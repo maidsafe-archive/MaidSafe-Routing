@@ -146,6 +146,22 @@ LIST(APPEND DHT_SOURCE_FILES ${ALL_FILES_KADEMLIA_DIR}
                              ${ALL_FILES_NATPMP_DIR}
                              ${ALL_FILES_MAIDSAFE_DIR})
 
+FILE(GLOB SOURCE_FILES_CRASH_REPORTER_DIR "${PROJECT_SOURCE_DIR}/src/maidsafe/dht/crash_reporter/*.cc")
+FILE(GLOB HEADER_FILES_CRASH_REPORTER_DIR "${PROJECT_SOURCE_DIR}/src/maidsafe/dht/crash_reporter/*.h")
+SET(ALL_FILES_CRASH_REPORTER_DIR ${SOURCE_FILES_CRASH_REPORTER_DIR} ${HEADER_FILES_CRASH_REPORTER_DIR})
+SET(ALL_FILES_CRASH_REPORTER_TRANSPORT
+      "${PROJECT_SOURCE_DIR}/src/maidsafe/dht/transport/transport.h"
+      "${PROJECT_SOURCE_DIR}/src/maidsafe/dht/transport/tcp_transport.cc"
+      "${PROJECT_SOURCE_DIR}/src/maidsafe/dht/transport/tcp_transport.h"
+      "${PROJECT_SOURCE_DIR}/src/maidsafe/dht/transport/tcp_connection.cc"
+      "${PROJECT_SOURCE_DIR}/src/maidsafe/dht/transport/tcp_connection.h"
+      "${PROJECT_SOURCE_DIR}/src/maidsafe/dht/transport/transport.pb.cc"
+      "${PROJECT_SOURCE_DIR}/src/maidsafe/dht/transport/transport.pb.h"
+      )
+
+SOURCE_GROUP("crash_reporter Source Files" FILES ${SOURCE_FILES_CRASH_REPORTER_DIR})
+SOURCE_GROUP("crash_reporter Header Files" FILES ${HEADER_FILES_CRASH_REPORTER_DIR})
+
 ####    BENCHMARK, DEMO & TESTS    ####
 FILE(GLOB SOURCE_FILES_BENCHMARK_DIR "${PROJECT_SOURCE_DIR}/src/maidsafe/dht/kademlia/benchmark/*.cc")
 FILE(GLOB HEADER_FILES_BENCHMARK_DIR "${PROJECT_SOURCE_DIR}/src/maidsafe/dht/kademlia/benchmark/*.h")
@@ -215,6 +231,7 @@ ADD_EXECUTABLE(benchmark_static ${ALL_FILES_BENCHMARK_DIR})
 IF(Mysqlpp_FOUND)
   ADD_EXECUTABLE(distributed_net_clients EXCLUDE_FROM_ALL ${ALL_FILES_NETWORK_TEST_DIR})
 ENDIF()
+ADD_EXECUTABLE(CrashReporter ${ALL_FILES_CRASH_REPORTER_DIR} ${ALL_FILES_CRASH_REPORTER_TRANSPORT})
 
 # Force renaming of exes to match standard CMake library renaming policy
 RENAME_EXECUTABLE(TESTkademlia)
@@ -229,6 +246,7 @@ RENAME_EXECUTABLE(benchmark_static)
 IF(Mysqlpp_FOUND)
   RENAME_EXECUTABLE(distributed_net_clients)
 ENDIF()
+RENAME_EXECUTABLE(CrashReporter)
 
 # SET(TEST_TARGETS TESTupnp TESTnatpmp TESTnode TESTkademlia TESTtransport)
 SET(TEST_TARGETS TESTkademlia TESTtransport TESTnode_functional TESTnode_impl_functional TESTnode_churn)
@@ -238,6 +256,7 @@ SET_TARGET_PROPERTIES(benchmark_static PROPERTIES FOLDER "Benchmark")
 IF(Mysqlpp_FOUND)
   SET_TARGET_PROPERTIES(distributed_net_clients PROPERTIES FOLDER "Tests")
 ENDIF()
+SET_TARGET_PROPERTIES(CrashReporter PROPERTIES FOLDER "Crash Reporter")
 
 SET_TARGET_PROPERTIES(TESTnode_functional PROPERTIES COMPILE_DEFINITIONS "FUNCTIONAL_NODE_TEST")
 SET_TARGET_PROPERTIES(TESTnode_impl_functional PROPERTIES COMPILE_DEFINITIONS "FUNCTIONAL_NODE_IMPL_TEST")
@@ -257,6 +276,7 @@ TARGET_LINK_LIBRARIES(maidsafe_dht_static
                         cryptopp_static
                         protobuf_static
                         glog_static
+                        breakpad_static
                         boost_date_time
                         boost_filesystem
                         boost_regex
@@ -275,6 +295,15 @@ TARGET_LINK_LIBRARIES(benchmark_static maidsafe_dht_static boost_program_options
 IF(Mysqlpp_FOUND)
   TARGET_LINK_LIBRARIES(distributed_net_clients maidsafe_dht_static ${Mysqlpp_LIBRARY})
 ENDIF()
+TARGET_LINK_LIBRARIES(CrashReporter
+                        maidsafe_common_static
+                        protobuf_static
+                        glog_static
+                        breakpad_static
+                        boost_filesystem
+                        boost_system
+                        boost_thread
+                        )
 
 
 ###################################################################################################
@@ -300,16 +329,13 @@ IF(MSVC)
 
   SET_TARGET_PROPERTIES(maidsafe_dht_static TESTkademlia PROPERTIES COMPILE_FLAGS "/bigobj")
 
-  # SET_TARGET_PROPERTIES(TESTkademlia TESTnode TESTnatpmp TESTtransport TESTupnp KademliaDemo benchmark_static PROPERTIES
-  SET_TARGET_PROPERTIES(TESTkademlia TESTtransport TESTnode_functional TESTnode_impl_functional TESTnode_churn KademliaDemo benchmark_static PROPERTIES
-#                          LINK_FLAGS "/STACK:1048576"
+  SET_TARGET_PROPERTIES(TESTkademlia TESTtransport TESTnode_functional TESTnode_impl_functional TESTnode_churn KademliaDemo benchmark_static CrashReporter PROPERTIES
                           LINK_FLAGS_RELEASE "/OPT:REF /OPT:ICF /LTCG /INCREMENTAL:NO ${LINKER_LIBS_DIRS_RELEASE}"
                           LINK_FLAGS_DEBUG "${LINKER_LIBS_DIRS_DEBUG}"
                           LINK_FLAGS_RELWITHDEBINFO "${LINKER_LIBS_DIRS_DEBUG}"
                           LINK_FLAGS_MINSIZEREL "${LINKER_LIBS_DIRS_DEBUG}")
   IF(Mysqlpp_FOUND)
     SET_TARGET_PROPERTIES(distributed_net_clients PROPERTIES
-#                            LINK_FLAGS "/STACK:1048576"
                             LINK_FLAGS_RELEASE "/OPT:REF /OPT:ICF /LTCG /INCREMENTAL:NO ${LINKER_LIBS_DIRS_RELEASE}"
                             LINK_FLAGS_DEBUG "${LINKER_LIBS_DIRS_DEBUG}"
                             LINK_FLAGS_RELWITHDEBINFO "${LINKER_LIBS_DIRS_DEBUG}"
@@ -318,6 +344,7 @@ IF(MSVC)
 
   SET_TARGET_PROPERTIES(maidsafe_dht_static PROPERTIES STATIC_LIBRARY_FLAGS_RELEASE "/LTCG")
 ELSEIF(UNIX)
+  SET_TARGET_PROPERTIES(KademliaDemo PROPERTIES COMPILE_FLAGS "-g")
   FILE(GLOB PROTO_SOURCE_FILES_KADEMLIA "${PROJECT_SOURCE_DIR}/src/maidsafe/dht/kademlia/*.pb.cc")
   FILE(GLOB PROTO_SOURCE_FILES_TRANSPORT "${PROJECT_SOURCE_DIR}/src/maidsafe/dht/transport/*.pb.cc")
   SET(PROTO_SOURCE_FILES "${PROTO_SOURCE_FILES_KADEMLIA};${PROTO_SOURCE_FILES_TRANSPORT}")
