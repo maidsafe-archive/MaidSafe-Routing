@@ -59,7 +59,7 @@ namespace mt = maidsafe::dht::transport;
 
 
 #ifdef WIN32
-  bool dumpCallback(const wchar_t* dump_path,
+  bool DumpCallback(const wchar_t* dump_path,
                     const wchar_t* minidump_id,
                     void* context,
                     EXCEPTION_POINTERS* exinfo,
@@ -75,11 +75,15 @@ namespace mt = maidsafe::dht::transport;
     return succeeded;
   }
 #else
-  static bool dumpCallback(const char* dump_path,
+  static bool DumpCallback(const char* dump_path,
                            const char* minidump_id,
                            void* context,
                            bool succeeded) {
     ULOG(INFO) <<  "Error Dump Location: " << dump_path << "/" << minidump_id;
+    int a = 2;
+    if (a != 2) {
+      context = NULL;
+    }
     return succeeded;
   }
 #endif
@@ -171,10 +175,10 @@ int main(int argc, char **argv) {
   fs::path cur_path = fs::initial_path();
 #ifdef WIN32
   google_breakpad::ExceptionHandler eh(cur_path.wstring(),
-                                        NULL, dumpCallback, NULL, true);
+                                        NULL, DumpCallback, NULL, true);
 #else
   google_breakpad::ExceptionHandler eh(cur_path.string(),
-                                        NULL, dumpCallback, NULL, true);
+                                        NULL, DumpCallback, NULL, true);
 #endif
   try {
     std::string logfile, bootstrap_file("bootstrap_contacts.xml");
