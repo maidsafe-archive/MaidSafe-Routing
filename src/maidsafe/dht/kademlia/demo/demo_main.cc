@@ -44,6 +44,12 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "maidsafe/dht/kademlia/node-api.h"
 #include "maidsafe/dht/kademlia/node_container.h"
 #include "maidsafe/dht/kademlia/demo/commands.h"
+#ifdef WIN32
+#  include "breakpad/client/windows/handler/exception_handler.h"
+#else
+#  include "breakpad/client/linux/handler/exception_handler.h"
+#endif
+
 
 namespace bptime = boost::posix_time;
 namespace fs = boost::filesystem;
@@ -51,6 +57,32 @@ namespace po = boost::program_options;
 namespace mk = maidsafe::dht::kademlia;
 namespace mt = maidsafe::dht::transport;
 
+
+#ifdef WIN32
+  bool dumpCallback(const wchar_t* dump_path,
+                    const wchar_t* minidump_id,
+                    void* context,
+                    EXCEPTION_POINTERS* exinfo,
+                    MDRawAssertionInfo* assertion,
+                    bool succeeded) {
+    ULOG(INFO) <<  "Error Dump Location: " << dump_path << "\\" << minidump_id;
+    int a = 2;
+    if (a != 2) {
+      context = NULL;
+      exinfo = NULL;
+      assertion = NULL;
+    }
+    return succeeded;
+  }
+#else
+  static bool dumpCallback(const char* dump_path,
+                           const char* minidump_id,
+                           void* context,
+                           bool succeeded) {
+    ULOG(INFO) <<  "Error Dump Location: " << dump_path << "/" << minidump_id;
+    return succeeded;
+  }
+#endif
 
 namespace {
 
@@ -136,6 +168,14 @@ mk::Contact ComposeContactWithKey(
 
 int main(int argc, char **argv) {
   google::InitGoogleLogging(argv[0]);
+  fs::path cur_path = fs::initial_path();
+#ifdef WIN32
+  google_breakpad::ExceptionHandler eh(cur_path.wstring(),
+                                        NULL, dumpCallback, NULL, true);
+#else
+  google_breakpad::ExceptionHandler eh(cur_path.string(),
+                                        NULL, dumpCallback, NULL, true);
+#endif
   try {
     std::string logfile, bootstrap_file("bootstrap_contacts.xml");
     uint16_t listening_port(8000), k(4), alpha(3), beta(2);
