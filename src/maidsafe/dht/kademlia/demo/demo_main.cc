@@ -72,6 +72,13 @@ namespace mt = maidsafe::dht::transport;
       exinfo = NULL;
       assertion = NULL;
     }
+    std::wstring full_dump_name = dump_path;
+    full_dump_name += L"\\";
+    full_dump_name += minidump_id;
+    std::wifstream dump_file(full_dump_name);
+    std::wstring dump_file_data((std::istreambuf_iterator<wchar_t>(dump_file)),
+                 std::istreambuf_iterator<wchar_t>());
+    std::wcout << dump_file_data << std::endl;
     return succeeded;
   }
 #else
@@ -174,19 +181,20 @@ int main(int argc, char **argv) {
   google::InitGoogleLogging(argv[0]);
   fs::path cur_path = fs::initial_path();
 #ifdef WIN32
-  google_breakpad::ExceptionHandler eh(cur_path.wstring(),
+  google_breakpad::ExceptionHandler exception_handler(cur_path.wstring(),
                                         NULL, DumpCallback, NULL, true);
 #else
-  google_breakpad::ExceptionHandler eh(cur_path.string(),
+  google_breakpad::ExceptionHandler exception_handler(cur_path.string(),
                                         NULL, DumpCallback, NULL, true);
 #endif
   try {
+    volatile int* a = static_cast<int*>(NULL);  // Initiating Crash
+    *a = 1;                          // Crash Line
     std::string logfile, bootstrap_file("bootstrap_contacts.xml");
     uint16_t listening_port(8000), k(4), alpha(3), beta(2);
     std::string ip("127.0.0.1");
     uint32_t refresh_interval(3600);
     size_t thread_count(3);
-
     po::options_description options_description("Options");
     options_description.add_options()
         ("help,h", "Print options.")
