@@ -97,6 +97,14 @@ std::string ParseDumpFileData(fs::ifstream *dump_file) {
                            void* /*context*/,
                            bool succeeded) {
     ULOG(INFO) <<  "Error Dump Location: " << dump_path << "/" << minidump_id;
+    std::cout << "Opening Dump File: " << dump_path << "/" <<
+                minidump_id << std::endl;
+    std::string full_dump_name = dump_path;
+    full_dump_name += "/";
+    full_dump_name += minidump_id;
+    full_dump_name += ".dmp";
+    fs::ifstream dump_file(full_dump_name);
+    std::string dump_file_data = ParseDumpFileData(&dump_file);
     return succeeded;
   }
 #endif
