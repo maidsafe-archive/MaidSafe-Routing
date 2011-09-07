@@ -27,6 +27,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <signal.h>
 #include "boost/filesystem.hpp"
+#include "boost/filesystem/fstream.hpp"
 #include "boost/program_options.hpp"
 #include "boost/archive/xml_iarchive.hpp"
 #include "boost/archive/xml_oarchive.hpp"
@@ -58,39 +59,44 @@ namespace mk = maidsafe::dht::kademlia;
 namespace mt = maidsafe::dht::transport;
 
 
+std::string ParseDumpFileData(fs::ifstream *dump_file) {
+  std::string dump_file_data;
+  if (dump_file->is_open()) {
+    std::string file_data(
+                  (std::istreambuf_iterator<char>(*dump_file)),
+                  std::istreambuf_iterator<char>());
+    std::cout << "File Contents: " << std::endl << file_data <<
+                std::endl;
+    dump_file_data = file_data;
+  } else {
+    std::wcout << "Error Opening File" << std::endl;
+  }
+  return dump_file_data;
+}
+
 #ifdef WIN32
   bool DumpCallback(const wchar_t* dump_path,
                     const wchar_t* minidump_id,
-                    void* context,
-                    EXCEPTION_POINTERS* exinfo,
-                    MDRawAssertionInfo* assertion,
+                    void* /*context*/,
+                    EXCEPTION_POINTERS* /*exinfo*/,
+                    MDRawAssertionInfo* /*assertion*/,
                     bool succeeded) {
     ULOG(INFO) <<  "Error Dump Location: " << dump_path << "\\" << minidump_id;
-    int a = 2;
-    if (a != 2) {
-      context = NULL;
-      exinfo = NULL;
-      assertion = NULL;
-    }
     std::wstring full_dump_name = dump_path;
     full_dump_name += L"\\";
     full_dump_name += minidump_id;
-    std::wifstream dump_file(full_dump_name);
-    std::wstring dump_file_data((std::istreambuf_iterator<wchar_t>(dump_file)),
-                 std::istreambuf_iterator<wchar_t>());
-    std::wcout << dump_file_data << std::endl;
+    full_dump_name += L".dmp";
+    std::wcout << "Opening Dump File: " << full_dump_name << std::endl;
+    fs::ifstream dump_file(full_dump_name);
+    std::string dump_file_data = ParseDumpFileData(&dump_file);
     return succeeded;
   }
 #else
   static bool DumpCallback(const char* dump_path,
                            const char* minidump_id,
-                           void* context,
+                           void* /*context*/,
                            bool succeeded) {
     ULOG(INFO) <<  "Error Dump Location: " << dump_path << "/" << minidump_id;
-    int a = 2;
-    if (a != 2) {
-      context = NULL;
-    }
     return succeeded;
   }
 #endif
@@ -189,7 +195,7 @@ int main(int argc, char **argv) {
 #endif
   try {
     volatile int* a = static_cast<int*>(NULL);  // Initiating Crash
-    *a = 1;                          // Crash Line
+    *a = 1;                                     // Crash Line
     std::string logfile, bootstrap_file("bootstrap_contacts.xml");
     uint16_t listening_port(8000), k(4), alpha(3), beta(2);
     std::string ip("127.0.0.1");
