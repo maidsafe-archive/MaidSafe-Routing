@@ -28,7 +28,10 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <memory>
 #include "boost/asio/io_service.hpp"
 #include "boost/thread/thread.hpp"
+#include "boost/interprocess/shared_memory_object.hpp"
+#include "boost/interprocess/mapped_region.hpp"
 #include "maidsafe/dht/transport/transport.h"
+#include "maidsafe/common/utils.h"
 #include "maidsafe/dht/transport/tcp_transport.h"
 #ifdef __MSVC__
 #  pragma warning(push)
@@ -39,7 +42,10 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #  pragma warning(pop)
 #endif
 
-int main(int /*argc*/, char ** /*argv*/) {
+namespace bp = boost::interprocess;
+
+
+int main(int argc, char ** argv) {
   boost::asio::io_service asio_service;
   std::shared_ptr<boost::asio::io_service::work> work(
       new boost::asio::io_service::work(asio_service));
@@ -59,17 +65,28 @@ int main(int /*argc*/, char ** /*argv*/) {
 
   int result(0);
   try {
-    std::string message(crash_report.SerializeAsString());
-    tcp_transport->Send(message, crash_server,
-                        maidsafe::dht::transport::kDefaultInitialTimeout);
+    if (argc != 2) {
+      throw std::logic_error(std::string("Invalid Arg count"));
+    } else {
+      std::string shared_mem_name = argv[1];
+      bp::shared_memory_object shared_mem_obj(bp::open_only,
+                                shared_mem_name.c_str(), bp::read_only);
+      bp::mapped_region map_region(shared_mem_obj, bp::read_only);
+      bp::shared_memory_object::remove(shared_mem_name.c_str());
+      std::ofstream test_output("./TestDump.dmp");
+      test_output << maidsafe::DecodeFromBase32(
+                    static_cast<char*>(map_region.get_address()));
+      test_output.close();
+//      std::string message(crash_report.SerializeAsString());
+/*      tcp_transport->Send(message, crash_server,
+                          maidsafe::dht::transport::kDefaultInitialTimeout);*/
+    }
   }
-  catch (const std::exception &) {
+  catch(const std::exception &) {
     result = -1;
   }
-
   work.reset();
   asio_service.stop();
   worker.join();
-
   return result;
 }

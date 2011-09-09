@@ -28,11 +28,14 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <signal.h>
 #include "boost/filesystem.hpp"
 #include "boost/filesystem/fstream.hpp"
+#include "boost/thread/thread.hpp"
 #include "boost/program_options.hpp"
 #include "boost/archive/xml_iarchive.hpp"
 #include "boost/archive/xml_oarchive.hpp"
 #include "boost/archive/text_oarchive.hpp"
 #include "boost/archive/text_iarchive.hpp"
+#include "boost/interprocess/shared_memory_object.hpp"
+#include "boost/interprocess/mapped_region.hpp"
 
 #include "maidsafe/common/crypto.h"
 #include "maidsafe/common/utils.h"
@@ -55,6 +58,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 namespace bptime = boost::posix_time;
 namespace fs = boost::filesystem;
 namespace po = boost::program_options;
+namespace bp = boost::interprocess;
 namespace mk = maidsafe::dht::kademlia;
 namespace mt = maidsafe::dht::transport;
 
@@ -65,8 +69,6 @@ std::string ParseDumpFileData(fs::ifstream *dump_file) {
     std::string file_data(
                   (std::istreambuf_iterator<char>(*dump_file)),
                   std::istreambuf_iterator<char>());
-    std::cout << "File Contents: " << std::endl << file_data <<
-                std::endl;
     dump_file_data = file_data;
   } else {
     std::wcout << "Error Opening File" << std::endl;
@@ -86,9 +88,23 @@ std::string ParseDumpFileData(fs::ifstream *dump_file) {
     full_dump_name += L"\\";
     full_dump_name += minidump_id;
     full_dump_name += L".dmp";
-    std::wcout << "Opening Dump File: " << full_dump_name << std::endl;
     fs::ifstream dump_file(full_dump_name);
     std::string dump_file_data = ParseDumpFileData(&dump_file);
+    std::cout << "Orig Log: " << dump_file_data <<std::endl;
+    dump_file_data = maidsafe::EncodeToBase32(dump_file_data);
+    std::string shared_mem_name = maidsafe::RandomAlphaNumericString(10);
+    bp::shared_memory_object shared_mem_obj(bp::create_only,
+                                  shared_mem_name.c_str(), bp::read_write);
+    shared_mem_obj.truncate(dump_file_data.size());
+    bp::mapped_region map_region(shared_mem_obj, bp::read_write);
+    const char *source = dump_file_data.c_str();
+    char *dest = static_cast<char*>(map_region.get_address());
+    for (; source != dump_file_data.c_str() + dump_file_data.size(); ++source,
+                                                                ++dest) {
+      *dest = *source;
+    }
+    std::string command = "./CrashReporter " + shared_mem_name;
+    std::system(command.c_str());
     return succeeded;
   }
 #else
