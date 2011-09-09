@@ -25,10 +25,15 @@ TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
+#ifdef WIN32
+#  include <windows.h>
+#else
+#  include <unistd.h>
+#  include <limits.h>
+#endif
+
 #include <signal.h>
 #include "boost/filesystem.hpp"
-#include "boost/filesystem/fstream.hpp"
-#include "boost/thread/thread.hpp"
 #include "boost/program_options.hpp"
 #include "boost/archive/xml_iarchive.hpp"
 #include "boost/archive/xml_oarchive.hpp"
@@ -48,6 +53,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "maidsafe/dht/kademlia/node-api.h"
 #include "maidsafe/dht/kademlia/node_container.h"
 #include "maidsafe/dht/kademlia/demo/commands.h"
+
 #ifdef WIN32
 #  include "breakpad/client/windows/handler/exception_handler.h"
 #else
@@ -63,19 +69,6 @@ namespace mk = maidsafe::dht::kademlia;
 namespace mt = maidsafe::dht::transport;
 
 
-std::string ParseDumpFileData(fs::ifstream *dump_file) {
-  std::string dump_file_data;
-  if (dump_file->is_open()) {
-    std::string file_data(
-                  (std::istreambuf_iterator<char>(*dump_file)),
-                  std::istreambuf_iterator<char>());
-    dump_file_data = file_data;
-  } else {
-    std::wcout << "Error Opening File" << std::endl;
-  }
-  return dump_file_data;
-}
-
 #ifdef WIN32
   bool DumpCallback(const wchar_t* dump_path,
                     const wchar_t* minidump_id,
@@ -88,6 +81,8 @@ std::string ParseDumpFileData(fs::ifstream *dump_file) {
     full_dump_name += L"\\";
     full_dump_name += minidump_id;
     full_dump_name += L".dmp";
+    fs::path full_dump_path(full_dump_name);
+    /*
     fs::ifstream dump_file(full_dump_name);
     std::string dump_file_data = ParseDumpFileData(&dump_file);
     std::cout << "Orig Log: " << dump_file_data <<std::endl;
@@ -102,9 +97,34 @@ std::string ParseDumpFileData(fs::ifstream *dump_file) {
     for (; source != dump_file_data.c_str() + dump_file_data.size(); ++source,
                                                                 ++dest) {
       *dest = *source;
+    }*/
+    int current_modulepath_length = 0;
+    int max_path_length = MAX_PATH;
+    TCHAR *current_path = new TCHAR[max_path_length];
+    while (current_modulepath_length <= max_path_length) {
+      current_modulepath_length = GetModuleFileName(
+                                          NULL, current_path, max_path_length);
+      if (current_modulepath_length >= max_path_length) {
+        max_path_length *= 2;
+        delete [] current_path;
+        current_path = new TCHAR[max_path_length];
+      } else if (current_modulepath_length == 0) {
+        std::cout << "Cannot Retrieve Current Path";
+        break;
+      } else {
+        break;
+      }
     }
-    std::string command = "./CrashReporter " + shared_mem_name;
-    std::system(command.c_str());
+    std::string current_directory(
+                              fs::path(current_path).parent_path().string());
+    delete [] current_path;
+    if (fs::is_regular_file(current_directory + "\\CrashReporter.exe")) {
+      std::string command = current_directory + "\\CrashReporter.exe "
+                                          + full_dump_path.string();
+      std::system(command.c_str());
+    } else {
+      std::cout << "Crash Reporter Not Found.";
+    }
     return succeeded;
   }
 #else
@@ -119,8 +139,37 @@ std::string ParseDumpFileData(fs::ifstream *dump_file) {
     full_dump_name += "/";
     full_dump_name += minidump_id;
     full_dump_name += ".dmp";
-    fs::ifstream dump_file(full_dump_name);
-    std::string dump_file_data = ParseDumpFileData(&dump_file);
+    int current_modulepath_length = 0;
+    int max_path_length = PATH_MAX;
+    char *current_path = new char[max_path_length];
+    while (current_modulepath_length <= max_path_length) {
+      current_modulepath_length = readlink("/proc/self/exe",
+                                            current_path, PATH_MAX);
+      if (current_modulepath_length >= max_path_length) {
+        max_path_length *= 2;
+        delete [] current_path;
+        current_path = new char[max_path_length];
+      } else if (current_modulepath_length == 0) {
+        std::cout << "Cannot Retrieve Current Path";
+        break;
+      } else {
+        break;
+      }
+    }
+    std::string current_directory(
+                              fs::path(current_path).parent_path().string());
+    delete [] current_path;
+    if (fs::is_regular_file(current_directory + "/CrashReporter-d")) {
+      std::string command = current_directory + "/CrashReporter-d "
+                                          + full_dump_path.string();
+      std::system(command.c_str());
+    } else if (fs::is_regular_file(current_directory + "/CrashReporter")) {
+      std::string command = current_directory + "/CrashReporter "
+                                          + full_dump_path.string();
+      std::system(command.c_str());
+    } else {
+      std::cout << "Crash Reporter Not Found.";
+    }
     return succeeded;
   }
 #endif

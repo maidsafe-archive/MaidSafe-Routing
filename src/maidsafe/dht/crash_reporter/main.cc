@@ -28,6 +28,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <memory>
 #include "boost/asio/io_service.hpp"
 #include "boost/thread/thread.hpp"
+#include "boost/filesystem/fstream.hpp"
 #include "boost/interprocess/shared_memory_object.hpp"
 #include "boost/interprocess/mapped_region.hpp"
 #include "maidsafe/dht/transport/transport.h"
@@ -44,6 +45,19 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 namespace bp = boost::interprocess;
 
+
+std::string ParseDumpFileData(fs::ifstream *dump_file) {
+  std::string dump_file_data;
+  if (dump_file->is_open()) {
+    std::string file_data(
+                  (std::istreambuf_iterator<char>(*dump_file)),
+                  std::istreambuf_iterator<char>());
+    dump_file_data = file_data;
+  } else {
+    std::wcout << "Error Opening File" << std::endl;
+  }
+  return dump_file_data;
+}
 
 int main(int argc, char ** argv) {
   boost::asio::io_service asio_service;
@@ -66,8 +80,9 @@ int main(int argc, char ** argv) {
   int result(0);
   try {
     if (argc != 2) {
-      throw std::logic_error(std::string("Invalid Arg count"));
+      throw std::logic_error(std::string("Missing Dump File Info"));
     } else {
+      /*
       std::string shared_mem_name = argv[1];
       bp::shared_memory_object shared_mem_obj(bp::open_only,
                                 shared_mem_name.c_str(), bp::read_only);
@@ -76,10 +91,17 @@ int main(int argc, char ** argv) {
       std::ofstream test_output("./TestDump.dmp");
       test_output << maidsafe::DecodeFromBase32(
                     static_cast<char*>(map_region.get_address()));
-      test_output.close();
+      test_output.close();*/
+      std::string dump_file_data;
+      if (!fs::is_regular_file(fs::path(argv[1]))) {
+        throw std::logic_error(std::string("No Dump File Located"));
+      }
+      maidsafe::ReadFile(fs::path(argv[1]), &dump_file_data);
+      maidsafe::WriteFile(fs::path("./Test.dmp"), dump_file_data);
+      std::cout << "Info Read: " << std::endl << dump_file_data;
 //      std::string message(crash_report.SerializeAsString());
 /*      tcp_transport->Send(message, crash_server,
-                          maidsafe::dht::transport::kDefaultInitialTimeout);*/
+                          maidsafe::dht::transport::kDefaultInitialTimeout);*/      
     }
   }
   catch(const std::exception &) {
