@@ -42,6 +42,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "maidsafe/common/crypto.h"
 #include "maidsafe/common/utils.h"
+#include "maidsafe/common/breakpad.h"
 
 #include "maidsafe/dht/log.h"
 #include "maidsafe/dht/version.h"
@@ -52,28 +53,30 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "maidsafe/dht/kademlia/node_container.h"
 #include "maidsafe/dht/kademlia/demo/commands.h"
 
+/*
 #ifdef WIN32
 #  include "breakpad/client/windows/handler/exception_handler.h"
 #else
 #  include "breakpad/client/linux/handler/exception_handler.h"
 #endif
-
+*/
 
 namespace bptime = boost::posix_time;
 namespace fs = boost::filesystem;
 namespace po = boost::program_options;
-namespace bp = boost::interprocess;
 namespace mk = maidsafe::dht::kademlia;
 namespace mt = maidsafe::dht::transport;
 
-
+/*
 #ifdef WIN32
   bool DumpCallback(const wchar_t* dump_path,
                     const wchar_t* minidump_id,
-                    void* /*context*/,
-                    EXCEPTION_POINTERS* /*exinfo*/,
-                    MDRawAssertionInfo* /*assertion*/,
+                    void* context,
+                    EXCEPTION_POINTERS* exinfo,
+                    MDRawAssertionInfo* assertion,
                     bool succeeded) {
+    std::string* proj_name = reinterpret_cast<std::string*>(context); 
+    std::cout << *proj_name << std::endl;
     ULOG(INFO) <<  "Error Dump Location: " << dump_path << "\\" << minidump_id;
     std::wstring full_dump_name = dump_path;
     full_dump_name += L"\\";
@@ -101,8 +104,10 @@ namespace mt = maidsafe::dht::transport;
                               fs::path(current_path).parent_path().string());
     delete [] current_path;
     if (fs::is_regular_file(current_directory + "\\CrashReporter.exe")) {
-      std::string command = current_directory + "\\CrashReporter.exe "
-                                          + full_dump_path.string();
+      std::string command = current_directory + "\\CrashReporter.exe " +
+                            full_dump_path.string() + " " + "MaidSafe-DHT" +
+                            " " +
+                         boost::lexical_cast<std::string>(MAIDSAFE_DHT_VERSION);
       std::system(command.c_str());
     } else {
       std::cout << "Crash Reporter Not Found.";
@@ -112,7 +117,7 @@ namespace mt = maidsafe::dht::transport;
 #else
   static bool DumpCallback(const char* dump_path,
                            const char* minidump_id,
-                           void* /*context*/,
+                           void* context,
                            bool succeeded) {
     ULOG(INFO) <<  "Error Dump Location: " << dump_path << "/" << minidump_id;
     std::cout << "Opening Dump File: " << dump_path << "/" <<
@@ -146,8 +151,9 @@ namespace mt = maidsafe::dht::transport;
                                           + full_dump_name;
       std::system(command.c_str());
     } else if (fs::is_regular_file(current_directory + "/CrashReporter")) {
-      std::string command = current_directory + "/CrashReporter "
-                                          + full_dump_name;
+      std::string command = current_directory + "/CrashReporter " +
+                            full_dump_name + " " + "MaidSafe-DHT" + " " +
+                         boost::lexical_cast<std::string>(MAIDSAFE_DHT_VERSION);
       std::system(command.c_str());
     } else {
       std::cout << "Crash Reporter Not Found.";
@@ -155,7 +161,7 @@ namespace mt = maidsafe::dht::transport;
     return succeeded;
   }
 #endif
-
+*/
 namespace {
 
 void ConflictingOptions(const po::variables_map &variables_map,
@@ -241,12 +247,20 @@ mk::Contact ComposeContactWithKey(
 int main(int argc, char **argv) {
   google::InitGoogleLogging(argv[0]);
   fs::path cur_path = fs::initial_path();
+  maidsafe::crash_report::ProjectInfo current_project("MaidSafe-DHT",
+                                                      MAIDSAFE_DHT_VERSION);
 #ifdef WIN32
   google_breakpad::ExceptionHandler exception_handler(cur_path.wstring(),
-                                        NULL, DumpCallback, NULL, true);
+                                        NULL,
+                                        maidsafe::crash_report::DumpCallback,
+                                        &current_project,
+                                        true);
 #else
   google_breakpad::ExceptionHandler exception_handler(cur_path.string(),
-                                        NULL, DumpCallback, NULL, true);
+                                        NULL,
+                                        maidsafe::crash_report::DumpCallback,
+                                        &current_project,
+                                        true);
 #endif
   try {
     volatile int* a = static_cast<int*>(NULL);  // Initiating Crash

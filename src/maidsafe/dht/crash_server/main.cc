@@ -28,12 +28,10 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <memory>
 #include "boost/asio/io_service.hpp"
 #include "boost/thread/thread.hpp"
-#include "boost/thread/condition.hpp"
 #include "boost/filesystem/fstream.hpp"
 #include "maidsafe/dht/transport/transport.h"
 #include "maidsafe/common/utils.h"
 #include "maidsafe/dht/transport/tcp_transport.h"
-#include "maidsafe/dht/version.h"
 #ifdef __MSVC__
 #  pragma warning(push)
 #  pragma warning(disable: 4127 4244 4267)
@@ -43,23 +41,44 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #  pragma warning(pop)
 #endif
 
-
 namespace arg = std::placeholders;
 namespace maid_dht = maidsafe::dht::transport;
 
-void DoOnReplyReceived(const std::string& request,
-                         const maid_dht::Info& /*info*/,
-                         std::string* /*response*/,
-                         boost::posix_time::time_duration* /* timeout*/,
-                         boost::mutex* cur_mutex,
-                         boost::condition_variable* cv,
-                         std::string* reply) {
-  boost::mutex::scoped_lock lock(*cur_mutex);
-  *reply = request;
-  cv->notify_one();
+
+boost::mutex mutex_;
+
+std::string ReturnDateTime() {
+  std::ostringstream msg;
+  const boost::posix_time::ptime cur_time =
+      boost::posix_time::second_clock::local_time();
+  boost::posix_time::time_facet *setting =
+      new boost::posix_time::time_facet("%d-%m-%Y %H-%M-%S");
+  msg.imbue(std::locale(msg.getloc(), setting));
+  msg << cur_time;
+  return msg.str();
 }
 
-int main(int argc, char ** argv) {
+void DoOnRequestReceived(const std::string& request,
+                         const maid_dht::Info& /*info*/,
+                         std::string* response,
+                         boost::posix_time::time_duration* /* timeout*/) {
+  *response = "Received";
+  std::cout << "New Error Log Received." << std::endl;
+  maidsafe::dht::transport::protobuf::CrashReport crash_report;
+  crash_report.ParseFromString(request);
+  boost::mutex::scoped_lock lock(mutex_);
+  fs::path out_dir("D:\\Dump\\Server-Logs\\" + ReturnDateTime() + " - " +
+                   maidsafe::RandomAlphaNumericString(3));
+  boost::filesystem::create_directory(out_dir);
+  maidsafe::WriteFile(out_dir.string() + "\\Error-Log.dmp",
+      crash_report.content());
+}
+
+void DoOnError(const maidsafe::dht::transport::TransportCondition &tc) {
+  std::cout<< "Got error " << tc << std::endl;
+}
+
+int main(/*int argc, char ** argv*/) {
   int result(0);
   boost::asio::io_service asio_service;
   std::shared_ptr<boost::asio::io_service::work> work(
@@ -67,42 +86,22 @@ int main(int argc, char ** argv) {
   boost::thread worker(
       std::bind(static_cast<size_t(boost::asio::io_service::*)()>(
           &boost::asio::io_service::run), std::ref(asio_service)));
+  boost::thread worker2(
+      std::bind(static_cast<size_t(boost::asio::io_service::*)()>(
+          &boost::asio::io_service::run), std::ref(asio_service)));
   std::shared_ptr<maid_dht::TcpTransport> tcp_transport(
       new maid_dht::TcpTransport(asio_service));
-  maid_dht::protobuf::CrashReport crash_report;
-  maid_dht::Endpoint crash_server("127.0.0.1", 5000);
-  // assign crash server's
-  // endpoint - resolve
-  // crash.maidsafe.net;
-  try {
-    boost::mutex cur_mutex;
-    boost::condition_variable cv;
-    std::string reply;
-    tcp_transport->on_message_received()->connect(
-        std::bind(&DoOnReplyReceived, arg::_1, arg::_2, arg::_3, arg::_4,
-                  &cur_mutex, &cv, &reply));
-    if (argc != 2) {
-      throw std::logic_error(std::string("Missing Dump File Info"));
-    }
-    std::string dump_file_data;
-    if (!fs::is_regular_file(fs::path(argv[1]))) {
-      throw std::logic_error(std::string("No Dump File Located"));
-    }
-    maidsafe::ReadFile(fs::path(argv[1]), &dump_file_data);
-    *crash_report.mutable_content() = dump_file_data;
-    std::string message(crash_report.SerializeAsString());
-    tcp_transport->Send(message,
-                        crash_server,
-                        maid_dht::kDefaultInitialTimeout);
-    boost::mutex::scoped_lock lock(cur_mutex);
-    while (reply.empty())
-      cv.wait(lock);
-//  maidsafe::Sleep(maidsafe::dht::transport::kDefaultInitialTimeout);
+  tcp_transport->on_message_received()->connect(
+      std::bind(&DoOnRequestReceived, arg::_1, arg::_2, arg::_3, arg::_4));
+  tcp_transport->on_error()->connect(std::bind(&DoOnError, arg::_1));
+  if (tcp_transport->StartListening(maid_dht::Endpoint(
+                                    "127.0.0.1", 5000)) != 0) {
+    std::cout << "Error Starting to Listen" << std::endl;
   }
-  catch(const std::exception &) {
-    std::cout << "Error Sending Out Report to Crash Server" <<std::endl;
-    result = -1;
-  }
+  std::cout << "Server Started... " << std::endl;
+//  maidsafe::Sleep(boost::posix_time::seconds(300));
+  while (true) {}
+//  Need some sort of loop to hold the exit till work finishes
   work.reset();
   asio_service.stop();
   worker.join();

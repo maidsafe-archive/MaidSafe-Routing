@@ -162,6 +162,14 @@ SET(ALL_FILES_CRASH_REPORTER_TRANSPORT
 SOURCE_GROUP("crash_reporter Source Files" FILES ${SOURCE_FILES_CRASH_REPORTER_DIR})
 SOURCE_GROUP("crash_reporter Header Files" FILES ${HEADER_FILES_CRASH_REPORTER_DIR})
 
+FILE(GLOB SOURCE_FILES_CRASH_SERVER_DIR "${PROJECT_SOURCE_DIR}/src/maidsafe/dht/crash_server/*.cc")
+FILE(GLOB HEADER_FILES_CRASH_SERVER_DIR "${PROJECT_SOURCE_DIR}/src/maidsafe/dht/crash_server/*.h")
+SET(ALL_FILES_CRASH_SERVER_DIR ${SOURCE_FILES_CRASH_SERVER_DIR} ${HEADER_FILES_CRASH_SERVER_DIR})
+SET(ALL_FILES_CRASH_SERVER_TRANSPORT ${ALL_FILES_CRASH_REPORTER_TRANSPORT})
+
+SOURCE_GROUP("crash_server Source Files" FILES ${SOURCE_FILES_CRASH_SERVER_DIR})
+SOURCE_GROUP("crash_server Header Files" FILES ${HEADER_FILES_CRASH_SERVER_DIR})
+
 ####    BENCHMARK, DEMO & TESTS    ####
 FILE(GLOB SOURCE_FILES_BENCHMARK_DIR "${PROJECT_SOURCE_DIR}/src/maidsafe/dht/kademlia/benchmark/*.cc")
 FILE(GLOB HEADER_FILES_BENCHMARK_DIR "${PROJECT_SOURCE_DIR}/src/maidsafe/dht/kademlia/benchmark/*.h")
@@ -232,6 +240,7 @@ IF(Mysqlpp_FOUND)
   ADD_EXECUTABLE(distributed_net_clients EXCLUDE_FROM_ALL ${ALL_FILES_NETWORK_TEST_DIR})
 ENDIF()
 ADD_EXECUTABLE(CrashReporter ${ALL_FILES_CRASH_REPORTER_DIR} ${ALL_FILES_CRASH_REPORTER_TRANSPORT})
+ADD_EXECUTABLE(CrashServer ${ALL_FILES_CRASH_SERVER_DIR} ${ALL_FILES_CRASH_SERVER_TRANSPORT})
 
 # Force renaming of exes to match standard CMake library renaming policy
 RENAME_EXECUTABLE(TESTkademlia)
@@ -247,6 +256,7 @@ IF(Mysqlpp_FOUND)
   RENAME_EXECUTABLE(distributed_net_clients)
 ENDIF()
 RENAME_EXECUTABLE(CrashReporter)
+RENAME_EXECUTABLE(CrashServer)
 
 # SET(TEST_TARGETS TESTupnp TESTnatpmp TESTnode TESTkademlia TESTtransport)
 SET(TEST_TARGETS TESTkademlia TESTtransport TESTnode_functional TESTnode_impl_functional TESTnode_churn)
@@ -257,6 +267,7 @@ IF(Mysqlpp_FOUND)
   SET_TARGET_PROPERTIES(distributed_net_clients PROPERTIES FOLDER "Tests")
 ENDIF()
 SET_TARGET_PROPERTIES(CrashReporter PROPERTIES FOLDER "Crash Reporter")
+SET_TARGET_PROPERTIES(CrashServer PROPERTIES FOLDER "Crash Server")
 
 SET_TARGET_PROPERTIES(TESTnode_functional PROPERTIES COMPILE_DEFINITIONS "FUNCTIONAL_NODE_TEST")
 SET_TARGET_PROPERTIES(TESTnode_impl_functional PROPERTIES COMPILE_DEFINITIONS "FUNCTIONAL_NODE_IMPL_TEST")
@@ -296,6 +307,15 @@ IF(Mysqlpp_FOUND)
   TARGET_LINK_LIBRARIES(distributed_net_clients maidsafe_dht_static ${Mysqlpp_LIBRARY})
 ENDIF()
 TARGET_LINK_LIBRARIES(CrashReporter
+                        maidsafe_common_static
+                        protobuf_static
+                        glog_static
+                        breakpad_static
+                        boost_filesystem
+                        boost_system
+                        boost_thread
+                        )
+TARGET_LINK_LIBRARIES(CrashServer
                         maidsafe_common_static
                         protobuf_static
                         glog_static
