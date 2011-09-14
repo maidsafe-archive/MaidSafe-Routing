@@ -25,13 +25,6 @@ TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#ifdef WIN32
-#  include <windows.h>
-#else
-#  include <unistd.h>
-#  include <limits.h>
-#endif
-
 #include <signal.h>
 #include "boost/filesystem.hpp"
 #include "boost/program_options.hpp"
@@ -53,13 +46,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "maidsafe/dht/kademlia/node_container.h"
 #include "maidsafe/dht/kademlia/demo/commands.h"
 
-/*
-#ifdef WIN32
-#  include "breakpad/client/windows/handler/exception_handler.h"
-#else
-#  include "breakpad/client/linux/handler/exception_handler.h"
-#endif
-*/
 
 namespace bptime = boost::posix_time;
 namespace fs = boost::filesystem;
@@ -67,101 +53,7 @@ namespace po = boost::program_options;
 namespace mk = maidsafe::dht::kademlia;
 namespace mt = maidsafe::dht::transport;
 
-/*
-#ifdef WIN32
-  bool DumpCallback(const wchar_t* dump_path,
-                    const wchar_t* minidump_id,
-                    void* context,
-                    EXCEPTION_POINTERS* exinfo,
-                    MDRawAssertionInfo* assertion,
-                    bool succeeded) {
-    std::string* proj_name = reinterpret_cast<std::string*>(context); 
-    std::cout << *proj_name << std::endl;
-    ULOG(INFO) <<  "Error Dump Location: " << dump_path << "\\" << minidump_id;
-    std::wstring full_dump_name = dump_path;
-    full_dump_name += L"\\";
-    full_dump_name += minidump_id;
-    full_dump_name += L".dmp";
-    fs::path full_dump_path(full_dump_name);
-    int current_modulepath_length = 0;
-    int max_path_length = MAX_PATH;
-    TCHAR *current_path = new TCHAR[max_path_length];
-    while (current_modulepath_length <= max_path_length) {
-      current_modulepath_length = GetModuleFileName(
-                                          NULL, current_path, max_path_length);
-      if (current_modulepath_length >= max_path_length) {
-        max_path_length *= 2;
-        delete [] current_path;
-        current_path = new TCHAR[max_path_length];
-      } else if (current_modulepath_length == 0) {
-        std::cout << "Cannot Retrieve Current Path";
-        break;
-      } else {
-        break;
-      }
-    }
-    std::string current_directory(
-                              fs::path(current_path).parent_path().string());
-    delete [] current_path;
-    if (fs::is_regular_file(current_directory + "\\CrashReporter.exe")) {
-      std::string command = current_directory + "\\CrashReporter.exe " +
-                            full_dump_path.string() + " " + "MaidSafe-DHT" +
-                            " " +
-                         boost::lexical_cast<std::string>(MAIDSAFE_DHT_VERSION);
-      std::system(command.c_str());
-    } else {
-      std::cout << "Crash Reporter Not Found.";
-    }
-    return succeeded;
-  }
-#else
-  static bool DumpCallback(const char* dump_path,
-                           const char* minidump_id,
-                           void* context,
-                           bool succeeded) {
-    ULOG(INFO) <<  "Error Dump Location: " << dump_path << "/" << minidump_id;
-    std::cout << "Opening Dump File: " << dump_path << "/" <<
-                minidump_id << std::endl;
-    std::string full_dump_name = dump_path;
-    full_dump_name += "/";
-    full_dump_name += minidump_id;
-    full_dump_name += ".dmp";
-    int current_modulepath_length = 0;
-    int max_path_length = PATH_MAX;
-    char *current_path = new char[max_path_length];
-    while (current_modulepath_length <= max_path_length) {
-      current_modulepath_length = readlink("/proc/self/exe",
-                                            current_path, PATH_MAX);
-      if (current_modulepath_length >= max_path_length) {
-        max_path_length *= 2;
-        delete [] current_path;
-        current_path = new char[max_path_length];
-      } else if (current_modulepath_length == 0) {
-        std::cout << "Cannot Retrieve Current Path";
-        break;
-      } else {
-        break;
-      }
-    }
-    std::string current_directory(
-                              fs::path(current_path).parent_path().string());
-    delete [] current_path;
-    if (fs::is_regular_file(current_directory + "/CrashReporter-d")) {
-      std::string command = current_directory + "/CrashReporter-d "
-                                          + full_dump_name;
-      std::system(command.c_str());
-    } else if (fs::is_regular_file(current_directory + "/CrashReporter")) {
-      std::string command = current_directory + "/CrashReporter " +
-                            full_dump_name + " " + "MaidSafe-DHT" + " " +
-                         boost::lexical_cast<std::string>(MAIDSAFE_DHT_VERSION);
-      std::system(command.c_str());
-    } else {
-      std::cout << "Crash Reporter Not Found.";
-    }
-    return succeeded;
-  }
-#endif
-*/
+
 namespace {
 
 void ConflictingOptions(const po::variables_map &variables_map,

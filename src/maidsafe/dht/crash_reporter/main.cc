@@ -43,6 +43,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #  pragma warning(pop)
 #endif
 
+const std::string kServerHost("127.0.0.1");
+const std::string kServerPort("5000");
 
 namespace arg = std::placeholders;
 namespace maid_dht = maidsafe::dht::transport;
@@ -70,10 +72,14 @@ int main(int argc, char ** argv) {
   std::shared_ptr<maid_dht::TcpTransport> tcp_transport(
       new maid_dht::TcpTransport(asio_service));
   maid_dht::protobuf::CrashReport crash_report;
-  maid_dht::Endpoint crash_server("127.0.0.1", 5000);
-  // assign crash server's
-  // endpoint - resolve
-  // crash.maidsafe.net;
+  boost::asio::ip::tcp::resolver endpoint_resolver(asio_service);
+  boost::asio::ip::tcp::resolver::query endpoint_query(
+      boost::asio::ip::tcp::v4(), kServerHost, kServerPort);
+  boost::asio::ip::tcp::resolver::iterator endpoint_iterator =
+      endpoint_resolver.resolve(endpoint_query);
+  boost::asio::ip::tcp::endpoint server_detail = *endpoint_iterator;
+  maid_dht::Endpoint crash_server(server_detail.address(),
+                                  server_detail.port());
   try {
     boost::mutex cur_mutex;
     boost::condition_variable cv;
@@ -81,7 +87,7 @@ int main(int argc, char ** argv) {
     tcp_transport->on_message_received()->connect(
         std::bind(&DoOnReplyReceived, arg::_1, arg::_2, arg::_3, arg::_4,
                   &cur_mutex, &cv, &reply));
-    if (argc != 2) {
+    if (argc != 4) {
       throw std::logic_error(std::string("Missing Dump File Info"));
     }
     std::string dump_file_data;
@@ -89,7 +95,10 @@ int main(int argc, char ** argv) {
       throw std::logic_error(std::string("No Dump File Located"));
     }
     maidsafe::ReadFile(fs::path(argv[1]), &dump_file_data);
-    *crash_report.mutable_content() = dump_file_data;
+    crash_report.set_project_name(argv[2]);
+//    std::cout << crash_report.project_name();
+    crash_report.set_project_version(argv[3]);
+    crash_report.set_content(dump_file_data);
     std::string message(crash_report.SerializeAsString());
     tcp_transport->Send(message,
                         crash_server,
@@ -97,7 +106,6 @@ int main(int argc, char ** argv) {
     boost::mutex::scoped_lock lock(cur_mutex);
     while (reply.empty())
       cv.wait(lock);
-//  maidsafe::Sleep(maidsafe::dht::transport::kDefaultInitialTimeout);
   }
   catch(const std::exception &) {
     std::cout << "Error Sending Out Report to Crash Server" <<std::endl;

@@ -52,7 +52,7 @@ std::string ReturnDateTime() {
   const boost::posix_time::ptime cur_time =
       boost::posix_time::second_clock::local_time();
   boost::posix_time::time_facet *setting =
-      new boost::posix_time::time_facet("%d-%m-%Y %H-%M-%S");
+      new boost::posix_time::time_facet("%d-%m-%Y %H;%M;%S");
   msg.imbue(std::locale(msg.getloc(), setting));
   msg << cur_time;
   return msg.str();
@@ -67,15 +67,25 @@ void DoOnRequestReceived(const std::string& request,
   maidsafe::dht::transport::protobuf::CrashReport crash_report;
   crash_report.ParseFromString(request);
   boost::mutex::scoped_lock lock(mutex_);
-  fs::path out_dir("D:\\Dump\\Server-Logs\\" + ReturnDateTime() + " - " +
+  std::cout << "Project Name: " << crash_report.project_name() << std::endl;
+  std::cout << "Project Ver: " << crash_report.project_version() << std::endl;
+  fs::path out_dir("./Error-Logs/" + crash_report.project_name() +
+                   "/" + crash_report.project_version() + "/" +
+                   ReturnDateTime() + " - " +
                    maidsafe::RandomAlphaNumericString(3));
+  boost::filesystem::create_directory("./Error-Logs/" +
+                                      crash_report.project_name());
+  boost::filesystem::create_directory("./Error-Logs/" +
+                                      crash_report.project_name() +
+                                      "/" + crash_report.project_version());
   boost::filesystem::create_directory(out_dir);
-  maidsafe::WriteFile(out_dir.string() + "\\Error-Log.dmp",
+  maidsafe::WriteFile(out_dir.string() + "/Error-Log.dmp",
       crash_report.content());
+  std::cout << "Waiting for New Log..." << std::endl;
 }
 
 void DoOnError(const maidsafe::dht::transport::TransportCondition &tc) {
-  std::cout<< "Got error " << tc << std::endl;
+  std::cout << "Got error " << tc << std::endl;
 }
 
 int main(/*int argc, char ** argv*/) {
