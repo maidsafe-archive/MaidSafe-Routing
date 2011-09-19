@@ -140,7 +140,7 @@ int main(int argc, char **argv) {
   google::InitGoogleLogging(argv[0]);
   fs::path cur_path = fs::initial_path();
   maidsafe::crash_report::ProjectInfo current_project("MaidSafe-DHT",
-                                                      MAIDSAFE_DHT_VERSION);
+                        boost::lexical_cast<std::string>(MAIDSAFE_DHT_VERSION));
 #ifdef WIN32
   google_breakpad::ExceptionHandler exception_handler(cur_path.wstring(),
                                         NULL,

@@ -25,12 +25,20 @@ TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <fcntl.h>
+#include <errno.h>
+#include <unistd.h>
 #include <memory>
 #include "boost/asio/io_service.hpp"
 #include "boost/thread/thread.hpp"
 #include "boost/filesystem/fstream.hpp"
 #include "maidsafe/dht/transport/transport.h"
 #include "maidsafe/common/utils.h"
+#include "maidsafe/common/log.h"
 #include "maidsafe/dht/transport/tcp_transport.h"
 #ifdef __MSVC__
 #  pragma warning(push)
@@ -41,11 +49,53 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #  pragma warning(pop)
 #endif
 
+const std::string kServerHost("178.79.157.251");
+const std::string kServerPort("50000");
+const std::string kPathToErrorLogs = "/home/viv/Crash-Reports/";
+const std::string kPathToCrashInfo = "/home/viv/BreakpadServer-CrashInfo/";
+
 namespace arg = std::placeholders;
 namespace maid_dht = maidsafe::dht::transport;
 
 
 boost::mutex mutex_;
+
+void InitialiseDeamon() {
+  /* Our process ID and Session ID */
+  pid_t pid, sid;
+
+  /* Fork off the parent process */
+  pid = fork();
+  if (pid < 0) {
+          exit(EXIT_FAILURE);
+  }
+  /* If we got a good PID, then
+     we can exit the parent process. */
+  if (pid > 0) {
+          exit(EXIT_SUCCESS);
+  }
+
+  /* Change the file mode mask */
+  umask(0);
+
+  /* Create a new SID for the child process */
+  sid = setsid();
+  if (sid < 0) {
+          LOG(ERROR) << "Error Retrieving Session Details For Deamon";
+          exit(EXIT_FAILURE);
+  }
+
+  /* Change the current working directory */
+  if ((chdir("/")) < 0) {
+          LOG(ERROR) << "Error Setting Working Directory For Deamon";
+          exit(EXIT_FAILURE);
+  }
+
+  /* Close out the standard file descriptors */
+  close(STDIN_FILENO);
+  close(STDOUT_FILENO);
+  close(STDERR_FILENO);
+}
 
 std::string ReturnDateTime() {
   std::ostringstream msg;
@@ -58,38 +108,61 @@ std::string ReturnDateTime() {
   return msg.str();
 }
 
+bool ProcessMiniDump(const std::string &stackwalk_path,
+                     const std::string &minidump_path,
+                     const std::string &symbolsfol_path,
+                     const std::string &outputfile_path) {
+  std::string command = stackwalk_path + " \"" + minidump_path + "\" " +
+                        symbolsfol_path + " > \"" + outputfile_path + "\"";
+  return (system(command.c_str()) == 0);
+}
+
 void DoOnRequestReceived(const std::string& request,
                          const maid_dht::Info& /*info*/,
                          std::string* response,
                          boost::posix_time::time_duration* /* timeout*/) {
   *response = "Received";
-  std::cout << "New Error Log Received." << std::endl;
+  LOG(INFO) << "New Error Log Received.";
   maidsafe::dht::transport::protobuf::CrashReport crash_report;
   crash_report.ParseFromString(request);
   boost::mutex::scoped_lock lock(mutex_);
-  std::cout << "Project Name: " << crash_report.project_name() << std::endl;
-  std::cout << "Project Ver: " << crash_report.project_version() << std::endl;
-  fs::path out_dir("./Error-Logs/" + crash_report.project_name() +
+  LOG(INFO) << "Project Name: " << crash_report.project_name();
+  LOG(INFO) << "Project Ver: " << crash_report.project_version();
+  fs::path out_dir(kPathToErrorLogs + crash_report.project_name() +
                    "/" + crash_report.project_version() + "/" +
                    ReturnDateTime() + " - " +
                    maidsafe::RandomAlphaNumericString(3));
-  boost::filesystem::create_directory("./Error-Logs/" +
+  boost::filesystem::create_directory(kPathToErrorLogs +
                                       crash_report.project_name());
-  boost::filesystem::create_directory("./Error-Logs/" +
+  boost::filesystem::create_directory(kPathToErrorLogs +
                                       crash_report.project_name() +
                                       "/" + crash_report.project_version());
   boost::filesystem::create_directory(out_dir);
   maidsafe::WriteFile(out_dir.string() + "/Error-Log.dmp",
-      crash_report.content());
-  std::cout << "Waiting for New Log..." << std::endl;
+                      crash_report.content());
+  std::string stackwalkfile(kPathToErrorLogs + "minidump_stackwalk");
+  std::string dumpfile = out_dir.string() + "/Error-Log.dmp";
+  std::string symbolsfile = kPathToErrorLogs + "symbols";
+  std::string outfile = out_dir.string() + "/Output.txt";
+  if (ProcessMiniDump(stackwalkfile, dumpfile, symbolsfile, outfile)) {
+    LOG(INFO) << "Processing Completed Succesfully.";
+  } else {
+    LOG(INFO) << "Processing Log File via minidump_stackwalk Unsuccessful.";
+  }
+  LOG(INFO) << "Waiting for New Log...";
 }
 
 void DoOnError(const maidsafe::dht::transport::TransportCondition &tc) {
-  std::cout << "Got error " << tc << std::endl;
+  LOG(WARNING) << "Error Receiving Log: " << tc;
 }
 
-int main(/*int argc, char ** argv*/) {
+int main(int /*argc*/, char ** argv) {
+  InitialiseDeamon();
   int result(0);
+  google::InitGoogleLogging(argv[0]);
+  FLAGS_logtostderr = false;
+  FLAGS_minloglevel = google::INFO;
+  FLAGS_log_dir = kPathToCrashInfo;
   boost::asio::io_service asio_service;
   std::shared_ptr<boost::asio::io_service::work> work(
       new boost::asio::io_service::work(asio_service));
@@ -104,14 +177,20 @@ int main(/*int argc, char ** argv*/) {
   tcp_transport->on_message_received()->connect(
       std::bind(&DoOnRequestReceived, arg::_1, arg::_2, arg::_3, arg::_4));
   tcp_transport->on_error()->connect(std::bind(&DoOnError, arg::_1));
-  if (tcp_transport->StartListening(maid_dht::Endpoint(
-                                    "127.0.0.1", 5000)) != 0) {
-    std::cout << "Error Starting to Listen" << std::endl;
+  boost::asio::ip::tcp::resolver endpoint_resolver(asio_service);
+  boost::asio::ip::tcp::resolver::query endpoint_query(
+      boost::asio::ip::tcp::v4(), kServerHost, kServerPort);
+  boost::asio::ip::tcp::resolver::iterator endpoint_iterator =
+      endpoint_resolver.resolve(endpoint_query);
+  boost::asio::ip::tcp::endpoint server_detail = *endpoint_iterator;
+  if (tcp_transport->StartListening(
+          maid_dht::Endpoint(server_detail.address(),
+                             server_detail.port())) != 0) {
+    LOG(ERROR) << "Error Starting to Listen";
+  } else {
+    LOG(INFO) << "Server Started... ";
   }
-  std::cout << "Server Started... " << std::endl;
-//  maidsafe::Sleep(boost::posix_time::seconds(300));
   while (true) {}
-//  Need some sort of loop to hold the exit till work finishes
   work.reset();
   asio_service.stop();
   worker.join();

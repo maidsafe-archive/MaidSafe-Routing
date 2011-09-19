@@ -32,6 +32,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "boost/filesystem/fstream.hpp"
 #include "maidsafe/dht/transport/transport.h"
 #include "maidsafe/common/utils.h"
+#include "maidsafe/common/log.h"
 #include "maidsafe/dht/transport/tcp_transport.h"
 #include "maidsafe/dht/version.h"
 #ifdef __MSVC__
@@ -43,8 +44,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #  pragma warning(pop)
 #endif
 
-const std::string kServerHost("127.0.0.1");
-const std::string kServerPort("5000");
+const std::string kServerHost("breakpad.maidsafe.net");
+const std::string kServerPort("50000");
 
 namespace arg = std::placeholders;
 namespace maid_dht = maidsafe::dht::transport;
@@ -63,6 +64,9 @@ void DoOnReplyReceived(const std::string& request,
 
 int main(int argc, char ** argv) {
   int result(0);
+  google::InitGoogleLogging(argv[0]);
+  FLAGS_logtostderr = false;
+  FLAGS_minloglevel = google::INFO;
   boost::asio::io_service asio_service;
   std::shared_ptr<boost::asio::io_service::work> work(
       new boost::asio::io_service::work(asio_service));
@@ -96,7 +100,6 @@ int main(int argc, char ** argv) {
     }
     maidsafe::ReadFile(fs::path(argv[1]), &dump_file_data);
     crash_report.set_project_name(argv[2]);
-//    std::cout << crash_report.project_name();
     crash_report.set_project_version(argv[3]);
     crash_report.set_content(dump_file_data);
     std::string message(crash_report.SerializeAsString());
@@ -107,8 +110,9 @@ int main(int argc, char ** argv) {
     while (reply.empty())
       cv.wait(lock);
   }
-  catch(const std::exception &) {
-    std::cout << "Error Sending Out Report to Crash Server" <<std::endl;
+  catch(const std::exception &e) {
+    LOG(WARNING) << "Error Sending Out Report to Crash Server" << std::endl
+                 << e.what();
     result = -1;
   }
   work.reset();
