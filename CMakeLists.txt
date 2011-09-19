@@ -240,8 +240,9 @@ IF(Mysqlpp_FOUND)
   ADD_EXECUTABLE(distributed_net_clients EXCLUDE_FROM_ALL ${ALL_FILES_NETWORK_TEST_DIR})
 ENDIF()
 ADD_EXECUTABLE(CrashReporter ${ALL_FILES_CRASH_REPORTER_DIR} ${ALL_FILES_CRASH_REPORTER_TRANSPORT})
-ADD_EXECUTABLE(CrashServer ${ALL_FILES_CRASH_SERVER_DIR} ${ALL_FILES_CRASH_SERVER_TRANSPORT})
-
+IF(UNIX)
+	ADD_EXECUTABLE(CrashServer ${ALL_FILES_CRASH_SERVER_DIR} ${ALL_FILES_CRASH_SERVER_TRANSPORT})
+ENDIF()
 # Force renaming of exes to match standard CMake library renaming policy
 RENAME_EXECUTABLE(TESTkademlia)
 RENAME_EXECUTABLE(TESTnode_functional)
@@ -256,7 +257,9 @@ IF(Mysqlpp_FOUND)
   RENAME_EXECUTABLE(distributed_net_clients)
 ENDIF()
 RENAME_EXECUTABLE(CrashReporter)
-RENAME_EXECUTABLE(CrashServer)
+IF(UNIX)
+  RENAME_EXECUTABLE(CrashServer)
+ENDIF()
 
 # SET(TEST_TARGETS TESTupnp TESTnatpmp TESTnode TESTkademlia TESTtransport)
 SET(TEST_TARGETS TESTkademlia TESTtransport TESTnode_functional TESTnode_impl_functional TESTnode_churn)
@@ -267,8 +270,9 @@ IF(Mysqlpp_FOUND)
   SET_TARGET_PROPERTIES(distributed_net_clients PROPERTIES FOLDER "Tests")
 ENDIF()
 SET_TARGET_PROPERTIES(CrashReporter PROPERTIES FOLDER "Crash Reporter")
-SET_TARGET_PROPERTIES(CrashServer PROPERTIES FOLDER "Crash Server")
-
+IF(UNIX)
+  SET_TARGET_PROPERTIES(CrashServer PROPERTIES FOLDER "Crash Server")
+ENDIF()
 SET_TARGET_PROPERTIES(TESTnode_functional PROPERTIES COMPILE_DEFINITIONS "FUNCTIONAL_NODE_TEST")
 SET_TARGET_PROPERTIES(TESTnode_impl_functional PROPERTIES COMPILE_DEFINITIONS "FUNCTIONAL_NODE_IMPL_TEST")
 SET_TARGET_PROPERTIES(TESTnode_churn PROPERTIES COMPILE_DEFINITIONS "FUNCTIONAL_CHURN_TEST")
@@ -315,7 +319,8 @@ TARGET_LINK_LIBRARIES(CrashReporter
                         boost_system
                         boost_thread
                         )
-TARGET_LINK_LIBRARIES(CrashServer
+IF(UNIX)
+  TARGET_LINK_LIBRARIES(CrashServer
                         maidsafe_common_static
                         protobuf_static
                         glog_static
@@ -324,6 +329,7 @@ TARGET_LINK_LIBRARIES(CrashServer
                         boost_system
                         boost_thread
                         )
+ENDIF()
 
 
 ###################################################################################################
