@@ -379,10 +379,14 @@ void NodeContainer<NodeType>::Init(
     securifier_ = securifier;
   } else {
     crypto::RsaKeyPair key_pair;
-    key_pair.GenerateKeys(4096);
-    std::string id(crypto::Hash<crypto::SHA512>(key_pair.public_key()));
-    securifier_.reset(new Securifier(id, key_pair.public_key(),
-                                     key_pair.private_key()));
+    do {
+      Sleep(boost::posix_time::milliseconds(100));
+      key_pair.GenerateKeys(4096);
+      std::string id(NodeId(NodeId::kRandomId).String());
+      securifier_.reset(new Securifier(id,
+                                       key_pair.public_key(),
+                                       key_pair.private_key()));
+    } while (key_pair.public_key().empty() || key_pair.private_key().empty());
   }
 
   if (message_handler) {
