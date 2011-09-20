@@ -49,7 +49,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #  pragma warning(pop)
 #endif
 
-const std::string kServerHost("178.79.157.251");
+const std::string kServerHost("breakpad.maidsafe.net");
 const std::string kServerPort("50000");
 const std::string kPathToErrorLogs = "/home/viv/Crash-Reports/";
 const std::string kPathToCrashInfo = "/home/viv/BreakpadServer-CrashInfo/";
@@ -190,7 +190,9 @@ int main(int /*argc*/, char ** argv) {
   } else {
     LOG(INFO) << "Server Started... ";
   }
-  while (true) {}
+  while (true) {
+    maidsafe::Sleep(boost::posix_time::seconds(300));
+  }
   work.reset();
   asio_service.stop();
   worker.join();
