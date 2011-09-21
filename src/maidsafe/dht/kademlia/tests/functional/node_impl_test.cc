@@ -852,9 +852,11 @@ TEST_P(NodeImplTest, FUNC_Delete) {
   EXPECT_TRUE(env_->cond_var_.timed_wait(lock, kTimeout_,
               chosen_container->wait_for_find_value_functor()));
   chosen_container->GetAndResetFindValueResult(&find_value_returns);
-<<<<<<< HEAD
-  ASSERT_EQ(kSuccess, find_value_returns.return_code);
-  EXPECT_EQ(value, find_value_returns.values[0]);
+  EXPECT_EQ(kSuccess, find_value_returns.return_code);
+  EXPECT_EQ(value, find_value_returns.values_and_signatures[0].first);
+  EXPECT_TRUE(chosen_container->securifier()->Validate(value,
+              find_value_returns.values_and_signatures[0].second, "",
+              chosen_container->securifier()->kSigningPublicKey(), "", ""));
   FindValueReturns find_multiple_value_returns;
   Key multiple_key(NodeId::kRandomId);
   std::string value1 = RandomString(RandomUint32() % 1000 + 24);
@@ -996,18 +998,30 @@ TEST_P(NodeImplTest, FUNC_Delete) {
               chosen_container->wait_for_find_value_functor()));
   chosen_container->GetAndResetFindValueResult(&find_multiple_value_returns);
   EXPECT_EQ(kSuccess, find_multiple_value_returns.return_code);
-  ASSERT_EQ(2, find_multiple_value_returns.values.size());
-  EXPECT_TRUE((find_multiple_value_returns.values[0] == value2 &&
-               find_multiple_value_returns.values[1] == value3) ||
-              (find_multiple_value_returns.values[0] == value3 &&
-               find_multiple_value_returns.values[1] == value2));
-=======
-  EXPECT_EQ(kSuccess, find_value_returns.return_code);
-  EXPECT_EQ(value, find_value_returns.values_and_signatures[0].first);
-  EXPECT_TRUE(chosen_container->securifier()->Validate(value,
-              find_value_returns.values_and_signatures[0].second, "",
-              chosen_container->securifier()->kSigningPublicKey(), "", ""));
->>>>>>> origin/next
+  ASSERT_EQ(2, find_multiple_value_returns.values_and_signatures.size());
+  EXPECT_TRUE((find_multiple_value_returns.values_and_signatures[0].first ==
+     value2 &&
+     find_multiple_value_returns.values_and_signatures[1].first ==
+     value3) ||
+     (find_multiple_value_returns.values_and_signatures[0].first ==
+     value3 &&
+     find_multiple_value_returns.values_and_signatures[1].first ==
+     value2));
+  if (find_multiple_value_returns.values_and_signatures[0].first == value2) {
+    EXPECT_TRUE(chosen_container->securifier()->Validate(value2,
+                find_multiple_value_returns.values_and_signatures[0].second, "",
+                chosen_container->securifier()->kSigningPublicKey(), "", ""));
+    EXPECT_TRUE(chosen_container->securifier()->Validate(value3,
+                find_multiple_value_returns.values_and_signatures[1].second, "",
+                chosen_container->securifier()->kSigningPublicKey(), "", ""));
+  } else {
+    EXPECT_TRUE(chosen_container->securifier()->Validate(value3,
+                find_multiple_value_returns.values_and_signatures[0].second, "",
+                chosen_container->securifier()->kSigningPublicKey(), "", ""));
+    EXPECT_TRUE(chosen_container->securifier()->Validate(value2,
+                find_multiple_value_returns.values_and_signatures[1].second, "",
+                chosen_container->securifier()->kSigningPublicKey(), "", ""));
+  }
 }
 
 TEST_P(NodeImplTest, FUNC_Update) {
