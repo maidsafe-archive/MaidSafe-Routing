@@ -67,9 +67,25 @@ class NodeImplTest : public testing::TestWithParam<bool> {
     // Clear all DataStores and restart any stopped nodes.
     for (size_t i = 0; i != env_->num_full_nodes_; ++i) {
       if (!env_->node_containers_[i]->node()->joined()) {
+        boost::mutex::scoped_lock lock(env_->mutex_);
         env_->node_containers_[i]->Join(
             env_->node_containers_[i]->node()->contact().node_id(),
             env_->node_containers_[i]->bootstrap_contacts());
+        env_->cond_var_.timed_wait(lock, kTimeout_,
+            env_->node_containers_[i]->wait_for_join_functor());
+        int result;
+        env_->node_containers_[i]->GetAndResetJoinResult(&result);
+        // ping the other environment containers to make sure their contact info
+        // is up to date
+        for (size_t j = 0; j != env_->num_full_nodes_; ++j) {
+          if (i != j) {
+            env_->node_containers_[i]->Ping(
+                env_->node_containers_[j]->node()->contact());
+            env_->cond_var_.timed_wait(lock, kTimeout_,
+                env_->node_containers_[i]->wait_for_ping_functor());
+            env_->node_containers_[i]->GetAndResetPingResult(&result);
+          }
+        }
       }
       boost::unique_lock<boost::shared_mutex> lock(
           GetDataStore(env_->node_containers_[i])->shared_mutex_);
@@ -107,10 +123,10 @@ class NodeImplTest : public testing::TestWithParam<bool> {
 
   bool IsKeyValueInDataStore(std::shared_ptr<DataStore> data_store,
                              std::string key, std::string value) {
-    std::vector<std::pair<std::string, std::string>> values;
-    data_store->GetValues(key, &values);
-    for (size_t i = 0; i < values.size(); ++i) {
-      if (values[i].first == value)
+    std::vector<ValueAndSignature> values_and_signatures;
+    data_store->GetValues(key, &values_and_signatures);
+    for (size_t i = 0; i < values_and_signatures.size(); ++i) {
+      if (values_and_signatures[i].first == value)
         return true;
     }
     return false;
@@ -472,7 +488,8 @@ TEST_P(NodeImplTest, FUNC_FindValue) {
         &find_value_returns_nonexistent_key);
     EXPECT_EQ(kFailedToFindValue,
               find_value_returns_nonexistent_key.return_code);
-    EXPECT_TRUE(find_value_returns_nonexistent_key.values.empty());
+    EXPECT_TRUE(
+        find_value_returns_nonexistent_key.values_and_signatures.empty());
     EXPECT_EQ(env_->k_,
               find_value_returns_nonexistent_key.closest_nodes.size());
   }
@@ -510,12 +527,16 @@ TEST_P(NodeImplTest, FUNC_FindValue) {
       test_container_->GetAndResetFindValueResult(&find_value_returns);
     }
     EXPECT_EQ(kSuccess, find_value_returns.return_code);
-    ASSERT_FALSE(find_value_returns.values.empty());
-    ASSERT_EQ(values.size(), find_value_returns.values.size());
+    ASSERT_FALSE(find_value_returns.values_and_signatures.empty());
+    ASSERT_EQ(values.size(), find_value_returns.values_and_signatures.size());
     size_t num_values(std::min(values.size(),
-                               find_value_returns.values.size()));
-    for (size_t k = 0; k != num_values; ++k)
-      EXPECT_EQ(values[k], find_value_returns.values[k]);
+                      find_value_returns.values_and_signatures.size()));
+    for (size_t k = 0; k != num_values; ++k) {
+      EXPECT_EQ(values[k], find_value_returns.values_and_signatures[k].first);
+      EXPECT_TRUE(test_container_->securifier()->Validate(values[k],
+                  find_value_returns.values_and_signatures[k].second, "",
+                  test_container_->securifier()->kSigningPublicKey(), "", ""));
+    }
     // TODO(Fraser#5#): 2011-07-14 - Handle other return fields
 
     // Stop nodes holding value one at a time and retry getting value
@@ -539,7 +560,7 @@ TEST_P(NodeImplTest, FUNC_FindValue) {
     test_container_->GetAndResetFindValueResult(&find_value_returns);
   }
   EXPECT_EQ(kFailedToFindValue, find_value_returns.return_code);
-  EXPECT_TRUE(find_value_returns.values.empty());
+  EXPECT_TRUE(find_value_returns.values_and_signatures.empty());
   EXPECT_EQ(env_->k_, find_value_returns.closest_nodes.size());
   // TODO(Fraser#5#): 2011-07-14 - Handle other return fields
 
@@ -582,7 +603,7 @@ TEST_P(NodeImplTest, FUNC_FindValue) {
                 test_container_->wait_for_find_value_functor()));
     test_container_->GetAndResetFindValueResult(
         &alternative_find_value_returns);
-    EXPECT_TRUE(alternative_find_value_returns.values.empty());
+    EXPECT_TRUE(alternative_find_value_returns.values_and_signatures.empty());
     EXPECT_EQ(alternative_container->node()->contact().node_id(),
         alternative_find_value_returns.alternative_store_holder.node_id())
         << "Expected: " << DebugId(alternative_container->node()->contact())
@@ -831,6 +852,7 @@ TEST_P(NodeImplTest, FUNC_Delete) {
   EXPECT_TRUE(env_->cond_var_.timed_wait(lock, kTimeout_,
               chosen_container->wait_for_find_value_functor()));
   chosen_container->GetAndResetFindValueResult(&find_value_returns);
+<<<<<<< HEAD
   ASSERT_EQ(kSuccess, find_value_returns.return_code);
   EXPECT_EQ(value, find_value_returns.values[0]);
   FindValueReturns find_multiple_value_returns;
@@ -979,6 +1001,13 @@ TEST_P(NodeImplTest, FUNC_Delete) {
                find_multiple_value_returns.values[1] == value3) ||
               (find_multiple_value_returns.values[0] == value3 &&
                find_multiple_value_returns.values[1] == value2));
+=======
+  EXPECT_EQ(kSuccess, find_value_returns.return_code);
+  EXPECT_EQ(value, find_value_returns.values_and_signatures[0].first);
+  EXPECT_TRUE(chosen_container->securifier()->Validate(value,
+              find_value_returns.values_and_signatures[0].second, "",
+              chosen_container->securifier()->kSigningPublicKey(), "", ""));
+>>>>>>> origin/next
 }
 
 TEST_P(NodeImplTest, FUNC_Update) {
@@ -1020,7 +1049,10 @@ TEST_P(NodeImplTest, FUNC_Update) {
     chosen_container->GetAndResetFindValueResult(&find_value_returns);
   }
   EXPECT_EQ(kSuccess, find_value_returns.return_code);
-  EXPECT_EQ(value, find_value_returns.values[0]);
+  EXPECT_EQ(value, find_value_returns.values_and_signatures[0].first);
+  EXPECT_TRUE(chosen_container->securifier()->Validate(value,
+              find_value_returns.values_and_signatures[0].second, "",
+              chosen_container->securifier()->kSigningPublicKey(), "", ""));
 
   //  verify updating fails for all but the original storer
   for (size_t i = 0; i < env_->node_containers_.size(); ++i) {
@@ -1068,7 +1100,10 @@ TEST_P(NodeImplTest, FUNC_Update) {
     chosen_container->GetAndResetFindValueResult(&find_value_returns);
   }
   EXPECT_EQ(kSuccess, find_value_returns.return_code);
-  EXPECT_EQ(value, find_value_returns.values[0]);
+  EXPECT_EQ(value, find_value_returns.values_and_signatures[0].first);
+  EXPECT_TRUE(chosen_container->securifier()->Validate(value,
+              find_value_returns.values_and_signatures[0].second, "",
+              chosen_container->securifier()->kSigningPublicKey(), "", ""));
 
   // verify single value is updated correctly out of multiple values
   // stored under a key
@@ -1106,17 +1141,21 @@ TEST_P(NodeImplTest, FUNC_Update) {
                 chosen_container->wait_for_find_value_functor()));
     chosen_container->GetAndResetFindValueResult(&find_value_returns);
     EXPECT_EQ(kSuccess, find_value_returns.return_code);
-    EXPECT_NE(find_value_returns.values.end(),
-              std::find(find_value_returns.values.begin(),
-                        find_value_returns.values.end(), new_value));
-    EXPECT_EQ(find_value_returns.values.end(),
-              std::find(find_value_returns.values.begin(),
-                        find_value_returns.values.end(), values[index]));
+    std::vector<std::string> returned_values;
+    for (size_t i(0); i != find_value_returns.values_and_signatures.size(); ++i)
+      returned_values.push_back(
+          find_value_returns.values_and_signatures.at(i).first);
+    EXPECT_NE(returned_values.end(), std::find(returned_values.begin(),
+                                               returned_values.end(),
+                                               new_value));
+    EXPECT_EQ(returned_values.end(), std::find(returned_values.begin(),
+                                               returned_values.end(),
+                                               values[index]));
     for (size_t i = 0; i < values_size; ++i) {
       if (i != index) {
-        EXPECT_NE(find_value_returns.values.end(),
-                  std::find(find_value_returns.values.begin(),
-                            find_value_returns.values.end(), values[i]));
+        EXPECT_NE(returned_values.end(), std::find(returned_values.begin(),
+                                                   returned_values.end(),
+                                                   values[i]));
       }
     }
   }
@@ -1189,6 +1228,104 @@ TEST_P(NodeImplTest, FUNC_StoreRefresh) {
         EXPECT_TRUE(GetDataStore(*itr)->HasKey(far_key_.String()));
     }
   }
+}
+
+TEST_P(NodeImplTest, FUNC_StoreRefreshInvalidSigner) {
+  auto itr(env_->node_containers_.begin()), refresh_node(itr);
+  for (; itr != env_->node_containers_.end(); ++itr) {
+    if (WithinKClosest((*itr)->node()->contact().node_id(), far_key_,
+                       env_->node_ids_, env_->k_)) {
+      refresh_node = itr;
+      break;
+    }
+  }
+
+  std::shared_ptr<DataStore> data_store(GetDataStore(*refresh_node));
+  const_cast<bptime::seconds&>(data_store->kRefreshInterval_) =
+      bptime::seconds(10);
+
+  std::vector<std::string> values;
+  const int kNumValues(4);
+  for (int i = 0; i != kNumValues; ++i)
+    values.push_back(RandomString(RandomUint32() % 1024));
+  bptime::time_duration duration(bptime::pos_infin);
+  int result(kPendingResult);
+  for (int i = 0; i != kNumValues; ++i) {
+    result = kPendingResult;
+    {
+      boost::mutex::scoped_lock lock(env_->mutex_);
+      test_container_->Store(far_key_, values[i], "", duration,
+                             test_container_->securifier());
+      EXPECT_TRUE(env_->cond_var_.timed_wait(lock, kTimeout_,
+                             test_container_->wait_for_store_functor()));
+      test_container_->GetAndResetStoreResult(&result);
+    }
+    EXPECT_EQ(kSuccess, result);
+  }
+
+  // Assert test_container_ didn't store the value
+  if (!client_only_node_)
+    ASSERT_FALSE(GetDataStore(test_container_)->HasKey(far_key_.String()));
+
+  // sign the message in datasore with a node which is not the original signer
+  auto itr1(data_store->key_value_index_->get<TagKey>().find(
+      far_key_.String()));
+  if (itr1 != data_store->key_value_index_->end()) {
+    const Key key((*itr1).key_value_signature.key);
+    const bptime::seconds seconds(3600);
+    std::pair<std::string, std::string> request_and_signature =
+        (*refresh_node)->node()->rpcs_->MakeStoreRequestAndSignature(
+            key,
+            (*itr1).key_value_signature.value,
+            (*itr1).key_value_signature.signature,
+            seconds,
+            (*refresh_node)->securifier());
+    bptime::ptime now(bptime::microsec_clock::universal_time());
+    KeyValueTuple tuple((*itr1).key_value_signature, now + duration,
+                        now + data_store->kRefreshInterval_,
+                        request_and_signature, false);
+    data_store->key_value_index_->erase(itr1);
+    // Try to insert key,value
+    KeyValueIndex::index<TagKeyValue>::type& index_by_key_value =
+        data_store->key_value_index_->get<TagKeyValue>();
+    index_by_key_value.insert(tuple);
+  }
+
+  itr = env_->node_containers_.begin();
+  auto node_to_leave = itr;
+  for (; itr != env_->node_containers_.end(); ++itr) {
+    if (WithinKClosest((*itr)->node()->contact().node_id(), far_key_,
+                       env_->node_ids_, env_->k_)) {
+      EXPECT_TRUE(GetDataStore(*itr)->HasKey(far_key_.String()));
+      node_to_leave = itr;
+    }
+  }
+  auto id_itr = std::find(env_->node_ids_.begin(), env_->node_ids_.end(),
+                          (*node_to_leave)->node()->contact().node_id());
+  ASSERT_NE(env_->node_ids_.end(), id_itr);
+  (*node_to_leave)->node()->Leave(NULL);
+
+  const_cast<bptime::seconds&>(data_store->kRefreshInterval_) =
+      bptime::seconds(3600);
+
+  // Having set refresh time to 20 seconds, wait for 30 seconds
+  Sleep(bptime::seconds(30));
+
+  bool not_refreshed(false);
+
+  // If a refresh has happened, the current k closest should hold the value,
+  // k-1 nodes should have kNumValues entries, and the new joined node
+  // kNumValues - 1 entries.
+  for (itr = env_->node_containers_.begin();
+       itr != env_->node_containers_.end(); ++itr) {
+    if (WithinKClosest((*itr)->node()->contact().node_id(), far_key_,
+                       env_->node_ids_, env_->k_ + 1)) {
+      if (itr != node_to_leave &&
+          (GetDataStore(*itr)->key_value_index_->size() == kNumValues - 1))
+        not_refreshed = true;
+    }
+  }
+  ASSERT_TRUE(not_refreshed);
 }
 
 TEST_P(NodeImplTest, FUNC_DeleteRefresh) {
@@ -1286,9 +1423,6 @@ TEST_P(NodeImplTest, FUNC_GetContact) {
   std::vector<Contact> contacts;
   test_container_->node()->GetAllContacts(&contacts);
   Contact not_in_rt_contact = *(contacts.begin());
-  std::cout << "Contact: " << DebugId(not_in_rt_contact.node_id()) << std::endl;
-  std::cout << "Test Container: "
-    << DebugId(test_container_->node()->contact().node_id()) << std::endl;
   // Remove contact from routing table by incrementing failed rpc count
   for (int i = 0; i <= kFailedRpcTolerance; ++i) {
     test_container_->node()->IncrementFailedRpcs(not_in_rt_contact);
