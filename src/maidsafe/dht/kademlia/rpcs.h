@@ -602,6 +602,8 @@ void Rpcs<TransportType>::FindValueCallback(
     if (response.closest_nodes_size() != 0) {
       for (int i = 0; i < response.closest_nodes_size(); ++i)
         contacts.push_back(FromProtobuf(response.closest_nodes(i)));
+      DLOG(INFO) << "\t" << DebugId(contact_) << " FIND_VALUE response from " <<
+          DebugId(rpcs_failure_peer->peer);
       callback(RankInfoPtr(new transport::Info(info)), kFailedToFindValue,
                values_and_signatures, contacts, alternative_value_holder);
       return;

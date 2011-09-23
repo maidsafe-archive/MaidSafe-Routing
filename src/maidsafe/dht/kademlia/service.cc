@@ -218,6 +218,18 @@ void Service::FindNodes(const transport::Info &info,
     routing_table_->AddContact(FromProtobuf(request.sender()),
                                RankInfoPtr(new transport::Info(info)));
   }
+  std::vector<Contact> all_contacts;
+  routing_table_->GetAllContacts(&all_contacts);
+  std::cout << std::endl << "Receiving Node ID:\t" << DebugId(node_contact_) <<
+      std::endl;
+  std::cout << "All Contacts:\t";
+  for (auto it = all_contacts.begin(); it != all_contacts.end(); ++it)
+    std::cout << DebugId((*it).node_id()).substr(0, 5) << "\t";
+  std::cout << std::endl;
+  std::cout << "Closest Contacts:\t";
+  for (auto it = closest_contacts.begin(); it != closest_contacts.end(); ++it)
+    std::cout << DebugId((*it).node_id()).substr(0, 5) << "\t";
+  std::cout << std::endl << std::endl;
 }
 
 void Service::Store(const transport::Info &info,
