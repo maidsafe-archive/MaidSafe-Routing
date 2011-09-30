@@ -36,6 +36,9 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "maidsafe/common/test.h"
 #include "maidsafe/common/crypto.h"
 #include "maidsafe/common/utils.h"
+#include "maidsafe/common/securifier.h"
+#include "maidsafe/transport/tcp_transport.h"
+#include "maidsafe/transport/udp_transport.h"
 #include "maidsafe/dht/kademlia/config.h"
 #ifdef __MSVC__
 #  pragma warning(push)
@@ -45,7 +48,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifdef __MSVC__
 #  pragma warning(pop)
 #endif
-#include "maidsafe/dht/kademlia/securifier.h"
 #include "maidsafe/dht/kademlia/utils.h"
 #include "maidsafe/dht/kademlia/service.h"
 #include "maidsafe/dht/kademlia/rpcs.h"
@@ -53,8 +55,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "maidsafe/dht/kademlia/routing_table.h"
 #include "maidsafe/dht/kademlia/return_codes.h"
 #include "maidsafe/dht/kademlia/message_handler.h"
-#include "maidsafe/dht/transport/tcp_transport.h"
-#include "maidsafe/dht/transport/udp_transport.h"
 #include "maidsafe/dht/kademlia/tests/test_utils.h"
 
 namespace arg = std::placeholders;

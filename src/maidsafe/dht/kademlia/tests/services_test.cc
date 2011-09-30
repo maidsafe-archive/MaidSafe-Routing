@@ -37,9 +37,10 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "maidsafe/common/test.h"
 #include "maidsafe/common/alternative_store.h"
 #include "maidsafe/common/crypto.h"
-#include "maidsafe/dht/log.h"
 #include "maidsafe/common/utils.h"
-#include "maidsafe/dht/kademlia/securifier.h"
+#include "maidsafe/transport/transport.h"
+#include "maidsafe/common/securifier.h"
+#include "maidsafe/dht/log.h"
 #include "maidsafe/dht/kademlia/data_store.h"
 #include "maidsafe/dht/kademlia/service.h"
 #include "maidsafe/dht/kademlia/message_handler.h"
@@ -54,7 +55,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #endif
 #include "maidsafe/dht/kademlia/utils.h"
 #include "maidsafe/dht/kademlia/return_codes.h"
-#include "maidsafe/dht/transport/transport.h"
 #include "maidsafe/dht/kademlia/tests/test_utils.h"
 
 namespace arg = std::placeholders;

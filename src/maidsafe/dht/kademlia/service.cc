@@ -31,6 +31,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "maidsafe/dht/kademlia/service.h"
 #include "maidsafe/common/alternative_store.h"
 #include "maidsafe/common/crypto.h"
+#include "maidsafe/common/securifier.h"
 #ifdef __MSVC__
 #  pragma warning(push)
 #  pragma warning(disable: 4127 4244 4267)
@@ -42,7 +43,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "maidsafe/dht/kademlia/message_handler.h"
 #include "maidsafe/dht/kademlia/return_codes.h"
 #include "maidsafe/dht/kademlia/routing_table.h"
-#include "maidsafe/dht/kademlia/securifier.h"
 #include "maidsafe/dht/kademlia/utils.h"
 #include "maidsafe/dht/log.h"
 

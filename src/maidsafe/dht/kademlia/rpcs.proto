@@ -1,5 +1,4 @@
 import "maidsafe/dht/kademlia/kademlia.proto";
-import "maidsafe/dht/transport/transport.proto";
 
 package maidsafe.dht.kademlia.protobuf;
 

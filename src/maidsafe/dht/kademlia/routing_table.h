@@ -65,9 +65,9 @@ namespace bmi = boost::multi_index;
 
 namespace maidsafe {
 
-namespace dht {
-
 namespace transport { struct Info; }
+
+namespace dht {
 
 namespace kademlia {
 

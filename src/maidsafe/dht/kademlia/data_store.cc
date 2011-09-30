@@ -29,9 +29,9 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <algorithm>
 #include "maidsafe/common/crypto.h"
 #include "maidsafe/common/utils.h"
+#include "maidsafe/common/securifier.h"
 #include "maidsafe/dht/log.h"
 #include "maidsafe/dht/kademlia/return_codes.h"
-#include "maidsafe/dht/kademlia/securifier.h"
 
 namespace arg = std::placeholders;
 namespace bptime = boost::posix_time;

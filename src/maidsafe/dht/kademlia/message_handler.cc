@@ -28,6 +28,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "maidsafe/dht/kademlia/message_handler.h"
 
 #include "boost/lexical_cast.hpp"
+#include "maidsafe/common/securifier.h"
 
 #ifdef __MSVC__
 #  pragma warning(push)
@@ -37,7 +38,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifdef __MSVC__
 #  pragma warning(pop)
 #endif
-#include "maidsafe/dht/kademlia/securifier.h"
 
 namespace maidsafe {
 

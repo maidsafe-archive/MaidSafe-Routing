@@ -26,6 +26,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 #include <algorithm>
+#include "maidsafe/transport/transport.h"
 #include "maidsafe/dht/kademlia/utils.h"
 #include "maidsafe/dht/kademlia/contact.h"
 #ifdef __MSVC__
@@ -37,15 +38,14 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #  pragma warning(pop)
 #endif
 #include "maidsafe/dht/kademlia/node_id.h"
-#include "maidsafe/dht/transport/transport.h"
 
 namespace arg = std::placeholders;
 
 namespace maidsafe {
 
-namespace dht {
-
 using transport::Endpoint;
+
+namespace dht {
 
 namespace kademlia {
 
@@ -89,8 +89,7 @@ protobuf::Contact ToProtobuf(const Contact &contact) {
 
   pb_contact.set_node_id(contact.node_id().String());
 
-  transport::protobuf::Endpoint *mutable_endpoint =
-      pb_contact.mutable_endpoint();
+  protobuf::Endpoint *mutable_endpoint = pb_contact.mutable_endpoint();
   mutable_endpoint->set_ip(contact.endpoint().ip.to_string(ec));
   mutable_endpoint->set_port(contact.endpoint().port);
 

@@ -35,13 +35,13 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "maidsafe/common/test.h"
 #include "maidsafe/common/crypto.h"
-#include "maidsafe/dht/log.h"
 #include "maidsafe/common/utils.h"
+#include "maidsafe/transport/utils.h"
+#include "maidsafe/dht/log.h"
 #include "maidsafe/dht/kademlia/contact.h"
 #include "maidsafe/dht/kademlia/routing_table.h"
 #include "maidsafe/dht/kademlia/return_codes.h"
 #include "maidsafe/dht/kademlia/node_id.h"
-#include "maidsafe/dht/transport/utils.h"
 #include "maidsafe/dht/kademlia/tests/test_utils.h"
 
 namespace maidsafe {

@@ -31,8 +31,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "maidsafe/common/test.h"
 #include "maidsafe/common/crypto.h"
 #include "maidsafe/common/utils.h"
+#include "maidsafe/common/securifier.h"
 #include "maidsafe/dht/kademlia/data_store.h"
-#include "maidsafe/dht/kademlia/securifier.h"
 #include "maidsafe/dht/kademlia/sender_task.h"
 #include "maidsafe/dht/kademlia/tests/test_utils.h"
 

@@ -38,17 +38,17 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "boost/date_time/posix_time/posix_time_duration.hpp"
 #include "boost/thread.hpp"
 #include "maidsafe/common/crypto.h"
+#include "maidsafe/common/securifier.h"
+#include "maidsafe/transport/tcp_transport.h"
+// TODO(Fraser#5#): 2011-08-30 - remove #include utils.h once NAT detection is
+//                  implemented.
+#include "maidsafe/transport/utils.h"
 
 #include "maidsafe/dht/kademlia/config.h"
 #include "maidsafe/dht/kademlia/message_handler.h"
 #include "maidsafe/dht/version.h"
 #include "maidsafe/dht/kademlia/node-api.h"
 #include "maidsafe/dht/kademlia/return_codes.h"
-#include "maidsafe/dht/kademlia/securifier.h"
-#include "maidsafe/dht/transport/tcp_transport.h"
-// TODO(Fraser#5#): 2011-08-30 - remove #include utils.h once NAT detection is
-//                  implemented.
-#include "maidsafe/dht/transport/utils.h"
 
 #if MAIDSAFE_DHT_VERSION != 3104
 #  error This API is not compatible with the installed library.\
@@ -423,7 +423,7 @@ int NodeContainer<NodeType>::Start(
     if (port_range.first > port_range.second)
       port_range = std::make_pair(port_range.second, port_range.first);
     // Workaround until NAT detection is up.
-    std::vector<dht::transport::IP> ips = transport::GetLocalAddresses();
+    std::vector<transport::IP> ips = transport::GetLocalAddresses();
     transport::Endpoint endpoint(
         ips.empty() ? IP::from_string("127.0.0.1") : ips.front(), 0);
     int result(transport::kError);

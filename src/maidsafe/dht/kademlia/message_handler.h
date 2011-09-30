@@ -32,7 +32,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <string>
 #include "boost/concept_check.hpp"
 #include "boost/signals2/signal.hpp"
-#include "maidsafe/dht/transport/message_handler.h"
+#include "maidsafe/transport/message_handler.h"
 #include "maidsafe/dht/version.h"
 
 #if MAIDSAFE_DHT_VERSION != 3104
@@ -45,9 +45,9 @@ namespace bs2 = boost::signals2;
 
 namespace maidsafe {
 
-namespace dht {
-
 class Securifier;
+
+namespace dht {
 
 namespace kademlia {
 

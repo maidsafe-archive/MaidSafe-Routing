@@ -31,6 +31,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <vector>
 #include "boost/thread.hpp"
 #include "maidsafe/common/crypto.h"
+#include "maidsafe/common/securifier.h"
 
 #ifdef __MSVC__
 #  pragma warning(push)
@@ -40,7 +41,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifdef __MSVC__
 #  pragma warning(pop)
 #endif
-#include "maidsafe/dht/kademlia/securifier.h"
 #include "maidsafe/dht/kademlia/routing_table.h"
 #include "maidsafe/dht/kademlia/data_store.h"
 
@@ -55,7 +55,7 @@ namespace test {
 const boost::posix_time::milliseconds kNetworkDelay(200);
 
 
-class SecurifierGetPublicKeyAndValidation: public Securifier {
+class SecurifierGetPublicKeyAndValidation : public Securifier {
  public:
   SecurifierGetPublicKeyAndValidation(const std::string &public_key_id,
                                       const std::string &public_key,

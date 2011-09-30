@@ -36,7 +36,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "boost/serialization/nvp.hpp"
 #include "boost/serialization/vector.hpp"
 #include "maidsafe/common/utils.h"
-#include "maidsafe/dht/transport/transport.h"
+#include "maidsafe/transport/transport.h"
 #include "maidsafe/dht/kademlia/node_id.h"
 #include "maidsafe/dht/version.h"
 
@@ -235,7 +235,7 @@ OrderedContacts CreateOrderedContacts(InputIterator first,
 
 
 namespace mk = maidsafe::dht::kademlia;
-namespace mt = maidsafe::dht::transport;
+namespace mt = maidsafe::transport;
 
 namespace boost {
 

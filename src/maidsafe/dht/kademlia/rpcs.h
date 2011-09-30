@@ -36,6 +36,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "boost/date_time/posix_time/posix_time_types.hpp"
 #include "boost/tuple/tuple.hpp"
 #include "maidsafe/common/utils.h"
+#include "maidsafe/common/securifier.h"
+#include "maidsafe/transport/transport.h"
 
 #include "maidsafe/dht/kademlia/node_id.h"
 #include "maidsafe/dht/kademlia/message_handler.h"
@@ -47,12 +49,10 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifdef __MSVC__
 #  pragma warning(pop)
 #endif
-#include "maidsafe/dht/kademlia/securifier.h"
 #include "maidsafe/dht/kademlia/utils.h"
 #include "maidsafe/dht/kademlia/config.h"
 #include "maidsafe/dht/kademlia/contact.h"
 #include "maidsafe/dht/kademlia/rpcs_objects.h"
-#include "maidsafe/dht/transport/transport.h"
 #include "maidsafe/dht/log.h"
 
 namespace arg = std::placeholders;

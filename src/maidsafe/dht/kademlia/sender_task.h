@@ -31,8 +31,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <functional>
 #include <string>
 
+#include "maidsafe/transport/transport.h"
 #include "maidsafe/dht/kademlia/data_store.h"
-#include "maidsafe/dht/transport/transport.h"
 
 namespace maidsafe  {
 

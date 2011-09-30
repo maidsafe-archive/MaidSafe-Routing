@@ -30,6 +30,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <map>
 
 #include "maidsafe/common/alternative_store.h"
+#include "maidsafe/common/securifier.h"
+#include "maidsafe/transport/tcp_transport.h"
 
 #include "maidsafe/dht/log.h"
 #include "maidsafe/dht/kademlia/node_impl.h"
@@ -46,10 +48,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "maidsafe/dht/kademlia/rpcs.h"
 #include "maidsafe/dht/kademlia/return_codes.h"
 #include "maidsafe/dht/kademlia/routing_table.h"
-#include "maidsafe/dht/kademlia/securifier.h"
 #include "maidsafe/dht/kademlia/service.h"
 #include "maidsafe/dht/kademlia/utils.h"
-#include "maidsafe/dht/transport/tcp_transport.h"
 
 namespace arg = std::placeholders;
 

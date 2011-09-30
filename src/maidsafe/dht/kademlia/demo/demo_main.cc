@@ -51,7 +51,7 @@ namespace bptime = boost::posix_time;
 namespace fs = boost::filesystem;
 namespace po = boost::program_options;
 namespace mk = maidsafe::dht::kademlia;
-namespace mt = maidsafe::dht::transport;
+namespace mt = maidsafe::transport;
 
 
 namespace {

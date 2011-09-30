@@ -33,9 +33,9 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 namespace maidsafe {
 
-namespace dht {
-
 namespace transport { struct Endpoint; }
+
+namespace dht {
 
 namespace kademlia {
 

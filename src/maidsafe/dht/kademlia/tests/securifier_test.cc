@@ -28,8 +28,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "maidsafe/common/test.h"
 #include "maidsafe/common/crypto.h"
 #include "maidsafe/common/utils.h"
+#include "maidsafe/common/securifier.h"
 #include "maidsafe/dht/kademlia/config.h"
-#include "maidsafe/dht/kademlia/securifier.h"
 
 namespace arg = std::placeholders;
 

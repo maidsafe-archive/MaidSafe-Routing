@@ -30,22 +30,14 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "maidsafe/common/test.h"
 #include "maidsafe/common/crypto.h"
 #include "maidsafe/common/utils.h"
+#include "maidsafe/common/securifier.h"
+#include "maidsafe/transport/tcp_transport.h"
+#include "maidsafe/transport/message_handler.h"
 #include "maidsafe/dht/kademlia/message_handler.h"
-#include "maidsafe/dht/transport/message_handler.h"
 #include "maidsafe/dht/kademlia/message_handler.cc"
 #include "maidsafe/dht/kademlia/utils.h"
 #include "maidsafe/dht/kademlia/rpcs.h"
-#include "maidsafe/dht/kademlia/securifier.h"
 #include "maidsafe/dht/kademlia/node_id.h"
-#ifdef __MSVC__
-#  pragma warning(push)
-#  pragma warning(disable: 4127 4244 4267)
-#endif
-#include "maidsafe/dht/transport/transport.pb.h"
-#ifdef __MSVC__
-#  pragma warning(pop)
-#endif
-#include "maidsafe/dht/transport/tcp_transport.h"
 
 
 namespace arg = std::placeholders;

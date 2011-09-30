@@ -46,9 +46,9 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #endif
 #include "boost/thread/shared_mutex.hpp"
 #include "boost/thread/locks.hpp"
+#include "maidsafe/transport/transport.h"
 
 #include "maidsafe/dht/kademlia/config.h"
-#include "maidsafe/dht/transport/transport.h"
 #include "maidsafe/dht/kademlia/message_handler.h"
 #include "maidsafe/dht/version.h"
 

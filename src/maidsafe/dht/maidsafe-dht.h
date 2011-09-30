@@ -28,6 +28,11 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef MAIDSAFE_DHT_MAIDSAFE_DHT_H_
 #define MAIDSAFE_DHT_MAIDSAFE_DHT_H_
 
+#include "maidsafe/transport/transport.h"
+#include "maidsafe/transport/message_handler.h"
+#include "maidsafe/transport/tcp_transport.h"
+#include "maidsafe/transport/udp_transport.h"
+
 #include "maidsafe/dht/kademlia/node-api.h"
 #include "maidsafe/dht/kademlia/node_container.h"
 #include "maidsafe/dht/kademlia/config.h"
@@ -35,13 +40,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "maidsafe/dht/kademlia/node_id.h"
 #include "maidsafe/dht/kademlia/message_handler.h"
 #include "maidsafe/dht/kademlia/rpcs_objects.h"
-#include "maidsafe/dht/kademlia/securifier.h"
 #include "maidsafe/dht/kademlia/return_codes.h"
-
-#include "maidsafe/dht/transport/transport.h"
-#include "maidsafe/dht/transport/message_handler.h"
-#include "maidsafe/dht/transport/tcp_transport.h"
-#include "maidsafe/dht/transport/udp_transport.h"
 
 #include "maidsafe/dht/version.h"
 

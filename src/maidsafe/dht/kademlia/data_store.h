@@ -53,9 +53,9 @@ namespace bptime = boost::posix_time;
 
 namespace maidsafe {
 
-namespace dht {
-
 class Securifier;
+
+namespace dht {
 
 namespace kademlia {
 

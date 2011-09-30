@@ -30,9 +30,9 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <string>
 #include <vector>
+#include "maidsafe/transport/transport.h"
 #include "maidsafe/dht/kademlia/contact.h"
 #include "maidsafe/dht/kademlia/node_id.h"
-#include "maidsafe/dht/transport/transport.h"
 
 namespace maidsafe {
 

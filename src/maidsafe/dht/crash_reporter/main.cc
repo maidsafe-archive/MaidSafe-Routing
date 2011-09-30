@@ -30,33 +30,33 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "boost/thread/thread.hpp"
 #include "boost/thread/condition.hpp"
 #include "boost/filesystem/fstream.hpp"
-#include "maidsafe/dht/transport/transport.h"
+#include "maidsafe/transport/transport.h"
+#include "maidsafe/transport/tcp_transport.h"
 #include "maidsafe/common/utils.h"
 #include "maidsafe/common/log.h"
-#include "maidsafe/dht/transport/tcp_transport.h"
-#include "maidsafe/dht/version.h"
 #ifdef __MSVC__
 #  pragma warning(push)
 #  pragma warning(disable: 4127 4244 4267)
 #endif
-#include "maidsafe/dht/transport/transport.pb.h"
+#include "maidsafe/dht/crash_reporter/crash.pb.h"
 #ifdef __MSVC__
 #  pragma warning(pop)
 #endif
+#include "maidsafe/dht/version.h"
 
 const std::string kServerHost("breakpad.maidsafe.net");
 const std::string kServerPort("50000");
 
 namespace arg = std::placeholders;
-namespace maid_dht = maidsafe::dht::transport;
+namespace mt = maidsafe::transport;
 
 void DoOnReplyReceived(const std::string& request,
-                         const maid_dht::Info& /*info*/,
-                         std::string* /*response*/,
-                         boost::posix_time::time_duration* /* timeout*/,
-                         boost::mutex* cur_mutex,
-                         boost::condition_variable* cv,
-                         std::string* reply) {
+                       const mt::Info& /*info*/,
+                       std::string* /*response*/,
+                       boost::posix_time::time_duration* /* timeout*/,
+                       boost::mutex* cur_mutex,
+                       boost::condition_variable* cv,
+                       std::string* reply) {
   boost::mutex::scoped_lock lock(*cur_mutex);
   *reply = request;
   cv->notify_one();
@@ -73,16 +73,16 @@ int main(int argc, char ** argv) {
   boost::thread worker(
       std::bind(static_cast<size_t(boost::asio::io_service::*)()>(
           &boost::asio::io_service::run), std::ref(asio_service)));
-  std::shared_ptr<maid_dht::TcpTransport> tcp_transport(
-      new maid_dht::TcpTransport(asio_service));
-  maid_dht::protobuf::CrashReport crash_report;
+  std::shared_ptr<mt::TcpTransport> tcp_transport(
+      new mt::TcpTransport(asio_service));
+  maidsafe::crash_report::protobuf::CrashReport crash_report;
   boost::asio::ip::tcp::resolver endpoint_resolver(asio_service);
   boost::asio::ip::tcp::resolver::query endpoint_query(
       boost::asio::ip::tcp::v4(), kServerHost, kServerPort);
   boost::asio::ip::tcp::resolver::iterator endpoint_iterator =
       endpoint_resolver.resolve(endpoint_query);
   boost::asio::ip::tcp::endpoint server_detail = *endpoint_iterator;
-  maid_dht::Endpoint crash_server(server_detail.address(),
+  mt::Endpoint crash_server(server_detail.address(),
                                   server_detail.port());
   try {
     boost::mutex cur_mutex;
@@ -105,7 +105,7 @@ int main(int argc, char ** argv) {
     std::string message(crash_report.SerializeAsString());
     tcp_transport->Send(message,
                         crash_server,
-                        maid_dht::kDefaultInitialTimeout);
+                        mt::kDefaultInitialTimeout);
     boost::mutex::scoped_lock lock(cur_mutex);
     while (reply.empty())
       cv.wait(lock);

@@ -28,6 +28,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "maidsafe/common/test.h"
 #include "maidsafe/common/crypto.h"
 #include "maidsafe/common/utils.h"
+#include "maidsafe/transport/utils.h"
 #include "maidsafe/dht/kademlia/contact.h"
 #ifdef __MSVC__
 #  pragma warning(push)
@@ -39,7 +40,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #endif
 #include "maidsafe/dht/kademlia/node_id.h"
 #include "maidsafe/dht/kademlia/utils.h"
-#include "maidsafe/dht/transport/utils.h"
 
 namespace maidsafe {
 

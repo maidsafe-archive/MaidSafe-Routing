@@ -52,9 +52,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 namespace maidsafe {
 
 class AlternativeStore;
-
-namespace dht {
-
 class Securifier;
 
 namespace transport {
@@ -62,6 +59,8 @@ class Transport;
 struct Endpoint;
 struct Info;
 }  // namespace transport
+
+namespace dht {
 
 namespace kademlia {
 
@@ -108,8 +107,8 @@ typedef uint16_t Port;
 
 
 typedef boost::asio::io_service AsioService;
-typedef std::shared_ptr<transport::Transport> TransportPtr;
 typedef std::shared_ptr<MessageHandler> MessageHandlerPtr;
+typedef std::shared_ptr<transport::Transport> TransportPtr;
 typedef std::shared_ptr<Securifier> SecurifierPtr;
 typedef std::shared_ptr<AlternativeStore> AlternativeStorePtr;
 typedef std::shared_ptr<transport::Info> RankInfoPtr;

@@ -1,13 +1,16 @@
-import "maidsafe/dht/transport/transport.proto";
-
 package maidsafe.dht.kademlia.protobuf;
+
+message Endpoint {
+  required bytes ip = 1;
+  required int32 port = 2;
+}
 
 message Contact {
   required bytes node_id = 1;
-  optional transport.protobuf.Endpoint endpoint = 2;
+  optional Endpoint endpoint = 2;
   repeated bytes local_ips = 3;
   optional int32 local_port = 4;
-  optional transport.protobuf.Endpoint rendezvous = 5;
+  optional Endpoint rendezvous = 5;
   optional bool tcp443 = 6;
   optional bool tcp80 = 7;
   optional bytes public_key_id = 8;
