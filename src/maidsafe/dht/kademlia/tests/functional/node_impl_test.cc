@@ -110,6 +110,9 @@ class NodeImplTest : public testing::TestWithParam<bool> {
     // make far_key_ as far as possible from test_container_'s ID
     far_key_ = test_container_->node()->contact().node_id() ^
                NodeId(std::string(kKeySizeBytes, static_cast<char>(-1)));
+    for (size_t n = 0; n < env_->node_ids_.size(); ++n)
+      LOG(WARNING) << DebugId(env_->node_ids_[n]);
+    std::cout << std::endl;
   }
 
   std::shared_ptr<DataStore> GetDataStore(
@@ -697,6 +700,9 @@ TEST_P(NodeImplTest, FUNC_Delete) {
   int result(kPendingResult);
   FindValueReturns find_value_returns;
   Key key(NodeId::kRandomId);
+  std::vector<NodeId> all_ids(env_->node_ids_);
+  if (!client_only_node_)
+    all_ids.push_back(test_container_->node()->contact().node_id());
   std::string value = RandomString(RandomUint32() % 1000 + 24);
   bptime::time_duration duration(bptime::pos_infin);
   size_t test_node_index(RandomUint32() % env_->node_containers_.size());
@@ -708,17 +714,88 @@ TEST_P(NodeImplTest, FUNC_Delete) {
               chosen_container->wait_for_store_functor()));
   chosen_container->GetAndResetStoreResult(&result);
   EXPECT_EQ(kSuccess, result);
+  // Verify that deleting fails for all but the storing node
   result = kPendingResult;
+  for (auto it = env_->node_containers_.begin();
+       it != env_->node_containers_.end(); ++it) {
+    if ((*it)->node()->contact().node_id()
+        != chosen_container->node()->contact().node_id()) {
+      (*it)->Delete(key, value, "", (*it)->securifier());
+      EXPECT_TRUE(env_->cond_var_.timed_wait(lock, kTimeout_,
+                  (*it)->wait_for_delete_functor()));
+      (*it)->GetAndResetDeleteResult(&result);
+      EXPECT_EQ(kDeleteTooFewNodes, result);
+      result = kPendingResult;
+      chosen_container->FindValue(key, chosen_container->securifier());
+      EXPECT_TRUE(env_->cond_var_.timed_wait(lock, kTimeout_,
+              chosen_container->wait_for_find_value_functor()));
+      chosen_container->GetAndResetFindValueResult(&find_value_returns);
+      EXPECT_EQ(kSuccess, find_value_returns.return_code);
+      result = kPendingResult;
+    }
+  }
+  // Verify that deleting succeeds for the storing node
   chosen_container->Delete(key, value, "", chosen_container->securifier());
   EXPECT_TRUE(env_->cond_var_.timed_wait(lock, kTimeout_,
               chosen_container->wait_for_delete_functor()));
   chosen_container->GetAndResetDeleteResult(&result);
   EXPECT_EQ(kSuccess, result);
+  std::vector<std::pair<std::string, std::string>> values;
+  // Delete activates callback after deleting most copies. Wait for up to
+  // kTimeout to ensure that all copies are deleted otherwise the FindValue that
+  // should fail may succeed
+  std::vector<Contact> k_closest;
+  for (auto it = env_->node_containers_.begin();
+       it != env_->node_containers_.end(); ++it) {
+    if (WithinKClosest((*it)->node()->contact().node_id(),
+                       key, all_ids, env_->k_)) {
+      k_closest.push_back((*it)->node()->contact());
+      bptime::time_duration total_sleep_time(bptime::milliseconds(0));
+      const bptime::milliseconds kIterSleep(100);
+    while (GetDataStore(*it)->GetValues(key.String(), &values)
+             && total_sleep_time < kTimeout_) {
+        total_sleep_time += kIterSleep;
+        Sleep(kIterSleep);
+      }
+      EXPECT_FALSE(GetDataStore(*it)->GetValues(key.String(), &values));
+    } else {
+      EXPECT_FALSE(GetDataStore(*it)->
+                   HasKey(key.String()));
+    }
+  }
+  for (auto it = k_closest.begin(); it != k_closest.end(); ++it) {
+    std::cout << "k Closest: " << DebugId((*it).node_id()) << std::endl;
+  }
+  if (!client_only_node_) {
+    if (WithinKClosest(test_container_->node()->contact().node_id(),
+                        key, all_ids, env_->k_)) {
+        k_closest.push_back((test_container_)->node()->contact());
+
+        bptime::time_duration total_sleep_time(bptime::milliseconds(0));
+        const bptime::milliseconds kIterSleep(100);
+
+        while (GetDataStore(test_container_)->GetValues(key.String(), &values)
+              && total_sleep_time < kTimeout_) {
+          total_sleep_time += kIterSleep;
+          Sleep(kIterSleep);
+        }
+        EXPECT_FALSE(GetDataStore(test_container_)->
+                     GetValues(key.String(), &values));
+      } else {
+        EXPECT_FALSE(GetDataStore(test_container_)->
+                     HasKey(key.String()));
+    }
+  }
   result = kPendingResult;
   chosen_container->FindValue(key, chosen_container->securifier());
   EXPECT_TRUE(env_->cond_var_.timed_wait(lock, kTimeout_,
               chosen_container->wait_for_find_value_functor()));
   chosen_container->GetAndResetFindValueResult(&find_value_returns);
+  std::cout << "Chosen ID: "
+    << DebugId(chosen_container->node()->contact().node_id()) << std::endl;
+  std::cout << "Test ID: "
+    << DebugId(test_container_->node()->contact().node_id()) << std::endl;
+
   EXPECT_NE(kSuccess, find_value_returns.return_code);
   // verify that the original storer can re-store the deleted value
   result = kPendingResult;
@@ -728,6 +805,48 @@ TEST_P(NodeImplTest, FUNC_Delete) {
               chosen_container->wait_for_store_functor()));
   chosen_container->GetAndResetStoreResult(&result);
   EXPECT_EQ(kSuccess, result);
+  // Store activates callback after storing most copies. Wait for up to
+  // kTimeout to ensure that all copies are stores otherwise the FindValue that
+  // should succeed may fail
+  for (auto it = env_->node_containers_.begin();
+       it != env_->node_containers_.end(); ++it) {
+    if (WithinKClosest((*it)->node()->contact().node_id(),
+                       key, all_ids, env_->k_)) {
+      bptime::time_duration total_sleep_time(bptime::milliseconds(0));
+      const bptime::milliseconds kIterSleep(100);
+
+      while (!GetDataStore(*it)->GetValues(key.String(), &values)
+             && total_sleep_time < kTimeout_) {
+        total_sleep_time += kIterSleep;
+        Sleep(kIterSleep);
+      }
+      std::cout << "Node: " << DebugId((*it)->node()->contact().node_id())
+        << std::endl;
+      EXPECT_TRUE(GetDataStore(*it)->GetValues(key.String(), &values));
+    } else {
+      EXPECT_FALSE(GetDataStore(*it)->HasKey(key.String()));
+    }
+  }
+  if (!client_only_node_) {
+    if (WithinKClosest(test_container_->node()->contact().node_id(),
+                       key, all_ids, env_->k_)) {
+      bptime::time_duration total_sleep_time(bptime::milliseconds(0));
+      const bptime::milliseconds kIterSleep(100);
+
+      while (!GetDataStore(test_container_)->GetValues(key.String(), &values)
+             && total_sleep_time < kTimeout_) {
+        total_sleep_time += kIterSleep;
+        Sleep(kIterSleep);
+      }
+      std::cout << "Node: "
+      << DebugId((test_container_)->node()->contact().node_id())
+        << std::endl;
+      EXPECT_TRUE(GetDataStore(test_container_)
+                  ->GetValues(key.String(), &values));
+    } else {
+      EXPECT_FALSE(GetDataStore(test_container_)->HasKey(key.String()));
+    }
+  }
   result = kPendingResult;
   chosen_container->FindValue(key, chosen_container->securifier());
   EXPECT_TRUE(env_->cond_var_.timed_wait(lock, kTimeout_,
@@ -738,6 +857,171 @@ TEST_P(NodeImplTest, FUNC_Delete) {
   EXPECT_TRUE(chosen_container->securifier()->Validate(value,
               find_value_returns.values_and_signatures[0].second, "",
               chosen_container->securifier()->kSigningPublicKey(), "", ""));
+  FindValueReturns find_multiple_value_returns;
+  Key multiple_key(NodeId::kRandomId);
+  std::string value1 = RandomString(RandomUint32() % 1000 + 24);
+  std::string value2 = RandomString(RandomUint32() % 1000 + 24);
+  std::string value3 = RandomString(RandomUint32() % 1000 + 24);
+  result = kPendingResult;
+  chosen_container->Store(multiple_key, value1, "", duration,
+                          chosen_container->securifier());
+  EXPECT_TRUE(env_->cond_var_.timed_wait(lock, kTimeout_,
+              chosen_container->wait_for_store_functor()));
+  chosen_container->GetAndResetStoreResult(&result);
+  EXPECT_EQ(kSuccess, result);
+  result = kPendingResult;
+  chosen_container->Store(multiple_key, value2, "", duration,
+                          chosen_container->securifier());
+  EXPECT_TRUE(env_->cond_var_.timed_wait(lock, kTimeout_,
+              chosen_container->wait_for_store_functor()));
+  chosen_container->GetAndResetStoreResult(&result);
+  EXPECT_EQ(kSuccess, result);
+  result = kPendingResult;
+  chosen_container->Store(multiple_key, value3, "", duration,
+                          chosen_container->securifier());
+  EXPECT_TRUE(env_->cond_var_.timed_wait(lock, kTimeout_,
+              chosen_container->wait_for_store_functor()));
+  chosen_container->GetAndResetStoreResult(&result);
+  EXPECT_EQ(kSuccess, result);
+  for (auto it = env_->node_containers_.begin();
+       it != env_->node_containers_.end(); ++it) {
+    if (WithinKClosest((*it)->node()->contact().node_id(),
+                       multiple_key, all_ids, env_->k_)) {
+      bptime::time_duration total_sleep_time(bptime::milliseconds(0));
+      const bptime::milliseconds kIterSleep(100);
+      size_t size(0);
+      if (GetDataStore(*it)->GetValues(multiple_key.String(), &values))
+        size = values.size();
+      while (size != 3
+             && total_sleep_time < kTimeout_) {
+        total_sleep_time += kIterSleep;
+        Sleep(kIterSleep);
+        if (GetDataStore(*it)->GetValues(multiple_key.String(), &values))
+          size = values.size();
+      }
+      ASSERT_TRUE(GetDataStore(*it)->GetValues(multiple_key.String(), &values)
+        && values.size() == 3);
+    } else {
+      EXPECT_FALSE(GetDataStore(*it)->
+                   HasKey(multiple_key.String()));
+    }
+  }
+  if (!client_only_node_) {
+    if (WithinKClosest(test_container_->node()->contact().node_id(),
+                        multiple_key, all_ids, env_->k_)) {
+      bptime::time_duration total_sleep_time(bptime::milliseconds(0));
+      const bptime::milliseconds kIterSleep(100);
+      size_t size(0);
+      if (GetDataStore(test_container_)
+        ->GetValues(multiple_key.String(), &values))
+        size = values.size();
+      while (size != 3
+            && total_sleep_time < kTimeout_) {
+        total_sleep_time += kIterSleep;
+        Sleep(kIterSleep);
+        if (GetDataStore(test_container_)
+          ->GetValues(multiple_key.String(), &values))
+          size = values.size();
+      }
+      ASSERT_TRUE(GetDataStore(test_container_)
+          ->GetValues(multiple_key.String(), &values)
+        && values.size() == 3);
+    } else {
+      EXPECT_FALSE(GetDataStore(test_container_)->
+                  HasKey(multiple_key.String()));
+    }
+  }
+  result = kPendingResult;
+  chosen_container->Delete(multiple_key, value1,
+                           "", chosen_container->securifier());
+  EXPECT_TRUE(env_->cond_var_.timed_wait(lock, kTimeout_,
+              chosen_container->wait_for_delete_functor()));
+  chosen_container->GetAndResetDeleteResult(&result);
+  EXPECT_EQ(kSuccess, result);
+
+  // Wait for up to kTimeout to ensure that the Delete has fully propagated
+  // through the network, before testing that the first value was deleted and
+  // and the other values remain
+  for (auto it = env_->node_containers_.begin();
+    it != env_->node_containers_.end(); ++it) {
+    if (WithinKClosest((*it)->node()->contact().node_id(),
+                        multiple_key, all_ids, env_->k_)) {
+      bptime::time_duration total_sleep_time(bptime::milliseconds(0));
+      const bptime::milliseconds kIterSleep(100);
+      size_t size(0);
+      if (GetDataStore(*it)->GetValues(multiple_key.String(), &values))
+        size = values.size();
+        while (values.size() >= 3
+              && total_sleep_time < kTimeout_) {
+          total_sleep_time += kIterSleep;
+          Sleep(kIterSleep);
+          if (GetDataStore(*it)->GetValues(multiple_key.String(), &values))
+            size = values.size();
+        }
+        EXPECT_TRUE(GetDataStore(*it)
+          ->GetValues(multiple_key.String(), &values));
+        EXPECT_EQ(2, values.size());
+      } else {
+        EXPECT_FALSE(GetDataStore(*it)->
+                    HasKey(multiple_key.String()));
+      }
+    }
+    if (!client_only_node_) {
+      if (WithinKClosest((test_container_)->node()->contact().node_id(),
+                        multiple_key, all_ids, env_->k_)) {
+        bptime::time_duration total_sleep_time(bptime::milliseconds(0));
+        const bptime::milliseconds kIterSleep(100);
+        size_t size(0);
+        if (GetDataStore(test_container_)
+          ->GetValues(multiple_key.String(), &values))
+          size = values.size();
+        while (values.size() >= 3
+              && total_sleep_time < kTimeout_) {
+          total_sleep_time += kIterSleep;
+          Sleep(kIterSleep);
+          if (GetDataStore(test_container_)
+            ->GetValues(multiple_key.String(), &values))
+            size = values.size();
+        }
+        EXPECT_TRUE(GetDataStore(test_container_)
+            ->GetValues(multiple_key.String(), &values));
+        EXPECT_EQ(2, values.size());
+      } else {
+          EXPECT_FALSE(GetDataStore(test_container_)
+            ->HasKey(multiple_key.String()));
+      }
+    }
+  // FindValue must now be successful, but yield only the two remaining values
+  result = kPendingResult;
+  chosen_container->FindValue(multiple_key, chosen_container->securifier());
+  EXPECT_TRUE(env_->cond_var_.timed_wait(lock, kTimeout_,
+              chosen_container->wait_for_find_value_functor()));
+  chosen_container->GetAndResetFindValueResult(&find_multiple_value_returns);
+  EXPECT_EQ(kSuccess, find_multiple_value_returns.return_code);
+  ASSERT_EQ(2, find_multiple_value_returns.values_and_signatures.size());
+  EXPECT_TRUE((find_multiple_value_returns.values_and_signatures[0].first ==
+     value2 &&
+     find_multiple_value_returns.values_and_signatures[1].first ==
+     value3) ||
+     (find_multiple_value_returns.values_and_signatures[0].first ==
+     value3 &&
+     find_multiple_value_returns.values_and_signatures[1].first ==
+     value2));
+  if (find_multiple_value_returns.values_and_signatures[0].first == value2) {
+    EXPECT_TRUE(chosen_container->securifier()->Validate(value2,
+                find_multiple_value_returns.values_and_signatures[0].second, "",
+                chosen_container->securifier()->kSigningPublicKey(), "", ""));
+    EXPECT_TRUE(chosen_container->securifier()->Validate(value3,
+                find_multiple_value_returns.values_and_signatures[1].second, "",
+                chosen_container->securifier()->kSigningPublicKey(), "", ""));
+  } else {
+    EXPECT_TRUE(chosen_container->securifier()->Validate(value3,
+                find_multiple_value_returns.values_and_signatures[0].second, "",
+                chosen_container->securifier()->kSigningPublicKey(), "", ""));
+    EXPECT_TRUE(chosen_container->securifier()->Validate(value2,
+                find_multiple_value_returns.values_and_signatures[1].second, "",
+                chosen_container->securifier()->kSigningPublicKey(), "", ""));
+  }
 }
 
 TEST_P(NodeImplTest, FUNC_Update) {
