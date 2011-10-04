@@ -289,7 +289,8 @@ std::string MessageHandler::MakeSerialisedWrapperMessage(
     std::string encrypt_aes_seed =
         securifier_->AsymmetricEncrypt(seed, recipient_public_key);
     if (encrypt_message.empty() || encrypt_aes_seed.empty()) {
-      DLOG(ERROR) << "MakeSerialisedWrapperMessage - encrypt_message or encrypt_aes_seed is empty.";
+      DLOG(ERROR) << "MakeSerialisedWrapperMessage"
+      "- encrypt_message or encrypt_aes_seed is empty.";
       return "";
     }
 
