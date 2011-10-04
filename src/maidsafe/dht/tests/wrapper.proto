@@ -1,0 +1,7 @@
+package maidsafe.dht.test.protobuf;
+
+message WrapperMessage {
+  required int32 msg_type = 1;
+  required bytes payload = 2;
+  optional bytes message_signature = 3;
+}
