@@ -35,6 +35,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "maidsafe/common/crypto.h"
 #include "maidsafe/common/utils.h"
+#include "maidsafe/common/breakpad.h"
 
 #include "maidsafe/dht/log.h"
 #include "maidsafe/dht/version.h"
@@ -44,6 +45,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "maidsafe/dht/kademlia/node-api.h"
 #include "maidsafe/dht/kademlia/node_container.h"
 #include "maidsafe/dht/kademlia/demo/commands.h"
+
 
 namespace bptime = boost::posix_time;
 namespace fs = boost::filesystem;
@@ -136,13 +138,30 @@ mk::Contact ComposeContactWithKey(
 
 int main(int argc, char **argv) {
   google::InitGoogleLogging(argv[0]);
+  fs::path cur_path = fs::initial_path();
+  maidsafe::crash_report::ProjectInfo current_project("MaidSafe-DHT",
+                        boost::lexical_cast<std::string>(MAIDSAFE_DHT_VERSION));
+#ifdef WIN32
+  google_breakpad::ExceptionHandler exception_handler(cur_path.wstring(),
+                                        NULL,
+                                        maidsafe::crash_report::DumpCallback,
+                                        &current_project,
+                                        true);
+#else
+  google_breakpad::ExceptionHandler exception_handler(cur_path.string(),
+                                        NULL,
+                                        maidsafe::crash_report::DumpCallback,
+                                        &current_project,
+                                        true);
+#endif
   try {
+    volatile int* a = static_cast<int*>(NULL);  // Initiating Crash
+    *a = 1;                                     // Crash Line
     std::string logfile, bootstrap_file("bootstrap_contacts.xml");
     uint16_t listening_port(8000), k(4), alpha(3), beta(2);
     std::string ip("127.0.0.1");
     uint32_t refresh_interval(3600);
     size_t thread_count(3);
-
     po::options_description options_description("Options");
     options_description.add_options()
         ("help,h", "Print options.")
