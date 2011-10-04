@@ -574,7 +574,11 @@ void NodeImpl::DoLookupIteration(LookupArgsPtr lookup_args) {
   lookup_args->lookup_phase_complete = false;
   size_t good_contact_count(0), pending_result_count(0);
   bool wait_for_in_flight_rpcs(false);
-  auto itr(lookup_args->lookup_contacts.begin());
+  auto itr = lookup_args->lookup_contacts.find(contact_);
+  if (itr != lookup_args->lookup_contacts.end() && !client_only_node_) {
+    (*itr).second.rpc_state = ContactInfo::kRepliedOK;
+  }
+  itr = lookup_args->lookup_contacts.begin();
   while (itr != lookup_args->lookup_contacts.end() &&
          !wait_for_in_flight_rpcs) {
     switch ((*itr).second.rpc_state) {
@@ -703,20 +707,8 @@ void NodeImpl::IterativeFindCallback(
   // Check to see if the lookup phase and/or iteration is now finished.
   bool iteration_complete(false);
   int shortlist_ok_count(0);
-  bool before = lookup_args->lookup_phase_complete;
   AssessLookupState(lookup_args, shortlist_upper_bound, &iteration_complete,
                     &shortlist_ok_count);
-  bool after = lookup_args->lookup_phase_complete;
-  bool print_stuff(false);
-  if (before != after) {
-    std::cout << "BEFORE ASSESSMENT: " << std::boolalpha << before << std::endl;
-    std::cout << "AFTER ASSESSMENT: " << std::boolalpha << after << std::endl;
-    std::cout << "SHORTLIST OK COUNT: " << shortlist_ok_count << std::endl;
-    std::cout << "LOOKUP CONTACTS: ";
-    // for (auto it = lookup_args->lookup_contacts.begin();
-    //     it != lookup_args->lookup_contacts.end())
-    print_stuff = true;
-  }
 
   // If the lookup phase is marked complete, but we still have <
   // kNumContactsRequested then try to get more contacts from the local routing
@@ -786,14 +778,6 @@ bool NodeImpl::AbortLookup(
                      alternative_store == peer);
       }
 #endif
-      std::string success = (result == kSuccess) ? "True" : "False";
-      std::string alt = (result == kFoundAlternativeStoreHolder)?"True":"False";
-      std::string second = second_node ? "True" : "False";
-      std::cout << "kSuccess: " << success <<
-      std::endl <<
-      "kFoundAlternativeStoreHolder: " <<
-      alt << std::endl <<
-      "second_node: " << second << std::endl;
       FindValueReturns find_value_returns(result, values_and_signatures,
                                           contacts, alternative_store,
                                           lookup_args->cache_candidate);
@@ -809,7 +793,6 @@ bool NodeImpl::AbortLookup(
     // RPC timed out or not.
     if (peer.node_id() == lookup_args->kTarget) {
       lookup_args->lookup_phase_complete = true;
-      std::cout << "PEER IS TARGET" << std::endl;
       if (result == kSuccess) {
         std::static_pointer_cast<GetContactArgs>(lookup_args)->callback(
             kSuccess, peer);
@@ -924,7 +907,6 @@ void NodeImpl::HandleCompletedLookup(
     LookupArgsPtr lookup_args,
     LookupContacts::iterator closest_upper_bound,
     const int &closest_count) {
-  std::cout << "Lookup Completed" << std::endl;
   switch (lookup_args->kOperationType) {
     case LookupArgs::kFindNodes:
     case LookupArgs::kFindValue: {
@@ -942,15 +924,8 @@ void NodeImpl::HandleCompletedLookup(
       } else {
         // We've already handled the case where the value or an alternative
         // store holder was found (in AbortLookup).
-        std::cout << "RESULT_________ ";
         int result(contacts.empty() ? kIterativeLookupFailed :
                    kFailedToFindValue);
-        if (result == kIterativeLookupFailed)
-          std::cout << "kIterativeLookupFailed" << std::endl;
-        else if (result == kFailedToFindValue)
-          std::cout << "kFailedToFindValue" << std::endl;
-        else
-          std::cout << result << std::endl;
         FindValueReturns find_value_returns(result,
                                             std::vector<ValueAndSignature>(),
                                             contacts, Contact(),
@@ -1054,7 +1029,6 @@ void NodeImpl::InitiateDeletePhase(DeleteArgsPtr delete_args,
                     std::bind(&NodeImpl::DeleteCallback, this, arg::_1, arg::_2,
                               (*itr).first, delete_args));
       ++delete_args->second_phase_rpcs_in_flight;
-      std::cout << delete_args->second_phase_rpcs_in_flight << std::endl;
     }
     ++itr;
   }
@@ -1400,7 +1374,6 @@ void NodeImpl::UpdateCallback(RankInfoPtr rank_info,
 template <typename T>
 void NodeImpl::HandleSecondPhaseCallback(int result, T args) {
   --args->second_phase_rpcs_in_flight;
-  std::cout << args->second_phase_rpcs_in_flight << std::endl;
   BOOST_ASSERT(args->second_phase_rpcs_in_flight >= 0);
   if (result == kSuccess) {
     ++args->successes;
@@ -1565,9 +1538,11 @@ void NodeImpl::PingDownContactCallback(Contact down_contact,
                                        RankInfoPtr rank_info,
                                        const int &result) {
   if (result != kSuccess) {
-    // Increment failed RPC count by two: one for us and one for the reporter.
-    routing_table_->IncrementFailedRpcCount(down_contact.node_id());
-    routing_table_->IncrementFailedRpcCount(down_contact.node_id());
+    // Increment failed RPC count until down contact is removed from the routing
+    // table
+    for (int i = 0, result = 0;
+        result != kFailedToFindContact && i < kFailedRpcTolerance + 1; ++i)
+      result = routing_table_->IncrementFailedRpcCount(down_contact.node_id());
   } else {
     // Add the contact again to update its last_seen to now
     routing_table_->AddContact(down_contact, rank_info);

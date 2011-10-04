@@ -502,15 +502,21 @@ void Rpcs<TransportType>::Downlist(const std::vector<NodeId> &node_ids,
   TransportPtr transport;
   MessageHandlerPtr message_handler;
   Prepare(securifier, transport, message_handler);
-
+  connected_objects_.AddObject(transport, message_handler);
   protobuf::DownlistNotification notification;
   *notification.mutable_sender() = ToProtobuf(contact_);
   for (size_t i = 0; i < node_ids.size(); ++i)
     notification.add_node_ids(node_ids[i].String());
-  std::string message =
-      message_handler->WrapMessage(notification, peer.public_key());
-  DLOG(INFO) << "\t" << DebugId(contact_) << " DOWNLIST to " << DebugId(peer);
-  transport->Send(message, peer.PreferredEndpoint(),
+  std::string message = message_handler->WrapMessage(notification,
+                                                     peer.public_key());
+  std::string downlist_ids;
+  for (size_t i = 0; i < node_ids.size(); ++i)
+    downlist_ids += " [" + DebugId(node_ids[i]) + "]";
+
+  DLOG(INFO) << "\t" << DebugId(contact_) << " DOWNLIST " << downlist_ids
+            << " to " << DebugId(peer);
+  transport->Send(message,
+                  peer.PreferredEndpoint(),
                   transport::kDefaultInitialTimeout);
 }
 

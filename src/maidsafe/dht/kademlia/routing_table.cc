@@ -73,6 +73,8 @@ int RoutingTable::AddContact(const Contact &contact, RankInfoPtr rank_info) {
     // will update the num_failed_rpcs to 0 as well and update the IPs ports if
     // changed.
     if (contacts_.modify(it_node, ChangeLastSeen(contact))) {
+      DLOG(WARNING) << kDebugId_ << ": Contact already in routing table "
+                    << DebugId(contact);
       return kSuccess;
     } else {
       DLOG(WARNING) << kDebugId_ << ": Failed to update last seen time for "

@@ -48,17 +48,23 @@ void MessageHandler::OnMessageReceived(const std::string &request,
                                        const Info &info,
                                        std::string *response,
                                        Timeout *timeout) {
-  if (request.empty())
+  if (request.empty()) {
+    DLOG(WARNING) << "Request is empty.";
     return;
+  }
   SecurityType security_type = request.at(0);
-  if (security_type && !securifier_)
+  if (security_type && !securifier_) {
+      DLOG(WARNING) << "Invalid securifier.";
     return;
+  }
 
   std::string serialised_message(request.substr(1));
   if (security_type & kAsymmetricEncrypt) {
     std::string aes_seed = request.substr(1, 512);
-    if (aes_seed.size() != 512)
+    if (aes_seed.size() != 512) {
+      DLOG(WARNING) << "Invalid aes seed size.";
       return;
+    }
 
     std::string encrypt_aes_seed = securifier_->AsymmetricDecrypt(aes_seed);
     if (encrypt_aes_seed.empty()) {
@@ -69,6 +75,8 @@ void MessageHandler::OnMessageReceived(const std::string &request,
     std::string aes_key = encrypt_aes_seed.substr(0, 32);
     std::string kIV = encrypt_aes_seed.substr(32, 16);
     serialised_message = crypto::SymmDecrypt(request.substr(513), aes_key, kIV);
+    if (serialised_message.empty())
+      DLOG(WARNING) << "Message is empty.";
   }
 
   protobuf::WrapperMessage wrapper;
@@ -76,6 +84,8 @@ void MessageHandler::OnMessageReceived(const std::string &request,
     return ProcessSerialisedMessage(wrapper.msg_type(), wrapper.payload(),
                                     security_type, wrapper.message_signature(),
                                     info, response, timeout);
+  } else {
+      DLOG(WARNING) << "Processing of serialised message failed.";
   }
 }
 
@@ -278,6 +288,11 @@ std::string MessageHandler::MakeSerialisedWrapperMessage(
         crypto::SymmEncrypt(wrapper_message.SerializeAsString(), key, kIV);
     std::string encrypt_aes_seed =
         securifier_->AsymmetricEncrypt(seed, recipient_public_key);
+    if (encrypt_message.empty() || encrypt_aes_seed.empty()) {
+      DLOG(ERROR) << "MakeSerialisedWrapperMessage - encrypt_message or encrypt_aes_seed is empty.";
+      return "";
+    }
+
     final_message += encrypt_aes_seed + encrypt_message;
   } else {
     final_message += wrapper_message.SerializeAsString();

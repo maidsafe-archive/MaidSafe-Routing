@@ -80,7 +80,8 @@ std::string MessageHandler::WrapMessage(
     return "";
   return MakeSerialisedWrapperMessage(kFindValueResponse,
                                       msg.SerializeAsString(),
-                                      kAsymmetricEncrypt, recipient_public_key);
+                                      kAsymmetricEncrypt,
+                                      recipient_public_key);
 }
 
 std::string MessageHandler::WrapMessage(
@@ -90,7 +91,8 @@ std::string MessageHandler::WrapMessage(
     return "";
   return MakeSerialisedWrapperMessage(kFindNodesRequest,
                                       msg.SerializeAsString(),
-                                      kAsymmetricEncrypt, recipient_public_key);
+                                      kAsymmetricEncrypt,
+                                      recipient_public_key);
 }
 
 std::string MessageHandler::WrapMessage(
@@ -100,7 +102,8 @@ std::string MessageHandler::WrapMessage(
     return "";
   return MakeSerialisedWrapperMessage(kFindNodesResponse,
                                       msg.SerializeAsString(),
-                                      kAsymmetricEncrypt, recipient_public_key);
+                                      kAsymmetricEncrypt,
+                                      recipient_public_key);
 }
 
 std::string MessageHandler::WrapMessage(
@@ -108,7 +111,8 @@ std::string MessageHandler::WrapMessage(
     const std::string &recipient_public_key) {
   if (!msg.IsInitialized())
     return "";
-  return MakeSerialisedWrapperMessage(kStoreRequest, msg.SerializeAsString(),
+  return MakeSerialisedWrapperMessage(kStoreRequest,
+                                      msg.SerializeAsString(),
                                       kSign | kAsymmetricEncrypt,
                                       recipient_public_key);
 }
@@ -140,7 +144,8 @@ std::string MessageHandler::WrapMessage(
     return "";
   return MakeSerialisedWrapperMessage(kStoreRefreshResponse,
                                       msg.SerializeAsString(),
-                                      kAsymmetricEncrypt, recipient_public_key);
+                                      kAsymmetricEncrypt,
+                                      recipient_public_key);
 }
 
 std::string MessageHandler::WrapMessage(
@@ -148,7 +153,8 @@ std::string MessageHandler::WrapMessage(
     const std::string &recipient_public_key) {
   if (!msg.IsInitialized())
     return "";
-  return MakeSerialisedWrapperMessage(kDeleteRequest, msg.SerializeAsString(),
+  return MakeSerialisedWrapperMessage(kDeleteRequest,
+                                      msg.SerializeAsString(),
                                       kSign | kAsymmetricEncrypt,
                                       recipient_public_key);
 }
@@ -180,7 +186,8 @@ std::string MessageHandler::WrapMessage(
     return "";
   return MakeSerialisedWrapperMessage(kDeleteRefreshResponse,
                                       msg.SerializeAsString(),
-                                      kAsymmetricEncrypt, recipient_public_key);
+                                      kAsymmetricEncrypt,
+                                      recipient_public_key);
 }
 
 std::string MessageHandler::WrapMessage(
@@ -190,7 +197,8 @@ std::string MessageHandler::WrapMessage(
     return "";
   return MakeSerialisedWrapperMessage(kDownlistNotification,
                                       msg.SerializeAsString(),
-                                      kAsymmetricEncrypt, recipient_public_key);
+                                      kAsymmetricEncrypt,
+                                      recipient_public_key);
 }
 
 void MessageHandler::ProcessSerialisedMessage(
