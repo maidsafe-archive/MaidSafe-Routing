@@ -79,8 +79,10 @@ ADD_MAIDSAFE_LIBRARY(MaidSafe-Transport)
 ###################################################################################################
 SET(PROTO_SOURCE_DIR ${PROJECT_SOURCE_DIR}/src)
 FILE(GLOB PROTO_FILES_KADEMLIA RELATIVE ${PROTO_SOURCE_DIR} "${PROTO_SOURCE_DIR}/maidsafe/dht/kademlia/*.proto")
-FILE(GLOB PROTO_FILES_CRASH RELATIVE ${PROTO_SOURCE_DIR} "${PROTO_SOURCE_DIR}/maidsafe/dht/crash_reporter/*.proto")
-SET(PROTO_FILES "${PROTO_FILES_KADEMLIA};${PROTO_FILES_CRASH}")
+FILE(GLOB PROTO_FILES_CRASH_REPORTER RELATIVE ${PROTO_SOURCE_DIR} "${PROTO_SOURCE_DIR}/maidsafe/dht/crash_reporter/*.proto")
+FILE(GLOB PROTO_FILES_CRASH_SERVER RELATIVE ${PROTO_SOURCE_DIR} "${PROTO_SOURCE_DIR}/maidsafe/dht/crash_server/*.proto")
+FILE(GLOB PROTO_FILES_TESTS RELATIVE ${PROTO_SOURCE_DIR} "${PROTO_SOURCE_DIR}/maidsafe/dht/kademlia/tests/*.proto")
+SET(PROTO_FILES "${PROTO_FILES_KADEMLIA};${PROTO_FILES_CRASH_REPORTER};${PROTO_FILES_CRASH_SERVER};${PROTO_FILES_TESTS}")
 INCLUDE(maidsafe_standard_setup)
 HANDLE_VERSIONS(${PROJECT_SOURCE_DIR}/src/maidsafe/dht/version.h)
 
@@ -108,11 +110,20 @@ SOURCE_GROUP("kademlia Header Files" FILES ${HEADER_FILES_KADEMLIA_DIR})
 FILE(GLOB SOURCE_FILES_CRASH_REPORTER_DIR "${PROJECT_SOURCE_DIR}/src/maidsafe/dht/crash_reporter/*.cc")
 FILE(GLOB HEADER_FILES_CRASH_REPORTER_DIR "${PROJECT_SOURCE_DIR}/src/maidsafe/dht/crash_reporter/*.h")
 SET(ALL_FILES_CRASH_REPORTER_DIR ${SOURCE_FILES_CRASH_REPORTER_DIR} ${HEADER_FILES_CRASH_REPORTER_DIR})
+SET(STYLE_CRASH_REPORTER ${ALL_FILES_CRASH_REPORTER_DIR})
 SOURCE_GROUP("crash_reporter Source Files" FILES ${SOURCE_FILES_CRASH_REPORTER_DIR})
 SOURCE_GROUP("crash_reporter Header Files" FILES ${HEADER_FILES_CRASH_REPORTER_DIR})
+LIST(REMOVE_ITEM STYLE_CRASH_REPORTER "${PROJECT_SOURCE_DIR}/src/maidsafe/dht/crash_reporter/crash.pb.cc")
+LIST(REMOVE_ITEM STYLE_CRASH_REPORTER "${PROJECT_SOURCE_DIR}/src/maidsafe/dht/crash_reporter/crash.pb.h")
 
-SET(ALL_FILES_CRASH_SERVER_DIR "${PROJECT_SOURCE_DIR}/src/maidsafe/dht/crash_server/main.cc")
-SOURCE_GROUP("crash_server Source Files" FILES ${ALL_FILES_CRASH_SERVER_DIR})
+FILE(GLOB SOURCE_FILES_CRASH_SERVER_DIR "${PROJECT_SOURCE_DIR}/src/maidsafe/dht/crash_server/*.cc")
+FILE(GLOB HEADER_FILES_CRASH_SERVER_DIR "${PROJECT_SOURCE_DIR}/src/maidsafe/dht/crash_server/*.h")
+SET(ALL_FILES_CRASH_SERVER_DIR ${SOURCE_FILES_CRASH_SERVER_DIR} ${HEADER_FILES_CRASH_SERVER_DIR})
+SET(STYLE_CRASH_SERVER ${ALL_FILES_CRASH_SERVER_DIR})
+SOURCE_GROUP("crash_server Source Files" FILES ${SOURCE_FILES_CRASH_SERVER_DIR})
+SOURCE_GROUP("crash_server Header Files" FILES ${HEADER_FILES_CRASH_SERVER_DIR})
+LIST(REMOVE_ITEM STYLE_CRASH_SERVER "${PROJECT_SOURCE_DIR}/src/maidsafe/dht/crash_server/crash_message.pb.cc")
+LIST(REMOVE_ITEM STYLE_CRASH_SERVER "${PROJECT_SOURCE_DIR}/src/maidsafe/dht/crash_server/crash_message.pb.h")
 
 ####    BENCHMARK, DEMO & TESTS    ####
 FILE(GLOB SOURCE_FILES_BENCHMARK_DIR "${PROJECT_SOURCE_DIR}/src/maidsafe/dht/kademlia/benchmark/*.cc")
@@ -130,8 +141,11 @@ SOURCE_GROUP("Demo Header Files" FILES ${HEADER_FILES_DEMO_DIR})
 FILE(GLOB SOURCE_FILES_TEST_KADEMLIA_DIR "${PROJECT_SOURCE_DIR}/src/maidsafe/dht/kademlia/tests/*.cc")
 FILE(GLOB HEADER_FILES_TEST_KADEMLIA_DIR "${PROJECT_SOURCE_DIR}/src/maidsafe/dht/kademlia/tests/*.h")
 SET(ALL_FILES_TEST_KADEMLIA_DIR ${SOURCE_FILES_TEST_KADEMLIA_DIR} ${HEADER_FILES_TEST_KADEMLIA_DIR})
+SET(STYLE_TEST_KADEMLIA ${ALL_FILES_TEST_KADEMLIA_DIR})
 SOURCE_GROUP("Kademlia Test Source Files" FILES ${SOURCE_FILES_TEST_KADEMLIA_DIR})
 SOURCE_GROUP("Kademlia Test Header Files" FILES ${HEADER_FILES_TEST_KADEMLIA_DIR})
+LIST(REMOVE_ITEM STYLE_TEST_KADEMLIA "${PROJECT_SOURCE_DIR}/src/maidsafe/dht/kademlia/tests/wrapper.pb.cc")
+LIST(REMOVE_ITEM STYLE_TEST_KADEMLIA "${PROJECT_SOURCE_DIR}/src/maidsafe/dht/kademlia/tests/wrapper.pb.h")
 
 FILE(GLOB SOURCE_FILES_TEST_FUNCTIONAL_KADEMLIA_DIR "${PROJECT_SOURCE_DIR}/src/maidsafe/dht/kademlia/tests/functional/*.cc")
 FILE(GLOB HEADER_FILES_TEST_FUNCTIONAL_KADEMLIA_DIR "${PROJECT_SOURCE_DIR}/src/maidsafe/dht/kademlia/tests/functional/*.h")
@@ -292,7 +306,10 @@ IF(MSVC)
   SET_TARGET_PROPERTIES(maidsafe_dht_static PROPERTIES STATIC_LIBRARY_FLAGS_RELEASE "/LTCG")
 ELSEIF(UNIX)
   SET_TARGET_PROPERTIES(KademliaDemo PROPERTIES COMPILE_FLAGS "-g")
-  FILE(GLOB PROTO_SOURCE_FILES "${PROJECT_SOURCE_DIR}/src/maidsafe/dht/kademlia/*.pb.cc")
+  FILE(GLOB PROTO_SOURCE_FILES "${PROJECT_SOURCE_DIR}/src/maidsafe/dht/kademlia/*.pb.cc"
+                               "${PROJECT_SOURCE_DIR}/src/maidsafe/dht/kademlia/tests/*.pb.cc"
+                               "${PROJECT_SOURCE_DIR}/src/maidsafe/dht/crash_server/*.pb.cc"
+                               "${PROJECT_SOURCE_DIR}/src/maidsafe/dht/crash_reporter/*.pb.cc")
   SET_SOURCE_FILES_PROPERTIES(${PROJECT_SOURCE_DIR}/src/maidsafe/dht/kademlia/service.cc
                               ${PROJECT_SOURCE_DIR}/src/maidsafe/dht/kademlia/node.cc
                               ${PROJECT_SOURCE_DIR}/src/maidsafe/dht/kademlia/node_impl.cc
@@ -319,10 +336,10 @@ IF(PYTHONINTERP_FOUND)
                ${STYLE_KADEMLIA}
                ${ALL_FILES_BENCHMARK_DIR}
                ${ALL_FILES_DEMO_DIR}
-               ${ALL_FILES_TEST_KADEMLIA_DIR}
+               ${STYLE_TEST_KADEMLIA}
                ${ALL_FILES_TEST_FUNCTIONAL_KADEMLIA_DIR}
-               ${ALL_FILES_CRASH_REPORTER_DIR}
-               ${ALL_FILES_CRASH_SERVER_DIR})
+               ${STYLE_CRASH_REPORTER_DIR}
+               ${STYLE_CRASH_SERVER_DIR})
     SET_PROPERTY(TEST STYLE_CHECK PROPERTY LABELS Functional CodingStyle)
   ELSE()
     STRING(REPLACE "/" "\\\\" STYLE_CHECK_SOURCE ${PROJECT_SOURCE_DIR})

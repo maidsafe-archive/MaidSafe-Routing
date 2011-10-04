@@ -33,18 +33,21 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <errno.h>
 #include <unistd.h>
 #include <memory>
+
 #include "boost/asio/io_service.hpp"
 #include "boost/thread/thread.hpp"
 #include "boost/filesystem/fstream.hpp"
-#include "maidsafe/dht/transport/transport.h"
+
 #include "maidsafe/common/utils.h"
 #include "maidsafe/common/log.h"
-#include "maidsafe/dht/transport/tcp_transport.h"
+#include "maidsafe/transport/transport.h"
+#include "maidsafe/transport/tcp_transport.h"
+
 #ifdef __MSVC__
 #  pragma warning(push)
 #  pragma warning(disable: 4127 4244 4267)
 #endif
-#include "maidsafe/dht/transport/transport.pb.h"
+#include "maidsafe/dht/crash_server/crash_message.pb.h"
 #ifdef __MSVC__
 #  pragma warning(pop)
 #endif
@@ -55,8 +58,6 @@ const std::string kPathToErrorLogs = "/home/viv/Crash-Reports/";
 const std::string kPathToCrashInfo = "/home/viv/BreakpadServer-CrashInfo/";
 
 namespace arg = std::placeholders;
-namespace maid_dht = maidsafe::dht::transport;
-
 
 boost::mutex mutex_;
 
@@ -118,12 +119,12 @@ bool ProcessMiniDump(const std::string &stackwalk_path,
 }
 
 void DoOnRequestReceived(const std::string& request,
-                         const maid_dht::Info& /*info*/,
+                         const maidsafe::transport::Info& /*info*/,
                          std::string* response,
                          boost::posix_time::time_duration* /* timeout*/) {
   *response = "Received";
   LOG(INFO) << "New Error Log Received.";
-  maidsafe::dht::transport::protobuf::CrashReport crash_report;
+  maidsafe::dht::protobuf::CrashReport crash_report;
   crash_report.ParseFromString(request);
   boost::mutex::scoped_lock lock(mutex_);
   LOG(INFO) << "Project Name: " << crash_report.project_name();
@@ -152,7 +153,7 @@ void DoOnRequestReceived(const std::string& request,
   LOG(INFO) << "Waiting for New Log...";
 }
 
-void DoOnError(const maidsafe::dht::transport::TransportCondition &tc) {
+void DoOnError(const maidsafe::transport::TransportCondition &tc) {
   LOG(WARNING) << "Error Receiving Log: " << tc;
 }
 
@@ -172,8 +173,8 @@ int main(int /*argc*/, char ** argv) {
   boost::thread worker2(
       std::bind(static_cast<size_t(boost::asio::io_service::*)()>(
           &boost::asio::io_service::run), std::ref(asio_service)));
-  std::shared_ptr<maid_dht::TcpTransport> tcp_transport(
-      new maid_dht::TcpTransport(asio_service));
+  std::shared_ptr<maidsafe::transport::TcpTransport> tcp_transport(
+      new maidsafe::transport::TcpTransport(asio_service));
   tcp_transport->on_message_received()->connect(
       std::bind(&DoOnRequestReceived, arg::_1, arg::_2, arg::_3, arg::_4));
   tcp_transport->on_error()->connect(std::bind(&DoOnError, arg::_1));
@@ -184,8 +185,8 @@ int main(int /*argc*/, char ** argv) {
       endpoint_resolver.resolve(endpoint_query);
   boost::asio::ip::tcp::endpoint server_detail = *endpoint_iterator;
   if (tcp_transport->StartListening(
-          maid_dht::Endpoint(server_detail.address(),
-                             server_detail.port())) != 0) {
+          maidsafe::transport::Endpoint(server_detail.address(),
+                                        server_detail.port())) != 0) {
     LOG(ERROR) << "Error Starting to Listen";
   } else {
     LOG(INFO) << "Server Started... ";
