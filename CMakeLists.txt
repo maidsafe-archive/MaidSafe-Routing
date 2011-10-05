@@ -232,6 +232,7 @@ IF(MSVC)
   # Warnings switched off for protocol buffer generated files and libupnp files
   SET_SOURCE_FILES_PROPERTIES(${PROJECT_SOURCE_DIR}/src/maidsafe/dht/kademlia.pb.cc
                               ${PROJECT_SOURCE_DIR}/src/maidsafe/dht/rpcs.pb.cc
+                              ${PROJECT_SOURCE_DIR}/src/maidsafe/dht/tests/wrapper.pb.cc
                                 PROPERTIES COMPILE_FLAGS "/W0")
 
   SET_TARGET_PROPERTIES(maidsafe_dht_static TESTkademlia PROPERTIES COMPILE_FLAGS "/bigobj")

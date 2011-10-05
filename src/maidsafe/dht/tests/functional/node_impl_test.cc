@@ -1641,7 +1641,7 @@ TEST_P(NodeImplTest, FUNC_Downlist) {
         std::find(contacts.begin(), contacts.end(), k_closest_contacts[3])
                 != contacts.end())
                 && count < 1000) {
-    Sleep(kTimeout_/1000.0);
+    Sleep(bptime::milliseconds(20));
     contacts.clear();
     bootstrap_container->node()->GetAllContacts(&contacts);
     ++count;
