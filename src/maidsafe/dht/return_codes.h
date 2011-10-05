@@ -1,4 +1,4 @@
-/* Copyright (c) 2009 maidsafe.net limited
+/* Copyright (c) 2011 maidsafe.net limited
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification,
@@ -25,22 +25,8 @@ TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#ifndef MAIDSAFE_DHT_MAIDSAFE_DHT_H_
-#define MAIDSAFE_DHT_MAIDSAFE_DHT_H_
-
-#include "maidsafe/transport/transport.h"
-#include "maidsafe/transport/message_handler.h"
-#include "maidsafe/transport/tcp_transport.h"
-#include "maidsafe/transport/udp_transport.h"
-
-#include "maidsafe/dht/kademlia/node-api.h"
-#include "maidsafe/dht/kademlia/node_container.h"
-#include "maidsafe/dht/kademlia/config.h"
-#include "maidsafe/dht/kademlia/contact.h"
-#include "maidsafe/dht/kademlia/node_id.h"
-#include "maidsafe/dht/kademlia/message_handler.h"
-#include "maidsafe/dht/kademlia/rpcs_objects.h"
-#include "maidsafe/dht/kademlia/return_codes.h"
+#ifndef MAIDSAFE_DHT_RETURN_CODES_H_
+#define MAIDSAFE_DHT_RETURN_CODES_H_
 
 #include "maidsafe/dht/version.h"
 
@@ -50,4 +36,56 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #endif
 
 
-#endif  // MAIDSAFE_DHT_MAIDSAFE_DHT_H_
+namespace maidsafe {
+namespace dht {
+
+enum ReturnCode {
+  // General
+  kSuccess = 0,
+  kGeneralError = -300001,
+  kUndefined = -300002,
+  kPendingResult = -300003,
+  kInvalidPointer = -300004,
+  kTimedOut = -300005,
+
+  // DataStore
+  kEmptyKey = -301001,
+  kZeroTTL = -301002,
+  kFailedToModifyKeyValue = -301003,
+  kMarkedForDeletion = -301004,
+
+  // RoutingTable
+  kOwnIdNotIncludable = -302001,
+  kFailedToUpdateLastSeenTime = -302002,
+  kNotInBrotherBucket = -302003,
+  kOutwithClosest = -302004,
+  kFailedToInsertNewContact = -302005,
+  kFailedToFindContact = -302006,
+  kFailedToSetPublicKey = -302007,
+  kFailedToUpdateRankInfo = -302008,
+  kFailedToSetPreferredEndpoint = -302009,
+  kFailedToIncrementFailedRpcCount = -302010,
+
+  // Node
+  kNoOnlineBootstrapContacts = -303001,
+  kInvalidBootstrapContacts = -303002,
+  kNotListening = -303003,
+  kNotJoined = -303004,
+  kFindNodesFailed = -303005,
+  kFoundTooFewNodes = -303006,
+  kStoreTooFewNodes = -303007,
+  kDeleteTooFewNodes = -303008,
+  kUpdateTooFewNodes = -303009,
+  kFailedToGetContact = -303010,
+  kFailedToFindValue = 303011,  // value intentionally positive
+  kFoundAlternativeStoreHolder = 303012,  // value intentionally positive
+  kIterativeLookupFailed = -303013,
+  kContactFailedToRespond = -303014,
+  kValueAlreadyExists = -303015,
+  kFailedValidation = -303016
+};
+
+}  // namespace dht
+}  // namespace maidsafe
+
+#endif  // MAIDSAFE_DHT_RETURN_CODES_H_

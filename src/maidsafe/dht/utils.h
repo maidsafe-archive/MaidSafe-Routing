@@ -1,4 +1,4 @@
-/* Copyright (c) 2009 maidsafe.net limited
+/* Copyright (c) 2011 maidsafe.net limited
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification,
@@ -25,29 +25,38 @@ TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#ifndef MAIDSAFE_DHT_MAIDSAFE_DHT_H_
-#define MAIDSAFE_DHT_MAIDSAFE_DHT_H_
+#ifndef MAIDSAFE_DHT_UTILS_H_
+#define MAIDSAFE_DHT_UTILS_H_
 
-#include "maidsafe/transport/transport.h"
-#include "maidsafe/transport/message_handler.h"
-#include "maidsafe/transport/tcp_transport.h"
-#include "maidsafe/transport/udp_transport.h"
+#include <string>
+#include <vector>
 
-#include "maidsafe/dht/kademlia/node-api.h"
-#include "maidsafe/dht/kademlia/node_container.h"
-#include "maidsafe/dht/kademlia/config.h"
-#include "maidsafe/dht/kademlia/contact.h"
-#include "maidsafe/dht/kademlia/node_id.h"
-#include "maidsafe/dht/kademlia/message_handler.h"
-#include "maidsafe/dht/kademlia/rpcs_objects.h"
-#include "maidsafe/dht/kademlia/return_codes.h"
+namespace maidsafe {
 
-#include "maidsafe/dht/version.h"
+namespace transport { struct Endpoint; }
 
-#if MAIDSAFE_DHT_VERSION != 3104
-#  error This API is not compatible with the installed library.\
-    Please update the maidsafe-dht library.
-#endif
+namespace dht {
 
+class Contact;
+class NodeId;
 
-#endif  // MAIDSAFE_DHT_MAIDSAFE_DHT_H_
+namespace protobuf { class Contact; }
+
+bool IsValid(const transport::Endpoint &endpoint);
+
+bool HasId(const Contact &contact, const NodeId &node_id);
+
+Contact FromProtobuf(const protobuf::Contact &protobuf_contact);
+
+protobuf::Contact ToProtobuf(const Contact &contact);
+
+bool IsListeningOnTCP(const Contact &contact);
+
+// sort the contacts according the distance to the target key
+void SortContacts(const NodeId &target_key, std::vector<Contact> *contacts);
+
+}  // namespace dht
+
+}  // namespace maidsafe
+
+#endif  // MAIDSAFE_DHT_UTILS_H_
