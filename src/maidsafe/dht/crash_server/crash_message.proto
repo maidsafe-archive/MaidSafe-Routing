@@ -1,8 +1,0 @@
-package maidsafe.dht.protobuf;
-
-message CrashReport {
-  required bytes content = 1;
-  required bytes project_name = 2;
-  required bytes project_version = 3;
-}
-

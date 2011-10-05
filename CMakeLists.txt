@@ -79,10 +79,8 @@ ADD_MAIDSAFE_LIBRARY(MaidSafe-Transport)
 ###################################################################################################
 SET(PROTO_SOURCE_DIR ${PROJECT_SOURCE_DIR}/src)
 FILE(GLOB PROTO_FILES_KADEMLIA RELATIVE ${PROTO_SOURCE_DIR} "${PROTO_SOURCE_DIR}/maidsafe/dht/*.proto")
-FILE(GLOB PROTO_FILES_CRASH_REPORTER RELATIVE ${PROTO_SOURCE_DIR} "${PROTO_SOURCE_DIR}/maidsafe/dht/crash_reporter/*.proto")
-FILE(GLOB PROTO_FILES_CRASH_SERVER RELATIVE ${PROTO_SOURCE_DIR} "${PROTO_SOURCE_DIR}/maidsafe/dht/crash_server/*.proto")
 FILE(GLOB PROTO_FILES_TESTS RELATIVE ${PROTO_SOURCE_DIR} "${PROTO_SOURCE_DIR}/maidsafe/dht/tests/*.proto")
-SET(PROTO_FILES "${PROTO_FILES_KADEMLIA};${PROTO_FILES_CRASH_REPORTER};${PROTO_FILES_CRASH_SERVER};${PROTO_FILES_TESTS}")
+SET(PROTO_FILES "${PROTO_FILES_KADEMLIA};${PROTO_FILES_TESTS}")
 INCLUDE(maidsafe_standard_setup)
 HANDLE_VERSIONS(${PROJECT_SOURCE_DIR}/src/maidsafe/dht/version.h)
 
@@ -106,24 +104,6 @@ LIST(REMOVE_ITEM STYLE_KADEMLIA "${PROJECT_SOURCE_DIR}/src/maidsafe/dht/rpcs.pb.
 LIST(REMOVE_ITEM STYLE_KADEMLIA "${PROJECT_SOURCE_DIR}/src/maidsafe/dht/rpcs.pb.h")
 SOURCE_GROUP("kademlia Source Files" FILES ${SOURCE_FILES_KADEMLIA_DIR})
 SOURCE_GROUP("kademlia Header Files" FILES ${HEADER_FILES_KADEMLIA_DIR})
-
-FILE(GLOB SOURCE_FILES_CRASH_REPORTER_DIR "${PROJECT_SOURCE_DIR}/src/maidsafe/dht/crash_reporter/*.cc")
-FILE(GLOB HEADER_FILES_CRASH_REPORTER_DIR "${PROJECT_SOURCE_DIR}/src/maidsafe/dht/crash_reporter/*.h")
-SET(ALL_FILES_CRASH_REPORTER_DIR ${SOURCE_FILES_CRASH_REPORTER_DIR} ${HEADER_FILES_CRASH_REPORTER_DIR})
-SET(STYLE_CRASH_REPORTER ${ALL_FILES_CRASH_REPORTER_DIR})
-SOURCE_GROUP("crash_reporter Source Files" FILES ${SOURCE_FILES_CRASH_REPORTER_DIR})
-SOURCE_GROUP("crash_reporter Header Files" FILES ${HEADER_FILES_CRASH_REPORTER_DIR})
-LIST(REMOVE_ITEM STYLE_CRASH_REPORTER "${PROJECT_SOURCE_DIR}/src/maidsafe/dht/crash_reporter/crash.pb.cc")
-LIST(REMOVE_ITEM STYLE_CRASH_REPORTER "${PROJECT_SOURCE_DIR}/src/maidsafe/dht/crash_reporter/crash.pb.h")
-
-FILE(GLOB SOURCE_FILES_CRASH_SERVER_DIR "${PROJECT_SOURCE_DIR}/src/maidsafe/dht/crash_server/*.cc")
-FILE(GLOB HEADER_FILES_CRASH_SERVER_DIR "${PROJECT_SOURCE_DIR}/src/maidsafe/dht/crash_server/*.h")
-SET(ALL_FILES_CRASH_SERVER_DIR ${SOURCE_FILES_CRASH_SERVER_DIR} ${HEADER_FILES_CRASH_SERVER_DIR})
-SET(STYLE_CRASH_SERVER ${ALL_FILES_CRASH_SERVER_DIR})
-SOURCE_GROUP("crash_server Source Files" FILES ${SOURCE_FILES_CRASH_SERVER_DIR})
-SOURCE_GROUP("crash_server Header Files" FILES ${HEADER_FILES_CRASH_SERVER_DIR})
-LIST(REMOVE_ITEM STYLE_CRASH_SERVER "${PROJECT_SOURCE_DIR}/src/maidsafe/dht/crash_server/crash_message.pb.cc")
-LIST(REMOVE_ITEM STYLE_CRASH_SERVER "${PROJECT_SOURCE_DIR}/src/maidsafe/dht/crash_server/crash_message.pb.h")
 
 ####    BENCHMARK, DEMO & TESTS    ####
 FILE(GLOB SOURCE_FILES_BENCHMARK_DIR "${PROJECT_SOURCE_DIR}/src/maidsafe/dht/benchmark/*.cc")
@@ -183,10 +163,6 @@ ADD_EXECUTABLE(benchmark_static ${ALL_FILES_BENCHMARK_DIR})
 IF(Mysqlpp_FOUND)
   ADD_EXECUTABLE(distributed_net_clients EXCLUDE_FROM_ALL ${ALL_FILES_NETWORK_TEST_DIR})
 ENDIF()
-ADD_EXECUTABLE(CrashReporter ${ALL_FILES_CRASH_REPORTER_DIR})
-IF(UNIX)
-	ADD_EXECUTABLE(CrashServer ${ALL_FILES_CRASH_SERVER_DIR})
-ENDIF()
 # Force renaming of exes to match standard CMake library renaming policy
 RENAME_EXECUTABLE(TESTkademlia)
 RENAME_EXECUTABLE(TESTnode_functional)
@@ -197,10 +173,6 @@ RENAME_EXECUTABLE(benchmark_static)
 IF(Mysqlpp_FOUND)
   RENAME_EXECUTABLE(distributed_net_clients)
 ENDIF()
-RENAME_EXECUTABLE(CrashReporter)
-IF(UNIX)
-  RENAME_EXECUTABLE(CrashServer)
-ENDIF()
 
 SET(TEST_TARGETS TESTkademlia TESTnode_functional TESTnode_impl_functional TESTnode_churn)
 SET_TARGET_PROPERTIES(${TEST_TARGETS} PROPERTIES FOLDER "Tests")
@@ -208,10 +180,6 @@ SET_TARGET_PROPERTIES(KademliaDemo PROPERTIES FOLDER "Demo")
 SET_TARGET_PROPERTIES(benchmark_static PROPERTIES FOLDER "Benchmark")
 IF(Mysqlpp_FOUND)
   SET_TARGET_PROPERTIES(distributed_net_clients PROPERTIES FOLDER "Tests")
-ENDIF()
-SET_TARGET_PROPERTIES(CrashReporter PROPERTIES FOLDER "Crash Reporter")
-IF(UNIX)
-  SET_TARGET_PROPERTIES(CrashServer PROPERTIES FOLDER "Crash Server")
 ENDIF()
 SET_TARGET_PROPERTIES(TESTnode_functional PROPERTIES COMPILE_DEFINITIONS "FUNCTIONAL_NODE_TEST")
 SET_TARGET_PROPERTIES(TESTnode_impl_functional PROPERTIES COMPILE_DEFINITIONS "FUNCTIONAL_NODE_IMPL_TEST")
@@ -246,27 +214,6 @@ TARGET_LINK_LIBRARIES(benchmark_static maidsafe_dht_static boost_program_options
 IF(Mysqlpp_FOUND)
   TARGET_LINK_LIBRARIES(distributed_net_clients maidsafe_dht_static ${Mysqlpp_LIBRARY})
 ENDIF()
-TARGET_LINK_LIBRARIES(CrashReporter
-                        maidsafe_transport_static
-                        maidsafe_common_static
-                        protobuf_static
-                        glog_static
-                        breakpad_static
-                        boost_filesystem
-                        boost_system
-                        boost_thread)
-IF(UNIX)
-  TARGET_LINK_LIBRARIES(CrashServer
-                          maidsafe_transport_static
-                          maidsafe_common_static
-                          protobuf_static
-                          glog_static
-                          breakpad_static
-                          boost_filesystem
-                          boost_system
-                          boost_thread)
-ENDIF()
-
 
 ###################################################################################################
 # Builds                                                                                          #
@@ -285,12 +232,11 @@ IF(MSVC)
   # Warnings switched off for protocol buffer generated files and libupnp files
   SET_SOURCE_FILES_PROPERTIES(${PROJECT_SOURCE_DIR}/src/maidsafe/dht/kademlia.pb.cc
                               ${PROJECT_SOURCE_DIR}/src/maidsafe/dht/rpcs.pb.cc
-                              ${PROJECT_SOURCE_DIR}/src/maidsafe/dht/crash_reporter/crash.pb.cc
                                 PROPERTIES COMPILE_FLAGS "/W0")
 
   SET_TARGET_PROPERTIES(maidsafe_dht_static TESTkademlia PROPERTIES COMPILE_FLAGS "/bigobj")
 
-  SET_TARGET_PROPERTIES(TESTkademlia TESTnode_functional TESTnode_impl_functional TESTnode_churn KademliaDemo benchmark_static CrashReporter PROPERTIES
+  SET_TARGET_PROPERTIES(TESTkademlia TESTnode_functional TESTnode_impl_functional TESTnode_churn KademliaDemo benchmark_static PROPERTIES
                           LINK_FLAGS_RELEASE "/OPT:REF /OPT:ICF /LTCG /INCREMENTAL:NO ${LINKER_LIBS_DIRS_RELEASE}"
                           LINK_FLAGS_DEBUG "${LINKER_LIBS_DIRS_DEBUG}"
                           LINK_FLAGS_RELWITHDEBINFO "${LINKER_LIBS_DIRS_DEBUG}"
@@ -307,9 +253,7 @@ IF(MSVC)
 ELSEIF(UNIX)
   SET_TARGET_PROPERTIES(KademliaDemo PROPERTIES COMPILE_FLAGS "-g")
   FILE(GLOB PROTO_SOURCE_FILES "${PROJECT_SOURCE_DIR}/src/maidsafe/dht/*.pb.cc"
-                               "${PROJECT_SOURCE_DIR}/src/maidsafe/dht/tests/*.pb.cc"
-                               "${PROJECT_SOURCE_DIR}/src/maidsafe/dht/crash_server/*.pb.cc"
-                               "${PROJECT_SOURCE_DIR}/src/maidsafe/dht/crash_reporter/*.pb.cc")
+                               "${PROJECT_SOURCE_DIR}/src/maidsafe/dht/tests/*.pb.cc")
   SET_SOURCE_FILES_PROPERTIES(${PROJECT_SOURCE_DIR}/src/maidsafe/dht/service.cc
                               ${PROJECT_SOURCE_DIR}/src/maidsafe/dht/node.cc
                               ${PROJECT_SOURCE_DIR}/src/maidsafe/dht/node_impl.cc
