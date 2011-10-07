@@ -1153,7 +1153,7 @@ void NodeImpl::HandleStoreToSelf(StoreArgsPtr store_args) {
 
 void NodeImpl::HandleDeleteToSelf(DeleteArgsPtr delete_args) {
   ++delete_args->second_phase_rpcs_in_flight;
-  
+
   if (!data_store_->HasKey(delete_args->kTarget.String())) {
     HandleSecondPhaseCallback<DeleteArgsPtr>(kSuccess, delete_args);
     return;
