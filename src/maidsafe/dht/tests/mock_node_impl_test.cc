@@ -96,6 +96,23 @@ class SecurifierValidateTrue: public Securifier {
   }
 };
 
+ContactInfo::RpcState GetRandomRpcReplyState() {
+  int selected_state_flag = maidsafe::RandomUint32() % 4;
+  switch (selected_state_flag) {
+  case 0:
+    return ContactInfo::kNotSent;
+  case 1:
+    return ContactInfo::kSent;
+  case 2:
+    return ContactInfo::kDelayed;
+  case 3:
+    return ContactInfo::kRepliedOK;
+  default:
+    DLOG(WARNING) << "GetRandomRpcState -> Invalid Flag Value";
+  }
+  return ContactInfo::kNotSent;
+}
+
 void FindNodeCallback(RankInfoPtr/* rank_info */,
                       int /* result */,
                       const std::vector<Contact> &cs,
@@ -2106,6 +2123,107 @@ TEST_F(MockNodeImplTest, BEH_Getters) {
     // k()
     EXPECT_EQ(g_kKademliaK, node_->k());
   }
+}
+
+TEST_F(MockNodeImplTest, BEH_AssessLookupState) {
+  uint16_t random_num_nodes(maidsafe::RandomUint32() % 15 + node_->k_);
+  int expected_shortlist_ok_count(0);
+  bool expected_lookupargs_lookupphase_complete(true);
+  bool expected_lookupargs_rpcinflight(true);
+  std::vector<Contact> test_contacts;
+  for (int i = 0; i < random_num_nodes; ++i)
+    test_contacts.push_back(
+        ComposeContact(NodeId(GenerateRandomId(node_id_, 490)), 5600));
+  OrderedContacts close_contacts(CreateOrderedContacts(test_contacts.begin(),
+                                                       test_contacts.end(),
+                                                       node_id_));
+  NodeId target;
+  uint16_t num_contacts_requested(random_num_nodes);
+  SecurifierPtr securifier(new Securifier("", "", ""));
+  LookupArgsPtr lookup_args(new LookupArgs(LookupArgs::kFindNodes,
+                                           target,
+                                           close_contacts,
+                                           num_contacts_requested,
+                                           securifier));
+  LookupContacts::iterator contacts_iterator;
+  ContactInfo::RpcState random_rpcstate = ContactInfo::kNotSent;
+  auto shortlist_upper_bound(lookup_args->lookup_contacts.end());
+
+  // Set Positive RPC Reply state of Contacts
+  expected_shortlist_ok_count = 0;
+  for (contacts_iterator = lookup_args->lookup_contacts.begin();
+       contacts_iterator != lookup_args->lookup_contacts.end();
+       ++contacts_iterator) {
+    random_rpcstate = ContactInfo::kRepliedOK;
+    (*contacts_iterator).second.rpc_state = random_rpcstate;
+    ++expected_shortlist_ok_count;
+  }
+
+  // Set Positive Current RPC in Flight to be above or below Accepted Limits
+  lookup_args->rpcs_in_flight_for_current_iteration = 0;
+
+  bool iteration_complete(false);
+  int shortlist_ok_count(0);
+
+  node_->AssessLookupState(lookup_args,
+                           shortlist_upper_bound,
+                           &iteration_complete,
+                           &shortlist_ok_count);
+  ASSERT_EQ(shortlist_ok_count, expected_shortlist_ok_count);
+  ASSERT_TRUE(iteration_complete);
+
+  // Set Negative RPC Reply state of Contacts
+  expected_shortlist_ok_count = 0;
+  for (contacts_iterator = lookup_args->lookup_contacts.begin();
+       contacts_iterator != lookup_args->lookup_contacts.end();
+       ++contacts_iterator) {
+    random_rpcstate = ContactInfo::kNotSent;
+    (*contacts_iterator).second.rpc_state = random_rpcstate;
+  }
+
+  // Set Negative Current RPC in Flight to be above or below Accepted Limits
+  lookup_args->rpcs_in_flight_for_current_iteration =
+      node_->kAlpha_ - node_->kBeta_ + 1;
+
+  iteration_complete = false;
+  shortlist_ok_count = 0;
+  node_->AssessLookupState(lookup_args,
+                           shortlist_upper_bound,
+                           &iteration_complete,
+                           &shortlist_ok_count);
+  ASSERT_FALSE(lookup_args->lookup_phase_complete);
+  ASSERT_FALSE(iteration_complete);
+
+  // Set Random RPC Reply state of Contacts
+  for (contacts_iterator = lookup_args->lookup_contacts.begin();
+       contacts_iterator != lookup_args->lookup_contacts.end();
+       ++contacts_iterator) {
+    random_rpcstate = GetRandomRpcReplyState();
+    (*contacts_iterator).second.rpc_state = random_rpcstate;
+    if (random_rpcstate == ContactInfo::kRepliedOK)
+      ++expected_shortlist_ok_count;
+    else
+      expected_lookupargs_lookupphase_complete = false;
+  }
+
+  // Set Random Current RPC in Flight to be above or below Accepted Limits
+  if (maidsafe::RandomUint32() % 2 == 0) {
+    lookup_args->rpcs_in_flight_for_current_iteration =
+        node_->kAlpha_ - node_->kBeta_ + 1;
+    expected_lookupargs_rpcinflight = false;
+  }
+
+  iteration_complete = false;
+  shortlist_ok_count = 0;
+  node_->AssessLookupState(lookup_args,
+                           shortlist_upper_bound,
+                           &iteration_complete,
+                           &shortlist_ok_count);
+  if (expected_lookupargs_lookupphase_complete)
+    ASSERT_EQ(shortlist_ok_count, expected_shortlist_ok_count);
+  else
+    ASSERT_FALSE(lookup_args->lookup_phase_complete);
+  ASSERT_EQ(expected_lookupargs_rpcinflight, iteration_complete);
 }
 
 }  // namespace test
