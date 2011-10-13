@@ -549,6 +549,13 @@ bool Service::ValidateAndDelete(const KeyValueSignature &key_value_signature,
     return false;
   }
 
+  if (is_refresh && !securifier_->Validate(request_signature.first,
+                            request_signature.second, "", public_key, "", "")) {
+    DLOG(WARNING) << DebugId(node_contact_) << ": Failed to validate request "
+                  << "against request signature";
+    return false;
+  }
+
   if (datastore_->DeleteValue(key_value_signature, request_signature,
                               is_refresh)) {
     return true;

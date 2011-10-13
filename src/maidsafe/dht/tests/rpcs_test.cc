@@ -1347,7 +1347,7 @@ TYPED_TEST_P(RpcsTest, FUNC_DeleteRefreshNonExistingKey) {
 
 // This test will fail (incorrectly allow values to be refreshed) until sender
 // signature checking is in place for DeleteRefresh
-TYPED_TEST_P(RpcsTest, DISABLED_FUNC_DeleteRefreshMultipleRequests) {
+TYPED_TEST_P(RpcsTest, FUNC_DeleteRefreshMultipleRequests) {
   bool done(false);
   std::vector<KeyValueSignature> kvs_vector;
   std::vector<std::pair<bool, int>> status_response;
@@ -1436,16 +1436,11 @@ REGISTER_TYPED_TEST_CASE_P(RpcsTest,
                            FUNC_DeleteRefreshStoredValue,
                            FUNC_DeleteRefreshMalicious,
                            FUNC_DeleteRefreshNonExistingKey,
-                           DISABLED_FUNC_DeleteRefreshMultipleRequests);
+                           FUNC_DeleteRefreshMultipleRequests);
 
 typedef ::testing::Types<transport::TcpTransport,
                          transport::UdpTransport> TransportTypes;
 INSTANTIATE_TYPED_TEST_CASE_P(TheRpcTests, RpcsTest, TransportTypes);
-
-
-
-
-
 
 
 template <typename T>
