@@ -869,7 +869,7 @@ TYPED_TEST_P(RpcsTest, FUNC_StoreRefresh) {
 
 // This test will fail (incorrectly allow values to be refreshed) until sender
 // signature checking is in place for StoreRefresh
-TYPED_TEST_P(RpcsTest, DISABLED_FUNC_StoreRefreshMultipleRequests) {
+TYPED_TEST_P(RpcsTest, FUNC_StoreRefreshMultipleRequests) {
   std::vector<KeyValueSignature> kvs_vector;
   std::vector<std::pair<bool, int>> status_response;
   std::vector<bptime::ptime> refresh_time_old_vector;
@@ -1170,11 +1170,11 @@ TYPED_TEST_P(RpcsTest, FUNC_DeleteRefresh) {
   // Adding key value from different contact in the receiver's datastore
   NodeId sender_id = this->GenerateUniqueRandomId(this->node_id_, 502);
   crypto::RsaKeyPair crypto_key_data;
-  crypto_key_data.GenerateKeys(1024);
+  crypto_key_data.GenerateKeys(4096);
   Contact sender = this->ComposeContactWithKey(sender_id, 5001,
                                                crypto_key_data);
   Key key = sender.node_id();
-  KeyValueSignature kvs = MakeKVS(crypto_key_data, 1024, key.String(), "");
+  KeyValueSignature kvs = MakeKVS(crypto_key_data, 4096, key.String(), "");
   RequestAndSignature request_signature("", "");
   this->AddToReceiverDataStore(kvs, crypto_key_data, sender, request_signature);
   EXPECT_TRUE(IsKeyValueInDataStore(kvs, this->data_store_));
@@ -1283,8 +1283,8 @@ TYPED_TEST_P(RpcsTest, FUNC_DeleteRefreshMalicious) {
   // Adding key value from different contact in the receiver's datastore
   NodeId sender_id = this->GenerateUniqueRandomId(this->node_id_, 502);
   crypto::RsaKeyPair crypto_key_data;
-  crypto_key_data.GenerateKeys(1024);
-  KeyValueSignature kvs = MakeKVS(crypto_key_data, 1024, "", "");
+  crypto_key_data.GenerateKeys(4096);
+  KeyValueSignature kvs = MakeKVS(crypto_key_data, 4096, "", "");
   Contact sender = this->ComposeContactWithKey(sender_id, 5001,
                                                crypto_key_data);
   RequestAndSignature request_signature("", "");
@@ -1320,8 +1320,8 @@ TYPED_TEST_P(RpcsTest, FUNC_DeleteRefreshNonExistingKey) {
   // Creating Delete request
   NodeId sender_id = this->GenerateUniqueRandomId(this->node_id_, 502);
   crypto::RsaKeyPair crypto_key_data;
-  crypto_key_data.GenerateKeys(1024);
-  KeyValueSignature kvs = MakeKVS(crypto_key_data, 1024, "", "");
+  crypto_key_data.GenerateKeys(4096);
+  KeyValueSignature kvs = MakeKVS(crypto_key_data, 4096, "", "");
   Contact sender = this->ComposeContactWithKey(sender_id, 5001,
                                                crypto_key_data);
   protobuf::DeleteRequest delete_request = MakeDeleteRequest(sender, kvs);
@@ -1357,8 +1357,8 @@ TYPED_TEST_P(RpcsTest, DISABLED_FUNC_DeleteRefreshMultipleRequests) {
     // Adding key value from different contact in the receiver's datastore
     NodeId sender_id = this->GenerateUniqueRandomId(this->node_id_, 502);
     crypto::RsaKeyPair crypto_key_data;
-    crypto_key_data.GenerateKeys(1024);
-    kvs_vector.push_back(MakeKVS(crypto_key_data, 1024, "", ""));
+    crypto_key_data.GenerateKeys(4096);
+    kvs_vector.push_back(MakeKVS(crypto_key_data, 4096, "", ""));
     Contact sender = this->ComposeContactWithKey(sender_id, 5001,
                                                  crypto_key_data);
     RequestAndSignature request_signature("", "");
@@ -1426,7 +1426,7 @@ REGISTER_TYPED_TEST_CASE_P(RpcsTest,
                            FUNC_StoreMalicious,
                            FUNC_StoreMultipleRequest,
                            FUNC_StoreRefresh,
-                           DISABLED_FUNC_StoreRefreshMultipleRequests,
+                           FUNC_StoreRefreshMultipleRequests,
                            FUNC_StoreRefreshMalicious,
                            FUNC_Delete,
                            FUNC_DeleteMalicious,
