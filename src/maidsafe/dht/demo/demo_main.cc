@@ -155,8 +155,6 @@ int main(int argc, char **argv) {
                                         true);
 #endif
   try {
-    volatile int* a = static_cast<int*>(NULL);  // Initiating Crash
-    *a = 1;                                     // Crash Line
     std::string logfile, bootstrap_file("bootstrap_contacts.xml");
     uint16_t listening_port(8000), k(4), alpha(3), beta(2);
     std::string ip("127.0.0.1");
