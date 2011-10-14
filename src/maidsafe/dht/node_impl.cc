@@ -874,6 +874,9 @@ LookupContacts::iterator NodeImpl::InsertCloseContacts(
         break;
     }
   }
+  auto itr = lookup_args->lookup_contacts.find(contact_);
+  if (itr != lookup_args->lookup_contacts.end() && !client_only_node_)
+    (*itr).second.rpc_state = ContactInfo::kRepliedOK;
   return GetShortlistUpperBound(lookup_args);
 }
 
