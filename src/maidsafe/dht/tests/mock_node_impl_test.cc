@@ -2288,13 +2288,12 @@ TEST_F(MockNodeImplTest, BEH_RemoveDownlistedContacts) {
   std::vector<bool> check_provider_flag;
   uint16_t expected_remaining_contacts = random_num_contacts;
   for (size_t i = 0; i < random_num_contacts; ++i) {
-    bool bDownlist(RandomUint32() % 2);
+    bool bDownlist(RandomUint32() % 2 == 0);
     Contact rand_contact;
     if (!bDownlist) {
       rand_contact = ComposeContact(
           NodeId(GenerateRandomId(node_id_, 490)), 5600);
-    }
-    else {
+    } else {
       rand_contact = test_contacts[i];
     }
     lookup_args->downlist.insert(

@@ -91,8 +91,8 @@ struct LookupArgs {
             const Contact&, const NodeId&)>(&CloserToTarget),
             arg::_1, arg::_2, target)),
         downlist(std::bind(static_cast<bool(*)(const Contact&,  // NOLINT (Fraser)
-            const Contact&, const NodeId&)>(&CloserToTarget),
-            arg::_1, arg::_2, target)),
+                 const Contact&, const NodeId&)>(&CloserToTarget),
+                 arg::_1, arg::_2, target)),
         cache_candidate(),
         mutex(),
         total_lookup_rpcs_in_flight(0),

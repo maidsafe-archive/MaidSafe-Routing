@@ -874,6 +874,10 @@ LookupContacts::iterator NodeImpl::InsertCloseContacts(
         break;
     }
   }
+  auto itr = lookup_args->lookup_contacts.find(contact_);
+  if (itr != lookup_args->lookup_contacts.end() && !client_only_node_) {
+    (*itr).second.rpc_state = ContactInfo::kRepliedOK;
+  }
   return GetShortlistUpperBound(lookup_args);
 }
 
@@ -1152,12 +1156,12 @@ void NodeImpl::HandleStoreToSelf(StoreArgsPtr store_args) {
 }
 
 void NodeImpl::HandleDeleteToSelf(DeleteArgsPtr delete_args) {
+  ++delete_args->second_phase_rpcs_in_flight;
+
   if (!data_store_->HasKey(delete_args->kTarget.String())) {
     HandleSecondPhaseCallback<DeleteArgsPtr>(kSuccess, delete_args);
     return;
   }
-
-  ++delete_args->second_phase_rpcs_in_flight;
 
   // Check this node signed other values under same key in datastore
   KeyValueSignature key_value_signature(delete_args->kTarget.String(),

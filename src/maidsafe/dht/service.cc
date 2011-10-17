@@ -371,6 +371,12 @@ bool Service::ValidateAndStore(const KeyValueSignature &key_value_signature,
                   << std::boolalpha << is_refresh << ")";
     return false;
   }
+  if (is_refresh && !securifier_->Validate(request_signature.first,
+                            request_signature.second, "", public_key, "", "")) {
+    DLOG(WARNING) << DebugId(node_contact_) << ": Failed to validate request "
+                  << "against request signature";
+    return false;
+  }
   if (datastore_->StoreValue(key_value_signature,
       boost::posix_time::seconds(request.ttl()), request_signature,
       is_refresh) == kSuccess) {
@@ -540,6 +546,13 @@ bool Service::ValidateAndDelete(const KeyValueSignature &key_value_signature,
     DLOG(WARNING) << DebugId(node_contact_) << ": Failed to validate Delete "
                   << "request for kademlia value (is_refresh = "
                   << std::boolalpha << is_refresh << ")";
+    return false;
+  }
+
+  if (is_refresh && !securifier_->Validate(request_signature.first,
+                            request_signature.second, "", public_key, "", "")) {
+    DLOG(WARNING) << DebugId(node_contact_) << ": Failed to validate request "
+                  << "against request signature";
     return false;
   }
 
