@@ -2209,6 +2209,9 @@ TEST_F(MockNodeImplTest, BEH_AssessLookupState) {
     lookup_args->rpcs_in_flight_for_current_iteration =
         node_->kAlpha_ - node_->kBeta_ + 1;
     expected_lookupargs_rpcinflight = false;
+  } else {
+    lookup_args->rpcs_in_flight_for_current_iteration =
+        node_->kAlpha_ - node_->kBeta_;
   }
 
   iteration_complete = false;
@@ -2226,14 +2229,13 @@ TEST_F(MockNodeImplTest, BEH_AssessLookupState) {
 
 TEST_F(MockNodeImplTest, BEH_RemoveDownlistedContacts) {
   uint16_t random_num_contacts(maidsafe::RandomUint32() % 15 + node_->k_);
-  std::vector<Contact> test_contacts;
-  for (int i = 0; i < random_num_contacts; ++i)
-    test_contacts.push_back(
-        ComposeContact(NodeId(GenerateRandomId(node_id_, 490)), 5600));
+  std::set<Contact> test_contacts;
+  while (test_contacts.size() < random_num_contacts)
+    test_contacts.insert(
+      ComposeContact(NodeId(GenerateRandomId(node_id_, 490)), 5600));
   OrderedContacts close_contacts(CreateOrderedContacts(test_contacts.begin(),
                                                        test_contacts.end(),
                                                        node_id_));
-//  uint16_t num_contacts_requested(random_num_contacts);
   SecurifierPtr securifier(new Securifier("", "", ""));
   LookupArgsPtr lookup_args(new LookupArgs(LookupArgs::kFindNodes,
                                            node_id_,
@@ -2244,9 +2246,17 @@ TEST_F(MockNodeImplTest, BEH_RemoveDownlistedContacts) {
   lookup_contact.insert(std::make_pair(ComposeContact(NodeId(
       GenerateRandomId(node_id_, 490)), 5600), ContactInfo()));
 
-  // Feed in Downlist != contacts for a full retain of contacts
-  lookup_args->downlist.insert(std::make_pair(ComposeContact(NodeId(
-    GenerateRandomId(node_id_, 490)), 5600), ContactInfo()));
+// Feed in Downlist != contacts for a full retain of contacts
+  Contact downlist_contact;
+  while (static_cast<uint16_t>(test_contacts.size()) <
+        random_num_contacts + 1) {
+    downlist_contact =
+        ComposeContact(NodeId(GenerateRandomId(node_id_, 490)), 5600);
+    test_contacts.insert(downlist_contact);
+  }
+  test_contacts.erase(downlist_contact);
+  lookup_args->downlist.insert(
+          std::make_pair((downlist_contact), ContactInfo()));
   node_->RemoveDownlistedContacts(lookup_args,
                                   lookup_contact.begin(),
                                   &close_contacts);
@@ -2259,7 +2269,7 @@ TEST_F(MockNodeImplTest, BEH_RemoveDownlistedContacts) {
                   (*lookup_contact.begin()).first));
   }
 
-  // Feed in Downlist = contacts for a full removal of contacts
+// Feed in Downlist = contacts for a full removal of contacts
   lookup_args->downlist.clear();
   close_contacts = CreateOrderedContacts(test_contacts.begin(),
                                          test_contacts.end(),
@@ -2280,41 +2290,44 @@ TEST_F(MockNodeImplTest, BEH_RemoveDownlistedContacts) {
                   (*lookup_contact.begin()).first));
   }
 
-  // Feed in Random Downlist for a Live Sim
+// Feed in Random Downlist for a Live Sim
+  std::map<Contact, bool> expected_downlist_flag;
   lookup_args->downlist.clear();
   close_contacts = CreateOrderedContacts(test_contacts.begin(),
                                          test_contacts.end(),
                                          node_id_);
-  std::vector<bool> check_provider_flag;
   uint16_t expected_remaining_contacts = random_num_contacts;
   for (size_t i = 0; i < random_num_contacts; ++i) {
-    bool bDownlist(RandomUint32() % 2 == 0);
     Contact rand_contact;
-    if (!bDownlist) {
-      rand_contact = ComposeContact(
-          NodeId(GenerateRandomId(node_id_, 490)), 5600);
+    if (RandomUint32() % 2 == 0) {
+      do {
+        rand_contact = ComposeContact(
+            NodeId(GenerateRandomId(node_id_, 490)), 5600);
+      }while(lookup_args->downlist.find(rand_contact) !=
+             lookup_args->downlist.end());
     } else {
-      rand_contact = test_contacts[i];
+      auto it(test_contacts.begin());
+      std::advance(it, i);
+      rand_contact = *it;
     }
-    lookup_args->downlist.insert(
-        std::make_pair(rand_contact, ContactInfo()));
-    if (bDownlist) {
+    if (test_contacts.find(rand_contact) == test_contacts.end()) {
+      expected_downlist_flag.insert(
+          std::pair<Contact, bool>(rand_contact, false));
+    } else {
+      expected_downlist_flag.insert(
+          std::pair<Contact, bool>(rand_contact, true));
       --expected_remaining_contacts;
-      check_provider_flag.push_back(true);
-    } else {
-      check_provider_flag.push_back(false);
     }
+    lookup_args->downlist.insert(std::make_pair(rand_contact, ContactInfo()));
   }
   node_->RemoveDownlistedContacts(lookup_args,
                                   lookup_contact.begin(),
                                   &close_contacts);
   ASSERT_EQ(expected_remaining_contacts, close_contacts.size());
-  std::vector<bool>::iterator flag_iterator = check_provider_flag.begin();
   for (auto downlist_itr(lookup_args->downlist.begin());
-       downlist_itr != lookup_args->downlist.end() &&
-       flag_iterator != check_provider_flag.end();
-       ++downlist_itr, ++flag_iterator) {
-    if (*flag_iterator) {
+       downlist_itr != lookup_args->downlist.end();
+       ++downlist_itr) {
+    if (expected_downlist_flag.find((*downlist_itr).first)->second) {
       ASSERT_NE((*downlist_itr).second.providers.end(),
                 std::find((*downlist_itr).second.providers.begin(),
                           (*downlist_itr).second.providers.end(),
