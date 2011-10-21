@@ -71,6 +71,7 @@ class MockNodeImplTest_BEH_FindNodes_Test;
 class MockNodeImplTest_BEH_FindValue_Test;
 class MockNodeImplTest_BEH_AssessLookupState_Test;
 class MockNodeImplTest_BEH_RemoveDownlistedContacts_Test;
+class MockNodeImplTest_BEH_InsertCloseContacts_Test;
 class NodeImplTest_FUNC_StoreRefreshInvalidSigner_Test;
 }  // namespace test
 
@@ -228,6 +229,7 @@ class NodeImpl {
   friend class test::MockNodeImplTest_BEH_FindValue_Test;
   friend class test::MockNodeImplTest_BEH_AssessLookupState_Test;
   friend class test::MockNodeImplTest_BEH_RemoveDownlistedContacts_Test;
+  friend class test::MockNodeImplTest_BEH_InsertCloseContacts_Test;
   friend class test::NodeImplTest_FUNC_StoreRefreshInvalidSigner_Test;
 
  private:

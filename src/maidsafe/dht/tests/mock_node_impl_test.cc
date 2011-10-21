@@ -2337,6 +2337,206 @@ TEST_F(MockNodeImplTest, BEH_RemoveDownlistedContacts) {
   }
 }
 
+TEST_F(MockNodeImplTest, BEH_InsertCloseContacts) {
+  uint16_t random_num_contacts(maidsafe::RandomUint32() % 15 + node_->k_);
+  std::set<Contact> test_contacts;
+  while (test_contacts.size() < random_num_contacts)
+    test_contacts.insert(
+      ComposeContact(NodeId(GenerateRandomId(node_id_, 490)), 5600));
+  OrderedContacts close_contacts(CreateOrderedContacts(test_contacts.begin(),
+                                                        test_contacts.end(),
+                                                        node_id_));
+
+// Empty Live Contacts to Test a Full Insert of New Contacts
+  auto expected_bound(close_contacts.rbegin());
+  SecurifierPtr securifier(new Securifier("", "", ""));
+  LookupArgsPtr lookup_args(new LookupArgs(LookupArgs::kFindNodes,
+                                            node_id_,
+                                            close_contacts,
+                                            random_num_contacts - 1,
+                                            securifier));
+  lookup_args->lookup_contacts.clear();
+  ASSERT_EQ(0, lookup_args->lookup_contacts.size());
+  auto result_itr(
+      node_->InsertCloseContacts(close_contacts,
+                                  lookup_args,
+                                  lookup_args->lookup_contacts.end()));
+  ASSERT_EQ(random_num_contacts, lookup_args->lookup_contacts.size());
+  ASSERT_EQ((*expected_bound), (*result_itr).first);
+
+// Empty New Contacts to Test a Full Retain of Live Contacts
+  OrderedContacts empty_contacts(CreateOrderedContacts(node_id_));
+  empty_contacts.clear();
+  ASSERT_EQ(0, empty_contacts.size());
+  lookup_args.reset(new LookupArgs(LookupArgs::kFindNodes,
+                                    node_id_,
+                                    close_contacts,
+                                    random_num_contacts - 2,
+                                    securifier));
+  ASSERT_EQ(random_num_contacts, lookup_args->lookup_contacts.size());
+  result_itr = lookup_args->lookup_contacts.end();
+  result_itr = node_->InsertCloseContacts(empty_contacts,
+                                          lookup_args,
+                                          lookup_args->lookup_contacts.begin());
+  ASSERT_EQ(random_num_contacts, lookup_args->lookup_contacts.size());
+  expected_bound++;
+  ASSERT_EQ((*expected_bound), (*result_itr).first);
+
+// Insert New Contacts at Beginning of Live Contacts
+  OrderedContacts live_contacts(CreateOrderedContacts(test_contacts.begin(),
+                                                      test_contacts.end(),
+                                                      node_id_));
+  auto live_contacts_itr(live_contacts.begin());
+  OrderedContacts new_contacts(CreateOrderedContacts(node_id_));
+  new_contacts.insert(*live_contacts_itr);
+  live_contacts.erase(*live_contacts_itr++);
+  new_contacts.insert(*live_contacts_itr);
+  live_contacts.erase(*live_contacts_itr);
+  ASSERT_EQ(random_num_contacts - 2, live_contacts.size());
+  ASSERT_EQ(2, new_contacts.size());
+  lookup_args.reset(new LookupArgs(LookupArgs::kFindNodes,
+                                    node_id_,
+                                    live_contacts,
+                                    random_num_contacts - 1,
+                                    securifier));
+  result_itr = lookup_args->lookup_contacts.end();
+  result_itr = node_->InsertCloseContacts(new_contacts,
+                                          lookup_args,
+                                          lookup_args->lookup_contacts.begin());
+  ASSERT_EQ(random_num_contacts, lookup_args->lookup_contacts.size());
+  expected_bound--;
+  ASSERT_EQ((*expected_bound), (*result_itr).first);
+
+// Insert New Contacts at End of Live Contacts
+  live_contacts.clear();
+  live_contacts = CreateOrderedContacts(test_contacts.begin(),
+                                        test_contacts.end(),
+                                        node_id_);
+  auto live_contacts_itr2(live_contacts.rbegin());
+  new_contacts.clear();
+  new_contacts = CreateOrderedContacts(node_id_);
+  new_contacts.insert(*live_contacts_itr2);
+  live_contacts.erase(*live_contacts_itr2);
+  live_contacts_itr2++;
+  new_contacts.insert(*live_contacts_itr2);
+  live_contacts.erase(*live_contacts_itr2);
+  ASSERT_EQ(random_num_contacts - 2, live_contacts.size());
+  ASSERT_EQ(2, new_contacts.size());
+  lookup_args.reset(new LookupArgs(LookupArgs::kFindNodes,
+                                    node_id_,
+                                    live_contacts,
+                                    random_num_contacts - 1,
+                                    securifier));
+  result_itr = lookup_args->lookup_contacts.end();
+  result_itr = node_->InsertCloseContacts(new_contacts,
+                                          lookup_args,
+                                          lookup_args->lookup_contacts.begin());
+  ASSERT_EQ(random_num_contacts, lookup_args->lookup_contacts.size());
+  ASSERT_EQ((*expected_bound), (*result_itr).first);
+
+// Insert New Contacts At Mixed Positions of Live Contacts
+  live_contacts.clear();
+  live_contacts = CreateOrderedContacts(node_id_);
+  new_contacts.clear();
+  new_contacts = CreateOrderedContacts(node_id_);
+  auto it(close_contacts.begin());
+  size_t new_contacts_size(0), live_contacts_size(0);
+  for (size_t i = 0;
+       i < random_num_contacts, it != close_contacts.end();
+       ++it, ++i)
+    if (i % 2 == 0) {
+      new_contacts.insert(*it);
+      ++new_contacts_size;
+    } else {
+      live_contacts.insert(*it);
+      ++live_contacts_size;
+    }
+  ASSERT_EQ(new_contacts_size, new_contacts.size());
+  ASSERT_EQ(live_contacts_size, live_contacts.size());
+  lookup_args.reset(new LookupArgs(LookupArgs::kFindNodes,
+                                    node_id_,
+                                    live_contacts,
+                                    random_num_contacts - 2,
+                                    securifier));
+  result_itr = lookup_args->lookup_contacts.end();
+  result_itr = node_->InsertCloseContacts(new_contacts,
+                                          lookup_args,
+                                          lookup_args->lookup_contacts.begin());
+  ASSERT_EQ(random_num_contacts, lookup_args->lookup_contacts.size());
+  ++expected_bound;
+  ASSERT_EQ((*expected_bound), (*result_itr).first);
+
+// Insert Duplicate Contacts to Live Contacts
+  live_contacts.clear();
+  live_contacts = CreateOrderedContacts(close_contacts.begin(),
+                                        close_contacts.end(),
+                                        node_id_);
+  new_contacts.clear();
+  new_contacts = CreateOrderedContacts(close_contacts.begin(),
+                                        close_contacts.end(),
+                                        node_id_);
+  ASSERT_EQ(close_contacts.size(), new_contacts.size());
+  ASSERT_EQ(close_contacts.size(), live_contacts.size());
+  lookup_args.reset(new LookupArgs(LookupArgs::kFindNodes,
+                                    node_id_,
+                                    live_contacts,
+                                    random_num_contacts - 2,
+                                    securifier));
+  result_itr = lookup_args->lookup_contacts.end();
+  result_itr = node_->InsertCloseContacts(new_contacts,
+                                          lookup_args,
+                                          lookup_args->lookup_contacts.begin());
+  ASSERT_EQ(random_num_contacts, lookup_args->lookup_contacts.size());
+  ASSERT_EQ((*expected_bound), (*result_itr).first);
+  for (auto it(lookup_args->lookup_contacts.begin());
+       it != lookup_args->lookup_contacts.end();
+       ++it)
+    ASSERT_NE((*it).second.providers.end(),
+              std::find((*it).second.providers.begin(),
+                        (*it).second.providers.end(),
+                        lookup_args->lookup_contacts.begin()->first));
+
+// Insert Unique & Duplicate New Contacts to Live Contacts
+  live_contacts.clear();
+  live_contacts = CreateOrderedContacts(node_id_);
+  new_contacts.clear();
+  new_contacts = CreateOrderedContacts(node_id_);
+  auto it2(close_contacts.begin());
+  new_contacts_size = 0;
+  live_contacts_size = 0;
+  for (size_t i = 0;
+       i < random_num_contacts, it2 != close_contacts.end();
+       ++it2, ++i) {
+    new_contacts.insert(*it2);
+    ++new_contacts_size;
+    if (i % 2 != 0) {
+      live_contacts.insert(*it2);
+      ++live_contacts_size;
+    }
+  }
+  ASSERT_EQ(new_contacts_size, new_contacts.size());
+  ASSERT_EQ(live_contacts_size, live_contacts.size());
+  lookup_args.reset(new LookupArgs(LookupArgs::kFindNodes,
+                                    node_id_,
+                                    live_contacts,
+                                    random_num_contacts - 2,
+                                    securifier));
+  result_itr = lookup_args->lookup_contacts.end();
+  auto peer_itr(lookup_args->lookup_contacts.begin());
+  result_itr = node_->InsertCloseContacts(new_contacts,
+                                          lookup_args,
+                                          peer_itr);
+  ASSERT_EQ(random_num_contacts, lookup_args->lookup_contacts.size());
+  ASSERT_EQ((*expected_bound), (*result_itr).first);
+  for (auto it(lookup_args->lookup_contacts.begin());
+       it != lookup_args->lookup_contacts.end();
+       ++it)
+    ASSERT_NE((*it).second.providers.end(),
+              std::find((*it).second.providers.begin(),
+                        (*it).second.providers.end(),
+                        (*peer_itr).first));
+}
+
 }  // namespace test
 }  // namespace dht
 }  // namespace maidsafe
