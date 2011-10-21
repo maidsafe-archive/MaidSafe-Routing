@@ -210,7 +210,7 @@ TEST_P(NodeImplTest, FUNC_JoinLeave) {
   int count(0);
   while (env_->k_ > new_nodes_contacts.size() && count < 1000) {
     node_container->node()->GetAllContacts(&new_nodes_contacts);
-    DLOG(INFO) << "Waiting, cout = " << count;
+    DLOG(INFO) << "Waiting, count = " << count;
     Sleep(kTimeout_ / 1000);
   }
   NodeId bootstrap_id = bootstrap_contacts.begin()->node_id();
