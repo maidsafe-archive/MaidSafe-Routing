@@ -130,7 +130,7 @@ bool Service::CheckParameters(const std::string &method_name,
     return false;
   }
   if (message_signature && message_signature->empty()) {
-    DLOG(WARNING) << debug_msg << ": signature empty.";
+    DLOG(WARNING) << debug_msg << "signature empty.";
     return false;
   }
   return true;
@@ -144,6 +144,8 @@ void Service::Ping(const transport::Info &info,
   if (!CheckParameters("Ping", NULL, &request.ping()))
     return;
   response->set_echo(request.ping());
+  DLOG(INFO) << "\t" << DebugId(node_contact_) << " PING from "
+             << DebugId(FromProtobuf(request.sender()));
   AddContactToRoutingTable(FromProtobuf(request.sender()), info);
 }
 

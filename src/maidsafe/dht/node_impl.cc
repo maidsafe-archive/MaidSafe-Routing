@@ -31,6 +31,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "maidsafe/common/alternative_store.h"
 #include "maidsafe/common/securifier.h"
+#include "maidsafe/common/utils.h"
 #include "maidsafe/transport/tcp_transport.h"
 
 #include "maidsafe/dht/log.h"
@@ -122,11 +123,14 @@ void NodeImpl::Join(const NodeId &node_id,
   }
 
   if (!default_securifier_) {
+    DLOG(INFO) << "Creating securifier";
     crypto::RsaKeyPair key_pair;
     key_pair.GenerateKeys(4096);
-    default_securifier_ =
-        SecurifierPtr(new Securifier(node_id.String(), key_pair.public_key(),
-                                     key_pair.private_key()));
+    default_securifier_ = SecurifierPtr(new Securifier(node_id.String(),
+                                                       key_pair.public_key(),
+                                                       key_pair.private_key()));
+  } else {
+    DLOG(INFO) << EncodeToHex(default_securifier_->kSigningKeyId());
   }
 
   if (!rpcs_) {
@@ -187,6 +191,8 @@ void NodeImpl::Join(const NodeId &node_id,
       new FindValueArgs(node_id, k_, search_contacts, true, default_securifier_,
           std::bind(&NodeImpl::JoinFindValueCallback, this, arg::_1,
                     bootstrap_contacts, node_id, callback, true)));
+
+  DLOG(INFO) << "Before StartLookup";
   StartLookup(find_value_args);
 }
 
@@ -474,7 +480,8 @@ void NodeImpl::GetContact(const NodeId &node_id, GetContactFunctor callback) {
   // If we have the contact in our own routing table, ping it, otherwise start
   // a lookup for it.
   if ((*close_contacts.begin()).node_id() == node_id) {
-    rpcs_->Ping(SecurifierPtr(), *close_contacts.begin(),
+    rpcs_->Ping(default_securifier_,
+                *close_contacts.begin(),
                 std::bind(&NodeImpl::GetContactPingCallback, this, arg::_1,
                           arg::_2, *close_contacts.begin(), callback));
   } else {
@@ -505,7 +512,8 @@ void NodeImpl::Ping(const Contact &contact, PingFunctor callback) {
     return asio_service_.post(std::bind(&NodeImpl::NotJoined<PingFunctor>,
                                         this, callback));
   }
-  rpcs_->Ping(SecurifierPtr(), contact,
+  rpcs_->Ping(default_securifier_,
+              contact,
               std::bind(&NodeImpl::PingCallback, this, arg::_1, arg::_2,
                         contact, callback));
 }
@@ -588,6 +596,7 @@ void NodeImpl::DoLookupIteration(LookupArgsPtr lookup_args) {
           (*itr).second.rpc_state = ContactInfo::kRepliedOK;
         } else {
           if (lookup_args->kOperationType == LookupArgs::kFindValue) {
+            DLOG(INFO) << "Sending RPC to " << DebugId(lookup_args->kTarget);
             rpcs_->FindValue(lookup_args->kTarget,
                              lookup_args->kNumContactsRequested,
                              lookup_args->securifier,
@@ -595,6 +604,7 @@ void NodeImpl::DoLookupIteration(LookupArgsPtr lookup_args) {
                              std::bind(&NodeImpl::IterativeFindCallback,
                                        this, arg::_1, arg::_2, arg::_3, arg::_4,
                                        arg::_5, (*itr).first, lookup_args));
+            DLOG(INFO) << "Sent RPC to " << DebugId(lookup_args->kTarget);
           } else {
             rpcs_->FindNodes(lookup_args->kTarget,
                              lookup_args->kNumContactsRequested,
@@ -1479,7 +1489,8 @@ bool NodeImpl::NodeContacted(const int &code) {
 void NodeImpl::PingOldestContact(const Contact &oldest_contact,
                                  const Contact &replacement_contact,
                                  RankInfoPtr replacement_rank_info) {
-  rpcs_->Ping(SecurifierPtr(), oldest_contact,
+  rpcs_->Ping(default_securifier_,
+              oldest_contact,
               std::bind(&NodeImpl::PingOldestContactCallback, this,
                         oldest_contact, arg::_1, arg::_2, replacement_contact,
                         replacement_rank_info));
@@ -1532,7 +1543,8 @@ void NodeImpl::ConnectValidateContact() {
 }
 
 void NodeImpl::PingDownContact(const Contact &down_contact) {
-  rpcs_->Ping(SecurifierPtr(), down_contact,
+  rpcs_->Ping(default_securifier_,
+              down_contact,
               std::bind(&NodeImpl::PingDownContactCallback, this,
                         down_contact, arg::_1, arg::_2));
 }

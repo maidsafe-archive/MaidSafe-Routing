@@ -162,7 +162,6 @@ TEST_P(NodeImplTest, FUNC_JoinLeave) {
   std::vector<Contact> contacts;
   test_container_->node()->GetAllContacts(&contacts);
   all_nodes_contacts_before.push_back(contacts);
-
   // For client, start without listening, for full try to start with listening
   int result(kPendingResult);
   if (client_only_node_) {
@@ -211,8 +210,8 @@ TEST_P(NodeImplTest, FUNC_JoinLeave) {
   int count(0);
   while (env_->k_ > new_nodes_contacts.size() && count < 1000) {
     node_container->node()->GetAllContacts(&new_nodes_contacts);
-    DLOG(INFO) << "What up, doc!";
-    Sleep(kTimeout_/1000);
+    DLOG(INFO) << "Waiting, cout = " << count;
+    Sleep(kTimeout_ / 1000);
   }
   NodeId bootstrap_id = bootstrap_contacts.begin()->node_id();
   NodeContainerPtr bootstrap_container;

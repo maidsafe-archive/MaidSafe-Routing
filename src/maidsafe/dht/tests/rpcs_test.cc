@@ -75,8 +75,8 @@ void TestCallback(RankInfoPtr,
                   int callback_code,
                   bool *done,
                   int *response_code) {
-  *done = true;
   *response_code = callback_code;
+  *done = true;
 }
 
 void TestFindNodesCallback(RankInfoPtr,
@@ -85,9 +85,9 @@ void TestFindNodesCallback(RankInfoPtr,
                            std::vector<Contact> *contact_list,
                            bool *done,
                            int *response_code) {
-  *done = true;
   *response_code = callback_code;
   *contact_list = contacts;
+  *done = true;
 }
 
 void TestFindValueCallback(
@@ -100,28 +100,29 @@ void TestFindValueCallback(
     std::vector<Contact> *return_contacts,
     bool *done,
     int *response_code) {
-  *done = true;
   *response_code = callback_code;
   *return_values_and_signatures = values_and_signatures;
   *return_contacts = contacts;
+  *done = true;
 }
 
 template <typename T>
 class RpcsTest : public CreateContactAndNodeId, public testing::Test {
  public:
-  RpcsTest() : CreateContactAndNodeId(g_kKademliaK),
-               node_id_(NodeId::kRandomId),
-               routing_table_(new RoutingTable(node_id_, g_kKademliaK)),
-               data_store_(new DataStore(bptime::seconds(3600))),
-               alternative_store_(),
-               asio_service_(),
-               local_asio_(),
-               rank_info_(),
-               contacts_(),
-               transport_(),
-               thread_group_(),
-               work_(new boost::asio::io_service::work(asio_service_)),
-               work1_(new boost::asio::io_service::work(local_asio_)) {
+  RpcsTest()
+      : CreateContactAndNodeId(g_kKademliaK),
+        node_id_(NodeId::kRandomId),
+        routing_table_(new RoutingTable(node_id_, g_kKademliaK)),
+        data_store_(new DataStore(bptime::seconds(3600))),
+        alternative_store_(),
+        asio_service_(),
+        local_asio_(),
+        rank_info_(),
+        contacts_(),
+        transport_(),
+        thread_group_(),
+        work_(new boost::asio::io_service::work(asio_service_)),
+        work1_(new boost::asio::io_service::work(local_asio_)) {
     for (int i = 0; i != 3; ++i) {
       thread_group_.create_thread(
           std::bind(static_cast<size_t(boost::asio::io_service::*)()>(
@@ -139,13 +140,14 @@ class RpcsTest : public CreateContactAndNodeId, public testing::Test {
 
   virtual void SetUp() {
     // rpcs setup
+    NodeId rpcs_node_id = GenerateRandomId(node_id_, 502);
     rpcs_securifier_ = std::shared_ptr<Securifier>(
-        new Securifier("", sender_crypto_key_id_.public_key(),
-                        sender_crypto_key_id_.private_key()));
+        new Securifier(rpcs_node_id.String(),
+                       sender_crypto_key_id_.public_key(),
+                       sender_crypto_key_id_.private_key()));
     rpcs_= std::shared_ptr<Rpcs<T>>(new Rpcs<T>(asio_service_,  // NOLINT (Fraser)
                                                 rpcs_securifier_));
 
-    NodeId rpcs_node_id = GenerateRandomId(node_id_, 502);
     rpcs_contact_ = ComposeContactWithKey(rpcs_node_id,
                                           5010,
                                           sender_crypto_key_id_);
@@ -184,7 +186,7 @@ class RpcsTest : public CreateContactAndNodeId, public testing::Test {
             _1, _2, _3, _4).track_foreign(handler_));
   }
 
-  virtual void TearDown() { }
+  virtual void TearDown() {}
 
   ~RpcsTest() {
     work_.reset();
@@ -194,11 +196,13 @@ class RpcsTest : public CreateContactAndNodeId, public testing::Test {
   }
 
   void PopulateRoutingTable(uint16_t count) {
-    for (int num_contact = 0; num_contact < count; ++num_contact) {
+    std::vector<Contact> rt_contacts;
+    while (rt_contacts.size() < count) {
       NodeId contact_id(NodeId::kRandomId);
       Contact contact = ComposeContact(contact_id, 5000);
       AddContact(routing_table_, contact, rank_info_);
       contacts_.push_back(contact);
+      routing_table_->GetAllContacts(&rt_contacts);
     }
   }
 
@@ -289,6 +293,7 @@ class RpcsTest : public CreateContactAndNodeId, public testing::Test {
     work1_.reset();
     thread_group_.join_all();
   }
+
  protected:
   typedef std::shared_ptr<boost::asio::io_service::work> WorkPtr;
 
@@ -322,6 +327,7 @@ crypto::RsaKeyPair RpcsTest<T>::receiver_crypto_key_id_;
 
 TYPED_TEST_CASE_P(RpcsTest);
 
+
 TYPED_TEST_P(RpcsTest, FUNC_PingNoTarget) {
   bool done(false);
   int response_code(kGeneralError);
@@ -338,7 +344,7 @@ TYPED_TEST_P(RpcsTest, FUNC_PingNoTarget) {
 
 TYPED_TEST_P(RpcsTest, FUNC_PingTarget) {
   bool done(false);
-  int response_code(kGeneralError);
+  int response_code(kPendingResult);
   this->rpcs_->Ping(this->rpcs_securifier_, this->service_contact_,
       std::bind(&TestCallback, arg::_1, arg::_2, &done, &response_code));
 
@@ -497,7 +503,7 @@ TYPED_TEST_P(RpcsTest, FUNC_FindValueVariableNodesRequest) {
   done = false;
   response_code = kGeneralError;
 
-  // attempt to find a value when number_of_nodes_requeste < g_kKademliaK,
+  // attempt to find a value when number_of_nodes_request < g_kKademliaK,
   // the response should contain g_kKademliaK nodes.
   this->rpcs_->FindValue(key, g_kKademliaK/2, this->rpcs_securifier_,
                          this->service_contact_,
@@ -511,8 +517,8 @@ TYPED_TEST_P(RpcsTest, FUNC_FindValueVariableNodesRequest) {
   EXPECT_EQ(kFailedToFindValue, response_code);
   EXPECT_EQ(g_kKademliaK, return_contacts.size());
 
-  // attempt to find a value when number_of_nodes_requeste > g_kKademliaK,
-  // the response should contain number_of_nodes_requeste nodes.
+  // attempt to find a value when number_of_nodes_request > g_kKademliaK,
+  // the response should contain number_of_nodes_request nodes.
   return_values_and_signatures.clear();
   return_contacts.clear();
   done = false;
@@ -1007,8 +1013,9 @@ TYPED_TEST_P(RpcsTest, FUNC_Delete) {
                     this->sender_crypto_key_id_.public_key());
 
   this->rpcs_->Delete(key, kvs.value, kvs.signature, this->rpcs_securifier_,
-      this->service_contact_, std::bind(&TestCallback, arg::_1, arg::_2, &done,
-                                        &response_code));
+                      this->service_contact_, std::bind(&TestCallback, arg::_1,
+                                                        arg::_2, &done,
+                                                        &response_code));
 
   while (!done)
     Sleep(boost::posix_time::milliseconds(10));
@@ -1131,15 +1138,16 @@ TYPED_TEST_P(RpcsTest, FUNC_DeleteMultipleRequest) {
   std::string signature;
 
   for (size_t i = 0; i < 10; ++i) {
-    if (i%2)
+    if (i % 2)
       signature = "invalid signature";
     else
       signature = crypto::AsymSign(kvs_vector[i].value,
                                    this->sender_crypto_key_id_.private_key());
     this->rpcs_->Delete(key, kvs_vector[i].value, signature,
-        this->rpcs_securifier_, this->service_contact_,
-        std::bind(&TestCallback, arg::_1, arg::_2, &status_response[i].first,
-                  &status_response[i].second));
+                        this->rpcs_securifier_, this->service_contact_,
+                        std::bind(&TestCallback, arg::_1, arg::_2,
+                                  &status_response[i].first,
+                                  &status_response[i].second));
   }
   while (!done) {
     for (size_t i = 0; i < 10; ++i) {
@@ -1155,8 +1163,8 @@ TYPED_TEST_P(RpcsTest, FUNC_DeleteMultipleRequest) {
 
   // Checking results
   for (int i = 0; i < 10; ++i) {
-    EXPECT_EQ(kSuccess, status_response[i].second);
-    if (i%2)
+    EXPECT_EQ(kSuccess, status_response[i].second) << "Failed index: " << i;
+    if (i % 2)
       EXPECT_TRUE(IsKeyValueInDataStore(kvs_vector[i], this->data_store_));
     else
       EXPECT_FALSE(IsKeyValueInDataStore(kvs_vector[i], this->data_store_));
@@ -1413,6 +1421,76 @@ TYPED_TEST_P(RpcsTest, FUNC_DeleteRefreshMultipleRequests) {
   }
 }
 
+TYPED_TEST_P(RpcsTest, FUNC_DifferentSecurifier) {
+  // Another securifier
+  crypto::RsaKeyPair key_pair2;
+  key_pair2.GenerateKeys(4096);
+  NodeId node_id2(NodeId::kRandomId);
+  SecurifierPtr other_securifier(new Securifier(node_id2.String(),
+                                                key_pair2.public_key(),
+                                                key_pair2.private_key()));
+
+
+  // Send Ping
+  bool done(false);
+  int response_code(kPendingResult), count(0);
+  this->rpcs_->Ping(other_securifier,
+                    this->service_contact_,
+                    std::bind(&TestCallback, arg::_1, arg::_2,
+                              &done, &response_code));
+
+  while (!done && count++ < 1000)
+    Sleep(transport::kDefaultInitialTimeout / 1000);
+  EXPECT_EQ(kSuccess, response_code);
+  JoinNetworkLookup(this->service_securifier_);
+
+  // Send FindValue
+  done = false;
+  response_code = kPendingResult;
+  count = 0;
+  this->PopulateRoutingTable(2*g_kKademliaK);
+  Key key = this->rpcs_contact_.node_id();
+  KeyValueSignature kvs = MakeKVS(this->sender_crypto_key_id_, 1024,
+                                  key.String(), "");
+  boost::posix_time::seconds ttl(3600);
+
+  std::vector<ValueAndSignature> return_values_and_signatures;
+  std::vector<Contact> return_contacts;
+  this->rpcs_->FindValue(key,
+                         g_kKademliaK,
+                         other_securifier,
+                         this->service_contact_,
+                         std::bind(&TestFindValueCallback, arg::_1, arg::_2,
+                                   arg::_3, arg::_4, arg::_5,
+                                   &return_values_and_signatures,
+                                   &return_contacts, &done, &response_code));
+  while (!done && count++ < 1000)
+    Sleep(transport::kDefaultInitialTimeout / 1000);
+  EXPECT_EQ(kFailedToFindValue, response_code);
+  EXPECT_EQ(g_kKademliaK, return_contacts.size());
+  JoinNetworkLookup(this->service_securifier_);
+
+  // FindNodes
+  done = false;
+  response_code = kPendingResult;
+  count = 0;
+  return_contacts.clear();
+  this->rpcs_->FindNodes(key,
+                         g_kKademliaK,
+                         other_securifier,
+                         this->service_contact_,
+                         std::bind(&TestFindNodesCallback, arg::_1, arg::_2,
+                                   arg::_3, &return_contacts, &done,
+                                   &response_code));
+  while (!done && count++ < 1000)
+    Sleep(transport::kDefaultInitialTimeout / 1000);
+  EXPECT_EQ(g_kKademliaK, return_contacts.size());
+  EXPECT_EQ(kSuccess, response_code);
+  JoinNetworkLookup(this->service_securifier_);
+
+  this->StopAndReset();
+}
+
 REGISTER_TYPED_TEST_CASE_P(RpcsTest,
                            FUNC_PingNoTarget,
                            FUNC_PingTarget,
@@ -1436,7 +1514,8 @@ REGISTER_TYPED_TEST_CASE_P(RpcsTest,
                            FUNC_DeleteRefreshStoredValue,
                            FUNC_DeleteRefreshMalicious,
                            FUNC_DeleteRefreshNonExistingKey,
-                           FUNC_DeleteRefreshMultipleRequests);
+                           FUNC_DeleteRefreshMultipleRequests,
+                           FUNC_DifferentSecurifier);
 
 typedef ::testing::Types<transport::TcpTransport,
                          transport::UdpTransport> TransportTypes;
