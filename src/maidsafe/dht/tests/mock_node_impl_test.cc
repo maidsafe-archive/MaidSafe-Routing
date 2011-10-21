@@ -2364,9 +2364,7 @@ TEST_F(MockNodeImplTest, BEH_InsertCloseContacts) {
   ASSERT_EQ((*expected_bound), (*result_itr).first);
 
 // Empty New Contacts to Test a Full Retain of Live Contacts
-  OrderedContacts empty_contacts(CreateOrderedContacts(test_contacts.begin(),
-                                                        test_contacts.end(),
-                                                        node_id_));
+  OrderedContacts empty_contacts(CreateOrderedContacts(node_id_));
   empty_contacts.clear();
   ASSERT_EQ(0, empty_contacts.size());
   lookup_args.reset(new LookupArgs(LookupArgs::kFindNodes,
