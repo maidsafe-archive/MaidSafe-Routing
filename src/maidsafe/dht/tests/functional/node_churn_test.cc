@@ -42,6 +42,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #endif
 
 #include "maidsafe/common/test.h"
+#include "maidsafe/common/log.h"
 
 #include "maidsafe/dht/node-api.h"
 #include "maidsafe/dht/node_container.h"
@@ -60,10 +61,13 @@ class NodeChurnTest : public testing::Test {
   typedef std::shared_ptr<boost::asio::deadline_timer> TimerPtr;
   void HandleStart(NodeContainerPtr node_container,
                    TimerPtr timer,
-                   size_t count);
+                   size_t count,
+                   std::vector<Contact>* bootstrap_contacts);
   void HandleStop(NodeContainerPtr node_container,
-                  TimerPtr timer,
-                  size_t count);
+                   TimerPtr timer,
+                   size_t count,
+                   std::vector<Contact>* bootstrap_contacts);
+  std::vector<std::vector<Contact>*> all_bootstrap_contacts_;
 
  protected:
   NodeChurnTest()
@@ -104,19 +108,26 @@ class NodeChurnTest : public testing::Test {
 
 void NodeChurnTest::HandleStart(NodeContainerPtr node_container,
                                 TimerPtr timer,
-                                size_t count) {
+                                size_t count,
+                                std::vector<Contact>* bootstrap_contacts) {
   EXPECT_FALSE(node_container->node()->joined());
   int result(kPendingResult);
   {
     boost::mutex::scoped_lock lock(env_->mutex_);
     node_container->Join(node_container->node()->contact().node_id(),
-                         node_container->bootstrap_contacts());
+                         *bootstrap_contacts);
+    DLOG(INFO) << "Node " << DebugId(node_container->node()->contact())
+        << " Joins, Bootstrap contacts: " << (*bootstrap_contacts).size();
     EXPECT_TRUE(env_->cond_var_.timed_wait(lock, kTimeout_,
-                node_container->wait_for_join_functor()));
+                node_container->wait_for_join_functor()))
+    << "Node " << DebugId(node_container->node()->contact()) << " Timed out";
     node_container->GetAndResetJoinResult(&result);
-    EXPECT_EQ(kSuccess, result);
+    EXPECT_EQ(kSuccess, result)
+    << "Node " << DebugId(node_container->node()->contact()) << " Join failed";
     EXPECT_TRUE(node_container->node()->joined());
-
+    if (result == kSuccess)
+          DLOG(INFO) << "Node " << DebugId(node_container->node()->contact())
+        << " Joined Successfully";
     if (++total_finished_ == total_restarts_) {  // all restarts are done
       cond_var_.notify_one();
       return;
@@ -126,32 +137,44 @@ void NodeChurnTest::HandleStart(NodeContainerPtr node_container,
   }
   timer->expires_from_now(bptime::milliseconds(Stop()));
   timer->async_wait(std::bind(&NodeChurnTest::HandleStop, this, node_container,
-                              timer, count));
+                              timer, count, bootstrap_contacts));
 }
 
 void NodeChurnTest::HandleStop(NodeContainerPtr node_container,
                                TimerPtr timer,
-                               size_t count) {
-  EXPECT_TRUE(node_container->node()->joined());
-  node_container->node()->Leave(NULL);
-  EXPECT_FALSE(node_container->node()->joined());
-
+                               size_t count,
+                               std::vector<Contact>* bootstrap_contacts) {
+  {
+    boost::mutex::scoped_lock lock(env_->mutex_);
+    DLOG(INFO) << "Node "
+        << DebugId(node_container->node()->contact()) << " Leaves";
+    EXPECT_TRUE(node_container->node()->joined());
+    node_container->node()->Leave(bootstrap_contacts);
+    EXPECT_FALSE(node_container->node()->joined());
+  }
   timer->expires_from_now(bptime::milliseconds(Start()));
   timer->async_wait(std::bind(&NodeChurnTest::HandleStart, this, node_container,
-                              timer, count));
+                              timer, count, bootstrap_contacts));
 }
 
 
-TEST_F(NodeChurnTest, DISABLED_FUNC_RandomStartStopNodes) {
-  auto node_itr(env_->node_containers_.begin()),
+TEST_F(NodeChurnTest, FUNC_RandomStartStopNodes) {
+  for (auto it = env_->node_containers_.begin();
+      it != env_->node_containers_.end(); ++it) {
+    DLOG(INFO) << DebugId((*it)->node()->contact()) << " Bootstrap contacts: "
+       << (*it)->bootstrap_contacts().size();
+  }
+  auto node_itr(env_->node_containers_.begin() + 1),
        node_itr_end(env_->node_containers_.end());
   for (; node_itr != node_itr_end; ++node_itr) {
+    std::vector<Contact>* bootstrap_contacts = new std::vector<Contact>();
+    all_bootstrap_contacts_.push_back(bootstrap_contacts);
     size_t restarts(RandomUint32() % kMaxRestartCycles_ + 2);
     TimerPtr timer(
         new boost::asio::deadline_timer((*node_itr)->asio_service()));
     timer->expires_from_now(bptime::milliseconds(Stop()));
     timer->async_wait(std::bind(&NodeChurnTest::HandleStop, this,
-                                *node_itr, timer, restarts));
+        *node_itr, timer, restarts, *(all_bootstrap_contacts_.rbegin())));
     total_restarts_ += restarts;
   }
   boost::mutex::scoped_lock lock(mutex_);
