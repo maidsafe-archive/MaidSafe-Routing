@@ -2344,23 +2344,23 @@ TEST_F(MockNodeImplTest, BEH_InsertCloseContacts) {
     test_contacts.insert(
       ComposeContact(NodeId(GenerateRandomId(node_id_, 490)), 5600));
   OrderedContacts close_contacts(CreateOrderedContacts(test_contacts.begin(),
-                                                        test_contacts.end(),
-                                                        node_id_));
+                                                       test_contacts.end(),
+                                                       node_id_));
 
 // Empty Live Contacts to Test a Full Insert of New Contacts
   auto expected_bound(close_contacts.rbegin());
   SecurifierPtr securifier(new Securifier("", "", ""));
   LookupArgsPtr lookup_args(new LookupArgs(LookupArgs::kFindNodes,
-                                            node_id_,
-                                            close_contacts,
-                                            random_num_contacts - 1,
-                                            securifier));
+                                           node_id_,
+                                           close_contacts,
+                                           random_num_contacts - 1,
+                                           securifier));
   lookup_args->lookup_contacts.clear();
   ASSERT_EQ(0, lookup_args->lookup_contacts.size());
   auto result_itr(
       node_->InsertCloseContacts(close_contacts,
-                                  lookup_args,
-                                  lookup_args->lookup_contacts.end()));
+                                 lookup_args,
+                                 lookup_args->lookup_contacts.end()));
   ASSERT_EQ(random_num_contacts, lookup_args->lookup_contacts.size());
   ASSERT_EQ((*expected_bound), (*result_itr).first);
 
@@ -2369,10 +2369,10 @@ TEST_F(MockNodeImplTest, BEH_InsertCloseContacts) {
   empty_contacts.clear();
   ASSERT_EQ(0, empty_contacts.size());
   lookup_args.reset(new LookupArgs(LookupArgs::kFindNodes,
-                                    node_id_,
-                                    close_contacts,
-                                    random_num_contacts - 2,
-                                    securifier));
+                                   node_id_,
+                                   close_contacts,
+                                   random_num_contacts - 2,
+                                   securifier));
   ASSERT_EQ(random_num_contacts, lookup_args->lookup_contacts.size());
   result_itr = lookup_args->lookup_contacts.end();
   result_itr = node_->InsertCloseContacts(empty_contacts,
@@ -2395,10 +2395,10 @@ TEST_F(MockNodeImplTest, BEH_InsertCloseContacts) {
   ASSERT_EQ(random_num_contacts - 2, live_contacts.size());
   ASSERT_EQ(2, new_contacts.size());
   lookup_args.reset(new LookupArgs(LookupArgs::kFindNodes,
-                                    node_id_,
-                                    live_contacts,
-                                    random_num_contacts - 1,
-                                    securifier));
+                                   node_id_,
+                                   live_contacts,
+                                   random_num_contacts - 1,
+                                   securifier));
   result_itr = lookup_args->lookup_contacts.end();
   result_itr = node_->InsertCloseContacts(new_contacts,
                                           lookup_args,
@@ -2423,10 +2423,10 @@ TEST_F(MockNodeImplTest, BEH_InsertCloseContacts) {
   ASSERT_EQ(random_num_contacts - 2, live_contacts.size());
   ASSERT_EQ(2, new_contacts.size());
   lookup_args.reset(new LookupArgs(LookupArgs::kFindNodes,
-                                    node_id_,
-                                    live_contacts,
-                                    random_num_contacts - 1,
-                                    securifier));
+                                   node_id_,
+                                   live_contacts,
+                                   random_num_contacts - 1,
+                                   securifier));
   result_itr = lookup_args->lookup_contacts.end();
   result_itr = node_->InsertCloseContacts(new_contacts,
                                           lookup_args,
