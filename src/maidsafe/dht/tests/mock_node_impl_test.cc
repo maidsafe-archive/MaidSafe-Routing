@@ -82,8 +82,8 @@ const uint16_t g_kRandomNoResponseRate = 20;  // in percentage
 class SecurifierValidateTrue: public Securifier {
  public:
   SecurifierValidateTrue(const std::string &public_key_id,
-                          const std::string &public_key,
-                          const std::string &private_key)
+                         const std::string &public_key,
+                         const std::string &private_key)
       : Securifier(public_key_id, public_key, private_key) {}
 
   bool Validate(const std::string&,
@@ -91,9 +91,7 @@ class SecurifierValidateTrue: public Securifier {
                 const std::string&,
                 const std::string&,
                 const std::string&,
-                const std::string&) const {
-    return true;
-  }
+                const std::string&) const { return true; }
 };
 
 ContactInfo::RpcState GetRandomRpcReplyState() {
@@ -243,11 +241,13 @@ class MockRpcs : public Rpcs<TransportType>, public CreateContactAndNodeId {
     RankInfoPtr rank_info;
     callback(rank_info, transport::kSuccess);
   }
+
   void StoreRefreshCallback(RpcStoreRefreshFunctor callback) {
     Rpcs<TransportType>::asio_service_.post(
         std::bind(&MockRpcs<TransportType>::StoreRefreshThread, this,
                   callback));
   }
+
   void FindNodeRandomResponseClose(const Contact &c,
                                    RpcFindNodesFunctor callback) {
     bool response(true);
@@ -661,8 +661,8 @@ class MockNodeImplTest : public CreateContactAndNodeId, public testing::Test {
         local_node_(new NodeImpl(asio_service_,
                                  mock_transport_,
                                  message_handler_,
-                                 SecurifierPtr(new SecurifierValidateTrue(
-                                               "", "", "")),
+                                 SecurifierPtr(
+                                     new SecurifierValidateTrue("", "", "")),
                                  alternative_store_,
                                  true,
                                  g_kKademliaK,
@@ -929,14 +929,14 @@ TEST_F(MockNodeImplTest, BEH_Join) {
     node_->Join(node_id_, bootstrap_contacts, callback);
     while (!done) {
       bool not_timed_out = cond_var_.timed_wait(unique_lock_, kTaskTimeout_);
-      if (!not_timed_out) {
+      if (!not_timed_out)
         done = true;
-      }
       EXPECT_TRUE(not_timed_out);
     }
     ASSERT_EQ(kSuccess, result);
     node_->Leave(NULL);
   }
+  DLOG(INFO) << "Last contact was valid";
   // When first contact in bootstrap_contacts is valid
   {
     done = false;
@@ -961,14 +961,15 @@ TEST_F(MockNodeImplTest, BEH_Join) {
     node_->Join(node_id_, bootstrap_contacts, callback);
     while (!done) {
       bool not_timed_out = cond_var_.timed_wait(unique_lock_, kTaskTimeout_);
-      if (!not_timed_out) {
+      if (!not_timed_out)
         done = true;
-      }
       EXPECT_TRUE(not_timed_out);
     }
     ASSERT_EQ(kSuccess, result);
     node_->Leave(NULL);
   }
+  Sleep(boost::posix_time::seconds(2));
+  DLOG(INFO) << "First contact was valid";
   // When no contacts are valid
   {
     done = false;
@@ -1000,14 +1001,14 @@ TEST_F(MockNodeImplTest, BEH_Join) {
     node_->Join(node_id_, bootstrap_contacts, callback);
     while (!done) {
       bool not_timed_out = cond_var_.timed_wait(unique_lock_, kTaskTimeout_);
-      if (!not_timed_out) {
+      if (!not_timed_out)
         done = true;
-      }
       EXPECT_TRUE(not_timed_out);
     }
     EXPECT_EQ(kContactFailedToRespond, result);
     node_->Leave(NULL);
   }
+  DLOG(INFO) << "No valid contacts";
   // Test for refreshing data_store entry
   {
     done = false;
@@ -1045,14 +1046,14 @@ TEST_F(MockNodeImplTest, BEH_Join) {
     node_->Join(node_id_, bootstrap_contacts, callback);
     while (!done) {
       bool not_timed_out = cond_var_.timed_wait(unique_lock_, kTaskTimeout_);
-      if (!not_timed_out) {
+      if (!not_timed_out)
         done = true;
-      }
       EXPECT_TRUE(not_timed_out);
     }
     ASSERT_EQ(kSuccess, result);
     node_->Leave(NULL);
   }
+  DLOG(INFO) << "Refreshing data store entry";
 }
 
 TEST_F(MockNodeImplTest, BEH_Leave) {

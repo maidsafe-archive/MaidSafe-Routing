@@ -70,6 +70,7 @@ int main(int argc, char **argv) {
 
   // Log messages from MaidSafe-Common.
   FLAGS_ms_logging_common = true;
+  FLAGS_ms_logging_transport = true;
 
   testing::InitGoogleTest(&argc, argv);
 #if defined FUNCTIONAL_NODE_TEST
@@ -83,8 +84,7 @@ int main(int argc, char **argv) {
 #elif defined FUNCTIONAL_NODE_IMPL_TEST
   testing::AddGlobalTestEnvironment(
       new maidsafe::dht::test::NodesEnvironment<
-          maidsafe::dht::NodeImpl>(10, 0, 3, 4, 3, 2,
-                                             bptime::hours(1)));
+          maidsafe::dht::NodeImpl>(10, 0, 3, 4, 3, 2, bptime::hours(1)));
 #endif
   int result(RUN_ALL_TESTS());
   int test_count = testing::UnitTest::GetInstance()->test_to_run_count();

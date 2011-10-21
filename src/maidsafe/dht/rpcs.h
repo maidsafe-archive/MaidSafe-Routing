@@ -63,20 +63,6 @@ namespace maidsafe {
 
 namespace dht {
 
-class MessageHandler;
-class NodeId;
-
-namespace protobuf {
-class PingResponse;
-class FindValueResponse;
-class FindNodesResponse;
-class StoreResponse;
-class StoreRefreshResponse;
-class DeleteResponse;
-class DeleteRefreshResponse;
-class UpdateResponse;
-}  // namespace protobuf
-
 typedef std::function<void(RankInfoPtr, const int&)> RpcPingFunctor,
                                                      RpcStoreFunctor,
                                                      RpcStoreRefreshFunctor,
@@ -236,6 +222,8 @@ class Rpcs {
       const std::string &message,
       std::shared_ptr<RpcsFailurePeer> rpcs_failure_peer);
 
+  protobuf::Contact PrepareContact(SecurifierPtr securifier);
+
   Contact contact_;
   SecurifierPtr default_securifier_;
   ConnectedObjectsList connected_objects_;
@@ -254,7 +242,7 @@ void Rpcs<TransportType>::Ping(SecurifierPtr securifier,
       connected_objects_.AddObject(transport, message_handler);
 
   protobuf::PingRequest request;
-  *request.mutable_sender() = ToProtobuf(contact_);
+  *request.mutable_sender() = PrepareContact(securifier);
   std::string random_data(RandomString(50 + (RandomUint32() % 50)));
   request.set_ping(random_data);
   std::shared_ptr<RpcsFailurePeer> rpcs_failure_peer(new RpcsFailurePeer);
@@ -270,7 +258,7 @@ void Rpcs<TransportType>::Ping(SecurifierPtr securifier,
       std::bind(&Rpcs::PingCallback, this, random_data, arg::_1,
                 transport::Info(), protobuf::PingResponse(), object_indx,
                 callback, message, rpcs_failure_peer));
-  DLOG(INFO) << "\t" << DebugId(contact_) << " PING to " << DebugId(peer);
+  DLOG(INFO) << "\t2 " << DebugId(contact_) << " PING to " << DebugId(peer);
   transport->Send(message,
                   peer.PreferredEndpoint(),
                   transport::kDefaultInitialTimeout);
@@ -289,7 +277,7 @@ void Rpcs<TransportType>::FindValue(const Key &key,
       connected_objects_.AddObject(transport, message_handler);
 
   protobuf::FindValueRequest request;
-  *request.mutable_sender() = ToProtobuf(contact_);
+  *request.mutable_sender() = PrepareContact(securifier);
   request.set_key(key.String());
   request.set_num_nodes_requested(nodes_requested);
   std::shared_ptr<RpcsFailurePeer> rpcs_failure_peer(new RpcsFailurePeer);
@@ -323,7 +311,7 @@ void Rpcs<TransportType>::FindNodes(const Key &key,
       connected_objects_.AddObject(transport, message_handler);
 
   protobuf::FindNodesRequest request;
-  *request.mutable_sender() = ToProtobuf(contact_);
+  *request.mutable_sender() = PrepareContact(securifier);
   request.set_key(key.String());
   request.set_num_nodes_requested(nodes_requested);
   std::shared_ptr<RpcsFailurePeer> rpcs_failure_peer(new RpcsFailurePeer);
@@ -359,7 +347,7 @@ void Rpcs<TransportType>::Store(const Key &key,
       connected_objects_.AddObject(transport, message_handler);
 
   protobuf::StoreRequest request;
-  *request.mutable_sender() = ToProtobuf(contact_);
+  *request.mutable_sender() = PrepareContact(securifier);
   request.set_key(key.String());
   std::shared_ptr<RpcsFailurePeer> rpcs_failure_peer(new RpcsFailurePeer);
   rpcs_failure_peer->peer = peer;
@@ -400,7 +388,7 @@ void Rpcs<TransportType>::StoreRefresh(
   std::shared_ptr<RpcsFailurePeer> rpcs_failure_peer(new RpcsFailurePeer);
   rpcs_failure_peer->peer = peer;
 
-  *request.mutable_sender() = ToProtobuf(contact_);
+  *request.mutable_sender() = PrepareContact(securifier);
   request.set_serialised_store_request(serialised_store_request);
   request.set_serialised_store_request_signature(
       serialised_store_request_signature);
@@ -437,7 +425,7 @@ void Rpcs<TransportType>::Delete(const Key &key,
   std::shared_ptr<RpcsFailurePeer> rpcs_failure_peer(new RpcsFailurePeer);
   rpcs_failure_peer->peer = peer;
 
-  *request.mutable_sender() = ToProtobuf(contact_);
+  *request.mutable_sender() = PrepareContact(securifier);
   request.set_key(key.String());
   protobuf::SignedValue *signed_value(request.mutable_signed_value());
   signed_value->set_value(value);
@@ -474,7 +462,7 @@ void Rpcs<TransportType>::DeleteRefresh(
   std::shared_ptr<RpcsFailurePeer> rpcs_failure_peer(new RpcsFailurePeer);
   rpcs_failure_peer->peer = peer;
 
-  *request.mutable_sender() = ToProtobuf(contact_);
+  *request.mutable_sender() = PrepareContact(securifier);
   request.set_serialised_delete_request(serialised_delete_request);
   request.set_serialised_delete_request_signature(
       serialised_delete_request_signature);
@@ -529,6 +517,8 @@ void Rpcs<TransportType>::PingCallback(
     RpcPingFunctor callback,
     const std::string &message,
     std::shared_ptr<RpcsFailurePeer> rpcs_failure_peer) {
+  DLOG(INFO) << "\t" << DebugId(contact_) << " PING response from "
+             << DebugId(rpcs_failure_peer->peer);
   if ((transport_condition != transport::kSuccess) &&
       (rpcs_failure_peer->rpcs_failure < kFailureTolerance_)) {
     ++(rpcs_failure_peer->rpcs_failure);
@@ -599,6 +589,9 @@ void Rpcs<TransportType>::FindValueCallback(
             std::make_pair(response.signed_values(i).value(),
                            response.signed_values(i).signature()));
       }
+      DLOG(INFO) << "\t" << DebugId(contact_) << " FIND_VALUE response from "
+                 << DebugId(rpcs_failure_peer->peer) << " found "
+                 << values_and_signatures.size() << " values.";
       callback(RankInfoPtr(new transport::Info(info)), kSuccess,
                values_and_signatures, contacts, alternative_value_holder);
       return;
@@ -607,8 +600,9 @@ void Rpcs<TransportType>::FindValueCallback(
     if (response.closest_nodes_size() != 0) {
       for (int i = 0; i < response.closest_nodes_size(); ++i)
         contacts.push_back(FromProtobuf(response.closest_nodes(i)));
-      DLOG(INFO) << "\t" << DebugId(contact_) << " FIND_VALUE response from " <<
-          DebugId(rpcs_failure_peer->peer);
+      DLOG(INFO) << "\t" << DebugId(contact_) << " FIND_VALUE response from "
+                 << DebugId(rpcs_failure_peer->peer) << " found "
+                 << contacts.size() << " contacts.";
       callback(RankInfoPtr(new transport::Info(info)), kFailedToFindValue,
                values_and_signatures, contacts, alternative_value_holder);
       return;
@@ -837,6 +831,24 @@ std::pair<std::string, std::string> Rpcs<T>::MakeDeleteRequestAndSignature(
   std::string message_signature(securifier->Sign(
         boost::lexical_cast<std::string>(kDeleteRequest) + message));
   return std::make_pair(message, message_signature);
+}
+
+template <typename TransportType>
+protobuf::Contact Rpcs<TransportType>::PrepareContact(
+    SecurifierPtr securifier) {
+  if (contact_.public_key_id() == securifier->kSigningKeyId())
+    return ToProtobuf(contact_);
+
+  Contact c(contact_.node_id(),
+            contact_.endpoint(),
+            contact_.local_endpoints(),
+            contact_.rendezvous_endpoint(),
+            IsValid(contact_.tcp443endpoint()),
+            IsValid(contact_.tcp80endpoint()),
+            securifier->kSigningKeyId(),
+            securifier->kSigningPublicKey(),
+            "");
+  return ToProtobuf(c);
 }
 
 }  // namespace dht
