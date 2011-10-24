@@ -1595,6 +1595,7 @@ class RpcsMultiServerNodesTest : public CreateContactAndNodeId,
 
   virtual void SetUp() {
     // rpcs setup
+    size_t port_start(RandomUint32() % 50000 + 1025);
     const int kMinClientPositionOffset(kKeySizeBits - g_kRpcClientNo);
     for (int index = 0; index != g_kRpcClientNo; ++index) {
       NodeId rpcs_node_id =
@@ -1608,8 +1609,8 @@ class RpcsMultiServerNodesTest : public CreateContactAndNodeId,
 
       Contact rpcs_contact;
       rpcs_contact = ComposeContactWithKey(rpcs_node_id,
-                                           static_cast<Port>(5011 + index),
-                                           senders_crypto_key_id3_[index]);
+                         static_cast<Port>(port_start + index),
+                         senders_crypto_key_id3_[index]);
       rpcs_contact_.push_back(rpcs_contact);
       rpcs_[index]->set_contact(rpcs_contact_[index]);
     }
@@ -1620,7 +1621,7 @@ class RpcsMultiServerNodesTest : public CreateContactAndNodeId,
           GenerateRandomId(node_id_, kMinServerPositionOffset + index);
       service_contact_.push_back(
           ComposeContactWithKey(service_node_id,
-                                static_cast<Port>(5011+g_kRpcClientNo+index),
+              static_cast<Port>(port_start + g_kRpcClientNo + index),
                                 receivers_crypto_key_id3_[index]));
       services_securifier_.push_back(
           SecurifierPtr(new SecurifierGetPublicKeyAndValidation(
