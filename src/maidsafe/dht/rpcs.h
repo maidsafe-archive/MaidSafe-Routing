@@ -37,7 +37,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "boost/tuple/tuple.hpp"
 
 #include "maidsafe/common/utils.h"
-#include "maidsafe/common/securifier.h"
 #include "maidsafe/transport/transport.h"
 
 #include "maidsafe/dht/node_id.h"
@@ -87,57 +86,57 @@ struct RpcsFailurePeer {
 template <typename TransportType>
 class Rpcs {
  public:
-  Rpcs(AsioService &asio_service, SecurifierPtr default_securifier)  // NOLINT (Fraser)
+  Rpcs(AsioService &asio_service, PrivateKeyPtr private_key)  // NOLINT (Fraser)
       : asio_service_(asio_service),
         kFailureTolerance_(2),
         contact_(),
-        default_securifier_(default_securifier),
+        default_private_key_(private_key),
         connected_objects_() {}
   virtual ~Rpcs() {}
-  virtual void Ping(SecurifierPtr securifier,
+  virtual void Ping(PrivateKeyPtr private_key,
                     const Contact &peer,
                     RpcPingFunctor callback);
   virtual void FindValue(const Key &key,
                          const uint16_t &nodes_requested,
-                         SecurifierPtr securifier,
+                         PrivateKeyPtr private_key,
                          const Contact &peer,
                          RpcFindValueFunctor callback);
   virtual void FindNodes(const Key &key,
                          const uint16_t &nodes_requested,
-                         SecurifierPtr securifier,
+                         PrivateKeyPtr private_key,
                          const Contact &peer,
                          RpcFindNodesFunctor callback);
   virtual void Store(const Key &key,
                      const std::string &value,
                      const std::string &signature,
                      const boost::posix_time::seconds &ttl,
-                     SecurifierPtr securifier,
+                     PrivateKeyPtr private_key,
                      const Contact &peer,
                      RpcStoreFunctor callback);
   virtual void StoreRefresh(
       const std::string &serialised_store_request,
       const std::string &serialised_store_request_signature,
-      SecurifierPtr securifier,
+      PrivateKeyPtr private_key,
       const Contact &peer,
       RpcStoreRefreshFunctor callback);
   virtual void Delete(const Key &key,
                       const std::string &value,
                       const std::string &signature,
-                      SecurifierPtr securifier,
+                      PrivateKeyPtr private_key,
                       const Contact &peer,
                       RpcDeleteFunctor callback);
   virtual void DeleteRefresh(
       const std::string &serialised_delete_request,
       const std::string &serialised_delete_request_signature,
-      SecurifierPtr securifier,
+      PrivateKeyPtr private_key,
       const Contact &peer,
       RpcDeleteRefreshFunctor callback);
   virtual void Downlist(const std::vector<NodeId> &node_ids,
-                        SecurifierPtr securifier,
+                        PrivateKeyPtr private_key,
                         const Contact &peer);
   void set_contact(const Contact &contact) { contact_ = contact; }
 
-  virtual void Prepare(SecurifierPtr securifier,
+  virtual void Prepare(PrivateKeyPtr private_key,
                        TransportPtr &transport,
                        MessageHandlerPtr &message_handler);
 
@@ -146,13 +145,13 @@ class Rpcs {
     const std::string &value,
     const std::string &signature,
     const boost::posix_time::seconds &ttl,
-    SecurifierPtr securifier);
+    PrivateKeyPtr private_key);
 
   std::pair<std::string, std::string> MakeDeleteRequestAndSignature(
     const Key &key,
     const std::string &value,
     const std::string &signature,
-    SecurifierPtr securifier);
+    PrivateKeyPtr private_key);
 
  protected:
   AsioService &asio_service_;
@@ -222,27 +221,25 @@ class Rpcs {
       const std::string &message,
       std::shared_ptr<RpcsFailurePeer> rpcs_failure_peer);
 
-  protobuf::Contact PrepareContact(SecurifierPtr securifier);
-
   Contact contact_;
-  SecurifierPtr default_securifier_;
+  PrivateKeyPtr default_private_key_;
   ConnectedObjectsList connected_objects_;
 };
 
 
 
 template <typename TransportType>
-void Rpcs<TransportType>::Ping(SecurifierPtr securifier,
+void Rpcs<TransportType>::Ping(PrivateKeyPtr private_key,
                                const Contact &peer,
                                RpcPingFunctor callback) {
   TransportPtr transport;
   MessageHandlerPtr message_handler;
-  Prepare(securifier, transport, message_handler);
+  Prepare(private_key, transport, message_handler);
   uint32_t object_indx =
       connected_objects_.AddObject(transport, message_handler);
 
   protobuf::PingRequest request;
-  *request.mutable_sender() = PrepareContact(securifier);
+  *request.mutable_sender() = ToProtobuf(contact_);
   std::string random_data(RandomString(50 + (RandomUint32() % 50)));
   request.set_ping(random_data);
   std::shared_ptr<RpcsFailurePeer> rpcs_failure_peer(new RpcsFailurePeer);
@@ -267,17 +264,17 @@ void Rpcs<TransportType>::Ping(SecurifierPtr securifier,
 template <typename TransportType>
 void Rpcs<TransportType>::FindValue(const Key &key,
                                     const uint16_t &nodes_requested,
-                                    SecurifierPtr securifier,
+                                    PrivateKeyPtr private_key,
                                     const Contact &peer,
                                     RpcFindValueFunctor callback) {
   TransportPtr transport;
   MessageHandlerPtr message_handler;
-  Prepare(securifier, transport, message_handler);
+  Prepare(private_key, transport, message_handler);
   uint32_t object_indx =
       connected_objects_.AddObject(transport, message_handler);
 
   protobuf::FindValueRequest request;
-  *request.mutable_sender() = PrepareContact(securifier);
+  *request.mutable_sender() = ToProtobuf(contact_);
   request.set_key(key.String());
   request.set_num_nodes_requested(nodes_requested);
   std::shared_ptr<RpcsFailurePeer> rpcs_failure_peer(new RpcsFailurePeer);
@@ -301,17 +298,17 @@ void Rpcs<TransportType>::FindValue(const Key &key,
 template <typename TransportType>
 void Rpcs<TransportType>::FindNodes(const Key &key,
                                     const uint16_t &nodes_requested,
-                                    SecurifierPtr securifier,
+                                    PrivateKeyPtr private_key,
                                     const Contact &peer,
                                     RpcFindNodesFunctor callback) {
   TransportPtr transport;
   MessageHandlerPtr message_handler;
-  Prepare(securifier, transport, message_handler);
+  Prepare(private_key, transport, message_handler);
   uint32_t object_indx =
       connected_objects_.AddObject(transport, message_handler);
 
   protobuf::FindNodesRequest request;
-  *request.mutable_sender() = PrepareContact(securifier);
+  *request.mutable_sender() = ToProtobuf(contact_);
   request.set_key(key.String());
   request.set_num_nodes_requested(nodes_requested);
   std::shared_ptr<RpcsFailurePeer> rpcs_failure_peer(new RpcsFailurePeer);
@@ -337,17 +334,17 @@ void Rpcs<TransportType>::Store(const Key &key,
                                 const std::string &value,
                                 const std::string &signature,
                                 const boost::posix_time::seconds &ttl,
-                                SecurifierPtr securifier,
+                                PrivateKeyPtr private_key,
                                 const Contact &peer,
                                 RpcStoreFunctor callback) {
   TransportPtr transport;
   MessageHandlerPtr message_handler;
-  Prepare(securifier, transport, message_handler);
+  Prepare(private_key, transport, message_handler);
   uint32_t object_indx =
       connected_objects_.AddObject(transport, message_handler);
 
   protobuf::StoreRequest request;
-  *request.mutable_sender() = PrepareContact(securifier);
+  *request.mutable_sender() = ToProtobuf(contact_);
   request.set_key(key.String());
   std::shared_ptr<RpcsFailurePeer> rpcs_failure_peer(new RpcsFailurePeer);
   rpcs_failure_peer->peer = peer;
@@ -375,12 +372,12 @@ template <typename TransportType>
 void Rpcs<TransportType>::StoreRefresh(
     const std::string &serialised_store_request,
     const std::string &serialised_store_request_signature,
-    SecurifierPtr securifier,
+    PrivateKeyPtr private_key,
     const Contact &peer,
     RpcStoreRefreshFunctor callback) {
   TransportPtr transport;
   MessageHandlerPtr message_handler;
-  Prepare(securifier, transport, message_handler);
+  Prepare(private_key, transport, message_handler);
   uint32_t object_indx =
       connected_objects_.AddObject(transport, message_handler);
 
@@ -388,7 +385,7 @@ void Rpcs<TransportType>::StoreRefresh(
   std::shared_ptr<RpcsFailurePeer> rpcs_failure_peer(new RpcsFailurePeer);
   rpcs_failure_peer->peer = peer;
 
-  *request.mutable_sender() = PrepareContact(securifier);
+  *request.mutable_sender() = ToProtobuf(contact_);
   request.set_serialised_store_request(serialised_store_request);
   request.set_serialised_store_request_signature(
       serialised_store_request_signature);
@@ -412,12 +409,12 @@ template <typename TransportType>
 void Rpcs<TransportType>::Delete(const Key &key,
                                  const std::string &value,
                                  const std::string &signature,
-                                 SecurifierPtr securifier,
+                                 PrivateKeyPtr private_key,
                                  const Contact &peer,
                                  RpcDeleteFunctor callback) {
   TransportPtr transport;
   MessageHandlerPtr message_handler;
-  Prepare(securifier, transport, message_handler);
+  Prepare(private_key, transport, message_handler);
   uint32_t object_indx =
       connected_objects_.AddObject(transport, message_handler);
 
@@ -425,7 +422,7 @@ void Rpcs<TransportType>::Delete(const Key &key,
   std::shared_ptr<RpcsFailurePeer> rpcs_failure_peer(new RpcsFailurePeer);
   rpcs_failure_peer->peer = peer;
 
-  *request.mutable_sender() = PrepareContact(securifier);
+  *request.mutable_sender() = ToProtobuf(contact_);
   request.set_key(key.String());
   protobuf::SignedValue *signed_value(request.mutable_signed_value());
   signed_value->set_value(value);
@@ -449,12 +446,12 @@ template <typename TransportType>
 void Rpcs<TransportType>::DeleteRefresh(
     const std::string &serialised_delete_request,
     const std::string &serialised_delete_request_signature,
-    SecurifierPtr securifier,
+    PrivateKeyPtr private_key,
     const Contact &peer,
     RpcDeleteRefreshFunctor callback) {
   TransportPtr transport;
   MessageHandlerPtr message_handler;
-  Prepare(securifier, transport, message_handler);
+  Prepare(private_key, transport, message_handler);
   uint32_t object_indx =
       connected_objects_.AddObject(transport, message_handler);
 
@@ -462,7 +459,7 @@ void Rpcs<TransportType>::DeleteRefresh(
   std::shared_ptr<RpcsFailurePeer> rpcs_failure_peer(new RpcsFailurePeer);
   rpcs_failure_peer->peer = peer;
 
-  *request.mutable_sender() = PrepareContact(securifier);
+  *request.mutable_sender() = ToProtobuf(contact_);
   request.set_serialised_delete_request(serialised_delete_request);
   request.set_serialised_delete_request_signature(
       serialised_delete_request_signature);
@@ -484,11 +481,11 @@ void Rpcs<TransportType>::DeleteRefresh(
 
 template <typename TransportType>
 void Rpcs<TransportType>::Downlist(const std::vector<NodeId> &node_ids,
-                                   SecurifierPtr securifier,
+                                   PrivateKeyPtr private_key,
                                    const Contact &peer) {
   TransportPtr transport;
   MessageHandlerPtr message_handler;
-  Prepare(securifier, transport, message_handler);
+  Prepare(private_key, transport, message_handler);
   connected_objects_.AddObject(transport, message_handler);
   protobuf::DownlistNotification notification;
   *notification.mutable_sender() = ToProtobuf(contact_);
@@ -771,12 +768,12 @@ void Rpcs<TransportType>::DeleteRefreshCallback(
 }
 
 template <typename TransportType>
-void Rpcs<TransportType>::Prepare(SecurifierPtr securifier,
+void Rpcs<TransportType>::Prepare(PrivateKeyPtr private_key,
                                   TransportPtr &transport,
                                   MessageHandlerPtr &message_handler) {
   transport.reset(new TransportType(asio_service_));
-  message_handler.reset(new MessageHandler(securifier ? securifier :
-                                                        default_securifier_));
+  message_handler.reset(new MessageHandler(private_key ? private_key :
+                                                        default_private_key_));
   // Connect message handler to transport for incoming raw messages
   transport->on_message_received()->connect(
       transport::OnMessageReceived::element_type::slot_type(
@@ -794,8 +791,8 @@ std::pair<std::string, std::string> Rpcs<T>::MakeStoreRequestAndSignature(
     const std::string &value,
     const std::string &signature,
     const boost::posix_time::seconds &ttl,
-    SecurifierPtr securifier) {
-  MessageHandlerPtr message_handler(new MessageHandler(securifier));
+    PrivateKeyPtr private_key) {
+  MessageHandlerPtr message_handler(new MessageHandler(private_key));
 
   protobuf::StoreRequest request;
   *request.mutable_sender() = ToProtobuf(contact_);
@@ -806,8 +803,10 @@ std::pair<std::string, std::string> Rpcs<T>::MakeStoreRequestAndSignature(
   signed_value->set_signature(signature);
   request.set_ttl(ttl.is_pos_infinity() ? -1 : ttl.total_seconds());
   std::string message(request.SerializeAsString());
-  std::string message_signature(securifier->Sign(
-        boost::lexical_cast<std::string>(kStoreRequest) + message));
+  std::string message_signature;
+  Asym::Sign(boost::lexical_cast<std::string>(kStoreRequest) + message,
+             *private_key,
+             &message_signature);
   return std::make_pair(message, message_signature);
 }
 
@@ -816,8 +815,8 @@ std::pair<std::string, std::string> Rpcs<T>::MakeDeleteRequestAndSignature(
     const Key &key,
     const std::string &value,
     const std::string &signature,
-    SecurifierPtr securifier) {
-  MessageHandlerPtr message_handler(new MessageHandler(securifier));
+    PrivateKeyPtr private_key) {
+  MessageHandlerPtr message_handler(new MessageHandler(private_key));
 
   protobuf::DeleteRequest request;
   *request.mutable_sender() = ToProtobuf(contact_);
@@ -828,27 +827,11 @@ std::pair<std::string, std::string> Rpcs<T>::MakeDeleteRequestAndSignature(
   signed_value->set_signature(signature);
 
   std::string message(request.SerializeAsString());
-  std::string message_signature(securifier->Sign(
-        boost::lexical_cast<std::string>(kDeleteRequest) + message));
+  std::string message_signature;
+  Asym::Sign(boost::lexical_cast<std::string>(kStoreRequest) + message,
+             *private_key,
+             &message_signature);
   return std::make_pair(message, message_signature);
-}
-
-template <typename TransportType>
-protobuf::Contact Rpcs<TransportType>::PrepareContact(
-    SecurifierPtr securifier) {
-  if (contact_.public_key_id() == securifier->kSigningKeyId())
-    return ToProtobuf(contact_);
-
-  Contact c(contact_.node_id(),
-            contact_.endpoint(),
-            contact_.local_endpoints(),
-            contact_.rendezvous_endpoint(),
-            IsValid(contact_.tcp443endpoint()),
-            IsValid(contact_.tcp80endpoint()),
-            securifier->kSigningKeyId(),
-            securifier->kSigningPublicKey(),
-            "");
-  return ToProtobuf(c);
 }
 
 }  // namespace dht

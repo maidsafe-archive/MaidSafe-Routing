@@ -45,8 +45,6 @@ namespace bs2 = boost::signals2;
 
 namespace maidsafe {
 
-class Securifier;
-
 namespace dht {
 
 namespace protobuf {
@@ -197,8 +195,8 @@ class MessageHandler : public transport::MessageHandler {
            const protobuf::DownlistNotification&,
            transport::Timeout*)>> DownlistNtfSigPtr;
 
-  explicit MessageHandler(std::shared_ptr<Securifier> securifier)
-    : transport::MessageHandler(securifier),
+  explicit MessageHandler(PrivateKeyPtr private_key)
+    : transport::MessageHandler(private_key),
       on_ping_request_(new PingReqSigPtr::element_type),
       on_ping_response_(new PingRspSigPtr::element_type),
       on_find_value_request_(new FindValueReqSigPtr::element_type),
@@ -217,21 +215,21 @@ class MessageHandler : public transport::MessageHandler {
   virtual ~MessageHandler() {}
 
   std::string WrapMessage(const protobuf::PingRequest &msg,
-                          const std::string &recipient_public_key);
+                          const PublicKey &recipient_public_key);
   std::string WrapMessage(const protobuf::FindValueRequest &msg,
-                          const std::string &recipient_public_key);
+                          const PublicKey &recipient_public_key);
   std::string WrapMessage(const protobuf::FindNodesRequest &msg,
-                          const std::string &recipient_public_key);
+                          const PublicKey &recipient_public_key);
   std::string WrapMessage(const protobuf::StoreRequest &msg,
-                          const std::string &recipient_public_key);
+                          const PublicKey &recipient_public_key);
   std::string WrapMessage(const protobuf::StoreRefreshRequest &msg,
-                          const std::string &recipient_public_key);
+                          const PublicKey &recipient_public_key);
   std::string WrapMessage(const protobuf::DeleteRequest &msg,
-                          const std::string &recipient_public_key);
+                          const PublicKey &recipient_public_key);
   std::string WrapMessage(const protobuf::DeleteRefreshRequest &msg,
-                          const std::string &recipient_public_key);
+                          const PublicKey &recipient_public_key);
   std::string WrapMessage(const protobuf::DownlistNotification &msg,
-                          const std::string &recipient_public_key);
+                          const PublicKey &recipient_public_key);
 
   PingReqSigPtr on_ping_request() { return on_ping_request_; }
   PingRspSigPtr on_ping_response() { return on_ping_response_; }
@@ -301,19 +299,19 @@ class MessageHandler : public transport::MessageHandler {
   MessageHandler& operator=(const MessageHandler&);
 
   std::string WrapMessage(const protobuf::PingResponse &msg,
-                          const std::string &recipient_public_key);
+                          const PublicKey &recipient_public_key);
   std::string WrapMessage(const protobuf::FindValueResponse &msg,
-                          const std::string &recipient_public_key);
+                          const PublicKey &recipient_public_key);
   std::string WrapMessage(const protobuf::FindNodesResponse &msg,
-                          const std::string &recipient_public_key);
+                          const PublicKey &recipient_public_key);
   std::string WrapMessage(const protobuf::StoreResponse &msg,
-                          const std::string &recipient_public_key);
+                          const PublicKey &recipient_public_key);
   std::string WrapMessage(const protobuf::StoreRefreshResponse &msg,
-                          const std::string &recipient_public_key);
+                          const PublicKey &recipient_public_key);
   std::string WrapMessage(const protobuf::DeleteResponse &msg,
-                          const std::string &recipient_public_key);
+                          const PublicKey &recipient_public_key);
   std::string WrapMessage(const protobuf::DeleteRefreshResponse &msg,
-                          const std::string &recipient_public_key);
+                          const PublicKey &recipient_public_key);
 
   PingReqSigPtr on_ping_request_;
   PingRspSigPtr on_ping_response_;

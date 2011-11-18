@@ -46,8 +46,8 @@ Contact::Contact(const NodeId &node_id,
                  const transport::Endpoint &rendezvous_endpoint,
                  bool tcp443,
                  bool tcp80,
-                 const std::string &public_key_id,
-                 const std::string &public_key,
+                 const Identity &public_key_id,
+                 const PublicKey &public_key,
                  const std::string &other_info)
     : pimpl_(new Contact::Impl(node_id, endpoint, local_endpoints,
                                rendezvous_endpoint, tcp443, tcp80,
@@ -79,11 +79,11 @@ transport::Endpoint Contact::tcp80endpoint() const {
   return pimpl_->tcp80endpoint();
 }
 
-std::string Contact::public_key_id() const {
+Identity Contact::public_key_id() const {
   return pimpl_->public_key_id();
 }
 
-std::string Contact::public_key() const {
+PublicKey Contact::public_key() const {
   return pimpl_->public_key();
 }
 

@@ -82,12 +82,12 @@ class Service : public std::enable_shared_from_this<Service> {
    *  @param routing_table The routing table contains all contacts.
    *  @param data_store The data_store table contains <value,sig,key> tuples.
    *  @param alternative_store Alternative store.
-   *  @param securifier Securifier for <value,sig,key> validation.
+   *  @param private_key Key for validation.
    *  @param[in] k Kademlia constant k.*/
   Service(std::shared_ptr<RoutingTable> routing_table,
           std::shared_ptr<DataStore> data_store,
           AlternativeStorePtr alternative_store,
-          SecurifierPtr securifier,
+          PrivateKeyPtr private_key,
           const uint16_t &k);
 
   /** Dstructor. */
@@ -182,9 +182,9 @@ class Service : public std::enable_shared_from_this<Service> {
   /** Set the node contact
    *  @param contact The node contact. */
   void set_node_contact(const Contact &contact) { node_contact_ = contact; }
-  /** Set the securifier
-   *  @param securifier The securifier. */
-  void set_securifier(SecurifierPtr securifier) { securifier_ = securifier; }
+  /** Set the PrivateKey
+   *  @param priv_key The Private Key. */
+  void set_private_key(PrivateKeyPtr priv_key) { private_key_ = priv_key; }
 
   friend class test::ServicesTest;
   template <typename T>
@@ -301,8 +301,8 @@ class Service : public std::enable_shared_from_this<Service> {
   std::shared_ptr<DataStore> datastore_;
   /** alternative store */
   AlternativeStorePtr alternative_store_;
-  /** securifier */
-  SecurifierPtr securifier_;
+  /** Private Key */
+  PrivateKeyPtr private_key_;
   /** bool switch of joined status */
   bool node_joined_;
   /** node contact */

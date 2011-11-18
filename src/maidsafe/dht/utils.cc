@@ -67,6 +67,9 @@ Contact FromProtobuf(const protobuf::Contact &pb_contact) {
         Endpoint(pb_contact.local_ips(i),
                 static_cast<uint16_t>(pb_contact.local_port())));
 
+  Asym::PublicKey public_key;
+  if (pb_contact.has_public_key())
+    Asym::DecodePublicKey(pb_contact.public_key(), &public_key);
   return Contact(
       NodeId(pb_contact.node_id()),
       Endpoint(pb_contact.endpoint().ip(),
@@ -79,7 +82,7 @@ Contact FromProtobuf(const protobuf::Contact &pb_contact) {
       pb_contact.has_tcp443() ? pb_contact.tcp443() : false,
       pb_contact.has_tcp80() ? pb_contact.tcp80() : false,
       pb_contact.has_public_key_id() ? pb_contact.public_key_id() : "",
-      pb_contact.has_public_key() ? pb_contact.public_key() : "",
+      public_key,
       pb_contact.has_other_info() ? pb_contact.other_info() : "");
 }
 
@@ -111,7 +114,9 @@ protobuf::Contact ToProtobuf(const Contact &contact) {
     pb_contact.set_tcp80(true);
 
   pb_contact.set_public_key_id(contact.public_key_id());
-  pb_contact.set_public_key(contact.public_key());
+  std::string encode_pub_key;
+  Asym::EncodePublicKey(contact.public_key(), &encode_pub_key);
+  pb_contact.set_public_key(encode_pub_key);
   pb_contact.set_other_info(contact.other_info());
   return pb_contact;
 }

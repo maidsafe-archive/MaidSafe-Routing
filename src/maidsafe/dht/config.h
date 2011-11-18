@@ -40,6 +40,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "boost/date_time/posix_time/posix_time_duration.hpp"
 #include "boost/signals2/signal.hpp"
 
+#include "maidsafe/common/rsa.h"
 #include "maidsafe/dht/return_codes.h"
 #include "maidsafe/dht/version.h"
 
@@ -48,11 +49,11 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     Please update the maidsafe-dht library.
 #endif
 
+namespace Asym = maidsafe::rsa;
 
 namespace maidsafe {
 
 class AlternativeStore;
-class Securifier;
 
 namespace transport {
 class Transport;
@@ -107,7 +108,9 @@ typedef uint16_t Port;
 typedef boost::asio::io_service AsioService;
 typedef std::shared_ptr<MessageHandler> MessageHandlerPtr;
 typedef std::shared_ptr<transport::Transport> TransportPtr;
-typedef std::shared_ptr<Securifier> SecurifierPtr;
+typedef std::shared_ptr<Asym::Keys> KeyPairPtr;
+typedef std::shared_ptr<Asym::PrivateKey> PrivateKeyPtr;
+typedef std::shared_ptr<Asym::PublicKey> PublicKeyPtr;
 typedef std::shared_ptr<AlternativeStore> AlternativeStorePtr;
 typedef std::shared_ptr<transport::Info> RankInfoPtr;
 

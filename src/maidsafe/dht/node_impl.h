@@ -82,7 +82,7 @@ class NodeImpl {
   NodeImpl(AsioService &asio_service,                         // NOLINT (Fraser)
            TransportPtr listening_transport,
            MessageHandlerPtr message_handler,
-           SecurifierPtr default_securifier,
+           KeyPairPtr default_asym_key_pair,
            AlternativeStorePtr alternative_store,
            bool client_only_node,
            const uint16_t &k,
@@ -105,13 +105,13 @@ class NodeImpl {
    *  @param[in] value The value to store.
    *  @param[in] signature The signature to store.
    *  @param[in] ttl The ttl for the new data.
-   *  @param[in] securifier The securifier to pass further.
+   *  @param[in] private_key The private key to pass further.
    *  @param[in] callback The callback to report the results. */
   void Store(const Key &key,
              const std::string &value,
              const std::string &signature,
              const bptime::time_duration &ttl,
-             SecurifierPtr securifier,
+             PrivateKeyPtr private_key,
              StoreFunctor callback);
 
   /** Function to DELETE the content of a <key, value> in the Kademlia network.
@@ -119,12 +119,12 @@ class NodeImpl {
    *  @param[in] Key The key to find
    *  @param[in] value The value to delete.
    *  @param[in] signature The signature to delete.
-   *  @param[in] securifier The securifier to use.
+   *  @param[in] private_key The private key to pass further.
    *  @param[in] callback The callback to report the results. */
   void Delete(const Key &key,
               const std::string &value,
               const std::string &signature,
-              SecurifierPtr securifier,
+              PrivateKeyPtr private_key,
               DeleteFunctor callback);
 
   /** Function to UPDATE the content of a <key, value> in the Kademlia network.
@@ -135,7 +135,7 @@ class NodeImpl {
    *  @param[in] old_value The old_value to delete.
    *  @param[in] old_signature The old_signature to delete.
    *  @param[in] ttl The ttl for the new data.
-   *  @param[in] securifier The securifier to pass further.
+   *  @param[in] private_key The private key to pass further.
    *  @param[in] callback The callback to report the results. */
   void Update(const Key &key,
               const std::string &new_value,
@@ -143,18 +143,18 @@ class NodeImpl {
               const std::string &old_value,
               const std::string &old_signature,
               const bptime::time_duration &ttl,
-              SecurifierPtr securifier,
+              PrivateKeyPtr private_key,
               UpdateFunctor callback);
 
   /** Function to FIND VALUES of the Key from the Kademlia network.
    *  @param[in] Key The key to find
-   *  @param[in] securifier The securifier to pass further.
+   *  @param[in] private_key The private key to pass further.
    *  @param[in] callback The callback to report the results.
    *  @param[in] extra_contacts The number of additional to k contacts to
    *  return.
    *  @param[in] cache Whether to cache the value(s) if found. */
   void FindValue(const Key &key,
-                 SecurifierPtr securifier,
+                 PrivateKeyPtr private_key,
                  FindValueFunctor callback,
                  const uint16_t &extra_contacts = 0,
                  bool cache = true);
@@ -257,11 +257,11 @@ class NodeImpl {
   OrderedContacts GetClosestContactsLocally(const Key &key,
                                             const uint16_t &total_contacts);
 
-  /** If signature is empty, it is set to the signature of value.  If not, it is
-   *  validated. */
-  bool ValidateOrSign(const std::string &value,
-                      SecurifierPtr securifier,
-                      std::string *signature);
+  /** If signature is empty, it is set to the signature of value.
+   *  Else returns kSuccess */
+  int SignIfEmpty(const std::string &value,
+                  PrivateKeyPtr private_key,
+                  std::string *signature);
 
   /** Runs the FindValue callback for the case where this node has the value(s)
    *  locally (i.e. in its alternative_store_ or data_store_). */
@@ -485,7 +485,8 @@ class NodeImpl {
   AsioService &asio_service_;
   TransportPtr listening_transport_;
   MessageHandlerPtr message_handler_;
-  SecurifierPtr default_securifier_;
+  PublicKeyPtr default_pub_key_;
+  PrivateKeyPtr default_priv_key_;
   AlternativeStorePtr alternative_store_;
   OnOnlineStatusChangePtr on_online_status_change_;
   bool client_only_node_;

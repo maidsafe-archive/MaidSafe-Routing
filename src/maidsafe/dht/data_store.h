@@ -47,13 +47,15 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #endif
 #include "boost/thread/shared_mutex.hpp"
 #include "boost/thread/locks.hpp"
+#include "maidsafe/common/rsa.h"
 #include "maidsafe/dht/config.h"
 
 namespace bptime = boost::posix_time;
+namespace Asym = maidsafe::rsa;
+
+typedef std::shared_ptr<Asym::PrivateKey> PrivateKeyPtr;
 
 namespace maidsafe {
-
-class Securifier;
 
 namespace dht {
 
@@ -211,8 +213,8 @@ class DataStore {
   // signature doesn't match the input one or cannot be validated using
   // public_key.
   bool DifferentSigner(const KeyValueSignature &key_value_signature,
-                       const std::string &public_key,
-                       std::shared_ptr<Securifier> securifier) const;
+                       const Asym::PublicKey &public_key,
+                       PrivateKeyPtr priv_key) const;
   bptime::seconds kRefreshInterval() const { return kRefreshInterval_; }
   void set_debug_id(const std::string &debug_id) { debug_id_ = debug_id; }
   friend class test::DataStoreTest;
