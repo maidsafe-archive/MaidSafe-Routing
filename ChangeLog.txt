@@ -1,6 +1,18 @@
-v0.31.04 (WIP)
+v0.31.06 (WIP)
 --------------
 
+
+v0.31.05 (2011-11-02)
+--------------
+* RPCs changed to use the credentials passed in the securifier instead of
+  always using the default one.
+* Fix for StoreRefreshMultipleRequests and DeleteRefreshMultipleRequests
+  test failures.
+* Fixes bug in HandleDeleteToSelf that occasionally caused boost assertion
+  failure.
+* Additional NodeImpl unit tests and fixes for RemoveDownlistedContacts,
+  AssessLookupState & InsertCloseContacts.
+* Using Random in place of SRandom.
 
 
 v0.31.03
