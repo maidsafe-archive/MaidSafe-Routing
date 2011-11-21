@@ -1047,9 +1047,10 @@ TEST_F(KademliaMessageHandlerTest, BEH_ProcessSerialisedMessagePingRqst) {
   auto it = invoked_slots_->find(kPingRequest);
   int total = (*it).second;
   ASSERT_EQ(0U, total);
-  msg_hndlr_->ProcessSerialisedMessage(message_type, payload, kAsymmetricEncrypt,
-                                      message_signature, info,
-                                      message_response, timeout);
+  msg_hndlr_->ProcessSerialisedMessage(message_type, payload,
+                                       kAsymmetricEncrypt,
+                                       message_signature, info,
+                                       message_response, timeout);
   it = invoked_slots_->find(kPingRequest);
   total = (*it).second;
   ASSERT_EQ(1U, total);

@@ -43,6 +43,58 @@ namespace dht {
 
 namespace test {
 
+AsymGetPublicKeyAndValidation::AsymGetPublicKeyAndValidation(
+    const std::string &public_key_id,
+    const Asym::PublicKey &public_key,
+    const Asym::PrivateKey &private_key)
+        : public_key_id_map_(),
+          thread_group_() {
+  private_key;
+  public_key;
+  public_key_id;
+}
+
+// Immitating a non-blocking function
+void AsymGetPublicKeyAndValidation::GetPublicKeyAndValidation(
+    const std::string &public_key_id,
+    Asym::GetPublicKeyAndValidationCallback callback) {
+  thread_group_.add_thread(
+      new boost::thread(
+              &AsymGetPublicKeyAndValidation::DummyFind, this,
+                  public_key_id, callback));
+}
+
+void AsymGetPublicKeyAndValidation::Join() {
+  thread_group_.join_all();
+}
+
+// This method will validate the network lookup for given public_key_id
+bool AsymGetPublicKeyAndValidation::AddTestValidation(
+    const std::string &public_key_id,
+    const std::string &public_key) {
+  auto itr = public_key_id_map_.insert(std::make_pair(public_key_id,
+                                                      public_key));
+  return itr.second;
+}
+
+void AsymGetPublicKeyAndValidation::ClearTestValidationMap() {
+  public_key_id_map_.erase(public_key_id_map_.begin(),
+                            public_key_id_map_.end());
+}
+
+void AsymGetPublicKeyAndValidation::DummyFind(
+    std::string public_key_id,
+    Asym::GetPublicKeyAndValidationCallback callback) {
+  // Imitating delay in lookup for kNetworkDelay milliseconds
+  Sleep(kNetworkDelay);
+  auto itr = public_key_id_map_.find(public_key_id);
+  if (itr != public_key_id_map_.end())
+    callback((*itr).second, "");
+  else
+    callback("", "");
+}
+
+
 CreateContactAndNodeId::CreateContactAndNodeId(uint16_t k)
     : contact_(),
       node_id_(NodeId::kRandomId),
@@ -243,21 +295,27 @@ protobuf::DeleteRequest MakeDeleteRequest(
   delete_request.mutable_signed_value()->set_value(key_value_signature.value);
   return delete_request;
 }
-/*
-void JoinNetworkLookup(SecurifierPtr securifier) {
-  SecurifierGPKPtr securifier_gpkv = std::static_pointer_cast
-      <SecurifierGetPublicKeyAndValidation>(securifier);
-  securifier_gpkv->Join();
+
+void JoinNetworkLookup(KeyPairPtr key_pair) {
+  AsymGPKPtr key_pair_gpkv(new AsymGetPublicKeyAndValidation(
+      key_pair->identity,
+      key_pair->pub_key,
+      key_pair->priv_key));
+  key_pair_gpkv->Join();
 }
 
-bool AddTestValidation(SecurifierPtr securifier,
+bool AddTestValidation(KeyPairPtr key_pair,
                        std::string public_key_id,
-                       std::string public_key) {
-  SecurifierGPKPtr securifier_gpkv = std::static_pointer_cast
-      <SecurifierGetPublicKeyAndValidation>(securifier);
-  return securifier_gpkv->AddTestValidation(public_key_id, public_key);
+                       Asym::PublicKey public_key) {
+  AsymGPKPtr key_pair_gpkv(new AsymGetPublicKeyAndValidation(
+      key_pair->identity,
+      key_pair->pub_key,
+      key_pair->priv_key));
+  std::string pub_key;
+  Asym::EncodePublicKey(public_key, &pub_key);
+  return key_pair_gpkv->AddTestValidation(public_key_id, pub_key);
 }
-*/
+
 void AddContact(std::shared_ptr<RoutingTable> routing_table,
                 const Contact &contact,
                 const RankInfoPtr rank_info) {
@@ -290,8 +348,8 @@ bool WithinKClosest(const NodeId &node_id,
           node_ids.begin() + k);
 }
 
-} // namespace test
+}  // namespace test
 
-} // namespace dht
+}  // namespace dht
 
-} // namespace maidsafe
+}  // namespace maidsafe

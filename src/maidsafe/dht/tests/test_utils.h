@@ -50,6 +50,28 @@ namespace dht {
 
 namespace test {
 
+class AsymGetPublicKeyAndValidation {
+ public:
+  AsymGetPublicKeyAndValidation(const std::string &public_key_id,
+                                const Asym::PublicKey &public_key,
+                                const Asym::PrivateKey &private_key);
+  void GetPublicKeyAndValidation(
+      const std::string &public_key_id,
+      Asym::GetPublicKeyAndValidationCallback callback);
+  void Join();
+  bool AddTestValidation(const std::string &public_key_id,
+                         const std::string &public_key);
+  void ClearTestValidationMap();
+
+ private:
+  void DummyFind(std::string public_key_id,
+                 Asym::GetPublicKeyAndValidationCallback callback);
+  std::map<std::string, std::string> public_key_id_map_;
+  boost::thread_group thread_group_;
+};
+
+typedef std::shared_ptr<AsymGetPublicKeyAndValidation> AsymGPKPtr;
+
 const boost::posix_time::milliseconds kNetworkDelay(200);
 
 class CreateContactAndNodeId {
@@ -112,12 +134,17 @@ bool WithinKClosest(const NodeId &node_id,
                     const Key &target_key,
                     std::vector<NodeId> node_ids,
                     const uint16_t &k);
+void JoinNetworkLookup(KeyPairPtr key_pair);
 
-} // namespace test
+bool AddTestValidation(KeyPairPtr key_pair,
+                       std::string public_key_id,
+                       Asym::PublicKey public_key);
 
-} // namespace dht
+}  // namespace test
 
-} // namespace maidsafe
+}  // namespace dht
 
-#endif // MAIDSAFE_DHT_TESTS_TEST_UTILS_H_
+}  // namespace maidsafe
+
+#endif  // MAIDSAFE_DHT_TESTS_TEST_UTILS_H_
 
