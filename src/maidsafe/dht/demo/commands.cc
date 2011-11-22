@@ -65,6 +65,8 @@ void PrintNodeInfo(const Contact &contact) {
       << boost::format("Node IP:   %1%") % contact.endpoint().ip.to_string();
   ULOG(INFO)
       << boost::format("Node port: %1%") % contact.endpoint().port;
+  ULOG(INFO)
+      << boost::format("Debug ID:  %1%") % DebugId(contact);
 }
 
 Commands::Commands(DemoNodePtr demo_node) : demo_node_(demo_node),

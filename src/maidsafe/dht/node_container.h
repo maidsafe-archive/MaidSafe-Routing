@@ -424,19 +424,23 @@ int NodeContainer<NodeType>::Start(
   bootstrap_contacts_ = bootstrap_contacts;
   int result(kPendingResult);
   if (!node_->client_only_node()) {
-    if (port_range.first > port_range.second)
-      port_range = std::make_pair(port_range.second, port_range.first);
-    // Workaround until NAT detection is up.
+     // Workaround until NAT detection is up.
     std::vector<transport::IP> ips = transport::GetLocalAddresses();
     transport::Endpoint endpoint(
         ips.empty() ? IP::from_string("127.0.0.1") : ips.front(), 0);
     int result(transport::kError);
-    uint16_t port_range_size(port_range.second - port_range.first);
     std::vector<Port> try_ports;
-    try_ports.reserve(port_range_size);
-    for (Port port(port_range.first); port != port_range.second; ++port)
-      try_ports.push_back(port);
-    std::random_shuffle(try_ports.begin(), try_ports.end());
+    if (port_range.first == port_range.second) {
+      try_ports.reserve(1);
+      try_ports.push_back(port_range.first);
+    } else  {
+      if (port_range.first > port_range.second)
+        port_range = std::make_pair(port_range.second, port_range.first);
+      try_ports.reserve(port_range.second - port_range.first);
+      for (Port port(port_range.first); port != port_range.second; ++port)
+        try_ports.push_back(port);
+      std::random_shuffle(try_ports.begin(), try_ports.end());
+    }
     for (auto itr(try_ports.begin()); itr != try_ports.end(); ++itr) {
       endpoint.port = *itr;
       result = listening_transport_->StartListening(endpoint);
