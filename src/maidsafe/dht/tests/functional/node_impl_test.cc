@@ -1002,15 +1002,14 @@ TEST_P(NodeImplTest, FUNC_Delete) {
       size_t size(0);
       if (GetDataStore(*it)->GetValues(multiple_key.String(), &values))
         size = values.size();
-        while (size >= 3
-              && total_sleep_time < kTimeout_) {
+        while (size >= 3 && total_sleep_time < kTimeout_) {
           total_sleep_time += kIterSleep;
           Sleep(kIterSleep);
           if (GetDataStore(*it)->GetValues(multiple_key.String(), &values))
             size = values.size();
         }
-        EXPECT_TRUE(GetDataStore(*it)
-          ->GetValues(multiple_key.String(), &values));
+        EXPECT_TRUE(GetDataStore(*it)->GetValues(multiple_key.String(),
+                                                 &values));
         EXPECT_EQ(2, values.size());
       } else {
         EXPECT_FALSE(GetDataStore(*it)->

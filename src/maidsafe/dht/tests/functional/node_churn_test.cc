@@ -64,9 +64,9 @@ class NodeChurnTest : public testing::Test {
                    size_t count,
                    std::vector<Contact>* bootstrap_contacts);
   void HandleStop(NodeContainerPtr node_container,
-                   TimerPtr timer,
-                   size_t count,
-                   std::vector<Contact>* bootstrap_contacts);
+                  TimerPtr timer,
+                  size_t count,
+                  std::vector<Contact>* bootstrap_contacts);
   std::vector<std::vector<Contact>*> all_bootstrap_contacts_;
 
  protected:
@@ -117,17 +117,20 @@ void NodeChurnTest::HandleStart(NodeContainerPtr node_container,
     node_container->Join(node_container->node()->contact().node_id(),
                          *bootstrap_contacts);
     DLOG(INFO) << "Node " << DebugId(node_container->node()->contact())
-        << " Joins, Bootstrap contacts: " << (*bootstrap_contacts).size();
+               << " Joins, Bootstrap contacts: "
+               << (*bootstrap_contacts).size();
     EXPECT_TRUE(env_->cond_var_.timed_wait(lock, kTimeout_,
                 node_container->wait_for_join_functor()))
-    << "Node " << DebugId(node_container->node()->contact()) << " Timed out";
+        << "Node " << DebugId(node_container->node()->contact())
+        << " Timed out";
     node_container->GetAndResetJoinResult(&result);
     EXPECT_EQ(kSuccess, result)
-    << "Node " << DebugId(node_container->node()->contact()) << " Join failed";
+        << "Node "
+        << DebugId(node_container->node()->contact()) << " Join failed";
     EXPECT_TRUE(node_container->node()->joined());
     if (result == kSuccess)
-          DLOG(INFO) << "Node " << DebugId(node_container->node()->contact())
-        << " Joined Successfully";
+      DLOG(INFO) << "Node " << DebugId(node_container->node()->contact())
+                 << " Joined Successfully";
     if (++total_finished_ == total_restarts_) {  // all restarts are done
       cond_var_.notify_one();
       return;
@@ -147,7 +150,7 @@ void NodeChurnTest::HandleStop(NodeContainerPtr node_container,
   {
     boost::mutex::scoped_lock lock(env_->mutex_);
     DLOG(INFO) << "Node "
-        << DebugId(node_container->node()->contact()) << " Leaves";
+               << DebugId(node_container->node()->contact()) << " Leaves";
     EXPECT_TRUE(node_container->node()->joined());
     node_container->node()->Leave(bootstrap_contacts);
     EXPECT_FALSE(node_container->node()->joined());
@@ -162,10 +165,10 @@ TEST_F(NodeChurnTest, FUNC_RandomStartStopNodes) {
   for (auto it = env_->node_containers_.begin();
       it != env_->node_containers_.end(); ++it) {
     DLOG(INFO) << DebugId((*it)->node()->contact()) << " Bootstrap contacts: "
-       << (*it)->bootstrap_contacts().size();
+               << (*it)->bootstrap_contacts().size();
   }
-  auto node_itr(env_->node_containers_.begin() + 1),
-       node_itr_end(env_->node_containers_.end());
+  auto node_itr(env_->node_containers_.begin() + 1);
+  auto node_itr_end(env_->node_containers_.end());
   for (; node_itr != node_itr_end; ++node_itr) {
     std::vector<Contact>* bootstrap_contacts = new std::vector<Contact>();
     all_bootstrap_contacts_.push_back(bootstrap_contacts);
