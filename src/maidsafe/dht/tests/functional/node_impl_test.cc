@@ -1002,7 +1002,7 @@ TEST_P(NodeImplTest, FUNC_Delete) {
       size_t size(0);
       if (GetDataStore(*it)->GetValues(multiple_key.String(), &values))
         size = values.size();
-        while (values.size() >= 3
+        while (size >= 3
               && total_sleep_time < kTimeout_) {
           total_sleep_time += kIterSleep;
           Sleep(kIterSleep);
@@ -1024,14 +1024,14 @@ TEST_P(NodeImplTest, FUNC_Delete) {
         const bptime::milliseconds kIterSleep(100);
         size_t size(0);
         if (GetDataStore(test_container_)
-          ->GetValues(multiple_key.String(), &values))
+            ->GetValues(multiple_key.String(), &values))
           size = values.size();
-        while (values.size() >= 3
+        while (size >= 3
               && total_sleep_time < kTimeout_) {
           total_sleep_time += kIterSleep;
           Sleep(kIterSleep);
           if (GetDataStore(test_container_)
-            ->GetValues(multiple_key.String(), &values))
+              ->GetValues(multiple_key.String(), &values))
             size = values.size();
         }
         EXPECT_TRUE(GetDataStore(test_container_)
