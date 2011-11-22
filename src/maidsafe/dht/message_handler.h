@@ -33,6 +33,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "boost/concept_check.hpp"
 #include "boost/signals2/signal.hpp"
 #include "maidsafe/transport/message_handler.h"
+
+#include "maidsafe/dht/config.h"
 #include "maidsafe/dht/version.h"
 
 #if MAIDSAFE_DHT_VERSION != 3106
@@ -215,21 +217,21 @@ class MessageHandler : public transport::MessageHandler {
   virtual ~MessageHandler() {}
 
   std::string WrapMessage(const protobuf::PingRequest &msg,
-                          const PublicKey &recipient_public_key);
+                          const Asym::PublicKey &recipient_public_key);
   std::string WrapMessage(const protobuf::FindValueRequest &msg,
-                          const PublicKey &recipient_public_key);
+                          const Asym::PublicKey &recipient_public_key);
   std::string WrapMessage(const protobuf::FindNodesRequest &msg,
-                          const PublicKey &recipient_public_key);
+                          const Asym::PublicKey &recipient_public_key);
   std::string WrapMessage(const protobuf::StoreRequest &msg,
-                          const PublicKey &recipient_public_key);
+                          const Asym::PublicKey &recipient_public_key);
   std::string WrapMessage(const protobuf::StoreRefreshRequest &msg,
-                          const PublicKey &recipient_public_key);
+                          const Asym::PublicKey &recipient_public_key);
   std::string WrapMessage(const protobuf::DeleteRequest &msg,
-                          const PublicKey &recipient_public_key);
+                          const Asym::PublicKey &recipient_public_key);
   std::string WrapMessage(const protobuf::DeleteRefreshRequest &msg,
-                          const PublicKey &recipient_public_key);
+                          const Asym::PublicKey &recipient_public_key);
   std::string WrapMessage(const protobuf::DownlistNotification &msg,
-                          const PublicKey &recipient_public_key);
+                          const Asym::PublicKey &recipient_public_key);
 
   PingReqSigPtr on_ping_request() { return on_ping_request_; }
   PingRspSigPtr on_ping_response() { return on_ping_response_; }
@@ -299,19 +301,19 @@ class MessageHandler : public transport::MessageHandler {
   MessageHandler& operator=(const MessageHandler&);
 
   std::string WrapMessage(const protobuf::PingResponse &msg,
-                          const PublicKey &recipient_public_key);
+                          const Asym::PublicKey &recipient_public_key);
   std::string WrapMessage(const protobuf::FindValueResponse &msg,
-                          const PublicKey &recipient_public_key);
+                          const Asym::PublicKey &recipient_public_key);
   std::string WrapMessage(const protobuf::FindNodesResponse &msg,
-                          const PublicKey &recipient_public_key);
+                          const Asym::PublicKey &recipient_public_key);
   std::string WrapMessage(const protobuf::StoreResponse &msg,
-                          const PublicKey &recipient_public_key);
+                          const Asym::PublicKey &recipient_public_key);
   std::string WrapMessage(const protobuf::StoreRefreshResponse &msg,
-                          const PublicKey &recipient_public_key);
+                          const Asym::PublicKey &recipient_public_key);
   std::string WrapMessage(const protobuf::DeleteResponse &msg,
-                          const PublicKey &recipient_public_key);
+                          const Asym::PublicKey &recipient_public_key);
   std::string WrapMessage(const protobuf::DeleteRefreshResponse &msg,
-                          const PublicKey &recipient_public_key);
+                          const Asym::PublicKey &recipient_public_key);
 
   PingReqSigPtr on_ping_request_;
   PingRspSigPtr on_ping_response_;

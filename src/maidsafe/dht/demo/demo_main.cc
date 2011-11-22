@@ -129,7 +129,7 @@ mk::Contact ComposeContactWithKey(
   std::vector<mt::Endpoint> local_endpoints;
   local_endpoints.push_back(endpoint);
   mk::Contact contact(node_id, endpoint, local_endpoints, endpoint, false,
-                      false, node_id.String(), crypto_key.pub_key, "");
+                      false, node_id.String(), crypto_key.public_key, "");
   return contact;
 }
 

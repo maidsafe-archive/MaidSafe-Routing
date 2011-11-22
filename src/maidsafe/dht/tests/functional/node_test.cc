@@ -212,7 +212,7 @@ TEST_F(NodeTest, FUNC_Bootstrap) {
     transport::Endpoint end_point("127.0.0.1", port);
     std::vector<transport::Endpoint> local_endpoints(1, end_point);
     Contact contact(contact_id, end_point, local_endpoints, end_point, false,
-                    false, "", temp_key_pair.pub_key, "");
+                    false, "", temp_key_pair.public_key, "");
     offline_contacts.push_back(contact);
   }
   bootstrap_contacts = offline_contacts;
@@ -299,7 +299,7 @@ TEST_F(NodeTest, FUNC_StoreAndFindSmallValue) {
     boost::mutex::scoped_lock lock(env_->mutex_);
     chosen_container_->Store(kKey, kValue, "", bptime::pos_infin,
                              PrivateKeyPtr(new Asym::PrivateKey(
-                                chosen_container_->key_pair()->priv_key)));
+                                chosen_container_->key_pair()->private_key)));
     EXPECT_TRUE(env_->cond_var_.timed_wait(lock, kTimeout_,
                 chosen_container_->wait_for_store_functor()));
     chosen_container_->GetAndResetStoreResult(&result);
@@ -310,8 +310,8 @@ TEST_F(NodeTest, FUNC_StoreAndFindSmallValue) {
   {
     boost::mutex::scoped_lock lock(env_->mutex_);
     chosen_container_->FindValue(kKey,
-                                 PrivateKeyPtr(new Asym::PrivateKey(
-                                    chosen_container_->key_pair()->priv_key)));
+        PrivateKeyPtr(new Asym::PrivateKey(
+            chosen_container_->key_pair()->private_key)));
     EXPECT_TRUE(env_->cond_var_.timed_wait(lock, kTimeout_,
                 chosen_container_->wait_for_find_value_functor()));
     chosen_container_->GetAndResetFindValueResult(&find_value_returns);
@@ -322,7 +322,7 @@ TEST_F(NodeTest, FUNC_StoreAndFindSmallValue) {
   EXPECT_TRUE(Asym::Validate(
                   kValue,
                   find_value_returns.values_and_signatures.front().second,
-                  chosen_container_->key_pair()->pub_key));
+                  chosen_container_->key_pair()->public_key));
   EXPECT_TRUE(find_value_returns.closest_nodes.empty());
   EXPECT_EQ(Contact(), find_value_returns.alternative_store_holder);
   // TODO(Philip#5#): 2011-09-01 - Re-introduce when caching is implemented
@@ -336,8 +336,8 @@ TEST_F(NodeTest, FUNC_StoreAndFindBigValue) {
   {
     boost::mutex::scoped_lock lock(env_->mutex_);
     chosen_container_->Store(kKey, kValue, "", bptime::pos_infin,
-                             PrivateKeyPtr(new Asym::PrivateKey(
-                                    chosen_container_->key_pair()->priv_key)));
+        PrivateKeyPtr(new Asym::PrivateKey(
+            chosen_container_->key_pair()->private_key)));
     EXPECT_TRUE(env_->cond_var_.timed_wait(lock, kTimeout_,
                 chosen_container_->wait_for_store_functor()));
     chosen_container_->GetAndResetStoreResult(&result);
@@ -347,8 +347,9 @@ TEST_F(NodeTest, FUNC_StoreAndFindBigValue) {
   FindValueReturns find_value_returns;
   {
     boost::mutex::scoped_lock lock(env_->mutex_);
-    chosen_container_->FindValue(kKey, PrivateKeyPtr(new Asym::PrivateKey(
-                                    chosen_container_->key_pair()->priv_key)));
+    chosen_container_->FindValue(kKey,
+        PrivateKeyPtr(new Asym::PrivateKey(
+            chosen_container_->key_pair()->private_key)));
     EXPECT_TRUE(env_->cond_var_.timed_wait(lock, kTimeout_,
                 chosen_container_->wait_for_find_value_functor()));
     chosen_container_->GetAndResetFindValueResult(&find_value_returns);
@@ -358,7 +359,7 @@ TEST_F(NodeTest, FUNC_StoreAndFindBigValue) {
   EXPECT_EQ(kValue, find_value_returns.values_and_signatures.front().first);
   EXPECT_TRUE(Asym::Validate(kValue,
               find_value_returns.values_and_signatures.front().second,
-              chosen_container_->key_pair()->pub_key));
+              chosen_container_->key_pair()->public_key));
   EXPECT_TRUE(find_value_returns.closest_nodes.empty());
   EXPECT_EQ(Contact(), find_value_returns.alternative_store_holder);
   // TODO(Philip#5#): 2011-09-01 - Re-introduce when caching is implemented
@@ -380,9 +381,8 @@ TEST_F(NodeTest, FUNC_StoreAndFindMultipleValues) {
     {
       boost::mutex::scoped_lock lock(env_->mutex_);
       chosen_container_->Store(keys.back(), values.back(), "",
-                               bptime::pos_infin,
-                               PrivateKeyPtr(new Asym::PrivateKey(
-                                    chosen_container_->key_pair()->priv_key)));
+          bptime::pos_infin, PrivateKeyPtr(new Asym::PrivateKey(
+                                 chosen_container_->key_pair()->private_key)));
       EXPECT_TRUE(env_->cond_var_.timed_wait(lock, kTimeout_,
                   chosen_container_->wait_for_store_functor()));
       chosen_container_->GetAndResetStoreResult(&result);
@@ -398,8 +398,8 @@ TEST_F(NodeTest, FUNC_StoreAndFindMultipleValues) {
     {
       boost::mutex::scoped_lock lock(env_->mutex_);
       chosen_container_->FindValue(*key_itr,
-                                   PrivateKeyPtr(new Asym::PrivateKey(
-                                     chosen_container_->key_pair()->priv_key)));
+          PrivateKeyPtr(new Asym::PrivateKey(
+              chosen_container_->key_pair()->private_key)));
       EXPECT_TRUE(env_->cond_var_.timed_wait(lock, kTimeout_,
                   chosen_container_->wait_for_find_value_functor()));
       chosen_container_->GetAndResetFindValueResult(&find_value_returns);
@@ -410,7 +410,7 @@ TEST_F(NodeTest, FUNC_StoreAndFindMultipleValues) {
               find_value_returns.values_and_signatures.front().first);
     EXPECT_TRUE(Asym::Validate(*value_itr,
                 find_value_returns.values_and_signatures.front().second,
-                chosen_container_->key_pair()->pub_key));
+                chosen_container_->key_pair()->public_key));
     EXPECT_TRUE(find_value_returns.closest_nodes.empty());
     EXPECT_EQ(Contact(), find_value_returns.alternative_store_holder);
     // TODO(Philip#5#): 2011-09-01 - Re-introduce when caching is implemented
@@ -425,8 +425,8 @@ TEST_F(NodeTest, FUNC_MultipleNodesFindSingleValue) {
   {
     boost::mutex::scoped_lock lock(env_->mutex_);
     chosen_container_->Store(kKey, kValue, "", bptime::pos_infin,
-                             PrivateKeyPtr(new Asym::PrivateKey(
-                                    chosen_container_->key_pair()->priv_key)));
+        PrivateKeyPtr(new Asym::PrivateKey(
+            chosen_container_->key_pair()->private_key)));
     EXPECT_TRUE(env_->cond_var_.timed_wait(lock, kTimeout_,
                 chosen_container_->wait_for_store_functor()));
     chosen_container_->GetAndResetStoreResult(&result);
@@ -450,7 +450,7 @@ TEST_F(NodeTest, FUNC_MultipleNodesFindSingleValue) {
     ++sent_count;
     env_->node_containers_[i]->FindValue(kKey,
         PrivateKeyPtr(new Asym::PrivateKey(
-            env_->node_containers_[i]->key_pair()->priv_key)));
+            env_->node_containers_[i]->key_pair()->private_key)));
   }
   EXPECT_TRUE(env_->cond_var_.timed_wait(lock, bptime::minutes(2),
               std::bind(&MultiNodeFindValueResultReady, &sent_count,
@@ -465,7 +465,7 @@ TEST_F(NodeTest, FUNC_MultipleNodesFindSingleValue) {
     EXPECT_EQ(kValue, (*it).values_and_signatures.front().first);
     EXPECT_TRUE(Asym::Validate(kValue,
                 (*it).values_and_signatures.front().second,
-                chosen_container_->key_pair()->pub_key));
+                chosen_container_->key_pair()->public_key));
     EXPECT_TRUE((*it).closest_nodes.empty());
     EXPECT_EQ(Contact(), (*it).alternative_store_holder);
     // TODO(Philip#5#): 2011-09-01 - Re-introduce when caching is implemented
@@ -495,8 +495,8 @@ TEST_F(NodeTest, FUNC_ClientFindValue) {
   {
     boost::mutex::scoped_lock lock(env_->mutex_);
     client_node_container->Store(kKey, kValue, "", bptime::pos_infin,
-                                 PrivateKeyPtr(new Asym::PrivateKey(
-                                    chosen_container_->key_pair()->priv_key)));
+        PrivateKeyPtr(new Asym::PrivateKey(
+            chosen_container_->key_pair()->private_key)));
     EXPECT_TRUE(env_->cond_var_.timed_wait(lock, kTimeout_,
                 client_node_container->wait_for_store_functor()));
     result = kGeneralError;
@@ -508,8 +508,8 @@ TEST_F(NodeTest, FUNC_ClientFindValue) {
   {
     boost::mutex::scoped_lock lock(env_->mutex_);
     client_node_container->FindValue(kKey,
-                                     PrivateKeyPtr(new Asym::PrivateKey(
-                                     chosen_container_->key_pair()->priv_key)));
+        PrivateKeyPtr(new Asym::PrivateKey(
+            chosen_container_->key_pair()->private_key)));
     EXPECT_TRUE(env_->cond_var_.timed_wait(lock, kTimeout_,
                 client_node_container->wait_for_find_value_functor()));
     client_node_container->GetAndResetFindValueResult(&find_value_returns);
@@ -519,7 +519,7 @@ TEST_F(NodeTest, FUNC_ClientFindValue) {
   EXPECT_EQ(kValue, find_value_returns.values_and_signatures.front().first);
   EXPECT_TRUE(Asym::Validate(kValue,
               find_value_returns.values_and_signatures.front().second,
-              client_node_container->key_pair()->pub_key));
+              client_node_container->key_pair()->public_key));
   EXPECT_TRUE(find_value_returns.closest_nodes.empty());
   EXPECT_EQ(Contact(), find_value_returns.alternative_store_holder);
   // TODO(Philip#5#): 2011-09-01 - Re-introduce when caching is implemented
@@ -549,8 +549,8 @@ TEST_F(NodeTest, FUNC_FindNonExistingValue) {
   {
     boost::mutex::scoped_lock lock(env_->mutex_);
     chosen_container_->FindValue(kKey,
-                                 PrivateKeyPtr(new Asym::PrivateKey(
-                                    chosen_container_->key_pair()->priv_key)));
+        PrivateKeyPtr(new Asym::PrivateKey(
+            chosen_container_->key_pair()->private_key)));
     EXPECT_TRUE(env_->cond_var_.timed_wait(lock, kTimeout_,
                 chosen_container_->wait_for_find_value_functor()));
     chosen_container_->GetAndResetFindValueResult(&find_value_returns);
@@ -607,8 +607,8 @@ TEST_F(NodeTest, FUNC_StoreWithInvalidRequest) {
   {
     boost::mutex::scoped_lock lock(env_->mutex_);
     chosen_container_->Store(kKey, kValue, "", bptime::pos_infin,
-                             PrivateKeyPtr(new Asym::PrivateKey(
-                                    chosen_container_->key_pair()->priv_key)));
+        PrivateKeyPtr(new Asym::PrivateKey(
+            chosen_container_->key_pair()->private_key)));
     EXPECT_TRUE(env_->cond_var_.timed_wait(lock, kTimeout_,
                 chosen_container_->wait_for_store_functor()));
     chosen_container_->GetAndResetStoreResult(&result);
@@ -622,7 +622,7 @@ TEST_F(NodeTest, FUNC_StoreWithInvalidRequest) {
     boost::mutex::scoped_lock lock(env_->mutex_);
     next_container->Store(kKey, kAnotherValue, "", bptime::pos_infin,
                           PrivateKeyPtr(new Asym::PrivateKey(
-                              next_container->key_pair()->priv_key)));
+                              next_container->key_pair()->private_key)));
     EXPECT_TRUE(env_->cond_var_.timed_wait(lock, kTimeout_,
                 next_container->wait_for_store_functor()));
     next_container->GetAndResetStoreResult(&result);
@@ -637,8 +637,8 @@ TEST_F(NodeTest, FUNC_Update) {
   {
     boost::mutex::scoped_lock lock(env_->mutex_);
     chosen_container_->Store(kKey, kValue, "", bptime::pos_infin,
-                             PrivateKeyPtr(new Asym::PrivateKey(
-                                    chosen_container_->key_pair()->priv_key)));
+        PrivateKeyPtr(new Asym::PrivateKey(
+            chosen_container_->key_pair()->private_key)));
     EXPECT_TRUE(env_->cond_var_.timed_wait(lock, kTimeout_,
                 chosen_container_->wait_for_store_functor()));
     chosen_container_->GetAndResetStoreResult(&result);
@@ -649,7 +649,7 @@ TEST_F(NodeTest, FUNC_Update) {
   {
     boost::mutex::scoped_lock lock(env_->mutex_);
     chosen_container_->FindValue(kKey, PrivateKeyPtr(new Asym::PrivateKey(
-                                    chosen_container_->key_pair()->priv_key)));
+        chosen_container_->key_pair()->private_key)));
     EXPECT_TRUE(env_->cond_var_.timed_wait(lock, kTimeout_,
                 chosen_container_->wait_for_find_value_functor()));
     chosen_container_->GetAndResetFindValueResult(&find_value_returns);
@@ -659,7 +659,7 @@ TEST_F(NodeTest, FUNC_Update) {
   EXPECT_EQ(kValue, find_value_returns.values_and_signatures.front().first);
   EXPECT_TRUE(Asym::Validate(kValue,
               find_value_returns.values_and_signatures.front().second,
-              chosen_container_->key_pair()->pub_key));
+              chosen_container_->key_pair()->public_key));
   EXPECT_TRUE(find_value_returns.closest_nodes.empty());
   EXPECT_EQ(Contact(), find_value_returns.alternative_store_holder);
   // TODO(Philip#5#): 2011-09-01 - Re-introduce when caching is implemented
@@ -671,9 +671,8 @@ TEST_F(NodeTest, FUNC_Update) {
   {
     boost::mutex::scoped_lock lock(env_->mutex_);
     chosen_container_->Update(kKey, kAnotherValue, "", kValue, "",
-                              bptime::pos_infin,
-                              PrivateKeyPtr(new Asym::PrivateKey(
-                                    chosen_container_->key_pair()->priv_key)));
+         bptime::pos_infin, PrivateKeyPtr(new Asym::PrivateKey(
+                                chosen_container_->key_pair()->private_key)));
     EXPECT_TRUE(env_->cond_var_.timed_wait(lock, kTimeout_,
                 chosen_container_->wait_for_update_functor()));
     chosen_container_->GetAndResetUpdateResult(&result);
@@ -684,7 +683,7 @@ TEST_F(NodeTest, FUNC_Update) {
   {
     boost::mutex::scoped_lock lock(env_->mutex_);
     chosen_container_->FindValue(kKey, PrivateKeyPtr(new Asym::PrivateKey(
-                                    chosen_container_->key_pair()->priv_key)));
+        chosen_container_->key_pair()->private_key)));
     EXPECT_TRUE(env_->cond_var_.timed_wait(lock, kTimeout_,
                 chosen_container_->wait_for_find_value_functor()));
     chosen_container_->GetAndResetFindValueResult(&find_value_returns);
@@ -702,7 +701,7 @@ TEST_F(NodeTest, FUNC_Update) {
             find_value_returns.values_and_signatures.front().first);
   EXPECT_TRUE(Asym::Validate(kAnotherValue,
               find_value_returns.values_and_signatures.front().second,
-              chosen_container_->key_pair()->pub_key));
+              chosen_container_->key_pair()->public_key));
   EXPECT_TRUE(find_value_returns.closest_nodes.empty());
   EXPECT_EQ(Contact(), find_value_returns.alternative_store_holder);
   // TODO(Philip#5#): 2011-09-01 - Re-introduce when caching is implemented
@@ -758,8 +757,8 @@ TEST_F(NodeTest, FUNC_Delete) {
   {
     boost::mutex::scoped_lock lock(env_->mutex_);
     chosen_container_->Store(kKey, kValue, "", bptime::pos_infin,
-                             PrivateKeyPtr(new Asym::PrivateKey(
-                                    chosen_container_->key_pair()->priv_key)));
+        PrivateKeyPtr(new Asym::PrivateKey(
+            chosen_container_->key_pair()->private_key)));
     EXPECT_TRUE(env_->cond_var_.timed_wait(lock, kTimeout_,
                 chosen_container_->wait_for_store_functor()));
     chosen_container_->GetAndResetStoreResult(&result);
@@ -769,8 +768,8 @@ TEST_F(NodeTest, FUNC_Delete) {
   {
     boost::mutex::scoped_lock lock(env_->mutex_);
     chosen_container_->Delete(kKey, kValue, "",
-                              PrivateKeyPtr(new Asym::PrivateKey(
-                                    chosen_container_->key_pair()->priv_key)));
+        PrivateKeyPtr(new Asym::PrivateKey(
+            chosen_container_->key_pair()->private_key)));
     EXPECT_TRUE(env_->cond_var_.timed_wait(lock, kTimeout_,
                 chosen_container_->wait_for_delete_functor()));
     int result(kGeneralError);
@@ -782,7 +781,7 @@ TEST_F(NodeTest, FUNC_Delete) {
   {
     boost::mutex::scoped_lock lock(env_->mutex_);
     chosen_container_->FindValue(kKey, PrivateKeyPtr(new Asym::PrivateKey(
-                                    chosen_container_->key_pair()->priv_key)));
+        chosen_container_->key_pair()->private_key)));
     EXPECT_TRUE(env_->cond_var_.timed_wait(lock, kTimeout_,
                 chosen_container_->wait_for_find_value_functor()));
     chosen_container_->GetAndResetFindValueResult(&find_value_returns);
@@ -801,7 +800,7 @@ TEST_F(NodeTest, FUNC_InvalidDeleteRequest) {
   boost::mutex::scoped_lock lock(env_->mutex_);
   chosen_container_->Delete(kKey, kValue, "",
                               PrivateKeyPtr(new Asym::PrivateKey(
-                                  chosen_container_->key_pair()->priv_key)));
+                                  chosen_container_->key_pair()->private_key)));
   EXPECT_TRUE(env_->cond_var_.timed_wait(lock, kTimeout_,
               chosen_container_->wait_for_delete_functor()));
   int result(kGeneralError);

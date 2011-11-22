@@ -70,11 +70,11 @@ const uint16_t g_kKademliaK = 16;
 
 boost::posix_time::time_duration time_out = transport::kDefaultInitialTimeout;
 
-inline void CreateRSAKeys(std::string *pub_key, std::string *priv_key) {
+inline void CreateRSAKeys(std::string *public_key, std::string *private_key) {
   Asym::Keys kp;
   Asym::GenerateKeyPair(&kp);
-  Asym::EncodePublicKey(kp.pub_key, pub_key);
-  Asym::EncodePrivateKey(kp.priv_key, priv_key);
+  Asym::EncodePublicKey(kp.public_key, public_key);
+  Asym::EncodePrivateKey(kp.private_key, private_key);
 }
 
 }  // unnamed namespace
@@ -131,7 +131,7 @@ class ServicesTest: public CreateContactAndNodeId, public testing::Test {
   virtual void SetUp() {}
 
   PrivateKeyPtr GetPrivateKeyPtr(KeyPairPtr key_pair) {
-    return PrivateKeyPtr(new Asym::PrivateKey(key_pair->priv_key));
+    return PrivateKeyPtr(new Asym::PrivateKey(key_pair->private_key));
   }
 
   void FakePingContact(Contact /*contact*/) {
@@ -167,7 +167,7 @@ class ServicesTest: public CreateContactAndNodeId, public testing::Test {
     protobuf::StoreRequest store_request = MakeStoreRequest(sender, kvs);
     std::string message = store_request.SerializeAsString();
     std::string message_sig;
-    Asym::Sign(message, crypto_key_data.priv_key, &message_sig);
+    Asym::Sign(message, crypto_key_data.private_key, &message_sig);
     protobuf::StoreResponse store_response;
     service_->Store(info_, store_request, message, message_sig,
                     &store_response, &time_out);
@@ -181,7 +181,8 @@ class ServicesTest: public CreateContactAndNodeId, public testing::Test {
     protobuf::DeleteRequest delete_request = MakeDeleteRequest(sender, kvs);
     std::string delete_message = delete_request.SerializeAsString();
     std::string delete_message_sig;
-    Asym::Sign(delete_message, crypto_key_data.priv_key, &delete_message_sig);
+    Asym::Sign(delete_message, crypto_key_data.private_key,
+               &delete_message_sig);
     protobuf::DeleteResponse delete_response;
     service_->Delete(info_, delete_request, delete_message,
                      delete_message_sig, &delete_response, &time_out);
@@ -198,7 +199,7 @@ class ServicesTest: public CreateContactAndNodeId, public testing::Test {
     protobuf::StoreRequest store_request = MakeStoreRequest(sender_orig, kvs);
     std::string message = store_request.SerializeAsString();
     std::string message_sig;
-    Asym::Sign(message, crypto_key_data.priv_key, &message_sig);
+    Asym::Sign(message, crypto_key_data.private_key, &message_sig);
     Contact new_sender = ComposeContactWithKey(sender_id_new, 5001,
                                                crypto_key_data_new);
     protobuf::StoreRefreshRequest store_refresh_request;
@@ -223,7 +224,8 @@ class ServicesTest: public CreateContactAndNodeId, public testing::Test {
                                                                kvs);
     std::string delete_message = delete_request.SerializeAsString();
     std::string delete_message_sig;
-    Asym::Sign(delete_message, crypto_key_data.priv_key, &delete_message_sig);
+    Asym::Sign(delete_message, crypto_key_data.private_key,
+               &delete_message_sig);
     Contact new_sender = ComposeContactWithKey(sender_id_new, 5001,
                                                crypto_key_data_new);
     protobuf::DeleteRefreshRequest delete_refresh_request;
@@ -365,7 +367,7 @@ TEST_F(ServicesTest, BEH_Store) {
 
   std::string message = store_request.SerializeAsString();
   std::string message_sig;
-  Asym::Sign(message, crypto_key_data.priv_key, &message_sig);
+  Asym::Sign(message, crypto_key_data.private_key, &message_sig);
   RequestAndSignature request_signature(message, message_sig);
   bptime::time_duration old_ttl(bptime::pos_infin);
   {
@@ -402,7 +404,7 @@ TEST_F(ServicesTest, BEH_Store) {
     // TODO(Viv) Change To Always Validate False For this KeyPair
     Asym::Keys key_pair;
     key_pair.identity = sender.public_key_id();
-    key_pair.pub_key = sender.public_key();
+    key_pair.public_key = sender.public_key();
     KeyPairPtr key_pair_local(new Asym::Keys(key_pair));
     Service service(routing_table_, data_store_, alternative_store_,
                     GetPrivateKeyPtr(key_pair_local), g_kKademliaK);
@@ -455,7 +457,7 @@ TEST_F(ServicesTest, BEH_Store) {
   {
     // Try to store a validated tuple, into the datastore already containing it
     AddTestValidation(key_pair_, sender_id.String(),
-                      crypto_key_data.pub_key);
+                      crypto_key_data.public_key);
     EXPECT_EQ(kSuccess, data_store_->StoreValue(kvs, old_ttl, request_signature,
                                                 false));
     ASSERT_EQ(1U, GetDataStoreSize());
@@ -485,12 +487,12 @@ TEST_F(ServicesTest, BEH_Delete) {
   protobuf::StoreRequest store_request = MakeStoreRequest(sender, kvs);
   std::string store_message = store_request.SerializeAsString();
   std::string store_message_sig;
-  Asym::Sign(store_message, crypto_key_data.priv_key, &store_message_sig);
+  Asym::Sign(store_message, crypto_key_data.private_key, &store_message_sig);
 
   protobuf::DeleteRequest delete_request = MakeDeleteRequest(sender, kvs);
   std::string delete_message = delete_request.SerializeAsString();
   std::string delete_message_sig;
-  Asym::Sign(delete_message, crypto_key_data.priv_key, &delete_message_sig);
+  Asym::Sign(delete_message, crypto_key_data.private_key, &delete_message_sig);
   RequestAndSignature request_signature(delete_message, delete_message_sig);
   bptime::time_duration old_ttl(bptime::pos_infin);
   {
@@ -525,7 +527,7 @@ TEST_F(ServicesTest, BEH_Delete) {
     // TODO(Viv) Change To Always Validate False For this KeyPair
     Asym::Keys key_pair;
     key_pair.identity = sender.public_key_id();
-    key_pair.pub_key = sender.public_key();
+    key_pair.public_key = sender.public_key();
     KeyPairPtr key_pair_local(new Asym::Keys(key_pair));
     Service service(routing_table_, data_store_, alternative_store_,
                     GetPrivateKeyPtr(key_pair_local), g_kKademliaK);
@@ -603,7 +605,7 @@ TEST_F(ServicesTest, FUNC_StoreRefresh) {
 
   std::string message = store_request.SerializeAsString();
   std::string message_sig;
-  Asym::Sign(message, crypto_key_data.priv_key, &message_sig);
+  Asym::Sign(message, crypto_key_data.private_key, &message_sig);
   RequestAndSignature request_signature(message, message_sig);
   bptime::time_duration old_ttl(bptime::pos_infin);
 
@@ -649,7 +651,7 @@ TEST_F(ServicesTest, FUNC_StoreRefresh) {
     // TODO(Viv) Change To Always Validate False For this KeyPair
     Asym::Keys key_pair;
     key_pair.identity = sender.public_key_id();
-    key_pair.pub_key = sender.public_key();
+    key_pair.public_key = sender.public_key();
     KeyPairPtr key_pair_local(new Asym::Keys(key_pair));
     Service service(routing_table_, data_store_, alternative_store_,
                     GetPrivateKeyPtr(key_pair_local), g_kKademliaK);
@@ -676,7 +678,7 @@ TEST_F(ServicesTest, FUNC_StoreRefresh) {
     service_->StoreRefresh(info_, store_refresh_request,
                            &store_refresh_response, &time_out);
     AddTestValidation(key_pair_, sender_id.String(),
-                      crypto_key_data.pub_key);
+                      crypto_key_data.public_key);
     EXPECT_TRUE(store_refresh_response.result());
     EXPECT_EQ(1U, GetSenderTaskSize());
     JoinNetworkLookup(key_pair_);
@@ -697,7 +699,7 @@ TEST_F(ServicesTest, FUNC_StoreRefresh) {
     service_->StoreRefresh(info_, store_refresh_request, &store_fresh_response,
                            &time_out);
     AddTestValidation(key_pair_, sender_id.String(),
-                      crypto_key_data.pub_key);
+                      crypto_key_data.public_key);
     EXPECT_TRUE(store_fresh_response.result());
     EXPECT_EQ(1U, GetSenderTaskSize());
     JoinNetworkLookup(key_pair_);
@@ -722,12 +724,12 @@ TEST_F(ServicesTest, FUNC_DeleteRefresh) {
   protobuf::StoreRequest store_request = MakeStoreRequest(sender, kvs);
   std::string store_message = store_request.SerializeAsString();
   std::string store_message_sig;
-  Asym::Sign(store_message, crypto_key_data.priv_key, &store_message_sig);
+  Asym::Sign(store_message, crypto_key_data.private_key, &store_message_sig);
 
   protobuf::DeleteRequest delete_request = MakeDeleteRequest(sender, kvs);
   std::string delete_message = delete_request.SerializeAsString();
   std::string delete_message_sig;
-  Asym::Sign(delete_message, crypto_key_data.priv_key, &delete_message_sig);
+  Asym::Sign(delete_message, crypto_key_data.private_key, &delete_message_sig);
   RequestAndSignature request_signature(delete_message, delete_message_sig);
   bptime::time_duration old_ttl(bptime::pos_infin);
 
@@ -738,7 +740,7 @@ TEST_F(ServicesTest, FUNC_DeleteRefresh) {
                                               new_crypto_key_id);
   protobuf::DeleteRefreshRequest delete_refresh_request;
   AddTestValidation(key_pair_, sender_id.String(),
-                    crypto_key_data.pub_key);
+                    crypto_key_data.public_key);
   delete_refresh_request.mutable_sender()->CopyFrom(ToProtobuf(new_sender));
   {
     service_->set_node_joined(false);
@@ -776,7 +778,7 @@ TEST_F(ServicesTest, FUNC_DeleteRefresh) {
     // TODO(Viv) Change To Always Validate False For this KeyPair
     Asym::Keys key_pair;
     key_pair.identity = sender.public_key_id();
-    key_pair.pub_key = sender.public_key();
+    key_pair.public_key = sender.public_key();
     KeyPairPtr key_pair_local(new Asym::Keys(key_pair));
     Service service(routing_table_, data_store_, alternative_store_,
                     GetPrivateKeyPtr(key_pair_local), g_kKademliaK);
@@ -1322,11 +1324,11 @@ TEST_F(ServicesTest, FUNC_MultipleStoreRequests) {
 
   // This will validate network lookup.
   AddTestValidation(key_pair_, sender_id_1.String(),
-                    crypto_key_data_1.pub_key);
+                    crypto_key_data_1.public_key);
   AddTestValidation(key_pair_, sender_id_2.String(),
-                    crypto_key_data_2.pub_key);
+                    crypto_key_data_2.public_key);
   AddTestValidation(key_pair_, sender_id_3.String(),
-                    crypto_key_data_3.pub_key);
+                    crypto_key_data_3.public_key);
 
   ASSERT_EQ(0U, GetDataStoreSize());
   // Multilple Store requests same key value
@@ -1434,11 +1436,11 @@ TEST_F(ServicesTest, FUNC_MultipleDeleteRequests) {
 
   // This will validate network lookup.
   AddTestValidation(key_pair_, sender_id_1.String(),
-                    crypto_key_data_1.pub_key);
+                    crypto_key_data_1.public_key);
   AddTestValidation(key_pair_, sender_id_2.String(),
-                    crypto_key_data_2.pub_key);
+                    crypto_key_data_2.public_key);
   AddTestValidation(key_pair_, sender_id_3.String(),
-                    crypto_key_data_3.pub_key);
+                    crypto_key_data_3.public_key);
 
   ASSERT_EQ(0U, GetDataStoreSize());
   // Multilple Delete requests same key value
@@ -1520,11 +1522,11 @@ TEST_F(ServicesTest, FUNC_MultipleStoreRefreshRequests) {
 
   // This will validate network lookup.
   AddTestValidation(key_pair_, sender_id_1.String(),
-                    crypto_key_data_1.pub_key);
+                    crypto_key_data_1.public_key);
   AddTestValidation(key_pair_, sender_id_2.String(),
-                    crypto_key_data_2.pub_key);
+                    crypto_key_data_2.public_key);
   AddTestValidation(key_pair_, sender_id_3.String(),
-                    crypto_key_data_3.pub_key);
+                    crypto_key_data_3.public_key);
 
   ASSERT_EQ(0U, GetDataStoreSize());
   // Multilple Store Refresh requests same key value
@@ -1691,11 +1693,11 @@ TEST_F(ServicesTest, FUNC_MultipleDeleteRefreshRequests) {
 
   // This will validate network lookup.
   AddTestValidation(key_pair_, sender_id_1.String(),
-                    crypto_key_data_1.pub_key);
+                    crypto_key_data_1.public_key);
   AddTestValidation(key_pair_, sender_id_2.String(),
-                    crypto_key_data_2.pub_key);
+                    crypto_key_data_2.public_key);
   AddTestValidation(key_pair_, sender_id_3.String(),
-                    crypto_key_data_3.pub_key);
+                    crypto_key_data_3.public_key);
 
   ASSERT_EQ(0U, GetDataStoreSize());
   // Multilple Delete Refresh requests same key value
@@ -1833,13 +1835,13 @@ TEST_F(ServicesTest, FUNC_MultipleThreads) {
   Clear();
   // This will validate network lookup for given public_key_id.
   AddTestValidation(key_pair_, sender_id_1.String(),
-                    crypto_key_data_1.pub_key);
+                    crypto_key_data_1.public_key);
   AddTestValidation(key_pair_, sender_id_2.String(),
-                    crypto_key_data_2.pub_key);
+                    crypto_key_data_2.public_key);
   AddTestValidation(key_pair_, sender_id_3.String(),
-                    crypto_key_data_3.pub_key);
+                    crypto_key_data_3.public_key);
   AddTestValidation(key_pair_, sender_id_4.String(),
-                    crypto_key_data_4.pub_key);
+                    crypto_key_data_4.public_key);
   // Store initial data
   // Data for store Refresh
   EXPECT_TRUE(DoStore(sender_id_2, k2_v1, crypto_key_data_2));
@@ -1991,7 +1993,7 @@ TEST_F(ServicesTest, BEH_SignalConnection) {
   protobuf::StoreRequest store_request = MakeStoreRequest(sender, kvs);
   std::string message = store_request.SerializeAsString();
   std::string message_sig;
-  Asym::Sign(message, crypto_key_data.priv_key, &message_sig);
+  Asym::Sign(message, crypto_key_data.private_key, &message_sig);
   protobuf::StoreResponse store_response;
   (*message_handler_ptr->on_store_request())(info_, store_request, message,
       message_sig, &store_response, &time_out);
@@ -2014,7 +2016,7 @@ TEST_F(ServicesTest, BEH_SignalConnection) {
   protobuf::DeleteRequest delete_request = MakeDeleteRequest(sender, kvs);
   std::string delete_message = delete_request.SerializeAsString();
   std::string delete_message_sig;
-  Asym::Sign(delete_message, crypto_key_data.priv_key, &delete_message_sig);
+  Asym::Sign(delete_message, crypto_key_data.private_key, &delete_message_sig);
   protobuf::DeleteResponse delete_response;
   (*message_handler_ptr->on_delete_request())(info_, delete_request,
                                               delete_message,

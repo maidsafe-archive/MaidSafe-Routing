@@ -112,7 +112,7 @@ class NodeImplTest : public testing::TestWithParam<bool> {
   }
 
   PrivateKeyPtr GetPrivateKeyPtr(KeyPairPtr key_pair) {
-    return PrivateKeyPtr(new Asym::PrivateKey(key_pair->priv_key));
+    return PrivateKeyPtr(new Asym::PrivateKey(key_pair->private_key));
   }
 
   std::shared_ptr<DataStore> GetDataStore(
@@ -427,7 +427,7 @@ TEST_P(NodeImplTest, FUNC_Store) {
     boost::mutex::scoped_lock lock(env_->mutex_);
     chosen_container->Store(far_key_, value, "", duration,
                             PrivateKeyPtr(new Asym::PrivateKey(
-                                chosen_container->key_pair()->priv_key)));
+                                chosen_container->key_pair()->private_key)));
     ASSERT_TRUE(env_->cond_var_.timed_wait(lock, kTimeout_,
                 chosen_container->wait_for_store_functor()));
     chosen_container->GetAndResetStoreResult(&result);
@@ -576,7 +576,7 @@ TEST_P(NodeImplTest, FUNC_FindValue) {
       EXPECT_EQ(values[k], find_value_returns.values_and_signatures[k].first);
       EXPECT_TRUE(Asym::Validate(values[k],
                   find_value_returns.values_and_signatures[k].second,
-                  test_container_->key_pair()->pub_key));
+                  test_container_->key_pair()->public_key));
     }
     // TODO(Fraser#5#): 2011-07-14 - Handle other return fields
 
@@ -921,7 +921,7 @@ TEST_P(NodeImplTest, FUNC_Delete) {
   EXPECT_EQ(value, find_value_returns.values_and_signatures[0].first);
   EXPECT_TRUE(Asym::Validate(value,
               find_value_returns.values_and_signatures[0].second,
-              chosen_container->key_pair()->pub_key));
+              chosen_container->key_pair()->public_key));
   FindValueReturns find_multiple_value_returns;
   Key multiple_key(NodeId::kRandomId);
   std::string value1 = RandomString(RandomUint32() % 1000 + 24);
@@ -1076,17 +1076,17 @@ TEST_P(NodeImplTest, FUNC_Delete) {
   if (find_multiple_value_returns.values_and_signatures[0].first == value2) {
     EXPECT_TRUE(Asym::Validate(value2,
                 find_multiple_value_returns.values_and_signatures[0].second,
-                chosen_container->key_pair()->pub_key));
+                chosen_container->key_pair()->public_key));
     EXPECT_TRUE(Asym::Validate(value3,
                 find_multiple_value_returns.values_and_signatures[1].second,
-                chosen_container->key_pair()->pub_key));
+                chosen_container->key_pair()->public_key));
   } else {
     EXPECT_TRUE(Asym::Validate(value3,
                 find_multiple_value_returns.values_and_signatures[0].second,
-                chosen_container->key_pair()->pub_key));
+                chosen_container->key_pair()->public_key));
     EXPECT_TRUE(Asym::Validate(value2,
                 find_multiple_value_returns.values_and_signatures[1].second,
-                chosen_container->key_pair()->pub_key));
+                chosen_container->key_pair()->public_key));
   }
 }
 
@@ -1134,7 +1134,7 @@ TEST_P(NodeImplTest, FUNC_Update) {
   EXPECT_EQ(value, find_value_returns.values_and_signatures[0].first);
   EXPECT_TRUE(Asym::Validate(value,
               find_value_returns.values_and_signatures[0].second,
-              chosen_container->key_pair()->pub_key));
+              chosen_container->key_pair()->public_key));
 
   //  verify updating fails for all but the original storer
   for (size_t i = 0; i < env_->node_containers_.size(); ++i) {
@@ -1187,7 +1187,7 @@ TEST_P(NodeImplTest, FUNC_Update) {
   EXPECT_EQ(value, find_value_returns.values_and_signatures[0].first);
   EXPECT_TRUE(Asym::Validate(value,
               find_value_returns.values_and_signatures[0].second,
-              chosen_container->key_pair()->pub_key));
+              chosen_container->key_pair()->public_key));
 
   // verify single value is updated correctly out of multiple values
   // stored under a key

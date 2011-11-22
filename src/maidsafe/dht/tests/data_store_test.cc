@@ -863,7 +863,7 @@ TEST_F(DataStoreTest, FUNC_MultipleThreads) {
                                 kvt.request_and_signature, false);
         stored_then_deleted_kvts.push_back(kvt);
       } else {
-        stored_kvts.push_back(std::make_pair(kvt, crypto_keys.pub_key));
+        stored_kvts.push_back(std::make_pair(kvt, crypto_keys.public_key));
       }
 
       std::string common_key = kvt.key_value_signature.key;
@@ -879,7 +879,7 @@ TEST_F(DataStoreTest, FUNC_MultipleThreads) {
                                   kvt.request_and_signature, false);
           stored_then_deleted_kvts.push_back(kvt);
         } else {
-          stored_kvts.push_back(std::make_pair(kvt, crypto_keys.pub_key));
+          stored_kvts.push_back(std::make_pair(kvt, crypto_keys.public_key));
         }
       }
     }

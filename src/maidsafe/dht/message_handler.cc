@@ -44,7 +44,7 @@ namespace dht {
 
 std::string MessageHandler::WrapMessage(
     const protobuf::PingRequest &msg,
-    const PublicKey &recipient_public_key) {
+    const Asym::PublicKey &recipient_public_key) {
   if (!msg.IsInitialized())
     return "";
   return MakeSerialisedWrapperMessage(kPingRequest, msg.SerializeAsString(),
@@ -53,7 +53,7 @@ std::string MessageHandler::WrapMessage(
 
 std::string MessageHandler::WrapMessage(
     const protobuf::PingResponse &msg,
-    const PublicKey &recipient_public_key) {
+    const Asym::PublicKey &recipient_public_key) {
   if (!msg.IsInitialized())
     return "";
   return MakeSerialisedWrapperMessage(kPingResponse, msg.SerializeAsString(),
@@ -62,7 +62,7 @@ std::string MessageHandler::WrapMessage(
 
 std::string MessageHandler::WrapMessage(
     const protobuf::FindValueRequest &msg,
-    const PublicKey &recipient_public_key) {
+    const Asym::PublicKey &recipient_public_key) {
   if (!msg.IsInitialized())
     return "";
   return MakeSerialisedWrapperMessage(kFindValueRequest,
@@ -72,7 +72,7 @@ std::string MessageHandler::WrapMessage(
 
 std::string MessageHandler::WrapMessage(
     const protobuf::FindValueResponse &msg,
-    const PublicKey &recipient_public_key) {
+    const Asym::PublicKey &recipient_public_key) {
   if (!msg.IsInitialized())
     return "";
   return MakeSerialisedWrapperMessage(kFindValueResponse,
@@ -83,7 +83,7 @@ std::string MessageHandler::WrapMessage(
 
 std::string MessageHandler::WrapMessage(
     const protobuf::FindNodesRequest &msg,
-    const PublicKey &recipient_public_key) {
+    const Asym::PublicKey &recipient_public_key) {
   if (!msg.IsInitialized())
     return "";
   return MakeSerialisedWrapperMessage(kFindNodesRequest,
@@ -94,7 +94,7 @@ std::string MessageHandler::WrapMessage(
 
 std::string MessageHandler::WrapMessage(
     const protobuf::FindNodesResponse &msg,
-    const PublicKey &recipient_public_key) {
+    const Asym::PublicKey &recipient_public_key) {
   if (!msg.IsInitialized())
     return "";
   return MakeSerialisedWrapperMessage(kFindNodesResponse,
@@ -105,7 +105,7 @@ std::string MessageHandler::WrapMessage(
 
 std::string MessageHandler::WrapMessage(
     const protobuf::StoreRequest &msg,
-    const PublicKey &recipient_public_key) {
+    const Asym::PublicKey &recipient_public_key) {
   if (!msg.IsInitialized())
     return "";
   return MakeSerialisedWrapperMessage(kStoreRequest,
@@ -116,7 +116,7 @@ std::string MessageHandler::WrapMessage(
 
 std::string MessageHandler::WrapMessage(
     const protobuf::StoreResponse &msg,
-    const PublicKey &recipient_public_key) {
+    const Asym::PublicKey &recipient_public_key) {
   if (!msg.IsInitialized())
     return "";
   return MakeSerialisedWrapperMessage(kStoreResponse, msg.SerializeAsString(),
@@ -125,7 +125,7 @@ std::string MessageHandler::WrapMessage(
 
 std::string MessageHandler::WrapMessage(
     const protobuf::StoreRefreshRequest &msg,
-    const PublicKey &recipient_public_key) {
+    const Asym::PublicKey &recipient_public_key) {
   if (!msg.IsInitialized())
     return "";
   return MakeSerialisedWrapperMessage(kStoreRefreshRequest,
@@ -136,7 +136,7 @@ std::string MessageHandler::WrapMessage(
 
 std::string MessageHandler::WrapMessage(
     const protobuf::StoreRefreshResponse &msg,
-    const PublicKey &recipient_public_key) {
+    const Asym::PublicKey &recipient_public_key) {
   if (!msg.IsInitialized())
     return "";
   return MakeSerialisedWrapperMessage(kStoreRefreshResponse,
@@ -147,7 +147,7 @@ std::string MessageHandler::WrapMessage(
 
 std::string MessageHandler::WrapMessage(
     const protobuf::DeleteRequest &msg,
-    const PublicKey &recipient_public_key) {
+    const Asym::PublicKey &recipient_public_key) {
   if (!msg.IsInitialized())
     return "";
   return MakeSerialisedWrapperMessage(kDeleteRequest,
@@ -158,7 +158,7 @@ std::string MessageHandler::WrapMessage(
 
 std::string MessageHandler::WrapMessage(
     const protobuf::DeleteResponse &msg,
-    const PublicKey &recipient_public_key) {
+    const Asym::PublicKey &recipient_public_key) {
   if (!msg.IsInitialized())
     return "";
   return MakeSerialisedWrapperMessage(kDeleteResponse, msg.SerializeAsString(),
@@ -167,7 +167,7 @@ std::string MessageHandler::WrapMessage(
 
 std::string MessageHandler::WrapMessage(
     const protobuf::DeleteRefreshRequest &msg,
-    const PublicKey &recipient_public_key) {
+    const Asym::PublicKey &recipient_public_key) {
   if (!msg.IsInitialized())
     return "";
   return MakeSerialisedWrapperMessage(kDeleteRefreshRequest,
@@ -178,7 +178,7 @@ std::string MessageHandler::WrapMessage(
 
 std::string MessageHandler::WrapMessage(
     const protobuf::DeleteRefreshResponse &msg,
-    const PublicKey &recipient_public_key) {
+    const Asym::PublicKey &recipient_public_key) {
   if (!msg.IsInitialized())
     return "";
   return MakeSerialisedWrapperMessage(kDeleteRefreshResponse,
@@ -189,7 +189,7 @@ std::string MessageHandler::WrapMessage(
 
 std::string MessageHandler::WrapMessage(
     const protobuf::DownlistNotification &msg,
-    const PublicKey &recipient_public_key) {
+    const Asym::PublicKey &recipient_public_key) {
   if (!msg.IsInitialized())
     return "";
   return MakeSerialisedWrapperMessage(kDownlistNotification,
@@ -296,7 +296,7 @@ void MessageHandler::ProcessSerialisedMessage(
           public_key = request.sender().public_key();
         if (request.sender().has_other_info())
           other_info = request.sender().other_info();
-        PublicKey asym_public_key;
+        Asym::PublicKey asym_public_key;
         Asym::DecodePublicKey(public_key, &asym_public_key);
         if (!Asym::ValidateKey(asym_public_key))
           return;
@@ -337,7 +337,7 @@ void MessageHandler::ProcessSerialisedMessage(
           public_key = request.sender().public_key();
         if (request.sender().has_other_info())
           other_info = request.sender().other_info();
-        PublicKey asym_public_key;
+        Asym::PublicKey asym_public_key;
         Asym::DecodePublicKey(public_key, &asym_public_key);
         if (!Asym::ValidateKey(asym_public_key))
           return;
@@ -379,7 +379,7 @@ void MessageHandler::ProcessSerialisedMessage(
           public_key = request.sender().public_key();
         if (request.sender().has_other_info())
           other_info = request.sender().other_info();
-        PublicKey asym_public_key;
+        Asym::PublicKey asym_public_key;
         Asym::DecodePublicKey(public_key, &asym_public_key);
         if (!Asym::ValidateKey(asym_public_key))
           return;
@@ -420,7 +420,7 @@ void MessageHandler::ProcessSerialisedMessage(
           public_key = request.sender().public_key();
         if (request.sender().has_other_info())
           other_info = request.sender().other_info();
-        PublicKey asym_public_key;
+        Asym::PublicKey asym_public_key;
         Asym::DecodePublicKey(public_key, &asym_public_key);
         if (!Asym::ValidateKey(asym_public_key))
           return;

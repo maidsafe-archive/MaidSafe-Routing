@@ -138,7 +138,7 @@ class RpcsTest : public CreateContactAndNodeId, public testing::Test {
   }
 
   PrivateKeyPtr GetPrivateKeyPtr(KeyPairPtr key_pair) {
-    return PrivateKeyPtr(new Asym::PrivateKey(key_pair->priv_key));
+    return PrivateKeyPtr(new Asym::PrivateKey(key_pair->private_key));
   }
 
   virtual void SetUp() {
@@ -146,8 +146,8 @@ class RpcsTest : public CreateContactAndNodeId, public testing::Test {
     NodeId rpcs_node_id = GenerateRandomId(node_id_, 502);
     Asym::Keys key_pair;
     key_pair.identity = rpcs_node_id.String();
-    key_pair.priv_key = sender_crypto_key_id_.priv_key;
-    key_pair.pub_key = sender_crypto_key_id_.pub_key;
+    key_pair.private_key = sender_crypto_key_id_.private_key;
+    key_pair.public_key = sender_crypto_key_id_.public_key;
     rpcs_key_pair_.reset(new Asym::Keys(key_pair));
     rpcs_= std::shared_ptr<Rpcs<T>>(new Rpcs<T>( // NOLINT (Fraser)
         asio_service_,
@@ -170,11 +170,11 @@ class RpcsTest : public CreateContactAndNodeId, public testing::Test {
     /* TODO(Viv) Check if this even does anything
     service_key_pair_ = std::shared_ptr<Securifier>(
         new SecurifierGetPublicKeyAndValidation("",
-                receiver_crypto_key_id_.pub_key,
-                    receiver_crypto_key_id_.priv_key));*/
+                receiver_crypto_key_id_.public_key,
+                    receiver_crypto_key_id_.private_key));*/
     Asym::Keys service_key_pair;
-    service_key_pair.pub_key = receiver_crypto_key_id_.pub_key;
-    service_key_pair.priv_key = receiver_crypto_key_id_.priv_key;
+    service_key_pair.public_key = receiver_crypto_key_id_.public_key;
+    service_key_pair.private_key = receiver_crypto_key_id_.private_key;
     service_key_pair_.reset(new Asym::Keys(service_key_pair));
     NodeId service_node_id = GenerateRandomId(node_id_, 503);
     service_contact_ = ComposeContactWithKey(service_node_id,
@@ -223,7 +223,7 @@ class RpcsTest : public CreateContactAndNodeId, public testing::Test {
     protobuf::StoreRequest store_request = MakeStoreRequest(contact, kvs);
     std::string store_message = store_request.SerializeAsString();
     std::string store_message_sig;
-    Asym::Sign(store_message, crypto_key_data.priv_key, &store_message_sig);
+    Asym::Sign(store_message, crypto_key_data.private_key, &store_message_sig);
     bptime::time_duration ttl(bptime::pos_infin);
     request_signature = std::make_pair(store_message, store_message_sig);
     EXPECT_EQ(kSuccess, data_store_->StoreValue(kvs, ttl, request_signature,
@@ -237,7 +237,8 @@ class RpcsTest : public CreateContactAndNodeId, public testing::Test {
     protobuf::DeleteRequest delete_request = MakeDeleteRequest(contact, kvs);
     std::string delete_message = delete_request.SerializeAsString();
     std::string delete_message_sig;
-    Asym::Sign(delete_message, crypto_key_data.priv_key, &delete_message_sig);
+    Asym::Sign(delete_message, crypto_key_data.private_key,
+               &delete_message_sig);
     request_signature = std::make_pair(delete_message, delete_message_sig);
     EXPECT_TRUE(data_store_->DeleteValue(kvs, request_signature, false));
   }
@@ -719,12 +720,12 @@ TYPED_TEST_P(RpcsTest, FUNC_StoreMalicious) {
   boost::posix_time::seconds ttl(3600);
   KeyValueSignature kvs =
       MakeKVS(this->sender_crypto_key_id_, 1024, key.String(), "");
-  Asym::PublicKey pub_key;
+  Asym::PublicKey public_key;
   Asym::DecodePublicKey("Different Public Key found on Network Lookup!!",
-                        &pub_key);
+                        &public_key);
   AddTestValidation(this->service_key_pair_,
                     this->rpcs_contact_.node_id().String(),
-                    pub_key);
+                    public_key);
   // Malicious sender sends fake public_key
   this->rpcs_->Store(key, kvs.value, kvs.signature, ttl,
                      GetPrivateKeyPtr(this->rpcs_key_pair_),
@@ -772,7 +773,7 @@ TYPED_TEST_P(RpcsTest, FUNC_StoreMultipleRequest) {
   }
   AddTestValidation(this->service_key_pair_,
                     this->rpcs_contact_.node_id().String(),
-                    this->sender_crypto_key_id_.pub_key);
+                    this->sender_crypto_key_id_.public_key);
   std::string signature("");
 
   for (size_t i = 0; i < 10; ++i) {
@@ -821,10 +822,11 @@ TYPED_TEST_P(RpcsTest, FUNC_StoreRefresh) {
                                                           kvs);
   std::string message = store_request.SerializeAsString();
   std::string store_message_sig;
-  Asym::Sign(message, this->sender_crypto_key_id_.priv_key, &store_message_sig);
+  Asym::Sign(message, this->sender_crypto_key_id_.private_key,
+             &store_message_sig);
   AddTestValidation(this->service_key_pair_,
                     this->rpcs_contact_.node_id().String(),
-                    this->sender_crypto_key_id_.pub_key);
+                    this->sender_crypto_key_id_.public_key);
 
   // send original store request
   this->rpcs_->Store(key, kvs.value, kvs.signature, ttl,
@@ -930,7 +932,7 @@ TYPED_TEST_P(RpcsTest, FUNC_StoreRefreshMultipleRequests) {
     status_response.push_back(std::make_pair(false, -1));
     refresh_time_old_vector.push_back(this->GetRefreshTime(kvs_vector[i]));
     AddTestValidation(this->service_key_pair_, sender_id.String(),
-                      this->sender_crypto_key_id_.pub_key);
+                      this->sender_crypto_key_id_.public_key);
   }
   // Store Refresh rpc
   std::string req_signature;
@@ -978,10 +980,11 @@ TYPED_TEST_P(RpcsTest, FUNC_StoreRefreshMalicious) {
                                                           kvs);
   std::string message = store_request.SerializeAsString();
   std::string store_message_sig;
-  Asym::Sign(message, this->sender_crypto_key_id_.priv_key, &store_message_sig);
+  Asym::Sign(message, this->sender_crypto_key_id_.private_key,
+             &store_message_sig);
   AddTestValidation(this->service_key_pair_,
                     this->rpcs_contact_.node_id().String(),
-                    this->sender_crypto_key_id_.pub_key);
+                    this->sender_crypto_key_id_.public_key);
 
   this->rpcs_->Store(key, kvs.value, kvs.signature, ttl,
       GetPrivateKeyPtr(this->rpcs_key_pair_),
@@ -995,12 +998,12 @@ TYPED_TEST_P(RpcsTest, FUNC_StoreRefreshMalicious) {
 
   // Attempt refresh with fake key
   Sleep(boost::posix_time::seconds(1));
-  Asym::PublicKey pub_key;
+  Asym::PublicKey public_key;
   Asym::DecodePublicKey("Different Public Key found on Network Lookup!!",
-                        &pub_key);
+                        &public_key);
   AddTestValidation(this->service_key_pair_,
                     this->rpcs_contact_.node_id().String(),
-                    pub_key);
+                    public_key);
   Sleep(boost::posix_time::seconds(1));
   done = false;
   response_code = kGeneralError;
@@ -1052,7 +1055,7 @@ TYPED_TEST_P(RpcsTest, FUNC_Delete) {
   EXPECT_TRUE(IsKeyValueInDataStore(kvs, this->data_store_));
   AddTestValidation(this->service_key_pair_,
                     this->rpcs_contact_.node_id().String(),
-                    this->sender_crypto_key_id_.pub_key);
+                    this->sender_crypto_key_id_.public_key);
 
   this->rpcs_->Delete(key, kvs.value, kvs.signature,
                       GetPrivateKeyPtr(this->rpcs_key_pair_),
@@ -1098,12 +1101,12 @@ TYPED_TEST_P(RpcsTest, FUNC_DeleteMalicious) {
   this->AddToReceiverDataStore(kvs, this->sender_crypto_key_id_,
                                this->rpcs_contact_, request_signature);
   EXPECT_TRUE(IsKeyValueInDataStore(kvs, this->data_store_));
-  Asym::PublicKey pub_key;
+  Asym::PublicKey public_key;
   Asym::DecodePublicKey("Different Public Key found on Network Lookup!!",
-                        &pub_key);
+                        &public_key);
   AddTestValidation(this->service_key_pair_,
                     this->rpcs_contact_.node_id().String(),
-                    pub_key);
+                    public_key);
 
   // Malicious sender sends fake public_key
   this->rpcs_->Delete(key, kvs.value, kvs.signature,
@@ -1151,7 +1154,7 @@ TYPED_TEST_P(RpcsTest, FUNC_DeleteNonExistingKey) {
   EXPECT_FALSE(IsKeyValueInDataStore(kvs, this->data_store_));
   AddTestValidation(this->service_key_pair_,
                     this->rpcs_contact_.node_id().String(),
-                    this->sender_crypto_key_id_.pub_key);
+                    this->sender_crypto_key_id_.public_key);
 
   this->rpcs_->Delete(key, kvs.value, kvs.signature,
       GetPrivateKeyPtr(this->rpcs_key_pair_),
@@ -1184,7 +1187,7 @@ TYPED_TEST_P(RpcsTest, FUNC_DeleteMultipleRequest) {
   }
   AddTestValidation(this->service_key_pair_,
                     this->rpcs_contact_.node_id().String(),
-                    this->sender_crypto_key_id_.pub_key);
+                    this->sender_crypto_key_id_.public_key);
   std::string signature;
 
   for (size_t i = 0; i < 10; ++i) {
@@ -1192,7 +1195,7 @@ TYPED_TEST_P(RpcsTest, FUNC_DeleteMultipleRequest) {
       signature = "invalid signature";
     else
       Asym::Sign(kvs_vector[i].value,
-                 this->sender_crypto_key_id_.priv_key,
+                 this->sender_crypto_key_id_.private_key,
                  &signature);
     this->rpcs_->Delete(key, kvs_vector[i].value, signature,
                         GetPrivateKeyPtr(
@@ -1241,7 +1244,7 @@ TYPED_TEST_P(RpcsTest, FUNC_DeleteRefresh) {
   EXPECT_TRUE(IsKeyValueInDataStore(kvs, this->data_store_));
 
   AddTestValidation(this->service_key_pair_, sender_id.String(),
-                    crypto_key_data.pub_key);
+                    crypto_key_data.public_key);
   // Deleting
   this->DeleteFromReceiverDataStore(kvs, crypto_key_data, sender,
                                     request_signature);
@@ -1300,7 +1303,7 @@ TYPED_TEST_P(RpcsTest, FUNC_DeleteRefreshStoredValue) {
   EXPECT_TRUE(IsKeyValueInDataStore(kvs, this->data_store_));
 
   AddTestValidation(this->service_key_pair_, sender_id.String(),
-                    crypto_key_data.pub_key);
+                    crypto_key_data.public_key);
   // Value not deleted
   RequestAndSignature request_signature("", "");
   EXPECT_TRUE(IsKeyValueInDataStore(kvs, this->data_store_));
@@ -1360,11 +1363,11 @@ TYPED_TEST_P(RpcsTest, FUNC_DeleteRefreshMalicious) {
                                     request_signature);
   EXPECT_FALSE(IsKeyValueInDataStore(kvs, this->data_store_));
   bptime::ptime refresh_time_old = this->GetRefreshTime(kvs);
-  Asym::PublicKey pub_key;
+  Asym::PublicKey public_key;
   Asym::DecodePublicKey("Different Public Key found on Network Lookup!!",
-                        &pub_key);
+                        &public_key);
   AddTestValidation(this->service_key_pair_, sender_id.String(),
-                    pub_key);
+                    public_key);
   // Malicious sender sends fake public_key
   this->rpcs_->DeleteRefresh(request_signature.first, request_signature.second,
       GetPrivateKeyPtr(this->rpcs_key_pair_), this->service_contact_,
@@ -1392,10 +1395,10 @@ TYPED_TEST_P(RpcsTest, FUNC_DeleteRefreshNonExistingKey) {
                                                crypto_key_data);
   protobuf::DeleteRequest delete_request = MakeDeleteRequest(sender, kvs);
   AddTestValidation(this->service_key_pair_, sender_id.String(),
-                    crypto_key_data.pub_key);
+                    crypto_key_data.public_key);
   std::string delete_message = delete_request.SerializeAsString();
   std::string delete_message_sig;
-  Asym::Sign(delete_message, crypto_key_data.priv_key, &delete_message_sig);
+  Asym::Sign(delete_message, crypto_key_data.private_key, &delete_message_sig);
   RequestAndSignature request_signature(delete_message, delete_message_sig);
   // Sending delete refresh
   this->rpcs_->DeleteRefresh(request_signature.first, request_signature.second,
@@ -1440,7 +1443,7 @@ TYPED_TEST_P(RpcsTest, FUNC_DeleteRefreshMultipleRequests) {
     EXPECT_FALSE(IsKeyValueInDataStore(kvs_vector[i], this->data_store_));
     refresh_time_old_vector.push_back(this->GetRefreshTime(kvs_vector[i]));
     AddTestValidation(this->service_key_pair_, sender_id.String(),
-                      crypto_key_data.pub_key);
+                      crypto_key_data.public_key);
   }
   // Delete Refresh rpc
   std::string req_signature;
@@ -1651,7 +1654,7 @@ class RpcsMultiServerNodesTest : public CreateContactAndNodeId,
   }
 
   PrivateKeyPtr GetPrivateKeyPtr(KeyPairPtr key_pair) {
-    return PrivateKeyPtr(new Asym::PrivateKey(key_pair->priv_key));
+    return PrivateKeyPtr(new Asym::PrivateKey(key_pair->private_key));
   }
 
   virtual void SetUp() {
@@ -1662,8 +1665,8 @@ class RpcsMultiServerNodesTest : public CreateContactAndNodeId,
           GenerateRandomId(node_id_, kMinClientPositionOffset + index);
       Asym::Keys key_pair;
       key_pair.identity = rpcs_node_id.String();
-      key_pair.priv_key = senders_crypto_key_id3_[index].priv_key;
-      key_pair.pub_key = senders_crypto_key_id3_[index].pub_key;
+      key_pair.private_key = senders_crypto_key_id3_[index].private_key;
+      key_pair.public_key = senders_crypto_key_id3_[index].public_key;
       rpcs_key_pair_.push_back(KeyPairPtr(new Asym::Keys(key_pair)));
       rpcs_.push_back(std::shared_ptr<Rpcs<T>>(               // NOLINT (Fraser)
           new Rpcs<T>(*asio_services_[index],
@@ -1687,8 +1690,8 @@ class RpcsMultiServerNodesTest : public CreateContactAndNodeId,
                                 receivers_crypto_key_id3_[index]));
       Asym::Keys key_pair;
       key_pair.identity = service_node_id.String();
-      key_pair.priv_key = receivers_crypto_key_id3_[index].priv_key;
-      key_pair.pub_key = receivers_crypto_key_id3_[index].pub_key;
+      key_pair.private_key = receivers_crypto_key_id3_[index].private_key;
+      key_pair.public_key = receivers_crypto_key_id3_[index].public_key;
       services_securifier_.push_back(KeyPairPtr(new Asym::Keys(key_pair)));
       service_.push_back(
           ServicePtr(new Service(routing_table_[index], data_store_[index],

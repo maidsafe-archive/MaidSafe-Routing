@@ -485,8 +485,8 @@ class NodeImpl {
   AsioService &asio_service_;
   TransportPtr listening_transport_;
   MessageHandlerPtr message_handler_;
-  PublicKeyPtr default_pub_key_;
-  PrivateKeyPtr default_priv_key_;
+  PublicKeyPtr default_public_key_;
+  PrivateKeyPtr default_private_key_;
   AlternativeStorePtr alternative_store_;
   OnOnlineStatusChangePtr on_online_status_change_;
   bool client_only_node_;

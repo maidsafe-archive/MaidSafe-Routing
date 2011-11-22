@@ -345,7 +345,7 @@ class MockRpcsTest : public testing::Test {
   }
 
   virtual void SetUp() {
-    private_key_.reset(new Asym::PrivateKey(crypto_key_pair_.priv_key));
+    private_key_.reset(new Asym::PrivateKey(crypto_key_pair_.private_key));
   }
 
   Contact ComposeContact(const NodeId& node_id, uint16_t port) {
@@ -354,7 +354,7 @@ class MockRpcsTest : public testing::Test {
     transport::Endpoint end_point(ip, port);
     local_endpoints.push_back(end_point);
     Contact contact(node_id, end_point, local_endpoints, end_point, false,
-                    false, "", crypto_key_pair_.pub_key, "");
+                    false, "", crypto_key_pair_.public_key, "");
     return contact;
   }
 

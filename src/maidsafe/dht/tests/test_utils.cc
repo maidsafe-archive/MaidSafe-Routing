@@ -209,7 +209,7 @@ Contact CreateContactAndNodeId::ComposeContactWithKey(
   transport::Endpoint end_point(ip, port);
   local_endpoints.push_back(end_point);
   Contact contact(node_id, end_point, local_endpoints, end_point, false,
-                  false, node_id.String(), rsa_key_pair.pub_key, "");
+                  false, node_id.String(), rsa_key_pair.public_key, "");
   IP ipa = IP::from_string(ip);
   contact.SetPreferredEndpoint(ipa);
   return contact;
@@ -240,7 +240,7 @@ KeyValueSignature MakeKVS(const Asym::Keys &rsa_key_pair,
     value = value.substr(0, value_size);
   }
   std::string signature;
-  Asym::Sign(value, rsa_key_pair.priv_key, &signature);
+  Asym::Sign(value, rsa_key_pair.private_key, &signature);
   return KeyValueSignature(key, value, signature);
 }
 
@@ -259,13 +259,13 @@ KeyValueTuple MakeKVT(const Asym::Keys &rsa_key_pair,
     value = value.substr(0, value_size);
   }
   std::string signature;
-  Asym::Sign(value, rsa_key_pair.priv_key, &signature);
+  Asym::Sign(value, rsa_key_pair.private_key, &signature);
   bptime::ptime now = bptime::microsec_clock::universal_time();
   bptime::ptime expire_time = now + ttl;
   bptime::ptime refresh_time = now + bptime::minutes(30);
   std::string request = RandomString(1024);
   std::string req_sig;
-  Asym::Sign(request, rsa_key_pair.priv_key, &req_sig);
+  Asym::Sign(request, rsa_key_pair.private_key, &req_sig);
   return KeyValueTuple(KeyValueSignature(key, value, signature),
                        expire_time, refresh_time,
                        RequestAndSignature(request, req_sig), false);
@@ -299,8 +299,8 @@ protobuf::DeleteRequest MakeDeleteRequest(
 void JoinNetworkLookup(KeyPairPtr key_pair) {
   AsymGPKPtr key_pair_gpkv(new AsymGetPublicKeyAndValidation(
       key_pair->identity,
-      key_pair->pub_key,
-      key_pair->priv_key));
+      key_pair->public_key,
+      key_pair->private_key));
   key_pair_gpkv->Join();
 }
 
@@ -309,11 +309,11 @@ bool AddTestValidation(KeyPairPtr key_pair,
                        Asym::PublicKey public_key) {
   AsymGPKPtr key_pair_gpkv(new AsymGetPublicKeyAndValidation(
       key_pair->identity,
-      key_pair->pub_key,
-      key_pair->priv_key));
-  std::string pub_key;
-  Asym::EncodePublicKey(public_key, &pub_key);
-  return key_pair_gpkv->AddTestValidation(public_key_id, pub_key);
+      key_pair->public_key,
+      key_pair->private_key));
+  std::string encoded_public_key;
+  Asym::EncodePublicKey(public_key, &encoded_public_key);
+  return key_pair_gpkv->AddTestValidation(public_key_id, encoded_public_key);
 }
 
 void AddContact(std::shared_ptr<RoutingTable> routing_table,

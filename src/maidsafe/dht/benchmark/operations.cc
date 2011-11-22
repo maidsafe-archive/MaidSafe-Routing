@@ -60,8 +60,8 @@ Operations::Operations(std::shared_ptr<Node> node)
 //  cryobj_.set_hash_algorithm(crypto::SHA_512);
   Asym::Keys kp;
   Asym::GenerateKeyPair(&kp);
-  public_key_ = kp.pub_key;
-  private_key_ = kp.priv_key;
+  public_key_ = kp.public_key;
+  private_key_ = kp.private_key;
 }
 
 void Operations::TestFindAndPing(const std::vector<NodeId> &nodes,
