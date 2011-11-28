@@ -1494,7 +1494,7 @@ TYPED_TEST_P(RpcsTest, FUNC_DifferentSecurifier) {
   // Send Ping
   bool done(false);
   int response_code(kPendingResult), count(0);
-  this->rpcs_->Ping(GetPrivateKeyPtr(other_securifier),
+  this->rpcs_->Ping(this->GetPrivateKeyPtr(other_securifier),
                     this->service_contact_,
                     std::bind(&TestCallback, arg::_1, arg::_2,
                               &done, &response_code));
@@ -1518,7 +1518,7 @@ TYPED_TEST_P(RpcsTest, FUNC_DifferentSecurifier) {
   std::vector<Contact> return_contacts;
   this->rpcs_->FindValue(key,
                          g_kKademliaK,
-                         GetPrivateKeyPtr(other_securifier),
+                         this->GetPrivateKeyPtr(other_securifier),
                          this->service_contact_,
                          std::bind(&TestFindValueCallback, arg::_1, arg::_2,
                                    arg::_3, arg::_4, arg::_5,
@@ -1537,7 +1537,7 @@ TYPED_TEST_P(RpcsTest, FUNC_DifferentSecurifier) {
   return_contacts.clear();
   this->rpcs_->FindNodes(key,
                          g_kKademliaK,
-                         GetPrivateKeyPtr(other_securifier),
+                         this->GetPrivateKeyPtr(other_securifier),
                          this->service_contact_,
                          std::bind(&TestFindNodesCallback, arg::_1, arg::_2,
                                    arg::_3, &return_contacts, &done,
