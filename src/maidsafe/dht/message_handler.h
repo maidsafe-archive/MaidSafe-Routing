@@ -217,21 +217,21 @@ class MessageHandler : public transport::MessageHandler {
   virtual ~MessageHandler() {}
 
   std::string WrapMessage(const protobuf::PingRequest &msg,
-                          const Asym::PublicKey &recipient_public_key);
+                          const asymm::PublicKey &recipient_public_key);
   std::string WrapMessage(const protobuf::FindValueRequest &msg,
-                          const Asym::PublicKey &recipient_public_key);
+                          const asymm::PublicKey &recipient_public_key);
   std::string WrapMessage(const protobuf::FindNodesRequest &msg,
-                          const Asym::PublicKey &recipient_public_key);
+                          const asymm::PublicKey &recipient_public_key);
   std::string WrapMessage(const protobuf::StoreRequest &msg,
-                          const Asym::PublicKey &recipient_public_key);
+                          const asymm::PublicKey &recipient_public_key);
   std::string WrapMessage(const protobuf::StoreRefreshRequest &msg,
-                          const Asym::PublicKey &recipient_public_key);
+                          const asymm::PublicKey &recipient_public_key);
   std::string WrapMessage(const protobuf::DeleteRequest &msg,
-                          const Asym::PublicKey &recipient_public_key);
+                          const asymm::PublicKey &recipient_public_key);
   std::string WrapMessage(const protobuf::DeleteRefreshRequest &msg,
-                          const Asym::PublicKey &recipient_public_key);
+                          const asymm::PublicKey &recipient_public_key);
   std::string WrapMessage(const protobuf::DownlistNotification &msg,
-                          const Asym::PublicKey &recipient_public_key);
+                          const asymm::PublicKey &recipient_public_key);
 
   PingReqSigPtr on_ping_request() { return on_ping_request_; }
   PingRspSigPtr on_ping_response() { return on_ping_response_; }
@@ -301,19 +301,19 @@ class MessageHandler : public transport::MessageHandler {
   MessageHandler& operator=(const MessageHandler&);
 
   std::string WrapMessage(const protobuf::PingResponse &msg,
-                          const Asym::PublicKey &recipient_public_key);
+                          const asymm::PublicKey &recipient_public_key);
   std::string WrapMessage(const protobuf::FindValueResponse &msg,
-                          const Asym::PublicKey &recipient_public_key);
+                          const asymm::PublicKey &recipient_public_key);
   std::string WrapMessage(const protobuf::FindNodesResponse &msg,
-                          const Asym::PublicKey &recipient_public_key);
+                          const asymm::PublicKey &recipient_public_key);
   std::string WrapMessage(const protobuf::StoreResponse &msg,
-                          const Asym::PublicKey &recipient_public_key);
+                          const asymm::PublicKey &recipient_public_key);
   std::string WrapMessage(const protobuf::StoreRefreshResponse &msg,
-                          const Asym::PublicKey &recipient_public_key);
+                          const asymm::PublicKey &recipient_public_key);
   std::string WrapMessage(const protobuf::DeleteResponse &msg,
-                          const Asym::PublicKey &recipient_public_key);
+                          const asymm::PublicKey &recipient_public_key);
   std::string WrapMessage(const protobuf::DeleteRefreshResponse &msg,
-                          const Asym::PublicKey &recipient_public_key);
+                          const asymm::PublicKey &recipient_public_key);
 
   PingReqSigPtr on_ping_request_;
   PingRspSigPtr on_ping_response_;

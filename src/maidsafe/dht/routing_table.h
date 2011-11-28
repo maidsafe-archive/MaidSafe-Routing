@@ -187,7 +187,7 @@ struct ChangeLastSeen {
   // Anju: use nolint to satisfy multi-indexing
   void operator()(RoutingTableContact &routing_table_contact) {  // NOLINT
     // TODO(Viv) Check if Equality Check is Valid for Pub Key
-    if (!Asym::MatchingPublicKeys(routing_table_contact.contact.public_key(),
+    if (!asymm::MatchingPublicKeys(routing_table_contact.contact.public_key(),
                                   contact.public_key())) {
       DLOG(WARNING) << "Contacts have different public keys.";
       return;

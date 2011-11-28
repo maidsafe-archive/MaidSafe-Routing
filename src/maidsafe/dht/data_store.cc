@@ -322,8 +322,7 @@ void DataStore::Refresh(std::vector<KeyValueTuple> *key_value_tuples) {
 
 bool DataStore::DifferentSigner(
     const KeyValueSignature &key_value_signature,
-    const Asym::PublicKey &public_key,
-    std::shared_ptr<Asym::PrivateKey> priv_key) const {
+    const asymm::PublicKey &public_key) const {
   SharedLock shared_lock(shared_mutex_);
   auto it(key_value_index_->get<TagKey>().find(key_value_signature.key));
 
@@ -333,7 +332,7 @@ bool DataStore::DifferentSigner(
   if ((*it).key_value_signature.signature == key_value_signature.signature)
     return false;
 
-  return !Asym::Validate((*it).key_value_signature.value,
+  return !asymm::Validate((*it).key_value_signature.value,
                          (*it).key_value_signature.signature,
                          public_key);
 }

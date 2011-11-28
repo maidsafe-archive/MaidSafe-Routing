@@ -341,11 +341,11 @@ class MockRpcsTest : public testing::Test {
   ~MockRpcsTest() {}
 
   static void SetUpTestCase() {
-    Asym::GenerateKeyPair(&crypto_key_pair_);
+    asymm::GenerateKeyPair(&crypto_key_pair_);
   }
 
   virtual void SetUp() {
-    private_key_.reset(new Asym::PrivateKey(crypto_key_pair_.private_key));
+    private_key_.reset(new asymm::PrivateKey(crypto_key_pair_.private_key));
   }
 
   Contact ComposeContact(const NodeId& node_id, uint16_t port) {
@@ -386,13 +386,13 @@ class MockRpcsTest : public testing::Test {
     Callback(rank_info, result, b, m, query_result);
   }
   protected:
-  static Asym::Keys crypto_key_pair_;
+  static asymm::Keys crypto_key_pair_;
   AsioService asio_service_;
   PrivateKeyPtr private_key_;
   Contact peer_;
 };
 
-Asym::Keys MockRpcsTest::crypto_key_pair_;
+asymm::Keys MockRpcsTest::crypto_key_pair_;
 
 TEST_F(MockRpcsTest, BEH_Ping) {
   uint16_t repeat_factor(1);

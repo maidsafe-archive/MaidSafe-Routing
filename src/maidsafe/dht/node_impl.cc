@@ -101,9 +101,9 @@ NodeImpl::NodeImpl(AsioService &asio_service,                 // NOLINT (Fraser)
       refresh_data_store_timer_(asio_service_) {
   if (default_asym_key_pair) {
     default_private_key_ = PrivateKeyPtr(
-        new Asym::PrivateKey(default_asym_key_pair->private_key));
+        new asymm::PrivateKey(default_asym_key_pair->private_key));
     default_public_key_ = PublicKeyPtr(
-        new Asym::PublicKey(default_asym_key_pair->public_key));
+        new asymm::PublicKey(default_asym_key_pair->public_key));
   }
 }
 
@@ -133,10 +133,10 @@ void NodeImpl::Join(const NodeId &node_id,
   // TODO(Viv) Remove Pub Key From Class Member and take in as Argument
   if (!default_private_key_ || !default_public_key_) {
     DLOG(INFO) << "Creating Keypair";
-    Asym::Keys key_pair;
-    Asym::GenerateKeyPair(&key_pair);
-    default_private_key_.reset(new Asym::PrivateKey(key_pair.private_key));
-    default_public_key_.reset(new Asym::PublicKey(key_pair.public_key));
+    asymm::Keys key_pair;
+    asymm::GenerateKeyPair(&key_pair);
+    default_private_key_.reset(new asymm::PrivateKey(key_pair.private_key));
+    default_public_key_.reset(new asymm::PublicKey(key_pair.public_key));
   } else {
     DLOG(INFO) << EncodeToHex(node_id.String());
   }
@@ -313,7 +313,7 @@ int NodeImpl::SignIfEmpty(const std::string &value,
                           PrivateKeyPtr private_key,
                           std::string *signature) {
   if (signature->empty())
-    return Asym::Sign(value, *private_key, signature);
+    return asymm::Sign(value, *private_key, signature);
   return kSuccess;
 }
 
@@ -1134,8 +1134,8 @@ void NodeImpl::HandleStoreToSelf(StoreArgsPtr store_args) {
   KeyValueSignature key_value_signature(store_args->kTarget.String(),
                                         store_args->kValue,
                                         store_args->kSignature);
-  if (data_store_->DifferentSigner(key_value_signature, contact_.public_key(),
-                                   default_private_key_)) {
+  if (data_store_->DifferentSigner(key_value_signature,
+                                   contact_.public_key())) {
     DLOG(WARNING) << DebugId(contact_) << ": Can't store to self - different "
                   << "signing key used to store under Kad key.";
     HandleSecondPhaseCallback<StoreArgsPtr>(kValueAlreadyExists, store_args);
@@ -1143,7 +1143,7 @@ void NodeImpl::HandleStoreToSelf(StoreArgsPtr store_args) {
   }
 
   // Check the signature validates with this node's public key
-  if (!Asym::Validate(store_args->kValue,
+  if (!asymm::Validate(store_args->kValue,
                       store_args->kSignature,
                       contact_.public_key())) {
     DLOG(ERROR) << DebugId(contact_) << ": Failed to validate Store request "
@@ -1183,8 +1183,8 @@ void NodeImpl::HandleDeleteToSelf(DeleteArgsPtr delete_args) {
   KeyValueSignature key_value_signature(delete_args->kTarget.String(),
                                         delete_args->kValue,
                                         delete_args->kSignature);
-  if (data_store_->DifferentSigner(key_value_signature, contact_.public_key(),
-                                   default_private_key_)) {
+  if (data_store_->DifferentSigner(key_value_signature,
+                                   contact_.public_key())) {
     DLOG(WARNING) << DebugId(contact_) << ": Can't delete to self - different "
                   << "signing key used to store under Kad key.";
     HandleSecondPhaseCallback<DeleteArgsPtr>(kGeneralError, delete_args);
@@ -1192,7 +1192,7 @@ void NodeImpl::HandleDeleteToSelf(DeleteArgsPtr delete_args) {
   }
 
   // Check the signature validates with this node's public key
-  if (!Asym::Validate(delete_args->kValue,
+  if (!asymm::Validate(delete_args->kValue,
                       delete_args->kSignature,
                       contact_.public_key())) {
     DLOG(ERROR) << DebugId(contact_) << ": Failed to validate Delete request "
@@ -1224,8 +1224,7 @@ void NodeImpl::HandleUpdateToSelf(UpdateArgsPtr update_args) {
                                             update_args->kNewValue,
                                             update_args->kNewSignature);
   if (data_store_->DifferentSigner(new_key_value_signature,
-                                   contact_.public_key(),
-                                   default_private_key_)) {
+                                   contact_.public_key())) {
     DLOG(WARNING) << DebugId(contact_) << ": Can't update to self - different "
                   << "signing key used to store under Kad key.";
     HandleSecondPhaseCallback<UpdateArgsPtr>(kGeneralError, update_args);
@@ -1233,7 +1232,7 @@ void NodeImpl::HandleUpdateToSelf(UpdateArgsPtr update_args) {
   }
 
   // Check the new signature validates with this node's public key
-  if (!Asym::Validate(update_args->kNewValue,
+  if (!asymm::Validate(update_args->kNewValue,
                       update_args->kNewSignature,
                       contact_.public_key())) {
     DLOG(ERROR) << DebugId(contact_) << ": Failed to validate Update new "
@@ -1266,7 +1265,7 @@ void NodeImpl::HandleUpdateToSelf(UpdateArgsPtr update_args) {
   }
 
   // Check the old signature validates with this node's public key
-  if (!Asym::Validate(update_args->kOldValue,
+  if (!asymm::Validate(update_args->kOldValue,
                       update_args->kOldSignature,
                       contact_.public_key())) {
     DLOG(ERROR) << DebugId(contact_) << ": Failed to validate Update old "
@@ -1525,10 +1524,10 @@ void NodeImpl::ConnectPingOldestContact() {
 }
 
 void NodeImpl::ValidateContact(const Contact &contact) {
-  Asym::GetPublicKeyAndValidationCallback callback(
+  asymm::GetPublicKeyAndValidationCallback callback(
       std::bind(&NodeImpl::ValidateContactCallback, this, contact, arg::_1,
                 arg::_2));
-  Asym::GetPublicKeyAndValidation(contact.public_key_id(), callback);
+  asymm::GetPublicKeyAndValidation(contact.public_key_id(), callback);
 }
 
 void NodeImpl::ValidateContactCallback(Contact contact,

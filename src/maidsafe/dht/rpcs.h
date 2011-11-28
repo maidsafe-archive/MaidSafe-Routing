@@ -804,7 +804,7 @@ std::pair<std::string, std::string> Rpcs<T>::MakeStoreRequestAndSignature(
   request.set_ttl(ttl.is_pos_infinity() ? -1 : ttl.total_seconds());
   std::string message(request.SerializeAsString());
   std::string message_signature;
-  Asym::Sign(boost::lexical_cast<std::string>(kStoreRequest) + message,
+  asymm::Sign(boost::lexical_cast<std::string>(kStoreRequest) + message,
              *private_key,
              &message_signature);
   return std::make_pair(message, message_signature);
@@ -828,7 +828,7 @@ std::pair<std::string, std::string> Rpcs<T>::MakeDeleteRequestAndSignature(
 
   std::string message(request.SerializeAsString());
   std::string message_signature;
-  Asym::Sign(boost::lexical_cast<std::string>(kStoreRequest) + message,
+  asymm::Sign(boost::lexical_cast<std::string>(kStoreRequest) + message,
              *private_key,
              &message_signature);
   return std::make_pair(message, message_signature);

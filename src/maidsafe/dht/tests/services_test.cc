@@ -71,10 +71,10 @@ const uint16_t g_kKademliaK = 16;
 boost::posix_time::time_duration time_out = transport::kDefaultInitialTimeout;
 
 inline void CreateRSAKeys(std::string *public_key, std::string *private_key) {
-  Asym::Keys kp;
-  Asym::GenerateKeyPair(&kp);
-  Asym::EncodePublicKey(kp.public_key, public_key);
-  Asym::EncodePrivateKey(kp.private_key, private_key);
+  asymm::Keys kp;
+  asymm::GenerateKeyPair(&kp);
+  asymm::EncodePublicKey(kp.public_key, public_key);
+  asymm::EncodePrivateKey(kp.private_key, private_key);
 }
 
 }  // unnamed namespace
@@ -119,7 +119,7 @@ class ServicesTest: public CreateContactAndNodeId, public testing::Test {
         data_store_(new DataStore(bptime::seconds(3600))),
         routing_table_(new RoutingTable(node_id_, g_kKademliaK)),
         alternative_store_(),
-        key_pair_(new Asym::Keys()),
+        key_pair_(new asymm::Keys()),
         info_(),
         rank_info_(),
         service_(new Service(routing_table_, data_store_, alternative_store_,
@@ -131,7 +131,7 @@ class ServicesTest: public CreateContactAndNodeId, public testing::Test {
   virtual void SetUp() {}
 
   PrivateKeyPtr GetPrivateKeyPtr(KeyPairPtr key_pair) {
-    return PrivateKeyPtr(new Asym::PrivateKey(key_pair->private_key));
+    return PrivateKeyPtr(new asymm::PrivateKey(key_pair->private_key));
   }
 
   void FakePingContact(Contact /*contact*/) {
@@ -162,12 +162,12 @@ class ServicesTest: public CreateContactAndNodeId, public testing::Test {
 
   bool DoStore(NodeId sender_id,
                KeyValueSignature kvs,
-               Asym::Keys& crypto_key_data) {
+               asymm::Keys& crypto_key_data) {
     Contact sender = ComposeContactWithKey(sender_id, 5001, crypto_key_data);
     protobuf::StoreRequest store_request = MakeStoreRequest(sender, kvs);
     std::string message = store_request.SerializeAsString();
     std::string message_sig;
-    Asym::Sign(message, crypto_key_data.private_key, &message_sig);
+    asymm::Sign(message, crypto_key_data.private_key, &message_sig);
     protobuf::StoreResponse store_response;
     service_->Store(info_, store_request, message, message_sig,
                     &store_response, &time_out);
@@ -176,12 +176,12 @@ class ServicesTest: public CreateContactAndNodeId, public testing::Test {
 
   bool DoDelete(NodeId sender_id,
                 KeyValueSignature kvs,
-                Asym::Keys& crypto_key_data) {
+                asymm::Keys& crypto_key_data) {
     Contact sender = ComposeContactWithKey(sender_id, 5001, crypto_key_data);
     protobuf::DeleteRequest delete_request = MakeDeleteRequest(sender, kvs);
     std::string delete_message = delete_request.SerializeAsString();
     std::string delete_message_sig;
-    Asym::Sign(delete_message, crypto_key_data.private_key,
+    asymm::Sign(delete_message, crypto_key_data.private_key,
                &delete_message_sig);
     protobuf::DeleteResponse delete_response;
     service_->Delete(info_, delete_request, delete_message,
@@ -190,16 +190,16 @@ class ServicesTest: public CreateContactAndNodeId, public testing::Test {
   }
 
   bool DoStoreRefresh(NodeId sender_id_new,
-                      Asym::Keys& crypto_key_data_new,
+                      asymm::Keys& crypto_key_data_new,
                       NodeId sender_id_orig_req,
                       KeyValueSignature& kvs,
-                      Asym::Keys& crypto_key_data) {
+                      asymm::Keys& crypto_key_data) {
     Contact sender_orig = ComposeContactWithKey(sender_id_orig_req, 5001,
                                                 crypto_key_data);
     protobuf::StoreRequest store_request = MakeStoreRequest(sender_orig, kvs);
     std::string message = store_request.SerializeAsString();
     std::string message_sig;
-    Asym::Sign(message, crypto_key_data.private_key, &message_sig);
+    asymm::Sign(message, crypto_key_data.private_key, &message_sig);
     Contact new_sender = ComposeContactWithKey(sender_id_new, 5001,
                                                crypto_key_data_new);
     protobuf::StoreRefreshRequest store_refresh_request;
@@ -214,17 +214,17 @@ class ServicesTest: public CreateContactAndNodeId, public testing::Test {
   }
 
   bool DoDeleteRefresh(NodeId sender_id_new,
-                       Asym::Keys& crypto_key_data_new,
+                       asymm::Keys& crypto_key_data_new,
                        NodeId sender_id_orig_req,
                        KeyValueSignature& kvs,
-                       Asym::Keys& crypto_key_data) {
+                       asymm::Keys& crypto_key_data) {
     Contact sender_orig = ComposeContactWithKey(sender_id_orig_req, 5001,
                                                 crypto_key_data);
     protobuf::DeleteRequest delete_request = MakeDeleteRequest(sender_orig,
                                                                kvs);
     std::string delete_message = delete_request.SerializeAsString();
     std::string delete_message_sig;
-    Asym::Sign(delete_message, crypto_key_data.private_key,
+    asymm::Sign(delete_message, crypto_key_data.private_key,
                &delete_message_sig);
     Contact new_sender = ComposeContactWithKey(sender_id_new, 5001,
                                                crypto_key_data_new);
@@ -257,8 +257,8 @@ class ServicesTest: public CreateContactAndNodeId, public testing::Test {
 
   void PopulateDataStore(uint16_t count) {
     bptime::time_duration old_ttl(bptime::pos_infin);
-    Asym::Keys crypto_key;
-    Asym::GenerateKeyPair(&crypto_key);
+    asymm::Keys crypto_key;
+    asymm::GenerateKeyPair(&crypto_key);
     for (int i = 0; i < count; ++i) {
       KeyValueTuple cur_kvt = MakeKVT(crypto_key, 1024, old_ttl, "", "");
       EXPECT_EQ(kSuccess, data_store_->StoreValue(cur_kvt.key_value_signature,
@@ -356,8 +356,8 @@ TEST_F(ServicesTest, BEH_Constructor) {
 }
 
 TEST_F(ServicesTest, BEH_Store) {
-  Asym::Keys crypto_key_data;
-  Asym::GenerateKeyPair(&crypto_key_data);
+  asymm::Keys crypto_key_data;
+  asymm::GenerateKeyPair(&crypto_key_data);
   NodeId sender_id = GenerateUniqueRandomId(node_id_, 502);
   Contact sender = ComposeContactWithKey(sender_id, 5001, crypto_key_data);
 
@@ -367,7 +367,7 @@ TEST_F(ServicesTest, BEH_Store) {
 
   std::string message = store_request.SerializeAsString();
   std::string message_sig;
-  Asym::Sign(message, crypto_key_data.private_key, &message_sig);
+  asymm::Sign(message, crypto_key_data.private_key, &message_sig);
   RequestAndSignature request_signature(message, message_sig);
   bptime::time_duration old_ttl(bptime::pos_infin);
   {
@@ -402,10 +402,10 @@ TEST_F(ServicesTest, BEH_Store) {
     // into empty datastore and empty routingtable
 
     // TODO(Viv) Change To Always Validate False For this KeyPair
-    Asym::Keys key_pair;
+    asymm::Keys key_pair;
     key_pair.identity = sender.public_key_id();
     key_pair.public_key = sender.public_key();
-    KeyPairPtr key_pair_local(new Asym::Keys(key_pair));
+    KeyPairPtr key_pair_local(new asymm::Keys(key_pair));
     Service service(routing_table_, data_store_, alternative_store_,
                     GetPrivateKeyPtr(key_pair_local), g_kKademliaK);
     service.set_node_joined(true);
@@ -477,8 +477,8 @@ TEST_F(ServicesTest, BEH_Store) {
 }
 
 TEST_F(ServicesTest, BEH_Delete) {
-  Asym::Keys crypto_key_data;
-  Asym::GenerateKeyPair(&crypto_key_data);
+  asymm::Keys crypto_key_data;
+  asymm::GenerateKeyPair(&crypto_key_data);
   NodeId sender_id = GenerateUniqueRandomId(node_id_, 502);
   Contact sender = ComposeContactWithKey(sender_id, 5001, crypto_key_data);
 
@@ -487,12 +487,12 @@ TEST_F(ServicesTest, BEH_Delete) {
   protobuf::StoreRequest store_request = MakeStoreRequest(sender, kvs);
   std::string store_message = store_request.SerializeAsString();
   std::string store_message_sig;
-  Asym::Sign(store_message, crypto_key_data.private_key, &store_message_sig);
+  asymm::Sign(store_message, crypto_key_data.private_key, &store_message_sig);
 
   protobuf::DeleteRequest delete_request = MakeDeleteRequest(sender, kvs);
   std::string delete_message = delete_request.SerializeAsString();
   std::string delete_message_sig;
-  Asym::Sign(delete_message, crypto_key_data.private_key, &delete_message_sig);
+  asymm::Sign(delete_message, crypto_key_data.private_key, &delete_message_sig);
   RequestAndSignature request_signature(delete_message, delete_message_sig);
   bptime::time_duration old_ttl(bptime::pos_infin);
   {
@@ -525,10 +525,10 @@ TEST_F(ServicesTest, BEH_Delete) {
     // Try to delete an in-valid tuple
     // from populated datastore and empty routingtable
     // TODO(Viv) Change To Always Validate False For this KeyPair
-    Asym::Keys key_pair;
+    asymm::Keys key_pair;
     key_pair.identity = sender.public_key_id();
     key_pair.public_key = sender.public_key();
-    KeyPairPtr key_pair_local(new Asym::Keys(key_pair));
+    KeyPairPtr key_pair_local(new asymm::Keys(key_pair));
     Service service(routing_table_, data_store_, alternative_store_,
                     GetPrivateKeyPtr(key_pair_local), g_kKademliaK);
     service.set_node_joined(true);
@@ -594,8 +594,8 @@ TEST_F(ServicesTest, BEH_Delete) {
 }
 
 TEST_F(ServicesTest, FUNC_StoreRefresh) {
-  Asym::Keys crypto_key_data;
-  Asym::GenerateKeyPair(&crypto_key_data);
+  asymm::Keys crypto_key_data;
+  asymm::GenerateKeyPair(&crypto_key_data);
   NodeId sender_id = GenerateUniqueRandomId(node_id_, 502);
   Contact sender = ComposeContactWithKey(sender_id, 5001, crypto_key_data);
 
@@ -605,12 +605,12 @@ TEST_F(ServicesTest, FUNC_StoreRefresh) {
 
   std::string message = store_request.SerializeAsString();
   std::string message_sig;
-  Asym::Sign(message, crypto_key_data.private_key, &message_sig);
+  asymm::Sign(message, crypto_key_data.private_key, &message_sig);
   RequestAndSignature request_signature(message, message_sig);
   bptime::time_duration old_ttl(bptime::pos_infin);
 
-  Asym::Keys new_crypto_key_id;
-  Asym::GenerateKeyPair(&new_crypto_key_id);
+  asymm::Keys new_crypto_key_id;
+  asymm::GenerateKeyPair(&new_crypto_key_id);
   NodeId new_sender_id = GenerateUniqueRandomId(node_id_, 502);
   Contact new_sender = ComposeContactWithKey(new_sender_id, 5001,
                                              new_crypto_key_id);
@@ -649,10 +649,10 @@ TEST_F(ServicesTest, FUNC_StoreRefresh) {
     // Try to storefresh an in-valid tuple
     // into empty datastore and empty routingtable
     // TODO(Viv) Change To Always Validate False For this KeyPair
-    Asym::Keys key_pair;
+    asymm::Keys key_pair;
     key_pair.identity = sender.public_key_id();
     key_pair.public_key = sender.public_key();
-    KeyPairPtr key_pair_local(new Asym::Keys(key_pair));
+    KeyPairPtr key_pair_local(new asymm::Keys(key_pair));
     Service service(routing_table_, data_store_, alternative_store_,
                     GetPrivateKeyPtr(key_pair_local), g_kKademliaK);
     service.set_node_joined(true);
@@ -714,8 +714,8 @@ TEST_F(ServicesTest, FUNC_StoreRefresh) {
 }
 
 TEST_F(ServicesTest, FUNC_DeleteRefresh) {
-  Asym::Keys crypto_key_data;
-  Asym::GenerateKeyPair(&crypto_key_data);
+  asymm::Keys crypto_key_data;
+  asymm::GenerateKeyPair(&crypto_key_data);
   NodeId sender_id = GenerateUniqueRandomId(node_id_, 502);
   Contact sender = ComposeContactWithKey(sender_id, 5001, crypto_key_data);
 
@@ -724,17 +724,17 @@ TEST_F(ServicesTest, FUNC_DeleteRefresh) {
   protobuf::StoreRequest store_request = MakeStoreRequest(sender, kvs);
   std::string store_message = store_request.SerializeAsString();
   std::string store_message_sig;
-  Asym::Sign(store_message, crypto_key_data.private_key, &store_message_sig);
+  asymm::Sign(store_message, crypto_key_data.private_key, &store_message_sig);
 
   protobuf::DeleteRequest delete_request = MakeDeleteRequest(sender, kvs);
   std::string delete_message = delete_request.SerializeAsString();
   std::string delete_message_sig;
-  Asym::Sign(delete_message, crypto_key_data.private_key, &delete_message_sig);
+  asymm::Sign(delete_message, crypto_key_data.private_key, &delete_message_sig);
   RequestAndSignature request_signature(delete_message, delete_message_sig);
   bptime::time_duration old_ttl(bptime::pos_infin);
 
-  Asym::Keys new_crypto_key_id;
-  Asym::GenerateKeyPair(&new_crypto_key_id);
+  asymm::Keys new_crypto_key_id;
+  asymm::GenerateKeyPair(&new_crypto_key_id);
   NodeId new_sender_id = GenerateUniqueRandomId(node_id_, 502);
   Contact new_sender = ComposeContactWithKey(new_sender_id, 5001,
                                               new_crypto_key_id);
@@ -776,10 +776,10 @@ TEST_F(ServicesTest, FUNC_DeleteRefresh) {
     // Try to deleterefresh an in-valid tuple
     // from populated datastore and empty routingtable
     // TODO(Viv) Change To Always Validate False For this KeyPair
-    Asym::Keys key_pair;
+    asymm::Keys key_pair;
     key_pair.identity = sender.public_key_id();
     key_pair.public_key = sender.public_key();
-    KeyPairPtr key_pair_local(new Asym::Keys(key_pair));
+    KeyPairPtr key_pair_local(new asymm::Keys(key_pair));
     Service service(routing_table_, data_store_, alternative_store_,
                     GetPrivateKeyPtr(key_pair_local), g_kKademliaK);
     service.set_node_joined(true);
@@ -1126,8 +1126,8 @@ TEST_F(ServicesTest, FUNC_FindValue) {
   }
   Clear();
 
-  Asym::Keys crypto_key;
-  Asym::GenerateKeyPair(&crypto_key);
+  asymm::Keys crypto_key;
+  asymm::GenerateKeyPair(&crypto_key);
   bptime::time_duration old_ttl(bptime::pos_infin), new_ttl(bptime::hours(24));
   KeyValueTuple target_kvt = MakeKVT(crypto_key, 1024, old_ttl, "", "");
   std::string target_key = target_kvt.key_value_signature.key;
@@ -1308,13 +1308,13 @@ TEST_F(ServicesTest, FUNC_MultipleStoreRequests) {
   NodeId sender_id_2 = GenerateUniqueRandomId(node_id_, 502);
   NodeId sender_id_3 = GenerateUniqueRandomId(node_id_, 502);
 
-  Asym::Keys crypto_key_data_1;
-  Asym::Keys crypto_key_data_2;
-  Asym::Keys crypto_key_data_3;
+  asymm::Keys crypto_key_data_1;
+  asymm::Keys crypto_key_data_2;
+  asymm::Keys crypto_key_data_3;
 
-  Asym::GenerateKeyPair(&crypto_key_data_1);
-  Asym::GenerateKeyPair(&crypto_key_data_2);
-  Asym::GenerateKeyPair(&crypto_key_data_3);
+  asymm::GenerateKeyPair(&crypto_key_data_1);
+  asymm::GenerateKeyPair(&crypto_key_data_2);
+  asymm::GenerateKeyPair(&crypto_key_data_3);
 
   KeyValueSignature k1_v1 = MakeKVS(crypto_key_data_1, 1024, "", "");
   KeyValueSignature k1_v2 = MakeKVS(crypto_key_data_1, 1024, k1_v1.key, "");
@@ -1420,13 +1420,13 @@ TEST_F(ServicesTest, FUNC_MultipleDeleteRequests) {
   NodeId sender_id_2 = GenerateUniqueRandomId(node_id_, 502);
   NodeId sender_id_3 = GenerateUniqueRandomId(node_id_, 502);
 
-  Asym::Keys crypto_key_data_1;
-  Asym::Keys crypto_key_data_2;
-  Asym::Keys crypto_key_data_3;
+  asymm::Keys crypto_key_data_1;
+  asymm::Keys crypto_key_data_2;
+  asymm::Keys crypto_key_data_3;
 
-  Asym::GenerateKeyPair(&crypto_key_data_1);
-  Asym::GenerateKeyPair(&crypto_key_data_2);
-  Asym::GenerateKeyPair(&crypto_key_data_3);
+  asymm::GenerateKeyPair(&crypto_key_data_1);
+  asymm::GenerateKeyPair(&crypto_key_data_2);
+  asymm::GenerateKeyPair(&crypto_key_data_3);
 
   KeyValueSignature k1_v1 = MakeKVS(crypto_key_data_1, 1024, "", "");
   KeyValueSignature k1_v2 = MakeKVS(crypto_key_data_1, 1024, k1_v1.key, "");
@@ -1506,13 +1506,13 @@ TEST_F(ServicesTest, FUNC_MultipleStoreRefreshRequests) {
   NodeId sender_id_2 = GenerateUniqueRandomId(node_id_, 502);
   NodeId sender_id_3 = GenerateUniqueRandomId(node_id_, 502);
 
-  Asym::Keys crypto_key_data_1;
-  Asym::Keys crypto_key_data_2;
-  Asym::Keys crypto_key_data_3;
+  asymm::Keys crypto_key_data_1;
+  asymm::Keys crypto_key_data_2;
+  asymm::Keys crypto_key_data_3;
 
-  Asym::GenerateKeyPair(&crypto_key_data_1);
-  Asym::GenerateKeyPair(&crypto_key_data_2);
-  Asym::GenerateKeyPair(&crypto_key_data_3);
+  asymm::GenerateKeyPair(&crypto_key_data_1);
+  asymm::GenerateKeyPair(&crypto_key_data_2);
+  asymm::GenerateKeyPair(&crypto_key_data_3);
 
   KeyValueSignature k1_v1 = MakeKVS(crypto_key_data_1, 1024, "", "");
   KeyValueSignature k1_v2 = MakeKVS(crypto_key_data_1, 1024, k1_v1.key, "");
@@ -1677,13 +1677,13 @@ TEST_F(ServicesTest, FUNC_MultipleDeleteRefreshRequests) {
   NodeId sender_id_2 = GenerateUniqueRandomId(node_id_, 502);
   NodeId sender_id_3 = GenerateUniqueRandomId(node_id_, 502);
 
-  Asym::Keys crypto_key_data_1;
-  Asym::Keys crypto_key_data_2;
-  Asym::Keys crypto_key_data_3;
+  asymm::Keys crypto_key_data_1;
+  asymm::Keys crypto_key_data_2;
+  asymm::Keys crypto_key_data_3;
 
-  Asym::GenerateKeyPair(&crypto_key_data_1);
-  Asym::GenerateKeyPair(&crypto_key_data_2);
-  Asym::GenerateKeyPair(&crypto_key_data_3);
+  asymm::GenerateKeyPair(&crypto_key_data_1);
+  asymm::GenerateKeyPair(&crypto_key_data_2);
+  asymm::GenerateKeyPair(&crypto_key_data_3);
 
   KeyValueSignature k1_v1 = MakeKVS(crypto_key_data_1, 1024, "", "");
   KeyValueSignature k1_v2 = MakeKVS(crypto_key_data_1, 1024, k1_v1.key, "");
@@ -1814,15 +1814,15 @@ TEST_F(ServicesTest, FUNC_MultipleThreads) {
   NodeId sender_id_3 = GenerateUniqueRandomId(node_id_, 502);
   NodeId sender_id_4 = GenerateUniqueRandomId(node_id_, 502);
 
-  Asym::Keys crypto_key_data_1;
-  Asym::Keys crypto_key_data_2;
-  Asym::Keys crypto_key_data_3;
-  Asym::Keys crypto_key_data_4;
+  asymm::Keys crypto_key_data_1;
+  asymm::Keys crypto_key_data_2;
+  asymm::Keys crypto_key_data_3;
+  asymm::Keys crypto_key_data_4;
 
-  Asym::GenerateKeyPair(&crypto_key_data_1);
-  Asym::GenerateKeyPair(&crypto_key_data_2);
-  Asym::GenerateKeyPair(&crypto_key_data_3);
-  Asym::GenerateKeyPair(&crypto_key_data_4);
+  asymm::GenerateKeyPair(&crypto_key_data_1);
+  asymm::GenerateKeyPair(&crypto_key_data_2);
+  asymm::GenerateKeyPair(&crypto_key_data_3);
+  asymm::GenerateKeyPair(&crypto_key_data_4);
 
   KeyValueSignature k1_v1 = MakeKVS(crypto_key_data_1, 1024, "", "");
   KeyValueSignature k1_v2 = MakeKVS(crypto_key_data_1, 1024, k1_v1.key, "");
@@ -1954,8 +1954,8 @@ TEST_F(ServicesTest, BEH_SignalConnection) {
           &MessageHandler::OnMessageReceived, message_handler_ptr.get(),
           _1, _2, _3, _4).track_foreign(message_handler_ptr));
   // Data
-  Asym::Keys crypto_key_data;
-  Asym::GenerateKeyPair(&crypto_key_data);
+  asymm::Keys crypto_key_data;
+  asymm::GenerateKeyPair(&crypto_key_data);
   NodeId sender_id = GenerateUniqueRandomId(node_id_, 502);
   Contact sender = ComposeContactWithKey(sender_id, 5001, crypto_key_data);
   KeyValueSignature kvs = MakeKVS(crypto_key_data, 1024, "", "");
@@ -1993,7 +1993,7 @@ TEST_F(ServicesTest, BEH_SignalConnection) {
   protobuf::StoreRequest store_request = MakeStoreRequest(sender, kvs);
   std::string message = store_request.SerializeAsString();
   std::string message_sig;
-  Asym::Sign(message, crypto_key_data.private_key, &message_sig);
+  asymm::Sign(message, crypto_key_data.private_key, &message_sig);
   protobuf::StoreResponse store_response;
   (*message_handler_ptr->on_store_request())(info_, store_request, message,
       message_sig, &store_response, &time_out);
@@ -2016,7 +2016,7 @@ TEST_F(ServicesTest, BEH_SignalConnection) {
   protobuf::DeleteRequest delete_request = MakeDeleteRequest(sender, kvs);
   std::string delete_message = delete_request.SerializeAsString();
   std::string delete_message_sig;
-  Asym::Sign(delete_message, crypto_key_data.private_key, &delete_message_sig);
+  asymm::Sign(delete_message, crypto_key_data.private_key, &delete_message_sig);
   protobuf::DeleteResponse delete_response;
   (*message_handler_ptr->on_delete_request())(info_, delete_request,
                                               delete_message,

@@ -49,9 +49,10 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     Please update the maidsafe-dht library.
 #endif
 
-namespace Asym = maidsafe::rsa;
 
 namespace maidsafe {
+
+namespace asymm = rsa;
 
 class AlternativeStore;
 
@@ -108,9 +109,9 @@ typedef uint16_t Port;
 typedef boost::asio::io_service AsioService;
 typedef std::shared_ptr<MessageHandler> MessageHandlerPtr;
 typedef std::shared_ptr<transport::Transport> TransportPtr;
-typedef std::shared_ptr<Asym::Keys> KeyPairPtr;
-typedef std::shared_ptr<Asym::PrivateKey> PrivateKeyPtr;
-typedef std::shared_ptr<Asym::PublicKey> PublicKeyPtr;
+typedef std::shared_ptr<asymm::Keys> KeyPairPtr;
+typedef std::shared_ptr<asymm::PrivateKey> PrivateKeyPtr;
+typedef std::shared_ptr<asymm::PublicKey> PublicKeyPtr;
 typedef std::shared_ptr<AlternativeStore> AlternativeStorePtr;
 typedef std::shared_ptr<transport::Info> RankInfoPtr;
 

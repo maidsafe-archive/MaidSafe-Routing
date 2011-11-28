@@ -29,8 +29,9 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define MAIDSAFE_DHT_DATA_STORE_H_
 
 #include <string>
-#include <vector>
 #include <utility>
+#include <vector>
+
 #include "boost/date_time/posix_time/posix_time_types.hpp"
 #ifdef __MSVC__
 #  pragma warning(push)
@@ -47,13 +48,13 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #endif
 #include "boost/thread/shared_mutex.hpp"
 #include "boost/thread/locks.hpp"
+
 #include "maidsafe/common/rsa.h"
+
 #include "maidsafe/dht/config.h"
 
 namespace bptime = boost::posix_time;
-namespace Asym = maidsafe::rsa;
 
-typedef std::shared_ptr<Asym::PrivateKey> PrivateKeyPtr;
 
 namespace maidsafe {
 
@@ -213,8 +214,7 @@ class DataStore {
   // signature doesn't match the input one or cannot be validated using
   // public_key.
   bool DifferentSigner(const KeyValueSignature &key_value_signature,
-                       const Asym::PublicKey &public_key,
-                       PrivateKeyPtr priv_key) const;
+                       const asymm::PublicKey &public_key) const;
   bptime::seconds kRefreshInterval() const { return kRefreshInterval_; }
   void set_debug_id(const std::string &debug_id) { debug_id_ = debug_id; }
   friend class test::DataStoreTest;

@@ -80,8 +80,8 @@ class Operations {
   std::shared_ptr<Node> node_;
 //  crypto::Crypto cryobj_;
   std::string public_key_validation_;
-  Asym::PublicKey public_key_;
-  Asym::PrivateKey private_key_;
+  asymm::PublicKey public_key_;
+  asymm::PrivateKey private_key_;
 };
 
 }  // namespace benchmark

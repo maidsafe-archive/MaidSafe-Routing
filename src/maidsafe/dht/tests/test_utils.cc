@@ -45,8 +45,8 @@ namespace test {
 
 AsymGetPublicKeyAndValidation::AsymGetPublicKeyAndValidation(
     const std::string &public_key_id,
-    const Asym::PublicKey &public_key,
-    const Asym::PrivateKey &private_key)
+    const asymm::PublicKey &public_key,
+    const asymm::PrivateKey &private_key)
         : public_key_id_map_(),
           thread_group_() {
   private_key;
@@ -57,7 +57,7 @@ AsymGetPublicKeyAndValidation::AsymGetPublicKeyAndValidation(
 // Immitating a non-blocking function
 void AsymGetPublicKeyAndValidation::GetPublicKeyAndValidation(
     const std::string &public_key_id,
-    Asym::GetPublicKeyAndValidationCallback callback) {
+    asymm::GetPublicKeyAndValidationCallback callback) {
   thread_group_.add_thread(
       new boost::thread(
               &AsymGetPublicKeyAndValidation::DummyFind, this,
@@ -84,7 +84,7 @@ void AsymGetPublicKeyAndValidation::ClearTestValidationMap() {
 
 void AsymGetPublicKeyAndValidation::DummyFind(
     std::string public_key_id,
-    Asym::GetPublicKeyAndValidationCallback callback) {
+    asymm::GetPublicKeyAndValidationCallback callback) {
   // Imitating delay in lookup for kNetworkDelay milliseconds
   Sleep(kNetworkDelay);
   auto itr = public_key_id_map_.find(public_key_id);
@@ -196,14 +196,14 @@ Contact CreateContactAndNodeId::ComposeContact(const NodeId &node_id,
   transport::Endpoint end_point("127.0.0.1", port);
   std::vector<transport::Endpoint> local_endpoints(1, end_point);
   Contact contact(node_id, end_point, local_endpoints, end_point, false,
-                  false, "", Asym::PublicKey(), "");
+                  false, "", asymm::PublicKey(), "");
   return contact;
 }
 
 Contact CreateContactAndNodeId::ComposeContactWithKey(
     const NodeId &node_id,
     const Port &port,
-    const Asym::Keys &rsa_key_pair) {
+    const asymm::Keys &rsa_key_pair) {
   std::string ip("127.0.0.1");
   std::vector<transport::Endpoint> local_endpoints;
   transport::Endpoint end_point(ip, port);
@@ -226,7 +226,7 @@ void CreateContactAndNodeId::PopulateContactsVector(
   }
 }
 
-KeyValueSignature MakeKVS(const Asym::Keys &rsa_key_pair,
+KeyValueSignature MakeKVS(const asymm::Keys &rsa_key_pair,
                           const size_t &value_size,
                           std::string key,
                           std::string value) {
@@ -240,11 +240,11 @@ KeyValueSignature MakeKVS(const Asym::Keys &rsa_key_pair,
     value = value.substr(0, value_size);
   }
   std::string signature;
-  Asym::Sign(value, rsa_key_pair.private_key, &signature);
+  asymm::Sign(value, rsa_key_pair.private_key, &signature);
   return KeyValueSignature(key, value, signature);
 }
 
-KeyValueTuple MakeKVT(const Asym::Keys &rsa_key_pair,
+KeyValueTuple MakeKVT(const asymm::Keys &rsa_key_pair,
                       const size_t &value_size,
                       const bptime::time_duration &ttl,
                       std::string key,
@@ -259,13 +259,13 @@ KeyValueTuple MakeKVT(const Asym::Keys &rsa_key_pair,
     value = value.substr(0, value_size);
   }
   std::string signature;
-  Asym::Sign(value, rsa_key_pair.private_key, &signature);
+  asymm::Sign(value, rsa_key_pair.private_key, &signature);
   bptime::ptime now = bptime::microsec_clock::universal_time();
   bptime::ptime expire_time = now + ttl;
   bptime::ptime refresh_time = now + bptime::minutes(30);
   std::string request = RandomString(1024);
   std::string req_sig;
-  Asym::Sign(request, rsa_key_pair.private_key, &req_sig);
+  asymm::Sign(request, rsa_key_pair.private_key, &req_sig);
   return KeyValueTuple(KeyValueSignature(key, value, signature),
                        expire_time, refresh_time,
                        RequestAndSignature(request, req_sig), false);
@@ -306,13 +306,13 @@ void JoinNetworkLookup(KeyPairPtr key_pair) {
 
 bool AddTestValidation(KeyPairPtr key_pair,
                        std::string public_key_id,
-                       Asym::PublicKey public_key) {
+                       asymm::PublicKey public_key) {
   AsymGPKPtr key_pair_gpkv(new AsymGetPublicKeyAndValidation(
       key_pair->identity,
       key_pair->public_key,
       key_pair->private_key));
   std::string encoded_public_key;
-  Asym::EncodePublicKey(public_key, &encoded_public_key);
+  asymm::EncodePublicKey(public_key, &encoded_public_key);
   return key_pair_gpkv->AddTestValidation(public_key_id, encoded_public_key);
 }
 

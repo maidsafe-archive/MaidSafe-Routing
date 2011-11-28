@@ -133,22 +133,22 @@ class RpcsTest : public CreateContactAndNodeId, public testing::Test {
   }
 
   static void SetUpTestCase() {
-    Asym::GenerateKeyPair(&sender_crypto_key_id_);
-    Asym::GenerateKeyPair(&receiver_crypto_key_id_);
+    asymm::GenerateKeyPair(&sender_crypto_key_id_);
+    asymm::GenerateKeyPair(&receiver_crypto_key_id_);
   }
 
   PrivateKeyPtr GetPrivateKeyPtr(KeyPairPtr key_pair) {
-    return PrivateKeyPtr(new Asym::PrivateKey(key_pair->private_key));
+    return PrivateKeyPtr(new asymm::PrivateKey(key_pair->private_key));
   }
 
   virtual void SetUp() {
     // rpcs setup
     NodeId rpcs_node_id = GenerateRandomId(node_id_, 502);
-    Asym::Keys key_pair;
+    asymm::Keys key_pair;
     key_pair.identity = rpcs_node_id.String();
     key_pair.private_key = sender_crypto_key_id_.private_key;
     key_pair.public_key = sender_crypto_key_id_.public_key;
-    rpcs_key_pair_.reset(new Asym::Keys(key_pair));
+    rpcs_key_pair_.reset(new asymm::Keys(key_pair));
     rpcs_= std::shared_ptr<Rpcs<T>>(new Rpcs<T>( // NOLINT (Fraser)
         asio_service_,
         GetPrivateKeyPtr(rpcs_key_pair_)));
@@ -172,10 +172,10 @@ class RpcsTest : public CreateContactAndNodeId, public testing::Test {
         new SecurifierGetPublicKeyAndValidation("",
                 receiver_crypto_key_id_.public_key,
                     receiver_crypto_key_id_.private_key));*/
-    Asym::Keys service_key_pair;
+    asymm::Keys service_key_pair;
     service_key_pair.public_key = receiver_crypto_key_id_.public_key;
     service_key_pair.private_key = receiver_crypto_key_id_.private_key;
-    service_key_pair_.reset(new Asym::Keys(service_key_pair));
+    service_key_pair_.reset(new asymm::Keys(service_key_pair));
     NodeId service_node_id = GenerateRandomId(node_id_, 503);
     service_contact_ = ComposeContactWithKey(service_node_id,
                                              transport_->listening_port(),
@@ -217,13 +217,13 @@ class RpcsTest : public CreateContactAndNodeId, public testing::Test {
   }
 
   void AddToReceiverDataStore(const KeyValueSignature& kvs,
-                              const Asym::Keys& crypto_key_data,
+                              const asymm::Keys& crypto_key_data,
                               const Contact& contact,
                               RequestAndSignature& request_signature) {
     protobuf::StoreRequest store_request = MakeStoreRequest(contact, kvs);
     std::string store_message = store_request.SerializeAsString();
     std::string store_message_sig;
-    Asym::Sign(store_message, crypto_key_data.private_key, &store_message_sig);
+    asymm::Sign(store_message, crypto_key_data.private_key, &store_message_sig);
     bptime::time_duration ttl(bptime::pos_infin);
     request_signature = std::make_pair(store_message, store_message_sig);
     EXPECT_EQ(kSuccess, data_store_->StoreValue(kvs, ttl, request_signature,
@@ -231,13 +231,13 @@ class RpcsTest : public CreateContactAndNodeId, public testing::Test {
   }
 
   void DeleteFromReceiverDataStore(const KeyValueSignature& kvs,
-                                   const Asym::Keys& crypto_key_data,
+                                   const asymm::Keys& crypto_key_data,
                                    const Contact& contact,
                                    RequestAndSignature& request_signature) {
     protobuf::DeleteRequest delete_request = MakeDeleteRequest(contact, kvs);
     std::string delete_message = delete_request.SerializeAsString();
     std::string delete_message_sig;
-    Asym::Sign(delete_message, crypto_key_data.private_key,
+    asymm::Sign(delete_message, crypto_key_data.private_key,
                &delete_message_sig);
     request_signature = std::make_pair(delete_message, delete_message_sig);
     EXPECT_TRUE(data_store_->DeleteValue(kvs, request_signature, false));
@@ -320,8 +320,8 @@ class RpcsTest : public CreateContactAndNodeId, public testing::Test {
   std::shared_ptr<Rpcs<T>> rpcs_;
   Contact rpcs_contact_;
   Contact service_contact_;
-  static Asym::Keys sender_crypto_key_id_;
-  static Asym::Keys receiver_crypto_key_id_;
+  static asymm::Keys sender_crypto_key_id_;
+  static asymm::Keys receiver_crypto_key_id_;
   RankInfoPtr rank_info_;
   std::vector<Contact> contacts_;
   TransportPtr transport_;
@@ -332,9 +332,9 @@ class RpcsTest : public CreateContactAndNodeId, public testing::Test {
 };
 
 template <typename T>
-Asym::Keys RpcsTest<T>::sender_crypto_key_id_;
+asymm::Keys RpcsTest<T>::sender_crypto_key_id_;
 template <typename T>
-Asym::Keys RpcsTest<T>::receiver_crypto_key_id_;
+asymm::Keys RpcsTest<T>::receiver_crypto_key_id_;
 
 TYPED_TEST_CASE_P(RpcsTest);
 
@@ -720,8 +720,8 @@ TYPED_TEST_P(RpcsTest, FUNC_StoreMalicious) {
   boost::posix_time::seconds ttl(3600);
   KeyValueSignature kvs =
       MakeKVS(this->sender_crypto_key_id_, 1024, key.String(), "");
-  Asym::PublicKey public_key;
-  Asym::DecodePublicKey("Different Public Key found on Network Lookup!!",
+  asymm::PublicKey public_key;
+  asymm::DecodePublicKey("Different Public Key found on Network Lookup!!",
                         &public_key);
   AddTestValidation(this->service_key_pair_,
                     this->rpcs_contact_.node_id().String(),
@@ -822,7 +822,7 @@ TYPED_TEST_P(RpcsTest, FUNC_StoreRefresh) {
                                                           kvs);
   std::string message = store_request.SerializeAsString();
   std::string store_message_sig;
-  Asym::Sign(message, this->sender_crypto_key_id_.private_key,
+  asymm::Sign(message, this->sender_crypto_key_id_.private_key,
              &store_message_sig);
   AddTestValidation(this->service_key_pair_,
                     this->rpcs_contact_.node_id().String(),
@@ -980,7 +980,7 @@ TYPED_TEST_P(RpcsTest, FUNC_StoreRefreshMalicious) {
                                                           kvs);
   std::string message = store_request.SerializeAsString();
   std::string store_message_sig;
-  Asym::Sign(message, this->sender_crypto_key_id_.private_key,
+  asymm::Sign(message, this->sender_crypto_key_id_.private_key,
              &store_message_sig);
   AddTestValidation(this->service_key_pair_,
                     this->rpcs_contact_.node_id().String(),
@@ -998,8 +998,8 @@ TYPED_TEST_P(RpcsTest, FUNC_StoreRefreshMalicious) {
 
   // Attempt refresh with fake key
   Sleep(boost::posix_time::seconds(1));
-  Asym::PublicKey public_key;
-  Asym::DecodePublicKey("Different Public Key found on Network Lookup!!",
+  asymm::PublicKey public_key;
+  asymm::DecodePublicKey("Different Public Key found on Network Lookup!!",
                         &public_key);
   AddTestValidation(this->service_key_pair_,
                     this->rpcs_contact_.node_id().String(),
@@ -1101,8 +1101,8 @@ TYPED_TEST_P(RpcsTest, FUNC_DeleteMalicious) {
   this->AddToReceiverDataStore(kvs, this->sender_crypto_key_id_,
                                this->rpcs_contact_, request_signature);
   EXPECT_TRUE(IsKeyValueInDataStore(kvs, this->data_store_));
-  Asym::PublicKey public_key;
-  Asym::DecodePublicKey("Different Public Key found on Network Lookup!!",
+  asymm::PublicKey public_key;
+  asymm::DecodePublicKey("Different Public Key found on Network Lookup!!",
                         &public_key);
   AddTestValidation(this->service_key_pair_,
                     this->rpcs_contact_.node_id().String(),
@@ -1194,7 +1194,7 @@ TYPED_TEST_P(RpcsTest, FUNC_DeleteMultipleRequest) {
     if (i % 2)
       signature = "invalid signature";
     else
-      Asym::Sign(kvs_vector[i].value,
+      asymm::Sign(kvs_vector[i].value,
                  this->sender_crypto_key_id_.private_key,
                  &signature);
     this->rpcs_->Delete(key, kvs_vector[i].value, signature,
@@ -1233,8 +1233,8 @@ TYPED_TEST_P(RpcsTest, FUNC_DeleteRefresh) {
   int response_code(-1);
   // Adding key value from different contact in the receiver's datastore
   NodeId sender_id = this->GenerateUniqueRandomId(this->node_id_, 502);
-  Asym::Keys crypto_key_data;
-  Asym::GenerateKeyPair(&crypto_key_data);
+  asymm::Keys crypto_key_data;
+  asymm::GenerateKeyPair(&crypto_key_data);
   Contact sender = this->ComposeContactWithKey(sender_id, 5001,
                                                crypto_key_data);
   Key key = sender.node_id();
@@ -1292,8 +1292,8 @@ TYPED_TEST_P(RpcsTest, FUNC_DeleteRefreshStoredValue) {
   int response_code(-1);
   // Adding key value from different contact in the receiver's datastore
   NodeId sender_id = this->GenerateUniqueRandomId(this->node_id_, 502);
-  Asym::Keys crypto_key_data;
-  Asym::GenerateKeyPair(&crypto_key_data);
+  asymm::Keys crypto_key_data;
+  asymm::GenerateKeyPair(&crypto_key_data);
   Contact sender = this->ComposeContactWithKey(sender_id, 5001,
                                                crypto_key_data);
   Key key = sender.node_id();
@@ -1349,8 +1349,8 @@ TYPED_TEST_P(RpcsTest, FUNC_DeleteRefreshMalicious) {
   int response_code(-1);
   // Adding key value from different contact in the receiver's datastore
   NodeId sender_id = this->GenerateUniqueRandomId(this->node_id_, 502);
-  Asym::Keys crypto_key_data;
-  Asym::GenerateKeyPair(&crypto_key_data);
+  asymm::Keys crypto_key_data;
+  asymm::GenerateKeyPair(&crypto_key_data);
   KeyValueSignature kvs = MakeKVS(crypto_key_data, 4096, "", "");
   Contact sender = this->ComposeContactWithKey(sender_id, 5001,
                                                crypto_key_data);
@@ -1363,8 +1363,8 @@ TYPED_TEST_P(RpcsTest, FUNC_DeleteRefreshMalicious) {
                                     request_signature);
   EXPECT_FALSE(IsKeyValueInDataStore(kvs, this->data_store_));
   bptime::ptime refresh_time_old = this->GetRefreshTime(kvs);
-  Asym::PublicKey public_key;
-  Asym::DecodePublicKey("Different Public Key found on Network Lookup!!",
+  asymm::PublicKey public_key;
+  asymm::DecodePublicKey("Different Public Key found on Network Lookup!!",
                         &public_key);
   AddTestValidation(this->service_key_pair_, sender_id.String(),
                     public_key);
@@ -1388,8 +1388,8 @@ TYPED_TEST_P(RpcsTest, FUNC_DeleteRefreshNonExistingKey) {
   int response_code(-1);
   // Creating Delete request
   NodeId sender_id = this->GenerateUniqueRandomId(this->node_id_, 502);
-  Asym::Keys crypto_key_data;
-  Asym::GenerateKeyPair(&crypto_key_data);
+  asymm::Keys crypto_key_data;
+  asymm::GenerateKeyPair(&crypto_key_data);
   KeyValueSignature kvs = MakeKVS(crypto_key_data, 4096, "", "");
   Contact sender = this->ComposeContactWithKey(sender_id, 5001,
                                                crypto_key_data);
@@ -1398,7 +1398,7 @@ TYPED_TEST_P(RpcsTest, FUNC_DeleteRefreshNonExistingKey) {
                     crypto_key_data.public_key);
   std::string delete_message = delete_request.SerializeAsString();
   std::string delete_message_sig;
-  Asym::Sign(delete_message, crypto_key_data.private_key, &delete_message_sig);
+  asymm::Sign(delete_message, crypto_key_data.private_key, &delete_message_sig);
   RequestAndSignature request_signature(delete_message, delete_message_sig);
   // Sending delete refresh
   this->rpcs_->DeleteRefresh(request_signature.first, request_signature.second,
@@ -1425,8 +1425,8 @@ TYPED_TEST_P(RpcsTest, FUNC_DeleteRefreshMultipleRequests) {
   for (size_t i = 0; i < 10; ++i) {
     // Adding key value from different contact in the receiver's datastore
     NodeId sender_id = this->GenerateUniqueRandomId(this->node_id_, 502);
-    Asym::Keys crypto_key_data;
-    Asym::GenerateKeyPair(&crypto_key_data);
+    asymm::Keys crypto_key_data;
+    asymm::GenerateKeyPair(&crypto_key_data);
     kvs_vector.push_back(MakeKVS(crypto_key_data, 4096, "", ""));
     Contact sender = this->ComposeContactWithKey(sender_id, 5001,
                                                  crypto_key_data);
@@ -1484,11 +1484,11 @@ TYPED_TEST_P(RpcsTest, FUNC_DeleteRefreshMultipleRequests) {
 
 TYPED_TEST_P(RpcsTest, FUNC_DifferentSecurifier) {
   // Another securifier
-  Asym::Keys key_pair2;
-  Asym::GenerateKeyPair(&key_pair2);
+  asymm::Keys key_pair2;
+  asymm::GenerateKeyPair(&key_pair2);
   NodeId node_id2(NodeId::kRandomId);
   key_pair2.identity = node_id2.String();
-  KeyPairPtr other_securifier(new Asym::Keys(key_pair2));
+  KeyPairPtr other_securifier(new asymm::Keys(key_pair2));
 
 
   // Send Ping
@@ -1642,19 +1642,19 @@ class RpcsMultiServerNodesTest : public CreateContactAndNodeId,
 
   static void SetUpTestCase() {
     for (int index = 0; index < g_kRpcClientNo; ++index) {
-      Asym::Keys temp_key_pair;
-      Asym::GenerateKeyPair(&temp_key_pair);
+      asymm::Keys temp_key_pair;
+      asymm::GenerateKeyPair(&temp_key_pair);
       senders_crypto_key_id3_.push_back(temp_key_pair);
     }
     for (int index = 0; index < g_kRpcServersNo; ++index) {
-      Asym::Keys temp_key_pair;
-      Asym::GenerateKeyPair(&temp_key_pair);
+      asymm::Keys temp_key_pair;
+      asymm::GenerateKeyPair(&temp_key_pair);
       receivers_crypto_key_id3_.push_back(temp_key_pair);
     }
   }
 
   PrivateKeyPtr GetPrivateKeyPtr(KeyPairPtr key_pair) {
-    return PrivateKeyPtr(new Asym::PrivateKey(key_pair->private_key));
+    return PrivateKeyPtr(new asymm::PrivateKey(key_pair->private_key));
   }
 
   virtual void SetUp() {
@@ -1663,11 +1663,11 @@ class RpcsMultiServerNodesTest : public CreateContactAndNodeId,
     for (int index = 0; index != g_kRpcClientNo; ++index) {
       NodeId rpcs_node_id =
           GenerateRandomId(node_id_, kMinClientPositionOffset + index);
-      Asym::Keys key_pair;
+      asymm::Keys key_pair;
       key_pair.identity = rpcs_node_id.String();
       key_pair.private_key = senders_crypto_key_id3_[index].private_key;
       key_pair.public_key = senders_crypto_key_id3_[index].public_key;
-      rpcs_key_pair_.push_back(KeyPairPtr(new Asym::Keys(key_pair)));
+      rpcs_key_pair_.push_back(KeyPairPtr(new asymm::Keys(key_pair)));
       rpcs_.push_back(std::shared_ptr<Rpcs<T>>(               // NOLINT (Fraser)
           new Rpcs<T>(*asio_services_[index],
                       GetPrivateKeyPtr(rpcs_key_pair_[index]))));
@@ -1688,11 +1688,11 @@ class RpcsMultiServerNodesTest : public CreateContactAndNodeId,
           ComposeContactWithKey(service_node_id,
                                 static_cast<Port>(5011+g_kRpcClientNo+index),
                                 receivers_crypto_key_id3_[index]));
-      Asym::Keys key_pair;
+      asymm::Keys key_pair;
       key_pair.identity = service_node_id.String();
       key_pair.private_key = receivers_crypto_key_id3_[index].private_key;
       key_pair.public_key = receivers_crypto_key_id3_[index].public_key;
-      services_securifier_.push_back(KeyPairPtr(new Asym::Keys(key_pair)));
+      services_securifier_.push_back(KeyPairPtr(new asymm::Keys(key_pair)));
       service_.push_back(
           ServicePtr(new Service(routing_table_[index], data_store_[index],
                                  alternative_store_[index],
@@ -1860,8 +1860,8 @@ class RpcsMultiServerNodesTest : public CreateContactAndNodeId,
   std::vector<std::shared_ptr<Rpcs<T>>> rpcs_;                // NOLINT (Fraser)
   std::vector<Contact> rpcs_contact_;
   std::vector<Contact> service_contact_;
-  static std::vector<Asym::Keys> senders_crypto_key_id3_;
-  static std::vector<Asym::Keys> receivers_crypto_key_id3_;
+  static std::vector<asymm::Keys> senders_crypto_key_id3_;
+  static std::vector<asymm::Keys> receivers_crypto_key_id3_;
   RankInfoPtr rank_info_;
   std::vector<Contact> contacts_;
   std::vector<TransportPtr> transport_;
@@ -1873,10 +1873,10 @@ class RpcsMultiServerNodesTest : public CreateContactAndNodeId,
 };
 
 template <typename T>
-std::vector<Asym::Keys>
+std::vector<asymm::Keys>
     RpcsMultiServerNodesTest<T>::senders_crypto_key_id3_;
 template <typename T>
-std::vector<Asym::Keys>
+std::vector<asymm::Keys>
     RpcsMultiServerNodesTest<T>::receivers_crypto_key_id3_;
 
 

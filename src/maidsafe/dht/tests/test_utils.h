@@ -53,11 +53,11 @@ namespace test {
 class AsymGetPublicKeyAndValidation {
  public:
   AsymGetPublicKeyAndValidation(const std::string &public_key_id,
-                                const Asym::PublicKey &public_key,
-                                const Asym::PrivateKey &private_key);
+                                const asymm::PublicKey &public_key,
+                                const asymm::PrivateKey &private_key);
   void GetPublicKeyAndValidation(
       const std::string &public_key_id,
-      Asym::GetPublicKeyAndValidationCallback callback);
+      asymm::GetPublicKeyAndValidationCallback callback);
   void Join();
   bool AddTestValidation(const std::string &public_key_id,
                          const std::string &public_key);
@@ -65,7 +65,7 @@ class AsymGetPublicKeyAndValidation {
 
  private:
   void DummyFind(std::string public_key_id,
-                 Asym::GetPublicKeyAndValidationCallback callback);
+                 asymm::GetPublicKeyAndValidationCallback callback);
   std::map<std::string, std::string> public_key_id_map_;
   boost::thread_group thread_group_;
 };
@@ -87,7 +87,7 @@ class CreateContactAndNodeId {
   Contact ComposeContact(const NodeId &node_id, const Port &port);
   Contact ComposeContactWithKey(const NodeId &node_id,
                                 const Port &port,
-                                const Asym::Keys &crypto_key);
+                                const asymm::Keys &crypto_key);
   void PopulateContactsVector(const int &count,
                               const int &pos,
                               std::vector<Contact> *contacts);
@@ -98,12 +98,12 @@ class CreateContactAndNodeId {
   std::shared_ptr<RoutingTable> routing_table_;
 };
 
-KeyValueSignature MakeKVS(const Asym::Keys &rsa_key_pair,
+KeyValueSignature MakeKVS(const asymm::Keys &rsa_key_pair,
                           const size_t &value_size,
                           std::string key,
                           std::string value);
 
-KeyValueTuple MakeKVT(const Asym::Keys &rsa_key_pair,
+KeyValueTuple MakeKVT(const asymm::Keys &rsa_key_pair,
                       const size_t &value_size,
                       const bptime::time_duration &ttl,
                       std::string key,
@@ -138,7 +138,7 @@ void JoinNetworkLookup(KeyPairPtr key_pair);
 
 bool AddTestValidation(KeyPairPtr key_pair,
                        std::string public_key_id,
-                       Asym::PublicKey public_key);
+                       asymm::PublicKey public_key);
 
 }  // namespace test
 

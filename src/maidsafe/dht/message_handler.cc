@@ -44,7 +44,7 @@ namespace dht {
 
 std::string MessageHandler::WrapMessage(
     const protobuf::PingRequest &msg,
-    const Asym::PublicKey &recipient_public_key) {
+    const asymm::PublicKey &recipient_public_key) {
   if (!msg.IsInitialized())
     return "";
   return MakeSerialisedWrapperMessage(kPingRequest, msg.SerializeAsString(),
@@ -53,7 +53,7 @@ std::string MessageHandler::WrapMessage(
 
 std::string MessageHandler::WrapMessage(
     const protobuf::PingResponse &msg,
-    const Asym::PublicKey &recipient_public_key) {
+    const asymm::PublicKey &recipient_public_key) {
   if (!msg.IsInitialized())
     return "";
   return MakeSerialisedWrapperMessage(kPingResponse, msg.SerializeAsString(),
@@ -62,7 +62,7 @@ std::string MessageHandler::WrapMessage(
 
 std::string MessageHandler::WrapMessage(
     const protobuf::FindValueRequest &msg,
-    const Asym::PublicKey &recipient_public_key) {
+    const asymm::PublicKey &recipient_public_key) {
   if (!msg.IsInitialized())
     return "";
   return MakeSerialisedWrapperMessage(kFindValueRequest,
@@ -72,7 +72,7 @@ std::string MessageHandler::WrapMessage(
 
 std::string MessageHandler::WrapMessage(
     const protobuf::FindValueResponse &msg,
-    const Asym::PublicKey &recipient_public_key) {
+    const asymm::PublicKey &recipient_public_key) {
   if (!msg.IsInitialized())
     return "";
   return MakeSerialisedWrapperMessage(kFindValueResponse,
@@ -83,7 +83,7 @@ std::string MessageHandler::WrapMessage(
 
 std::string MessageHandler::WrapMessage(
     const protobuf::FindNodesRequest &msg,
-    const Asym::PublicKey &recipient_public_key) {
+    const asymm::PublicKey &recipient_public_key) {
   if (!msg.IsInitialized())
     return "";
   return MakeSerialisedWrapperMessage(kFindNodesRequest,
@@ -94,7 +94,7 @@ std::string MessageHandler::WrapMessage(
 
 std::string MessageHandler::WrapMessage(
     const protobuf::FindNodesResponse &msg,
-    const Asym::PublicKey &recipient_public_key) {
+    const asymm::PublicKey &recipient_public_key) {
   if (!msg.IsInitialized())
     return "";
   return MakeSerialisedWrapperMessage(kFindNodesResponse,
@@ -105,7 +105,7 @@ std::string MessageHandler::WrapMessage(
 
 std::string MessageHandler::WrapMessage(
     const protobuf::StoreRequest &msg,
-    const Asym::PublicKey &recipient_public_key) {
+    const asymm::PublicKey &recipient_public_key) {
   if (!msg.IsInitialized())
     return "";
   return MakeSerialisedWrapperMessage(kStoreRequest,
@@ -116,7 +116,7 @@ std::string MessageHandler::WrapMessage(
 
 std::string MessageHandler::WrapMessage(
     const protobuf::StoreResponse &msg,
-    const Asym::PublicKey &recipient_public_key) {
+    const asymm::PublicKey &recipient_public_key) {
   if (!msg.IsInitialized())
     return "";
   return MakeSerialisedWrapperMessage(kStoreResponse, msg.SerializeAsString(),
@@ -125,7 +125,7 @@ std::string MessageHandler::WrapMessage(
 
 std::string MessageHandler::WrapMessage(
     const protobuf::StoreRefreshRequest &msg,
-    const Asym::PublicKey &recipient_public_key) {
+    const asymm::PublicKey &recipient_public_key) {
   if (!msg.IsInitialized())
     return "";
   return MakeSerialisedWrapperMessage(kStoreRefreshRequest,
@@ -136,7 +136,7 @@ std::string MessageHandler::WrapMessage(
 
 std::string MessageHandler::WrapMessage(
     const protobuf::StoreRefreshResponse &msg,
-    const Asym::PublicKey &recipient_public_key) {
+    const asymm::PublicKey &recipient_public_key) {
   if (!msg.IsInitialized())
     return "";
   return MakeSerialisedWrapperMessage(kStoreRefreshResponse,
@@ -147,7 +147,7 @@ std::string MessageHandler::WrapMessage(
 
 std::string MessageHandler::WrapMessage(
     const protobuf::DeleteRequest &msg,
-    const Asym::PublicKey &recipient_public_key) {
+    const asymm::PublicKey &recipient_public_key) {
   if (!msg.IsInitialized())
     return "";
   return MakeSerialisedWrapperMessage(kDeleteRequest,
@@ -158,7 +158,7 @@ std::string MessageHandler::WrapMessage(
 
 std::string MessageHandler::WrapMessage(
     const protobuf::DeleteResponse &msg,
-    const Asym::PublicKey &recipient_public_key) {
+    const asymm::PublicKey &recipient_public_key) {
   if (!msg.IsInitialized())
     return "";
   return MakeSerialisedWrapperMessage(kDeleteResponse, msg.SerializeAsString(),
@@ -167,7 +167,7 @@ std::string MessageHandler::WrapMessage(
 
 std::string MessageHandler::WrapMessage(
     const protobuf::DeleteRefreshRequest &msg,
-    const Asym::PublicKey &recipient_public_key) {
+    const asymm::PublicKey &recipient_public_key) {
   if (!msg.IsInitialized())
     return "";
   return MakeSerialisedWrapperMessage(kDeleteRefreshRequest,
@@ -178,7 +178,7 @@ std::string MessageHandler::WrapMessage(
 
 std::string MessageHandler::WrapMessage(
     const protobuf::DeleteRefreshResponse &msg,
-    const Asym::PublicKey &recipient_public_key) {
+    const asymm::PublicKey &recipient_public_key) {
   if (!msg.IsInitialized())
     return "";
   return MakeSerialisedWrapperMessage(kDeleteRefreshResponse,
@@ -189,7 +189,7 @@ std::string MessageHandler::WrapMessage(
 
 std::string MessageHandler::WrapMessage(
     const protobuf::DownlistNotification &msg,
-    const Asym::PublicKey &recipient_public_key) {
+    const asymm::PublicKey &recipient_public_key) {
   if (!msg.IsInitialized())
     return "";
   return MakeSerialisedWrapperMessage(kDownlistNotification,
@@ -216,8 +216,8 @@ void MessageHandler::ProcessSerialisedMessage(
       if (request.ParseFromString(payload) && request.IsInitialized()) {
         protobuf::PingResponse response;
         (*on_ping_request_)(info, request, &response, timeout);
-        Asym::PublicKey sender_public_key;
-        Asym::DecodePublicKey(request.sender().public_key(),
+        asymm::PublicKey sender_public_key;
+        asymm::DecodePublicKey(request.sender().public_key(),
                               &sender_public_key);
         *message_response = WrapMessage(response,
                                         sender_public_key);
@@ -239,8 +239,8 @@ void MessageHandler::ProcessSerialisedMessage(
       if (request.ParseFromString(payload) && request.IsInitialized()) {
         protobuf::FindValueResponse response;
         (*on_find_value_request_)(info, request, &response, timeout);
-        Asym::PublicKey sender_public_key;
-        Asym::DecodePublicKey(request.sender().public_key(),
+        asymm::PublicKey sender_public_key;
+        asymm::DecodePublicKey(request.sender().public_key(),
                               &sender_public_key);
         *message_response = WrapMessage(response,
                                         sender_public_key);
@@ -262,8 +262,8 @@ void MessageHandler::ProcessSerialisedMessage(
       if (request.ParseFromString(payload) && request.IsInitialized()) {
         protobuf::FindNodesResponse response;
         (*on_find_nodes_request_)(info, request, &response, timeout);
-        Asym::PublicKey sender_public_key;
-        Asym::DecodePublicKey(request.sender().public_key(),
+        asymm::PublicKey sender_public_key;
+        asymm::DecodePublicKey(request.sender().public_key(),
                               &sender_public_key);
         *message_response = WrapMessage(response,
                                         sender_public_key);
@@ -279,9 +279,8 @@ void MessageHandler::ProcessSerialisedMessage(
       break;
     }
     case kStoreRequest: {
-      // TODO(Viv) Replace false in IF with Check for PubKeyID Existing Cond
       if ((security_type != (kSign | kAsymmetricEncrypt)) ||
-          (message_signature.empty() && false))
+          (asymm::ValidateKey(*private_key_) && message_signature.empty()))
         return;
       protobuf::StoreRequest request;
       if (request.ParseFromString(payload) && request.IsInitialized()) {
@@ -296,17 +295,17 @@ void MessageHandler::ProcessSerialisedMessage(
           public_key = request.sender().public_key();
         if (request.sender().has_other_info())
           other_info = request.sender().other_info();
-        Asym::PublicKey asym_public_key;
-        Asym::DecodePublicKey(public_key, &asym_public_key);
-        if (!Asym::ValidateKey(asym_public_key))
+        asymm::PublicKey asym_public_key;
+        asymm::DecodePublicKey(public_key, &asym_public_key);
+        if (!asymm::ValidateKey(asym_public_key))
           return;
-        if (!Asym::Validate(message, message_signature, asym_public_key))
+        if (!asymm::Validate(message, message_signature, asym_public_key))
           return;
         protobuf::StoreResponse response;
         (*on_store_request_)(info, request, payload, message_signature,
                              &response, timeout);
-        Asym::PublicKey sender_public_key;
-        Asym::DecodePublicKey(request.sender().public_key(),
+        asymm::PublicKey sender_public_key;
+        asymm::DecodePublicKey(request.sender().public_key(),
                               &sender_public_key);
         *message_response = WrapMessage(response,
                                         sender_public_key);
@@ -337,16 +336,16 @@ void MessageHandler::ProcessSerialisedMessage(
           public_key = request.sender().public_key();
         if (request.sender().has_other_info())
           other_info = request.sender().other_info();
-        Asym::PublicKey asym_public_key;
-        Asym::DecodePublicKey(public_key, &asym_public_key);
-        if (!Asym::ValidateKey(asym_public_key))
+        asymm::PublicKey asym_public_key;
+        asymm::DecodePublicKey(public_key, &asym_public_key);
+        if (!asymm::ValidateKey(asym_public_key))
           return;
-        if (!Asym::Validate(message, message_signature, asym_public_key))
+        if (!asymm::Validate(message, message_signature, asym_public_key))
           return;
         protobuf::StoreRefreshResponse response;
         (*on_store_refresh_request_)(info, request, &response, timeout);
-        Asym::PublicKey sender_public_key;
-        Asym::DecodePublicKey(request.sender().public_key(),
+        asymm::PublicKey sender_public_key;
+        asymm::DecodePublicKey(request.sender().public_key(),
                               &sender_public_key);
         *message_response = WrapMessage(response,
                                         sender_public_key);
@@ -379,17 +378,17 @@ void MessageHandler::ProcessSerialisedMessage(
           public_key = request.sender().public_key();
         if (request.sender().has_other_info())
           other_info = request.sender().other_info();
-        Asym::PublicKey asym_public_key;
-        Asym::DecodePublicKey(public_key, &asym_public_key);
-        if (!Asym::ValidateKey(asym_public_key))
+        asymm::PublicKey asym_public_key;
+        asymm::DecodePublicKey(public_key, &asym_public_key);
+        if (!asymm::ValidateKey(asym_public_key))
           return;
-        if (!Asym::Validate(message, message_signature, asym_public_key))
+        if (!asymm::Validate(message, message_signature, asym_public_key))
           return;
         protobuf::DeleteResponse response;
         (*on_delete_request_)(info, request, payload, message_signature,
                               &response, timeout);
-        Asym::PublicKey sender_public_key;
-        Asym::DecodePublicKey(request.sender().public_key(),
+        asymm::PublicKey sender_public_key;
+        asymm::DecodePublicKey(request.sender().public_key(),
                               &sender_public_key);
         *message_response = WrapMessage(response,
                                         sender_public_key);
@@ -420,16 +419,16 @@ void MessageHandler::ProcessSerialisedMessage(
           public_key = request.sender().public_key();
         if (request.sender().has_other_info())
           other_info = request.sender().other_info();
-        Asym::PublicKey asym_public_key;
-        Asym::DecodePublicKey(public_key, &asym_public_key);
-        if (!Asym::ValidateKey(asym_public_key))
+        asymm::PublicKey asym_public_key;
+        asymm::DecodePublicKey(public_key, &asym_public_key);
+        if (!asymm::ValidateKey(asym_public_key))
           return;
-        if (!Asym::Validate(message, message_signature, asym_public_key))
+        if (!asymm::Validate(message, message_signature, asym_public_key))
           return;
         protobuf::DeleteRefreshResponse response;
         (*on_delete_refresh_request_)(info, request, &response, timeout);
-        Asym::PublicKey sender_public_key;
-        Asym::DecodePublicKey(request.sender().public_key(),
+        asymm::PublicKey sender_public_key;
+        asymm::DecodePublicKey(request.sender().public_key(),
                               &sender_public_key);
         *message_response = WrapMessage(response,
                                         sender_public_key);

@@ -624,7 +624,7 @@ class MockNodeImplTest : public CreateContactAndNodeId, public testing::Test {
       : CreateContactAndNodeId(g_kKademliaK),
         data_store_(),
         alternative_store_(),
-        private_key_(new Asym::PrivateKey()),
+        private_key_(new asymm::PrivateKey()),
         mock_transport_(new MockTransport),
         rank_info_(),
         asio_service_(),
@@ -634,7 +634,7 @@ class MockNodeImplTest : public CreateContactAndNodeId, public testing::Test {
         node_(new NodeImpl(asio_service_,
                            mock_transport_,
                            message_handler_,
-                           KeyPairPtr(new Asym::Keys()),
+                           KeyPairPtr(new asymm::Keys()),
                            alternative_store_,
                            false,
                            g_kKademliaK,
@@ -645,7 +645,7 @@ class MockNodeImplTest : public CreateContactAndNodeId, public testing::Test {
         local_node_(new NodeImpl(asio_service_,
                                  mock_transport_,
                                  message_handler_,
-                                 KeyPairPtr(new Asym::Keys()),
+                                 KeyPairPtr(new asymm::Keys()),
                                  alternative_store_,
                                  true,
                                  g_kKademliaK,
@@ -1326,8 +1326,8 @@ TEST_F(MockNodeImplTest, BEH_Store) {
                     new_rpcs.get(), arg::_1))));
   std::string key_str(kKeySizeBytes, -1);
   NodeId key = NodeId(key_str);
-  Asym::Keys crypto_key_data;
-  Asym::GenerateKeyPair(&crypto_key_data);
+  asymm::Keys crypto_key_data;
+  asymm::GenerateKeyPair(&crypto_key_data);
   KeyValueSignature kvs = MakeKVS(crypto_key_data, 1024, key.String(), "");
   bptime::time_duration old_ttl(bptime::pos_infin);
   {
@@ -1512,8 +1512,8 @@ TEST_F(MockNodeImplTest, BEH_Delete) {
 
   std::string key_str(kKeySizeBytes, -1);
   NodeId key = NodeId(key_str);
-  Asym::Keys crypto_key_data;
-  Asym::GenerateKeyPair(&crypto_key_data);
+  asymm::Keys crypto_key_data;
+  asymm::GenerateKeyPair(&crypto_key_data);
   KeyValueSignature kvs = MakeKVS(crypto_key_data, 1024, key.String(), "");
   {
     // All k populated contacts response with random closest list
@@ -1670,8 +1670,8 @@ TEST_F(MockNodeImplTest, BEH_Update) {
 
   std::string key_str(kKeySizeBytes, -1);
   NodeId key = NodeId(key_str);
-  Asym::Keys crypto_key_data;
-  Asym::GenerateKeyPair(&crypto_key_data);
+  asymm::Keys crypto_key_data;
+  asymm::GenerateKeyPair(&crypto_key_data);
   KeyValueSignature kvs = MakeKVS(crypto_key_data, 1024, key.String(), "");
   KeyValueSignature kvs_new = MakeKVS(crypto_key_data, 1024, key.String(), "");
   bptime::time_duration old_ttl(bptime::pos_infin);
@@ -2121,7 +2121,7 @@ TEST_F(MockNodeImplTest, BEH_AssessLookupState) {
                                                        test_contacts.end(),
                                                        node_id_));
   uint16_t num_contacts_requested(random_num_nodes);
-  PrivateKeyPtr private_key(new Asym::PrivateKey());
+  PrivateKeyPtr private_key(new asymm::PrivateKey());
   LookupArgsPtr lookup_args(new LookupArgs(LookupArgs::kFindNodes,
                                            node_id_,
                                            close_contacts,
@@ -2220,7 +2220,7 @@ TEST_F(MockNodeImplTest, BEH_RemoveDownlistedContacts) {
   OrderedContacts close_contacts(CreateOrderedContacts(test_contacts.begin(),
                                                        test_contacts.end(),
                                                        node_id_));
-  PrivateKeyPtr private_key(new Asym::PrivateKey());
+  PrivateKeyPtr private_key(new asymm::PrivateKey());
   LookupArgsPtr lookup_args(new LookupArgs(LookupArgs::kFindNodes,
                                            node_id_,
                                            close_contacts,
@@ -2332,7 +2332,7 @@ TEST_F(MockNodeImplTest, BEH_InsertCloseContacts) {
 
 // Empty Live Contacts to Test a Full Insert of New Contacts
   auto expected_bound(close_contacts.rbegin());
-  PrivateKeyPtr private_key(new Asym::PrivateKey());
+  PrivateKeyPtr private_key(new asymm::PrivateKey());
   LookupArgsPtr lookup_args(new LookupArgs(LookupArgs::kFindNodes,
                                            node_id_,
                                            close_contacts,

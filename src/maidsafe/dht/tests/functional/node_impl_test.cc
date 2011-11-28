@@ -112,7 +112,7 @@ class NodeImplTest : public testing::TestWithParam<bool> {
   }
 
   PrivateKeyPtr GetPrivateKeyPtr(KeyPairPtr key_pair) {
-    return PrivateKeyPtr(new Asym::PrivateKey(key_pair->private_key));
+    return PrivateKeyPtr(new asymm::PrivateKey(key_pair->private_key));
   }
 
   std::shared_ptr<DataStore> GetDataStore(
@@ -426,7 +426,7 @@ TEST_P(NodeImplTest, FUNC_Store) {
   {
     boost::mutex::scoped_lock lock(env_->mutex_);
     chosen_container->Store(far_key_, value, "", duration,
-                            PrivateKeyPtr(new Asym::PrivateKey(
+                            PrivateKeyPtr(new asymm::PrivateKey(
                                 chosen_container->key_pair()->private_key)));
     ASSERT_TRUE(env_->cond_var_.timed_wait(lock, kTimeout_,
                 chosen_container->wait_for_store_functor()));
@@ -574,7 +574,7 @@ TEST_P(NodeImplTest, FUNC_FindValue) {
                       find_value_returns.values_and_signatures.size()));
     for (size_t k = 0; k != num_values; ++k) {
       EXPECT_EQ(values[k], find_value_returns.values_and_signatures[k].first);
-      EXPECT_TRUE(Asym::Validate(values[k],
+      EXPECT_TRUE(asymm::Validate(values[k],
                   find_value_returns.values_and_signatures[k].second,
                   test_container_->key_pair()->public_key));
     }
@@ -678,8 +678,8 @@ TEST_P(NodeImplTest, FUNC_FindValue) {
   // needs_cache_copy field
   Key saturation_key(NodeId::kRandomId);
   std::string saturation_value = RandomString(RandomUint32() % 1024);
-  Asym::Keys crypto_key;
-  Asym::GenerateKeyPair(&crypto_key);
+  asymm::Keys crypto_key;
+  asymm::GenerateKeyPair(&crypto_key);
   KeyValueTuple kvt = MakeKVT(crypto_key, saturation_value.size(), duration,
                               saturation_key.String(), saturation_value);
   for (auto it(env_->node_containers_.begin());
@@ -919,7 +919,7 @@ TEST_P(NodeImplTest, FUNC_Delete) {
   chosen_container->GetAndResetFindValueResult(&find_value_returns);
   EXPECT_EQ(kSuccess, find_value_returns.return_code);
   EXPECT_EQ(value, find_value_returns.values_and_signatures[0].first);
-  EXPECT_TRUE(Asym::Validate(value,
+  EXPECT_TRUE(asymm::Validate(value,
               find_value_returns.values_and_signatures[0].second,
               chosen_container->key_pair()->public_key));
   FindValueReturns find_multiple_value_returns;
@@ -1074,17 +1074,17 @@ TEST_P(NodeImplTest, FUNC_Delete) {
      find_multiple_value_returns.values_and_signatures[1].first ==
      value2));
   if (find_multiple_value_returns.values_and_signatures[0].first == value2) {
-    EXPECT_TRUE(Asym::Validate(value2,
+    EXPECT_TRUE(asymm::Validate(value2,
                 find_multiple_value_returns.values_and_signatures[0].second,
                 chosen_container->key_pair()->public_key));
-    EXPECT_TRUE(Asym::Validate(value3,
+    EXPECT_TRUE(asymm::Validate(value3,
                 find_multiple_value_returns.values_and_signatures[1].second,
                 chosen_container->key_pair()->public_key));
   } else {
-    EXPECT_TRUE(Asym::Validate(value3,
+    EXPECT_TRUE(asymm::Validate(value3,
                 find_multiple_value_returns.values_and_signatures[0].second,
                 chosen_container->key_pair()->public_key));
-    EXPECT_TRUE(Asym::Validate(value2,
+    EXPECT_TRUE(asymm::Validate(value2,
                 find_multiple_value_returns.values_and_signatures[1].second,
                 chosen_container->key_pair()->public_key));
   }
@@ -1132,7 +1132,7 @@ TEST_P(NodeImplTest, FUNC_Update) {
   }
   EXPECT_EQ(kSuccess, find_value_returns.return_code);
   EXPECT_EQ(value, find_value_returns.values_and_signatures[0].first);
-  EXPECT_TRUE(Asym::Validate(value,
+  EXPECT_TRUE(asymm::Validate(value,
               find_value_returns.values_and_signatures[0].second,
               chosen_container->key_pair()->public_key));
 
@@ -1185,7 +1185,7 @@ TEST_P(NodeImplTest, FUNC_Update) {
   }
   EXPECT_EQ(kSuccess, find_value_returns.return_code);
   EXPECT_EQ(value, find_value_returns.values_and_signatures[0].first);
-  EXPECT_TRUE(Asym::Validate(value,
+  EXPECT_TRUE(asymm::Validate(value,
               find_value_returns.values_and_signatures[0].second,
               chosen_container->key_pair()->public_key));
 

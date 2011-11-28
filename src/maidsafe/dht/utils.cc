@@ -67,9 +67,9 @@ Contact FromProtobuf(const protobuf::Contact &pb_contact) {
         Endpoint(pb_contact.local_ips(i),
                 static_cast<uint16_t>(pb_contact.local_port())));
 
-  Asym::PublicKey public_key;
+  asymm::PublicKey public_key;
   if (pb_contact.has_public_key())
-    Asym::DecodePublicKey(pb_contact.public_key(), &public_key);
+    asymm::DecodePublicKey(pb_contact.public_key(), &public_key);
   return Contact(
       NodeId(pb_contact.node_id()),
       Endpoint(pb_contact.endpoint().ip(),
@@ -115,7 +115,7 @@ protobuf::Contact ToProtobuf(const Contact &contact) {
 
   pb_contact.set_public_key_id(contact.public_key_id());
   std::string encode_pub_key;
-  Asym::EncodePublicKey(contact.public_key(), &encode_pub_key);
+  asymm::EncodePublicKey(contact.public_key(), &encode_pub_key);
   pb_contact.set_public_key(encode_pub_key);
   pb_contact.set_other_info(contact.other_info());
   return pb_contact;

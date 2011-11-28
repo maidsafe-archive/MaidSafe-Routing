@@ -39,6 +39,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "maidsafe/dht/log.h"
 #include "maidsafe/dht/version.h"
+#include "maidsafe/dht/config.h"
 #include "maidsafe/dht/contact.h"
 #include "maidsafe/dht/return_codes.h"
 #include "maidsafe/dht/node_id.h"
@@ -52,6 +53,7 @@ namespace fs = boost::filesystem;
 namespace po = boost::program_options;
 namespace mk = maidsafe::dht;
 namespace mt = maidsafe::transport;
+namespace ma = maidsafe::asymm;
 
 
 namespace {
@@ -118,18 +120,18 @@ mk::Contact ComposeContact(const mk::NodeId &node_id,
   std::vector<mt::Endpoint> local_endpoints;
   local_endpoints.push_back(endpoint);
   mk::Contact contact(node_id, endpoint, local_endpoints, endpoint, false,
-                      false, "", Asym::PublicKey(), "");
+                      false, "", ma::PublicKey(), "");
   return contact;
 }
 
 mk::Contact ComposeContactWithKey(
     const mk::NodeId &node_id,
     const mt::Endpoint &endpoint,
-    const Asym::Keys &crypto_key) {
+    const ma::Keys &crypto_key_pair) {
   std::vector<mt::Endpoint> local_endpoints;
   local_endpoints.push_back(endpoint);
   mk::Contact contact(node_id, endpoint, local_endpoints, endpoint, false,
-                      false, node_id.String(), crypto_key.public_key, "");
+                      false, node_id.String(), crypto_key_pair.public_key, "");
   return contact;
 }
 

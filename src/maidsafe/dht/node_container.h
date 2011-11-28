@@ -377,11 +377,11 @@ void NodeContainer<NodeType>::Init(
   if (key_pair) {
     key_pair_ = key_pair;
   } else {
-    KeyPairPtr new_key_pair(new Asym::Keys());
-    Asym::GenerateKeyPair(new_key_pair.get());
+    KeyPairPtr new_key_pair(new asymm::Keys());
+    asymm::GenerateKeyPair(new_key_pair.get());
     // TODO(Viv) Check if id Gen is Correct or to use NodeId(NodeId::kRandomId)
     std::string pub_key;
-    Asym::EncodePublicKey(new_key_pair->public_key, &pub_key);
+    asymm::EncodePublicKey(new_key_pair->public_key, &pub_key);
     std::string id(crypto::Hash<crypto::SHA512>(pub_key));
     new_key_pair->identity = id;
     key_pair_ = new_key_pair;
@@ -391,7 +391,7 @@ void NodeContainer<NodeType>::Init(
     message_handler_ = message_handler;
   } else {
     PrivateKeyPtr priv_key = PrivateKeyPtr(
-        new Asym::PrivateKey(key_pair_->private_key));
+        new asymm::PrivateKey(key_pair_->private_key));
     message_handler_.reset(new MessageHandler(priv_key));
   }
 

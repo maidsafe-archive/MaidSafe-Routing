@@ -260,7 +260,7 @@ void serialize(Archive &archive,                              // NOLINT (Fraser)
     tcp443 = contact.tcp443endpoint().port == 443;
     tcp80 = contact.tcp80endpoint().port == 80;
     public_key_id = maidsafe::EncodeToBase32(contact.public_key_id());
-    Asym::EncodePublicKey(contact.public_key(), &public_key);
+    maidsafe::asymm::EncodePublicKey(contact.public_key(), &public_key);
     other_info = contact.other_info();
   }
 
