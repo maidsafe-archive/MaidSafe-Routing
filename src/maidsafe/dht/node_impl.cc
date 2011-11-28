@@ -1531,8 +1531,8 @@ void NodeImpl::ValidateContact(const Contact &contact) {
 }
 
 void NodeImpl::ValidateContactCallback(Contact contact,
-                                       std::string public_key,
-                                       std::string public_key_validation) {
+                                       std::string /*public_key*/,
+                                       std::string /*public_key_validation*/) {
   bool valid = true;  // TODO(Viv) Check Implementation
   routing_table_->SetValidated(contact.node_id(), valid);
 }

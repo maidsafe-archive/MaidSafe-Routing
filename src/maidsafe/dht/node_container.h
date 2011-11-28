@@ -373,18 +373,13 @@ void NodeContainer<NodeType>::Init(
   }
 
   // Set up private_key if it wasn't passed in - make signing_key_id compatible
-  // with type NodeId so that the node's ID can be set as the private_key's ID
+  // with type NodeId so that the node's ID can be set as the public key's ID
   if (key_pair) {
     key_pair_ = key_pair;
   } else {
-    KeyPairPtr new_key_pair(new asymm::Keys());
-    asymm::GenerateKeyPair(new_key_pair.get());
-    // TODO(Viv) Check if id Gen is Correct or to use NodeId(NodeId::kRandomId)
-    std::string pub_key;
-    asymm::EncodePublicKey(new_key_pair->public_key, &pub_key);
-    std::string id(crypto::Hash<crypto::SHA512>(pub_key));
-    new_key_pair->identity = id;
-    key_pair_ = new_key_pair;
+    key_pair_ = KeyPairPtr(new asymm::Keys);
+    asymm::GenerateKeyPair(key_pair_.get());
+    key_pair_->identity = RandomString(crypto::SHA512::DIGESTSIZE);
   }
 
   if (message_handler) {
@@ -453,7 +448,6 @@ int NodeContainer<NodeType>::Start(
 
   boost::mutex mutex;
   boost::condition_variable cond_var;
-  // TODO(Viv) Check This Initialisation or to use PubLic Key
   NodeId node_id(key_pair_->identity);
   JoinFunctor join_functor(std::bind(&NodeContainer<NodeType>::JoinCallback,
                            this, arg::_1, &mutex, &cond_var));

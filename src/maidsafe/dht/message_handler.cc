@@ -280,7 +280,7 @@ void MessageHandler::ProcessSerialisedMessage(
     }
     case kStoreRequest: {
       if ((security_type != (kSign | kAsymmetricEncrypt)) ||
-          (asymm::ValidateKey(*private_key_) && message_signature.empty()))
+          message_signature.empty())
         return;
       protobuf::StoreRequest request;
       if (request.ParseFromString(payload) && request.IsInitialized()) {
@@ -323,7 +323,7 @@ void MessageHandler::ProcessSerialisedMessage(
     case kStoreRefreshRequest: {
       // TODO(Viv) Check Above TODO
       if ((security_type != (kSign | kAsymmetricEncrypt)) ||
-          (message_signature.empty() && false))
+          message_signature.empty())
         return;
       protobuf::StoreRefreshRequest request;
       if (request.ParseFromString(payload) && request.IsInitialized()) {
@@ -361,9 +361,8 @@ void MessageHandler::ProcessSerialisedMessage(
       break;
     }
     case kDeleteRequest: {
-      // TODO(Viv) Check Above
       if ((security_type != (kSign | kAsymmetricEncrypt)) ||
-          (message_signature.empty() && false))
+          message_signature.empty())
         return;
       protobuf::DeleteRequest request;
       if (request.ParseFromString(payload) && request.IsInitialized()) {
@@ -404,9 +403,8 @@ void MessageHandler::ProcessSerialisedMessage(
       break;
     }
     case kDeleteRefreshRequest: {
-      // TODO(Viv) Check Above
       if ((security_type != (kSign | kAsymmetricEncrypt)) ||
-          (message_signature.empty() && false))
+          message_signature.empty())
         return;
       protobuf::DeleteRefreshRequest request;
       if (request.ParseFromString(payload) && request.IsInitialized()) {
