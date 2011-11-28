@@ -137,7 +137,7 @@ TEST_F(NodeTest, FUNC_Bootstrap) {
   ASSERT_FALSE(online_contacts.empty());
   NodeContainerPtr node_container(
       new maidsafe::dht::NodeContainer<Node>());
-  node_container->Init(3, NULL, MessageHandlerPtr(),
+  node_container->Init(3, KeyPairPtr(), MessageHandlerPtr(),
                        AlternativeStorePtr(), false, env_->k_, env_->alpha_,
                        env_->beta_, env_->mean_refresh_interval_);
   node_container->MakeAllCallbackFunctors(&env_->mutex_, &env_->cond_var_);
@@ -277,7 +277,7 @@ TEST_F(NodeTest, FUNC_Bootstrap) {
 TEST_F(NodeTest, FUNC_JoinClient) {
   NodeContainerPtr client_node_container(
       new maidsafe::dht::NodeContainer<Node>());
-  client_node_container->Init(3, NULL, MessageHandlerPtr(),
+  client_node_container->Init(3, KeyPairPtr(), MessageHandlerPtr(),
                               AlternativeStorePtr(), true, env_->k_,
                               env_->alpha_, env_->beta_,
                               env_->mean_refresh_interval_);
@@ -476,7 +476,7 @@ TEST_F(NodeTest, FUNC_MultipleNodesFindSingleValue) {
 TEST_F(NodeTest, FUNC_ClientFindValue) {
   NodeContainerPtr client_node_container(
       new maidsafe::dht::NodeContainer<Node>());
-  client_node_container->Init(3, NULL, MessageHandlerPtr(),
+  client_node_container->Init(3, KeyPairPtr(), MessageHandlerPtr(),
                               AlternativeStorePtr(), true, env_->k_,
                               env_->alpha_, env_->beta_,
                               env_->mean_refresh_interval_);

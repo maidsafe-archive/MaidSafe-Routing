@@ -90,7 +90,7 @@ class NodeImplTest : public testing::TestWithParam<bool> {
           GetDataStore(env_->node_containers_[i])->shared_mutex_);
       GetDataStore(env_->node_containers_[i])->key_value_index_->clear();
     }
-    test_container_->Init(3, NULL, MessageHandlerPtr(),
+    test_container_->Init(3, KeyPairPtr(), MessageHandlerPtr(),
                           AlternativeStorePtr(), client_only_node_, env_->k_,
                           env_->alpha_, env_->beta_,
                           env_->mean_refresh_interval_);
@@ -148,7 +148,7 @@ class NodeImplTest : public testing::TestWithParam<bool> {
 TEST_P(NodeImplTest, FUNC_JoinLeave) {
   NodeContainerPtr node_container(
       new maidsafe::dht::NodeContainer<NodeImpl>());
-  node_container->Init(3, NULL, MessageHandlerPtr(),
+  node_container->Init(3, KeyPairPtr(), MessageHandlerPtr(),
                        AlternativeStorePtr(), client_only_node_, env_->k_,
                        env_->alpha_, env_->beta_, env_->mean_refresh_interval_);
   node_container->MakeAllCallbackFunctors(&env_->mutex_, &env_->cond_var_);
@@ -639,7 +639,7 @@ TEST_P(NodeImplTest, FUNC_FindValue) {
   }
   NodeContainerPtr alternative_container(
       new maidsafe::dht::NodeContainer<NodeImpl>());
-  alternative_container->Init(3, NULL, MessageHandlerPtr(),
+  alternative_container->Init(3, KeyPairPtr(), MessageHandlerPtr(),
       AlternativeStorePtr(new TestAlternativeStoreReturnsTrue), false, env_->k_,
       env_->alpha_, env_->beta_, env_->mean_refresh_interval_);
   alternative_container->MakeAllCallbackFunctors(&env_->mutex_,

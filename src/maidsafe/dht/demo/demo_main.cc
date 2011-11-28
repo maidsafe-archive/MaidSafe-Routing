@@ -302,7 +302,7 @@ int main(int argc, char **argv) {
 
     mk::demo::DemoNodePtr demo_node(new mk::demo::DemoNode);
     ULOG(INFO) << "Creating node...";
-    demo_node->Init(static_cast<uint8_t>(thread_count), NULL,
+    demo_node->Init(static_cast<uint8_t>(thread_count), mk::KeyPairPtr(),
                     mk::MessageHandlerPtr(), mk::AlternativeStorePtr(),
                     client_only_node, k, alpha, beta, mean_refresh_interval);
     std::pair<mt::Port, mt::Port> port_range(listening_port, listening_port);
