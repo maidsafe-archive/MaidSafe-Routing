@@ -48,7 +48,7 @@ const std::string& Task::key() const {
   return key_value_signature.key;
 }
 
-const std::string& Task::get_public_key_id() const {
+const asymm::Identity& Task::get_public_key_id() const {
   return public_key_id;
 }
 
@@ -61,7 +61,7 @@ SenderTask::~SenderTask() {}
 bool SenderTask::AddTask(const KeyValueSignature &key_value_signature,
                          const transport::Info &info,
                          const RequestAndSignature &request_signature,
-                         const std::string &public_key_id,
+                         const asymm::Identity &public_key_id,
                          TaskCallback ops_callback,
                          bool *is_new_id) {
   if (key_value_signature.key.empty()) {
@@ -116,9 +116,10 @@ bool SenderTask::AddTask(const KeyValueSignature &key_value_signature,
   return itr_return.second;
 }
 
-void SenderTask::SenderTaskCallback(std::string public_key_id,
-                                    std::string public_key,
-                                    std::string public_key_validation) {
+void SenderTask::SenderTaskCallback(
+    asymm::Identity public_key_id,
+    asymm::PublicKey public_key,
+    asymm::ValidationToken public_key_validation) {
   if (public_key_id.empty()) {
     DLOG(WARNING) << "Empty public_key_id.";
     return;

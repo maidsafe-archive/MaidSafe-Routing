@@ -52,21 +52,22 @@ namespace test {
 
 class AsymGetPublicKeyAndValidation {
  public:
-  AsymGetPublicKeyAndValidation(const std::string &public_key_id,
+  AsymGetPublicKeyAndValidation(const asymm::Identity &public_key_id,
                                 const asymm::PublicKey &public_key,
                                 const asymm::PrivateKey &private_key);
   void GetPublicKeyAndValidation(
-      const std::string &public_key_id,
+      const asymm::Identity &public_key_id,
       asymm::GetPublicKeyAndValidationCallback callback);
   void Join();
-  bool AddTestValidation(const std::string &public_key_id,
-                         const std::string &public_key);
+  bool AddTestValidation(const asymm::Identity &public_key_id,
+                         const asymm::PublicKey &public_key);
   void ClearTestValidationMap();
 
  private:
-  void DummyFind(std::string public_key_id,
-                 asymm::GetPublicKeyAndValidationCallback callback);
-  std::map<std::string, std::string> public_key_id_map_;
+  void DummyContactValidationGetter(
+      asymm::Identity public_key_id,
+      asymm::GetPublicKeyAndValidationCallback callback);
+  std::map<asymm::Identity, asymm::PublicKey> public_key_id_map_;
   boost::thread_group thread_group_;
 };
 
@@ -139,6 +140,16 @@ void JoinNetworkLookup(KeyPairPtr key_pair);
 bool AddTestValidation(KeyPairPtr key_pair,
                        std::string public_key_id,
                        asymm::PublicKey public_key);
+
+
+void DummyContactValidationGetter(
+    asymm::Identity identity,
+    asymm::GetPublicKeyAndValidationCallback callback);
+
+bool ValidateFalse(const asymm::PlainText &plain_text,
+                   const asymm::Signature &signature,
+                   const asymm::PublicKey &public_key);
+
 
 }  // namespace test
 

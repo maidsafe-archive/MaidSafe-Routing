@@ -126,6 +126,8 @@ class ServicesTest: public CreateContactAndNodeId, public testing::Test {
                              GetPrivateKeyPtr(key_pair_), g_kKademliaK)),
         num_of_pings_(0) {
     service_->set_node_joined(true);
+    service_->set_contact_validation_getter(std::bind(
+        &DummyContactValidationGetter, arg::_1, arg::_2));
   }
 
   virtual void SetUp() {}
@@ -390,7 +392,7 @@ TEST_F(ServicesTest, BEH_Store) {
                     &store_response, &time_out);
     EXPECT_FALSE(store_response.result());
     EXPECT_EQ(0U, GetSenderTaskSize());
-    JoinNetworkLookup(key_pair_);
+    Sleep(kNetworkDelay * 2);
     ASSERT_EQ(0U, GetDataStoreSize());
     ASSERT_EQ(0U, GetRoutingTableSize());
     ASSERT_EQ(0U, CountUnValidatedContacts());
@@ -400,8 +402,6 @@ TEST_F(ServicesTest, BEH_Store) {
   {
     // Try to store an in-valid tuple
     // into empty datastore and empty routingtable
-
-    // TODO(Viv) Change To Always Validate False For this KeyPair
     asymm::Keys key_pair;
     key_pair.identity = sender.public_key_id();
     key_pair.public_key = sender.public_key();
@@ -409,13 +409,16 @@ TEST_F(ServicesTest, BEH_Store) {
     Service service(routing_table_, data_store_, alternative_store_,
                     GetPrivateKeyPtr(key_pair_local), g_kKademliaK);
     service.set_node_joined(true);
+    service.set_contact_validation_getter(std::bind(
+        &DummyContactValidationGetter, arg::_1, arg::_2));
+    service.set_validate(std::bind(&ValidateFalse, arg::_1, arg::_2, arg::_3));
 
     protobuf::StoreResponse store_response;
     service.Store(info_, store_request, message, message_sig, &store_response,
                   &time_out);
     EXPECT_TRUE(store_response.result());
     EXPECT_EQ(1U, GetSenderTaskSize(service));
-    JoinNetworkLookup(key_pair_local);
+    Sleep(kNetworkDelay * 2);
     EXPECT_EQ(0U, GetSenderTaskSize(service));
     ASSERT_EQ(0U, GetDataStoreSize());
     ASSERT_EQ(0U, GetRoutingTableSize());
@@ -430,7 +433,7 @@ TEST_F(ServicesTest, BEH_Store) {
                     &store_response, &time_out);
     EXPECT_TRUE(store_response.result());
     EXPECT_EQ(1U, GetSenderTaskSize());
-    JoinNetworkLookup(key_pair_);
+    Sleep(kNetworkDelay * 2);
     EXPECT_EQ(0U, GetSenderTaskSize());
     ASSERT_EQ(0U, GetDataStoreSize());
     store_request.set_ttl(3600*24);
@@ -447,7 +450,7 @@ TEST_F(ServicesTest, BEH_Store) {
                     &store_response, &time_out);
     EXPECT_TRUE(store_response.result());
     EXPECT_EQ(1U, GetSenderTaskSize());
-    JoinNetworkLookup(key_pair_);
+    Sleep(kNetworkDelay * 2);
     EXPECT_EQ(0U, GetSenderTaskSize());
     ASSERT_EQ(1U, GetDataStoreSize());
     ASSERT_EQ(1U, GetRoutingTableSize());
@@ -467,7 +470,7 @@ TEST_F(ServicesTest, BEH_Store) {
                     &store_response, &time_out);
     EXPECT_TRUE(store_response.result());
     EXPECT_EQ(1U, GetSenderTaskSize());
-    JoinNetworkLookup(key_pair_);
+    Sleep(kNetworkDelay * 2);
     EXPECT_EQ(0U, GetSenderTaskSize());
     EXPECT_EQ(1U, GetDataStoreSize());
     // the sender will be pushed into the unvalidated_contacts list
@@ -515,7 +518,7 @@ TEST_F(ServicesTest, BEH_Delete) {
                      message_sig_empty, &delete_response, &time_out);
     EXPECT_FALSE(delete_response.result());
     EXPECT_EQ(0U, GetSenderTaskSize());
-    JoinNetworkLookup(key_pair_);
+    Sleep(kNetworkDelay * 2);
     ASSERT_EQ(0U, GetDataStoreSize());
     ASSERT_EQ(0U, GetRoutingTableSize());
     ASSERT_EQ(0U, CountUnValidatedContacts());
@@ -524,7 +527,6 @@ TEST_F(ServicesTest, BEH_Delete) {
   {
     // Try to delete an in-valid tuple
     // from populated datastore and empty routingtable
-    // TODO(Viv) Change To Always Validate False For this KeyPair
     asymm::Keys key_pair;
     key_pair.identity = sender.public_key_id();
     key_pair.public_key = sender.public_key();
@@ -532,6 +534,9 @@ TEST_F(ServicesTest, BEH_Delete) {
     Service service(routing_table_, data_store_, alternative_store_,
                     GetPrivateKeyPtr(key_pair_local), g_kKademliaK);
     service.set_node_joined(true);
+    service.set_contact_validation_getter(std::bind(
+        &DummyContactValidationGetter, arg::_1, arg::_2));
+    service.set_validate(std::bind(&ValidateFalse, arg::_1, arg::_2, arg::_3));
 
     EXPECT_EQ(kSuccess, data_store_->StoreValue(kvs, old_ttl, request_signature,
                                                 false));
@@ -542,7 +547,7 @@ TEST_F(ServicesTest, BEH_Delete) {
                    delete_message_sig, &delete_response, &time_out);
     EXPECT_TRUE(delete_response.result());
     EXPECT_EQ(1U, GetSenderTaskSize(service));
-    JoinNetworkLookup(key_pair_local);
+    Sleep(kNetworkDelay * 2);
     EXPECT_EQ(0U, GetSenderTaskSize(service));
     ASSERT_EQ(1U, GetDataStoreSize());
     ASSERT_EQ(0U, GetRoutingTableSize());
@@ -560,7 +565,7 @@ TEST_F(ServicesTest, BEH_Delete) {
                      delete_message_sig, &delete_response, &time_out);
     EXPECT_TRUE(delete_response.result());
     EXPECT_EQ(0U, GetSenderTaskSize());
-    JoinNetworkLookup(key_pair_);
+    Sleep(kNetworkDelay * 2);
     ASSERT_EQ(0U, GetDataStoreSize());
     ASSERT_EQ(1U, GetRoutingTableSize());
     ASSERT_EQ(0U, CountUnValidatedContacts());
@@ -574,7 +579,7 @@ TEST_F(ServicesTest, BEH_Delete) {
                     store_message_sig, &store_response, &time_out);
     ASSERT_TRUE(store_response.result());
     EXPECT_EQ(1U, GetSenderTaskSize());
-    JoinNetworkLookup(key_pair_);
+    Sleep(kNetworkDelay * 2);
     EXPECT_EQ(0U, GetSenderTaskSize());
     ASSERT_EQ(1U, GetDataStoreSize());
 
@@ -583,7 +588,7 @@ TEST_F(ServicesTest, BEH_Delete) {
                      delete_message_sig, &delete_response, &time_out);
     EXPECT_TRUE(delete_response.result());
     EXPECT_EQ(1U, GetSenderTaskSize());
-    JoinNetworkLookup(key_pair_);
+    Sleep(kNetworkDelay * 2);
     EXPECT_EQ(0U, GetSenderTaskSize());
     // data_store_ will only mark the entry as deleted, but still keep it
     ASSERT_EQ(1U, GetDataStoreSize());
@@ -637,7 +642,7 @@ TEST_F(ServicesTest, FUNC_StoreRefresh) {
                            &store_refresh_response, &time_out);
     EXPECT_FALSE(store_refresh_response.result());
     EXPECT_EQ(0U, GetSenderTaskSize());
-    JoinNetworkLookup(key_pair_);
+    Sleep(kNetworkDelay * 2);
     ASSERT_EQ(0U, GetDataStoreSize());
     ASSERT_EQ(0U, GetRoutingTableSize());
     ASSERT_EQ(0U, CountUnValidatedContacts());
@@ -648,7 +653,6 @@ TEST_F(ServicesTest, FUNC_StoreRefresh) {
   {
     // Try to storefresh an in-valid tuple
     // into empty datastore and empty routingtable
-    // TODO(Viv) Change To Always Validate False For this KeyPair
     asymm::Keys key_pair;
     key_pair.identity = sender.public_key_id();
     key_pair.public_key = sender.public_key();
@@ -656,13 +660,16 @@ TEST_F(ServicesTest, FUNC_StoreRefresh) {
     Service service(routing_table_, data_store_, alternative_store_,
                     GetPrivateKeyPtr(key_pair_local), g_kKademliaK);
     service.set_node_joined(true);
+    service.set_contact_validation_getter(std::bind(
+        &DummyContactValidationGetter, arg::_1, arg::_2));
+    service.set_validate(std::bind(&ValidateFalse, arg::_1, arg::_2, arg::_3));
 
     protobuf::StoreRefreshResponse store_refresh_response;
     service.StoreRefresh(info_, store_refresh_request, &store_refresh_response,
                          &time_out);
     EXPECT_TRUE(store_refresh_response.result());
     EXPECT_EQ(1U, GetSenderTaskSize(service));
-    JoinNetworkLookup(key_pair_local);
+    Sleep(kNetworkDelay * 2);
     EXPECT_EQ(0U, GetSenderTaskSize(service));
     ASSERT_EQ(0U, GetDataStoreSize());
     ASSERT_EQ(0U, GetRoutingTableSize());
@@ -681,7 +688,7 @@ TEST_F(ServicesTest, FUNC_StoreRefresh) {
                       crypto_key_data.public_key);
     EXPECT_TRUE(store_refresh_response.result());
     EXPECT_EQ(1U, GetSenderTaskSize());
-    JoinNetworkLookup(key_pair_);
+    Sleep(kNetworkDelay * 2);
     EXPECT_EQ(0U, GetSenderTaskSize());
     ASSERT_EQ(1U, GetDataStoreSize());
     ASSERT_EQ(1U, GetRoutingTableSize());
@@ -702,7 +709,7 @@ TEST_F(ServicesTest, FUNC_StoreRefresh) {
                       crypto_key_data.public_key);
     EXPECT_TRUE(store_fresh_response.result());
     EXPECT_EQ(1U, GetSenderTaskSize());
-    JoinNetworkLookup(key_pair_);
+    Sleep(kNetworkDelay * 2);
     EXPECT_EQ(0U, GetSenderTaskSize());
     ASSERT_EQ(1U, GetDataStoreSize());
     bptime::ptime refresh_time_new = GetRefreshTime(kvs);
@@ -763,7 +770,7 @@ TEST_F(ServicesTest, FUNC_DeleteRefresh) {
                             &delete_refresh_response, &time_out);
     EXPECT_FALSE(delete_refresh_response.result());
     EXPECT_EQ(0U, GetSenderTaskSize());
-    JoinNetworkLookup(key_pair_);
+    Sleep(kNetworkDelay * 2);
     ASSERT_EQ(0U, GetDataStoreSize());
     ASSERT_EQ(0U, GetRoutingTableSize());
     ASSERT_EQ(0U, CountUnValidatedContacts());
@@ -775,7 +782,6 @@ TEST_F(ServicesTest, FUNC_DeleteRefresh) {
   {
     // Try to deleterefresh an in-valid tuple
     // from populated datastore and empty routingtable
-    // TODO(Viv) Change To Always Validate False For this KeyPair
     asymm::Keys key_pair;
     key_pair.identity = sender.public_key_id();
     key_pair.public_key = sender.public_key();
@@ -783,6 +789,9 @@ TEST_F(ServicesTest, FUNC_DeleteRefresh) {
     Service service(routing_table_, data_store_, alternative_store_,
                     GetPrivateKeyPtr(key_pair_local), g_kKademliaK);
     service.set_node_joined(true);
+    service.set_contact_validation_getter(std::bind(
+        &DummyContactValidationGetter, arg::_1, arg::_2));
+    service.set_validate(std::bind(&ValidateFalse, arg::_1, arg::_2, arg::_3));
 
     EXPECT_EQ(kSuccess, data_store_->StoreValue(kvs, old_ttl, request_signature,
                                                 false));
@@ -793,7 +802,7 @@ TEST_F(ServicesTest, FUNC_DeleteRefresh) {
                           &delete_refresh_response, &time_out);
     EXPECT_TRUE(delete_refresh_response.result());
     EXPECT_EQ(1U, GetSenderTaskSize(service));
-    JoinNetworkLookup(key_pair_local);
+    Sleep(kNetworkDelay * 2);
     EXPECT_EQ(0U, GetSenderTaskSize(service));
     ASSERT_EQ(1U, GetDataStoreSize());
     ASSERT_EQ(0U, GetRoutingTableSize());
@@ -812,7 +821,7 @@ TEST_F(ServicesTest, FUNC_DeleteRefresh) {
                             &delete_refresh_response, &time_out);
     EXPECT_TRUE(delete_refresh_response.result());
     EXPECT_EQ(1U, GetSenderTaskSize());
-    JoinNetworkLookup(key_pair_);
+    Sleep(kNetworkDelay * 2);
     ASSERT_EQ(1U, GetDataStoreSize());
     ASSERT_EQ(1U, GetRoutingTableSize());
     ASSERT_EQ(0U, CountUnValidatedContacts());
@@ -826,7 +835,7 @@ TEST_F(ServicesTest, FUNC_DeleteRefresh) {
                     store_message_sig, &store_response, &time_out);
     ASSERT_TRUE(store_response.result());
     EXPECT_EQ(1U, GetSenderTaskSize());
-    JoinNetworkLookup(key_pair_);
+    Sleep(kNetworkDelay * 2);
     bptime::ptime refresh_time_old = GetRefreshTime(kvs);
     EXPECT_EQ(0U, GetSenderTaskSize());
     ASSERT_EQ(1U, GetDataStoreSize());
@@ -840,7 +849,7 @@ TEST_F(ServicesTest, FUNC_DeleteRefresh) {
     // will fail, but the sender will be added into the routing table
     EXPECT_TRUE(delete_refresh_response.result());
     EXPECT_EQ(1U, GetSenderTaskSize());
-    JoinNetworkLookup(key_pair_);
+    Sleep(kNetworkDelay * 2);
     bptime::ptime refresh_time_new = GetRefreshTime(kvs);
     EXPECT_EQ(refresh_time_new, refresh_time_old);
     EXPECT_EQ(0U, GetSenderTaskSize());
@@ -857,7 +866,7 @@ TEST_F(ServicesTest, FUNC_DeleteRefresh) {
                     store_message_sig, &store_response, &time_out);
     ASSERT_TRUE(store_response.result());
     EXPECT_EQ(1U, GetSenderTaskSize());
-    JoinNetworkLookup(key_pair_);
+    Sleep(kNetworkDelay * 2);
     EXPECT_EQ(0U, GetSenderTaskSize());
     ASSERT_EQ(1U, GetDataStoreSize());
     ASSERT_EQ(0U, GetRoutingTableSize());
@@ -869,7 +878,7 @@ TEST_F(ServicesTest, FUNC_DeleteRefresh) {
                       delete_message_sig, &delete_response, &time_out);
     EXPECT_TRUE(delete_response.result());
     EXPECT_EQ(1U, GetSenderTaskSize());
-    JoinNetworkLookup(key_pair_);
+    Sleep(kNetworkDelay * 2);
     bptime::ptime refresh_time_old = GetRefreshTime(kvs);
     EXPECT_EQ(0U, GetSenderTaskSize());
     // data_store_ will only mark the entry as deleted, but still keep it
@@ -884,7 +893,7 @@ TEST_F(ServicesTest, FUNC_DeleteRefresh) {
     // will refresh its ttl
     EXPECT_TRUE(delete_refresh_response.result());
     EXPECT_EQ(1U, GetSenderTaskSize());
-    JoinNetworkLookup(key_pair_);
+    Sleep(kNetworkDelay * 2);
     bptime::ptime refresh_time_new = GetRefreshTime(kvs);
     EXPECT_GT(refresh_time_new, refresh_time_old);
     EXPECT_EQ(0U, GetSenderTaskSize());
@@ -1167,6 +1176,8 @@ TEST_F(ServicesTest, FUNC_FindValue) {
     Service service(routing_table_, data_store_, alternative_store_false_ptr,
                     GetPrivateKeyPtr(key_pair_), g_kKademliaK);
     service.set_node_joined(true);
+    service.set_contact_validation_getter(std::bind(
+        &DummyContactValidationGetter, arg::_1, arg::_2));
 
     find_value_req.set_key(target_key);
     protobuf::FindValueResponse find_value_rsp;
@@ -1195,6 +1206,8 @@ TEST_F(ServicesTest, FUNC_FindValue) {
                     GetPrivateKeyPtr(key_pair_), g_kKademliaK);
     service.set_node_joined(true);
     service.set_node_contact(node_contact);
+    service.set_contact_validation_getter(std::bind(
+        &DummyContactValidationGetter, arg::_1, arg::_2));
 
     find_value_req.set_key(target_key);
     protobuf::FindValueResponse find_value_rsp;
@@ -1335,7 +1348,7 @@ TEST_F(ServicesTest, FUNC_MultipleStoreRequests) {
   EXPECT_TRUE(DoStore(sender_id_1, k1_v1, crypto_key_data_1));
   EXPECT_TRUE(DoStore(sender_id_1, k1_v1, crypto_key_data_1));
   EXPECT_TRUE(DoStore(sender_id_1, k1_v1, crypto_key_data_1));
-  JoinNetworkLookup(key_pair_);
+  Sleep(kNetworkDelay * 2);
   EXPECT_EQ(1U, GetDataStoreSize());
   EXPECT_EQ(1U, CountUnValidatedContacts());
   EXPECT_TRUE(IsKeyValueInDataStore(k1_v1));
@@ -1344,7 +1357,7 @@ TEST_F(ServicesTest, FUNC_MultipleStoreRequests) {
   EXPECT_TRUE(DoStore(sender_id_1, k1_v1, crypto_key_data_1));
   EXPECT_TRUE(DoStore(sender_id_1, k1_v2, crypto_key_data_1));
   EXPECT_TRUE(DoStore(sender_id_1, k1_v3, crypto_key_data_1));
-  JoinNetworkLookup(key_pair_);
+  Sleep(kNetworkDelay * 2);
   EXPECT_EQ(3U, GetDataStoreSize());
   EXPECT_EQ(1U, CountUnValidatedContacts());
   EXPECT_TRUE(IsKeyValueInDataStore(k1_v1));
@@ -1355,12 +1368,12 @@ TEST_F(ServicesTest, FUNC_MultipleStoreRequests) {
   // Store request for same key from different senders
   // Case 1 : key already present in datastore
   EXPECT_TRUE(DoStore(sender_id_1, k1_v1, crypto_key_data_1));
-  JoinNetworkLookup(key_pair_);
+  Sleep(kNetworkDelay * 2);
   EXPECT_EQ(1U, GetDataStoreSize());
   EXPECT_FALSE(DoStore(sender_id_2, k1_v2, crypto_key_data_2));
   EXPECT_FALSE(DoStore(sender_id_3, k1_v3, crypto_key_data_3));
   EXPECT_TRUE(DoStore(sender_id_1, k1_v2, crypto_key_data_1));
-  JoinNetworkLookup(key_pair_);
+  Sleep(kNetworkDelay * 2);
   EXPECT_EQ(2U, GetDataStoreSize());
   EXPECT_TRUE(IsKeyValueInDataStore(k1_v1));
   EXPECT_TRUE(IsKeyValueInDataStore(k1_v2));
@@ -1380,7 +1393,7 @@ TEST_F(ServicesTest, FUNC_MultipleStoreRequests) {
     ++attempts;
   }
   EXPECT_TRUE(succeeded);
-  JoinNetworkLookup(key_pair_);
+  Sleep(kNetworkDelay * 2);
   EXPECT_EQ(1U, GetDataStoreSize());
   Clear();
 
@@ -1390,7 +1403,7 @@ TEST_F(ServicesTest, FUNC_MultipleStoreRequests) {
   EXPECT_TRUE(DoStore(sender_id_1, k1_v1, crypto_key_data_1));
   EXPECT_FALSE(DoStore(sender_id_2, k1_v2, crypto_key_data_2));
   EXPECT_FALSE(DoStore(sender_id_3, k1_v3, crypto_key_data_3));
-  JoinNetworkLookup(key_pair_);
+  Sleep(kNetworkDelay * 2);
   EXPECT_EQ(1U, GetDataStoreSize());
   EXPECT_TRUE(IsKeyValueInDataStore(k1_v1));
   Clear();
@@ -1406,7 +1419,7 @@ TEST_F(ServicesTest, FUNC_MultipleStoreRequests) {
   Sleep(kNetworkDelay + kNetworkDelay);
   EXPECT_TRUE(DoStore(sender_id_3, k3_v1, crypto_key_data_3));
   EXPECT_EQ(1U, GetSenderTaskSize());
-  JoinNetworkLookup(key_pair_);
+  Sleep(kNetworkDelay * 2);
   EXPECT_EQ(3U, GetDataStoreSize());
   EXPECT_EQ(3U, CountUnValidatedContacts());
   EXPECT_TRUE(IsKeyValueInDataStore(k1_v1));
@@ -1445,11 +1458,11 @@ TEST_F(ServicesTest, FUNC_MultipleDeleteRequests) {
   ASSERT_EQ(0U, GetDataStoreSize());
   // Multilple Delete requests same key value
   EXPECT_TRUE(DoStore(sender_id_1, k1_v1, crypto_key_data_1));
-  JoinNetworkLookup(key_pair_);
+  Sleep(kNetworkDelay * 2);
   EXPECT_TRUE(DoDelete(sender_id_1, k1_v1, crypto_key_data_1));
   EXPECT_TRUE(DoDelete(sender_id_1, k1_v1, crypto_key_data_1));
   EXPECT_TRUE(DoDelete(sender_id_1, k1_v1, crypto_key_data_1));
-  JoinNetworkLookup(key_pair_);
+  Sleep(kNetworkDelay * 2);
   EXPECT_EQ(1U, GetDataStoreSize());
   EXPECT_EQ(1U, CountUnValidatedContacts());
   EXPECT_FALSE(IsKeyValueInDataStore(k1_v1));
@@ -1458,12 +1471,12 @@ TEST_F(ServicesTest, FUNC_MultipleDeleteRequests) {
   EXPECT_TRUE(DoStore(sender_id_1, k1_v1, crypto_key_data_1));
   EXPECT_TRUE(DoStore(sender_id_1, k1_v2, crypto_key_data_1));
   EXPECT_TRUE(DoStore(sender_id_1, k1_v3, crypto_key_data_1));
-  JoinNetworkLookup(key_pair_);
+  Sleep(kNetworkDelay * 2);
   EXPECT_EQ(3U, GetDataStoreSize());
   EXPECT_TRUE(DoDelete(sender_id_1, k1_v1, crypto_key_data_1));
   EXPECT_TRUE(DoDelete(sender_id_1, k1_v2, crypto_key_data_1));
   EXPECT_TRUE(DoDelete(sender_id_1, k1_v3, crypto_key_data_1));
-  JoinNetworkLookup(key_pair_);
+  Sleep(kNetworkDelay * 2);
   EXPECT_EQ(3U, GetDataStoreSize());
   EXPECT_EQ(1U, CountUnValidatedContacts());
   EXPECT_FALSE(IsKeyValueInDataStore(k1_v1));
@@ -1473,12 +1486,12 @@ TEST_F(ServicesTest, FUNC_MultipleDeleteRequests) {
 
   // Delete request for same key from different senders
   EXPECT_TRUE(DoStore(sender_id_1, k1_v1, crypto_key_data_1));
-  JoinNetworkLookup(key_pair_);
+  Sleep(kNetworkDelay * 2);
   EXPECT_EQ(1U, GetDataStoreSize());
   EXPECT_FALSE(DoDelete(sender_id_2, k1_v2, crypto_key_data_2));
   EXPECT_FALSE(DoDelete(sender_id_3, k1_v3, crypto_key_data_3));
   EXPECT_TRUE(DoDelete(sender_id_1, k1_v1, crypto_key_data_1));
-  JoinNetworkLookup(key_pair_);
+  Sleep(kNetworkDelay * 2);
   EXPECT_EQ(1U, GetDataStoreSize());
   EXPECT_FALSE(IsKeyValueInDataStore(k1_v1));
   Clear();
@@ -1487,12 +1500,12 @@ TEST_F(ServicesTest, FUNC_MultipleDeleteRequests) {
   EXPECT_TRUE(DoStore(sender_id_1, k1_v1, crypto_key_data_1));
   EXPECT_TRUE(DoStore(sender_id_2, k2_v1, crypto_key_data_2));
   EXPECT_TRUE(DoStore(sender_id_3, k3_v1, crypto_key_data_3));
-  JoinNetworkLookup(key_pair_);
+  Sleep(kNetworkDelay * 2);
   EXPECT_EQ(3U, GetDataStoreSize());
   EXPECT_TRUE(DoDelete(sender_id_1, k1_v1, crypto_key_data_1));
   EXPECT_TRUE(DoDelete(sender_id_2, k2_v1, crypto_key_data_2));
   EXPECT_TRUE(DoDelete(sender_id_3, k3_v1, crypto_key_data_3));
-  JoinNetworkLookup(key_pair_);
+  Sleep(kNetworkDelay * 2);
   EXPECT_FALSE(IsKeyValueInDataStore(k1_v1));
   EXPECT_FALSE(IsKeyValueInDataStore(k2_v1));
   EXPECT_FALSE(IsKeyValueInDataStore(k3_v1));
@@ -1532,7 +1545,7 @@ TEST_F(ServicesTest, FUNC_MultipleStoreRefreshRequests) {
   // Multilple Store Refresh requests same key value
   {
     EXPECT_TRUE(DoStore(sender_id_1, k1_v1, crypto_key_data_1));
-    JoinNetworkLookup(key_pair_);
+    Sleep(kNetworkDelay * 2);
     EXPECT_EQ(1U, GetDataStoreSize());
     bptime::ptime refresh_time_old_k1_v1 = GetRefreshTime(k1_v1);
     EXPECT_TRUE(DoStoreRefresh(sender_id_2, crypto_key_data_2, sender_id_1,
@@ -1541,7 +1554,7 @@ TEST_F(ServicesTest, FUNC_MultipleStoreRefreshRequests) {
                                k1_v1, crypto_key_data_1));
     EXPECT_TRUE(DoStoreRefresh(sender_id_2, crypto_key_data_2, sender_id_1,
                                k1_v1, crypto_key_data_1));
-    JoinNetworkLookup(key_pair_);
+    Sleep(kNetworkDelay * 2);
     EXPECT_EQ(1U, GetDataStoreSize());
     EXPECT_EQ(2U, CountUnValidatedContacts());
     EXPECT_TRUE(IsKeyValueInDataStore(k1_v1));
@@ -1557,7 +1570,7 @@ TEST_F(ServicesTest, FUNC_MultipleStoreRefreshRequests) {
     bptime::ptime refresh_time_old_k1_v1 = GetRefreshTime(k1_v1);
     bptime::ptime refresh_time_old_k1_v2 = GetRefreshTime(k1_v2);
     bptime::ptime refresh_time_old_k1_v3 = GetRefreshTime(k1_v3);
-    JoinNetworkLookup(key_pair_);
+    Sleep(kNetworkDelay * 2);
     EXPECT_EQ(3U, GetDataStoreSize());
     EXPECT_TRUE(DoStoreRefresh(sender_id_2, crypto_key_data_2, sender_id_1,
                                k1_v1, crypto_key_data_1));
@@ -1565,7 +1578,7 @@ TEST_F(ServicesTest, FUNC_MultipleStoreRefreshRequests) {
                                k1_v2, crypto_key_data_1));
     EXPECT_TRUE(DoStoreRefresh(sender_id_2, crypto_key_data_2, sender_id_1,
                                k1_v3, crypto_key_data_1));
-    JoinNetworkLookup(key_pair_);
+    Sleep(kNetworkDelay * 2);
     EXPECT_EQ(3U, GetDataStoreSize());
     EXPECT_EQ(2U, CountUnValidatedContacts());
     EXPECT_TRUE(IsKeyValueInDataStore(k1_v1));
@@ -1584,7 +1597,7 @@ TEST_F(ServicesTest, FUNC_MultipleStoreRefreshRequests) {
   // Case 1 : key already present in datastore
   {
     EXPECT_TRUE(DoStore(sender_id_1, k1_v1, crypto_key_data_1));
-    JoinNetworkLookup(key_pair_);
+    Sleep(kNetworkDelay * 2);
     EXPECT_EQ(1U, GetDataStoreSize());
     bptime::ptime refresh_time_old_k1_v1 = GetRefreshTime(k1_v1);
     // Invalid request recieves true but value doesn't get stored
@@ -1600,7 +1613,7 @@ TEST_F(ServicesTest, FUNC_MultipleStoreRefreshRequests) {
       ++attempts;
     }
     EXPECT_TRUE(succeeded);
-    JoinNetworkLookup(key_pair_);
+    Sleep(kNetworkDelay * 2);
     EXPECT_EQ(1U, GetDataStoreSize());
     EXPECT_TRUE(IsKeyValueInDataStore(k1_v1));
     EXPECT_FALSE(IsKeyValueInDataStore(k1_v2));
@@ -1624,7 +1637,7 @@ TEST_F(ServicesTest, FUNC_MultipleStoreRefreshRequests) {
       ++attempts;
     }
     EXPECT_TRUE(succeeded);
-    JoinNetworkLookup(key_pair_);
+    Sleep(kNetworkDelay * 2);
     EXPECT_EQ(1U, GetDataStoreSize());
   }
   Clear();
@@ -1636,7 +1649,7 @@ TEST_F(ServicesTest, FUNC_MultipleStoreRefreshRequests) {
                                k1_v1, crypto_key_data_1));
     EXPECT_FALSE(DoStoreRefresh(sender_id_3, crypto_key_data_3, sender_id_2,
                                k1_v1, crypto_key_data_2));
-    JoinNetworkLookup(key_pair_);
+    Sleep(kNetworkDelay * 2);
     EXPECT_EQ(1U, GetDataStoreSize());
     EXPECT_TRUE(IsKeyValueInDataStore(k1_v1));
   }
@@ -1650,7 +1663,7 @@ TEST_F(ServicesTest, FUNC_MultipleStoreRefreshRequests) {
     bptime::ptime refresh_time_old_k2_v1 = GetRefreshTime(k2_v1);
     bptime::ptime refresh_time_old_k3_v1 = GetRefreshTime(k3_v1);
 
-    JoinNetworkLookup(key_pair_);
+    Sleep(kNetworkDelay * 2);
     EXPECT_EQ(3U, GetDataStoreSize());
     EXPECT_EQ(3U, CountUnValidatedContacts());
     EXPECT_TRUE(DoStoreRefresh(sender_id_2, crypto_key_data_2, sender_id_1,
@@ -1659,7 +1672,7 @@ TEST_F(ServicesTest, FUNC_MultipleStoreRefreshRequests) {
                                k2_v1, crypto_key_data_2));
     EXPECT_TRUE(DoStoreRefresh(sender_id_1, crypto_key_data_1, sender_id_3,
                                k3_v1, crypto_key_data_3));
-    JoinNetworkLookup(key_pair_);
+    Sleep(kNetworkDelay * 2);
     EXPECT_EQ(3U, GetDataStoreSize());
 
     bptime::ptime refresh_time_new_k1_v1 = GetRefreshTime(k1_v1);
@@ -1703,9 +1716,9 @@ TEST_F(ServicesTest, FUNC_MultipleDeleteRefreshRequests) {
   // Multilple Delete Refresh requests same key value
   {
     EXPECT_TRUE(DoStore(sender_id_1, k1_v1, crypto_key_data_1));
-    JoinNetworkLookup(key_pair_);
+    Sleep(kNetworkDelay * 2);
     EXPECT_TRUE(DoDelete(sender_id_1, k1_v1, crypto_key_data_1));
-    JoinNetworkLookup(key_pair_);
+    Sleep(kNetworkDelay * 2);
     EXPECT_EQ(1U, GetDataStoreSize());
     bptime::ptime refresh_time_old_k1_v1 = GetRefreshTime(k1_v1);
     EXPECT_TRUE(DoDeleteRefresh(sender_id_2, crypto_key_data_2,
@@ -1714,7 +1727,7 @@ TEST_F(ServicesTest, FUNC_MultipleDeleteRefreshRequests) {
                                 sender_id_1, k1_v1, crypto_key_data_1));
     EXPECT_TRUE(DoDeleteRefresh(sender_id_3, crypto_key_data_3,
                                 sender_id_1, k1_v1, crypto_key_data_1));
-    JoinNetworkLookup(key_pair_);
+    Sleep(kNetworkDelay * 2);
     EXPECT_EQ(1U, GetDataStoreSize());
     bptime::ptime refresh_time_new_k1_v1 = GetRefreshTime(k1_v1);
     EXPECT_GT(refresh_time_new_k1_v1, refresh_time_old_k1_v1);
@@ -1726,11 +1739,11 @@ TEST_F(ServicesTest, FUNC_MultipleDeleteRefreshRequests) {
     EXPECT_TRUE(DoStore(sender_id_1, k1_v1, crypto_key_data_1));
     EXPECT_TRUE(DoStore(sender_id_1, k1_v2, crypto_key_data_1));
     EXPECT_TRUE(DoStore(sender_id_1, k1_v3, crypto_key_data_1));
-    JoinNetworkLookup(key_pair_);
+    Sleep(kNetworkDelay * 2);
     EXPECT_TRUE(DoDelete(sender_id_1, k1_v1, crypto_key_data_1));
     EXPECT_TRUE(DoDelete(sender_id_1, k1_v2, crypto_key_data_1));
     EXPECT_TRUE(DoDelete(sender_id_1, k1_v3, crypto_key_data_1));
-    JoinNetworkLookup(key_pair_);
+    Sleep(kNetworkDelay * 2);
     EXPECT_EQ(3U, GetDataStoreSize());
     bptime::ptime refresh_time_old_k1_v1 = GetRefreshTime(k1_v1);
     bptime::ptime refresh_time_old_k1_v2 = GetRefreshTime(k1_v2);
@@ -1742,7 +1755,7 @@ TEST_F(ServicesTest, FUNC_MultipleDeleteRefreshRequests) {
                                 sender_id_1, k1_v2, crypto_key_data_1));
     EXPECT_TRUE(DoDeleteRefresh(sender_id_2, crypto_key_data_2,
                                 sender_id_1, k1_v3, crypto_key_data_1));
-    JoinNetworkLookup(key_pair_);
+    Sleep(kNetworkDelay * 2);
     EXPECT_EQ(3U, GetDataStoreSize());
     EXPECT_EQ(3U, CountUnValidatedContacts());
     EXPECT_FALSE(IsKeyValueInDataStore(k1_v1));
@@ -1760,7 +1773,7 @@ TEST_F(ServicesTest, FUNC_MultipleDeleteRefreshRequests) {
   // Delete Refresh requests for existing key from different sender
   {
     EXPECT_TRUE(DoStore(sender_id_1, k1_v1, crypto_key_data_1));
-    JoinNetworkLookup(key_pair_);
+    Sleep(kNetworkDelay * 2);
     EXPECT_FALSE(DoDeleteRefresh(sender_id_2, crypto_key_data_2,
                                  sender_id_3, k1_v2, crypto_key_data_3));
     EXPECT_FALSE(DoDeleteRefresh(sender_id_3, crypto_key_data_3,
@@ -1774,11 +1787,11 @@ TEST_F(ServicesTest, FUNC_MultipleDeleteRefreshRequests) {
     EXPECT_TRUE(DoStore(sender_id_1, k1_v1, crypto_key_data_1));
     EXPECT_TRUE(DoStore(sender_id_2, k2_v1, crypto_key_data_2));
     EXPECT_TRUE(DoStore(sender_id_3, k3_v1, crypto_key_data_3));
-    JoinNetworkLookup(key_pair_);
+    Sleep(kNetworkDelay * 2);
     EXPECT_TRUE(DoDelete(sender_id_1, k1_v1, crypto_key_data_1));
     EXPECT_TRUE(DoDelete(sender_id_2, k2_v1, crypto_key_data_2));
     EXPECT_TRUE(DoDelete(sender_id_3, k3_v1, crypto_key_data_3));
-    JoinNetworkLookup(key_pair_);
+    Sleep(kNetworkDelay * 2);
     EXPECT_EQ(3U, GetDataStoreSize());
     bptime::ptime refresh_time_old_k1_v1 = GetRefreshTime(k1_v1);
     bptime::ptime refresh_time_old_k2_v1 = GetRefreshTime(k2_v1);
@@ -1790,7 +1803,7 @@ TEST_F(ServicesTest, FUNC_MultipleDeleteRefreshRequests) {
                                 sender_id_2, k2_v1, crypto_key_data_2));
     EXPECT_TRUE(DoDeleteRefresh(sender_id_1, crypto_key_data_1,
                                 sender_id_3, k3_v1, crypto_key_data_3));
-    JoinNetworkLookup(key_pair_);
+    Sleep(kNetworkDelay * 2);
     EXPECT_EQ(3U, GetDataStoreSize());
     EXPECT_EQ(3U, CountUnValidatedContacts());
     EXPECT_FALSE(IsKeyValueInDataStore(k1_v1));
@@ -1846,7 +1859,7 @@ TEST_F(ServicesTest, FUNC_MultipleThreads) {
   // Data for store Refresh
   EXPECT_TRUE(DoStore(sender_id_2, k2_v1, crypto_key_data_2));
   EXPECT_TRUE(DoStore(sender_id_2, k2_v2, crypto_key_data_2));
-  JoinNetworkLookup(key_pair_);
+  Sleep(kNetworkDelay * 2);
   bptime::ptime refresh_time_old_k2_v1 = GetRefreshTime(k2_v1);
   bptime::ptime refresh_time_old_k2_v2 = GetRefreshTime(k2_v2);
   // Data for Delete
@@ -1855,10 +1868,10 @@ TEST_F(ServicesTest, FUNC_MultipleThreads) {
   // Data for Delete refresh
   EXPECT_TRUE(DoStore(sender_id_4, k4_v1, crypto_key_data_4));
   EXPECT_TRUE(DoStore(sender_id_4, k4_v2, crypto_key_data_4));
-  JoinNetworkLookup(key_pair_);
+  Sleep(kNetworkDelay * 2);
   EXPECT_TRUE(DoDelete(sender_id_4, k4_v1, crypto_key_data_4));
   EXPECT_TRUE(DoDelete(sender_id_4, k4_v2, crypto_key_data_4));
-  JoinNetworkLookup(key_pair_);
+  Sleep(kNetworkDelay * 2);
   bptime::ptime refresh_time_old_k4_v1 = GetRefreshTime(k4_v1);
   bptime::ptime refresh_time_old_k4_v2 = GetRefreshTime(k4_v2);
 
@@ -1913,7 +1926,7 @@ TEST_F(ServicesTest, FUNC_MultipleThreads) {
   }
   // Check results
   asio_thread_group.join_all();
-  JoinNetworkLookup(key_pair_);
+  Sleep(kNetworkDelay * 2);
   // Store
   EXPECT_TRUE(IsKeyValueInDataStore(k1_v1));
   EXPECT_TRUE(IsKeyValueInDataStore(k1_v2));
@@ -2010,7 +2023,7 @@ TEST_F(ServicesTest, BEH_SignalConnection) {
                                                      &store_refresh_response,
                                                      &time_out);
   EXPECT_TRUE(store_refresh_response.result());
-  JoinNetworkLookup(key_pair_);
+  Sleep(kNetworkDelay * 2);
 
   // Signal DeleteRequest
   protobuf::DeleteRequest delete_request = MakeDeleteRequest(sender, kvs);
@@ -2044,7 +2057,7 @@ TEST_F(ServicesTest, BEH_SignalConnection) {
   (*message_handler_ptr->on_downlist_notification())(info_, downlist_request,
                                                      &time_out);
   EXPECT_EQ(0U, num_of_pings_);
-  JoinNetworkLookup(key_pair_);
+  Sleep(kNetworkDelay * 2);
 }
 
 }  // namespace test_service

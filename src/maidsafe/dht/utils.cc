@@ -135,6 +135,27 @@ void SortContacts(const NodeId &target_key, std::vector<Contact> *contacts) {
                 arg::_1, arg::_2, target_key));
 }
 
+void StubContactValidationGetter(
+    asymm::Identity identity,
+    asymm::GetPublicKeyAndValidationCallback callback) {
+  callback(asymm::PublicKey(), asymm::ValidationToken());
+}
+
+bool StubContactValidator(asymm::Identity /*identity*/,
+                          asymm::PublicKey /*public_key*/,
+                          asymm::ValidationToken /*validation_token*/) {
+  return true;
+}
+
+bool StubValidate(const asymm::PlainText &plain_text,
+                  const asymm::Signature &signature,
+                  const asymm::PublicKey &public_key) {
+  if (asymm::ValidateKey(public_key))
+    return asymm::Validate(plain_text, signature, public_key);
+  else
+    return true;
+}
+
 }  // namespace dht
 
 }  // namespace maidsafe

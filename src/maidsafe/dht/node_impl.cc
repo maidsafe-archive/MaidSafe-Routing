@@ -93,6 +93,11 @@ NodeImpl::NodeImpl(AsioService &asio_service,                 // NOLINT (Fraser)
       service_(),
       routing_table_(),
       rpcs_(),
+      contact_validation_getter_(std::bind(&StubContactValidationGetter,
+                                           arg::_1, arg::_2)),
+      contact_validator_(std::bind(&StubContactValidator, arg::_1, arg::_2,
+                                   arg::_3)),
+      validate_functor_(std::bind(&StubValidate, arg::_1, arg::_2, arg::_3)),
       contact_(),
       joined_(false),
       ping_oldest_contact_(),
@@ -245,6 +250,9 @@ void NodeImpl::JoinSucceeded(JoinFunctor callback) {
     service_->set_node_joined(true);
     service_->set_node_contact(contact_);
     service_->ConnectToSignals(message_handler_);
+    service_->set_contact_validation_getter(contact_validation_getter_);
+    service_->set_contact_validator(contact_validator_);
+    service_->set_validate(validate_functor_);
     refresh_data_store_timer_.expires_from_now(kDataStoreCheckInterval_);
     refresh_data_store_timer_.async_wait(
         std::bind(&NodeImpl::RefreshDataStore, this, arg::_1));
@@ -496,6 +504,26 @@ void NodeImpl::GetContact(const NodeId &node_id, GetContactFunctor callback) {
                            callback));
     StartLookup(get_contact_args);
   }
+}
+
+void NodeImpl::SetContactValidationGetter(
+    asymm::GetPublicKeyAndValidationFunctor contact_validation_getter) {
+  contact_validation_getter_ = contact_validation_getter;
+  if (service_)
+    service_->set_contact_validation_getter(contact_validation_getter_);
+}
+
+void NodeImpl::SetContactValidator(
+    asymm::ValidatePublicKeyFunctor contact_validator) {
+  contact_validator_ = contact_validator;
+  if (service_)
+    service_->set_contact_validator(contact_validator_);
+}
+
+void NodeImpl::SetValidate(asymm::ValidateFunctor validate_functor) {
+  validate_functor_ = validate_functor;
+  if (service_)
+    service_->set_validate(validate_functor_);
 }
 
 void NodeImpl::GetOwnContact(GetContactFunctor callback) {
@@ -1143,9 +1171,9 @@ void NodeImpl::HandleStoreToSelf(StoreArgsPtr store_args) {
   }
 
   // Check the signature validates with this node's public key
-  if (!asymm::Validate(store_args->kValue,
-                      store_args->kSignature,
-                      contact_.public_key())) {
+  if (!validate_functor_(store_args->kValue,
+                         store_args->kSignature,
+                         contact_.public_key())) {
     DLOG(ERROR) << DebugId(contact_) << ": Failed to validate Store request "
                 << "for kademlia value";
     HandleSecondPhaseCallback<StoreArgsPtr>(kGeneralError, store_args);
@@ -1192,9 +1220,9 @@ void NodeImpl::HandleDeleteToSelf(DeleteArgsPtr delete_args) {
   }
 
   // Check the signature validates with this node's public key
-  if (!asymm::Validate(delete_args->kValue,
-                      delete_args->kSignature,
-                      contact_.public_key())) {
+  if (!validate_functor_(delete_args->kValue,
+                         delete_args->kSignature,
+                         contact_.public_key())) {
     DLOG(ERROR) << DebugId(contact_) << ": Failed to validate Delete request "
                 << "for kademlia value";
     HandleSecondPhaseCallback<DeleteArgsPtr>(kGeneralError, delete_args);
@@ -1232,9 +1260,9 @@ void NodeImpl::HandleUpdateToSelf(UpdateArgsPtr update_args) {
   }
 
   // Check the new signature validates with this node's public key
-  if (!asymm::Validate(update_args->kNewValue,
-                      update_args->kNewSignature,
-                      contact_.public_key())) {
+  if (!validate_functor_(update_args->kNewValue,
+                         update_args->kNewSignature,
+                         contact_.public_key())) {
     DLOG(ERROR) << DebugId(contact_) << ": Failed to validate Update new "
                 << "request for kademlia value";
     HandleSecondPhaseCallback<UpdateArgsPtr>(kGeneralError, update_args);
@@ -1265,9 +1293,9 @@ void NodeImpl::HandleUpdateToSelf(UpdateArgsPtr update_args) {
   }
 
   // Check the old signature validates with this node's public key
-  if (!asymm::Validate(update_args->kOldValue,
-                      update_args->kOldSignature,
-                      contact_.public_key())) {
+  if (!validate_functor_(update_args->kOldValue,
+                         update_args->kOldSignature,
+                         contact_.public_key())) {
     DLOG(ERROR) << DebugId(contact_) << ": Failed to validate Update old "
                 << "request for kademlia value";
     HandleSecondPhaseCallback<UpdateArgsPtr>(kGeneralError, update_args);
@@ -1527,13 +1555,15 @@ void NodeImpl::ValidateContact(const Contact &contact) {
   asymm::GetPublicKeyAndValidationCallback callback(
       std::bind(&NodeImpl::ValidateContactCallback, this, contact, arg::_1,
                 arg::_2));
-  asymm::GetPublicKeyAndValidation(contact.public_key_id(), callback);
+  contact_validation_getter_(contact.public_key_id(), callback);
 }
 
-void NodeImpl::ValidateContactCallback(Contact contact,
-                                       std::string /*public_key*/,
-                                       std::string /*public_key_validation*/) {
-  bool valid = true;  // TODO(Viv) Check Implementation
+void NodeImpl::ValidateContactCallback(
+    Contact contact,
+    asymm::PublicKey public_key,
+    asymm::ValidationToken public_key_validation) {
+  bool valid = contact_validator_(contact.public_key_id(),
+                                  public_key, public_key_validation);
   routing_table_->SetValidated(contact.node_id(), valid);
 }
 

@@ -107,6 +107,20 @@ void Node::GetContact(const NodeId &node_id, GetContactFunctor callback) {
   pimpl_->GetContact(node_id, callback);
 }
 
+void Node::SetContactValidationGetter(
+    asymm::GetPublicKeyAndValidationFunctor contact_validation_getter) {
+  pimpl_->SetContactValidationGetter(contact_validation_getter);
+}
+
+void Node::SetContactValidator(
+    asymm::ValidatePublicKeyFunctor contact_validator) {
+  pimpl_->SetContactValidator(contact_validator);
+}
+
+void Node::SetValidate(asymm::ValidateFunctor validate_functor) {
+  pimpl_->SetValidate(validate_functor);
+}
+
 void Node::SetLastSeenToNow(const Contact &contact) {
   pimpl_->SetLastSeenToNow(contact);
 }

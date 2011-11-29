@@ -321,7 +321,6 @@ void MessageHandler::ProcessSerialisedMessage(
       break;
     }
     case kStoreRefreshRequest: {
-      // TODO(Viv) Check Above TODO
       if ((security_type != (kSign | kAsymmetricEncrypt)) ||
           message_signature.empty())
         return;

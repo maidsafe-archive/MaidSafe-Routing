@@ -44,7 +44,7 @@ namespace dht {
 namespace test {
 
 AsymGetPublicKeyAndValidation::AsymGetPublicKeyAndValidation(
-    const std::string &public_key_id,
+    const asymm::Identity &public_key_id,
     const asymm::PublicKey &public_key,
     const asymm::PrivateKey &private_key)
         : public_key_id_map_(),
@@ -56,12 +56,12 @@ AsymGetPublicKeyAndValidation::AsymGetPublicKeyAndValidation(
 
 // Immitating a non-blocking function
 void AsymGetPublicKeyAndValidation::GetPublicKeyAndValidation(
-    const std::string &public_key_id,
+    const asymm::Identity &public_key_id,
     asymm::GetPublicKeyAndValidationCallback callback) {
   thread_group_.add_thread(
       new boost::thread(
-              &AsymGetPublicKeyAndValidation::DummyFind, this,
-                  public_key_id, callback));
+              &AsymGetPublicKeyAndValidation::DummyContactValidationGetter,
+              this, public_key_id, callback));
 }
 
 void AsymGetPublicKeyAndValidation::Join() {
@@ -70,8 +70,8 @@ void AsymGetPublicKeyAndValidation::Join() {
 
 // This method will validate the network lookup for given public_key_id
 bool AsymGetPublicKeyAndValidation::AddTestValidation(
-    const std::string &public_key_id,
-    const std::string &public_key) {
+    const asymm::Identity &public_key_id,
+    const asymm::PublicKey &public_key) {
   auto itr = public_key_id_map_.insert(std::make_pair(public_key_id,
                                                       public_key));
   return itr.second;
@@ -82,8 +82,8 @@ void AsymGetPublicKeyAndValidation::ClearTestValidationMap() {
                             public_key_id_map_.end());
 }
 
-void AsymGetPublicKeyAndValidation::DummyFind(
-    std::string public_key_id,
+void AsymGetPublicKeyAndValidation::DummyContactValidationGetter(
+    asymm::Identity public_key_id,
     asymm::GetPublicKeyAndValidationCallback callback) {
   // Imitating delay in lookup for kNetworkDelay milliseconds
   Sleep(kNetworkDelay);
@@ -91,7 +91,7 @@ void AsymGetPublicKeyAndValidation::DummyFind(
   if (itr != public_key_id_map_.end())
     callback((*itr).second, "");
   else
-    callback("", "");
+    callback(asymm::PublicKey(), "");
 }
 
 
@@ -311,9 +311,7 @@ bool AddTestValidation(KeyPairPtr key_pair,
       key_pair->identity,
       key_pair->public_key,
       key_pair->private_key));
-  std::string encoded_public_key;
-  asymm::EncodePublicKey(public_key, &encoded_public_key);
-  return key_pair_gpkv->AddTestValidation(public_key_id, encoded_public_key);
+  return key_pair_gpkv->AddTestValidation(public_key_id, public_key);
 }
 
 void AddContact(std::shared_ptr<RoutingTable> routing_table,
@@ -347,6 +345,27 @@ bool WithinKClosest(const NodeId &node_id,
   return (std::find(node_ids.begin(), node_ids.begin() + k, node_id) !=
           node_ids.begin() + k);
 }
+
+void ExecDummyContactValidationGetter(
+    asymm::Identity identity,
+    asymm::GetPublicKeyAndValidationCallback callback) {
+  // Imitating delay in lookup for kNetworkDelay milliseconds
+  Sleep(kNetworkDelay);
+  callback(asymm::PublicKey(), asymm::ValidationToken());
+}
+
+void DummyContactValidationGetter(
+    asymm::Identity identity,
+    asymm::GetPublicKeyAndValidationCallback callback) {
+  boost::thread(&ExecDummyContactValidationGetter, identity, callback);
+}
+
+bool ValidateFalse(const asymm::PlainText& /*plain_text*/,
+                   const asymm::Signature& /*signature*/,
+                   const asymm::PublicKey& /*public_key*/) {
+  return false;
+}
+
 
 }  // namespace test
 

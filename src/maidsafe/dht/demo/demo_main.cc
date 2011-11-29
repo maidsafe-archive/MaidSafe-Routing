@@ -231,11 +231,17 @@ int main(int argc, char **argv) {
     ConflictingOptions(variables_map, "first_node", "bootstrap_file");
 
     // Set up logging
-    FLAGS_ms_logging_common = variables_map["verbose"].as<bool>();
-    FLAGS_ms_logging_dht = variables_map["verbose"].as<bool>();
+    if (variables_map["verbose"].as<bool>()) {
+      FLAGS_ms_logging_common = google::INFO;
+      FLAGS_ms_logging_transport = google::INFO;
+      FLAGS_ms_logging_dht = google::INFO;
+    } else {
+      FLAGS_ms_logging_common = google::FATAL;
+      FLAGS_ms_logging_transport = google::FATAL;
+      FLAGS_ms_logging_dht = google::FATAL;
+    }
     FLAGS_log_prefix = variables_map["verbose"].as<bool>();
-    FLAGS_ms_logging_user = true;
-    FLAGS_minloglevel = google::INFO;
+    FLAGS_ms_logging_user = google::INFO;
     FLAGS_logtostderr = true;
     if (variables_map.count("logfile")) {
       fs::path log_path;

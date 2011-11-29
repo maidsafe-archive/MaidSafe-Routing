@@ -202,6 +202,20 @@ class Node {
   // in the callback.
   void GetContact(const NodeId &node_id, GetContactFunctor callback);
 
+  // Setter for the functor which will be called by Node and Service to retrieve
+  // the public key and public key validation token for a given contact.
+  void SetContactValidationGetter(
+      asymm::GetPublicKeyAndValidationFunctor contact_validation_getter);
+
+  // Setter for the functor which will be invoked in the callback of
+  // contact_validation_getter above.  It will return true if the retrieved
+  // public key validates correctly against the retrieved validation token.
+  void SetContactValidator(asymm::ValidatePublicKeyFunctor contact_validator);
+
+  // Setter for the functor which will be invoked for checking a signature
+  // against a given public key.
+  void SetValidate(asymm::ValidateFunctor validate_functor);
+
   // Mark contact in routing table as having just been seen (i.e. contacted).
   void SetLastSeenToNow(const Contact &contact);
 

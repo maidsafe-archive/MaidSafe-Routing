@@ -52,8 +52,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 namespace maidsafe {
 
-namespace asymm = rsa;
-
 class AlternativeStore;
 
 namespace transport {
@@ -98,7 +96,6 @@ typedef std::function<void(int, Contact)> GetContactFunctor;
 
 // Functor to be used as a predicate in waits and timed_waits.
 typedef std::function<bool()> WaitFunctor;
-
 
 
 typedef NodeId Key;

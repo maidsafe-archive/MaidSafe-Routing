@@ -79,16 +79,16 @@ class SenderTaskTest: public testing::Test {
                          transport::Info,
                          RequestAndSignature,
                          std::string,
-                         std::string,
-                         std::string) { ++count_callback_1_; }
+                         asymm::PublicKey,
+                         asymm::ValidationToken) { ++count_callback_1_; }
 
   void TestTaskCallBack2(KeyValueSignature,
                          std::string,
                          transport::Info,
                          RequestAndSignature,
                          std::string,
-                         std::string,
-                         std::string) { ++count_callback_2_; }
+                         asymm::PublicKey,
+                         asymm::ValidationToken) { ++count_callback_2_; }
 
   size_t GetSenderTaskSize() {
     return sender_task_->task_index_->size();
@@ -112,7 +112,7 @@ class SenderTaskTest: public testing::Test {
                  asymm::GetPublicKeyAndValidationCallback callback) {
     // Imitating delay in lookup for kNetworkDelay milliseconds
     Sleep(boost::posix_time::milliseconds(kNetworkDelay));
-    callback("", "");
+    callback(asymm::PublicKey(), "");
   }
 
   transport::Info info_;
@@ -212,11 +212,11 @@ TEST_F(SenderTaskTest, FUNC_SenderTaskCallback) {
   KeyValueSignature kvs = MakeKVS(crypto_key_data, 1024, "", "");
   ASSERT_TRUE(sender_task_->AddTask(kvs, info_, request_signature,
                                     "public_key_id_1", task_cb_1, &is_new_id));
-  sender_task_->SenderTaskCallback("", "", "");
+  sender_task_->SenderTaskCallback("", asymm::PublicKey(), "");
   EXPECT_EQ(size_t(1), GetSenderTaskSize());
   EXPECT_EQ(0u , count_callback_1_);
   // Valid data (public_key_id)
-  sender_task_->SenderTaskCallback("public_key_id_1", "public_key",
+  sender_task_->SenderTaskCallback("public_key_id_1", asymm::PublicKey(),
                                    "public_key_validation");
   EXPECT_EQ(size_t(0), GetSenderTaskSize());
   EXPECT_EQ(1u , count_callback_1_);
@@ -299,12 +299,12 @@ TEST_F(SenderTaskTest, FUNC_SenderTaskCallbackMultiThreaded) {
   asio_thread_group_.create_thread(std::bind(&SenderTask::SenderTaskCallback,
                                              sender_task_,
                                              "public_key_id_1",
-                                             "public_key",
+                                             asymm::PublicKey(),
                                              "public_key_validation"));
   asio_thread_group_.create_thread(std::bind(&SenderTask::SenderTaskCallback,
                                              sender_task_,
                                              "public_key_id_2",
-                                             "public_key",
+                                             asymm::PublicKey(),
                                              "public_key_validation"));
   asio_thread_group_.join_all();
 

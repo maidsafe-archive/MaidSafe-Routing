@@ -610,6 +610,7 @@ TYPED_TEST_P(RpcsTest, FUNC_StoreAndFindValue) {
   while (!done)
     Sleep(boost::posix_time::milliseconds(10));
   EXPECT_EQ(kSuccess, response_code);
+  ASSERT_FALSE(return_values_and_signatures.empty());
   EXPECT_EQ(kvs.value, return_values_and_signatures[0].first);
   EXPECT_TRUE(return_contacts.empty());
 

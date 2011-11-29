@@ -173,6 +173,20 @@ class NodeImpl {
    *  @param[in] callback The callback to report the results. */
   void GetContact(const NodeId &node_id, GetContactFunctor callback);
 
+  // Setter for the functor which will be called by Node and Service to retrieve
+  // the public key and public key validation token for a given contact.
+  void SetContactValidationGetter(
+      asymm::GetPublicKeyAndValidationFunctor contact_validation_getter);
+
+  // Setter for the functor which will be invoked in the callback of
+  // contact_validation_getter above.  It will return true if the retrieved
+  // public key validates correctly against the retrieved validation token.
+  void SetContactValidator(asymm::ValidatePublicKeyFunctor contact_validator);
+
+  // Setter for the functor which will be invoked for checking a signature
+  // against a given public key.
+  void SetValidate(asymm::ValidateFunctor validate_functor);
+
   /** Investigates the contact's online/offline status
    *  @param[in] contact the contact to be pinged
    *  @param[in] callback The callback to report the result. */
@@ -446,8 +460,8 @@ class NodeImpl {
    *  @param[in] public_key The public_key of the contact
    *  @param[in] public_key_validation The contact's public_key_validation */
   void ValidateContactCallback(Contact contact,
-                               std::string public_key,
-                               std::string public_key_validation);
+                               asymm::PublicKey public_key,
+                               asymm::ValidationToken public_key_validation);
 
   /** Will connect the validate_contact signal in routing table to
    *  ValidateContact if not already done. */
@@ -503,6 +517,9 @@ class NodeImpl {
   std::shared_ptr<Service> service_;
   std::shared_ptr<RoutingTable> routing_table_;
   std::shared_ptr<Rpcs<transport::TcpTransport>> rpcs_;
+  asymm::GetPublicKeyAndValidationFunctor contact_validation_getter_;
+  asymm::ValidatePublicKeyFunctor contact_validator_;
+  asymm::ValidateFunctor validate_functor_;
   /** Own info of nodeid, ip and port */
   Contact contact_;
   bool joined_;
