@@ -31,7 +31,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "maidsafe/common/test.h"
 #include "maidsafe/common/crypto.h"
 #include "maidsafe/common/utils.h"
-#include "maidsafe/common/securifier.h"
 #include "maidsafe/dht/data_store.h"
 #include "maidsafe/dht/sender_task.h"
 #include "maidsafe/dht/tests/test_utils.h"
@@ -80,16 +79,16 @@ class SenderTaskTest: public testing::Test {
                          transport::Info,
                          RequestAndSignature,
                          std::string,
-                         std::string,
-                         std::string) { ++count_callback_1_; }
+                         asymm::PublicKey,
+                         asymm::ValidationToken) { ++count_callback_1_; }
 
   void TestTaskCallBack2(KeyValueSignature,
                          std::string,
                          transport::Info,
                          RequestAndSignature,
                          std::string,
-                         std::string,
-                         std::string) { ++count_callback_2_; }
+                         asymm::PublicKey,
+                         asymm::ValidationToken) { ++count_callback_2_; }
 
   size_t GetSenderTaskSize() {
     return sender_task_->task_index_->size();
@@ -102,17 +101,18 @@ class SenderTaskTest: public testing::Test {
 
  protected:
   // Dummy function to imitate Securifier::GetPublicKeyAndValidation
-  void GetPublicKeyAndValidation(const std::string & public_key_id,
-                                 GetPublicKeyAndValidationCallback callback) {
+  void GetPublicKeyAndValidation(
+      const std::string & public_key_id,
+      asymm::GetPublicKeyAndValidationCallback callback) {
     asio_thread_group_.create_thread(std::bind(&SenderTaskTest::DummyFind,
                                                this, public_key_id, callback));
   }
 
   void DummyFind(const std::string&,
-                 GetPublicKeyAndValidationCallback callback) {
+                 asymm::GetPublicKeyAndValidationCallback callback) {
     // Imitating delay in lookup for kNetworkDelay milliseconds
     Sleep(boost::posix_time::milliseconds(kNetworkDelay));
-    callback("", "");
+    callback(asymm::PublicKey(), "");
   }
 
   transport::Info info_;
@@ -122,8 +122,8 @@ class SenderTaskTest: public testing::Test {
 };
 
 TEST_F(SenderTaskTest, BEH_AddTask) {
-  crypto::RsaKeyPair crypto_key_data;
-  crypto_key_data.GenerateKeys(4096);
+  asymm::Keys crypto_key_data;
+  asymm::GenerateKeyPair(&  crypto_key_data);
   KeyValueSignature kvs = MakeKVS(crypto_key_data, 1024, "", "");
   RequestAndSignature request_signature("message", "message_signature");
   TaskCallback task_cb = std::bind(&SenderTaskTest::TestTaskCallBack1, this,
@@ -164,7 +164,7 @@ TEST_F(SenderTaskTest, BEH_AddTask) {
   EXPECT_EQ(size_t(2), GetSenderTaskSize());
 
   { // Adding new task with same public key id
-    crypto_key_data.GenerateKeys(4096);
+    asymm::GenerateKeyPair(&  crypto_key_data);
     KeyValueSignature kvs = MakeKVS(crypto_key_data, 1024, "", "");
     EXPECT_TRUE(sender_task_->AddTask(kvs, info_, request_signature,
                                       "public_key_id_1", task_cb, &is_new_id));
@@ -174,7 +174,7 @@ TEST_F(SenderTaskTest, BEH_AddTask) {
   }
   // Adding new task with new public key id
   {
-    crypto_key_data.GenerateKeys(4096);
+    asymm::GenerateKeyPair(&  crypto_key_data);
     KeyValueSignature kvs = MakeKVS(crypto_key_data, 1024, "", "");
     EXPECT_TRUE(sender_task_->AddTask(kvs, info_, request_signature,
                                       "public_key_id_2", task_cb, &is_new_id));
@@ -187,7 +187,7 @@ TEST_F(SenderTaskTest, BEH_AddTask) {
     TaskCallback task_cb = std::bind(&SenderTaskTest::TestTaskCallBack2,
                                      this, arg::_1, "request", arg::_2,
                                      arg::_3, "response", arg::_4, arg::_5);
-    crypto_key_data.GenerateKeys(4096);
+    asymm::GenerateKeyPair(&  crypto_key_data);
     KeyValueSignature kvs = MakeKVS(crypto_key_data, 1024, "", "");
     EXPECT_TRUE(sender_task_->AddTask(kvs, info_, request_signature,
                                       "public_key_id_1", task_cb, &is_new_id));
@@ -198,32 +198,32 @@ TEST_F(SenderTaskTest, BEH_AddTask) {
 }
 
 TEST_F(SenderTaskTest, FUNC_SenderTaskCallback) {
-  crypto::RsaKeyPair crypto_key_data;
+  asymm::Keys crypto_key_data;
   RequestAndSignature request_signature("message", "message_signature");
   TaskCallback task_cb_1 = std::bind(&SenderTaskTest::TestTaskCallBack1,
                                      this, arg::_1, "request", arg::_2,
                                      arg::_3, "response", arg::_4, arg::_5);
   bool is_new_id(true);
-  GetPublicKeyAndValidationCallback sender_task_cb_1 =
+  asymm::GetPublicKeyAndValidationCallback sender_task_cb_1 =
       std::bind(&SenderTask::SenderTaskCallback, sender_task_,
                 "public_key_id_1", arg::_1, arg::_2);
   // Invalid data
-  crypto_key_data.GenerateKeys(4096);
+  asymm::GenerateKeyPair(&  crypto_key_data);
   KeyValueSignature kvs = MakeKVS(crypto_key_data, 1024, "", "");
   ASSERT_TRUE(sender_task_->AddTask(kvs, info_, request_signature,
                                     "public_key_id_1", task_cb_1, &is_new_id));
-  sender_task_->SenderTaskCallback("", "", "");
+  sender_task_->SenderTaskCallback("", asymm::PublicKey(), "");
   EXPECT_EQ(size_t(1), GetSenderTaskSize());
   EXPECT_EQ(0u , count_callback_1_);
   // Valid data (public_key_id)
-  sender_task_->SenderTaskCallback("public_key_id_1", "public_key",
+  sender_task_->SenderTaskCallback("public_key_id_1", asymm::PublicKey(),
                                    "public_key_validation");
   EXPECT_EQ(size_t(0), GetSenderTaskSize());
   EXPECT_EQ(1u , count_callback_1_);
   ResetCallbackCount();
   // Adding multiple task
   for (int i = 1; i < 11; ++i) {
-    crypto_key_data.GenerateKeys(4096);
+    asymm::GenerateKeyPair(&  crypto_key_data);
     KeyValueSignature kvs = MakeKVS(crypto_key_data, 1024, "", "");
     EXPECT_TRUE(sender_task_->AddTask(kvs, info_, request_signature,
                 "public_key_id_1", task_cb_1, &is_new_id));
@@ -239,7 +239,7 @@ TEST_F(SenderTaskTest, FUNC_SenderTaskCallback) {
 }
 
 TEST_F(SenderTaskTest, FUNC_SenderTaskCallbackMultiThreaded) {
-  crypto::RsaKeyPair crypto_key_data;
+  asymm::Keys crypto_key_data;
   RequestAndSignature request_signature("message", "message_signature");
   TaskCallback task_cb_1 = std::bind(&SenderTaskTest::TestTaskCallBack1,
                                      this, arg::_1, "request", arg::_2,
@@ -251,22 +251,22 @@ TEST_F(SenderTaskTest, FUNC_SenderTaskCallbackMultiThreaded) {
   uint16_t i(0);
   // Tasks to be executed and removed
   for (i = 0; i < 10; ++i) {
-    crypto_key_data.GenerateKeys(4096);
+    asymm::GenerateKeyPair(&  crypto_key_data);
     KeyValueSignature kvs = MakeKVS(crypto_key_data, 1024, "", "");
     EXPECT_TRUE(sender_task_->AddTask(kvs, info_, request_signature,
                 "public_key_id_1", task_cb_1, &is_new_id));
     EXPECT_TRUE(HasDataInIndex(kvs, request_signature, "public_key_id_1"));
-    crypto_key_data.GenerateKeys(4096);
+    asymm::GenerateKeyPair(&  crypto_key_data);
     kvs = MakeKVS(crypto_key_data, 1024, "", "");
     EXPECT_TRUE(sender_task_->AddTask(kvs, info_, request_signature,
                 "public_key_id_1", task_cb_2, &is_new_id));
     EXPECT_TRUE(HasDataInIndex(kvs, request_signature, "public_key_id_1"));
-    crypto_key_data.GenerateKeys(4096);
+    asymm::GenerateKeyPair(&  crypto_key_data);
     kvs = MakeKVS(crypto_key_data, 1024, "", "");
     EXPECT_TRUE(sender_task_->AddTask(kvs, info_, request_signature,
                 "public_key_id_2", task_cb_1, &is_new_id));
     EXPECT_TRUE(HasDataInIndex(kvs, request_signature, "public_key_id_2"));
-    crypto_key_data.GenerateKeys(4096);
+    asymm::GenerateKeyPair(&  crypto_key_data);
     kvs = MakeKVS(crypto_key_data, 1024, "", "");
     EXPECT_TRUE(sender_task_->AddTask(kvs, info_, request_signature,
                 "public_key_id_2", task_cb_2, &is_new_id));
@@ -276,7 +276,7 @@ TEST_F(SenderTaskTest, FUNC_SenderTaskCallbackMultiThreaded) {
   std::vector<KeyValueSignature> kvs_vector;
   // Tasks added and not executed and removed
   for (i = 0; i < 3; ++i) {
-    crypto_key_data.GenerateKeys(4096);
+    asymm::GenerateKeyPair(&  crypto_key_data);
     KeyValueSignature kvs = MakeKVS(crypto_key_data, 1024, "", "");
     kvs_vector.push_back(kvs);
     asio_thread_group_.create_thread(std::bind(&SenderTask::AddTask,
@@ -284,7 +284,7 @@ TEST_F(SenderTaskTest, FUNC_SenderTaskCallbackMultiThreaded) {
                                                info_, request_signature,
                                                "public_key_id_3", task_cb_1,
                                                &is_new_id));
-    crypto_key_data.GenerateKeys(4096);
+    asymm::GenerateKeyPair(&  crypto_key_data);
     kvs = MakeKVS(crypto_key_data, 1024, "", "");
     kvs_vector.push_back(kvs);
     asio_thread_group_.create_thread(std::bind(&SenderTask::AddTask,
@@ -299,12 +299,12 @@ TEST_F(SenderTaskTest, FUNC_SenderTaskCallbackMultiThreaded) {
   asio_thread_group_.create_thread(std::bind(&SenderTask::SenderTaskCallback,
                                              sender_task_,
                                              "public_key_id_1",
-                                             "public_key",
+                                             asymm::PublicKey(),
                                              "public_key_validation"));
   asio_thread_group_.create_thread(std::bind(&SenderTask::SenderTaskCallback,
                                              sender_task_,
                                              "public_key_id_2",
-                                             "public_key",
+                                             asymm::PublicKey(),
                                              "public_key_validation"));
   asio_thread_group_.join_all();
 

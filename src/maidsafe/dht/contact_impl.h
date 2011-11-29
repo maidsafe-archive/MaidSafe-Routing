@@ -48,8 +48,8 @@ class Contact::Impl {
        const transport::Endpoint &rendezvous_endpoint,
        bool tcp443,
        bool tcp80,
-       const std::string &public_key_id,
-       const std::string &public_key,
+       const Identity &public_key_id,
+       const PublicKey &public_key,
        const std::string &other_info);
   NodeId node_id() const { return node_id_; }
   transport::Endpoint endpoint() const { return endpoint_; }
@@ -61,8 +61,8 @@ class Contact::Impl {
   }
   transport::Endpoint tcp443endpoint() const;
   transport::Endpoint tcp80endpoint() const;
-  std::string public_key_id() const { return public_key_id_; }
-  std::string public_key() const { return public_key_; }
+  Identity public_key_id() const { return public_key_id_; }
+  PublicKey public_key() const { return public_key_; }
   std::string other_info() const { return other_info_; }
   bool SetPreferredEndpoint(const transport::IP &ip);
   transport::Endpoint PreferredEndpoint() const;
@@ -85,7 +85,9 @@ class Contact::Impl {
   std::vector<transport::Endpoint> local_endpoints_;
   transport::Endpoint rendezvous_endpoint_;
   bool tcp443_, tcp80_, prefer_local_;
-  std::string public_key_id_, public_key_, other_info_;
+  std::string other_info_;
+  PublicKey public_key_;
+  Identity public_key_id_;
 };
 
 }  // namespace dht

@@ -39,6 +39,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "maidsafe/dht/log.h"
 #include "maidsafe/dht/version.h"
+#include "maidsafe/dht/config.h"
 #include "maidsafe/dht/contact.h"
 #include "maidsafe/dht/return_codes.h"
 #include "maidsafe/dht/node_id.h"
@@ -52,6 +53,7 @@ namespace fs = boost::filesystem;
 namespace po = boost::program_options;
 namespace mk = maidsafe::dht;
 namespace mt = maidsafe::transport;
+namespace ma = maidsafe::asymm;
 
 struct PortRange {
   PortRange(uint16_t first, uint16_t second)
@@ -124,18 +126,18 @@ mk::Contact ComposeContact(const mk::NodeId &node_id,
   std::vector<mt::Endpoint> local_endpoints;
   local_endpoints.push_back(endpoint);
   mk::Contact contact(node_id, endpoint, local_endpoints, endpoint, false,
-                      false, "", "", "");
+                      false, "", ma::PublicKey(), "");
   return contact;
 }
 
 mk::Contact ComposeContactWithKey(
     const mk::NodeId &node_id,
     const mt::Endpoint &endpoint,
-    const maidsafe::crypto::RsaKeyPair &crypto_key) {
+    const ma::Keys &crypto_key_pair) {
   std::vector<mt::Endpoint> local_endpoints;
   local_endpoints.push_back(endpoint);
   mk::Contact contact(node_id, endpoint, local_endpoints, endpoint, false,
-                      false, node_id.String(), crypto_key.public_key(), "");
+                      false, node_id.String(), crypto_key_pair.public_key, "");
   return contact;
 }
 
@@ -282,14 +284,13 @@ int main(int argc, char **argv) {
       FLAGS_ms_logging_common = google::INFO;
       FLAGS_ms_logging_transport = google::INFO;
       FLAGS_ms_logging_dht = google::INFO;
-      FLAGS_ms_logging_user = google::INFO;
     } else {
       FLAGS_ms_logging_common = google::FATAL;
       FLAGS_ms_logging_transport = google::FATAL;
       FLAGS_ms_logging_dht = google::FATAL;
-      FLAGS_ms_logging_user = google::INFO;
     }
-    FLAGS_log_prefix = true;
+    FLAGS_log_prefix = variables_map["verbose"].as<bool>();
+    FLAGS_ms_logging_user = google::INFO;
     FLAGS_logtostderr = true;
     if (variables_map.count("logfile")) {
       fs::path log_path;
@@ -357,7 +358,7 @@ int main(int argc, char **argv) {
 
     mk::demo::DemoNodePtr demo_node(new mk::demo::DemoNode);
     ULOG(INFO) << "Creating node...";
-    demo_node->Init(static_cast<uint8_t>(thread_count), mk::SecurifierPtr(),
+    demo_node->Init(static_cast<uint8_t>(thread_count), mk::KeyPairPtr(),
                     mk::MessageHandlerPtr(), mk::AlternativeStorePtr(),
                     client_only_node, k, alpha, beta, mean_refresh_interval);
     std::pair<uint16_t, uint16_t> ports(port_range.first, port_range.second);

@@ -100,7 +100,7 @@ void LocalNetwork<NodeType>::SetUp() {
   for (size_t i = 0; i != num_client_nodes_ + num_full_nodes_; ++i) {
     std::shared_ptr<maidsafe::dht::NodeContainer<NodeType>>
         node_container(new maidsafe::dht::NodeContainer<NodeType>());
-    node_container->Init(threads_per_node_, SecurifierPtr(),
+    node_container->Init(threads_per_node_, KeyPairPtr(),
                          MessageHandlerPtr(), AlternativeStorePtr(), false, k_,
                          alpha_, beta_, mean_refresh_interval_);
     node_container->MakeAllCallbackFunctors(&mutex_, &cond_var_);

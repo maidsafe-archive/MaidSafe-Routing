@@ -31,7 +31,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "maidsafe/common/crypto.h"
 #include "maidsafe/common/utils.h"
-#include "maidsafe/common/securifier.h"
 
 #include "maidsafe/dht/log.h"
 #include "maidsafe/dht/return_codes.h"
@@ -323,8 +322,7 @@ void DataStore::Refresh(std::vector<KeyValueTuple> *key_value_tuples) {
 
 bool DataStore::DifferentSigner(
     const KeyValueSignature &key_value_signature,
-    const std::string &public_key,
-    std::shared_ptr<Securifier> securifier) const {
+    const asymm::PublicKey &public_key) const {
   SharedLock shared_lock(shared_mutex_);
   auto it(key_value_index_->get<TagKey>().find(key_value_signature.key));
 
@@ -334,9 +332,9 @@ bool DataStore::DifferentSigner(
   if ((*it).key_value_signature.signature == key_value_signature.signature)
     return false;
 
-  return !securifier->Validate((*it).key_value_signature.value,
-                               (*it).key_value_signature.signature, "",
-                               public_key, "", "");
+  return !asymm::Validate((*it).key_value_signature.value,
+                         (*it).key_value_signature.signature,
+                         public_key);
 }
 
 }  // namespace dht

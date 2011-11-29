@@ -82,12 +82,12 @@ class Service : public std::enable_shared_from_this<Service> {
    *  @param routing_table The routing table contains all contacts.
    *  @param data_store The data_store table contains <value,sig,key> tuples.
    *  @param alternative_store Alternative store.
-   *  @param securifier Securifier for <value,sig,key> validation.
+   *  @param private_key Key for validation.
    *  @param[in] k Kademlia constant k.*/
   Service(std::shared_ptr<RoutingTable> routing_table,
           std::shared_ptr<DataStore> data_store,
           AlternativeStorePtr alternative_store,
-          SecurifierPtr securifier,
+          PrivateKeyPtr private_key,
           const uint16_t &k);
 
   /** Dstructor. */
@@ -182,9 +182,23 @@ class Service : public std::enable_shared_from_this<Service> {
   /** Set the node contact
    *  @param contact The node contact. */
   void set_node_contact(const Contact &contact) { node_contact_ = contact; }
-  /** Set the securifier
-   *  @param securifier The securifier. */
-  void set_securifier(SecurifierPtr securifier) { securifier_ = securifier; }
+  /** Set the PrivateKey
+   *  @param priv_key The Private Key. */
+  void set_private_key(PrivateKeyPtr priv_key) { private_key_ = priv_key; }
+
+  void set_contact_validation_getter(
+      asymm::GetPublicKeyAndValidationFunctor contact_validation_getter) {
+    contact_validation_getter_ = contact_validation_getter;
+  }
+
+  void set_contact_validator(
+      asymm::ValidatePublicKeyFunctor contact_validator) {
+    contact_validator_ = contact_validator;
+  }
+
+  void set_validate(asymm::ValidateFunctor validate_functor) {
+    validate_functor_ = validate_functor;
+  }
 
   friend class test::ServicesTest;
   template <typename T>
@@ -216,8 +230,8 @@ class Service : public std::enable_shared_from_this<Service> {
                      protobuf::StoreRequest request,
                      transport::Info info,
                      RequestAndSignature request_signature,
-                     std::string public_key,
-                     std::string public_key_validation);
+                     asymm::PublicKey public_key,
+                     asymm::ValidationToken public_key_validation);
   /** Store Refresh Callback.
    *  @param[in] key_value_signature tuple of <key, value, signature>.
    *  @param[in] request The request.
@@ -229,8 +243,8 @@ class Service : public std::enable_shared_from_this<Service> {
                             protobuf::StoreRefreshRequest request,
                             transport::Info info,
                             RequestAndSignature request_signature,
-                            std::string public_key,
-                            std::string public_key_validation);
+                            asymm::PublicKey public_key,
+                            asymm::ValidationToken public_key_validation);
   /** Validate the request and then store the tuple.
    *  @param[in] key_value_signature tuple of <key, value, signature>.
    *  @param[in] request The request.
@@ -245,8 +259,8 @@ class Service : public std::enable_shared_from_this<Service> {
                         const protobuf::StoreRequest &request,
                         const transport::Info &info,
                         const RequestAndSignature &request_signature,
-                        const std::string &public_key,
-                        const std::string &public_key_validation,
+                        const asymm::PublicKey &public_key,
+                        const asymm::ValidationToken &public_key_validation,
                         const bool is_refresh);
   /** Delete Callback.
    *  @param[in] key_value_signature tuple of <key, value, signature>.
@@ -259,8 +273,8 @@ class Service : public std::enable_shared_from_this<Service> {
                       protobuf::DeleteRequest request,
                       transport::Info info,
                       RequestAndSignature request_signature,
-                      std::string public_key,
-                      std::string public_key_validation);
+                      asymm::PublicKey public_key,
+                      asymm::ValidationToken public_key_validation);
   /** Delete Refresh Callback.
    *  @param[in] key_value_signature tuple of <key, value, signature>.
    *  @param[in] request The request.
@@ -272,8 +286,8 @@ class Service : public std::enable_shared_from_this<Service> {
                              protobuf::DeleteRefreshRequest request,
                              transport::Info info,
                              RequestAndSignature request_signature,
-                             std::string public_key,
-                             std::string public_key_validation);
+                             asymm::PublicKey public_key,
+                             asymm::ValidationToken public_key_validation);
   /** Validate the request and then delete the tuple.
    *  @param[in] key_value_signature tuple of <key, value, signature>.
    *  @param[in] request The request.
@@ -288,8 +302,8 @@ class Service : public std::enable_shared_from_this<Service> {
                          const protobuf::DeleteRequest &request,
                          const transport::Info &info,
                          const RequestAndSignature &request_signature,
-                         const std::string &public_key,
-                         const std::string &public_key_validation,
+                         const asymm::PublicKey &public_key,
+                         const asymm::ValidationToken &public_key_validation,
                          const bool is_refresh);
 
   void AddContactToRoutingTable(const Contact &contact,
@@ -301,8 +315,8 @@ class Service : public std::enable_shared_from_this<Service> {
   std::shared_ptr<DataStore> datastore_;
   /** alternative store */
   AlternativeStorePtr alternative_store_;
-  /** securifier */
-  SecurifierPtr securifier_;
+  /** Private Key */
+  PrivateKeyPtr private_key_;
   /** bool switch of joined status */
   bool node_joined_;
   /** node contact */
@@ -313,6 +327,9 @@ class Service : public std::enable_shared_from_this<Service> {
   std::shared_ptr<SenderTask> sender_task_;
   /** client node id that gets ignored by RT **/
   std::string client_node_id_;
+  asymm::GetPublicKeyAndValidationFunctor contact_validation_getter_;
+  asymm::ValidatePublicKeyFunctor contact_validator_;
+  asymm::ValidateFunctor validate_functor_;
 };
 
 }  // namespace dht

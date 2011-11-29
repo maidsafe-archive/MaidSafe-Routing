@@ -31,7 +31,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "maidsafe/common/test.h"
 #include "maidsafe/common/crypto.h"
 #include "maidsafe/common/utils.h"
-#include "maidsafe/common/securifier.h"
 
 #include "maidsafe/transport/tcp_transport.h"
 #include "maidsafe/transport/message_handler.h"
@@ -97,11 +96,11 @@ class RpcsMockTransport : public transport::Transport {
 
 class MockMessageHandler : public MessageHandler {
  public:
-  MockMessageHandler(SecurifierPtr securifier,
+  MockMessageHandler(PrivateKeyPtr private_key,
                      const int &request_type,
                      const int &result_type)
-    : MessageHandler(securifier),
-      securifier_(securifier),
+    : MessageHandler(private_key),
+      private_key_(private_key),
       request_type_(request_type),
       result_type_(result_type) {}
 
@@ -269,7 +268,7 @@ class MockMessageHandler : public MessageHandler {
 }
   static volatile bool ops_completion_flag;
  protected:
-  SecurifierPtr securifier_;
+  PrivateKeyPtr private_key_;
   int request_type_;
   int result_type_;
 };
@@ -282,25 +281,25 @@ template <typename TransportType>
 class MockRpcs : public Rpcs<TransportType> {
  public:
   MockRpcs(AsioService &asio_service,                     // NOLINT (Fraser)
-           SecurifierPtr securifier,
+           PrivateKeyPtr private_key,
            const int &request_type,
            const uint16_t &repeat_factor,
            const int &result_type)
-      : Rpcs<TransportType>(asio_service, securifier),
+      : Rpcs<TransportType>(asio_service, private_key),
         local_t_(),
         local_mh_(),
         request_type_(request_type),
         repeat_factor_(repeat_factor),
         result_type_(result_type) {}
-  MOCK_METHOD3_T(Prepare, void(SecurifierPtr securifier,
+  MOCK_METHOD3_T(Prepare, void(PrivateKeyPtr private_key,
                                TransportPtr &transport,
                                MessageHandlerPtr &message_handler));
-  void MockPrepare(SecurifierPtr securifier,
+  void MockPrepare(PrivateKeyPtr private_key,
                    TransportPtr &transport,
                    MessageHandlerPtr &message_handler) {
     transport.reset(new RpcsMockTransport(this->asio_service_, repeat_factor_,
                                           this->kFailureTolerance_));
-    message_handler.reset(new MockMessageHandler(securifier,
+    message_handler.reset(new MockMessageHandler(private_key,
                                                  request_type_,
                                                  result_type_));
     transport->on_message_received()->connect(
@@ -336,19 +335,17 @@ class MockRpcs : public Rpcs<TransportType> {
 class MockRpcsTest : public testing::Test {
  public:
   MockRpcsTest() : asio_service_(),
-                   securifier_(),
+                   private_key_(),
                    peer_(ComposeContact(NodeId(NodeId::kRandomId), 6789)) {}
 
   ~MockRpcsTest() {}
 
   static void SetUpTestCase() {
-    crypto_key_pair_.GenerateKeys(4096);
+    asymm::GenerateKeyPair(&crypto_key_pair_);
   }
 
   virtual void SetUp() {
-    securifier_.reset(
-        new Securifier(RandomString(64), crypto_key_pair_.public_key(),
-                        crypto_key_pair_.private_key()));
+    private_key_.reset(new asymm::PrivateKey(crypto_key_pair_.private_key));
   }
 
   Contact ComposeContact(const NodeId& node_id, uint16_t port) {
@@ -357,7 +354,7 @@ class MockRpcsTest : public testing::Test {
     transport::Endpoint end_point(ip, port);
     local_endpoints.push_back(end_point);
     Contact contact(node_id, end_point, local_endpoints, end_point, false,
-                    false, "", crypto_key_pair_.public_key(), "");
+                    false, "", crypto_key_pair_.public_key, "");
     return contact;
   }
 
@@ -389,13 +386,13 @@ class MockRpcsTest : public testing::Test {
     Callback(rank_info, result, b, m, query_result);
   }
   protected:
-  static crypto::RsaKeyPair crypto_key_pair_;
+  static asymm::Keys crypto_key_pair_;
   AsioService asio_service_;
-  SecurifierPtr securifier_;
+  PrivateKeyPtr private_key_;
   Contact peer_;
 };
 
-crypto::RsaKeyPair MockRpcsTest::crypto_key_pair_;
+asymm::Keys MockRpcsTest::crypto_key_pair_;
 
 TEST_F(MockRpcsTest, BEH_Ping) {
   uint16_t repeat_factor(1);
@@ -403,7 +400,7 @@ TEST_F(MockRpcsTest, BEH_Ping) {
   for (int i = 0; i < 5; ++i) {
     std::shared_ptr<MockRpcs<transport::TcpTransport>> rpcs(
         new MockRpcs<transport::TcpTransport>(asio_service_,
-                                              securifier_,
+                                              private_key_,
                                               kPingRequest,
                                               repeat_factor,
                                               result_type));
@@ -417,7 +414,7 @@ TEST_F(MockRpcsTest, BEH_Ping) {
 
     RpcPingFunctor pf = std::bind(&MockRpcsTest::Callback, this, arg::_1,
                                   arg::_2, &b, &m, &result);
-    rpcs->Ping(securifier_, peer_, pf);
+    rpcs->Ping(private_key_, peer_, pf);
     while (!b2) {
       Sleep(boost::posix_time::milliseconds(10));
       {
@@ -463,7 +460,7 @@ TEST_F(MockRpcsTest, BEH_Store) {
   for (int i = 0; i < 5; ++i) {
     std::shared_ptr<MockRpcs<transport::TcpTransport>> rpcs(
         new MockRpcs<transport::TcpTransport>(asio_service_,
-                                              securifier_,
+                                              private_key_,
                                               kStoreRequest,
                                               repeat_factor,
                                               result_type));
@@ -478,7 +475,7 @@ TEST_F(MockRpcsTest, BEH_Store) {
     RpcStoreFunctor sf = std::bind(&MockRpcsTest::Callback, this, arg::_1,
                                    arg::_2, &b, &m, &result);
     rpcs->Store(NodeId(NodeId::kRandomId), "", "",
-                boost::posix_time::seconds(1), securifier_, peer_, sf);
+                boost::posix_time::seconds(1), private_key_, peer_, sf);
     while (!b2) {
       Sleep(boost::posix_time::milliseconds(10));
       {
@@ -524,7 +521,7 @@ TEST_F(MockRpcsTest, BEH_StoreRefresh) {
   for (int i = 0; i < 5; ++i) {
     std::shared_ptr<MockRpcs<transport::TcpTransport>> rpcs(
         new MockRpcs<transport::TcpTransport>(asio_service_,
-                                              securifier_,
+                                              private_key_,
                                               kStoreRefreshRequest,
                                               repeat_factor,
                                               result_type));
@@ -538,7 +535,7 @@ TEST_F(MockRpcsTest, BEH_StoreRefresh) {
 
     RpcStoreRefreshFunctor srf = std::bind(&MockRpcsTest::Callback, this,
                                            arg::_1, arg::_2, &b, &m, &result);
-    rpcs->StoreRefresh("", "", securifier_, peer_, srf);
+    rpcs->StoreRefresh("", "", private_key_, peer_, srf);
     while (!b2) {
       Sleep(boost::posix_time::milliseconds(10));
       boost::mutex::scoped_lock lock(m);
@@ -582,7 +579,7 @@ TEST_F(MockRpcsTest, BEH_Delete) {
   for (int i = 0; i < 5; ++i) {
     std::shared_ptr<MockRpcs<transport::TcpTransport>> rpcs(
         new MockRpcs<transport::TcpTransport>(asio_service_,
-                                              securifier_,
+                                              private_key_,
                                               kDeleteRequest,
                                               repeat_factor,
                                               result_type));
@@ -596,7 +593,7 @@ TEST_F(MockRpcsTest, BEH_Delete) {
 
     RpcDeleteFunctor df = std::bind(&MockRpcsTest::Callback, this, arg::_1,
                                     arg::_2, &b, &m, &result);
-    rpcs->Delete(NodeId(NodeId::kRandomId), "", "", securifier_, peer_, df);
+    rpcs->Delete(NodeId(NodeId::kRandomId), "", "", private_key_, peer_, df);
     while (!b2) {
       Sleep(boost::posix_time::milliseconds(10));
       boost::mutex::scoped_lock lock(m);
@@ -640,7 +637,7 @@ TEST_F(MockRpcsTest, BEH_DeleteRefresh) {
   for (int i = 0; i < 5; ++i) {
     std::shared_ptr<MockRpcs<transport::TcpTransport>> rpcs(
         new MockRpcs<transport::TcpTransport>(asio_service_,
-                                              securifier_,
+                                              private_key_,
                                               kDeleteRefreshRequest,
                                               repeat_factor,
                                               result_type));
@@ -654,7 +651,7 @@ TEST_F(MockRpcsTest, BEH_DeleteRefresh) {
 
     RpcDeleteRefreshFunctor drf = std::bind(&MockRpcsTest::Callback, this,
                                             arg::_1, arg::_2, &b, &m, &result);
-    rpcs->DeleteRefresh("", "", securifier_, peer_, drf);
+    rpcs->DeleteRefresh("", "", private_key_, peer_, drf);
     while (!b2) {
       Sleep(boost::posix_time::milliseconds(10));
       boost::mutex::scoped_lock lock(m);
@@ -698,7 +695,7 @@ TEST_F(MockRpcsTest, BEH_FindNodes) {
   for (int i = 0; i < 5; ++i) {
     std::shared_ptr<MockRpcs<transport::TcpTransport>> rpcs(
         new MockRpcs<transport::TcpTransport>(asio_service_,
-                                              securifier_,
+                                              private_key_,
                                               kFindNodesRequest,
                                               repeat_factor,
                                               result_type));
@@ -714,7 +711,7 @@ TEST_F(MockRpcsTest, BEH_FindNodes) {
                                         arg::_1, arg::_2, arg::_3, &b, &m,
                                         &result);
 
-    rpcs->FindNodes(NodeId(NodeId::kRandomId), 1, securifier_, peer_, fnf);
+    rpcs->FindNodes(NodeId(NodeId::kRandomId), 1, private_key_, peer_, fnf);
     while (!b2) {
       Sleep(boost::posix_time::milliseconds(10));
       boost::mutex::scoped_lock lock(m);
@@ -758,7 +755,7 @@ TEST_F(MockRpcsTest, BEH_FindValue) {
   for (int i = 0; i < 5; ++i) {
     std::shared_ptr<MockRpcs<transport::TcpTransport>> rpcs(
         new MockRpcs<transport::TcpTransport>(asio_service_,
-                                              securifier_,
+                                              private_key_,
                                               kFindValueRequest,
                                               repeat_factor,
                                               result_type));
@@ -774,7 +771,7 @@ TEST_F(MockRpcsTest, BEH_FindValue) {
                                         arg::_1, arg::_2, arg::_3, arg::_4,
                                         arg::_5, &b, &m, &result);
 
-    rpcs->FindValue(NodeId(NodeId::kRandomId), 1, securifier_, peer_, fvf);
+    rpcs->FindValue(NodeId(NodeId::kRandomId), 1, private_key_, peer_, fvf);
     while (!b2) {
       Sleep(boost::posix_time::milliseconds(10));
       boost::mutex::scoped_lock lock(m);
@@ -819,7 +816,7 @@ TEST_F(MockRpcsTest, BEH_Downlist) {
   node_ids.push_back(node_id);
   std::shared_ptr<MockRpcs<transport::TcpTransport>> rpcs(
       new MockRpcs<transport::TcpTransport>(asio_service_,
-                                            securifier_,
+                                            private_key_,
                                             kDownlistNotification,
                                             2,
                                             1));
@@ -829,7 +826,7 @@ TEST_F(MockRpcsTest, BEH_Downlist) {
           std::bind(&MockRpcs<transport::TcpTransport>::MockPrepare,
                     rpcs.get(), arg::_1, arg::_2, arg::_3))));
 
-  rpcs->Downlist(node_ids, securifier_, peer_);
+  rpcs->Downlist(node_ids, private_key_, peer_);
   while (!MockMessageHandler::ops_completion_flag) {
     Sleep(boost::posix_time::milliseconds(10));
   }

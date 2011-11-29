@@ -86,7 +86,7 @@ struct LookupArgs {
              const NodeId &target,
              const OrderedContacts &close_contacts,
              const uint16_t &num_contacts_requested,
-             SecurifierPtr securifier_in)
+             PrivateKeyPtr priv_key)
       : lookup_contacts(std::bind(static_cast<bool(*)(const Contact&,  // NOLINT (Fraser)
             const Contact&, const NodeId&)>(&CloserToTarget),
             arg::_1, arg::_2, target)),
@@ -101,7 +101,7 @@ struct LookupArgs {
         kOperationType(operation_type),
         kTarget(target),
         kNumContactsRequested(num_contacts_requested),
-        securifier(securifier_in) {
+        private_key(priv_key) {
     auto insert_itr(lookup_contacts.end());
     for (auto it(close_contacts.begin()); it != close_contacts.end(); ++it) {
       insert_itr = lookup_contacts.insert(insert_itr,
@@ -118,17 +118,17 @@ struct LookupArgs {
   const OperationType kOperationType;
   const NodeId kTarget;
   const uint16_t kNumContactsRequested;
-  SecurifierPtr securifier;
+  PrivateKeyPtr private_key;
 };
 
 struct FindNodesArgs : public LookupArgs {
   FindNodesArgs(const NodeId &target,
                 const uint16_t &num_contacts_requested,
                 const OrderedContacts &close_contacts,
-                SecurifierPtr securifier,
+                PrivateKeyPtr private_key,
                 FindNodesFunctor callback_in)
       : LookupArgs(kFindNodes, target, close_contacts, num_contacts_requested,
-                   securifier),
+                   private_key),
         callback(callback_in) {}
   FindNodesFunctor callback;
 };
@@ -138,10 +138,10 @@ struct FindValueArgs : public LookupArgs {
                 const uint16_t &num_contacts_requested,
                 const OrderedContacts &close_contacts,
                 bool cache_in,
-                SecurifierPtr securifier,
+                PrivateKeyPtr private_key,
                 FindValueFunctor callback_in)
       : LookupArgs(kFindValue, target, close_contacts, num_contacts_requested,
-                   securifier),
+                   private_key),
         cache(cache_in),
         callback(callback_in) {}
   bool cache;
@@ -156,10 +156,10 @@ struct StoreArgs : public LookupArgs {
             const std::string &value,
             const std::string &signature,
             const bptime::time_duration &time_to_live,
-            SecurifierPtr securifier,
+            PrivateKeyPtr private_key,
             StoreFunctor callback_in)
       : LookupArgs(kStore, target, close_contacts, num_contacts_requested,
-                   securifier),
+                   private_key),
         kSuccessThreshold(success_threshold),
         second_phase_rpcs_in_flight(0),
         successes(0),
@@ -181,10 +181,10 @@ struct DeleteArgs : public LookupArgs {
              const int &success_threshold,
              const std::string &value,
              const std::string &signature,
-             SecurifierPtr securifier,
+             PrivateKeyPtr private_key,
              DeleteFunctor callback_in)
       : LookupArgs(kDelete, target, close_contacts, num_contacts_requested,
-                   securifier),
+                   private_key),
         kSuccessThreshold(success_threshold),
         second_phase_rpcs_in_flight(0),
         successes(0),
@@ -207,10 +207,10 @@ struct UpdateArgs : public LookupArgs {
              const std::string &new_value,
              const std::string &new_signature,
              const bptime::time_duration &time_to_live,
-             SecurifierPtr securifier,
+             PrivateKeyPtr private_key,
              UpdateFunctor callback_in)
       : LookupArgs(kUpdate, target, close_contacts, num_contacts_requested,
-                   securifier),
+                   private_key),
         kSuccessThreshold(success_threshold),
         store_rpcs_in_flight(0),
         store_successes(0),
@@ -237,10 +237,10 @@ struct GetContactArgs : public LookupArgs {
   GetContactArgs(const NodeId &target,
                  const uint16_t &num_contacts_requested,
                  const OrderedContacts &close_contacts,
-                 SecurifierPtr securifier,
+                 PrivateKeyPtr private_key,
                  GetContactFunctor callback_in)
       : LookupArgs(kGetContact, target, close_contacts, num_contacts_requested,
-                   securifier),
+                   private_key),
         callback(callback_in) {}
   GetContactFunctor callback;
 };
@@ -250,11 +250,11 @@ struct RefreshArgs : public LookupArgs {
               const NodeId &target,
               const uint16_t &num_contacts_requested,
               const OrderedContacts &close_contacts,
-              SecurifierPtr securifier,
+              PrivateKeyPtr private_key,
               const std::string &serialised_request,
               const std::string &serialised_request_signature)
       : LookupArgs(op_type, target, close_contacts, num_contacts_requested,
-                   securifier),
+                   private_key),
         kSerialisedRequest(serialised_request),
         kSerialisedRequestSignature(serialised_request_signature) {
     BOOST_ASSERT(op_type == LookupArgs::kStoreRefresh ||

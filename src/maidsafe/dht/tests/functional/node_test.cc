@@ -45,7 +45,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "maidsafe/common/test.h"
 #include "maidsafe/common/crypto.h"
-#include "maidsafe/common/securifier.h"
 #include "maidsafe/transport/transport.h"
 #include "maidsafe/transport/tcp_transport.h"
 #include "maidsafe/dht/log.h"
@@ -138,7 +137,7 @@ TEST_F(NodeTest, FUNC_Bootstrap) {
   ASSERT_FALSE(online_contacts.empty());
   NodeContainerPtr node_container(
       new maidsafe::dht::NodeContainer<Node>());
-  node_container->Init(3, SecurifierPtr(), MessageHandlerPtr(),
+  node_container->Init(3, KeyPairPtr(), MessageHandlerPtr(),
                        AlternativeStorePtr(), false, env_->k_, env_->alpha_,
                        env_->beta_, env_->mean_refresh_interval_);
   node_container->MakeAllCallbackFunctors(&env_->mutex_, &env_->cond_var_);
@@ -151,10 +150,10 @@ TEST_F(NodeTest, FUNC_Bootstrap) {
 
   // Test using an empty bootstrap list - should start a new network
   bootstrap_contacts.clear();
-  SecurifierPtr securifier = node_container->securifier();
+  KeyPairPtr key_pair = node_container->key_pair();
   node_container = NodeContainerPtr(
       new maidsafe::dht::NodeContainer<Node>());
-  node_container->Init(3, securifier, MessageHandlerPtr(),
+  node_container->Init(3, key_pair, MessageHandlerPtr(),
                        AlternativeStorePtr(), false, env_->k_, env_->alpha_,
                        env_->beta_, env_->mean_refresh_interval_);
   node_container->MakeAllCallbackFunctors(&env_->mutex_, &env_->cond_var_);
@@ -169,7 +168,7 @@ TEST_F(NodeTest, FUNC_Bootstrap) {
   bootstrap_contacts.assign(1, node_container->node()->contact());
   node_container = NodeContainerPtr(
       new maidsafe::dht::NodeContainer<Node>());
-  node_container->Init(3, securifier, MessageHandlerPtr(),
+  node_container->Init(3, key_pair, MessageHandlerPtr(),
                        AlternativeStorePtr(), false, env_->k_, env_->alpha_,
                        env_->beta_, env_->mean_refresh_interval_);
   node_container->MakeAllCallbackFunctors(&env_->mutex_, &env_->cond_var_);
@@ -184,7 +183,7 @@ TEST_F(NodeTest, FUNC_Bootstrap) {
   // network
   node_container = NodeContainerPtr(
       new maidsafe::dht::NodeContainer<Node>());
-  node_container->Init(3, securifier, MessageHandlerPtr(),
+  node_container->Init(3, key_pair, MessageHandlerPtr(),
                        AlternativeStorePtr(), false, env_->k_, env_->alpha_,
                        env_->beta_, env_->mean_refresh_interval_);
   node_container->MakeAllCallbackFunctors(&env_->mutex_, &env_->cond_var_);
@@ -201,19 +200,19 @@ TEST_F(NodeTest, FUNC_Bootstrap) {
   // position in the list followed by offline contacts - should fail to join
   node_container = NodeContainerPtr(
       new maidsafe::dht::NodeContainer<Node>());
-  node_container->Init(3, securifier, MessageHandlerPtr(),
+  node_container->Init(3, key_pair, MessageHandlerPtr(),
                        AlternativeStorePtr(), false, env_->k_, env_->alpha_,
                        env_->beta_, env_->mean_refresh_interval_);
   node_container->MakeAllCallbackFunctors(&env_->mutex_, &env_->cond_var_);
   std::vector<Contact> offline_contacts;
   for (Port port = 5000; port < 5003; ++port) {
-    crypto::RsaKeyPair key_pair;
-    key_pair.GenerateKeys(4096);
+    asymm::Keys temp_key_pair;
+    asymm::GenerateKeyPair(&temp_key_pair);
     NodeId contact_id(dht::NodeId::kRandomId);
     transport::Endpoint end_point("127.0.0.1", port);
     std::vector<transport::Endpoint> local_endpoints(1, end_point);
     Contact contact(contact_id, end_point, local_endpoints, end_point, false,
-                    false, "", key_pair.public_key(), "");
+                    false, "", temp_key_pair.public_key, "");
     offline_contacts.push_back(contact);
   }
   bootstrap_contacts = offline_contacts;
@@ -230,7 +229,7 @@ TEST_F(NodeTest, FUNC_Bootstrap) {
   // join
   node_container = NodeContainerPtr(
       new maidsafe::dht::NodeContainer<Node>());
-  node_container->Init(3, securifier, MessageHandlerPtr(),
+  node_container->Init(3, key_pair, MessageHandlerPtr(),
                        AlternativeStorePtr(), false, env_->k_, env_->alpha_,
                        env_->beta_, env_->mean_refresh_interval_);
   node_container->MakeAllCallbackFunctors(&env_->mutex_, &env_->cond_var_);
@@ -246,7 +245,7 @@ TEST_F(NodeTest, FUNC_Bootstrap) {
   // should join the existing network
   node_container = NodeContainerPtr(
       new maidsafe::dht::NodeContainer<Node>());
-  node_container->Init(3, securifier, MessageHandlerPtr(),
+  node_container->Init(3, key_pair, MessageHandlerPtr(),
                        AlternativeStorePtr(), false, env_->k_, env_->alpha_,
                        env_->beta_, env_->mean_refresh_interval_);
   node_container->MakeAllCallbackFunctors(&env_->mutex_, &env_->cond_var_);
@@ -263,7 +262,7 @@ TEST_F(NodeTest, FUNC_Bootstrap) {
   // should join the existing network
   node_container = NodeContainerPtr(
       new maidsafe::dht::NodeContainer<Node>());
-  node_container->Init(3, securifier, MessageHandlerPtr(),
+  node_container->Init(3, key_pair, MessageHandlerPtr(),
                        AlternativeStorePtr(), false, env_->k_, env_->alpha_,
                        env_->beta_, env_->mean_refresh_interval_);
   node_container->MakeAllCallbackFunctors(&env_->mutex_, &env_->cond_var_);
@@ -278,7 +277,7 @@ TEST_F(NodeTest, FUNC_Bootstrap) {
 TEST_F(NodeTest, FUNC_JoinClient) {
   NodeContainerPtr client_node_container(
       new maidsafe::dht::NodeContainer<Node>());
-  client_node_container->Init(3, SecurifierPtr(), MessageHandlerPtr(),
+  client_node_container->Init(3, KeyPairPtr(), MessageHandlerPtr(),
                               AlternativeStorePtr(), true, env_->k_,
                               env_->alpha_, env_->beta_,
                               env_->mean_refresh_interval_);
@@ -299,7 +298,8 @@ TEST_F(NodeTest, FUNC_StoreAndFindSmallValue) {
   {
     boost::mutex::scoped_lock lock(env_->mutex_);
     chosen_container_->Store(kKey, kValue, "", bptime::pos_infin,
-                             chosen_container_->securifier());
+                             PrivateKeyPtr(new asymm::PrivateKey(
+                                chosen_container_->key_pair()->private_key)));
     EXPECT_TRUE(env_->cond_var_.timed_wait(lock, kTimeout_,
                 chosen_container_->wait_for_store_functor()));
     chosen_container_->GetAndResetStoreResult(&result);
@@ -309,7 +309,9 @@ TEST_F(NodeTest, FUNC_StoreAndFindSmallValue) {
   FindValueReturns find_value_returns;
   {
     boost::mutex::scoped_lock lock(env_->mutex_);
-    chosen_container_->FindValue(kKey, chosen_container_->securifier());
+    chosen_container_->FindValue(kKey,
+        PrivateKeyPtr(new asymm::PrivateKey(
+            chosen_container_->key_pair()->private_key)));
     EXPECT_TRUE(env_->cond_var_.timed_wait(lock, kTimeout_,
                 chosen_container_->wait_for_find_value_functor()));
     chosen_container_->GetAndResetFindValueResult(&find_value_returns);
@@ -317,9 +319,10 @@ TEST_F(NodeTest, FUNC_StoreAndFindSmallValue) {
   EXPECT_EQ(kSuccess, find_value_returns.return_code);
   ASSERT_EQ(1U, find_value_returns.values_and_signatures.size());
   EXPECT_EQ(kValue, find_value_returns.values_and_signatures.front().first);
-  EXPECT_TRUE(chosen_container_->securifier()->Validate(kValue,
-              find_value_returns.values_and_signatures.front().second, "",
-              chosen_container_->securifier()->kSigningPublicKey(), "", ""));
+  EXPECT_TRUE(asymm::Validate(
+                  kValue,
+                  find_value_returns.values_and_signatures.front().second,
+                  chosen_container_->key_pair()->public_key));
   EXPECT_TRUE(find_value_returns.closest_nodes.empty());
   EXPECT_EQ(Contact(), find_value_returns.alternative_store_holder);
   // TODO(Philip#5#): 2011-09-01 - Re-introduce when caching is implemented
@@ -333,7 +336,8 @@ TEST_F(NodeTest, FUNC_StoreAndFindBigValue) {
   {
     boost::mutex::scoped_lock lock(env_->mutex_);
     chosen_container_->Store(kKey, kValue, "", bptime::pos_infin,
-                             chosen_container_->securifier());
+        PrivateKeyPtr(new asymm::PrivateKey(
+            chosen_container_->key_pair()->private_key)));
     EXPECT_TRUE(env_->cond_var_.timed_wait(lock, kTimeout_,
                 chosen_container_->wait_for_store_functor()));
     chosen_container_->GetAndResetStoreResult(&result);
@@ -343,7 +347,9 @@ TEST_F(NodeTest, FUNC_StoreAndFindBigValue) {
   FindValueReturns find_value_returns;
   {
     boost::mutex::scoped_lock lock(env_->mutex_);
-    chosen_container_->FindValue(kKey, chosen_container_->securifier());
+    chosen_container_->FindValue(kKey,
+        PrivateKeyPtr(new asymm::PrivateKey(
+            chosen_container_->key_pair()->private_key)));
     EXPECT_TRUE(env_->cond_var_.timed_wait(lock, kTimeout_,
                 chosen_container_->wait_for_find_value_functor()));
     chosen_container_->GetAndResetFindValueResult(&find_value_returns);
@@ -351,9 +357,9 @@ TEST_F(NodeTest, FUNC_StoreAndFindBigValue) {
   EXPECT_EQ(kSuccess, find_value_returns.return_code);
   ASSERT_EQ(1U, find_value_returns.values_and_signatures.size());
   EXPECT_EQ(kValue, find_value_returns.values_and_signatures.front().first);
-  EXPECT_TRUE(chosen_container_->securifier()->Validate(kValue,
-              find_value_returns.values_and_signatures.front().second, "",
-              chosen_container_->securifier()->kSigningPublicKey(), "", ""));
+  EXPECT_TRUE(asymm::Validate(kValue,
+              find_value_returns.values_and_signatures.front().second,
+              chosen_container_->key_pair()->public_key));
   EXPECT_TRUE(find_value_returns.closest_nodes.empty());
   EXPECT_EQ(Contact(), find_value_returns.alternative_store_holder);
   // TODO(Philip#5#): 2011-09-01 - Re-introduce when caching is implemented
@@ -375,8 +381,8 @@ TEST_F(NodeTest, FUNC_StoreAndFindMultipleValues) {
     {
       boost::mutex::scoped_lock lock(env_->mutex_);
       chosen_container_->Store(keys.back(), values.back(), "",
-                               bptime::pos_infin,
-                               chosen_container_->securifier());
+          bptime::pos_infin, PrivateKeyPtr(new asymm::PrivateKey(
+                                 chosen_container_->key_pair()->private_key)));
       EXPECT_TRUE(env_->cond_var_.timed_wait(lock, kTimeout_,
                   chosen_container_->wait_for_store_functor()));
       chosen_container_->GetAndResetStoreResult(&result);
@@ -391,7 +397,9 @@ TEST_F(NodeTest, FUNC_StoreAndFindMultipleValues) {
     find_value_returns = FindValueReturns();
     {
       boost::mutex::scoped_lock lock(env_->mutex_);
-      chosen_container_->FindValue(*key_itr, chosen_container_->securifier());
+      chosen_container_->FindValue(*key_itr,
+          PrivateKeyPtr(new asymm::PrivateKey(
+              chosen_container_->key_pair()->private_key)));
       EXPECT_TRUE(env_->cond_var_.timed_wait(lock, kTimeout_,
                   chosen_container_->wait_for_find_value_functor()));
       chosen_container_->GetAndResetFindValueResult(&find_value_returns);
@@ -400,9 +408,9 @@ TEST_F(NodeTest, FUNC_StoreAndFindMultipleValues) {
     ASSERT_EQ(1U, find_value_returns.values_and_signatures.size());
     EXPECT_EQ(*value_itr,
               find_value_returns.values_and_signatures.front().first);
-    EXPECT_TRUE(chosen_container_->securifier()->Validate(*value_itr,
-                find_value_returns.values_and_signatures.front().second, "",
-                chosen_container_->securifier()->kSigningPublicKey(), "", ""));
+    EXPECT_TRUE(asymm::Validate(*value_itr,
+                find_value_returns.values_and_signatures.front().second,
+                chosen_container_->key_pair()->public_key));
     EXPECT_TRUE(find_value_returns.closest_nodes.empty());
     EXPECT_EQ(Contact(), find_value_returns.alternative_store_holder);
     // TODO(Philip#5#): 2011-09-01 - Re-introduce when caching is implemented
@@ -417,7 +425,8 @@ TEST_F(NodeTest, FUNC_MultipleNodesFindSingleValue) {
   {
     boost::mutex::scoped_lock lock(env_->mutex_);
     chosen_container_->Store(kKey, kValue, "", bptime::pos_infin,
-                             chosen_container_->securifier());
+        PrivateKeyPtr(new asymm::PrivateKey(
+            chosen_container_->key_pair()->private_key)));
     EXPECT_TRUE(env_->cond_var_.timed_wait(lock, kTimeout_,
                 chosen_container_->wait_for_store_functor()));
     chosen_container_->GetAndResetStoreResult(&result);
@@ -440,7 +449,8 @@ TEST_F(NodeTest, FUNC_MultipleNodesFindSingleValue) {
   for (size_t i(0); i < env_->node_containers_.size(); i += 2) {
     ++sent_count;
     env_->node_containers_[i]->FindValue(kKey,
-        env_->node_containers_[i]->securifier());
+        PrivateKeyPtr(new asymm::PrivateKey(
+            env_->node_containers_[i]->key_pair()->private_key)));
   }
   EXPECT_TRUE(env_->cond_var_.timed_wait(lock, bptime::minutes(2),
               std::bind(&MultiNodeFindValueResultReady, &sent_count,
@@ -453,9 +463,9 @@ TEST_F(NodeTest, FUNC_MultipleNodesFindSingleValue) {
     EXPECT_EQ(kSuccess, (*it).return_code);
     ASSERT_EQ(1U, (*it).values_and_signatures.size());
     EXPECT_EQ(kValue, (*it).values_and_signatures.front().first);
-    EXPECT_TRUE(chosen_container_->securifier()->Validate(kValue,
-                (*it).values_and_signatures.front().second, "",
-                chosen_container_->securifier()->kSigningPublicKey(), "", ""));
+    EXPECT_TRUE(asymm::Validate(kValue,
+                (*it).values_and_signatures.front().second,
+                chosen_container_->key_pair()->public_key));
     EXPECT_TRUE((*it).closest_nodes.empty());
     EXPECT_EQ(Contact(), (*it).alternative_store_holder);
     // TODO(Philip#5#): 2011-09-01 - Re-introduce when caching is implemented
@@ -466,7 +476,7 @@ TEST_F(NodeTest, FUNC_MultipleNodesFindSingleValue) {
 TEST_F(NodeTest, FUNC_ClientFindValue) {
   NodeContainerPtr client_node_container(
       new maidsafe::dht::NodeContainer<Node>());
-  client_node_container->Init(3, SecurifierPtr(), MessageHandlerPtr(),
+  client_node_container->Init(3, KeyPairPtr(), MessageHandlerPtr(),
                               AlternativeStorePtr(), true, env_->k_,
                               env_->alpha_, env_->beta_,
                               env_->mean_refresh_interval_);
@@ -485,7 +495,8 @@ TEST_F(NodeTest, FUNC_ClientFindValue) {
   {
     boost::mutex::scoped_lock lock(env_->mutex_);
     client_node_container->Store(kKey, kValue, "", bptime::pos_infin,
-                                 client_node_container->securifier());
+        PrivateKeyPtr(new asymm::PrivateKey(
+            chosen_container_->key_pair()->private_key)));
     EXPECT_TRUE(env_->cond_var_.timed_wait(lock, kTimeout_,
                 client_node_container->wait_for_store_functor()));
     result = kGeneralError;
@@ -496,7 +507,9 @@ TEST_F(NodeTest, FUNC_ClientFindValue) {
   FindValueReturns find_value_returns;
   {
     boost::mutex::scoped_lock lock(env_->mutex_);
-    client_node_container->FindValue(kKey, client_node_container->securifier());
+    client_node_container->FindValue(kKey,
+        PrivateKeyPtr(new asymm::PrivateKey(
+            chosen_container_->key_pair()->private_key)));
     EXPECT_TRUE(env_->cond_var_.timed_wait(lock, kTimeout_,
                 client_node_container->wait_for_find_value_functor()));
     client_node_container->GetAndResetFindValueResult(&find_value_returns);
@@ -504,10 +517,9 @@ TEST_F(NodeTest, FUNC_ClientFindValue) {
   EXPECT_EQ(kSuccess, find_value_returns.return_code);
   ASSERT_EQ(1U, find_value_returns.values_and_signatures.size());
   EXPECT_EQ(kValue, find_value_returns.values_and_signatures.front().first);
-  EXPECT_TRUE(client_node_container->securifier()->Validate(kValue,
-              find_value_returns.values_and_signatures.front().second, "",
-              client_node_container->securifier()->kSigningPublicKey(), "",
-              ""));
+  EXPECT_TRUE(asymm::Validate(kValue,
+              find_value_returns.values_and_signatures.front().second,
+              client_node_container->key_pair()->public_key));
   EXPECT_TRUE(find_value_returns.closest_nodes.empty());
   EXPECT_EQ(Contact(), find_value_returns.alternative_store_holder);
   // TODO(Philip#5#): 2011-09-01 - Re-introduce when caching is implemented
@@ -536,7 +548,9 @@ TEST_F(NodeTest, FUNC_FindNonExistingValue) {
   FindValueReturns find_value_returns;
   {
     boost::mutex::scoped_lock lock(env_->mutex_);
-    chosen_container_->FindValue(kKey, chosen_container_->securifier());
+    chosen_container_->FindValue(kKey,
+        PrivateKeyPtr(new asymm::PrivateKey(
+            chosen_container_->key_pair()->private_key)));
     EXPECT_TRUE(env_->cond_var_.timed_wait(lock, kTimeout_,
                 chosen_container_->wait_for_find_value_functor()));
     chosen_container_->GetAndResetFindValueResult(&find_value_returns);
@@ -593,7 +607,8 @@ TEST_F(NodeTest, FUNC_StoreWithInvalidRequest) {
   {
     boost::mutex::scoped_lock lock(env_->mutex_);
     chosen_container_->Store(kKey, kValue, "", bptime::pos_infin,
-                             chosen_container_->securifier());
+        PrivateKeyPtr(new asymm::PrivateKey(
+            chosen_container_->key_pair()->private_key)));
     EXPECT_TRUE(env_->cond_var_.timed_wait(lock, kTimeout_,
                 chosen_container_->wait_for_store_functor()));
     chosen_container_->GetAndResetStoreResult(&result);
@@ -606,7 +621,8 @@ TEST_F(NodeTest, FUNC_StoreWithInvalidRequest) {
   {
     boost::mutex::scoped_lock lock(env_->mutex_);
     next_container->Store(kKey, kAnotherValue, "", bptime::pos_infin,
-                          next_container->securifier());
+                          PrivateKeyPtr(new asymm::PrivateKey(
+                              next_container->key_pair()->private_key)));
     EXPECT_TRUE(env_->cond_var_.timed_wait(lock, kTimeout_,
                 next_container->wait_for_store_functor()));
     next_container->GetAndResetStoreResult(&result);
@@ -621,7 +637,8 @@ TEST_F(NodeTest, FUNC_Update) {
   {
     boost::mutex::scoped_lock lock(env_->mutex_);
     chosen_container_->Store(kKey, kValue, "", bptime::pos_infin,
-                             chosen_container_->securifier());
+        PrivateKeyPtr(new asymm::PrivateKey(
+            chosen_container_->key_pair()->private_key)));
     EXPECT_TRUE(env_->cond_var_.timed_wait(lock, kTimeout_,
                 chosen_container_->wait_for_store_functor()));
     chosen_container_->GetAndResetStoreResult(&result);
@@ -631,7 +648,8 @@ TEST_F(NodeTest, FUNC_Update) {
   FindValueReturns find_value_returns;
   {
     boost::mutex::scoped_lock lock(env_->mutex_);
-    chosen_container_->FindValue(kKey, chosen_container_->securifier());
+    chosen_container_->FindValue(kKey, PrivateKeyPtr(new asymm::PrivateKey(
+        chosen_container_->key_pair()->private_key)));
     EXPECT_TRUE(env_->cond_var_.timed_wait(lock, kTimeout_,
                 chosen_container_->wait_for_find_value_functor()));
     chosen_container_->GetAndResetFindValueResult(&find_value_returns);
@@ -639,9 +657,9 @@ TEST_F(NodeTest, FUNC_Update) {
   EXPECT_EQ(kSuccess, find_value_returns.return_code);
   ASSERT_EQ(1U, find_value_returns.values_and_signatures.size());
   EXPECT_EQ(kValue, find_value_returns.values_and_signatures.front().first);
-  EXPECT_TRUE(chosen_container_->securifier()->Validate(kValue,
-              find_value_returns.values_and_signatures.front().second, "",
-              chosen_container_->securifier()->kSigningPublicKey(), "", ""));
+  EXPECT_TRUE(asymm::Validate(kValue,
+              find_value_returns.values_and_signatures.front().second,
+              chosen_container_->key_pair()->public_key));
   EXPECT_TRUE(find_value_returns.closest_nodes.empty());
   EXPECT_EQ(Contact(), find_value_returns.alternative_store_holder);
   // TODO(Philip#5#): 2011-09-01 - Re-introduce when caching is implemented
@@ -653,8 +671,8 @@ TEST_F(NodeTest, FUNC_Update) {
   {
     boost::mutex::scoped_lock lock(env_->mutex_);
     chosen_container_->Update(kKey, kAnotherValue, "", kValue, "",
-                              bptime::pos_infin,
-                              chosen_container_->securifier());
+         bptime::pos_infin, PrivateKeyPtr(new asymm::PrivateKey(
+                                chosen_container_->key_pair()->private_key)));
     EXPECT_TRUE(env_->cond_var_.timed_wait(lock, kTimeout_,
                 chosen_container_->wait_for_update_functor()));
     chosen_container_->GetAndResetUpdateResult(&result);
@@ -664,7 +682,8 @@ TEST_F(NodeTest, FUNC_Update) {
   find_value_returns = FindValueReturns();
   {
     boost::mutex::scoped_lock lock(env_->mutex_);
-    chosen_container_->FindValue(kKey, chosen_container_->securifier());
+    chosen_container_->FindValue(kKey, PrivateKeyPtr(new asymm::PrivateKey(
+        chosen_container_->key_pair()->private_key)));
     EXPECT_TRUE(env_->cond_var_.timed_wait(lock, kTimeout_,
                 chosen_container_->wait_for_find_value_functor()));
     chosen_container_->GetAndResetFindValueResult(&find_value_returns);
@@ -680,9 +699,9 @@ TEST_F(NodeTest, FUNC_Update) {
   ASSERT_EQ(1U, find_value_returns.values_and_signatures.size());
   EXPECT_EQ(kAnotherValue,
             find_value_returns.values_and_signatures.front().first);
-  EXPECT_TRUE(chosen_container_->securifier()->Validate(kAnotherValue,
-              find_value_returns.values_and_signatures.front().second, "",
-              chosen_container_->securifier()->kSigningPublicKey(), "", ""));
+  EXPECT_TRUE(asymm::Validate(kAnotherValue,
+              find_value_returns.values_and_signatures.front().second,
+              chosen_container_->key_pair()->public_key));
   EXPECT_TRUE(find_value_returns.closest_nodes.empty());
   EXPECT_EQ(Contact(), find_value_returns.alternative_store_holder);
   // TODO(Philip#5#): 2011-09-01 - Re-introduce when caching is implemented
@@ -738,7 +757,8 @@ TEST_F(NodeTest, FUNC_Delete) {
   {
     boost::mutex::scoped_lock lock(env_->mutex_);
     chosen_container_->Store(kKey, kValue, "", bptime::pos_infin,
-                             chosen_container_->securifier());
+        PrivateKeyPtr(new asymm::PrivateKey(
+            chosen_container_->key_pair()->private_key)));
     EXPECT_TRUE(env_->cond_var_.timed_wait(lock, kTimeout_,
                 chosen_container_->wait_for_store_functor()));
     chosen_container_->GetAndResetStoreResult(&result);
@@ -748,7 +768,8 @@ TEST_F(NodeTest, FUNC_Delete) {
   {
     boost::mutex::scoped_lock lock(env_->mutex_);
     chosen_container_->Delete(kKey, kValue, "",
-                              chosen_container_->securifier());
+        PrivateKeyPtr(new asymm::PrivateKey(
+            chosen_container_->key_pair()->private_key)));
     EXPECT_TRUE(env_->cond_var_.timed_wait(lock, kTimeout_,
                 chosen_container_->wait_for_delete_functor()));
     int result(kGeneralError);
@@ -759,7 +780,8 @@ TEST_F(NodeTest, FUNC_Delete) {
   FindValueReturns find_value_returns;
   {
     boost::mutex::scoped_lock lock(env_->mutex_);
-    chosen_container_->FindValue(kKey, chosen_container_->securifier());
+    chosen_container_->FindValue(kKey, PrivateKeyPtr(new asymm::PrivateKey(
+        chosen_container_->key_pair()->private_key)));
     EXPECT_TRUE(env_->cond_var_.timed_wait(lock, kTimeout_,
                 chosen_container_->wait_for_find_value_functor()));
     chosen_container_->GetAndResetFindValueResult(&find_value_returns);
@@ -776,7 +798,9 @@ TEST_F(NodeTest, FUNC_InvalidDeleteRequest) {
   const Key kKey(Key::kRandomId);
   const std::string kValue(RandomString(1024));
   boost::mutex::scoped_lock lock(env_->mutex_);
-  chosen_container_->Delete(kKey, kValue, "", chosen_container_->securifier());
+  chosen_container_->Delete(kKey, kValue, "",
+                              PrivateKeyPtr(new asymm::PrivateKey(
+                                  chosen_container_->key_pair()->private_key)));
   EXPECT_TRUE(env_->cond_var_.timed_wait(lock, kTimeout_,
               chosen_container_->wait_for_delete_functor()));
   int result(kGeneralError);

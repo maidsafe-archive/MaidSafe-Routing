@@ -41,7 +41,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "boost/lexical_cast.hpp"
 
 #include "maidsafe/dht/log.h"
-#include "maidsafe/dht/contact.h"
 #include "maidsafe/dht/node_id.h"
 #include "maidsafe/dht/node-api.h"
 
@@ -59,10 +58,10 @@ Operations::Operations(std::shared_ptr<Node> node)
       public_key_validation_() {
 //  cryobj_.set_symm_algorithm(crypto::AES_256);
 //  cryobj_.set_hash_algorithm(crypto::SHA_512);
-  crypto::RsaKeyPair kp;
-  kp.GenerateKeys(4096);
-  public_key_ = kp.public_key();
-  private_key_ = kp.private_key();
+  asymm::Keys kp;
+  asymm::GenerateKeyPair(&kp);
+  public_key_ = kp.public_key;
+  private_key_ = kp.private_key;
 }
 
 void Operations::TestFindAndPing(const std::vector<NodeId> &nodes,
@@ -176,13 +175,13 @@ void Operations::TestStoreAndFind(const std::vector<NodeId> &nodes,
 //
 //
 //          sig_val.set_value(value);
-////          sig_val.set_value_signature(cryobj_.AsymSign(value, "",
-////              private_key_, crypto::STRING_STRING));
-////          ser_sig_val = sig_val.SerializeAsString();
-////          sig_req.set_signer_id(node_->node_id().String());
-////          sig_req.set_public_key(public_key_);
-////          sig_req.set_public_key_validation(public_key_validation_);
-////          sig_req.set_request_signature(req_sig);
+// //          sig_val.set_value_signature(cryobj_.AsymSign(value, "",
+// //              private_key_, crypto::STRING_STRING));
+// //          ser_sig_val = sig_val.SerializeAsString();
+// //          sig_req.set_signer_id(node_->node_id().String());
+// //          sig_req.set_public_key(public_key_);
+// //          sig_req.set_public_key_validation(public_key_validation_);
+// //          sig_req.set_request_signature(req_sig);
 //        }
 //        uint64_t t = GetEpochMilliseconds();
 //        if (sign) {

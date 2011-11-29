@@ -96,7 +96,7 @@ class Node {
   Node(AsioService &asio_service,                             // NOLINT (Fraser)
        TransportPtr listening_transport,
        MessageHandlerPtr message_handler,
-       SecurifierPtr default_securifier,
+       KeyPairPtr default_key_pair,
        AlternativeStorePtr alternative_store,
        bool client_only_node,
        const uint16_t &k,
@@ -128,7 +128,7 @@ class Node {
              const std::string &value,
              const std::string &signature,
              const boost::posix_time::time_duration &ttl,
-             SecurifierPtr securifier,
+             PrivateKeyPtr private_key,
              StoreFunctor callback);
 
   // Delete <key,value,signature> from network.  If signature is empty, the
@@ -140,7 +140,7 @@ class Node {
   void Delete(const Key &key,
               const std::string &value,
               const std::string &signature,
-              SecurifierPtr securifier,
+              PrivateKeyPtr private_key,
               DeleteFunctor callback);
 
   // Replace <key,old_value,old_signature> with <key,new_value,new_signature>
@@ -157,7 +157,7 @@ class Node {
               const std::string &old_value,
               const std::string &old_signature,
               const boost::posix_time::time_duration &ttl,
-              SecurifierPtr securifier,
+              PrivateKeyPtr private_key,
               UpdateFunctor callback);
 
   // Find value(s) on the network.  The callback will always have passed to it
@@ -184,7 +184,7 @@ class Node {
   // in the lookup process and will be < 0.  N.B. This node could be returned as
   // the alternative_store holder or as one of the closest contacts.
   void FindValue(const Key &key,
-                 SecurifierPtr securifier,
+                 PrivateKeyPtr private_key,
                  FindValueFunctor callback,
                  const uint16_t &extra_contacts = 0,
                  bool cache = true);
@@ -201,6 +201,20 @@ class Node {
   // If the node is offline, a default-constructed Contact will be passed back
   // in the callback.
   void GetContact(const NodeId &node_id, GetContactFunctor callback);
+
+  // Setter for the functor which will be called by Node and Service to retrieve
+  // the public key and public key validation token for a given contact.
+  void SetContactValidationGetter(
+      asymm::GetPublicKeyAndValidationFunctor contact_validation_getter);
+
+  // Setter for the functor which will be invoked in the callback of
+  // contact_validation_getter above.  It will return true if the retrieved
+  // public key validates correctly against the retrieved validation token.
+  void SetContactValidator(asymm::ValidatePublicKeyFunctor contact_validator);
+
+  // Setter for the functor which will be invoked for checking a signature
+  // against a given public key.
+  void SetValidate(asymm::ValidateFunctor validate_functor);
 
   // Mark contact in routing table as having just been seen (i.e. contacted).
   void SetLastSeenToNow(const Contact &contact);

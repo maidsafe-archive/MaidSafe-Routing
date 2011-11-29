@@ -32,7 +32,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "maidsafe/common/alternative_store.h"
 #include "maidsafe/common/crypto.h"
-#include "maidsafe/common/securifier.h"
 
 #ifdef __MSVC__
 #  pragma warning(push)
@@ -58,17 +57,22 @@ namespace dht {
 Service::Service(std::shared_ptr<RoutingTable> routing_table,
                  std::shared_ptr<DataStore> data_store,
                  AlternativeStorePtr alternative_store,
-                 SecurifierPtr securifier,
+                 PrivateKeyPtr private_key,
                  const uint16_t &k)
     : routing_table_(routing_table),
       datastore_(data_store),
       alternative_store_(alternative_store),
-      securifier_(securifier),
+      private_key_(private_key),
       node_joined_(false),
       node_contact_(),
       k_(k),
       sender_task_(new SenderTask),
-      client_node_id_(NodeId().String()) {}
+      client_node_id_(NodeId().String()),
+      contact_validation_getter_(std::bind(&StubContactValidationGetter,
+                                           arg::_1, arg::_2)),
+      contact_validator_(std::bind(&StubContactValidator, arg::_1, arg::_2,
+                                   arg::_3)),
+      validate_functor_(std::bind(&StubValidate, arg::_1, arg::_2, arg::_3)) {}
 
 Service::~Service() {}
 
@@ -117,8 +121,8 @@ bool Service::CheckParameters(const std::string &method_name,
     DLOG(WARNING) << debug_msg << ": Not joined.";
     return false;
   }
-  if (!securifier_) {
-    DLOG(WARNING) << debug_msg << ": NULL securifier.";
+  if (!private_key_) {
+    DLOG(WARNING) << debug_msg << ": NULL private_key.";
     return false;
   }
   if (key && !key->IsValid()) {
@@ -237,9 +241,9 @@ void Service::Store(const transport::Info &info,
   KeyValueSignature key_value_signature(key.String(),
                                         request.signed_value().value(),
                                         request.signed_value().signature());
-  if (datastore_->DifferentSigner(key_value_signature,
-                                  request.sender().public_key(),
-                                  securifier_)) {
+  asymm::PublicKey sender_public_key;
+  asymm::DecodePublicKey(request.sender().public_key(), &sender_public_key);
+  if (datastore_->DifferentSigner(key_value_signature, sender_public_key)) {
     DLOG(WARNING) << DebugId(node_contact_) << ": Can't store - different "
                   << "signing key used to store under Kad key.";
     routing_table_->AddContact(FromProtobuf(request.sender()),
@@ -255,11 +259,10 @@ void Service::Store(const transport::Info &info,
                             request.sender().public_key_id(), store_cb,
                             &is_new_id)) {
     if (is_new_id) {  // If public_key_id is new
-      GetPublicKeyAndValidationCallback cb =
-          std::bind(&SenderTask::SenderTaskCallback, sender_task_,
-                    request.sender().public_key_id(), arg::_1, arg::_2);
-      securifier_->GetPublicKeyAndValidation(request.sender().public_key_id(),
-                                             cb);
+      asymm::Identity id(request.sender().public_key_id());
+      asymm::GetPublicKeyAndValidationCallback callback(std::bind(
+          &SenderTask::SenderTaskCallback, sender_task_, id, arg::_1, arg::_2));
+      contact_validation_getter_(id, callback);
     }
     response->set_result(true);
   } else {
@@ -293,9 +296,10 @@ void Service::StoreRefresh(const transport::Info &info,
   KeyValueSignature key_value_signature(
       ori_store_request.key(), ori_store_request.signed_value().value(),
       ori_store_request.signed_value().signature());
-  if (datastore_->DifferentSigner(key_value_signature,
-                                  ori_store_request.sender().public_key(),
-                                  securifier_)) {
+  asymm::PublicKey sender_public_key;
+  asymm::DecodePublicKey(ori_store_request.sender().public_key(),
+                        &sender_public_key);
+  if (datastore_->DifferentSigner(key_value_signature, sender_public_key)) {
     DLOG(WARNING) << DebugId(node_contact_) << ": Can't refresh store - "
                   << "different signing key used to store under Kad key.";
     routing_table_->AddContact(FromProtobuf(request.sender()),
@@ -313,12 +317,12 @@ void Service::StoreRefresh(const transport::Info &info,
                             ori_store_request.sender().public_key_id(),
                             store_refresh_cb, &is_new_id)) {
     if (is_new_id) {
-      GetPublicKeyAndValidationCallback cb =
+      asymm::GetPublicKeyAndValidationCallback callback(
           std::bind(&SenderTask::SenderTaskCallback, sender_task_,
                     ori_store_request.sender().public_key_id(), arg::_1,
-                    arg::_2);
-      securifier_->GetPublicKeyAndValidation(
-          ori_store_request.sender().public_key_id(), cb);
+                    arg::_2));
+      contact_validation_getter_(ori_store_request.sender().public_key_id(),
+                                 callback);
     }
     response->set_result(true);
   } else {
@@ -331,8 +335,8 @@ void Service::StoreCallback(KeyValueSignature key_value_signature,
                             protobuf::StoreRequest request,
                             transport::Info info,
                             RequestAndSignature request_signature,
-                            std::string public_key,
-                            std::string public_key_validation) {
+                            asymm::PublicKey public_key,
+                            asymm::ValidationToken public_key_validation) {
   if (ValidateAndStore(key_value_signature, request, info, request_signature,
                        public_key, public_key_validation, false))
     if (request.sender().node_id() != client_node_id_)
@@ -340,12 +344,13 @@ void Service::StoreCallback(KeyValueSignature key_value_signature,
                                  RankInfoPtr(new transport::Info(info)));
 }
 
-void Service::StoreRefreshCallback(KeyValueSignature key_value_signature,
-                                   protobuf::StoreRefreshRequest request,
-                                   transport::Info info,
-                                   RequestAndSignature request_signature,
-                                   std::string public_key,
-                                   std::string public_key_validation) {
+void Service::StoreRefreshCallback(
+    KeyValueSignature key_value_signature,
+    protobuf::StoreRefreshRequest request,
+    transport::Info info,
+    RequestAndSignature request_signature,
+    asymm::PublicKey public_key,
+    asymm::ValidationToken public_key_validation) {
   protobuf::StoreRequest ori_store_request;
   ori_store_request.ParseFromString(request.serialised_store_request());
   if (ValidateAndStore(key_value_signature, ori_store_request, info,
@@ -355,26 +360,32 @@ void Service::StoreRefreshCallback(KeyValueSignature key_value_signature,
                                  RankInfoPtr(new transport::Info(info)));
 }
 
-bool Service::ValidateAndStore(const KeyValueSignature &key_value_signature,
-                               const protobuf::StoreRequest &request,
-                               const transport::Info &/*info*/,
-                               const RequestAndSignature &request_signature,
-                               const std::string &public_key,
-                               const std::string &public_key_validation,
-                               const bool is_refresh) {
-  if (!securifier_->Validate(key_value_signature.value,
-                             key_value_signature.signature,
-                             request.sender().public_key_id(),
-                             public_key,
-                             public_key_validation,
-                             request.key())) {
+bool Service::ValidateAndStore(
+    const KeyValueSignature &key_value_signature,
+    const protobuf::StoreRequest &request,
+    const transport::Info &/*info*/,
+    const RequestAndSignature &request_signature,
+    const asymm::PublicKey &public_key,
+    const asymm::ValidationToken &public_key_validation,
+    const bool is_refresh) {
+  if (!contact_validator_(request.sender().public_key_id(), public_key,
+                          public_key_validation)) {
+    DLOG(WARNING) << DebugId(node_contact_) << ": Failed to validate contact "
+                  << " for Store request (is_refresh = " << std::boolalpha
+                  << is_refresh << ")";
+    return false;
+  }
+  if (!validate_functor_(key_value_signature.value,
+                         key_value_signature.signature,
+                         public_key)) {
     DLOG(WARNING) << DebugId(node_contact_) << ": Failed to validate Store "
                   << "request for kademlia value (is_refresh = "
                   << std::boolalpha << is_refresh << ")";
     return false;
   }
-  if (is_refresh && !securifier_->Validate(request_signature.first,
-                            request_signature.second, "", public_key, "", "")) {
+  if (is_refresh && !validate_functor_(request_signature.first,
+                                       request_signature.second,
+                                       public_key)) {
     DLOG(WARNING) << DebugId(node_contact_) << ": Failed to validate request "
                   << "against request signature";
     return false;
@@ -409,9 +420,9 @@ void Service::Delete(const transport::Info &info,
   KeyValueSignature key_value_signature(key.String(),
                                         request.signed_value().value(),
                                         request.signed_value().signature());
-  if (datastore_->DifferentSigner(key_value_signature,
-                                  request.sender().public_key(),
-                                  securifier_)) {
+  asymm::PublicKey sender_public_key;
+  asymm::DecodePublicKey(request.sender().public_key(), &sender_public_key);
+  if (datastore_->DifferentSigner(key_value_signature, sender_public_key)) {
     DLOG(WARNING) << DebugId(node_contact_) << ": Can't delete - different "
                   << "signing key used to store key,value.";
     routing_table_->AddContact(FromProtobuf(request.sender()),
@@ -428,11 +439,10 @@ void Service::Delete(const transport::Info &info,
                             request.sender().public_key_id(), delete_cb,
                             &is_new_id)) {
     if (is_new_id) {
-      GetPublicKeyAndValidationCallback cb =
+      asymm::GetPublicKeyAndValidationCallback callback(
           std::bind(&SenderTask::SenderTaskCallback, sender_task_,
-                    request.sender().public_key_id(), arg::_1, arg::_2);
-      securifier_->GetPublicKeyAndValidation(request.sender().public_key_id(),
-                                             cb);
+                    request.sender().public_key_id(), arg::_1, arg::_2));
+      contact_validation_getter_(request.sender().public_key_id(), callback);
     }
     response->set_result(true);
   } else {
@@ -468,9 +478,10 @@ void Service::DeleteRefresh(const transport::Info &info,
       ori_delete_request.key(),
       ori_delete_request.signed_value().value(),
       ori_delete_request.signed_value().signature());
-  if (datastore_->DifferentSigner(key_value_signature,
-                                  ori_delete_request.sender().public_key(),
-                                  securifier_)) {
+  asymm::PublicKey sender_public_key;
+  asymm::DecodePublicKey(ori_delete_request.sender().public_key(),
+                        &sender_public_key);
+  if (datastore_->DifferentSigner(key_value_signature, sender_public_key)) {
     DLOG(WARNING) << DebugId(node_contact_) << ": Can't refresh delete - "
                   << "different signing key used to store key,value.";
     routing_table_->AddContact(FromProtobuf(request.sender()),
@@ -488,12 +499,12 @@ void Service::DeleteRefresh(const transport::Info &info,
                             ori_delete_request.sender().public_key_id(),
                             delete_refresh_cb, &is_new_id)) {
     if (is_new_id) {
-      GetPublicKeyAndValidationCallback cb =
+      asymm::GetPublicKeyAndValidationCallback callback(
           std::bind(&SenderTask::SenderTaskCallback, sender_task_,
                     ori_delete_request.sender().public_key_id(), arg::_1,
-                    arg::_2);
-      securifier_->GetPublicKeyAndValidation(
-          ori_delete_request.sender().public_key_id(), cb);
+                    arg::_2));
+      contact_validation_getter_(ori_delete_request.sender().public_key_id(),
+                                 callback);
     }
     response->set_result(true);
   } else {
@@ -506,8 +517,8 @@ void Service::DeleteCallback(KeyValueSignature key_value_signature,
                              protobuf::DeleteRequest request,
                              transport::Info info,
                              RequestAndSignature request_signature,
-                             std::string public_key,
-                             std::string public_key_validation) {
+                             asymm::PublicKey public_key,
+                             asymm::ValidationToken public_key_validation) {
   if (ValidateAndDelete(key_value_signature, request, info, request_signature,
                         public_key, public_key_validation, false))
     if (request.sender().node_id() != client_node_id_)
@@ -515,12 +526,13 @@ void Service::DeleteCallback(KeyValueSignature key_value_signature,
                                  RankInfoPtr(new transport::Info(info)));
 }
 
-void Service::DeleteRefreshCallback(KeyValueSignature key_value_signature,
-                                    protobuf::DeleteRefreshRequest request,
-                                    transport::Info info,
-                                    RequestAndSignature request_signature,
-                                    std::string public_key,
-                                    std::string public_key_validation) {
+void Service::DeleteRefreshCallback(
+    KeyValueSignature key_value_signature,
+    protobuf::DeleteRefreshRequest request,
+    transport::Info info,
+    RequestAndSignature request_signature,
+    asymm::PublicKey public_key,
+    asymm::ValidationToken public_key_validation) {
   protobuf::DeleteRequest ori_delete_request;
   ori_delete_request.ParseFromString(request.serialised_delete_request());
   if (ValidateAndDelete(key_value_signature, ori_delete_request, info,
@@ -532,27 +544,33 @@ void Service::DeleteRefreshCallback(KeyValueSignature key_value_signature,
   }
 }
 
-bool Service::ValidateAndDelete(const KeyValueSignature &key_value_signature,
-                                const protobuf::DeleteRequest &request,
-                                const transport::Info &/*info*/,
-                                const RequestAndSignature &request_signature,
-                                const std::string &public_key,
-                                const std::string &public_key_validation,
-                                const bool is_refresh) {
-  if (!securifier_->Validate(key_value_signature.value,
-                             key_value_signature.signature,
-                             request.sender().public_key_id(),
-                             public_key,
-                             public_key_validation,
-                             request.key())) {
+bool Service::ValidateAndDelete(
+    const KeyValueSignature &key_value_signature,
+    const protobuf::DeleteRequest &request,
+    const transport::Info &/*info*/,
+    const RequestAndSignature &request_signature,
+    const asymm::PublicKey &public_key,
+    const asymm::ValidationToken &public_key_validation,
+    const bool is_refresh) {
+  if (!contact_validator_(request.sender().public_key_id(), public_key,
+                          public_key_validation)) {
+    DLOG(WARNING) << DebugId(node_contact_) << ": Failed to validate contact "
+                  << " for Delete request (is_refresh = " << std::boolalpha
+                  << is_refresh << ")";
+    return false;
+  }
+  if (!validate_functor_(key_value_signature.value,
+                         key_value_signature.signature,
+                         public_key)) {
     DLOG(WARNING) << DebugId(node_contact_) << ": Failed to validate Delete "
                   << "request for kademlia value (is_refresh = "
                   << std::boolalpha << is_refresh << ")";
     return false;
   }
 
-  if (is_refresh && !securifier_->Validate(request_signature.first,
-                            request_signature.second, "", public_key, "", "")) {
+  if (is_refresh && !validate_functor_(request_signature.first,
+                                       request_signature.second,
+                                       public_key)) {
     DLOG(WARNING) << DebugId(node_contact_) << ": Failed to validate request "
                   << "against request signature";
     return false;

@@ -40,6 +40,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "boost/date_time/posix_time/posix_time_duration.hpp"
 #include "boost/signals2/signal.hpp"
 
+#include "maidsafe/common/rsa.h"
 #include "maidsafe/dht/return_codes.h"
 #include "maidsafe/dht/version.h"
 
@@ -52,7 +53,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 namespace maidsafe {
 
 class AlternativeStore;
-class Securifier;
 
 namespace transport {
 class Transport;
@@ -98,7 +98,6 @@ typedef std::function<void(int, Contact)> GetContactFunctor;
 typedef std::function<bool()> WaitFunctor;
 
 
-
 typedef NodeId Key;
 typedef boost::asio::ip::address IP;
 typedef uint16_t Port;
@@ -107,7 +106,9 @@ typedef uint16_t Port;
 typedef boost::asio::io_service AsioService;
 typedef std::shared_ptr<MessageHandler> MessageHandlerPtr;
 typedef std::shared_ptr<transport::Transport> TransportPtr;
-typedef std::shared_ptr<Securifier> SecurifierPtr;
+typedef std::shared_ptr<asymm::Keys> KeyPairPtr;
+typedef std::shared_ptr<asymm::PrivateKey> PrivateKeyPtr;
+typedef std::shared_ptr<asymm::PublicKey> PublicKeyPtr;
 typedef std::shared_ptr<AlternativeStore> AlternativeStorePtr;
 typedef std::shared_ptr<transport::Info> RankInfoPtr;
 

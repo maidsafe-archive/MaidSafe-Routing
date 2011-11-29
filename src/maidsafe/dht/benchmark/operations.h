@@ -35,6 +35,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "boost/thread/locks.hpp"
 #include "maidsafe/common/crypto.h"
 #include "maidsafe/common/utils.h"
+#include "maidsafe/dht/contact.h"
 
 namespace maidsafe {
 
@@ -78,7 +79,9 @@ class Operations {
                          std::shared_ptr<CallbackData> data);
   std::shared_ptr<Node> node_;
 //  crypto::Crypto cryobj_;
-  std::string private_key_, public_key_, public_key_validation_;
+  std::string public_key_validation_;
+  asymm::PublicKey public_key_;
+  asymm::PrivateKey private_key_;
 };
 
 }  // namespace benchmark

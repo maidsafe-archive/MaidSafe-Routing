@@ -36,7 +36,7 @@ namespace dht {
 Node::Node(AsioService &asio_service,             // NOLINT (Fraser)
            TransportPtr listening_transport,
            MessageHandlerPtr message_handler,
-           SecurifierPtr default_securifier,
+           KeyPairPtr default_key_pair,
            AlternativeStorePtr alternative_store,
            bool client_only_node,
            const uint16_t &k,
@@ -44,7 +44,7 @@ Node::Node(AsioService &asio_service,             // NOLINT (Fraser)
            const uint16_t &beta,
            const boost::posix_time::time_duration &mean_refresh_interval)
     : pimpl_(new NodeImpl(asio_service, listening_transport, message_handler,
-                          default_securifier, alternative_store,
+                          default_key_pair, alternative_store,
                           client_only_node, k, alpha, beta,
                           mean_refresh_interval)) {}
 
@@ -64,17 +64,17 @@ void Node::Store(const Key &key,
                  const std::string &value,
                  const std::string &signature,
                  const boost::posix_time::time_duration &ttl,
-                 SecurifierPtr securifier,
+                 PrivateKeyPtr private_key,
                  StoreFunctor callback) {
-  pimpl_->Store(key, value, signature, ttl, securifier, callback);
+  pimpl_->Store(key, value, signature, ttl, private_key, callback);
 }
 
 void Node::Delete(const Key &key,
                  const std::string &value,
                  const std::string &signature,
-                 SecurifierPtr securifier,
+                 PrivateKeyPtr private_key,
                  DeleteFunctor callback) {
-  pimpl_->Delete(key, value, signature, securifier, callback);
+  pimpl_->Delete(key, value, signature, private_key, callback);
 }
 
 void Node::Update(const Key &key,
@@ -83,18 +83,18 @@ void Node::Update(const Key &key,
                   const std::string &old_value,
                   const std::string &old_signature,
                   const boost::posix_time::time_duration &ttl,
-                  SecurifierPtr securifier,
+                  PrivateKeyPtr private_key,
                   UpdateFunctor callback) {
   pimpl_->Update(key, new_value, new_signature, old_value, old_signature,
-                 ttl, securifier, callback);
+                 ttl, private_key, callback);
 }
 
 void Node::FindValue(const Key &key,
-                     SecurifierPtr securifier,
+                     PrivateKeyPtr private_key,
                      FindValueFunctor callback,
                      const uint16_t &extra_contacts,
                      bool cache) {
-  pimpl_->FindValue(key, securifier, callback, extra_contacts, cache);
+  pimpl_->FindValue(key, private_key, callback, extra_contacts, cache);
 }
 
 void Node::FindNodes(const Key &key,
@@ -105,6 +105,20 @@ void Node::FindNodes(const Key &key,
 
 void Node::GetContact(const NodeId &node_id, GetContactFunctor callback) {
   pimpl_->GetContact(node_id, callback);
+}
+
+void Node::SetContactValidationGetter(
+    asymm::GetPublicKeyAndValidationFunctor contact_validation_getter) {
+  pimpl_->SetContactValidationGetter(contact_validation_getter);
+}
+
+void Node::SetContactValidator(
+    asymm::ValidatePublicKeyFunctor contact_validator) {
+  pimpl_->SetContactValidator(contact_validator);
+}
+
+void Node::SetValidate(asymm::ValidateFunctor validate_functor) {
+  pimpl_->SetValidate(validate_functor);
 }
 
 void Node::SetLastSeenToNow(const Contact &contact) {
