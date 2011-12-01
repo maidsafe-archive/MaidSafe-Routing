@@ -56,7 +56,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "maidsafe/dht/message_handler.h"
 #include "maidsafe/dht/tests/test_utils.h"
 
-namespace arg = std::placeholders;
+namespace args = std::placeholders;
 
 namespace maidsafe {
 
@@ -344,7 +344,7 @@ TYPED_TEST_P(RpcsTest, FUNC_PingNoTarget) {
   int response_code(kGeneralError);
 
   this->rpcs_->Ping(GetPrivateKeyPtr(this->rpcs_key_pair_), this->rpcs_contact_,
-      std::bind(&TestCallback, arg::_1, arg::_2, &done, &response_code));
+      std::bind(&TestCallback, args::_1, args::_2, &done, &response_code));
 
   while (!done)
     Sleep(boost::posix_time::milliseconds(10));
@@ -358,7 +358,7 @@ TYPED_TEST_P(RpcsTest, FUNC_PingTarget) {
   int response_code(kPendingResult);
   this->rpcs_->Ping(GetPrivateKeyPtr(this->rpcs_key_pair_),
       this->service_contact_,
-      std::bind(&TestCallback, arg::_1, arg::_2, &done, &response_code));
+      std::bind(&TestCallback, args::_1, args::_2, &done, &response_code));
 
   while (!done)
     Sleep(boost::posix_time::milliseconds(10));
@@ -377,8 +377,8 @@ TYPED_TEST_P(RpcsTest, FUNC_FindNodesEmptyRT) {
   this->rpcs_->FindNodes(key, g_kKademliaK,
                          GetPrivateKeyPtr(this->rpcs_key_pair_),
                          this->service_contact_,
-                         std::bind(&TestFindNodesCallback, arg::_1, arg::_2,
-                                   arg::_3, &contact_list, &done,
+                         std::bind(&TestFindNodesCallback, args::_1, args::_2,
+                                   args::_3, &contact_list, &done,
                                    &response_code));
   while (!done)
     Sleep(boost::posix_time::milliseconds(10));
@@ -400,8 +400,8 @@ TYPED_TEST_P(RpcsTest, FUNC_FindNodesPopulatedRTnoNode) {
   this->rpcs_->FindNodes(key, g_kKademliaK,
                          GetPrivateKeyPtr(this->rpcs_key_pair_),
                          this->service_contact_,
-                         std::bind(&TestFindNodesCallback, arg::_1, arg::_2,
-                                   arg::_3, &contact_list, &done,
+                         std::bind(&TestFindNodesCallback, args::_1, args::_2,
+                                   args::_3, &contact_list, &done,
                                    &response_code));
   while (!done)
     Sleep(boost::posix_time::milliseconds(10));
@@ -439,8 +439,8 @@ TYPED_TEST_P(RpcsTest, FUNC_FindNodesPopulatedRTwithNode) {
   this->rpcs_->FindNodes(key, g_kKademliaK,
                          GetPrivateKeyPtr(this->rpcs_key_pair_),
                          this->service_contact_,
-                         std::bind(&TestFindNodesCallback, arg::_1, arg::_2,
-                                   arg::_3, &contact_list, &done,
+                         std::bind(&TestFindNodesCallback, args::_1, args::_2,
+                                   args::_3, &contact_list, &done,
                                    &response_code));
   while (!done)
     Sleep(boost::posix_time::milliseconds(10));
@@ -478,8 +478,8 @@ TYPED_TEST_P(RpcsTest, FUNC_FindNodesVariableNodesRequest) {
   this->rpcs_->FindNodes(key, g_kKademliaK/2,
                          GetPrivateKeyPtr(this->rpcs_key_pair_),
                          this->service_contact_,
-                         std::bind(&TestFindNodesCallback, arg::_1, arg::_2,
-                                   arg::_3, &contact_list, &done,
+                         std::bind(&TestFindNodesCallback, args::_1, args::_2,
+                                   args::_3, &contact_list, &done,
                                    &response_code));
   while (!done)
     Sleep(boost::posix_time::milliseconds(10));
@@ -496,8 +496,8 @@ TYPED_TEST_P(RpcsTest, FUNC_FindNodesVariableNodesRequest) {
   this->rpcs_->FindNodes(key, g_kKademliaK*3/2,
                          GetPrivateKeyPtr(this->rpcs_key_pair_),
                          this->service_contact_,
-                         std::bind(&TestFindNodesCallback, arg::_1, arg::_2,
-                                   arg::_3, &contact_list, &done,
+                         std::bind(&TestFindNodesCallback, args::_1, args::_2,
+                                   args::_3, &contact_list, &done,
                                    &response_code));
   while (!done)
     Sleep(boost::posix_time::milliseconds(10));
@@ -525,8 +525,8 @@ TYPED_TEST_P(RpcsTest, FUNC_FindValueVariableNodesRequest) {
   this->rpcs_->FindValue(key, g_kKademliaK/2,
                          GetPrivateKeyPtr(this->rpcs_key_pair_),
                          this->service_contact_,
-                         std::bind(&TestFindValueCallback, arg::_1, arg::_2,
-                                   arg::_3, arg::_4, arg::_5,
+                         std::bind(&TestFindValueCallback, args::_1, args::_2,
+                                   args::_3, args::_4, args::_5,
                                    &return_values_and_signatures,
                                    &return_contacts, &done, &response_code));
 
@@ -544,8 +544,8 @@ TYPED_TEST_P(RpcsTest, FUNC_FindValueVariableNodesRequest) {
   this->rpcs_->FindValue(key, g_kKademliaK*3/2,
                          GetPrivateKeyPtr(this->rpcs_key_pair_),
                          this->service_contact_,
-                         std::bind(&TestFindValueCallback, arg::_1, arg::_2,
-                                   arg::_3, arg::_4, arg::_5,
+                         std::bind(&TestFindValueCallback, args::_1, args::_2,
+                                   args::_3, args::_4, args::_5,
                                    &return_values_and_signatures,
                                    &return_contacts, &done, &response_code));
   while (!done)
@@ -572,8 +572,8 @@ TYPED_TEST_P(RpcsTest, FUNC_StoreAndFindValue) {
   this->rpcs_->FindValue(key, g_kKademliaK,
                          GetPrivateKeyPtr(this->rpcs_key_pair_),
                          this->service_contact_,
-                         std::bind(&TestFindValueCallback, arg::_1, arg::_2,
-                                   arg::_3, arg::_4, arg::_5,
+                         std::bind(&TestFindValueCallback, args::_1, args::_2,
+                                   args::_3, args::_4, args::_5,
                                    &return_values_and_signatures,
                                    &return_contacts, &done, &response_code));
 
@@ -587,7 +587,7 @@ TYPED_TEST_P(RpcsTest, FUNC_StoreAndFindValue) {
   this->rpcs_->Store(key, kvs.value, kvs.signature, ttl,
                      GetPrivateKeyPtr(this->rpcs_key_pair_),
                      this->service_contact_,
-                     std::bind(&TestCallback, arg::_1, arg::_2, &done,
+                     std::bind(&TestCallback, args::_1, args::_2, &done,
                                &response_code));
 
   while (!done)
@@ -603,8 +603,8 @@ TYPED_TEST_P(RpcsTest, FUNC_StoreAndFindValue) {
   this->rpcs_->FindValue(key, g_kKademliaK,
                          GetPrivateKeyPtr(this->rpcs_key_pair_),
                          this->service_contact_,
-                         std::bind(&TestFindValueCallback, arg::_1, arg::_2,
-                                   arg::_3, arg::_4, arg::_5,
+                         std::bind(&TestFindValueCallback, args::_1, args::_2,
+                                   args::_3, args::_4, args::_5,
                                    &return_values_and_signatures,
                                    &return_contacts, &done, &response_code));
   while (!done)
@@ -634,8 +634,8 @@ TYPED_TEST_P(RpcsTest, FUNC_StoreAndFindAndDeleteValueXXXToBeRemoved) {
   this->rpcs_->FindValue(key, g_kKademliaK,
                          GetPrivateKeyPtr(this->rpcs_key_pair_),
                          this->service_contact_,
-                         std::bind(&TestFindValueCallback, arg::_1, arg::_2,
-                                   arg::_3, arg::_4, arg::_5,
+                         std::bind(&TestFindValueCallback, args::_1, args::_2,
+                                   args::_3, args::_4, args::_5,
                                    &return_values_and_signatures,
                                    &return_contacts, &done, &response_code));
   while (!done)
@@ -649,7 +649,7 @@ TYPED_TEST_P(RpcsTest, FUNC_StoreAndFindAndDeleteValueXXXToBeRemoved) {
   this->rpcs_->Store(key, kvs.value, kvs.signature, ttl,
                      GetPrivateKeyPtr(this->rpcs_key_pair_),
                      this->service_contact_,
-                     std::bind(&TestCallback, arg::_1, arg::_2, &done,
+                     std::bind(&TestCallback, args::_1, args::_2, &done,
                                &response_code));
 
   while (!done)
@@ -668,8 +668,8 @@ TYPED_TEST_P(RpcsTest, FUNC_StoreAndFindAndDeleteValueXXXToBeRemoved) {
   this->rpcs_->FindValue(key, g_kKademliaK,
                          GetPrivateKeyPtr(this->rpcs_key_pair_),
                          this->service_contact_,
-                         std::bind(&TestFindValueCallback, arg::_1, arg::_2,
-                                   arg::_3, arg::_4, arg::_5,
+                         std::bind(&TestFindValueCallback, args::_1, args::_2,
+                                   args::_3, args::_4, args::_5,
                                    &return_values_and_signatures,
                                    &return_contacts, &done, &response_code));
   while (!done)
@@ -680,8 +680,8 @@ TYPED_TEST_P(RpcsTest, FUNC_StoreAndFindAndDeleteValueXXXToBeRemoved) {
 
   this->rpcs_->Delete(key, kvs.value, kvs.signature,
       GetPrivateKeyPtr(this->rpcs_key_pair_),
-      this->service_contact_, std::bind(&TestCallback, arg::_1, arg::_2, &done,
-                                  &response_code));
+      this->service_contact_, std::bind(&TestCallback, args::_1, args::_2,
+                                        &done, &response_code));
 
   done = false;
   response_code = kGeneralError;
@@ -697,8 +697,8 @@ TYPED_TEST_P(RpcsTest, FUNC_StoreAndFindAndDeleteValueXXXToBeRemoved) {
   this->rpcs_->FindValue(key, g_kKademliaK,
                          GetPrivateKeyPtr(this->rpcs_key_pair_),
                          this->service_contact_,
-                         std::bind(&TestFindValueCallback, arg::_1, arg::_2,
-                                   arg::_3, arg::_4, arg::_5,
+                         std::bind(&TestFindValueCallback, args::_1, args::_2,
+                                   args::_3, args::_4, args::_5,
                                    &return_values_and_signatures,
                                    &return_contacts, &done, &response_code));
   while (!done)
@@ -730,8 +730,8 @@ TYPED_TEST_P(RpcsTest, FUNC_StoreMalicious) {
   // Malicious sender sends fake public_key
   this->rpcs_->Store(key, kvs.value, kvs.signature, ttl,
                      GetPrivateKeyPtr(this->rpcs_key_pair_),
-      this->service_contact_, std::bind(&TestCallback, arg::_1, arg::_2, &done,
-                                  &response_code));
+      this->service_contact_, std::bind(&TestCallback, args::_1, args::_2,
+                                        &done, &response_code));
 
   while (!done)
     Sleep(boost::posix_time::milliseconds(10));
@@ -746,8 +746,8 @@ TYPED_TEST_P(RpcsTest, FUNC_StoreMalicious) {
   this->rpcs_->FindValue(key, g_kKademliaK,
                          GetPrivateKeyPtr(this->rpcs_key_pair_),
                          this->service_contact_,
-                         std::bind(&TestFindValueCallback, arg::_1, arg::_2,
-                                   arg::_3, arg::_4, arg::_5,
+                         std::bind(&TestFindValueCallback, args::_1, args::_2,
+                                   args::_3, args::_4, args::_5,
                                    &return_values_and_signatures,
                                    &return_contacts, &done, &response_code));
   while (!done)
@@ -784,7 +784,7 @@ TYPED_TEST_P(RpcsTest, FUNC_StoreMultipleRequest) {
       signature = kvs_vector[i].signature;
     this->rpcs_->Store(key, kvs_vector[i].value, signature, ttl,
         GetPrivateKeyPtr(this->rpcs_key_pair_), this->service_contact_,
-        std::bind(&TestCallback, arg::_1, arg::_2, &status_response[i].first,
+        std::bind(&TestCallback, args::_1, args::_2, &status_response[i].first,
                   &status_response[i].second));
   }
   while (!done) {
@@ -832,8 +832,8 @@ TYPED_TEST_P(RpcsTest, FUNC_StoreRefresh) {
   // send original store request
   this->rpcs_->Store(key, kvs.value, kvs.signature, ttl,
                      GetPrivateKeyPtr(this->rpcs_key_pair_),
-      this->service_contact_, std::bind(&TestCallback, arg::_1, arg::_2, &done,
-                                  &response_code));
+      this->service_contact_, std::bind(&TestCallback, args::_1, args::_2,
+                                        &done, &response_code));
 
   while (!done)
     Sleep(boost::posix_time::milliseconds(10));
@@ -847,8 +847,8 @@ TYPED_TEST_P(RpcsTest, FUNC_StoreRefresh) {
   response_code = kGeneralError;
   this->rpcs_->StoreRefresh(message, store_message_sig,
       GetPrivateKeyPtr(this->rpcs_key_pair_),
-      this->service_contact_, std::bind(&TestCallback, arg::_1, arg::_2, &done,
-                                  &response_code));
+      this->service_contact_, std::bind(&TestCallback, args::_1, args::_2,
+                                        &done, &response_code));
 
   while (!done)
     Sleep(boost::posix_time::milliseconds(10));
@@ -863,8 +863,8 @@ TYPED_TEST_P(RpcsTest, FUNC_StoreRefresh) {
   this->rpcs_->FindValue(key, g_kKademliaK,
                          GetPrivateKeyPtr(this->rpcs_key_pair_),
                          this->service_contact_,
-                         std::bind(&TestFindValueCallback, arg::_1, arg::_2,
-                                   arg::_3, arg::_4, arg::_5,
+                         std::bind(&TestFindValueCallback, args::_1, args::_2,
+                                   args::_3, args::_4, args::_5,
                                    &return_values_and_signatures,
                                    &return_contacts, &done, &response_code));
 
@@ -882,8 +882,8 @@ TYPED_TEST_P(RpcsTest, FUNC_StoreRefresh) {
   response_code = kGeneralError;
   this->rpcs_->StoreRefresh(message, store_message_sig,
       GetPrivateKeyPtr(this->rpcs_key_pair_),
-      this->service_contact_, std::bind(&TestCallback, arg::_1, arg::_2, &done,
-                                  &response_code));
+      this->service_contact_, std::bind(&TestCallback, args::_1, args::_2,
+                                        &done, &response_code));
 
   while (!done)
     Sleep(boost::posix_time::milliseconds(10));
@@ -897,8 +897,8 @@ TYPED_TEST_P(RpcsTest, FUNC_StoreRefresh) {
   this->rpcs_->FindValue(key, g_kKademliaK,
                          GetPrivateKeyPtr(this->rpcs_key_pair_),
                          this->service_contact_,
-                         std::bind(&TestFindValueCallback, arg::_1, arg::_2,
-                                   arg::_3, arg::_4, arg::_5,
+                         std::bind(&TestFindValueCallback, args::_1, args::_2,
+                                   args::_3, args::_4, args::_5,
                                    &return_values_and_signatures,
                                    &return_contacts, &done, &response_code));
 
@@ -945,7 +945,7 @@ TYPED_TEST_P(RpcsTest, FUNC_StoreRefreshMultipleRequests) {
       req_signature = req_sig_vector[i].second;
     this->rpcs_->StoreRefresh(req_sig_vector[i].first, req_signature,
         GetPrivateKeyPtr(this->rpcs_key_pair_), this->service_contact_,
-        std::bind(&TestCallback, arg::_1, arg::_2, &status_response[i].first,
+        std::bind(&TestCallback, args::_1, args::_2, &status_response[i].first,
                   &status_response[i].second));
   }
   for (size_t i = 0; i < 10; ++i) {
@@ -989,8 +989,8 @@ TYPED_TEST_P(RpcsTest, FUNC_StoreRefreshMalicious) {
 
   this->rpcs_->Store(key, kvs.value, kvs.signature, ttl,
       GetPrivateKeyPtr(this->rpcs_key_pair_),
-      this->service_contact_, std::bind(&TestCallback, arg::_1, arg::_2, &done,
-                                  &response_code));
+      this->service_contact_, std::bind(&TestCallback, args::_1, args::_2,
+                                        &done, &response_code));
 
   while (!done)
     Sleep(boost::posix_time::milliseconds(10));
@@ -1010,8 +1010,8 @@ TYPED_TEST_P(RpcsTest, FUNC_StoreRefreshMalicious) {
   response_code = kGeneralError;
   this->rpcs_->StoreRefresh(message, store_message_sig,
       GetPrivateKeyPtr(this->rpcs_key_pair_),
-      this->service_contact_, std::bind(&TestCallback, arg::_1, arg::_2, &done,
-                                  &response_code));
+      this->service_contact_, std::bind(&TestCallback, args::_1, args::_2,
+                                        &done, &response_code));
 
   while (!done)
     Sleep(boost::posix_time::milliseconds(10));
@@ -1027,8 +1027,8 @@ TYPED_TEST_P(RpcsTest, FUNC_StoreRefreshMalicious) {
   this->rpcs_->FindValue(key, g_kKademliaK,
                          GetPrivateKeyPtr(this->rpcs_key_pair_),
                          this->service_contact_,
-                         std::bind(&TestFindValueCallback, arg::_1, arg::_2,
-                                   arg::_3, arg::_4, arg::_5,
+                         std::bind(&TestFindValueCallback, args::_1, args::_2,
+                                   args::_3, args::_4, args::_5,
                                    &return_values_and_signatures,
                                    &return_contacts, &done, &response_code));
 
@@ -1060,8 +1060,8 @@ TYPED_TEST_P(RpcsTest, FUNC_Delete) {
 
   this->rpcs_->Delete(key, kvs.value, kvs.signature,
                       GetPrivateKeyPtr(this->rpcs_key_pair_),
-                      this->service_contact_, std::bind(&TestCallback, arg::_1,
-                                                        arg::_2, &done,
+                      this->service_contact_, std::bind(&TestCallback, args::_1,
+                                                        args::_2, &done,
                                                         &response_code));
 
   while (!done)
@@ -1076,8 +1076,8 @@ TYPED_TEST_P(RpcsTest, FUNC_Delete) {
   this->rpcs_->FindValue(key, g_kKademliaK,
                          GetPrivateKeyPtr(this->rpcs_key_pair_),
                          this->service_contact_,
-                         std::bind(&TestFindValueCallback, arg::_1, arg::_2,
-                                   arg::_3, arg::_4, arg::_5,
+                         std::bind(&TestFindValueCallback, args::_1, args::_2,
+                                   args::_3, args::_4, args::_5,
                                    &return_values_and_signatures,
                                    &return_contacts, &done, &response_code));
 
@@ -1112,8 +1112,8 @@ TYPED_TEST_P(RpcsTest, FUNC_DeleteMalicious) {
   // Malicious sender sends fake public_key
   this->rpcs_->Delete(key, kvs.value, kvs.signature,
       GetPrivateKeyPtr(this->rpcs_key_pair_),
-      this->service_contact_, std::bind(&TestCallback, arg::_1, arg::_2, &done,
-                                  &response_code));
+      this->service_contact_, std::bind(&TestCallback, args::_1, args::_2,
+                                        &done, &response_code));
 
   while (!done)
     Sleep(boost::posix_time::milliseconds(10));
@@ -1130,8 +1130,8 @@ TYPED_TEST_P(RpcsTest, FUNC_DeleteMalicious) {
   this->rpcs_->FindValue(key, g_kKademliaK,
                          GetPrivateKeyPtr(this->rpcs_key_pair_),
                          this->service_contact_,
-                         std::bind(&TestFindValueCallback, arg::_1, arg::_2,
-                                   arg::_3, arg::_4, arg::_5,
+                         std::bind(&TestFindValueCallback, args::_1, args::_2,
+                                   args::_3, args::_4, args::_5,
                                    &return_values_and_signatures,
                                    &return_contacts, &done, &response_code));
 
@@ -1159,8 +1159,8 @@ TYPED_TEST_P(RpcsTest, FUNC_DeleteNonExistingKey) {
 
   this->rpcs_->Delete(key, kvs.value, kvs.signature,
       GetPrivateKeyPtr(this->rpcs_key_pair_),
-      this->service_contact_, std::bind(&TestCallback, arg::_1, arg::_2, &done,
-                                  &response_code));
+      this->service_contact_, std::bind(&TestCallback, args::_1, args::_2,
+                                        &done, &response_code));
 
   while (!done)
     Sleep(boost::posix_time::milliseconds(10));
@@ -1202,7 +1202,7 @@ TYPED_TEST_P(RpcsTest, FUNC_DeleteMultipleRequest) {
                         GetPrivateKeyPtr(
                             this->rpcs_key_pair_),
                             this->service_contact_,
-                            std::bind(&TestCallback, arg::_1, arg::_2,
+                            std::bind(&TestCallback, args::_1, args::_2,
                                       &status_response[i].first,
                                       &status_response[i].second));
   }
@@ -1255,7 +1255,7 @@ TYPED_TEST_P(RpcsTest, FUNC_DeleteRefresh) {
   this->rpcs_->DeleteRefresh(request_signature.first, request_signature.second,
                              GetPrivateKeyPtr(this->rpcs_key_pair_),
                              this->service_contact_,
-                             std::bind(&TestCallback, arg::_1, arg::_2, &done,
+                             std::bind(&TestCallback, args::_1, args::_2, &done,
                                        &response_code));
 
   while (!done)
@@ -1270,8 +1270,8 @@ TYPED_TEST_P(RpcsTest, FUNC_DeleteRefresh) {
   this->rpcs_->FindValue(key, g_kKademliaK,
                          GetPrivateKeyPtr(this->rpcs_key_pair_),
                          this->service_contact_,
-                         std::bind(&TestFindValueCallback, arg::_1, arg::_2,
-                                   arg::_3, arg::_4, arg::_5,
+                         std::bind(&TestFindValueCallback, args::_1, args::_2,
+                                   args::_3, args::_4, args::_5,
                                    &return_values_and_signatures,
                                    &return_contacts, &done, &response_code));
 
@@ -1313,7 +1313,7 @@ TYPED_TEST_P(RpcsTest, FUNC_DeleteRefreshStoredValue) {
   // Delete refresh without deleting
   this->rpcs_->DeleteRefresh(request_signature.first, request_signature.second,
       GetPrivateKeyPtr(this->rpcs_key_pair_), this->service_contact_,
-      std::bind(&TestCallback, arg::_1, arg::_2, &done, &response_code));
+      std::bind(&TestCallback, args::_1, args::_2, &done, &response_code));
 
   while (!done)
     Sleep(boost::posix_time::milliseconds(10));
@@ -1327,8 +1327,8 @@ TYPED_TEST_P(RpcsTest, FUNC_DeleteRefreshStoredValue) {
   this->rpcs_->FindValue(key, g_kKademliaK,
                          GetPrivateKeyPtr(this->rpcs_key_pair_),
                          this->service_contact_,
-                         std::bind(&TestFindValueCallback, arg::_1, arg::_2,
-                                   arg::_3, arg::_4, arg::_5,
+                         std::bind(&TestFindValueCallback, args::_1, args::_2,
+                                   args::_3, args::_4, args::_5,
                                    &return_values_and_signatures,
                                    &return_contacts, &done, &response_code));
 
@@ -1372,7 +1372,7 @@ TYPED_TEST_P(RpcsTest, FUNC_DeleteRefreshMalicious) {
   // Malicious sender sends fake public_key
   this->rpcs_->DeleteRefresh(request_signature.first, request_signature.second,
       GetPrivateKeyPtr(this->rpcs_key_pair_), this->service_contact_,
-      std::bind(&TestCallback, arg::_1, arg::_2, &done, &response_code));
+      std::bind(&TestCallback, args::_1, args::_2, &done, &response_code));
 
   while (!done)
     Sleep(boost::posix_time::milliseconds(10));
@@ -1404,7 +1404,7 @@ TYPED_TEST_P(RpcsTest, FUNC_DeleteRefreshNonExistingKey) {
   // Sending delete refresh
   this->rpcs_->DeleteRefresh(request_signature.first, request_signature.second,
       GetPrivateKeyPtr(this->rpcs_key_pair_), this->service_contact_,
-      std::bind(&TestCallback, arg::_1, arg::_2, &done, &response_code));
+      std::bind(&TestCallback, args::_1, args::_2, &done, &response_code));
 
   while (!done)
     Sleep(boost::posix_time::milliseconds(10));
@@ -1455,7 +1455,7 @@ TYPED_TEST_P(RpcsTest, FUNC_DeleteRefreshMultipleRequests) {
       req_signature = req_sig_vector[i].second;
     this->rpcs_->DeleteRefresh(req_sig_vector[i].first, req_signature,
         GetPrivateKeyPtr(this->rpcs_key_pair_), this->service_contact_,
-        std::bind(&TestCallback, arg::_1, arg::_2, &status_response[i].first,
+        std::bind(&TestCallback, args::_1, args::_2, &status_response[i].first,
                   &status_response[i].second));
   }
   while (!done) {
@@ -1497,7 +1497,7 @@ TYPED_TEST_P(RpcsTest, FUNC_DifferentSecurifier) {
   int response_code(kPendingResult), count(0);
   this->rpcs_->Ping(this->GetPrivateKeyPtr(other_securifier),
                     this->service_contact_,
-                    std::bind(&TestCallback, arg::_1, arg::_2,
+                    std::bind(&TestCallback, args::_1, args::_2,
                               &done, &response_code));
 
   while (!done && count++ < 1000)
@@ -1521,8 +1521,8 @@ TYPED_TEST_P(RpcsTest, FUNC_DifferentSecurifier) {
                          g_kKademliaK,
                          this->GetPrivateKeyPtr(other_securifier),
                          this->service_contact_,
-                         std::bind(&TestFindValueCallback, arg::_1, arg::_2,
-                                   arg::_3, arg::_4, arg::_5,
+                         std::bind(&TestFindValueCallback, args::_1, args::_2,
+                                   args::_3, args::_4, args::_5,
                                    &return_values_and_signatures,
                                    &return_contacts, &done, &response_code));
   while (!done && count++ < 1000)
@@ -1540,8 +1540,8 @@ TYPED_TEST_P(RpcsTest, FUNC_DifferentSecurifier) {
                          g_kKademliaK,
                          this->GetPrivateKeyPtr(other_securifier),
                          this->service_contact_,
-                         std::bind(&TestFindNodesCallback, arg::_1, arg::_2,
-                                   arg::_3, &return_contacts, &done,
+                         std::bind(&TestFindNodesCallback, args::_1, args::_2,
+                                   args::_3, &return_contacts, &done,
                                    &response_code));
   while (!done && count++ < 1000)
     Sleep(transport::kDefaultInitialTimeout / 1000);
@@ -1764,8 +1764,8 @@ class RpcsMultiServerNodesTest : public CreateContactAndNodeId,
     rpcs_[index]->FindValue(key, g_kKademliaK,
                             GetPrivateKeyPtr(rpcs_key_pair_[index]),
                             service_contact_[server_index],
-                            std::bind(&TestFindValueCallback, arg::_1,
-                                      arg::_2, arg::_3, arg::_4, arg::_5,
+                            std::bind(&TestFindValueCallback, args::_1,
+                                      args::_2, args::_3, args::_4, args::_5,
                                       &return_values_and_signatures,
                                       &return_contacts, &ldone, response_code));
     while (!ldone)
@@ -1781,7 +1781,7 @@ class RpcsMultiServerNodesTest : public CreateContactAndNodeId,
     rpcs_[index]->Store(key, kvs.value, kvs.signature, ttl,
                         GetPrivateKeyPtr(rpcs_key_pair_[index]),
                         service_contact_[server_index],
-                        std::bind(&TestCallback, arg::_1, arg::_2, &ldone,
+                        std::bind(&TestCallback, args::_1, args::_2, &ldone,
                                   response_code));
     while (!ldone)
       Sleep(boost::posix_time::milliseconds(10));
@@ -1797,8 +1797,8 @@ class RpcsMultiServerNodesTest : public CreateContactAndNodeId,
     rpcs_[index]->FindValue(key, g_kKademliaK,
                             GetPrivateKeyPtr(rpcs_key_pair_[index]),
                             service_contact_[server_index],
-                            std::bind(&TestFindValueCallback, arg::_1,
-                                      arg::_2, arg::_3, arg::_4, arg::_5,
+                            std::bind(&TestFindValueCallback, args::_1,
+                                      args::_2, args::_3, args::_4, args::_5,
                                       &return_values_and_signatures,
                                       &return_contacts, &ldone, response_code));
 
@@ -1814,7 +1814,7 @@ class RpcsMultiServerNodesTest : public CreateContactAndNodeId,
     rpcs_[index]->Delete(key, kvs.value, kvs.signature,
                          GetPrivateKeyPtr(rpcs_key_pair_[index]),
                          service_contact_[server_index],
-                         std::bind(&TestCallback, arg::_1, arg::_2,
+                         std::bind(&TestCallback, args::_1, args::_2,
                                    &ldone, response_code));
     while (!ldone)
       Sleep(boost::posix_time::milliseconds(10));
@@ -1829,8 +1829,8 @@ class RpcsMultiServerNodesTest : public CreateContactAndNodeId,
     rpcs_[index]->FindValue(key, g_kKademliaK,
                             GetPrivateKeyPtr(rpcs_key_pair_[index]),
                             service_contact_[server_index],
-                            std::bind(&TestFindValueCallback, arg::_1,
-                                      arg::_2, arg::_3, arg::_4, arg::_5,
+                            std::bind(&TestFindValueCallback, args::_1,
+                                      args::_2, args::_3, args::_4, args::_5,
                                       &return_values_and_signatures,
                                       &return_contacts, done, response_code));
     while (!*done)
