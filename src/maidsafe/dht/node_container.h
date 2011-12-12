@@ -51,7 +51,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "maidsafe/dht/node-api.h"
 #include "maidsafe/dht/return_codes.h"
 
-#if MAIDSAFE_DHT_VERSION != 3106
+#if MAIDSAFE_DHT_VERSION != 3107
 #  error This API is not compatible with the installed library.\
     Please update the maidsafe-dht library.
 #endif

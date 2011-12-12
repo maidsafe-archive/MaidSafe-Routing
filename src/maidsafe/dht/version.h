@@ -28,7 +28,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef MAIDSAFE_DHT_VERSION_H_
 #define MAIDSAFE_DHT_VERSION_H_
 
-#define MAIDSAFE_DHT_VERSION 3106
+#define MAIDSAFE_DHT_VERSION 3107
 
 #if defined CMAKE_MAIDSAFE_DHT_VERSION &&\
             MAIDSAFE_DHT_VERSION != CMAKE_MAIDSAFE_DHT_VERSION
@@ -38,7 +38,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "maidsafe/common/version.h"
 #include "maidsafe/transport/version.h"
 
-#define THIS_NEEDS_MAIDSAFE_COMMON_VERSION 1004
+#define THIS_NEEDS_MAIDSAFE_COMMON_VERSION 1005
 #if MAIDSAFE_COMMON_VERSION < THIS_NEEDS_MAIDSAFE_COMMON_VERSION
 #  error This API is not compatible with the installed library.\
     Please update the maidsafe-common library.
@@ -47,7 +47,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     Please update this project.
 #endif
 
-#define THIS_NEEDS_MAIDSAFE_TRANSPORT_VERSION 102
+#define THIS_NEEDS_MAIDSAFE_TRANSPORT_VERSION 103
 #if MAIDSAFE_TRANSPORT_VERSION < THIS_NEEDS_MAIDSAFE_TRANSPORT_VERSION
 #  error This API is not compatible with the installed library.\
     Please update the maidsafe-transport library.
