@@ -72,13 +72,13 @@ class ContactTest : public testing::Test {
         transport::Endpoint(kLocalIp1_, kLocalPort_));
     direct_connected_locals_.push_back(transport::Endpoint(kIp_, kLocalPort_));
     contact_ = Contact(kNodeId_, kEndpoint_, locals_, transport::Endpoint(),
-                       false, false, "", "", "");
+      false, false, "", asymm::PublicKey(), "");
     rv_contact_ = Contact(kNodeId_, kEndpoint_, locals_, kRvEndpoint_, false,
-                          false, "", "", "");
+                          false, "", asymm::PublicKey(), "");
     direct_connected_contact_ = Contact(kNodeId_, kEndpoint_,
                                         direct_connected_locals_,
                                         transport::Endpoint(), false, true, "",
-                                        "", "");
+                                        asymm::PublicKey(), "");
   }
   ~ContactTest() {}
  protected:
@@ -158,13 +158,13 @@ TEST_F(ContactTest, BEH_GetIpPortNodeId) {
 
   Contact default_contact;
   Contact bad_locals_contact(kNodeId_, kEndpoint_, bad_locals, kRvEndpoint_,
-                             false, false, "", "", "");
+                             false, false, "", asymm::PublicKey(), "");
   Contact invalid_contact1(kNodeId_, kEndpoint_, locals_, kRvEndpoint_, false,
-                           true, "", "", "");
+                           true, "", asymm::PublicKey(), "");
   Contact invalid_contact2(kNodeId_, kEndpoint_, locals_, kRvEndpoint_, true,
-                           false, "", "", "");
+                           false, "", asymm::PublicKey(), "");
   Contact invalid_contact3(kNodeId_, kEndpoint_, locals_, kRvEndpoint_, true,
-                           true, "", "", "");
+                           true, "", asymm::PublicKey(), "");
 
   EXPECT_TRUE(ContactDetails(default_contact, NodeId(), IP(), 0, IP(), 0,
       IP(), 0, IP(), 0, IP(), 0, IP(), 0));
@@ -200,34 +200,37 @@ TEST_F(ContactTest, BEH_OverloadedOperators) {
   transport::Endpoint rv_endpoint1("192.168.1.58", 8891);
   transport::Endpoint rv_endpoint2("192.168.1.59", 8892);
   Contact contact1(kNodeId_, kEndpoint_, locals1, transport::Endpoint(), false,
-                   false, "", "", "");
+                   false, "", asymm::PublicKey(), "");
   Contact contact2(kNodeId_, kEndpoint_, locals2, rv_endpoint2, false, false,
-                   "", "", "");
+                   "", asymm::PublicKey(), "");
   EXPECT_EQ(contact1, contact2);
 
   Contact contact3(kNodeId_, transport::Endpoint("192.168.1.55", 8889), locals2,
-                   rv_endpoint2, false, false, "", "", "");
+                   rv_endpoint2, false, false, "", asymm::PublicKey(), "");
   EXPECT_EQ(contact1, contact3);
 
   std::vector<transport::Endpoint> locals(10,
       transport::Endpoint("192.168.1.1", 10000));
   Contact contact4(kNodeId_, transport::Endpoint("192.168.2.155", 8888), locals,
                    transport::Endpoint("192.168.2.155", 8888), false, false, "",
-                   "", "");
+                   asymm::PublicKey(), "");
   EXPECT_EQ(contact1, contact4);
 
   Contact contact5(NodeId(crypto::Hash<crypto::SHA512>("5612348")), kEndpoint_,
                    std::vector<transport::Endpoint>(1, kEndpoint_),
-                   transport::Endpoint(), true, true, "", "", "");
+                   transport::Endpoint(), true, true, "",
+                   asymm::PublicKey(), "");
   EXPECT_NE(contact1, contact5);
 
   Contact contact6(NodeId(crypto::Hash<crypto::SHA512>("5612348")),
                    transport::Endpoint("192.168.1.55", 8889), locals1,
-                   transport::Endpoint(), true, true, "", "", "");
+                   transport::Endpoint(), true, true, "",
+                   asymm::PublicKey(), "");
   EXPECT_NE(contact1, contact6);
 
   Contact contact7(kNodeId_, transport::Endpoint("192.168.2.54", 8889), locals1,
-                   transport::Endpoint(), false, false, "", "", "");
+                   transport::Endpoint(), false, false, "",
+                   asymm::PublicKey(), "");
   EXPECT_EQ(contact1, contact7);
 
   contact6 = contact1;
@@ -237,9 +240,11 @@ TEST_F(ContactTest, BEH_OverloadedOperators) {
   EXPECT_EQ(contact1, contact8);
 
   Contact contact9(NodeId(kZeroId), transport::Endpoint("127.0.0.1", 1234),
-                   locals1, transport::Endpoint(), false, false, "", "", "");
+                   locals1, transport::Endpoint(), false, false, "",
+                   asymm::PublicKey(), "");
   Contact contact10(NodeId(kZeroId), transport::Endpoint("127.0.0.2", 1234),
-                    locals1, transport::Endpoint(), false, false, "", "", "");
+                    locals1, transport::Endpoint(), false, false, "",
+                    asymm::PublicKey(), "");
   EXPECT_NE(contact9, contact10);
 
   Contact contact11(contact9);
@@ -385,10 +390,12 @@ TEST_F(ContactTest, BEH_NodeWithinClosest) {
   std::vector<transport::Endpoint> locals(1, kEndpoint_);
   contacts.push_back(Contact(NodeId(
       DecodeFromHex(std::string(2 * kKeySizeBytes, '1'))), kEndpoint_, locals,
-      transport::Endpoint(), false, false, "", "", ""));
+      transport::Endpoint(), false, false, "",
+      asymm::PublicKey(), ""));
   contacts.push_back(Contact(NodeId(
       DecodeFromHex(std::string(2 * kKeySizeBytes, '7'))), kEndpoint_, locals,
-      transport::Endpoint(), false, false, "", "", ""));
+      transport::Endpoint(), false, false, "",
+      asymm::PublicKey(), ""));
 
   NodeId close_node(DecodeFromHex(std::string(2 * kKeySizeBytes, '3')));
   NodeId not_close_node(DecodeFromHex(std::string(2 * kKeySizeBytes, 'f')));
@@ -401,13 +408,17 @@ TEST_F(ContactTest, BEH_RemoveContact) {
   std::vector<Contact> contacts;
   std::vector<transport::Endpoint> locals(1, kEndpoint_);
   contacts.push_back(Contact(NodeId(crypto::Hash<crypto::SHA512>("aaa")),
-      kEndpoint_, locals, transport::Endpoint(), false, false, "", "", ""));
+      kEndpoint_, locals, transport::Endpoint(), false, false, "",
+      asymm::PublicKey(), ""));
   contacts.push_back(Contact(NodeId(crypto::Hash<crypto::SHA512>("bbb")),
-      kEndpoint_, locals, transport::Endpoint(), false, false, "", "", ""));
+      kEndpoint_, locals, transport::Endpoint(), false, false, "",
+      asymm::PublicKey(), ""));
   contacts.push_back(Contact(NodeId(crypto::Hash<crypto::SHA512>("ccc")),
-      kEndpoint_, locals, transport::Endpoint(), false, false, "", "", ""));
+      kEndpoint_, locals, transport::Endpoint(), false, false, "",
+      asymm::PublicKey(), ""));
   contacts.push_back(Contact(NodeId(crypto::Hash<crypto::SHA512>("bbb")),
-      kEndpoint_, locals, transport::Endpoint(), false, false, "", "", ""));
+      kEndpoint_, locals, transport::Endpoint(), false, false, "",
+      asymm::PublicKey(), ""));
 
   EXPECT_EQ(4U, contacts.size());
   EXPECT_FALSE(RemoveContact(NodeId(crypto::Hash<crypto::SHA512>("ddd")),

@@ -39,6 +39,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "maidsafe/dht/log.h"
 #include "maidsafe/dht/version.h"
+#include "maidsafe/dht/config.h"
 #include "maidsafe/dht/contact.h"
 #include "maidsafe/dht/return_codes.h"
 #include "maidsafe/dht/node_id.h"
@@ -52,7 +53,14 @@ namespace fs = boost::filesystem;
 namespace po = boost::program_options;
 namespace mk = maidsafe::dht;
 namespace mt = maidsafe::transport;
+namespace ma = maidsafe::asymm;
 
+struct PortRange {
+  PortRange(uint16_t first, uint16_t second)
+      : first(first), second(second) {}
+  uint16_t first;
+  uint16_t second;
+};
 
 namespace {
 
@@ -118,23 +126,65 @@ mk::Contact ComposeContact(const mk::NodeId &node_id,
   std::vector<mt::Endpoint> local_endpoints;
   local_endpoints.push_back(endpoint);
   mk::Contact contact(node_id, endpoint, local_endpoints, endpoint, false,
-                      false, "", "", "");
+                      false, "", ma::PublicKey(), "");
   return contact;
 }
 
 mk::Contact ComposeContactWithKey(
     const mk::NodeId &node_id,
     const mt::Endpoint &endpoint,
-    const maidsafe::crypto::RsaKeyPair &crypto_key) {
+    const ma::Keys &crypto_key_pair) {
   std::vector<mt::Endpoint> local_endpoints;
   local_endpoints.push_back(endpoint);
   mk::Contact contact(node_id, endpoint, local_endpoints, endpoint, false,
-                      false, node_id.String(), crypto_key.public_key(), "");
+                      false, node_id.String(), crypto_key_pair.public_key, "");
   return contact;
 }
 
 }  // unnamed namespace
 
+void validate(boost::any& v, const std::vector<std::string>& values,
+              PortRange*, int) {
+  PortRange port_range(0, 0);
+  if (values.size() == 1) {
+    try {
+      std::string arg = boost::lexical_cast<std::string>(values.at(0));
+      if (arg.compare("auto") == 0 || arg.compare("AUTO") == 0) {  // auto
+        port_range.first = 8000;
+        port_range.second = 65535;
+      } else if (arg.find("-") != std::string::npos) {  // port range
+        boost::char_separator<char> sep("-");
+        boost::tokenizer<boost::char_separator<char>> tok(arg, sep);
+        auto it = tok.begin();
+        port_range.first = boost::lexical_cast<uint16_t>(*it);
+        ++it;
+        if (it == tok.end()) {
+          throw po::validation_error(po::validation_error::invalid_option);
+        }
+        port_range.second = boost::lexical_cast<uint16_t>(*it);
+        ++it;
+        if (it != tok.end()) {
+          throw po::validation_error(po::validation_error::invalid_option);
+        }
+      } else {  // specific port
+        port_range.first = boost::lexical_cast<uint16_t>(arg);
+        port_range.second = boost::lexical_cast<uint16_t>(arg);
+      }
+    }
+    catch(boost::bad_lexical_cast&) {
+      throw po::validation_error(po::validation_error::invalid_option);
+    }
+  } else {
+    throw po::validation_error(po::validation_error::invalid_option,
+                               "Invalid port or port range");
+  }
+
+  if (port_range.first > port_range.second || port_range.first < 8000) {
+    throw po::validation_error(po::validation_error::invalid_option,
+                               "Invalid port range");
+  }
+  v = port_range;
+}
 
 int main(int argc, char **argv) {
   google::InitGoogleLogging(argv[0]);
@@ -155,8 +205,9 @@ int main(int argc, char **argv) {
                                         true);
 #endif
   try {
+    PortRange port_range(8000, 65535);
     std::string logfile, bootstrap_file("bootstrap_contacts.xml");
-    uint16_t listening_port(8000), k(4), alpha(3), beta(2);
+    uint16_t k(4), alpha(3), beta(2);
     std::string ip("127.0.0.1");
     uint32_t refresh_interval(3600);
     size_t thread_count(3);
@@ -175,12 +226,12 @@ int main(int argc, char **argv) {
             " a new network.")
 //        ("type,t", po::value(&type)->default_value(type),
 //            "Type of transport: 0 - TCP (default), 1 - UDP, 2 - Other.")
-        ("ip", po::value(&ip)->default_value(ip),
-            "Local listening IP address of node (applicable to non-client type "
-            "only).")
-        ("port,p", po::value(&listening_port)->default_value(listening_port),
-            "Local listening port of node (applicable to non-client type "
-            "only).")
+//        ("port,p", po::value(&listening_port)->default_value(listening_port),
+//            "Local listening port of node (applicable to non-client type "
+//            "only).")
+        ("port,p", po::value<PortRange>(&port_range)->multitoken(),
+              "Local listening port/port-range to start non-client type node."
+              "Use auto for any port.")
         ("bootstrap,b", po::value<std::string>
             (&bootstrap_file)->default_value(bootstrap_file),
             "Path to XML file with bootstrap nodes.")
@@ -229,11 +280,17 @@ int main(int argc, char **argv) {
     ConflictingOptions(variables_map, "first_node", "bootstrap_file");
 
     // Set up logging
-    FLAGS_ms_logging_common = variables_map["verbose"].as<bool>();
-    FLAGS_ms_logging_dht = variables_map["verbose"].as<bool>();
+    if (variables_map["verbose"].as<bool>()) {
+      FLAGS_ms_logging_common = google::INFO;
+      FLAGS_ms_logging_transport = google::INFO;
+      FLAGS_ms_logging_dht = google::INFO;
+    } else {
+      FLAGS_ms_logging_common = google::FATAL;
+      FLAGS_ms_logging_transport = google::FATAL;
+      FLAGS_ms_logging_dht = google::FATAL;
+    }
     FLAGS_log_prefix = variables_map["verbose"].as<bool>();
-    FLAGS_ms_logging_user = true;
-    FLAGS_minloglevel = google::INFO;
+    FLAGS_ms_logging_user = google::INFO;
     FLAGS_logtostderr = true;
     if (variables_map.count("logfile")) {
       fs::path log_path;
@@ -287,7 +344,6 @@ int main(int argc, char **argv) {
 //      return 1;
 //    }
 
-    listening_port = variables_map["port"].as<uint16_t>();
 
     if (variables_map.count("refresh_interval")) {
       refresh_interval = variables_map["refresh_interval"].as<uint32_t>();
@@ -302,11 +358,11 @@ int main(int argc, char **argv) {
 
     mk::demo::DemoNodePtr demo_node(new mk::demo::DemoNode);
     ULOG(INFO) << "Creating node...";
-    demo_node->Init(static_cast<uint8_t>(thread_count), mk::SecurifierPtr(),
+    demo_node->Init(static_cast<uint8_t>(thread_count), mk::KeyPairPtr(),
                     mk::MessageHandlerPtr(), mk::AlternativeStorePtr(),
                     client_only_node, k, alpha, beta, mean_refresh_interval);
-    std::pair<mt::Port, mt::Port> port_range(listening_port, listening_port);
-    int result = demo_node->Start(bootstrap_contacts, port_range);
+    std::pair<uint16_t, uint16_t> ports(port_range.first, port_range.second);
+    int result = demo_node->Start(bootstrap_contacts, ports);
 
     if (first_node)
       demo_node->node()->GetBootstrapContacts(&bootstrap_contacts);

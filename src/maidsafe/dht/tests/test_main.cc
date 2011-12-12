@@ -54,10 +54,6 @@ int main(int argc, char **argv) {
   // Choose to direct output to stderr as well as to logfiles.
   FLAGS_alsologtostderr = false;
 
-  // Log messages at or above this level. Severity levels are INFO, WARNING,
-  // ERROR, and FATAL (0 to 3 respectively).
-  FLAGS_minloglevel = google::INFO;
-
   // Prepend the log prefix to the start of each log line
   FLAGS_log_prefix = true;
 
@@ -68,9 +64,11 @@ int main(int argc, char **argv) {
   // Show all VLOG(m) messages for m <= this.
   FLAGS_v = 0;
 
-  // Log messages from MaidSafe-Common.
-  FLAGS_ms_logging_common = true;
-  FLAGS_ms_logging_transport = true;
+  // Log messages at or above this level. Severity levels are INFO, WARNING,
+  // ERROR, and FATAL (0 to 3 respectively).
+  FLAGS_ms_logging_common = google::FATAL;
+  FLAGS_ms_logging_transport = google::FATAL;
+  FLAGS_ms_logging_dht = google::FATAL;
 
   testing::InitGoogleTest(&argc, argv);
 #if defined FUNCTIONAL_NODE_TEST

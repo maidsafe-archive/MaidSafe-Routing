@@ -65,10 +65,12 @@ void PrintNodeInfo(const Contact &contact) {
       << boost::format("Node IP:   %1%") % contact.endpoint().ip.to_string();
   ULOG(INFO)
       << boost::format("Node port: %1%") % contact.endpoint().port;
+  ULOG(INFO)
+      << boost::format("Debug ID:  %1%") % DebugId(contact);
 }
 
 Commands::Commands(DemoNodePtr demo_node) : demo_node_(demo_node),
-                                            null_securifier_(),
+                                            null_priv_key_(),
                                             result_arrived_(false),
                                             finish_(false),
                                             wait_mutex_(),
@@ -127,7 +129,7 @@ void Commands::Store(const Arguments &args, bool read_from_file) {
   if (!key.IsValid())
     key = Key(crypto::Hash<crypto::SHA512>(args[0]));
 
-  demo_node_->node()->Store(key, value, "", ttl, null_securifier_,
+  demo_node_->node()->Store(key, value, "", ttl, null_priv_key_,
       std::bind(&Commands::StoreCallback, this, arg::_1, key, ttl));
 }
 
@@ -163,7 +165,7 @@ void Commands::FindValue(const Arguments &args, bool write_to_file) {
   if (!key.IsValid())
     key = Key(crypto::Hash<crypto::SHA512>(args[0]));
 
-  demo_node_->node()->FindValue(key, null_securifier_,
+  demo_node_->node()->FindValue(key, null_priv_key_,
       std::bind(&Commands::FindValueCallback, this, arg::_1, path));
 }
 
@@ -284,7 +286,7 @@ void Commands::Store50Values(const Arguments &args) {
       value += (kPrefix + boost::lexical_cast<std::string>(i));
 
     bptime::time_duration ttl(boost::posix_time::pos_infin);
-    demo_node_->node()->Store(key, value, "", ttl, null_securifier_,
+    demo_node_->node()->Store(key, value, "", ttl, null_priv_key_,
         std::bind(&Commands::Store50Callback, this, arg::_1, key_str,
                   &returned_count));
   }

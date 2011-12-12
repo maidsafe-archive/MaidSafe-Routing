@@ -281,7 +281,7 @@ TEST(NodeIdTest, BEH_InsertKadContact) {
   for (char c = '9'; c >= '0'; --c)
     contacts.push_back(Contact(NodeId(std::string(64, c)), ep,
                        std::vector<transport::Endpoint>(), ep, false, false,
-                       "", "", ""));
+                       "", asymm::PublicKey(), ""));
   ASSERT_EQ(size_t(10), contacts.size());
   // Copy the vector.
   std::vector<Contact> contacts_before(contacts);
@@ -289,7 +289,7 @@ TEST(NodeIdTest, BEH_InsertKadContact) {
   NodeId kad_key(key);
   Contact new_contact(NodeId(std::string(64, 'a')), ep,
                       std::vector<transport::Endpoint>(), ep, false, false,
-                      "", "", "");
+                      "", asymm::PublicKey(), "");
   contacts.push_back(new_contact);
   SortContacts(kad_key, &contacts);
   ASSERT_EQ(size_t(11), contacts.size());

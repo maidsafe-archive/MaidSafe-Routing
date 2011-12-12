@@ -40,13 +40,15 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "maidsafe/dht/node_id.h"
 #include "maidsafe/dht/version.h"
 
-#if MAIDSAFE_DHT_VERSION != 3105
+#if MAIDSAFE_DHT_VERSION != 3106
 #  error This API is not compatible with the installed library.\
     Please update the maidsafe-dht library.
 #endif
 
 namespace arg = std::placeholders;
 
+typedef maidsafe::rsa::PublicKey PublicKey;
+typedef maidsafe::rsa::Identity Identity;
 
 namespace maidsafe {
 
@@ -87,8 +89,8 @@ class Contact {
           const transport::Endpoint &rendezvous_endpoint,
           bool tcp443,
           bool tcp80,
-          const std::string &public_key_id,
-          const std::string &public_key,
+          const Identity &public_key_id,
+          const PublicKey &public_key,
           const std::string &other_info);
 
   /** Destructor. */
@@ -121,12 +123,12 @@ class Contact {
   /** Getter.
    *  @return ID of the public key which should be used to encrypt messages for
    *          this contact. */
-  std::string public_key_id() const;
+  Identity public_key_id() const;
 
   /** Getter.
    *  @return Public key which should be used to encrypt messages for this
    *          contact. */
-  std::string public_key() const;
+  PublicKey public_key() const;
 
   /** Getter.
    *  @return Any extra information held for this contact. */
@@ -257,8 +259,8 @@ void serialize(Archive &archive,                              // NOLINT (Fraser)
     rendezvous_endpoint = contact.rendezvous_endpoint();
     tcp443 = contact.tcp443endpoint().port == 443;
     tcp80 = contact.tcp80endpoint().port == 80;
-    public_key_id = maidsafe::EncodeToBase64(contact.public_key_id());
-    public_key = maidsafe::EncodeToBase64(contact.public_key());
+    public_key_id = maidsafe::EncodeToBase32(contact.public_key_id());
+    maidsafe::asymm::EncodePublicKey(contact.public_key(), &public_key);
     other_info = contact.other_info();
   }
 
@@ -273,11 +275,12 @@ void serialize(Archive &archive,                              // NOLINT (Fraser)
   archive& make_nvp("other_info", other_info);
 
   if (Archive::is_loading::value) {
-    public_key_id = maidsafe::DecodeFromBase64(public_key_id);
-    public_key = maidsafe::DecodeFromBase64(public_key);
+    public_key_id = maidsafe::DecodeFromBase32(public_key_id);
+    PublicKey asym_public_key;
+    maidsafe::rsa::DecodePublicKey(public_key, &asym_public_key);
     contact = mk::Contact(node_id, endpoint, local_endpoints,
                           rendezvous_endpoint, tcp443, tcp80, public_key_id,
-                          public_key, other_info);
+                          asym_public_key, other_info);
   }
 #ifdef __MSVC__
 #  pragma warning(default: 4127)

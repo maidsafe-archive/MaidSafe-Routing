@@ -39,7 +39,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "boost/thread.hpp"
 
 #include "maidsafe/common/crypto.h"
-#include "maidsafe/common/securifier.h"
 
 #include "maidsafe/transport/tcp_transport.h"
 // TODO(Fraser#5#): 2011-08-30 - remove #include utils.h once NAT detection is
@@ -52,7 +51,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "maidsafe/dht/node-api.h"
 #include "maidsafe/dht/return_codes.h"
 
-#if MAIDSAFE_DHT_VERSION != 3105
+#if MAIDSAFE_DHT_VERSION != 3106
 #  error This API is not compatible with the installed library.\
     Please update the maidsafe-dht library.
 #endif
@@ -72,7 +71,7 @@ class NodeContainer {
 
   virtual void Init(
       uint8_t thread_count,
-      SecurifierPtr securifier,
+      KeyPairPtr key_pair,
       MessageHandlerPtr message_handler,
       AlternativeStorePtr alternative_store,
       bool client_only_node,
@@ -99,20 +98,20 @@ class NodeContainer {
              const std::string &value,
              const std::string &signature,
              const boost::posix_time::time_duration &ttl,
-             SecurifierPtr securifier);
+             PrivateKeyPtr private_key);
   void Delete(const Key &key,
               const std::string &value,
               const std::string &signature,
-              SecurifierPtr securifier);
+              PrivateKeyPtr private_key);
   void Update(const Key &key,
               const std::string &new_value,
               const std::string &new_signature,
               const std::string &old_value,
               const std::string &old_signature,
               const boost::posix_time::time_duration &ttl,
-              SecurifierPtr securifier);
+              PrivateKeyPtr private_key);
   void FindValue(const Key &key,
-                 SecurifierPtr securifier,
+                 PrivateKeyPtr private_key,
                  const uint16_t &extra_contacts = 0);
   void FindNodes(const Key &key,
                  const uint16_t &extra_contacts = 0);
@@ -189,7 +188,7 @@ class NodeContainer {
 
   // Standard getters
   std::shared_ptr<NodeType> node() const { return node_; }
-  SecurifierPtr securifier() const { return securifier_; }
+  KeyPairPtr key_pair() const { return key_pair_; }
   std::vector<Contact> bootstrap_contacts() const {
     return bootstrap_contacts_;
   }
@@ -230,7 +229,7 @@ class NodeContainer {
   boost::thread_group thread_group_;
   TransportPtr listening_transport_;
   MessageHandlerPtr message_handler_;
-  SecurifierPtr securifier_;
+  KeyPairPtr key_pair_;
   std::shared_ptr<NodeType> node_;
   std::vector<Contact> bootstrap_contacts_;
   int join_result_, store_result_, delete_result_, update_result_,
@@ -300,7 +299,7 @@ NodeContainer<NodeType>::NodeContainer()
       thread_group_(),
       listening_transport_(),
       message_handler_(),
-      securifier_(),
+      key_pair_(),
       node_(),
       bootstrap_contacts_(),
       join_result_(kPendingResult),
@@ -358,7 +357,7 @@ NodeContainer<NodeType>::~NodeContainer() {
 template <typename NodeType>
 void NodeContainer<NodeType>::Init(
     uint8_t thread_count,
-    SecurifierPtr securifier,
+    KeyPairPtr key_pair,
     MessageHandlerPtr message_handler,
     AlternativeStorePtr alternative_store,
     bool client_only_node,
@@ -373,26 +372,22 @@ void NodeContainer<NodeType>::Init(
             &boost::asio::io_service::run), std::ref(asio_service_)));
   }
 
-  // Set up securifier if it wasn't passed in - make signing_key_id compatible
-  // with type NodeId so that the node's ID can be set as the securifier's ID
-  if (securifier) {
-    securifier_ = securifier;
+  // Set up private_key if it wasn't passed in - make signing_key_id compatible
+  // with type NodeId so that the node's ID can be set as the public key's ID
+  if (key_pair) {
+    key_pair_ = key_pair;
   } else {
-    crypto::RsaKeyPair key_pair;
-    do {
-      Sleep(boost::posix_time::milliseconds(100));
-      key_pair.GenerateKeys(4096);
-      std::string id(NodeId(NodeId::kRandomId).String());
-      securifier_.reset(new Securifier(id,
-                                       key_pair.public_key(),
-                                       key_pair.private_key()));
-    } while (key_pair.public_key().empty() || key_pair.private_key().empty());
+    key_pair_ = KeyPairPtr(new asymm::Keys);
+    asymm::GenerateKeyPair(key_pair_.get());
+    key_pair_->identity = RandomString(crypto::SHA512::DIGESTSIZE);
   }
 
   if (message_handler) {
     message_handler_ = message_handler;
   } else {
-    message_handler_.reset(new MessageHandler(securifier_));
+    PrivateKeyPtr priv_key = PrivateKeyPtr(
+        new asymm::PrivateKey(key_pair_->private_key));
+    message_handler_.reset(new MessageHandler(priv_key));
   }
 
   // If this is not a client node, connect message handler to transport for
@@ -412,7 +407,7 @@ void NodeContainer<NodeType>::Init(
 
   // Create node
   node_.reset(new NodeType(asio_service_, listening_transport_,
-                           message_handler_, securifier_, alternative_store,
+                           message_handler_, key_pair_, alternative_store,
                            client_only_node, k, alpha, beta,
                            mean_refresh_interval));
 }
@@ -424,19 +419,23 @@ int NodeContainer<NodeType>::Start(
   bootstrap_contacts_ = bootstrap_contacts;
   int result(kPendingResult);
   if (!node_->client_only_node()) {
-    if (port_range.first > port_range.second)
-      port_range = std::make_pair(port_range.second, port_range.first);
-    // Workaround until NAT detection is up.
+     // Workaround until NAT detection is up.
     std::vector<transport::IP> ips = transport::GetLocalAddresses();
     transport::Endpoint endpoint(
         ips.empty() ? IP::from_string("127.0.0.1") : ips.front(), 0);
     int result(transport::kError);
-    uint16_t port_range_size(port_range.second - port_range.first);
     std::vector<Port> try_ports;
-    try_ports.reserve(port_range_size);
-    for (Port port(port_range.first); port != port_range.second; ++port)
-      try_ports.push_back(port);
-    std::random_shuffle(try_ports.begin(), try_ports.end());
+    if (port_range.first == port_range.second) {
+      try_ports.reserve(1);
+      try_ports.push_back(port_range.first);
+    } else  {
+      if (port_range.first > port_range.second)
+        port_range = std::make_pair(port_range.second, port_range.first);
+      try_ports.reserve(port_range.second - port_range.first);
+      for (Port port(port_range.first); port != port_range.second; ++port)
+        try_ports.push_back(port);
+      std::random_shuffle(try_ports.begin(), try_ports.end());
+    }
     for (auto itr(try_ports.begin()); itr != try_ports.end(); ++itr) {
       endpoint.port = *itr;
       result = listening_transport_->StartListening(endpoint);
@@ -453,7 +452,7 @@ int NodeContainer<NodeType>::Start(
 
   boost::mutex mutex;
   boost::condition_variable cond_var;
-  NodeId node_id(securifier_->kSigningKeyId());
+  NodeId node_id(key_pair_->identity);
   JoinFunctor join_functor(std::bind(&NodeContainer<NodeType>::JoinCallback,
                            this, arg::_1, &mutex, &cond_var));
 
@@ -507,16 +506,16 @@ void NodeContainer<NodeType>::Store(const Key &key,
                                     const std::string &value,
                                     const std::string &signature,
                                     const boost::posix_time::time_duration &ttl,
-                                    SecurifierPtr securifier) {
-  node_->Store(key, value, signature, ttl, securifier, store_functor_);
+                                    PrivateKeyPtr private_key) {
+  node_->Store(key, value, signature, ttl, private_key, store_functor_);
 }
 
 template <typename NodeType>
 void NodeContainer<NodeType>::Delete(const Key &key,
                                      const std::string &value,
                                      const std::string &signature,
-                                     SecurifierPtr securifier) {
-  node_->Delete(key, value, signature, securifier, delete_functor_);
+                                     PrivateKeyPtr private_key) {
+  node_->Delete(key, value, signature, private_key, delete_functor_);
 }
 
 template <typename NodeType>
@@ -527,16 +526,16 @@ void NodeContainer<NodeType>::Update(
     const std::string &old_value,
     const std::string &old_signature,
     const boost::posix_time::time_duration &ttl,
-    SecurifierPtr securifier) {
+    PrivateKeyPtr private_key) {
   node_->Update(key, new_value, new_signature, old_value, old_signature, ttl,
-                securifier, update_functor_);
+                private_key, update_functor_);
 }
 
 template <typename NodeType>
 void NodeContainer<NodeType>::FindValue(const Key &key,
-                                        SecurifierPtr securifier,
+                                        PrivateKeyPtr private_key,
                                         const uint16_t &extra_contacts) {
-  node_->FindValue(key, securifier, find_value_functor_, extra_contacts);
+  node_->FindValue(key, private_key, find_value_functor_, extra_contacts);
 }
 
 template <typename NodeType>

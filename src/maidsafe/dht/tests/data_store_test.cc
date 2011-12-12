@@ -4,14 +4,14 @@ All rights reserved.
 Redistribution and use in source and binary forms, with or without modification,
 are permitted provided that the following conditions are met:
 
-    * Redistributions of source code must retain the above copyright notice,
-    this list of conditions and the following disclaimer.
-    * Redistributions in binary form must reproduce the above copyright notice,
-    this list of conditions and the following disclaimer in the documentation
-    and/or other materials provided with the distribution.
-    * Neither the name of the maidsafe.net limited nor the names of its
-    contributors may be used to endorse or promote products derived from this
-    software without specific prior written permission.
+   * Redistributions of source code must retain the above copyright notice,
+   this list of conditions and the following disclaimer.
+   * Redistributions in binary form must reproduce the above copyright notice,
+   this list of conditions and the following disclaimer in the documentation
+   and/or other materials provided with the distribution.
+   * Neither the name of the maidsafe.net limited nor the names of its
+   contributors may be used to endorse or promote products derived from this
+   software without specific prior written permission.
 
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
 ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
@@ -77,14 +77,14 @@ class DataStoreTest: public testing::Test {
         crypto_keys_() {}
 
   bool FindValue(std::pair<std::string, std::string> element,
-                 std::pair<std::string, std::string> value) {
+                std::pair<std::string, std::string> value) {
     return ((element.first == value.first) && (element.second == value.second));
   }
 
  protected:
   std::shared_ptr<DataStore> data_store_;
   std::shared_ptr<KeyValueIndex> key_value_index_;
-  std::vector<crypto::RsaKeyPair> crypto_keys_;
+  std::vector<asymm::Keys> crypto_keys_;
  private:
   DataStoreTest(const DataStoreTest&);
   DataStoreTest &operator=(const DataStoreTest&);
@@ -93,8 +93,8 @@ class DataStoreTest: public testing::Test {
 TEST_F(DataStoreTest, BEH_StoreUnderEmptyKey) {
   EXPECT_EQ(0U, key_value_index_->size());
   for (int i = 0; i != 3; ++i) {
-    crypto_keys_.push_back(crypto::RsaKeyPair());
-    crypto_keys_.at(i).GenerateKeys(4096);
+    crypto_keys_.push_back(asymm::Keys());
+    asymm::GenerateKeyPair(&crypto_keys_.at(i));
   }
   bptime::time_duration ttl(bptime::pos_infin);
   KeyValueTuple kvt1 = MakeKVT(crypto_keys_.at(0), 1024, ttl, "", "");
@@ -126,8 +126,8 @@ TEST_F(DataStoreTest, BEH_StoreUnderEmptyKey) {
 }
 
 TEST_F(DataStoreTest, BEH_StoreInvalidData) {
-  crypto::RsaKeyPair crypto_keys;
-  crypto_keys.GenerateKeys(4096);
+  asymm::Keys crypto_keys;
+  asymm::GenerateKeyPair(&crypto_keys);
   bptime::time_duration ttl(bptime::pos_infin), bad_ttl(bptime::hours(0));
   KeyValueTuple kvt = MakeKVT(crypto_keys, 1024, ttl, "", "");
 
@@ -151,8 +151,8 @@ TEST_F(DataStoreTest, BEH_StoreInvalidData) {
 }
 
 TEST_F(DataStoreTest, BEH_StoreUnderExistingKey) {
-  crypto::RsaKeyPair crypto_keys;
-  crypto_keys.GenerateKeys(4096);
+  asymm::Keys crypto_keys;
+  asymm::GenerateKeyPair(&crypto_keys);
   bptime::time_duration ttl(bptime::pos_infin);
   KeyValueTuple kvt1 = MakeKVT(crypto_keys, 1024, ttl, "", "");
   std::string common_key = kvt1.key_value_signature.key;
@@ -198,8 +198,8 @@ TEST_F(DataStoreTest, BEH_StoreUnderExistingKey) {
 }
 
 TEST_F(DataStoreTest, BEH_StoreExistingKeyValue) {
-  crypto::RsaKeyPair crypto_keys;
-  crypto_keys.GenerateKeys(4096);
+  asymm::Keys crypto_keys;
+  asymm::GenerateKeyPair(&crypto_keys);
   bptime::time_duration old_ttl(bptime::pos_infin), new_ttl(bptime::hours(24));
   KeyValueTuple old_kvt = MakeKVT(crypto_keys, 1024, old_ttl, "", "");
   std::string common_key = old_kvt.key_value_signature.key;
@@ -264,8 +264,8 @@ TEST_F(DataStoreTest, BEH_StoreExistingKeyValue) {
 }
 
 TEST_F(DataStoreTest, BEH_StoreExistingDeletedKeyValue) {
-  crypto::RsaKeyPair crypto_keys;
-  crypto_keys.GenerateKeys(4096);
+  asymm::Keys crypto_keys;
+  asymm::GenerateKeyPair(&crypto_keys);
   bptime::time_duration old_ttl(bptime::pos_infin), new_ttl(bptime::hours(24));
   KeyValueTuple old_kvt = MakeKVT(crypto_keys, 1024, old_ttl, "", "");
   std::string common_key = old_kvt.key_value_signature.key;
@@ -331,8 +331,8 @@ TEST_F(DataStoreTest, BEH_StoreExistingDeletedKeyValue) {
 }
 
 TEST_F(DataStoreTest, BEH_DeleteUnderEmptyKey) {
-  crypto::RsaKeyPair crypto_keys;
-  crypto_keys.GenerateKeys(4096);
+  asymm::Keys crypto_keys;
+  asymm::GenerateKeyPair(&crypto_keys);
   bptime::time_duration ttl(bptime::pos_infin);
   KeyValueTuple kvt1 = MakeKVT(crypto_keys, 1024, ttl, "", "");
   KeyValueTuple kvt2 = MakeKVT(crypto_keys, 1024, ttl, "", "");
@@ -360,8 +360,8 @@ TEST_F(DataStoreTest, BEH_DeleteUnderEmptyKey) {
 }
 
 TEST_F(DataStoreTest, BEH_DeleteExistingKeyValue) {
-  crypto::RsaKeyPair crypto_keys;
-  crypto_keys.GenerateKeys(4096);
+  asymm::Keys crypto_keys;
+  asymm::GenerateKeyPair(&crypto_keys);
   bptime::time_duration old_ttl(bptime::pos_infin), new_ttl(bptime::hours(24));
   KeyValueTuple old_kvt = MakeKVT(crypto_keys, 1024, old_ttl, "", "");
   std::string common_key = old_kvt.key_value_signature.key;
@@ -369,7 +369,7 @@ TEST_F(DataStoreTest, BEH_DeleteExistingKeyValue) {
   KeyValueTuple new_refresh_kvt = MakeKVT(crypto_keys, 1024, new_ttl,
                                           common_key, common_value);
   KeyValueTuple new_delete_kvt = MakeKVT(crypto_keys, 1024, new_ttl,
-                                         common_key, common_value);
+                                        common_key, common_value);
 
   // Initial key,value.
   EXPECT_EQ(kSuccess, data_store_->StoreValue(old_kvt.key_value_signature,
@@ -388,7 +388,7 @@ TEST_F(DataStoreTest, BEH_DeleteExistingKeyValue) {
   // Refresh-type delete, confirm time not expired.
   Sleep(boost::posix_time::milliseconds(10));
   EXPECT_FALSE(data_store_->DeleteValue(new_refresh_kvt.key_value_signature,
-               new_refresh_kvt.request_and_signature, true));
+              new_refresh_kvt.request_and_signature, true));
   ASSERT_EQ(1U, key_value_index_->size());
   EXPECT_EQ(old_signature,
             (*key_value_index_->begin()).key_value_signature.signature);
@@ -452,8 +452,8 @@ TEST_F(DataStoreTest, BEH_DeleteExistingKeyValue) {
 }
 
 TEST_F(DataStoreTest, BEH_DeleteExistingDeletedKeyValue) {
-  crypto::RsaKeyPair crypto_keys;
-  crypto_keys.GenerateKeys(4096);
+  asymm::Keys crypto_keys;
+  asymm::GenerateKeyPair(&crypto_keys);
   bptime::time_duration old_ttl(bptime::pos_infin), new_ttl(bptime::hours(24));
   KeyValueTuple old_kvt = MakeKVT(crypto_keys, 1024, old_ttl, "", "");
   std::string common_key = old_kvt.key_value_signature.key;
@@ -461,13 +461,13 @@ TEST_F(DataStoreTest, BEH_DeleteExistingDeletedKeyValue) {
   KeyValueTuple new_refresh_kvt = MakeKVT(crypto_keys, 1024, new_ttl,
                                           common_key, common_value);
   KeyValueTuple new_delete_kvt = MakeKVT(crypto_keys, 1024, new_ttl,
-                                         common_key, common_value);
+                                        common_key, common_value);
 
   // Initial key,value.
   EXPECT_EQ(kSuccess, data_store_->StoreValue(old_kvt.key_value_signature,
       old_ttl, old_kvt.request_and_signature, false));
   EXPECT_TRUE(data_store_->DeleteValue(old_kvt.key_value_signature,
-                                       old_kvt.request_and_signature, false));
+                                      old_kvt.request_and_signature, false));
   ASSERT_EQ(1U, key_value_index_->size());
   std::string old_signature =
       (*key_value_index_->begin()).key_value_signature.signature;
@@ -520,8 +520,8 @@ TEST_F(DataStoreTest, BEH_DeleteExistingDeletedKeyValue) {
 }
 
 TEST_F(DataStoreTest, BEH_HasKey) {
-  crypto::RsaKeyPair crypto_keys;
-  crypto_keys.GenerateKeys(4096);
+  asymm::Keys crypto_keys;
+  asymm::GenerateKeyPair(&crypto_keys);
   bptime::time_duration ttl(bptime::pos_infin);
   KeyValueTuple kvt1 = MakeKVT(crypto_keys, 1024, ttl, "", "");
   std::string common_key = kvt1.key_value_signature.key;
@@ -572,7 +572,7 @@ TEST_F(DataStoreTest, BEH_HasKey) {
     EXPECT_TRUE(data_store_->HasKey(kvt.key_value_signature.key));
 
     EXPECT_TRUE(data_store_->DeleteValue(kvt.key_value_signature,
-                                         kvt.request_and_signature, false));
+                                        kvt.request_and_signature, false));
     EXPECT_TRUE(data_store_->HasKey(kvt.key_value_signature.key));
   }
 
@@ -590,8 +590,8 @@ TEST_F(DataStoreTest, BEH_HasKey) {
 }
 
 TEST_F(DataStoreTest, BEH_GetValues) {
-  crypto::RsaKeyPair crypto_keys;
-  crypto_keys.GenerateKeys(4096);
+  asymm::Keys crypto_keys;
+  asymm::GenerateKeyPair(&crypto_keys);
   bptime::time_duration ttl(bptime::pos_infin);
   std::vector<KeyValueTuple> kvts;
   const size_t kTotalEntries(100), kRepeatedValues(13);
@@ -652,7 +652,7 @@ TEST_F(DataStoreTest, BEH_GetValues) {
   // Retrieve values for all other keys
   for (size_t i = kRepeatedValues; i != kvts.size(); ++i) {
     EXPECT_TRUE(data_store_->GetValues(kvts.at(i).key_value_signature.key,
-                                       &values));
+                                      &values));
     ASSERT_EQ(1U, values.size());
     EXPECT_EQ(kvts.at(i).key_value_signature.value, values.at(0).first);
     EXPECT_EQ(kvts.at(i).key_value_signature.signature, values.at(0).second);
@@ -689,8 +689,8 @@ TEST_F(DataStoreTest, BEH_GetValues) {
 }
 
 TEST_F(DataStoreTest, FUNC_Refresh) {
-  crypto::RsaKeyPair crypto_keys;
-  crypto_keys.GenerateKeys(4096);
+  asymm::Keys crypto_keys;
+  asymm::GenerateKeyPair(&crypto_keys);
   bptime::time_duration two_seconds(bptime::seconds(2));
   bptime::time_duration four_seconds(bptime::seconds(4));
   std::vector<KeyValueTuple> kvts, returned_kvts;
@@ -706,8 +706,8 @@ TEST_F(DataStoreTest, FUNC_Refresh) {
   for (size_t i = 1; i != kRepeatedValues; ++i) {
     value += "a";
     kvts.push_back(MakeKVT(crypto_keys, 0,
-                           ((i % 2) ? two_seconds : four_seconds),
-                           common_key, value));
+                          ((i % 2) ? two_seconds : four_seconds),
+                          common_key, value));
   }
   // Create unique key,values (no repeated keys)
   // Use std::set of keys to ensure uniqueness of keys
@@ -758,7 +758,7 @@ TEST_F(DataStoreTest, FUNC_Refresh) {
   ASSERT_EQ(kRepeatedValues, values.size());
   for (size_t i = kRepeatedValues; i != kvts.size(); ++i) {
     ASSERT_TRUE(data_store_->GetValues(kvts.at(i).key_value_signature.key,
-                                       &values));
+                                      &values));
     ASSERT_EQ(1U, values.size());
   }
 
@@ -800,9 +800,9 @@ TEST_F(DataStoreTest, FUNC_Refresh) {
   auto it = key_value_index_->begin();
   for (size_t i = 0; i != (kTotalEntries + kRepeatedValues) / 2; ++i, ++it) {
     key_value_index_->modify(it,
-           std::bind(&KeyValueTuple::UpdateStatus, arg::_1,
-                     (*it).expire_time, now, now + kPendingConfirmDuration,
-                     (*it).request_and_signature, (*it).deleted));
+          std::bind(&KeyValueTuple::UpdateStatus, arg::_1,
+                    (*it).expire_time, now, now + kPendingConfirmDuration,
+                    (*it).request_and_signature, (*it).deleted));
   }
   data_store_->Refresh(&returned_kvts);
   ASSERT_EQ((kTotalEntries + kRepeatedValues) / 2, returned_kvts.size());
@@ -812,9 +812,9 @@ TEST_F(DataStoreTest, FUNC_Refresh) {
   it = key_value_index_->begin();
   for (size_t i = 0; i != (kTotalEntries + kRepeatedValues) / 2; ++i, ++it) {
     key_value_index_->modify(it,
-           std::bind(&KeyValueTuple::UpdateStatus, arg::_1,
-                     (*it).expire_time, now + data_store_->kRefreshInterval(),
-                     now, (*it).request_and_signature, (*it).deleted));
+          std::bind(&KeyValueTuple::UpdateStatus, arg::_1,
+                    (*it).expire_time, now + data_store_->kRefreshInterval(),
+                    now, (*it).request_and_signature, (*it).deleted));
   }
   data_store_->Refresh(&returned_kvts);
   ASSERT_TRUE(returned_kvts.empty());
@@ -827,13 +827,13 @@ TEST_F(DataStoreTest, FUNC_MultipleThreads) {
 
   AsioService asio_service;
   for (size_t i = 0; i != kSigners; ++i) {
-    crypto_keys_.push_back(crypto::RsaKeyPair());
-    crypto_keys_.at(i).GenerateKeys(4096);
+    crypto_keys_.push_back(asymm::Keys());
+    asymm::GenerateKeyPair(&crypto_keys_.at(i));
   }
 
   // Prepare values for storing and deleting
   bptime::time_duration ttl(bptime::pos_infin);
-  std::vector<std::pair<KeyValueTuple, std::string>> stored_kvts;
+  std::vector<std::pair<KeyValueTuple, asymm::PublicKey>> stored_kvts;
   std::vector<KeyValueTuple> stored_then_deleted_kvts;
   stored_kvts.reserve(kSigners * kEntriesPerSigner * kValuesPerEntry);
   stored_then_deleted_kvts.reserve(
@@ -843,7 +843,7 @@ TEST_F(DataStoreTest, FUNC_MultipleThreads) {
   bool unique(false);
 
   for (size_t signer = 0; signer != kSigners; ++signer) {
-    const crypto::RsaKeyPair &crypto_keys(crypto_keys_.at(signer));
+    const asymm::Keys &crypto_keys(crypto_keys_.at(signer));
 
     for (size_t entry = 0; entry != kEntriesPerSigner; ++entry) {
       uint32_t rand_num(RandomUint32());
@@ -863,7 +863,7 @@ TEST_F(DataStoreTest, FUNC_MultipleThreads) {
                                 kvt.request_and_signature, false);
         stored_then_deleted_kvts.push_back(kvt);
       } else {
-        stored_kvts.push_back(std::make_pair(kvt, crypto_keys.public_key()));
+        stored_kvts.push_back(std::make_pair(kvt, crypto_keys.public_key));
       }
 
       std::string common_key = kvt.key_value_signature.key;
@@ -879,7 +879,7 @@ TEST_F(DataStoreTest, FUNC_MultipleThreads) {
                                   kvt.request_and_signature, false);
           stored_then_deleted_kvts.push_back(kvt);
         } else {
-          stored_kvts.push_back(std::make_pair(kvt, crypto_keys.public_key()));
+          stored_kvts.push_back(std::make_pair(kvt, crypto_keys.public_key));
         }
       }
     }
@@ -896,16 +896,16 @@ TEST_F(DataStoreTest, FUNC_MultipleThreads) {
   int_functors.reserve(3 * returned_size);
   auto returned_itr = returned_values.begin();
   for (auto it = stored_then_deleted_kvts.begin();
-       it != stored_then_deleted_kvts.end(); ++it, ++returned_itr) {
+      it != stored_then_deleted_kvts.end(); ++it, ++returned_itr) {
     bool_functors.push_back(std::bind(&DataStore::DeleteValue, data_store_,
         (*it).key_value_signature, (*it).request_and_signature, false));
     bool_functors.push_back(std::bind(&DataStore::HasKey, data_store_,
-                       (*it).key_value_signature.key));
+                      (*it).key_value_signature.key));
     bool_functors.push_back(std::bind(&DataStore::GetValues, data_store_,
-                       (*it).key_value_signature.key, &(*returned_itr)));
+                      (*it).key_value_signature.key, &(*returned_itr)));
   }
   for (auto it = stored_kvts.begin(); it != stored_kvts.end();
-       ++it, ++returned_itr) {
+      ++it, ++returned_itr) {
     const KeyValueTuple &kvt = (*it).first;
     int_functors.push_back(std::bind(
         &DataStore::StoreValue, data_store_, kvt.key_value_signature, ttl,
@@ -924,7 +924,7 @@ TEST_F(DataStoreTest, FUNC_MultipleThreads) {
       std::vector<KeyValueTuple>());
   int count(0);
   for (auto it = bool_functors.begin(); it != bool_functors.end();
-       ++it, ++count) {
+      ++it, ++count) {
     asio_service.post(*it);
     if ((count % kValuesPerEntry) == 0) {
       asio_service.post(std::bind(&DataStore::Refresh, data_store_,
@@ -932,7 +932,7 @@ TEST_F(DataStoreTest, FUNC_MultipleThreads) {
     }
   }
   for (auto it = int_functors.begin(); it != int_functors.end();
-       ++it, ++count) {
+      ++it, ++count) {
     asio_service.post(*it);
     if ((count % kValuesPerEntry) == 0) {
       asio_service.post(std::bind(&DataStore::Refresh, data_store_,
@@ -951,7 +951,7 @@ TEST_F(DataStoreTest, FUNC_MultipleThreads) {
 
   // Check results
   for (auto it = stored_then_deleted_kvts.begin();
-       it != stored_then_deleted_kvts.end(); ++it) {
+      it != stored_then_deleted_kvts.end(); ++it) {
     const std::string &key = (*it).key_value_signature.key;
     EXPECT_TRUE(data_store_->HasKey(key));
     returned_values.front().push_back(std::make_pair("a", "b"));
@@ -965,7 +965,7 @@ TEST_F(DataStoreTest, FUNC_MultipleThreads) {
     EXPECT_TRUE(data_store_->GetValues(key, &returned_values.front()));
     bool found(false);
     for (auto itr = returned_values.front().begin();
-         itr != returned_values.front().end(); ++itr) {
+        itr != returned_values.front().end(); ++itr) {
       found = ((*it).first.key_value_signature.value == (*itr).first);
       if (found) {
         EXPECT_EQ((*it).first.key_value_signature.signature, (*itr).second);

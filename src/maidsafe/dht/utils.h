@@ -31,6 +31,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <string>
 #include <vector>
 
+#include "maidsafe/common/rsa.h"
+
 namespace maidsafe {
 
 namespace transport { struct Endpoint; }
@@ -54,6 +56,18 @@ bool IsListeningOnTCP(const Contact &contact);
 
 // sort the contacts according the distance to the target key
 void SortContacts(const NodeId &target_key, std::vector<Contact> *contacts);
+
+void StubContactValidationGetter(
+    asymm::Identity identity,
+    asymm::GetPublicKeyAndValidationCallback callback);
+
+bool StubContactValidator(asymm::Identity identity,
+                          asymm::PublicKey public_key,
+                          asymm::ValidationToken validation_token);
+
+bool StubValidate(const asymm::PlainText &plain_text,
+                  const asymm::Signature &signature,
+                  const asymm::PublicKey &public_key);
 
 }  // namespace dht
 

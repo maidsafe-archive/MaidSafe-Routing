@@ -41,7 +41,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "maidsafe/common/alternative_store.h"
 #include "maidsafe/common/utils.h"
 #include "maidsafe/common/crypto.h"
-#include "maidsafe/common/securifier.h"
 
 #include "maidsafe/transport/transport.h"
 #include "maidsafe/transport/utils.h"
@@ -78,21 +77,6 @@ const uint16_t g_kAlpha = 3;
 const uint16_t g_kBeta = 2;
 const uint16_t g_kRandomNoResponseRate = 20;  // in percentage
 
-
-class SecurifierValidateTrue: public Securifier {
- public:
-  SecurifierValidateTrue(const std::string &public_key_id,
-                         const std::string &public_key,
-                         const std::string &private_key)
-      : Securifier(public_key_id, public_key, private_key) {}
-
-  bool Validate(const std::string&,
-                const std::string&,
-                const std::string&,
-                const std::string&,
-                const std::string&,
-                const std::string&) const { return true; }
-};
 
 ContactInfo::RpcState GetRandomRpcReplyState() {
   int selected_state_flag = maidsafe::RandomUint32() % 4;
@@ -184,8 +168,8 @@ class TestAlternativeStore : public AlternativeStore {
 template <typename TransportType>
 class MockRpcs : public Rpcs<TransportType>, public CreateContactAndNodeId {
  public:
-  MockRpcs(boost::asio::io_service &asio_service, SecurifierPtr securifier)  // NOLINT (Fraser)
-      : Rpcs<TransportType>(asio_service, securifier),
+  MockRpcs(boost::asio::io_service &asio_service, PrivateKeyPtr private_key)  // NOLINT (Fraser)
+      : Rpcs<TransportType>(asio_service, private_key),
         CreateContactAndNodeId(g_kKademliaK),
         node_list_mutex_(),
         node_list_(),
@@ -198,42 +182,42 @@ class MockRpcs : public Rpcs<TransportType>, public CreateContactAndNodeId {
         respond_contacts_(),
         target_id_(),
         threshold_((g_kKademliaK * 3) / 4) {}
-  MOCK_METHOD3_T(Ping, void(SecurifierPtr securifier,
+  MOCK_METHOD3_T(Ping, void(PrivateKeyPtr private_key,
                             const Contact &peer,
                             RpcPingFunctor callback));
   MOCK_METHOD5_T(FindValue, void(const Key &key,
                                  const uint16_t &nodes_requested,
-                                 SecurifierPtr securifier,
+                                 PrivateKeyPtr private_key,
                                  const Contact &peer,
                                  RpcFindValueFunctor callback));
   MOCK_METHOD5_T(FindNodes, void(const Key &key,
                                  const uint16_t &nodes_requested,
-                                 SecurifierPtr securifier,
+                                 PrivateKeyPtr private_key,
                                  const Contact &peer,
                                  RpcFindNodesFunctor callback));
   MOCK_METHOD7_T(Store, void(const Key &key,
                              const std::string &value,
                              const std::string &signature,
                              const bptime::seconds &ttl,
-                             SecurifierPtr securifier,
+                             PrivateKeyPtr private_key,
                              const Contact &peer,
                              RpcStoreFunctor callback));
   MOCK_METHOD5_T(StoreRefresh,
                  void(const std::string &serialised_store_request,
                       const std::string &serialised_store_request_signature,
-                      SecurifierPtr securifier,
+                      PrivateKeyPtr private_key,
                       const Contact &peer,
                       RpcStoreRefreshFunctor callback));
   MOCK_METHOD6_T(Delete, void(const Key &key,
                               const std::string &value,
                               const std::string &signature,
-                              SecurifierPtr securifier,
+                              PrivateKeyPtr private_key,
                               const Contact &peer,
                               RpcDeleteFunctor callback));
   MOCK_METHOD5_T(DeleteRefresh,
                  void(const std::string &serialised_delete_request,
                  const std::string &serialised_delete_request_signature,
-                 SecurifierPtr securifier,
+                 PrivateKeyPtr private_key,
                  const Contact &peer,
                  RpcDeleteRefreshFunctor callback));
 
@@ -640,17 +624,17 @@ class MockNodeImplTest : public CreateContactAndNodeId, public testing::Test {
       : CreateContactAndNodeId(g_kKademliaK),
         data_store_(),
         alternative_store_(),
-        securifier_(new Securifier("", "", "")),
+        private_key_(new asymm::PrivateKey()),
         mock_transport_(new MockTransport),
         rank_info_(),
         asio_service_(),
         work_(new boost::asio::io_service::work(asio_service_)),
         thread_group_(),
-        message_handler_(new MessageHandler(securifier_)),
+        message_handler_(new MessageHandler(private_key_)),
         node_(new NodeImpl(asio_service_,
                            mock_transport_,
                            message_handler_,
-                           securifier_,
+                           KeyPairPtr(new asymm::Keys()),
                            alternative_store_,
                            false,
                            g_kKademliaK,
@@ -661,8 +645,7 @@ class MockNodeImplTest : public CreateContactAndNodeId, public testing::Test {
         local_node_(new NodeImpl(asio_service_,
                                  mock_transport_,
                                  message_handler_,
-                                 SecurifierPtr(
-                                     new SecurifierValidateTrue("", "", "")),
+                                 KeyPairPtr(new asymm::Keys()),
                                  alternative_store_,
                                  true,
                                  g_kKademliaK,
@@ -720,7 +703,7 @@ class MockNodeImplTest : public CreateContactAndNodeId, public testing::Test {
 
   std::shared_ptr<DataStore> data_store_;
   AlternativeStorePtr alternative_store_;
-  SecurifierPtr securifier_;
+  PrivateKeyPtr private_key_;
   TransportPtr mock_transport_;
   RankInfoPtr rank_info_;
   boost::asio::io_service asio_service_;
@@ -754,7 +737,7 @@ TEST_F(MockNodeImplTest, BEH_GetContact) {
   bool done(false);
   PopulateRoutingTable(g_kKademliaK, 500);
   std::shared_ptr<MockRpcs<transport::TcpTransport>> new_rpcs(
-      new MockRpcs<transport::TcpTransport>(asio_service_, securifier_));
+      new MockRpcs<transport::TcpTransport>(asio_service_, private_key_));
   new_rpcs->set_node_id(node_id_);
   SetRpcs<transport::TcpTransport>(new_rpcs);
 
@@ -838,7 +821,7 @@ TEST_F(MockNodeImplTest, BEH_PingOldestContact) {
   PopulateRoutingTable(g_kKademliaK, 501);
 
   std::shared_ptr<MockRpcs<transport::TcpTransport>> new_rpcs(
-      new MockRpcs<transport::TcpTransport>(asio_service_, securifier_));
+      new MockRpcs<transport::TcpTransport>(asio_service_, private_key_));
   new_rpcs->set_node_id(node_id_);
   SetLocalRpcs<transport::TcpTransport>(new_rpcs);
 
@@ -886,7 +869,7 @@ TEST_F(MockNodeImplTest, BEH_Join) {
   node_->joined_ = false;
   std::vector<Contact> bootstrap_contacts;
   std::shared_ptr<MockRpcs<transport::TcpTransport>> new_rpcs(
-      new MockRpcs<transport::TcpTransport>(asio_service_, securifier_));
+      new MockRpcs<transport::TcpTransport>(asio_service_, private_key_));
   new_rpcs->set_node_id(node_id_);
   SetRpcs<transport::TcpTransport>(new_rpcs);
 
@@ -1061,7 +1044,7 @@ TEST_F(MockNodeImplTest, BEH_Leave) {
   PopulateRoutingTable(g_kKademliaK, 500);
   std::vector<Contact> bootstrap_contacts;
   std::shared_ptr<MockRpcs<transport::TcpTransport>> new_rpcs(
-      new MockRpcs<transport::TcpTransport>(asio_service_, securifier_));
+      new MockRpcs<transport::TcpTransport>(asio_service_, private_key_));
   SetRpcs<transport::TcpTransport>(new_rpcs);
 
   int count = 10 * g_kKademliaK;
@@ -1112,7 +1095,7 @@ TEST_F(MockNodeImplTest, BEH_FindNodes) {
   bool done(false);
   PopulateRoutingTable(g_kKademliaK * 2, 500);
   std::shared_ptr<MockRpcs<transport::TcpTransport>> new_rpcs(
-      new MockRpcs<transport::TcpTransport>(asio_service_, securifier_));
+      new MockRpcs<transport::TcpTransport>(asio_service_, private_key_));
   new_rpcs->set_node_id(node_id_);
   SetRpcs<transport::TcpTransport>(new_rpcs);
 
@@ -1320,7 +1303,7 @@ TEST_F(MockNodeImplTest, BEH_Store) {
   bool done(false);
   PopulateRoutingTable(g_kKademliaK * 2, 500);
   std::shared_ptr<MockRpcs<transport::TcpTransport>> new_rpcs(
-      new MockRpcs<transport::TcpTransport>(asio_service_, securifier_));
+      new MockRpcs<transport::TcpTransport>(asio_service_, private_key_));
   new_rpcs->set_node_id(node_id_);
   SetRpcs<transport::TcpTransport>(new_rpcs);
 
@@ -1343,8 +1326,8 @@ TEST_F(MockNodeImplTest, BEH_Store) {
                     new_rpcs.get(), arg::_1))));
   std::string key_str(kKeySizeBytes, -1);
   NodeId key = NodeId(key_str);
-  crypto::RsaKeyPair crypto_key_data;
-  crypto_key_data.GenerateKeys(4096);
+  asymm::Keys crypto_key_data;
+  asymm::GenerateKeyPair(&crypto_key_data);
   KeyValueSignature kvs = MakeKVS(crypto_key_data, 1024, key.String(), "");
   bptime::time_duration old_ttl(bptime::pos_infin);
   {
@@ -1358,7 +1341,7 @@ TEST_F(MockNodeImplTest, BEH_Store) {
             &MockRpcs<transport::TcpTransport>::Response<RpcStoreFunctor>,
             new_rpcs.get(), arg::_1))));
     int response_code(-2);
-    node_->Store(key, kvs.value, kvs.signature, old_ttl, securifier_,
+    node_->Store(key, kvs.value, kvs.signature, old_ttl, private_key_,
                  std::bind(&ErrorCodeCallback, arg::_1, &cond_var_,
                            &response_code, &done));
     while (!done) {
@@ -1389,7 +1372,7 @@ TEST_F(MockNodeImplTest, BEH_Store) {
                 LastSeveralNoResponse<RpcStoreFunctor>, new_rpcs.get(),
                 arg::_1))));
     int response_code(-2);
-    node_->Store(key, kvs.value, kvs.signature, old_ttl, securifier_,
+    node_->Store(key, kvs.value, kvs.signature, old_ttl, private_key_,
                  std::bind(&ErrorCodeCallback, arg::_1, &cond_var_,
                            &response_code, &done));
     while (!done) {
@@ -1423,7 +1406,7 @@ TEST_F(MockNodeImplTest, BEH_Store) {
                 FirstSeveralNoResponse<RpcStoreFunctor>, new_rpcs.get(),
                 arg::_1))));
     int response_code(-2);
-    node_->Store(key, kvs.value, kvs.signature, old_ttl, securifier_,
+    node_->Store(key, kvs.value, kvs.signature, old_ttl, private_key_,
                  std::bind(&ErrorCodeCallback, arg::_1, &cond_var_,
                            &response_code, &done));
     while (!done) {
@@ -1458,7 +1441,7 @@ TEST_F(MockNodeImplTest, BEH_Store) {
                 LastLessNoResponse<RpcStoreFunctor>, new_rpcs.get(),
                 arg::_1))));
     int response_code(-2);
-    node_->Store(key, kvs.value, kvs.signature, old_ttl, securifier_,
+    node_->Store(key, kvs.value, kvs.signature, old_ttl, private_key_,
                  std::bind(&ErrorCodeCallback, arg::_1, &cond_var_,
                            &response_code, &done));
     while (!done) {
@@ -1490,7 +1473,7 @@ TEST_F(MockNodeImplTest, BEH_Store) {
                 LastLessNoResponse<RpcStoreFunctor>, new_rpcs.get(),
                 arg::_1))));
     int response_code(-2);
-    node_->Store(key, kvs.value, kvs.signature, old_ttl, securifier_,
+    node_->Store(key, kvs.value, kvs.signature, old_ttl, private_key_,
                  std::bind(&ErrorCodeCallback, arg::_1, &cond_var_,
                            &response_code, &done));
     while (!done) {
@@ -1509,7 +1492,7 @@ TEST_F(MockNodeImplTest, BEH_Delete) {
   bool done(false);
   PopulateRoutingTable(g_kKademliaK * 2, 500);
   std::shared_ptr<MockRpcs<transport::TcpTransport>> new_rpcs(
-      new MockRpcs<transport::TcpTransport>(asio_service_, securifier_));
+      new MockRpcs<transport::TcpTransport>(asio_service_, private_key_));
   new_rpcs->set_node_id(node_id_);
   SetRpcs<transport::TcpTransport>(new_rpcs);
 
@@ -1529,8 +1512,8 @@ TEST_F(MockNodeImplTest, BEH_Delete) {
 
   std::string key_str(kKeySizeBytes, -1);
   NodeId key = NodeId(key_str);
-  crypto::RsaKeyPair crypto_key_data;
-  crypto_key_data.GenerateKeys(4096);
+  asymm::Keys crypto_key_data;
+  asymm::GenerateKeyPair(&crypto_key_data);
   KeyValueSignature kvs = MakeKVS(crypto_key_data, 1024, key.String(), "");
   {
     // All k populated contacts response with random closest list
@@ -1542,7 +1525,7 @@ TEST_F(MockNodeImplTest, BEH_Delete) {
             &MockRpcs<transport::TcpTransport>::Response<RpcDeleteFunctor>,
             new_rpcs.get(), arg::_1))));
     int response_code(-2);
-    node_->Delete(key, kvs.value, kvs.signature, securifier_,
+    node_->Delete(key, kvs.value, kvs.signature, private_key_,
              std::bind(&ErrorCodeCallback, arg::_1, &cond_var_,
                        &response_code, &done));
     while (!done) {
@@ -1567,7 +1550,7 @@ TEST_F(MockNodeImplTest, BEH_Delete) {
                 LastSeveralNoResponse<RpcDeleteFunctor>, new_rpcs.get(),
                 arg::_1))));
     int response_code(0);
-    node_->Delete(key, kvs.value, kvs.signature, securifier_,
+    node_->Delete(key, kvs.value, kvs.signature, private_key_,
              std::bind(&ErrorCodeCallback, arg::_1, &cond_var_,
                        &response_code, &done));
 
@@ -1594,7 +1577,7 @@ TEST_F(MockNodeImplTest, BEH_Delete) {
                 FirstSeveralNoResponse<RpcDeleteFunctor>, new_rpcs.get(),
                 arg::_1))));
     int response_code(-2);
-    node_->Delete(key, kvs.value, kvs.signature, securifier_,
+    node_->Delete(key, kvs.value, kvs.signature, private_key_,
              std::bind(&ErrorCodeCallback, arg::_1, &cond_var_,
                        &response_code, &done));
     while (!done) {
@@ -1620,7 +1603,7 @@ TEST_F(MockNodeImplTest, BEH_Delete) {
                 LastLessNoResponse<RpcDeleteFunctor>, new_rpcs.get(),
                 arg::_1))));
     int response_code(-2);
-    node_->Delete(key, kvs.value, kvs.signature, securifier_,
+    node_->Delete(key, kvs.value, kvs.signature, private_key_,
              std::bind(&ErrorCodeCallback, arg::_1, &cond_var_,
                        &response_code, &done));
     while (!done) {
@@ -1648,7 +1631,7 @@ TEST_F(MockNodeImplTest, BEH_Delete) {
                 LastLessNoResponse<RpcDeleteFunctor>, new_rpcs.get(),
                 arg::_1))));
     int response_code(-2);
-    node_->Delete(key, kvs.value, kvs.signature, securifier_,
+    node_->Delete(key, kvs.value, kvs.signature, private_key_,
              std::bind(&ErrorCodeCallback, arg::_1, &cond_var_,
                        &response_code, &done));
     while (!done) {
@@ -1667,7 +1650,7 @@ TEST_F(MockNodeImplTest, BEH_Update) {
   bool done(false);
   PopulateRoutingTable(g_kKademliaK, 500);
   std::shared_ptr<MockRpcs<transport::TcpTransport>> new_rpcs(
-      new MockRpcs<transport::TcpTransport>(asio_service_, securifier_));
+      new MockRpcs<transport::TcpTransport>(asio_service_, private_key_));
   new_rpcs->set_node_id(node_id_);
   SetRpcs<transport::TcpTransport>(new_rpcs);
 
@@ -1687,8 +1670,8 @@ TEST_F(MockNodeImplTest, BEH_Update) {
 
   std::string key_str(kKeySizeBytes, -1);
   NodeId key = NodeId(key_str);
-  crypto::RsaKeyPair crypto_key_data;
-  crypto_key_data.GenerateKeys(4096);
+  asymm::Keys crypto_key_data;
+  asymm::GenerateKeyPair(&crypto_key_data);
   KeyValueSignature kvs = MakeKVS(crypto_key_data, 1024, key.String(), "");
   KeyValueSignature kvs_new = MakeKVS(crypto_key_data, 1024, key.String(), "");
   bptime::time_duration old_ttl(bptime::pos_infin);
@@ -1709,7 +1692,7 @@ TEST_F(MockNodeImplTest, BEH_Update) {
             new_rpcs.get(), arg::_1))));
     int response_code(-2);
     node_->Update(key, kvs_new.value, kvs_new.signature,
-                  kvs.value, kvs.signature, old_ttl, securifier_,
+                  kvs.value, kvs.signature, old_ttl, private_key_,
                   std::bind(&ErrorCodeCallback, arg::_1, &cond_var_,
                             &response_code, &done));
     while (!done) {
@@ -1741,7 +1724,7 @@ TEST_F(MockNodeImplTest, BEH_Update) {
                 arg::_1))));
     int response_code(-2);
     node_->Update(key, kvs_new.value, kvs_new.signature,
-                  kvs.value, kvs.signature, old_ttl, securifier_,
+                  kvs.value, kvs.signature, old_ttl, private_key_,
                   std::bind(&ErrorCodeCallback, arg::_1, &cond_var_,
                             &response_code, &done));
     while (!done) {
@@ -1775,7 +1758,7 @@ TEST_F(MockNodeImplTest, BEH_Update) {
                 arg::_1))));
     int response_code(-2);
     node_->Update(key, kvs_new.value, kvs_new.signature,
-                  kvs.value, kvs.signature, old_ttl, securifier_,
+                  kvs.value, kvs.signature, old_ttl, private_key_,
                   std::bind(&ErrorCodeCallback, arg::_1, &cond_var_,
                             &response_code, &done));
     while (!done) {
@@ -1809,7 +1792,7 @@ TEST_F(MockNodeImplTest, BEH_Update) {
             new_rpcs.get(), arg::_1))));
     int response_code(-2);
     node_->Update(key, kvs_new.value, kvs_new.signature,
-                  kvs.value, kvs.signature, old_ttl, securifier_,
+                  kvs.value, kvs.signature, old_ttl, private_key_,
                   std::bind(&ErrorCodeCallback, arg::_1, &cond_var_,
                             &response_code, &done));
     while (!done) {
@@ -1843,7 +1826,7 @@ TEST_F(MockNodeImplTest, BEH_Update) {
             new_rpcs.get(), arg::_1))));
     int response_code(-2);
     node_->Update(key, kvs_new.value, kvs_new.signature,
-                  kvs.value, kvs.signature, old_ttl, securifier_,
+                  kvs.value, kvs.signature, old_ttl, private_key_,
                   std::bind(&ErrorCodeCallback, arg::_1, &cond_var_,
                             &response_code, &done));
     while (!done) {
@@ -1880,7 +1863,7 @@ TEST_F(MockNodeImplTest, BEH_Update) {
             new_rpcs.get(), arg::_1))));
     int response_code(-2);
     node_->Update(key, kvs_new.value, kvs_new.signature,
-                  kvs.value, kvs.signature, old_ttl, securifier_,
+                  kvs.value, kvs.signature, old_ttl, private_key_,
                   std::bind(&ErrorCodeCallback, arg::_1, &cond_var_,
                             &response_code, &done));
     while (!done) {
@@ -1900,7 +1883,7 @@ TEST_F(MockNodeImplTest, BEH_FindValue) {
   PopulateRoutingTable(g_kKademliaK * 2, 500);
   node_->joined_ = true;
   std::shared_ptr<MockRpcs<transport::TcpTransport>> new_rpcs(
-      new MockRpcs<transport::TcpTransport>(asio_service_, securifier_));
+      new MockRpcs<transport::TcpTransport>(asio_service_, private_key_));
   new_rpcs->set_node_id(node_id_);
   SetRpcs<transport::TcpTransport>(new_rpcs);
   NodeId key = GenerateRandomId(node_id_, 498);
@@ -1912,7 +1895,7 @@ TEST_F(MockNodeImplTest, BEH_FindValue) {
             std::bind(&MockRpcs<transport::TcpTransport>::FindValueNoResponse,
                       new_rpcs.get(), arg::_1))));
     FindValueReturns results;
-    node_->FindValue(key, securifier_,
+    node_->FindValue(key, private_key_,
                      std::bind(&FindValueCallback, arg::_1, &cond_var_,
                                &results, &done));
     while (!done) {
@@ -1939,7 +1922,7 @@ TEST_F(MockNodeImplTest, BEH_FindValue) {
             &MockRpcs<transport::TcpTransport>::FindValueResponseCloseOnly,
             new_rpcs.get(), arg::_1))));
     FindValueReturns results;
-    node_->FindValue(key, securifier_,
+    node_->FindValue(key, private_key_,
                      std::bind(&FindValueCallback, arg::_1, &cond_var_,
                                &results, &done));
     while (!done) {
@@ -1969,7 +1952,7 @@ TEST_F(MockNodeImplTest, BEH_FindValue) {
             std::bind(&MockRpcs<transport::TcpTransport>::FindValueNthResponse,
                       new_rpcs.get(), arg::_1))));
     FindValueReturns results;
-    node_->FindValue(key, securifier_,
+    node_->FindValue(key, private_key_,
                      std::bind(&FindValueCallback, arg::_1, &cond_var_,
                                &results, &done));
     while (!done) {
@@ -1994,7 +1977,7 @@ TEST_F(MockNodeImplTest, BEH_FindValue) {
             &MockRpcs<transport::TcpTransport>::FindValueNoValueResponse,
             new_rpcs.get(), arg::_1))));
     FindValueReturns results;
-    node_->FindValue(key, securifier_,
+    node_->FindValue(key, private_key_,
                      std::bind(&FindValueCallback, arg::_1, &cond_var_,
                                &results, &done));
     while (!done) {
@@ -2020,7 +2003,7 @@ TEST_F(MockNodeImplTest, BEH_FindValue) {
             &MockRpcs<transport::TcpTransport>::FindValueResponseCloseOnly,
                 new_rpcs.get(), arg::_1))));
     FindValueReturns results;
-    node_->FindValue(key, securifier_,
+    node_->FindValue(key, private_key_,
                      std::bind(&FindValueCallback, arg::_1, &cond_var_,
                                &results, &done),
                      g_kKademliaK / 2);
@@ -2081,7 +2064,7 @@ TEST_F(MockNodeImplTest, BEH_Getters) {
     EXPECT_EQ(Contact(), node_->contact());
   }
   std::shared_ptr<MockRpcs<transport::TcpTransport>> new_rpcs(
-      new MockRpcs<transport::TcpTransport>(asio_service_, securifier_));
+      new MockRpcs<transport::TcpTransport>(asio_service_, private_key_));
   new_rpcs->set_node_id(node_id_);
   SetLocalRpcs<transport::TcpTransport>(new_rpcs);
   {
@@ -2138,12 +2121,12 @@ TEST_F(MockNodeImplTest, BEH_AssessLookupState) {
                                                        test_contacts.end(),
                                                        node_id_));
   uint16_t num_contacts_requested(random_num_nodes);
-  SecurifierPtr securifier(new Securifier("", "", ""));
+  PrivateKeyPtr private_key(new asymm::PrivateKey());
   LookupArgsPtr lookup_args(new LookupArgs(LookupArgs::kFindNodes,
                                            node_id_,
                                            close_contacts,
                                            num_contacts_requested,
-                                           securifier));
+                                           private_key));
   LookupContacts::iterator contacts_iterator;
   ContactInfo::RpcState random_rpcstate = ContactInfo::kNotSent;
   auto shortlist_upper_bound(lookup_args->lookup_contacts.end());
@@ -2237,12 +2220,12 @@ TEST_F(MockNodeImplTest, BEH_RemoveDownlistedContacts) {
   OrderedContacts close_contacts(CreateOrderedContacts(test_contacts.begin(),
                                                        test_contacts.end(),
                                                        node_id_));
-  SecurifierPtr securifier(new Securifier("", "", ""));
+  PrivateKeyPtr private_key(new asymm::PrivateKey());
   LookupArgsPtr lookup_args(new LookupArgs(LookupArgs::kFindNodes,
                                            node_id_,
                                            close_contacts,
                                            random_num_contacts,
-                                           securifier));
+                                           private_key));
   LookupContacts lookup_contact;
   lookup_contact.insert(std::make_pair(ComposeContact(NodeId(
       GenerateRandomId(node_id_, 490)), 5600), ContactInfo()));
@@ -2349,12 +2332,12 @@ TEST_F(MockNodeImplTest, BEH_InsertCloseContacts) {
 
 // Empty Live Contacts to Test a Full Insert of New Contacts
   auto expected_bound(close_contacts.rbegin());
-  SecurifierPtr securifier(new Securifier("", "", ""));
+  PrivateKeyPtr private_key(new asymm::PrivateKey());
   LookupArgsPtr lookup_args(new LookupArgs(LookupArgs::kFindNodes,
                                            node_id_,
                                            close_contacts,
                                            random_num_contacts - 1,
-                                           securifier));
+                                           private_key));
   lookup_args->lookup_contacts.clear();
   ASSERT_EQ(0, lookup_args->lookup_contacts.size());
   auto result_itr(
@@ -2372,7 +2355,7 @@ TEST_F(MockNodeImplTest, BEH_InsertCloseContacts) {
                                    node_id_,
                                    close_contacts,
                                    random_num_contacts - 2,
-                                   securifier));
+                                   private_key));
   ASSERT_EQ(random_num_contacts, lookup_args->lookup_contacts.size());
   result_itr = lookup_args->lookup_contacts.end();
   result_itr = node_->InsertCloseContacts(empty_contacts,
@@ -2398,7 +2381,7 @@ TEST_F(MockNodeImplTest, BEH_InsertCloseContacts) {
                                    node_id_,
                                    live_contacts,
                                    random_num_contacts - 1,
-                                   securifier));
+                                   private_key));
   result_itr = lookup_args->lookup_contacts.end();
   result_itr = node_->InsertCloseContacts(new_contacts,
                                           lookup_args,
@@ -2426,7 +2409,7 @@ TEST_F(MockNodeImplTest, BEH_InsertCloseContacts) {
                                    node_id_,
                                    live_contacts,
                                    random_num_contacts - 1,
-                                   securifier));
+                                   private_key));
   result_itr = lookup_args->lookup_contacts.end();
   result_itr = node_->InsertCloseContacts(new_contacts,
                                           lookup_args,
@@ -2457,7 +2440,7 @@ TEST_F(MockNodeImplTest, BEH_InsertCloseContacts) {
                                     node_id_,
                                     live_contacts,
                                     random_num_contacts - 2,
-                                    securifier));
+                                    private_key));
   result_itr = lookup_args->lookup_contacts.end();
   result_itr = node_->InsertCloseContacts(new_contacts,
                                           lookup_args,
@@ -2481,7 +2464,7 @@ TEST_F(MockNodeImplTest, BEH_InsertCloseContacts) {
                                     node_id_,
                                     live_contacts,
                                     random_num_contacts - 2,
-                                    securifier));
+                                    private_key));
   result_itr = lookup_args->lookup_contacts.end();
   result_itr = node_->InsertCloseContacts(new_contacts,
                                           lookup_args,
@@ -2520,7 +2503,7 @@ TEST_F(MockNodeImplTest, BEH_InsertCloseContacts) {
                                     node_id_,
                                     live_contacts,
                                     random_num_contacts - 2,
-                                    securifier));
+                                    private_key));
   result_itr = lookup_args->lookup_contacts.end();
   auto peer_itr(lookup_args->lookup_contacts.begin());
   result_itr = node_->InsertCloseContacts(new_contacts,

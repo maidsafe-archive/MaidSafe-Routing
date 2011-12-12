@@ -186,7 +186,8 @@ struct ChangeLastSeen {
   explicit ChangeLastSeen(const Contact &contact_in) : contact(contact_in) {}
   // Anju: use nolint to satisfy multi-indexing
   void operator()(RoutingTableContact &routing_table_contact) {  // NOLINT
-    if (routing_table_contact.contact.public_key() != contact.public_key()) {
+    if (!asymm::MatchingPublicKeys(routing_table_contact.contact.public_key(),
+                                   contact.public_key())) {
       DLOG(WARNING) << "Contacts have different public keys.";
       return;
     }

@@ -48,9 +48,11 @@ class SenderTaskTest_FUNC_SenderTaskCallbackMultiThreaded_Test;
 
 class Service;
 
-typedef std::function<void(KeyValueSignature, transport::Info,
-                           RequestAndSignature, std::string, std::string)>
-        TaskCallback;
+typedef std::function<void(KeyValueSignature,
+                           transport::Info,
+                           RequestAndSignature,
+                           asymm::PublicKey,
+                           asymm::ValidationToken)> TaskCallback;
 
 struct Task {
   Task(const KeyValueSignature &key_value_signature,
@@ -60,12 +62,12 @@ struct Task {
        TaskCallback ops_callback);
 
   const std::string& key() const;
-  const std::string& get_public_key_id() const;
+  const asymm::Identity& get_public_key_id() const;
 
   KeyValueSignature key_value_signature;
   transport::Info info;
   RequestAndSignature request_signature;
-  std::string public_key_id;
+  asymm::Identity public_key_id;
   TaskCallback ops_callback;
 };
 
@@ -81,7 +83,7 @@ typedef boost::multi_index::multi_index_container<
     >,
     boost::multi_index::ordered_non_unique<
       boost::multi_index::tag<TagPublicKeyId>,
-      BOOST_MULTI_INDEX_CONST_MEM_FUN(Task, const std::string&,
+      BOOST_MULTI_INDEX_CONST_MEM_FUN(Task, const asymm::Identity&,
                                       get_public_key_id)
     >
   >
@@ -104,7 +106,7 @@ class SenderTask  {
   bool AddTask(const KeyValueSignature &key_value_signature,
                const transport::Info &info,
                const RequestAndSignature &request_signature,
-               const std::string &public_key_id,
+               const asymm::Identity &public_key_id,
                TaskCallback ops_callback,
                bool *is_new_id);
 
@@ -126,9 +128,9 @@ class SenderTask  {
   // public_key_id and delete them from the multi index after the execution.
   // Does nothing if the public_key_id is empty or task for given public_key_id
   // is not present in the multi index.
-  void SenderTaskCallback(std::string public_key_id,
-                          std::string public_key,
-                          std::string public_key_validation);
+  void SenderTaskCallback(asymm::Identity public_key_id,
+                          asymm::PublicKey public_key,
+                          asymm::ValidationToken public_key_validation);
 
   /**  Multi_index container of sender tasks */
   std::shared_ptr<TaskIndex> task_index_;

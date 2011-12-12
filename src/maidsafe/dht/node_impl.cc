@@ -30,7 +30,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <map>
 
 #include "maidsafe/common/alternative_store.h"
-#include "maidsafe/common/securifier.h"
+#include "maidsafe/common/rsa.h"
 #include "maidsafe/common/utils.h"
 #include "maidsafe/transport/tcp_transport.h"
 
@@ -68,7 +68,7 @@ bool FindResultError(int result) {
 NodeImpl::NodeImpl(AsioService &asio_service,                 // NOLINT (Fraser)
                    TransportPtr listening_transport,
                    MessageHandlerPtr message_handler,
-                   SecurifierPtr default_securifier,
+                   KeyPairPtr default_asym_key_pair,
                    AlternativeStorePtr alternative_store,
                    bool client_only_node,
                    const uint16_t &k,
@@ -78,7 +78,8 @@ NodeImpl::NodeImpl(AsioService &asio_service,                 // NOLINT (Fraser)
     : asio_service_(asio_service),
       listening_transport_(listening_transport),
       message_handler_(message_handler),
-      default_securifier_(default_securifier),
+      default_public_key_(),
+      default_private_key_(),
       alternative_store_(alternative_store),
       on_online_status_change_(new OnOnlineStatusChangePtr::element_type),
       client_only_node_(client_only_node),
@@ -92,12 +93,24 @@ NodeImpl::NodeImpl(AsioService &asio_service,                 // NOLINT (Fraser)
       service_(),
       routing_table_(),
       rpcs_(),
+      contact_validation_getter_(std::bind(&StubContactValidationGetter,
+                                           arg::_1, arg::_2)),
+      contact_validator_(std::bind(&StubContactValidator, arg::_1, arg::_2,
+                                   arg::_3)),
+      validate_functor_(std::bind(&StubValidate, arg::_1, arg::_2, arg::_3)),
       contact_(),
       joined_(false),
       ping_oldest_contact_(),
       validate_contact_(),
       ping_down_contact_(),
-      refresh_data_store_timer_(asio_service_) {}
+      refresh_data_store_timer_(asio_service_) {
+  if (default_asym_key_pair) {
+    default_private_key_ = PrivateKeyPtr(
+        new asymm::PrivateKey(default_asym_key_pair->private_key));
+    default_public_key_ = PublicKeyPtr(
+        new asymm::PublicKey(default_asym_key_pair->public_key));
+  }
+}
 
 NodeImpl::~NodeImpl() {
   if (joined_)
@@ -122,20 +135,20 @@ void NodeImpl::Join(const NodeId &node_id,
                                         kNotListening));
   }
 
-  if (!default_securifier_) {
-    DLOG(INFO) << "Creating securifier";
-    crypto::RsaKeyPair key_pair;
-    key_pair.GenerateKeys(4096);
-    default_securifier_ = SecurifierPtr(new Securifier(node_id.String(),
-                                                       key_pair.public_key(),
-                                                       key_pair.private_key()));
+  // TODO(Viv) Remove Pub Key From Class Member and take in as Argument
+  if (!default_private_key_ || !default_public_key_) {
+    DLOG(INFO) << "Creating Keypair";
+    asymm::Keys key_pair;
+    asymm::GenerateKeyPair(&key_pair);
+    default_private_key_.reset(new asymm::PrivateKey(key_pair.private_key));
+    default_public_key_.reset(new asymm::PublicKey(key_pair.public_key));
   } else {
-    DLOG(INFO) << EncodeToHex(default_securifier_->kSigningKeyId());
+    DLOG(INFO) << EncodeToHex(node_id.String());
   }
 
   if (!rpcs_) {
     rpcs_.reset(new Rpcs<transport::TcpTransport>(asio_service_,
-                                                  default_securifier_));
+                                                  default_private_key_));
   }
 
   // TODO(Fraser#5#): 2011-07-08 - Need to update code for local endpoints.
@@ -149,15 +162,15 @@ void NodeImpl::Join(const NodeId &node_id,
     contact_ =
         Contact(node_id, endpoint, local_endpoints,
                 listening_transport_->transport_details().rendezvous_endpoint,
-                false, false, default_securifier_->kSigningKeyId(),
-                default_securifier_->kSigningPublicKey(), "");
+                false, false, node_id.String(),
+                *default_public_key_, "");
     rpcs_->set_contact(contact_);
   } else {
     contact_ = Contact(node_id, transport::Endpoint(),
                        std::vector<transport::Endpoint>(),
                        transport::Endpoint(), false, false,
-                       default_securifier_->kSigningKeyId(),
-                       default_securifier_->kSigningPublicKey(), "");
+                       node_id.String(),
+                       *default_public_key_, "");
     protobuf::Contact proto_contact(ToProtobuf(contact_));
     proto_contact.set_node_id(NodeId().String());
     rpcs_->set_contact(FromProtobuf(proto_contact));
@@ -188,9 +201,11 @@ void NodeImpl::Join(const NodeId &node_id,
   search_contacts.insert(bootstrap_contacts.front());
   bootstrap_contacts.erase(bootstrap_contacts.begin());
   FindValueArgsPtr find_value_args(
-      new FindValueArgs(node_id, k_, search_contacts, true, default_securifier_,
-          std::bind(&NodeImpl::JoinFindValueCallback, this, arg::_1,
-                    bootstrap_contacts, node_id, callback, true)));
+      new FindValueArgs(node_id, k_, search_contacts, true,
+                        default_private_key_,
+                        std::bind(&NodeImpl::JoinFindValueCallback, this,
+                                  arg::_1, bootstrap_contacts, node_id,
+                                  callback, true)));
 
   DLOG(INFO) << "Before StartLookup";
   StartLookup(find_value_args);
@@ -217,9 +232,9 @@ void NodeImpl::JoinFindValueCallback(FindValueReturns find_value_returns,
     bootstrap_contacts.erase(bootstrap_contacts.begin());
     FindValueArgsPtr find_value_args(
         new FindValueArgs(node_id, k_, search_contacts, true,
-            default_securifier_, std::bind(&NodeImpl::JoinFindValueCallback,
-                                           this, arg::_1, bootstrap_contacts,
-                                           node_id, callback, none_reached)));
+            default_private_key_, std::bind(&NodeImpl::JoinFindValueCallback,
+                                         this, arg::_1, bootstrap_contacts,
+                                         node_id, callback, none_reached)));
     StartLookup(find_value_args);
   } else {
     JoinSucceeded(callback);
@@ -231,10 +246,13 @@ void NodeImpl::JoinSucceeded(JoinFunctor callback) {
   if (!client_only_node_) {
     data_store_.reset(new DataStore(kMeanRefreshInterval_));
     service_.reset(new Service(routing_table_, data_store_,
-                               alternative_store_, default_securifier_, k_));
+                               alternative_store_, default_private_key_, k_));
     service_->set_node_joined(true);
     service_->set_node_contact(contact_);
     service_->ConnectToSignals(message_handler_);
+    service_->set_contact_validation_getter(contact_validation_getter_);
+    service_->set_contact_validator(contact_validator_);
+    service_->set_validate(validate_functor_);
     refresh_data_store_timer_.expires_from_now(kDataStoreCheckInterval_);
     refresh_data_store_timer_.async_wait(
         std::bind(&NodeImpl::RefreshDataStore, this, arg::_1));
@@ -299,34 +317,30 @@ OrderedContacts NodeImpl::GetClosestContactsLocally(
   return close_contacts;
 }
 
-bool NodeImpl::ValidateOrSign(const std::string &value,
-                              SecurifierPtr securifier,
-                              std::string *signature) {
-  if (signature->empty()) {
-    *signature = securifier->Sign(value);
-    return true;
-  } else {
-    return securifier->Validate(value, *signature, "",
-                                securifier->kSigningPublicKey(), "", "");
-  }
+int NodeImpl::SignIfEmpty(const std::string &value,
+                          PrivateKeyPtr private_key,
+                          std::string *signature) {
+  if (signature->empty())
+    return asymm::Sign(value, *private_key, signature);
+  return kSuccess;
 }
 
 void NodeImpl::Store(const Key &key,
                      const std::string &value,
                      const std::string &signature,
                      const bptime::time_duration &ttl,
-                     SecurifierPtr securifier,
+                     PrivateKeyPtr private_key,
                      StoreFunctor callback) {
   if (!joined_) {
     return asio_service_.post(std::bind(&NodeImpl::NotJoined<StoreFunctor>,
                                         this, callback));
   }
 
-  if (!securifier)
-    securifier = default_securifier_;
+  if (!private_key)
+    private_key = default_private_key_;
 
   std::string sig(signature);
-  if (!ValidateOrSign(value, securifier, &sig)) {
+  if (SignIfEmpty(value, private_key, &sig) != kSuccess) {
     return asio_service_.post(
         std::bind(&NodeImpl::FailedValidation<StoreFunctor>, this, callback));
   }
@@ -334,25 +348,25 @@ void NodeImpl::Store(const Key &key,
   OrderedContacts close_contacts(GetClosestContactsLocally(key, k_));
   StoreArgsPtr store_args(new StoreArgs(key, k_, close_contacts,
       static_cast<int>(k_ * kMinSuccessfulPecentageStore), value, sig, ttl,
-      securifier, callback));
+      private_key, callback));
   StartLookup(store_args);
 }
 
 void NodeImpl::Delete(const Key &key,
                       const std::string &value,
                       const std::string &signature,
-                      SecurifierPtr securifier,
+                      PrivateKeyPtr private_key,
                       DeleteFunctor callback) {
   if (!joined_) {
     return asio_service_.post(std::bind(&NodeImpl::NotJoined<DeleteFunctor>,
                                         this, callback));
   }
 
-  if (!securifier)
-    securifier = default_securifier_;
+  if (!private_key)
+    private_key = default_private_key_;
 
   std::string sig(signature);
-  if (!ValidateOrSign(value, securifier, &sig)) {
+  if (SignIfEmpty(value, private_key, &sig) != kSuccess) {
     return asio_service_.post(
         std::bind(&NodeImpl::FailedValidation<DeleteFunctor>, this, callback));
   }
@@ -360,7 +374,7 @@ void NodeImpl::Delete(const Key &key,
   OrderedContacts close_contacts(GetClosestContactsLocally(key, k_));
   DeleteArgsPtr delete_args(new DeleteArgs(key, k_, close_contacts,
       static_cast<int>(k_ * kMinSuccessfulPecentageDelete), value, sig,
-      securifier, callback));
+      private_key, callback));
   StartLookup(delete_args);
 }
 
@@ -370,19 +384,19 @@ void NodeImpl::Update(const Key &key,
                       const std::string &old_value,
                       const std::string &old_signature,
                       const bptime::time_duration &ttl,
-                      SecurifierPtr securifier,
+                      PrivateKeyPtr private_key,
                       UpdateFunctor callback) {
   if (!joined_) {
     return asio_service_.post(std::bind(&NodeImpl::NotJoined<UpdateFunctor>,
                                         this, callback));
   }
 
-  if (!securifier)
-    securifier = default_securifier_;
+  if (!private_key)
+    private_key = default_private_key_;
 
   std::string new_sig(new_signature), old_sig(old_signature);
-  if (!ValidateOrSign(old_value, securifier, &old_sig) ||
-      !ValidateOrSign(new_value, securifier, &new_sig)) {
+  if (SignIfEmpty(old_value, private_key, &old_sig) != kSuccess ||
+      SignIfEmpty(new_value, private_key, &new_sig) != kSuccess) {
     return asio_service_.post(
         std::bind(&NodeImpl::FailedValidation<UpdateFunctor>, this, callback));
   }
@@ -390,12 +404,12 @@ void NodeImpl::Update(const Key &key,
   OrderedContacts close_contacts(GetClosestContactsLocally(key, k_));
   UpdateArgsPtr update_args(new UpdateArgs(key, k_, close_contacts,
       static_cast<int>(k_ * kMinSuccessfulPecentageUpdate), old_value,
-      old_sig, new_value, new_sig, ttl, securifier, callback));
+      old_sig, new_value, new_sig, ttl, private_key, callback));
   StartLookup(update_args);
 }
 
 void NodeImpl::FindValue(const Key &key,
-                         SecurifierPtr securifier,
+                         PrivateKeyPtr private_key,
                          FindValueFunctor callback,
                          const uint16_t &extra_contacts,
                          bool cache) {
@@ -403,8 +417,8 @@ void NodeImpl::FindValue(const Key &key,
     return asio_service_.post(std::bind(&NodeImpl::NotJoined<FindValueFunctor>,
                                         this, callback));
   }
-  if (!securifier)
-    securifier = default_securifier_;
+  if (!private_key)
+    private_key = default_private_key_;
   OrderedContacts close_contacts(
       GetClosestContactsLocally(key, k_ + extra_contacts));
 
@@ -438,7 +452,7 @@ void NodeImpl::FindValue(const Key &key,
   }
 
   FindValueArgsPtr find_value_args(new FindValueArgs(key, k_ + extra_contacts,
-      close_contacts, cache, securifier, callback));
+      close_contacts, cache, private_key, callback));
   StartLookup(find_value_args);
 }
 
@@ -457,7 +471,7 @@ void NodeImpl::FindNodes(const Key &key,
   OrderedContacts close_contacts(
       GetClosestContactsLocally(key, k_ + extra_contacts));
   FindNodesArgsPtr find_nodes_args(new FindNodesArgs(key, k_ + extra_contacts,
-      close_contacts, default_securifier_, callback));
+      close_contacts, default_private_key_, callback));
   StartLookup(find_nodes_args);
 }
 
@@ -480,16 +494,36 @@ void NodeImpl::GetContact(const NodeId &node_id, GetContactFunctor callback) {
   // If we have the contact in our own routing table, ping it, otherwise start
   // a lookup for it.
   if ((*close_contacts.begin()).node_id() == node_id) {
-    rpcs_->Ping(default_securifier_,
+    rpcs_->Ping(default_private_key_,
                 *close_contacts.begin(),
                 std::bind(&NodeImpl::GetContactPingCallback, this, arg::_1,
                           arg::_2, *close_contacts.begin(), callback));
   } else {
     GetContactArgsPtr get_contact_args(
-        new GetContactArgs(node_id, k_, close_contacts, default_securifier_,
+        new GetContactArgs(node_id, k_, close_contacts, default_private_key_,
                            callback));
     StartLookup(get_contact_args);
   }
+}
+
+void NodeImpl::SetContactValidationGetter(
+    asymm::GetPublicKeyAndValidationFunctor contact_validation_getter) {
+  contact_validation_getter_ = contact_validation_getter;
+  if (service_)
+    service_->set_contact_validation_getter(contact_validation_getter_);
+}
+
+void NodeImpl::SetContactValidator(
+    asymm::ValidatePublicKeyFunctor contact_validator) {
+  contact_validator_ = contact_validator;
+  if (service_)
+    service_->set_contact_validator(contact_validator_);
+}
+
+void NodeImpl::SetValidate(asymm::ValidateFunctor validate_functor) {
+  validate_functor_ = validate_functor;
+  if (service_)
+    service_->set_validate(validate_functor_);
 }
 
 void NodeImpl::GetOwnContact(GetContactFunctor callback) {
@@ -512,7 +546,7 @@ void NodeImpl::Ping(const Contact &contact, PingFunctor callback) {
     return asio_service_.post(std::bind(&NodeImpl::NotJoined<PingFunctor>,
                                         this, callback));
   }
-  rpcs_->Ping(default_securifier_,
+  rpcs_->Ping(default_private_key_,
               contact,
               std::bind(&NodeImpl::PingCallback, this, arg::_1, arg::_2,
                         contact, callback));
@@ -599,7 +633,7 @@ void NodeImpl::DoLookupIteration(LookupArgsPtr lookup_args) {
             DLOG(INFO) << "Sending RPC to " << DebugId(lookup_args->kTarget);
             rpcs_->FindValue(lookup_args->kTarget,
                              lookup_args->kNumContactsRequested,
-                             lookup_args->securifier,
+                             lookup_args->private_key,
                              (*itr).first,
                              std::bind(&NodeImpl::IterativeFindCallback,
                                        this, arg::_1, arg::_2, arg::_3, arg::_4,
@@ -608,7 +642,7 @@ void NodeImpl::DoLookupIteration(LookupArgsPtr lookup_args) {
           } else {
             rpcs_->FindNodes(lookup_args->kTarget,
                              lookup_args->kNumContactsRequested,
-                             default_securifier_,
+                             default_private_key_,
                              (*itr).first,
                              std::bind(&NodeImpl::IterativeFindCallback,
                                        this, arg::_1, arg::_2,
@@ -1003,7 +1037,7 @@ void NodeImpl::InitiateStorePhase(StoreArgsPtr store_args,
                    store_args->kValue,
                    store_args->kSignature,
                    store_args->kSecondsToLive,
-                   store_args->securifier,
+                   store_args->private_key,
                    (*itr).first,
                    std::bind(&NodeImpl::StoreCallback, this, arg::_1, arg::_2,
                              (*itr).first, store_args));
@@ -1036,7 +1070,7 @@ void NodeImpl::InitiateDeletePhase(DeleteArgsPtr delete_args,
       rpcs_->Delete(delete_args->kTarget,
                     delete_args->kValue,
                     delete_args->kSignature,
-                    delete_args->securifier,
+                    delete_args->private_key,
                     (*itr).first,
                     std::bind(&NodeImpl::DeleteCallback, this, arg::_1, arg::_2,
                               (*itr).first, delete_args));
@@ -1070,7 +1104,7 @@ void NodeImpl::InitiateUpdatePhase(UpdateArgsPtr update_args,
                    update_args->kNewValue,
                    update_args->kNewSignature,
                    update_args->kSecondsToLive,
-                   update_args->securifier,
+                   update_args->private_key,
                    (*itr).first,
                    std::bind(&NodeImpl::UpdateCallback, this, arg::_1, arg::_2,
                              (*itr).first, update_args));
@@ -1103,13 +1137,13 @@ void NodeImpl::InitiateRefreshPhase(
       if (refresh_args->kOperationType == LookupArgs::kStoreRefresh) {
         rpcs_->StoreRefresh(refresh_args->kSerialisedRequest,
                             refresh_args->kSerialisedRequestSignature,
-                            refresh_args->securifier, (*itr).first,
+                            refresh_args->private_key, (*itr).first,
                             std::bind(&NodeImpl::HandleRpcCallback, this,
                                       (*itr).first, arg::_1, arg::_2));
       } else {
         rpcs_->DeleteRefresh(refresh_args->kSerialisedRequest,
                              refresh_args->kSerialisedRequestSignature,
-                             refresh_args->securifier, (*itr).first,
+                             refresh_args->private_key, (*itr).first,
                              std::bind(&NodeImpl::HandleRpcCallback, this,
                                        (*itr).first, arg::_1, arg::_2));
       }
@@ -1128,8 +1162,8 @@ void NodeImpl::HandleStoreToSelf(StoreArgsPtr store_args) {
   KeyValueSignature key_value_signature(store_args->kTarget.String(),
                                         store_args->kValue,
                                         store_args->kSignature);
-  if (data_store_->DifferentSigner(key_value_signature, contact_.public_key(),
-                                   default_securifier_)) {
+  if (data_store_->DifferentSigner(key_value_signature,
+                                   contact_.public_key())) {
     DLOG(WARNING) << DebugId(contact_) << ": Can't store to self - different "
                   << "signing key used to store under Kad key.";
     HandleSecondPhaseCallback<StoreArgsPtr>(kValueAlreadyExists, store_args);
@@ -1137,8 +1171,9 @@ void NodeImpl::HandleStoreToSelf(StoreArgsPtr store_args) {
   }
 
   // Check the signature validates with this node's public key
-  if (!default_securifier_->Validate(store_args->kValue, store_args->kSignature,
-                                     "", contact_.public_key(), "", "")) {
+  if (!validate_functor_(store_args->kValue,
+                         store_args->kSignature,
+                         contact_.public_key())) {
     DLOG(ERROR) << DebugId(contact_) << ": Failed to validate Store request "
                 << "for kademlia value";
     HandleSecondPhaseCallback<StoreArgsPtr>(kGeneralError, store_args);
@@ -1151,7 +1186,7 @@ void NodeImpl::HandleStoreToSelf(StoreArgsPtr store_args) {
                                           store_args->kValue,
                                           store_args->kSignature,
                                           store_args->kSecondsToLive,
-                                          store_args->securifier));
+                                          store_args->private_key));
   int result(data_store_->StoreValue(key_value_signature,
                                      store_args->kSecondsToLive,
                                      store_request_and_signature,
@@ -1176,8 +1211,8 @@ void NodeImpl::HandleDeleteToSelf(DeleteArgsPtr delete_args) {
   KeyValueSignature key_value_signature(delete_args->kTarget.String(),
                                         delete_args->kValue,
                                         delete_args->kSignature);
-  if (data_store_->DifferentSigner(key_value_signature, contact_.public_key(),
-                                   default_securifier_)) {
+  if (data_store_->DifferentSigner(key_value_signature,
+                                   contact_.public_key())) {
     DLOG(WARNING) << DebugId(contact_) << ": Can't delete to self - different "
                   << "signing key used to store under Kad key.";
     HandleSecondPhaseCallback<DeleteArgsPtr>(kGeneralError, delete_args);
@@ -1185,9 +1220,9 @@ void NodeImpl::HandleDeleteToSelf(DeleteArgsPtr delete_args) {
   }
 
   // Check the signature validates with this node's public key
-  if (!default_securifier_->Validate(delete_args->kValue,
-                                     delete_args->kSignature, "",
-                                     contact_.public_key(), "", "")) {
+  if (!validate_functor_(delete_args->kValue,
+                         delete_args->kSignature,
+                         contact_.public_key())) {
     DLOG(ERROR) << DebugId(contact_) << ": Failed to validate Delete request "
                 << "for kademlia value";
     HandleSecondPhaseCallback<DeleteArgsPtr>(kGeneralError, delete_args);
@@ -1199,7 +1234,7 @@ void NodeImpl::HandleDeleteToSelf(DeleteArgsPtr delete_args) {
       rpcs_->MakeDeleteRequestAndSignature(delete_args->kTarget,
                                            delete_args->kValue,
                                            delete_args->kSignature,
-                                           delete_args->securifier));
+                                           delete_args->private_key));
   bool result(data_store_->DeleteValue(key_value_signature,
                                        delete_request_and_signature, false));
   if (result) {
@@ -1217,8 +1252,7 @@ void NodeImpl::HandleUpdateToSelf(UpdateArgsPtr update_args) {
                                             update_args->kNewValue,
                                             update_args->kNewSignature);
   if (data_store_->DifferentSigner(new_key_value_signature,
-                                   contact_.public_key(),
-                                   default_securifier_)) {
+                                   contact_.public_key())) {
     DLOG(WARNING) << DebugId(contact_) << ": Can't update to self - different "
                   << "signing key used to store under Kad key.";
     HandleSecondPhaseCallback<UpdateArgsPtr>(kGeneralError, update_args);
@@ -1226,9 +1260,9 @@ void NodeImpl::HandleUpdateToSelf(UpdateArgsPtr update_args) {
   }
 
   // Check the new signature validates with this node's public key
-  if (!default_securifier_->Validate(update_args->kNewValue,
-                                     update_args->kNewSignature,
-                                     "", contact_.public_key(), "", "")) {
+  if (!validate_functor_(update_args->kNewValue,
+                         update_args->kNewSignature,
+                         contact_.public_key())) {
     DLOG(ERROR) << DebugId(contact_) << ": Failed to validate Update new "
                 << "request for kademlia value";
     HandleSecondPhaseCallback<UpdateArgsPtr>(kGeneralError, update_args);
@@ -1241,7 +1275,7 @@ void NodeImpl::HandleUpdateToSelf(UpdateArgsPtr update_args) {
                                           update_args->kNewValue,
                                           update_args->kNewSignature,
                                           update_args->kSecondsToLive,
-                                          update_args->securifier));
+                                          update_args->private_key));
   int result(data_store_->StoreValue(new_key_value_signature,
                                      update_args->kSecondsToLive,
                                      store_request_and_signature,
@@ -1259,9 +1293,9 @@ void NodeImpl::HandleUpdateToSelf(UpdateArgsPtr update_args) {
   }
 
   // Check the old signature validates with this node's public key
-  if (!default_securifier_->Validate(update_args->kOldValue,
-                                     update_args->kOldSignature, "",
-                                     contact_.public_key(), "", "")) {
+  if (!validate_functor_(update_args->kOldValue,
+                         update_args->kOldSignature,
+                         contact_.public_key())) {
     DLOG(ERROR) << DebugId(contact_) << ": Failed to validate Update old "
                 << "request for kademlia value";
     HandleSecondPhaseCallback<UpdateArgsPtr>(kGeneralError, update_args);
@@ -1276,7 +1310,7 @@ void NodeImpl::HandleUpdateToSelf(UpdateArgsPtr update_args) {
       rpcs_->MakeDeleteRequestAndSignature(update_args->kTarget,
                                            update_args->kOldValue,
                                            update_args->kOldSignature,
-                                           update_args->securifier));
+                                           update_args->private_key));
   if (data_store_->DeleteValue(old_key_value_signature,
                                delete_request_and_signature, false)) {
     HandleSecondPhaseCallback<UpdateArgsPtr>(kSuccess, update_args);
@@ -1309,7 +1343,7 @@ void NodeImpl::StoreCallback(RankInfoPtr rank_info,
             rpcs_->MakeDeleteRequestAndSignature(store_args->kTarget,
                                                  store_args->kValue,
                                                  store_args->kSignature,
-                                                 store_args->securifier));
+                                                 store_args->private_key));
         if (!data_store_->DeleteValue(key_value_signature,
                                       delete_request_and_signature, false)) {
           DLOG(WARNING) << DebugId(contact_) << ": Failed to delete value "
@@ -1319,7 +1353,7 @@ void NodeImpl::StoreCallback(RankInfoPtr rank_info,
         rpcs_->Delete(store_args->kTarget,
                       store_args->kValue,
                       store_args->kSignature,
-                      store_args->securifier,
+                      store_args->private_key,
                       (*itr).first,
                       std::bind(&NodeImpl::HandleRpcCallback, this,
                                 (*itr).first, arg::_1, arg::_2));
@@ -1364,7 +1398,7 @@ void NodeImpl::UpdateCallback(RankInfoPtr rank_info,
       rpcs_->Delete(update_args->kTarget,
                     update_args->kOldValue,
                     update_args->kOldSignature,
-                    update_args->securifier,
+                    update_args->private_key,
                     peer,
                     std::bind(&NodeImpl::DeleteCallback, this, arg::_1, arg::_2,
                               peer, update_args));
@@ -1433,7 +1467,7 @@ void NodeImpl::SendDownlist(const Downlist &downlist) {
   // Send RPCs
   auto itr(downlist_by_provider.begin());
   while (itr != downlist_by_provider.end()) {
-    rpcs_->Downlist((*itr).second, default_securifier_, (*itr).first);
+    rpcs_->Downlist((*itr).second, default_private_key_, (*itr).first);
     ++itr;
   }
 }
@@ -1466,7 +1500,7 @@ void NodeImpl::RefreshData(const KeyValueTuple &key_value_tuple) {
                                     LookupArgs::kDeleteRefresh :
                                     LookupArgs::kStoreRefresh);
   RefreshArgsPtr refresh_args(new RefreshArgs(op_type,
-      NodeId(key_value_tuple.key()), k_, close_contacts, default_securifier_,
+      NodeId(key_value_tuple.key()), k_, close_contacts, default_private_key_,
       key_value_tuple.request_and_signature.first,
       key_value_tuple.request_and_signature.second));
   StartLookup(refresh_args);
@@ -1488,7 +1522,7 @@ bool NodeImpl::NodeContacted(const int &code) {
 void NodeImpl::PingOldestContact(const Contact &oldest_contact,
                                  const Contact &replacement_contact,
                                  RankInfoPtr replacement_rank_info) {
-  rpcs_->Ping(default_securifier_,
+  rpcs_->Ping(default_private_key_,
               oldest_contact,
               std::bind(&NodeImpl::PingOldestContactCallback, this,
                         oldest_contact, arg::_1, arg::_2, replacement_contact,
@@ -1518,19 +1552,18 @@ void NodeImpl::ConnectPingOldestContact() {
 }
 
 void NodeImpl::ValidateContact(const Contact &contact) {
-  GetPublicKeyAndValidationCallback callback(
+  asymm::GetPublicKeyAndValidationCallback callback(
       std::bind(&NodeImpl::ValidateContactCallback, this, contact, arg::_1,
                 arg::_2));
-  default_securifier_->GetPublicKeyAndValidation(contact.public_key_id(),
-                                                 callback);
+  contact_validation_getter_(contact.public_key_id(), callback);
 }
 
-void NodeImpl::ValidateContactCallback(Contact contact,
-                                       std::string public_key,
-                                       std::string public_key_validation) {
-  bool valid = default_securifier_->Validate("", "", contact.public_key_id(),
-                                             public_key, public_key_validation,
-                                             contact.node_id().String());
+void NodeImpl::ValidateContactCallback(
+    Contact contact,
+    asymm::PublicKey public_key,
+    asymm::ValidationToken public_key_validation) {
+  bool valid = contact_validator_(contact.public_key_id(),
+                                  public_key, public_key_validation);
   routing_table_->SetValidated(contact.node_id(), valid);
 }
 
@@ -1542,7 +1575,7 @@ void NodeImpl::ConnectValidateContact() {
 }
 
 void NodeImpl::PingDownContact(const Contact &down_contact) {
-  rpcs_->Ping(default_securifier_,
+  rpcs_->Ping(default_private_key_,
               down_contact,
               std::bind(&NodeImpl::PingDownContactCallback, this,
                         down_contact, arg::_1, arg::_2));

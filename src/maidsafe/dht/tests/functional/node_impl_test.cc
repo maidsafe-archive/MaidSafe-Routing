@@ -90,7 +90,7 @@ class NodeImplTest : public testing::TestWithParam<bool> {
           GetDataStore(env_->node_containers_[i])->shared_mutex_);
       GetDataStore(env_->node_containers_[i])->key_value_index_->clear();
     }
-    test_container_->Init(3, SecurifierPtr(), MessageHandlerPtr(),
+    test_container_->Init(3, KeyPairPtr(), MessageHandlerPtr(),
                           AlternativeStorePtr(), client_only_node_, env_->k_,
                           env_->alpha_, env_->beta_,
                           env_->mean_refresh_interval_);
@@ -109,6 +109,10 @@ class NodeImplTest : public testing::TestWithParam<bool> {
     // make far_key_ as far as possible from test_container_'s ID
     far_key_ = test_container_->node()->contact().node_id() ^
                NodeId(std::string(kKeySizeBytes, static_cast<char>(-1)));
+  }
+
+  PrivateKeyPtr GetPrivateKeyPtr(KeyPairPtr key_pair) {
+    return PrivateKeyPtr(new asymm::PrivateKey(key_pair->private_key));
   }
 
   std::shared_ptr<DataStore> GetDataStore(
@@ -144,7 +148,7 @@ class NodeImplTest : public testing::TestWithParam<bool> {
 TEST_P(NodeImplTest, FUNC_JoinLeave) {
   NodeContainerPtr node_container(
       new maidsafe::dht::NodeContainer<NodeImpl>());
-  node_container->Init(3, SecurifierPtr(), MessageHandlerPtr(),
+  node_container->Init(3, KeyPairPtr(), MessageHandlerPtr(),
                        AlternativeStorePtr(), client_only_node_, env_->k_,
                        env_->alpha_, env_->beta_, env_->mean_refresh_interval_);
   node_container->MakeAllCallbackFunctors(&env_->mutex_, &env_->cond_var_);
@@ -392,7 +396,7 @@ TEST_P(NodeImplTest, FUNC_Store) {
   {
     boost::mutex::scoped_lock lock(env_->mutex_);
     chosen_container->Store(far_key_, value, "", duration,
-                            chosen_container->securifier());
+                            GetPrivateKeyPtr(chosen_container->key_pair()));
     ASSERT_TRUE(env_->cond_var_.timed_wait(lock, kTimeout_,
                 chosen_container->wait_for_store_functor()));
     chosen_container->GetAndResetStoreResult(&result);
@@ -422,7 +426,8 @@ TEST_P(NodeImplTest, FUNC_Store) {
   {
     boost::mutex::scoped_lock lock(env_->mutex_);
     chosen_container->Store(far_key_, value, "", duration,
-                            chosen_container->securifier());
+                            PrivateKeyPtr(new asymm::PrivateKey(
+                                chosen_container->key_pair()->private_key)));
     ASSERT_TRUE(env_->cond_var_.timed_wait(lock, kTimeout_,
                 chosen_container->wait_for_store_functor()));
     chosen_container->GetAndResetStoreResult(&result);
@@ -438,7 +443,7 @@ TEST_P(NodeImplTest, FUNC_Store) {
   {
     boost::mutex::scoped_lock lock(env_->mutex_);
     env_->node_containers_[index]->Store(far_key_, value1, "", duration,
-        env_->node_containers_[index]->securifier());
+        GetPrivateKeyPtr(env_->node_containers_[index]->key_pair()));
     ASSERT_TRUE(env_->cond_var_.timed_wait(lock, kTimeout_,
                 env_->node_containers_[index]->wait_for_store_functor()));
     env_->node_containers_[index]->GetAndResetStoreResult(&result);
@@ -451,7 +456,7 @@ TEST_P(NodeImplTest, FUNC_Store) {
   {
     boost::mutex::scoped_lock lock(env_->mutex_);
     chosen_container->Store(far_key_, value1, "", duration,
-                            chosen_container->securifier());
+                            GetPrivateKeyPtr(chosen_container->key_pair()));
     ASSERT_TRUE(env_->cond_var_.timed_wait(lock, kTimeout_,
                 chosen_container->wait_for_store_functor()));
     chosen_container->GetAndResetStoreResult(&result);
@@ -493,7 +498,7 @@ TEST_P(NodeImplTest, FUNC_FindValue) {
     FindValueReturns find_value_returns_nonexistent_key;
     boost::mutex::scoped_lock lock(env_->mutex_);
     test_container_->FindValue(nonexistent_key,
-                               test_container_->securifier());
+                               GetPrivateKeyPtr(test_container_->key_pair()));
     ASSERT_TRUE(env_->cond_var_.timed_wait(
         lock, kTimeout_, test_container_->wait_for_find_value_functor()));
     test_container_->GetAndResetFindValueResult(
@@ -517,7 +522,7 @@ TEST_P(NodeImplTest, FUNC_FindValue) {
     {
       boost::mutex::scoped_lock lock(env_->mutex_);
       test_container_->Store(far_key_, values[i], "", duration,
-                             test_container_->securifier());
+                             GetPrivateKeyPtr(test_container_->key_pair()));
       ASSERT_TRUE(env_->cond_var_.timed_wait(lock, kTimeout_,
                              test_container_->wait_for_store_functor()));
       test_container_->GetAndResetStoreResult(&result);
@@ -556,7 +561,8 @@ TEST_P(NodeImplTest, FUNC_FindValue) {
   for (size_t i = 0; i != env_->k_; ++i) {
     {
       boost::mutex::scoped_lock lock(env_->mutex_);
-      test_container_->FindValue(far_key_, test_container_->securifier());
+      test_container_->FindValue(far_key_,
+                                 GetPrivateKeyPtr(test_container_->key_pair()));
       ASSERT_TRUE(env_->cond_var_.timed_wait(lock, kTimeout_,
                   test_container_->wait_for_find_value_functor()));
       test_container_->GetAndResetFindValueResult(&find_value_returns);
@@ -568,9 +574,9 @@ TEST_P(NodeImplTest, FUNC_FindValue) {
                       find_value_returns.values_and_signatures.size()));
     for (size_t k = 0; k != num_values; ++k) {
       EXPECT_EQ(values[k], find_value_returns.values_and_signatures[k].first);
-      EXPECT_TRUE(test_container_->securifier()->Validate(values[k],
-                  find_value_returns.values_and_signatures[k].second, "",
-                  test_container_->securifier()->kSigningPublicKey(), "", ""));
+      EXPECT_TRUE(asymm::Validate(values[k],
+                  find_value_returns.values_and_signatures[k].second,
+                  test_container_->key_pair()->public_key));
     }
     // TODO(Fraser#5#): 2011-07-14 - Handle other return fields
 
@@ -589,7 +595,8 @@ TEST_P(NodeImplTest, FUNC_FindValue) {
   find_value_returns = FindValueReturns();
   {
     boost::mutex::scoped_lock lock(env_->mutex_);
-    test_container_->FindValue(far_key_, test_container_->securifier());
+    test_container_->FindValue(far_key_,
+                               GetPrivateKeyPtr(test_container_->key_pair()));
     ASSERT_TRUE(env_->cond_var_.timed_wait(lock, bptime::minutes(1),
                 test_container_->wait_for_find_value_functor()));
     test_container_->GetAndResetFindValueResult(&find_value_returns);
@@ -632,7 +639,7 @@ TEST_P(NodeImplTest, FUNC_FindValue) {
   }
   NodeContainerPtr alternative_container(
       new maidsafe::dht::NodeContainer<NodeImpl>());
-  alternative_container->Init(3, SecurifierPtr(), MessageHandlerPtr(),
+  alternative_container->Init(3, KeyPairPtr(), MessageHandlerPtr(),
       AlternativeStorePtr(new TestAlternativeStoreReturnsTrue), false, env_->k_,
       env_->alpha_, env_->beta_, env_->mean_refresh_interval_);
   alternative_container->MakeAllCallbackFunctors(&env_->mutex_,
@@ -653,7 +660,7 @@ TEST_P(NodeImplTest, FUNC_FindValue) {
     boost::mutex::scoped_lock lock(env_->mutex_);
     test_container_->FindValue(
         alternative_container->node()->contact().node_id(),
-        test_container_->securifier());
+        GetPrivateKeyPtr(test_container_->key_pair()));
     ASSERT_TRUE(env_->cond_var_.timed_wait(lock, kTimeout_,
                 test_container_->wait_for_find_value_functor()));
     test_container_->GetAndResetFindValueResult(
@@ -671,8 +678,8 @@ TEST_P(NodeImplTest, FUNC_FindValue) {
   // needs_cache_copy field
   Key saturation_key(NodeId::kRandomId);
   std::string saturation_value = RandomString(RandomUint32() % 1024);
-  maidsafe::crypto::RsaKeyPair crypto_key;
-  crypto_key.GenerateKeys(4096);
+  asymm::Keys crypto_key;
+  asymm::GenerateKeyPair(&crypto_key);
   KeyValueTuple kvt = MakeKVT(crypto_key, saturation_value.size(), duration,
                               saturation_key.String(), saturation_value);
   for (auto it(env_->node_containers_.begin());
@@ -684,7 +691,8 @@ TEST_P(NodeImplTest, FUNC_FindValue) {
   {
     boost::mutex::scoped_lock lock(env_->mutex_);
     result = kPendingResult;
-    test_container_->FindValue(saturation_key, test_container_->securifier());
+    test_container_->FindValue(saturation_key,
+                               GetPrivateKeyPtr(test_container_->key_pair()));
     ASSERT_TRUE(env_->cond_var_.timed_wait(lock, kTimeout_,
                 test_container_->wait_for_find_value_functor()));
     test_container_->GetAndResetFindValueResult(&saturation_find_value_returns);
@@ -703,7 +711,7 @@ TEST_P(NodeImplTest, FUNC_FindValue) {
 //    boost::mutex::scoped_lock lock(env_->mutex_);
 //    result = kPendingResult;
 //    test_container_->Store(needs_cache_copy_key, needs_cache_copy_value, "",
-//                           duration, test_container_->securifier());
+//                           duration, test_container_->key_pair());
 //    ASSERT_TRUE(env_->cond_var_.timed_wait(lock, kTimeout_,
 //                             test_container_->wait_for_store_functor()));
 //    test_container_->GetAndResetStoreResult(&result);
@@ -718,7 +726,7 @@ TEST_P(NodeImplTest, FUNC_FindValue) {
 //    boost::mutex::scoped_lock lock(env_->mutex_);
 //    result = kPendingResult;
 //    test_container_->FindValue(needs_cache_copy_key,
-//                               test_container_->securifier());
+//                               test_container_->key_pair());
 //    ASSERT_TRUE(env_->cond_var_.timed_wait(lock, kTimeout_,
 //                test_container_->wait_for_find_value_functor()));
 //    test_container_->GetAndResetFindValueResult(&need_cache_copy_returns);
@@ -764,7 +772,7 @@ TEST_P(NodeImplTest, FUNC_Delete) {
   NodeContainerPtr chosen_container(env_->node_containers_[test_node_index]);
   boost::mutex::scoped_lock lock(env_->mutex_);
   chosen_container->Store(key, value, "", duration,
-                          chosen_container->securifier());
+                          GetPrivateKeyPtr(chosen_container->key_pair()));
   EXPECT_TRUE(env_->cond_var_.timed_wait(lock, kTimeout_,
               chosen_container->wait_for_store_functor()));
   chosen_container->GetAndResetStoreResult(&result);
@@ -775,13 +783,15 @@ TEST_P(NodeImplTest, FUNC_Delete) {
        it != env_->node_containers_.end(); ++it) {
     if ((*it)->node()->contact().node_id()
         != chosen_container->node()->contact().node_id()) {
-      (*it)->Delete(key, value, "", (*it)->securifier());
+      (*it)->Delete(key, value, "", GetPrivateKeyPtr((*it)->key_pair()));
       EXPECT_TRUE(env_->cond_var_.timed_wait(lock, kTimeout_,
                   (*it)->wait_for_delete_functor()));
       (*it)->GetAndResetDeleteResult(&result);
       EXPECT_EQ(kDeleteTooFewNodes, result);
       result = kPendingResult;
-      chosen_container->FindValue(key, chosen_container->securifier());
+      chosen_container->FindValue(
+            key,
+            GetPrivateKeyPtr(chosen_container->key_pair()));
       EXPECT_TRUE(env_->cond_var_.timed_wait(lock, kTimeout_,
               chosen_container->wait_for_find_value_functor()));
       chosen_container->GetAndResetFindValueResult(&find_value_returns);
@@ -790,7 +800,8 @@ TEST_P(NodeImplTest, FUNC_Delete) {
     }
   }
   // Verify that deleting succeeds for the storing node
-  chosen_container->Delete(key, value, "", chosen_container->securifier());
+  chosen_container->Delete(key, value, "",
+                           GetPrivateKeyPtr(chosen_container->key_pair()));
   EXPECT_TRUE(env_->cond_var_.timed_wait(lock, kTimeout_,
               chosen_container->wait_for_delete_functor()));
   chosen_container->GetAndResetDeleteResult(&result);
@@ -839,7 +850,8 @@ TEST_P(NodeImplTest, FUNC_Delete) {
     }
   }
   result = kPendingResult;
-  chosen_container->FindValue(key, chosen_container->securifier());
+  chosen_container->FindValue(key,
+                              GetPrivateKeyPtr(chosen_container->key_pair()));
   EXPECT_TRUE(env_->cond_var_.timed_wait(lock, kTimeout_,
               chosen_container->wait_for_find_value_functor()));
   chosen_container->GetAndResetFindValueResult(&find_value_returns);
@@ -847,7 +859,8 @@ TEST_P(NodeImplTest, FUNC_Delete) {
 
   result = kPendingResult;
   // Verify that re-deleting the deleted value succeeds for the storing node
-  chosen_container->Delete(key, value, "", chosen_container->securifier());
+  chosen_container->Delete(key, value, "",
+                           GetPrivateKeyPtr(chosen_container->key_pair()));
   EXPECT_TRUE(env_->cond_var_.timed_wait(lock, kTimeout_,
               chosen_container->wait_for_delete_functor()));
   chosen_container->GetAndResetDeleteResult(&result);
@@ -856,7 +869,7 @@ TEST_P(NodeImplTest, FUNC_Delete) {
   // verify that the original storer can re-store the deleted value
   result = kPendingResult;
   chosen_container->Store(key, value, "", duration,
-                          chosen_container->securifier());
+                          GetPrivateKeyPtr(chosen_container->key_pair()));
   EXPECT_TRUE(env_->cond_var_.timed_wait(lock, kTimeout_,
               chosen_container->wait_for_store_functor()));
   chosen_container->GetAndResetStoreResult(&result);
@@ -899,15 +912,16 @@ TEST_P(NodeImplTest, FUNC_Delete) {
     }
   }
   result = kPendingResult;
-  chosen_container->FindValue(key, chosen_container->securifier());
+  chosen_container->FindValue(key,
+                              GetPrivateKeyPtr(chosen_container->key_pair()));
   EXPECT_TRUE(env_->cond_var_.timed_wait(lock, kTimeout_,
               chosen_container->wait_for_find_value_functor()));
   chosen_container->GetAndResetFindValueResult(&find_value_returns);
   EXPECT_EQ(kSuccess, find_value_returns.return_code);
   EXPECT_EQ(value, find_value_returns.values_and_signatures[0].first);
-  EXPECT_TRUE(chosen_container->securifier()->Validate(value,
-              find_value_returns.values_and_signatures[0].second, "",
-              chosen_container->securifier()->kSigningPublicKey(), "", ""));
+  EXPECT_TRUE(asymm::Validate(value,
+              find_value_returns.values_and_signatures[0].second,
+              chosen_container->key_pair()->public_key));
   FindValueReturns find_multiple_value_returns;
   Key multiple_key(NodeId::kRandomId);
   std::string value1 = RandomString(RandomUint32() % 1000 + 24);
@@ -915,21 +929,21 @@ TEST_P(NodeImplTest, FUNC_Delete) {
   std::string value3 = RandomString(RandomUint32() % 1000 + 24);
   result = kPendingResult;
   chosen_container->Store(multiple_key, value1, "", duration,
-                          chosen_container->securifier());
+                          GetPrivateKeyPtr(chosen_container->key_pair()));
   EXPECT_TRUE(env_->cond_var_.timed_wait(lock, kTimeout_,
               chosen_container->wait_for_store_functor()));
   chosen_container->GetAndResetStoreResult(&result);
   EXPECT_EQ(kSuccess, result);
   result = kPendingResult;
   chosen_container->Store(multiple_key, value2, "", duration,
-                          chosen_container->securifier());
+                          GetPrivateKeyPtr(chosen_container->key_pair()));
   EXPECT_TRUE(env_->cond_var_.timed_wait(lock, kTimeout_,
               chosen_container->wait_for_store_functor()));
   chosen_container->GetAndResetStoreResult(&result);
   EXPECT_EQ(kSuccess, result);
   result = kPendingResult;
   chosen_container->Store(multiple_key, value3, "", duration,
-                          chosen_container->securifier());
+                          GetPrivateKeyPtr(chosen_container->key_pair()));
   EXPECT_TRUE(env_->cond_var_.timed_wait(lock, kTimeout_,
               chosen_container->wait_for_store_functor()));
   chosen_container->GetAndResetStoreResult(&result);
@@ -984,7 +998,7 @@ TEST_P(NodeImplTest, FUNC_Delete) {
   }
   result = kPendingResult;
   chosen_container->Delete(multiple_key, value1,
-                           "", chosen_container->securifier());
+                           "", GetPrivateKeyPtr(chosen_container->key_pair()));
   EXPECT_TRUE(env_->cond_var_.timed_wait(lock, kTimeout_,
               chosen_container->wait_for_delete_functor()));
   chosen_container->GetAndResetDeleteResult(&result);
@@ -1002,15 +1016,14 @@ TEST_P(NodeImplTest, FUNC_Delete) {
       size_t size(0);
       if (GetDataStore(*it)->GetValues(multiple_key.String(), &values))
         size = values.size();
-        while (values.size() >= 3
-              && total_sleep_time < kTimeout_) {
+        while (size >= 3 && total_sleep_time < kTimeout_) {
           total_sleep_time += kIterSleep;
           Sleep(kIterSleep);
           if (GetDataStore(*it)->GetValues(multiple_key.String(), &values))
             size = values.size();
         }
-        EXPECT_TRUE(GetDataStore(*it)
-          ->GetValues(multiple_key.String(), &values));
+        EXPECT_TRUE(GetDataStore(*it)->GetValues(multiple_key.String(),
+                                                 &values));
         EXPECT_EQ(2, values.size());
       } else {
         EXPECT_FALSE(GetDataStore(*it)->
@@ -1024,14 +1037,14 @@ TEST_P(NodeImplTest, FUNC_Delete) {
         const bptime::milliseconds kIterSleep(100);
         size_t size(0);
         if (GetDataStore(test_container_)
-          ->GetValues(multiple_key.String(), &values))
+            ->GetValues(multiple_key.String(), &values))
           size = values.size();
-        while (values.size() >= 3
+        while (size >= 3
               && total_sleep_time < kTimeout_) {
           total_sleep_time += kIterSleep;
           Sleep(kIterSleep);
           if (GetDataStore(test_container_)
-            ->GetValues(multiple_key.String(), &values))
+              ->GetValues(multiple_key.String(), &values))
             size = values.size();
         }
         EXPECT_TRUE(GetDataStore(test_container_)
@@ -1044,7 +1057,8 @@ TEST_P(NodeImplTest, FUNC_Delete) {
     }
   // FindValue must now be successful, but yield only the two remaining values
   result = kPendingResult;
-  chosen_container->FindValue(multiple_key, chosen_container->securifier());
+  chosen_container->FindValue(multiple_key,
+                              GetPrivateKeyPtr(chosen_container->key_pair()));
   EXPECT_TRUE(env_->cond_var_.timed_wait(lock, kTimeout_,
               chosen_container->wait_for_find_value_functor()));
   chosen_container->GetAndResetFindValueResult(&find_multiple_value_returns);
@@ -1059,19 +1073,19 @@ TEST_P(NodeImplTest, FUNC_Delete) {
      find_multiple_value_returns.values_and_signatures[1].first ==
      value2));
   if (find_multiple_value_returns.values_and_signatures[0].first == value2) {
-    EXPECT_TRUE(chosen_container->securifier()->Validate(value2,
-                find_multiple_value_returns.values_and_signatures[0].second, "",
-                chosen_container->securifier()->kSigningPublicKey(), "", ""));
-    EXPECT_TRUE(chosen_container->securifier()->Validate(value3,
-                find_multiple_value_returns.values_and_signatures[1].second, "",
-                chosen_container->securifier()->kSigningPublicKey(), "", ""));
+    EXPECT_TRUE(asymm::Validate(value2,
+                find_multiple_value_returns.values_and_signatures[0].second,
+                chosen_container->key_pair()->public_key));
+    EXPECT_TRUE(asymm::Validate(value3,
+                find_multiple_value_returns.values_and_signatures[1].second,
+                chosen_container->key_pair()->public_key));
   } else {
-    EXPECT_TRUE(chosen_container->securifier()->Validate(value3,
-                find_multiple_value_returns.values_and_signatures[0].second, "",
-                chosen_container->securifier()->kSigningPublicKey(), "", ""));
-    EXPECT_TRUE(chosen_container->securifier()->Validate(value2,
-                find_multiple_value_returns.values_and_signatures[1].second, "",
-                chosen_container->securifier()->kSigningPublicKey(), "", ""));
+    EXPECT_TRUE(asymm::Validate(value3,
+                find_multiple_value_returns.values_and_signatures[0].second,
+                chosen_container->key_pair()->public_key));
+    EXPECT_TRUE(asymm::Validate(value2,
+                find_multiple_value_returns.values_and_signatures[1].second,
+                chosen_container->key_pair()->public_key));
   }
 }
 
@@ -1089,7 +1103,7 @@ TEST_P(NodeImplTest, FUNC_Update) {
   {
     boost::mutex::scoped_lock lock(env_->mutex_);
     chosen_container->Store(key, value, "", duration,
-                            chosen_container->securifier());
+                            GetPrivateKeyPtr(chosen_container->key_pair()));
     EXPECT_TRUE(env_->cond_var_.timed_wait(lock, kTimeout_,
                 chosen_container->wait_for_store_functor()));
     chosen_container->GetAndResetStoreResult(&result);
@@ -1099,7 +1113,7 @@ TEST_P(NodeImplTest, FUNC_Update) {
   {
     boost::mutex::scoped_lock lock(env_->mutex_);
     chosen_container->Update(key, value, "", value, "",
-        duration, chosen_container->securifier());
+        duration, GetPrivateKeyPtr(chosen_container->key_pair()));
     EXPECT_TRUE(env_->cond_var_.timed_wait(lock, kTimeout_,
                 chosen_container->wait_for_update_functor()));
     chosen_container->GetAndResetUpdateResult(&result);
@@ -1108,23 +1122,25 @@ TEST_P(NodeImplTest, FUNC_Update) {
   result = kPendingResult;
   {
     boost::mutex::scoped_lock lock(env_->mutex_);
-    chosen_container->FindValue(key, chosen_container->securifier());
+    chosen_container->FindValue(
+        key,
+        GetPrivateKeyPtr(chosen_container->key_pair()));
     EXPECT_TRUE(env_->cond_var_.timed_wait(lock, kTimeout_,
                 chosen_container->wait_for_find_value_functor()));
     chosen_container->GetAndResetFindValueResult(&find_value_returns);
   }
   EXPECT_EQ(kSuccess, find_value_returns.return_code);
   EXPECT_EQ(value, find_value_returns.values_and_signatures[0].first);
-  EXPECT_TRUE(chosen_container->securifier()->Validate(value,
-              find_value_returns.values_and_signatures[0].second, "",
-              chosen_container->securifier()->kSigningPublicKey(), "", ""));
+  EXPECT_TRUE(asymm::Validate(value,
+              find_value_returns.values_and_signatures[0].second,
+              chosen_container->key_pair()->public_key));
 
   //  verify updating fails for all but the original storer
   for (size_t i = 0; i < env_->node_containers_.size(); ++i) {
     {
       boost::mutex::scoped_lock lock(env_->mutex_);
       env_->node_containers_[i]->Update(key, new_value, "", value, "",
-          duration, env_->node_containers_[i]->securifier());
+          duration, GetPrivateKeyPtr(env_->node_containers_[i]->key_pair()));
       EXPECT_TRUE(env_->cond_var_.timed_wait(lock, kTimeout_,
                   env_->node_containers_[i]->wait_for_update_functor()));
       env_->node_containers_[i]->GetAndResetUpdateResult(&result);
@@ -1140,7 +1156,7 @@ TEST_P(NodeImplTest, FUNC_Update) {
   {
     boost::mutex::scoped_lock lock(env_->mutex_);
     chosen_container->Delete(key, new_value, "",
-                             chosen_container->securifier());
+                             GetPrivateKeyPtr(chosen_container->key_pair()));
     EXPECT_TRUE(env_->cond_var_.timed_wait(lock, kTimeout_,
               chosen_container->wait_for_delete_functor()));
     chosen_container->GetAndResetDeleteResult(&result);
@@ -1150,7 +1166,7 @@ TEST_P(NodeImplTest, FUNC_Update) {
   {
     boost::mutex::scoped_lock lock(env_->mutex_);
     chosen_container->Update(key, value, "", new_value, "",
-        duration, chosen_container->securifier());
+        duration, GetPrivateKeyPtr(chosen_container->key_pair()));
     EXPECT_TRUE(env_->cond_var_.timed_wait(lock, kTimeout_,
                 chosen_container->wait_for_update_functor()));
     chosen_container->GetAndResetUpdateResult(&result);
@@ -1159,16 +1175,18 @@ TEST_P(NodeImplTest, FUNC_Update) {
   result = kPendingResult;
   {
     boost::mutex::scoped_lock lock(env_->mutex_);
-    chosen_container->FindValue(key, chosen_container->securifier());
+    chosen_container->FindValue(
+      key,
+      GetPrivateKeyPtr(chosen_container->key_pair()));
     EXPECT_TRUE(env_->cond_var_.timed_wait(lock, kTimeout_,
                 chosen_container->wait_for_find_value_functor()));
     chosen_container->GetAndResetFindValueResult(&find_value_returns);
   }
   EXPECT_EQ(kSuccess, find_value_returns.return_code);
   EXPECT_EQ(value, find_value_returns.values_and_signatures[0].first);
-  EXPECT_TRUE(chosen_container->securifier()->Validate(value,
-              find_value_returns.values_and_signatures[0].second, "",
-              chosen_container->securifier()->kSigningPublicKey(), "", ""));
+  EXPECT_TRUE(asymm::Validate(value,
+              find_value_returns.values_and_signatures[0].second,
+              chosen_container->key_pair()->public_key));
 
   // verify single value is updated correctly out of multiple values
   // stored under a key
@@ -1180,7 +1198,7 @@ TEST_P(NodeImplTest, FUNC_Update) {
     {
       boost::mutex::scoped_lock lock(env_->mutex_);
       chosen_container->Store(key, values[index], "", duration,
-                              chosen_container->securifier());
+                              GetPrivateKeyPtr(chosen_container->key_pair()));
       EXPECT_TRUE(env_->cond_var_.timed_wait(lock, kTimeout_,
                   chosen_container->wait_for_store_functor()));
       chosen_container->GetAndResetStoreResult(&result);
@@ -1192,7 +1210,7 @@ TEST_P(NodeImplTest, FUNC_Update) {
   {
     boost::mutex::scoped_lock lock(env_->mutex_);
     chosen_container->Update(key, new_value, "", values[index], "", duration,
-                             chosen_container->securifier());
+                             GetPrivateKeyPtr(chosen_container->key_pair()));
     EXPECT_TRUE(env_->cond_var_.timed_wait(lock, kTimeout_,
                 chosen_container->wait_for_update_functor()));
     chosen_container->GetAndResetUpdateResult(&result);
@@ -1201,7 +1219,8 @@ TEST_P(NodeImplTest, FUNC_Update) {
   result = kPendingResult;
   {
     boost::mutex::scoped_lock lock(env_->mutex_);
-    chosen_container->FindValue(key, chosen_container->securifier());
+    chosen_container->FindValue(
+          key, GetPrivateKeyPtr(chosen_container->key_pair()));
     EXPECT_TRUE(env_->cond_var_.timed_wait(lock, kTimeout_,
                 chosen_container->wait_for_find_value_functor()));
     chosen_container->GetAndResetFindValueResult(&find_value_returns);
@@ -1250,7 +1269,7 @@ TEST_P(NodeImplTest, FUNC_StoreRefresh) {
     {
       boost::mutex::scoped_lock lock(env_->mutex_);
       test_container_->Store(far_key_, values[i], "", duration,
-                             test_container_->securifier());
+                             GetPrivateKeyPtr(test_container_->key_pair()));
       EXPECT_TRUE(env_->cond_var_.timed_wait(lock, kTimeout_,
                              test_container_->wait_for_store_functor()));
       test_container_->GetAndResetStoreResult(&result);
@@ -1320,7 +1339,7 @@ TEST_P(NodeImplTest, FUNC_StoreRefreshInvalidSigner) {
     {
       boost::mutex::scoped_lock lock(env_->mutex_);
       test_container_->Store(far_key_, values[i], "", duration,
-                             test_container_->securifier());
+                             GetPrivateKeyPtr(test_container_->key_pair()));
       EXPECT_TRUE(env_->cond_var_.timed_wait(lock, kTimeout_,
                              test_container_->wait_for_store_functor()));
       test_container_->GetAndResetStoreResult(&result);
@@ -1344,7 +1363,7 @@ TEST_P(NodeImplTest, FUNC_StoreRefreshInvalidSigner) {
             (*itr1).key_value_signature.value,
             (*itr1).key_value_signature.signature,
             seconds,
-            (*refresh_node)->securifier());
+            GetPrivateKeyPtr((*refresh_node)->key_pair()));
     bptime::ptime now(bptime::microsec_clock::universal_time());
     KeyValueTuple tuple((*itr1).key_value_signature, now + duration,
                         now + data_store->kRefreshInterval_,
@@ -1419,7 +1438,7 @@ TEST_P(NodeImplTest, FUNC_DeleteRefresh) {
     {
       boost::mutex::scoped_lock lock(env_->mutex_);
       test_container_->Store(far_key_, values[i], "", duration,
-                             test_container_->securifier());
+                             GetPrivateKeyPtr(test_container_->key_pair()));
       EXPECT_TRUE(env_->cond_var_.timed_wait(lock, kTimeout_,
                              test_container_->wait_for_store_functor()));
       test_container_->GetAndResetStoreResult(&result);
@@ -1440,7 +1459,7 @@ TEST_P(NodeImplTest, FUNC_DeleteRefresh) {
     {
       boost::mutex::scoped_lock lock(env_->mutex_);
       test_container_->Delete(far_key_, values[i], "",
-                              test_container_->securifier());
+                              GetPrivateKeyPtr(test_container_->key_pair()));
       EXPECT_TRUE(env_->cond_var_.timed_wait(lock, kTimeout_,
                   test_container_->wait_for_delete_functor()));
       test_container_->GetAndResetDeleteResult(&result);

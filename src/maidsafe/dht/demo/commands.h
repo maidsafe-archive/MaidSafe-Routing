@@ -83,7 +83,7 @@ class Commands {
   void MarkResultArrived();
   bool ResultArrived() { return result_arrived_; }
   std::shared_ptr<DemoNode> demo_node_;
-  SecurifierPtr null_securifier_;
+  PrivateKeyPtr null_priv_key_;
   bool result_arrived_, finish_;
   boost::mutex wait_mutex_;
   boost::condition_variable wait_cond_var_;

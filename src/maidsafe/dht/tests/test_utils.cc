@@ -43,54 +43,56 @@ namespace dht {
 
 namespace test {
 
-SecurifierGetPublicKeyAndValidation::SecurifierGetPublicKeyAndValidation(
-    const std::string &public_key_id,
-    const std::string &public_key,
-    const std::string &private_key)
-        : Securifier(public_key_id, public_key, private_key),
-          public_key_id_map_(),
-          thread_group_() {}
-
-// Immitating a non-blocking function
-void SecurifierGetPublicKeyAndValidation::GetPublicKeyAndValidation(
-    const std::string &public_key_id,
-    GetPublicKeyAndValidationCallback callback) {
-  thread_group_.add_thread(
-      new boost::thread(
-              &SecurifierGetPublicKeyAndValidation::DummyFind, this,
-                  public_key_id, callback));
+AsymGetPublicKeyAndValidation::AsymGetPublicKeyAndValidation(
+    const asymm::Identity &public_key_id,
+    const asymm::PublicKey &public_key,
+    const asymm::PrivateKey &private_key)
+        : public_key_id_map_(),
+          thread_group_() {
+  private_key;
+  public_key;
+  public_key_id;
 }
 
-void SecurifierGetPublicKeyAndValidation::Join() {
+// Immitating a non-blocking function
+void AsymGetPublicKeyAndValidation::GetPublicKeyAndValidation(
+    const asymm::Identity &public_key_id,
+    asymm::GetPublicKeyAndValidationCallback callback) {
+  thread_group_.add_thread(
+      new boost::thread(
+              &AsymGetPublicKeyAndValidation::DummyContactValidationGetter,
+              this, public_key_id, callback));
+}
+
+void AsymGetPublicKeyAndValidation::Join() {
   thread_group_.join_all();
 }
 
 // This method will validate the network lookup for given public_key_id
-bool SecurifierGetPublicKeyAndValidation::AddTestValidation(
-    const std::string &public_key_id,
-    const std::string &public_key) {
+bool AsymGetPublicKeyAndValidation::AddTestValidation(
+    const asymm::Identity &public_key_id,
+    const asymm::PublicKey &public_key) {
   auto itr = public_key_id_map_.insert(std::make_pair(public_key_id,
                                                       public_key));
   return itr.second;
 }
 
-void SecurifierGetPublicKeyAndValidation::ClearTestValidationMap() {
+void AsymGetPublicKeyAndValidation::ClearTestValidationMap() {
   public_key_id_map_.erase(public_key_id_map_.begin(),
                             public_key_id_map_.end());
 }
 
-void SecurifierGetPublicKeyAndValidation::DummyFind(
-    std::string public_key_id,
-    GetPublicKeyAndValidationCallback callback) {
+void AsymGetPublicKeyAndValidation::DummyContactValidationGetter(
+    asymm::Identity public_key_id,
+    asymm::GetPublicKeyAndValidationCallback callback) {
   // Imitating delay in lookup for kNetworkDelay milliseconds
   Sleep(kNetworkDelay);
   auto itr = public_key_id_map_.find(public_key_id);
   if (itr != public_key_id_map_.end())
     callback((*itr).second, "");
   else
-    callback("", "");
+    callback(asymm::PublicKey(), "");
 }
-
 
 
 CreateContactAndNodeId::CreateContactAndNodeId(uint16_t k)
@@ -194,20 +196,20 @@ Contact CreateContactAndNodeId::ComposeContact(const NodeId &node_id,
   transport::Endpoint end_point("127.0.0.1", port);
   std::vector<transport::Endpoint> local_endpoints(1, end_point);
   Contact contact(node_id, end_point, local_endpoints, end_point, false,
-                  false, "", "", "");
+                  false, "", asymm::PublicKey(), "");
   return contact;
 }
 
 Contact CreateContactAndNodeId::ComposeContactWithKey(
     const NodeId &node_id,
     const Port &port,
-    const crypto::RsaKeyPair &rsa_key_pair) {
+    const asymm::Keys &rsa_key_pair) {
   std::string ip("127.0.0.1");
   std::vector<transport::Endpoint> local_endpoints;
   transport::Endpoint end_point(ip, port);
   local_endpoints.push_back(end_point);
   Contact contact(node_id, end_point, local_endpoints, end_point, false,
-                  false, node_id.String(), rsa_key_pair.public_key(), "");
+                  false, node_id.String(), rsa_key_pair.public_key, "");
   IP ipa = IP::from_string(ip);
   contact.SetPreferredEndpoint(ipa);
   return contact;
@@ -224,7 +226,7 @@ void CreateContactAndNodeId::PopulateContactsVector(
   }
 }
 
-KeyValueSignature MakeKVS(const crypto::RsaKeyPair &rsa_key_pair,
+KeyValueSignature MakeKVS(const asymm::Keys &rsa_key_pair,
                           const size_t &value_size,
                           std::string key,
                           std::string value) {
@@ -237,11 +239,12 @@ KeyValueSignature MakeKVS(const crypto::RsaKeyPair &rsa_key_pair,
       value += temp;
     value = value.substr(0, value_size);
   }
-  std::string signature = crypto::AsymSign(value, rsa_key_pair.private_key());
+  std::string signature;
+  asymm::Sign(value, rsa_key_pair.private_key, &signature);
   return KeyValueSignature(key, value, signature);
 }
 
-KeyValueTuple MakeKVT(const crypto::RsaKeyPair &rsa_key_pair,
+KeyValueTuple MakeKVT(const asymm::Keys &rsa_key_pair,
                       const size_t &value_size,
                       const bptime::time_duration &ttl,
                       std::string key,
@@ -255,12 +258,14 @@ KeyValueTuple MakeKVT(const crypto::RsaKeyPair &rsa_key_pair,
       value += temp;
     value = value.substr(0, value_size);
   }
-  std::string signature = crypto::AsymSign(value, rsa_key_pair.private_key());
+  std::string signature;
+  asymm::Sign(value, rsa_key_pair.private_key, &signature);
   bptime::ptime now = bptime::microsec_clock::universal_time();
   bptime::ptime expire_time = now + ttl;
   bptime::ptime refresh_time = now + bptime::minutes(30);
   std::string request = RandomString(1024);
-  std::string req_sig = crypto::AsymSign(request, rsa_key_pair.private_key());
+  std::string req_sig;
+  asymm::Sign(request, rsa_key_pair.private_key, &req_sig);
   return KeyValueTuple(KeyValueSignature(key, value, signature),
                        expire_time, refresh_time,
                        RequestAndSignature(request, req_sig), false);
@@ -291,18 +296,22 @@ protobuf::DeleteRequest MakeDeleteRequest(
   return delete_request;
 }
 
-void JoinNetworkLookup(SecurifierPtr securifier) {
-  SecurifierGPKPtr securifier_gpkv = std::static_pointer_cast
-      <SecurifierGetPublicKeyAndValidation>(securifier);
-  securifier_gpkv->Join();
+void JoinNetworkLookup(KeyPairPtr key_pair) {
+  AsymGPKPtr key_pair_gpkv(new AsymGetPublicKeyAndValidation(
+      key_pair->identity,
+      key_pair->public_key,
+      key_pair->private_key));
+  key_pair_gpkv->Join();
 }
 
-bool AddTestValidation(SecurifierPtr securifier,
+bool AddTestValidation(KeyPairPtr key_pair,
                        std::string public_key_id,
-                       std::string public_key) {
-  SecurifierGPKPtr securifier_gpkv = std::static_pointer_cast
-      <SecurifierGetPublicKeyAndValidation>(securifier);
-  return securifier_gpkv->AddTestValidation(public_key_id, public_key);
+                       asymm::PublicKey public_key) {
+  AsymGPKPtr key_pair_gpkv(new AsymGetPublicKeyAndValidation(
+      key_pair->identity,
+      key_pair->public_key,
+      key_pair->private_key));
+  return key_pair_gpkv->AddTestValidation(public_key_id, public_key);
 }
 
 void AddContact(std::shared_ptr<RoutingTable> routing_table,
@@ -316,7 +325,7 @@ void SortIds(const NodeId &target_key, std::vector<NodeId> *node_ids) {
   if (!node_ids || node_ids->empty())
     return;
   std::sort(node_ids->begin(), node_ids->end(),
-      std::bind(static_cast<bool(*)(const NodeId&,  // NOLINT
+      std::bind(static_cast<bool(*)(const NodeId&, // NOLINT
                                     const NodeId&,
                                     const NodeId&)>(&NodeId::CloserToTarget),
                 arg::_1, arg::_2, target_key));
@@ -327,8 +336,8 @@ bool WithinKClosest(const NodeId &node_id,
                     std::vector<NodeId> node_ids,
                     const uint16_t &k) {
   // Put the k closest first (and sorted) in the vector.
-  std::function<bool(const NodeId&, const NodeId&)> predicate =                 // NOLINT (Fraser)
-      std::bind(static_cast<bool(*)(const NodeId&, const NodeId&,               // NOLINT (Fraser)
+  std::function<bool(const NodeId&, const NodeId&)> predicate = // NOLINT (Fraser)
+      std::bind(static_cast<bool(*)(const NodeId&, const NodeId&, // NOLINT (Fraser)
                                     const NodeId&)>(&NodeId::CloserToTarget),
                 arg::_1, arg::_2, target_key);
   std::partial_sort(node_ids.begin(), node_ids.begin() + k, node_ids.end(),
@@ -336,6 +345,27 @@ bool WithinKClosest(const NodeId &node_id,
   return (std::find(node_ids.begin(), node_ids.begin() + k, node_id) !=
           node_ids.begin() + k);
 }
+
+void ExecDummyContactValidationGetter(
+    asymm::Identity identity,
+    asymm::GetPublicKeyAndValidationCallback callback) {
+  // Imitating delay in lookup for kNetworkDelay milliseconds
+  Sleep(kNetworkDelay);
+  callback(asymm::PublicKey(), asymm::ValidationToken());
+}
+
+void DummyContactValidationGetter(
+    asymm::Identity identity,
+    asymm::GetPublicKeyAndValidationCallback callback) {
+  boost::thread(&ExecDummyContactValidationGetter, identity, callback);
+}
+
+bool ValidateFalse(const asymm::PlainText& /*plain_text*/,
+                   const asymm::Signature& /*signature*/,
+                   const asymm::PublicKey& /*public_key*/) {
+  return false;
+}
+
 
 }  // namespace test
 
