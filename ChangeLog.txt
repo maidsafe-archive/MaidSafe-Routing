@@ -1,5 +1,14 @@
-v0.31.06 (WIP)
+v0.31.07 (WIP)
 --------------
+
+
+v0.31.06
+--------
+* Changed to match updated CMake modules.
+* Fixed ambiguous namespace alias.
+* Added setters for RSA functors.
+* KademliaDemo fixed to be able to start on given port range.
+* Updated to use RSA instead of Securifier
 
 
 v0.31.05 (2011-11-02)
