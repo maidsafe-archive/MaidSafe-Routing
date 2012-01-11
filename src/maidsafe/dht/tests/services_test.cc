@@ -98,13 +98,21 @@ class MockTransportServiceTest : public transport::Transport {
 class AlternativeStoreTrue: public AlternativeStore {
  public:
   virtual ~AlternativeStoreTrue() {}
-  virtual bool Has(const std::string&) const { return true; }
+  virtual bool Has(
+      const std::string&,
+      const ValidationData &validation_data = ValidationData()) const {
+    return true;
+  }
 };
 
 class AlternativeStoreFalse: public AlternativeStore {
  public:
   virtual ~AlternativeStoreFalse() {}
-  virtual bool Has(const std::string&) const { return false; }
+  virtual bool Has(
+      const std::string&,
+      const ValidationData &validation_data = ValidationData()) const {
+    return false;
+  }
 };
 
 typedef std::shared_ptr<AlternativeStoreTrue> AlternativeStoreTruePtr;

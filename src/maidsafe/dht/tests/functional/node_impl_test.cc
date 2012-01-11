@@ -45,7 +45,11 @@ namespace test {
 class TestAlternativeStoreReturnsTrue : public AlternativeStore {
  public:
   ~TestAlternativeStoreReturnsTrue() {}
-  virtual bool Has(const std::string&) const { return true; }
+  virtual bool Has(
+      const std::string&,
+      const ValidationData &validation_data = ValidationData()) const {
+    return true;
+  }
 };
 
 class NodeImplTest : public testing::TestWithParam<bool> {
