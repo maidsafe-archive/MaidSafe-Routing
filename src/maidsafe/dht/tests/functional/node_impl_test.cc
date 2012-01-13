@@ -47,7 +47,7 @@ class TestAlternativeStoreReturnsTrue : public AlternativeStore {
   ~TestAlternativeStoreReturnsTrue() {}
   virtual bool Has(
       const std::string&,
-      const ValidationData &validation_data = ValidationData()) const {
+      const ValidationData& = ValidationData()) const {
     return true;
   }
 };

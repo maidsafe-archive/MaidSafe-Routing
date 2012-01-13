@@ -100,7 +100,7 @@ class AlternativeStoreTrue: public AlternativeStore {
   virtual ~AlternativeStoreTrue() {}
   virtual bool Has(
       const std::string&,
-      const ValidationData &validation_data = ValidationData()) const {
+      const ValidationData& = ValidationData()) const {
     return true;
   }
 };
@@ -110,7 +110,7 @@ class AlternativeStoreFalse: public AlternativeStore {
   virtual ~AlternativeStoreFalse() {}
   virtual bool Has(
       const std::string&,
-      const ValidationData &validation_data = ValidationData()) const {
+      const ValidationData& = ValidationData()) const {
     return false;
   }
 };
