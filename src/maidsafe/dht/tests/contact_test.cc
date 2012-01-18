@@ -81,6 +81,7 @@ class ContactTest : public testing::Test {
                                         asymm::PublicKey(), "");
   }
   ~ContactTest() {}
+
  protected:
   const NodeId kNodeId_;
   const IP kIp_, kRvIp_, kLocalIp1_, kLocalIp2_;

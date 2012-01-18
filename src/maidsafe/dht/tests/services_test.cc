@@ -264,7 +264,6 @@ class ServicesTest: public CreateContactAndNodeId, public testing::Test {
   virtual void TearDown() {}
 
  protected:
-
   void PopulateDataStore(uint16_t count) {
     bptime::time_duration old_ttl(bptime::pos_infin);
     asymm::Keys crypto_key;

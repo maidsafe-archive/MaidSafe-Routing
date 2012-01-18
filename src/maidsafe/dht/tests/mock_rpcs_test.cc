@@ -89,6 +89,7 @@ class RpcsMockTransport : public transport::Transport {
     std::string response("response");
     (*on_message_received())(data, info, &response, &response_timeout);
   }
+
  protected:
   uint16_t repeat_factor_;
   uint16_t failure_tolerance_;
@@ -120,154 +121,155 @@ class MockMessageHandler : public MessageHandler {
     const transport::Info &info,
     std::string *message_response,
     transport::Timeout* timeout) {
-  message_response->clear();
-  *timeout = transport::kImmediateTimeout;
+    message_response->clear();
+    *timeout = transport::kImmediateTimeout;
 
-  switch (message_type) {
-    case kPingRequest: {
-      protobuf::PingRequest request;
-      request.ParseFromString(payload);
-      protobuf::PingResponse response;
-      switch (result_type_) {
-        case 1: {
-          response.set_echo(request.ping());
-          break;
+    switch (message_type) {
+      case kPingRequest: {
+        protobuf::PingRequest request;
+        request.ParseFromString(payload);
+        protobuf::PingResponse response;
+        switch (result_type_) {
+          case 1: {
+            response.set_echo(request.ping());
+            break;
+          }
+          case 2: {
+            response.set_echo("");
+            break;
+          }
+          default:
+            break;
         }
-        case 2: {
-          response.set_echo("");
-          break;
-        }
-        default:
-          break;
+        (*on_ping_response())(info, response);
+        break;
       }
-      (*on_ping_response())(info, response);
-      break;
-    }
-    case kFindValueRequest: {
-      protobuf::FindValueResponse response;
-      switch (result_type_) {
-        case 1: {
-          protobuf::SignedValue value;
-          value.set_value("value");
-          value.set_signature("signature");
-          Contact contact, alternative_value_holder;
-          response.set_result(true);
-          *response.add_closest_nodes() = ToProtobuf(contact);
-          *response.add_signed_values() = value;
-          *response.mutable_alternative_value_holder() =
-              ToProtobuf(alternative_value_holder);
-          break;
+      case kFindValueRequest: {
+        protobuf::FindValueResponse response;
+        switch (result_type_) {
+          case 1: {
+            protobuf::SignedValue value;
+            value.set_value("value");
+            value.set_signature("signature");
+            Contact contact, alternative_value_holder;
+            response.set_result(true);
+            *response.add_closest_nodes() = ToProtobuf(contact);
+            *response.add_signed_values() = value;
+            *response.mutable_alternative_value_holder() =
+                ToProtobuf(alternative_value_holder);
+            break;
+          }
+          case 2: {
+            response.set_result(false);
+            break;
+          }
+          default:
+            break;
         }
-        case 2: {
-          response.set_result(false);
-          break;
-        }
-        default:
-          break;
+        (*on_find_value_response())(info, response);
+        break;
       }
-      (*on_find_value_response())(info, response);
-      break;
-    }
-    case kFindNodesRequest: {
-      protobuf::FindNodesResponse response;
-      switch (result_type_) {
-        case 1: {
-          Contact contact;
-          response.set_result(true);
-          *response.add_closest_nodes() = ToProtobuf(contact);
-          break;
+      case kFindNodesRequest: {
+        protobuf::FindNodesResponse response;
+        switch (result_type_) {
+          case 1: {
+            Contact contact;
+            response.set_result(true);
+            *response.add_closest_nodes() = ToProtobuf(contact);
+            break;
+          }
+          case 2: {
+            response.set_result(false);
+            break;
+          }
+          default:
+            break;
         }
-        case 2: {
-          response.set_result(false);
-          break;
-        }
-        default:
-          break;
+        (*on_find_nodes_response())(info, response);
+        break;
       }
-      (*on_find_nodes_response())(info, response);
-      break;
-    }
-    case kStoreRequest: {
-      protobuf::StoreResponse response;
-      switch (result_type_) {
-        case 1: {
-          response.set_result(true);
-          break;
+      case kStoreRequest: {
+        protobuf::StoreResponse response;
+        switch (result_type_) {
+          case 1: {
+            response.set_result(true);
+            break;
+          }
+          case 2: {
+            response.set_result(false);
+            break;
+          }
+          default:
+            break;
         }
-        case 2: {
-          response.set_result(false);
-          break;
-        }
-        default:
-          break;
+        (*on_store_response())(info, response);
+        break;
       }
-      (*on_store_response())(info, response);
-      break;
-    }
-    case kStoreRefreshRequest: {
-      protobuf::StoreRefreshResponse response;
-      switch (result_type_) {
-        case 1: {
-          response.set_result(true);
-          break;
+      case kStoreRefreshRequest: {
+        protobuf::StoreRefreshResponse response;
+        switch (result_type_) {
+          case 1: {
+            response.set_result(true);
+            break;
+          }
+          case 2: {
+            response.set_result(false);
+            break;
+          }
+          default:
+            break;
         }
-        case 2: {
-          response.set_result(false);
-          break;
-        }
-        default:
-          break;
+        (*on_store_refresh_response())(info, response);
+        break;
       }
-      (*on_store_refresh_response())(info, response);
-      break;
-    }
-    case kDeleteRequest: {
-      protobuf::DeleteResponse response;
-      switch (result_type_) {
-        case 1: {
-          response.set_result(true);
-          break;
+      case kDeleteRequest: {
+        protobuf::DeleteResponse response;
+        switch (result_type_) {
+          case 1: {
+            response.set_result(true);
+            break;
+          }
+          case 2: {
+            response.set_result(false);
+            break;
+          }
+          default:
+            break;
         }
-        case 2: {
-          response.set_result(false);
-          break;
-        }
-        default:
-          break;
+        (*on_delete_response())(info, response);
+        break;
       }
-      (*on_delete_response())(info, response);
-      break;
-    }
-    case kDeleteRefreshRequest: {
-      protobuf::DeleteRefreshResponse response;
-      switch (result_type_) {
-        case 1: {
-          response.set_result(true);
-          break;
+      case kDeleteRefreshRequest: {
+        protobuf::DeleteRefreshResponse response;
+        switch (result_type_) {
+          case 1: {
+            response.set_result(true);
+            break;
+          }
+          case 2: {
+            response.set_result(false);
+            break;
+          }
+          default:
+            break;
         }
-        case 2: {
-          response.set_result(false);
-          break;
-        }
-        default:
-          break;
+        (*on_delete_refresh_response())(info, response);
+        break;
       }
-      (*on_delete_refresh_response())(info, response);
-      break;
+      case kDownlistNotification: {
+        protobuf::DownlistNotification request;
+        EXPECT_TRUE(request.ParseFromString(payload));
+        EXPECT_EQ(size_t(1), request.node_ids_size());
+        ops_completion_flag = true;
+        break;
+      }
+      default:
+        break;
     }
-    case kDownlistNotification: {
-      protobuf::DownlistNotification request;
-      EXPECT_TRUE(request.ParseFromString(payload));
-      EXPECT_EQ(size_t(1), request.node_ids_size());
-      ops_completion_flag = true;
-      break;
-    }
-    default:
-      break;
   }
-}
   static volatile bool ops_completion_flag;
- protected:
+
+  protected:
   PrivateKeyPtr private_key_;
   int request_type_;
   int result_type_;
@@ -385,7 +387,8 @@ class MockRpcsTest : public testing::Test {
                          int *query_result) {
     Callback(rank_info, result, b, m, query_result);
   }
-  protected:
+
+ protected:
   static asymm::Keys crypto_key_pair_;
   AsioService asio_service_;
   PrivateKeyPtr private_key_;

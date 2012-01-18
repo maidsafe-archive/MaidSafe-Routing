@@ -58,7 +58,6 @@ namespace dht {
  *  @class Contact */
 class Contact {
  public:
-
   /** Default constructor. */
   Contact();
 

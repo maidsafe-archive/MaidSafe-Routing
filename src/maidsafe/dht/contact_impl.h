@@ -74,6 +74,7 @@ class Contact::Impl {
   bool operator>(const Impl &other) const;
   bool operator<=(const Impl &other) const;
   bool operator>=(const Impl &other) const;
+
  private:
   void Init();
   void Clear();

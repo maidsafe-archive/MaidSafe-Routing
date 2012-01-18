@@ -405,6 +405,7 @@ class RoutingTable {
   friend class test::ServicesTest;
   friend class
       test::RoutingTableSingleKTest_BEH_MutexTestWithMultipleThread_Test;
+
  private:
   typedef boost::shared_lock<boost::shared_mutex> SharedLock;
   typedef boost::upgrade_lock<boost::shared_mutex> UpgradeLock;

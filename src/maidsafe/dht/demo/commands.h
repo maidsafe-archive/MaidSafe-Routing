@@ -59,6 +59,7 @@ class Commands {
  public:
   explicit Commands(DemoNodePtr demo_node);
   void Run();
+
  private:
   typedef std::vector<std::string> Arguments;
   void Store(const Arguments &args, bool read_from_file);

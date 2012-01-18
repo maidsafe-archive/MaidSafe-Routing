@@ -65,7 +65,6 @@ class NodeImpl;
 // methods to access the local storage of the node and its routing table.
 class Node {
  public:
-
   // asio_service is a reference to a boost::asio::io_service instance which
   // should have at least 1 thread running io_service::run().
   //
