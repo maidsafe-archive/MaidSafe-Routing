@@ -260,6 +260,7 @@ void serialize(Archive &archive,                              // NOLINT (Fraser)
     tcp80 = contact.tcp80endpoint().port == 80;
     public_key_id = maidsafe::EncodeToBase32(contact.public_key_id());
     maidsafe::asymm::EncodePublicKey(contact.public_key(), &public_key);
+    public_key = maidsafe::EncodeToBase32(public_key);
     other_info = contact.other_info();
   }
 
@@ -275,6 +276,7 @@ void serialize(Archive &archive,                              // NOLINT (Fraser)
 
   if (Archive::is_loading::value) {
     public_key_id = maidsafe::DecodeFromBase32(public_key_id);
+    public_key = maidsafe::DecodeFromBase32(public_key);
     PublicKey asym_public_key;
     maidsafe::rsa::DecodePublicKey(public_key, &asym_public_key);
     contact = mk::Contact(node_id, endpoint, local_endpoints,
