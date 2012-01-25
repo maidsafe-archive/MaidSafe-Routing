@@ -2425,7 +2425,7 @@ TEST_F(MockNodeImplTest, BEH_InsertCloseContacts) {
   auto it(close_contacts.begin());
   size_t new_contacts_size(0), live_contacts_size(0);
   for (size_t i = 0;
-       i < random_num_contacts, it != close_contacts.end();
+       i < random_num_contacts || it != close_contacts.end();
        ++it, ++i)
     if (i % 2 == 0) {
       new_contacts.insert(*it);
@@ -2488,7 +2488,7 @@ TEST_F(MockNodeImplTest, BEH_InsertCloseContacts) {
   new_contacts_size = 0;
   live_contacts_size = 0;
   for (size_t i = 0;
-       i < random_num_contacts, it2 != close_contacts.end();
+       i < random_num_contacts || it2 != close_contacts.end();
        ++it2, ++i) {
     new_contacts.insert(*it2);
     ++new_contacts_size;

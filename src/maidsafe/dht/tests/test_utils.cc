@@ -44,15 +44,11 @@ namespace dht {
 namespace test {
 
 AsymGetPublicKeyAndValidation::AsymGetPublicKeyAndValidation(
-    const asymm::Identity &public_key_id,
-    const asymm::PublicKey &public_key,
-    const asymm::PrivateKey &private_key)
+    const asymm::Identity &/*public_key_id*/,
+    const asymm::PublicKey &/*public_key*/,
+    const asymm::PrivateKey &/*private_key*/)
         : public_key_id_map_(),
-          thread_group_() {
-  private_key;
-  public_key;
-  public_key_id;
-}
+          thread_group_() {}
 
 // Immitating a non-blocking function
 void AsymGetPublicKeyAndValidation::GetPublicKeyAndValidation(
