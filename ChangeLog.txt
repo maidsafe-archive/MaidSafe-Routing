@@ -1,5 +1,13 @@
-v0.31.07 (WIP)
+v0.31.08 (WIP)
 --------------
+
+
+v0.31.07
+--------
+* Matching the new AlternativeStore API.
+* Updated Contact serialization to encode PublicKey to Base32.
+* Fix for a couple of for loop conditions.
+* Updated ctest config file in sync with project name change.
 
 
 v0.31.06
