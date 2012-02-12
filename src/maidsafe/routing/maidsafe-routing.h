@@ -66,12 +66,19 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     Please update this project.
 #endif
 /// end of versioning
+#include "boost/asio/io_service.hpp"
 
 #include "maidsafe/transport/transport.h"
 #include "maidsafe/transport/message_handler.h"
 #include "maidsafe/transport/tcp_transport.h"
 #include "maidsafe/transport/udp_transport.h"
+/// Forward Declerations
+class Contact;
+class NodeId;
+class MessageHandler;
 
+typedef boost::asio::ip::address IP;
+typedef int16_t Port;
 
 /// The size of ROUTING keys and node IDs in bytes.
 const int16_t kKeySizeBytes(64);
@@ -85,36 +92,46 @@ const int16_t kRoutingTableSize(64);
 static_assert(kClosestNodes >= kRoutingTableSize); 
 
 typedef std::function<void()> FindValueFunctor;
+typedef std::function<void()> RegisterMesageHandlerFunctor;
 
-void Start();
+void Start(boost::asio::io_service &service);
 void Stop();
+bool Running();
+void FindNodes(NodeId &target_id, int16_t num_nodes, std::vector<NodeId> *nodes);
 
 /// must be set before node can start  This allows node to 
 /// check locally for data that's marked cacheable. 
 void SetGetDataFunctor(FindValueFunctor &find_value);
 
-/// To create and send messages through network - may be best as object but less 
-/// portable (to c and c++ I think)
-/// Setters
-void CreateMessage(const char &message, int64_t size, int64_t &message_id);
-void setMessageDestination(const char &id, int32_t size, int64_t &message_id);
-void setMessageCacheable(bool cache, int64_t message_id);
-void setMessageLock(bool lock, int64_t &message_id);
-void setMessageSignature(const char &signature, int16_t size, int64_t &message_id);
-void setMessageSignatureId(const char &signature_id, int16_t size, int64_t &message_id);
-void setMessageDirect(bool direct);
-
-/// Getters
-char* MessageDestination(int64_t &message_id);
-bool MessageCacheable(int64_t &message_id);
-bool MessageLock(int64_t &message_id);
-char* MessageSignature(int64_t &message_id);
-char* MessageSignatureId(int64_t &message_id);
-bool MessageDirect(int64_t &message_id);
-bool SendMessage(int64_t &message_id);
 /// to recieve messages
-bool RegisterMessageHandler(); ///needs some thought on how best to do this cleanly
+bool RegisterMessageHandler(RegisterMesageHandlerFunctor &register_message_handler); 
 
-bool Running();
+/// to allow message parameter setting and sending
+struct Message {
+ public:
+  /// Setters
+  explicit Message(const std::string &message);
+  void setMessageDestination(const NodeId &id);
+  void setResponse(bool reponse);
+  void setMessageCacheable(bool cache);
+  void setMessageLock(bool lock);
+  void setMessageSignature(const std::string &signature);
+  void setMessageSignatureId(const std::string &signature_id);
+  void setMessageDirect(bool direct);
+  /// Getters
+  const NodeId MessageDestination();
+  bool Responce();
+  bool MessageCacheable();
+  bool MessageLock();
+  const std::string  MessageSignature();
+  const NodeId MessageSignatureId();
+  bool MessageDirect();
+  bool SendMessage();
+private:
+  Message(const Message&);
+  Message &operator=(const Message&);
+};
+
+
 
 #endif  // MAIDSAFE_ROUTING_MAIDSAFE_ROUTING_H_
