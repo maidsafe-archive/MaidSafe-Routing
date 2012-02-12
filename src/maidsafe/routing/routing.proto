@@ -1,0 +1,59 @@
+package maidsafe.routing.protobuf;
+
+message Endpoint {
+  required bytes ip = 1;
+  required int32 port = 2;
+}
+
+message Contact {
+  required bytes node_id = 1;
+  optional Endpoint endpoint = 2;
+  repeated bytes local_ips = 3;
+  optional int32 local_port = 4;
+  optional Endpoint rendezvous = 5;
+  optional bool tcp443 = 6;
+  optional bool tcp80 = 7;
+  optional bytes public_key_id = 8;
+  optional bytes public_key = 9;
+  optional bytes other_info = 10;
+}
+
+message ConfigFile {
+  repeated Contact contact = 1;
+  optional bytes private_key = 2;
+  optional bytes node_id = 3;
+}
+
+// Message wrappers 
+
+message Request {
+  required bytes source_id = 1;
+  required bytes destination_id = 2;
+  optional bool  cachable = 3;
+  optional bool  lock = 4;
+  required bytes message = 5;
+  optional bytes signature = 6;
+  optional bytes signature_id = 7;
+}
+
+message Response {
+  required bytes source_id = 1;
+  required bytes destination_id = 2;
+  optional bool  cachable = 3;
+  required bytes message = 4;
+  optional bytes signature = 5;
+  optional bytes signature_id = 6;
+}
+
+message FindNodesRequest {
+  required bytes source_id = 1;
+  required bytes destination_id = 2;
+  optional int32 num_nodes_requested = 3;
+}
+
+message FindNodesResponse {
+  required bytes source_id = 1;
+  required bytes destination_id = 2;
+  repeated bytes closest_nodes = 3;
+  required bytes signature = 4;
+}

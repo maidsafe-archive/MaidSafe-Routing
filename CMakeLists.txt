@@ -34,7 +34,7 @@
 #==============================================================================#
 
 
-SET(MS_PROJECT_NAME maidsafe_dht)
+SET(MS_PROJECT_NAME maidsafe_routing)
 
 CMAKE_MINIMUM_REQUIRED(VERSION 2.8.4 FATAL_ERROR)
 MESSAGE("================================================================================\n")
@@ -76,93 +76,91 @@ ADD_MAIDSAFE_LIBRARY(MaidSafe-Transport)
 # Standard setup                                                                                  #
 ###################################################################################################
 SET(PROTO_SOURCE_DIR ${PROJECT_SOURCE_DIR}/src)
-FILE(GLOB PROTO_FILES_KADEMLIA RELATIVE ${PROTO_SOURCE_DIR} "${PROTO_SOURCE_DIR}/maidsafe/dht/*.proto")
-FILE(GLOB PROTO_FILES_TESTS RELATIVE ${PROTO_SOURCE_DIR} "${PROTO_SOURCE_DIR}/maidsafe/dht/tests/*.proto")
+FILE(GLOB PROTO_FILES_KADEMLIA RELATIVE ${PROTO_SOURCE_DIR} "${PROTO_SOURCE_DIR}/maidsafe/routing/*.proto")
+FILE(GLOB PROTO_FILES_TESTS RELATIVE ${PROTO_SOURCE_DIR} "${PROTO_SOURCE_DIR}/maidsafe/routing/tests/*.proto")
 SET(PROTO_FILES "${PROTO_FILES_KADEMLIA};${PROTO_FILES_TESTS}")
 INCLUDE(maidsafe_standard_setup)
-HANDLE_VERSIONS(${PROJECT_SOURCE_DIR}/src/maidsafe/dht/version.h)
+HANDLE_VERSIONS(${PROJECT_SOURCE_DIR}/src/maidsafe/routing/version.h)
 
 
 ###################################################################################################
 # Set up all files as GLOBs                                                                       #
 ###################################################################################################
 ####    CODE    ####
-FILE(GLOB SOURCE_FILES_DHT_DIR "${PROJECT_SOURCE_DIR}/src/maidsafe/dht/*.cc")
-FILE(GLOB HEADER_FILES_DHT_DIR "${PROJECT_SOURCE_DIR}/src/maidsafe/dht/*.h")
-SET(ALL_FILES_DHT_DIR ${SOURCE_FILES_DHT_DIR} ${HEADER_FILES_DHT_DIR})
-SET(STYLE_DHT ${ALL_FILES_DHT_DIR})
-LIST(REMOVE_ITEM STYLE_DHT "${PROJECT_SOURCE_DIR}/src/maidsafe/dht/kademlia.pb.cc")
-LIST(REMOVE_ITEM STYLE_DHT "${PROJECT_SOURCE_DIR}/src/maidsafe/dht/kademlia.pb.h")
-LIST(REMOVE_ITEM STYLE_DHT "${PROJECT_SOURCE_DIR}/src/maidsafe/dht/rpcs.pb.cc")
-LIST(REMOVE_ITEM STYLE_DHT "${PROJECT_SOURCE_DIR}/src/maidsafe/dht/rpcs.pb.h")
-SOURCE_GROUP("DHT Source Files" FILES ${SOURCE_FILES_DHT_DIR})
-SOURCE_GROUP("DHT Header Files" FILES ${HEADER_FILES_DHT_DIR})
+FILE(GLOB SOURCE_FILES_ROUTING_DIR "${PROJECT_SOURCE_DIR}/src/maidsafe/routing/*.cc")
+FILE(GLOB HEADER_FILES_ROUTING_DIR "${PROJECT_SOURCE_DIR}/src/maidsafe/routing/*.h")
+SET(ALL_FILES_ROUTING_DIR ${SOURCE_FILES_ROUTING_DIR} ${HEADER_FILES_ROUTING_DIR})
+SET(STYLE_ROUTING ${ALL_FILES_ROUTING_DIR})
+LIST(REMOVE_ITEM STYLE_ROUTING "${PROJECT_SOURCE_DIR}/src/maidsafe/routing/routing.pb.cc")
+LIST(REMOVE_ITEM STYLE_ROUTING "${PROJECT_SOURCE_DIR}/src/maidsafe/routing/routing.pb.h")
+SOURCE_GROUP("ROUTING Source Files" FILES ${SOURCE_FILES_ROUTING_DIR})
+SOURCE_GROUP("ROUTING Header Files" FILES ${HEADER_FILES_ROUTING_DIR})
 
 ####    BENCHMARK, DEMO & TESTS    ####
-FILE(GLOB SOURCE_FILES_BENCHMARK_DIR "${PROJECT_SOURCE_DIR}/src/maidsafe/dht/benchmark/*.cc")
-FILE(GLOB HEADER_FILES_BENCHMARK_DIR "${PROJECT_SOURCE_DIR}/src/maidsafe/dht/benchmark/*.h")
+FILE(GLOB SOURCE_FILES_BENCHMARK_DIR "${PROJECT_SOURCE_DIR}/src/maidsafe/routing/benchmark/*.cc")
+FILE(GLOB HEADER_FILES_BENCHMARK_DIR "${PROJECT_SOURCE_DIR}/src/maidsafe/routing/benchmark/*.h")
 SET(ALL_FILES_BENCHMARK_DIR ${SOURCE_FILES_BENCHMARK_DIR} ${HEADER_FILES_BENCHMARK_DIR})
 SOURCE_GROUP("Benchmark Source Files" FILES ${SOURCE_FILES_BENCHMARK_DIR})
 SOURCE_GROUP("Benchmark Header Files" FILES ${HEADER_FILES_BENCHMARK_DIR})
 
-FILE(GLOB SOURCE_FILES_DEMO_DIR "${PROJECT_SOURCE_DIR}/src/maidsafe/dht/demo/*.cc")
-FILE(GLOB HEADER_FILES_DEMO_DIR "${PROJECT_SOURCE_DIR}/src/maidsafe/dht/demo/*.h")
+FILE(GLOB SOURCE_FILES_DEMO_DIR "${PROJECT_SOURCE_DIR}/src/maidsafe/routing/demo/*.cc")
+FILE(GLOB HEADER_FILES_DEMO_DIR "${PROJECT_SOURCE_DIR}/src/maidsafe/routing/demo/*.h")
 SET(ALL_FILES_DEMO_DIR ${SOURCE_FILES_DEMO_DIR} ${HEADER_FILES_DEMO_DIR})
 SOURCE_GROUP("Demo Source Files" FILES ${SOURCE_FILES_DEMO_DIR})
 SOURCE_GROUP("Demo Header Files" FILES ${HEADER_FILES_DEMO_DIR})
 
-FILE(GLOB SOURCE_FILES_DHT_TESTS_DIR "${PROJECT_SOURCE_DIR}/src/maidsafe/dht/tests/*.cc")
-FILE(GLOB HEADER_FILES_DHT_TESTS_DIR "${PROJECT_SOURCE_DIR}/src/maidsafe/dht/tests/*.h")
-SET(ALL_FILES_DHT_TESTS_DIR ${SOURCE_FILES_DHT_TESTS_DIR} ${HEADER_FILES_DHT_TESTS_DIR})
-SET(STYLE_DHT_TESTS ${ALL_FILES_DHT_TESTS_DIR})
-SOURCE_GROUP("DHT Tests Source Files" FILES ${SOURCE_FILES_DHT_TESTS_DIR})
-SOURCE_GROUP("DHT Tests Header Files" FILES ${HEADER_FILES_DHT_TESTS_DIR})
-LIST(REMOVE_ITEM STYLE_DHT_TESTS "${PROJECT_SOURCE_DIR}/src/maidsafe/dht/tests/wrapper.pb.cc")
-LIST(REMOVE_ITEM STYLE_DHT_TESTS "${PROJECT_SOURCE_DIR}/src/maidsafe/dht/tests/wrapper.pb.h")
+FILE(GLOB SOURCE_FILES_ROUTING_TESTS_DIR "${PROJECT_SOURCE_DIR}/src/maidsafe/routing/tests/*.cc")
+FILE(GLOB HEADER_FILES_ROUTING_TESTS_DIR "${PROJECT_SOURCE_DIR}/src/maidsafe/routing/tests/*.h")
+SET(ALL_FILES_ROUTING_TESTS_DIR ${SOURCE_FILES_ROUTING_TESTS_DIR} ${HEADER_FILES_ROUTING_TESTS_DIR})
+SET(STYLE_ROUTING_TESTS ${ALL_FILES_ROUTING_TESTS_DIR})
+SOURCE_GROUP("ROUTING Tests Source Files" FILES ${SOURCE_FILES_ROUTING_TESTS_DIR})
+SOURCE_GROUP("ROUTING Tests Header Files" FILES ${HEADER_FILES_ROUTING_TESTS_DIR})
+LIST(REMOVE_ITEM STYLE_ROUTING_TESTS "${PROJECT_SOURCE_DIR}/src/maidsafe/routing/tests/wrapper.pb.cc")
+LIST(REMOVE_ITEM STYLE_ROUTING_TESTS "${PROJECT_SOURCE_DIR}/src/maidsafe/routing/tests/wrapper.pb.h")
 
-FILE(GLOB SOURCE_FILES_DHT_TESTS_FUNCTIONAL_DIR "${PROJECT_SOURCE_DIR}/src/maidsafe/dht/tests/functional/*.cc")
-FILE(GLOB HEADER_FILES_DHT_TESTS_FUNCTIONAL_DIR "${PROJECT_SOURCE_DIR}/src/maidsafe/dht/tests/functional/*.h")
-SET(ALL_FILES_DHT_TESTS_FUNCTIONAL_DIR ${SOURCE_FILES_DHT_TESTS_FUNCTIONAL_DIR} ${HEADER_FILES_DHT_TESTS_FUNCTIONAL_DIR})
-SOURCE_GROUP("Functional Tests Source Files" FILES ${SOURCE_FILES_DHT_TESTS_FUNCTIONAL_DIR})
-SOURCE_GROUP("Functional Tests Header Files" FILES ${HEADER_FILES_DHT_TESTS_FUNCTIONAL_DIR})
+FILE(GLOB SOURCE_FILES_ROUTING_TESTS_FUNCTIONAL_DIR "${PROJECT_SOURCE_DIR}/src/maidsafe/routing/tests/functional/*.cc")
+FILE(GLOB HEADER_FILES_ROUTING_TESTS_FUNCTIONAL_DIR "${PROJECT_SOURCE_DIR}/src/maidsafe/routing/tests/functional/*.h")
+SET(ALL_FILES_ROUTING_TESTS_FUNCTIONAL_DIR ${SOURCE_FILES_ROUTING_TESTS_FUNCTIONAL_DIR} ${HEADER_FILES_ROUTING_TESTS_FUNCTIONAL_DIR})
+SOURCE_GROUP("Functional Tests Source Files" FILES ${SOURCE_FILES_ROUTING_TESTS_FUNCTIONAL_DIR})
+SOURCE_GROUP("Functional Tests Header Files" FILES ${HEADER_FILES_ROUTING_TESTS_FUNCTIONAL_DIR})
 
-SET(SOURCE_FILES_DHT_TESTS_FUNCTIONAL_NODE "${PROJECT_SOURCE_DIR}/src/maidsafe/dht/tests/functional/node_test.cc"
-                                           "${PROJECT_SOURCE_DIR}/src/maidsafe/dht/tests/test_utils.cc"
-                                           "${PROJECT_SOURCE_DIR}/src/maidsafe/dht/tests/test_main.cc")
-SET(SOURCE_FILES_DHT_TESTS_FUNCTIONAL_NODE_IMPL "${PROJECT_SOURCE_DIR}/src/maidsafe/dht/tests/functional/node_impl_test.cc"
-                                                "${PROJECT_SOURCE_DIR}/src/maidsafe/dht/tests/test_utils.cc"
-                                                "${PROJECT_SOURCE_DIR}/src/maidsafe/dht/tests/test_main.cc")
-SET(SOURCE_FILES_DHT_TESTS_FUNCTIONAL_NODE_CHURN "${PROJECT_SOURCE_DIR}/src/maidsafe/dht/tests/functional/node_churn_test.cc"
-                                                 "${PROJECT_SOURCE_DIR}/src/maidsafe/dht/tests/test_utils.cc"
-                                                 "${PROJECT_SOURCE_DIR}/src/maidsafe/dht/tests/test_main.cc")
-SET(HEADER_FILES_DHT_TESTS_FUNCTIONALS "${PROJECT_SOURCE_DIR}/src/maidsafe/dht/tests/functional/test_node_environment.h"
-                                       "${PROJECT_SOURCE_DIR}/src/maidsafe/dht/tests/test_utils.h"
-                                       "${PROJECT_SOURCE_DIR}/src/maidsafe/dht/tests/local_network.h")
+SET(SOURCE_FILES_ROUTING_TESTS_FUNCTIONAL_NODE "${PROJECT_SOURCE_DIR}/src/maidsafe/routing/tests/functional/node_test.cc"
+                                           "${PROJECT_SOURCE_DIR}/src/maidsafe/routing/tests/test_utils.cc"
+                                           "${PROJECT_SOURCE_DIR}/src/maidsafe/routing/tests/test_main.cc")
+SET(SOURCE_FILES_ROUTING_TESTS_FUNCTIONAL_NODE_IMPL "${PROJECT_SOURCE_DIR}/src/maidsafe/routing/tests/functional/node_impl_test.cc"
+                                                "${PROJECT_SOURCE_DIR}/src/maidsafe/routing/tests/test_utils.cc"
+                                                "${PROJECT_SOURCE_DIR}/src/maidsafe/routing/tests/test_main.cc")
+SET(SOURCE_FILES_ROUTING_TESTS_FUNCTIONAL_NODE_CHURN "${PROJECT_SOURCE_DIR}/src/maidsafe/routing/tests/functional/node_churn_test.cc"
+                                                 "${PROJECT_SOURCE_DIR}/src/maidsafe/routing/tests/test_utils.cc"
+                                                 "${PROJECT_SOURCE_DIR}/src/maidsafe/routing/tests/test_main.cc")
+SET(HEADER_FILES_ROUTING_TESTS_FUNCTIONALS "${PROJECT_SOURCE_DIR}/src/maidsafe/routing/tests/functional/test_node_environment.h"
+                                       "${PROJECT_SOURCE_DIR}/src/maidsafe/routing/tests/test_utils.h"
+                                       "${PROJECT_SOURCE_DIR}/src/maidsafe/routing/tests/local_network.h")
 
 
 ###################################################################################################
 # Define MaidSafe libraries and executables                                                       #
 ###################################################################################################
-MS_ADD_STATIC_LIBRARY(${MS_PROJECT_NAME} ${ALL_FILES_DHT_DIR})
-MS_ADD_EXECUTABLE(TESTkademlia Tests ${ALL_FILES_DHT_TESTS_DIR})
-MS_ADD_EXECUTABLE(TESTnode_functional Tests ${SOURCE_FILES_DHT_TESTS_FUNCTIONAL_NODE} ${HEADER_FILES_DHT_TESTS_FUNCTIONALS})
-MS_ADD_EXECUTABLE(TESTnode_impl_functional Tests ${SOURCE_FILES_DHT_TESTS_FUNCTIONAL_NODE_IMPL} ${HEADER_FILES_DHT_TESTS_FUNCTIONALS})
-MS_ADD_EXECUTABLE(TESTnode_churn Tests ${SOURCE_FILES_DHT_TESTS_FUNCTIONAL_NODE_CHURN} ${HEADER_FILES_DHT_TESTS_FUNCTIONALS})
+MS_ADD_STATIC_LIBRARY(${MS_PROJECT_NAME} ${ALL_FILES_ROUTING_DIR})
+MS_ADD_EXECUTABLE(TESTkademlia Tests ${ALL_FILES_ROUTING_TESTS_DIR})
+MS_ADD_EXECUTABLE(TESTnode_functional Tests ${SOURCE_FILES_ROUTING_TESTS_FUNCTIONAL_NODE} ${HEADER_FILES_ROUTING_TESTS_FUNCTIONALS})
+MS_ADD_EXECUTABLE(TESTnode_impl_functional Tests ${SOURCE_FILES_ROUTING_TESTS_FUNCTIONAL_NODE_IMPL} ${HEADER_FILES_ROUTING_TESTS_FUNCTIONALS})
+MS_ADD_EXECUTABLE(TESTnode_churn Tests ${SOURCE_FILES_ROUTING_TESTS_FUNCTIONAL_NODE_CHURN} ${HEADER_FILES_ROUTING_TESTS_FUNCTIONALS})
 MS_ADD_EXECUTABLE(KademliaDemo Demo ${ALL_FILES_DEMO_DIR})
 MS_ADD_EXECUTABLE(Benchmark Benchmark ${ALL_FILES_BENCHMARK_DIR})
 
-TARGET_LINK_LIBRARIES(maidsafe_dht_static
+TARGET_LINK_LIBRARIES(maidsafe_routing_static
                         maidsafe_transport_static
                         maidsafe_common_static
                         breakpad_static
                         boost_date_time
                         boost_regex)
-TARGET_LINK_LIBRARIES(TESTkademlia maidsafe_dht_static gmock_static)
-TARGET_LINK_LIBRARIES(TESTnode_functional maidsafe_dht_static gtest_static)
-TARGET_LINK_LIBRARIES(TESTnode_impl_functional maidsafe_dht_static gtest_static)
-TARGET_LINK_LIBRARIES(TESTnode_churn maidsafe_dht_static gtest_static)
-TARGET_LINK_LIBRARIES(KademliaDemo maidsafe_dht_static boost_program_options)
-TARGET_LINK_LIBRARIES(Benchmark maidsafe_dht_static boost_program_options)
+TARGET_LINK_LIBRARIES(TESTkademlia maidsafe_routing_static gmock_static)
+TARGET_LINK_LIBRARIES(TESTnode_functional maidsafe_routing_static gtest_static)
+TARGET_LINK_LIBRARIES(TESTnode_impl_functional maidsafe_routing_static gtest_static)
+TARGET_LINK_LIBRARIES(TESTnode_churn maidsafe_routing_static gtest_static)
+TARGET_LINK_LIBRARIES(KademliaDemo maidsafe_routing_static boost_program_options)
+TARGET_LINK_LIBRARIES(Benchmark maidsafe_routing_static boost_program_options)
 
 
 ###################################################################################################
@@ -176,28 +174,28 @@ SET_TARGET_PROPERTIES(TESTnode_churn PROPERTIES COMPILE_DEFINITIONS "FUNCTIONAL_
 
 IF(MSVC)
   # Warnings switched off for protocol buffer generated files
-  SET_SOURCE_FILES_PROPERTIES(${PROJECT_SOURCE_DIR}/src/maidsafe/dht/kademlia.pb.cc
-                              ${PROJECT_SOURCE_DIR}/src/maidsafe/dht/rpcs.pb.cc
-                              ${PROJECT_SOURCE_DIR}/src/maidsafe/dht/tests/wrapper.pb.cc
+  SET_SOURCE_FILES_PROPERTIES(${PROJECT_SOURCE_DIR}/src/maidsafe/routing/kademlia.pb.cc
+                              ${PROJECT_SOURCE_DIR}/src/maidsafe/routing/rpcs.pb.cc
+                              ${PROJECT_SOURCE_DIR}/src/maidsafe/routing/tests/wrapper.pb.cc
                                 PROPERTIES COMPILE_FLAGS "/W0")
-  SET_TARGET_PROPERTIES(maidsafe_dht_static TESTkademlia PROPERTIES COMPILE_FLAGS "/bigobj")
-  SET_TARGET_PROPERTIES(maidsafe_dht_static PROPERTIES STATIC_LIBRARY_FLAGS_RELEASE "/LTCG")
+  SET_TARGET_PROPERTIES(maidsafe_routing_static TESTkademlia PROPERTIES COMPILE_FLAGS "/bigobj")
+  SET_TARGET_PROPERTIES(maidsafe_routing_static PROPERTIES STATIC_LIBRARY_FLAGS_RELEASE "/LTCG")
 ELSEIF(UNIX)
   SET_TARGET_PROPERTIES(KademliaDemo PROPERTIES COMPILE_FLAGS "-g")
-  FILE(GLOB PROTO_SOURCE_FILES "${PROJECT_SOURCE_DIR}/src/maidsafe/dht/*.pb.cc"
-                               "${PROJECT_SOURCE_DIR}/src/maidsafe/dht/tests/*.pb.cc")
-  SET_SOURCE_FILES_PROPERTIES(${PROJECT_SOURCE_DIR}/src/maidsafe/dht/service.cc
-                              ${PROJECT_SOURCE_DIR}/src/maidsafe/dht/node.cc
-                              ${PROJECT_SOURCE_DIR}/src/maidsafe/dht/node_impl.cc
-                              ${PROJECT_SOURCE_DIR}/src/maidsafe/dht/benchmark/benchmark.cc
-                              ${PROJECT_SOURCE_DIR}/src/maidsafe/dht/tests/test_main.cc
-                              ${PROJECT_SOURCE_DIR}/src/maidsafe/dht/tests/mock_rpcs_test.cc
-                              ${PROJECT_SOURCE_DIR}/src/maidsafe/dht/tests/mock_node_impl_test.cc
-                              ${PROJECT_SOURCE_DIR}/src/maidsafe/dht/tests/rpcs_test.cc
-                              ${PROJECT_SOURCE_DIR}/src/maidsafe/dht/tests/services_test.cc
-                              ${PROJECT_SOURCE_DIR}/src/maidsafe/dht/tests/functional/node_churn_test
-                              ${PROJECT_SOURCE_DIR}/src/maidsafe/dht/tests/functional/node_test.cc
-                              ${PROJECT_SOURCE_DIR}/src/maidsafe/dht/tests/functional/node_impl_test.cc
+  FILE(GLOB PROTO_SOURCE_FILES "${PROJECT_SOURCE_DIR}/src/maidsafe/routing/*.pb.cc"
+                               "${PROJECT_SOURCE_DIR}/src/maidsafe/routing/tests/*.pb.cc")
+  SET_SOURCE_FILES_PROPERTIES(${PROJECT_SOURCE_DIR}/src/maidsafe/routing/service.cc
+                              ${PROJECT_SOURCE_DIR}/src/maidsafe/routing/node.cc
+                              ${PROJECT_SOURCE_DIR}/src/maidsafe/routing/node_impl.cc
+                              ${PROJECT_SOURCE_DIR}/src/maidsafe/routing/benchmark/benchmark.cc
+                              ${PROJECT_SOURCE_DIR}/src/maidsafe/routing/tests/test_main.cc
+                              ${PROJECT_SOURCE_DIR}/src/maidsafe/routing/tests/mock_rpcs_test.cc
+                              ${PROJECT_SOURCE_DIR}/src/maidsafe/routing/tests/mock_node_impl_test.cc
+                              ${PROJECT_SOURCE_DIR}/src/maidsafe/routing/tests/rpcs_test.cc
+                              ${PROJECT_SOURCE_DIR}/src/maidsafe/routing/tests/services_test.cc
+                              ${PROJECT_SOURCE_DIR}/src/maidsafe/routing/tests/functional/node_churn_test
+                              ${PROJECT_SOURCE_DIR}/src/maidsafe/routing/tests/functional/node_test.cc
+                              ${PROJECT_SOURCE_DIR}/src/maidsafe/routing/tests/functional/node_impl_test.cc
                               PROPERTIES COMPILE_FLAGS "-Wno-effc++")
   SET_SOURCE_FILES_PROPERTIES(${PROTO_SOURCE_FILES} PROPERTIES COMPILE_FLAGS "-w")
 ENDIF()
@@ -206,11 +204,11 @@ ENDIF()
 ###################################################################################################
 # Tests                                                                                           #
 ###################################################################################################
-ADD_STYLE_TEST(${STYLE_DHT}
+ADD_STYLE_TEST(${STYLE_ROUTING}
                ${ALL_FILES_BENCHMARK_DIR}
                ${ALL_FILES_DEMO_DIR}
-               ${STYLE_DHT_TESTS}
-               ${ALL_FILES_DHT_TESTS_FUNCTIONAL_DIR})
+               ${STYLE_ROUTING_TESTS}
+               ${ALL_FILES_ROUTING_TESTS_FUNCTIONAL_DIR})
 
 ADD_GTESTS(TESTkademlia)
 ADD_GTESTS(TESTnode_functional)
@@ -264,22 +262,22 @@ ADD_MEMCHECK_IGNORE(NodeChurnTest.FUNC_RandomStartStopNodes)
 FINAL_MESSAGE()
 RENAME_OUTDATED_BUILT_EXES()
 
-SET(MAIDSAFE_DHT_INSTALL_FILES
-      ${PROJECT_SOURCE_DIR}/src/maidsafe/dht/config.h
-      ${PROJECT_SOURCE_DIR}/src/maidsafe/dht/contact.h
-      ${PROJECT_SOURCE_DIR}/src/maidsafe/dht/maidsafe-dht.h
-      ${PROJECT_SOURCE_DIR}/src/maidsafe/dht/message_handler.h
-      ${PROJECT_SOURCE_DIR}/src/maidsafe/dht/node-api.h
-      ${PROJECT_SOURCE_DIR}/src/maidsafe/dht/node_container.h
-      ${PROJECT_SOURCE_DIR}/src/maidsafe/dht/node_id.h
-      ${PROJECT_SOURCE_DIR}/src/maidsafe/dht/return_codes.h
-      ${PROJECT_SOURCE_DIR}/src/maidsafe/dht/rpcs_objects.h
-      ${PROJECT_SOURCE_DIR}/src/maidsafe/dht/version.h)
+SET(MAIDSAFE_ROUTING_INSTALL_FILES
+      ${PROJECT_SOURCE_DIR}/src/maidsafe/routing/config.h
+      ${PROJECT_SOURCE_DIR}/src/maidsafe/routing/contact.h
+      ${PROJECT_SOURCE_DIR}/src/maidsafe/routing/maidsafe-routing.h
+      ${PROJECT_SOURCE_DIR}/src/maidsafe/routing/message_handler.h
+      ${PROJECT_SOURCE_DIR}/src/maidsafe/routing/node-api.h
+      ${PROJECT_SOURCE_DIR}/src/maidsafe/routing/node_container.h
+      ${PROJECT_SOURCE_DIR}/src/maidsafe/routing/node_id.h
+      ${PROJECT_SOURCE_DIR}/src/maidsafe/routing/return_codes.h
+      ${PROJECT_SOURCE_DIR}/src/maidsafe/routing/rpcs_objects.h
+      ${PROJECT_SOURCE_DIR}/src/maidsafe/routing/version.h)
 
-SET(MAIDSAFE_DHT_TEST_INSTALL_FILES
-      ${PROJECT_SOURCE_DIR}/src/maidsafe/dht/tests/local_network.h)
+SET(MAIDSAFE_ROUTING_TEST_INSTALL_FILES
+      ${PROJECT_SOURCE_DIR}/src/maidsafe/routing/tests/local_network.h)
 
-MS_INSTALL_LIBS(maidsafe_dht_static)
-MS_INSTALL_HEADERS(dht ${MAIDSAFE_DHT_INSTALL_FILES})
-MS_INSTALL_HEADERS(dht/tests ${MAIDSAFE_DHT_TEST_INSTALL_FILES})
+MS_INSTALL_LIBS(maidsafe_routing_static)
+MS_INSTALL_HEADERS(routing ${MAIDSAFE_ROUTING_INSTALL_FILES})
+MS_INSTALL_HEADERS(routing/tests ${MAIDSAFE_ROUTING_TEST_INSTALL_FILES})
 MS_INSTALL_EXPORT()
