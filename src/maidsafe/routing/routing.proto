@@ -34,6 +34,7 @@ message Request {
   required bytes message = 5;
   optional bytes signature = 6;
   optional bytes signature_id = 7;
+  optinoal bool direct = 8;
 }
 
 message Response {
