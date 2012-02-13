@@ -142,12 +142,7 @@ SET(HEADER_FILES_ROUTING_TESTS_FUNCTIONALS "${PROJECT_SOURCE_DIR}/src/maidsafe/r
 # Define MaidSafe libraries and executables                                                       #
 ###################################################################################################
 MS_ADD_STATIC_LIBRARY(${MS_PROJECT_NAME} ${ALL_FILES_ROUTING_DIR})
-MS_ADD_EXECUTABLE(TESTkademlia Tests ${ALL_FILES_ROUTING_TESTS_DIR})
-MS_ADD_EXECUTABLE(TESTnode_functional Tests ${SOURCE_FILES_ROUTING_TESTS_FUNCTIONAL_NODE} ${HEADER_FILES_ROUTING_TESTS_FUNCTIONALS})
-MS_ADD_EXECUTABLE(TESTnode_impl_functional Tests ${SOURCE_FILES_ROUTING_TESTS_FUNCTIONAL_NODE_IMPL} ${HEADER_FILES_ROUTING_TESTS_FUNCTIONALS})
-MS_ADD_EXECUTABLE(TESTnode_churn Tests ${SOURCE_FILES_ROUTING_TESTS_FUNCTIONAL_NODE_CHURN} ${HEADER_FILES_ROUTING_TESTS_FUNCTIONALS})
-MS_ADD_EXECUTABLE(KademliaDemo Demo ${ALL_FILES_DEMO_DIR})
-MS_ADD_EXECUTABLE(Benchmark Benchmark ${ALL_FILES_BENCHMARK_DIR})
+MS_ADD_EXECUTABLE(TESTRouting Tests ${ALL_FILES_ROUTING_TESTS_DIR})
 
 TARGET_LINK_LIBRARIES(maidsafe_routing_static
                         maidsafe_transport_static
@@ -155,12 +150,8 @@ TARGET_LINK_LIBRARIES(maidsafe_routing_static
                         breakpad_static
                         boost_date_time
                         boost_regex)
-TARGET_LINK_LIBRARIES(TESTkademlia maidsafe_routing_static gmock_static)
-TARGET_LINK_LIBRARIES(TESTnode_functional maidsafe_routing_static gtest_static)
-TARGET_LINK_LIBRARIES(TESTnode_impl_functional maidsafe_routing_static gtest_static)
-TARGET_LINK_LIBRARIES(TESTnode_churn maidsafe_routing_static gtest_static)
-TARGET_LINK_LIBRARIES(KademliaDemo maidsafe_routing_static boost_program_options)
-TARGET_LINK_LIBRARIES(Benchmark maidsafe_routing_static boost_program_options)
+TARGET_LINK_LIBRARIES(TESTRouting maidsafe_routing_static gmock_static)
+
 
 
 ###################################################################################################
@@ -168,35 +159,23 @@ TARGET_LINK_LIBRARIES(Benchmark maidsafe_routing_static boost_program_options)
 ###################################################################################################
 INCLUDE(maidsafe_standard_flags)
 
-SET_TARGET_PROPERTIES(TESTnode_functional PROPERTIES COMPILE_DEFINITIONS "FUNCTIONAL_NODE_TEST")
-SET_TARGET_PROPERTIES(TESTnode_impl_functional PROPERTIES COMPILE_DEFINITIONS "FUNCTIONAL_NODE_IMPL_TEST")
-SET_TARGET_PROPERTIES(TESTnode_churn PROPERTIES COMPILE_DEFINITIONS "FUNCTIONAL_CHURN_TEST")
-
 IF(MSVC)
   # Warnings switched off for protocol buffer generated files
-  SET_SOURCE_FILES_PROPERTIES(${PROJECT_SOURCE_DIR}/src/maidsafe/routing/kademlia.pb.cc
-                              ${PROJECT_SOURCE_DIR}/src/maidsafe/routing/rpcs.pb.cc
-                              ${PROJECT_SOURCE_DIR}/src/maidsafe/routing/tests/wrapper.pb.cc
+  SET_SOURCE_FILES_PROPERTIES(${PROJECT_SOURCE_DIR}/src/maidsafe/routing/routing.pb.cc
                                 PROPERTIES COMPILE_FLAGS "/W0")
-  SET_TARGET_PROPERTIES(maidsafe_routing_static TESTkademlia PROPERTIES COMPILE_FLAGS "/bigobj")
+  SET_TARGET_PROPERTIES(maidsafe_routing_static TESTRouting PROPERTIES COMPILE_FLAGS "/bigobj")
   SET_TARGET_PROPERTIES(maidsafe_routing_static PROPERTIES STATIC_LIBRARY_FLAGS_RELEASE "/LTCG")
 ELSEIF(UNIX)
-  SET_TARGET_PROPERTIES(KademliaDemo PROPERTIES COMPILE_FLAGS "-g")
+#  SET_TARGET_PROPERTIES(KademliaDemo PROPERTIES COMPILE_FLAGS "-g")
   FILE(GLOB PROTO_SOURCE_FILES "${PROJECT_SOURCE_DIR}/src/maidsafe/routing/*.pb.cc"
                                "${PROJECT_SOURCE_DIR}/src/maidsafe/routing/tests/*.pb.cc")
-  SET_SOURCE_FILES_PROPERTIES(${PROJECT_SOURCE_DIR}/src/maidsafe/routing/service.cc
-                              ${PROJECT_SOURCE_DIR}/src/maidsafe/routing/node.cc
-                              ${PROJECT_SOURCE_DIR}/src/maidsafe/routing/node_impl.cc
-                              ${PROJECT_SOURCE_DIR}/src/maidsafe/routing/benchmark/benchmark.cc
-                              ${PROJECT_SOURCE_DIR}/src/maidsafe/routing/tests/test_main.cc
-                              ${PROJECT_SOURCE_DIR}/src/maidsafe/routing/tests/mock_rpcs_test.cc
-                              ${PROJECT_SOURCE_DIR}/src/maidsafe/routing/tests/mock_node_impl_test.cc
-                              ${PROJECT_SOURCE_DIR}/src/maidsafe/routing/tests/rpcs_test.cc
-                              ${PROJECT_SOURCE_DIR}/src/maidsafe/routing/tests/services_test.cc
-                              ${PROJECT_SOURCE_DIR}/src/maidsafe/routing/tests/functional/node_churn_test
-                              ${PROJECT_SOURCE_DIR}/src/maidsafe/routing/tests/functional/node_test.cc
-                              ${PROJECT_SOURCE_DIR}/src/maidsafe/routing/tests/functional/node_impl_test.cc
-                              PROPERTIES COMPILE_FLAGS "-Wno-effc++")
+#   SET_SOURCE_FILES_PROPERTIES(${PROJECT_SOURCE_DIR}/src/maidsafe/routing/service.cc
+#                               ${PROJECT_SOURCE_DIR}/src/maidsafe/routing/node.cc
+#                               ${PROJECT_SOURCE_DIR}/src/maidsafe/routing/node_impl.cc
+#                               ${PROJECT_SOURCE_DIR}/src/maidsafe/routing/benchmark/benchmark.cc
+#                               ${PROJECT_SOURCE_DIR}/src/maidsafe/routing/tests/test_main.cc
+#                               ${PROJECT_SOURCE_DIR}/src/maidsafe/routing/tests/mock_rpcs_test.cc
+#                               PROPERTIES COMPILE_FLAGS "-Wno-effc++")
   SET_SOURCE_FILES_PROPERTIES(${PROTO_SOURCE_FILES} PROPERTIES COMPILE_FLAGS "-w")
 ENDIF()
 
@@ -210,50 +189,14 @@ ADD_STYLE_TEST(${STYLE_ROUTING}
                ${STYLE_ROUTING_TESTS}
                ${ALL_FILES_ROUTING_TESTS_FUNCTIONAL_DIR})
 
-ADD_GTESTS(TESTkademlia)
-ADD_GTESTS(TESTnode_functional)
-ADD_GTESTS(TESTnode_impl_functional)
-ADD_GTESTS(TESTnode_churn)
+ADD_GTESTS(TESTRouting)
+
 
 TEST_SUMMARY_OUTPUT()
 
 # Remove most lengthy tests and style checkers from MemCheck runs.
 ADD_MEMCHECK_IGNORE(STYLE_CHECK)
-ADD_MEMCHECK_IGNORE(NodeTest.FUNC_Ping)
-ADD_MEMCHECK_IGNORE(NodeTest.FUNC_Bootstrap)
-ADD_MEMCHECK_IGNORE(NodeTest.FUNC_JoinClient)
-ADD_MEMCHECK_IGNORE(NodeTest.FUNC_StoreAndFindSmallValue)
-ADD_MEMCHECK_IGNORE(NodeTest.FUNC_StoreAndFindBigValue)
-ADD_MEMCHECK_IGNORE(NodeTest.FUNC_StoreAndFindMultipleValues)
-ADD_MEMCHECK_IGNORE(NodeTest.FUNC_MultipleNodesFindSingleValue)
-ADD_MEMCHECK_IGNORE(NodeTest.FUNC_ClientFindValue)
-ADD_MEMCHECK_IGNORE(NodeTest.FUNC_GetContact)
-ADD_MEMCHECK_IGNORE(NodeTest.FUNC_FindNonExistingValue)
-ADD_MEMCHECK_IGNORE(NodeTest.FUNC_FindDeadNode)
-ADD_MEMCHECK_IGNORE(NodeTest.FUNC_JoinLeave)
-ADD_MEMCHECK_IGNORE(NodeTest.FUNC_StoreWithInvalidRequest)
-ADD_MEMCHECK_IGNORE(NodeTest.FUNC_Update)
-ADD_MEMCHECK_IGNORE(NodeTest.FUNC_FindNodes)
-ADD_MEMCHECK_IGNORE(NodeTest.FUNC_Delete)
-ADD_MEMCHECK_IGNORE(NodeTest.FUNC_InvalidDeleteRequest)
-ADD_MEMCHECK_IGNORE(FullOrClient/NodeImplTest.FUNC_JoinLeave/0)
-ADD_MEMCHECK_IGNORE(FullOrClient/NodeImplTest.FUNC_JoinLeave/1)
-ADD_MEMCHECK_IGNORE(FullOrClient/NodeImplTest.FUNC_FindNodes/0)
-ADD_MEMCHECK_IGNORE(FullOrClient/NodeImplTest.FUNC_FindNodes/1)
-ADD_MEMCHECK_IGNORE(FullOrClient/NodeImplTest.FUNC_Store/0)
-ADD_MEMCHECK_IGNORE(FullOrClient/NodeImplTest.FUNC_Store/1)
-ADD_MEMCHECK_IGNORE(FullOrClient/NodeImplTest.FUNC_FindValue/0)
-ADD_MEMCHECK_IGNORE(FullOrClient/NodeImplTest.FUNC_FindValue/1)
-ADD_MEMCHECK_IGNORE(FullOrClient/NodeImplTest.FUNC_Delete/0)
-ADD_MEMCHECK_IGNORE(FullOrClient/NodeImplTest.FUNC_Delete/1)
-ADD_MEMCHECK_IGNORE(FullOrClient/NodeImplTest.FUNC_Update/1)
-ADD_MEMCHECK_IGNORE(FullOrClient/NodeImplTest.FUNC_StoreRefresh/0)
-ADD_MEMCHECK_IGNORE(FullOrClient/NodeImplTest.FUNC_StoreRefresh/1)
-ADD_MEMCHECK_IGNORE(FullOrClient/NodeImplTest.FUNC_DeleteRefresh/0)
-ADD_MEMCHECK_IGNORE(FullOrClient/NodeImplTest.FUNC_DeleteRefresh/1)
-ADD_MEMCHECK_IGNORE(FullOrClient/NodeImplTest.FUNC_GetContact/0)
-ADD_MEMCHECK_IGNORE(FullOrClient/NodeImplTest.FUNC_GetContact/1)
-ADD_MEMCHECK_IGNORE(NodeChurnTest.FUNC_RandomStartStopNodes)
+
 
 
 ###################################################################################################
@@ -264,18 +207,10 @@ RENAME_OUTDATED_BUILT_EXES()
 
 SET(MAIDSAFE_ROUTING_INSTALL_FILES
       ${PROJECT_SOURCE_DIR}/src/maidsafe/routing/config.h
-      ${PROJECT_SOURCE_DIR}/src/maidsafe/routing/contact.h
       ${PROJECT_SOURCE_DIR}/src/maidsafe/routing/maidsafe-routing.h
       ${PROJECT_SOURCE_DIR}/src/maidsafe/routing/message_handler.h
-      ${PROJECT_SOURCE_DIR}/src/maidsafe/routing/node-api.h
-      ${PROJECT_SOURCE_DIR}/src/maidsafe/routing/node_container.h
-      ${PROJECT_SOURCE_DIR}/src/maidsafe/routing/node_id.h
-      ${PROJECT_SOURCE_DIR}/src/maidsafe/routing/return_codes.h
-      ${PROJECT_SOURCE_DIR}/src/maidsafe/routing/rpcs_objects.h
       ${PROJECT_SOURCE_DIR}/src/maidsafe/routing/version.h)
 
-SET(MAIDSAFE_ROUTING_TEST_INSTALL_FILES
-      ${PROJECT_SOURCE_DIR}/src/maidsafe/routing/tests/local_network.h)
 
 MS_INSTALL_LIBS(maidsafe_routing_static)
 MS_INSTALL_HEADERS(routing ${MAIDSAFE_ROUTING_INSTALL_FILES})
