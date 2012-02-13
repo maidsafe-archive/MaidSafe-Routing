@@ -26,6 +26,22 @@ message ConfigFile {
 
 // Message wrappers 
 
+message ConnectRequest {
+  required bytes source_id = 1;
+  required bytes destination_id = 2;
+  optional bytes signature = 3;
+  optional bytes signature_id = 4;
+  optional bool direct = 5;
+}
+
+message ConnectResponce {
+  required bytes source_id = 1;
+  required bytes destination_id = 2;
+  optional bytes signature = 3;
+  optional bytes signature_id = 4;
+  optional bool direct = 5;
+}
+
 message Request {
   required bytes source_id = 1;
   required bytes destination_id = 2;
@@ -34,7 +50,7 @@ message Request {
   required bytes message = 5;
   optional bytes signature = 6;
   optional bytes signature_id = 7;
-  optinoal bool direct = 8;
+  optional bool direct = 8;
 }
 
 message Response {
