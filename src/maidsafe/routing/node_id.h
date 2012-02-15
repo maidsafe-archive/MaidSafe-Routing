@@ -136,7 +136,8 @@ class NodeId {
   * Checks that raw_id_ has size kKeySizeBytes.
   */
   bool IsValid() const;
-
+  bool operator () (const NodeId &lhs, const NodeId &rhs) const {
+    return lhs.raw_id_ < rhs.raw_id_; }
   bool operator == (const NodeId &rhs) const;
   bool operator != (const NodeId &rhs) const;
   bool operator < (const NodeId &rhs) const;

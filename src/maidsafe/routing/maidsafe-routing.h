@@ -88,11 +88,14 @@ const int16_t kClosestNodes(8);
 
 /// total nodes in routing table
 const int16_t kRoutingTableSize(64);
+static_assert(kClosestNodes >= kRoutingTableSize);
 
-static_assert(kClosestNodes >= kRoutingTableSize); 
+/// Nodes hint per bucket (hint as buckets will fill more than
+/// this when space permits)
+const int16_t kBucketSize(2);
 
-typedef std::function<void()> FindValueFunctor;
-typedef std::function<void()> RegisterMesageHandlerFunctor;
+typedef std::function<void(std::string &message)> GetValueFunctor;
+typedef std::function<void(std::string &messsage)> PassMessageUpFunctor;
 
 void Start(boost::asio::io_service &service);
 void Stop();
@@ -101,13 +104,13 @@ void FindNodes(NodeId &target_id, int16_t num_nodes, std::vector<NodeId> *nodes)
 
 /// must be set before node can start  This allows node to 
 /// check locally for data that's marked cacheable. 
-void SetGetDataFunctor(FindValueFunctor &find_value);
+void SetGetDataFunctor(GetValueFunctor &get_local_value);
 
 /// to recieve messages
 bool RegisterMessageHandler(RegisterMesageHandlerFunctor &register_message_handler); 
 
 /// to allow message parameter setting and sending
-struct Message {
+class Message {
  public:
   /// Setters
   explicit Message(const std::string &message);

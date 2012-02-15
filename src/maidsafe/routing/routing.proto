@@ -1,5 +1,10 @@
 package maidsafe.routing.protobuf;
 
+message layer {
+  required int32 identifier = 1;
+  required bytes message = 2;
+}
+
 message Endpoint {
   required bytes ip = 1;
   required int32 port = 2;
@@ -25,22 +30,6 @@ message ConfigFile {
 }
 
 // Message wrappers 
-
-message ConnectRequest {
-  required bytes source_id = 1;
-  required bytes destination_id = 2;
-  optional bytes signature = 3;
-  optional bytes signature_id = 4;
-  optional bool direct = 5;
-}
-
-message ConnectResponce {
-  required bytes source_id = 1;
-  required bytes destination_id = 2;
-  optional bytes signature = 3;
-  optional bytes signature_id = 4;
-  optional bool direct = 5;
-}
 
 message Request {
   required bytes source_id = 1;

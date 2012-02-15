@@ -208,7 +208,6 @@ RENAME_OUTDATED_BUILT_EXES()
 SET(MAIDSAFE_ROUTING_INSTALL_FILES
       ${PROJECT_SOURCE_DIR}/src/maidsafe/routing/config.h
       ${PROJECT_SOURCE_DIR}/src/maidsafe/routing/maidsafe-routing.h
-      ${PROJECT_SOURCE_DIR}/src/maidsafe/routing/message_handler.h
       ${PROJECT_SOURCE_DIR}/src/maidsafe/routing/version.h)
 
 

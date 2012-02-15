@@ -35,7 +35,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #  pragma warning(push)
 #  pragma warning(disable: 4127 4244 4267)
 #endif
-#include "maidsafe/routing/kademlia.pb.h"
+#include "maidsafe/routing/routing.pb.h"
 #ifdef __MSVC__
 #  pragma warning(pop)
 #endif
