@@ -35,47 +35,20 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
   Please update the maidsafe_routing library.
 #endif
 
-
-/// Versioning information
-
-#define MAIDSAFE_ROUTING_VERSION 3107
-
-#if defined CMAKE_MAIDSAFE_ROUTING_VERSION &&\
-            MAIDSAFE_ROUTING_VERSION != CMAKE_MAIDSAFE_ROUTING_VERSION
-#  error The project version has changed.  Re-run CMake.
-#endif
-
-#include "maidsafe/common/version.h"
-#include "maidsafe/transport/version.h"
-
-#define THIS_NEEDS_MAIDSAFE_COMMON_VERSION 1100
-#if MAIDSAFE_COMMON_VERSION < THIS_NEEDS_MAIDSAFE_COMMON_VERSION
-#  error This API is not compatible with the installed library.\
-    Please update the maidsafe-common library.
-#elif MAIDSAFE_COMMON_VERSION > THIS_NEEDS_MAIDSAFE_COMMON_VERSION
-#  error This API uses a newer version of the maidsafe-common library.\
-    Please update this project.
-#endif
-
-#define THIS_NEEDS_MAIDSAFE_TRANSPORT_VERSION 104
-#if MAIDSAFE_TRANSPORT_VERSION < THIS_NEEDS_MAIDSAFE_TRANSPORT_VERSION
-#  error This API is not compatible with the installed library.\
-    Please update the maidsafe-transport library.
-#elif MAIDSAFE_TRANSPORT_VERSION > THIS_NEEDS_MAIDSAFE_TRANSPORT_VERSION
-#  error This API uses a newer version of the maidsafe-transport library.\
-    Please update this project.
-#endif
-/// end of versioning
 #include "boost/asio/io_service.hpp"
 
 #include "maidsafe/transport/transport.h"
 #include "maidsafe/transport/message_handler.h"
 #include "maidsafe/transport/tcp_transport.h"
 #include "maidsafe/transport/udp_transport.h"
+
+namespace maidsafe {
+
+namespace routing {
 /// Forward Declerations
-class Contact;
+
+class RoutingImpl;
 class NodeId;
-class MessageHandler;
 
 typedef boost::asio::ip::address IP;
 typedef int16_t Port;
@@ -88,7 +61,8 @@ const int16_t kClosestNodes(8);
 
 /// total nodes in routing table
 const int16_t kRoutingTableSize(64);
-static_assert(kClosestNodes >= kRoutingTableSize);
+static_assert(kClosestNodes <= kRoutingTableSize,
+              "Cannot set closest nodes larger than routing table");
 
 /// Nodes hint per bucket (hint as buckets will fill more than
 /// this when space permits)
@@ -97,17 +71,23 @@ const int16_t kBucketSize(2);
 typedef std::function<void(std::string &message)> GetValueFunctor;
 typedef std::function<void(std::string &messsage)> PassMessageUpFunctor;
 
-void Start(boost::asio::io_service &service);
-void Stop();
-bool Running();
-void FindNodes(NodeId &target_id, int16_t num_nodes, std::vector<NodeId> *nodes);
 
-/// must be set before node can start  This allows node to 
-/// check locally for data that's marked cacheable. 
-void SetGetDataFunctor(GetValueFunctor &get_local_value);
+class Routing {
+ public:
+  Routing();
+  void Start(boost::asio::io_service &service);
+  void Stop();
+  bool Running();
+  void FindNodes(NodeId &target_id, int16_t num_nodes, std::vector<NodeId> *nodes);
+  /// must be set before node can start  This allows node to
+  /// check locally for data that's marked cacheable.
+  void SetGetDataFunctor(GetValueFunctor &get_local_value);
+  /// to recieve messages
+  bool RegisterMessageHandler(PassMessageUpFunctor &pass_message_up_handler);
+ private:
+  std::unique_ptr<RoutingImpl>  Impl;
+};
 
-/// to recieve messages
-bool RegisterMessageHandler(RegisterMesageHandlerFunctor &register_message_handler); 
 
 /// to allow message parameter setting and sending
 class Message {
@@ -133,8 +113,11 @@ class Message {
 private:
   Message(const Message&);
   Message &operator=(const Message&);
+  
 };
 
+}  // namespace routing
 
+}  // namespace maidsafe
 
 #endif  // MAIDSAFE_ROUTING_MAIDSAFE_ROUTING_H_

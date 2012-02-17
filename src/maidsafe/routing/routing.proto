@@ -23,6 +23,10 @@ message Contact {
   optional bytes other_info = 10;
 }
 
+message ClosestContacts {
+  repeated Contact close_contacts = 1;
+}
+
 message ConfigFile {
   repeated Contact contact = 1;
   optional bytes private_key = 2;

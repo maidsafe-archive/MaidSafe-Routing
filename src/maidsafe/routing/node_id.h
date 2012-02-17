@@ -33,7 +33,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <vector>
 #include "boost/serialization/nvp.hpp"
 #include "maidsafe/common/platform_config.h"
-#include "maidsafe/routing/config.h"
+#include "maidsafe/routing/maidsafe_routing.h"
 #include "maidsafe/routing/version.h"
 
 #if MAIDSAFE_ROUTING_VERSION != 3107
@@ -45,11 +45,11 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 namespace maidsafe {
 
 namespace routing {
-
+  
 /**
 * The size of ROUTING keys and node IDs in bits.
 **/
-const uint16_t kKeySizeBits = 8 * kKeySizeBytes;
+const int16_t kKeySizeBits = 8 * kKeySizeBytes;
 
 const std::string kZeroId(kKeySizeBytes, 0);
 
@@ -165,37 +165,5 @@ std::string DebugId(const NodeId &node_id);
 }  // namespace routing
 
 }  // namespace maidsafe
-
-
-
-namespace mk = maidsafe::routing;
-
-namespace boost {
-
-namespace serialization {
-
-#ifdef __MSVC__
-#  pragma warning(disable: 4127)
-#endif
-template <typename Archive>
-void serialize(Archive &archive,                              // NOLINT (Fraser)
-               mk::NodeId &node_id,
-               const unsigned int& /*version*/) {
-  std::string node_id_local;
-  if (Archive::is_saving::value) {
-    node_id_local = (node_id.ToStringEncoded(mk::NodeId::kBase64));
-  }
-  archive& boost::serialization::make_nvp("node_id", node_id_local);
-  if (Archive::is_loading::value) {
-    node_id = mk::NodeId(node_id_local, mk::NodeId::kBase64);
-  }
-#ifdef __MSVC__
-#  pragma warning(default: 4127)
-#endif
-}
-
-}  // namespace serialization
-
-}  // namespace boost
 
 #endif  // MAIDSAFE_ROUTING_NODE_ID_H_

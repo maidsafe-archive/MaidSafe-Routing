@@ -60,7 +60,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define MAIDSAFE_ROUTING_ROUTING_TABLE_H_
 
 #include <cstdint>
-#include <map>
+#include <set>
 #include <memory>
 #include <string>
 #include <vector>
@@ -69,64 +69,57 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "boost/thread/shared_mutex.hpp"
 #include "boost/thread/mutex.hpp"
 
-#include "maidsafe/routing/contact.h"
+#include "maidsafe/common/rsa.h"
+#include "maidsafe/routing/routing.pb.h"
 #include "maidsafe/routing/node_id.h"
 #include "maidsafe/routing/log.h"
+
 
 namespace maidsafe {
 
 namespace transport { struct Info; }
 
 namespace routing {
-
+  typedef protobuf::Contact Contact;
+  
 class RoutingTable {
  public:
-  RoutingTable();
+  RoutingTable(NodeId &this_node_id);
   ~RoutingTable();
-  int AddContact(const Contact &contact, RankInfoPtr rank_info);
+  int AddContact(const Contact &contact);
   int GetContact(const NodeId &node_id, Contact *contact);
   void GetCloseContacts(const NodeId &target_id,
                         const size_t &count,
                         const std::vector<Contact> &exclude_contacts,
                         std::vector<Contact> *close_contacts);
-  int SetPublicKey(const NodeId &node_id, const std::string &new_public_key);
-  int SetPreferredEndpoint(const NodeId &node_id, const IP &ip);
-  int SetValidated(const NodeId &node_id, bool validated);
-  void GetBootstrapContacts(std::vector<Contact> *contacts);
-  void GetAllContacts(std::vector<Contact> *contacts);
-  ValidateContactPtr validate_contact();
+  std::string GetClosestContacts();
  private:
   typedef boost::shared_lock<boost::shared_mutex> SharedLock;
   typedef boost::upgrade_lock<boost::shared_mutex> UpgradeLock;
   typedef boost::unique_lock<boost::shared_mutex> UniqueLock;
   typedef boost::upgrade_to_unique_lock<boost::shared_mutex>
       UpgradeToUniqueLock;
-
-  uint16_t KBucketIndex(const NodeId &key);
-
-  uint16_t KBucketIndex(const uint16_t &common_leading_bits);
-
-  uint16_t KBucketCount() const;
-
-  uint16_t KBucketSizeForKey(const uint16_t &key);
-
+  void SortCriteria();  // for set order    
+  int16_t BucketIndex(const NodeId &key);
+  int16_t BucketSizeForNode(const NodeId &key);
+  
   void InsertContact(const Contact &contact,
-                     RankInfoPtr rank_info,
                      std::shared_ptr<UpgradeLock> upgrade_lock);
   /** XOR KBucket distance between two kademlia IDs.
    *  Measured by the number of common leading bits.
    *  The less the value is, the further the distance (the wider range) is.
    *  @param[in] rhs NodeId to which this is XOR
    *  @return the number of common bits from the beginning */
-  uint16_t KDistanceTo(const NodeId &rhs) const;
+  int16_t DistanceTo(const NodeId &rhs) const;
   int GetLeastCommonLeadingBitInKClosestContact();
   size_t Size();
   void Clear();
-  const NodeId kThisId_;
+  const NodeId ThisId_;
   /** Holder's Kademlia ID held as a human readable string for debugging */
   std::string kDebugId_;
-  std::set<NodeId, NodeId()> contacts_;
-  std::vector<NodeId> unvalidated_contacts_;
+  std::vector<Contact> closest_contacts_;
+  std::set<NodeId> routing_table_nodes_;
+  std::set<Contact> unvalidated_contacts_;
   boost::shared_mutex shared_mutex_;
 };
 

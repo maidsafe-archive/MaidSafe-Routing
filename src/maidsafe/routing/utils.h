@@ -32,16 +32,17 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <vector>
 
 #include "maidsafe/common/rsa.h"
-
+#include "maidsafe/routing/routing.pb.h"
 namespace maidsafe {
 
 namespace transport { struct Endpoint; }
 
 namespace routing {
 
-class Contact;
-class NodeId;
 
+class NodeId;
+typedef protobuf::Contact Contact;
+  
 namespace protobuf { class Contact; }
 
 bool IsValid(const transport::Endpoint &endpoint);
