@@ -81,46 +81,37 @@ namespace transport { struct Info; }
 
 namespace routing {
   typedef protobuf::Contact Contact;
-  
+  class ManagedConnections;
 class RoutingTable {
  public:
-  RoutingTable(NodeId &this_node_id);
+  RoutingTable(const NodeId &this_node_id/*, ManagedConnections &MC*/);
   ~RoutingTable();
   int AddContact(const Contact &contact);
   int GetContact(const NodeId &node_id, Contact *contact);
-  void GetCloseContacts(const NodeId &target_id,
-                        const size_t &count,
-                        const std::vector<Contact> &exclude_contacts,
-                        std::vector<Contact> *close_contacts);
-  std::string GetClosestContacts();
+  protobuf::ClosestContacts GetMyClosestContacts();
+  int16_t Size() { return routing_table_nodes_.size(); }
  private:
-  typedef boost::shared_lock<boost::shared_mutex> SharedLock;
-  typedef boost::upgrade_lock<boost::shared_mutex> UpgradeLock;
-  typedef boost::unique_lock<boost::shared_mutex> UniqueLock;
-  typedef boost::upgrade_to_unique_lock<boost::shared_mutex>
-      UpgradeToUniqueLock;
-  void SortCriteria();  // for set order    
-  int16_t BucketIndex(const NodeId &key);
-  int16_t BucketSizeForNode(const NodeId &key);
+  RoutingTable operator =(const RoutingTable &assign_object);
+  RoutingTable(const RoutingTable &copy_object);
+  void SortCriteria();  // for set order
+  bool isClose(const NodeId &node_id);
   
-  void InsertContact(const Contact &contact,
-                     std::shared_ptr<UpgradeLock> upgrade_lock);
-  /** XOR KBucket distance between two kademlia IDs.
-   *  Measured by the number of common leading bits.
-   *  The less the value is, the further the distance (the wider range) is.
-   *  @param[in] rhs NodeId to which this is XOR
-   *  @return the number of common bits from the beginning */
-  int16_t DistanceTo(const NodeId &rhs) const;
+  int16_t BucketSizeForNode(const NodeId &key);
+  void UpdateClosestNode(NodeId &node_id); 
+  void InsertContact(const Contact &contact);
+  int16_t BucketIndex(const NodeId &rhs) const;
+  NodeId DistanceTo(const NodeId &rhs) const;
   int GetLeastCommonLeadingBitInKClosestContact();
-  size_t Size();
   void Clear();
   const NodeId ThisId_;
-  /** Holder's Kademlia ID held as a human readable string for debugging */
-  std::string kDebugId_;
+  NodeId furthest_closest_node_;
   std::vector<Contact> closest_contacts_;
-  std::set<NodeId> routing_table_nodes_;
+  std::vector<NodeId> routing_table_nodes_;
   std::set<Contact> unvalidated_contacts_;
   boost::shared_mutex shared_mutex_;
+  boost::mutex closest_contacts_mutex_;
+  boost::mutex routing_table_nodes_mutex_;
+//   ManagedConnections MC_;
 };
 
 }  // namespace routing

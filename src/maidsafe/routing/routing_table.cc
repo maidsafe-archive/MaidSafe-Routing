@@ -28,6 +28,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "maidsafe/routing/routing_table.h"
 #include "maidsafe/common/utils.h"
+#include "maidsafe/routing/node_id.h"
 #include "maidsafe/routing/return_codes.h"
 #include "maidsafe/routing/routing.pb.h"
 #include "maidsafe/routing/log.h"
@@ -36,13 +37,20 @@ namespace maidsafe {
 
 namespace routing {
 
-RoutingTable::RoutingTable(NodeId &this_node_id)
+  class ManagedConnections;
+  
+RoutingTable::RoutingTable(const NodeId &this_node_id/*, ManagedConnections &MC*/)
     : ThisId_(this_node_id),
-      kDebugId_(),
-      shared_mutex_() {}
+    furthest_closest_node_(),
+      closest_contacts_(),
+      routing_table_nodes_(),
+      unvalidated_contacts_(),
+      shared_mutex_(),
+      closest_contacts_mutex_(),
+      routing_table_nodes_mutex_() {}
 
 RoutingTable::~RoutingTable() {
-  UniqueLock unique_lock(shared_mutex_);
+  boost::unique_lock<boost::shared_mutex> unique_lock(shared_mutex_);
   unvalidated_contacts_.clear();
   closest_contacts_.clear();
   routing_table_nodes_.clear();
@@ -53,17 +61,39 @@ int RoutingTable::AddContact(const Contact &contact) {
 
   // If the contact has the same ID as the holder, return directly
   if (node_id == ThisId_) {
-    DLOG(WARNING) << kDebugId_ << ": Can't add own ID to routing table.";
+//    DLOG(WARNING) << kDebugId_ << ": Can't add own ID to routing table.";
     return kOwnIdNotIncludable;
   }
   /* TODO implement this
   CheckValidID // get public key and check signature
   CheckValidDistance // test algorithm
   */
+  if (Size() < kRoutingTableSize) {
+    routing_table_nodes_.push_back(node_id);
+  } else if (Size() < kClosestNodes) {
+    routing_table_nodes_.push_back(node_id);    
+  } else if (isClose(node_id)) {
+    // drop furthest_closest_node_ ???
+    //update closest nodes
+  }
+  return kSuccess;
 }
 
-// Done
-int16_t RoutingTable::DistanceTo(const NodeId &rhs) const {
+
+
+bool RoutingTable::isClose(const NodeId& node_id) { 
+  return DistanceTo(node_id) < DistanceTo(furthest_closest_node_);
+}
+
+void RoutingTable::UpdateClosestNode(NodeId &node_id) {
+  if (furthest_closest_node_ > node_id) {
+//     MC.Add(node_id);
+//     MC.Drop(furthest_closest_node_);
+    furthest_closest_node_ = node_id;
+  }
+}
+
+int16_t RoutingTable::BucketIndex(const NodeId &rhs) const {
   uint16_t distance = 0;
   std::string this_id_binary = ThisId_.ToStringEncoded(NodeId::kBinary);
   std::string rhs_id_binary = rhs.ToStringEncoded(NodeId::kBinary);
@@ -72,39 +102,33 @@ int16_t RoutingTable::DistanceTo(const NodeId &rhs) const {
   for (; ((this_it != this_id_binary.end()) && (*this_it == *rhs_it));
       ++this_it, ++rhs_it)
     ++distance;
-  return distance;
+  return (distance + 511) % 511;
 }
 
-// TODO
-void RoutingTable::GetCloseContacts(
-    const NodeId &target_id,
-    const size_t &count,
-    const std::vector<Contact> &exclude_contacts,
-    std::vector<Contact> *close_contacts) {
-  if (!close_contacts) {
-    DLOG(WARNING) << kDebugId_ << ": Null pointer passed.";
-    return;
-  }
+NodeId RoutingTable::DistanceTo(const NodeId &rhs) const {
+  std::string distance;
+  std::string this_id_binary = ThisId_.ToStringEncoded(NodeId::kBinary);
+  std::string rhs_id_binary = rhs.ToStringEncoded(NodeId::kBinary);
+  std::string::const_iterator this_it = this_id_binary.begin();
+  std::string::const_iterator rhs_it = rhs_id_binary.begin();
+  for (int i = 0; (this_it != this_id_binary.end());++i, ++this_it, ++rhs_it)
+    distance[i] = (*this_it ^ *rhs_it);
+  NodeId node_dist(distance, NodeId::kBinary);
+  return node_dist;
 }
 
-// done
-std::string RoutingTable::GetClosestContacts() {
- 
+protobuf::ClosestContacts RoutingTable::GetMyClosestContacts() {
   protobuf::ClosestContacts pbcontact;
-  SharedLock shared_lock(shared_mutex_);
-  // TODO FIXME
-//   for (auto it = closest_contacts_.begin(); it != closest_contacts_.end(); ++it)
-//      pbcontact.add_close_contacts((*it));
-    
+  boost::mutex::scoped_lock lock(closest_contacts_mutex_);
+  for (auto it = closest_contacts_.begin(); it != closest_contacts_.end(); ++it)
+    *pbcontact.add_close_contacts() = (*it);
+  return pbcontact;
 }
 
-int16_t RoutingTable::BucketIndex(const NodeId &key) {
-  return (DistanceTo(key) + 511) % 511;
-}
 
 int16_t RoutingTable::BucketSizeForNode(const NodeId &key) {
   int16_t bucket = BucketIndex(key);
-  
+  return bucket;
 }
 
 }  // namespace routing

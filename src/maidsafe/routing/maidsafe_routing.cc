@@ -36,12 +36,11 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "maidsafe/routing/log.h"
 
 namespace maidsafe {
-
 namespace routing {
 
-  Routing::Routing() { std::unique_ptr<RoutingImpl> Impl(new RoutingImpl); }
+  Routing::Routing() :
+  Impl() { std::unique_ptr<RoutingImpl> Impl(new RoutingImpl); }
 
   
 }  // namespace routing
-
 }  // namespace maidsafe

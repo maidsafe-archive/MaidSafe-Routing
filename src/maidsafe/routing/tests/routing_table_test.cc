@@ -47,14 +47,17 @@ class RoutingTableTest {
   RoutingTableTest();
 };
   
-TEST(RoutingTableTest, BEH_AddLessThanClose) {
-  RoutingTable RT(NodeId(kRandomId));
-  std::vector<Contact> contacts(kClosestNodes);
-//   for (int i = 0; i < kClosestNodes - 1; ++i) {
-//     NodeId node`(NodeId(kRandomId));
-//     contacts.at(i).set_node_id(node.ToStringEncoded());
-//     RT.AddContact(contacts.at(i));
-//   }
+TEST(RoutingTableTest, BEH_AddCloseNodes) {
+  RoutingTable RT(NodeId(RandomString(64)));
+  
+   for (int i = 0; i <= kClosestNodes - 1; ++i) {
+     protobuf::Contact pbcontact;
+     pbcontact.set_node_id(RandomString(64));
+     RT.AddContact(pbcontact);
+   }
+   EXPECT_EQ(RT.GetMyClosestContacts().close_contacts().size(), RT.Size());
+   EXPECT_EQ(RT.GetMyClosestContacts().close_contacts().size(), kClosestNodes);
+   EXPECT_EQ(kClosestNodes, RT.Size());
 }
 
 }  // namespace test

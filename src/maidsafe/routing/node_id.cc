@@ -76,7 +76,7 @@ NodeId::NodeId(const std::string &id, const EncodingType &encoding_type)
     }
   }
   catch(const std::exception &e) {
-    DLOG(ERROR) << "NodeId Ctor: " << e.what();
+//    DLOG(ERROR) << "NodeId Ctor: " << e.what();
     raw_id_.clear();
     return;
   }
