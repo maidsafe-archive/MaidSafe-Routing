@@ -24,6 +24,9 @@ CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR
 TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
+
+#include <algorithm>
+
 #include "boost/thread/locks.hpp"
 
 #include "maidsafe/routing/routing_table.h"
@@ -58,39 +61,70 @@ RoutingTable::~RoutingTable() {
 
 int RoutingTable::AddContact(const Contact &contact) {
   const NodeId node_id = NodeId(contact.node_id());
-
-  // If the contact has the same ID as the holder, return directly
   if (node_id == ThisId_) {
-//    DLOG(WARNING) << kDebugId_ << ": Can't add own ID to routing table.";
     return kOwnIdNotIncludable;
   }
   /* TODO implement this
   CheckValidID // get public key and check signature
-  CheckValidDistance // test algorithm
+  or return kFalse_ID;
   */
-  if (Size() < kRoutingTableSize) {
-    routing_table_nodes_.push_back(node_id);
-  } else if (Size() < kClosestNodes) {
-    routing_table_nodes_.push_back(node_id);    
-  } else if (isClose(node_id)) {
-    // drop furthest_closest_node_ ???
-    //update closest nodes
+  if (isClose(node_id)) {
+    if (routing_table_nodes_.size() >= kRoutingTableSize) {
+      // TODO drop furthest_closest_node_ connection in Transport ???
+      // TODO try to Connect to node in Transport
+      RemoveClosecontact(node_id);
+      return kSuccess;
+    }
+  } else if (IsSpaceForNodeToBeAdded()) {
+      // TODO try to Connect to node in Transport
+      // Add node
+      return kSuccess; // or fail if cannot connect 
   }
+    
   return kSuccess;
 }
 
 
+bool RoutingTable::IsSpaceForNodeToBeAdded() {
+  if (kRoutingTableSize < routing_table_nodes_.size())
+    return true;
+  std::sort (routing_table_nodes_.begin(),
+             routing_table_nodes_.end(),
+             [](const NodeId &i, const NodeId &j){ return (i < j);});
 
-bool RoutingTable::isClose(const NodeId& node_id) { 
-  return DistanceTo(node_id) < DistanceTo(furthest_closest_node_);
+  // TODO FIXME - cannot see error for trees probably
+//   auto it = std::find_if(routing_table_nodes_.begin(),
+//                          routing_table_nodes_.end(),
+//                          [this](const NodeId &i, const NodeId &j)
+//                          { return (BucketIndex(i) == BucketIndex(j));});
+//   if (it != routing_table_nodes_.end()) {
+//     // remove *it
+//     return true;
+//   }
+  return false;
 }
 
-void RoutingTable::UpdateClosestNode(NodeId &node_id) {
-  if (furthest_closest_node_ > node_id) {
-//     MC.Add(node_id);
-//     MC.Drop(furthest_closest_node_);
-    furthest_closest_node_ = node_id;
+
+bool RoutingTable::AddcloseContact(const Contact& contact) {
+  size_t sizebefore = closest_contacts_.size();
+  closest_contacts_.push_back(contact);
+  if (sizebefore < closest_contacts_.size())
+    return true;
+  return false;
+}
+
+bool RoutingTable::RemoveClosecontact(const NodeId& node_id){
+  for (uint i = 0; i < closest_contacts_.size(); ++i) {
+    if (closest_contacts_[i].node_id() == node_id.String()) {
+      closest_contacts_.erase(closest_contacts_.begin() + i);
+      return true;
+    }
   }
+  return false;
+}
+
+bool RoutingTable::isClose(const NodeId& node_id) const { 
+  return DistanceTo(node_id) < DistanceTo(furthest_closest_node_);
 }
 
 int16_t RoutingTable::BucketIndex(const NodeId &rhs) const {
@@ -126,7 +160,7 @@ protobuf::ClosestContacts RoutingTable::GetMyClosestContacts() {
 }
 
 
-int16_t RoutingTable::BucketSizeForNode(const NodeId &key) {
+int16_t RoutingTable::BucketSizeForNode(const NodeId &key) const {
   int16_t bucket = BucketIndex(key);
   return bucket;
 }

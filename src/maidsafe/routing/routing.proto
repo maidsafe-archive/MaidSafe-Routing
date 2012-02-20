@@ -62,8 +62,8 @@ message FindNodesRequest {
 }
 
 message FindNodesResponse {
-  required bytes source_id = 1;
-  required bytes destination_id = 2;
-  repeated bytes closest_nodes = 3;
-  required bytes signature = 4;
+  required bytes source_id = 1; // reponse sender
+  required bytes destination_id = 2; // orig sender
+  required ClosestContacts close_contacts = 3;
+  required bytes signature = 4; // sig of source id
 }

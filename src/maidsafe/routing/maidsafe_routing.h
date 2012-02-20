@@ -54,13 +54,13 @@ typedef boost::asio::ip::address IP;
 typedef int16_t Port;
 
 /// The size of ROUTING keys and node IDs in bytes.
-const int16_t kKeySizeBytes(64);
+const uint16_t kKeySizeBytes(64);
 
 /// Size of closest nodes group
-const int16_t kClosestNodes(8);
+const uint16_t kClosestNodes(8);
 
 /// total nodes in routing table
-const int16_t kRoutingTableSize(64);
+const uint16_t kRoutingTableSize(64);
 static_assert(kClosestNodes <= kRoutingTableSize,
               "Cannot set closest nodes larger than routing table");
 

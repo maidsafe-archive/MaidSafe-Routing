@@ -32,7 +32,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "maidsafe_routing-impl.h"
 #include "maidsafe/common/utils.h"
 #include "maidsafe/routing/return_codes.h"
-#include "maidsafe/routing/utils.h"
 #include "maidsafe/routing/log.h"
 
 namespace maidsafe {
@@ -40,6 +39,11 @@ namespace routing {
 
   Routing::Routing() :
   Impl() { std::unique_ptr<RoutingImpl> Impl(new RoutingImpl); }
+
+void Routing::Start(boost::asio::io_service& /*service*/)
+{
+
+}
 
   
 }  // namespace routing
