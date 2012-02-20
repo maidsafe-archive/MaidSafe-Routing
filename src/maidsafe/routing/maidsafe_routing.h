@@ -66,7 +66,7 @@ static_assert(kClosestNodes <= kRoutingTableSize,
 
 /// Nodes hint per bucket (hint as buckets will fill more than
 /// this when space permits)
-const int16_t kBucketSize(2);
+const int16_t kBucketSize(1);
 
 typedef std::function<void(std::string &message)> GetValueFunctor;
 typedef std::function<void(std::string &messsage)> PassMessageUpFunctor;

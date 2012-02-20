@@ -88,19 +88,19 @@ int RoutingTable::AddContact(const Contact &contact) {
 bool RoutingTable::IsSpaceForNodeToBeAdded() {
   if (kRoutingTableSize < routing_table_nodes_.size())
     return true;
-  std::sort (routing_table_nodes_.begin(),
-             routing_table_nodes_.end(),
-             [](const NodeId &i, const NodeId &j){ return (i < j);});
 
-  // TODO FIXME - cannot see error for trees probably
-//   auto it = std::find_if(routing_table_nodes_.begin(),
-//                          routing_table_nodes_.end(),
-//                          [this](const NodeId &i, const NodeId &j)
-//                          { return (BucketIndex(i) == BucketIndex(j));});
-//   if (it != routing_table_nodes_.end()) {
-//     // remove *it
-//     return true;
-//   }
+  auto nth = routing_table_nodes_.begin() + kBucketSize;
+  std::nth_element(routing_table_nodes_.begin(),
+                  nth,
+                  routing_table_nodes_.end(),
+                  [this](const NodeId &i, const NodeId &j)
+                  { return BucketIndex(i) == BucketIndex(j);});
+
+  if (nth != routing_table_nodes_.end()) {
+    // TODO remove *nth from managed connection
+    routing_table_nodes_.erase(nth);
+    return true;
+  }
   return false;
 }
 
