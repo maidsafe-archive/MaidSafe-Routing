@@ -69,10 +69,12 @@ int RoutingTable::AddContact(const Contact &contact) {
     if (routing_table_nodes_.size() >= kRoutingTableSize) {
       // TODO drop furthest_closest_node_ connection in Transport ???
       // TODO try to Connect to node in Transport
-      RemoveClosecontact(furthest_closest_node_);
-      AddcloseContact(contact);
-      routing_table_nodes_.push_back(NodeId(contact.node_id()));
-      return kSuccess;
+      if (RemoveClosecontact(furthest_closest_node_) &&
+          AddcloseContact(contact)) {
+        routing_table_nodes_.push_back(NodeId(contact.node_id()));
+        return kSuccess;
+      } else
+        return kFailedToInsertNewContact;
     }
   } else if (IsSpaceForNodeToBeAdded()) {
       // TODO try to Connect to node in Transport
