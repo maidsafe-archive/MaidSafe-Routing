@@ -159,11 +159,6 @@ protobuf::ClosestContacts RoutingTable::GetMyClosestContacts() {
   return pbcontact;
 }
 
-int16_t RoutingTable::BucketSizeForNode(const NodeId &key) const {
-  int16_t bucket = BucketIndex(key);
-  return bucket;
-}
-
 }  // namespace routing
 
 }  // namespace maidsafe

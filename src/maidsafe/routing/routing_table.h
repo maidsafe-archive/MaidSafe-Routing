@@ -95,7 +95,6 @@ class RoutingTable {
   RoutingTable(const RoutingTable &copy_object);
   void SortCriteria();  // for set order
   bool isClose(const NodeId &node_id) const;
-  int16_t BucketSizeForNode(const NodeId &key) const;
   void InsertContact(const Contact &contact);
   int16_t BucketIndex(const NodeId &rhs) const;
   bool IsSpaceForNodeToBeAdded();
