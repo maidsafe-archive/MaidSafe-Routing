@@ -78,13 +78,17 @@ class Routing {
   void Start(boost::asio::io_service &service);
   void Stop();
   bool Running();
-  void FindNodes(NodeId &target_id, int16_t num_nodes, std::vector<NodeId> *nodes);
+  void FindNodes(NodeId &target_id,
+                 int16_t num_nodes,
+                 std::vector<NodeId> *nodes);
   /// must be set before node can start  This allows node to
   /// check locally for data that's marked cacheable.
   void SetGetDataFunctor(GetValueFunctor &get_local_value);
   /// to recieve messages
   bool RegisterMessageHandler(PassMessageUpFunctor &pass_message_up_handler);
  private:
+  Routing(const Routing&);
+  Routing &operator=(const Routing&);
   std::unique_ptr<RoutingImpl>  Impl;
 };
 

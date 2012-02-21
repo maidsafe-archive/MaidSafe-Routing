@@ -81,7 +81,6 @@ int RoutingTable::AddContact(const Contact &contact) {
       // Add node
       return kSuccess; // or fail if cannot connect 
   }
-    
   return kSuccess;
 }
 
