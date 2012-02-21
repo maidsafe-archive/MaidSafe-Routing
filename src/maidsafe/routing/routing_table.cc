@@ -37,12 +37,9 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "maidsafe/routing/log.h"
 
 namespace maidsafe {
-
 namespace routing {
-
-  class ManagedConnections;
   
-RoutingTable::RoutingTable(const NodeId &this_node_id/*, ManagedConnections &MC*/)
+RoutingTable::RoutingTable(const NodeId &this_node_id)
     : ThisId_(this_node_id),
     furthest_closest_node_(),
       closest_contacts_(),
@@ -84,7 +81,6 @@ int RoutingTable::AddContact(const Contact &contact) {
   return kSuccess;
 }
 
-
 bool RoutingTable::IsSpaceForNodeToBeAdded() {
   if (kRoutingTableSize < routing_table_nodes_.size())
     return true;
@@ -104,7 +100,6 @@ bool RoutingTable::IsSpaceForNodeToBeAdded() {
   return false;
 }
 
-
 bool RoutingTable::AddcloseContact(const Contact& contact) {
   size_t sizebefore = closest_contacts_.size();
   closest_contacts_.push_back(contact);
@@ -114,11 +109,14 @@ bool RoutingTable::AddcloseContact(const Contact& contact) {
 }
 
 bool RoutingTable::RemoveClosecontact(const NodeId& node_id){
-  for (uint i = 0; i < closest_contacts_.size(); ++i) {
-    if (closest_contacts_[i].node_id() == node_id.String()) {
-      closest_contacts_.erase(closest_contacts_.begin() + i);
-      return true;
-    }
+  auto it = std::find_if(closest_contacts_.begin(),
+                      closest_contacts_.end(),
+                      [node_id](Contact &i)
+                      { return i.node_id() == node_id.String(); });
+
+  if (it != closest_contacts_.end()) {
+    closest_contacts_.erase(it);
+    return true;
   }
   return false;
 }
@@ -158,7 +156,6 @@ protobuf::ClosestContacts RoutingTable::GetMyClosestContacts() {
     *pbcontact.add_close_contacts() = (*it);
   return pbcontact;
 }
-
 
 int16_t RoutingTable::BucketSizeForNode(const NodeId &key) const {
   int16_t bucket = BucketIndex(key);
