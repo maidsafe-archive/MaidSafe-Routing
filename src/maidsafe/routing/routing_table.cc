@@ -51,7 +51,6 @@ RoutingTable::RoutingTable(const NodeId &this_node_id)
 
 RoutingTable::~RoutingTable() {
   boost::unique_lock<boost::shared_mutex> unique_lock(shared_mutex_);
-  unvalidated_contacts_.clear();
   closest_contacts_.clear();
   routing_table_nodes_.clear();
 }

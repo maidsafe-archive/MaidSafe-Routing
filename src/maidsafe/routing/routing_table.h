@@ -64,7 +64,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <memory>
 #include <string>
 #include <vector>
-
+#include <queue>
 #include "boost/signals2/signal.hpp"
 #include "boost/thread/shared_mutex.hpp"
 #include "boost/thread/mutex.hpp"
@@ -106,7 +106,7 @@ class RoutingTable {
   NodeId furthest_closest_node_;
   std::vector<Contact> closest_contacts_;
   std::vector<NodeId> routing_table_nodes_;
-  std::set<Contact> unvalidated_contacts_;
+  std::queue<Contact> unvalidated_contacts_;
   boost::shared_mutex shared_mutex_;
   boost::mutex closest_contacts_mutex_;
   boost::mutex routing_table_nodes_mutex_;
