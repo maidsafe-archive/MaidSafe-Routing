@@ -93,16 +93,15 @@ class RoutingTable {
  private:
   RoutingTable operator =(const RoutingTable &assign_object);
   RoutingTable(const RoutingTable &copy_object);
-  void SortCriteria();  // for set order
   bool isClose(const NodeId &node_id) const;
   void InsertContact(const Contact &contact);
   int16_t BucketIndex(const NodeId &rhs) const;
   bool IsSpaceForNodeToBeAdded();
+  void SortFromMe();
   bool RemoveClosecontact(const NodeId &node_id);
   bool AddcloseContact(const Contact &contact);
   NodeId DistanceTo(const NodeId &rhs) const;
-  const Contact my_contact_Info_;
-  NodeId furthest_closest_node_;
+  const NodeId kMyNodeId_;
   std::vector<NodeId> routing_table_nodes_;
   std::queue<NodeId> unvalidated_contacts_;
   boost::shared_mutex shared_mutex_;

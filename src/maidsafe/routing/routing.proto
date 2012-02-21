@@ -24,7 +24,7 @@ message Contact {
 }
 
 message ClosestContacts {
-  repeated Contact close_contacts = 1;
+  repeated bytes close_contacts = 1;
 }
 
 message ConfigFile {

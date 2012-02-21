@@ -40,8 +40,7 @@ namespace maidsafe {
 namespace routing {
   
 RoutingTable::RoutingTable(const Contact &my_contact)
-    : my_contact_Info_(my_contact),
-    furthest_closest_node_(),
+    : kMyNodeId_(NodeId(my_contact.node_id())),
       routing_table_nodes_(),
       unvalidated_contacts_(),
       shared_mutex_(),
@@ -55,7 +54,7 @@ RoutingTable::~RoutingTable() {
 
 int RoutingTable::AddContact(const Contact &contact) {
   const NodeId node_id = NodeId(contact.node_id());
-  if (node_id == NodeId(my_contact_Info_.node_id())) {
+  if (node_id == kMyNodeId_) {
     return kOwnIdNotIncludable;
   }
   /* TODO implement this
@@ -96,14 +95,26 @@ bool RoutingTable::IsSpaceForNodeToBeAdded() {
   return false;
 }
 
-bool RoutingTable::isClose(const NodeId& node_id) const { 
-  return DistanceTo(node_id) < DistanceTo(furthest_closest_node_);
+void RoutingTable::SortFromMe() {
+  std::sort(routing_table_nodes_.begin(), 
+            routing_table_nodes_.end(),
+            [this](const NodeId &i, const NodeId &j)
+            { return DistanceTo(i) < DistanceTo(j);});
 }
+
+bool RoutingTable::isClose(const NodeId& node_id) const { 
+  if (routing_table_nodes_.size() < kClosestNodes)
+    return true;
+  if (routing_table_nodes_.size() >= kClosestNodes)  
+  return  DistanceTo(routing_table_nodes_[kClosestNodes] <
+               DistanceTo(furthest_closest_node_);
+}
+
+
 
 int16_t RoutingTable::BucketIndex(const NodeId &rhs) const {
   uint16_t distance = 0;
-  std::string this_id_binary = 
-         NodeId(my_contact_Info_.node_id()).ToStringEncoded(NodeId::kBinary);
+  std::string this_id_binary = kMyNodeId_.ToStringEncoded(NodeId::kBinary);
   std::string rhs_id_binary = rhs.ToStringEncoded(NodeId::kBinary);
   std::string::const_iterator this_it = this_id_binary.begin();
   std::string::const_iterator rhs_it = rhs_id_binary.begin();
@@ -116,7 +127,7 @@ int16_t RoutingTable::BucketIndex(const NodeId &rhs) const {
 NodeId RoutingTable::DistanceTo(const NodeId &rhs) const {
   std::string distance;
   std::string this_id_binary = 
-       NodeId(my_contact_Info_.node_id()).ToStringEncoded(NodeId::kBinary);
+       NodeId(kMyNodeId_.node_id()).ToStringEncoded(NodeId::kBinary);
   std::string rhs_id_binary = rhs.ToStringEncoded(NodeId::kBinary);
   std::string::const_iterator this_it = this_id_binary.begin();
   std::string::const_iterator rhs_it = rhs_id_binary.begin();
