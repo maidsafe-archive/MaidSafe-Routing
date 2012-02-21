@@ -84,7 +84,7 @@ namespace routing {
   class ManagedConnections;
 class RoutingTable {
  public:
-  RoutingTable(const NodeId &this_node_id/*, ManagedConnections &MC*/);
+  RoutingTable(const Contact &my_contact);
   ~RoutingTable();
   int AddContact(const Contact &contact);
   int GetContact(const NodeId &node_id, Contact *contact);
@@ -101,11 +101,10 @@ class RoutingTable {
   bool RemoveClosecontact(const NodeId &node_id);
   bool AddcloseContact(const Contact &contact);
   NodeId DistanceTo(const NodeId &rhs) const;
-  const NodeId ThisId_;
+  const Contact my_contact_Info_;
   NodeId furthest_closest_node_;
-  std::vector<Contact> closest_contacts_;
   std::vector<NodeId> routing_table_nodes_;
-  std::queue<Contact> unvalidated_contacts_;
+  std::queue<NodeId> unvalidated_contacts_;
   boost::shared_mutex shared_mutex_;
   boost::mutex closest_contacts_mutex_;
   boost::mutex routing_table_nodes_mutex_;
