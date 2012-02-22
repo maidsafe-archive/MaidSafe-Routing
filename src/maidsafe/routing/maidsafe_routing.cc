@@ -45,15 +45,22 @@ class RoutingImpl {
    RoutingImpl();
    RoutingTable routing_table_;
    transport::RudpTransport transport_;
+   typename T trans_;
    Contact my_contact_;
 };
 
+RoutingImpl::RoutingImpl() : routing_table_(my_contact_)
+{
+
+}
+
   
-Routing::Routing() :  pimpl_(new RoutingImpl()) {
+Routing::Routing() :  pimpl_(new RoutingImpl) {
   pimpl_->routing_table_ = RoutingTable(pimpl_->my_contact_);
 }
           
 
+          
 void Routing::Start(boost::asio::io_service& service) { // NOLINT
   pimpl_->transport_ = transport::RudpTransport(service);
   // TODO Frasers first question !! why oh why !!! cant I get my head around this without pointers !!

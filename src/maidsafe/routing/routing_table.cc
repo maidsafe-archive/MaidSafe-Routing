@@ -142,7 +142,7 @@ NodeId RoutingTable::DistanceTo(const NodeId &target,
   for (int i = 0; from_it != from.ToStringEncoded(NodeId::kBinary).end() ;
       ++i, ++from_it, ++target_it)
     distance[i] = (*from_it ^ *target_it);
-  NodeId node_dist(distance, NodeId::kBinary);
+  NodeId node_dist(distance, NodeId::kBinary);my_contact
   return node_dist;
 }
 
