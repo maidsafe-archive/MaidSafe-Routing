@@ -35,7 +35,7 @@ message ConfigFile {
 
 // Message wrappers 
 
-message Request {
+message Message {
   required bytes source_id = 1;
   required bytes destination_id = 2;
   optional bool  cachable = 3;
@@ -44,15 +44,8 @@ message Request {
   optional bytes signature = 6;
   optional bytes signature_id = 7;
   optional bool direct = 8;
-}
-
-message Response {
-  required bytes source_id = 1;
-  required bytes destination_id = 2;
-  optional bool  cachable = 3;
-  required bytes message = 4;
-  optional bytes signature = 5;
-  optional bytes signature_id = 6;
+  required bool response = 9;
+  required int32 type = 10;
 }
 
 message FindNodesRequest {

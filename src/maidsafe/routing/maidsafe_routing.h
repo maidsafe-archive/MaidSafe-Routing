@@ -37,10 +37,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "boost/asio/io_service.hpp"
 
-#include "maidsafe/transport/transport.h"
-#include "maidsafe/transport/message_handler.h"
-#include "maidsafe/transport/tcp_transport.h"
-#include "maidsafe/transport/udp_transport.h"
+#include "maidsafe/transport/rudp_transport.h"
 
 namespace maidsafe {
 
@@ -70,26 +67,24 @@ const int16_t kBucketSize(1);
 
 typedef std::function<void(std::string &message)> GetValueFunctor;
 typedef std::function<void(std::string &messsage)> PassMessageUpFunctor;
-
+class Message;
 
 class Routing {
  public:
   Routing();
+  ~Routing();
   void Start(boost::asio::io_service &service);
   void Stop();
   bool Running();
-  void FindNodes(NodeId &target_id,
-                 int16_t num_nodes,
-                 std::vector<NodeId> *nodes);
-  /// must be set before node can start  This allows node to
-  /// check locally for data that's marked cacheable.
+  std::vector<NodeId> FindNodes(NodeId &target_id,
+                                int16_t num_nodes);
   void SetGetDataFunctor(GetValueFunctor &get_local_value);
-  /// to recieve messages
+  void Send(const Message &message);
   bool RegisterMessageHandler(PassMessageUpFunctor &pass_message_up_handler);
  private:
   Routing(const Routing&);
   Routing &operator=(const Routing&);
-  std::unique_ptr<RoutingImpl>  Impl;
+  std::shared_ptr<RoutingImpl> pimpl_;
 };
 
 
@@ -107,13 +102,12 @@ class Message {
   void setMessageDirect(bool direct);
   /// Getters
   const NodeId MessageDestination();
-  bool Responce();
+  bool Response();
   bool MessageCacheable();
   bool MessageLock();
   const std::string  MessageSignature();
   const NodeId MessageSignatureId();
   bool MessageDirect();
-  bool SendMessage();
 private:
   Message(const Message&);
   Message &operator=(const Message&);

@@ -28,6 +28,10 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef MAIDSAFE_ROUTING_MAIDSAFE_ROUTING_IMPL_H_
 #define MAIDSAFE_ROUTING_MAIDSAFE_ROUTING_IMPL_H_
 
+#include "maidsafe/transport/rudp_transport.h"
+
+#include "maidsafe/routing/routing_table.h"
+#include "maidsafe/routing/routing.pb.h"
 #include "maidsafe/routing/version.h"
 
 namespace maidsafe {
@@ -37,7 +41,12 @@ namespace routing {
 
 class RoutingImpl {
  public:
- 
+   RoutingImpl();
+   void MessageRecieved(const Message &message);
+ private:
+   RoutingTable routing_table_;
+   transport::RudpTransport transport_;
+   protobuf::Contact my_contact_;
 };
 
 

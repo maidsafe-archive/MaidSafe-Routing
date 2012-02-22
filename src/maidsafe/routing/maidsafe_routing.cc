@@ -26,25 +26,52 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 #include "boost/thread/locks.hpp"
 
+#include "maidsafe/routing/routing.pb.h"
 #include "maidsafe/routing/routing_table.h"
-#include "maidsafe/routing/maidsafe_routing-impl.h"
 #include "maidsafe/routing/maidsafe_routing.h"
-#include "maidsafe_routing-impl.h"
-#include "maidsafe/common/utils.h"
-#include "maidsafe/routing/return_codes.h"
 #include "maidsafe/routing/log.h"
+
+#include "maidsafe/transport/rudp_transport.h"
+#include "maidsafe/transport/utils.h"
+
+#include "maidsafe/common/utils.h"
+
 
 namespace maidsafe {
 namespace routing {
-
-  Routing::Routing() :
-  Impl() { std::unique_ptr<RoutingImpl> Impl(new RoutingImpl); }
-
-void Routing::Start(boost::asio::io_service& /*service*/)
-{
-
-}
+  typedef protobuf::Contact Contact;
+class RoutingImpl {
+ public:
+   RoutingImpl();
+   RoutingTable routing_table_;
+   transport::RudpTransport transport_;
+   Contact my_contact_;
+};
 
   
+Routing::Routing() :  pimpl_(new RoutingImpl()) {
+  pimpl_->routing_table_ = RoutingTable(pimpl_->my_contact_);
+}
+          
+
+void Routing::Start(boost::asio::io_service& service) { // NOLINT
+  pimpl_->transport_ = transport::RudpTransport(service);
+  // TODO Frasers first question !! why oh why !!! cant I get my head around this without pointers !!
+//   std::vector<IP> local_ips(transport::GetLocalAddresses());
+  
+}
+
+void Routing::Send(const Message &message) { // NOLINT, cause I dont want pointers
+//   Impl->routing_table_ 
+}
+
+
+
+
+// TODO get messages from transport
+
+
+
+
 }  // namespace routing
 }  // namespace maidsafe

@@ -74,39 +74,37 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "maidsafe/routing/node_id.h"
 #include "maidsafe/routing/log.h"
 
-
 namespace maidsafe {
-
-namespace transport { struct Info; }
 
 namespace routing {
   typedef protobuf::Contact Contact;
-  class ManagedConnections;
+  
 class RoutingTable {
  public:
   RoutingTable(const Contact &my_contact);
   ~RoutingTable();
-  int AddContact(const Contact &contact);
-  int GetContact(const NodeId &node_id, Contact *contact);
-  protobuf::ClosestContacts GetMyClosestContacts();
-  int16_t Size() { return routing_table_nodes_.size(); }
- private:
+  bool AddNode(const NodeId &node_id);
+  // TODO : debate whether this method should not be private !!
+  std::vector<NodeId> GetClosestNodes(const NodeId &from,
+                               uint16_t number_to_get = kClosestNodes);
+  bool AmIClosestNode(const NodeId &node_id);
   RoutingTable operator =(const RoutingTable &assign_object);
+ private:
+
   RoutingTable(const RoutingTable &copy_object);
-  bool isClose(const NodeId &node_id) const;
+  bool isClose(const NodeId &node_id);
   void InsertContact(const Contact &contact);
   int16_t BucketIndex(const NodeId &rhs) const;
-  bool IsSpaceForNodeToBeAdded();
-  void SortFromMe();
+  bool MakeSpaceForNodeToBeAdded();
+  void SortFromThisNode(const NodeId &from);
+  void PartialSortFromThisNode(const NodeId &from,
+                               int16_t number_to_sort = kClosestNodes);
   bool RemoveClosecontact(const NodeId &node_id);
   bool AddcloseContact(const Contact &contact);
-  NodeId DistanceTo(const NodeId &rhs) const;
+  NodeId DistanceTo(const NodeId &target,const NodeId &from) const;
   const NodeId kMyNodeId_;
   std::vector<NodeId> routing_table_nodes_;
-  std::queue<NodeId> unvalidated_contacts_;
-  boost::shared_mutex shared_mutex_;
-  boost::mutex closest_contacts_mutex_;
-  boost::mutex routing_table_nodes_mutex_;
+  boost::mutex mutex_;
 //   ManagedConnections MC_;
 };
 
