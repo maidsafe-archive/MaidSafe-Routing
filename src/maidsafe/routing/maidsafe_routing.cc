@@ -52,11 +52,16 @@ class RoutingImpl {
    transport::Endpoint GetLocalEndpoint();
    RoutingTable routing_table_;
    transport::RudpTransport transport_;
+   typename T trans_;
    Contact my_contact_;
    
 };
 
-  
+RoutingImpl::RoutingImpl() : routing_table_(my_contact_)
+{
+
+}
+
 Routing::Routing() :  pimpl_(new RoutingImpl())  {}
 
 
@@ -65,6 +70,7 @@ transport::Endpoint RoutingImpl::GetLocalEndpoint() {
 }
 // TODO FIXME - do we even need a listening port at all ?? 
 // TODO read in boostrap node list and get id / keys etc.
+
 void Routing::Start(boost::asio::io_service& service) { // NOLINT
   pimpl_->transport_ = (transport::RudpTransport(service));
   std::vector<IP> local_ips(transport::GetLocalAddresses());
