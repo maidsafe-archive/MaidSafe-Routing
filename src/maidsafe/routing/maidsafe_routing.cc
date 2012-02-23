@@ -24,7 +24,10 @@ CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR
 TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
+
+#include <memory>
 #include "boost/thread/locks.hpp"
+#include "boost/asio/io_service.hpp"
 
 #include "maidsafe/routing/routing.pb.h"
 #include "maidsafe/routing/routing_table.h"
@@ -32,34 +35,66 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "maidsafe/routing/log.h"
 
 #include "maidsafe/transport/rudp_transport.h"
+#include "maidsafe/transport/transport.h"
 #include "maidsafe/transport/utils.h"
+
 
 #include "maidsafe/common/utils.h"
 
 
 namespace maidsafe {
 namespace routing {
+  
   typedef protobuf::Contact Contact;
 class RoutingImpl {
  public:
    RoutingImpl();
+   transport::Endpoint GetLocalEndpoint();
    RoutingTable routing_table_;
    transport::RudpTransport transport_;
    Contact my_contact_;
+   
 };
 
   
-Routing::Routing() :  pimpl_(new RoutingImpl()) {
+Routing::Routing() :  pimpl_(new RoutingImpl())  {}
+
+
+transport::Endpoint RoutingImpl::GetLocalEndpoint() {
+
+}
+// TODO FIXME - do we even need a listening port at all ?? 
+// TODO read in boostrap node list and get id / keys etc.
+void Routing::Start(boost::asio::io_service& service) { // NOLINT
+  pimpl_->transport_ = (transport::RudpTransport(service));
+  std::vector<IP> local_ips(transport::GetLocalAddresses());
+  transport::Port  port = RandomInt32() % 1600 + 30000;
+// TODO we must only listen on the correct local port
+  // this is a very old issue.
+  bool breakme(false);
+  for (uint16_t i = port; i < 35000; ++i) {
+    for (auto it = local_ips.begin(); it != local_ips.end(); ++it) {
+      transport::Endpoint ep;
+      ep.ip = *it;
+      ep.port = i;
+      if (pimpl_->transport_.StartListening(ep) == transport::kSuccess) {
+        // TODO check we can get to at least a bootsrap node !!! then we
+        // have the correct ep
+//         if (send and recieve)  // maybe connect is enough !!
+//          break; ou of both loops - set a var
+            breakme = true;
+//         else
+//           pimpl_->transport_.StopListening();
+      }
+      if (breakme)
+        break;
+    }
+  }
+  
   pimpl_->routing_table_ = RoutingTable(pimpl_->my_contact_);
 }
-          
 
-void Routing::Start(boost::asio::io_service& service) { // NOLINT
-  pimpl_->transport_ = transport::RudpTransport(service);
-  // TODO Frasers first question !! why oh why !!! cant I get my head around this without pointers !!
-//   std::vector<IP> local_ips(transport::GetLocalAddresses());
-  
-}
+
 
 void Routing::Send(const Message &message) { // NOLINT, cause I dont want pointers
 //   Impl->routing_table_ 
