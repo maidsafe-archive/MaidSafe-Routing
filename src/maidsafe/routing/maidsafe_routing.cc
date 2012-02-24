@@ -46,7 +46,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "maidsafe/common/rsa.h"
 #include "maidsafe/common/utils.h"
 
-
 namespace maidsafe {
 
 namespace routing {
@@ -55,11 +54,10 @@ namespace routing {
   typedef bfs::ifstream ifs;
   typedef bfs::ofstream ofs;
   typedef protobuf::Contact Contact;
- // typedef protobuf::Message Message;
   
-class RoutingImpl {
-     RoutingImpl();
- private:
+class RoutingPrivate {
+public:
+   RoutingPrivate();
    bool ReadConfigFile();
    bool WriteConfigFile();
    transport::Endpoint GetLocalEndpoint();
@@ -70,42 +68,40 @@ class RoutingImpl {
    void doConnectResponse(protobuf::Message &message);
    void doConnectRequest(protobuf::Message &message);
    void SendOn(const protobuf::Message &message, NodeId &node);
-   boost::asio::io_service service_;
-   int16_t cache_size_hint_;
+public: // members
    std::vector<Contact> bootstrap_nodes_;
    NodeId my_node_id_;
    asymm::PrivateKey my_private_key_;
    Contact my_contact_;
    RoutingTable routing_table_;
-   transport::RudpTransport transport_;
    bfs::path config_file_;
    bool private_key_is_set_;
    bool node_is_set_;
+ private:
+   boost::asio::io_service service_;
+   uint16_t cache_size_hint_;
+   transport::RudpTransport transport_;
    std::map<NodeId, asymm::PublicKey> public_keys_;
    std::vector<std::pair<std::string, std::string> > cache_chunks_;
 };
 
-Routing r;
-r.Stop();
-
-RoutingImpl::RoutingImpl() :
-          
-  service_(),
-  cache_size_hint_(kNumChunksToCache),
+RoutingPrivate::RoutingPrivate() :
   bootstrap_nodes_(),
   my_node_id_(),
   my_private_key_(),
   my_contact_(),
   routing_table_(my_contact_), // TODO FIXME contact is empty here
-  transport_(service_),
   config_file_("dht_config"),
   private_key_is_set_(false),
   node_is_set_(false),
+  service_(),
+  cache_size_hint_(kNumChunksToCache),
+  transport_(service_),
   public_keys_(), 
   cache_chunks_()
   {}
 
-bool RoutingImpl::ReadConfigFile() {
+bool RoutingPrivate::ReadConfigFile() {
   protobuf::ConfigFile protobuf;
   if (!bfs::exists(config_file_) || !bfs::is_regular_file(config_file_))
     return false;
@@ -122,7 +118,7 @@ bool RoutingImpl::ReadConfigFile() {
     }
     if (!node_is_set_) {
       if(protobuf.has_node_id()) {
-         my_node_id_ = NodeId(protobuf.node_id());service_
+         my_node_id_ = NodeId(protobuf.node_id());
        } else {
         return false;
        }
@@ -137,46 +133,13 @@ bool RoutingImpl::ReadConfigFile() {
   return true;
 }
 
-bool RoutingImpl::WriteConfigFile() {
+bool RoutingPrivate::WriteConfigFile() {
   // TODO implement 
 return false;
 }
-asymm::PrivateKey Routing::MyPrivateKey(int x) {
-  return pimpl_->MyPrivateKey(x);
-}
 
-Routing::Routing() : pimpl_(new RoutingImpl())  {}
 
-bool Routing::setConfigFile(boost::filesystem3::path &config_file) {
-   if (bfs::exists(config_file) && !bfs::is_regular_file(config_file))
-    return false;
-   pimpl_->config_file_ = config_file;
-}
-
-bool Routing::setMyPrivateKey(asymm::PrivateKey& key) {
-  pimpl_->my_private_key_ = key;
-  pimpl_->private_key_is_set_ = true;
-  return true;
-}
-
-asymm::PrivateKey Routing::MyPrivateKey(int x) {
-  return pimpl_->MyPrivateKey(x);
-}
-asymm::PrivateKey RoutingImpl::MyPrivateKey(int x) {
-  return my_private_key_;
-}
-
-bool Routing::setMyNodeId(NodeId& node) {
-  pimpl_->my_node_id_ = node;
-  pimpl_->node_is_set_ = true;
-  return true;
-}
-
-NodeId Routing::MyNodeID() {
-  return pimpl_->my_node_id_;
-}
-
-transport::Endpoint RoutingImpl::GetLocalEndpoint() {
+transport::Endpoint RoutingPrivate::GetLocalEndpoint() {
 //   std::vector<IP> local_ips(transport::GetLocalAddresses());
 //   transport::Port  port = RandomInt32() % 1600 + 30000;
 // // TODO we must only listen on the correct local port
@@ -202,27 +165,8 @@ transport::Endpoint RoutingImpl::GetLocalEndpoint() {
 //   }
 }
 
-bool Routing::StartVault(boost::asio::io_service& service) { // NOLINT
-   if (! pimpl_->ReadConfigFile())
-     return false;
-//    pimpl_->transport_ = (transport::RudpTransport(service));
-   pimpl_->routing_table_ = RoutingTable(pimpl_->my_contact_);
-   return false; // not implemented need to start network and routing table
-}
 
-bool Routing::StartClient(boost::asio::io_service& service) {
-  //TODO client will join network using pmid BUT will request a
-  // relay conenction. Vaults (i.e. routing table) will accept a range
-  // of these, Initially set to 64 but we shoudl make this dynamic later
-}
-
-void Routing::Send(const protobuf::Message &msg) {
- NodeId next_node =
-        pimpl_->routing_table_.GetClosestNode(NodeId(msg.destination_id()));
- pimpl_->SendOn(msg, next_node);
-}
-
-void RoutingImpl::RecieveMessage(std::string &message) {
+void RoutingPrivate::RecieveMessage(std::string &message) {
   protobuf::Message msg;
   if(msg.ParseFromString(message))
     ProcessMessage(msg);
@@ -236,7 +180,7 @@ bool isDirect(protobuf::Message &message) {
   return (message.has_direct() && message.direct());
 }
 
-void RoutingImpl::ProcessMessage(protobuf::Message& message) {
+void RoutingPrivate::ProcessMessage(protobuf::Message& message) {
   // handle cache data
   if (isCacheable(message)) {
     if (message.response()) {
@@ -270,57 +214,89 @@ void RoutingImpl::ProcessMessage(protobuf::Message& message) {
           NodeId next_node =
               routing_table_.GetClosestNode(NodeId(message.destination_id()));
           SendOn(message, next_node);
-          return;
+          return; // our work here is done - send it home !!
        }
      }
-  //     if (cache_chunks_.search(key)protobuf::Message
-  //       SendOn(message); // TODO back to source_id
-    // TODO check our cache and send back response
   }
   // is it for us ??
   if (!routing_table_.AmIClosestNode(NodeId(message.destination_id()))) {
     NodeId next_node =
               routing_table_.GetClosestNode(NodeId(message.destination_id()));
     SendOn(message, next_node);
+    return;
   } else { // I am closest
     if (isDirect(message)) {
       if (message.destination_id() != my_node_id_.String()) {
       // TODO send back a failure I presume !!
       } else {
-        //Signal up
+        //Signal up it's for us
       }
     }
-    if (message.type() == 1) // find_nodes
+    if (message.type() == 1) {// find_nodes
       if (message.has_response() && message.response()) {
         doFindNodeResponse(message);
-        return;
+        return; // Job done !!
       } else {
         doFindNodeRequest(message);
+        return; 
       }
-    // TODO again with the signals we are closest node
-    // could check with next line
-    if (routing_table_.IsMyNodeInRange(NodeId
-                                            (message.destination_id()))){
-      // signal we are in closest if it helps logic
     }
-  }
+    // I am closest so will send to all my replicant nodes
+    message.set_direct(true);
+    message.set_source_id(my_node_id_.String());
+    auto close =
+          routing_table_.GetClosestNodes(NodeId(message.destination_id()),
+                                         kReplicationSize);
+     for (auto it = close.begin(); it != close.end(); ++it) {
+       message.set_destination_id((*it).String());
+       NodeId send_to = routing_table_.GetClosestNode((*it));
+       SendOn(message, send_to);
+     }
+     // signal up - we should act on it now
+     return;
+   }
 }
 
-void RoutingImpl::SendOn(const protobuf::Message& message, NodeId& node) {
+
+void RoutingPrivate::SendOn(const protobuf::Message& message, NodeId& node) {
+  std::string message_data(message.SerializeAsString());
+  NodeId send_to = routing_table_.GetClosestNode(node);
   // TODO managed connections get this !! post to asio_service !!
 }
 
-void RoutingImpl::doFindNodeResponse(protobuf::Message& message)
+void RoutingPrivate::doFindNodeResponse(protobuf::Message& message)
 {
    protobuf::FindNodesResponse find_nodes;
    if (! find_nodes.ParseFromString(message.data()))
-     return;
-   for (uint i = 0; i < find_nodes.close_contacts().size(); ++i)
-     routing_table_.AddNode(NodeId(find_nodes.close_contacts().at(i)));
-   
+    return;
+   for (int i = 0; i < find_nodes.nodes().size(); ++i)
+     routing_table_.AddNode(NodeId(find_nodes.nodes(i)));
 }
 
-void RoutingImpl::doConnectResponse(protobuf::Message& message)
+void RoutingPrivate::doFindNodeRequest(protobuf::Message& message)
+{
+  protobuf::FindNodesRequest find_nodes;
+  protobuf::FindNodesResponse found_nodes;
+  std::vector<NodeId> nodes;
+  nodes = routing_table_.GetClosestNodes(NodeId(message.destination_id()),
+                                         find_nodes.num_nodes_requested());
+  
+  for (auto it = nodes.begin(); it != nodes.end(); ++it) 
+      found_nodes.add_nodes((*it).String());
+  message.set_destination_id(message.source_id());
+  message.set_source_id(my_node_id_.String());
+  message.set_cachable(false);
+  message.set_data(found_nodes.SerializeAsString());
+  message.set_direct(true);
+  message.set_response(true);
+  message.set_type(1);
+  message.set_failure(false);
+  NodeId send_to(message.destination_id());
+  SendOn(message, send_to);
+}
+
+
+void RoutingPrivate::doConnectResponse(protobuf::Message& message)
 {
   // TODO - check contact for direct conencted node - i.e try a
   // quick connect / ping to the remote endpoint and if reachable
@@ -330,6 +306,66 @@ void RoutingImpl::doConnectResponse(protobuf::Message& message)
   // Keep at least 1000 nodes in table and drop any dead beyond this
 }
 
+// ********************API implementation* *************************************
+Routing::Routing() : pimpl_(new RoutingPrivate())  {}
+
+bool Routing::StartVault(boost::asio::io_service& service) { // NOLINT
+   if (! pimpl_->ReadConfigFile())
+     return false;
+//    pimpl_->transport_ = (transport::RudpTransport(service));
+   pimpl_->routing_table_ = RoutingTable(pimpl_->my_contact_);
+   return false; // not implemented need to start network and routing table
+}
+
+bool Routing::StartClient(boost::asio::io_service& service) {
+  //TODO client will join network using pmid BUT will request a
+  // relay conenction. Vaults (i.e. routing table) will accept a range
+  // of these, Initially set to 64 but we shoudl make this dynamic later
+}
+
+void Routing::Send(const protobuf::Message &msg) {
+ NodeId next_node =
+        pimpl_->routing_table_.GetClosestNode(NodeId(msg.destination_id()));
+ pimpl_->SendOn(msg, next_node);
+}
+
+
+/// Setters
+
+bool Routing::setConfigFilePath(boost::filesystem3::path &config_file) {
+   if (bfs::exists(config_file) && !bfs::is_regular_file(config_file))
+    return false;
+   pimpl_->config_file_ = config_file;
+   return true;
+}
+
+bool Routing::setMyPrivateKey(asymm::PrivateKey& key) {
+  pimpl_->my_private_key_ = key;
+  pimpl_->private_key_is_set_ = true;
+  return true;
+}
+
+bool Routing::setMyNodeId(NodeId& node) {
+  pimpl_->my_node_id_ = node;
+  pimpl_->node_is_set_ = true;
+  return true;
+}
+
+/// Getters
+
+asymm::PrivateKey Routing::MyPrivateKey() {
+  return pimpl_->my_private_key_ ;
+}
+
+NodeId Routing::MyNodeID() {
+  return pimpl_->my_node_id_;
+}
+
+bfs::path Routing::ConfigFilePath() {
+  return pimpl_->config_file_;
+}
+
+// ******************** END Of API implementations *****************************
 
 // TODO get messages from transport
 

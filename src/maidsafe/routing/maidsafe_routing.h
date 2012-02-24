@@ -45,10 +45,9 @@ namespace maidsafe {
 
 namespace routing {
 
-class RoutingImpl;
 class NodeId;
 class PrivateKey;
-
+class RoutingPrivate;
 
 
 typedef boost::asio::ip::address IP;
@@ -75,7 +74,7 @@ static_assert(kReplicationSize <= kClosestNodes,
 const int16_t kBucketSize(1);
 
 /// how many chunks to cache (hint as it will be adjusted if mem low)
-const int16_t kNumChunksToCache(100);
+const uint16_t kNumChunksToCache(100);
 
 typedef std::function<void(std::string &messsage)> PassMessageUpFunctor;
 
@@ -92,18 +91,19 @@ class Routing {
   void Stop();
   bool Running();
   // setters
-  bool setConfigFile(boost::filesystem3::path &);
+  bool setConfigFilePath(boost::filesystem3::path &);
   bool setMyPrivateKey(asymm::PrivateKey &);
   bool setMyNodeId(NodeId &);
   bool setBootStrapNodes(std::vector<Contact> &);
   // getters
+  boost::filesystem3::path ConfigFilePath();
   asymm::PrivateKey MyPrivateKey();
   NodeId MyNodeID();
   std::vector<Contact> BootStrapNodes();
  private:
   Routing(const Routing&);
   Routing &operator=(const Routing&);
-  std::shared_ptr<RoutingImpl> pimpl_;
+  std::unique_ptr<RoutingPrivate> pimpl_;
 };
 // TODO FIXME - is it forced on us to just include the
 // routing.bh.h file so we can prepare messages for sending properly !!
