@@ -50,6 +50,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 namespace maidsafe {
   // utility for iterable queue - should go in common
   // just a wrapper to get at deque iterators
+  // a better/safer method would be to inherit form dqueue
+  // and create our own unasoci
 template<typename T, typename Container=std::deque<T>>
 class iqueue : public std::queue<T,Container>
 {
