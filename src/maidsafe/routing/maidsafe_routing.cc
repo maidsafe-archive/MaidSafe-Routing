@@ -229,7 +229,8 @@ void RoutingPrivate::ProcessMessage(protobuf::Message& message) {
       if (message.destination_id() != my_node_id_.String()) {
       // TODO send back a failure I presume !!
       } else {
-        //Signal up it's for us
+        message_recieved(message.type(), message.data());
+        return;
       }
     }
     if (message.type() == 1) {// find_nodes
@@ -252,7 +253,7 @@ void RoutingPrivate::ProcessMessage(protobuf::Message& message) {
        NodeId send_to = routing_table_.GetClosestNode((*it));
        SendOn(message, send_to);
      }
-     // signal up - we should act on it now
+     message_recieved(message.type(), message.data());
      return;
    }
 }
@@ -295,7 +296,6 @@ void RoutingPrivate::doFindNodeRequest(protobuf::Message& message)
   SendOn(message, send_to);
 }
 
-
 void RoutingPrivate::doConnectResponse(protobuf::Message& message)
 {
   // TODO - check contact for direct conencted node - i.e try a
@@ -328,7 +328,6 @@ void Routing::Send(const protobuf::Message &msg) {
         pimpl_->routing_table_.GetClosestNode(NodeId(msg.destination_id()));
  pimpl_->SendOn(msg, next_node);
 }
-
 
 /// Setters
 

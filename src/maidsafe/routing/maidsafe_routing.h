@@ -35,6 +35,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
   Please update the maidsafe_routing library.
 #endif
 
+#include "boost/signals2.hpp"
 #include "boost/asio/io_service.hpp"
 #include "boost/filesystem.hpp"
 #include "maidsafe/routing/routing.pb.h"
@@ -105,6 +106,10 @@ class Routing {
   Routing &operator=(const Routing&);
   std::unique_ptr<RoutingPrivate> pimpl_;
 };
+// Signals
+boost::signals2::signal<void(uint16_t, std::string)> message_recieved;
+boost::signals2::signal<void(int16_t)> network_status;
+
 // TODO FIXME - is it forced on us to just include the
 // routing.bh.h file so we can prepare messages for sending properly !!
 // I think it may be unless we want send to take string and that mease
