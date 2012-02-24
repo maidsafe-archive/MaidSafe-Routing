@@ -227,6 +227,8 @@ void RoutingImpl::ProcessMessage(protobuf::Message& message) {
         return;
       data = std::make_pair(message.source_id(), message.data());
       cache_chunks_.push(data);
+      if (cache_chunks_.size() > cache_size_hint_)
+        cache_chunks_.pop();
     } catch (std::exception &e) {
       // oohps reduce cache size quickly
       for (int16_t i = 0; i < (cache_size_hint_ / 2) ; ++i)
