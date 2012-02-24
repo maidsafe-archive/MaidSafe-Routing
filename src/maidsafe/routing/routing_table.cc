@@ -74,7 +74,6 @@ bool RoutingTable::AmIClosestNode(const NodeId& node_id)
                     DistanceTo(node_id, routing_table_nodes_[0]) ;
 }
 
-
 bool RoutingTable::MakeSpaceForNodeToBeAdded() {
   if (kRoutingTableSize < routing_table_nodes_.size())
     return true;

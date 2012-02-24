@@ -29,7 +29,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define MAIDSAFE_ROUTING_MAIDSAFE_ROUTING_H_
 
 #include "maidsafe/routing/version.h"
-
 #if MAIDSAFE_ROUTING_VERSION != 3107
 # error This API is not compatible with the installed library.\
   Please update the maidsafe_routing library.
@@ -40,7 +39,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "boost/filesystem.hpp"
 #include "maidsafe/routing/routing.pb.h"
 #include "maidsafe/transport/rudp_transport.h"
-#include <common/rsa.h>
+#include "common/rsa.h"
 
 namespace maidsafe {
 
@@ -50,34 +49,19 @@ class NodeId;
 class PrivateKey;
 class RoutingPrivate;
 
-
-typedef boost::asio::ip::address IP;
-typedef int16_t Port;
-
 /// The size of ROUTING keys and node IDs in bytes.
 const uint16_t kKeySizeBytes(64);
-
 /// Size of closest nodes group
 const uint16_t kClosestNodes(8);
-
 /// total nodes in routing table
 const uint16_t kRoutingTableSize(64);
-static_assert(kClosestNodes <= kRoutingTableSize,
-              "Cannot set closest nodes larger than routing table");
-
-// replication shoudl be lower than ClseNodes
+// replication should be lower than CloseNodes
 const uint16_t kReplicationSize(4);
-static_assert(kReplicationSize <= kClosestNodes,
-              "Cannot set replication factor larger than closest nodes");
-
 /// Nodes hint per bucket (hint as buckets will fill more than
 /// this when space permits)
 const int16_t kBucketSize(1);
-
 /// how many chunks to cache (hint as it will be adjusted if mem low)
 const uint16_t kNumChunksToCache(100);
-
-typedef std::function<void(std::string &messsage)> PassMessageUpFunctor;
 
 class Routing {
  class Contact;
@@ -87,8 +71,6 @@ class Routing {
   bool StartVault(boost::asio::io_service &service);
   bool StartClient(boost::asio::io_service &service);
   void Send(const protobuf::Message &message);
-  // TODO FIXME this should be a signal !! 
-  bool RegisterMessageHandler(PassMessageUpFunctor &pass_message_up_handler);
   void Stop();
   bool Running();
   // setters
@@ -107,41 +89,11 @@ class Routing {
   std::unique_ptr<RoutingPrivate> pimpl_;
 };
 // Signals
-boost::signals2::signal<void(uint16_t, std::string)> message_recieved;
-boost::signals2::signal<void(int16_t)> network_status;
-
-// TODO FIXME - is it forced on us to just include the
-// routing.bh.h file so we can prepare messages for sending properly !!
-// I think it may be unless we want send to take string and that mease
-// an extra serialise / parse stage - too slow !! 
-/// to allow message parameter setting and sending
-// class ThisMessage {
-//  public:
-//   /// Setters
-//   explicit ThisMessage(const std::string &message);
-//   void setMessageDestination(const NodeId &id);
-//   void setResponse(bool reponse);
-//   void setMessageCacheable(bool cache);
-//   void setMessageLock(bool lock);
-//   void setMessageSignature(const std::string &signature);
-//   void setMessageSignatureId(const std::string &signature_id);
-//   void setMessageDirect(bool direct);
-//   /// Getters
-//   const NodeId MessageDestination();
-//   bool Response();
-//   bool MessageCacheable();
-//   bool MessageLock();
-//   const std::string  MessageSignature();
-//   const NodeId MessageSignatureId();
-//   bool MessageDirect();
-// private:
-//   ThisMessage(const ThisMessage&);
-//   ThisMessage &operator=(const ThisMessage&);
-//   
-// };
-
+// to connect use "message_recieved.connect(&function);" where function
+// has (uint16_t, std::string) as parameters and void return type.
+static boost::signals2::signal<void(uint16_t, std::string)> message_recieved_signal;
+static boost::signals2::signal<void(int16_t)> network_status;
 }  // namespace routing
-
 }  // namespace maidsafe
 
 #endif  // MAIDSAFE_ROUTING_MAIDSAFE_ROUTING_H_

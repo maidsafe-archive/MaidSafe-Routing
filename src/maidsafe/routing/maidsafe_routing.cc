@@ -54,7 +54,13 @@ namespace routing {
   typedef bfs::ifstream ifs;
   typedef bfs::ofstream ofs;
   typedef protobuf::Contact Contact;
-  
+
+  // check correctness of config settings  
+  static_assert(kReplicationSize <= kClosestNodes,
+                "Cannot set replication factor larger than closest nodes");
+  static_assert(kClosestNodes <= kRoutingTableSize,
+                "Cannot set closest nodes larger than routing table");
+
 class RoutingPrivate {
 public:
    RoutingPrivate();
@@ -229,7 +235,7 @@ void RoutingPrivate::ProcessMessage(protobuf::Message& message) {
       if (message.destination_id() != my_node_id_.String()) {
       // TODO send back a failure I presume !!
       } else {
-        message_recieved(message.type(), message.data());
+        message_recieved_signal(message.type(), message.data());
         return;
       }
     }
@@ -253,7 +259,7 @@ void RoutingPrivate::ProcessMessage(protobuf::Message& message) {
        NodeId send_to = routing_table_.GetClosestNode((*it));
        SendOn(message, send_to);
      }
-     message_recieved(message.type(), message.data());
+     message_recieved_signal(message.type(), message.data());
      return;
    }
 }
