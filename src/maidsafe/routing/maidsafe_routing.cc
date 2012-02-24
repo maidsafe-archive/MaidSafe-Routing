@@ -65,6 +65,8 @@ class RoutingImpl {
    void ProcessMessage(protobuf::Message &message);
    void doFindNodeResponse(protobuf::Message &message);
    void doFindNodeRequest(protobuf::Message &message);
+   void doConnectResponse(protobuf::Message &message);
+   void doConnectRequest(protobuf::Message &message);
    void SendOn(const protobuf::Message &message, NodeId &node);
    boost::asio::io_service service_;
    int16_t cache_size_hint_;
@@ -274,7 +276,19 @@ void RoutingImpl::doFindNodeResponse(protobuf::Message& message)
      return;
    for (uint i = 0; i < find_nodes.close_contacts().size(); ++i)
      routing_table_.AddNode(NodeId(find_nodes.close_contacts().at(i)));
+   
 }
+
+void RoutingImpl::doConnectResponse(protobuf::Message& message)
+{
+  // TODO - check contact for direct conencted node - i.e try a
+  // quick connect / ping to the remote endpoint and if reachable
+  // store in bootstrap_nodes_ and do a WriteConfigFile()
+  // this may be where we need a ping command to iterate and remove
+  // any long dead nodes from the table.
+  // Keep at least 1000 nodes in table and drop any dead beyond this
+}
+
 
 // TODO get messages from transport
 
