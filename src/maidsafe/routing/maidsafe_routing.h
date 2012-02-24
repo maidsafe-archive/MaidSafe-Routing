@@ -100,8 +100,8 @@ class Routing {
   Routing &operator=(const Routing&);
   std::shared_ptr<RoutingImpl> pimpl_;
 };
-// TODO FIXME - is it forced on us to jsut include the
-// routing.bh.h file so we cna prepare messages for sendign properly !!
+// TODO FIXME - is it forced on us to just include the
+// routing.bh.h file so we can prepare messages for sending properly !!
 // I think it may be unless we want send to take string and that mease
 // an extra serialise / parse stage - too slow !! 
 /// to allow message parameter setting and sending

@@ -43,6 +43,10 @@ message Message {
   required bool response = 9;
   required int32 type = 10;
   optional bool failure = 11;
+  optional Endpoint proxy = 12;
+  required bytes message_rand_id = 13;
+  optional bytes lock_signature = 14;
+  optional bytes lock_id = 15;
 }
 
 message ConnectRequest {

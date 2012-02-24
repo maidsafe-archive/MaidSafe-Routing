@@ -94,7 +94,7 @@ RoutingImpl::RoutingImpl() :
   routing_table_(my_contact_), // TODO FIXME contact is empty here
   transport_(service_),
   config_file_("dht_config"),
-  private_key_is_set_(false),
+  private_key_is_set_(false),e
   node_is_set_(false),
   public_keys_(), 
   cache_chunks_()
@@ -199,7 +199,9 @@ bool Routing::StartVault(boost::asio::io_service& service) { // NOLINT
    return false; // not implemented need to start network and routing table
 }
 
-bool Routing::StartClient(boost::asio::io_service& service) {
+bool Routing::StartClient(boost::asio::io_service& service) {if (message.has_cachable() &&
+              message.cachable() &&
+              message.response()) {
   //TODO client will join network using pmid BUT will request a
   // relay conenction. Vaults (i.e. routing table) will accept a range
   // of these, Initially set to 64 but we shoudl make this dynamic later
@@ -237,6 +239,13 @@ void RoutingImpl::ProcessMessage(protobuf::Message& message) {
         cache_chunks_.pop();
       cache_size_hint_ = cache_size_hint_ / 2;
     }
+  }
+  if (message.has_cachable() &&
+              message.cachable() &&
+              !message.response()) {
+    if (cache_chunks_.search(key)protobuf::Message
+      SendOn(message); // TODO back to source_id
+    // TODO check our cache and send back response
   }
   // is it for us ??
   if (!routing_table_.AmIClosestNode(NodeId(message.destination_id()))) {
