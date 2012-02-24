@@ -27,7 +27,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <memory>
 #include <queue>
-#include <deque>
+#include <vector>
 
 #include "boost/thread/locks.hpp"
 #include "boost/asio/io_service.hpp"
@@ -48,23 +48,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
 namespace maidsafe {
-  // utility for iterable queue - should go in common
-  // just a wrapper to get at deque iterators
-  // a better/safer method would be to inherit form dqueue
-  // and create our own unasoci
-template<typename T, typename Container=std::deque<T>>
-class iqueue : public std::queue<T,Container>
-{
-public:
-    typedef typename Container::iterator iterator;
-    typedef typename Container::const_iterator const_iterator;
-
-    iterator begin() { return this->c.begin(); }
-    iterator end() { return this->c.end(); }
-    const_iterator begin() const { return this->c.begin(); }
-    const_iterator end() const { return this->c.end(); }
-    void Resize(int t) { return this->c.resize(t); } // TODO FIXME TESTME
-};
 
 namespace routing {
 
@@ -75,8 +58,8 @@ namespace routing {
  // typedef protobuf::Message Message;
   
 class RoutingImpl {
- public:
-   RoutingImpl();
+     RoutingImpl();
+ private:
    bool ReadConfigFile();
    bool WriteConfigFile();
    transport::Endpoint GetLocalEndpoint();
@@ -99,8 +82,11 @@ class RoutingImpl {
    bool private_key_is_set_;
    bool node_is_set_;
    std::map<NodeId, asymm::PublicKey> public_keys_;
-   maidsafe::iqueue<std::pair<std::string, std::string> > cache_chunks_;
+   std::vector<std::pair<std::string, std::string> > cache_chunks_;
 };
+
+Routing r;
+r.Stop();
 
 RoutingImpl::RoutingImpl() :
           
@@ -136,7 +122,7 @@ bool RoutingImpl::ReadConfigFile() {
     }
     if (!node_is_set_) {
       if(protobuf.has_node_id()) {
-         my_node_id_ = NodeId(protobuf.node_id());
+         my_node_id_ = NodeId(protobuf.node_id());service_
        } else {
         return false;
        }
@@ -155,6 +141,9 @@ bool RoutingImpl::WriteConfigFile() {
   // TODO implement 
 return false;
 }
+asymm::PrivateKey Routing::MyPrivateKey(int x) {
+  return pimpl_->MyPrivateKey(x);
+}
 
 Routing::Routing() : pimpl_(new RoutingImpl())  {}
 
@@ -170,8 +159,11 @@ bool Routing::setMyPrivateKey(asymm::PrivateKey& key) {
   return true;
 }
 
-asymm::PrivateKey Routing::MyPrivateKey() {
-  return pimpl_->my_private_key_;
+asymm::PrivateKey Routing::MyPrivateKey(int x) {
+  return pimpl_->MyPrivateKey(x);
+}
+asymm::PrivateKey RoutingImpl::MyPrivateKey(int x) {
+  return my_private_key_;
 }
 
 bool Routing::setMyNodeId(NodeId& node) {
@@ -213,7 +205,7 @@ transport::Endpoint RoutingImpl::GetLocalEndpoint() {
 bool Routing::StartVault(boost::asio::io_service& service) { // NOLINT
    if (! pimpl_->ReadConfigFile())
      return false;
-   pimpl_->transport_ = (transport::RudpTransport(service));
+//    pimpl_->transport_ = (transport::RudpTransport(service));
    pimpl_->routing_table_ = RoutingTable(pimpl_->my_contact_);
    return false; // not implemented need to start network and routing table
 }
@@ -254,15 +246,16 @@ void RoutingImpl::ProcessMessage(protobuf::Message& message) {
         if (crypto::Hash<crypto::SHA512>(message.data()) != message.source_id())
           return;
         data = std::make_pair(message.source_id(), message.data());
-        cache_chunks_.push(data);
-        if (cache_chunks_.size() > cache_size_hint_)
-          cache_chunks_.pop();
+        cache_chunks_.push_back(data);
+        while (cache_chunks_.size() > cache_size_hint_)
+          cache_chunks_.erase(cache_chunks_.begin());
       } catch (std::exception &e) {
         // oohps reduce cache size quickly
 //         for (int16_t i = 0; i < (cache_size_hint_ / 2) ; ++i)
 //           cache_chunks_.pop();
         cache_size_hint_ = cache_size_hint_ / 2;
-        cache_chunks_.Resize(cache_size_hint_);
+        while (cache_chunks_.size() > cache_size_hint_)
+          cache_chunks_.erase(cache_chunks_.begin()+1);
       }
     }
   } else  { // request
