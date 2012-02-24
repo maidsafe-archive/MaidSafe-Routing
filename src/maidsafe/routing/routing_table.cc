@@ -52,7 +52,7 @@ bool RoutingTable::AddNode(const NodeId &node_id) {
   if (node_id == kMyNodeId_) {
     return false;
   }
-  if (isClose(node_id)) {
+  if (IsInMyClosestAddressRange(node_id)) {
     if (routing_table_nodes_.size() >= kRoutingTableSize) {
       PartialSortFromThisNode(kMyNodeId_, kClosestNodes);
       auto furthest = routing_table_nodes_.begin() + kClosestNodes;
@@ -112,7 +112,7 @@ void RoutingTable::PartialSortFromThisNode(const NodeId &from,
                     { return DistanceTo(i, from) < DistanceTo(j, from); } );
 }
 
-bool RoutingTable::isClose(const NodeId& node_id) {
+bool RoutingTable::IsInMyClosestAddressRange(const NodeId& node_id) {
   if (routing_table_nodes_.size() < kClosestNodes)
     return true;
   PartialSortFromThisNode(kMyNodeId_, kClosestNodes);
@@ -144,6 +144,11 @@ NodeId RoutingTable::DistanceTo(const NodeId &target,
     distance[i] = (*from_it ^ *target_it);
   NodeId node_dist(distance, NodeId::kBinary);
   return node_dist;
+}
+
+NodeId RoutingTable::GetClosestNode(const NodeId &from) {
+ PartialSortFromThisNode(from, 1);
+ return routing_table_nodes_[0];
 }
 
 std::vector<NodeId> RoutingTable::GetClosestNodes(const NodeId &from,

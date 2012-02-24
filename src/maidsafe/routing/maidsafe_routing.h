@@ -36,16 +36,20 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #endif
 
 #include "boost/asio/io_service.hpp"
-
+#include "boost/filesystem.hpp"
+#include "maidsafe/routing/routing.pb.h"
 #include "maidsafe/transport/rudp_transport.h"
+#include <common/rsa.h>
 
 namespace maidsafe {
 
 namespace routing {
-/// Forward Declerations
 
 class RoutingImpl;
 class NodeId;
+class PrivateKey;
+
+
 
 typedef boost::asio::ip::address IP;
 typedef int16_t Port;
@@ -65,54 +69,66 @@ static_assert(kClosestNodes <= kRoutingTableSize,
 /// this when space permits)
 const int16_t kBucketSize(1);
 
-typedef std::function<void(std::string &message)> GetValueFunctor;
+/// how many chunks to cache (hint as it will be adjusted if mem low)
+const int16_t kNumChunksToCache(100);
+
 typedef std::function<void(std::string &messsage)> PassMessageUpFunctor;
-class Message;
 
 class Routing {
+ class Contact;
  public:
   Routing();
   ~Routing();
-  void Start(boost::asio::io_service &service);
+  bool StartVault(boost::asio::io_service &service);
+  bool StartClient(boost::asio::io_service &service);
+  void Send(const protobuf::Message &message);
+  // TODO FIXME this should be a signal !! 
+  bool RegisterMessageHandler(PassMessageUpFunctor &pass_message_up_handler);
   void Stop();
   bool Running();
-  std::vector<NodeId> FindNodes(NodeId &target_id,
-                                int16_t num_nodes);
-  void SetGetDataFunctor(GetValueFunctor &get_local_value);
-  void Send(const Message &message);
-  bool RegisterMessageHandler(PassMessageUpFunctor &pass_message_up_handler);
+  // setters
+  bool setConfigFile(boost::filesystem3::path &);
+  bool setMyPrivateKey(asymm::PrivateKey &);
+  bool setMyNodeId(NodeId &);
+  bool setBootStrapNodes(std::vector<Contact> &);
+  // getters
+  asymm::PrivateKey MyPrivateKey();
+  NodeId MyNodeID();
+  std::vector<Contact> BootStrapNodes();
  private:
   Routing(const Routing&);
   Routing &operator=(const Routing&);
   std::shared_ptr<RoutingImpl> pimpl_;
 };
-
-
+// TODO FIXME - is it forced on us to jsut include the
+// routing.bh.h file so we cna prepare messages for sendign properly !!
+// I think it may be unless we want send to take string and that mease
+// an extra serialise / parse stage - too slow !! 
 /// to allow message parameter setting and sending
-class Message {
- public:
-  /// Setters
-  explicit Message(const std::string &message);
-  void setMessageDestination(const NodeId &id);
-  void setResponse(bool reponse);
-  void setMessageCacheable(bool cache);
-  void setMessageLock(bool lock);
-  void setMessageSignature(const std::string &signature);
-  void setMessageSignatureId(const std::string &signature_id);
-  void setMessageDirect(bool direct);
-  /// Getters
-  const NodeId MessageDestination();
-  bool Response();
-  bool MessageCacheable();
-  bool MessageLock();
-  const std::string  MessageSignature();
-  const NodeId MessageSignatureId();
-  bool MessageDirect();
-private:
-  Message(const Message&);
-  Message &operator=(const Message&);
-  
-};
+// class ThisMessage {
+//  public:
+//   /// Setters
+//   explicit ThisMessage(const std::string &message);
+//   void setMessageDestination(const NodeId &id);
+//   void setResponse(bool reponse);
+//   void setMessageCacheable(bool cache);
+//   void setMessageLock(bool lock);
+//   void setMessageSignature(const std::string &signature);
+//   void setMessageSignatureId(const std::string &signature_id);
+//   void setMessageDirect(bool direct);
+//   /// Getters
+//   const NodeId MessageDestination();
+//   bool Response();
+//   bool MessageCacheable();
+//   bool MessageLock();
+//   const std::string  MessageSignature();
+//   const NodeId MessageSignatureId();
+//   bool MessageDirect();
+// private:
+//   ThisMessage(const ThisMessage&);
+//   ThisMessage &operator=(const ThisMessage&);
+//   
+// };
 
 }  // namespace routing
 

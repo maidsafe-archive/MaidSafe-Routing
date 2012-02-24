@@ -23,10 +23,6 @@ message Contact {
   optional bytes other_info = 10;
 }
 
-message ClosestContacts {
-  repeated bytes close_contacts = 1;
-}
-
 message ConfigFile {
   repeated Contact contact = 1;
   optional bytes private_key = 2;
@@ -36,27 +32,35 @@ message ConfigFile {
 // Message wrappers 
 
 message Message {
-  required bytes source_id = 1;
+  required bytes source_id = 1; // in response this is name of data
   required bytes destination_id = 2;
   optional bool  cachable = 3;
   optional bool  lock = 4;
-  required bytes message = 5;
+  required bytes data = 5; // may be just chunk contents
   optional bytes signature = 6;
-  optional bytes signature_id = 7;
-  optional bool direct = 8;
+  optional bytes signature_id = 7; // sig that validates action
+  optional bool direct = 8; // goes to a single node !!
   required bool response = 9;
   required int32 type = 10;
+  optional bool failure = 11;
+}
+
+message ConnectRequest {
+  optional bool client = 1;
+  required Contact contact= 2;
+  required Endpoint actual_endpoint_seen = 3; // filled in by first node in chain
+}
+
+message ConnectResponse {
+  required bool answer = 1;
+  required Contact contact = 2;
+  required Endpoint actual_endpoint_seen = 3; // filled in by first node in chain
 }
 
 message FindNodesRequest {
-  required bytes source_id = 1;
-  required bytes destination_id = 2;
-  optional int32 num_nodes_requested = 3;
+  optional int32 num_nodes_requested = 1;
 }
 
 message FindNodesResponse {
-  required bytes source_id = 1; // reponse sender
-  required bytes destination_id = 2; // orig sender
-  required ClosestContacts close_contacts = 3;
-  required bytes signature = 4; // sig of source id
+  required bytes close_contacts = 1;
 }
