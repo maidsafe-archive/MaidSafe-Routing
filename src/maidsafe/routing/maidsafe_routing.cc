@@ -27,6 +27,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <memory>
 #include <queue>
+#include <deque>
 
 #include "boost/thread/locks.hpp"
 #include "boost/asio/io_service.hpp"
@@ -47,6 +48,22 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
 namespace maidsafe {
+  // utility for iterable queue - should go in common
+  // just a wrapper to get at deque iterators
+template<typename T, typename Container=std::deque<T>>
+class iqueue : public std::queue<T,Container>
+{
+public:
+    typedef typename Container::iterator iterator;
+    typedef typename Container::const_iterator const_iterator;
+
+    iterator begin() { return this->c.begin(); }
+    iterator end() { return this->c.end(); }
+    const_iterator begin() const { return this->c.begin(); }
+    const_iterator end() const { return this->c.end(); }
+    void Resize(int t) { return this->c.resize(t); } // TODO FIXME TESTME
+};
+
 namespace routing {
 
   namespace bfs = boost::filesystem3;
@@ -80,7 +97,7 @@ class RoutingImpl {
    bool private_key_is_set_;
    bool node_is_set_;
    std::map<NodeId, asymm::PublicKey> public_keys_;
-   std::queue<std::pair<std::string, std::string>> cache_chunks_;
+   maidsafe::iqueue<std::pair<std::string, std::string> > cache_chunks_;
 };
 
 RoutingImpl::RoutingImpl() :
@@ -94,7 +111,7 @@ RoutingImpl::RoutingImpl() :
   routing_table_(my_contact_), // TODO FIXME contact is empty here
   transport_(service_),
   config_file_("dht_config"),
-  private_key_is_set_(false),e
+  private_key_is_set_(false),
   node_is_set_(false),
   public_keys_(), 
   cache_chunks_()
@@ -199,9 +216,7 @@ bool Routing::StartVault(boost::asio::io_service& service) { // NOLINT
    return false; // not implemented need to start network and routing table
 }
 
-bool Routing::StartClient(boost::asio::io_service& service) {if (message.has_cachable() &&
-              message.cachable() &&
-              message.response()) {
+bool Routing::StartClient(boost::asio::io_service& service) {
   //TODO client will join network using pmid BUT will request a
   // relay conenction. Vaults (i.e. routing table) will accept a range
   // of these, Initially set to 64 but we shoudl make this dynamic later
@@ -219,32 +234,52 @@ void RoutingImpl::RecieveMessage(std::string &message) {
     ProcessMessage(msg);
 }
 
+bool isCacheable(protobuf::Message &message) {
+ return (message.has_cachable() && message.cachable());
+}
+
+bool isDirect(protobuf::Message &message) {
+  return (message.has_direct() && message.direct());
+}
+
 void RoutingImpl::ProcessMessage(protobuf::Message& message) {
   // handle cache data
-  if (message.has_cachable() &&
-              message.cachable() &&
-              message.response()) {
-    std::pair<std::string, std::string> data;
-    try {
-      // check data is valid
-      if (crypto::Hash<crypto::SHA512>(message.data()) != message.source_id())
-        return;
-      data = std::make_pair(message.source_id(), message.data());
-      cache_chunks_.push(data);
-      if (cache_chunks_.size() > cache_size_hint_)
-        cache_chunks_.pop();
-    } catch (std::exception &e) {
-      // oohps reduce cache size quickly
-      for (int16_t i = 0; i < (cache_size_hint_ / 2) ; ++i)
-        cache_chunks_.pop();
-      cache_size_hint_ = cache_size_hint_ / 2;
+  if (isCacheable(message)) {
+    if (message.response()) {
+      std::pair<std::string, std::string> data;
+      try {
+        // check data is valid TODO FIXME - ask CAA
+        if (crypto::Hash<crypto::SHA512>(message.data()) != message.source_id())
+          return;
+        data = std::make_pair(message.source_id(), message.data());
+        cache_chunks_.push(data);
+        if (cache_chunks_.size() > cache_size_hint_)
+          cache_chunks_.pop();
+      } catch (std::exception &e) {
+        // oohps reduce cache size quickly
+//         for (int16_t i = 0; i < (cache_size_hint_ / 2) ; ++i)
+//           cache_chunks_.pop();
+        cache_size_hint_ = cache_size_hint_ / 2;
+        cache_chunks_.Resize(cache_size_hint_);
+      }
     }
-  }
-  if (message.has_cachable() &&
-              message.cachable() &&
-              !message.response()) {
-    if (cache_chunks_.search(key)protobuf::Message
-      SendOn(message); // TODO back to source_id
+  } else  { // request
+     for(auto it = cache_chunks_.begin(); it != cache_chunks_.end(); ++it) {
+       if ((*it).first == message.source_id()) {
+          message.set_destination_id(message.source_id());
+          message.set_cachable(true);
+          message.set_data((*it).second);
+          message.set_source_id(my_node_id_.String());
+          message.set_direct(true);
+          message.set_response(false);
+          NodeId next_node =
+              routing_table_.GetClosestNode(NodeId(message.destination_id()));
+          SendOn(message, next_node);
+          return;
+       }
+     }
+  //     if (cache_chunks_.search(key)protobuf::Message
+  //       SendOn(message); // TODO back to source_id
     // TODO check our cache and send back response
   }
   // is it for us ??
@@ -253,10 +288,12 @@ void RoutingImpl::ProcessMessage(protobuf::Message& message) {
               routing_table_.GetClosestNode(NodeId(message.destination_id()));
     SendOn(message, next_node);
   } else { // I am closest
-    if (message.has_direct() &&
-        message.direct() &&
-        (message.destination_id() != my_node_id_.String())) {
+    if (isDirect(message)) {
+      if (message.destination_id() != my_node_id_.String()) {
       // TODO send back a failure I presume !!
+      } else {
+        //Signal up
+      }
     }
     if (message.type() == 1) // find_nodes
       if (message.has_response() && message.response()) {
@@ -267,7 +304,7 @@ void RoutingImpl::ProcessMessage(protobuf::Message& message) {
       }
     // TODO again with the signals we are closest node
     // could check with next line
-    if (routing_table_.IsInMyClosestAddressRange(NodeId
+    if (routing_table_.IsMyNodeInRange(NodeId
                                             (message.destination_id()))){
       // signal we are in closest if it helps logic
     }

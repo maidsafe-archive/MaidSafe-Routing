@@ -70,7 +70,7 @@ class RoutingTable {
   RoutingTable(const Contact &my_contact);
   ~RoutingTable();
   bool AddNode(const NodeId &node_id);
-  bool IsInMyClosestAddressRange(const NodeId &node_id);
+  bool IsMyNodeInRange(const NodeId &node_id, uint16_t = kReplicationSize);
   bool AmIClosestNode(const NodeId &node_id);
   std::vector<NodeId> GetClosestNodes(const NodeId &from,
                                uint16_t number_to_get = kClosestNodes);
@@ -78,7 +78,6 @@ class RoutingTable {
   RoutingTable operator =(const RoutingTable &assign_object);
  private:
   RoutingTable(const RoutingTable &copy_object);
-
   void InsertContact(const Contact &contact);
   int16_t BucketIndex(const NodeId &rhs) const;
   bool MakeSpaceForNodeToBeAdded();

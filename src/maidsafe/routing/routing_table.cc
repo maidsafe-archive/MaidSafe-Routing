@@ -52,7 +52,7 @@ bool RoutingTable::AddNode(const NodeId &node_id) {
   if (node_id == kMyNodeId_) {
     return false;
   }
-  if (IsInMyClosestAddressRange(node_id)) {
+  if (IsMyNodeInRange(node_id)) {
     if (routing_table_nodes_.size() >= kRoutingTableSize) {
       PartialSortFromThisNode(kMyNodeId_, kClosestNodes);
       auto furthest = routing_table_nodes_.begin() + kClosestNodes;
@@ -69,11 +69,9 @@ bool RoutingTable::AddNode(const NodeId &node_id) {
 bool RoutingTable::AmIClosestNode(const NodeId& node_id)
 {
   boost::mutex::scoped_lock lock(mutex_);
-  auto it = std::find_if(routing_table_nodes_.begin(),
-                        routing_table_nodes_.end(),
-                        [this, node_id](const NodeId &i)
-       { return DistanceTo(kMyNodeId_, node_id) < DistanceTo(i, node_id); } );
-  return (it == routing_table_nodes_.end());
+  PartialSortFromThisNode(node_id, 1);
+  return DistanceTo(kMyNodeId_, routing_table_nodes_[0]) <
+                    DistanceTo(node_id, routing_table_nodes_[0]) ;
 }
 
 
@@ -112,14 +110,12 @@ void RoutingTable::PartialSortFromThisNode(const NodeId &from,
                     { return DistanceTo(i, from) < DistanceTo(j, from); } );
 }
 
-bool RoutingTable::IsInMyClosestAddressRange(const NodeId& node_id) {
-  if (routing_table_nodes_.size() < kClosestNodes)
+bool RoutingTable::IsMyNodeInRange(const NodeId& node_id, uint16_t range) {
+  if (routing_table_nodes_.size() < range)
     return true;
-  PartialSortFromThisNode(kMyNodeId_, kClosestNodes);
-  if (DistanceTo(routing_table_nodes_[kClosestNodes], kMyNodeId_) >
-      DistanceTo(node_id, kMyNodeId_))
-    return true;
-  return false;
+  PartialSortFromThisNode(kMyNodeId_, range);
+  return (DistanceTo(routing_table_nodes_[range], kMyNodeId_) <
+      DistanceTo(node_id, kMyNodeId_));
 }
 
 int16_t RoutingTable::BucketIndex(const NodeId &rhs) const {

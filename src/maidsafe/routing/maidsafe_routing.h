@@ -65,6 +65,11 @@ const uint16_t kRoutingTableSize(64);
 static_assert(kClosestNodes <= kRoutingTableSize,
               "Cannot set closest nodes larger than routing table");
 
+// replication shoudl be lower than ClseNodes
+const uint16_t kReplicationSize(4);
+static_assert(kReplicationSize <= kClosestNodes,
+              "Cannot set replication factor larger than closest nodes");
+
 /// Nodes hint per bucket (hint as buckets will fill more than
 /// this when space permits)
 const int16_t kBucketSize(1);

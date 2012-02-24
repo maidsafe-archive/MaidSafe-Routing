@@ -31,34 +31,27 @@ message ConfigFile {
 
 // Message wrappers 
 
+
 message Message {
   required bytes source_id = 1; // in response this is name of data
-  required bytes destination_id = 2;
+  required bytes destination_id = 2; // in request (except direct) this is the name of the data
   optional bool  cachable = 3;
-  optional bool  lock = 4;
-  required bytes data = 5; // may be just chunk contents
-  optional bytes signature = 6;
-  optional bytes signature_id = 7; // sig that validates action
-  optional bool direct = 8; // goes to a single node !!
-  required bool response = 9;
-  required int32 type = 10;
-  optional bool failure = 11;
-  optional Endpoint proxy = 12;
-  required bytes message_rand_id = 13;
-  optional bytes lock_signature = 14;
-  optional bytes lock_id = 15;
+  required bytes data = 4; // serialised protobuf - possibly encrypted in upper layers 
+  optional bool direct = 5; // goes to a single node !! if proxy is set then to here then we transmit to endpoint 
+  required bool response = 6;
+  required int32 type = 7; // type of data - used in signal to upper layers with (type, data)
+  optional bool failure = 8; 
+  optional Endpoint proxy = 9;
 }
 
 message ConnectRequest {
   optional bool client = 1;
   required Contact contact= 2;
-  required Endpoint actual_endpoint_seen = 3; // filled in by first node in chain
 }
 
 message ConnectResponse {
   required bool answer = 1;
   required Contact contact = 2;
-  required Endpoint actual_endpoint_seen = 3; // filled in by first node in void chain
 }
 
 message FindNodesRequest {
