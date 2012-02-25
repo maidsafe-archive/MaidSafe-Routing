@@ -83,16 +83,15 @@ class Routing {
   asymm::PrivateKey MyPrivateKey();
   NodeId MyNodeID();
   std::vector<Contact> BootStrapNodes();
+  // references to Signal objects
+  boost::signals2::signal<void(uint16_t, std::string)> &MessageReceivedSignal();
+  boost::signals2::signal<void(int16_t)> &NetworkStatusSignal();
  private:
   Routing(const Routing&);
   Routing &operator=(const Routing&);
   std::unique_ptr<RoutingPrivate> pimpl_;
 };
-// Signals
-// to connect use "message_recieved.connect(&function);" where function
-// has (uint16_t, std::string) as parameters and void return type.
-static boost::signals2::signal<void(uint16_t, std::string)> message_recieved_signal;
-static boost::signals2::signal<void(int16_t)> network_status;
+
 }  // namespace routing
 }  // namespace maidsafe
 

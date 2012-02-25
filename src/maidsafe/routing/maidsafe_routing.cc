@@ -83,6 +83,8 @@ public: // members
    bfs::path config_file_;
    bool private_key_is_set_;
    bool node_is_set_;
+   boost::signals2::signal<void(uint16_t, std::string)> message_recieved_sig_;
+   boost::signals2::signal<void(int16_t)> network_status_sig_;
  private:
    boost::asio::io_service service_;
    uint16_t cache_size_hint_;
@@ -233,7 +235,7 @@ void RoutingPrivate::ProcessMessage(protobuf::Message& message) {
       if (message.destination_id() != my_node_id_.String()) {
       // TODO send back a failure I presume !!
       } else {
-        message_recieved_signal(message.type(), message.data());
+        message_recieved_sig_(message.type(), message.data());
         return;
       }
     }
@@ -257,11 +259,10 @@ void RoutingPrivate::ProcessMessage(protobuf::Message& message) {
        NodeId send_to = routing_table_.GetClosestNode((*it));
        SendOn(message, send_to);
      }
-     message_recieved_signal(message.type(), message.data());
+     message_recieved_sig_(message.type(), message.data());
      return;
    }
 }
-
 
 void RoutingPrivate::SendOn(const protobuf::Message& message, NodeId& node) {
   std::string message_data(message.SerializeAsString());
@@ -367,6 +368,17 @@ NodeId Routing::MyNodeID() {
 bfs::path Routing::ConfigFilePath() {
   return pimpl_->config_file_;
 }
+
+/// Signals
+boost::signals2::signal<void(uint16_t, std::string)> & Routing::MessageReceivedSignal() {
+  return  pimpl_->message_recieved_sig_;
+}
+
+boost::signals2::signal<void(int16_t)> & Routing::NetworkStatusSignal() {
+
+  return pimpl_->network_status_sig_;
+}
+
 
 // ******************** END Of API implementations *****************************
 
