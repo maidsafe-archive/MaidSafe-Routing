@@ -86,7 +86,7 @@ public: // members
  private:
    boost::asio::io_service service_;
    uint16_t cache_size_hint_;
-   transport::RudpTransport transport_;
+   std::unique_ptr<transport::RudpTransport> transport_;
    std::map<NodeId, asymm::PublicKey> public_keys_;
    std::vector<std::pair<std::string, std::string> > cache_chunks_;
 };
@@ -102,7 +102,7 @@ RoutingPrivate::RoutingPrivate() :
   node_is_set_(false),
   service_(),
   cache_size_hint_(kNumChunksToCache),
-  transport_(service_),
+  transport_ (new  transport::RudpTransport(service_)),
   public_keys_(), 
   cache_chunks_()
   {}
@@ -133,7 +133,7 @@ bool RoutingPrivate::ReadConfigFile() {
        bootstrap_nodes_.push_back(protobuf.contact(i));
   }  catch(const std::exception &e) {
     // TODO fix DLOG - need to update common log types
-//     DLOG(WARNING) << "Exception: " << e.what();
+       DLOG(ERROR) << "Exception: " << e.what();
     return false;
   }
   return true;
@@ -146,29 +146,29 @@ return false;
 
 
 transport::Endpoint RoutingPrivate::GetLocalEndpoint() {
-//   std::vector<IP> local_ips(transport::GetLocalAddresses());
-//   transport::Port  port = RandomInt32() % 1600 + 30000;
-// // TODO we must only listen on the correct local port
-//   // this is a very old issue.
-//   bool breakme(false);
-//   for (uint16_t i = port; i < 35000; ++i) {
-//     for (auto it = local_ips.begin(); it != local_ips.end(); ++it) {
-//       transport::Endpoint ep;
-//       ep.ip = *it;
-//       ep.port = i;
-//       if (pimpl_->transport_.StartListening(ep) == transport::kSuccess) {
-//         // TODO check we can get to at least a bootsrap node !!! then we
-//         // have the correct ep
-// //         if (send and recieve)  // maybe connect is enough !!
-// //          break; ou of both loops - set a var
-//             breakme = true;
-// //         else
-// //           pimpl_->transport_.StopListening();
-//       }
-//       if (breakme)
-//         break;
-//     }
-//   }
+  std::vector<transport::IP> local_ips(transport::GetLocalAddresses());
+  transport::Port  port = RandomInt32() % 1600 + 30000;
+// TODO we must only listen on the correct local port
+  // this is a very old issue.
+  bool breakme(false);
+  for (uint16_t i = port; i < 35000; ++i) {
+    for (auto it = local_ips.begin(); it != local_ips.end(); ++it) {
+      transport::Endpoint ep;
+      ep.ip = *it;
+      ep.port = i;
+      if (transport_->StartListening(ep) == transport::kSuccess) {
+        // TODO check we can get to at least a bootsrap node !!! then we
+        // have the correct ep
+//         if (send and recieve)  // maybe connect is enough !!
+//          break; ou of both loops - set a var
+            breakme = true;
+//         else
+//           transport_->StopListening();
+      }
+      if (breakme)
+        break;
+    }
+  }
 }
 
 
@@ -201,8 +201,6 @@ void RoutingPrivate::ProcessMessage(protobuf::Message& message) {
           cache_chunks_.erase(cache_chunks_.begin());
       } catch (std::exception &e) {
         // oohps reduce cache size quickly
-//         for (int16_t i = 0; i < (cache_size_hint_ / 2) ; ++i)
-//           cache_chunks_.pop();
         cache_size_hint_ = cache_size_hint_ / 2;
         while (cache_chunks_.size() > cache_size_hint_)
           cache_chunks_.erase(cache_chunks_.begin()+1);
