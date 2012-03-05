@@ -44,10 +44,12 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 namespace maidsafe {
 
 namespace routing {
-
+/// forward declarations
 class NodeId;
 class PrivateKey;
 class RoutingPrivate;
+/// Aliases
+namespace bs2 = boost::signals2;
 
 /// The size of ROUTING keys and node IDs in bytes.
 const uint16_t kKeySizeBytes(64);
@@ -84,8 +86,8 @@ class Routing {
   NodeId MyNodeID();
   std::vector<Contact> BootStrapNodes();
   // references to Signal objects
-  boost::signals2::signal<void(uint16_t, std::string)> &MessageReceivedSignal();
-  boost::signals2::signal<void(int16_t)> &NetworkStatusSignal();
+  bs2::signal<void(uint16_t, std::string)> &MessageReceivedSignal();
+  bs2::signal<void(int16_t)> &NetworkStatusSignal();
  private:
   Routing(const Routing&);
   Routing &operator=(const Routing&);
