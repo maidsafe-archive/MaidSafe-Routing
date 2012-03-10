@@ -52,7 +52,7 @@ bool RoutingTable::AddNode(const NodeId &node_id) {
   if (node_id == kMyNodeId_) {
     return false;
   }
-  if (routing_table_nodes_.size() >= kRoutingTableSize) {
+  if (routing_table_nodes_.size() > kRoutingTableSize) {
 //     PartialSortFromThisNode(kMyNodeId_, kClosestNodes);
 //     auto furthest = routing_table_nodes_.begin() + kClosestNodes;
 //     *furthest = node_id;
