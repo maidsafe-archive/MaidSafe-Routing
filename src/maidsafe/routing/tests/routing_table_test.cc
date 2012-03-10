@@ -27,7 +27,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <bitset>
 #include <memory>
-
+#include <vector>
 #include "maidsafe/common/test.h"
 
 #include "maidsafe/common/utils.h"
@@ -48,16 +48,24 @@ class RoutingTableTest {
 };
   
 TEST(RoutingTableTest, BEH_AddCloseNodes) {
-//   RoutingTable RT(NodeId(RandomString(64)));
-//   
-//    for (int i = 0; i <= kClosestNodes - 1; ++i) {
-//      protobuf::Contact pbcontact;
-//      pbcontact.set_node_id(RandomString(64));
-//      RT.AddContact(pbcontact);
-//    }
-//    EXPECT_EQ(RT.GetMyClosestContacts().close_contacts().size(), RT.Size());
-//    EXPECT_EQ(RT.GetMyClosestContacts().close_contacts().size(), kClosestNodes);
-//    EXPECT_EQ(kClosestNodes, RT.Size());
+  protobuf::Contact contact;
+  contact.set_node_id(RandomString(64));
+  RoutingTable RT(contact);
+   for (int i = 0; i < kClosestNodes ; ++i) {
+     EXPECT_TRUE(RT.AddNode(NodeId(RandomString(64))));
+   }
+   EXPECT_EQ(RT.Size(), kClosestNodes);
+}
+
+TEST(RoutingTableTest, BEH_AddTooManyNodes) {
+  protobuf::Contact contact;
+  contact.set_node_id(RandomString(64));
+  RoutingTable RT(contact);
+   for (int i = 0; i < kRoutingTableSize + 5 ; ++i) {
+     EXPECT_TRUE(RT.AddNode(NodeId(RandomString(64))));
+   }
+   EXPECT_EQ(RT.Size(), kRoutingTableSize);
+   EXPECT_FALSE(RT.AddNode(NodeId(RandomString(64))));
 }
 
 }  // namespace test

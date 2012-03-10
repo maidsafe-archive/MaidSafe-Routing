@@ -135,7 +135,7 @@ bool RoutingPrivate::ReadConfigFile() {
        bootstrap_nodes_.push_back(protobuf.contact(i));
   }  catch(const std::exception &e) {
     // TODO fix DLOG - need to update common log types
-       DLOG(ERROR) << "Exception: " << e.what();
+     //  DLOG(ERROR) << "Exception: " << e.what();
     return false;
   }
   return true;
@@ -145,7 +145,6 @@ bool RoutingPrivate::WriteConfigFile() {
   // TODO implement 
 return false;
 }
-
 
 transport::Endpoint RoutingPrivate::GetLocalEndpoint() {
   std::vector<transport::IP> local_ips(transport::GetLocalAddresses());
@@ -370,7 +369,8 @@ bfs::path Routing::ConfigFilePath() {
 }
 
 /// Signals
-boost::signals2::signal<void(uint16_t, std::string)> & Routing::MessageReceivedSignal() {
+boost::signals2::signal
+           <void(uint16_t, std::string)> & Routing::MessageReceivedSignal() {
   return  pimpl_->message_recieved_sig_;
 }
 

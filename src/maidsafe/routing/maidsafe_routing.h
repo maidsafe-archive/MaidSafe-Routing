@@ -98,3 +98,23 @@ class Routing {
 }  // namespace maidsafe
 
 #endif  // MAIDSAFE_ROUTING_MAIDSAFE_ROUTING_H_
+/***********************************************************************
+ *
+ *    API Documentation
+ *
+ * *********************************************************************
+Guarantees
+__________
+
+1: Find any node by key.
+2: Find any value by key.
+3: Ensure messages are sent to all closest nodes in order (close to furthest)
+4: Provide NAT traversal techniques where necessary.
+5: Read and Write configuration file to allow bootstrap from known nodes.
+6: Read and Write configuration file preserving ID and private key.
+7: Allow retrieval of bootsrap nodes from known location.
+8: Remove bad nodes from all routing tables (ban from network).
+9: Inform of close node changes in routing table.
+10:  
+ 
+*/

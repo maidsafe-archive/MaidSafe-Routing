@@ -52,18 +52,20 @@ bool RoutingTable::AddNode(const NodeId &node_id) {
   if (node_id == kMyNodeId_) {
     return false;
   }
-  if (IsMyNodeInRange(node_id)) {
-    if (routing_table_nodes_.size() >= kRoutingTableSize) {
-      PartialSortFromThisNode(kMyNodeId_, kClosestNodes);
-      auto furthest = routing_table_nodes_.begin() + kClosestNodes;
-      *furthest = node_id;
-      return true;
+  if (routing_table_nodes_.size() >= kRoutingTableSize) {
+//     PartialSortFromThisNode(kMyNodeId_, kClosestNodes);
+//     auto furthest = routing_table_nodes_.begin() + kClosestNodes;
+//     *furthest = node_id;
+//     return true;
+    if (MakeSpaceForNodeToBeAdded()) {
+    routing_table_nodes_.push_back(node_id);
+    return true;
     }
-  } else if (MakeSpaceForNodeToBeAdded()) {
-      routing_table_nodes_.push_back(node_id);
-      return true;
+  } else {
+    routing_table_nodes_.push_back(node_id);
+    return true;
   }
-  return true;
+  return false;
 }
 
 bool RoutingTable::AmIClosestNode(const NodeId& node_id)
@@ -76,7 +78,7 @@ bool RoutingTable::AmIClosestNode(const NodeId& node_id)
 
 bool RoutingTable::MakeSpaceForNodeToBeAdded() {
   if (kRoutingTableSize < routing_table_nodes_.size())
-    return true;
+    return false;
   SortFromThisNode(kMyNodeId_);
   int i = 0;
   for (auto it = routing_table_nodes_.begin();
@@ -149,12 +151,11 @@ NodeId RoutingTable::GetClosestNode(const NodeId &from) {
 std::vector<NodeId> RoutingTable::GetClosestNodes(const NodeId &from,
                                                        uint16_t number_to_get) {
   std::vector<NodeId>close_nodes;
-  if (number_to_get > kClosestNodes)
-    return close_nodes; //empty vector - no wrong results
   // routing_table_nodes_.size() should never be over uin16_t cast is safe
   boost::mutex::scoped_lock lock(mutex_);
   int16_t count = std::min(number_to_get,
                            static_cast<uint16_t>(routing_table_nodes_.size()));
+  std::cout << " size is " << routing_table_nodes_.size();
   PartialSortFromThisNode(from, count);
   close_nodes.resize(count);
   std::copy(routing_table_nodes_.begin(),

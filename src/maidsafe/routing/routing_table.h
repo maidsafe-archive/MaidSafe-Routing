@@ -76,6 +76,7 @@ class RoutingTable {
                                uint16_t number_to_get = kClosestNodes);
   NodeId GetClosestNode(const NodeId &from);
   RoutingTable operator =(const RoutingTable &assign_object);
+  int16_t Size() { return routing_table_nodes_.size(); }
  private:
   RoutingTable(const RoutingTable &copy_object);
   void InsertContact(const Contact &contact);
