@@ -36,7 +36,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "maidsafe/routing/routing.pb.h"
 #include "maidsafe/routing/routing_table.h"
-#include "maidsafe/routing/maidsafe_routing.h"
+#include "maidsafe/routing/maidsafe_routing_api.h"
 #include "maidsafe/routing/log.h"
 
 #include "maidsafe/transport/rudp_transport.h"
@@ -92,6 +92,7 @@ public: // members
    std::map<NodeId, asymm::PublicKey> public_keys_;
    std::vector<std::pair<std::string, std::string> > cache_chunks_;
 };
+
 
 RoutingPrivate::RoutingPrivate() :
   bootstrap_nodes_(),

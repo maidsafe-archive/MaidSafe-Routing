@@ -29,19 +29,16 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <memory>
 #include <vector>
 #include "maidsafe/common/test.h"
-
 #include "maidsafe/common/utils.h"
 #include "maidsafe/transport/utils.h"
 #include "maidsafe/routing/routing_table.h"
-#include "maidsafe/routing/maidsafe_routing.h"
+#include "maidsafe/routing/maidsafe_routing_api.h"
 #include "maidsafe/routing/routing.pb.h"
 #include "maidsafe/routing/node_id.h"
 #include "maidsafe/routing/log.h"
 
 namespace maidsafe {
-
 namespace routing {
-
 namespace test {
 
 class RoutingTableTest {
@@ -85,8 +82,6 @@ TEST(RoutingTableTest, BEH_CloseAndInRangeCheck) {
   std::string my_id_encoded(my_node.ToStringEncoded(NodeId::kBinary));
   my_id_encoded[511] == '0' ? my_id_encoded[511] = '1' : my_id_encoded[511] = '0';
   NodeId my_closest_node(NodeId(my_id_encoded, NodeId::kBinary));
-  
-  
   EXPECT_TRUE(RT.AmIClosestNode(my_closest_node));
   EXPECT_TRUE(RT.IsMyNodeInRange(my_closest_node, 2));
   EXPECT_TRUE(RT.IsMyNodeInRange(my_closest_node, 200));  
@@ -99,7 +94,6 @@ TEST(RoutingTableTest, BEH_CloseAndInRangeCheck) {
     EXPECT_TRUE(std::find(close_nodes.begin(),
                           close_nodes.end(),
                           RT.GetClosestNode(my_node, i)) != close_nodes.end());
-
   // add the node now
   EXPECT_TRUE(RT.AddNode(my_closest_node));
   // houdl nwo be closest node to itself :-) 
@@ -107,12 +101,16 @@ TEST(RoutingTableTest, BEH_CloseAndInRangeCheck) {
             my_closest_node.String());
   EXPECT_EQ(RT.Size(), kRoutingTableSize); // make sure we removed a
                                            // node to insert this one
-  
 }
 
+// TODO really need transport or a fancy way around not having it :-(
+
+// TEST(RoutingTableAPI, API_BadconfigFile) {
+//   Routing RtAPI;
+//   boost::filesystem3::path bad_file("bad file/ not found/ I hope");
+//   EXPECT_FALSE(RtAPI.setConfigFilePath(bad_file));
+// }
 
 }  // namespace test
-
 }  // namespace routing
-
 }  // namespace maidsafe

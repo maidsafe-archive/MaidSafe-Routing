@@ -135,7 +135,6 @@ std::vector<NodeId> RoutingTable::GetClosestNodes(const NodeId &from,
   boost::mutex::scoped_lock lock(mutex_);
   int16_t count = std::min(number_to_get,
                            static_cast<uint16_t>(routing_table_nodes_.size()));
-  std::cout << " size is " << routing_table_nodes_.size();
   SortFromThisNode(from);
   close_nodes.resize(count);
   std::copy(routing_table_nodes_.begin(),

@@ -166,16 +166,8 @@ IF(MSVC)
   SET_TARGET_PROPERTIES(maidsafe_routing_static TESTRouting PROPERTIES COMPILE_FLAGS "/bigobj")
   SET_TARGET_PROPERTIES(maidsafe_routing_static PROPERTIES STATIC_LIBRARY_FLAGS_RELEASE "/LTCG")
 ELSEIF(UNIX)
-#  SET_TARGET_PROPERTIES(KademliaDemo PROPERTIES COMPILE_FLAGS "-g")
   FILE(GLOB PROTO_SOURCE_FILES "${PROJECT_SOURCE_DIR}/src/maidsafe/routing/*.pb.cc"
                                "${PROJECT_SOURCE_DIR}/src/maidsafe/routing/tests/*.pb.cc")
-#   SET_SOURCE_FILES_PROPERTIES(${PROJECT_SOURCE_DIR}/src/maidsafe/routing/service.cc
-#                               ${PROJECT_SOURCE_DIR}/src/maidsafe/routing/node.cc
-#                               ${PROJECT_SOURCE_DIR}/src/maidsafe/routing/node_impl.cc
-#                               ${PROJECT_SOURCE_DIR}/src/maidsafe/routing/benchmark/benchmark.cc
-#                               ${PROJECT_SOURCE_DIR}/src/maidsafe/routing/tests/test_main.cc
-#                               ${PROJECT_SOURCE_DIR}/src/maidsafe/routing/tests/mock_rpcs_test.cc
-#                               PROPERTIES COMPILE_FLAGS "-Wno-effc++")
   SET_SOURCE_FILES_PROPERTIES(${PROTO_SOURCE_FILES} PROPERTIES COMPILE_FLAGS "-w")
 ENDIF()
 
@@ -206,7 +198,7 @@ FINAL_MESSAGE()
 RENAME_OUTDATED_BUILT_EXES()
 
 SET(MAIDSAFE_ROUTING_INSTALL_FILES
-      ${PROJECT_SOURCE_DIR}/src/maidsafe/routing/maidsafe_routing.h
+      ${PROJECT_SOURCE_DIR}/src/maidsafe/routing/maidsafe_routing_api.h
       ${PROJECT_SOURCE_DIR}/src/maidsafe/routing/version.h)
 
 

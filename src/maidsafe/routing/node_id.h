@@ -33,7 +33,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <vector>
 #include "boost/serialization/nvp.hpp"
 #include "maidsafe/common/platform_config.h"
-#include "maidsafe/routing/maidsafe_routing.h"
+#include "maidsafe/routing/maidsafe_routing_api.h"
 #include "maidsafe/routing/version.h"
 
 #if MAIDSAFE_ROUTING_VERSION != 3107

@@ -42,8 +42,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  * any other library to access these internals (AFAIK).
  */
 
-#ifndef MAIDSAFE_ROUTING_ROUTING_TABLE_H_
-#define MAIDSAFE_ROUTING_ROUTING_TABLE_H_
+#ifndef MAIDSAFE_ROUTING_TABLE_H_
+#define MAIDSAFE_ROUTING_TABLE_H_
 
 #include <cstdint>
 #include <set>
@@ -98,4 +98,4 @@ class RoutingTable {
 
 }  // namespace maidsafe
 
-#endif  // MAIDSAFE_ROUTING_ROUTING_TABLE_H_
+#endif  // MAIDSAFE_ROUTING_TABLE_H_
