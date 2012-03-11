@@ -25,8 +25,8 @@ TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#ifndef MAIDSAFE_ROUTING_MAIDSAFE_ROUTING_H_
-#define MAIDSAFE_ROUTING_MAIDSAFE_ROUTING_H_
+#ifndef MAIDSAFE_ROUTING_API_H_
+#define MAIDSAFE_ROUTING_API_H_
 
 #include "maidsafe/routing/version.h"
 #if MAIDSAFE_ROUTING_VERSION != 3107
@@ -97,7 +97,7 @@ class Routing {
 }  // namespace routing
 }  // namespace maidsafe
 
-#endif  // MAIDSAFE_ROUTING_MAIDSAFE_ROUTING_H_
+#endif  // MAIDSAFE_ROUTING_API_H_
 /***********************************************************************
  *
  *    API Documentation

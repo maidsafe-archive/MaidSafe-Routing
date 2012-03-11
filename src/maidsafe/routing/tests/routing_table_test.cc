@@ -85,18 +85,29 @@ TEST(RoutingTableTest, BEH_CloseAndInRangeCheck) {
   std::string my_id_encoded(my_node.ToStringEncoded(NodeId::kBinary));
   my_id_encoded[511] == '0' ? my_id_encoded[511] = '1' : my_id_encoded[511] = '0';
   NodeId my_closest_node(NodeId(my_id_encoded, NodeId::kBinary));
-
+  
+  
   EXPECT_TRUE(RT.AmIClosestNode(my_closest_node));
   EXPECT_TRUE(RT.IsMyNodeInRange(my_closest_node, 2));
   EXPECT_TRUE(RT.IsMyNodeInRange(my_closest_node, 200));  
   EXPECT_TRUE(RT.AmIClosestNode(my_closest_node));
   EXPECT_EQ(RT.Size(), kRoutingTableSize);
+  // get closest nodes to me 
+  std::vector<NodeId> close_nodes(RT.GetClosestNodes(my_node, kClosestNodes));
+  // Check against individually selected close nodes
+  for (int i = 0; i < kClosestNodes; ++i) 
+    EXPECT_TRUE(std::find(close_nodes.begin(),
+                          close_nodes.end(),
+                          RT.GetClosestNode(my_node, i)) != close_nodes.end());
+
   // add the node now
   EXPECT_TRUE(RT.AddNode(my_closest_node));
+  // houdl nwo be closest node to itself :-) 
   EXPECT_EQ(RT.GetClosestNode(my_closest_node).String(),
             my_closest_node.String());
   EXPECT_EQ(RT.Size(), kRoutingTableSize); // make sure we removed a
                                            // node to insert this one
+  
 }
 
 
