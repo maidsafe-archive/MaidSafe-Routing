@@ -61,11 +61,13 @@ TEST(RoutingTableTest, BEH_AddTooManyNodes) {
   protobuf::Contact contact;
   contact.set_node_id(RandomString(64));
   RoutingTable RT(contact);
-   for (int i = 0; i < kRoutingTableSize + 5 ; ++i) {
+   for (int i = 0; RT.Size() < kRoutingTableSize; ++i) {
      EXPECT_TRUE(RT.AddNode(NodeId(RandomString(64))));
    }
    EXPECT_EQ(RT.Size(), kRoutingTableSize);
-   EXPECT_FALSE(RT.AddNode(NodeId(RandomString(64))));
+   for (int i = 0; i < 100; ++i)
+        RT.AddNode(NodeId(RandomString(64)));
+   EXPECT_EQ(RT.Size(), kRoutingTableSize);
 }
 
 }  // namespace test

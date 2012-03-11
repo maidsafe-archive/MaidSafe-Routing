@@ -52,18 +52,12 @@ bool RoutingTable::AddNode(const NodeId &node_id) {
   if (node_id == kMyNodeId_) {
     return false;
   }
-  if (routing_table_nodes_.size() > kRoutingTableSize) {
-//     PartialSortFromThisNode(kMyNodeId_, kClosestNodes);
-//     auto furthest = routing_table_nodes_.begin() + kClosestNodes;
-//     *furthest = node_id;
-//     return true;
-    if (MakeSpaceForNodeToBeAdded()) {
+  if (Size() < kRoutingTableSize) {
     routing_table_nodes_.push_back(node_id);
     return true;
-    }
-  } else {
-    routing_table_nodes_.push_back(node_id);
-    return true;
+  } else if (MakeSpaceForNodeToBeAdded()) {
+      routing_table_nodes_.push_back(node_id);
+      return true;
   }
   return false;
 }
@@ -82,21 +76,19 @@ bool RoutingTable::MakeSpaceForNodeToBeAdded() {
   SortFromThisNode(kMyNodeId_);
   int i = 0;
   for (auto it = routing_table_nodes_.begin();
-       it != routing_table_nodes_.end();
+       it < routing_table_nodes_.end();
        ++it) {
-    if (BucketIndex(*it) == BucketIndex((*--it)))
-      ++i;
-    else
-      i = 0;
-    if (i > kBucketSize)
-      routing_table_nodes_.erase(it);
-    return true;
+    BucketIndex(*it) == BucketIndex(*(++it)) ? ++i : i = 0;
+    if (i > kBucketSize) {
+       routing_table_nodes_.erase(it);
+       return true;
+    }
   }
   return false;
 }
 
 void RoutingTable::SortFromThisNode(const NodeId &from) {
-  std::sort(routing_table_nodes_.begin(), 
+  std::sort(routing_table_nodes_.begin(),
             routing_table_nodes_.end(),
             [this, from](const NodeId &i, const NodeId &j)
             { return DistanceTo(i, from) < DistanceTo(j, from); } );
@@ -123,8 +115,8 @@ int16_t RoutingTable::BucketIndex(const NodeId &rhs) const {
   uint16_t distance = 0;
   std::string this_id_binary = kMyNodeId_.ToStringEncoded(NodeId::kBinary);
   std::string rhs_id_binary = rhs.ToStringEncoded(NodeId::kBinary);
-  std::string::const_iterator this_it = this_id_binary.begin();
-  std::string::const_iterator rhs_it = rhs_id_binary.begin();
+  auto this_it = this_id_binary.begin();
+  auto rhs_it = rhs_id_binary.begin();
   for (; ((this_it != this_id_binary.end()) && (*this_it == *rhs_it));
       ++this_it, ++rhs_it)
     ++distance;
@@ -133,12 +125,14 @@ int16_t RoutingTable::BucketIndex(const NodeId &rhs) const {
 
 NodeId RoutingTable::DistanceTo(const NodeId &target,
                                 const NodeId &from) const {
+
+  std::string from_binary = from.ToStringEncoded(NodeId::kBinary);
+  std::string target_binary = target.ToStringEncoded(NodeId::kBinary);
   std::string distance;
-  auto from_it =  from.ToStringEncoded(NodeId::kBinary).begin();
-  auto target_it = target.ToStringEncoded(NodeId::kBinary).begin();
-  for (int i = 0; from_it != from.ToStringEncoded(NodeId::kBinary).end() ;
-      ++i, ++from_it, ++target_it)
-    distance[i] = (*from_it ^ *target_it);
+  distance.resize(from_binary.size());
+  BOOST_ASSERT(from_binary.size() == target_binary.size());
+  for (uint i = 0; i != from_binary.size(); ++i)
+    distance[i] = (from_binary[i] ^ target_binary[i]);
   NodeId node_dist(distance, NodeId::kBinary);
   return node_dist;
 }
