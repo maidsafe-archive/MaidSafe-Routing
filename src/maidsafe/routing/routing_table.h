@@ -74,7 +74,7 @@ class RoutingTable {
   bool AmIClosestNode(const NodeId &node_id);
   std::vector<NodeId> GetClosestNodes(const NodeId &from,
                                uint16_t number_to_get = kClosestNodes);
-  NodeId GetClosestNode(const NodeId &from);
+  NodeId GetClosestNode(const NodeId &from, uint16_t node_number = 0);
   RoutingTable operator =(const RoutingTable &assign_object);
   int16_t Size() { return routing_table_nodes_.size(); }
  private:
@@ -87,7 +87,7 @@ class RoutingTable {
                                int16_t number_to_sort = kClosestNodes);
   bool RemoveClosecontact(const NodeId &node_id);
   bool AddcloseContact(const Contact &contact);
-  NodeId DistanceTo(const NodeId &target,const NodeId &from) const;
+  bool sorted_;
   const NodeId kMyNodeId_;
   std::vector<NodeId> routing_table_nodes_;
   boost::mutex mutex_;

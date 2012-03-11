@@ -36,6 +36,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "maidsafe/routing/maidsafe_routing.h"
 #include "maidsafe/routing/routing.pb.h"
 #include "maidsafe/routing/node_id.h"
+#include "maidsafe/routing/log.h"
 
 namespace maidsafe {
 
@@ -66,9 +67,38 @@ TEST(RoutingTableTest, BEH_AddTooManyNodes) {
    }
    EXPECT_EQ(RT.Size(), kRoutingTableSize);
    for (int i = 0; i < 100; ++i)
-        RT.AddNode(NodeId(RandomString(64)));
+        if (RT.AddNode(NodeId(RandomString(64))))
+          DLOG(INFO) << "made space for node in full routing table";
    EXPECT_EQ(RT.Size(), kRoutingTableSize);
 }
+
+TEST(RoutingTableTest, BEH_CloseAndInRangeCheck) {
+  protobuf::Contact contact;
+  contact.set_node_id(RandomString(64));
+  RoutingTable RT(contact);
+  NodeId my_node(NodeId(contact.node_id()));
+  // Add some nodes to RT
+  for (int i = 0; RT.Size() < kRoutingTableSize; ++i) {
+    EXPECT_TRUE(RT.AddNode(NodeId(RandomString(64))));
+  }
+  EXPECT_EQ(RT.Size(), kRoutingTableSize);
+  std::string my_id_encoded(my_node.ToStringEncoded(NodeId::kBinary));
+  my_id_encoded[511] == '0' ? my_id_encoded[511] = '1' : my_id_encoded[511] = '0';
+  NodeId my_closest_node(NodeId(my_id_encoded, NodeId::kBinary));
+
+  EXPECT_TRUE(RT.AmIClosestNode(my_closest_node));
+  EXPECT_TRUE(RT.IsMyNodeInRange(my_closest_node, 2));
+  EXPECT_TRUE(RT.IsMyNodeInRange(my_closest_node, 200));  
+  EXPECT_TRUE(RT.AmIClosestNode(my_closest_node));
+  EXPECT_EQ(RT.Size(), kRoutingTableSize);
+  // add the node now
+  EXPECT_TRUE(RT.AddNode(my_closest_node));
+  EXPECT_EQ(RT.GetClosestNode(my_closest_node).String(),
+            my_closest_node.String());
+  EXPECT_EQ(RT.Size(), kRoutingTableSize); // make sure we removed a
+                                           // node to insert this one
+}
+
 
 }  // namespace test
 
