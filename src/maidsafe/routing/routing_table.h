@@ -25,8 +25,8 @@ TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#ifndef MAIDSAFE_ROUTING_TABLE_H_
-#define MAIDSAFE_ROUTING_TABLE_H_
+#ifndef MAIDSAFE_ROUTING_ROUTING_TABLE_H_
+#define MAIDSAFE_ROUTING_ROUTING_TABLE_H_
 
 #include <cstdint>
 #include <set>
@@ -47,10 +47,10 @@ namespace maidsafe {
 
 namespace routing {
   typedef protobuf::Contact Contact;
-  
+
 class RoutingTable {
  public:
-  RoutingTable(const Contact &my_contact);
+  explicit RoutingTable(const Contact &my_contact);
   ~RoutingTable();
   bool AddNode(const NodeId &node_id);
   bool IsMyNodeInRange(const NodeId &node_id, uint16_t = kReplicationSize);
@@ -60,6 +60,7 @@ class RoutingTable {
   NodeId GetClosestNode(const NodeId &from, uint16_t node_number = 0);
   RoutingTable operator =(const RoutingTable &assign_object);
   int16_t Size() { return routing_table_nodes_.size(); }
+
  private:
   RoutingTable(const RoutingTable &copy_object);
   void InsertContact(const Contact &contact);
@@ -81,4 +82,4 @@ class RoutingTable {
 
 }  // namespace maidsafe
 
-#endif  // MAIDSAFE_ROUTING_TABLE_H_
+#endif  // MAIDSAFE_ROUTING_ROUTING_TABLE_H_

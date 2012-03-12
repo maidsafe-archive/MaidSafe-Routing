@@ -36,7 +36,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 namespace maidsafe {
 namespace routing {
-  
+
 RoutingTable::RoutingTable(const Contact &my_contact)
     : sorted_(false),
       kMyNodeId_(NodeId(my_contact.node_id())),
@@ -68,11 +68,10 @@ bool RoutingTable::AddNode(const NodeId &node_id) {
   return false;
 }
 
-bool RoutingTable::AmIClosestNode(const NodeId& node_id)
-{
+bool RoutingTable::AmIClosestNode(const NodeId& node_id) {
   boost::mutex::scoped_lock lock(mutex_);
   return ((kMyNodeId_ ^ node_id) <
-          (node_id ^ routing_table_nodes_[0])) ;
+          (node_id ^ routing_table_nodes_[0]));
 }
 
 bool RoutingTable::MakeSpaceForNodeToBeAdded(const NodeId &node_id) {
@@ -89,7 +88,7 @@ bool RoutingTable::MakeSpaceForNodeToBeAdded(const NodeId &node_id) {
     routing_table_nodes_.erase(delete_this_node);
     return true;
   }
-    
+
   int i = 0;
   int16_t node_id_index = BucketIndex(node_id);
   for (auto it = routing_table_nodes_.begin();
@@ -99,7 +98,7 @@ bool RoutingTable::MakeSpaceForNodeToBeAdded(const NodeId &node_id) {
 
     if (((it + kBucketSize + 1) < found) &&
         (BucketIndex(*it) == BucketIndex(*(it + kBucketSize + 1))))
-      found = it; // bucket too full
+      found = it;  // bucket too full
 
     if  ((it + kBucketSize < routing_table_nodes_.end()) &&
         (BucketIndex(*it) != BucketIndex(*(it + kBucketSize))) &&
@@ -119,7 +118,7 @@ void RoutingTable::SortFromThisNode(const NodeId &from) {
       std::sort(routing_table_nodes_.begin(),
             routing_table_nodes_.end(),
             [this, from](const NodeId &i, const NodeId &j)
-            { return (i ^ from) < (j ^ from); } );
+            { return (i ^ from) < (j ^ from); } ); // NOLINT (dirvine)
   if (kMyNodeId_ == from)
     sorted_ = true;
   else
@@ -146,8 +145,8 @@ int16_t RoutingTable::BucketIndex(const NodeId &rhs) const {
 }
 
 NodeId RoutingTable::GetClosestNode(const NodeId &from, uint16_t node_number) {
- SortFromThisNode(from);
- return routing_table_nodes_[node_number];
+  SortFromThisNode(from);
+  return routing_table_nodes_[node_number];
 }
 
 std::vector<NodeId> RoutingTable::GetClosestNodes(const NodeId &from,
