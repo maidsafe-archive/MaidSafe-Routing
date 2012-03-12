@@ -53,7 +53,7 @@ class RoutingPrivate;
 namespace bs2 = boost::signals2;
 /// Typedefs
 struct Message; // defined below
-std::function<void(uint16_t, Message)> ResponseRecievedFunctor;
+typedef std::function<void(uint16_t, Message)> ResponseRecievedFunctor;
 /// The size of ROUTING keys and node IDs in bytes.
 const uint16_t kKeySizeBytes(64);
 /// Size of closest nodes group
@@ -91,7 +91,7 @@ class Routing {
           const std::string & node_id);
   ~Routing();
   void Send(const Message &message, ResponseRecievedFunctor response);
-  bs2::signal<void(uint16_t, Message)> &RequestReceivedSignal();
+  bs2::signal<void(uint16_t, std::string)> &RequestReceivedSignal();
   bs2::signal<void(int16_t)> &NetworkStatusSignal();
  private:
   Routing(const Routing&);

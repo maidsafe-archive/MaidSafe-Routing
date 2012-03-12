@@ -150,29 +150,7 @@ return false;
 }
 
 transport::Endpoint RoutingPrivate::GetLocalEndpoint() {
-  std::vector<transport::IP> local_ips(transport::GetLocalAddresses());
-  transport::Port  port = RandomInt32() % 1600 + 30000;
-// TODO we must only listen on the correct local port
-  // this is a very old issue.
-  bool breakme(false);
-  for (uint16_t i = port; i < 35000; ++i) {
-    for (auto it = local_ips.begin(); it != local_ips.end(); ++it) {
-      transport::Endpoint ep;
-      ep.ip = *it;
-      ep.port = i;
-      if (transport_->StartListening(ep) == transport::kSuccess) {
-        // TODO check we can get to at least a bootsrap node !!! then we
-        // have the correct ep
-//         if (send and recieve)  // maybe connect is enough !!
-//          break; ou of both loops - set a var
-            breakme = true;
-//         else
-//           transport_->StopListening();
-      }
-      if (breakme)
-        break;
-    }
-  }
+
 }
 
 
@@ -237,7 +215,7 @@ void RoutingPrivate::ProcessMessage(protobuf::Message& message) {
       if (message.destination_id() != my_node_id_.String()) {
       // TODO send back a failure I presume !!
       } else {
-        message_recieved_sig_(message.type(), message.data());
+        message_recieved_sig_(static_cast<int16_t>(message.type()), message.data());
         return;
       }
     }
@@ -316,67 +294,52 @@ void RoutingPrivate::doConnectResponse(protobuf::Message& message)
 }
 
 // ********************API implementation* *************************************
-Routing::Routing() : pimpl_(new RoutingPrivate())  {}
+Routing::Routing(NodeType nodetype, boost::filesystem3::path & config_file) :
+         pimpl_(new RoutingPrivate())  {}
 
-bool Routing::StartVault(boost::asio::io_service& service) { // NOLINT
-   if (! pimpl_->ReadConfigFile())
-     return false;
-//    pimpl_->transport_ = (transport::RudpTransport(service));
-   pimpl_->routing_table_ = RoutingTable(pimpl_->my_contact_);
-   return false; // not implemented need to start network and routing table
+Routing::Routing(NodeType nodetype,
+                const boost::filesystem3::path & config_file,
+                const asymm::PrivateKey &private_key,
+                const std::string & node_id) {
+     pimpl_->config_file_ = config_file;
+     pimpl_->my_private_key_ = private_key;
+     pimpl_->private_key_is_set_ = true;
+     pimpl_->my_node_id_ = NodeId(node_id);
+     pimpl_->node_is_set_ = true;
 }
 
-bool Routing::StartClient(boost::asio::io_service& service) {
-  //TODO client will join network using pmid BUT will request a
-  // relay conenction. Vaults (i.e. routing table) will accept a range
-  // of these, Initially set to 64 but we shoudl make this dynamic later
-  return false;
+         
+void Routing::Send(const Message &msg, ResponseRecievedFunctor response) {
+/* NodeId next_node =
+        pimpl_->routing_table_.GetClosestNode(NodeId(msg.destination_id()),0);
+ pimpl_->SendOn(msg, next_node)*/;
 }
 
-void Routing::Send(const protobuf::Message &msg) {
- NodeId next_node =
-        pimpl_->routing_table_.GetClosestNode(NodeId(msg.destination_id()));
- pimpl_->SendOn(msg, next_node);
-}
+// /// Setters
+// 
+// bool Routing::setConfigFilePath(boost::filesystem3::path &config_file) {
+//    if (bfs::exists(config_file) && !bfs::is_regular_file(config_file))
+//     return false;
+//    pimpl_->config_file_ = config_file;
+//    return true;
+// }
+// 
+// bool Routing::setMyPrivateKey(asymm::PrivateKey& key) {
+//   pimpl_->my_private_key_ = key;
+//   pimpl_->private_key_is_set_ = true;
+//   return true;
+// }
+// 
+// bool Routing::setMyNodeId(NodeId& node) {
+//   pimpl_->my_node_id_ = node;
+//   pimpl_->node_is_set_ = true;
+//   return true;
+// }
 
-/// Setters
-
-bool Routing::setConfigFilePath(boost::filesystem3::path &config_file) {
-   if (bfs::exists(config_file) && !bfs::is_regular_file(config_file))
-    return false;
-   pimpl_->config_file_ = config_file;
-   return true;
-}
-
-bool Routing::setMyPrivateKey(asymm::PrivateKey& key) {
-  pimpl_->my_private_key_ = key;
-  pimpl_->private_key_is_set_ = true;
-  return true;
-}
-
-bool Routing::setMyNodeId(NodeId& node) {
-  pimpl_->my_node_id_ = node;
-  pimpl_->node_is_set_ = true;
-  return true;
-}
-
-/// Getters
-
-asymm::PrivateKey Routing::MyPrivateKey() {
-  return pimpl_->my_private_key_ ;
-}
-
-NodeId Routing::MyNodeID() {
-  return pimpl_->my_node_id_;
-}
-
-bfs::path Routing::ConfigFilePath() {
-  return pimpl_->config_file_;
-}
 
 /// Signals
 boost::signals2::signal
-           <void(uint16_t, std::string)> & Routing::MessageReceivedSignal() {
+           <void(uint16_t, std::string)> & Routing::RequestReceivedSignal() {
   return  pimpl_->message_recieved_sig_;
 }
 
