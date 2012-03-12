@@ -71,6 +71,7 @@ const uint16_t kNumChunksToCache(100);
 
 struct Message {
 public:
+  Message();
   std::string source_id;
   std::string destination_id;
   bool  cachable;

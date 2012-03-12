@@ -67,3 +67,11 @@ message FindNodesRequest {
 message FindNodesResponse {
   repeated bytes nodes = 1;
 }
+
+message PingRequest {
+  required bool ping = 1;
+}
+
+message PingResponse {
+   required bool pong = 1;
+}
