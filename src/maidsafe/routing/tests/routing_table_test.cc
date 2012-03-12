@@ -31,6 +31,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "maidsafe/common/test.h"
 #include "maidsafe/common/utils.h"
 #include "maidsafe/transport/utils.h"
+#include "maidsafe/common/omp.h"
 #include "maidsafe/routing/routing_table.h"
 #include "maidsafe/routing/maidsafe_routing_api.h"
 #include "maidsafe/routing/routing.pb.h"
@@ -46,16 +47,21 @@ class RoutingTableTest {
 };
   
 TEST(RoutingTableTest, BEH_AddCloseNodes) {
+#pragma omp parallel
+{
   protobuf::Contact contact;
   contact.set_node_id(RandomString(64));
   RoutingTable RT(contact);
    for (int i = 0; i < kClosestNodes ; ++i) {
      EXPECT_TRUE(RT.AddNode(NodeId(RandomString(64))));
    }
-   EXPECT_EQ(RT.Size(), kClosestNodes);
+   EXPECT_EQ(RT.Size(), kClosestNodes);  
+} // #pragma omp parallel
 }
 
 TEST(RoutingTableTest, BEH_AddTooManyNodes) {
+#pragma omp parallel
+{
   protobuf::Contact contact;
   contact.set_node_id(RandomString(64));
   RoutingTable RT(contact);
@@ -70,9 +76,12 @@ TEST(RoutingTableTest, BEH_AddTooManyNodes) {
    if (count > 0)
      DLOG(INFO) << "made space for " << count << " node(s) in routing table";
    EXPECT_EQ(RT.Size(), kRoutingTableSize);
+} // #pragma omp parallel
 }
 
 TEST(RoutingTableTest, BEH_CloseAndInRangeCheck) {
+#pragma omp parallel
+{
   protobuf::Contact contact;
   contact.set_node_id(RandomString(64));
   RoutingTable RT(contact);
@@ -104,6 +113,7 @@ TEST(RoutingTableTest, BEH_CloseAndInRangeCheck) {
             my_closest_node.String());
   EXPECT_EQ(RT.Size(), kRoutingTableSize); // make sure we removed a
                                            // node to insert this one
+} // #pragma omp parallel
 }
 
 }  // namespace test
