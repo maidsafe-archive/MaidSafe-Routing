@@ -44,6 +44,12 @@ message Message {
   optional Endpoint proxy = 9;
 }
 
+message SignedMessage {
+  required bytes message = 1; // serialised Message
+  required bytes signature = 2;
+  required bytes id = 3;
+}
+
 message ConnectRequest {
   optional bool client = 1;
   required Contact contact= 2;

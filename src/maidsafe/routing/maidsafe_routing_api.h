@@ -34,6 +34,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
   Please update the maidsafe_routing library.
 #endif
 
+#include <functional>
 #include "boost/signals2.hpp"
 #include "boost/asio/io_service.hpp"
 #include "boost/filesystem.hpp"
@@ -50,7 +51,9 @@ class PrivateKey;
 class RoutingPrivate;
 /// Aliases
 namespace bs2 = boost::signals2;
-
+/// Typedefs
+struct Message; // defined below
+std::function<void(uint16_t, Message)> ResponseRecievedFunctor;
 /// The size of ROUTING keys and node IDs in bytes.
 const uint16_t kKeySizeBytes(64);
 /// Size of closest nodes group
@@ -64,29 +67,31 @@ const uint16_t kReplicationSize(4);
 const int16_t kBucketSize(1);
 /// how many chunks to cache (hint as it will be adjusted if mem low)
 const uint16_t kNumChunksToCache(100);
+/// Message timeout 
+
+struct Message {
+public:
+  std::string source_id;
+  std::string destination_id;
+  bool  cachable;
+  std::string data;
+  bool direct;
+  bool response;
+  int32_t type;
+  bool failure;
+};
 
 class Routing {
- class Contact;
  public:
-  Routing();
+  enum NodeType {kVault, kClient};
+  Routing(NodeType nodetype, boost::filesystem3::path & config_file);
+  Routing(NodeType nodetype,
+          const boost::filesystem3::path & config_file,
+          const asymm::PrivateKey &private_key,
+          const std::string & node_id);
   ~Routing();
-  bool StartVault(boost::asio::io_service &service);
-  bool StartClient(boost::asio::io_service &service);
-  void Send(const protobuf::Message &message);
-  void Stop();
-  bool Running();
-  // setters
-  bool setConfigFilePath(boost::filesystem3::path &);
-  bool setMyPrivateKey(asymm::PrivateKey &);
-  bool setMyNodeId(NodeId &);
-  bool setBootStrapNodes(std::vector<Contact> &);
-  // getters
-  boost::filesystem3::path ConfigFilePath();
-  asymm::PrivateKey MyPrivateKey();
-  NodeId MyNodeID();
-  std::vector<Contact> BootStrapNodes();
-  // references to Signal objects
-  bs2::signal<void(uint16_t, std::string)> &MessageReceivedSignal();
+  void Send(const Message &message, ResponseRecievedFunctor response);
+  bs2::signal<void(uint16_t, Message)> &RequestReceivedSignal();
   bs2::signal<void(int16_t)> &NetworkStatusSignal();
  private:
   Routing(const Routing&);
