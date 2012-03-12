@@ -61,7 +61,7 @@ bool RoutingTable::AddNode(const NodeId &node_id) {
   if (Size() < kRoutingTableSize) {
     routing_table_nodes_.push_back(node_id);
     return true;
-  } else if (MakeSpaceForNodeToBeAdded()) {
+  } else if (MakeSpaceForNodeToBeAdded(node_id)) {
       routing_table_nodes_.push_back(node_id);
       return true;
   }
@@ -75,18 +75,40 @@ bool RoutingTable::AmIClosestNode(const NodeId& node_id)
           (node_id ^ routing_table_nodes_[0])) ;
 }
 
-bool RoutingTable::MakeSpaceForNodeToBeAdded() {
+bool RoutingTable::MakeSpaceForNodeToBeAdded(const NodeId &node_id) {
   if (kRoutingTableSize < routing_table_nodes_.size())
-    return false;
+    return true;
   SortFromThisNode(kMyNodeId_);
+  NodeId furthest_close_node = GetClosestNode(kMyNodeId_, kClosestNodes);
+  if ((furthest_close_node ^ kMyNodeId_) > (kMyNodeId_ ^ node_id)) {
+    auto delete_this_node = std::find(routing_table_nodes_.begin(),
+                                      routing_table_nodes_.end(),
+                                      furthest_close_node);
+    if (delete_this_node == routing_table_nodes_.end())
+      return false;
+    routing_table_nodes_.erase(delete_this_node);
+    return true;
+  }
+    
   int i = 0;
+  int16_t node_id_index = BucketIndex(node_id);
   for (auto it = routing_table_nodes_.begin();
        it < routing_table_nodes_.end();
        ++it) {
-    BucketIndex(*it) == BucketIndex(*(++it)) ? ++i : i = 0;
-    if (i > kBucketSize) { // TODO (dirvine) do we need to go all the way here?
-       routing_table_nodes_.erase(it);
-       return true;
+    auto found = routing_table_nodes_.end();
+
+    if (((it + kBucketSize + 1) < found) &&
+        (BucketIndex(*it) == BucketIndex(*(it + kBucketSize + 1))))
+      found = it; // bucket too full
+
+    if  ((it + kBucketSize < routing_table_nodes_.end()) &&
+        (BucketIndex(*it) != BucketIndex(*(it + kBucketSize))) &&
+        (BucketIndex(*it) == BucketIndex(node_id)) &&
+        (found != routing_table_nodes_.end())) {
+      routing_table_nodes_.erase(found);
+      return true;
+    } else {
+      return false;
     }
   }
   return false;
@@ -120,7 +142,7 @@ int16_t RoutingTable::BucketIndex(const NodeId &rhs) const {
   for (; ((this_it != this_id_binary.end()) && (*this_it == *rhs_it));
       ++this_it, ++rhs_it)
     ++distance;
-  return (distance + 511) % 511;
+  return distance;
 }
 
 NodeId RoutingTable::GetClosestNode(const NodeId &from, uint16_t node_number) {

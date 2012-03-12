@@ -47,7 +47,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     Please update this project.
 #endif
 
-#define THIS_NEEDS_MAIDSAFE_TRANSPORT_VERSION 104
+#define THIS_NEEDS_MAIDSAFE_TRANSPORT_VERSION 300
 #if MAIDSAFE_TRANSPORT_VERSION < THIS_NEEDS_MAIDSAFE_TRANSPORT_VERSION
 #  error This API is not compatible with the installed library.\
     Please update the maidsafe-transport library.

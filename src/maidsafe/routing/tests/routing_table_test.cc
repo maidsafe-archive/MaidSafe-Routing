@@ -63,9 +63,12 @@ TEST(RoutingTableTest, BEH_AddTooManyNodes) {
      EXPECT_TRUE(RT.AddNode(NodeId(RandomString(64))));
    }
    EXPECT_EQ(RT.Size(), kRoutingTableSize);
+   size_t count(0);
    for (int i = 0; i < 100; ++i)
-        if (RT.AddNode(NodeId(RandomString(64))))
-          DLOG(INFO) << "made space for node in full routing table";
+     if (RT.AddNode(NodeId(RandomString(64)))) 
+       ++count;
+   if (count > 0)
+     DLOG(INFO) << "made space for " << count << " node(s) in routing table";
    EXPECT_EQ(RT.Size(), kRoutingTableSize);
 }
 
@@ -102,14 +105,6 @@ TEST(RoutingTableTest, BEH_CloseAndInRangeCheck) {
   EXPECT_EQ(RT.Size(), kRoutingTableSize); // make sure we removed a
                                            // node to insert this one
 }
-
-// TODO really need transport or a fancy way around not having it :-(
-
-// TEST(RoutingTableAPI, API_BadconfigFile) {
-//   Routing RtAPI;
-//   boost::filesystem3::path bad_file("bad file/ not found/ I hope");
-//   EXPECT_FALSE(RtAPI.setConfigFilePath(bad_file));
-// }
 
 }  // namespace test
 }  // namespace routing

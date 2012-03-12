@@ -39,8 +39,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "maidsafe/routing/maidsafe_routing_api.h"
 #include "maidsafe/routing/log.h"
 
-#include "maidsafe/transport/rudp_transport.h"
-#include "maidsafe/transport/transport.h"
+// #include "maidsafe/transport/rudp_transport.h"
+// #include "maidsafe/transport/transport.h"
 #include "maidsafe/transport/utils.h"
 
 #include "maidsafe/common/rsa.h"
@@ -103,6 +103,8 @@ RoutingPrivate::RoutingPrivate() :
   config_file_("dht_config"),
   private_key_is_set_(false),
   node_is_set_(false),
+  message_recieved_sig_(),
+  network_status_sig_(),
   service_(),
   cache_size_hint_(kNumChunksToCache),
   transport_ (new  transport::RudpTransport(service_)),
@@ -309,6 +311,8 @@ void RoutingPrivate::doConnectResponse(protobuf::Message& message)
   // this may be where we need a ping command to iterate and remove
   // any long dead nodes from the table.
   // Keep at least 1000 nodes in table and drop any dead beyond this
+  if (message.has_source_id())
+    DLOG(INFO) << " have source ID";
 }
 
 // ********************API implementation* *************************************
@@ -326,6 +330,7 @@ bool Routing::StartClient(boost::asio::io_service& service) {
   //TODO client will join network using pmid BUT will request a
   // relay conenction. Vaults (i.e. routing table) will accept a range
   // of these, Initially set to 64 but we shoudl make this dynamic later
+  return false;
 }
 
 void Routing::Send(const protobuf::Message &msg) {

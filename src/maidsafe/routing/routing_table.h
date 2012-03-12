@@ -25,23 +25,6 @@ TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-/*
- * The purpose of this object is to dynamically manage a routing table.
- * Based on managed connections which require a connection agreement algorithm
- * This algorithm is simple in current state. We fill routing table with 64
- * or more accurately kRoutingTableSize nodes (we get closest nodes with
- * every find_node). When we have max nodes we itterate through routing
- * tabel and find the closest bucket the node wil fit in and test it
- * for existing kBucketSize nodes. If full we drop node. If there is space we
- * add the node. Any close node is added and this is tested during the AddNode
- * public method of routing, which is itself bhind the API and not part
- * of the library API.
- * All of this is NOT in the DHT API, although 'get all nodes' may be supplied
- * as impl if required, best not to though and let this object internally
- * handle all routing on it's own. There should not be a requirement for
- * any other library to access these internals (AFAIK).
- */
-
 #ifndef MAIDSAFE_ROUTING_TABLE_H_
 #define MAIDSAFE_ROUTING_TABLE_H_
 
@@ -81,7 +64,7 @@ class RoutingTable {
   RoutingTable(const RoutingTable &copy_object);
   void InsertContact(const Contact &contact);
   int16_t BucketIndex(const NodeId &rhs) const;
-  bool MakeSpaceForNodeToBeAdded();
+  bool MakeSpaceForNodeToBeAdded(const NodeId &node_id);
   void SortFromThisNode(const NodeId &from);
   void PartialSortFromThisNode(const NodeId &from,
                                int16_t number_to_sort = kClosestNodes);
