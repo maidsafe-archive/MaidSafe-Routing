@@ -1,29 +1,14 @@
-/* Copyright (c) 2009 maidsafe.net limited
-All rights reserved.
-
-Redistribution and use in source and binary forms, with or without modification,
-are permitted provided that the following conditions are met:
-
-    * Redistributions of source code must retain the above copyright notice,
-    this list of conditions and the following disclaimer.
-    * Redistributions in binary form must reproduce the above copyright notice,
-    this list of conditions and the following disclaimer in the documentation
-    and/or other materials provided with the distribution.
-    * Neither the name of the maidsafe.net limited nor the names of its
-    contributors may be used to endorse or promote products derived from this
-    software without specific prior written permission.
-
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
-ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
-FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
-DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
-SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
-CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR
-TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
-THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-*/
+/*******************************************************************************
+ *  Copyright 2012 maidsafe.net limited                                        *
+ *                                                                             *
+ *  The following source code is property of maidsafe.net limited and is not   *
+ *  meant for external use.  The use of this code is governed by the licence   *
+ *  file licence.txt found in the root of this directory and also on           *
+ *  www.maidsafe.net.                                                          *
+ *                                                                             *
+ *  You are not free to copy, amend or otherwise use this source code without  *
+ *  the explicit written permission of the board of directors of maidsafe.net. *
+ ******************************************************************************/
 
 #include "maidsafe/common/test.h"
 #include "maidsafe/common/utils.h"
@@ -78,7 +63,7 @@ const std::string ToBinary(const std::string &raw_id)  {
 }
 
 TEST(NodeIdTest, BEH_BitToByteCount) {
-  for (size_t i = 0; i < Parameters::kKeySizeBytes; ++i) {
+  for (size_t i = 0; i < kKeySizeBytes; ++i) {
     ASSERT_EQ(i, BitToByteCount(8 * i));
     for (size_t j = 1; j < 8; ++j) {
       ASSERT_EQ(i + 1, BitToByteCount((8 * i) + j));
@@ -88,12 +73,12 @@ TEST(NodeIdTest, BEH_BitToByteCount) {
 
 TEST(NodeIdTest, BEH_DefaultCtr) {
   NodeId node_id;
-  ASSERT_EQ(Parameters::kKeySizeBytes, node_id.String().size());
+  ASSERT_EQ(kKeySizeBytes, node_id.String().size());
   for (size_t i = 0; i < node_id.String().size(); ++i)
     ASSERT_EQ('\0', node_id.String()[i]);
-  std::string hex_id(Parameters::kKeySizeBytes * 2, '0');
+  std::string hex_id(kKeySizeBytes * 2, '0');
   ASSERT_EQ(hex_id, node_id.ToStringEncoded(NodeId::kHex));
-  std::string bin_id(kKeySizeBits, '0');
+  std::string bin_id(kKeySizeBytes * 8, '0');
   ASSERT_EQ(bin_id, node_id.ToStringEncoded(NodeId::kBinary));
 }
 
@@ -112,35 +97,35 @@ TEST(NodeIdTest, BEH_CopyCtr) {
 
 TEST(NodeIdTest, BEH_KadIdTypeCtr) {
   std::string min_id = kZeroId;
-  ASSERT_EQ(Parameters::kKeySizeBytes, min_id.size());
-  for (int i = 0; i < Parameters::kKeySizeBytes; ++i)
+  ASSERT_EQ(kKeySizeBytes, min_id.size());
+  for (int i = 0; i < kKeySizeBytes; ++i)
     ASSERT_EQ(min_id[i], '\0');
   NodeId max_id(NodeId::kMaxId);
-  ASSERT_EQ(Parameters::kKeySizeBytes, max_id.String().size());
-  for (int i = 0; i < Parameters::kKeySizeBytes; ++i)
+  ASSERT_EQ(kKeySizeBytes, max_id.String().size());
+  for (int i = 0; i < kKeySizeBytes; ++i)
     ASSERT_EQ(-1, max_id.String()[i]);
   NodeId rand_id(NodeId::kRandomId);
-  ASSERT_EQ(Parameters::kKeySizeBytes, rand_id.String().size());
+  ASSERT_EQ(kKeySizeBytes, rand_id.String().size());
   // TODO(Fraser#5#): 2010-06-06 - Test for randomness properly
   ASSERT_NE(rand_id.String(), NodeId(NodeId::kRandomId).String());
 }
 
 TEST(NodeIdTest, BEH_StringCtr) {
-  std::string rand_str(RandomString(Parameters::kKeySizeBytes));
+  std::string rand_str(RandomString(kKeySizeBytes));
   NodeId id1(rand_str);
   ASSERT_TRUE(id1.String() == rand_str);
-  NodeId id2(rand_str.substr(0, Parameters::kKeySizeBytes - 1));
+  NodeId id2(rand_str.substr(0, kKeySizeBytes - 1));
   ASSERT_TRUE(id2.String().empty());
   NodeId id3(rand_str + "a");
   ASSERT_TRUE(id3.String().empty());
 }
 
 TEST(NodeIdTest, BEH_EncodingCtr) {
-  std::string known_raw(Parameters::kKeySizeBytes, 0);
-  for (char c = 0; c < Parameters::kKeySizeBytes; ++c)
+  std::string known_raw(kKeySizeBytes, 0);
+  for (char c = 0; c < kKeySizeBytes; ++c)
     known_raw.at(static_cast<uint8_t>(c)) = c;
   for (int i = 0; i < 4; ++i) {
-    std::string rand_str(RandomString(Parameters::kKeySizeBytes));
+    std::string rand_str(RandomString(kKeySizeBytes));
     std::string bad_encoded("Bad Encoded"), encoded, known_encoded;
     NodeId::EncodingType type = static_cast<NodeId::EncodingType>(i);
     switch (type) {
@@ -214,15 +199,15 @@ TEST(NodeIdTest, BEH_CtrPower) {
 #  pragma warning(pop)
 #endif
   ASSERT_FALSE(node_id.IsValid());
-  node_id = NodeId(kKeySizeBits + 1);
+  node_id = NodeId((kKeySizeBytes * 8) + 1);
   ASSERT_FALSE(node_id.IsValid());
-  std::string bin_id(kKeySizeBits, '0');
-  for (int16_t i = 0; i < kKeySizeBits; ++i) {
+  std::string bin_id(kKeySizeBytes * 8, '0');
+  for (int16_t i = 0; i < (kKeySizeBytes * 8); ++i) {
     NodeId node_id(i);
-    bin_id[kKeySizeBits - 1 - i] = '1';
+    bin_id[(kKeySizeBytes * 8) - 1 - i] = '1';
     ASSERT_EQ(bin_id, node_id.ToStringEncoded(NodeId::kBinary))
         << "Fail to construct 2^" << i << std::endl;
-    bin_id[kKeySizeBits - 1 - i] = '0';
+    bin_id[(kKeySizeBytes * 8) - 1 - i] = '0';
   }
 }
 
@@ -262,7 +247,7 @@ TEST(NodeIdTest, BEH_CtrBetweenIds) {
         << std::max(id1, id2).ToStringEncoded(NodeId::kBinary) << std::endl;
   }
   NodeId min_range, max_range(NodeId::kMaxId);
-  for (uint16_t i = 0; i < kKeySizeBits - 1; ++i) {
+  for (uint16_t i = 0; i < (kKeySizeBytes * 8) - 1; ++i) {
     min_range = NodeId(i);
     max_range = NodeId(i + 1);
     id = NodeId(min_range, max_range);
@@ -283,7 +268,7 @@ TEST(NodeIdTest, BEH_OperatorEqual) {
       kadid1.ToStringEncoded(NodeId::kBinary) << std::endl << "kadid2 = " <<
       kadid2.ToStringEncoded(NodeId::kBinary) << std::endl;
   std::string id1;
-  for (size_t i = 0; i < BitToByteCount(kKeySizeBits) * 2;
+  for (size_t i = 0; i < BitToByteCount(kKeySizeBytes * 8) * 2;
        ++i) {
     id1 += "f";
   }
@@ -302,7 +287,7 @@ TEST(NodeIdTest, BEH_OperatorDifferent) {
       std::endl << "kadid2 = " << kadid2.ToStringEncoded(NodeId::kBinary) <<
       std::endl;
   std::string id1;
-  for (size_t i = 0; i < BitToByteCount(kKeySizeBits) * 2; ++i)
+  for (size_t i = 0; i < BitToByteCount(kKeySizeBytes * 8) * 2; ++i)
     id1 += "f";
   NodeId kadid3(id1, NodeId::kHex);
   ASSERT_TRUE(kadid1 != kadid3) << "kadid1 = " <<
@@ -396,7 +381,7 @@ TEST(NodeIdTest, BEH_OperatorXOR) {
   NodeId kadid6(kadid1 ^ kadid5);
   ASSERT_EQ(binzero, kadid6.ToStringEncoded(NodeId::kBinary));
   std::string zero(kadid6.String());
-  ASSERT_EQ(BitToByteCount(kKeySizeBits), zero.size());
+  ASSERT_EQ(BitToByteCount(kKeySizeBytes * 8), zero.size());
   for (size_t i = 0; i < zero.size(); ++i)
     ASSERT_EQ('\0', zero[i]);
 }

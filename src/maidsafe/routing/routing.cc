@@ -1,29 +1,14 @@
-/* Copyright (c) 2009 maidsafe.net limited
-All rights reserved.
-
-Redistribution and use in source and binary forms, with or without modification,
-are permitted provided that the following conditions are met:
-
-    * Redistributions of source code must retain the above copyright notice,
-    this list of conditions and the following disclaimer.
-    * Redistributions in binary form must reproduce the above copyright notice,
-    this list of conditions and the following disclaimer in the documentation
-    and/or other materials provided with the distribution.
-    * Neither the name of the maidsafe.net limited nor the names of its
-    contributors may be used to endorse or promote products derived from this
-    software without specific prior written permission.
-
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
-ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
-FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
-DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
-SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
-CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR
-TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
-THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-*/
+/*******************************************************************************
+ *  Copyright 2012 maidsafe.net limited                                        *
+ *                                                                             *
+ *  The following source code is property of maidsafe.net limited and is not   *
+ *  meant for external use.  The use of this code is governed by the licence   *
+ *  file licence.txt found in the root of this directory and also on           *
+ *  www.maidsafe.net.                                                          *
+ *                                                                             *
+ *  You are not free to copy, amend or otherwise use this source code without  *
+ *  the explicit written permission of the board of directors of maidsafe.net. *
+ ******************************************************************************/
 
 #include <memory>
 #include <queue>
@@ -44,7 +29,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #  pragma warning(pop)
 #endif
 #include "maidsafe/routing/routing_table.h"
-#include "maidsafe/routing/maidsafe_routing_api.h"
+#include "maidsafe/routing/routing_api.h"
 #include "maidsafe/routing/log.h"
 
 // #include "maidsafe/transport/rudp_transport.h"
@@ -58,15 +43,15 @@ namespace maidsafe {
 
 namespace routing {
 
-  namespace bfs = boost::filesystem3;
-  typedef bfs::ifstream ifs;
-  typedef bfs::ofstream ofs;
-  typedef protobuf::Contact Contact;
+namespace bfs = boost::filesystem3;
+typedef bfs::ifstream ifs;
+typedef bfs::ofstream ofs;
+typedef protobuf::Contact Contact;
 
   // check correctness of config settings  
 //  static_assert(Parameters::kReplicationSize <= Parameters::kClosestNodes,
 //                "Cannot set replication factor larger than closest nodes");
-//  static_assert(Parameters::kClosestNodes <= Parameters::kRoutingTableSize,
+//  static_assert(Parameters::kClosestNodes <= Parameters::kMaxRoutingTableSize,
 //                "Cannot set closest nodes larger than routing table");
 
 Message::Message() :
@@ -80,12 +65,11 @@ Message::Message() :
   type(0),
   routing_failure(false) {}
 
-const uint16_t Parameters::kKeySizeBytes(64);
-const uint16_t Parameters::kKeySizeBits(512);
-const uint16_t Parameters::kClosestNodes(8);
-const uint16_t Parameters::kRoutingTableSize(64);
-const int16_t Parameters::kBucketSize(1);
-const uint16_t Parameters::kNumChunksToCache(100);
+
+const unsigned int Parameters::kClosestNodesSize(8);
+const unsigned int Parameters::kMaxRoutingTableSize(64);
+const unsigned int Parameters::kBucketTargetSize(1);
+const unsigned int Parameters::kNumChunksToCache(100);
   
   
 class RoutingPrivate {
@@ -239,7 +223,7 @@ void RoutingPrivate::ProcessMessage(protobuf::Message& message) {
           message.set_direct(true);
           message.set_response(false);
           NodeId next_node =
-              routing_table_.GetClosestNode(NodeId(message.destination_id()));
+              routing_table_.GetClosestNode(NodeId(message.destination_id()), 0);
           SendOn(message, next_node);
           return; // our work here is done - send it home !!
        }
@@ -248,7 +232,7 @@ void RoutingPrivate::ProcessMessage(protobuf::Message& message) {
   // is it for us ??
   if (!routing_table_.AmIClosestNode(NodeId(message.destination_id()))) {
     NodeId next_node =
-              routing_table_.GetClosestNode(NodeId(message.destination_id()));
+              routing_table_.GetClosestNode(NodeId(message.destination_id()), 0);
     SendOn(message, next_node);
     return;
   } else { // I am closest
@@ -286,7 +270,7 @@ void RoutingPrivate::ProcessMessage(protobuf::Message& message) {
                                          static_cast<uint16_t>(message.replication()));
      for (auto it = close.begin(); it != close.end(); ++it) {
        message.set_destination_id((*it).String());
-       NodeId send_to = routing_table_.GetClosestNode((*it));
+       NodeId send_to = routing_table_.GetClosestNode((*it), 0);
        SendOn(message, send_to);
      }
      message_recieved_sig_(static_cast<uint16_t>(message.type()), message.data());
