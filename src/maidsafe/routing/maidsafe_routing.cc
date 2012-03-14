@@ -30,11 +30,19 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <vector>
 
 #include "boost/thread/locks.hpp"
+#include "boost/thread/thread.hpp"
 #include "boost/asio/io_service.hpp"
 #include "boost/filesystem.hpp"
 #include "boost/filesystem/fstream.hpp"
 
+#ifdef __MSVC__
+#  pragma warning(push)
+#  pragma warning(disable: 4127 4244 4267)
+#endif
 #include "maidsafe/routing/routing.pb.h"
+#ifdef __MSVC__
+#  pragma warning(pop)
+#endif
 #include "maidsafe/routing/routing_table.h"
 #include "maidsafe/routing/maidsafe_routing_api.h"
 #include "maidsafe/routing/log.h"
@@ -45,7 +53,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "maidsafe/common/rsa.h"
 #include "maidsafe/common/utils.h"
-#include <boost/thread/detail/thread.hpp> // TODO risky !!
 
 namespace maidsafe {
 
@@ -57,10 +64,10 @@ namespace routing {
   typedef protobuf::Contact Contact;
 
   // check correctness of config settings  
-  static_assert(kReplicationSize <= kClosestNodes,
-                "Cannot set replication factor larger than closest nodes");
-  static_assert(kClosestNodes <= kRoutingTableSize,
-                "Cannot set closest nodes larger than routing table");
+//  static_assert(Parameters::kReplicationSize <= Parameters::kClosestNodes,
+//                "Cannot set replication factor larger than closest nodes");
+//  static_assert(Parameters::kClosestNodes <= Parameters::kRoutingTableSize,
+//                "Cannot set closest nodes larger than routing table");
 
 Message::Message() :
   source_id(),
@@ -69,16 +76,16 @@ Message::Message() :
   data(),
   direct(false),
   response(false),
-  type(),
-  failure(false) {}
+  replication(0),
+  type(0),
+  routing_failure(false) {}
 
-Parameters::Parameters() :
-  kKeySizeBytes(64),
-  kKeySizeBits(512),
-  kClosestNodes(8),
-  kRoutingTableSize(64),
-  kBucketSize(1),
-  kNumChunksToCache(100) {}
+const uint16_t Parameters::kKeySizeBytes(64);
+const uint16_t Parameters::kKeySizeBits(512);
+const uint16_t Parameters::kClosestNodes(8);
+const uint16_t Parameters::kRoutingTableSize(64);
+const int16_t Parameters::kBucketSize(1);
+const uint16_t Parameters::kNumChunksToCache(100);
   
   
 class RoutingPrivate {
@@ -100,7 +107,7 @@ public: // members
    boost::signals2::signal<void(int16_t)> network_status_sig_;
  private:
    void AddToCache(protobuf::Message &message);
-   bool GetFromCache(protobuf::Message &message);
+//   bool GetFromCache(protobuf::Message &message);
    void RecieveMessage(std::string &message);
    void ProcessMessage(protobuf::Message &message);
    void doFindNodeResponse(protobuf::Message &message);
@@ -129,7 +136,7 @@ RoutingPrivate::RoutingPrivate() :
   message_recieved_sig_(),
   network_status_sig_(),
   service_(boost::thread::hardware_concurrency()),
-  cache_size_hint_(kNumChunksToCache),
+  cache_size_hint_(Parameters::kNumChunksToCache),
   transport_ (new  transport::RudpTransport(service_)),
   public_keys_(), 
   cache_chunks_() {
@@ -139,12 +146,13 @@ RoutingPrivate::RoutingPrivate() :
 
 bool RoutingPrivate::ReadConfigFile() {
   protobuf::ConfigFile protobuf;
-  if (!bfs::exists(config_file_) || !bfs::is_regular_file(config_file_))
+  if (!bfs::exists(config_file_) || !bfs::is_regular_file(config_file_)) {
     DLOG(ERROR) << "Cannot read config file  ";
     return false;
+  }
   try {
     ifs config_file_stream(config_file_);
-    if (!protobuf.ParseFromString(config_file_.c_str()))
+    if (!protobuf.ParseFromString(config_file_.string()))
       return false;
     if(!private_key_is_set_) {
       if(!protobuf.has_private_key()) {
@@ -176,9 +184,9 @@ bool RoutingPrivate::WriteConfigFile() {
 return false;
 }
 
-transport::Endpoint RoutingPrivate::GetLocalEndpoint() {
-
-}
+//transport::Endpoint RoutingPrivate::GetLocalEndpoint() {
+//
+//}
 
 
 void RoutingPrivate::RecieveMessage(std::string &message) {
@@ -205,7 +213,7 @@ void RoutingPrivate::AddToCache(protobuf::Message& message) {
         cache_chunks_.push_back(data);
         while (cache_chunks_.size() > cache_size_hint_)
           cache_chunks_.erase(cache_chunks_.begin());
-      } catch (std::exception &e) {
+      } catch (const std::exception &/*e*/) {
         // oohps reduce cache size quickly
         cache_size_hint_ = cache_size_hint_ / 2;
         while (cache_chunks_.size() > cache_size_hint_)
@@ -219,8 +227,8 @@ void RoutingPrivate::ProcessMessage(protobuf::Message& message) {
   if (isCacheable(message)) {
     if (message.response())
         AddToCache(message);
-    else
-        GetFromCache(message);
+//    else
+//        GetFromCache(message);
   } else  { // request
      for(auto it = cache_chunks_.begin(); it != cache_chunks_.end(); ++it) {
        if ((*it).first == message.source_id()) {
@@ -275,13 +283,13 @@ void RoutingPrivate::ProcessMessage(protobuf::Message& message) {
     message.set_source_id(my_node_id_.String());
     auto close =
           routing_table_.GetClosestNodes(NodeId(message.destination_id()),
-                                         kReplicationSize);
+                                         static_cast<uint16_t>(message.replication()));
      for (auto it = close.begin(); it != close.end(); ++it) {
        message.set_destination_id((*it).String());
        NodeId send_to = routing_table_.GetClosestNode((*it));
        SendOn(message, send_to);
      }
-     message_recieved_sig_(message.type(), message.data());
+     message_recieved_sig_(static_cast<uint16_t>(message.type()), message.data());
      return;
    }
 }
@@ -319,8 +327,9 @@ void RoutingPrivate::doPingRequest(protobuf::Message& message) {
   message.set_data(ping_request.SerializeAsString());
   message.set_direct(true);
   message.set_response(true);
+  message.set_replication(1);
   message.set_type(0);
-  message.set_failure(false);
+  message.set_routing_failure(false);
   NodeId send_to(message.destination_id());
   SendOn(message, send_to);
 }
@@ -331,7 +340,7 @@ void RoutingPrivate::doFindNodeRequest(protobuf::Message& message) {
   protobuf::FindNodesResponse found_nodes;
   std::vector<NodeId>
           nodes(routing_table_.GetClosestNodes(NodeId(message.destination_id()),
-                                              find_nodes.num_nodes_requested()));
+                                              static_cast<uint16_t>(find_nodes.num_nodes_requested())));
   
   for (auto it = nodes.begin(); it != nodes.end(); ++it) 
       found_nodes.add_nodes((*it).String());
@@ -341,8 +350,9 @@ void RoutingPrivate::doFindNodeRequest(protobuf::Message& message) {
   message.set_data(found_nodes.SerializeAsString());
   message.set_direct(true);
   message.set_response(true);
+  message.set_replication(1);
   message.set_type(1);
-  message.set_failure(false);
+  message.set_routing_failure(false);
   NodeId send_to(message.destination_id());
   SendOn(message, send_to);
 }
@@ -361,10 +371,10 @@ void RoutingPrivate::doConnectResponse(protobuf::Message& message)
 
 
 // ********************API implementation* *************************************
-Routing::Routing(NodeType nodetype, boost::filesystem3::path & config_file) :
+Routing::Routing(NodeType /*nodetype*/, boost::filesystem3::path & config_file) :
          pimpl_(new RoutingPrivate())  { pimpl_->config_file_ = config_file; }
 
-Routing::Routing(NodeType nodetype,
+Routing::Routing(NodeType /*nodetype*/,
                 const boost::filesystem3::path & config_file,
                 const asymm::PrivateKey &private_key,
                 const std::string & node_id) {
@@ -382,8 +392,9 @@ void Routing::Send(const Message &msg, ResponseRecievedFunctor response) {
   message.set_cachable(msg.cachable);
   message.set_data(msg.data);
   message.set_direct(msg.direct);
+  message.set_replication(1);
   message.set_type(msg.type);
-  message.set_failure(false);
+  message.set_routing_failure(false);
   NodeId target_node = NodeId(msg.destination_id);
   pimpl_->SendOn(message, target_node);
 }

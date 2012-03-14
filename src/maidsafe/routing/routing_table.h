@@ -39,7 +39,14 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "boost/thread/mutex.hpp"
 
 #include "maidsafe/common/rsa.h"
+#ifdef __MSVC__
+#  pragma warning(push)
+#  pragma warning(disable: 4127 4244 4267)
+#endif
 #include "maidsafe/routing/routing.pb.h"
+#ifdef __MSVC__
+#  pragma warning(pop)
+#endif
 #include "maidsafe/routing/node_id.h"
 #include "maidsafe/routing/log.h"
 
@@ -60,7 +67,7 @@ class RoutingTable {
                         uint16_t number_to_get = Parameters::kClosestNodes);
   NodeId GetClosestNode(const NodeId &from, uint16_t node_number = 0);
   RoutingTable operator =(const RoutingTable &assign_object);
-  int16_t Size() { return routing_table_nodes_.size(); }
+  int16_t Size() { return static_cast<int16_t>(routing_table_nodes_.size()); }
 
  private:
   RoutingTable(const RoutingTable &copy_object);

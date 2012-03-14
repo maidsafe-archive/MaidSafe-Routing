@@ -31,10 +31,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "maidsafe/common/test.h"
 #include "maidsafe/common/utils.h"
 #include "maidsafe/transport/utils.h"
-#include "maidsafe/common/omp.h"
 #include "maidsafe/routing/routing_table.h"
 #include "maidsafe/routing/maidsafe_routing_api.h"
-#include "maidsafe/routing/routing.pb.h"
 #include "maidsafe/routing/node_id.h"
 #include "maidsafe/routing/log.h"
 
@@ -45,75 +43,66 @@ namespace test {
 class RoutingTableTest {
   RoutingTableTest();
 };
-  
+
 TEST(RoutingTableTest, BEH_AddCloseNodes) {
-#pragma omp parallel
-{
   protobuf::Contact contact;
   contact.set_node_id(RandomString(64));
   RoutingTable RT(contact);
-   for (int i = 0; i < kClosestNodes ; ++i) {
+   for (int i = 0; i < Parameters::kClosestNodes ; ++i) {
      EXPECT_TRUE(RT.AddNode(NodeId(RandomString(64))));
    }
-   EXPECT_EQ(RT.Size(), kClosestNodes);  
-} // #pragma omp parallel
+   EXPECT_EQ(RT.Size(), Parameters::kClosestNodes);
 }
 
 TEST(RoutingTableTest, BEH_AddTooManyNodes) {
-#pragma omp parallel
-{
   protobuf::Contact contact;
   contact.set_node_id(RandomString(64));
   RoutingTable RT(contact);
-   for (int i = 0; RT.Size() < kRoutingTableSize; ++i) {
+   for (int i = 0; RT.Size() < Parameters::kRoutingTableSize; ++i) {
      EXPECT_TRUE(RT.AddNode(NodeId(RandomString(64))));
    }
-   EXPECT_EQ(RT.Size(), kRoutingTableSize);
+   EXPECT_EQ(RT.Size(), Parameters::kRoutingTableSize);
    size_t count(0);
    for (int i = 0; i < 100; ++i)
-     if (RT.AddNode(NodeId(RandomString(64)))) 
+     if (RT.AddNode(NodeId(RandomString(64))))
        ++count;
    if (count > 0)
      DLOG(INFO) << "made space for " << count << " node(s) in routing table";
-   EXPECT_EQ(RT.Size(), kRoutingTableSize);
-} // #pragma omp parallel
+   EXPECT_EQ(RT.Size(), Parameters::kRoutingTableSize);
 }
 
 TEST(RoutingTableTest, BEH_CloseAndInRangeCheck) {
-#pragma omp parallel
-{
   protobuf::Contact contact;
   contact.set_node_id(RandomString(64));
   RoutingTable RT(contact);
   NodeId my_node(NodeId(contact.node_id()));
   // Add some nodes to RT
-  for (int i = 0; RT.Size() < kRoutingTableSize; ++i) {
+  for (int i = 0; RT.Size() < Parameters::kRoutingTableSize; ++i) {
     EXPECT_TRUE(RT.AddNode(NodeId(RandomString(64))));
   }
-  EXPECT_EQ(RT.Size(), kRoutingTableSize);
+  EXPECT_EQ(RT.Size(), Parameters::kRoutingTableSize);
   std::string my_id_encoded(my_node.ToStringEncoded(NodeId::kBinary));
-  my_id_encoded[511] == '0' ? my_id_encoded[511] = '1' : my_id_encoded[511] = '0';
+  my_id_encoded[511] = (my_id_encoded[511] == '0' ? '1' : '0');
   NodeId my_closest_node(NodeId(my_id_encoded, NodeId::kBinary));
   EXPECT_TRUE(RT.AmIClosestNode(my_closest_node));
   EXPECT_TRUE(RT.IsMyNodeInRange(my_closest_node, 2));
-  EXPECT_TRUE(RT.IsMyNodeInRange(my_closest_node, 200));  
+  EXPECT_TRUE(RT.IsMyNodeInRange(my_closest_node, 200));
   EXPECT_TRUE(RT.AmIClosestNode(my_closest_node));
-  EXPECT_EQ(RT.Size(), kRoutingTableSize);
+  EXPECT_EQ(RT.Size(), Parameters::kRoutingTableSize);
   // get closest nodes to me 
-  std::vector<NodeId> close_nodes(RT.GetClosestNodes(my_node, kClosestNodes));
+  std::vector<NodeId> close_nodes(RT.GetClosestNodes(my_node, Parameters::kClosestNodes));
   // Check against individually selected close nodes
-  for (int i = 0; i < kClosestNodes; ++i) 
+  for (uint16_t i = 0; i < Parameters::kClosestNodes; ++i)
     EXPECT_TRUE(std::find(close_nodes.begin(),
                           close_nodes.end(),
                           RT.GetClosestNode(my_node, i)) != close_nodes.end());
   // add the node now
   EXPECT_TRUE(RT.AddNode(my_closest_node));
-  // houdl nwo be closest node to itself :-) 
+  // houdl nwo be closest node to itself :-)
   EXPECT_EQ(RT.GetClosestNode(my_closest_node).String(),
             my_closest_node.String());
-  EXPECT_EQ(RT.Size(), kRoutingTableSize); // make sure we removed a
+  EXPECT_EQ(RT.Size(), Parameters::kRoutingTableSize); // make sure we removed a
                                            // node to insert this one
-} // #pragma omp parallel
 }
 
 }  // namespace test

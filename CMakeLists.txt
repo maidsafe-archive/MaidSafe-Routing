@@ -163,8 +163,6 @@ IF(MSVC)
   # Warnings switched off for protocol buffer generated files
   SET_SOURCE_FILES_PROPERTIES(${PROJECT_SOURCE_DIR}/src/maidsafe/routing/routing.pb.cc
                                 PROPERTIES COMPILE_FLAGS "/W0")
-  SET_TARGET_PROPERTIES(maidsafe_routing_static TESTRouting PROPERTIES COMPILE_FLAGS "/bigobj")
-  SET_TARGET_PROPERTIES(maidsafe_routing_static PROPERTIES STATIC_LIBRARY_FLAGS_RELEASE "/LTCG")
 ELSEIF(UNIX)
   FILE(GLOB PROTO_SOURCE_FILES "${PROJECT_SOURCE_DIR}/src/maidsafe/routing/*.pb.cc"
                                "${PROJECT_SOURCE_DIR}/src/maidsafe/routing/tests/*.pb.cc")

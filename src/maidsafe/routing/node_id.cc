@@ -76,7 +76,7 @@ NodeId::NodeId(const std::string &id, const EncodingType &encoding_type)
     }
   }
   catch(const std::exception &e) {
-//    DLOG(ERROR) << "NodeId Ctor: " << e.what();
+    DLOG(ERROR) << "NodeId Ctor: " << e.what();
     raw_id_.clear();
     return;
   }
@@ -91,9 +91,9 @@ NodeId::NodeId(const uint16_t &power) : raw_id_(kZeroId) {
   }
   uint16_t shift = power % 8;
   if (shift != 0) {
-    raw_id_[Parameters::Parameters::kKeySizeBytes - BitToByteCount(power)] += 1 << shift;
+    raw_id_[Parameters::kKeySizeBytes - BitToByteCount(power)] += 1 << shift;
   } else {
-    raw_id_[Parameters::Parameters::kKeySizeBytes - BitToByteCount(power) - 1] = 1;
+    raw_id_[Parameters::kKeySizeBytes - BitToByteCount(power) - 1] = 1;
   }
 }
 
@@ -150,7 +150,7 @@ std::string NodeId::EncodeToBinary() const {
 }
 
 void NodeId::DecodeFromBinary(const std::string &binary_id) {
-  std::bitset< Parameters::kKeySizeBits > binary_bitset(binary_id);
+  std::bitset<512> binary_bitset(binary_id);
   if (!IsValid()) {
     raw_id_.assign(Parameters::kKeySizeBytes, 0);
   }

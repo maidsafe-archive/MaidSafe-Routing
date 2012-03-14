@@ -31,7 +31,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "maidsafe/routing/routing_table.h"
 #include "maidsafe/routing/node_id.h"
-#include "maidsafe/routing/routing.pb.h"
 #include "maidsafe/routing/log.h"
 
 namespace maidsafe {
@@ -89,10 +88,12 @@ bool RoutingTable::MakeSpaceForNodeToBeAdded(const NodeId &node_id) {
     return true;
   }
 
-  int i = 0;
-  int16_t node_id_index = BucketIndex(node_id);
+//  int i = 0;
+//  int16_t node_id_index = BucketIndex(node_id);
+
+  // TODO(Fraser#5#): 2012-03-14 - Protect closest nodes
   for (auto it = routing_table_nodes_.begin();
-       it < routing_table_nodes_.end();
+       it != routing_table_nodes_.end();
        ++it) {
     auto found = routing_table_nodes_.end();
 
@@ -100,14 +101,16 @@ bool RoutingTable::MakeSpaceForNodeToBeAdded(const NodeId &node_id) {
         (BucketIndex(*it) == BucketIndex(*(it + Parameters::kBucketSize + 1))))
       found = it;  // bucket too full
 
-    if  ((it + Parameters::kBucketSize < routing_table_nodes_.end()) &&
+    if (found == routing_table_nodes_.end())
+      return false;
+
+    if ((it + Parameters::kBucketSize < routing_table_nodes_.end()) &&
         (BucketIndex(*it) != BucketIndex(*(it + Parameters::kBucketSize))) &&
-        (BucketIndex(*it) == BucketIndex(node_id)) &&
-        (found != routing_table_nodes_.end())) {
+        (BucketIndex(*it) == BucketIndex(node_id))) {
       routing_table_nodes_.erase(found);
       return true;
-    } else {
-      return false;
+//    } else {
+//      return false;
     }
   }
   return false;

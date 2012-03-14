@@ -78,7 +78,7 @@ const std::string ToBinary(const std::string &raw_id)  {
 }
 
 TEST(NodeIdTest, BEH_BitToByteCount) {
-  for (size_t i = 0; i < kKeySizeBytes; ++i) {
+  for (size_t i = 0; i < Parameters::kKeySizeBytes; ++i) {
     ASSERT_EQ(i, BitToByteCount(8 * i));
     for (size_t j = 1; j < 8; ++j) {
       ASSERT_EQ(i + 1, BitToByteCount((8 * i) + j));
@@ -88,10 +88,10 @@ TEST(NodeIdTest, BEH_BitToByteCount) {
 
 TEST(NodeIdTest, BEH_DefaultCtr) {
   NodeId node_id;
-  ASSERT_EQ(kKeySizeBytes, node_id.String().size());
+  ASSERT_EQ(Parameters::kKeySizeBytes, node_id.String().size());
   for (size_t i = 0; i < node_id.String().size(); ++i)
     ASSERT_EQ('\0', node_id.String()[i]);
-  std::string hex_id(kKeySizeBytes * 2, '0');
+  std::string hex_id(Parameters::kKeySizeBytes * 2, '0');
   ASSERT_EQ(hex_id, node_id.ToStringEncoded(NodeId::kHex));
   std::string bin_id(kKeySizeBits, '0');
   ASSERT_EQ(bin_id, node_id.ToStringEncoded(NodeId::kBinary));
@@ -112,35 +112,35 @@ TEST(NodeIdTest, BEH_CopyCtr) {
 
 TEST(NodeIdTest, BEH_KadIdTypeCtr) {
   std::string min_id = kZeroId;
-  ASSERT_EQ(kKeySizeBytes, min_id.size());
-  for (int i = 0; i < kKeySizeBytes; ++i)
+  ASSERT_EQ(Parameters::kKeySizeBytes, min_id.size());
+  for (int i = 0; i < Parameters::kKeySizeBytes; ++i)
     ASSERT_EQ(min_id[i], '\0');
   NodeId max_id(NodeId::kMaxId);
-  ASSERT_EQ(kKeySizeBytes, max_id.String().size());
-  for (int i = 0; i < kKeySizeBytes; ++i)
+  ASSERT_EQ(Parameters::kKeySizeBytes, max_id.String().size());
+  for (int i = 0; i < Parameters::kKeySizeBytes; ++i)
     ASSERT_EQ(-1, max_id.String()[i]);
   NodeId rand_id(NodeId::kRandomId);
-  ASSERT_EQ(kKeySizeBytes, rand_id.String().size());
+  ASSERT_EQ(Parameters::kKeySizeBytes, rand_id.String().size());
   // TODO(Fraser#5#): 2010-06-06 - Test for randomness properly
   ASSERT_NE(rand_id.String(), NodeId(NodeId::kRandomId).String());
 }
 
 TEST(NodeIdTest, BEH_StringCtr) {
-  std::string rand_str(RandomString(kKeySizeBytes));
+  std::string rand_str(RandomString(Parameters::kKeySizeBytes));
   NodeId id1(rand_str);
   ASSERT_TRUE(id1.String() == rand_str);
-  NodeId id2(rand_str.substr(0, kKeySizeBytes - 1));
+  NodeId id2(rand_str.substr(0, Parameters::kKeySizeBytes - 1));
   ASSERT_TRUE(id2.String().empty());
   NodeId id3(rand_str + "a");
   ASSERT_TRUE(id3.String().empty());
 }
 
 TEST(NodeIdTest, BEH_EncodingCtr) {
-  std::string known_raw(kKeySizeBytes, 0);
-  for (char c = 0; c < kKeySizeBytes; ++c)
+  std::string known_raw(Parameters::kKeySizeBytes, 0);
+  for (char c = 0; c < Parameters::kKeySizeBytes; ++c)
     known_raw.at(static_cast<uint8_t>(c)) = c;
   for (int i = 0; i < 4; ++i) {
-    std::string rand_str(RandomString(kKeySizeBytes));
+    std::string rand_str(RandomString(Parameters::kKeySizeBytes));
     std::string bad_encoded("Bad Encoded"), encoded, known_encoded;
     NodeId::EncodingType type = static_cast<NodeId::EncodingType>(i);
     switch (type) {

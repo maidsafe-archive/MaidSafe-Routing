@@ -38,7 +38,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "boost/signals2.hpp"
 #include "boost/asio/io_service.hpp"
 #include "boost/filesystem.hpp"
-#include "maidsafe/routing/routing.pb.h"
 #include "maidsafe/transport/rudp_transport.h"
 #include "common/rsa.h"
 
@@ -56,8 +55,6 @@ struct Message; // defined below
 typedef std::function<void(uint16_t, Message)> ResponseRecievedFunctor;
 
 struct Parameters {
- public:
-  Parameters();
   /// The size of ROUTING keys and node IDs in bytes.(default 64)
   static const uint16_t kKeySizeBytes;
   static const  uint16_t kKeySizeBits;
@@ -67,7 +64,7 @@ struct Parameters {
   static const uint16_t kRoutingTableSize;
   /// Nodes hint per bucket (hint as buckets will fill more than
   /// this when space permits) (default 1)
-  static  const int16_t kBucketSize;
+  static const int16_t kBucketSize;
   /// how many chunks to cache (hint as it will be adjusted if mem low)
   /// (default 100)
   static const uint16_t kNumChunksToCache;

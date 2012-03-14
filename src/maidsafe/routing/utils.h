@@ -32,7 +32,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <vector>
 
 #include "maidsafe/common/rsa.h"
-#include "maidsafe/routing/routing.pb.h"
+
 namespace maidsafe {
 
 namespace transport { struct Endpoint; }
