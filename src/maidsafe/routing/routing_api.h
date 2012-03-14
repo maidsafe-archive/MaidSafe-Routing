@@ -10,15 +10,34 @@
  *  the explicit written permission of the board of directors of maidsafe.net. *
  ******************************************************************************/
 
+/*
+Guarantees
+__________
+
+1:  Find any node by key.
+2:  Find any value by key.
+3:  Ensure messages are sent to all closest nodes in order (close to furthest).
+4:  Provide NAT traversal techniques where necessary.
+5:  Read and Write configuration file to allow bootstrap from known nodes.
+6:  Read and Write configuration file preserving ID and private key.
+7:  Allow retrieval of bootstrap nodes from known location.
+8:  Remove bad nodes from all routing tables (ban from network).
+9:  Inform of close node changes in routing table.
+*/
+
 #ifndef MAIDSAFE_ROUTING_API_H_
 #define MAIDSAFE_ROUTING_API_H_
 
+#include <cstdint>
 #include <functional>
-#include "boost/signals2.hpp"
-#include "boost/asio/io_service.hpp"
-#include "boost/filesystem.hpp"
-#include "maidsafe/transport/rudp_transport.h"
-#include "common/rsa.h"
+#include <memory>
+#include <string>
+
+#include "boost/signals2/signal.hpp"
+#include "boost/filesystem/path.hpp"
+
+#include "maidsafe/common/rsa.h"
+
 #include "maidsafe/routing/version.h"
 
 #if MAIDSAFE_ROUTING_VERSION != 100
@@ -31,14 +50,12 @@ namespace maidsafe {
 
 namespace routing {
 
-class NodeId;
-class PrivateKey;
-class RoutingPrivate;
+namespace protobuf { class Message; }
 struct Message;
+class RoutingImpl;
 
-namespace bs2 = boost::signals2;
-
-typedef std::function<void(uint16_t, Message)> ResponseRecievedFunctor;
+typedef std::function<void(int,
+                           maidsafe::routing::Message)> ResponseReceivedFunctor;
 
 struct Parameters {
   // The size of a group of closest nodes.
@@ -51,11 +68,12 @@ struct Parameters {
 };
 
 struct Message {
-public:
+ public:
   Message();
+  explicit Message(const protobuf::Message &protobuf_message);
   std::string source_id;
   std::string destination_id;
-  bool  cachable;
+  bool cacheable;
   std::string data;
   bool direct;
   bool response;
@@ -66,43 +84,26 @@ public:
 
 class Routing {
  public:
-  enum NodeType {kVault, kClient};
-  Routing(NodeType nodetype, boost::filesystem3::path & config_file);
-  Routing(NodeType nodetype,
-          const boost::filesystem3::path & config_file,
+  enum NodeType { kVault, kClient };
+  Routing(NodeType node_type, const boost::filesystem::path &config_file);
+  Routing(NodeType node_type,
+          const boost::filesystem::path &config_file,
           const asymm::PrivateKey &private_key,
-          const std::string & node_id);
+          const std::string &node_id);
   ~Routing();
-  void Send(const Message &message, ResponseRecievedFunctor response);
-  bs2::signal<void(uint16_t, std::string)> &RequestReceivedSignal();
-  bs2::signal<void(int16_t)> &NetworkStatusSignal();
+  void Send(const Message &message,
+            const ResponseReceivedFunctor &response_functor);
+  boost::signals2::signal<void(int, Message)> &RequestReceivedSignal();
+  boost::signals2::signal<void(int16_t)> &NetworkStatusSignal();
+
  private:
   Routing(const Routing&);
-  Routing &operator=(const Routing&);
-  std::unique_ptr<RoutingPrivate> pimpl_;
+  Routing& operator=(const Routing&);
+  std::unique_ptr<RoutingImpl> pimpl_;
 };
 
 }  // namespace routing
+
 }  // namespace maidsafe
 
 #endif  // MAIDSAFE_ROUTING_API_H_
-/***********************************************************************
- *
- *    API Documentation
- *
- * *********************************************************************
-Guarantees
-__________
-
-1: Find any node by key.
-2: Find any value by key.
-3: Ensure messages are sent to all closest nodes in order (close to furthest)
-4: Provide NAT traversal techniques where necessary.
-5: Read and Write configuration file to allow bootstrap from known nodes.
-6: Read and Write configuration file preserving ID and private key.
-7: Allow retrieval of bootsrap nodes from known location.
-8: Remove bad nodes from all routing tables (ban from network).
-9: Inform of close node changes in routing table.
-10:  
- 
-*/

@@ -35,7 +35,7 @@ message ConfigFile {
 message Message {
   required bytes source_id = 1; // in response this is name of data
   required bytes destination_id = 2; // in request (except direct) this is the name of the data
-  optional bool  cachable = 3;
+  optional bool cacheable = 3;
   required bytes data = 4; // serialised protobuf - possibly encrypted in upper layers
   optional bool direct = 5; // goes to a single node !! if proxy is set then to here then we transmit to endpoint 
   required bool response = 6;

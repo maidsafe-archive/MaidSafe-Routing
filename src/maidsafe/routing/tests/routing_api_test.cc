@@ -28,7 +28,7 @@ class RoutingTableAPI {
 
 // TEST(RoutingTableAPI, API_BadconfigFile) {
 //   Routing RtAPI;
-//   boost::filesystem3::path bad_file("bad file/ not found/ I hope");
+//   boost::filesystem::path bad_file("bad file/ not found/ I hope");
 //   EXPECT_FALSE(RtAPI.setConfigFilePath(bad_file));
 // }
 
