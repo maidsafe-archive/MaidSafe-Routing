@@ -49,9 +49,9 @@ namespace routing {
 /**
 * The size of ROUTING keys and node IDs in bits.
 **/
-const int16_t kKeySizeBits = 8 * kKeySizeBytes;
+const int16_t kKeySizeBits = 8 *  Parameters::kKeySizeBytes;
 
-const std::string kZeroId(kKeySizeBytes, 0);
+const std::string kZeroId(Parameters::kKeySizeBytes, 0);
 
 size_t BitToByteCount(const size_t &bit_count);
 

@@ -72,13 +72,20 @@ Message::Message() :
   type(),
   failure(false) {}
 
+Parameters::Parameters() :
+  kKeySizeBytes(64),
+  kKeySizeBits(512),
+  kClosestNodes(8),
+  kRoutingTableSize(64),
+  kBucketSize(1),
+  kNumChunksToCache(100) {}
+  
   
 class RoutingPrivate {
 public:
    RoutingPrivate();
    bool ReadConfigFile();
    bool WriteConfigFile();
-   transport::Endpoint GetLocalEndpoint();
    void SendOn(const protobuf::Message &message, NodeId &node);
 public: // members
    std::vector<Contact> bootstrap_nodes_;
@@ -92,6 +99,8 @@ public: // members
    boost::signals2::signal<void(uint16_t, std::string)> message_recieved_sig_;
    boost::signals2::signal<void(int16_t)> network_status_sig_;
  private:
+   void AddToCache(protobuf::Message &message);
+   bool GetFromCache(protobuf::Message &message);
    void RecieveMessage(std::string &message);
    void ProcessMessage(protobuf::Message &message);
    void doFindNodeResponse(protobuf::Message &message);
@@ -186,10 +195,7 @@ bool isDirect(protobuf::Message &message) {
   return (message.has_direct() && message.direct());
 }
 
-void RoutingPrivate::ProcessMessage(protobuf::Message& message) {
-  // handle cache data
-  if (isCacheable(message)) {
-    if (message.response()) {
+void RoutingPrivate::AddToCache(protobuf::Message& message) {
       std::pair<std::string, std::string> data;
       try {
         // check data is valid TODO FIXME - ask CAA
@@ -205,7 +211,16 @@ void RoutingPrivate::ProcessMessage(protobuf::Message& message) {
         while (cache_chunks_.size() > cache_size_hint_)
           cache_chunks_.erase(cache_chunks_.begin()+1);
       }
-    }
+}
+
+
+void RoutingPrivate::ProcessMessage(protobuf::Message& message) {
+  // handle cache data
+  if (isCacheable(message)) {
+    if (message.response())
+        AddToCache(message);
+    else
+        GetFromCache(message);
   } else  { // request
      for(auto it = cache_chunks_.begin(); it != cache_chunks_.end(); ++it) {
        if ((*it).first == message.source_id()) {
@@ -270,6 +285,7 @@ void RoutingPrivate::ProcessMessage(protobuf::Message& message) {
      return;
    }
 }
+
 
 
 void RoutingPrivate::SendOn(const protobuf::Message& message, NodeId& node) {

@@ -54,20 +54,25 @@ namespace bs2 = boost::signals2;
 /// Typedefs
 struct Message; // defined below
 typedef std::function<void(uint16_t, Message)> ResponseRecievedFunctor;
-/// The size of ROUTING keys and node IDs in bytes.
-const uint16_t kKeySizeBytes(64);
-/// Size of closest nodes group
-const uint16_t kClosestNodes(8);
-/// total nodes in routing table
-const uint16_t kRoutingTableSize(64);
-// replication should be lower than CloseNodes
-const uint16_t kReplicationSize(4);
-/// Nodes hint per bucket (hint as buckets will fill more than
-/// this when space permits)
-const int16_t kBucketSize(1);
-/// how many chunks to cache (hint as it will be adjusted if mem low)
-const uint16_t kNumChunksToCache(100);
-/// Message timeout 
+
+struct Parameters {
+ public:
+  Parameters();
+  /// The size of ROUTING keys and node IDs in bytes.(default 64)
+  static const uint16_t kKeySizeBytes;
+  static const  uint16_t kKeySizeBits;
+  /// Size of closest nodes group (default 4)
+  static const uint16_t kClosestNodes;
+  /// total nodes in routing table (default 64)
+  static const uint16_t kRoutingTableSize;
+  /// Nodes hint per bucket (hint as buckets will fill more than
+  /// this when space permits) (default 1)
+  static  const int16_t kBucketSize;
+  /// how many chunks to cache (hint as it will be adjusted if mem low)
+  /// (default 100)
+  static const uint16_t kNumChunksToCache;
+  /// Message timeout
+};
 
 struct Message {
 public:
@@ -78,8 +83,9 @@ public:
   std::string data;
   bool direct;
   bool response;
+  int32_t replication;
   int32_t type;
-  bool failure;
+  bool routing_failure;
 };
 
 class Routing {

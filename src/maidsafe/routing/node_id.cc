@@ -42,7 +42,7 @@ NodeId::NodeId() : raw_id_(kZeroId) {}
 
 NodeId::NodeId(const NodeId &other) : raw_id_(other.raw_id_) {}
 
-NodeId::NodeId(const KadIdType &type) : raw_id_(kKeySizeBytes, -1) {
+NodeId::NodeId(const KadIdType &type) : raw_id_(Parameters::kKeySizeBytes, -1) {
   switch (type) {
     case kMaxId :
       break;  // already set
@@ -91,9 +91,9 @@ NodeId::NodeId(const uint16_t &power) : raw_id_(kZeroId) {
   }
   uint16_t shift = power % 8;
   if (shift != 0) {
-    raw_id_[kKeySizeBytes - BitToByteCount(power)] += 1 << shift;
+    raw_id_[Parameters::Parameters::kKeySizeBytes - BitToByteCount(power)] += 1 << shift;
   } else {
-    raw_id_[kKeySizeBytes - BitToByteCount(power) - 1] = 1;
+    raw_id_[Parameters::Parameters::kKeySizeBytes - BitToByteCount(power) - 1] = 1;
   }
 }
 
@@ -114,7 +114,7 @@ NodeId::NodeId(const NodeId &id1, const NodeId &id2) : raw_id_(kZeroId) {
   bool less_than_upper_limit(false);
   bool greater_than_lower_limit(false);
   unsigned char max_id_char(0), min_id_char(0), this_char(0);
-  for (size_t pos = 0; pos < kKeySizeBytes; ++pos) {
+  for (size_t pos = 0; pos < Parameters::kKeySizeBytes; ++pos) {
     if (!less_than_upper_limit) {
       max_id_char = max_id[pos];
       min_id_char = greater_than_lower_limit ? 0 : min_id[pos];
@@ -141,8 +141,8 @@ NodeId::NodeId(const NodeId &id1, const NodeId &id2) : raw_id_(kZeroId) {
 
 std::string NodeId::EncodeToBinary() const {
   std::string binary;
-  binary.reserve(kKeySizeBytes);
-  for (size_t i = 0; i < kKeySizeBytes; ++i) {
+  binary.reserve(Parameters::kKeySizeBytes);
+  for (size_t i = 0; i < Parameters::kKeySizeBytes; ++i) {
     std::bitset<8> temp(static_cast<int>(raw_id_[i]));
     binary += temp.to_string();
   }
@@ -150,11 +150,11 @@ std::string NodeId::EncodeToBinary() const {
 }
 
 void NodeId::DecodeFromBinary(const std::string &binary_id) {
-  std::bitset<kKeySizeBits> binary_bitset(binary_id);
+  std::bitset< Parameters::kKeySizeBits > binary_bitset(binary_id);
   if (!IsValid()) {
-    raw_id_.assign(kKeySizeBytes, 0);
+    raw_id_.assign(Parameters::kKeySizeBytes, 0);
   }
-  for (size_t i = 0; i < kKeySizeBytes; ++i) {
+  for (size_t i = 0; i < Parameters::kKeySizeBytes; ++i) {
     std::bitset<8> temp(binary_id.substr(i * 8, 8));
     raw_id_[i] = static_cast<char>(temp.to_ulong());
   }
@@ -168,7 +168,7 @@ bool NodeId::CloserToTarget(const NodeId &id1,
   std::string raw_id1(id1.raw_id_);
   std::string raw_id2(id2.raw_id_);
   std::string raw_id_target(target_id.raw_id_);
-  for (uint16_t i = 0; i < kKeySizeBytes; ++i) {
+  for (uint16_t i = 0; i < Parameters::kKeySizeBytes; ++i) {
     unsigned char result1 = raw_id1[i] ^ raw_id_target[i];
     unsigned char result2 = raw_id2[i] ^ raw_id_target[i];
     if (result1 != result2)
@@ -200,7 +200,7 @@ const std::string NodeId::ToStringEncoded(
 }
 
 bool NodeId::IsValid() const {
-  return raw_id_.size() == kKeySizeBytes;
+  return raw_id_.size() == Parameters::kKeySizeBytes;
 }
 
 bool NodeId::operator == (const NodeId &rhs) const {

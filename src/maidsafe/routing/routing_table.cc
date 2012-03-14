@@ -58,7 +58,7 @@ bool RoutingTable::AddNode(const NodeId &node_id) {
                 routing_table_nodes_.end(), node_id)
       != routing_table_nodes_.end())
     return true;
-  if (Size() < kRoutingTableSize) {
+  if (Size() < Parameters::kRoutingTableSize) {
     routing_table_nodes_.push_back(node_id);
     return true;
   } else if (MakeSpaceForNodeToBeAdded(node_id)) {
@@ -75,10 +75,10 @@ bool RoutingTable::AmIClosestNode(const NodeId& node_id) {
 }
 
 bool RoutingTable::MakeSpaceForNodeToBeAdded(const NodeId &node_id) {
-  if (kRoutingTableSize < routing_table_nodes_.size())
+  if (Parameters::kRoutingTableSize < routing_table_nodes_.size())
     return true;
   SortFromThisNode(kMyNodeId_);
-  NodeId furthest_close_node = GetClosestNode(kMyNodeId_, kClosestNodes);
+  NodeId furthest_close_node = GetClosestNode(kMyNodeId_, Parameters::kClosestNodes);
   if ((furthest_close_node ^ kMyNodeId_) > (kMyNodeId_ ^ node_id)) {
     auto delete_this_node = std::find(routing_table_nodes_.begin(),
                                       routing_table_nodes_.end(),
@@ -96,12 +96,12 @@ bool RoutingTable::MakeSpaceForNodeToBeAdded(const NodeId &node_id) {
        ++it) {
     auto found = routing_table_nodes_.end();
 
-    if (((it + kBucketSize + 1) < found) &&
-        (BucketIndex(*it) == BucketIndex(*(it + kBucketSize + 1))))
+    if (((it + Parameters::kBucketSize + 1) < found) &&
+        (BucketIndex(*it) == BucketIndex(*(it + Parameters::kBucketSize + 1))))
       found = it;  // bucket too full
 
-    if  ((it + kBucketSize < routing_table_nodes_.end()) &&
-        (BucketIndex(*it) != BucketIndex(*(it + kBucketSize))) &&
+    if  ((it + Parameters::kBucketSize < routing_table_nodes_.end()) &&
+        (BucketIndex(*it) != BucketIndex(*(it + Parameters::kBucketSize))) &&
         (BucketIndex(*it) == BucketIndex(node_id)) &&
         (found != routing_table_nodes_.end())) {
       routing_table_nodes_.erase(found);
