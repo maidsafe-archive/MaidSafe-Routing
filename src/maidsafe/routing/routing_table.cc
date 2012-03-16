@@ -21,7 +21,7 @@
 
 namespace maidsafe {
 namespace routing {
-
+  
 RoutingTable::RoutingTable(const Contact &my_contact)
     : sorted_(false),
     kMyNodeId_(NodeId(my_contact.node_id())),
@@ -69,47 +69,60 @@ bool RoutingTable::AmIClosestNode(const NodeId& node_id) {
 /// checks paramters are real
 bool RoutingTable::CheckValidParameters(const NodeInfo& node)
 {
-   if ((!asymm::ValidateKey(node.public_key, 0)))
+  if ((!asymm::ValidateKey(node.public_key, 0))) {
+    DLOG(INFO) << "invalid public key";
     return false;
+  }
           /* TODO FIXME (dirvine) needs uncommented &&
           (!node.endpoint.ip.is_v4()) &&
           (node.endpoint.port > 1500) &&
           (node.endpoint.port < 35000))*/
+  if (node.bucket == 99999) {
+        DLOG(INFO) << "bad bucket index";
+    return false;
+  }
   return CheckarametersAreUnique(node);
 }
 
-/// checks parameters are unique
 bool RoutingTable::CheckarametersAreUnique(const NodeInfo& node) {
+
     /// if we already have a duplicate public key return false
   if (std::find_if(routing_table_nodes_.begin(),
                    routing_table_nodes_.end(),
                    [&node](const NodeInfo &i)->bool
                    { return  asymm::MatchingPublicKeys(i.public_key,
                                                        node.public_key);})
-                 != routing_table_nodes_.end())
+                 != routing_table_nodes_.end()) {
+    DLOG(INFO) << "Already have node with this public key";
     return false;
-      /// if we already have a duplicate endpoint return false
+  }
+
+  /// if we already have a duplicate endpoint return false
     if (std::find_if(routing_table_nodes_.begin(),
                    routing_table_nodes_.end(),
                    [&node](const NodeInfo &i)->bool
                    { return (i.endpoint.ip.to_string() ==
                             node.endpoint.ip.to_string()) &&
                             (i.endpoint.port == node.endpoint.port ); })
-                 != routing_table_nodes_.end())
+                 != routing_table_nodes_.end()) {
+     DLOG(INFO) << "Already have node with this endpoint";
      return false;
+    }
     /// node_id was checked in AddNode() so if were here then were unique
   return true;
 }
 
 bool RoutingTable::MakeSpaceForNodeToBeAdded(NodeInfo &node, bool remove) {
-  if ((remove) && (!CheckValidParameters(node)))
+  node.bucket = BucketIndex(node.node_id);
+  if ((remove) && (!CheckValidParameters(node))) {
+    DLOG(INFO) << "Invalid Parameters";
     return false;
-  
+  }
+
   if (Size() < Parameters::kMaxRoutingTableSize)
     return true;
 
   SortFromThisNode(kMyNodeId_);
-  node.bucket = BucketIndex(node.node_id);
   NodeInfo furthest_close_node =
            routing_table_nodes_[Parameters::kClosestNodesSize];
   auto not_found = routing_table_nodes_.end();
@@ -129,16 +142,17 @@ bool RoutingTable::MakeSpaceForNodeToBeAdded(NodeInfo &node, bool remove) {
   }
 
   for (auto it = furthest_close_node_iter; it != not_found; ++it) {
-    if (node.bucket > (*it).bucket)
+    if (node.bucket >= (*it).bucket) {
+      /// stop searching as it's worthless
       return false;
+    }
     /// safety net
-    if ((not_found - it) < (Parameters::kBucketTargetSize + 1))
+    if ((not_found - it) < (Parameters::kBucketTargetSize + 1)) {
+      /// reached end of checkable area
       return false;
+    }
 
     if ((*it).bucket == (*(it + Parameters::kBucketTargetSize + 1)).bucket) {
-      /// does no good to add this node
-      if (node.bucket >= (*it).bucket)
-        return false;
       /// here we know the node should fit into a bucket if
       /// the bucket has too many nodes AND node to add
       /// has a lower bucketindex

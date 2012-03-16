@@ -28,7 +28,6 @@
 //#include "maidsafe/routing/routing_table.h"
 #include "maidsafe/routing/log.h"
 
-
 namespace maidsafe {
 
 namespace routing {

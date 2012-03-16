@@ -45,6 +45,9 @@ typedef protobuf::Contact Contact;
 
 
 struct NodeInfo {
+  NodeInfo() :
+  node_id(), public_key(), rank(), bucket(99999), endpoint(), dimension_1(),
+  dimension_2(), dimension_3(), dimension_4() {}
   NodeId node_id;
   asymm::PublicKey public_key;
   int32_t rank;
