@@ -34,6 +34,8 @@
 #endif
 #include "maidsafe/routing/node_id.h"
 #include "maidsafe/routing/log.h"
+#include "maidsafe/transport/transport.h"
+
 
 namespace maidsafe {
 
@@ -41,33 +43,52 @@ namespace routing {
 
 typedef protobuf::Contact Contact;
 
+
+struct NodeInfo {
+  NodeId node_id;
+  asymm::PublicKey public_key;
+  int32_t rank;
+  int32_t bucket;
+  transport::Endpoint endpoint;
+  int32_t dimension_1; 
+  int32_t dimension_2;
+  int32_t dimension_3;
+  int32_t dimension_4; 
+};
+
 class RoutingTable {
+
  public:
   explicit RoutingTable(const Contact &my_contact);
   ~RoutingTable();
-  bool AddNode(const NodeId &node_id);
+  bool AddNode(NodeInfo &node, bool node_pub_key_is_set);
+  bool DropNode(NodeId &node_id);
+  bool DropNode(transport::Endpoint &endpoint);
   bool IsMyNodeInRange(const NodeId &node_id, uint16_t closest_nodes);
   bool AmIClosestNode(const NodeId &node_id);
   std::vector<NodeId> GetClosestNodes(const NodeId &from,
-                                      unsigned int number_to_get);
+                                        unsigned int number_to_get);
   NodeId GetClosestNode(const NodeId &from, unsigned int node_number);
   unsigned int Size() {
-    return static_cast<unsigned int>(routing_table_nodes_.size());
+    return static_cast<uint16_t>(routing_table_nodes_.size());
   }
 
  private:
   RoutingTable(const RoutingTable&);
   RoutingTable& operator=(const RoutingTable&);
-  void InsertContact(const Contact &contact);
   int16_t BucketIndex(const NodeId &rhs) const;
-  bool MakeSpaceForNodeToBeAdded(const NodeId &node_id);
+  bool InsertNode(NodeInfo &node);
+  bool CheckValidParameters(NodeInfo &node);
+  bool CheckarametersAreUnique(NodeInfo &node);
+  void ValidatePublicKey(NodeInfo &node);
+  bool MakeSpaceForNodeToBeAdded(NodeInfo &node, bool remove_and_add);
   void SortFromThisNode(const NodeId &from);
   void PartialSortFromThisNode(const NodeId &from, int16_t number_to_sort);
   bool RemoveClosecontact(const NodeId &node_id);
   bool AddcloseContact(const Contact &contact);
   bool sorted_;
   const NodeId kMyNodeId_;
-  std::vector<NodeId> routing_table_nodes_;
+  std::vector<NodeInfo> routing_table_nodes_;
   boost::mutex mutex_;
 //   ManagedConnections MC_;
 };

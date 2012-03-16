@@ -42,6 +42,7 @@ class Contact;
 class Message;
 }  // namespace protobuf
 
+
 struct Message;
 class NodeId;
 
@@ -72,7 +73,8 @@ class RoutingImpl {
   void DoConnectResponse(const protobuf::Message &message);
   void DoFindNodeRequest(protobuf::Message &message);
   void DoFindNodeResponse(const protobuf::Message &message);
-
+  void DoValidateIdRequest(const protobuf::Message &message);
+  void DoValidateIdResponse(const protobuf::Message &message);
   AsioService asio_service_;
   fs::path config_file_;
   std::vector<protobuf::Contact> bootstrap_nodes_;

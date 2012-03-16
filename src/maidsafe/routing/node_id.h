@@ -26,6 +26,7 @@ namespace maidsafe {
 namespace routing {
   
 extern const uint16_t kKeySizeBytes;
+extern const uint16_t kKeySizeBits;
 extern const std::string kZeroId;
 
 size_t BitToByteCount(const size_t &bit_count);

@@ -310,11 +310,11 @@ void RoutingImpl::DoFindNodeRequest(protobuf::Message &message) {
 }
 
 void RoutingImpl::DoFindNodeResponse(const protobuf::Message &message) {
-  protobuf::FindNodesResponse find_nodes;
-  if (! find_nodes.ParseFromString(message.data()))
-    return;
-  for (int i = 0; i < find_nodes.nodes().size(); ++i)
-    routing_table_.AddNode(NodeId(find_nodes.nodes(i)));
+//   protobuf::FindNodesResponse find_nodes;
+//   if (! find_nodes.ParseFromString(message.data()))
+//     return;
+//   for (int i = 0; i < find_nodes.nodes().size(); ++i)
+//     routing_table_.AddNode(NodeId(find_nodes.nodes(i)));
 }
 
 }  // namespace routing
