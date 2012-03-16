@@ -66,7 +66,7 @@ TEST(RoutingTableTest, FUNC_AddCloseNodes) {
    /// TODO we should fail when public keys are the same
    for (unsigned int i = 0; i < Parameters::kClosestNodesSize ; ++i) {
      node = MakeNode();
-     node.endpoint.port = 1501 + i;
+     node.endpoint.port = 1501 + i;  // has to be unique
      EXPECT_TRUE(RT.AddNode(node, true));
    }   
    EXPECT_EQ(RT.Size(), Parameters::kClosestNodesSize);

@@ -61,7 +61,6 @@ Message::Message(const protobuf::Message &protobuf_message)
                       protobuf_message.routing_failure() : false) {}
 
   
-
 Routing::Routing(NodeType node_type, const fs::path &config_file)
     : pimpl_(new RoutingImpl(node_type, config_file)) {}
 

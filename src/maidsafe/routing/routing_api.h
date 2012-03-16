@@ -23,6 +23,23 @@ __________
 7:  Allow retrieval of bootstrap nodes from known location.
 8:  Remove bad nodes from all routing tables (ban from network).
 9:  Inform of close node changes in routing table.
+
+Client connects with a made up address (which must be unique (he can remember it))
+but requres to sign with a valid PMID
+Connects to closest nodes plus some others (no need to update much)
+Send all requests via closest node to destination_id
+all returns will come through close nodes mostly unless we allow
+by proxy which I think we should.
+We can detect a client and wrap his message in one of ours
+this can make sure they can only do certain things as well (no accounts/CIH etc.)
+we can register client acceptable messages or vault accptable and allow
+clients anything else ? 
+if a client or hacker tries to start as a vault ID it will not be unique
+  we can use dans signal block to make sure clients only get signalled client stuff
+  this will help is we release a public API and soembody tries to get smart
+  (help not solve)
+  The node passing the message back knows its a client he is talking to and if the message is a vault
+  type he can drop it.
 */
 
 #ifndef MAIDSAFE_ROUTING_API_H_
@@ -44,7 +61,6 @@ __________
 #  error This API is not compatible with the installed library.\
   Please update the maidsafe_routing library.
 #endif
-
 
 namespace maidsafe {
 
