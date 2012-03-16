@@ -77,10 +77,8 @@ class RoutingTable {
   RoutingTable(const RoutingTable&);
   RoutingTable& operator=(const RoutingTable&);
   int16_t BucketIndex(const NodeId &rhs) const;
-  bool InsertNode(NodeInfo &node);
-  bool CheckValidParameters(NodeInfo &node);
-  bool CheckarametersAreUnique(NodeInfo &node);
-  void ValidatePublicKey(NodeInfo &node);
+  bool CheckValidParameters(const NodeInfo &node);
+  bool CheckarametersAreUnique(const NodeInfo &node);
   bool MakeSpaceForNodeToBeAdded(NodeInfo &node, bool remove_and_add);
   void SortFromThisNode(const NodeId &from);
   void PartialSortFromThisNode(const NodeId &from, int16_t number_to_sort);

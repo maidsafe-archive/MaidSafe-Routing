@@ -29,7 +29,19 @@ class RoutingTableTest {
   RoutingTableTest();
 };
 
-TEST(RoutingTableTest, BEH_AddCloseNodes) {
+NodeInfo MakeNode() {
+  NodeInfo node;
+  node.node_id = NodeId(RandomString(64));
+  asymm::Keys keys;
+  asymm::GenerateKeyPair(&keys);
+  node.public_key = keys.public_key;
+  transport::Port port = (RandomUint32() % 30000) + 1500;
+  transport::IP ip;
+  node.endpoint = transport::Endpoint(ip.from_string("192.168.1.1") , port);
+  return node;
+}
+
+TEST(RoutingTableTest, FUNC_AddCloseNodes) {
   protobuf::Contact contact;
   contact.set_node_id(RandomString(64));
   RoutingTable RT(contact);
@@ -40,20 +52,21 @@ TEST(RoutingTableTest, BEH_AddCloseNodes) {
      EXPECT_TRUE(RT.AddNode(node, false));
    }
    EXPECT_EQ(RT.Size(), 0);
+   asymm::PublicKey dummy_key;
    /// check we cannot input nodes with invalid public_keys
    for (unsigned int i = 0; i < Parameters::kClosestNodesSize ; ++i) {
-     node.node_id = NodeId(RandomString(64));
+     NodeInfo node(MakeNode());
+     node.public_key = dummy_key;
      EXPECT_FALSE(RT.AddNode(node, true));
    }   
    EXPECT_EQ(RT.Size(), 0);
-   asymm::Keys keys;
-   asymm::GenerateKeyPair(&keys);
+
    /// everything should be set to go now
    /// TODO should we also test for valid enpoints ??
    /// TODO we should fail when public keys are the same
    for (unsigned int i = 0; i < Parameters::kClosestNodesSize ; ++i) {
-     node.node_id = NodeId(RandomString(64));
-     node.public_key = keys.public_key;
+     node = MakeNode();
+     node.endpoint.port = 1501 + i;
      EXPECT_TRUE(RT.AddNode(node, true));
    }   
    EXPECT_EQ(RT.Size(), Parameters::kClosestNodesSize);

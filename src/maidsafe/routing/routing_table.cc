@@ -51,7 +51,7 @@ bool RoutingTable::AddNode(NodeInfo &node, bool node_is_known_valid) {
                    [&node](const NodeInfo &i)->bool
                    { return i.node_id ==  node.node_id; })
                  != routing_table_nodes_.end())
-    return true;
+    return false;
   if (MakeSpaceForNodeToBeAdded(node, node_is_known_valid)) {
       if (node_is_known_valid)
         routing_table_nodes_.push_back(node);
@@ -67,9 +67,9 @@ bool RoutingTable::AmIClosestNode(const NodeId& node_id) {
 }
 
 /// checks paramters are real
-bool RoutingTable::CheckValidParameters(NodeInfo& node)
+bool RoutingTable::CheckValidParameters(const NodeInfo& node)
 {
-  if ((!asymm::ValidateKey(node.public_key)))
+   if ((!asymm::ValidateKey(node.public_key, 0)))
     return false;
           /* TODO FIXME (dirvine) needs uncommented &&
           (!node.endpoint.ip.is_v4()) &&
@@ -79,7 +79,7 @@ bool RoutingTable::CheckValidParameters(NodeInfo& node)
 }
 
 /// checks parameters are unique
-bool RoutingTable::CheckarametersAreUnique(NodeInfo& node) {
+bool RoutingTable::CheckarametersAreUnique(const NodeInfo& node) {
     /// if we already have a duplicate public key return false
   if (std::find_if(routing_table_nodes_.begin(),
                    routing_table_nodes_.end(),
@@ -101,9 +101,8 @@ bool RoutingTable::CheckarametersAreUnique(NodeInfo& node) {
   return true;
 }
 
-
 bool RoutingTable::MakeSpaceForNodeToBeAdded(NodeInfo &node, bool remove) {
-  if ((remove) && (CheckValidParameters(node)))
+  if ((remove) && (!CheckValidParameters(node)))
     return false;
   
   if (Size() < Parameters::kMaxRoutingTableSize)
