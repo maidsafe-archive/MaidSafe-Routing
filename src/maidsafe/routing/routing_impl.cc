@@ -44,7 +44,7 @@ RoutingImpl::RoutingImpl(Routing::NodeType /*node_type*/,
       node_local_endpoint_(),
       node_external_endpoint_(),
       transport_(new transport::ManagedConnection()),
-      routing_table_(Contact()),  // TODO(dirvine) FIXME contact is empty here
+      routing_table_(node_id_),  // TODO(dirvine) FIXME contact is empty here
       public_keys_(),
       cache_size_hint_(Parameters::kNumChunksToCache),
       cache_chunks_(),
@@ -67,7 +67,7 @@ RoutingImpl::RoutingImpl(Routing::NodeType /*node_type*/,
       node_local_endpoint_(),
       node_external_endpoint_(),
       transport_(new transport::ManagedConnection()),
-      routing_table_(Contact()),  // TODO(dirvine) FIXME contact is empty here
+      routing_table_(node_id_),  // TODO(dirvine) FIXME contact is empty here
       public_keys_(),
       cache_size_hint_(Parameters::kNumChunksToCache),
       cache_chunks_(),

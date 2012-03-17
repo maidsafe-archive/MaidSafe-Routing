@@ -40,9 +40,7 @@ NodeInfo MakeNode() {
 }
 
 TEST(RoutingTableTest, FUNC_AddCloseNodes) {
-  protobuf::Contact contact;
-  contact.set_node_id(RandomString(64));
-  RoutingTable RT(contact);
+  RoutingTable RT(NodeId(RandomString(64)));
   NodeInfo node;
   /// check the node is useful when false is set
   for (unsigned int i = 0; i < Parameters::kClosestNodesSize ; ++i) {
@@ -72,9 +70,7 @@ TEST(RoutingTableTest, FUNC_AddCloseNodes) {
 }
 
 TEST(RoutingTableTest, BEH_AddTooManyNodes) {
-  protobuf::Contact contact;
-  contact.set_node_id(RandomString(64));
-  RoutingTable RT(contact);
+  RoutingTable RT(NodeId(RandomString(64)));
   for (int i = 0; RT.Size() < Parameters::kMaxRoutingTableSize; ++i) {
      NodeInfo node(MakeNode());
      node.endpoint.port = 1501 + i;  // has to be unique
@@ -96,10 +92,8 @@ TEST(RoutingTableTest, BEH_AddTooManyNodes) {
 }
 
 TEST(RoutingTableTest, BEH_CloseAndInRangeCheck) {
-  protobuf::Contact contact;
-  contact.set_node_id(RandomString(64));
-  RoutingTable RT(contact);
-  NodeId my_node(NodeId(contact.node_id()));
+  NodeId my_node(NodeId(RandomString(64)));
+  RoutingTable RT(my_node);
   // Add some nodes to RT
   for (int i = 0; RT.Size() < Parameters::kMaxRoutingTableSize; ++i) {
      NodeInfo node(MakeNode());

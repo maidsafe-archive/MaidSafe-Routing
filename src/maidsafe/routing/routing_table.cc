@@ -21,9 +21,9 @@
 namespace maidsafe {
 namespace routing {
   
-RoutingTable::RoutingTable(const Contact &my_contact)
+RoutingTable::RoutingTable(const NodeId &node)
     : sorted_(false),
-    kMyNodeId_(NodeId(my_contact.node_id())),
+    kMyNodeId_(node),
     routing_table_nodes_(),
     mutex_() {}
 
@@ -32,7 +32,8 @@ RoutingTable::~RoutingTable() {
   routing_table_nodes_.clear();
 }
 
-bool RoutingTable::AddNode(NodeInfo &node, bool node_is_known_valid) {
+bool RoutingTable::AddNode(maidsafe::routing::NodeInfo& node,
+                           bool node_is_known_valid) {
   boost::mutex::scoped_lock lock(mutex_);
 
   if (node.node_id == kMyNodeId_) {
@@ -54,7 +55,7 @@ bool RoutingTable::AddNode(NodeInfo &node, bool node_is_known_valid) {
   return false;
 }
 
-bool RoutingTable::DropNode(NodeId& node_id) {
+bool RoutingTable::DropNode(const NodeId& node_id) {
     for (auto it = routing_table_nodes_.begin();
          it != routing_table_nodes_.end(); ++it) {
 
@@ -66,7 +67,7 @@ bool RoutingTable::DropNode(NodeId& node_id) {
    return false;
 }
 
-bool RoutingTable::DropNode(transport::Endpoint &endpoint) {
+bool RoutingTable::DropNode(const transport::Endpoint &endpoint) {
     for (auto it = routing_table_nodes_.begin();
          it != routing_table_nodes_.end(); ++it) {
 
@@ -78,15 +79,13 @@ bool RoutingTable::DropNode(transport::Endpoint &endpoint) {
    return false;
 }
 
-bool RoutingTable::AmIClosestNode(const NodeId& node_id) {
-  boost::mutex::scoped_lock lock(mutex_);
+bool RoutingTable::AmIClosestNode(const NodeId& node_id) const {
   return ((kMyNodeId_ ^ node_id) <
           (node_id ^ routing_table_nodes_[0].node_id));
 }
 
 /// checks paramters are real
-bool RoutingTable::CheckValidParameters(const NodeInfo& node)
-{
+bool RoutingTable::CheckValidParameters(const NodeInfo& node)const {
   if ((!asymm::ValidateKey(node.public_key, 0))) {
     DLOG(INFO) << "invalid public key";
     return false;
@@ -107,7 +106,7 @@ bool RoutingTable::CheckValidParameters(const NodeInfo& node)
   return CheckarametersAreUnique(node);
 }
 
-bool RoutingTable::CheckarametersAreUnique(const NodeInfo& node) {
+bool RoutingTable::CheckarametersAreUnique(const NodeInfo& node) const {
 
     /// if we already have a duplicate public key return false
   if (std::find_if(routing_table_nodes_.begin(),
@@ -135,7 +134,8 @@ bool RoutingTable::CheckarametersAreUnique(const NodeInfo& node) {
   return true;
 }
 
-bool RoutingTable::MakeSpaceForNodeToBeAdded(NodeInfo &node, bool remove) {
+bool RoutingTable::MakeSpaceForNodeToBeAdded(maidsafe::routing::NodeInfo& node,
+                                             bool remove) {
   node.bucket = BucketIndex(node.node_id);
   if ((remove) && (!CheckValidParameters(node))) {
     DLOG(INFO) << "Invalid Parameters";

@@ -61,13 +61,13 @@ struct NodeInfo {
 
 class RoutingTable {
  public:
-  explicit RoutingTable(const Contact &my_contact);
+  explicit RoutingTable(const NodeId &node);
   ~RoutingTable();
   bool AddNode(NodeInfo &node, bool node_pub_key_is_set);
-  bool DropNode(NodeId &node_id);
-  bool DropNode(transport::Endpoint &endpoint);
+  bool DropNode(const NodeId &node_id);
+  bool DropNode(const transport::Endpoint &endpoint);
   bool IsMyNodeInRange(const NodeId &node_id, uint16_t closest_nodes);
-  bool AmIClosestNode(const NodeId &node_id);
+  bool AmIClosestNode(const NodeId &node_id) const;
   std::vector<NodeId> GetClosestNodes(const NodeId &from,
                                         unsigned int number_to_get);
   NodeInfo GetClosestNode(const NodeId &from, unsigned int node_number);
@@ -79,8 +79,8 @@ class RoutingTable {
   RoutingTable(const RoutingTable&);
   RoutingTable& operator=(const RoutingTable&);
   int16_t BucketIndex(const NodeId &rhs) const;
-  bool CheckValidParameters(const NodeInfo &node);
-  bool CheckarametersAreUnique(const NodeInfo &node);
+  bool CheckValidParameters(const NodeInfo &node) const;
+  bool CheckarametersAreUnique(const NodeInfo &node) const;
   bool MakeSpaceForNodeToBeAdded(NodeInfo &node, bool remove_and_add);
   void SortFromThisNode(const NodeId &from);
   void PartialSortFromThisNode(const NodeId &from, int16_t number_to_sort);
