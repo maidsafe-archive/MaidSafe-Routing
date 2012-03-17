@@ -12,7 +12,6 @@
 
 #include <algorithm>
 
-
 #include "boost/thread/locks.hpp"
 #include "boost/assert.hpp"
 #include "maidsafe/routing/routing_table.h"
@@ -30,11 +29,6 @@ RoutingTable::RoutingTable(const Contact &my_contact)
 
 RoutingTable::~RoutingTable() {
   boost::mutex::scoped_lock lock(mutex_);
-// TODO (dirvine) Delete this when finiished and happy
-//   SortFromThisNode(kMyNodeId_);
-//   for (auto it = routing_table_nodes_.begin();
-//        it != routing_table_nodes_.end(); ++it)
-//     DLOG(INFO) << "bucket of node " << /*((*it).node_id).ToStringEncoded(NodeId::kBinary) << */" is " << (*it).bucket;
   routing_table_nodes_.clear();
 }
 
@@ -58,6 +52,30 @@ bool RoutingTable::AddNode(NodeInfo &node, bool node_is_known_valid) {
       return true;
   }
   return false;
+}
+
+bool RoutingTable::DropNode(NodeId& node_id) {
+    for (auto it = routing_table_nodes_.begin();
+         it != routing_table_nodes_.end(); ++it) {
+
+       if((*it).node_id ==  node_id) {
+          routing_table_nodes_.erase(it);
+          return true;
+       }
+    }
+   return false;
+}
+
+bool RoutingTable::DropNode(transport::Endpoint &endpoint) {
+    for (auto it = routing_table_nodes_.begin();
+         it != routing_table_nodes_.end(); ++it) {
+
+       if((*it).endpoint ==  endpoint) {
+          routing_table_nodes_.erase(it);
+          return true;
+       }
+    }
+   return false;
 }
 
 bool RoutingTable::AmIClosestNode(const NodeId& node_id) {
@@ -203,11 +221,11 @@ int16_t RoutingTable::BucketIndex(const NodeId &rhs) const {
   return bucket;
 }
 
-NodeId RoutingTable::GetClosestNode(const NodeId &from,
+NodeInfo RoutingTable::GetClosestNode(const NodeId &from,
                                     unsigned int node_number) {
   SortFromThisNode(from);
   sorted_ = false;
-  return routing_table_nodes_[node_number].node_id;
+  return routing_table_nodes_[node_number];
 }
 
 std::vector<NodeId> RoutingTable::GetClosestNodes(const NodeId &from,

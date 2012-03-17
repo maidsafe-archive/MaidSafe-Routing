@@ -15,9 +15,7 @@
 #include <vector>
 #include "maidsafe/common/test.h"
 #include "maidsafe/common/utils.h"
-#include "maidsafe/transport/utils.h"
 #include "maidsafe/routing/routing_table.h"
-#include "maidsafe/routing/routing_api.h"
 #include "maidsafe/routing/node_id.h"
 #include "maidsafe/routing/log.h"
 
@@ -124,17 +122,24 @@ TEST(RoutingTableTest, BEH_CloseAndInRangeCheck) {
   for (uint16_t i = 0; i < Parameters::kClosestNodesSize; ++i)
     EXPECT_TRUE(std::find(close_nodes.begin(),
                           close_nodes.end(),
-                          RT.GetClosestNode(my_node, i)) != close_nodes.end());
+                          RT.GetClosestNode(my_node, i).node_id) != close_nodes.end());
   // add the node now
      NodeInfo node(MakeNode());
-     node.endpoint.port = 20000;  // has to be unique
+     node.endpoint.port = 1502;  // duplicate endpoint
      node.node_id = my_closest_node;
+     EXPECT_FALSE(RT.AddNode(node,true));
+     node.endpoint.port = 20000;
      EXPECT_TRUE(RT.AddNode(node,true));
   // should now be closest node to itself :-)
-  EXPECT_EQ(RT.GetClosestNode(my_closest_node, 0).String(),
+  EXPECT_EQ(RT.GetClosestNode(my_closest_node, 0).node_id.String(),
             my_closest_node.String());
   EXPECT_EQ(RT.Size(), Parameters::kMaxRoutingTableSize); // make sure we removed a
-                                           // node to insert this one
+  EXPECT_TRUE(RT.DropNode(node.node_id));             
+  EXPECT_FALSE(RT.DropNode(node.node_id));
+  EXPECT_TRUE(RT.AddNode(node,true));
+  EXPECT_TRUE(RT.DropNode(node.endpoint));
+  EXPECT_FALSE(RT.DropNode(node.endpoint));
+  
 }
 
 }  // namespace test

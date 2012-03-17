@@ -52,9 +52,8 @@ if a client or hacker tries to start as a vault ID it will not be unique
 
 #include "boost/signals2/signal.hpp"
 #include "boost/filesystem/path.hpp"
-
 #include "maidsafe/common/rsa.h"
-
+#include "maidsafe/transport/managed_connection.h"
 #include "maidsafe/routing/version.h"
 
 #if MAIDSAFE_ROUTING_VERSION != 100
@@ -89,6 +88,7 @@ struct Message {
   explicit Message(const protobuf::Message &protobuf_message);
   std::string source_id;
   std::string destination_id;
+  std::string target_name;
   bool cacheable;
   std::string data;
   bool direct;
@@ -107,6 +107,7 @@ class Routing {
           const asymm::PrivateKey &private_key,
           const std::string &node_id);
   ~Routing();
+  void AddManualBootStrapEndpoint(transport::Endpoint &endpoint);
   void Send(const Message &message,
             const ResponseReceivedFunctor &response_functor);
   boost::signals2::signal<void(int, Message)> &RequestReceivedSignal();

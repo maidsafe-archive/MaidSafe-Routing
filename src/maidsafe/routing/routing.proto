@@ -12,21 +12,14 @@ message Endpoint {
 
 message Contact {
   required bytes node_id = 1;
-  optional Endpoint endpoint = 2;
-  repeated bytes local_ips = 3;
-  optional int32 local_port = 4;
-  optional Endpoint rendezvous = 5;
-  optional bool tcp443 = 6;
-  optional bool tcp80 = 7;
-  optional bytes public_key_id = 8;
-  optional bytes public_key = 9;
-  optional bytes other_info = 10;
+  repeated Endpoint endpoint = 2;
+  optional bool tcp = 4;
 }
 
 message ConfigFile {
-  repeated Contact contact = 1;
+  optional bytes node_id = 1;
   optional bytes private_key = 2;
-  optional bytes node_id = 3;
+  repeated Endpoint endpoint = 3; 
 }
 
 // Message wrappers 
@@ -35,13 +28,14 @@ message ConfigFile {
 message Message {
   required bytes source_id = 1; // in response this is name of data
   required bytes destination_id = 2; // in request (except direct) this is the name of the data
-  optional bool cacheable = 3;
-  required bytes data = 4; // serialised protobuf - possibly encrypted in upper layers
-  optional bool direct = 5; // goes to a single node !! if proxy is set then to here then we transmit to endpoint 
-  required bool response = 6;
-  required int32 replication = 7;
-  required int32 type = 8; // type of data - used in signal to upper layers with (type, data)
-  optional bool routing_failure = 9;
+  optional bytes target_name = 3; // to allow for different names 
+  optional bool cacheable = 4;
+  required bytes data = 5; // serialised protobuf - possibly encrypted in upper layers
+  optional bool direct = 6; // goes to a single node !! if proxy is set then to here then we transmit to endpoint
+  required bool response = 7;
+  required int32 replication = 8;
+  required int32 type = 9; // type of data - used in signal to upper layers with (type, data)
+  optional bool routing_failure = 10;
 }
 
 message SignedMessage {
@@ -51,13 +45,15 @@ message SignedMessage {
 }
 
 message ConnectRequest {
-  optional bool client = 1;
-  required Contact contact= 2;
+  required Contact contact=1;
+  optional bool client = 2;
+  optional bool bootstrap = 3;
 }
 
 message ConnectResponse {
   required bool answer = 1;
-  required Contact contact = 2;
+  optional Contact contact = 2;
+  optional Endpoint seen_endpoint = 3;
 }
 
 message FindNodesRequest {

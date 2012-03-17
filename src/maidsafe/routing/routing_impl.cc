@@ -13,7 +13,8 @@
 #include "maidsafe/routing/routing_impl.h"
 
 #include "boost/filesystem/fstream.hpp"
-
+#include "boost/asio.hpp"
+#include "maidsafe/transport/managed_connection.h"
 //#include "maidsafe/transport/utils.h"
 //#include "maidsafe/common/utils.h"
 
@@ -41,14 +42,16 @@ RoutingImpl::RoutingImpl(Routing::NodeType /*node_type*/,
       bootstrap_nodes_(),
       private_key_(),
       node_id_(),
-      transport_(new transport::RudpTransport(asio_service_.service())),
+      node_local_endpoint_(),
+      node_external_endpoint_(),
+      transport_(new transport::ManagedConnection()),
       routing_table_(Contact()), // TODO FIXME contact is empty here
       public_keys_(), 
       cache_size_hint_(Parameters::kNumChunksToCache),
       cache_chunks_(),
       private_key_is_set_(false),
       node_is_set_(false) {
-  asio_service_.Start(5);
+      Init();
 }
 
 RoutingImpl::RoutingImpl(Routing::NodeType /*node_type*/,
@@ -62,14 +65,34 @@ RoutingImpl::RoutingImpl(Routing::NodeType /*node_type*/,
       bootstrap_nodes_(),
       private_key_(private_key),
       node_id_(node_id),
-      transport_(new transport::RudpTransport(asio_service_.service())),
+      node_local_endpoint_(),
+      node_external_endpoint_(),
+      transport_(new transport::ManagedConnection()),
       routing_table_(Contact()), // TODO FIXME contact is empty here
       public_keys_(), 
       cache_size_hint_(Parameters::kNumChunksToCache),
       cache_chunks_(),
       private_key_is_set_(false),
       node_is_set_(false) {
+      Init();
+}
+
+void RoutingImpl::Init() {
   asio_service_.Start(5);
+  transport_->Init(20);
+  node_local_endpoint_ = transport_->GetOurEndpoint();
+  LOG(INFO) << " Local IP address : " << node_local_endpoint_.ip.to_string();
+  LOG(INFO) << " Local Port       : " << node_local_endpoint_.port;
+  transport_->on_message_received()->connect(
+      std::bind(&RoutingImpl::ReceiveMessage, this, args::_1));
+  Join();
+}
+
+void RoutingImpl::AddManualBootStrapEndpoint(transport::Endpoint& endpoint) {
+  bootstrap_nodes_.push_back(endpoint);
+  LOG(INFO) << " Entered bootstrap IP address : " << endpoint.ip.to_string();
+  LOG(INFO) << " Entered bootstrap Port       : " << endpoint.port;
+  Join();
 }
 
 void RoutingImpl::Send(const Message &message,
@@ -84,6 +107,18 @@ void RoutingImpl::Send(const Message &message,
   proto_message.set_type(message.type);
   SendOn(proto_message, NodeId(message.destination_id));
   // TODO(Fraser#5#): 2012-03-14 - We'd better do something with the functor.
+}
+
+void RoutingImpl::Join() {
+  if (bootstrap_nodes_.empty()) {
+    DLOG(INFO) << "No bootstrap nodes";
+    return;
+  }
+
+  for (auto it = bootstrap_nodes_.begin();
+       it != bootstrap_nodes_.end(); ++it) {
+   
+  }
 }
 
 bool RoutingImpl::WriteConfigFile() const {
@@ -118,8 +153,12 @@ bool RoutingImpl::ReadConfigFile() {
         return false;
        }
     }
-    for (int i = 0; i != protobuf.contact_size(); ++i) 
-       bootstrap_nodes_.push_back(protobuf.contact(i));
+    transport::Endpoint endpoint;
+    for (int i = 0; i != protobuf.endpoint_size(); ++i) {
+      endpoint.ip.from_string(protobuf.endpoint(i).ip());
+      endpoint.port= protobuf.endpoint(i).port();
+      bootstrap_nodes_.push_back(endpoint);
+    }
   }
   catch(const std::exception &e) {
     DLOG(ERROR) << "Exception: " << e.what();
@@ -131,17 +170,9 @@ bool RoutingImpl::ReadConfigFile() {
 void RoutingImpl::SendOn(const protobuf::Message &message,
                          const NodeId &target_node) {
   std::string message_data(message.SerializeAsString());
-  NodeId send_to = routing_table_.GetClosestNode(target_node, 0);
-  // TODO managed connections get this !! post to asio_service !!
+  NodeId send_to = routing_table_.GetClosestNode(target_node, 0).node_id;
+//   transport_->Send(
 }
-
-
-
-
-//transport::Endpoint RoutingImpl::GetLocalEndpoint() {
-//
-//}
-
 
 void RoutingImpl::ReceiveMessage(const std::string &message) {
   protobuf::Message protobuf_message;
@@ -152,30 +183,17 @@ void RoutingImpl::ReceiveMessage(const std::string &message) {
 void RoutingImpl::ProcessMessage(protobuf::Message &message) {
   // handle cache data
   if (message.has_cacheable() && message.cacheable()) {
-    if (message.response())
+    if (message.response()) {
       AddToCache(message);
-//    else
-//        GetFromCache(message);
-  } else  {  // request
-    for(auto it = cache_chunks_.begin(); it != cache_chunks_.end(); ++it) {
-      if ((*it).first == message.source_id()) {
-        message.set_destination_id(message.source_id());
-        message.set_cacheable(true);
-        message.set_data((*it).second);
-        message.set_source_id(node_id_.String());
-        message.set_direct(true);
-        message.set_response(false);
-        NodeId next_node =
-            routing_table_.GetClosestNode(NodeId(message.destination_id()), 0);
-        SendOn(message, next_node);
-        return; // our work here is done - send it home !!
-      }
-    }
+     } else  {  // request
+       if (GetFromCache(message))
+         return;
+     }
   }
   // is it for us ??
   if (!routing_table_.AmIClosestNode(NodeId(message.destination_id()))) {
     NodeId next_node =
-              routing_table_.GetClosestNode(NodeId(message.destination_id()), 0);
+              routing_table_.GetClosestNode(NodeId(message.destination_id()), 0).node_id;
     SendOn(message, next_node);
     return;
   } else { // I am closest
@@ -219,7 +237,7 @@ void RoutingImpl::ProcessMessage(protobuf::Message &message) {
                                          static_cast<uint16_t>(message.replication()));
     for (auto it = close.begin(); it != close.end(); ++it) {
       message.set_destination_id((*it).String());
-      NodeId send_to = routing_table_.GetClosestNode((*it), 0);
+      NodeId send_to = routing_table_.GetClosestNode((*it), 0).node_id;
       SendOn(message, send_to);
     }
     try {
@@ -231,6 +249,25 @@ void RoutingImpl::ProcessMessage(protobuf::Message &message) {
     }
     return;
   }
+}
+
+bool RoutingImpl::GetFromCache(protobuf::Message &message) {
+  bool result(false);
+  for(auto it = cache_chunks_.begin(); it != cache_chunks_.end(); ++it) {
+      if ((*it).first == message.source_id()) {
+        result = true;
+        message.set_destination_id(message.source_id());
+        message.set_cacheable(true);
+        message.set_data((*it).second);
+        message.set_source_id(node_id_.String());
+        message.set_direct(true);
+        message.set_response(false);
+        NodeId next_node =
+            routing_table_.GetClosestNode(NodeId(message.destination_id()), 0).node_id;
+        SendOn(message, next_node);
+      }
+  }
+  return result;
 }
 
 void RoutingImpl::AddToCache(const protobuf::Message &message) {
@@ -274,16 +311,19 @@ void RoutingImpl::DoPingResponse(const protobuf::Message &message) {
     return; // TODO FIXME IMPLEMENT ME
 }
 
-void RoutingImpl::DoConnectRequest(protobuf::Message &/*message*/) {
+void RoutingImpl::DoConnectRequest(protobuf::Message &message) {
+    /// create a connect message to send direct.
+  protobuf::ConnectRequest protobuf_connect_request;
+  protobuf::Endpoint protobuf_endpoint;
+  /// for now accept bootstrap requests without prejeduce
+  
+  /// for now accept client requests without prejeduce
 }
 
 void RoutingImpl::DoConnectResponse(const protobuf::Message &message) {
-  // TODO - check contact for direct conencted node - i.e try a
-  // quick connect / ping to the remote endpoint and if reacheable
-  // store in bootstrap_nodes_ and do a WriteConfigFile()
-  // this may be where we need a ping command to iterate and remove
-  // any long dead nodes from the table.
-  // Keep at least 1000 nodes in table and drop any dead beyond this
+// send message back  wait on his connect
+// add him to a pending endpoint queue
+// and when transport asks us to accept him we will
   if (message.has_source_id())
     DLOG(INFO) << " have source ID";
 }
@@ -309,12 +349,18 @@ void RoutingImpl::DoFindNodeRequest(protobuf::Message &message) {
 }
 
 void RoutingImpl::DoFindNodeResponse(const protobuf::Message &message) {
-//   protobuf::FindNodesResponse find_nodes;
-//   if (! find_nodes.ParseFromString(message.data()))
-//     return;
-//   for (int i = 0; i < find_nodes.nodes().size(); ++i)
-//     routing_table_.AddNode(NodeId(find_nodes.nodes(i)));
+  protobuf::FindNodesResponse find_nodes;
+  if (! find_nodes.ParseFromString(message.data()))
+    return;
+  for (int i = 0; i < find_nodes.nodes().size(); ++i) {
+    NodeInfo node;
+    node.node_id = NodeId(find_nodes.nodes(i));
+    routing_table_.AddNode(node, false);
+  }
 }
+
+
+
 
 }  // namespace routing
 

@@ -38,6 +38,7 @@ const unsigned int Parameters::kNumChunksToCache(100);
 Message::Message()
     : source_id(),
       destination_id(),
+      target_name(),
       cacheable(false),
       data(),
       direct(false),
@@ -49,6 +50,8 @@ Message::Message()
 Message::Message(const protobuf::Message &protobuf_message)
     : source_id(protobuf_message.source_id()),
       destination_id(protobuf_message.destination_id()),
+      target_name(protobuf_message.has_target_name() ?
+                protobuf_message.target_name() : ""),
       cacheable(protobuf_message.has_cacheable() ?
                 protobuf_message.cacheable() : false),
       data(protobuf_message.data()),
@@ -69,7 +72,11 @@ Routing::Routing(NodeType node_type,
                  const asymm::PrivateKey &private_key,
                  const std::string &node_id)
     : pimpl_(new RoutingImpl(node_type, config_file, private_key, node_id)) {}
-         
+
+void Routing::AddManualBootStrapEndpoint(transport::Endpoint &endpoint) {
+  pimpl_->AddManualBootStrapEndpoint(endpoint);
+}
+
 void Routing::Send(const Message &message,
                    const ResponseReceivedFunctor &response_functor) {
   pimpl_->Send(message, response_functor);

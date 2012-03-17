@@ -71,7 +71,7 @@ class RoutingTable {
   bool AmIClosestNode(const NodeId &node_id);
   std::vector<NodeId> GetClosestNodes(const NodeId &from,
                                         unsigned int number_to_get);
-  NodeId GetClosestNode(const NodeId &from, unsigned int node_number);
+  NodeInfo GetClosestNode(const NodeId &from, unsigned int node_number);
   unsigned int Size() {
     return static_cast<uint16_t>(routing_table_nodes_.size());
   }
