@@ -10,13 +10,13 @@
  *  the explicit written permission of the board of directors of maidsafe.net. *
  ******************************************************************************/
 
+#include <utility>  /// for pair
+
 #include "maidsafe/routing/routing_impl.h"
 
 #include "boost/filesystem/fstream.hpp"
 #include "boost/asio.hpp"
 #include "maidsafe/transport/managed_connection.h"
-//#include "maidsafe/transport/utils.h"
-//#include "maidsafe/common/utils.h"
 
 #ifdef __MSVC__
 #  pragma warning(push)
@@ -26,7 +26,6 @@
 #ifdef __MSVC__
 #  pragma warning(pop)
 #endif
-//#include "maidsafe/routing/routing_table.h"
 #include "maidsafe/routing/log.h"
 
 namespace maidsafe {
@@ -45,8 +44,8 @@ RoutingImpl::RoutingImpl(Routing::NodeType /*node_type*/,
       node_local_endpoint_(),
       node_external_endpoint_(),
       transport_(new transport::ManagedConnection()),
-      routing_table_(Contact()), // TODO FIXME contact is empty here
-      public_keys_(), 
+      routing_table_(Contact()),  // TODO(dirvine) FIXME contact is empty here
+      public_keys_(),
       cache_size_hint_(Parameters::kNumChunksToCache),
       cache_chunks_(),
       private_key_is_set_(false),
@@ -68,8 +67,8 @@ RoutingImpl::RoutingImpl(Routing::NodeType /*node_type*/,
       node_local_endpoint_(),
       node_external_endpoint_(),
       transport_(new transport::ManagedConnection()),
-      routing_table_(Contact()), // TODO FIXME contact is empty here
-      public_keys_(), 
+      routing_table_(Contact()),  // TODO(dirvine) FIXME contact is empty here
+      public_keys_(),
       cache_size_hint_(Parameters::kNumChunksToCache),
       cache_chunks_(),
       private_key_is_set_(false),
@@ -88,7 +87,7 @@ void RoutingImpl::Init() {
   Join();
 }
 
-void RoutingImpl::AddManualBootStrapEndpoint(transport::Endpoint& endpoint) {
+void RoutingImpl::AddBootStrapEndpoint(const transport::Endpoint& endpoint) {
   bootstrap_nodes_.push_back(endpoint);
   LOG(INFO) << " Entered bootstrap IP address : " << endpoint.ip.to_string();
   LOG(INFO) << " Entered bootstrap Port       : " << endpoint.port;
@@ -117,12 +116,11 @@ void RoutingImpl::Join() {
 
   for (auto it = bootstrap_nodes_.begin();
        it != bootstrap_nodes_.end(); ++it) {
-   
   }
 }
 
 bool RoutingImpl::WriteConfigFile() const {
-  // TODO implement 
+  // TODO(dirvine) implement
 return false;
 }
 
@@ -137,8 +135,8 @@ bool RoutingImpl::ReadConfigFile() {
     fs::ifstream config_file_stream(config_file_);
     if (!protobuf.ParseFromString(config_file_.string()))
       return false;
-    if(!private_key_is_set_) {
-      if(!protobuf.has_private_key()) {
+    if (!private_key_is_set_) {
+      if (!protobuf.has_private_key()) {
         DLOG(ERROR) << "No private key in config or set ";
         return false;
       } else {
@@ -146,7 +144,7 @@ bool RoutingImpl::ReadConfigFile() {
       }
     }
     if (!node_is_set_) {
-      if(protobuf.has_node_id()) {
+      if (protobuf.has_node_id()) {
          node_id_ = NodeId(protobuf.node_id());
        } else {
         DLOG(ERROR) << "Cannot read NodeId ";
@@ -193,23 +191,23 @@ void RoutingImpl::ProcessMessage(protobuf::Message &message) {
   // is it for us ??
   if (!routing_table_.AmIClosestNode(NodeId(message.destination_id()))) {
     NodeId next_node =
-              routing_table_.GetClosestNode(NodeId(message.destination_id()), 0).node_id;
+     routing_table_.GetClosestNode(NodeId(message.destination_id()), 0).node_id;
     SendOn(message, next_node);
     return;
-  } else { // I am closest
-    if (message.type() == 0) { // ping
+  } else {  // I am closest
+    if (message.type() == 0) {  // ping
       if (message.has_response() && message.response()) {
         DoPingResponse(message);
-        return; // Job done !!
+        return;  // Job done !!
       } else {
         DoPingRequest(message);
         return;
       }
     }
-    if (message.type() == 1) {// find_nodes
+    if (message.type() == 1) {  // find_nodes
       if (message.has_response() && message.response()) {
         DoFindNodeResponse(message);
-        return; // Job done !!
+        return;   // Job done !!
       } else {
         DoFindNodeRequest(message);
         return;
@@ -217,7 +215,7 @@ void RoutingImpl::ProcessMessage(protobuf::Message &message) {
     }
     if (message.has_direct() && message.direct()) {
       if (message.destination_id() != node_id_.String()) {
-      // TODO send back a failure I presume !!
+      // TODO(dirvine) send back a failure I presume !!
       } else {
         try {
           Message msg(message);
@@ -234,7 +232,7 @@ void RoutingImpl::ProcessMessage(protobuf::Message &message) {
     message.set_source_id(node_id_.String());
     auto close =
           routing_table_.GetClosestNodes(NodeId(message.destination_id()),
-                                         static_cast<uint16_t>(message.replication()));
+                                 static_cast<uint16_t>(message.replication()));
     for (auto it = close.begin(); it != close.end(); ++it) {
       message.set_destination_id((*it).String());
       NodeId send_to = routing_table_.GetClosestNode((*it), 0).node_id;
@@ -253,7 +251,7 @@ void RoutingImpl::ProcessMessage(protobuf::Message &message) {
 
 bool RoutingImpl::GetFromCache(protobuf::Message &message) {
   bool result(false);
-  for(auto it = cache_chunks_.begin(); it != cache_chunks_.end(); ++it) {
+  for (auto it = cache_chunks_.begin(); it != cache_chunks_.end(); ++it) {
       if ((*it).first == message.source_id()) {
         result = true;
         message.set_destination_id(message.source_id());
@@ -263,7 +261,8 @@ bool RoutingImpl::GetFromCache(protobuf::Message &message) {
         message.set_direct(true);
         message.set_response(false);
         NodeId next_node =
-            routing_table_.GetClosestNode(NodeId(message.destination_id()), 0).node_id;
+           routing_table_.GetClosestNode(NodeId(message.destination_id()),
+                                         0).node_id;
         SendOn(message, next_node);
       }
   }
@@ -308,7 +307,7 @@ void RoutingImpl::DoPingResponse(const protobuf::Message &message) {
   if (!ping_response.ParseFromString(message.data()))
     return;
   if (ping_response.pong())
-    return; // TODO FIXME IMPLEMENT ME
+    return;  // TODO(dirvine) FIXME IMPLEMENT ME
 }
 
 void RoutingImpl::DoConnectRequest(protobuf::Message &message) {
@@ -316,7 +315,7 @@ void RoutingImpl::DoConnectRequest(protobuf::Message &message) {
   protobuf::ConnectRequest protobuf_connect_request;
   protobuf::Endpoint protobuf_endpoint;
   /// for now accept bootstrap requests without prejeduce
-  
+
   /// for now accept client requests without prejeduce
 }
 
@@ -333,9 +332,9 @@ void RoutingImpl::DoFindNodeRequest(protobuf::Message &message) {
   protobuf::FindNodesResponse found_nodes;
   std::vector<NodeId>
           nodes(routing_table_.GetClosestNodes(NodeId(message.destination_id()),
-                                              static_cast<uint16_t>(find_nodes.num_nodes_requested())));
-  
-  for (auto it = nodes.begin(); it != nodes.end(); ++it) 
+                      static_cast<uint16_t>(find_nodes.num_nodes_requested())));
+
+  for (auto it = nodes.begin(); it != nodes.end(); ++it)
     found_nodes.add_nodes((*it).String());
   message.set_destination_id(message.source_id());
   message.set_source_id(node_id_.String());
@@ -350,7 +349,7 @@ void RoutingImpl::DoFindNodeRequest(protobuf::Message &message) {
 
 void RoutingImpl::DoFindNodeResponse(const protobuf::Message &message) {
   protobuf::FindNodesResponse find_nodes;
-  if (! find_nodes.ParseFromString(message.data()))
+  if (!find_nodes.ParseFromString(message.data()))
     return;
   for (int i = 0; i < find_nodes.nodes().size(); ++i) {
     NodeInfo node;

@@ -91,14 +91,19 @@ bool RoutingTable::CheckValidParameters(const NodeInfo& node)
     DLOG(INFO) << "invalid public key";
     return false;
   }
-          /* TODO FIXME (dirvine) needs uncommented &&
-          (!node.endpoint.ip.is_v4()) &&
-          (node.endpoint.port > 1500) &&
-          (node.endpoint.port < 35000))*/
-  if (node.bucket == 99999) {
-        DLOG(INFO) << "bad bucket index";
+
+  if  ((!node.endpoint.ip.is_v4()) &&
+      (node.endpoint.port < 1500) &&
+      (node.endpoint.port > 35000)) {
+    DLOG(INFO) << "invalid endpoint";
     return false;
   }
+  
+  if (node.bucket == 99999) {
+        DLOG(INFO) << "invalid bucket index";
+    return false;
+  }
+  
   return CheckarametersAreUnique(node);
 }
 

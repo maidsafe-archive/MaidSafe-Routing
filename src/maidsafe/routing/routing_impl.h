@@ -10,14 +10,14 @@
  *  the explicit written permission of the board of directors of maidsafe.net. *
  ******************************************************************************/
 
-#ifndef MAIDSAFE_ROUTING_IMPL_H_
-#define MAIDSAFE_ROUTING_IMPL_H_
+#ifndef MAIDSAFE_ROUTING_ROUTING_IMPL_H_
+#define MAIDSAFE_ROUTING_ROUTING_IMPL_H_
 
 
 #include <map>
 #include <string>
 #include <vector>
-
+#include <utility>  // for pair<>
 #include "boost/filesystem/path.hpp"
 #include "boost/signals2/signal.hpp"
 
@@ -51,7 +51,7 @@ class RoutingImpl {
               const fs::path &config_file,
               const asymm::PrivateKey &private_key,
               const std::string &node_id);
-  void AddManualBootStrapEndpoint(transport::Endpoint &endpoint);
+  void AddBootStrapEndpoint(const transport::Endpoint &endpoint);
   void Send(const Message &message, ResponseReceivedFunctor response_functor);
   // These are public members as RoutingImpl is the d-pointer for Routing.
   bs2::signal<void(int, Message)> message_received_signal_;
@@ -89,11 +89,10 @@ class RoutingImpl {
   std::vector<std::pair<std::string, std::string>> cache_chunks_;
   bool private_key_is_set_;
   bool node_is_set_;
-  
 };
 
 }  // namespace routing
 
 }  // namespace maidsafe
 
-#endif  // MAIDSAFE_ROUTING_IMPL_H_
+#endif  // MAIDSAFE_ROUTING_ROUTING_IMPL_H_

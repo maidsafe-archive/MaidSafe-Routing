@@ -33,7 +33,7 @@ by proxy which I think we should.
 We can detect a client and wrap his message in one of ours
 this can make sure they can only do certain things as well (no accounts/CIH etc.)
 we can register client acceptable messages or vault accptable and allow
-clients anything else ? 
+clients anything else ?
 if a client or hacker tries to start as a vault ID it will not be unique
   we can use dans signal block to make sure clients only get signalled client stuff
   this will help is we release a public API and soembody tries to get smart
@@ -42,8 +42,8 @@ if a client or hacker tries to start as a vault ID it will not be unique
   type he can drop it.
 */
 
-#ifndef MAIDSAFE_ROUTING_API_H_
-#define MAIDSAFE_ROUTING_API_H_
+#ifndef MAIDSAFE_ROUTING_ROUTING_API_H_
+#define MAIDSAFE_ROUTING_ROUTING_API_H_
 
 #include <cstdint>
 #include <functional>
@@ -107,7 +107,7 @@ class Routing {
           const asymm::PrivateKey &private_key,
           const std::string &node_id);
   ~Routing();
-  void AddManualBootStrapEndpoint(transport::Endpoint &endpoint);
+  void AddBootStrapEndpoint(const maidsafe::transport::Endpoint& endpoint);
   void Send(const Message &message,
             const ResponseReceivedFunctor &response_functor);
   boost::signals2::signal<void(int, Message)> &RequestReceivedSignal();
@@ -123,4 +123,4 @@ class Routing {
 
 }  // namespace maidsafe
 
-#endif  // MAIDSAFE_ROUTING_API_H_
+#endif  // MAIDSAFE_ROUTING_ROUTING_API_H_

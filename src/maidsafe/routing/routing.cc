@@ -63,7 +63,7 @@ Message::Message(const protobuf::Message &protobuf_message)
       routing_failure(protobuf_message.has_routing_failure() ?
                       protobuf_message.routing_failure() : false) {}
 
-  
+
 Routing::Routing(NodeType node_type, const fs::path &config_file)
     : pimpl_(new RoutingImpl(node_type, config_file)) {}
 
@@ -73,8 +73,8 @@ Routing::Routing(NodeType node_type,
                  const std::string &node_id)
     : pimpl_(new RoutingImpl(node_type, config_file, private_key, node_id)) {}
 
-void Routing::AddManualBootStrapEndpoint(transport::Endpoint &endpoint) {
-  pimpl_->AddManualBootStrapEndpoint(endpoint);
+void Routing::AddBootStrapEndpoint(const transport::Endpoint &endpoint) {
+  pimpl_->AddBootStrapEndpoint(endpoint);
 }
 
 void Routing::Send(const Message &message,

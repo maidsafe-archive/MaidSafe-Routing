@@ -19,12 +19,10 @@
 namespace maidsafe {
 namespace routing {
 namespace test {
-  
+
 class RoutingTableAPI {
   RoutingTableAPI();
 };
-
-// TODO really need transport or a fancy way around not having it :-(
 
 // TEST(RoutingTableAPI, API_BadconfigFile) {
 //   Routing RtAPI;

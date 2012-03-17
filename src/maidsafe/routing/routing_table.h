@@ -53,14 +53,13 @@ struct NodeInfo {
   int32_t rank;
   int32_t bucket;
   transport::Endpoint endpoint;
-  int32_t dimension_1; 
+  int32_t dimension_1;
   int32_t dimension_2;
   int32_t dimension_3;
-  int32_t dimension_4; 
+  int32_t dimension_4;
 };
 
 class RoutingTable {
-
  public:
   explicit RoutingTable(const Contact &my_contact);
   ~RoutingTable();
