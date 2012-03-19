@@ -234,7 +234,7 @@ void RoutingImpl::DoValidateIdRequest(const protobuf::Message& message) {
 void RoutingImpl::ProcessMessage(protobuf::Message &message) {
   // handle cache data
   if (message.has_cacheable() && message.cacheable()) {
-    if (message.response()) {
+    if (message.has_response() && message.response()) {
       AddToCache(message);
      } else  {  // request
        if (GetFromCache(message))
@@ -250,12 +250,21 @@ void RoutingImpl::ProcessMessage(protobuf::Message &message) {
   } else {  // I am closest
 
     if (message.type() == 0) {  // ping
-      DoPingResponse(message);
-      return;  // Job done !!
+      if (message.has_response() && message.response()) {
+        DoPingResponse(message);
+        return;  // Job done !!
+      } else {
+        DoPingRequest(message);
+      }
     }
     if (message.type() == 1) {  // find_nodes
-      DoFindNodeResponse(message);
-      return;
+      if (message.has_response() && message.response()) {
+        DoFindNodeResponse(message);
+       return;
+      } else {
+         DoFindNodeRequest(message);
+         return;
+      }
     }
     if (message.has_direct() && message.direct()) {
       if (message.destination_id() != node_id_.String()) {
@@ -271,17 +280,6 @@ void RoutingImpl::ProcessMessage(protobuf::Message &message) {
         return;
       }
     }
-    // I am closest so will send to all my replicant nodes
-    message.set_direct(true);
-    message.set_source_id(node_id_.String());
-    auto close =
-          routing_table_.GetClosestNodes(NodeId(message.destination_id()),
-                                 static_cast<uint16_t>(message.replication()));
-    for (auto it = close.begin(); it != close.end(); ++it) {
-      message.set_destination_id((*it).String());
-      NodeId send_to = routing_table_.GetClosestNode((*it), 0).node_id;
-      SendOn(message, send_to);
-    }
     // if this is set not direct and ID == ME do NOT respond.
     if ((message.has_direct() && !message.direct()) &&
       (message.destination_id() != node_id_.String())) {
@@ -292,7 +290,17 @@ void RoutingImpl::ProcessMessage(protobuf::Message &message) {
       catch(const std::exception &e) {
         DLOG(ERROR) << e.what();
       }
-      return;
+    }
+    // I am closest so will send to all my replicant nodes
+    message.set_direct(true);
+    message.set_source_id(node_id_.String());
+    auto close =
+          routing_table_.GetClosestNodes(NodeId(message.destination_id()),
+                                 static_cast<uint16_t>(message.replication()));
+    for (auto it = close.begin(); it != close.end(); ++it) {
+      message.set_destination_id((*it).String());
+      NodeId send_to = routing_table_.GetClosestNode((*it), 0).node_id;
+      SendOn(message, send_to);
     }
   }
 }
