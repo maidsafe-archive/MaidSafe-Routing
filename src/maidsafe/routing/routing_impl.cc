@@ -132,7 +132,8 @@ void RoutingImpl::Join() {
 }
 
 /// drop existing routing table and restart
-void RoutingImpl::BootStrapFromThisEndpoint(const transport::Endpoint &endpoint) {
+void RoutingImpl::BootStrapFromThisEndpoint(const transport::Endpoint
+                                                             &endpoint) {
   LOG(INFO) << " Entered bootstrap IP address : " << endpoint.ip.to_string();
   LOG(INFO) << " Entered bootstrap Port       : " << endpoint.port;
   for (uint i = 0; i < routing_table_.Size(); ++i) {
@@ -219,9 +220,9 @@ void RoutingImpl::ReceiveMessage(const std::string &message) {
   NodeInfo node;
   if (protobuf_message.has_source_id()) {
     node.node_id = NodeId(protobuf_message.source_id());
-    // TODO(dirvine( FIXME
     if (routing_table_.CheckNode(node))
-      asio_service_.service().post(std::bind(&RoutingImpl::DoValidateIdRequest, this, protobuf_message));
+      asio_service_.service().post(std::bind(&RoutingImpl::DoValidateIdRequest,
+                                             this, protobuf_message));
   }
 }
 
@@ -237,7 +238,7 @@ void RoutingImpl::ProcessMessage(protobuf::Message &message) {
       AddToCache(message);
      } else  {  // request
        if (GetFromCache(message))
-         return;
+         return; 
      }
   }
   // is it for us ??
@@ -247,23 +248,14 @@ void RoutingImpl::ProcessMessage(protobuf::Message &message) {
     SendOn(message, next_node);
     return;
   } else {  // I am closest
+
     if (message.type() == 0) {  // ping
-      if (message.has_response() && message.response()) {
-        DoPingResponse(message);
-        return;  // Job done !!
-      } else {
-        DoPingRequest(message);
-        return;
-      }
+      DoPingResponse(message);
+      return;  // Job done !!
     }
     if (message.type() == 1) {  // find_nodes
-      if (message.has_response() && message.response()) {
-        DoFindNodeResponse(message);
-        return;   // Job done !!
-      } else {
-        DoFindNodeRequest(message);
-        return;
-      }
+      DoFindNodeResponse(message);
+      return;
     }
     if (message.has_direct() && message.direct()) {
       if (message.destination_id() != node_id_.String()) {
@@ -290,14 +282,18 @@ void RoutingImpl::ProcessMessage(protobuf::Message &message) {
       NodeId send_to = routing_table_.GetClosestNode((*it), 0).node_id;
       SendOn(message, send_to);
     }
-    try {
-      Message msg(message);
-      message_received_signal_(static_cast<int>(message.type()), msg);
+    // if this is set not direct and ID == ME do NOT respond.
+    if ((message.has_direct() && !message.direct()) &&
+      (message.destination_id() != node_id_.String())) {
+      try {
+        Message msg(message);
+        message_received_signal_(static_cast<int>(message.type()), msg);
+      }
+      catch(const std::exception &e) {
+        DLOG(ERROR) << e.what();
+      }
+      return;
     }
-    catch(const std::exception &e) {
-      DLOG(ERROR) << e.what();
-    }
-    return;
   }
 }
 
@@ -409,9 +405,6 @@ void RoutingImpl::DoFindNodeResponse(const protobuf::Message &message) {
     routing_table_.CheckNode(node);
   }
 }
-
-
-
 
 }  // namespace routing
 
