@@ -107,7 +107,7 @@ class Routing {
           const asymm::PrivateKey &private_key,
           const std::string &node_id);
   ~Routing();
-  void AddBootStrapEndpoint(const maidsafe::transport::Endpoint& endpoint);
+  void BootStrapFromThisEndpoint(const maidsafe::transport::Endpoint& endpoint);
   void Send(const Message &message,
             const ResponseReceivedFunctor &response_functor);
   boost::signals2::signal<void(int, Message)> &RequestReceivedSignal();

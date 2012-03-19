@@ -54,13 +54,14 @@ message ConnectResponse {
   required bool answer = 1;
   optional Contact contact = 2;
   optional Endpoint seen_endpoint = 3;
+  optional FindNodesResponse = 4;  // if connect request is bootstrap
 }
 
 message FindNodesRequest {
   optional int32 num_nodes_requested = 1;
 }
 
-message FindNodesResponse {
+message  {
   repeated bytes nodes = 1;
 }
 

@@ -74,7 +74,7 @@ class RoutingTable {
   unsigned int Size() {
     return static_cast<uint16_t>(routing_table_nodes_.size());
   }
-
+  NodeId MyNode() { return kMyNodeId_; }
  private:
   RoutingTable(const RoutingTable&);
   RoutingTable& operator=(const RoutingTable&);

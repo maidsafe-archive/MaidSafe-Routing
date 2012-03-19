@@ -69,7 +69,7 @@ TEST(RoutingTableTest, FUNC_AddCloseNodes) {
   EXPECT_EQ(RT.Size(), Parameters::kClosestNodesSize);
 }
 
-TEST(RoutingTableTest, BEH_AddTooManyNodes) {
+TEST(RoutingTableTest, FUNC_AddTooManyNodes) {
   RoutingTable RT(NodeId(RandomString(64)));
   for (int i = 0; RT.Size() < Parameters::kMaxRoutingTableSize; ++i) {
      NodeInfo node(MakeNode());

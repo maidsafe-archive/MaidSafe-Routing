@@ -51,7 +51,7 @@ class RoutingImpl {
               const fs::path &config_file,
               const asymm::PrivateKey &private_key,
               const std::string &node_id);
-  void AddBootStrapEndpoint(const transport::Endpoint &endpoint);
+  void BootStrapFromThisEndpoint(const transport::Endpoint &endpoint);
   void Send(const Message &message, ResponseReceivedFunctor response_functor);
   // These are public members as RoutingImpl is the d-pointer for Routing.
   bs2::signal<void(int, Message)> message_received_signal_;
@@ -63,6 +63,7 @@ class RoutingImpl {
   bool WriteConfigFile() const;
   void Join();
   void SendOn(const protobuf::Message &message, const NodeId &target_node);
+  void AckRecieved(const transport::TransportCondition &, const std::string &);
   void ReceiveMessage(const std::string &message);
   void ProcessMessage(protobuf::Message &message);
   void AddToCache(const protobuf::Message &message);
@@ -89,6 +90,8 @@ class RoutingImpl {
   std::vector<std::pair<std::string, std::string>> cache_chunks_;
   bool private_key_is_set_;
   bool node_is_set_;
+  bool joined_;
+  Routing::NodeType node_type_;
 };
 
 }  // namespace routing

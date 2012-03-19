@@ -73,8 +73,8 @@ Routing::Routing(NodeType node_type,
                  const std::string &node_id)
     : pimpl_(new RoutingImpl(node_type, config_file, private_key, node_id)) {}
 
-void Routing::AddBootStrapEndpoint(const transport::Endpoint &endpoint) {
-  pimpl_->AddBootStrapEndpoint(endpoint);
+void Routing::BootStrapFromThisEndpoint(const transport::Endpoint &endpoint) {
+  pimpl_->BootStrapFromThisEndpoint(endpoint);
 }
 
 void Routing::Send(const Message &message,

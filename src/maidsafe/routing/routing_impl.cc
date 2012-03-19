@@ -27,6 +27,7 @@
 #  pragma warning(pop)
 #endif
 #include "maidsafe/routing/log.h"
+#include "return_codes.h"
 
 namespace maidsafe {
 
@@ -49,7 +50,9 @@ RoutingImpl::RoutingImpl(Routing::NodeType /*node_type*/,
       cache_size_hint_(Parameters::kNumChunksToCache),
       cache_chunks_(),
       private_key_is_set_(false),
-      node_is_set_(false) {
+      node_is_set_(false),
+      joined_(false),
+      node_type_() {
       Init();
 }
 
@@ -72,7 +75,9 @@ RoutingImpl::RoutingImpl(Routing::NodeType /*node_type*/,
       cache_size_hint_(Parameters::kNumChunksToCache),
       cache_chunks_(),
       private_key_is_set_(false),
-      node_is_set_(false) {
+      node_is_set_(false),
+      joined_(false),
+      node_type_() {
       Init();
 }
 
@@ -87,15 +92,12 @@ void RoutingImpl::Init() {
   Join();
 }
 
-void RoutingImpl::AddBootStrapEndpoint(const transport::Endpoint& endpoint) {
-  bootstrap_nodes_.push_back(endpoint);
-  LOG(INFO) << " Entered bootstrap IP address : " << endpoint.ip.to_string();
-  LOG(INFO) << " Entered bootstrap Port       : " << endpoint.port;
-  Join();
-}
-
 void RoutingImpl::Send(const Message &message,
                        ResponseReceivedFunctor response_functor) {
+  if (message.type < 100) {
+    DLOG(ERROR) << "Attempt to use Reserved message type (<100), aborted send";
+    return;
+  }
   protobuf::Message proto_message;
   proto_message.set_source_id(message.source_id);
   proto_message.set_destination_id(message.destination_id);
@@ -108,6 +110,9 @@ void RoutingImpl::Send(const Message &message,
   // TODO(Fraser#5#): 2012-03-14 - We'd better do something with the functor.
 }
 
+
+
+
 void RoutingImpl::Join() {
   if (bootstrap_nodes_.empty()) {
     DLOG(INFO) << "No bootstrap nodes";
@@ -116,7 +121,25 @@ void RoutingImpl::Join() {
 
   for (auto it = bootstrap_nodes_.begin();
        it != bootstrap_nodes_.end(); ++it) {
+    // TODO)dirvine) send bootstrap requests
+    
   }
+}
+
+/// drop existing routing table and restart
+void RoutingImpl::BootStrapFromThisEndpoint(const transport::Endpoint &endpoint) {
+  LOG(INFO) << " Entered bootstrap IP address : " << endpoint.ip.to_string();
+  LOG(INFO) << " Entered bootstrap Port       : " << endpoint.port;
+  for (uint i = 0; i < routing_table_.Size(); ++i) {
+    NodeInfo remove_node =
+                 routing_table_.GetClosestNode(routing_table_.MyNode(), 0);
+    transport_->RemoveConnection(remove_node.endpoint);
+    routing_table_.DropNode(remove_node.node_id);
+  }
+  network_status_signal_(routing_table_.Size());
+  bootstrap_nodes_.clear();
+  bootstrap_nodes_.push_back(endpoint);
+  asio_service_.service().post(std::bind(&RoutingImpl::Join, this));
 }
 
 bool RoutingImpl::WriteConfigFile() const {
@@ -165,18 +188,42 @@ bool RoutingImpl::ReadConfigFile() {
   return true;
 }
 
+void RoutingImpl::AckRecieved(const transport::TransportCondition &return_value,
+                              const std::string &message) {
+  if (return_value != kSuccess)
+    return;  // TODO(dirvine) FIXME we may need to take action here
+             // depending on return code
+  ReceiveMessage(message);
+}
+
 void RoutingImpl::SendOn(const protobuf::Message &message,
                          const NodeId &target_node) {
   std::string message_data(message.SerializeAsString());
-  NodeId send_to = routing_table_.GetClosestNode(target_node, 0).node_id;
-//   transport_->Send(
+  transport::Endpoint send_to =
+             routing_table_.GetClosestNode(target_node, 0).endpoint;
+  transport::ResponseFunctor response_functor =
+                std::bind(&RoutingImpl::AckRecieved, this, args::_1, args::_2);
+  transport_->Send(send_to, message_data, response_functor);
 }
 
 void RoutingImpl::ReceiveMessage(const std::string &message) {
   protobuf::Message protobuf_message;
+  protobuf::ConnectRequest connection_request;
   if (protobuf_message.ParseFromString(message))
     ProcessMessage(protobuf_message);
+  NodeInfo node;
+  if (protobuf_message.has_source_id()) {
+    node.node_id = NodeId(protobuf_message.source_id());
+    // TODO(dirvine( FIXME
+    if (routing_table_.AddNode(node, false))
+      asio_service_.service().post(std::bind(&RoutingImpl::DoValidateIdRequest, this, protobuf_message));
+  }
 }
+
+void RoutingImpl::DoValidateIdRequest(const protobuf::Message& message) {
+// TODO 
+}
+
 
 void RoutingImpl::ProcessMessage(protobuf::Message &message) {
   // handle cache data
