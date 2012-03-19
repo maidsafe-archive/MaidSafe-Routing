@@ -10,7 +10,7 @@
  *  the explicit written permission of the board of directors of maidsafe.net. *
  ******************************************************************************/
 
-#include <utility>  /// for pair
+#include <utility>  // for pair
 
 #include "maidsafe/routing/routing_impl.h"
 
@@ -131,7 +131,7 @@ void RoutingImpl::Join() {
   }
 }
 
-/// drop existing routing table and restart
+// drop existing routing table and restart
 void RoutingImpl::BootStrapFromThisEndpoint(const transport::Endpoint
                                                              &endpoint) {
   LOG(INFO) << " Entered bootstrap IP address : " << endpoint.ip.to_string();
@@ -232,6 +232,10 @@ void RoutingImpl::DoValidateIdRequest(const protobuf::Message& message) {
 
 
 void RoutingImpl::ProcessMessage(protobuf::Message &message) {
+  // TODO TODO(dirvine) if message is from/for a client connected
+  // to us replace the source address to me for requests
+  // in responses the message will be direct with our address
+ 
   // handle cache data
   if (message.has_cacheable() && message.cacheable()) {
     if (message.has_response() && message.response()) {
@@ -263,6 +267,15 @@ void RoutingImpl::ProcessMessage(protobuf::Message &message) {
        return;
       } else {
          DoFindNodeRequest(message);
+         return;
+      }
+    }
+    if (message.type() == 2) {  // bootstrap
+      if (message.has_response() && message.response()) {
+         DoConnectResponse(message);
+       return;
+      } else {
+         DoConnectRequest(message);
          return;
       }
     }
@@ -367,12 +380,26 @@ void RoutingImpl::DoPingResponse(const protobuf::Message &message) {
 }
 
 void RoutingImpl::DoConnectRequest(protobuf::Message &message) {
-    /// create a connect message to send direct.
+    // create a connect message to send direct.
   protobuf::ConnectRequest protobuf_connect_request;
   protobuf::Endpoint protobuf_endpoint;
-  /// for now accept bootstrap requests without prejeduce
-
-  /// for now accept client requests without prejeduce
+  transport::Endpoint peer_endpoint;
+  peer_endpoint.ip.from_string(protobuf_endpoint.ip());
+  peer_endpoint.port = protobuf_endpoint.port();
+  // for now accept bootstrap requests without prejeduce
+  if (protobuf_connect_request.has_bootstrap() &&
+      protobuf_connect_request.bootstrap()) {
+    transport_->AcceptConnection(peer_endpoint, true);
+  // TODO(dirvine) FIXME get find nodes and reply then drop connection
+    
+  }
+  // for now accept client requests without prejeduce
+  if (protobuf_connect_request.has_client() &&
+      protobuf_connect_request.client()) {
+    transport_->AcceptConnection(peer_endpoint, true);
+  // TODO(dirvine) FIXME, add to client holding table (no routing info)
+  // make sure any dropped connections try this and routing table
+  }
 }
 
 void RoutingImpl::DoConnectResponse(const protobuf::Message &message) {

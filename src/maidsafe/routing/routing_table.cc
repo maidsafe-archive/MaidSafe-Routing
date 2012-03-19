@@ -56,7 +56,7 @@ bool RoutingTable::AddOrCheckNode(maidsafe::routing::NodeInfo& node,
     return false;
   }
 
-  /// if we already have node return true
+  // if we already have node return true
   if (std::find_if(routing_table_nodes_.begin(),
                    routing_table_nodes_.end(),
                    [&node](const NodeInfo &i)->bool
@@ -89,7 +89,7 @@ bool RoutingTable::AmIClosestNode(const NodeId& node_id) {
           (node_id ^ routing_table_nodes_[0].node_id));
 }
 
-/// checks paramters are real
+// checks paramters are real
 bool RoutingTable::CheckValidParameters(const NodeInfo& node)const {
   if ((!asymm::ValidateKey(node.public_key, 0))) {
     DLOG(INFO) << "invalid public key";
@@ -113,7 +113,7 @@ bool RoutingTable::CheckValidParameters(const NodeInfo& node)const {
 
 bool RoutingTable::CheckarametersAreUnique(const NodeInfo& node) const {
 
-    /// if we already have a duplicate public key return false
+    // if we already have a duplicate public key return false
   if (std::find_if(routing_table_nodes_.begin(),
                    routing_table_nodes_.end(),
                    [&node](const NodeInfo &i)->bool
@@ -124,7 +124,7 @@ bool RoutingTable::CheckarametersAreUnique(const NodeInfo& node) const {
     return false;
   }
 
-  /// if we already have a duplicate endpoint return false
+  // if we already have a duplicate endpoint return false
     if (std::find_if(routing_table_nodes_.begin(),
                    routing_table_nodes_.end(),
                    [&node](const NodeInfo &i)->bool
@@ -135,7 +135,7 @@ bool RoutingTable::CheckarametersAreUnique(const NodeInfo& node) const {
      DLOG(INFO) << "Already have node with this endpoint";
      return false;
     }
-    /// node_id was checked in AddNode() so if were here then were unique
+    // node_id was checked in AddNode() so if were here then were unique
   return true;
 }
 
@@ -169,19 +169,19 @@ bool RoutingTable::MakeSpaceForNodeToBeAdded(maidsafe::routing::NodeInfo& node,
 
   for (auto it = furthest_close_node_iter; it != not_found; ++it) {
     if (node.bucket >= (*it).bucket) {
-      /// stop searching as it's worthless
+      // stop searching as it's worthless
       return false;
     }
-    /// safety net
+    // safety net
     if ((not_found - it) < (kBucketTargetSize + 1)) {
-      /// reached end of checkable area
+      // reached end of checkable area
       return false;
     }
 
     if ((*it).bucket == (*(it + kBucketTargetSize + 1)).bucket) {
-      /// here we know the node should fit into a bucket if
-      /// the bucket has too many nodes AND node to add
-      /// has a lower bucketindex
+      // here we know the node should fit into a bucket if
+      // the bucket has too many nodes AND node to add
+      // has a lower bucketindex
       BOOST_ASSERT_MSG(node.bucket < (*it).bucket,
                        "node replacement to a larger bucket");
       if (remove) {
@@ -215,7 +215,7 @@ bool RoutingTable::IsMyNodeInRange(const NodeId& node_id, uint range)  {
          (node_id ^ kMyNodeId_);
 }
 
-/// bucket 0 is us, 511 is furthest bucket (should fill first)
+// bucket 0 is us, 511 is furthest bucket (should fill first)
 int16_t RoutingTable::BucketIndex(const NodeId &rhs) const {
   uint16_t bucket = kKeySizeBits - 1;  // (n-1)
   std::string this_id_binary = kMyNodeId_.ToStringEncoded(NodeId::kBinary);

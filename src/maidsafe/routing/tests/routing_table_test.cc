@@ -51,14 +51,14 @@ NodeInfo MakeNode() {
 TEST(RoutingTableTest, FUNC_AddCloseNodes) {
   RoutingTable RT(NodeId(RandomString(64)));
   NodeInfo node;
-  /// check the node is useful when false is set
+  // check the node is useful when false is set
   for (unsigned int i = 0; i < kClosestNodesSize ; ++i) {
      node.node_id = NodeId(RandomString(64));
      EXPECT_TRUE(RT.CheckNode(node));
   }
   EXPECT_EQ(RT.Size(), 0);
   asymm::PublicKey dummy_key;
-  /// check we cannot input nodes with invalid public_keys
+  // check we cannot input nodes with invalid public_keys
   for (unsigned int i = 0; i < kClosestNodesSize ; ++i) {
      NodeInfo node(MakeNode());
      node.endpoint.port = 1501 + i;  // has to be unique
@@ -67,9 +67,9 @@ TEST(RoutingTableTest, FUNC_AddCloseNodes) {
   }
   EXPECT_EQ(RT.Size(), 0);
 
-  /// everything should be set to go now
-  /// TODO should we also test for valid enpoints ??
-  /// TODO we should fail when public keys are the same
+  // everything should be set to go now
+  // TODO should we also test for valid enpoints ??
+  // TODO we should fail when public keys are the same
   for (unsigned int i = 0; i < kClosestNodesSize ; ++i) {
      node = MakeNode();
      node.endpoint.port = 1501 + i;  // has to be unique
