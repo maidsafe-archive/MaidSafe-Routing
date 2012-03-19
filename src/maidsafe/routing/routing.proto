@@ -18,8 +18,18 @@ message Contact {
 
 message ConfigFile {
   optional bytes node_id = 1;
-  optional bytes private_key = 2;
-  repeated Endpoint endpoint = 3; 
+  optional bytes private_key = 2; 
+}
+
+message BootStrapcontacts {
+  required bytes node_id = 1;
+  required bytes public_key = 2;
+  required Endpoint endpoint = 3;
+}
+
+// contacts file 
+message Bootstrap ( 
+  repeated BootStrapcontacts = 1;
 }
 
 // Message wrappers 

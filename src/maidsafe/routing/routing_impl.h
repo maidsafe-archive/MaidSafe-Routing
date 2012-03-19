@@ -40,7 +40,6 @@ class Contact;
 class Message;
 }  // namespace protobuf
 
-
 struct Message;
 class NodeId;
 

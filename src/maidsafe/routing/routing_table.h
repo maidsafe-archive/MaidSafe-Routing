@@ -63,11 +63,11 @@ class RoutingTable {
  public:
   explicit RoutingTable(const NodeId &node);
   ~RoutingTable();
-  bool AddNode(NodeInfo &node, bool node_pub_key_is_set);
-  bool DropNode(const NodeId &node_id);
+  bool AddNode(NodeInfo &node);
+  bool CheckNode(NodeInfo &node);
   bool DropNode(const transport::Endpoint &endpoint);
-  bool IsMyNodeInRange(const NodeId &node_id, uint16_t closest_nodes);
-  bool AmIClosestNode(const NodeId &node_id) const;
+  bool IsMyNodeInRange(const NodeId &node_id, uint closest_nodes);
+  bool AmIClosestNode(const NodeId &node_id);
   std::vector<NodeId> GetClosestNodes(const NodeId &from,
                                         unsigned int number_to_get);
   NodeInfo GetClosestNode(const NodeId &from, unsigned int node_number);
@@ -78,6 +78,7 @@ class RoutingTable {
  private:
   RoutingTable(const RoutingTable&);
   RoutingTable& operator=(const RoutingTable&);
+  bool AddOrCheckNode(NodeInfo &node, bool remove);
   int16_t BucketIndex(const NodeId &rhs) const;
   bool CheckValidParameters(const NodeInfo &node) const;
   bool CheckarametersAreUnique(const NodeInfo &node) const;

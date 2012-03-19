@@ -72,16 +72,6 @@ class RoutingImpl;
 typedef std::function<void(int,
                            maidsafe::routing::Message)> ResponseReceivedFunctor;
 
-struct Parameters {
-  // The size of a group of closest nodes.
-  static const unsigned int kClosestNodesSize;
-  static const unsigned int kMaxRoutingTableSize;
-  // Target number of nodes per bucket (buckets will fill more than this when
-  // space permits).
-  static const unsigned int kBucketTargetSize;
-  static const unsigned int kNumChunksToCache;
-};
-
 struct Message {
  public:
   Message();
@@ -101,9 +91,9 @@ struct Message {
 class Routing {
  public:
   enum NodeType { kVault, kClient };
-  Routing(NodeType node_type, const boost::filesystem::path &config_file);
+  Routing(NodeType node_type, const boost::filesystem::path &config_dir);
   Routing(NodeType node_type,
-          const boost::filesystem::path &config_file,
+          const boost::filesystem::path &config_dir,
           const asymm::PrivateKey &private_key,
           const std::string &node_id);
   ~Routing();

@@ -30,11 +30,6 @@ namespace maidsafe {
 
 namespace routing {
 
-const unsigned int Parameters::kClosestNodesSize(8);
-const unsigned int Parameters::kMaxRoutingTableSize(64);
-const unsigned int Parameters::kBucketTargetSize(1);
-const unsigned int Parameters::kNumChunksToCache(100);
-
 Message::Message()
     : source_id(),
       destination_id(),
@@ -64,14 +59,14 @@ Message::Message(const protobuf::Message &protobuf_message)
                       protobuf_message.routing_failure() : false) {}
 
 
-Routing::Routing(NodeType node_type, const fs::path &config_file)
-    : pimpl_(new RoutingImpl(node_type, config_file)) {}
+Routing::Routing(NodeType node_type, const fs::path &config_dir)
+    : pimpl_(new RoutingImpl(node_type, config_dir)) {}
 
 Routing::Routing(NodeType node_type,
-                 const fs::path &config_file,
+                 const fs::path &config_dir,
                  const asymm::PrivateKey &private_key,
                  const std::string &node_id)
-    : pimpl_(new RoutingImpl(node_type, config_file, private_key, node_id)) {}
+    : pimpl_(new RoutingImpl(node_type, config_dir, private_key, node_id)) {}
 
 void Routing::BootStrapFromThisEndpoint(const transport::Endpoint &endpoint) {
   pimpl_->BootStrapFromThisEndpoint(endpoint);

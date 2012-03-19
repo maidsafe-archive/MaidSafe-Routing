@@ -33,6 +33,11 @@ namespace maidsafe {
 
 namespace routing {
 
+
+namespace {
+const unsigned int kNumChunksToCache(100);
+}
+
 RoutingImpl::RoutingImpl(Routing::NodeType /*node_type*/,
                          const fs::path &config_file)
     : message_received_signal_(),
@@ -47,7 +52,7 @@ RoutingImpl::RoutingImpl(Routing::NodeType /*node_type*/,
       transport_(new transport::ManagedConnection()),
       routing_table_(node_id_),  // TODO(dirvine) FIXME contact is empty here
       public_keys_(),
-      cache_size_hint_(Parameters::kNumChunksToCache),
+      cache_size_hint_(kNumChunksToCache),
       cache_chunks_(),
       private_key_is_set_(false),
       node_is_set_(false),
@@ -72,7 +77,7 @@ RoutingImpl::RoutingImpl(Routing::NodeType /*node_type*/,
       transport_(new transport::ManagedConnection()),
       routing_table_(node_id_),  // TODO(dirvine) FIXME contact is empty here
       public_keys_(),
-      cache_size_hint_(Parameters::kNumChunksToCache),
+      cache_size_hint_(kNumChunksToCache),
       cache_chunks_(),
       private_key_is_set_(false),
       node_is_set_(false),
@@ -134,7 +139,7 @@ void RoutingImpl::BootStrapFromThisEndpoint(const transport::Endpoint &endpoint)
     NodeInfo remove_node =
                  routing_table_.GetClosestNode(routing_table_.MyNode(), 0);
     transport_->RemoveConnection(remove_node.endpoint);
-    routing_table_.DropNode(remove_node.node_id);
+    routing_table_.DropNode(remove_node.endpoint);
   }
   network_status_signal_(routing_table_.Size());
   bootstrap_nodes_.clear();
@@ -215,7 +220,7 @@ void RoutingImpl::ReceiveMessage(const std::string &message) {
   if (protobuf_message.has_source_id()) {
     node.node_id = NodeId(protobuf_message.source_id());
     // TODO(dirvine( FIXME
-    if (routing_table_.AddNode(node, false))
+    if (routing_table_.CheckNode(node))
       asio_service_.service().post(std::bind(&RoutingImpl::DoValidateIdRequest, this, protobuf_message));
   }
 }
@@ -401,7 +406,7 @@ void RoutingImpl::DoFindNodeResponse(const protobuf::Message &message) {
   for (int i = 0; i < find_nodes.nodes().size(); ++i) {
     NodeInfo node;
     node.node_id = NodeId(find_nodes.nodes(i));
-    routing_table_.AddNode(node, false);
+    routing_table_.CheckNode(node);
   }
 }
 

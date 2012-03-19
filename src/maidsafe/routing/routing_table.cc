@@ -15,12 +15,19 @@
 #include "boost/thread/locks.hpp"
 #include "boost/assert.hpp"
 #include "maidsafe/routing/routing_table.h"
+#include "maidsafe/routing/routing_impl.h"
 #include "maidsafe/routing/node_id.h"
 #include "maidsafe/routing/log.h"
 
 namespace maidsafe {
 namespace routing {
-  
+
+namespace {
+const unsigned int kClosestNodesSize(8);
+const unsigned int kMaxRoutingTableSize(64);
+const unsigned int kBucketTargetSize(1);
+}
+
 RoutingTable::RoutingTable(const NodeId &node)
     : sorted_(false),
     kMyNodeId_(node),
@@ -32,8 +39,17 @@ RoutingTable::~RoutingTable() {
   routing_table_nodes_.clear();
 }
 
-bool RoutingTable::AddNode(maidsafe::routing::NodeInfo& node,
-                           bool node_is_known_valid) {
+bool RoutingTable::CheckNode(NodeInfo& node) {
+  return AddOrCheckNode(node, false);
+}
+
+bool RoutingTable::AddNode(NodeInfo& node) {
+  return AddOrCheckNode(node, true);
+}
+
+
+bool RoutingTable::AddOrCheckNode(maidsafe::routing::NodeInfo& node,
+                           bool remove) {
   boost::mutex::scoped_lock lock(mutex_);
 
   if (node.node_id == kMyNodeId_) {
@@ -47,24 +63,12 @@ bool RoutingTable::AddNode(maidsafe::routing::NodeInfo& node,
                    { return i.node_id ==  node.node_id; })
                  != routing_table_nodes_.end())
     return false;
-  if (MakeSpaceForNodeToBeAdded(node, node_is_known_valid)) {
-      if (node_is_known_valid)
+  if (MakeSpaceForNodeToBeAdded(node, remove)) {
+      if (remove)
         routing_table_nodes_.push_back(node);
       return true;
   }
   return false;
-}
-
-bool RoutingTable::DropNode(const NodeId& node_id) {
-    for (auto it = routing_table_nodes_.begin();
-         it != routing_table_nodes_.end(); ++it) {
-
-       if((*it).node_id ==  node_id) {
-          routing_table_nodes_.erase(it);
-          return true;
-       }
-    }
-   return false;
 }
 
 bool RoutingTable::DropNode(const transport::Endpoint &endpoint) {
@@ -79,7 +83,8 @@ bool RoutingTable::DropNode(const transport::Endpoint &endpoint) {
    return false;
 }
 
-bool RoutingTable::AmIClosestNode(const NodeId& node_id) const {
+bool RoutingTable::AmIClosestNode(const NodeId& node_id) {
+  SortFromThisNode(node_id);
   return ((kMyNodeId_ ^ node_id) <
           (node_id ^ routing_table_nodes_[0].node_id));
 }
@@ -142,17 +147,15 @@ bool RoutingTable::MakeSpaceForNodeToBeAdded(maidsafe::routing::NodeInfo& node,
     return false;
   }
 
-  if (Size() < Parameters::kMaxRoutingTableSize)
+  if (Size() < kMaxRoutingTableSize)
     return true;
 
   SortFromThisNode(kMyNodeId_);
   NodeInfo furthest_close_node =
-           routing_table_nodes_[Parameters::kClosestNodesSize];
+           routing_table_nodes_[kClosestNodesSize];
   auto not_found = routing_table_nodes_.end();
   auto furthest_close_node_iter =
-       routing_table_nodes_.begin() + Parameters::kClosestNodesSize;
-  BOOST_ASSERT_MSG(furthest_close_node_iter <= not_found,
-                   "cannot find a close node");
+       routing_table_nodes_.begin() + kClosestNodesSize;
 
   if ((furthest_close_node.node_id ^ kMyNodeId_) >
      (kMyNodeId_ ^ node.node_id)) {
@@ -170,12 +173,12 @@ bool RoutingTable::MakeSpaceForNodeToBeAdded(maidsafe::routing::NodeInfo& node,
       return false;
     }
     /// safety net
-    if ((not_found - it) < (Parameters::kBucketTargetSize + 1)) {
+    if ((not_found - it) < (kBucketTargetSize + 1)) {
       /// reached end of checkable area
       return false;
     }
 
-    if ((*it).bucket == (*(it + Parameters::kBucketTargetSize + 1)).bucket) {
+    if ((*it).bucket == (*(it + kBucketTargetSize + 1)).bucket) {
       /// here we know the node should fit into a bucket if
       /// the bucket has too many nodes AND node to add
       /// has a lower bucketindex
@@ -198,9 +201,11 @@ void RoutingTable::SortFromThisNode(const NodeId &from) {
     return (i.node_id ^ from) < (j.node_id ^ from);
     } ); // NOLINT
   }
+  if (from != kMyNodeId_)
+    sorted_ = false;
 }
 
-bool RoutingTable::IsMyNodeInRange(const NodeId& node_id, uint16_t range) {
+bool RoutingTable::IsMyNodeInRange(const NodeId& node_id, uint range)  {
   if (routing_table_nodes_.size() < range)
     return true;
 
@@ -229,7 +234,6 @@ int16_t RoutingTable::BucketIndex(const NodeId &rhs) const {
 NodeInfo RoutingTable::GetClosestNode(const NodeId &from,
                                     unsigned int node_number) {
   SortFromThisNode(from);
-  sorted_ = false;
   return routing_table_nodes_[node_number];
 }
 
