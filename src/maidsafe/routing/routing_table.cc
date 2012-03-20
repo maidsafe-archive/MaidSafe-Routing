@@ -15,7 +15,7 @@
 #include "boost/thread/locks.hpp"
 #include "boost/assert.hpp"
 #include "maidsafe/routing/routing_table.h"
-#include "maidsafe/routing/routing_impl.h"
+#include "maidsafe/routing/routing_api.h"
 #include "maidsafe/routing/node_id.h"
 #include "maidsafe/routing/log.h"
 

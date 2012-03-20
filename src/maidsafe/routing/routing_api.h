@@ -66,9 +66,8 @@ namespace maidsafe {
 namespace routing {
 
 namespace protobuf { class Message; }
-
-typedef std::function<void(int,
-                           maidsafe::routing::Message)> ResponseReceivedFunctor;
+class NodeId;
+class RoutingTable;
 
 struct Message {
  public:
@@ -83,6 +82,7 @@ struct Message {
   int32_t replication;
 };
 
+typedef std::function<void(int, Message)> ResponseReceivedFunctor;
 
 
 class Routing {
@@ -121,7 +121,6 @@ class Routing {
   void DoValidateIdResponse(const protobuf::Message &message);
 
   AsioService asio_service_;
-  const NodeType node_type_;
   fs::path bootstrap_file_;
   std::vector<transport::Endpoint> bootstrap_nodes_;
   asymm::PrivateKey private_key_;
