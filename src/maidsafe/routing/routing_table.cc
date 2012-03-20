@@ -28,11 +28,11 @@ const unsigned int kMaxRoutingTableSize(64);
 const unsigned int kBucketTargetSize(1);
 }
 
-RoutingTable::RoutingTable(const NodeId &node)
+RoutingTable::RoutingTable(const std::string &node_id)
     : sorted_(false),
-    kMyNodeId_(node),
-    routing_table_nodes_(),
-    mutex_() {}
+      kNodeId_(node_id),
+      routing_table_nodes_(),
+      mutex_() {}
 
 RoutingTable::~RoutingTable() {
   boost::mutex::scoped_lock lock(mutex_);
@@ -52,7 +52,7 @@ bool RoutingTable::AddOrCheckNode(maidsafe::routing::NodeInfo& node,
                            bool remove) {
   boost::mutex::scoped_lock lock(mutex_);
 
-  if (node.node_id == kMyNodeId_) {
+  if (node.node_id == kNodeId_) {
     return false;
   }
 
@@ -85,7 +85,7 @@ bool RoutingTable::DropNode(const transport::Endpoint &endpoint) {
 
 bool RoutingTable::AmIClosestNode(const NodeId& node_id) {
   SortFromThisNode(node_id);
-  return ((kMyNodeId_ ^ node_id) <
+  return ((kNodeId_ ^ node_id) <
           (node_id ^ routing_table_nodes_[0].node_id));
 }
 
@@ -150,15 +150,15 @@ bool RoutingTable::MakeSpaceForNodeToBeAdded(maidsafe::routing::NodeInfo& node,
   if (Size() < kMaxRoutingTableSize)
     return true;
 
-  SortFromThisNode(kMyNodeId_);
+  SortFromThisNode(kNodeId_);
   NodeInfo furthest_close_node =
            routing_table_nodes_[kClosestNodesSize];
   auto not_found = routing_table_nodes_.end();
   auto furthest_close_node_iter =
        routing_table_nodes_.begin() + kClosestNodesSize;
 
-  if ((furthest_close_node.node_id ^ kMyNodeId_) >
-     (kMyNodeId_ ^ node.node_id)) {
+  if ((furthest_close_node.node_id ^ kNodeId_) >
+     (kNodeId_ ^ node.node_id)) {
      BOOST_ASSERT_MSG(node.bucket <= furthest_close_node.bucket,
                        "close node replacement to a larger bucket");
 
@@ -194,31 +194,31 @@ bool RoutingTable::MakeSpaceForNodeToBeAdded(maidsafe::routing::NodeInfo& node,
 }
 
 void RoutingTable::SortFromThisNode(const NodeId &from) {
-  if ((!sorted_)  || (from != kMyNodeId_)) {
+  if ((!sorted_)  || (from != kNodeId_)) {
     std::sort(routing_table_nodes_.begin(),
               routing_table_nodes_.end(),
     [this, from](const NodeInfo &i, const NodeInfo &j) {
     return (i.node_id ^ from) < (j.node_id ^ from);
     } ); // NOLINT
   }
-  if (from != kMyNodeId_)
+  if (from != kNodeId_)
     sorted_ = false;
 }
 
-bool RoutingTable::IsMyNodeInRange(const NodeId& node_id, uint range)  {
+bool RoutingTable::IsMyNodeInRange(const NodeId& node_id, unsigned int range)  {
   if (routing_table_nodes_.size() < range)
     return true;
 
-  SortFromThisNode(kMyNodeId_);
+  SortFromThisNode(kNodeId_);
 
-  return (routing_table_nodes_[range].node_id ^ kMyNodeId_) >
-         (node_id ^ kMyNodeId_);
+  return (routing_table_nodes_[range].node_id ^ kNodeId_) >
+         (node_id ^ kNodeId_);
 }
 
 // bucket 0 is us, 511 is furthest bucket (should fill first)
 int16_t RoutingTable::BucketIndex(const NodeId &rhs) const {
   uint16_t bucket = kKeySizeBits - 1;  // (n-1)
-  std::string this_id_binary = kMyNodeId_.ToStringEncoded(NodeId::kBinary);
+  std::string this_id_binary = kNodeId_.ToStringEncoded(NodeId::kBinary);
   std::string rhs_id_binary = rhs.ToStringEncoded(NodeId::kBinary);
   auto this_it = this_id_binary.begin();
   auto rhs_it = rhs_id_binary.begin();
@@ -245,7 +245,7 @@ std::vector<NodeId> RoutingTable::GetClosestNodes(const NodeId &from,
   SortFromThisNode(from);
   close_nodes.resize(count);
 
-  for (uint i = 0; i < count; ++i) {
+  for (unsigned int i = 0; i < count; ++i) {
     close_nodes.push_back(routing_table_nodes_[i].node_id);
   }
   return close_nodes;

@@ -66,8 +66,12 @@ namespace maidsafe {
 namespace routing {
 
 namespace protobuf { class Message; }
+<<<<<<< HEAD
 class maidsafe::routing::NodeId;
+=======
+>>>>>>> ef9277bb1097a57a411414e8d1e91af1794f07b0
 class RoutingTable;
+class NodeId;
 
 struct Message {
  public:
@@ -96,7 +100,7 @@ class Routing {
   void Send(const Message &message,
             const ResponseReceivedFunctor &response_functor);
   boost::signals2::signal<void(int, Message)> &RequestReceivedSignal();
-  boost::signals2::signal<void(int16_t)> &NetworkStatusSignal();
+  boost::signals2::signal<void(unsigned int)> &NetworkStatusSignal();
 
  private:
   Routing(const Routing&);
@@ -124,13 +128,12 @@ class Routing {
   fs::path bootstrap_file_;
   std::vector<transport::Endpoint> bootstrap_nodes_;
   asymm::PrivateKey private_key_;
-  NodeId node_id_;
   transport::Endpoint node_local_endpoint_;
   transport::Endpoint node_external_endpoint_;
   std::shared_ptr<transport::ManagedConnection> transport_;
-  RoutingTable routing_table_;
+  std::unique_ptr<RoutingTable> routing_table_;
   boost::signals2::signal<void(int, Message)> message_received_signal_;
-  boost::signals2::signal<void(int16_t)> network_status_signal_;
+  boost::signals2::signal<void(unsigned int)> network_status_signal_;
   std::map<NodeId, asymm::PublicKey> public_keys_;
   unsigned int cache_size_hint_;
   std::vector<std::pair<std::string, std::string>> cache_chunks_;

@@ -24,17 +24,11 @@
 #include "boost/thread/mutex.hpp"
 
 #include "maidsafe/common/rsa.h"
-#ifdef __MSVC__
-#  pragma warning(push)
-#  pragma warning(disable: 4127 4244 4267)
-#endif
-#include "maidsafe/routing/routing.pb.h"
-#ifdef __MSVC__
-#  pragma warning(pop)
-#endif
+#include "maidsafe/transport/transport.h"
+
+#include "maidsafe/routing/routing_pb.h"
 #include "maidsafe/routing/node_id.h"
 #include "maidsafe/routing/log.h"
-#include "maidsafe/transport/transport.h"
 
 
 namespace maidsafe {
@@ -61,20 +55,20 @@ struct NodeInfo {
 
 class RoutingTable {
  public:
-  explicit RoutingTable(const NodeId &node);
+  explicit RoutingTable(const std::string &node_id);
   ~RoutingTable();
   bool AddNode(NodeInfo &node);
   bool CheckNode(NodeInfo &node);
   bool DropNode(const transport::Endpoint &endpoint);
-  bool IsMyNodeInRange(const NodeId &node_id, uint closest_nodes);
+  bool IsMyNodeInRange(const NodeId &node_id, unsigned int closest_nodes);
   bool AmIClosestNode(const NodeId &node_id);
   std::vector<NodeId> GetClosestNodes(const NodeId &from,
-                                        unsigned int number_to_get);
+                                      unsigned int number_to_get);
   NodeInfo GetClosestNode(const NodeId &from, unsigned int node_number);
   unsigned int Size() {
     return static_cast<uint16_t>(routing_table_nodes_.size());
   }
-  NodeId MyNode() { return kMyNodeId_; }
+  NodeId kNodeId() const { return kNodeId_; }
  private:
   RoutingTable(const RoutingTable&);
   RoutingTable& operator=(const RoutingTable&);
@@ -88,7 +82,7 @@ class RoutingTable {
   bool RemoveClosecontact(const NodeId &node_id);
   bool AddcloseContact(const Contact &contact);
   bool sorted_;
-  const NodeId kMyNodeId_;
+  const NodeId kNodeId_;
   std::vector<NodeInfo> routing_table_nodes_;
   boost::mutex mutex_;
 //   ManagedConnections MC_;

@@ -49,7 +49,7 @@ NodeInfo MakeNode() {
 }
 
 TEST(RoutingTableTest, FUNC_AddCloseNodes) {
-  RoutingTable RT(NodeId(RandomString(64)));
+  RoutingTable RT(RandomString(64));
   NodeInfo node;
   // check the node is useful when false is set
   for (unsigned int i = 0; i < kClosestNodesSize ; ++i) {
@@ -59,7 +59,7 @@ TEST(RoutingTableTest, FUNC_AddCloseNodes) {
   EXPECT_EQ(RT.Size(), 0);
   asymm::PublicKey dummy_key;
   // check we cannot input nodes with invalid public_keys
-  for (unsigned int i = 0; i < kClosestNodesSize ; ++i) {
+  for (transport::Port i = 0; i < kClosestNodesSize ; ++i) {
      NodeInfo node(MakeNode());
      node.endpoint.port = 1501 + i;  // has to be unique
      node.public_key = dummy_key;
@@ -70,7 +70,7 @@ TEST(RoutingTableTest, FUNC_AddCloseNodes) {
   // everything should be set to go now
   // TODO should we also test for valid enpoints ??
   // TODO we should fail when public keys are the same
-  for (unsigned int i = 0; i < kClosestNodesSize ; ++i) {
+  for (transport::Port i = 0; i < kClosestNodesSize ; ++i) {
      node = MakeNode();
      node.endpoint.port = 1501 + i;  // has to be unique
      EXPECT_TRUE(RT.AddNode(node));
@@ -79,15 +79,15 @@ TEST(RoutingTableTest, FUNC_AddCloseNodes) {
 }
 
 TEST(RoutingTableTest, FUNC_AddTooManyNodes) {
-  RoutingTable RT(NodeId(RandomString(64)));
-  for (int i = 0; RT.Size() < kMaxRoutingTableSize; ++i) {
+  RoutingTable RT(RandomString(64));
+  for (transport::Port i = 0; RT.Size() < kMaxRoutingTableSize; ++i) {
      NodeInfo node(MakeNode());
      node.endpoint.port = 1501 + i;  // has to be unique
      EXPECT_TRUE(RT.AddNode(node));
   }
   EXPECT_EQ(RT.Size(), kMaxRoutingTableSize);
   size_t count(0);
-  for (size_t i = 0; i < 100U; ++i) {
+  for (transport::Port i = 0; i < 100U; ++i) {
      NodeInfo node(MakeNode());
      node.endpoint.port = 1700 + i;  // has to be unique
      if (RT.CheckNode(node)) {
@@ -102,9 +102,9 @@ TEST(RoutingTableTest, FUNC_AddTooManyNodes) {
 
 TEST(RoutingTableTest, BEH_CloseAndInRangeCheck) {
   NodeId my_node(NodeId(RandomString(64)));
-  RoutingTable RT(my_node);
+  RoutingTable RT(my_node.String());
   // Add some nodes to RT
-  for (int i = 0; RT.Size() < kMaxRoutingTableSize; ++i) {
+  for (transport::Port i = 0; RT.Size() < kMaxRoutingTableSize; ++i) {
      NodeInfo node(MakeNode());
      node.endpoint.port = 1501 + i;  // has to be unique
      EXPECT_TRUE(RT.AddNode(node));
