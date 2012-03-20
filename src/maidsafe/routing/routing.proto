@@ -45,6 +45,7 @@ message Message {
   required int32 replication = 7;
   required int32 type = 8; // type of data - used in signal to upper layers with (type, data)
   required bool routing_failure = 9;
+  required int32 id = 10;
 }
 
 message SignedMessage {

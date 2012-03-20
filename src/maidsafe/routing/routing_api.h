@@ -23,13 +23,13 @@ __________
 7:  Allow retrieval of bootstrap nodes from known location.
 8:  Remove bad nodes from all routing tables (ban from network).
 9:  Inform of close node changes in routing table.
+10: Respond to every send that requires it, either with timeout or reply
 
 Client connects with a made up address (which must be unique (he can remember it))
 but requres to sign with a valid PMID
 Connects to closest nodes plus some others (no need to update much)
-Send all requests via closest node to destination_id
 all returns will come through close nodes mostly unless we allow
-by proxy which I think we should.
+by proxy which I think we may.
 We can detect a client and wrap his message in one of ours
 this can make sure they can only do certain things as well (no accounts/CIH etc.)
 we can register client acceptable messages or vault accptable and allow
@@ -69,6 +69,8 @@ namespace protobuf { class Message; }
 
 class RoutingTable;
 class NodeId;
+class Service;
+class Rpcs;
 
 struct Message {
  public:
@@ -100,7 +102,6 @@ class Routing {
             const ResponseReceivedFunctor &response_functor);
   boost::signals2::signal<void(int, Message)> &RequestReceivedSignal();
   boost::signals2::signal<void(unsigned int)> &NetworkStatusSignal();
-
  private:
   Routing(const Routing&);
   Routing& operator=(const Routing&);
@@ -112,33 +113,33 @@ class Routing {
   void AckReceived(const transport::TransportCondition &, const std::string &);
   void ReceiveMessage(const std::string &message);
   void ProcessMessage(protobuf::Message &message);
+  void ProcessPingResponse(protobuf::Message &message);
+  void ProcessConnectResponse(protobuf::Message &message);
+  void ProcessFindNodeResponse(protobuf::Message &message);
   void AddToCache(const protobuf::Message &message);
   bool GetFromCache(protobuf::Message &message);
-  void DoPingRequest(protobuf::Message &message);
-  void DoPingResponse(const protobuf::Message &message);
-  void DoConnectRequest(protobuf::Message &message);
-  void DoConnectResponse(const protobuf::Message &message);
-  void DoFindNodeRequest(protobuf::Message &message);
-  void DoFindNodeResponse(const protobuf::Message &message);
-  void DoValidateIdRequest(const protobuf::Message &message);
-  void DoValidateIdResponse(const protobuf::Message &message);
-
+  uint32_t AddToCallbackQueue(const ResponseReceivedFunctor &response_functor);
+  void ExecuteCallback(protobuf::Message &message);
   AsioService asio_service_;
   fs::path bootstrap_file_;
   std::vector<transport::Endpoint> bootstrap_nodes_;
   asymm::PrivateKey private_key_;
   transport::Endpoint node_local_endpoint_;
   transport::Endpoint node_external_endpoint_;
-  std::unique_ptr<transport::ManagedConnection> transport_;
-  std::unique_ptr<RoutingTable> routing_table_;
+  std::shared_ptr<transport::ManagedConnection> transport_;
+  std::shared_ptr<RoutingTable> routing_table_;
+  std::shared_ptr<Rpcs> rpc_ptr_;
+  std::shared_ptr<Service> service_;
   boost::signals2::signal<void(int, Message)> message_received_signal_;
   boost::signals2::signal<void(unsigned int)> network_status_signal_;
   unsigned int cache_size_hint_;
   std::vector<std::pair<std::string, std::string>> cache_chunks_;
+  std::map<uint32_t, ResponseReceivedFunctor> waiting_for_response_;
   bool joined_;
   bool signatures_required_;
   bool encryption_required_;
   Routing::NodeType node_type_;
+
 };
 
 }  // namespace routing

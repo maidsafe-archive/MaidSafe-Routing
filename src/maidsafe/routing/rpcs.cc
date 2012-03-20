@@ -46,7 +46,7 @@ void Rpcs::Ping(protobuf::Message &message) {
   SendOn(message, send_to);
 }
 
-void Rpcs::ConnectRequest(protobuf::Message &message) {
+void Rpcs::Connect(protobuf::Message &message) {
     // create a connect message to send direct.
   protobuf::ConnectRequest protobuf_connect_request;
   protobuf::Endpoint protobuf_endpoint;
@@ -68,7 +68,7 @@ void Rpcs::ConnectRequest(protobuf::Message &message) {
   }
 }
 
-void Rpcs::FindNodeRequest(protobuf::Message &message) {
+void Rpcs::FindNodes(protobuf::Message &message) {
   protobuf::FindNodesRequest find_nodes;
   protobuf::FindNodesResponse found_nodes;
   std::vector<NodeId>

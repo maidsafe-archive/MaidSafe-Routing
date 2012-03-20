@@ -14,7 +14,8 @@
 #include "maidsafe/routing/routing_pb.h"
 #include "maidsafe/routing/node_id.h"
 #include "maidsafe/routing/routing_table.h"
-
+#include "maidsafe/routing/service.h"
+#include "maidsafe/routing/rpcs.h"
 
 namespace fs = boost::filesystem;
 namespace bs2 = boost::signals2;
@@ -59,7 +60,9 @@ Routing::Routing(NodeType node_type,
       node_local_endpoint_(),
       node_external_endpoint_(),
       transport_(new transport::ManagedConnection()),
-      routing_table_(new RoutingTable(node_id)),  // TODO(dirvine) FIXME contact is empty here
+      routing_table_(new RoutingTable(node_id)),
+      rpc_ptr_(new Rpcs(routing_table_, transport_)),
+      service_(new Service(rpc_ptr_, routing_table_)),
       message_received_signal_(),
       network_status_signal_(),
       cache_size_hint_(kNumChunksToCache),
@@ -84,11 +87,12 @@ void Routing::Init() {
 }
 
 void Routing::Send(const Message &message,
-                   const ResponseReceivedFunctor &/*response_functor*/) {
+                   const ResponseReceivedFunctor &response_functor) {
   if (message.type < 100) {
     DLOG(ERROR) << "Attempt to use Reserved message type (<100), aborted send";
     return;
   }
+  uint32_t message_unique_id = AddToCallbackQueue(response_functor);
   protobuf::Message proto_message;
   proto_message.set_source_id(message.source_id);
   proto_message.set_destination_id(message.destination_id);
@@ -98,8 +102,34 @@ void Routing::Send(const Message &message,
   proto_message.set_replication(message.replication);
   proto_message.set_type(message.type);
   SendOn(proto_message, NodeId(message.destination_id));
-  // TODO(Fraser#5#): 2012-03-14 - We'd better do something with the functor.
 }
+
+
+
+uint32_t Routing::AddToCallbackQueue(const ResponseReceivedFunctor &response_functor) {
+  auto it = waiting_for_response_.end();
+  uint32_t id;
+  while(it == waiting_for_response_.end()) {
+    id = RandomUint32();
+    it = waiting_for_response_.find(id);
+  }
+  waiting_for_response_.insert(std::pair<uint32_t, ResponseReceivedFunctor>
+                                                     (id, response_functor));
+  return id;
+}
+
+void Routing::ExecuteCallback(protobuf::Message &message) {
+ uint32_t id = message.id();
+ auto it = waiting_for_response_.find(id);
+ if (it != waiting_for_response_.end()) {
+     Message message_struct;
+     message_struct.source_id = message.source_id();
+     message_struct.data = message.data();
+     (*it).second(message.type(), message_struct);
+ }  // otherwise timed out and deleted 
+}
+
+
 
 bs2::signal<void(int, Message)> &Routing::RequestReceivedSignal() {
   return message_received_signal_;
@@ -209,17 +239,6 @@ void Routing::ReceiveMessage(const std::string &message) {
   protobuf::ConnectRequest connection_request;
   if (protobuf_message.ParseFromString(message))
     ProcessMessage(protobuf_message);
-  NodeInfo node;
-  if (protobuf_message.has_source_id()) {
-    node.node_id = NodeId(protobuf_message.source_id());
-    if (routing_table_->CheckNode(node))
-      asio_service_.service().post(std::bind(&Routing::DoValidateIdRequest,
-                                             this, protobuf_message));
-  }
-}
-
-void Routing::DoValidateIdRequest(const protobuf::Message& /*message*/) {
-// TODO
 }
 
 
@@ -244,36 +263,35 @@ void Routing::ProcessMessage(protobuf::Message &message) {
     SendOn(message, next_node);
     return;
   } else {  // I am closest
-
     if (message.type() == 0) {  // ping
       if (message.has_response() && message.response()) {
-        DoPingResponse(message);
+        // TODO(dirvine) FIXME its for me  !! DoPingResponse(message);
         return;  // Job done !!
       } else {
-        DoPingRequest(message);
+        service_->Ping(message);
       }
     }
     if (message.type() == 1) {  // find_nodes
       if (message.has_response() && message.response()) {
-        DoFindNodeResponse(message);
+        // TODO(dirvine) FIXME its for me  !!        DoFindNodeResponse(message);
        return;
       } else {
-         DoFindNodeRequest(message);
+         service_->FindNodes(message);
          return;
       }
     }
     if (message.type() == 2) {  // bootstrap
       if (message.has_response() && message.response()) {
-         DoConnectResponse(message);
+         // TODO(dirvine) FIXME its for me  !!        DoConnectResponse(message);
        return;
       } else {
-         DoConnectRequest(message);
+         service_->Connect(message);
          return;
       }
     }
 
     // if this is set not direct and ID == ME do NOT respond.
-    if ((message.has_direct() && !message.direct()) &&
+    if (!message.direct() &&
       (message.destination_id() != routing_table_->kNodeId().String())) {
       try {
         Message msg(message);
@@ -296,6 +314,9 @@ void Routing::ProcessMessage(protobuf::Message &message) {
     }
   }
 }
+
+
+
 
 bool Routing::GetFromCache(protobuf::Message &message) {
   bool result(false);
