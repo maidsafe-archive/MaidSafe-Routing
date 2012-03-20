@@ -66,8 +66,6 @@ namespace maidsafe {
 namespace routing {
 
 namespace protobuf { class Message; }
-struct Message;
-class RoutingImpl;
 
 typedef std::function<void(int,
                            maidsafe::routing::Message)> ResponseReceivedFunctor;
@@ -76,24 +74,21 @@ struct Message {
  public:
   Message();
   explicit Message(const protobuf::Message &protobuf_message);
+  int32_t type;
   std::string source_id;
   std::string destination_id;
-  std::string target_name;
-  bool cacheable;
   std::string data;
+  bool cacheable;
   bool direct;
-  bool response;
   int32_t replication;
-  int32_t type;
-  bool routing_failure;
 };
+
+
 
 class Routing {
  public:
   enum NodeType { kVault, kClient };
-  Routing(NodeType node_type, const boost::filesystem::path &config_dir);
   Routing(NodeType node_type,
-          const boost::filesystem::path &config_dir,
           const asymm::PrivateKey &private_key,
           const std::string &node_id);
   ~Routing();
@@ -106,7 +101,44 @@ class Routing {
  private:
   Routing(const Routing&);
   Routing& operator=(const Routing&);
-  std::unique_ptr<RoutingImpl> pimpl_;
+  void Init();
+  bool ReadConfigFile();
+  bool WriteConfigFile() const;
+  void Join();
+  void SendOn(const protobuf::Message &message, const NodeId &target_node);
+  void AckReceived(const transport::TransportCondition &, const std::string &);
+  void ReceiveMessage(const std::string &message);
+  void ProcessMessage(protobuf::Message &message);
+  void AddToCache(const protobuf::Message &message);
+  bool GetFromCache(protobuf::Message &message);
+  void DoPingRequest(protobuf::Message &message);
+  void DoPingResponse(const protobuf::Message &message);
+  void DoConnectRequest(protobuf::Message &message);
+  void DoConnectResponse(const protobuf::Message &message);
+  void DoFindNodeRequest(protobuf::Message &message);
+  void DoFindNodeResponse(const protobuf::Message &message);
+  void DoValidateIdRequest(const protobuf::Message &message);
+  void DoValidateIdResponse(const protobuf::Message &message);
+
+  AsioService asio_service_;
+  const NodeType node_type_;
+  fs::path bootstrap_file_;
+  std::vector<transport::Endpoint> bootstrap_nodes_;
+  asymm::PrivateKey private_key_;
+  NodeId node_id_;
+  transport::Endpoint node_local_endpoint_;
+  transport::Endpoint node_external_endpoint_;
+  std::shared_ptr<transport::ManagedConnection> transport_;
+  RoutingTable routing_table_;
+  boost::signals2::signal<void(int, Message)> message_received_signal_;
+  boost::signals2::signal<void(int16_t)> network_status_signal_;
+  std::map<NodeId, asymm::PublicKey> public_keys_;
+  unsigned int cache_size_hint_;
+  std::vector<std::pair<std::string, std::string>> cache_chunks_;
+  bool private_key_is_set_;
+  bool node_is_set_;
+  bool joined_;
+  Routing::NodeType node_type_;
 };
 
 }  // namespace routing

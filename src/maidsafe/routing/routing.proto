@@ -1,6 +1,6 @@
 package maidsafe.routing.protobuf;
 
-message layer {
+message Layer {
   required int32 identifier = 1;
   required bytes message = 2;
 }
@@ -13,7 +13,7 @@ message Endpoint {
 message Contact {
   required bytes node_id = 1;
   repeated Endpoint endpoint = 2;
-  optional bool tcp = 4;
+  optional bool tcp = 3;
 }
 
 message ConfigFile {
@@ -21,15 +21,15 @@ message ConfigFile {
   optional bytes private_key = 2; 
 }
 
-message BootStrapcontacts {
+message BootstrapContacts {
   required bytes node_id = 1;
   required bytes public_key = 2;
   required Endpoint endpoint = 3;
 }
 
-// contacts file 
-message Bootstrap ( 
-  repeated BootStrapcontacts = 1;
+// contacts file
+message Bootstrap { 
+  repeated BootstrapContacts bootstrap_contacts = 1;
 }
 
 // Message wrappers 
@@ -38,14 +38,13 @@ message Bootstrap (
 message Message {
   required bytes source_id = 1; // in response this is name of data
   required bytes destination_id = 2; // in request (except direct) this is the name of the data
-  optional bytes target_name = 3; // to allow for different names 
-  optional bool cacheable = 4;
-  required bytes data = 5; // serialised protobuf - possibly encrypted in upper layers
-  optional bool direct = 6; // goes to a single node !! if proxy is set then to here then we transmit to endpoint
-  required bool response = 7;
-  required int32 replication = 8;
-  required int32 type = 9; // type of data - used in signal to upper layers with (type, data)
-  optional bool routing_failure = 10;
+  required bool cacheable = 3;
+  required bytes data = 4; // serialised protobuf - possibly encrypted in upper layers
+  required bool direct = 5; // goes to a si node !! if proxy is set then to here then we transmit to endpoint
+  required bool response = 6;
+  required int32 replication = 7;
+  required int32 type = 8; // type of data - used in signal to upper layers with (type, data)
+  required bool routing_failure = 9;
 }
 
 message SignedMessage {
@@ -55,7 +54,7 @@ message SignedMessage {
 }
 
 message ConnectRequest {
-  required Contact contact=1;
+  required Contact contact = 1;
   optional bool client = 2;
   optional bool bootstrap = 3;
 }
@@ -64,14 +63,14 @@ message ConnectResponse {
   required bool answer = 1;
   optional Contact contact = 2;
   optional Endpoint seen_endpoint = 3;
-  optional FindNodesResponse = 4;  // if connect request is bootstrap
+  optional FindNodesResponse find_nodes = 4;  // if connect request is bootstrap
 }
 
 message FindNodesRequest {
   optional int32 num_nodes_requested = 1;
 }
 
-message  {
+message FindNodesResponse {
   repeated bytes nodes = 1;
 }
 

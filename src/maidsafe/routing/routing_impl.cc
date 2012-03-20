@@ -153,8 +153,9 @@ bool RoutingImpl::WriteConfigFile() const {
 return false;
 }
 
-bool RoutingImpl::ReadConfigFile() {
+bool RoutingImpl::ReadConfigFile() {  //TODO(dirvine) FIXME now a dir
   protobuf::ConfigFile protobuf;
+  protobuf::BootStrap protobuf_bootstrap;
   // TODO(Fraser#5#): 2012-03-14 - Use try catch / pass error_code for fs funcs.
   if (!fs::exists(config_file_) || !fs::is_regular_file(config_file_)) {
     DLOG(ERROR) << "Cannot read config file " << config_file_;
@@ -181,9 +182,9 @@ bool RoutingImpl::ReadConfigFile() {
        }
     }
     transport::Endpoint endpoint;
-    for (int i = 0; i != protobuf.endpoint_size(); ++i) {
-      endpoint.ip.from_string(protobuf.endpoint(i).ip());
-      endpoint.port= protobuf.endpoint(i).port();
+    for (int i = 0; i != protobuf_bootstrap.endpoint_size(); ++i) {
+      endpoint.ip.from_string(protobuf_bootstrap.endpoint(i).ip());
+      endpoint.port= protobuf_bootstrap.endpoint(i).port();
       bootstrap_nodes_.push_back(endpoint);
     }
   }
@@ -279,20 +280,7 @@ void RoutingImpl::ProcessMessage(protobuf::Message &message) {
          return;
       }
     }
-    if (message.has_direct() && message.direct()) {
-      if (message.destination_id() != node_id_.String()) {
-      // TODO(dirvine) send back a failure I presume !!
-      } else {
-        try {
-          Message msg(message);
-          message_received_signal_(static_cast<int>(message.type()), msg);
-        }
-        catch(const std::exception &e) {
-          DLOG(ERROR) << e.what();
-        }
-        return;
-      }
-    }
+
     // if this is set not direct and ID == ME do NOT respond.
     if ((message.has_direct() && !message.direct()) &&
       (message.destination_id() != node_id_.String())) {
