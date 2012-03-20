@@ -66,7 +66,7 @@ namespace maidsafe {
 namespace routing {
 
 namespace protobuf { class Message; }
-class NodeId;
+class maidsafe::routing::NodeId;
 class RoutingTable;
 
 struct Message {
