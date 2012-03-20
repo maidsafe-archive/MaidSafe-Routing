@@ -49,7 +49,9 @@ if a client or hacker tries to start as a vault ID it will not be unique
 #include <functional>
 #include <memory>
 #include <string>
-
+#include <utility>  // for pair
+#include <map>
+#include <vector>
 #include "boost/signals2/signal.hpp"
 #include "boost/filesystem/path.hpp"
 #include "maidsafe/common/rsa.h"
@@ -88,7 +90,6 @@ struct Message {
 
 typedef std::function<void(Message)> ResponseReceivedFunctor;
 
-
 class Routing {
  public:
   enum NodeType { kVault, kClient };
@@ -103,6 +104,7 @@ class Routing {
             const ResponseReceivedFunctor &response_functor);
   boost::signals2::signal<void(int, Message)> &RequestReceivedSignal();
   boost::signals2::signal<void(unsigned int)> &NetworkStatusSignal();
+
  private:
   Routing(const Routing&);  // no copy
   Routing& operator=(const Routing&);  // no assign
@@ -141,7 +143,6 @@ class Routing {
   bool signatures_required_;
   bool encryption_required_;
   Routing::NodeType node_type_;
-
 };
 
 }  // namespace routing

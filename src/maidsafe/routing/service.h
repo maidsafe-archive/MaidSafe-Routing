@@ -30,10 +30,10 @@ class Service {
   void Connect(const protobuf::Message &message);
   void FindNodes(const protobuf::Message &message);
  private:
-   std::shared_ptr<Rpcs> rpc_ptr_;
-   std::shared_ptr<RoutingTable> routing_table_;
+  std::shared_ptr<Rpcs> rpc_ptr_;
+  std::shared_ptr<RoutingTable> routing_table_;
 };
-  
+
 }  // namespace routing
 
 }  // namespace maidsafe

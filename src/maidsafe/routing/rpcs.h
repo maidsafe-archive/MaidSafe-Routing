@@ -27,7 +27,7 @@ class Endpoint;
 class RoutingTable;
 class NodeId;
 
-// Send request to the network 
+// Send request to the network
 class Rpcs {
  public:
   Rpcs(std::shared_ptr<RoutingTable> routing_table,
@@ -38,8 +38,8 @@ class Rpcs {
   // utility method also called from services
   void SendOn(protobuf::Message &message, NodeId &final_node_id);
  private:
-   std::shared_ptr<RoutingTable> routing_table_;
-   std::shared_ptr<transport::ManagedConnection> transport_;
+  std::shared_ptr<RoutingTable> routing_table_;
+  std::shared_ptr<transport::ManagedConnection> transport_;
 };
 
 }  // namespace routing
@@ -47,3 +47,7 @@ class Rpcs {
 }  // namespace maidsafe
 
 #endif  // MAIDSAFE_ROUTING_RPCS_H_
+
+
+
+

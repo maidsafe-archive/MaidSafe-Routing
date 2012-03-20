@@ -10,6 +10,7 @@
  *  the explicit written permission of the board of directors of maidsafe.net. *
  ******************************************************************************/
 
+#include <utility>
 #include "boost/asio/deadline_timer.hpp"
 #include "boost/date_time.hpp"
 #include "maidsafe/routing/routing_api.h"
@@ -32,12 +33,12 @@ const unsigned int kNumChunksToCache(100);
 const unsigned int kTimoutInSeconds(5);
 }
 
-
 Message::Message()
     : type(0),
       source_id(),
       destination_id(),
       data(),
+      timeout(false),
       cacheable(false),
       direct(false),
       replication(0) {}
@@ -47,6 +48,7 @@ Message::Message(const protobuf::Message &protobuf_message)
       source_id(protobuf_message.source_id()),
       destination_id(protobuf_message.destination_id()),
       data(protobuf_message.data()),
+      timeout(protobuf_message.routing_failure()),
       cacheable(protobuf_message.cacheable()),
       direct(protobuf_message.direct()),
       replication(protobuf_message.replication()) {}
@@ -54,7 +56,7 @@ Message::Message(const protobuf::Message &protobuf_message)
 Routing::Routing(NodeType node_type,
                  const asymm::PrivateKey &private_key,
                  const std::string &node_id,
-                 bool signatures_required,  // sets all nodes sign data with asymm
+                 bool signatures_required,  // sets all nodes sign data
                  bool encryption_required)
     : asio_service_(),
       bootstrap_file_(),
@@ -80,7 +82,7 @@ Routing::Routing(NodeType node_type,
 
 void Routing::Init() {
   asio_service_.Start(5);
-  // TODO fill in bootstrap file location and do ReadConfigFile
+  // TODO(dirvine) fill in bootstrap file location and do ReadConfigFile
   transport_->Init(20);
   node_local_endpoint_ = transport_->GetOurEndpoint();
   LOG(INFO) << " Local IP address : " << node_local_endpoint_.ip.to_string();
@@ -110,10 +112,11 @@ void Routing::Send(const Message &message,
 }
 
 
-uint32_t Routing::AddToCallbackQueue(const ResponseReceivedFunctor &response_functor) {
+uint32_t Routing::AddToCallbackQueue(const ResponseReceivedFunctor
+                                           &response_functor) {
   auto it = waiting_for_response_.end();
   uint32_t id;
-  while(it == waiting_for_response_.end()) {
+  while (it == waiting_for_response_.end()) {
     id = RandomUint32();
     it = waiting_for_response_.find(id);
   }
@@ -126,24 +129,24 @@ uint32_t Routing::AddToCallbackQueue(const ResponseReceivedFunctor &response_fun
 }
 
 void Routing::ExecuteCallback(protobuf::Message &message) {
- uint32_t id = message.id();
- auto it = waiting_for_response_.find(id);
- if (it != waiting_for_response_.end()) {
-     Message message_struct;
-     message_struct.source_id = message.source_id();
-     message_struct.data = message.data();
-     (*it).second(message_struct);
- }  // otherwise timed out and deleted 
+  uint32_t id = message.id();
+  auto it = waiting_for_response_.find(id);
+  if (it != waiting_for_response_.end()) {
+    Message message_struct;
+    message_struct.source_id = message.source_id();
+    message_struct.data = message.data();
+    (*it).second(message_struct);
+  }  // otherwise timed out and deleted
 }
 
 void Routing::FindAndKillJob(uint32_t job_number) {
- auto it = waiting_for_response_.find(job_number);
- if (it != waiting_for_response_.end()) {
+  auto it = waiting_for_response_.find(job_number);
+  if (it != waiting_for_response_.end()) {
     Message failure;
     failure.timeout = true;
-   (*it).second(failure); // send failure in callback
-   waiting_for_response_.erase(it); // kill job
- }
+    (*it).second(failure);  // send failure in callback
+    waiting_for_response_.erase(it);  // kill job
+  }
 }
 
 bs2::signal<void(int, Message)> &Routing::RequestReceivedSignal() {
@@ -162,8 +165,7 @@ void Routing::Join() {
 
   for (auto it = bootstrap_nodes_.begin();
        it != bootstrap_nodes_.end(); ++it) {
-    // TODO)dirvine) send bootstrap requests
-
+    // TODO(dirvine) send bootstrap requests
   }
 }
 
@@ -189,10 +191,10 @@ bool Routing::WriteConfigFile() const {
 return false;
 }
 
-bool Routing::ReadConfigFile() {  //TODO(dirvine) FIXME now a dir
+bool Routing::ReadConfigFile() {  // TODO(dirvine) FIXME now a dir
   protobuf::ConfigFile protobuf_config;
   protobuf::Bootstrap protobuf_bootstrap;
-  // TODO(Fraser#5#): 2012-03-14 - Use try catch / pass error_code for fs funcs.
+// TODO(Fraser#5#): 2012-03-14 - Use try catch / pass error_code for fs funcs.
 //  if (!fs::exists(config_file_) || !fs::is_regular_file(config_file_)) {
 //    DLOG(ERROR) << "Cannot read config file " << config_file_;
 //    return false;
@@ -274,7 +276,8 @@ void Routing::ProcessMessage(protobuf::Message &message) {
   // is it for us ??
   if (!routing_table_->AmIClosestNode(NodeId(message.destination_id()))) {
     NodeId next_node =
-     routing_table_->GetClosestNode(NodeId(message.destination_id()), 0).node_id;
+     routing_table_->GetClosestNode(NodeId(message.destination_id()),
+                                    0).node_id;
     SendOn(message, next_node);
     return;
   } else {  // I am closest
@@ -288,7 +291,7 @@ void Routing::ProcessMessage(protobuf::Message &message) {
     }
     if (message.type() == 1) {  // find_nodes
       if (message.has_response() && message.response()) {
-        // TODO(dirvine) FIXME its for me  !!        DoFindNodeResponse(message);
+        // TODO(dirvine) FIXME its for me  !!  DoFindNodeResponse(message);
        return;
       } else {
          service_->FindNodes(message);
@@ -297,7 +300,7 @@ void Routing::ProcessMessage(protobuf::Message &message) {
     }
     if (message.type() == 2) {  // bootstrap
       if (message.has_response() && message.response()) {
-         // TODO(dirvine) FIXME its for me  !!        DoConnectResponse(message);
+         // TODO(dirvine) FIXME its for me  !  DoConnectResponse(message);
        return;
       } else {
          service_->Connect(message);
