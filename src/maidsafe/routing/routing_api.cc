@@ -10,6 +10,8 @@
  *  the explicit written permission of the board of directors of maidsafe.net. *
  ******************************************************************************/
 
+#include "boost/asio/deadline_timer.hpp"
+#include "boost/date_time.hpp"
 #include "maidsafe/routing/routing_api.h"
 #include "maidsafe/routing/routing_pb.h"
 #include "maidsafe/routing/node_id.h"
@@ -27,6 +29,7 @@ namespace routing {
 
 namespace {
 const unsigned int kNumChunksToCache(100);
+const unsigned int kTimoutInSeconds(5);
 }
 
 
@@ -67,6 +70,7 @@ Routing::Routing(NodeType node_type,
       network_status_signal_(),
       cache_size_hint_(kNumChunksToCache),
       cache_chunks_(),
+      waiting_for_response_(),
       joined_(false),
       signatures_required_(signatures_required),
       encryption_required_(encryption_required),
@@ -94,6 +98,7 @@ void Routing::Send(const Message &message,
   }
   uint32_t message_unique_id = AddToCallbackQueue(response_functor);
   protobuf::Message proto_message;
+  proto_message.set_id(message_unique_id);
   proto_message.set_source_id(message.source_id);
   proto_message.set_destination_id(message.destination_id);
   proto_message.set_cacheable(message.cacheable);
@@ -105,7 +110,6 @@ void Routing::Send(const Message &message,
 }
 
 
-
 uint32_t Routing::AddToCallbackQueue(const ResponseReceivedFunctor &response_functor) {
   auto it = waiting_for_response_.end();
   uint32_t id;
@@ -115,6 +119,9 @@ uint32_t Routing::AddToCallbackQueue(const ResponseReceivedFunctor &response_fun
   }
   waiting_for_response_.insert(std::pair<uint32_t, ResponseReceivedFunctor>
                                                      (id, response_functor));
+  boost::asio::deadline_timer timer(asio_service_.service(),
+                                 boost::posix_time::seconds(kTimoutInSeconds));
+  timer.async_wait(std::bind(&Routing::FindAndKillJob, this, id));
   return id;
 }
 
@@ -125,11 +132,19 @@ void Routing::ExecuteCallback(protobuf::Message &message) {
      Message message_struct;
      message_struct.source_id = message.source_id();
      message_struct.data = message.data();
-     (*it).second(message.type(), message_struct);
+     (*it).second(message_struct);
  }  // otherwise timed out and deleted 
 }
 
-
+void Routing::FindAndKillJob(uint32_t job_number) {
+ auto it = waiting_for_response_.find(job_number);
+ if (it != waiting_for_response_.end()) {
+    Message failure;
+    failure.timeout = true;
+   (*it).second(failure); // send failure in callback
+   waiting_for_response_.erase(it); // kill job
+ }
+}
 
 bs2::signal<void(int, Message)> &Routing::RequestReceivedSignal() {
   return message_received_signal_;

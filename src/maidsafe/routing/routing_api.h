@@ -80,12 +80,13 @@ struct Message {
   std::string source_id;
   std::string destination_id;
   std::string data;
+  bool timeout;
   bool cacheable;
   bool direct;
   int32_t replication;
 };
 
-typedef std::function<void(int, Message)> ResponseReceivedFunctor;
+typedef std::function<void(Message)> ResponseReceivedFunctor;
 
 
 class Routing {
@@ -103,8 +104,8 @@ class Routing {
   boost::signals2::signal<void(int, Message)> &RequestReceivedSignal();
   boost::signals2::signal<void(unsigned int)> &NetworkStatusSignal();
  private:
-  Routing(const Routing&);
-  Routing& operator=(const Routing&);
+  Routing(const Routing&);  // no copy
+  Routing& operator=(const Routing&);  // no assign
   void Init();
   bool ReadConfigFile();
   bool WriteConfigFile() const;
@@ -118,6 +119,7 @@ class Routing {
   void ProcessFindNodeResponse(protobuf::Message &message);
   void AddToCache(const protobuf::Message &message);
   bool GetFromCache(protobuf::Message &message);
+  void FindAndKillJob(uint32_t job_number);
   uint32_t AddToCallbackQueue(const ResponseReceivedFunctor &response_functor);
   void ExecuteCallback(protobuf::Message &message);
   AsioService asio_service_;
