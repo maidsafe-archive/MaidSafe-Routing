@@ -47,10 +47,11 @@ Message::Message(const protobuf::Message &protobuf_message)
       direct(protobuf_message.direct()),
       replication(protobuf_message.replication()) {}
 
-
 Routing::Routing(NodeType node_type,
                  const asymm::PrivateKey &private_key,
-                 const std::string &node_id)
+                 const std::string &node_id,
+                 bool signatures_required,  // sets all nodes sign data with asymm
+                 bool encryption_required)
     : asio_service_(),
       bootstrap_file_(),
       bootstrap_nodes_(),
@@ -61,12 +62,11 @@ Routing::Routing(NodeType node_type,
       routing_table_(new RoutingTable(node_id)),  // TODO(dirvine) FIXME contact is empty here
       message_received_signal_(),
       network_status_signal_(),
-      public_keys_(),
       cache_size_hint_(kNumChunksToCache),
       cache_chunks_(),
-      private_key_is_set_(false),
-      node_is_set_(false),
       joined_(false),
+      signatures_required_(signatures_required),
+      encryption_required_(encryption_required),
       node_type_(node_type) {
   Init();
 }
@@ -333,76 +333,6 @@ void Routing::AddToCache(const protobuf::Message &message) {
     cache_size_hint_ = cache_size_hint_ / 2;
     while (cache_chunks_.size() > cache_size_hint_)
       cache_chunks_.erase(cache_chunks_.begin()+1);
-  }
-}
-
-void Routing::DoPingResponse(const protobuf::Message &message) {
-  protobuf::PingResponse ping_response;
-  if (!ping_response.ParseFromString(message.data()))
-    return;
-  if (ping_response.pong())
-    return;  // TODO(dirvine) FIXME IMPLEMENT ME
-}
-
-void Routing::DoConnectRequest(protobuf::Message &/*message*/) {
-    // create a connect message to send direct.
-  protobuf::ConnectRequest protobuf_connect_request;
-  protobuf::Endpoint protobuf_endpoint;
-  transport::Endpoint peer_endpoint;
-  peer_endpoint.ip.from_string(protobuf_endpoint.ip());
-  peer_endpoint.port = static_cast<transport::Port>(protobuf_endpoint.port());
-  // for now accept bootstrap requests without prejeduce
-  if (protobuf_connect_request.has_bootstrap() &&
-      protobuf_connect_request.bootstrap()) {
-    transport_->AcceptConnection(peer_endpoint, true);
-  // TODO(dirvine) FIXME get find nodes and reply then drop connection
-
-  }
-  // for now accept client requests without prejeduce
-  if (protobuf_connect_request.has_client() &&
-      protobuf_connect_request.client()) {
-    transport_->AcceptConnection(peer_endpoint, true);
-  // TODO(dirvine) FIXME, add to client holding table (no routing info)
-  // make sure any dropped connections try this and routing table
-  }
-}
-
-void Routing::DoConnectResponse(const protobuf::Message &message) {
-// send message back  wait on his connect
-// add him to a pending endpoint queue
-// and when transport asks us to accept him we will
-  if (message.has_source_id())
-    DLOG(INFO) << " have source ID";
-}
-
-void Routing::DoFindNodeRequest(protobuf::Message &message) {
-  protobuf::FindNodesRequest find_nodes;
-  protobuf::FindNodesResponse found_nodes;
-  std::vector<NodeId>
-          nodes(routing_table_->GetClosestNodes(NodeId(message.destination_id()),
-                      static_cast<uint16_t>(find_nodes.num_nodes_requested())));
-
-  for (auto it = nodes.begin(); it != nodes.end(); ++it)
-    found_nodes.add_nodes((*it).String());
-  message.set_destination_id(message.source_id());
-  message.set_source_id(routing_table_->kNodeId().String());
-  message.set_data(found_nodes.SerializeAsString());
-  message.set_direct(true);
-  message.set_response(true);
-  message.set_replication(1);
-  message.set_type(1);
-  NodeId send_to(message.destination_id());
-  SendOn(message, send_to);
-}
-
-void Routing::DoFindNodeResponse(const protobuf::Message &message) {
-  protobuf::FindNodesResponse find_nodes;
-  if (!find_nodes.ParseFromString(message.data()))
-    return;
-  for (int i = 0; i < find_nodes.nodes().size(); ++i) {
-    NodeInfo node;
-    node.node_id = NodeId(find_nodes.nodes(i));
-    routing_table_->CheckNode(node);
   }
 }
 

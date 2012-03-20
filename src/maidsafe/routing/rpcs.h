@@ -13,14 +13,32 @@
 #ifndef MAIDSAFE_ROUTING_RPCS_H_
 #define MAIDSAFE_ROUTING_RPCS_H_
 
+#include <memory>
 
 namespace maidsafe {
 
+namespace transport { class ManagedConnection; }
+
 namespace routing {
 
+namespace protobuf {  class Message; }
+
+class Endpoint;
+class RoutingTable;
+class NodeId;
+
 class Rpcs {
-public:
-  Ping();
+ public:
+  Rpcs(std::shared_ptr<RoutingTable> routing_table,
+       std::shared_ptr<transport::ManagedConnection> transport);
+  void Ping(protobuf::Message &message);
+  void ConnectRequest(protobuf::Message &message);
+  void FindNodeRequest(protobuf::Message &message);
+  // utility method also called from services
+  void SendOn(protobuf::Message &message, NodeId &final_node_id);
+ private:
+   std::shared_ptr<RoutingTable> routing_table_;
+   std::shared_ptr<transport::ManagedConnection> transport_;
 };
 
 }  // namespace routing

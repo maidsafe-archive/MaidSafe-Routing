@@ -66,10 +66,7 @@ namespace maidsafe {
 namespace routing {
 
 namespace protobuf { class Message; }
-<<<<<<< HEAD
-class maidsafe::routing::NodeId;
-=======
->>>>>>> ef9277bb1097a57a411414e8d1e91af1794f07b0
+
 class RoutingTable;
 class NodeId;
 
@@ -94,7 +91,9 @@ class Routing {
   enum NodeType { kVault, kClient };
   Routing(NodeType node_type,
           const asymm::PrivateKey &private_key,
-          const std::string &node_id);
+          const std::string &node_id,
+          bool signatures_required,  // sets all nodes sign data with asymm
+          bool encryption_required);  // full asymm encrypt of all messages
   ~Routing();
   void BootStrapFromThisEndpoint(const maidsafe::transport::Endpoint& endpoint);
   void Send(const Message &message,
@@ -130,16 +129,15 @@ class Routing {
   asymm::PrivateKey private_key_;
   transport::Endpoint node_local_endpoint_;
   transport::Endpoint node_external_endpoint_;
-  std::shared_ptr<transport::ManagedConnection> transport_;
+  std::unique_ptr<transport::ManagedConnection> transport_;
   std::unique_ptr<RoutingTable> routing_table_;
   boost::signals2::signal<void(int, Message)> message_received_signal_;
   boost::signals2::signal<void(unsigned int)> network_status_signal_;
-  std::map<NodeId, asymm::PublicKey> public_keys_;
   unsigned int cache_size_hint_;
   std::vector<std::pair<std::string, std::string>> cache_chunks_;
-  bool private_key_is_set_;
-  bool node_is_set_;
   bool joined_;
+  bool signatures_required_;
+  bool encryption_required_;
   Routing::NodeType node_type_;
 };
 

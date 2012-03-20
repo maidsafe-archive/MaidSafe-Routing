@@ -11,11 +11,47 @@
  ******************************************************************************/
 
 #include "maidsafe/routing/service.h"
-
+#include "maidsafe/routing/node_id.h"
+#include "maidsafe/routing/routing.pb.h"
+#include "maidsafe/routing/routing_table.h"
+#include "maidsafe/routing/log.h"
 
 namespace maidsafe {
 
 namespace routing {
+
+Service::Service(std::shared_ptr< Rpcs > rpc_ptr,
+                 std::shared_ptr< RoutingTable > routing_table) :
+                 rpc_ptr_(rpc_ptr),
+                 routing_table_(routing_table) {}
+
+  
+void Service::PingResponse(const protobuf::Message &message) {
+  protobuf::PingResponse ping_response;
+  if (!ping_response.ParseFromString(message.data()))
+    return;
+  if (ping_response.pong())
+    return;  // TODO(dirvine) FIXME IMPLEMENT ME
+}
+
+void Service::ConnectResponse(const protobuf::Message &message) {
+// send message back  wait on his connect
+// add him to a pending endpoint queue
+// and when transport asks us to accept him we will
+  if (message.has_source_id())
+    DLOG(INFO) << " have source ID";
+}
+
+void Service::FindNodeResponse(const protobuf::Message &message) {
+  protobuf::FindNodesResponse find_nodes;
+  if (!find_nodes.ParseFromString(message.data()))
+    return;
+  for (int i = 0; i < find_nodes.nodes().size(); ++i) {
+    NodeInfo node;
+    node.node_id = NodeId(find_nodes.nodes(i));
+    routing_table_->CheckNode(node);
+  }
+}
 
 
 }  // namespace routing

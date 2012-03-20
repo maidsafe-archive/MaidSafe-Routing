@@ -12,13 +12,26 @@
 
 #ifndef MAIDSAFE_ROUTING_SERVICE_H_
 #define MAIDSAFE_ROUTING_SERVICE_H_
+#include "rpcs.h"
 
 
 namespace maidsafe {
 
 namespace routing {
+namespace protobuf {  class Message; }
 
-
+class Service {
+ public:
+  Service(std::shared_ptr<Rpcs> rpc_ptr,
+          std::shared_ptr<RoutingTable> routing_table);
+  void PingResponse(const protobuf::Message &message);
+  void ConnectResponse(const protobuf::Message &message);
+  void FindNodeResponse(const protobuf::Message &message);
+ private:
+   std::shared_ptr<Rpcs> rpc_ptr_;
+   std::shared_ptr<RoutingTable> routing_table_;
+};
+  
 }  // namespace routing
 
 }  // namespace maidsafe

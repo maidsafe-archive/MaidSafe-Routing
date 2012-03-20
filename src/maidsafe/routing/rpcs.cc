@@ -10,7 +10,10 @@
  *  the explicit written permission of the board of directors of maidsafe.net. *
  ******************************************************************************/
 
-
+#include "maidsafe/transport/managed_connection.h"
+#include "maidsafe/routing/node_id.h"
+#include "maidsafe/routing/routing.pb.h"
+#include "maidsafe/routing/routing_table.h"
 #include "maidsafe/routing/rpcs.h"
 
 
@@ -18,12 +21,22 @@ namespace maidsafe {
 
 namespace routing {
 
+Rpcs::Rpcs(std::shared_ptr< RoutingTable > routing_table,
+           std::shared_ptr< transport::ManagedConnection > transport) :
+           routing_table_(routing_table),
+           transport_(transport) { }
+
+void Rpcs::SendOn(protobuf::Message& message, NodeId &final_node_id) {
+  NodeInfo next_node(routing_table_->GetClosestNode(final_node_id, 0));
+// FIXME SEND transport_->Send(next_node.endpoint, message.SerializeAsString());
+}
+
 
 void Rpcs::Ping(protobuf::Message &message) {
   protobuf::PingRequest ping_request;
   ping_request.set_ping(true);
   message.set_destination_id(message.source_id());
-  message.set_source_id(node_id_.String());
+  message.set_source_id(routing_table_->kNodeId().String());
   message.set_data(ping_request.SerializeAsString());
   message.set_direct(true);
   message.set_response(true);
@@ -33,6 +46,47 @@ void Rpcs::Ping(protobuf::Message &message) {
   SendOn(message, send_to);
 }
 
+void Rpcs::ConnectRequest(protobuf::Message &message) {
+    // create a connect message to send direct.
+  protobuf::ConnectRequest protobuf_connect_request;
+  protobuf::Endpoint protobuf_endpoint;
+  maidsafe::transport::Endpoint peer_endpoint;
+  peer_endpoint.ip.from_string(protobuf_endpoint.ip());
+  peer_endpoint.port = protobuf_endpoint.port();
+  // for now accept bootstrap requests without prejeduce
+  if (protobuf_connect_request.bootstrap()) {
+    transport_->AcceptConnection(peer_endpoint, true);
+  // TODO(dirvine) FIXME get find nodes and reply then drop connection
+
+  }
+  // for now accept client requests without prejeduce
+  if (protobuf_connect_request.has_client() &&
+      protobuf_connect_request.client()) {
+    transport_->AcceptConnection(peer_endpoint, true);
+  // TODO(dirvine) FIXME, add to client holding table (no routing info)
+  // make sure any dropped connections try this and routing table
+  }
+}
+
+void Rpcs::FindNodeRequest(protobuf::Message &message) {
+  protobuf::FindNodesRequest find_nodes;
+  protobuf::FindNodesResponse found_nodes;
+  std::vector<NodeId>
+          nodes(routing_table_->GetClosestNodes(NodeId(message.destination_id()),
+                      static_cast<uint16_t>(find_nodes.num_nodes_requested())));
+
+  for (auto it = nodes.begin(); it != nodes.end(); ++it)
+    found_nodes.add_nodes((*it).String());
+  message.set_destination_id(message.source_id());
+  message.set_source_id(routing_table_->kNodeId().String());
+  message.set_data(found_nodes.SerializeAsString());
+  message.set_direct(true);
+  message.set_response(true);
+  message.set_replication(1);
+  message.set_type(1);
+  NodeId send_to(message.destination_id());
+  SendOn(message, send_to);
+}
 
 
 }  // namespace routing
