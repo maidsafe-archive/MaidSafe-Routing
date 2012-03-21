@@ -97,11 +97,10 @@ class Routing {
   Routing(NodeType node_type,
           const asymm::PrivateKey &private_key,
           const std::string &node_id,
-          bool signatures_required,  // sets all nodes sign data with asymm
           bool encryption_required);  // full asymm encrypt of all messages
   ~Routing();
   void BootStrapFromThisEndpoint(const maidsafe::transport::Endpoint& endpoint);
-  void Send(const Message &message,
+  int Send(const Message &message,
             const ResponseReceivedFunctor &response_functor);
   void ValidateThisNode(bool valid,
                         std::string node_id,
@@ -109,7 +108,7 @@ class Routing {
                         //  do this in response to the ValidateNodeId signal
   boost::signals2::signal<void(int, Message)> &RequestReceivedSignal();
   boost::signals2::signal<void(unsigned int)> &NetworkStatusSignal();
-  boost::signals2::signal<void(std::string)> &ValidateNodeId();
+  boost::signals2::signal<void(std::string)> &ValidateNodeIdSignal();
 
  private:
   Routing(const Routing&);  // no copy
@@ -144,10 +143,13 @@ class Routing {
   std::shared_ptr<Service> service_;
   boost::signals2::signal<void(int, Message)> message_received_signal_;
   boost::signals2::signal<void(unsigned int)> network_status_signal_;
+  boost::signals2::signal<void(std::string)> validate_node_signal_;
   unsigned int cache_size_hint_;
   std::vector<std::pair<std::string, std::string>> cache_chunks_;
   std::vector<NodeInfo> waiting_node_validation_;
-  std::map<uint32_t, ResponseReceivedFunctor> waiting_for_response_;
+  std::map<uint32_t, std::pair<std::shared_ptr<boost::asio::deadline_timer>,
+                              ResponseReceivedFunctor> > waiting_for_response_;
+  std::vector<NodeInfo> client_connections_;
   bool joined_;
   bool signatures_required_;
   bool encryption_required_;

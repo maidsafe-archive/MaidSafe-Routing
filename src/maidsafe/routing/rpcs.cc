@@ -53,12 +53,12 @@ void Rpcs::Connect(protobuf::Message &message) {
   maidsafe::transport::Endpoint peer_endpoint;
   peer_endpoint.ip.from_string(protobuf_endpoint.ip());
   peer_endpoint.port = protobuf_endpoint.port();
-  // for now accept bootstrap requests without prejeduce
+  // for now accept bootstrap requests without prejudice
   if (protobuf_connect_request.bootstrap()) {
     transport_->AcceptConnection(peer_endpoint, true);
   // TODO(dirvine) FIXME get find nodes and reply then drop connection
   }
-  // for now accept client requests without prejeduce
+  // for now accept client requests without prejudice
   if (protobuf_connect_request.has_client() &&
       protobuf_connect_request.client()) {
     transport_->AcceptConnection(peer_endpoint, true);

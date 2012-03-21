@@ -25,7 +25,7 @@ Service::Service(std::shared_ptr< Rpcs > rpc_ptr,
                  rpc_ptr_(rpc_ptr),
                  routing_table_(routing_table) {}
 
-  
+
 void Service::Ping(const protobuf::Message &message) {
   protobuf::PingResponse ping_response;
   if (!ping_response.ParseFromString(message.data()))

@@ -56,7 +56,6 @@ Message::Message(const protobuf::Message &protobuf_message)
 Routing::Routing(NodeType node_type,
                  const asymm::PrivateKey &private_key,
                  const std::string &node_id,
-                 bool signatures_required,  // sets all nodes sign data
                  bool encryption_required)
     : asio_service_(),
       bootstrap_file_(),
@@ -70,11 +69,14 @@ Routing::Routing(NodeType node_type,
       service_(new Service(rpc_ptr_, routing_table_)),
       message_received_signal_(),
       network_status_signal_(),
+      validate_node_signal_(),
       cache_size_hint_(kNumChunksToCache),
       cache_chunks_(),
+      waiting_node_validation_(),
       waiting_for_response_(),
+      client_connections_(),
       joined_(false),
-      signatures_required_(signatures_required),
+      signatures_required_(false),  // we may do this ourselves internally
       encryption_required_(encryption_required),
       node_type_(node_type) {
   Init();
@@ -97,23 +99,33 @@ void Routing::BootStrapFromThisEndpoint(const transport::Endpoint
   asio_service_.service().post(std::bind(&Routing::Join, this));
 }
 
-void Routing::Send(const Message &message,
+int Routing::Send(const Message &message,
                    const ResponseReceivedFunctor &response_functor) {
+  if (message.destination_id.empty()) {
+    DLOG(ERROR) << "No destination id, aborted send";
+    return 1;
+  }
+  if (message.data.empty()) {
+    DLOG(ERROR) << "No data, aborted send";
+    return 2;
+  }
   if (message.type < 100) {
     DLOG(ERROR) << "Attempt to use Reserved message type (<100), aborted send";
-    return;
+    return 3;
   }
   uint32_t message_unique_id = AddToCallbackQueue(response_functor);
   protobuf::Message proto_message;
   proto_message.set_id(message_unique_id);
-  proto_message.set_source_id(message.source_id);
+  proto_message.set_source_id(routing_table_->kNodeId().String());
   proto_message.set_destination_id(message.destination_id);
   proto_message.set_cacheable(message.cacheable);
   proto_message.set_data(message.data);
   proto_message.set_direct(message.direct);
   proto_message.set_replication(message.replication);
   proto_message.set_type(message.type);
+  proto_message.set_routing_failure(false);
   SendOn(proto_message, NodeId(message.destination_id));
+  return 0;
 }
 
 
@@ -146,7 +158,8 @@ bool Routing::ReadBootstrapFile() {  // TODO(dirvine) FIXME now a dir
     //        DLOG(ERROR) << "No private key in config or set ";
 //        return false;
 //      } else {
-  //        asymm::DecodePrivateKey(protobuf_config.private_key(), &private_key_);
+  //        asymm::DecodePrivateKey(protobuf_config.private_key(),
+  //  &private_key_);
 //      }
 //    }
 //    if (!node_is_set_) {
@@ -176,7 +189,6 @@ bool Routing::WriteBootstrapFile() const {
   return false;
 }
 
-
 uint32_t Routing::AddToCallbackQueue(const ResponseReceivedFunctor
                                            &response_functor) {
   auto it = waiting_for_response_.end();
@@ -185,11 +197,11 @@ uint32_t Routing::AddToCallbackQueue(const ResponseReceivedFunctor
     id = RandomUint32();
     it = waiting_for_response_.find(id);
   }
-  waiting_for_response_.insert(std::pair<uint32_t, ResponseReceivedFunctor>
-                                                     (id, response_functor));
-  boost::asio::deadline_timer timer(asio_service_.service(),
-                                 boost::posix_time::seconds(kTimoutInSeconds));
-  timer.async_wait(std::bind(&Routing::FindAndKillJob, this, id));
+  std::shared_ptr<boost::asio::deadline_timer> timer( new
+  boost::asio::deadline_timer(asio_service_.service(),
+                              boost::posix_time::seconds(kTimoutInSeconds)));
+  timer->async_wait(std::bind(&Routing::FindAndKillJob, this, id));
+  waiting_for_response_.insert(std::make_pair(id,std::make_pair(timer, response_functor)));
   return id;
 }
 
@@ -200,7 +212,7 @@ void Routing::ExecuteCallback(protobuf::Message &message) {
     Message message_struct;
     message_struct.source_id = message.source_id();
     message_struct.data = message.data();
-    (*it).second(message_struct);
+    (*it).second.second(message_struct);
   }  // otherwise timed out and deleted
 }
 
@@ -209,7 +221,7 @@ void Routing::FindAndKillJob(uint32_t job_number) {
   if (it != waiting_for_response_.end()) {
     Message failure;
     failure.timeout = true;
-    (*it).second(failure);  // send failure in callback
+    (*it).second.second(failure);  // send failure in callback
     waiting_for_response_.erase(it);  // kill job
   }
 }
@@ -220,6 +232,10 @@ bs2::signal<void(int, Message)> &Routing::RequestReceivedSignal() {
 
 bs2::signal<void(unsigned int)> &Routing::NetworkStatusSignal() {
   return network_status_signal_;
+}
+
+bs2::signal<void(std::string)> &Routing::ValidateNodeIdSignal() {
+  return validate_node_signal_;
 }
 
 void Routing::Join() {
@@ -353,7 +369,7 @@ void Routing::ProcessConnectResponse(protobuf::Message& message) {
                   it != waiting_node_validation_.end();
                   ++it) {
       if ((*it).node_id == node_to_add) {
-        routing_table_->AddNode(*it); // by now public key is also valid
+        routing_table_->AddNode(*it);  // by now public key is also valid
         waiting_node_validation_.erase(it);
         break;
       }
@@ -375,7 +391,7 @@ void Routing::TryAddNode(NodeId node) {
   node_info.node_id = node;
   if (routing_table_->CheckNode(node_info)) {
     waiting_node_validation_.push_back(node_info);
-   // TODO FIXME why not work ??? ValidateNodeId(node.String());
+    validate_node_signal_(node.String());
     boost::asio::deadline_timer timer(asio_service_.service(),
                                  boost::posix_time::seconds(kTimoutInSeconds));
     timer.async_wait(std::bind(&Routing::FindAndKillWaitingNodeValidation,
@@ -393,6 +409,7 @@ void Routing::ValidateThisNode(bool valid,
        it != waiting_node_validation_.end();
        ++it) {
     if ((*it).node_id == node) {
+      (*it).public_key = public_key;
         // TODO(dirvine) create a connect request
 
       break;
