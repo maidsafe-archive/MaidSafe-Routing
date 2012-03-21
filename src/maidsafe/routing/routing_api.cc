@@ -80,16 +80,21 @@ Routing::Routing(NodeType node_type,
   Init();
 }
 
-void Routing::Init() {
-  asio_service_.Start(5);
-  // TODO(dirvine) fill in bootstrap file location and do ReadConfigFile
-  transport_->Init(20);
-  node_local_endpoint_ = transport_->GetOurEndpoint();
-  LOG(INFO) << " Local IP address : " << node_local_endpoint_.ip.to_string();
-  LOG(INFO) << " Local Port       : " << node_local_endpoint_.port;
-  transport_->on_message_received()->connect(
-      std::bind(&Routing::ReceiveMessage, this, args::_1));
-  Join();
+// drop existing routing table and restart
+void Routing::BootStrapFromThisEndpoint(const transport::Endpoint
+&endpoint) {
+  LOG(INFO) << " Entered bootstrap IP address : " << endpoint.ip.to_string();
+  LOG(INFO) << " Entered bootstrap Port       : " << endpoint.port;
+  for (unsigned int i = 0; i < routing_table_->Size(); ++i) {
+    NodeInfo remove_node =
+    routing_table_->GetClosestNode(routing_table_->kNodeId(), 0);
+    transport_->RemoveConnection(remove_node.endpoint);
+    routing_table_->DropNode(remove_node.endpoint);
+  }
+  network_status_signal_(routing_table_->Size());
+  bootstrap_nodes_.clear();
+  bootstrap_nodes_.push_back(endpoint);
+  asio_service_.service().post(std::bind(&Routing::Join, this));
 }
 
 void Routing::Send(const Message &message,
@@ -109,6 +114,66 @@ void Routing::Send(const Message &message,
   proto_message.set_replication(message.replication);
   proto_message.set_type(message.type);
   SendOn(proto_message, NodeId(message.destination_id));
+}
+
+
+void Routing::Init() {
+  asio_service_.Start(5);
+  // TODO(dirvine) fill in bootstrap file location and do ReadConfigFile
+  transport_->Init(20);
+  node_local_endpoint_ = transport_->GetOurEndpoint();
+  LOG(INFO) << " Local IP address : " << node_local_endpoint_.ip.to_string();
+  LOG(INFO) << " Local Port       : " << node_local_endpoint_.port;
+  transport_->on_message_received()->connect(
+      std::bind(&Routing::ReceiveMessage, this, args::_1));
+  Join();
+}
+
+bool Routing::ReadBootstrapFile() {  // TODO(dirvine) FIXME now a dir
+  protobuf::ConfigFile protobuf_config;
+  protobuf::Bootstrap protobuf_bootstrap;
+// TODO(Fraser#5#): 2012-03-14 - Use try catch / pass error_code for fs funcs.
+//  if (!fs::exists(config_file_) || !fs::is_regular_file(config_file_)) {
+  //    DLOG(ERROR) << "Cannot read config file " << config_file_;
+//    return false;
+//  }
+//  try {
+  //    fs::ifstream config_file_stream(config_file_);
+//    if (!protobuf_config.ParseFromString(config_file_.string()))
+//      return false;
+//    if (!private_key_is_set_) {
+  //      if (!protobuf_config.has_private_key()) {
+    //        DLOG(ERROR) << "No private key in config or set ";
+//        return false;
+//      } else {
+  //        asymm::DecodePrivateKey(protobuf_config.private_key(), &private_key_);
+//      }
+//    }
+//    if (!node_is_set_) {
+  //      if (protobuf_config.has_node_id()) {
+    //         node_id_ = NodeId(protobuf_config.node_id());
+//       } else {
+  //        DLOG(ERROR) << "Cannot read NodeId ";
+//        return false;
+//       }
+//    }
+//    transport::Endpoint endpoint;
+//    for (int i = 0; i != protobuf_bootstrap.endpoint_size(); ++i) {
+  //      endpoint.ip.from_string(protobuf_bootstrap.endpoint(i).ip());
+//      endpoint.port= protobuf_bootstrap.endpoint(i).port();
+//      bootstrap_nodes_.push_back(endpoint);
+//    }
+//  }
+//  catch(const std::exception &e) {
+  //    DLOG(ERROR) << "Exception: " << e.what();
+//    return false;
+//  }
+  return true;
+}
+
+bool Routing::WriteBootstrapFile() const {
+  // TODO(dirvine) implement
+  return false;
 }
 
 
@@ -167,70 +232,6 @@ void Routing::Join() {
        it != bootstrap_nodes_.end(); ++it) {
     // TODO(dirvine) send bootstrap requests
   }
-}
-
-// drop existing routing table and restart
-void Routing::BootStrapFromThisEndpoint(const transport::Endpoint
-                                                             &endpoint) {
-  LOG(INFO) << " Entered bootstrap IP address : " << endpoint.ip.to_string();
-  LOG(INFO) << " Entered bootstrap Port       : " << endpoint.port;
-  for (unsigned int i = 0; i < routing_table_->Size(); ++i) {
-    NodeInfo remove_node =
-                 routing_table_->GetClosestNode(routing_table_->kNodeId(), 0);
-    transport_->RemoveConnection(remove_node.endpoint);
-    routing_table_->DropNode(remove_node.endpoint);
-  }
-  network_status_signal_(routing_table_->Size());
-  bootstrap_nodes_.clear();
-  bootstrap_nodes_.push_back(endpoint);
-  asio_service_.service().post(std::bind(&Routing::Join, this));
-}
-
-bool Routing::WriteConfigFile() const {
-  // TODO(dirvine) implement
-return false;
-}
-
-bool Routing::ReadConfigFile() {  // TODO(dirvine) FIXME now a dir
-  protobuf::ConfigFile protobuf_config;
-  protobuf::Bootstrap protobuf_bootstrap;
-// TODO(Fraser#5#): 2012-03-14 - Use try catch / pass error_code for fs funcs.
-//  if (!fs::exists(config_file_) || !fs::is_regular_file(config_file_)) {
-//    DLOG(ERROR) << "Cannot read config file " << config_file_;
-//    return false;
-//  }
-//  try {
-//    fs::ifstream config_file_stream(config_file_);
-//    if (!protobuf_config.ParseFromString(config_file_.string()))
-//      return false;
-//    if (!private_key_is_set_) {
-//      if (!protobuf_config.has_private_key()) {
-//        DLOG(ERROR) << "No private key in config or set ";
-//        return false;
-//      } else {
-//        asymm::DecodePrivateKey(protobuf_config.private_key(), &private_key_);
-//      }
-//    }
-//    if (!node_is_set_) {
-//      if (protobuf_config.has_node_id()) {
-//         node_id_ = NodeId(protobuf_config.node_id());
-//       } else {
-//        DLOG(ERROR) << "Cannot read NodeId ";
-//        return false;
-//       }
-//    }
-//    transport::Endpoint endpoint;
-//    for (int i = 0; i != protobuf_bootstrap.endpoint_size(); ++i) {
-//      endpoint.ip.from_string(protobuf_bootstrap.endpoint(i).ip());
-//      endpoint.port= protobuf_bootstrap.endpoint(i).port();
-//      bootstrap_nodes_.push_back(endpoint);
-//    }
-//  }
-//  catch(const std::exception &e) {
-//    DLOG(ERROR) << "Exception: " << e.what();
-//    return false;
-//  }
-  return true;
 }
 
 void Routing::AckReceived(const transport::TransportCondition &return_value,
@@ -333,7 +334,83 @@ void Routing::ProcessMessage(protobuf::Message &message) {
   }
 }
 
+void Routing::ProcessPingResponse(protobuf::Message& message) {
+  // TODO , do we need this and where and how can I update the response
+  protobuf::PingResponse ping_response;
+  if (ping_response.ParseFromString(message.data()) &&
+    ping_response.has_pong()) {
+    //  do stuff here
+    }
+}
 
+// the other node agreed to connect - he has accepted our connection
+void Routing::ProcessConnectResponse(protobuf::Message& message) {
+  protobuf::ConnectResponse connect_response;
+  if (connect_response.ParseFromString(message.data()) &&
+      connect_response.answer()) {
+    NodeId node_to_add(connect_response.contact().node_id());
+    for (auto it = waiting_node_validation_.begin();
+                  it != waiting_node_validation_.end();
+                  ++it) {
+      if ((*it).node_id == node_to_add) {
+        routing_table_->AddNode(*it); // by now public key is also valid
+        waiting_node_validation_.erase(it);
+        break;
+      }
+    }
+    // if this was a bootstrap connect then we will have our closest nodes
+    // as well. Bootstrap node will drop us in 10 minutes;
+    protobuf::FindNodesResponse find_nodes(connect_response.find_nodes());
+    if (connect_response.has_find_nodes()) {
+      protobuf::FindNodesResponse find_nodes(connect_response.find_nodes());
+      for(int i = 0; i < find_nodes.nodes_size() ; ++i) {
+        TryAddNode(NodeId(find_nodes.nodes(i)));
+      }
+    }
+  }
+}
+
+void Routing::TryAddNode(NodeId node) {
+  NodeInfo node_info;
+  node_info.node_id = node;
+  if (routing_table_->CheckNode(node_info)) {
+    waiting_node_validation_.push_back(node_info);
+   // TODO FIXME why not work ??? ValidateNodeId(node.String());
+    boost::asio::deadline_timer timer(asio_service_.service(),
+                                 boost::posix_time::seconds(kTimoutInSeconds));
+    timer.async_wait(std::bind(&Routing::FindAndKillWaitingNodeValidation,
+                               this, node));
+  }
+}
+
+void Routing::ValidateThisNode(bool valid,
+                               std::string node_id,
+                               rsa::PublicKey& public_key) {
+  if (!valid)
+    return;
+  NodeId node(node_id);
+  for (auto it = waiting_node_validation_.begin();
+       it != waiting_node_validation_.end();
+       ++it) {
+    if ((*it).node_id == node) {
+        // TODO(dirvine) create a connect request
+
+      break;
+    }
+  }
+}
+
+
+void Routing::FindAndKillWaitingNodeValidation(NodeId node) {
+  for (auto it = waiting_node_validation_.begin();
+       it != waiting_node_validation_.end();
+       ++it) {
+    if ((*it).node_id == node) {
+      waiting_node_validation_.erase(it);
+      break;
+    }
+  }
+}
 
 
 bool Routing::GetFromCache(protobuf::Message &message) {

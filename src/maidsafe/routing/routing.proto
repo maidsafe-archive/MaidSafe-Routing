@@ -18,7 +18,7 @@ message Contact {
 
 message ConfigFile {
   optional bytes node_id = 1;
-  optional bytes private_key = 2; 
+  optional bytes private_key = 2;
 }
 
 message BootstrapContacts {
@@ -28,11 +28,11 @@ message BootstrapContacts {
 }
 
 // contacts file
-message Bootstrap { 
+message Bootstrap {
   repeated BootstrapContacts bootstrap_contacts = 1;
 }
 
-// Message wrappers 
+// Message wrappers
 
 
 message Message {
@@ -62,7 +62,7 @@ message ConnectRequest {
 
 message ConnectResponse {
   required bool answer = 1;
-  optional Contact contact = 2;
+  required Contact contact = 2;
   optional Endpoint seen_endpoint = 3;
   optional FindNodesResponse find_nodes = 4;  // if connect request is bootstrap
 }

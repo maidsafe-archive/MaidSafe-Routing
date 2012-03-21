@@ -71,6 +71,7 @@ namespace protobuf { class Message; }
 
 class RoutingTable;
 class NodeId;
+class NodeInfo;
 class Service;
 class Rpcs;
 
@@ -102,15 +103,20 @@ class Routing {
   void BootStrapFromThisEndpoint(const maidsafe::transport::Endpoint& endpoint);
   void Send(const Message &message,
             const ResponseReceivedFunctor &response_functor);
+  void ValidateThisNode(bool valid,
+                        std::string node_id,
+                        asymm::PublicKey &public_key);  // upper layers must
+                        //  do this in response to the ValidateNodeId signal
   boost::signals2::signal<void(int, Message)> &RequestReceivedSignal();
   boost::signals2::signal<void(unsigned int)> &NetworkStatusSignal();
+  boost::signals2::signal<void(std::string)> &ValidateNodeId();
 
  private:
   Routing(const Routing&);  // no copy
   Routing& operator=(const Routing&);  // no assign
   void Init();
-  bool ReadConfigFile();
-  bool WriteConfigFile() const;
+  bool ReadBootstrapFile();
+  bool WriteBootstrapFile() const;
   void Join();
   void SendOn(const protobuf::Message &message, const NodeId &target_node);
   void AckReceived(const transport::TransportCondition &, const std::string &);
@@ -119,11 +125,13 @@ class Routing {
   void ProcessPingResponse(protobuf::Message &message);
   void ProcessConnectResponse(protobuf::Message &message);
   void ProcessFindNodeResponse(protobuf::Message &message);
+  void FindAndKillWaitingNodeValidation(NodeId node);
   void AddToCache(const protobuf::Message &message);
   bool GetFromCache(protobuf::Message &message);
   void FindAndKillJob(uint32_t job_number);
   uint32_t AddToCallbackQueue(const ResponseReceivedFunctor &response_functor);
   void ExecuteCallback(protobuf::Message &message);
+  void TryAddNode(NodeId node);
   AsioService asio_service_;
   fs::path bootstrap_file_;
   std::vector<transport::Endpoint> bootstrap_nodes_;
@@ -138,6 +146,7 @@ class Routing {
   boost::signals2::signal<void(unsigned int)> network_status_signal_;
   unsigned int cache_size_hint_;
   std::vector<std::pair<std::string, std::string>> cache_chunks_;
+  std::vector<NodeInfo> waiting_node_validation_;
   std::map<uint32_t, ResponseReceivedFunctor> waiting_for_response_;
   bool joined_;
   bool signatures_required_;
