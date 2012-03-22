@@ -21,8 +21,8 @@ namespace transport { class ManagedConnection; }
 
 namespace routing {
 
-namespace protobuf {  class Message; }
-
+namespace protobuf { class Message; }
+class Routing;
 class Endpoint;
 class RoutingTable;
 class NodeId;
@@ -30,7 +30,8 @@ class NodeId;
 // Send request to the network
 class Rpcs {
  public:
-  Rpcs(std::shared_ptr<RoutingTable> routing_table,
+  Rpcs(std::shared_ptr<Routing> routing,
+       std::shared_ptr<RoutingTable> routing_table,
        std::shared_ptr<transport::ManagedConnection> transport);
   void Ping(protobuf::Message &message);
   void Connect(protobuf::Message &message);
@@ -38,6 +39,7 @@ class Rpcs {
 // utility method also called from services
   void SendOn(protobuf::Message &message);
  private:
+  std::weak_ptr<Routing> routing_;
   std::shared_ptr<RoutingTable> routing_table_;
   std::shared_ptr<transport::ManagedConnection> transport_;
 };

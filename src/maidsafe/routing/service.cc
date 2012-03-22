@@ -11,20 +11,24 @@
  ******************************************************************************/
 
 #include "maidsafe/routing/service.h"
+
+#include "maidsafe/routing/routing_api.h"
 #include "maidsafe/routing/node_id.h"
 #include "maidsafe/routing/routing.pb.h"
 #include "maidsafe/routing/routing_table.h"
+#include "maidsafe/routing/rpcs.h"
 #include "maidsafe/routing/log.h"
 
 namespace maidsafe {
 
 namespace routing {
 
-Service::Service(std::shared_ptr< Rpcs > rpc_ptr,
-                 std::shared_ptr< RoutingTable > routing_table) :
-                 rpc_ptr_(rpc_ptr),
-                 routing_table_(routing_table) {}
-
+Service::Service(std::shared_ptr<Routing> routing,
+                 std::shared_ptr<Rpcs> rpc_ptr,
+                 std::shared_ptr<RoutingTable> routing_table)
+    : routing_(routing),
+      rpc_ptr_(rpc_ptr),
+      routing_table_(routing_table) {}
 
 void Service::Ping(protobuf::Message &message) {
   protobuf::PingResponse ping_response;

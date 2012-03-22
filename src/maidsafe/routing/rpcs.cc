@@ -10,21 +10,26 @@
  *  the explicit written permission of the board of directors of maidsafe.net. *
  ******************************************************************************/
 
+#include "maidsafe/routing/rpcs.h"
+
 #include "maidsafe/transport/managed_connection.h"
+
+#include "maidsafe/routing/routing_api.h"
 #include "maidsafe/routing/node_id.h"
 #include "maidsafe/routing/routing.pb.h"
 #include "maidsafe/routing/routing_table.h"
-#include "maidsafe/routing/rpcs.h"
 
 
 namespace maidsafe {
 
 namespace routing {
 
-Rpcs::Rpcs(std::shared_ptr< RoutingTable > routing_table,
-           std::shared_ptr< transport::ManagedConnection > transport) :
-           routing_table_(routing_table),
-           transport_(transport) { }
+Rpcs::Rpcs(std::shared_ptr<Routing> routing,
+           std::shared_ptr<RoutingTable> routing_table,
+           std::shared_ptr<transport::ManagedConnection> transport)
+    : routing_(routing),
+      routing_table_(routing_table),
+      transport_(transport) {}
 
 void Rpcs::SendOn(protobuf::Message& message) {
   NodeInfo next_node(routing_table_->

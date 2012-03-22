@@ -65,8 +65,8 @@ Routing::Routing(NodeType node_type,
       node_external_endpoint_(),
       transport_(new transport::ManagedConnection()),
       routing_table_(new RoutingTable(node_id)),
-      rpc_ptr_(new Rpcs(routing_table_, transport_)),
-      service_(new Service(rpc_ptr_, routing_table_)),
+      rpc_ptr_(),
+      service_(),
       timer_(new Timer(asio_service_)),
       message_received_signal_(),
       network_status_signal_(),
@@ -131,6 +131,8 @@ int Routing::Send(const Message &message,
 }
 
 void Routing::Init() {
+  rpc_ptr_.reset(new Rpcs(shared_from_this(), routing_table_, transport_)),
+  service_.reset(new Service(shared_from_this(), rpc_ptr_, routing_table_)),
   asio_service_.Start(5);
   // TODO(dirvine) fill in bootstrap file location and do ReadConfigFile
   transport_->Init(20);

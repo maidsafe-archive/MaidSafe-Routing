@@ -92,7 +92,14 @@ struct Message {
 
 typedef std::function<void(int, std::string)> ResponseReceivedFunctor;
 
-class Routing {
+#ifdef __GNUC__
+#  pragma GCC diagnostic push
+#  pragma GCC diagnostic ignored "-Weffc++"
+#endif
+class Routing : public std::enable_shared_from_this<Routing> {
+#ifdef __GNUC__
+#  pragma GCC diagnostic pop
+#endif
  public:
   enum NodeType { kVault, kClient };
   Routing(NodeType node_type,
