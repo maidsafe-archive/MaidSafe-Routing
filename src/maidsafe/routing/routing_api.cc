@@ -24,7 +24,6 @@
 namespace fs = boost::filesystem;
 namespace bs2 = boost::signals2;
 
-
 namespace maidsafe {
 
 namespace routing {
@@ -130,7 +129,6 @@ int Routing::Send(const Message &message,
   SendOn(proto_message);
   return 0;
 }
-
 
 void Routing::Init() {
   asio_service_.Start(5);
@@ -240,7 +238,6 @@ void Routing::ReceiveMessage(const std::string &message) {
   if (protobuf_message.ParseFromString(message))
     ProcessMessage(protobuf_message);
 }
-
 
 void Routing::ProcessMessage(protobuf::Message &message) {
   // TODO(dirvine) if message is from/for a client connected
@@ -396,7 +393,6 @@ void Routing::ValidateThisNode(bool valid,
   }
 }
 
-
 void Routing::FindAndKillWaitingNodeValidation(NodeId node) {
   for (auto it = waiting_node_validation_.begin();
        it != waiting_node_validation_.end();
@@ -407,7 +403,6 @@ void Routing::FindAndKillWaitingNodeValidation(NodeId node) {
     }
   }
 }
-
 
 bool Routing::GetFromCache(protobuf::Message &message) {
   bool result(false);
