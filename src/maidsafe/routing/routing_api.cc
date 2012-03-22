@@ -70,7 +70,6 @@ Routing::Routing(NodeType node_type,
       timer_(new Timer(asio_service_)),
       message_received_signal_(),
       network_status_signal_(),
-      validate_node_signal_(),
       cache_size_hint_(kNumChunksToCache),
       cache_chunks_(),
       waiting_node_validation_(),
@@ -79,8 +78,18 @@ Routing::Routing(NodeType node_type,
       joined_(false),
       signatures_required_(false),  // we may do this ourselves internally
       encryption_required_(encryption_required),
-      node_type_(node_type) {
+      node_type_(node_type),
+      node_validation_functor_() {
   Init();
+}
+
+void Routing::setNodeValidationFunctor(NodeValidationFunctor
+                                       &node_validation_functor) {
+  if (!node_validation_functor) {
+    DLOG(ERROR) << "Invalid node_validation_functor passed ";
+    return;
+  }
+  node_validation_functor_ = node_validation_functor;
 }
 
 // drop existing routing table and restart
@@ -126,11 +135,15 @@ int Routing::Send(const Message &message,
   proto_message.set_replication(message.replication);
   proto_message.set_type(message.type);
   proto_message.set_routing_failure(false);
-  SendOn(proto_message);
+  routing_table_->SendOn(proto_message);
   return 0;
 }
 
 void Routing::Init() {
+  if (!node_validation_functor_) {
+    DLOG(ERROR) << "Invalid node_validation_functor passed: Aborted start";
+    return;
+  }
   rpc_ptr_.reset(new Rpcs(routing_table_)),
   service_.reset(new Service(routing_table_)),
   asio_service_.Start(5);
@@ -200,10 +213,6 @@ bs2::signal<void(unsigned int)> &Routing::NetworkStatusSignal() {
   return network_status_signal_;
 }
 
-bs2::signal<void(std::string)> &Routing::ValidateNodeIdSignal() {
-  return validate_node_signal_;
-}
-
 void Routing::Join() {
   if (bootstrap_nodes_.empty()) {
     DLOG(INFO) << "No bootstrap nodes";
@@ -214,24 +223,6 @@ void Routing::Join() {
        it != bootstrap_nodes_.end(); ++it) {
     // TODO(dirvine) send bootstrap requests
   }
-}
-
-void Routing::AckReceived(const transport::TransportCondition &return_value,
-                          const std::string &message) {
-  if (return_value != transport::kSuccess)
-    return;  // TODO(dirvine) FIXME we may need to take action here
-             // depending on return code
-  ReceiveMessage(message);
-}
-
-void Routing::SendOn(const protobuf::Message &message) {
-  std::string message_data(message.SerializeAsString());
-  transport::Endpoint send_to =
-             routing_table_->
-                 GetClosestNode(NodeId(message.destination_id()), 0).endpoint;
-//   transport::ResponseFunctor response_functor =
-//                 std::bind(&Routing::AckReceived, this, args::_1, args::_2);
-// TODO(dirvine)  transport_->Send(send_to, message_data, response_functor);
 }
 
 void Routing::ReceiveMessage(const std::string &message) {
@@ -260,7 +251,7 @@ void Routing::ProcessMessage(protobuf::Message &message) {
     NodeId next_node =
      routing_table_->GetClosestNode(NodeId(message.destination_id()),
                                     0).node_id;
-    SendOn(message);
+    routing_table_->SendOn(message);
     return;
   } else {  // I am closest
     if (message.type() == 0) {  // ping
@@ -321,7 +312,7 @@ void Routing::ProcessMessage(protobuf::Message &message) {
                                  static_cast<uint16_t>(message.replication()));
     for (auto it = close.begin(); it != close.end(); ++it) {
       message.set_destination_id((*it).String());
-      SendOn(message);
+      routing_table_->SendOn(message);
     }
   }
 }
@@ -367,7 +358,7 @@ void Routing::TryAddNode(NodeId node) {
   node_info.node_id = node;
   if (routing_table_->CheckNode(node_info)) {
     waiting_node_validation_.push_back(node_info);
-    validate_node_signal_(node.String());
+    node_validation_functor_(node.String());
     boost::asio::deadline_timer timer(asio_service_.service(),
                                  boost::posix_time::seconds(kTimoutInSeconds));
     timer.async_wait(std::bind(&Routing::FindAndKillWaitingNodeValidation,
@@ -417,7 +408,7 @@ bool Routing::GetFromCache(protobuf::Message &message) {
         message.set_source_id(routing_table_->kNodeId().String());
         message.set_direct(true);
         message.set_response(false);
-        SendOn(message);
+        routing_table_->SendOn(message);
       }
   }
   return result;

@@ -24,7 +24,6 @@ namespace maidsafe {
 
 namespace routing {
 
-
 namespace fs = boost::filesystem;
 namespace bs2 = boost::signals2;
 namespace asio = boost::asio;

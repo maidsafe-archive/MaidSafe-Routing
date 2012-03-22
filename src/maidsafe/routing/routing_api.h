@@ -91,32 +91,28 @@ struct Message {
 };
 
 typedef std::function<void(int, std::string)> ResponseReceivedFunctor;
+typedef std::function<void(std::string)> NodeValidationFunctor;
 
-#ifdef __GNUC__
-#  pragma GCC diagnostic push
-#  pragma GCC diagnostic ignored "-Weffc++"
-#endif
-class Routing : public std::enable_shared_from_this<Routing> {
-#ifdef __GNUC__
-#  pragma GCC diagnostic pop
-#endif
+
+class Routing {
  public:
   enum NodeType { kVault, kClient };
   Routing(NodeType node_type,
           const asymm::PrivateKey &private_key,
           const NodeId &node_id,
-          bool encryption_required);  // full asymm encrypt of all messages
+          bool encryption_required);
   ~Routing();
   void BootStrapFromThisEndpoint(const maidsafe::transport::Endpoint& endpoint);
   int Send(const Message &message,
             const ResponseReceivedFunctor &response_functor);
+  // this object will not start unless this functor is set !!
+  void setNodeValidationFunctor(NodeValidationFunctor &node_validation_functor);
+  // on completion of above functor this method MUST be passed the results
   void ValidateThisNode(bool valid,
                         std::string node_id,
-                        asymm::PublicKey &public_key);  // upper layers must
-                        //  do this in response to the ValidateNodeId signal
+                        asymm::PublicKey &public_key);
   boost::signals2::signal<void(int, std::string)> &RequestReceivedSignal();
   boost::signals2::signal<void(unsigned int)> &NetworkStatusSignal();
-  boost::signals2::signal<void(std::string)> &ValidateNodeIdSignal();
 
  private:
   Routing(const Routing&);  // no copy
@@ -125,8 +121,6 @@ class Routing : public std::enable_shared_from_this<Routing> {
   bool ReadBootstrapFile();
   bool WriteBootstrapFile() const;
   void Join();
-  void SendOn(const protobuf::Message &message);
-  void AckReceived(const transport::TransportCondition &, const std::string &);
   void ReceiveMessage(const std::string &message);
   void ProcessMessage(protobuf::Message &message);
   void ProcessPingResponse(protobuf::Message &message);
@@ -149,7 +143,6 @@ class Routing : public std::enable_shared_from_this<Routing> {
   std::shared_ptr<Timer> timer_;
   boost::signals2::signal<void(int, std::string)> message_received_signal_;
   boost::signals2::signal<void(unsigned int)> network_status_signal_;
-  boost::signals2::signal<void(std::string)> validate_node_signal_;
   unsigned int cache_size_hint_;
   std::vector<std::pair<std::string, std::string>> cache_chunks_;
   std::vector<NodeInfo> waiting_node_validation_;
@@ -160,6 +153,7 @@ class Routing : public std::enable_shared_from_this<Routing> {
   bool signatures_required_;
   bool encryption_required_;
   Routing::NodeType node_type_;
+  NodeValidationFunctor node_validation_functor_;
 };
 
 }  // namespace routing
