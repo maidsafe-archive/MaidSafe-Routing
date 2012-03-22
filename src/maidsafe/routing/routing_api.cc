@@ -19,6 +19,7 @@
 #include "maidsafe/routing/routing_table.h"
 #include "maidsafe/routing/service.h"
 #include "maidsafe/routing/rpcs.h"
+#include "maidsafe/routing/timer.h"
 
 namespace fs = boost::filesystem;
 namespace bs2 = boost::signals2;
@@ -67,6 +68,7 @@ Routing::Routing(NodeType node_type,
       routing_table_(new RoutingTable(node_id)),
       rpc_ptr_(new Rpcs(routing_table_, transport_)),
       service_(new Service(rpc_ptr_, routing_table_)),
+      timer_(new Timer(asio_service_)),
       message_received_signal_(),
       network_status_signal_(),
       validate_node_signal_(),
@@ -113,7 +115,8 @@ int Routing::Send(const Message &message,
     DLOG(ERROR) << "Attempt to use Reserved message type (<100), aborted send";
     return 3;
   }
-  uint32_t message_unique_id = AddToCallbackQueue(response_functor);
+  uint32_t message_unique_id =  timer_->AddTask(kTimoutInSeconds,
+                                                response_functor);
   protobuf::Message proto_message;
   proto_message.set_id(message_unique_id);
   proto_message.set_source_id(routing_table_->kNodeId().String());
@@ -124,7 +127,7 @@ int Routing::Send(const Message &message,
   proto_message.set_replication(message.replication);
   proto_message.set_type(message.type);
   proto_message.set_routing_failure(false);
-  SendOn(proto_message, NodeId(message.destination_id));
+  SendOn(proto_message);
   return 0;
 }
 
@@ -189,44 +192,7 @@ bool Routing::WriteBootstrapFile() const {
   return false;
 }
 
-uint32_t Routing::AddToCallbackQueue(const ResponseReceivedFunctor
-                                           &response_functor) {
-  auto it = waiting_for_response_.end();
-  uint32_t id;
-  while (it == waiting_for_response_.end()) {
-    id = RandomUint32();
-    it = waiting_for_response_.find(id);
-  }
-  std::shared_ptr<boost::asio::deadline_timer> timer( new
-  boost::asio::deadline_timer(asio_service_.service(),
-                              boost::posix_time::seconds(kTimoutInSeconds)));
-  timer->async_wait(std::bind(&Routing::FindAndKillJob, this, id));
-  waiting_for_response_.insert(std::make_pair(id,std::make_pair(timer, response_functor)));
-  return id;
-}
-
-void Routing::ExecuteCallback(protobuf::Message &message) {
-  uint32_t id = message.id();
-  auto it = waiting_for_response_.find(id);
-  if (it != waiting_for_response_.end()) {
-    Message message_struct;
-    message_struct.source_id = message.source_id();
-    message_struct.data = message.data();
-    (*it).second.second(message_struct);
-  }  // otherwise timed out and deleted
-}
-
-void Routing::FindAndKillJob(uint32_t job_number) {
-  auto it = waiting_for_response_.find(job_number);
-  if (it != waiting_for_response_.end()) {
-    Message failure;
-    failure.timeout = true;
-    (*it).second.second(failure);  // send failure in callback
-    waiting_for_response_.erase(it);  // kill job
-  }
-}
-
-bs2::signal<void(int, Message)> &Routing::RequestReceivedSignal() {
+bs2::signal<void(int, std::string)> &Routing::RequestReceivedSignal() {
   return message_received_signal_;
 }
 
@@ -258,14 +224,14 @@ void Routing::AckReceived(const transport::TransportCondition &return_value,
   ReceiveMessage(message);
 }
 
-void Routing::SendOn(const protobuf::Message &message,
-                         const NodeId &target_node) {
+void Routing::SendOn(const protobuf::Message &message) {
   std::string message_data(message.SerializeAsString());
   transport::Endpoint send_to =
-             routing_table_->GetClosestNode(target_node, 0).endpoint;
-  transport::ResponseFunctor response_functor =
-                std::bind(&Routing::AckReceived, this, args::_1, args::_2);
-  transport_->Send(send_to, message_data, response_functor);
+             routing_table_->
+                 GetClosestNode(NodeId(message.destination_id()), 0).endpoint;
+//   transport::ResponseFunctor response_functor =
+//                 std::bind(&Routing::AckReceived, this, args::_1, args::_2);
+// TODO(dirvine)  transport_->Send(send_to, message_data, response_functor);
 }
 
 void Routing::ReceiveMessage(const std::string &message) {
@@ -295,7 +261,7 @@ void Routing::ProcessMessage(protobuf::Message &message) {
     NodeId next_node =
      routing_table_->GetClosestNode(NodeId(message.destination_id()),
                                     0).node_id;
-    SendOn(message, next_node);
+    SendOn(message);
     return;
   } else {  // I am closest
     if (message.type() == 0) {  // ping
@@ -329,11 +295,23 @@ void Routing::ProcessMessage(protobuf::Message &message) {
     if (!message.direct() &&
       (message.destination_id() != routing_table_->kNodeId().String())) {
       try {
-        Message msg(message);
-        message_received_signal_(static_cast<int>(message.type()), msg);
+        message_received_signal_(static_cast<int>(message.type()),
+                                 message.data());
       }
       catch(const std::exception &e) {
         DLOG(ERROR) << e.what();
+      }
+    } else {  // I am closest and it's direct
+      if(message.response()) {
+        timer_->ExecuteTaskNow(message);
+        return;
+      } else { // I am closest and it's a request
+        try {
+          message_received_signal_(static_cast<int>(message.type()),
+                                 message.data());
+        } catch(const std::exception &e) {
+        DLOG(ERROR) << e.what();
+        }
       }
     }
     // I am closest so will send to all my replicant nodes
@@ -344,8 +322,7 @@ void Routing::ProcessMessage(protobuf::Message &message) {
                                  static_cast<uint16_t>(message.replication()));
     for (auto it = close.begin(); it != close.end(); ++it) {
       message.set_destination_id((*it).String());
-      NodeId send_to = routing_table_->GetClosestNode((*it), 0).node_id;
-      SendOn(message, send_to);
+      SendOn(message);
     }
   }
 }
@@ -441,10 +418,7 @@ bool Routing::GetFromCache(protobuf::Message &message) {
         message.set_source_id(routing_table_->kNodeId().String());
         message.set_direct(true);
         message.set_response(false);
-        NodeId next_node =
-           routing_table_->GetClosestNode(NodeId(message.destination_id()),
-                                         0).node_id;
-        SendOn(message, next_node);
+        SendOn(message);
       }
   }
   return result;

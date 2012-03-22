@@ -26,9 +26,9 @@ class Service {
  public:
   Service(std::shared_ptr<Rpcs> rpc_ptr,
           std::shared_ptr<RoutingTable> routing_table);
-  void Ping(const protobuf::Message &message);
-  void Connect(const protobuf::Message &message);
-  void FindNodes(const protobuf::Message &message);
+  void Ping(protobuf::Message &message);
+  void Connect(protobuf::Message &message);
+  void FindNodes(protobuf::Message &message);
  private:
   std::shared_ptr<Rpcs> rpc_ptr_;
   std::shared_ptr<RoutingTable> routing_table_;

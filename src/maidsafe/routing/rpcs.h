@@ -36,7 +36,7 @@ class Rpcs {
   void Connect(protobuf::Message &message);
   void FindNodes(protobuf::Message &message);
 // utility method also called from services
-  void SendOn(protobuf::Message &message, NodeId &final_node_id);
+  void SendOn(protobuf::Message &message);
  private:
   std::shared_ptr<RoutingTable> routing_table_;
   std::shared_ptr<transport::ManagedConnection> transport_;

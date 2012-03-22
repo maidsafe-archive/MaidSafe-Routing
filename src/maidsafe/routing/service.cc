@@ -26,15 +26,18 @@ Service::Service(std::shared_ptr< Rpcs > rpc_ptr,
                  routing_table_(routing_table) {}
 
 
-void Service::Ping(const protobuf::Message &message) {
+void Service::Ping(protobuf::Message &message) {
   protobuf::PingResponse ping_response;
-  if (!ping_response.ParseFromString(message.data()))
+  protobuf::PingRequest ping_request;
+
+  if (!ping_request.ParseFromString(message.data()))
     return;
-  if (ping_response.pong())
-    return;  // TODO(dirvine) FIXME IMPLEMENT ME
+  ping_response.set_pong(true);
+  message.set_data(ping_response.SerializeAsString());
+  rpc_ptr_->SendOn(message);
 }
 
-void Service::Connect(const protobuf::Message &message) {
+void Service::Connect(protobuf::Message &message) {
 // send message back  wait on his connect
 // add him to a pending endpoint queue
 // and when transport asks us to accept him we will
@@ -42,7 +45,7 @@ void Service::Connect(const protobuf::Message &message) {
     DLOG(INFO) << " have source ID";
 }
 
-void Service::FindNodes(const protobuf::Message &message) {
+void Service::FindNodes(protobuf::Message &message) {
   protobuf::FindNodesResponse find_nodes;
   if (!find_nodes.ParseFromString(message.data()))
     return;
@@ -52,7 +55,6 @@ void Service::FindNodes(const protobuf::Message &message) {
     routing_table_->CheckNode(node);
   }
 }
-
 
 }  // namespace routing
 

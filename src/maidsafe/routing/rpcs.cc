@@ -26,8 +26,9 @@ Rpcs::Rpcs(std::shared_ptr< RoutingTable > routing_table,
            routing_table_(routing_table),
            transport_(transport) { }
 
-void Rpcs::SendOn(protobuf::Message& message, NodeId &final_node_id) {
-  NodeInfo next_node(routing_table_->GetClosestNode(final_node_id, 0));
+void Rpcs::SendOn(protobuf::Message& message) {
+  NodeInfo next_node(routing_table_->
+                     GetClosestNode(NodeId(message.destination_id()), 0));
 // FIXME SEND transport_->Send(next_node.endpoint, message.SerializeAsString());
 }
 
@@ -42,8 +43,7 @@ void Rpcs::Ping(protobuf::Message &message) {
   message.set_response(true);
   message.set_replication(1);
   message.set_type(0);
-  NodeId send_to(message.destination_id());
-  SendOn(message, send_to);
+  SendOn(message);
 }
 
 void Rpcs::Connect(protobuf::Message &message) {
@@ -83,8 +83,7 @@ void Rpcs::FindNodes(protobuf::Message &message) {
   message.set_response(true);
   message.set_replication(1);
   message.set_type(1);
-  NodeId send_to(message.destination_id());
-  SendOn(message, send_to);
+  SendOn(message);
 }
 
 

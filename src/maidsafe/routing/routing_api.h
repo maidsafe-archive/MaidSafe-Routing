@@ -74,6 +74,7 @@ class NodeId;
 class NodeInfo;
 class Service;
 class Rpcs;
+class Timer;
 
 struct Message {
  public:
@@ -89,7 +90,7 @@ struct Message {
   int32_t replication;
 };
 
-typedef std::function<void(Message)> ResponseReceivedFunctor;
+typedef std::function<void(std::string)> ResponseReceivedFunctor;
 
 class Routing {
  public:
@@ -106,7 +107,7 @@ class Routing {
                         std::string node_id,
                         asymm::PublicKey &public_key);  // upper layers must
                         //  do this in response to the ValidateNodeId signal
-  boost::signals2::signal<void(int, Message)> &RequestReceivedSignal();
+  boost::signals2::signal<void(int, std::string)> &RequestReceivedSignal();
   boost::signals2::signal<void(unsigned int)> &NetworkStatusSignal();
   boost::signals2::signal<void(std::string)> &ValidateNodeIdSignal();
 
@@ -117,7 +118,7 @@ class Routing {
   bool ReadBootstrapFile();
   bool WriteBootstrapFile() const;
   void Join();
-  void SendOn(const protobuf::Message &message, const NodeId &target_node);
+  void SendOn(const protobuf::Message &message);
   void AckReceived(const transport::TransportCondition &, const std::string &);
   void ReceiveMessage(const std::string &message);
   void ProcessMessage(protobuf::Message &message);
@@ -127,9 +128,6 @@ class Routing {
   void FindAndKillWaitingNodeValidation(NodeId node);
   void AddToCache(const protobuf::Message &message);
   bool GetFromCache(protobuf::Message &message);
-  void FindAndKillJob(uint32_t job_number);
-  uint32_t AddToCallbackQueue(const ResponseReceivedFunctor &response_functor);
-  void ExecuteCallback(protobuf::Message &message);
   void TryAddNode(NodeId node);
   AsioService asio_service_;
   fs::path bootstrap_file_;
@@ -141,7 +139,8 @@ class Routing {
   std::shared_ptr<RoutingTable> routing_table_;
   std::shared_ptr<Rpcs> rpc_ptr_;
   std::shared_ptr<Service> service_;
-  boost::signals2::signal<void(int, Message)> message_received_signal_;
+  std::shared_ptr<Timer> timer_;
+  boost::signals2::signal<void(int, std::string)> message_received_signal_;
   boost::signals2::signal<void(unsigned int)> network_status_signal_;
   boost::signals2::signal<void(std::string)> validate_node_signal_;
   unsigned int cache_size_hint_;
