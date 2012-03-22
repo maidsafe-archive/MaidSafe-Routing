@@ -90,7 +90,7 @@ struct Message {
   int32_t replication;
 };
 
-typedef std::function<void(std::string)> ResponseReceivedFunctor;
+typedef std::function<void(int, std::string)> ResponseReceivedFunctor;
 
 class Routing {
  public:

@@ -28,7 +28,7 @@ namespace routing {
 namespace fs = boost::filesystem;
 namespace bs2 = boost::signals2;
 namespace asio = boost::asio;
-typedef std::function<void(std::string)> TaskResponseFunctor;
+typedef std::function<void(int, std::string)> TaskResponseFunctor;
 
 // we could use boost::system::error_code to check why task failed (cancelled /
 // timout etc.) but here we choose to add tasks to a queue_ and they either run

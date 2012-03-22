@@ -47,6 +47,8 @@ uint32_t Timer::AddTask(uint32_t timeout,
 void Timer::KillTask(uint32_t task_id) {
   auto it = queue_.find(task_id);
   if (it != queue_.end()) {
+    // message timed out or task killed
+     (*it).second.second(1, "");
     queue_.erase(it);
   }else {
     DLOG(ERROR) << "Attempt to kill an expired or non existent task";
@@ -56,7 +58,8 @@ void Timer::KillTask(uint32_t task_id) {
 void Timer::ExecuteTaskNow(protobuf::Message &message) {
     auto it = queue_.find(message.id());
   if (it != queue_.end()) {
-    (*it).second.second(message.data());
+    // message all OK in routing
+    (*it).second.second(0, message.data());
     queue_.erase(it);
   } else {
     DLOG(ERROR) << "Attempt to run an expired or non existent task";
