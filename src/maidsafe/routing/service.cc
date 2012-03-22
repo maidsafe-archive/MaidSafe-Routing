@@ -38,11 +38,19 @@ void Service::Ping(protobuf::Message &message) {
 }
 
 void Service::Connect(protobuf::Message &message) {
-// send message back  wait on his connect
-// add him to a pending endpoint queue
-// and when transport asks us to accept him we will
-  if (message.has_source_id())
-    DLOG(INFO) << " have source ID";
+  protobuf::ConnectRequest connect_request;
+  if (!connect_request.ParseFromString(message.data()))
+    return;  // no need to reply
+  // OK we will try to connect to all the endpoints supplied
+//   connect_request.contact()
+
+  if (connect_request.bootstrap()) {
+    return;  //  will be cleared by by Routing after timeout
+  }
+//   if (connect_request.client())
+//
+//   if (routing_table_->CheckNode(NodeId(connect_request.contact().node_id())))
+//
 }
 
 void Service::FindNodes(protobuf::Message &message) {
