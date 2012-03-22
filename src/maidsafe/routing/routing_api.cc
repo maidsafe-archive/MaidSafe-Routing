@@ -379,12 +379,14 @@ void Routing::TryAddNode(NodeId node) {
 void Routing::ValidateThisNode(bool valid,
                                std::string node_id,
                                rsa::PublicKey& public_key) {
-  if (!valid)
-    return;
   NodeId node(node_id);
   for (auto it = waiting_node_validation_.begin();
        it != waiting_node_validation_.end();
        ++it) {
+    if (!valid) {
+      waiting_node_validation_.erase(it);
+      return;
+    }
     if ((*it).node_id == node) {
       (*it).public_key = public_key;
         // TODO(dirvine) create a connect request
