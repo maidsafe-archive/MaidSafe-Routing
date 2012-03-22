@@ -104,7 +104,7 @@ class Routing : public std::enable_shared_from_this<Routing> {
   enum NodeType { kVault, kClient };
   Routing(NodeType node_type,
           const asymm::PrivateKey &private_key,
-          const std::string &node_id,
+          const NodeId &node_id,
           bool encryption_required);  // full asymm encrypt of all messages
   ~Routing();
   void BootStrapFromThisEndpoint(const maidsafe::transport::Endpoint& endpoint);

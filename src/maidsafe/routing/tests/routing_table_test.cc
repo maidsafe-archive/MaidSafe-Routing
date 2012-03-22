@@ -16,6 +16,7 @@
 #include "maidsafe/common/test.h"
 #include "maidsafe/common/utils.h"
 #include "maidsafe/routing/routing_table.h"
+#include "maidsafe/transport/managed_connection.h"
 #include "maidsafe/routing/node_id.h"
 #include "maidsafe/routing/log.h"
 
@@ -49,7 +50,10 @@ NodeInfo MakeNode() {
 }
 
 TEST(RoutingTableTest, FUNC_AddCloseNodes) {
-  RoutingTable RT(RandomString(64));
+  const NodeId test_node(NodeId(RandomString(64)));
+  std::shared_ptr<transport::ManagedConnection>
+                              ptr(new transport::ManagedConnection);
+  RoutingTable RT(test_node, ptr);
   NodeInfo node;
   // check the node is useful when false is set
   for (unsigned int i = 0; i < kClosestNodesSize ; ++i) {
@@ -79,7 +83,9 @@ TEST(RoutingTableTest, FUNC_AddCloseNodes) {
 }
 
 TEST(RoutingTableTest, FUNC_AddTooManyNodes) {
-  RoutingTable RT(RandomString(64));
+    std::shared_ptr<transport::ManagedConnection>
+                              ptr(new transport::ManagedConnection);
+  RoutingTable RT(NodeId(RandomString(64)), ptr);
   for (transport::Port i = 0; RT.Size() < kMaxRoutingTableSize; ++i) {
      NodeInfo node(MakeNode());
      node.endpoint.port = 1501 + i;  // has to be unique
@@ -101,8 +107,10 @@ TEST(RoutingTableTest, FUNC_AddTooManyNodes) {
 }
 
 TEST(RoutingTableTest, BEH_CloseAndInRangeCheck) {
-  NodeId my_node(NodeId(RandomString(64)));
-  RoutingTable RT(my_node.String());
+  const NodeId my_node(NodeId(RandomString(64)));
+    std::shared_ptr<transport::ManagedConnection>
+                              ptr(new transport::ManagedConnection);
+  RoutingTable RT(my_node, ptr);
   // Add some nodes to RT
   for (transport::Port i = 0; RT.Size() < kMaxRoutingTableSize; ++i) {
      NodeInfo node(MakeNode());

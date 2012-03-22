@@ -24,7 +24,7 @@
 #include "boost/thread/mutex.hpp"
 
 #include "maidsafe/common/rsa.h"
-#include "maidsafe/transport/transport.h"
+#include "maidsafe/transport/managed_connection.h"
 
 #include "maidsafe/routing/routing_pb.h"
 #include "maidsafe/routing/node_id.h"
@@ -34,8 +34,6 @@
 namespace maidsafe {
 
 namespace routing {
-
-typedef protobuf::Contact Contact;
 
 
 struct NodeInfo {
@@ -55,7 +53,9 @@ struct NodeInfo {
 
 class RoutingTable {
  public:
-  explicit RoutingTable(const std::string &node_id);
+  explicit RoutingTable(const NodeId &node_id,
+                        std::shared_ptr<transport::ManagedConnection> transport
+                        );
   ~RoutingTable();
   bool AddNode(NodeInfo &node);
   bool CheckNode(NodeInfo &node);
@@ -65,10 +65,12 @@ class RoutingTable {
   std::vector<NodeId> GetClosestNodes(const NodeId &from,
                                       unsigned int number_to_get);
   NodeInfo GetClosestNode(const NodeId &from, unsigned int node_number);
+  void SendOn(protobuf::Message &message);
   unsigned int Size() {
     return static_cast<uint16_t>(routing_table_nodes_.size());
   }
   NodeId kNodeId() const { return kNodeId_; }
+
  private:
   RoutingTable(const RoutingTable&);
   RoutingTable& operator=(const RoutingTable&);
@@ -80,12 +82,12 @@ class RoutingTable {
   void SortFromThisNode(const NodeId &from);
   void PartialSortFromThisNode(const NodeId &from, int16_t number_to_sort);
   bool RemoveClosecontact(const NodeId &node_id);
-  bool AddcloseContact(const Contact &contact);
+  bool AddcloseContact(const protobuf::Contact &contact);
   bool sorted_;
   const NodeId kNodeId_;
   std::vector<NodeInfo> routing_table_nodes_;
   boost::mutex mutex_;
-//   ManagedConnections MC_;
+  std::shared_ptr<transport::ManagedConnection> transport_;
 };
 
 }  // namespace routing

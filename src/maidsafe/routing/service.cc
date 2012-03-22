@@ -23,12 +23,8 @@ namespace maidsafe {
 
 namespace routing {
 
-Service::Service(std::shared_ptr<Routing> routing,
-                 std::shared_ptr<Rpcs> rpc_ptr,
-                 std::shared_ptr<RoutingTable> routing_table)
-    : routing_(routing),
-      rpc_ptr_(rpc_ptr),
-      routing_table_(routing_table) {}
+Service::Service(std::shared_ptr<RoutingTable> routing_table)
+    : routing_table_(routing_table) {}
 
 void Service::Ping(protobuf::Message &message) {
   protobuf::PingResponse ping_response;
@@ -38,7 +34,7 @@ void Service::Ping(protobuf::Message &message) {
     return;
   ping_response.set_pong(true);
   message.set_data(ping_response.SerializeAsString());
-  rpc_ptr_->SendOn(message);
+  routing_table_->SendOn(message);
 }
 
 void Service::Connect(protobuf::Message &message) {

@@ -55,7 +55,7 @@ Message::Message(const protobuf::Message &protobuf_message)
 
 Routing::Routing(NodeType node_type,
                  const asymm::PrivateKey &private_key,
-                 const std::string &node_id,
+                 const NodeId &node_id,
                  bool encryption_required)
     : asio_service_(),
       bootstrap_file_(),
@@ -64,7 +64,7 @@ Routing::Routing(NodeType node_type,
       node_local_endpoint_(),
       node_external_endpoint_(),
       transport_(new transport::ManagedConnection()),
-      routing_table_(new RoutingTable(node_id)),
+      routing_table_(new RoutingTable(node_id, transport_)),
       rpc_ptr_(),
       service_(),
       timer_(new Timer(asio_service_)),
@@ -131,8 +131,8 @@ int Routing::Send(const Message &message,
 }
 
 void Routing::Init() {
-  rpc_ptr_.reset(new Rpcs(shared_from_this(), routing_table_, transport_)),
-  service_.reset(new Service(shared_from_this(), rpc_ptr_, routing_table_)),
+  rpc_ptr_.reset(new Rpcs(routing_table_)),
+  service_.reset(new Service(routing_table_)),
   asio_service_.Start(5);
   // TODO(dirvine) fill in bootstrap file location and do ReadConfigFile
   transport_->Init(20);

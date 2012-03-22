@@ -12,8 +12,6 @@
 
 #include "maidsafe/routing/rpcs.h"
 
-#include "maidsafe/transport/managed_connection.h"
-
 #include "maidsafe/routing/routing_api.h"
 #include "maidsafe/routing/node_id.h"
 #include "maidsafe/routing/routing.pb.h"
@@ -24,18 +22,8 @@ namespace maidsafe {
 
 namespace routing {
 
-Rpcs::Rpcs(std::shared_ptr<Routing> routing,
-           std::shared_ptr<RoutingTable> routing_table,
-           std::shared_ptr<transport::ManagedConnection> transport)
-    : routing_(routing),
-      routing_table_(routing_table),
-      transport_(transport) {}
-
-void Rpcs::SendOn(protobuf::Message& message) {
-  NodeInfo next_node(routing_table_->
-                     GetClosestNode(NodeId(message.destination_id()), 0));
-// FIXME SEND transport_->Send(next_node.endpoint, message.SerializeAsString());
-}
+Rpcs::Rpcs(std::shared_ptr<RoutingTable> routing_table)
+    : routing_table_(routing_table) {}
 
 
 void Rpcs::Ping(protobuf::Message &message) {
@@ -48,7 +36,7 @@ void Rpcs::Ping(protobuf::Message &message) {
   message.set_response(true);
   message.set_replication(1);
   message.set_type(0);
-  SendOn(message);
+  routing_table_->SendOn(message);
 }
 
 void Rpcs::Connect(protobuf::Message &message) {
@@ -77,7 +65,7 @@ void Rpcs::FindNodes(protobuf::Message &message) {
   message.set_response(true);
   message.set_replication(1);
   message.set_type(1);
-  SendOn(message);
+  routing_table_->SendOn(message);
 }
 
 

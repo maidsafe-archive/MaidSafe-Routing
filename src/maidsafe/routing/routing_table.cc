@@ -14,6 +14,7 @@
 
 #include "boost/thread/locks.hpp"
 #include "boost/assert.hpp"
+#include "maidsafe/transport/managed_connection.h"
 #include "maidsafe/routing/routing_table.h"
 #include "maidsafe/routing/routing_api.h"
 #include "maidsafe/routing/node_id.h"
@@ -28,11 +29,13 @@ const unsigned int kMaxRoutingTableSize(64);
 const unsigned int kBucketTargetSize(1);
 }
 
-RoutingTable::RoutingTable(const std::string &node_id)
+RoutingTable::RoutingTable(const NodeId &node_id,
+                           std::shared_ptr<transport::ManagedConnection> rudp)
     : sorted_(false),
       kNodeId_(node_id),
       routing_table_nodes_(),
-      mutex_() {}
+      mutex_(),
+      transport_(rudp) {}
 
 RoutingTable::~RoutingTable() {
   boost::mutex::scoped_lock lock(mutex_);
@@ -102,12 +105,12 @@ bool RoutingTable::CheckValidParameters(const NodeInfo& node)const {
     DLOG(INFO) << "invalid endpoint";
     return false;
   }
-  
+
   if (node.bucket == 99999) {
         DLOG(INFO) << "invalid bucket index";
     return false;
   }
-  
+
   return CheckarametersAreUnique(node);
 }
 
@@ -236,6 +239,12 @@ NodeInfo RoutingTable::GetClosestNode(const NodeId &from,
   SortFromThisNode(from);
   return routing_table_nodes_[node_number];
 }
+
+void RoutingTable::SendOn(protobuf::Message& message) {
+  NodeInfo next_node(GetClosestNode(NodeId(message.destination_id()), 0));
+// FIXME SEND transport_->Send(next_node.endpoint, message.SerializeAsString());
+}
+
 
 std::vector<NodeId> RoutingTable::GetClosestNodes(const NodeId &from,
     unsigned int number_to_get) {
