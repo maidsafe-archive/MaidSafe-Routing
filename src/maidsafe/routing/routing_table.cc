@@ -42,6 +42,10 @@ RoutingTable::~RoutingTable() {
   routing_table_nodes_.clear();
 }
 
+unsigned int RoutingTable::ClosestNodesSize() {
+  return kClosestNodesSize;
+}
+
 bool RoutingTable::CheckNode(NodeInfo& node) {
   return AddOrCheckNode(node, false);
 }

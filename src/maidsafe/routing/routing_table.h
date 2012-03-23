@@ -26,7 +26,7 @@
 #include "maidsafe/common/rsa.h"
 #include "maidsafe/transport/managed_connection.h"
 
-#include "maidsafe/routing/routing_pb.h"
+#include "maidsafe/routing/routing.pb.h"
 #include "maidsafe/routing/node_id.h"
 #include "maidsafe/routing/log.h"
 
@@ -70,7 +70,7 @@ class RoutingTable {
     return static_cast<uint16_t>(routing_table_nodes_.size());
   }
   NodeId kNodeId() const { return kNodeId_; }
-
+  unsigned int ClosestNodesSize();
  private:
   RoutingTable(const RoutingTable&);
   RoutingTable& operator=(const RoutingTable&);

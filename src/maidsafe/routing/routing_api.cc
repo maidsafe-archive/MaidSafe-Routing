@@ -14,7 +14,7 @@
 #include "boost/asio/deadline_timer.hpp"
 #include "boost/date_time.hpp"
 #include "maidsafe/routing/routing_api.h"
-#include "maidsafe/routing/routing_pb.h"
+#include "maidsafe/routing/routing.pb.h"
 #include "maidsafe/routing/node_id.h"
 #include "maidsafe/routing/routing_table.h"
 #include "maidsafe/routing/service.h"
@@ -359,9 +359,8 @@ void Routing::TryAddNode(NodeId node) {
   if (routing_table_->CheckNode(node_info)) {
     waiting_node_validation_.push_back(node_info);
     node_validation_functor_(node.String());
-    boost::asio::deadline_timer timer(asio_service_.service(),
-                                 boost::posix_time::seconds(kTimoutInSeconds));
-    timer.async_wait(std::bind(&Routing::FindAndKillWaitingNodeValidation,
+    timer_->AddTask(kTimoutInSeconds,
+                    std::bind(&Routing::FindAndKillWaitingNodeValidation,
                                this, node));
   }
 }
@@ -375,12 +374,13 @@ void Routing::ValidateThisNode(bool valid,
        ++it) {
     if (!valid) {
       waiting_node_validation_.erase(it);
+      transport_->RemoveConnection((*it).endpoint);
       return;
     }
     if ((*it).node_id == node) {
       (*it).public_key = public_key;
-        // TODO(dirvine) create a connect request
-
+      routing_table_->AddNode(*it);
+      rpc_ptr_->Ping((*it).node_id);
       break;
     }
   }

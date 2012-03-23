@@ -25,42 +25,50 @@ namespace routing {
 Rpcs::Rpcs(std::shared_ptr<RoutingTable> routing_table)
     : routing_table_(routing_table) {}
 
-
-void Rpcs::Ping(protobuf::Message &message) {
+// this is maybe not required and might be removed
+void Rpcs::Ping(const NodeId &node_id) {
+  protobuf::Message message;
   protobuf::PingRequest ping_request;
   ping_request.set_ping(true);
-  message.set_destination_id(message.source_id());
+  message.set_destination_id(node_id.String());
   message.set_source_id(routing_table_->kNodeId().String());
   message.set_data(ping_request.SerializeAsString());
   message.set_direct(true);
-  message.set_response(true);
-  message.set_replication(1);
+  message.set_response(false);
+  message.set_replication(0);
   message.set_type(0);
   routing_table_->SendOn(message);
 }
 
-void Rpcs::Connect(protobuf::Message &message) {
-    // create a connect message to send direct.
+void Rpcs::Connect(const NodeId &node_id,
+                   const transport::Endpoint &our_endpoint,
+                   bool client,
+                   bool bootstrap) {
+  protobuf::Message message;
   protobuf::ConnectRequest protobuf_connect_request;
-  protobuf::Endpoint protobuf_endpoint;
-  maidsafe::transport::Endpoint peer_endpoint;
-  peer_endpoint.ip.from_string(protobuf_endpoint.ip());
-  peer_endpoint.port = protobuf_endpoint.port();
+  protobuf_connect_request.mutable_contact()->mutable_endpoint()->set_ip(our_endpoint.ip.to_string());
+  protobuf_connect_request.mutable_contact()->mutable_endpoint()->set_port(our_endpoint.port);
+  protobuf_connect_request.mutable_contact()->set_node_id(routing_table_->kNodeId().String());
+  protobuf_connect_request.set_bootstrap(bootstrap);
+  protobuf_connect_request.set_client(client);
+  message.set_destination_id(node_id.String());
+  message.set_source_id(routing_table_->kNodeId().String());
+  message.set_data(protobuf_connect_request.SerializeAsString());
+  message.set_direct(true);
+  message.set_response(true);
+  message.set_replication(1);
+  message.set_type(1);
+  routing_table_->SendOn(message);
 
 }
 
-void Rpcs::FindNodes(protobuf::Message &message) {
+void Rpcs::FindNodes(const NodeId &node_id) {
+  protobuf::Message message;
   protobuf::FindNodesRequest find_nodes;
-  protobuf::FindNodesResponse found_nodes;
-  std::vector<NodeId>
-        nodes(routing_table_->GetClosestNodes(NodeId(message.destination_id()),
-                 static_cast<uint16_t>(find_nodes.num_nodes_requested())));
-
-  for (auto it = nodes.begin(); it != nodes.end(); ++it)
-    found_nodes.add_nodes((*it).String());
-  message.set_destination_id(message.source_id());
+  find_nodes.set_num_nodes_requested(routing_table_->ClosestNodesSize());
+  message.set_destination_id(node_id.String());
   message.set_source_id(routing_table_->kNodeId().String());
-  message.set_data(found_nodes.SerializeAsString());
+  message.set_data(find_nodes.SerializeAsString());
   message.set_direct(true);
   message.set_response(true);
   message.set_replication(1);

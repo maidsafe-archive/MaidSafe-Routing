@@ -20,6 +20,7 @@
 #include "common/asio_service.h"
 #include "maidsafe/routing/routing.pb.h"
 
+
 namespace maidsafe {
 
 namespace routing {

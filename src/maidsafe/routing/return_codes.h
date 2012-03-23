@@ -37,37 +37,21 @@ enum ReturnCode {
   kEmptyKey = -301001,
   kZeroTTL = -301002,
   kFailedToModifyKeyValue = -301003,
-  kMarkedForDeletion = -301004,
 
   // RoutingTable
   kOwnIdNotIncludable = -302001,
-  kFailedToUpdateLastSeenTime = -302002,
-  kNotInBrotherBucket = -302003,
-  kOutwithClosest = -302004,
-  kFailedToInsertNewContact = -302005,
-  kFailedToFindContact = -302006,
-  kFailedToSetPublicKey = -302007,
-  kFailedToUpdateRankInfo = -302008,
-  kFailedToSetPreferredEndpoint = -302009,
-  kFailedToIncrementFailedRpcCount = -302010,
+  kFailedToInsertNewContact = -302002,
+  kFailedToFindContact = -302003,
+  kFailedToSetPublicKey = -302004,
+  kFailedToUpdateRankInfo = -302005,
+  kFailedToSetPreferredEndpoint = -302006,
+  kFailedToIncrementFailedRpcCount = -302007,
 
   // Node
   kNoOnlineBootstrapContacts = -303001,
   kInvalidBootstrapContacts = -303002,
   kNotListening = -303003,
-  kNotJoined = -303004,
-  kFindNodesFailed = -303005,
-  kFoundTooFewNodes = -303006,
-  kStoreTooFewNodes = -303007,
-  kDeleteTooFewNodes = -303008,
-  kUpdateTooFewNodes = -303009,
-  kFailedToGetContact = -303010,
-  kFailedToFindValue = 303011,  // value intentionally positive
-  kFoundAlternativeStoreHolder = 303012,  // value intentionally positive
-  kIterativeLookupFailed = -303013,
-  kContactFailedToRespond = -303014,
-  kValueAlreadyExists = -303015,
-  kFailedValidation = -303016
+  kNotJoined = -303004
 };
 
 }  // namespace routing

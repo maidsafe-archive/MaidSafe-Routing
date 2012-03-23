@@ -54,14 +54,24 @@ void Service::Connect(protobuf::Message &message) {
 }
 
 void Service::FindNodes(protobuf::Message &message) {
-  protobuf::FindNodesResponse find_nodes;
-  if (!find_nodes.ParseFromString(message.data()))
-    return;
-  for (int i = 0; i < find_nodes.nodes().size(); ++i) {
-    NodeInfo node;
-    node.node_id = NodeId(find_nodes.nodes(i));
-    routing_table_->CheckNode(node);
-  }
+  protobuf::FindNodesRequest find_nodes;
+  protobuf::FindNodesResponse found_nodes;
+  std::vector<NodeId>
+        nodes(routing_table_->GetClosestNodes(NodeId(message.destination_id()),
+                 static_cast<uint16_t>(find_nodes.num_nodes_requested())));
+
+  for (auto it = nodes.begin(); it != nodes.end(); ++it)
+    found_nodes.add_nodes((*it).String());
+  if (routing_table_->Size() < routing_table_->ClosestNodesSize())
+    found_nodes.add_nodes(routing_table_->kNodeId().String()); // small network send our ID
+  message.set_destination_id(message.source_id());
+  message.set_source_id(routing_table_->kNodeId().String());
+  message.set_data(found_nodes.SerializeAsString());
+  message.set_direct(true);
+  message.set_response(true);
+  message.set_replication(0);
+  message.set_type(1);
+  routing_table_->SendOn(message);
 }
 
 }  // namespace routing

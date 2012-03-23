@@ -14,7 +14,7 @@
 #define MAIDSAFE_ROUTING_RPCS_H_
 
 #include <memory>
-
+#include "maidsafe/transport/managed_connection.h"
 
 namespace maidsafe {
 
@@ -32,9 +32,12 @@ class NodeId;
 class Rpcs {
  public:
   Rpcs(std::shared_ptr<RoutingTable> routing_table);
-  void Ping(protobuf::Message &message);
-  void Connect(protobuf::Message &message);
-  void FindNodes(protobuf::Message &message);
+  void Ping(const NodeId &node_id);
+  void Connect(const NodeId &node_id,
+                const transport::Endpoint &our_endpoint,
+                bool client,
+                bool bootstrap);
+  void FindNodes(const NodeId &node_id);
 
  private:
   std::shared_ptr<RoutingTable> routing_table_;
