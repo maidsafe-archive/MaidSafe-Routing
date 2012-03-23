@@ -37,15 +37,16 @@ message Bootstrap {
 
 message Message {
   required bytes source_id = 1; // in response this is name of data
-  required bytes destination_id = 2; // in request (except direct) this is the name of the data
+  required bytes destination_id = 2;
   required bool cacheable = 3;
-  required bytes data = 4; // serialised protobuf - possibly encrypted in upper layers
-  required bool direct = 5; // goes to a si node !! if proxy is set then to here then we transmit to endpoint
-  required bool response = 6;
-  required int32 replication = 7;
-  required int32 type = 8; // type of data - used in signal to upper layers with (type, data)
-  required bool routing_failure = 9;
-  required int32 id = 10;
+  required bytes data = 4; // serialised protobuf - possibly encrypted
+  required bytes signature = 5;
+  required bool direct = 6;
+  required bool response = 7;
+  required int32 replication = 8;
+  required int32 type = 9; // type of data - used in signal to upper layers with (type, data)
+  required bool routing_failure = 10;
+  required int32 id = 11;
 }
 
 message SignedMessage {
@@ -58,6 +59,7 @@ message ConnectRequest {
   optional Contact contact = 1;
   optional bool client = 2;
   optional bool bootstrap = 3;
+  required int32 timestamp = 4;
 }
 
 message ConnectResponse {
@@ -65,20 +67,31 @@ message ConnectResponse {
   required Contact contact = 2;
   optional Endpoint seen_endpoint = 3;
   optional FindNodesResponse find_nodes = 4;  // if connect request is bootstrap
+  required int32 timestamp = 5;
+  required bytes original_request = 6;
+  required bytes requst_signature = 7;
 }
 
 message FindNodesRequest {
   required int32 num_nodes_requested = 1;
+  required bytes target_node = 2;
+  required int32 timestamp = 3;
 }
 
 message FindNodesResponse {
   repeated bytes nodes = 1;
+  required int32 timestamp = 2;
+  required bytes original_request = 3;
+  required bytes request_signature = 4;
 }
 
 message PingRequest {
   required bool ping = 1;
+  required int32 timestamp = 2;
 }
 
 message PingResponse {
-   required bool pong = 1;
+  required bool pong = 1;
+  required bytes original_request = 2;
+  required bytes request_signature = 3;
 }

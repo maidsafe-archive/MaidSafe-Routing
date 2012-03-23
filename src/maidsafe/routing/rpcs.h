@@ -14,6 +14,7 @@
 #define MAIDSAFE_ROUTING_RPCS_H_
 
 #include <memory>
+#include "maidsafe/common/rsa.h"
 #include "maidsafe/transport/managed_connection.h"
 
 namespace maidsafe {

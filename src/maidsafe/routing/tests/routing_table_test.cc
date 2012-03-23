@@ -50,10 +50,12 @@ NodeInfo MakeNode() {
 }
 
 TEST(RoutingTableTest, FUNC_AddCloseNodes) {
-  const NodeId test_node(NodeId(RandomString(64)));
+
 //   std::shared_ptr<transport::ManagedConnection>
 //                               ptr(new transport::ManagedConnection);
-  RoutingTable RT(test_node, nullptr);
+    asymm::Keys keys;
+    keys.identity = RandomString(64);
+  RoutingTable RT(keys, nullptr);
   NodeInfo node;
   // check the node is useful when false is set
   for (unsigned int i = 0; i < kClosestNodesSize ; ++i) {
@@ -85,7 +87,9 @@ TEST(RoutingTableTest, FUNC_AddCloseNodes) {
 TEST(RoutingTableTest, FUNC_AddTooManyNodes) {
 //     std::shared_ptr<transport::ManagedConnection>
 //                               ptr(new transport::ManagedConnection);
-  RoutingTable RT(NodeId(RandomString(64)), nullptr);
+    asymm::Keys keys;
+    keys.identity = RandomString(64);
+  RoutingTable RT(keys, nullptr);
   for (transport::Port i = 0; RT.Size() < kMaxRoutingTableSize; ++i) {
      NodeInfo node(MakeNode());
      node.endpoint.port = 1501 + i;  // has to be unique
@@ -107,11 +111,14 @@ TEST(RoutingTableTest, FUNC_AddTooManyNodes) {
 }
 
 TEST(RoutingTableTest, BEH_CloseAndInRangeCheck) {
-  const NodeId my_node(NodeId(RandomString(64)));
+
 //     std::shared_ptr<transport::ManagedConnection>
 //                               ptr(new transport::ManagedConnection);
-  RoutingTable RT(my_node, nullptr);
+  asymm::Keys keys;
+  keys.identity = RandomString(64);
+  RoutingTable RT(keys, nullptr);
   // Add some nodes to RT
+  NodeId my_node(keys.identity);
   for (transport::Port i = 0; RT.Size() < kMaxRoutingTableSize; ++i) {
      NodeInfo node(MakeNode());
      node.endpoint.port = 1501 + i;  // has to be unique

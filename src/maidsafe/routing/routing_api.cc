@@ -11,8 +11,10 @@
  ******************************************************************************/
 
 #include <utility>
+#include "boost/date_time.hpp"
 #include "boost/asio/deadline_timer.hpp"
 #include "boost/date_time.hpp"
+#include "maidsafe/common/utils.h"
 #include "maidsafe/routing/routing_api.h"
 #include "maidsafe/routing/routing.pb.h"
 #include "maidsafe/routing/node_id.h"
@@ -54,17 +56,16 @@ Message::Message(const protobuf::Message &protobuf_message)
       replication(protobuf_message.replication()) {}
 
 Routing::Routing(NodeType node_type,
-                 const asymm::PrivateKey &private_key,
-                 const NodeId &node_id,
+                 const asymm::Keys &keys,
                  bool encryption_required)
     : asio_service_(),
       bootstrap_file_(),
       bootstrap_nodes_(),
-      private_key_(private_key),
+      keys_(keys),
       node_local_endpoint_(),
       node_external_endpoint_(),
       transport_(new transport::ManagedConnection()),
-      routing_table_(new RoutingTable(node_id, transport_)),
+      routing_table_(new RoutingTable(keys_, transport_)),
       rpc_ptr_(),
       service_(),
       timer_(new Timer(asio_service_)),
@@ -239,11 +240,11 @@ void Routing::ProcessMessage(protobuf::Message &message) {
 
   // handle cache data
   if (message.has_cacheable() && message.cacheable()) {
-    if (message.has_response() && message.response()) {
+    if (message.response()) {
       AddToCache(message);
      } else  {  // request
        if (GetFromCache(message))
-         return;
+         return;// this operation sends back the message
      }
   }
   // is it for us ??
@@ -253,70 +254,69 @@ void Routing::ProcessMessage(protobuf::Message &message) {
                                     0).node_id;
     routing_table_->SendOn(message);
     return;
-  } else {  // I am closest
-    if (message.type() == 0) {  // ping
-      if (message.has_response() && message.response()) {
-        // TODO(dirvine) FIXME its for me  !! DoPingResponse(message);
-        return;  // Job done !!
-      } else {
-        service_->Ping(message);
-      }
-    }
-    if (message.type() == 1) {  // find_nodes
-      if (message.has_response() && message.response()) {
-        // TODO(dirvine) FIXME its for me  !!  DoFindNodeResponse(message);
-       return;
-      } else {
-         service_->FindNodes(message);
-         return;
-      }
-    }
-    if (message.type() == 2) {  // bootstrap
-      if (message.has_response() && message.response()) {
-         // TODO(dirvine) FIXME its for me  !  DoConnectResponse(message);
-       return;
-      } else {
-         service_->Connect(message);
-         return;
-      }
-    }
-
-    // if this is set not direct and ID == ME do NOT respond.
-    if (!message.direct() &&
-      (message.destination_id() != routing_table_->kNodeId().String())) {
-      try {
-        message_received_signal_(static_cast<int>(message.type()),
-                                 message.data());
-      }
-      catch(const std::exception &e) {
-        DLOG(ERROR) << e.what();
-      }
-    } else {  // I am closest and it's direct
-      if(message.response()) {
-        timer_->ExecuteTaskNow(message);
-        return;
-      } else { // I am closest and it's a request
-        try {
-          message_received_signal_(static_cast<int>(message.type()),
-                                 message.data());
-        } catch(const std::exception &e) {
-        DLOG(ERROR) << e.what();
-        }
-      }
-    }
-    // I am closest so will send to all my replicant nodes
-    message.set_direct(true);
-    message.set_source_id(routing_table_->kNodeId().String());
-    auto close =
-          routing_table_->GetClosestNodes(NodeId(message.destination_id()),
-                                 static_cast<uint16_t>(message.replication()));
-    for (auto it = close.begin(); it != close.end(); ++it) {
-      message.set_destination_id((*it).String());
-      routing_table_->SendOn(message);
+  }   // I am closest
+  if (message.type() == 0) {  // ping
+    if (message.response()) {
+      ProcessPingResponse(message);
+      return;  // Job done !!
+    } else {
+      service_->Ping(message);
     }
   }
-}
+  if (message.type() == 1) {  // find_nodes
+    if (message.response()) {
+      ProcessFindNodeResponse(message);
+      return;
+    } else {
+        service_->FindNodes(message);
+        return;
+    }
+  }
+  if (message.type() == 2) {  // bootstrap
+    if (message.response()) {
+        ProcessConnectResponse(message);
+      return;
+    } else {
+        service_->Connect(message);
+        return;
+    }
+  }
 
+  // if this is set not direct and ID == ME do NOT respond.
+  if (!message.direct() &&
+    (message.destination_id() != routing_table_->kNodeId().String())) {
+    try {
+      message_received_signal_(static_cast<int>(message.type()),
+                                message.data());
+    }
+    catch(const std::exception &e) {
+      DLOG(ERROR) << e.what();
+    }
+  } else {  // I am closest and it's direct
+    if(message.response()) {
+      timer_->ExecuteTaskNow(message);
+      return;
+    } else { // I am closest and it's a request
+      try {
+        message_received_signal_(static_cast<int>(message.type()),
+                                message.data());
+      } catch(const std::exception &e) {
+      DLOG(ERROR) << e.what();
+      }
+    }
+  }
+  // I am closest so will send to all my replicant nodes
+  message.set_direct(true);
+  message.set_source_id(routing_table_->kNodeId().String());
+  auto close =
+        routing_table_->GetClosestNodes(NodeId(message.destination_id()),
+                                static_cast<uint16_t>(message.replication()));
+  for (auto it = close.begin(); it != close.end(); ++it) {
+    message.set_destination_id((*it).String());
+    routing_table_->SendOn(message);
+  }
+}
+// always direct !! never pass on
 void Routing::ProcessPingResponse(protobuf::Message& message) {
   // TODO , do we need this and where and how can I update the response
   protobuf::PingResponse ping_response;
@@ -380,7 +380,7 @@ void Routing::ValidateThisNode(bool valid,
     if ((*it).node_id == node) {
       (*it).public_key = public_key;
       routing_table_->AddNode(*it);
-      rpc_ptr_->Ping((*it).node_id);
+      rpc_ptr_->Ping((*it).node_id);// TODO FIXME use transport ping
       break;
     }
   }
@@ -398,10 +398,8 @@ void Routing::FindAndKillWaitingNodeValidation(NodeId node) {
 }
 
 bool Routing::GetFromCache(protobuf::Message &message) {
-  bool result(false);
   for (auto it = cache_chunks_.begin(); it != cache_chunks_.end(); ++it) {
       if ((*it).first == message.source_id()) {
-        result = true;
         message.set_destination_id(message.source_id());
         message.set_cacheable(true);
         message.set_data((*it).second);
@@ -409,9 +407,10 @@ bool Routing::GetFromCache(protobuf::Message &message) {
         message.set_direct(true);
         message.set_response(false);
         routing_table_->SendOn(message);
+        return true;
       }
   }
-  return result;
+  return false;
 }
 
 void Routing::AddToCache(const protobuf::Message &message) {
@@ -432,7 +431,6 @@ void Routing::AddToCache(const protobuf::Message &message) {
       cache_chunks_.erase(cache_chunks_.begin()+1);
   }
 }
-
 
 }  // namespace routing
 

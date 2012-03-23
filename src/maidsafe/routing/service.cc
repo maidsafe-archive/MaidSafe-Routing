@@ -41,16 +41,23 @@ void Service::Connect(protobuf::Message &message) {
   protobuf::ConnectRequest connect_request;
   if (!connect_request.ParseFromString(message.data()))
     return;  // no need to reply
-  // OK we will try to connect to all the endpoints supplied
-//   connect_request.contact()
-
   if (connect_request.bootstrap()) {
-    return;  //  will be cleared by by Routing after timeout
+             // connect here !!
+     //  will be cleared by by Routing after timeout
   }
-//   if (connect_request.client())
-//
-//   if (routing_table_->CheckNode(NodeId(connect_request.contact().node_id())))
-//
+  if (connect_request.client()) {
+                 // connect here !!
+                 // add to client bucket
+     //  will be cleared by by Routing after timeout
+  }
+  NodeInfo node;
+  node.node_id = NodeId(connect_request.contact().node_id());
+  if (routing_table_->CheckNode(node))
+    return; // no need to reply
+  // OK we will try to connect to all the endpoints supplied
+ // for (int i = connect_request.contact()
+  //transport_->AddConnection(transport::Endpoint(connect_request.contact().endpoint().ip(), connect_request.contact().endpoint().port()));
+
 }
 
 void Service::FindNodes(protobuf::Message &message) {

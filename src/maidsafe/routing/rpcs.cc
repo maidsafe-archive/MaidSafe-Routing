@@ -10,8 +10,9 @@
  *  the explicit written permission of the board of directors of maidsafe.net. *
  ******************************************************************************/
 
+#include "maidsafe/common/utils.h"
+#include "maidsafe/common/rsa.h"
 #include "maidsafe/routing/rpcs.h"
-
 #include "maidsafe/routing/routing_api.h"
 #include "maidsafe/routing/node_id.h"
 #include "maidsafe/routing/routing.pb.h"
@@ -22,14 +23,15 @@ namespace maidsafe {
 
 namespace routing {
 
-Rpcs::Rpcs(std::shared_ptr<RoutingTable> routing_table)
-    : routing_table_(routing_table) {}
+Rpcs::Rpcs(std::shared_ptr<RoutingTable> routing_table) :
+    routing_table_(routing_table) {}
 
 // this is maybe not required and might be removed
 void Rpcs::Ping(const NodeId &node_id) {
   protobuf::Message message;
   protobuf::PingRequest ping_request;
   ping_request.set_ping(true);
+  ping_request.set_timestamp(GetTimeStamp());
   message.set_destination_id(node_id.String());
   message.set_source_id(routing_table_->kNodeId().String());
   message.set_data(ping_request.SerializeAsString());
@@ -45,12 +47,17 @@ void Rpcs::Connect(const NodeId &node_id,
                    bool client,
                    bool bootstrap) {
   protobuf::Message message;
+  protobuf::Contact *contact;
+  protobuf::Endpoint *endpoint;
   protobuf::ConnectRequest protobuf_connect_request;
-  protobuf_connect_request.mutable_contact()->mutable_endpoint()->set_ip(our_endpoint.ip.to_string());
-  protobuf_connect_request.mutable_contact()->mutable_endpoint()->set_port(our_endpoint.port);
-  protobuf_connect_request.mutable_contact()->set_node_id(routing_table_->kNodeId().String());
+  contact = protobuf_connect_request.mutable_contact();
+  endpoint = contact->mutable_endpoint();
+  endpoint->set_ip(our_endpoint.ip.to_string());
+  endpoint->set_port(our_endpoint.port);
+  contact->set_node_id(routing_table_->kNodeId().String());
   protobuf_connect_request.set_bootstrap(bootstrap);
   protobuf_connect_request.set_client(client);
+  protobuf_connect_request.set_timestamp(GetTimeStamp());
   message.set_destination_id(node_id.String());
   message.set_source_id(routing_table_->kNodeId().String());
   message.set_data(protobuf_connect_request.SerializeAsString());
@@ -59,13 +66,14 @@ void Rpcs::Connect(const NodeId &node_id,
   message.set_replication(1);
   message.set_type(1);
   routing_table_->SendOn(message);
-
 }
 
 void Rpcs::FindNodes(const NodeId &node_id) {
   protobuf::Message message;
   protobuf::FindNodesRequest find_nodes;
   find_nodes.set_num_nodes_requested(routing_table_->ClosestNodesSize());
+  find_nodes.set_target_node(node_id.String());
+  find_nodes.set_timestamp(GetTimeStamp());
   message.set_destination_id(node_id.String());
   message.set_source_id(routing_table_->kNodeId().String());
   message.set_data(find_nodes.SerializeAsString());

@@ -29,10 +29,11 @@ const unsigned int kMaxRoutingTableSize(64);
 const unsigned int kBucketTargetSize(1);
 }
 
-RoutingTable::RoutingTable(const NodeId &node_id,
+RoutingTable::RoutingTable(const asymm::Keys &keys,
                            std::shared_ptr<transport::ManagedConnection> rudp)
-    : sorted_(false),
-      kNodeId_(node_id),
+    : keys_(keys),
+      sorted_(false),
+      kNodeId_(NodeId(keys_.identity)),
       routing_table_nodes_(),
       mutex_(),
       transport_(rudp) {}
@@ -245,6 +246,9 @@ NodeInfo RoutingTable::GetClosestNode(const NodeId &from,
 }
 
 void RoutingTable::SendOn(protobuf::Message& message) {
+  std::string signature;
+  asymm::Sign(message.data(), keys_.private_key, &signature);
+  message.set_signature(signature);
   NodeInfo next_node(GetClosestNode(NodeId(message.destination_id()), 0));
 // FIXME SEND transport_->Send(next_node.endpoint, message.SerializeAsString());
 }

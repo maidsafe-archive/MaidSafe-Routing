@@ -22,10 +22,8 @@
 #include "boost/signals2/signal.hpp"
 #include "boost/thread/shared_mutex.hpp"
 #include "boost/thread/mutex.hpp"
-
 #include "maidsafe/common/rsa.h"
 #include "maidsafe/transport/managed_connection.h"
-
 #include "maidsafe/routing/routing.pb.h"
 #include "maidsafe/routing/node_id.h"
 #include "maidsafe/routing/log.h"
@@ -53,7 +51,7 @@ struct NodeInfo {
 
 class RoutingTable {
  public:
-  explicit RoutingTable(const NodeId &node_id,
+  explicit RoutingTable(const asymm::Keys &keys,
                         std::shared_ptr<transport::ManagedConnection> transport
                         );
   ~RoutingTable();
@@ -83,6 +81,7 @@ class RoutingTable {
   void PartialSortFromThisNode(const NodeId &from, int16_t number_to_sort);
   bool RemoveClosecontact(const NodeId &node_id);
   bool AddcloseContact(const protobuf::Contact &contact);
+  asymm::Keys keys_;
   bool sorted_;
   const NodeId kNodeId_;
   std::vector<NodeInfo> routing_table_nodes_;

@@ -98,8 +98,7 @@ class Routing {
  public:
   enum NodeType { kVault, kClient };
   Routing(NodeType node_type,
-          const asymm::PrivateKey &private_key,
-          const NodeId &node_id,
+          const asymm::Keys &keys,
           bool encryption_required);
   ~Routing();
   void BootStrapFromThisEndpoint(const maidsafe::transport::Endpoint& endpoint);
@@ -127,13 +126,14 @@ class Routing {
   void ProcessConnectResponse(protobuf::Message &message);
   void ProcessFindNodeResponse(protobuf::Message &message);
   void FindAndKillWaitingNodeValidation(NodeId node);
+  bool TimestampAndSign(protobuf::Message &message);
   void AddToCache(const protobuf::Message &message);
   bool GetFromCache(protobuf::Message &message);
   void TryAddNode(NodeId node);
   AsioService asio_service_;
   fs::path bootstrap_file_;
   std::vector<transport::Endpoint> bootstrap_nodes_;
-  asymm::PrivateKey private_key_;
+  asymm::Keys keys_;
   transport::Endpoint node_local_endpoint_;
   transport::Endpoint node_external_endpoint_;
   std::shared_ptr<transport::ManagedConnection> transport_;
