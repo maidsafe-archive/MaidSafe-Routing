@@ -22,6 +22,7 @@
 #include "maidsafe/routing/service.h"
 #include "maidsafe/routing/rpcs.h"
 #include "maidsafe/routing/timer.h"
+#include "return_codes.h"
 
 namespace fs = boost::filesystem;
 namespace bs2 = boost::signals2;
@@ -77,7 +78,6 @@ Routing::Routing(NodeType node_type,
       waiting_for_response_(),
       client_connections_(),
       joined_(false),
-      signatures_required_(false),  // we may do this ourselves internally
       encryption_required_(encryption_required),
       node_type_(node_type),
       node_validation_functor_() {
@@ -100,7 +100,7 @@ void Routing::BootStrapFromThisEndpoint(const transport::Endpoint
   LOG(INFO) << " Entered bootstrap Port       : " << endpoint.port;
   for (unsigned int i = 0; i < routing_table_->Size(); ++i) {
     NodeInfo remove_node =
-    routing_table_->GetClosestNode(routing_table_->kNodeId(), 0);
+    routing_table_->GetClosestNode(NodeId(routing_table_->kKeys().identity), 0);
     transport_->RemoveConnection(remove_node.endpoint);
     routing_table_->DropNode(remove_node.endpoint);
   }
@@ -128,7 +128,7 @@ int Routing::Send(const Message &message,
                                                 response_functor);
   protobuf::Message proto_message;
   proto_message.set_id(message_unique_id);
-  proto_message.set_source_id(routing_table_->kNodeId().String());
+  proto_message.set_source_id(routing_table_->kKeys().identity);
   proto_message.set_destination_id(message.destination_id);
   proto_message.set_cacheable(message.cacheable);
   proto_message.set_data(message.data);
@@ -146,7 +146,7 @@ void Routing::Init() {
     return;
   }
   rpc_ptr_.reset(new Rpcs(routing_table_)),
-  service_.reset(new Service(routing_table_)),
+  service_.reset(new Service(routing_table_, transport_)),
   asio_service_.Start(5);
   // TODO(dirvine) fill in bootstrap file location and do ReadConfigFile
   transport_->Init(20);
@@ -263,16 +263,7 @@ void Routing::ProcessMessage(protobuf::Message &message) {
       service_->Ping(message);
     }
   }
-  if (message.type() == 1) {  // find_nodes
-    if (message.response()) {
-      ProcessFindNodeResponse(message);
-      return;
-    } else {
-        service_->FindNodes(message);
-        return;
-    }
-  }
-  if (message.type() == 2) {  // bootstrap
+   if (message.type() == 1) {  // bootstrap
     if (message.response()) {
         ProcessConnectResponse(message);
       return;
@@ -281,10 +272,20 @@ void Routing::ProcessMessage(protobuf::Message &message) {
         return;
     }
   }
+  if (message.type() == 2) {  // find_nodes
+    if (message.response()) {
+      ProcessFindNodeResponse(message);
+      return;
+    } else {
+        service_->FindNodes(message);
+        return;
+    }
+  }
+
 
   // if this is set not direct and ID == ME do NOT respond.
   if (!message.direct() &&
-    (message.destination_id() != routing_table_->kNodeId().String())) {
+    (message.destination_id() != routing_table_->kKeys().identity)) {
     try {
       message_received_signal_(static_cast<int>(message.type()),
                                 message.data());
@@ -307,7 +308,7 @@ void Routing::ProcessMessage(protobuf::Message &message) {
   }
   // I am closest so will send to all my replicant nodes
   message.set_direct(true);
-  message.set_source_id(routing_table_->kNodeId().String());
+  message.set_source_id(routing_table_->kKeys().identity);
   auto close =
         routing_table_->GetClosestNodes(NodeId(message.destination_id()),
                                 static_cast<uint16_t>(message.replication()));
@@ -316,6 +317,7 @@ void Routing::ProcessMessage(protobuf::Message &message) {
     routing_table_->SendOn(message);
   }
 }
+
 // always direct !! never pass on
 void Routing::ProcessPingResponse(protobuf::Message& message) {
   // TODO , do we need this and where and how can I update the response
@@ -329,27 +331,47 @@ void Routing::ProcessPingResponse(protobuf::Message& message) {
 // the other node agreed to connect - he has accepted our connection
 void Routing::ProcessConnectResponse(protobuf::Message& message) {
   protobuf::ConnectResponse connect_response;
-  if (connect_response.ParseFromString(message.data()) &&
-      connect_response.answer()) {
-    NodeId node_to_add(connect_response.contact().node_id());
-    for (auto it = waiting_node_validation_.begin();
-                  it != waiting_node_validation_.end();
-                  ++it) {
-      if ((*it).node_id == node_to_add) {
+  if (!connect_response.ParseFromString(message.data())) {
+
+    DLOG(ERROR) << "Could not parse connect response";
+    return;
+  }
+  if (!connect_response.answer()) {
+    return;  // they don't want us
+  }
+  NodeId node_to_add(connect_response.contact().node_id());
+  transport::Endpoint endpoint;
+  endpoint.ip.from_string(connect_response.contact().endpoint().ip());
+  endpoint.port = connect_response.contact().endpoint().port();
+//   transport_-> //  TODO FIXME add connection to transport
+  for (auto it = waiting_node_validation_.begin();
+                it != waiting_node_validation_.end();
+                ++it) {
+    if ((*it).node_id == node_to_add) {
+      (*it).endpoint = endpoint;
+      if ( asymm::ValidateKey((*it).public_key, 0)) {
         routing_table_->AddNode(*it);  // by now public key is also valid
         waiting_node_validation_.erase(it);
-        break;
       }
+      break;
     }
-    // if this was a bootstrap connect then we will have our closest nodes
-    // as well. Bootstrap node will drop us in 10 minutes;
-    protobuf::FindNodesResponse find_nodes(connect_response.find_nodes());
-    if (connect_response.has_find_nodes()) {
-      protobuf::FindNodesResponse find_nodes(connect_response.find_nodes());
-      for(int i = 0; i < find_nodes.nodes_size() ; ++i) {
+  }
+}
+
+void Routing::ProcessFindNodeResponse(protobuf::Message& message) {
+  protobuf::FindNodesResponse find_nodes;
+  if (!find_nodes.ParseFromString(message.data())) {
+    DLOG(ERROR) << "Could not parse find node response";
+    return;
+  }
+  if (asymm::CheckSignature(find_nodes.original_request(),
+                            find_nodes.original_signature(),
+                            routing_table_->kKeys().public_key) != kSuccess) {
+    DLOG(ERROR) << " find node response was not signed by us";
+    return;  // we never requested this
+  }
+  for(int i = 0; i < find_nodes.nodes_size() ; ++i) {
         TryAddNode(NodeId(find_nodes.nodes(i)));
-      }
-    }
   }
 }
 
@@ -403,7 +425,7 @@ bool Routing::GetFromCache(protobuf::Message &message) {
         message.set_destination_id(message.source_id());
         message.set_cacheable(true);
         message.set_data((*it).second);
-        message.set_source_id(routing_table_->kNodeId().String());
+        message.set_source_id(routing_table_->kKeys().identity);
         message.set_direct(true);
         message.set_response(false);
         routing_table_->SendOn(message);

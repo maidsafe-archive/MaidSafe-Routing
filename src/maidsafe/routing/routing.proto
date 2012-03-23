@@ -47,6 +47,7 @@ message Message {
   required int32 type = 9; // type of data - used in signal to upper layers with (type, data)
   required bool routing_failure = 10;
   required int32 id = 11;
+
 }
 
 message SignedMessage {
@@ -66,10 +67,9 @@ message ConnectResponse {
   required bool answer = 1;
   required Contact contact = 2;
   optional Endpoint seen_endpoint = 3;
-  optional FindNodesResponse find_nodes = 4;  // if connect request is bootstrap
-  required int32 timestamp = 5;
-  required bytes original_request = 6;
-  required bytes requst_signature = 7;
+  required int32 timestamp = 4;
+  required bytes original_request = 5;
+  required bytes original_signature = 6;
 }
 
 message FindNodesRequest {
@@ -82,7 +82,7 @@ message FindNodesResponse {
   repeated bytes nodes = 1;
   required int32 timestamp = 2;
   required bytes original_request = 3;
-  required bytes request_signature = 4;
+  required bytes original_signature = 4;
 }
 
 message PingRequest {
@@ -92,6 +92,7 @@ message PingRequest {
 
 message PingResponse {
   required bool pong = 1;
-  required bytes original_request = 2;
-  required bytes request_signature = 3;
+  required int32 timestamp = 2;
+  required bytes original_request = 3;
+  required bytes original_signature = 4;
 }

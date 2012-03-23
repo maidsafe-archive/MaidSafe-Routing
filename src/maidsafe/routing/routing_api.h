@@ -150,7 +150,6 @@ class Routing {
                               ResponseReceivedFunctor> > waiting_for_response_;
   std::vector<NodeInfo> client_connections_;
   bool joined_;
-  bool signatures_required_;
   bool encryption_required_;
   Routing::NodeType node_type_;
   NodeValidationFunctor node_validation_functor_;

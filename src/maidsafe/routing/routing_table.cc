@@ -116,10 +116,10 @@ bool RoutingTable::CheckValidParameters(const NodeInfo& node)const {
     return false;
   }
 
-  return CheckarametersAreUnique(node);
+  return CheckParametersAreUnique(node);
 }
 
-bool RoutingTable::CheckarametersAreUnique(const NodeInfo& node) const {
+bool RoutingTable::CheckParametersAreUnique(const NodeInfo& node) const {
 
     // if we already have a duplicate public key return false
   if (std::find_if(routing_table_nodes_.begin(),

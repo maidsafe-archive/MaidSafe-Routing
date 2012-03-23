@@ -67,7 +67,7 @@ class RoutingTable {
   unsigned int Size() {
     return static_cast<uint16_t>(routing_table_nodes_.size());
   }
-  NodeId kNodeId() const { return kNodeId_; }
+  asymm::Keys kKeys() const { return keys_; }
   unsigned int ClosestNodesSize();
  private:
   RoutingTable(const RoutingTable&);
@@ -75,7 +75,7 @@ class RoutingTable {
   bool AddOrCheckNode(NodeInfo &node, bool remove);
   int16_t BucketIndex(const NodeId &rhs) const;
   bool CheckValidParameters(const NodeInfo &node) const;
-  bool CheckarametersAreUnique(const NodeInfo &node) const;
+  bool CheckParametersAreUnique(const NodeInfo &node) const;
   bool MakeSpaceForNodeToBeAdded(NodeInfo &node, bool remove_and_add);
   void SortFromThisNode(const NodeId &from);
   void PartialSortFromThisNode(const NodeId &from, int16_t number_to_sort);
