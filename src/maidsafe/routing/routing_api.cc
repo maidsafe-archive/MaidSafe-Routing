@@ -14,6 +14,7 @@
 #include "boost/date_time.hpp"
 #include "boost/asio/deadline_timer.hpp"
 #include "boost/date_time.hpp"
+#include "boost/filesystem/v3/fstream.hpp"
 #include "maidsafe/common/utils.h"
 #include "maidsafe/routing/routing_api.h"
 #include "maidsafe/routing/routing.pb.h"
@@ -155,47 +156,32 @@ void Routing::Init() {
   Join();
 }
 
-bool Routing::ReadBootstrapFile() {  // TODO(dirvine) FIXME now a dir
+bool Routing::ReadBootstrapFile() {
   protobuf::ConfigFile protobuf_config;
   protobuf::Bootstrap protobuf_bootstrap;
-// TODO(Fraser#5#): 2012-03-14 - Use try catch / pass error_code for fs funcs.
-//  if (!fs::exists(config_file_) || !fs::is_regular_file(config_file_)) {
-  //    DLOG(ERROR) << "Cannot read config file " << config_file_;
-//    return false;
-//  }
-//  try {
-  //    fs::ifstream config_file_stream(config_file_);
-//    if (!protobuf_config.ParseFromString(config_file_.string()))
-//      return false;
-//    if (!private_key_is_set_) {
-  //      if (!protobuf_config.has_private_key()) {
-    //        DLOG(ERROR) << "No private key in config or set ";
-//        return false;
-//      } else {
-  //        asymm::DecodePrivateKey(protobuf_config.private_key(),
-  //  &private_key_);
-//      }
-//    }
-//    if (!node_is_set_) {
-  //      if (protobuf_config.has_node_id()) {
-    //         node_id_ = NodeId(protobuf_config.node_id());
-//       } else {
-  //        DLOG(ERROR) << "Cannot read NodeId ";
-//        return false;
-//       }
-//    }
-//    transport::Endpoint endpoint;
-//    for (int i = 0; i != protobuf_bootstrap.endpoint_size(); ++i) {
-  //      endpoint.ip.from_string(protobuf_bootstrap.endpoint(i).ip());
-//      endpoint.port= protobuf_bootstrap.endpoint(i).port();
-//      bootstrap_nodes_.push_back(endpoint);
-//    }
-//  }
-//  catch(const std::exception &e) {
-  //    DLOG(ERROR) << "Exception: " << e.what();
-//    return false;
-//  }
-  return true;
+  fs::path config_file(".");  //TODO(dirvine) get correct location of this
+
+ if (!fs::exists(config_file) || !fs::is_regular_file(config_file)) {
+     DLOG(ERROR) << "Cannot read config file " << config_file;
+   return false;
+ }
+ try {
+     fs::ifstream config_file_stream(config_file);
+   if (!protobuf_config.ParseFromString(config_file.string()))
+     return false;
+
+   transport::Endpoint endpoint;
+  for (int i = 0; i != protobuf_bootstrap.bootstrap_contacts().size(); ++i) {
+    endpoint.ip.from_string(protobuf_bootstrap.bootstrap_contacts(i).endpoint().ip());
+    endpoint.port= protobuf_bootstrap.bootstrap_contacts(i).endpoint().port();
+    bootstrap_nodes_.push_back(endpoint);
+  }
+ }
+ catch(const std::exception &e) {
+     DLOG(ERROR) << "Exception: " << e.what();
+   return false;
+ }
+  return  bootstrap_nodes_.empty() ? false : true;
 }
 
 bool Routing::WriteBootstrapFile() const {
@@ -349,7 +335,7 @@ void Routing::ProcessFindNodeResponse(protobuf::Message& message) {
   if (asymm::CheckSignature(find_nodes.original_request(),
                             find_nodes.original_signature(),
                             routing_table_->kKeys().public_key) != kSuccess) {
-    DLOG(ERROR) << " find node response was not signed by us";
+    DLOG(ERROR) << " find node request was not signed by us";
     return;  // we never requested this
   }
   for(int i = 0; i < find_nodes.nodes_size() ; ++i) {
@@ -373,6 +359,11 @@ void Routing::ValidateThisNode(const std::string &node_id,
   node_info.endpoint = endpoint;
   transport_->Add(endpoint, node_id);
   routing_table_->AddNode(node_info);
+  if (bootstrap_nodes_.size() > 1000) {
+  bootstrap_nodes_.erase(bootstrap_nodes_.begin());
+  }
+  bootstrap_nodes_.push_back(endpoint);
+  WriteBootstrapFile();
 }
 
 bool Routing::GetFromCache(protobuf::Message &message) {
