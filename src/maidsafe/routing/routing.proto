@@ -29,7 +29,7 @@ message BootstrapContacts {
 
 // contacts file
 message Bootstrap {
-  repeated BootstrapContacts bootstrap_contacts = 1;
+  repeated Endpoint bootstrap_contacts = 1;
 }
 
 // Message wrappers

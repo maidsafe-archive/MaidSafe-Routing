@@ -119,7 +119,7 @@ class Routing {
   Routing& operator=(const Routing&);  // no assign
   void Init();
   bool ReadBootstrapFile();
-  bool WriteBootstrapFile() const;
+  bool WriteBootstrapFile();
   void Join();
   void ReceiveMessage(const std::string &message);
   void ProcessMessage(protobuf::Message &message);
@@ -151,6 +151,7 @@ class Routing {
   bool encryption_required_;
   Routing::NodeType node_type_;
   NodeValidationFunctor node_validation_functor_;
+  boost::system::error_code error_code_;
 };
 
 }  // namespace routing

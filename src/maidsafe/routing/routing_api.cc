@@ -15,6 +15,8 @@
 #include "boost/asio/deadline_timer.hpp"
 #include "boost/date_time.hpp"
 #include "boost/filesystem/v3/fstream.hpp"
+#include "boost/filesystem.hpp"
+#include "boost/system/error_code.hpp"
 #include "maidsafe/common/utils.h"
 #include "maidsafe/routing/routing_api.h"
 #include "maidsafe/routing/routing.pb.h"
@@ -61,7 +63,7 @@ Routing::Routing(NodeType node_type,
                  const asymm::Keys &keys,
                  bool encryption_required)
     : asio_service_(),
-      bootstrap_file_(),
+      bootstrap_file_("config_file"),
       bootstrap_nodes_(),
       keys_(keys),
       node_local_endpoint_(),
@@ -80,7 +82,8 @@ Routing::Routing(NodeType node_type,
       joined_(false),
       encryption_required_(encryption_required),
       node_type_(node_type),
-      node_validation_functor_() {
+      node_validation_functor_(),
+      error_code_() {
   Init();
 }
 
@@ -149,7 +152,6 @@ void Routing::Init() {
                              routing_table_,
                              transport_));
   asio_service_.Start(5);
-  // TODO(dirvine) fill in bootstrap file location and do ReadConfigFile
   node_local_endpoint_ = transport_->GetAvailableEndpoint();
   LOG(INFO) << " Local IP address : " << node_local_endpoint_.ip.to_string();
   LOG(INFO) << " Local Port       : " << node_local_endpoint_.port;
@@ -159,34 +161,63 @@ void Routing::Init() {
 bool Routing::ReadBootstrapFile() {
   protobuf::ConfigFile protobuf_config;
   protobuf::Bootstrap protobuf_bootstrap;
-  fs::path config_file("config_file");  //TODO(dirvine) get correct location of this
+  fs::path config_file(bootstrap_file_);  //TODO(dirvine) get correct location
 
- if (!fs::exists(config_file) || !fs::is_regular_file(config_file)) {
-     DLOG(ERROR) << "Cannot read config file " << config_file;
+  if (!fs::exists(config_file, error_code_) ||
+      !fs::is_regular_file(config_file, error_code_)) {
+      DLOG(ERROR) << "Cannot read config file " <<
+        error_code_.category().name() << config_file;
    return false;
- }
- try {
-     fs::ifstream config_file_stream(config_file);
-   if (!protobuf_config.ParseFromString(config_file.string()))
-     return false;
+  }
 
-   transport::Endpoint endpoint;
+  fs::ifstream config_file_stream;
+  try {
+    config_file_stream.open(config_file);
+  } catch (const boost::filesystem::filesystem_error & ex) {
+    DLOG(ERROR) << "Cannot read file stream " << config_file.string() ;
+    return false;
+  }
+
+  if (!protobuf_config.ParseFromIstream(&config_file_stream)) {
+    DLOG(ERROR) << "Cannot parse from file stream" ;
+    return false;
+  }
+
+  transport::Endpoint endpoint;
   for (int i = 0; i != protobuf_bootstrap.bootstrap_contacts().size(); ++i) {
-    endpoint.ip.from_string(protobuf_bootstrap.bootstrap_contacts(i).endpoint().ip());
-    endpoint.port= protobuf_bootstrap.bootstrap_contacts(i).endpoint().port();
+    endpoint.ip.from_string(protobuf_bootstrap.bootstrap_contacts(i).ip());
+    endpoint.port= protobuf_bootstrap.bootstrap_contacts(i).port();
     bootstrap_nodes_.push_back(endpoint);
   }
- }
- catch(const std::exception &e) {
-     DLOG(ERROR) << "Exception: " << e.what();
-   return false;
- }
+
   return  bootstrap_nodes_.empty() ? false : true;
 }
 
-bool Routing::WriteBootstrapFile() const {
-  // TODO(dirvine) implement
-  return false;
+bool Routing::WriteBootstrapFile() {
+  protobuf::Bootstrap protobuf_bootstrap;
+  fs::path config_file(bootstrap_file_);  //TODO(dirvine) get correct location
+
+  if (!fs::exists(config_file, error_code_) ||
+      !fs::is_regular_file(config_file, error_code_)) {
+      DLOG(ERROR) << "Cannot read config file " <<
+        error_code_.category().name() << config_file;
+   return false;
+  }
+
+  fs::ofstream config_file_stream;
+  try {
+    config_file_stream.open(config_file);
+  } catch (const boost::filesystem::filesystem_error & ex) {
+    DLOG(ERROR) << "Cannot read file stream " << config_file.string() ;
+    return false;
+  }
+
+  for (size_t i = 0; i < bootstrap_nodes_.size(); ++i) {
+    protobuf::Endpoint *endpoint = protobuf_bootstrap.add_bootstrap_contacts();
+    endpoint->set_ip(bootstrap_nodes_[i].ip.to_string());
+    endpoint->set_port(bootstrap_nodes_[i].port);
+  }
+  return protobuf_bootstrap.SerializeToOstream(&config_file_stream);
 }
 
 bs2::signal<void(int, std::string)> &Routing::RequestReceivedSignal() {
