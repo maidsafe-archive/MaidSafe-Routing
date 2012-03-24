@@ -180,8 +180,8 @@ bool RoutingTable::MakeSpaceForNodeToBeAdded(maidsafe::routing::NodeInfo& node,
 
      if (remove) {
       routing_table_nodes_.erase(furthest_close_node_iter);
-      close_node_from_to_signal_(node.node_id.String(),
-                                 (*furthest_close_node_iter).node_id.String());
+      close_node_from_to_signal_((*furthest_close_node_iter).node_id.String(),
+                                 node.node_id.String());
      }
     return true;
   }
