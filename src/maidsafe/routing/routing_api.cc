@@ -111,7 +111,7 @@ void Routing::BootStrapFromThisEndpoint(const transport::Endpoint
 }
 
 int Routing::Send(const Message &message,
-                   const ResponseReceivedFunctor &response_functor) {
+                   const ResponseReceivedFunctor response_functor) {
   if (message.destination_id.empty()) {
     DLOG(ERROR) << "No destination id, aborted send";
     return 1;
@@ -159,7 +159,7 @@ void Routing::Init() {
 bool Routing::ReadBootstrapFile() {
   protobuf::ConfigFile protobuf_config;
   protobuf::Bootstrap protobuf_bootstrap;
-  fs::path config_file(".");  //TODO(dirvine) get correct location of this
+  fs::path config_file("config_file");  //TODO(dirvine) get correct location of this
 
  if (!fs::exists(config_file) || !fs::is_regular_file(config_file)) {
      DLOG(ERROR) << "Cannot read config file " << config_file;

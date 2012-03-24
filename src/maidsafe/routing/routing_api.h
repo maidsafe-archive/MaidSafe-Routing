@@ -91,7 +91,8 @@ struct Message {
 };
 
 typedef std::function<void(int, std::string)> ResponseReceivedFunctor;
-typedef std::function<void(std::string, transport::Endpoint)> NodeValidationFunctor;
+typedef std::function<void(const std::string,const transport::Endpoint)>
+                                                        NodeValidationFunctor;
 
 
 class Routing {
@@ -103,7 +104,7 @@ class Routing {
   ~Routing();
   void BootStrapFromThisEndpoint(const maidsafe::transport::Endpoint& endpoint);
   int Send(const Message &message,
-            const ResponseReceivedFunctor &response_functor);
+            const ResponseReceivedFunctor response_functor);
   // this object will not start unless this functor is set !!
   void setNodeValidationFunctor(NodeValidationFunctor &node_validation_functor);
   // on completion of above functor this method MUST be passed the results
