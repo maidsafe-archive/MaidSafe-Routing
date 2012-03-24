@@ -15,11 +15,11 @@
 
 #include <memory>
 #include "maidsafe/common/rsa.h"
-#include "maidsafe/transport/managed_connection.h"
+#include "maidsafe/transport/managed_connections.h"
 
 namespace maidsafe {
 
-namespace transport { class ManagedConnection; }
+namespace transport { class ManagedConnections; }
 
 namespace routing {
 

@@ -55,7 +55,7 @@ if a client or hacker tries to start as a vault ID it will not be unique
 #include "boost/signals2/signal.hpp"
 #include "boost/filesystem/path.hpp"
 #include "maidsafe/common/rsa.h"
-#include "maidsafe/transport/managed_connection.h"
+#include "maidsafe/transport/managed_connections.h"
 #include "maidsafe/routing/version.h"
 
 #if MAIDSAFE_ROUTING_VERSION != 100
@@ -136,7 +136,7 @@ class Routing {
   asymm::Keys keys_;
   transport::Endpoint node_local_endpoint_;
   transport::Endpoint node_external_endpoint_;
-  std::shared_ptr<transport::ManagedConnection> transport_;
+  std::shared_ptr<transport::ManagedConnections> transport_;
   std::shared_ptr<RoutingTable> routing_table_;
   std::shared_ptr<Rpcs> rpc_ptr_;
   std::shared_ptr<Service> service_;

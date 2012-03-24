@@ -14,7 +14,7 @@
 
 #include "boost/thread/locks.hpp"
 #include "boost/assert.hpp"
-#include "maidsafe/transport/managed_connection.h"
+#include "maidsafe/transport/managed_connections.h"
 #include "maidsafe/routing/routing_table.h"
 #include "maidsafe/routing/routing_api.h"
 #include "maidsafe/routing/node_id.h"
@@ -30,7 +30,7 @@ const unsigned int kBucketTargetSize(1);
 }
 
 RoutingTable::RoutingTable(const asymm::Keys &keys,
-                           std::shared_ptr<transport::ManagedConnection> rudp)
+                           std::shared_ptr<transport::ManagedConnections> rudp)
     : keys_(keys),
       sorted_(false),
       kNodeId_(NodeId(keys_.identity)),

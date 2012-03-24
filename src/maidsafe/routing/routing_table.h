@@ -23,7 +23,7 @@
 #include "boost/thread/shared_mutex.hpp"
 #include "boost/thread/mutex.hpp"
 #include "maidsafe/common/rsa.h"
-#include "maidsafe/transport/managed_connection.h"
+#include "maidsafe/transport/managed_connections.h"
 #include "maidsafe/routing/routing.pb.h"
 #include "maidsafe/routing/node_id.h"
 #include "maidsafe/routing/log.h"
@@ -52,7 +52,7 @@ struct NodeInfo {
 class RoutingTable {
  public:
   explicit RoutingTable(const asymm::Keys &keys,
-                        std::shared_ptr<transport::ManagedConnection> transport
+                        std::shared_ptr<transport::ManagedConnections> transport
                         );
   ~RoutingTable();
   bool AddNode(NodeInfo &node);
@@ -86,7 +86,7 @@ class RoutingTable {
   const NodeId kNodeId_;
   std::vector<NodeInfo> routing_table_nodes_;
   boost::mutex mutex_;
-  std::shared_ptr<transport::ManagedConnection> transport_;
+  std::shared_ptr<transport::ManagedConnections> transport_;
 };
 
 }  // namespace routing

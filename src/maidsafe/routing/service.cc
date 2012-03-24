@@ -11,7 +11,7 @@
  ******************************************************************************/
 
 #include "maidsafe/routing/service.h"
-
+#include "maidsafe/transport/managed_connections.h"
 #include "maidsafe/routing/routing_api.h"
 #include "maidsafe/routing/node_id.h"
 #include "maidsafe/routing/routing.pb.h"
@@ -24,7 +24,7 @@ namespace maidsafe {
 namespace routing {
 
 Service::Service(std::shared_ptr<RoutingTable> routing_table,
-           std::shared_ptr<transport::ManagedConnection> transport)
+           std::shared_ptr<transport::ManagedConnections> transport)
     : routing_table_(routing_table), transport_(transport) {}
 
 void Service::Ping(protobuf::Message &message) {
@@ -49,25 +49,49 @@ void Service::Connect(protobuf::Message &message) {
   if (message.destination_id() != routing_table_->kKeys().identity)
     return;  // not for us and we should not pass it on.
   protobuf::ConnectRequest connect_request;
+  protobuf::ConnectResponse connect_response;
   if (!connect_request.ParseFromString(message.data()))
     return;  // no need to reply
-
+  NodeInfo node;
+  node.node_id = NodeId(connect_request.contact().node_id());
   if (connect_request.bootstrap()) {
              // Already connected
              return;  // FIXME
   }
+  connect_response.set_answer(false);
   if (connect_request.client()) {
-                 // connect here !!
+    connect_response.set_answer(true);
+    transport_->Add(transport::Endpoint
+                    (connect_request.contact().endpoint().ip(),
+                    connect_request.contact().endpoint().port()),
+                    routing_table_->kKeys().identity);
                  // add to client bucket
+  } else if (routing_table_->CheckNode(node)) {
+    connect_response.set_answer(true);
+    transport_->Add(transport::Endpoint
+                    (connect_request.contact().endpoint().ip(),
+                    connect_request.contact().endpoint().port()),
+                    routing_table_->kKeys().identity);
   }
-  NodeInfo node;
-  node.node_id = NodeId(connect_request.contact().node_id());
-  if (routing_table_->CheckNode(node)) {
-    return; // no need to reply
-  }
-  // OK we will try to connect to all the endpoints supplied
- // for (int i = connect_request.contact()
-  //transport_->AddConnection(transport::Endpoint(connect_request.contact().endpoint().ip(), connect_request.contact().endpoint().port()));
+  transport::Endpoint our_endpoint(transport_->GetAvailableEndpoint());
+  protobuf::Contact *contact;
+  protobuf::Endpoint *endpoint;
+  contact =connect_response.mutable_contact();
+  endpoint = contact->mutable_endpoint();
+  endpoint->set_ip(our_endpoint.ip.to_string());
+  endpoint->set_port(our_endpoint.port);
+  contact->set_node_id(routing_table_->kKeys().identity);
+  connect_response.set_timestamp(GetTimeStamp());
+  connect_response.set_original_request(message.data());
+  connect_response.set_original_signature(message.signature());
+  message.set_destination_id(message.source_id());
+  message.set_source_id(routing_table_->kKeys().identity);
+  message.set_data(connect_response.SerializeAsString());
+  message.set_direct(true);
+  message.set_response(true);
+  message.set_replication(1);
+  message.set_type(1);
+  routing_table_->SendOn(message);
 }
 
 void Service::FindNodes(protobuf::Message &message) {

@@ -65,7 +65,7 @@ Routing::Routing(NodeType node_type,
       keys_(keys),
       node_local_endpoint_(),
       node_external_endpoint_(),
-      transport_(new transport::ManagedConnection()),
+      transport_(new transport::ManagedConnections()),
       routing_table_(new RoutingTable(keys_, transport_)),
       rpc_ptr_(),
       service_(),
@@ -101,7 +101,7 @@ void Routing::BootStrapFromThisEndpoint(const transport::Endpoint
   for (unsigned int i = 0; i < routing_table_->Size(); ++i) {
     NodeInfo remove_node =
     routing_table_->GetClosestNode(NodeId(routing_table_->kKeys().identity), 0);
-    transport_->RemoveConnection(remove_node.endpoint);
+    transport_->Remove(remove_node.endpoint);
     routing_table_->DropNode(remove_node.endpoint);
   }
   network_status_signal_(routing_table_->Size());
@@ -149,12 +149,9 @@ void Routing::Init() {
   service_.reset(new Service(routing_table_, transport_)),
   asio_service_.Start(5);
   // TODO(dirvine) fill in bootstrap file location and do ReadConfigFile
-  transport_->Init(20);
-  node_local_endpoint_ = transport_->GetOurEndpoint();
+  node_local_endpoint_ = transport_->GetAvailableEndpoint();
   LOG(INFO) << " Local IP address : " << node_local_endpoint_.ip.to_string();
   LOG(INFO) << " Local Port       : " << node_local_endpoint_.port;
-  transport_->on_message_received()->connect(
-      std::bind(&Routing::ReceiveMessage, this, args::_1));
   Join();
 }
 
@@ -249,9 +246,6 @@ void Routing::ProcessMessage(protobuf::Message &message) {
   }
   // is it for us ??
   if (!routing_table_->AmIClosestNode(NodeId(message.destination_id()))) {
-    NodeId next_node =
-     routing_table_->GetClosestNode(NodeId(message.destination_id()),
-                                    0).node_id;
     routing_table_->SendOn(message);
     return;
   }   // I am closest
@@ -343,14 +337,17 @@ void Routing::ProcessConnectResponse(protobuf::Message& message) {
   transport::Endpoint endpoint;
   endpoint.ip.from_string(connect_response.contact().endpoint().ip());
   endpoint.port = connect_response.contact().endpoint().port();
-//   transport_-> //  TODO FIXME add connection to transport
+  transport_->Add(transport::Endpoint
+                (connect_response.contact().endpoint().ip(),
+                connect_response.contact().endpoint().port()),
+                routing_table_->kKeys().identity);
   for (auto it = waiting_node_validation_.begin();
                 it != waiting_node_validation_.end();
                 ++it) {
     if ((*it).node_id == node_to_add) {
       (*it).endpoint = endpoint;
-      if ( asymm::ValidateKey((*it).public_key, 0)) {
-        routing_table_->AddNode(*it);  // by now public key is also valid
+      if (asymm::ValidateKey((*it).public_key, 0)) {
+        routing_table_->AddNode(*it);
         waiting_node_validation_.erase(it);
       }
       break;
@@ -396,13 +393,16 @@ void Routing::ValidateThisNode(bool valid,
        ++it) {
     if (!valid) {
       waiting_node_validation_.erase(it);
-      transport_->RemoveConnection((*it).endpoint);
+      transport_->Remove((*it).endpoint);
       return;
     }
     if ((*it).node_id == node) {
       (*it).public_key = public_key;
-      routing_table_->AddNode(*it);
-      rpc_ptr_->Ping((*it).node_id);// TODO FIXME use transport ping
+      if ((*it).endpoint.ip.is_v4()) {
+        routing_table_->AddNode(*it);
+        rpc_ptr_->Ping((*it).node_id);
+        waiting_node_validation_.erase(it);
+      }
       break;
     }
   }

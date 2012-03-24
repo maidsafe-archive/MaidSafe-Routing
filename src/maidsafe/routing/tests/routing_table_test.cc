@@ -16,7 +16,7 @@
 #include "maidsafe/common/test.h"
 #include "maidsafe/common/utils.h"
 #include "maidsafe/routing/routing_table.h"
-#include "maidsafe/transport/managed_connection.h"
+#include "maidsafe/transport/managed_connections.h"
 #include "maidsafe/routing/node_id.h"
 #include "maidsafe/routing/log.h"
 
@@ -51,8 +51,8 @@ NodeInfo MakeNode() {
 
 TEST(RoutingTableTest, FUNC_AddCloseNodes) {
 
-//   std::shared_ptr<transport::ManagedConnection>
-//                               ptr(new transport::ManagedConnection);
+//   std::shared_ptr<transport::ManagedConnections>
+//                               ptr(new transport::ManagedConnections);
     asymm::Keys keys;
     keys.identity = RandomString(64);
   RoutingTable RT(keys, nullptr);
@@ -85,8 +85,8 @@ TEST(RoutingTableTest, FUNC_AddCloseNodes) {
 }
 
 TEST(RoutingTableTest, FUNC_AddTooManyNodes) {
-//     std::shared_ptr<transport::ManagedConnection>
-//                               ptr(new transport::ManagedConnection);
+//     std::shared_ptr<transport::ManagedConnections>
+//                               ptr(new transport::ManagedConnections);
     asymm::Keys keys;
     keys.identity = RandomString(64);
   RoutingTable RT(keys, nullptr);
@@ -112,8 +112,8 @@ TEST(RoutingTableTest, FUNC_AddTooManyNodes) {
 
 TEST(RoutingTableTest, BEH_CloseAndInRangeCheck) {
 
-//     std::shared_ptr<transport::ManagedConnection>
-//                               ptr(new transport::ManagedConnection);
+//     std::shared_ptr<transport::ManagedConnections>
+//                               ptr(new transport::ManagedConnections);
   asymm::Keys keys;
   keys.identity = RandomString(64);
   RoutingTable RT(keys, nullptr);
