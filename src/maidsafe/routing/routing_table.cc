@@ -36,12 +36,20 @@ RoutingTable::RoutingTable(const asymm::Keys &keys,
       kNodeId_(NodeId(keys_.identity)),
       routing_table_nodes_(),
       mutex_(),
-      transport_(rudp) {}
+      transport_(rudp),
+      close_node_from_to_signal_()
+      {}
 
 RoutingTable::~RoutingTable() {
   boost::mutex::scoped_lock lock(mutex_);
   routing_table_nodes_.clear();
 }
+
+bs2::signal<void(std::string, std::string)>
+                            &RoutingTable::CloseNodeReplacedOldNewSignal() {
+  return close_node_from_to_signal_;
+}
+
 
 unsigned int RoutingTable::ClosestNodesSize() {
   return kClosestNodesSize;
@@ -170,8 +178,11 @@ bool RoutingTable::MakeSpaceForNodeToBeAdded(maidsafe::routing::NodeInfo& node,
      BOOST_ASSERT_MSG(node.bucket <= furthest_close_node.bucket,
                        "close node replacement to a larger bucket");
 
-     if (remove)
+     if (remove) {
       routing_table_nodes_.erase(furthest_close_node_iter);
+      close_node_from_to_signal_(node.node_id.String(),
+                                 (*furthest_close_node_iter).node_id.String());
+     }
     return true;
   }
 

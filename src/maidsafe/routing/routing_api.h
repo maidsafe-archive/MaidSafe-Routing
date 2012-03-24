@@ -113,7 +113,8 @@ class Routing {
                         const transport::Endpoint &endpoint);
   boost::signals2::signal<void(int, std::string)> &RequestReceivedSignal();
   boost::signals2::signal<void(unsigned int)> &NetworkStatusSignal();
-
+  boost::signals2::signal<void(std::string, std::string)>
+                                           &CloseNodeReplacedOldNewSignal();
  private:
   Routing(const Routing&);  // no copy
   Routing& operator=(const Routing&);  // no assign
@@ -141,6 +142,8 @@ class Routing {
   std::shared_ptr<Timer> timer_;
   boost::signals2::signal<void(int, std::string)> message_received_signal_;
   boost::signals2::signal<void(unsigned int)> network_status_signal_;
+  boost::signals2::signal<void(std::string, std::string)>
+                                                    close_node_from_to_signal_;
   unsigned int cache_size_hint_;
   std::vector<std::pair<std::string, std::string>> cache_chunks_;
 

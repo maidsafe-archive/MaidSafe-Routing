@@ -75,6 +75,7 @@ Routing::Routing(NodeType node_type,
       timer_(new Timer(asio_service_)),
       message_received_signal_(),
       network_status_signal_(),
+      close_node_from_to_signal_(),
       cache_size_hint_(kNumChunksToCache),
       cache_chunks_(),
       waiting_for_response_(),
@@ -226,6 +227,11 @@ bs2::signal<void(int, std::string)> &Routing::RequestReceivedSignal() {
 
 bs2::signal<void(unsigned int)> &Routing::NetworkStatusSignal() {
   return network_status_signal_;
+}
+
+bs2::signal<void(std::string, std::string)>
+                            &Routing::CloseNodeReplacedOldNewSignal() {
+  return routing_table_->CloseNodeReplacedOldNewSignal();
 }
 
 void Routing::Join() {
