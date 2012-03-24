@@ -23,9 +23,13 @@ namespace maidsafe {
 
 namespace routing {
 
-Service::Service(std::shared_ptr<RoutingTable> routing_table,
-           std::shared_ptr<transport::ManagedConnections> transport)
-    : routing_table_(routing_table), transport_(transport) {}
+Service::Service(NodeValidationFunctor &node_validate_functor,
+           std::shared_ptr<RoutingTable> routing_table,
+           std::shared_ptr<transport::ManagedConnections> transport
+                )
+    : node_validation_functor_(node_validate_functor),
+    routing_table_(routing_table),
+    transport_(transport) {}
 
 void Service::Ping(protobuf::Message &message) {
   if (message.destination_id() != routing_table_->kKeys().identity)
@@ -61,17 +65,17 @@ void Service::Connect(protobuf::Message &message) {
   connect_response.set_answer(false);
   if (connect_request.client()) {
     connect_response.set_answer(true);
-    transport_->Add(transport::Endpoint
+    //TODO(dirvine) get the routing pointer back again
+    node_validation_functor_(routing_table_->kKeys().identity,
+                    transport::Endpoint
                     (connect_request.contact().endpoint().ip(),
-                    connect_request.contact().endpoint().port()),
-                    routing_table_->kKeys().identity);
-                 // add to client bucket
+                    connect_request.contact().endpoint().port()));
   } else if (routing_table_->CheckNode(node)) {
     connect_response.set_answer(true);
-    transport_->Add(transport::Endpoint
+    node_validation_functor_(routing_table_->kKeys().identity,
+                    transport::Endpoint
                     (connect_request.contact().endpoint().ip(),
-                    connect_request.contact().endpoint().port()),
-                    routing_table_->kKeys().identity);
+                    connect_request.contact().endpoint().port()));
   }
   transport::Endpoint our_endpoint(transport_->GetAvailableEndpoint());
   protobuf::Contact *contact;

@@ -67,14 +67,13 @@ Routing::Routing(NodeType node_type,
       node_external_endpoint_(),
       transport_(new transport::ManagedConnections()),
       routing_table_(new RoutingTable(keys_, transport_)),
-      rpc_ptr_(),
+      rpc_ptr_(new Rpcs(routing_table_)),
       service_(),
       timer_(new Timer(asio_service_)),
       message_received_signal_(),
       network_status_signal_(),
       cache_size_hint_(kNumChunksToCache),
       cache_chunks_(),
-      waiting_node_validation_(),
       waiting_for_response_(),
       client_connections_(),
       joined_(false),
@@ -145,8 +144,9 @@ void Routing::Init() {
     DLOG(ERROR) << "Invalid node_validation_functor passed: Aborted start";
     return;
   }
-  rpc_ptr_.reset(new Rpcs(routing_table_)),
-  service_.reset(new Service(routing_table_, transport_)),
+  service_.reset(new Service(node_validation_functor_,
+                             routing_table_,
+                             transport_));
   asio_service_.Start(5);
   // TODO(dirvine) fill in bootstrap file location and do ReadConfigFile
   node_local_endpoint_ = transport_->GetAvailableEndpoint();
@@ -333,26 +333,11 @@ void Routing::ProcessConnectResponse(protobuf::Message& message) {
   if (!connect_response.answer()) {
     return;  // they don't want us
   }
-  NodeId node_to_add(connect_response.contact().node_id());
   transport::Endpoint endpoint;
   endpoint.ip.from_string(connect_response.contact().endpoint().ip());
   endpoint.port = connect_response.contact().endpoint().port();
-  transport_->Add(transport::Endpoint
-                (connect_response.contact().endpoint().ip(),
-                connect_response.contact().endpoint().port()),
-                routing_table_->kKeys().identity);
-  for (auto it = waiting_node_validation_.begin();
-                it != waiting_node_validation_.end();
-                ++it) {
-    if ((*it).node_id == node_to_add) {
-      (*it).endpoint = endpoint;
-      if (asymm::ValidateKey((*it).public_key, 0)) {
-        routing_table_->AddNode(*it);
-        waiting_node_validation_.erase(it);
-      }
-      break;
-    }
-  }
+  node_validation_functor_(connect_response.contact().node_id(),
+                           endpoint);
 }
 
 void Routing::ProcessFindNodeResponse(protobuf::Message& message) {
@@ -368,55 +353,26 @@ void Routing::ProcessFindNodeResponse(protobuf::Message& message) {
     return;  // we never requested this
   }
   for(int i = 0; i < find_nodes.nodes_size() ; ++i) {
-        TryAddNode(NodeId(find_nodes.nodes(i)));
+    NodeInfo node_to_add;
+    node_to_add.node_id = NodeId(find_nodes.nodes(i));
+    if (routing_table_->CheckNode(node_to_add)) {
+      rpc_ptr_->Connect(NodeId(find_nodes.nodes(i)),
+                               transport_->GetAvailableEndpoint(),
+                               kClient ? true : false,
+                               false);
+    }
   }
 }
 
-void Routing::TryAddNode(NodeId node) {
+void Routing::ValidateThisNode(const std::string &node_id,
+                               const asymm::PublicKey &public_key,
+                               const transport::Endpoint &endpoint) {
   NodeInfo node_info;
-  node_info.node_id = node;
-  if (routing_table_->CheckNode(node_info)) {
-    waiting_node_validation_.push_back(node_info);
-    node_validation_functor_(node.String());
-    timer_->AddTask(kTimoutInSeconds,
-                    std::bind(&Routing::FindAndKillWaitingNodeValidation,
-                               this, node));
-  }
-}
-
-void Routing::ValidateThisNode(bool valid,
-                               std::string node_id,
-                               rsa::PublicKey& public_key) {
-  NodeId node(node_id);
-  for (auto it = waiting_node_validation_.begin();
-       it != waiting_node_validation_.end();
-       ++it) {
-    if (!valid) {
-      waiting_node_validation_.erase(it);
-      transport_->Remove((*it).endpoint);
-      return;
-    }
-    if ((*it).node_id == node) {
-      (*it).public_key = public_key;
-      if ((*it).endpoint.ip.is_v4()) {
-        routing_table_->AddNode(*it);
-        rpc_ptr_->Ping((*it).node_id);
-        waiting_node_validation_.erase(it);
-      }
-      break;
-    }
-  }
-}
-
-void Routing::FindAndKillWaitingNodeValidation(NodeId node) {
-  for (auto it = waiting_node_validation_.begin();
-       it != waiting_node_validation_.end();
-       ++it) {
-    if ((*it).node_id == node) {
-      waiting_node_validation_.erase(it);
-      break;
-    }
-  }
+  node_info.node_id =NodeId(node_id);
+  node_info.public_key = public_key;
+  node_info.endpoint = endpoint;
+  transport_->Add(endpoint, node_id);
+  routing_table_->AddNode(node_info);
 }
 
 bool Routing::GetFromCache(protobuf::Message &message) {

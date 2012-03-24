@@ -15,6 +15,7 @@
 
 #include <memory>
 #include "maidsafe/transport/managed_connections.h"
+#include "maidsafe/routing/routing_api.h"
 
 namespace maidsafe {
 
@@ -28,12 +29,14 @@ class RoutingTable;
 // Handle all incoming requests and send back reply
 class Service {
  public:
-  Service(std::shared_ptr<RoutingTable> routing_table,
-           std::shared_ptr<transport::ManagedConnections> transport);
+  Service(NodeValidationFunctor &node_validate_functor,
+          std::shared_ptr<RoutingTable> routing_table,
+          std::shared_ptr<transport::ManagedConnections> transport);
   void Ping(protobuf::Message &message);
   void Connect(protobuf::Message &message);
   void FindNodes(protobuf::Message &message);
  private:
+  NodeValidationFunctor node_validation_functor_;
   std::shared_ptr<RoutingTable> routing_table_;
   std::shared_ptr<transport::ManagedConnections> transport_;
 

@@ -91,7 +91,7 @@ struct Message {
 };
 
 typedef std::function<void(int, std::string)> ResponseReceivedFunctor;
-typedef std::function<void(std::string)> NodeValidationFunctor;
+typedef std::function<void(std::string, transport::Endpoint)> NodeValidationFunctor;
 
 
 class Routing {
@@ -107,9 +107,9 @@ class Routing {
   // this object will not start unless this functor is set !!
   void setNodeValidationFunctor(NodeValidationFunctor &node_validation_functor);
   // on completion of above functor this method MUST be passed the results
-  void ValidateThisNode(bool valid,
-                        std::string node_id,
-                        asymm::PublicKey &public_key);
+  void ValidateThisNode(const std::string &node_id,
+                        const asymm::PublicKey &public_key,
+                        const transport::Endpoint &endpoint);
   boost::signals2::signal<void(int, std::string)> &RequestReceivedSignal();
   boost::signals2::signal<void(unsigned int)> &NetworkStatusSignal();
 
@@ -125,11 +125,8 @@ class Routing {
   void ProcessPingResponse(protobuf::Message &message);
   void ProcessConnectResponse(protobuf::Message &message);
   void ProcessFindNodeResponse(protobuf::Message &message);
-  void FindAndKillWaitingNodeValidation(NodeId node);
-  bool TimestampAndSign(protobuf::Message &message);
   void AddToCache(const protobuf::Message &message);
   bool GetFromCache(protobuf::Message &message);
-  void TryAddNode(NodeId node);
   AsioService asio_service_;
   fs::path bootstrap_file_;
   std::vector<transport::Endpoint> bootstrap_nodes_;
@@ -145,7 +142,7 @@ class Routing {
   boost::signals2::signal<void(unsigned int)> network_status_signal_;
   unsigned int cache_size_hint_;
   std::vector<std::pair<std::string, std::string>> cache_chunks_;
-  std::vector<NodeInfo> waiting_node_validation_;
+
   std::map<uint32_t, std::pair<std::shared_ptr<boost::asio::deadline_timer>,
                               ResponseReceivedFunctor> > waiting_for_response_;
   std::vector<NodeInfo> client_connections_;
