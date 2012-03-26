@@ -10,12 +10,13 @@
  *  the explicit written permission of the board of directors of maidsafe.net. *
  ******************************************************************************/
 
-#ifndef MAIDSAFE_ROUTING_CACHE_MANAGER_H_
-#define MAIDSAFE_ROUTING_CACHE_MANAGER_H_
+#ifndef MAIDSAFE_ROUTING_RESPONSE_HANDLER_H_
+#define MAIDSAFE_ROUTING_RESPONSE_HANDLER_H_
 
 #include "boost/thread/shared_mutex.hpp"
 #include "boost/thread/mutex.hpp"
 #include "maidsafe/common/rsa.h"
+#include "maidsafe/routing/rpcs.h"
 #include "maidsafe/transport/managed_connections.h"
 #include "maidsafe/routing/routing.pb.h"
 #include "maidsafe/routing/node_id.h"
@@ -26,24 +27,29 @@ namespace maidsafe {
 
 namespace routing {
 
-class CacheManager {
+class RoutingTable;
+
+class ResponseHandler {
  public:
-  CacheManager(const uint16_t cache_size_hint,
-               std::shared_ptr<RoutingTable> routing_table,
-               std::shared_ptr<transport::ManagedConnections> transport);
-  void AddToCache(const protobuf::Message &message);
-  bool GetFromCache(protobuf::Message &message);
+  ResponseHandler(NodeValidationFunctor &node_Validation_functor,
+                 std::shared_ptr<RoutingTable> routing_table,
+                 std::shared_ptr<transport::ManagedConnections> transport,
+                 Rpcs &rpcs);
+  ~ResponseHandler();
+  void ProcessPingResponse(protobuf::Message &message);
+  void ProcessConnectResponse(protobuf::Message &message);
+  void ProcessFindNodeResponse(protobuf::Message &message);
  private:
-  CacheManager(const CacheManager&);  // no copy
-  CacheManager& operator=(const CacheManager&);  // no assign
-  size_t cache_size_hint_;
-  std::vector<std::pair<std::string, std::string> > cache_chunks_;
-  std::shared_ptr<transport::ManagedConnections> transport_;
+  ResponseHandler(const ResponseHandler&);  // no copy
+  ResponseHandler& operator=(const ResponseHandler&);  // no assign
+  NodeValidationFunctor node_validation_functor_;
   std::shared_ptr<RoutingTable> routing_table_;
+  std::shared_ptr<transport::ManagedConnections> transport_;
+  Rpcs rpcs_;
 };
 
 }  // namespace routing
 
 }  // namespace maidsafe
 
-#endif // MAIDSAFE_ROUTING_CACHE_MANAGER_H_
+#endif  // MAIDSAFE_ROUTING_RESPONSE_HANDLER_H_

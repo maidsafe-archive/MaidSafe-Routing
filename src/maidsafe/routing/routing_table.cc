@@ -29,14 +29,12 @@ const unsigned int kMaxRoutingTableSize(64);
 const unsigned int kBucketTargetSize(1);
 }
 
-RoutingTable::RoutingTable(const asymm::Keys &keys,
-                           std::shared_ptr<transport::ManagedConnections> rudp)
+RoutingTable::RoutingTable(const asymm::Keys &keys)
     : keys_(keys),
       sorted_(false),
       kNodeId_(NodeId(keys_.identity)),
       routing_table_nodes_(),
       mutex_(),
-      transport_(rudp),
       close_node_from_to_signal_()
       {}
 

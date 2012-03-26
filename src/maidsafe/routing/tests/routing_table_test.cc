@@ -55,7 +55,7 @@ TEST(RoutingTableTest, FUNC_AddCloseNodes) {
 //                               ptr(new transport::ManagedConnections);
     asymm::Keys keys;
     keys.identity = RandomString(64);
-  RoutingTable RT(keys, nullptr);
+  RoutingTable RT(keys);
   NodeInfo node;
   // check the node is useful when false is set
   for (unsigned int i = 0; i < kClosestNodesSize ; ++i) {
@@ -89,7 +89,7 @@ TEST(RoutingTableTest, FUNC_AddTooManyNodes) {
 //                               ptr(new transport::ManagedConnections);
     asymm::Keys keys;
     keys.identity = RandomString(64);
-  RoutingTable RT(keys, nullptr);
+  RoutingTable RT(keys);
   for (transport::Port i = 0; RT.Size() < kMaxRoutingTableSize; ++i) {
      NodeInfo node(MakeNode());
      node.endpoint.port = 1501 + i;  // has to be unique
@@ -116,7 +116,7 @@ TEST(RoutingTableTest, BEH_CloseAndInRangeCheck) {
 //                               ptr(new transport::ManagedConnections);
   asymm::Keys keys;
   keys.identity = RandomString(64);
-  RoutingTable RT(keys, nullptr);
+  RoutingTable RT(keys);
   // Add some nodes to RT
   NodeId my_node(keys.identity);
   for (transport::Port i = 0; RT.Size() < kMaxRoutingTableSize; ++i) {
@@ -128,7 +128,6 @@ TEST(RoutingTableTest, BEH_CloseAndInRangeCheck) {
   std::string my_id_encoded(my_node.ToStringEncoded(NodeId::kBinary));
   my_id_encoded[511] = (my_id_encoded[511] == '0' ? '1' : '0');
   NodeId my_closest_node(NodeId(my_id_encoded, NodeId::kBinary));
-
   EXPECT_TRUE(RT.AmIClosestNode(my_closest_node));
   EXPECT_TRUE(RT.IsMyNodeInRange(my_closest_node, 2));
   EXPECT_TRUE(RT.IsMyNodeInRange(my_closest_node, 200));

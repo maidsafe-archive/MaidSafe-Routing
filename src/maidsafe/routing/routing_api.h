@@ -67,6 +67,9 @@ namespace maidsafe {
 
 namespace routing {
 
+class MessageHandler;
+
+
 namespace protobuf { class Message; }
 
 class RoutingTable;
@@ -76,6 +79,7 @@ class Service;
 class Rpcs;
 class Timer;
 class CacheManager;
+class ResponseHandler;
 
 struct Message {
  public:
@@ -114,7 +118,7 @@ class Routing {
                         const asymm::PublicKey &public_key,
                         const transport::Endpoint &endpoint,
                         bool client);
-  boost::signals2::signal<void(int, std::string)> &RequestReceivedSignal();
+  boost::signals2::signal<void(int, std::string)> &MessageReceivedSignal();
   boost::signals2::signal<void(unsigned int)> &NetworkStatusSignal();
   boost::signals2::signal<void(std::string, std::string)>
                                            &CloseNodeReplacedOldNewSignal();
@@ -122,28 +126,17 @@ class Routing {
   Routing(const Routing&);  // no copy
   Routing& operator=(const Routing&);  // no assign
   void Init();
-  bool ReadBootstrapFile();
-  bool WriteBootstrapFile();
   void Join();
   void ReceiveMessage(const std::string &message);
-  void ProcessMessage(protobuf::Message &message);
-  void ProcessPingResponse(protobuf::Message &message);
-  void ProcessConnectResponse(protobuf::Message &message);
-  void ProcessFindNodeResponse(protobuf::Message &message);
-
-
   AsioService asio_service_;
-  fs::path bootstrap_file_;
   std::vector<transport::Endpoint> bootstrap_nodes_;
   asymm::Keys keys_;
   transport::Endpoint node_local_endpoint_;
   transport::Endpoint node_external_endpoint_;
   std::shared_ptr<transport::ManagedConnections> transport_;
   std::shared_ptr<RoutingTable> routing_table_;
-  std::shared_ptr<Rpcs> rpc_ptr_;
-  std::shared_ptr<Service> service_;
   std::shared_ptr<Timer> timer_;
-  std::shared_ptr<CacheManager> cache_manager_;
+  std::shared_ptr<MessageHandler> message_handler_;
   boost::signals2::signal<void(int, std::string)> message_received_signal_;
   boost::signals2::signal<void(unsigned int)> network_status_signal_;
   boost::signals2::signal<void(std::string, std::string)>
@@ -158,7 +151,6 @@ class Routing {
   bool encryption_required_;
   bool client_mode_;
   NodeValidationFunctor node_validation_functor_;
-  boost::system::error_code error_code_;
 };
 
 }  // namespace routing

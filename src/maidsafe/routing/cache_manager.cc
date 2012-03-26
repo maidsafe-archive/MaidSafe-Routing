@@ -19,8 +19,7 @@ namespace maidsafe {
 
 namespace routing {
 
-CacheManager::CacheManager(uint16_t
-cache_size_hint,
+CacheManager::CacheManager(uint16_t cache_size_hint,
                     std::shared_ptr<RoutingTable> routing_table,
                     std::shared_ptr<transport::ManagedConnections> transport)
                     : cache_size_hint_(cache_size_hint),

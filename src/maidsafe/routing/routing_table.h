@@ -51,8 +51,7 @@ struct NodeInfo {
 
 class RoutingTable {
  public:
-  explicit RoutingTable(const asymm::Keys &keys,
-                      std::shared_ptr<transport::ManagedConnections> transport);
+  explicit RoutingTable(const asymm::Keys &keys);
   ~RoutingTable();
   bool AddNode(NodeInfo &node);
   bool CheckNode(NodeInfo &node);
@@ -86,7 +85,6 @@ class RoutingTable {
   const NodeId kNodeId_;
   std::vector<NodeInfo> routing_table_nodes_;
   boost::mutex mutex_;
-  std::shared_ptr<transport::ManagedConnections> transport_;
   boost::signals2::signal<void(std::string, std::string)>
                                                     close_node_from_to_signal_;
 };
