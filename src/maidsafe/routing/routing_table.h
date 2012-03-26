@@ -62,7 +62,6 @@ class RoutingTable {
   std::vector<NodeId> GetClosestNodes(const NodeId &from,
                                       unsigned int number_to_get);
   NodeInfo GetClosestNode(const NodeId &from, unsigned int node_number);
-  void SendOn(protobuf::Message &message);
   unsigned int Size() {
     return static_cast<uint16_t>(routing_table_nodes_.size());
   }

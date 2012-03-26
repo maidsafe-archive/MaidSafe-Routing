@@ -17,14 +17,16 @@
 #include "maidsafe/routing/node_id.h"
 #include "maidsafe/routing/routing.pb.h"
 #include "maidsafe/routing/routing_table.h"
-
+#include "maidsafe/routing/utils.h"
 
 namespace maidsafe {
 
 namespace routing {
 
-Rpcs::Rpcs(std::shared_ptr<RoutingTable> routing_table) :
-    routing_table_(routing_table) {}
+Rpcs::Rpcs(std::shared_ptr<RoutingTable> routing_table,
+           std::shared_ptr<transport::ManagedConnections> transport)
+   :routing_table_(routing_table),
+    transport_(transport) {}
 
 // this is maybe not required and might be removed
 void Rpcs::Ping(const NodeId &node_id) {
@@ -39,7 +41,7 @@ void Rpcs::Ping(const NodeId &node_id) {
   message.set_response(false);
   message.set_replication(1);
   message.set_type(0);
-  routing_table_->SendOn(message);
+  SendOn(message, transport_, routing_table_);
 }
 
 void Rpcs::Connect(const NodeId &node_id,
@@ -62,7 +64,7 @@ void Rpcs::Connect(const NodeId &node_id,
   message.set_replication(1);
   message.set_type(1);
   if (message.IsInitialized()) {
-    routing_table_->SendOn(message);
+    SendOn(message, transport_, routing_table_);
   } else {
     DLOG(ERROR) << "Message not initialised ";
   }
@@ -81,7 +83,7 @@ void Rpcs::FindNodes(const NodeId &node_id) {
   message.set_response(false);
   message.set_replication(1);
   message.set_type(2);
-  routing_table_->SendOn(message);
+  SendOn(message, transport_, routing_table_);
 }
 
 

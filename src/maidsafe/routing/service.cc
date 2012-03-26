@@ -17,6 +17,7 @@
 #include "maidsafe/routing/routing.pb.h"
 #include "maidsafe/routing/routing_table.h"
 #include "maidsafe/routing/rpcs.h"
+#include "maidsafe/routing/utils.h"
 #include "maidsafe/routing/log.h"
 
 namespace maidsafe {
@@ -46,7 +47,7 @@ void Service::Ping(protobuf::Message &message) {
   message.set_data(ping_response.SerializeAsString());
   message.set_destination_id(message.source_id());
   message.set_source_id(routing_table_->kKeys().identity);
-  routing_table_->SendOn(message);
+  SendOn(message, transport_, routing_table_);
 }
 
 void Service::Connect(protobuf::Message &message) {
@@ -97,7 +98,7 @@ void Service::Connect(protobuf::Message &message) {
   message.set_response(true);
   message.set_replication(1);
   message.set_type(1);
-  routing_table_->SendOn(message);
+  SendOn(message, transport_, routing_table_);
 }
 
 void Service::FindNodes(protobuf::Message &message) {
@@ -121,7 +122,7 @@ void Service::FindNodes(protobuf::Message &message) {
   message.set_response(true);
   message.set_replication(1);
   message.set_type(1);
-  routing_table_->SendOn(message);
+  SendOn(message, transport_, routing_table_);
 }
 
 }  // namespace routing

@@ -256,13 +256,6 @@ NodeInfo RoutingTable::GetClosestNode(const NodeId &from,
   return routing_table_nodes_[node_number];
 }
 
-void RoutingTable::SendOn(protobuf::Message& message) {
-  std::string signature;
-  asymm::Sign(message.data(), keys_.private_key, &signature);
-  message.set_signature(signature);
-  NodeInfo next_node(GetClosestNode(NodeId(message.destination_id()), 0));
-// FIXME SEND transport_->Send(next_node.endpoint, message.SerializeAsString());
-}
 
 
 std::vector<NodeId> RoutingTable::GetClosestNodes(const NodeId &from,

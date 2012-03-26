@@ -10,46 +10,29 @@
  *  the explicit written permission of the board of directors of maidsafe.net. *
  ******************************************************************************/
 
-#ifndef MAIDSAFE_ROUTING_RPCS_H_
-#define MAIDSAFE_ROUTING_RPCS_H_
-
-#include <memory>
-#include "maidsafe/common/rsa.h"
 #include "maidsafe/transport/managed_connections.h"
+#include "maidsafe/routing/routing.pb.h"
+#include "maidsafe/routing/routing_table.h"
+
 
 namespace maidsafe {
 
-namespace transport { class ManagedConnections; }
-
 namespace routing {
 
-namespace protobuf { class Message; }
-class Routing;
-class Endpoint;
-class RoutingTable;
-class NodeId;
+void SendOn(protobuf::Message &message,
+            std::shared_ptr<transport::ManagedConnections> transport,
+            std::shared_ptr<RoutingTable> routing_table) {
 
-// Send request to the network
-class Rpcs {
- public:
-  Rpcs(std::shared_ptr<RoutingTable> routing_table,
-       std::shared_ptr<transport::ManagedConnections> transport);
-  void Ping(const NodeId &node_id);
-  void Connect(const NodeId &node_id,
-                const transport::Endpoint &our_endpoint);
-  void FindNodes(const NodeId &node_id);
+  std::string signature;
+  asymm::Sign(message.data(), keys_.private_key, &signature);
+  message.set_signature(signature);
+  NodeInfo next_node(transport->GetClosestNode(NodeId(message.destination_id()),
+                                               0));
+// FIXME SEND transport_->Send(next_node.endpoint, message.SerializeAsString());
 
- private:
-  std::shared_ptr<RoutingTable> routing_table_;
-  std::shared_ptr<transport::ManagedConnections> transport_;
-};
+}
+
 
 }  // namespace routing
 
 }  // namespace maidsafe
-
-#endif  // MAIDSAFE_ROUTING_RPCS_H_
-
-
-
-

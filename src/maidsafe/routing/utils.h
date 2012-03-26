@@ -10,46 +10,28 @@
  *  the explicit written permission of the board of directors of maidsafe.net. *
  ******************************************************************************/
 
-#ifndef MAIDSAFE_ROUTING_RPCS_H_
-#define MAIDSAFE_ROUTING_RPCS_H_
+#ifndef MAIDSAFE_ROUTING_UTILS_H_
+#define MAIDSAFE_ROUTING_UTILS_H_
 
-#include <memory>
+#include "boost/thread/shared_mutex.hpp"
+#include "boost/thread/mutex.hpp"
 #include "maidsafe/common/rsa.h"
 #include "maidsafe/transport/managed_connections.h"
+#include "maidsafe/routing/routing.pb.h"
+#include "maidsafe/routing/node_id.h"
+#include "maidsafe/routing/log.h"
+
 
 namespace maidsafe {
 
-namespace transport { class ManagedConnections; }
-
 namespace routing {
 
-namespace protobuf { class Message; }
-class Routing;
-class Endpoint;
-class RoutingTable;
-class NodeId;
+void SendOn(protobuf::Message &message,
+            std::shared_ptr<transport::ManagedConnections> transport,
+            std::shared_ptr<RoutingTable> routing_table);
 
-// Send request to the network
-class Rpcs {
- public:
-  Rpcs(std::shared_ptr<RoutingTable> routing_table,
-       std::shared_ptr<transport::ManagedConnections> transport);
-  void Ping(const NodeId &node_id);
-  void Connect(const NodeId &node_id,
-                const transport::Endpoint &our_endpoint);
-  void FindNodes(const NodeId &node_id);
-
- private:
-  std::shared_ptr<RoutingTable> routing_table_;
-  std::shared_ptr<transport::ManagedConnections> transport_;
-};
+#endif // MAIDSAFE_ROUTING_UTILS_H_
 
 }  // namespace routing
 
 }  // namespace maidsafe
-
-#endif  // MAIDSAFE_ROUTING_RPCS_H_
-
-
-
-

@@ -26,6 +26,7 @@
 #include "maidsafe/routing/rpcs.h"
 #include "maidsafe/routing/timer.h"
 #include "return_codes.h"
+#include "maidsafe/routing/utils.h"
 
 namespace fs = boost::filesystem;
 namespace bs2 = boost::signals2;
@@ -70,7 +71,7 @@ Routing::Routing(bool client_mode,
       node_external_endpoint_(),
       transport_(new transport::ManagedConnections()),
       routing_table_(new RoutingTable(keys_, transport_)),
-      rpc_ptr_(new Rpcs(routing_table_)),
+      rpc_ptr_(new Rpcs(routing_table_, transport_)),
       service_(),
       timer_(new Timer(asio_service_)),
       message_received_signal_(),
@@ -132,7 +133,7 @@ int Routing::Send(const Message &message,
   proto_message.set_replication(message.replication);
   proto_message.set_type(message.type);
   proto_message.set_routing_failure(false);
-  routing_table_->SendOn(proto_message);
+  SendOn(proto_message, transport_, routing_table_);
   return 0;
 }
 
@@ -292,7 +293,7 @@ void Routing::ProcessMessage(protobuf::Message &message) {
   }
   // is it for us ??
   if (!routing_table_->AmIClosestNode(NodeId(message.destination_id()))) {
-    routing_table_->SendOn(message);
+    SendOn(message, transport_, routing_table_);
     return;
   }   // I am closest
   if (message.type() == 0) {  // ping
@@ -354,7 +355,7 @@ void Routing::ProcessMessage(protobuf::Message &message) {
                                 static_cast<uint16_t>(message.replication()));
   for (auto it = close.begin(); it != close.end(); ++it) {
     message.set_destination_id((*it).String());
-    routing_table_->SendOn(message);
+    SendOn(message, transport_, routing_table_);
   }
 }
 
@@ -417,7 +418,7 @@ bool Routing::GetFromCache(protobuf::Message &message) {
         message.set_source_id(routing_table_->kKeys().identity);
         message.set_direct(true);
         message.set_response(false);
-        routing_table_->SendOn(message);
+        SendOn(message, transport_, routing_table_);
         return true;
       }
   }
