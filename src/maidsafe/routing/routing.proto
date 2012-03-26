@@ -47,6 +47,7 @@ message Message {
   required int32 type = 9; // type of data - used in signal to upper layers with (type, data)
   required bool routing_failure = 10;
   required int32 id = 11;
+  required bool client_node = 12;
 
 }
 

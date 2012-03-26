@@ -35,9 +35,7 @@ class Rpcs {
   Rpcs(std::shared_ptr<RoutingTable> routing_table);
   void Ping(const NodeId &node_id);
   void Connect(const NodeId &node_id,
-                const transport::Endpoint &our_endpoint,
-                bool client,
-                bool bootstrap);
+                const transport::Endpoint &our_endpoint);
   void FindNodes(const NodeId &node_id);
 
  private:

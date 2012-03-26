@@ -43,9 +43,7 @@ void Rpcs::Ping(const NodeId &node_id) {
 }
 
 void Rpcs::Connect(const NodeId &node_id,
-                   const transport::Endpoint &our_endpoint,
-                   bool client,
-                   bool bootstrap) {
+                   const transport::Endpoint &our_endpoint) {
   protobuf::Message message;
   protobuf::Contact *contact;
   protobuf::Endpoint *endpoint;
@@ -55,8 +53,6 @@ void Rpcs::Connect(const NodeId &node_id,
   endpoint->set_ip(our_endpoint.ip.to_string());
   endpoint->set_port(our_endpoint.port);
   contact->set_node_id(routing_table_->kKeys().identity);
-  protobuf_connect_request.set_bootstrap(bootstrap);
-  protobuf_connect_request.set_client(client);
   protobuf_connect_request.set_timestamp(GetTimeStamp());
   message.set_destination_id(node_id.String());
   message.set_source_id(routing_table_->kKeys().identity);
@@ -65,7 +61,11 @@ void Rpcs::Connect(const NodeId &node_id,
   message.set_response(false);
   message.set_replication(1);
   message.set_type(1);
-  routing_table_->SendOn(message);
+  if (message.IsInitialized()) {
+    routing_table_->SendOn(message);
+  } else {
+    DLOG(ERROR) << "Message not initialised ";
+  }
 }
 
 void Rpcs::FindNodes(const NodeId &node_id) {

@@ -69,13 +69,15 @@ void Service::Connect(protobuf::Message &message) {
     node_validation_functor_(routing_table_->kKeys().identity,
                     transport::Endpoint
                     (connect_request.contact().endpoint().ip(),
-                    connect_request.contact().endpoint().port()));
+                    connect_request.contact().endpoint().port()),
+                    message.client_node());
   } else if (routing_table_->CheckNode(node)) {
     connect_response.set_answer(true);
     node_validation_functor_(routing_table_->kKeys().identity,
                     transport::Endpoint
                     (connect_request.contact().endpoint().ip(),
-                    connect_request.contact().endpoint().port()));
+                    connect_request.contact().endpoint().port()),
+                    message.client_node());
   }
   transport::Endpoint our_endpoint(transport_->GetAvailableEndpoint());
   protobuf::Contact *contact;

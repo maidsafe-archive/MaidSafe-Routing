@@ -32,13 +32,13 @@ all returns will come through close nodes mostly unless we allow
 by proxy which I think we may.
 We can detect a client and wrap his message in one of ours
 this can make sure they can only do certain things as well (no accounts/CIH etc.)
-we can register client acceptable messages or vault accptable and allow
+we can register client acceptable messages or node accptable and allow
 clients anything else ?
-if a client or hacker tries to start as a vault ID it will not be unique
+if a client or hacker tries to start as a node ID it will not be unique
   we can use dans signal block to make sure clients only get signalled client stuff
   this will help is we release a public API and soembody tries to get smart
   (help not solve)
-  The node passing the message back knows its a client he is talking to and if the message is a vault
+  The node passing the message back knows its a client he is talking to and if the message is a node
   type he can drop it.
 */
 
@@ -90,15 +90,15 @@ struct Message {
   int32_t replication;
 };
 
-typedef std::function<void(int, std::string)> ResponseReceivedFunctor;
-typedef std::function<void(const std::string,const transport::Endpoint)>
-                                                        NodeValidationFunctor;
-
+typedef std::function<void(int /*message type*/,
+                           std::string /*message*/ )> ResponseReceivedFunctor;
+typedef std::function<void(const std::string& /*node Id*/ ,
+                           const transport::Endpoint& /*Node endpoint */,
+                           const bool)/*client ? */>  NodeValidationFunctor;
 
 class Routing {
  public:
-  enum NodeType { kVault, kClient };
-  Routing(NodeType node_type,
+  Routing(bool client_mode,
           const asymm::Keys &keys,
           bool encryption_required);
   ~Routing();
@@ -106,11 +106,13 @@ class Routing {
   int Send(const Message &message,
             const ResponseReceivedFunctor response_functor);
   // this object will not start unless this functor is set !!
+  // this functor MUST call ValideThisNode with result
   void setNodeValidationFunctor(NodeValidationFunctor &node_validation_functor);
   // on completion of above functor this method MUST be passed the results
   void ValidateThisNode(const std::string &node_id,
                         const asymm::PublicKey &public_key,
-                        const transport::Endpoint &endpoint);
+                        const transport::Endpoint &endpoint,
+                        bool client);
   boost::signals2::signal<void(int, std::string)> &RequestReceivedSignal();
   boost::signals2::signal<void(unsigned int)> &NetworkStatusSignal();
   boost::signals2::signal<void(std::string, std::string)>
@@ -149,10 +151,12 @@ class Routing {
 
   std::map<uint32_t, std::pair<std::shared_ptr<boost::asio::deadline_timer>,
                               ResponseReceivedFunctor> > waiting_for_response_;
-  std::vector<NodeInfo> client_connections_;
+  std::vector<NodeInfo> client_connections_;  // hold connections to clients only
+  std::vector<NodeInfo> client_routing_table_;  // when node is client this is
+  // closest nodes to the client.
   bool joined_;
   bool encryption_required_;
-  Routing::NodeType node_type_;
+  bool client_mode_;
   NodeValidationFunctor node_validation_functor_;
   boost::system::error_code error_code_;
 };

@@ -59,7 +59,7 @@ Message::Message(const protobuf::Message &protobuf_message)
       direct(protobuf_message.direct()),
       replication(protobuf_message.replication()) {}
 
-Routing::Routing(NodeType node_type,
+Routing::Routing(bool client_mode,
                  const asymm::Keys &keys,
                  bool encryption_required)
     : asio_service_(),
@@ -80,21 +80,13 @@ Routing::Routing(NodeType node_type,
       cache_chunks_(),
       waiting_for_response_(),
       client_connections_(),
+      client_routing_table_(),
       joined_(false),
       encryption_required_(encryption_required),
-      node_type_(node_type),
+      client_mode_(client_mode),
       node_validation_functor_(),
       error_code_() {
   Init();
-}
-
-void Routing::setNodeValidationFunctor(NodeValidationFunctor
-                                       &node_validation_functor) {
-  if (!node_validation_functor) {
-    DLOG(ERROR) << "Invalid node_validation_functor passed ";
-    return;
-  }
-  node_validation_functor_ = node_validation_functor;
 }
 
 // drop existing routing table and restart
@@ -144,6 +136,36 @@ int Routing::Send(const Message &message,
   return 0;
 }
 
+void Routing::setNodeValidationFunctor(NodeValidationFunctor
+                                       &node_validation_functor) {
+  if (!node_validation_functor) {
+    DLOG(ERROR) << "Invalid node_validation_functor passed ";
+    return;
+  }
+  node_validation_functor_ = node_validation_functor;
+}
+
+void Routing::ValidateThisNode(const std::string &node_id,
+                               const asymm::PublicKey &public_key,
+                               const transport::Endpoint &endpoint,
+                               bool client) {
+  NodeInfo node_info;
+  node_info.node_id =NodeId(node_id);
+  node_info.public_key = public_key;
+  node_info.endpoint = endpoint;
+  if (client) {
+    client_connections_.push_back(node_info);
+  } else {
+    transport_->Add(endpoint, node_id);
+    routing_table_->AddNode(node_info);
+    if (bootstrap_nodes_.size() > 1000) {
+    bootstrap_nodes_.erase(bootstrap_nodes_.begin());
+    }
+    bootstrap_nodes_.push_back(endpoint);
+    WriteBootstrapFile();
+  }
+}
+
 void Routing::Init() {
   if (!node_validation_functor_) {
     DLOG(ERROR) << "Invalid node_validation_functor passed: Aborted start";
@@ -154,6 +176,7 @@ void Routing::Init() {
                              transport_));
   asio_service_.Start(5);
   node_local_endpoint_ = transport_->GetAvailableEndpoint();
+  // TODO(dirvine) connect transport signals !!
   LOG(INFO) << " Local IP address : " << node_local_endpoint_.ip.to_string();
   LOG(INFO) << " Local Port       : " << node_local_endpoint_.port;
   Join();
@@ -360,7 +383,7 @@ void Routing::ProcessConnectResponse(protobuf::Message& message) {
   endpoint.ip.from_string(connect_response.contact().endpoint().ip());
   endpoint.port = connect_response.contact().endpoint().port();
   node_validation_functor_(connect_response.contact().node_id(),
-                           endpoint);
+                           endpoint, message.client_node());
 }
 
 void Routing::ProcessFindNodeResponse(protobuf::Message& message) {
@@ -380,27 +403,9 @@ void Routing::ProcessFindNodeResponse(protobuf::Message& message) {
     node_to_add.node_id = NodeId(find_nodes.nodes(i));
     if (routing_table_->CheckNode(node_to_add)) {
       rpc_ptr_->Connect(NodeId(find_nodes.nodes(i)),
-                               transport_->GetAvailableEndpoint(),
-                               kClient ? true : false,
-                               false);
+                               transport_->GetAvailableEndpoint());
     }
   }
-}
-
-void Routing::ValidateThisNode(const std::string &node_id,
-                               const asymm::PublicKey &public_key,
-                               const transport::Endpoint &endpoint) {
-  NodeInfo node_info;
-  node_info.node_id =NodeId(node_id);
-  node_info.public_key = public_key;
-  node_info.endpoint = endpoint;
-  transport_->Add(endpoint, node_id);
-  routing_table_->AddNode(node_info);
-  if (bootstrap_nodes_.size() > 1000) {
-  bootstrap_nodes_.erase(bootstrap_nodes_.begin());
-  }
-  bootstrap_nodes_.push_back(endpoint);
-  WriteBootstrapFile();
 }
 
 bool Routing::GetFromCache(protobuf::Message &message) {
