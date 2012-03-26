@@ -75,6 +75,7 @@ class NodeInfo;
 class Service;
 class Rpcs;
 class Timer;
+class CacheManager;
 
 struct Message {
  public:
@@ -129,8 +130,8 @@ class Routing {
   void ProcessPingResponse(protobuf::Message &message);
   void ProcessConnectResponse(protobuf::Message &message);
   void ProcessFindNodeResponse(protobuf::Message &message);
-  void AddToCache(const protobuf::Message &message);
-  bool GetFromCache(protobuf::Message &message);
+
+
   AsioService asio_service_;
   fs::path bootstrap_file_;
   std::vector<transport::Endpoint> bootstrap_nodes_;
@@ -142,12 +143,11 @@ class Routing {
   std::shared_ptr<Rpcs> rpc_ptr_;
   std::shared_ptr<Service> service_;
   std::shared_ptr<Timer> timer_;
+  std::shared_ptr<CacheManager> cache_manager_;
   boost::signals2::signal<void(int, std::string)> message_received_signal_;
   boost::signals2::signal<void(unsigned int)> network_status_signal_;
   boost::signals2::signal<void(std::string, std::string)>
                                                     close_node_from_to_signal_;
-  unsigned int cache_size_hint_;
-  std::vector<std::pair<std::string, std::string>> cache_chunks_;
 
   std::map<uint32_t, std::pair<std::shared_ptr<boost::asio::deadline_timer>,
                               ResponseReceivedFunctor> > waiting_for_response_;

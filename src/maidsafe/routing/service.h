@@ -39,7 +39,6 @@ class Service {
   NodeValidationFunctor node_validation_functor_;
   std::shared_ptr<RoutingTable> routing_table_;
   std::shared_ptr<transport::ManagedConnections> transport_;
-
 };
 
 }  // namespace routing

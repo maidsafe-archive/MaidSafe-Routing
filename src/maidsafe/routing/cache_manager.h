@@ -10,28 +10,42 @@
  *  the explicit written permission of the board of directors of maidsafe.net. *
  ******************************************************************************/
 
+#ifndef MAIDSAFE_ROUTING_CACHE_MANAGER_H_
+#define MAIDSAFE_ROUTING_CACHE_MANAGER_H_
+
+#include "boost/thread/shared_mutex.hpp"
+#include "boost/thread/mutex.hpp"
+#include "maidsafe/common/rsa.h"
 #include "maidsafe/transport/managed_connections.h"
 #include "maidsafe/routing/routing.pb.h"
-#include "maidsafe/routing/routing_table.h"
 #include "maidsafe/routing/node_id.h"
+#include "maidsafe/routing/log.h"
+
 
 namespace maidsafe {
 
 namespace routing {
 
-void SendOn(protobuf::Message &message,
-            std::shared_ptr<transport::ManagedConnections> transport,
-            std::shared_ptr<RoutingTable> routing_table) {
+class CacheManager {
+ public:
+  CacheManager(const uint16_t cache_size_hint,
+               std::shared_ptr<RoutingTable> routing_table,
+               std::shared_ptr<transport::ManagedConnections> transport);
+  void AddToCache(const protobuf::Message &message);
+  bool GetFromCache(protobuf::Message &message);
+ private:
+  CacheManager(const CacheManager&);  // no copy
+  CacheManager& operator=(const CacheManager&);  // no assign
+  size_t cache_size_hint_;
+  std::vector<std::pair<std::string, std::string> > cache_chunks_;
+  std::shared_ptr<transport::ManagedConnections> transport_;
+  std::shared_ptr<RoutingTable> routing_table_;
+};
 
-  std::string signature;
-  asymm::Sign(message.data(), routing_table->kKeys().private_key, &signature);
-  message.set_signature(signature);
-  NodeInfo next_node(routing_table->GetClosestNode(NodeId(message.destination_id()),
-                                               0));
-// FIXME SEND transport_->Send(next_node.endpoint, message.SerializeAsString());
 
-}
 
+
+#endif // MAIDSAFE_ROUTING_CACHE_MANAGER_H_
 
 }  // namespace routing
 

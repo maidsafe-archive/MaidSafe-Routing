@@ -27,6 +27,7 @@
 #include "maidsafe/routing/timer.h"
 #include "return_codes.h"
 #include "maidsafe/routing/utils.h"
+#include "maidsafe/routing/cache_manager.h"
 
 namespace fs = boost::filesystem;
 namespace bs2 = boost::signals2;
@@ -36,7 +37,7 @@ namespace maidsafe {
 namespace routing {
 
 namespace {
-const unsigned int kNumChunksToCache(100);
+const uint16_t kNumChunksToCache(100);
 const unsigned int kTimoutInSeconds(5);
 }
 
@@ -74,11 +75,12 @@ Routing::Routing(bool client_mode,
       rpc_ptr_(new Rpcs(routing_table_, transport_)),
       service_(),
       timer_(new Timer(asio_service_)),
+      cache_manager_(new CacheManager(kNumChunksToCache,
+                                      routing_table_,
+                                      transport_)),
       message_received_signal_(),
       network_status_signal_(),
       close_node_from_to_signal_(),
-      cache_size_hint_(kNumChunksToCache),
-      cache_chunks_(),
       waiting_for_response_(),
       client_connections_(),
       client_routing_table_(),
@@ -285,9 +287,9 @@ void Routing::ProcessMessage(protobuf::Message &message) {
   // handle cache data
   if (message.has_cacheable() && message.cacheable()) {
     if (message.response()) {
-      AddToCache(message);
+      cache_manager_->AddToCache(message);
      } else  {  // request
-       if (GetFromCache(message))
+       if (cache_manager_->GetFromCache(message))
          return;// this operation sends back the message
      }
   }
@@ -406,41 +408,6 @@ void Routing::ProcessFindNodeResponse(protobuf::Message& message) {
       rpc_ptr_->Connect(NodeId(find_nodes.nodes(i)),
                                transport_->GetAvailableEndpoint());
     }
-  }
-}
-
-bool Routing::GetFromCache(protobuf::Message &message) {
-  for (auto it = cache_chunks_.begin(); it != cache_chunks_.end(); ++it) {
-      if ((*it).first == message.source_id()) {
-        message.set_destination_id(message.source_id());
-        message.set_cacheable(true);
-        message.set_data((*it).second);
-        message.set_source_id(routing_table_->kKeys().identity);
-        message.set_direct(true);
-        message.set_response(false);
-        SendOn(message, transport_, routing_table_);
-        return true;
-      }
-  }
-  return false;
-}
-
-void Routing::AddToCache(const protobuf::Message &message) {
-  std::pair<std::string, std::string> data;
-  try {
-    // check data is valid TODO FIXME - ask CAA
-    if (crypto::Hash<crypto::SHA512>(message.data()) != message.source_id())
-      return;
-    data = std::make_pair(message.source_id(), message.data());
-    cache_chunks_.push_back(data);
-    while (cache_chunks_.size() > cache_size_hint_)
-      cache_chunks_.erase(cache_chunks_.begin());
-  }
-  catch(const std::exception &/*e*/) {
-    // oohps reduce cache size quickly
-    cache_size_hint_ = cache_size_hint_ / 2;
-    while (cache_chunks_.size() > cache_size_hint_)
-      cache_chunks_.erase(cache_chunks_.begin()+1);
   }
 }
 
