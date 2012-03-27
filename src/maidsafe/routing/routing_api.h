@@ -89,14 +89,17 @@ typedef std::function<void(const std::string& /*node Id*/ ,
 class Routing {
  public:
   Routing(bool client_mode,
-          const asymm::Keys &keys,
-          bool encryption_required);
+          const asymm::Keys &keys);
   ~Routing();
   /****************************************************************************
   *To force the node to use a specific endpoint for bootstrapping             *
   *(i.e. private network)                                                     *
   *****************************************************************************/
   void BootStrapFromThisEndpoint(const maidsafe::transport::Endpoint& endpoint);
+   /***************************************************************************
+   *Set routing layer encryption on all messages (uses keys you pass)         *
+   * *************************************************************************/
+  bool setEncryption(bool encryption_required);
   /****************************************************************************
    *Used to set location of config files - Default "MaidSafe"                 *
    *Cannot be empty string !!                                                 *
@@ -193,8 +196,6 @@ class Routing {
   std::vector<NodeInfo> client_routing_table_;  // when node is client this is
   // closest nodes to the client.
   bool joined_;
-  bool encryption_required_;
-  bool client_mode_;
   NodeValidationFunctor node_validation_functor_;
 };
 

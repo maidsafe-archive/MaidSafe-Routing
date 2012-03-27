@@ -55,8 +55,7 @@ Message::Message(const protobuf::Message &protobuf_message)
       replication(protobuf_message.replication()) {}
 
 Routing::Routing(bool client_mode,
-                 const asymm::Keys &keys,
-                 bool encryption_required)
+                 const asymm::Keys &keys)
     : asio_service_(),
       bootstrap_nodes_(),
       keys_(keys),
@@ -72,12 +71,9 @@ Routing::Routing(bool client_mode,
       client_connections_(),
       client_routing_table_(),
       joined_(false),
-      encryption_required_(encryption_required),
-      client_mode_(client_mode),
       node_validation_functor_()
 {
   Parameters::client_mode = client_mode;
-  Parameters::encryption_required = encryption_required;
   Init();
 }
 
@@ -96,6 +92,10 @@ void Routing::BootStrapFromThisEndpoint(const transport::Endpoint
   bootstrap_nodes_.clear();
   bootstrap_nodes_.push_back(endpoint);
   asio_service_.service().post(std::bind(&Routing::Join, this));
+}
+
+bool Routing::setEncryption(bool encryption_required) {
+  Parameters::encryption_required = encryption_required;
 }
 
 bool Routing::setCompanyName(const std::string &company) const {
