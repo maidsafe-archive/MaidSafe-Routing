@@ -62,7 +62,7 @@ boost::signals2::signal<void(int, std::string)>
 }
 
 bool MessageHandler::CheckCacheData(protobuf::Message &message) {
-  if (message.cacheable()) {
+  if (message.type() == 100) {
     if (message.response()) {
       cache_manager_.AddToCache(message);
      } else  {  // request

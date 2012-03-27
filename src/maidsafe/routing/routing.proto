@@ -38,16 +38,15 @@ message Bootstrap {
 message Message {
   required bytes source_id = 1; // in response this is name of data
   required bytes destination_id = 2;
-  required bool cacheable = 3;
-  required bytes data = 4; // serialised protobuf - possibly encrypted
-  required bytes signature = 5;
-  required bool direct = 6;
-  required bool response = 7;
-  required int32 replication = 8;
-  required int32 type = 9; // type of data - used in signal to upper layers with (type, data)
-  required bool routing_failure = 10;
-  required int32 id = 11;
-  required bool client_node = 12;
+  required bytes data = 3; // serialised protobuf - possibly encrypted
+  required bytes signature = 4;
+  required bool direct = 5;
+  required bool response = 6;
+  required int32 replication = 7;
+  required int32 type = 8; // type of data - used in signal to upper layers with (type, data)
+  required bool routing_failure = 9;
+  required int32 id = 10;
+  required bool client_node = 11;
 
 }
 

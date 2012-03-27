@@ -18,7 +18,8 @@
 #include "maidsafe/routing/node_id.h"
 #include "maidsafe/routing/routing_table.h"
 #include "maidsafe/routing/timer.h"
-#include "return_codes.h"
+#include "maidsafe/routing/bootstrap_file_handler.h"
+#include "maidsafe/routing/return_codes.h"
 #include "maidsafe/routing/utils.h"
 #include "maidsafe/routing/message_handler.h"
 #include "maidsafe/routing/parameters.h"
@@ -41,7 +42,6 @@ Message::Message()
       destination_id(),
       data(),
       timeout(kTimoutInSeconds),
-      cacheable(false),
       direct(false),
       replication(1) {}
 
@@ -50,12 +50,11 @@ Message::Message(const protobuf::Message &protobuf_message)
       source_id(protobuf_message.source_id()),
       destination_id(protobuf_message.destination_id()),
       data(protobuf_message.data()),
-      cacheable(protobuf_message.cacheable()),
+      timeout(kTimoutInSeconds),
       direct(protobuf_message.direct()),
       replication(protobuf_message.replication()) {}
 
-Routing::Routing(bool client_mode,
-                 const asymm::Keys &keys)
+Routing::Routing(const asymm::Keys &keys)
     : asio_service_(),
       bootstrap_nodes_(),
       keys_(keys),
@@ -64,6 +63,7 @@ Routing::Routing(bool client_mode,
       transport_(new transport::ManagedConnections()),
       routing_table_(new RoutingTable(keys_)),
       timer_(new Timer(asio_service_)),
+      message_handler_(),
       message_received_signal_(),
       network_status_signal_(),
       close_node_from_to_signal_(),
@@ -73,7 +73,30 @@ Routing::Routing(bool client_mode,
       joined_(false),
       node_validation_functor_()
 {
-  Parameters::client_mode = client_mode;
+  Parameters::client_mode = false;
+  Init();
+}
+
+Routing::Routing()
+    : asio_service_(),
+      bootstrap_nodes_(),
+      keys_(),
+      node_local_endpoint_(),
+      node_external_endpoint_(),
+      transport_(new transport::ManagedConnections()),
+      routing_table_(new RoutingTable(keys_)),
+      timer_(new Timer(asio_service_)),
+      message_handler_(),
+      message_received_signal_(),
+      network_status_signal_(),
+      close_node_from_to_signal_(),
+      waiting_for_response_(),
+      client_connections_(),
+      client_routing_table_(),
+      joined_(false),
+      node_validation_functor_()
+{
+  Parameters::client_mode = true;
   Init();
 }
 
@@ -94,44 +117,51 @@ void Routing::BootStrapFromThisEndpoint(const transport::Endpoint
   asio_service_.service().post(std::bind(&Routing::Join, this));
 }
 
-bool Routing::setEncryption(bool encryption_required) {
-  Parameters::encryption_required = encryption_required;
+bool Routing::SetEncryption(bool encryption_required) {
+  return (Parameters::encryption_required = encryption_required);
 }
 
-bool Routing::setCompanyName(const std::string &company) const {
-  if (company.empty())
+bool Routing::SetCompanyName(const std::string &company) const {
+  if (company.empty()) {
+    DLOG(ERROR) << "tried to set empty company name";
     return false;
+  }
   Parameters::company_name = company;
-  return true;
+  return (Parameters::company_name == company);
 }
 
-bool Routing::setApplicationName(const std::string &application_name) const {
-  if(application_name.empty())
+bool Routing::SetApplicationName(const std::string &application_name) const {
+  if(application_name.empty()) {
+    DLOG(ERROR) << "tried to set empty application name";
     return false;
+  }
   Parameters::application_name = application_name;
-  return true;
+  return (Parameters::application_name == application_name);
+
 }
 
-bool Routing::setBoostrapFilePath(const boost::filesystem3::path &path) const {
-  if (path.empty())
+bool Routing::SetBoostrapFilePath(const boost::filesystem3::path &path) const {
+  if (path.empty()) {
+    DLOG(ERROR) << "tried to set empty bootstrap file path";
     return false;
+  }
   Parameters::bootstrap_file_path = path;
-  return true;
+  return (Parameters::bootstrap_file_path == path);
 }
 
 int Routing::Send(const Message &message,
                    const MessageReceivedFunctor response_functor) {
   if (message.destination_id.empty()) {
     DLOG(ERROR) << "No destination id, aborted send";
-    return 1;
+    return kInvalidDestinatinId;
   }
-  if (message.data.empty()) {
+  if (message.data.empty() && (message.type != 100)) {
     DLOG(ERROR) << "No data, aborted send";
-    return 2;
+    return kEmptyData;
   }
   if (message.type < 100) {
     DLOG(ERROR) << "Attempt to use Reserved message type (<100), aborted send";
-    return 3;
+    return kInvalidType;
   }
   uint32_t message_unique_id =  timer_->AddTask(message.timeout,
                                                 response_functor);
@@ -139,7 +169,6 @@ int Routing::Send(const Message &message,
   proto_message.set_id(message_unique_id);
   proto_message.set_source_id(routing_table_->kKeys().identity);
   proto_message.set_destination_id(message.destination_id);
-  proto_message.set_cacheable(message.cacheable);
   proto_message.set_data(message.data);
   proto_message.set_direct(message.direct);
   proto_message.set_replication(message.replication);
@@ -149,7 +178,7 @@ int Routing::Send(const Message &message,
   return 0;
 }
 
-void Routing::setNodeValidationFunctor(NodeValidationFunctor
+void Routing::SetNodeValidationFunctor(NodeValidationFunctor
                                        &node_validation_functor) {
   if (!node_validation_functor) {
     DLOG(ERROR) << "Invalid node_validation_functor passed ";
@@ -175,7 +204,8 @@ void Routing::ValidateThisNode(const std::string &node_id,
     bootstrap_nodes_.erase(bootstrap_nodes_.begin());
     }
     bootstrap_nodes_.push_back(endpoint);
-    WriteBootstrapFile(bootstrap_nodes_);
+    BootStrapFile bfile;
+    bfile.WriteBootstrapFile(bootstrap_nodes_);
   }
 }
 

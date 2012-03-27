@@ -52,7 +52,6 @@ bool CacheManager::GetFromCache(protobuf::Message &message) {
     for (auto it = cache_chunks_.begin(); it != cache_chunks_.end(); ++it) {
       if ((*it).first == message.source_id()) {
         message.set_destination_id(message.source_id());
-        message.set_cacheable(true);
         message.set_data((*it).second);
         message.set_source_id(routing_table_->kKeys().identity);
         message.set_direct(true);

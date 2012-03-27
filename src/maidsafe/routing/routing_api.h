@@ -58,22 +58,28 @@ namespace protobuf { class Message; }
 class RoutingTable;
 class NodeId;
 class NodeInfo;
-class Service;
-class Rpcs;
 class Timer;
-class CacheManager;
-class ResponseHandler;
+
+// Send method return codes
+enum SendErrors {
+  kInvalidDestinatinId = -1,
+  kInvalidSourceId = -2,
+  kInvalidType = -3,
+  kEmptyData = -4
+};
 
 struct Message {
  public:
   Message();
   explicit Message(const protobuf::Message &protobuf_message);
-  int32_t type;
+  int32_t type;  // message type identifier
+                 // if type == 100 then this is cachable data
+                 // Data field must then contain serialised data only
+                 // cachable data must hash (sha512) to content
   std::string source_id;  // your id
-  std::string destination_id;  //id of final destination or address
-  std::string data;  // message content (serialised)
+  std::string destination_id;  //id of final destination
+  std::string data;  // message content (serialised data)
   uint16_t timeout;  // in seconds
-  bool cacheable;  // can this data be cached as is
   bool direct;  // is this to a close node group or direct
   int32_t replication;
 };
@@ -88,8 +94,8 @@ typedef std::function<void(const std::string& /*node Id*/ ,
 
 class Routing {
  public:
-  Routing(bool client_mode,
-          const asymm::Keys &keys);
+  explicit Routing(const asymm::Keys &keys);  // Full node
+  Routing();  // Client mode only
   ~Routing();
   /****************************************************************************
   *To force the node to use a specific endpoint for bootstrapping             *
@@ -99,17 +105,17 @@ class Routing {
    /***************************************************************************
    *Set routing layer encryption on all messages (uses keys you pass)         *
    * *************************************************************************/
-  bool setEncryption(bool encryption_required);
+  bool SetEncryption(bool encryption_required);
   /****************************************************************************
    *Used to set location of config files - Default "MaidSafe"                 *
    *Cannot be empty string !!                                                 *
    * *************************************************************************/
-  bool setCompanyName(const std::string &company) const;
+  bool SetCompanyName(const std::string &company) const;
    /***************************************************************************
    *Used to set location of config files - Default "Routing"                  *
    *Cannot be empty string !!                                                 *
    * *************************************************************************/
-  bool setApplicationName(const std::string &application_name) const;
+  bool SetApplicationName(const std::string &application_name) const;
   /****************************************************************************
    *Defaults are local file called bootstrap.endpoints or will use operating  *
    * system application cache directories for multi user then single user     *
@@ -126,7 +132,7 @@ class Routing {
    * /var/cache/<company_name>/<application_name>/bootstrap.endpoints         *
    * Cannot be empty string !!, RECOMMEND THIS IS NOT ALTERED                 *
    * **************************************************************************/
-  bool setBoostrapFilePath(const boost::filesystem::path &path) const;
+  bool SetBoostrapFilePath(const boost::filesystem::path &path) const;
   /****************************************************************************
   *The reply or error (timeout) will be passed to this response_functor       *
   *error is passed as negative int (return code) and empty string             *
@@ -138,7 +144,7 @@ class Routing {
   *this object will not start unless this functor is set !!                   *
   *this functor MUST call ValideThisNode with result                          *
   ****************************************************************************/
-  void setNodeValidationFunctor(NodeValidationFunctor &node_validation_functor);
+  void SetNodeValidationFunctor(NodeValidationFunctor &node_validation_functor);
   /***************************************************************************
    * on completion of above functor this method MUST be passed the results   *
    **************************************************************************/

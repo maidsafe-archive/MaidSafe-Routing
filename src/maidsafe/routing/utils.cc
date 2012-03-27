@@ -36,66 +36,7 @@ void SendOn(protobuf::Message &message,
 
 }
 
-std::vector<transport::Endpoint> ReadBootstrapFile() {
-  protobuf::ConfigFile protobuf_config;
-  protobuf::Bootstrap protobuf_bootstrap;
-  std::vector<transport::Endpoint> bootstrap_nodes;
-  fs::path config_file("routing_config_file");  //TODO(dirvine) get correct location
 
-  if (!fs::exists(config_file) || (!fs::is_regular_file(config_file))) {
-      DLOG(ERROR) << "Cannot read config file " /*<<
-        ec.category().name()*/ << config_file;
-   return bootstrap_nodes;
-  }
-
-  fs::ifstream config_file_stream;
-  try {
-    config_file_stream.open(config_file);
-  } catch (const boost::filesystem::filesystem_error & ex) {
-    DLOG(ERROR) << "Cannot read file stream " << config_file.string() ;
-    return bootstrap_nodes;
-  }
-
-  if (!protobuf_config.ParseFromIstream(&config_file_stream)) {
-    DLOG(ERROR) << "Cannot parse from file stream" ;
-    return bootstrap_nodes;
-  }
-
-  transport::Endpoint endpoint;
-  for (int i = 0; i != protobuf_bootstrap.bootstrap_contacts().size(); ++i) {
-    endpoint.ip.from_string(protobuf_bootstrap.bootstrap_contacts(i).ip());
-    endpoint.port= protobuf_bootstrap.bootstrap_contacts(i).port();
-    bootstrap_nodes.push_back(endpoint);
-  }
-  return  bootstrap_nodes;
-}
-
-bool WriteBootstrapFile(const std::vector<transport::Endpoint> &endpoints) {
-  protobuf::Bootstrap protobuf_bootstrap;
-  fs::path config_file("routing_config_file");  //TODO(dirvine) get correct location
-
-  if (!fs::exists(config_file) ||
-      !fs::is_regular_file(config_file)) {
-      DLOG(ERROR) << "Cannot read config file " /*<<
-        error_code_.category().name()*/ << config_file;
-   return false;
-  }
-
-  fs::ofstream config_file_stream;
-  try {
-    config_file_stream.open(config_file);
-  } catch (const boost::filesystem::filesystem_error & ex) {
-    DLOG(ERROR) << "Cannot read file stream " << config_file.string() ;
-    return false;
-  }
-
-  for (size_t i = 0; i < endpoints.size(); ++i) {
-    protobuf::Endpoint *endpoint = protobuf_bootstrap.add_bootstrap_contacts();
-    endpoint->set_ip(endpoints[i].ip.to_string());
-    endpoint->set_port(endpoints[i].port);
-  }
-  return protobuf_bootstrap.SerializeToOstream(&config_file_stream);
-}
 
 
 }  // namespace routing

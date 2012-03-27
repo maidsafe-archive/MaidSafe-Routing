@@ -30,11 +30,11 @@ void SendOn(protobuf::Message &message,
             std::shared_ptr<transport::ManagedConnections> transport,
             std::shared_ptr<RoutingTable> routing_table);
 
-bool ReadBootstrapFile();
-bool WriteBootstrapFile(const std::vector<transport::Endpoint> &endpoints);
 
-#endif // MAIDSAFE_ROUTING_UTILS_H_
+
 
 }  // namespace routing
 
 }  // namespace maidsafe
+
+#endif // MAIDSAFE_ROUTING_UTILS_H_

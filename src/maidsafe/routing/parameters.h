@@ -13,7 +13,7 @@
 #ifndef MAIDSAFE_ROUTING_PARAMETERS_H_
 #define MAIDSAFE_ROUTING_PARAMETERS_H_
 
-#include "boost/filesystem.hpp"
+#include "boost/filesystem/path.hpp"
 
 namespace maidsafe {
 
@@ -25,10 +25,10 @@ struct Parameters {
   static bool client_mode;
   // fully encrypt all data at routing level in both directions
   static bool encryption_required;
-  static std::string &company_name;
-  static std::string &application_name;
+  static std::string company_name;
+  static std::string application_name;
   // path including filename of config file
-  static boost::filesystem::path &bootstrap_file_path;
+  static boost::filesystem::path bootstrap_file_path;
  private:
   Parameters(const Parameters&);  // no copy
   Parameters& operator=(const Parameters&);  // no assign

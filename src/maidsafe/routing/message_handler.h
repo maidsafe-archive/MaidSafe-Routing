@@ -40,7 +40,6 @@ public:
                  std::shared_ptr<transport::ManagedConnections> transport,
                  std::shared_ptr<Timer> timer_ptr);
   ~MessageHandler();
-
   void ProcessMessage(protobuf::Message &message);
   void ProcessDirectMessage(protobuf::Message &message);
   void ProcessCloseNodesMessage(protobuf::Message &message);
