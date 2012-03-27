@@ -28,9 +28,8 @@ namespace routing {
 
 class CacheManager {
  public:
-  CacheManager(const uint16_t cache_size_hint,
-               std::shared_ptr<RoutingTable> routing_table,
-               std::shared_ptr<transport::ManagedConnections> transport);
+  CacheManager(std::shared_ptr<RoutingTable> routing_table,
+               transport::ManagedConnections &transport);
   void AddToCache(const protobuf::Message &message);
   bool GetFromCache(protobuf::Message &message);
  private:
@@ -38,7 +37,7 @@ class CacheManager {
   CacheManager& operator=(const CacheManager&);  // no assign
   size_t cache_size_hint_;
   std::vector<std::pair<std::string, std::string> > cache_chunks_;
-  std::shared_ptr<transport::ManagedConnections> transport_;
+  transport::ManagedConnections &transport_;
   std::shared_ptr<RoutingTable> routing_table_;
 };
 

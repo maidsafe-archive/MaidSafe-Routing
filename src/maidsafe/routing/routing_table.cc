@@ -15,6 +15,7 @@
 #include "boost/thread/locks.hpp"
 #include "boost/assert.hpp"
 #include "maidsafe/transport/managed_connections.h"
+#include "maidsafe/routing/parameters.h"
 #include "maidsafe/routing/routing_table.h"
 #include "maidsafe/routing/routing_api.h"
 #include "maidsafe/routing/node_id.h"
@@ -22,12 +23,6 @@
 
 namespace maidsafe {
 namespace routing {
-
-namespace {
-const unsigned int kClosestNodesSize(8);
-const unsigned int kMaxRoutingTableSize(64);
-const unsigned int kBucketTargetSize(1);
-}
 
 RoutingTable::RoutingTable(const asymm::Keys &keys)
     : keys_(keys),
@@ -46,11 +41,6 @@ RoutingTable::~RoutingTable() {
 bs2::signal<void(std::string, std::string)>
                             &RoutingTable::CloseNodeReplacedOldNewSignal() {
   return close_node_from_to_signal_;
-}
-
-
-unsigned int RoutingTable::ClosestNodesSize() {
-  return kClosestNodesSize;
 }
 
 bool RoutingTable::CheckNode(NodeInfo& node) {
@@ -88,8 +78,10 @@ bool RoutingTable::AddOrCheckNode(maidsafe::routing::NodeInfo& node,
 bool RoutingTable::DropNode(const transport::Endpoint &endpoint) {
     for (auto it = routing_table_nodes_.begin();
          it != routing_table_nodes_.end(); ++it) {
-
        if((*it).endpoint ==  endpoint) {
+         if (IsMyNodeInRange((*it).node_id, Parameters::closest_nodes_size) {
+           //TODO(dirvine) send find_nodes (to me) RPC
+         }
           routing_table_nodes_.erase(it);
           return true;
        }
@@ -161,15 +153,15 @@ bool RoutingTable::MakeSpaceForNodeToBeAdded(maidsafe::routing::NodeInfo& node,
     return false;
   }
 
-  if (Size() < kMaxRoutingTableSize)
+  if (Size() < Parameters::max_routing_table_size)
     return true;
 
   SortFromThisNode(kNodeId_);
   NodeInfo furthest_close_node =
-           routing_table_nodes_[kClosestNodesSize];
+           routing_table_nodes_[Parameters::closest_nodes_size];
   auto not_found = routing_table_nodes_.end();
   auto furthest_close_node_iter =
-       routing_table_nodes_.begin() + kClosestNodesSize;
+       routing_table_nodes_.begin() + Parameters::closest_nodes_size;
 
   if ((furthest_close_node.node_id ^ kNodeId_) >
      (kNodeId_ ^ node.node_id)) {
@@ -190,12 +182,12 @@ bool RoutingTable::MakeSpaceForNodeToBeAdded(maidsafe::routing::NodeInfo& node,
       return false;
     }
     // safety net
-    if ((not_found - it) < (kBucketTargetSize + 1)) {
+    if ((not_found - it) < (Parameters::bucket_target_size + 1)) {
       // reached end of checkable area
       return false;
     }
 
-    if ((*it).bucket == (*(it + kBucketTargetSize + 1)).bucket) {
+    if ((*it).bucket == (*(it + Parameters::bucket_target_size + 1)).bucket) {
       // here we know the node should fit into a bucket if
       // the bucket has too many nodes AND node to add
       // has a lower bucketindex

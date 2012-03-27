@@ -132,7 +132,7 @@ class Routing {
    * /var/cache/<company_name>/<application_name>/bootstrap.endpoints         *
    * Cannot be empty string !!, RECOMMEND THIS IS NOT ALTERED                 *
    * **************************************************************************/
-  bool SetBoostrapFilePath(const boost::filesystem::path &path) const;
+  // DISABLED bool SetBoostrapFilePath(const boost::filesystem::path &path) const;
   /****************************************************************************
   *The reply or error (timeout) will be passed to this response_functor       *
   *error is passed as negative int (return code) and empty string             *
@@ -183,12 +183,13 @@ class Routing {
   void Init();
   void Join();
   void ReceiveMessage(const std::string &message);
+  void ConnectionLost(transport::Endpoint &lost_endpoint);
   AsioService asio_service_;
   std::vector<transport::Endpoint> bootstrap_nodes_;
   asymm::Keys keys_;
   transport::Endpoint node_local_endpoint_;
   transport::Endpoint node_external_endpoint_;
-  std::shared_ptr<transport::ManagedConnections> transport_;
+  transport::ManagedConnections transport_;
   std::shared_ptr<RoutingTable> routing_table_;
   std::shared_ptr<Timer> timer_;
   std::shared_ptr<MessageHandler> message_handler_;

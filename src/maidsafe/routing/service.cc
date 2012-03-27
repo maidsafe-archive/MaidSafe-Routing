@@ -12,6 +12,7 @@
 
 #include "maidsafe/routing/service.h"
 #include "maidsafe/transport/managed_connections.h"
+#include "maidsafe/routing/parameters.h"
 #include "maidsafe/routing/routing_api.h"
 #include "maidsafe/routing/node_id.h"
 #include "maidsafe/routing/routing.pb.h"
@@ -46,6 +47,7 @@ void Service::Ping(protobuf::Message &message) {
   message.set_data(ping_response.SerializeAsString());
   message.set_destination_id(message.source_id());
   message.set_source_id(routing_table_->kKeys().identity);
+  BOOST_ASSERT_MSG(message.IsInitialized(), "unintialised message");
   SendOn(message, transport_, routing_table_);
 }
 
@@ -97,6 +99,9 @@ void Service::Connect(protobuf::Message &message) {
   message.set_response(true);
   message.set_replication(1);
   message.set_type(1);
+  if (!message.IsInitialized())
+    DLOG(INFO) << "Uninitialised message";
+  BOOST_ASSERT_MSG(message.IsInitialized(), "unintialised message");
   SendOn(message, transport_, routing_table_);
 }
 
@@ -109,7 +114,7 @@ void Service::FindNodes(protobuf::Message &message) {
 
   for (auto it = nodes.begin(); it != nodes.end(); ++it)
     found_nodes.add_nodes((*it).String());
-  if (routing_table_->Size() < routing_table_->ClosestNodesSize())
+  if (routing_table_->Size() < Parameters::closest_nodes_size)
     found_nodes.add_nodes(routing_table_->kKeys().identity); // small network send our ID
   found_nodes.set_original_request(message.data());
   found_nodes.set_original_signature(message.signature());
@@ -121,6 +126,7 @@ void Service::FindNodes(protobuf::Message &message) {
   message.set_response(true);
   message.set_replication(1);
   message.set_type(1);
+  BOOST_ASSERT_MSG(message.IsInitialized(), "unintialised message");
   SendOn(message, transport_, routing_table_);
 }
 

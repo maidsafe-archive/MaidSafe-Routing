@@ -33,7 +33,7 @@ class ResponseHandler {
  public:
   ResponseHandler(NodeValidationFunctor &node_Validation_functor,
                  std::shared_ptr<RoutingTable> routing_table,
-                 std::shared_ptr<transport::ManagedConnections> transport,
+                 transport::ManagedConnections &transport,
                  Rpcs &rpcs);
   ~ResponseHandler();
   void ProcessPingResponse(protobuf::Message &message);

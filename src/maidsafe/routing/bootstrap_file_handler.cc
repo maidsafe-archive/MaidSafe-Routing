@@ -27,8 +27,8 @@ namespace routing {
 std::vector<transport::Endpoint> BootStrapFile::ReadBootstrapFile() {
   protobuf::Bootstrap protobuf_bootstrap;
   std::vector<transport::Endpoint> bootstrap_nodes;
-  if (!file_path_set_ || GetFilePath())
-    return bootstrap_nodes;
+   if (!GetFilePath())
+     return bootstrap_nodes;
 
   std::string serialised_endpoints;
   if (!ReadFile(file_path_, &serialised_endpoints)) {
@@ -39,21 +39,25 @@ std::vector<transport::Endpoint> BootStrapFile::ReadBootstrapFile() {
     DLOG(ERROR) << "could not parse bootstrap file";
     return bootstrap_nodes;
   }
-
+  bootstrap_nodes.resize(protobuf_bootstrap.bootstrap_contacts().size());
   transport::Endpoint endpoint;
-  for (int i = 0; i != protobuf_bootstrap.bootstrap_contacts().size(); ++i) {
-    endpoint.ip.from_string(protobuf_bootstrap.bootstrap_contacts(i).ip());
-    endpoint.port= protobuf_bootstrap.bootstrap_contacts(i).port();
-    bootstrap_nodes.push_back(endpoint);
+  transport::IP ip;
+  for (int i = 0; i < protobuf_bootstrap.bootstrap_contacts().size(); ++i) {
+    endpoint.ip = ip.from_string(protobuf_bootstrap.bootstrap_contacts(i).ip());
+    endpoint.port = protobuf_bootstrap.bootstrap_contacts(i).port();
+    bootstrap_nodes[i] = endpoint;
   }
+
   return  bootstrap_nodes;
 }
 
 bool BootStrapFile::WriteBootstrapFile(const std::vector<transport::Endpoint>
                                                                   &endpoints) {
   protobuf::Bootstrap protobuf_bootstrap;
-  if (!file_path_set_ || GetFilePath())
+  if (!GetFilePath()) {
+    DLOG(ERROR) << "could not write bootstrap file";
     return false;
+  }
 
   for (size_t i = 0; i < endpoints.size(); ++i) {
     protobuf::Endpoint *endpoint = protobuf_bootstrap.add_bootstrap_contacts();
@@ -72,12 +76,13 @@ bool BootStrapFile::GetFilePath() {
   file_path_ = Parameters::bootstrap_file_path;
   std::string dummy_content;
   // seems daft but we will iterate paths soon enough
-  if (ReadFile(file_path_, &dummy_content)) {
+  if ((fs::exists(file_path_) && fs::is_regular_file(file_path_)) ||
+      (WriteFile(file_path_, dummy_content) && fs::remove(file_path_))) {
     file_path_set_ = true;
     return true;
   } else {
-    DLOG(ERROR) << "Cannot read file stream " << file_path_.string();
-    file_path_set_ = true;
+    DLOG(ERROR) << "Cannot read/write file stream " << file_path_.string();
+    file_path_set_ = false;
     return false;
   }
 }

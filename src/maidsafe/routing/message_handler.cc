@@ -34,20 +34,15 @@ namespace routing {
 
 class Timer;
 
-namespace {
-const uint16_t kNumChunksToCache(100);
-const unsigned int kTimoutInSeconds(5);
-}
-
 MessageHandler::MessageHandler(NodeValidationFunctor& node_validation_functor,
                 std::shared_ptr<RoutingTable> routing_table,
-                std::shared_ptr<transport::ManagedConnections> transport,
+                transport::ManagedConnections &transport,
                 std::shared_ptr<Timer> timer_ptr ) :
                 node_validation_functor_(node_validation_functor),
                 routing_table_(routing_table),
                 transport_(transport),
                 timer_ptr_(timer_ptr),
-                cache_manager_(kNumChunksToCache, routing_table, transport),
+                cache_manager_(routing_table, transport),
                 service_(node_validation_functor, routing_table, transport),
                 rpcs_(routing_table_, transport_),
                 response_handler_(node_validation_functor,

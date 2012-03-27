@@ -29,6 +29,11 @@ struct Parameters {
   static std::string application_name;
   // path including filename of config file
   static boost::filesystem::path bootstrap_file_path;
+  static uint16_t num_chunks_to_cache;
+  static uint16_t timout_in_seconds;
+  static uint16_t closest_nodes_size;
+  static uint16_t max_routing_table_size;
+  static uint16_t bucket_target_size;
  private:
   Parameters(const Parameters&);  // no copy
   Parameters& operator=(const Parameters&);  // no assign

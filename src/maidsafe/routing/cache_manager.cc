@@ -11,6 +11,7 @@
  ******************************************************************************/
 
 #include "maidsafe/routing/cache_manager.h"
+#include "maidsafe/routing/parameters.h"
 #include "maidsafe/routing/utils.h"
 #include "maidsafe/routing/routing.pb.h"
 #include "maidsafe/routing/routing_table.h"
@@ -19,10 +20,9 @@ namespace maidsafe {
 
 namespace routing {
 
-CacheManager::CacheManager(uint16_t cache_size_hint,
-                    std::shared_ptr<RoutingTable> routing_table,
-                    std::shared_ptr<transport::ManagedConnections> transport)
-                    : cache_size_hint_(cache_size_hint),
+CacheManager::CacheManager(std::shared_ptr<RoutingTable> routing_table,
+                    transport::ManagedConnections &transport)
+                    : cache_size_hint_(Parameters::num_chunks_to_cache),
                     cache_chunks_(),
                     transport_(transport),
                     routing_table_(routing_table)

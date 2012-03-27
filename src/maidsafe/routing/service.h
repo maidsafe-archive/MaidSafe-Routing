@@ -31,14 +31,14 @@ class Service {
  public:
   Service(NodeValidationFunctor &node_validate_functor,
           std::shared_ptr<RoutingTable> routing_table,
-          std::shared_ptr<transport::ManagedConnections> transport);
+          transport::ManagedConnections &transport);
   void Ping(protobuf::Message &message);
   void Connect(protobuf::Message &message);
   void FindNodes(protobuf::Message &message);
  private:
   NodeValidationFunctor node_validation_functor_;
   std::shared_ptr<RoutingTable> routing_table_;
-  std::shared_ptr<transport::ManagedConnections> transport_;
+  transport::ManagedConnections transport_;
 };
 
 }  // namespace routing

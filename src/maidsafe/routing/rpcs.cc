@@ -13,6 +13,7 @@
 #include "maidsafe/common/utils.h"
 #include "maidsafe/common/rsa.h"
 #include "maidsafe/routing/rpcs.h"
+#include "maidsafe/routing/parameters.h"
 #include "maidsafe/routing/routing_api.h"
 #include "maidsafe/routing/node_id.h"
 #include "maidsafe/routing/routing.pb.h"
@@ -41,6 +42,7 @@ void Rpcs::Ping(const NodeId &node_id) {
   message.set_response(false);
   message.set_replication(1);
   message.set_type(0);
+  BOOST_ASSERT_MSG(message.IsInitialized(), "unintialised message");
   SendOn(message, transport_, routing_table_);
 }
 
@@ -63,17 +65,14 @@ void Rpcs::Connect(const NodeId &node_id,
   message.set_response(false);
   message.set_replication(1);
   message.set_type(1);
-  if (message.IsInitialized()) {
-    SendOn(message, transport_, routing_table_);
-  } else {
-    DLOG(ERROR) << "Message not initialised ";
-  }
+  BOOST_ASSERT_MSG(message.IsInitialized(), "unintialised message");
+  SendOn(message, transport_, routing_table_);
 }
 
 void Rpcs::FindNodes(const NodeId &node_id) {
   protobuf::Message message;
   protobuf::FindNodesRequest find_nodes;
-  find_nodes.set_num_nodes_requested(routing_table_->ClosestNodesSize());
+  find_nodes.set_num_nodes_requested(Parameters::closest_nodes_size);
   find_nodes.set_target_node(node_id.String());
 //  find_nodes.set_timestamp(GetTimeStamp());
   message.set_destination_id(node_id.String());
@@ -83,6 +82,7 @@ void Rpcs::FindNodes(const NodeId &node_id) {
   message.set_response(false);
   message.set_replication(1);
   message.set_type(2);
+  BOOST_ASSERT_MSG(message.IsInitialized(), "unintialised message");
   SendOn(message, transport_, routing_table_);
 }
 

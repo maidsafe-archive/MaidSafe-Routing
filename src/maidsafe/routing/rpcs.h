@@ -33,7 +33,7 @@ class NodeId;
 class Rpcs {
  public:
   Rpcs(std::shared_ptr<RoutingTable> routing_table,
-       std::shared_ptr<transport::ManagedConnections> transport);
+       transport::ManagedConnections &transport);
   void Ping(const NodeId &node_id);
   void Connect(const NodeId &node_id,
                 const transport::Endpoint &our_endpoint);
@@ -41,7 +41,7 @@ class Rpcs {
 
  private:
   std::shared_ptr<RoutingTable> routing_table_;
-  std::shared_ptr<transport::ManagedConnections> transport_;
+  transport::ManagedConnections transport_;
 };
 
 }  // namespace routing

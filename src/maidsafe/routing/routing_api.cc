@@ -31,17 +31,12 @@ namespace maidsafe {
 
 namespace routing {
 
-namespace {
-const uint16_t kNumChunksToCache(100);
-const unsigned int kTimoutInSeconds(5);
-}
-
 Message::Message()
     : type(0),
       source_id(),
       destination_id(),
       data(),
-      timeout(kTimoutInSeconds),
+      timeout(Parameters::timout_in_seconds),
       direct(false),
       replication(1) {}
 
@@ -50,7 +45,7 @@ Message::Message(const protobuf::Message &protobuf_message)
       source_id(protobuf_message.source_id()),
       destination_id(protobuf_message.destination_id()),
       data(protobuf_message.data()),
-      timeout(kTimoutInSeconds),
+      timeout(Parameters::timout_in_seconds),
       direct(protobuf_message.direct()),
       replication(protobuf_message.replication()) {}
 
@@ -60,7 +55,7 @@ Routing::Routing(const asymm::Keys &keys)
       keys_(keys),
       node_local_endpoint_(),
       node_external_endpoint_(),
-      transport_(new transport::ManagedConnections()),
+      transport_(),
       routing_table_(new RoutingTable(keys_)),
       timer_(new Timer(asio_service_)),
       message_handler_(),
@@ -83,7 +78,7 @@ Routing::Routing()
       keys_(),
       node_local_endpoint_(),
       node_external_endpoint_(),
-      transport_(new transport::ManagedConnections()),
+      transport_(),
       routing_table_(new RoutingTable(keys_)),
       timer_(new Timer(asio_service_)),
       message_handler_(),
@@ -108,7 +103,7 @@ void Routing::BootStrapFromThisEndpoint(const transport::Endpoint
   for (unsigned int i = 0; i < routing_table_->Size(); ++i) {
     NodeInfo remove_node =
     routing_table_->GetClosestNode(NodeId(routing_table_->kKeys().identity), 0);
-    transport_->Remove(remove_node.endpoint);
+    transport_.Remove(remove_node.endpoint);
     routing_table_->DropNode(remove_node.endpoint);
   }
   network_status_signal_(routing_table_->Size());
@@ -139,15 +134,15 @@ bool Routing::SetApplicationName(const std::string &application_name) const {
   return (Parameters::application_name == application_name);
 
 }
-
-bool Routing::SetBoostrapFilePath(const boost::filesystem3::path &path) const {
-  if (path.empty()) {
-    DLOG(ERROR) << "tried to set empty bootstrap file path";
-    return false;
-  }
-  Parameters::bootstrap_file_path = path;
-  return (Parameters::bootstrap_file_path == path);
-}
+// TODO(dirvine) I don not think this should be allowed to be changed
+// bool Routing::SetBoostrapFilePath(const boost::filesystem3::path &path) const {
+//   if (path.empty()) {
+//     DLOG(ERROR) << "tried to set empty bootstrap file path";
+//     return false;
+//   }
+//   Parameters::bootstrap_file_path = path;
+//   return (Parameters::bootstrap_file_path == path);
+// }
 
 int Routing::Send(const Message &message,
                    const MessageReceivedFunctor response_functor) {
@@ -198,7 +193,7 @@ void Routing::ValidateThisNode(const std::string &node_id,
   if (client) {
     client_connections_.push_back(node_info);
   } else {
-    transport_->Add(endpoint, node_id);
+    transport_.Add(endpoint, node_id);
     routing_table_->AddNode(node_info);
     if (bootstrap_nodes_.size() > 1000) {
     bootstrap_nodes_.erase(bootstrap_nodes_.begin());
@@ -219,7 +214,7 @@ void Routing::Init() {
                                             transport_,
                                             timer_));
   asio_service_.Start(5);
-  node_local_endpoint_ = transport_->GetAvailableEndpoint();
+  node_local_endpoint_ = transport_.GetAvailableEndpoint();
   // TODO(dirvine) connect transport signals !!
   LOG(INFO) << " Local IP address : " << node_local_endpoint_.ip.to_string();
   LOG(INFO) << " Local Port       : " << node_local_endpoint_.port;
@@ -257,6 +252,27 @@ void Routing::ReceiveMessage(const std::string &message) {
   if (protobuf_message.ParseFromString(message))
     message_handler_->ProcessMessage(protobuf_message);
 }
+
+void Routing::ConnectionLost(transport::Endpoint& lost_endpoint) {
+  if (!routing_table_->DropNode(lost_endpoint))
+    return;
+    for (auto it = client_connections_.begin();
+         it != client_connections_.end(); ++it) {
+       if((*it).endpoint ==  endpoint) {
+          client_connections_.erase(it);
+          return true;
+       }
+    }
+    for (auto it = client_routing_table_.begin();
+         it != client_routing_table_.end(); ++it) {
+       if((*it).endpoint ==  endpoint) {
+          client_routing_table_.erase(it);
+          /// TODO(dirvine) do another find node on ourself
+          return true;
+       }
+    }
+}
+
 
 }  // namespace routing
 

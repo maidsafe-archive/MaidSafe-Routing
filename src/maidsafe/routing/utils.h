@@ -27,7 +27,7 @@ namespace maidsafe {
 namespace routing {
 
 void SendOn(protobuf::Message &message,
-            std::shared_ptr<transport::ManagedConnections> transport,
+            transport::ManagedConnections &transport,
             std::shared_ptr<RoutingTable> routing_table);
 
 

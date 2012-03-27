@@ -65,7 +65,6 @@ class RoutingTable {
     return static_cast<uint16_t>(routing_table_nodes_.size());
   }
   asymm::Keys kKeys() const { return keys_; }
-  unsigned int ClosestNodesSize();
   boost::signals2::signal<void(std::string, std::string)>
                                            &CloseNodeReplacedOldNewSignal();
  private:

@@ -37,7 +37,7 @@ class MessageHandler {
 public:
   MessageHandler(NodeValidationFunctor &node_Validation_functor,
                  std::shared_ptr<RoutingTable> routing_table,
-                 std::shared_ptr<transport::ManagedConnections> transport,
+                 transport::ManagedConnections &transport,
                  std::shared_ptr<Timer> timer_ptr);
   ~MessageHandler();
   void ProcessMessage(protobuf::Message &message);
@@ -51,7 +51,7 @@ private:
   MessageHandler& operator=(const MessageHandler&);  // no assign
   NodeValidationFunctor node_validation_functor_;
   std::shared_ptr<RoutingTable> routing_table_;
-  std::shared_ptr<transport::ManagedConnections> transport_;
+  transport::ManagedConnections transport_;
   std::shared_ptr<Timer> timer_ptr_;
   CacheManager cache_manager_;
   Service service_;

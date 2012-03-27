@@ -30,7 +30,7 @@ namespace routing {
 
 ResponseHandler::ResponseHandler(NodeValidationFunctor& node_Validation_functor,
                 std::shared_ptr<RoutingTable> routing_table,
-                std::shared_ptr<transport::ManagedConnections> transport,
+                transport::ManagedConnections &transport,
                 Rpcs &rpcs ) :
                 node_validation_functor_(node_Validation_functor),
                 routing_table_(routing_table),
@@ -41,8 +41,7 @@ ResponseHandler::ResponseHandler(NodeValidationFunctor& node_Validation_functor,
 void ResponseHandler::ProcessPingResponse(protobuf::Message& message) {
   // TODO , do we need this and where and how can I update the response
   protobuf::PingResponse ping_response;
-  if (ping_response.ParseFromString(message.data()) &&
-    ping_response.has_pong()) {
+  if (ping_response.ParseFromString(message.data())) {
     //  do stuff here
     }
 }
