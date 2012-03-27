@@ -14,6 +14,12 @@
 #include <vector>
 #include "maidsafe/common/test.h"
 #include "maidsafe/routing/routing_api.h"
+#include "maidsafe/common/test.h"
+#include "maidsafe/common/utils.h"
+#include "maidsafe/routing/routing_table.h"
+#include "maidsafe/transport/managed_connections.h"
+#include "maidsafe/routing/node_id.h"
+#include "maidsafe/routing/log.h"
 
 
 namespace maidsafe {
@@ -24,11 +30,33 @@ class RoutingTableAPI {
   RoutingTableAPI();
 };
 
-// TEST(RoutingTableAPI, API_BadconfigFile) {
-//   Routing RtAPI;
-//   boost::filesystem::path bad_file("bad file/ not found/ I hope");
-//   EXPECT_FALSE(RtAPI.setConfigFilePath(bad_file));
-// }
+NodeInfo MakeNodeInfo() {
+  NodeInfo node;
+  node.node_id = NodeId(RandomString(64));
+  asymm::Keys keys;
+  asymm::GenerateKeyPair(&keys);
+  node.public_key = keys.public_key;
+  transport::Port port = 1500;
+  transport::IP ip;
+  node.endpoint = transport::Endpoint(ip.from_string("192.168.1.1") , port);
+  return node;
+}
+
+asymm::Keys MakeKeys() {
+  NodeInfo node(MakeNodeInfo());
+  asymm::Keys keys;
+  keys.identity = node.node_id.String();
+  keys.public_key = node.public_key;
+}
+
+ TEST(RoutingTableAPI, API_BadconfigFile) {
+  asymm::Keys keys(MakeKeys());
+
+//   Routing RtAPI(false, keys, false);
+//    boost::filesystem::path bad_file("bad file/ not found/ I hope");
+//    EXPECT_FALSE(RtAPI.setConfigFilePath(bad_file));
+
+}
 
 }  // namespace test
 }  // namespace routing

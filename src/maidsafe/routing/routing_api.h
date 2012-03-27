@@ -10,37 +10,20 @@
  *  the explicit written permission of the board of directors of maidsafe.net. *
  ******************************************************************************/
 
-/*
-Guarantees
-__________
-
-1:  Find any node by key.
-2:  Find any value by key.
-3:  Ensure messages are sent to all closest nodes in order (close to furthest).
-4:  Provide NAT traversal techniques where necessary.
-5:  Read and Write configuration file to allow bootstrap from known nodes.
-6:  Read and Write configuration file preserving ID and private key.
-7:  Allow retrieval of bootstrap nodes from known location.
-8:  Remove bad nodes from all routing tables (ban from network).
-9:  Inform of close node changes in routing table.
-10: Respond to every send that requires it, either with timeout or reply
-
-Client connects with a made up address (which must be unique (he can remember it))
-but requres to sign with a valid PMID
-Connects to closest nodes plus some others (no need to update much)
-all returns will come through close nodes mostly unless we allow
-by proxy which I think we may.
-We can detect a client and wrap his message in one of ours
-this can make sure they can only do certain things as well (no accounts/CIH etc.)
-we can register client acceptable messages or node accptable and allow
-clients anything else ?
-if a client or hacker tries to start as a node ID it will not be unique
-  we can use dans signal block to make sure clients only get signalled client stuff
-  this will help is we release a public API and soembody tries to get smart
-  (help not solve)
-  The node passing the message back knows its a client he is talking to and if the message is a node
-  type he can drop it.
-*/
+/*******************************************************************************
+*Guarantees                                                                    *
+*______________________________________________________________________________*
+*                                                                              *
+*1:  Find any node by key.                                                     *
+*2:  Find any value by key.                                                    *
+*3:  Ensure messages are sent to all closest nodes in order (close to furthest)*.
+*4:  Provide NAT traversal techniques where necessary.                         *
+*5:  Read and Write configuration file to allow bootstrap from known nodes.    *
+*6:  Allow retrieval of bootstrap nodes from known location.                   *
+*7:  Remove bad nodes from all routing tables (ban from network).              *
+*8:  Inform of close node changes in routing table.                            *
+*9:  Respond to every send that requires it, either with timeout or reply      *
+*******************************************************************************/
 
 #ifndef MAIDSAFE_ROUTING_ROUTING_API_H_
 #define MAIDSAFE_ROUTING_ROUTING_API_H_
@@ -86,17 +69,17 @@ struct Message {
   Message();
   explicit Message(const protobuf::Message &protobuf_message);
   int32_t type;
-  std::string source_id;
-  std::string destination_id;
-  std::string data;
-  bool timeout;
-  bool cacheable;
-  bool direct;
+  std::string source_id;  // your id
+  std::string destination_id;  //id of final destination or address
+  std::string data;  // message content (serialised)
+  uint16_t timeout;  // in seconds
+  bool cacheable;  // can this data be cached as is
+  bool direct;  // is this to a close node group or direct
   int32_t replication;
 };
 
 typedef std::function<void(int /*message type*/,
-                           std::string /*message*/ )> ResponseReceivedFunctor;
+                           std::string /*message*/ )> MessageReceivedFunctor;
 typedef std::function<void(const std::string& /*node Id*/ ,
                            const transport::Endpoint& /*Node endpoint */,
                            const bool)/*client ? */>  NodeValidationFunctor;
@@ -107,20 +90,54 @@ class Routing {
           const asymm::Keys &keys,
           bool encryption_required);
   ~Routing();
+  /****************************************************************************
+  *To force the node to use a specific endpoint for bootstrapping             *
+  *(i.e. private network)                                                     *
+  *****************************************************************************/
   void BootStrapFromThisEndpoint(const maidsafe::transport::Endpoint& endpoint);
+  /****************************************************************************
+  *The reply or error (timeout) will be passed to this response_functor       *
+  *error is passed as negative int (return code) and empty string             *
+  * otherwise a positive return code is message type and indicates success    *
+  ****************************************************************************/
   int Send(const Message &message,
-            const ResponseReceivedFunctor response_functor);
-  // this object will not start unless this functor is set !!
-  // this functor MUST call ValideThisNode with result
+            const MessageReceivedFunctor response_functor);
+  /****************************************************************************
+  *this object will not start unless this functor is set !!                   *
+  *this functor MUST call ValideThisNode with result                          *
+  ****************************************************************************/
   void setNodeValidationFunctor(NodeValidationFunctor &node_validation_functor);
-  // on completion of above functor this method MUST be passed the results
+  /***************************************************************************
+   * on completion of above functor this method MUST be passed the results   *
+   **************************************************************************/
   void ValidateThisNode(const std::string &node_id,
                         const asymm::PublicKey &public_key,
                         const transport::Endpoint &endpoint,
                         bool client);
+  /****************************************************************************
+  * this will return all known connections made by *your* client ID at this   *
+  * time. Sending a message to your own address will send to all connected    *
+  * clients with your address (except you). If you are a node and not a client*
+  * this method will return false.                                            *
+  *****************************************************************************/
+  bool GetAllMyClientConnections(std::vector<transport::Endpoint> *clients);
+  /***************************************************************************
+  * This signal is fired on any message received that is NOT a reply to a    *
+  * request made by the Send method.                                         *
+  ****************************************************************************/
   boost::signals2::signal<void(int, std::string)> &MessageReceivedSignal();
+  /****************************************************************************
+  * This signal fires a number from 0 to 100 and represents % network health  *
+  ****************************************************************************/
   boost::signals2::signal<void(unsigned int)> &NetworkStatusSignal();
-  boost::signals2::signal<void(std::string, std::string)>
+  /****************************************************************************
+  * This signal fires when a new close node is inserted in routing table.     *
+  * upper layers responsible for storing key/value pairs should send all      *
+  * key/values between itself and the new nodes address to the new node.      *
+  * Keys further than the furthest node can safely be deleted (if any)        *
+  *****************************************************************************/
+  boost::signals2::signal<void(std::string /*new node*/,
+                               std::string /*current furthest node*/ )>
                                            &CloseNodeReplacedOldNewSignal();
  private:
   Routing(const Routing&);  // no copy
@@ -141,9 +158,8 @@ class Routing {
   boost::signals2::signal<void(unsigned int)> network_status_signal_;
   boost::signals2::signal<void(std::string, std::string)>
                                                     close_node_from_to_signal_;
-
   std::map<uint32_t, std::pair<std::shared_ptr<boost::asio::deadline_timer>,
-                              ResponseReceivedFunctor> > waiting_for_response_;
+                              MessageReceivedFunctor> > waiting_for_response_;
   std::vector<NodeInfo> client_connections_;  // hold connections to clients only
   std::vector<NodeInfo> client_routing_table_;  // when node is client this is
   // closest nodes to the client.

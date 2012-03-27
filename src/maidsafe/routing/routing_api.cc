@@ -39,17 +39,16 @@ Message::Message()
       source_id(),
       destination_id(),
       data(),
-      timeout(false),
+      timeout(kTimoutInSeconds),
       cacheable(false),
       direct(false),
-      replication(0) {}
+      replication(1) {}
 
 Message::Message(const protobuf::Message &protobuf_message)
     : type(protobuf_message.type()),
       source_id(protobuf_message.source_id()),
       destination_id(protobuf_message.destination_id()),
       data(protobuf_message.data()),
-      timeout(protobuf_message.routing_failure()),
       cacheable(protobuf_message.cacheable()),
       direct(protobuf_message.direct()),
       replication(protobuf_message.replication()) {}
@@ -97,7 +96,7 @@ void Routing::BootStrapFromThisEndpoint(const transport::Endpoint
 }
 
 int Routing::Send(const Message &message,
-                   const ResponseReceivedFunctor response_functor) {
+                   const MessageReceivedFunctor response_functor) {
   if (message.destination_id.empty()) {
     DLOG(ERROR) << "No destination id, aborted send";
     return 1;
@@ -110,7 +109,7 @@ int Routing::Send(const Message &message,
     DLOG(ERROR) << "Attempt to use Reserved message type (<100), aborted send";
     return 3;
   }
-  uint32_t message_unique_id =  timer_->AddTask(kTimoutInSeconds,
+  uint32_t message_unique_id =  timer_->AddTask(message.timeout,
                                                 response_functor);
   protobuf::Message proto_message;
   proto_message.set_id(message_unique_id);
