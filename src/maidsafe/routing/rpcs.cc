@@ -33,7 +33,7 @@ void Rpcs::Ping(const NodeId &node_id) {
   protobuf::Message message;
   protobuf::PingRequest ping_request;
   ping_request.set_ping(true);
-  ping_request.set_timestamp(GetTimeStamp());
+//  ping_request.set_timestamp(GetTimeStamp());
   message.set_destination_id(node_id.String());
   message.set_source_id(routing_table_->kKeys().identity);
   message.set_data(ping_request.SerializeAsString());
@@ -55,7 +55,7 @@ void Rpcs::Connect(const NodeId &node_id,
   endpoint->set_ip(our_endpoint.ip.to_string());
   endpoint->set_port(our_endpoint.port);
   contact->set_node_id(routing_table_->kKeys().identity);
-  protobuf_connect_request.set_timestamp(GetTimeStamp());
+//  protobuf_connect_request.set_timestamp(GetTimeStamp());
   message.set_destination_id(node_id.String());
   message.set_source_id(routing_table_->kKeys().identity);
   message.set_data(protobuf_connect_request.SerializeAsString());
@@ -75,7 +75,7 @@ void Rpcs::FindNodes(const NodeId &node_id) {
   protobuf::FindNodesRequest find_nodes;
   find_nodes.set_num_nodes_requested(routing_table_->ClosestNodesSize());
   find_nodes.set_target_node(node_id.String());
-  find_nodes.set_timestamp(GetTimeStamp());
+//  find_nodes.set_timestamp(GetTimeStamp());
   message.set_destination_id(node_id.String());
   message.set_source_id(routing_table_->kKeys().identity);
   message.set_data(find_nodes.SerializeAsString());

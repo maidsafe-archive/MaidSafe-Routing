@@ -47,6 +47,7 @@ asymm::Keys MakeKeys() {
   asymm::Keys keys;
   keys.identity = node.node_id.String();
   keys.public_key = node.public_key;
+  return keys;
 }
 
  TEST(RoutingTableAPI, API_BadconfigFile) {

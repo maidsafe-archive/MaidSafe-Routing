@@ -25,12 +25,11 @@ namespace maidsafe {
 namespace routing {
 
 Service::Service(NodeValidationFunctor &node_validate_functor,
-           std::shared_ptr<RoutingTable> routing_table,
-           std::shared_ptr<transport::ManagedConnections> transport
-                )
+                 std::shared_ptr<RoutingTable> routing_table,
+                 std::shared_ptr<transport::ManagedConnections> transport)
     : node_validation_functor_(node_validate_functor),
-    routing_table_(routing_table),
-    transport_(transport) {}
+      routing_table_(routing_table),
+      transport_(transport) {}
 
 void Service::Ping(protobuf::Message &message) {
   if (message.destination_id() != routing_table_->kKeys().identity)
@@ -43,7 +42,7 @@ void Service::Ping(protobuf::Message &message) {
   ping_response.set_pong(true);
   ping_response.set_original_request(message.data());
   ping_response.set_original_signature(message.signature());
-  ping_response.set_timestamp(GetTimeStamp());
+//  ping_response.set_timestamp(GetTimeStamp());
   message.set_data(ping_response.SerializeAsString());
   message.set_destination_id(message.source_id());
   message.set_source_id(routing_table_->kKeys().identity);
@@ -88,7 +87,7 @@ void Service::Connect(protobuf::Message &message) {
   endpoint->set_ip(our_endpoint.ip.to_string());
   endpoint->set_port(our_endpoint.port);
   contact->set_node_id(routing_table_->kKeys().identity);
-  connect_response.set_timestamp(GetTimeStamp());
+//  connect_response.set_timestamp(GetTimeStamp());
   connect_response.set_original_request(message.data());
   connect_response.set_original_signature(message.signature());
   message.set_destination_id(message.source_id());
@@ -114,7 +113,7 @@ void Service::FindNodes(protobuf::Message &message) {
     found_nodes.add_nodes(routing_table_->kKeys().identity); // small network send our ID
   found_nodes.set_original_request(message.data());
   found_nodes.set_original_signature(message.signature());
-  found_nodes.set_timestamp(GetTimeStamp());
+//  found_nodes.set_timestamp(GetTimeStamp());
   message.set_destination_id(message.source_id());
   message.set_source_id(routing_table_->kKeys().identity);
   message.set_data(found_nodes.SerializeAsString());

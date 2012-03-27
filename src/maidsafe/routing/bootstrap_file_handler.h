@@ -29,8 +29,7 @@ namespace fs = boost::filesystem;
 
 class BootStrapFile {
 public:
-  BootStrapFile();
-  ~BootStrapFile();
+  BootStrapFile() : file_path_set_(false), file_path_() {}
   std::vector<transport::Endpoint> ReadBootstrapFile();
   bool WriteBootstrapFile(const std::vector<transport::Endpoint> &endpoints);
 private:

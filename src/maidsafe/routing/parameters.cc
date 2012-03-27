@@ -16,11 +16,11 @@ namespace maidsafe {
 
 namespace routing {
 
-static bool client_mode(false);
-static bool encryption_required(false);
-static boost::filesystem::path bootstrap_file_path("bootstrap.endpoints");
-static std::string company_name("MaidSafe");
-static std::string application_name("Routing");
+bool Parameters::client_mode(false);
+bool Parameters::encryption_required(false);
+boost::filesystem::path Parameters::bootstrap_file_path("bootstrap.endpoints");
+std::string Parameters::company_name("MaidSafe");
+std::string Parameters::application_name("Routing");
 
 }  // namespace routing
 

@@ -25,7 +25,7 @@ namespace routing {
 namespace test {
 
 
-TEST(BootStrapFileTest, ReadInvalidFile) {
+TEST(BootStrapFileTest, BEH_ReadInvalidFile) {
   routing::BootStrapFile test_handler;
   routing::Parameters::bootstrap_file_path = "/impossible/path/for/us";
   std::vector<transport::Endpoint>empty_vec(test_handler.ReadBootstrapFile());
