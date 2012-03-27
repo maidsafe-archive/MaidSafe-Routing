@@ -21,6 +21,7 @@
 #include "return_codes.h"
 #include "maidsafe/routing/utils.h"
 #include "maidsafe/routing/message_handler.h"
+#include "maidsafe/routing/parameters.h"
 
 namespace fs = boost::filesystem;
 namespace bs2 = boost::signals2;
@@ -75,6 +76,8 @@ Routing::Routing(bool client_mode,
       client_mode_(client_mode),
       node_validation_functor_()
 {
+  Parameters::client_mode = client_mode;
+  Parameters::encryption_required = encryption_required;
   Init();
 }
 
@@ -93,6 +96,27 @@ void Routing::BootStrapFromThisEndpoint(const transport::Endpoint
   bootstrap_nodes_.clear();
   bootstrap_nodes_.push_back(endpoint);
   asio_service_.service().post(std::bind(&Routing::Join, this));
+}
+
+bool Routing::setCompanyName(const std::string &company) const {
+  if (company.empty())
+    return false;
+  Parameters::company_name = company;
+  return true;
+}
+
+bool Routing::setApplicationName(const std::string &application_name) const {
+  if(application_name.empty())
+    return false;
+  Parameters::application_name = application_name;
+  return true;
+}
+
+bool Routing::setBoostrapFilePath(const boost::filesystem3::path &path) const {
+  if (path.empty())
+    return false;
+  Parameters::bootstrap_file_path = path;
+  return true;
 }
 
 int Routing::Send(const Message &message,

@@ -84,6 +84,8 @@ typedef std::function<void(const std::string& /*node Id*/ ,
                            const transport::Endpoint& /*Node endpoint */,
                            const bool)/*client ? */>  NodeValidationFunctor;
 
+
+
 class Routing {
  public:
   Routing(bool client_mode,
@@ -95,6 +97,33 @@ class Routing {
   *(i.e. private network)                                                     *
   *****************************************************************************/
   void BootStrapFromThisEndpoint(const maidsafe::transport::Endpoint& endpoint);
+  /****************************************************************************
+   *Used to set location of config files - Default "MaidSafe"                 *
+   *Cannot be empty string !!                                                 *
+   * *************************************************************************/
+  bool setCompanyName(const std::string &company) const;
+   /***************************************************************************
+   *Used to set location of config files - Default "Routing"                  *
+   *Cannot be empty string !!                                                 *
+   * *************************************************************************/
+  bool setApplicationName(const std::string &application_name) const;
+  /****************************************************************************
+   *Defaults are local file called bootstrap.endpoints or will use operating  *
+   * system application cache directories for multi user then single user     *
+   * Apple                                                                    *
+   * ~/Library/Application Support/<company_name>/<application_name>/         *
+   *                                                       bootstrap.endpoints*
+   *  /Library/Application Support/<company_name>/<application_name>/         *
+   *                                                       bootstrap.endpoints*
+   * Windows                                                                  *
+   * %appdata%\<company_name>\<application_name>\bootstrap.endpoints          *
+   *                                                                          *
+   * Linux                                                                    *
+   * ~/config/<company_name>/<application_name>/bootstrap.endpoints           *
+   * /var/cache/<company_name>/<application_name>/bootstrap.endpoints         *
+   * Cannot be empty string !!, RECOMMEND THIS IS NOT ALTERED                 *
+   * **************************************************************************/
+  bool setBoostrapFilePath(const boost::filesystem::path &path) const;
   /****************************************************************************
   *The reply or error (timeout) will be passed to this response_functor       *
   *error is passed as negative int (return code) and empty string             *
