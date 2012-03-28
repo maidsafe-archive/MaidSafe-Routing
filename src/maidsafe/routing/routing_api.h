@@ -90,6 +90,8 @@ typedef std::function<void(const std::string& /*node Id*/ ,
 
 class Routing {
  public:
+   // set keys.identity to ANONYMOUS and empty NodeValidationFunctor
+   // for temporary anonymous connection.
   Routing(const NodeValidationFunctor &node_valid_functor,
                  const asymm::Keys &keys, bool client_mode);
   ~Routing();

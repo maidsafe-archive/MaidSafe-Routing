@@ -29,7 +29,8 @@ namespace maidsafe {
 
 namespace routing {
 
-ResponseHandler::ResponseHandler(const NodeValidationFunctor& node_Validation_functor,
+ResponseHandler::ResponseHandler(
+                const NodeValidationFunctor& node_Validation_functor,
                 RoutingTable &routing_table,
                 transport::ManagedConnections &transport) :
                 node_validation_functor_(node_Validation_functor),
@@ -50,7 +51,6 @@ void ResponseHandler::ProcessConnectResponse(protobuf::Message& message) {
   protobuf::ConnectResponse connect_response;
   protobuf::ConnectRequest connect_request;
   if (!connect_response.ParseFromString(message.data())) {
-
     DLOG(ERROR) << "Could not parse connect response";
     return;
   }

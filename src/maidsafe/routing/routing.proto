@@ -47,6 +47,7 @@ message Message {
   required bool routing_failure = 9;
   required int32 id = 10;
   required bool client_node = 11;
+  optional Endpoint relay = 12;
 
 }
 

@@ -48,7 +48,6 @@ RoutingPrivate::RoutingPrivate(const NodeValidationFunctor &node_valid_functor,
       node_validation_functor_(node_valid_functor),
       client_mode_(client_mode) {}
 
-
 }  // namespace routing
 
 }  // namespace maidsafe

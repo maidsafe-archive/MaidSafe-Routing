@@ -67,6 +67,17 @@ bool MessageHandler::CheckCacheData(protobuf::Message &message) {
 }
 
 void MessageHandler::ProcessMessage(protobuf::Message &message) {
+  if (message.source_id() == "ANONYMOUS" ) {  // relay mode
+    message.set_source_id(routing_table_.kKeys().identity);
+  }
+  if ((message.destination_id() == routing_table_.kKeys().identity) &&
+      message.has_relay()) {
+     transport::Endpoint send_to_endpoint(message.relay().ip(),
+                    message.relay().port());
+     transport_.Send(send_to_endpoint,
+                     send_to_endpoint,
+                     message.SerializeAsString());
+  }
   if (CheckCacheData(message))
     return;  // message was sent on it's way
 
