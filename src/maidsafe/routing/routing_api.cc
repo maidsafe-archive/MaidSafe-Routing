@@ -50,15 +50,15 @@ Message::Message(const protobuf::Message &protobuf_message)
       direct(protobuf_message.direct()),
       replication(protobuf_message.replication()) {}
 
-Routing::Routing(const NodeValidationFunctor &node_valid_functor,
-                 const asymm::Keys &keys)
+Routing::Routing(const NodeValidationFunctor node_valid_functor,
+                 const asymm::Keys keys)
     : impl_(new RoutingPrivate(node_valid_functor, keys))
 {
   Parameters::client_mode = false;
   Init();
 }
 
-Routing::Routing(const NodeValidationFunctor &node_valid_functor)
+Routing::Routing(const NodeValidationFunctor node_valid_functor)
     : impl_(new RoutingPrivate(node_valid_functor))
 {
   Parameters::client_mode = true;

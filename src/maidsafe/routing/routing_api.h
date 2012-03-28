@@ -50,15 +50,7 @@ namespace maidsafe {
 
 namespace routing {
 
-class MessageHandler;
-
-
 namespace protobuf { class Message; }
-
-class RoutingTable;
-class NodeId;
-class NodeInfo;
-class Timer;
 class RoutingPrivate;
 
 // Send method return codes
@@ -95,9 +87,9 @@ typedef std::function<void(const std::string& /*node Id*/ ,
 
 class Routing {
  public:
-  Routing(const NodeValidationFunctor &node_valid_functor,
-                   const asymm::Keys &keys);  // Full node
-  explicit Routing(const NodeValidationFunctor &node_valid_functor); // Client mode only
+  Routing(const NodeValidationFunctor node_valid_functor,
+                   const asymm::Keys keys);  // Full node
+  explicit Routing(const NodeValidationFunctor node_valid_functor); // Client mode only
   ~Routing();
   /****************************************************************************
   *To force the node to use a specific endpoint for bootstrapping             *
