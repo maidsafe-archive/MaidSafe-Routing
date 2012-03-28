@@ -154,8 +154,12 @@ void Routing::ValidateThisNode(const std::string &node_id,
 
 void Routing::Init() {
   if (!impl_->node_validation_functor_) {
-    DLOG(ERROR) << "Invalid node_validation_functor passed: Aborted start";
-    return;
+    if (impl_->client_mode_) {
+    DLOG(ERROR) << "Invalid node_validation_functor passed: Anonymous node!";
+    }else {
+      DLOG(ERROR) << "Invalid node_validation_functor passed as node: Aborted!";
+      return;
+    }
   }
   impl_->asio_service_.Start(5);
   impl_->node_local_endpoint_ = impl_->transport_.GetAvailableEndpoint();
@@ -164,19 +168,7 @@ void Routing::Init() {
   LOG(INFO) << " Local Port       : " << impl_->node_local_endpoint_.port;
   Join();
 }
-
-bs2::signal<void(int, std::string)> &Routing::MessageReceivedSignal() {
-  return impl_->message_received_signal_;
-}
-
-bs2::signal<void(unsigned int)> &Routing::NetworkStatusSignal() {
-  return impl_->network_status_signal_;
-}
-
-bs2::signal<void(std::string, std::string)>
-                            &Routing::CloseNodeReplacedOldNewSignal() {
-  return impl_->routing_table_.CloseNodeReplacedOldNewSignal();
-}
+//TODO add anonymous join method FIXME
 
 void Routing::Join() {
   if (impl_->bootstrap_nodes_.empty()) {
@@ -190,6 +182,19 @@ void Routing::Join() {
   }
 
 //TODO send this message direct to whom we bootstrap onto   rpcs::FindNodes(NodeId(impl_.keys_.identity));
+}
+
+bs2::signal<void(int, std::string)> &Routing::MessageReceivedSignal() {
+  return impl_->message_received_signal_;
+}
+
+bs2::signal<void(unsigned int)> &Routing::NetworkStatusSignal() {
+  return impl_->network_status_signal_;
+}
+
+bs2::signal<void(std::string, std::string)>
+                            &Routing::CloseNodeReplacedOldNewSignal() {
+  return impl_->routing_table_.CloseNodeReplacedOldNewSignal();
 }
 
 void Routing::ReceiveMessage(const std::string &message) {
