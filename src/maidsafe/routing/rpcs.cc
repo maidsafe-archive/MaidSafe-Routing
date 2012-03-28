@@ -24,8 +24,8 @@ namespace maidsafe {
 
 namespace routing {
 
-Rpcs::Rpcs(std::shared_ptr<RoutingTable> routing_table,
-           std::shared_ptr<transport::ManagedConnections> transport)
+Rpcs::Rpcs(RoutingTable &routing_table,
+           transport::ManagedConnections &transport)
    :routing_table_(routing_table),
     transport_(transport) {}
 
@@ -36,7 +36,7 @@ void Rpcs::Ping(const NodeId &node_id) {
   ping_request.set_ping(true);
 //  ping_request.set_timestamp(GetTimeStamp());
   message.set_destination_id(node_id.String());
-  message.set_source_id(routing_table_->kKeys().identity);
+  message.set_source_id(routing_table_.kKeys().identity);
   message.set_data(ping_request.SerializeAsString());
   message.set_direct(true);
   message.set_response(false);
@@ -56,10 +56,10 @@ void Rpcs::Connect(const NodeId &node_id,
   endpoint = contact->mutable_endpoint();
   endpoint->set_ip(our_endpoint.ip.to_string());
   endpoint->set_port(our_endpoint.port);
-  contact->set_node_id(routing_table_->kKeys().identity);
+  contact->set_node_id(routing_table_.kKeys().identity);
 //  protobuf_connect_request.set_timestamp(GetTimeStamp());
   message.set_destination_id(node_id.String());
-  message.set_source_id(routing_table_->kKeys().identity);
+  message.set_source_id(routing_table_.kKeys().identity);
   message.set_data(protobuf_connect_request.SerializeAsString());
   message.set_direct(true);
   message.set_response(false);
@@ -76,7 +76,7 @@ void Rpcs::FindNodes(const NodeId &node_id) {
   find_nodes.set_target_node(node_id.String());
 //  find_nodes.set_timestamp(GetTimeStamp());
   message.set_destination_id(node_id.String());
-  message.set_source_id(routing_table_->kKeys().identity);
+  message.set_source_id(routing_table_.kKeys().identity);
   message.set_data(find_nodes.SerializeAsString());
   message.set_direct(true);
   message.set_response(false);

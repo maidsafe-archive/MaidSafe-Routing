@@ -35,10 +35,10 @@ namespace routing {
 
 class MessageHandler {
 public:
-  MessageHandler(NodeValidationFunctor &node_Validation_functor,
-                 std::shared_ptr<RoutingTable> routing_table,
+  MessageHandler(const NodeValidationFunctor &node_Validation_functor,
+                 RoutingTable &routing_table,
                  transport::ManagedConnections &transport,
-                 std::shared_ptr<Timer> timer_ptr);
+                 Timer &timer_ptr);
   ~MessageHandler();
   void ProcessMessage(protobuf::Message &message);
   void ProcessDirectMessage(protobuf::Message &message);
@@ -50,9 +50,9 @@ private:
   MessageHandler(const MessageHandler&);  // no copy
   MessageHandler& operator=(const MessageHandler&);  // no assign
   NodeValidationFunctor node_validation_functor_;
-  std::shared_ptr<RoutingTable> routing_table_;
-  transport::ManagedConnections transport_;
-  std::shared_ptr<Timer> timer_ptr_;
+  RoutingTable &routing_table_;
+  transport::ManagedConnections &transport_;
+  Timer &timer_ptr_;
   CacheManager cache_manager_;
   Service service_;
   Rpcs rpcs_;
@@ -60,10 +60,9 @@ private:
   boost::signals2::signal<void(int, std::string)> message_received_signal_;
 };
 
-
-
-#endif // MAIDSAFE_ROUTING_MESSAGE_HANDLER_H_
-
 }  // namespace routing
 
 }  // namespace maidsafe
+
+
+#endif // MAIDSAFE_ROUTING_MESSAGE_HANDLER_H_

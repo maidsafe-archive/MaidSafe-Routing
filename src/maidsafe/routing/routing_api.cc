@@ -23,6 +23,7 @@
 #include "maidsafe/routing/utils.h"
 #include "maidsafe/routing/message_handler.h"
 #include "maidsafe/routing/parameters.h"
+#include "maidsafe/routing/routing_api_impl.h"
 
 namespace fs = boost::filesystem;
 namespace bs2 = boost::signals2;
@@ -49,47 +50,16 @@ Message::Message(const protobuf::Message &protobuf_message)
       direct(protobuf_message.direct()),
       replication(protobuf_message.replication()) {}
 
-Routing::Routing(const asymm::Keys &keys)
-    : asio_service_(),
-      bootstrap_nodes_(),
-      keys_(keys),
-      node_local_endpoint_(),
-      node_external_endpoint_(),
-      transport_(),
-      routing_table_(new RoutingTable(keys_)),
-      timer_(new Timer(asio_service_)),
-      message_handler_(),
-      message_received_signal_(),
-      network_status_signal_(),
-      close_node_from_to_signal_(),
-      waiting_for_response_(),
-      client_connections_(),
-      client_routing_table_(),
-      joined_(false),
-      node_validation_functor_()
+Routing::Routing(const NodeValidationFunctor &node_valid_functor,
+                 const asymm::Keys &keys)
+    : impl_(new RoutingPrivate(node_valid_functor, keys))
 {
   Parameters::client_mode = false;
   Init();
 }
 
-Routing::Routing()
-    : asio_service_(),
-      bootstrap_nodes_(),
-      keys_(),
-      node_local_endpoint_(),
-      node_external_endpoint_(),
-      transport_(),
-      routing_table_(new RoutingTable(keys_)),
-      timer_(new Timer(asio_service_)),
-      message_handler_(),
-      message_received_signal_(),
-      network_status_signal_(),
-      close_node_from_to_signal_(),
-      waiting_for_response_(),
-      client_connections_(),
-      client_routing_table_(),
-      joined_(false),
-      node_validation_functor_()
+Routing::Routing(const NodeValidationFunctor &node_valid_functor)
+    : impl_(new RoutingPrivate(node_valid_functor))
 {
   Parameters::client_mode = true;
   Init();
@@ -100,16 +70,16 @@ void Routing::BootStrapFromThisEndpoint(const transport::Endpoint
 &endpoint) {
   LOG(INFO) << " Entered bootstrap IP address : " << endpoint.ip.to_string();
   LOG(INFO) << " Entered bootstrap Port       : " << endpoint.port;
-  for (unsigned int i = 0; i < routing_table_->Size(); ++i) {
+  for (unsigned int i = 0; i < impl_->routing_table_.Size(); ++i) {
     NodeInfo remove_node =
-    routing_table_->GetClosestNode(NodeId(routing_table_->kKeys().identity), 0);
-    transport_.Remove(remove_node.endpoint);
-    routing_table_->DropNode(remove_node.endpoint);
+    impl_->routing_table_.GetClosestNode(NodeId(impl_->routing_table_.kKeys().identity), 0);
+    impl_->transport_.Remove(remove_node.endpoint);
+    impl_->routing_table_.DropNode(remove_node.endpoint);
   }
-  network_status_signal_(routing_table_->Size());
-  bootstrap_nodes_.clear();
-  bootstrap_nodes_.push_back(endpoint);
-  asio_service_.service().post(std::bind(&Routing::Join, this));
+  impl_->network_status_signal_(impl_->routing_table_.Size());
+  impl_->bootstrap_nodes_.clear();
+  impl_->bootstrap_nodes_.push_back(endpoint);
+  impl_->asio_service_.service().post(std::bind(&Routing::Join, this));
 }
 
 bool Routing::SetEncryption(bool encryption_required) {
@@ -134,15 +104,6 @@ bool Routing::SetApplicationName(const std::string &application_name) const {
   return (Parameters::application_name == application_name);
 
 }
-// TODO(dirvine) I don not think this should be allowed to be changed
-// bool Routing::SetBoostrapFilePath(const boost::filesystem3::path &path) const {
-//   if (path.empty()) {
-//     DLOG(ERROR) << "tried to set empty bootstrap file path";
-//     return false;
-//   }
-//   Parameters::bootstrap_file_path = path;
-//   return (Parameters::bootstrap_file_path == path);
-// }
 
 int Routing::Send(const Message &message,
                    const MessageReceivedFunctor response_functor) {
@@ -158,29 +119,21 @@ int Routing::Send(const Message &message,
     DLOG(ERROR) << "Attempt to use Reserved message type (<100), aborted send";
     return kInvalidType;
   }
-  uint32_t message_unique_id =  timer_->AddTask(message.timeout,
+  uint32_t message_unique_id =  impl_->timer_.AddTask(message.timeout,
                                                 response_functor);
   protobuf::Message proto_message;
   proto_message.set_id(message_unique_id);
-  proto_message.set_source_id(routing_table_->kKeys().identity);
+  proto_message.set_source_id(impl_->routing_table_.kKeys().identity);
   proto_message.set_destination_id(message.destination_id);
   proto_message.set_data(message.data);
   proto_message.set_direct(message.direct);
   proto_message.set_replication(message.replication);
   proto_message.set_type(message.type);
   proto_message.set_routing_failure(false);
-  SendOn(proto_message, transport_, routing_table_);
+  SendOn(proto_message, impl_->transport_, impl_->routing_table_);
   return 0;
 }
 
-void Routing::SetNodeValidationFunctor(NodeValidationFunctor
-                                       &node_validation_functor) {
-  if (!node_validation_functor) {
-    DLOG(ERROR) << "Invalid node_validation_functor passed ";
-    return;
-  }
-  node_validation_functor_ = node_validation_functor;
-}
 
 void Routing::ValidateThisNode(const std::string &node_id,
                                const asymm::PublicKey &public_key,
@@ -191,57 +144,53 @@ void Routing::ValidateThisNode(const std::string &node_id,
   node_info.public_key = public_key;
   node_info.endpoint = endpoint;
   if (client) {
-    client_connections_.push_back(node_info);
+    impl_->client_connections_.push_back(node_info);
   } else {
-    transport_.Add(endpoint, node_id);
-    routing_table_->AddNode(node_info);
-    if (bootstrap_nodes_.size() > 1000) {
-    bootstrap_nodes_.erase(bootstrap_nodes_.begin());
+    impl_->transport_.Add(endpoint, node_id);
+    impl_->routing_table_.AddNode(node_info);
+    if (impl_->bootstrap_nodes_.size() > 1000) {
+    impl_->bootstrap_nodes_.erase(impl_->bootstrap_nodes_.begin());
     }
-    bootstrap_nodes_.push_back(endpoint);
+    impl_->bootstrap_nodes_.push_back(endpoint);
     BootStrapFile bfile;
-    bfile.WriteBootstrapFile(bootstrap_nodes_);
+    bfile.WriteBootstrapFile(impl_->bootstrap_nodes_);
   }
 }
 
 void Routing::Init() {
-  if (!node_validation_functor_) {
+  if (!impl_->node_validation_functor_) {
     DLOG(ERROR) << "Invalid node_validation_functor passed: Aborted start";
     return;
   }
-  message_handler_.reset(new MessageHandler(node_validation_functor_,
-                                            routing_table_,
-                                            transport_,
-                                            timer_));
-  asio_service_.Start(5);
-  node_local_endpoint_ = transport_.GetAvailableEndpoint();
+  impl_->asio_service_.Start(5);
+  impl_->node_local_endpoint_ = impl_->transport_.GetAvailableEndpoint();
   // TODO(dirvine) connect transport signals !!
-  LOG(INFO) << " Local IP address : " << node_local_endpoint_.ip.to_string();
-  LOG(INFO) << " Local Port       : " << node_local_endpoint_.port;
+  LOG(INFO) << " Local IP address : " << impl_->node_local_endpoint_.ip.to_string();
+  LOG(INFO) << " Local Port       : " << impl_->node_local_endpoint_.port;
   Join();
 }
 
 bs2::signal<void(int, std::string)> &Routing::MessageReceivedSignal() {
-  return message_received_signal_;
+  return impl_->message_received_signal_;
 }
 
 bs2::signal<void(unsigned int)> &Routing::NetworkStatusSignal() {
-  return network_status_signal_;
+  return impl_->network_status_signal_;
 }
 
 bs2::signal<void(std::string, std::string)>
                             &Routing::CloseNodeReplacedOldNewSignal() {
-  return routing_table_->CloseNodeReplacedOldNewSignal();
+  return impl_->routing_table_.CloseNodeReplacedOldNewSignal();
 }
 
 void Routing::Join() {
-  if (bootstrap_nodes_.empty()) {
+  if (impl_->bootstrap_nodes_.empty()) {
     DLOG(INFO) << "No bootstrap nodes";
     return;
   }
 
-  for (auto it = bootstrap_nodes_.begin();
-       it != bootstrap_nodes_.end(); ++it) {
+  for (auto it = impl_->bootstrap_nodes_.begin();
+       it != impl_->bootstrap_nodes_.end(); ++it) {
     // TODO(dirvine) send bootstrap requests
   }
 }
@@ -250,25 +199,25 @@ void Routing::ReceiveMessage(const std::string &message) {
   protobuf::Message protobuf_message;
   protobuf::ConnectRequest connection_request;
   if (protobuf_message.ParseFromString(message))
-    message_handler_->ProcessMessage(protobuf_message);
+    impl_->message_handler_.ProcessMessage(protobuf_message);
 }
 
 void Routing::ConnectionLost(transport::Endpoint& lost_endpoint) {
-  if (!routing_table_->DropNode(lost_endpoint))
+  if (!impl_->routing_table_.DropNode(lost_endpoint))
     return;
-    for (auto it = client_connections_.begin();
-         it != client_connections_.end(); ++it) {
-       if((*it).endpoint ==  endpoint) {
-          client_connections_.erase(it);
-          return true;
+    for (auto it = impl_->client_connections_.begin();
+         it != impl_->client_connections_.end(); ++it) {
+       if((*it).endpoint ==  lost_endpoint) {
+          impl_->client_connections_.erase(it);
+          return;
        }
     }
-    for (auto it = client_routing_table_.begin();
-         it != client_routing_table_.end(); ++it) {
-       if((*it).endpoint ==  endpoint) {
-          client_routing_table_.erase(it);
+    for (auto it = impl_->client_routing_table_.begin();
+         it != impl_->client_routing_table_.end(); ++it) {
+       if((*it).endpoint ==  lost_endpoint) {
+          impl_->client_routing_table_.erase(it);
           /// TODO(dirvine) do another find node on ourself
-          return true;
+          return;
        }
     }
 }

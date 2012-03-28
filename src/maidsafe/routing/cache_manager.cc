@@ -20,10 +20,9 @@ namespace maidsafe {
 
 namespace routing {
 
-CacheManager::CacheManager(std::shared_ptr<RoutingTable> routing_table,
+CacheManager::CacheManager(RoutingTable &routing_table,
                     transport::ManagedConnections &transport)
-                    : cache_size_hint_(Parameters::num_chunks_to_cache),
-                    cache_chunks_(),
+                    : cache_chunks_(),
                     transport_(transport),
                     routing_table_(routing_table)
                     {}
@@ -37,13 +36,13 @@ void CacheManager::AddToCache(const protobuf::Message& message) {
       return;
     data = std::make_pair(message.source_id(), message.data());
     cache_chunks_.push_back(data);
-    while (cache_chunks_.size() > cache_size_hint_)
+    while (cache_chunks_.size() > Parameters::num_chunks_to_cache)
       cache_chunks_.erase(cache_chunks_.begin());
   }
   catch(const std::exception &/*e*/) {
     // oohps reduce cache size quickly
-    cache_size_hint_ = cache_size_hint_ / 2;
-    while (cache_chunks_.size() > cache_size_hint_)
+    Parameters::num_chunks_to_cache = Parameters::num_chunks_to_cache / 2;
+    while (cache_chunks_.size() > Parameters::num_chunks_to_cache)
       cache_chunks_.erase(cache_chunks_.begin()+1);
   }
 }
@@ -53,7 +52,7 @@ bool CacheManager::GetFromCache(protobuf::Message &message) {
       if ((*it).first == message.source_id()) {
         message.set_destination_id(message.source_id());
         message.set_data((*it).second);
-        message.set_source_id(routing_table_->kKeys().identity);
+        message.set_source_id(routing_table_.kKeys().identity);
         message.set_direct(true);
         message.set_response(false);
         SendOn(message, transport_, routing_table_);

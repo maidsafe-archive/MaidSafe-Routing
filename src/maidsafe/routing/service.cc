@@ -25,15 +25,15 @@ namespace maidsafe {
 
 namespace routing {
 
-Service::Service(NodeValidationFunctor &node_validate_functor,
-                 std::shared_ptr<RoutingTable> routing_table,
-                 std::shared_ptr<transport::ManagedConnections> transport)
+Service::Service(const NodeValidationFunctor &node_validate_functor,
+                 RoutingTable &routing_table,
+                 transport::ManagedConnections &transport)
     : node_validation_functor_(node_validate_functor),
       routing_table_(routing_table),
       transport_(transport) {}
 
 void Service::Ping(protobuf::Message &message) {
-  if (message.destination_id() != routing_table_->kKeys().identity)
+  if (message.destination_id() != routing_table_.kKeys().identity)
     return;  // not for us and we should not pass it on.
   protobuf::PingResponse ping_response;
   protobuf::PingRequest ping_request;
@@ -46,13 +46,13 @@ void Service::Ping(protobuf::Message &message) {
 //  ping_response.set_timestamp(GetTimeStamp());
   message.set_data(ping_response.SerializeAsString());
   message.set_destination_id(message.source_id());
-  message.set_source_id(routing_table_->kKeys().identity);
+  message.set_source_id(routing_table_.kKeys().identity);
   BOOST_ASSERT_MSG(message.IsInitialized(), "unintialised message");
   SendOn(message, transport_, routing_table_);
 }
 
 void Service::Connect(protobuf::Message &message) {
-  if (message.destination_id() != routing_table_->kKeys().identity)
+  if (message.destination_id() != routing_table_.kKeys().identity)
     return;  // not for us and we should not pass it on.
   protobuf::ConnectRequest connect_request;
   protobuf::ConnectResponse connect_response;
@@ -68,32 +68,32 @@ void Service::Connect(protobuf::Message &message) {
   if (connect_request.client()) {
     connect_response.set_answer(true);
     //TODO(dirvine) get the routing pointer back again
-    node_validation_functor_(routing_table_->kKeys().identity,
+    node_validation_functor_(routing_table_.kKeys().identity,
                     transport::Endpoint
                     (connect_request.contact().endpoint().ip(),
                     connect_request.contact().endpoint().port()),
                     message.client_node());
-  } else if (routing_table_->CheckNode(node)) {
+  } else if (routing_table_.CheckNode(node)) {
     connect_response.set_answer(true);
-    node_validation_functor_(routing_table_->kKeys().identity,
+    node_validation_functor_(routing_table_.kKeys().identity,
                     transport::Endpoint
                     (connect_request.contact().endpoint().ip(),
                     connect_request.contact().endpoint().port()),
                     message.client_node());
   }
-  transport::Endpoint our_endpoint(transport_->GetAvailableEndpoint());
+  transport::Endpoint our_endpoint(transport_.GetAvailableEndpoint());
   protobuf::Contact *contact;
   protobuf::Endpoint *endpoint;
   contact =connect_response.mutable_contact();
   endpoint = contact->mutable_endpoint();
   endpoint->set_ip(our_endpoint.ip.to_string());
   endpoint->set_port(our_endpoint.port);
-  contact->set_node_id(routing_table_->kKeys().identity);
+  contact->set_node_id(routing_table_.kKeys().identity);
 //  connect_response.set_timestamp(GetTimeStamp());
   connect_response.set_original_request(message.data());
   connect_response.set_original_signature(message.signature());
   message.set_destination_id(message.source_id());
-  message.set_source_id(routing_table_->kKeys().identity);
+  message.set_source_id(routing_table_.kKeys().identity);
   message.set_data(connect_response.SerializeAsString());
   message.set_direct(true);
   message.set_response(true);
@@ -109,18 +109,18 @@ void Service::FindNodes(protobuf::Message &message) {
   protobuf::FindNodesRequest find_nodes;
   protobuf::FindNodesResponse found_nodes;
   std::vector<NodeId>
-        nodes(routing_table_->GetClosestNodes(NodeId(message.destination_id()),
+        nodes(routing_table_.GetClosestNodes(NodeId(message.destination_id()),
                  static_cast<uint16_t>(find_nodes.num_nodes_requested())));
 
   for (auto it = nodes.begin(); it != nodes.end(); ++it)
     found_nodes.add_nodes((*it).String());
-  if (routing_table_->Size() < Parameters::closest_nodes_size)
-    found_nodes.add_nodes(routing_table_->kKeys().identity); // small network send our ID
+  if (routing_table_.Size() < Parameters::closest_nodes_size)
+    found_nodes.add_nodes(routing_table_.kKeys().identity); // small network send our ID
   found_nodes.set_original_request(message.data());
   found_nodes.set_original_signature(message.signature());
 //  found_nodes.set_timestamp(GetTimeStamp());
   message.set_destination_id(message.source_id());
-  message.set_source_id(routing_table_->kKeys().identity);
+  message.set_source_id(routing_table_.kKeys().identity);
   message.set_data(found_nodes.SerializeAsString());
   message.set_direct(true);
   message.set_response(true);

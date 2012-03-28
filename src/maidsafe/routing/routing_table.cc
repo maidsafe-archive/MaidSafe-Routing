@@ -79,9 +79,10 @@ bool RoutingTable::DropNode(const transport::Endpoint &endpoint) {
     for (auto it = routing_table_nodes_.begin();
          it != routing_table_nodes_.end(); ++it) {
        if((*it).endpoint ==  endpoint) {
-         if (IsMyNodeInRange((*it).node_id, Parameters::closest_nodes_size) {
-           //TODO(dirvine) send find_nodes (to me) RPC
-         }
+//          if (IsMyNodeInRange((*it).node_id, Parameters::closest_nodes_size)) {
+//            //TODO(dirvine) send find_nodes (to me) RPC
+//            DLOG(INFO) << "lost close node IP:  " << endpoint.ip.to_string() << " Port: " << endpoint.port;
+//          }
           routing_table_nodes_.erase(it);
           return true;
        }

@@ -18,6 +18,7 @@
 #include "maidsafe/common/rsa.h"
 #include "maidsafe/transport/managed_connections.h"
 #include "maidsafe/routing/routing.pb.h"
+#include "maidsafe/routing/routing_table.h"
 #include "maidsafe/routing/node_id.h"
 #include "maidsafe/routing/log.h"
 
@@ -28,17 +29,16 @@ namespace routing {
 
 class CacheManager {
  public:
-  CacheManager(std::shared_ptr<RoutingTable> routing_table,
+  CacheManager(RoutingTable &routing_table,
                transport::ManagedConnections &transport);
   void AddToCache(const protobuf::Message &message);
   bool GetFromCache(protobuf::Message &message);
  private:
   CacheManager(const CacheManager&);  // no copy
   CacheManager& operator=(const CacheManager&);  // no assign
-  size_t cache_size_hint_;
   std::vector<std::pair<std::string, std::string> > cache_chunks_;
   transport::ManagedConnections &transport_;
-  std::shared_ptr<RoutingTable> routing_table_;
+  RoutingTable &routing_table_;
 };
 
 }  // namespace routing

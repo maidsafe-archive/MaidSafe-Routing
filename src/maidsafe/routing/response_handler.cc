@@ -28,8 +28,8 @@ namespace maidsafe {
 
 namespace routing {
 
-ResponseHandler::ResponseHandler(NodeValidationFunctor& node_Validation_functor,
-                std::shared_ptr<RoutingTable> routing_table,
+ResponseHandler::ResponseHandler(const NodeValidationFunctor& node_Validation_functor,
+                RoutingTable &routing_table,
                 transport::ManagedConnections &transport,
                 Rpcs &rpcs ) :
                 node_validation_functor_(node_Validation_functor),
@@ -72,16 +72,16 @@ void ResponseHandler::ProcessFindNodeResponse(protobuf::Message& message) {
   }
   if (asymm::CheckSignature(find_nodes.original_request(),
                             find_nodes.original_signature(),
-                            routing_table_->kKeys().public_key) != kSuccess) {
+                            routing_table_.kKeys().public_key) != kSuccess) {
     DLOG(ERROR) << " find node request was not signed by us";
     return;  // we never requested this
   }
   for(int i = 0; i < find_nodes.nodes_size() ; ++i) {
     NodeInfo node_to_add;
     node_to_add.node_id = NodeId(find_nodes.nodes(i));
-    if (routing_table_->CheckNode(node_to_add)) {
+    if (routing_table_.CheckNode(node_to_add)) {
       rpcs_.Connect(NodeId(find_nodes.nodes(i)),
-                               transport_->GetAvailableEndpoint());
+                               transport_.GetAvailableEndpoint());
     }
   }
 }

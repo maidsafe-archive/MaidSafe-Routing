@@ -34,10 +34,10 @@ namespace routing {
 
 class Timer;
 
-MessageHandler::MessageHandler(NodeValidationFunctor& node_validation_functor,
-                std::shared_ptr<RoutingTable> routing_table,
+MessageHandler::MessageHandler(const NodeValidationFunctor &node_validation_functor,
+                RoutingTable &routing_table,
                 transport::ManagedConnections &transport,
-                std::shared_ptr<Timer> timer_ptr ) :
+                Timer &timer_ptr ) :
                 node_validation_functor_(node_validation_functor),
                 routing_table_(routing_table),
                 transport_(transport),
@@ -74,9 +74,9 @@ void MessageHandler::ProcessMessage(protobuf::Message &message) {
 
   // Handle direct to me messages
   if(message.direct()) {
-    if (message.destination_id() == routing_table_->kKeys().identity) {
+    if (message.destination_id() == routing_table_.kKeys().identity) {
       if(message.response()) {
-        timer_ptr_->ExecuteTaskNow(message);
+        timer_ptr_.ExecuteTaskNow(message);
         return;
       } else { // I am closest and it's a request
         try {
@@ -97,7 +97,7 @@ void MessageHandler::ProcessMessage(protobuf::Message &message) {
   }
 
   // is it for us ??
-  if (!routing_table_->AmIClosestNode(NodeId(message.destination_id()))) {
+  if (!routing_table_.AmIClosestNode(NodeId(message.destination_id()))) {
     SendOn(message, transport_, routing_table_);
     return;
   }
@@ -131,7 +131,7 @@ void MessageHandler::ProcessMessage(protobuf::Message &message) {
     }
   }
   // if this is set not direct and ID == ME do NOT respond.
-  if (message.destination_id() != routing_table_->kKeys().identity) {
+  if (message.destination_id() != routing_table_.kKeys().identity) {
     try {
 //       message_received_signal_(static_cast<int>(message.type()),
 //                                 message.data());
@@ -144,9 +144,9 @@ void MessageHandler::ProcessMessage(protobuf::Message &message) {
   }
   // I am closest so will send to all my replicant nodes
   message.set_direct(true);
-  message.set_source_id(routing_table_->kKeys().identity);
+  message.set_source_id(routing_table_.kKeys().identity);
   auto close =
-        routing_table_->GetClosestNodes(NodeId(message.destination_id()),
+        routing_table_.GetClosestNodes(NodeId(message.destination_id()),
                                 static_cast<uint16_t>(message.replication()));
   for (auto it = close.begin(); it != close.end(); ++it) {
     message.set_destination_id((*it).String());

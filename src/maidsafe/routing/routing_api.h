@@ -59,6 +59,7 @@ class RoutingTable;
 class NodeId;
 class NodeInfo;
 class Timer;
+class RoutingPrivate;
 
 // Send method return codes
 enum SendErrors {
@@ -94,8 +95,9 @@ typedef std::function<void(const std::string& /*node Id*/ ,
 
 class Routing {
  public:
-  explicit Routing(const asymm::Keys &keys);  // Full node
-  Routing();  // Client mode only
+  Routing(const NodeValidationFunctor &node_valid_functor,
+                   const asymm::Keys &keys);  // Full node
+  explicit Routing(const NodeValidationFunctor &node_valid_functor); // Client mode only
   ~Routing();
   /****************************************************************************
   *To force the node to use a specific endpoint for bootstrapping             *
@@ -140,13 +142,10 @@ class Routing {
   ****************************************************************************/
   int Send(const Message &message,
             const MessageReceivedFunctor response_functor);
-  /****************************************************************************
-  *this object will not start unless this functor is set !!                   *
-  *this functor MUST call ValideThisNode with result                          *
-  ****************************************************************************/
-  void SetNodeValidationFunctor(NodeValidationFunctor &node_validation_functor);
+
   /***************************************************************************
    * on completion of above functor this method MUST be passed the results   *
+   * of the NodeValidationFunctor                                            *
    **************************************************************************/
   void ValidateThisNode(const std::string &node_id,
                         const asymm::PublicKey &public_key,
@@ -184,26 +183,7 @@ class Routing {
   void Join();
   void ReceiveMessage(const std::string &message);
   void ConnectionLost(transport::Endpoint &lost_endpoint);
-  AsioService asio_service_;
-  std::vector<transport::Endpoint> bootstrap_nodes_;
-  asymm::Keys keys_;
-  transport::Endpoint node_local_endpoint_;
-  transport::Endpoint node_external_endpoint_;
-  transport::ManagedConnections transport_;
-  std::shared_ptr<RoutingTable> routing_table_;
-  std::shared_ptr<Timer> timer_;
-  std::shared_ptr<MessageHandler> message_handler_;
-  boost::signals2::signal<void(int, std::string)> message_received_signal_;
-  boost::signals2::signal<void(unsigned int)> network_status_signal_;
-  boost::signals2::signal<void(std::string, std::string)>
-                                                    close_node_from_to_signal_;
-  std::map<uint32_t, std::pair<std::shared_ptr<boost::asio::deadline_timer>,
-                              MessageReceivedFunctor> > waiting_for_response_;
-  std::vector<NodeInfo> client_connections_;  // hold connections to clients only
-  std::vector<NodeInfo> client_routing_table_;  // when node is client this is
-  // closest nodes to the client.
-  bool joined_;
-  NodeValidationFunctor node_validation_functor_;
+  std::unique_ptr<RoutingPrivate> impl_;
 };
 
 }  // namespace routing

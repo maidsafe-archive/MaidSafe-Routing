@@ -25,7 +25,6 @@ namespace maidsafe {
 namespace routing {
 namespace test {
 
-
 NodeInfo MakeNode() {
   NodeInfo node;
   node.node_id = NodeId(RandomString(64));
@@ -39,8 +38,6 @@ NodeInfo MakeNode() {
 }
 
 TEST(RoutingTableTest, FUNC_AddCloseNodes) {
-//   std::shared_ptr<transport::ManagedConnections>
-//                               ptr(new transport::ManagedConnections);
     asymm::Keys keys;
     keys.identity = RandomString(64);
   RoutingTable RT(keys);
@@ -73,8 +70,6 @@ TEST(RoutingTableTest, FUNC_AddCloseNodes) {
 }
 
 TEST(RoutingTableTest, FUNC_AddTooManyNodes) {
-//     std::shared_ptr<transport::ManagedConnections>
-//                               ptr(new transport::ManagedConnections);
     asymm::Keys keys;
     keys.identity = RandomString(64);
   RoutingTable RT(keys);
@@ -100,9 +95,6 @@ TEST(RoutingTableTest, FUNC_AddTooManyNodes) {
 }
 
 TEST(RoutingTableTest, BEH_CloseAndInRangeCheck) {
-
-//     std::shared_ptr<transport::ManagedConnections>
-//                               ptr(new transport::ManagedConnections);
   asymm::Keys keys;
   keys.identity = RandomString(64);
   RoutingTable RT(keys);
@@ -138,15 +130,20 @@ TEST(RoutingTableTest, BEH_CloseAndInRangeCheck) {
      node.endpoint.port = 1502;  // duplicate endpoint
      node.node_id = my_closest_node;
      EXPECT_FALSE(RT.AddNode(node));
-     node.endpoint.port = 20000;
+     node.endpoint.port = 25000;
      EXPECT_TRUE(RT.AddNode(node));
   // should now be closest node to itself :-)
   EXPECT_EQ(RT.GetClosestNode(my_closest_node, 0).node_id.String(),
             my_closest_node.String());
   EXPECT_EQ(RT.Size(), Parameters::max_routing_table_size);
   EXPECT_TRUE(RT.DropNode(node.endpoint));
+  EXPECT_EQ(RT.Size(), Parameters::max_routing_table_size - 1);
   EXPECT_TRUE(RT.AddNode(node));
+  EXPECT_EQ(RT.Size(), Parameters::max_routing_table_size);
+  EXPECT_FALSE(RT.AddNode(node));
+  EXPECT_EQ(RT.Size(), Parameters::max_routing_table_size);
   EXPECT_TRUE(RT.DropNode(node.endpoint));
+  EXPECT_EQ(RT.Size(), Parameters::max_routing_table_size -1);
   EXPECT_FALSE(RT.DropNode(node.endpoint));
 }
 

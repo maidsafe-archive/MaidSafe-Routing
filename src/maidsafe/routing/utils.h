@@ -17,6 +17,7 @@
 #include "boost/thread/mutex.hpp"
 #include "maidsafe/common/rsa.h"
 #include "maidsafe/transport/managed_connections.h"
+#include "maidsafe/routing/routing_table.h"
 #include "maidsafe/routing/routing.pb.h"
 #include "maidsafe/routing/node_id.h"
 #include "maidsafe/routing/log.h"
@@ -28,9 +29,7 @@ namespace routing {
 
 void SendOn(protobuf::Message &message,
             transport::ManagedConnections &transport,
-            std::shared_ptr<RoutingTable> routing_table);
-
-
+            RoutingTable &routing_table);
 
 
 }  // namespace routing

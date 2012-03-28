@@ -18,6 +18,7 @@
 #include "maidsafe/common/rsa.h"
 #include "maidsafe/routing/rpcs.h"
 #include "maidsafe/transport/managed_connections.h"
+#include "maidsafe/routing/routing_table.h"
 #include "maidsafe/routing/routing.pb.h"
 #include "maidsafe/routing/node_id.h"
 #include "maidsafe/routing/log.h"
@@ -31,8 +32,8 @@ class RoutingTable;
 
 class ResponseHandler {
  public:
-  ResponseHandler(NodeValidationFunctor &node_Validation_functor,
-                 std::shared_ptr<RoutingTable> routing_table,
+  ResponseHandler(const NodeValidationFunctor &node_Validation_functor,
+                 RoutingTable &routing_table,
                  transport::ManagedConnections &transport,
                  Rpcs &rpcs);
   ~ResponseHandler();
@@ -43,9 +44,9 @@ class ResponseHandler {
   ResponseHandler(const ResponseHandler&);  // no copy
   ResponseHandler& operator=(const ResponseHandler&);  // no assign
   NodeValidationFunctor node_validation_functor_;
-  std::shared_ptr<RoutingTable> routing_table_;
-  std::shared_ptr<transport::ManagedConnections> transport_;
-  Rpcs rpcs_;
+  RoutingTable &routing_table_;
+  transport::ManagedConnections &transport_;
+  Rpcs &rpcs_;
 };
 
 }  // namespace routing

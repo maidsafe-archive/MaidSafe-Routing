@@ -32,7 +32,7 @@ class NodeId;
 // Send request to the network
 class Rpcs {
  public:
-  Rpcs(std::shared_ptr<RoutingTable> routing_table,
+  Rpcs(RoutingTable &routing_table,
        transport::ManagedConnections &transport);
   void Ping(const NodeId &node_id);
   void Connect(const NodeId &node_id,
@@ -40,8 +40,8 @@ class Rpcs {
   void FindNodes(const NodeId &node_id);
 
  private:
-  std::shared_ptr<RoutingTable> routing_table_;
-  transport::ManagedConnections transport_;
+  RoutingTable &routing_table_;
+  transport::ManagedConnections &transport_;
 };
 
 }  // namespace routing
