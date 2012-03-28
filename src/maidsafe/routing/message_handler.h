@@ -55,7 +55,6 @@ private:
   Timer &timer_ptr_;
   CacheManager cache_manager_;
   Service service_;
-  Rpcs rpcs_;
   ResponseHandler response_handler_;
   boost::signals2::signal<void(int, std::string)> message_received_signal_;
 };

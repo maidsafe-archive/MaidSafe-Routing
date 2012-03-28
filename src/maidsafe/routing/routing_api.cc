@@ -193,6 +193,7 @@ void Routing::Join() {
        it != impl_->bootstrap_nodes_.end(); ++it) {
     // TODO(dirvine) send bootstrap requests
   }
+//TODO send this message direct to whom we bootstrap onto   rpcs::FindNodes(NodeId(impl_.keys_.identity));
 }
 
 void Routing::ReceiveMessage(const std::string &message) {

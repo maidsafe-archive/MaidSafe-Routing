@@ -44,11 +44,9 @@ MessageHandler::MessageHandler(const NodeValidationFunctor &node_validation_func
                 timer_ptr_(timer_ptr),
                 cache_manager_(routing_table, transport),
                 service_(node_validation_functor, routing_table, transport),
-                rpcs_(routing_table_, transport_),
                 response_handler_(node_validation_functor,
                                   routing_table,
-                                  transport,
-                                  rpcs_),
+                                  transport),
                 message_received_signal_()  {}
 
 boost::signals2::signal<void(int, std::string)>

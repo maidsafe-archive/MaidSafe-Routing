@@ -21,6 +21,7 @@
 #include "maidsafe/routing/node_id.h"
 #include "maidsafe/routing/return_codes.h"
 #include "maidsafe/routing/rpcs.h"
+#include "maidsafe/routing/utils.h"
 #include "maidsafe/routing/log.h"
 
 
@@ -30,12 +31,10 @@ namespace routing {
 
 ResponseHandler::ResponseHandler(const NodeValidationFunctor& node_Validation_functor,
                 RoutingTable &routing_table,
-                transport::ManagedConnections &transport,
-                Rpcs &rpcs ) :
+                transport::ManagedConnections &transport) :
                 node_validation_functor_(node_Validation_functor),
                 routing_table_(routing_table),
-                transport_(transport),
-                rpcs_(rpcs) {}
+                transport_(transport) {}
 
 // always direct !! never pass on
 void ResponseHandler::ProcessPingResponse(protobuf::Message& message) {
@@ -80,8 +79,11 @@ void ResponseHandler::ProcessFindNodeResponse(protobuf::Message& message) {
     NodeInfo node_to_add;
     node_to_add.node_id = NodeId(find_nodes.nodes(i));
     if (routing_table_.CheckNode(node_to_add)) {
-      rpcs_.Connect(NodeId(find_nodes.nodes(i)),
-                               transport_.GetAvailableEndpoint());
+      SendOn(rpcs::Connect(NodeId(find_nodes.nodes(i)),
+                               transport_.GetAvailableEndpoint(),
+                               routing_table_.kKeys().identity),
+             transport_,
+             routing_table_);
     }
   }
 }

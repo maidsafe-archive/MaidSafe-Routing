@@ -24,30 +24,29 @@ namespace maidsafe {
 
 namespace routing {
 
-Rpcs::Rpcs(RoutingTable &routing_table,
-           transport::ManagedConnections &transport)
-   :routing_table_(routing_table),
-    transport_(transport) {}
+namespace rpcs {
 
 // this is maybe not required and might be removed
-void Rpcs::Ping(const NodeId &node_id) {
+const protobuf::Message Ping(const NodeId &node_id, std::string &,
+                       const std::string &identity) {
   protobuf::Message message;
   protobuf::PingRequest ping_request;
   ping_request.set_ping(true);
-//  ping_request.set_timestamp(GetTimeStamp());
+  ping_request.set_timestamp(GetTimeStamp());
   message.set_destination_id(node_id.String());
-  message.set_source_id(routing_table_.kKeys().identity);
+  message.set_source_id(identity);
   message.set_data(ping_request.SerializeAsString());
   message.set_direct(true);
   message.set_response(false);
   message.set_replication(1);
   message.set_type(0);
   BOOST_ASSERT_MSG(message.IsInitialized(), "unintialised message");
-  SendOn(message, transport_, routing_table_);
+  return message;
 }
 
-void Rpcs::Connect(const NodeId &node_id,
-                   const transport::Endpoint &our_endpoint) {
+const protobuf::Message Connect(const NodeId &node_id,
+                   const transport::Endpoint &our_endpoint,
+                   const std::string &identity) {
   protobuf::Message message;
   protobuf::Contact *contact;
   protobuf::Endpoint *endpoint;
@@ -56,36 +55,37 @@ void Rpcs::Connect(const NodeId &node_id,
   endpoint = contact->mutable_endpoint();
   endpoint->set_ip(our_endpoint.ip.to_string());
   endpoint->set_port(our_endpoint.port);
-  contact->set_node_id(routing_table_.kKeys().identity);
-//  protobuf_connect_request.set_timestamp(GetTimeStamp());
+  contact->set_node_id(identity);
+  protobuf_connect_request.set_timestamp(GetTimeStamp());
   message.set_destination_id(node_id.String());
-  message.set_source_id(routing_table_.kKeys().identity);
+  message.set_source_id(identity);
   message.set_data(protobuf_connect_request.SerializeAsString());
   message.set_direct(true);
   message.set_response(false);
   message.set_replication(1);
   message.set_type(1);
   BOOST_ASSERT_MSG(message.IsInitialized(), "unintialised message");
-  SendOn(message, transport_, routing_table_);
+  return message;
 }
 
-void Rpcs::FindNodes(const NodeId &node_id) {
+const protobuf::Message FindNodes(const NodeId &node_id) {
   protobuf::Message message;
   protobuf::FindNodesRequest find_nodes;
   find_nodes.set_num_nodes_requested(Parameters::closest_nodes_size);
   find_nodes.set_target_node(node_id.String());
-//  find_nodes.set_timestamp(GetTimeStamp());
+  find_nodes.set_timestamp(GetTimeStamp());
   message.set_destination_id(node_id.String());
-  message.set_source_id(routing_table_.kKeys().identity);
+  message.set_source_id(node_id.String());
   message.set_data(find_nodes.SerializeAsString());
   message.set_direct(true);
   message.set_response(false);
   message.set_replication(1);
   message.set_type(2);
   BOOST_ASSERT_MSG(message.IsInitialized(), "unintialised message");
-  SendOn(message, transport_, routing_table_);
+  return message;
 }
 
+} // namespace rpcs
 
 }  // namespace routing
 

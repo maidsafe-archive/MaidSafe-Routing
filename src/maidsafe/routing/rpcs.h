@@ -16,33 +16,24 @@
 #include <memory>
 #include "maidsafe/common/rsa.h"
 #include "maidsafe/transport/managed_connections.h"
+#include "maidsafe/routing/node_id.h"
+#include "maidsafe/routing/routing.pb.h"
 
 namespace maidsafe {
 
-namespace transport { class ManagedConnections; }
-
 namespace routing {
 
-namespace protobuf { class Message; }
-class Routing;
-class Endpoint;
-class RoutingTable;
-class NodeId;
+namespace rpcs {
 
-// Send request to the network
-class Rpcs {
- public:
-  Rpcs(RoutingTable &routing_table,
-       transport::ManagedConnections &transport);
-  void Ping(const NodeId &node_id);
-  void Connect(const NodeId &node_id,
-                const transport::Endpoint &our_endpoint);
-  void FindNodes(const NodeId &node_id);
+const protobuf::Message Ping(const NodeId &node_id,
+                       const std::string &identity);
+const protobuf::Message Connect(const NodeId &node_id,
+                          const transport::Endpoint &our_endpoint,
+                          const std::string &identity);
+const protobuf::Message FindNodes(const NodeId &node_id);
 
- private:
-  RoutingTable &routing_table_;
-  transport::ManagedConnections &transport_;
-};
+
+} // namespace rpcs
 
 }  // namespace routing
 

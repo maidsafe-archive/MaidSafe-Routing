@@ -34,8 +34,7 @@ class ResponseHandler {
  public:
   ResponseHandler(const NodeValidationFunctor &node_Validation_functor,
                  RoutingTable &routing_table,
-                 transport::ManagedConnections &transport,
-                 Rpcs &rpcs);
+                 transport::ManagedConnections &transport);
   ~ResponseHandler();
   void ProcessPingResponse(protobuf::Message &message);
   void ProcessConnectResponse(protobuf::Message &message);
@@ -46,7 +45,6 @@ class ResponseHandler {
   NodeValidationFunctor node_validation_functor_;
   RoutingTable &routing_table_;
   transport::ManagedConnections &transport_;
-  Rpcs &rpcs_;
 };
 
 }  // namespace routing

@@ -23,7 +23,7 @@ namespace maidsafe {
 
 namespace routing {
 
-void SendOn(protobuf::Message &message,
+void SendOn(protobuf::Message message,
             transport::ManagedConnections &transport,
             RoutingTable &routing_table) {
   std::string signature;
