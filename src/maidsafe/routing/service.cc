@@ -65,6 +65,7 @@ void Service::Connect(protobuf::Message &message) {
              return;  // FIXME
   }
   connect_response.set_answer(false);
+  transport::Endpoint our_endpoint(transport_.GetAvailableEndpoint());
   if (connect_request.client()) {
     connect_response.set_answer(true);
     //TODO(dirvine) get the routing pointer back again
@@ -72,16 +73,18 @@ void Service::Connect(protobuf::Message &message) {
                     transport::Endpoint
                     (connect_request.contact().endpoint().ip(),
                     connect_request.contact().endpoint().port()),
-                    message.client_node());
+                    message.client_node(),
+                    our_endpoint);
   } else if (routing_table_.CheckNode(node)) {
     connect_response.set_answer(true);
     node_validation_functor_(routing_table_.kKeys().identity,
                     transport::Endpoint
                     (connect_request.contact().endpoint().ip(),
                     connect_request.contact().endpoint().port()),
-                    message.client_node());
+                    message.client_node(),
+                    our_endpoint);
   }
-  transport::Endpoint our_endpoint(transport_.GetAvailableEndpoint());
+
   protobuf::Contact *contact;
   protobuf::Endpoint *endpoint;
   contact =connect_response.mutable_contact();

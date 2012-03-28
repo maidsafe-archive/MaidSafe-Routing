@@ -20,6 +20,8 @@
 #include "maidsafe/routing/routing_api.h"
 #include "maidsafe/routing/node_id.h"
 #include "maidsafe/routing/log.h"
+#include "maidsafe/routing/rpcs.h"
+#include "maidsafe/routing/utils.h"
 
 namespace maidsafe {
 namespace routing {
@@ -51,7 +53,6 @@ bool RoutingTable::AddNode(NodeInfo& node) {
   return AddOrCheckNode(node, true);
 }
 
-
 bool RoutingTable::AddOrCheckNode(maidsafe::routing::NodeInfo& node,
                            bool remove) {
   boost::mutex::scoped_lock lock(mutex_);
@@ -79,16 +80,25 @@ bool RoutingTable::DropNode(const transport::Endpoint &endpoint) {
     for (auto it = routing_table_nodes_.begin();
          it != routing_table_nodes_.end(); ++it) {
        if((*it).endpoint ==  endpoint) {
-//          if (IsMyNodeInRange((*it).node_id, Parameters::closest_nodes_size)) {
-//            //TODO(dirvine) send find_nodes (to me) RPC
-//            DLOG(INFO) << "lost close node IP:  " << endpoint.ip.to_string() << " Port: " << endpoint.port;
-//          }
           routing_table_nodes_.erase(it);
           return true;
        }
     }
    return false;
 }
+
+bool RoutingTable::GetNodeInfo(const transport::Endpoint &endpoint,
+                               NodeInfo *node_info) {
+    for (auto it = routing_table_nodes_.begin();
+         it != routing_table_nodes_.end(); ++it) {
+       if((*it).endpoint ==  endpoint) {
+          *node_info = (*it);
+          return true;
+       }
+    }
+   return false;
+}
+
 
 bool RoutingTable::AmIClosestNode(const NodeId& node_id) {
   SortFromThisNode(node_id);

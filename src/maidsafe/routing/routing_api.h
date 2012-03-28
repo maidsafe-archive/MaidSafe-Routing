@@ -79,17 +79,19 @@ struct Message {
 
 typedef std::function<void(int /*message type*/,
                            std::string /*message*/ )> MessageReceivedFunctor;
+// check and get public key and run ValidateThisNode method.
 typedef std::function<void(const std::string& /*node Id*/ ,
-                           const transport::Endpoint& /*Node endpoint */,
-                           const bool)/*client ? */>  NodeValidationFunctor;
+                           const transport::Endpoint& /*their Node endpoint */,
+                           const bool /*client ? */,
+                           const transport::Endpoint& /*our Node endpoint */)>
+                                                 NodeValidationFunctor;
 
 
 
 class Routing {
  public:
-  Routing(const NodeValidationFunctor node_valid_functor,
-                   const asymm::Keys keys);  // Full node
-  explicit Routing(const NodeValidationFunctor node_valid_functor); // Client mode only
+  Routing(const NodeValidationFunctor &node_valid_functor,
+                 const asymm::Keys &keys, bool client_mode);
   ~Routing();
   /****************************************************************************
   *To force the node to use a specific endpoint for bootstrapping             *
@@ -141,7 +143,8 @@ class Routing {
    **************************************************************************/
   void ValidateThisNode(const std::string &node_id,
                         const asymm::PublicKey &public_key,
-                        const transport::Endpoint &endpoint,
+                        const transport::Endpoint &their_endpoint,
+                        const transport::Endpoint &our_endpoint,
                         bool client);
   /****************************************************************************
   * this will return all known connections made by *your* client ID at this   *

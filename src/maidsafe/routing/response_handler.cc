@@ -48,6 +48,7 @@ void ResponseHandler::ProcessPingResponse(protobuf::Message& message) {
 // the other node agreed to connect - he has accepted our connection
 void ResponseHandler::ProcessConnectResponse(protobuf::Message& message) {
   protobuf::ConnectResponse connect_response;
+  protobuf::ConnectRequest connect_request;
   if (!connect_response.ParseFromString(message.data())) {
 
     DLOG(ERROR) << "Could not parse connect response";
@@ -56,11 +57,20 @@ void ResponseHandler::ProcessConnectResponse(protobuf::Message& message) {
   if (!connect_response.answer()) {
     return;  // they don't want us
   }
-  transport::Endpoint endpoint;
-  endpoint.ip.from_string(connect_response.contact().endpoint().ip());
-  endpoint.port = connect_response.contact().endpoint().port();
-  node_validation_functor_(connect_response.contact().node_id(),
-                           endpoint, message.client_node());
+  if (!connect_request.ParseFromString(connect_response.original_request()))
+    return;  // invalid response
+
+  transport::Endpoint our_endpoint(connect_request.contact().endpoint().ip(),
+                                  connect_request.contact().endpoint().port());
+
+  transport::Endpoint their_endpoint;
+  their_endpoint.ip.from_string(connect_response.contact().endpoint().ip());
+  their_endpoint.port = connect_response.contact().endpoint().port();
+  if (node_validation_functor_)  // never add any node to routing table
+    node_validation_functor_(connect_response.contact().node_id(),
+                            their_endpoint,
+                            message.client_node(),
+                            our_endpoint);
 }
 
 void ResponseHandler::ProcessFindNodeResponse(protobuf::Message& message) {

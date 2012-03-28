@@ -50,18 +50,11 @@ Message::Message(const protobuf::Message &protobuf_message)
       direct(protobuf_message.direct()),
       replication(protobuf_message.replication()) {}
 
-Routing::Routing(const NodeValidationFunctor node_valid_functor,
-                 const asymm::Keys keys)
-    : impl_(new RoutingPrivate(node_valid_functor, keys))
+Routing::Routing(const NodeValidationFunctor &node_valid_functor,
+                 const asymm::Keys &keys, bool client_mode)
+    : impl_(new RoutingPrivate(node_valid_functor, keys, client_mode))
 {
   Parameters::client_mode = false;
-  Init();
-}
-
-Routing::Routing(const NodeValidationFunctor node_valid_functor)
-    : impl_(new RoutingPrivate(node_valid_functor))
-{
-  Parameters::client_mode = true;
   Init();
 }
 
@@ -136,22 +129,24 @@ int Routing::Send(const Message &message,
 
 
 void Routing::ValidateThisNode(const std::string &node_id,
-                               const asymm::PublicKey &public_key,
-                               const transport::Endpoint &endpoint,
-                               bool client) {
+                              const asymm::PublicKey &public_key,
+                              const transport::Endpoint &their_endpoint,
+                              const transport::Endpoint &our_endpoint,
+                              bool client) {
   NodeInfo node_info;
+  // TODO(dirvine) Add Managed Connection  here !!!
   node_info.node_id =NodeId(node_id);
   node_info.public_key = public_key;
-  node_info.endpoint = endpoint;
+  node_info.endpoint = their_endpoint;
+  impl_->transport_.Add(their_endpoint, node_id);
   if (client) {
     impl_->client_connections_.push_back(node_info);
   } else {
-    impl_->transport_.Add(endpoint, node_id);
     impl_->routing_table_.AddNode(node_info);
     if (impl_->bootstrap_nodes_.size() > 1000) {
     impl_->bootstrap_nodes_.erase(impl_->bootstrap_nodes_.begin());
     }
-    impl_->bootstrap_nodes_.push_back(endpoint);
+    impl_->bootstrap_nodes_.push_back(their_endpoint);
     BootStrapFile bfile;
     bfile.WriteBootstrapFile(impl_->bootstrap_nodes_);
   }
@@ -193,6 +188,7 @@ void Routing::Join() {
        it != impl_->bootstrap_nodes_.end(); ++it) {
     // TODO(dirvine) send bootstrap requests
   }
+
 //TODO send this message direct to whom we bootstrap onto   rpcs::FindNodes(NodeId(impl_.keys_.identity));
 }
 
@@ -204,23 +200,33 @@ void Routing::ReceiveMessage(const std::string &message) {
 }
 
 void Routing::ConnectionLost(transport::Endpoint& lost_endpoint) {
+  NodeInfo node_info;
+  if ((impl_->routing_table_.GetNodeInfo(lost_endpoint, &node_info) &&
+     (impl_->routing_table_.IsMyNodeInRange(node_info.node_id,
+                                            Parameters::closest_nodes_size)))) {
+    SendOn(rpcs::FindNodes(NodeId(impl_->keys_.identity)),
+           impl_->transport_,
+           impl_->routing_table_); // close node, get more
+  }
   if (!impl_->routing_table_.DropNode(lost_endpoint))
     return;
-    for (auto it = impl_->client_connections_.begin();
-         it != impl_->client_connections_.end(); ++it) {
-       if((*it).endpoint ==  lost_endpoint) {
-          impl_->client_connections_.erase(it);
-          return;
-       }
-    }
-    for (auto it = impl_->client_routing_table_.begin();
-         it != impl_->client_routing_table_.end(); ++it) {
-       if((*it).endpoint ==  lost_endpoint) {
-          impl_->client_routing_table_.erase(it);
-          /// TODO(dirvine) do another find node on ourself
-          return;
-       }
-    }
+  for (auto it = impl_->client_connections_.begin();
+        it != impl_->client_connections_.end(); ++it) {
+      if((*it).endpoint ==  lost_endpoint) {
+        impl_->client_connections_.erase(it);
+        return;
+      }
+  }
+  for (auto it = impl_->client_routing_table_.begin();
+        it != impl_->client_routing_table_.end(); ++it) {
+      if((*it).endpoint ==  lost_endpoint) {
+        impl_->client_routing_table_.erase(it);
+      SendOn(rpcs::FindNodes(NodeId(impl_->keys_.identity)),
+      impl_->transport_,
+      impl_->routing_table_);  // close node, get more
+      return;
+      }
+  }
 }
 
 

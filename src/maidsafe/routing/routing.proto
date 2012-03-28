@@ -39,7 +39,7 @@ message Message {
   required bytes source_id = 1; // in response this is name of data
   required bytes destination_id = 2;
   required bytes data = 3; // serialised protobuf - possibly encrypted
-  required bytes signature = 4;
+  optional bytes signature = 4;
   required bool direct = 5;
   required bool response = 6;
   required int32 replication = 7;

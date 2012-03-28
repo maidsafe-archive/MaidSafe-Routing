@@ -27,7 +27,7 @@ namespace routing {
 namespace rpcs {
 
 // this is maybe not required and might be removed
-const protobuf::Message Ping(const NodeId &node_id, std::string &,
+const protobuf::Message Ping(const NodeId &node_id,
                        const std::string &identity) {
   protobuf::Message message;
   protobuf::PingRequest ping_request;
@@ -40,6 +40,9 @@ const protobuf::Message Ping(const NodeId &node_id, std::string &,
   message.set_response(false);
   message.set_replication(1);
   message.set_type(0);
+  message.set_routing_failure(false);
+  message.set_id(0);
+  message.set_client_node(false);
   BOOST_ASSERT_MSG(message.IsInitialized(), "unintialised message");
   return message;
 }
@@ -64,6 +67,9 @@ const protobuf::Message Connect(const NodeId &node_id,
   message.set_response(false);
   message.set_replication(1);
   message.set_type(1);
+  message.set_routing_failure(false);
+  message.set_id(0);
+  message.set_client_node(false);
   BOOST_ASSERT_MSG(message.IsInitialized(), "unintialised message");
   return message;
 }
@@ -81,6 +87,9 @@ const protobuf::Message FindNodes(const NodeId &node_id) {
   message.set_response(false);
   message.set_replication(1);
   message.set_type(2);
+  message.set_routing_failure(false);
+  message.set_id(0);
+  message.set_client_node(false);
   BOOST_ASSERT_MSG(message.IsInitialized(), "unintialised message");
   return message;
 }

@@ -20,18 +20,18 @@ namespace maidsafe {
 namespace routing {
 
 struct RoutingPrivate {
- public:
-  RoutingPrivate(const NodeValidationFunctor node_valid_functor);
-  RoutingPrivate(const NodeValidationFunctor node_valid_functor,
-                 const asymm::Keys keys);
+public:
   ~RoutingPrivate();
- private:
+private:
+  RoutingPrivate(const NodeValidationFunctor &node_valid_functor,
+                 const asymm::Keys &keys, bool client_mode);
+
   RoutingPrivate(const RoutingPrivate&);  // no copy
   RoutingPrivate& operator=(const RoutingPrivate&);  // no assign
   friend class Routing;
   AsioService asio_service_;
   std::vector<transport::Endpoint> bootstrap_nodes_;
-  asymm::Keys keys_;
+  const asymm::Keys keys_;
   transport::Endpoint node_local_endpoint_;
   transport::Endpoint node_external_endpoint_;
   transport::ManagedConnections transport_;
@@ -49,6 +49,7 @@ struct RoutingPrivate {
   // closest nodes to the client.
   bool joined_;
   const NodeValidationFunctor node_validation_functor_;
+  bool client_mode_;
 };
 
 

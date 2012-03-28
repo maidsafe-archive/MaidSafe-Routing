@@ -35,8 +35,6 @@ void SendOn(protobuf::Message message,
 }
 
 
-
-
 }  // namespace routing
 
 }  // namespace maidsafe

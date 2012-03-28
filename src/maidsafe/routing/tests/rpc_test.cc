@@ -25,22 +25,19 @@ namespace routing {
 namespace test {
 
 
-TEST(RPC, BEH_Ping) {
-
+TEST(RPC, BEH_PingMessageInitialised) {
+  // check with assert in debug mode, should NEVER fail
+  ASSERT_TRUE(rpcs::Ping(NodeId("david"), "me").IsInitialized());
 }
 
-
-TEST(RPC, BEH_Connect) {
+TEST(RPC, BEH_ConnectMessageInitialised) {
   transport::IP ip;
   transport::Endpoint our_endpoint(ip.from_string("192.168.1.1") , 5000);
-
+  ASSERT_TRUE(rpcs::Connect(NodeId("dav"), our_endpoint, "id").IsInitialized());
 }
 
-
-TEST(RPC, BEH_FindNodes) {
-  transport::IP ip;
-  transport::Endpoint our_endpoint(ip.from_string("192.168.1.1") , 5000);
-
+TEST(RPC, BEH_FindNodesMessageInitialised) {
+  ASSERT_TRUE(rpcs::FindNodes(NodeId("david")).IsInitialized());
 }
 
 

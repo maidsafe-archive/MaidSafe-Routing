@@ -56,6 +56,7 @@ class RoutingTable {
   bool AddNode(NodeInfo &node);
   bool CheckNode(NodeInfo &node);
   bool DropNode(const transport::Endpoint &endpoint);
+  bool GetNodeInfo(const transport::Endpoint &endpoint, NodeInfo *node_info);
   bool IsMyNodeInRange(const NodeId &node_id, unsigned int closest_nodes);
   bool AmIClosestNode(const NodeId &node_id);
   std::vector<NodeId> GetClosestNodes(const NodeId &from,

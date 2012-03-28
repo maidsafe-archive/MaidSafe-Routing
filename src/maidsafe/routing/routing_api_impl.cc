@@ -26,28 +26,9 @@
 namespace maidsafe {
 
 namespace routing {
-// client
-RoutingPrivate::RoutingPrivate(const NodeValidationFunctor node_valid_functor)
-    : asio_service_(),
-      bootstrap_nodes_(),
-      keys_(),
-      node_local_endpoint_(),
-      node_external_endpoint_(),
-      transport_(),
-      routing_table_(keys_), // TODO(dirvine) these keys are empty we now have invalid objects !!
-      timer_(asio_service_),
-      message_handler_(node_valid_functor, routing_table_, transport_, timer_),
-      message_received_signal_(),
-      network_status_signal_(),
-      close_node_from_to_signal_(),
-      waiting_for_response_(),
-      client_connections_(),
-      client_routing_table_(),
-      joined_(false),
-      node_validation_functor_(node_valid_functor) {}
-// node
-RoutingPrivate::RoutingPrivate(const NodeValidationFunctor node_valid_functor,
-                 const asymm::Keys keys)
+
+RoutingPrivate::RoutingPrivate(const NodeValidationFunctor &node_valid_functor,
+                 const asymm::Keys &keys, bool client_mode)
     : asio_service_(),
       bootstrap_nodes_(),
       keys_(keys),
@@ -64,13 +45,8 @@ RoutingPrivate::RoutingPrivate(const NodeValidationFunctor node_valid_functor,
       client_connections_(),
       client_routing_table_(),
       joined_(false),
-      node_validation_functor_(node_valid_functor) {}
-
-
-
-
-
-
+      node_validation_functor_(node_valid_functor),
+      client_mode_(client_mode) {}
 
 
 }  // namespace routing
