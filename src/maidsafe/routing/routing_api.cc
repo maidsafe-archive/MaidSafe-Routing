@@ -112,6 +112,10 @@ int Routing::Send(const Message &message,
     DLOG(ERROR) << "Attempt to use Reserved message type (<100), aborted send";
     return kInvalidType;
   }
+  if (routing_table_.kKeys().identity == "ANONYMOUS") {
+    // TODO(dirvine) FIXME need to get current used endpoint.
+    // set this in message.relat.ip and port
+  }
   uint32_t message_unique_id =  impl_->timer_.AddTask(message.timeout,
                                                 response_functor);
   protobuf::Message proto_message;
