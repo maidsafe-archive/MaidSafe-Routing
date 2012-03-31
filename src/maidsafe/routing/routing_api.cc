@@ -34,7 +34,6 @@ namespace routing {
 
 Message::Message()
     : type(0),
-      source_id(),
       destination_id(),
       data(),
       timeout(Parameters::timout_in_seconds),
@@ -43,18 +42,47 @@ Message::Message()
 
 Message::Message(const protobuf::Message &protobuf_message)
     : type(protobuf_message.type()),
-      source_id(protobuf_message.source_id()),
       destination_id(protobuf_message.destination_id()),
       data(protobuf_message.data()),
       timeout(Parameters::timout_in_seconds),
       direct(protobuf_message.direct()),
       replication(protobuf_message.replication()) {}
 
+
+bool SetCompanyName(const std::string &company) {
+  if (company.empty()) {
+    DLOG(ERROR) << "tried to set empty company name";
+    return false;
+  }
+  Parameters::company_name = company;
+  return (Parameters::company_name == company);
+}
+
+bool SetApplicationName(const std::string &application_name) {
+  if(application_name.empty()) {
+    DLOG(ERROR) << "tried to set empty application name";
+    return false;
+  }
+  Parameters::application_name = application_name;
+  return (Parameters::application_name == application_name);
+}
+
+
 Routing::Routing(const NodeValidationFunctor &node_valid_functor,
-                 const asymm::Keys &keys, bool client_mode)
-    : impl_(new RoutingPrivate(node_valid_functor, keys, client_mode))
+                 const asymm::Keys &keys,
+                 const boost::filesystem::path &path,
+                 bool client_mode)
+    : impl_(new RoutingPrivate(node_valid_functor,
+                               keys,
+                               path,
+                               client_mode))
 {
-  Parameters::client_mode = false;
+  // test path
+  std::string dummy_content;
+  // not catching exceptions !!
+  (fs::exists(path) && fs::is_regular_file(path)) ||
+   (WriteFile(path, dummy_content) && fs::remove(path));
+  Parameters::client_mode = client_mode;
   Init();
 }
 
@@ -79,24 +107,6 @@ bool Routing::SetEncryption(bool encryption_required) {
   return (Parameters::encryption_required = encryption_required);
 }
 
-bool Routing::SetCompanyName(const std::string &company) const {
-  if (company.empty()) {
-    DLOG(ERROR) << "tried to set empty company name";
-    return false;
-  }
-  Parameters::company_name = company;
-  return (Parameters::company_name == company);
-}
-
-bool Routing::SetApplicationName(const std::string &application_name) const {
-  if(application_name.empty()) {
-    DLOG(ERROR) << "tried to set empty application name";
-    return false;
-  }
-  Parameters::application_name = application_name;
-  return (Parameters::application_name == application_name);
-
-}
 
 int Routing::Send(const Message &message,
                    const MessageReceivedFunctor response_functor) {

@@ -69,14 +69,17 @@ struct Message {
                  // if type == 100 then this is cachable data
                  // Data field must then contain serialised data only
                  // cachable data must hash (sha512) to content
-  std::string source_id;  // your id
   std::string destination_id;  //id of final destination
   std::string data;  // message content (serialised data)
   uint16_t timeout;  // in seconds
   bool direct;  // is this to a close node group or direct
-  int32_t replication;
+  int32_t replication;  // defaults to 1 for direct and CloseNodes otherwise
 };
-
+/****************************************************************************
+* if using boost::bind or std::bind, use **shared_from_this** pointers      *
+* to preserve lifetimes of functors. The MessageRecievedFunctor WILL        *
+* ensure functors are deleted when the system timeout is reached.           *
+****************************************************************************/
 typedef std::function<void(int /*message type*/,
                            std::string /*message*/ )> MessageReceivedFunctor;
 // check and get public key and run ValidateThisNode method.
@@ -86,51 +89,29 @@ typedef std::function<void(const std::string& /*node Id*/ ,
                            const transport::Endpoint& /*our Node endpoint */)>
                                                  NodeValidationFunctor;
 
-
-
+/***************************************************************************
+*  WARNING THIS CONSTRUCTOR WILL THROW A BOOST::FILESYSTEM_ERROR           *
+* if config file is invalid                                                *
+* *************************************************************************/
 class Routing {
  public:
-   // set keys.identity to ANONYMOUS and empty NodeValidationFunctor
+   // set keys.identity to ANONYMOUS && empty NodeValidationFunctor
+   // && client_mode
    // for temporary anonymous connection.
   Routing(const NodeValidationFunctor &node_valid_functor,
-                 const asymm::Keys &keys, bool client_mode);
+          const asymm::Keys &keys,
+          const boost::filesystem::path &full_path_and_name,
+          bool client_mode);
   ~Routing();
   /****************************************************************************
   *To force the node to use a specific endpoint for bootstrapping             *
   *(i.e. private network)                                                     *
   *****************************************************************************/
   void BootStrapFromThisEndpoint(const maidsafe::transport::Endpoint& endpoint);
-   /***************************************************************************
-   *Set routing layer encryption on all messages (uses keys you pass)         *
-   * *************************************************************************/
+  /***************************************************************************
+  *Set routing layer encryption on all messages (uses keys you pass)         *
+  * *************************************************************************/
   bool SetEncryption(bool encryption_required);
-  /****************************************************************************
-   *Used to set location of config files - Default "MaidSafe"                 *
-   *Cannot be empty string !!                                                 *
-   * *************************************************************************/
-  bool SetCompanyName(const std::string &company) const;
-   /***************************************************************************
-   *Used to set location of config files - Default "Routing"                  *
-   *Cannot be empty string !!                                                 *
-   * *************************************************************************/
-  bool SetApplicationName(const std::string &application_name) const;
-  /****************************************************************************
-   *Defaults are local file called bootstrap.endpoints or will use operating  *
-   * system application cache directories for multi user then single user     *
-   * Apple                                                                    *
-   * ~/Library/Application Support/<company_name>/<application_name>/         *
-   *                                                       bootstrap.endpoints*
-   *  /Library/Application Support/<company_name>/<application_name>/         *
-   *                                                       bootstrap.endpoints*
-   * Windows                                                                  *
-   * %appdata%\<company_name>\<application_name>\bootstrap.endpoints          *
-   *                                                                          *
-   * Linux                                                                    *
-   * ~/config/<company_name>/<application_name>/bootstrap.endpoints           *
-   * /var/cache/<company_name>/<application_name>/bootstrap.endpoints         *
-   * Cannot be empty string !!, RECOMMEND THIS IS NOT ALTERED                 *
-   * **************************************************************************/
-  // DISABLED bool SetBoostrapFilePath(const boost::filesystem::path &path) const;
   /****************************************************************************
   *The reply or error (timeout) will be passed to this response_functor       *
   *error is passed as negative int (return code) and empty string             *
@@ -138,7 +119,6 @@ class Routing {
   ****************************************************************************/
   int Send(const Message &message,
             const MessageReceivedFunctor response_functor);
-
   /***************************************************************************
    * on completion of above functor this method MUST be passed the results   *
    * of the NodeValidationFunctor                                            *

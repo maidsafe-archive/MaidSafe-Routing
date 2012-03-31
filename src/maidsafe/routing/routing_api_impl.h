@@ -24,7 +24,9 @@ public:
   ~RoutingPrivate();
 private:
   RoutingPrivate(const NodeValidationFunctor &node_valid_functor,
-                 const asymm::Keys &keys, bool client_mode);
+                 const asymm::Keys &keys,
+                 const boost::filesystem::path &full_path_and_name,
+                 bool client_mode);
 
   RoutingPrivate(const RoutingPrivate&);  // no copy
   RoutingPrivate& operator=(const RoutingPrivate&);  // no assign
