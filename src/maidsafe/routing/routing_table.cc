@@ -79,7 +79,8 @@ bool RoutingTable::AddOrCheckNode(maidsafe::routing::NodeInfo& node,
 bool RoutingTable::DropNode(const transport::Endpoint &endpoint) {
     for (auto it = routing_table_nodes_.begin();
          it != routing_table_nodes_.end(); ++it) {
-       if((*it).endpoint ==  endpoint) {
+       if(((*it).endpoint.ip ==  endpoint.ip) &&
+          ((*it).endpoint.port ==  endpoint.port)){
           routing_table_nodes_.erase(it);
           return true;
        }
@@ -91,7 +92,8 @@ bool RoutingTable::GetNodeInfo(const transport::Endpoint &endpoint,
                                NodeInfo *node_info) {
     for (auto it = routing_table_nodes_.begin();
          it != routing_table_nodes_.end(); ++it) {
-       if((*it).endpoint ==  endpoint) {
+       if(((*it).endpoint.ip ==  endpoint.ip) &&
+          ((*it).endpoint.port ==  endpoint.port)){
           *node_info = (*it);
           return true;
        }

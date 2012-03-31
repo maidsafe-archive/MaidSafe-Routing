@@ -24,7 +24,7 @@ namespace maidsafe {
 namespace routing {
 
 void SendOn(protobuf::Message message,
-            transport::ManagedConnections &transport,
+            rudp::ManagedConnections &transport,
             RoutingTable &routing_table) {
   std::string signature;
   asymm::Sign(message.data(), routing_table.kKeys().private_key, &signature);

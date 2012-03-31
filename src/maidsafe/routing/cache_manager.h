@@ -30,14 +30,14 @@ namespace routing {
 class CacheManager {
  public:
   CacheManager(RoutingTable &routing_table,
-               transport::ManagedConnections &transport);
+               rudp::ManagedConnections &transport);
   void AddToCache(const protobuf::Message &message);
   bool GetFromCache(protobuf::Message &message);
  private:
   CacheManager(const CacheManager&);  // no copy
   CacheManager& operator=(const CacheManager&);  // no assign
   std::vector<std::pair<std::string, std::string> > cache_chunks_;
-  transport::ManagedConnections &transport_;
+  rudp::ManagedConnections &transport_;
   RoutingTable &routing_table_;
 };
 

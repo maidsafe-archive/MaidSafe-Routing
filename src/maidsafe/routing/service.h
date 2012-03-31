@@ -32,14 +32,14 @@ class Service {
  public:
   Service(const NodeValidationFunctor &node_validate_functor,
           RoutingTable &routing_table,
-          transport::ManagedConnections &transport);
+          rudp::ManagedConnections &transport);
   void Ping(protobuf::Message &message);
   void Connect(protobuf::Message &message);
   void FindNodes(protobuf::Message &message);
  private:
   const NodeValidationFunctor &node_validation_functor_;
   RoutingTable &routing_table_;
-  transport::ManagedConnections &transport_;
+  rudp::ManagedConnections &transport_;
 };
 
 }  // namespace routing

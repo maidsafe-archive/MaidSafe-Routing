@@ -27,7 +27,7 @@ namespace routing {
 
 Service::Service(const NodeValidationFunctor &node_validate_functor,
                  RoutingTable &routing_table,
-                 transport::ManagedConnections &transport)
+                 rudp::ManagedConnections &transport)
     : node_validation_functor_(node_validate_functor),
       routing_table_(routing_table),
       transport_(transport) {}
@@ -65,7 +65,8 @@ void Service::Connect(protobuf::Message &message) {
              return;  // FIXME
   }
   connect_response.set_answer(false);
-  transport::Endpoint our_endpoint(transport_.GetAvailableEndpoint());
+  transport::Endpoint our_endpoint;
+  transport_.GetAvailableEndpoint(&our_endpoint);
   if (connect_request.client()) {
     connect_response.set_answer(true);
     //TODO(dirvine) get the routing pointer back again

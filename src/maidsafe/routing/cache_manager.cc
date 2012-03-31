@@ -15,13 +15,14 @@
 #include "maidsafe/routing/utils.h"
 #include "maidsafe/routing/routing.pb.h"
 #include "maidsafe/routing/routing_table.h"
+#include "maidsafe/common/crypto.h"
 
 namespace maidsafe {
 
 namespace routing {
 
 CacheManager::CacheManager(RoutingTable &routing_table,
-                    transport::ManagedConnections &transport)
+                    rudp::ManagedConnections &transport)
                     : cache_chunks_(),
                     transport_(transport),
                     routing_table_(routing_table)

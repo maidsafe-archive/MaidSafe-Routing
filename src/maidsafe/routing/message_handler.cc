@@ -36,7 +36,7 @@ class Timer;
 
 MessageHandler::MessageHandler(const NodeValidationFunctor &node_validation_functor,
                 RoutingTable &routing_table,
-                transport::ManagedConnections &transport,
+                rudp::ManagedConnections &transport,
                 Timer &timer_ptr ) :
                 node_validation_functor_(node_validation_functor),
                 routing_table_(routing_table),
@@ -74,9 +74,10 @@ void MessageHandler::ProcessMessage(protobuf::Message &message) {
       message.has_relay()) {
      transport::Endpoint send_to_endpoint(message.relay().ip(),
                     message.relay().port());
-     transport_.Send(send_to_endpoint,
-                     send_to_endpoint,
-                     message.SerializeAsString());
+     //TODO(dirvine) FIXME
+//      transport_.Send(send_to_endpoint, 
+//                      send_to_endpoint,
+//                      message.SerializeAsString());
   }
   if (CheckCacheData(message))
     return;  // message was sent on it's way

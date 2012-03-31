@@ -37,7 +37,7 @@ class MessageHandler {
 public:
   MessageHandler(const NodeValidationFunctor &node_Validation_functor,
                  RoutingTable &routing_table,
-                 transport::ManagedConnections &transport,
+                 rudp::ManagedConnections &transport,
                  Timer &timer_ptr);
   ~MessageHandler();
   void ProcessMessage(protobuf::Message &message);
@@ -51,7 +51,7 @@ private:
   MessageHandler& operator=(const MessageHandler&);  // no assign
   NodeValidationFunctor node_validation_functor_;
   RoutingTable &routing_table_;
-  transport::ManagedConnections &transport_;
+  rudp::ManagedConnections &transport_;
   Timer &timer_ptr_;
   CacheManager cache_manager_;
   Service service_;

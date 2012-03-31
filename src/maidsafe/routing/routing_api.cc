@@ -112,7 +112,7 @@ int Routing::Send(const Message &message,
     DLOG(ERROR) << "Attempt to use Reserved message type (<100), aborted send";
     return kInvalidType;
   }
-  if (routing_table_.kKeys().identity == "ANONYMOUS") {
+  if (impl_->routing_table_.kKeys().identity == "ANONYMOUS") {
     // TODO(dirvine) FIXME need to get current used endpoint.
     // set this in message.relat.ip and port
   }
@@ -139,10 +139,10 @@ void Routing::ValidateThisNode(const std::string &node_id,
                               bool client) {
   NodeInfo node_info;
   // TODO(dirvine) Add Managed Connection  here !!!
-  node_info.node_id =NodeId(node_id);
+  node_info.node_id = NodeId(node_id);
   node_info.public_key = public_key;
   node_info.endpoint = their_endpoint;
-  impl_->transport_.Add(their_endpoint, node_id);
+  impl_->transport_.Add(their_endpoint, our_endpoint, node_id);
   if (client) {
     impl_->client_connections_.push_back(node_info);
   } else {
@@ -166,7 +166,8 @@ void Routing::Init() {
     }
   }
   impl_->asio_service_.Start(5);
-  impl_->node_local_endpoint_ = impl_->transport_.GetAvailableEndpoint();
+// TODO(dirvine) handle return code
+  impl_->transport_.GetAvailableEndpoint(& impl_->node_local_endpoint_);
   // TODO(dirvine) connect transport signals !!
   LOG(INFO) << " Local IP address : " << impl_->node_local_endpoint_.ip.to_string();
   LOG(INFO) << " Local Port       : " << impl_->node_local_endpoint_.port;
@@ -221,14 +222,16 @@ void Routing::ConnectionLost(transport::Endpoint& lost_endpoint) {
     return;
   for (auto it = impl_->client_connections_.begin();
         it != impl_->client_connections_.end(); ++it) {
-      if((*it).endpoint ==  lost_endpoint) {
+      if(((*it).endpoint.ip ==  lost_endpoint.ip) &&
+          ((*it).endpoint.port ==  lost_endpoint.port)) {
         impl_->client_connections_.erase(it);
         return;
       }
   }
   for (auto it = impl_->client_routing_table_.begin();
         it != impl_->client_routing_table_.end(); ++it) {
-      if((*it).endpoint ==  lost_endpoint) {
+      if(((*it).endpoint.ip ==  lost_endpoint.ip) &&
+          ((*it).endpoint.port ==  lost_endpoint.port)) {
         impl_->client_routing_table_.erase(it);
       SendOn(rpcs::FindNodes(NodeId(impl_->keys_.identity)),
       impl_->transport_,

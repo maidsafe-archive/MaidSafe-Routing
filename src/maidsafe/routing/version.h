@@ -31,14 +31,15 @@
 #  error This API uses a newer version of the maidsafe-common library.\
     Please update this project.
 #endif
-
-#define THIS_NEEDS_MAIDSAFE_TRANSPORT_VERSION 300
-#if MAIDSAFE_TRANSPORT_VERSION < THIS_NEEDS_MAIDSAFE_TRANSPORT_VERSION
-#  error This API is not compatible with the installed library.\
-    Please update the maidsafe-transport library.
-#elif MAIDSAFE_TRANSPORT_VERSION > THIS_NEEDS_MAIDSAFE_TRANSPORT_VERSION
-#  error This API uses a newer version of the maidsafe-transport library.\
-    Please update this project.
-#endif
-
+/*
+// TODO(dirvine) update when we know the names of the dependent libs
+// #define THIS_NEEDS_MAIDSAFE_TRANSPORT_VERSION 300
+// #if MAIDSAFE_TRANSPORT_VERSION < THIS_NEEDS_MAIDSAFE_TRANSPORT_VERSION
+// #  error This API is not compatible with the installed library.\
+//     Please update the maidsafe-transport library.
+// #elif MAIDSAFE_TRANSPORT_VERSION > THIS_NEEDS_MAIDSAFE_TRANSPORT_VERSION
+// #  error This API uses a newer version of the maidsafe-transport library.\
+//     Please update this project.
+// #endif
+*/
 #endif  // MAIDSAFE_ROUTING_VERSION_H_

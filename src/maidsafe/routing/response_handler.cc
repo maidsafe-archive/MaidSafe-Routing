@@ -32,7 +32,7 @@ namespace routing {
 ResponseHandler::ResponseHandler(
                 const NodeValidationFunctor& node_Validation_functor,
                 RoutingTable &routing_table,
-                transport::ManagedConnections &transport) :
+                rudp::ManagedConnections &transport) :
                 node_validation_functor_(node_Validation_functor),
                 routing_table_(routing_table),
                 transport_(transport) {}
@@ -89,8 +89,11 @@ void ResponseHandler::ProcessFindNodeResponse(protobuf::Message& message) {
     NodeInfo node_to_add;
     node_to_add.node_id = NodeId(find_nodes.nodes(i));
     if (routing_table_.CheckNode(node_to_add)) {
+      // TODO(dirvine) handle return code from transport
+      transport::Endpoint endpoint;
+      transport_.GetAvailableEndpoint(&endpoint);
       SendOn(rpcs::Connect(NodeId(find_nodes.nodes(i)),
-                               transport_.GetAvailableEndpoint(),
+                               endpoint,
                                routing_table_.kKeys().identity),
              transport_,
              routing_table_);

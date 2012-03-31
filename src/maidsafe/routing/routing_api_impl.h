@@ -34,7 +34,7 @@ private:
   const asymm::Keys keys_;
   transport::Endpoint node_local_endpoint_;
   transport::Endpoint node_external_endpoint_;
-  transport::ManagedConnections transport_;
+  rudp::ManagedConnections transport_;
   RoutingTable routing_table_;
   Timer timer_;
   MessageHandler message_handler_;
