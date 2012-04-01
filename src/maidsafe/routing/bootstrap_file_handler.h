@@ -27,18 +27,10 @@ namespace maidsafe {
 namespace routing {
 namespace fs = boost::filesystem;
 
-class BootStrapFile {
-public:
-  BootStrapFile() : file_path_set_(false), file_path_() {}
-  std::vector<transport::Endpoint> ReadBootstrapFile();
-  bool WriteBootstrapFile(const std::vector<transport::Endpoint> &endpoints);
-private:
-  BootStrapFile(const BootStrapFile&);  // no copy
-  BootStrapFile& operator=(const BootStrapFile&);  // no assign
-  bool GetFilePath();
-  bool file_path_set_;
-  fs::path file_path_;
-};
+
+std::vector<transport::Endpoint> ReadBootstrapFile(const fs::path &path);
+bool WriteBootstrapFile(const std::vector<transport::Endpoint> &endpoints,
+                        const fs::path & path);
 
 }  // namespace routing
 

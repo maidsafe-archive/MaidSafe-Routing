@@ -88,7 +88,12 @@ typedef std::function<void(const std::string& /*node Id*/ ,
                            const bool /*client ? */,
                            const transport::Endpoint& /*our Node endpoint */)>
                                                  NodeValidationFunctor;
-
+typedef std::function<void(const std::string& /*node Id*/ ,
+                           const asymm::PublicKey &public_key,
+                           const transport::Endpoint& /*their Node endpoint */,
+                           const transport::Endpoint& /*our Node endpoint */,
+                           const bool /*client ? */
+                          )> NodeValidatedFunctor;
 /***************************************************************************
 *  WARNING THIS CONSTRUCTOR WILL THROW A BOOST::FILESYSTEM_ERROR           *
 * if config file is invalid                                                *
@@ -153,6 +158,7 @@ class Routing {
   boost::signals2::signal<void(std::string /*new node*/,
                                std::string /*current furthest node*/ )>
                                            &CloseNodeReplacedOldNewSignal();
+//   boost::signals2::signal<void(                                           
  private:
   Routing(const Routing&);  // no copy
   Routing& operator=(const Routing&);  // no assign

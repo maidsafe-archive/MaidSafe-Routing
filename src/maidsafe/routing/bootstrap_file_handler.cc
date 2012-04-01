@@ -24,14 +24,12 @@ namespace maidsafe {
 
 namespace routing {
 
-std::vector<transport::Endpoint> BootStrapFile::ReadBootstrapFile() {
+std::vector<transport::Endpoint> ReadBootstrapFile(const fs::path &path) {
   protobuf::Bootstrap protobuf_bootstrap;
   std::vector<transport::Endpoint> bootstrap_nodes;
-   if (!GetFilePath())
-     return bootstrap_nodes;
 
   std::string serialised_endpoints;
-  if (!ReadFile(file_path_, &serialised_endpoints)) {
+  if (!ReadFile(path, &serialised_endpoints)) {
      DLOG(ERROR) << "could not read bootstrap file";
     return bootstrap_nodes;
   }
@@ -51,13 +49,9 @@ std::vector<transport::Endpoint> BootStrapFile::ReadBootstrapFile() {
   return  bootstrap_nodes;
 }
 
-bool BootStrapFile::WriteBootstrapFile(const std::vector<transport::Endpoint>
-                                                                  &endpoints) {
+bool WriteBootstrapFile(const std::vector<transport::Endpoint> &endpoints,
+                        const fs::path & path) {
   protobuf::Bootstrap protobuf_bootstrap;
-  if (!GetFilePath()) {
-    DLOG(ERROR) << "could not write bootstrap file";
-    return false;
-  }
 
   for (size_t i = 0; i < endpoints.size(); ++i) {
     protobuf::Endpoint *endpoint = protobuf_bootstrap.add_bootstrap_contacts();
@@ -66,25 +60,7 @@ bool BootStrapFile::WriteBootstrapFile(const std::vector<transport::Endpoint>
   }
   std::string serialised_bootstrap_nodes;
   protobuf_bootstrap.SerializeToString(&serialised_bootstrap_nodes);
-  return WriteFile(file_path_, serialised_bootstrap_nodes);
-}
-
-bool BootStrapFile::GetFilePath() {
-//TODO(dirvine) get operating system correct location
-// for now just get the name of the local file
-// FIXME we should iterate through the system paths
-  file_path_ = Parameters::bootstrap_file_path;
-  std::string dummy_content;
-  // seems daft but we will iterate paths soon enough
-  if ((fs::exists(file_path_) && fs::is_regular_file(file_path_)) ||
-      (WriteFile(file_path_, dummy_content) && fs::remove(file_path_))) {
-    file_path_set_ = true;
-    return true;
-  } else {
-    DLOG(ERROR) << "Cannot read/write file stream " << file_path_.string();
-    file_path_set_ = false;
-    return false;
-  }
+  return WriteFile(path, serialised_bootstrap_nodes);
 }
 
 

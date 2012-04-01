@@ -25,7 +25,7 @@ public:
 private:
   RoutingPrivate(const NodeValidationFunctor &node_valid_functor,
                  const asymm::Keys &keys,
-                 const boost::filesystem::path &full_path_and_name,
+                 const boost::filesystem::path &bootstrap_file_path,
                  bool client_mode);
 
   RoutingPrivate(const RoutingPrivate&);  // no copy
@@ -51,6 +51,7 @@ private:
   // closest nodes to the client.
   bool joined_;
   const NodeValidationFunctor node_validation_functor_;
+  const boost::filesystem::path bootstrap_file_path_;
   bool client_mode_;
 };
 

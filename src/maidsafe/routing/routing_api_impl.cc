@@ -48,6 +48,7 @@ RoutingPrivate::RoutingPrivate(const NodeValidationFunctor &node_functor,
       client_routing_table_(),
       joined_(false),
       node_validation_functor_(node_functor),
+      bootstrap_file_path_(path),
       client_mode_(client_mode) {}
 
 }  // namespace routing

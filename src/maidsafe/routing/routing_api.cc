@@ -82,7 +82,6 @@ Routing::Routing(const NodeValidationFunctor &node_valid_functor,
   // not catching exceptions !!
   (fs::exists(path) && fs::is_regular_file(path)) ||
    (WriteFile(path, dummy_content) && fs::remove(path));
-  Parameters::client_mode = client_mode;
   Init();
 }
 
@@ -161,8 +160,7 @@ void Routing::ValidateThisNode(const std::string &node_id,
     impl_->bootstrap_nodes_.erase(impl_->bootstrap_nodes_.begin());
     }
     impl_->bootstrap_nodes_.push_back(their_endpoint);
-    BootStrapFile bfile;
-    bfile.WriteBootstrapFile(impl_->bootstrap_nodes_);
+    WriteBootstrapFile(impl_->bootstrap_nodes_, impl_->bootstrap_file_path_);
   }
 }
 
