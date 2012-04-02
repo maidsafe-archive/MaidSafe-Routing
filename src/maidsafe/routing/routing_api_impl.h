@@ -23,8 +23,7 @@ struct RoutingPrivate {
 public:
   ~RoutingPrivate();
 private:
-  RoutingPrivate(const NodeValidationFunctor &node_valid_functor,
-                 const asymm::Keys &keys,
+  RoutingPrivate(const asymm::Keys &keys,
                  const boost::filesystem::path &bootstrap_file_path,
                  bool client_mode);
 
@@ -39,18 +38,23 @@ private:
   rudp::ManagedConnections transport_;
   RoutingTable routing_table_;
   Timer timer_;
+  const NodeValidationFunctor node_validation_functor_;
   MessageHandler message_handler_;
   boost::signals2::signal<void(int, std::string)> message_received_signal_;
-  boost::signals2::signal<void(unsigned int)> network_status_signal_;
+  boost::signals2::signal<void(int16_t)> network_status_signal_;
   boost::signals2::signal<void(std::string, std::string)>
-                                                    close_node_from_to_signal_;
+                                                close_node_from_to_signal_;
+  boost::signals2::signal<void(const std::string&,
+                           const transport::Endpoint&,
+                           const bool,
+                           const transport::Endpoint&,
+                           NodeValidatedFunctor &)> node_validation_signal_;
   std::map<uint32_t, std::pair<std::unique_ptr<boost::asio::deadline_timer>,
                               MessageReceivedFunctor> > waiting_for_response_;
   std::vector<NodeInfo> client_connections_;  // hold connections to clients only
   std::vector<NodeInfo> client_routing_table_;  // when node is client this is
   // closest nodes to the client.
   bool joined_;
-  const NodeValidationFunctor node_validation_functor_;
   const boost::filesystem::path bootstrap_file_path_;
   bool client_mode_;
 };

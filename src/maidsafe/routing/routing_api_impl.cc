@@ -27,8 +27,7 @@ namespace maidsafe {
 
 namespace routing {
 
-RoutingPrivate::RoutingPrivate(const NodeValidationFunctor &node_functor,
-                               const asymm::Keys &keys,
+RoutingPrivate::RoutingPrivate(const asymm::Keys &keys,
                                const boost::filesystem::path &path,
                                bool client_mode)
     : asio_service_(),
@@ -39,15 +38,19 @@ RoutingPrivate::RoutingPrivate(const NodeValidationFunctor &node_functor,
       transport_(),
       routing_table_(keys_),
       timer_(asio_service_),
-      message_handler_(node_functor, routing_table_, transport_, timer_),
+      node_validation_functor_(),
+      message_handler_(node_validation_functor_,
+                       routing_table_,
+                       transport_,
+                       timer_),
       message_received_signal_(),
       network_status_signal_(),
       close_node_from_to_signal_(),
+      node_validation_signal_(),
       waiting_for_response_(),
       client_connections_(),
       client_routing_table_(),
       joined_(false),
-      node_validation_functor_(node_functor),
       bootstrap_file_path_(path),
       client_mode_(client_mode) {}
 

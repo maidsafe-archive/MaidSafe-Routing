@@ -16,11 +16,7 @@ namespace maidsafe {
 
 namespace routing {
 
-bool Parameters::client_mode(false);
 bool Parameters::encryption_required(false);
-boost::filesystem::path Parameters::bootstrap_file_path("bootstrap.endpoints");
-std::string Parameters::company_name("MaidSafe");
-std::string Parameters::application_name("Routing");
 uint16_t Parameters::num_chunks_to_cache(100);
 uint16_t Parameters::timout_in_seconds(5);
 uint16_t Parameters::closest_nodes_size(8);

@@ -53,6 +53,10 @@ namespace routing {
 namespace protobuf { class Message; }
 class RoutingPrivate;
 
+int8_t GetMajorVersion(); // API changes between Major versions
+int8_t GetMinorVersion(); // internal additions to logic
+int8_t GetPatchVersion(); // bugfixes
+
 // Send method return codes
 enum SendErrors {
   kInvalidDestinatinId = -1,
@@ -61,6 +65,7 @@ enum SendErrors {
   kEmptyData = -4
 };
 
+// required for Send method 
 struct Message {
  public:
   Message();
@@ -75,6 +80,7 @@ struct Message {
   bool direct;  // is this to a close node group or direct
   int32_t replication;  // defaults to 1 for direct and CloseNodes otherwise
 };
+
 /****************************************************************************
 * if using boost::bind or std::bind, use **shared_from_this** pointers      *
 * to preserve lifetimes of functors. The MessageRecievedFunctor WILL        *
@@ -103,62 +109,60 @@ class Routing {
    // set keys.identity to ANONYMOUS && empty NodeValidationFunctor
    // && client_mode
    // for temporary anonymous connection.
-  Routing(const NodeValidationFunctor &node_valid_functor,
-          const asymm::Keys &keys,
+  Routing(const asymm::Keys &keys,
           const boost::filesystem::path &full_path_and_name,
           bool client_mode);
   ~Routing();
-  /****************************************************************************
-  *To force the node to use a specific endpoint for bootstrapping             *
-  *(i.e. private network)                                                     *
-  *****************************************************************************/
+  /**************************************************************************
+  *Useful in stand alone mode (first network node)                          *                                               *
+  ***************************************************************************/
+  maidsafe::transport::Endpoint GetEndoint();
+  /**************************************************************************
+  * returns current network status as int (> 0 is connected)                *                                               *
+  ***************************************************************************/
+  int16_t GetStatus();
+  /**************************************************************************
+  *To force the node to use a specific endpoint for bootstrapping           *
+  *(i.e. private network)                                                   *
+  ***************************************************************************/
   void BootStrapFromThisEndpoint(const maidsafe::transport::Endpoint& endpoint);
-  /***************************************************************************
-  *Set routing layer encryption on all messages (uses keys you pass)         *
-  * *************************************************************************/
-  bool SetEncryption(bool encryption_required);
-  /****************************************************************************
-  *The reply or error (timeout) will be passed to this response_functor       *
-  *error is passed as negative int (return code) and empty string             *
-  * otherwise a positive return code is message type and indicates success    *
-  ****************************************************************************/
+  /**************************************************************************
+  *The reply or error (timeout) will be passed to this response_functor     *
+  *error is passed as negative int (return code) and empty string           *
+  * otherwise a positive return code is message type and indicates success  *
+  **************************************************************************/
   int Send(const Message &message,
             const MessageReceivedFunctor response_functor);
-  /***************************************************************************
-   * on completion of above functor this method MUST be passed the results   *
-   * of the NodeValidationFunctor                                            *
-   **************************************************************************/
-  void ValidateThisNode(const std::string &node_id,
-                        const asymm::PublicKey &public_key,
-                        const transport::Endpoint &their_endpoint,
-                        const transport::Endpoint &our_endpoint,
-                        bool client);
-  /****************************************************************************
-  * this will return all known connections made by *your* client ID at this   *
-  * time. Sending a message to your own address will send to all connected    *
-  * clients with your address (except you). If you are a node and not a client*
-  * this method will return false.                                            *
-  *****************************************************************************/
+  /**************************************************************************
+  * this will return all known connections made by *your* client ID at this *
+  * time. Sending a message to your own address will send to all connected  *
+  * clients with your address (except you). If you are a node and not a     *
+  * client this method will return false.                                   *
+  ***************************************************************************/
   bool GetAllMyClientConnections(std::vector<transport::Endpoint> *clients);
-  /***************************************************************************
-  * This signal is fired on any message received that is NOT a reply to a    *
-  * request made by the Send method.                                         *
-  ****************************************************************************/
+  /**************************************************************************
+  * This signal is fired on any message received that is NOT a reply to a   *
+  * request made by the Send method.                                        *
+  ***************************************************************************/
   boost::signals2::signal<void(int, std::string)> &MessageReceivedSignal();
-  /****************************************************************************
-  * This signal fires a number from 0 to 100 and represents % network health  *
-  ****************************************************************************/
-  boost::signals2::signal<void(unsigned int)> &NetworkStatusSignal();
-  /****************************************************************************
-  * This signal fires when a new close node is inserted in routing table.     *
-  * upper layers responsible for storing key/value pairs should send all      *
-  * key/values between itself and the new nodes address to the new node.      *
-  * Keys further than the furthest node can safely be deleted (if any)        *
-  *****************************************************************************/
+  /**************************************************************************
+  * This signal fires a number from 0 to 100 and represents % network health*
+  **************************************************************************/
+  boost::signals2::signal<void(int16_t)> &NetworkStatusSignal();
+  /**************************************************************************
+  * This signal fires when a new close node is inserted in routing table.   *
+  * upper layers responsible for storing key/value pairs should send all    *
+  * key/values between itself and the new nodes address to the new node.    *
+  * Keys further than the furthest node can safely be deleted (if any)      *
+  ***************************************************************************/
   boost::signals2::signal<void(std::string /*new node*/,
                                std::string /*current furthest node*/ )>
                                            &CloseNodeReplacedOldNewSignal();
-//   boost::signals2::signal<void(                                           
+  boost::signals2::signal<void(const std::string& /*node Id*/ ,
+                           const transport::Endpoint& /*their Node */,
+                           const bool /*client ? */,
+                           const transport::Endpoint& /*our Node */,
+                           NodeValidatedFunctor & )> &NodeValidationSignal();
  private:
   Routing(const Routing&);  // no copy
   Routing& operator=(const Routing&);  // no assign
@@ -166,7 +170,12 @@ class Routing {
   void Join();
   void ReceiveMessage(const std::string &message);
   void ConnectionLost(transport::Endpoint &lost_endpoint);
-  std::unique_ptr<RoutingPrivate> impl_;
+  void ValidateThisNode(const std::string &node_id,
+                      const asymm::PublicKey &public_key,
+                      const transport::Endpoint &their_endpoint,
+                      const transport::Endpoint &our_endpoint,
+                      bool client);
+  std::unique_ptr<RoutingPrivate> impl_;  // pimpl (data members only)
 };
 
 }  // namespace routing

@@ -25,10 +25,6 @@ struct Parameters {
   static bool client_mode;
   // fully encrypt all data at routing level in both directions
   static bool encryption_required;
-  static std::string company_name;
-  static std::string application_name;
-  // path including filename of config file
-  static boost::filesystem::path bootstrap_file_path;
   static uint16_t num_chunks_to_cache;
   static uint16_t timout_in_seconds;
   static uint16_t closest_nodes_size;

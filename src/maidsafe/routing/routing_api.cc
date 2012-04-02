@@ -49,39 +49,18 @@ Message::Message(const protobuf::Message &protobuf_message)
       replication(protobuf_message.replication()) {}
 
 
-bool SetCompanyName(const std::string &company) {
-  if (company.empty()) {
-    DLOG(ERROR) << "tried to set empty company name";
-    return false;
-  }
-  Parameters::company_name = company;
-  return (Parameters::company_name == company);
-}
-
-bool SetApplicationName(const std::string &application_name) {
-  if(application_name.empty()) {
-    DLOG(ERROR) << "tried to set empty application name";
-    return false;
-  }
-  Parameters::application_name = application_name;
-  return (Parameters::application_name == application_name);
-}
-
-
-Routing::Routing(const NodeValidationFunctor &node_valid_functor,
-                 const asymm::Keys &keys,
-                 const boost::filesystem::path &path,
+Routing::Routing(const asymm::Keys &keys,
+                 const boost::filesystem::path &boostrap_file_path,
                  bool client_mode)
-    : impl_(new RoutingPrivate(node_valid_functor,
-                               keys,
-                               path,
-                               client_mode))
+    : impl_(new RoutingPrivate(keys, boostrap_file_path, client_mode))
 {
   // test path
   std::string dummy_content;
   // not catching exceptions !!
-  (fs::exists(path) && fs::is_regular_file(path)) ||
-   (WriteFile(path, dummy_content) && fs::remove(path));
+  (fs::exists(boostrap_file_path) &&
+   fs::is_regular_file(boostrap_file_path)) ||
+   (WriteFile(boostrap_file_path, dummy_content) &&
+    fs::remove(boostrap_file_path));
   Init();
 }
 
@@ -101,11 +80,6 @@ void Routing::BootStrapFromThisEndpoint(const transport::Endpoint
   impl_->bootstrap_nodes_.push_back(endpoint);
   impl_->asio_service_.service().post(std::bind(&Routing::Join, this));
 }
-
-bool Routing::SetEncryption(bool encryption_required) {
-  return (Parameters::encryption_required = encryption_required);
-}
-
 
 int Routing::Send(const Message &message,
                    const MessageReceivedFunctor response_functor) {
@@ -201,7 +175,7 @@ bs2::signal<void(int, std::string)> &Routing::MessageReceivedSignal() {
   return impl_->message_received_signal_;
 }
 
-bs2::signal<void(unsigned int)> &Routing::NetworkStatusSignal() {
+bs2::signal<void(int16_t)> &Routing::NetworkStatusSignal() {
   return impl_->network_status_signal_;
 }
 
@@ -209,6 +183,15 @@ bs2::signal<void(std::string, std::string)>
                             &Routing::CloseNodeReplacedOldNewSignal() {
   return impl_->routing_table_.CloseNodeReplacedOldNewSignal();
 }
+
+  boost::signals2::signal<void(const std::string&,
+                           const transport::Endpoint&,
+                           const bool,
+                           const transport::Endpoint&,
+                           NodeValidatedFunctor &)>
+                           &Routing::NodeValidationSignal() {
+  return impl_->node_validation_signal_;
+                           }
 
 void Routing::ReceiveMessage(const std::string &message) {
   protobuf::Message protobuf_message;
