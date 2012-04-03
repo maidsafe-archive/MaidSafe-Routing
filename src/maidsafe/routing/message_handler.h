@@ -16,7 +16,7 @@
 #include "boost/thread/shared_mutex.hpp"
 #include "boost/thread/mutex.hpp"
 #include "maidsafe/common/rsa.h"
-#include "maidsafe/transport/managed_connections.h"
+#include "maidsafe/rudp/managed_connections.h"
 #include "maidsafe/routing/routing.pb.h"
 #include "maidsafe/routing/routing_table.h"
 #include "maidsafe/routing/routing_api.h"
@@ -37,7 +37,7 @@ class MessageHandler {
 public:
   MessageHandler(const NodeValidationFunctor &node_Validation_functor,
                  RoutingTable &routing_table,
-                 rudp::ManagedConnections &transport,
+                 rudp::ManagedConnections &rudp,
                  Timer &timer_ptr);
   ~MessageHandler();
   void ProcessMessage(protobuf::Message &message);
@@ -51,7 +51,7 @@ private:
   MessageHandler& operator=(const MessageHandler&);  // no assign
   NodeValidationFunctor node_validation_functor_;
   RoutingTable &routing_table_;
-  rudp::ManagedConnections &transport_;
+  rudp::ManagedConnections &rudp_;
   Timer &timer_ptr_;
   CacheManager cache_manager_;
   Service service_;

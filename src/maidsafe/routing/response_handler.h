@@ -17,7 +17,7 @@
 #include "boost/thread/mutex.hpp"
 #include "maidsafe/common/rsa.h"
 #include "maidsafe/routing/rpcs.h"
-#include "maidsafe/transport/managed_connections.h"
+#include "maidsafe/rudp/managed_connections.h"
 #include "maidsafe/routing/routing_table.h"
 #include "maidsafe/routing/routing.pb.h"
 #include "maidsafe/routing/node_id.h"
@@ -34,7 +34,7 @@ class ResponseHandler {
  public:
   ResponseHandler(const NodeValidationFunctor &node_Validation_functor,
                  RoutingTable &routing_table,
-                 rudp::ManagedConnections &transport);
+                 rudp::ManagedConnections &rudp);
   ~ResponseHandler();
   void ProcessPingResponse(protobuf::Message &message);
   void ProcessConnectResponse(protobuf::Message &message);
@@ -44,7 +44,7 @@ class ResponseHandler {
   ResponseHandler& operator=(const ResponseHandler&);  // no assign
   NodeValidationFunctor node_validation_functor_;
   RoutingTable &routing_table_;
-  rudp::ManagedConnections &transport_;
+  rudp::ManagedConnections &rudp_;
 };
 
 }  // namespace routing

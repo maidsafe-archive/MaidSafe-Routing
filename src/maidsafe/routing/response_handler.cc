@@ -13,7 +13,7 @@
 #include "boost/thread/shared_mutex.hpp"
 #include "boost/thread/mutex.hpp"
 #include "maidsafe/common/rsa.h"
-#include "maidsafe/transport/managed_connections.h"
+#include "maidsafe/rudp/managed_connections.h"
 #include "maidsafe/routing/response_handler.h"
 #include "maidsafe/routing/routing.pb.h"
 #include "maidsafe/routing/routing_table.h"
@@ -32,10 +32,10 @@ namespace routing {
 ResponseHandler::ResponseHandler(
                 const NodeValidationFunctor& node_Validation_functor,
                 RoutingTable &routing_table,
-                rudp::ManagedConnections &transport) :
+                rudp::ManagedConnections &rudp) :
                 node_validation_functor_(node_Validation_functor),
                 routing_table_(routing_table),
-                transport_(transport) {}
+                rudp_(rudp) {}
 
 // always direct !! never pass on
 void ResponseHandler::ProcessPingResponse(protobuf::Message& message) {
@@ -60,12 +60,13 @@ void ResponseHandler::ProcessConnectResponse(protobuf::Message& message) {
   if (!connect_request.ParseFromString(connect_response.original_request()))
     return;  // invalid response
 
-  transport::Endpoint our_endpoint(connect_request.contact().endpoint().ip(),
-                                  connect_request.contact().endpoint().port());
+  boost::asio::ip::udp::endpoint our_endpoint;
+  our_endpoint.address().from_string(connect_request.contact().endpoint().ip());
+  our_endpoint.port(connect_request.contact().endpoint().port());
 
-  transport::Endpoint their_endpoint;
-  their_endpoint.ip.from_string(connect_response.contact().endpoint().ip());
-  their_endpoint.port = connect_response.contact().endpoint().port();
+  boost::asio::ip::udp::endpoint their_endpoint;
+  their_endpoint.address().from_string(connect_response.contact().endpoint().ip());
+  their_endpoint.port(connect_response.contact().endpoint().port());
   if (node_validation_functor_)  // never add any node to routing table
     node_validation_functor_(connect_response.contact().node_id(),
                             their_endpoint,
@@ -89,13 +90,13 @@ void ResponseHandler::ProcessFindNodeResponse(protobuf::Message& message) {
     NodeInfo node_to_add;
     node_to_add.node_id = NodeId(find_nodes.nodes(i));
     if (routing_table_.CheckNode(node_to_add)) {
-      // TODO(dirvine) handle return code from transport
-      transport::Endpoint endpoint;
-      transport_.GetAvailableEndpoint(&endpoint);
+      // TODO(dirvine) handle return code from rudp
+      boost::asio::ip::udp::endpoint endpoint;
+      rudp_.GetAvailableEndpoint(&endpoint);
       SendOn(rpcs::Connect(NodeId(find_nodes.nodes(i)),
                                endpoint,
                                routing_table_.kKeys().identity),
-             transport_,
+             rudp_,
              routing_table_);
     }
   }

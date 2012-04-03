@@ -16,7 +16,7 @@
 #include "boost/thread/shared_mutex.hpp"
 #include "boost/thread/mutex.hpp"
 #include "maidsafe/common/rsa.h"
-#include "maidsafe/transport/managed_connections.h"
+#include "maidsafe/rudp/managed_connections.h"
 #include "maidsafe/routing/routing.pb.h"
 #include "maidsafe/routing/node_id.h"
 #include "maidsafe/routing/log.h"
@@ -27,9 +27,8 @@ namespace maidsafe {
 namespace routing {
 namespace fs = boost::filesystem;
 
-
-std::vector<transport::Endpoint> ReadBootstrapFile(const fs::path &path);
-bool WriteBootstrapFile(const std::vector<transport::Endpoint> &endpoints,
+std::vector<boost::asio::ip::udp::endpoint> ReadBootstrapFile(const fs::path &path);
+bool WriteBootstrapFile(const std::vector<boost::asio::ip::udp::endpoint> &endpoints,
                         const fs::path & path);
 
 }  // namespace routing

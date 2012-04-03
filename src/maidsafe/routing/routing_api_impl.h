@@ -31,11 +31,11 @@ private:
   RoutingPrivate& operator=(const RoutingPrivate&);  // no assign
   friend class Routing;
   AsioService asio_service_;
-  std::vector<transport::Endpoint> bootstrap_nodes_;
+  std::vector<boost::asio::ip::udp::endpoint> bootstrap_nodes_;
   const asymm::Keys keys_;
-  transport::Endpoint node_local_endpoint_;
-  transport::Endpoint node_external_endpoint_;
-  rudp::ManagedConnections transport_;
+  boost::asio::ip::udp::endpoint node_local_endpoint_;
+  boost::asio::ip::udp::endpoint node_external_endpoint_;
+  rudp::ManagedConnections rudp_;
   RoutingTable routing_table_;
   Timer timer_;
   const NodeValidationFunctor node_validation_functor_;
@@ -45,9 +45,9 @@ private:
   boost::signals2::signal<void(std::string, std::string)>
                                                 close_node_from_to_signal_;
   boost::signals2::signal<void(const std::string&,
-                           const transport::Endpoint&,
+                           const boost::asio::ip::udp::endpoint&,
                            const bool,
-                           const transport::Endpoint&,
+                           const boost::asio::ip::udp::endpoint&,
                            NodeValidatedFunctor &)> node_validation_signal_;
   std::map<uint32_t, std::pair<std::unique_ptr<boost::asio::deadline_timer>,
                               MessageReceivedFunctor> > waiting_for_response_;

@@ -14,7 +14,7 @@
 
 #include "boost/thread/locks.hpp"
 #include "boost/assert.hpp"
-#include "maidsafe/transport/managed_connections.h"
+#include "maidsafe/rudp/managed_connections.h"
 #include "maidsafe/routing/parameters.h"
 #include "maidsafe/routing/routing_table.h"
 #include "maidsafe/routing/routing_api.h"
@@ -40,7 +40,7 @@ RoutingTable::~RoutingTable() {
   routing_table_nodes_.clear();
 }
 
-bs2::signal<void(std::string, std::string)>
+boost::signals2::signal<void(std::string, std::string)>
                             &RoutingTable::CloseNodeReplacedOldNewSignal() {
   return close_node_from_to_signal_;
 }
@@ -76,11 +76,10 @@ bool RoutingTable::AddOrCheckNode(maidsafe::routing::NodeInfo& node,
   return false;
 }
 
-bool RoutingTable::DropNode(const transport::Endpoint &endpoint) {
+bool RoutingTable::DropNode(const boost::asio::ip::udp::endpoint &endpoint) {
     for (auto it = routing_table_nodes_.begin();
          it != routing_table_nodes_.end(); ++it) {
-       if(((*it).endpoint.ip ==  endpoint.ip) &&
-          ((*it).endpoint.port ==  endpoint.port)){
+       if(((*it).endpoint ==  endpoint)){
           routing_table_nodes_.erase(it);
           return true;
        }
@@ -88,12 +87,11 @@ bool RoutingTable::DropNode(const transport::Endpoint &endpoint) {
    return false;
 }
 
-bool RoutingTable::GetNodeInfo(const transport::Endpoint &endpoint,
+bool RoutingTable::GetNodeInfo(const boost::asio::ip::udp::endpoint &endpoint,
                                NodeInfo *node_info) {
     for (auto it = routing_table_nodes_.begin();
          it != routing_table_nodes_.end(); ++it) {
-       if(((*it).endpoint.ip ==  endpoint.ip) &&
-          ((*it).endpoint.port ==  endpoint.port)){
+       if(((*it).endpoint ==  endpoint)){
           *node_info = (*it);
           return true;
        }
@@ -112,13 +110,6 @@ bool RoutingTable::AmIClosestNode(const NodeId& node_id) {
 bool RoutingTable::CheckValidParameters(const NodeInfo& node)const {
   if ((!asymm::ValidateKey(node.public_key, 0))) {
     DLOG(INFO) << "invalid public key";
-    return false;
-  }
-
-  if  ((!node.endpoint.ip.is_v4()) &&
-      (node.endpoint.port < 1500) &&
-      (node.endpoint.port > 35000)) {
-    DLOG(INFO) << "invalid endpoint";
     return false;
   }
 
@@ -147,9 +138,7 @@ bool RoutingTable::CheckParametersAreUnique(const NodeInfo& node) const {
     if (std::find_if(routing_table_nodes_.begin(),
                    routing_table_nodes_.end(),
                    [&node](const NodeInfo &i)->bool
-                   { return (i.endpoint.ip.to_string() ==
-                            node.endpoint.ip.to_string()) &&
-                            (i.endpoint.port == node.endpoint.port ); })
+                   { return (i.endpoint == node.endpoint); })
                  != routing_table_nodes_.end()) {
      DLOG(INFO) << "Already have node with this endpoint";
      return false;

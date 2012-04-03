@@ -11,7 +11,7 @@
  ******************************************************************************/
 
 #include "maidsafe/routing/service.h"
-#include "maidsafe/transport/managed_connections.h"
+#include "maidsafe/rudp/managed_connections.h"
 #include "maidsafe/routing/parameters.h"
 #include "maidsafe/routing/routing_api.h"
 #include "maidsafe/routing/node_id.h"
@@ -27,10 +27,10 @@ namespace routing {
 
 Service::Service(const NodeValidationFunctor &node_validate_functor,
                  RoutingTable &routing_table,
-                 rudp::ManagedConnections &transport)
+                 rudp::ManagedConnections &rudp)
     : node_validation_functor_(node_validate_functor),
       routing_table_(routing_table),
-      transport_(transport) {}
+      rudp_(rudp) {}
 
 void Service::Ping(protobuf::Message &message) {
   if (message.destination_id() != routing_table_.kKeys().identity)
@@ -48,7 +48,7 @@ void Service::Ping(protobuf::Message &message) {
   message.set_destination_id(message.source_id());
   message.set_source_id(routing_table_.kKeys().identity);
   BOOST_ASSERT_MSG(message.IsInitialized(), "unintialised message");
-  SendOn(message, transport_, routing_table_);
+  SendOn(message, rudp_, routing_table_);
 }
 
 void Service::Connect(protobuf::Message &message) {
@@ -65,23 +65,23 @@ void Service::Connect(protobuf::Message &message) {
              return;  // FIXME
   }
   connect_response.set_answer(false);
-  transport::Endpoint our_endpoint;
-  transport_.GetAvailableEndpoint(&our_endpoint);
+  boost::asio::ip::udp::endpoint our_endpoint;
+  boost::asio::ip::udp::endpoint their_endpoint;
+  their_endpoint.address().from_string(
+                            connect_request.contact().endpoint().ip());
+  their_endpoint.port(connect_request.contact().endpoint().port());
+  rudp_.GetAvailableEndpoint(&our_endpoint);
   if (connect_request.client()) {
     connect_response.set_answer(true);
     //TODO(dirvine) get the routing pointer back again
     node_validation_functor_(routing_table_.kKeys().identity,
-                    transport::Endpoint
-                    (connect_request.contact().endpoint().ip(),
-                    connect_request.contact().endpoint().port()),
+                    their_endpoint,
                     message.client_node(),
                     our_endpoint);
   } else if (routing_table_.CheckNode(node)) {
     connect_response.set_answer(true);
     node_validation_functor_(routing_table_.kKeys().identity,
-                    transport::Endpoint
-                    (connect_request.contact().endpoint().ip(),
-                    connect_request.contact().endpoint().port()),
+                    their_endpoint,
                     message.client_node(),
                     our_endpoint);
   }
@@ -90,8 +90,8 @@ void Service::Connect(protobuf::Message &message) {
   protobuf::Endpoint *endpoint;
   contact =connect_response.mutable_contact();
   endpoint = contact->mutable_endpoint();
-  endpoint->set_ip(our_endpoint.ip.to_string());
-  endpoint->set_port(our_endpoint.port);
+  endpoint->set_ip(our_endpoint.address().to_string());
+  endpoint->set_port(our_endpoint.port());
   contact->set_node_id(routing_table_.kKeys().identity);
 //  connect_response.set_timestamp(GetTimeStamp());
   connect_response.set_original_request(message.data());
@@ -106,7 +106,7 @@ void Service::Connect(protobuf::Message &message) {
   if (!message.IsInitialized())
     DLOG(INFO) << "Uninitialised message";
   BOOST_ASSERT_MSG(message.IsInitialized(), "unintialised message");
-  SendOn(message, transport_, routing_table_);
+  SendOn(message, rudp_, routing_table_);
 }
 
 void Service::FindNodes(protobuf::Message &message) {
@@ -131,7 +131,7 @@ void Service::FindNodes(protobuf::Message &message) {
   message.set_replication(1);
   message.set_type(1);
   BOOST_ASSERT_MSG(message.IsInitialized(), "unintialised message");
-  SendOn(message, transport_, routing_table_);
+  SendOn(message, rudp_, routing_table_);
 }
 
 }  // namespace routing

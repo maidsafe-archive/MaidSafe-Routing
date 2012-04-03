@@ -13,7 +13,7 @@
 #include "boost/thread/shared_mutex.hpp"
 #include "boost/thread/mutex.hpp"
 #include "maidsafe/common/rsa.h"
-#include "maidsafe/transport/managed_connections.h"
+#include "maidsafe/rudp/managed_connections.h"
 #include "maidsafe/routing/cache_manager.h"
 #include "maidsafe/routing/message_handler.h"
 #include "maidsafe/routing/response_handler.h"
@@ -36,17 +36,17 @@ class Timer;
 
 MessageHandler::MessageHandler(const NodeValidationFunctor &node_validation_functor,
                 RoutingTable &routing_table,
-                rudp::ManagedConnections &transport,
+                rudp::ManagedConnections &rudp,
                 Timer &timer_ptr ) :
                 node_validation_functor_(node_validation_functor),
                 routing_table_(routing_table),
-                transport_(transport),
+                rudp_(rudp),
                 timer_ptr_(timer_ptr),
-                cache_manager_(routing_table, transport),
-                service_(node_validation_functor, routing_table, transport),
+                cache_manager_(routing_table, rudp),
+                service_(node_validation_functor, routing_table, rudp),
                 response_handler_(node_validation_functor,
                                   routing_table,
-                                  transport),
+                                  rudp),
                 message_received_signal_()  {}
 
 boost::signals2::signal<void(int, std::string)>
@@ -72,10 +72,11 @@ void MessageHandler::ProcessMessage(protobuf::Message &message) {
   }
   if ((message.destination_id() == routing_table_.kKeys().identity) &&
       message.has_relay()) {
-     transport::Endpoint send_to_endpoint(message.relay().ip(),
-                    message.relay().port());
+     boost::asio::ip::udp::endpoint send_to_endpoint;
+     send_to_endpoint.address().from_string(message.relay().ip());
+     send_to_endpoint.port(message.relay().port());
      //TODO(dirvine) FIXME
-//      transport_.Send(send_to_endpoint, 
+//      rudp_.Send(send_to_endpoint, 
 //                      send_to_endpoint,
 //                      message.SerializeAsString());
   }
@@ -101,14 +102,14 @@ void MessageHandler::ProcessMessage(protobuf::Message &message) {
       // send to all clients with that node_id;
       return;
     } else {
-      SendOn(message, transport_, routing_table_);
+      SendOn(message, rudp_, routing_table_);
       return;
     }
   }
 
   // is it for us ??
   if (!routing_table_.AmIClosestNode(NodeId(message.destination_id()))) {
-    SendOn(message, transport_, routing_table_);
+    SendOn(message, rudp_, routing_table_);
     return;
   }
 
@@ -160,7 +161,7 @@ void MessageHandler::ProcessMessage(protobuf::Message &message) {
                                 static_cast<uint16_t>(message.replication()));
   for (auto it = close.begin(); it != close.end(); ++it) {
     message.set_destination_id((*it).String());
-    SendOn(message, transport_, routing_table_);
+    SendOn(message, rudp_, routing_table_);
   }
 }
 
@@ -174,7 +175,7 @@ bool MessageHandler::CheckAndSendToLocalClients(protobuf::Message &message) {
 //                 {
 //                   if (i.node_id ==  destination_node) {
 //                     found = true;
-//                     // transport send TODO(dirvine)
+//                     // rudp send TODO(dirvine)
 //                   }
 //                   return found;  // lambda return
 //                 });

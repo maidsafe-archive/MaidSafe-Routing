@@ -18,6 +18,7 @@
 #include "maidsafe/routing/node_id.h"
 #include "maidsafe/routing/routing_table.h"
 #include "maidsafe/routing/timer.h"
+#include "maidsafe/routing/version.h"
 #include "maidsafe/routing/bootstrap_file_handler.h"
 #include "maidsafe/routing/return_codes.h"
 #include "maidsafe/routing/utils.h"
@@ -32,6 +33,18 @@ namespace maidsafe {
 
 namespace routing {
 
+int8_t GetMajorVersion() {
+  return MAIDSAFE_ROUTING_VERSION;
+}
+
+int8_t GetMinorVersion() {
+  return MAIDSAFE_ROUTING_VERSION; /*_MINOR; TODO(dirvine)*/
+}
+
+int8_t GetPatchVersion() {
+  return MAIDSAFE_ROUTING_VERSION; /*_PATCH; TODO(dirvine) */
+}
+  
 Message::Message()
     : type(0),
       destination_id(),
@@ -65,14 +78,14 @@ Routing::Routing(const asymm::Keys &keys,
 }
 
 // drop existing routing table and restart
-void Routing::BootStrapFromThisEndpoint(const transport::Endpoint
+void Routing::BootStrapFromThisEndpoint(const boost::asio::ip::udp::endpoint
 &endpoint) {
-  LOG(INFO) << " Entered bootstrap IP address : " << endpoint.ip.to_string();
-  LOG(INFO) << " Entered bootstrap Port       : " << endpoint.port;
+  LOG(INFO) << " Entered bootstrap IP address : " << endpoint.address().to_string();
+  LOG(INFO) << " Entered bootstrap Port       : " << endpoint.port();
   for (unsigned int i = 0; i < impl_->routing_table_.Size(); ++i) {
     NodeInfo remove_node =
     impl_->routing_table_.GetClosestNode(NodeId(impl_->routing_table_.kKeys().identity), 0);
-    impl_->transport_.Remove(remove_node.endpoint);
+    impl_->rudp_.Remove(remove_node.endpoint);
     impl_->routing_table_.DropNode(remove_node.endpoint);
   }
   impl_->network_status_signal_(impl_->routing_table_.Size());
@@ -110,22 +123,22 @@ int Routing::Send(const Message &message,
   proto_message.set_replication(message.replication);
   proto_message.set_type(message.type);
   proto_message.set_routing_failure(false);
-  SendOn(proto_message, impl_->transport_, impl_->routing_table_);
+  SendOn(proto_message, impl_->rudp_, impl_->routing_table_);
   return 0;
 }
 
 
 void Routing::ValidateThisNode(const std::string &node_id,
                               const asymm::PublicKey &public_key,
-                              const transport::Endpoint &their_endpoint,
-                              const transport::Endpoint &our_endpoint,
+                              const boost::asio::ip::udp::endpoint &their_endpoint,
+                              const boost::asio::ip::udp::endpoint &our_endpoint,
                               bool client) {
   NodeInfo node_info;
   // TODO(dirvine) Add Managed Connection  here !!!
   node_info.node_id = NodeId(node_id);
   node_info.public_key = public_key;
   node_info.endpoint = their_endpoint;
-  impl_->transport_.Add(their_endpoint, our_endpoint, node_id);
+  impl_->rudp_.Add(their_endpoint, our_endpoint, node_id);
   if (client) {
     impl_->client_connections_.push_back(node_info);
   } else {
@@ -149,10 +162,10 @@ void Routing::Init() {
   }
   impl_->asio_service_.Start(5);
 // TODO(dirvine) handle return code
-  impl_->transport_.GetAvailableEndpoint(& impl_->node_local_endpoint_);
-  // TODO(dirvine) connect transport signals !!
-  LOG(INFO) << " Local IP address : " << impl_->node_local_endpoint_.ip.to_string();
-  LOG(INFO) << " Local Port       : " << impl_->node_local_endpoint_.port;
+  impl_->rudp_.GetAvailableEndpoint(& impl_->node_local_endpoint_);
+  // TODO(dirvine) connect rudp signals !!
+  LOG(INFO) << " Local IP address : " << impl_->node_local_endpoint_.address().to_string();
+  LOG(INFO) << " Local Port       : " << impl_->node_local_endpoint_.port();
   Join();
 }
 //TODO add anonymous join method FIXME
@@ -185,9 +198,9 @@ bs2::signal<void(std::string, std::string)>
 }
 
   boost::signals2::signal<void(const std::string&,
-                           const transport::Endpoint&,
+                           const boost::asio::ip::udp::endpoint&,
                            const bool,
-                           const transport::Endpoint&,
+                           const boost::asio::ip::udp::endpoint&,
                            NodeValidatedFunctor &)>
                            &Routing::NodeValidationSignal() {
   return impl_->node_validation_signal_;
@@ -200,32 +213,30 @@ void Routing::ReceiveMessage(const std::string &message) {
     impl_->message_handler_.ProcessMessage(protobuf_message);
 }
 
-void Routing::ConnectionLost(transport::Endpoint& lost_endpoint) {
+void Routing::ConnectionLost(boost::asio::ip::udp::endpoint& lost_endpoint) {
   NodeInfo node_info;
   if ((impl_->routing_table_.GetNodeInfo(lost_endpoint, &node_info) &&
      (impl_->routing_table_.IsMyNodeInRange(node_info.node_id,
                                             Parameters::closest_nodes_size)))) {
     SendOn(rpcs::FindNodes(NodeId(impl_->keys_.identity)),
-           impl_->transport_,
+           impl_->rudp_,
            impl_->routing_table_); // close node, get more
   }
   if (!impl_->routing_table_.DropNode(lost_endpoint))
     return;
   for (auto it = impl_->client_connections_.begin();
         it != impl_->client_connections_.end(); ++it) {
-      if(((*it).endpoint.ip ==  lost_endpoint.ip) &&
-          ((*it).endpoint.port ==  lost_endpoint.port)) {
+      if((*it).endpoint ==  lost_endpoint) {
         impl_->client_connections_.erase(it);
         return;
       }
   }
   for (auto it = impl_->client_routing_table_.begin();
         it != impl_->client_routing_table_.end(); ++it) {
-      if(((*it).endpoint.ip ==  lost_endpoint.ip) &&
-          ((*it).endpoint.port ==  lost_endpoint.port)) {
+      if((*it).endpoint ==  lost_endpoint) {
         impl_->client_routing_table_.erase(it);
       SendOn(rpcs::FindNodes(NodeId(impl_->keys_.identity)),
-      impl_->transport_,
+      impl_->rudp_,
       impl_->routing_table_);  // close node, get more
       return;
       }

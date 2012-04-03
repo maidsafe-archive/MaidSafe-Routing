@@ -48,7 +48,7 @@ const protobuf::Message Ping(const NodeId &node_id,
 }
 
 const protobuf::Message Connect(const NodeId &node_id,
-                   const transport::Endpoint &our_endpoint,
+                   const boost::asio::ip::udp::endpoint &our_endpoint,
                    const std::string &identity) {
   protobuf::Message message;
   protobuf::Contact *contact;
@@ -56,8 +56,8 @@ const protobuf::Message Connect(const NodeId &node_id,
   protobuf::ConnectRequest protobuf_connect_request;
   contact = protobuf_connect_request.mutable_contact();
   endpoint = contact->mutable_endpoint();
-  endpoint->set_ip(our_endpoint.ip.to_string());
-  endpoint->set_port(our_endpoint.port);
+  endpoint->set_ip(our_endpoint.address().to_string());
+  endpoint->set_port(our_endpoint.port());
   contact->set_node_id(identity);
   protobuf_connect_request.set_timestamp(GetTimeStamp());
   message.set_destination_id(node_id.String());

@@ -10,7 +10,7 @@
  *  the explicit written permission of the board of directors of maidsafe.net. *
  ******************************************************************************/
 
-#include "maidsafe/transport/managed_connections.h"
+#include "maidsafe/rudp/managed_connections.h"
 #include "maidsafe/routing/routing.pb.h"
 #include "maidsafe/routing/routing_table.h"
 #include "maidsafe/routing/node_id.h"
@@ -24,14 +24,14 @@ namespace maidsafe {
 namespace routing {
 
 void SendOn(protobuf::Message message,
-            rudp::ManagedConnections &transport,
+            rudp::ManagedConnections &rudp,
             RoutingTable &routing_table) {
   std::string signature;
   asymm::Sign(message.data(), routing_table.kKeys().private_key, &signature);
   message.set_signature(signature);
   NodeInfo next_node(routing_table.GetClosestNode(NodeId(message.destination_id()),
                                                0));
-// FIXME SEND transport_->Send(next_node.endpoint, message.SerializeAsString());
+// FIXME SEND rudp_->Send(next_node.endpoint, message.SerializeAsString());
 }
 
 

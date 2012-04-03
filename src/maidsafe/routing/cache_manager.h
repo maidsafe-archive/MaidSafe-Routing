@@ -16,7 +16,7 @@
 #include "boost/thread/shared_mutex.hpp"
 #include "boost/thread/mutex.hpp"
 #include "maidsafe/common/rsa.h"
-#include "maidsafe/transport/managed_connections.h"
+#include "maidsafe/rudp/managed_connections.h"
 #include "maidsafe/routing/routing.pb.h"
 #include "maidsafe/routing/routing_table.h"
 #include "maidsafe/routing/node_id.h"
@@ -30,14 +30,14 @@ namespace routing {
 class CacheManager {
  public:
   CacheManager(RoutingTable &routing_table,
-               rudp::ManagedConnections &transport);
+               rudp::ManagedConnections &rudp);
   void AddToCache(const protobuf::Message &message);
   bool GetFromCache(protobuf::Message &message);
  private:
   CacheManager(const CacheManager&);  // no copy
   CacheManager& operator=(const CacheManager&);  // no assign
   std::vector<std::pair<std::string, std::string> > cache_chunks_;
-  rudp::ManagedConnections &transport_;
+  rudp::ManagedConnections &rudp_;
   RoutingTable &routing_table_;
 };
 

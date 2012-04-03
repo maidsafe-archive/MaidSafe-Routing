@@ -14,7 +14,7 @@
 #include <vector>
 #include "maidsafe/common/test.h"
 #include "maidsafe/common/utils.h"
-#include "maidsafe/transport/managed_connections.h"
+#include "maidsafe/rudp/managed_connections.h"
 #include "maidsafe/routing/parameters.h"
 #include "maidsafe/routing/bootstrap_file_handler.h"
 #include "maidsafe/routing/log.h"
@@ -27,9 +27,9 @@ namespace test {
 
 
 TEST(BootStrapFileTest1, BEH_ReadValidFile) {
-//   std::vector<transport::Endpoint>vec;
-//   transport::IP ip;
-//   vec.push_back(transport::Endpoint(ip.from_string("192.168.1.1") , 5000));
+//   std::vector<boost::asio::ip::udp::endpoint>vec;
+//   rudp::IP ip;
+//   vec.push_back(boost::asio::ip::udp::endpoint(ip.from_string("192.168.1.1") , 5000));
 // //   (test_handler.ReadBootstrapFile());
 //   EXPECT_TRUE(test_handler.WriteBootstrapFile(vec));
 //   EXPECT_FALSE(test_handler.ReadBootstrapFile().empty());

@@ -15,7 +15,7 @@
 #include "boost/filesystem.hpp"
 #include "boost/filesystem/fstream.hpp"
 #include "maidsafe/common/utils.h"
-#include "maidsafe/transport/managed_connections.h"
+#include "maidsafe/rudp/managed_connections.h"
 #include "maidsafe/routing/bootstrap_file_handler.h"
 #include "maidsafe/routing/parameters.h"
 #include "maidsafe/routing/log.h"
@@ -24,9 +24,9 @@ namespace maidsafe {
 
 namespace routing {
 
-std::vector<transport::Endpoint> ReadBootstrapFile(const fs::path &path) {
+std::vector<boost::asio::ip::udp::endpoint> ReadBootstrapFile(const fs::path &path) {
   protobuf::Bootstrap protobuf_bootstrap;
-  std::vector<transport::Endpoint> bootstrap_nodes;
+  std::vector<boost::asio::ip::udp::endpoint> bootstrap_nodes;
 
   std::string serialised_endpoints;
   if (!ReadFile(path, &serialised_endpoints)) {
@@ -38,25 +38,24 @@ std::vector<transport::Endpoint> ReadBootstrapFile(const fs::path &path) {
     return bootstrap_nodes;
   }
   bootstrap_nodes.resize(protobuf_bootstrap.bootstrap_contacts().size());
-  transport::Endpoint endpoint;
-  transport::IP ip;
+  boost::asio::ip::udp::endpoint endpoint;
   for (int i = 0; i < protobuf_bootstrap.bootstrap_contacts().size(); ++i) {
-    endpoint.ip = ip.from_string(protobuf_bootstrap.bootstrap_contacts(i).ip());
-    endpoint.port = protobuf_bootstrap.bootstrap_contacts(i).port();
+    endpoint.address().from_string(protobuf_bootstrap.bootstrap_contacts(i).ip());
+    endpoint.port(protobuf_bootstrap.bootstrap_contacts(i).port());
     bootstrap_nodes[i] = endpoint;
   }
 
   return  bootstrap_nodes;
 }
 
-bool WriteBootstrapFile(const std::vector<transport::Endpoint> &endpoints,
+bool WriteBootstrapFile(const std::vector<boost::asio::ip::udp::endpoint> &endpoints,
                         const fs::path & path) {
   protobuf::Bootstrap protobuf_bootstrap;
 
   for (size_t i = 0; i < endpoints.size(); ++i) {
     protobuf::Endpoint *endpoint = protobuf_bootstrap.add_bootstrap_contacts();
-    endpoint->set_ip(endpoints[i].ip.to_string());
-    endpoint->set_port(endpoints[i].port);
+    endpoint->set_ip(endpoints[i].address().to_string());
+    endpoint->set_port(endpoints[i].port());
   }
   std::string serialised_bootstrap_nodes;
   protobuf_bootstrap.SerializeToString(&serialised_bootstrap_nodes);

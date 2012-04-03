@@ -38,7 +38,7 @@
 #include "boost/signals2/signal.hpp"
 #include "boost/filesystem/path.hpp"
 #include "maidsafe/common/rsa.h"
-#include "maidsafe/transport/managed_connections.h"
+#include "maidsafe/rudp/managed_connections.h"
 #include "maidsafe/routing/version.h"
 
 #if MAIDSAFE_ROUTING_VERSION != 100
@@ -90,14 +90,14 @@ typedef std::function<void(int /*message type*/,
                            std::string /*message*/ )> MessageReceivedFunctor;
 // check and get public key and run ValidateThisNode method.
 typedef std::function<void(const std::string& /*node Id*/ ,
-                           const transport::Endpoint& /*their Node endpoint */,
+                           const boost::asio::ip::udp::endpoint& /*their Node endpoint */,
                            const bool /*client ? */,
-                           const transport::Endpoint& /*our Node endpoint */)>
+                           const boost::asio::ip::udp::endpoint& /*our Node endpoint */)>
                                                  NodeValidationFunctor;
 typedef std::function<void(const std::string& /*node Id*/ ,
                            const asymm::PublicKey &public_key,
-                           const transport::Endpoint& /*their Node endpoint */,
-                           const transport::Endpoint& /*our Node endpoint */,
+                           const boost::asio::ip::udp::endpoint& /*their Node endpoint */,
+                           const boost::asio::ip::udp::endpoint& /*our Node endpoint */,
                            const bool /*client ? */
                           )> NodeValidatedFunctor;
 /***************************************************************************
@@ -114,18 +114,18 @@ class Routing {
           bool client_mode);
   ~Routing();
   /**************************************************************************
-  *Useful in stand alone mode (first network node)                          *                                               *
+  *Useful in stand alone mode (first network node)                          * 
   ***************************************************************************/
-  maidsafe::transport::Endpoint GetEndoint();
+  boost::asio::ip::udp::endpoint GetEndoint();
   /**************************************************************************
-  * returns current network status as int (> 0 is connected)                *                                               *
+  * returns current network status as int (> 0 is connected)                *
   ***************************************************************************/
   int16_t GetStatus();
   /**************************************************************************
   *To force the node to use a specific endpoint for bootstrapping           *
   *(i.e. private network)                                                   *
   ***************************************************************************/
-  void BootStrapFromThisEndpoint(const maidsafe::transport::Endpoint& endpoint);
+  void BootStrapFromThisEndpoint(const boost::asio::ip::udp::endpoint& endpoint);
   /**************************************************************************
   *The reply or error (timeout) will be passed to this response_functor     *
   *error is passed as negative int (return code) and empty string           *
@@ -139,7 +139,7 @@ class Routing {
   * clients with your address (except you). If you are a node and not a     *
   * client this method will return false.                                   *
   ***************************************************************************/
-  bool GetAllMyClientConnections(std::vector<transport::Endpoint> *clients);
+  bool GetAllMyClientConnections(std::vector<boost::asio::ip::udp::endpoint> *clients);
   /**************************************************************************
   * This signal is fired on any message received that is NOT a reply to a   *
   * request made by the Send method.                                        *
@@ -159,9 +159,9 @@ class Routing {
                                std::string /*current furthest node*/ )>
                                            &CloseNodeReplacedOldNewSignal();
   boost::signals2::signal<void(const std::string& /*node Id*/ ,
-                           const transport::Endpoint& /*their Node */,
+                           const boost::asio::ip::udp::endpoint& /*their Node */,
                            const bool /*client ? */,
-                           const transport::Endpoint& /*our Node */,
+                           const boost::asio::ip::udp::endpoint& /*our Node */,
                            NodeValidatedFunctor & )> &NodeValidationSignal();
  private:
   Routing(const Routing&);  // no copy
@@ -169,11 +169,11 @@ class Routing {
   void Init();
   void Join();
   void ReceiveMessage(const std::string &message);
-  void ConnectionLost(transport::Endpoint &lost_endpoint);
+  void ConnectionLost(boost::asio::ip::udp::endpoint &lost_endpoint);
   void ValidateThisNode(const std::string &node_id,
                       const asymm::PublicKey &public_key,
-                      const transport::Endpoint &their_endpoint,
-                      const transport::Endpoint &our_endpoint,
+                      const boost::asio::ip::udp::endpoint &their_endpoint,
+                      const boost::asio::ip::udp::endpoint &our_endpoint,
                       bool client);
   std::unique_ptr<RoutingPrivate> impl_;  // pimpl (data members only)
 };

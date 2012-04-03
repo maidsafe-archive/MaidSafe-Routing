@@ -21,7 +21,7 @@
 #endif
 
 #include "maidsafe/common/version.h"
-#include "maidsafe/transport/version.h"
+#include "maidsafe/rudp/version.h"
 
 #define THIS_NEEDS_MAIDSAFE_COMMON_VERSION 1200
 #if MAIDSAFE_COMMON_VERSION < THIS_NEEDS_MAIDSAFE_COMMON_VERSION
@@ -31,15 +31,15 @@
 #  error This API uses a newer version of the maidsafe-common library.\
     Please update this project.
 #endif
-/*
+
 // TODO(dirvine) update when we know the names of the dependent libs
-// #define THIS_NEEDS_MAIDSAFE_TRANSPORT_VERSION 300
-// #if MAIDSAFE_TRANSPORT_VERSION < THIS_NEEDS_MAIDSAFE_TRANSPORT_VERSION
-// #  error This API is not compatible with the installed library.\
-//     Please update the maidsafe-transport library.
-// #elif MAIDSAFE_TRANSPORT_VERSION > THIS_NEEDS_MAIDSAFE_TRANSPORT_VERSION
-// #  error This API uses a newer version of the maidsafe-transport library.\
-//     Please update this project.
-// #endif
-*/
+#define THIS_NEEDS_MAIDSAFE_RUDP_VERSION 100
+#if THIS_NEEDS_MAIDSAFE_RUDP_VERSION < THIS_NEEDS_MAIDSAFE_RUDP_VERSION
+#  error This API is not compatible with the installed library.\
+    Please update the maidsafe-rudp library.
+#elif THIS_NEEDS_MAIDSAFE_RUDP_VERSION > THIS_NEEDS_MAIDSAFE_RUDP_VERSION
+#  error This API uses a newer version of the maidsafe-rudp library.\
+    Please update this project.
+#endif
+
 #endif  // MAIDSAFE_ROUTING_VERSION_H_

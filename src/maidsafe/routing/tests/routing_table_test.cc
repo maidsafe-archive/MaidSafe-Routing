@@ -17,7 +17,7 @@
 #include "maidsafe/common/utils.h"
 #include "maidsafe/routing/routing_table.h"
 #include "maidsafe/routing/parameters.h"
-#include "maidsafe/transport/managed_connections.h"
+#include "maidsafe/rudp/managed_connections.h"
 #include "maidsafe/routing/node_id.h"
 #include "maidsafe/routing/log.h"
 
@@ -31,9 +31,8 @@ NodeInfo MakeNode() {
   asymm::Keys keys;
   asymm::GenerateKeyPair(&keys);
   node.public_key = keys.public_key;
-  transport::Port port = 1500;
-  transport::IP ip;
-  node.endpoint = transport::Endpoint(ip.from_string("192.168.1.1") , port);
+  node.endpoint.address().from_string("192.168.1.1");
+  node.endpoint.port(1500);
   return node;
 }
 
@@ -50,9 +49,9 @@ TEST(RoutingTableTest, FUNC_AddCloseNodes) {
   EXPECT_EQ(RT.Size(), 0);
   asymm::PublicKey dummy_key;
   // check we cannot input nodes with invalid public_keys
-  for (transport::Port i = 0; i < Parameters::closest_nodes_size ; ++i) {
+  for (int i = 0; i < Parameters::closest_nodes_size ; ++i) {
      NodeInfo node(MakeNode());
-     node.endpoint.port = 1501 + i;  // has to be unique
+     node.endpoint.port(1501 + i);  // has to be unique
      node.public_key = dummy_key;
      EXPECT_FALSE(RT.AddNode(node));
   }
@@ -61,9 +60,9 @@ TEST(RoutingTableTest, FUNC_AddCloseNodes) {
   // everything should be set to go now
   // TODO should we also test for valid enpoints ??
   // TODO we should fail when public keys are the same
-  for (transport::Port i = 0; i < Parameters::closest_nodes_size ; ++i) {
+  for (int i = 0; i < Parameters::closest_nodes_size ; ++i) {
      node = MakeNode();
-     node.endpoint.port = 1501 + i;  // has to be unique
+     node.endpoint.port(1501 + i);  // has to be unique
      EXPECT_TRUE(RT.AddNode(node));
   }
   EXPECT_EQ(RT.Size(), Parameters::closest_nodes_size);
@@ -73,17 +72,17 @@ TEST(RoutingTableTest, FUNC_AddTooManyNodes) {
     asymm::Keys keys;
     keys.identity = RandomString(64);
   RoutingTable RT(keys);
-  for (transport::Port i = 0;
+  for (int i = 0;
        RT.Size() < Parameters::max_routing_table_size; ++i) {
      NodeInfo node(MakeNode());
-     node.endpoint.port = 1501 + i;  // has to be unique
+     node.endpoint.port(1501 + i);  // has to be unique
      EXPECT_TRUE(RT.AddNode(node));
   }
   EXPECT_EQ(RT.Size(), Parameters::max_routing_table_size);
   size_t count(0);
-  for (transport::Port i = 0; i < 100U; ++i) {
+  for (int i = 0; i < 100U; ++i) {
      NodeInfo node(MakeNode());
-     node.endpoint.port = 1700 + i;  // has to be unique
+     node.endpoint.port(1700 + i);  // has to be unique
      if (RT.CheckNode(node)) {
         EXPECT_TRUE(RT.AddNode(node));
        ++count;
@@ -100,11 +99,11 @@ TEST(RoutingTableTest, BEH_CloseAndInRangeCheck) {
   RoutingTable RT(keys);
   // Add some nodes to RT
   NodeId my_node(keys.identity);
-  for (transport::Port i = 0;
+  for (int i = 0;
        RT.Size() < Parameters::max_routing_table_size;
        ++i) {
      NodeInfo node(MakeNode());
-     node.endpoint.port = 1501 + i;  // has to be unique
+     node.endpoint.port(1501 + i);  // has to be unique
      EXPECT_TRUE(RT.AddNode(node));
   }
   EXPECT_EQ(RT.Size(), Parameters::max_routing_table_size);
@@ -127,10 +126,10 @@ TEST(RoutingTableTest, BEH_CloseAndInRangeCheck) {
                               != close_nodes.end());
   // add the node now
      NodeInfo node(MakeNode());
-     node.endpoint.port = 1502;  // duplicate endpoint
+     node.endpoint.port(1502);  // duplicate endpoint
      node.node_id = my_closest_node;
      EXPECT_FALSE(RT.AddNode(node));
-     node.endpoint.port = 25000;
+     node.endpoint.port(25000);
      EXPECT_TRUE(RT.AddNode(node));
   // should now be closest node to itself :-)
   EXPECT_EQ(RT.GetClosestNode(my_closest_node, 0).node_id.String(),

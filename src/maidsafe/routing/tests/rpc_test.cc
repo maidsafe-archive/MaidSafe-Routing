@@ -14,7 +14,7 @@
 #include <vector>
 #include "maidsafe/common/test.h"
 #include "maidsafe/common/utils.h"
-#include "maidsafe/transport/managed_connections.h"
+#include "maidsafe/rudp/managed_connections.h"
 #include "maidsafe/routing/parameters.h"
 #include "maidsafe/routing/rpcs.h"
 #include "maidsafe/routing/log.h"
@@ -31,8 +31,10 @@ TEST(RPC, BEH_PingMessageInitialised) {
 }
 
 TEST(RPC, BEH_ConnectMessageInitialised) {
-  transport::IP ip;
-  transport::Endpoint our_endpoint(ip.from_string("192.168.1.1") , 5000);
+
+  boost::asio::ip::udp::endpoint our_endpoint;
+  our_endpoint.address().from_string("192.168.1.1");
+  our_endpoint.port(5000);
   ASSERT_TRUE(rpcs::Connect(NodeId("dav"), our_endpoint, "id").IsInitialized());
 }
 

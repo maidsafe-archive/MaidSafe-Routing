@@ -22,9 +22,9 @@ namespace maidsafe {
 namespace routing {
 
 CacheManager::CacheManager(RoutingTable &routing_table,
-                    rudp::ManagedConnections &transport)
+                    rudp::ManagedConnections &rudp)
                     : cache_chunks_(),
-                    transport_(transport),
+                    rudp_(rudp),
                     routing_table_(routing_table)
                     {}
 
@@ -56,7 +56,7 @@ bool CacheManager::GetFromCache(protobuf::Message &message) {
         message.set_source_id(routing_table_.kKeys().identity);
         message.set_direct(true);
         message.set_response(false);
-        SendOn(message, transport_, routing_table_);
+        SendOn(message, rudp_, routing_table_);
         return true;
       }
   }

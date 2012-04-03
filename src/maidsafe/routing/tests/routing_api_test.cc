@@ -17,7 +17,7 @@
 #include "maidsafe/common/test.h"
 #include "maidsafe/common/utils.h"
 #include "maidsafe/routing/routing_table.h"
-#include "maidsafe/transport/managed_connections.h"
+#include "maidsafe/rudp/managed_connections.h"
 #include "maidsafe/routing/node_id.h"
 #include "maidsafe/routing/log.h"
 
@@ -36,9 +36,8 @@ NodeInfo MakeNodeInfo() {
   asymm::Keys keys;
   asymm::GenerateKeyPair(&keys);
   node.public_key = keys.public_key;
-  transport::Port port = 1500;
-  transport::IP ip;
-  node.endpoint = transport::Endpoint(ip.from_string("192.168.1.1") , port);
+  node.endpoint.address().from_string("192.168.1.1");
+  node.endpoint.port(5000);
   return node;
 }
 

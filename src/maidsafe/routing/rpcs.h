@@ -15,7 +15,7 @@
 
 #include <memory>
 #include "maidsafe/common/rsa.h"
-#include "maidsafe/transport/managed_connections.h"
+#include "maidsafe/rudp/managed_connections.h"
 #include "maidsafe/routing/node_id.h"
 #include "maidsafe/routing/routing.pb.h"
 
@@ -28,7 +28,7 @@ namespace rpcs {
 const protobuf::Message Ping(const NodeId &node_id,
                        const std::string &identity);
 const protobuf::Message Connect(const NodeId &node_id,
-                          const transport::Endpoint &our_endpoint,
+                          const boost::asio::ip::udp::endpoint &our_endpoint,
                           const std::string &identity);
 const protobuf::Message FindNodes(const NodeId &node_id);
 

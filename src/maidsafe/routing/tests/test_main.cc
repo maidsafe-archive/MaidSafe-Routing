@@ -19,7 +19,7 @@ int main(int argc, char **argv) {
   FLAGS_alsologtostderr = false;
   FLAGS_log_prefix = true;
   FLAGS_ms_logging_common = google::FATAL;
-  FLAGS_ms_logging_transport = google::FATAL;
+  FLAGS_ms_logging_rudp = google::FATAL;
   FLAGS_ms_logging_routing = google::INFO;
 
   testing::InitGoogleTest(&argc, argv);

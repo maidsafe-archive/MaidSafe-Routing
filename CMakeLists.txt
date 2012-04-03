@@ -44,11 +44,11 @@ SET(CMAKE_BUILD_TYPE ${CMAKE_BUILD_TYPE_DIR} CACHE INTERNAL "Except for MSVC, th
 
 
 ###################################################################################################
-# MaidSafe Common & Transport library search                                                      #
+# MaidSafe Common & RUDP library search                                                      #
 ###################################################################################################
 SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${PROJECT_SOURCE_DIR}/build)
 INCLUDE(maidsafe_find_common)
-ADD_MAIDSAFE_LIBRARY(MaidSafe-Transport)
+ADD_MAIDSAFE_LIBRARY(MaidSafe-RUDP)
 
 
 ###################################################################################################
@@ -93,7 +93,7 @@ SOURCE_GROUP("Routing Tests Header Files" FILES ${HEADER_FILES_ROUTING_TESTS_DIR
 MS_ADD_STATIC_LIBRARY(${MS_PROJECT_NAME} ${ALL_FILES_ROUTING_DIR})
 MS_ADD_EXECUTABLE(TESTRouting Tests ${ALL_FILES_ROUTING_TESTS_DIR})
 
-TARGET_LINK_LIBRARIES(maidsafe_routing_static maidsafe_transport_static)
+TARGET_LINK_LIBRARIES(maidsafe_routing_static maidsafe_rudp_static)
 TARGET_LINK_LIBRARIES(TESTRouting maidsafe_routing_static gmock_static)
 
 

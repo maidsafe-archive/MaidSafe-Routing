@@ -23,7 +23,7 @@
 #include "boost/thread/shared_mutex.hpp"
 #include "boost/thread/mutex.hpp"
 #include "maidsafe/common/rsa.h"
-#include "maidsafe/transport/managed_connections.h"
+#include "maidsafe/rudp/managed_connections.h"
 #include "maidsafe/routing/routing.pb.h"
 #include "maidsafe/routing/node_id.h"
 #include "maidsafe/routing/log.h"
@@ -42,7 +42,7 @@ struct NodeInfo {
   asymm::PublicKey public_key;
   int32_t rank;
   int32_t bucket;
-  transport::Endpoint endpoint;
+  boost::asio::ip::udp::endpoint endpoint;
   int32_t dimension_1;
   int32_t dimension_2;
   int32_t dimension_3;
@@ -55,8 +55,8 @@ class RoutingTable {
   ~RoutingTable();
   bool AddNode(NodeInfo &node);
   bool CheckNode(NodeInfo &node);
-  bool DropNode(const transport::Endpoint &endpoint);
-  bool GetNodeInfo(const transport::Endpoint &endpoint, NodeInfo *node_info);
+  bool DropNode(const boost::asio::ip::udp::endpoint &endpoint);
+  bool GetNodeInfo(const boost::asio::ip::udp::endpoint &endpoint, NodeInfo *node_info);
   bool IsMyNodeInRange(const NodeId &node_id, unsigned int closest_nodes);
   bool AmIClosestNode(const NodeId &node_id);
   std::vector<NodeId> GetClosestNodes(const NodeId &from,

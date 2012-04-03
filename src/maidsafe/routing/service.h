@@ -14,7 +14,7 @@
 #define MAIDSAFE_ROUTING_SERVICE_H_
 
 #include <memory>
-#include "maidsafe/transport/managed_connections.h"
+#include "maidsafe/rudp/managed_connections.h"
 #include "maidsafe/routing/routing_table.h"
 #include "maidsafe/routing/routing_api.h"
 
@@ -32,14 +32,14 @@ class Service {
  public:
   Service(const NodeValidationFunctor &node_validate_functor,
           RoutingTable &routing_table,
-          rudp::ManagedConnections &transport);
+          rudp::ManagedConnections &rudp);
   void Ping(protobuf::Message &message);
   void Connect(protobuf::Message &message);
   void FindNodes(protobuf::Message &message);
  private:
   const NodeValidationFunctor &node_validation_functor_;
   RoutingTable &routing_table_;
-  rudp::ManagedConnections &transport_;
+  rudp::ManagedConnections &rudp_;
 };
 
 }  // namespace routing
