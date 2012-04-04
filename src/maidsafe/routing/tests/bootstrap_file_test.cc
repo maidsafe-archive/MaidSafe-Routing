@@ -27,15 +27,18 @@ namespace test {
 
 
 TEST(BootStrapFileTest1, BEH_ReadValidFile) {
-//   std::vector<boost::asio::ip::udp::endpoint>vec;
-//   rudp::IP ip;
-//   vec.push_back(boost::asio::ip::udp::endpoint(ip.from_string("192.168.1.1") , 5000));
-// //   (test_handler.ReadBootstrapFile());
-//   EXPECT_TRUE(test_handler.WriteBootstrapFile(vec));
-//   EXPECT_FALSE(test_handler.ReadBootstrapFile().empty());
-//   EXPECT_EQ(test_handler.ReadBootstrapFile().size(), vec.size());
-//   EXPECT_EQ(test_handler.ReadBootstrapFile()[0].port, vec[0].port);
-//   EXPECT_EQ(test_handler.ReadBootstrapFile()[0].ip, vec[0].ip);
+  std::vector<boost::asio::ip::udp::endpoint>vec;
+  boost::asio::ip::udp::endpoint endpoint;
+  endpoint.address().from_string("192.168.1.1");
+  endpoint.port(5000);
+  vec.push_back(endpoint);
+  boost::filesystem::path good_file
+                (fs::unique_path(fs::temp_directory_path() / "test"));
+  EXPECT_TRUE(ReadBootstrapFile(good_file).empty());
+  EXPECT_TRUE(WriteBootstrapFile(vec, good_file));
+  EXPECT_FALSE(ReadBootstrapFile(good_file).empty());
+  EXPECT_EQ(ReadBootstrapFile(good_file).size(), vec.size());
+  EXPECT_EQ(ReadBootstrapFile(good_file)[0], vec[0]);
 }
 
 

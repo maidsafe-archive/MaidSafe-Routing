@@ -11,7 +11,8 @@
  ******************************************************************************/
 
 #include <utility>
-
+#include "boost/filesystem/fstream.hpp"
+#include "boost/filesystem/exception.hpp"
 #include "maidsafe/common/utils.h"
 #include "maidsafe/routing/routing_api.h"
 #include "maidsafe/routing/routing.pb.h"
@@ -65,17 +66,30 @@ Message::Message(const protobuf::Message &protobuf_message)
 Routing::Routing(const asymm::Keys &keys,
                  const boost::filesystem::path &boostrap_file_path,
                  bool client_mode)
-    : impl_(new RoutingPrivate(keys, boostrap_file_path, client_mode))
-{
+    : impl_(new RoutingPrivate(keys, boostrap_file_path, client_mode)) {
   // test path
   std::string dummy_content;
   // not catching exceptions !!
-  (fs::exists(boostrap_file_path) &&
-   fs::is_regular_file(boostrap_file_path)) ||
-   (WriteFile(boostrap_file_path, dummy_content) &&
-    fs::remove(boostrap_file_path));
+  fs::ifstream file_in(boostrap_file_path, std::ios::in | std::ios::binary);
+  fs::ofstream file_out(boostrap_file_path, std::ios::out | std::ios::binary);
+  if(file_in.good()) {
+    if (fs::exists(boostrap_file_path)) {
+      fs::file_size(boostrap_file_path);  // throws
+    } else if (file_out.good()) {
+      file_out.put('c');
+    fs::file_size(boostrap_file_path);  // throws
+    fs::remove(boostrap_file_path);
+    } else {
+      fs::file_size(boostrap_file_path);  // throws
+    }
+  } else {
+    fs::file_size(boostrap_file_path);  // throws
+  }
   Init();
 }
+
+Routing::~Routing() { }
+
 
 // drop existing routing table and restart
 void Routing::BootStrapFromThisEndpoint(const boost::asio::ip::udp::endpoint
@@ -152,14 +166,6 @@ void Routing::ValidateThisNode(const std::string &node_id,
 }
 
 void Routing::Init() {
-  if (!impl_->node_validation_functor_) {
-    if (impl_->client_mode_) {
-    DLOG(ERROR) << "Invalid node_validation_functor passed: Anonymous node!";
-    }else {
-      DLOG(ERROR) << "Invalid node_validation_functor passed as node: Aborted!";
-      return;
-    }
-  }
   impl_->asio_service_.Start(5);
 // TODO(dirvine) handle return code
   impl_->rudp_.GetAvailableEndpoint(& impl_->node_local_endpoint_);

@@ -39,7 +39,7 @@ public:
                  RoutingTable &routing_table,
                  rudp::ManagedConnections &rudp,
                  Timer &timer_ptr);
-  ~MessageHandler();
+  ~MessageHandler() {}
   void ProcessMessage(protobuf::Message &message);
   void ProcessDirectMessage(protobuf::Message &message);
   void ProcessCloseNodesMessage(protobuf::Message &message);

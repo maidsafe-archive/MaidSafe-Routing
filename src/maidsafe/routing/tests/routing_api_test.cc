@@ -12,6 +12,7 @@
 
 #include <memory>
 #include <vector>
+#include "boost/filesystem/exception.hpp"
 #include "maidsafe/common/test.h"
 #include "maidsafe/routing/routing_api.h"
 #include "maidsafe/common/test.h"
@@ -49,13 +50,15 @@ asymm::Keys MakeKeys() {
   return keys;
 }
 
- TEST(RoutingTableAPI, API_BadconfigFile) {
+ TEST(APICtrTest, API_BadconfigFile) {
   asymm::Keys keys(MakeKeys());
-
-//   Routing RtAPI(false, keys, false);
-//    boost::filesystem::path bad_file("bad file/ not found/ I hope");
-//    EXPECT_FALSE(RtAPI.setConfigFilePath(bad_file));
-
+   boost::filesystem::path bad_file("/bad file/ not found/ I hope/");
+   boost::filesystem::path good_file
+                (fs::unique_path(fs::temp_directory_path() / "test"));
+   EXPECT_THROW({Routing RtAPI(keys, bad_file, false);},
+                boost::filesystem::filesystem_error);
+   EXPECT_NO_THROW({Routing RtAPI(keys, good_file, false);});
+   EXPECT_TRUE(boost::filesystem::remove(good_file));
 }
 
 }  // namespace test

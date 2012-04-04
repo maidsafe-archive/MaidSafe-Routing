@@ -35,7 +35,7 @@ class ResponseHandler {
   ResponseHandler(const NodeValidationFunctor &node_Validation_functor,
                  RoutingTable &routing_table,
                  rudp::ManagedConnections &rudp);
-  ~ResponseHandler();
+  ~ResponseHandler() {}
   void ProcessPingResponse(protobuf::Message &message);
   void ProcessConnectResponse(protobuf::Message &message);
   void ProcessFindNodeResponse(protobuf::Message &message);

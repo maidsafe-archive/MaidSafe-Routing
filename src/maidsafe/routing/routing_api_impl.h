@@ -21,7 +21,7 @@ namespace routing {
 
 struct RoutingPrivate {
 public:
-  ~RoutingPrivate();
+  ~RoutingPrivate() {}
 private:
   RoutingPrivate(const asymm::Keys &keys,
                  const boost::filesystem::path &bootstrap_file_path,

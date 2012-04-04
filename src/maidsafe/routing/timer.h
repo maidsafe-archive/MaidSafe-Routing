@@ -37,7 +37,7 @@ typedef std::function<void(int, std::string)> TaskResponseFunctor;
 class Timer {
  public:
   Timer(AsioService &io_service);
-  ~Timer();
+  ~Timer() {}
   typedef std::shared_ptr<asio::deadline_timer> TimerPointer;
   // return code is used to set message.id() when sending
   uint32_t AddTask(uint32_t timeout, const TaskResponseFunctor &);
