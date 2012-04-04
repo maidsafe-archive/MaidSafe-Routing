@@ -27,9 +27,7 @@ namespace maidsafe {
 namespace routing {
 namespace test {
 
-class RoutingTableAPI {
-  RoutingTableAPI();
-};
+static int test_routing_api_node_port(5000);
 
 NodeInfo MakeNodeInfo() {
   NodeInfo node;
@@ -38,7 +36,7 @@ NodeInfo MakeNodeInfo() {
   asymm::GenerateKeyPair(&keys);
   node.public_key = keys.public_key;
   node.endpoint.address().from_string("192.168.1.1");
-  node.endpoint.port(5000);
+  node.endpoint.port(++test_routing_api_node_port);
   return node;
 }
 
@@ -51,14 +49,19 @@ asymm::Keys MakeKeys() {
 }
 
  TEST(APICtrTest, API_BadconfigFile) {
+  // See bootstrap file tests for further interrogation of these files
   asymm::Keys keys(MakeKeys());
-   boost::filesystem::path bad_file("/bad file/ not found/ I hope/");
-   boost::filesystem::path good_file
-                (fs::unique_path(fs::temp_directory_path() / "test"));
-   EXPECT_THROW({Routing RtAPI(keys, bad_file, false);},
-                boost::filesystem::filesystem_error);
-   EXPECT_NO_THROW({Routing RtAPI(keys, good_file, false);});
-   EXPECT_TRUE(boost::filesystem::remove(good_file));
+  boost::filesystem::path bad_file("/bad file/ not found/ I hope/");
+  boost::filesystem::path good_file
+              (fs::unique_path(fs::temp_directory_path() / "test"));
+  EXPECT_THROW({Routing RtAPI(keys, bad_file, false);},
+              boost::filesystem::filesystem_error)
+                                         << "should not accept invalid files";
+  EXPECT_NO_THROW({Routing RtAPI(keys, good_file, false);});
+  EXPECT_TRUE(WriteFile(good_file, "not a vector of endpoints"));
+  EXPECT_NO_THROW({Routing RtAPI(keys, good_file, false);})
+                                            << "cannot handle corrupt files";
+  EXPECT_TRUE(boost::filesystem::remove(good_file));
 }
 
 }  // namespace test

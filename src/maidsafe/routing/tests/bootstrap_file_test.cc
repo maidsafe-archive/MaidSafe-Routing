@@ -39,6 +39,7 @@ TEST(BootStrapFileTest1, BEH_ReadValidFile) {
   EXPECT_FALSE(ReadBootstrapFile(good_file).empty());
   EXPECT_EQ(ReadBootstrapFile(good_file).size(), vec.size());
   EXPECT_EQ(ReadBootstrapFile(good_file)[0], vec[0]);
+  EXPECT_TRUE(boost::filesystem::remove(good_file));
 }
 
 

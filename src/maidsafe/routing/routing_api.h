@@ -106,9 +106,7 @@ typedef std::function<void(const std::string& /*node Id*/ ,
 * *************************************************************************/
 class Routing {
  public:
-   // set keys.identity to ANONYMOUS && empty NodeValidationFunctor
-   // && client_mode
-   // for temporary anonymous connection.
+   // set keys.identity to ANONYMOUS for temporary anonymous connection.
   Routing(const asymm::Keys &keys,
           const boost::filesystem::path &full_path_and_name,
           bool client_mode);
