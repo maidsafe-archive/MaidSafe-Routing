@@ -34,18 +34,21 @@ void CacheManager::AddToCache(const protobuf::Message& message) {
       return;
     data = std::make_pair(message.source_id(), message.data());
     cache_chunks_.push_back(data);
+    boost::mutex::scoped_lock lock(mutex_);
     while (cache_chunks_.size() > Parameters::num_chunks_to_cache)
       cache_chunks_.erase(cache_chunks_.begin());
   }
   catch(const std::exception &/*e*/) {
     // oohps reduce cache size quickly
     Parameters::num_chunks_to_cache = Parameters::num_chunks_to_cache / 2;
+    boost::mutex::scoped_lock lock(mutex_);
     while (cache_chunks_.size() > Parameters::num_chunks_to_cache)
       cache_chunks_.erase(cache_chunks_.begin()+1);
   }
 }
 
 bool CacheManager::GetFromCache(protobuf::Message &message) {
+    boost::mutex::scoped_lock lock(mutex_);
     for (auto it = cache_chunks_.begin(); it != cache_chunks_.end(); ++it) {
       if ((*it).first == message.source_id()) {
         message.set_destination_id(message.source_id());
