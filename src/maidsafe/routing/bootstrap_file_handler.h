@@ -21,7 +21,6 @@
 #include "maidsafe/routing/node_id.h"
 #include "maidsafe/routing/log.h"
 
-
 namespace maidsafe {
 
 namespace routing {

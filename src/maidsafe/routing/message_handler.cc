@@ -42,7 +42,7 @@ MessageHandler::MessageHandler(const NodeValidationFunctor &node_validation_func
                 routing_table_(routing_table),
                 rudp_(rudp),
                 timer_ptr_(timer_ptr),
-                cache_manager_(routing_table, rudp),
+                cache_manager_(),
                 service_(node_validation_functor, routing_table, rudp),
                 response_handler_(node_validation_functor,
                                   routing_table,
@@ -59,8 +59,11 @@ bool MessageHandler::CheckCacheData(protobuf::Message &message) {
     if (message.response()) {
       cache_manager_.AddToCache(message);
      } else  {  // request
-       if (cache_manager_.GetFromCache(message))
-        return true;// this operation sends back the message
+       if (cache_manager_.GetFromCache(message)) {
+        message.set_source_id(routing_table_.kKeys().identity);
+        SendOn(message, rudp_, routing_table_);
+        return true;
+       }
      }
   }
   return false;  // means this message is not finished processing

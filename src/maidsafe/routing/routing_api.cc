@@ -14,6 +14,9 @@
 #include "boost/filesystem/fstream.hpp"
 #include "boost/filesystem/exception.hpp"
 #include "maidsafe/common/utils.h"
+#include "maidsafe/rudp/managed_connections.h"
+#include "maidsafe/rudp/return_codes.h"
+#include "maidsafe/routing/return_codes.h"
 #include "maidsafe/routing/routing_api.h"
 #include "maidsafe/routing/routing.pb.h"
 #include "maidsafe/routing/node_id.h"
@@ -90,6 +93,19 @@ Routing::Routing(const asymm::Keys &keys,
 
 Routing::~Routing() { }
 
+int Routing::GetStatus() {
+ if (impl_->routing_table_.Size() == 0) {
+    boost::asio::ip::udp::endpoint endpoint;
+    if(impl_->rudp_.GetAvailableEndpoint(&endpoint) != rudp::kSuccess) {
+      if (impl_->rudp_.GetAvailableEndpoint(&endpoint)
+                                          == rudp::kNoneAvailable) 
+        return kNotJoined;
+    } 
+ } else {
+   return impl_->routing_table_.Size();
+ }
+}
+
 
 // drop existing routing table and restart
 void Routing::BootStrapFromThisEndpoint(const boost::asio::ip::udp::endpoint
@@ -165,8 +181,15 @@ void Routing::ValidateThisNode(const std::string &node_id,
   }
 }
 
+asio::ip::udp::endpoint Routing::GetEndPoint() {
+  asio::ip::udp::endpoint endpoint;
+  impl_->rudp_.GetAvailableEndpoint(& endpoint);
+  return endpoint;
+}
+
+
 void Routing::Init() {
-  impl_->asio_service_.Start(5);
+  impl_->asio_service_.Start(10);
 // TODO(dirvine) handle return code
   impl_->rudp_.GetAvailableEndpoint(& impl_->node_local_endpoint_);
   // TODO(dirvine) connect rudp signals !!

@@ -21,13 +21,10 @@ namespace maidsafe {
 
 namespace routing {
 
-CacheManager::CacheManager(RoutingTable &routing_table,
-                    rudp::ManagedConnections &rudp)
+CacheManager::CacheManager()
                     : cache_chunks_(),
-                    rudp_(rudp),
-                    routing_table_(routing_table)
+                    mutex_()
                     {}
-
 
 void CacheManager::AddToCache(const protobuf::Message& message) {
     std::pair<std::string, std::string> data;
@@ -53,10 +50,8 @@ bool CacheManager::GetFromCache(protobuf::Message &message) {
       if ((*it).first == message.source_id()) {
         message.set_destination_id(message.source_id());
         message.set_data((*it).second);
-        message.set_source_id(routing_table_.kKeys().identity);
         message.set_direct(true);
         message.set_response(false);
-        SendOn(message, rudp_, routing_table_);
         return true;
       }
   }

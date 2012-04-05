@@ -13,6 +13,7 @@
 #include <memory>
 #include <vector>
 #include "boost/filesystem/exception.hpp"
+#include "boost/asio.hpp"
 #include "maidsafe/common/test.h"
 #include "maidsafe/routing/routing_api.h"
 #include "maidsafe/common/test.h"
@@ -21,6 +22,7 @@
 #include "maidsafe/rudp/managed_connections.h"
 #include "maidsafe/routing/node_id.h"
 #include "maidsafe/routing/log.h"
+#include "maidsafe/routing/return_codes.h"
 
 
 namespace maidsafe {
@@ -48,7 +50,7 @@ asymm::Keys MakeKeys() {
   return keys;
 }
 
- TEST(APICtrTest, API_BadconfigFile) {
+ TEST(APITest, BadConfigFile) {
   // See bootstrap file tests for further interrogation of these files
   asymm::Keys keys(MakeKeys());
   boost::filesystem::path bad_file("/bad file/ not found/ I hope/");
@@ -63,6 +65,46 @@ asymm::Keys MakeKeys() {
                                             << "cannot handle corrupt files";
   EXPECT_TRUE(boost::filesystem::remove(good_file));
 }
+
+TEST(APITest, StandAloneNodeNotConnected) {
+  asymm::Keys keys(MakeKeys());
+  boost::filesystem::path good_file
+                       (fs::unique_path(fs::temp_directory_path() / "test"));
+  EXPECT_NO_THROW({Routing RtAPI(keys, good_file, false);});
+  Routing RAPI(keys, good_file, false);
+  boost::asio::ip::udp::endpoint endpoint(RAPI.GetEndPoint());
+  boost::asio::ip::udp::endpoint empty_endpoint;
+  EXPECT_EQ(endpoint , empty_endpoint);
+  EXPECT_EQ(RAPI.GetStatus(), kNotJoined);
+  EXPECT_TRUE(boost::filesystem::remove(good_file));
+}
+
+
+TEST(APITest, ManualBootstrap) {
+  asymm::Keys keys1(MakeKeys());
+  asymm::Keys keys2(MakeKeys());
+  boost::filesystem::path node1_config
+                       (fs::unique_path(fs::temp_directory_path() / "test1"));
+  boost::filesystem::path node2_config
+                       (fs::unique_path(fs::temp_directory_path() / "test2"));
+  EXPECT_NO_THROW({Routing RtAPI(keys1, node1_config, false);});
+  EXPECT_NO_THROW({Routing RtAPI(keys2, node2_config, false);});
+  Routing R1(keys1, node1_config, false);
+  Routing R2(keys2, node2_config, false);
+  
+  boost::asio::ip::udp::endpoint endpoint1(R1.GetEndPoint());
+  boost::asio::ip::udp::endpoint endpoint2(R2.GetEndPoint());
+  boost::asio::ip::udp::endpoint empty_endpoint;
+  EXPECT_EQ(endpoint1 , empty_endpoint);
+  EXPECT_EQ(R1.GetStatus(), kNotJoined);
+  EXPECT_EQ(endpoint2 , empty_endpoint);
+  EXPECT_EQ(R2.GetStatus(), kNotJoined);
+  
+  EXPECT_TRUE(boost::filesystem::remove(node1_config));
+  EXPECT_TRUE(boost::filesystem::remove(node2_config));
+}
+
+
 
 }  // namespace test
 }  // namespace routing

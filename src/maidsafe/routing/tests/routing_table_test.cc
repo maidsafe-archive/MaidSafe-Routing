@@ -80,7 +80,7 @@ TEST(RoutingTableTest, FUNC_AddTooManyNodes) {
   }
   EXPECT_EQ(RT.Size(), Parameters::max_routing_table_size);
   size_t count(0);
-  for (int i = 0; i < 100U; ++i) {
+  for (int i = 0; i < 100; ++i) {
      NodeInfo node(MakeNode());
      node.endpoint.port(1700 + i);  // has to be unique
      if (RT.CheckNode(node)) {
