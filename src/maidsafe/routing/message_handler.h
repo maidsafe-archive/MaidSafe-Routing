@@ -35,8 +35,7 @@ namespace routing {
 
 class MessageHandler {
 public:
-  MessageHandler(const NodeValidationFunctor &node_Validation_functor,
-                 RoutingTable &routing_table,
+  MessageHandler(RoutingTable &routing_table,
                  rudp::ManagedConnections &rudp,
                  Timer &timer_ptr);
   ~MessageHandler() {}

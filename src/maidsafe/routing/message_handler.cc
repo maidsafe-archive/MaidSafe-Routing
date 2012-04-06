@@ -34,19 +34,16 @@ namespace routing {
 
 class Timer;
 
-MessageHandler::MessageHandler(const NodeValidationFunctor &node_validation_functor,
+MessageHandler::MessageHandler(
                 RoutingTable &routing_table,
                 rudp::ManagedConnections &rudp,
                 Timer &timer_ptr ) :
-                node_validation_functor_(node_validation_functor),
                 routing_table_(routing_table),
                 rudp_(rudp),
                 timer_ptr_(timer_ptr),
                 cache_manager_(),
-                service_(node_validation_functor, routing_table, rudp),
-                response_handler_(node_validation_functor,
-                                  routing_table,
-                                  rudp),
+                service_(routing_table, rudp),
+                response_handler_(routing_table, rudp),
                 message_received_signal_()  {}
 
 boost::signals2::signal<void(int, std::string)>

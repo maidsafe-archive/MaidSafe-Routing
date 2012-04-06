@@ -59,68 +59,6 @@ int8_t GetMajorVersion(); // API changes between Major versions
 int8_t GetMinorVersion(); // internal additions to logic
 int8_t GetPatchVersion(); // bugfixes
 
-/*
-enum class RoutingAPI {
-  kSuccess = 0,
-  kInvalidDestinationId = -1,
-  kInvalidSourceId = -2,
-  kInvalidType = -3,
-  kEmptyData = -4
-};
-
-class RoutingAPI_impl
-  : public std::error_category
-{
-public:
-  virtual const char* name() const;
-  virtual std::string message(int ev) const;
-};
-
-const char* RoutingAPI_impl::name() const {
-  return "routing";
-}
-
-std::string RoutingAPI_impl::message(int ev) const {
-  switch (ev)  {
-  case RoutingAPI::kInvalidDestinationId:
-    return "Invalid Destination id ";
-  case RoutingAPI::kInvalidSourceId:
-    return "Invalid source id ";
-  case RoutingAPI::kSuccess:
-    return "OK";
-  case RoutingAPI::kInvalidType:
-    return "Unrecognised type";
-  case RoutingAPI::kEmptyData:
-    return "No data";
-  default:
-    return "Unknown routing error";
-  }
-}
-
-const std::error_category& routing_category() {
-  static RoutingAPI_impl instance;
-  return instance;
-}
-
-std::error_code make_error_code(routing_error e) {
-  return std::error_code(
-      static_cast<int>(e),
-      routing_category());
-}
-
-std::error_condition make_error_condition(routing_error e) {
-  return std::error_condition(
-      static_cast<int>(e),
-      routing_category());
-}
-
-namespace std {
-  template <>
-  struct is_error_code_enum<routing_error>
-    : public true_type {};
-}
-
-*/
 
 // Send method return codes
 enum SendErrors {

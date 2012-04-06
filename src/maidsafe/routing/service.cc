@@ -25,10 +25,9 @@ namespace maidsafe {
 
 namespace routing {
 
-Service::Service(const NodeValidationFunctor &node_validate_functor,
-                 RoutingTable &routing_table,
+Service::Service(RoutingTable &routing_table,
                  rudp::ManagedConnections &rudp)
-    : node_validation_functor_(node_validate_functor),
+    : 
       routing_table_(routing_table),
       rudp_(rudp) {}
 
@@ -74,16 +73,16 @@ void Service::Connect(protobuf::Message &message) {
   if (connect_request.client()) {
     connect_response.set_answer(true);
     //TODO(dirvine) get the routing pointer back again
-    node_validation_functor_(routing_table_.kKeys().identity,
-                    their_endpoint,
-                    message.client_node(),
-                    our_endpoint);
+//     node_validation_functor_(routing_table_.kKeys().identity,
+//                     their_endpoint,
+//                     message.client_node(),
+//                     our_endpoint);
   } else if (routing_table_.CheckNode(node)) {
     connect_response.set_answer(true);
-    node_validation_functor_(routing_table_.kKeys().identity,
-                    their_endpoint,
-                    message.client_node(),
-                    our_endpoint);
+//     node_validation_functor_(routing_table_.kKeys().identity,
+//                     their_endpoint,
+//                     message.client_node(),
+//                     our_endpoint);
   }
 
   protobuf::Contact *contact;

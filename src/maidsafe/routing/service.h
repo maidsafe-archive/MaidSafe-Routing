@@ -30,14 +30,12 @@ class RoutingTable;
 // Handle all incoming requests and send back reply
 class Service {
  public:
-  Service(const NodeValidationFunctor &node_validate_functor,
-          RoutingTable &routing_table,
+  Service(RoutingTable &routing_table,
           rudp::ManagedConnections &rudp);
   void Ping(protobuf::Message &message);
   void Connect(protobuf::Message &message);
   void FindNodes(protobuf::Message &message);
  private:
-  const NodeValidationFunctor &node_validation_functor_;
   RoutingTable &routing_table_;
   rudp::ManagedConnections &rudp_;
 };

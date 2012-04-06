@@ -29,13 +29,10 @@ namespace maidsafe {
 
 namespace routing {
 
-ResponseHandler::ResponseHandler(
-                const NodeValidationFunctor& node_Validation_functor,
-                RoutingTable &routing_table,
-                rudp::ManagedConnections &rudp) :
-                node_validation_functor_(node_Validation_functor),
-                routing_table_(routing_table),
-                rudp_(rudp) {}
+ResponseHandler::ResponseHandler(RoutingTable &routing_table,
+                                  rudp::ManagedConnections &rudp) :
+                                  routing_table_(routing_table),
+                                  rudp_(rudp) {}
 
 // always direct !! never pass on
 void ResponseHandler::ProcessPingResponse(protobuf::Message& message) {

@@ -38,7 +38,6 @@ private:
   rudp::ManagedConnections rudp_;
   RoutingTable routing_table_;
   Timer timer_;
-  const NodeValidationFunctor node_validation_functor_;
   MessageHandler message_handler_;
   boost::signals2::signal<void(int, std::string)> message_received_signal_;
   boost::signals2::signal<void(int16_t)> network_status_signal_;
