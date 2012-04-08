@@ -26,7 +26,7 @@ CacheManager::CacheManager()
                     mutex_()
                     {}
 
-void CacheManager::AddToCache(const protobuf::Message& message) {
+void CacheManager::AddToCache(const protobuf::Message &message) {
     std::pair<std::string, std::string> data;
   try {
     // check data is valid TODO FIXME - ask CAA
@@ -54,7 +54,7 @@ bool CacheManager::GetFromCache(protobuf::Message &message) {
         message.set_destination_id(message.source_id());
         message.set_data((*it).second);
         message.set_direct(true);
-        message.set_response(false);
+        message.set_type(-message.type());
         return true;
       }
   }

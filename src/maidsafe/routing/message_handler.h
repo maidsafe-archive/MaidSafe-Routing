@@ -40,21 +40,19 @@ public:
                  Timer &timer_ptr);
   ~MessageHandler() {}
   void ProcessMessage(protobuf::Message &message);
-  void ProcessDirectMessage(protobuf::Message &message);
-  void ProcessCloseNodesMessage(protobuf::Message &message);
+  void DirectMessage(protobuf::Message &message);
+  void RoutingMessage(protobuf::Message &message);
+  void CloseNodesMessage(protobuf::Message &message);
   bool CheckCacheData(protobuf::Message &message);
   bool CheckAndSendToLocalClients(protobuf::Message &message);
   boost::signals2::signal<void(int, std::string)> &MessageReceivedSignal();
 private:
   MessageHandler(const MessageHandler&);  // no copy
   MessageHandler& operator=(const MessageHandler&);  // no assign
-  NodeValidationFunctor node_validation_functor_;
   RoutingTable &routing_table_;
   rudp::ManagedConnections &rudp_;
   Timer &timer_ptr_;
   CacheManager cache_manager_;
-  Service service_;
-  ResponseHandler response_handler_;
   boost::signals2::signal<void(int, std::string)> message_received_signal_;
 };
 

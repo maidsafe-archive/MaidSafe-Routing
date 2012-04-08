@@ -73,7 +73,7 @@ struct Message {
  public:
   Message();
   explicit Message(const protobuf::Message &protobuf_message);
-  int32_t type;  // message type identifier
+  uint32_t type; // message type identifier
                  // if type == 100 then this is cachable data
                  // Data field must then contain serialised data only
                  // cachable data must hash (sha512) to content
@@ -81,7 +81,7 @@ struct Message {
   std::string data;  // message content (serialised data)
   uint16_t timeout;  // in seconds
   bool direct;  // is this to a close node group or direct
-  int32_t replication;  // defaults to 1 for direct and CloseNodes otherwise
+  uint32_t replication;  // defaults to 1 for direct and CloseNodes otherwise
 };
 
 /****************************************************************************
@@ -103,6 +103,7 @@ typedef std::function<void(const std::string& /*node Id*/ ,
                            const boost::asio::ip::udp::endpoint& /*our Node endpoint */,
                            const bool /*client ? */
                           )> NodeValidatedFunctor;
+
 /***************************************************************************
 *  WARNING THIS CONSTRUCTOR WILL THROW A BOOST::FILESYSTEM_ERROR           *
 * if config file is invalid                                                *
@@ -132,15 +133,17 @@ class Routing {
   *error is passed as negative int (return code) and empty string           *
   * otherwise a positive return code is message type and indicates success  *
   **************************************************************************/
+  /**************************************************************************
+  * Sending a message to your own address will send to all connected        *
+  * clients with your address (except you). If you are a node and not a     *
+  * client this method will return false. Empty for non-client nodes        *
+  ***************************************************************************/
   int Send(const Message &message,
             const MessageReceivedFunctor response_functor);
   /**************************************************************************
-  * this will return all known connections made by *your* client ID at this *
-  * time. Sending a message to your own address will send to all connected  *
-  * clients with your address (except you). If you are a node and not a     *
-  * client this method will return false.                                   *
-  ***************************************************************************/
-  bool GetAllMyClientConnections(std::vector<boost::asio::ip::udp::endpoint> *clients);
+  *Non RPC Send                                                             *
+  **************************************************************************/
+  int Send(const Message &message);
   /**************************************************************************
   * This signal is fired on any message received that is NOT a reply to a   *
   * request made by the Send method.                                        *

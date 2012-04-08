@@ -17,6 +17,7 @@
 #include "maidsafe/rudp/managed_connections.h"
 #include "maidsafe/rudp/return_codes.h"
 #include "maidsafe/routing/return_codes.h"
+#include "maidsafe/routing/parameters.h"
 #include "maidsafe/routing/routing_api.h"
 #include "maidsafe/routing/routing.pb.h"
 #include "maidsafe/routing/node_id.h"
@@ -68,7 +69,7 @@ Message::Message(const protobuf::Message &protobuf_message)
 
 Routing::Routing(const asymm::Keys &keys,
                  const boost::filesystem::path &boostrap_file_path,
-                 bool client_mode)
+                 const bool client_mode)
     : impl_(new RoutingPrivate(keys, boostrap_file_path, client_mode)) {
   // test path
   std::string dummy_content;
@@ -87,6 +88,9 @@ Routing::Routing(const asymm::Keys &keys,
     }
   } else {
     fs::file_size(boostrap_file_path);  // throws
+  }
+  if (client_mode) {
+    Parameters::max_routing_table_size = Parameters::closest_nodes_size;
   }
   Init();
 }
@@ -134,18 +138,12 @@ int Routing::Send(const Message &message,
     DLOG(ERROR) << "No data, aborted send";
     return kEmptyData;
   }
-  if (message.type < 100) {
-    DLOG(ERROR) << "Attempt to use Reserved message type (<100), aborted send";
-    return kInvalidType;
-  }
-  if (impl_->routing_table_.kKeys().identity == "ANONYMOUS") {
-    // TODO(dirvine) FIXME need to get current used endpoint.
-    // set this in message.relat.ip and port
-  }
+  
   uint32_t message_unique_id =  impl_->timer_.AddTask(message.timeout,
                                                 response_functor);
   protobuf::Message proto_message;
   proto_message.set_id(message_unique_id);
+  // TODO(see if ANONYMOUS and Endpoint required here
   proto_message.set_source_id(impl_->routing_table_.kKeys().identity);
   proto_message.set_destination_id(message.destination_id);
   proto_message.set_data(message.data);
@@ -170,7 +168,7 @@ void Routing::ValidateThisNode(const std::string &node_id,
   node_info.endpoint = their_endpoint;
   impl_->rudp_.Add(their_endpoint, our_endpoint, node_id);
   if (client) {
-    impl_->client_connections_.push_back(node_info);
+    impl_->direct_non_routing_table_connections_.push_back(node_info);
   } else {
     impl_->routing_table_.AddNode(node_info);
     if (impl_->bootstrap_nodes_.size() > 1000) {
@@ -191,10 +189,10 @@ asio::ip::udp::endpoint Routing::GetEndPoint() {
 void Routing::Init() {
   impl_->asio_service_.Start(10);
 // TODO(dirvine) handle return code
-  impl_->rudp_.GetAvailableEndpoint(& impl_->node_local_endpoint_);
+//   impl_->rudp_.GetAvailableEndpoint(& impl_->node_local_endpoint_);
   // TODO(dirvine) connect rudp signals !!
-  LOG(INFO) << " Local IP address : " << impl_->node_local_endpoint_.address().to_string();
-  LOG(INFO) << " Local Port       : " << impl_->node_local_endpoint_.port();
+//   LOG(INFO) << " Local IP address : " << impl_->node_local_endpoint_.address().to_string();
+//   LOG(INFO) << " Local Port       : " << impl_->node_local_endpoint_.port();
   Join();
 }
 //TODO add anonymous join method FIXME
@@ -253,17 +251,17 @@ void Routing::ConnectionLost(boost::asio::ip::udp::endpoint& lost_endpoint) {
   }
   if (!impl_->routing_table_.DropNode(lost_endpoint))
     return;
-  for (auto it = impl_->client_connections_.begin();
-        it != impl_->client_connections_.end(); ++it) {
+  for (auto it = impl_->direct_non_routing_table_connections_.begin();
+        it != impl_->direct_non_routing_table_connections_.end(); ++it) {
       if((*it).endpoint ==  lost_endpoint) {
-        impl_->client_connections_.erase(it);
+        impl_->direct_non_routing_table_connections_.erase(it);
         return;
       }
   }
-  for (auto it = impl_->client_routing_table_.begin();
-        it != impl_->client_routing_table_.end(); ++it) {
+  for (auto it = impl_->direct_non_routing_table_connections_.begin();
+        it != impl_->direct_non_routing_table_connections_.end(); ++it) {
       if((*it).endpoint ==  lost_endpoint) {
-        impl_->client_routing_table_.erase(it);
+        impl_->direct_non_routing_table_connections_.erase(it);
       SendOn(rpcs::FindNodes(NodeId(impl_->keys_.identity)),
       impl_->rudp_,
       impl_->routing_table_);  // close node, get more

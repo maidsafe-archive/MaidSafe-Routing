@@ -31,7 +31,7 @@ void SendOn(protobuf::Message message,
   message.set_signature(signature);
   NodeInfo next_node(routing_table.GetClosestNode(NodeId(message.destination_id()),
                                                0));
-// FIXME SEND rudp_->Send(next_node.endpoint, message.SerializeAsString());
+  rudp.Send(next_node.endpoint, message.SerializeAsString());
 }
 
 

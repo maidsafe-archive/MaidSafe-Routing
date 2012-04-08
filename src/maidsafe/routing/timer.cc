@@ -46,7 +46,7 @@ uint32_t Timer::AddTask(uint32_t timeout,
 // we could change the find to iterate entire map if we want to be able to send
 // multiple requests and accept the first one back, dropping the rest.
 void Timer::KillTask(uint32_t task_id) {
-  auto it = queue_.find(task_id);
+  const auto it = queue_.find(task_id);
   if (it != queue_.end()) {
     // message timed out or task killed
      (*it).second.second(ReturnCode::kTimedOut, "");
@@ -57,7 +57,7 @@ void Timer::KillTask(uint32_t task_id) {
 }
 
 void Timer::ExecuteTaskNow(protobuf::Message &message) {
-    auto it = queue_.find(message.id());
+    const auto it = queue_.find(message.id());
   if (it != queue_.end()) {
     // message all OK in routing
     (*it).second.second(ReturnCode::kSuccess, message.data());

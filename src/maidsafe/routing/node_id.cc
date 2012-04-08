@@ -217,7 +217,9 @@ bool NodeId::operator >= (const NodeId &rhs) const {
   return raw_id_ >= rhs.raw_id_;
 }
 
-NodeId& NodeId::operator = (const NodeId &rhs) {
+NodeId& NodeId::operator= (const NodeId &rhs) {
+  if (this == &rhs)
+    return *this; // handle self assignment
   this->raw_id_ = rhs.raw_id_;
   return *this;
 }

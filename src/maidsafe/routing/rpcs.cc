@@ -37,9 +37,8 @@ const protobuf::Message Ping(const NodeId &node_id,
   message.set_source_id(identity);
   message.set_data(ping_request.SerializeAsString());
   message.set_direct(true);
-  message.set_response(false);
   message.set_replication(1);
-  message.set_type(0);
+  message.set_type(1);
   message.set_routing_failure(false);
   message.set_id(0);
   message.set_client_node(false);
@@ -64,9 +63,8 @@ const protobuf::Message Connect(const NodeId &node_id,
   message.set_source_id(identity);
   message.set_data(protobuf_connect_request.SerializeAsString());
   message.set_direct(true);
-  message.set_response(false);
   message.set_replication(1);
-  message.set_type(1);
+  message.set_type(2);
   message.set_routing_failure(false);
   message.set_id(0);
   message.set_client_node(false);
@@ -84,9 +82,8 @@ const protobuf::Message FindNodes(const NodeId &node_id) {
   message.set_source_id(node_id.String());
   message.set_data(find_nodes.SerializeAsString());
   message.set_direct(true);
-  message.set_response(false);
   message.set_replication(1);
-  message.set_type(2);
+  message.set_type(3);
   message.set_routing_failure(false);
   message.set_id(0);
   message.set_client_node(false);

@@ -21,25 +21,27 @@
 namespace maidsafe {
 
 namespace routing {
-
+  
 namespace protobuf { class Message; }
-class Routing;
-class Rpcs;
-class RoutingTable;
+
+namespace service {
+
+
 
 // Handle all incoming requests and send back reply
-class Service {
- public:
-  Service(RoutingTable &routing_table,
-          rudp::ManagedConnections &rudp);
-  void Ping(protobuf::Message &message);
-  void Connect(protobuf::Message &message);
-  void FindNodes(protobuf::Message &message);
- private:
-  RoutingTable &routing_table_;
-  rudp::ManagedConnections &rudp_;
-};
+void Ping(RoutingTable &routing_table,
+          rudp::ManagedConnections &rudp,
+          protobuf::Message &message);
+void Connect(RoutingTable &routing_table,
+              rudp::ManagedConnections &rudp,
+              protobuf::Message &message);
+void FindNodes(RoutingTable &routing_table,
+              rudp::ManagedConnections &rudp,
+              protobuf::Message &message);
 
+  
+}  // namespace service
+  
 }  // namespace routing
 
 }  // namespace maidsafe

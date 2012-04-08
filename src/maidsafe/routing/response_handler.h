@@ -28,23 +28,17 @@ namespace maidsafe {
 
 namespace routing {
 
-class RoutingTable;
+namespace response {
+  
+void ProcessPingResponse(protobuf::Message &message);
+void Connect(RoutingTable &routing_table,
+                            rudp::ManagedConnections &rudp,
+                            protobuf::Message &message);
+void FindNode(RoutingTable &routing_table,
+                             rudp::ManagedConnections &rudp,
+                             protobuf::Message &message);
 
-class ResponseHandler {
- public:
-  ResponseHandler(RoutingTable &routing_table,
-                  rudp::ManagedConnections &rudp);
-  ~ResponseHandler() {}
-  void ProcessPingResponse(protobuf::Message &message);
-  void ProcessConnectResponse(protobuf::Message &message);
-  void ProcessFindNodeResponse(protobuf::Message &message);
- private:
-  ResponseHandler(const ResponseHandler&);  // no copy
-  ResponseHandler& operator=(const ResponseHandler&);  // no assign
-  NodeValidationFunctor node_validation_functor_;
-  RoutingTable &routing_table_;
-  rudp::ManagedConnections &rudp_;
-};
+}  // namespace response
 
 }  // namespace routing
 

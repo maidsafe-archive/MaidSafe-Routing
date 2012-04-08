@@ -24,7 +24,8 @@ namespace maidsafe {
 
 namespace routing {
 
-std::vector<boost::asio::ip::udp::endpoint> ReadBootstrapFile(const fs::path &path) {
+std::vector<boost::asio::ip::udp::endpoint>
+                                      ReadBootstrapFile(const fs::path &path) {
   protobuf::Bootstrap protobuf_bootstrap;
   std::vector<boost::asio::ip::udp::endpoint> bootstrap_nodes;
 
@@ -44,11 +45,11 @@ std::vector<boost::asio::ip::udp::endpoint> ReadBootstrapFile(const fs::path &pa
     endpoint.port(protobuf_bootstrap.bootstrap_contacts(i).port());
     bootstrap_nodes[i] = endpoint;
   }
-
   return  bootstrap_nodes;
 }
 
-bool WriteBootstrapFile(const std::vector<boost::asio::ip::udp::endpoint> &endpoints,
+bool WriteBootstrapFile(const std::vector<boost::asio::ip::udp::endpoint>
+                                                                    &endpoints,
                         const fs::path & path) {
   protobuf::Bootstrap protobuf_bootstrap;
 
@@ -61,8 +62,6 @@ bool WriteBootstrapFile(const std::vector<boost::asio::ip::udp::endpoint> &endpo
   protobuf_bootstrap.SerializeToString(&serialised_bootstrap_nodes);
   return WriteFile(path, serialised_bootstrap_nodes);
 }
-
-
 
 }  // namespace routing
 

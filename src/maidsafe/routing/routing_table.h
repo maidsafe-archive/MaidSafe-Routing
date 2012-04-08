@@ -56,8 +56,9 @@ class RoutingTable {
   bool AddNode(NodeInfo &node);
   bool CheckNode(NodeInfo &node);
   bool DropNode(const boost::asio::ip::udp::endpoint &endpoint);
-  bool GetNodeInfo(const boost::asio::ip::udp::endpoint &endpoint, NodeInfo *node_info);
-  bool IsMyNodeInRange(const NodeId &node_id, unsigned int closest_nodes);
+  bool GetNodeInfo(const boost::asio::ip::udp::endpoint &endpoint,
+                   NodeInfo *node_info);
+  bool IsMyNodeInRange(const NodeId &node_id, const uint16_t range);
   bool AmIClosestNode(const NodeId &node_id);
   std::vector<NodeId> GetClosestNodes(const NodeId &from,
                                       unsigned int number_to_get);
@@ -71,11 +72,11 @@ class RoutingTable {
  private:
   RoutingTable(const RoutingTable&);
   RoutingTable& operator=(const RoutingTable&);
-  bool AddOrCheckNode(NodeInfo &node, bool remove);
+  bool AddOrCheckNode(NodeInfo &node, const bool remove);
   int16_t BucketIndex(const NodeId &rhs) const;
   bool CheckValidParameters(const NodeInfo &node) const;
   bool CheckParametersAreUnique(const NodeInfo &node) const;
-  bool MakeSpaceForNodeToBeAdded(NodeInfo &node, bool remove_and_add);
+  bool MakeSpaceForNodeToBeAdded(NodeInfo &node, const bool remove_and_add);
   void SortFromThisNode(const NodeId &from);
   void PartialSortFromThisNode(const NodeId &from, int16_t number_to_sort);
   bool RemoveClosecontact(const NodeId &node_id);

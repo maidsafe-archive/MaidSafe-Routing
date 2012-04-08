@@ -31,7 +31,6 @@ void SendOn(protobuf::Message message,
             rudp::ManagedConnections &rudp,
             RoutingTable &routing_table);
 
-
 }  // namespace routing
 
 }  // namespace maidsafe

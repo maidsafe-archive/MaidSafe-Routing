@@ -54,7 +54,7 @@ bool RoutingTable::AddNode(NodeInfo& node) {
 }
 
 bool RoutingTable::AddOrCheckNode(maidsafe::routing::NodeInfo& node,
-                           bool remove) {
+                                  const bool remove) {
   boost::mutex::scoped_lock lock(mutex_);
 
   if (node.node_id == kNodeId_) {
@@ -148,7 +148,7 @@ bool RoutingTable::CheckParametersAreUnique(const NodeInfo& node) const {
 }
 
 bool RoutingTable::MakeSpaceForNodeToBeAdded(maidsafe::routing::NodeInfo& node,
-                                             bool remove) {
+                                             const bool remove) {
   node.bucket = BucketIndex(node.node_id);
   if ((remove) && (!CheckValidParameters(node))) {
     DLOG(INFO) << "Invalid Parameters";
@@ -161,8 +161,8 @@ bool RoutingTable::MakeSpaceForNodeToBeAdded(maidsafe::routing::NodeInfo& node,
   SortFromThisNode(kNodeId_);
   NodeInfo furthest_close_node =
            routing_table_nodes_[Parameters::closest_nodes_size];
-  auto not_found = routing_table_nodes_.end();
-  auto furthest_close_node_iter =
+  const auto not_found = routing_table_nodes_.end();
+  const auto furthest_close_node_iter =
        routing_table_nodes_.begin() + Parameters::closest_nodes_size;
 
   if ((furthest_close_node.node_id ^ kNodeId_) >
@@ -216,7 +216,7 @@ void RoutingTable::SortFromThisNode(const NodeId &from) {
     sorted_ = false;
 }
 
-bool RoutingTable::IsMyNodeInRange(const NodeId& node_id, unsigned int range)  {
+bool RoutingTable::IsMyNodeInRange(const NodeId& node_id, const uint16_t range)  {
   if (routing_table_nodes_.size() < range)
     return true;
 

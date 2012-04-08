@@ -15,6 +15,7 @@
 #include "maidsafe/common/rsa.h"
 #include "maidsafe/rudp/managed_connections.h"
 #include "maidsafe/routing/cache_manager.h"
+#include "maidsafe/routing/parameters.h"
 #include "maidsafe/routing/message_handler.h"
 #include "maidsafe/routing/response_handler.h"
 #include "maidsafe/routing/routing.pb.h"
@@ -42,8 +43,6 @@ MessageHandler::MessageHandler(
                 rudp_(rudp),
                 timer_ptr_(timer_ptr),
                 cache_manager_(),
-                service_(routing_table, rudp),
-                response_handler_(routing_table, rudp),
                 message_received_signal_()  {}
 
 boost::signals2::signal<void(int, std::string)>
@@ -52,117 +51,114 @@ boost::signals2::signal<void(int, std::string)>
 }
 
 bool MessageHandler::CheckCacheData(protobuf::Message &message) {
-  if (message.type() == 100) {
-    if (message.response()) {
-      cache_manager_.AddToCache(message);
-     } else  {  // request
-       if (cache_manager_.GetFromCache(message)) {
-        message.set_source_id(routing_table_.kKeys().identity);
-        SendOn(message, rudp_, routing_table_);
-        return true;
-       }
-     }
+  if (message.type() == -100) {
+    cache_manager_.AddToCache(message);
+  } else  if (message.type() == 100) {
+    if (cache_manager_.GetFromCache(message)) {
+      message.set_source_id(routing_table_.kKeys().identity);
+      SendOn(message, rudp_, routing_table_);
+      return true;
+    }
   }
   return false;  // means this message is not finished processing
 }
 
-void MessageHandler::ProcessMessage(protobuf::Message &message) {
-  if (message.source_id() == "ANONYMOUS" ) {  // relay mode
-    message.set_source_id(routing_table_.kKeys().identity);
+
+void MessageHandler::RoutingMessage(protobuf::Message& message) {
+  switch (message.type()) {
+    case 1 :  // ping
+      response::ProcessPingResponse(message);
+      break;
+    case -1 :
+      service::Ping(routing_table_, rudp_, message);
+      break;
+    case 2 :  // connect
+      response::Connect(routing_table_, rudp_, message);
+      break;
+    case -2 :
+      service::Connect(routing_table_, rudp_, message);
+      break;
+    case 3 :   // find_nodes
+      response::FindNode(routing_table_, rudp_, message);
+      break;
+    case -3 :
+      service::FindNodes(routing_table_, rudp_, message);
+      break;
+    default: // unknown (silent drop)
+      break;
   }
-  if ((message.destination_id() == routing_table_.kKeys().identity) &&
-      message.has_relay()) {
+}
+
+void MessageHandler::DirectMessage(protobuf::Message& message) {
+  if (message.has_relay()) {
      boost::asio::ip::udp::endpoint send_to_endpoint;
      send_to_endpoint.address().from_string(message.relay().ip());
      send_to_endpoint.port(message.relay().port());
-     //TODO(dirvine) FIXME
-//      rudp_.Send(send_to_endpoint, 
-//                      send_to_endpoint,
-//                      message.SerializeAsString());
+     rudp_.Send(send_to_endpoint, message.SerializeAsString());
+     return;
   }
-  if (CheckCacheData(message))
-    return;  // message was sent on it's way
-
-  // Handle direct to me messages
-  if(message.direct()) {
-    if (message.destination_id() == routing_table_.kKeys().identity) {
-      if(message.response()) {
-        timer_ptr_.ExecuteTaskNow(message);
-        return;
-      } else { // I am closest and it's a request
-        try {
-          message_received_signal_(static_cast<int>(message.type()),
-                                  message.data());
-        } catch(const std::exception &e) {
-          DLOG(ERROR) << e.what();
-        }
-      }
-      // signal up
-    } else if (CheckAndSendToLocalClients(message)) {
-      // send to all clients with that node_id;
-      return;
-    } else {
-      SendOn(message, rudp_, routing_table_);
-      return;
-    }
+  if ((message.type() < 100) && (message.type() > -100)) {
+    RoutingMessage(message);
+    return;
   }
+  if (message.type() > 100) {  // request
+    message_received_signal_(static_cast<int>(-message.type()),
+                             message.data());
+  } else {  // response
+    timer_ptr_.ExecuteTaskNow(message);
+  }
+}
 
-  // is it for us ??
-  if (!routing_table_.AmIClosestNode(NodeId(message.destination_id()))) {
+void MessageHandler::CloseNodesMessage(protobuf::Message& message) {
+  if (message.has_relay()) {
+     boost::asio::ip::udp::endpoint send_to_endpoint;
+     send_to_endpoint.address().from_string(message.relay().ip());
+     send_to_endpoint.port(message.relay().port());
+     //TODO(dirvine) FIXME if we have this non rt connection!!
+     
+//      auto find = close.begin();
+     
+     rudp_.Send(send_to_endpoint, message.SerializeAsString());
+     return;
+  }
+  if ((message.direct()) &&
+      (!routing_table_.AmIClosestNode(NodeId(message.destination_id())))) {
     SendOn(message, rudp_, routing_table_);
     return;
   }
-
-  // I am closest node
-  if (message.type() == 0) {  // ping
-    if (message.response()) {
-      response_handler_.ProcessPingResponse(message);
-      return;
-    } else {
-      service_.Ping(message);
-      return;
-    }
-  }
-   if (message.type() == 1) {  // bootstrap
-    if (message.response()) {
-        response_handler_.ProcessConnectResponse(message);
-      return;
-    } else {
-        service_.Connect(message);
-        return;
-    }
-  }
-  if (message.type() == 2) {  // find_nodes
-    if (message.response()) {
-      response_handler_.ProcessFindNodeResponse(message);
-      return;
-    } else {
-        service_.FindNodes(message);
-        return;
-    }
-  }
-  // if this is set not direct and ID == ME do NOT respond.
-  if (message.destination_id() != routing_table_.kKeys().identity) {
-    try {
-//       message_received_signal_(static_cast<int>(message.type()),
-//                                 message.data());
-    }
-    catch(const std::exception &e) {
-      DLOG(ERROR) << e.what();
-    }
-  } else {  // I am closest and it's direct
-
-  }
   // I am closest so will send to all my replicant nodes
   message.set_direct(true);
-  message.set_source_id(routing_table_.kKeys().identity);
   auto close =
         routing_table_.GetClosestNodes(NodeId(message.destination_id()),
                                 static_cast<uint16_t>(message.replication()));
-  for (auto it = close.begin(); it != close.end(); ++it) {
-    message.set_destination_id((*it).String());
+  for (auto i : close) {
+    message.set_destination_id(i.String());
     SendOn(message, rudp_, routing_table_);
   }
+}
+
+
+void MessageHandler::ProcessMessage(protobuf::Message &message) {
+  // client connected messages -> out
+  if (message.source_id() == "ANONYMOUS" ) {  // relay mode
+    message.set_source_id(routing_table_.kKeys().identity);
+    SendOn(message, rudp_, routing_table_);
+  }
+  // message for me !
+  if (message.destination_id() == routing_table_.kKeys().identity) {
+    DirectMessage(message);
+    return;
+  }
+  // cache response to get data that's cacheable
+  if ((message.type() == -100) && (CheckCacheData(message)))
+    return;
+  // I am in closest proximity to this message
+  if (routing_table_.IsMyNodeInRange(NodeId(message.destination_id()),
+                                            Parameters::closest_nodes_size)) {
+  CloseNodesMessage(message);
+  }
+  // default
+  SendOn(message, rudp_, routing_table_);
 }
 
 // TODO(dirvine) implement client handler

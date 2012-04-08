@@ -29,13 +29,10 @@ namespace maidsafe {
 
 namespace routing {
 
-ResponseHandler::ResponseHandler(RoutingTable &routing_table,
-                                  rudp::ManagedConnections &rudp) :
-                                  routing_table_(routing_table),
-                                  rudp_(rudp) {}
+namespace response {
 
 // always direct !! never pass on
-void ResponseHandler::ProcessPingResponse(protobuf::Message& message) {
+void ProcessPingResponse(protobuf::Message& message) {
   // TODO , do we need this and where and how can I update the response
   protobuf::PingResponse ping_response;
   if (ping_response.ParseFromString(message.data())) {
@@ -44,7 +41,9 @@ void ResponseHandler::ProcessPingResponse(protobuf::Message& message) {
 }
 
 // the other node agreed to connect - he has accepted our connection
-void ResponseHandler::ProcessConnectResponse(protobuf::Message& message) {
+void Connect(RoutingTable &routing_table,
+             rudp::ManagedConnections &rudp,
+             protobuf::Message& message) {
   protobuf::ConnectResponse connect_response;
   protobuf::ConnectRequest connect_request;
   if (!connect_response.ParseFromString(message.data())) {
@@ -64,14 +63,17 @@ void ResponseHandler::ProcessConnectResponse(protobuf::Message& message) {
   boost::asio::ip::udp::endpoint their_endpoint;
   their_endpoint.address().from_string(connect_response.contact().endpoint().ip());
   their_endpoint.port(connect_response.contact().endpoint().port());
-  if (node_validation_functor_)  // never add any node to routing table
-    node_validation_functor_(connect_response.contact().node_id(),
-                            their_endpoint,
-                            message.client_node(),
-                            our_endpoint);
+  // TODO(dirvine) FIXME
+//   if (node_validation_functor_)  // never add any node to routing table
+//     node_validation_functor_(connect_response.contact().node_id(),
+//                             their_endpoint,
+//                             message.client_node(),
+//                             our_endpoint);
 }
 
-void ResponseHandler::ProcessFindNodeResponse(protobuf::Message& message) {
+void FindNode(RoutingTable &routing_table,
+              rudp::ManagedConnections &rudp,
+              protobuf::Message& message) {
   protobuf::FindNodesResponse find_nodes;
   if (!find_nodes.ParseFromString(message.data())) {
     DLOG(ERROR) << "Could not parse find node response";
@@ -79,26 +81,27 @@ void ResponseHandler::ProcessFindNodeResponse(protobuf::Message& message) {
   }
   if (asymm::CheckSignature(find_nodes.original_request(),
                             find_nodes.original_signature(),
-                            routing_table_.kKeys().public_key) != kSuccess) {
+                            routing_table.kKeys().public_key) != kSuccess) {
     DLOG(ERROR) << " find node request was not signed by us";
     return;  // we never requested this
   }
   for(int i = 0; i < find_nodes.nodes_size() ; ++i) {
     NodeInfo node_to_add;
     node_to_add.node_id = NodeId(find_nodes.nodes(i));
-    if (routing_table_.CheckNode(node_to_add)) {
+    if (routing_table.CheckNode(node_to_add)) {
       // TODO(dirvine) handle return code from rudp
       boost::asio::ip::udp::endpoint endpoint;
-      rudp_.GetAvailableEndpoint(&endpoint);
+      rudp.GetAvailableEndpoint(&endpoint);
       SendOn(rpcs::Connect(NodeId(find_nodes.nodes(i)),
-                               endpoint,
-                               routing_table_.kKeys().identity),
-             rudp_,
-             routing_table_);
+                           endpoint,
+                           routing_table.kKeys().identity),
+             rudp,
+             routing_table);
     }
   }
 }
 
+}  // namespace response 
 
 }  // namespace routing
 

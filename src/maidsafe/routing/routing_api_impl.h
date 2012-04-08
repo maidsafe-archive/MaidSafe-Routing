@@ -33,8 +33,6 @@ private:
   AsioService asio_service_;
   std::vector<boost::asio::ip::udp::endpoint> bootstrap_nodes_;
   const asymm::Keys keys_;
-  boost::asio::ip::udp::endpoint node_local_endpoint_;
-  boost::asio::ip::udp::endpoint node_external_endpoint_;
   rudp::ManagedConnections rudp_;
   RoutingTable routing_table_;
   Timer timer_;
@@ -50,8 +48,7 @@ private:
                            NodeValidatedFunctor &)> node_validation_signal_;
   std::map<uint32_t, std::pair<std::unique_ptr<boost::asio::deadline_timer>,
                               MessageReceivedFunctor> > waiting_for_response_;
-  std::vector<NodeInfo> client_connections_;  // hold connections to clients only
-  std::vector<NodeInfo> client_routing_table_;  // when node is client this is
+  std::vector<NodeInfo> direct_non_routing_table_connections_;
   // closest nodes to the client.
   bool joined_;
   const boost::filesystem::path bootstrap_file_path_;
