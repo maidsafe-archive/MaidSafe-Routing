@@ -49,6 +49,12 @@ boost::signals2::signal<void(int, std::string)>
                                      &MessageHandler::MessageReceivedSignal() {
   return message_received_signal_;
 }
+// TODO ask Fraser about this mockery of an attempt :-) either that or get some sleep
+void MessageHandler::Send(protobuf::Message& message) {
+  message.set_routing_failure(false);
+  SendOn(message, rudp_, routing_table_);
+}
+
 
 bool MessageHandler::CheckCacheData(protobuf::Message &message) {
   if (message.type() == -100) {

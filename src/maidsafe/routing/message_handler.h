@@ -45,6 +45,7 @@ public:
   void CloseNodesMessage(protobuf::Message &message);
   bool CheckCacheData(protobuf::Message &message);
   bool CheckAndSendToLocalClients(protobuf::Message &message);
+  void Send(protobuf::Message &message);
   boost::signals2::signal<void(int, std::string)> &MessageReceivedSignal();
 private:
   MessageHandler(const MessageHandler&);  // no copy

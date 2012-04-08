@@ -138,22 +138,43 @@ int Routing::Send(const Message &message,
     DLOG(ERROR) << "No data, aborted send";
     return kEmptyData;
   }
-  
   uint32_t message_unique_id =  impl_->timer_.AddTask(message.timeout,
                                                 response_functor);
   protobuf::Message proto_message;
   proto_message.set_id(message_unique_id);
   // TODO(see if ANONYMOUS and Endpoint required here
   proto_message.set_source_id(impl_->routing_table_.kKeys().identity);
+  proto_message.set_replication(message.replication);
   proto_message.set_destination_id(message.destination_id);
   proto_message.set_data(message.data);
   proto_message.set_direct(message.direct);
-  proto_message.set_replication(message.replication);
   proto_message.set_type(message.type);
-  proto_message.set_routing_failure(false);
-  SendOn(proto_message, impl_->rudp_, impl_->routing_table_);
+  impl_->message_handler_.Send(proto_message);
   return 0;
 }
+
+int Routing::Send(const Message& message) {
+  if (message.destination_id.empty()) {
+    DLOG(ERROR) << "No destination id, aborted send";
+    return kInvalidDestinatinId;
+  }
+  if (message.data.empty() && (message.type != 100)) {
+    DLOG(ERROR) << "No data, aborted send";
+    return kEmptyData;
+  }
+  protobuf::Message proto_message;
+  proto_message.set_id(0);
+  // TODO(see if ANONYMOUS and Endpoint required here
+  proto_message.set_source_id(impl_->routing_table_.kKeys().identity);
+  proto_message.set_replication(message.replication);
+  proto_message.set_destination_id(message.destination_id);
+  proto_message.set_data(message.data);
+  proto_message.set_direct(message.direct);
+  proto_message.set_type(message.type);
+  impl_->message_handler_.Send(proto_message);
+  return 0;
+}
+
 
 
 void Routing::ValidateThisNode(const std::string &node_id,
