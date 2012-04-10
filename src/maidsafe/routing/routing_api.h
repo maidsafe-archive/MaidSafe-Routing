@@ -138,12 +138,12 @@ class Routing {
   * clients with your address (except you). If you are a node and not a     *
   * client this method will return false. Empty for non-client nodes        *
   ***************************************************************************/
-  int Send(const Message &message,
+  int Send(const Message message,
             const MessageReceivedFunctor response_functor);
   /**************************************************************************
   *Non RPC Send                                                             *
   **************************************************************************/
-  int Send(const Message &message);
+  int Send(const Message message);
   /**************************************************************************
   * This signal is fired on any message received that is NOT a reply to a   *
   * request made by the Send method.                                        *
@@ -173,7 +173,7 @@ class Routing {
   void Init();
   void Join();
   void ReceiveMessage(const std::string &message);
-  void ConnectionLost(boost::asio::ip::udp::endpoint &lost_endpoint);
+  void ConnectionLost(const boost::asio::ip::udp::endpoint &lost_endpoint);
   void ValidateThisNode(const std::string &node_id,
                       const asymm::PublicKey &public_key,
                       const boost::asio::ip::udp::endpoint &their_endpoint,

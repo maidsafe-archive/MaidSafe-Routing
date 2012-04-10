@@ -128,7 +128,7 @@ void Routing::BootStrapFromThisEndpoint(const boost::asio::ip::udp::endpoint
   impl_->asio_service_.service().post(std::bind(&Routing::Join, this));
 }
 
-int Routing::Send(const Message &message,
+int Routing::Send(const Message message,
                    const MessageReceivedFunctor response_functor) {
   if (message.destination_id.empty()) {
     DLOG(ERROR) << "No destination id, aborted send";
@@ -153,7 +153,7 @@ int Routing::Send(const Message &message,
   return 0;
 }
 
-int Routing::Send(const Message& message) {
+int Routing::Send(const Message message) {
   if (message.destination_id.empty()) {
     DLOG(ERROR) << "No destination id, aborted send";
     return kInvalidDestinatinId;
@@ -223,13 +223,26 @@ void Routing::Join() {
     DLOG(INFO) << "No bootstrap nodes";
     return;
   }
-
-  for (auto it = impl_->bootstrap_nodes_.begin();
-       it != impl_->bootstrap_nodes_.end(); ++it) {
-    // TODO(dirvine) send bootstrap requests
+  boost::asio::ip::udp::endpoint local_endpoint;
+  if (impl_->rudp_.GetAvailableEndpoint(&local_endpoint)) {
+    for (auto it = impl_->bootstrap_nodes_.begin();
+        it != impl_->bootstrap_nodes_.end(); ++it) {
+      rudp::MessageReceivedFunctor message_recieved(
+                                          std::bind(&Routing::ReceiveMessage,
+                                                    this,
+                                                    std::placeholders::_1));
+      rudp::ConnectionLostFunctor connection_lost(
+                                             std::bind(&Routing::ConnectionLost,
+                                                      this,
+                                                      std::placeholders::_1));
+//       impl_->rudp_.Bootstrap(impl_->bootstrap_nodes_,
+//               message_recieved,
+//               connection_lost,
+//               local_endpoint);
+    }
   }
 
-//TODO send this message direct to whom we bootstrap onto   rpcs::FindNodes(NodeId(impl_.keys_.identity));
+//TODO(dirvine) send this message direct to whom we bootstrap onto   rpcs::FindNodes(NodeId(impl_.keys_.identity));
 }
 
 bs2::signal<void(int, std::string)> &Routing::MessageReceivedSignal() {
@@ -261,7 +274,8 @@ void Routing::ReceiveMessage(const std::string &message) {
     impl_->message_handler_.ProcessMessage(protobuf_message);
 }
 
-void Routing::ConnectionLost(boost::asio::ip::udp::endpoint& lost_endpoint) {
+void Routing::ConnectionLost(const boost::asio::ip::udp::endpoint
+                                                        &lost_endpoint) {
   NodeInfo node_info;
   if ((impl_->routing_table_.GetNodeInfo(lost_endpoint, &node_info) &&
      (impl_->routing_table_.IsMyNodeInRange(node_info.node_id,

@@ -91,15 +91,18 @@ TEST(APITest, ManualBootstrap) {
   EXPECT_NO_THROW({Routing RtAPI(keys2, node2_config, false);});
   Routing R1(keys1, node1_config, false);
   Routing R2(keys2, node2_config, false);
-  
-  boost::asio::ip::udp::endpoint endpoint1(R1.GetEndPoint());
-  boost::asio::ip::udp::endpoint endpoint2(R2.GetEndPoint());
+  boost::asio::ip::udp::endpoint endpoint1d(R1.GetEndPoint());
+  boost::asio::ip::udp::endpoint endpoint2d(R2.GetEndPoint());
   boost::asio::ip::udp::endpoint empty_endpoint;
-  EXPECT_EQ(endpoint1 , empty_endpoint);
+  EXPECT_EQ(endpoint1d , empty_endpoint);
   EXPECT_EQ(R1.GetStatus(), kNotJoined);
-  EXPECT_EQ(endpoint2 , empty_endpoint);
+  EXPECT_EQ(endpoint2d , empty_endpoint);
   EXPECT_EQ(R2.GetStatus(), kNotJoined);
-  
+  boost::asio::ip::udp::endpoint endpoint1g(boost::asio::ip::address_v4::loopback(), 5000);
+  boost::asio::ip::udp::endpoint endpoint2g(boost::asio::ip::address_v4::loopback(), 5001);
+  R1.BootStrapFromThisEndpoint(endpoint1g);
+  R2.BootStrapFromThisEndpoint(endpoint2g);
+  EXPECT_EQ(R1.GetStatus(), kNotJoined);
   EXPECT_TRUE(boost::filesystem::remove(node1_config));
   EXPECT_TRUE(boost::filesystem::remove(node2_config));
 }
