@@ -49,7 +49,7 @@ int8_t GetMinorVersion() {
 int8_t GetPatchVersion() {
   return MAIDSAFE_ROUTING_VERSION; /*_PATCH; TODO(dirvine) */
 }
-  
+
 Message::Message()
     : type(0),
       destination_id(),
@@ -57,15 +57,6 @@ Message::Message()
       timeout(Parameters::timout_in_seconds),
       direct(false),
       replication(1) {}
-
-Message::Message(const protobuf::Message &protobuf_message)
-    : type(protobuf_message.type()),
-      destination_id(protobuf_message.destination_id()),
-      data(protobuf_message.data()),
-      timeout(Parameters::timout_in_seconds),
-      direct(protobuf_message.direct()),
-      replication(protobuf_message.replication()) {}
-
 
 Routing::Routing(const asymm::Keys &keys,
                  const boost::filesystem::path &boostrap_file_path,
@@ -92,7 +83,7 @@ Routing::Routing(const asymm::Keys &keys,
   if (client_mode) {
     Parameters::max_routing_table_size = Parameters::closest_nodes_size;
   }
-  Init();
+  Join();
 }
 
 Routing::~Routing() { }
@@ -106,14 +97,15 @@ int Routing::GetStatus() {
         return kNotJoined;
     } 
  } else {
-   return impl_->routing_table_.Size();
+  return impl_->routing_table_.Size();
  }
 }
 
-
 // drop existing routing table and restart
-void Routing::BootStrapFromThisEndpoint(const boost::asio::ip::udp::endpoint
-&endpoint) {
+// the endpoint is the endpoint to connect to.
+void Routing::BootStrapFromThisEndpoint(const boost::asio::ip::udp::endpoint&
+                                                                     endpoint,
+                              boost::asio::ip::udp::endpoint local_endpoint) {
   LOG(INFO) << " Entered bootstrap IP address : " << endpoint.address().to_string();
   LOG(INFO) << " Entered bootstrap Port       : " << endpoint.port();
   for (unsigned int i = 0; i < impl_->routing_table_.Size(); ++i) {
@@ -125,7 +117,32 @@ void Routing::BootStrapFromThisEndpoint(const boost::asio::ip::udp::endpoint
   impl_->network_status_signal_(impl_->routing_table_.Size());
   impl_->bootstrap_nodes_.clear();
   impl_->bootstrap_nodes_.push_back(endpoint);
-  impl_->asio_service_.service().post(std::bind(&Routing::Join, this));
+  Join(local_endpoint);
+}
+
+void Routing::Join(boost::asio::ip::udp::endpoint local_endpoint) {
+  if (impl_->bootstrap_nodes_.empty()) {
+    LOG(INFO) << "No bootstrap nodes Aborted Join !! You must now";
+    LOG(INFO) << "use BootStrapFromThisEndpoint method, node is started";
+    return;
+  }
+  rudp::MessageReceivedFunctor message_recieved(std::bind(&Routing::ReceiveMessage,
+                                                          this,
+                                                          std::placeholders::_1));
+  rudp::ConnectionLostFunctor connection_lost(
+                                          std::bind(&Routing::ConnectionLost,
+                                                  this,
+                                                  std::placeholders::_1));
+  boost::asio::ip::udp::endpoint bootstrap_endpoint(impl_->rudp_.Bootstrap(
+                                                    impl_->bootstrap_nodes_,
+                                                    message_recieved,
+                                                    connection_lost,
+                                                    local_endpoint));
+  Sleep(boost::posix_time::seconds(1)); //TODO(dirvine) get rid !!
+  if (impl_->rudp_.Send(bootstrap_endpoint,
+      rpcs::FindNodes(NodeId(impl_->keys_.identity)).SerializeAsString()) !=
+      0)
+    DLOG(INFO) << " Send Error in Join";
 }
 
 int Routing::Send(const Message message,
@@ -206,45 +223,6 @@ asio::ip::udp::endpoint Routing::GetEndPoint() {
   return endpoint;
 }
 
-
-void Routing::Init() {
-  impl_->asio_service_.Start(10);
-// TODO(dirvine) handle return code
-//   impl_->rudp_.GetAvailableEndpoint(& impl_->node_local_endpoint_);
-  // TODO(dirvine) connect rudp signals !!
-//   LOG(INFO) << " Local IP address : " << impl_->node_local_endpoint_.address().to_string();
-//   LOG(INFO) << " Local Port       : " << impl_->node_local_endpoint_.port();
-  Join();
-}
-//TODO add anonymous join method FIXME
-
-void Routing::Join() {
-  if (impl_->bootstrap_nodes_.empty()) {
-    DLOG(INFO) << "No bootstrap nodes";
-    return;
-  }
-  boost::asio::ip::udp::endpoint local_endpoint;
-  if (impl_->rudp_.GetAvailableEndpoint(&local_endpoint)) {
-    for (auto it = impl_->bootstrap_nodes_.begin();
-        it != impl_->bootstrap_nodes_.end(); ++it) {
-      rudp::MessageReceivedFunctor message_recieved(
-                                          std::bind(&Routing::ReceiveMessage,
-                                                    this,
-                                                    std::placeholders::_1));
-      rudp::ConnectionLostFunctor connection_lost(
-                                             std::bind(&Routing::ConnectionLost,
-                                                      this,
-                                                      std::placeholders::_1));
-//       impl_->rudp_.Bootstrap(impl_->bootstrap_nodes_,
-//               message_recieved,
-//               connection_lost,
-//               local_endpoint);
-    }
-  }
-
-//TODO(dirvine) send this message direct to whom we bootstrap onto   rpcs::FindNodes(NodeId(impl_.keys_.identity));
-}
-
 bs2::signal<void(int, std::string)> &Routing::MessageReceivedSignal() {
   return impl_->message_received_signal_;
 }
@@ -270,8 +248,11 @@ bs2::signal<void(std::string, std::string)>
 void Routing::ReceiveMessage(const std::string &message) {
   protobuf::Message protobuf_message;
   protobuf::ConnectRequest connection_request;
-  if (protobuf_message.ParseFromString(message))
+  if (protobuf_message.ParseFromString(message)) {
+    DLOG(INFO) << " Message received, type: " << protobuf_message.type();
+    DLOG(INFO) << " from " << EncodeToHex(protobuf_message.source_id());
     impl_->message_handler_.ProcessMessage(protobuf_message);
+  }
 }
 
 void Routing::ConnectionLost(const boost::asio::ip::udp::endpoint

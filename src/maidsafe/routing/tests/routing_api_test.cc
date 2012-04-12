@@ -28,8 +28,8 @@
 namespace maidsafe {
 namespace routing {
 namespace test {
-
-static int test_routing_api_node_port(5000);
+namespace bptime = boost::posix_time;
+static int test_routing_api_node_port(6000);
 
 NodeInfo MakeNodeInfo() {
   NodeInfo node;
@@ -57,16 +57,14 @@ asymm::Keys MakeKeys() {
   boost::filesystem::path good_file
               (fs::unique_path(fs::temp_directory_path() / "test"));
   EXPECT_THROW({Routing RtAPI(keys, bad_file, false);},
-              boost::filesystem::filesystem_error)
-                                         << "should not accept invalid files";
+              boost::filesystem::filesystem_error)  << "should not accept invalid files";
   EXPECT_NO_THROW({Routing RtAPI(keys, good_file, false);});
   EXPECT_TRUE(WriteFile(good_file, "not a vector of endpoints"));
-  EXPECT_NO_THROW({Routing RtAPI(keys, good_file, false);})
-                                            << "cannot handle corrupt files";
+  EXPECT_NO_THROW({Routing RtAPI(keys, good_file, false);}) << "cannot handle corrupt files";
   EXPECT_TRUE(boost::filesystem::remove(good_file));
 }
 
-TEST(APITest, StandAloneNodeNotConnected) {
+TEST(APITest, BEH_API_StandAloneNodeNotConnected) {
   asymm::Keys keys(MakeKeys());
   boost::filesystem::path good_file
                        (fs::unique_path(fs::temp_directory_path() / "test"));
@@ -80,7 +78,7 @@ TEST(APITest, StandAloneNodeNotConnected) {
 }
 
 
-TEST(APITest, ManualBootstrap) {
+TEST(APITest, BEH_API_ManualBootstrap) {
   asymm::Keys keys1(MakeKeys());
   asymm::Keys keys2(MakeKeys());
   boost::filesystem::path node1_config
@@ -100,14 +98,50 @@ TEST(APITest, ManualBootstrap) {
   EXPECT_EQ(R2.GetStatus(), kNotJoined);
   boost::asio::ip::udp::endpoint endpoint1g(boost::asio::ip::address_v4::loopback(), 5000);
   boost::asio::ip::udp::endpoint endpoint2g(boost::asio::ip::address_v4::loopback(), 5001);
-  R1.BootStrapFromThisEndpoint(endpoint1g);
-  R2.BootStrapFromThisEndpoint(endpoint2g);
-  EXPECT_EQ(R1.GetStatus(), kNotJoined);
+  R1.BootStrapFromThisEndpoint(endpoint2g);
+  R2.BootStrapFromThisEndpoint(endpoint1g);
+  EXPECT_EQ(R1.GetStatus(), kSuccess);
+  EXPECT_EQ(R2.GetStatus(), kSuccess);
   EXPECT_TRUE(boost::filesystem::remove(node1_config));
   EXPECT_TRUE(boost::filesystem::remove(node2_config));
 }
 
-
+TEST(APITest, BEH_API_ZeroState) {
+  asymm::Keys keys1(MakeKeys());
+  asymm::Keys keys2(MakeKeys());
+  asymm::Keys keys3(MakeKeys());
+  boost::filesystem::path node1_config
+                       (fs::unique_path(fs::temp_directory_path() / "test1"));
+  boost::filesystem::path node2_config
+                       (fs::unique_path(fs::temp_directory_path() / "test2"));
+  boost::filesystem::path node3_config
+                       (fs::unique_path(fs::temp_directory_path() / "test3"));
+  EXPECT_NO_THROW({Routing RtAPI(keys1, node1_config, false);});
+  EXPECT_NO_THROW({Routing RtAPI(keys2, node2_config, false);});
+  EXPECT_NO_THROW({Routing RtAPI(keys3, node3_config, false);});
+  Routing R1(keys1, node1_config, false);
+  Routing R2(keys2, node2_config, false);
+  Routing R3(keys3, node3_config, false);
+  boost::asio::ip::udp::endpoint endpoint1(boost::asio::ip::address_v4::loopback(), 5000);
+  boost::asio::ip::udp::endpoint endpoint2(boost::asio::ip::address_v4::loopback(), 5001);
+  boost::asio::ip::udp::endpoint endpoint3(boost::asio::ip::address_v4::loopback(), 5002);
+  // start first pair
+  
+  boost::thread t1(&Routing::BootStrapFromThisEndpoint, &R1, endpoint2, endpoint1);
+  boost::thread t2(&Routing::BootStrapFromThisEndpoint, &R2 ,endpoint1, endpoint2);
+  t1.join();
+  t2.join();
+  EXPECT_EQ(R1.GetStatus(), kSuccess);
+  EXPECT_EQ(R2.GetStatus(), kSuccess);
+  R3.BootStrapFromThisEndpoint(endpoint1);
+  for (auto i = 0;(R3.GetStatus() <1) && i < 1000; ++i)
+    Sleep(bptime::milliseconds(10));
+//   routing table should now be 1
+  EXPECT_TRUE(R3.GetStatus() > 0);
+  EXPECT_TRUE(boost::filesystem::remove(node1_config));
+  EXPECT_TRUE(boost::filesystem::remove(node2_config));
+  EXPECT_TRUE(boost::filesystem::remove(node3_config));
+}
 
 }  // namespace test
 }  // namespace routing

@@ -52,7 +52,6 @@ namespace maidsafe {
 
 namespace routing {
 
-namespace protobuf { class Message; }
 class RoutingPrivate;
 
 int8_t GetMajorVersion(); // API changes between Major versions
@@ -72,7 +71,6 @@ enum SendErrors {
 struct Message {
  public:
   Message();
-  explicit Message(const protobuf::Message &protobuf_message);
   uint32_t type; // message type identifier
                  // if type == 100 then this is cachable data
                  // Data field must then contain serialised data only
@@ -127,7 +125,9 @@ class Routing {
   *To force the node to use a specific endpoint for bootstrapping           *
   *(i.e. private network)                                                   *
   ***************************************************************************/
-  void BootStrapFromThisEndpoint(const boost::asio::ip::udp::endpoint& endpoint);
+  void BootStrapFromThisEndpoint(const boost::asio::ip::udp::endpoint& endpoint,
+                                boost::asio::ip::udp::endpoint local_endpoint =
+                                boost::asio::ip::udp::endpoint());
   /**************************************************************************
   *The reply or error (timeout) will be passed to this response_functor     *
   *error is passed as negative int (return code) and empty string           *
@@ -171,7 +171,8 @@ class Routing {
   Routing(const Routing&);  // no copy
   Routing& operator=(const Routing&);  // no assign
   void Init();
-  void Join();
+  void Join(boost::asio::ip::udp::endpoint local_endpoint =
+                                boost::asio::ip::udp::endpoint());
   void ReceiveMessage(const std::string &message);
   void ConnectionLost(const boost::asio::ip::udp::endpoint &lost_endpoint);
   void ValidateThisNode(const std::string &node_id,
