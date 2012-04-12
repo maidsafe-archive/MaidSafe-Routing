@@ -112,7 +112,10 @@ class Routing {
   Routing(const asymm::Keys &keys,
           const boost::filesystem::path &full_path_and_name,
           bool client_mode);
-  ~Routing();
+  ~Routing();  // TODO(dirvine) if this is allowed to default it tries to delete the unique_ptr and does not know the size
+  Routing(const Routing&) = delete;
+  Routing(const Routing&&) = delete;
+  Routing& operator=(const Routing&) = delete;
   /**************************************************************************
   *Useful in stand alone mode (first network node)                          * 
   ***************************************************************************/
@@ -125,7 +128,7 @@ class Routing {
   *To force the node to use a specific endpoint for bootstrapping           *
   *(i.e. private network)                                                   *
   ***************************************************************************/
-  void BootStrapFromThisEndpoint(const boost::asio::ip::udp::endpoint& endpoint,
+  bool BootStrapFromThisEndpoint(const boost::asio::ip::udp::endpoint& endpoint,
                                 boost::asio::ip::udp::endpoint local_endpoint =
                                 boost::asio::ip::udp::endpoint());
   /**************************************************************************
@@ -168,10 +171,8 @@ class Routing {
                            const boost::asio::ip::udp::endpoint& /*our Node */,
                            NodeValidatedFunctor & )> &NodeValidationSignal();
  private:
-  Routing(const Routing&);  // no copy
-  Routing& operator=(const Routing&);  // no assign
   void Init();
-  void Join(boost::asio::ip::udp::endpoint local_endpoint =
+  bool Join(boost::asio::ip::udp::endpoint local_endpoint =
                                 boost::asio::ip::udp::endpoint());
   void ReceiveMessage(const std::string &message);
   void ConnectionLost(const boost::asio::ip::udp::endpoint &lost_endpoint);

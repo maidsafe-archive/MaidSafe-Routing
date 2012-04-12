@@ -32,7 +32,7 @@ maidsafe::routing::Timer::Timer(AsioService &io_service) :
   queue_() {}
 // below comment would require an overload or default here to
 // put in another task with the same task_id
-uint32_t Timer::AddTask(uint32_t timeout,
+TaskId Timer::AddTask(uint32_t timeout,
                         const TaskResponseFunctor &response_functor) {
   ++task_id_;
   TimerPointer timer(new asio::deadline_timer(io_service_.service(),
@@ -45,7 +45,7 @@ uint32_t Timer::AddTask(uint32_t timeout,
 // TODO(dirvine)
 // we could change the find to iterate entire map if we want to be able to send
 // multiple requests and accept the first one back, dropping the rest.
-void Timer::KillTask(uint32_t task_id) {
+void Timer::KillTask(TaskId task_id) {
   const auto it = queue_.find(task_id);
   if (it != queue_.end()) {
     // message timed out or task killed

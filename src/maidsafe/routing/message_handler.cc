@@ -91,8 +91,9 @@ void MessageHandler::RoutingMessage(protobuf::Message& message) {
       service::FindNodes(routing_table_, rudp_, message);
       break;
     default: // unknown (silent drop)
-      break;
+      return;
   }
+  SendOn(message, rudp_, routing_table_);
 }
 
 void MessageHandler::DirectMessage(protobuf::Message& message) {
@@ -110,8 +111,10 @@ void MessageHandler::DirectMessage(protobuf::Message& message) {
   if (message.type() > 100) {  // request
     message_received_signal_(static_cast<int>(-message.type()),
                              message.data());
+    DLOG(INFO) << "Routing message detected";
   } else {  // response
     timer_ptr_.ExecuteTaskNow(message);
+    DLOG(INFO) << "Response detected";
   }
 }
 
@@ -120,10 +123,6 @@ void MessageHandler::CloseNodesMessage(protobuf::Message& message) {
      boost::asio::ip::udp::endpoint send_to_endpoint;
      send_to_endpoint.address().from_string(message.relay().ip());
      send_to_endpoint.port(message.relay().port());
-     //TODO(dirvine) FIXME if we have this non rt connection!!
-     
-//      auto find = close.begin();
-     
      rudp_.Send(send_to_endpoint, message.SerializeAsString());
      return;
   }
@@ -161,7 +160,11 @@ void MessageHandler::ProcessMessage(protobuf::Message &message) {
   // I am in closest proximity to this message
   if (routing_table_.IsMyNodeInRange(NodeId(message.destination_id()),
                                             Parameters::closest_nodes_size)) {
-  CloseNodesMessage(message);
+    if ((message.type() < 100) && (message.type() > -100)) {
+      RoutingMessage(message);
+    } else {
+      CloseNodesMessage(message);
+    }
   }
   // default
   SendOn(message, rudp_, routing_table_);

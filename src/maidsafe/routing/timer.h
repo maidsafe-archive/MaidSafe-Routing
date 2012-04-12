@@ -29,7 +29,7 @@ namespace fs = boost::filesystem;
 namespace bs2 = boost::signals2;
 namespace asio = boost::asio;
 typedef std::function<void(int, std::string)> TaskResponseFunctor;
-
+typedef uint32_t TaskId;
 // we could use boost::system::error_code to check why task failed (cancelled /
 // timout etc.) but here we choose to add tasks to a queue_ and they either run
 // or get killed (erased -> out of scope pointer so delete)
@@ -37,16 +37,17 @@ typedef std::function<void(int, std::string)> TaskResponseFunctor;
 class Timer {
  public:
   Timer(AsioService &io_service);
-  ~Timer() {}
+  ~Timer() = default;
+  Timer &operator=(const Timer&) = delete;
+  Timer(const Timer&) = delete;
+  Timer(const Timer&&) = delete;
   typedef std::shared_ptr<asio::deadline_timer> TimerPointer;
-  // return code is used to set message.id() when sending
-  uint32_t AddTask(uint32_t timeout, const TaskResponseFunctor &);
+  TaskId AddTask(uint32_t timeout, const TaskResponseFunctor &);
   void KillTask(uint32_t task_id);  // removes from queue immediately no run
   void ExecuteTaskNow(protobuf::Message &message);  //executes and removes task
  private:
-  Timer(const Timer&);
   AsioService &io_service_;
-  uint32_t task_id_;
+  TaskId task_id_;
   std::map<uint32_t, std::pair<TimerPointer, TaskResponseFunctor> > queue_;
 };
 

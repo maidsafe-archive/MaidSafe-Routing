@@ -21,13 +21,14 @@ namespace routing {
 
 struct RoutingPrivate {
 public:
-  ~RoutingPrivate() {}
+  ~RoutingPrivate() { DLOG(INFO) << "RoutingPrivate dtor"; }
 private:
   RoutingPrivate(const asymm::Keys &keys,
                  const boost::filesystem::path &bootstrap_file_path,
                  bool client_mode);
 
   RoutingPrivate(const RoutingPrivate&);  // no copy
+  RoutingPrivate(const RoutingPrivate&&);  // no move
   RoutingPrivate& operator=(const RoutingPrivate&);  // no assign
   friend class Routing;
   AsioService asio_service_;

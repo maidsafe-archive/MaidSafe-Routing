@@ -14,6 +14,7 @@
 #define MAIDSAFE_ROUTING_PARAMETERS_H_
 
 #include "boost/filesystem/path.hpp"
+#include "maidsafe/routing/log.h"
 
 namespace maidsafe {
 
@@ -21,6 +22,11 @@ namespace routing {
 
 struct Parameters {
  public:
+  Parameters(const Parameters&);  // no copy
+  Parameters(const Parameters&&);  // no move
+  Parameters& operator=(const Parameters&);  // no assign
+  Parameters() = default;
+  ~Parameters() { DLOG(INFO) << "Parameters dtor"; }
   // this node is client or node (full routing node with storage)
   static bool client_mode;
   // fully encrypt all data at routing level in both directions
@@ -30,12 +36,7 @@ struct Parameters {
   static uint16_t closest_nodes_size;
   static uint16_t max_routing_table_size;
   static uint16_t bucket_target_size;
- private:
-  Parameters(const Parameters&);  // no copy
-  Parameters& operator=(const Parameters&);  // no assign
 };
-
-
 
 
 }  // namespace routing

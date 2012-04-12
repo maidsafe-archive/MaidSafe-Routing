@@ -11,6 +11,9 @@
  ******************************************************************************/
 
 #include <utility>
+#include <chrono>
+#include <thread>
+#include <future>
 #include "boost/filesystem/fstream.hpp"
 #include "boost/filesystem/exception.hpp"
 #include "maidsafe/common/utils.h"
@@ -86,7 +89,7 @@ Routing::Routing(const asymm::Keys &keys,
   Join();
 }
 
-Routing::~Routing() { }
+Routing::~Routing() { DLOG(INFO) << "Routing dtr"; }
 
 int Routing::GetStatus() {
  if (impl_->routing_table_.Size() == 0) {
@@ -99,15 +102,20 @@ int Routing::GetStatus() {
  } else {
   return impl_->routing_table_.Size();
  }
+ return 0;
 }
 
 // drop existing routing table and restart
 // the endpoint is the endpoint to connect to.
-void Routing::BootStrapFromThisEndpoint(const boost::asio::ip::udp::endpoint&
+bool Routing::BootStrapFromThisEndpoint(const boost::asio::ip::udp::endpoint&
                                                                      endpoint,
                               boost::asio::ip::udp::endpoint local_endpoint) {
   LOG(INFO) << " Entered bootstrap IP address : " << endpoint.address().to_string();
   LOG(INFO) << " Entered bootstrap Port       : " << endpoint.port();
+  if (endpoint.address().is_unspecified()) {
+    DLOG(ERROR) << "Attempt to boot from unspecified endpoint ! aborted";
+    return false;
+  }
   for (unsigned int i = 0; i < impl_->routing_table_.Size(); ++i) {
     NodeInfo remove_node =
     impl_->routing_table_.GetClosestNode(NodeId(impl_->routing_table_.kKeys().identity), 0);
@@ -117,14 +125,13 @@ void Routing::BootStrapFromThisEndpoint(const boost::asio::ip::udp::endpoint&
   impl_->network_status_signal_(impl_->routing_table_.Size());
   impl_->bootstrap_nodes_.clear();
   impl_->bootstrap_nodes_.push_back(endpoint);
-  Join(local_endpoint);
+  return Join(local_endpoint);
 }
 
-void Routing::Join(boost::asio::ip::udp::endpoint local_endpoint) {
+bool Routing::Join(boost::asio::ip::udp::endpoint local_endpoint) {
   if (impl_->bootstrap_nodes_.empty()) {
-    LOG(INFO) << "No bootstrap nodes Aborted Join !! You must now";
-    LOG(INFO) << "use BootStrapFromThisEndpoint method, node is started";
-    return;
+    LOG(INFO) << "No bootstrap nodes Aborted Join !!";
+    return false;
   }
   rudp::MessageReceivedFunctor message_recieved(std::bind(&Routing::ReceiveMessage,
                                                           this,
@@ -138,11 +145,18 @@ void Routing::Join(boost::asio::ip::udp::endpoint local_endpoint) {
                                                     message_recieved,
                                                     connection_lost,
                                                     local_endpoint));
-  Sleep(boost::posix_time::seconds(1)); //TODO(dirvine) get rid !!
-  if (impl_->rudp_.Send(bootstrap_endpoint,
-      rpcs::FindNodes(NodeId(impl_->keys_.identity)).SerializeAsString()) !=
-      0)
-    DLOG(INFO) << " Send Error in Join";
+
+//   if (bootstrap_endpoint.address().is_unspecified() &&
+//       (!local_endpoint.address().is_unspecified())) {
+//     DLOG(ERROR) << "could not get bootstrap address and not zero state";
+//     return false;
+//   }
+
+  std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+  auto boot = std::async(std::launch::async,
+    [&]{ return impl_->rudp_.Send(bootstrap_endpoint,
+                rpcs::FindNodes(NodeId(impl_->keys_.identity)).SerializeAsString()); });
+  return (boot.get() == 0);
 }
 
 int Routing::Send(const Message message,
@@ -188,7 +202,7 @@ int Routing::Send(const Message message) {
   proto_message.set_data(message.data);
   proto_message.set_direct(message.direct);
   proto_message.set_type(message.type);
-  impl_->message_handler_.Send(proto_message);
+  SendOn(proto_message, impl_->rudp_, impl_->routing_table_);
   return 0;
 }
 

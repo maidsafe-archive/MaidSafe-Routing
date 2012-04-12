@@ -29,8 +29,13 @@ void SendOn(protobuf::Message message,
   std::string signature;
   asymm::Sign(message.data(), routing_table.kKeys().private_key, &signature);
   message.set_signature(signature);
-  NodeInfo next_node(routing_table.GetClosestNode(NodeId(message.destination_id()),
-                                               0));
+  NodeInfo next_node;
+   if (routing_table.Size() > 0){
+     next_node = routing_table.GetClosestNode(NodeId(message.destination_id()), 0);
+   } else {
+     DLOG(ERROR) << "Attempt to send on when routing table full ";
+     return;
+   }
   rudp.Send(next_node.endpoint, message.SerializeAsString());
 }
 

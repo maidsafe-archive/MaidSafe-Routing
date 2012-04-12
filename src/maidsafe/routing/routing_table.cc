@@ -101,6 +101,12 @@ bool RoutingTable::GetNodeInfo(const boost::asio::ip::udp::endpoint &endpoint,
 
 
 bool RoutingTable::AmIClosestNode(const NodeId& node_id) {
+  if (!node_id.IsValid()) {
+    DLOG(ERROR) << "Invalid node_id passed";
+    return false;
+  }
+  if (routing_table_nodes_.empty())
+    return true;
   SortFromThisNode(node_id);
   return ((kNodeId_ ^ node_id) <
           (node_id ^ routing_table_nodes_[0].node_id));

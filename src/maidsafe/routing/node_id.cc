@@ -190,7 +190,7 @@ const std::string NodeId::ToStringEncoded(
 }
 
 bool NodeId::IsValid() const {
-  return raw_id_.size() == kKeySizeBytes;
+  return ((raw_id_.size() == kKeySizeBytes) && (!raw_id_.empty()));
 }
 
 bool NodeId::operator == (const NodeId &rhs) const {
@@ -226,9 +226,13 @@ NodeId& NodeId::operator= (const NodeId &rhs) {
 
 const NodeId NodeId::operator ^ (const NodeId &rhs) const {
   NodeId result;
-  std::string::const_iterator this_it = raw_id_.begin();
-  std::string::const_iterator rhs_it = rhs.raw_id_.begin();
-  std::string::iterator result_it = result.raw_id_.begin();
+  if (!rhs.IsValid()) {
+    DLOG(ERROR) << "Invalid nodeid";
+    return result;
+  }
+  auto this_it = raw_id_.begin();
+  auto rhs_it = rhs.raw_id_.begin();
+  auto result_it = result.raw_id_.begin();
   for (; this_it != raw_id_.end(); ++this_it, ++rhs_it, ++result_it)
     *result_it = *this_it ^ *rhs_it;
   return result;
