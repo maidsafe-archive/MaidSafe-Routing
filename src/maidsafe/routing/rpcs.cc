@@ -72,7 +72,7 @@ const protobuf::Message Connect(const NodeId &node_id,
   return message;
 }
 
-const protobuf::Message FindNodes(const NodeId &node_id) {
+const protobuf::Message FindNodes(const NodeId &node_id, boost::asio::ip::udp::endpoint endpoint) {
   protobuf::Message message;
   protobuf::FindNodesRequest find_nodes;
   find_nodes.set_num_nodes_requested(Parameters::closest_nodes_size);
@@ -87,6 +87,13 @@ const protobuf::Message FindNodes(const NodeId &node_id) {
   message.set_routing_failure(false);
   message.set_id(0);
   message.set_client_node(false);
+  if (!endpoint.address().is_unspecified()) {
+    DLOG(INFO) << "IP Address " << endpoint.address().to_string();
+    protobuf::Endpoint *pbendpoint;
+    pbendpoint = message.mutable_relay();
+    pbendpoint->set_ip(endpoint.address().to_string().c_str());
+    pbendpoint->set_port(endpoint.port());
+  }
   BOOST_ASSERT_MSG(message.IsInitialized(), "unintialised message");
   return message;
 }

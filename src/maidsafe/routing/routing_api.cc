@@ -155,7 +155,7 @@ bool Routing::Join(boost::asio::ip::udp::endpoint local_endpoint) {
   std::this_thread::sleep_for(std::chrono::milliseconds(1000));
   auto boot = std::async(std::launch::async,
     [&]{ return impl_->rudp_.Send(bootstrap_endpoint,
-                rpcs::FindNodes(NodeId(impl_->keys_.identity)).SerializeAsString()); });
+                rpcs::FindNodes(NodeId(impl_->keys_.identity), local_endpoint).SerializeAsString()); });
   return (boot.get() == 0);
 }
 
@@ -263,8 +263,9 @@ void Routing::ReceiveMessage(const std::string &message) {
   protobuf::Message protobuf_message;
   protobuf::ConnectRequest connection_request;
   if (protobuf_message.ParseFromString(message)) {
-    DLOG(INFO) << " Message received, type: " << protobuf_message.type();
-    DLOG(INFO) << " from " << EncodeToHex(protobuf_message.source_id());
+    DLOG(INFO) << " Message received, type: " << protobuf_message.type() 
+               << " from " << HexSubstr(protobuf_message.source_id())
+               << " I am " << HexSubstr(impl_->keys_.identity);
     impl_->message_handler_.ProcessMessage(protobuf_message);
   }
 }

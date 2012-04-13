@@ -43,7 +43,8 @@ void ProcessPingResponse(protobuf::Message& message) {
 // the other node agreed to connect - he has accepted our connection
 void Connect(RoutingTable &routing_table,
              rudp::ManagedConnections &rudp,
-             protobuf::Message& message) {
+             protobuf::Message& message,
+             NodeValidationFunctor node_validation_functor) {
   protobuf::ConnectResponse connect_response;
   protobuf::ConnectRequest connect_request;
   if (!connect_response.ParseFromString(message.data())) {
@@ -64,16 +65,16 @@ void Connect(RoutingTable &routing_table,
   their_endpoint.address().from_string(connect_response.contact().endpoint().ip());
   their_endpoint.port(connect_response.contact().endpoint().port());
   // TODO(dirvine) FIXME
-//   if (node_validation_functor_)  // never add any node to routing table
-//     node_validation_functor_(connect_response.contact().node_id(),
-//                             their_endpoint,
-//                             message.client_node(),
-//                             our_endpoint);
+  if (node_validation_functor)  // never add any node to routing table
+    node_validation_functor(connect_response.contact().node_id(),
+                            their_endpoint,
+                            message.client_node(),
+                            our_endpoint);
 }
 
 void FindNode(RoutingTable &routing_table,
               rudp::ManagedConnections &rudp,
-              protobuf::Message& message) {
+              const protobuf::Message& message) {
   protobuf::FindNodesResponse find_nodes;
   if (!find_nodes.ParseFromString(message.data())) {
     DLOG(ERROR) << "Could not parse find node response";
@@ -89,7 +90,7 @@ void FindNode(RoutingTable &routing_table,
     NodeInfo node_to_add;
     node_to_add.node_id = NodeId(find_nodes.nodes(i));
     if (routing_table.CheckNode(node_to_add)) {
-      // TODO(dirvine) handle return code from rudp
+      DLOG(INFO) << " size of find nodes " << find_nodes.nodes_size();
       boost::asio::ip::udp::endpoint endpoint;
       rudp.GetAvailableEndpoint(&endpoint);
       SendOn(rpcs::Connect(NodeId(find_nodes.nodes(i)),

@@ -135,8 +135,9 @@ TEST(APITest, BEH_API_ZeroState) {
                        [&]{return R2.BootStrapFromThisEndpoint(endpoint1, endpoint2);});
 // R1.BootStrapFromThisEndpoint(endpoint2, endpoint1);
 // R2.BootStrapFromThisEndpoint(endpoint1, endpoint2);
-  EXPECT_TRUE(a1.get());  // wait for promise !
+std::this_thread::sleep_for(std::chrono::milliseconds(3000));
   EXPECT_TRUE(a2.get());  // wait for promise !
+  EXPECT_TRUE(a1.get());  // wait for promise !
 //   std::this_thread::sleep_for(std::chrono::milliseconds(3000));
   auto a3 = std::async(std::launch::async,
                        [&]{return R3.BootStrapFromThisEndpoint(endpoint1);});

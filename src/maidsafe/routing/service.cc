@@ -10,6 +10,7 @@
  *  the explicit written permission of the board of directors of maidsafe.net. *
  ******************************************************************************/
 
+#include "maidsafe/common/utils.h"
 #include "maidsafe/routing/service.h"
 #include "maidsafe/rudp/managed_connections.h"
 #include "maidsafe/routing/parameters.h"
@@ -47,7 +48,6 @@ void Ping(RoutingTable &routing_table,
   message.set_destination_id(message.source_id());
   message.set_source_id(routing_table.kKeys().identity);
   BOOST_ASSERT_MSG(message.IsInitialized(), "unintialised message");
-  SendOn(message, rudp, routing_table);
 }
 
 void Connect(RoutingTable &routing_table,
@@ -106,7 +106,6 @@ void Connect(RoutingTable &routing_table,
   if (!message.IsInitialized())
     DLOG(INFO) << "Uninitialised message";
   BOOST_ASSERT_MSG(message.IsInitialized(), "unintialised message");
-  SendOn(message, rudp, routing_table);
 }
 
 void FindNodes(RoutingTable &routing_table,
@@ -115,16 +114,19 @@ void FindNodes(RoutingTable &routing_table,
   protobuf::FindNodesRequest find_nodes;
   protobuf::FindNodesResponse found_nodes;
   std::vector<NodeId>
-        nodes(routing_table.GetClosestNodes(NodeId(message.destination_id()),
-                 static_cast<uint16_t>(find_nodes.num_nodes_requested())));
-
+        nodes {routing_table.GetClosestNodes(NodeId(message.destination_id()),
+                 static_cast<uint16_t>(find_nodes.num_nodes_requested())) };
+  DLOG(INFO) << "In service num nodes returned is " << nodes.size();
   for (auto it = nodes.begin(); it != nodes.end(); ++it)
     found_nodes.add_nodes((*it).String());
   if (routing_table.Size() < Parameters::closest_nodes_size)
     found_nodes.add_nodes(routing_table.kKeys().identity); // small network send our ID
+  DLOG(INFO) << "In service num nodes after our ID entered " << found_nodes.nodes().size();
   found_nodes.set_original_request(message.data());
   found_nodes.set_original_signature(message.signature());
+  found_nodes.set_timestamp(GetTimeStamp());
 //  found_nodes.set_timestamp(GetTimeStamp());
+  BOOST_ASSERT_MSG(found_nodes.IsInitialized(), "unintialised found_nodes response");
   message.set_destination_id(message.source_id());
   message.set_source_id(routing_table.kKeys().identity);
   message.set_data(found_nodes.SerializeAsString());
@@ -132,7 +134,6 @@ void FindNodes(RoutingTable &routing_table,
   message.set_replication(1);
   message.set_type(-3);
   BOOST_ASSERT_MSG(message.IsInitialized(), "unintialised message");
-  SendOn(message, rudp, routing_table);
 }
 
 

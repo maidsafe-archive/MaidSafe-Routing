@@ -33,10 +33,11 @@ namespace response {
 void ProcessPingResponse(protobuf::Message &message);
 void Connect(RoutingTable &routing_table,
                             rudp::ManagedConnections &rudp,
-                            protobuf::Message &message);
+                            protobuf::Message &message,
+                            NodeValidationFunctor node_validation_functor = nullptr);
 void FindNode(RoutingTable &routing_table,
                              rudp::ManagedConnections &rudp,
-                             protobuf::Message &message);
+                             const protobuf::Message &message);
 
 }  // namespace response
 

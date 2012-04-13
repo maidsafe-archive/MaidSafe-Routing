@@ -17,6 +17,7 @@
 #include "boost/thread/mutex.hpp"
 #include "maidsafe/common/rsa.h"
 #include "maidsafe/rudp/managed_connections.h"
+#include "maidsafe/routing/parameters.h"
 #include "maidsafe/routing/routing_table.h"
 #include "maidsafe/routing/routing.pb.h"
 #include "maidsafe/routing/node_id.h"
@@ -29,7 +30,8 @@ namespace routing {
 
 void SendOn(protobuf::Message message,
             rudp::ManagedConnections &rudp,
-            RoutingTable &routing_table);
+            RoutingTable &routing_table,
+            Endpoint local_endpoint = Endpoint());
 
 }  // namespace routing
 

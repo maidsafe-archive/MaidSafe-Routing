@@ -13,12 +13,15 @@
 #ifndef MAIDSAFE_ROUTING_PARAMETERS_H_
 #define MAIDSAFE_ROUTING_PARAMETERS_H_
 
+#include "boost/asio.hpp"
 #include "boost/filesystem/path.hpp"
 #include "maidsafe/routing/log.h"
 
 namespace maidsafe {
 
 namespace routing {
+
+typedef boost::asio::ip::udp::endpoint Endpoint;
 
 struct Parameters {
  public:
@@ -37,7 +40,6 @@ struct Parameters {
   static uint16_t max_routing_table_size;
   static uint16_t bucket_target_size;
 };
-
 
 }  // namespace routing
 

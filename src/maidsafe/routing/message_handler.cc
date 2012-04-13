@@ -72,22 +72,22 @@ bool MessageHandler::CheckCacheData(protobuf::Message &message) {
 
 void MessageHandler::RoutingMessage(protobuf::Message& message) {
   switch (message.type()) {
-    case 1 :  // ping
+    case -1 :  // ping
       response::ProcessPingResponse(message);
       break;
-    case -1 :
+    case 1 :
       service::Ping(routing_table_, rudp_, message);
       break;
-    case 2 :  // connect
+    case -2 :  // connect
       response::Connect(routing_table_, rudp_, message);
       break;
-    case -2 :
+    case 2 :
       service::Connect(routing_table_, rudp_, message);
       break;
-    case 3 :   // find_nodes
+    case -3 :   // find_nodes
       response::FindNode(routing_table_, rudp_, message);
       break;
-    case -3 :
+    case 3 :
       service::FindNodes(routing_table_, rudp_, message);
       break;
     default: // unknown (silent drop)
@@ -162,8 +162,10 @@ void MessageHandler::ProcessMessage(protobuf::Message &message) {
                                             Parameters::closest_nodes_size)) {
     if ((message.type() < 100) && (message.type() > -100)) {
       RoutingMessage(message);
+      return;
     } else {
       CloseNodesMessage(message);
+      return;
     }
   }
   // default
