@@ -73,7 +73,8 @@ void Connect(RoutingTable &routing_table,
 //                     their_endpoint,
 //                     message.client_node(),
 //                     our_endpoint);
-  } else if (routing_table.CheckNode(node)) {
+  }
+  if ((routing_table.CheckNode(node)) && (!connect_request.client())) {
     connect_response.set_answer(true);
 //     node_validation_functor_(routing_table.kKeys().identity,
 //                     their_endpoint,

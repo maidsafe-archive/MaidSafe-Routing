@@ -28,7 +28,7 @@ typedef std::function<void(int, std::string)> TaskResponseFunctor;
 typedef uint32_t TaskId;
 class Timer {
  public:
-  Timer(AsioService &io_service);
+  explicit Timer(AsioService &io_service);
   ~Timer() = default;
   Timer &operator=(const Timer&) = delete;
   Timer(const Timer&) = delete;

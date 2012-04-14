@@ -230,10 +230,7 @@ NodeId& NodeId::operator= (const NodeId &rhs) {
 
 const NodeId NodeId::operator ^ (const NodeId &rhs) const {
   NodeId result;
-  if (!rhs.IsValid()) {
-    DLOG(ERROR) << "Invalid nodeid";
-    return result;
-  }
+  BOOST_ASSERT_MSG(rhs.IsValid(), "Invalid nodeid");
   auto this_it = raw_id_.begin();
   auto rhs_it = rhs.raw_id_.begin();
   auto result_it = result.raw_id_.begin();

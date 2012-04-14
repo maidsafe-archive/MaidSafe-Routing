@@ -13,12 +13,12 @@
 #include "maidsafe/routing/routing_api.h"
 #include "maidsafe/routing/routing_table.h"
 #include "maidsafe/routing/message_handler.h"
+#include "maidsafe/routing/parameters.h"
 #include "maidsafe/routing/timer.h"
 
 namespace maidsafe {
 
 namespace routing {
-typedef boost::asio::ip::udp::endpoint Endpoint;
 
 struct RoutingPrivate {
 public:

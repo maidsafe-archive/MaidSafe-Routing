@@ -32,11 +32,6 @@ RoutingTable::RoutingTable(const asymm::Keys &keys)
       close_node_from_to_signal_()
       {}
 
-RoutingTable::~RoutingTable() {
-  boost::mutex::scoped_lock lock(mutex_);
-  routing_table_nodes_.clear();
-}
-
 boost::signals2::signal<void(std::string, std::string)>
                             &RoutingTable::CloseNodeReplacedOldNewSignal() {
   return close_node_from_to_signal_;

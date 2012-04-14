@@ -66,8 +66,10 @@ bool MessageHandler::CheckCacheData(protobuf::Message &message) {
       SendOn(message, rudp_, routing_table_);
       return true;
     }
+  } else {
+    return false;  // means this message is not finished processing
   }
-  return false;  // means this message is not finished processing
+  return false;
 }
 
 
