@@ -32,7 +32,7 @@ namespace routing {
 namespace response {
 
 // always direct !! never pass on
-void ProcessPingResponse(protobuf::Message& message) {
+void Ping(protobuf::Message& message) {
   // TODO , do we need this and where and how can I update the response
   protobuf::PingResponse ping_response;
   if (ping_response.ParseFromString(message.data())) {
@@ -41,9 +41,7 @@ void ProcessPingResponse(protobuf::Message& message) {
 }
 
 // the other node agreed to connect - he has accepted our connection
-void Connect(RoutingTable &routing_table,
-             rudp::ManagedConnections &rudp,
-             protobuf::Message& message,
+void Connect(protobuf::Message& message,
              NodeValidationFunctor node_validation_functor) {
   protobuf::ConnectResponse connect_response;
   protobuf::ConnectRequest connect_request;

@@ -37,8 +37,9 @@ class MessageHandler {
 public:
   MessageHandler(RoutingTable &routing_table,
                  rudp::ManagedConnections &rudp,
-                 Timer &timer_ptr);
-  ~MessageHandler() { DLOG(INFO) << "MessageHandler dtor"; }
+                 Timer &timer_ptr,
+                 NodeValidationFunctor node_validation_functor);
+  ~MessageHandler() = default;
   MessageHandler(const MessageHandler&) = delete;  // no copy
   MessageHandler(const MessageHandler&&) = delete;  // no move
   MessageHandler& operator=(const MessageHandler&) = delete;  // no assign
@@ -56,6 +57,7 @@ private:
   Timer &timer_ptr_;
   CacheManager cache_manager_;
   boost::signals2::signal<void(int, std::string)> message_received_signal_;
+  NodeValidationFunctor node_validation_functor_;
 };
 
 }  // namespace routing

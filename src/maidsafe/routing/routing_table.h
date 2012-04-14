@@ -13,20 +13,10 @@
 #ifndef MAIDSAFE_ROUTING_ROUTING_TABLE_H_
 #define MAIDSAFE_ROUTING_ROUTING_TABLE_H_
 
-#include <cstdint>
-#include <set>
-#include <memory>
-#include <string>
-#include <vector>
-#include <queue>
-#include "boost/signals2/signal.hpp"
-#include "boost/thread/shared_mutex.hpp"
 #include "boost/thread/mutex.hpp"
-#include "maidsafe/common/rsa.h"
-#include "maidsafe/rudp/managed_connections.h"
 #include "maidsafe/routing/routing.pb.h"
 #include "maidsafe/routing/node_id.h"
-#include "maidsafe/routing/log.h"
+
 
 
 namespace maidsafe {
@@ -35,9 +25,7 @@ namespace routing {
 
 
 struct NodeInfo {
-  NodeInfo() :
-  node_id(), public_key(), rank(), bucket(99999), endpoint(), dimension_1(),
-  dimension_2(), dimension_3(), dimension_4() {}
+  NodeInfo();
   NodeId node_id;
   asymm::PublicKey public_key;
   int32_t rank;
@@ -52,7 +40,9 @@ struct NodeInfo {
 class RoutingTable {
  public:
   explicit RoutingTable(const asymm::Keys &keys);
-  ~RoutingTable();
+  ~RoutingTable() = default;
+  RoutingTable(const RoutingTable&) = delete;
+  RoutingTable& operator=(const RoutingTable&) = delete;
   bool AddNode(NodeInfo &node);
   bool CheckNode(NodeInfo &node);
   bool DropNode(const boost::asio::ip::udp::endpoint &endpoint);
@@ -61,17 +51,13 @@ class RoutingTable {
   bool IsMyNodeInRange(const NodeId &node_id, const uint16_t range);
   bool AmIClosestNode(const NodeId &node_id);
   std::vector<NodeId> GetClosestNodes(const NodeId &from,
-                                      unsigned int number_to_get);
+                                      uint16_t number_to_get);
   NodeInfo GetClosestNode(const NodeId &from, unsigned int node_number);
-  unsigned int Size() {
-    return static_cast<uint16_t>(routing_table_nodes_.size());
-  }
-  asymm::Keys kKeys() const { return keys_; }
+  uint16_t Size();
+  asymm::Keys kKeys() const;
   boost::signals2::signal<void(std::string, std::string)>
                                            &CloseNodeReplacedOldNewSignal();
  private:
-  RoutingTable(const RoutingTable&);
-  RoutingTable& operator=(const RoutingTable&);
   bool AddOrCheckNode(NodeInfo &node, const bool remove);
   int16_t BucketIndex(const NodeId &rhs) const;
   bool CheckValidParameters(const NodeInfo &node) const;

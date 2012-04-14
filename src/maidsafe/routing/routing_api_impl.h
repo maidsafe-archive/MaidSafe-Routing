@@ -22,15 +22,16 @@ typedef boost::asio::ip::udp::endpoint Endpoint;
 
 struct RoutingPrivate {
 public:
-  ~RoutingPrivate() { DLOG(INFO) << "RoutingPrivate dtor"; }
+  ~RoutingPrivate() = default;
+  RoutingPrivate(const RoutingPrivate&) = delete;  // no copy
+  RoutingPrivate(const RoutingPrivate&&) = delete;  // no move
+  RoutingPrivate& operator=(const RoutingPrivate&);  // no assign
 private:
   RoutingPrivate(const asymm::Keys &keys,
                  const boost::filesystem::path &bootstrap_file_path,
+                 NodeValidationFunctor node_validation_functor,
                  bool client_mode);
 
-  RoutingPrivate(const RoutingPrivate&);  // no copy
-  RoutingPrivate(const RoutingPrivate&&);  // no move
-  RoutingPrivate& operator=(const RoutingPrivate&);  // no assign
   friend class Routing;
   AsioService asio_service_;
   std::vector<boost::asio::ip::udp::endpoint> bootstrap_nodes_;
@@ -38,7 +39,6 @@ private:
   rudp::ManagedConnections rudp_;
   RoutingTable routing_table_;
   Timer timer_;
-  MessageHandler message_handler_;
   boost::signals2::signal<void(int, std::string)> message_received_signal_;
   boost::signals2::signal<void(int16_t)> network_status_signal_;
   boost::signals2::signal<void(std::string, std::string)>
@@ -52,6 +52,7 @@ private:
                               MessageReceivedFunctor> > waiting_for_response_;
   std::vector<NodeInfo> direct_non_routing_table_connections_;
   // closest nodes to the client.
+  MessageHandler message_handler_;
   bool joined_;
   const boost::filesystem::path bootstrap_file_path_;
   bool client_mode_;

@@ -13,15 +13,11 @@
 #ifndef MAIDSAFE_ROUTING_UTILS_H_
 #define MAIDSAFE_ROUTING_UTILS_H_
 
-#include "boost/thread/shared_mutex.hpp"
-#include "boost/thread/mutex.hpp"
-#include "maidsafe/common/rsa.h"
-#include "maidsafe/rudp/managed_connections.h"
 #include "maidsafe/routing/parameters.h"
 #include "maidsafe/routing/routing_table.h"
 #include "maidsafe/routing/routing.pb.h"
-#include "maidsafe/routing/node_id.h"
-#include "maidsafe/routing/log.h"
+
+
 
 
 namespace maidsafe {

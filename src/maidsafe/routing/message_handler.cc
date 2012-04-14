@@ -38,23 +38,24 @@ class Timer;
 MessageHandler::MessageHandler(
                 RoutingTable &routing_table,
                 rudp::ManagedConnections &rudp,
-                Timer &timer_ptr ) :
+                Timer &timer_ptr,
+                NodeValidationFunctor node_validation_functor) :
                 routing_table_(routing_table),
                 rudp_(rudp),
                 timer_ptr_(timer_ptr),
                 cache_manager_(),
-                message_received_signal_()  {}
+                message_received_signal_(),
+                node_validation_functor_(node_validation_functor) {}
 
 boost::signals2::signal<void(int, std::string)>
                                      &MessageHandler::MessageReceivedSignal() {
   return message_received_signal_;
 }
-// TODO ask Fraser about this mockery of an attempt :-) either that or get some sleep
+
 void MessageHandler::Send(protobuf::Message& message) {
   message.set_routing_failure(false);
   SendOn(message, rudp_, routing_table_);
 }
-
 
 bool MessageHandler::CheckCacheData(protobuf::Message &message) {
   if (message.type() == -100) {
@@ -73,13 +74,13 @@ bool MessageHandler::CheckCacheData(protobuf::Message &message) {
 void MessageHandler::RoutingMessage(protobuf::Message& message) {
   switch (message.type()) {
     case -1 :  // ping
-      response::ProcessPingResponse(message);
+      response::Ping(message);
       break;
     case 1 :
-      service::Ping(routing_table_, rudp_, message);
+      service::Ping(routing_table_, message);
       break;
     case -2 :  // connect
-      response::Connect(routing_table_, rudp_, message);
+      response::Connect(message, node_validation_functor_);
       break;
     case 2 :
       service::Connect(routing_table_, rudp_, message);
@@ -88,7 +89,7 @@ void MessageHandler::RoutingMessage(protobuf::Message& message) {
       response::FindNode(routing_table_, rudp_, message);
       break;
     case 3 :
-      service::FindNodes(routing_table_, rudp_, message);
+      service::FindNodes(routing_table_, message);
       break;
     default: // unknown (silent drop)
       return;
@@ -172,22 +173,22 @@ void MessageHandler::ProcessMessage(protobuf::Message &message) {
   SendOn(message, rudp_, routing_table_);
 }
 
-// TODO(dirvine) implement client handler
-bool MessageHandler::CheckAndSendToLocalClients(protobuf::Message &message) {
-  bool found(false);
-//   NodeId destination_node(message.destination_id());
-//   std::for_each(client_connections_.begin(),
-//                 client_connections_.end(),
-//                 [&destination_node, &found](const NodeInfo &i)->bool
-//                 {
-//                   if (i.node_id ==  destination_node) {
-//                     found = true;
-//                     // rudp send TODO(dirvine)
-//                   }
-//                   return found;  // lambda return
-//                 });
-  return found;
-}
+// // TODO(dirvine) implement client handler
+// bool MessageHandler::CheckAndSendToLocalClients(protobuf::Message &message) {
+//   bool found(false);
+// //   NodeId destination_node(message.destination_id());
+// //   std::for_each(client_connections_.begin(),
+// //                 client_connections_.end(),
+// //                 [&destination_node, &found](const NodeInfo &i)->bool
+// //                 {
+// //                   if (i.node_id ==  destination_node) {
+// //                     found = true;
+// //                     // rudp send TODO(dirvine)
+// //                   }
+// //                   return found;  // lambda return
+// //                 });
+//   return found;
+// }
 
 
 

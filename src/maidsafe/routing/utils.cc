@@ -11,15 +11,12 @@
  ******************************************************************************/
 
 #include "maidsafe/common/utils.h"
-#include "maidsafe/rudp/managed_connections.h"
+
 #include "maidsafe/rudp/return_codes.h"
 #include "maidsafe/routing/routing.pb.h"
 #include "maidsafe/routing/routing_table.h"
 #include "maidsafe/routing/parameters.h"
-#include "maidsafe/routing/node_id.h"
-#include "boost/system/system_error.hpp"
-#include "boost/filesystem.hpp"
-#include "boost/filesystem/fstream.hpp"
+
 
 namespace maidsafe {
 

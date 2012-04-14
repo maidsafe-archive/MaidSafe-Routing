@@ -30,7 +30,7 @@ namespace routing {
 class CacheManager {
  public:
   CacheManager();
-  ~CacheManager() { DLOG(INFO) << "Cache Manager dtor"; }
+  ~CacheManager() = default;
   CacheManager(const CacheManager&) = delete;  // no copy
   CacheManager(const CacheManager&&) = delete;  // no move
   CacheManager& operator=(const CacheManager&) = delete;  // no assign

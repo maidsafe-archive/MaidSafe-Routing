@@ -12,14 +12,9 @@
 
 #include "maidsafe/common/utils.h"
 #include "maidsafe/routing/service.h"
-#include "maidsafe/rudp/managed_connections.h"
-#include "maidsafe/routing/parameters.h"
-#include "maidsafe/routing/routing_api.h"
-#include "maidsafe/routing/node_id.h"
 #include "maidsafe/routing/routing.pb.h"
 #include "maidsafe/routing/routing_table.h"
-#include "maidsafe/routing/rpcs.h"
-#include "maidsafe/routing/utils.h"
+#include "maidsafe/routing/parameters.h"
 #include "maidsafe/routing/log.h"
 
 namespace maidsafe {
@@ -29,7 +24,6 @@ namespace routing {
 namespace service {
 
 void Ping(RoutingTable &routing_table,
-                   rudp::ManagedConnections &rudp,
                    protobuf::Message &message) {
   
   if (message.destination_id() != routing_table.kKeys().identity)
@@ -109,19 +103,16 @@ void Connect(RoutingTable &routing_table,
 }
 
 void FindNodes(RoutingTable &routing_table,
-                        rudp::ManagedConnections &rudp,
                         protobuf::Message &message) {
   protobuf::FindNodesRequest find_nodes;
   protobuf::FindNodesResponse found_nodes;
   std::vector<NodeId>
         nodes {routing_table.GetClosestNodes(NodeId(message.destination_id()),
                  static_cast<uint16_t>(find_nodes.num_nodes_requested())) };
-  DLOG(INFO) << "In service num nodes returned is " << nodes.size();
   for (auto it = nodes.begin(); it != nodes.end(); ++it)
     found_nodes.add_nodes((*it).String());
   if (routing_table.Size() < Parameters::closest_nodes_size)
     found_nodes.add_nodes(routing_table.kKeys().identity); // small network send our ID
-  DLOG(INFO) << "In service num nodes after our ID entered " << found_nodes.nodes().size();
   found_nodes.set_original_request(message.data());
   found_nodes.set_original_signature(message.signature());
   found_nodes.set_timestamp(GetTimeStamp());

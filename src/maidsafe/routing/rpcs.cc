@@ -11,14 +11,10 @@
  ******************************************************************************/
 
 #include "maidsafe/common/utils.h"
-#include "maidsafe/common/rsa.h"
-#include "maidsafe/routing/rpcs.h"
-#include "maidsafe/routing/parameters.h"
-#include "maidsafe/routing/routing_api.h"
 #include "maidsafe/routing/node_id.h"
 #include "maidsafe/routing/routing.pb.h"
-#include "maidsafe/routing/routing_table.h"
-#include "maidsafe/routing/utils.h"
+#include "maidsafe/routing/parameters.h"
+#include "maidsafe/routing/log.h"
 
 namespace maidsafe {
 

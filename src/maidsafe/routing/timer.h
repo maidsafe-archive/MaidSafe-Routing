@@ -13,27 +13,19 @@
 
 #ifndef MAIDSAFE_ROUTING_TIMER_H_
 #define MAIDSAFE_ROUTING_TIMER_H_
-#include <utility>
-#include "boost/signals2.hpp"
-#include "boost/asio/deadline_timer.hpp"
-#include "boost/date_time.hpp"
-#include "common/asio_service.h"
-#include "maidsafe/routing/routing.pb.h"
 
+#include "boost/asio.hpp"
+#include "maidsafe/common/asio_service.h"
+#include "maidsafe/common/utils.h"
+#include "maidsafe/routing/routing.pb.h"
 
 namespace maidsafe {
 
 namespace routing {
 
-namespace fs = boost::filesystem;
-namespace bs2 = boost::signals2;
 namespace asio = boost::asio;
 typedef std::function<void(int, std::string)> TaskResponseFunctor;
 typedef uint32_t TaskId;
-// we could use boost::system::error_code to check why task failed (cancelled /
-// timout etc.) but here we choose to add tasks to a queue_ and they either run
-// or get killed (erased -> out of scope pointer so delete)
-// used here to match responses to requests particularly from upper layers
 class Timer {
  public:
   Timer(AsioService &io_service);

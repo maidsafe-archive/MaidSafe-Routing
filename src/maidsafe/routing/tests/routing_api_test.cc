@@ -27,7 +27,6 @@
 #include "maidsafe/routing/log.h"
 #include "maidsafe/routing/return_codes.h"
 
-
 namespace maidsafe {
 namespace routing {
 namespace test {
@@ -59,11 +58,11 @@ asymm::Keys MakeKeys() {
   boost::filesystem::path bad_file("/bad file/ not found/ I hope/");
   boost::filesystem::path good_file
               (fs::unique_path(fs::temp_directory_path() / "test"));
-  EXPECT_THROW({Routing RtAPI(keys, bad_file, false);},
+  EXPECT_THROW({Routing RtAPI(keys, bad_file, nullptr, false);},
               boost::filesystem::filesystem_error)  << "should not accept invalid files";
-  EXPECT_NO_THROW({Routing RtAPI(keys, good_file, false);});
+  EXPECT_NO_THROW({Routing RtAPI(keys, good_file, nullptr, false);});
   EXPECT_TRUE(WriteFile(good_file, "not a vector of endpoints"));
-  EXPECT_NO_THROW({Routing RtAPI(keys, good_file, false);}) << "cannot handle corrupt files";
+  EXPECT_NO_THROW({Routing RtAPI(keys, good_file, nullptr, false);}) << "cannot handle corrupt files";
   EXPECT_TRUE(boost::filesystem::remove(good_file));
 }
 
@@ -71,15 +70,14 @@ TEST(APITest, BEH_API_StandAloneNodeNotConnected) {
   asymm::Keys keys(MakeKeys());
   boost::filesystem::path good_file
                        (fs::unique_path(fs::temp_directory_path() / "test"));
-  EXPECT_NO_THROW({Routing RtAPI(keys, good_file, false);});
-  Routing RAPI(keys, good_file, false);
+  EXPECT_NO_THROW({Routing RtAPI(keys, good_file, nullptr, false);});
+  Routing RAPI(keys, good_file, nullptr, false);
   boost::asio::ip::udp::endpoint endpoint(RAPI.GetEndPoint());
   boost::asio::ip::udp::endpoint empty_endpoint;
   EXPECT_EQ(endpoint , empty_endpoint);
   EXPECT_EQ(RAPI.GetStatus(), kNotJoined);
   EXPECT_TRUE(boost::filesystem::remove(good_file));
 }
-
 
 TEST(APITest, BEH_API_ManualBootstrap) {
   asymm::Keys keys1(MakeKeys());
@@ -88,10 +86,10 @@ TEST(APITest, BEH_API_ManualBootstrap) {
                        (fs::unique_path(fs::temp_directory_path() / "test1"));
   boost::filesystem::path node2_config
                        (fs::unique_path(fs::temp_directory_path() / "test2"));
-  EXPECT_NO_THROW({Routing RtAPI(keys1, node1_config, false);});
-  EXPECT_NO_THROW({Routing RtAPI(keys2, node2_config, false);});
-  Routing R1(keys1, node1_config, false);
-  Routing R2(keys2, node2_config, false);
+  EXPECT_NO_THROW({Routing RtAPI(keys1, node1_config, nullptr, false);});
+  EXPECT_NO_THROW({Routing RtAPI(keys2, node2_config, nullptr, false);});
+  Routing R1(keys1, node1_config, nullptr, false);
+  Routing R2(keys2, node2_config, nullptr, false);
   boost::asio::ip::udp::endpoint endpoint1d(R1.GetEndPoint());
   boost::asio::ip::udp::endpoint endpoint2d(R2.GetEndPoint());
   boost::asio::ip::udp::endpoint empty_endpoint;
@@ -103,7 +101,7 @@ TEST(APITest, BEH_API_ManualBootstrap) {
   boost::asio::ip::udp::endpoint endpoint2g(boost::asio::ip::address_v4::loopback(), 5001);
   R1.BootStrapFromThisEndpoint(endpoint2g);
   R2.BootStrapFromThisEndpoint(endpoint1g);
-  EXPECT_EQ(R1.GetStatus(), kNotJoined);
+  EXPECT_EQ(R1.GetStatus(), kSuccess);
   EXPECT_EQ(R2.GetStatus(), kSuccess);
   EXPECT_TRUE(boost::filesystem::remove(node1_config));
   EXPECT_TRUE(boost::filesystem::remove(node2_config));
@@ -122,9 +120,9 @@ TEST(APITest, BEH_API_ZeroState) {
 //   EXPECT_NO_THROW({Routing RtAPI(keys1, node1_config, false);});
 //   EXPECT_NO_THROW({Routing RtAPI(keys2, node2_config, false);});
 //   EXPECT_NO_THROW({Routing RtAPI(keys3, node3_config, false);});
-  Routing R1(keys1, node1_config, false);
-  Routing R2(keys2, node2_config, false);
-  Routing R3(keys3, node3_config, false);
+  Routing R1(keys1, node1_config, nullptr, false);
+  Routing R2(keys2, node2_config, nullptr, false);
+  Routing R3(keys3, node3_config, nullptr, false);
   boost::asio::ip::udp::endpoint endpoint1(boost::asio::ip::address_v4::loopback(), 5000);
   boost::asio::ip::udp::endpoint endpoint2(boost::asio::ip::address_v4::loopback(), 5001);
   boost::asio::ip::udp::endpoint endpoint3(boost::asio::ip::address_v4::loopback(), 5002);
@@ -133,18 +131,18 @@ TEST(APITest, BEH_API_ZeroState) {
                        [&]{return R1.BootStrapFromThisEndpoint(endpoint2, endpoint1);});
   auto a2 = std::async(std::launch::async,
                        [&]{return R2.BootStrapFromThisEndpoint(endpoint1, endpoint2);});
-// R1.BootStrapFromThisEndpoint(endpoint2, endpoint1);
-// R2.BootStrapFromThisEndpoint(endpoint1, endpoint2);
+
 std::this_thread::sleep_for(std::chrono::milliseconds(3000));
   EXPECT_TRUE(a2.get());  // wait for promise !
   EXPECT_TRUE(a1.get());  // wait for promise !
-//   std::this_thread::sleep_for(std::chrono::milliseconds(3000));
+
   auto a3 = std::async(std::launch::async,
                        [&]{return R3.BootStrapFromThisEndpoint(endpoint1);});
+  std::this_thread::sleep_for(std::chrono::milliseconds(3000));
   EXPECT_TRUE(a3.get());  // wait for promise !
 
   EXPECT_TRUE(R3.GetStatus() > 0);
-  
+
   try {
   EXPECT_TRUE(boost::filesystem::remove(node1_config));
   EXPECT_TRUE(boost::filesystem::remove(node2_config));
@@ -152,6 +150,17 @@ std::this_thread::sleep_for(std::chrono::milliseconds(3000));
   } catch (std::exception &e) {
     DLOG(ERROR) << e.what();
   }
+}
+
+TEST(APITest, BEH_API_NodeNetwork) {
+  const uint16_t network_size(30);
+  std::vector<asymm::Keys> network(network_size, MakeKeys());
+  int count(0);
+  for (auto &i : network) {
+//    Routing AnodeToBEFixed (i, fs::unique_path(fs::temp_directory_path() / i.identity), nullptr, false);
+  }
+  // TODO(dirvine) do this properly !!!
+
 }
 
 }  // namespace test

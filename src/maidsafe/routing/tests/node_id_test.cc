@@ -231,8 +231,6 @@ TEST(NodeIdTest, BEH_CtrBetweenIds) {
   for (int i = 0; i < 100; ++i) {
     id1 = NodeId(NodeId::kRandomId);
     id2 = NodeId(NodeId::kRandomId);
-    std::string test_raw_id1 = id1.ToStringEncoded(NodeId::kBinary);
-    std::string test_raw_id2 = id2.ToStringEncoded(NodeId::kBinary);
     id = NodeId(id1, id2);
     ASSERT_TRUE(id.IsValid());
     ASSERT_TRUE(id >= std::min(id1, id2)) << "id  = " <<

@@ -63,8 +63,9 @@ Message::Message()
 
 Routing::Routing(const asymm::Keys &keys,
                  const boost::filesystem::path &boostrap_file_path,
+                 NodeValidationFunctor node_validation_functor,
                  const bool client_mode)
-    : impl_(new RoutingPrivate(keys, boostrap_file_path, client_mode)) {
+    : impl_(new RoutingPrivate(keys, boostrap_file_path, node_validation_functor, client_mode)) {
   // test path
   std::string dummy_content;
   // not catching exceptions !!
@@ -146,11 +147,11 @@ bool Routing::Join(boost::asio::ip::udp::endpoint local_endpoint) {
                                                     connection_lost,
                                                     local_endpoint));
 
-//   if (bootstrap_endpoint.address().is_unspecified() &&
-//       (!local_endpoint.address().is_unspecified())) {
-//     DLOG(ERROR) << "could not get bootstrap address and not zero state";
-//     return false;
-//   }
+  if (bootstrap_endpoint.address().is_unspecified() &&
+      (local_endpoint.address().is_unspecified())) {
+    DLOG(ERROR) << "could not get bootstrap address and not zero state";
+    return false;
+  }
 
   std::this_thread::sleep_for(std::chrono::milliseconds(1000));
   auto boot = std::async(std::launch::async,
@@ -205,8 +206,6 @@ int Routing::Send(const Message message) {
   SendOn(proto_message, impl_->rudp_, impl_->routing_table_);
   return 0;
 }
-
-
 
 void Routing::ValidateThisNode(const std::string &node_id,
                               const asymm::PublicKey &public_key,

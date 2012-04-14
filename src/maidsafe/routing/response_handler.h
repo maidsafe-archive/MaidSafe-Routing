@@ -29,12 +29,8 @@ namespace maidsafe {
 namespace routing {
 
 namespace response {
-  
-void ProcessPingResponse(protobuf::Message &message);
-void Connect(RoutingTable &routing_table,
-                            rudp::ManagedConnections &rudp,
-                            protobuf::Message &message,
-                            NodeValidationFunctor node_validation_functor = nullptr);
+void Ping(protobuf::Message &message);
+void Connect(protobuf::Message &message, NodeValidationFunctor node_validation_functor);
 void FindNode(RoutingTable &routing_table,
                              rudp::ManagedConnections &rudp,
                              const protobuf::Message &message);

@@ -30,13 +30,11 @@ namespace service {
 
 // Handle all incoming requests and send back reply
 void Ping(RoutingTable &routing_table,
-          rudp::ManagedConnections &rudp,
           protobuf::Message &message);
 void Connect(RoutingTable &routing_table,
               rudp::ManagedConnections &rudp,
               protobuf::Message &message);
 void FindNodes(RoutingTable &routing_table,
-              rudp::ManagedConnections &rudp,
               protobuf::Message &message);
 
   

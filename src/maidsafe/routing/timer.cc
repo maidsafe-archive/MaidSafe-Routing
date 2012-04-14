@@ -11,12 +11,8 @@
  ******************************************************************************/
 
 
-#include <utility>
-#include "boost/signals2.hpp"
-#include "boost/asio/deadline_timer.hpp"
-#include "boost/date_time.hpp"
+
 #include "maidsafe/common/asio_service.h"
-#include "maidsafe/common/utils.h"
 #include "maidsafe/routing/timer.h"
 #include "maidsafe/routing/routing.pb.h"
 #include "maidsafe/routing/return_codes.h"

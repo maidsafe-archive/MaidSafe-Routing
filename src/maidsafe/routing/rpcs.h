@@ -13,9 +13,6 @@
 #ifndef MAIDSAFE_ROUTING_RPCS_H_
 #define MAIDSAFE_ROUTING_RPCS_H_
 
-#include <memory>
-#include "maidsafe/common/rsa.h"
-#include "maidsafe/rudp/managed_connections.h"
 #include "maidsafe/routing/node_id.h"
 #include "maidsafe/routing/routing.pb.h"
 

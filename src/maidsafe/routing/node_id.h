@@ -32,7 +32,7 @@ size_t BitToByteCount(const size_t &bit_count);
 
 /**
 * @class NodeId
-* Class used to contain a valid kademlia id in the range [0, 2 ^ kKeySizeBits)
+* Class used to contain a valid dht id in the range [0, 2 ^ kKeySizeBits)
 */
 
 class NodeId {
@@ -59,13 +59,13 @@ class NodeId {
 
   /**
   * Constructor.  Creates a NodeId from a raw (decoded) string.
-  * @param id string representing the decoded kademlia id.
+  * @param id string representing the decoded dht id.
   */
   explicit NodeId(const std::string &id);
 
   /**
   * Constructor.  Creates a NodeId from an encoded string.
-  * @param id string representing the kademlia id.
+  * @param id string representing the dht id.
   * @param encoding_type Type of encoding to use.
   */
   NodeId(const std::string &id, const EncodingType &encoding_type);
@@ -96,14 +96,14 @@ class NodeId {
                              const NodeId &id2,
                              const NodeId &target_id);
 
-  /** Decoded representation of the kademlia id.
-  * @return A decoded string representation of the kademlia id.
+  /** Decoded representation of the dht id.
+  * @return A decoded string representation of the dht id.
   */
   const std::string String() const;
 
-  /** Encoded representation of the kademlia id.
+  /** Encoded representation of the dht id.
   * @param encoding_type Type of encoding to use.
-  * @return An encoded string representation of the kademlia id.
+  * @return An encoded string representation of the dht id.
   */
   const std::string ToStringEncoded(const EncodingType &encoding_type) const;
 
@@ -111,8 +111,7 @@ class NodeId {
   * Checks that raw_id_ has size kKeySizeBytes.
   */
   bool IsValid() const;
-  bool operator() (const NodeId &lhs, const NodeId &rhs) const {
-    return lhs.raw_id_ < rhs.raw_id_; }
+  bool operator() (const NodeId &lhs, const NodeId &rhs) const;
   bool operator == (const NodeId &rhs) const;
   bool operator != (const NodeId &rhs) const;
   bool operator < (const NodeId &rhs) const;
@@ -122,7 +121,7 @@ class NodeId {
   NodeId& operator = (const NodeId &rhs);
 
   /**
-  * XOR distance between two kademlia IDs.  XOR bit to bit.
+  * XOR distance between two dht IDs.  XOR bit to bit.
   * @param rhs NodeId to which this is XOR
   * @return a NodeId object that is equal to this XOR rhs
   */

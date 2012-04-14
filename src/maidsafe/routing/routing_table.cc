@@ -10,21 +10,18 @@
  *  the explicit written permission of the board of directors of maidsafe.net. *
  ******************************************************************************/
 
-#include <algorithm>
-
-#include "boost/thread/locks.hpp"
-#include "boost/assert.hpp"
-#include "maidsafe/rudp/managed_connections.h"
 #include "maidsafe/routing/parameters.h"
 #include "maidsafe/routing/routing_table.h"
 #include "maidsafe/routing/routing_api.h"
 #include "maidsafe/routing/node_id.h"
 #include "maidsafe/routing/log.h"
-#include "maidsafe/routing/rpcs.h"
-#include "maidsafe/routing/utils.h"
 
 namespace maidsafe {
 namespace routing {
+
+NodeInfo::NodeInfo()  :
+  node_id(), public_key(), rank(), bucket(99999), endpoint(), dimension_1(),
+  dimension_2(), dimension_3(), dimension_4() {}
 
 RoutingTable::RoutingTable(const asymm::Keys &keys)
     : keys_(keys),
@@ -60,7 +57,6 @@ bool RoutingTable::AddOrCheckNode(maidsafe::routing::NodeInfo& node,
   if (node.node_id == kNodeId_) {
     return false;
   }
-
   // if we already have node return true
   if (std::find_if(routing_table_nodes_.begin(),
                    routing_table_nodes_.end(),
@@ -74,6 +70,14 @@ bool RoutingTable::AddOrCheckNode(maidsafe::routing::NodeInfo& node,
       return true;
   }
   return false;
+}
+
+uint16_t RoutingTable::Size() {
+    return static_cast<uint16_t>(routing_table_nodes_.size());
+}
+
+asymm::Keys RoutingTable::kKeys() const {
+  return keys_;
 }
 
 bool RoutingTable::DropNode(const boost::asio::ip::udp::endpoint &endpoint) {
@@ -199,8 +203,8 @@ bool RoutingTable::MakeSpaceForNodeToBeAdded(maidsafe::routing::NodeInfo& node,
       // here we know the node should fit into a bucket if
       // the bucket has too many nodes AND node to add
       // has a lower bucketindex
-      BOOST_ASSERT_MSG(node.bucket < (*it).bucket,
-                       "node replacement to a larger bucket");
+      BOOST_ASSERT(node.bucket < (*it).bucket); //,
+                       //"node replacement to a larger bucket");
       if (remove) {
         routing_table_nodes_.erase(it);
       }
@@ -257,7 +261,7 @@ NodeInfo RoutingTable::GetClosestNode(const NodeId &from,
 
 
 std::vector<NodeId> RoutingTable::GetClosestNodes(const NodeId &from,
-    unsigned int number_to_get) {
+                                                  uint16_t number_to_get) {
   std::vector<NodeId>close_nodes;
   boost::mutex::scoped_lock lock(mutex_);
   unsigned int count = std::min(number_to_get, Size());

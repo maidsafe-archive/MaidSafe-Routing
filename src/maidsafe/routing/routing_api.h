@@ -111,8 +111,9 @@ class Routing {
    // set keys.identity to ANONYMOUS for temporary anonymous connection.
   Routing(const asymm::Keys &keys,
           const boost::filesystem::path &full_path_and_name,
+          NodeValidationFunctor node_validation_functor,
           bool client_mode);
-  ~Routing();  // TODO(dirvine) if this is allowed to default it tries to delete the unique_ptr and does not know the size
+  ~Routing();
   Routing(const Routing&) = delete;
   Routing(const Routing&&) = delete;
   Routing& operator=(const Routing&) = delete;
@@ -134,9 +135,7 @@ class Routing {
   /**************************************************************************
   *The reply or error (timeout) will be passed to this response_functor     *
   *error is passed as negative int (return code) and empty string           *
-  * otherwise a positive return code is message type and indicates success  *
-  **************************************************************************/
-  /**************************************************************************
+  * otherwise a positive return code is message type and indicates success. *
   * Sending a message to your own address will send to all connected        *
   * clients with your address (except you). If you are a node and not a     *
   * client this method will return false. Empty for non-client nodes        *
