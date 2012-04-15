@@ -24,8 +24,6 @@ namespace maidsafe {
 namespace routing {
 namespace test {
 
-
-
 TEST(BootStrapFileTest1, BEH_ReadValidFile) {
   std::vector<boost::asio::ip::udp::endpoint>vec;
   boost::asio::ip::udp::endpoint endpoint;
@@ -41,8 +39,6 @@ TEST(BootStrapFileTest1, BEH_ReadValidFile) {
   EXPECT_EQ(ReadBootstrapFile(good_file)[0], vec[0]);
   EXPECT_TRUE(boost::filesystem::remove(good_file));
 }
-
-
 
 }  // namespace test
 }  // namespace routing

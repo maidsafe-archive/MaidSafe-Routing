@@ -1,0 +1,86 @@
+#include "maidsafe/routing/error.h"
+// ************************************
+
+namespace maidsafe {
+
+namespace routing {
+
+
+const char* routing_category_impl::name() const {
+  return "routing";
+}
+
+std::string routing_category_impl::message(int ev) const {
+  switch (ev)
+  {
+  case routing_error::timed_out :
+    return "Timed out";
+  case routing_error::own_id_not_includable :
+    return "Own node not includable";
+  case routing_error::failed_to_insert_new_contact :
+    return "Cannot insert new contact";
+  case routing_error::failed_to_find_contact :
+    return "Cannot find contact";
+  case routing_error::failed_to_set_publicKey :
+    return "cannot set public key";
+  case routing_error::failed_to_update_rank :
+    return "cannot update rank";
+  case routing_error::failed_to_set_preferred_endpoint :
+    return "Cannot set desired endpoint";
+  case routing_error::no_online_bootstrap_contacts :
+    return "No contactable bootstrap contacts";
+  case routing_error::invalid_bootstrap_contacts :
+    return "Invalid bootstrap contacts";
+  case routing_error::not_joined :
+    return "Not joined";
+  case routing_error::cannot_write_config:
+    return "bad config file";
+  default :
+    "Unknown routing error";
+  }
+}
+
+std::error_condition routing_category_impl::default_error_condition(int ev) const
+{
+    switch (ev)
+    {
+        // validate tx
+      case routing_error::timed_out:
+      case routing_error::not_joined:
+        return routing_error_condition::network_error;
+      case routing_error::failed_to_find_contact:
+      case routing_error::failed_to_insert_new_contact:
+      case routing_error::failed_to_set_publicKey:
+      case routing_error::failed_to_update_rank:
+        return routing_error_condition::routing_table_error;
+      case routing_error::own_id_not_includable:
+      case routing_error::invalid_bootstrap_contacts:
+        return routing_error_condition::node_error;
+      case routing_error::cannot_write_config:
+        return routing_error_condition::file_error;
+      default:
+        return std::error_condition(ev, *this);
+    }
+}
+
+const std::error_category& routing_category()
+{
+  static routing_category_impl instance;
+  return instance;
+}
+
+std::error_code make_error_code(routing_error e) {
+  return std::error_code(
+      static_cast<int>(e),
+      routing_category());
+}
+
+std::error_condition make_error_condition(routing_error e) {
+  return std::error_condition(
+      static_cast<int>(e),
+      routing_category());
+}
+
+}  // namespace routing
+
+} // namespace maidsafe

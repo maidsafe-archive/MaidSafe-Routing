@@ -72,9 +72,7 @@ TEST(APITest, BEH_API_StandAloneNodeNotConnected) {
                        (fs::unique_path(fs::temp_directory_path() / "test"));
   EXPECT_NO_THROW({Routing RtAPI(keys, good_file, nullptr, false);});
   Routing RAPI(keys, good_file, nullptr, false);
-  boost::asio::ip::udp::endpoint endpoint(RAPI.GetEndPoint());
   boost::asio::ip::udp::endpoint empty_endpoint;
-  EXPECT_EQ(endpoint , empty_endpoint);
   EXPECT_EQ(RAPI.GetStatus(), kNotJoined);
   EXPECT_TRUE(boost::filesystem::remove(good_file));
 }
@@ -90,12 +88,8 @@ TEST(APITest, BEH_API_ManualBootstrap) {
   EXPECT_NO_THROW({Routing RtAPI(keys2, node2_config, nullptr, false);});
   Routing R1(keys1, node1_config, nullptr, false);
   Routing R2(keys2, node2_config, nullptr, false);
-  boost::asio::ip::udp::endpoint endpoint1d(R1.GetEndPoint());
-  boost::asio::ip::udp::endpoint endpoint2d(R2.GetEndPoint());
   boost::asio::ip::udp::endpoint empty_endpoint;
-  EXPECT_EQ(endpoint1d , empty_endpoint);
   EXPECT_EQ(R1.GetStatus(), kNotJoined);
-  EXPECT_EQ(endpoint2d , empty_endpoint);
   EXPECT_EQ(R2.GetStatus(), kNotJoined);
   boost::asio::ip::udp::endpoint endpoint1g(boost::asio::ip::address_v4::loopback(), 5000);
   boost::asio::ip::udp::endpoint endpoint2g(boost::asio::ip::address_v4::loopback(), 5001);

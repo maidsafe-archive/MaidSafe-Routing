@@ -41,26 +41,6 @@ namespace maidsafe {
 
 namespace routing {
 
-int8_t GetMajorVersion() {
-  return MAIDSAFE_ROUTING_VERSION;
-}
-
-int8_t GetMinorVersion() {
-  return MAIDSAFE_ROUTING_VERSION; /*_MINOR; TODO(dirvine)*/
-}
-
-int8_t GetPatchVersion() {
-  return MAIDSAFE_ROUTING_VERSION; /*_PATCH; TODO(dirvine) */
-}
-
-Message::Message()
-    : type(0),
-      destination_id(),
-      data(),
-      timeout(Parameters::timout_in_seconds),
-      direct(false),
-      replication(1) {}
-
 Routing::Routing(const asymm::Keys &keys,
                  const boost::filesystem::path &boostrap_file_path,
                  NodeValidationFunctor node_validation_functor,
@@ -90,7 +70,7 @@ Routing::Routing(const asymm::Keys &keys,
   Join();
 }
 
-Routing::~Routing() { DLOG(INFO) << "Routing dtr"; }
+Routing::~Routing() = default;
 
 int Routing::GetStatus() {
  if (impl_->routing_table_.Size() == 0) {
@@ -160,37 +140,17 @@ bool Routing::Join(boost::asio::ip::udp::endpoint local_endpoint) {
   return (boot.get() == 0);
 }
 
-int Routing::Send(const Message message,
-                   const MessageReceivedFunctor response_functor) {
-  if (message.destination_id.empty()) {
+int Routing::Send(const std::string destination_id,
+                  const std::string data,
+                  const uint16_t type,
+                  const MessageReceivedFunctor response_functor,
+                  const uint16_t timeout_seconds,
+                  const bool direct) {
+  if (destination_id.empty()) {
     DLOG(ERROR) << "No destination id, aborted send";
     return kInvalidDestinatinId;
   }
-  if (message.data.empty() && (message.type != 100)) {
-    DLOG(ERROR) << "No data, aborted send";
-    return kEmptyData;
-  }
-  uint32_t message_unique_id =  impl_->timer_.AddTask(message.timeout,
-                                                response_functor);
-  protobuf::Message proto_message;
-  proto_message.set_id(message_unique_id);
-  // TODO(see if ANONYMOUS and Endpoint required here
-  proto_message.set_source_id(impl_->routing_table_.kKeys().identity);
-  proto_message.set_replication(message.replication);
-  proto_message.set_destination_id(message.destination_id);
-  proto_message.set_data(message.data);
-  proto_message.set_direct(message.direct);
-  proto_message.set_type(message.type);
-  impl_->message_handler_.Send(proto_message);
-  return 0;
-}
-
-int Routing::Send(const Message message) {
-  if (message.destination_id.empty()) {
-    DLOG(ERROR) << "No destination id, aborted send";
-    return kInvalidDestinatinId;
-  }
-  if (message.data.empty() && (message.type != 100)) {
+  if (data.empty() && (type != 100)) {
     DLOG(ERROR) << "No data, aborted send";
     return kEmptyData;
   }
@@ -198,11 +158,10 @@ int Routing::Send(const Message message) {
   proto_message.set_id(0);
   // TODO(see if ANONYMOUS and Endpoint required here
   proto_message.set_source_id(impl_->routing_table_.kKeys().identity);
-  proto_message.set_replication(message.replication);
-  proto_message.set_destination_id(message.destination_id);
-  proto_message.set_data(message.data);
-  proto_message.set_direct(message.direct);
-  proto_message.set_type(message.type);
+  proto_message.set_destination_id(destination_id);
+  proto_message.set_data(data);
+  proto_message.set_direct(direct);
+  proto_message.set_type(type);
   SendOn(proto_message, impl_->rudp_, impl_->routing_table_);
   return 0;
 }
@@ -226,14 +185,10 @@ void Routing::ValidateThisNode(const std::string &node_id,
     impl_->bootstrap_nodes_.erase(impl_->bootstrap_nodes_.begin());
     }
     impl_->bootstrap_nodes_.push_back(their_endpoint);
-    WriteBootstrapFile(impl_->bootstrap_nodes_, impl_->bootstrap_file_path_);
+    std::error_code error_code;
+    WriteBootstrapFile(impl_->bootstrap_nodes_,
+                       impl_->bootstrap_file_path_);
   }
-}
-
-asio::ip::udp::endpoint Routing::GetEndPoint() {
-  asio::ip::udp::endpoint endpoint;
-  impl_->rudp_.GetAvailableEndpoint(& endpoint);
-  return endpoint;
 }
 
 bs2::signal<void(int, std::string)> &Routing::MessageReceivedSignal() {

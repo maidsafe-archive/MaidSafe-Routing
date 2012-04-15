@@ -54,32 +54,12 @@ namespace routing {
 
 class RoutingPrivate;
 
-int8_t GetMajorVersion(); // API changes between Major versions
-int8_t GetMinorVersion(); // internal additions to logic
-int8_t GetPatchVersion(); // bugfixes
-
-
 // Send method return codes
 enum SendErrors {
   kInvalidDestinatinId = -1,
   kInvalidSourceId = -2,
   kInvalidType = -3,
   kEmptyData = -4
-};
-
-// required for Send method 
-struct Message {
- public:
-  Message();
-  uint32_t type; // message type identifier
-                 // if type == 100 then this is cachable data
-                 // Data field must then contain serialised data only
-                 // cachable data must hash (sha512) to content
-  std::string destination_id;  //id of final destination
-  std::string data;  // message content (serialised data)
-  uint16_t timeout;  // in seconds
-  bool direct;  // is this to a close node group or direct
-  uint32_t replication;  // defaults to 1 for direct and CloseNodes otherwise
 };
 
 /****************************************************************************
@@ -118,10 +98,6 @@ class Routing {
   Routing(const Routing&&) = delete;
   Routing& operator=(const Routing&) = delete;
   /**************************************************************************
-  *Useful in stand alone mode (first network node)                          * 
-  ***************************************************************************/
-  boost::asio::ip::udp::endpoint GetEndPoint();
-  /**************************************************************************
   * returns current network status as int (> 0 is connected)                *
   ***************************************************************************/
   int GetStatus();
@@ -137,15 +113,16 @@ class Routing {
   *error is passed as negative int (return code) and empty string           *
   * otherwise a positive return code is message type and indicates success. *
   * Sending a message to your own address will send to all connected        *
-  * clients with your address (except you). If you are a node and not a     *
-  * client this method will return false. Empty for non-client nodes        *
+  * clients with your address (except you). Pass an empty response_functor  *
+  * to indicate you do not care about a response.                           *
   ***************************************************************************/
-  int Send(const Message message,
-            const MessageReceivedFunctor response_functor);
-  /**************************************************************************
-  *Non RPC Send                                                             *
-  **************************************************************************/
-  int Send(const Message message);
+  int Send(const std::string destination_id,  //id of final destination
+           const std::string data,  // message content (serialised data)
+           const uint16_t type,  // user defined message type
+           const MessageReceivedFunctor response_functor,
+           const uint16_t timeout_seconds,
+           const bool direct  // is this to a close node group or direct
+           );
   /**************************************************************************
   * This signal is fired on any message received that is NOT a reply to a   *
   * request made by the Send method.                                        *

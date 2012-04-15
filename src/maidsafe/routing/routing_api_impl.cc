@@ -51,6 +51,8 @@ RoutingPrivate::RoutingPrivate(const asymm::Keys &keys,
       bootstrap_file_path_(path),
       client_mode_(client_mode) {}
 
+RoutingPrivate::~RoutingPrivate() = default;
+
 }  // namespace routing
 
 }  // namespace maidsafe

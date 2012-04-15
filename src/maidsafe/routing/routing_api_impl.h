@@ -22,7 +22,7 @@ namespace routing {
 
 struct RoutingPrivate {
 public:
-  ~RoutingPrivate() = default;
+  ~RoutingPrivate();
   RoutingPrivate(const RoutingPrivate&) = delete;  // no copy
   RoutingPrivate(const RoutingPrivate&&) = delete;  // no move
   RoutingPrivate& operator=(const RoutingPrivate&);  // no assign

@@ -11,12 +11,10 @@
  ******************************************************************************/
 
 #include "maidsafe/common/utils.h"
-
 #include "maidsafe/rudp/return_codes.h"
 #include "maidsafe/routing/routing.pb.h"
 #include "maidsafe/routing/routing_table.h"
 #include "maidsafe/routing/parameters.h"
-
 
 namespace maidsafe {
 

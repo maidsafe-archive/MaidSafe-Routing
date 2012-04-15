@@ -17,9 +17,6 @@
 #include "maidsafe/routing/routing_table.h"
 #include "maidsafe/routing/routing.pb.h"
 
-
-
-
 namespace maidsafe {
 
 namespace routing {
@@ -27,7 +24,7 @@ namespace routing {
 void SendOn(protobuf::Message message,
             rudp::ManagedConnections &rudp,
             RoutingTable &routing_table,
-            Endpoint local_endpoint = Endpoint());
+            Endpoint endpoint = Endpoint());
 
 }  // namespace routing
 

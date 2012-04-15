@@ -50,7 +50,8 @@ std::vector<boost::asio::ip::udp::endpoint>
 
 bool WriteBootstrapFile(const std::vector<boost::asio::ip::udp::endpoint>
                                                                     &endpoints,
-                        const fs::path & path) {
+                        const fs::path & path
+                       ) {
   protobuf::Bootstrap protobuf_bootstrap;
 
   for (size_t i = 0; i < endpoints.size(); ++i) {
@@ -60,7 +61,7 @@ bool WriteBootstrapFile(const std::vector<boost::asio::ip::udp::endpoint>
   }
   std::string serialised_bootstrap_nodes;
   protobuf_bootstrap.SerializeToString(&serialised_bootstrap_nodes);
-  return WriteFile(path, serialised_bootstrap_nodes);
+  return (WriteFile(path, serialised_bootstrap_nodes));
 }
 
 }  // namespace routing
