@@ -47,7 +47,7 @@ bool RoutingTable::AddNode(NodeInfo& node) {
 
 bool RoutingTable::AddOrCheckNode(maidsafe::routing::NodeInfo& node,
                                   const bool remove) {
-  boost::mutex::scoped_lock lock(mutex_);
+  std::lock_guard<std::mutex> lock(mutex_);
 
   if (node.node_id == kNodeId_) {
     return false;
@@ -258,7 +258,7 @@ NodeInfo RoutingTable::GetClosestNode(const NodeId &from,
 std::vector<NodeId> RoutingTable::GetClosestNodes(const NodeId &from,
                                                   uint16_t number_to_get) {
   std::vector<NodeId>close_nodes;
-  boost::mutex::scoped_lock lock(mutex_);
+  std::lock_guard<std::mutex> lock(mutex_);
   unsigned int count = std::min(number_to_get, Size());
   SortFromThisNode(from);
   close_nodes.resize(count);

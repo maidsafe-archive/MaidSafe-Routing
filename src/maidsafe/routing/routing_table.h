@@ -13,7 +13,7 @@
 #ifndef MAIDSAFE_ROUTING_ROUTING_TABLE_H_
 #define MAIDSAFE_ROUTING_ROUTING_TABLE_H_
 
-#include "boost/thread/mutex.hpp"
+#include <thread>
 #include "maidsafe/routing/routing.pb.h"
 #include "maidsafe/routing/node_id.h"
 
@@ -71,7 +71,7 @@ class RoutingTable {
   bool sorted_;
   const NodeId kNodeId_;
   std::vector<NodeInfo> routing_table_nodes_;
-  boost::mutex mutex_;
+  std::mutex mutex_;
   boost::signals2::signal<void(std::string, std::string)>
                                                     close_node_from_to_signal_;
 };
