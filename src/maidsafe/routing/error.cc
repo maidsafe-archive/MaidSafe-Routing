@@ -74,7 +74,8 @@ std::error_condition error_category_routing::default_error_condition(int ev) con
         return std::error_condition(ev, *this);
     }
 }
-
+// TODO(dirvine) we can implement this later on I think if we want to catch and
+// collate all system errors as per this example
 // bool error_category_routing::equivalent(
 //     const std::error_code& code,
 //     int condition) const {

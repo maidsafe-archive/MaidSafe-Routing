@@ -17,6 +17,7 @@
 #include "maidsafe/rudp/managed_connections.h"
 #include "maidsafe/routing/parameters.h"
 #include "maidsafe/routing/rpcs.h"
+#include "maidsafe/routing/service.h"
 #include "maidsafe/routing/tests/test_utils.h"
 #include "maidsafe/routing/log.h"
 
@@ -26,20 +27,38 @@ namespace routing {
 namespace test {
 
 
-TEST(RPC, BEH_PingMessageInitialised) {
-  // check with assert in debug mode, should NEVER fail
-  ASSERT_TRUE(rpcs::Ping(NodeId("david"), "me").IsInitialized());
+TEST(Services, BEH_PingM) {
+  asymm::Keys keys;
+  keys.identity = RandomString(64);
+  RoutingTable RT(keys);
+  NodeInfo node;
+  protobuf::Message message = rpcs::Ping(NodeId(keys.identity), "me");
+  service::Ping(RT, message);
+  EXPECT_TRUE(message.IsInitialized());
+  protobuf::PingResponse ping_response;
+  EXPECT_FALSE(ping_response.ParseFromString(message.data())); // not us
+  message = rpcs::Ping(NodeId(keys.identity), RandomString(64));
+  EXPECT_TRUE(ping_response.ParseFromString(message.data())); // is us
+  // TODO(dirvine) check all elements as expected
 }
 
-TEST(RPC, BEH_ConnectMessageInitialised) {
+TEST(Services, BEH_Connect) {
 
   boost::asio::ip::udp::endpoint our_endpoint;
   our_endpoint.address().from_string("192.168.1.1");
   our_endpoint.port(5000);
-  ASSERT_TRUE(rpcs::Connect(NodeId("dav"), our_endpoint, "id").IsInitialized());
+  asymm::Keys keys;
+  keys.identity = RandomString(64);
+  RoutingTable RT(keys);
+  NodeInfo node;
+  rudp::ManagedConnections rudp;
+  protobuf::Message message = rpcs::Connect(NodeId("dav"), our_endpoint, "id");
+  service::Connect(RT, rudp, message);
+  EXPECT_TRUE(message.IsInitialized());
+    // TODO(dirvine) check all elements as expected
 }
 
-TEST(RPC, BEH_FindNodesMessageInitialised) {
+TEST(Services, BEH_FindNodes) {
   ASSERT_TRUE(rpcs::FindNodes(NodeId("david")).IsInitialized());
 }
 

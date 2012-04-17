@@ -10,43 +10,19 @@
  *  the explicit written permission of the board of directors of maidsafe.net. *
  ******************************************************************************/
 
-#include <memory>
-#include <vector>
-#include "maidsafe/common/test.h"
-#include "maidsafe/common/utils.h"
-#include "maidsafe/rudp/managed_connections.h"
-#include "maidsafe/routing/parameters.h"
-#include "maidsafe/routing/rpcs.h"
-#include "maidsafe/routing/tests/test_utils.h"
-#include "maidsafe/routing/log.h"
+#include "maidsafe/routing/routing_table.h"
 
-
+#ifndef MAIDSAFE_TEST_UTILS_H_
+#define MAIDSAFE_TEST_UTILS_H_
 namespace maidsafe {
 namespace routing {
 namespace test {
 
-
-TEST(RPC, BEH_PingMessageInitialised) {
-  // check with assert in debug mode, should NEVER fail
-  ASSERT_TRUE(rpcs::Ping(NodeId("david"), "me").IsInitialized());
-}
-
-TEST(RPC, BEH_ConnectMessageInitialised) {
-
-  boost::asio::ip::udp::endpoint our_endpoint;
-  our_endpoint.address().from_string("192.168.1.1");
-  our_endpoint.port(5000);
-  ASSERT_TRUE(rpcs::Connect(NodeId("dav"), our_endpoint, "id").IsInitialized());
-}
-
-TEST(RPC, BEH_FindNodesMessageInitialised) {
-  ASSERT_TRUE(rpcs::FindNodes(NodeId("david")).IsInitialized());
-}
-
-
-
-
+NodeInfo MakeNode();
 
 }  // namespace test
 }  // namespace routing
 }  // namespace maidsafe
+
+
+#endif  // MAIDSAFE_TEST_UTILS_H_

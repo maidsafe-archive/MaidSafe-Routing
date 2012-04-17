@@ -14,27 +14,18 @@
 #include <memory>
 #include <vector>
 #include "maidsafe/common/test.h"
+
 #include "maidsafe/common/utils.h"
 #include "maidsafe/routing/routing_table.h"
 #include "maidsafe/routing/parameters.h"
 #include "maidsafe/rudp/managed_connections.h"
+#include "maidsafe/routing/tests/test_utils.h"
 #include "maidsafe/routing/node_id.h"
 #include "maidsafe/routing/log.h"
 
 namespace maidsafe {
 namespace routing {
 namespace test {
-
-NodeInfo MakeNode() {
-  NodeInfo node;
-  node.node_id = NodeId(RandomString(64));
-  asymm::Keys keys;
-  asymm::GenerateKeyPair(&keys);
-  node.public_key = keys.public_key;
-  node.endpoint.address().from_string("192.168.1.1");
-  node.endpoint.port(1500);
-  return node;
-}
 
 TEST(RoutingTableTest, FUNC_AddCloseNodes) {
     asymm::Keys keys;

@@ -26,13 +26,17 @@ namespace service {
 void Ping(RoutingTable &routing_table,
                    protobuf::Message &message) {
   
-  if (message.destination_id() != routing_table.kKeys().identity)
+  if (message.destination_id() != routing_table.kKeys().identity){ 
+    DLOG(ERROR) << "Message not for us";
     return;  // not for us and we should not pass it on.
+  }
   protobuf::PingResponse ping_response;
   protobuf::PingRequest ping_request;
 
-  if (!ping_request.ParseFromString(message.data()))
+  if (!ping_request.ParseFromString(message.data())) {
+    DLOG(ERROR) << "No Data";
     return;
+  }
   ping_response.set_pong(true);
   ping_response.set_original_request(message.data());
   ping_response.set_original_signature(message.signature());

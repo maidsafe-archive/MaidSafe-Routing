@@ -59,7 +59,6 @@ class error_category_routing : public std::error_category {
     virtual bool equivalent(const std::error_code& code, int condition) const;
 };
 
-
 const std::error_category &error_category();
 
 }  // namespace routing
