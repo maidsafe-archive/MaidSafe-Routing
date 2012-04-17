@@ -19,6 +19,7 @@
 #include "maidsafe/rudp/managed_connections.h"
 #include "maidsafe/routing/routing.pb.h"
 #include "maidsafe/routing/node_id.h"
+#include "maidsafe/routing/error.h"
 #include "maidsafe/routing/log.h"
 
 namespace maidsafe {
@@ -28,7 +29,9 @@ namespace fs = boost::filesystem;
 
 std::vector<boost::asio::ip::udp::endpoint> ReadBootstrapFile(const fs::path &path);
 bool WriteBootstrapFile(const std::vector<boost::asio::ip::udp::endpoint> &endpoints,
-                        const fs::path & path);
+                        const fs::path & path,
+                        std::error_code &error
+                       );
 
 }  // namespace routing
 

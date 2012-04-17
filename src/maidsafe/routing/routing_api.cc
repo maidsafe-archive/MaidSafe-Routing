@@ -185,9 +185,9 @@ void Routing::ValidateThisNode(const std::string &node_id,
     impl_->bootstrap_nodes_.erase(impl_->bootstrap_nodes_.begin());
     }
     impl_->bootstrap_nodes_.push_back(their_endpoint);
-    std::error_code error_code;
+    std::error_code error;
     WriteBootstrapFile(impl_->bootstrap_nodes_,
-                       impl_->bootstrap_file_path_);
+                       impl_->bootstrap_file_path_, error);
   }
 }
 

@@ -19,7 +19,9 @@ namespace maidsafe {
 
 namespace routing {
 
-enum class routing_error {
+namespace error {
+
+enum error_codes {
   // General
   Ok = 10,
   timed_out = 100,
@@ -37,24 +39,28 @@ enum class routing_error {
   cannot_write_config = 1100
 };
 
-enum class routing_error_condition {
+enum error_conditions {
   routing_table_error = 100,
   node_error = 200,
   file_error = 300,
   network_error = 400
 };
 
-class routing_category_impl : public std::error_category {
+std::error_code make_error_code(error_codes e);
+std::error_condition make_error_condition(error_conditions e);
+
+} // namespace error // until gcc supports enum classes we need this!!
+
+class error_category_routing : public std::error_category {
  public:
     virtual const char* name() const;
     virtual std::string message(int ev) const;
     virtual std::error_condition default_error_condition(int ev) const;
+    virtual bool equivalent(const std::error_code& code, int condition) const;
 };
 
-std::error_code make_error_code(routing_error e);
-std::error_condition make_error_condition(routing_error e);
 
-const std::error_category &routing_category();
+const std::error_category &error_category();
 
 }  // namespace routing
 
@@ -67,8 +73,12 @@ const std::error_category &routing_category();
 namespace std
 {
   template <>
-  struct is_error_code_enum<maidsafe::routing::routing_error>
+  struct is_error_code_enum<maidsafe::routing::error::error_codes>
     : public true_type {};
+
+  template <>
+  struct is_error_condition_enum<maidsafe::routing::error::error_conditions>
+      : public true_type {};
 }
 #ifdef __GNUC__
 #  pragma GCC diagnostic pop

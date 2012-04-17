@@ -18,6 +18,7 @@
 #include "maidsafe/rudp/managed_connections.h"
 #include "maidsafe/routing/bootstrap_file_handler.h"
 #include "maidsafe/routing/parameters.h"
+#include "maidsafe/routing/error.h"
 #include "maidsafe/routing/log.h"
 
 namespace maidsafe {
@@ -50,8 +51,8 @@ std::vector<boost::asio::ip::udp::endpoint>
 
 bool WriteBootstrapFile(const std::vector<boost::asio::ip::udp::endpoint>
                                                                     &endpoints,
-                        const fs::path & path
-                       ) {
+                        const fs::path & path,
+                        std::error_code &error) {
   protobuf::Bootstrap protobuf_bootstrap;
 
   for (size_t i = 0; i < endpoints.size(); ++i) {

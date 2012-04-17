@@ -33,7 +33,9 @@ TEST(BootStrapFileTest1, BEH_ReadValidFile) {
   boost::filesystem::path good_file
                 (fs::unique_path(fs::temp_directory_path() / "test"));
   EXPECT_TRUE(ReadBootstrapFile(good_file).empty());
-  EXPECT_TRUE(WriteBootstrapFile(vec, good_file));
+  std::error_code error;
+  EXPECT_TRUE(WriteBootstrapFile(vec, good_file, error));
+  EXPECT_TRUE(&error);
   EXPECT_FALSE(ReadBootstrapFile(good_file).empty());
   EXPECT_EQ(ReadBootstrapFile(good_file).size(), vec.size());
   EXPECT_EQ(ReadBootstrapFile(good_file)[0], vec[0]);
