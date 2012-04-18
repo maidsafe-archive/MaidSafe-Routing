@@ -19,7 +19,7 @@ std::error_condition make_error_condition(error_conditions e) {
 } // namespace error // until gcc supports strongly typed enums we need this!!
 
 
-const char* error_category_routing::name() const {
+const char* error_category_routing::name() const noexcept (true){
   return "routing";
 }
 
@@ -53,8 +53,7 @@ std::string error_category_routing::message(int ev) const {
   }
 }
 
-std::error_condition error_category_routing::default_error_condition(int ev) const
-{
+std::error_condition error_category_routing::default_error_condition(int ev) const noexcept (true) {
     switch (ev)
     {
       case error::timed_out:

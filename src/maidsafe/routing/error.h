@@ -53,10 +53,10 @@ std::error_condition make_error_condition(error_conditions e);
 
 class error_category_routing : public std::error_category {
  public:
-    virtual const char* name() const;
+    virtual const char* name() const noexcept (true);
     virtual std::string message(int ev) const;
-    virtual std::error_condition default_error_condition(int ev) const;
-    virtual bool equivalent(const std::error_code& code, int condition) const;
+    virtual std::error_condition default_error_condition(int ev) const noexcept (true);
+    virtual bool equivalent(const std::error_code& code, int condition) const noexcept (true);
 };
 
 const std::error_category &error_category();

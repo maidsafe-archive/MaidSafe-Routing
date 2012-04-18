@@ -14,6 +14,7 @@
 #define MAIDSAFE_ROUTING_ROUTING_TABLE_H_
 
 #include <thread>
+#include <mutex>
 #include "maidsafe/routing/routing.pb.h"
 #include "maidsafe/routing/node_id.h"
 
