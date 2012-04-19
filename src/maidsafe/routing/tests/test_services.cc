@@ -45,7 +45,7 @@ TEST(Services, BEH_Ping) {
   EXPECT_FALSE(message.data().empty());
   EXPECT_TRUE(message.source_id() == keys.identity);
   EXPECT_EQ(message.replication(), 1);
-  EXPECT_EQ(message.type(), 1);
+  EXPECT_EQ(message.type(), -1);
   EXPECT_FALSE(message.routing_failure());
   EXPECT_EQ(message.id(), 0);
   EXPECT_FALSE(message.client_node());
@@ -77,7 +77,7 @@ TEST(Services, BEH_Connect) {
   EXPECT_EQ(message.source_id(), us.node_id.String());
   EXPECT_FALSE(message.data().empty());
   EXPECT_EQ(message.replication(), 1);
-  EXPECT_EQ(message.type(), 2);
+  EXPECT_EQ(message.type(), -2);
   EXPECT_FALSE(message.routing_failure());
   EXPECT_EQ(message.id(), 0);
   EXPECT_FALSE(message.client_node());
@@ -87,19 +87,24 @@ TEST(Services, BEH_Connect) {
 TEST(Services, BEH_FindNodes) {
   NodeInfo us(MakeNode());
   NodeInfo them(MakeNode());
+  asymm::Keys keys;
+  keys.identity = us.node_id.String();
+  keys.public_key = us.public_key;
+  RoutingTable RT(keys);
   protobuf::Message message = rpcs::FindNodes(us.node_id, us.endpoint);
-  protobuf::FindNodesRequest find_nodes_request;
-  EXPECT_TRUE(find_nodes_request.ParseFromString(message.data())); // us
-  EXPECT_TRUE(find_nodes_request.num_nodes_requested() == Parameters::closest_nodes_size);
-  EXPECT_EQ(find_nodes_request.target_node(), us.node_id.String());
-  EXPECT_TRUE(find_nodes_request.has_timestamp());
-  EXPECT_TRUE(find_nodes_request.timestamp() > static_cast<int32_t>(GetTimeStamp() - 2));
-  EXPECT_TRUE(find_nodes_request.timestamp() < static_cast<int32_t>(GetTimeStamp() + 1));
+  service::FindNodes(RT, message);
+  protobuf::FindNodesResponse find_nodes_respose;
+  EXPECT_TRUE(find_nodes_respose.ParseFromString(message.data())); 
+//   EXPECT_EQ(find_nodes_respose.nodes().size(), 1);  // will only have us
+//  EXPECT_EQ(find_nodes_respose.nodes().Get(1), us.node_id.String());
+  EXPECT_TRUE(find_nodes_respose.has_timestamp());
+  EXPECT_TRUE(find_nodes_respose.timestamp() > static_cast<int32_t>(GetTimeStamp() - 2));
+  EXPECT_TRUE(find_nodes_respose.timestamp() < static_cast<int32_t>(GetTimeStamp() + 1));
   EXPECT_EQ(message.destination_id(), us.node_id.String());
   EXPECT_EQ(message.source_id(), us.node_id.String());
   EXPECT_FALSE(message.data().empty());
   EXPECT_EQ(message.replication(), 1);
-  EXPECT_EQ(message.type(), 3);
+  EXPECT_EQ(message.type(), -3);
   EXPECT_FALSE(message.routing_failure());
   EXPECT_EQ(message.id(), 0);
   EXPECT_FALSE(message.client_node());
@@ -107,5 +112,7 @@ TEST(Services, BEH_FindNodes) {
 }
 
 }  // namespace test
+
 }  // namespace routing
+
 }  // namespace maidsafe

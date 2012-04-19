@@ -25,11 +25,8 @@ typedef boost::asio::ip::udp::endpoint Endpoint;
 
 struct Parameters {
  public:
-  Parameters(const Parameters&) = delete;  // no copy
-  Parameters(const Parameters&&) = delete ;  // no move
-  Parameters& operator=(const Parameters&) = delete;  // no assign
-  Parameters() = default;
-  ~Parameters() = default;
+  Parameters();
+  ~Parameters();
   // this node is client or node (full routing node with storage)
   static bool client_mode;
   // fully encrypt all data at routing level in both directions
@@ -39,6 +36,10 @@ struct Parameters {
   static uint16_t closest_nodes_size;
   static uint16_t max_routing_table_size;
   static uint16_t bucket_target_size;
+ private:
+  Parameters(const Parameters&);  // no copy
+  Parameters(const Parameters&&);  // no move
+  Parameters& operator=(const Parameters&);  // no assign
 };
 
 }  // namespace routing

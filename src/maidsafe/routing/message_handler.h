@@ -40,10 +40,6 @@ public:
                  rudp::ManagedConnections &rudp,
                  Timer &timer_ptr,
                  NodeValidationFunctor node_validation_functor);
-  ~MessageHandler() = default;
-  MessageHandler(const MessageHandler&) = delete;  // no copy
-  MessageHandler(const MessageHandler&&) = delete;  // no move
-  MessageHandler& operator=(const MessageHandler&) = delete;  // no assign
   void ProcessMessage(protobuf::Message &message);
   void DirectMessage(protobuf::Message &message);
   void RoutingMessage(protobuf::Message &message);
@@ -53,6 +49,9 @@ public:
   void Send(protobuf::Message &message);
   boost::signals2::signal<void(int, std::string)> &MessageReceivedSignal();
 private:
+  MessageHandler(const MessageHandler&);  // no copy
+  MessageHandler(const MessageHandler&&);  // no move
+  MessageHandler& operator=(const MessageHandler&);  // no assign
   RoutingTable &routing_table_;
   rudp::ManagedConnections &rudp_;
   Timer &timer_ptr_;

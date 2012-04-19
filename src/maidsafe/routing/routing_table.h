@@ -41,9 +41,6 @@ struct NodeInfo {
 class RoutingTable {
  public:
   explicit RoutingTable(const asymm::Keys &keys);
-  ~RoutingTable() = default;
-  RoutingTable(const RoutingTable&) = delete;
-  RoutingTable& operator=(const RoutingTable&) = delete;
   bool AddNode(NodeInfo &node);
   bool CheckNode(NodeInfo &node);
   bool DropNode(const boost::asio::ip::udp::endpoint &endpoint);
@@ -59,6 +56,8 @@ class RoutingTable {
   boost::signals2::signal<void(std::string, std::string)>
                                            &CloseNodeReplacedOldNewSignal();
  private:
+  RoutingTable(const RoutingTable&);
+  RoutingTable& operator=(const RoutingTable&);
   bool AddOrCheckNode(NodeInfo &node, const bool remove);
   int16_t BucketIndex(const NodeId &rhs) const;
   bool CheckValidParameters(const NodeInfo &node) const;

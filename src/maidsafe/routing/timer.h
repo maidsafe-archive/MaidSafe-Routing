@@ -29,15 +29,14 @@ typedef uint32_t TaskId;
 class Timer {
  public:
   explicit Timer(AsioService &io_service);
-  ~Timer() = default;
-  Timer &operator=(const Timer&) = delete;
-  Timer(const Timer&) = delete;
-  Timer(const Timer&&) = delete;
   typedef std::shared_ptr<asio::deadline_timer> TimerPointer;
   TaskId AddTask(uint32_t timeout, const TaskResponseFunctor &);
   void KillTask(uint32_t task_id);  // removes from queue immediately no run
   void ExecuteTaskNow(protobuf::Message &message);  //executes and removes task
  private:
+  Timer &operator=(const Timer&);
+  Timer(const Timer&);
+  Timer(const Timer&&);
   AsioService &io_service_;
   TaskId task_id_;
   std::map<uint32_t, std::pair<TimerPointer, TaskResponseFunctor> > queue_;

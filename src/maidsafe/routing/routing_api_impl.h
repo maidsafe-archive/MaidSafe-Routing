@@ -31,7 +31,6 @@ private:
                  const boost::filesystem::path &bootstrap_file_path,
                  NodeValidationFunctor node_validation_functor,
                  bool client_mode);
-
   friend class Routing;
   AsioService asio_service_;
   std::vector<boost::asio::ip::udp::endpoint> bootstrap_nodes_;

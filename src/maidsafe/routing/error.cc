@@ -18,8 +18,11 @@ std::error_condition make_error_condition(error_conditions e) {
 
 } // namespace error // until gcc supports strongly typed enums we need this!!
 
-
+#ifdef MAIDSAFE_WIN32
+const char* error_category_routing::name() const {
+#else
 const char* error_category_routing::name() const noexcept (true){
+#endif 
   return "routing";
 }
 
@@ -52,9 +55,12 @@ std::string error_category_routing::message(int ev) const {
     return "Unknown routing error";
   }
 }
-
+#ifdef MAIDSAFE_WIN32
+std::error_condition error_category_routing::default_error_condition(int ev) const {
+#else
 std::error_condition error_category_routing::default_error_condition(int ev) const noexcept (true) {
-    switch (ev)
+#endif
+  switch (ev)
     {
       case error::timed_out:
       case error::not_joined:

@@ -97,7 +97,7 @@ void Connect(RoutingTable &routing_table,
   endpoint->set_ip(our_endpoint.address().to_string());
   endpoint->set_port(our_endpoint.port());
   contact->set_node_id(routing_table.kKeys().identity);
-//  connect_response.set_timestamp(GetTimeStamp());
+  connect_response.set_timestamp(GetTimeStamp());
   connect_response.set_original_request(message.data());
   connect_response.set_original_signature(message.signature());
   message.set_destination_id(message.source_id());
@@ -125,7 +125,6 @@ void FindNodes(RoutingTable &routing_table,
   found_nodes.set_original_request(message.data());
   found_nodes.set_original_signature(message.signature());
   found_nodes.set_timestamp(GetTimeStamp());
-//  found_nodes.set_timestamp(GetTimeStamp());
   BOOST_ASSERT_MSG(found_nodes.IsInitialized(), "unintialised found_nodes response");
   message.set_destination_id(message.source_id());
   message.set_source_id(routing_table.kKeys().identity);
@@ -136,9 +135,8 @@ void FindNodes(RoutingTable &routing_table,
   BOOST_ASSERT_MSG(message.IsInitialized(), "unintialised message");
 }
 
-
 }  // namespace service
-  
+
 }  // namespace routing
 
 }  // namespace maidsafe
