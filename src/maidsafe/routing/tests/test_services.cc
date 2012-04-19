@@ -27,44 +27,84 @@ namespace routing {
 namespace test {
 
 
-TEST(Services, BEH_PingM) {
-  asymm::Keys keys;
-  keys.identity = RandomString(64);
-  RoutingTable RT(keys);
-  NodeInfo node;
-  protobuf::Message message = rpcs::Ping(NodeId(keys.identity), "me");
-  service::Ping(RT, message);
-  EXPECT_TRUE(message.IsInitialized());
-  protobuf::PingResponse ping_response;
-  EXPECT_FALSE(ping_response.ParseFromString(message.data())); // not us
-  message = rpcs::Ping(NodeId(keys.identity), RandomString(64));
-  EXPECT_TRUE(ping_response.ParseFromString(message.data())); // is us
-  // TODO(dirvine) check all elements as expected
-}
-
-TEST(Services, BEH_Connect) {
-
-  boost::asio::ip::udp::endpoint our_endpoint;
-  our_endpoint.address().from_string("192.168.1.1");
-  our_endpoint.port(5000);
+TEST(Services, BEH_Ping) {
   asymm::Keys keys;
   keys.identity = RandomString(64);
   RoutingTable RT(keys);
   NodeInfo node;
   rudp::ManagedConnections rudp;
-  protobuf::Message message = rpcs::Connect(NodeId("dav"), our_endpoint, "id");
-  service::Connect(RT, rudp, message);
+  protobuf::PingRequest ping_request;
+  // somebody pings us
+  protobuf::Message message = rpcs::Ping(NodeId(keys.identity), "me");
+  EXPECT_TRUE(message.destination_id() == keys.identity);
+  EXPECT_TRUE(ping_request.ParseFromString(message.data())); // us
+  EXPECT_TRUE(ping_request.IsInitialized());
+  // run message through Service
+  service::Ping(RT, message);
+  EXPECT_TRUE(message.type() == -1);
+  EXPECT_FALSE(message.data().empty());
+  EXPECT_TRUE(message.source_id() == keys.identity);
+  EXPECT_EQ(message.replication(), 1);
+  EXPECT_EQ(message.type(), 1);
+  EXPECT_FALSE(message.routing_failure());
+  EXPECT_EQ(message.id(), 0);
+  EXPECT_FALSE(message.client_node());
+  EXPECT_FALSE(message.has_relay());
+}
+
+TEST(Services, BEH_Connect) {
+  NodeInfo us(MakeNode());
+  NodeInfo them(MakeNode());
+  asymm::Keys keys;
+  keys.identity = us.node_id.String();
+  keys.public_key = us.public_key;
+  RoutingTable RT(keys);
+  NodeInfo node;
+  rudp::ManagedConnections rudp;
+  // they send us an rpc
+  protobuf::Message message = rpcs::Connect(us.node_id, them.endpoint, them.node_id.String());
   EXPECT_TRUE(message.IsInitialized());
-    // TODO(dirvine) check all elements as expected
+  // we receive it
+  service::Connect(RT, rudp, message);
+  protobuf::ConnectResponse connect_response;
+  EXPECT_TRUE(connect_response.ParseFromString(message.data())); // us
+  EXPECT_TRUE(connect_response.answer());
+  EXPECT_EQ(connect_response.contact().node_id(), us.node_id.String());
+  EXPECT_TRUE(connect_response.has_timestamp());
+  EXPECT_TRUE(connect_response.timestamp() > static_cast<int32_t>(GetTimeStamp() - 2));
+  EXPECT_TRUE(connect_response.timestamp() < static_cast<int32_t>(GetTimeStamp() + 1));
+  EXPECT_EQ(message.destination_id(), them.node_id.String());
+  EXPECT_EQ(message.source_id(), us.node_id.String());
+  EXPECT_FALSE(message.data().empty());
+  EXPECT_EQ(message.replication(), 1);
+  EXPECT_EQ(message.type(), 2);
+  EXPECT_FALSE(message.routing_failure());
+  EXPECT_EQ(message.id(), 0);
+  EXPECT_FALSE(message.client_node());
+  EXPECT_FALSE(message.has_relay());
 }
 
 TEST(Services, BEH_FindNodes) {
-  ASSERT_TRUE(rpcs::FindNodes(NodeId("david")).IsInitialized());
+  NodeInfo us(MakeNode());
+  NodeInfo them(MakeNode());
+  protobuf::Message message = rpcs::FindNodes(us.node_id, us.endpoint);
+  protobuf::FindNodesRequest find_nodes_request;
+  EXPECT_TRUE(find_nodes_request.ParseFromString(message.data())); // us
+  EXPECT_TRUE(find_nodes_request.num_nodes_requested() == Parameters::closest_nodes_size);
+  EXPECT_EQ(find_nodes_request.target_node(), us.node_id.String());
+  EXPECT_TRUE(find_nodes_request.has_timestamp());
+  EXPECT_TRUE(find_nodes_request.timestamp() > static_cast<int32_t>(GetTimeStamp() - 2));
+  EXPECT_TRUE(find_nodes_request.timestamp() < static_cast<int32_t>(GetTimeStamp() + 1));
+  EXPECT_EQ(message.destination_id(), us.node_id.String());
+  EXPECT_EQ(message.source_id(), us.node_id.String());
+  EXPECT_FALSE(message.data().empty());
+  EXPECT_EQ(message.replication(), 1);
+  EXPECT_EQ(message.type(), 3);
+  EXPECT_FALSE(message.routing_failure());
+  EXPECT_EQ(message.id(), 0);
+  EXPECT_FALSE(message.client_node());
+  EXPECT_FALSE(message.has_relay());
 }
-
-
-
-
 
 }  // namespace test
 }  // namespace routing

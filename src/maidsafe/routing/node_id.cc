@@ -46,8 +46,10 @@ NodeId::NodeId(const KadIdType &type) : raw_id_(kKeySizeBytes, -1) {
 }
 
 NodeId::NodeId(const std::string &id) : raw_id_(id) {
-  if (!IsValid())
+  if (!IsValid()) {
     raw_id_.clear();
+    DLOG(ERROR) << "Attempt to create ID from string != " << kKeySizeBytes;
+  }
 }
 
 NodeId::NodeId(const std::string &id, const EncodingType &encoding_type)

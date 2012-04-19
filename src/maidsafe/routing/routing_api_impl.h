@@ -23,10 +23,10 @@ namespace routing {
 struct RoutingPrivate {
 public:
   ~RoutingPrivate();
-  RoutingPrivate(const RoutingPrivate&) = delete;  // no copy
-  RoutingPrivate(const RoutingPrivate&&) = delete;  // no move
-  RoutingPrivate& operator=(const RoutingPrivate&);  // no assign
 private:
+  RoutingPrivate(const RoutingPrivate&);  // no copy
+  RoutingPrivate(const RoutingPrivate&&);  // no move
+  RoutingPrivate& operator=(const RoutingPrivate&);  // no assign
   RoutingPrivate(const asymm::Keys &keys,
                  const boost::filesystem::path &bootstrap_file_path,
                  NodeValidationFunctor node_validation_functor,

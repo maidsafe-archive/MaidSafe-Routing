@@ -81,6 +81,8 @@ TEST(NodeIdTest, BEH_DefaultCtr) {
   ASSERT_EQ(hex_id, node_id.ToStringEncoded(NodeId::kHex));
   std::string bin_id(kKeySizeBytes * 8, '0');
   ASSERT_EQ(bin_id, node_id.ToStringEncoded(NodeId::kBinary));
+  NodeId dave("david");
+  ASSERT_NE("david", dave.String());
 }
 
 TEST(NodeIdTest, BEH_CopyCtr) {

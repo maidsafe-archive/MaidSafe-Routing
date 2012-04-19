@@ -93,10 +93,7 @@ class Routing {
           const boost::filesystem::path &full_path_and_name,
           NodeValidationFunctor node_validation_functor,
           bool client_mode);
-  ~Routing();
-  Routing(const Routing&) = delete;
-  Routing(const Routing&&) = delete;
-  Routing& operator=(const Routing&) = delete;
+   ~Routing();
   /**************************************************************************
   * returns current network status as int (> 0 is connected)                *
   ***************************************************************************/
@@ -147,6 +144,9 @@ class Routing {
                            const boost::asio::ip::udp::endpoint& /*our Node */,
                            NodeValidatedFunctor & )> &NodeValidationSignal();
  private:
+  Routing(const Routing&);
+  Routing(const Routing&&);
+  Routing& operator=(const Routing&);
   void Init();
   bool Join(boost::asio::ip::udp::endpoint local_endpoint =
                                 boost::asio::ip::udp::endpoint());

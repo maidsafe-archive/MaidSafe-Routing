@@ -12,6 +12,7 @@
 
 #include "maidsafe/common/utils.h"
 #include "maidsafe/routing/service.h"
+#include "maidsafe/routing/node_id.h"
 #include "maidsafe/routing/routing.pb.h"
 #include "maidsafe/routing/routing_table.h"
 #include "maidsafe/routing/parameters.h"
@@ -25,7 +26,10 @@ namespace service {
 
 void Ping(RoutingTable &routing_table,
                    protobuf::Message &message) {
-  
+//   if (message.destination_id() != NodeId::kKeySizeBytes) {
+//         DLOG(ERROR) << "Invalid destination ID";
+//     return;
+//   }
   if (message.destination_id() != routing_table.kKeys().identity){ 
     DLOG(ERROR) << "Message not for us";
     return;  // not for us and we should not pass it on.
@@ -40,7 +44,7 @@ void Ping(RoutingTable &routing_table,
   ping_response.set_pong(true);
   ping_response.set_original_request(message.data());
   ping_response.set_original_signature(message.signature());
-//  ping_response.set_timestamp(GetTimeStamp());
+  ping_response.set_timestamp(GetTimeStamp());
   message.set_type(-1);
   message.set_data(ping_response.SerializeAsString());
   message.set_destination_id(message.source_id());
@@ -70,7 +74,7 @@ void Connect(RoutingTable &routing_table,
                             connect_request.contact().endpoint().ip());
   their_endpoint.port(connect_request.contact().endpoint().port());
   rudp.GetAvailableEndpoint(&our_endpoint);
-  if (connect_request.client()) {
+  if (message.client_node()) {
     connect_response.set_answer(true);
     //TODO(dirvine) get the routing pointer back again
 //     node_validation_functor_(routing_table.kKeys().identity,
@@ -78,7 +82,7 @@ void Connect(RoutingTable &routing_table,
 //                     message.client_node(),
 //                     our_endpoint);
   }
-  if ((routing_table.CheckNode(node)) && (!connect_request.client())) {
+  if ((routing_table.CheckNode(node)) && (!message.client_node())) {
     connect_response.set_answer(true);
 //     node_validation_functor_(routing_table.kKeys().identity,
 //                     their_endpoint,

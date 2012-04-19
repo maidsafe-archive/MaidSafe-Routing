@@ -14,7 +14,7 @@
 #define MAIDSAFE_ROUTING_ERROR_H_
 
 #include <system_error>
-
+#include "maidsafe/common/platform_config.h"
 namespace maidsafe {
 
 namespace routing {
@@ -53,11 +53,19 @@ std::error_condition make_error_condition(error_conditions e);
 
 class error_category_routing : public std::error_category {
  public:
-    virtual const char* name() const noexcept (true);
     virtual std::string message(int ev) const;
+#ifdef MAIDSAFE_WIN32
+    virtual const char* name() const;  // msvc 11 does not support noexcept
+    virtual std::error_condition default_error_condition(int ev) const;
+    virtual bool equivalent(const std::error_code& code, int condition) const;
+#else
+    virtual const char* name() const noexcept (true);  // gcc > 4.7 requires noexcept
     virtual std::error_condition default_error_condition(int ev) const noexcept (true);
     virtual bool equivalent(const std::error_code& code, int condition) const noexcept (true);
+#endif
 };
+
+
 
 const std::error_category &error_category();
 

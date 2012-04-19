@@ -58,9 +58,8 @@ message SignedMessage {
 
 message ConnectRequest {
   optional Contact contact = 1;
-  optional bool client = 2;
-  optional bool bootstrap = 3;
-  required int32 timestamp = 4;
+  optional bool bootstrap = 2;
+  required int32 timestamp = 3;
 }
 
 message ConnectResponse {
