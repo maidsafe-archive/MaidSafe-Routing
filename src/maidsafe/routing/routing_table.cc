@@ -176,9 +176,9 @@ bool RoutingTable::MakeSpaceForNodeToBeAdded(maidsafe::routing::NodeInfo& node,
                        "close node replacement to a larger bucket");
 
      if (remove) {
-      routing_table_nodes_.erase(furthest_close_node_iter);
       close_node_from_to_signal_((*furthest_close_node_iter).node_id.String(),
                                  node.node_id.String());
+      routing_table_nodes_.erase(furthest_close_node_iter);
      }
     return true;
   }

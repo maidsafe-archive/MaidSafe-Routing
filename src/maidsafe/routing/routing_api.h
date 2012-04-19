@@ -52,7 +52,7 @@ namespace maidsafe {
 
 namespace routing {
 
-class RoutingPrivate;
+struct RoutingPrivate;
 
 // Send method return codes
 enum SendErrors {

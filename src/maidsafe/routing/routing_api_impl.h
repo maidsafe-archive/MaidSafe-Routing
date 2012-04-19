@@ -21,9 +21,9 @@ namespace maidsafe {
 namespace routing {
 
 struct RoutingPrivate {
-public:
+ public:
   ~RoutingPrivate();
-private:
+ private:
   RoutingPrivate(const RoutingPrivate&);  // no copy
   RoutingPrivate(const RoutingPrivate&&);  // no move
   RoutingPrivate& operator=(const RoutingPrivate&);  // no assign

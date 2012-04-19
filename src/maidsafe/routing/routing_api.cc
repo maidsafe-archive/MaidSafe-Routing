@@ -22,7 +22,7 @@
 #include "maidsafe/routing/return_codes.h"
 #include "maidsafe/routing/parameters.h"
 #include "maidsafe/routing/routing_api.h"
-#include "maidsafe/routing/routing.pb.h"
+#include "maidsafe/routing/routing_pb.h"
 #include "maidsafe/routing/node_id.h"
 #include "maidsafe/routing/routing_table.h"
 #include "maidsafe/routing/timer.h"
@@ -70,7 +70,7 @@ Routing::Routing(const asymm::Keys &keys,
   Join();
 }
 
-Routing::~Routing() = default;
+Routing::~Routing() {}
 
 int Routing::GetStatus() {
  if (impl_->routing_table_.Size() == 0) {

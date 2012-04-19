@@ -13,7 +13,7 @@
 #include "maidsafe/common/utils.h"
 #include "maidsafe/routing/service.h"
 #include "maidsafe/routing/node_id.h"
-#include "maidsafe/routing/routing.pb.h"
+#include "maidsafe/routing/routing_pb.h"
 #include "maidsafe/routing/routing_table.h"
 #include "maidsafe/routing/parameters.h"
 #include "maidsafe/routing/log.h"
@@ -116,8 +116,8 @@ void FindNodes(RoutingTable &routing_table,
   protobuf::FindNodesRequest find_nodes;
   protobuf::FindNodesResponse found_nodes;
   std::vector<NodeId>
-        nodes {routing_table.GetClosestNodes(NodeId(message.destination_id()),
-                 static_cast<uint16_t>(find_nodes.num_nodes_requested())) };
+        nodes (routing_table.GetClosestNodes(NodeId(message.destination_id()),
+                 static_cast<uint16_t>(find_nodes.num_nodes_requested())));
   for (auto it = nodes.begin(); it != nodes.end(); ++it)
     found_nodes.add_nodes((*it).String());
   if (routing_table.Size() < Parameters::closest_nodes_size)

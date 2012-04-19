@@ -14,7 +14,7 @@
 #define MAIDSAFE_ROUTING_RPCS_H_
 
 #include "maidsafe/routing/node_id.h"
-#include "maidsafe/routing/routing.pb.h"
+#include "maidsafe/routing/routing_pb.h"
 
 namespace maidsafe {
 

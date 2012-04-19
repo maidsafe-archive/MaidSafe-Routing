@@ -12,7 +12,7 @@
 
 #include "maidsafe/common/utils.h"
 #include "maidsafe/routing/node_id.h"
-#include "maidsafe/routing/routing.pb.h"
+#include "maidsafe/routing/routing_pb.h"
 #include "maidsafe/routing/parameters.h"
 #include "maidsafe/routing/log.h"
 

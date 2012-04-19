@@ -15,7 +15,7 @@
 #include "maidsafe/common/rsa.h"
 #include "maidsafe/rudp/managed_connections.h"
 #include "maidsafe/routing/response_handler.h"
-#include "maidsafe/routing/routing.pb.h"
+#include "maidsafe/routing/routing_pb.h"
 #include "maidsafe/routing/routing_table.h"
 #include "maidsafe/routing/routing_api.h"
 #include "maidsafe/routing/node_id.h"

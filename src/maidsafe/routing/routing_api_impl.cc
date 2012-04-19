@@ -13,7 +13,7 @@
 #include "maidsafe/routing/routing_api_impl.h"
 #include "maidsafe/common/utils.h"
 #include "maidsafe/routing/routing_api.h"
-#include "maidsafe/routing/routing.pb.h"
+#include "maidsafe/routing/routing_pb.h"
 #include "maidsafe/routing/node_id.h"
 #include "maidsafe/routing/routing_table.h"
 #include "maidsafe/routing/timer.h"
@@ -51,7 +51,7 @@ RoutingPrivate::RoutingPrivate(const asymm::Keys &keys,
       bootstrap_file_path_(path),
       client_mode_(client_mode) {}
 
-RoutingPrivate::~RoutingPrivate() = default;
+RoutingPrivate::~RoutingPrivate() {}
 
 }  // namespace routing
 
