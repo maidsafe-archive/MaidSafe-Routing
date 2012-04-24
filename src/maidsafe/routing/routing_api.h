@@ -71,14 +71,14 @@ typedef std::function<void(int /*message type*/,
                            std::string /*message*/ )> MessageReceivedFunctor;
 // check and get public key and run ValidateThisNode method.
 typedef std::function<void(const std::string& /*node Id*/ ,
-                           const boost::asio::ip::udp::endpoint& /*their Node endpoint */,
+                           const rudp::EndpointPair& /*their Node endpoint */,
                            const bool /*client ? */,
-                           const boost::asio::ip::udp::endpoint& /*our Node endpoint */)>
+                           const rudp::EndpointPair& /*our Node endpoint */)>
                                                  NodeValidationFunctor;
 typedef std::function<void(const std::string& /*node Id*/ ,
                            const asymm::PublicKey &public_key,
-                           const boost::asio::ip::udp::endpoint& /*their Node endpoint */,
-                           const boost::asio::ip::udp::endpoint& /*our Node endpoint */,
+                           const rudp::EndpointPair& /*their Node endpoint */,
+                           const rudp::EndpointPair& /*our Node endpoint */,
                            const bool /*client ? */
                           )> NodeValidatedFunctor;
 

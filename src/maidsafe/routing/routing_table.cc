@@ -52,7 +52,7 @@ bool RoutingTable::AddOrCheckNode(maidsafe::routing::NodeInfo& node,
   if (node.node_id == kNodeId_) {
     return false;
   }
-  // if we already have node return true
+  // if we already have node return false
   if (std::find_if(routing_table_nodes_.begin(),
                    routing_table_nodes_.end(),
                    [&node](const NodeInfo &i)->bool
@@ -252,8 +252,6 @@ NodeInfo RoutingTable::GetClosestNode(const NodeId &from,
   SortFromThisNode(from);
   return routing_table_nodes_[node_number];
 }
-
-
 
 std::vector<NodeId> RoutingTable::GetClosestNodes(const NodeId &from,
                                                   uint16_t number_to_get) {

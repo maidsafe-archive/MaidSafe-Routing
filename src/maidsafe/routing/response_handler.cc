@@ -55,19 +55,22 @@ void Connect(protobuf::Message& message,
   if (!connect_request.ParseFromString(connect_response.original_request()))
     return;  // invalid response
 
-  boost::asio::ip::udp::endpoint our_endpoint;
-  our_endpoint.address().from_string(connect_request.contact().endpoint().ip());
-  our_endpoint.port(connect_request.contact().endpoint().port());
-
-  boost::asio::ip::udp::endpoint their_endpoint;
-  their_endpoint.address().from_string(connect_response.contact().endpoint().ip());
-  their_endpoint.port(connect_response.contact().endpoint().port());
+  rudp::EndpointPair our_endpoint_pair;;
+  our_endpoint_pair.external.address().from_string(connect_request.contact().public_endpoint().ip());
+  our_endpoint_pair.external.port(connect_request.contact().public_endpoint().port());
+  our_endpoint_pair.local.address().from_string(connect_request.contact().private_endpoint().ip());
+  our_endpoint_pair.local.port(connect_request.contact().private_endpoint().port());
+  rudp::EndpointPair their_endpoint_pair;
+  their_endpoint_pair.external.address().from_string(connect_response.contact().public_endpoint().ip());
+  their_endpoint_pair.external.port(connect_response.contact().public_endpoint().port());
+  their_endpoint_pair.local.address().from_string(connect_response.contact().private_endpoint().ip());
+  their_endpoint_pair.local.port(connect_response.contact().private_endpoint().port());
   // TODO(dirvine) FIXME
   if (node_validation_functor)  // never add any node to routing table
     node_validation_functor(connect_response.contact().node_id(),
-                            their_endpoint,
+                            their_endpoint_pair,
                             message.client_node(),
-                            our_endpoint);
+                            our_endpoint_pair);
 }
 
 void FindNode(RoutingTable &routing_table,
@@ -89,7 +92,7 @@ void FindNode(RoutingTable &routing_table,
     node_to_add.node_id = NodeId(find_nodes.nodes(i));
     if (routing_table.CheckNode(node_to_add)) {
       DLOG(INFO) << " size of find nodes " << find_nodes.nodes_size();
-      boost::asio::ip::udp::endpoint endpoint;
+      rudp::EndpointPair endpoint;
       rudp.GetAvailableEndpoint(&endpoint);
       SendOn(rpcs::Connect(NodeId(find_nodes.nodes(i)),
                            endpoint,

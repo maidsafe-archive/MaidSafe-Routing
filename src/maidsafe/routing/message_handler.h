@@ -26,7 +26,7 @@
 #include "maidsafe/routing/cache_manager.h"
 #include "maidsafe/routing/timer.h"
 #include "maidsafe/routing/node_id.h"
-#include "maidsafe/routing/error.h"
+// #include "maidsafe/routing/error.h"
 #include "maidsafe/routing/log.h"
 
 

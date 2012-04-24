@@ -61,8 +61,11 @@ TEST(Services, BEH_Connect) {
   RoutingTable RT(keys);
   NodeInfo node;
   rudp::ManagedConnections rudp;
+  rudp::EndpointPair them_end;
+  them_end.local = them.endpoint;
+  them_end.external = them.endpoint;
   // they send us an rpc
-  protobuf::Message message = rpcs::Connect(us.node_id, them.endpoint, them.node_id.String());
+  protobuf::Message message = rpcs::Connect(us.node_id, them_end, them.node_id.String());
   EXPECT_TRUE(message.IsInitialized());
   // we receive it
   service::Connect(RT, rudp, message);
@@ -95,7 +98,7 @@ TEST(Services, BEH_FindNodes) {
   service::FindNodes(RT, message);
   protobuf::FindNodesResponse find_nodes_respose;
   EXPECT_TRUE(find_nodes_respose.ParseFromString(message.data())); 
-//   EXPECT_EQ(find_nodes_respose.nodes().size(), 1);  // will only have us
+  EXPECT_EQ(find_nodes_respose.nodes().size(), 1);  // will only have us
 //  EXPECT_EQ(find_nodes_respose.nodes().Get(1), us.node_id.String());
   EXPECT_TRUE(find_nodes_respose.has_timestamp());
   EXPECT_TRUE(find_nodes_respose.timestamp() > static_cast<int32_t>(GetTimeStamp() - 2));

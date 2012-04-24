@@ -43,16 +43,20 @@ const protobuf::Message Ping(const NodeId &node_id,
 }
 
 const protobuf::Message Connect(const NodeId &node_id,
-                   const boost::asio::ip::udp::endpoint &our_endpoint,
+                   const rudp::EndpointPair &our_endpoint,
                    const std::string &identity) {
   protobuf::Message message;
   protobuf::Contact *contact;
-  protobuf::Endpoint *endpoint;
+  protobuf::Endpoint *public_endpoint;
+  protobuf::Endpoint *private_endpoint;
   protobuf::ConnectRequest protobuf_connect_request;
   contact = protobuf_connect_request.mutable_contact();
-  endpoint = contact->mutable_endpoint();
-  endpoint->set_ip(our_endpoint.address().to_string());
-  endpoint->set_port(our_endpoint.port());
+  public_endpoint = contact->mutable_public_endpoint();
+  public_endpoint->set_ip(our_endpoint.external.address().to_string());
+  public_endpoint->set_port(our_endpoint.external.port());
+  private_endpoint = contact->mutable_private_endpoint();
+  private_endpoint->set_ip(our_endpoint.local.address().to_string());
+  private_endpoint->set_port(our_endpoint.local.port());
   contact->set_node_id(identity);
   protobuf_connect_request.set_timestamp(GetTimeStamp());
   message.set_destination_id(node_id.String());
@@ -84,7 +88,7 @@ const protobuf::Message FindNodes(const NodeId &node_id, boost::asio::ip::udp::e
   message.set_id(0);
   message.set_client_node(false);
   if (!endpoint.address().is_unspecified()) {
-    DLOG(INFO) << "IP Address " << endpoint.address().to_string();
+    DLOG(INFO) << "RPC IP Address " << endpoint.address().to_string();
     protobuf::Endpoint *pbendpoint;
     pbendpoint = message.mutable_relay();
     pbendpoint->set_ip(endpoint.address().to_string().c_str());

@@ -61,17 +61,21 @@ TEST(RPC, BEH_PingMessageNode) {
 
 TEST(RPC, BEH_ConnectMessageInitialised) {
 
-  boost::asio::ip::udp::endpoint our_endpoint;
-  our_endpoint.address().from_string("192.168.1.1");
-  our_endpoint.port(5000);
+  rudp::EndpointPair our_endpoint;
+  our_endpoint.external.address().from_string("192.168.1.1");
+  our_endpoint.external.port(5000);
   ASSERT_TRUE(rpcs::Connect(NodeId(RandomString(64)), our_endpoint, "id").IsInitialized());
 }
 
 TEST(RPC, BEH_ConnectMessageNode) {
   NodeInfo us(MakeNode());
+  rudp::EndpointPair endpoint;
+  endpoint.local = us.endpoint;
+  endpoint.external = us.endpoint;
   std::string destination = RandomString(64);
-  protobuf::Message message = rpcs::Connect(NodeId(destination), us.endpoint, us.node_id.String());
+  protobuf::Message message = rpcs::Connect(NodeId(destination), endpoint, us.node_id.String());
   protobuf::ConnectRequest connect_request;
+  EXPECT_TRUE(message.IsInitialized());
   EXPECT_TRUE(connect_request.ParseFromString(message.data())); // us
   EXPECT_FALSE(connect_request.bootstrap());
   EXPECT_TRUE(connect_request.has_timestamp());

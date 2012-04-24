@@ -148,7 +148,15 @@ void MessageHandler::CloseNodesMessage(protobuf::Message& message) {
 
 void MessageHandler::ProcessMessage(protobuf::Message &message) {
   // client connected messages -> out
-  if (message.source_id() == "ANONYMOUS" ) {  // relay mode
+  if (message.source_id().empty()) {  // relay mode
+    // if zero state we may be closest
+    if(routing_table_.Size() <= Parameters::closest_nodes_size) {
+      if (message.type() == 3) {
+        service::FindNodes(routing_table_, message);
+        SendOn(message, rudp_, routing_table_);
+        return;
+      }
+    }
     message.set_source_id(routing_table_.kKeys().identity);
     SendOn(message, rudp_, routing_table_);
   }

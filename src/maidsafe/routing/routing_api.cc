@@ -74,7 +74,7 @@ Routing::~Routing() {}
 
 int Routing::GetStatus() {
  if (impl_->routing_table_.Size() == 0) {
-    boost::asio::ip::udp::endpoint endpoint;
+    rudp::EndpointPair endpoint;
     if(impl_->rudp_.GetAvailableEndpoint(&endpoint) != rudp::kSuccess) {
       if (impl_->rudp_.GetAvailableEndpoint(&endpoint)
                                           == rudp::kNoneAvailable) 
@@ -187,7 +187,7 @@ void Routing::ValidateThisNode(const std::string &node_id,
     impl_->bootstrap_nodes_.push_back(their_endpoint);
     std::error_code error;
     WriteBootstrapFile(impl_->bootstrap_nodes_,
-                       impl_->bootstrap_file_path_, error);
+                       impl_->bootstrap_file_path_);
   }
 }
 

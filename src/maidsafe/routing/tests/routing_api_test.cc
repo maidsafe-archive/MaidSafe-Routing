@@ -111,9 +111,6 @@ TEST(APITest, BEH_API_ZeroState) {
                        (fs::unique_path(fs::temp_directory_path() / "test2"));
   boost::filesystem::path node3_config
                        (fs::unique_path(fs::temp_directory_path() / "test3"));
-//   EXPECT_NO_THROW({Routing RtAPI(keys1, node1_config, false);});
-//   EXPECT_NO_THROW({Routing RtAPI(keys2, node2_config, false);});
-//   EXPECT_NO_THROW({Routing RtAPI(keys3, node3_config, false);});
   Routing R1(keys1, node1_config, nullptr, false);
   Routing R2(keys2, node2_config, nullptr, false);
   Routing R3(keys3, node3_config, nullptr, false);
@@ -126,7 +123,7 @@ TEST(APITest, BEH_API_ZeroState) {
   auto a2 = std::async(std::launch::async,
                        [&]{return R2.BootStrapFromThisEndpoint(endpoint1, endpoint2);});
 
-std::this_thread::sleep_for(std::chrono::milliseconds(3000));
+  std::this_thread::sleep_for(std::chrono::milliseconds(3000));
   EXPECT_TRUE(a2.get());  // wait for promise !
   EXPECT_TRUE(a1.get());  // wait for promise !
 

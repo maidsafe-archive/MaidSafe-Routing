@@ -12,8 +12,9 @@ message Endpoint {
 
 message Contact {
   required bytes node_id = 1;
-  required Endpoint endpoint = 2;
-  optional bool tcp = 3;
+  required Endpoint private_endpoint = 2;
+  required Endpoint public_endpoint = 3;
+  optional bool tcp = 4;
 }
 
 message ConfigFile {
@@ -24,7 +25,8 @@ message ConfigFile {
 message BootstrapContacts {
   required bytes node_id = 1;
   required bytes public_key = 2;
-  required Endpoint endpoint = 3;
+  required Endpoint public_endpoint = 3;
+  required Endpoint private_endpoint = 4;
 }
 
 // contacts file

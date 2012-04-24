@@ -66,7 +66,6 @@ class error_category_routing : public std::error_category {
 };
 
 
-
 const std::error_category &error_category();
 
 }  // namespace routing
@@ -80,11 +79,11 @@ const std::error_category &error_category();
 namespace std
 {
   template <>
-  struct is_error_code_enum<maidsafe::routing::error::error_codes>
+  struct std::is_error_code_enum<maidsafe::routing::error::error_codes>
     : public true_type {};
 
   template <>
-  struct is_error_condition_enum<maidsafe::routing::error::error_conditions>
+  struct std::is_error_condition_enum<maidsafe::routing::error::error_conditions>
       : public true_type {};
 }
 #ifdef __GNUC__

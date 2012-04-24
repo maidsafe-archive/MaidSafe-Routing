@@ -15,6 +15,7 @@
 #include "maidsafe/routing/node_id.h"
 #include "maidsafe/routing/routing_pb.h"
 #include "maidsafe/routing/routing_table.h"
+#include "maidsafe/rudp/managed_connections.h"
 #include "maidsafe/routing/parameters.h"
 #include "maidsafe/routing/log.h"
 
@@ -68,12 +69,17 @@ void Connect(RoutingTable &routing_table,
              return;  // FIXME
   }
   connect_response.set_answer(false);
-  boost::asio::ip::udp::endpoint our_endpoint;
-  boost::asio::ip::udp::endpoint their_endpoint;
-  their_endpoint.address().from_string(
-                            connect_request.contact().endpoint().ip());
-  their_endpoint.port(connect_request.contact().endpoint().port());
+  rudp::EndpointPair our_endpoint;
+  boost::asio::ip::udp::endpoint their_public_endpoint;
+  boost::asio::ip::udp::endpoint their_private_endpoint;
+  their_public_endpoint.address().from_string(
+                            connect_request.contact().public_endpoint().ip());
+  their_public_endpoint.port(connect_request.contact().public_endpoint().port());
+  their_private_endpoint.address().from_string(
+                            connect_request.contact().private_endpoint().ip());
+  their_private_endpoint.port(connect_request.contact().private_endpoint().port());
   rudp.GetAvailableEndpoint(&our_endpoint);
+  // TODO(dirvine) try both connections
   if (message.client_node()) {
     connect_response.set_answer(true);
     //TODO(dirvine) get the routing pointer back again
@@ -91,11 +97,15 @@ void Connect(RoutingTable &routing_table,
   }
 
   protobuf::Contact *contact;
-  protobuf::Endpoint *endpoint;
-  contact =connect_response.mutable_contact();
-  endpoint = contact->mutable_endpoint();
-  endpoint->set_ip(our_endpoint.address().to_string());
-  endpoint->set_port(our_endpoint.port());
+  protobuf::Endpoint *private_endpoint;
+  protobuf::Endpoint *public_endpoint;
+  contact = connect_response.mutable_contact();
+  private_endpoint = contact->mutable_private_endpoint();
+  private_endpoint->set_ip(our_endpoint.local.address().to_string());
+  private_endpoint->set_port(our_endpoint.local.port());
+  public_endpoint = contact->mutable_public_endpoint();
+  public_endpoint->set_ip(our_endpoint.local.address().to_string());
+  public_endpoint->set_port(our_endpoint.local.port());
   contact->set_node_id(routing_table.kKeys().identity);
   connect_response.set_timestamp(GetTimeStamp());
   connect_response.set_original_request(message.data());
