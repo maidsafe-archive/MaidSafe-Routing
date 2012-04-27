@@ -23,8 +23,7 @@ namespace routing {
 namespace rpcs {
 
 // this is maybe not required and might be removed
-const protobuf::Message Ping(const NodeId &node_id,
-                       const std::string &identity) {
+const protobuf::Message Ping(const NodeId &node_id, const std::string &identity) {
   protobuf::Message message;
   protobuf::PingRequest ping_request;
   ping_request.set_ping(true);
@@ -72,7 +71,7 @@ const protobuf::Message Connect(const NodeId &node_id,
   return message;
 }
 
-const protobuf::Message FindNodes(const NodeId &node_id, boost::asio::ip::udp::endpoint endpoint) {
+const protobuf::Message FindNodes(const NodeId &node_id, Endpoint endpoint) {
   protobuf::Message message;
   protobuf::FindNodesRequest find_nodes;
   find_nodes.set_num_nodes_requested(Parameters::closest_nodes_size);
@@ -95,6 +94,30 @@ const protobuf::Message FindNodes(const NodeId &node_id, boost::asio::ip::udp::e
     pbendpoint->set_port(endpoint.port());
   }
   BOOST_ASSERT_MSG(message.IsInitialized(), "unintialised message");
+  return message;
+}
+
+const protobuf::Message ProxyConnect(const NodeId &node_id, const std::string &identity,
+                                     const Endpoint &endpoint) {
+  BOOST_ASSERT_MSG(node_id.IsValid(), "Invalid node_id");
+  BOOST_ASSERT_MSG(!identity.empty(), "Invalid identity");
+  BOOST_ASSERT_MSG(!endpoint.address().is_unspecified(), "Unspecified endpoint");
+
+  protobuf::Message message;
+  protobuf::ProxyConnectRequest proxy_connect_request;
+  protobuf::Endpoint *endpoint_proto = proxy_connect_request.mutable_endpoint();
+  endpoint_proto->set_ip(endpoint.address().to_string());
+  endpoint_proto->set_port(endpoint.port());
+  message.set_destination_id(node_id.String());
+  message.set_source_id(identity);
+  message.set_data(proxy_connect_request.SerializeAsString());
+  message.set_direct(true);
+  message.set_replication(1);
+  message.set_type(4);
+  message.set_routing_failure(false);
+  message.set_id(0);
+  message.set_client_node(false);
+  BOOST_ASSERT_MSG(message.IsInitialized(), "Unintialised message");
   return message;
 }
 

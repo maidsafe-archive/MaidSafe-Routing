@@ -37,7 +37,10 @@ void Connect(RoutingTable &routing_table,
 void FindNodes(RoutingTable &routing_table,
               protobuf::Message &message);
 
-  
+void ProxyConnect(RoutingTable &routing_table,
+                  rudp::ManagedConnections &rudp,
+                  protobuf::Message &message);
+
 }  // namespace service
   
 }  // namespace routing

@@ -103,6 +103,13 @@ void FindNode(RoutingTable &routing_table,
   }
 }
 
+void ProxyConnect(protobuf::Message& message) {
+  protobuf::PingResponse proxy_connect_response;
+  if (proxy_connect_response.ParseFromString(message.data())) {
+    //  do stuff here
+    }
+}
+
 }  // namespace response 
 
 }  // namespace routing

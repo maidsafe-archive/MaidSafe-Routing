@@ -111,6 +111,15 @@ bool RoutingTable::AmIClosestNode(const NodeId& node_id) {
           (node_id ^ routing_table_nodes_[0].node_id));
 }
 
+bool RoutingTable::AmIConnectedToEndpoint(const Endpoint& endpoint) {
+  std::lock_guard<std::mutex> lock(mutex_);
+  return (std::find_if(routing_table_nodes_.begin(),
+                   routing_table_nodes_.end(),
+                   [endpoint](const NodeInfo &i)->bool
+                   { return i.endpoint == endpoint; })
+                 != routing_table_nodes_.end());
+}
+
 // checks paramters are real
 bool RoutingTable::CheckValidParameters(const NodeInfo& node)const {
   if ((!asymm::ValidateKey(node.public_key, 0))) {

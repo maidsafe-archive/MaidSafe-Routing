@@ -15,9 +15,10 @@
 
 #include <thread>
 #include <mutex>
-#include "maidsafe/routing/routing_pb.h"
-#include "maidsafe/routing/node_id.h"
 
+#include "maidsafe/routing/node_id.h"
+#include "maidsafe/routing/parameters.h"
+#include "maidsafe/routing/routing_pb.h"
 
 
 namespace maidsafe {
@@ -48,6 +49,7 @@ class RoutingTable {
                    NodeInfo *node_info);
   bool IsMyNodeInRange(const NodeId &node_id, const uint16_t range);
   bool AmIClosestNode(const NodeId &node_id);
+  bool AmIConnectedToEndpoint(const Endpoint& endpoint);
   std::vector<NodeId> GetClosestNodes(const NodeId &from,
                                       uint16_t number_to_get);
   NodeInfo GetClosestNode(const NodeId &from, unsigned int node_number);

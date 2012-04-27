@@ -53,9 +53,8 @@ void Ping(RoutingTable &routing_table,
   BOOST_ASSERT_MSG(message.IsInitialized(), "unintialised message");
 }
 
-void Connect(RoutingTable &routing_table,
-                      rudp::ManagedConnections &rudp,
-                      protobuf::Message &message) {
+void Connect(RoutingTable &routing_table, rudp::ManagedConnections &rudp,
+             protobuf::Message &message) {
   if (message.destination_id() != routing_table.kKeys().identity)
     return;  // not for us and we should not pass it on.
   protobuf::ConnectRequest connect_request;
@@ -121,8 +120,7 @@ void Connect(RoutingTable &routing_table,
   BOOST_ASSERT_MSG(message.IsInitialized(), "unintialised message");
 }
 
-void FindNodes(RoutingTable &routing_table,
-                        protobuf::Message &message) {
+void FindNodes(RoutingTable &routing_table, protobuf::Message &message) {
   protobuf::FindNodesRequest find_nodes;
   protobuf::FindNodesResponse found_nodes;
   std::vector<NodeId>
@@ -142,6 +140,41 @@ void FindNodes(RoutingTable &routing_table,
   message.set_direct(true);
   message.set_replication(1);
   message.set_type(-3);
+  BOOST_ASSERT_MSG(message.IsInitialized(), "unintialised message");
+}
+
+void ProxyConnect(RoutingTable &routing_table, rudp::ManagedConnections &rudp,
+                  protobuf::Message &message) {
+  if (message.destination_id() != routing_table.kKeys().identity){
+    DLOG(ERROR) << "Message not for us";
+    return;  // not for us and we should not pass it on.
+  }
+  protobuf::ProxyConnectResponse proxy_connect_response;
+  protobuf::ProxyConnectRequest proxy_connect_request;
+
+  if (!proxy_connect_request.ParseFromString(message.data())) {
+    DLOG(ERROR) << "No Data";
+    return;
+  }
+
+  //TODO(Prakash) any validation needed?
+
+  Endpoint endpoint(boost::asio::ip::address::from_string(proxy_connect_request.endpoint().ip()),
+                    static_cast<uint16_t> (proxy_connect_request.endpoint().port()));
+  if (routing_table.AmIConnectedToEndpoint(endpoint)) { // If endpoint already in routing table
+    proxy_connect_response.set_result(protobuf::kAlreadyConnected);
+  } else {
+    bool connect_result;
+    //TODO(Prakash) connect_result = rudp.TryConnect(endpoint);
+    if (connect_result)
+      proxy_connect_response.set_result(protobuf::kSuccess);
+    else
+      proxy_connect_response.set_result(protobuf::kFailure);
+  }
+  message.set_type(-4);
+  message.set_data(proxy_connect_response.SerializeAsString());
+  message.set_destination_id(message.source_id());
+  message.set_source_id(routing_table.kKeys().identity);
   BOOST_ASSERT_MSG(message.IsInitialized(), "unintialised message");
 }
 

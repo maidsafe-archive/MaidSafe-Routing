@@ -34,6 +34,7 @@ void Connect(protobuf::Message &message, NodeValidationFunctor node_validation_f
 void FindNode(RoutingTable &routing_table,
                              rudp::ManagedConnections &rudp,
                              const protobuf::Message &message);
+void ProxyConnect(protobuf::Message& message);
 
 }  // namespace response
 

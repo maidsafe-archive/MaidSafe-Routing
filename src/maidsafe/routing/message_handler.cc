@@ -93,6 +93,12 @@ void MessageHandler::RoutingMessage(protobuf::Message& message) {
     case 3 :
       service::FindNodes(routing_table_, message);
       break;
+    case -4 :   // proxy_connect
+      response::ProxyConnect(message);
+      break;
+    case 4 :
+      service::ProxyConnect(routing_table_, rudp_, message);
+      break;
     default: // unknown (silent drop)
       return;
   }
