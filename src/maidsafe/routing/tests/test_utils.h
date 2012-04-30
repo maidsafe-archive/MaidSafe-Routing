@@ -14,14 +14,21 @@
 
 #ifndef MAIDSAFE_TEST_UTILS_H_
 #define MAIDSAFE_TEST_UTILS_H_
+
 namespace maidsafe {
+
 namespace routing {
+
 namespace test {
+
+uint16_t GetRandomPort();
 
 NodeInfo MakeNode();
 
 }  // namespace test
+
 }  // namespace routing
+
 }  // namespace maidsafe
 
 

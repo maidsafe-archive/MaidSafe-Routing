@@ -24,6 +24,8 @@ namespace rpcs {
 
 // this is maybe not required and might be removed
 const protobuf::Message Ping(const NodeId &node_id, const std::string &identity) {
+  BOOST_ASSERT_MSG(node_id.IsValid(), "Invalid node_id");
+  BOOST_ASSERT_MSG(!identity.empty(), "Invalid identity");
   protobuf::Message message;
   protobuf::PingRequest ping_request;
   ping_request.set_ping(true);
@@ -37,13 +39,17 @@ const protobuf::Message Ping(const NodeId &node_id, const std::string &identity)
   message.set_routing_failure(false);
   message.set_id(0);
   message.set_client_node(false);
-  BOOST_ASSERT_MSG(message.IsInitialized(), "unintialised message");
+  BOOST_ASSERT_MSG(message.IsInitialized(), "Unintialised message");
   return message;
 }
 
 const protobuf::Message Connect(const NodeId &node_id,
                    const rudp::EndpointPair &our_endpoint,
                    const std::string &identity) {
+  BOOST_ASSERT_MSG(node_id.IsValid(), "Invalid node_id");
+  BOOST_ASSERT_MSG(!identity.empty(), "Invalid identity");
+  BOOST_ASSERT_MSG(!our_endpoint.external.address().is_unspecified(), "Unspecified endpoint");
+  BOOST_ASSERT_MSG(!our_endpoint.local.address().is_unspecified(), "Unspecified endpoint");
   protobuf::Message message;
   protobuf::Contact *contact;
   protobuf::Endpoint *public_endpoint;
@@ -67,11 +73,12 @@ const protobuf::Message Connect(const NodeId &node_id,
   message.set_routing_failure(false);
   message.set_id(0);
   message.set_client_node(false);
-  BOOST_ASSERT_MSG(message.IsInitialized(), "unintialised message");
+  BOOST_ASSERT_MSG(message.IsInitialized(), "Unintialised message");
   return message;
 }
 
 const protobuf::Message FindNodes(const NodeId &node_id, Endpoint endpoint) {
+  BOOST_ASSERT_MSG(node_id.IsValid(), "Invalid node_id");
   protobuf::Message message;
   protobuf::FindNodesRequest find_nodes;
   find_nodes.set_num_nodes_requested(Parameters::closest_nodes_size);
@@ -93,7 +100,7 @@ const protobuf::Message FindNodes(const NodeId &node_id, Endpoint endpoint) {
     pbendpoint->set_ip(endpoint.address().to_string().c_str());
     pbendpoint->set_port(endpoint.port());
   }
-  BOOST_ASSERT_MSG(message.IsInitialized(), "unintialised message");
+  BOOST_ASSERT_MSG(message.IsInitialized(), "Unintialised message");
   return message;
 }
 
@@ -121,7 +128,7 @@ const protobuf::Message ProxyConnect(const NodeId &node_id, const std::string &i
   return message;
 }
 
-} // namespace rpcs
+}  // namespace rpcs
 
 }  // namespace routing
 

@@ -13,6 +13,8 @@
 #ifndef MAIDSAFE_ROUTING_RPCS_H_
 #define MAIDSAFE_ROUTING_RPCS_H_
 
+#include <string>
+
 #include "maidsafe/routing/node_id.h"
 #include "maidsafe/routing/parameters.h"
 #include "maidsafe/routing/routing_pb.h"
@@ -32,7 +34,7 @@ const protobuf::Message FindNodes(const NodeId &node_id, Endpoint local_endpoint
 
 const protobuf::Message ProxyConnect(const NodeId &node_id, const std::string &identity,
                                      const Endpoint &endpoint);
-} // namespace rpcs
+}  // namespace rpcs
 
 }  // namespace routing
 

@@ -42,7 +42,8 @@ std::vector<boost::asio::ip::udp::endpoint>
   bootstrap_nodes.resize(protobuf_bootstrap.bootstrap_contacts().size());
   boost::asio::ip::udp::endpoint endpoint;
   for (int i = 0; i < protobuf_bootstrap.bootstrap_contacts().size(); ++i) {
-    endpoint.address().from_string(protobuf_bootstrap.bootstrap_contacts(i).ip());
+    endpoint.address(
+        boost::asio::ip::address::from_string(protobuf_bootstrap.bootstrap_contacts(i).ip()));
     endpoint.port(protobuf_bootstrap.bootstrap_contacts(i).port());
     bootstrap_nodes[i] = endpoint;
   }

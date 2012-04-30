@@ -21,7 +21,7 @@
 namespace maidsafe {
 
 namespace routing {
-  
+
 namespace protobuf { class Message; }
 
 namespace service {
@@ -42,7 +42,7 @@ void ProxyConnect(RoutingTable &routing_table,
                   protobuf::Message &message);
 
 }  // namespace service
-  
+
 }  // namespace routing
 
 }  // namespace maidsafe

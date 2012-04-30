@@ -10,9 +10,12 @@
  *  the explicit written permission of the board of directors of maidsafe.net. *
  ******************************************************************************/
 
+#include <chrono>
 #include <memory>
 #include <vector>
-#include <chrono>
+
+#include "boost/asio/ip/address.hpp"
+
 #include "maidsafe/common/test.h"
 #include "maidsafe/common/utils.h"
 #include "maidsafe/rudp/managed_connections.h"
@@ -39,11 +42,10 @@ TEST(RPC, BEH_PingMessageNode) {
   keys.identity = RandomString(64);
   RoutingTable RT(keys);
   NodeInfo node;
-  rudp::ManagedConnections rudp;
   std::string destination = RandomString(64);
   protobuf::Message message = rpcs::Ping(NodeId(destination), keys.identity);
   protobuf::PingRequest ping_request;
-  EXPECT_TRUE(ping_request.ParseFromString(message.data())); // us
+  EXPECT_TRUE(ping_request.ParseFromString(message.data()));  // us
   EXPECT_TRUE(ping_request.ping());
   EXPECT_TRUE(ping_request.has_timestamp());
   EXPECT_TRUE(ping_request.timestamp() > static_cast<int32_t>(GetTimeStamp() - 2));
@@ -60,10 +62,9 @@ TEST(RPC, BEH_PingMessageNode) {
 }
 
 TEST(RPC, BEH_ConnectMessageInitialised) {
-
   rudp::EndpointPair our_endpoint;
-  our_endpoint.external.address().from_string("192.168.1.1");
-  our_endpoint.external.port(5000);
+  our_endpoint.local = Endpoint(boost::asio::ip::address_v4::loopback(), GetRandomPort());
+  our_endpoint.external = Endpoint(boost::asio::ip::address_v4::loopback(), GetRandomPort());
   ASSERT_TRUE(rpcs::Connect(NodeId(RandomString(64)), our_endpoint, "id").IsInitialized());
 }
 
@@ -76,7 +77,7 @@ TEST(RPC, BEH_ConnectMessageNode) {
   protobuf::Message message = rpcs::Connect(NodeId(destination), endpoint, us.node_id.String());
   protobuf::ConnectRequest connect_request;
   EXPECT_TRUE(message.IsInitialized());
-  EXPECT_TRUE(connect_request.ParseFromString(message.data())); // us
+  EXPECT_TRUE(connect_request.ParseFromString(message.data()));  // us
   EXPECT_FALSE(connect_request.bootstrap());
   EXPECT_TRUE(connect_request.has_timestamp());
   EXPECT_TRUE(connect_request.timestamp() > static_cast<int32_t>(GetTimeStamp() - 2));
@@ -95,12 +96,13 @@ TEST(RPC, BEH_ConnectMessageNode) {
 TEST(RPC, BEH_FindNodesMessageInitialised) {
   ASSERT_TRUE(rpcs::FindNodes(NodeId(RandomString(64))).IsInitialized());
 }
+
 TEST(RPC, BEH_FindNodesMessageNode) {
   NodeInfo us(MakeNode());
   std::string destination = RandomString(64);
   protobuf::Message message = rpcs::FindNodes(us.node_id, us.endpoint);
   protobuf::FindNodesRequest find_nodes_request;
-  EXPECT_TRUE(find_nodes_request.ParseFromString(message.data())); // us
+  EXPECT_TRUE(find_nodes_request.ParseFromString(message.data()));  // us
   EXPECT_TRUE(find_nodes_request.num_nodes_requested() == Parameters::closest_nodes_size);
   EXPECT_EQ(find_nodes_request.target_node(), us.node_id.String());
   EXPECT_TRUE(find_nodes_request.has_timestamp());
@@ -114,14 +116,43 @@ TEST(RPC, BEH_FindNodesMessageNode) {
   EXPECT_FALSE(message.routing_failure());
   EXPECT_EQ(message.id(), 0);
   EXPECT_FALSE(message.client_node());
+  EXPECT_TRUE(message.has_relay());
+}
+
+TEST(RPC, BEH_ProxyConnectMessageInitialised) {
+  std::string destination = RandomString(64);
+  Endpoint endpoint(boost::asio::ip::address_v4::loopback(), GetRandomPort());
+  ASSERT_TRUE(rpcs::ProxyConnect(NodeId(destination), "me", endpoint).IsInitialized());
+}
+
+TEST(RPC, BEH_ProxyConnectMessageNode) {
+  asymm::Keys keys;
+  keys.identity = RandomString(64);
+  RoutingTable RT(keys);
+  NodeInfo node;
+  std::string destination = RandomString(64);
+  Endpoint endpoint(boost::asio::ip::address_v4::loopback(), GetRandomPort());
+  protobuf::Message message = rpcs::ProxyConnect(NodeId(destination), keys.identity, endpoint);
+  protobuf::ProxyConnectRequest proxy_connect_request;
+  EXPECT_TRUE(proxy_connect_request.ParseFromString(message.data()));  // us
+  protobuf::Endpoint endpoint_proto;
+  endpoint_proto.set_ip(endpoint.address().to_string());
+  endpoint_proto.set_port(endpoint.port());
+  EXPECT_EQ(endpoint_proto.ip(), proxy_connect_request.endpoint().ip());
+  EXPECT_EQ(endpoint_proto.port(), proxy_connect_request.endpoint().port());
+  EXPECT_EQ(destination, message.destination_id());
+  EXPECT_EQ(keys.identity, message.source_id());
+  EXPECT_FALSE(message.data().empty());
+  EXPECT_EQ(1, message.replication());
+  EXPECT_EQ(4, message.type());
+  EXPECT_FALSE(message.routing_failure());
+  EXPECT_EQ(0, message.id());
+  EXPECT_FALSE(message.client_node());
   EXPECT_FALSE(message.has_relay());
 }
 
-
-
-
-
-
 }  // namespace test
+
 }  // namespace routing
+
 }  // namespace maidsafe

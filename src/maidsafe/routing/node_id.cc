@@ -198,7 +198,7 @@ bool NodeId::IsValid() const {
 bool NodeId::operator()(const NodeId& lhs, const NodeId& rhs) const {
   return lhs.raw_id_ < rhs.raw_id_;
 }
- 
+
 bool NodeId::operator == (const NodeId &rhs) const {
   return raw_id_ == rhs.raw_id_;
 }
@@ -225,7 +225,7 @@ bool NodeId::operator >= (const NodeId &rhs) const {
 
 NodeId& NodeId::operator= (const NodeId &rhs) {
   if (this == &rhs)
-    return *this; // handle self assignment
+    return *this;  // handle self assignment
   this->raw_id_ = rhs.raw_id_;
   return *this;
 }

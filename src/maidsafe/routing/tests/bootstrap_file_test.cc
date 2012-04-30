@@ -27,7 +27,7 @@ namespace test {
 TEST(BootStrapFileTest1, BEH_ReadValidFile) {
   std::vector<boost::asio::ip::udp::endpoint>vec;
   boost::asio::ip::udp::endpoint endpoint;
-  endpoint.address().from_string("192.168.1.1");
+  endpoint.address(boost::asio::ip::address::from_string("192.168.1.1"));
   endpoint.port(5000);
   vec.push_back(endpoint);
   boost::filesystem::path good_file

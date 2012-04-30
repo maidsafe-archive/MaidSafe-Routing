@@ -39,7 +39,7 @@ NodeInfo MakeNodeInfo() {
   asymm::Keys keys;
   asymm::GenerateKeyPair(&keys);
   node.public_key = keys.public_key;
-  node.endpoint.address().from_string("192.168.1.1");
+  node.endpoint.address(boost::asio::ip::address::from_string("192.168.1.1"));
   node.endpoint.port(++test_routing_api_node_port);
   return node;
 }
