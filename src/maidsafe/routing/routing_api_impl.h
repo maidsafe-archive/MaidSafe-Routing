@@ -10,10 +10,18 @@
  *  the explicit written permission of the board of directors of maidsafe.net. *
  ******************************************************************************/
 
-#include "maidsafe/routing/routing_api.h"
-#include "maidsafe/routing/routing_table.h"
+#ifndef MAIDSAFE_ROUTING_ROUTING_API_IMPL_H_
+#define MAIDSAFE_ROUTING_ROUTING_API_IMPL_H_
+
+#include <map>
+#include <string>
+#include <utility>
+#include <vector>
+
 #include "maidsafe/routing/message_handler.h"
 #include "maidsafe/routing/parameters.h"
+#include "maidsafe/routing/routing_api.h"
+#include "maidsafe/routing/routing_table.h"
 #include "maidsafe/routing/timer.h"
 
 namespace maidsafe {
@@ -23,6 +31,7 @@ namespace routing {
 struct RoutingPrivate {
  public:
   ~RoutingPrivate();
+
  private:
   RoutingPrivate(const RoutingPrivate&);  // no copy
   RoutingPrivate(const RoutingPrivate&&);  // no move
@@ -57,7 +66,8 @@ struct RoutingPrivate {
   bool client_mode_;
 };
 
-
 }  // namespace routing
 
 }  // namespace maidsafe
+
+#endif  // MAIDSAFE_ROUTING_ROUTING_API_IMPL_H_

@@ -49,8 +49,8 @@ TEST(RoutingTableTest, FUNC_AddCloseNodes) {
   EXPECT_EQ(RT.Size(), 0);
 
   // everything should be set to go now
-  // TODO should we also test for valid enpoints ??
-  // TODO we should fail when public keys are the same
+  // TODO(dirvine): should we also test for valid enpoints ??
+  // TODO(dirvine): we should fail when public keys are the same
   for (int i = 0; i < Parameters::closest_nodes_size ; ++i) {
      node = MakeNode();
      node.endpoint.port(1501 + i);  // has to be unique

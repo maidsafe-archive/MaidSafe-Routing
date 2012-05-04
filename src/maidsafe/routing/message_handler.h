@@ -13,29 +13,26 @@
 #ifndef MAIDSAFE_ROUTING_MESSAGE_HANDLER_H_
 #define MAIDSAFE_ROUTING_MESSAGE_HANDLER_H_
 
-#include "boost/thread/shared_mutex.hpp"
-#include "boost/thread/mutex.hpp"
-#include "maidsafe/common/rsa.h"
-#include "maidsafe/rudp/managed_connections.h"
-#include "maidsafe/routing/routing_pb.h"
-#include "maidsafe/routing/routing_table.h"
-#include "maidsafe/routing/routing_api.h"
-#include "maidsafe/routing/service.h"
-#include "maidsafe/routing/rpcs.h"
-#include "maidsafe/routing/response_handler.h"
-#include "maidsafe/routing/cache_manager.h"
-#include "maidsafe/routing/timer.h"
-#include "maidsafe/routing/node_id.h"
-// #include "maidsafe/routing/error.h"
-#include "maidsafe/routing/log.h"
+#include <string>
 
+#include "maidsafe/rudp/managed_connections.h"
+#include "maidsafe/routing/cache_manager.h"
+#include "maidsafe/routing/routing_api.h"
 
 namespace maidsafe {
 
 namespace routing {
 
+class RoutingTable;
+class Timer;
+class CacheManager;
+
+namespace protobuf {
+class Message;
+}  // namespace protobuf
+
 class MessageHandler {
-public:
+ public:
   MessageHandler(RoutingTable &routing_table,
                  rudp::ManagedConnections &rudp,
                  Timer &timer_ptr,
@@ -48,7 +45,8 @@ public:
   bool CheckAndSendToLocalClients(protobuf::Message &message);
   void Send(protobuf::Message &message);
   boost::signals2::signal<void(int, std::string)> &MessageReceivedSignal();
-private:
+
+ private:
   MessageHandler(const MessageHandler&);  // no copy
   MessageHandler(const MessageHandler&&);  // no move
   MessageHandler& operator=(const MessageHandler&);  // no assign
@@ -64,5 +62,4 @@ private:
 
 }  // namespace maidsafe
 
-
-#endif // MAIDSAFE_ROUTING_MESSAGE_HANDLER_H_
+#endif  // MAIDSAFE_ROUTING_MESSAGE_HANDLER_H_

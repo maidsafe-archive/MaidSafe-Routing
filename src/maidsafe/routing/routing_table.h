@@ -13,13 +13,13 @@
 #ifndef MAIDSAFE_ROUTING_ROUTING_TABLE_H_
 #define MAIDSAFE_ROUTING_ROUTING_TABLE_H_
 
-#include <thread>
 #include <mutex>
+#include <string>
+#include <vector>
 
 #include "maidsafe/routing/node_id.h"
 #include "maidsafe/routing/parameters.h"
 #include "maidsafe/routing/routing_pb.h"
-
 
 namespace maidsafe {
 
@@ -57,6 +57,7 @@ class RoutingTable {
   asymm::Keys kKeys() const;
   boost::signals2::signal<void(std::string, std::string)>
                                            &CloseNodeReplacedOldNewSignal();
+
  private:
   RoutingTable(const RoutingTable&);
   RoutingTable& operator=(const RoutingTable&);
@@ -74,8 +75,7 @@ class RoutingTable {
   const NodeId kNodeId_;
   std::vector<NodeInfo> routing_table_nodes_;
   std::mutex mutex_;
-  boost::signals2::signal<void(std::string, std::string)>
-                                                    close_node_from_to_signal_;
+  boost::signals2::signal<void(std::string, std::string)> close_node_from_to_signal_;
 };
 
 }  // namespace routing

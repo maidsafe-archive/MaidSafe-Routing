@@ -13,26 +13,24 @@
 #ifndef MAIDSAFE_ROUTING_BOOTSTRAP_FILE_HANDLER_H_
 #define MAIDSAFE_ROUTING_BOOTSTRAP_FILE_HANDLER_H_
 
-#include "boost/thread/shared_mutex.hpp"
-#include "boost/thread/mutex.hpp"
-#include "maidsafe/common/rsa.h"
-#include "maidsafe/rudp/managed_connections.h"
-#include "maidsafe/routing/routing_pb.h"
-#include "maidsafe/routing/node_id.h"
-// #include "maidsafe/routing/error.h"
-#include "maidsafe/routing/log.h"
+#include <vector>
+
+#include "boost/filesystem/path.hpp"
+
+#include "maidsafe/routing/parameters.h"
+
+namespace fs = boost::filesystem;
 
 namespace maidsafe {
 
 namespace routing {
-namespace fs = boost::filesystem;
 
-std::vector<boost::asio::ip::udp::endpoint> ReadBootstrapFile(const fs::path &path);
-bool WriteBootstrapFile(const std::vector<boost::asio::ip::udp::endpoint> &endpoints,
-                        const fs::path & path);
+std::vector<Endpoint> ReadBootstrapFile(const fs::path &path);
+
+bool WriteBootstrapFile(const std::vector<Endpoint> &endpoints, const fs::path & path);
 
 }  // namespace routing
 
 }  // namespace maidsafe
 
-#endif // MAIDSAFE_ROUTING_BOOTSTRAP_FILE_HANDLER_H_
+#endif  // MAIDSAFE_ROUTING_BOOTSTRAP_FILE_HANDLER_H_

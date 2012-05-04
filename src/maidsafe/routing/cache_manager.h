@@ -13,13 +13,13 @@
 #ifndef MAIDSAFE_ROUTING_CACHE_MANAGER_H_
 #define MAIDSAFE_ROUTING_CACHE_MANAGER_H_
 
-#include "boost/thread/shared_mutex.hpp"
+#include <string>
+#include <utility>
+#include <vector>
+
 #include "boost/thread/mutex.hpp"
-#include "maidsafe/common/rsa.h"
-#include "maidsafe/rudp/managed_connections.h"
+
 #include "maidsafe/routing/routing_pb.h"
-#include "maidsafe/routing/routing_table.h"
-#include "maidsafe/routing/node_id.h"
 #include "maidsafe/routing/log.h"
 
 
@@ -44,4 +44,4 @@ class CacheManager {
 
 }  // namespace maidsafe
 
-#endif // MAIDSAFE_ROUTING_CACHE_MANAGER_H_
+#endif  // MAIDSAFE_ROUTING_CACHE_MANAGER_H_

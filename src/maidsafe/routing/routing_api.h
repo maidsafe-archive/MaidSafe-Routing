@@ -28,19 +28,17 @@
 #ifndef MAIDSAFE_ROUTING_ROUTING_API_H_
 #define MAIDSAFE_ROUTING_ROUTING_API_H_
 
-#include <cstdint>
 #include <functional>
 #include <memory>
 #include <string>
-#include <utility>  // for pair
-#include <map>
-#include <vector>
-#include <system_error>
-#include "boost/signals2/signal.hpp"
+
+#include "boost/asio.hpp"
 #include "boost/filesystem/path.hpp"
+#include "boost/signals2/signal.hpp"
+
 #include "maidsafe/common/rsa.h"
 #include "maidsafe/rudp/managed_connections.h"
-#include "boost/asio.hpp"
+
 #include "maidsafe/routing/version.h"
 
 #if MAIDSAFE_ROUTING_VERSION != 100
@@ -68,19 +66,17 @@ enum SendErrors {
 * ensure functors are deleted when the system timeout is reached.           *
 ****************************************************************************/
 typedef std::function<void(int /*message type*/,
-                           std::string /*message*/ )> MessageReceivedFunctor;
+                           std::string /*message*/)> MessageReceivedFunctor;
 // check and get public key and run ValidateThisNode method.
 typedef std::function<void(const std::string& /*node Id*/ ,
                            const rudp::EndpointPair& /*their Node endpoint */,
                            const bool /*client ? */,
-                           const rudp::EndpointPair& /*our Node endpoint */)>
-                                                 NodeValidationFunctor;
+                           const rudp::EndpointPair& /*our Node endpoint */)> NodeValidationFunctor;
 typedef std::function<void(const std::string& /*node Id*/ ,
                            const asymm::PublicKey &public_key,
                            const rudp::EndpointPair& /*their Node endpoint */,
                            const rudp::EndpointPair& /*our Node endpoint */,
-                           const bool /*client ? */
-                          )> NodeValidatedFunctor;
+                           const bool /*client ? */)> NodeValidatedFunctor;
 
 /***************************************************************************
 *  WARNING THIS CONSTRUCTOR WILL THROW A BOOST::FILESYSTEM_ERROR           *
@@ -88,12 +84,12 @@ typedef std::function<void(const std::string& /*node Id*/ ,
 * *************************************************************************/
 class Routing {
  public:
-   // set keys.identity to ANONYMOUS for temporary anonymous connection.
+  // set keys.identity to ANONYMOUS for temporary anonymous connection.
   Routing(const asymm::Keys &keys,
           const boost::filesystem::path &full_path_and_name,
           NodeValidationFunctor node_validation_functor,
           bool client_mode);
-   ~Routing();
+  ~Routing();
   /**************************************************************************
   * returns current network status as int (> 0 is connected)                *
   ***************************************************************************/
@@ -113,13 +109,12 @@ class Routing {
   * clients with your address (except you). Pass an empty response_functor  *
   * to indicate you do not care about a response.                           *
   ***************************************************************************/
-  int Send(const std::string destination_id,  //id of final destination
+  int Send(const std::string destination_id,  // id of final destination
            const std::string data,  // message content (serialised data)
            const uint16_t type,  // user defined message type
            const MessageReceivedFunctor response_functor,
            const uint16_t timeout_seconds,
-           const bool direct  // is this to a close node group or direct
-           );
+           const bool direct);  // is this to a close node group or direct
   /**************************************************************************
   * This signal is fired on any message received that is NOT a reply to a   *
   * request made by the Send method.                                        *
@@ -136,13 +131,14 @@ class Routing {
   * Keys further than the furthest node can safely be deleted (if any)      *
   ***************************************************************************/
   boost::signals2::signal<void(std::string /*new node*/,
-                               std::string /*current furthest node*/ )>
+                               std::string /*current furthest node*/)>
                                            &CloseNodeReplacedOldNewSignal();
-  boost::signals2::signal<void(const std::string& /*node Id*/ ,
+  boost::signals2::signal<void(const std::string& /*node Id*/,
                            const boost::asio::ip::udp::endpoint& /*their Node */,
                            const bool /*client ? */,
                            const boost::asio::ip::udp::endpoint& /*our Node */,
-                           NodeValidatedFunctor & )> &NodeValidationSignal();
+                           NodeValidatedFunctor &)> &NodeValidationSignal();
+
  private:
   Routing(const Routing&);
   Routing(const Routing&&);

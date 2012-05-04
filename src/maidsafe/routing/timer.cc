@@ -22,10 +22,10 @@ namespace maidsafe {
 
 namespace routing {
 
-maidsafe::routing::Timer::Timer(AsioService &io_service) :
-   io_service_(io_service),
-  task_id_(RandomUint32()),
-  queue_() {}
+maidsafe::routing::Timer::Timer(AsioService &io_service)
+    : io_service_(io_service),
+      task_id_(RandomUint32()),
+      queue_() {}
 // below comment would require an overload or default here to
 // put in another task with the same task_id
 TaskId Timer::AddTask(uint32_t timeout,
@@ -45,15 +45,15 @@ void Timer::KillTask(TaskId task_id) {
   const auto it = queue_.find(task_id);
   if (it != queue_.end()) {
     // message timed out or task killed
-     (*it).second.second(ReturnCode::kTimedOut, "");
+    (*it).second.second(ReturnCode::kTimedOut, "");
     queue_.erase(it);
-  }else {
+  } else {
     DLOG(ERROR) << "Attempt to kill an expired or non existent task";
   }
 }
 
 void Timer::ExecuteTaskNow(protobuf::Message &message) {
-    const auto it = queue_.find(message.id());
+  const auto it = queue_.find(message.id());
   if (it != queue_.end()) {
     // message all OK in routing
     (*it).second.second(ReturnCode::kSuccess, message.data());
@@ -63,7 +63,6 @@ void Timer::ExecuteTaskNow(protobuf::Message &message) {
     DLOG(ERROR) << "Attempt to run an expired or non existent task";
   }
 }
-
 
 }  // namespace maidsafe
 

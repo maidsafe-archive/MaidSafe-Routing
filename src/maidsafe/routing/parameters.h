@@ -46,4 +46,4 @@ struct Parameters {
 
 }  // namespace maidsafe
 
-#endif // MAIDSAFE_ROUTING_PARAMETERS_H_
+#endif  // MAIDSAFE_ROUTING_PARAMETERS_H_

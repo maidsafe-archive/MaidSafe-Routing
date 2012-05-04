@@ -30,4 +30,4 @@ void SendOn(protobuf::Message message,
 
 }  // namespace maidsafe
 
-#endif // MAIDSAFE_ROUTING_UTILS_H_
+#endif  // MAIDSAFE_ROUTING_UTILS_H_

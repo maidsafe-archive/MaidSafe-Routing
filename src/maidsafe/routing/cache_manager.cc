@@ -11,11 +11,11 @@
  ******************************************************************************/
 
 #include "maidsafe/routing/cache_manager.h"
-#include "maidsafe/routing/parameters.h"
-#include "maidsafe/routing/utils.h"
-#include "maidsafe/routing/routing_pb.h"
-#include "maidsafe/routing/routing_table.h"
+
 #include "maidsafe/common/crypto.h"
+
+#include "maidsafe/routing/parameters.h"
+#include "maidsafe/routing/routing_pb.h"
 
 namespace maidsafe {
 
