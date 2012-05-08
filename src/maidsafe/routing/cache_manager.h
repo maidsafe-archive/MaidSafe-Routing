@@ -19,13 +19,13 @@
 
 #include "boost/thread/mutex.hpp"
 
-#include "maidsafe/routing/routing_pb.h"
 #include "maidsafe/routing/log.h"
-
 
 namespace maidsafe {
 
 namespace routing {
+
+namespace protobuf { class Message;}  // namespace protobuf
 
 class CacheManager {
  public:

@@ -10,11 +10,14 @@
  *  the explicit written permission of the board of directors of maidsafe.net. *
  ******************************************************************************/
 
+#include "maidsafe/routing/rpcs.h"
+
 #include "maidsafe/common/utils.h"
+#include "maidsafe/rudp/managed_connections.h"
+
+#include "maidsafe/routing/log.h"
 #include "maidsafe/routing/node_id.h"
 #include "maidsafe/routing/routing_pb.h"
-#include "maidsafe/routing/parameters.h"
-#include "maidsafe/routing/log.h"
 
 namespace maidsafe {
 
@@ -43,9 +46,8 @@ const protobuf::Message Ping(const NodeId &node_id, const std::string &identity)
   return message;
 }
 
-const protobuf::Message Connect(const NodeId &node_id,
-                   const rudp::EndpointPair &our_endpoint,
-                   const std::string &identity) {
+const protobuf::Message Connect(const NodeId &node_id, const rudp::EndpointPair &our_endpoint,
+                                const std::string &identity) {
   BOOST_ASSERT_MSG(node_id.IsValid(), "Invalid node_id");
   BOOST_ASSERT_MSG(!identity.empty(), "Invalid identity");
   BOOST_ASSERT_MSG(!our_endpoint.external.address().is_unspecified(), "Unspecified endpoint");

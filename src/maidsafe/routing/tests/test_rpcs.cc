@@ -21,6 +21,7 @@
 #include "maidsafe/rudp/managed_connections.h"
 #include "maidsafe/routing/parameters.h"
 #include "maidsafe/routing/rpcs.h"
+#include "maidsafe/routing/routing_pb.h"
 #include "maidsafe/routing/routing_table.h"
 #include "maidsafe/routing/tests/test_utils.h"
 #include "maidsafe/routing/log.h"

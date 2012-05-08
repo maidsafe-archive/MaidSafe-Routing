@@ -16,14 +16,13 @@
 #include <cstdint>
 #include <string>
 #include <vector>
-#include "boost/serialization/nvp.hpp"
-#include "maidsafe/common/platform_config.h"
-#include "maidsafe/routing/routing_api.h"
 
+#include "maidsafe/common/platform_config.h"
 
 namespace maidsafe {
 
 namespace routing {
+
 extern const uint16_t kKeySizeBytes;
 extern const uint16_t kKeySizeBits;
 extern const std::string kZeroId;

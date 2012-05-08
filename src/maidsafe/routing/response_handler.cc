@@ -10,20 +10,22 @@
  *  the explicit written permission of the board of directors of maidsafe.net. *
  ******************************************************************************/
 
+#include "maidsafe/routing/response_handler.h"
+
 #include "boost/thread/shared_mutex.hpp"
 #include "boost/thread/mutex.hpp"
+
 #include "maidsafe/common/rsa.h"
 #include "maidsafe/rudp/managed_connections.h"
-#include "maidsafe/routing/response_handler.h"
-#include "maidsafe/routing/routing_pb.h"
-#include "maidsafe/routing/routing_table.h"
-#include "maidsafe/routing/routing_api.h"
+
+#include "maidsafe/routing/log.h"
 #include "maidsafe/routing/node_id.h"
 #include "maidsafe/routing/return_codes.h"
+#include "maidsafe/routing/routing_api.h"
+#include "maidsafe/routing/routing_pb.h"
+#include "maidsafe/routing/routing_table.h"
 #include "maidsafe/routing/rpcs.h"
 #include "maidsafe/routing/utils.h"
-#include "maidsafe/routing/log.h"
-
 
 namespace maidsafe {
 
@@ -41,8 +43,7 @@ void Ping(protobuf::Message& message) {
 }
 
 // the other node agreed to connect - he has accepted our connection
-void Connect(protobuf::Message& message,
-             NodeValidationFunctor node_validation_functor) {
+void Connect(protobuf::Message& message, NodeValidationFunctor node_validation_functor) {
   protobuf::ConnectResponse connect_response;
   protobuf::ConnectRequest connect_request;
   if (!connect_response.ParseFromString(message.data())) {

@@ -17,6 +17,7 @@
 #include <string>
 
 #include "maidsafe/common/platform_config.h"
+
 namespace maidsafe {
 
 namespace routing {

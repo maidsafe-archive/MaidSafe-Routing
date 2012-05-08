@@ -9,15 +9,20 @@
  *  You are not free to copy, amend or otherwise use this source code without  *
  *  the explicit written permission of the board of directors of maidsafe.net. *
  ******************************************************************************/
+#include "maidsafe/routing/routing_table.h"
+
 #include <thread>
 
-#include "maidsafe/routing/parameters.h"
-#include "maidsafe/routing/routing_table.h"
-#include "maidsafe/routing/routing_api.h"
-#include "maidsafe/routing/node_id.h"
 #include "maidsafe/routing/log.h"
+#include "maidsafe/routing/node_id.h"
+#include "maidsafe/routing/parameters.h"
+#include "maidsafe/routing/routing_api.h"
+#include "maidsafe/routing/routing_pb.h"
+
+namespace bs2 = boost::signals2;
 
 namespace maidsafe {
+
 namespace routing {
 
 NodeInfo::NodeInfo()
@@ -39,8 +44,7 @@ RoutingTable::RoutingTable(const asymm::Keys &keys)
       mutex_(),
       close_node_from_to_signal_() {}
 
-boost::signals2::signal<void(std::string, std::string)>
-                            &RoutingTable::CloseNodeReplacedOldNewSignal() {
+bs2::signal<void(std::string, std::string)> &RoutingTable::CloseNodeReplacedOldNewSignal() {
   return close_node_from_to_signal_;
 }
 
@@ -52,14 +56,14 @@ bool RoutingTable::AddNode(NodeInfo& node) {
   return AddOrCheckNode(node, true);
 }
 
-bool RoutingTable::AddOrCheckNode(maidsafe::routing::NodeInfo& node, const bool remove) {
+bool RoutingTable::AddOrCheckNode(NodeInfo& node, const bool remove) {
   std::lock_guard<std::mutex> lock(mutex_);
   if (node.node_id == kNodeId_) {
     return false;
   }
   // if we already have node return false
   if (std::find_if(routing_table_nodes_.begin(), routing_table_nodes_.end(),
-                   [&node](const NodeInfo &i)->bool
+                   [node](const NodeInfo &i)->bool
                    { return i.node_id ==  node.node_id; })
                  != routing_table_nodes_.end())
     return false;
@@ -137,7 +141,7 @@ bool RoutingTable::CheckParametersAreUnique(const NodeInfo& node) const {
   // if we already have a duplicate public key return false
   if (std::find_if(routing_table_nodes_.begin(),
                    routing_table_nodes_.end(),
-                   [&node](const NodeInfo &i)->bool
+                   [node](const NodeInfo &i)->bool
                    { return  asymm::MatchingPublicKeys(i.public_key, node.public_key);})
                  != routing_table_nodes_.end()) {
     DLOG(INFO) << "Already have node with this public key";
@@ -156,7 +160,7 @@ bool RoutingTable::CheckParametersAreUnique(const NodeInfo& node) const {
   return true;
 }
 
-bool RoutingTable::MakeSpaceForNodeToBeAdded(maidsafe::routing::NodeInfo& node, const bool remove) {
+bool RoutingTable::MakeSpaceForNodeToBeAdded(NodeInfo& node, const bool remove) {
   node.bucket = BucketIndex(node.node_id);
   if ((remove) && (!CheckValidParameters(node))) {
     DLOG(INFO) << "Invalid Parameters";

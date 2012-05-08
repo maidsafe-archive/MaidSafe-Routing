@@ -16,20 +16,21 @@
 #include <string>
 
 #include "maidsafe/rudp/managed_connections.h"
+
 #include "maidsafe/routing/cache_manager.h"
-#include "maidsafe/routing/routing_api.h"
+#include "maidsafe/routing/api_config.h"
+
+namespace bs2 = boost::signals2;
 
 namespace maidsafe {
 
 namespace routing {
 
+namespace protobuf { class Message;}  // namespace protobuf
+
 class RoutingTable;
 class Timer;
 class CacheManager;
-
-namespace protobuf {
-class Message;
-}  // namespace protobuf
 
 class MessageHandler {
  public:
@@ -44,7 +45,7 @@ class MessageHandler {
   bool CheckCacheData(protobuf::Message &message);
   bool CheckAndSendToLocalClients(protobuf::Message &message);
   void Send(protobuf::Message &message);
-  boost::signals2::signal<void(int, std::string)> &MessageReceivedSignal();
+  bs2::signal<void(int, std::string)> &MessageReceivedSignal();
 
  private:
   MessageHandler(const MessageHandler&);  // no copy
@@ -54,7 +55,7 @@ class MessageHandler {
   rudp::ManagedConnections &rudp_;
   Timer &timer_ptr_;
   CacheManager cache_manager_;
-  boost::signals2::signal<void(int, std::string)> message_received_signal_;
+  bs2::signal<void(int, std::string)> message_received_signal_;
   NodeValidationFunctor node_validation_functor_;
 };
 

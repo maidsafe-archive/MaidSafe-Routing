@@ -12,20 +12,24 @@
 
 #include <memory>
 #include <vector>
+
 #include "maidsafe/common/test.h"
 #include "maidsafe/common/utils.h"
+
 #include "maidsafe/rudp/managed_connections.h"
+
+#include "maidsafe/routing/log.h"
 #include "maidsafe/routing/parameters.h"
+#include "maidsafe/routing/routing_pb.h"
 #include "maidsafe/routing/rpcs.h"
 #include "maidsafe/routing/service.h"
 #include "maidsafe/routing/tests/test_utils.h"
-#include "maidsafe/routing/log.h"
-
 
 namespace maidsafe {
-namespace routing {
-namespace test {
 
+namespace routing {
+
+namespace test {
 
 TEST(Services, BEH_Ping) {
   asymm::Keys keys;

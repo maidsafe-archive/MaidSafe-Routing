@@ -15,24 +15,30 @@
 
 #include <string>
 
+#include "maidsafe/routing/api_config.h"
 #include "maidsafe/routing/node_id.h"
 #include "maidsafe/routing/parameters.h"
-#include "maidsafe/routing/routing_pb.h"
 
 namespace maidsafe {
 
 namespace routing {
 
+namespace protobuf { class Message;}  // namespace protobuf
+
 namespace rpcs {
 
-const protobuf::Message Ping(const NodeId &node_id, const std::string &identity);
+const protobuf::Message Ping(const NodeId &node_id,
+                             const std::string &identity);
 
-const protobuf::Message Connect(const NodeId &node_id, const rudp::EndpointPair &our_endpoint,
+const protobuf::Message Connect(const NodeId &node_id,
+                                const rudp::EndpointPair &our_endpoint,
                                 const std::string &identity);
 
-const protobuf::Message FindNodes(const NodeId &node_id, Endpoint local_endpoint = Endpoint());
+const protobuf::Message FindNodes(const NodeId &node_id,
+                                  Endpoint local_endpoint = Endpoint());
 
-const protobuf::Message ProxyConnect(const NodeId &node_id, const std::string &identity,
+const protobuf::Message ProxyConnect(const NodeId &node_id,
+                                     const std::string &identity,
                                      const Endpoint &endpoint);
 }  // namespace rpcs
 

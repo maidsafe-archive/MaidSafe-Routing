@@ -23,13 +23,13 @@
 #include "maidsafe/common/asio_service.h"
 #include "maidsafe/common/utils.h"
 
-#include "maidsafe/routing/routing_pb.h"
-
 namespace asio = boost::asio;
 
 namespace maidsafe {
 
 namespace routing {
+
+namespace protobuf { class Message;}  // namespace protobuf
 
 typedef std::function<void(int, std::string)> TaskResponseFunctor;
 typedef uint32_t TaskId;

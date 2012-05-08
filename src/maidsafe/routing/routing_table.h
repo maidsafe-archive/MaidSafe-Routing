@@ -17,14 +17,21 @@
 #include <string>
 #include <vector>
 
+#include "boost/signals2/signal.hpp"
+
+#include "maidsafe/common/rsa.h"
+
+#include "maidsafe/routing/api_config.h"
 #include "maidsafe/routing/node_id.h"
 #include "maidsafe/routing/parameters.h"
-#include "maidsafe/routing/routing_pb.h"
+
+namespace bs2 = boost::signals2;
 
 namespace maidsafe {
 
 namespace routing {
 
+namespace protobuf { class Contact; }  //  namespace protobuf
 
 struct NodeInfo {
   NodeInfo();
@@ -32,7 +39,7 @@ struct NodeInfo {
   asymm::PublicKey public_key;
   int32_t rank;
   int32_t bucket;
-  boost::asio::ip::udp::endpoint endpoint;
+  Endpoint endpoint;
   int32_t dimension_1;
   int32_t dimension_2;
   int32_t dimension_3;
@@ -44,19 +51,16 @@ class RoutingTable {
   explicit RoutingTable(const asymm::Keys &keys);
   bool AddNode(NodeInfo &node);
   bool CheckNode(NodeInfo &node);
-  bool DropNode(const boost::asio::ip::udp::endpoint &endpoint);
-  bool GetNodeInfo(const boost::asio::ip::udp::endpoint &endpoint,
-                   NodeInfo *node_info);
+  bool DropNode(const Endpoint &endpoint);
+  bool GetNodeInfo(const Endpoint &endpoint, NodeInfo *node_info);
   bool IsMyNodeInRange(const NodeId &node_id, const uint16_t range);
   bool AmIClosestNode(const NodeId &node_id);
   bool AmIConnectedToEndpoint(const Endpoint& endpoint);
-  std::vector<NodeId> GetClosestNodes(const NodeId &from,
-                                      uint16_t number_to_get);
+  std::vector<NodeId> GetClosestNodes(const NodeId &from, uint16_t number_to_get);
   NodeInfo GetClosestNode(const NodeId &from, unsigned int node_number);
   uint16_t Size();
   asymm::Keys kKeys() const;
-  boost::signals2::signal<void(std::string, std::string)>
-                                           &CloseNodeReplacedOldNewSignal();
+  bs2::signal<void(std::string, std::string)> &CloseNodeReplacedOldNewSignal();
 
  private:
   RoutingTable(const RoutingTable&);
@@ -75,7 +79,7 @@ class RoutingTable {
   const NodeId kNodeId_;
   std::vector<NodeInfo> routing_table_nodes_;
   std::mutex mutex_;
-  boost::signals2::signal<void(std::string, std::string)> close_node_from_to_signal_;
+  bs2::signal<void(std::string, std::string)> close_node_from_to_signal_;
 };
 
 }  // namespace routing

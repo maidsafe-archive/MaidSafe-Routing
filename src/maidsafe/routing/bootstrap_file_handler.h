@@ -17,7 +17,7 @@
 
 #include "boost/filesystem/path.hpp"
 
-#include "maidsafe/routing/parameters.h"
+#include "maidsafe/routing/api_config.h"
 
 namespace fs = boost::filesystem;
 

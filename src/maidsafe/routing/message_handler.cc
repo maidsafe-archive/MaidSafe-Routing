@@ -10,12 +10,12 @@
  *  the explicit written permission of the board of directors of maidsafe.net. *
  ******************************************************************************/
 
-#include "maidsafe/common/rsa.h"
+#include "maidsafe/routing/message_handler.h"
 
+#include "maidsafe/common/rsa.h"
 #include "maidsafe/rudp/managed_connections.h"
 
 #include "maidsafe/routing/log.h"
-#include "maidsafe/routing/message_handler.h"
 #include "maidsafe/routing/node_id.h"
 #include "maidsafe/routing/parameters.h"
 #include "maidsafe/routing/response_handler.h"
@@ -26,6 +26,8 @@
 #include "maidsafe/routing/service.h"
 #include "maidsafe/routing/timer.h"
 #include "maidsafe/routing/utils.h"
+
+namespace bs2 = boost::signals2;
 
 namespace maidsafe {
 
@@ -45,7 +47,7 @@ MessageHandler::MessageHandler(
                 message_received_signal_(),
                 node_validation_functor_(node_validation_functor) {}
 
-boost::signals2::signal<void(int, std::string)> &MessageHandler::MessageReceivedSignal() {
+bs2::signal<void(int, std::string)> &MessageHandler::MessageReceivedSignal() {
   return message_received_signal_;
 }
 
@@ -68,7 +70,6 @@ bool MessageHandler::CheckCacheData(protobuf::Message &message) {
   }
   return false;
 }
-
 
 void MessageHandler::RoutingMessage(protobuf::Message& message) {
   switch (message.type()) {
@@ -104,7 +105,7 @@ void MessageHandler::RoutingMessage(protobuf::Message& message) {
 
 void MessageHandler::DirectMessage(protobuf::Message& message) {
   if (message.has_relay()) {
-     boost::asio::ip::udp::endpoint send_to_endpoint;
+     Endpoint send_to_endpoint;
      send_to_endpoint.address(boost::asio::ip::address::from_string(message.relay().ip()));
      send_to_endpoint.port(message.relay().port());
      rudp_.Send(send_to_endpoint, message.SerializeAsString());
@@ -126,7 +127,7 @@ void MessageHandler::DirectMessage(protobuf::Message& message) {
 
 void MessageHandler::CloseNodesMessage(protobuf::Message& message) {
   if (message.has_relay()) {
-     boost::asio::ip::udp::endpoint send_to_endpoint;
+     Endpoint send_to_endpoint;
      send_to_endpoint.address(boost::asio::ip::address::from_string(message.relay().ip()));
      send_to_endpoint.port(message.relay().port());
      rudp_.Send(send_to_endpoint, message.SerializeAsString());
@@ -171,7 +172,7 @@ void MessageHandler::ProcessMessage(protobuf::Message &message) {
     return;
   // I am in closest proximity to this message
   if (routing_table_.IsMyNodeInRange(NodeId(message.destination_id()),
-                                            Parameters::closest_nodes_size)) {
+                                     Parameters::closest_nodes_size)) {
     if ((message.type() < 100) && (message.type() > -100)) {
       RoutingMessage(message);
       return;

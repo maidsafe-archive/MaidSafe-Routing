@@ -12,11 +12,13 @@
 
 
 
-#include "maidsafe/common/asio_service.h"
 #include "maidsafe/routing/timer.h"
-#include "maidsafe/routing/routing_pb.h"
-#include "maidsafe/routing/return_codes.h"
+
+#include "maidsafe/common/asio_service.h"
+
 #include "maidsafe/routing/log.h"
+#include "maidsafe/routing/return_codes.h"
+#include "maidsafe/routing/routing_pb.h"
 
 namespace maidsafe {
 

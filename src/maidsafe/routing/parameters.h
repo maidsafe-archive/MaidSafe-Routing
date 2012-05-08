@@ -21,8 +21,6 @@ namespace maidsafe {
 
 namespace routing {
 
-typedef boost::asio::ip::udp::endpoint Endpoint;
-
 struct Parameters {
  public:
   Parameters();

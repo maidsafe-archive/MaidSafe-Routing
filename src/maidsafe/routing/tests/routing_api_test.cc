@@ -81,7 +81,7 @@ TEST(APITest, BEH_API_StandAloneNodeNotConnected) {
     Routing RtAPI(keys, good_file, nullptr, false);
   });
   Routing RAPI(keys, good_file, nullptr, false);
-  boost::asio::ip::udp::endpoint empty_endpoint;
+  Endpoint empty_endpoint;
   EXPECT_EQ(RAPI.GetStatus(), kNotJoined);
   EXPECT_TRUE(boost::filesystem::remove(good_file));
 }
@@ -99,11 +99,11 @@ TEST(APITest, BEH_API_ManualBootstrap) {
   });
   Routing R1(keys1, node1_config, nullptr, false);
   Routing R2(keys2, node2_config, nullptr, false);
-  boost::asio::ip::udp::endpoint empty_endpoint;
+  Endpoint empty_endpoint;
   EXPECT_EQ(R1.GetStatus(), kNotJoined);
   EXPECT_EQ(R2.GetStatus(), kNotJoined);
-  boost::asio::ip::udp::endpoint endpoint1g(boost::asio::ip::address_v4::loopback(), 5000);
-  boost::asio::ip::udp::endpoint endpoint2g(boost::asio::ip::address_v4::loopback(), 5001);
+  Endpoint endpoint1g(boost::asio::ip::address_v4::loopback(), 5000);
+  Endpoint endpoint2g(boost::asio::ip::address_v4::loopback(), 5001);
   R1.BootStrapFromThisEndpoint(endpoint2g);
   R2.BootStrapFromThisEndpoint(endpoint1g);
   EXPECT_EQ(R1.GetStatus(), kSuccess);

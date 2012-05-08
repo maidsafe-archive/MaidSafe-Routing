@@ -10,14 +10,16 @@
  *  the explicit written permission of the board of directors of maidsafe.net. *
  ******************************************************************************/
 
-#include "maidsafe/common/utils.h"
 #include "maidsafe/routing/service.h"
+
+#include "maidsafe/common/utils.h"
+#include "maidsafe/rudp/managed_connections.h"
+
+#include "maidsafe/routing/log.h"
 #include "maidsafe/routing/node_id.h"
+#include "maidsafe/routing/parameters.h"
 #include "maidsafe/routing/routing_pb.h"
 #include "maidsafe/routing/routing_table.h"
-#include "maidsafe/rudp/managed_connections.h"
-#include "maidsafe/routing/parameters.h"
-#include "maidsafe/routing/log.h"
 
 namespace maidsafe {
 
@@ -68,8 +70,8 @@ void Connect(RoutingTable &routing_table, rudp::ManagedConnections &rudp,
   }
   connect_response.set_answer(false);
   rudp::EndpointPair our_endpoint;
-  boost::asio::ip::udp::endpoint their_public_endpoint;
-  boost::asio::ip::udp::endpoint their_private_endpoint;
+  Endpoint their_public_endpoint;
+  Endpoint their_private_endpoint;
   their_public_endpoint.address(
       boost::asio::ip::address::from_string(connect_request.contact().public_endpoint().ip()));
   their_public_endpoint.port(connect_request.contact().public_endpoint().port());

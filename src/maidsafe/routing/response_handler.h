@@ -15,25 +15,29 @@
 
 #include "boost/thread/shared_mutex.hpp"
 #include "boost/thread/mutex.hpp"
-#include "maidsafe/common/rsa.h"
-#include "maidsafe/routing/rpcs.h"
-#include "maidsafe/rudp/managed_connections.h"
-#include "maidsafe/routing/routing_table.h"
-#include "maidsafe/routing/routing_pb.h"
-#include "maidsafe/routing/node_id.h"
-#include "maidsafe/routing/log.h"
 
+#include "maidsafe/common/rsa.h"
+#include "maidsafe/rudp/managed_connections.h"
+
+#include "maidsafe/routing/log.h"
+#include "maidsafe/routing/node_id.h"
+#include "maidsafe/routing/routing_table.h"
+#include "maidsafe/routing/rpcs.h"
 
 namespace maidsafe {
 
 namespace routing {
 
+namespace protobuf { class Message; }  // namespace protobuf
+
 namespace response {
+
 void Ping(protobuf::Message &message);
-void Connect(protobuf::Message &message, NodeValidationFunctor node_validation_functor);
+void Connect(protobuf::Message &message,
+             NodeValidationFunctor node_validation_functor);
 void FindNode(RoutingTable &routing_table,
-                             rudp::ManagedConnections &rudp,
-                             const protobuf::Message &message);
+              rudp::ManagedConnections &rudp,
+              const protobuf::Message &message);
 void ProxyConnect(protobuf::Message& message);
 
 }  // namespace response

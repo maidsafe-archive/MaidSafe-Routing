@@ -14,29 +14,27 @@
 #define MAIDSAFE_ROUTING_SERVICE_H_
 
 #include <memory>
-#include "maidsafe/rudp/managed_connections.h"
-#include "maidsafe/routing/routing_table.h"
-#include "maidsafe/routing/routing_api.h"
+
+#include "maidsafe/routing/api_config.h"
 
 namespace maidsafe {
 
 namespace routing {
 
-namespace protobuf { class Message; }
+namespace protobuf { class Message;}  // namespace protobuf
+
+class RoutingTable;
 
 namespace service {
-
-
 
 // Handle all incoming requests and send back reply
 void Ping(RoutingTable &routing_table,
           protobuf::Message &message);
 void Connect(RoutingTable &routing_table,
-              rudp::ManagedConnections &rudp,
-              protobuf::Message &message);
+             rudp::ManagedConnections &rudp,
+             protobuf::Message &message);
 void FindNodes(RoutingTable &routing_table,
               protobuf::Message &message);
-
 void ProxyConnect(RoutingTable &routing_table,
                   rudp::ManagedConnections &rudp,
                   protobuf::Message &message);
