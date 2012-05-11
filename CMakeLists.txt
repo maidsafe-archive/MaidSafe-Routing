@@ -13,7 +13,7 @@
 #==============================================================================#
 
 
-SET(MS_PROJECT_NAME maidsafe_routing)
+project(routing)
 
 CMAKE_MINIMUM_REQUIRED(VERSION 2.8.4 FATAL_ERROR)
 MESSAGE("================================================================================\n")
