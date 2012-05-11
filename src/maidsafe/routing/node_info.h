@@ -10,19 +10,36 @@
  *  the explicit written permission of the board of directors of maidsafe.net. *
  ******************************************************************************/
 
+#ifndef MAIDSAFE_ROUTING_NODE_INFO_H_
+#define MAIDSAFE_ROUTING_NODE_INFO_H_
+
+#include "maidsafe/common/rsa.h"
+
+#include "maidsafe/routing/api_config.h"
+#include "maidsafe/routing/node_id.h"
 #include "maidsafe/routing/parameters.h"
 
 namespace maidsafe {
 
 namespace routing {
 
-bool Parameters::encryption_required(false);
-uint16_t Parameters::num_chunks_to_cache(100);
-uint16_t Parameters::timout_in_seconds(5);
-uint16_t Parameters::closest_nodes_size(8);
-uint16_t Parameters::max_routing_table_size(64);
-uint16_t Parameters::max_non_routing_table_size(64);
-uint16_t Parameters::bucket_target_size(1);
+namespace protobuf { class Contact; }  //  namespace protobuf
+
+struct NodeInfo {
+  NodeInfo();
+  NodeId node_id;
+  asymm::PublicKey public_key;
+  int32_t rank;
+  int32_t bucket;
+  Endpoint endpoint;
+  int32_t dimension_1;
+  int32_t dimension_2;
+  int32_t dimension_3;
+  int32_t dimension_4;
+};
+
 }  // namespace routing
 
 }  // namespace maidsafe
+
+#endif  // MAIDSAFE_ROUTING_NODE_INFO_H_

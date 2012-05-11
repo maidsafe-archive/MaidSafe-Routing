@@ -14,10 +14,6 @@
 #include <thread>
 
 #include "maidsafe/routing/log.h"
-#include "maidsafe/routing/node_id.h"
-#include "maidsafe/routing/parameters.h"
-#include "maidsafe/routing/routing_api.h"
-#include "maidsafe/routing/routing_pb.h"
 
 namespace bs2 = boost::signals2;
 
@@ -25,16 +21,6 @@ namespace maidsafe {
 
 namespace routing {
 
-NodeInfo::NodeInfo()
-    : node_id(),
-      public_key(),
-      rank(),
-      bucket(99999),
-      endpoint(),
-      dimension_1(),
-      dimension_2(),
-      dimension_3(),
-      dimension_4() {}
 
 RoutingTable::RoutingTable(const asymm::Keys &keys)
     : keys_(keys),
@@ -56,7 +42,7 @@ bool RoutingTable::AddNode(NodeInfo& node) {
   return AddOrCheckNode(node, true);
 }
 
-bool RoutingTable::AddOrCheckNode(NodeInfo& node, const bool remove) {
+bool RoutingTable::AddOrCheckNode(NodeInfo& node, const bool &remove) {
   std::lock_guard<std::mutex> lock(mutex_);
   if (node.node_id == kNodeId_) {
     return false;
@@ -76,7 +62,12 @@ bool RoutingTable::AddOrCheckNode(NodeInfo& node, const bool remove) {
 }
 
 uint16_t RoutingTable::Size() {
-    return static_cast<uint16_t>(routing_table_nodes_.size());
+  std::lock_guard<std::mutex> lock(mutex_);
+  return RoutingTableSize();
+}
+
+uint16_t RoutingTable::RoutingTableSize() {
+  return static_cast<uint16_t>(routing_table_nodes_.size());
 }
 
 asymm::Keys RoutingTable::kKeys() const {
@@ -84,6 +75,7 @@ asymm::Keys RoutingTable::kKeys() const {
 }
 
 bool RoutingTable::DropNode(const Endpoint &endpoint) {
+  std::lock_guard<std::mutex> lock(mutex_);
   for (auto it = routing_table_nodes_.begin(); it != routing_table_nodes_.end(); ++it) {
     if (((*it).endpoint ==  endpoint)) {
       routing_table_nodes_.erase(it);
@@ -94,6 +86,7 @@ bool RoutingTable::DropNode(const Endpoint &endpoint) {
 }
 
 bool RoutingTable::GetNodeInfo(const Endpoint &endpoint, NodeInfo *node_info) {
+  std::lock_guard<std::mutex> lock(mutex_);
   for (auto it = routing_table_nodes_.begin(); it != routing_table_nodes_.end(); ++it) {
     if (((*it).endpoint ==  endpoint)) {
       *node_info = (*it);
@@ -108,6 +101,7 @@ bool RoutingTable::AmIClosestNode(const NodeId& node_id) {
     DLOG(ERROR) << "Invalid node_id passed";
     return false;
   }
+  std::lock_guard<std::mutex> lock(mutex_);
   if (routing_table_nodes_.empty())
     return true;
   SortFromThisNode(node_id);
@@ -150,7 +144,7 @@ bool RoutingTable::CheckParametersAreUnique(const NodeInfo& node) const {
 
   // if we already have a duplicate endpoint return false
   if (std::find_if(routing_table_nodes_.begin(), routing_table_nodes_.end(),
-                   [&node](const NodeInfo &i)->bool
+                   [node](const NodeInfo &i)->bool
                    { return (i.endpoint == node.endpoint); })
                  != routing_table_nodes_.end()) {
     DLOG(INFO) << "Already have node with this endpoint";
@@ -160,14 +154,14 @@ bool RoutingTable::CheckParametersAreUnique(const NodeInfo& node) const {
   return true;
 }
 
-bool RoutingTable::MakeSpaceForNodeToBeAdded(NodeInfo& node, const bool remove) {
+bool RoutingTable::MakeSpaceForNodeToBeAdded(NodeInfo &node, const bool &remove) {
   node.bucket = BucketIndex(node.node_id);
   if ((remove) && (!CheckValidParameters(node))) {
     DLOG(INFO) << "Invalid Parameters";
     return false;
   }
 
-  if (Size() < Parameters::max_routing_table_size)
+  if (RoutingTableSize() < Parameters::max_routing_table_size)
     return true;
 
   SortFromThisNode(kNodeId_);
@@ -225,6 +219,7 @@ void RoutingTable::SortFromThisNode(const NodeId &from) {
 }
 
 bool RoutingTable::IsMyNodeInRange(const NodeId& node_id, const uint16_t range)  {
+  std::lock_guard<std::mutex> lock(mutex_);
   if (routing_table_nodes_.size() < range)
     return true;
 
@@ -250,6 +245,7 @@ int16_t RoutingTable::BucketIndex(const NodeId &rhs) const {
 }
 
 NodeInfo RoutingTable::GetClosestNode(const NodeId &from, unsigned int node_number) {
+  std::lock_guard<std::mutex> lock(mutex_);
   SortFromThisNode(from);
   return routing_table_nodes_[node_number];
 }
@@ -257,7 +253,7 @@ NodeInfo RoutingTable::GetClosestNode(const NodeId &from, unsigned int node_numb
 std::vector<NodeId> RoutingTable::GetClosestNodes(const NodeId &from, uint16_t number_to_get) {
   std::vector<NodeId>close_nodes;
   std::lock_guard<std::mutex> lock(mutex_);
-  unsigned int count = std::min(number_to_get, Size());
+  unsigned int count = std::min(number_to_get, RoutingTableSize());
   SortFromThisNode(from);
   close_nodes.resize(count);
 

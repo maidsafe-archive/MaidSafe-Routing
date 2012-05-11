@@ -10,8 +10,8 @@
  *  the explicit written permission of the board of directors of maidsafe.net. *
  ******************************************************************************/
 
-#ifndef MAIDSAFE_ROUTING_ROUTING_TABLE_H_
-#define MAIDSAFE_ROUTING_ROUTING_TABLE_H_
+#ifndef MAIDSAFE_ROUTING_NON_ROUTING_TABLE_H_
+#define MAIDSAFE_ROUTING_NON_ROUTING_TABLE_H_
 
 #include <mutex>
 #include <string>
@@ -34,40 +34,33 @@ namespace routing {
 
 namespace protobuf { class Contact; }  //  namespace protobuf
 
-class RoutingTable {
+class NonRoutingTable {
  public:
-  explicit RoutingTable(const asymm::Keys &keys);
-  bool AddNode(NodeInfo &node);
-  bool CheckNode(NodeInfo &node);
+  explicit NonRoutingTable(const asymm::Keys &keys);
+  bool AddNode(NodeInfo &node, const NodeId &furthest_close_node_id);
+  bool CheckNode(NodeInfo &node, const NodeId &furthest_close_node_id);
+  int16_t DropNodes(const NodeId &node_id);
   bool DropNode(const Endpoint &endpoint);
-  bool GetNodeInfo(const Endpoint &endpoint, NodeInfo *node_info);
-  bool IsMyNodeInRange(const NodeId &node_id, const uint16_t range);
-  bool AmIClosestNode(const NodeId &node_id);
+  NodeInfo GetNodeInfo(const Endpoint &endpoint);
+  std::vector<NodeInfo> GetNodesInfo(const NodeId &node_id);
   bool AmIConnectedToEndpoint(const Endpoint& endpoint);
-  std::vector<NodeId> GetClosestNodes(const NodeId &from, uint16_t number_to_get);
-  NodeInfo GetClosestNode(const NodeId &from, unsigned int node_number);
   uint16_t Size();
   asymm::Keys kKeys() const;
   bs2::signal<void(std::string, std::string)> &CloseNodeReplacedOldNewSignal();
 
  private:
-  RoutingTable(const RoutingTable&);
-  RoutingTable& operator=(const RoutingTable&);
-  bool AddOrCheckNode(NodeInfo &node, const bool &remove);
-  int16_t BucketIndex(const NodeId &rhs) const;
+  NonRoutingTable(const NonRoutingTable&);
+  NonRoutingTable& operator=(const NonRoutingTable&);
+  bool AddOrCheckNode(NodeInfo &node, const NodeId &furthest_close_node_id, const bool &add);
   bool CheckValidParameters(const NodeInfo &node) const;
   bool CheckParametersAreUnique(const NodeInfo &node) const;
-  bool MakeSpaceForNodeToBeAdded(NodeInfo &node, const bool &remove);
-  void SortFromThisNode(const NodeId &from);
-  void PartialSortFromThisNode(const NodeId &from, int16_t number_to_sort);
-  void NthElementSortFromThisNode(const NodeId &from, int16_t nth_element_to_sort);
-  bool AddcloseContact(const protobuf::Contact &contact);
-  uint16_t RoutingTableSize();
+  bool CheckRangeForNodeToBeAdded(NodeInfo &node, const NodeId &furthest_close_node_id);
+  bool IsMyNodeInRange(const NodeId &node_id, const NodeId &furthest_close_node_id);
+  uint16_t NonRoutingTableSize();
 
   asymm::Keys keys_;
-  bool sorted_;
   const NodeId kNodeId_;
-  std::vector<NodeInfo> routing_table_nodes_;
+  std::vector<NodeInfo> non_routing_table_nodes_;
   std::mutex mutex_;
   bs2::signal<void(std::string, std::string)> close_node_from_to_signal_;
 };
@@ -76,4 +69,4 @@ class RoutingTable {
 
 }  // namespace maidsafe
 
-#endif  // MAIDSAFE_ROUTING_ROUTING_TABLE_H_
+#endif  // MAIDSAFE_ROUTING_NON_ROUTING_TABLE_H_
