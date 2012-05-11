@@ -61,6 +61,7 @@ class RoutingTable {
   void SortFromThisNode(const NodeId &from);
   void PartialSortFromThisNode(const NodeId &from, int16_t number_to_sort);
   void NthElementSortFromThisNode(const NodeId &from, int16_t nth_element_to_sort);
+  bool RemoveClosecontact(const NodeId &node_id);
   bool AddcloseContact(const protobuf::Contact &contact);
   uint16_t RoutingTableSize();
 
