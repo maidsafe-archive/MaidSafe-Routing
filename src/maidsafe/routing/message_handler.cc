@@ -103,7 +103,7 @@ void MessageHandler::DirectMessage(protobuf::Message& message) {
   if (message.has_relay()) {
      boost::asio::ip::udp::endpoint send_to_endpoint;
      send_to_endpoint.address().from_string(message.relay().ip());
-     send_to_endpoint.port(message.relay().port());
+     send_to_endpoint.port(static_cast<unsigned short>(message.relay().port()));
      rudp_.Send(send_to_endpoint, message.SerializeAsString());
      return;
   }
@@ -125,7 +125,7 @@ void MessageHandler::CloseNodesMessage(protobuf::Message& message) {
   if (message.has_relay()) {
      boost::asio::ip::udp::endpoint send_to_endpoint;
      send_to_endpoint.address().from_string(message.relay().ip());
-     send_to_endpoint.port(message.relay().port());
+     send_to_endpoint.port(static_cast<unsigned short>(message.relay().port()));
      rudp_.Send(send_to_endpoint, message.SerializeAsString());
      return;
   }

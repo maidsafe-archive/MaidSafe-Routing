@@ -31,7 +31,7 @@ namespace maidsafe {
 namespace routing {
 namespace test {
 namespace bptime = boost::posix_time;
-static int test_routing_api_node_port(6000);
+static unsigned short test_routing_api_node_port(6000);
 
 NodeInfo MakeNodeInfo() {
   NodeInfo node;
@@ -146,10 +146,10 @@ TEST(APITest, BEH_API_ZeroState) {
 TEST(APITest, BEH_API_NodeNetwork) {
   const uint16_t network_size(30);
   std::vector<asymm::Keys> network(network_size, MakeKeys());
-  int count(0);
-  for (auto &i : network) {
+//  int count(0);
+//  for (auto &i : network) {
 //    Routing AnodeToBEFixed (i, fs::unique_path(fs::temp_directory_path() / i.identity), nullptr, false);
-  }
+//  }
   // TODO(dirvine) do this properly !!!
 
 }

@@ -74,11 +74,13 @@ void Connect(RoutingTable &routing_table,
   boost::asio::ip::udp::endpoint their_private_endpoint;
   their_public_endpoint.address().from_string(
                             connect_request.contact().public_endpoint().ip());
-  their_public_endpoint.port(connect_request.contact().public_endpoint().port());
+  their_public_endpoint.port(
+      static_cast<unsigned short>(connect_request.contact().public_endpoint().port()));
   their_private_endpoint.address().from_string(
                             connect_request.contact().private_endpoint().ip());
-  their_private_endpoint.port(connect_request.contact().private_endpoint().port());
-  rudp.GetAvailableEndpoint(&our_endpoint);
+  their_private_endpoint.port(
+      static_cast<unsigned short>(connect_request.contact().private_endpoint().port()));
+  rudp.GetAvailableEndpoint(our_endpoint);
   // TODO(dirvine) try both connections
   if (message.client_node()) {
     connect_response.set_answer(true);

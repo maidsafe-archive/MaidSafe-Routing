@@ -17,7 +17,6 @@
 #include <string>
 #include <vector>
 #include "boost/serialization/nvp.hpp"
-#include "maidsafe/common/platform_config.h"
 #include "maidsafe/routing/routing_api.h"
 
 

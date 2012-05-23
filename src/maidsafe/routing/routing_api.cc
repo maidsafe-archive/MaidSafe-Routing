@@ -26,7 +26,6 @@
 #include "maidsafe/routing/node_id.h"
 #include "maidsafe/routing/routing_table.h"
 #include "maidsafe/routing/timer.h"
-#include "maidsafe/routing/version.h"
 #include "maidsafe/routing/bootstrap_file_handler.h"
 #include "maidsafe/routing/return_codes.h"
 #include "maidsafe/routing/utils.h"
@@ -75,8 +74,8 @@ Routing::~Routing() {}
 int Routing::GetStatus() {
  if (impl_->routing_table_.Size() == 0) {
     rudp::EndpointPair endpoint;
-    if(impl_->rudp_.GetAvailableEndpoint(&endpoint) != rudp::kSuccess) {
-      if (impl_->rudp_.GetAvailableEndpoint(&endpoint)
+    if(impl_->rudp_.GetAvailableEndpoint(endpoint) != rudp::kSuccess) {
+      if (impl_->rudp_.GetAvailableEndpoint(endpoint)
                                           == rudp::kNoneAvailable) 
         return kNotJoined;
     } 
@@ -144,7 +143,7 @@ int Routing::Send(const std::string destination_id,
                   const std::string data,
                   const uint16_t type,
                   const MessageReceivedFunctor response_functor,
-                  const uint16_t timeout_seconds,
+                  const uint16_t /*timeout_seconds*/,
                   const bool direct) {
   if (destination_id.empty()) {
     DLOG(ERROR) << "No destination id, aborted send";

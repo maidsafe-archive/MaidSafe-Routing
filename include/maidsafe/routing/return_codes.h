@@ -13,13 +13,6 @@
 #ifndef MAIDSAFE_ROUTING_RETURN_CODES_H_
 #define MAIDSAFE_ROUTING_RETURN_CODES_H_
 
-#include "maidsafe/routing/version.h"
-
-#if MAIDSAFE_ROUTING_VERSION != 100
-#  error This API is not compatible with the installed library.\
-    Please update the maidsafe-routing library.
-#endif
-
 
 namespace maidsafe {
 namespace routing {

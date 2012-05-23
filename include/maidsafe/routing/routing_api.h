@@ -41,12 +41,7 @@
 #include "maidsafe/common/rsa.h"
 #include "maidsafe/rudp/managed_connections.h"
 #include "boost/asio.hpp"
-#include "maidsafe/routing/version.h"
 
-#if MAIDSAFE_ROUTING_VERSION != 100
-#  error This API is not compatible with the installed library.\
-  Please update the maidsafe_routing library.
-#endif
 
 namespace maidsafe {
 

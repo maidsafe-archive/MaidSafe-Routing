@@ -30,7 +30,7 @@ void SendOn(protobuf::Message message,
   if (endpoint.address().is_unspecified()) {
     if ((message.has_relay()) && (routing_table.AmIClosestNode(NodeId(message.destination_id())))) {
       endpoint = Endpoint(boost::asio::ip::address::from_string(message.relay().ip()),
-                          message.relay().port());
+                          static_cast<unsigned short>(message.relay().port()));
       DLOG(INFO) << "Sending to non routing table node message type : "
                  << message.type() << " message"
                  << " to " << HexSubstr(message.source_id())

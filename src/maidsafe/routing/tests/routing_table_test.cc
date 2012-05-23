@@ -40,9 +40,9 @@ TEST(RoutingTableTest, FUNC_AddCloseNodes) {
   EXPECT_EQ(RT.Size(), 0);
   asymm::PublicKey dummy_key;
   // check we cannot input nodes with invalid public_keys
-  for (int i = 0; i < Parameters::closest_nodes_size ; ++i) {
+  for (unsigned short i = 0; i < Parameters::closest_nodes_size ; ++i) {
      NodeInfo node(MakeNode());
-     node.endpoint.port(1501 + i);  // has to be unique
+     node.endpoint.port(i + 1501U);  // has to be unique
      node.public_key = dummy_key;
      EXPECT_FALSE(RT.AddNode(node));
   }
@@ -51,9 +51,9 @@ TEST(RoutingTableTest, FUNC_AddCloseNodes) {
   // everything should be set to go now
   // TODO should we also test for valid enpoints ??
   // TODO we should fail when public keys are the same
-  for (int i = 0; i < Parameters::closest_nodes_size ; ++i) {
+  for (unsigned short i = 0; i < Parameters::closest_nodes_size ; ++i) {
      node = MakeNode();
-     node.endpoint.port(1501 + i);  // has to be unique
+     node.endpoint.port(i + 1501U);  // has to be unique
      EXPECT_TRUE(RT.AddNode(node));
   }
   EXPECT_EQ(RT.Size(), Parameters::closest_nodes_size);
@@ -63,17 +63,17 @@ TEST(RoutingTableTest, FUNC_AddTooManyNodes) {
     asymm::Keys keys;
     keys.identity = RandomString(64);
   RoutingTable RT(keys);
-  for (int i = 0;
+  for (unsigned short i = 0;
        RT.Size() < Parameters::max_routing_table_size; ++i) {
      NodeInfo node(MakeNode());
-     node.endpoint.port(1501 + i);  // has to be unique
+     node.endpoint.port(i + 1501U);  // has to be unique
      EXPECT_TRUE(RT.AddNode(node));
   }
   EXPECT_EQ(RT.Size(), Parameters::max_routing_table_size);
   size_t count(0);
-  for (int i = 0; i < 100; ++i) {
+  for (unsigned short i = 0; i < 100; ++i) {
      NodeInfo node(MakeNode());
-     node.endpoint.port(1700 + i);  // has to be unique
+     node.endpoint.port(i + 1700U);  // has to be unique
      if (RT.CheckNode(node)) {
         EXPECT_TRUE(RT.AddNode(node));
        ++count;
@@ -90,11 +90,11 @@ TEST(RoutingTableTest, BEH_CloseAndInRangeCheck) {
   RoutingTable RT(keys);
   // Add some nodes to RT
   NodeId my_node(keys.identity);
-  for (int i = 0;
+  for (unsigned short i = 0;
        RT.Size() < Parameters::max_routing_table_size;
        ++i) {
      NodeInfo node(MakeNode());
-     node.endpoint.port(1501 + i);  // has to be unique
+     node.endpoint.port(i + 1501U);  // has to be unique
      EXPECT_TRUE(RT.AddNode(node));
   }
   EXPECT_EQ(RT.Size(), Parameters::max_routing_table_size);
