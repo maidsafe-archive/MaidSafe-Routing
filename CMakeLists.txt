@@ -80,4 +80,5 @@ ms_disable_warnings(${SOURCE_PROTO_FILES_ROUTING_DIR})
 ###################################################################################################
 add_style_test(${STYLE_ROUTING} ${STYLE_ROUTING_TESTS})
 add_gtests(TESTrouting)
+add_project_experimental()
 test_summary_output()
