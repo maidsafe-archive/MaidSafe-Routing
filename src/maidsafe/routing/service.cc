@@ -18,6 +18,8 @@
 #include "maidsafe/rudp/managed_connections.h"
 #include "maidsafe/routing/parameters.h"
 #include "maidsafe/routing/log.h"
+#include "maidsafe/common/log.h"
+
 
 namespace maidsafe {
 

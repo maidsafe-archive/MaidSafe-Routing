@@ -75,24 +75,18 @@ Routing::~Routing() {}
 int Routing::GetStatus() {
  if (impl_->routing_table_.Size() == 0) {
     rudp::EndpointPair endpoint;
-    if(impl_->rudp_.GetAvailableEndpoint(&endpoint) != rudp::kSuccess) {
-      if (impl_->rudp_.GetAvailableEndpoint(&endpoint)
-                                          == rudp::kNoneAvailable) 
-        return kNotJoined;
-    } 
- } else {
-  return impl_->routing_table_.Size();
- }
- return 0;
+    return impl_->rudp_.GetAvailableEndpoint(&endpoint);
+  }
+ return impl_->routing_table_.Size();
 }
 
 // drop existing routing table and restart
 // the endpoint is the endpoint to connect to.
-bool Routing::BootStrapFromThisEndpoint(const boost::asio::ip::udp::endpoint&
+bool Routing::BootStrapFromThisEndpoint(const boost::asio::ip::udp::endpoint
                                                                      endpoint,
                               boost::asio::ip::udp::endpoint local_endpoint) {
-  LOG(INFO) << " Entered bootstrap IP address : " << endpoint.address().to_string();
-  LOG(INFO) << " Entered bootstrap Port       : " << endpoint.port();
+  DLOG(INFO) << " Entered bootstrap IP address : " << endpoint.address().to_string();
+  DLOG(INFO) << " Entered bootstrap Port       : " << endpoint.port();
   if (endpoint.address().is_unspecified()) {
     DLOG(ERROR) << "Attempt to boot from unspecified endpoint ! aborted";
     return false;
@@ -111,7 +105,7 @@ bool Routing::BootStrapFromThisEndpoint(const boost::asio::ip::udp::endpoint&
 
 bool Routing::Join(boost::asio::ip::udp::endpoint local_endpoint) {
   if (impl_->bootstrap_nodes_.empty()) {
-    LOG(INFO) << "No bootstrap nodes Aborted Join !!";
+    DLOG(INFO) << "No bootstrap nodes Aborted Join !!";
     return false;
   }
   rudp::MessageReceivedFunctor message_recieved(std::bind(&Routing::ReceiveMessage,
@@ -129,7 +123,8 @@ bool Routing::Join(boost::asio::ip::udp::endpoint local_endpoint) {
 
   if (bootstrap_endpoint.address().is_unspecified() &&
       (local_endpoint.address().is_unspecified())) {
-    DLOG(ERROR) << "could not get bootstrap address and not zero state";
+    DLOG(ERROR) << "Bootstrap endpoint: " << bootstrap_endpoint
+                << "\tLocal endpoint: " << local_endpoint;
     return false;
   }
 
@@ -221,11 +216,15 @@ void Routing::ReceiveMessage(const std::string &message) {
                << " from " << HexSubstr(protobuf_message.source_id())
                << " I am " << HexSubstr(impl_->keys_.identity);
     impl_->message_handler_.ProcessMessage(protobuf_message);
+  } else {
+    DLOG(ERROR) << "received a message I cannot parse";
   }
 }
 
 void Routing::ConnectionLost(const boost::asio::ip::udp::endpoint
                                                         &lost_endpoint) {
+  DLOG(INFO) << "Lost connection " << lost_endpoint.address().to_string()
+             << " " << lost_endpoint.port();
   NodeInfo node_info;
   if ((impl_->routing_table_.GetNodeInfo(lost_endpoint, &node_info) &&
      (impl_->routing_table_.IsMyNodeInRange(node_info.node_id,
@@ -254,7 +253,6 @@ void Routing::ConnectionLost(const boost::asio::ip::udp::endpoint
       }
   }
 }
-
 
 }  // namespace routing
 

@@ -117,11 +117,6 @@ TEST(RPC, BEH_FindNodesMessageNode) {
   EXPECT_FALSE(message.has_relay());
 }
 
-
-
-
-
-
 }  // namespace test
 }  // namespace routing
 }  // namespace maidsafe

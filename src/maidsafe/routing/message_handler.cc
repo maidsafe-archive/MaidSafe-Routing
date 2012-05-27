@@ -47,8 +47,7 @@ MessageHandler::MessageHandler(
                 message_received_signal_(),
                 node_validation_functor_(node_validation_functor) {}
 
-boost::signals2::signal<void(int, std::string)>
-                                     &MessageHandler::MessageReceivedSignal() {
+boost::signals2::signal<void(int, std::string)> &MessageHandler::MessageReceivedSignal() {
   return message_received_signal_;
 }
 

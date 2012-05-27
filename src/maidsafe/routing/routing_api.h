@@ -88,7 +88,7 @@ typedef std::function<void(const std::string& /*node Id*/ ,
 * *************************************************************************/
 class Routing {
  public:
-   // set keys.identity to ANONYMOUS for temporary anonymous connection.
+   // leave keys.identity to empty for temporary anonymous connection.
   Routing(const asymm::Keys &keys,
           const boost::filesystem::path &full_path_and_name,
           NodeValidationFunctor node_validation_functor,
@@ -102,7 +102,7 @@ class Routing {
   *To force the node to use a specific endpoint for bootstrapping           *
   *(i.e. private network)                                                   *
   ***************************************************************************/
-  bool BootStrapFromThisEndpoint(const boost::asio::ip::udp::endpoint& endpoint,
+  bool BootStrapFromThisEndpoint(const boost::asio::ip::udp::endpoint endpoint,
                                 boost::asio::ip::udp::endpoint local_endpoint =
                                 boost::asio::ip::udp::endpoint());
   /**************************************************************************
