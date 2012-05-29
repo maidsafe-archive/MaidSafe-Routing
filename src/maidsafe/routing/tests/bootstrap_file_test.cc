@@ -10,8 +10,10 @@
  *  the explicit written permission of the board of directors of maidsafe.net. *
  ******************************************************************************/
 
+#include <system_error>
 #include <memory>
 #include <vector>
+
 #include "maidsafe/common/test.h"
 #include "maidsafe/common/utils.h"
 #include "maidsafe/rudp/managed_connections.h"
@@ -25,9 +27,9 @@ namespace routing {
 namespace test {
 
 TEST(BootStrapFileTest1, BEH_ReadValidFile) {
-  std::vector<boost::asio::ip::udp::endpoint>vec;
-  boost::asio::ip::udp::endpoint endpoint;
-  endpoint.address().from_string("192.168.1.1");
+  std::vector<Endpoint>vec;
+  Endpoint endpoint;
+  endpoint.address(boost::asio::ip::address::from_string("192.168.1.1"));
   endpoint.port(5000);
   vec.push_back(endpoint);
   boost::filesystem::path good_file

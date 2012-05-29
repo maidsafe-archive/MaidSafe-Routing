@@ -15,11 +15,12 @@
 
 #include "maidsafe/routing/parameters.h"
 #include "maidsafe/routing/routing_table.h"
-#include "maidsafe/routing/routing_pb.h"
 
 namespace maidsafe {
 
 namespace routing {
+
+namespace protobuf { class Message;}  // namespace protobuf
 
 void SendOn(protobuf::Message message,
             rudp::ManagedConnections &rudp,
@@ -30,4 +31,4 @@ void SendOn(protobuf::Message message,
 
 }  // namespace maidsafe
 
-#endif // MAIDSAFE_ROUTING_UTILS_H_
+#endif  // MAIDSAFE_ROUTING_UTILS_H_

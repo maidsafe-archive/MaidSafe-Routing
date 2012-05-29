@@ -10,19 +10,25 @@
  *  the explicit written permission of the board of directors of maidsafe.net. *
  ******************************************************************************/
 
+#ifndef MAIDSAFE_ROUTING_TESTS_TEST_UTILS_H_
+#define MAIDSAFE_ROUTING_TESTS_TEST_UTILS_H_
+
 #include "maidsafe/routing/routing_table.h"
 
-#ifndef MAIDSAFE_TEST_UTILS_H_
-#define MAIDSAFE_TEST_UTILS_H_
 namespace maidsafe {
+
 namespace routing {
+
 namespace test {
+
+uint16_t GetRandomPort();
 
 NodeInfo MakeNode();
 
 }  // namespace test
+
 }  // namespace routing
+
 }  // namespace maidsafe
 
-
-#endif  // MAIDSAFE_TEST_UTILS_H_
+#endif  // MAIDSAFE_ROUTING_TESTS_TEST_UTILS_H_

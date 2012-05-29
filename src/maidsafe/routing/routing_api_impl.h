@@ -10,11 +10,24 @@
  *  the explicit written permission of the board of directors of maidsafe.net. *
  ******************************************************************************/
 
-#include "maidsafe/routing/routing_api.h"
-#include "maidsafe/routing/routing_table.h"
+#ifndef MAIDSAFE_ROUTING_ROUTING_API_IMPL_H_
+#define MAIDSAFE_ROUTING_ROUTING_API_IMPL_H_
+
+#include <map>
+#include <string>
+#include <utility>
+#include <vector>
+
+#include "maidsafe/rudp/managed_connections.h"
+
+#include "maidsafe/routing/api_config.h"
 #include "maidsafe/routing/message_handler.h"
 #include "maidsafe/routing/parameters.h"
+#include "maidsafe/routing/routing_table.h"
 #include "maidsafe/routing/timer.h"
+
+namespace bs2 = boost::signals2;
+namespace fs = boost::filesystem;
 
 namespace maidsafe {
 
@@ -23,6 +36,7 @@ namespace routing {
 struct RoutingPrivate {
  public:
   ~RoutingPrivate();
+
  private:
   RoutingPrivate(const RoutingPrivate&);  // no copy
   RoutingPrivate(const RoutingPrivate&&);  // no move
@@ -33,31 +47,28 @@ struct RoutingPrivate {
                  bool client_mode);
   friend class Routing;
   AsioService asio_service_;
-  std::vector<boost::asio::ip::udp::endpoint> bootstrap_nodes_;
+  std::vector<Endpoint> bootstrap_nodes_;
   const asymm::Keys keys_;
   rudp::ManagedConnections rudp_;
   RoutingTable routing_table_;
   Timer timer_;
-  boost::signals2::signal<void(int, std::string)> message_received_signal_;
-  boost::signals2::signal<void(int16_t)> network_status_signal_;
-  boost::signals2::signal<void(std::string, std::string)>
-                                                close_node_from_to_signal_;
-  boost::signals2::signal<void(const std::string&,
-                           const boost::asio::ip::udp::endpoint&,
-                           const bool,
-                           const boost::asio::ip::udp::endpoint&,
-                           NodeValidatedFunctor &)> node_validation_signal_;
+  bs2::signal<void(int, std::string)> message_received_signal_;
+  bs2::signal<void(int16_t)> network_status_signal_;
+  bs2::signal<void(std::string, std::string)> close_node_from_to_signal_;
+  bs2::signal<void(const std::string&, const Endpoint&, const bool, const Endpoint&,
+                   NodeValidatedFunctor &)> node_validation_signal_;
   std::map<uint32_t, std::pair<std::unique_ptr<boost::asio::deadline_timer>,
                               MessageReceivedFunctor> > waiting_for_response_;
   std::vector<NodeInfo> direct_non_routing_table_connections_;
   // closest nodes to the client.
   MessageHandler message_handler_;
   bool joined_;
-  const boost::filesystem::path bootstrap_file_path_;
+  const fs::path bootstrap_file_path_;
   bool client_mode_;
 };
-
 
 }  // namespace routing
 
 }  // namespace maidsafe
+
+#endif  // MAIDSAFE_ROUTING_ROUTING_API_IMPL_H_

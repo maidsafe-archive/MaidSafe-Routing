@@ -10,24 +10,24 @@
  *  the explicit written permission of the board of directors of maidsafe.net. *
  ******************************************************************************/
 
-#include "boost/thread/shared_mutex.hpp"
-#include "boost/thread/mutex.hpp"
+#include "maidsafe/routing/message_handler.h"
+
 #include "maidsafe/common/rsa.h"
 #include "maidsafe/rudp/managed_connections.h"
-#include "maidsafe/routing/cache_manager.h"
+
+#include "maidsafe/routing/log.h"
+#include "maidsafe/routing/node_id.h"
 #include "maidsafe/routing/parameters.h"
-#include "maidsafe/routing/message_handler.h"
 #include "maidsafe/routing/response_handler.h"
+#include "maidsafe/routing/return_codes.h"
 #include "maidsafe/routing/routing_pb.h"
 #include "maidsafe/routing/routing_table.h"
-#include "maidsafe/routing/routing_api.h"
-#include "maidsafe/routing/node_id.h"
-#include "maidsafe/routing/return_codes.h"
 #include "maidsafe/routing/rpcs.h"
 #include "maidsafe/routing/service.h"
+#include "maidsafe/routing/timer.h"
 #include "maidsafe/routing/utils.h"
-#include "maidsafe/routing/log.h"
 
+namespace bs2 = boost::signals2;
 
 namespace maidsafe {
 
@@ -47,8 +47,7 @@ MessageHandler::MessageHandler(
                 message_received_signal_(),
                 node_validation_functor_(node_validation_functor) {}
 
-boost::signals2::signal<void(int, std::string)>
-                                     &MessageHandler::MessageReceivedSignal() {
+bs2::signal<void(int, std::string)> &MessageHandler::MessageReceivedSignal() {
   return message_received_signal_;
 }
 
@@ -72,7 +71,6 @@ bool MessageHandler::CheckCacheData(protobuf::Message &message) {
   return false;
 }
 
-
 void MessageHandler::RoutingMessage(protobuf::Message& message) {
   switch (message.type()) {
     case -1 :  // ping
@@ -87,13 +85,19 @@ void MessageHandler::RoutingMessage(protobuf::Message& message) {
     case 2 :
       service::Connect(routing_table_, rudp_, message);
       break;
-    case -3 :   // find_nodes
+    case -3 :  // find_nodes
       response::FindNode(routing_table_, rudp_, message);
       break;
     case 3 :
       service::FindNodes(routing_table_, message);
       break;
-    default: // unknown (silent drop)
+    case -4 :  // proxy_connect
+      response::ProxyConnect(message);
+      break;
+    case 4 :
+      service::ProxyConnect(routing_table_, rudp_, message);
+      break;
+    default:  // unknown (silent drop)
       return;
   }
   SendOn(message, rudp_, routing_table_);
@@ -101,8 +105,8 @@ void MessageHandler::RoutingMessage(protobuf::Message& message) {
 
 void MessageHandler::DirectMessage(protobuf::Message& message) {
   if (message.has_relay()) {
-     boost::asio::ip::udp::endpoint send_to_endpoint;
-     send_to_endpoint.address().from_string(message.relay().ip());
+     Endpoint send_to_endpoint;
+     send_to_endpoint.address(boost::asio::ip::address::from_string(message.relay().ip()));
      send_to_endpoint.port(static_cast<unsigned short>(message.relay().port()));
      rudp_.Send(send_to_endpoint, message.SerializeAsString());
      return;
@@ -123,14 +127,13 @@ void MessageHandler::DirectMessage(protobuf::Message& message) {
 
 void MessageHandler::CloseNodesMessage(protobuf::Message& message) {
   if (message.has_relay()) {
-     boost::asio::ip::udp::endpoint send_to_endpoint;
-     send_to_endpoint.address().from_string(message.relay().ip());
-     send_to_endpoint.port(static_cast<unsigned short>(message.relay().port()));
-     rudp_.Send(send_to_endpoint, message.SerializeAsString());
-     return;
+    Endpoint send_to_endpoint;
+    send_to_endpoint.address(boost::asio::ip::address::from_string(message.relay().ip()));
+    send_to_endpoint.port(static_cast<unsigned short>(message.relay().port()));
+    rudp_.Send(send_to_endpoint, message.SerializeAsString());
+    return;
   }
-  if ((message.direct()) &&
-      (!routing_table_.AmIClosestNode(NodeId(message.destination_id())))) {
+  if ((message.direct()) && (!routing_table_.AmIClosestNode(NodeId(message.destination_id())))) {
     SendOn(message, rudp_, routing_table_);
     return;
   }
@@ -138,19 +141,18 @@ void MessageHandler::CloseNodesMessage(protobuf::Message& message) {
   message.set_direct(true);
   auto close =
         routing_table_.GetClosestNodes(NodeId(message.destination_id()),
-                                static_cast<uint16_t>(message.replication()));
+                                       static_cast<uint16_t>(message.replication()));
   for (auto i : close) {
     message.set_destination_id(i.String());
     SendOn(message, rudp_, routing_table_);
   }
 }
 
-
 void MessageHandler::ProcessMessage(protobuf::Message &message) {
   // client connected messages -> out
   if (message.source_id().empty()) {  // relay mode
     // if zero state we may be closest
-    if(routing_table_.Size() <= Parameters::closest_nodes_size) {
+    if (routing_table_.Size() <= Parameters::closest_nodes_size) {
       if (message.type() == 3) {
         service::FindNodes(routing_table_, message);
         SendOn(message, rudp_, routing_table_);
@@ -170,7 +172,7 @@ void MessageHandler::ProcessMessage(protobuf::Message &message) {
     return;
   // I am in closest proximity to this message
   if (routing_table_.IsMyNodeInRange(NodeId(message.destination_id()),
-                                            Parameters::closest_nodes_size)) {
+                                     Parameters::closest_nodes_size)) {
     if ((message.type() < 100) && (message.type() > -100)) {
       RoutingMessage(message);
       return;

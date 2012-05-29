@@ -11,10 +11,13 @@
  ******************************************************************************/
 
 #include "maidsafe/common/utils.h"
+
+#include "maidsafe/rudp/managed_connections.h"
 #include "maidsafe/rudp/return_codes.h"
+
+#include "maidsafe/routing/parameters.h"
 #include "maidsafe/routing/routing_pb.h"
 #include "maidsafe/routing/routing_table.h"
-#include "maidsafe/routing/parameters.h"
 
 namespace maidsafe {
 
@@ -35,19 +38,19 @@ void SendOn(protobuf::Message message,
                  << message.type() << " message"
                  << " to " << HexSubstr(message.source_id())
                  << " From " << HexSubstr(routing_table.kKeys().identity);
-    }else if (routing_table.Size() > 0) {
+    } else if (routing_table.Size() > 0) {
       endpoint = routing_table.GetClosestNode(NodeId(message.destination_id()), 0).endpoint;
     } else {
       DLOG(ERROR) << " No Endpoint to send to, Aborting Send!"
                   << " Attempt to send a type : " << message.type() << " message"
                   << " to " << HexSubstr(message.source_id())
                   << " From " << HexSubstr(routing_table.kKeys().identity);
-    return;
+      return;
     }
   }
   int send_status = rudp.Send(endpoint, message.SerializeAsString());
   if (send_status != rudp::kSuccess)
-   DLOG(ERROR) << " Send error !!! = " << send_status;
+    DLOG(ERROR) << " Send error !!! = " << send_status;
 }
 
 

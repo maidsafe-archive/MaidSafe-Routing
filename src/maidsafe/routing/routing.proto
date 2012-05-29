@@ -97,3 +97,17 @@ message PingResponse {
   required bytes original_request = 3;
   required bytes original_signature = 4;
 }
+
+enum ProxyConnectResultType {
+  kSuccess = 0;
+  kFailure = 1;
+  kAlreadyConnected = 2;
+}
+
+message ProxyConnectRequest {
+  required Endpoint endpoint = 1;
+}
+
+message ProxyConnectResponse {
+  required ProxyConnectResultType result = 1;
+}
