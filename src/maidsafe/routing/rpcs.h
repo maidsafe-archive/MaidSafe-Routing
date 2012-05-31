@@ -13,25 +13,34 @@
 #ifndef MAIDSAFE_ROUTING_RPCS_H_
 #define MAIDSAFE_ROUTING_RPCS_H_
 
+#include <string>
+
+#include "maidsafe/routing/api_config.h"
 #include "maidsafe/routing/node_id.h"
-#include "maidsafe/routing/routing_pb.h"
+#include "maidsafe/routing/parameters.h"
 
 namespace maidsafe {
 
 namespace routing {
 
+namespace protobuf { class Message;}  // namespace protobuf
+
 namespace rpcs {
 
 const protobuf::Message Ping(const NodeId &node_id,
-                       const std::string &identity);
-const protobuf::Message Connect(const NodeId &node_id,
-                          const rudp::EndpointPair &our_endpoint,
-                          const std::string &identity);
-const protobuf::Message FindNodes(const NodeId &node_id,
-                                  boost::asio::ip::udp::endpoint local_endpoint =
-                                  boost::asio::ip::udp::endpoint());
+                             const std::string &identity);
 
-} // namespace rpcs
+const protobuf::Message Connect(const NodeId &node_id,
+                                const rudp::EndpointPair &our_endpoint,
+                                const std::string &identity);
+
+const protobuf::Message FindNodes(const NodeId &node_id,
+                                  Endpoint local_endpoint = Endpoint());
+
+const protobuf::Message ProxyConnect(const NodeId &node_id,
+                                     const std::string &identity,
+                                     const Endpoint &endpoint);
+}  // namespace rpcs
 
 }  // namespace routing
 

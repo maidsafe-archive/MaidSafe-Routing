@@ -14,25 +14,34 @@
 #ifndef MAIDSAFE_ROUTING_TIMER_H_
 #define MAIDSAFE_ROUTING_TIMER_H_
 
+#include <map>
+#include <string>
+#include <utility>
+
 #include "boost/asio.hpp"
+
 #include "maidsafe/common/asio_service.h"
 #include "maidsafe/common/utils.h"
-#include "maidsafe/routing/routing_pb.h"
+
+namespace asio = boost::asio;
 
 namespace maidsafe {
 
 namespace routing {
 
-namespace asio = boost::asio;
+namespace protobuf { class Message;}  // namespace protobuf
+
 typedef std::function<void(int, std::string)> TaskResponseFunctor;
 typedef uint32_t TaskId;
+
 class Timer {
  public:
   explicit Timer(AsioService &io_service);
   typedef std::shared_ptr<asio::deadline_timer> TimerPointer;
   TaskId AddTask(uint32_t timeout, const TaskResponseFunctor &);
   void KillTask(uint32_t task_id);  // removes from queue immediately no run
-  void ExecuteTaskNow(protobuf::Message &message);  //executes and removes task
+  void ExecuteTaskNow(protobuf::Message &message);  // executes and removes task
+
  private:
   Timer &operator=(const Timer&);
   Timer(const Timer&);

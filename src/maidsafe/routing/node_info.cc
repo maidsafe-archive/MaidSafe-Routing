@@ -9,28 +9,23 @@
  *  You are not free to copy, amend or otherwise use this source code without  *
  *  the explicit written permission of the board of directors of maidsafe.net. *
  ******************************************************************************/
-
-#ifndef MAIDSAFE_ROUTING_BOOTSTRAP_FILE_HANDLER_H_
-#define MAIDSAFE_ROUTING_BOOTSTRAP_FILE_HANDLER_H_
-
-#include <vector>
-
-#include "boost/filesystem/path.hpp"
-
-#include "maidsafe/routing/api_config.h"
-
-namespace fs = boost::filesystem;
+#include "maidsafe/routing/node_info.h"
 
 namespace maidsafe {
 
 namespace routing {
 
-std::vector<Endpoint> ReadBootstrapFile(const fs::path &path);
-
-bool WriteBootstrapFile(const std::vector<Endpoint> &endpoints, const fs::path & path);
+NodeInfo::NodeInfo()
+    : node_id(),
+      public_key(),
+      rank(),
+      bucket(99999),
+      endpoint(),
+      dimension_1(),
+      dimension_2(),
+      dimension_3(),
+      dimension_4() {}
 
 }  // namespace routing
 
 }  // namespace maidsafe
-
-#endif  // MAIDSAFE_ROUTING_BOOTSTRAP_FILE_HANDLER_H_

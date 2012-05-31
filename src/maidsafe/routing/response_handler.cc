@@ -10,20 +10,22 @@
  *  the explicit written permission of the board of directors of maidsafe.net. *
  ******************************************************************************/
 
+#include "maidsafe/routing/response_handler.h"
+
 #include "boost/thread/shared_mutex.hpp"
 #include "boost/thread/mutex.hpp"
+
 #include "maidsafe/common/rsa.h"
 #include "maidsafe/rudp/managed_connections.h"
-#include "maidsafe/routing/response_handler.h"
-#include "maidsafe/routing/routing_pb.h"
-#include "maidsafe/routing/routing_table.h"
-#include "maidsafe/routing/routing_api.h"
+
+#include "maidsafe/routing/log.h"
 #include "maidsafe/routing/node_id.h"
 #include "maidsafe/routing/return_codes.h"
+#include "maidsafe/routing/routing_api.h"
+#include "maidsafe/routing/routing_pb.h"
+#include "maidsafe/routing/routing_table.h"
 #include "maidsafe/routing/rpcs.h"
 #include "maidsafe/routing/utils.h"
-#include "maidsafe/routing/log.h"
-
 
 namespace maidsafe {
 
@@ -33,7 +35,7 @@ namespace response {
 
 // always direct !! never pass on
 void Ping(protobuf::Message& message) {
-  // TODO , do we need this and where and how can I update the response
+  // TODO(dirvine): do we need this and where and how can I update the response
   protobuf::PingResponse ping_response;
   if (ping_response.ParseFromString(message.data())) {
     //  do stuff here
@@ -41,8 +43,7 @@ void Ping(protobuf::Message& message) {
 }
 
 // the other node agreed to connect - he has accepted our connection
-void Connect(protobuf::Message& message,
-             NodeValidationFunctor node_validation_functor) {
+void Connect(protobuf::Message& message, NodeValidationFunctor node_validation_functor) {
   protobuf::ConnectResponse connect_response;
   protobuf::ConnectRequest connect_request;
   if (!connect_response.ParseFromString(message.data())) {
@@ -55,21 +56,22 @@ void Connect(protobuf::Message& message,
   if (!connect_request.ParseFromString(connect_response.original_request()))
     return;  // invalid response
 
-  rudp::EndpointPair our_endpoint_pair;;
-  our_endpoint_pair.external.address().from_string(
-      connect_request.contact().public_endpoint().ip());
+  rudp::EndpointPair our_endpoint_pair;
+  our_endpoint_pair.external.address(
+      boost::asio::ip::address::from_string(connect_request.contact().public_endpoint().ip()));
   our_endpoint_pair.external.port(
       static_cast<unsigned short>(connect_request.contact().public_endpoint().port()));
-  our_endpoint_pair.local.address().from_string(connect_request.contact().private_endpoint().ip());
+  our_endpoint_pair.local.address(
+      boost::asio::ip::address::from_string(connect_request.contact().private_endpoint().ip()));
   our_endpoint_pair.local.port(
       static_cast<unsigned short>(connect_request.contact().private_endpoint().port()));
   rudp::EndpointPair their_endpoint_pair;
-  their_endpoint_pair.external.address().from_string(
-      connect_response.contact().public_endpoint().ip());
+  their_endpoint_pair.external.address(
+      boost::asio::ip::address::from_string(connect_response.contact().public_endpoint().ip()));
   their_endpoint_pair.external.port(
       static_cast<unsigned short>(connect_response.contact().public_endpoint().port()));
-  their_endpoint_pair.local.address().from_string(
-      connect_response.contact().private_endpoint().ip());
+  their_endpoint_pair.local.address(
+      boost::asio::ip::address::from_string(connect_response.contact().private_endpoint().ip()));
   their_endpoint_pair.local.port(
       static_cast<unsigned short>(connect_response.contact().private_endpoint().port()));
   // TODO(dirvine) FIXME
@@ -94,7 +96,7 @@ void FindNode(RoutingTable &routing_table,
     DLOG(ERROR) << " find node request was not signed by us";
     return;  // we never requested this
   }
-  for(int i = 0; i < find_nodes.nodes_size() ; ++i) {
+  for (int i = 0; i < find_nodes.nodes_size() ; ++i) {
     NodeInfo node_to_add;
     node_to_add.node_id = NodeId(find_nodes.nodes(i));
     if (routing_table.CheckNode(node_to_add)) {
@@ -110,7 +112,14 @@ void FindNode(RoutingTable &routing_table,
   }
 }
 
-}  // namespace response 
+void ProxyConnect(protobuf::Message& message) {
+  protobuf::ProxyConnectResponse proxy_connect_response;
+  if (proxy_connect_response.ParseFromString(message.data())) {
+    //  do stuff here
+    }
+}
+
+}  // namespace response
 
 }  // namespace routing
 

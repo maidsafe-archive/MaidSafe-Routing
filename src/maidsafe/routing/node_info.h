@@ -10,27 +10,36 @@
  *  the explicit written permission of the board of directors of maidsafe.net. *
  ******************************************************************************/
 
-#ifndef MAIDSAFE_ROUTING_BOOTSTRAP_FILE_HANDLER_H_
-#define MAIDSAFE_ROUTING_BOOTSTRAP_FILE_HANDLER_H_
+#ifndef MAIDSAFE_ROUTING_NODE_INFO_H_
+#define MAIDSAFE_ROUTING_NODE_INFO_H_
 
-#include <vector>
-
-#include "boost/filesystem/path.hpp"
+#include "maidsafe/common/rsa.h"
 
 #include "maidsafe/routing/api_config.h"
-
-namespace fs = boost::filesystem;
+#include "maidsafe/routing/node_id.h"
+#include "maidsafe/routing/parameters.h"
 
 namespace maidsafe {
 
 namespace routing {
 
-std::vector<Endpoint> ReadBootstrapFile(const fs::path &path);
+namespace protobuf { class Contact; }  //  namespace protobuf
 
-bool WriteBootstrapFile(const std::vector<Endpoint> &endpoints, const fs::path & path);
+struct NodeInfo {
+  NodeInfo();
+  NodeId node_id;
+  asymm::PublicKey public_key;
+  int32_t rank;
+  int32_t bucket;
+  Endpoint endpoint;
+  int32_t dimension_1;
+  int32_t dimension_2;
+  int32_t dimension_3;
+  int32_t dimension_4;
+};
 
 }  // namespace routing
 
 }  // namespace maidsafe
 
-#endif  // MAIDSAFE_ROUTING_BOOTSTRAP_FILE_HANDLER_H_
+#endif  // MAIDSAFE_ROUTING_NODE_INFO_H_

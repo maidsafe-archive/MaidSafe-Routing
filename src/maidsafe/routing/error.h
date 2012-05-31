@@ -14,7 +14,10 @@
 #define MAIDSAFE_ROUTING_ERROR_H_
 
 #include <system_error>
+#include <string>
+
 #include "maidsafe/common/platform_config.h"
+
 namespace maidsafe {
 
 namespace routing {
@@ -49,7 +52,7 @@ enum error_conditions {
 std::error_code make_error_code(error_codes e);
 std::error_condition make_error_condition(error_conditions e);
 
-} // namespace error // until gcc supports enum classes we need this!!
+}  // namespace error // until gcc supports enum classes we need this!!
 
 class error_category_routing : public std::error_category {
  public:
@@ -59,9 +62,9 @@ class error_category_routing : public std::error_category {
     virtual std::error_condition default_error_condition(int ev) const;
     virtual bool equivalent(const std::error_code& code, int condition) const;
 #else
-    virtual const char* name() const noexcept (true);  // gcc > 4.7 requires noexcept
-    virtual std::error_condition default_error_condition(int ev) const noexcept (true);
-    virtual bool equivalent(const std::error_code& code, int condition) const noexcept (true);
+    virtual const char* name() const noexcept(true);  // gcc > 4.7 requires noexcept
+    virtual std::error_condition default_error_condition(int ev) const noexcept(true);
+    virtual bool equivalent(const std::error_code& code, int condition) const noexcept(true);
 #endif
 };
 
@@ -70,14 +73,13 @@ const std::error_category &error_category();
 
 }  // namespace routing
 
-} // namespace maidsafe
+}  // namespace maidsafe
 
 #ifdef __GNUC__
 #  pragma GCC diagnostic push
 #  pragma GCC diagnostic ignored "-Weffc++"
 #endif
-namespace std
-{
+namespace std {
   template <>
   struct std::is_error_code_enum<maidsafe::routing::error::error_codes>
     : public true_type {};

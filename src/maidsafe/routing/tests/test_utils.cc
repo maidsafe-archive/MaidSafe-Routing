@@ -18,8 +18,14 @@
 #include "maidsafe/routing/log.h"
 
 namespace maidsafe {
+
 namespace routing {
+
 namespace test {
+
+uint16_t GetRandomPort() {
+  return ((RandomUint32() % 48126) + 1025);
+}
 
 NodeInfo MakeNode() {
   NodeInfo node;
@@ -27,12 +33,13 @@ NodeInfo MakeNode() {
   asymm::Keys keys;
   asymm::GenerateKeyPair(&keys);
   node.public_key = keys.public_key;
-  node.endpoint.address().from_string("127.0.0.1");
+  node.endpoint.address().from_string("192.168.1.1");
   node.endpoint.port(1500);
   return node;
 }
 
-
 }  // namespace test
+
 }  // namespace routing
+
 }  // namespace maidsafe

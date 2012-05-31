@@ -10,11 +10,14 @@
  *  the explicit written permission of the board of directors of maidsafe.net. *
  ******************************************************************************/
 
+#include "maidsafe/routing/rpcs.h"
+
 #include "maidsafe/common/utils.h"
+#include "maidsafe/rudp/managed_connections.h"
+
+#include "maidsafe/routing/log.h"
 #include "maidsafe/routing/node_id.h"
 #include "maidsafe/routing/routing_pb.h"
-#include "maidsafe/routing/parameters.h"
-#include "maidsafe/routing/log.h"
 
 namespace maidsafe {
 
@@ -23,8 +26,9 @@ namespace routing {
 namespace rpcs {
 
 // this is maybe not required and might be removed
-const protobuf::Message Ping(const NodeId &node_id,
-                       const std::string &identity) {
+const protobuf::Message Ping(const NodeId &node_id, const std::string &identity) {
+  BOOST_ASSERT_MSG(node_id.IsValid(), "Invalid node_id");
+  BOOST_ASSERT_MSG(!identity.empty(), "Invalid identity");
   protobuf::Message message;
   protobuf::PingRequest ping_request;
   ping_request.set_ping(true);
@@ -38,13 +42,16 @@ const protobuf::Message Ping(const NodeId &node_id,
   message.set_routing_failure(false);
   message.set_id(0);
   message.set_client_node(false);
-  BOOST_ASSERT_MSG(message.IsInitialized(), "unintialised message");
+  BOOST_ASSERT_MSG(message.IsInitialized(), "Unintialised message");
   return message;
 }
 
-const protobuf::Message Connect(const NodeId &node_id,
-                   const rudp::EndpointPair &our_endpoint,
-                   const std::string &identity) {
+const protobuf::Message Connect(const NodeId &node_id, const rudp::EndpointPair &our_endpoint,
+                                const std::string &identity) {
+  BOOST_ASSERT_MSG(node_id.IsValid(), "Invalid node_id");
+  BOOST_ASSERT_MSG(!identity.empty(), "Invalid identity");
+ // BOOST_ASSERT_MSG(!our_endpoint.external.address().is_unspecified(), "Unspecified endpoint");
+//  BOOST_ASSERT_MSG(!our_endpoint.local.address().is_unspecified(), "Unspecified endpoint");
   protobuf::Message message;
   protobuf::Contact *contact;
   protobuf::Endpoint *public_endpoint;
@@ -68,11 +75,12 @@ const protobuf::Message Connect(const NodeId &node_id,
   message.set_routing_failure(false);
   message.set_id(0);
   message.set_client_node(false);
-  BOOST_ASSERT_MSG(message.IsInitialized(), "unintialised message");
+  BOOST_ASSERT_MSG(message.IsInitialized(), "Unintialised message");
   return message;
 }
 
-const protobuf::Message FindNodes(const NodeId &node_id, boost::asio::ip::udp::endpoint endpoint) {
+const protobuf::Message FindNodes(const NodeId &node_id, Endpoint endpoint) {
+  BOOST_ASSERT_MSG(node_id.IsValid(), "Invalid node_id");
   protobuf::Message message;
   protobuf::FindNodesRequest find_nodes;
   find_nodes.set_num_nodes_requested(Parameters::closest_nodes_size);
@@ -94,11 +102,35 @@ const protobuf::Message FindNodes(const NodeId &node_id, boost::asio::ip::udp::e
     pbendpoint->set_ip(endpoint.address().to_string().c_str());
     pbendpoint->set_port(endpoint.port());
   }
-  BOOST_ASSERT_MSG(message.IsInitialized(), "unintialised message");
+  BOOST_ASSERT_MSG(message.IsInitialized(), "Unintialised message");
   return message;
 }
 
-} // namespace rpcs
+const protobuf::Message ProxyConnect(const NodeId &node_id, const std::string &identity,
+                                     const Endpoint &endpoint) {
+  BOOST_ASSERT_MSG(node_id.IsValid(), "Invalid node_id");
+  BOOST_ASSERT_MSG(!identity.empty(), "Invalid identity");
+  BOOST_ASSERT_MSG(!endpoint.address().is_unspecified(), "Unspecified endpoint");
+
+  protobuf::Message message;
+  protobuf::ProxyConnectRequest proxy_connect_request;
+  protobuf::Endpoint *endpoint_proto = proxy_connect_request.mutable_endpoint();
+  endpoint_proto->set_ip(endpoint.address().to_string());
+  endpoint_proto->set_port(endpoint.port());
+  message.set_destination_id(node_id.String());
+  message.set_source_id(identity);
+  message.set_data(proxy_connect_request.SerializeAsString());
+  message.set_direct(true);
+  message.set_replication(1);
+  message.set_type(4);
+  message.set_routing_failure(false);
+  message.set_id(0);
+  message.set_client_node(false);
+  BOOST_ASSERT_MSG(message.IsInitialized(), "Unintialised message");
+  return message;
+}
+
+}  // namespace rpcs
 
 }  // namespace routing
 

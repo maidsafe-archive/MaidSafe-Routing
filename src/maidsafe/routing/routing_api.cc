@@ -10,38 +10,42 @@
  *  the explicit written permission of the board of directors of maidsafe.net. *
  ******************************************************************************/
 
-#include <utility>
+#include "maidsafe/routing/routing_api.h"
+
 #include <chrono>
-#include <thread>
 #include <future>
-#include "boost/filesystem/fstream.hpp"
+#include <thread>
+#include <utility>
+
 #include "boost/filesystem/exception.hpp"
+#include "boost/filesystem/fstream.hpp"
+
 #include "maidsafe/common/utils.h"
 #include "maidsafe/rudp/managed_connections.h"
 #include "maidsafe/rudp/return_codes.h"
-#include "maidsafe/routing/return_codes.h"
-#include "maidsafe/routing/parameters.h"
-#include "maidsafe/routing/routing_api.h"
-#include "maidsafe/routing/routing_pb.h"
-#include "maidsafe/routing/node_id.h"
-#include "maidsafe/routing/routing_table.h"
-#include "maidsafe/routing/timer.h"
-#include "maidsafe/routing/bootstrap_file_handler.h"
-#include "maidsafe/routing/return_codes.h"
-#include "maidsafe/routing/utils.h"
-#include "maidsafe/routing/message_handler.h"
-#include "maidsafe/routing/parameters.h"
-#include "maidsafe/routing/routing_api_impl.h"
 
-namespace fs = boost::filesystem;
+#include "maidsafe/routing/bootstrap_file_handler.h"
+#include "maidsafe/routing/message_handler.h"
+#include "maidsafe/routing/node_id.h"
+#include "maidsafe/routing/parameters.h"
+#include "maidsafe/routing/return_codes.h"
+#include "maidsafe/routing/routing_api_impl.h"
+#include "maidsafe/routing/routing_pb.h"
+#include "maidsafe/routing/routing_table.h"
+#include "maidsafe/routing/rpcs.h"
+#include "maidsafe/routing/timer.h"
+#include "maidsafe/routing/utils.h"
+
+namespace args = std::placeholders;
 namespace bs2 = boost::signals2;
+namespace fs = boost::filesystem;
 
 namespace maidsafe {
 
 namespace routing {
 
 Routing::Routing(const asymm::Keys &keys,
-                 const boost::filesystem::path &boostrap_file_path,
+                 const fs::path &boostrap_file_path,
                  NodeValidationFunctor node_validation_functor,
                  const bool client_mode)
     : impl_(new RoutingPrivate(keys, boostrap_file_path, node_validation_functor, client_mode)) {
@@ -50,7 +54,7 @@ Routing::Routing(const asymm::Keys &keys,
   // not catching exceptions !!
   fs::ifstream file_in(boostrap_file_path, std::ios::in | std::ios::binary);
   fs::ofstream file_out(boostrap_file_path, std::ios::out | std::ios::binary);
-  if(file_in.good()) {
+  if (file_in.good()) {
     if (fs::exists(boostrap_file_path)) {
       fs::file_size(boostrap_file_path);  // throws
     } else if (file_out.good()) {
@@ -72,26 +76,25 @@ Routing::Routing(const asymm::Keys &keys,
 Routing::~Routing() {}
 
 int Routing::GetStatus() {
- if (impl_->routing_table_.Size() == 0) {
+  if (impl_->routing_table_.Size() == 0) {
     rudp::EndpointPair endpoint;
     if(impl_->rudp_.GetAvailableEndpoint(endpoint) != rudp::kSuccess) {
-      if (impl_->rudp_.GetAvailableEndpoint(endpoint)
-                                          == rudp::kNoneAvailable) 
+      if (impl_->rudp_.GetAvailableEndpoint(endpoint) == rudp::kNoneAvailable)
         return kNotJoined;
-    } 
- } else {
-  return impl_->routing_table_.Size();
- }
- return 0;
+    }
+  } else {
+    return impl_->routing_table_.Size();
+  }
+  return 0;
 }
 
 // drop existing routing table and restart
 // the endpoint is the endpoint to connect to.
-bool Routing::BootStrapFromThisEndpoint(const boost::asio::ip::udp::endpoint
+bool Routing::BootStrapFromThisEndpoint(const boost::asio::ip::udp::endpoint&
                                                                      endpoint,
                               boost::asio::ip::udp::endpoint local_endpoint) {
-  DLOG(INFO) << " Entered bootstrap IP address : " << endpoint.address().to_string();
-  DLOG(INFO) << " Entered bootstrap Port       : " << endpoint.port();
+  LOG(INFO) << " Entered bootstrap IP address : " << endpoint.address().to_string();
+  LOG(INFO) << " Entered bootstrap Port       : " << endpoint.port();
   if (endpoint.address().is_unspecified()) {
     DLOG(ERROR) << "Attempt to boot from unspecified endpoint ! aborted";
     return false;
@@ -108,35 +111,29 @@ bool Routing::BootStrapFromThisEndpoint(const boost::asio::ip::udp::endpoint
   return Join(local_endpoint);
 }
 
-bool Routing::Join(boost::asio::ip::udp::endpoint local_endpoint) {
+bool Routing::Join(Endpoint local_endpoint) {
   if (impl_->bootstrap_nodes_.empty()) {
-    DLOG(INFO) << "No bootstrap nodes Aborted Join !!";
+    LOG(INFO) << "No bootstrap nodes Aborted Join !!";
     return false;
   }
-  rudp::MessageReceivedFunctor message_recieved(std::bind(&Routing::ReceiveMessage,
-                                                          this,
-                                                          std::placeholders::_1));
-  rudp::ConnectionLostFunctor connection_lost(
-                                          std::bind(&Routing::ConnectionLost,
-                                                  this,
-                                                  std::placeholders::_1));
-  boost::asio::ip::udp::endpoint bootstrap_endpoint(impl_->rudp_.Bootstrap(
-                                                    impl_->bootstrap_nodes_,
-                                                    message_recieved,
-                                                    connection_lost,
-                                                    local_endpoint));
+  rudp::MessageReceivedFunctor message_recieved(std::bind(&Routing::ReceiveMessage, this,
+                                                          args::_1));
+  rudp::ConnectionLostFunctor connection_lost(std::bind(&Routing::ConnectionLost, this, args::_1));
 
-  if (bootstrap_endpoint.address().is_unspecified() &&
-      (local_endpoint.address().is_unspecified())) {
-    DLOG(ERROR) << "Bootstrap endpoint: " << bootstrap_endpoint
-                << "\tLocal endpoint: " << local_endpoint;
+  Endpoint bootstrap_endpoint(impl_->rudp_.Bootstrap(impl_->bootstrap_nodes_,
+                                                     message_recieved,
+                                                     connection_lost,
+                                                     local_endpoint));
+
+  if (bootstrap_endpoint.address().is_unspecified() && local_endpoint.address().is_unspecified()) {
+    DLOG(ERROR) << "could not get bootstrap address and not zero state";
     return false;
   }
 
   std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-  auto boot = std::async(std::launch::async,
-    [&]{ return impl_->rudp_.Send(bootstrap_endpoint,
-                rpcs::FindNodes(NodeId(impl_->keys_.identity), local_endpoint).SerializeAsString()); });
+  auto boot = std::async(std::launch::async, [&] {
+      return impl_->rudp_.Send(bootstrap_endpoint, rpcs::FindNodes(
+          NodeId(impl_->keys_.identity), local_endpoint).SerializeAsString()); }); // NOLINT Prakash
   return (boot.get() == 0);
 }
 
@@ -144,7 +141,7 @@ int Routing::Send(const std::string destination_id,
                   const std::string data,
                   const uint16_t type,
                   const MessageReceivedFunctor response_functor,
-                  const uint16_t timeout_seconds,
+                  const uint16_t /*timeout_seconds*/,
                   const bool direct) {
   if (destination_id.empty()) {
     DLOG(ERROR) << "No destination id, aborted send";
@@ -156,7 +153,7 @@ int Routing::Send(const std::string destination_id,
   }
   protobuf::Message proto_message;
   proto_message.set_id(0);
-  // TODO(see if ANONYMOUS and Endpoint required here
+  // TODO(dirvine): see if ANONYMOUS and Endpoint required here
   proto_message.set_source_id(impl_->routing_table_.kKeys().identity);
   proto_message.set_destination_id(destination_id);
   proto_message.set_data(data);
@@ -167,10 +164,10 @@ int Routing::Send(const std::string destination_id,
 }
 
 void Routing::ValidateThisNode(const std::string &node_id,
-                              const asymm::PublicKey &public_key,
-                              const boost::asio::ip::udp::endpoint &their_endpoint,
-                              const boost::asio::ip::udp::endpoint &our_endpoint,
-                              bool client) {
+                               const asymm::PublicKey &public_key,
+                               const Endpoint &their_endpoint,
+                               const Endpoint &our_endpoint,
+                               bool client) {
   NodeInfo node_info;
   // TODO(dirvine) Add Managed Connection  here !!!
   node_info.node_id = NodeId(node_id);
@@ -186,8 +183,7 @@ void Routing::ValidateThisNode(const std::string &node_id,
     }
     impl_->bootstrap_nodes_.push_back(their_endpoint);
     std::error_code error;
-    WriteBootstrapFile(impl_->bootstrap_nodes_,
-                       impl_->bootstrap_file_path_);
+    WriteBootstrapFile(impl_->bootstrap_nodes_, impl_->bootstrap_file_path_);
   }
 }
 
@@ -199,63 +195,54 @@ bs2::signal<void(int16_t)> &Routing::NetworkStatusSignal() {
   return impl_->network_status_signal_;
 }
 
-bs2::signal<void(std::string, std::string)>
-                            &Routing::CloseNodeReplacedOldNewSignal() {
+bs2::signal<void(std::string, std::string)> &Routing::CloseNodeReplacedOldNewSignal() {
   return impl_->routing_table_.CloseNodeReplacedOldNewSignal();
 }
 
-  boost::signals2::signal<void(const std::string&,
-                           const boost::asio::ip::udp::endpoint&,
-                           const bool,
-                           const boost::asio::ip::udp::endpoint&,
-                           NodeValidatedFunctor &)>
-                           &Routing::NodeValidationSignal() {
+bs2::signal<void(const std::string&,
+                 const Endpoint&,
+                 const bool,
+                 const Endpoint&,
+               NodeValidatedFunctor &)> &Routing::NodeValidationSignal() {
   return impl_->node_validation_signal_;
-                           }
+}
 
 void Routing::ReceiveMessage(const std::string &message) {
   protobuf::Message protobuf_message;
   protobuf::ConnectRequest connection_request;
   if (protobuf_message.ParseFromString(message)) {
-    DLOG(INFO) << " Message received, type: " << protobuf_message.type() 
+    DLOG(INFO) << " Message received, type: " << protobuf_message.type()
                << " from " << HexSubstr(protobuf_message.source_id())
                << " I am " << HexSubstr(impl_->keys_.identity);
     impl_->message_handler_.ProcessMessage(protobuf_message);
-  } else {
-    DLOG(ERROR) << "received a message I cannot parse";
   }
 }
 
-void Routing::ConnectionLost(const boost::asio::ip::udp::endpoint
-                                                        &lost_endpoint) {
-  DLOG(INFO) << "Lost connection " << lost_endpoint.address().to_string()
-             << " " << lost_endpoint.port();
+void Routing::ConnectionLost(const Endpoint &lost_endpoint) {
   NodeInfo node_info;
   if ((impl_->routing_table_.GetNodeInfo(lost_endpoint, &node_info) &&
-     (impl_->routing_table_.IsMyNodeInRange(node_info.node_id,
-                                            Parameters::closest_nodes_size)))) {
-    SendOn(rpcs::FindNodes(NodeId(impl_->keys_.identity)),
-           impl_->rudp_,
-           impl_->routing_table_); // close node, get more
+      (impl_->routing_table_.IsMyNodeInRange(node_info.node_id,
+                                             Parameters::closest_nodes_size)))) {
+    // close node, get more
+    SendOn(rpcs::FindNodes(NodeId(impl_->keys_.identity)), impl_->rudp_, impl_->routing_table_);
   }
   if (!impl_->routing_table_.DropNode(lost_endpoint))
     return;
   for (auto it = impl_->direct_non_routing_table_connections_.begin();
         it != impl_->direct_non_routing_table_connections_.end(); ++it) {
-      if((*it).endpoint ==  lost_endpoint) {
-        impl_->direct_non_routing_table_connections_.erase(it);
-        return;
-      }
+    if ((*it).endpoint ==  lost_endpoint) {
+      impl_->direct_non_routing_table_connections_.erase(it);
+      return;
+    }
   }
   for (auto it = impl_->direct_non_routing_table_connections_.begin();
         it != impl_->direct_non_routing_table_connections_.end(); ++it) {
-      if((*it).endpoint ==  lost_endpoint) {
-        impl_->direct_non_routing_table_connections_.erase(it);
-      SendOn(rpcs::FindNodes(NodeId(impl_->keys_.identity)),
-      impl_->rudp_,
-      impl_->routing_table_);  // close node, get more
+    if ((*it).endpoint ==  lost_endpoint) {
+      impl_->direct_non_routing_table_connections_.erase(it);
+      // close node, get more
+      SendOn(rpcs::FindNodes(NodeId(impl_->keys_.identity)), impl_->rudp_, impl_->routing_table_);
       return;
-      }
+    }
   }
 }
 

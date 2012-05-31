@@ -21,8 +21,6 @@ namespace maidsafe {
 
 namespace routing {
 
-typedef boost::asio::ip::udp::endpoint Endpoint;
-
 struct Parameters {
  public:
   Parameters();
@@ -35,6 +33,7 @@ struct Parameters {
   static uint16_t timout_in_seconds;
   static uint16_t closest_nodes_size;
   static uint16_t max_routing_table_size;
+  static uint16_t max_non_routing_table_size;
   static uint16_t bucket_target_size;
  private:
   Parameters(const Parameters&);  // no copy
@@ -46,4 +45,4 @@ struct Parameters {
 
 }  // namespace maidsafe
 
-#endif // MAIDSAFE_ROUTING_PARAMETERS_H_
+#endif  // MAIDSAFE_ROUTING_PARAMETERS_H_

@@ -28,19 +28,15 @@
 #ifndef MAIDSAFE_ROUTING_ROUTING_API_H_
 #define MAIDSAFE_ROUTING_ROUTING_API_H_
 
-#include <cstdint>
 #include <functional>
 #include <memory>
 #include <string>
-#include <utility>  // for pair
-#include <map>
-#include <vector>
-#include <system_error>
-#include "boost/signals2/signal.hpp"
+
 #include "boost/filesystem/path.hpp"
+#include "boost/signals2/signal.hpp"
+
 #include "maidsafe/common/rsa.h"
-#include "maidsafe/rudp/managed_connections.h"
-#include "boost/asio.hpp"
+#include "maidsafe/routing/api_config.h"
 
 
 namespace maidsafe {
@@ -49,33 +45,6 @@ namespace routing {
 
 struct RoutingPrivate;
 
-// Send method return codes
-enum SendErrors {
-  kInvalidDestinatinId = -1,
-  kInvalidSourceId = -2,
-  kInvalidType = -3,
-  kEmptyData = -4
-};
-
-/****************************************************************************
-* if using boost::bind or std::bind, use **shared_from_this** pointers      *
-* to preserve lifetimes of functors. The MessageRecievedFunctor WILL        *
-* ensure functors are deleted when the system timeout is reached.           *
-****************************************************************************/
-typedef std::function<void(int /*message type*/,
-                           std::string /*message*/ )> MessageReceivedFunctor;
-// check and get public key and run ValidateThisNode method.
-typedef std::function<void(const std::string& /*node Id*/ ,
-                           const rudp::EndpointPair& /*their Node endpoint */,
-                           const bool /*client ? */,
-                           const rudp::EndpointPair& /*our Node endpoint */)>
-                                                 NodeValidationFunctor;
-typedef std::function<void(const std::string& /*node Id*/ ,
-                           const asymm::PublicKey &public_key,
-                           const rudp::EndpointPair& /*their Node endpoint */,
-                           const rudp::EndpointPair& /*our Node endpoint */,
-                           const bool /*client ? */
-                          )> NodeValidatedFunctor;
 
 /***************************************************************************
 *  WARNING THIS CONSTRUCTOR WILL THROW A BOOST::FILESYSTEM_ERROR           *
@@ -83,12 +52,12 @@ typedef std::function<void(const std::string& /*node Id*/ ,
 * *************************************************************************/
 class Routing {
  public:
-   // leave keys.identity to empty for temporary anonymous connection.
+   // set keys.identity to ANONYMOUS for temporary anonymous connection.
   Routing(const asymm::Keys &keys,
           const boost::filesystem::path &full_path_and_name,
           NodeValidationFunctor node_validation_functor,
           bool client_mode);
-   ~Routing();
+  ~Routing();
   /**************************************************************************
   * returns current network status as int (> 0 is connected)                *
   ***************************************************************************/
@@ -97,7 +66,7 @@ class Routing {
   *To force the node to use a specific endpoint for bootstrapping           *
   *(i.e. private network)                                                   *
   ***************************************************************************/
-  bool BootStrapFromThisEndpoint(const boost::asio::ip::udp::endpoint endpoint,
+  bool BootStrapFromThisEndpoint(const boost::asio::ip::udp::endpoint& endpoint,
                                 boost::asio::ip::udp::endpoint local_endpoint =
                                 boost::asio::ip::udp::endpoint());
   /**************************************************************************
@@ -108,13 +77,12 @@ class Routing {
   * clients with your address (except you). Pass an empty response_functor  *
   * to indicate you do not care about a response.                           *
   ***************************************************************************/
-  int Send(const std::string destination_id,  //id of final destination
+  int Send(const std::string destination_id,  // id of final destination
            const std::string data,  // message content (serialised data)
            const uint16_t type,  // user defined message type
            const MessageReceivedFunctor response_functor,
            const uint16_t timeout_seconds,
-           const bool direct  // is this to a close node group or direct
-           );
+           const bool direct);  // is this to a close node group or direct
   /**************************************************************************
   * This signal is fired on any message received that is NOT a reply to a   *
   * request made by the Send method.                                        *
@@ -131,26 +99,26 @@ class Routing {
   * Keys further than the furthest node can safely be deleted (if any)      *
   ***************************************************************************/
   boost::signals2::signal<void(std::string /*new node*/,
-                               std::string /*current furthest node*/ )>
+                               std::string /*current furthest node*/)>
                                            &CloseNodeReplacedOldNewSignal();
-  boost::signals2::signal<void(const std::string& /*node Id*/ ,
-                           const boost::asio::ip::udp::endpoint& /*their Node */,
+  boost::signals2::signal<void(const std::string& /*node Id*/,
+                           const Endpoint& /*their Node */,
                            const bool /*client ? */,
-                           const boost::asio::ip::udp::endpoint& /*our Node */,
-                           NodeValidatedFunctor & )> &NodeValidationSignal();
+                           const Endpoint& /*our Node */,
+                           NodeValidatedFunctor &)> &NodeValidationSignal();
+
  private:
   Routing(const Routing&);
   Routing(const Routing&&);
   Routing& operator=(const Routing&);
   void Init();
-  bool Join(boost::asio::ip::udp::endpoint local_endpoint =
-                                boost::asio::ip::udp::endpoint());
+  bool Join(Endpoint local_endpoint = Endpoint());
   void ReceiveMessage(const std::string &message);
-  void ConnectionLost(const boost::asio::ip::udp::endpoint &lost_endpoint);
+  void ConnectionLost(const Endpoint &lost_endpoint);
   void ValidateThisNode(const std::string &node_id,
                       const asymm::PublicKey &public_key,
-                      const boost::asio::ip::udp::endpoint &their_endpoint,
-                      const boost::asio::ip::udp::endpoint &our_endpoint,
+                      const Endpoint &their_endpoint,
+                      const Endpoint &our_endpoint,
                       bool client);
   std::unique_ptr<RoutingPrivate> impl_;  // pimpl (data members only)
 };
