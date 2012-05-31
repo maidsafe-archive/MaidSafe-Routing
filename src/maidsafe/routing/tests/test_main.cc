@@ -12,7 +12,7 @@
 
 #include "maidsafe/common/test.h"
 #include "maidsafe/routing/log.h"
-
+#include "maidsafe/common/log.h"
 int main(int argc, char **argv) {
   maidsafe::InitLogging(argv[0]);
   FLAGS_logtostderr = true;

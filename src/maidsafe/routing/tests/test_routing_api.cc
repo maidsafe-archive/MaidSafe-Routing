@@ -23,6 +23,7 @@
 #include "maidsafe/common/utils.h"
 #include "maidsafe/routing/routing_table.h"
 #include "maidsafe/rudp/managed_connections.h"
+#include "maidsafe/rudp/return_codes.h"
 #include "maidsafe/routing/node_id.h"
 #include "maidsafe/routing/log.h"
 #include "maidsafe/routing/return_codes.h"
@@ -88,13 +89,18 @@ TEST(APITest, BEH_API_ManualBootstrap) {
   EXPECT_NO_THROW({Routing RtAPI(keys2, node2_config, nullptr, false);});
   Routing R1(keys1, node1_config, nullptr, false);
   Routing R2(keys2, node2_config, nullptr, false);
-  boost::asio::ip::udp::endpoint empty_endpoint;
-  EXPECT_EQ(R1.GetStatus(), kNotJoined);
-  EXPECT_EQ(R2.GetStatus(), kNotJoined);
+  EXPECT_EQ(R1.GetStatus(), rudp::kNoneAvailable);
+  EXPECT_EQ(R2.GetStatus(), rudp::kNoneAvailable);
   boost::asio::ip::udp::endpoint endpoint1g(boost::asio::ip::address_v4::loopback(), 5000);
   boost::asio::ip::udp::endpoint endpoint2g(boost::asio::ip::address_v4::loopback(), 5001);
-  R1.BootStrapFromThisEndpoint(endpoint2g);
-  R2.BootStrapFromThisEndpoint(endpoint1g);
+  auto a1 = std::async(std::launch::async, [&] { return (R1.BootStrapFromThisEndpoint(endpoint2g,
+                                                                                  endpoint1g)); });
+  auto a2 = std::async(std::launch::async, [&] { return (R2.BootStrapFromThisEndpoint(endpoint1g,
+                                                                                  endpoint2g)); });
+  EXPECT_TRUE(a2.get());
+  EXPECT_TRUE(a1.get());
+
+  std::this_thread::sleep_for(std::chrono::milliseconds(3000));
   EXPECT_EQ(R1.GetStatus(), kSuccess);
   EXPECT_EQ(R2.GetStatus(), kSuccess);
   EXPECT_TRUE(boost::filesystem::remove(node1_config));
@@ -105,10 +111,8 @@ TEST(APITest, BEH_API_ZeroState) {
   asymm::Keys keys1(MakeKeys());
   asymm::Keys keys2(MakeKeys());
   asymm::Keys keys3(MakeKeys());
-  boost::filesystem::path node1_config
-                       (fs::unique_path(fs::temp_directory_path() / "test1"));
-  boost::filesystem::path node2_config
-                       (fs::unique_path(fs::temp_directory_path() / "test2"));
+  boost::filesystem::path node1_config (fs::unique_path(fs::temp_directory_path() / "test1"));
+  boost::filesystem::path node2_config (fs::unique_path(fs::temp_directory_path() / "test2"));
   boost::filesystem::path node3_config
                        (fs::unique_path(fs::temp_directory_path() / "test3"));
   Routing R1(keys1, node1_config, nullptr, false);
@@ -125,10 +129,12 @@ TEST(APITest, BEH_API_ZeroState) {
 
   std::this_thread::sleep_for(std::chrono::milliseconds(3000));
   EXPECT_TRUE(a2.get());  // wait for promise !
+  while(std::future_status::ready != a1.wait_for(std::chrono::milliseconds(10)))  {}
+  
   EXPECT_TRUE(a1.get());  // wait for promise !
 
-  auto a3 = std::async(std::launch::async,
-                       [&]{return R3.BootStrapFromThisEndpoint(endpoint1);});
+  std::this_thread::sleep_for(std::chrono::milliseconds(5000));
+  auto a3 = std::async(std::launch::async, [&]{return R3.BootStrapFromThisEndpoint(endpoint1);});
   std::this_thread::sleep_for(std::chrono::milliseconds(3000));
   EXPECT_TRUE(a3.get());  // wait for promise !
 
@@ -151,7 +157,6 @@ TEST(APITest, BEH_API_NodeNetwork) {
 //    Routing AnodeToBEFixed (i, fs::unique_path(fs::temp_directory_path() / i.identity), nullptr, false);
 //  }
   // TODO(dirvine) do this properly !!!
-
 }
 
 }  // namespace test

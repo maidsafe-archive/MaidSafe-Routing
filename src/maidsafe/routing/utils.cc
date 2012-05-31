@@ -15,6 +15,7 @@
 #include "maidsafe/routing/routing_pb.h"
 #include "maidsafe/routing/routing_table.h"
 #include "maidsafe/routing/parameters.h"
+#include "maidsafe/common/log.h"
 
 namespace maidsafe {
 
