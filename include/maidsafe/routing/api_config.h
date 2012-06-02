@@ -45,7 +45,7 @@ enum SendErrors {
 * to preserve lifetimes of functors. The MessageRecievedFunctor WILL        *
 * ensure functors are deleted when the system timeout is reached.           *
 ****************************************************************************/
-typedef std::function<void(int /*message type*/,
+typedef std::function<void(int32_t /*return code*/,
                            std::string /*message*/)> MessageReceivedFunctor;
 // check and get public key and run ValidateThisNode method.
 typedef std::function<void(const std::string& /*node Id*/ ,

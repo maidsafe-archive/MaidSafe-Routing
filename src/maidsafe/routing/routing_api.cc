@@ -137,13 +137,13 @@ bool Routing::Join(Endpoint local_endpoint) {
   return (boot.get() == 0);
 }
 
-int Routing::Send(const std::string destination_id,
+int Routing::Send(const NodeId destination_id,
                   const std::string data,
-                  const uint16_t type,
+                  const int32_t type,
                   const MessageReceivedFunctor response_functor,
-                  const uint16_t /*timeout_seconds*/,
+                  const int16_t timeout_seconds,
                   const bool direct) {
-  if (destination_id.empty()) {
+  if (destination_id.String().empty()) {
     DLOG(ERROR) << "No destination id, aborted send";
     return kInvalidDestinatinId;
   }
@@ -155,7 +155,7 @@ int Routing::Send(const std::string destination_id,
   proto_message.set_id(0);
   // TODO(dirvine): see if ANONYMOUS and Endpoint required here
   proto_message.set_source_id(impl_->routing_table_.kKeys().identity);
-  proto_message.set_destination_id(destination_id);
+  proto_message.set_destination_id(destination_id.String());
   proto_message.set_data(data);
   proto_message.set_direct(direct);
   proto_message.set_type(type);

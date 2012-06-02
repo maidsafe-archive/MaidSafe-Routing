@@ -36,6 +36,7 @@
 #include "boost/signals2/signal.hpp"
 
 #include "maidsafe/common/rsa.h"
+#include "maidsafe/routing/node_id.h"
 #include "maidsafe/routing/api_config.h"
 
 
@@ -77,11 +78,11 @@ class Routing {
   * clients with your address (except you). Pass an empty response_functor  *
   * to indicate you do not care about a response.                           *
   ***************************************************************************/
-  int Send(const std::string destination_id,  // id of final destination
+  int Send(const NodeId destination_id,  // id of final destination
            const std::string data,  // message content (serialised data)
-           const uint16_t type,  // user defined message type
+           const int32_t type,  // user defined message type
            const MessageReceivedFunctor response_functor,
-           const uint16_t timeout_seconds,
+           const int16_t timeout_seconds,
            const bool direct);  // is this to a close node group or direct
   /**************************************************************************
   * This signal is fired on any message received that is NOT a reply to a   *
