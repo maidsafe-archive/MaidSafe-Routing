@@ -42,7 +42,7 @@ message Message {
   required bytes destination_id = 2;
   required bytes data = 3; // serialised protobuf - possibly encrypted
   optional bytes signature = 4;
-  required bool direct = 5;
+  required int32 direct = 5;
   required int32 replication = 6;
   required sint32 type = 7; // type of data - used in signal to upper layers with (type, data)
   required bool routing_failure = 8;

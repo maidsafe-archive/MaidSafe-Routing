@@ -83,7 +83,7 @@ class Routing {
            const int32_t type,  // user defined message type
            const MessageReceivedFunctor response_functor,
            const int16_t timeout_seconds,
-           const bool direct);  // is this to a close node group or direct
+           const ConnectType);  // is this to a close node group or direct
   /**************************************************************************
   * This signal is fired on any message received that is NOT a reply to a   *
   * request made by the Send method.                                        *

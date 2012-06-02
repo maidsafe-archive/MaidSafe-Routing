@@ -142,7 +142,7 @@ int Routing::Send(const NodeId destination_id,
                   const int32_t type,
                   const MessageReceivedFunctor response_functor,
                   const int16_t timeout_seconds,
-                  const bool direct) {
+                  const ConnectType connect_type) {
   if (destination_id.String().empty()) {
     DLOG(ERROR) << "No destination id, aborted send";
     return kInvalidDestinatinId;
@@ -157,7 +157,7 @@ int Routing::Send(const NodeId destination_id,
   proto_message.set_source_id(impl_->routing_table_.kKeys().identity);
   proto_message.set_destination_id(destination_id.String());
   proto_message.set_data(data);
-  proto_message.set_direct(direct);
+  proto_message.set_direct(static_cast<int32_t>(connect_type));
   proto_message.set_type(type);
   SendOn(proto_message, impl_->rudp_, impl_->routing_table_);
   return 0;

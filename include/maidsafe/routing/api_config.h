@@ -20,6 +20,7 @@
 #include "boost/signals2/signal.hpp"
 
 #include "maidsafe/common/rsa.h"
+#include "maidsafe/routing/node_id.h"
 
 namespace maidsafe {
 
@@ -30,7 +31,13 @@ class ManagedConnections;
 
 namespace routing {
 
-class NodeId;
+// Send method connection types
+
+enum class ConnectType : int32_t {
+    kSingle = 1,
+    kClosest,
+    kGroup
+};
 
 // Send method return codes
 enum SendErrors {
