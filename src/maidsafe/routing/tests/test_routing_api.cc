@@ -54,7 +54,7 @@ asymm::Keys MakeKeys() {
   return keys;
 }
 
-TEST(APITest, BadConfigFile) {
+TEST(APITest, BEH_API_BadConfigFile) {
   // See bootstrap file tests for further interrogation of these files
   asymm::Keys keys(MakeKeys());
   boost::filesystem::path bad_file("/bad file/ not found/ I hope/");
