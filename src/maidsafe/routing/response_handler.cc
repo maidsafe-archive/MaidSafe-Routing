@@ -76,7 +76,7 @@ void Connect(protobuf::Message& message, NodeValidationFunctor node_validation_f
       static_cast<unsigned short>(connect_response.contact().private_endpoint().port()));
   // TODO(dirvine) FIXME
   if (node_validation_functor)  // never add any node to routing table
-    node_validation_functor(connect_response.contact().node_id(),
+    node_validation_functor(NodeId(connect_response.contact().node_id()),
                             their_endpoint_pair,
                             message.client_node(),
                             our_endpoint_pair);

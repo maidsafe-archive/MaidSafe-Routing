@@ -147,7 +147,7 @@ void FindNodes(RoutingTable &routing_table, protobuf::Message &message) {
   assert(message.IsInitialized() && "unintialised message");
 }
 
-void ProxyConnect(RoutingTable &routing_table, rudp::ManagedConnections &rudp,
+void ProxyConnect(RoutingTable &routing_table, rudp::ManagedConnections &/*rudp*/,
                   protobuf::Message &message) {
   if (message.destination_id() != routing_table.kKeys().identity) {
     LOG(kError) << "Message not for us";

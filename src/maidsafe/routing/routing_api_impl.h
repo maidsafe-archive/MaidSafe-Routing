@@ -43,7 +43,7 @@ struct RoutingPrivate {
   RoutingPrivate& operator=(const RoutingPrivate&);  // no assign
   RoutingPrivate(const asymm::Keys &keys,
                  const boost::filesystem::path &bootstrap_file_path,
-                 NodeValidationFunctor node_validation_functor,
+                 Functors functors,
                  bool client_mode);
   friend class Routing;
   AsioService asio_service_;
@@ -52,11 +52,9 @@ struct RoutingPrivate {
   rudp::ManagedConnections rudp_;
   RoutingTable routing_table_;
   Timer timer_;
-  bs2::signal<void(int, std::string)> message_received_signal_;
-  bs2::signal<void(int16_t)> network_status_signal_;
-  bs2::signal<void(std::string, std::string)> close_node_from_to_signal_;
-  bs2::signal<void(const std::string&, const Endpoint&, const bool, const Endpoint&,
-                   NodeValidatedFunctor &)> node_validation_signal_;
+  Functors functors_;
+//  bs2::signal<void(const std::string&, const Endpoint&, const bool, const Endpoint&,
+//                   NodeValidatedFunctor &)> node_validation_signal_;
   std::map<uint32_t, std::pair<std::unique_ptr<boost::asio::deadline_timer>,
                               MessageReceivedFunctor> > waiting_for_response_;
   std::vector<NodeInfo> direct_non_routing_table_connections_;

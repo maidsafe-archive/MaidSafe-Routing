@@ -60,14 +60,15 @@ TEST(APITest, BEH_BadConfigFile) {
   boost::filesystem::path bad_file("/bad file/ not found/ I hope/");
   boost::filesystem::path good_file
               (fs::unique_path(fs::temp_directory_path() / "test"));
-  EXPECT_THROW({Routing RtAPI(keys, bad_file, nullptr, false);},
+  Functors functors;
+  EXPECT_THROW({Routing RtAPI(keys, bad_file, functors, false);},
               boost::filesystem::filesystem_error)  << "should not accept invalid files";
   EXPECT_NO_THROW({
-    Routing RtAPI(keys, good_file, nullptr, false);
+    Routing RtAPI(keys, good_file, functors, false);
   });
   EXPECT_TRUE(WriteFile(good_file, "not a vector of endpoints"));
   EXPECT_NO_THROW({
-    Routing RtAPI(keys, good_file, nullptr, false);
+    Routing RtAPI(keys, good_file, functors, false);
   }) << "cannot handle corrupt files";
   EXPECT_TRUE(boost::filesystem::remove(good_file));
 }
@@ -75,10 +76,11 @@ TEST(APITest, BEH_BadConfigFile) {
 TEST(APITest, BEH_API_StandAloneNodeNotConnected) {
   asymm::Keys keys(MakeKeys());
   boost::filesystem::path good_file(fs::unique_path(fs::temp_directory_path() / "test"));
+  Functors functors;
   EXPECT_NO_THROW({
-    Routing RtAPI(keys, good_file, nullptr, false);
+    Routing RtAPI(keys, good_file, functors, false);
   });
-  Routing RAPI(keys, good_file, nullptr, false);
+  Routing RAPI(keys, good_file, functors, false);
   Endpoint empty_endpoint;
   EXPECT_EQ(RAPI.GetStatus(), kNotJoined);
   EXPECT_TRUE(boost::filesystem::remove(good_file));
@@ -89,14 +91,15 @@ TEST(APITest, BEH_API_ManualBootstrap) {
   asymm::Keys keys2(MakeKeys());
   boost::filesystem::path node1_config(fs::unique_path(fs::temp_directory_path() / "test1"));
   boost::filesystem::path node2_config(fs::unique_path(fs::temp_directory_path() / "test2"));
+  Functors functors;
   EXPECT_NO_THROW({
-    Routing RtAPI(keys1, node1_config, nullptr, false);
+    Routing RtAPI(keys1, node1_config, functors, false);
   });
   EXPECT_NO_THROW({
-    Routing RtAPI(keys2, node2_config, nullptr, false);
+    Routing RtAPI(keys2, node2_config, functors, false);
   });
-  Routing R1(keys1, node1_config, nullptr, false);
-  Routing R2(keys2, node2_config, nullptr, false);
+  Routing R1(keys1, node1_config, functors, false);
+  Routing R2(keys2, node2_config, functors, false);
   boost::asio::ip::udp::endpoint empty_endpoint;
   EXPECT_EQ(R1.GetStatus(), kNotJoined);
   EXPECT_EQ(R2.GetStatus(), kNotJoined);
@@ -120,9 +123,10 @@ TEST(APITest, BEH_API_ZeroState) {
                        (fs::unique_path(fs::temp_directory_path() / "test2"));
   boost::filesystem::path node3_config
                        (fs::unique_path(fs::temp_directory_path() / "test3"));
-  Routing R1(keys1, node1_config, nullptr, false);
-  Routing R2(keys2, node2_config, nullptr, false);
-  Routing R3(keys3, node3_config, nullptr, false);
+  Functors functors;
+  Routing R1(keys1, node1_config, functors, false);
+  Routing R2(keys2, node2_config, functors, false);
+  Routing R3(keys3, node3_config, functors, false);
   Endpoint endpoint1(boost::asio::ip::address_v4::loopback(), 5000);
   Endpoint endpoint2(boost::asio::ip::address_v4::loopback(), 5001);
   Endpoint endpoint3(boost::asio::ip::address_v4::loopback(), 5002);

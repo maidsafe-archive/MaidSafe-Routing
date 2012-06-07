@@ -46,9 +46,9 @@ namespace routing {
 
 Routing::Routing(const asymm::Keys &keys,
                  const fs::path &boostrap_file_path,
-                 NodeValidationFunctor node_validation_functor,
+                 Functors functors,
                  const bool client_mode)
-    : impl_(new RoutingPrivate(keys, boostrap_file_path, node_validation_functor, client_mode)) {
+    : impl_(new RoutingPrivate(keys, boostrap_file_path, functors, client_mode)) {
   // test path
   std::string dummy_content;
   // not catching exceptions !!
@@ -105,7 +105,8 @@ bool Routing::BootStrapFromThisEndpoint(const boost::asio::ip::udp::endpoint&
     impl_->rudp_.Remove(remove_node.endpoint);
     impl_->routing_table_.DropNode(remove_node.endpoint);
   }
-  impl_->network_status_signal_(impl_->routing_table_.Size());
+  if(impl_->functors_.network_status)
+    impl_->functors_.network_status(impl_->routing_table_.Size());
   impl_->bootstrap_nodes_.clear();
   impl_->bootstrap_nodes_.push_back(endpoint);
   return Join(local_endpoint);
@@ -141,11 +142,11 @@ SendStatus Routing::Send(const NodeId destination_id,
                   const std::string data,
                   const int32_t type,
                   const MessageReceivedFunctor response_functor,
-                  const int16_t timeout_seconds,
+                  const int16_t /*timeout_seconds*/,
                   const ConnectType connect_type) {
   if (destination_id.String().empty()) {
     LOG(kError) << "No destination id, aborted send";
-    return SendStatus::kInvalidDestinatinId;
+    return SendStatus::kInvalidDestinationId;
   }
   if (data.empty() && (type != 100)) {
     LOG(kError) << "No data, aborted send";
@@ -160,7 +161,7 @@ SendStatus Routing::Send(const NodeId destination_id,
   proto_message.set_direct(static_cast<int32_t>(connect_type));
   proto_message.set_type(type);
   SendOn(proto_message, impl_->rudp_, impl_->routing_table_);
-  return SendStatus::kSucess;
+  return SendStatus::kSuccess;
 }
 
 void Routing::ValidateThisNode(const std::string &node_id,
@@ -187,25 +188,13 @@ void Routing::ValidateThisNode(const std::string &node_id,
   }
 }
 
-bs2::signal<void(int, std::string)> &Routing::MessageReceivedSignal() {
-  return impl_->message_received_signal_;
-}
-
-bs2::signal<void(int16_t)> &Routing::NetworkStatusSignal() {
-  return impl_->network_status_signal_;
-}
-
-bs2::signal<void(std::string, std::string)> &Routing::CloseNodeReplacedOldNewSignal() {
-  return impl_->routing_table_.CloseNodeReplacedOldNewSignal();
-}
-
-bs2::signal<void(const std::string&,
-                 const Endpoint&,
-                 const bool,
-                 const Endpoint&,
-               NodeValidatedFunctor &)> &Routing::NodeValidationSignal() {
-  return impl_->node_validation_signal_;
-}
+//bs2::signal<void(const std::string&,
+//                 const Endpoint&,
+//                 const bool,
+//                 const Endpoint&,
+//               NodeValidatedFunctor &)> &Routing::NodeValidationSignal() {
+//  return impl_->node_validation_signal_;
+//}
 
 void Routing::ReceiveMessage(const std::string &message) {
   protobuf::Message protobuf_message;

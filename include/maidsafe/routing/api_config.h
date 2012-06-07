@@ -40,31 +40,55 @@ enum class ConnectType : int32_t {
 };
 
 // Send method return codes
-enum class SendStatus {
-  kSucess = 0,
-  kInvalidDestinatinId = -1,
+enum class SendStatus : int32_t {
+  kSuccess = 0,
+  kInvalidDestinationId = -1,
   kInvalidSourceId = -2,
   kInvalidType = -3,
   kEmptyData = -4
 };
 
-/****************************************************************************
-* if using boost::bind or std::bind, use **shared_from_this** pointers      *
-* to preserve lifetimes of functors. The MessageRecievedFunctor WILL        *
-* ensure functors are deleted when the system timeout is reached.           *
-****************************************************************************/
-typedef std::function<void(int32_t /*return code*/,
-                           std::string /*message*/)> MessageReceivedFunctor;
+/***************************************************************************************************
+* if using boost::bind or std::bind, use **shared_from_this** pointers to preserve lifetimes of    *
+* functors. The ResponseFunctor WILL ensure functors are deleted when the system timeouts.         *
+***************************************************************************************************/
+typedef std::function<void(const int& /*return code*/,
+                           const std::string& /*message*/)> ResponseFunctor;
+/***************************************************************************************************
+* This is called on any message received that is NOT a reply to a request made by the Send method. *
+***************************************************************************************************/
+typedef std::function<void(const int32_t& /*mesasge type*/,
+                           const std::string &/*message*/)> MessageReceivedFunctor;
+
 // check and get public key and run ValidateThisNode method.
-typedef std::function<void(const std::string& /*node Id*/ ,
+typedef std::function<void(const NodeId& /*node Id*/,
                            const rudp::EndpointPair& /*their Node endpoint */,
-                           const bool /*client ? */,
+                           const bool& /*client ? */,
                            const rudp::EndpointPair& /*our Node endpoint */)> NodeValidationFunctor;
-typedef std::function<void(const std::string& /*node Id*/ ,
+
+typedef std::function<void(const NodeId& /*node Id*/ ,
                            const asymm::PublicKey &public_key,
-                           const rudp::EndpointPair& /*their Node endpoint */,
+                           const rudp::EndpointPair& /*their Node endpoint*/,
                            const rudp::EndpointPair& /*our Node endpoint */,
-                           const bool /*client ? */)> NodeValidatedFunctor;
+                           const bool& /*client ? */)> NodeValidatedFunctor;
+/***************************************************************************************************
+* This functor fires a number from 0 to 100 and represents % network health                        *
+***************************************************************************************************/
+typedef std::function<void(const int16_t& /*network_health*/)> NetworkStatusFunctor;
+/***************************************************************************************************
+* This functor fires when a new close node is inserted in routing table. Upper layers responsible  *
+* for storing key/value pairs should send all key/values between itself and the new nodes address  *
+* to the new node. Keys further than the furthest node can safely be deleted (if any)              *
+***************************************************************************************************/
+typedef std::function<void(const NodeId& /*new_node*/,
+                           const NodeId& /*current_furthest_node*/)> CloseNodeReplacedOldNewFunctor;
+
+struct Functors {
+  MessageReceivedFunctor message_received;
+  NodeValidationFunctor node_validation;
+  NetworkStatusFunctor network_status;
+  CloseNodeReplacedOldNewFunctor close_node_replaced_old_new;
+};
 
 typedef boost::asio::ip::udp::endpoint Endpoint;
 
