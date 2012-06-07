@@ -75,18 +75,23 @@ class Routing {
   * clients with your address (except you). Pass an empty response_functor  *
   * to indicate you do not care about a response.                           *
   ***************************************************************************/
-  SendStatus Send(const NodeId destination_id,  // id of final destination
-                  const std::string data,  // message content (serialised data)
-                  const int32_t type,  // user defined message type
+  SendStatus Send(const NodeId &destination_id,  // id of final destination
+                  const NodeId &group_id,  // id of destination group
+                  const std::string &data,  // message content (serialised data)
+                  const int32_t &type,  // user defined message type
                   const ResponseFunctor response_functor,
-                  const int16_t timeout_seconds,
-                  const ConnectType);  // is this to a close node group or direct
+                  const int16_t &timeout_seconds,
+                  const ConnectType &connect_type);  // is this to a close node group or direct
 
-  //boost::signals2::signal<void(const std::string& /*node Id*/,
-  //                         const Endpoint& /*their Node */,
-  //                         const bool /*client ? */,
-  //                         const Endpoint& /*our Node */,
-  //                         NodeValidatedFunctor &)> &NodeValidationSignal();
+  /***************************************************************************
+  * This method should be called by the user in response to                  *
+  * NodeValidateFunctor to add the node in routing table.                    *
+  ***************************************************************************/
+  void ValidateThisNode(const std::string &node_id,
+                        const asymm::PublicKey &public_key,
+                        const Endpoint &their_endpoint,
+                        const Endpoint &our_endpoint,
+                        const bool &client);
 
  private:
   Routing(const Routing&);
@@ -96,11 +101,6 @@ class Routing {
   bool Join(Endpoint local_endpoint = Endpoint());
   void ReceiveMessage(const std::string &message);
   void ConnectionLost(const Endpoint &lost_endpoint);
-  void ValidateThisNode(const std::string &node_id,
-                        const asymm::PublicKey &public_key,
-                        const Endpoint &their_endpoint,
-                        const Endpoint &our_endpoint,
-                        bool client);
   std::unique_ptr<RoutingPrivate> impl_;  // pimpl (data members only)
 };
 

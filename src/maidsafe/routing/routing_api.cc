@@ -138,12 +138,13 @@ bool Routing::Join(Endpoint local_endpoint) {
   return (boot.get() == 0);
 }
 
-SendStatus Routing::Send(const NodeId destination_id,
-                  const std::string data,
-                  const int32_t type,
-                  const MessageReceivedFunctor response_functor,
-                  const int16_t /*timeout_seconds*/,
-                  const ConnectType connect_type) {
+SendStatus Routing::Send(const NodeId &destination_id,
+                         const NodeId &/*group_id*/,
+                         const std::string &data,
+                         const int32_t &type,
+                         const ResponseFunctor response_functor,
+                         const int16_t &/*timeout_seconds*/,
+                         const ConnectType &connect_type) {
   if (destination_id.String().empty()) {
     LOG(kError) << "No destination id, aborted send";
     return SendStatus::kInvalidDestinationId;
@@ -168,7 +169,7 @@ void Routing::ValidateThisNode(const std::string &node_id,
                                const asymm::PublicKey &public_key,
                                const Endpoint &their_endpoint,
                                const Endpoint &our_endpoint,
-                               bool client) {
+                               const bool &client) {
   NodeInfo node_info;
   // TODO(dirvine) Add Managed Connection  here !!!
   node_info.node_id = NodeId(node_id);

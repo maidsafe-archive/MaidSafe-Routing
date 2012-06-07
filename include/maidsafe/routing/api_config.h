@@ -31,6 +31,8 @@ class ManagedConnections;
 
 namespace routing {
 
+typedef boost::asio::ip::udp::endpoint Endpoint;
+
 // Send method connection types
 
 enum class ConnectType : int32_t {
@@ -49,7 +51,7 @@ enum class SendStatus : int32_t {
 };
 
 /***************************************************************************************************
-* if using boost::bind or std::bind, use **shared_from_this** pointers to preserve lifetimes of    *
+* If using boost::bind or std::bind, use **shared_from_this** pointers to preserve lifetimes of    *
 * functors. The ResponseFunctor WILL ensure functors are deleted when the system timeouts.         *
 ***************************************************************************************************/
 typedef std::function<void(const int& /*return code*/,
@@ -59,18 +61,14 @@ typedef std::function<void(const int& /*return code*/,
 ***************************************************************************************************/
 typedef std::function<void(const int32_t& /*mesasge type*/,
                            const std::string &/*message*/)> MessageReceivedFunctor;
-
-// check and get public key and run ValidateThisNode method.
+/***************************************************************************************************
+* This is fired to validate a new peer node. User is supposed to validate the node and call        *
+* ValidateThisNode() method with valid public key.                                                 *
+***************************************************************************************************/
 typedef std::function<void(const NodeId& /*node Id*/,
                            const rudp::EndpointPair& /*their Node endpoint */,
-                           const bool& /*client ? */,
-                           const rudp::EndpointPair& /*our Node endpoint */)> NodeValidationFunctor;
-
-typedef std::function<void(const NodeId& /*node Id*/ ,
-                           const asymm::PublicKey &public_key,
-                           const rudp::EndpointPair& /*their Node endpoint*/,
                            const rudp::EndpointPair& /*our Node endpoint */,
-                           const bool& /*client ? */)> NodeValidatedFunctor;
+                           const bool& /*client ? */)> NodeValidationFunctor;
 /***************************************************************************************************
 * This functor fires a number from 0 to 100 and represents % network health                        *
 ***************************************************************************************************/
@@ -85,12 +83,16 @@ typedef std::function<void(const NodeId& /*new_node*/,
 
 struct Functors {
   MessageReceivedFunctor message_received;
-  NodeValidationFunctor node_validation;
   NetworkStatusFunctor network_status;
   CloseNodeReplacedOldNewFunctor close_node_replaced_old_new;
-};
+  NodeValidationFunctor node_validation;
 
-typedef boost::asio::ip::udp::endpoint Endpoint;
+  Functors()
+      : message_received(nullptr),
+        network_status(nullptr),
+        close_node_replaced_old_new(nullptr),
+        node_validation(nullptr) {}
+};
 
 }  // namespace routing
 

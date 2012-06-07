@@ -17,6 +17,8 @@
 #include <string>
 #include <vector>
 
+#include "boost/serialization/nvp.hpp"
+
 namespace maidsafe {
 
 namespace routing {
@@ -137,4 +139,33 @@ std::string DebugId(const NodeId &node_id);
 
 }  // namespace maidsafe
 
+namespace mr = maidsafe::routing;
+
+namespace boost {
+
+namespace serialization {
+
+#ifdef __MSVC__
+#  pragma warning(disable: 4127)
+#endif
+template <typename Archive>
+void serialize(Archive &archive,                              // NOLINT (Fraser)
+               mr::NodeId &node_id,
+               const unsigned int& /*version*/) {
+  std::string node_id_local;
+  if (Archive::is_saving::value) {
+    node_id_local = (node_id.ToStringEncoded(mr::NodeId::kBase64));
+  }
+  archive& boost::serialization::make_nvp("node_id", node_id_local);
+  if (Archive::is_loading::value) {
+    node_id = mr::NodeId(node_id_local, mr::NodeId::kBase64);
+  }
+#ifdef __MSVC__
+#  pragma warning(default: 4127)
+#endif
+}
+
+}  // namespace serialization
+
+}  // namespace boost
 #endif  // MAIDSAFE_ROUTING_NODE_ID_H_
