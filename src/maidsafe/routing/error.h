@@ -16,7 +16,6 @@
 #include <system_error>
 #include <string>
 
-#include "maidsafe/common/platform_config.h"
 
 namespace maidsafe {
 

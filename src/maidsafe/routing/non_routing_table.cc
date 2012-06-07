@@ -122,12 +122,12 @@ bool NonRoutingTable::AmIConnectedToEndpoint(const Endpoint& endpoint) {
 // checks paramters are real
 bool NonRoutingTable::CheckValidParameters(const NodeInfo& node) const {
   if ((!asymm::ValidateKey(node.public_key, 0))) {
-    DLOG(INFO) << "invalid public key";
+    LOG(kInfo) << "invalid public key";
     return false;
   }
   // bucket index is not used in non routing table
   if (node.bucket != 99999) {
-    DLOG(INFO) << "invalid bucket index";
+    LOG(kInfo) << "invalid bucket index";
     return false;
   }
   return CheckParametersAreUnique(node);
@@ -139,7 +139,7 @@ bool NonRoutingTable::CheckParametersAreUnique(const NodeInfo& node) const {
                    [node](const NodeInfo &i)->bool
                    { return (i.endpoint == node.endpoint); })
                  != non_routing_table_nodes_.end()) {
-    DLOG(INFO) << "Already have node with this endpoint";
+    LOG(kInfo) << "Already have node with this endpoint";
     return false;
   }
 
@@ -150,7 +150,7 @@ bool NonRoutingTable::CheckParametersAreUnique(const NodeInfo& node) const {
                    { return (asymm::MatchingPublicKeys(i.public_key, node.public_key) &&
                        (i.node_id != node.node_id));})
                  != non_routing_table_nodes_.end()) {
-    DLOG(INFO) << "Already have a different node id with this public key";
+    LOG(kInfo) << "Already have a different node id with this public key";
     return false;
   }
 
@@ -160,12 +160,12 @@ bool NonRoutingTable::CheckParametersAreUnique(const NodeInfo& node) const {
 bool NonRoutingTable::CheckRangeForNodeToBeAdded(NodeInfo& node,
                                                  const NodeId &furthest_close_node_id) {
   if (NonRoutingTableSize() > Parameters::max_non_routing_table_size) {
-    DLOG(INFO) << "Non Routing Table full";
+    LOG(kInfo) << "Non Routing Table full";
     return false;
   }
 
   if (!CheckValidParameters(node)) {
-    DLOG(INFO) << "Invalid Parameters";
+    LOG(kInfo) << "Invalid Parameters";
     return false;
   }
   return IsMyNodeInRange(kNodeId_, furthest_close_node_id);

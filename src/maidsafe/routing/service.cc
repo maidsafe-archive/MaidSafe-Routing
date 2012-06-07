@@ -31,18 +31,18 @@ namespace service {
 
 void Ping(RoutingTable &routing_table, protobuf::Message &message) {
 //   if (message.destination_id() != NodeId::kKeySizeBytes) {
-//         DLOG(ERROR) << "Invalid destination ID";
+//         LOG(kError) << "Invalid destination ID";
 //     return;
 //   }
   if (message.destination_id() != routing_table.kKeys().identity) {
-    DLOG(ERROR) << "Message not for us";
+    LOG(kError) << "Message not for us";
     return;  // not for us and we should not pass it on.
   }
   protobuf::PingResponse ping_response;
   protobuf::PingRequest ping_request;
 
   if (!ping_request.ParseFromString(message.data())) {
-    DLOG(ERROR) << "No Data";
+    LOG(kError) << "No Data";
     return;
   }
   ping_response.set_pong(true);
@@ -53,7 +53,7 @@ void Ping(RoutingTable &routing_table, protobuf::Message &message) {
   message.set_data(ping_response.SerializeAsString());
   message.set_destination_id(message.source_id());
   message.set_source_id(routing_table.kKeys().identity);
-  BOOST_ASSERT_MSG(message.IsInitialized(), "unintialised message");
+  assert(message.IsInitialized() && "unintialised message");
 }
 
 void Connect(RoutingTable &routing_table, rudp::ManagedConnections &rudp,
@@ -121,9 +121,7 @@ void Connect(RoutingTable &routing_table, rudp::ManagedConnections &rudp,
   message.set_direct(true);
   message.set_replication(1);
   message.set_type(-2);
-  if (!message.IsInitialized())
-    DLOG(INFO) << "Uninitialised message";
-  BOOST_ASSERT_MSG(message.IsInitialized(), "unintialised message");
+  assert(message.IsInitialized() && "unintialised message");
 }
 
 void FindNodes(RoutingTable &routing_table, protobuf::Message &message) {
@@ -139,28 +137,27 @@ void FindNodes(RoutingTable &routing_table, protobuf::Message &message) {
   found_nodes.set_original_request(message.data());
   found_nodes.set_original_signature(message.signature());
   found_nodes.set_timestamp(GetTimeStamp());
-  BOOST_ASSERT_MSG(found_nodes.IsInitialized(), "unintialised found_nodes response");
+  assert(found_nodes.IsInitialized() && "unintialised found_nodes response");
   message.set_destination_id(message.source_id());
   message.set_source_id(routing_table.kKeys().identity);
   message.set_data(found_nodes.SerializeAsString());
   message.set_direct(true);
   message.set_replication(1);
   message.set_type(-3);
-  BOOST_ASSERT_MSG(message.IsInitialized(), "unintialised message");
+  assert(message.IsInitialized() && "unintialised message");
 }
 
-void ProxyConnect(RoutingTable &routing_table,
-                  rudp::ManagedConnections &/*rudp*/,
+void ProxyConnect(RoutingTable &routing_table, rudp::ManagedConnections &/*rudp*/,
                   protobuf::Message &message) {
   if (message.destination_id() != routing_table.kKeys().identity) {
-    DLOG(ERROR) << "Message not for us";
+    LOG(kError) << "Message not for us";
     return;  // not for us and we should not pass it on.
   }
   protobuf::ProxyConnectResponse proxy_connect_response;
   protobuf::ProxyConnectRequest proxy_connect_request;
 
   if (!proxy_connect_request.ParseFromString(message.data())) {
-    DLOG(ERROR) << "No Data";
+    LOG(kError) << "No Data";
     return;
   }
 
@@ -182,7 +179,7 @@ void ProxyConnect(RoutingTable &routing_table,
   message.set_data(proxy_connect_response.SerializeAsString());
   message.set_destination_id(message.source_id());
   message.set_source_id(routing_table.kKeys().identity);
-  BOOST_ASSERT_MSG(message.IsInitialized(), "unintialised message");
+  assert(message.IsInitialized() && "unintialised message");
 }
 
 }  // namespace service

@@ -14,15 +14,12 @@
 *Guarantees                                                                    *
 *______________________________________________________________________________*
 *                                                                              *
-*1:  Find any node by key.                                                     *
-*2:  Find any value by key.                                                    *
-*3:  Ensure messages are sent to all closest nodes in order (close to furthest)*.
-*4:  Provide NAT traversal techniques where necessary.                         *
-*5:  Read and Write configuration file to allow bootstrap from known nodes.    *
-*6:  Allow retrieval of bootstrap nodes from known location.                   *
-*7:  Remove bad nodes from all routing tables (ban from network).              *
-*8:  Inform of close node changes in routing table.                            *
-*9:  Respond to every send that requires it, either with timeout or reply      *
+*1:  Provide NAT traversal techniques where necessary.                         *
+*2:  Read and Write configuration file to allow bootstrap from known nodes.    *
+*3:  Allow retrieval of bootstrap nodes from known location.                   *
+*4:  Remove bad nodes from all routing tables (ban from network).              *
+*5:  Inform of changes in data range to be stored and sent to each node        *
+*6:  Respond to every send that requires it, either with timeout or reply      *
 *******************************************************************************/
 
 #ifndef MAIDSAFE_ROUTING_ROUTING_API_H_
@@ -36,6 +33,7 @@
 #include "boost/signals2/signal.hpp"
 
 #include "maidsafe/common/rsa.h"
+#include "maidsafe/routing/node_id.h"
 #include "maidsafe/routing/api_config.h"
 
 
@@ -55,7 +53,7 @@ class Routing {
    // set keys.identity to ANONYMOUS for temporary anonymous connection.
   Routing(const asymm::Keys &keys,
           const boost::filesystem::path &full_path_and_name,
-          NodeValidationFunctor node_validation_functor,
+          Functors functors,
           bool client_mode);
   ~Routing();
   /**************************************************************************
@@ -77,35 +75,18 @@ class Routing {
   * clients with your address (except you). Pass an empty response_functor  *
   * to indicate you do not care about a response.                           *
   ***************************************************************************/
-  int Send(const std::string destination_id,  // id of final destination
-           const std::string data,  // message content (serialised data)
-           const uint16_t type,  // user defined message type
-           const MessageReceivedFunctor response_functor,
-           const uint16_t timeout_seconds,
-           const bool direct);  // is this to a close node group or direct
-  /**************************************************************************
-  * This signal is fired on any message received that is NOT a reply to a   *
-  * request made by the Send method.                                        *
-  ***************************************************************************/
-  boost::signals2::signal<void(int, std::string)> &MessageReceivedSignal();
-  /**************************************************************************
-  * This signal fires a number from 0 to 100 and represents % network health*
-  **************************************************************************/
-  boost::signals2::signal<void(int16_t)> &NetworkStatusSignal();
-  /**************************************************************************
-  * This signal fires when a new close node is inserted in routing table.   *
-  * upper layers responsible for storing key/value pairs should send all    *
-  * key/values between itself and the new nodes address to the new node.    *
-  * Keys further than the furthest node can safely be deleted (if any)      *
-  ***************************************************************************/
-  boost::signals2::signal<void(std::string /*new node*/,
-                               std::string /*current furthest node*/)>
-                                           &CloseNodeReplacedOldNewSignal();
-  boost::signals2::signal<void(const std::string& /*node Id*/,
-                           const Endpoint& /*their Node */,
-                           const bool /*client ? */,
-                           const Endpoint& /*our Node */,
-                           NodeValidatedFunctor &)> &NodeValidationSignal();
+  SendStatus Send(const NodeId destination_id,  // id of final destination
+                  const std::string data,  // message content (serialised data)
+                  const int32_t type,  // user defined message type
+                  const ResponseFunctor response_functor,
+                  const int16_t timeout_seconds,
+                  const ConnectType);  // is this to a close node group or direct
+
+  //boost::signals2::signal<void(const std::string& /*node Id*/,
+  //                         const Endpoint& /*their Node */,
+  //                         const bool /*client ? */,
+  //                         const Endpoint& /*our Node */,
+  //                         NodeValidatedFunctor &)> &NodeValidationSignal();
 
  private:
   Routing(const Routing&);
@@ -116,10 +97,10 @@ class Routing {
   void ReceiveMessage(const std::string &message);
   void ConnectionLost(const Endpoint &lost_endpoint);
   void ValidateThisNode(const std::string &node_id,
-                      const asymm::PublicKey &public_key,
-                      const Endpoint &their_endpoint,
-                      const Endpoint &our_endpoint,
-                      bool client);
+                        const asymm::PublicKey &public_key,
+                        const Endpoint &their_endpoint,
+                        const Endpoint &our_endpoint,
+                        bool client);
   std::unique_ptr<RoutingPrivate> impl_;  // pimpl (data members only)
 };
 

@@ -47,7 +47,7 @@ void Connect(protobuf::Message& message, NodeValidationFunctor node_validation_f
   protobuf::ConnectResponse connect_response;
   protobuf::ConnectRequest connect_request;
   if (!connect_response.ParseFromString(message.data())) {
-    DLOG(ERROR) << "Could not parse connect response";
+    LOG(kError) << "Could not parse connect response";
     return;
   }
   if (!connect_response.answer()) {
@@ -76,7 +76,7 @@ void Connect(protobuf::Message& message, NodeValidationFunctor node_validation_f
       static_cast<unsigned short>(connect_response.contact().private_endpoint().port()));
   // TODO(dirvine) FIXME
   if (node_validation_functor)  // never add any node to routing table
-    node_validation_functor(connect_response.contact().node_id(),
+    node_validation_functor(NodeId(connect_response.contact().node_id()),
                             their_endpoint_pair,
                             message.client_node(),
                             our_endpoint_pair);
@@ -87,20 +87,20 @@ void FindNode(RoutingTable &routing_table,
               const protobuf::Message& message) {
   protobuf::FindNodesResponse find_nodes;
   if (!find_nodes.ParseFromString(message.data())) {
-    DLOG(ERROR) << "Could not parse find node response";
+    LOG(kError) << "Could not parse find node response";
     return;
   }
   if (asymm::CheckSignature(find_nodes.original_request(),
                             find_nodes.original_signature(),
                             routing_table.kKeys().public_key) != kSuccess) {
-    DLOG(ERROR) << " find node request was not signed by us";
+    LOG(kError) << " find node request was not signed by us";
     return;  // we never requested this
   }
   for (int i = 0; i < find_nodes.nodes_size() ; ++i) {
     NodeInfo node_to_add;
     node_to_add.node_id = NodeId(find_nodes.nodes(i));
     if (routing_table.CheckNode(node_to_add)) {
-      DLOG(INFO) << " size of find nodes " << find_nodes.nodes_size();
+      LOG(kInfo) << " size of find nodes " << find_nodes.nodes_size();
       rudp::EndpointPair endpoint;
       rudp.GetAvailableEndpoint(endpoint);
       SendOn(rpcs::Connect(NodeId(find_nodes.nodes(i)),

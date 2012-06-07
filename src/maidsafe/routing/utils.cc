@@ -34,14 +34,14 @@ void SendOn(protobuf::Message message,
     if ((message.has_relay()) && (routing_table.AmIClosestNode(NodeId(message.destination_id())))) {
       endpoint = Endpoint(boost::asio::ip::address::from_string(message.relay().ip()),
                           static_cast<unsigned short>(message.relay().port()));
-      DLOG(INFO) << "Sending to non routing table node message type : "
+      LOG(kInfo) << "Sending to non routing table node message type : "
                  << message.type() << " message"
                  << " to " << HexSubstr(message.source_id())
                  << " From " << HexSubstr(routing_table.kKeys().identity);
     } else if (routing_table.Size() > 0) {
       endpoint = routing_table.GetClosestNode(NodeId(message.destination_id()), 0).endpoint;
     } else {
-      DLOG(ERROR) << " No Endpoint to send to, Aborting Send!"
+      LOG(kError) << " No Endpoint to send to, Aborting Send!"
                   << " Attempt to send a type : " << message.type() << " message"
                   << " to " << HexSubstr(message.source_id())
                   << " From " << HexSubstr(routing_table.kKeys().identity);
@@ -50,7 +50,16 @@ void SendOn(protobuf::Message message,
   }
   int send_status = rudp.Send(endpoint, message.SerializeAsString());
   if (send_status != rudp::kSuccess)
-    DLOG(ERROR) << " Send error !!! = " << send_status;
+    LOG(kError) << " Send error !!! = " << send_status;
+}
+
+bool ClosestToMe(protobuf::Message &message, RoutingTable &routing_table) {
+  return routing_table.AmIClosestNode(NodeId(message.destination_id()));
+}
+
+bool InClosestNodesToMe(protobuf::Message &message, RoutingTable &routing_table) {
+  return routing_table.IsMyNodeInRange(NodeId(message.destination_id()),
+                                       Parameters::closest_nodes_size);
 }
 
 

@@ -56,7 +56,7 @@ const std::string ToBinary(const std::string &raw_id)  {
       case 'd': temp = "1101"; break;
       case 'e': temp = "1110"; break;
       case 'f': temp = "1111"; break;
-      default : DLOG(ERROR) << "Invalid hex format";
+      default : LOG(kError) << "Invalid hex format";
     }
     result += temp;
   }

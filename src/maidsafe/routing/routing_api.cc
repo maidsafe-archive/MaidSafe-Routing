@@ -46,9 +46,9 @@ namespace routing {
 
 Routing::Routing(const asymm::Keys &keys,
                  const fs::path &boostrap_file_path,
-                 NodeValidationFunctor node_validation_functor,
+                 Functors functors,
                  const bool client_mode)
-    : impl_(new RoutingPrivate(keys, boostrap_file_path, node_validation_functor, client_mode)) {
+    : impl_(new RoutingPrivate(keys, boostrap_file_path, functors, client_mode)) {
   // test path
   std::string dummy_content;
   // not catching exceptions !!
@@ -93,10 +93,10 @@ int Routing::GetStatus() {
 bool Routing::BootStrapFromThisEndpoint(const boost::asio::ip::udp::endpoint&
                                                                      endpoint,
                               boost::asio::ip::udp::endpoint local_endpoint) {
-  LOG(INFO) << " Entered bootstrap IP address : " << endpoint.address().to_string();
-  LOG(INFO) << " Entered bootstrap Port       : " << endpoint.port();
+  LOG(kInfo) << " Entered bootstrap IP address : " << endpoint.address().to_string();
+  LOG(kInfo) << " Entered bootstrap Port       : " << endpoint.port();
   if (endpoint.address().is_unspecified()) {
-    DLOG(ERROR) << "Attempt to boot from unspecified endpoint ! aborted";
+    LOG(kError) << "Attempt to boot from unspecified endpoint ! aborted";
     return false;
   }
   for (unsigned int i = 0; i < impl_->routing_table_.Size(); ++i) {
@@ -105,7 +105,8 @@ bool Routing::BootStrapFromThisEndpoint(const boost::asio::ip::udp::endpoint&
     impl_->rudp_.Remove(remove_node.endpoint);
     impl_->routing_table_.DropNode(remove_node.endpoint);
   }
-  impl_->network_status_signal_(impl_->routing_table_.Size());
+  if(impl_->functors_.network_status)
+    impl_->functors_.network_status(impl_->routing_table_.Size());
   impl_->bootstrap_nodes_.clear();
   impl_->bootstrap_nodes_.push_back(endpoint);
   return Join(local_endpoint);
@@ -113,7 +114,7 @@ bool Routing::BootStrapFromThisEndpoint(const boost::asio::ip::udp::endpoint&
 
 bool Routing::Join(Endpoint local_endpoint) {
   if (impl_->bootstrap_nodes_.empty()) {
-    LOG(INFO) << "No bootstrap nodes Aborted Join !!";
+    LOG(kInfo) << "No bootstrap nodes Aborted Join !!";
     return false;
   }
   rudp::MessageReceivedFunctor message_recieved(std::bind(&Routing::ReceiveMessage, this,
@@ -126,7 +127,7 @@ bool Routing::Join(Endpoint local_endpoint) {
                                                      local_endpoint));
 
   if (bootstrap_endpoint.address().is_unspecified() && local_endpoint.address().is_unspecified()) {
-    DLOG(ERROR) << "could not get bootstrap address and not zero state";
+    LOG(kError) << "could not get bootstrap address and not zero state";
     return false;
   }
 
@@ -137,30 +138,30 @@ bool Routing::Join(Endpoint local_endpoint) {
   return (boot.get() == 0);
 }
 
-int Routing::Send(const std::string destination_id,
+SendStatus Routing::Send(const NodeId destination_id,
                   const std::string data,
-                  const uint16_t type,
+                  const int32_t type,
                   const MessageReceivedFunctor response_functor,
-                  const uint16_t /*timeout_seconds*/,
-                  const bool direct) {
-  if (destination_id.empty()) {
-    DLOG(ERROR) << "No destination id, aborted send";
-    return kInvalidDestinatinId;
+                  const int16_t /*timeout_seconds*/,
+                  const ConnectType connect_type) {
+  if (destination_id.String().empty()) {
+    LOG(kError) << "No destination id, aborted send";
+    return SendStatus::kInvalidDestinationId;
   }
   if (data.empty() && (type != 100)) {
-    DLOG(ERROR) << "No data, aborted send";
-    return kEmptyData;
+    LOG(kError) << "No data, aborted send";
+    return SendStatus::kEmptyData;
   }
   protobuf::Message proto_message;
   proto_message.set_id(0);
   // TODO(dirvine): see if ANONYMOUS and Endpoint required here
   proto_message.set_source_id(impl_->routing_table_.kKeys().identity);
-  proto_message.set_destination_id(destination_id);
+  proto_message.set_destination_id(destination_id.String());
   proto_message.set_data(data);
-  proto_message.set_direct(direct);
+  proto_message.set_direct(static_cast<int32_t>(connect_type));
   proto_message.set_type(type);
   SendOn(proto_message, impl_->rudp_, impl_->routing_table_);
-  return 0;
+  return SendStatus::kSuccess;
 }
 
 void Routing::ValidateThisNode(const std::string &node_id,
@@ -187,31 +188,19 @@ void Routing::ValidateThisNode(const std::string &node_id,
   }
 }
 
-bs2::signal<void(int, std::string)> &Routing::MessageReceivedSignal() {
-  return impl_->message_received_signal_;
-}
-
-bs2::signal<void(int16_t)> &Routing::NetworkStatusSignal() {
-  return impl_->network_status_signal_;
-}
-
-bs2::signal<void(std::string, std::string)> &Routing::CloseNodeReplacedOldNewSignal() {
-  return impl_->routing_table_.CloseNodeReplacedOldNewSignal();
-}
-
-bs2::signal<void(const std::string&,
-                 const Endpoint&,
-                 const bool,
-                 const Endpoint&,
-               NodeValidatedFunctor &)> &Routing::NodeValidationSignal() {
-  return impl_->node_validation_signal_;
-}
+//bs2::signal<void(const std::string&,
+//                 const Endpoint&,
+//                 const bool,
+//                 const Endpoint&,
+//               NodeValidatedFunctor &)> &Routing::NodeValidationSignal() {
+//  return impl_->node_validation_signal_;
+//}
 
 void Routing::ReceiveMessage(const std::string &message) {
   protobuf::Message protobuf_message;
   protobuf::ConnectRequest connection_request;
   if (protobuf_message.ParseFromString(message)) {
-    DLOG(INFO) << " Message received, type: " << protobuf_message.type()
+    LOG(kInfo) << " Message received, type: " << protobuf_message.type()
                << " from " << HexSubstr(protobuf_message.source_id())
                << " I am " << HexSubstr(impl_->keys_.identity);
     impl_->message_handler_.ProcessMessage(protobuf_message);

@@ -32,8 +32,7 @@ TEST(BootStrapFileTest1, BEH_ReadValidFile) {
   endpoint.address(boost::asio::ip::address::from_string("192.168.1.1"));
   endpoint.port(5000);
   vec.push_back(endpoint);
-  boost::filesystem::path good_file
-                (fs::unique_path(fs::temp_directory_path() / "test"));
+  fs::path good_file(fs::unique_path(fs::temp_directory_path() / "test"));
   EXPECT_TRUE(ReadBootstrapFile(good_file).empty());
   std::error_code error;
   EXPECT_TRUE(WriteBootstrapFile(vec, good_file));

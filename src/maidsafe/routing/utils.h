@@ -22,10 +22,21 @@ namespace routing {
 
 namespace protobuf { class Message;}  // namespace protobuf
 
+class Message {
+  Message(protobuf::Message message);
+
+};
+
 void SendOn(protobuf::Message message,
             rudp::ManagedConnections &rudp,
             RoutingTable &routing_table,
             Endpoint endpoint = Endpoint());
+
+bool ClosestToMe(protobuf::Message &message);
+
+bool InClosestNodesToMe(protobuf::Message &message);
+
+
 
 }  // namespace routing
 

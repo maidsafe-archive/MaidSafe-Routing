@@ -80,7 +80,7 @@ TEST(RoutingTableTest, FUNC_AddTooManyNodes) {
      }
   }
   if (count > 0)
-     DLOG(INFO) << "made space for " << count << " node(s) in routing table";
+     LOG(kInfo) << "made space for " << count << " node(s) in routing table";
   EXPECT_EQ(RT.Size(), Parameters::max_routing_table_size);
 }
 
