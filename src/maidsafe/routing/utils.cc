@@ -53,6 +53,15 @@ void SendOn(protobuf::Message message,
     DLOG(ERROR) << " Send error !!! = " << send_status;
 }
 
+bool ClosestToMe(protobuf::Message &message, RoutingTable &routing_table) {
+  return routing_table.AmIClosestNode(NodeId(message.destination_id()));
+}
+
+bool InClosestNodesToMe(protobuf::Message &message, RoutingTable &routing_table) {
+  return routing_table.IsMyNodeInRange(NodeId(message.destination_id()),
+                                       Parameters::closest_nodes_size);
+}
+
 
 }  // namespace routing
 

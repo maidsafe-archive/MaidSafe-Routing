@@ -14,15 +14,12 @@
 *Guarantees                                                                    *
 *______________________________________________________________________________*
 *                                                                              *
-*1:  Find any node by key.                                                     *
-*2:  Find any value by key.                                                    *
-*3:  Ensure messages are sent to all closest nodes in order (close to furthest)*.
-*4:  Provide NAT traversal techniques where necessary.                         *
-*5:  Read and Write configuration file to allow bootstrap from known nodes.    *
-*6:  Allow retrieval of bootstrap nodes from known location.                   *
-*7:  Remove bad nodes from all routing tables (ban from network).              *
-*8:  Inform of close node changes in routing table.                            *
-*9:  Respond to every send that requires it, either with timeout or reply      *
+*1:  Provide NAT traversal techniques where necessary.                         *
+*2:  Read and Write configuration file to allow bootstrap from known nodes.    *
+*3:  Allow retrieval of bootstrap nodes from known location.                   *
+*4:  Remove bad nodes from all routing tables (ban from network).              *
+*5:  Inform of changes in data range to be stored and sent to each node        *
+*6:  Respond to every send that requires it, either with timeout or reply      *
 *******************************************************************************/
 
 #ifndef MAIDSAFE_ROUTING_ROUTING_API_H_
@@ -78,7 +75,7 @@ class Routing {
   * clients with your address (except you). Pass an empty response_functor  *
   * to indicate you do not care about a response.                           *
   ***************************************************************************/
-  int Send(const NodeId destination_id,  // id of final destination
+  SendStatus Send(const NodeId destination_id,  // id of final destination
            const std::string data,  // message content (serialised data)
            const int32_t type,  // user defined message type
            const MessageReceivedFunctor response_functor,

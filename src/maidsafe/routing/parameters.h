@@ -25,8 +25,6 @@ struct Parameters {
  public:
   Parameters();
   ~Parameters();
-  // this node is client or node (full routing node with storage)
-  static bool client_mode;
   // fully encrypt all data at routing level in both directions
   static bool encryption_required;
   static uint16_t num_chunks_to_cache;

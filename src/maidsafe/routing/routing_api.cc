@@ -93,8 +93,8 @@ int Routing::GetStatus() {
 bool Routing::BootStrapFromThisEndpoint(const boost::asio::ip::udp::endpoint&
                                                                      endpoint,
                               boost::asio::ip::udp::endpoint local_endpoint) {
-  LOG(INFO) << " Entered bootstrap IP address : " << endpoint.address().to_string();
-  LOG(INFO) << " Entered bootstrap Port       : " << endpoint.port();
+  DLOG(INFO) << " Entered bootstrap IP address : " << endpoint.address().to_string();
+  DLOG(INFO) << " Entered bootstrap Port       : " << endpoint.port();
   if (endpoint.address().is_unspecified()) {
     DLOG(ERROR) << "Attempt to boot from unspecified endpoint ! aborted";
     return false;
@@ -113,7 +113,7 @@ bool Routing::BootStrapFromThisEndpoint(const boost::asio::ip::udp::endpoint&
 
 bool Routing::Join(Endpoint local_endpoint) {
   if (impl_->bootstrap_nodes_.empty()) {
-    LOG(INFO) << "No bootstrap nodes Aborted Join !!";
+    DLOG(INFO) << "No bootstrap nodes Aborted Join !!";
     return false;
   }
   rudp::MessageReceivedFunctor message_recieved(std::bind(&Routing::ReceiveMessage, this,
@@ -137,7 +137,7 @@ bool Routing::Join(Endpoint local_endpoint) {
   return (boot.get() == 0);
 }
 
-int Routing::Send(const NodeId destination_id,
+SendStatus Routing::Send(const NodeId destination_id,
                   const std::string data,
                   const int32_t type,
                   const MessageReceivedFunctor response_functor,
@@ -145,11 +145,11 @@ int Routing::Send(const NodeId destination_id,
                   const ConnectType connect_type) {
   if (destination_id.String().empty()) {
     DLOG(ERROR) << "No destination id, aborted send";
-    return kInvalidDestinatinId;
+    return SendStatus::kInvalidDestinatinId;
   }
   if (data.empty() && (type != 100)) {
     DLOG(ERROR) << "No data, aborted send";
-    return kEmptyData;
+    return SendStatus::kEmptyData;
   }
   protobuf::Message proto_message;
   proto_message.set_id(0);
@@ -160,7 +160,7 @@ int Routing::Send(const NodeId destination_id,
   proto_message.set_direct(static_cast<int32_t>(connect_type));
   proto_message.set_type(type);
   SendOn(proto_message, impl_->rudp_, impl_->routing_table_);
-  return 0;
+  return SendStatus::kSucess;
 }
 
 void Routing::ValidateThisNode(const std::string &node_id,

@@ -34,13 +34,14 @@ namespace routing {
 // Send method connection types
 
 enum class ConnectType : int32_t {
-    kSingle = 1,
-    kClosest,
-    kGroup
+  kSingle = 1,
+  kClosest,
+  kGroup
 };
 
 // Send method return codes
-enum SendErrors {
+enum class SendStatus {
+  kSucess = 0,
   kInvalidDestinatinId = -1,
   kInvalidSourceId = -2,
   kInvalidType = -3,
