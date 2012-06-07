@@ -31,18 +31,18 @@ namespace service {
 
 void Ping(RoutingTable &routing_table, protobuf::Message &message) {
 //   if (message.destination_id() != NodeId::kKeySizeBytes) {
-//         DLOG(ERROR) << "Invalid destination ID";
+//         LOG(kError) << "Invalid destination ID";
 //     return;
 //   }
   if (message.destination_id() != routing_table.kKeys().identity) {
-    DLOG(ERROR) << "Message not for us";
+    LOG(kError) << "Message not for us";
     return;  // not for us and we should not pass it on.
   }
   protobuf::PingResponse ping_response;
   protobuf::PingRequest ping_request;
 
   if (!ping_request.ParseFromString(message.data())) {
-    DLOG(ERROR) << "No Data";
+    LOG(kError) << "No Data";
     return;
   }
   ping_response.set_pong(true);
@@ -150,14 +150,14 @@ void FindNodes(RoutingTable &routing_table, protobuf::Message &message) {
 void ProxyConnect(RoutingTable &routing_table, rudp::ManagedConnections &rudp,
                   protobuf::Message &message) {
   if (message.destination_id() != routing_table.kKeys().identity) {
-    DLOG(ERROR) << "Message not for us";
+    LOG(kError) << "Message not for us";
     return;  // not for us and we should not pass it on.
   }
   protobuf::ProxyConnectResponse proxy_connect_response;
   protobuf::ProxyConnectRequest proxy_connect_request;
 
   if (!proxy_connect_request.ParseFromString(message.data())) {
-    DLOG(ERROR) << "No Data";
+    LOG(kError) << "No Data";
     return;
   }
 

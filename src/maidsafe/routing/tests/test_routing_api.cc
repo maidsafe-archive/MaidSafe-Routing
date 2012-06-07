@@ -148,7 +148,7 @@ TEST(APITest, BEH_API_ZeroState) {
     EXPECT_TRUE(boost::filesystem::remove(node2_config));
     EXPECT_TRUE(boost::filesystem::remove(node3_config));
   } catch(const std::exception &e) {
-    DLOG(ERROR) << e.what();
+    LOG(kError) << e.what();
   }
 }
 

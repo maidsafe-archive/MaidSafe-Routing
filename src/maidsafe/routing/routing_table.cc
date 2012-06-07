@@ -99,7 +99,7 @@ bool RoutingTable::GetNodeInfo(const Endpoint &endpoint, NodeInfo *node_info) {
 
 bool RoutingTable::AmIClosestNode(const NodeId& node_id) {
   if (!node_id.IsValid()) {
-    DLOG(ERROR) << "Invalid node_id passed";
+    LOG(kError) << "Invalid node_id passed";
     return false;
   }
   std::lock_guard<std::mutex> lock(mutex_);
@@ -121,12 +121,12 @@ bool RoutingTable::AmIConnectedToEndpoint(const Endpoint& endpoint) {
 // checks paramters are real
 bool RoutingTable::CheckValidParameters(const NodeInfo& node) const {
   if ((!asymm::ValidateKey(node.public_key, 0))) {
-    DLOG(INFO) << "invalid public key";
+    LOG(kInfo) << "invalid public key";
     return false;
   }
 
   if (node.bucket == 99999) {
-    DLOG(INFO) << "invalid bucket index";
+    LOG(kInfo) << "invalid bucket index";
     return false;
   }
   return CheckParametersAreUnique(node);
@@ -139,7 +139,7 @@ bool RoutingTable::CheckParametersAreUnique(const NodeInfo& node) const {
                    [node](const NodeInfo &i)->bool
                    { return  asymm::MatchingPublicKeys(i.public_key, node.public_key);})
                  != routing_table_nodes_.end()) {
-    DLOG(INFO) << "Already have node with this public key";
+    LOG(kInfo) << "Already have node with this public key";
     return false;
   }
 
@@ -148,7 +148,7 @@ bool RoutingTable::CheckParametersAreUnique(const NodeInfo& node) const {
                    [node](const NodeInfo &i)->bool
                    { return (i.endpoint == node.endpoint); })
                  != routing_table_nodes_.end()) {
-    DLOG(INFO) << "Already have node with this endpoint";
+    LOG(kInfo) << "Already have node with this endpoint";
     return false;
   }
   // node_id was checked in AddNode() so if were here then were unique
@@ -158,7 +158,7 @@ bool RoutingTable::CheckParametersAreUnique(const NodeInfo& node) const {
 bool RoutingTable::MakeSpaceForNodeToBeAdded(NodeInfo &node, const bool &remove) {
   node.bucket = BucketIndex(node.node_id);
   if ((remove) && (!CheckValidParameters(node))) {
-    DLOG(INFO) << "Invalid Parameters";
+    LOG(kInfo) << "Invalid Parameters";
     return false;
   }
 

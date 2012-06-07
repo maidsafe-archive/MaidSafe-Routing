@@ -96,7 +96,7 @@ const protobuf::Message FindNodes(const NodeId &node_id, Endpoint endpoint) {
   message.set_id(0);
   message.set_client_node(false);
   if (!endpoint.address().is_unspecified()) {
-    DLOG(INFO) << "RPC IP Address " << endpoint.address().to_string();
+    LOG(kInfo) << "RPC IP Address " << endpoint.address().to_string();
     protobuf::Endpoint *pbendpoint;
     pbendpoint = message.mutable_relay();
     pbendpoint->set_ip(endpoint.address().to_string().c_str());

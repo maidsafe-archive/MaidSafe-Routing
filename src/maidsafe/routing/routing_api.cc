@@ -93,10 +93,10 @@ int Routing::GetStatus() {
 bool Routing::BootStrapFromThisEndpoint(const boost::asio::ip::udp::endpoint&
                                                                      endpoint,
                               boost::asio::ip::udp::endpoint local_endpoint) {
-  DLOG(INFO) << " Entered bootstrap IP address : " << endpoint.address().to_string();
-  DLOG(INFO) << " Entered bootstrap Port       : " << endpoint.port();
+  LOG(kInfo) << " Entered bootstrap IP address : " << endpoint.address().to_string();
+  LOG(kInfo) << " Entered bootstrap Port       : " << endpoint.port();
   if (endpoint.address().is_unspecified()) {
-    DLOG(ERROR) << "Attempt to boot from unspecified endpoint ! aborted";
+    LOG(kError) << "Attempt to boot from unspecified endpoint ! aborted";
     return false;
   }
   for (unsigned int i = 0; i < impl_->routing_table_.Size(); ++i) {
@@ -113,7 +113,7 @@ bool Routing::BootStrapFromThisEndpoint(const boost::asio::ip::udp::endpoint&
 
 bool Routing::Join(Endpoint local_endpoint) {
   if (impl_->bootstrap_nodes_.empty()) {
-    DLOG(INFO) << "No bootstrap nodes Aborted Join !!";
+    LOG(kInfo) << "No bootstrap nodes Aborted Join !!";
     return false;
   }
   rudp::MessageReceivedFunctor message_recieved(std::bind(&Routing::ReceiveMessage, this,
@@ -126,7 +126,7 @@ bool Routing::Join(Endpoint local_endpoint) {
                                                      local_endpoint));
 
   if (bootstrap_endpoint.address().is_unspecified() && local_endpoint.address().is_unspecified()) {
-    DLOG(ERROR) << "could not get bootstrap address and not zero state";
+    LOG(kError) << "could not get bootstrap address and not zero state";
     return false;
   }
 
@@ -144,11 +144,11 @@ SendStatus Routing::Send(const NodeId destination_id,
                   const int16_t timeout_seconds,
                   const ConnectType connect_type) {
   if (destination_id.String().empty()) {
-    DLOG(ERROR) << "No destination id, aborted send";
+    LOG(kError) << "No destination id, aborted send";
     return SendStatus::kInvalidDestinatinId;
   }
   if (data.empty() && (type != 100)) {
-    DLOG(ERROR) << "No data, aborted send";
+    LOG(kError) << "No data, aborted send";
     return SendStatus::kEmptyData;
   }
   protobuf::Message proto_message;
@@ -211,7 +211,7 @@ void Routing::ReceiveMessage(const std::string &message) {
   protobuf::Message protobuf_message;
   protobuf::ConnectRequest connection_request;
   if (protobuf_message.ParseFromString(message)) {
-    DLOG(INFO) << " Message received, type: " << protobuf_message.type()
+    LOG(kInfo) << " Message received, type: " << protobuf_message.type()
                << " from " << HexSubstr(protobuf_message.source_id())
                << " I am " << HexSubstr(impl_->keys_.identity);
     impl_->message_handler_.ProcessMessage(protobuf_message);

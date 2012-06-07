@@ -29,11 +29,11 @@ std::vector<Endpoint> ReadBootstrapFile(const fs::path &path) {
 
   std::string serialised_endpoints;
   if (!ReadFile(path, &serialised_endpoints)) {
-     DLOG(ERROR) << "could not read bootstrap file";
+     LOG(kError) << "could not read bootstrap file";
     return bootstrap_nodes;
   }
   if (!protobuf_bootstrap.ParseFromString(serialised_endpoints)) {
-    DLOG(ERROR) << "could not parse bootstrap file";
+    LOG(kError) << "could not parse bootstrap file";
     return bootstrap_nodes;
   }
   bootstrap_nodes.resize(protobuf_bootstrap.bootstrap_contacts().size());

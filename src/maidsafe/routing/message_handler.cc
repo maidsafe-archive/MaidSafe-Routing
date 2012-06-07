@@ -119,10 +119,10 @@ void MessageHandler::DirectMessage(protobuf::Message& message) {
   if (message.type() > 100) {  // request
     message_received_signal_(static_cast<int>(-message.type()),
                              message.data());
-    DLOG(INFO) << "Routing message detected";
+    LOG(kInfo) << "Routing message detected";
   } else {  // response
     timer_ptr_.ExecuteTaskNow(message);
-    DLOG(INFO) << "Response detected";
+    LOG(kInfo) << "Response detected";
   }
 }
 

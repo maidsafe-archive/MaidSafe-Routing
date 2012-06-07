@@ -50,7 +50,7 @@ void Timer::KillTask(TaskId task_id) {
     (*it).second.second(ReturnCode::kTimedOut, "");
     queue_.erase(it);
   } else {
-    DLOG(ERROR) << "Attempt to kill an expired or non existent task";
+    LOG(kError) << "Attempt to kill an expired or non existent task";
   }
 }
 
@@ -62,7 +62,7 @@ void Timer::ExecuteTaskNow(protobuf::Message &message) {
     queue_.erase(it);
   } else {
     (*it).second.second(ReturnCode::kGeneralError, message.data());
-    DLOG(ERROR) << "Attempt to run an expired or non existent task";
+    LOG(kError) << "Attempt to run an expired or non existent task";
   }
 }
 
