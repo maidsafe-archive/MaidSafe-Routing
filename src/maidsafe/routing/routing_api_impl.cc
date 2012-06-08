@@ -33,7 +33,7 @@ RoutingPrivate::RoutingPrivate(const asymm::Keys &keys,
                                const fs::path &path,
                                Functors functors,
                                bool client_mode)
-    : asio_service_(),
+    : asio_service_(Concurrency()),
       bootstrap_nodes_(),
       keys_(keys),
       rudp_(),

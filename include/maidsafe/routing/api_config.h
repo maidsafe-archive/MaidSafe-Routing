@@ -19,15 +19,13 @@
 #include "boost/asio/ip/udp.hpp"
 #include "boost/signals2/signal.hpp"
 
+#include "maidsafe/rudp/managed_connections.h"
+
 #include "maidsafe/common/rsa.h"
 #include "maidsafe/routing/node_id.h"
 
 namespace maidsafe {
 
-namespace rudp {
-struct EndpointPair;
-class ManagedConnections;
-}  // namespace rudp
 
 namespace routing {
 
