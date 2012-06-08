@@ -33,7 +33,7 @@ RoutingPrivate::RoutingPrivate(const asymm::Keys &keys,
                                const fs::path &path,
                                Functors functors,
                                bool client_mode)
-    : asio_service_(),
+    : asio_service_(Parameters::thread_count),
       bootstrap_nodes_(),
       keys_(keys),
       rudp_(),
@@ -46,7 +46,9 @@ RoutingPrivate::RoutingPrivate(const asymm::Keys &keys,
       message_handler_(routing_table_, rudp_, timer_, functors_.node_validation),
       joined_(false),
       bootstrap_file_path_(path),
-      client_mode_(client_mode) {}
+      client_mode_(client_mode) {
+  asio_service_.Start();
+}
 
 RoutingPrivate::~RoutingPrivate() {}
 

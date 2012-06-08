@@ -27,6 +27,8 @@ struct Parameters {
   ~Parameters();
   // fully encrypt all data at routing level in both directions
   static bool encryption_required;
+  // Thread count for use of asio::io_service
+  static uint16_t thread_count;
   static uint16_t num_chunks_to_cache;
   static uint16_t timout_in_seconds;
   static uint16_t closest_nodes_size;

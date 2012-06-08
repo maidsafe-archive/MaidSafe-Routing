@@ -65,8 +65,8 @@ class Routing {
   *(i.e. private network)                                                   *
   ***************************************************************************/
   bool BootStrapFromThisEndpoint(const boost::asio::ip::udp::endpoint& endpoint,
-                                boost::asio::ip::udp::endpoint local_endpoint =
-                                boost::asio::ip::udp::endpoint());
+                                 boost::asio::ip::udp::endpoint local_endpoint =
+                                 boost::asio::ip::udp::endpoint());
   /**************************************************************************
   *The reply or error (timeout) will be passed to this response_functor     *
   *error is passed as negative int (return code) and empty string           *

@@ -82,16 +82,15 @@ typedef std::function<void(const NodeId& /*new_node*/,
                            const NodeId& /*current_furthest_node*/)> CloseNodeReplacedOldNewFunctor;
 
 struct Functors {
-  MessageReceivedFunctor message_received;
-  NetworkStatusFunctor network_status;
-  CloseNodeReplacedOldNewFunctor close_node_replaced_old_new;
-  NodeValidationFunctor node_validation;
-
   Functors()
       : message_received(nullptr),
         network_status(nullptr),
         close_node_replaced_old_new(nullptr),
         node_validation(nullptr) {}
+  MessageReceivedFunctor message_received;
+  NetworkStatusFunctor network_status;
+  CloseNodeReplacedOldNewFunctor close_node_replaced_old_new;
+  NodeValidationFunctor node_validation;
 };
 
 }  // namespace routing

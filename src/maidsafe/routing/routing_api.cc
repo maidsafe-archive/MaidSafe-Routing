@@ -90,9 +90,8 @@ int Routing::GetStatus() {
 
 // drop existing routing table and restart
 // the endpoint is the endpoint to connect to.
-bool Routing::BootStrapFromThisEndpoint(const boost::asio::ip::udp::endpoint&
-                                                                     endpoint,
-                              boost::asio::ip::udp::endpoint local_endpoint) {
+bool Routing::BootStrapFromThisEndpoint(const boost::asio::ip::udp::endpoint &endpoint,
+                                        boost::asio::ip::udp::endpoint local_endpoint) {
   LOG(kInfo) << " Entered bootstrap IP address : " << endpoint.address().to_string();
   LOG(kInfo) << " Entered bootstrap Port       : " << endpoint.port();
   if (endpoint.address().is_unspecified()) {

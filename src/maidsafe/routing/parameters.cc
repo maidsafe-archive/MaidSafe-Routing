@@ -17,6 +17,7 @@ namespace maidsafe {
 namespace routing {
 
 bool Parameters::encryption_required(false);
+uint16_t Parameters::thread_count(8);
 uint16_t Parameters::num_chunks_to_cache(100);
 uint16_t Parameters::timout_in_seconds(5);
 uint16_t Parameters::closest_nodes_size(8);
