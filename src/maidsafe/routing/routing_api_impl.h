@@ -49,14 +49,12 @@ struct RoutingPrivate {
   AsioService asio_service_;
   std::vector<Endpoint> bootstrap_nodes_;
   const asymm::Keys keys_;
+  Functors functors_;
   rudp::ManagedConnections rudp_;
   RoutingTable routing_table_;
   Timer timer_;
-  Functors functors_;
-//  bs2::signal<void(const std::string&, const Endpoint&, const bool, const Endpoint&,
-//                   NodeValidatedFunctor &)> node_validation_signal_;
   std::map<uint32_t, std::pair<std::unique_ptr<boost::asio::deadline_timer>,
-                              MessageReceivedFunctor> > waiting_for_response_;
+                               MessageReceivedFunctor> > waiting_for_response_;
   std::vector<NodeInfo> direct_non_routing_table_connections_;
   // closest nodes to the client.
   MessageHandler message_handler_;
