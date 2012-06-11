@@ -30,7 +30,7 @@ namespace test {
 TEST(RoutingTableTest, FUNC_AddCloseNodes) {
     asymm::Keys keys;
     keys.identity = RandomString(64);
-  RoutingTable RT(keys);
+  RoutingTable RT(keys, nullptr);
   NodeInfo node;
   // check the node is useful when false is set
   for (unsigned int i = 0; i < Parameters::closest_nodes_size ; ++i) {
@@ -46,7 +46,7 @@ TEST(RoutingTableTest, FUNC_AddCloseNodes) {
      node.public_key = dummy_key;
      EXPECT_FALSE(RT.AddNode(node));
   }
-  EXPECT_EQ(RT.Size(), 0);
+  EXPECT_EQ(0, RT.Size());
 
   // everything should be set to go now
   // TODO(dirvine): should we also test for valid enpoints ??
@@ -56,13 +56,13 @@ TEST(RoutingTableTest, FUNC_AddCloseNodes) {
     node.endpoint.port(i + 1501U);  // has to be unique
     EXPECT_TRUE(RT.AddNode(node));
   }
-  EXPECT_EQ(RT.Size(), Parameters::closest_nodes_size);
+  EXPECT_EQ(Parameters::closest_nodes_size, RT.Size());
 }
 
 TEST(RoutingTableTest, FUNC_AddTooManyNodes) {
     asymm::Keys keys;
     keys.identity = RandomString(64);
-  RoutingTable RT(keys);
+  RoutingTable RT(keys, nullptr);
   for (unsigned short i = 0;
        RT.Size() < Parameters::max_routing_table_size; ++i) {
      NodeInfo node(MakeNode());
@@ -72,12 +72,12 @@ TEST(RoutingTableTest, FUNC_AddTooManyNodes) {
   EXPECT_EQ(RT.Size(), Parameters::max_routing_table_size);
   size_t count(0);
   for (unsigned short i = 0; i < 100; ++i) {
-     NodeInfo node(MakeNode());
-     node.endpoint.port(i + 1700U);  // has to be unique
-     if (RT.CheckNode(node)) {
-        EXPECT_TRUE(RT.AddNode(node));
-       ++count;
-     }
+    NodeInfo node(MakeNode());
+    node.endpoint.port(i + 1700U);  // has to be unique
+    if (RT.CheckNode(node)) {
+      EXPECT_TRUE(RT.AddNode(node));
+      ++count;
+    }
   }
   if (count > 0)
      LOG(kInfo) << "made space for " << count << " node(s) in routing table";
@@ -87,7 +87,7 @@ TEST(RoutingTableTest, FUNC_AddTooManyNodes) {
 TEST(RoutingTableTest, BEH_CloseAndInRangeCheck) {
   asymm::Keys keys;
   keys.identity = RandomString(64);
-  RoutingTable RT(keys);
+  RoutingTable RT(keys, nullptr);
   // Add some nodes to RT
   NodeId my_node(keys.identity);
   for (unsigned short i = 0;

@@ -21,6 +21,7 @@
 
 #include "maidsafe/common/rsa.h"
 #include "maidsafe/routing/node_id.h"
+#include "maidsafe/routing/node_info.h"
 
 namespace maidsafe {
 
@@ -30,8 +31,6 @@ class ManagedConnections;
 }  // namespace rudp
 
 namespace routing {
-
-typedef boost::asio::ip::udp::endpoint Endpoint;
 
 // Send method connection types
 
@@ -78,18 +77,18 @@ typedef std::function<void(const int16_t& /*network_health*/)> NetworkStatusFunc
 * for storing key/value pairs should send all key/values between itself and the new nodes address  *
 * to the new node. Keys further than the furthest node can safely be deleted (if any)              *
 ***************************************************************************************************/
-typedef std::function<void(const NodeId& /*new_node*/,
-                           const NodeId& /*current_furthest_node*/)> CloseNodeReplacedOldNewFunctor;
+typedef std::function<void(const std::vector<NodeInfo> /*new_close_nodes*/)>
+    CloseNodeReplacedFunctor;
 
 struct Functors {
   Functors()
       : message_received(nullptr),
         network_status(nullptr),
-        close_node_replaced_old_new(nullptr),
+        close_node_replaced(nullptr),
         node_validation(nullptr) {}
   MessageReceivedFunctor message_received;
   NetworkStatusFunctor network_status;
-  CloseNodeReplacedOldNewFunctor close_node_replaced_old_new;
+  CloseNodeReplacedFunctor close_node_replaced;
   NodeValidationFunctor node_validation;
 };
 

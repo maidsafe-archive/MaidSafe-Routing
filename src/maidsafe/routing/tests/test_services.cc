@@ -34,7 +34,7 @@ namespace test {
 TEST(Services, BEH_Ping) {
   asymm::Keys keys;
   keys.identity = RandomString(64);
-  RoutingTable RT(keys);
+  RoutingTable RT(keys, nullptr);
   NodeInfo node;
   rudp::ManagedConnections rudp;
   protobuf::PingRequest ping_request;
@@ -62,7 +62,7 @@ TEST(Services, BEH_Connect) {
   asymm::Keys keys;
   keys.identity = us.node_id.String();
   keys.public_key = us.public_key;
-  RoutingTable RT(keys);
+  RoutingTable RT(keys, nullptr);
   NodeInfo node;
   rudp::ManagedConnections rudp;
   rudp::EndpointPair them_end;
@@ -97,7 +97,7 @@ TEST(Services, BEH_FindNodes) {
   asymm::Keys keys;
   keys.identity = us.node_id.String();
   keys.public_key = us.public_key;
-  RoutingTable RT(keys);
+  RoutingTable RT(keys, nullptr);
   protobuf::Message message = rpcs::FindNodes(us.node_id, us.endpoint);
   service::FindNodes(RT, message);
   protobuf::FindNodesResponse find_nodes_respose;
@@ -121,7 +121,7 @@ TEST(Services, BEH_FindNodes) {
 TEST(Services, BEH_ProxyConnect) {
   asymm::Keys keys;
   keys.identity = RandomString(64);
-  RoutingTable RT(keys);
+  RoutingTable RT(keys, nullptr);
   NodeInfo node;
   rudp::ManagedConnections rudp;
   protobuf::ProxyConnectRequest proxy_connect_request;

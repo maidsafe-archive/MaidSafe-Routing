@@ -10,6 +10,9 @@
  *  the explicit written permission of the board of directors of maidsafe.net. *
  ******************************************************************************/
 
+#include "maidsafe/routing/tests/test_utils.h"
+#include <set>
+
 #include "maidsafe/common/utils.h"
 #include "maidsafe/routing/routing_table.h"
 #include "maidsafe/routing/parameters.h"
@@ -24,7 +27,16 @@ namespace routing {
 namespace test {
 
 uint16_t GetRandomPort() {
-  return ((RandomUint32() % 48126) + 1025);
+  static std::set<uint16_t> already_used_ports;
+  bool unique(false);
+  uint16_t port(0);
+  uint16_t failed_attempts(0);
+  do {
+    assert((1000 >= failed_attempts++) && "Unable to generate unique ports");
+    port = (RandomUint32() % 48126) + 1025;
+    unique = (already_used_ports.insert(port)).second;
+  } while (!unique);
+  return port;
 }
 
 NodeInfo MakeNode() {

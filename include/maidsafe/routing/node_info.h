@@ -15,7 +15,6 @@
 
 #include "maidsafe/common/rsa.h"
 
-#include "maidsafe/routing/api_config.h"
 #include "maidsafe/routing/node_id.h"
 #include "maidsafe/routing/parameters.h"
 
@@ -24,6 +23,8 @@ namespace maidsafe {
 namespace routing {
 
 namespace protobuf { class Contact; }  //  namespace protobuf
+
+typedef boost::asio::ip::udp::endpoint Endpoint;
 
 struct NodeInfo {
   NodeInfo();

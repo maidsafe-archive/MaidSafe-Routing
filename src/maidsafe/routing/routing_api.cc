@@ -45,27 +45,27 @@ namespace maidsafe {
 namespace routing {
 
 Routing::Routing(const asymm::Keys &keys,
-                 const fs::path &boostrap_file_path,
+                 const fs::path &bootstrap_file_path,
                  Functors functors,
                  const bool client_mode)
-    : impl_(new RoutingPrivate(keys, boostrap_file_path, functors, client_mode)) {
+    : impl_(new RoutingPrivate(keys, bootstrap_file_path, functors, client_mode)) {
   // test path
   std::string dummy_content;
   // not catching exceptions !!
-  fs::ifstream file_in(boostrap_file_path, std::ios::in | std::ios::binary);
-  fs::ofstream file_out(boostrap_file_path, std::ios::out | std::ios::binary);
+  fs::ifstream file_in(bootstrap_file_path, std::ios::in | std::ios::binary);
+  fs::ofstream file_out(bootstrap_file_path, std::ios::out | std::ios::binary);
   if (file_in.good()) {
-    if (fs::exists(boostrap_file_path)) {
-      fs::file_size(boostrap_file_path);  // throws
+    if (fs::exists(bootstrap_file_path)) {
+      fs::file_size(bootstrap_file_path);  // throws
     } else if (file_out.good()) {
       file_out.put('c');
-    fs::file_size(boostrap_file_path);  // throws
-    fs::remove(boostrap_file_path);
+    fs::file_size(bootstrap_file_path);  // throws
+    fs::remove(bootstrap_file_path);
     } else {
-      fs::file_size(boostrap_file_path);  // throws
+      fs::file_size(bootstrap_file_path);  // throws
     }
   } else {
-    fs::file_size(boostrap_file_path);  // throws
+    fs::file_size(bootstrap_file_path);  // throws
   }
   if (client_mode) {
     Parameters::max_routing_table_size = Parameters::closest_nodes_size;
@@ -85,7 +85,7 @@ int Routing::GetStatus() {
   } else {
     return impl_->routing_table_.Size();
   }
-  return 0;
+  return kSuccess;
 }
 
 // drop existing routing table and restart
@@ -187,14 +187,6 @@ void Routing::ValidateThisNode(const std::string &node_id,
     WriteBootstrapFile(impl_->bootstrap_nodes_, impl_->bootstrap_file_path_);
   }
 }
-
-//bs2::signal<void(const std::string&,
-//                 const Endpoint&,
-//                 const bool,
-//                 const Endpoint&,
-//               NodeValidatedFunctor &)> &Routing::NodeValidationSignal() {
-//  return impl_->node_validation_signal_;
-//}
 
 void Routing::ReceiveMessage(const std::string &message) {
   protobuf::Message protobuf_message;

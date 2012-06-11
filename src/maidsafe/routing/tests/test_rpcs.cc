@@ -41,7 +41,7 @@ TEST(RPC, BEH_PingMessageInitialised) {
 TEST(RPC, BEH_PingMessageNode) {
   asymm::Keys keys;
   keys.identity = RandomString(64);
-  RoutingTable RT(keys);
+  RoutingTable RT(keys, nullptr);
   NodeInfo node;
   std::string destination = RandomString(64);
   protobuf::Message message = rpcs::Ping(NodeId(destination), keys.identity);
