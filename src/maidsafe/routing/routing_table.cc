@@ -14,7 +14,9 @@
 #include <algorithm>
 #include <thread>
 
+#include "maidsafe/routing/parameters.h"
 #include "maidsafe/routing/log.h"
+#include "maidsafe/routing/api_config.h"
 
 namespace bs2 = boost::signals2;
 
@@ -249,6 +251,11 @@ NodeInfo RoutingTable::GetClosestNode(const NodeId &from, unsigned int node_numb
   std::lock_guard<std::mutex> lock(mutex_);
   SortFromThisNode(from);
   return routing_table_nodes_[node_number];
+}
+
+NodeId RoutingTable::GetFurthestClosestNode() {
+  SortFromThisNode(kNodeId_);
+  return routing_table_nodes_[Parameters::closest_nodes_size].node_id;
 }
 
 std::vector<NodeId> RoutingTable::GetClosestNodes(const NodeId &from, uint16_t number_to_get) {

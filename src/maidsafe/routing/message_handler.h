@@ -18,6 +18,8 @@
 #include "maidsafe/rudp/managed_connections.h"
 
 #include "maidsafe/routing/cache_manager.h"
+#include "maidsafe/routing/non_routing_table.h"
+#include "maidsafe/routing/message.h"
 #include "maidsafe/routing/api_config.h"
 
 namespace bs2 = boost::signals2;
@@ -35,16 +37,17 @@ class CacheManager;
 class MessageHandler {
  public:
   MessageHandler(RoutingTable &routing_table,
+                 NonRoutingTable &non_routing_table,
                  rudp::ManagedConnections &rudp,
                  Timer &timer_ptr,
                  NodeValidationFunctor node_validation_functor);
-  void ProcessMessage(protobuf::Message &message);
-  void DirectMessage(protobuf::Message &message);
-  void RoutingMessage(protobuf::Message &message);
-  void CloseNodesMessage(protobuf::Message &message);
-  bool CheckCacheData(protobuf::Message &message);
-  bool CheckAndSendToLocalClients(protobuf::Message &message);
-  void Send(protobuf::Message &message);
+  void ProcessMessage(const std::string &message);
+  void DirectMessage(Message &message);
+  void RoutingMessage(Message &message);
+  void CloseNodesMessage(Message &message);
+  bool CheckCacheData(Message &message);
+  bool CheckAndSendToLocalClients(Message &message);
+  void Send(Message &message);
   bs2::signal<void(int, std::string)> &MessageReceivedSignal();
 
  private:
@@ -52,6 +55,7 @@ class MessageHandler {
   MessageHandler(const MessageHandler&&);  // no move
   MessageHandler& operator=(const MessageHandler&);  // no assign
   RoutingTable &routing_table_;
+  NonRoutingTable &non_routing_table_;
   rudp::ManagedConnections &rudp_;
   Timer &timer_ptr_;
   CacheManager cache_manager_;

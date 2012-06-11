@@ -45,7 +45,8 @@ enum class SendStatus : int32_t {
   kInvalidDestinationId = -1,
   kInvalidSourceId = -2,
   kInvalidType = -3,
-  kEmptyData = -4
+  kEmptyData = -4,
+  kGeneralError = -5
 };
 
 /***************************************************************************************************

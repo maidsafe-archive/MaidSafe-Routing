@@ -17,11 +17,13 @@
 
 #include "maidsafe/routing/log.h"
 #include "maidsafe/routing/node_id.h"
+#include "maidsafe/routing/message.h"
 #include "maidsafe/routing/parameters.h"
 #include "maidsafe/routing/response_handler.h"
 #include "maidsafe/routing/return_codes.h"
 #include "maidsafe/routing/routing_pb.h"
 #include "maidsafe/routing/routing_table.h"
+#include "maidsafe/routing/non_routing_table.h"
 #include "maidsafe/routing/rpcs.h"
 #include "maidsafe/routing/service.h"
 #include "maidsafe/routing/timer.h"
@@ -37,10 +39,12 @@ class Timer;
 
 MessageHandler::MessageHandler(
                 RoutingTable &routing_table,
+                NonRoutingTable &non_routing_table,
                 rudp::ManagedConnections &rudp,
                 Timer &timer_ptr,
                 NodeValidationFunctor node_validation_functor) :
                 routing_table_(routing_table),
+                non_routing_table_(non_routing_table),
                 rudp_(rudp),
                 timer_ptr_(timer_ptr),
                 cache_manager_(),
@@ -52,28 +56,30 @@ boost::signals2::signal<void(int, std::string)>
   return message_received_signal_;
 }
 
-void MessageHandler::Send(protobuf::Message& message) {
-  message.set_routing_failure(false);
+void MessageHandler::Send(Message& message) {
+  assert(!message.Valid() && "invalid message");
   SendOn(message, rudp_, routing_table_);
 }
 
-bool MessageHandler::CheckCacheData(protobuf::Message &message) {
-  if (message.type() == -100) {
-    cache_manager_.AddToCache(message);
-  } else  if (message.type() == 100) {
-    if (cache_manager_.GetFromCache(message)) {
-      message.set_source_id(routing_table_.kKeys().identity);
-      SendOn(message, rudp_, routing_table_);
-      return true;
-    }
-  } else {
-    return false;  // means this message is not finished processing
-  }
-  return false;
+bool MessageHandler::CheckCacheData(Message &message) {
+//  if (message.Type() == -100) {
+//    cache_manager_.AddToCache(message.Data());
+//  } else  if (message.Type() == 100) {
+//    if (cache_manager_.GetFromCache(message.Data())) {
+//      message.SetDestination(message.SourceId().String());
+//      message.SetMeAsSource();
+//      assert(!message.Valid() && "invalid message");
+//      SendOn(message, rudp_, routing_table_);
+//      return true;
+//    }
+//  } else {
+//    return false;  // means this message is not finished processing
+//  }
+//  return false;
 }
 
-void MessageHandler::RoutingMessage(protobuf::Message& message) {
-  switch (message.type()) {
+void MessageHandler::RoutingMessage(Message& message) {
+  switch (message.Type()) {
     case -1 :  // ping
       response::Ping(message);
       break;
@@ -104,21 +110,18 @@ void MessageHandler::RoutingMessage(protobuf::Message& message) {
   SendOn(message, rudp_, routing_table_);
 }
 
-void MessageHandler::DirectMessage(protobuf::Message& message) {
-  if (message.has_relay()) {
-     Endpoint send_to_endpoint;
-     send_to_endpoint.address(boost::asio::ip::address::from_string(message.relay().ip()));
-     send_to_endpoint.port(static_cast<unsigned short>(message.relay().port()));
-     rudp_.Send(send_to_endpoint, message.SerializeAsString());
+void MessageHandler::DirectMessage(Message& message) {
+  if (message.HasRelay()) {
+      rudp_.Send(message.RelayEndpoint(), message.Serialise());
      return;
   }
-  if ((message.type() < 100) && (message.type() > -100)) {
+  if ((message.Type() < 100) && (message.Type() > -100)) {
     RoutingMessage(message);
     return;
   }
-  if (message.type() > 100) {  // request
-    message_received_signal_(static_cast<int>(-message.type()),
-                             message.data());
+  if (message.Type() > 100) {  // request
+    message_received_signal_(static_cast<int>(-message.Type()),
+                             message.Data());
     LOG(kInfo) << "Routing message detected";
   } else {  // response
     timer_ptr_.ExecuteTaskNow(message);
@@ -126,64 +129,64 @@ void MessageHandler::DirectMessage(protobuf::Message& message) {
   }
 }
 
-void MessageHandler::CloseNodesMessage(protobuf::Message& message) {
-  if (message.has_relay()) {
-    Endpoint send_to_endpoint;
-    send_to_endpoint.address(boost::asio::ip::address::from_string(message.relay().ip()));
-    send_to_endpoint.port(static_cast<unsigned short>(message.relay().port()));
-    rudp_.Send(send_to_endpoint, message.SerializeAsString());
+void MessageHandler::CloseNodesMessage(Message& message) {
+  if (message.HasRelay()) {
+    rudp_.Send(message.RelayEndpoint() , message.Serialise());
     return;
   }
-  if ((message.direct()) && (!routing_table_.AmIClosestNode(NodeId(message.destination_id())))) {
+  if ((message.Direct() == ConnectType::kSingle) && (message.ClosestToMe())) {
     SendOn(message, rudp_, routing_table_);
     return;
   }
   // I am closest so will send to all my replicant nodes
-  message.set_direct(true);
+  message.SetDirect(ConnectType::kSingle);
   auto close =
-        routing_table_.GetClosestNodes(NodeId(message.destination_id()),
-                                       static_cast<uint16_t>(message.replication()));
+        routing_table_.GetClosestNodes(message.DestinationId(),
+                                       Parameters::managed_group_size);
   for (auto i : close) {
-    message.set_destination_id(i.String());
+    message.SetDestination(i.String());
     SendOn(message, rudp_, routing_table_);
   }
 }
 
-void MessageHandler::ProcessMessage(protobuf::Message &message) {
-  // client connected messages -> out
-  if (message.source_id().empty()) {  // relay mode
-    // if zero state we may be closest
-    if (routing_table_.Size() <= Parameters::closest_nodes_size) {
-      if (message.type() == 3) {
-        service::FindNodes(routing_table_, message);
-        SendOn(message, rudp_, routing_table_);
-        return;
-      }
-    }
-    message.set_source_id(routing_table_.kKeys().identity);
-    SendOn(message, rudp_, routing_table_);
+void MessageHandler::ProcessMessage(const std::string &message) {
+  Message msg(message, routing_table_, non_routing_table_);
+  if (msg.ForMe()) {
+
   }
-  // message for me !
-  if (message.destination_id() == routing_table_.kKeys().identity) {
-    DirectMessage(message);
-    return;
-  }
-  // cache response to get data that's cacheable
-  if ((message.type() == -100) && (CheckCacheData(message)))
-    return;
-  // I am in closest proximity to this message
-  if (routing_table_.IsMyNodeInRange(NodeId(message.destination_id()),
-                                     Parameters::closest_nodes_size)) {
-    if ((message.type() < 100) && (message.type() > -100)) {
-      RoutingMessage(message);
-      return;
-    } else {
-      CloseNodesMessage(message);
-      return;
-    }
-  }
+//  // client connected messages -> out
+//  if (message.source_id().empty()) {  // relay mode
+//    // if zero state we may be closest
+//    if ((routing_table_.Size() <= Parameters::closest_nodes_size) &&
+//       (message.type() == 3)) {
+//        service::FindNodes(routing_table_, message);
+//        SendOn(message, rudp_, routing_table_);
+//        return;
+//    }
+//    message.set_source_id(routing_table_.kKeys().identity);
+//    SendOn(message, rudp_, routing_table_);
+//  }
+//  // message for me !
+//  if (message.destination_id() == routing_table_.kKeys().identity) {
+//    DirectMessage(message);
+//    return;
+//  }
+//  // cache response to get data that's cacheable
+//  if ((message.type() == -100) && (CheckCacheData(message)))
+//    return;
+//  // I am in closest proximity to this message
+//  if (routing_table_.IsMyNodeInRange(NodeId(message.destination_id()),
+//                                     Parameters::closest_nodes_size)) {
+//    if ((message.type() < 100) && (message.type() > -100)) {
+//      RoutingMessage(message);
+//      return;
+//    } else {
+//      CloseNodesMessage(message);
+//      return;
+//    }
+//  }
   // default
-  SendOn(message, rudp_, routing_table_);
+//  SendOn(message, rudp_, routing_table_);
 }
 
 // // TODO(dirvine) implement client handler
@@ -202,8 +205,6 @@ void MessageHandler::ProcessMessage(protobuf::Message &message) {
 // //                 });
 //   return found;
 // }
-
-
 
 }  // namespace routing
 

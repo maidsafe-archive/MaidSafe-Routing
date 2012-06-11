@@ -15,7 +15,9 @@
 #include "maidsafe/common/crypto.h"
 
 #include "maidsafe/routing/parameters.h"
+#include "maidsafe/routing/message.h"
 #include "maidsafe/routing/routing_pb.h"
+#include "maidsafe/routing/api_config.h"
 
 namespace maidsafe {
 
@@ -25,41 +27,41 @@ CacheManager::CacheManager()
                     : cache_chunks_(),
                     mutex_()
                     {}
+// cache to be handled in vaults buffer
+//void CacheManager::AddToCache(Message &message) {
+////    std::pair<std::string, std::string> data;
+////  try {
+////    // check data is valid TODO FIXME - ask CAA
+////    if (crypto::Hash<crypto::SHA512>(message.Data()) != message.SourceId())
+////      return;
+////    data = std::make_pair(message.SourceId(), message.Data());
+////    cache_chunks_.push_back(data);
+////    boost::mutex::scoped_lock lock(mutex_);
+////    while (cache_chunks_.size() > Parameters::num_chunks_to_cache)
+////      cache_chunks_.erase(cache_chunks_.begin());
+////  }
+////  catch(const std::exception &/*e*/) {
+////    // oohps reduce cache size quickly
+////    Parameters::num_chunks_to_cache = Parameters::num_chunks_to_cache / 2;
+////    boost::mutex::scoped_lock lock(mutex_);
+////    while (cache_chunks_.size() > Parameters::num_chunks_to_cache)
+////      cache_chunks_.erase(cache_chunks_.begin()+1);
+////  }
+//}
 
-void CacheManager::AddToCache(const protobuf::Message &message) {
-    std::pair<std::string, std::string> data;
-  try {
-    // check data is valid TODO FIXME - ask CAA
-    if (crypto::Hash<crypto::SHA512>(message.data()) != message.source_id())
-      return;
-    data = std::make_pair(message.source_id(), message.data());
-    cache_chunks_.push_back(data);
-    boost::mutex::scoped_lock lock(mutex_);
-    while (cache_chunks_.size() > Parameters::num_chunks_to_cache)
-      cache_chunks_.erase(cache_chunks_.begin());
-  }
-  catch(const std::exception &/*e*/) {
-    // oohps reduce cache size quickly
-    Parameters::num_chunks_to_cache = Parameters::num_chunks_to_cache / 2;
-    boost::mutex::scoped_lock lock(mutex_);
-    while (cache_chunks_.size() > Parameters::num_chunks_to_cache)
-      cache_chunks_.erase(cache_chunks_.begin()+1);
-  }
-}
-
-bool CacheManager::GetFromCache(protobuf::Message &message) {
-    boost::mutex::scoped_lock lock(mutex_);
-    for (auto it = cache_chunks_.begin(); it != cache_chunks_.end(); ++it) {
-      if ((*it).first == message.source_id()) {
-        message.set_destination_id(message.source_id());
-        message.set_data((*it).second);
-        message.set_direct(true);
-        message.set_type(-message.type());
-        return true;
-      }
-  }
-  return false;
-}
+//bool CacheManager::GetFromCache(Message &message) {
+////    boost::mutex::scoped_lock lock(mutex_);
+////    for (auto it = cache_chunks_.begin(); it != cache_chunks_.end(); ++it) {
+////      if ((*it).first == message.SourceId()) {
+////        message.SetDestination(message.SourceId());
+////        message.SetData((*it).second);
+////        message.SetDirect(ConnectType::kSingle);
+////        message.SetType(-message.Type());
+////        return true;
+////      }
+////  }
+//  return false;
+//}
 
 }  // namespace routing
 }  // namespace maidsafe

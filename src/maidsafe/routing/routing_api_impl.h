@@ -24,6 +24,7 @@
 #include "maidsafe/routing/message_handler.h"
 #include "maidsafe/routing/parameters.h"
 #include "maidsafe/routing/routing_table.h"
+#include "maidsafe/routing/non_routing_table.h"
 #include "maidsafe/routing/timer.h"
 
 namespace bs2 = boost::signals2;
@@ -51,14 +52,11 @@ struct RoutingPrivate {
   const asymm::Keys keys_;
   rudp::ManagedConnections rudp_;
   RoutingTable routing_table_;
+  NonRoutingTable non_routing_table_;
   Timer timer_;
   Functors functors_;
-//  bs2::signal<void(const std::string&, const Endpoint&, const bool, const Endpoint&,
-//                   NodeValidatedFunctor &)> node_validation_signal_;
   std::map<uint32_t, std::pair<std::unique_ptr<boost::asio::deadline_timer>,
                               MessageReceivedFunctor> > waiting_for_response_;
-  std::vector<NodeInfo> direct_non_routing_table_connections_;
-  // closest nodes to the client.
   MessageHandler message_handler_;
   bool joined_;
   const fs::path bootstrap_file_path_;

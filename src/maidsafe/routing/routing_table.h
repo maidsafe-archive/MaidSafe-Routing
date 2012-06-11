@@ -45,6 +45,7 @@ class RoutingTable {
   bool AmIClosestNode(const NodeId &node_id);
   bool AmIConnectedToEndpoint(const Endpoint& endpoint);
   std::vector<NodeId> GetClosestNodes(const NodeId &from, uint16_t number_to_get);
+  NodeId GetFurthestClosestNode();
   NodeInfo GetClosestNode(const NodeId &from, unsigned int node_number);
   uint16_t Size();
   asymm::Keys kKeys() const;

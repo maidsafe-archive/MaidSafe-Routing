@@ -16,28 +16,27 @@
 #include <memory>
 
 #include "maidsafe/routing/api_config.h"
+#include "maidsafe/routing/message.h"
 
 namespace maidsafe {
 
 namespace routing {
 
-namespace protobuf { class Message;}  // namespace protobuf
-
 class RoutingTable;
-
+class Message;
 namespace service {
 
 // Handle all incoming requests and send back reply
 void Ping(RoutingTable &routing_table,
-          protobuf::Message &message);
+          routing::Message &message);
 void Connect(RoutingTable &routing_table,
              rudp::ManagedConnections &rudp,
-             protobuf::Message &message);
+             routing::Message &message);
 void FindNodes(RoutingTable &routing_table,
-              protobuf::Message &message);
+              routing::Message &message);
 void ProxyConnect(RoutingTable &routing_table,
                   rudp::ManagedConnections &rudp,
-                  protobuf::Message &message);
+                  routing::Message &message);
 
 }  // namespace service
 

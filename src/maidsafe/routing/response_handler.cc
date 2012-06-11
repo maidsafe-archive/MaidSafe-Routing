@@ -23,6 +23,7 @@
 #include "maidsafe/routing/return_codes.h"
 #include "maidsafe/routing/routing_api.h"
 #include "maidsafe/routing/routing_pb.h"
+#include "maidsafe/routing/message.h"
 #include "maidsafe/routing/routing_table.h"
 #include "maidsafe/routing/rpcs.h"
 #include "maidsafe/routing/utils.h"
@@ -34,19 +35,19 @@ namespace routing {
 namespace response {
 
 // always direct !! never pass on
-void Ping(protobuf::Message& message) {
+void Ping(Message& message) {
   // TODO(dirvine): do we need this and where and how can I update the response
   protobuf::PingResponse ping_response;
-  if (ping_response.ParseFromString(message.data())) {
+  if (ping_response.ParseFromString(message.Data())) {
     //  do stuff here
     }
 }
 
 // the other node agreed to connect - he has accepted our connection
-void Connect(protobuf::Message& message, NodeValidationFunctor node_validation_functor) {
+void Connect(Message& message, NodeValidationFunctor node_validation_functor) {
   protobuf::ConnectResponse connect_response;
   protobuf::ConnectRequest connect_request;
-  if (!connect_response.ParseFromString(message.data())) {
+  if (!connect_response.ParseFromString(message.Data())) {
     LOG(kError) << "Could not parse connect response";
     return;
   }
@@ -75,18 +76,18 @@ void Connect(protobuf::Message& message, NodeValidationFunctor node_validation_f
   their_endpoint_pair.local.port(
       static_cast<unsigned short>(connect_response.contact().private_endpoint().port()));
   // TODO(dirvine) FIXME
-  if (node_validation_functor)  // never add any node to routing table
-    node_validation_functor(NodeId(connect_response.contact().node_id()),
-                            their_endpoint_pair,
-                            our_endpoint_pair,
-                            message.client_node());
+//  if (node_validation_functor)  // never add any node to routing table
+//    node_validation_functor(NodeId(connect_response.contact().node_id()),
+//                            their_endpoint_pair,
+//                            our_endpoint_pair,
+//                            message.client_node());
 }
 
 void FindNode(RoutingTable &routing_table,
               rudp::ManagedConnections &rudp,
-              const protobuf::Message& message) {
+              Message& message) {
   protobuf::FindNodesResponse find_nodes;
-  if (!find_nodes.ParseFromString(message.data())) {
+  if (!find_nodes.ParseFromString(message.Data())) {
     LOG(kError) << "Could not parse find node response";
     return;
   }
@@ -103,18 +104,19 @@ void FindNode(RoutingTable &routing_table,
       LOG(kInfo) << " size of find nodes " << find_nodes.nodes_size();
       rudp::EndpointPair endpoint;
       rudp.GetAvailableEndpoint(endpoint);
-      SendOn(rpcs::Connect(NodeId(find_nodes.nodes(i)),
-                           endpoint,
-                           routing_table.kKeys().identity),
-             rudp,
-             routing_table);
+// TODO(dirvine)
+      //      SendOn(rpcs::Connect(NodeId(find_nodes.nodes(i)),
+//                           endpoint,
+//                           routing_table.kKeys().identity),
+//             rudp,
+//             routing_table);
     }
   }
 }
 
-void ProxyConnect(protobuf::Message& message) {
+void ProxyConnect(Message& message) {
   protobuf::ProxyConnectResponse proxy_connect_response;
-  if (proxy_connect_response.ParseFromString(message.data())) {
+  if (proxy_connect_response.ParseFromString(message.Data())) {
     //  do stuff here
     }
 }

@@ -22,6 +22,7 @@
 
 #include "maidsafe/common/asio_service.h"
 #include "maidsafe/common/utils.h"
+#include "maidsafe/routing/message.h"
 
 namespace asio = boost::asio;
 
@@ -40,7 +41,7 @@ class Timer {
   typedef std::shared_ptr<asio::deadline_timer> TimerPointer;
   TaskId AddTask(uint32_t timeout, const TaskResponseFunctor &);
   void KillTask(uint32_t task_id);  // removes from queue immediately no run
-  void ExecuteTaskNow(protobuf::Message &message);  // executes and removes task
+  void ExecuteTaskNow(Message &message);  // executes and removes task
 
  private:
   Timer &operator=(const Timer&);

@@ -18,7 +18,7 @@
 #include <vector>
 
 #include "boost/thread/mutex.hpp"
-
+#include "maidsafe/routing/message.h"
 #include "maidsafe/routing/log.h"
 
 namespace maidsafe {
@@ -30,8 +30,8 @@ namespace protobuf { class Message;}  // namespace protobuf
 class CacheManager {
  public:
   CacheManager();
-  void AddToCache(const protobuf::Message &message);
-  bool GetFromCache(protobuf::Message &message);
+  void AddToCache(Message &message, std::string name);
+  bool GetFromCache(Message &message, std::string name);
  private:
   CacheManager(const CacheManager&);  // no copy
   CacheManager(const CacheManager&&);  // no move

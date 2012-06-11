@@ -1,5 +1,5 @@
 package maidsafe.routing.protobuf;
-
+option optimize_for = LITE_RUNTIME;
 message Layer {
   required int32 identifier = 1;
   required bytes message = 2;
@@ -37,7 +37,7 @@ message Bootstrap {
 // Message wrappers
 
 
-message Message {
+message PbMessage {
   required bytes source_id = 1; // in response this is name of data
   required bytes destination_id = 2;
   optional bytes last_id = 3;
@@ -50,14 +50,13 @@ message Message {
   required int32 id = 10;
   required bool client_node = 11;
   optional Endpoint relay = 12;
-  optional bool ClosestToMe = 13;
-  optional bool CloseToMe = 14;
 }
 
 message SignedMessage {
   required bytes message = 1; // serialised Message
-  required bytes signature = 2;
+  optional bytes signature = 2;
   required bytes id = 3;
+  required bytes destination = 4;
 }
 
 message ConnectRequest {

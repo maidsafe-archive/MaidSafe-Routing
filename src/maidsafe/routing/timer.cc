@@ -15,8 +15,8 @@
 #include "maidsafe/routing/timer.h"
 
 #include "maidsafe/common/asio_service.h"
-
-#include "maidsafe/routing/log.h"
+#include "maidsafe/routing/message.h"
+#include "maidsafe/common/log.h"
 #include "maidsafe/routing/return_codes.h"
 #include "maidsafe/routing/routing_pb.h"
 
@@ -54,14 +54,14 @@ void Timer::KillTask(TaskId task_id) {
   }
 }
 
-void Timer::ExecuteTaskNow(protobuf::Message &message) {
-  const auto it = queue_.find(message.id());
+void Timer::ExecuteTaskNow(Message &message) {
+  const auto it = queue_.find(message.Id());
   if (it != queue_.end()) {
     // message all OK in routing
-    (*it).second.second(ReturnCode::kSuccess, message.data());
+    (*it).second.second(ReturnCode::kSuccess, message.Data());
     queue_.erase(it);
   } else {
-    (*it).second.second(ReturnCode::kGeneralError, message.data());
+    (*it).second.second(ReturnCode::kGeneralError, message.Data());
     LOG(kError) << "Attempt to run an expired or non existent task";
   }
 }

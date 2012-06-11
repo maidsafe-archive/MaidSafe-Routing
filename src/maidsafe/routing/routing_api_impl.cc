@@ -20,6 +20,7 @@
 #include "maidsafe/routing/routing_api.h"
 #include "maidsafe/routing/routing_pb.h"
 #include "maidsafe/routing/routing_table.h"
+#include "maidsafe/routing/non_routing_table.h"
 #include "maidsafe/routing/timer.h"
 #include "maidsafe/routing/utils.h"
 
@@ -38,12 +39,16 @@ RoutingPrivate::RoutingPrivate(const asymm::Keys &keys,
       keys_(keys),
       rudp_(),
       routing_table_(keys_),
+      non_routing_table_(keys_),
       timer_(asio_service_),
       functors_(functors),
       //node_validation_signal_(),
       waiting_for_response_(),
-      direct_non_routing_table_connections_(),
-      message_handler_(routing_table_, rudp_, timer_, functors_.node_validation),
+      message_handler_(routing_table_,
+                       non_routing_table_,
+                       rudp_,
+                       timer_,
+                       functors_.node_validation),
       joined_(false),
       bootstrap_file_path_(path),
       client_mode_(client_mode) {}

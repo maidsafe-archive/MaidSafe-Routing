@@ -25,6 +25,7 @@
 #include "maidsafe/rudp/return_codes.h"
 
 #include "maidsafe/routing/bootstrap_file_handler.h"
+//#include "maidsafe/routing/message.h"
 #include "maidsafe/routing/message_handler.h"
 #include "maidsafe/routing/node_id.h"
 #include "maidsafe/routing/parameters.h"
@@ -132,10 +133,10 @@ bool Routing::Join(Endpoint local_endpoint) {
   }
 
   std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-  auto boot = std::async(std::launch::async, [&] {
-      return impl_->rudp_.Send(bootstrap_endpoint, rpcs::FindNodes(
-          NodeId(impl_->keys_.identity), local_endpoint).SerializeAsString()); }); // NOLINT Prakash
-  return (boot.get() == 0);
+//  auto boot = std::async(std::launch::async, [&] {
+//      return impl_->rudp_.Send(bootstrap_endpoint, rpcs::FindNodes(
+//          NodeId(impl_->keys_.identity), local_endpoint).SerializeAsString()); }); // NOLINT Prakash
+//  return (boot.get() == 0);
 }
 
 SendStatus Routing::Send(const NodeId &destination_id,
@@ -153,7 +154,7 @@ SendStatus Routing::Send(const NodeId &destination_id,
     LOG(kError) << "No data, aborted send";
     return SendStatus::kEmptyData;
   }
-  protobuf::Message proto_message;
+  protobuf::PbMessage proto_message;
   proto_message.set_id(0);
   // TODO(dirvine): see if ANONYMOUS and Endpoint required here
   proto_message.set_source_id(impl_->routing_table_.kKeys().identity);
@@ -161,7 +162,13 @@ SendStatus Routing::Send(const NodeId &destination_id,
   proto_message.set_data(data);
   proto_message.set_direct(static_cast<int32_t>(connect_type));
   proto_message.set_type(type);
-  SendOn(proto_message, impl_->rudp_, impl_->routing_table_);
+  Endpoint endpoint = impl_->routing_table_.GetClosestNode(NodeId(destination_id), 0).endpoint;
+
+  int send_status = impl_->rudp_.Send(endpoint, data);
+  if (send_status != rudp::kSuccess) {
+    LOG(kError) << " Send error !!! = " << send_status;
+    SendStatus::kGeneralError;
+  }
   return SendStatus::kSuccess;
 }
 
@@ -177,7 +184,7 @@ void Routing::ValidateThisNode(const std::string &node_id,
   node_info.endpoint = their_endpoint;
   impl_->rudp_.Add(their_endpoint, our_endpoint, node_id);
   if (client) {
-    impl_->direct_non_routing_table_connections_.push_back(node_info);
+    impl_->non_routing_table_.AddNode(node_info, impl_->routing_table_.GetFurthestClosestNode());
   } else {
     impl_->routing_table_.AddNode(node_info);
     if (impl_->bootstrap_nodes_.size() > 1000) {
@@ -198,14 +205,7 @@ void Routing::ValidateThisNode(const std::string &node_id,
 //}
 
 void Routing::ReceiveMessage(const std::string &message) {
-  protobuf::Message protobuf_message;
-  protobuf::ConnectRequest connection_request;
-  if (protobuf_message.ParseFromString(message)) {
-    LOG(kInfo) << " Message received, type: " << protobuf_message.type()
-               << " from " << HexSubstr(protobuf_message.source_id())
-               << " I am " << HexSubstr(impl_->keys_.identity);
-    impl_->message_handler_.ProcessMessage(protobuf_message);
-  }
+    impl_->message_handler_.ProcessMessage(message);
 }
 
 void Routing::ConnectionLost(const Endpoint &lost_endpoint) {
@@ -213,27 +213,15 @@ void Routing::ConnectionLost(const Endpoint &lost_endpoint) {
   if ((impl_->routing_table_.GetNodeInfo(lost_endpoint, &node_info) &&
       (impl_->routing_table_.IsMyNodeInRange(node_info.node_id,
                                              Parameters::closest_nodes_size)))) {
+    if (impl_->routing_table_.IsMyNodeInRange(node_info.node_id,
+                                              Parameters::managed_group_size)) {
+      // TODO callback to vaults new close nodes group
+    }
     // close node, get more
-    SendOn(rpcs::FindNodes(NodeId(impl_->keys_.identity)), impl_->rudp_, impl_->routing_table_);
+//    SendOn(rpcs::FindNodes(NodeId(impl_->keys_.identity)), impl_->rudp_, impl_->routing_table_);
   }
-  if (!impl_->routing_table_.DropNode(lost_endpoint))
-    return;
-  for (auto it = impl_->direct_non_routing_table_connections_.begin();
-        it != impl_->direct_non_routing_table_connections_.end(); ++it) {
-    if ((*it).endpoint ==  lost_endpoint) {
-      impl_->direct_non_routing_table_connections_.erase(it);
-      return;
-    }
-  }
-  for (auto it = impl_->direct_non_routing_table_connections_.begin();
-        it != impl_->direct_non_routing_table_connections_.end(); ++it) {
-    if ((*it).endpoint ==  lost_endpoint) {
-      impl_->direct_non_routing_table_connections_.erase(it);
-      // close node, get more
-      SendOn(rpcs::FindNodes(NodeId(impl_->keys_.identity)), impl_->rudp_, impl_->routing_table_);
-      return;
-    }
-  }
+  impl_->routing_table_.DropNode(lost_endpoint);
+  impl_->non_routing_table_.DropNode(lost_endpoint);
 }
 
 }  // namespace routing

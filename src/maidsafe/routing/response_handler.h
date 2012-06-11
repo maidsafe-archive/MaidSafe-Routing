@@ -22,23 +22,22 @@
 #include "maidsafe/routing/log.h"
 #include "maidsafe/routing/node_id.h"
 #include "maidsafe/routing/routing_table.h"
+#include "maidsafe/routing/message.h"
 #include "maidsafe/routing/rpcs.h"
 
 namespace maidsafe {
 
 namespace routing {
 
-namespace protobuf { class Message; }  // namespace protobuf
-
 namespace response {
 
-void Ping(protobuf::Message &message);
-void Connect(protobuf::Message &message,
+void Ping(Message &message);
+void Connect(Message &message,
              NodeValidationFunctor node_validation_functor);
 void FindNode(RoutingTable &routing_table,
               rudp::ManagedConnections &rudp,
-              const protobuf::Message &message);
-void ProxyConnect(protobuf::Message& message);
+              Message &message);
+void ProxyConnect(Message& message);
 
 }  // namespace response
 

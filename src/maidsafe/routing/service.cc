@@ -20,6 +20,7 @@
 #include "maidsafe/routing/log.h"
 #include "maidsafe/routing/node_id.h"
 #include "maidsafe/routing/parameters.h"
+#include "maidsafe/routing/message.h"
 #include "maidsafe/routing/routing_pb.h"
 #include "maidsafe/routing/routing_table.h"
 
@@ -29,40 +30,40 @@ namespace routing {
 
 namespace service {
 
-void Ping(RoutingTable &routing_table, protobuf::Message &message) {
+void Ping(RoutingTable &routing_table, Message &message) {
 //   if (message.destination_id() != NodeId::kKeySizeBytes) {
 //         LOG(kError) << "Invalid destination ID";
 //     return;
 //   }
-  if (message.destination_id() != routing_table.kKeys().identity) {
+  if (message.DestinationId().String() != routing_table.kKeys().identity) {
     LOG(kError) << "Message not for us";
     return;  // not for us and we should not pass it on.
   }
   protobuf::PingResponse ping_response;
   protobuf::PingRequest ping_request;
 
-  if (!ping_request.ParseFromString(message.data())) {
+  if (!ping_request.ParseFromString(message.Data())) {
     LOG(kError) << "No Data";
     return;
   }
   ping_response.set_pong(true);
-  ping_response.set_original_request(message.data());
-  ping_response.set_original_signature(message.signature());
+  ping_response.set_original_request(message.Data());
+ // ping_response.set_original_signature(message.ignature());
   ping_response.set_timestamp(GetTimeStamp());
-  message.set_type(-1);
-  message.set_data(ping_response.SerializeAsString());
-  message.set_destination_id(message.source_id());
-  message.set_source_id(routing_table.kKeys().identity);
-  assert(message.IsInitialized() && "unintialised message");
+  message.SetType(-1);
+  message.SetData(ping_response.SerializeAsString());
+  message.SetDestination(message.SourceId().String());
+  message.SetMeAsSource();
+  assert(message.Valid() && "unintialised message");
 }
 
 void Connect(RoutingTable &routing_table, rudp::ManagedConnections &rudp,
-             protobuf::Message &message) {
-  if (message.destination_id() != routing_table.kKeys().identity)
+             Message &message) {
+  if (message.DestinationId().String() != routing_table.kKeys().identity)
     return;  // not for us and we should not pass it on.
   protobuf::ConnectRequest connect_request;
   protobuf::ConnectResponse connect_response;
-  if (!connect_request.ParseFromString(message.data()))
+  if (!connect_request.ParseFromString(message.Data()))
     return;  // no need to reply
   NodeInfo node;
   node.node_id = NodeId(connect_request.contact().node_id());
@@ -85,21 +86,21 @@ void Connect(RoutingTable &routing_table, rudp::ManagedConnections &rudp,
   rudp.GetAvailableEndpoint(our_endpoint);
 
   // TODO(dirvine) try both connections
-  if (message.client_node()) {
-    connect_response.set_answer(true);
-    // TODO(dirvine): get the routing pointer back again
-//     node_validation_functor_(routing_table.kKeys().identity,
-//                     their_endpoint,
-//                     message.client_node(),
-//                     our_endpoint);
-  }
-  if ((routing_table.CheckNode(node)) && (!message.client_node())) {
-    connect_response.set_answer(true);
-//     node_validation_functor_(routing_table.kKeys().identity,
-//                     their_endpoint,
-//                     message.client_node(),
-//                     our_endpoint);
-  }
+//  if (message.client_node()) {
+//    connect_response.set_answer(true);
+//    // TODO(dirvine): get the routing pointer back again
+////     node_validation_functor_(routing_table.kKeys().identity,
+////                     their_endpoint,
+////                     message.client_node(),
+////                     our_endpoint);
+//  }
+//  if ((routing_table.CheckNode(node)) /*&& (!message.client_node()*/) {
+//    connect_response.set_answer(true);
+////     node_validation_functor_(routing_table.kKeys().identity,
+////                     their_endpoint,
+////                     message.client_node(),
+////                     our_endpoint);
+//  }
 
   protobuf::Contact *contact;
   protobuf::Endpoint *private_endpoint;
@@ -113,50 +114,48 @@ void Connect(RoutingTable &routing_table, rudp::ManagedConnections &rudp,
   public_endpoint->set_port(our_endpoint.local.port());
   contact->set_node_id(routing_table.kKeys().identity);
   connect_response.set_timestamp(GetTimeStamp());
-  connect_response.set_original_request(message.data());
-  connect_response.set_original_signature(message.signature());
-  message.set_destination_id(message.source_id());
-  message.set_source_id(routing_table.kKeys().identity);
-  message.set_data(connect_response.SerializeAsString());
-  message.set_direct(true);
-  message.set_replication(1);
-  message.set_type(-2);
-  assert(message.IsInitialized() && "unintialised message");
+  connect_response.set_original_request(message.Data());
+  connect_response.set_original_signature(message.Signature());
+  message.SetDestination(message.SourceId().String());
+  message.SetMeAsSource();
+  message.SetData(connect_response.SerializeAsString());
+  message.SetDirect(ConnectType::kSingle);
+  message.SetType(-2);
+  assert(message.Valid() && "unintialised message");
 }
 
-void FindNodes(RoutingTable &routing_table, protobuf::Message &message) {
+void FindNodes(RoutingTable &routing_table, Message &message) {
   protobuf::FindNodesRequest find_nodes;
   protobuf::FindNodesResponse found_nodes;
   std::vector<NodeId>
-      nodes(routing_table.GetClosestNodes(NodeId(message.destination_id()),
+      nodes(routing_table.GetClosestNodes(message.DestinationId(),
             static_cast<uint16_t>(find_nodes.num_nodes_requested())));
   for (auto it = nodes.begin(); it != nodes.end(); ++it)
     found_nodes.add_nodes((*it).String());
   if (routing_table.Size() < Parameters::closest_nodes_size)
     found_nodes.add_nodes(routing_table.kKeys().identity);  // small network send our ID
-  found_nodes.set_original_request(message.data());
-  found_nodes.set_original_signature(message.signature());
+  found_nodes.set_original_request(message.Data());
+  found_nodes.set_original_signature(message.Signature());
   found_nodes.set_timestamp(GetTimeStamp());
   assert(found_nodes.IsInitialized() && "unintialised found_nodes response");
-  message.set_destination_id(message.source_id());
-  message.set_source_id(routing_table.kKeys().identity);
-  message.set_data(found_nodes.SerializeAsString());
-  message.set_direct(true);
-  message.set_replication(1);
-  message.set_type(-3);
-  assert(message.IsInitialized() && "unintialised message");
+  message.SetDestination(message.SourceId().String());
+  message.SetMeAsSource();
+  message.SetData(found_nodes.SerializeAsString());
+  message.SetDirect(ConnectType::kSingle);
+  message.SetType(-3);
+  assert(message.Valid() && "unintialised message");
 }
 
 void ProxyConnect(RoutingTable &routing_table, rudp::ManagedConnections &/*rudp*/,
-                  protobuf::Message &message) {
-  if (message.destination_id() != routing_table.kKeys().identity) {
+                  Message &message) {
+  if (message.DestinationId().String() != routing_table.kKeys().identity) {
     LOG(kError) << "Message not for us";
     return;  // not for us and we should not pass it on.
   }
   protobuf::ProxyConnectResponse proxy_connect_response;
   protobuf::ProxyConnectRequest proxy_connect_request;
 
-  if (!proxy_connect_request.ParseFromString(message.data())) {
+  if (!proxy_connect_request.ParseFromString(message.Data())) {
     LOG(kError) << "No Data";
     return;
   }
@@ -175,11 +174,11 @@ void ProxyConnect(RoutingTable &routing_table, rudp::ManagedConnections &/*rudp*
     else
       proxy_connect_response.set_result(protobuf::kFailure);
   }
-  message.set_type(-4);
-  message.set_data(proxy_connect_response.SerializeAsString());
-  message.set_destination_id(message.source_id());
-  message.set_source_id(routing_table.kKeys().identity);
-  assert(message.IsInitialized() && "unintialised message");
+  message.SetType(-4);
+  message.SetData(proxy_connect_response.SerializeAsString());
+  message.SetDestination(message.SourceId().String());
+  message.SetMeAsSource();
+  assert(message.Valid() && "unintialised message");
 }
 
 }  // namespace service
