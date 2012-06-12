@@ -26,7 +26,7 @@ namespace routing {
 namespace rpcs {
 
 // this is maybe not required and might be removed
-const protobuf::PbMessage Ping(const NodeId &node_id, const std::string &identity) {
+protobuf::PbMessage Ping(const NodeId &node_id, const std::string &identity) {
   assert(node_id.IsValid() && "Invalid node_id");
   assert(!identity.empty() && "Invalid identity");
   protobuf::PbMessage message;
@@ -46,7 +46,7 @@ const protobuf::PbMessage Ping(const NodeId &node_id, const std::string &identit
   return message;
 }
 
-const protobuf::PbMessage Connect(const NodeId &node_id, const rudp::EndpointPair &our_endpoint,
+protobuf::PbMessage Connect(const NodeId &node_id, const rudp::EndpointPair &our_endpoint,
                                 const std::string &identity) {
   assert(node_id.IsValid() && "Invalid node_id");
   assert(!identity.empty() && "Invalid identity");
@@ -79,7 +79,7 @@ const protobuf::PbMessage Connect(const NodeId &node_id, const rudp::EndpointPai
   return message;
 }
 
-const protobuf::PbMessage FindNodes(const NodeId &node_id, Endpoint endpoint) {
+protobuf::PbMessage FindNodes(const NodeId &node_id, Endpoint endpoint) {
   assert(node_id.IsValid() && "Invalid node_id");
   protobuf::PbMessage message;
   protobuf::FindNodesRequest find_nodes;
@@ -106,7 +106,7 @@ const protobuf::PbMessage FindNodes(const NodeId &node_id, Endpoint endpoint) {
   return message;
 }
 
-const protobuf::PbMessage ProxyConnect(const NodeId &node_id, const std::string &identity,
+protobuf::PbMessage ProxyConnect(const NodeId &node_id, const std::string &identity,
                                      const Endpoint &endpoint) {
   assert(node_id.IsValid() && "Invalid node_id");
   assert(!identity.empty() && "Invalid identity");

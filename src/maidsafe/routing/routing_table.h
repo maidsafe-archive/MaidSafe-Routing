@@ -25,6 +25,7 @@
 #include "maidsafe/routing/node_id.h"
 #include "maidsafe/routing/node_info.h"
 #include "maidsafe/routing/parameters.h"
+#include "maidsafe/routing/non_routing_table.h"
 
 namespace bs2 = boost::signals2;
 

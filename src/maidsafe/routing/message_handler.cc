@@ -84,7 +84,7 @@ void MessageHandler::RoutingMessage(Message& message) {
       response::Ping(message);
       break;
     case 1 :
-      service::Ping(routing_table_, message);
+      service::Ping(message);
       break;
     case -2 :  // connect
       response::Connect(message, node_validation_functor_);

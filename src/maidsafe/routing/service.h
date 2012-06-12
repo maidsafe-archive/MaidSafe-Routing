@@ -27,15 +27,11 @@ class Message;
 namespace service {
 
 // Handle all incoming requests and send back reply
-void Ping(RoutingTable &routing_table,
-          routing::Message &message);
-void Connect(RoutingTable &routing_table,
-             rudp::ManagedConnections &rudp,
+void Ping(routing::Message &message);
+void Connect(RoutingTable &routing_table, rudp::ManagedConnections &rudp,
              routing::Message &message);
-void FindNodes(RoutingTable &routing_table,
-              routing::Message &message);
-void ProxyConnect(RoutingTable &routing_table,
-                  rudp::ManagedConnections &rudp,
+void FindNodes(RoutingTable &routing_table, routing::Message &message);
+void ProxyConnect(RoutingTable &routing_table, rudp::ManagedConnections &rudp,
                   routing::Message &message);
 
 }  // namespace service

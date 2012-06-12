@@ -21,6 +21,7 @@
 #include "maidsafe/routing/log.h"
 #include "maidsafe/routing/parameters.h"
 #include "maidsafe/routing/routing_pb.h"
+#include "maidsafe/routing/message.h"
 #include "maidsafe/routing/rpcs.h"
 #include "maidsafe/routing/service.h"
 #include "maidsafe/routing/tests/test_utils.h"
@@ -35,16 +36,19 @@ TEST(Services, BEH_Ping) {
   asymm::Keys keys;
   keys.identity = RandomString(64);
   RoutingTable RT(keys);
+  NonRoutingTable NRT(keys);
   NodeInfo node;
   rudp::ManagedConnections rudp;
   protobuf::PingRequest ping_request;
   // somebody pings us
-  protobuf::Message message = rpcs::Ping(NodeId(keys.identity), "me");
+  const std::string id="me";
+  protobuf::PbMessage message = rpcs::Ping(NodeId(keys.identity), &id);
   EXPECT_TRUE(message.destination_id() == keys.identity);
   EXPECT_TRUE(ping_request.ParseFromString(message.data()));  // us
   EXPECT_TRUE(ping_request.IsInitialized());
+  Message msg(message.SerializeAsString(), &RT, &NRT);
   // run message through Service
-  service::Ping(RT, message);
+  service::Ping(&RT, &NRT, message);
   EXPECT_EQ(-1, message.type());
   EXPECT_FALSE(message.data().empty());
   EXPECT_TRUE(message.source_id() == keys.identity);
@@ -69,7 +73,7 @@ TEST(Services, BEH_Connect) {
   them_end.local = them.endpoint;
   them_end.external = them.endpoint;
   // they send us an rpc
-  protobuf::Message message = rpcs::Connect(us.node_id, them_end, them.node_id.String());
+  protobuf::PbMessage message = rpcs::Connect(us.node_id, them_end, them.node_id.String());
   EXPECT_TRUE(message.IsInitialized());
   // we receive it
   service::Connect(RT, rudp, message);
@@ -98,7 +102,7 @@ TEST(Services, BEH_FindNodes) {
   keys.identity = us.node_id.String();
   keys.public_key = us.public_key;
   RoutingTable RT(keys);
-  protobuf::Message message = rpcs::FindNodes(us.node_id, us.endpoint);
+  protobuf::PbMessage message = rpcs::FindNodes(us.node_id, us.endpoint);
   service::FindNodes(RT, message);
   protobuf::FindNodesResponse find_nodes_respose;
   EXPECT_TRUE(find_nodes_respose.ParseFromString(message.data()));
@@ -127,7 +131,7 @@ TEST(Services, BEH_ProxyConnect) {
   protobuf::ProxyConnectRequest proxy_connect_request;
   // they send us an proxy connect rpc
   Endpoint endpoint(boost::asio::ip::address_v4::loopback(), GetRandomPort());
-  protobuf::Message message = rpcs::ProxyConnect(NodeId(keys.identity), "me", endpoint);
+  protobuf::PbMessage message = rpcs::ProxyConnect(NodeId(keys.identity), "me", endpoint);
   EXPECT_TRUE(message.destination_id() == keys.identity);
   EXPECT_TRUE(proxy_connect_request.ParseFromString(message.data()));  // us
   EXPECT_TRUE(proxy_connect_request.IsInitialized());

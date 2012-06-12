@@ -30,15 +30,7 @@ namespace routing {
 
 namespace service {
 
-void Ping(RoutingTable &routing_table, Message &message) {
-//   if (message.destination_id() != NodeId::kKeySizeBytes) {
-//         LOG(kError) << "Invalid destination ID";
-//     return;
-//   }
-  if (message.DestinationId().String() != routing_table.kKeys().identity) {
-    LOG(kError) << "Message not for us";
-    return;  // not for us and we should not pass it on.
-  }
+void Ping(Message &message) {
   protobuf::PingResponse ping_response;
   protobuf::PingRequest ping_request;
 
@@ -57,10 +49,9 @@ void Ping(RoutingTable &routing_table, Message &message) {
   assert(message.Valid() && "unintialised message");
 }
 
-void Connect(RoutingTable &routing_table, rudp::ManagedConnections &rudp,
+void Connect(RoutingTable &routing_table,
+             rudp::ManagedConnections &rudp,
              Message &message) {
-  if (message.DestinationId().String() != routing_table.kKeys().identity)
-    return;  // not for us and we should not pass it on.
   protobuf::ConnectRequest connect_request;
   protobuf::ConnectResponse connect_response;
   if (!connect_request.ParseFromString(message.Data()))
@@ -146,12 +137,10 @@ void FindNodes(RoutingTable &routing_table, Message &message) {
   assert(message.Valid() && "unintialised message");
 }
 
-void ProxyConnect(RoutingTable &routing_table, rudp::ManagedConnections &/*rudp*/,
+void ProxyConnect(RoutingTable &routing_table,
+                  rudp::ManagedConnections &/*rudp*/,
                   Message &message) {
-  if (message.DestinationId().String() != routing_table.kKeys().identity) {
-    LOG(kError) << "Message not for us";
-    return;  // not for us and we should not pass it on.
-  }
+
   protobuf::ProxyConnectResponse proxy_connect_response;
   protobuf::ProxyConnectRequest proxy_connect_request;
 

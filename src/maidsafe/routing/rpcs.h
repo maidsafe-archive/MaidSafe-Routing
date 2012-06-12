@@ -26,17 +26,17 @@ namespace routing {
 
 namespace rpcs {
 
-const protobuf::PbMessage Ping(const NodeId &node_id,
+protobuf::PbMessage Ping(const NodeId &node_id,
                              const std::string &identity);
 
-const protobuf::PbMessage Connect(const NodeId &node_id,
+protobuf::PbMessage Connect(const NodeId &node_id,
                                 const rudp::EndpointPair &our_endpoint,
                                 const std::string &identity);
 
-const protobuf::PbMessage FindNodes(const NodeId &node_id,
+protobuf::PbMessage FindNodes(const NodeId &node_id,
                                   Endpoint local_endpoint = Endpoint());
 
-const protobuf::PbMessage ProxyConnect(const NodeId &node_id,
+protobuf::PbMessage ProxyConnect(const NodeId &node_id,
                                      const std::string &identity,
                                      const Endpoint &endpoint);
 }  // namespace rpcs
