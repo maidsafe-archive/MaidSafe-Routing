@@ -108,7 +108,8 @@ void MessageHandler::DirectMessage(protobuf::Message& message) {
      Endpoint send_to_endpoint;
      send_to_endpoint.address(boost::asio::ip::address::from_string(message.relay().ip()));
      send_to_endpoint.port(static_cast<unsigned short>(message.relay().port()));
-     rudp_.Send(send_to_endpoint, message.SerializeAsString());
+     rudp::MessageSentFunctor message_sent_functor; // TODO (FIXME)
+     rudp_.Send(send_to_endpoint, message.SerializeAsString(), message_sent_functor);
      return;
   }
   if ((message.type() < 100) && (message.type() > -100)) {
@@ -130,7 +131,8 @@ void MessageHandler::CloseNodesMessage(protobuf::Message& message) {
     Endpoint send_to_endpoint;
     send_to_endpoint.address(boost::asio::ip::address::from_string(message.relay().ip()));
     send_to_endpoint.port(static_cast<unsigned short>(message.relay().port()));
-    rudp_.Send(send_to_endpoint, message.SerializeAsString());
+    rudp::MessageSentFunctor message_sent_functor;  // TODO (FIXME)
+    rudp_.Send(send_to_endpoint, message.SerializeAsString(), message_sent_functor);
     return;
   }
   if ((message.direct()) && (!routing_table_.AmIClosestNode(NodeId(message.destination_id())))) {

@@ -132,8 +132,10 @@ bool Routing::Join(Endpoint local_endpoint) {
 
   std::this_thread::sleep_for(std::chrono::milliseconds(1000));
   auto boot = std::async(std::launch::async, [&] {
+      rudp::MessageSentFunctor message_sent_functor;  // TODO (FIXME)
       return impl_->rudp_.Send(bootstrap_endpoint, rpcs::FindNodes(
-          NodeId(impl_->keys_.identity), local_endpoint).SerializeAsString()); }); // NOLINT Prakash
+                                 NodeId(impl_->keys_.identity), local_endpoint).SerializeAsString(),
+                               message_sent_functor); }); // NOLINT Prakash
   return (boot.get() == 0);
 }
 

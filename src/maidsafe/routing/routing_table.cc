@@ -285,7 +285,6 @@ int16_t RoutingTable::BucketIndex(const NodeId &rhs) const {
 NodeInfo RoutingTable::GetClosestNode(const NodeId &from, const uint16_t &node_number) {
   std::lock_guard<std::mutex> lock(mutex_);
   NthElementSortFromThisNode(from, node_number + 1);
-//  SortFromThisNode(from);
   return routing_table_nodes_[node_number];
 }
 
