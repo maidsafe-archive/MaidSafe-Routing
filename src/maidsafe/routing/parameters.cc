@@ -21,6 +21,7 @@ uint16_t Parameters::thread_count(8);
 uint16_t Parameters::num_chunks_to_cache(100);
 uint16_t Parameters::timout_in_seconds(5);
 uint16_t Parameters::closest_nodes_size(8);
+uint16_t Parameters::node_group_size(3);
 uint16_t Parameters::max_routing_table_size(64);
 uint16_t Parameters::max_non_routing_table_size(64);
 uint16_t Parameters::bucket_target_size(1);

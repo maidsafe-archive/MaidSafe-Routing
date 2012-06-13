@@ -28,6 +28,7 @@ RoutingTable::RoutingTable(const asymm::Keys &keys,
     : keys_(keys),
       sorted_(false),
       kNodeId_(NodeId(keys_.identity)),
+      furthest_group_node_id_(),
       routing_table_nodes_(),
       mutex_(),
       close_node_replaced_functor_(close_node_replaced_functor) {}
@@ -52,6 +53,10 @@ bool RoutingTable::AddOrCheckNode(NodeInfo& node, const bool &remove) {
                  != routing_table_nodes_.end())
     return false;
   if (MakeSpaceForNodeToBeAdded(node, remove)) {
+    if (remove) {
+      routing_table_nodes_.push_back(node);
+      UpdateGroupChangeAndNotify();
+    }
     return true;
   }
   return false;
@@ -75,6 +80,7 @@ bool RoutingTable::DropNode(const Endpoint &endpoint) {
   for (auto it = routing_table_nodes_.begin(); it != routing_table_nodes_.end(); ++it) {
     if (((*it).endpoint ==  endpoint)) {
       routing_table_nodes_.erase(it);
+      UpdateGroupChangeAndNotify();
       return true;
     }
   }
@@ -158,8 +164,6 @@ bool RoutingTable::MakeSpaceForNodeToBeAdded(NodeInfo &node, const bool &remove)
   }
 
   if (RoutingTableSize() < Parameters::max_routing_table_size) {
-    if (remove)
-      InsertAndNotify(node);
     return true;
   }
 
@@ -174,7 +178,6 @@ bool RoutingTable::MakeSpaceForNodeToBeAdded(NodeInfo &node, const bool &remove)
                      "close node replacement to a larger bucket");
 
     if (remove) {
-      InsertAndNotify(node);
       routing_table_nodes_.erase(furthest_close_node_iter);
     }
     return true;
@@ -197,7 +200,6 @@ bool RoutingTable::MakeSpaceForNodeToBeAdded(NodeInfo &node, const bool &remove)
       // has a lower bucketindex
       BOOST_ASSERT(node.bucket < (*it).bucket);  // , "node replacement to a larger bucket");
       if (remove) {
-        InsertAndNotify(node);
         routing_table_nodes_.erase(it);
       }
       return true;
@@ -206,21 +208,24 @@ bool RoutingTable::MakeSpaceForNodeToBeAdded(NodeInfo &node, const bool &remove)
   return false;
 }
 
-void RoutingTable::InsertAndNotify(const NodeInfo &node) {
-  if (RoutingTableSize() >= Parameters::closest_nodes_size && close_node_replaced_functor_) {
-    bool new_node_is_closer(false);
-    NthElementSortFromThisNode(kNodeId_, Parameters::closest_nodes_size);
-    NodeInfo furthest_close_node = routing_table_nodes_[Parameters::closest_nodes_size - 1];
-    if ((furthest_close_node.node_id ^ kNodeId_) > (kNodeId_ ^ node.node_id))
-      new_node_is_closer = true;
-    routing_table_nodes_.push_back(node);
-    if (new_node_is_closer) {
-      std::vector<NodeInfo> new_close_nodes(GetClosestNodeInfo(kNodeId_,
-                                                               Parameters::closest_nodes_size));
-      close_node_replaced_functor_(new_close_nodes);
+void RoutingTable::UpdateGroupChangeAndNotify() {
+  if (close_node_replaced_functor_) {
+    if (RoutingTableSize() >= Parameters::node_group_size) {
+      NthElementSortFromThisNode(kNodeId_, Parameters::node_group_size);
+      NodeId new_furthest_group_node_id =
+          routing_table_nodes_[Parameters::node_group_size - 1].node_id;
+      if (furthest_group_node_id_ != new_furthest_group_node_id) {
+        std::vector<NodeInfo> new_close_nodes(GetClosestNodeInfo(kNodeId_,
+            Parameters::node_group_size));
+        furthest_group_node_id_ = new_close_nodes[Parameters::node_group_size - 1].node_id;
+        close_node_replaced_functor_(new_close_nodes);
+      }
+    } else {
+       std::vector<NodeInfo> new_close_nodes(GetClosestNodeInfo(kNodeId_,
+           Parameters::node_group_size));
+       furthest_group_node_id_ = new_close_nodes[RoutingTableSize() - 1].node_id;
+       close_node_replaced_functor_(new_close_nodes);
     }
-  } else {
-    routing_table_nodes_.push_back(node);
   }
 }
 

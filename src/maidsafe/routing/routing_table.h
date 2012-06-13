@@ -54,7 +54,7 @@ class RoutingTable {
   RoutingTable(const RoutingTable&);
   RoutingTable& operator=(const RoutingTable&);
   bool AddOrCheckNode(NodeInfo &node, const bool &remove);
-  void InsertAndNotify(const NodeInfo &node);
+  void UpdateGroupChangeAndNotify();
   int16_t BucketIndex(const NodeId &rhs) const;
   bool CheckValidParameters(const NodeInfo &node) const;
   bool CheckParametersAreUnique(const NodeInfo &node) const;
@@ -70,6 +70,7 @@ class RoutingTable {
   asymm::Keys keys_;
   bool sorted_;
   const NodeId kNodeId_;
+  NodeId furthest_group_node_id_;
   std::vector<NodeInfo> routing_table_nodes_;
   std::mutex mutex_;
   CloseNodeReplacedFunctor close_node_replaced_functor_;
