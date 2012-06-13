@@ -30,8 +30,12 @@ void SendOn(protobuf::Message message,
   std::string signature;
   asymm::Sign(message.data(), routing_table.kKeys().private_key, &signature);
   message.set_signature(signature);
-  if (endpoint.address().is_unspecified()) {
-    if ((message.has_relay()) && (routing_table.AmIClosestNode(NodeId(message.destination_id())))) {
+  bool relay_and_i_am_closest(false);
+  bool direct_message(endpoint.address().is_unspecified());
+  if (!direct_message) {
+    relay_and_i_am_closest =
+        ((message.has_relay()) && (routing_table.AmIClosestNode(NodeId(message.destination_id()))));
+    if (relay_and_i_am_closest) {
       endpoint = Endpoint(boost::asio::ip::address::from_string(message.relay().ip()),
                           static_cast<unsigned short>(message.relay().port()));
       LOG(kInfo) << "Sending to non routing table node message type : "
@@ -54,6 +58,15 @@ void SendOn(protobuf::Message message,
   rudp::MessageSentFunctor message_sent_functor = [&](bool message_sent) {
       if (!message_sent) {
         ++attempt_count;
+        if (relay_and_i_am_closest || direct_message) {  //  retry only once in this case
+          if (attempt_count == 1) {
+            rudp.Send(endpoint, serialised_message, message_sent_functor);
+          } else {
+            LOG(kError) << " Send error on " << (relay_and_i_am_closest? "relay" : "direct")
+                        << " message!!!" << "attempt" << attempt_count << " times";
+            return;
+          }
+        }
         if ((attempt_count < Parameters::closest_nodes_size) &&
             (routing_table.Size() > attempt_count)) {
           LOG(kInfo) << " Sending attempt " << attempt_count;
@@ -61,7 +74,7 @@ void SendOn(protobuf::Message message,
                                                   attempt_count).endpoint;
           rudp.Send(endpoint, serialised_message, message_sent_functor);
         } else {
-          LOG(kError) << " Send error !!! failed " << attempt_count << " times";
+          LOG(kError) << " Send error !!! failed " << "attempt" << attempt_count << " times";
         }
       } else {
         LOG(kInfo) << " Send succeeded at attempt " << attempt_count;

@@ -42,7 +42,6 @@ struct RoutingPrivate {
   RoutingPrivate(const RoutingPrivate&&);  // no move
   RoutingPrivate& operator=(const RoutingPrivate&);  // no assign
   RoutingPrivate(const asymm::Keys &keys,
-                 const boost::filesystem::path &bootstrap_file_path,
                  Functors functors,
                  bool client_mode);
   friend class Routing;
@@ -59,7 +58,7 @@ struct RoutingPrivate {
   // closest nodes to the client.
   MessageHandler message_handler_;
   bool joined_;
-  const fs::path bootstrap_file_path_;
+  fs::path bootstrap_file_path_;
   bool client_mode_;
 };
 

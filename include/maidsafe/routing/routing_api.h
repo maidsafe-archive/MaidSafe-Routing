@@ -52,7 +52,6 @@ class Routing {
  public:
    // set keys.identity to ANONYMOUS for temporary anonymous connection.
   Routing(const asymm::Keys &keys,
-          const boost::filesystem::path &full_path_and_name,
           Functors functors,
           bool client_mode);
   ~Routing();
@@ -101,6 +100,7 @@ class Routing {
   bool Join(Endpoint local_endpoint = Endpoint());
   void ReceiveMessage(const std::string &message);
   void ConnectionLost(const Endpoint &lost_endpoint);
+  void CheckBootStrapFilePath();
   std::unique_ptr<RoutingPrivate> impl_;  // pimpl (data members only)
 };
 

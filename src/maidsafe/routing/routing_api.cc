@@ -45,28 +45,10 @@ namespace maidsafe {
 namespace routing {
 
 Routing::Routing(const asymm::Keys &keys,
-                 const fs::path &bootstrap_file_path,
                  Functors functors,
                  const bool client_mode)
-    : impl_(new RoutingPrivate(keys, bootstrap_file_path, functors, client_mode)) {
-  // test path
-  std::string dummy_content;
-  // not catching exceptions !!
-  fs::ifstream file_in(bootstrap_file_path, std::ios::in | std::ios::binary);
-  fs::ofstream file_out(bootstrap_file_path, std::ios::out | std::ios::binary);
-  if (file_in.good()) {
-    if (fs::exists(bootstrap_file_path)) {
-      fs::file_size(bootstrap_file_path);  // throws
-    } else if (file_out.good()) {
-      file_out.put('c');
-    fs::file_size(bootstrap_file_path);  // throws
-    fs::remove(bootstrap_file_path);
-    } else {
-      fs::file_size(bootstrap_file_path);  // throws
-    }
-  } else {
-    fs::file_size(bootstrap_file_path);  // throws
-  }
+    : impl_(new RoutingPrivate(keys, functors, client_mode)) {
+  CheckBootStrapFilePath();
   if (client_mode) {
     Parameters::max_routing_table_size = Parameters::closest_nodes_size;
   }
@@ -86,6 +68,34 @@ int Routing::GetStatus() {
     return impl_->routing_table_.Size();
   }
   return kSuccess;
+}
+
+void Routing::CheckBootStrapFilePath() {
+  std::string file_name;
+  if(impl_->client_mode_) {
+    file_name = "bootstrap";  // TODO (FIXME)
+    impl_->bootstrap_file_path_ = GetUserAppDir() / file_name;
+  } else {
+    file_name = "bootstrap." + EncodeToBase32(impl_->keys_.identity);
+    impl_->bootstrap_file_path_ = GetSystemAppDir() / file_name;
+  }
+  // test path
+  // not catching exceptions !!
+  fs::ifstream file_in(impl_->bootstrap_file_path_, std::ios::binary);
+  fs::ofstream file_out(impl_->bootstrap_file_path_, std::ios::binary);
+  if (file_in.good()) {
+    if (fs::exists(impl_->bootstrap_file_path_)) {
+      fs::file_size(impl_->bootstrap_file_path_);  // throws
+    } else if (file_out.good()) {
+      file_out.put('c');
+    fs::file_size(impl_->bootstrap_file_path_);  // throws
+    fs::remove(impl_->bootstrap_file_path_);
+    } else {
+      fs::file_size(impl_->bootstrap_file_path_);  // throws
+    }
+  } else {
+    fs::file_size(impl_->bootstrap_file_path_);  // throws
+  }
 }
 
 // drop existing routing table and restart

@@ -30,7 +30,6 @@ namespace maidsafe {
 namespace routing {
 
 RoutingPrivate::RoutingPrivate(const asymm::Keys &keys,
-                               const fs::path &path,
                                Functors functors,
                                bool client_mode)
     : asio_service_(Concurrency()),
@@ -44,7 +43,7 @@ RoutingPrivate::RoutingPrivate(const asymm::Keys &keys,
       direct_non_routing_table_connections_(),
       message_handler_(routing_table_, rudp_, timer_, functors_.node_validation),
       joined_(false),
-      bootstrap_file_path_(path),
+      bootstrap_file_path_(),
       client_mode_(client_mode) {
   asio_service_.Start();
 }
