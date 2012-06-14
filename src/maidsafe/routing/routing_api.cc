@@ -71,31 +71,60 @@ int Routing::GetStatus() {
 }
 
 void Routing::CheckBootStrapFilePath() {
+  LOG(kInfo) << "path " << GetUserAppDir();
+  LOG(kInfo) << "sys path " << GetSystemAppDir();
+  fs::path path;
   std::string file_name;
-  if(impl_->client_mode_) {
-    file_name = "bootstrap";  // TODO (FIXME)
-    impl_->bootstrap_file_path_ = GetUserAppDir() / file_name;
-  } else {
+  boost::system::error_code error_code;
+  if(impl_->client_mode_) {  // throw if no bootstrap available
+    file_name = "bootstrap";
+    path = GetUserAppDir() / file_name;
+    if (fs::exists(path) && fs::is_regular_file(path)) {
+      LOG(kInfo) << "Found bootstrap file at " << path;
+    }
+  } else {  // vaults
     file_name = "bootstrap." + EncodeToBase32(impl_->keys_.identity);
-    impl_->bootstrap_file_path_ = GetSystemAppDir() / file_name;
+    path = GetSystemAppDir() / file_name;
+    if (!fs::exists(path, error_code) || !fs::is_regular_file(path, error_code)) {
+      LOG(kInfo) << "No bootstrap.id file associated with id found : " << path;
+      file_name = "bootstrap";  //  need bootstrap file to copy from
+    }
+    if (file_name == "bootstrap") {  // find bootstrap file and copy contents bootstrap.id
+      path = GetSystemAppDir() / file_name;
+      std::string file_content;
+      if (fs::exists(path, error_code) && fs::is_regular_file(path, error_code)) {
+        LOG(kInfo) << "Will create bootstrap.id file from existing bootstrap file at " << path;
+        ReadFile(path, &file_content);
+      } else {
+        LOG(kInfo) << "Not found bootstrap file at " << path;
+      }
+      file_name = "bootstrap." + EncodeToBase32(impl_->keys_.identity);
+      path = GetSystemAppDir() / file_name;
+      // create file and copy contents if available
+      LOG(kInfo) << "Trying to create bootstrap.id file at " << path;
+      WriteFile(path, file_content);
+    }
   }
+  impl_->bootstrap_file_path_ = path;
+  fs::file_size(impl_->bootstrap_file_path_);  // throws
+
   // test path
   // not catching exceptions !!
-  fs::ifstream file_in(impl_->bootstrap_file_path_, std::ios::binary);
-  fs::ofstream file_out(impl_->bootstrap_file_path_, std::ios::binary);
-  if (file_in.good()) {
-    if (fs::exists(impl_->bootstrap_file_path_)) {
-      fs::file_size(impl_->bootstrap_file_path_);  // throws
-    } else if (file_out.good()) {
-      file_out.put('c');
-    fs::file_size(impl_->bootstrap_file_path_);  // throws
-    fs::remove(impl_->bootstrap_file_path_);
-    } else {
-      fs::file_size(impl_->bootstrap_file_path_);  // throws
-    }
-  } else {
-    fs::file_size(impl_->bootstrap_file_path_);  // throws
-  }
+  //fs::ifstream file_in(impl_->bootstrap_file_path_, std::ios::binary);
+  //fs::ofstream file_out(impl_->bootstrap_file_path_, std::ios::binary);
+  //if (file_in.good()) {
+  //  if (fs::exists(impl_->bootstrap_file_path_)) {
+  //    fs::file_size(impl_->bootstrap_file_path_);  // throws
+  //  } else if (file_out.good()) {
+  //    file_out.put('c');
+  //  fs::file_size(impl_->bootstrap_file_path_);  // throws
+  //  fs::remove(impl_->bootstrap_file_path_);
+  //  } else {
+  //    fs::file_size(impl_->bootstrap_file_path_);  // throws
+  //  }
+  //} else {
+  //  fs::file_size(impl_->bootstrap_file_path_);  // throws
+  //}
 }
 
 // drop existing routing table and restart
