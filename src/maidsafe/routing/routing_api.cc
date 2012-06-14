@@ -107,24 +107,7 @@ void Routing::CheckBootStrapFilePath() {
   }
   impl_->bootstrap_file_path_ = path;
   fs::file_size(impl_->bootstrap_file_path_);  // throws
-
-  // test path
-  // not catching exceptions !!
-  //fs::ifstream file_in(impl_->bootstrap_file_path_, std::ios::binary);
-  //fs::ofstream file_out(impl_->bootstrap_file_path_, std::ios::binary);
-  //if (file_in.good()) {
-  //  if (fs::exists(impl_->bootstrap_file_path_)) {
-  //    fs::file_size(impl_->bootstrap_file_path_);  // throws
-  //  } else if (file_out.good()) {
-  //    file_out.put('c');
-  //  fs::file_size(impl_->bootstrap_file_path_);  // throws
-  //  fs::remove(impl_->bootstrap_file_path_);
-  //  } else {
-  //    fs::file_size(impl_->bootstrap_file_path_);  // throws
-  //  }
-  //} else {
-  //  fs::file_size(impl_->bootstrap_file_path_);  // throws
-  //}
+  impl_->bootstrap_nodes_ = ReadBootstrapFile(impl_->bootstrap_file_path_);
 }
 
 // drop existing routing table and restart
@@ -169,13 +152,39 @@ bool Routing::Join(Endpoint local_endpoint) {
     return false;
   }
 
-  std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-  auto boot = std::async(std::launch::async, [&] {
-      rudp::MessageSentFunctor message_sent_functor;  // TODO (FIXME)
-      return impl_->rudp_.Send(bootstrap_endpoint, rpcs::FindNodes(
-                                 NodeId(impl_->keys_.identity), local_endpoint).SerializeAsString(),
-                               message_sent_functor); }); // NOLINT Prakash
-  return (boot.get() == 0);
+  std::string find_node_rpc(rpcs::FindNodes(NodeId(impl_->keys_.identity),
+                                            local_endpoint).SerializeAsString());
+  std::promise<bool> message_sent_promise;
+  auto message_sent_future = message_sent_promise.get_future();
+  uint8_t attempt_count(0);
+  rudp::MessageSentFunctor message_sent_functor = [&](bool message_sent) {
+      if (message_sent) {
+        message_sent_promise.set_value(true);
+      } else if (attempt_count < 3) {
+        impl_->rudp_.Send(bootstrap_endpoint, find_node_rpc, message_sent_functor);
+      } else {
+        message_sent_promise.set_value(false);
+      }
+    };
+
+  impl_->rudp_.Send(bootstrap_endpoint, find_node_rpc, message_sent_functor);
+
+  if(message_sent_future.wait_for(std::chrono::seconds(10))) {
+    LOG(kError) << "Unable to send find value rpc to bootstrap endpoint - " << bootstrap_endpoint;
+    return false;
+  }
+  // now poll for routing table size to have at least one node available
+  uint8_t poll_count(0);
+  do {
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+  } while ((impl_->routing_table_.Size() == 0) || (poll_count < 100));
+  if (impl_->routing_table_.Size() != 0) {
+    LOG(kInfo) << "Successfully bootstraped with node - " << bootstrap_endpoint;
+    return true;
+  } else {
+    LOG(kInfo) << "Failed to bootstrap with node - " << bootstrap_endpoint;
+    return false;
+  }
 }
 
 SendStatus Routing::Send(const NodeId &destination_id,

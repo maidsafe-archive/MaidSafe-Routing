@@ -15,6 +15,9 @@
 
 #include "maidsafe/routing/routing_table.h"
 
+#include "boost/asio/ip/address.hpp"
+#include "boost/asio/ip/udp.hpp"
+
 namespace maidsafe {
 
 namespace routing {
@@ -24,6 +27,15 @@ namespace test {
 uint16_t GetRandomPort();
 
 NodeInfo MakeNode();
+
+//TODO(Prakash): Copying from rudp utils for test purpose. need to expose it if needed.
+// Makes a udp socket connection to peer_endpoint.  Note, no data is sent, so
+// no information about the validity or availability of the peer is deduced.
+// If the retrieved local endpoint is unspecified or is the loopback address,
+// the function returns a default-constructed (invalid) address.
+boost::asio::ip::address GetLocalIp(
+    boost::asio::ip::udp::endpoint peer_endpoint =
+        Endpoint(boost::asio::ip::address_v4::from_string("8.8.8.8"), 0));
 
 }  // namespace test
 
