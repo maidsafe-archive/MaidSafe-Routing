@@ -28,6 +28,7 @@ namespace routing {
 namespace test {
 
 namespace{
+
 NodeInfo MakeNodeInfo() {
   NodeInfo node;
   node.node_id = NodeId(RandomString(64));
@@ -47,77 +48,91 @@ asymm::Keys MakeKeys() {
   return keys;
 }
 
-class TestNode {
+class Node {
  public:
-  explicit TestNode(const uint32_t &id, bool client_mode = false)
-      : id_(id),
-        mutex_(),
+  explicit Node(bool client_mode = false)
+      : id_(0),
         key_(MakeKeys()),
-        node_config_(fs::unique_path(fs::temp_directory_path() /
-            ("node_config_" + std::to_string(id)))),
+        endpoint_(boost::asio::ip::address_v4::loopback(), GetRandomPort()),
+        node_config_(),
         functors_(),
-        routing_api_() {
+        routing_(),
+        mutex_(),
+        messages_() {
     functors_.close_node_replaced = nullptr;
-    functors_.message_received = std::bind(&TestNode::MessageReceived, this, args::_1, args::_2);
+    functors_.message_received = std::bind(&Node::MessageReceived, this, args::_1, args::_2);
     functors_.network_status = nullptr;
     functors_.node_validation = nullptr;
-    routing_api_.reset(new Routing(key_, functors_, client_mode));
-  }
+    routing_.reset(new Routing(key_, functors_, client_mode));
+    {
+      std::lock_guard<std::mutex> lock(mutex_);
+      id_ = next_id_++;
+    }
+    node_config_ = fs::unique_path(fs::temp_directory_path() /
+                       ("node_config_" + std::to_string(id_)));
+}
 
   void MessageReceived(const int32_t &mesasge_type, const std::string &message) {
     LOG(kInfo) << id_ << " -- Received: type <" << mesasge_type
                << "> message : " << message.substr(0, 10);
     std::lock_guard<std::mutex> guard(mutex_);
     messages_.push_back(std::make_pair(mesasge_type, message));
-//    if (mesasge_type == 200) reply
+ }
 
+  int GetStatus() { return routing_->GetStatus(); }
+  NodeId node_id() { return NodeId(key_.identity); }
+  bool BootstrapFromEndpoint(const Endpoint &endpoint) {
+    return routing_->BootStrapFromThisEndpoint(endpoint, endpoint_);
   }
 
-  int GetStatus() { return routing_api_->GetStatus(); }
-  NodeId node_id() { return NodeId(key_.identity); }
-//std::shared_ptr<Routing> routing_api() { return routing_api_;}
+  Endpoint endpoint() {
+    return endpoint_;
+  }
 
+  static size_t next_id_;
  private:
-  uint32_t id_;
-  std::mutex mutex_;
+  size_t id_;
   asymm::Keys key_;
+  Endpoint endpoint_;
   boost::filesystem::path node_config_;
   Functors functors_;
-  std::shared_ptr<Routing> routing_api_;
+  std::shared_ptr<Routing> routing_;
+  std::mutex mutex_;
   std::vector<std::pair<int32_t, std::string>>  messages_;
 };
 
-typedef std::shared_ptr<TestNode> TestNodePtr;
+size_t Node::next_id_(0);
+
+typedef std::shared_ptr<Node> NodePtr;
 }  // anonymous namspace
 
-//class RoutingFunctionalTest : public testing::Test {
-// public:
-//   RoutingFunctionalTest() {}
-//  ~RoutingFunctionalTest() {}
-// protected:
-//};
+class RoutingFunctionalTest : public testing::Test {
+ public:
+   RoutingFunctionalTest() : nodes_() {}
+  ~RoutingFunctionalTest() {}
+ protected:
 
-//TEST(RoutingFunctionalTest, FUNC_Network) {
-//  std::vector<TestNodePtr> nodes;
-//  for (uint8_t i(0); i != 10; ++i) {
-//    TestNodePtr node = std::make_shared<TestNode>(i);
-//    ASSERT_EQ(kSuccess, node->GetStatus());
-//    nodes.push_back(node);
-//  }
-//}
-//
-//TEST(RoutingFunctionalTest, FUNC_Send) {
-//  std::vector<TestNodePtr> nodes;
-//  for (uint8_t i(0); i != 10; ++i) {
-//    TestNodePtr node = std::make_shared<TestNode>(i);
-//    ASSERT_EQ(kSuccess, node->GetStatus());
-//    nodes.push_back(node);
-//  }
-//  // Send
-//
-//
-//
-//}
+   virtual void SetUp() {
+     NodePtr node1(new Node(false)), node2(new Node(false));
+     node1->BootstrapFromEndpoint(node2->endpoint());
+     node2->BootstrapFromEndpoint(node1->endpoint());
+     nodes_.push_back(node1);
+     nodes_.push_back(node2);
+   }
+
+   void SetUpNetwork(const size_t &size) {
+     for (size_t index = 0; index < size - 2; ++index) {
+       NodePtr node(new Node(false));
+       node->BootstrapFromEndpoint(nodes_[0]->endpoint());
+       nodes_.push_back(node);
+     }
+   }
+   std::vector<NodePtr> nodes_;
+};
+
+TEST_F(RoutingFunctionalTest, FUNC_Network) {
+//  SetUpNetwork(10);
+}
 
 }  // namespace test
 
