@@ -39,17 +39,14 @@ MessageHandler::MessageHandler(
                 RoutingTable &routing_table,
                 rudp::ManagedConnections &rudp,
                 Timer &timer_ptr,
+                MessageReceivedFunctor message_received_functor,
                 NodeValidationFunctor node_validation_functor) :
                 routing_table_(routing_table),
                 rudp_(rudp),
                 timer_ptr_(timer_ptr),
                 cache_manager_(),
-                message_received_signal_(),
+                message_received_functor_(message_received_functor),
                 node_validation_functor_(node_validation_functor) {}
-
-boost::signals2::signal<void(int, std::string)> &MessageHandler::MessageReceivedSignal() {
-  return message_received_signal_;
-}
 
 void MessageHandler::Send(protobuf::Message& message) {
   message.set_routing_failure(false);
@@ -72,6 +69,7 @@ bool MessageHandler::CheckCacheData(protobuf::Message &message) {
 }
 
 void MessageHandler::RoutingMessage(protobuf::Message& message) {
+  LOG(kInfo) << "MessageHandler::RoutingMessage";
   switch (message.type()) {
     case -1 :  // ping
       response::Ping(message);
@@ -104,21 +102,27 @@ void MessageHandler::RoutingMessage(protobuf::Message& message) {
 }
 
 void MessageHandler::DirectMessage(protobuf::Message& message) {
-  if (message.has_relay()) {
-     Endpoint send_to_endpoint;
-     send_to_endpoint.address(boost::asio::ip::address::from_string(message.relay().ip()));
-     send_to_endpoint.port(static_cast<unsigned short>(message.relay().port()));
-     rudp::MessageSentFunctor message_sent_functor; // TODO (FIXME)
-     rudp_.Send(send_to_endpoint, message.SerializeAsString(), message_sent_functor);
-     return;
-  }
+  if ((message.has_relay()) && (message.relay_id() != routing_table_.kKeys().identity)) {
+    LOG(kVerbose) <<"MessageHandler::DirectMessage -- message.has_relay and relay id is not me";
+    Endpoint send_to_endpoint;
+    send_to_endpoint.address(boost::asio::ip::address::from_string(message.relay().ip()));
+    send_to_endpoint.port(static_cast<unsigned short>(message.relay().port()));
+    rudp::MessageSentFunctor message_sent_functor; // TODO (FIXME)
+    rudp_.Send(send_to_endpoint, message.SerializeAsString(), message_sent_functor);
+   }
   if ((message.type() < 100) && (message.type() > -100)) {
+    LOG(kVerbose) <<"RoutingMessage type";
     RoutingMessage(message);
     return;
   }
   if (message.type() > 100) {  // request
-    message_received_signal_(static_cast<int>(-message.type()),
-                             message.data());
+    ReplyFunctor response_functor = [&](const std::string& reply_message)  {
+        if (!reply_message.empty()) {
+         // TODO(Prakash): To add rudp send for replying to the message
+        }
+    };
+    message_received_functor_(static_cast<int>(-message.type()), message.data(), NodeId(),
+                              response_functor);
     LOG(kInfo) << "Routing message detected";
   } else {  // response
     timer_ptr_.ExecuteTaskNow(message);
@@ -166,6 +170,7 @@ void MessageHandler::ProcessMessage(protobuf::Message &message) {
   }
   // message for me !
   if (message.destination_id() == routing_table_.kKeys().identity) {
+    LOG(kVerbose) << "message for me !";
     DirectMessage(message);
     return;
   }
@@ -175,6 +180,7 @@ void MessageHandler::ProcessMessage(protobuf::Message &message) {
   // I am in closest proximity to this message
   if (routing_table_.IsMyNodeInRange(NodeId(message.destination_id()),
                                      Parameters::closest_nodes_size)) {
+    LOG(kVerbose) <<"I am in closest proximity to this message";
     if ((message.type() < 100) && (message.type() > -100)) {
       RoutingMessage(message);
       return;
@@ -182,6 +188,8 @@ void MessageHandler::ProcessMessage(protobuf::Message &message) {
       CloseNodesMessage(message);
       return;
     }
+  } else {
+    LOG(kVerbose) <<"I am not in closest proximity to this message";
   }
   // default
   SendOn(message, rudp_, routing_table_);

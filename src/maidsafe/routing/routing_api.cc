@@ -169,10 +169,10 @@ bool Routing::Join(Endpoint local_endpoint) {
 
   impl_->rudp_.Send(bootstrap_endpoint, find_node_rpc, message_sent_functor);
 
-  if(message_sent_future.wait_for(std::chrono::seconds(10))) {
-    LOG(kError) << "Unable to send find value rpc to bootstrap endpoint - " << bootstrap_endpoint;
-    return false;
-  }
+  //if(message_sent_future.wait_for(std::chrono::seconds(10))) {
+  //  LOG(kError) << "Unable to send find value rpc to bootstrap endpoint - " << bootstrap_endpoint;
+  //  return false;
+  //}
   // now poll for routing table size to have at least one node available
   uint8_t poll_count(0);
   do {

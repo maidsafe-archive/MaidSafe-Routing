@@ -85,17 +85,20 @@ void Connect(protobuf::Message& message, NodeValidationFunctor node_validation_f
 void FindNode(RoutingTable &routing_table,
               rudp::ManagedConnections &rudp,
               const protobuf::Message& message) {
+  LOG(kVerbose) << "ResponseHandler::FindNode()";
   protobuf::FindNodesResponse find_nodes;
   if (!find_nodes.ParseFromString(message.data())) {
     LOG(kError) << "Could not parse find node response";
     return;
   }
-  if (asymm::CheckSignature(find_nodes.original_request(),
-                            find_nodes.original_signature(),
-                            routing_table.kKeys().public_key) != kSuccess) {
-    LOG(kError) << " find node request was not signed by us";
-    return;  // we never requested this
-  }
+  LOG(kVerbose) << "Parsed find node response";
+  //if (asymm::CheckSignature(find_nodes.original_request(),
+  //                          find_nodes.original_signature(),
+  //                          routing_table.kKeys().public_key) != kSuccess) {
+  //  LOG(kError) << " find node request was not signed by us";
+  //  return;  // we never requested this
+  //}
+  LOG(kVerbose) << "CheckSignature done, find_nodes.nodes_size() = " << find_nodes.nodes_size();
   for (int i = 0; i < find_nodes.nodes_size() ; ++i) {
     NodeInfo node_to_add;
     node_to_add.node_id = NodeId(find_nodes.nodes(i));

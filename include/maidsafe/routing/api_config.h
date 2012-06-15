@@ -54,10 +54,17 @@ enum class SendStatus : int32_t {
 typedef std::function<void(const int& /*return code*/,
                            const std::string& /*message*/)> ResponseFunctor;
 /***************************************************************************************************
+* They are passed as a parameter by MessageReceivedFunctor and should be called for responding to  *
+* the received message. Passing an empty message will mean you don't want to reply.                *
+***************************************************************************************************/
+typedef std::function<void(const std::string& /*message*/)> ReplyFunctor;
+/***************************************************************************************************
 * This is called on any message received that is NOT a reply to a request made by the Send method. *
 ***************************************************************************************************/
 typedef std::function<void(const int32_t& /*mesasge type*/,
-                           const std::string &/*message*/)> MessageReceivedFunctor;
+                           const std::string &/*message*/,
+                           const NodeId &/*group id*/,
+                           ReplyFunctor /*reply functor*/)> MessageReceivedFunctor;
 /***************************************************************************************************
 * This is fired to validate a new peer node. User is supposed to validate the node and call        *
 * ValidateThisNode() method with valid public key.                                                 *

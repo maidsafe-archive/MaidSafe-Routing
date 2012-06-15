@@ -37,6 +37,7 @@ class MessageHandler {
   MessageHandler(RoutingTable &routing_table,
                  rudp::ManagedConnections &rudp,
                  Timer &timer_ptr,
+                 MessageReceivedFunctor message_received_functor,
                  NodeValidationFunctor node_validation_functor);
   void ProcessMessage(protobuf::Message &message);
   void DirectMessage(protobuf::Message &message);
@@ -55,7 +56,7 @@ class MessageHandler {
   rudp::ManagedConnections &rudp_;
   Timer &timer_ptr_;
   CacheManager cache_manager_;
-  bs2::signal<void(int, std::string)> message_received_signal_;
+  MessageReceivedFunctor message_received_functor_;
   NodeValidationFunctor node_validation_functor_;
 };
 

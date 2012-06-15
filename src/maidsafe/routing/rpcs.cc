@@ -86,8 +86,10 @@ const protobuf::Message FindNodes(const NodeId &node_id, Endpoint endpoint) {
   find_nodes.set_num_nodes_requested(Parameters::closest_nodes_size);
   find_nodes.set_target_node(node_id.String());
   find_nodes.set_timestamp(GetTimeStamp());
-  message.set_destination_id(node_id.String());
   message.set_source_id(node_id.String());
+  message.set_destination_id(node_id.String());
+  message.set_last_id(node_id.String());
+  message.set_relay_id(node_id.String());
   message.set_data(find_nodes.SerializeAsString());
   message.set_direct(false);
   message.set_replication(1);

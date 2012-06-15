@@ -31,7 +31,8 @@ void SendOn(protobuf::Message message,
   asymm::Sign(message.data(), routing_table.kKeys().private_key, &signature);
   message.set_signature(signature);
   bool relay_and_i_am_closest(false);
-  bool direct_message(endpoint.address().is_unspecified());
+  LOG(kVerbose) << "endpoint.address().is_unspecified() -- " << endpoint.address().is_unspecified();
+  bool direct_message(!endpoint.address().is_unspecified());
   if (!direct_message) {
     relay_and_i_am_closest =
         ((message.has_relay()) && (routing_table.AmIClosestNode(NodeId(message.destination_id()))));
@@ -44,6 +45,7 @@ void SendOn(protobuf::Message message,
                  << " From " << HexSubstr(routing_table.kKeys().identity);
     } else if (routing_table.Size() > 0) {
       endpoint = routing_table.GetClosestNode(NodeId(message.destination_id()), 0).endpoint;
+      LOG(kVerbose) << " Endpoint to send to routing table size > 0 " << endpoint;
     } else {
       LOG(kError) << " No Endpoint to send to, Aborting Send!"
                   << " Attempt to send a type : " << message.type() << " message"
@@ -51,6 +53,8 @@ void SendOn(protobuf::Message message,
                   << " From " << HexSubstr(routing_table.kKeys().identity);
       return;
     }
+  } else {
+    LOG(kVerbose) << " Direct message to " << endpoint;
   }
   std::string serialised_message(message.SerializeAsString());
   uint16_t attempt_count(0);
@@ -80,7 +84,7 @@ void SendOn(protobuf::Message message,
         LOG(kInfo) << " Send succeeded at attempt " << attempt_count;
       }
     };
-
+  LOG(kVerbose) << " >>>>>> rudp send message to " << endpoint << " <<<<<<<<<<<";
   rudp.Send(endpoint, serialised_message, message_sent_functor);
 }
 
