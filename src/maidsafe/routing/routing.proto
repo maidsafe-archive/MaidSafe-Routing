@@ -52,7 +52,7 @@ message Message {
   required bool client_node = 12;
   optional Endpoint relay = 13;
   optional bool ClosestToMe = 14;
- optional bool CloseToMe = 15;
+  optional bool CloseToMe = 15;
 }
 
 message SignedMessage {

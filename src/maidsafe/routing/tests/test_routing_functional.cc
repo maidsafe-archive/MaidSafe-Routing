@@ -69,7 +69,7 @@ class Node {
     functors_.message_received = std::bind(&Node::MessageReceived, this, args::_1, args::_2);
     functors_.network_status = nullptr;
     functors_.node_validation = nullptr;
-    routing_.reset(new Routing(key_, functors_, client_mode));
+    routing_.reset(new Routing(key_, client_mode));
     {
       std::lock_guard<std::mutex> lock(mutex_);
       id_ = next_id_++;
@@ -87,8 +87,8 @@ class Node {
 
   int GetStatus() { return routing_->GetStatus(); }
   NodeId node_id() { return NodeId(key_.identity); }
-  bool BootstrapFromEndpoint(const Endpoint &endpoint) {
-    return routing_->BootStrapFromThisEndpoint(endpoint, endpoint_);
+  int Join(Functors functors, const Endpoint &peer_endpoint, const Endpoint &local_endpoint) {
+    return routing_->Join(functors, peer_endpoint, local_endpoint);
   }
 
   Endpoint endpoint() {
@@ -134,8 +134,9 @@ class RoutingFunctionalTest : public testing::Test {
 
    virtual void SetUp() {
      NodePtr node1(new Node(false)), node2(new Node(false));
-     node1->BootstrapFromEndpoint(node2->endpoint());
-     node2->BootstrapFromEndpoint(node1->endpoint());
+     Functors functors1, functors2;
+     node1->Join(functors1, node2->endpoint(), node1->endpoint());
+     node2->Join(functors2, node1->endpoint(), node2->endpoint());
      nodes_.push_back(node1);
      nodes_.push_back(node2);
      bootstrap_endpoints_.push_back(node1->endpoint());

@@ -43,10 +43,15 @@ class MessageHandler {
   void DirectMessage(protobuf::Message &message);
   void RoutingMessage(protobuf::Message &message);
   void CloseNodesMessage(protobuf::Message &message);
+  void GroupMessage(protobuf::Message &message);
   bool CheckCacheData(protobuf::Message &message);
   bool CheckAndSendToLocalClients(protobuf::Message &message);
   void Send(protobuf::Message &message);
   bs2::signal<void(int, std::string)> &MessageReceivedSignal();
+  void set_bootstrap_endpoint(Endpoint endpoint);
+  void set_message_received_functor(MessageReceivedFunctor message_received);
+  void set_node_validation_functor(NodeValidationFunctor node_validation);
+  Endpoint bootstrap_endpoint();
 
  private:
   MessageHandler(const MessageHandler&);  // no copy
@@ -54,6 +59,7 @@ class MessageHandler {
   MessageHandler& operator=(const MessageHandler&);  // no assign
   RoutingTable &routing_table_;
   rudp::ManagedConnections &rudp_;
+  Endpoint bootstrap_endpoint_;
   Timer &timer_ptr_;
   CacheManager cache_manager_;
   MessageReceivedFunctor message_received_functor_;

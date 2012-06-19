@@ -75,6 +75,10 @@ asymm::Keys RoutingTable::kKeys() const {
   return keys_;
 }
 
+void RoutingTable::set_close_node_replaced_functor(CloseNodeReplacedFunctor close_node_replaced) {
+  close_node_replaced_functor_ = close_node_replaced;
+}
+
 bool RoutingTable::DropNode(const Endpoint &endpoint) {
   std::lock_guard<std::mutex> lock(mutex_);
   for (auto it = routing_table_nodes_.begin(); it != routing_table_nodes_.end(); ++it) {

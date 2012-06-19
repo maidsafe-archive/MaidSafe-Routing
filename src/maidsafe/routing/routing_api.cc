@@ -45,14 +45,12 @@ namespace maidsafe {
 namespace routing {
 
 Routing::Routing(const asymm::Keys &keys,
-                 Functors functors,
                  const bool client_mode)
-    : impl_(new RoutingPrivate(keys, functors, client_mode)) {
+    : impl_(new RoutingPrivate(keys, client_mode)) {
   CheckBootStrapFilePath();
   if (client_mode) {
     Parameters::max_routing_table_size = Parameters::closest_nodes_size;
   }
-  Join();
 }
 
 Routing::~Routing() {}
@@ -60,8 +58,8 @@ Routing::~Routing() {}
 int Routing::GetStatus() {
   if (impl_->routing_table_.Size() == 0) {
     rudp::EndpointPair endpoint;
-    if(impl_->rudp_.GetAvailableEndpoint(endpoint) != rudp::kSuccess) {
-      if (impl_->rudp_.GetAvailableEndpoint(endpoint) == rudp::kNoneAvailable)
+    if(impl_->rudp_.GetAvailableEndpoint(Endpoint(), endpoint) != rudp::kSuccess) {
+      if (impl_->rudp_.GetAvailableEndpoint(Endpoint(), endpoint) == rudp::kNoneAvailable)
         return kNotJoined;
     }
   } else {
@@ -110,34 +108,58 @@ void Routing::CheckBootStrapFilePath() {
   impl_->bootstrap_nodes_ = ReadBootstrapFile(impl_->bootstrap_file_path_);
 }
 
-// drop existing routing table and restart
-// the endpoint is the endpoint to connect to.
-bool Routing::BootStrapFromThisEndpoint(const boost::asio::ip::udp::endpoint &endpoint,
-                                        boost::asio::ip::udp::endpoint local_endpoint) {
-  LOG(kInfo) << " Entered bootstrap IP address : " << endpoint.address().to_string();
-  LOG(kInfo) << " Entered bootstrap Port       : " << endpoint.port();
-  if (endpoint.address().is_unspecified()) {
-    LOG(kError) << "Attempt to boot from unspecified endpoint ! aborted";
-    return false;
+int Routing::Join(Functors functors, Endpoint peer_endpoint, Endpoint local_endpoint) {
+  if (!peer_endpoint.address().is_unspecified()) {
+    return BootStrapFromThisEndpoint(functors, peer_endpoint, local_endpoint);
+  } else {
+    LOG(kInfo) << " Doing a default join";
+    return DoJoin(functors);
   }
-  for (unsigned int i = 0; i < impl_->routing_table_.Size(); ++i) {
-    NodeInfo remove_node =
-    impl_->routing_table_.GetClosestNode(NodeId(impl_->routing_table_.kKeys().identity), 0);
-    impl_->rudp_.Remove(remove_node.endpoint);
-    impl_->routing_table_.DropNode(remove_node.endpoint);
-  }
-  if(impl_->functors_.network_status)
-    impl_->functors_.network_status(impl_->routing_table_.Size());
-  impl_->bootstrap_nodes_.clear();
-  impl_->bootstrap_nodes_.push_back(endpoint);
-  return Join(local_endpoint);
 }
 
-bool Routing::Join(Endpoint local_endpoint) {
+void Routing::ConnectFunctors(Functors functors) {
+  impl_->routing_table_.set_close_node_replaced_functor(functors.close_node_replaced);
+  impl_->message_handler_.set_message_received_functor(functors.message_received);
+  impl_->message_handler_.set_node_validation_functor(functors.node_validation);
+  impl_->functors_ = functors;
+}
+
+void Routing::DisconnectFunctors() {
+  impl_->routing_table_.set_close_node_replaced_functor(nullptr);
+  impl_->message_handler_.set_message_received_functor(nullptr);
+  impl_->message_handler_.set_node_validation_functor(nullptr);
+  impl_->functors_ = Functors();
+}
+
+// drop existing routing table and restart
+// the endpoint is the endpoint to connect to.
+int Routing::BootStrapFromThisEndpoint(Functors functors,
+                                       const boost::asio::ip::udp::endpoint &endpoint,
+                                       const boost::asio::ip::udp::endpoint& local_endpoint) {
+  LOG(kInfo) << " Entered bootstrap IP address : " << endpoint.address().to_string();
+  LOG(kInfo) << " Entered bootstrap Port       : " << endpoint.port();
+  if (impl_->routing_table_.Size() > 0) {
+    DisconnectFunctors();  //TODO(Prakash): Do we need this ?
+    for (unsigned int i = 0; i < impl_->routing_table_.Size(); ++i) {
+      NodeInfo remove_node =
+      impl_->routing_table_.GetClosestNode(NodeId(impl_->routing_table_.kKeys().identity), 0);
+      impl_->rudp_.Remove(remove_node.endpoint);
+      impl_->routing_table_.DropNode(remove_node.endpoint);
+    }
+    if(impl_->functors_.network_status)
+      impl_->functors_.network_status(impl_->routing_table_.Size());
+  }
+  impl_->bootstrap_nodes_.clear();
+  impl_->bootstrap_nodes_.push_back(endpoint);
+  return DoJoin(functors, local_endpoint);
+}
+
+int Routing::DoJoin(Functors functors, Endpoint local_endpoint) {
   if (impl_->bootstrap_nodes_.empty()) {
     LOG(kInfo) << "No bootstrap nodes Aborted Join !!";
-    return false;
+    return kInvalidBootstrapContacts;
   }
+  ConnectFunctors(functors);
   rudp::MessageReceivedFunctor message_recieved(std::bind(&Routing::ReceiveMessage, this,
                                                           args::_1));
   rudp::ConnectionLostFunctor connection_lost(std::bind(&Routing::ConnectionLost, this, args::_1));
@@ -149,9 +171,9 @@ bool Routing::Join(Endpoint local_endpoint) {
 
   if (bootstrap_endpoint.address().is_unspecified() && local_endpoint.address().is_unspecified()) {
     LOG(kError) << "could not get bootstrap address and not zero state";
-    return false;
+    return kNoOnlineBootstrapContacts;
   }
-
+  impl_->message_handler_.set_bootstrap_endpoint(bootstrap_endpoint);
   std::string find_node_rpc(rpcs::FindNodes(NodeId(impl_->keys_.identity),
                                             local_endpoint).SerializeAsString());
   std::promise<bool> message_sent_promise;
@@ -176,14 +198,14 @@ bool Routing::Join(Endpoint local_endpoint) {
   // now poll for routing table size to have at least one node available
   uint8_t poll_count(0);
   do {
-    std::this_thread::sleep_for(std::chrono::milliseconds(100));
-  } while ((impl_->routing_table_.Size() == 0) || (poll_count < 100));
+    Sleep(boost::posix_time::milliseconds(100));
+  } while ((impl_->routing_table_.Size() == 0) || (++poll_count < 100));
   if (impl_->routing_table_.Size() != 0) {
     LOG(kInfo) << "Successfully bootstraped with node - " << bootstrap_endpoint;
-    return true;
+    return kSuccess;
   } else {
     LOG(kInfo) << "Failed to bootstrap with node - " << bootstrap_endpoint;
-    return false;
+    return kNotJoined;
   }
 }
 
@@ -214,27 +236,34 @@ SendStatus Routing::Send(const NodeId &destination_id,
   return SendStatus::kSuccess;
 }
 
-void Routing::ValidateThisNode(const std::string &node_id,
+void Routing::ValidateThisNode(const NodeId& node_id,
                                const asymm::PublicKey &public_key,
-                               const Endpoint &their_endpoint,
-                               const Endpoint &our_endpoint,
+                               const rudp::EndpointPair &their_endpoint,
+                               const rudp::EndpointPair &our_endpoint,
                                const bool &client) {
   NodeInfo node_info;
   // TODO(dirvine) Add Managed Connection  here !!!
   node_info.node_id = NodeId(node_id);
   node_info.public_key = public_key;
-  node_info.endpoint = their_endpoint;
-  impl_->rudp_.Add(their_endpoint, our_endpoint, node_id);
+  node_info.endpoint = their_endpoint.external;
+  LOG(kVerbose) << "Calling rudp Add on endpoint = " << our_endpoint.external
+                << ", their endpoint = " << their_endpoint.external;
+  int result = impl_->rudp_.Add(their_endpoint.external, our_endpoint.external, node_id.String());
+  LOG(kVerbose) << "rudp_.Add result = " << result;
+  // TODO(Prakash): FIXME Uncomment after rudp add succeeds.
+  //if (result != kSuccess)
+  //  return;
   if (client) {
     impl_->direct_non_routing_table_connections_.push_back(node_info);
   } else {
-    impl_->routing_table_.AddNode(node_info);
-    if (impl_->bootstrap_nodes_.size() > 1000) {
-    impl_->bootstrap_nodes_.erase(impl_->bootstrap_nodes_.begin());
+    if(impl_->routing_table_.AddNode(node_info)) {
+      LOG(kVerbose) << "Added node to routing table. node id "
+                    << HexSubstr(node_id.String());
+      if (impl_->bootstrap_nodes_.size() > 1000)
+        impl_->bootstrap_nodes_.erase(impl_->bootstrap_nodes_.begin());
+      impl_->bootstrap_nodes_.push_back(their_endpoint.external);
+      WriteBootstrapFile(impl_->bootstrap_nodes_, impl_->bootstrap_file_path_);
     }
-    impl_->bootstrap_nodes_.push_back(their_endpoint);
-    std::error_code error;
-    WriteBootstrapFile(impl_->bootstrap_nodes_, impl_->bootstrap_file_path_);
   }
 }
 

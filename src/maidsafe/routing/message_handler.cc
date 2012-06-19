@@ -35,18 +35,18 @@ namespace routing {
 
 class Timer;
 
-MessageHandler::MessageHandler(
-                RoutingTable &routing_table,
-                rudp::ManagedConnections &rudp,
-                Timer &timer_ptr,
-                MessageReceivedFunctor message_received_functor,
-                NodeValidationFunctor node_validation_functor) :
-                routing_table_(routing_table),
-                rudp_(rudp),
-                timer_ptr_(timer_ptr),
-                cache_manager_(),
-                message_received_functor_(message_received_functor),
-                node_validation_functor_(node_validation_functor) {}
+MessageHandler::MessageHandler(RoutingTable &routing_table,
+                               rudp::ManagedConnections &rudp,
+                               Timer &timer_ptr,
+                               MessageReceivedFunctor message_received_functor,
+                               NodeValidationFunctor node_validation_functor)
+    : routing_table_(routing_table),
+      rudp_(rudp),
+      bootstrap_endpoint_(),
+      timer_ptr_(timer_ptr),
+      cache_manager_(),
+      message_received_functor_(message_received_functor),
+      node_validation_functor_(node_validation_functor) {}
 
 void MessageHandler::Send(protobuf::Message& message) {
   message.set_routing_failure(false);
@@ -70,6 +70,7 @@ bool MessageHandler::CheckCacheData(protobuf::Message &message) {
 
 void MessageHandler::RoutingMessage(protobuf::Message& message) {
   LOG(kInfo) << "MessageHandler::RoutingMessage";
+  bool is_response(message.type() < 0);
   switch (message.type()) {
     case -1 :  // ping
       response::Ping(message);
@@ -84,7 +85,7 @@ void MessageHandler::RoutingMessage(protobuf::Message& message) {
       service::Connect(routing_table_, rudp_, message);
       break;
     case -3 :  // find_nodes
-      response::FindNode(routing_table_, rudp_, message);
+      response::FindNode(routing_table_, rudp_, message, bootstrap_endpoint_);
       break;
     case 3 :
       service::FindNodes(routing_table_, message);
@@ -98,7 +99,14 @@ void MessageHandler::RoutingMessage(protobuf::Message& message) {
     default:  // unknown (silent drop)
       return;
   }
-  SendOn(message, rudp_, routing_table_);
+  if (is_response)
+    return;
+
+  Endpoint direct_endpoint;
+  if (routing_table_.Size() == 0) {  // I can only send to bootstrap_endpoint
+    direct_endpoint = bootstrap_endpoint_;
+  }
+  SendOn(message, rudp_, routing_table_, direct_endpoint);
 }
 
 void MessageHandler::DirectMessage(protobuf::Message& message) {
@@ -151,6 +159,19 @@ void MessageHandler::CloseNodesMessage(protobuf::Message& message) {
   for (auto i : close) {
     message.set_destination_id(i.String());
     SendOn(message, rudp_, routing_table_);
+  }
+}
+
+void MessageHandler::GroupMessage(protobuf::Message &message) {
+if (routing_table_.IsMyNodeInRange(NodeId(message.destination_id()), 1)) {
+  LOG(kVerbose) <<"I am in closest proximity to this group message";
+  ReplyFunctor response_functor = [&](const std::string& reply_message)  {
+      if (!reply_message.empty()) {
+        // TODO(Prakash): To add rudp send for replying to the message
+      }
+  };
+  message_received_functor_(static_cast<int>(-message.type()), message.data(), NodeId(),
+                            response_functor);
   }
 }
 
@@ -212,7 +233,21 @@ void MessageHandler::ProcessMessage(protobuf::Message &message) {
 //   return found;
 // }
 
+void MessageHandler::set_message_received_functor(MessageReceivedFunctor message_received) {
+  message_received_functor_ = message_received;
+}
 
+void MessageHandler::set_node_validation_functor(NodeValidationFunctor node_validation) {
+  node_validation_functor_ = node_validation;
+}
+
+void MessageHandler::set_bootstrap_endpoint(Endpoint endpoint) {
+  bootstrap_endpoint_ = endpoint;
+}
+
+Endpoint MessageHandler::bootstrap_endpoint() {
+return bootstrap_endpoint_;
+}
 
 }  // namespace routing
 

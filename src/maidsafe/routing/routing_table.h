@@ -49,6 +49,7 @@ class RoutingTable {
   NodeInfo GetClosestNode(const NodeId &from, const uint16_t &node_number);
   uint16_t Size();
   asymm::Keys kKeys() const;
+  void set_close_node_replaced_functor(CloseNodeReplacedFunctor close_node_replaced);
 
  private:
   RoutingTable(const RoutingTable&);

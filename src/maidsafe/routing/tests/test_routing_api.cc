@@ -79,9 +79,9 @@ TEST(APITest, BEH_API_StandAloneNodeNotConnected) {
 //  boost::filesystem::path good_file(fs::unique_path(fs::temp_directory_path() / "test"));
   Functors functors;
   EXPECT_NO_THROW({
-    Routing RtAPI(keys, functors, false);
+    Routing RtAPI(keys, false);
   });
-  Routing RAPI(keys, functors, false);
+  Routing RAPI(keys, false);
   Endpoint empty_endpoint;
   EXPECT_EQ(RAPI.GetStatus(), kNotJoined);
 //  EXPECT_TRUE(boost::filesystem::remove(good_file));
@@ -92,20 +92,20 @@ TEST(APITest, BEH_API_ManualBootstrap) {
   asymm::Keys keys2(MakeKeys());
   Functors functors;
   EXPECT_NO_THROW({
-    Routing RtAPI(keys1, functors, false);
+    Routing RtAPI(keys1, false);
   });
   EXPECT_NO_THROW({
-    Routing RtAPI(keys2, functors, false);
+    Routing RtAPI(keys2, false);
   });
-  Routing R1(keys1, functors, false);
-  Routing R2(keys2, functors, false);
+  Routing R1(keys1, false);
+  Routing R2(keys2, false);
   boost::asio::ip::udp::endpoint empty_endpoint;
   EXPECT_EQ(kNotJoined, R1.GetStatus());
   EXPECT_EQ(kNotJoined, R2.GetStatus());
   Endpoint endpoint1g(GetLocalIp(), 5000);
   Endpoint endpoint2g(GetLocalIp(), 5001);
-  R1.BootStrapFromThisEndpoint(endpoint2g);
-  R2.BootStrapFromThisEndpoint(endpoint1g);
+  R1.Join(functors, endpoint2g);
+  R2.Join(functors, endpoint1g);
   EXPECT_EQ(kSuccess, R1.GetStatus());
   EXPECT_EQ(kSuccess, R2.GetStatus());
 //  EXPECT_TRUE(boost::filesystem::remove(node1_config));
@@ -116,22 +116,35 @@ TEST(APITest, BEH_API_ZeroState) {
   asymm::Keys keys1(MakeKeys());
   asymm::Keys keys2(MakeKeys());
   asymm::Keys keys3(MakeKeys());
-  Functors functors;
-  Routing R1(keys1, functors, false);
-  Routing R2(keys2, functors, false);
-  Routing R3(keys3, functors, false);
+  Routing R1(keys1, false);
+  Routing R2(keys2, false);
+  Routing R3(keys3, false);
+  Functors functors1, functors2;
+  functors1.node_validation = [&](const NodeId& node_id,
+                                  const rudp::EndpointPair& their_endpoint,
+                                  const rudp::EndpointPair& our_endpoint,
+                                  const bool& client) {
+     R1.ValidateThisNode(node_id, keys2.public_key, their_endpoint, our_endpoint, client);
+  };
+
+  functors2.node_validation = [&](const NodeId& node_id,
+                                 const rudp::EndpointPair& their_endpoint,
+                                 const rudp::EndpointPair& our_endpoint,
+                                 const bool& client) {
+    R2.ValidateThisNode(node_id, keys1.public_key, their_endpoint, our_endpoint, client);
+  };
   Endpoint endpoint1(boost::asio::ip::address_v4::loopback(), 5000);
   Endpoint endpoint2(boost::asio::ip::address_v4::loopback(), 5001);
   Endpoint endpoint3(boost::asio::ip::address_v4::loopback(), 5002);
 
   auto a1 = std::async(std::launch::async,
-                       [&]{return R1.BootStrapFromThisEndpoint(endpoint2, endpoint1);});  // NOLINT (Prakash)
+                       [&]{return R1.Join(functors1, endpoint2, endpoint1);});  // NOLINT (Prakash)
   auto a2 = std::async(std::launch::async,
-                       [&]{return R2.BootStrapFromThisEndpoint(endpoint1, endpoint2);});  // NOLINT (Prakash)
+                       [&]{return R2.Join(functors2, endpoint1, endpoint2);});  // NOLINT (Prakash)
 
   std::this_thread::sleep_for(std::chrono::milliseconds(3000));
-  EXPECT_TRUE(a2.get());  // wait for promise !
-  EXPECT_TRUE(a1.get());  // wait for promise !
+  EXPECT_EQ(kSuccess, a2.get());  // wait for promise !
+  EXPECT_EQ(kSuccess, a1.get());  // wait for promise !
 
   //auto a3 = std::async(std::launch::async,
   //                     [&]{return R3.BootStrapFromThisEndpoint(endpoint1);});

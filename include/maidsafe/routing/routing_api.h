@@ -51,21 +51,21 @@ struct RoutingPrivate;
 class Routing {
  public:
    // set keys.identity to ANONYMOUS for temporary anonymous connection.
-  Routing(const asymm::Keys &keys,
-          Functors functors,
-          bool client_mode);
+  Routing(const asymm::Keys &keys, bool client_mode);
   ~Routing();
+
+  /**************************************************************************
+  * Joins the network                                                       *
+  * To force the node to use a specific endpoint for bootstrapping, provide *
+  * peer_endpoint & local_endpoint. (i.e. private network)                  *
+  ***************************************************************************/
+  int Join(Functors functors,
+           boost::asio::ip::udp::endpoint peer_endpoint = boost::asio::ip::udp::endpoint(),
+           boost::asio::ip::udp::endpoint local_endpoint = boost::asio::ip::udp::endpoint());
   /**************************************************************************
   * returns current network status as int (> 0 is connected)                *
   ***************************************************************************/
   int GetStatus();
-  /**************************************************************************
-  *To force the node to use a specific endpoint for bootstrapping           *
-  *(i.e. private network)                                                   *
-  ***************************************************************************/
-  bool BootStrapFromThisEndpoint(const boost::asio::ip::udp::endpoint& endpoint,
-                                 boost::asio::ip::udp::endpoint local_endpoint =
-                                 boost::asio::ip::udp::endpoint());
   /**************************************************************************
   *The reply or error (timeout) will be passed to this response_functor     *
   *error is passed as negative int (return code) and empty string           *
@@ -75,7 +75,7 @@ class Routing {
   * to indicate you do not care about a response.                           *
   ***************************************************************************/
   SendStatus Send(const NodeId &destination_id,  // id of final destination
-                  const NodeId &group_id,  // id of destination group
+                  const NodeId &group_id,  // id of sending group
                   const std::string &data,  // message content (serialised data)
                   const int32_t &type,  // user defined message type
                   const ResponseFunctor response_functor,
@@ -86,18 +86,22 @@ class Routing {
   * This method should be called by the user in response to                  *
   * NodeValidateFunctor to add the node in routing table.                    *
   ***************************************************************************/
-  void ValidateThisNode(const std::string &node_id,
+  void ValidateThisNode(const NodeId& node_id,
                         const asymm::PublicKey &public_key,
-                        const Endpoint &their_endpoint,
-                        const Endpoint &our_endpoint,
+                        const rudp::EndpointPair &their_endpoint,
+                        const rudp::EndpointPair &our_endpoint,
                         const bool &client);
 
  private:
   Routing(const Routing&);
   Routing(const Routing&&);
   Routing& operator=(const Routing&);
-  void Init();
-  bool Join(Endpoint local_endpoint = Endpoint());
+  void ConnectFunctors(Functors functors);
+  void DisconnectFunctors();
+  int BootStrapFromThisEndpoint(Functors functors,
+                                const boost::asio::ip::udp::endpoint& endpoint,
+                                const boost::asio::ip::udp::endpoint& local_endpoint);
+  int DoJoin(Functors functors, Endpoint local_endpoint = Endpoint());
   void ReceiveMessage(const std::string &message);
   void ConnectionLost(const Endpoint &lost_endpoint);
   void CheckBootStrapFilePath();

@@ -58,12 +58,16 @@ void Ping(RoutingTable &routing_table, protobuf::Message &message) {
 
 void Connect(RoutingTable &routing_table, rudp::ManagedConnections &rudp,
              protobuf::Message &message) {
-  if (message.destination_id() != routing_table.kKeys().identity)
+  if (message.destination_id() != routing_table.kKeys().identity) {
+    LOG(kVerbose) << "Connect -- not for us and we should not pass it on.";
     return;  // not for us and we should not pass it on.
+  }
   protobuf::ConnectRequest connect_request;
   protobuf::ConnectResponse connect_response;
-  if (!connect_request.ParseFromString(message.data()))
+  if (!connect_request.ParseFromString(message.data())) {
+    LOG(kVerbose) << "Unable to parse connect request";
     return;  // no need to reply
+  }
   NodeInfo node;
   node.node_id = NodeId(connect_request.contact().node_id());
   if (connect_request.bootstrap()) {
@@ -82,7 +86,11 @@ void Connect(RoutingTable &routing_table, rudp::ManagedConnections &rudp,
       boost::asio::ip::address::from_string(connect_request.contact().private_endpoint().ip()));
   their_private_endpoint.port(
       static_cast<unsigned short>(connect_request.contact().private_endpoint().port()));
-  rudp.GetAvailableEndpoint(our_endpoint);
+  LOG(kVerbose) << "Calling GetAvailableEndpoint with peer ep - " << their_public_endpoint;
+  if((rudp.GetAvailableEndpoint(their_public_endpoint, our_endpoint)) != 0) {
+    LOG(kVerbose) << "Unable to get available endpoint to connect to" << their_public_endpoint;
+    return;
+  }
 
   // TODO(dirvine) try both connections
   if (message.client_node()) {
@@ -95,6 +103,7 @@ void Connect(RoutingTable &routing_table, rudp::ManagedConnections &rudp,
   }
   if ((routing_table.CheckNode(node)) && (!message.client_node())) {
     connect_response.set_answer(true);
+    LOG(kVerbose) << "CheckNode(node) successfull";
 //     node_validation_functor_(routing_table.kKeys().identity,
 //                     their_endpoint,
 //                     message.client_node(),
