@@ -14,9 +14,9 @@
 #define MAIDSAFE_ROUTING_NODE_INFO_H_
 
 #include "maidsafe/common/rsa.h"
+#include "boost/asio/ip/udp.hpp"
 
 #include "maidsafe/routing/node_id.h"
-#include "maidsafe/routing/parameters.h"
 
 namespace maidsafe {
 

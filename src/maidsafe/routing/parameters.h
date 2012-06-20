@@ -13,8 +13,6 @@
 #ifndef MAIDSAFE_ROUTING_PARAMETERS_H_
 #define MAIDSAFE_ROUTING_PARAMETERS_H_
 
-#include "boost/asio.hpp"
-#include "boost/filesystem/path.hpp"
 #include "maidsafe/routing/log.h"
 
 namespace maidsafe {
