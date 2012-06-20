@@ -119,47 +119,53 @@ TEST(APITest, BEH_API_ZeroState) {
   Routing R1(keys1, false);
   Routing R2(keys2, false);
   Routing R3(keys3, false);
-  Functors functors1, functors2;
-  functors1.node_validation = [&](const NodeId& node_id,
+  bool zero_state1(true), zero_state2(true);
+  Functors functors1, functors2, functors3;
+  functors1.node_validation = [&](const NodeId& /*node_id*/,
                                   const rudp::EndpointPair& their_endpoint,
                                   const rudp::EndpointPair& our_endpoint,
                                   const bool& client) {
-     R1.ValidateThisNode(node_id, keys2.public_key, their_endpoint, our_endpoint, client);
+     if (zero_state1) {
+       LOG(kVerbose) << "node_validation called for " << HexSubstr(keys2.identity);
+       R1.ValidateThisNode(NodeId(keys2.identity), keys2.public_key, their_endpoint, our_endpoint,
+                           client);
+       zero_state1 = false;
+     }
   };
 
   functors2.node_validation = [&](const NodeId& node_id,
                                  const rudp::EndpointPair& their_endpoint,
                                  const rudp::EndpointPair& our_endpoint,
                                  const bool& client) {
-    R2.ValidateThisNode(node_id, keys1.public_key, their_endpoint, our_endpoint, client);
+    if (zero_state2) {
+      LOG(kVerbose) << "node_validation called for " << HexSubstr(keys1.identity);
+      R2.ValidateThisNode(NodeId(keys1.identity), keys1.public_key, their_endpoint, our_endpoint,
+                          client);
+      zero_state2 = false;
+    } else {
+      LOG(kVerbose) << "node_validation called for " << HexSubstr(node_id.String());
+      if (node_id == NodeId(keys3.identity))
+        R2.ValidateThisNode(node_id, keys1.public_key, their_endpoint, our_endpoint,
+                            client);
+    }
   };
-  Endpoint endpoint1(boost::asio::ip::address_v4::loopback(), 5000);
-  Endpoint endpoint2(boost::asio::ip::address_v4::loopback(), 5001);
-  Endpoint endpoint3(boost::asio::ip::address_v4::loopback(), 5002);
+  Endpoint endpoint1(GetLocalIp(), 5000);
+  Endpoint endpoint2(GetLocalIp(), 5001);
+  Endpoint endpoint3(GetLocalIp(), 5002);
 
   auto a1 = std::async(std::launch::async,
                        [&]{return R1.Join(functors1, endpoint2, endpoint1);});  // NOLINT (Prakash)
   auto a2 = std::async(std::launch::async,
                        [&]{return R2.Join(functors2, endpoint1, endpoint2);});  // NOLINT (Prakash)
 
-  std::this_thread::sleep_for(std::chrono::milliseconds(3000));
   EXPECT_EQ(kSuccess, a2.get());  // wait for promise !
   EXPECT_EQ(kSuccess, a1.get());  // wait for promise !
 
-  //auto a3 = std::async(std::launch::async,
-  //                     [&]{return R3.BootStrapFromThisEndpoint(endpoint1);});
-  //std::this_thread::sleep_for(std::chrono::milliseconds(3000));
-  //EXPECT_TRUE(a3.get());  // wait for future !
+  auto a3 = std::async(std::launch::async,
+                       [&]{return R3.Join(functors3, endpoint2);});
+  EXPECT_EQ(kSuccess, a3.get());  // wait for promise !
 
-  //EXPECT_GT(R3.GetStatus(), 0);
-
-  //try {
-  //  EXPECT_TRUE(boost::filesystem::remove(node1_config));
-  //  EXPECT_TRUE(boost::filesystem::remove(node2_config));
-  //  EXPECT_TRUE(boost::filesystem::remove(node3_config));
-  //} catch(const std::exception &e) {
-  //  LOG(kError) << e.what();
-  //}
+  EXPECT_GT(R3.GetStatus(), 0);
 }
 
 //TEST(APITest, BEH_API_NodeNetwork) {

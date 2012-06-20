@@ -14,7 +14,7 @@
 
 int main(int argc, char **argv) {
   maidsafe::log::FilterMap filter;
-  filter["rudp"] = maidsafe::log::kWarning;
+  filter["rudp"] = maidsafe::log::kInfo;
   filter["routing"] = maidsafe::log::kVerbose;
   return ExecuteMain(argc, argv, filter);
 }

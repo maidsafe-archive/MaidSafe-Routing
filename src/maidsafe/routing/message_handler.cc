@@ -82,7 +82,7 @@ void MessageHandler::RoutingMessage(protobuf::Message& message) {
       response::Connect(message, node_validation_functor_);
       break;
     case 2 :
-      service::Connect(routing_table_, rudp_, message);
+      service::Connect(routing_table_, rudp_, message, node_validation_functor_);
       break;
     case -3 :  // find_nodes
       response::FindNode(routing_table_, rudp_, message, bootstrap_endpoint_);

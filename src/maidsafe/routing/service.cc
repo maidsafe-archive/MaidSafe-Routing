@@ -56,8 +56,10 @@ void Ping(RoutingTable &routing_table, protobuf::Message &message) {
   assert(message.IsInitialized() && "unintialised message");
 }
 
-void Connect(RoutingTable &routing_table, rudp::ManagedConnections &rudp,
-             protobuf::Message &message) {
+void Connect(RoutingTable &routing_table,
+             rudp::ManagedConnections &rudp,
+             protobuf::Message &message,
+             NodeValidationFunctor node_validation_functor) {
   if (message.destination_id() != routing_table.kKeys().identity) {
     LOG(kVerbose) << "Connect -- not for us and we should not pass it on.";
     return;  // not for us and we should not pass it on.
@@ -75,7 +77,8 @@ void Connect(RoutingTable &routing_table, rudp::ManagedConnections &rudp,
              return;  // FIXME
   }
   connect_response.set_answer(false);
-  rudp::EndpointPair our_endpoint;
+  rudp::EndpointPair our_endpoint_pair;
+  rudp::EndpointPair their_endpoint_pair;
   Endpoint their_public_endpoint;
   Endpoint their_private_endpoint;
   their_public_endpoint.address(
@@ -86,8 +89,10 @@ void Connect(RoutingTable &routing_table, rudp::ManagedConnections &rudp,
       boost::asio::ip::address::from_string(connect_request.contact().private_endpoint().ip()));
   their_private_endpoint.port(
       static_cast<unsigned short>(connect_request.contact().private_endpoint().port()));
+  their_endpoint_pair.external = their_public_endpoint;
+  their_endpoint_pair.local = their_private_endpoint;
   LOG(kVerbose) << "Calling GetAvailableEndpoint with peer ep - " << their_public_endpoint;
-  if((rudp.GetAvailableEndpoint(their_public_endpoint, our_endpoint)) != 0) {
+  if((rudp.GetAvailableEndpoint(their_public_endpoint, our_endpoint_pair)) != 0) {
     LOG(kVerbose) << "Unable to get available endpoint to connect to" << their_public_endpoint;
     return;
   }
@@ -96,18 +101,21 @@ void Connect(RoutingTable &routing_table, rudp::ManagedConnections &rudp,
   if (message.client_node()) {
     connect_response.set_answer(true);
     // TODO(dirvine): get the routing pointer back again
-//     node_validation_functor_(routing_table.kKeys().identity,
-//                     their_endpoint,
-//                     message.client_node(),
-//                     our_endpoint);
+
+    //if (node_validation_functor)  // never add any node to routing table
+    //node_validation_functor(NodeId(connect_response.contact().node_id()),
+    //                        their_endpoint_pair,
+    //                        our_endpoint_pair,
+    //                        message.client_node());
   }
   if ((routing_table.CheckNode(node)) && (!message.client_node())) {
     connect_response.set_answer(true);
-    LOG(kVerbose) << "CheckNode(node) successfull";
-//     node_validation_functor_(routing_table.kKeys().identity,
-//                     their_endpoint,
-//                     message.client_node(),
-//                     our_endpoint);
+    LOG(kVerbose) << "CheckNode(node) successfull!";
+    if(node_validation_functor)
+      node_validation_functor(NodeId(connect_response.contact().node_id()),
+                              their_endpoint_pair,
+                              our_endpoint_pair,
+                              message.client_node());
   }
 
   protobuf::Contact *contact;
@@ -115,11 +123,11 @@ void Connect(RoutingTable &routing_table, rudp::ManagedConnections &rudp,
   protobuf::Endpoint *public_endpoint;
   contact = connect_response.mutable_contact();
   private_endpoint = contact->mutable_private_endpoint();
-  private_endpoint->set_ip(our_endpoint.local.address().to_string());
-  private_endpoint->set_port(our_endpoint.local.port());
+  private_endpoint->set_ip(our_endpoint_pair.local.address().to_string());
+  private_endpoint->set_port(our_endpoint_pair.local.port());
   public_endpoint = contact->mutable_public_endpoint();
-  public_endpoint->set_ip(our_endpoint.local.address().to_string());
-  public_endpoint->set_port(our_endpoint.local.port());
+  public_endpoint->set_ip(our_endpoint_pair.local.address().to_string());
+  public_endpoint->set_port(our_endpoint_pair.local.port());
   contact->set_node_id(routing_table.kKeys().identity);
   connect_response.set_timestamp(GetTimeStamp());
   connect_response.set_original_request(message.data());

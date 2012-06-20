@@ -72,7 +72,7 @@ TEST(Services, BEH_Connect) {
   protobuf::Message message = rpcs::Connect(us.node_id, them_end, them.node_id.String());
   EXPECT_TRUE(message.IsInitialized());
   // we receive it
-  service::Connect(RT, rudp, message);
+  service::Connect(RT, rudp, message, NodeValidationFunctor());
   protobuf::ConnectResponse connect_response;
   EXPECT_TRUE(connect_response.ParseFromString(message.data()));  // us
   EXPECT_TRUE(connect_response.answer());

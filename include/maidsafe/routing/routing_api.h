@@ -55,9 +55,12 @@ class Routing {
   ~Routing();
 
   /**************************************************************************
-  * Joins the network                                                       *
+  * Joins the network. Valid functor for node validation must be passed to  *
+  * allow node validatation or else no node will be added to routing and    *
+  * will fail to  join the network.                                         *
   * To force the node to use a specific endpoint for bootstrapping, provide *
-  * peer_endpoint & local_endpoint. (i.e. private network)                  *
+  * peer_endpoint (i.e. private network). Note: local_endpoint should only  *
+  * be provided to state that its zero state network.                       *
   ***************************************************************************/
   int Join(Functors functors,
            boost::asio::ip::udp::endpoint peer_endpoint = boost::asio::ip::udp::endpoint(),
@@ -99,9 +102,9 @@ class Routing {
   void ConnectFunctors(Functors functors);
   void DisconnectFunctors();
   int BootStrapFromThisEndpoint(Functors functors,
-                                const boost::asio::ip::udp::endpoint& endpoint,
-                                const boost::asio::ip::udp::endpoint& local_endpoint);
-  int DoJoin(Functors functors, Endpoint local_endpoint = Endpoint());
+                                const boost::asio::ip::udp::endpoint& endpoint);
+  int DoJoin(Functors functors);
+  int DoZeroStateJoin(Functors functors, Endpoint peer_endpoint, Endpoint local_endpoint);
   void ReceiveMessage(const std::string &message);
   void ConnectionLost(const Endpoint &lost_endpoint);
   void CheckBootStrapFilePath();

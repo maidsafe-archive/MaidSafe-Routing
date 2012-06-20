@@ -19,6 +19,7 @@
 
 #include "boost/filesystem/exception.hpp"
 #include "boost/filesystem/fstream.hpp"
+#include "boost/thread/future.hpp"
 
 #include "maidsafe/common/utils.h"
 #include "maidsafe/rudp/managed_connections.h"
@@ -109,9 +110,11 @@ void Routing::CheckBootStrapFilePath() {
 }
 
 int Routing::Join(Functors functors, Endpoint peer_endpoint, Endpoint local_endpoint) {
-  if (!peer_endpoint.address().is_unspecified()) {
-    return BootStrapFromThisEndpoint(functors, peer_endpoint, local_endpoint);
-  } else {
+  if (!local_endpoint.address().is_unspecified()) {  // DoZeroStateJoin
+    return DoZeroStateJoin(functors, peer_endpoint, local_endpoint);
+  } else if (!peer_endpoint.address().is_unspecified()) {  // BootStrapFromThisEndpoint
+    return BootStrapFromThisEndpoint(functors, peer_endpoint);
+  } else  {  // Default Join
     LOG(kInfo) << " Doing a default join";
     return DoJoin(functors);
   }
@@ -134,8 +137,7 @@ void Routing::DisconnectFunctors() {
 // drop existing routing table and restart
 // the endpoint is the endpoint to connect to.
 int Routing::BootStrapFromThisEndpoint(Functors functors,
-                                       const boost::asio::ip::udp::endpoint &endpoint,
-                                       const boost::asio::ip::udp::endpoint& local_endpoint) {
+                                       const boost::asio::ip::udp::endpoint &endpoint) {
   LOG(kInfo) << " Entered bootstrap IP address : " << endpoint.address().to_string();
   LOG(kInfo) << " Entered bootstrap Port       : " << endpoint.port();
   if (impl_->routing_table_.Size() > 0) {
@@ -151,10 +153,10 @@ int Routing::BootStrapFromThisEndpoint(Functors functors,
   }
   impl_->bootstrap_nodes_.clear();
   impl_->bootstrap_nodes_.push_back(endpoint);
-  return DoJoin(functors, local_endpoint);
+  return DoJoin(functors);
 }
 
-int Routing::DoJoin(Functors functors, Endpoint local_endpoint) {
+int Routing::DoJoin(Functors functors) {
   if (impl_->bootstrap_nodes_.empty()) {
     LOG(kInfo) << "No bootstrap nodes Aborted Join !!";
     return kInvalidBootstrapContacts;
@@ -163,20 +165,21 @@ int Routing::DoJoin(Functors functors, Endpoint local_endpoint) {
   rudp::MessageReceivedFunctor message_recieved(std::bind(&Routing::ReceiveMessage, this,
                                                           args::_1));
   rudp::ConnectionLostFunctor connection_lost(std::bind(&Routing::ConnectionLost, this, args::_1));
-
+  Endpoint local_endpoint;  // FIXME need to know my local endpoint on bootstrapping
   Endpoint bootstrap_endpoint(impl_->rudp_.Bootstrap(impl_->bootstrap_nodes_,
                                                      message_recieved,
                                                      connection_lost,
-                                                     local_endpoint));
+                                                     local_endpoint));  // FIXME
 
-  if (bootstrap_endpoint.address().is_unspecified() && local_endpoint.address().is_unspecified()) {
-    LOG(kError) << "could not get bootstrap address and not zero state";
+  if (bootstrap_endpoint.address().is_unspecified()) {
+    LOG(kError) << "could not bootstrap.";
     return kNoOnlineBootstrapContacts;
   }
+  LOG(kVerbose) << "Bootstrap successful, bootstrap node - " << bootstrap_endpoint;
   impl_->message_handler_.set_bootstrap_endpoint(bootstrap_endpoint);
   std::string find_node_rpc(rpcs::FindNodes(NodeId(impl_->keys_.identity),
-                                            local_endpoint).SerializeAsString());
-  std::promise<bool> message_sent_promise;
+                                            Endpoint()).SerializeAsString());
+  boost::promise<bool> message_sent_promise;
   auto message_sent_future = message_sent_promise.get_future();
   uint8_t attempt_count(0);
   rudp::MessageSentFunctor message_sent_functor = [&](bool message_sent) {
@@ -191,20 +194,69 @@ int Routing::DoJoin(Functors functors, Endpoint local_endpoint) {
 
   impl_->rudp_.Send(bootstrap_endpoint, find_node_rpc, message_sent_functor);
 
-  //if(message_sent_future.wait_for(std::chrono::seconds(10))) {
-  //  LOG(kError) << "Unable to send find value rpc to bootstrap endpoint - " << bootstrap_endpoint;
-  //  return false;
-  //}
+  if(!message_sent_future.timed_wait(boost::posix_time::seconds(10))) {
+    LOG(kError) << "Unable to send find value rpc to bootstrap endpoint - " << bootstrap_endpoint;
+    return false;
+  }
   // now poll for routing table size to have at least one node available
   uint8_t poll_count(0);
   do {
     Sleep(boost::posix_time::milliseconds(100));
-  } while ((impl_->routing_table_.Size() == 0) || (++poll_count < 100));
+  } while ((impl_->routing_table_.Size() == 0) && (++poll_count < 100));
   if (impl_->routing_table_.Size() != 0) {
-    LOG(kInfo) << "Successfully bootstraped with node - " << bootstrap_endpoint;
+    LOG(kInfo) << "Successfully joined network, bootstrap node - " << bootstrap_endpoint;
     return kSuccess;
   } else {
-    LOG(kInfo) << "Failed to bootstrap with node - " << bootstrap_endpoint;
+    LOG(kInfo) << "Failed to join network, bootstrap node - " << bootstrap_endpoint;
+    return kNotJoined;
+  }
+}
+
+int Routing::DoZeroStateJoin(Functors functors, Endpoint peer_endpoint, Endpoint local_endpoint) {
+  assert((!impl_->client_mode_) && "no client nodes allowed in zero state network");
+  impl_->bootstrap_nodes_.clear();
+  impl_->bootstrap_nodes_.push_back(peer_endpoint);
+  if (impl_->bootstrap_nodes_.empty()) {
+    LOG(kInfo) << "No bootstrap nodes Aborted Join !!";
+    return kInvalidBootstrapContacts;
+  }
+
+  ConnectFunctors(functors);
+  rudp::MessageReceivedFunctor message_recieved(std::bind(&Routing::ReceiveMessage, this,
+                                                          args::_1));
+  rudp::ConnectionLostFunctor connection_lost(std::bind(&Routing::ConnectionLost, this, args::_1));
+
+  Endpoint bootstrap_endpoint(impl_->rudp_.Bootstrap(impl_->bootstrap_nodes_,
+                                                     message_recieved,
+                                                     connection_lost,
+                                                     local_endpoint));
+
+  if (bootstrap_endpoint.address().is_unspecified() && local_endpoint.address().is_unspecified()) {
+    LOG(kError) << "could not bootstrap zero state node with " << bootstrap_endpoint;
+    return kNoOnlineBootstrapContacts;
+  }
+  assert((bootstrap_endpoint == peer_endpoint) && "This should be only used in zero state network");
+  LOG(kVerbose) << local_endpoint << " Bootstraped with remote endpoint " << bootstrap_endpoint;
+  impl_->message_handler_.set_bootstrap_endpoint(bootstrap_endpoint);
+  rudp::EndpointPair their_endpoint_pair;  //  zero state nodes must be directly connected endpoint
+  rudp::EndpointPair our_endpoint_pair;
+  their_endpoint_pair.external = their_endpoint_pair.local = bootstrap_endpoint;
+  our_endpoint_pair.external = our_endpoint_pair.local = local_endpoint;
+
+  if (impl_->functors_.node_validation)
+    impl_->functors_.node_validation(NodeId(), their_endpoint_pair, our_endpoint_pair, false);
+
+  // now poll for routing table size to have at least one node available
+  uint8_t poll_count(0);
+  do {
+    Sleep(boost::posix_time::milliseconds(100));
+  } while ((impl_->routing_table_.Size() == 0) && (++poll_count < 50));
+  if (impl_->routing_table_.Size() != 0) {
+    LOG(kInfo) << "Successfully joined zero state network, with " << bootstrap_endpoint;
+    return kSuccess;
+  } else {
+    LOG(kInfo) << "Failed to join zero state network, with bootstrap_endpoint"
+               << bootstrap_endpoint;
     return kNotJoined;
   }
 }
@@ -242,23 +294,23 @@ void Routing::ValidateThisNode(const NodeId& node_id,
                                const rudp::EndpointPair &our_endpoint,
                                const bool &client) {
   NodeInfo node_info;
-  // TODO(dirvine) Add Managed Connection  here !!!
   node_info.node_id = NodeId(node_id);
   node_info.public_key = public_key;
   node_info.endpoint = their_endpoint.external;
   LOG(kVerbose) << "Calling rudp Add on endpoint = " << our_endpoint.external
                 << ", their endpoint = " << their_endpoint.external;
-  int result = impl_->rudp_.Add(their_endpoint.external, our_endpoint.external, node_id.String());
+  int result = impl_->rudp_.Add(our_endpoint.external, their_endpoint.external, node_id.String());
+
+  if (result != kSuccess) {
+      LOG(kWarning) << "rudp add failed " << result;
+    return;
+  }
   LOG(kVerbose) << "rudp_.Add result = " << result;
-  // TODO(Prakash): FIXME Uncomment after rudp add succeeds.
-  //if (result != kSuccess)
-  //  return;
   if (client) {
     impl_->direct_non_routing_table_connections_.push_back(node_info);
   } else {
     if(impl_->routing_table_.AddNode(node_info)) {
-      LOG(kVerbose) << "Added node to routing table. node id "
-                    << HexSubstr(node_id.String());
+      LOG(kVerbose) << "Added node to routing table. node id " << HexSubstr(node_id.String());
       if (impl_->bootstrap_nodes_.size() > 1000)
         impl_->bootstrap_nodes_.erase(impl_->bootstrap_nodes_.begin());
       impl_->bootstrap_nodes_.push_back(their_endpoint.external);
