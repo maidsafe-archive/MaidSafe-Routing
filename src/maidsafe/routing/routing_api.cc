@@ -130,7 +130,8 @@ bool Routing::Join(Endpoint local_endpoint) {
     return false;
   }
 
-  std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+  // std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+  Sleep(boost::posix_time::milliseconds(1000));
   auto boot = std::async(std::launch::async, [&] {
       return impl_->rudp_.Send(bootstrap_endpoint, rpcs::FindNodes(
           NodeId(impl_->keys_.identity), local_endpoint).SerializeAsString()); }); // NOLINT Prakash
