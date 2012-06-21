@@ -165,20 +165,24 @@ int Routing::DoJoin(Functors functors) {
   rudp::MessageReceivedFunctor message_recieved(std::bind(&Routing::ReceiveMessage, this,
                                                           args::_1));
   rudp::ConnectionLostFunctor connection_lost(std::bind(&Routing::ConnectionLost, this, args::_1));
-  Endpoint local_endpoint;  // FIXME need to know my local endpoint on bootstrapping
   Endpoint bootstrap_endpoint(impl_->rudp_.Bootstrap(impl_->bootstrap_nodes_,
                                                      message_recieved,
-                                                     connection_lost,
-                                                     local_endpoint));  // FIXME
+                                                     connection_lost));
 
   if (bootstrap_endpoint.address().is_unspecified()) {
     LOG(kError) << "could not bootstrap.";
     return kNoOnlineBootstrapContacts;
   }
   LOG(kVerbose) << "Bootstrap successful, bootstrap node - " << bootstrap_endpoint;
+  rudp::EndpointPair endpoint_pair;
+  if (kSuccess != impl_->rudp_.GetAvailableEndpoint(bootstrap_endpoint, endpoint_pair)) {
+    LOG(kError) << " Failed to get available endpoint for new connections";
+    return kGeneralError;
+  }
+  LOG(kWarning) << " GetAvailableEndpoint for peer - " << bootstrap_endpoint << " my endpoint - " << endpoint_pair.external;
   impl_->message_handler_.set_bootstrap_endpoint(bootstrap_endpoint);
-  std::string find_node_rpc(rpcs::FindNodes(NodeId(impl_->keys_.identity),
-                                            Endpoint()).SerializeAsString());
+  std::string find_node_rpc(rpcs::FindNodes(NodeId(impl_->keys_.identity), NodeId(),
+                                            endpoint_pair.external).SerializeAsString());
   boost::promise<bool> message_sent_promise;
   auto message_sent_future = message_sent_promise.get_future();
   uint8_t attempt_count(0);
@@ -327,6 +331,8 @@ void Routing::ReceiveMessage(const std::string &message) {
                << " from " << HexSubstr(protobuf_message.source_id())
                << " I am " << HexSubstr(impl_->keys_.identity);
     impl_->message_handler_.ProcessMessage(protobuf_message);
+  } else {
+    LOG(kVerbose) << " Message received, failed to parse";
   }
 }
 
@@ -336,7 +342,9 @@ void Routing::ConnectionLost(const Endpoint &lost_endpoint) {
       (impl_->routing_table_.IsMyNodeInRange(node_info.node_id,
                                              Parameters::closest_nodes_size)))) {
     // close node, get more
-    SendOn(rpcs::FindNodes(NodeId(impl_->keys_.identity)), impl_->rudp_, impl_->routing_table_);
+    SendOn(rpcs::FindNodes(NodeId(impl_->keys_.identity),
+                           NodeId(impl_->keys_.identity)),
+                           impl_->rudp_, impl_->routing_table_);
   }
   if (!impl_->routing_table_.DropNode(lost_endpoint))
     return;
@@ -352,7 +360,9 @@ void Routing::ConnectionLost(const Endpoint &lost_endpoint) {
     if ((*it).endpoint ==  lost_endpoint) {
       impl_->direct_non_routing_table_connections_.erase(it);
       // close node, get more
-      SendOn(rpcs::FindNodes(NodeId(impl_->keys_.identity)), impl_->rudp_, impl_->routing_table_);
+      SendOn(rpcs::FindNodes(NodeId(impl_->keys_.identity),
+                             NodeId(impl_->keys_.identity)),
+                             impl_->rudp_, impl_->routing_table_);
       return;
     }
   }

@@ -66,7 +66,8 @@ TEST(RPC, BEH_ConnectMessageInitialised) {
   rudp::EndpointPair our_endpoint;
   our_endpoint.local = Endpoint(boost::asio::ip::address_v4::loopback(), GetRandomPort());
   our_endpoint.external = Endpoint(boost::asio::ip::address_v4::loopback(), GetRandomPort());
-  ASSERT_TRUE(rpcs::Connect(NodeId(RandomString(64)), our_endpoint, "id").IsInitialized());
+  ASSERT_TRUE(rpcs::Connect(NodeId(RandomString(64)), our_endpoint,
+                            NodeId(RandomString(64))).IsInitialized());
 }
 
 TEST(RPC, BEH_ConnectMessageNode) {
@@ -75,7 +76,7 @@ TEST(RPC, BEH_ConnectMessageNode) {
   endpoint.local = us.endpoint;
   endpoint.external = us.endpoint;
   std::string destination = RandomString(64);
-  protobuf::Message message = rpcs::Connect(NodeId(destination), endpoint, us.node_id.String());
+  protobuf::Message message = rpcs::Connect(NodeId(destination), endpoint, us.node_id);
   protobuf::ConnectRequest connect_request;
   EXPECT_TRUE(message.IsInitialized());
   EXPECT_TRUE(connect_request.ParseFromString(message.data()));  // us
@@ -95,13 +96,13 @@ TEST(RPC, BEH_ConnectMessageNode) {
 }
 
 TEST(RPC, BEH_FindNodesMessageInitialised) {
-  ASSERT_TRUE(rpcs::FindNodes(NodeId(RandomString(64))).IsInitialized());
+  ASSERT_TRUE(rpcs::FindNodes(NodeId(RandomString(64)), NodeId(RandomString(64))).IsInitialized());
 }
 
 TEST(RPC, BEH_FindNodesMessageNode) {
   NodeInfo us(MakeNode());
   std::string destination = RandomString(64);
-  protobuf::Message message = rpcs::FindNodes(us.node_id, us.endpoint);
+  protobuf::Message message = rpcs::FindNodes(us.node_id, us.node_id, us.endpoint);
   protobuf::FindNodesRequest find_nodes_request;
   EXPECT_TRUE(find_nodes_request.ParseFromString(message.data()));  // us
   EXPECT_TRUE(find_nodes_request.num_nodes_requested() == Parameters::closest_nodes_size);

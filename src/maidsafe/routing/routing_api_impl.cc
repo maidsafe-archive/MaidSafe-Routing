@@ -31,21 +31,21 @@ namespace routing {
 
 RoutingPrivate::RoutingPrivate(const asymm::Keys &keys,
                                bool client_mode)
-    : asio_service_(Concurrency()),
+    : asio_service_(new AsioService(Concurrency())),
       bootstrap_nodes_(),
       keys_(keys),
       functors_(),
       rudp_(),
       routing_table_(keys_, CloseNodeReplacedFunctor()),
-      timer_(asio_service_),
+      timer_(*asio_service_),
       waiting_for_response_(),
       direct_non_routing_table_connections_(),
-      message_handler_(routing_table_, rudp_, timer_, MessageReceivedFunctor(),
+      message_handler_(asio_service_, routing_table_, rudp_, timer_, MessageReceivedFunctor(),
                        NodeValidationFunctor()),
       joined_(false),
       bootstrap_file_path_(),
       client_mode_(client_mode) {
-  asio_service_.Start();
+  asio_service_->Start();
 }
 
 RoutingPrivate::~RoutingPrivate() {}

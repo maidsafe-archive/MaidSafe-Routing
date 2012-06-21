@@ -31,18 +31,32 @@ void SendOn(protobuf::Message message,
   asymm::Sign(message.data(), routing_table.kKeys().private_key, &signature);
   message.set_signature(signature);
   bool relay_and_i_am_closest(false);
+  bool has_relay_ip(false);
   LOG(kVerbose) << "endpoint.address().is_unspecified() -- " << endpoint.address().is_unspecified();
   bool direct_message(!endpoint.address().is_unspecified());
   if (!direct_message) {
+    LOG(kVerbose) << "message.has_relay()" << message.has_relay();
+    LOG(kVerbose) << "message.has_relay_id()" << message.has_relay_id();
+    LOG(kVerbose) << "routing_table.AmIClosest" << routing_table.AmIClosestNode(NodeId(message.destination_id()));
     relay_and_i_am_closest =
-        ((message.has_relay()) && (routing_table.AmIClosestNode(NodeId(message.destination_id()))));
+        ((message.has_relay_id()) && (routing_table.AmIClosestNode(NodeId(message.destination_id()))));
+    has_relay_ip = message.has_relay();
     if (relay_and_i_am_closest) {
+      //TODO(Prakash) find the endpoint of the node from my RT
+      //endpoint = Endpoint(boost::asio::ip::address::from_string(message.relay().ip()),
+      //                    static_cast<unsigned short>(message.relay().port()));
+      //LOG(kInfo) << "Sending to non routing table node message type : "
+      //           << message.type() << " message"
+      //           << " to " << HexSubstr(message.source_id())
+      //           << " From " << HexSubstr(routing_table.kKeys().identity);
+    } else if (has_relay_ip) {  // Message to new guy whose ID is not in anyones RT
       endpoint = Endpoint(boost::asio::ip::address::from_string(message.relay().ip()),
                           static_cast<unsigned short>(message.relay().port()));
       LOG(kInfo) << "Sending to non routing table node message type : "
                  << message.type() << " message"
                  << " to " << HexSubstr(message.source_id())
                  << " From " << HexSubstr(routing_table.kKeys().identity);
+
     } else if (routing_table.Size() > 0) {
       endpoint = routing_table.GetClosestNode(NodeId(message.destination_id()), 0).endpoint;
       LOG(kVerbose) << " Endpoint to send to routing table size > 0 " << endpoint;
@@ -62,7 +76,7 @@ void SendOn(protobuf::Message message,
   rudp::MessageSentFunctor message_sent_functor = [&](bool message_sent) {
       if (!message_sent) {
         ++attempt_count;
-        if (relay_and_i_am_closest || direct_message) {  //  retry only once in this case
+        if (relay_and_i_am_closest || direct_message || has_relay_ip) {  //  retry only once
           if (attempt_count == 1) {
             rudp.Send(endpoint, serialised_message, message_sent_functor);
           } else {
@@ -84,7 +98,7 @@ void SendOn(protobuf::Message message,
         LOG(kInfo) << " Send succeeded at attempt " << attempt_count;
       }
     };
-  LOG(kVerbose) << " >>>>>> rudp send message to " << endpoint << " <<<<<<<<<<<";
+  LOG(kVerbose) << " >>>>>>>>>>>>>>> rudp send message to " << endpoint << " <<<<<<<<<<<<<<<<<<<<";
   rudp.Send(endpoint, serialised_message, message_sent_functor);
 }
 

@@ -32,9 +32,11 @@ const protobuf::Message Ping(const NodeId &node_id,
 
 const protobuf::Message Connect(const NodeId &node_id,
                                 const rudp::EndpointPair &our_endpoint,
-                                const std::string &identity);
+                                const NodeId &my_node_id,
+                                Endpoint local_endpoint = Endpoint());
 
 const protobuf::Message FindNodes(const NodeId &node_id,
+                                  const NodeId &my_node_id,
                                   Endpoint local_endpoint = Endpoint());
 
 const protobuf::Message ProxyConnect(const NodeId &node_id,

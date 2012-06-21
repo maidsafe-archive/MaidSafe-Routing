@@ -22,6 +22,7 @@
 #include "maidsafe/routing/parameters.h"
 #include "maidsafe/routing/routing_pb.h"
 #include "maidsafe/routing/routing_table.h"
+#include "maidsafe/routing/utils.h"
 
 namespace maidsafe {
 
@@ -59,7 +60,8 @@ void Ping(RoutingTable &routing_table, protobuf::Message &message) {
 void Connect(RoutingTable &routing_table,
              rudp::ManagedConnections &rudp,
              protobuf::Message &message,
-             NodeValidationFunctor node_validation_functor) {
+             NodeValidationFunctor node_validation_functor,
+             std::shared_ptr<AsioService> asio_service) {
   if (message.destination_id() != routing_table.kKeys().identity) {
     LOG(kVerbose) << "Connect -- not for us and we should not pass it on.";
     return;  // not for us and we should not pass it on.
@@ -96,7 +98,7 @@ void Connect(RoutingTable &routing_table,
     LOG(kVerbose) << "Unable to get available endpoint to connect to" << their_public_endpoint;
     return;
   }
-
+  LOG(kWarning) << " GetAvailableEndpoint for peer - " << their_public_endpoint << " my endpoint - " << our_endpoint_pair.external;
   // TODO(dirvine) try both connections
   if (message.client_node()) {
     connect_response.set_answer(true);
@@ -111,11 +113,12 @@ void Connect(RoutingTable &routing_table,
   if ((routing_table.CheckNode(node)) && (!message.client_node())) {
     connect_response.set_answer(true);
     LOG(kVerbose) << "CheckNode(node) successfull!";
-    if(node_validation_functor)
-      node_validation_functor(NodeId(connect_response.contact().node_id()),
-                              their_endpoint_pair,
-                              our_endpoint_pair,
-                              message.client_node());
+
+    asio_service->service().post(std::bind(node_validation_functor,
+                                           NodeId(connect_request.contact().node_id()),
+                                           their_endpoint_pair,
+                                           our_endpoint_pair,
+                                           message.client_node()));
   }
 
   protobuf::Contact *contact;
@@ -138,6 +141,13 @@ void Connect(RoutingTable &routing_table,
   message.set_direct(true);
   message.set_replication(1);
   message.set_type(-2);
+  if (!message.has_relay()) {
+    message.set_relay_id(connect_request.contact().node_id());
+  }
+  protobuf::Endpoint *pbendpoint;
+  pbendpoint = message.mutable_relay();
+  pbendpoint->set_ip(their_public_endpoint.address().to_string().c_str());
+  pbendpoint->set_port(their_public_endpoint.port());
   assert(message.IsInitialized() && "unintialised message");
 }
 

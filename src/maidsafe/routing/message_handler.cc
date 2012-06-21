@@ -35,12 +35,14 @@ namespace routing {
 
 class Timer;
 
-MessageHandler::MessageHandler(RoutingTable &routing_table,
+MessageHandler::MessageHandler(std::shared_ptr<AsioService> asio_service,
+                               RoutingTable &routing_table,
                                rudp::ManagedConnections &rudp,
                                Timer &timer_ptr,
                                MessageReceivedFunctor message_received_functor,
                                NodeValidationFunctor node_validation_functor)
-    : routing_table_(routing_table),
+    : asio_service_(asio_service),
+      routing_table_(routing_table),
       rudp_(rudp),
       bootstrap_endpoint_(),
       timer_ptr_(timer_ptr),
@@ -79,10 +81,10 @@ void MessageHandler::RoutingMessage(protobuf::Message& message) {
       service::Ping(routing_table_, message);
       break;
     case -2 :  // connect
-      response::Connect(message, node_validation_functor_);
+      response::Connect(message, node_validation_functor_, asio_service_);
       break;
     case 2 :
-      service::Connect(routing_table_, rudp_, message, node_validation_functor_);
+      service::Connect(routing_table_, rudp_, message, node_validation_functor_, asio_service_);
       break;
     case -3 :  // find_nodes
       response::FindNode(routing_table_, rudp_, message, bootstrap_endpoint_);
@@ -110,13 +112,13 @@ void MessageHandler::RoutingMessage(protobuf::Message& message) {
 }
 
 void MessageHandler::DirectMessage(protobuf::Message& message) {
-  if ((message.has_relay()) && (message.relay_id() != routing_table_.kKeys().identity)) {
+  if ((message.has_relay_id()) && (message.relay_id() != routing_table_.kKeys().identity)) {
     LOG(kVerbose) <<"MessageHandler::DirectMessage -- message.has_relay and relay id is not me";
-    Endpoint send_to_endpoint;
-    send_to_endpoint.address(boost::asio::ip::address::from_string(message.relay().ip()));
-    send_to_endpoint.port(static_cast<unsigned short>(message.relay().port()));
-    rudp::MessageSentFunctor message_sent_functor; // TODO (FIXME)
-    rudp_.Send(send_to_endpoint, message.SerializeAsString(), message_sent_functor);
+    //Endpoint send_to_endpoint; // TODO(Prakash): FIXME
+    //send_to_endpoint.address(boost::asio::ip::address::from_string(message.relay().ip()));
+    //send_to_endpoint.port(static_cast<unsigned short>(message.relay().port()));
+    //rudp::MessageSentFunctor message_sent_functor; // TODO (FIXME)
+    //rudp_.Send(send_to_endpoint, message.SerializeAsString(), message_sent_functor);
    }
   if ((message.type() < 100) && (message.type() > -100)) {
     LOG(kVerbose) <<"RoutingMessage type";

@@ -45,7 +45,8 @@ void Ping(protobuf::Message& message) {
 
 // the other node agreed to connect - he has accepted our connection
 void Connect(protobuf::Message& message,
-             NodeValidationFunctor node_validation_functor) {
+             NodeValidationFunctor node_validation_functor,
+             std::shared_ptr<AsioService> asio_service) {
   protobuf::ConnectResponse connect_response;
   protobuf::ConnectRequest connect_request;
   if (!connect_response.ParseFromString(message.data())) {
@@ -78,14 +79,13 @@ void Connect(protobuf::Message& message,
       boost::asio::ip::address::from_string(connect_response.contact().private_endpoint().ip()));
   their_endpoint_pair.local.port(
       static_cast<unsigned short>(connect_response.contact().private_endpoint().port()));
-  // TODO(dirvine) FIXME
-  LOG(kVerbose) << "**********************************Firing validation callback their endpoint "
-                << their_endpoint_pair.external << ", our endpoint "<< our_endpoint_pair.external;
-  if (node_validation_functor)  // never add any node to routing table
-    node_validation_functor(NodeId(connect_response.contact().node_id()),
-                            their_endpoint_pair,
-                            our_endpoint_pair,
-                            message.client_node());
+  if (node_validation_functor) {
+    asio_service->service().post(std::bind(node_validation_functor,
+                                           NodeId(connect_response.contact().node_id()),
+                                           their_endpoint_pair,
+                                           our_endpoint_pair,
+                                           message.client_node()));
+  }
 }
 
 void FindNode(RoutingTable &routing_table,
@@ -123,10 +123,10 @@ void FindNode(RoutingTable &routing_table,
         LOG(kWarning) << " Failed to get available endpoint for new connections";
         return;
       }
-      LOG(kVerbose) << " rudp.GetAvailableEndpoint " << endpoint.external << endpoint.local;
+      LOG(kWarning) << " GetAvailableEndpoint for peer - " << direct_endpoint << " my endpoint - " << endpoint.external;
       SendOn(rpcs::Connect(NodeId(find_nodes.nodes(i)),
                            endpoint,
-                           routing_table.kKeys().identity),
+                           NodeId(routing_table.kKeys().identity)),
              rudp,
              routing_table,
              direct_endpoint);

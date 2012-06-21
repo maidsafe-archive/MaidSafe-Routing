@@ -33,7 +33,8 @@ void Ping(RoutingTable &routing_table,
 void Connect(RoutingTable &routing_table,
              rudp::ManagedConnections &rudp,
              protobuf::Message &message,
-             NodeValidationFunctor node_validation_functor);
+             NodeValidationFunctor node_validation_functor,
+             std::shared_ptr<AsioService> asio_service);
 void FindNodes(RoutingTable &routing_table,
               protobuf::Message &message);
 void ProxyConnect(RoutingTable &routing_table,

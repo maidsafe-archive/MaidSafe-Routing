@@ -69,10 +69,11 @@ TEST(Services, BEH_Connect) {
   them_end.local = them.endpoint;
   them_end.external = them.endpoint;
   // they send us an rpc
-  protobuf::Message message = rpcs::Connect(us.node_id, them_end, them.node_id.String());
+  protobuf::Message message = rpcs::Connect(us.node_id, them_end, them.node_id);
   EXPECT_TRUE(message.IsInitialized());
   // we receive it
-  service::Connect(RT, rudp, message, NodeValidationFunctor());
+  std::shared_ptr<AsioService> asio_service;
+  service::Connect(RT, rudp, message, NodeValidationFunctor(), asio_service);
   protobuf::ConnectResponse connect_response;
   EXPECT_TRUE(connect_response.ParseFromString(message.data()));  // us
   EXPECT_TRUE(connect_response.answer());
@@ -98,7 +99,7 @@ TEST(Services, BEH_FindNodes) {
   keys.identity = us.node_id.String();
   keys.public_key = us.public_key;
   RoutingTable RT(keys, nullptr);
-  protobuf::Message message = rpcs::FindNodes(us.node_id, us.endpoint);
+  protobuf::Message message = rpcs::FindNodes(us.node_id, us.node_id, us.endpoint);
   service::FindNodes(RT, message);
   protobuf::FindNodesResponse find_nodes_respose;
   EXPECT_TRUE(find_nodes_respose.ParseFromString(message.data()));

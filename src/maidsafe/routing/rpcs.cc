@@ -47,9 +47,9 @@ const protobuf::Message Ping(const NodeId &node_id, const std::string &identity)
 }
 
 const protobuf::Message Connect(const NodeId &node_id, const rudp::EndpointPair &our_endpoint,
-                                const std::string &identity) {
+                                const NodeId &my_node_id, Endpoint local_endpoint) {
   assert(node_id.IsValid() && "Invalid node_id");
-  assert(!identity.empty() && "Invalid identity");
+  assert(my_node_id.IsValid() && "Invalid my node_id");
  // BOOST_ASSERT_MSG(!our_endpoint.external.address().is_unspecified(), "Unspecified endpoint");
 //  BOOST_ASSERT_MSG(!our_endpoint.local.address().is_unspecified(), "Unspecified endpoint");
   protobuf::Message message;
@@ -64,10 +64,10 @@ const protobuf::Message Connect(const NodeId &node_id, const rudp::EndpointPair 
   private_endpoint = contact->mutable_private_endpoint();
   private_endpoint->set_ip(our_endpoint.local.address().to_string());
   private_endpoint->set_port(our_endpoint.local.port());
-  contact->set_node_id(identity);
+  contact->set_node_id(my_node_id.String());
   protobuf_connect_request.set_timestamp(GetTimeStamp());
   message.set_destination_id(node_id.String());
-  message.set_source_id(identity);
+  message.set_source_id(my_node_id.String());
   message.set_data(protobuf_connect_request.SerializeAsString());
   message.set_direct(true);
   message.set_replication(1);
@@ -75,11 +75,20 @@ const protobuf::Message Connect(const NodeId &node_id, const rudp::EndpointPair 
   message.set_routing_failure(false);
   message.set_id(0);
   message.set_client_node(false);
+  if (!local_endpoint.address().is_unspecified()) {  // I am not in anyones RT yet
+    LOG(kInfo) << "Connect RPC has relay ip : " << local_endpoint;
+    protobuf::Endpoint *pbendpoint;
+    pbendpoint = message.mutable_relay();
+    pbendpoint->set_ip(local_endpoint.address().to_string().c_str());
+    pbendpoint->set_port(local_endpoint.port());
+  } else {  // I am in someones RT
+    message.set_relay_id(my_node_id.String());
+  }
   assert(message.IsInitialized() && "Unintialised message");
   return message;
 }
 
-const protobuf::Message FindNodes(const NodeId &node_id, Endpoint endpoint) {
+const protobuf::Message FindNodes(const NodeId &node_id, const NodeId &my_node_id, Endpoint local_endpoint) {
   assert(node_id.IsValid() && "Invalid node_id");
   protobuf::Message message;
   protobuf::FindNodesRequest find_nodes;
@@ -89,7 +98,7 @@ const protobuf::Message FindNodes(const NodeId &node_id, Endpoint endpoint) {
   message.set_source_id(node_id.String());
   message.set_destination_id(node_id.String());
   message.set_last_id(node_id.String());
-  message.set_relay_id(node_id.String());
+//  message.set_relay_id(node_id.String());
   message.set_data(find_nodes.SerializeAsString());
   message.set_direct(false);
   message.set_replication(1);
@@ -97,12 +106,14 @@ const protobuf::Message FindNodes(const NodeId &node_id, Endpoint endpoint) {
   message.set_routing_failure(false);
   message.set_id(0);
   message.set_client_node(false);
-  if (!endpoint.address().is_unspecified()) {
-    LOG(kInfo) << "RPC IP Address " << endpoint.address().to_string();
+  if (!local_endpoint.address().is_unspecified()) {    // I am not in anyones RT yet
+    LOG(kInfo) << "FindNode RPC has relay ip : " << local_endpoint;
     protobuf::Endpoint *pbendpoint;
     pbendpoint = message.mutable_relay();
-    pbendpoint->set_ip(endpoint.address().to_string().c_str());
-    pbendpoint->set_port(endpoint.port());
+    pbendpoint->set_ip(local_endpoint.address().to_string().c_str());
+    pbendpoint->set_port(local_endpoint.port());
+  } else {  // I am in someones RT
+    message.set_relay_id(my_node_id.String());
   }
   assert(message.IsInitialized() && "Unintialised message");
   return message;

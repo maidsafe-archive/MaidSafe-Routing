@@ -43,7 +43,7 @@ struct RoutingPrivate {
   RoutingPrivate& operator=(const RoutingPrivate&);  // no assign
   RoutingPrivate(const asymm::Keys &keys, bool client_mode);
   friend class Routing;
-  AsioService asio_service_;
+  std::shared_ptr<AsioService> asio_service_;
   std::vector<Endpoint> bootstrap_nodes_;
   const asymm::Keys keys_;
   Functors functors_;

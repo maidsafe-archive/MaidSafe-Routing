@@ -34,7 +34,8 @@ class CacheManager;
 
 class MessageHandler {
  public:
-  MessageHandler(RoutingTable &routing_table,
+  MessageHandler(std::shared_ptr<AsioService> asio_service,
+                 RoutingTable &routing_table,
                  rudp::ManagedConnections &rudp,
                  Timer &timer_ptr,
                  MessageReceivedFunctor message_received_functor,
@@ -57,6 +58,7 @@ class MessageHandler {
   MessageHandler(const MessageHandler&);  // no copy
   MessageHandler(const MessageHandler&&);  // no move
   MessageHandler& operator=(const MessageHandler&);  // no assign
+  std::shared_ptr<AsioService> asio_service_;
   RoutingTable &routing_table_;
   rudp::ManagedConnections &rudp_;
   Endpoint bootstrap_endpoint_;
