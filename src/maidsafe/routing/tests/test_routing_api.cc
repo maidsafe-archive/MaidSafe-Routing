@@ -145,7 +145,7 @@ TEST(APITest, BEH_API_ZeroState) {
     } else {
       LOG(kVerbose) << "node_validation called for " << HexSubstr(node_id.String());
       if (node_id == NodeId(keys3.identity))
-        R2.ValidateThisNode(node_id, keys1.public_key, their_endpoint, our_endpoint, client);
+        R2.ValidateThisNode(node_id, keys3.public_key, their_endpoint, our_endpoint, client);
     }
   };
   Endpoint endpoint1(GetLocalIp(), 5000);

@@ -143,11 +143,12 @@ void Connect(RoutingTable &routing_table,
   message.set_type(-2);
   if (!message.has_relay()) {
     message.set_relay_id(connect_request.contact().node_id());
+  } else {
+    protobuf::Endpoint *pbendpoint;
+    pbendpoint = message.mutable_relay();
+    pbendpoint->set_ip(their_public_endpoint.address().to_string().c_str());
+    pbendpoint->set_port(their_public_endpoint.port());
   }
-  protobuf::Endpoint *pbendpoint;
-  pbendpoint = message.mutable_relay();
-  pbendpoint->set_ip(their_public_endpoint.address().to_string().c_str());
-  pbendpoint->set_port(their_public_endpoint.port());
   assert(message.IsInitialized() && "unintialised message");
 }
 

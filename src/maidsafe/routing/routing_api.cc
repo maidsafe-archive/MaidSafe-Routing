@@ -319,6 +319,11 @@ void Routing::ValidateThisNode(const NodeId& node_id,
         impl_->bootstrap_nodes_.erase(impl_->bootstrap_nodes_.begin());
       impl_->bootstrap_nodes_.push_back(their_endpoint.external);
       WriteBootstrapFile(impl_->bootstrap_nodes_, impl_->bootstrap_file_path_);
+    } else {
+      LOG(kVerbose) << "Add node to routing table failed. node id "
+                    << HexSubstr(node_id.String())
+                    << " just added rudp connection will be removed now";
+      impl_->rudp_.Remove(their_endpoint.external);
     }
   }
 }
