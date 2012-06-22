@@ -99,7 +99,7 @@ TEST(Services, BEH_FindNodes) {
   keys.identity = us.node_id.String();
   keys.public_key = us.public_key;
   RoutingTable RT(keys, nullptr);
-  protobuf::Message message = rpcs::FindNodes(us.node_id, us.node_id, us.endpoint);
+  protobuf::Message message = rpcs::FindNodes(us.node_id, us.node_id);
   service::FindNodes(RT, message);
   protobuf::FindNodesResponse find_nodes_respose;
   EXPECT_TRUE(find_nodes_respose.ParseFromString(message.data()));

@@ -47,9 +47,12 @@ class MessageHandler {
   void GroupMessage(protobuf::Message &message);
   bool CheckCacheData(protobuf::Message &message);
   bool CheckAndSendToLocalClients(protobuf::Message &message);
+  void SwapWithMySourceIdIfNeeded(protobuf::Message &message);
+  bool RelayDirectMessageIfNeeded(protobuf::Message &message);
   void Send(protobuf::Message &message);
   bs2::signal<void(int, std::string)> &MessageReceivedSignal();
   void set_bootstrap_endpoint(Endpoint endpoint);
+  void set_my_relay_endpoint(Endpoint endpoint);
   void set_message_received_functor(MessageReceivedFunctor message_received);
   void set_node_validation_functor(NodeValidationFunctor node_validation);
   Endpoint bootstrap_endpoint();
@@ -62,6 +65,7 @@ class MessageHandler {
   RoutingTable &routing_table_;
   rudp::ManagedConnections &rudp_;
   Endpoint bootstrap_endpoint_;
+  Endpoint my_relay_endpoint_;
   Timer &timer_ptr_;
   CacheManager cache_manager_;
   MessageReceivedFunctor message_received_functor_;

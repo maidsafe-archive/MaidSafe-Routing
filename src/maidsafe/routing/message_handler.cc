@@ -45,6 +45,7 @@ MessageHandler::MessageHandler(std::shared_ptr<AsioService> asio_service,
       routing_table_(routing_table),
       rudp_(rudp),
       bootstrap_endpoint_(),
+      my_relay_endpoint_(),
       timer_ptr_(timer_ptr),
       cache_manager_(),
       message_received_functor_(message_received_functor),
@@ -112,20 +113,17 @@ void MessageHandler::RoutingMessage(protobuf::Message& message) {
 }
 
 void MessageHandler::DirectMessage(protobuf::Message& message) {
-  if ((message.has_relay_id()) && (message.relay_id() != routing_table_.kKeys().identity)) {
-    LOG(kVerbose) <<"MessageHandler::DirectMessage -- message.has_relay and relay id is not me";
-    //Endpoint send_to_endpoint; // TODO(Prakash): FIXME
-    //send_to_endpoint.address(boost::asio::ip::address::from_string(message.relay().ip()));
-    //send_to_endpoint.port(static_cast<unsigned short>(message.relay().port()));
-    //rudp::MessageSentFunctor message_sent_functor; // TODO (FIXME)
-    //rudp_.Send(send_to_endpoint, message.SerializeAsString(), message_sent_functor);
-   }
+  if (RelayDirectMessageIfNeeded(message)) {
+    return;
+  }
+  LOG(kVerbose) <<"Direct Message for me!!!";
   if ((message.type() < 100) && (message.type() > -100)) {
-    LOG(kVerbose) <<"RoutingMessage type";
+    LOG(kVerbose) <<"Direct RoutingMessage type";
     RoutingMessage(message);
     return;
   }
   if (message.type() > 100) {  // request
+    LOG(kVerbose) <<"Direct Node Message type";
     ReplyFunctor response_functor = [&](const std::string& reply_message)  {
         if (!reply_message.empty()) {
          // TODO(Prakash): To add rudp send for replying to the message
@@ -193,7 +191,7 @@ void MessageHandler::ProcessMessage(protobuf::Message &message) {
   }
   // message for me !
   if (message.destination_id() == routing_table_.kKeys().identity) {
-    LOG(kVerbose) << "message for me !";
+    LOG(kVerbose) << "Direct message!";
     DirectMessage(message);
     return;
   }
@@ -216,6 +214,47 @@ void MessageHandler::ProcessMessage(protobuf::Message &message) {
   }
   // default
   SendOn(message, rudp_, routing_table_);
+}
+
+void MessageHandler::SwapWithMySourceIdIfNeeded(protobuf::Message &message) {
+  if(message.has_source_id())
+    return;
+  if (message.has_relay()) {
+    message.set_source_id(routing_table_.kKeys().identity);
+  } else if(message.has_relay_id()) {
+    message.set_source_id(routing_table_.kKeys().identity);
+    // TODO(Prakash): Add this node to my non RT
+  }
+}
+
+bool MessageHandler::RelayDirectMessageIfNeeded(protobuf::Message &message) {
+  if (message.type() < 0) { //  Only direct responses need to be relayed
+    Endpoint relay_endpoint;
+    if ((message.has_relay_id()) && (message.relay_id() != routing_table_.kKeys().identity)) {
+      LOG(kVerbose) <<"DirectMessage -- message has_relay_id and relay id is not me";
+      bool i_am_connected_to_relay_id_node(false); //TODO(Prakash): FIXME if relay_id in RT and NRT
+      if (i_am_connected_to_relay_id_node) {
+        relay_endpoint = Endpoint(); //TODO(Prakash): Find relay id in my RT & non RT
+        message.set_destination_id(message.relay_id());
+        SendOn(message, rudp_, routing_table_, relay_endpoint);
+        return true;
+      } else {
+        LOG(kVerbose) <<"DirectMessage - Droping message with relay id not in my RT & NRT.";
+        return true;
+      }
+    } else if (message.has_relay()) {  // node with unpublished node_id
+      relay_endpoint.address(boost::asio::ip::address::from_string(message.relay().ip()));
+      relay_endpoint.port(static_cast<unsigned short>(message.relay().port()));
+      LOG(kVerbose) << "has relay ip " << relay_endpoint << ", my relay ip " << my_relay_endpoint_;
+      if (relay_endpoint != my_relay_endpoint_) {
+        LOG(kVerbose) <<"DirectMessage -- replying to the relay_endpoint.";
+        message.set_destination_id(NodeId().String());
+        SendOn(message, rudp_, routing_table_, relay_endpoint);
+        return true;
+      }
+    }
+  }
+  return false;
 }
 
 // // TODO(dirvine) implement client handler
@@ -245,6 +284,10 @@ void MessageHandler::set_node_validation_functor(NodeValidationFunctor node_vali
 
 void MessageHandler::set_bootstrap_endpoint(Endpoint endpoint) {
   bootstrap_endpoint_ = endpoint;
+}
+
+void MessageHandler::set_my_relay_endpoint(Endpoint endpoint) {
+  my_relay_endpoint_ = endpoint;
 }
 
 Endpoint MessageHandler::bootstrap_endpoint() {

@@ -32,7 +32,6 @@ void SendOn(protobuf::Message message,
   message.set_signature(signature);
   bool relay_and_i_am_closest(false);
   bool has_relay_ip(false);
-  LOG(kVerbose) << "endpoint.address().is_unspecified() -- " << endpoint.address().is_unspecified();
   bool direct_message(!endpoint.address().is_unspecified());
   if (!direct_message) {
     LOG(kVerbose) << "message.has_relay()" << message.has_relay();
@@ -43,12 +42,7 @@ void SendOn(protobuf::Message message,
     has_relay_ip = message.has_relay();
     if (relay_and_i_am_closest) {
       //TODO(Prakash) find the endpoint of the node from my RT
-      //endpoint = Endpoint(boost::asio::ip::address::from_string(message.relay().ip()),
-      //                    static_cast<unsigned short>(message.relay().port()));
-      //LOG(kInfo) << "Sending to non routing table node message type : "
-      //           << message.type() << " message"
-      //           << " to " << HexSubstr(message.source_id())
-      //           << " From " << HexSubstr(routing_table.kKeys().identity);
+      endpoint = Endpoint();
     } else if (has_relay_ip) {  // Message to new guy whose ID is not in anyones RT
       endpoint = Endpoint(boost::asio::ip::address::from_string(message.relay().ip()),
                           static_cast<unsigned short>(message.relay().port()));

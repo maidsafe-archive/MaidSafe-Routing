@@ -181,7 +181,10 @@ int Routing::DoJoin(Functors functors) {
   }
   LOG(kWarning) << " GetAvailableEndpoint for peer - " << bootstrap_endpoint << " my endpoint - " << endpoint_pair.external;
   impl_->message_handler_.set_bootstrap_endpoint(bootstrap_endpoint);
-  std::string find_node_rpc(rpcs::FindNodes(NodeId(impl_->keys_.identity), NodeId(),
+  impl_->message_handler_.set_my_relay_endpoint(endpoint_pair.external);
+
+  std::string find_node_rpc(rpcs::FindNodes(NodeId(impl_->keys_.identity),
+                                            NodeId(impl_->keys_.identity),
                                             endpoint_pair.external).SerializeAsString());
   boost::promise<bool> message_sent_promise;
   auto message_sent_future = message_sent_promise.get_future();
@@ -242,6 +245,7 @@ int Routing::DoZeroStateJoin(Functors functors, Endpoint peer_endpoint, Endpoint
   assert((bootstrap_endpoint == peer_endpoint) && "This should be only used in zero state network");
   LOG(kVerbose) << local_endpoint << " Bootstraped with remote endpoint " << bootstrap_endpoint;
   impl_->message_handler_.set_bootstrap_endpoint(bootstrap_endpoint);
+  impl_->message_handler_.set_my_relay_endpoint(local_endpoint);
   rudp::EndpointPair their_endpoint_pair;  //  zero state nodes must be directly connected endpoint
   rudp::EndpointPair our_endpoint_pair;
   their_endpoint_pair.external = their_endpoint_pair.local = bootstrap_endpoint;

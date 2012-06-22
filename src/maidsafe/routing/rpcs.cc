@@ -82,23 +82,23 @@ const protobuf::Message Connect(const NodeId &node_id, const rudp::EndpointPair 
     pbendpoint->set_ip(local_endpoint.address().to_string().c_str());
     pbendpoint->set_port(local_endpoint.port());
   } else {  // I am in someones RT
-    message.set_relay_id(my_node_id.String());
+    //message.set_relay_id(my_node_id.String());TODO(Prakash): set relay_id on request
   }
   assert(message.IsInitialized() && "Unintialised message");
   return message;
 }
 
-const protobuf::Message FindNodes(const NodeId &node_id, const NodeId &my_node_id, Endpoint local_endpoint) {
+const protobuf::Message FindNodes(const NodeId &node_id, const NodeId &my_node_id,
+                                  Endpoint local_endpoint) {
   assert(node_id.IsValid() && "Invalid node_id");
   protobuf::Message message;
   protobuf::FindNodesRequest find_nodes;
   find_nodes.set_num_nodes_requested(Parameters::closest_nodes_size);
   find_nodes.set_target_node(node_id.String());
   find_nodes.set_timestamp(GetTimeStamp());
-  message.set_source_id(node_id.String());
+  message.set_source_id(my_node_id.String());
+  message.set_last_id(my_node_id.String());
   message.set_destination_id(node_id.String());
-  message.set_last_id(node_id.String());
-//  message.set_relay_id(node_id.String());
   message.set_data(find_nodes.SerializeAsString());
   message.set_direct(false);
   message.set_replication(1);
@@ -112,8 +112,8 @@ const protobuf::Message FindNodes(const NodeId &node_id, const NodeId &my_node_i
     pbendpoint = message.mutable_relay();
     pbendpoint->set_ip(local_endpoint.address().to_string().c_str());
     pbendpoint->set_port(local_endpoint.port());
-  } else {  // I am in someones RT
-    message.set_relay_id(my_node_id.String());
+  } else {  // I am in someones RT  TODO(Prakash): set relay_id on request
+    //message.set_relay_id(my_node_id.String());
   }
   assert(message.IsInitialized() && "Unintialised message");
   return message;
