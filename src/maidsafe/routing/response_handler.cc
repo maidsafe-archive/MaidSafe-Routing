@@ -115,7 +115,7 @@ void FindNode(RoutingTable &routing_table,
       LOG(kVerbose) << " CheckNode succeeded for node "
                     << HexSubstr(node_to_add.node_id.String());
       Endpoint direct_endpoint;
-      if (routing_table.Size() == 0)  // Joining the network
+      if (routing_table.Size() == 0)  // Joining the network, and may connect to bootstrapping node.
         direct_endpoint = bootstrap_endpoint;
       rudp::EndpointPair endpoint;
       LOG(kVerbose) << " calling rudp.GetAvailableEndpoint now ....";
@@ -124,9 +124,14 @@ void FindNode(RoutingTable &routing_table,
         return;
       }
       LOG(kWarning) << " GetAvailableEndpoint for peer - " << direct_endpoint << " my endpoint - " << endpoint.external;
+      Endpoint relay_endpoint;
+      if (routing_table.Size() == 0)  // Not in anyones RT, need a path back through relay ip.
+        relay_endpoint = endpoint.external;
+
       SendOn(rpcs::Connect(NodeId(find_nodes.nodes(i)),
                            endpoint,
-                           NodeId(routing_table.kKeys().identity)),
+                           NodeId(routing_table.kKeys().identity),
+                           relay_endpoint),
              rudp,
              routing_table,
              direct_endpoint);
