@@ -61,6 +61,7 @@ class MessageHandler {
   MessageHandler(const MessageHandler&);  // no copy
   MessageHandler(const MessageHandler&&);  // no move
   MessageHandler& operator=(const MessageHandler&);  // no assign
+  void MessageForMe(protobuf::Message &message);
   std::shared_ptr<AsioService> asio_service_;
   RoutingTable &routing_table_;
   rudp::ManagedConnections &rudp_;

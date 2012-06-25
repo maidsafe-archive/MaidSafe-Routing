@@ -110,7 +110,7 @@ TEST(APITest, BEH_API_ManualBootstrap) {
   EXPECT_EQ(kSuccess, R2.GetStatus());
 //  EXPECT_TRUE(boost::filesystem::remove(node1_config));
 //  EXPECT_TRUE(boost::filesystem::remove(node2_config));
-}
+}/*
 
 TEST(APITest, BEH_API_ZeroState) {
   asymm::Keys keys1(MakeKeys());
@@ -121,7 +121,7 @@ TEST(APITest, BEH_API_ZeroState) {
   Routing R3(keys3, false);
   bool zero_state1(true), zero_state2(true);
   Functors functors1, functors2, functors3;
-  functors1.node_validation = [&](const NodeId& /*node_id*/,
+  functors1.node_validation = [&](const NodeId& node_id,
                                   const rudp::EndpointPair& their_endpoint,
                                   const rudp::EndpointPair& our_endpoint,
                                   const bool& client) {
@@ -184,7 +184,7 @@ TEST(APITest, BEH_API_ZeroState) {
 ////  }
 //  // TODO(dirvine) do this properly !!!
 //
-//}
+//}*/
 
 }  // namespace test
 

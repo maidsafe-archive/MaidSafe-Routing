@@ -36,7 +36,6 @@
 #include "maidsafe/routing/node_id.h"
 #include "maidsafe/routing/api_config.h"
 
-
 namespace maidsafe {
 
 namespace routing {
@@ -89,11 +88,7 @@ class Routing {
   * This method should be called by the user in response to                  *
   * NodeValidateFunctor to add the node in routing table.                    *
   ***************************************************************************/
-  void ValidateThisNode(const NodeId& node_id,
-                        const asymm::PublicKey &public_key,
-                        const rudp::EndpointPair &their_endpoint,
-                        const rudp::EndpointPair &our_endpoint,
-                        const bool &client);
+
 
  private:
   Routing(const Routing&);
@@ -107,7 +102,7 @@ class Routing {
   int DoZeroStateJoin(Functors functors, Endpoint peer_endpoint, Endpoint local_endpoint);
   void ReceiveMessage(const std::string &message);
   void ConnectionLost(const Endpoint &lost_endpoint);
-  void CheckBootStrapFilePath();
+  bool CheckBootStrapFilePath();
   std::unique_ptr<RoutingPrivate> impl_;  // pimpl (data members only)
 };
 

@@ -44,9 +44,10 @@ void Ping(protobuf::Message& message) {
 }
 
 // the other node agreed to connect - he has accepted our connection
-void Connect(protobuf::Message& message,
-             NodeValidationFunctor node_validation_functor,
-             std::shared_ptr<AsioService> asio_service) {
+void Connect(RoutingTable &routing_table,
+             rudp::ManagedConnections &rudp,
+             protobuf::Message& message,
+             NodeValidationFunctor node_validation_functor) {
   protobuf::ConnectResponse connect_response;
   protobuf::ConnectRequest connect_request;
   if (!connect_response.ParseFromString(message.data())) {
@@ -80,11 +81,18 @@ void Connect(protobuf::Message& message,
   their_endpoint_pair.local.port(
       static_cast<unsigned short>(connect_response.contact().private_endpoint().port()));
   if (node_validation_functor) {
-    asio_service->service().post(std::bind(node_validation_functor,
-                                           NodeId(connect_response.contact().node_id()),
-                                           their_endpoint_pair,
-                                           our_endpoint_pair,
-                                           message.client_node()));
+    auto validate_node = [=, &routing_table, &rudp] (const asymm::PublicKey &key)
+    {
+    LOG(kInfo) << "NEED TO VALIDATE THE NODE HERE";
+      ValidateThisNode(rudp,
+                       routing_table,
+                       NodeId(connect_response.contact().node_id()),
+                       key,
+                       their_endpoint_pair,
+                       our_endpoint_pair,
+                       false);
+    };
+    node_validation_functor(NodeId(connect_response.contact().node_id()), validate_node);
   }
 }
 

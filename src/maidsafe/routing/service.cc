@@ -60,8 +60,7 @@ void Ping(RoutingTable &routing_table, protobuf::Message &message) {
 void Connect(RoutingTable &routing_table,
              rudp::ManagedConnections &rudp,
              protobuf::Message &message,
-             NodeValidationFunctor node_validation_functor,
-             std::shared_ptr<AsioService> asio_service) {
+             NodeValidationFunctor node_validation_functor) {
   if (message.destination_id() != routing_table.kKeys().identity) {
     LOG(kVerbose) << "Connect -- not for us and we should not pass it on.";
     return;  // not for us and we should not pass it on.
@@ -101,24 +100,25 @@ void Connect(RoutingTable &routing_table,
   LOG(kWarning) << " GetAvailableEndpoint for peer - " << their_public_endpoint << " my endpoint - " << our_endpoint_pair.external;
   // TODO(dirvine) try both connections
   if (message.client_node()) {
-    connect_response.set_answer(true);
-    // TODO(dirvine): get the routing pointer back again
-
-    //if (node_validation_functor)  // never add any node to routing table
-    //node_validation_functor(NodeId(connect_response.contact().node_id()),
-    //                        their_endpoint_pair,
-    //                        our_endpoint_pair,
-    //                        message.client_node());
+    LOG(kInfo) << " client connecting - HELP !!!!";
   }
   if ((routing_table.CheckNode(node)) && (!message.client_node())) {
     connect_response.set_answer(true);
     LOG(kVerbose) << "CheckNode(node) successfull!";
-
-    asio_service->service().post(std::bind(node_validation_functor,
-                                           NodeId(connect_request.contact().node_id()),
-                                           their_endpoint_pair,
-                                           our_endpoint_pair,
-                                           message.client_node()));
+  if (node_validation_functor) {
+    auto validate_node = [=, &routing_table, &rudp] (const asymm::PublicKey &key)->void
+    {
+    LOG(kInfo) << "NEED TO VALIDATE THE NODE HERE";
+      ValidateThisNode(rudp,
+                       routing_table,
+                       NodeId(connect_request.contact().node_id()),
+                       key,
+                       their_endpoint_pair,
+                       our_endpoint_pair,
+                       false);
+    };
+    node_validation_functor(NodeId(connect_request.contact().node_id()), validate_node);
+  }
   }
 
   protobuf::Contact *contact;

@@ -69,10 +69,11 @@ typedef std::function<void(const int32_t& /*mesasge type*/,
 * This is fired to validate a new peer node. User is supposed to validate the node and call        *
 * ValidateThisNode() method with valid public key.                                                 *
 ***************************************************************************************************/
-typedef std::function<void(const NodeId& /*node Id*/,
-                           const rudp::EndpointPair& /*their Node endpoint */,
-                           const rudp::EndpointPair& /*our Node endpoint */,
-                           const bool& /*client ? */)> NodeValidationFunctor;
+typedef std::function<void(const asymm::PublicKey & /*public_key*/)> ValidateNodeFunctor;
+typedef std::function<void(const NodeId& /*node Id*/, ValidateNodeFunctor)> NodeValidationFunctor;
+
+typedef std::function<bool(const std::string & /*data*/)> HaveCacheDatafunctor;
+typedef std::function<void(const std::string &/* data*/)> StoreCacheDataFunctor;
 /***************************************************************************************************
 * This functor fires a number from 0 to 100 and represents % network health                        *
 ***************************************************************************************************/
@@ -83,7 +84,7 @@ typedef std::function<void(const int16_t& /*network_health*/)> NetworkStatusFunc
 * to the new node. Keys further than the furthest node can safely be deleted (if any)              *
 ***************************************************************************************************/
 typedef std::function<void(const std::vector<NodeInfo> /*new_close_nodes*/)>
-    CloseNodeReplacedFunctor;
+  CloseNodeReplacedFunctor;
 
 struct Functors {
   Functors()

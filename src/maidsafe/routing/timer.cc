@@ -55,6 +55,10 @@ void Timer::KillTask(TaskId task_id) {
 }
 
 void Timer::ExecuteTaskNow(protobuf::Message &message) {
+  if (!message.has_id()) {
+  LOG(kError) << "recieved response with no ID ABORT message";
+  return;
+  }
   const auto it = queue_.find(message.id());
   if (it != queue_.end()) {
     // message all OK in routing

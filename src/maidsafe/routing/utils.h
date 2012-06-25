@@ -36,7 +36,13 @@ bool ClosestToMe(protobuf::Message &message);
 
 bool InClosestNodesToMe(protobuf::Message &message);
 
-
+void ValidateThisNode(rudp::ManagedConnections &rudp,
+                      RoutingTable &routing_table,
+                      const NodeId& node_id,
+                      const asymm::PublicKey &public_key,
+                      const rudp::EndpointPair &their_endpoint,
+                      const rudp::EndpointPair &our_endpoint,
+                      const bool &client);
 
 }  // namespace routing
 

@@ -56,7 +56,6 @@ TEST(RPC, BEH_PingMessageNode) {
   EXPECT_FALSE(message.data().empty());
   EXPECT_EQ(message.replication(), 1);
   EXPECT_EQ(message.type(), 1);
-  EXPECT_FALSE(message.routing_failure());
   EXPECT_EQ(message.id(), 0);
   EXPECT_FALSE(message.client_node());
   EXPECT_FALSE(message.has_relay());
@@ -89,7 +88,6 @@ TEST(RPC, BEH_ConnectMessageNode) {
   EXPECT_FALSE(message.data().empty());
   EXPECT_EQ(message.replication(), 1);
   EXPECT_EQ(message.type(), 2);
-  EXPECT_FALSE(message.routing_failure());
   EXPECT_EQ(message.id(), 0);
   EXPECT_FALSE(message.client_node());
   EXPECT_FALSE(message.has_relay());
@@ -115,7 +113,6 @@ TEST(RPC, BEH_FindNodesMessageNode) {
   EXPECT_FALSE(message.data().empty());
   EXPECT_EQ(message.replication(), 1);
   EXPECT_EQ(message.type(), 3);
-  EXPECT_FALSE(message.routing_failure());
   EXPECT_EQ(message.id(), 0);
   EXPECT_FALSE(message.client_node());
   EXPECT_TRUE(message.has_relay());

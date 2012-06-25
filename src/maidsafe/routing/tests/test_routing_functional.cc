@@ -23,6 +23,7 @@
 #include "maidsafe/routing/routing_table.h"
 #include "maidsafe/routing/routing_api_impl.h"
 #include "maidsafe/routing/routing_pb.h"
+#include "maidsafe/routing/utils.h"
 #include "maidsafe/routing/tests/test_utils.h"
 
 namespace args = std::placeholders;
@@ -39,7 +40,7 @@ NodeInfo MakeNodeInfo() {
   asymm::Keys keys;
   asymm::GenerateKeyPair(&keys);
   node.public_key = keys.public_key;
-  node.endpoint.address(boost::asio::ip::address::from_string("192.168.1.1"));
+  node.endpoint.address(GetLocalIp());
   node.endpoint.port(GetRandomPort());
   return node;
 }
@@ -128,7 +129,7 @@ class RoutingFunctionalTest : public testing::Test {
  public:
    RoutingFunctionalTest() : nodes_(),
                              bootstrap_endpoints_(),
-                             bootstrap_path_(GetSystemAppDir() / "bootstrap") {}
+                             bootstrap_path_("bootstrap") {}
   ~RoutingFunctionalTest() {}
 
   void ResponseHandler(const int32_t& /*result*/,
@@ -227,31 +228,17 @@ class RoutingFunctionalTest : public testing::Test {
     return testing::AssertionSuccess();
   }
 
-  void Validate(const NodeId& node_id,
-                const rudp::EndpointPair& their_endpoint,
-                const rudp::EndpointPair& our_endpoint,
-                const bool& client,
-                std::shared_ptr<Routing> routhing) {
-    if (node_id == NodeId()) {
-      auto iter = std::find_if(nodes_.begin(), nodes_.end(),
-          [&their_endpoint](const NodePtr &node) {
-              return node->endpoint().port() == their_endpoint.external.port(); });
-      EXPECT_NE(iter, nodes_.end());
-      routhing->ValidateThisNode(NodeId((*iter)->key_.identity), (*iter)->key_.public_key,
-                                 their_endpoint, our_endpoint, client);
-    }
-    else {
-      auto iter = std::find_if(nodes_.begin(), nodes_.end(),
+  void Validate(const NodeId& node_id, ValidateNodeFunctor node_validate) {
+    auto iter = std::find_if(nodes_.begin(), nodes_.end(),
           [&node_id](const NodePtr &node) { return node->key_.identity == node_id.String(); });
-      EXPECT_NE(iter, nodes_.end());
-      routhing->ValidateThisNode(NodeId((*iter)->key_.identity), (*iter)->key_.public_key,
-                                 their_endpoint, our_endpoint, client);
-    }
+    ASSERT_NE(iter, nodes_.end());
+    if (node_validate)
+      node_validate((*iter)->key_.public_key);
   }
 
   void SetNodeValidationFunctor(NodePtr node) {
     node->functors_.node_validation = std::bind(&RoutingFunctionalTest::Validate, this, args::_1,
-                                                args::_2, args::_3, args::_4, node->routing());
+                                                args::_2);
   }
 
   std::vector<NodePtr> nodes_;
@@ -261,7 +248,7 @@ class RoutingFunctionalTest : public testing::Test {
 
 TEST_F(RoutingFunctionalTest, FUNC_OneSourceOneDestinationOneMessage) {
   SetUpNetwork(9);
-//  EXPECT_TRUE(Send(1, 1, 1));
+  EXPECT_TRUE(Send(1, 1, 1));
 }
 
 TEST_F(RoutingFunctionalTest, FUNC_OneSourceOneDestinationMultiMessage) {

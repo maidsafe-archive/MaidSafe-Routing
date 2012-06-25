@@ -18,6 +18,7 @@
 #include "maidsafe/routing/parameters.h"
 #include "maidsafe/routing/routing_pb.h"
 #include "maidsafe/routing/routing_table.h"
+#include "maidsafe/routing/rpcs.h"
 
 namespace maidsafe {
 
@@ -65,33 +66,24 @@ void SendOn(protobuf::Message message,
     LOG(kVerbose) << " Direct message to " << endpoint;
   }
   std::string serialised_message(message.SerializeAsString());
-  uint16_t attempt_count(0);
-
-  rudp::MessageSentFunctor message_sent_functor = [&](bool message_sent) {
+  rudp::MessageSentFunctor message_sent_functor;
+  if (relay_and_i_am_closest || direct_message || has_relay_ip) {  //  retry only once
+    message_sent_functor = [](bool message_sent) {
+    message_sent ?  LOG(kError) << "Sent to a relay node" :
+                    LOG(kError) << "could not send to a relay node";
+    };
+  } else {
+      message_sent_functor = [=, &rudp, &routing_table](bool message_sent) {
       if (!message_sent) {
-        ++attempt_count;
-        if (relay_and_i_am_closest || direct_message || has_relay_ip) {  //  retry only once
-          if (attempt_count == 1) {
-            rudp.Send(endpoint, serialised_message, message_sent_functor);
-          } else {
-            LOG(kError) << " Send error on " << (relay_and_i_am_closest? "relay" : "direct")
-                        << " message!!!" << "attempt" << attempt_count << " times";
-            return;
-          }
-        }
-        if ((attempt_count < Parameters::closest_nodes_size) &&
-            (routing_table.Size() > attempt_count)) {
-          LOG(kInfo) << " Sending attempt " << attempt_count;
-          endpoint = routing_table.GetClosestNode(NodeId(message.destination_id()),
-                                                  attempt_count).endpoint;
+         LOG(kInfo) << " Send retry !! ";
+         Endpoint endpoint = routing_table.GetClosestNode(NodeId(message.destination_id()),
+                                                  1).endpoint;
           rudp.Send(endpoint, serialised_message, message_sent_functor);
-        } else {
-          LOG(kError) << " Send error !!! failed " << "attempt" << attempt_count << " times";
-        }
       } else {
-        LOG(kInfo) << " Send succeeded at attempt " << attempt_count;
+        LOG(kInfo) << " Send succeeded ";
       }
     };
+  }
   LOG(kVerbose) << " >>>>>>>>>>>>>>> rudp send message to " << endpoint << " <<<<<<<<<<<<<<<<<<<<";
   rudp.Send(endpoint, serialised_message, message_sent_functor);
 }
@@ -105,6 +97,44 @@ bool InClosestNodesToMe(protobuf::Message &message, RoutingTable &routing_table)
                                        Parameters::closest_nodes_size);
 }
 
+void ValidateThisNode(rudp::ManagedConnections &rudp,
+                      RoutingTable &routing_table,
+                      const NodeId& node_id,
+                      const asymm::PublicKey &public_key,
+                      const rudp::EndpointPair &their_endpoint,
+                      const rudp::EndpointPair &our_endpoint,
+                      const bool &client) {
+  NodeInfo node_info;
+  node_info.node_id = NodeId(node_id);
+  node_info.public_key = public_key;
+  node_info.endpoint = their_endpoint.external;
+  LOG(kVerbose) << "Calling rudp Add on endpoint = " << our_endpoint.external
+                << ", their endpoint = " << their_endpoint.external;
+  int result = rudp.Add(our_endpoint.external, their_endpoint.external, node_id.String());
+
+  if (result != 0) {
+      LOG(kWarning) << "rudp add failed " << result;
+    return;
+  }
+  LOG(kVerbose) << "rudp.Add result = " << result;
+  if (client) {
+    //direct_non_routing_table_connections_.push_back(node_info);
+    LOG(kError) << " got client and do not know how to add them yet ";
+  } else {
+    if(routing_table.AddNode(node_info)) {
+      LOG(kVerbose) << "Added node to routing table. node id " << HexSubstr(node_id.String());
+      SendOn(rpcs::ProxyConnect(node_id,routing_table.kKeys().identity, their_endpoint.external),
+                                rudp,
+                                routing_table,
+                                Endpoint());  // check if this is a boostrap candidate
+    } else {
+      LOG(kVerbose) << "Not adding node to routing table  node id "
+                    << HexSubstr(node_id.String())
+                    << " just added rudp connection will be removed now";
+      rudp.Remove(their_endpoint.external);
+    }
+  }
+}
 
 }  // namespace routing
 

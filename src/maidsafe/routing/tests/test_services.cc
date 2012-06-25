@@ -50,7 +50,6 @@ TEST(Services, BEH_Ping) {
   EXPECT_TRUE(message.source_id() == keys.identity);
   EXPECT_EQ(message.replication(), 1);
   EXPECT_EQ(message.type(), -1);
-  EXPECT_FALSE(message.routing_failure());
   EXPECT_EQ(message.id(), 0);
   EXPECT_FALSE(message.client_node());
   EXPECT_FALSE(message.has_relay());
@@ -72,8 +71,7 @@ TEST(Services, BEH_Connect) {
   protobuf::Message message = rpcs::Connect(us.node_id, them_end, them.node_id);
   EXPECT_TRUE(message.IsInitialized());
   // we receive it
-  std::shared_ptr<AsioService> asio_service;
-  service::Connect(RT, rudp, message, NodeValidationFunctor(), asio_service);
+  service::Connect(RT, rudp, message, NodeValidationFunctor());
   protobuf::ConnectResponse connect_response;
   EXPECT_TRUE(connect_response.ParseFromString(message.data()));  // us
   EXPECT_TRUE(connect_response.answer());
@@ -86,7 +84,6 @@ TEST(Services, BEH_Connect) {
   EXPECT_FALSE(message.data().empty());
   EXPECT_EQ(message.replication(), 1);
   EXPECT_EQ(message.type(), -2);
-  EXPECT_FALSE(message.routing_failure());
   EXPECT_EQ(message.id(), 0);
   EXPECT_FALSE(message.client_node());
   EXPECT_FALSE(message.has_relay());
@@ -113,7 +110,6 @@ TEST(Services, BEH_FindNodes) {
   EXPECT_FALSE(message.data().empty());
   EXPECT_EQ(message.replication(), 1);
   EXPECT_EQ(message.type(), -3);
-  EXPECT_FALSE(message.routing_failure());
   EXPECT_EQ(message.id(), 0);
   EXPECT_FALSE(message.client_node());
   EXPECT_FALSE(message.has_relay());
@@ -141,7 +137,6 @@ TEST(Services, BEH_ProxyConnect) {
   EXPECT_TRUE(message.source_id() == keys.identity);
   EXPECT_EQ(1, message.replication());
   EXPECT_EQ(-4, message.type());
-  EXPECT_FALSE(message.routing_failure());
   EXPECT_EQ(0, message.id());
   EXPECT_FALSE(message.client_node());
   EXPECT_FALSE(message.has_relay());

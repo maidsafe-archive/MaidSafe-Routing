@@ -48,7 +48,9 @@ namespace routing {
 Routing::Routing(const asymm::Keys &keys,
                  const bool client_mode)
     : impl_(new RoutingPrivate(keys, client_mode)) {
-  CheckBootStrapFilePath();
+  if (!CheckBootStrapFilePath()) {
+    LOG(kInfo) << " no bootstrap nodes, require BootStrapFromThisEndpoint()";
+  }
   if (client_mode) {
     Parameters::max_routing_table_size = Parameters::closest_nodes_size;
   }
@@ -69,44 +71,36 @@ int Routing::GetStatus() {
   return kSuccess;
 }
 
-void Routing::CheckBootStrapFilePath() {
+bool Routing::CheckBootStrapFilePath() {
   LOG(kInfo) << "path " << GetUserAppDir();
   LOG(kInfo) << "sys path " << GetSystemAppDir();
   fs::path path;
+  fs::path local_file;
   std::string file_name;
   boost::system::error_code error_code;
-  if(impl_->client_mode_) {  // throw if no bootstrap available
+  if(impl_->client_mode_) {
     file_name = "bootstrap";
+    path = GetUserAppDir() / file_name;
+  } else {
+    file_name = "bootstrap." + EncodeToBase32(impl_->keys_.identity);
+    path = GetSystemAppDir() / file_name;
+  }
+  local_file = fs::current_path() / file_name;
+  if (fs::exists(local_file) && fs::is_regular_file(local_file)) {
+    LOG(kInfo) << "Found bootstrap file at " << local_file.string();
+    impl_->bootstrap_file_path_ = local_file;
+    impl_->bootstrap_nodes_ = ReadBootstrapFile(impl_->bootstrap_file_path_);
+    return true;
+  } else {
     path = GetUserAppDir() / file_name;
     if (fs::exists(path) && fs::is_regular_file(path)) {
       LOG(kInfo) << "Found bootstrap file at " << path;
-    }
-  } else {  // vaults
-    file_name = "bootstrap." + EncodeToBase32(impl_->keys_.identity);
-    path = GetSystemAppDir() / file_name;
-    if (!fs::exists(path, error_code) || !fs::is_regular_file(path, error_code)) {
-      LOG(kInfo) << "No bootstrap.id file associated with id found : " << path;
-      file_name = "bootstrap";  //  need bootstrap file to copy from
-    }
-    if (file_name == "bootstrap") {  // find bootstrap file and copy contents bootstrap.id
-      path = GetSystemAppDir() / file_name;
-      std::string file_content;
-      if (fs::exists(path, error_code) && fs::is_regular_file(path, error_code)) {
-        LOG(kInfo) << "Will create bootstrap.id file from existing bootstrap file at " << path;
-        ReadFile(path, &file_content);
-      } else {
-        LOG(kInfo) << "Not found bootstrap file at " << path;
-      }
-      file_name = "bootstrap." + EncodeToBase32(impl_->keys_.identity);
-      path = GetSystemAppDir() / file_name;
-      // create file and copy contents if available
-      LOG(kInfo) << "Trying to create bootstrap.id file at " << path;
-      WriteFile(path, file_content);
+      impl_->bootstrap_file_path_ = path;
+      impl_->bootstrap_nodes_ = ReadBootstrapFile(impl_->bootstrap_file_path_);
+      return true;
     }
   }
-  impl_->bootstrap_file_path_ = path;
-  fs::file_size(impl_->bootstrap_file_path_);  // throws
-  impl_->bootstrap_nodes_ = ReadBootstrapFile(impl_->bootstrap_file_path_);
+  return false;
 }
 
 int Routing::Join(Functors functors, Endpoint peer_endpoint, Endpoint local_endpoint) {
@@ -116,7 +110,10 @@ int Routing::Join(Functors functors, Endpoint peer_endpoint, Endpoint local_endp
     return BootStrapFromThisEndpoint(functors, peer_endpoint);
   } else  {  // Default Join
     LOG(kInfo) << " Doing a default join";
-    return DoJoin(functors);
+    if (CheckBootStrapFilePath())
+      return DoJoin(functors);
+    else
+      return kInvalidBootstrapContacts;
   }
 }
 
@@ -250,9 +247,18 @@ int Routing::DoZeroStateJoin(Functors functors, Endpoint peer_endpoint, Endpoint
   rudp::EndpointPair our_endpoint_pair;
   their_endpoint_pair.external = their_endpoint_pair.local = bootstrap_endpoint;
   our_endpoint_pair.external = our_endpoint_pair.local = local_endpoint;
-
-  if (impl_->functors_.node_validation)
-    impl_->functors_.node_validation(NodeId(), their_endpoint_pair, our_endpoint_pair, false);
+//  ValidateNodeFunctor validate_node = [=] (const asymm::PublicKey &key)
+//    {
+//    LOG(kError) << "NEED TO VALIDATE THE NODE HERE";
+//    static_assert("FIXME");
+//      ValidateThisNode(NodeId(impl_->keys_.identity),
+//                              key,
+//                              their_endpoint_pair,
+//                              our_endpoint_pair,
+//                              false);
+//    };
+//  if (impl_->functors_.node_validation)
+//    impl_->functors_.node_validation(NodeId(impl_->keys_.identity), validate_node);
 
   // now poll for routing table size to have at least one node available
   uint8_t poll_count(0);
@@ -274,7 +280,7 @@ SendStatus Routing::Send(const NodeId &destination_id,
                          const std::string &data,
                          const int32_t &type,
                          const ResponseFunctor response_functor,
-                         const int16_t &/*timeout_seconds*/,
+                         const int16_t &timeout_seconds,
                          const ConnectType &connect_type) {
   if (destination_id.String().empty()) {
     LOG(kError) << "No destination id, aborted send";
@@ -285,8 +291,7 @@ SendStatus Routing::Send(const NodeId &destination_id,
     return SendStatus::kEmptyData;
   }
   protobuf::Message proto_message;
-  proto_message.set_id(0);
-  // TODO(dirvine): see if ANONYMOUS and Endpoint required here
+  proto_message.set_id(impl_->timer_.AddTask(timeout_seconds, response_functor));
   proto_message.set_source_id(impl_->routing_table_.kKeys().identity);
   proto_message.set_destination_id(destination_id.String());
   proto_message.set_data(data);
@@ -294,42 +299,6 @@ SendStatus Routing::Send(const NodeId &destination_id,
   proto_message.set_type(type);
   SendOn(proto_message, impl_->rudp_, impl_->routing_table_);
   return SendStatus::kSuccess;
-}
-
-void Routing::ValidateThisNode(const NodeId& node_id,
-                               const asymm::PublicKey &public_key,
-                               const rudp::EndpointPair &their_endpoint,
-                               const rudp::EndpointPair &our_endpoint,
-                               const bool &client) {
-  NodeInfo node_info;
-  node_info.node_id = NodeId(node_id);
-  node_info.public_key = public_key;
-  node_info.endpoint = their_endpoint.external;
-  LOG(kVerbose) << "Calling rudp Add on endpoint = " << our_endpoint.external
-                << ", their endpoint = " << their_endpoint.external;
-  int result = impl_->rudp_.Add(our_endpoint.external, their_endpoint.external, node_id.String());
-
-  if (result != kSuccess) {
-      LOG(kWarning) << "rudp add failed " << result;
-    return;
-  }
-  LOG(kVerbose) << "rudp_.Add result = " << result;
-  if (client) {
-    impl_->direct_non_routing_table_connections_.push_back(node_info);
-  } else {
-    if(impl_->routing_table_.AddNode(node_info)) {
-      LOG(kVerbose) << "Added node to routing table. node id " << HexSubstr(node_id.String());
-      if (impl_->bootstrap_nodes_.size() > 1000)
-        impl_->bootstrap_nodes_.erase(impl_->bootstrap_nodes_.begin());
-      impl_->bootstrap_nodes_.push_back(their_endpoint.external);
-      WriteBootstrapFile(impl_->bootstrap_nodes_, impl_->bootstrap_file_path_);
-    } else {
-      LOG(kVerbose) << "Add node to routing table failed. node id "
-                    << HexSubstr(node_id.String())
-                    << " just added rudp connection will be removed now";
-      impl_->rudp_.Remove(their_endpoint.external);
-    }
-  }
 }
 
 void Routing::ReceiveMessage(const std::string &message) {

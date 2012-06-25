@@ -39,7 +39,6 @@ const protobuf::Message Ping(const NodeId &node_id, const std::string &identity)
   message.set_direct(true);
   message.set_replication(1);
   message.set_type(1);
-  message.set_routing_failure(false);
   message.set_id(0);
   message.set_client_node(false);
   assert(message.IsInitialized() && "Unintialised message");
@@ -72,7 +71,6 @@ const protobuf::Message Connect(const NodeId &node_id, const rudp::EndpointPair 
   message.set_direct(true);
   message.set_replication(1);
   message.set_type(2);
-  message.set_routing_failure(false);
   message.set_id(0);
   message.set_client_node(false);
   if (!local_endpoint.address().is_unspecified()) {  // I am not in anyones RT yet
@@ -103,7 +101,6 @@ const protobuf::Message FindNodes(const NodeId &node_id, const NodeId &my_node_i
   message.set_direct(false);
   message.set_replication(1);
   message.set_type(3);
-  message.set_routing_failure(false);
   message.set_id(0);
   message.set_client_node(false);
   if (!local_endpoint.address().is_unspecified()) {    // I am not in anyones RT yet
@@ -136,7 +133,6 @@ const protobuf::Message ProxyConnect(const NodeId &node_id, const std::string &i
   message.set_direct(true);
   message.set_replication(1);
   message.set_type(4);
-  message.set_routing_failure(false);
   message.set_id(0);
   message.set_client_node(false);
   assert(message.IsInitialized() && "Unintialised message");

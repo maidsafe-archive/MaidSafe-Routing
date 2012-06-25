@@ -52,7 +52,6 @@ MessageHandler::MessageHandler(std::shared_ptr<AsioService> asio_service,
       node_validation_functor_(node_validation_functor) {}
 
 void MessageHandler::Send(protobuf::Message& message) {
-  message.set_routing_failure(false);
   SendOn(message, rudp_, routing_table_);
 }
 
@@ -82,10 +81,10 @@ void MessageHandler::RoutingMessage(protobuf::Message& message) {
       service::Ping(routing_table_, message);
       break;
     case -2 :  // connect
-      response::Connect(message, node_validation_functor_, asio_service_);
+      response::Connect(routing_table_, rudp_, message, node_validation_functor_);
       break;
     case 2 :
-      service::Connect(routing_table_, rudp_, message, node_validation_functor_, asio_service_);
+      service::Connect(routing_table_, rudp_, message, node_validation_functor_);
       break;
     case -3 :  // find_nodes
       response::FindNode(routing_table_, rudp_, message, bootstrap_endpoint_);
@@ -112,6 +111,32 @@ void MessageHandler::RoutingMessage(protobuf::Message& message) {
   SendOn(message, rudp_, routing_table_, direct_endpoint);
 }
 
+void MessageHandler::MessageForMe(protobuf::Message &message) {
+   if (message.type() > 100) {  // request
+    LOG(kVerbose) <<"Message for me !!";
+    ReplyFunctor response_functor = [=](const std::string& reply_message)  {
+      if (reply_message.empty())
+        return;
+    protobuf::Message message_out;
+    message_out.set_type(-message.type());
+    message_out.set_destination_id(message.source_id());
+    message_out.set_direct(static_cast<int32_t>(ConnectType::kSingle));
+    message_out.set_data(reply_message);
+    message_out.set_last_id(routing_table_.kKeys().identity);
+    message_out.set_source_id(routing_table_.kKeys().identity);
+    SendOn(message_out, rudp_, routing_table_);
+    };
+    if (message.type() < 0)
+      message.set_type(-message.type());
+    message_received_functor_(static_cast<int>(message.type()), message.data(), NodeId(),
+                              response_functor);
+    LOG(kInfo) << "Routing message detected";
+  } else {  // response
+    timer_ptr_.ExecuteTaskNow(message);
+    LOG(kInfo) << "Response detected";
+  }
+}
+
 void MessageHandler::DirectMessage(protobuf::Message& message) {
   if (RelayDirectMessageIfNeeded(message)) {
     return;
@@ -120,21 +145,8 @@ void MessageHandler::DirectMessage(protobuf::Message& message) {
   if ((message.type() < 100) && (message.type() > -100)) {
     LOG(kVerbose) <<"Direct RoutingMessage type";
     RoutingMessage(message);
-    return;
-  }
-  if (message.type() > 100) {  // request
-    LOG(kVerbose) <<"Direct Node Message type";
-    ReplyFunctor response_functor = [&](const std::string& reply_message)  {
-        if (!reply_message.empty()) {
-         // TODO(Prakash): To add rudp send for replying to the message
-        }
-    };
-    message_received_functor_(static_cast<int>(-message.type()), message.data(), NodeId(),
-                              response_functor);
-    LOG(kInfo) << "Routing message detected";
-  } else {  // response
-    timer_ptr_.ExecuteTaskNow(message);
-    LOG(kInfo) << "Response detected";
+  } else {
+    MessageForMe(message);
   }
 }
 
@@ -160,18 +172,26 @@ void MessageHandler::CloseNodesMessage(protobuf::Message& message) {
     message.set_destination_id(i.String());
     SendOn(message, rudp_, routing_table_);
   }
+  if ((message.type() < 100) && (message.type() > -100)) {
+    LOG(kVerbose) <<"I am closest node RoutingMessage";
+    RoutingMessage(message);
+  } else {
+    LOG(kVerbose) <<"I am closest node Message";
+    MessageForMe(message);
+  }
 }
 
 void MessageHandler::GroupMessage(protobuf::Message &message) {
-if (routing_table_.IsMyNodeInRange(NodeId(message.destination_id()), 1)) {
+if (!routing_table_.IsMyNodeInRange(NodeId(message.destination_id()), 1))
+  return;
+
   LOG(kVerbose) <<"I am in closest proximity to this group message";
-  ReplyFunctor response_functor = [&](const std::string& reply_message)  {
-      if (!reply_message.empty()) {
-        // TODO(Prakash): To add rudp send for replying to the message
-      }
-  };
-  message_received_functor_(static_cast<int>(-message.type()), message.data(), NodeId(),
-                            response_functor);
+  if ((message.type() < 100) && (message.type() > -100)) {
+    LOG(kVerbose) <<"I am closest node RoutingMessage";
+    RoutingMessage(message);
+  } else {
+    LOG(kVerbose) <<"I am closest node Message";
+    MessageForMe(message);
   }
 }
 
