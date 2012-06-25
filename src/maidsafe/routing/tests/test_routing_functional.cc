@@ -90,7 +90,9 @@ class Node {
  }
 
   int GetStatus() { return routing_->GetStatus(); }
+
   NodeId node_id() { return NodeId(key_.identity); }
+
   int JoinZero(Functors functors, const Endpoint &peer_endpoint, const Endpoint &local_endpoint) {
     return routing_->Join(functors, peer_endpoint, local_endpoint);
   }
@@ -160,9 +162,6 @@ class RoutingFunctionalTest : public testing::Test {
                           node1->endpoint(), node2->endpoint());
      EXPECT_EQ(kSuccess, f2.get());
      EXPECT_EQ(kSuccess, f1.get());
-//     bootstrap_endpoints_.push_back(node1->endpoint());
-//     bootstrap_endpoints_.push_back(node2->endpoint());
-//     WriteBootstrapFile(bootstrap_endpoints_, bootstrap_path_);
    }
 
    void SetUpNetwork(const size_t &size) {
@@ -238,25 +237,25 @@ class RoutingFunctionalTest : public testing::Test {
   std::condition_variable cond_var;
   for (size_t index = 0; index < messages; ++index) {
     for (auto source_node : nodes_) {
-        for (auto dest_node : nodes_) {
-          if (source_node->Id() != dest_node->Id()) {
-            std::string data(RandomAlphaNumericString(256));
-            source_node->routing_->Send(NodeId(dest_node->key_.identity), group_id, data, 101,
-                std::bind(&RoutingFunctionalTest::ResponseHandler, this, args::_1, args::_2,
-                          &messages_count, messages, &mutex, &cond_var),
-                10, ConnectType::kSingle);
-          }
+      for (auto dest_node : nodes_) {
+        if (source_node->Id() != dest_node->Id()) {
+          std::string data(RandomAlphaNumericString(256));
+          source_node->routing_->Send(NodeId(dest_node->key_.identity), group_id, data, 101,
+              std::bind(&RoutingFunctionalTest::ResponseHandler, this, args::_1, args::_2,
+                        &messages_count, messages, &mutex, &cond_var),
+              10, ConnectType::kSingle);
         }
+      }
     }
   }
 
   std::unique_lock<std::mutex> lock(mutex);
   bool result = cond_var.wait_for(lock, std::chrono::seconds(10),
-      [&](){ return messages_count == messages * network_size; });
+      [&](){ return messages_count == messages * (network_size - 1); });
   EXPECT_TRUE(result);
   if (!result) {
     return testing::AssertionFailure() << "Send operarion timed out: "
-                                       << messages * network_size - messages_count
+                                       << messages * (network_size - 1) - messages_count
                                        << " failed to reply.";
   }
   return testing::AssertionSuccess();
