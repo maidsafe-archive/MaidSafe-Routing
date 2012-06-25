@@ -28,7 +28,9 @@
 namespace args = std::placeholders;
 
 namespace maidsafe {
+
 namespace routing {
+
 namespace test {
 
 namespace {
@@ -72,11 +74,9 @@ class Node {
     functors_.network_status = nullptr;
     functors_.node_validation = nullptr;
     routing_.reset(new Routing(key_, client_mode));
-    {
-      std::lock_guard<std::mutex> lock(mutex_);
-      id_ = next_id_++;
-    }
-}
+    std::lock_guard<std::mutex> lock(mutex_);
+    id_ = next_id_++;
+  }
 
   void MessageReceived(const int32_t &mesasge_type,
                        const std::string &message,
@@ -101,17 +101,11 @@ class Node {
     return routing_->Join(functors, peer_endpoint);
   }
 
-  Endpoint endpoint() const {
-    return endpoint_;
-  }
+  Endpoint endpoint() const { return endpoint_; }
 
-  std::shared_ptr<Routing> routing() const {
-      return routing_;
-  }
+  std::shared_ptr<Routing> routing() const { return routing_; }
 
-  size_t Id() const {
-    return id_;
-  }
+  size_t Id() const { return id_; }
 
   friend class RoutingFunctionalTest;
 
@@ -132,9 +126,9 @@ typedef std::shared_ptr<Node> NodePtr;
 
 class RoutingFunctionalTest : public testing::Test {
  public:
-   RoutingFunctionalTest() : nodes_(),
-                             bootstrap_endpoints_(),
-                             bootstrap_path_(GetSystemAppDir() / "bootstrap") {}
+  RoutingFunctionalTest() : nodes_(),
+                            bootstrap_endpoints_(),
+                            bootstrap_path_(GetSystemAppDir() / "bootstrap") {}
   ~RoutingFunctionalTest() {}
 
   void ResponseHandler(const int32_t& /*result*/,
@@ -172,7 +166,7 @@ class RoutingFunctionalTest : public testing::Test {
        results.push_back(std::async(&Node::Join, node, node->functors_, nodes_[1]->endpoint()));
        nodes_.push_back(node);
      }
-     for (size_t index = 0; index < size - 2; ++index)
+     for (size_t index = 0; index < nodes_.size() - 2; ++index)
          EXPECT_EQ(kSuccess, results[index].get());
    }
 
@@ -217,7 +211,7 @@ class RoutingFunctionalTest : public testing::Test {
       nodes_[source_nodes[source_id]]->routing_->Send(dest_node_id, group_id, data, 101,
           std::bind(&RoutingFunctionalTest::ResponseHandler, this, args::_1, args::_2,
                     &messages_count, messages, &mutex, &cond_var),
-                    10, ConnectType::kSingle);
+          10, ConnectType::kSingle);
     }
     std::unique_lock<std::mutex> lock(mutex);
     bool result = cond_var.wait_for(lock, std::chrono::seconds(10),
@@ -229,37 +223,38 @@ class RoutingFunctionalTest : public testing::Test {
     }
     return testing::AssertionSuccess();
   }
+
   /** Send messages from each source to each destination */
   testing::AssertionResult Send(const size_t &messages) {
-  NodeId  group_id;
-  size_t messages_count(0), network_size(nodes_.size());
-  std::mutex mutex;
-  std::condition_variable cond_var;
-  for (size_t index = 0; index < messages; ++index) {
-    for (auto source_node : nodes_) {
-      for (auto dest_node : nodes_) {
-        if (source_node->Id() != dest_node->Id()) {
-          std::string data(RandomAlphaNumericString(256));
-          source_node->routing_->Send(NodeId(dest_node->key_.identity), group_id, data, 101,
-              std::bind(&RoutingFunctionalTest::ResponseHandler, this, args::_1, args::_2,
-                        &messages_count, messages, &mutex, &cond_var),
-              10, ConnectType::kSingle);
+    NodeId  group_id;
+    size_t messages_count(0), network_size(nodes_.size());
+    std::mutex mutex;
+    std::condition_variable cond_var;
+    for (size_t index = 0; index < messages; ++index) {
+      for (auto source_node : nodes_) {
+        for (auto dest_node : nodes_) {
+          if (source_node->Id() != dest_node->Id()) {
+            std::string data(RandomAlphaNumericString(256));
+            source_node->routing_->Send(NodeId(dest_node->key_.identity), group_id, data, 101,
+                std::bind(&RoutingFunctionalTest::ResponseHandler, this, args::_1, args::_2,
+                          &messages_count, messages, &mutex, &cond_var),
+                10, ConnectType::kSingle);
+          }
         }
       }
     }
-  }
 
-  std::unique_lock<std::mutex> lock(mutex);
-  bool result = cond_var.wait_for(lock, std::chrono::seconds(10),
-      [&](){ return messages_count == messages * (network_size - 1); });
-  EXPECT_TRUE(result);
-  if (!result) {
-    return testing::AssertionFailure() << "Send operarion timed out: "
-                                       << messages * (network_size - 1) - messages_count
-                                       << " failed to reply.";
+    std::unique_lock<std::mutex> lock(mutex);
+    bool result = cond_var.wait_for(lock, std::chrono::seconds(10),
+        [&](){ return messages_count == messages * (network_size - 1); });
+    EXPECT_TRUE(result);
+    if (!result) {
+      return testing::AssertionFailure() << "Send operarion timed out: "
+                                         << messages * (network_size - 1) - messages_count
+                                         << " failed to reply.";
+    }
+    return testing::AssertionSuccess();
   }
-  return testing::AssertionSuccess();
-}
 
   void Validate(const NodeId& node_id,
                 const rudp::EndpointPair& their_endpoint,
@@ -273,8 +268,7 @@ class RoutingFunctionalTest : public testing::Test {
       EXPECT_NE(iter, nodes_.end());
       routhing->ValidateThisNode(NodeId((*iter)->key_.identity), (*iter)->key_.public_key,
                                  their_endpoint, our_endpoint, client);
-    }
-    else {
+    } else {
       auto iter = std::find_if(nodes_.begin(), nodes_.end(),
           [&node_id](const NodePtr &node) { return node->key_.identity == node_id.String(); });
       EXPECT_NE(iter, nodes_.end());
