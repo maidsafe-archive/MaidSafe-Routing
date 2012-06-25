@@ -183,22 +183,24 @@ class RoutingFunctionalTest : public testing::Test {
                                          << nodes_.size() << " and " << 1;
     if (destinations < network_size)
       return testing::AssertionFailure() << "The max and min number of destination nodes is "
-                                         << nodes_.size() << " and " <<1;
-    std::vector<size_t> source_nodes, dest_nodes;
+                                         << nodes_.size() << " and " << 1;
+    std::vector<NodePtr> source_nodes, dest_nodes;
     while(source_nodes.size() < sources) {
       source_id = RandomUint32() % nodes_.size();
-      if (std::find(source_nodes.begin(), source_nodes.end(), source_id) == source_nodes.end())
-        source_nodes.push_back(source_id);
+      if (std::find(source_nodes.begin(), source_nodes.end(),
+                    nodes_[source_id]) == source_nodes.end())
+        source_nodes.push_back(nodes_[source_id]);
     }
     // make sure that source and destination nodes are not the same if only one source and one
     // destination is to choose
     if ((sources == 1) && (destinations == 1))
-      dest_nodes.push_back((source_nodes[0] +
-                           RandomUint32() % (network_size - 1) + 1) % network_size);
+      dest_nodes.push_back(nodes_[(source_nodes[0]->Id() +
+          RandomUint32() % (network_size - 1) + 1) % network_size]);
     while(dest_nodes.size() < destinations) {
       dest_id = RandomUint32() % network_size;
-      if (std::find(dest_nodes.begin(), dest_nodes.end(), dest_id) == dest_nodes.end())
-        dest_nodes.push_back(dest_id);
+      if (std::find(dest_nodes.begin(), dest_nodes.end(),
+                    nodes_[dest_id]) == dest_nodes.end())
+        dest_nodes.push_back(nodes_[dest_id]);
     }
     for (size_t index = 0; index < messages; ++index) {
       std::string data(RandomAlphaNumericString(256));
@@ -206,9 +208,9 @@ class RoutingFunctionalTest : public testing::Test {
       // chooses a destination different from source
       do {
         dest_id = RandomUint32() % dest_nodes.size();
-      } while (source_nodes[source_id] == dest_nodes[dest_id]);
-      dest_node_id = NodeId(nodes_[dest_nodes[dest_id]]->key_.identity);
-      nodes_[source_nodes[source_id]]->routing_->Send(dest_node_id, group_id, data, 101,
+      } while (source_nodes[source_id]->Id() == dest_nodes[dest_id]->Id());
+      dest_node_id = NodeId(dest_nodes[dest_id]->key_.identity);
+      source_nodes[source_id]->routing_->Send(dest_node_id, group_id, data, 101,
           std::bind(&RoutingFunctionalTest::ResponseHandler, this, args::_1, args::_2,
                     &messages_count, messages, &mutex, &cond_var),
           10, ConnectType::kSingle);
