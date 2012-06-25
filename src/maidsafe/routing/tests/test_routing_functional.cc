@@ -262,30 +262,17 @@ class RoutingFunctionalTest : public testing::Test {
     return testing::AssertionSuccess();
   }
 
-  void Validate(const NodeId& node_id,
-                const rudp::EndpointPair& their_endpoint,
-                const rudp::EndpointPair& our_endpoint,
-                const bool& client,
-                std::shared_ptr<Routing> routhing) {
-    if (node_id == NodeId()) {
-      auto iter = std::find_if(nodes_.begin(), nodes_.end(),
-          [&their_endpoint](const NodePtr &node) {
-              return node->endpoint().port() == their_endpoint.external.port(); });
-      EXPECT_NE(iter, nodes_.end());
-      routhing->ValidateThisNode(NodeId((*iter)->key_.identity), (*iter)->key_.public_key,
-                                 their_endpoint, our_endpoint, client);
-    } else {
-      auto iter = std::find_if(nodes_.begin(), nodes_.end(),
+  void Validate(const NodeId& node_id, ValidateNodeFunctor node_validate) {
+   auto iter = std::find_if(nodes_.begin(), nodes_.end(),
           [&node_id](const NodePtr &node) { return node->key_.identity == node_id.String(); });
-      EXPECT_NE(iter, nodes_.end());
-      routhing->ValidateThisNode(NodeId((*iter)->key_.identity), (*iter)->key_.public_key,
-                                 their_endpoint, our_endpoint, client);
-    }
+    EXPECT_NE(iter, nodes_.end());
+    if (iter != nodes_.end())
+      node_validate((*iter)->key_.public_key);
   }
 
   void SetNodeValidationFunctor(NodePtr node) {
     node->functors_.node_validation = std::bind(&RoutingFunctionalTest::Validate, this, args::_1,
-                                                args::_2, args::_3, args::_4, node->routing());
+                                                args::_2);
   }
 
   std::vector<NodePtr> nodes_;
