@@ -39,7 +39,7 @@ message Bootstrap {
 
 message Message {
   optional bytes source_id = 1; // in response this is name of data
-  required bytes destination_id = 2;
+  optional bytes destination_id = 2;
   optional bytes last_id = 3;
   optional bytes relay_id = 4;
   required bytes data = 5; // serialised protobuf - possibly encrypted

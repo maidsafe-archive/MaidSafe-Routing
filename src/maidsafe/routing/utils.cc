@@ -15,6 +15,7 @@
 #include "maidsafe/rudp/managed_connections.h"
 #include "maidsafe/rudp/return_codes.h"
 
+#include "maidsafe/routing/network_utils.h"
 #include "maidsafe/routing/parameters.h"
 #include "maidsafe/routing/routing_pb.h"
 #include "maidsafe/routing/routing_table.h"
@@ -23,70 +24,6 @@
 namespace maidsafe {
 
 namespace routing {
-
-void SendOn(protobuf::Message message,
-            rudp::ManagedConnections &rudp,
-            RoutingTable &routing_table,
-            Endpoint endpoint) {
-  std::string signature;
-  asymm::Sign(message.data(), routing_table.kKeys().private_key, &signature);
-  message.set_signature(signature);
-  bool relay_and_i_am_closest(false);
-  bool has_relay_ip(false);
-  bool direct_message(!endpoint.address().is_unspecified());
-  if (!direct_message) {
-    LOG(kVerbose) << "message.has_relay()" << message.has_relay();
-    LOG(kVerbose) << "message.has_relay_id()" << message.has_relay_id();
-    LOG(kVerbose) << "routing_table.AmIClosest" << routing_table.AmIClosestNode(NodeId(message.destination_id()));
-    relay_and_i_am_closest =
-        ((message.has_relay_id()) && (routing_table.AmIClosestNode(NodeId(message.destination_id()))));
-    has_relay_ip = message.has_relay();
-    if (relay_and_i_am_closest) {
-      //TODO(Prakash) find the endpoint of the node from my RT
-      endpoint = Endpoint();
-    } else if (has_relay_ip) {  // Message to new guy whose ID is not in anyones RT
-      endpoint = Endpoint(boost::asio::ip::address::from_string(message.relay().ip()),
-                          static_cast<unsigned short>(message.relay().port()));
-      LOG(kInfo) << "Sending to non routing table node message type : "
-                 << message.type() << " message"
-                 << " to " << HexSubstr(message.source_id())
-                 << " From " << HexSubstr(routing_table.kKeys().identity);
-
-    } else if (routing_table.Size() > 0) {
-      endpoint = routing_table.GetClosestNode(NodeId(message.destination_id()), 0).endpoint;
-      LOG(kVerbose) << " Endpoint to send to routing table size > 0 " << endpoint;
-    } else {
-      LOG(kError) << " No Endpoint to send to, Aborting Send!"
-                  << " Attempt to send a type : " << message.type() << " message"
-                  << " to " << HexSubstr(message.source_id())
-                  << " From " << HexSubstr(routing_table.kKeys().identity);
-      return;
-    }
-  } else {
-    LOG(kVerbose) << " Direct message to " << endpoint;
-  }
-  std::string serialised_message(message.SerializeAsString());
-  rudp::MessageSentFunctor message_sent_functor;
-  if (relay_and_i_am_closest || direct_message || has_relay_ip) {  //  retry only once
-    message_sent_functor = [](bool message_sent) {
-    message_sent ?  LOG(kError) << "Sent to a relay node" :
-                    LOG(kError) << "could not send to a relay node";
-    };
-  } else {
-      message_sent_functor = [=, &rudp, &routing_table](bool message_sent) {
-      if (!message_sent) {
-         LOG(kInfo) << " Send retry !! ";
-         Endpoint endpoint = routing_table.GetClosestNode(NodeId(message.destination_id()),
-                                                  1).endpoint;
-          rudp.Send(endpoint, serialised_message, message_sent_functor);
-      } else {
-        LOG(kInfo) << " Send succeeded ";
-      }
-    };
-  }
-  LOG(kVerbose) << " >>>>>>>>>>>>>>> rudp send message to " << endpoint << " <<<<<<<<<<<<<<<<<<<<";
-  rudp.Send(endpoint, serialised_message, message_sent_functor);
-}
 
 bool ClosestToMe(protobuf::Message &message, RoutingTable &routing_table) {
   return routing_table.AmIClosestNode(NodeId(message.destination_id()));
@@ -123,10 +60,11 @@ void ValidateThisNode(rudp::ManagedConnections &rudp,
   } else {
     if(routing_table.AddNode(node_info)) {
       LOG(kVerbose) << "Added node to routing table. node id " << HexSubstr(node_id.String());
-      SendOn(rpcs::ProxyConnect(node_id,routing_table.kKeys().identity, their_endpoint.external),
-                                rudp,
-                                routing_table,
-                                Endpoint());  // check if this is a boostrap candidate
+      ProcessSend(rpcs::ProxyConnect(node_id,routing_table.kKeys().identity,
+                                     their_endpoint.external),
+                  rudp,
+                  routing_table,
+                  Endpoint());  // check if this is a boostrap candidate
     } else {
       LOG(kVerbose) << "Not adding node to routing table  node id "
                     << HexSubstr(node_id.String())

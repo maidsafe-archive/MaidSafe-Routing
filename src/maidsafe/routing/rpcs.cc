@@ -46,7 +46,8 @@ const protobuf::Message Ping(const NodeId &node_id, const std::string &identity)
 }
 
 const protobuf::Message Connect(const NodeId &node_id, const rudp::EndpointPair &our_endpoint,
-                                const NodeId &my_node_id, Endpoint local_endpoint) {
+                                const NodeId &my_node_id, bool relay_message,
+                                Endpoint local_endpoint) {
   assert(node_id.IsValid() && "Invalid node_id");
   assert(my_node_id.IsValid() && "Invalid my node_id");
  // BOOST_ASSERT_MSG(!our_endpoint.external.address().is_unspecified(), "Unspecified endpoint");
@@ -66,35 +67,39 @@ const protobuf::Message Connect(const NodeId &node_id, const rudp::EndpointPair 
   contact->set_node_id(my_node_id.String());
   protobuf_connect_request.set_timestamp(GetTimeStamp());
   message.set_destination_id(node_id.String());
-  message.set_source_id(my_node_id.String());
   message.set_data(protobuf_connect_request.SerializeAsString());
   message.set_direct(true);
   message.set_replication(1);
   message.set_type(2);
   message.set_id(0);
   message.set_client_node(false);
-  if (!local_endpoint.address().is_unspecified()) {  // I am not in anyones RT yet
-    LOG(kInfo) << "Connect RPC has relay ip : " << local_endpoint;
-    protobuf::Endpoint *pbendpoint;
-    pbendpoint = message.mutable_relay();
-    pbendpoint->set_ip(local_endpoint.address().to_string().c_str());
-    pbendpoint->set_port(local_endpoint.port());
-  } else {  // I am in someones RT
-    //message.set_relay_id(my_node_id.String());TODO(Prakash): set relay_id on request
+
+  if (!relay_message) {
+    message.set_source_id(my_node_id.String());
+  } else {
+    message.set_relay_id(my_node_id.String());
+    if (!local_endpoint.address().is_unspecified()) {  // I am not in anyones RT yet
+      LOG(kInfo) << "Connect RPC has relay ip : " << local_endpoint;
+      protobuf::Endpoint *pbendpoint;
+      pbendpoint = message.mutable_relay();
+      pbendpoint->set_ip(local_endpoint.address().to_string().c_str());
+      pbendpoint->set_port(local_endpoint.port());
+    }
   }
+
+
   assert(message.IsInitialized() && "Unintialised message");
   return message;
 }
 
 const protobuf::Message FindNodes(const NodeId &node_id, const NodeId &my_node_id,
-                                  Endpoint local_endpoint) {
+                                  bool relay_message, Endpoint local_endpoint) {
   assert(node_id.IsValid() && "Invalid node_id");
   protobuf::Message message;
   protobuf::FindNodesRequest find_nodes;
   find_nodes.set_num_nodes_requested(Parameters::closest_nodes_size);
   find_nodes.set_target_node(node_id.String());
   find_nodes.set_timestamp(GetTimeStamp());
-  message.set_source_id(my_node_id.String());
   message.set_last_id(my_node_id.String());
   message.set_destination_id(node_id.String());
   message.set_data(find_nodes.SerializeAsString());
@@ -103,14 +108,17 @@ const protobuf::Message FindNodes(const NodeId &node_id, const NodeId &my_node_i
   message.set_type(3);
   message.set_id(0);
   message.set_client_node(false);
-  if (!local_endpoint.address().is_unspecified()) {    // I am not in anyones RT yet
-    LOG(kInfo) << "FindNode RPC has relay ip : " << local_endpoint;
-    protobuf::Endpoint *pbendpoint;
-    pbendpoint = message.mutable_relay();
-    pbendpoint->set_ip(local_endpoint.address().to_string().c_str());
-    pbendpoint->set_port(local_endpoint.port());
-  } else {  // I am in someones RT  TODO(Prakash): set relay_id on request
-    //message.set_relay_id(my_node_id.String());
+  if (!relay_message) {
+    message.set_source_id(my_node_id.String());
+  } else {
+    message.set_relay_id(my_node_id.String());
+    if (!local_endpoint.address().is_unspecified()) {  // I am not in anyones RT yet
+      LOG(kInfo) << "Connect RPC has relay ip : " << local_endpoint;
+      protobuf::Endpoint *pbendpoint;
+      pbendpoint = message.mutable_relay();
+      pbendpoint->set_ip(local_endpoint.address().to_string().c_str());
+      pbendpoint->set_port(local_endpoint.port());
+    }
   }
   assert(message.IsInitialized() && "Unintialised message");
   return message;

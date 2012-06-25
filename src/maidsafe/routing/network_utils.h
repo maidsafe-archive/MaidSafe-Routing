@@ -10,8 +10,8 @@
  *  the explicit written permission of the board of directors of maidsafe.net. *
  ******************************************************************************/
 
-#ifndef MAIDSAFE_ROUTING_UTILS_H_
-#define MAIDSAFE_ROUTING_UTILS_H_
+#ifndef MAIDSAFE_ROUTING_NETWORK_UTILS_H_
+#define MAIDSAFE_ROUTING_NETWORK_UTILS_H_
 
 #include "maidsafe/routing/parameters.h"
 #include "maidsafe/routing/routing_table.h"
@@ -22,25 +22,23 @@ namespace routing {
 
 namespace protobuf { class Message;}  // namespace protobuf
 
-class Message {
-  Message(protobuf::Message message);
-
-};
-
-bool ClosestToMe(protobuf::Message &message);
-
-bool InClosestNodesToMe(protobuf::Message &message);
-
-void ValidateThisNode(rudp::ManagedConnections &rudp,
-                      RoutingTable &routing_table,
-                      const NodeId& node_id,
-                      const asymm::PublicKey &public_key,
-                      const rudp::EndpointPair &their_endpoint,
-                      const rudp::EndpointPair &our_endpoint,
-                      const bool &client);
+//  Message processing evaluation order
+// 1. If valid parameter - endpoint is provided, the message is sent once to it. On failure,
+//    it does nothing.
+// 2. If message has destination id, message is sent to the right destination or to node close to
+//    destination id. On failure, it retries to send until it tries with all its RT nodes.
+// 3. If message has relay id & endpoint and its a response type message, the NRT is seeked for
+//    the relay id. If relay id exist in NRT, it is send to that node. Or else, message is sent to
+//    the relay_endpoint provided in the message. On failure, it does nothing.
+// Note: For sending relay requests, message with empty source id may be provided, along with
+// direct endpint if RT is empty.
+void ProcessSend(protobuf::Message message,
+                 rudp::ManagedConnections &rudp,
+                 RoutingTable &routing_table,
+                 Endpoint endpoint = Endpoint());
 
 }  // namespace routing
 
 }  // namespace maidsafe
 
-#endif  // MAIDSAFE_ROUTING_UTILS_H_
+#endif  // MAIDSAFE_ROUTING_NETWORK_UTILS_H_
