@@ -69,8 +69,8 @@ typedef std::function<void(const int32_t& /*mesasge type*/,
 * This is fired to validate a new peer node. User is supposed to validate the node and call        *
 * ValidateThisNode() method with valid public key.                                                 *
 ***************************************************************************************************/
-typedef std::function<void(const asymm::PublicKey & /*public_key*/)> ValidateNodeFunctor;
-typedef std::function<void(const NodeId& /*node Id*/, ValidateNodeFunctor)> NodeValidationFunctor;
+typedef std::function<void(const asymm::PublicKey & /*public_key*/)> GivePublicKeyFunctor;
+typedef std::function<void(const NodeId& /*node Id*/, GivePublicKeyFunctor)> RequestPublicKeyFunctor;
 
 typedef std::function<bool(const std::string & /*data*/)> HaveCacheDatafunctor;
 typedef std::function<void(const std::string &/* data*/)> StoreCacheDataFunctor;
@@ -88,14 +88,17 @@ typedef std::function<void(const std::vector<NodeInfo> /*new_close_nodes*/)>
 
 struct Functors {
   Functors()
-      : message_received(nullptr),
-        network_status(nullptr),
-        close_node_replaced(nullptr),
-        node_validation(nullptr) {}
+      : message_received(),
+        network_status(),
+        close_node_replaced(),
+        set_public_key(),
+        request_public_key()
+         {}
   MessageReceivedFunctor message_received;
   NetworkStatusFunctor network_status;
   CloseNodeReplacedFunctor close_node_replaced;
-  NodeValidationFunctor node_validation;
+  GivePublicKeyFunctor set_public_key;
+  RequestPublicKeyFunctor request_public_key;
 };
 
 }  // namespace routing

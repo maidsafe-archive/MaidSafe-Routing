@@ -73,7 +73,7 @@ class Node {
     functors_.message_received = std::bind(&Node::MessageReceived, this, args::_1, args::_2,
                                            args::_3, args::_4);
     functors_.network_status = nullptr;
-    functors_.node_validation = nullptr;
+    functors_.request_public_key = nullptr;
     routing_.reset(new Routing(key_, client_mode));
     std::lock_guard<std::mutex> lock(mutex_);
     id_ = next_id_++;
@@ -262,7 +262,7 @@ class RoutingFunctionalTest : public testing::Test {
     return testing::AssertionSuccess();
   }
 
-  void Validate(const NodeId& node_id, ValidateNodeFunctor node_validate) {
+  void Validate(const NodeId& node_id, GivePublicKeyFunctor node_validate) {
    auto iter = std::find_if(nodes_.begin(), nodes_.end(),
           [&node_id](const NodePtr &node) { return node->key_.identity == node_id.String(); });
     EXPECT_NE(iter, nodes_.end());
@@ -271,7 +271,7 @@ class RoutingFunctionalTest : public testing::Test {
   }
 
   void SetNodeValidationFunctor(NodePtr node) {
-    node->functors_.node_validation = std::bind(&RoutingFunctionalTest::Validate, this, args::_1,
+    node->functors_.request_public_key = std::bind(&RoutingFunctionalTest::Validate, this, args::_1,
                                                 args::_2);
   }
 

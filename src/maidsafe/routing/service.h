@@ -33,7 +33,7 @@ void Ping(RoutingTable &routing_table,
 void Connect(RoutingTable &routing_table,
              rudp::ManagedConnections &rudp,
              protobuf::Message &message,
-             NodeValidationFunctor node_validation_functor);
+             RequestPublicKeyFunctor node_validation_functor);
 void FindNodes(RoutingTable &routing_table,
               protobuf::Message &message);
 void ProxyConnect(RoutingTable &routing_table,

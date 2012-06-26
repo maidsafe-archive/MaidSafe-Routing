@@ -60,7 +60,7 @@ void Ping(RoutingTable &routing_table, protobuf::Message &message) {
 void Connect(RoutingTable &routing_table,
              rudp::ManagedConnections &rudp,
              protobuf::Message &message,
-             NodeValidationFunctor node_validation_functor) {
+             RequestPublicKeyFunctor node_validation_functor) {
   if (message.destination_id() != routing_table.kKeys().identity) {
     LOG(kVerbose) << "Connect -- not for us and we should not pass it on.";
     return;  // not for us and we should not pass it on.

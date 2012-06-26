@@ -47,7 +47,7 @@ void Ping(protobuf::Message& message) {
 void Connect(RoutingTable &routing_table,
              rudp::ManagedConnections &rudp,
              protobuf::Message& message,
-             NodeValidationFunctor node_validation_functor) {
+             RequestPublicKeyFunctor node_validation_functor) {
   protobuf::ConnectResponse connect_response;
   protobuf::ConnectRequest connect_request;
   if (!connect_response.ParseFromString(message.data())) {

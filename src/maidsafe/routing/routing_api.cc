@@ -120,7 +120,7 @@ int Routing::Join(Functors functors, Endpoint peer_endpoint, Endpoint local_endp
 void Routing::ConnectFunctors(Functors functors) {
   impl_->routing_table_.set_close_node_replaced_functor(functors.close_node_replaced);
   impl_->message_handler_.set_message_received_functor(functors.message_received);
-  impl_->message_handler_.set_node_validation_functor(functors.node_validation);
+  impl_->message_handler_.set_node_validation_functor(functors.request_public_key);
   impl_->functors_ = functors;
 }
 

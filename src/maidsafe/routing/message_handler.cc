@@ -40,7 +40,7 @@ MessageHandler::MessageHandler(std::shared_ptr<AsioService> asio_service,
                                rudp::ManagedConnections &rudp,
                                Timer &timer_ptr,
                                MessageReceivedFunctor message_received_functor,
-                               NodeValidationFunctor node_validation_functor)
+                               RequestPublicKeyFunctor node_validation_functor)
     : asio_service_(asio_service),
       routing_table_(routing_table),
       rudp_(rudp),
@@ -298,7 +298,7 @@ void MessageHandler::set_message_received_functor(MessageReceivedFunctor message
   message_received_functor_ = message_received;
 }
 
-void MessageHandler::set_node_validation_functor(NodeValidationFunctor node_validation) {
+void MessageHandler::set_node_validation_functor(RequestPublicKeyFunctor node_validation) {
   node_validation_functor_ = node_validation;
 }
 

@@ -41,7 +41,7 @@ RoutingPrivate::RoutingPrivate(const asymm::Keys &keys,
       waiting_for_response_(),
       direct_non_routing_table_connections_(),
       message_handler_(asio_service_, routing_table_, rudp_, timer_, MessageReceivedFunctor(),
-                       NodeValidationFunctor()),
+                       RequestPublicKeyFunctor()),
       joined_(false),
       bootstrap_file_path_(),
       client_mode_(client_mode) {

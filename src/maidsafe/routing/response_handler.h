@@ -36,7 +36,7 @@ void Ping(protobuf::Message &message);
 void Connect(RoutingTable &routing_table,
              rudp::ManagedConnections &rudp,
              protobuf::Message &message,
-             NodeValidationFunctor node_validation_functor);
+             RequestPublicKeyFunctor node_validation_functor);
 void FindNode(RoutingTable &routing_table,
               rudp::ManagedConnections &rudp,
               const protobuf::Message &message,

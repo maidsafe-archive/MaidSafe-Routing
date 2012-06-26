@@ -39,7 +39,7 @@ class MessageHandler {
                  rudp::ManagedConnections &rudp,
                  Timer &timer_ptr,
                  MessageReceivedFunctor message_received_functor,
-                 NodeValidationFunctor node_validation_functor);
+                 RequestPublicKeyFunctor node_validation_functor);
   void ProcessMessage(protobuf::Message &message);
   void DirectMessage(protobuf::Message &message);
   void RoutingMessage(protobuf::Message &message);
@@ -54,7 +54,7 @@ class MessageHandler {
   void set_bootstrap_endpoint(Endpoint endpoint);
   void set_my_relay_endpoint(Endpoint endpoint);
   void set_message_received_functor(MessageReceivedFunctor message_received);
-  void set_node_validation_functor(NodeValidationFunctor node_validation);
+  void set_node_validation_functor(RequestPublicKeyFunctor node_validation);
   Endpoint bootstrap_endpoint();
 
  private:
@@ -70,7 +70,7 @@ class MessageHandler {
   Timer &timer_ptr_;
   CacheManager cache_manager_;
   MessageReceivedFunctor message_received_functor_;
-  NodeValidationFunctor node_validation_functor_;
+  RequestPublicKeyFunctor node_validation_functor_;
 };
 
 }  // namespace routing
