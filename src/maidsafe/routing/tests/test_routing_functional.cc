@@ -253,9 +253,9 @@ class RoutingFunctionalTest : public testing::Test {
     }
 
     std::unique_lock<std::mutex> lock(mutex);
-    bool result = cond_var.wait_for(lock, std::chrono::seconds(10),
+    bool result = cond_var.wait_for(lock, std::chrono::seconds(15),
         [&]()->bool {
-        LOG(kInfo) << " message count" << messages_count << " expected " << expected_messages << "\n";
+        LOG(kInfo) << " message count " << messages_count << " expected " << expected_messages << "\n";
         return messages_count == expected_messages; });
     EXPECT_TRUE(result);
     if (!result) {
