@@ -104,7 +104,7 @@ bool Routing::CheckBootStrapFilePath() {
   return false;
 }
 
-int Routing::Join(Functors functors, Endpoint peer_endpoint, Endpoint /*local_endpoint*/) {
+int Routing::Join(Functors functors, Endpoint peer_endpoint) {
   if (!peer_endpoint.address().is_unspecified()) {  // BootStrapFromThisEndpoint
     return BootStrapFromThisEndpoint(functors, peer_endpoint);
   } else  {  // Default Join
@@ -134,6 +134,7 @@ void Routing::DisconnectFunctors() {
 // the endpoint is the endpoint to connect to.
 int Routing::BootStrapFromThisEndpoint(Functors functors,
                                        const boost::asio::ip::udp::endpoint &endpoint) {
+  LOG(kInfo) << " Doing a BootStrapFromThisEndpoint Join.";
   LOG(kInfo) << " Entered bootstrap IP address : " << endpoint.address().to_string();
   LOG(kInfo) << " Entered bootstrap Port       : " << endpoint.port();
   if (impl_->routing_table_.Size() > 0) {

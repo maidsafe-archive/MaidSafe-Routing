@@ -257,6 +257,8 @@ void MessageHandler::ProcessRelayRequest(protobuf::Message &message) {
 
 bool MessageHandler::RelayDirectMessageIfNeeded(protobuf::Message &message) {
   assert(message.destination_id() == routing_table_.kKeys().identity);
+  if (!message.has_relay_id())
+    return false;
   //  Only direct responses need to be relayed
   if ((message.destination_id() != message.relay_id()) &&  (message.type() < 0)) {
     message.clear_destination_id(); // to allow network util to identify it as relay message

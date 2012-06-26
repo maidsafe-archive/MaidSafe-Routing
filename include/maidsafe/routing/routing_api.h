@@ -58,15 +58,13 @@ class Routing {
   * allow node validatation or else no node will be added to routing and    *
   * will fail to  join the network.                                         *
   * To force the node to use a specific endpoint for bootstrapping, provide *
-  * peer_endpoint (i.e. private network). Note: local_endpoint should only  *
-  * be provided to state that its zero state network.                       *
+  * peer_endpoint (i.e. private network).                                   *
   ***************************************************************************/
   int Join(Functors functors,
-           boost::asio::ip::udp::endpoint peer_endpoint = boost::asio::ip::udp::endpoint(),
-           boost::asio::ip::udp::endpoint local_endpoint = boost::asio::ip::udp::endpoint());
+           boost::asio::ip::udp::endpoint peer_endpoint = boost::asio::ip::udp::endpoint());
 
 /***************************************************************************
-*  WARNING THIS FUNCTION SHOULD BE ONLY USED TO jOIN FIRST TWO ZERO STATE  *
+*  WARNING THIS FUNCTION SHOULD BE ONLY USED TO JOIN FIRST TWO ZERO STATE  *
 *  NODES                                                                   *
 * *************************************************************************/
   int ZeroStateJoin(Functors functors, const Endpoint &local_endpoint,
