@@ -145,7 +145,13 @@ TEST(APITest, BEH_API_ZeroState) {
     }
   };
 
-  //functors1.request_public_key = request_public_key1;
+
+  functors3.request_public_key = [&](const NodeId& node_id, GivePublicKeyFunctor give_key )
+  {
+      LOG(kVerbose) << "node_validation called for " << HexSubstr(node_id.String());
+      if (node_id == NodeId(keys2.identity))
+        give_key(keys2.public_key);
+  };
 
   Endpoint endpoint1(GetLocalIp(), 5000);
   Endpoint endpoint2(GetLocalIp(), 5001);
@@ -158,13 +164,6 @@ TEST(APITest, BEH_API_ZeroState) {
 
   EXPECT_EQ(kSuccess, a2.get());  // wait for promise !
   EXPECT_EQ(kSuccess, a1.get());  // wait for promise !
-
-  functors3.request_public_key = [&](const NodeId& node_id, GivePublicKeyFunctor give_key )
-  {
-      LOG(kVerbose) << "node_validation called for " << HexSubstr(node_id.String());
-      if (node_id == NodeId(keys2.identity))
-        give_key(keys2.public_key);
-  };
 
   auto a3 = std::async(std::launch::async,
                        [&]{return R3.Join(functors3, endpoint2);});

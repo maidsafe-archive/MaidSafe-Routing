@@ -44,6 +44,7 @@ bool RoutingTable::AddNode(NodeInfo& node) {
 bool RoutingTable::AddOrCheckNode(NodeInfo& node, const bool &remove) {
   std::lock_guard<std::mutex> lock(mutex_);
   if (node.node_id == kNodeId_) {
+    LOG(kInfo) << "tried to add own node !!";
     return false;
   }
   // if we already have node return false

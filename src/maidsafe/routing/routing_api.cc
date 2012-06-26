@@ -249,18 +249,18 @@ int Routing::DoZeroStateJoin(Functors functors, Endpoint peer_endpoint, Endpoint
   rudp::EndpointPair our_endpoint_pair;
   their_endpoint_pair.external = their_endpoint_pair.local = bootstrap_endpoint;
   our_endpoint_pair.external = our_endpoint_pair.local = local_endpoint;
-//  ValidateNodeFunctor validate_node = [=] (const asymm::PublicKey &key)
-//    {
-//    LOG(kError) << "NEED TO VALIDATE THE NODE HERE";
-//    static_assert("FIXME");
-//      ValidateThisNode(NodeId(impl_->keys_.identity),
-//                              key,
-//                              their_endpoint_pair,
-//                              our_endpoint_pair,
-//                              false);
-//    };
-//  if (impl_->functors_.node_validation)
-//    impl_->functors_.node_validation(NodeId(impl_->keys_.identity), validate_node);
+  GivePublicKeyFunctor validate_node = [=] (const asymm::PublicKey &key)
+    {
+      ValidateThisNode(impl_->rudp_,
+                       impl_->routing_table_,
+                       NodeId(),
+                       key,
+                       their_endpoint_pair,
+                       our_endpoint_pair,
+                       false);
+    };
+  if (impl_->functors_.request_public_key)
+    impl_->functors_.request_public_key(NodeId(), validate_node);
 
   // now poll for routing table size to have at least one node available
   uint8_t poll_count(0);
