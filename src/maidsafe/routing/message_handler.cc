@@ -73,7 +73,7 @@ bool MessageHandler::CheckCacheData(protobuf::Message &message) {
 
 void MessageHandler::RoutingMessage(protobuf::Message& message) {
   LOG(kInfo) << "MessageHandler::RoutingMessage";
-  bool is_response(message.type() < 0);
+  bool is_response(IsResponse(message));
   switch (message.type()) {
     case -1 :  // ping
       response::Ping(message);
@@ -112,8 +112,8 @@ void MessageHandler::RoutingMessage(protobuf::Message& message) {
   ProcessSend(message, rudp_, routing_table_, direct_endpoint);
 }
 
-void MessageHandler::MessageForMe(protobuf::Message &message) {
-   if (message.type() > 100) {  // request
+void MessageHandler::NodeLevelMessageForMe(protobuf::Message &message) {
+   if (IsRequest(message)) {  // request
     LOG(kVerbose) <<"Message for me !!";
     ReplyFunctor response_functor = [=](const std::string& reply_message)  {
       if (reply_message.empty())
@@ -127,7 +127,7 @@ void MessageHandler::MessageForMe(protobuf::Message &message) {
     message_out.set_source_id(routing_table_.kKeys().identity);
     ProcessSend(message_out, rudp_, routing_table_);
     };
-    if (message.type() < 0)
+    if (IsResponse(message))
       message.set_type(-message.type());
     message_received_functor_(static_cast<int>(message.type()), message.data(), NodeId(),
                               response_functor);
@@ -143,11 +143,11 @@ void MessageHandler::DirectMessage(protobuf::Message& message) {
     return;
   }
   LOG(kVerbose) <<"Direct Message for me!!!";
-  if ((message.type() < 100) && (message.type() > -100)) {
+  if (IsRoutingMessage(message)) {
     LOG(kVerbose) <<"Direct RoutingMessage type";
     RoutingMessage(message);
   } else {
-    MessageForMe(message);
+    NodeLevelMessageForMe(message);
   }
 }
 
@@ -165,12 +165,12 @@ void MessageHandler::CloseNodesMessage(protobuf::Message& message) {
     message.set_destination_id(i.String());
     ProcessSend(message, rudp_, routing_table_);
   }
-  if ((message.type() < 100) && (message.type() > -100)) {
+  if (IsRoutingMessage(message)) {
     LOG(kVerbose) <<"I am closest node RoutingMessage";
     RoutingMessage(message);
   } else {
-    LOG(kVerbose) <<"I am closest node Message";
-    MessageForMe(message);
+    LOG(kVerbose) <<"I am closest node level Message";
+    NodeLevelMessageForMe(message);
   }
 }
 
@@ -179,12 +179,12 @@ if (!routing_table_.IsMyNodeInRange(NodeId(message.destination_id()), 1))
   return;
 
   LOG(kVerbose) <<"I am in closest proximity to this group message";
-  if ((message.type() < 100) && (message.type() > -100)) {
+  if (IsRoutingMessage(message)) {
     LOG(kVerbose) <<"I am closest node RoutingMessage";
     RoutingMessage(message);
   } else {
     LOG(kVerbose) <<"I am closest node Message";
-    MessageForMe(message);
+    NodeLevelMessageForMe(message);
   }
 }
 
@@ -219,7 +219,7 @@ void MessageHandler::ProcessMessage(protobuf::Message &message) {
   if (routing_table_.IsMyNodeInRange(NodeId(message.destination_id()),
                                      Parameters::closest_nodes_size)) {
     LOG(kVerbose) <<"I am in closest proximity to this message";
-    if ((message.type() < 100) && (message.type() > -100)) {
+    if (IsRoutingMessage(message)) {
       RoutingMessage(message);
       return;
     } else {
@@ -260,7 +260,7 @@ bool MessageHandler::RelayDirectMessageIfNeeded(protobuf::Message &message) {
   if (!message.has_relay_id())
     return false;
   //  Only direct responses need to be relayed
-  if ((message.destination_id() != message.relay_id()) &&  (message.type() < 0)) {
+  if ((message.destination_id() != message.relay_id()) &&  IsResponse(message)) {
     message.clear_destination_id(); // to allow network util to identify it as relay message
     ProcessSend(message, rudp_, routing_table_);
     LOG(kVerbose) <<"Relaying response Message to" <<  HexSubstr(message.relay_id());

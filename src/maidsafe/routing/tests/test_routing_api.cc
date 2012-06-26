@@ -115,8 +115,6 @@ TEST(APITest, BEH_API_ManualBootstrap) {
   R2.Join(functors, endpoint1g);
   EXPECT_EQ(kSuccess, R1.GetStatus());
   EXPECT_EQ(kSuccess, R2.GetStatus());
-//  EXPECT_TRUE(boost::filesystem::remove(node1_config));
-//  EXPECT_TRUE(boost::filesystem::remove(node2_config));
 }
 
 TEST(APITest, BEH_API_ZeroState) {
@@ -161,16 +159,45 @@ TEST(APITest, BEH_API_ZeroState) {
   EXPECT_GT(R3.GetStatus(), 0);
 }
 
-//TEST(APITest, BEH_API_NodeNetwork) {
-//  const uint16_t network_size(30);
-//  std::vector<asymm::Keys> network(network_size, MakeKeys());
-////  int count(0);
-////  for (auto &i : network) {
-////    Routing AnodeToBEFixed (i, fs::unique_path(fs::temp_directory_path() / i.identity), nullptr, false);
-////  }
-//  // TODO(dirvine) do this properly !!!
-//
-//}
+TEST(APITest, BEH_API_NodeNetwork) {
+  uint8_t kNetworkSize(5);
+  std::vector<NodeInfo> node_infos;
+  std::vector<std::shared_ptr<Routing>> routing_node;
+  std::map<NodeId, asymm::Keys> key_map;
+  for (auto i(0); i != kNetworkSize; ++i) {
+    NodeInfo node(MakeNodeInfo());
+    node_infos.push_back(node);
+    key_map.insert(std::make_pair(NodeId(node.node_id), GetKeys(node)));
+    routing_node.push_back(std::make_shared<Routing>(GetKeys(node), false));
+  }
+  Functors functors;
+
+  functors.request_public_key = [&](const NodeId& node_id, GivePublicKeyFunctor give_key ) {
+      LOG(kWarning) << "node_validation called for " << HexSubstr(node_id.String());
+      auto itr(key_map.find(NodeId(node_id)));
+      if (key_map.end() != itr)
+        give_key((*itr).second.public_key);
+  };
+
+  auto a1 = std::async(std::launch::async, [&]{
+    return routing_node[0]->ZeroStateJoin(functors, node_infos[0].endpoint,
+                                          node_infos[1]);});  // NOLINT (Prakash)
+  auto a2 = std::async(std::launch::async, [&]{
+    return routing_node[1]->ZeroStateJoin(functors, node_infos[1].endpoint,
+                                          node_infos[0]);});  // NOLINT (Prakash)
+
+  EXPECT_EQ(kSuccess, a2.get());  // wait for promise !
+  EXPECT_EQ(kSuccess, a1.get());  // wait for promise !
+
+  for (auto i(2); i != kNetworkSize; ++i) {
+    ASSERT_EQ(kSuccess, routing_node[i]->Join(functors, node_infos[i%2].endpoint));
+    LOG(kVerbose) << "Joined !!!!!!!!!!!!!!!!! " << i + 1 << " nodes";
+  }
+
+  for (auto i(0); i != kNetworkSize; ++i) {
+    EXPECT_GT(routing_node[i]->GetStatus(), 0);
+  }
+}
 
 }  // namespace test
 

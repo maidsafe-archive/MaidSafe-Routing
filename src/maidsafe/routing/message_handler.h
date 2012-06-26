@@ -41,14 +41,9 @@ class MessageHandler {
                  MessageReceivedFunctor message_received_functor,
                  RequestPublicKeyFunctor node_validation_functor);
   void ProcessMessage(protobuf::Message &message);
-  void DirectMessage(protobuf::Message &message);
-  void RoutingMessage(protobuf::Message &message);
-  void CloseNodesMessage(protobuf::Message &message);
-  void GroupMessage(protobuf::Message &message);
   bool CheckCacheData(protobuf::Message &message);
   bool CheckAndSendToLocalClients(protobuf::Message &message);
   void Send(protobuf::Message &message);
-  bs2::signal<void(int, std::string)> &MessageReceivedSignal();
   void set_bootstrap_endpoint(Endpoint endpoint);
   void set_my_relay_endpoint(Endpoint endpoint);
   void set_message_received_functor(MessageReceivedFunctor message_received);
@@ -59,9 +54,13 @@ class MessageHandler {
   MessageHandler(const MessageHandler&);  // no copy
   MessageHandler(const MessageHandler&&);  // no move
   MessageHandler& operator=(const MessageHandler&);  // no assign
-  void MessageForMe(protobuf::Message &message);
+  void DirectMessage(protobuf::Message &message);
+  void RoutingMessage(protobuf::Message &message);
+  void NodeLevelMessageForMe(protobuf::Message &message);
+  void CloseNodesMessage(protobuf::Message &message);
   void ProcessRelayRequest(protobuf::Message &message);
   bool RelayDirectMessageIfNeeded(protobuf::Message &message);
+  void GroupMessage(protobuf::Message &message);
   std::shared_ptr<AsioService> asio_service_;
   RoutingTable &routing_table_;
   rudp::ManagedConnections &rudp_;

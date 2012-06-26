@@ -39,6 +39,11 @@ void ValidateThisNode(rudp::ManagedConnections &rudp,
                       const rudp::EndpointPair &our_endpoint,
                       const bool &client);
 
+bool IsRoutingMessage(const protobuf::Message &message);
+bool IsNodeLevelMessage(const protobuf::Message &message);
+bool IsRequest(const protobuf::Message &message);
+bool IsResponse(const protobuf::Message &message);
+
 }  // namespace routing
 
 }  // namespace maidsafe

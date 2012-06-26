@@ -19,6 +19,8 @@
 #include "maidsafe/routing/routing_pb.h"
 #include "maidsafe/routing/routing_table.h"
 #include "maidsafe/routing/rpcs.h"
+#include "maidsafe/routing/utils.h"
+
 
 namespace maidsafe {
 
@@ -88,7 +90,7 @@ void ProcessSend(protobuf::Message message,
   }
 
   // Relay message responses only
-  if (message.has_relay_id() && (message.type() < 0)) {  // relay type message
+  if (message.has_relay_id() && (IsResponse(message))) {  // relay type message
     if (false /*AmIConnectedToNonRoutingNode(message.relay_id())*/)  // if I have relay id in NRT
       endpoint; // = NRT.getendpoint(message.relay_id());
     else if (message.has_relay()){  //  relay endpoint is the last resort to find endpoint
