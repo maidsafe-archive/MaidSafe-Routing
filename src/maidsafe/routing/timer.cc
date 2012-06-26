@@ -49,8 +49,6 @@ void Timer::KillTask(TaskId task_id) {
     // message timed out or task killed
     (*it).second.second(ReturnCode::kTimedOut, "");
     queue_.erase(it);
-  } else {
-    LOG(kError) << "Attempt to kill an expired or non existent task";
   }
 }
 

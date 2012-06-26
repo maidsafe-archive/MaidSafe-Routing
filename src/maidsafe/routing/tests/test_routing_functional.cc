@@ -145,7 +145,7 @@ class RoutingFunctionalTest : public testing::Test {
                        std::condition_variable *cond_var) {
     std::lock_guard<std::mutex> lock(*mutex);
     (*message_count)++;
-//    LOG(kVerbose) << "ResponseHandler .... " << *message_count;
+    LOG(kVerbose) << "ResponseHandler .... " << *message_count;
     if (*message_count == total_messages) {
       cond_var->notify_one();
       LOG(kVerbose) << "ResponseHandler .... DONE " << *message_count;
@@ -246,7 +246,7 @@ class RoutingFunctionalTest : public testing::Test {
             source_node->routing_->Send(NodeId(dest_node->GetKeys().identity), group_id, data, 101,
                 std::bind(&RoutingFunctionalTest::ResponseHandler, this, args::_1, args::_2,
                           &messages_count, expected_messages, &mutex, &cond_var),
-                3, ConnectType::kSingle);
+                15, ConnectType::kSingle);
           }
         }
       }
@@ -254,7 +254,9 @@ class RoutingFunctionalTest : public testing::Test {
 
     std::unique_lock<std::mutex> lock(mutex);
     bool result = cond_var.wait_for(lock, std::chrono::seconds(10),
-        [&](){ return messages_count == expected_messages; });
+        [&]()->bool {
+        LOG(kInfo) << " message count" << messages_count << " expected " << expected_messages << "\n";
+        return messages_count == expected_messages; });
     EXPECT_TRUE(result);
     if (!result) {
       return testing::AssertionFailure() << "Send operarion timed out: "
@@ -286,6 +288,7 @@ TEST_F(RoutingFunctionalTest, FUNC_Send) {
   SetUpNetwork(6);
   EXPECT_TRUE(Send(2));
   LOG(kVerbose) << "Func send is over";
+  Sleep(boost::posix_time::seconds(20));
 }
 
 TEST_F(RoutingFunctionalTest, FUNC_RandomSend) {

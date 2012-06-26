@@ -160,7 +160,7 @@ TEST(APITest, BEH_API_ZeroState) {
 }
 
 TEST(APITest, BEH_API_NodeNetwork) {
-  uint8_t kNetworkSize(5);
+  uint8_t kNetworkSize(15);
   std::vector<NodeInfo> node_infos;
   std::vector<std::shared_ptr<Routing>> routing_node;
   std::map<NodeId, asymm::Keys> key_map;
@@ -190,10 +190,11 @@ TEST(APITest, BEH_API_NodeNetwork) {
   EXPECT_EQ(kSuccess, a1.get());  // wait for promise !
 
   for (auto i(2); i != kNetworkSize; ++i) {
+    std::async(std::launch::async, [&]{
     ASSERT_EQ(kSuccess, routing_node[i]->Join(functors, node_infos[i%2].endpoint));
     LOG(kVerbose) << "Joined !!!!!!!!!!!!!!!!! " << i + 1 << " nodes";
-  }
-
+  });
+}
   for (auto i(0); i != kNetworkSize; ++i) {
     EXPECT_GT(routing_node[i]->GetStatus(), 0);
   }

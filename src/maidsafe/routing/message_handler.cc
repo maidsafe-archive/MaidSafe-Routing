@@ -125,6 +125,10 @@ void MessageHandler::NodeLevelMessageForMe(protobuf::Message &message) {
     message_out.set_data(reply_message);
     message_out.set_last_id(routing_table_.kKeys().identity);
     message_out.set_source_id(routing_table_.kKeys().identity);
+    if (message.has_id())
+      message_out.set_id(message.id());
+    else
+      LOG(kInfo) << "Message to be sent back had no id";
     ProcessSend(message_out, rudp_, routing_table_);
     };
     if (IsResponse(message))
@@ -134,7 +138,7 @@ void MessageHandler::NodeLevelMessageForMe(protobuf::Message &message) {
     LOG(kInfo) << "Routing message detected";
   } else {  // response
     timer_ptr_.ExecuteTaskNow(message);
-    LOG(kInfo) << "Response detected";
+    LOG(kInfo) << "Response detected and function run";
   }
 }
 
