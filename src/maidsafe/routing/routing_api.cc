@@ -27,6 +27,7 @@
 
 #include "maidsafe/routing/bootstrap_file_handler.h"
 #include "maidsafe/routing/message_handler.h"
+#include "maidsafe/routing/network_utils.h"
 #include "maidsafe/routing/node_id.h"
 #include "maidsafe/routing/parameters.h"
 #include "maidsafe/routing/return_codes.h"
@@ -182,6 +183,7 @@ int Routing::DoJoin(Functors functors) {
 
   std::string find_node_rpc(rpcs::FindNodes(NodeId(impl_->keys_.identity),
                                             NodeId(impl_->keys_.identity),
+                                            true,
                                             endpoint_pair.external).SerializeAsString());
   boost::promise<bool> message_sent_promise;
   auto message_sent_future = message_sent_promise.get_future();
@@ -297,7 +299,7 @@ SendStatus Routing::Send(const NodeId &destination_id,
   proto_message.set_data(data);
   proto_message.set_direct(static_cast<int32_t>(connect_type));
   proto_message.set_type(type);
-  SendOn(proto_message, impl_->rudp_, impl_->routing_table_);
+  ProcessSend(proto_message, impl_->rudp_, impl_->routing_table_);
   return SendStatus::kSuccess;
 }
 
@@ -320,9 +322,9 @@ void Routing::ConnectionLost(const Endpoint &lost_endpoint) {
       (impl_->routing_table_.IsMyNodeInRange(node_info.node_id,
                                              Parameters::closest_nodes_size)))) {
     // close node, get more
-    SendOn(rpcs::FindNodes(NodeId(impl_->keys_.identity),
-                           NodeId(impl_->keys_.identity)),
-                           impl_->rudp_, impl_->routing_table_);
+    ProcessSend(rpcs::FindNodes(NodeId(impl_->keys_.identity),
+                                NodeId(impl_->keys_.identity)),
+                                impl_->rudp_, impl_->routing_table_);
   }
   if (!impl_->routing_table_.DropNode(lost_endpoint))
     return;
@@ -338,9 +340,9 @@ void Routing::ConnectionLost(const Endpoint &lost_endpoint) {
     if ((*it).endpoint ==  lost_endpoint) {
       impl_->direct_non_routing_table_connections_.erase(it);
       // close node, get more
-      SendOn(rpcs::FindNodes(NodeId(impl_->keys_.identity),
-                             NodeId(impl_->keys_.identity)),
-                             impl_->rudp_, impl_->routing_table_);
+      ProcessSend(rpcs::FindNodes(NodeId(impl_->keys_.identity),
+                                  NodeId(impl_->keys_.identity)),
+                                  impl_->rudp_, impl_->routing_table_);
       return;
     }
   }

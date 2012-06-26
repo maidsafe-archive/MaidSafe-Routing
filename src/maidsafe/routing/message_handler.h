@@ -47,8 +47,6 @@ class MessageHandler {
   void GroupMessage(protobuf::Message &message);
   bool CheckCacheData(protobuf::Message &message);
   bool CheckAndSendToLocalClients(protobuf::Message &message);
-  void SwapWithMySourceIdIfNeeded(protobuf::Message &message);
-  bool RelayDirectMessageIfNeeded(protobuf::Message &message);
   void Send(protobuf::Message &message);
   bs2::signal<void(int, std::string)> &MessageReceivedSignal();
   void set_bootstrap_endpoint(Endpoint endpoint);
@@ -62,6 +60,8 @@ class MessageHandler {
   MessageHandler(const MessageHandler&&);  // no move
   MessageHandler& operator=(const MessageHandler&);  // no assign
   void MessageForMe(protobuf::Message &message);
+  void ProcessRelayRequest(protobuf::Message &message);
+  bool RelayDirectMessageIfNeeded(protobuf::Message &message);
   std::shared_ptr<AsioService> asio_service_;
   RoutingTable &routing_table_;
   rudp::ManagedConnections &rudp_;

@@ -16,6 +16,7 @@
 #include "maidsafe/rudp/managed_connections.h"
 
 #include "maidsafe/routing/log.h"
+#include "maidsafe/routing/network_utils.h"
 #include "maidsafe/routing/node_id.h"
 #include "maidsafe/routing/parameters.h"
 #include "maidsafe/routing/response_handler.h"
@@ -52,7 +53,7 @@ MessageHandler::MessageHandler(std::shared_ptr<AsioService> asio_service,
       node_validation_functor_(node_validation_functor) {}
 
 void MessageHandler::Send(protobuf::Message& message) {
-  SendOn(message, rudp_, routing_table_);
+  ProcessSend(message, rudp_, routing_table_);
 }
 
 bool MessageHandler::CheckCacheData(protobuf::Message &message) {
@@ -61,7 +62,7 @@ bool MessageHandler::CheckCacheData(protobuf::Message &message) {
   } else  if (message.type() == 100) {
     if (cache_manager_.GetFromCache(message)) {
       message.set_source_id(routing_table_.kKeys().identity);
-      SendOn(message, rudp_, routing_table_);
+      ProcessSend(message, rudp_, routing_table_);
       return true;
     }
   } else {
@@ -108,7 +109,7 @@ void MessageHandler::RoutingMessage(protobuf::Message& message) {
   if (routing_table_.Size() == 0) {  // I can only send to bootstrap_endpoint
     direct_endpoint = bootstrap_endpoint_;
   }
-  SendOn(message, rudp_, routing_table_, direct_endpoint);
+  ProcessSend(message, rudp_, routing_table_, direct_endpoint);
 }
 
 void MessageHandler::MessageForMe(protobuf::Message &message) {
@@ -124,7 +125,7 @@ void MessageHandler::MessageForMe(protobuf::Message &message) {
     message_out.set_data(reply_message);
     message_out.set_last_id(routing_table_.kKeys().identity);
     message_out.set_source_id(routing_table_.kKeys().identity);
-    SendOn(message_out, rudp_, routing_table_);
+    ProcessSend(message_out, rudp_, routing_table_);
     };
     if (message.type() < 0)
       message.set_type(-message.type());
@@ -151,16 +152,8 @@ void MessageHandler::DirectMessage(protobuf::Message& message) {
 }
 
 void MessageHandler::CloseNodesMessage(protobuf::Message& message) {
-  if (message.has_relay()) {
-    Endpoint send_to_endpoint;
-    send_to_endpoint.address(boost::asio::ip::address::from_string(message.relay().ip()));
-    send_to_endpoint.port(static_cast<unsigned short>(message.relay().port()));
-    rudp::MessageSentFunctor message_sent_functor;  // TODO (FIXME)
-    rudp_.Send(send_to_endpoint, message.SerializeAsString(), message_sent_functor);
-    return;
-  }
   if ((message.direct()) && (!routing_table_.AmIClosestNode(NodeId(message.destination_id())))) {
-    SendOn(message, rudp_, routing_table_);
+    ProcessSend(message, rudp_, routing_table_);
     return;
   }
   // I am closest so will send to all my replicant nodes
@@ -170,7 +163,7 @@ void MessageHandler::CloseNodesMessage(protobuf::Message& message) {
                                        static_cast<uint16_t>(message.replication()));
   for (auto i : close) {
     message.set_destination_id(i.String());
-    SendOn(message, rudp_, routing_table_);
+    ProcessSend(message, rudp_, routing_table_);
   }
   if ((message.type() < 100) && (message.type() > -100)) {
     LOG(kVerbose) <<"I am closest node RoutingMessage";
@@ -196,20 +189,25 @@ if (!routing_table_.IsMyNodeInRange(NodeId(message.destination_id()), 1))
 }
 
 void MessageHandler::ProcessMessage(protobuf::Message &message) {
-  // client connected messages -> out
-  if (message.source_id().empty()) {  // relay mode
-    // if zero state we may be closest
-    if (routing_table_.Size() <= Parameters::closest_nodes_size) {
-      if (message.type() == 3) {
-        service::FindNodes(routing_table_, message);
-        SendOn(message, rudp_, routing_table_);
-        return;
-      }
-    }
-    message.set_source_id(routing_table_.kKeys().identity);
-    SendOn(message, rudp_, routing_table_);
+  // Invalid destination id, unknown message
+  if ((NodeId(message.destination_id()).IsValid())) {
+    LOG(kVerbose) << "Stray message dropped, need destination id for processing.";
+    return;
   }
-  // message for me !
+
+  // Relay mode message
+  if (message.source_id().empty()) {
+   ProcessRelayRequest(message);
+   return;
+  }
+
+  // Invalid source id, unknown message
+  if ((NodeId(message.source_id()).IsValid())) {
+    LOG(kVerbose) << "Stray message dropped, need source id for processing.";
+    return;
+  }
+
+  // Direct message
   if (message.destination_id() == routing_table_.kKeys().identity) {
     LOG(kVerbose) << "Direct message!";
     DirectMessage(message);
@@ -233,48 +231,34 @@ void MessageHandler::ProcessMessage(protobuf::Message &message) {
     LOG(kVerbose) <<"I am not in closest proximity to this message";
   }
   // default
-  SendOn(message, rudp_, routing_table_);
+  ProcessSend(message, rudp_, routing_table_);
 }
 
-void MessageHandler::SwapWithMySourceIdIfNeeded(protobuf::Message &message) {
-  if(message.has_source_id())
-    return;
-  if (message.has_relay()) {
-    message.set_source_id(routing_table_.kKeys().identity);
-  } else if(message.has_relay_id()) {
-    message.set_source_id(routing_table_.kKeys().identity);
-    // TODO(Prakash): Add this node to my non RT
+void MessageHandler::ProcessRelayRequest(protobuf::Message &message) {
+  assert(!message.has_source_id());
+  // if small network yet, we may be closest.
+  if (routing_table_.Size() <= Parameters::closest_nodes_size) {
+    if (message.type() == 3) {
+      service::FindNodes(routing_table_, message);
+      ProcessSend(message, rudp_, routing_table_);
+        return;
+    }
   }
+  // I am now the src id for the relay message and will forward back response to original node.
+  message.set_source_id(routing_table_.kKeys().identity);
+  ProcessSend(message, rudp_, routing_table_);
 }
 
 bool MessageHandler::RelayDirectMessageIfNeeded(protobuf::Message &message) {
+  assert(message.destination_id() == routing_table_.kKeys().identity);
   if (message.type() < 0) { //  Only direct responses need to be relayed
-    Endpoint relay_endpoint;
-    if ((message.has_relay_id()) && (message.relay_id() != routing_table_.kKeys().identity)) {
-      LOG(kVerbose) <<"DirectMessage -- message has_relay_id and relay id is not me";
-      bool i_am_connected_to_relay_id_node(false); //TODO(Prakash): FIXME if relay_id in RT and NRT
-      if (i_am_connected_to_relay_id_node) {
-        relay_endpoint = Endpoint(); //TODO(Prakash): Find relay id in my RT & non RT
-        message.set_destination_id(message.relay_id());
-        SendOn(message, rudp_, routing_table_, relay_endpoint);
-        return true;
-      } else {
-        LOG(kVerbose) <<"DirectMessage - Droping message with relay id not in my RT & NRT.";
-        return true;
-      }
-    } else if (message.has_relay()) {  // node with unpublished node_id
-      relay_endpoint.address(boost::asio::ip::address::from_string(message.relay().ip()));
-      relay_endpoint.port(static_cast<unsigned short>(message.relay().port()));
-      LOG(kVerbose) << "has relay ip " << relay_endpoint << ", my relay ip " << my_relay_endpoint_;
-      if (relay_endpoint != my_relay_endpoint_) {
-        LOG(kVerbose) <<"DirectMessage -- replying to the relay_endpoint.";
-        message.set_destination_id(NodeId().String());
-        SendOn(message, rudp_, routing_table_, relay_endpoint);
-        return true;
-      }
-    }
+    message.clear_destination_id(); // to allow network util to identify it as relay message
+    ProcessSend(message, rudp_, routing_table_);
+    LOG(kVerbose) <<"Relaying response Message to" <<  HexSubstr(message.relay_id());
+    return true;
+  } else {  // not a relay message response, its for me!!
+    return false;
   }
-  return false;
 }
 
 // // TODO(dirvine) implement client handler

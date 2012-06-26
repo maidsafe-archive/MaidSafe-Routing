@@ -20,6 +20,7 @@
 #include "maidsafe/rudp/managed_connections.h"
 
 #include "maidsafe/routing/log.h"
+#include "maidsafe/routing/network_utils.h"
 #include "maidsafe/routing/node_id.h"
 #include "maidsafe/routing/return_codes.h"
 #include "maidsafe/routing/routing_api.h"
@@ -133,16 +134,20 @@ void FindNode(RoutingTable &routing_table,
       }
       LOG(kWarning) << " GetAvailableEndpoint for peer - " << direct_endpoint << " my endpoint - " << endpoint.external;
       Endpoint relay_endpoint;
-      if (routing_table.Size() == 0)  // Not in anyones RT, need a path back through relay ip.
+      bool relay_message(false);
+      if (routing_table.Size() == 0) { // Not in anyones RT, need a path back through relay ip.
         relay_endpoint = endpoint.external;
+        relay_message = true;
+      }
 
-      SendOn(rpcs::Connect(NodeId(find_nodes.nodes(i)),
-                           endpoint,
-                           NodeId(routing_table.kKeys().identity),
-                           relay_endpoint),
-             rudp,
-             routing_table,
-             direct_endpoint);
+      ProcessSend(rpcs::Connect(NodeId(find_nodes.nodes(i)),
+                                endpoint,
+                                NodeId(routing_table.kKeys().identity),
+                                relay_message,
+                                relay_endpoint),
+                  rudp,
+                  routing_table,
+                  direct_endpoint);
     }
   }
 }
