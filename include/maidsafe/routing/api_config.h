@@ -92,13 +92,17 @@ struct Functors {
         network_status(),
         close_node_replaced(),
         set_public_key(),
-        request_public_key()
+        request_public_key(),
+        have_cache_data_(),
+        store_cache_data_()
          {}
   MessageReceivedFunctor message_received;
   NetworkStatusFunctor network_status;
   CloseNodeReplacedFunctor close_node_replaced;
   GivePublicKeyFunctor set_public_key;
   RequestPublicKeyFunctor request_public_key;
+  HaveCacheDatafunctor have_cache_data_;
+  StoreCacheDataFunctor store_cache_data_;
 };
 
 }  // namespace routing

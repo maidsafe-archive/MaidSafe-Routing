@@ -213,9 +213,7 @@ void MessageHandler::ProcessMessage(protobuf::Message &message) {
     DirectMessage(message);
     return;
   }
-  // cache response to get data that's cacheable
-  if ((message.type() == -100) && (CheckCacheData(message)))
-    return;
+
   // I am in closest proximity to this message
   if (routing_table_.IsMyNodeInRange(NodeId(message.destination_id()),
                                      Parameters::closest_nodes_size)) {
