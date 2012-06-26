@@ -63,8 +63,7 @@ class Node {
  public:
   explicit Node(bool client_mode = false)
       : id_(0),
-        key_(MakeKeys()),
-        endpoint_(GetLocalIp(), GetRandomPort()),
+        node_info_(MakeNodeInfo()),
         routing_(),
         functors_(),
         mutex_(),
@@ -74,7 +73,7 @@ class Node {
                                            args::_3, args::_4);
     functors_.network_status = nullptr;
     functors_.request_public_key = nullptr;
-    routing_.reset(new Routing(key_, client_mode));
+    routing_.reset(new Routing(GetKeys(), client_mode));
     std::lock_guard<std::mutex> lock(mutex_);
     id_ = next_id_++;
   }
@@ -92,17 +91,25 @@ class Node {
 
   int GetStatus() { return routing_->GetStatus(); }
 
-  NodeId node_id() { return NodeId(key_.identity); }
+  NodeId node_id() { return NodeId(GetKeys().identity); }
 
-  int JoinZero(Functors functors, const Endpoint &peer_endpoint, const Endpoint &local_endpoint) {
-    return routing_->Join(functors, peer_endpoint, local_endpoint);
+  asymm::Keys GetKeys() {
+    asymm::Keys keys;
+    keys.identity = node_info_.node_id.String();
+    keys.public_key = node_info_.public_key;
+    return keys;
+  }
+
+  int ZeroStateJoin(Functors functors, const Endpoint &local_endpoint,
+                    const NodeInfo &peer_node_info) {
+    return routing_->ZeroStateJoin(functors, local_endpoint, peer_node_info);
   }
 
   int Join(Functors functors, const Endpoint &peer_endpoint) {
     return routing_->Join(functors, peer_endpoint);
   }
 
-  Endpoint endpoint() const { return endpoint_; }
+  Endpoint endpoint() const { return node_info_.endpoint; }
 
   std::shared_ptr<Routing> routing() const { return routing_; }
 
@@ -113,8 +120,7 @@ class Node {
   static size_t next_id_;
  protected:
   size_t id_;
-  asymm::Keys key_;
-  Endpoint endpoint_;
+  NodeInfo node_info_;
   std::shared_ptr<Routing> routing_;
   Functors functors_;
   std::mutex mutex_;
@@ -151,15 +157,12 @@ class RoutingFunctionalTest : public testing::Test {
      nodes_.push_back(node2);
      SetNodeValidationFunctor(node1);
      SetNodeValidationFunctor(node2);
-     auto f1 = std::async(std::launch::async, &Node::JoinZero, node1, node1->functors_,
-                          node2->endpoint(), node1->endpoint());
-     auto f2 = std::async(std::launch::async, &Node::JoinZero, node2, node2->functors_,
-                          node1->endpoint(), node2->endpoint());
+     auto f1 = std::async(std::launch::async, &Node::ZeroStateJoin, node1, node1->functors_,
+                          node1->endpoint(), node2->node_info_);
+     auto f2 = std::async(std::launch::async, &Node::ZeroStateJoin, node2, node2->functors_,
+                          node2->endpoint(), node1->node_info_);
      EXPECT_EQ(kSuccess, f2.get());
      EXPECT_EQ(kSuccess, f1.get());
-//     bootstrap_endpoints_.push_back(node1->endpoint());
-//     bootstrap_endpoints_.push_back(node2->endpoint());
-//     WriteBootstrapFile(bootstrap_endpoints_, bootstrap_path_);
    }
 
    void SetUpNetwork(const size_t &size) {
@@ -213,7 +216,7 @@ class RoutingFunctionalTest : public testing::Test {
       do {
         dest_id = RandomUint32() % dest_nodes.size();
       } while (source_nodes[source_id]->Id() == dest_nodes[dest_id]->Id());
-      dest_node_id = NodeId(dest_nodes[dest_id]->key_.identity);
+      dest_node_id = NodeId(dest_nodes[dest_id]->GetKeys().identity);
       source_nodes[source_id]->routing_->Send(dest_node_id, group_id, data, 101,
           std::bind(&RoutingFunctionalTest::ResponseHandler, this, args::_1, args::_2,
                     &messages_count, messages, &mutex, &cond_var),
@@ -241,7 +244,7 @@ class RoutingFunctionalTest : public testing::Test {
         for (auto dest_node : nodes_) {
           if (source_node->Id() != dest_node->Id()) {
             std::string data(RandomAlphaNumericString(256));
-            source_node->routing_->Send(NodeId(dest_node->key_.identity), group_id, data, 101,
+            source_node->routing_->Send(NodeId(dest_node->GetKeys().identity), group_id, data, 101,
                 std::bind(&RoutingFunctionalTest::ResponseHandler, this, args::_1, args::_2,
                           &messages_count, messages, &mutex, &cond_var),
                 10, ConnectType::kSingle);
@@ -263,11 +266,11 @@ class RoutingFunctionalTest : public testing::Test {
   }
 
   void Validate(const NodeId& node_id, GivePublicKeyFunctor node_validate) {
-   auto iter = std::find_if(nodes_.begin(), nodes_.end(),
-          [&node_id](const NodePtr &node) { return node->key_.identity == node_id.String(); });
+    auto iter = std::find_if(nodes_.begin(), nodes_.end(),
+        [&node_id](const NodePtr &node) { return node->GetKeys().identity == node_id.String(); });
     EXPECT_NE(iter, nodes_.end());
     if (iter != nodes_.end())
-      node_validate((*iter)->key_.public_key);
+      node_validate((*iter)->GetKeys().public_key);
   }
 
   void SetNodeValidationFunctor(NodePtr node) {
@@ -281,7 +284,7 @@ class RoutingFunctionalTest : public testing::Test {
 };
 
 TEST_F(RoutingFunctionalTest, FUNC_Send) {
-  SetUpNetwork(9);
+  SetUpNetwork(2);
   EXPECT_TRUE(Send(1));
 }
 
