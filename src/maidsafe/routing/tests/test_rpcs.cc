@@ -169,6 +169,8 @@ TEST(RPC, BEH_FindNodesMessageNodeRelayMode) {
   EXPECT_TRUE(message.has_relay());
   EXPECT_TRUE(message.has_relay_id());
   EXPECT_EQ(us.node_id.String(), message.relay_id());
+  NodeId node(message.relay_id());
+  ASSERT_TRUE(node.IsValid());
 }
 
 TEST(RPC, BEH_ProxyConnectMessageInitialised) {

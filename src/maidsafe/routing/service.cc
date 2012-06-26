@@ -135,20 +135,15 @@ void Connect(RoutingTable &routing_table,
   connect_response.set_timestamp(GetTimeStamp());
   connect_response.set_original_request(message.data());
   connect_response.set_original_signature(message.signature());
-  message.set_destination_id(message.source_id());
-  message.set_source_id(routing_table.kKeys().identity);
   message.set_data(connect_response.SerializeAsString());
   message.set_direct(true);
   message.set_replication(1);
   message.set_type(-2);
-  if (!message.has_relay()) {
-    message.set_relay_id(connect_request.contact().node_id());
-  } else {
-    protobuf::Endpoint *pbendpoint;
-    pbendpoint = message.mutable_relay();
-    pbendpoint->set_ip(their_public_endpoint.address().to_string().c_str());
-    pbendpoint->set_port(their_public_endpoint.port());
-  }
+  if (message.has_source_id())
+    message.set_destination_id(message.source_id());
+  else
+    message.clear_destination_id();
+  message.set_source_id(routing_table.kKeys().identity);
   assert(message.IsInitialized() && "unintialised message");
 }
 
@@ -166,7 +161,10 @@ void FindNodes(RoutingTable &routing_table, protobuf::Message &message) {
   found_nodes.set_original_signature(message.signature());
   found_nodes.set_timestamp(GetTimeStamp());
   assert(found_nodes.IsInitialized() && "unintialised found_nodes response");
-  message.set_destination_id(message.source_id());
+  if (message.has_source_id())
+    message.set_destination_id(message.source_id());
+  else
+    message.clear_destination_id();
   message.set_source_id(routing_table.kKeys().identity);
   message.set_data(found_nodes.SerializeAsString());
   message.set_direct(true);

@@ -42,8 +42,8 @@ NodeInfo MakeNodeInfo() {
   asymm::Keys keys;
   asymm::GenerateKeyPair(&keys);
   node.public_key = keys.public_key;
-  node.endpoint.address(boost::asio::ip::address::from_string("192.168.1.1"));
-  node.endpoint.port(++test_routing_api_node_port);
+  node.endpoint.address(GetLocalIp());
+  node.endpoint.port(GetRandomPort());
   return node;
 }
 
@@ -52,6 +52,13 @@ asymm::Keys MakeKeys() {
   asymm::Keys keys;
   keys.identity = node.node_id.String();
   keys.public_key = node.public_key;
+  return keys;
+}
+
+asymm::Keys GetKeys(const NodeInfo &node_info) {
+  asymm::Keys keys;
+  keys.identity = node_info.node_id.String();
+  keys.public_key = node_info.public_key;
   return keys;
 }
 
@@ -113,60 +120,42 @@ TEST(APITest, BEH_API_ManualBootstrap) {
 }
 
 TEST(APITest, BEH_API_ZeroState) {
-  asymm::Keys keys1(MakeKeys());
-  asymm::Keys keys2(MakeKeys());
-  asymm::Keys keys3(MakeKeys());
-  Routing R1(keys1, false);
-  Routing R2(keys2, false);
-  Routing R3(keys3, false);
-  bool zero_state1(true), zero_state2(true);
+  NodeInfo node1(MakeNodeInfo());
+  NodeInfo node2(MakeNodeInfo());
+  NodeInfo node3(MakeNodeInfo());
+//  asymm::Keys keys3(MakeKeys());
+  std::map<NodeId, asymm::Keys> key_map;
+  key_map.insert(std::make_pair(NodeId(node1.node_id), GetKeys(node1)));
+  key_map.insert(std::make_pair(NodeId(node2.node_id), GetKeys(node2)));
+  key_map.insert(std::make_pair(NodeId(node3.node_id), GetKeys(node3)));
+  node1.endpoint.port(5000);
+  node2.endpoint.port(5001);
+
+  Routing R1(GetKeys(node1), false);
+  Routing R2(GetKeys(node2), false);
+  Routing R3(GetKeys(node3), false);
   Functors functors1, functors2, functors3;
 
   functors1.request_public_key = [&](const NodeId& node_id, GivePublicKeyFunctor give_key )
   {
-     if (zero_state1) {
-       LOG(kVerbose) << "node_validation called for " << HexSubstr(keys2.identity);
-       give_key(keys2.public_key);
-       zero_state1 = false;
-     }
+      LOG(kWarning) << "node_validation called for " << HexSubstr(node_id.String());
+      auto itr(key_map.find(NodeId(node_id)));
+      if (key_map.end() != itr)
+        give_key((*itr).second.public_key);
   };
 
-
-  functors2.request_public_key = [&](const NodeId& node_id, GivePublicKeyFunctor give_key )
-  {
-    if (zero_state2) {
-      LOG(kVerbose) << "node_validation called for " << HexSubstr(keys1.identity);
-      give_key(keys1.public_key);
-      zero_state2 = false;
-    } else {
-      LOG(kVerbose) << "node_validation called for " << HexSubstr(node_id.String());
-      if (node_id == NodeId(keys3.identity))
-        give_key(keys3.public_key);
-    }
-  };
-
-
-  functors3.request_public_key = [&](const NodeId& node_id, GivePublicKeyFunctor give_key )
-  {
-      LOG(kVerbose) << "node_validation called for " << HexSubstr(node_id.String());
-      if (node_id == NodeId(keys2.identity))
-        give_key(keys2.public_key);
-  };
-
-  Endpoint endpoint1(GetLocalIp(), 5000);
-  Endpoint endpoint2(GetLocalIp(), 5001);
-  Endpoint endpoint3(GetLocalIp(), 5002);
+  functors2.request_public_key = functors3.request_public_key = functors1.request_public_key;
 
   auto a1 = std::async(std::launch::async,
-                       [&]{return R1.Join(functors1, endpoint2, endpoint1);});  // NOLINT (Prakash)
+      [&]{return R1.ZeroStateJoin(functors1, node1.endpoint, node2);});  // NOLINT (Prakash)
   auto a2 = std::async(std::launch::async,
-                       [&]{return R2.Join(functors2, endpoint1, endpoint2);});  // NOLINT (Prakash)
+      [&]{return R2.ZeroStateJoin(functors2, node2.endpoint, node1);});  // NOLINT (Prakash)
 
   EXPECT_EQ(kSuccess, a2.get());  // wait for promise !
   EXPECT_EQ(kSuccess, a1.get());  // wait for promise !
 
   auto a3 = std::async(std::launch::async,
-                       [&]{return R3.Join(functors3, endpoint2);});
+                       [&]{return R3.Join(functors3, node2.endpoint);});  // NOLINT (Prakash)
   EXPECT_EQ(kSuccess, a3.get());  // wait for promise !
 
   EXPECT_GT(R3.GetStatus(), 0);
@@ -181,7 +170,7 @@ TEST(APITest, BEH_API_ZeroState) {
 ////  }
 //  // TODO(dirvine) do this properly !!!
 //
-//}*/
+//}
 
 }  // namespace test
 

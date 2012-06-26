@@ -64,6 +64,14 @@ class Routing {
   int Join(Functors functors,
            boost::asio::ip::udp::endpoint peer_endpoint = boost::asio::ip::udp::endpoint(),
            boost::asio::ip::udp::endpoint local_endpoint = boost::asio::ip::udp::endpoint());
+
+/***************************************************************************
+*  WARNING THIS FUNCTION SHOULD BE ONLY USED TO jOIN FIRST TWO ZERO STATE  *
+*  NODES                                                                   *
+* *************************************************************************/
+  int ZeroStateJoin(Functors functors, const Endpoint &local_endpoint,
+                    const NodeInfo &peer_node_info);
+
   /**************************************************************************
   * returns current network status as int (> 0 is connected)                *
   ***************************************************************************/
@@ -99,7 +107,6 @@ class Routing {
   int BootStrapFromThisEndpoint(Functors functors,
                                 const boost::asio::ip::udp::endpoint& endpoint);
   int DoJoin(Functors functors);
-  int DoZeroStateJoin(Functors functors, Endpoint peer_endpoint, Endpoint local_endpoint);
   void ReceiveMessage(const std::string &message);
   void ConnectionLost(const Endpoint &lost_endpoint);
   bool CheckBootStrapFilePath();

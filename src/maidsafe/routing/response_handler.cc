@@ -139,7 +139,7 @@ void FindNode(RoutingTable &routing_table,
         relay_endpoint = endpoint.external;
         relay_message = true;
       }
-
+      LOG(kVerbose) << " Sending Connect rpc to - " << HexSubstr(find_nodes.nodes(i));
       ProcessSend(rpcs::Connect(NodeId(find_nodes.nodes(i)),
                                 endpoint,
                                 NodeId(routing_table.kKeys().identity),

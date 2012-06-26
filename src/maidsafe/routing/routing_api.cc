@@ -104,10 +104,8 @@ bool Routing::CheckBootStrapFilePath() {
   return false;
 }
 
-int Routing::Join(Functors functors, Endpoint peer_endpoint, Endpoint local_endpoint) {
-  if (!local_endpoint.address().is_unspecified()) {  // DoZeroStateJoin
-    return DoZeroStateJoin(functors, peer_endpoint, local_endpoint);
-  } else if (!peer_endpoint.address().is_unspecified()) {  // BootStrapFromThisEndpoint
+int Routing::Join(Functors functors, Endpoint peer_endpoint, Endpoint /*local_endpoint*/) {
+  if (!peer_endpoint.address().is_unspecified()) {  // BootStrapFromThisEndpoint
     return BootStrapFromThisEndpoint(functors, peer_endpoint);
   } else  {  // Default Join
     LOG(kInfo) << " Doing a default join";
@@ -218,10 +216,11 @@ int Routing::DoJoin(Functors functors) {
   }
 }
 
-int Routing::DoZeroStateJoin(Functors functors, Endpoint peer_endpoint, Endpoint local_endpoint) {
+int Routing::ZeroStateJoin(Functors functors, const Endpoint &local_endpoint,
+                           const NodeInfo &peer_node) {
   assert((!impl_->client_mode_) && "no client nodes allowed in zero state network");
   impl_->bootstrap_nodes_.clear();
-  impl_->bootstrap_nodes_.push_back(peer_endpoint);
+  impl_->bootstrap_nodes_.push_back(peer_node.endpoint);
   if (impl_->bootstrap_nodes_.empty()) {
     LOG(kInfo) << "No bootstrap nodes Aborted Join !!";
     return kInvalidBootstrapContacts;
@@ -241,28 +240,20 @@ int Routing::DoZeroStateJoin(Functors functors, Endpoint peer_endpoint, Endpoint
     LOG(kError) << "could not bootstrap zero state node with " << bootstrap_endpoint;
     return kNoOnlineBootstrapContacts;
   }
-  assert((bootstrap_endpoint == peer_endpoint) && "This should be only used in zero state network");
+  assert((bootstrap_endpoint == peer_node.endpoint) &&
+         "This should be only used in zero state network");
   LOG(kVerbose) << local_endpoint << " Bootstraped with remote endpoint " << bootstrap_endpoint;
   impl_->message_handler_.set_bootstrap_endpoint(bootstrap_endpoint);
   impl_->message_handler_.set_my_relay_endpoint(local_endpoint);
   rudp::EndpointPair their_endpoint_pair;  //  zero state nodes must be directly connected endpoint
   rudp::EndpointPair our_endpoint_pair;
-  their_endpoint_pair.external = their_endpoint_pair.local = bootstrap_endpoint;
+  their_endpoint_pair.external = their_endpoint_pair.local = peer_node.endpoint;
   our_endpoint_pair.external = our_endpoint_pair.local = local_endpoint;
-  GivePublicKeyFunctor validate_node = [=] (const asymm::PublicKey &key)
-    {
-      ValidateThisNode(impl_->rudp_,
-                       impl_->routing_table_,
-                       NodeId(),
-                       key,
-                       their_endpoint_pair,
-                       our_endpoint_pair,
-                       false);
-    };
-  if (impl_->functors_.request_public_key)
-    impl_->functors_.request_public_key(NodeId(), validate_node);
 
-  // now poll for routing table size to have at least one node available
+  ValidateThisNode(impl_->rudp_, impl_->routing_table_, NodeId(peer_node.node_id),
+                   peer_node.public_key, their_endpoint_pair, our_endpoint_pair, false);
+
+  // now poll for routing table size to have at other node available
   uint8_t poll_count(0);
   do {
     Sleep(boost::posix_time::milliseconds(100));

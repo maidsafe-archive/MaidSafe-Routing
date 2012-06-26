@@ -190,19 +190,20 @@ if (!routing_table_.IsMyNodeInRange(NodeId(message.destination_id()), 1))
 
 void MessageHandler::ProcessMessage(protobuf::Message &message) {
   // Invalid destination id, unknown message
-  if ((NodeId(message.destination_id()).IsValid())) {
+  if (!(NodeId(message.destination_id()).IsValid())) {
     LOG(kVerbose) << "Stray message dropped, need destination id for processing.";
     return;
   }
 
   // Relay mode message
   if (message.source_id().empty()) {
+   LOG(kVerbose) << "Relay mode message";
    ProcessRelayRequest(message);
    return;
   }
 
   // Invalid source id, unknown message
-  if ((NodeId(message.source_id()).IsValid())) {
+  if (!(NodeId(message.source_id()).IsValid())) {
     LOG(kVerbose) << "Stray message dropped, need source id for processing.";
     return;
   }
@@ -234,6 +235,13 @@ void MessageHandler::ProcessMessage(protobuf::Message &message) {
 
 void MessageHandler::ProcessRelayRequest(protobuf::Message &message) {
   assert(!message.has_source_id());
+  if ((message.destination_id() == routing_table_.kKeys().identity) &&
+    (message.type() > 0)) {
+    LOG(kVerbose) << "relay request with my destination id!";
+    DirectMessage(message);
+    return;
+  }
+
   // if small network yet, we may be closest.
   if (routing_table_.Size() <= Parameters::closest_nodes_size) {
     if (message.type() == 3) {
@@ -249,12 +257,14 @@ void MessageHandler::ProcessRelayRequest(protobuf::Message &message) {
 
 bool MessageHandler::RelayDirectMessageIfNeeded(protobuf::Message &message) {
   assert(message.destination_id() == routing_table_.kKeys().identity);
-  if (message.type() < 0) { //  Only direct responses need to be relayed
+  //  Only direct responses need to be relayed
+  if ((message.destination_id() != message.relay_id()) &&  (message.type() < 0)) {
     message.clear_destination_id(); // to allow network util to identify it as relay message
     ProcessSend(message, rudp_, routing_table_);
     LOG(kVerbose) <<"Relaying response Message to" <<  HexSubstr(message.relay_id());
     return true;
   } else {  // not a relay message response, its for me!!
+    LOG(kVerbose) << "not a relay message response, its for me!!";
     return false;
   }
 }

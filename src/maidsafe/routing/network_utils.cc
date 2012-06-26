@@ -35,7 +35,7 @@ void SendOn(protobuf::Message message,
   rudp::MessageSentFunctor message_sent_functor;
   if (!recursive_retry) {  //  send only once to direct endpoint
     message_sent_functor = [](bool message_sent) {
-    message_sent ?  LOG(kError) << "Sent to a direct node" :
+    message_sent ?  LOG(kInfo) << "Sent to a direct node" :
                     LOG(kError) << "could not send to a direct node";
     };
   } else {
