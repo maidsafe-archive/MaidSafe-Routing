@@ -285,10 +285,10 @@ class RoutingFunctionalTest : public testing::Test {
 };
 
 TEST_F(RoutingFunctionalTest, FUNC_Send) {
-  SetUpNetwork(4);
+  SetUpNetwork(10);
   EXPECT_TRUE(Send(2));
   LOG(kVerbose) << "Func send is over";
-  Sleep(boost::posix_time::seconds(20));
+  Sleep(boost::posix_time::seconds(5));
 }
 
 TEST_F(RoutingFunctionalTest, FUNC_RandomSend) {
