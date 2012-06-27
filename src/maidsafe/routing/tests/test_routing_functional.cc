@@ -34,36 +34,13 @@ namespace routing {
 
 namespace test {
 
-namespace {
-
-NodeInfo MakeNodeInfo() {
-  NodeInfo node;
-  node.node_id = NodeId(RandomString(64));
-  asymm::Keys keys;
-  asymm::GenerateKeyPair(&keys);
-  node.public_key = keys.public_key;
-  node.endpoint.address(GetLocalIp());
-  node.endpoint.port(GetRandomPort());
-  return node;
-}
-
-asymm::Keys MakeKeys() {
-  NodeInfo node(MakeNodeInfo());
-  asymm::Keys keys;
-  keys.identity = node.node_id.String();
-  keys.public_key = node.public_key;
-  return keys;
-}
-
-}  // unamed namespace
-
 class RoutingFunctionalTest;
 
 class Node {
  public:
   explicit Node(bool client_mode = false)
       : id_(0),
-        node_info_(MakeNodeInfo()),
+        node_info_(MakeNode()),
         routing_(),
         functors_(),
         mutex_(),
@@ -285,8 +262,8 @@ class RoutingFunctionalTest : public testing::Test {
 };
 
 TEST_F(RoutingFunctionalTest, FUNC_Send) {
-  SetUpNetwork(8);
-  EXPECT_TRUE(Send(20));
+  SetUpNetwork(6);
+  EXPECT_TRUE(Send(2));
   LOG(kVerbose) << "Func send is over";
   Sleep(boost::posix_time::seconds(5));
 }

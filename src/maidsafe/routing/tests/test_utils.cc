@@ -48,8 +48,8 @@ NodeInfo MakeNode() {
   asymm::Keys keys;
   asymm::GenerateKeyPair(&keys);
   node.public_key = keys.public_key;
-  node.endpoint.address(boost::asio::ip::address::from_string("192.168.1.1"));
-  node.endpoint.port(1500);
+  node.endpoint.address(GetLocalIp());
+  node.endpoint.port(GetRandomPort());
   return node;
 }
 
