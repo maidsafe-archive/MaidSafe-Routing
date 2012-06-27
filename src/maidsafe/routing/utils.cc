@@ -60,11 +60,11 @@ void ValidateThisNode(rudp::ManagedConnections &rudp,
   } else {
     if(routing_table.AddNode(node_info)) {
       LOG(kVerbose) << "Added node to routing table. node id " << HexSubstr(node_id.String());
-      ProcessSend(rpcs::ProxyConnect(node_id,routing_table.kKeys().identity,
-                                     their_endpoint.external),
-                  rudp,
-                  routing_table,
-                  Endpoint());  // check if this is a boostrap candidate
+      //ProcessSend(rpcs::ProxyConnect(node_id, NodeId(routing_table.kKeys().identity),
+      //                               their_endpoint),
+      //            rudp,
+      //            routing_table,
+      //            Endpoint());
     } else {
       LOG(kVerbose) << "Not adding node to routing table  node id "
                     << HexSubstr(node_id.String())
@@ -88,6 +88,20 @@ bool IsRequest(const protobuf::Message &message) {
 
 bool IsResponse(const protobuf::Message &message) {
   return !IsRequest(message);
+}
+
+void SetProtobufEndpoint(const Endpoint& endpoint, protobuf::Endpoint *pbendpoint) {
+  if (pbendpoint) {
+    pbendpoint->set_ip(endpoint.address().to_string().c_str());
+    pbendpoint->set_port(endpoint.port());
+  }
+}
+
+Endpoint GetEndpointFromProtobuf(const protobuf::Endpoint &pbendpoint) {
+ Endpoint endpoint;
+  endpoint.address(boost::asio::ip::address::from_string(pbendpoint.ip()));
+  endpoint.port(static_cast<unsigned short>(pbendpoint.port()));
+  return endpoint;
 }
 
 }  // namespace routing

@@ -18,6 +18,7 @@
 #include "maidsafe/routing/log.h"
 #include "maidsafe/routing/node_id.h"
 #include "maidsafe/routing/routing_pb.h"
+#include "maidsafe/routing/utils.h"
 
 namespace maidsafe {
 
@@ -124,25 +125,32 @@ const protobuf::Message FindNodes(const NodeId &node_id, const NodeId &my_node_i
   return message;
 }
 
-const protobuf::Message ProxyConnect(const NodeId &node_id, const std::string &identity,
-                                     const Endpoint &endpoint) {
+const protobuf::Message ProxyConnect(const NodeId &node_id, const NodeId &my_node_id,
+                                     const rudp::EndpointPair &endpoint_pair, bool relay_message,
+                                     Endpoint local_endpoint) {
   assert(node_id.IsValid() && "Invalid node_id");
-  assert(!identity.empty() && "Invalid identity");
-  assert(!endpoint.address().is_unspecified() && "Unspecified endpoint");
-
+  assert(my_node_id.IsValid() && "Invalid my node_id");
+  assert(!endpoint_pair.external.address().is_unspecified() && "Unspecified external endpoint");
+  assert(!endpoint_pair.local.address().is_unspecified() && "Unspecified local endpoint");
   protobuf::Message message;
   protobuf::ProxyConnectRequest proxy_connect_request;
-  protobuf::Endpoint *endpoint_proto = proxy_connect_request.mutable_endpoint();
-  endpoint_proto->set_ip(endpoint.address().to_string());
-  endpoint_proto->set_port(endpoint.port());
+  SetProtobufEndpoint(endpoint_pair.local, proxy_connect_request.mutable_local_endpoint());
+  SetProtobufEndpoint(endpoint_pair.external, proxy_connect_request.mutable_external_endpoint());
   message.set_destination_id(node_id.String());
-  message.set_source_id(identity);
   message.set_data(proxy_connect_request.SerializeAsString());
   message.set_direct(true);
   message.set_replication(1);
   message.set_type(4);
   message.set_id(0);
   message.set_client_node(false);
+  if (!relay_message) {
+    message.set_source_id(my_node_id.String());
+  } else {
+    message.set_relay_id(my_node_id.String());
+    if (!local_endpoint.address().is_unspecified()) {  // I am not in anyones RT yet
+      SetProtobufEndpoint(local_endpoint, message.mutable_relay());
+    }
+  }
   assert(message.IsInitialized() && "Unintialised message");
   return message;
 }

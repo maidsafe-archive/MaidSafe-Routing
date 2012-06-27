@@ -175,8 +175,12 @@ TEST(RPC, BEH_FindNodesMessageNodeRelayMode) {
 
 TEST(RPC, BEH_ProxyConnectMessageInitialised) {
   std::string destination = RandomString(64);
-  Endpoint endpoint(boost::asio::ip::address_v4::loopback(), GetRandomPort());
-  ASSERT_TRUE(rpcs::ProxyConnect(NodeId(destination), "me", endpoint).IsInitialized());
+  std::string source = RandomString(64);
+  rudp::EndpointPair endpoint_pair;
+  endpoint_pair.external =  Endpoint(boost::asio::ip::address_v4::loopback(), GetRandomPort());
+  endpoint_pair.local =  Endpoint(boost::asio::ip::address_v4::loopback(), GetRandomPort());
+  ASSERT_TRUE(rpcs::ProxyConnect(NodeId(destination), NodeId(source),
+                                 endpoint_pair).IsInitialized());
 }
 
 

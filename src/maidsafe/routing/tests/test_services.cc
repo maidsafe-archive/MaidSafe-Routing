@@ -116,6 +116,8 @@ TEST(Services, BEH_FindNodes) {
 }
 
 TEST(Services, BEH_ProxyConnect) {
+  asymm::Keys my_keys;
+  my_keys.identity = RandomString(64);
   asymm::Keys keys;
   keys.identity = RandomString(64);
   RoutingTable RT(keys, nullptr);
@@ -123,8 +125,11 @@ TEST(Services, BEH_ProxyConnect) {
   rudp::ManagedConnections rudp;
   protobuf::ProxyConnectRequest proxy_connect_request;
   // they send us an proxy connect rpc
-  Endpoint endpoint(boost::asio::ip::address_v4::loopback(), GetRandomPort());
-  protobuf::Message message = rpcs::ProxyConnect(NodeId(keys.identity), "me", endpoint);
+  rudp::EndpointPair endpoint_pair;
+  endpoint_pair.external =  Endpoint(boost::asio::ip::address_v4::loopback(), GetRandomPort());
+  endpoint_pair.local =  Endpoint(boost::asio::ip::address_v4::loopback(), GetRandomPort());
+  protobuf::Message message = rpcs::ProxyConnect(NodeId(keys.identity), NodeId(my_keys.identity),
+                                                 endpoint_pair);
   EXPECT_TRUE(message.destination_id() == keys.identity);
   EXPECT_TRUE(proxy_connect_request.ParseFromString(message.data()));  // us
   EXPECT_TRUE(proxy_connect_request.IsInitialized());

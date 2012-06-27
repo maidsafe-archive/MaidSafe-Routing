@@ -31,10 +31,6 @@ namespace routing {
 namespace service {
 
 void Ping(RoutingTable &routing_table, protobuf::Message &message) {
-//   if (message.destination_id() != NodeId::kKeySizeBytes) {
-//         LOG(kError) << "Invalid destination ID";
-//     return;
-//   }
   if (message.destination_id() != routing_table.kKeys().identity) {
     LOG(kError) << "Message not for us";
     return;  // not for us and we should not pass it on.
@@ -63,12 +59,14 @@ void Connect(RoutingTable &routing_table,
              RequestPublicKeyFunctor node_validation_functor) {
   if (message.destination_id() != routing_table.kKeys().identity) {
     LOG(kVerbose) << "Connect -- not for us and we should not pass it on.";
+    message.Clear();
     return;  // not for us and we should not pass it on.
   }
   protobuf::ConnectRequest connect_request;
   protobuf::ConnectResponse connect_response;
   if (!connect_request.ParseFromString(message.data())) {
     LOG(kVerbose) << "Unable to parse connect request";
+    message.Clear();
     return;  // no need to reply
   }
   NodeInfo node;
@@ -148,15 +146,24 @@ void Connect(RoutingTable &routing_table,
 }
 
 void FindNodes(RoutingTable &routing_table, protobuf::Message &message) {
+  LOG(kVerbose) << "FindNodes -- service()";
   protobuf::FindNodesRequest find_nodes;
+  if (!find_nodes.ParseFromString(message.data())) {
+    LOG(kVerbose) << "Unable to parse find node request";
+    message.Clear();
+    return;  // no need to reply
+  }
+  LOG(kVerbose) << "Parsed find node request -- " << HexSubstr(find_nodes.target_node());
   protobuf::FindNodesResponse found_nodes;
-  std::vector<NodeId>
-      nodes(routing_table.GetClosestNodes(NodeId(message.destination_id()),
-            static_cast<uint16_t>(find_nodes.num_nodes_requested())));
-  for (auto it = nodes.begin(); it != nodes.end(); ++it)
+  std::vector<NodeId> nodes(routing_table.GetClosestNodes(NodeId(find_nodes.target_node()),
+                              static_cast<uint16_t>(find_nodes.num_nodes_requested())));
+
+  for (auto it = nodes.begin(); it != nodes.end(); ++it) {
     found_nodes.add_nodes((*it).String());
+  }
   if (routing_table.Size() < Parameters::closest_nodes_size)
     found_nodes.add_nodes(routing_table.kKeys().identity);  // small network send our ID
+
   found_nodes.set_original_request(message.data());
   found_nodes.set_original_signature(message.signature());
   found_nodes.set_timestamp(GetTimeStamp());
@@ -188,10 +195,12 @@ void ProxyConnect(RoutingTable &routing_table, rudp::ManagedConnections &/*rudp*
   }
 
   // TODO(Prakash): any validation needed?
+  rudp::EndpointPair endpoint_pair;
+  endpoint_pair.external = GetEndpointFromProtobuf(proxy_connect_request.external_endpoint());
+  endpoint_pair.local = GetEndpointFromProtobuf(proxy_connect_request.local_endpoint());
 
-  Endpoint endpoint(boost::asio::ip::address::from_string(proxy_connect_request.endpoint().ip()),
-                    static_cast<uint16_t> (proxy_connect_request.endpoint().port()));
-  if (routing_table.AmIConnectedToEndpoint(endpoint)) {  // If endpoint already in routing table
+  // TODO(Prakash): Also check NRT and if its my bootstrap endpoint.
+  if (routing_table.AmIConnectedToEndpoint(endpoint_pair.external)) {  // If endpoint already in routing table
     proxy_connect_response.set_result(protobuf::kAlreadyConnected);
   } else {
     bool connect_result(false);

@@ -133,8 +133,9 @@ void MessageHandler::NodeLevelMessageForMe(protobuf::Message &message) {
     };
     if (IsResponse(message))
       message.set_type(-message.type());
-    message_received_functor_(static_cast<int>(message.type()), message.data(), NodeId(),
-                              response_functor);
+    if (message_received_functor_)
+      message_received_functor_(static_cast<int>(message.type()), message.data(), NodeId(),
+                                response_functor);
     LOG(kInfo) << "Routing message detected";
   } else {  // response
     timer_ptr_.ExecuteTaskNow(message);
