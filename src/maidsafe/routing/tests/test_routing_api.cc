@@ -157,10 +157,11 @@ TEST(APITest, BEH_API_ZeroState) {
   EXPECT_EQ(kSuccess, a3.get());  // wait for promise !
 
   EXPECT_GT(R3.GetStatus(), 0);
+  Sleep(boost::posix_time::seconds(2));  // Added to allow more than 1 node to join
 }
 
 TEST(APITest, BEH_API_NodeNetwork) {
-  uint8_t kNetworkSize(10);
+  uint8_t kNetworkSize(8);
   std::vector<NodeInfo> node_infos;
   std::vector<std::shared_ptr<Routing>> routing_node;
   std::map<NodeId, asymm::Keys> key_map;
@@ -172,7 +173,7 @@ TEST(APITest, BEH_API_NodeNetwork) {
   }
   Functors functors;
 
-  functors.request_public_key = [&](const NodeId& node_id, GivePublicKeyFunctor give_key ) {
+  functors.request_public_key = [=](const NodeId& node_id, GivePublicKeyFunctor give_key ) {
       LOG(kWarning) << "node_validation called for " << HexSubstr(node_id.String());
       auto itr(key_map.find(NodeId(node_id)));
       if (key_map.end() != itr)
