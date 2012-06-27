@@ -15,6 +15,7 @@
 #define MAIDSAFE_ROUTING_TIMER_H_
 
 #include <map>
+#include<mutex>
 #include <string>
 #include <utility>
 
@@ -48,6 +49,7 @@ class Timer {
   Timer(const Timer&&);
   AsioService &io_service_;
   TaskId task_id_;
+  std::mutex mutex_;
   std::map<uint32_t, std::pair<TimerPointer, TaskResponseFunctor> > queue_;
 };
 

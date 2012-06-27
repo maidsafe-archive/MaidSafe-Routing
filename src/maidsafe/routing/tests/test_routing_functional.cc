@@ -209,7 +209,7 @@ class RoutingFunctionalTest : public testing::Test {
         dest_nodes.push_back(nodes_[dest_id]);
     }
     for (size_t index = 0; index < messages; ++index) {
-      std::string data(RandomAlphaNumericString(256));
+      std::string data(RandomAlphaNumericString(256 * 1024));
       source_id = RandomUint32() % source_nodes.size();
       // chooses a destination different from source
       do {
@@ -285,8 +285,8 @@ class RoutingFunctionalTest : public testing::Test {
 };
 
 TEST_F(RoutingFunctionalTest, FUNC_Send) {
-  SetUpNetwork(10);
-  EXPECT_TRUE(Send(2));
+  SetUpNetwork(8);
+  EXPECT_TRUE(Send(20));
   LOG(kVerbose) << "Func send is over";
   Sleep(boost::posix_time::seconds(5));
 }

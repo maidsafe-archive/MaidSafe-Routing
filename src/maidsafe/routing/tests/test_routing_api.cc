@@ -160,7 +160,7 @@ TEST(APITest, BEH_API_ZeroState) {
 }
 
 TEST(APITest, BEH_API_NodeNetwork) {
-  uint8_t kNetworkSize(15);
+  uint8_t kNetworkSize(10);
   std::vector<NodeInfo> node_infos;
   std::vector<std::shared_ptr<Routing>> routing_node;
   std::map<NodeId, asymm::Keys> key_map;
