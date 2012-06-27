@@ -16,11 +16,7 @@
 #include <set>
 #include <string>
 
-#include "maidsafe/common/utils.h"
 #include "maidsafe/routing/return_codes.h"
-#include "maidsafe/routing/routing_table.h"
-#include "maidsafe/routing/parameters.h"
-#include "maidsafe/rudp/managed_connections.h"
 #include "maidsafe/routing/node_id.h"
 #include "maidsafe/routing/log.h"
 #include "maidsafe/routing/routing_api.h"
@@ -35,6 +31,7 @@ namespace routing {
 namespace test {
 
 size_t RoutingNode::next_node_id_(0);
+
 RoutingNode::RoutingNode(bool client_mode)
     : id_(0),
       node_info_(MakeNode()),
@@ -59,7 +56,7 @@ asymm::Keys RoutingNode::GetKeys() const {
   return keys;
 }
 
-int RoutingNode::GetStatus() {
+int RoutingNode::GetStatus() const {
   return routing_->GetStatus();
 }
 

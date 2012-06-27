@@ -9,22 +9,9 @@
  *  You are not free to copy, amend or otherwise use this source code without  *
  *  the explicit written permission of the board of directors of maidsafe.net. *
  ******************************************************************************/
-#include <future>
+
 #include <vector>
 
-#include "maidsafe/common/test.h"
-#include "maidsafe/common/utils.h"
-
-#include "maidsafe/rudp/managed_connections.h"
-#include "maidsafe/routing/node_id.h"
-#include "maidsafe/routing/bootstrap_file_handler.h"
-#include "maidsafe/routing/return_codes.h"
-#include "maidsafe/routing/routing_api.h"
-#include "maidsafe/routing/routing_table.h"
-#include "maidsafe/routing/routing_api_impl.h"
-#include "maidsafe/routing/routing_pb.h"
-#include "maidsafe/routing/utils.h"
-#include "maidsafe/routing/tests/test_utils.h"
 #include "maidsafe/routing/tests/routing_network.h"
 
 namespace args = std::placeholders;
@@ -66,7 +53,7 @@ class TestNode : public RoutingNode {
 template <typename NodeType>
 class RoutingNetworkTest : public RoutingNetwork<NodeType> {
  public:
-  RoutingNetworkTest(void);
+  RoutingNetworkTest(void) : RoutingNetwork<NodeType>() {}
 
   void ResponseHandler(const int32_t& /*result*/,
                        const std::string& /*message*/,
@@ -122,12 +109,6 @@ class RoutingNetworkTest : public RoutingNetwork<NodeType> {
     return testing::AssertionSuccess();
   }
 };
-
-template<typename NodeType>
-RoutingNetworkTest<NodeType>::RoutingNetworkTest(void)
-    : RoutingNetwork<NodeType>() {
-  LOG(kVerbose) << "RoutingNetworkTest constructor";
-}
 
 TYPED_TEST_CASE_P(RoutingNetworkTest);
 

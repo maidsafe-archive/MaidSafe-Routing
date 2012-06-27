@@ -22,6 +22,8 @@
 #include "maidsafe/routing/return_codes.h"
 #include "maidsafe/routing/tests/test_utils.h"
 
+namespace args = std::placeholders;
+
 namespace maidsafe {
 
 namespace routing {
@@ -33,14 +35,12 @@ namespace test {
 template <typename NodeType>
 class RoutingNetwork;
 
-namespace args = std::placeholders;
-
 class RoutingNode {
  public:
   explicit RoutingNode(bool client_mode = false);
   virtual ~RoutingNode();
   asymm::Keys GetKeys() const;
-  int GetStatus();
+  int GetStatus() const;
   NodeId Id() const;
   Endpoint endpoint() const;
   std::shared_ptr<Routing> routing() const;
@@ -97,7 +97,7 @@ class RoutingNetwork : public testing::Test {
     LOG(kVerbose) << "Setup succeeded";
   }
 
-  void SetUpNetwork(const size_t &size) {
+  virtual void SetUpNetwork(const size_t &size) {
     std::vector<std::future<int>> results;
     for (size_t index = 2; index < size; ++index) {
       NodePtr node(new NodeType(false));
@@ -107,14 +107,14 @@ class RoutingNetwork : public testing::Test {
     }
   }
 
-  void Validate(const NodeId& node_id, GivePublicKeyFunctor node_validate) {
+  virtual void Validate(const NodeId& node_id, GivePublicKeyFunctor node_validate) {
       auto iter = std::find_if(nodes_.begin(), nodes_.end(),
           [&node_id](const NodePtr &node) { return node->GetKeys().identity == node_id.String(); });  // NOLINT (Mahmoud)
       EXPECT_NE(iter, nodes_.end());
       if (iter != nodes_.end())
         node_validate((*iter)->GetKeys().public_key);  }
 
-  void SetNodeValidationFunctor(NodePtr node) {
+  virtual void SetNodeValidationFunctor(NodePtr node) {
     node->functors_.request_public_key = std::bind(&RoutingNetwork::Validate, this, args::_1,
                                                 args::_2);
   }
