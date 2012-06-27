@@ -29,6 +29,7 @@
 #include <memory>
 #include <string>
 
+#include "boost/date_time/posix_time/posix_time_duration.hpp"
 #include "boost/filesystem/path.hpp"
 #include "boost/signals2/signal.hpp"
 
@@ -87,7 +88,7 @@ class Routing {
                   const std::string &data,  // message content (serialised data)
                   const int32_t &type,  // user defined message type
                   const ResponseFunctor response_functor,
-                  const int16_t &timeout_seconds,
+                  const boost::posix_time::time_duration &timeout,
                   const ConnectType &connect_type);  // is this to a close node group or direct
 
   /***************************************************************************

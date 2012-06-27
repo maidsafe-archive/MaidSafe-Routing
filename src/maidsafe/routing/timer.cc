@@ -31,9 +31,9 @@ maidsafe::routing::Timer::Timer(AsioService &io_service)
       queue_() {}
 // below comment would require an overload or default here to
 // put in another task with the same task_id
-TaskId Timer::AddTask(uint32_t timeout, const TaskResponseFunctor &response_functor) {
-  TimerPointer timer(new asio::deadline_timer(io_service_.service(),
-                                              boost::posix_time::seconds(timeout)));
+TaskId Timer::AddTask(const boost::posix_time::time_duration &timeout,
+                      const TaskResponseFunctor &response_functor) {
+  TimerPointer timer(new asio::deadline_timer(io_service_.service(), timeout));
   std::lock_guard<std::mutex> lock(mutex_);
   ++task_id_;
   queue_.insert(std::make_pair(task_id_, std::make_pair(timer, response_functor)));

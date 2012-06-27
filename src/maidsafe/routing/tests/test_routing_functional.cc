@@ -219,7 +219,7 @@ class RoutingFunctionalTest : public testing::Test {
       source_nodes[source_id]->routing_->Send(dest_node_id, group_id, data, 101,
           std::bind(&RoutingFunctionalTest::ResponseHandler, this, args::_1, args::_2,
                     &messages_count, messages, &mutex, &cond_var),
-          10, ConnectType::kSingle);
+          boost::posix_time::seconds(10), ConnectType::kSingle);
     }
     std::unique_lock<std::mutex> lock(mutex);
     bool result = cond_var.wait_for(lock, std::chrono::seconds(10),
@@ -246,7 +246,7 @@ class RoutingFunctionalTest : public testing::Test {
             source_node->routing_->Send(NodeId(dest_node->GetKeys().identity), group_id, data, 101,
                 std::bind(&RoutingFunctionalTest::ResponseHandler, this, args::_1, args::_2,
                           &messages_count, expected_messages, &mutex, &cond_var),
-                15, ConnectType::kSingle);
+                boost::posix_time::seconds(15), ConnectType::kSingle);
           }
         }
       }

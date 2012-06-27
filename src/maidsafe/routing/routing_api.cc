@@ -274,7 +274,7 @@ SendStatus Routing::Send(const NodeId &destination_id,
                          const std::string &data,
                          const int32_t &type,
                          const ResponseFunctor response_functor,
-                         const int16_t &timeout_seconds,
+                         const boost::posix_time::time_duration &timeout,
                          const ConnectType &connect_type) {
   if (destination_id.String().empty()) {
     LOG(kError) << "No destination id, aborted send";
@@ -285,7 +285,7 @@ SendStatus Routing::Send(const NodeId &destination_id,
     return SendStatus::kEmptyData;
   }
   protobuf::Message proto_message;
-  proto_message.set_id(impl_->timer_.AddTask(timeout_seconds, response_functor));
+  proto_message.set_id(impl_->timer_.AddTask(timeout, response_functor));
   proto_message.set_source_id(impl_->routing_table_.kKeys().identity);
   proto_message.set_destination_id(destination_id.String());
   proto_message.set_data(data);

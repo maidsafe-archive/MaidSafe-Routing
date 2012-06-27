@@ -39,7 +39,8 @@ class Timer {
  public:
   explicit Timer(AsioService &io_service);
   typedef std::shared_ptr<asio::deadline_timer> TimerPointer;
-  TaskId AddTask(uint32_t timeout, const TaskResponseFunctor &);
+  TaskId AddTask(const boost::posix_time::time_duration &timeout,
+                 const TaskResponseFunctor &response_functor);
   void KillTask(uint32_t task_id);  // removes from queue immediately no run
   void ExecuteTaskNow(protobuf::Message &message);  // executes and removes task
 
