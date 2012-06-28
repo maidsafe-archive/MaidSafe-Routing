@@ -81,13 +81,9 @@ const protobuf::Message Connect(const NodeId &node_id, const rudp::EndpointPair 
     message.set_relay_id(my_node_id.String());
     if (!local_endpoint.address().is_unspecified()) {  // I am not in anyones RT yet
       LOG(kInfo) << "Connect RPC has relay ip : " << local_endpoint;
-      protobuf::Endpoint *pbendpoint;
-      pbendpoint = message.mutable_relay();
-      pbendpoint->set_ip(local_endpoint.address().to_string().c_str());
-      pbendpoint->set_port(local_endpoint.port());
+      SetProtobufEndpoint(local_endpoint, message.mutable_relay());
     }
   }
-
 
   assert(message.IsInitialized() && "Unintialised message");
   return message;
@@ -114,11 +110,8 @@ const protobuf::Message FindNodes(const NodeId &node_id, const NodeId &my_node_i
   } else {
     message.set_relay_id(my_node_id.String());
     if (!local_endpoint.address().is_unspecified()) {  // I am not in anyones RT yet
-      LOG(kInfo) << "Connect RPC has relay ip : " << local_endpoint;
-      protobuf::Endpoint *pbendpoint;
-      pbendpoint = message.mutable_relay();
-      pbendpoint->set_ip(local_endpoint.address().to_string().c_str());
-      pbendpoint->set_port(local_endpoint.port());
+      LOG(kInfo) << "FindNode RPC has relay ip : " << local_endpoint;
+      SetProtobufEndpoint(local_endpoint, message.mutable_relay());
     }
   }
   assert(message.IsInitialized() && "Unintialised message");
@@ -148,6 +141,7 @@ const protobuf::Message ProxyConnect(const NodeId &node_id, const NodeId &my_nod
   } else {
     message.set_relay_id(my_node_id.String());
     if (!local_endpoint.address().is_unspecified()) {  // I am not in anyones RT yet
+      LOG(kInfo) << "ProxyConnect RPC has relay ip : " << local_endpoint;
       SetProtobufEndpoint(local_endpoint, message.mutable_relay());
     }
   }

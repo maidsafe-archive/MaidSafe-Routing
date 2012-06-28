@@ -62,8 +62,9 @@ Routing::~Routing() {}
 int Routing::GetStatus() {
   if (impl_->routing_table_.Size() == 0) {
     rudp::EndpointPair endpoint;
-    if(impl_->rudp_.GetAvailableEndpoint(Endpoint(), endpoint) != rudp::kSuccess) {
-      if (impl_->rudp_.GetAvailableEndpoint(Endpoint(), endpoint) == rudp::kNoneAvailable)
+    int status = impl_->rudp_.GetAvailableEndpoint(Endpoint(), endpoint);
+    if(rudp::kSuccess != status) {
+      if (status == rudp::kNoneAvailable)
         return kNotJoined;
     }
   } else {
@@ -206,10 +207,11 @@ int Routing::DoJoin(Functors functors) {
   // now poll for routing table size to have at least one node available
   uint8_t poll_count(0);
   do {
-    Sleep(boost::posix_time::milliseconds(100));
-  } while ((impl_->routing_table_.Size() == 0) && (++poll_count < 100));
+    Sleep(boost::posix_time::milliseconds(1000));
+  } while ((impl_->routing_table_.Size() == 0) && (++poll_count < 10));
   if (impl_->routing_table_.Size() != 0) {
-    LOG(kInfo) << "Successfully joined network, bootstrap node - " << bootstrap_endpoint;
+    LOG(kInfo) << "Successfully joined network, bootstrap node - " << bootstrap_endpoint
+               << "Routing table size - " << impl_->routing_table_.Size();
     return kSuccess;
   } else {
     LOG(kInfo) << "Failed to join network, bootstrap node - " << bootstrap_endpoint;

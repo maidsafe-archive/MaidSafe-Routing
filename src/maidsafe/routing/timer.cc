@@ -55,7 +55,10 @@ void Timer::KillTask(TaskId task_id) {
     }
   }
   if (task_response_functor)
-    io_service_.service().dispatch(std::bind(task_response_functor, kResponseTimeout, ""));
+    io_service_.service().dispatch([=] {
+        task_response_functor(kResponseTimeout, "");
+      }
+    );
 }
 
 void Timer::ExecuteTaskNow(protobuf::Message &message) {
@@ -78,7 +81,10 @@ void Timer::ExecuteTaskNow(protobuf::Message &message) {
 
   //posting messages
   if (task_response_functor)
-    io_service_.service().dispatch(std::bind(task_response_functor, kSuccess, message.data()));
+    io_service_.service().dispatch([=] {
+        task_response_functor(kSuccess, message.data());
+      }
+    );
 }
 
 }  // namespace maidsafe

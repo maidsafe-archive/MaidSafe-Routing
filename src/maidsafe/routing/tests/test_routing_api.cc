@@ -191,10 +191,10 @@ TEST(APITest, BEH_API_NodeNetwork) {
   EXPECT_EQ(kSuccess, a1.get());  // wait for promise !
 
   for (auto i(2); i != kNetworkSize; ++i) {
-    std::async(std::launch::async, [&]{
+//    std::async(std::launch::async, [&] {
     ASSERT_EQ(kSuccess, routing_node[i]->Join(functors, node_infos[i%2].endpoint));
     LOG(kVerbose) << "Joined !!!!!!!!!!!!!!!!! " << i + 1 << " nodes";
-  });
+//  });
 }
   for (auto i(0); i != kNetworkSize; ++i) {
     EXPECT_GT(routing_node[i]->GetStatus(), 0);
