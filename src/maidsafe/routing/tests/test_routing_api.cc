@@ -157,11 +157,61 @@ TEST(APITest, BEH_API_ZeroState) {
   EXPECT_EQ(kSuccess, a3.get());  // wait for promise !
 
   EXPECT_GT(R3.GetStatus(), 0);
-  Sleep(boost::posix_time::seconds(2));  // Added to allow more than 1 node to join
+}
+
+TEST(APITest, BEH_API_Anonymous) {
+  NodeInfo node1(MakeNodeInfo());
+  NodeInfo node2(MakeNodeInfo());
+//  NodeInfo node3(MakeNodeInfo());
+  std::map<NodeId, asymm::Keys> key_map;
+  key_map.insert(std::make_pair(NodeId(node1.node_id), GetKeys(node1)));
+  key_map.insert(std::make_pair(NodeId(node2.node_id), GetKeys(node2)));
+  node1.endpoint.port(5000);
+  node2.endpoint.port(5001);
+
+  Routing R1(GetKeys(node1), false);
+  Routing R2(GetKeys(node2), false);
+  Routing R3(asymm::Keys(), false);  // Anonymous node
+  Functors functors1, functors2, functors3;
+
+  functors1.request_public_key = [&](const NodeId& node_id, GivePublicKeyFunctor give_key )
+  {
+      LOG(kWarning) << "node_validation called for " << HexSubstr(node_id.String());
+      auto itr(key_map.find(NodeId(node_id)));
+      if (key_map.end() != itr)
+        give_key((*itr).second.public_key);
+  };
+
+  functors2.request_public_key = functors1.request_public_key;
+
+  auto a1 = std::async(std::launch::async,
+      [&]{return R1.ZeroStateJoin(functors1, node1.endpoint, node2);});  // NOLINT (Prakash)
+  auto a2 = std::async(std::launch::async,
+      [&]{return R2.ZeroStateJoin(functors2, node2.endpoint, node1);});  // NOLINT (Prakash)
+
+  EXPECT_EQ(kSuccess, a2.get());  // wait for promise !
+  EXPECT_EQ(kSuccess, a1.get());  // wait for promise !
+
+  EXPECT_EQ(kSuccess, R3.Join(functors3, node2.endpoint));  // NOLINT (Prakash)
+
+  EXPECT_EQ(0, R3.GetStatus());
+  LOG(kVerbose) << "after 0 sec R3.GetStatus() -- " << R3.GetStatus();
+
+  ResponseFunctor response_functor = [=] (const int& return_code, const std::string &/*message*/) {
+    ASSERT_EQ(kSuccess, return_code);
+
+  };
+  //  Testing Send
+  R3.Send(NodeId(node1.node_id), NodeId(), "message_from_anonymous node", 101, response_functor,
+    boost::posix_time::seconds(60), ConnectType::kSingle);
+
+  Sleep(boost::posix_time::seconds(70));  // Added to allow more than 1 node to join
+  LOG(kVerbose) << "after 70 sec R3.GetStatus() -- " << R3.GetStatus();
+  EXPECT_LT(R3.GetStatus(), 0);
 }
 
 TEST(APITest, BEH_API_NodeNetwork) {
-  uint8_t kNetworkSize(8);
+  uint8_t kNetworkSize(6);
   std::vector<NodeInfo> node_infos;
   std::vector<std::shared_ptr<Routing>> routing_node;
   std::map<NodeId, asymm::Keys> key_map;

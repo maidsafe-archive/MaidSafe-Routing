@@ -46,14 +46,18 @@ namespace maidsafe {
 
 namespace routing {
 
-Routing::Routing(const asymm::Keys &keys,
-                 const bool client_mode)
+Routing::Routing(const asymm::Keys &keys, const bool client_mode)
     : impl_(new RoutingPrivate(keys, client_mode)) {
   if (!CheckBootStrapFilePath()) {
     LOG(kInfo) << " no bootstrap nodes, require BootStrapFromThisEndpoint()";
   }
   if (client_mode) {
     Parameters::max_routing_table_size = Parameters::closest_nodes_size;
+  }
+  if (keys.identity.empty()) {
+    impl_->anonymous_node_ = true;
+    LOG(kInfo) << " Empty key found ! This will be an anonymous node";
+    asymm::GenerateKeyPair(&impl_->keys_);  // FIXME
   }
 }
 
@@ -155,6 +159,17 @@ int Routing::BootStrapFromThisEndpoint(Functors functors,
 }
 
 int Routing::DoJoin(Functors functors) {
+  int return_value(DoBootstrap(functors));
+  if (kSuccess != return_value)
+    return return_value;
+
+  if (impl_->anonymous_node_)  //  No need to do find value for anonymous node
+    return return_value;
+
+  return DoFindNode();
+}
+
+int Routing::DoBootstrap(Functors functors) {
   if (impl_->bootstrap_nodes_.empty()) {
     LOG(kInfo) << "No bootstrap nodes Aborted Join !!";
     return kInvalidBootstrapContacts;
@@ -177,14 +192,20 @@ int Routing::DoJoin(Functors functors) {
     LOG(kError) << " Failed to get available endpoint for new connections";
     return kGeneralError;
   }
-  LOG(kWarning) << " GetAvailableEndpoint for peer - " << bootstrap_endpoint << " my endpoint - " << endpoint_pair.external;
+  LOG(kVerbose) << " GetAvailableEndpoint for peer - "
+                << bootstrap_endpoint << " my endpoint - " << endpoint_pair.external;
   impl_->message_handler_.set_bootstrap_endpoint(bootstrap_endpoint);
   impl_->message_handler_.set_my_relay_endpoint(endpoint_pair.external);
+  return kSuccess;
+}
 
-  std::string find_node_rpc(rpcs::FindNodes(NodeId(impl_->keys_.identity),
-                                            NodeId(impl_->keys_.identity),
-                                            true,
-                                            endpoint_pair.external).SerializeAsString());
+int Routing::DoFindNode() {
+  std::string find_node_rpc(
+      rpcs::FindNodes(NodeId(impl_->keys_.identity),
+                      NodeId(impl_->keys_.identity),
+                      true,
+                      impl_->message_handler_.my_relay_endpoint()).SerializeAsString());
+
   boost::promise<bool> message_sent_promise;
   auto message_sent_future = message_sent_promise.get_future();
   uint8_t attempt_count(0);
@@ -192,16 +213,19 @@ int Routing::DoJoin(Functors functors) {
       if (message_sent) {
         message_sent_promise.set_value(true);
       } else if (attempt_count < 3) {
-        impl_->rudp_.Send(bootstrap_endpoint, find_node_rpc, message_sent_functor);
+        impl_->rudp_.Send(impl_->message_handler_.bootstrap_endpoint(),
+                          find_node_rpc, message_sent_functor);
       } else {
         message_sent_promise.set_value(false);
       }
     };
 
-  impl_->rudp_.Send(bootstrap_endpoint, find_node_rpc, message_sent_functor);
+  impl_->rudp_.Send(impl_->message_handler_.bootstrap_endpoint(),
+                    find_node_rpc, message_sent_functor);
 
   if(!message_sent_future.timed_wait(boost::posix_time::seconds(10))) {
-    LOG(kError) << "Unable to send find value rpc to bootstrap endpoint - " << bootstrap_endpoint;
+    LOG(kError) << "Unable to send find value rpc to bootstrap endpoint - "
+                << impl_->message_handler_.bootstrap_endpoint();
     return false;
   }
   // now poll for routing table size to have at least one node available
@@ -210,11 +234,13 @@ int Routing::DoJoin(Functors functors) {
     Sleep(boost::posix_time::milliseconds(1000));
   } while ((impl_->routing_table_.Size() == 0) && (++poll_count < 10));
   if (impl_->routing_table_.Size() != 0) {
-    LOG(kInfo) << "Successfully joined network, bootstrap node - " << bootstrap_endpoint
+    LOG(kInfo) << "Successfully joined network, bootstrap node - "
+               << impl_->message_handler_.bootstrap_endpoint()
                << "Routing table size - " << impl_->routing_table_.Size();
     return kSuccess;
   } else {
-    LOG(kInfo) << "Failed to join network, bootstrap node - " << bootstrap_endpoint;
+    LOG(kError) << "Failed to join network, bootstrap node - "
+                << impl_->message_handler_.bootstrap_endpoint();
     return kNotJoined;
   }
 }
@@ -222,10 +248,11 @@ int Routing::DoJoin(Functors functors) {
 int Routing::ZeroStateJoin(Functors functors, const Endpoint &local_endpoint,
                            const NodeInfo &peer_node) {
   assert((!impl_->client_mode_) && "no client nodes allowed in zero state network");
+  assert((!impl_->anonymous_node_) && "not allwed on anonymous node");
   impl_->bootstrap_nodes_.clear();
   impl_->bootstrap_nodes_.push_back(peer_node.endpoint);
   if (impl_->bootstrap_nodes_.empty()) {
-    LOG(kInfo) << "No bootstrap nodes Aborted Join !!";
+    LOG(kError) << "No bootstrap nodes Aborted Join !!";
     return kInvalidBootstrapContacts;
   }
 
@@ -265,7 +292,7 @@ int Routing::ZeroStateJoin(Functors functors, const Endpoint &local_endpoint,
     LOG(kInfo) << "Successfully joined zero state network, with " << bootstrap_endpoint;
     return kSuccess;
   } else {
-    LOG(kInfo) << "Failed to join zero state network, with bootstrap_endpoint"
+    LOG(kError) << "Failed to join zero state network, with bootstrap_endpoint"
                << bootstrap_endpoint;
     return kNotJoined;
   }
@@ -288,12 +315,20 @@ SendStatus Routing::Send(const NodeId &destination_id,
   }
   protobuf::Message proto_message;
   proto_message.set_id(impl_->timer_.AddTask(timeout, response_functor));
-  proto_message.set_source_id(impl_->routing_table_.kKeys().identity);
   proto_message.set_destination_id(destination_id.String());
   proto_message.set_data(data);
   proto_message.set_direct(static_cast<int32_t>(connect_type));
   proto_message.set_type(type);
-  ProcessSend(proto_message, impl_->rudp_, impl_->routing_table_);
+  Endpoint direct_endpoint;
+  if (impl_->anonymous_node_) {
+    proto_message.set_relay_id(impl_->routing_table_.kKeys().identity);
+    SetProtobufEndpoint(impl_->message_handler_.my_relay_endpoint(), proto_message.mutable_relay());
+    direct_endpoint = impl_->message_handler_.bootstrap_endpoint();
+  } else {
+    proto_message.set_source_id(impl_->routing_table_.kKeys().identity);
+  }
+
+  ProcessSend(proto_message, impl_->rudp_, impl_->routing_table_, direct_endpoint);
   return SendStatus::kSuccess;
 }
 
@@ -306,7 +341,7 @@ void Routing::ReceiveMessage(const std::string &message) {
                << " I am " << HexSubstr(impl_->keys_.identity);
     impl_->message_handler_.ProcessMessage(protobuf_message);
   } else {
-    LOG(kVerbose) << " Message received, failed to parse";
+    LOG(kWarning) << " Message received, failed to parse";
   }
 }
 

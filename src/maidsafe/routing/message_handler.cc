@@ -309,6 +309,10 @@ void MessageHandler::set_my_relay_endpoint(Endpoint endpoint) {
   my_relay_endpoint_ = endpoint;
 }
 
+Endpoint MessageHandler::my_relay_endpoint() {
+return my_relay_endpoint_;
+}
+
 Endpoint MessageHandler::bootstrap_endpoint() {
 return bootstrap_endpoint_;
 }

@@ -47,6 +47,11 @@ struct RoutingPrivate;
 /***************************************************************************
 *  WARNING THIS CONSTRUCTOR WILL THROW A BOOST::FILESYSTEM_ERROR           *
 * if config file is invalid                                                *
+* Providing empty key means that, on Joins it will join the network        *
+* Anonymously. This will allow to Send/Recieve messages to/from network.   *
+* WARNING : CONNECTION TO NETWORK WILL STAY FOR 60 SEC.                    *
+* Users are expected to recreate routing object with right credentials and *
+* call Join() method to join the routing network.                          *
 * *************************************************************************/
 class Routing {
  public:
@@ -106,6 +111,8 @@ class Routing {
   int BootStrapFromThisEndpoint(Functors functors,
                                 const boost::asio::ip::udp::endpoint& endpoint);
   int DoJoin(Functors functors);
+  int DoBootstrap(Functors functors);
+  int DoFindNode();
   void ReceiveMessage(const std::string &message);
   void ConnectionLost(const Endpoint &lost_endpoint);
   bool CheckBootStrapFilePath();

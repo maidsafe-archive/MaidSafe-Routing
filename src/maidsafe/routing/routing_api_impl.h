@@ -45,7 +45,7 @@ struct RoutingPrivate {
   friend class Routing;
   std::shared_ptr<AsioService> asio_service_;
   std::vector<Endpoint> bootstrap_nodes_;
-  const asymm::Keys keys_;
+  asymm::Keys keys_;  // FIXME
   Functors functors_;
   rudp::ManagedConnections rudp_;
   RoutingTable routing_table_;
@@ -58,6 +58,7 @@ struct RoutingPrivate {
   bool joined_;
   fs::path bootstrap_file_path_;
   bool client_mode_;
+  bool anonymous_node_;
 };
 
 }  // namespace routing
