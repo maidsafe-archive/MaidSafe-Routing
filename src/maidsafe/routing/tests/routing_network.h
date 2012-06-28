@@ -107,16 +107,16 @@ class RoutingNetwork : public testing::Test {
     }
   }
 
-  virtual void Validate(const NodeId& node_id, GivePublicKeyFunctor node_validate) {
+  virtual void Validate(const NodeId& node_id, GivePublicKeyFunctor give_public_key) {
       auto iter = std::find_if(nodes_.begin(), nodes_.end(),
           [&node_id](const NodePtr &node) { return node->GetKeys().identity == node_id.String(); });  // NOLINT (Mahmoud)
       EXPECT_NE(iter, nodes_.end());
       if (iter != nodes_.end())
-        node_validate((*iter)->GetKeys().public_key);  }
+        give_public_key((*iter)->GetKeys().public_key);  }
 
   virtual void SetNodeValidationFunctor(NodePtr node) {
-    node->functors_.request_public_key = std::bind(&RoutingNetwork::Validate, this, args::_1,
-                                                args::_2);
+    node->functors_.request_public_key = [this](const NodeId& node_id,
+        GivePublicKeyFunctor give_public_key) { this->Validate(node_id, give_public_key); };
   }
 
   std::vector<NodePtr> nodes_;

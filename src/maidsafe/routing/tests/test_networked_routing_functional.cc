@@ -83,11 +83,12 @@ class RoutingNetworkTest : public RoutingNetwork<NodeType> {
     for (size_t index = 0; index < messages; ++index) {
       for (auto source_node : RoutingNetwork<NodeType>::nodes_) {
         for (auto dest_node : RoutingNetwork<NodeType>::nodes_) {
+            auto callable = [&] (const int32_t& result, const std::string& message) {
+                this->ResponseHandler(result, message, &messages_count, expected_messages, &mutex,
+                                &cond_var); };
           if (source_node->Id() != dest_node->Id()) {
             std::string data(RandomAlphaNumericString(256));
-            source_node->Send(NodeId(dest_node->Id()), group_id, data, 101,
-                std::bind(&RoutingNetworkTest::ResponseHandler, this, args::_1, args::_2,
-                          &messages_count, expected_messages, &mutex, &cond_var),
+            source_node->Send(NodeId(dest_node->Id()), group_id, data, 101, callable,
                 boost::posix_time::seconds(15), ConnectType::kSingle);
           }
         }

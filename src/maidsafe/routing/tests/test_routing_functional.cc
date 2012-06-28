@@ -219,11 +219,13 @@ class RoutingFunctionalTest : public testing::Test {
       for (auto source_node : nodes_) {
         for (auto dest_node : nodes_) {
           if (source_node->Id() != dest_node->Id()) {
+            auto callable = [&] (const int32_t& result, const std::string& message) {
+                ResponseHandler(result, message, &messages_count, expected_messages, &mutex,
+                                &cond_var); };
             std::string data(RandomAlphaNumericString(256));
             source_node->routing_->Send(NodeId(dest_node->GetKeys().identity), group_id, data, 101,
-                std::bind(&RoutingFunctionalTest::ResponseHandler, this, args::_1, args::_2,
-                          &messages_count, expected_messages, &mutex, &cond_var),
-                boost::posix_time::seconds(15), ConnectType::kSingle);
+                                        callable, boost::posix_time::seconds(15),
+                                        ConnectType::kSingle);
           }
         }
       }
@@ -252,8 +254,9 @@ class RoutingFunctionalTest : public testing::Test {
   }
 
   void SetNodeValidationFunctor(NodePtr node) {
-    node->functors_.request_public_key = std::bind(&RoutingFunctionalTest::Validate, this, args::_1,
-                                                args::_2);
+    node->functors_.request_public_key = [=]
+        (const NodeId& node_id, GivePublicKeyFunctor give_public_key) {
+            Validate(node_id, give_public_key); };
   }
 
   std::vector<NodePtr> nodes_;
