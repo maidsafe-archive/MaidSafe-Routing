@@ -33,12 +33,12 @@ class Routing;
 namespace test {
 
 template <typename NodeType>
-class RoutingNetwork;
+class GenericNetwork;
 
-class RoutingNode {
+class GenericNode {
  public:
-  explicit RoutingNode(bool client_mode = false);
-  virtual ~RoutingNode();
+  explicit GenericNode(bool client_mode = false);
+  virtual ~GenericNode();
   asymm::Keys GetKeys() const;
   int GetStatus() const;
   NodeId Id() const;
@@ -58,7 +58,7 @@ class RoutingNode {
   static size_t next_node_id_;
 
   template <typename NodeType>
-  friend class RoutingNetwork;
+  friend class GenericNetwork;
 
  protected:
   size_t id_;
@@ -69,16 +69,18 @@ class RoutingNode {
 };
 
 template <typename NodeType>
-class RoutingNetwork : public testing::Test {
+class GenericNetwork : public testing::Test {
  public:
   typedef std::shared_ptr<NodeType> NodePtr;
-  RoutingNetwork() : nodes_(),
+  GenericNetwork() : nodes_(),
                bootstrap_endpoints_(),
                bootstrap_path_("bootstrap") {
       LOG(kVerbose) << "RoutingNetwork Constructor";
   }
 
-  ~RoutingNetwork() {}
+  ~GenericNetwork() {}
+
+  std::vector<NodePtr> nodes_;
 
  protected:
   virtual void SetUp() {
@@ -88,9 +90,9 @@ class RoutingNetwork : public testing::Test {
     SetNodeValidationFunctor(node1);
     SetNodeValidationFunctor(node2);
     LOG(kVerbose) << "Setup started";
-    auto f1 = std::async(std::launch::async, &RoutingNode::ZeroStateJoin, node1,
+    auto f1 = std::async(std::launch::async, &GenericNode::ZeroStateJoin, node1,
                          node2->node_info());
-    auto f2 = std::async(std::launch::async, &RoutingNode::ZeroStateJoin, node2,
+    auto f2 = std::async(std::launch::async, &GenericNode::ZeroStateJoin, node2,
                          node1->node_info());
     EXPECT_EQ(kSuccess, f2.get());
     EXPECT_EQ(kSuccess, f1.get());
@@ -116,10 +118,10 @@ class RoutingNetwork : public testing::Test {
 
   virtual void SetNodeValidationFunctor(NodePtr node) {
     node->functors_.request_public_key = [this](const NodeId& node_id,
-        GivePublicKeyFunctor give_public_key) { this->Validate(node_id, give_public_key); };
+        GivePublicKeyFunctor give_public_key) { this->Validate(node_id, give_public_key);
+    };
   }
 
-  std::vector<NodePtr> nodes_;
   std::vector<Endpoint> bootstrap_endpoints_;
   fs::path bootstrap_path_;
 };

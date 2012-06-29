@@ -30,9 +30,9 @@ namespace routing {
 
 namespace test {
 
-size_t RoutingNode::next_node_id_(0);
+size_t GenericNode::next_node_id_(0);
 
-RoutingNode::RoutingNode(bool client_mode)
+GenericNode::GenericNode(bool client_mode)
     : id_(0),
       node_info_(MakeNode()),
       routing_(),
@@ -47,28 +47,28 @@ RoutingNode::RoutingNode(bool client_mode)
   id_ = next_node_id_++;
 }
 
-RoutingNode::~RoutingNode() {}
+GenericNode::~GenericNode() {}
 
-asymm::Keys RoutingNode::GetKeys() const {
+asymm::Keys GenericNode::GetKeys() const {
   asymm::Keys keys;
   keys.identity = node_info_.node_id.String();
   keys.public_key = node_info_.public_key;
   return keys;
 }
 
-int RoutingNode::GetStatus() const {
+int GenericNode::GetStatus() const {
   return routing_->GetStatus();
 }
 
-Endpoint RoutingNode::endpoint() const {
+Endpoint GenericNode::endpoint() const {
   return node_info_.endpoint;
 }
 
-NodeId RoutingNode::Id() const {
-  return NodeId(GetKeys().identity);
+NodeId GenericNode::Id() const {
+  return node_info_.node_id;
 }
 
-SendStatus RoutingNode::Send(const NodeId &destination_id,
+SendStatus GenericNode::Send(const NodeId &destination_id,
                              const NodeId &group_id,
                              const std::string &data,
                              const int32_t &type,
@@ -79,15 +79,15 @@ SendStatus RoutingNode::Send(const NodeId &destination_id,
                           timeout, connect_type);
 }
 
-NodeInfo RoutingNode::node_info() const {
+NodeInfo GenericNode::node_info() const {
   return node_info_;
 }
 
-int RoutingNode::ZeroStateJoin(const NodeInfo &peer_node_info) {
+int GenericNode::ZeroStateJoin(const NodeInfo &peer_node_info) {
   return routing_->ZeroStateJoin(functors_, endpoint(), peer_node_info);
 }
 
-int RoutingNode::Join(const Endpoint &peer_endpoint) {
+int GenericNode::Join(const Endpoint &peer_endpoint) {
   return routing_->Join(functors_, peer_endpoint);
 }
 

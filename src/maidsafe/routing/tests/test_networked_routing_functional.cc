@@ -22,70 +22,58 @@ namespace routing {
 
 namespace test {
 
-
-class TestNode : public RoutingNode {
+class TestNode : public GenericNode {
  public:
   explicit TestNode(bool client_mode = false)
-      : RoutingNode(client_mode),
+      : GenericNode(client_mode),
         messages_() {
-    functors_.message_received = std::bind(&TestNode::MessageReceived, this, args::_1, args::_2,
-                                           args::_3, args::_4);
+    functors_.message_received = [&](const int32_t &mesasge_type,
+                                     const std::string &message,
+                                     const NodeId &/*group_id*/,
+                                     ReplyFunctor reply_functor) {
+        LOG(kInfo) << id_ << " -- Received: type <" << mesasge_type
+                   << "> message : " << message.substr(0, 10);
+      std::lock_guard<std::mutex> guard(mutex_);
+      messages_.push_back(std::make_pair(mesasge_type, message));
+      reply_functor("Response to " + message);
+  };
+
     LOG(kVerbose) << "RoutingNode constructor";
   }
 
   virtual ~TestNode() {}
-
-  void MessageReceived(const int32_t &mesasge_type,
-                       const std::string &message,
-                       const NodeId &/*group_id*/,
-                       ReplyFunctor reply_functor) {
-    LOG(kInfo) << id_ << " -- Received: type <" << mesasge_type
-               << "> message : " << message.substr(0, 10);
-    std::lock_guard<std::mutex> guard(mutex_);
-    messages_.push_back(std::make_pair(mesasge_type, message));
-    reply_functor("Response to " + message);
-  }
 
  protected:
   std::vector<std::pair<int32_t, std::string> > messages_;
 };
 
 template <typename NodeType>
-class RoutingNetworkTest : public RoutingNetwork<NodeType> {
+class RoutingNetworkTest : public GenericNetwork<NodeType> {
  public:
-  RoutingNetworkTest(void) : RoutingNetwork<NodeType>() {}
-
-  void ResponseHandler(const int32_t& /*result*/,
-                       const std::string& /*message*/,
-                       size_t *message_count,
-                       const size_t &total_messages,
-                       std::mutex *mutex,
-                       std::condition_variable *cond_var) {
-    std::lock_guard<std::mutex> lock(*mutex);
-    (*message_count)++;
-    LOG(kVerbose) << "ResponseHandler .... " << *message_count;
-    if (*message_count == total_messages) {
-      cond_var->notify_one();
-      LOG(kVerbose) << "ResponseHandler .... DONE " << *message_count;
-    }
-  }
+  RoutingNetworkTest(void) : GenericNetwork<NodeType>() {}
 
  protected:
   /** Send messages from each source to each destination */
   testing::AssertionResult Send(const size_t &messages) {
     NodeId  group_id;
     size_t messages_count(0),
-        expected_messages(RoutingNetwork<NodeType>::nodes_.size() *
-                          (RoutingNetwork<NodeType>::nodes_.size() - 1) *
+        expected_messages(GenericNetwork<NodeType>::nodes_.size() *
+                          (GenericNetwork<NodeType>::nodes_.size() - 1) *
                           messages);
     std::mutex mutex;
     std::condition_variable cond_var;
     for (size_t index = 0; index < messages; ++index) {
-      for (auto source_node : RoutingNetwork<NodeType>::nodes_) {
-        for (auto dest_node : RoutingNetwork<NodeType>::nodes_) {
-            auto callable = [&] (const int32_t& result, const std::string& message) {
-                this->ResponseHandler(result, message, &messages_count, expected_messages, &mutex,
-                                &cond_var); };
+      for (auto source_node : GenericNetwork<NodeType>::nodes_) {
+        for (auto dest_node : GenericNetwork<NodeType>::nodes_) {
+            auto callable = [&] (const int32_t& /*result*/, const std::string& /*message*/) {
+              std::lock_guard<std::mutex> lock(mutex);
+              messages_count++;
+              LOG(kVerbose) << "ResponseHandler .... " << messages_count;
+              if (messages_count == expected_messages) {
+                cond_var.notify_one();
+                LOG(kVerbose) << "ResponseHandler .... DONE " << messages_count;
+              }
+            };
           if (source_node->Id() != dest_node->Id()) {
             std::string data(RandomAlphaNumericString(256));
             source_node->Send(NodeId(dest_node->Id()), group_id, data, 101, callable,
@@ -100,7 +88,8 @@ class RoutingNetworkTest : public RoutingNetwork<NodeType> {
         [&]()->bool {
         LOG(kInfo) << " message count " << messages_count << " expected "
                    << expected_messages << "\n";
-        return messages_count == expected_messages; });  // NOLINT (Mahmoud)
+        return messages_count == expected_messages;
+        });
     EXPECT_TRUE(result);
     if (!result) {
       return testing::AssertionFailure() << "Send operarion timed out: "
@@ -114,7 +103,7 @@ class RoutingNetworkTest : public RoutingNetwork<NodeType> {
 TYPED_TEST_CASE_P(RoutingNetworkTest);
 
 TYPED_TEST_P(RoutingNetworkTest, FUNC_Send) {
-  this->SetUpNetwork(6);
+  this->SetUpNetwork(4);
   EXPECT_TRUE(this->Send(2));
   LOG(kVerbose) << "Func send is over";
   Sleep(boost::posix_time::seconds(5));

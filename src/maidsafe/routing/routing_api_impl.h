@@ -33,9 +33,16 @@ namespace maidsafe {
 
 namespace routing {
 
+namespace test {
+
+class FindNode;
+}  // namespace test
+
 struct RoutingPrivate {
  public:
   ~RoutingPrivate();
+
+  friend class test::FindNode;
 
  private:
   RoutingPrivate(const RoutingPrivate&);  // no copy

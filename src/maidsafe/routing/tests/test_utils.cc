@@ -11,7 +11,10 @@
  ******************************************************************************/
 
 #include "maidsafe/routing/tests/test_utils.h"
+
 #include <set>
+#include <bitset>
+#include <string>
 
 #include "maidsafe/common/utils.h"
 #include "maidsafe/routing/routing_table.h"
@@ -51,6 +54,23 @@ NodeInfo MakeNode() {
   node.endpoint.address(GetLocalIp());
   node.endpoint.port(GetRandomPort());
   return node;
+}
+
+NodeId GenerateUniqueRandomId(const NodeId &holder, const uint16_t &pos) {
+  std::string holder_id = holder.ToStringEncoded(NodeId::kBinary);
+  std::bitset<64*8> holder_id_binary_bitset(holder_id);
+  NodeId new_node;
+  std::string new_node_string;
+  // generate a random ID and make sure it has not been generated previously
+  new_node = NodeId(NodeId::kRandomId);
+  std::string new_id = new_node.ToStringEncoded(NodeId::kBinary);
+  std::bitset<64*8> binary_bitset(new_id);
+  for (uint16_t i = kKeySizeBits - 1; i >= pos; --i)
+    binary_bitset[i] = holder_id_binary_bitset[i];
+  binary_bitset[pos].flip();
+  new_node_string = binary_bitset.to_string();
+  new_node = NodeId(new_node_string, NodeId::kBinary);
+  return new_node;
 }
 
 ip::address GetLocalIp(ip::udp::endpoint peer_endpoint) {

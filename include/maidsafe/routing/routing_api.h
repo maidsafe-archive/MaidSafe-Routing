@@ -41,6 +41,10 @@ namespace maidsafe {
 
 namespace routing {
 
+namespace test {
+  class FindNode;
+}  // namspace test
+
 struct RoutingPrivate;
 
 
@@ -96,7 +100,7 @@ class Routing {
   * NodeValidateFunctor to add the node in routing table.                    *
   ***************************************************************************/
 
-
+  friend class maidsafe::routing::test::FindNode;
  private:
   Routing(const Routing&);
   Routing(const Routing&&);
