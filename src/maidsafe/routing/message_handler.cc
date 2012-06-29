@@ -114,7 +114,8 @@ void MessageHandler::RoutingMessage(protobuf::Message& message) {
 
 void MessageHandler::NodeLevelMessageForMe(protobuf::Message &message) {
   if (IsRequest(message)) {  // request
-    LOG(kVerbose) <<"Node Level Request Message for me !!";
+    LOG(kInfo) <<"Node Level Request Message for me !! from "
+               << HexSubstr(message.source_id());
     ReplyFunctor response_functor = [=](const std::string& reply_message) {
         if (reply_message.empty())
           return;
@@ -147,10 +148,11 @@ void MessageHandler::NodeLevelMessageForMe(protobuf::Message &message) {
     if (message_received_functor_)
       message_received_functor_(static_cast<int>(message.type()), message.data(), NodeId(),
                                 response_functor);
-    LOG(kInfo) << "Routing message detected";
   } else {  // response
     timer_ptr_.ExecuteTaskNow(message);
-    LOG(kInfo) << "Response detected and function run";
+    LOG(kInfo) <<"Node Level Response Message for me !! from "
+               << HexSubstr(message.source_id())
+               << "I am " << HexSubstr(routing_table_.kKeys().identity);
   }
 }
 
@@ -160,7 +162,6 @@ void MessageHandler::DirectMessage(protobuf::Message& message) {
   }
   LOG(kVerbose) <<"Direct Message for me!!!";
   if (IsRoutingMessage(message)) {
-    LOG(kVerbose) <<"Direct RoutingMessage type";
     RoutingMessage(message);
   } else {
     NodeLevelMessageForMe(message);
@@ -196,10 +197,8 @@ if (!routing_table_.IsMyNodeInRange(NodeId(message.destination_id()), 1))
 
   LOG(kVerbose) <<"I am in closest proximity to this group message";
   if (IsRoutingMessage(message)) {
-    LOG(kVerbose) <<"I am closest node RoutingMessage";
     RoutingMessage(message);
   } else {
-    LOG(kVerbose) <<"I am closest node Message";
     NodeLevelMessageForMe(message);
   }
 }
@@ -207,20 +206,19 @@ if (!routing_table_.IsMyNodeInRange(NodeId(message.destination_id()), 1))
 void MessageHandler::ProcessMessage(protobuf::Message &message) {
   // Invalid destination id, unknown message
   if (!(NodeId(message.destination_id()).IsValid())) {
-    LOG(kVerbose) << "Stray message dropped, need destination id for processing.";
+    LOG(kWarning) << "Stray message dropped, need destination id for processing.";
     return;
   }
 
   // Relay mode message
   if (message.source_id().empty()) {
-   LOG(kVerbose) << "Relay mode message";
    ProcessRelayRequest(message);
    return;
   }
 
   // Invalid source id, unknown message
   if (!(NodeId(message.source_id()).IsValid())) {
-    LOG(kVerbose) << "Stray message dropped, need source id for processing.";
+    LOG(kWarning) << "Stray message dropped, need source id for processing.";
     return;
   }
 

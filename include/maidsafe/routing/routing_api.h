@@ -60,7 +60,8 @@ struct RoutingPrivate;
 class Routing {
  public:
    // set keys.identity to ANONYMOUS for temporary anonymous connection.
-  Routing(const asymm::Keys &keys, bool client_mode);
+  Routing(const asymm::Keys &keys, const bool &client_mode);
+
   ~Routing();
 
   /**************************************************************************
@@ -70,7 +71,7 @@ class Routing {
   * To force the node to use a specific endpoint for bootstrapping, provide *
   * peer_endpoint (i.e. private network).                                   *
   ***************************************************************************/
-  int Join(Functors functors,
+  int Join(const Functors functors,
            boost::asio::ip::udp::endpoint peer_endpoint = boost::asio::ip::udp::endpoint());
 
 /***************************************************************************
@@ -106,16 +107,18 @@ class Routing {
   ***************************************************************************/
 
   friend class maidsafe::routing::test::FindNode;
+
  private:
   Routing(const Routing&);
   Routing(const Routing&&);
   Routing& operator=(const Routing&);
-  void ConnectFunctors(Functors functors);
+
+  void ConnectFunctors(const Functors functors);
   void DisconnectFunctors();
-  int BootStrapFromThisEndpoint(Functors functors,
+  int BootStrapFromThisEndpoint(const Functors functors,
                                 const boost::asio::ip::udp::endpoint& endpoint);
-  int DoJoin(Functors functors);
-  int DoBootstrap(Functors functors);
+  int DoJoin(const Functors functors);
+  int DoBootstrap(const Functors functors);
   int DoFindNode();
   void ReceiveMessage(const std::string &message);
   void ConnectionLost(const Endpoint &lost_endpoint);

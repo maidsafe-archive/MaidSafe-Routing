@@ -12,11 +12,6 @@
 
 #include "maidsafe/routing/routing_api.h"
 
-#include <chrono>
-#include <future>
-#include <thread>
-#include <utility>
-
 #include "boost/filesystem/exception.hpp"
 #include "boost/filesystem/fstream.hpp"
 #include "boost/thread/future.hpp"
@@ -46,10 +41,10 @@ namespace maidsafe {
 
 namespace routing {
 
-Routing::Routing(const asymm::Keys &keys, const bool client_mode)
+Routing::Routing(const asymm::Keys &keys, const bool &client_mode)
     : impl_(new RoutingPrivate(keys, client_mode)) {
   if (!CheckBootStrapFilePath()) {
-    LOG(kInfo) << " no bootstrap nodes, require BootStrapFromThisEndpoint()";
+    LOG(kInfo) << " No bootstrap nodes, require BootStrapFromThisEndpoint()";
   }
   if (client_mode) {
     Parameters::max_routing_table_size = Parameters::closest_nodes_size;
@@ -80,8 +75,8 @@ int Routing::GetStatus() {
 }
 
 bool Routing::CheckBootStrapFilePath() {
-  LOG(kInfo) << "path " << GetUserAppDir();
-  LOG(kInfo) << "sys path " << GetSystemAppDir();
+  LOG(kVerbose) << "Application Path " << GetUserAppDir();
+  LOG(kVerbose) << "System Path " << GetSystemAppDir();
   fs::path path;
   fs::path local_file;
   std::string file_name;
@@ -95,14 +90,14 @@ bool Routing::CheckBootStrapFilePath() {
   }
   local_file = fs::current_path() / file_name;
   if (fs::exists(local_file) && fs::is_regular_file(local_file)) {
-    LOG(kInfo) << "Found bootstrap file at " << local_file.string();
+    LOG(kVerbose) << "Found bootstrap file at " << local_file.string();
     impl_->bootstrap_file_path_ = local_file;
     impl_->bootstrap_nodes_ = ReadBootstrapFile(impl_->bootstrap_file_path_);
     return true;
   } else {
     path = GetUserAppDir() / file_name;
     if (fs::exists(path) && fs::is_regular_file(path)) {
-      LOG(kInfo) << "Found bootstrap file at " << path;
+      LOG(kVerbose) << "Found bootstrap file at " << path;
       impl_->bootstrap_file_path_ = path;
       impl_->bootstrap_nodes_ = ReadBootstrapFile(impl_->bootstrap_file_path_);
       return true;
@@ -116,10 +111,12 @@ int Routing::Join(Functors functors, Endpoint peer_endpoint) {
     return BootStrapFromThisEndpoint(functors, peer_endpoint);
   } else  {  // Default Join
     LOG(kInfo) << " Doing a default join";
-    if (CheckBootStrapFilePath())
+    if (CheckBootStrapFilePath()) {
       return DoJoin(functors);
-    else
+    } else {
+      LOG(kError) << "Invalid Bootstrap Contacts";
       return kInvalidBootstrapContacts;
+    }
   }
 }
 
@@ -139,11 +136,10 @@ void Routing::DisconnectFunctors() {
 
 // drop existing routing table and restart
 // the endpoint is the endpoint to connect to.
-int Routing::BootStrapFromThisEndpoint(Functors functors,
-                                       const boost::asio::ip::udp::endpoint &endpoint) {
+int Routing::BootStrapFromThisEndpoint(Functors functors, const Endpoint &endpoint) {
   LOG(kInfo) << " Doing a BootStrapFromThisEndpoint Join.";
-  LOG(kInfo) << " Entered bootstrap IP address : " << endpoint.address().to_string();
-  LOG(kInfo) << " Entered bootstrap Port       : " << endpoint.port();
+  LOG(kInfo) << " Entered bootstrap endpoint : " << endpoint;
+
   if (impl_->routing_table_.Size() > 0) {
     DisconnectFunctors();  //TODO(Prakash): Do we need this ?
     for (unsigned int i = 0; i < impl_->routing_table_.Size(); ++i) {
@@ -173,7 +169,7 @@ int Routing::DoJoin(Functors functors) {
 
 int Routing::DoBootstrap(Functors functors) {
   if (impl_->bootstrap_nodes_.empty()) {
-    LOG(kInfo) << "No bootstrap nodes Aborted Join !!";
+    LOG(kError) << "No bootstrap nodes Aborted Join !!";
     return kInvalidBootstrapContacts;
   }
   ConnectFunctors(functors);
@@ -185,7 +181,7 @@ int Routing::DoBootstrap(Functors functors) {
                                                      connection_lost));
 
   if (bootstrap_endpoint.address().is_unspecified()) {
-    LOG(kError) << "could not bootstrap.";
+    LOG(kError) << "No Online Bootstrap Node found.";
     return kNoOnlineBootstrapContacts;
   }
   LOG(kVerbose) << "Bootstrap successful, bootstrap node - " << bootstrap_endpoint;
@@ -226,7 +222,7 @@ int Routing::DoFindNode() {
                     find_node_rpc, message_sent_functor);
 
   if(!message_sent_future.timed_wait(boost::posix_time::seconds(10))) {
-    LOG(kError) << "Unable to send find value rpc to bootstrap endpoint - "
+    LOG(kError) << "Unable to send FindValue rpc to bootstrap endpoint - "
                 << impl_->message_handler_.bootstrap_endpoint();
     return false;
   }
@@ -254,7 +250,7 @@ int Routing::ZeroStateJoin(Functors functors, const Endpoint &local_endpoint,
   impl_->bootstrap_nodes_.clear();
   impl_->bootstrap_nodes_.push_back(peer_node.endpoint);
   if (impl_->bootstrap_nodes_.empty()) {
-    LOG(kError) << "No bootstrap nodes Aborted Join !!";
+    LOG(kError) << "No bootstrap nodes, Aborted Join !!";
     return kInvalidBootstrapContacts;
   }
 
@@ -269,7 +265,7 @@ int Routing::ZeroStateJoin(Functors functors, const Endpoint &local_endpoint,
                                                      local_endpoint));
 
   if (bootstrap_endpoint.address().is_unspecified() && local_endpoint.address().is_unspecified()) {
-    LOG(kError) << "could not bootstrap zero state node with " << bootstrap_endpoint;
+    LOG(kError) << "Could not bootstrap zero state node with " << bootstrap_endpoint;
     return kNoOnlineBootstrapContacts;
   }
   assert((bootstrap_endpoint == peer_node.endpoint) &&
@@ -295,7 +291,7 @@ int Routing::ZeroStateJoin(Functors functors, const Endpoint &local_endpoint,
     return kSuccess;
   } else {
     LOG(kError) << "Failed to join zero state network, with bootstrap_endpoint"
-               << bootstrap_endpoint;
+                << bootstrap_endpoint;
     return kNotJoined;
   }
 }
@@ -320,7 +316,8 @@ void Routing::Send(const NodeId &destination_id,
     return;
   }
   protobuf::Message proto_message;
-  proto_message.set_id(impl_->timer_.AddTask(timeout, response_functor));
+  if (response_functor)
+    proto_message.set_id(impl_->timer_.AddTask(timeout, response_functor));
   proto_message.set_destination_id(destination_id.String());
   proto_message.set_data(data);
   proto_message.set_direct(static_cast<int32_t>(connect_type));
@@ -330,18 +327,17 @@ void Routing::Send(const NodeId &destination_id,
   if (impl_->anonymous_node_) {
     proto_message.set_relay_id(impl_->routing_table_.kKeys().identity);
     SetProtobufEndpoint(impl_->message_handler_.my_relay_endpoint(), proto_message.mutable_relay());
-    Endpoint direct_endpoint = impl_->message_handler_.bootstrap_endpoint();
-    rudp::MessageSentFunctor message_sent = [response_functor] (bool result) {
+    Endpoint bootstrap_endpoint = impl_->message_handler_.bootstrap_endpoint();
+    rudp::MessageSentFunctor message_sent = [&] (bool result) {
         if (!result) {
-          if (response_functor)
-            response_functor(kAnonymousSessionEnded, "");
+          impl_->timer_.KillTask(proto_message.id());
           LOG(kError) << "Anonymous Session Ended, Send not allowed anymore";
         } else {
           LOG(kInfo) << "Message Sent from Anonymous node";
         }
       };
 
-    impl_->rudp_.Send(direct_endpoint, proto_message.SerializeAsString(), message_sent);
+    impl_->rudp_.Send(bootstrap_endpoint, proto_message.SerializeAsString(), message_sent);
     return;
   }
 
@@ -355,13 +351,13 @@ void Routing::ReceiveMessage(const std::string &message) {
   protobuf::Message protobuf_message;
   protobuf::ConnectRequest connection_request;
   if (protobuf_message.ParseFromString(message)) {
+    bool relay_message(protobuf_message.has_source_id());
     LOG(kInfo) << " Message received, type: " << protobuf_message.type()
-               << " from " << HexSubstr(protobuf_message.source_id())
-               << " I am " << HexSubstr(impl_->keys_.identity);
-    if (protobuf_message.has_relay_id()) {
-      LOG(kVerbose) << " Message has relay id : " << HexSubstr(protobuf_message.relay_id())
-                    << " and relay ip : " << protobuf_message.has_relay();
-    }
+               << " from "
+               << (relay_message? HexSubstr(protobuf_message.source_id()):
+                     HexSubstr(protobuf_message.relay_id()))
+               << " I am " << HexSubstr(impl_->keys_.identity)
+               << (relay_message? " -- RELAY REQUEST": "");
     impl_->message_handler_.ProcessMessage(protobuf_message);
   } else {
     LOG(kWarning) << " Message received, failed to parse";

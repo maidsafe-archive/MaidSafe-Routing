@@ -45,7 +45,7 @@ void ValidateThisNode(rudp::ManagedConnections &rudp,
   node_info.node_id = NodeId(node_id);
   node_info.public_key = public_key;
   node_info.endpoint = their_endpoint.external;
-  LOG(kWarning) << "Calling rudp Add on endpoint = " << our_endpoint.external
+  LOG(kVerbose) << "Calling rudp Add on endpoint = " << our_endpoint.external
                 << ", their endpoint = " << their_endpoint.external;
   int result = rudp.Add(our_endpoint.external, their_endpoint.external, node_id.String());
 

@@ -95,7 +95,7 @@ void Connect(RoutingTable &routing_table,
     LOG(kVerbose) << "Unable to get available endpoint to connect to" << their_public_endpoint;
     return;
   }
-  LOG(kWarning) << " GetAvailableEndpoint for peer - " << their_public_endpoint << " my endpoint - " << our_endpoint_pair.external;
+  LOG(kVerbose) << " GetAvailableEndpoint for peer - " << their_public_endpoint << " my endpoint - " << our_endpoint_pair.external;
   // TODO(dirvine) try both connections
   if (message.client_node()) {
     LOG(kInfo) << " client connecting - HELP !!!!";

@@ -210,7 +210,7 @@ TEST(APITest, BEH_API_AnonymousNode) {
 
   Sleep(boost::posix_time::seconds(61));  // to allow disconnection
   ResponseFunctor failed_response = [=](const int& return_code, const std::string &message) {
-      ASSERT_EQ(kAnonymousSessionEnded, return_code);
+      EXPECT_EQ(kResponseTimeout, return_code);
       ASSERT_EQ("", message);
     };
   R3.Send(NodeId(node1.node_id), NodeId(), "message_2_from_anonymous node", 101, failed_response,
@@ -232,7 +232,7 @@ TEST(APITest, BEH_API_NodeNetwork) {
   Functors functors;
 
   functors.request_public_key = [=](const NodeId& node_id, GivePublicKeyFunctor give_key ) {
-      LOG(kWarning) << "node_validation called for " << HexSubstr(node_id.String());
+      LOG(kInfo) << "node_validation called for " << HexSubstr(node_id.String());
       auto itr(key_map.find(NodeId(node_id)));
       if (key_map.end() != itr)
         give_key((*itr).second.public_key);
