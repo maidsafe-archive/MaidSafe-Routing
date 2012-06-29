@@ -44,7 +44,8 @@ RoutingPrivate::RoutingPrivate(const asymm::Keys &keys,
                        RequestPublicKeyFunctor()),
       joined_(false),
       bootstrap_file_path_(),
-      client_mode_(client_mode) {
+      client_mode_(client_mode),
+      anonymous_node_(false) {
   asio_service_->Start();
 }
 

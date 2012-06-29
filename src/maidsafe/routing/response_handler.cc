@@ -114,7 +114,10 @@ void FindNode(RoutingTable &routing_table,
   //  LOG(kError) << " find node request was not signed by us";
   //  return;  // we never requested this
   //}
-  LOG(kVerbose) << "CheckSignature done, find_nodes.nodes_size() = " << find_nodes.nodes_size();
+  for (int i = 0; i < find_nodes.nodes_size(); ++i) {
+    LOG(kVerbose) << " Find node returned - "  << HexSubstr(find_nodes.nodes(i));
+  }
+
   for (int i = 0; i < find_nodes.nodes_size(); ++i) {
     NodeInfo node_to_add;
     node_to_add.node_id = NodeId(find_nodes.nodes(i));

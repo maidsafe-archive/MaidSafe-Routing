@@ -53,6 +53,9 @@ void SendOn(protobuf::Message message,
     };
   }
   LOG(kVerbose) << " >>>>>>>>>>>>>>> rudp send message to " << endpoint << " <<<<<<<<<<<<<<<<<<<<";
+  LOG(kVerbose) << " Sent Message , id " << message.id()
+                << ", Relay id " << HexSubstr(message.relay_id())
+                << ", Has relay ip " << message.has_relay();
   rudp.Send(endpoint, serialised_message, message_sent_functor);
 }
 

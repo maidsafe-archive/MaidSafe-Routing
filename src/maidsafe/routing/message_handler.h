@@ -49,6 +49,7 @@ class MessageHandler {
   void set_message_received_functor(MessageReceivedFunctor message_received);
   void set_node_validation_functor(RequestPublicKeyFunctor node_validation);
   Endpoint bootstrap_endpoint();
+  Endpoint my_relay_endpoint();
 
  private:
   MessageHandler(const MessageHandler&);  // no copy

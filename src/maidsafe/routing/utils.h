@@ -44,6 +44,9 @@ bool IsNodeLevelMessage(const protobuf::Message &message);
 bool IsRequest(const protobuf::Message &message);
 bool IsResponse(const protobuf::Message &message);
 
+void SetProtobufEndpoint(const Endpoint& endpoint, protobuf::Endpoint *pbendpoint);
+Endpoint GetEndpointFromProtobuf(const protobuf::Endpoint &pbendpoint);
+
 }  // namespace routing
 
 }  // namespace maidsafe

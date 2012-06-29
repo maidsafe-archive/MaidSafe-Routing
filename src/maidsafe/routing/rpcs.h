@@ -42,8 +42,10 @@ const protobuf::Message FindNodes(const NodeId &node_id,
                                   Endpoint local_endpoint = Endpoint());
 
 const protobuf::Message ProxyConnect(const NodeId &node_id,
-                                     const std::string &identity,
-                                     const Endpoint &endpoint);
+                                     const NodeId &my_node_id,
+                                     const rudp::EndpointPair &endpoint_pair,
+                                     bool relay_message = false,
+                                     Endpoint local_endpoint = Endpoint());
 }  // namespace rpcs
 
 }  // namespace routing

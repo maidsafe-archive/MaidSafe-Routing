@@ -108,7 +108,8 @@ enum ProxyConnectResultType {
 }
 
 message ProxyConnectRequest {
-  required Endpoint endpoint = 1;
+  required Endpoint local_endpoint = 1;
+  required Endpoint external_endpoint = 2;
 }
 
 message ProxyConnectResponse {

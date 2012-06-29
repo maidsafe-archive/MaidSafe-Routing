@@ -51,6 +51,11 @@ struct RoutingPrivate;
 /***************************************************************************
 *  WARNING THIS CONSTRUCTOR WILL THROW A BOOST::FILESYSTEM_ERROR           *
 * if config file is invalid                                                *
+* Providing empty key means that, on Joins it will join the network        *
+* Anonymously. This will allow to Send/Recieve messages to/from network.   *
+* WARNING : CONNECTION TO NETWORK WILL STAY FOR 60 SEC.                    *
+* Users are expected to recreate routing object with right credentials and *
+* call Join() method to join the routing network.                          *
 * *************************************************************************/
 class Routing {
  public:
@@ -87,13 +92,13 @@ class Routing {
   * clients with your address (except you). Pass an empty response_functor  *
   * to indicate you do not care about a response.                           *
   ***************************************************************************/
-  SendStatus Send(const NodeId &destination_id,  // id of final destination
-                  const NodeId &group_id,  // id of sending group
-                  const std::string &data,  // message content (serialised data)
-                  const int32_t &type,  // user defined message type
-                  const ResponseFunctor response_functor,
-                  const boost::posix_time::time_duration &timeout,
-                  const ConnectType &connect_type);  // is this to a close node group or direct
+  void Send(const NodeId &destination_id,  // id of final destination
+            const NodeId &group_id,  // id of sending group
+            const std::string &data,  // message content (serialised data)
+            const int32_t &type,  // user defined message type
+            const ResponseFunctor response_functor,
+            const boost::posix_time::time_duration &timeout,
+            const ConnectType &connect_type);  // is this to a close node group or direct
 
   /***************************************************************************
   * This method should be called by the user in response to                  *
@@ -110,6 +115,8 @@ class Routing {
   int BootStrapFromThisEndpoint(Functors functors,
                                 const boost::asio::ip::udp::endpoint& endpoint);
   int DoJoin(Functors functors);
+  int DoBootstrap(Functors functors);
+  int DoFindNode();
   void ReceiveMessage(const std::string &message);
   void ConnectionLost(const Endpoint &lost_endpoint);
   bool CheckBootStrapFilePath();

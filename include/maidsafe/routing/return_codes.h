@@ -45,7 +45,10 @@ enum ReturnCode {
   kInvalidBootstrapContacts = -303002,
   kNotListening = -303003,
   kNotJoined = -303004,
-  kResponseTimeout = -303005
+  kResponseTimeout = -303005,
+  kAnonymousSessionEnded = -303006,
+  kInvalidDestinationId = -303007,
+  kEmptyData = -303008
 };
 
 }  // namespace routing

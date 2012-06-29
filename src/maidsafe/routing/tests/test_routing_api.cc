@@ -159,8 +159,67 @@ TEST(APITest, BEH_API_ZeroState) {
   EXPECT_GT(R3.GetStatus(), 0);
 }
 
+TEST(APITest, BEH_API_AnonymousNode) {
+  NodeInfo node1(MakeNodeInfo());
+  NodeInfo node2(MakeNodeInfo());
+  std::map<NodeId, asymm::Keys> key_map;
+  key_map.insert(std::make_pair(NodeId(node1.node_id), GetKeys(node1)));
+  key_map.insert(std::make_pair(NodeId(node2.node_id), GetKeys(node2)));
+  node1.endpoint.port(5000);
+  node2.endpoint.port(5001);
+
+  Routing R1(GetKeys(node1), false);
+  Routing R2(GetKeys(node2), false);
+  Routing R3(asymm::Keys(), false);  // Anonymous node
+  Functors functors1, functors2, functors3;
+
+  functors1.request_public_key = [&](const NodeId& node_id, GivePublicKeyFunctor give_key )
+  {
+      LOG(kWarning) << "node_validation called for " << HexSubstr(node_id.String());
+      auto itr(key_map.find(NodeId(node_id)));
+      if (key_map.end() != itr)
+        give_key((*itr).second.public_key);
+  };
+
+  functors1.message_received = [&] (const int32_t&, const std::string &message, const NodeId &,
+    ReplyFunctor reply_functor) {
+    reply_functor("response to " + message);
+    LOG(kVerbose) << "Message received and replied to message !!";
+  };
+
+  functors2.request_public_key = functors1.request_public_key;
+
+  auto a1 = std::async(std::launch::async,
+      [&]{return R1.ZeroStateJoin(functors1, node1.endpoint, node2);});  // NOLINT (Prakash)
+  auto a2 = std::async(std::launch::async,
+      [&]{return R2.ZeroStateJoin(functors2, node2.endpoint, node1);});  // NOLINT (Prakash)
+
+  EXPECT_EQ(kSuccess, a2.get());  // wait for promise !
+  EXPECT_EQ(kSuccess, a1.get());  // wait for promise !
+
+  EXPECT_EQ(kSuccess, R3.Join(functors3, node2.endpoint));  // NOLINT (Prakash)
+
+  ResponseFunctor response_functor = [=](const int& return_code, const std::string &message) {
+      ASSERT_EQ(kSuccess, return_code);
+      ASSERT_EQ("response to message_from_anonymous node", message);
+      LOG(kVerbose) << "Got response !!";
+    };
+  //  Testing Send
+  R3.Send(NodeId(node1.node_id), NodeId(), "message_from_anonymous node", 101, response_functor,
+          boost::posix_time::seconds(10), ConnectType::kSingle);
+
+  Sleep(boost::posix_time::seconds(61));  // to allow disconnection
+  ResponseFunctor failed_response = [=](const int& return_code, const std::string &message) {
+      ASSERT_EQ(kAnonymousSessionEnded, return_code);
+      ASSERT_EQ("", message);
+    };
+  R3.Send(NodeId(node1.node_id), NodeId(), "message_2_from_anonymous node", 101, failed_response,
+          boost::posix_time::seconds(60), ConnectType::kSingle);
+  Sleep(boost::posix_time::seconds(1));
+}
+
 TEST(APITest, BEH_API_NodeNetwork) {
-  uint8_t kNetworkSize(10);
+  uint8_t kNetworkSize(6);
   std::vector<NodeInfo> node_infos;
   std::vector<std::shared_ptr<Routing>> routing_node;
   std::map<NodeId, asymm::Keys> key_map;
@@ -172,7 +231,7 @@ TEST(APITest, BEH_API_NodeNetwork) {
   }
   Functors functors;
 
-  functors.request_public_key = [&](const NodeId& node_id, GivePublicKeyFunctor give_key ) {
+  functors.request_public_key = [=](const NodeId& node_id, GivePublicKeyFunctor give_key ) {
       LOG(kWarning) << "node_validation called for " << HexSubstr(node_id.String());
       auto itr(key_map.find(NodeId(node_id)));
       if (key_map.end() != itr)
@@ -190,10 +249,10 @@ TEST(APITest, BEH_API_NodeNetwork) {
   EXPECT_EQ(kSuccess, a1.get());  // wait for promise !
 
   for (auto i(2); i != kNetworkSize; ++i) {
-    std::async(std::launch::async, [&]{
+//    std::async(std::launch::async, [&] {
     ASSERT_EQ(kSuccess, routing_node[i]->Join(functors, node_infos[i%2].endpoint));
     LOG(kVerbose) << "Joined !!!!!!!!!!!!!!!!! " << i + 1 << " nodes";
-  });
+//  });
 }
   for (auto i(0); i != kNetworkSize; ++i) {
     EXPECT_GT(routing_node[i]->GetStatus(), 0);

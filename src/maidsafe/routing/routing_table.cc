@@ -33,6 +33,10 @@ RoutingTable::RoutingTable(const asymm::Keys &keys,
       mutex_(),
       close_node_replaced_functor_(close_node_replaced_functor) {}
 
+void RoutingTable::set_keys(asymm::Keys keys) {
+  keys_ = keys;
+}
+
 bool RoutingTable::CheckNode(NodeInfo& node) {
   return AddOrCheckNode(node, false);
 }
@@ -246,7 +250,8 @@ void RoutingTable::SortFromThisNode(const NodeId &from) {
 }
 
 void RoutingTable::PartialSortFromThisNode(const NodeId &from, const uint16_t &number) {
-  std::partial_sort(routing_table_nodes_.begin(), routing_table_nodes_.begin() + number,
+  uint16_t count = std::min(number, RoutingTableSize());
+  std::partial_sort(routing_table_nodes_.begin(), routing_table_nodes_.begin() + count,
                     routing_table_nodes_.end(),
                     [this, from](const NodeInfo &i, const NodeInfo &j) {
                       return (i.node_id ^ from) < (j.node_id ^ from);
@@ -297,9 +302,9 @@ std::vector<NodeId> RoutingTable::GetClosestNodes(const NodeId &from,
                                                   const uint16_t &number_to_get) {
   std::vector<NodeId>close_nodes;
   std::lock_guard<std::mutex> lock(mutex_);
-  unsigned int count = std::min(number_to_get, RoutingTableSize());
-  PartialSortFromThisNode(from, number_to_get);
-  close_nodes.resize(count);
+  uint16_t count = std::min(number_to_get, RoutingTableSize());
+  PartialSortFromThisNode(from, count);
+  close_nodes.reserve(count);
 
   for (unsigned int i = 0; i < count; ++i) {
     close_nodes.push_back(routing_table_nodes_[i].node_id);

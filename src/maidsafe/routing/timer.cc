@@ -36,6 +36,7 @@ TaskId Timer::AddTask(const boost::posix_time::time_duration &timeout,
   TimerPointer timer(new asio::deadline_timer(io_service_.service(), timeout));
   std::lock_guard<std::mutex> lock(mutex_);
   ++task_id_;
+  LOG(kVerbose) << "AddTask added a task, with id" << task_id_;
   queue_.insert(std::make_pair(task_id_, std::make_pair(timer, response_functor)));
   timer->async_wait(std::bind(&Timer::KillTask, this, task_id_));
   return task_id_;
@@ -50,18 +51,22 @@ void Timer::KillTask(TaskId task_id) {
     const auto it = queue_.find(task_id);
     if (it != queue_.end()) {
       // message timed out or task killed
+      LOG(kVerbose) << "KillTask killed a task, with id" << task_id_;
       task_response_functor = (*it).second.second;
       queue_.erase(it);
     }
   }
   if (task_response_functor)
-    io_service_.service().dispatch(std::bind(task_response_functor, kResponseTimeout, ""));
+    io_service_.service().dispatch([=] {
+        task_response_functor(kResponseTimeout, "");
+      }
+    );
 }
 
 void Timer::ExecuteTaskNow(protobuf::Message &message) {
   if (!message.has_id()) {
-  LOG(kError) << "recieved response with no ID ABORT message";
-  return;
+    LOG(kError) << "recieved response with no ID ABORT message";
+    return;
   }
   TaskResponseFunctor task_response_functor(nullptr);
   {
@@ -71,6 +76,7 @@ void Timer::ExecuteTaskNow(protobuf::Message &message) {
       // message all OK in routing
       task_response_functor = (*it).second.second;
       queue_.erase(it);
+      LOG(kVerbose) << "ExecuteTaskNow will execute a task, with id" << task_id_;
     } else {
       LOG(kError) << "Attempt to run an expired or non existent task";
     }
@@ -78,7 +84,10 @@ void Timer::ExecuteTaskNow(protobuf::Message &message) {
 
   //posting messages
   if (task_response_functor)
-    io_service_.service().dispatch(std::bind(task_response_functor, kSuccess, message.data()));
+    io_service_.service().dispatch([=] {
+        task_response_functor(kSuccess, message.data());
+      }
+    );
 }
 
 }  // namespace maidsafe

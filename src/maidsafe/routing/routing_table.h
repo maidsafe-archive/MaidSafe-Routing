@@ -50,6 +50,7 @@ class RoutingTable {
   uint16_t Size();
   asymm::Keys kKeys() const;
   void set_close_node_replaced_functor(CloseNodeReplacedFunctor close_node_replaced);
+  void set_keys(asymm::Keys keys);
 
  private:
   RoutingTable(const RoutingTable&);
