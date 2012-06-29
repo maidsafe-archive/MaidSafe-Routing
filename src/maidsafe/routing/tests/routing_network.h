@@ -47,13 +47,13 @@ class GenericNode {
   NodeInfo node_info() const;
   int ZeroStateJoin(const NodeInfo &peer_node_info);
   int Join(const Endpoint &peer_endpoint);
-  SendStatus Send(const NodeId &destination_id,
-                  const NodeId &group_id,
-                  const std::string &data,
-                  const int32_t &type,
-                  const ResponseFunctor response_functor,
-                  const boost::posix_time::time_duration &timeout,
-                  const ConnectType &connect_type);
+  void Send(const NodeId &destination_id,
+            const NodeId &group_id,
+            const std::string &data,
+            const int32_t &type,
+            const ResponseFunctor response_functor,
+            const boost::posix_time::time_duration &timeout,
+            const ConnectType &connect_type);
 
   static size_t next_node_id_;
 

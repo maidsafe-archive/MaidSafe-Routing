@@ -68,15 +68,16 @@ NodeId GenericNode::Id() const {
   return node_info_.node_id;
 }
 
-SendStatus GenericNode::Send(const NodeId &destination_id,
-                             const NodeId &group_id,
-                             const std::string &data,
-                             const int32_t &type,
-                             const ResponseFunctor response_functor,
-                             const boost::posix_time::time_duration &timeout,
-                             const ConnectType &connect_type) {
-    return routing_->Send(destination_id, group_id, data, type, response_functor,
-                          timeout, connect_type);
+void GenericNode::Send(const NodeId &destination_id,
+                       const NodeId &group_id,
+                       const std::string &data,
+                       const int32_t &type,
+                       const ResponseFunctor response_functor,
+                       const boost::posix_time::time_duration &timeout,
+                       const ConnectType &connect_type) {
+    routing_->Send(destination_id, group_id, data, type, response_functor,
+                   timeout, connect_type);
+    return;
 }
 
 NodeInfo GenericNode::node_info() const {
