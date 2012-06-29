@@ -351,11 +351,11 @@ void Routing::ReceiveMessage(const std::string &message) {
   protobuf::Message protobuf_message;
   protobuf::ConnectRequest connection_request;
   if (protobuf_message.ParseFromString(message)) {
-    bool relay_message(protobuf_message.has_source_id());
+    bool relay_message(!protobuf_message.has_source_id());
     LOG(kInfo) << " Message received, type: " << protobuf_message.type()
                << " from "
-               << (relay_message? HexSubstr(protobuf_message.source_id()):
-                     HexSubstr(protobuf_message.relay_id()))
+               << (relay_message? HexSubstr(protobuf_message.relay_id()):
+                     HexSubstr(protobuf_message.source_id()))
                << " I am " << HexSubstr(impl_->keys_.identity)
                << (relay_message? " -- RELAY REQUEST": "");
     impl_->message_handler_.ProcessMessage(protobuf_message);
