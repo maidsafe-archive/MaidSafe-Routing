@@ -56,8 +56,10 @@ Routing::Routing(const asymm::Keys &keys, const bool client_mode)
   }
   if (keys.identity.empty()) {
     impl_->anonymous_node_ = true;
-    LOG(kInfo) << " Empty key found ! This will be an anonymous node";
-    asymm::GenerateKeyPair(&impl_->keys_);  // FIXME
+    asymm::GenerateKeyPair(&impl_->keys_);
+    impl_->keys_.identity = NodeId(RandomString(64)).String();
+    impl_->routing_table_.set_keys(impl_->keys_);
+    LOG(kInfo) << " Anonymous node id : " << HexSubstr(impl_->keys_.identity);
   }
 }
 
@@ -298,20 +300,24 @@ int Routing::ZeroStateJoin(Functors functors, const Endpoint &local_endpoint,
   }
 }
 
-SendStatus Routing::Send(const NodeId &destination_id,
-                         const NodeId &/*group_id*/,
-                         const std::string &data,
-                         const int32_t &type,
-                         const ResponseFunctor response_functor,
-                         const boost::posix_time::time_duration &timeout,
-                         const ConnectType &connect_type) {
+void Routing::Send(const NodeId &destination_id,
+                   const NodeId &/*group_id*/,
+                   const std::string &data,
+                   const int32_t &type,
+                   const ResponseFunctor response_functor,
+                   const boost::posix_time::time_duration &timeout,
+                   const ConnectType &connect_type) {
   if (destination_id.String().empty()) {
     LOG(kError) << "No destination id, aborted send";
-    return SendStatus::kInvalidDestinationId;
+    if (response_functor)
+      response_functor(kInvalidDestinationId, "");
+    return;
   }
   if (data.empty() && (type != 100)) {
     LOG(kError) << "No data, aborted send";
-    return SendStatus::kEmptyData;
+    if (response_functor)
+      response_functor(kEmptyData, "");
+    return;
   }
   protobuf::Message proto_message;
   proto_message.set_id(impl_->timer_.AddTask(timeout, response_functor));
@@ -319,17 +325,30 @@ SendStatus Routing::Send(const NodeId &destination_id,
   proto_message.set_data(data);
   proto_message.set_direct(static_cast<int32_t>(connect_type));
   proto_message.set_type(type);
-  Endpoint direct_endpoint;
+
+  // Anonymous node
   if (impl_->anonymous_node_) {
     proto_message.set_relay_id(impl_->routing_table_.kKeys().identity);
     SetProtobufEndpoint(impl_->message_handler_.my_relay_endpoint(), proto_message.mutable_relay());
-    direct_endpoint = impl_->message_handler_.bootstrap_endpoint();
-  } else {
-    proto_message.set_source_id(impl_->routing_table_.kKeys().identity);
+    Endpoint direct_endpoint = impl_->message_handler_.bootstrap_endpoint();
+    rudp::MessageSentFunctor message_sent = [response_functor] (bool result) {
+        if (!result) {
+          if (response_functor)
+            response_functor(kAnonymousSessionEnded, "");
+          LOG(kError) << "Anonymous Session Ended, Send not allowed anymore";
+        } else {
+          LOG(kInfo) << "Message Sent from Anonymous node";
+        }
+      };
+
+    impl_->rudp_.Send(direct_endpoint, proto_message.SerializeAsString(), message_sent);
+    return;
   }
 
-  ProcessSend(proto_message, impl_->rudp_, impl_->routing_table_, direct_endpoint);
-  return SendStatus::kSuccess;
+  // Non Anonymous, normal node
+  proto_message.set_source_id(impl_->routing_table_.kKeys().identity);
+  ProcessSend(proto_message, impl_->rudp_, impl_->routing_table_);
+  return;
 }
 
 void Routing::ReceiveMessage(const std::string &message) {
@@ -339,6 +358,10 @@ void Routing::ReceiveMessage(const std::string &message) {
     LOG(kInfo) << " Message received, type: " << protobuf_message.type()
                << " from " << HexSubstr(protobuf_message.source_id())
                << " I am " << HexSubstr(impl_->keys_.identity);
+    if (protobuf_message.has_relay_id()) {
+      LOG(kVerbose) << " Message has relay id : " << HexSubstr(protobuf_message.relay_id())
+                    << " and relay ip : " << protobuf_message.has_relay();
+    }
     impl_->message_handler_.ProcessMessage(protobuf_message);
   } else {
     LOG(kWarning) << " Message received, failed to parse";

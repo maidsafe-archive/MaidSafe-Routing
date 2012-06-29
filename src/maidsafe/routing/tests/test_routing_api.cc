@@ -159,10 +159,9 @@ TEST(APITest, BEH_API_ZeroState) {
   EXPECT_GT(R3.GetStatus(), 0);
 }
 
-TEST(APITest, BEH_API_Anonymous) {
+TEST(APITest, BEH_API_AnonymousNode) {
   NodeInfo node1(MakeNodeInfo());
   NodeInfo node2(MakeNodeInfo());
-//  NodeInfo node3(MakeNodeInfo());
   std::map<NodeId, asymm::Keys> key_map;
   key_map.insert(std::make_pair(NodeId(node1.node_id), GetKeys(node1)));
   key_map.insert(std::make_pair(NodeId(node2.node_id), GetKeys(node2)));
@@ -182,6 +181,12 @@ TEST(APITest, BEH_API_Anonymous) {
         give_key((*itr).second.public_key);
   };
 
+  functors1.message_received = [&] (const int32_t&, const std::string &message, const NodeId &,
+    ReplyFunctor reply_functor) {
+    reply_functor("response to " + message);
+    LOG(kVerbose) << "Message received and replied to message !!";
+  };
+
   functors2.request_public_key = functors1.request_public_key;
 
   auto a1 = std::async(std::launch::async,
@@ -194,20 +199,23 @@ TEST(APITest, BEH_API_Anonymous) {
 
   EXPECT_EQ(kSuccess, R3.Join(functors3, node2.endpoint));  // NOLINT (Prakash)
 
-  EXPECT_EQ(0, R3.GetStatus());
-  LOG(kVerbose) << "after 0 sec R3.GetStatus() -- " << R3.GetStatus();
-
-  ResponseFunctor response_functor = [=] (const int& return_code, const std::string &/*message*/) {
-    ASSERT_EQ(kSuccess, return_code);
-
-  };
+  ResponseFunctor response_functor = [=](const int& return_code, const std::string &message) {
+      ASSERT_EQ(kSuccess, return_code);
+      ASSERT_EQ("response to message_from_anonymous node", message);
+      LOG(kVerbose) << "Got response !!";
+    };
   //  Testing Send
   R3.Send(NodeId(node1.node_id), NodeId(), "message_from_anonymous node", 101, response_functor,
-    boost::posix_time::seconds(60), ConnectType::kSingle);
+          boost::posix_time::seconds(10), ConnectType::kSingle);
 
-  Sleep(boost::posix_time::seconds(70));  // Added to allow more than 1 node to join
-  LOG(kVerbose) << "after 70 sec R3.GetStatus() -- " << R3.GetStatus();
-  EXPECT_LT(R3.GetStatus(), 0);
+  Sleep(boost::posix_time::seconds(61));  // to allow disconnection
+  ResponseFunctor failed_response = [=](const int& return_code, const std::string &message) {
+      ASSERT_EQ(kAnonymousSessionEnded, return_code);
+      ASSERT_EQ("", message);
+    };
+  R3.Send(NodeId(node1.node_id), NodeId(), "message_2_from_anonymous node", 101, failed_response,
+          boost::posix_time::seconds(60), ConnectType::kSingle);
+  Sleep(boost::posix_time::seconds(1));
 }
 
 TEST(APITest, BEH_API_NodeNetwork) {

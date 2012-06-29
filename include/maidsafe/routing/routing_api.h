@@ -88,13 +88,13 @@ class Routing {
   * clients with your address (except you). Pass an empty response_functor  *
   * to indicate you do not care about a response.                           *
   ***************************************************************************/
-  SendStatus Send(const NodeId &destination_id,  // id of final destination
-                  const NodeId &group_id,  // id of sending group
-                  const std::string &data,  // message content (serialised data)
-                  const int32_t &type,  // user defined message type
-                  const ResponseFunctor response_functor,
-                  const boost::posix_time::time_duration &timeout,
-                  const ConnectType &connect_type);  // is this to a close node group or direct
+  void Send(const NodeId &destination_id,  // id of final destination
+            const NodeId &group_id,  // id of sending group
+            const std::string &data,  // message content (serialised data)
+            const int32_t &type,  // user defined message type
+            const ResponseFunctor response_functor,
+            const boost::posix_time::time_duration &timeout,
+            const ConnectType &connect_type);  // is this to a close node group or direct
 
   /***************************************************************************
   * This method should be called by the user in response to                  *

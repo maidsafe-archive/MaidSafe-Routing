@@ -113,26 +113,37 @@ void MessageHandler::RoutingMessage(protobuf::Message& message) {
 }
 
 void MessageHandler::NodeLevelMessageForMe(protobuf::Message &message) {
-   if (IsRequest(message)) {  // request
-    LOG(kVerbose) <<"Message for me !!";
-    ReplyFunctor response_functor = [=](const std::string& reply_message)  {
-      if (reply_message.empty())
-        return;
-    protobuf::Message message_out;
-    message_out.set_type(-message.type());
-    message_out.set_destination_id(message.source_id());
-    message_out.set_direct(static_cast<int32_t>(ConnectType::kSingle));
-    message_out.set_data(reply_message);
-    message_out.set_last_id(routing_table_.kKeys().identity);
-    message_out.set_source_id(routing_table_.kKeys().identity);
-    if (message.has_id())
-      message_out.set_id(message.id());
-    else
-      LOG(kInfo) << "Message to be sent back had no id";
-    ProcessSend(message_out, rudp_, routing_table_);
-    };
+  if (IsRequest(message)) {  // request
+    LOG(kVerbose) <<"Node Level Request Message for me !!";
+    ReplyFunctor response_functor = [=](const std::string& reply_message) {
+        if (reply_message.empty())
+          return;
+        protobuf::Message message_out;
+        message_out.set_type(-message.type());
+        message_out.set_destination_id(message.source_id());
+        message_out.set_direct(static_cast<int32_t>(ConnectType::kSingle));
+        message_out.set_data(reply_message);
+        message_out.set_last_id(routing_table_.kKeys().identity);
+        message_out.set_source_id(routing_table_.kKeys().identity);
+        if (message.has_id())
+          message_out.set_id(message.id());
+        else
+          LOG(kInfo) << "Message to be sent back had no id";
+
+        if (message.has_relay_id())
+          message_out.set_relay_id(message.relay_id());
+
+        if (message.has_relay()) {
+          Endpoint relay_endpoint = GetEndpointFromProtobuf(message.relay());
+          SetProtobufEndpoint(relay_endpoint, message_out.mutable_relay());
+        }
+
+        ProcessSend(message_out, rudp_, routing_table_);
+      };
+
     if (IsResponse(message))
       message.set_type(-message.type());
+
     if (message_received_functor_)
       message_received_functor_(static_cast<int>(message.type()), message.data(), NodeId(),
                                 response_functor);
@@ -262,8 +273,10 @@ void MessageHandler::ProcessRelayRequest(protobuf::Message &message) {
 
 bool MessageHandler::RelayDirectMessageIfNeeded(protobuf::Message &message) {
   assert(message.destination_id() == routing_table_.kKeys().identity);
-  if (!message.has_relay_id())
+  if (!message.has_relay_id()) {
+    LOG(kVerbose) << "message don't have relay id, so its not a relay message";
     return false;
+  }
   //  Only direct responses need to be relayed
   if ((message.destination_id() != message.relay_id()) &&  IsResponse(message)) {
     message.clear_destination_id(); // to allow network util to identify it as relay message

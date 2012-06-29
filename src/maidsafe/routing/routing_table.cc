@@ -33,6 +33,10 @@ RoutingTable::RoutingTable(const asymm::Keys &keys,
       mutex_(),
       close_node_replaced_functor_(close_node_replaced_functor) {}
 
+void RoutingTable::set_keys(asymm::Keys keys) {
+  keys_ = keys;
+}
+
 bool RoutingTable::CheckNode(NodeInfo& node) {
   return AddOrCheckNode(node, false);
 }
