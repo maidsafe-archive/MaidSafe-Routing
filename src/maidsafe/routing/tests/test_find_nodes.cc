@@ -59,6 +59,21 @@ class FindNode : public GenericNode {
     routing_->impl_->rudp_.Send(peer_endpoint, message, message_sent_functor);
   }
 
+  void PrintRoutingTable() {
+    LOG(kInfo) << " PrintRoutingTable() ";
+    for (auto node_info : routing_->impl_->routing_table_.routing_table_nodes_) {
+      LOG(kInfo) << "Port: " << node_info.endpoint.port();
+    }
+  }
+
+  bool RoutingTableHasEndpoint(const Endpoint &endpoint) {
+    return (std::find_if(routing_->impl_->routing_table_.routing_table_nodes_.begin(),
+                         routing_->impl_->routing_table_.routing_table_nodes_.end(),
+                 [&endpoint](const NodeInfo &node_info) {
+                   return (endpoint == node_info.endpoint); }) !=
+            routing_->impl_->routing_table_.routing_table_nodes_.end());
+  }
+
  protected:
   std::vector<std::pair<int32_t, std::string> > messages_;
 };
@@ -69,19 +84,18 @@ class FindNodeNetwork : public GenericNetwork<NodeType> {
   FindNodeNetwork(void) : GenericNetwork<NodeType>() {}
 
  protected:
-  testing::AssertionResult Find() {
-    std::string find_node_rpc(rpcs::FindNodes(this->nodes_[5]->Id(), this->nodes_[3]->Id(),
-        true, this->nodes_[3]->endpoint()).SerializeAsString());
+  testing::AssertionResult Find(std::shared_ptr<NodeType> source,
+                                std::shared_ptr<NodeType> destination) {
+    std::string find_node_rpc(rpcs::FindNodes(destination->Id(), source->Id(),
+        true, source->endpoint()).SerializeAsString());
     boost::promise<bool> message_sent_promise;
     auto message_sent_future = message_sent_promise.get_future();
     uint8_t attempts(0);
-    rudp::MessageSentFunctor message_sent_functor = [this,
-        &message_sent_promise, &attempts, &find_node_rpc, &message_sent_functor]
-            (bool message_sent) {
+    rudp::MessageSentFunctor message_sent_functor = [&] (bool message_sent) {
         if (message_sent) {
           message_sent_promise.set_value(true);
         } else if (attempts < 3) {
-          this->nodes_[3]->RudpSend(
+          source->RudpSend(
               this->nodes_[1]->endpoint(),
               find_node_rpc,
               message_sent_functor);
@@ -89,8 +103,14 @@ class FindNodeNetwork : public GenericNetwork<NodeType> {
           message_sent_promise.set_value(false);
         }
       };
-    this->nodes_[3]->RudpSend(this->nodes_[1]->endpoint(),
-                              find_node_rpc, message_sent_functor);
+    source->PrintRoutingTable();
+    source->RudpSend(this->nodes_[1]->endpoint(), find_node_rpc, message_sent_functor);
+    if(!message_sent_future.timed_wait(boost::posix_time::seconds(10))) {
+      return testing::AssertionFailure() << "Unable to send FindValue rpc to bootstrap endpoint - "
+                                         << destination->endpoint().port();
+    }
+    LOG(kInfo) << " destination->endpoint() " << destination->endpoint().port();
+    EXPECT_TRUE(source->RoutingTableHasEndpoint(destination->endpoint()));
     return testing::AssertionSuccess();
   }
 };
@@ -99,8 +119,8 @@ class FindNodeNetwork : public GenericNetwork<NodeType> {
 TYPED_TEST_CASE_P(FindNodeNetwork);
 
 TYPED_TEST_P(FindNodeNetwork, FUNC_FindNodes) {
-  this->SetUpNetwork(9);
-  EXPECT_TRUE(this->Find());
+  this->SetUpNetwork(6);
+  EXPECT_TRUE(this->Find(this->nodes_[3], this->nodes_[2]));
 }
 
 REGISTER_TYPED_TEST_CASE_P(FindNodeNetwork, FUNC_FindNodes);
