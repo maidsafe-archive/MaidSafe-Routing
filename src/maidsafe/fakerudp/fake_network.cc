@@ -40,7 +40,7 @@ FakeNetwork::FakeNetwork() : next_port_(1500) {
       boost::asio::ip::address  ip;
       ip.from_string("8.8.8.8");
       Endpoint test_endpoint(ip, 53); // TODO(dirvine) randomise the ip address
-      local_ip_ = GetLocalIp(test_endpoint);
+      local_ip_ = ip;
 }
 
 Endpoint FakeNetwork::GetEndpoint() {
@@ -48,6 +48,7 @@ Endpoint FakeNetwork::GetEndpoint() {
 }
 
 std::vector<Node>::iterator FakeNetwork::FindNode(Endpoint endpoint) {
+    std::lock_guard<std::mutex> lock(mutex_);
   return  std::find_if(nodes_.begin(),
                      nodes_.end(),
                     [=] (Node& element)
@@ -58,26 +59,38 @@ std::vector<Node>::iterator FakeNetwork::FindNode(Endpoint endpoint) {
 }
 
 bool FakeNetwork::BootStrap(Node &node, Endpoint &connect_to_endpoint) {
-  auto iter = FindNode(node.endpoint);
-  if (iter == nodes_.end()) {
+    std::lock_guard<std::mutex> lock(mutex_);
+ // auto iter = FindNode(node.endpoint);
+ // if (iter == nodes_.end()) {
     nodes_.push_back(node);
-    for (int i = 0; i < 200; ++i) {
-      std::this_thread::sleep_for(std::chrono::milliseconds(10));
-      auto iter2 = FindNode(connect_to_endpoint);
-      if (iter2 != nodes_.end())
-       (*iter2).connected_to_endpoints.push_back(node.endpoint);
+//    for (int i = 0; i < 200; ++i) {
+//      std::this_thread::sleep_for(std::chrono::milliseconds(10));
+//      auto iter2 = FindNode(connect_to_endpoint);
+//      if (iter2 != nodes_.end())
+//       (*iter2).connected_to_endpoints.push_back(node.endpoint);
+
       return true;
-    }
-  }
-  return false;
+   // }
+//  }
+//  return false;
 }
 
 bool FakeNetwork::AddConnection(const Endpoint &my_endpoint, const Endpoint &peer_endpoint) {
-  (*FindNode(my_endpoint)).connected_to_endpoints.push_back(peer_endpoint);
+//      std::lock_guard<std::mutex> lock(mutex_);
+//      auto iter = std::find_if(nodes_.begin(),
+//                           nodes_.end(),
+//                          [=] (Node& element)
+//                           {
+//                             return (element.endpoint == my_endpoint);
+//                           }
+//                           );
+//     (*iter).connected_to_endpoints.push_back(peer_endpoint);
+  return true;
 }
 
 
 bool FakeNetwork::RemoveMyNode(Endpoint endpoint) {
+  std::lock_guard<std::mutex> lock(mutex_);
   auto iter = FindNode(endpoint);
   if (iter != nodes_.end()) {
     for (auto i :  (*iter).connected_to_endpoints) {
@@ -100,6 +113,7 @@ bool FakeNetwork::RemoveMyNode(Endpoint endpoint) {
 }
 
 bool FakeNetwork::SendMessageToNode(Endpoint endpoint, std::string message) {
+  std::lock_guard<std::mutex> lock(mutex_);
   auto iter = FindNode(endpoint);
   if (iter == nodes_.end())
     return false;
