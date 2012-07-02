@@ -17,7 +17,7 @@
 #include <string>
 #include <vector>
 #include <algorithm>
-
+#include <mutex>
 #include "boost/asio/ip/address.hpp"
 #include "boost/asio/ip/udp.hpp"
 #include "boost/date_time/posix_time/posix_time_duration.hpp"
@@ -49,21 +49,17 @@ public:
   bool SendMessageToNode(Endpoint endpoint, std::string message);
   bool AddConnection(const Endpoint &my_endpoint, const Endpoint &peer_endpoint);
   std::vector<Node>::iterator FindNode(Endpoint endpoint);
-  std::vector<Node>::iterator GetEnd() { return nodes_.end(); }
+  std::vector<Node>::iterator GetEndIterator() { return nodes_.end(); }
+  void AddEmptyNode(Node node);
  private:
   std::vector<Node> nodes_;
   int32_t next_port_;
   boost::asio::ip::address local_ip_;
+  std::mutex mutex_;
 };
 
 struct Node {
-  Node(ConnectionLostFunctor lost, MessageReceivedFunctor message_rec) {
-    endpoint = FakeNetwork::instance().GetEndpoint();
-    if (lost)
-      connection_lost = lost;
-    if (message_rec)
-      message_received = message_rec;
-  }
+  Node();
   Endpoint endpoint;
   ConnectionLostFunctor connection_lost;
   MessageReceivedFunctor message_received;
