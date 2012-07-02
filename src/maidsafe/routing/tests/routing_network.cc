@@ -32,6 +32,21 @@ namespace test {
 
 size_t GenericNode::next_node_id_(0);
 
+GenericNode::GenericNode(bool client_mode, const NodeInfo &node_info)
+    : id_(0),
+      node_info_(node_info),
+      routing_(),
+      functors_(),
+      mutex_() {
+  functors_.close_node_replaced = nullptr;
+  functors_.message_received = nullptr;
+  functors_.network_status = nullptr;
+  routing_.reset(new Routing(GetKeys(), client_mode));
+  LOG(kVerbose) << "Node constructor";
+  std::lock_guard<std::mutex> lock(mutex_);
+  id_ = next_node_id_++;
+}
+
 GenericNode::GenericNode(bool client_mode)
     : id_(0),
       node_info_(MakeNode()),

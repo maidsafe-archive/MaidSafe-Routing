@@ -36,19 +36,8 @@ namespace test {
 namespace bptime = boost::posix_time;
 static uint16_t test_routing_api_node_port(6000);
 
-NodeInfo MakeNodeInfo() {
-  NodeInfo node;
-  node.node_id = NodeId(RandomString(64));
-  asymm::Keys keys;
-  asymm::GenerateKeyPair(&keys);
-  node.public_key = keys.public_key;
-  node.endpoint.address(GetLocalIp());
-  node.endpoint.port(GetRandomPort());
-  return node;
-}
-
 asymm::Keys MakeKeys() {
-  NodeInfo node(MakeNodeInfo());
+  NodeInfo node(MakeNode());
   asymm::Keys keys;
   keys.identity = node.node_id.String();
   keys.public_key = node.public_key;
@@ -118,9 +107,9 @@ TEST(APITest, BEH_API_ManualBootstrap) {
 }
 
 TEST(APITest, BEH_API_ZeroState) {
-  NodeInfo node1(MakeNodeInfo());
-  NodeInfo node2(MakeNodeInfo());
-  NodeInfo node3(MakeNodeInfo());
+  NodeInfo node1(MakeNode());
+  NodeInfo node2(MakeNode());
+  NodeInfo node3(MakeNode());
 //  asymm::Keys keys3(MakeKeys());
   std::map<NodeId, asymm::Keys> key_map;
   key_map.insert(std::make_pair(NodeId(node1.node_id), GetKeys(node1)));
@@ -159,8 +148,8 @@ TEST(APITest, BEH_API_ZeroState) {
 }
 
 TEST(APITest, BEH_API_AnonymousNode) {
-  NodeInfo node1(MakeNodeInfo());
-  NodeInfo node2(MakeNodeInfo());
+  NodeInfo node1(MakeNode());
+  NodeInfo node2(MakeNode());
   std::map<NodeId, asymm::Keys> key_map;
   key_map.insert(std::make_pair(NodeId(node1.node_id), GetKeys(node1)));
   key_map.insert(std::make_pair(NodeId(node2.node_id), GetKeys(node2)));
@@ -222,7 +211,7 @@ TEST(APITest, BEH_API_NodeNetwork) {
   std::vector<std::shared_ptr<Routing>> routing_node;
   std::map<NodeId, asymm::Keys> key_map;
   for (auto i(0); i != kNetworkSize; ++i) {
-    NodeInfo node(MakeNodeInfo());
+    NodeInfo node(MakeNode());
     node_infos.push_back(node);
     key_map.insert(std::make_pair(NodeId(node.node_id), GetKeys(node)));
     routing_node.push_back(std::make_shared<Routing>(GetKeys(node), false));

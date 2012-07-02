@@ -38,6 +38,10 @@ class FindNode : public GenericNode {
     LOG(kVerbose) << "RoutingNode constructor";
   }
 
+  FindNode(bool client_mode, const NodeInfo &node_info)
+      : GenericNode(client_mode, node_info),
+        messages_() {}
+
   virtual ~FindNode() {}
 
   void RudpSend(const Endpoint &peer_endpoint,
@@ -47,9 +51,9 @@ class FindNode : public GenericNode {
   }
 
   void PrintRoutingTable() {
-    LOG(kInfo) << " PrintRoutingTable() ";
+    LOG(kInfo) << " PrintRoutingTable of " << HexSubstr(node_info_.node_id.String());
     for (auto node_info : routing_->impl_->routing_table_.routing_table_nodes_) {
-      LOG(kInfo) << "Port: " << node_info.endpoint.port();
+      LOG(kInfo) << "NodeId: " << HexSubstr(node_info.node_id.String());
     }
   }
 
@@ -59,6 +63,25 @@ class FindNode : public GenericNode {
                  [&node_id](const NodeInfo &node_info) { return (node_id == node_info.node_id); } )
                  !=  routing_->impl_->routing_table_.routing_table_nodes_.end());
   }
+
+  bool DropNode(const NodeId &node_id) {
+    auto iter = std::find_if(routing_->impl_->routing_table_.routing_table_nodes_.begin(),
+        routing_->impl_->routing_table_.routing_table_nodes_.end(),
+        [&node_id](const NodeInfo &node_info) {
+            return (node_id == node_info.node_id);
+          });
+    if (iter != routing_->impl_->routing_table_.routing_table_nodes_.end()) {
+      routing_->impl_->routing_table_.DropNode(iter->endpoint);
+    }
+    std::this_thread::sleep_for(std::chrono::seconds(3));
+    iter = std::find_if(routing_->impl_->routing_table_.routing_table_nodes_.begin(),
+        routing_->impl_->routing_table_.routing_table_nodes_.end(),
+        [&node_id](const NodeInfo &node_info) {
+            return (node_id == node_info.node_id);
+          });
+    return (iter == routing_->impl_->routing_table_.routing_table_nodes_.end());
+  }
+
 
  protected:
   std::vector<std::pair<int32_t, std::string> > messages_;
@@ -110,13 +133,19 @@ TYPED_TEST_CASE_P(FindNodeNetwork);
 
 TYPED_TEST_P(FindNodeNetwork, FUNC_FindNodes) {
   this->SetUpNetwork(6);
-  LOG(kInfo) << "source: " << this->nodes_[3]->endpoint().port()
-             << " destination: " << this->nodes_[2]->endpoint().port();
-  this->PrintAllRoutingTables();
-  EXPECT_TRUE(this->Find(this->nodes_[3], this->nodes_[2]));
+  uint8_t source(RandomUint32() % (this->nodes_.size() - 2) + 2), dest(this->nodes_.size());
+//  this->PrintAllRoutingTables();
+  EXPECT_TRUE(this->AddNode(false, GenerateUniqueRandomId(this->nodes_[source]->Id(), 20)));
+//  LOG(kInfo) << "After Add " << HexSubstr(this->nodes_[source]->Id().String()) << ", "
+//             << HexSubstr(this->nodes_[dest]->Id().String());
+//  this->PrintAllRoutingTables();
+  this->nodes_[source]->DropNode(this->nodes_[dest]->Id());
+  EXPECT_FALSE(this->nodes_[source]->RoutingTableHasNode(this->nodes_[dest]->Id()));
+  EXPECT_TRUE(this->Find(this->nodes_[source], this->nodes_[dest]));
   std::this_thread::sleep_for(std::chrono::seconds(5));
-  EXPECT_TRUE(this->nodes_[3]->RoutingTableHasNode(this->nodes_[2]->Id()));
+  EXPECT_TRUE(this->nodes_[source]->RoutingTableHasNode(this->nodes_[dest]->Id()));
 }
+
 
 REGISTER_TYPED_TEST_CASE_P(FindNodeNetwork, FUNC_FindNodes);
 INSTANTIATE_TYPED_TEST_CASE_P(MAIDSAFE, FindNodeNetwork, FindNode);
