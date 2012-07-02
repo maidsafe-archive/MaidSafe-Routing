@@ -55,16 +55,16 @@ void ValidateThisNode(rudp::ManagedConnections &rudp,
   }
   LOG(kVerbose) << "rudp.Add result = " << result;
   if (client) {
-    //direct_non_routing_table_connections_.push_back(node_info);
+    // direct_non_routing_table_connections_.push_back(node_info);
     LOG(kError) << " got client and do not know how to add them yet ";
   } else {
-    if(routing_table.AddNode(node_info)) {
+    if (routing_table.AddNode(node_info)) {
       LOG(kVerbose) << "Added node to routing table. node id " << HexSubstr(node_id.String());
-      //ProcessSend(rpcs::ProxyConnect(node_id, NodeId(routing_table.kKeys().identity),
-      //                               their_endpoint),
-      //            rudp,
-      //            routing_table,
-      //            Endpoint());
+//      ProcessSend(rpcs::ProxyConnect(node_id, NodeId(routing_table.kKeys().identity),
+//                                     their_endpoint),
+//                  rudp,
+//                  routing_table,
+//                  Endpoint());
     } else {
       LOG(kVerbose) << "Not adding node to routing table  node id "
                     << HexSubstr(node_id.String())
@@ -98,9 +98,9 @@ void SetProtobufEndpoint(const Endpoint& endpoint, protobuf::Endpoint *pbendpoin
 }
 
 Endpoint GetEndpointFromProtobuf(const protobuf::Endpoint &pbendpoint) {
- Endpoint endpoint;
+  Endpoint endpoint;
   endpoint.address(boost::asio::ip::address::from_string(pbendpoint.ip()));
-  endpoint.port(static_cast<unsigned short>(pbendpoint.port()));
+  endpoint.port(static_cast<uint16_t>(pbendpoint.port()));
   return endpoint;
 }
 

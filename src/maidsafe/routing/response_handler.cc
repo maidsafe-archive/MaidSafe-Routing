@@ -67,32 +67,31 @@ void Connect(RoutingTable &routing_table,
   our_endpoint_pair.external.address(
       boost::asio::ip::address::from_string(connect_request.contact().public_endpoint().ip()));
   our_endpoint_pair.external.port(
-      static_cast<unsigned short>(connect_request.contact().public_endpoint().port()));
+      static_cast<uint16_t>(connect_request.contact().public_endpoint().port()));
   our_endpoint_pair.local.address(
       boost::asio::ip::address::from_string(connect_request.contact().private_endpoint().ip()));
   our_endpoint_pair.local.port(
-      static_cast<unsigned short>(connect_request.contact().private_endpoint().port()));
+      static_cast<uint16_t>(connect_request.contact().private_endpoint().port()));
   rudp::EndpointPair their_endpoint_pair;
   their_endpoint_pair.external.address(
       boost::asio::ip::address::from_string(connect_response.contact().public_endpoint().ip()));
   their_endpoint_pair.external.port(
-      static_cast<unsigned short>(connect_response.contact().public_endpoint().port()));
+      static_cast<uint16_t>(connect_response.contact().public_endpoint().port()));
   their_endpoint_pair.local.address(
       boost::asio::ip::address::from_string(connect_response.contact().private_endpoint().ip()));
   their_endpoint_pair.local.port(
-      static_cast<unsigned short>(connect_response.contact().private_endpoint().port()));
+      static_cast<uint16_t>(connect_response.contact().private_endpoint().port()));
   if (node_validation_functor) {
-    auto validate_node = [=, &routing_table, &rudp] (const asymm::PublicKey &key)
-    {
-    LOG(kInfo) << "NEED TO VALIDATE THE NODE HERE";
-      ValidateThisNode(rudp,
-                       routing_table,
-                       NodeId(connect_response.contact().node_id()),
-                       key,
-                       their_endpoint_pair,
-                       our_endpoint_pair,
-                       false);
-    };
+    auto validate_node = [=, &routing_table, &rudp] (const asymm::PublicKey &key) {
+        LOG(kInfo) << "NEED TO VALIDATE THE NODE HERE";
+        ValidateThisNode(rudp,
+                         routing_table,
+                         NodeId(connect_response.contact().node_id()),
+                         key,
+                         their_endpoint_pair,
+                         our_endpoint_pair,
+                         false);
+      };
     node_validation_functor(NodeId(connect_response.contact().node_id()), validate_node);
   }
 }
@@ -108,12 +107,12 @@ void FindNode(RoutingTable &routing_table,
     return;
   }
   LOG(kVerbose) << "Parsed find node response";
-  //if (asymm::CheckSignature(find_nodes.original_request(),
-  //                          find_nodes.original_signature(),
-  //                          routing_table.kKeys().public_key) != kSuccess) {
-  //  LOG(kError) << " find node request was not signed by us";
-  //  return;  // we never requested this
-  //}
+//  if (asymm::CheckSignature(find_nodes.original_request(),
+//                            find_nodes.original_signature(),
+//                            routing_table.kKeys().public_key) != kSuccess) {
+//    LOG(kError) << " find node request was not signed by us";
+//    return;  // we never requested this
+//  }
   for (int i = 0; i < find_nodes.nodes_size(); ++i) {
     LOG(kVerbose) << " Find node returned - "  << HexSubstr(find_nodes.nodes(i));
   }
@@ -122,7 +121,7 @@ void FindNode(RoutingTable &routing_table,
     NodeInfo node_to_add;
     node_to_add.node_id = NodeId(find_nodes.nodes(i));
     if (node_to_add.node_id == NodeId(routing_table.kKeys().identity))
-      continue;  //TODO(Prakash): FIXME handle collision and return kIdCollision on join()
+      continue;  // TODO(Prakash): FIXME handle collision and return kIdCollision on join()
     if (routing_table.CheckNode(node_to_add)) {
       LOG(kVerbose) << " CheckNode succeeded for node "
                     << HexSubstr(node_to_add.node_id.String());
@@ -135,10 +134,11 @@ void FindNode(RoutingTable &routing_table,
         LOG(kWarning) << " Failed to get available endpoint for new connections";
         return;
       }
-      LOG(kVerbose) << " GetAvailableEndpoint for peer - " << direct_endpoint << " my endpoint - " << endpoint.external;
+      LOG(kVerbose) << " GetAvailableEndpoint for peer - " << direct_endpoint << " my endpoint - "
+                    << endpoint.external;
       Endpoint relay_endpoint;
       bool relay_message(false);
-      if (routing_table.Size() == 0) { // Not in anyones RT, need a path back through relay ip.
+      if (routing_table.Size() == 0) {  //  Not in anyones RT, need a path back through relay ip.
         relay_endpoint = endpoint.external;
         relay_message = true;
       }

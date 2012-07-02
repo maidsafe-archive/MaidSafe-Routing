@@ -64,7 +64,7 @@ int Routing::GetStatus() {
   if (impl_->routing_table_.Size() == 0) {
     rudp::EndpointPair endpoint;
     int status = impl_->rudp_.GetAvailableEndpoint(Endpoint(), endpoint);
-    if(rudp::kSuccess != status) {
+    if (rudp::kSuccess != status) {
       if (status == rudp::kNoneAvailable)
         return kNotJoined;
     }
@@ -81,7 +81,7 @@ bool Routing::CheckBootStrapFilePath() {
   fs::path local_file;
   std::string file_name;
   boost::system::error_code error_code;
-  if(impl_->client_mode_) {
+  if (impl_->client_mode_) {
     file_name = "bootstrap";
     path = GetUserAppDir() / file_name;
   } else {
@@ -141,14 +141,14 @@ int Routing::BootStrapFromThisEndpoint(Functors functors, const Endpoint &endpoi
   LOG(kInfo) << " Entered bootstrap endpoint : " << endpoint;
 
   if (impl_->routing_table_.Size() > 0) {
-    DisconnectFunctors();  //TODO(Prakash): Do we need this ?
+    DisconnectFunctors();  // TODO(Prakash): Do we need this ?
     for (unsigned int i = 0; i < impl_->routing_table_.Size(); ++i) {
       NodeInfo remove_node =
       impl_->routing_table_.GetClosestNode(NodeId(impl_->routing_table_.kKeys().identity), 0);
       impl_->rudp_.Remove(remove_node.endpoint);
       impl_->routing_table_.DropNode(remove_node.endpoint);
     }
-    if(impl_->functors_.network_status)
+    if (impl_->functors_.network_status)
       impl_->functors_.network_status(impl_->routing_table_.Size());
   }
   impl_->bootstrap_nodes_.clear();
@@ -221,7 +221,7 @@ int Routing::DoFindNode() {
   impl_->rudp_.Send(impl_->message_handler_.bootstrap_endpoint(),
                     find_node_rpc, message_sent_functor);
 
-  if(!message_sent_future.timed_wait(boost::posix_time::seconds(10))) {
+  if (!message_sent_future.timed_wait(boost::posix_time::seconds(10))) {
     LOG(kError) << "Unable to send FindValue rpc to bootstrap endpoint - "
                 << impl_->message_handler_.bootstrap_endpoint();
     return false;

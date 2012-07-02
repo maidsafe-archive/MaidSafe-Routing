@@ -41,7 +41,7 @@ std::vector<Endpoint> ReadBootstrapFile(const fs::path &path) {
   for (int i = 0; i < protobuf_bootstrap.bootstrap_contacts().size(); ++i) {
     endpoint.address(
         boost::asio::ip::address::from_string(protobuf_bootstrap.bootstrap_contacts(i).ip()));
-    endpoint.port(static_cast<unsigned short>(protobuf_bootstrap.bootstrap_contacts(i).port()));
+    endpoint.port(static_cast<uint16_t>(protobuf_bootstrap.bootstrap_contacts(i).port()));
     bootstrap_nodes[i] = endpoint;
   }
   return  bootstrap_nodes;

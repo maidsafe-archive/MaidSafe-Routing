@@ -14,8 +14,8 @@
 #ifndef MAIDSAFE_ROUTING_TIMER_H_
 #define MAIDSAFE_ROUTING_TIMER_H_
 
-#include <map>
 #include<mutex>
+#include <map>
 #include <string>
 #include <utility>
 

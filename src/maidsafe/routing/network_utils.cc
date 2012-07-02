@@ -74,7 +74,7 @@ void ProcessSend(protobuf::Message message,
   if (!endpoint.address().is_unspecified()) {  // direct endpoint provided
     SendOn(message, rudp, routing_table, endpoint, false);
     return;
-  } 
+  }
 
   // Normal messages
   if (message.has_destination_id()) {  // message has destination id
@@ -95,10 +95,10 @@ void ProcessSend(protobuf::Message message,
   // Relay message responses only
   if (message.has_relay_id() && (IsResponse(message))) {  // relay type message
     if (false /*AmIConnectedToNonRoutingNode(message.relay_id())*/)  // if I have relay id in NRT
-      endpoint; // = NRT.getendpoint(message.relay_id());
-    else if (message.has_relay()){  //  relay endpoint is the last resort to find endpoint
+      endpoint;  // = NRT.getendpoint(message.relay_id());
+    else if (message.has_relay()) {  //  relay endpoint is the last resort to find endpoint
       endpoint = Endpoint(boost::asio::ip::address::from_string(message.relay().ip()),
-                          static_cast<unsigned short>(message.relay().port()));
+                          static_cast<uint16_t>(message.relay().port()));
     }
     message.set_destination_id(message.relay_id());  // so that peer identifies it as direct msg
     SendOn(message, rudp, routing_table, endpoint, false);

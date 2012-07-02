@@ -11,8 +11,8 @@
  ******************************************************************************/
 #include "maidsafe/routing/routing_table.h"
 
-#include <algorithm>
 #include <thread>
+#include <algorithm>
 
 #include "maidsafe/routing/log.h"
 
@@ -178,8 +178,8 @@ bool RoutingTable::MakeSpaceForNodeToBeAdded(NodeInfo &node, const bool &remove)
 
   PartialSortFromThisNode(kNodeId_, Parameters::closest_nodes_size);
   NodeInfo furthest_close_node = routing_table_nodes_[Parameters::closest_nodes_size - 1];
-  const auto not_found = routing_table_nodes_.end();
-  const auto furthest_close_node_iter =
+  auto const  not_found = routing_table_nodes_.end();
+  auto const furthest_close_node_iter =
       routing_table_nodes_.begin() + (Parameters::closest_nodes_size - 1);
 
   if ((furthest_close_node.node_id ^ kNodeId_) > (kNodeId_ ^ node.node_id)) {

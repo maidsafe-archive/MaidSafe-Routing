@@ -81,11 +81,11 @@ const std::error_category &error_category();
 namespace std {
   template <>
   struct std::is_error_code_enum<maidsafe::routing::error::error_codes>
-    : public true_type {};
+    : public true_type {}
 
   template <>
   struct std::is_error_condition_enum<maidsafe::routing::error::error_conditions>
-      : public true_type {};
+      : public true_type {}
 }
 #ifdef __GNUC__
 #  pragma GCC diagnostic pop

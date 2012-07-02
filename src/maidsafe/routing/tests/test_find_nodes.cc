@@ -10,8 +10,8 @@
  *  the explicit written permission of the board of directors of maidsafe.net. *
  ******************************************************************************/
 
-#include <vector>
 #include <thread>
+#include <vector>
 
 #include "boost/thread/future.hpp"
 
@@ -29,7 +29,6 @@ namespace maidsafe {
 namespace routing {
 
 namespace test {
-
 
 class FindNode : public GenericNode {
  public:
@@ -54,12 +53,11 @@ class FindNode : public GenericNode {
     }
   }
 
-  bool RoutingTableHasEndpoint(const Endpoint &endpoint) {
+  bool RoutingTableHasNode(const NodeId &node_id) {
     return (std::find_if(routing_->impl_->routing_table_.routing_table_nodes_.begin(),
                          routing_->impl_->routing_table_.routing_table_nodes_.end(),
-                 [&endpoint](const NodeInfo &node_info) {
-                   return (endpoint == node_info.endpoint); }) !=
-            routing_->impl_->routing_table_.routing_table_nodes_.end());
+                 [&node_id](const NodeInfo &node_info) { return (node_id == node_info.node_id); } )
+                 !=  routing_->impl_->routing_table_.routing_table_nodes_.end());
   }
 
  protected:
@@ -74,8 +72,7 @@ class FindNodeNetwork : public GenericNetwork<NodeType> {
  protected:
   testing::AssertionResult Find(std::shared_ptr<NodeType> source,
                                 std::shared_ptr<NodeType> destination) {
-    std::string find_node_rpc(rpcs::FindNodes(destination->Id(), source->Id(),
-        true, source->endpoint()).SerializeAsString());
+    std::string find_node_rpc(rpcs::FindNodes(destination->Id(), source->Id()).SerializeAsString());
     boost::promise<bool> message_sent_promise;
     auto message_sent_future = message_sent_promise.get_future();
     uint8_t attempts(0);
@@ -93,7 +90,7 @@ class FindNodeNetwork : public GenericNetwork<NodeType> {
       };
     source->PrintRoutingTable();
     source->RudpSend(this->nodes_[1]->endpoint(), find_node_rpc, message_sent_functor);
-    if(!message_sent_future.timed_wait(boost::posix_time::seconds(10))) {
+    if (!message_sent_future.timed_wait(boost::posix_time::seconds(10))) {
       return testing::AssertionFailure() << "Unable to send FindValue rpc to bootstrap endpoint - "
                                          << destination->endpoint().port();
     }
@@ -118,7 +115,7 @@ TYPED_TEST_P(FindNodeNetwork, FUNC_FindNodes) {
   this->PrintAllRoutingTables();
   EXPECT_TRUE(this->Find(this->nodes_[3], this->nodes_[2]));
   std::this_thread::sleep_for(std::chrono::seconds(5));
-  EXPECT_TRUE(this->nodes_[3]->RoutingTableHasEndpoint(this->nodes_[2]->endpoint()));
+  EXPECT_TRUE(this->nodes_[3]->RoutingTableHasNode(this->nodes_[2]->Id()));
 }
 
 REGISTER_TYPED_TEST_CASE_P(FindNodeNetwork, FUNC_FindNodes);
