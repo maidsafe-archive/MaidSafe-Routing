@@ -48,6 +48,8 @@ Routing::Routing(const asymm::Keys &keys, const bool &client_mode)
   }
   if (client_mode) {
     Parameters::max_routing_table_size = Parameters::closest_nodes_size;
+  } else {
+    assert(!keys.identity.empty() && "Server Nodes cannot be created without valid keys");
   }
   if (keys.identity.empty()) {
     impl_->anonymous_node_ = true;
@@ -278,8 +280,9 @@ int Routing::ZeroStateJoin(Functors functors, const Endpoint &local_endpoint,
   their_endpoint_pair.external = their_endpoint_pair.local = peer_node.endpoint;
   our_endpoint_pair.external = our_endpoint_pair.local = local_endpoint;
 
-  ValidateThisNode(impl_->rudp_, impl_->routing_table_, NodeId(peer_node.node_id),
-                   peer_node.public_key, their_endpoint_pair, our_endpoint_pair, false);
+  ValidateThisNode(impl_->rudp_, impl_->routing_table_, impl_->non_routing_table_,
+                   NodeId(peer_node.node_id), peer_node.public_key, their_endpoint_pair,
+                   our_endpoint_pair, false);
 
   // now poll for routing table size to have at other node available
   uint8_t poll_count(0);
@@ -322,6 +325,7 @@ void Routing::Send(const NodeId &destination_id,
   proto_message.set_data(data);
   proto_message.set_direct(static_cast<int32_t>(connect_type));
   proto_message.set_type(type);
+  proto_message.set_client_node(impl_->client_mode_);
 
   // Anonymous node
   if (impl_->anonymous_node_) {

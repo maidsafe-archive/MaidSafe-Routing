@@ -62,14 +62,14 @@ message SignedMessage {
 }
 
 message ConnectRequest {
-  optional Contact contact = 1;
+  required Contact contact = 1;
   optional bool bootstrap = 2;
   required int32 timestamp = 3;
 }
 
 message ConnectResponse {
   required bool answer = 1;
-  required Contact contact = 2;
+  optional Contact contact = 2;
   optional Endpoint seen_endpoint = 3;
   required int32 timestamp = 4;
   required bytes original_request = 5;

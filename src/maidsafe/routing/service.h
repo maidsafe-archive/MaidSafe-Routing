@@ -23,6 +23,7 @@ namespace routing {
 
 namespace protobuf { class Message;}  // namespace protobuf
 
+class NonRoutingTable;
 class RoutingTable;
 
 namespace service {
@@ -31,6 +32,7 @@ namespace service {
 void Ping(RoutingTable &routing_table,
           protobuf::Message &message);
 void Connect(RoutingTable &routing_table,
+             NonRoutingTable &non_routing_table,
              rudp::ManagedConnections &rudp,
              protobuf::Message &message,
              RequestPublicKeyFunctor node_validation_functor);

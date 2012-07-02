@@ -16,6 +16,7 @@
 #include "maidsafe/rudp/return_codes.h"
 
 #include "maidsafe/routing/network_utils.h"
+#include "maidsafe/routing/non_routing_table.h"
 #include "maidsafe/routing/parameters.h"
 #include "maidsafe/routing/routing_pb.h"
 #include "maidsafe/routing/routing_table.h"
@@ -36,6 +37,7 @@ bool InClosestNodesToMe(protobuf::Message &message, RoutingTable &routing_table)
 
 void ValidateThisNode(rudp::ManagedConnections &rudp,
                       RoutingTable &routing_table,
+                      NonRoutingTable &non_routing_table,
                       const NodeId& node_id,
                       const asymm::PublicKey &public_key,
                       const rudp::EndpointPair &their_endpoint,
@@ -54,23 +56,36 @@ void ValidateThisNode(rudp::ManagedConnections &rudp,
     return;
   }
   LOG(kVerbose) << "rudp.Add result = " << result;
+  bool routing_accepted_node(false);
   if (client) {
-    //direct_non_routing_table_connections_.push_back(node_info);
-    LOG(kError) << " got client and do not know how to add them yet ";
+    NodeId furthest_close_node_id =
+        routing_table.GetClosestNode(NodeId(routing_table.kKeys().identity),
+                                     Parameters::closest_nodes_size).node_id;
+    if (furthest_close_node_id == NodeId())
+      furthest_close_node_id = NodeId(NodeId::kMaxId);
+
+    if (non_routing_table.AddNode(node_info, furthest_close_node_id)) {
+      routing_accepted_node = true;
+      LOG(kVerbose) << "Added client node to non routing table. node id "
+                    << HexSubstr(node_id.String());
+    }
   } else {
     if(routing_table.AddNode(node_info)) {
+      routing_accepted_node = true;
       LOG(kVerbose) << "Added node to routing table. node id " << HexSubstr(node_id.String());
+
       //ProcessSend(rpcs::ProxyConnect(node_id, NodeId(routing_table.kKeys().identity),
       //                               their_endpoint),
       //            rudp,
       //            routing_table,
       //            Endpoint());
-    } else {
-      LOG(kVerbose) << "Not adding node to routing table  node id "
-                    << HexSubstr(node_id.String())
-                    << " just added rudp connection will be removed now";
-      rudp.Remove(their_endpoint.external);
     }
+  }
+  if (!routing_accepted_node){
+    LOG(kVerbose) << "Not adding node to " << (client?"non-": "") << "routing table  node id "
+                  << HexSubstr(node_id.String())
+                  << " just added rudp connection will be removed now";
+    rudp.Remove(their_endpoint.external);
   }
 }
 

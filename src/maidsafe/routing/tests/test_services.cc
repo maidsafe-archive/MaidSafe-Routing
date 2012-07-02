@@ -19,6 +19,7 @@
 #include "maidsafe/rudp/managed_connections.h"
 
 #include "maidsafe/routing/log.h"
+#include "maidsafe/routing/non_routing_table.h"
 #include "maidsafe/routing/parameters.h"
 #include "maidsafe/routing/routing_pb.h"
 #include "maidsafe/routing/rpcs.h"
@@ -34,7 +35,7 @@ namespace test {
 TEST(Services, BEH_Ping) {
   asymm::Keys keys;
   keys.identity = RandomString(64);
-  RoutingTable RT(keys, nullptr);
+  RoutingTable RT(keys, false, nullptr);
   NodeInfo node;
   rudp::ManagedConnections rudp;
   protobuf::PingRequest ping_request;
@@ -61,7 +62,8 @@ TEST(Services, BEH_Connect) {
   asymm::Keys keys;
   keys.identity = us.node_id.String();
   keys.public_key = us.public_key;
-  RoutingTable RT(keys, nullptr);
+  RoutingTable RT(keys, false, nullptr);
+  NonRoutingTable NRT(keys);
   NodeInfo node;
   rudp::ManagedConnections rudp;
   rudp::EndpointPair them_end;
@@ -71,7 +73,7 @@ TEST(Services, BEH_Connect) {
   protobuf::Message message = rpcs::Connect(us.node_id, them_end, them.node_id);
   EXPECT_TRUE(message.IsInitialized());
   // we receive it
-  service::Connect(RT, rudp, message, RequestPublicKeyFunctor());
+  service::Connect(RT, NRT, rudp, message, RequestPublicKeyFunctor());
   protobuf::ConnectResponse connect_response;
   EXPECT_TRUE(connect_response.ParseFromString(message.data()));  // us
   EXPECT_TRUE(connect_response.answer());
@@ -95,7 +97,7 @@ TEST(Services, BEH_FindNodes) {
   asymm::Keys keys;
   keys.identity = us.node_id.String();
   keys.public_key = us.public_key;
-  RoutingTable RT(keys, nullptr);
+  RoutingTable RT(keys, false, nullptr);
   protobuf::Message message = rpcs::FindNodes(us.node_id, us.node_id);
   service::FindNodes(RT, message);
   protobuf::FindNodesResponse find_nodes_respose;
@@ -120,7 +122,7 @@ TEST(Services, BEH_ProxyConnect) {
   my_keys.identity = RandomString(64);
   asymm::Keys keys;
   keys.identity = RandomString(64);
-  RoutingTable RT(keys, nullptr);
+  RoutingTable RT(keys, false, nullptr);
   NodeInfo node;
   rudp::ManagedConnections rudp;
   protobuf::ProxyConnectRequest proxy_connect_request;

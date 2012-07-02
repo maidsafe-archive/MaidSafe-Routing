@@ -18,6 +18,7 @@
 #include "maidsafe/routing/log.h"
 #include "maidsafe/routing/network_utils.h"
 #include "maidsafe/routing/node_id.h"
+#include "maidsafe/routing/non_routing_table.h"
 #include "maidsafe/routing/parameters.h"
 #include "maidsafe/routing/response_handler.h"
 #include "maidsafe/routing/return_codes.h"
@@ -38,12 +39,14 @@ class Timer;
 
 MessageHandler::MessageHandler(std::shared_ptr<AsioService> asio_service,
                                RoutingTable &routing_table,
+                               NonRoutingTable &non_routing_table,
                                rudp::ManagedConnections &rudp,
                                Timer &timer_ptr,
                                MessageReceivedFunctor message_received_functor,
                                RequestPublicKeyFunctor node_validation_functor)
     : asio_service_(asio_service),
       routing_table_(routing_table),
+      non_routing_table_(non_routing_table),
       rudp_(rudp),
       bootstrap_endpoint_(),
       my_relay_endpoint_(),
@@ -82,10 +85,12 @@ void MessageHandler::RoutingMessage(protobuf::Message& message) {
       service::Ping(routing_table_, message);
       break;
     case -2 :  // connect
-      response::Connect(routing_table_, rudp_, message, node_validation_functor_);
+      response::Connect(routing_table_, non_routing_table_, rudp_, message,
+                        node_validation_functor_);
       break;
     case 2 :
-      service::Connect(routing_table_, rudp_, message, node_validation_functor_);
+      service::Connect(routing_table_, non_routing_table_, rudp_, message,
+                       node_validation_functor_);
       break;
     case -3 :  // find_nodes
       response::FindNode(routing_table_, rudp_, message, bootstrap_endpoint_);
@@ -278,8 +283,8 @@ bool MessageHandler::RelayDirectMessageIfNeeded(protobuf::Message &message) {
   //  Only direct responses need to be relayed
   if ((message.destination_id() != message.relay_id()) &&  IsResponse(message)) {
     message.clear_destination_id(); // to allow network util to identify it as relay message
+    LOG(kVerbose) <<"Relaying response Message to " <<  HexSubstr(message.relay_id());
     ProcessSend(message, rudp_, routing_table_);
-    LOG(kVerbose) <<"Relaying response Message to" <<  HexSubstr(message.relay_id());
     return true;
   } else {  // not a relay message response, its for me!!
     LOG(kVerbose) << "not a relay message response, its for me!!";

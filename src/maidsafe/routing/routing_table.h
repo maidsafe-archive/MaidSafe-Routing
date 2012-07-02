@@ -44,6 +44,7 @@ namespace protobuf { class Contact; }  //  namespace protobuf
 class RoutingTable {
  public:
   explicit RoutingTable(const asymm::Keys &keys,
+                        const bool &client_mode,
                         CloseNodeReplacedFunctor close_node_replaced_functor);
   bool AddNode(NodeInfo &node);
   bool CheckNode(NodeInfo &node);
@@ -58,6 +59,7 @@ class RoutingTable {
   asymm::Keys kKeys() const;
   void set_close_node_replaced_functor(CloseNodeReplacedFunctor close_node_replaced);
   void set_keys(asymm::Keys keys);
+  bool client_mode() { return client_mode_; }
 
   friend class test::FindNode;
 
@@ -78,6 +80,7 @@ class RoutingTable {
   uint16_t RoutingTableSize();
   std::vector<NodeInfo> GetClosestNodeInfo(const NodeId &from, const uint16_t &number_to_get);
 
+  bool client_mode_;
   asymm::Keys keys_;
   bool sorted_;
   const NodeId kNodeId_;

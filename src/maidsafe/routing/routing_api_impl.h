@@ -22,6 +22,7 @@
 
 #include "maidsafe/routing/api_config.h"
 #include "maidsafe/routing/message_handler.h"
+#include "maidsafe/routing/non_routing_table.h"
 #include "maidsafe/routing/parameters.h"
 #include "maidsafe/routing/routing_table.h"
 #include "maidsafe/routing/timer.h"
@@ -57,6 +58,7 @@ struct RoutingPrivate {
   Functors functors_;
   rudp::ManagedConnections rudp_;
   RoutingTable routing_table_;
+  NonRoutingTable non_routing_table_;
   Timer timer_;
   std::map<uint32_t, std::pair<std::unique_ptr<boost::asio::deadline_timer>,
                                MessageReceivedFunctor> > waiting_for_response_;
