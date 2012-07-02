@@ -36,6 +36,7 @@ namespace routing {
 namespace test {
 
 class FindNode;
+
 }  // namespace test
 
 struct RoutingPrivate {

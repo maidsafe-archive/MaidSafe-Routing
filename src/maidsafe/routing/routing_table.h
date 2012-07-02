@@ -32,6 +32,13 @@ namespace maidsafe {
 
 namespace routing {
 
+namespace test {
+
+class FindNode;
+
+}  // namespace test
+
+
 namespace protobuf { class Contact; }  //  namespace protobuf
 
 class RoutingTable {
@@ -51,6 +58,8 @@ class RoutingTable {
   asymm::Keys kKeys() const;
   void set_close_node_replaced_functor(CloseNodeReplacedFunctor close_node_replaced);
   void set_keys(asymm::Keys keys);
+
+  friend class test::FindNode;
 
  private:
   RoutingTable(const RoutingTable&);
