@@ -49,8 +49,8 @@ public:
   bool SendMessageToNode(Endpoint endpoint, std::string message);
   bool AddConnection(const Endpoint &my_endpoint, const Endpoint &peer_endpoint);
   std::vector<Node>::iterator FindNode(Endpoint endpoint);
-  std::vector<Node>::iterator GetEnd() { return nodes_.end(); }
- // void AddEmptyNode(Node node) { nodes_.push_back(node); }
+  std::vector<Node>::iterator GetEndIterator() { return nodes_.end(); }
+  void AddEmptyNode(Node node);
  private:
   std::vector<Node> nodes_;
   int32_t next_port_;
@@ -59,14 +59,8 @@ public:
 };
 
 struct Node {
-  Node(ConnectionLostFunctor lost, MessageReceivedFunctor message_rec) {
-    endpoint = FakeNetwork::instance().GetEndpoint();
-    if (lost)
-      connection_lost = lost;
-    if (message_rec)
-      message_received = message_rec;
-  }
-  Node() { endpoint = FakeNetwork::instance().GetEndpoint(); }
+  Node(ConnectionLostFunctor lost, MessageReceivedFunctor message_rec);
+  Node();
   Endpoint endpoint;
   ConnectionLostFunctor connection_lost;
   MessageReceivedFunctor message_received;

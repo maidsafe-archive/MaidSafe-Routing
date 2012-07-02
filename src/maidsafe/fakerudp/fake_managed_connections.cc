@@ -39,8 +39,7 @@ typedef boost::asio::ip::udp::endpoint Endpoint;
 ManagedConnections::ManagedConnections()  {
   Node node;
   bootstrap_endpoints_.push_back(node.endpoint);
-  //FIXME
-//  FakeNetwork::instance().AddEmptyNode(node);
+  FakeNetwork::instance().AddEmptyNode(node);
 }
 
 ManagedConnections::~ManagedConnections() {}
@@ -53,23 +52,24 @@ boost::asio::ip::udp::endpoint ManagedConnections::Bootstrap(
 
   LOG(kVerbose) << "in bootstrap";
 
-//  auto mynode = FakeNetwork::instance().FindNode(bootstrap_endpoints_[0]);
-//  if (mynode == FakeNetwork.instance().GetEnd())
-//    return Endpoint();
-//  Node node = (*mynode);
-  Node node;
-  //FIXME
-//  if (local_endpoint.address().is_unspecified())
-//    node.endpoint = local_endpoint;
-//  if (connection_lost_functor)
-//    node.connection_lost = connection_lost_functor;
-//  if (message_received_functor)
-//    node.message_received = message_received_functor;
+  auto mynode = FakeNetwork::instance().FindNode(bootstrap_endpoints_[0]);
+  if (mynode == FakeNetwork::instance().GetEndIterator())
+    return Endpoint();
+  Node &node = (*mynode);
+
+  if (local_endpoint.address().is_unspecified()) {
+    node.endpoint = local_endpoint;
+    bootstrap_endpoints_[0] = local_endpoint;
+  }
+  if (connection_lost_functor)
+    node.connection_lost = connection_lost_functor;
+  if (message_received_functor)
+    node.message_received = message_received_functor;
 
   for (auto i : bootstrap_endpoints) {
     for (int j = 0; j < 200; ++j) {
       std::this_thread::sleep_for(std::chrono::milliseconds(10));
-      if (local_endpoint.address().is_unspecified() && (FakeNetwork::instance().FindNode(i) != FakeNetwork::instance().GetEnd())) {
+      if (local_endpoint.address().is_unspecified() && (FakeNetwork::instance().FindNode(i) != FakeNetwork::instance().GetEndIterator())) {
         LOG(kVerbose) << "found viable bootstrap node \n";
         if(FakeNetwork::instance().BootStrap(node, i)) {
           LOG(kVerbose) << "Bootstrap sucessfull !!\n";
