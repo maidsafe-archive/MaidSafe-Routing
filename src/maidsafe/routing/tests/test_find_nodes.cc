@@ -11,6 +11,7 @@
  ******************************************************************************/
 
 #include <vector>
+#include <thread>
 
 #include "boost/thread/future.hpp"
 
@@ -35,23 +36,10 @@ class FindNode : public GenericNode {
   explicit FindNode(bool client_mode = false)
       : GenericNode(client_mode),
         messages_() {
-    functors_.message_received = std::bind(&FindNode::MessageReceived, this, args::_1, args::_2,
-                                           args::_3, args::_4);
     LOG(kVerbose) << "RoutingNode constructor";
   }
 
   virtual ~FindNode() {}
-
-  void MessageReceived(const int32_t &mesasge_type,
-                       const std::string &message,
-                       const NodeId &/*group_id*/,
-                       ReplyFunctor reply_functor) {
-    LOG(kInfo) << id_ << " -- Received: type <" << mesasge_type
-               << "> message : " << message.substr(0, 10);
-    std::lock_guard<std::mutex> guard(mutex_);
-    messages_.push_back(std::make_pair(mesasge_type, message));
-    reply_functor("Response to " + message);
-  }
 
   void RudpSend(const Endpoint &peer_endpoint,
                 const std::string &message,
@@ -109,9 +97,14 @@ class FindNodeNetwork : public GenericNetwork<NodeType> {
       return testing::AssertionFailure() << "Unable to send FindValue rpc to bootstrap endpoint - "
                                          << destination->endpoint().port();
     }
-    LOG(kInfo) << " destination->endpoint() " << destination->endpoint().port();
-    EXPECT_TRUE(source->RoutingTableHasEndpoint(destination->endpoint()));
     return testing::AssertionSuccess();
+  }
+
+  void PrintAllRoutingTables() {
+    for (size_t index = 0; index < this->nodes_.size(); ++index) {
+      LOG(kInfo) << "Routing table of node # " << index;
+      this->nodes_[index]->PrintRoutingTable();
+    }
   }
 };
 
@@ -120,7 +113,12 @@ TYPED_TEST_CASE_P(FindNodeNetwork);
 
 TYPED_TEST_P(FindNodeNetwork, FUNC_FindNodes) {
   this->SetUpNetwork(6);
+  LOG(kInfo) << "source: " << this->nodes_[3]->endpoint().port()
+             << " destination: " << this->nodes_[2]->endpoint().port();
+  this->PrintAllRoutingTables();
   EXPECT_TRUE(this->Find(this->nodes_[3], this->nodes_[2]));
+  std::this_thread::sleep_for(std::chrono::seconds(5));
+  EXPECT_TRUE(this->nodes_[3]->RoutingTableHasEndpoint(this->nodes_[2]->endpoint()));
 }
 
 REGISTER_TYPED_TEST_CASE_P(FindNodeNetwork, FUNC_FindNodes);
