@@ -52,15 +52,15 @@ boost::asio::ip::udp::endpoint ManagedConnections::Bootstrap(
 
   LOG(kVerbose) << "in bootstrap";
 
-  auto mynode = FakeNetwork::instance().FindNode(bootstrap_endpoints_[0]);
-  if (mynode == FakeNetwork::instance().GetEndIterator())
-    return Endpoint();
-  Node &node = (*mynode);
+  auto mynode = FakeNetwork::instance().FindNode(bootstrap_endpoints_[0]);  // me
+  assert(mynode != FakeNetwork::instance().GetEndIterator() && "apparently not in network");
 
-  if (local_endpoint.address().is_unspecified()) {
+  Node &node = (*mynode);
+  if (!local_endpoint.address().is_unspecified()) {
     node.endpoint = local_endpoint;
     bootstrap_endpoints_[0] = local_endpoint;
   }
+
   if (connection_lost_functor)
     node.connection_lost = connection_lost_functor;
   if (message_received_functor)
@@ -87,14 +87,11 @@ boost::asio::ip::udp::endpoint ManagedConnections::Bootstrap(
 
 int ManagedConnections::GetAvailableEndpoint(const boost::asio::ip::udp::endpoint& /*peer_endpoint*/,
                                              EndpointPair &this_endpoint_pair) {
-  if (bootstrap_endpoints_.size() > 0) {
+  assert((bootstrap_endpoints_.size() != 0) && "I do not know my own endpoint");
     this_endpoint_pair.external = bootstrap_endpoints_[0];
     this_endpoint_pair.local = bootstrap_endpoints_[0]; 
     LOG(kInfo) << " endpoint ip address " << this_endpoint_pair.external.address().to_string() << "\n";
     return kSuccess;
-  } else {
-    return kError;
-  }
 }
 
 int ManagedConnections::Add(const boost::asio::ip::udp::endpoint &this_endpoint,

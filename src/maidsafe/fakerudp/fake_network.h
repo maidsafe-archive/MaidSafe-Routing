@@ -59,7 +59,6 @@ public:
 };
 
 struct Node {
-  Node(ConnectionLostFunctor lost, MessageReceivedFunctor message_rec);
   Node();
   Endpoint endpoint;
   ConnectionLostFunctor connection_lost;

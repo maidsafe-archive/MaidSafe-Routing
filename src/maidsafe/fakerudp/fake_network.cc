@@ -34,26 +34,15 @@ namespace rudp {
 
 typedef boost::asio::ip::udp::endpoint Endpoint;
 
-Node::Node(ConnectionLostFunctor lost, MessageReceivedFunctor message_rec) {
-  endpoint = FakeNetwork::instance().GetEndpoint();
-  if (lost)
-    connection_lost = lost;
-  if (message_rec)
-    message_received = message_rec;
-}
 
 Node::Node() {
   endpoint = FakeNetwork::instance().GetEndpoint();
 }
 
-FakeNetwork::FakeNetwork() : next_port_(1500) {
-      boost::asio::ip::address ip;
-      ip.from_string("8.8.8.8");
-      local_ip_ = ip;
-}
+FakeNetwork::FakeNetwork() : next_port_(1500) {}
 
 Endpoint FakeNetwork::GetEndpoint() {
-  return Endpoint(local_ip_, ++next_port_);
+  return Endpoint(boost::asio::ip::address::from_string("8.8.8.8"), ++next_port_);
 }
 
 std::vector<Node>::iterator FakeNetwork::FindNode(Endpoint endpoint) {
