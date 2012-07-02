@@ -282,8 +282,8 @@ TEST_F(RoutingFunctionalTest, FUNC_Send) {
 }
 
 TEST_F(RoutingFunctionalTest, FUNC_RandomSend) {
-//  SetUpNetwork(9);
-//  EXPECT_TRUE(RandomSend(9, 9, 10));
+  SetUpNetwork(9);
+  EXPECT_TRUE(RandomSend(9, 9, 10));
 }
 
 }  // namespace test

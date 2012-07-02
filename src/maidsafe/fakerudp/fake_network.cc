@@ -105,7 +105,7 @@ bool FakeNetwork::RemoveConnection(const Endpoint &my_endpoint, const Endpoint &
                               [&](Endpoint &endpoint) {
                                   return (endpoint == my_endpoint);
                               });
-      if (itr != my_iter->connected_endpoints.end()) {
+      if (itr != peer_iter->connected_endpoints.end()) {
         peer_iter->connection_lost(my_endpoint);
         peer_iter->connected_endpoints.erase(itr);
       } else {
