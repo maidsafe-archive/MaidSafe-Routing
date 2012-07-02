@@ -219,7 +219,7 @@ TEST(APITest, BEH_API_AnonymousNode) {
 }
 
 TEST(APITest, BEH_API_NodeNetwork) {
-  uint8_t kNetworkSize(6);
+  int32_t kNetworkSize(6);
   std::vector<NodeInfo> node_infos;
   std::vector<std::shared_ptr<Routing>> routing_node;
   std::map<NodeId, asymm::Keys> key_map;
