@@ -34,21 +34,10 @@ namespace maidsafe {
 namespace routing {
 namespace test {
 namespace bptime = boost::posix_time;
-static unsigned short test_routing_api_node_port(6000);
-
-NodeInfo MakeNodeInfo() {
-  NodeInfo node;
-  node.node_id = NodeId(RandomString(64));
-  asymm::Keys keys;
-  asymm::GenerateKeyPair(&keys);
-  node.public_key = keys.public_key;
-  node.endpoint.address(GetLocalIp());
-  node.endpoint.port(GetRandomPort());
-  return node;
-}
+static uint16_t test_routing_api_node_port(6000);
 
 asymm::Keys MakeKeys() {
-  NodeInfo node(MakeNodeInfo());
+  NodeInfo node(MakeNode());
   asymm::Keys keys;
   keys.identity = node.node_id.String();
   keys.public_key = node.public_key;
@@ -62,24 +51,24 @@ asymm::Keys GetKeys(const NodeInfo &node_info) {
   return keys;
 }
 
-//TEST(APITest, BEH_BadConfigFile) {
-//  // See bootstrap file tests for further interrogation of these files
-//  asymm::Keys keys(MakeKeys());
-//  boost::filesystem::path bad_file("/bad file/ not found/ I hope/");
-//  boost::filesystem::path good_file
-//              (fs::unique_path(fs::temp_directory_path() / "test"));
-//  Functors functors;
-//  EXPECT_THROW({Routing RtAPI(keys, bad_file, functors, false);},
-//              boost::filesystem::filesystem_error)  << "should not accept invalid files";
-//  EXPECT_NO_THROW({
-//    Routing RtAPI(keys, good_file, functors, false);
-//  });
-//  EXPECT_TRUE(WriteFile(good_file, "not a vector of endpoints"));
-//  EXPECT_NO_THROW({
-//    Routing RtAPI(keys, good_file, functors, false);
-//  }) << "cannot handle corrupt files";
-//  EXPECT_TRUE(boost::filesystem::remove(good_file));
-//}
+// TEST(APITest, BEH_BadConfigFile) {
+//   // See bootstrap file tests for further interrogation of these files
+//   asymm::Keys keys(MakeKeys());
+//   boost::filesystem::path bad_file("/bad file/ not found/ I hope/");
+//   boost::filesystem::path good_file
+//               (fs::unique_path(fs::temp_directory_path() / "test"));
+//   Functors functors;
+//   EXPECT_THROW({Routing RtAPI(keys, bad_file, functors, false);},
+//               boost::filesystem::filesystem_error)  << "should not accept invalid files";
+//   EXPECT_NO_THROW({
+//     Routing RtAPI(keys, good_file, functors, false);
+//   });
+//   EXPECT_TRUE(WriteFile(good_file, "not a vector of endpoints"));
+//   EXPECT_NO_THROW({
+//     Routing RtAPI(keys, good_file, functors, false);
+//   }) << "cannot handle corrupt files";
+//   EXPECT_TRUE(boost::filesystem::remove(good_file));
+// }
 
 TEST(APITest, BEH_API_StandAloneNodeNotConnected) {
   asymm::Keys keys(MakeKeys());
@@ -118,9 +107,9 @@ TEST(APITest, BEH_API_ManualBootstrap) {
 }
 
 TEST(APITest, BEH_API_ZeroState) {
-  NodeInfo node1(MakeNodeInfo());
-  NodeInfo node2(MakeNodeInfo());
-  NodeInfo node3(MakeNodeInfo());
+  NodeInfo node1(MakeNode());
+  NodeInfo node2(MakeNode());
+  NodeInfo node3(MakeNode());
 //  asymm::Keys keys3(MakeKeys());
   std::map<NodeId, asymm::Keys> key_map;
   key_map.insert(std::make_pair(NodeId(node1.node_id), GetKeys(node1)));
@@ -134,13 +123,12 @@ TEST(APITest, BEH_API_ZeroState) {
   Routing R3(GetKeys(node3), false);
   Functors functors1, functors2, functors3;
 
-  functors1.request_public_key = [&](const NodeId& node_id, GivePublicKeyFunctor give_key )
-  {
+  functors1.request_public_key = [&](const NodeId& node_id, GivePublicKeyFunctor give_key ) {
       LOG(kWarning) << "node_validation called for " << HexSubstr(node_id.String());
       auto itr(key_map.find(NodeId(node_id)));
       if (key_map.end() != itr)
         give_key((*itr).second.public_key);
-  };
+    };
 
   functors2.request_public_key = functors3.request_public_key = functors1.request_public_key;
 
@@ -159,8 +147,8 @@ TEST(APITest, BEH_API_ZeroState) {
 }
 
 TEST(APITest, BEH_API_AnonymousNode) {
-  NodeInfo node1(MakeNodeInfo());
-  NodeInfo node2(MakeNodeInfo());
+  NodeInfo node1(MakeNode());
+  NodeInfo node2(MakeNode());
   std::map<NodeId, asymm::Keys> key_map;
   key_map.insert(std::make_pair(NodeId(node1.node_id), GetKeys(node1)));
   key_map.insert(std::make_pair(NodeId(node2.node_id), GetKeys(node2)));
@@ -172,8 +160,7 @@ TEST(APITest, BEH_API_AnonymousNode) {
   Routing R3(asymm::Keys(), false);  // Anonymous node
   Functors functors1, functors2, functors3;
 
-  functors1.request_public_key = [&](const NodeId& node_id, GivePublicKeyFunctor give_key )
-  {
+  functors1.request_public_key = [&](const NodeId& node_id, GivePublicKeyFunctor give_key ) {
       LOG(kWarning) << "node_validation called for " << HexSubstr(node_id.String());
       auto itr(key_map.find(NodeId(node_id)));
       if (key_map.end() != itr)
@@ -223,7 +210,7 @@ TEST(APITest, BEH_API_NodeNetwork) {
   std::vector<std::shared_ptr<Routing>> routing_node;
   std::map<NodeId, asymm::Keys> key_map;
   for (auto i(0); i != kNetworkSize; ++i) {
-    NodeInfo node(MakeNodeInfo());
+    NodeInfo node(MakeNode());
     node_infos.push_back(node);
     key_map.insert(std::make_pair(NodeId(node.node_id), GetKeys(node)));
     routing_node.push_back(std::make_shared<Routing>(GetKeys(node), false));
@@ -237,12 +224,12 @@ TEST(APITest, BEH_API_NodeNetwork) {
         give_key((*itr).second.public_key);
   };
 
-  auto a1 = std::async(std::launch::async, [&]{
-    return routing_node[0]->ZeroStateJoin(functors, node_infos[0].endpoint,
-                                          node_infos[1]);});  // NOLINT (Prakash)
-  auto a2 = std::async(std::launch::async, [&]{
-    return routing_node[1]->ZeroStateJoin(functors, node_infos[1].endpoint,
-                                          node_infos[0]);});  // NOLINT (Prakash)
+  auto a1 = std::async(std::launch::async, [&] {
+      return routing_node[0]->ZeroStateJoin(functors, node_infos[0].endpoint, node_infos[1]);
+    });
+  auto a2 = std::async(std::launch::async, [&] {
+      return routing_node[1]->ZeroStateJoin(functors, node_infos[1].endpoint, node_infos[0]);
+    });
 
   EXPECT_EQ(kSuccess, a2.get());  // wait for promise !
   EXPECT_EQ(kSuccess, a1.get());  // wait for promise !

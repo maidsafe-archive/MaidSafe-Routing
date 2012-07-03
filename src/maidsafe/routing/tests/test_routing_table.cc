@@ -40,7 +40,7 @@ TEST(RoutingTableTest, FUNC_AddCloseNodes) {
   EXPECT_EQ(RT.Size(), 0);
   asymm::PublicKey dummy_key;
   // check we cannot input nodes with invalid public_keys
-  for (unsigned short i = 0; i < Parameters::closest_nodes_size ; ++i) {
+  for (uint16_t i = 0; i < Parameters::closest_nodes_size ; ++i) {
      NodeInfo node(MakeNode());
      node.endpoint.port(i + 1501U);  // has to be unique
      node.public_key = dummy_key;
@@ -51,7 +51,7 @@ TEST(RoutingTableTest, FUNC_AddCloseNodes) {
   // everything should be set to go now
   // TODO(dirvine): should we also test for valid enpoints ??
   // TODO(dirvine): we should fail when public keys are the same
-  for (unsigned short i = 0; i < Parameters::closest_nodes_size ; ++i) {
+  for (uint16_t i = 0; i < Parameters::closest_nodes_size ; ++i) {
     node = MakeNode();
     node.endpoint.port(i + 1501U);  // has to be unique
     EXPECT_TRUE(RT.AddNode(node));
@@ -63,15 +63,14 @@ TEST(RoutingTableTest, FUNC_AddTooManyNodes) {
     asymm::Keys keys;
     keys.identity = RandomString(64);
   RoutingTable RT(keys, nullptr);
-  for (unsigned short i = 0;
-       RT.Size() < Parameters::max_routing_table_size; ++i) {
+  for (uint16_t i = 0; RT.Size() < Parameters::max_routing_table_size; ++i) {
      NodeInfo node(MakeNode());
      node.endpoint.port(i + 1501U);  // has to be unique
      EXPECT_TRUE(RT.AddNode(node));
   }
   EXPECT_EQ(RT.Size(), Parameters::max_routing_table_size);
   size_t count(0);
-  for (unsigned short i = 0; i < 100; ++i) {
+  for (uint16_t i = 0; i < 100; ++i) {
     NodeInfo node(MakeNode());
     node.endpoint.port(i + 1700U);  // has to be unique
     if (RT.CheckNode(node)) {
@@ -80,7 +79,7 @@ TEST(RoutingTableTest, FUNC_AddTooManyNodes) {
     }
   }
   if (count > 0)
-     LOG(kInfo) << "made space for " << count << " node(s) in routing table";
+    LOG(kInfo) << "made space for " << count << " node(s) in routing table";
   EXPECT_EQ(RT.Size(), Parameters::max_routing_table_size);
 }
 
@@ -90,12 +89,10 @@ TEST(RoutingTableTest, BEH_CloseAndInRangeCheck) {
   RoutingTable RT(keys, nullptr);
   // Add some nodes to RT
   NodeId my_node(keys.identity);
-  for (unsigned short i = 0;
-       RT.Size() < Parameters::max_routing_table_size;
-       ++i) {
-     NodeInfo node(MakeNode());
-     node.endpoint.port(i + 1501U);  // has to be unique
-     EXPECT_TRUE(RT.AddNode(node));
+  for (uint16_t i = 0; RT.Size() < Parameters::max_routing_table_size; ++i) {
+    NodeInfo node(MakeNode());
+    node.endpoint.port(i + 1501U);  // has to be unique
+    EXPECT_TRUE(RT.AddNode(node));
   }
   EXPECT_EQ(RT.Size(), Parameters::max_routing_table_size);
   std::string my_id_encoded(my_node.ToStringEncoded(NodeId::kBinary));

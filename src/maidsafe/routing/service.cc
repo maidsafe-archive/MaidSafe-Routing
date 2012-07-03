@@ -83,40 +83,40 @@ void Connect(RoutingTable &routing_table,
   their_public_endpoint.address(
       boost::asio::ip::address::from_string(connect_request.contact().public_endpoint().ip()));
   their_public_endpoint.port(
-      static_cast<unsigned short>(connect_request.contact().public_endpoint().port()));
+      static_cast<uint16_t>(connect_request.contact().public_endpoint().port()));
   their_private_endpoint.address(
       boost::asio::ip::address::from_string(connect_request.contact().private_endpoint().ip()));
   their_private_endpoint.port(
-      static_cast<unsigned short>(connect_request.contact().private_endpoint().port()));
+      static_cast<uint16_t>(connect_request.contact().private_endpoint().port()));
   their_endpoint_pair.external = their_public_endpoint;
   their_endpoint_pair.local = their_private_endpoint;
   LOG(kVerbose) << "Calling GetAvailableEndpoint with peer ep - " << their_public_endpoint;
-  if((rudp.GetAvailableEndpoint(their_public_endpoint, our_endpoint_pair)) != 0) {
+  if ((rudp.GetAvailableEndpoint(their_public_endpoint, our_endpoint_pair)) != 0) {
     LOG(kVerbose) << "Unable to get available endpoint to connect to" << their_public_endpoint;
     return;
   }
-  LOG(kVerbose) << " GetAvailableEndpoint for peer - " << their_public_endpoint << " my endpoint - " << our_endpoint_pair.external;
-  // TODO(dirvine) try both connections
+  LOG(kVerbose) << " GetAvailableEndpoint for peer - " << their_public_endpoint << " my endpoint - "
+                << our_endpoint_pair.external;
+// TODO(dirvine) try both connections
   if (message.client_node()) {
     LOG(kInfo) << " client connecting - HELP !!!!";
   }
   if ((routing_table.CheckNode(node)) && (!message.client_node())) {
     connect_response.set_answer(true);
     LOG(kVerbose) << "CheckNode(node) successfull!";
-  if (node_validation_functor) {
-    auto validate_node = [=, &routing_table, &rudp] (const asymm::PublicKey &key)->void
-    {
-    LOG(kInfo) << "NEED TO VALIDATE THE NODE HERE";
-      ValidateThisNode(rudp,
-                       routing_table,
-                       NodeId(connect_request.contact().node_id()),
-                       key,
-                       their_endpoint_pair,
-                       our_endpoint_pair,
-                       false);
-    };
-    node_validation_functor(NodeId(connect_request.contact().node_id()), validate_node);
-  }
+    if (node_validation_functor) {
+      auto validate_node = [=, &routing_table, &rudp] (const asymm::PublicKey &key)->void {
+          LOG(kInfo) << "NEED TO VALIDATE THE NODE HERE";
+          ValidateThisNode(rudp,
+                           routing_table,
+                           NodeId(connect_request.contact().node_id()),
+                           key,
+                           their_endpoint_pair,
+                           our_endpoint_pair,
+                           false);
+        };
+      node_validation_functor(NodeId(connect_request.contact().node_id()), validate_node);
+    }
   }
 
   protobuf::Contact *contact;
@@ -200,7 +200,7 @@ void ProxyConnect(RoutingTable &routing_table, rudp::ManagedConnections &/*rudp*
   endpoint_pair.local = GetEndpointFromProtobuf(proxy_connect_request.local_endpoint());
 
   // TODO(Prakash): Also check NRT and if its my bootstrap endpoint.
-  if (routing_table.AmIConnectedToEndpoint(endpoint_pair.external)) {  // If endpoint already in routing table
+  if (routing_table.AmIConnectedToEndpoint(endpoint_pair.external)) {  // If already in RT
     proxy_connect_response.set_result(protobuf::kAlreadyConnected);
   } else {
     bool connect_result(false);

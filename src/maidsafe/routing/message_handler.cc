@@ -212,8 +212,8 @@ void MessageHandler::ProcessMessage(protobuf::Message &message) {
 
   // Relay mode message
   if (message.source_id().empty()) {
-   ProcessRelayRequest(message);
-   return;
+    ProcessRelayRequest(message);
+    return;
   }
 
   // Invalid source id, unknown message
@@ -277,7 +277,7 @@ bool MessageHandler::RelayDirectMessageIfNeeded(protobuf::Message &message) {
   }
   //  Only direct responses need to be relayed
   if ((message.destination_id() != message.relay_id()) &&  IsResponse(message)) {
-    message.clear_destination_id(); // to allow network util to identify it as relay message
+    message.clear_destination_id();  // to allow network util to identify it as relay message
     ProcessSend(message, rudp_, routing_table_);
     LOG(kVerbose) <<"Relaying response Message to" <<  HexSubstr(message.relay_id());
     return true;

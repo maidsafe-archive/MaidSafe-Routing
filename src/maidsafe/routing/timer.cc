@@ -48,7 +48,7 @@ void Timer::KillTask(TaskId task_id) {
   TaskResponseFunctor task_response_functor(nullptr);
   {
     std::lock_guard<std::mutex> lock(mutex_);
-    const auto it = queue_.find(task_id);
+    auto const it = queue_.find(task_id);
     if (it != queue_.end()) {
       // message timed out or task killed
       LOG(kVerbose) << "KillTask killed a task, with id" << task_id_;
@@ -59,8 +59,7 @@ void Timer::KillTask(TaskId task_id) {
   if (task_response_functor)
     io_service_.service().dispatch([=] {
         task_response_functor(kResponseTimeout, "");
-      }
-    );
+      });
 }
 
 void Timer::ExecuteTaskNow(protobuf::Message &message) {
@@ -71,7 +70,7 @@ void Timer::ExecuteTaskNow(protobuf::Message &message) {
   TaskResponseFunctor task_response_functor(nullptr);
   {
     std::lock_guard<std::mutex> lock(mutex_);
-    const auto it = queue_.find(message.id());
+    auto const it = queue_.find(message.id());
     if (it != queue_.end()) {
       // message all OK in routing
       task_response_functor = (*it).second.second;
@@ -82,12 +81,11 @@ void Timer::ExecuteTaskNow(protobuf::Message &message) {
     }
   }
 
-  //posting messages
+  //  posting messages
   if (task_response_functor)
     io_service_.service().dispatch([=] {
         task_response_functor(kSuccess, message.data());
-      }
-    );
+      });
 }
 
 }  // namespace maidsafe
