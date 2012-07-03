@@ -112,11 +112,8 @@ void ManagedConnections::Send(const Endpoint &peer_endpoint,
 }
 
 void ManagedConnections::Remove(const Endpoint &peer_endpoint) {
- // find in network remove and fire connection losts's
-  auto my_node = FakeNetwork::instance().FindNode(bootstrap_endpoints_[0]);
-  assert(my_node != FakeNetwork::instance().GetEndIterator() && "Apparently not in network.");
-  if (!FakeNetwork::instance().RemoveConnection(my_node->endpoint, peer_endpoint)) {
-    LOG(kVerbose) << "Failed to remove my node in destructor.";
+  if (!FakeNetwork::instance().RemoveConnection(bootstrap_endpoints_[0], peer_endpoint)) {
+    LOG(kVerbose) << "Failed to remove " << peer_endpoint;
   }
 }
 
