@@ -50,20 +50,35 @@ source_group("Routing API Files" FILES ${API_FILES_ROUTING_DIR})
 ####    TESTS    ####
 file(GLOB SOURCE_FILES_ROUTING_TESTS_DIR "${PROJECT_SOURCE_DIR}/src/maidsafe/routing/tests/*.cc")
 file(GLOB HEADER_FILES_ROUTING_TESTS_DIR "${PROJECT_SOURCE_DIR}/src/maidsafe/routing/tests/*.h")
+
+set(ALL_FILES_ROUTING_TABLE "${PROJECT_SOURCE_DIR}/src/maidsafe/routing/tests/test_routing_table.cc"  "${PROJECT_SOURCE_DIR}/src/maidsafe/routing/tests/test_utils.cc" "${PROJECT_SOURCE_DIR}/src/maidsafe/routing/tests/test_main.cc")
 set(ALL_FILES_ROUTING_TESTS_DIR ${SOURCE_FILES_ROUTING_TESTS_DIR} ${HEADER_FILES_ROUTING_TESTS_DIR})
+list(REMOVE_ITEM ALL_FILES_ROUTING_TESTS_DIR "${PROJECT_SOURCE_DIR}/src/maidsafe/routing/tests/test_routing_table.cc")
 set(STYLE_ROUTING_TESTS ${ALL_FILES_ROUTING_TESTS_DIR})
+
 source_group("Routing Tests Source Files" FILES ${SOURCE_FILES_ROUTING_TESTS_DIR})
 source_group("Routing Tests Header Files" FILES ${HEADER_FILES_ROUTING_TESTS_DIR})
-
 
 ###################################################################################################
 # Define MaidSafe libraries and executables                                                       #
 ###################################################################################################
 ms_add_static_library(routing ${ALL_FILES_ROUTING_DIR})
+ms_add_static_library(routing_fake_rudp ${ALL_FILES_ROUTING_DIR}
+                     "${PROJECT_SOURCE_DIR}/src/maidsafe/fakerudp/fake_managed_connections.cc"
+                     "${PROJECT_SOURCE_DIR}/src/maidsafe/fakerudp/fake_network.cc"
+                     "${PROJECT_SOURCE_DIR}/src/maidsafe/fakerudp/fake_network.h"
+                      )
 ms_add_executable(TESTrouting "Tests/Routing" ${ALL_FILES_ROUTING_TESTS_DIR})
+ms_add_executable(TESTroutingtable "Tests/Routing" ${ALL_FILES_ROUTING_TABLE})
+ms_add_executable(TESTrouting_fake_rudp "Tests/Routing" ${ALL_FILES_ROUTING_TESTS_DIR})
+ms_add_executable(TESTroutingtable_fake_rudp "Tests/Routing" ${ALL_FILES_ROUTING_TABLE})
 
 target_link_libraries(maidsafe_routing maidsafe_rudp)
+target_link_libraries(maidsafe_routing_fake_rudp maidsafe_common)
 target_link_libraries(TESTrouting maidsafe_routing)
+target_link_libraries(TESTroutingtable maidsafe_routing)
+target_link_libraries(TESTrouting_fake_rudp maidsafe_routing_fake_rudp)
+target_link_libraries(TESTroutingtable_fake_rudp maidsafe_routing_fake_rudp)
 
 rename_outdated_built_exes()
 
@@ -80,5 +95,6 @@ ms_disable_warnings(${SOURCE_PROTO_FILES_ROUTING_DIR})
 ###################################################################################################
 add_style_test(${STYLE_ROUTING} ${STYLE_ROUTING_TESTS})
 add_gtests(TESTrouting)
+add_gtests(TESTroutingtable)
 add_project_experimental()
 test_summary_output()

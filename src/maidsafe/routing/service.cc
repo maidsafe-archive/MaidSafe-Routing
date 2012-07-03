@@ -22,6 +22,7 @@
 #include "maidsafe/routing/parameters.h"
 #include "maidsafe/routing/routing_pb.h"
 #include "maidsafe/routing/routing_table.h"
+#include "maidsafe/routing/utils.h"
 
 namespace maidsafe {
 
@@ -30,10 +31,6 @@ namespace routing {
 namespace service {
 
 void Ping(RoutingTable &routing_table, protobuf::Message &message) {
-//   if (message.destination_id() != NodeId::kKeySizeBytes) {
-//         LOG(kError) << "Invalid destination ID";
-//     return;
-//   }
   if (message.destination_id() != routing_table.kKeys().identity) {
     LOG(kError) << "Message not for us";
     return;  // not for us and we should not pass it on.
@@ -56,14 +53,22 @@ void Ping(RoutingTable &routing_table, protobuf::Message &message) {
   assert(message.IsInitialized() && "unintialised message");
 }
 
-void Connect(RoutingTable &routing_table, rudp::ManagedConnections &rudp,
-             protobuf::Message &message) {
-  if (message.destination_id() != routing_table.kKeys().identity)
+void Connect(RoutingTable &routing_table,
+             rudp::ManagedConnections &rudp,
+             protobuf::Message &message,
+             RequestPublicKeyFunctor node_validation_functor) {
+  if (message.destination_id() != routing_table.kKeys().identity) {
+    LOG(kVerbose) << "Connect -- not for us and we should not pass it on.";
+    message.Clear();
     return;  // not for us and we should not pass it on.
+  }
   protobuf::ConnectRequest connect_request;
   protobuf::ConnectResponse connect_response;
-  if (!connect_request.ParseFromString(message.data()))
+  if (!connect_request.ParseFromString(message.data())) {
+    LOG(kVerbose) << "Unable to parse connect request";
+    message.Clear();
     return;  // no need to reply
+  }
   NodeInfo node;
   node.node_id = NodeId(connect_request.contact().node_id());
   if (connect_request.bootstrap()) {
@@ -71,7 +76,8 @@ void Connect(RoutingTable &routing_table, rudp::ManagedConnections &rudp,
              return;  // FIXME
   }
   connect_response.set_answer(false);
-  rudp::EndpointPair our_endpoint;
+  rudp::EndpointPair our_endpoint_pair;
+  rudp::EndpointPair their_endpoint_pair;
   Endpoint their_public_endpoint;
   Endpoint their_private_endpoint;
   their_public_endpoint.address(
@@ -82,23 +88,35 @@ void Connect(RoutingTable &routing_table, rudp::ManagedConnections &rudp,
       boost::asio::ip::address::from_string(connect_request.contact().private_endpoint().ip()));
   their_private_endpoint.port(
       static_cast<unsigned short>(connect_request.contact().private_endpoint().port()));
-  rudp.GetAvailableEndpoint(our_endpoint);
-
+  their_endpoint_pair.external = their_public_endpoint;
+  their_endpoint_pair.local = their_private_endpoint;
+  LOG(kVerbose) << "Calling GetAvailableEndpoint with peer ep - " << their_public_endpoint;
+  if((rudp.GetAvailableEndpoint(their_public_endpoint, our_endpoint_pair)) != 0) {
+    LOG(kVerbose) << "Unable to get available endpoint to connect to" << their_public_endpoint;
+    return;
+  }
+  LOG(kVerbose) << " GetAvailableEndpoint for peer - " << their_public_endpoint << " my endpoint - " << our_endpoint_pair.external;
   // TODO(dirvine) try both connections
   if (message.client_node()) {
-    connect_response.set_answer(true);
-    // TODO(dirvine): get the routing pointer back again
-//     node_validation_functor_(routing_table.kKeys().identity,
-//                     their_endpoint,
-//                     message.client_node(),
-//                     our_endpoint);
+    LOG(kInfo) << " client connecting - HELP !!!!";
   }
   if ((routing_table.CheckNode(node)) && (!message.client_node())) {
     connect_response.set_answer(true);
-//     node_validation_functor_(routing_table.kKeys().identity,
-//                     their_endpoint,
-//                     message.client_node(),
-//                     our_endpoint);
+    LOG(kVerbose) << "CheckNode(node) successfull!";
+  if (node_validation_functor) {
+    auto validate_node = [=, &routing_table, &rudp] (const asymm::PublicKey &key)->void
+    {
+    LOG(kInfo) << "NEED TO VALIDATE THE NODE HERE";
+      ValidateThisNode(rudp,
+                       routing_table,
+                       NodeId(connect_request.contact().node_id()),
+                       key,
+                       their_endpoint_pair,
+                       our_endpoint_pair,
+                       false);
+    };
+    node_validation_functor(NodeId(connect_request.contact().node_id()), validate_node);
+  }
   }
 
   protobuf::Contact *contact;
@@ -106,39 +124,54 @@ void Connect(RoutingTable &routing_table, rudp::ManagedConnections &rudp,
   protobuf::Endpoint *public_endpoint;
   contact = connect_response.mutable_contact();
   private_endpoint = contact->mutable_private_endpoint();
-  private_endpoint->set_ip(our_endpoint.local.address().to_string());
-  private_endpoint->set_port(our_endpoint.local.port());
+  private_endpoint->set_ip(our_endpoint_pair.local.address().to_string());
+  private_endpoint->set_port(our_endpoint_pair.local.port());
   public_endpoint = contact->mutable_public_endpoint();
-  public_endpoint->set_ip(our_endpoint.local.address().to_string());
-  public_endpoint->set_port(our_endpoint.local.port());
+  public_endpoint->set_ip(our_endpoint_pair.local.address().to_string());
+  public_endpoint->set_port(our_endpoint_pair.local.port());
   contact->set_node_id(routing_table.kKeys().identity);
   connect_response.set_timestamp(GetTimeStamp());
   connect_response.set_original_request(message.data());
   connect_response.set_original_signature(message.signature());
-  message.set_destination_id(message.source_id());
-  message.set_source_id(routing_table.kKeys().identity);
   message.set_data(connect_response.SerializeAsString());
   message.set_direct(true);
   message.set_replication(1);
   message.set_type(-2);
+  if (message.has_source_id())
+    message.set_destination_id(message.source_id());
+  else
+    message.clear_destination_id();
+  message.set_source_id(routing_table.kKeys().identity);
   assert(message.IsInitialized() && "unintialised message");
 }
 
 void FindNodes(RoutingTable &routing_table, protobuf::Message &message) {
+  LOG(kVerbose) << "FindNodes -- service()";
   protobuf::FindNodesRequest find_nodes;
+  if (!find_nodes.ParseFromString(message.data())) {
+    LOG(kVerbose) << "Unable to parse find node request";
+    message.Clear();
+    return;  // no need to reply
+  }
+  LOG(kVerbose) << "Parsed find node request -- " << HexSubstr(find_nodes.target_node());
   protobuf::FindNodesResponse found_nodes;
-  std::vector<NodeId>
-      nodes(routing_table.GetClosestNodes(NodeId(message.destination_id()),
-            static_cast<uint16_t>(find_nodes.num_nodes_requested())));
-  for (auto it = nodes.begin(); it != nodes.end(); ++it)
+  std::vector<NodeId> nodes(routing_table.GetClosestNodes(NodeId(find_nodes.target_node()),
+                              static_cast<uint16_t>(find_nodes.num_nodes_requested())));
+
+  for (auto it = nodes.begin(); it != nodes.end(); ++it) {
     found_nodes.add_nodes((*it).String());
+  }
   if (routing_table.Size() < Parameters::closest_nodes_size)
     found_nodes.add_nodes(routing_table.kKeys().identity);  // small network send our ID
+
   found_nodes.set_original_request(message.data());
   found_nodes.set_original_signature(message.signature());
   found_nodes.set_timestamp(GetTimeStamp());
   assert(found_nodes.IsInitialized() && "unintialised found_nodes response");
-  message.set_destination_id(message.source_id());
+  if (message.has_source_id())
+    message.set_destination_id(message.source_id());
+  else
+    message.clear_destination_id();
   message.set_source_id(routing_table.kKeys().identity);
   message.set_data(found_nodes.SerializeAsString());
   message.set_direct(true);
@@ -162,10 +195,12 @@ void ProxyConnect(RoutingTable &routing_table, rudp::ManagedConnections &/*rudp*
   }
 
   // TODO(Prakash): any validation needed?
+  rudp::EndpointPair endpoint_pair;
+  endpoint_pair.external = GetEndpointFromProtobuf(proxy_connect_request.external_endpoint());
+  endpoint_pair.local = GetEndpointFromProtobuf(proxy_connect_request.local_endpoint());
 
-  Endpoint endpoint(boost::asio::ip::address::from_string(proxy_connect_request.endpoint().ip()),
-                    static_cast<uint16_t> (proxy_connect_request.endpoint().port()));
-  if (routing_table.AmIConnectedToEndpoint(endpoint)) {  // If endpoint already in routing table
+  // TODO(Prakash): Also check NRT and if its my bootstrap endpoint.
+  if (routing_table.AmIConnectedToEndpoint(endpoint_pair.external)) {  // If endpoint already in routing table
     proxy_connect_response.set_result(protobuf::kAlreadyConnected);
   } else {
     bool connect_result(false);

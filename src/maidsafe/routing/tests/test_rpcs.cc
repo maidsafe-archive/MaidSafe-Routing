@@ -41,7 +41,7 @@ TEST(RPC, BEH_PingMessageInitialised) {
 TEST(RPC, BEH_PingMessageNode) {
   asymm::Keys keys;
   keys.identity = RandomString(64);
-  RoutingTable RT(keys);
+  RoutingTable RT(keys, nullptr);
   NodeInfo node;
   std::string destination = RandomString(64);
   protobuf::Message message = rpcs::Ping(NodeId(destination), keys.identity);
@@ -56,7 +56,6 @@ TEST(RPC, BEH_PingMessageNode) {
   EXPECT_FALSE(message.data().empty());
   EXPECT_EQ(message.replication(), 1);
   EXPECT_EQ(message.type(), 1);
-  EXPECT_FALSE(message.routing_failure());
   EXPECT_EQ(message.id(), 0);
   EXPECT_FALSE(message.client_node());
   EXPECT_FALSE(message.has_relay());
@@ -66,7 +65,8 @@ TEST(RPC, BEH_ConnectMessageInitialised) {
   rudp::EndpointPair our_endpoint;
   our_endpoint.local = Endpoint(boost::asio::ip::address_v4::loopback(), GetRandomPort());
   our_endpoint.external = Endpoint(boost::asio::ip::address_v4::loopback(), GetRandomPort());
-  ASSERT_TRUE(rpcs::Connect(NodeId(RandomString(64)), our_endpoint, "id").IsInitialized());
+  ASSERT_TRUE(rpcs::Connect(NodeId(RandomString(64)), our_endpoint,
+                            NodeId(RandomString(64))).IsInitialized());
 }
 
 TEST(RPC, BEH_ConnectMessageNode) {
@@ -75,7 +75,7 @@ TEST(RPC, BEH_ConnectMessageNode) {
   endpoint.local = us.endpoint;
   endpoint.external = us.endpoint;
   std::string destination = RandomString(64);
-  protobuf::Message message = rpcs::Connect(NodeId(destination), endpoint, us.node_id.String());
+  protobuf::Message message = rpcs::Connect(NodeId(destination), endpoint, us.node_id);
   protobuf::ConnectRequest connect_request;
   EXPECT_TRUE(message.IsInitialized());
   EXPECT_TRUE(connect_request.ParseFromString(message.data()));  // us
@@ -88,20 +88,47 @@ TEST(RPC, BEH_ConnectMessageNode) {
   EXPECT_FALSE(message.data().empty());
   EXPECT_EQ(message.replication(), 1);
   EXPECT_EQ(message.type(), 2);
-  EXPECT_FALSE(message.routing_failure());
   EXPECT_EQ(message.id(), 0);
   EXPECT_FALSE(message.client_node());
   EXPECT_FALSE(message.has_relay());
 }
 
+TEST(RPC, BEH_ConnectMessageNodeRelayMode) {
+  NodeInfo us(MakeNode());
+  rudp::EndpointPair endpoint;
+  endpoint.local = us.endpoint;
+  endpoint.external = us.endpoint;
+  Endpoint relay_endpoint(boost::asio::ip::address_v4::loopback(), GetRandomPort());
+  std::string destination = RandomString(64);
+  protobuf::Message message = rpcs::Connect(NodeId(destination), endpoint, us.node_id,
+                                            true, relay_endpoint);
+  protobuf::ConnectRequest connect_request;
+  EXPECT_TRUE(message.IsInitialized());
+  EXPECT_TRUE(connect_request.ParseFromString(message.data()));  // us
+  EXPECT_FALSE(connect_request.bootstrap());
+  EXPECT_TRUE(connect_request.has_timestamp());
+  EXPECT_TRUE(connect_request.timestamp() > static_cast<int32_t>(GetTimeStamp() - 2));
+  EXPECT_TRUE(connect_request.timestamp() < static_cast<int32_t>(GetTimeStamp() + 1));
+  EXPECT_EQ(message.destination_id(), destination);
+  EXPECT_FALSE(message.has_source_id());
+  EXPECT_FALSE(message.data().empty());
+  EXPECT_EQ(message.replication(), 1);
+  EXPECT_EQ(message.type(), 2);
+  EXPECT_EQ(message.id(), 0);
+  EXPECT_FALSE(message.client_node());
+  EXPECT_TRUE(message.has_relay());
+  EXPECT_TRUE(message.has_relay_id());
+  EXPECT_EQ(us.node_id.String(), message.relay_id());
+}
+
 TEST(RPC, BEH_FindNodesMessageInitialised) {
-  ASSERT_TRUE(rpcs::FindNodes(NodeId(RandomString(64))).IsInitialized());
+  ASSERT_TRUE(rpcs::FindNodes(NodeId(RandomString(64)), NodeId(RandomString(64))).IsInitialized());
 }
 
 TEST(RPC, BEH_FindNodesMessageNode) {
   NodeInfo us(MakeNode());
   std::string destination = RandomString(64);
-  protobuf::Message message = rpcs::FindNodes(us.node_id, us.endpoint);
+  protobuf::Message message = rpcs::FindNodes(us.node_id, us.node_id);
   protobuf::FindNodesRequest find_nodes_request;
   EXPECT_TRUE(find_nodes_request.ParseFromString(message.data()));  // us
   EXPECT_TRUE(find_nodes_request.num_nodes_requested() == Parameters::closest_nodes_size);
@@ -114,16 +141,46 @@ TEST(RPC, BEH_FindNodesMessageNode) {
   EXPECT_FALSE(message.data().empty());
   EXPECT_EQ(message.replication(), 1);
   EXPECT_EQ(message.type(), 3);
-  EXPECT_FALSE(message.routing_failure());
+  EXPECT_EQ(message.id(), 0);
+  EXPECT_FALSE(message.client_node());
+  EXPECT_FALSE(message.has_relay());
+  EXPECT_FALSE(message.has_relay_id());
+}
+
+TEST(RPC, BEH_FindNodesMessageNodeRelayMode) {
+  NodeInfo us(MakeNode());
+  std::string destination = RandomString(64);
+  Endpoint relay_endpoint(boost::asio::ip::address_v4::loopback(), GetRandomPort());
+  protobuf::Message message = rpcs::FindNodes(us.node_id, us.node_id, true, relay_endpoint);
+  protobuf::FindNodesRequest find_nodes_request;
+  EXPECT_TRUE(find_nodes_request.ParseFromString(message.data()));  // us
+  EXPECT_TRUE(find_nodes_request.num_nodes_requested() == Parameters::closest_nodes_size);
+  EXPECT_EQ(find_nodes_request.target_node(), us.node_id.String());
+  EXPECT_TRUE(find_nodes_request.has_timestamp());
+  EXPECT_TRUE(find_nodes_request.timestamp() > static_cast<int32_t>(GetTimeStamp() - 2));
+  EXPECT_TRUE(find_nodes_request.timestamp() < static_cast<int32_t>(GetTimeStamp() + 1));
+  EXPECT_EQ(message.destination_id(), us.node_id.String());
+  EXPECT_FALSE(message.has_source_id());
+  EXPECT_FALSE(message.data().empty());
+  EXPECT_EQ(message.replication(), 1);
+  EXPECT_EQ(message.type(), 3);
   EXPECT_EQ(message.id(), 0);
   EXPECT_FALSE(message.client_node());
   EXPECT_TRUE(message.has_relay());
+  EXPECT_TRUE(message.has_relay_id());
+  EXPECT_EQ(us.node_id.String(), message.relay_id());
+  NodeId node(message.relay_id());
+  ASSERT_TRUE(node.IsValid());
 }
 
 TEST(RPC, BEH_ProxyConnectMessageInitialised) {
   std::string destination = RandomString(64);
-  Endpoint endpoint(boost::asio::ip::address_v4::loopback(), GetRandomPort());
-  ASSERT_TRUE(rpcs::ProxyConnect(NodeId(destination), "me", endpoint).IsInitialized());
+  std::string source = RandomString(64);
+  rudp::EndpointPair endpoint_pair;
+  endpoint_pair.external =  Endpoint(boost::asio::ip::address_v4::loopback(), GetRandomPort());
+  endpoint_pair.local =  Endpoint(boost::asio::ip::address_v4::loopback(), GetRandomPort());
+  ASSERT_TRUE(rpcs::ProxyConnect(NodeId(destination), NodeId(source),
+                                 endpoint_pair).IsInitialized());
 }
 
 

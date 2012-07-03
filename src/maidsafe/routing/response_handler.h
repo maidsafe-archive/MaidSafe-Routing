@@ -33,11 +33,14 @@ namespace protobuf { class Message; }  // namespace protobuf
 namespace response {
 
 void Ping(protobuf::Message &message);
-void Connect(protobuf::Message &message,
-             NodeValidationFunctor node_validation_functor);
+void Connect(RoutingTable &routing_table,
+             rudp::ManagedConnections &rudp,
+             protobuf::Message &message,
+             RequestPublicKeyFunctor node_validation_functor);
 void FindNode(RoutingTable &routing_table,
               rudp::ManagedConnections &rudp,
-              const protobuf::Message &message);
+              const protobuf::Message &message,
+              const Endpoint &bootstrap_endpoint);
 void ProxyConnect(protobuf::Message& message);
 
 }  // namespace response

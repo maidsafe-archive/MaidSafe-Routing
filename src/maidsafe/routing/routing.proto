@@ -38,20 +38,21 @@ message Bootstrap {
 
 
 message Message {
-  required bytes source_id = 1; // in response this is name of data
-  required bytes destination_id = 2;
+  optional bytes source_id = 1; // in response this is name of data
+  optional bytes destination_id = 2;
   optional bytes last_id = 3;
-  required bytes data = 4; // serialised protobuf - possibly encrypted
-  optional bytes signature = 5;
-  required int32 direct = 6;
-  required int32 replication = 7;
-  required sint32 type = 8; // type of data - used in signal to upper layers with (type, data)
-  required bool routing_failure = 9;
-  required int32 id = 10;
-  required bool client_node = 11;
-  optional Endpoint relay = 12;
-  optional bool ClosestToMe = 13;
-  optional bool CloseToMe = 14;
+  optional bytes relay_id = 4;
+  required bytes data = 5; // serialised protobuf - possibly encrypted
+  optional bytes signature = 6;
+  required int32 direct = 7;
+  optional int32 replication = 8;
+  required sint32 type = 9; // type of data - used in signal to upper layers 
+  optional bool cacheable = 10;
+  optional int32 id = 11;
+  optional bool client_node = 12;
+  optional Endpoint relay = 13;
+  optional bool ClosestToMe = 14;
+  optional bool CloseToMe = 15;
 }
 
 message SignedMessage {
@@ -107,7 +108,8 @@ enum ProxyConnectResultType {
 }
 
 message ProxyConnectRequest {
-  required Endpoint endpoint = 1;
+  required Endpoint local_endpoint = 1;
+  required Endpoint external_endpoint = 2;
 }
 
 message ProxyConnectResponse {

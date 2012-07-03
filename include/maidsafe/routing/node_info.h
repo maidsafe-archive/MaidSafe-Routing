@@ -10,39 +10,37 @@
  *  the explicit written permission of the board of directors of maidsafe.net. *
  ******************************************************************************/
 
-#ifndef MAIDSAFE_ROUTING_PARAMETERS_H_
-#define MAIDSAFE_ROUTING_PARAMETERS_H_
+#ifndef MAIDSAFE_ROUTING_NODE_INFO_H_
+#define MAIDSAFE_ROUTING_NODE_INFO_H_
 
-#include "boost/asio.hpp"
-#include "boost/filesystem/path.hpp"
-#include "maidsafe/routing/log.h"
+#include "maidsafe/common/rsa.h"
+#include "boost/asio/ip/udp.hpp"
+
+#include "maidsafe/routing/node_id.h"
 
 namespace maidsafe {
 
 namespace routing {
 
-struct Parameters {
- public:
-  Parameters();
-  ~Parameters();
-  // fully encrypt all data at routing level in both directions
-  static bool encryption_required;
-  // Thread count for use of asio::io_service
-  static uint16_t thread_count;
-  static uint16_t num_chunks_to_cache;
-  static uint16_t timout_in_seconds;
-  static uint16_t closest_nodes_size;
-  static uint16_t max_routing_table_size;
-  static uint16_t max_non_routing_table_size;
-  static uint16_t bucket_target_size;
- private:
-  Parameters(const Parameters&);  // no copy
-  Parameters(const Parameters&&);  // no move
-  Parameters& operator=(const Parameters&);  // no assign
+namespace protobuf { class Contact; }  //  namespace protobuf
+
+typedef boost::asio::ip::udp::endpoint Endpoint;
+
+struct NodeInfo {
+  NodeInfo();
+  NodeId node_id;
+  asymm::PublicKey public_key;
+  int32_t rank;
+  int32_t bucket;
+  Endpoint endpoint;
+  int32_t dimension_1;
+  int32_t dimension_2;
+  int32_t dimension_3;
+  int32_t dimension_4;
 };
 
 }  // namespace routing
 
 }  // namespace maidsafe
 
-#endif  // MAIDSAFE_ROUTING_PARAMETERS_H_
+#endif  // MAIDSAFE_ROUTING_NODE_INFO_H_

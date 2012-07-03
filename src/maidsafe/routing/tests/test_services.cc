@@ -34,7 +34,7 @@ namespace test {
 TEST(Services, BEH_Ping) {
   asymm::Keys keys;
   keys.identity = RandomString(64);
-  RoutingTable RT(keys);
+  RoutingTable RT(keys, nullptr);
   NodeInfo node;
   rudp::ManagedConnections rudp;
   protobuf::PingRequest ping_request;
@@ -50,7 +50,6 @@ TEST(Services, BEH_Ping) {
   EXPECT_TRUE(message.source_id() == keys.identity);
   EXPECT_EQ(message.replication(), 1);
   EXPECT_EQ(message.type(), -1);
-  EXPECT_FALSE(message.routing_failure());
   EXPECT_EQ(message.id(), 0);
   EXPECT_FALSE(message.client_node());
   EXPECT_FALSE(message.has_relay());
@@ -62,17 +61,17 @@ TEST(Services, BEH_Connect) {
   asymm::Keys keys;
   keys.identity = us.node_id.String();
   keys.public_key = us.public_key;
-  RoutingTable RT(keys);
+  RoutingTable RT(keys, nullptr);
   NodeInfo node;
   rudp::ManagedConnections rudp;
   rudp::EndpointPair them_end;
   them_end.local = them.endpoint;
   them_end.external = them.endpoint;
   // they send us an rpc
-  protobuf::Message message = rpcs::Connect(us.node_id, them_end, them.node_id.String());
+  protobuf::Message message = rpcs::Connect(us.node_id, them_end, them.node_id);
   EXPECT_TRUE(message.IsInitialized());
   // we receive it
-  service::Connect(RT, rudp, message);
+  service::Connect(RT, rudp, message, RequestPublicKeyFunctor());
   protobuf::ConnectResponse connect_response;
   EXPECT_TRUE(connect_response.ParseFromString(message.data()));  // us
   EXPECT_TRUE(connect_response.answer());
@@ -85,7 +84,6 @@ TEST(Services, BEH_Connect) {
   EXPECT_FALSE(message.data().empty());
   EXPECT_EQ(message.replication(), 1);
   EXPECT_EQ(message.type(), -2);
-  EXPECT_FALSE(message.routing_failure());
   EXPECT_EQ(message.id(), 0);
   EXPECT_FALSE(message.client_node());
   EXPECT_FALSE(message.has_relay());
@@ -97,8 +95,8 @@ TEST(Services, BEH_FindNodes) {
   asymm::Keys keys;
   keys.identity = us.node_id.String();
   keys.public_key = us.public_key;
-  RoutingTable RT(keys);
-  protobuf::Message message = rpcs::FindNodes(us.node_id, us.endpoint);
+  RoutingTable RT(keys, nullptr);
+  protobuf::Message message = rpcs::FindNodes(us.node_id, us.node_id);
   service::FindNodes(RT, message);
   protobuf::FindNodesResponse find_nodes_respose;
   EXPECT_TRUE(find_nodes_respose.ParseFromString(message.data()));
@@ -112,22 +110,26 @@ TEST(Services, BEH_FindNodes) {
   EXPECT_FALSE(message.data().empty());
   EXPECT_EQ(message.replication(), 1);
   EXPECT_EQ(message.type(), -3);
-  EXPECT_FALSE(message.routing_failure());
   EXPECT_EQ(message.id(), 0);
   EXPECT_FALSE(message.client_node());
   EXPECT_FALSE(message.has_relay());
 }
 
 TEST(Services, BEH_ProxyConnect) {
+  asymm::Keys my_keys;
+  my_keys.identity = RandomString(64);
   asymm::Keys keys;
   keys.identity = RandomString(64);
-  RoutingTable RT(keys);
+  RoutingTable RT(keys, nullptr);
   NodeInfo node;
   rudp::ManagedConnections rudp;
   protobuf::ProxyConnectRequest proxy_connect_request;
   // they send us an proxy connect rpc
-  Endpoint endpoint(boost::asio::ip::address_v4::loopback(), GetRandomPort());
-  protobuf::Message message = rpcs::ProxyConnect(NodeId(keys.identity), "me", endpoint);
+  rudp::EndpointPair endpoint_pair;
+  endpoint_pair.external =  Endpoint(boost::asio::ip::address_v4::loopback(), GetRandomPort());
+  endpoint_pair.local =  Endpoint(boost::asio::ip::address_v4::loopback(), GetRandomPort());
+  protobuf::Message message = rpcs::ProxyConnect(NodeId(keys.identity), NodeId(my_keys.identity),
+                                                 endpoint_pair);
   EXPECT_TRUE(message.destination_id() == keys.identity);
   EXPECT_TRUE(proxy_connect_request.ParseFromString(message.data()));  // us
   EXPECT_TRUE(proxy_connect_request.IsInitialized());
@@ -140,7 +142,6 @@ TEST(Services, BEH_ProxyConnect) {
   EXPECT_TRUE(message.source_id() == keys.identity);
   EXPECT_EQ(1, message.replication());
   EXPECT_EQ(-4, message.type());
-  EXPECT_FALSE(message.routing_failure());
   EXPECT_EQ(0, message.id());
   EXPECT_FALSE(message.client_node());
   EXPECT_FALSE(message.has_relay());

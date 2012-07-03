@@ -32,11 +32,19 @@ namespace maidsafe {
 
 namespace routing {
 
+namespace test {
+
+class FindNode;
+
+}  // namespace test
+
+
 namespace protobuf { class Contact; }  //  namespace protobuf
 
 class RoutingTable {
  public:
-  explicit RoutingTable(const asymm::Keys &keys);
+  explicit RoutingTable(const asymm::Keys &keys,
+                        CloseNodeReplacedFunctor close_node_replaced_functor);
   bool AddNode(NodeInfo &node);
   bool CheckNode(NodeInfo &node);
   bool DropNode(const Endpoint &endpoint);
@@ -44,33 +52,39 @@ class RoutingTable {
   bool IsMyNodeInRange(const NodeId &node_id, const uint16_t range);
   bool AmIClosestNode(const NodeId &node_id);
   bool AmIConnectedToEndpoint(const Endpoint& endpoint);
-  std::vector<NodeId> GetClosestNodes(const NodeId &from, uint16_t number_to_get);
-  NodeInfo GetClosestNode(const NodeId &from, unsigned int node_number);
+  std::vector<NodeId> GetClosestNodes(const NodeId &from, const uint16_t &number_to_get);
+  NodeInfo GetClosestNode(const NodeId &from, const uint16_t &node_number);
   uint16_t Size();
   asymm::Keys kKeys() const;
-  bs2::signal<void(std::string, std::string)> &CloseNodeReplacedOldNewSignal();
+  void set_close_node_replaced_functor(CloseNodeReplacedFunctor close_node_replaced);
+  void set_keys(asymm::Keys keys);
+
+  friend class test::FindNode;
 
  private:
   RoutingTable(const RoutingTable&);
   RoutingTable& operator=(const RoutingTable&);
   bool AddOrCheckNode(NodeInfo &node, const bool &remove);
+  void UpdateGroupChangeAndNotify();
   int16_t BucketIndex(const NodeId &rhs) const;
   bool CheckValidParameters(const NodeInfo &node) const;
   bool CheckParametersAreUnique(const NodeInfo &node) const;
   bool MakeSpaceForNodeToBeAdded(NodeInfo &node, const bool &remove);
   void SortFromThisNode(const NodeId &from);
-  void PartialSortFromThisNode(const NodeId &from, int16_t number_to_sort);
-  void NthElementSortFromThisNode(const NodeId &from, int16_t nth_element_to_sort);
+  void PartialSortFromThisNode(const NodeId &from, const uint16_t &number);
+  void NthElementSortFromThisNode(const NodeId &from, const uint16_t &nth_element);
   bool RemoveClosecontact(const NodeId &node_id);
   bool AddcloseContact(const protobuf::Contact &contact);
   uint16_t RoutingTableSize();
+  std::vector<NodeInfo> GetClosestNodeInfo(const NodeId &from, const uint16_t &number_to_get);
 
   asymm::Keys keys_;
   bool sorted_;
   const NodeId kNodeId_;
+  NodeId furthest_group_node_id_;
   std::vector<NodeInfo> routing_table_nodes_;
   std::mutex mutex_;
-  bs2::signal<void(std::string, std::string)> close_node_from_to_signal_;
+  CloseNodeReplacedFunctor close_node_replaced_functor_;
 };
 
 }  // namespace routing

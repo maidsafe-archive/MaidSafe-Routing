@@ -33,36 +33,40 @@ namespace maidsafe {
 
 namespace routing {
 
+namespace test {
+
+class FindNode;
+
+}  // namespace test
+
 struct RoutingPrivate {
  public:
   ~RoutingPrivate();
+
+  friend class test::FindNode;
 
  private:
   RoutingPrivate(const RoutingPrivate&);  // no copy
   RoutingPrivate(const RoutingPrivate&&);  // no move
   RoutingPrivate& operator=(const RoutingPrivate&);  // no assign
-  RoutingPrivate(const asymm::Keys &keys,
-                 const boost::filesystem::path &bootstrap_file_path,
-                 Functors functors,
-                 bool client_mode);
+  RoutingPrivate(const asymm::Keys &keys, bool client_mode);
   friend class Routing;
-  AsioService asio_service_;
+  std::shared_ptr<AsioService> asio_service_;
   std::vector<Endpoint> bootstrap_nodes_;
-  const asymm::Keys keys_;
+  asymm::Keys keys_;  // FIXME
+  Functors functors_;
   rudp::ManagedConnections rudp_;
   RoutingTable routing_table_;
   Timer timer_;
-  Functors functors_;
-//  bs2::signal<void(const std::string&, const Endpoint&, const bool, const Endpoint&,
-//                   NodeValidatedFunctor &)> node_validation_signal_;
   std::map<uint32_t, std::pair<std::unique_ptr<boost::asio::deadline_timer>,
-                              MessageReceivedFunctor> > waiting_for_response_;
+                               MessageReceivedFunctor> > waiting_for_response_;
   std::vector<NodeInfo> direct_non_routing_table_connections_;
   // closest nodes to the client.
   MessageHandler message_handler_;
   bool joined_;
-  const fs::path bootstrap_file_path_;
+  fs::path bootstrap_file_path_;
   bool client_mode_;
+  bool anonymous_node_;
 };
 
 }  // namespace routing

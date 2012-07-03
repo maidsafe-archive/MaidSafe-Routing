@@ -27,43 +27,67 @@ namespace routing {
 maidsafe::routing::Timer::Timer(AsioService &io_service)
     : io_service_(io_service),
       task_id_(RandomUint32()),
+      mutex_(),
       queue_() {}
 // below comment would require an overload or default here to
 // put in another task with the same task_id
-TaskId Timer::AddTask(uint32_t timeout,
-                        const TaskResponseFunctor &response_functor) {
+TaskId Timer::AddTask(const boost::posix_time::time_duration &timeout,
+                      const TaskResponseFunctor &response_functor) {
+  TimerPointer timer(new asio::deadline_timer(io_service_.service(), timeout));
+  std::lock_guard<std::mutex> lock(mutex_);
   ++task_id_;
-  TimerPointer timer(new asio::deadline_timer(io_service_.service(),
-                                      boost::posix_time::seconds(timeout)));
+  LOG(kVerbose) << "AddTask added a task, with id" << task_id_;
+  queue_.insert(std::make_pair(task_id_, std::make_pair(timer, response_functor)));
   timer->async_wait(std::bind(&Timer::KillTask, this, task_id_));
-  queue_.insert(std::make_pair(task_id_, std::make_pair(timer,
-                                                        response_functor)));
   return task_id_;
 }
 // TODO(dirvine)
 // we could change the find to iterate entire map if we want to be able to send
 // multiple requests and accept the first one back, dropping the rest.
 void Timer::KillTask(TaskId task_id) {
-  const auto it = queue_.find(task_id);
-  if (it != queue_.end()) {
-    // message timed out or task killed
-    (*it).second.second(ReturnCode::kTimedOut, "");
-    queue_.erase(it);
-  } else {
-    LOG(kError) << "Attempt to kill an expired or non existent task";
+  TaskResponseFunctor task_response_functor(nullptr);
+  {
+    std::lock_guard<std::mutex> lock(mutex_);
+    const auto it = queue_.find(task_id);
+    if (it != queue_.end()) {
+      // message timed out or task killed
+      LOG(kVerbose) << "KillTask killed a task, with id" << task_id_;
+      task_response_functor = (*it).second.second;
+      queue_.erase(it);
+    }
   }
+  if (task_response_functor)
+    io_service_.service().dispatch([=] {
+        task_response_functor(kResponseTimeout, "");
+      }
+    );
 }
 
 void Timer::ExecuteTaskNow(protobuf::Message &message) {
-  const auto it = queue_.find(message.id());
-  if (it != queue_.end()) {
-    // message all OK in routing
-    (*it).second.second(ReturnCode::kSuccess, message.data());
-    queue_.erase(it);
-  } else {
-    (*it).second.second(ReturnCode::kGeneralError, message.data());
-    LOG(kError) << "Attempt to run an expired or non existent task";
+  if (!message.has_id()) {
+    LOG(kError) << "recieved response with no ID ABORT message";
+    return;
   }
+  TaskResponseFunctor task_response_functor(nullptr);
+  {
+    std::lock_guard<std::mutex> lock(mutex_);
+    const auto it = queue_.find(message.id());
+    if (it != queue_.end()) {
+      // message all OK in routing
+      task_response_functor = (*it).second.second;
+      queue_.erase(it);
+      LOG(kVerbose) << "ExecuteTaskNow will execute a task, with id" << task_id_;
+    } else {
+      LOG(kError) << "Attempt to run an expired or non existent task";
+    }
+  }
+
+  //posting messages
+  if (task_response_functor)
+    io_service_.service().dispatch([=] {
+        task_response_functor(kSuccess, message.data());
+      }
+    );
 }
 
 }  // namespace maidsafe

@@ -28,6 +28,7 @@
 #include "maidsafe/routing/return_codes.h"
 #include "maidsafe/routing/routing_api.h"
 #include "maidsafe/routing/routing_table.h"
+#include "maidsafe/routing/tests/test_utils.h"
 
 namespace maidsafe {
 namespace routing {
@@ -41,8 +42,8 @@ NodeInfo MakeNodeInfo() {
   asymm::Keys keys;
   asymm::GenerateKeyPair(&keys);
   node.public_key = keys.public_key;
-  node.endpoint.address(boost::asio::ip::address::from_string("192.168.1.1"));
-  node.endpoint.port(++test_routing_api_node_port);
+  node.endpoint.address(GetLocalIp());
+  node.endpoint.port(GetRandomPort());
   return node;
 }
 
@@ -54,119 +55,207 @@ asymm::Keys MakeKeys() {
   return keys;
 }
 
-TEST(APITest, BEH_BadConfigFile) {
-  // See bootstrap file tests for further interrogation of these files
-  asymm::Keys keys(MakeKeys());
-  boost::filesystem::path bad_file("/bad file/ not found/ I hope/");
-  boost::filesystem::path good_file
-              (fs::unique_path(fs::temp_directory_path() / "test"));
-  Functors functors;
-  EXPECT_THROW({Routing RtAPI(keys, bad_file, functors, false);},
-              boost::filesystem::filesystem_error)  << "should not accept invalid files";
-  EXPECT_NO_THROW({
-    Routing RtAPI(keys, good_file, functors, false);
-  });
-  EXPECT_TRUE(WriteFile(good_file, "not a vector of endpoints"));
-  EXPECT_NO_THROW({
-    Routing RtAPI(keys, good_file, functors, false);
-  }) << "cannot handle corrupt files";
-  EXPECT_TRUE(boost::filesystem::remove(good_file));
+asymm::Keys GetKeys(const NodeInfo &node_info) {
+  asymm::Keys keys;
+  keys.identity = node_info.node_id.String();
+  keys.public_key = node_info.public_key;
+  return keys;
 }
+
+//TEST(APITest, BEH_BadConfigFile) {
+//  // See bootstrap file tests for further interrogation of these files
+//  asymm::Keys keys(MakeKeys());
+//  boost::filesystem::path bad_file("/bad file/ not found/ I hope/");
+//  boost::filesystem::path good_file
+//              (fs::unique_path(fs::temp_directory_path() / "test"));
+//  Functors functors;
+//  EXPECT_THROW({Routing RtAPI(keys, bad_file, functors, false);},
+//              boost::filesystem::filesystem_error)  << "should not accept invalid files";
+//  EXPECT_NO_THROW({
+//    Routing RtAPI(keys, good_file, functors, false);
+//  });
+//  EXPECT_TRUE(WriteFile(good_file, "not a vector of endpoints"));
+//  EXPECT_NO_THROW({
+//    Routing RtAPI(keys, good_file, functors, false);
+//  }) << "cannot handle corrupt files";
+//  EXPECT_TRUE(boost::filesystem::remove(good_file));
+//}
 
 TEST(APITest, BEH_API_StandAloneNodeNotConnected) {
   asymm::Keys keys(MakeKeys());
-  boost::filesystem::path good_file(fs::unique_path(fs::temp_directory_path() / "test"));
+//  boost::filesystem::path good_file(fs::unique_path(fs::temp_directory_path() / "test"));
   Functors functors;
   EXPECT_NO_THROW({
-    Routing RtAPI(keys, good_file, functors, false);
+    Routing RtAPI(keys, false);
   });
-  Routing RAPI(keys, good_file, functors, false);
+  Routing RAPI(keys, false);
   Endpoint empty_endpoint;
   EXPECT_EQ(RAPI.GetStatus(), kNotJoined);
-  EXPECT_TRUE(boost::filesystem::remove(good_file));
+//  EXPECT_TRUE(boost::filesystem::remove(good_file));
 }
 
 TEST(APITest, BEH_API_ManualBootstrap) {
   asymm::Keys keys1(MakeKeys());
   asymm::Keys keys2(MakeKeys());
-  boost::filesystem::path node1_config(fs::unique_path(fs::temp_directory_path() / "test1"));
-  boost::filesystem::path node2_config(fs::unique_path(fs::temp_directory_path() / "test2"));
   Functors functors;
   EXPECT_NO_THROW({
-    Routing RtAPI(keys1, node1_config, functors, false);
+    Routing RtAPI(keys1, false);
   });
   EXPECT_NO_THROW({
-    Routing RtAPI(keys2, node2_config, functors, false);
+    Routing RtAPI(keys2, false);
   });
-  Routing R1(keys1, node1_config, functors, false);
-  Routing R2(keys2, node2_config, functors, false);
+  Routing R1(keys1, false);
+  Routing R2(keys2, false);
   boost::asio::ip::udp::endpoint empty_endpoint;
-  EXPECT_EQ(R1.GetStatus(), kNotJoined);
-  EXPECT_EQ(R2.GetStatus(), kNotJoined);
-  Endpoint endpoint1g(boost::asio::ip::address_v4::loopback(), 5000);
-  Endpoint endpoint2g(boost::asio::ip::address_v4::loopback(), 5001);
-  R1.BootStrapFromThisEndpoint(endpoint2g);
-  R2.BootStrapFromThisEndpoint(endpoint1g);
-  EXPECT_EQ(R1.GetStatus(), kSuccess);
-  EXPECT_EQ(R2.GetStatus(), kSuccess);
-  EXPECT_TRUE(boost::filesystem::remove(node1_config));
-  EXPECT_TRUE(boost::filesystem::remove(node2_config));
+  EXPECT_EQ(kNotJoined, R1.GetStatus());
+  EXPECT_EQ(kNotJoined, R2.GetStatus());
+  Endpoint endpoint1g(GetLocalIp(), 5000);
+  Endpoint endpoint2g(GetLocalIp(), 5001);
+  R1.Join(functors, endpoint2g);
+  R2.Join(functors, endpoint1g);
+  EXPECT_EQ(kSuccess, R1.GetStatus());
+  EXPECT_EQ(kSuccess, R2.GetStatus());
 }
 
 TEST(APITest, BEH_API_ZeroState) {
-  asymm::Keys keys1(MakeKeys());
-  asymm::Keys keys2(MakeKeys());
-  asymm::Keys keys3(MakeKeys());
-  boost::filesystem::path node1_config
-                       (fs::unique_path(fs::temp_directory_path() / "test1"));
-  boost::filesystem::path node2_config
-                       (fs::unique_path(fs::temp_directory_path() / "test2"));
-  boost::filesystem::path node3_config
-                       (fs::unique_path(fs::temp_directory_path() / "test3"));
-  Functors functors;
-  Routing R1(keys1, node1_config, functors, false);
-  Routing R2(keys2, node2_config, functors, false);
-  Routing R3(keys3, node3_config, functors, false);
-  Endpoint endpoint1(boost::asio::ip::address_v4::loopback(), 5000);
-  Endpoint endpoint2(boost::asio::ip::address_v4::loopback(), 5001);
-  Endpoint endpoint3(boost::asio::ip::address_v4::loopback(), 5002);
+  NodeInfo node1(MakeNodeInfo());
+  NodeInfo node2(MakeNodeInfo());
+  NodeInfo node3(MakeNodeInfo());
+//  asymm::Keys keys3(MakeKeys());
+  std::map<NodeId, asymm::Keys> key_map;
+  key_map.insert(std::make_pair(NodeId(node1.node_id), GetKeys(node1)));
+  key_map.insert(std::make_pair(NodeId(node2.node_id), GetKeys(node2)));
+  key_map.insert(std::make_pair(NodeId(node3.node_id), GetKeys(node3)));
+  node1.endpoint.port(5000);
+  node2.endpoint.port(5001);
+
+  Routing R1(GetKeys(node1), false);
+  Routing R2(GetKeys(node2), false);
+  Routing R3(GetKeys(node3), false);
+  Functors functors1, functors2, functors3;
+
+  functors1.request_public_key = [&](const NodeId& node_id, GivePublicKeyFunctor give_key )
+  {
+      LOG(kWarning) << "node_validation called for " << HexSubstr(node_id.String());
+      auto itr(key_map.find(NodeId(node_id)));
+      if (key_map.end() != itr)
+        give_key((*itr).second.public_key);
+  };
+
+  functors2.request_public_key = functors3.request_public_key = functors1.request_public_key;
 
   auto a1 = std::async(std::launch::async,
-                       [&]{return R1.BootStrapFromThisEndpoint(endpoint2, endpoint1);});  // NOLINT (Prakash)
+      [&]{return R1.ZeroStateJoin(functors1, node1.endpoint, node2);});  // NOLINT (Prakash)
   auto a2 = std::async(std::launch::async,
-                       [&]{return R2.BootStrapFromThisEndpoint(endpoint1, endpoint2);});  // NOLINT (Prakash)
+      [&]{return R2.ZeroStateJoin(functors2, node2.endpoint, node1);});  // NOLINT (Prakash)
 
-  // std::this_thread::sleep_for(std::chrono::milliseconds(3000));
-  Sleep(boost::posix_time::milliseconds(3000));
-  EXPECT_TRUE(a2.get());  // wait for promise !
-  EXPECT_TRUE(a1.get());  // wait for promise !
+  EXPECT_EQ(kSuccess, a2.get());  // wait for promise !
+  EXPECT_EQ(kSuccess, a1.get());  // wait for promise !
 
   auto a3 = std::async(std::launch::async,
-                       [&]{return R3.BootStrapFromThisEndpoint(endpoint1);});
-  // std::this_thread::sleep_for(std::chrono::milliseconds(3000));
-  Sleep(boost::posix_time::milliseconds(3000));
-  EXPECT_TRUE(a3.get());  // wait for future !
-
+                       [&]{return R3.Join(functors3, node2.endpoint);});  // NOLINT (Prakash)
+  EXPECT_EQ(kSuccess, a3.get());  // wait for promise !
   EXPECT_GT(R3.GetStatus(), 0);
+}
 
-  try {
-    EXPECT_TRUE(boost::filesystem::remove(node1_config));
-    EXPECT_TRUE(boost::filesystem::remove(node2_config));
-    EXPECT_TRUE(boost::filesystem::remove(node3_config));
-  } catch(const std::exception &e) {
-    LOG(kError) << e.what();
-  }
+TEST(APITest, BEH_API_AnonymousNode) {
+  NodeInfo node1(MakeNodeInfo());
+  NodeInfo node2(MakeNodeInfo());
+  std::map<NodeId, asymm::Keys> key_map;
+  key_map.insert(std::make_pair(NodeId(node1.node_id), GetKeys(node1)));
+  key_map.insert(std::make_pair(NodeId(node2.node_id), GetKeys(node2)));
+  node1.endpoint.port(5000);
+  node2.endpoint.port(5001);
+
+  Routing R1(GetKeys(node1), false);
+  Routing R2(GetKeys(node2), false);
+  Routing R3(asymm::Keys(), false);  // Anonymous node
+  Functors functors1, functors2, functors3;
+
+  functors1.request_public_key = [&](const NodeId& node_id, GivePublicKeyFunctor give_key )
+  {
+      LOG(kWarning) << "node_validation called for " << HexSubstr(node_id.String());
+      auto itr(key_map.find(NodeId(node_id)));
+      if (key_map.end() != itr)
+        give_key((*itr).second.public_key);
+  };
+
+  functors1.message_received = [&] (const int32_t&, const std::string &message, const NodeId &,
+    ReplyFunctor reply_functor) {
+    reply_functor("response to " + message);
+    LOG(kVerbose) << "Message received and replied to message !!";
+  };
+
+  functors2.request_public_key = functors1.request_public_key;
+
+  auto a1 = std::async(std::launch::async,
+      [&]{return R1.ZeroStateJoin(functors1, node1.endpoint, node2);});  // NOLINT (Prakash)
+  auto a2 = std::async(std::launch::async,
+      [&]{return R2.ZeroStateJoin(functors2, node2.endpoint, node1);});  // NOLINT (Prakash)
+
+  EXPECT_EQ(kSuccess, a2.get());  // wait for promise !
+  EXPECT_EQ(kSuccess, a1.get());  // wait for promise !
+
+  EXPECT_EQ(kSuccess, R3.Join(functors3, node2.endpoint));  // NOLINT (Prakash)
+
+  ResponseFunctor response_functor = [=](const int& return_code, const std::string &message) {
+      ASSERT_EQ(kSuccess, return_code);
+      ASSERT_EQ("response to message_from_anonymous node", message);
+      LOG(kVerbose) << "Got response !!";
+    };
+  //  Testing Send
+  R3.Send(NodeId(node1.node_id), NodeId(), "message_from_anonymous node", 101, response_functor,
+          boost::posix_time::seconds(10), ConnectType::kSingle);
+
+  Sleep(boost::posix_time::seconds(61));  // to allow disconnection
+  ResponseFunctor failed_response = [=](const int& return_code, const std::string &message) {
+      EXPECT_EQ(kResponseTimeout, return_code);
+      ASSERT_EQ("", message);
+    };
+  R3.Send(NodeId(node1.node_id), NodeId(), "message_2_from_anonymous node", 101, failed_response,
+          boost::posix_time::seconds(60), ConnectType::kSingle);
+  Sleep(boost::posix_time::seconds(1));
 }
 
 TEST(APITest, BEH_API_NodeNetwork) {
-  const uint16_t network_size(30);
-  std::vector<asymm::Keys> network(network_size, MakeKeys());
-//  int count(0);
-//  for (auto &i : network) {
-//    Routing AnodeToBEFixed (i, fs::unique_path(fs::temp_directory_path() / i.identity), nullptr, false);
-//  }
-  // TODO(dirvine) do this properly !!!
+  int32_t kNetworkSize(6);
+  std::vector<NodeInfo> node_infos;
+  std::vector<std::shared_ptr<Routing>> routing_node;
+  std::map<NodeId, asymm::Keys> key_map;
+  for (auto i(0); i != kNetworkSize; ++i) {
+    NodeInfo node(MakeNodeInfo());
+    node_infos.push_back(node);
+    key_map.insert(std::make_pair(NodeId(node.node_id), GetKeys(node)));
+    routing_node.push_back(std::make_shared<Routing>(GetKeys(node), false));
+  }
+  Functors functors;
 
+  functors.request_public_key = [=](const NodeId& node_id, GivePublicKeyFunctor give_key ) {
+      LOG(kInfo) << "node_validation called for " << HexSubstr(node_id.String());
+      auto itr(key_map.find(NodeId(node_id)));
+      if (key_map.end() != itr)
+        give_key((*itr).second.public_key);
+  };
+
+  auto a1 = std::async(std::launch::async, [&]{
+    return routing_node[0]->ZeroStateJoin(functors, node_infos[0].endpoint,
+                                          node_infos[1]);});  // NOLINT (Prakash)
+  auto a2 = std::async(std::launch::async, [&]{
+    return routing_node[1]->ZeroStateJoin(functors, node_infos[1].endpoint,
+                                          node_infos[0]);});  // NOLINT (Prakash)
+
+  EXPECT_EQ(kSuccess, a2.get());  // wait for promise !
+  EXPECT_EQ(kSuccess, a1.get());  // wait for promise !
+
+  for (auto i(2); i != kNetworkSize; ++i) {
+//    std::async(std::launch::async, [&] {
+    ASSERT_EQ(kSuccess, routing_node[i]->Join(functors, node_infos[i%2].endpoint));
+    LOG(kVerbose) << "Joined !!!!!!!!!!!!!!!!! " << i + 1 << " nodes";
+//  });
+}
+  for (auto i(0); i != kNetworkSize; ++i) {
+    EXPECT_GT(routing_node[i]->GetStatus(), 0);
+  }
 }
 
 }  // namespace test
