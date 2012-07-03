@@ -295,8 +295,11 @@ int16_t RoutingTable::BucketIndex(const NodeId &rhs) const {
 
 NodeInfo RoutingTable::GetClosestNode(const NodeId &from, const uint16_t &node_number) {
   std::lock_guard<std::mutex> lock(mutex_);
-  if (RoutingTableSize() < node_number)  // TODO(Prakash) Review!!! return max id or zero id?
-    return NodeInfo();
+  if (RoutingTableSize() < node_number) {
+    NodeInfo node_info;
+    node_info.node_id = NodeId(NodeId::kMaxId);
+    return node_info;
+  }
   NthElementSortFromThisNode(from, node_number + 1);
   return routing_table_nodes_[node_number];
 }

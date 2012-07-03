@@ -41,6 +41,7 @@ void Connect(RoutingTable &routing_table,
              protobuf::Message &message,
              RequestPublicKeyFunctor node_validation_functor);
 void FindNode(RoutingTable &routing_table,
+              NonRoutingTable &non_routing_table,
               rudp::ManagedConnections &rudp,
               const protobuf::Message &message,
               const Endpoint &bootstrap_endpoint);

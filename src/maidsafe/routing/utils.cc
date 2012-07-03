@@ -61,18 +61,16 @@ void ValidateThisNode(rudp::ManagedConnections &rudp,
     NodeId furthest_close_node_id =
         routing_table.GetClosestNode(NodeId(routing_table.kKeys().identity),
                                      Parameters::closest_nodes_size).node_id;
-    if (furthest_close_node_id == NodeId())
-      furthest_close_node_id = NodeId(NodeId::kMaxId);
 
     if (non_routing_table.AddNode(node_info, furthest_close_node_id)) {
       routing_accepted_node = true;
-      LOG(kVerbose) << "Added client node to non routing table. node id "
+      LOG(kVerbose) << "Added client node to non routing table. node id : "
                     << HexSubstr(node_id.String());
     }
   } else {
     if(routing_table.AddNode(node_info)) {
       routing_accepted_node = true;
-      LOG(kVerbose) << "Added node to routing table. node id " << HexSubstr(node_id.String());
+      LOG(kVerbose) << "Added node to routing table. node id : " << HexSubstr(node_id.String());
 
       //ProcessSend(rpcs::ProxyConnect(node_id, NodeId(routing_table.kKeys().identity),
       //                               their_endpoint),

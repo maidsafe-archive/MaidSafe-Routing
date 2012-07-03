@@ -234,7 +234,8 @@ int Routing::DoFindNode() {
     Sleep(boost::posix_time::milliseconds(1000));
   } while ((impl_->routing_table_.Size() == 0) && (++poll_count < 10));
   if (impl_->routing_table_.Size() != 0) {
-    LOG(kInfo) << "Successfully joined network, bootstrap node - "
+    LOG(kInfo) << "Node with id : " << HexSubstr(impl_->keys_.identity)
+               << " successfully joined network, bootstrap node - "
                << impl_->message_handler_.bootstrap_endpoint()
                << "Routing table size - " << impl_->routing_table_.Size();
     return kSuccess;
@@ -347,7 +348,7 @@ void Routing::Send(const NodeId &destination_id,
 
   // Non Anonymous, normal node
   proto_message.set_source_id(impl_->routing_table_.kKeys().identity);
-  ProcessSend(proto_message, impl_->rudp_, impl_->routing_table_);
+  ProcessSend(proto_message, impl_->rudp_, impl_->routing_table_, impl_->non_routing_table_);
   return;
 }
 
@@ -376,7 +377,9 @@ void Routing::ConnectionLost(const Endpoint &lost_endpoint) {
     // close node, get more
     ProcessSend(rpcs::FindNodes(NodeId(impl_->keys_.identity),
                                 NodeId(impl_->keys_.identity)),
-                                impl_->rudp_, impl_->routing_table_);
+                                impl_->rudp_,
+                                impl_->routing_table_,
+                                impl_->non_routing_table_);
   }
   if (!impl_->routing_table_.DropNode(lost_endpoint))
     return;
@@ -394,7 +397,9 @@ void Routing::ConnectionLost(const Endpoint &lost_endpoint) {
       // close node, get more
       ProcessSend(rpcs::FindNodes(NodeId(impl_->keys_.identity),
                                   NodeId(impl_->keys_.identity)),
-                                  impl_->rudp_, impl_->routing_table_);
+                                  impl_->rudp_,
+                                  impl_->routing_table_,
+                                  impl_->non_routing_table_);
       return;
     }
   }

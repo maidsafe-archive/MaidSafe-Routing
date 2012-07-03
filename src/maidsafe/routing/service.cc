@@ -100,8 +100,6 @@ void Connect(RoutingTable &routing_table,
     NodeId furthest_close_node_id =
         routing_table.GetClosestNode(NodeId(routing_table.kKeys().identity),
                                      Parameters::closest_nodes_size).node_id;
-    if (furthest_close_node_id == NodeId())
-      furthest_close_node_id = NodeId(NodeId::kMaxId);
     check_node_succeeded = non_routing_table.CheckNode(node, furthest_close_node_id);
   } else {
     LOG(kVerbose) << " server connect request - will check RT";

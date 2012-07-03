@@ -19,6 +19,7 @@
 
 #include "boost/asio.hpp"
 #include "boost/filesystem/exception.hpp"
+#include "boost/thread/future.hpp"
 
 #include "maidsafe/common/test.h"
 #include "maidsafe/common/utils.h"
@@ -234,13 +235,18 @@ TEST(APITest, BEH_API_ClientNode) {
   Routing R3(GetKeys(node3), true);  // client mode
   Functors functors1, functors2, functors3;
 
-  functors1.request_public_key = [&](const NodeId& node_id, GivePublicKeyFunctor give_key )
-  {
+  functors1.request_public_key = [&](const NodeId& node_id, GivePublicKeyFunctor give_key ) {
       LOG(kWarning) << "node_validation called for " << HexSubstr(node_id.String());
       auto itr(key_map.find(NodeId(node_id)));
       if (key_map.end() != itr)
         give_key((*itr).second.public_key);
-  };
+    };
+
+  functors1.message_received = [&] (const int32_t&, const std::string &message, const NodeId &,
+    ReplyFunctor reply_functor) {
+      reply_functor("response to " + message);
+      LOG(kVerbose) << "Message received and replied to message !!";
+    };
 
   functors2.request_public_key = functors3.request_public_key = functors1.request_public_key;
 
@@ -255,6 +261,20 @@ TEST(APITest, BEH_API_ClientNode) {
   auto a3 = std::async(std::launch::async,
                        [&]{return R3.Join(functors3, node2.endpoint);});  // NOLINT (Prakash)
   EXPECT_EQ(kSuccess, a3.get());  // wait for promise !
+
+  //  Testing Send
+  boost::promise<bool> response_promise;
+  auto response_future = response_promise.get_future();
+  ResponseFunctor response_functor = [&](const int& return_code, const std::string &message) {
+      ASSERT_EQ(kSuccess, return_code);
+      ASSERT_EQ("response to message from client node", message);
+      LOG(kVerbose) << "Got response !!";
+      response_promise.set_value(true);
+    };
+  R3.Send(NodeId(node1.node_id), NodeId(), "message from client node", 101, response_functor,
+          boost::posix_time::seconds(10), ConnectType::kSingle);
+
+  EXPECT_TRUE(response_future.timed_wait(boost::posix_time::seconds(10)));
 }
 
 TEST(APITest, BEH_API_NodeNetwork) {

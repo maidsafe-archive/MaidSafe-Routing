@@ -63,6 +63,7 @@ class MessageHandler {
   void CloseNodesMessage(protobuf::Message &message);
   void ProcessRelayRequest(protobuf::Message &message);
   bool RelayDirectMessageIfNeeded(protobuf::Message &message);
+  void ClientMessage(protobuf::Message &message);
   void GroupMessage(protobuf::Message &message);
   std::shared_ptr<AsioService> asio_service_;
   RoutingTable &routing_table_;

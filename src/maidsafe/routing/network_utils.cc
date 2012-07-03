@@ -15,6 +15,7 @@
 #include "maidsafe/rudp/managed_connections.h"
 #include "maidsafe/rudp/return_codes.h"
 
+#include "maidsafe/routing/non_routing_table.h"
 #include "maidsafe/routing/parameters.h"
 #include "maidsafe/routing/routing_pb.h"
 #include "maidsafe/routing/routing_table.h"
@@ -33,6 +34,7 @@ void SendOn(protobuf::Message message,
             RoutingTable &routing_table,
             const Endpoint &endpoint,
             const bool &recursive_retry) {
+  Endpoint direct_endpoint = endpoint;
   std::string serialised_message(message.SerializeAsString());
   rudp::MessageSentFunctor message_sent_functor;
   if (!recursive_retry) {  //  send only once to direct endpoint
@@ -41,22 +43,23 @@ void SendOn(protobuf::Message message,
                     LOG(kError) << "could not send to a direct node";
     };
   } else {
-      message_sent_functor = [=, &rudp, &routing_table](bool message_sent) {
+      message_sent_functor = [=, &rudp, &routing_table, &direct_endpoint](bool message_sent) {
       if (!message_sent) {
-         LOG(kInfo) << " Send retry !! ";
-         Endpoint endpoint = routing_table.GetClosestNode(NodeId(message.destination_id()),
-                                                  1).endpoint;
-          rudp.Send(endpoint, serialised_message, message_sent_functor);
+         LOG(kInfo) << " Failed to send to : " << direct_endpoint << " will retry now.";
+         direct_endpoint =
+             routing_table.GetClosestNode(NodeId(message.destination_id()), 1).endpoint;
+          rudp.Send(direct_endpoint, serialised_message, message_sent_functor);
       } else {
-        LOG(kInfo) << " Send succeeded ";
+        LOG(kInfo) << " Send succeeded to endpoint " << direct_endpoint
+                   << ". I am " << HexSubstr(routing_table.kKeys().identity);
       }
     };
   }
-  LOG(kVerbose) << " >>>>>>>>>>>>>>> rudp send message to " << endpoint << " <<<<<<<<<<<<<<<<<<<<";
+  LOG(kVerbose) << " >>>>>>>>> rudp send message to " << direct_endpoint << " <<<<<<<<<<<<<<<<<<<<";
   LOG(kVerbose) << " Sent Message , id " << message.id()
                 << ", Relay id " << HexSubstr(message.relay_id())
                 << ", Has relay ip " << message.has_relay();
-  rudp.Send(endpoint, serialised_message, message_sent_functor);
+  rudp.Send(direct_endpoint, serialised_message, message_sent_functor);
 }
 
 }  // anonymous namespace
@@ -65,6 +68,7 @@ void SendOn(protobuf::Message message,
 void ProcessSend(protobuf::Message message,
                  rudp::ManagedConnections &rudp,
                  RoutingTable &routing_table,
+                 NonRoutingTable &non_routing_table,
                  Endpoint endpoint) {
   std::string signature;
   asymm::Sign(message.data(), routing_table.kKeys().private_key, &signature);
@@ -78,10 +82,24 @@ void ProcessSend(protobuf::Message message,
 
   // Normal messages
   if (message.has_destination_id()) {  // message has destination id
-    if (routing_table.Size() > 0) {
-      endpoint = routing_table.GetClosestNode(NodeId(message.destination_id()), 0).endpoint;
+    std::vector<NodeInfo>
+      non_routing_nodes(non_routing_table.GetNodesInfo(NodeId(message.destination_id())));
+    if (!non_routing_nodes.empty()) {  // I have the destination id in my NRT
+      LOG(kInfo) <<"I have destination node in my NRT";
+      for (auto i : non_routing_nodes) {
+        LOG(kVerbose) <<"Sending message to my NRT node with endpoint : " << i.endpoint;
+        SendOn(message, rudp, routing_table, i.endpoint, false);
+      }
+    } else if (routing_table.Size() > 0) {  //  getting closer nodes from my RT
+      NodeInfo closest_node;
+      closest_node = routing_table.GetClosestNode(NodeId(message.destination_id()), 0);
+      endpoint = closest_node.endpoint;
+      LOG(kInfo) << " Sending message to closest node to destination id : "
+                 << HexSubstr(message.destination_id()) << ", closest node : "
+                 << HexSubstr(closest_node.node_id.String())
+                 << ". I am " << HexSubstr(routing_table.kKeys().identity);
       LOG(kVerbose) << " Endpoint to send for message with destination id : "
-                    << HexSubstr(message.source_id()) << " , endpoint : " << endpoint;
+                    << HexSubstr(message.destination_id()) << " , endpoint : " << endpoint;
       SendOn(message, rudp, routing_table, endpoint, true);
     } else {
       LOG(kError) << " No Endpoint to send to, Aborting Send!"

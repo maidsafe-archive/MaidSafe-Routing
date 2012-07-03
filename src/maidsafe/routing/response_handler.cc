@@ -22,6 +22,7 @@
 #include "maidsafe/routing/log.h"
 #include "maidsafe/routing/network_utils.h"
 #include "maidsafe/routing/node_id.h"
+#include "maidsafe/routing/non_routing_table.h"
 #include "maidsafe/routing/return_codes.h"
 #include "maidsafe/routing/routing_api.h"
 #include "maidsafe/routing/routing_pb.h"
@@ -92,6 +93,7 @@ void Connect(RoutingTable &routing_table,
 }
 
 void FindNode(RoutingTable &routing_table,
+              NonRoutingTable &non_routing_table,
               rudp::ManagedConnections &rudp,
               const protobuf::Message& message,
               const Endpoint &bootstrap_endpoint) {
@@ -144,6 +146,7 @@ void FindNode(RoutingTable &routing_table,
                                 relay_endpoint),
                   rudp,
                   routing_table,
+                  non_routing_table,
                   direct_endpoint);
     }
   }
