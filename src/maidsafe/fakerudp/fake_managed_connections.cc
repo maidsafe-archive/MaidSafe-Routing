@@ -36,7 +36,14 @@ namespace rudp {
 
 typedef boost::asio::ip::udp::endpoint Endpoint;
 
-ManagedConnections::ManagedConnections()  {
+ManagedConnections::ManagedConnections()
+    : asio_service_(0),
+      message_received_functor_(),
+      connection_lost_functor_(),
+      transports_(),
+      connection_map_(),
+      shared_mutex_(),
+      bootstrap_endpoints_() {
   Node node;
   bootstrap_endpoints_.push_back(node.endpoint);
   FakeNetwork::instance().AddEmptyNode(node);
@@ -72,7 +79,8 @@ Endpoint ManagedConnections::Bootstrap(const std::vector<Endpoint> &bootstrap_en
 
   for (auto i : bootstrap_endpoints) {
     for (int j = 0; j < 200; ++j) {
-      std::this_thread::sleep_for(std::chrono::milliseconds(10));
+//      std::this_thread::sleep_for(std::chrono::milliseconds(10));
+      Sleep(boost::posix_time::milliseconds(10));
       if (local_endpoint.address().is_unspecified() && (FakeNetwork::instance().FindNode(i) != FakeNetwork::instance().GetEndIterator())) {
         LOG(kVerbose) << "Found viable bootstrap node.\n";
         if(FakeNetwork::instance().BootStrap(node, i)) {
@@ -93,7 +101,7 @@ int ManagedConnections::GetAvailableEndpoint(const Endpoint& /*peer_endpoint*/,
                                              EndpointPair &this_endpoint_pair) {
   assert((bootstrap_endpoints_.size() != 0) && "I do not know my own endpoint");
   this_endpoint_pair.external = bootstrap_endpoints_[0];
-  this_endpoint_pair.local = bootstrap_endpoints_[0]; 
+  this_endpoint_pair.local = bootstrap_endpoints_[0];
   LOG(kInfo) << " endpoint ip address " << this_endpoint_pair.external.address().to_string() << "\n";
   return kSuccess;
 }
@@ -107,7 +115,7 @@ int ManagedConnections::Add(const Endpoint &this_endpoint,
 
 void ManagedConnections::Send(const Endpoint &peer_endpoint,
                               const std::string &message,
-                              MessageSentFunctor message_sent_functor) const {
+                              MessageSentFunctor message_sent_functor) {
   message_sent_functor(FakeNetwork::instance().SendMessageToNode(peer_endpoint, message));
 }
 

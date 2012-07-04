@@ -58,7 +58,8 @@ std::vector<Node>::iterator FakeNetwork::FindNode(Endpoint endpoint) {
 bool FakeNetwork::BootStrap(Node &node, Endpoint &connect_to_endpoint) {
   std::lock_guard<std::mutex> lock(mutex_);
   for (int i = 0; i < 200; ++i) {
-    std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    Sleep(boost::posix_time::milliseconds(10));
+//    std::this_thread::sleep_for(std::chrono::milliseconds(10));
     auto iter2 = FindNode(connect_to_endpoint);
     if (iter2 != nodes_.end()) {
       iter2->connected_endpoints.push_back(node.endpoint);
