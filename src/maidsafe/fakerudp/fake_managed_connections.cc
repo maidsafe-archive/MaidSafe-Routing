@@ -36,7 +36,14 @@ namespace rudp {
 
 typedef boost::asio::ip::udp::endpoint Endpoint;
 
-ManagedConnections::ManagedConnections()  {
+ManagedConnections::ManagedConnections()
+    : asio_service_(0),
+      message_received_functor_(),
+      connection_lost_functor_(),
+      transports_(),
+      connection_map_(),
+      shared_mutex_(),
+      bootstrap_endpoints_() {
   Node node;
   bootstrap_endpoints_.push_back(node.endpoint);
   FakeNetwork::instance().AddEmptyNode(node);
@@ -107,7 +114,7 @@ int ManagedConnections::Add(const Endpoint &this_endpoint,
 
 void ManagedConnections::Send(const Endpoint &peer_endpoint,
                               const std::string &message,
-                              MessageSentFunctor message_sent_functor) const {
+                              MessageSentFunctor message_sent_functor) {
   message_sent_functor(FakeNetwork::instance().SendMessageToNode(peer_endpoint, message));
 }
 
