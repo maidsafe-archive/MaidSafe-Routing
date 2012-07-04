@@ -210,7 +210,7 @@ void ProxyConnect(RoutingTable &routing_table, rudp::ManagedConnections &/*rudp*
   endpoint_pair.local = GetEndpointFromProtobuf(proxy_connect_request.local_endpoint());
 
   // TODO(Prakash): Also check NRT and if its my bootstrap endpoint.
-  if (routing_table.AmIConnectedToEndpoint(endpoint_pair.external)) {  // If endpoint already in routing table
+  if (routing_table.AmIConnectedToEndpoint(endpoint_pair.external)) {  // If already in RT
     proxy_connect_response.set_result(protobuf::kAlreadyConnected);
   } else {
     bool connect_result(false);

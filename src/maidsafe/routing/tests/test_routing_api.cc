@@ -278,7 +278,7 @@ TEST(APITest, BEH_API_ClientNode) {
 }
 
 TEST(APITest, BEH_API_NodeNetwork) {
-  uint8_t kNetworkSize(6);
+  int32_t kNetworkSize(6);
   std::vector<NodeInfo> node_infos;
   std::vector<std::shared_ptr<Routing>> routing_node;
   std::map<NodeId, asymm::Keys> key_map;
@@ -297,10 +297,10 @@ TEST(APITest, BEH_API_NodeNetwork) {
         give_key((*itr).second.public_key);
   };
 
-  auto a1 = std::async(std::launch::async, [&]{
+  auto a1 = std::async(std::launch::async, [&] {
     return routing_node[0]->ZeroStateJoin(functors, node_infos[0].endpoint,
                                           node_infos[1]);});  // NOLINT (Prakash)
-  auto a2 = std::async(std::launch::async, [&]{
+  auto a2 = std::async(std::launch::async, [&] {
     return routing_node[1]->ZeroStateJoin(functors, node_infos[1].endpoint,
                                           node_infos[0]);});  // NOLINT (Prakash)
 
@@ -312,7 +312,8 @@ TEST(APITest, BEH_API_NodeNetwork) {
     ASSERT_EQ(kSuccess, routing_node[i]->Join(functors, node_infos[i%2].endpoint));
     LOG(kVerbose) << "Joined !!!!!!!!!!!!!!!!! " << i + 1 << " nodes";
 //  });
-}
+  }
+  Sleep(boost::posix_time::seconds(2));
 }
 
 }  // namespace test

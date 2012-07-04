@@ -37,6 +37,7 @@ class GenericNetwork;
 
 class GenericNode {
  public:
+  GenericNode(bool client_mode, const NodeInfo &node_info);
   explicit GenericNode(bool client_mode = false);
   virtual ~GenericNode();
   asymm::Keys GetKeys() const;
@@ -107,6 +108,15 @@ class GenericNetwork : public testing::Test {
       nodes_.push_back(node);
       EXPECT_EQ(kSuccess, node->Join(nodes_[1]->endpoint()));
     }
+  }
+
+  bool AddNode(const bool &client_mode, const NodeId &node_id) {
+    NodeInfo node_info(MakeNode());
+    node_info.node_id = node_id;
+    NodePtr node(new NodeType(client_mode, node_info));
+    SetNodeValidationFunctor(node);
+    nodes_.push_back(node);
+    return (kSuccess == node->Join(nodes_[1]->endpoint()));
   }
 
   virtual void Validate(const NodeId& node_id, GivePublicKeyFunctor give_public_key) {

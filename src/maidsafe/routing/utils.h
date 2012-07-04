@@ -22,8 +22,7 @@ namespace routing {
 namespace protobuf { class Message;}  // namespace protobuf
 
 class Message {
-  Message(protobuf::Message message);
-
+  explicit Message(protobuf::Message message);
 };
 
 class NonRoutingTable;

@@ -230,8 +230,8 @@ void MessageHandler::ProcessMessage(protobuf::Message &message) {
 
   // Relay mode message
   if (message.source_id().empty()) {
-   ProcessRelayRequest(message);
-   return;
+    ProcessRelayRequest(message);
+    return;
   }
 
   // Invalid source id, unknown message

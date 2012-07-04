@@ -103,7 +103,7 @@ TEST(Services, BEH_FindNodes) {
   protobuf::FindNodesResponse find_nodes_respose;
   EXPECT_TRUE(find_nodes_respose.ParseFromString(message.data()));
 //  EXPECT_TRUE(find_nodes_respose.nodes().size() > 0);  // will only have us
- // EXPECT_EQ(find_nodes_respose.nodes().Get(1), us.node_id.String());
+//  EXPECT_EQ(find_nodes_respose.nodes().Get(1), us.node_id.String());
   EXPECT_TRUE(find_nodes_respose.has_timestamp());
   EXPECT_TRUE(find_nodes_respose.timestamp() > static_cast<int32_t>(GetTimeStamp() - 2));
   EXPECT_TRUE(find_nodes_respose.timestamp() < static_cast<int32_t>(GetTimeStamp() + 1));

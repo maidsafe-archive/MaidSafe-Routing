@@ -51,7 +51,7 @@ const protobuf::Message Connect(const NodeId &node_id, const rudp::EndpointPair 
                                 Endpoint local_endpoint) {
   assert(node_id.IsValid() && "Invalid node_id");
   assert(my_node_id.IsValid() && "Invalid my node_id");
- // BOOST_ASSERT_MSG(!our_endpoint.external.address().is_unspecified(), "Unspecified endpoint");
+//  BOOST_ASSERT_MSG(!our_endpoint.external.address().is_unspecified(), "Unspecified endpoint");
 //  BOOST_ASSERT_MSG(!our_endpoint.local.address().is_unspecified(), "Unspecified endpoint");
   protobuf::Message message;
   protobuf::Contact *contact;

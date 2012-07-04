@@ -111,9 +111,9 @@ void SetProtobufEndpoint(const Endpoint& endpoint, protobuf::Endpoint *pbendpoin
 }
 
 Endpoint GetEndpointFromProtobuf(const protobuf::Endpoint &pbendpoint) {
- Endpoint endpoint;
+  Endpoint endpoint;
   endpoint.address(boost::asio::ip::address::from_string(pbendpoint.ip()));
-  endpoint.port(static_cast<unsigned short>(pbendpoint.port()));
+  endpoint.port(static_cast<uint16_t>(pbendpoint.port()));
   return endpoint;
 }
 

@@ -48,12 +48,13 @@ public:
   bool RemoveMyNode(Endpoint endpoint);
   bool SendMessageToNode(Endpoint endpoint, std::string message);
   bool AddConnection(const Endpoint &my_endpoint, const Endpoint &peer_endpoint);
+  bool RemoveConnection(const Endpoint &my_endpoint, const Endpoint &peer_endpoint);
   std::vector<Node>::iterator FindNode(Endpoint endpoint);
   std::vector<Node>::iterator GetEndIterator() { return nodes_.end(); }
   void AddEmptyNode(Node node);
  private:
   std::vector<Node> nodes_;
-  int32_t next_port_;
+  int16_t next_port_;
   boost::asio::ip::address local_ip_;
   std::mutex mutex_;
 };
@@ -63,7 +64,7 @@ struct Node {
   Endpoint endpoint;
   ConnectionLostFunctor connection_lost;
   MessageReceivedFunctor message_received;
-  std::vector<Endpoint> connected_to_endpoints;
+  std::vector<Endpoint> connected_endpoints;
 };
 
 

@@ -38,10 +38,11 @@ uint16_t GetRandomPort() {
   uint16_t port(0);
   uint16_t failed_attempts(0);
   do {
-    assert((1000 >= failed_attempts++) && "Unable to generate unique ports");
     port = (RandomUint32() % 48126) + 1025;
     unique = (already_used_ports.insert(port)).second;
-  } while (!unique);
+  } while (!unique && failed_attempts++ < 1000);
+  if (failed_attempts > 1000)
+    LOG(kError) << "Unable to generate unique ports";
   return port;
 }
 

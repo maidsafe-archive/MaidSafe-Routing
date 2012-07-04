@@ -32,6 +32,7 @@ struct Parameters {
   static uint16_t closest_nodes_size;
   static uint16_t node_group_size;
   static uint16_t max_routing_table_size;
+  static uint16_t max_client_routing_table_size;
   static uint16_t max_non_routing_table_size;
   static uint16_t bucket_target_size;
  private:

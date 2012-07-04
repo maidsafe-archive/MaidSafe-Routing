@@ -37,15 +37,22 @@ file(GLOB PROTO_FILES_ROUTING_DIR "${PROJECT_SOURCE_DIR}/src/maidsafe/routing/*.
 file(GLOB SOURCE_PROTO_FILES_ROUTING_DIR "${PROJECT_SOURCE_DIR}/src/maidsafe/routing/*.pb.cc")
 file(GLOB HEADER_PROTO_FILES_ROUTING_DIR "${PROJECT_SOURCE_DIR}/src/maidsafe/routing/*pb.h")
 file(GLOB API_FILES_ROUTING_DIR "${PROJECT_SOURCE_DIR}/include/maidsafe/routing/*.h")
-set(ALL_FILES_ROUTING_DIR ${SOURCE_FILES_ROUTING_DIR} ${HEADER_FILES_ROUTING_DIR} ${PROTO_FILES_ROUTING_DIR} ${API_FILES_ROUTING_DIR})
-set(STYLE_ROUTING ${ALL_FILES_ROUTING_DIR})
-list(REMOVE_ITEM STYLE_ROUTING ${SOURCE_PROTO_FILES_ROUTING_DIR} ${HEADER_PROTO_FILES_ROUTING_DIR} ${PROTO_FILES_ROUTING_DIR})
-list(REMOVE_ITEM SOURCE_FILES_ROUTING_DIR ${SOURCE_PROTO_FILES_ROUTING_DIR})
-list(REMOVE_ITEM HEADER_FILES_ROUTING_DIR ${HEADER_PROTO_FILES_ROUTING_DIR})
+
 source_group("Routing Source Files" FILES ${SOURCE_FILES_ROUTING_DIR})
 source_group("Routing Header Files" FILES ${HEADER_FILES_ROUTING_DIR})
 source_group("Routing Proto Files" FILES ${PROTO_FILES_ROUTING_DIR} ${SOURCE_PROTO_FILES_ROUTING_DIR} ${HEADER_PROTO_FILES_ROUTING_DIR})
 source_group("Routing API Files" FILES ${API_FILES_ROUTING_DIR})
+
+set(ALL_FILES_ROUTING_DIR
+    ${SOURCE_FILES_ROUTING_DIR}
+	${HEADER_FILES_ROUTING_DIR}
+	${PROTO_FILES_ROUTING_DIR}
+	${API_FILES_ROUTING_DIR})
+
+set(STYLE_ROUTING ${ALL_FILES_ROUTING_DIR})
+list(REMOVE_ITEM STYLE_ROUTING ${SOURCE_PROTO_FILES_ROUTING_DIR} ${HEADER_PROTO_FILES_ROUTING_DIR} ${PROTO_FILES_ROUTING_DIR})
+list(REMOVE_ITEM SOURCE_FILES_ROUTING_DIR ${SOURCE_PROTO_FILES_ROUTING_DIR})
+list(REMOVE_ITEM HEADER_FILES_ROUTING_DIR ${HEADER_PROTO_FILES_ROUTING_DIR})
 
 ####    TESTS    ####
 file(GLOB SOURCE_FILES_ROUTING_TESTS_DIR "${PROJECT_SOURCE_DIR}/src/maidsafe/routing/tests/*.cc")
@@ -53,8 +60,8 @@ file(GLOB HEADER_FILES_ROUTING_TESTS_DIR "${PROJECT_SOURCE_DIR}/src/maidsafe/rou
 
 set(ALL_FILES_ROUTING_TABLE "${PROJECT_SOURCE_DIR}/src/maidsafe/routing/tests/test_routing_table.cc"  "${PROJECT_SOURCE_DIR}/src/maidsafe/routing/tests/test_utils.cc" "${PROJECT_SOURCE_DIR}/src/maidsafe/routing/tests/test_main.cc")
 set(ALL_FILES_ROUTING_TESTS_DIR ${SOURCE_FILES_ROUTING_TESTS_DIR} ${HEADER_FILES_ROUTING_TESTS_DIR})
+set(STYLE_ROUTING ${STYLE_ROUTING} ${ALL_FILES_ROUTING_TESTS_DIR})
 list(REMOVE_ITEM ALL_FILES_ROUTING_TESTS_DIR "${PROJECT_SOURCE_DIR}/src/maidsafe/routing/tests/test_routing_table.cc")
-set(STYLE_ROUTING_TESTS ${ALL_FILES_ROUTING_TESTS_DIR})
 
 source_group("Routing Tests Source Files" FILES ${SOURCE_FILES_ROUTING_TESTS_DIR})
 source_group("Routing Tests Header Files" FILES ${HEADER_FILES_ROUTING_TESTS_DIR})
@@ -93,7 +100,7 @@ ms_disable_warnings(${SOURCE_PROTO_FILES_ROUTING_DIR})
 ###################################################################################################
 # Tests                                                                                           #
 ###################################################################################################
-add_style_test(${STYLE_ROUTING} ${STYLE_ROUTING_TESTS})
+add_style_test(${STYLE_ROUTING})
 add_gtests(TESTrouting)
 add_gtests(TESTroutingtable)
 add_project_experimental()
