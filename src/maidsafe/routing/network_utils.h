@@ -38,7 +38,7 @@ void ProcessSend(protobuf::Message message,
                  rudp::ManagedConnections &rudp,
                  RoutingTable &routing_table,
                  NonRoutingTable &non_routing_table,
-                 Endpoint endpoint = Endpoint());
+                 Endpoint peer_endpoint = Endpoint());
 
 }  // namespace routing
 

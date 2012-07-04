@@ -130,7 +130,8 @@ void FindNode(RoutingTable &routing_table,
         LOG(kWarning) << " Failed to get available endpoint for new connections";
         return;
       }
-      LOG(kVerbose) << " GetAvailableEndpoint for peer - " << direct_endpoint << " my endpoint - " << endpoint.external;
+      LOG(kVerbose) << " GetAvailableEndpoint for peer - " << direct_endpoint
+                    << " my endpoint - " << endpoint.external;
       Endpoint relay_endpoint;
       bool relay_message(false);
       if (routing_table.Size() == 0) { // Not in anyones RT, need a path back through relay ip.
