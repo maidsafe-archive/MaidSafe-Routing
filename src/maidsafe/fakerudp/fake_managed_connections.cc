@@ -79,7 +79,8 @@ Endpoint ManagedConnections::Bootstrap(const std::vector<Endpoint> &bootstrap_en
 
   for (auto i : bootstrap_endpoints) {
     for (int j = 0; j < 200; ++j) {
-      std::this_thread::sleep_for(std::chrono::milliseconds(10));
+//      std::this_thread::sleep_for(std::chrono::milliseconds(10));
+      Sleep(boost::posix_time::milliseconds(10));
       if (local_endpoint.address().is_unspecified() && (FakeNetwork::instance().FindNode(i) != FakeNetwork::instance().GetEndIterator())) {
         LOG(kVerbose) << "Found viable bootstrap node.\n";
         if(FakeNetwork::instance().BootStrap(node, i)) {
@@ -100,7 +101,7 @@ int ManagedConnections::GetAvailableEndpoint(const Endpoint& /*peer_endpoint*/,
                                              EndpointPair &this_endpoint_pair) {
   assert((bootstrap_endpoints_.size() != 0) && "I do not know my own endpoint");
   this_endpoint_pair.external = bootstrap_endpoints_[0];
-  this_endpoint_pair.local = bootstrap_endpoints_[0]; 
+  this_endpoint_pair.local = bootstrap_endpoints_[0];
   LOG(kInfo) << " endpoint ip address " << this_endpoint_pair.external.address().to_string() << "\n";
   return kSuccess;
 }

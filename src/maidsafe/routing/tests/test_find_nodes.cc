@@ -73,7 +73,8 @@ class FindNode : public GenericNode {
     if (iter != routing_->impl_->routing_table_.routing_table_nodes_.end()) {
       routing_->impl_->routing_table_.DropNode(iter->endpoint);
     }
-    std::this_thread::sleep_for(std::chrono::seconds(3));
+    Sleep(boost::posix_time::seconds(3));
+//    std::this_thread::sleep_for(std::chrono::seconds(3));
     iter = std::find_if(routing_->impl_->routing_table_.routing_table_nodes_.begin(),
         routing_->impl_->routing_table_.routing_table_nodes_.end(),
         [&node_id](const NodeInfo &node_info) {
@@ -151,7 +152,8 @@ TYPED_TEST_P(FindNodeNetwork, FUNC_FindNodes) {
   this->nodes_[source]->PrintRoutingTable();
   EXPECT_FALSE(this->nodes_[source]->RoutingTableHasNode(this->nodes_[dest]->Id()));
   EXPECT_TRUE(this->Find(this->nodes_[source], this->nodes_[dest]));
-  std::this_thread::sleep_for(std::chrono::seconds(5));
+  Sleep(boost::posix_time::seconds(5));
+//  std::this_thread::sleep_for(std::chrono::seconds(5));
   LOG(kVerbose) << "after find " << HexSubstr(this->nodes_[dest]->Id().String());
   this->nodes_[source]->PrintRoutingTable();
   EXPECT_TRUE(this->nodes_[source]->RoutingTableHasNode(this->nodes_[dest]->Id()));
