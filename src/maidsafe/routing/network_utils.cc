@@ -62,7 +62,11 @@ void SendOn(protobuf::Message message,
   } else {
     message_sent_functor = [=, &rudp, &routing_table, &peer_endpoint](bool message_sent) {
         if (!message_sent) {
-          NodeInfo new_node = routing_table.GetClosestNode(NodeId(message.destination_id()), 1);
+          NodeInfo new_node = routing_table.GetClosestNode(NodeId(message.destination_id()));
+          if (new_node.node_id == NodeId()) {
+            LOG(kError) << " My RT is empty now. Need to rebootstrap.";
+            return;
+          }
           LOG(kError) << " Failed to send message, type: " << message.type()
                       << " to "
                       << HexSubstr(peer_node_id.String())

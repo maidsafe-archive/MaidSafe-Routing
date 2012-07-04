@@ -304,6 +304,15 @@ NodeInfo RoutingTable::GetClosestNode(const NodeId &from, const uint16_t &node_n
   return routing_table_nodes_[node_number];
 }
 
+NodeInfo RoutingTable::GetClosestNode(const NodeId &from) {
+  std::lock_guard<std::mutex> lock(mutex_);
+  if (RoutingTableSize() == 0) {
+    return NodeInfo();
+  }
+  NthElementSortFromThisNode(from, 1);
+  return routing_table_nodes_[0];
+}
+
 std::vector<NodeId> RoutingTable::GetClosestNodes(const NodeId &from,
                                                   const uint16_t &number_to_get) {
   std::vector<NodeId>close_nodes;
