@@ -85,7 +85,7 @@ void Connect(RoutingTable &routing_table,
   their_endpoint_pair.local = GetEndpointFromProtobuf(connect_request.contact().
                                                         private_endpoint());
   // TODO(dirvine) try both connections
-  if((rudp.GetAvailableEndpoint(their_endpoint_pair.external, our_endpoint_pair)) != 0) {
+  if ((rudp.GetAvailableEndpoint(their_endpoint_pair.external, our_endpoint_pair)) != 0) {
     LOG(kError) << "Unable to get available endpoint to connect to"
                 << their_endpoint_pair.external;
     return;

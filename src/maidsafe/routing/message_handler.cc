@@ -294,7 +294,7 @@ bool MessageHandler::RelayDirectMessageIfNeeded(protobuf::Message &message) {
   }
   //  Only direct responses need to be relayed
   if ((message.destination_id() != message.relay_id()) &&  IsResponse(message)) {
-    message.clear_destination_id(); // to allow network util to identify it as relay message
+    message.clear_destination_id();  // to allow network util to identify it as relay message
     LOG(kVerbose) <<"Relaying response Message to " <<  HexSubstr(message.relay_id());
     ProcessSend(message, rudp_, routing_table_, non_routing_table_);
     return true;

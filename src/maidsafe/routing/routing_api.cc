@@ -139,8 +139,10 @@ void Routing::DisconnectFunctors() {
 // drop existing routing table and restart
 // the endpoint is the endpoint to connect to.
 int Routing::BootStrapFromThisEndpoint(Functors functors, const Endpoint &endpoint) {
-  LOG(kInfo) << " Doing a BootStrapFromThisEndpoint Join.";
-  LOG(kInfo) << " Entered bootstrap endpoint : " << endpoint;
+  LOG(kInfo) << " Doing a BootStrapFromThisEndpoint Join."
+             << " Entered bootstrap endpoint : " << endpoint
+             << ", My Node id : " << HexSubstr(impl_->keys_.identity)
+             << (impl_->client_mode_ ? "Client" : "");
 
   if (impl_->routing_table_.Size() > 0) {
     DisconnectFunctors();  // TODO(Prakash): Do we need this ?
@@ -229,12 +231,17 @@ int Routing::DoFindNode() {
     return false;
   }
   // now poll for routing table size to have at least one node available
+
   uint8_t poll_count(0);
+  // TODO(Prakash) : Need to fix target min RT size.
+  uint8_t target_routing_table_size = 2; //  (impl_->client_mode_? 4 : 2);
   do {
-    Sleep(boost::posix_time::milliseconds(1000));
-  } while ((impl_->routing_table_.Size() == 0) && (++poll_count < 10));
-  if (impl_->routing_table_.Size() != 0) {
-    LOG(kInfo) << "Node with id : " << HexSubstr(impl_->keys_.identity)
+    Sleep(boost::posix_time::milliseconds(100));
+  } while ((impl_->routing_table_.Size() < target_routing_table_size) &&
+           (++poll_count < 100));
+  if (impl_->routing_table_.Size() >= target_routing_table_size) {
+    LOG(kInfo) << (impl_->client_mode_? "Client ": "")
+               << "Node with id : " << HexSubstr(impl_->keys_.identity)
                << " successfully joined network, bootstrap node - "
                << impl_->message_handler_.bootstrap_endpoint()
                << ", Routing table size - " << impl_->routing_table_.Size();

@@ -59,7 +59,7 @@ struct RoutingPrivate;
 * *************************************************************************/
 class Routing {
  public:
-   // set keys.identity to ANONYMOUS for temporary anonymous connection.
+  // pass empyt keys for temporary anonymous connection.
   Routing(const asymm::Keys &keys, const bool &client_mode);
 
   ~Routing();

@@ -15,6 +15,7 @@
 
 #include <functional>
 #include <string>
+#include <vector>
 
 #include "boost/asio/ip/udp.hpp"
 #include "boost/signals2/signal.hpp"
@@ -70,7 +71,8 @@ typedef std::function<void(const int32_t& /*mesasge type*/,
 * ValidateThisNode() method with valid public key.                                                 *
 ***************************************************************************************************/
 typedef std::function<void(const asymm::PublicKey & /*public_key*/)> GivePublicKeyFunctor;
-typedef std::function<void(const NodeId& /*node Id*/, GivePublicKeyFunctor)> RequestPublicKeyFunctor;
+typedef std::function<void(const NodeId& /*node Id*/, GivePublicKeyFunctor)>
+    RequestPublicKeyFunctor;
 
 typedef std::function<bool(const std::string & /*data*/)> HaveCacheDatafunctor;
 typedef std::function<void(const std::string &/* data*/)> StoreCacheDataFunctor;

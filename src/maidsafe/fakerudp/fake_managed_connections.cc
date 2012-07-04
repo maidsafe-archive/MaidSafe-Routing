@@ -9,23 +9,23 @@
  *  You are not free to copy, amend or otherwise use this source code without  *
  *  the explicit written permission of the board of directors of maidsafe.net. *
  ******************************************************************************/
-#include "maidsafe/rudp/managed_connections.h"
-#include "maidsafe/rudp/return_codes.h"
-#include "maidsafe/fakerudp/fake_network.h"
+
 #include <functional>
 #include <map>
 #include <memory>
 #include <string>
 #include <vector>
 #include <algorithm>
-#include <thread>
-#include <chrono>
+
 #include "boost/asio/ip/address.hpp"
 #include "boost/asio/ip/udp.hpp"
 #include "boost/date_time/posix_time/posix_time_duration.hpp"
 #include "boost/signals2/connection.hpp"
 #include "boost/thread/shared_mutex.hpp"
 
+#include "maidsafe/rudp/managed_connections.h"
+#include "maidsafe/rudp/return_codes.h"
+#include "maidsafe/fakerudp/fake_network.h"
 #include "maidsafe/common/asio_service.h"
 #include "maidsafe/common/utils.h"
 #include "maidsafe/common/log.h"
@@ -81,16 +81,17 @@ Endpoint ManagedConnections::Bootstrap(const std::vector<Endpoint> &bootstrap_en
     for (int j = 0; j < 200; ++j) {
 //      std::this_thread::sleep_for(std::chrono::milliseconds(10));
       Sleep(boost::posix_time::milliseconds(10));
-      if (local_endpoint.address().is_unspecified() && (FakeNetwork::instance().FindNode(i) != FakeNetwork::instance().GetEndIterator())) {
+      if (local_endpoint.address().is_unspecified() &&
+          (FakeNetwork::instance().FindNode(i) != FakeNetwork::instance().GetEndIterator())) {
         LOG(kVerbose) << "Found viable bootstrap node.\n";
-        if(FakeNetwork::instance().BootStrap(node, i)) {
+        if (FakeNetwork::instance().BootStrap(node, i)) {
           LOG(kVerbose) << "Bootstrap sucessfull!!\n";
           Add(node.endpoint, i, "");
           return i;
         }
       } else {
         Add(node.endpoint, i, "");
-         return i;
+        return i;
       }
     }
   }
@@ -102,7 +103,8 @@ int ManagedConnections::GetAvailableEndpoint(const Endpoint& /*peer_endpoint*/,
   assert((bootstrap_endpoints_.size() != 0) && "I do not know my own endpoint");
   this_endpoint_pair.external = bootstrap_endpoints_[0];
   this_endpoint_pair.local = bootstrap_endpoints_[0];
-  LOG(kInfo) << " endpoint ip address " << this_endpoint_pair.external.address().to_string() << "\n";
+  LOG(kInfo) << " endpoint ip address "
+             << this_endpoint_pair.external.address().to_string() << "\n";
   return kSuccess;
 }
 

@@ -31,7 +31,7 @@ namespace routing {
 
 RoutingPrivate::RoutingPrivate(const asymm::Keys &keys,
                                bool client_mode)
-    : asio_service_(new AsioService(2)), //Concurrency())),
+    : asio_service_(new AsioService(2)),
       bootstrap_nodes_(),
       keys_(keys),
       functors_(),

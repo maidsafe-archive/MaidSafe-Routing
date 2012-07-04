@@ -9,21 +9,23 @@
  *  You are not free to copy, amend or otherwise use this source code without  *
  *  the explicit written permission of the board of directors of maidsafe.net. *
  ******************************************************************************/
-#include "maidsafe/rudp/managed_connections.h"
+#ifndef MAIDSAFE_FAKERUDP_FAKE_NETWORK_H_
+#define MAIDSAFE_FAKERUDP_FAKE_NETWORK_H_
 
+#include <mutex>
 #include <functional>
 #include <map>
 #include <memory>
 #include <string>
 #include <vector>
-#include <algorithm>
-#include <mutex>
+
 #include "boost/asio/ip/address.hpp"
 #include "boost/asio/ip/udp.hpp"
 #include "boost/date_time/posix_time/posix_time_duration.hpp"
 #include "boost/signals2/connection.hpp"
 #include "boost/thread/shared_mutex.hpp"
 
+#include "maidsafe/rudp/managed_connections.h"
 #include "maidsafe/common/asio_service.h"
 #include "maidsafe/common/utils.h"
 
@@ -37,7 +39,7 @@ struct Node;
 
 // singleton
 class FakeNetwork {
-public:
+ public:
   FakeNetwork();
   static FakeNetwork& instance() {
     static FakeNetwork FakeNetwork;
@@ -71,3 +73,5 @@ struct Node {
 }  // namespace rudp
 
 }  // namespace maidsafe
+
+#endif  // MAIDSAFE_FAKERUDP_FAKE_NETWORK_H_

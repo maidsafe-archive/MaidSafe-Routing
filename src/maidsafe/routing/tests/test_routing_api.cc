@@ -35,7 +35,6 @@ namespace maidsafe {
 namespace routing {
 namespace test {
 namespace bptime = boost::posix_time;
-static unsigned short test_routing_api_node_port(6000);
 
 NodeInfo MakeNodeInfo() {
   NodeInfo node;
@@ -63,7 +62,7 @@ asymm::Keys GetKeys(const NodeInfo &node_info) {
   return keys;
 }
 
-//TEST(APITest, BEH_BadConfigFile) {
+// TEST(APITest, BEH_BadConfigFile) {
 //  // See bootstrap file tests for further interrogation of these files
 //  asymm::Keys keys(MakeKeys());
 //  boost::filesystem::path bad_file("/bad file/ not found/ I hope/");
@@ -80,7 +79,7 @@ asymm::Keys GetKeys(const NodeInfo &node_info) {
 //    Routing RtAPI(keys, good_file, functors, false);
 //  }) << "cannot handle corrupt files";
 //  EXPECT_TRUE(boost::filesystem::remove(good_file));
-//}
+// }
 
 TEST(APITest, BEH_API_StandAloneNodeNotConnected) {
   asymm::Keys keys(MakeKeys());
@@ -95,7 +94,7 @@ TEST(APITest, BEH_API_StandAloneNodeNotConnected) {
 //  EXPECT_TRUE(boost::filesystem::remove(good_file));
 }
 
-TEST(APITest, BEH_API_ManualBootstrap) {
+TEST(APITest, DISABLED_BEH_API_ManualBootstrap) {
   asymm::Keys keys1(MakeKeys());
   asymm::Keys keys2(MakeKeys());
   Functors functors;
@@ -122,26 +121,22 @@ TEST(APITest, BEH_API_ZeroState) {
   NodeInfo node1(MakeNodeInfo());
   NodeInfo node2(MakeNodeInfo());
   NodeInfo node3(MakeNodeInfo());
-//  asymm::Keys keys3(MakeKeys());
   std::map<NodeId, asymm::Keys> key_map;
   key_map.insert(std::make_pair(NodeId(node1.node_id), GetKeys(node1)));
   key_map.insert(std::make_pair(NodeId(node2.node_id), GetKeys(node2)));
   key_map.insert(std::make_pair(NodeId(node3.node_id), GetKeys(node3)));
-  //node1.endpoint.port(5000);
-  //node2.endpoint.port(5001);
 
   Routing R1(GetKeys(node1), false);
   Routing R2(GetKeys(node2), false);
   Routing R3(GetKeys(node3), false);
   Functors functors1, functors2, functors3;
 
-  functors1.request_public_key = [&](const NodeId& node_id, GivePublicKeyFunctor give_key )
-  {
+  functors1.request_public_key = [&](const NodeId& node_id, GivePublicKeyFunctor give_key ) {
       LOG(kWarning) << "node_validation called for " << HexSubstr(node_id.String());
       auto itr(key_map.find(NodeId(node_id)));
       if (key_map.end() != itr)
         give_key((*itr).second.public_key);
-  };
+    };
 
   functors2.request_public_key = functors3.request_public_key = functors1.request_public_key;
 
@@ -164,21 +159,18 @@ TEST(APITest, BEH_API_AnonymousNode) {
   std::map<NodeId, asymm::Keys> key_map;
   key_map.insert(std::make_pair(NodeId(node1.node_id), GetKeys(node1)));
   key_map.insert(std::make_pair(NodeId(node2.node_id), GetKeys(node2)));
-  //node1.endpoint.port(5000);
-  //node2.endpoint.port(5001);
 
   Routing R1(GetKeys(node1), false);
   Routing R2(GetKeys(node2), false);
   Routing R3(asymm::Keys(), true);  // Anonymous node
   Functors functors1, functors2, functors3;
 
-  functors1.request_public_key = [&](const NodeId& node_id, GivePublicKeyFunctor give_key)
-  {
+  functors1.request_public_key = [&](const NodeId& node_id, GivePublicKeyFunctor give_key) {
       LOG(kWarning) << "node_validation called for " << HexSubstr(node_id.String());
       auto itr(key_map.find(NodeId(node_id)));
       if (key_map.end() != itr)
         give_key((*itr).second.public_key);
-  };
+    };
 
   functors1.message_received = [&] (const int32_t&, const std::string &message, const NodeId &,
     ReplyFunctor reply_functor) {
@@ -313,6 +305,68 @@ TEST(APITest, BEH_API_NodeNetwork) {
     LOG(kVerbose) << "Joined !!!!!!!!!!!!!!!!! " << i + 1 << " nodes";
 //  });
   }
+  Sleep(boost::posix_time::seconds(2));
+}
+
+TEST(APITest, BEH_API_NodeNetworkWithClient) {
+  const int32_t kClientCount(4) , kServerCount(4);
+  const int32_t kNetworkSize(kClientCount +  kServerCount);
+  std::vector<NodeInfo> node_infos;
+  std::vector<std::shared_ptr<Routing>> routing_node;
+  std::map<NodeId, asymm::Keys> key_map;
+  for (auto i(0); i != kNetworkSize; ++i) {
+    NodeInfo node(MakeNodeInfo());
+    node_infos.push_back(node);
+    key_map.insert(std::make_pair(NodeId(node.node_id), GetKeys(node)));
+    routing_node.push_back(
+        std::make_shared<Routing>(GetKeys(node), ((i < kServerCount)? false: true)));
+  }
+
+  Functors functors;
+
+  functors.request_public_key = [=](const NodeId& node_id, GivePublicKeyFunctor give_key ) {
+      LOG(kInfo) << "node_validation called for " << HexSubstr(node_id.String());
+      auto itr(key_map.find(NodeId(node_id)));
+      if (key_map.end() != itr)
+        give_key((*itr).second.public_key);
+  };
+
+  functors.message_received = [&] (const int32_t&, const std::string &message, const NodeId &,
+    ReplyFunctor reply_functor) {
+      reply_functor("response to " + message);
+      LOG(kVerbose) << "Message received and replied to message !!";
+    };
+
+  Functors client_functors;
+  client_functors.request_public_key = functors.request_public_key;
+
+  client_functors.message_received = [&] (const int32_t&, const std::string &, const NodeId &,
+    ReplyFunctor reply_functor) {
+      ASSERT_TRUE(false);  //  Client should not receive incoming message
+    };
+
+  auto a1 = std::async(std::launch::async, [&] {
+    return routing_node[0]->ZeroStateJoin(functors, node_infos[0].endpoint,
+                                          node_infos[1]);});  // NOLINT (Prakash)
+  auto a2 = std::async(std::launch::async, [&] {
+    return routing_node[1]->ZeroStateJoin(functors, node_infos[1].endpoint,
+                                          node_infos[0]);});  // NOLINT (Prakash)
+
+  EXPECT_EQ(kSuccess, a2.get());  // wait for promise !
+  EXPECT_EQ(kSuccess, a1.get());  // wait for promise !
+
+  for (auto i(2); i != kServerCount; ++i) {
+    ASSERT_EQ(kSuccess, routing_node[i]->Join(functors, node_infos[i%2].endpoint));
+    LOG(kVerbose) << "Server - " << i
+                  << " joined !!!!!!!!!!!!!!!!! " << i + 1 << " nodes";
+  }
+
+  for (auto i(kServerCount); i != kNetworkSize; ++i) {
+    ASSERT_EQ(kSuccess, routing_node[i]->Join(functors, node_infos[0].endpoint));
+    LOG(kVerbose) << "Client - " << i - kServerCount << " joined !!!!!!!!!!!!!!!!! ";
+    LOG(kVerbose) << " joined !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! ";
+  }
+
   Sleep(boost::posix_time::seconds(2));
 }
 

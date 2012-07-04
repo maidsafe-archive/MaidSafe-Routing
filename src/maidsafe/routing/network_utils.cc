@@ -37,15 +37,16 @@ void SendOn(protobuf::Message message,
             const bool &recursive_retry) {
   Endpoint peer_endpoint = endpoint;
   NodeId peer_node_id = node_id;
+  const std::string my_node_id(HexSubstr(routing_table.kKeys().identity));
   std::string serialised_message(message.SerializeAsString());
   rudp::MessageSentFunctor message_sent_functor;
   if (!recursive_retry) {  //  send only once to direct endpoint
-    message_sent_functor = [message, &routing_table, peer_node_id](bool message_sent) {
+    message_sent_functor = [my_node_id, message, &routing_table, peer_node_id](bool message_sent) {
         if (message_sent)
           LOG(kInfo) << " Message sent, type: " << message.type()
                      << " to "
                      << HexSubstr(peer_node_id.String())
-                     << " I am " << HexSubstr(routing_table.kKeys().identity)
+                     << " I am " << my_node_id
                      << " [destination id : "
                      << HexSubstr(message.destination_id())
                      << "]";
@@ -53,7 +54,7 @@ void SendOn(protobuf::Message message,
           LOG(kError) << " Failed to send message, type: " << message.type()
                       << " to "
                       << HexSubstr(peer_node_id.String())
-                      << " I am " << HexSubstr(routing_table.kKeys().identity)
+                      << " I am " << my_node_id
                       << " [destination id : "
                       << HexSubstr(message.destination_id())
                       << "]";
@@ -70,7 +71,7 @@ void SendOn(protobuf::Message message,
           LOG(kError) << " Failed to send message, type: " << message.type()
                       << " to "
                       << HexSubstr(peer_node_id.String())
-                      << " I am " << HexSubstr(routing_table.kKeys().identity)
+                      << " I am " << my_node_id
                       << " [ destination id : "
                       << HexSubstr(message.destination_id())
                       << "]"
@@ -82,7 +83,7 @@ void SendOn(protobuf::Message message,
           LOG(kInfo) << " Message sent, type: " << message.type()
                      << " to "
                      << HexSubstr(peer_node_id.String())
-                     << " I am " << HexSubstr(routing_table.kKeys().identity)
+                     << " I am " << my_node_id
                      << " [ destination id : "
                      << HexSubstr(message.destination_id())
                      << "]";

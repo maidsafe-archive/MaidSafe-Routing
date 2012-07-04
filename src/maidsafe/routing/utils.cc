@@ -68,18 +68,18 @@ void ValidateThisNode(rudp::ManagedConnections &rudp,
                     << HexSubstr(node_id.String());
     }
   } else {
-    if(routing_table.AddNode(node_info)) {
+    if (routing_table.AddNode(node_info)) {
       routing_accepted_node = true;
       LOG(kVerbose) << "Added node to routing table. node id : " << HexSubstr(node_id.String());
 
-      //ProcessSend(rpcs::ProxyConnect(node_id, NodeId(routing_table.kKeys().identity),
-      //                               their_endpoint),
-      //            rudp,
-      //            routing_table,
-      //            Endpoint());
+      // ProcessSend(rpcs::ProxyConnect(node_id, NodeId(routing_table.kKeys().identity),
+       //                              their_endpoint),
+       //           rudp,
+       //           routing_table,
+       //           Endpoint());
     }
   }
-  if (!routing_accepted_node){
+  if (!routing_accepted_node) {
     LOG(kVerbose) << "Not adding node to " << (client?"non-": "") << "routing table  node id "
                   << HexSubstr(node_id.String())
                   << " just added rudp connection will be removed now";
