@@ -151,20 +151,24 @@ void FindNodes(RoutingTable &routing_table, protobuf::Message &message) {
   LOG(kVerbose) << "FindNodes -- service()";
   protobuf::FindNodesRequest find_nodes;
   if (!find_nodes.ParseFromString(message.data())) {
-    LOG(kVerbose) << "Unable to parse find node request";
+    LOG(kWarning) << "Unable to parse find node request";
+    message.Clear();
+    return;  // no need to reply
+  }
+  if (0 == find_nodes.num_nodes_requested()) {
+    LOG(kWarning) << "Invalid find node request";
     message.Clear();
     return;  // no need to reply
   }
   LOG(kVerbose) << "Parsed find node request -- " << HexSubstr(find_nodes.target_node());
   protobuf::FindNodesResponse found_nodes;
   std::vector<NodeId> nodes(routing_table.GetClosestNodes(NodeId(find_nodes.target_node()),
-                              static_cast<uint16_t>(find_nodes.num_nodes_requested())));
+                              static_cast<uint16_t>(find_nodes.num_nodes_requested() - 1)));
 
-  for (auto it = nodes.begin(); it != nodes.end(); ++it) {
-    found_nodes.add_nodes((*it).String());
-  }
-  if (routing_table.Size() < Parameters::closest_nodes_size)
-    found_nodes.add_nodes(routing_table.kKeys().identity);  // small network send our ID
+  found_nodes.add_nodes(routing_table.kKeys().identity);
+
+  for (auto node : nodes)
+    found_nodes.add_nodes(node.String());
 
   LOG(kVerbose) << "Responding Find node with " << found_nodes.nodes_size()  << " contacts";
 

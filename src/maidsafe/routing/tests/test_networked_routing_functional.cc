@@ -75,7 +75,7 @@ class RoutingNetworkTest : public GenericNetwork<NodeType> {
               }
             };
           if (source_node->Id() != dest_node->Id()) {
-            std::string data(RandomAlphaNumericString(256));
+            std::string data(RandomAlphaNumericString(256 * 1024));
             source_node->Send(NodeId(dest_node->Id()), group_id, data, 101, callable,
                 boost::posix_time::seconds(15), ConnectType::kSingle);
           }

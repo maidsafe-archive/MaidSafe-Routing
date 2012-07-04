@@ -237,7 +237,7 @@ int Routing::DoFindNode() {
     LOG(kInfo) << "Node with id : " << HexSubstr(impl_->keys_.identity)
                << " successfully joined network, bootstrap node - "
                << impl_->message_handler_.bootstrap_endpoint()
-               << "Routing table size - " << impl_->routing_table_.Size();
+               << ", Routing table size - " << impl_->routing_table_.Size();
     return kSuccess;
   } else {
     LOG(kError) << "Failed to join network, bootstrap node - "
