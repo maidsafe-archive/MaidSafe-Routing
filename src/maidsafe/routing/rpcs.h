@@ -33,6 +33,7 @@ const protobuf::Message Ping(const NodeId &node_id,
 const protobuf::Message Connect(const NodeId &node_id,
                                 const rudp::EndpointPair &our_endpoint,
                                 const NodeId &my_node_id,
+                                bool client_node = false,
                                 bool relay_message = false,
                                 Endpoint local_endpoint = Endpoint());
 

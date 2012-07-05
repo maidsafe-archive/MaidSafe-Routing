@@ -30,7 +30,7 @@ namespace test {
 TEST(RoutingTableTest, FUNC_AddCloseNodes) {
     asymm::Keys keys;
     keys.identity = RandomString(64);
-  RoutingTable RT(keys, nullptr);
+  RoutingTable RT(keys, false, nullptr);
   NodeInfo node;
   // check the node is useful when false is set
   for (unsigned int i = 0; i < Parameters::closest_nodes_size ; ++i) {
@@ -62,11 +62,11 @@ TEST(RoutingTableTest, FUNC_AddCloseNodes) {
 TEST(RoutingTableTest, FUNC_AddTooManyNodes) {
     asymm::Keys keys;
     keys.identity = RandomString(64);
-  RoutingTable RT(keys, nullptr);
+  RoutingTable RT(keys, false, nullptr);
   for (uint16_t i = 0; RT.Size() < Parameters::max_routing_table_size; ++i) {
-     NodeInfo node(MakeNode());
-     node.endpoint.port(i + 1501U);  // has to be unique
-     EXPECT_TRUE(RT.AddNode(node));
+    NodeInfo node(MakeNode());
+    node.endpoint.port(i + 1501U);  // has to be unique
+    EXPECT_TRUE(RT.AddNode(node));
   }
   EXPECT_EQ(RT.Size(), Parameters::max_routing_table_size);
   size_t count(0);
@@ -86,7 +86,7 @@ TEST(RoutingTableTest, FUNC_AddTooManyNodes) {
 TEST(RoutingTableTest, BEH_CloseAndInRangeCheck) {
   asymm::Keys keys;
   keys.identity = RandomString(64);
-  RoutingTable RT(keys, nullptr);
+  RoutingTable RT(keys, false, nullptr);
   // Add some nodes to RT
   NodeId my_node(keys.identity);
   for (uint16_t i = 0; RT.Size() < Parameters::max_routing_table_size; ++i) {

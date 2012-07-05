@@ -47,6 +47,7 @@ class NonRoutingTable {
   uint16_t Size();
   asymm::Keys kKeys() const;
   bs2::signal<void(std::string, std::string)> &CloseNodeReplacedOldNewSignal();
+  void set_keys(asymm::Keys keys);
 
  private:
   NonRoutingTable(const NonRoutingTable&);
@@ -54,7 +55,8 @@ class NonRoutingTable {
   bool AddOrCheckNode(NodeInfo &node, const NodeId &furthest_close_node_id, const bool &add);
   bool CheckValidParameters(const NodeInfo &node) const;
   bool CheckParametersAreUnique(const NodeInfo &node) const;
-  bool CheckRangeForNodeToBeAdded(NodeInfo &node, const NodeId &furthest_close_node_id);
+  bool CheckRangeForNodeToBeAdded(NodeInfo &node, const NodeId &furthest_close_node_id,
+                                  const bool &add);
   bool IsMyNodeInRange(const NodeId &node_id, const NodeId &furthest_close_node_id);
   uint16_t NonRoutingTableSize();
 

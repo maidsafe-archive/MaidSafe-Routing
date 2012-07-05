@@ -23,9 +23,10 @@ namespace maidsafe {
 namespace routing {
 
 
-RoutingTable::RoutingTable(const asymm::Keys &keys,
+RoutingTable::RoutingTable(const asymm::Keys &keys, const bool &client_mode,
                            CloseNodeReplacedFunctor close_node_replaced_functor)
-    : keys_(keys),
+    : client_mode_(client_mode),
+      keys_(keys),
       sorted_(false),
       kNodeId_(NodeId(keys_.identity)),
       furthest_group_node_id_(),
@@ -294,8 +295,22 @@ int16_t RoutingTable::BucketIndex(const NodeId &rhs) const {
 
 NodeInfo RoutingTable::GetClosestNode(const NodeId &from, const uint16_t &node_number) {
   std::lock_guard<std::mutex> lock(mutex_);
+  if (RoutingTableSize() < node_number) {
+    NodeInfo node_info;
+    node_info.node_id = NodeId(NodeId::kMaxId);
+    return node_info;
+  }
   NthElementSortFromThisNode(from, node_number + 1);
   return routing_table_nodes_[node_number];
+}
+
+NodeInfo RoutingTable::GetClosestNode(const NodeId &from) {
+  std::lock_guard<std::mutex> lock(mutex_);
+  if (RoutingTableSize() == 0) {
+    return NodeInfo();
+  }
+  NthElementSortFromThisNode(from, 1);
+  return routing_table_nodes_[0];
 }
 
 std::vector<NodeId> RoutingTable::GetClosestNodes(const NodeId &from,

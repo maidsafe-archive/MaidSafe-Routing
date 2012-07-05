@@ -48,6 +48,8 @@ Routing::Routing(const asymm::Keys &keys, const bool &client_mode)
   }
   if (client_mode) {
     Parameters::max_routing_table_size = Parameters::closest_nodes_size;
+  } else {
+    assert(!keys.identity.empty() && "Server Nodes cannot be created without valid keys");
   }
   if (keys.identity.empty()) {
     impl_->anonymous_node_ = true;
@@ -137,8 +139,10 @@ void Routing::DisconnectFunctors() {
 // drop existing routing table and restart
 // the endpoint is the endpoint to connect to.
 int Routing::BootStrapFromThisEndpoint(Functors functors, const Endpoint &endpoint) {
-  LOG(kInfo) << " Doing a BootStrapFromThisEndpoint Join.";
-  LOG(kInfo) << " Entered bootstrap endpoint : " << endpoint;
+  LOG(kInfo) << " Doing a BootStrapFromThisEndpoint Join."
+             << " Entered bootstrap endpoint : " << endpoint
+             << ", My Node id : " << HexSubstr(impl_->keys_.identity)
+             << (impl_->client_mode_ ? "Client" : "");
 
   if (impl_->routing_table_.Size() > 0) {
     DisconnectFunctors();  // TODO(Prakash): Do we need this ?
@@ -227,14 +231,20 @@ int Routing::DoFindNode() {
     return false;
   }
   // now poll for routing table size to have at least one node available
+
   uint8_t poll_count(0);
+  // TODO(Prakash) : Need to fix target min RT size.
+  uint8_t target_routing_table_size = 2; //  (impl_->client_mode_? 4 : 2);
   do {
-    Sleep(boost::posix_time::milliseconds(1000));
-  } while ((impl_->routing_table_.Size() == 0) && (++poll_count < 10));
-  if (impl_->routing_table_.Size() != 0) {
-    LOG(kInfo) << "Successfully joined network, bootstrap node - "
+    Sleep(boost::posix_time::milliseconds(100));
+  } while ((impl_->routing_table_.Size() < target_routing_table_size) &&
+           (++poll_count < 100));
+  if (impl_->routing_table_.Size() >= target_routing_table_size) {
+    LOG(kInfo) << (impl_->client_mode_? "Client ": "")
+               << "Node with id : " << HexSubstr(impl_->keys_.identity)
+               << " successfully joined network, bootstrap node - "
                << impl_->message_handler_.bootstrap_endpoint()
-               << "Routing table size - " << impl_->routing_table_.Size();
+               << ", Routing table size - " << impl_->routing_table_.Size();
     return kSuccess;
   } else {
     LOG(kError) << "Failed to join network, bootstrap node - "
@@ -278,8 +288,9 @@ int Routing::ZeroStateJoin(Functors functors, const Endpoint &local_endpoint,
   their_endpoint_pair.external = their_endpoint_pair.local = peer_node.endpoint;
   our_endpoint_pair.external = our_endpoint_pair.local = local_endpoint;
 
-  ValidateThisNode(impl_->rudp_, impl_->routing_table_, NodeId(peer_node.node_id),
-                   peer_node.public_key, their_endpoint_pair, our_endpoint_pair, false);
+  ValidateThisNode(impl_->rudp_, impl_->routing_table_, impl_->non_routing_table_,
+                   NodeId(peer_node.node_id), peer_node.public_key, their_endpoint_pair,
+                   our_endpoint_pair, false);
 
   // now poll for routing table size to have at other node available
   uint8_t poll_count(0);
@@ -322,6 +333,7 @@ void Routing::Send(const NodeId &destination_id,
   proto_message.set_data(data);
   proto_message.set_direct(static_cast<int32_t>(connect_type));
   proto_message.set_type(type);
+  proto_message.set_client_node(impl_->client_mode_);
 
   // Anonymous node
   if (impl_->anonymous_node_) {
@@ -343,7 +355,7 @@ void Routing::Send(const NodeId &destination_id,
 
   // Non Anonymous, normal node
   proto_message.set_source_id(impl_->routing_table_.kKeys().identity);
-  ProcessSend(proto_message, impl_->rudp_, impl_->routing_table_);
+  ProcessSend(proto_message, impl_->rudp_, impl_->routing_table_, impl_->non_routing_table_);
   return;
 }
 
@@ -372,7 +384,9 @@ void Routing::ConnectionLost(const Endpoint &lost_endpoint) {
     // close node, get more
     ProcessSend(rpcs::FindNodes(NodeId(impl_->keys_.identity),
                                 NodeId(impl_->keys_.identity)),
-                                impl_->rudp_, impl_->routing_table_);
+                                impl_->rudp_,
+                                impl_->routing_table_,
+                                impl_->non_routing_table_);
   }
   if (!impl_->routing_table_.DropNode(lost_endpoint))
     return;
@@ -390,7 +404,9 @@ void Routing::ConnectionLost(const Endpoint &lost_endpoint) {
       // close node, get more
       ProcessSend(rpcs::FindNodes(NodeId(impl_->keys_.identity),
                                   NodeId(impl_->keys_.identity)),
-                                  impl_->rudp_, impl_->routing_table_);
+                                  impl_->rudp_,
+                                  impl_->routing_table_,
+                                  impl_->non_routing_table_);
       return;
     }
   }

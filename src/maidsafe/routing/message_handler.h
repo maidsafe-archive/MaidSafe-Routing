@@ -28,14 +28,16 @@ namespace routing {
 
 namespace protobuf { class Message;}  // namespace protobuf
 
+class CacheManager;
+class NonRoutingTable;
 class RoutingTable;
 class Timer;
-class CacheManager;
 
 class MessageHandler {
  public:
   MessageHandler(std::shared_ptr<AsioService> asio_service,
                  RoutingTable &routing_table,
+                 NonRoutingTable &non_routing_table,
                  rudp::ManagedConnections &rudp,
                  Timer &timer_ptr,
                  MessageReceivedFunctor message_received_functor,
@@ -61,9 +63,11 @@ class MessageHandler {
   void CloseNodesMessage(protobuf::Message &message);
   void ProcessRelayRequest(protobuf::Message &message);
   bool RelayDirectMessageIfNeeded(protobuf::Message &message);
+  void ClientMessage(protobuf::Message &message);
   void GroupMessage(protobuf::Message &message);
   std::shared_ptr<AsioService> asio_service_;
   RoutingTable &routing_table_;
+  NonRoutingTable &non_routing_table_;
   rudp::ManagedConnections &rudp_;
   Endpoint bootstrap_endpoint_;
   Endpoint my_relay_endpoint_;

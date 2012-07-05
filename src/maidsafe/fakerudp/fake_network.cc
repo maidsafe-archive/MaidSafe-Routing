@@ -17,8 +17,7 @@
 #include <string>
 #include <vector>
 #include <algorithm>
-#include <thread>
-#include <chrono>
+
 #include "boost/asio/ip/address.hpp"
 #include "boost/asio/ip/udp.hpp"
 #include "boost/date_time/posix_time/posix_time_duration.hpp"

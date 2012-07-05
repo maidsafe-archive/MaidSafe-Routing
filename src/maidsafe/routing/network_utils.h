@@ -13,14 +13,16 @@
 #ifndef MAIDSAFE_ROUTING_NETWORK_UTILS_H_
 #define MAIDSAFE_ROUTING_NETWORK_UTILS_H_
 
-#include "maidsafe/routing/parameters.h"
-#include "maidsafe/routing/routing_table.h"
+#include "maidsafe/routing/node_info.h"
 
 namespace maidsafe {
 
 namespace routing {
 
 namespace protobuf { class Message;}  // namespace protobuf
+
+class NonRoutingTable;
+class RoutingTable;
 
 //  Message processing evaluation order
 // 1. If valid parameter - endpoint is provided, the message is sent once to it. On failure,
@@ -35,7 +37,8 @@ namespace protobuf { class Message;}  // namespace protobuf
 void ProcessSend(protobuf::Message message,
                  rudp::ManagedConnections &rudp,
                  RoutingTable &routing_table,
-                 Endpoint endpoint = Endpoint());
+                 NonRoutingTable &non_routing_table,
+                 Endpoint peer_endpoint = Endpoint());
 
 }  // namespace routing
 

@@ -47,7 +47,7 @@ const protobuf::Message Ping(const NodeId &node_id, const std::string &identity)
 }
 
 const protobuf::Message Connect(const NodeId &node_id, const rudp::EndpointPair &our_endpoint,
-                                const NodeId &my_node_id, bool relay_message,
+                                const NodeId &my_node_id, bool client_node, bool relay_message,
                                 Endpoint local_endpoint) {
   assert(node_id.IsValid() && "Invalid node_id");
   assert(my_node_id.IsValid() && "Invalid my node_id");
@@ -73,7 +73,7 @@ const protobuf::Message Connect(const NodeId &node_id, const rudp::EndpointPair 
   message.set_replication(1);
   message.set_type(2);
   message.set_id(0);
-  message.set_client_node(false);
+  message.set_client_node(client_node);
 
   if (!relay_message) {
     message.set_source_id(my_node_id.String());

@@ -22,6 +22,7 @@
 #include "maidsafe/routing/log.h"
 #include "maidsafe/routing/network_utils.h"
 #include "maidsafe/routing/node_id.h"
+#include "maidsafe/routing/non_routing_table.h"
 #include "maidsafe/routing/return_codes.h"
 #include "maidsafe/routing/routing_api.h"
 #include "maidsafe/routing/routing_pb.h"
@@ -46,6 +47,7 @@ void Ping(protobuf::Message& message) {
 
 // the other node agreed to connect - he has accepted our connection
 void Connect(RoutingTable &routing_table,
+             NonRoutingTable &non_routing_table,
              rudp::ManagedConnections &rudp,
              protobuf::Message& message,
              RequestPublicKeyFunctor node_validation_functor) {
@@ -64,39 +66,34 @@ void Connect(RoutingTable &routing_table,
     return;  // invalid response
 
   rudp::EndpointPair our_endpoint_pair;
-  our_endpoint_pair.external.address(
-      boost::asio::ip::address::from_string(connect_request.contact().public_endpoint().ip()));
-  our_endpoint_pair.external.port(
-      static_cast<uint16_t>(connect_request.contact().public_endpoint().port()));
-  our_endpoint_pair.local.address(
-      boost::asio::ip::address::from_string(connect_request.contact().private_endpoint().ip()));
-  our_endpoint_pair.local.port(
-      static_cast<uint16_t>(connect_request.contact().private_endpoint().port()));
+  our_endpoint_pair.external = GetEndpointFromProtobuf(connect_request.contact().public_endpoint());
+  our_endpoint_pair.local = GetEndpointFromProtobuf(connect_request.contact().private_endpoint());
+
   rudp::EndpointPair their_endpoint_pair;
-  their_endpoint_pair.external.address(
-      boost::asio::ip::address::from_string(connect_response.contact().public_endpoint().ip()));
-  their_endpoint_pair.external.port(
-      static_cast<uint16_t>(connect_response.contact().public_endpoint().port()));
-  their_endpoint_pair.local.address(
-      boost::asio::ip::address::from_string(connect_response.contact().private_endpoint().ip()));
-  their_endpoint_pair.local.port(
-      static_cast<uint16_t>(connect_response.contact().private_endpoint().port()));
+  their_endpoint_pair.external =
+      GetEndpointFromProtobuf(connect_response.contact().public_endpoint());
+  their_endpoint_pair.local =
+      GetEndpointFromProtobuf(connect_response.contact().private_endpoint());
+
   if (node_validation_functor) {
-    auto validate_node = [=, &routing_table, &rudp] (const asymm::PublicKey &key) {
-        LOG(kInfo) << "NEED TO VALIDATE THE NODE HERE";
-        ValidateThisNode(rudp,
-                         routing_table,
-                         NodeId(connect_response.contact().node_id()),
-                         key,
-                         their_endpoint_pair,
-                         our_endpoint_pair,
-                         false);
-      };
+    auto validate_node =
+      [=, &routing_table, &non_routing_table, &rudp] (const asymm::PublicKey &key) {
+          LOG(kInfo) << "NEED TO VALIDATE THE NODE HERE";
+          ValidateThisNode(rudp,
+                           routing_table,
+                           non_routing_table,
+                           NodeId(connect_response.contact().node_id()),
+                           key,
+                           their_endpoint_pair,
+                           our_endpoint_pair,
+                           false);
+        };
     node_validation_functor(NodeId(connect_response.contact().node_id()), validate_node);
   }
 }
 
 void FindNode(RoutingTable &routing_table,
+              NonRoutingTable &non_routing_table,
               rudp::ManagedConnections &rudp,
               const protobuf::Message& message,
               const Endpoint &bootstrap_endpoint) {
@@ -129,13 +126,12 @@ void FindNode(RoutingTable &routing_table,
       if (routing_table.Size() == 0)  // Joining the network, and may connect to bootstrapping node.
         direct_endpoint = bootstrap_endpoint;
       rudp::EndpointPair endpoint;
-      LOG(kVerbose) << " calling rudp.GetAvailableEndpoint now ....";
       if (kSuccess != rudp.GetAvailableEndpoint(direct_endpoint, endpoint)) {
         LOG(kWarning) << " Failed to get available endpoint for new connections";
         return;
       }
-      LOG(kVerbose) << " GetAvailableEndpoint for peer - " << direct_endpoint << " my endpoint - "
-                    << endpoint.external;
+      LOG(kVerbose) << " GetAvailableEndpoint for peer - " << direct_endpoint
+                    << " my endpoint - " << endpoint.external;
       Endpoint relay_endpoint;
       bool relay_message(false);
       if (routing_table.Size() == 0) {  //  Not in anyones RT, need a path back through relay ip.
@@ -146,10 +142,12 @@ void FindNode(RoutingTable &routing_table,
       ProcessSend(rpcs::Connect(NodeId(find_nodes.nodes(i)),
                                 endpoint,
                                 NodeId(routing_table.kKeys().identity),
+                                routing_table.client_mode(),
                                 relay_message,
                                 relay_endpoint),
                   rudp,
                   routing_table,
+                  non_routing_table,
                   direct_endpoint);
     }
   }

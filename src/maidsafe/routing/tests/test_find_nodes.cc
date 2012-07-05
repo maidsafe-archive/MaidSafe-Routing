@@ -122,7 +122,7 @@ class FindNodeNetwork : public GenericNetwork<NodeType> {
   }
 
   testing::AssertionResult DropNode(const NodeId &node_id) {
-    for(auto node : this->nodes_)
+    for (auto node : this->nodes_)
       node->DropNode(node_id);
     return testing::AssertionSuccess();
   }

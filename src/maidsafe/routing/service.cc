@@ -19,6 +19,7 @@
 
 #include "maidsafe/routing/log.h"
 #include "maidsafe/routing/node_id.h"
+#include "maidsafe/routing/non_routing_table.h"
 #include "maidsafe/routing/parameters.h"
 #include "maidsafe/routing/routing_pb.h"
 #include "maidsafe/routing/routing_table.h"
@@ -54,6 +55,7 @@ void Ping(RoutingTable &routing_table, protobuf::Message &message) {
 }
 
 void Connect(RoutingTable &routing_table,
+             NonRoutingTable &non_routing_table,
              rudp::ManagedConnections &rudp,
              protobuf::Message &message,
              RequestPublicKeyFunctor node_validation_functor) {
@@ -78,58 +80,58 @@ void Connect(RoutingTable &routing_table,
   connect_response.set_answer(false);
   rudp::EndpointPair our_endpoint_pair;
   rudp::EndpointPair their_endpoint_pair;
-  Endpoint their_public_endpoint;
-  Endpoint their_private_endpoint;
-  their_public_endpoint.address(
-      boost::asio::ip::address::from_string(connect_request.contact().public_endpoint().ip()));
-  their_public_endpoint.port(
-      static_cast<uint16_t>(connect_request.contact().public_endpoint().port()));
-  their_private_endpoint.address(
-      boost::asio::ip::address::from_string(connect_request.contact().private_endpoint().ip()));
-  their_private_endpoint.port(
-      static_cast<uint16_t>(connect_request.contact().private_endpoint().port()));
-  their_endpoint_pair.external = their_public_endpoint;
-  their_endpoint_pair.local = their_private_endpoint;
-  LOG(kVerbose) << "Calling GetAvailableEndpoint with peer ep - " << their_public_endpoint;
-  if ((rudp.GetAvailableEndpoint(their_public_endpoint, our_endpoint_pair)) != 0) {
-    LOG(kVerbose) << "Unable to get available endpoint to connect to" << their_public_endpoint;
+  their_endpoint_pair.external = GetEndpointFromProtobuf(connect_request.contact().
+                                                           public_endpoint());
+  their_endpoint_pair.local = GetEndpointFromProtobuf(connect_request.contact().
+                                                        private_endpoint());
+  // TODO(dirvine) try both connections
+  if ((rudp.GetAvailableEndpoint(their_endpoint_pair.external, our_endpoint_pair)) != 0) {
+    LOG(kError) << "Unable to get available endpoint to connect to"
+                << their_endpoint_pair.external;
     return;
   }
-  LOG(kVerbose) << " GetAvailableEndpoint for peer - " << their_public_endpoint << " my endpoint - "
-                << our_endpoint_pair.external;
-// TODO(dirvine) try both connections
-  if (message.client_node()) {
-    LOG(kInfo) << " client connecting - HELP !!!!";
+
+  LOG(kVerbose) << " GetAvailableEndpoint for peer - " << their_endpoint_pair.external
+                << " my endpoint - " << our_endpoint_pair.external;
+
+  bool check_node_succeeded(false);
+  if (message.client_node()) {  // Client node, check NRT
+    LOG(kVerbose) << " client connect request - will check NRT";
+    NodeId furthest_close_node_id =
+        routing_table.GetClosestNode(NodeId(routing_table.kKeys().identity),
+                                     Parameters::closest_nodes_size).node_id;
+    check_node_succeeded = non_routing_table.CheckNode(node, furthest_close_node_id);
+  } else {
+    LOG(kVerbose) << " server connect request - will check RT";
+    check_node_succeeded = routing_table.CheckNode(node);
   }
-  if ((routing_table.CheckNode(node)) && (!message.client_node())) {
-    connect_response.set_answer(true);
-    LOG(kVerbose) << "CheckNode(node) successfull!";
+
+  if (check_node_succeeded) {
+    LOG(kVerbose) << "CheckNode(node) for " << (message.client_node()?" client" : "server")
+                  << " node succeeded !!";
     if (node_validation_functor) {
-      auto validate_node = [=, &routing_table, &rudp] (const asymm::PublicKey &key)->void {
-          LOG(kInfo) << "NEED TO VALIDATE THE NODE HERE";
-          ValidateThisNode(rudp,
-                           routing_table,
-                           NodeId(connect_request.contact().node_id()),
-                           key,
-                           their_endpoint_pair,
-                           our_endpoint_pair,
-                           false);
-        };
+      auto validate_node =
+          [=, &routing_table, &non_routing_table, &rudp] (const asymm::PublicKey &key)->void {
+            LOG(kInfo) << "NEED TO VALIDATE THE NODE HERE";
+            ValidateThisNode(rudp,
+                             routing_table,
+                             non_routing_table,
+                             NodeId(connect_request.contact().node_id()),
+                             key,
+                             their_endpoint_pair,
+                             our_endpoint_pair,
+                             message.client_node());
+          };
       node_validation_functor(NodeId(connect_request.contact().node_id()), validate_node);
+      connect_response.set_answer(true);
+      connect_response.mutable_contact()->set_node_id(routing_table.kKeys().identity);
+      SetProtobufEndpoint(our_endpoint_pair.local,
+                          connect_response.mutable_contact()->mutable_private_endpoint());
+      SetProtobufEndpoint(our_endpoint_pair.external,
+                          connect_response.mutable_contact()->mutable_public_endpoint());
     }
   }
 
-  protobuf::Contact *contact;
-  protobuf::Endpoint *private_endpoint;
-  protobuf::Endpoint *public_endpoint;
-  contact = connect_response.mutable_contact();
-  private_endpoint = contact->mutable_private_endpoint();
-  private_endpoint->set_ip(our_endpoint_pair.local.address().to_string());
-  private_endpoint->set_port(our_endpoint_pair.local.port());
-  public_endpoint = contact->mutable_public_endpoint();
-  public_endpoint->set_ip(our_endpoint_pair.local.address().to_string());
-  public_endpoint->set_port(our_endpoint_pair.local.port());
-  contact->set_node_id(routing_table.kKeys().identity);
   connect_response.set_timestamp(GetTimeStamp());
   connect_response.set_original_request(message.data());
   connect_response.set_original_signature(message.signature());
@@ -149,29 +151,37 @@ void FindNodes(RoutingTable &routing_table, protobuf::Message &message) {
   LOG(kVerbose) << "FindNodes -- service()";
   protobuf::FindNodesRequest find_nodes;
   if (!find_nodes.ParseFromString(message.data())) {
-    LOG(kVerbose) << "Unable to parse find node request";
+    LOG(kWarning) << "Unable to parse find node request";
+    message.Clear();
+    return;  // no need to reply
+  }
+  if (0 == find_nodes.num_nodes_requested()) {
+    LOG(kWarning) << "Invalid find node request";
     message.Clear();
     return;  // no need to reply
   }
   LOG(kVerbose) << "Parsed find node request -- " << HexSubstr(find_nodes.target_node());
   protobuf::FindNodesResponse found_nodes;
   std::vector<NodeId> nodes(routing_table.GetClosestNodes(NodeId(find_nodes.target_node()),
-                              static_cast<uint16_t>(find_nodes.num_nodes_requested())));
+                              static_cast<uint16_t>(find_nodes.num_nodes_requested() - 1)));
 
-  for (auto it = nodes.begin(); it != nodes.end(); ++it) {
-    found_nodes.add_nodes((*it).String());
-  }
-  if (routing_table.Size() < Parameters::closest_nodes_size)
-    found_nodes.add_nodes(routing_table.kKeys().identity);  // small network send our ID
+  found_nodes.add_nodes(routing_table.kKeys().identity);
+
+  for (auto node : nodes)
+    found_nodes.add_nodes(node.String());
+
+  LOG(kVerbose) << "Responding Find node with " << found_nodes.nodes_size()  << " contacts";
 
   found_nodes.set_original_request(message.data());
   found_nodes.set_original_signature(message.signature());
   found_nodes.set_timestamp(GetTimeStamp());
   assert(found_nodes.IsInitialized() && "unintialised found_nodes response");
-  if (message.has_source_id())
+  if (message.has_source_id()) {
     message.set_destination_id(message.source_id());
-  else
+  } else {
     message.clear_destination_id();
+    LOG(kVerbose) << "Relay message, so not setting dst id";
+  }
   message.set_source_id(routing_table.kKeys().identity);
   message.set_data(found_nodes.SerializeAsString());
   message.set_direct(true);

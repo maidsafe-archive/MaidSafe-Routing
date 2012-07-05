@@ -21,7 +21,6 @@
 
 #include "maidsafe/routing/log.h"
 #include "maidsafe/routing/node_id.h"
-#include "maidsafe/routing/routing_table.h"
 #include "maidsafe/routing/rpcs.h"
 
 namespace maidsafe {
@@ -30,14 +29,19 @@ namespace routing {
 
 namespace protobuf { class Message; }  // namespace protobuf
 
+class NonRoutingTable;
+class RoutingTable;
+
 namespace response {
 
 void Ping(protobuf::Message &message);
 void Connect(RoutingTable &routing_table,
+             NonRoutingTable &non_routing_table,
              rudp::ManagedConnections &rudp,
              protobuf::Message &message,
              RequestPublicKeyFunctor node_validation_functor);
 void FindNode(RoutingTable &routing_table,
+              NonRoutingTable &non_routing_table,
               rudp::ManagedConnections &rudp,
               const protobuf::Message &message,
               const Endpoint &bootstrap_endpoint);

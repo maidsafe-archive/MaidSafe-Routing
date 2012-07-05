@@ -14,7 +14,6 @@
 #define MAIDSAFE_ROUTING_UTILS_H_
 
 #include "maidsafe/routing/parameters.h"
-#include "maidsafe/routing/routing_table.h"
 
 namespace maidsafe {
 
@@ -26,12 +25,16 @@ class Message {
   explicit Message(protobuf::Message message);
 };
 
+class NonRoutingTable;
+class RoutingTable;
+
 bool ClosestToMe(protobuf::Message &message);
 
 bool InClosestNodesToMe(protobuf::Message &message);
 
 void ValidateThisNode(rudp::ManagedConnections &rudp,
                       RoutingTable &routing_table,
+                      NonRoutingTable &non_routing_table,
                       const NodeId& node_id,
                       const asymm::PublicKey &public_key,
                       const rudp::EndpointPair &their_endpoint,

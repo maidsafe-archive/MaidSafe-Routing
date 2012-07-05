@@ -31,16 +31,18 @@ namespace routing {
 
 RoutingPrivate::RoutingPrivate(const asymm::Keys &keys,
                                bool client_mode)
-    : asio_service_(new AsioService(2)), //Concurrency())),
+    : asio_service_(new AsioService(2)),
       bootstrap_nodes_(),
       keys_(keys),
       functors_(),
       rudp_(),
-      routing_table_(keys_, CloseNodeReplacedFunctor()),
+      routing_table_(keys_, client_mode, CloseNodeReplacedFunctor()),
+      non_routing_table_(keys_),  // TODO(Prakash) : don't create NRT for client nodes (wrap both)
       timer_(*asio_service_),
       waiting_for_response_(),
       direct_non_routing_table_connections_(),
-      message_handler_(asio_service_, routing_table_, rudp_, timer_, MessageReceivedFunctor(),
+      message_handler_(asio_service_, routing_table_, non_routing_table_,
+                       rudp_, timer_, MessageReceivedFunctor(),
                        RequestPublicKeyFunctor()),
       joined_(false),
       bootstrap_file_path_(),

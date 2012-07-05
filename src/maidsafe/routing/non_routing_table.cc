@@ -28,6 +28,10 @@ NonRoutingTable::NonRoutingTable(const asymm::Keys &keys)
       mutex_(),
       close_node_from_to_signal_() {}
 
+void NonRoutingTable::set_keys(asymm::Keys keys) {
+  keys_ = keys;
+}
+
 bool NonRoutingTable::AddNode(NodeInfo &node, const NodeId &furthest_close_node_id) {
   return AddOrCheckNode(node, furthest_close_node_id, true);
 }
@@ -42,7 +46,7 @@ bool NonRoutingTable::AddOrCheckNode(NodeInfo &node, const NodeId &furthest_clos
   if (node.node_id == kNodeId_) {
     return false;
   }
-  if (CheckRangeForNodeToBeAdded(node, furthest_close_node_id)) {
+  if (CheckRangeForNodeToBeAdded(node, furthest_close_node_id, add)) {
     if (add)
       non_routing_table_nodes_.push_back(node);
     return true;
@@ -146,25 +150,25 @@ bool NonRoutingTable::CheckParametersAreUnique(const NodeInfo& node) const {
   // if we already have a duplicate public key under different node id return false
   if (std::find_if(non_routing_table_nodes_.begin(),
                    non_routing_table_nodes_.end(),
-                   [node](const NodeInfo &i)->bool
-                   { return (asymm::MatchingPublicKeys(i.public_key, node.public_key) &&
-                       (i.node_id != node.node_id));})
+                   [node](const NodeInfo &i)->bool {
+                       return (asymm::MatchingPublicKeys(i.public_key, node.public_key) &&
+                           (i.node_id != node.node_id));})
                  != non_routing_table_nodes_.end()) {
     LOG(kInfo) << "Already have a different node id with this public key";
     return false;
   }
-
   return true;
 }
 
 bool NonRoutingTable::CheckRangeForNodeToBeAdded(NodeInfo& node,
-                                                 const NodeId &furthest_close_node_id) {
+                                                 const NodeId &furthest_close_node_id,
+                                                 const bool &add) {
   if (NonRoutingTableSize() > Parameters::max_non_routing_table_size) {
     LOG(kInfo) << "Non Routing Table full";
     return false;
   }
 
-  if (!CheckValidParameters(node)) {
+  if (add && !CheckValidParameters(node)) {
     LOG(kInfo) << "Invalid Parameters";
     return false;
   }

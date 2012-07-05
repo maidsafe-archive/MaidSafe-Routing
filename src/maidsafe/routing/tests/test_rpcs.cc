@@ -41,7 +41,6 @@ TEST(RPC, BEH_PingMessageInitialised) {
 TEST(RPC, BEH_PingMessageNode) {
   asymm::Keys keys;
   keys.identity = RandomString(64);
-  RoutingTable RT(keys, nullptr);
   NodeInfo node;
   std::string destination = RandomString(64);
   protobuf::Message message = rpcs::Ping(NodeId(destination), keys.identity);
@@ -101,7 +100,7 @@ TEST(RPC, BEH_ConnectMessageNodeRelayMode) {
   Endpoint relay_endpoint(boost::asio::ip::address_v4::loopback(), GetRandomPort());
   std::string destination = RandomString(64);
   protobuf::Message message = rpcs::Connect(NodeId(destination), endpoint, us.node_id,
-                                            true, relay_endpoint);
+                                            false, true, relay_endpoint);
   protobuf::ConnectRequest connect_request;
   EXPECT_TRUE(message.IsInitialized());
   EXPECT_TRUE(connect_request.ParseFromString(message.data()));  // us
