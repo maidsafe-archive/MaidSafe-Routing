@@ -153,7 +153,7 @@ TEST(APITest, BEH_API_ZeroState) {
   EXPECT_EQ(kSuccess, a3.get());  // wait for promise !
 }
 
-TEST(APITest, BEH_API_AnonymousNode) {
+TEST(APITest, FUNC_API_AnonymousNode) {
   NodeInfo node1(MakeNodeInfo());
   NodeInfo node2(MakeNodeInfo());
   std::map<NodeId, asymm::Keys> key_map;
