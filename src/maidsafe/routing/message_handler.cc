@@ -12,6 +12,8 @@
 
 #include "maidsafe/routing/message_handler.h"
 
+#include <vector>
+
 #include "maidsafe/common/rsa.h"
 #include "maidsafe/rudp/managed_connections.h"
 
