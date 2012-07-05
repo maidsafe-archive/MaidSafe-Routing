@@ -141,8 +141,12 @@ class RoutingFunctionalTest : public testing::Test {
     nodes_.push_back(node2);
     SetNodeValidationFunctor(node1);
     SetNodeValidationFunctor(node2);
-    auto f1 = std::async(std::launch::async, [=] { return node1->ZeroStateJoin(node2->node_info_); });
-    auto f2 = std::async(std::launch::async, [=] { return node2->ZeroStateJoin(node1->node_info_); });
+    auto f1 = std::async(std::launch::async, [=] {
+      return node1->ZeroStateJoin(node2->node_info_);
+    });
+    auto f2 = std::async(std::launch::async, [=] {
+      return node2->ZeroStateJoin(node1->node_info_);
+    });
     EXPECT_EQ(kSuccess, f2.get());
     EXPECT_EQ(kSuccess, f1.get());
   }

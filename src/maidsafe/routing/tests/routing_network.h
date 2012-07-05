@@ -91,8 +91,12 @@ class GenericNetwork : public testing::Test {
     SetNodeValidationFunctor(node1);
     SetNodeValidationFunctor(node2);
     LOG(kVerbose) << "Setup started";
-    auto f1 = std::async(std::launch::async, [=, &node2] ()->int { return node1->ZeroStateJoin(node2->node_info()); } );
-    auto f2 = std::async(std::launch::async, [=, &node1] ()->int { return node2->ZeroStateJoin(node1->node_info()); } );
+    auto f1 = std::async(std::launch::async, [=, &node2] ()->int {
+      return node1->ZeroStateJoin(node2->node_info());
+    });
+    auto f2 = std::async(std::launch::async, [=, &node1] ()->int {
+      return node2->ZeroStateJoin(node1->node_info());
+    });
     EXPECT_EQ(kSuccess, f2.get());
     EXPECT_EQ(kSuccess, f1.get());
     LOG(kVerbose) << "Setup succeeded";

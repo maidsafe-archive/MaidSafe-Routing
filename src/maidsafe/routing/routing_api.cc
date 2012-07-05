@@ -234,7 +234,7 @@ int Routing::DoFindNode() {
 
   uint8_t poll_count(0);
   // TODO(Prakash) : Need to fix target min RT size.
-  uint8_t target_routing_table_size = 2; //  (impl_->client_mode_? 4 : 2);
+  uint8_t target_routing_table_size = 2;  // (impl_->client_mode_? 4 : 2);
   do {
     Sleep(boost::posix_time::milliseconds(100));
   } while ((impl_->routing_table_.Size() < target_routing_table_size) &&

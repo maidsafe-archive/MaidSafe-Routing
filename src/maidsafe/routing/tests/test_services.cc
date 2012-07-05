@@ -56,7 +56,7 @@ TEST(Services, BEH_Ping) {
   EXPECT_FALSE(message.has_relay());
 }
 
-TEST(Services, BEH_Connect) {
+TEST(Services, DISABLED_BEH_Connect) {
   NodeInfo us(MakeNode());
   NodeInfo them(MakeNode());
   asymm::Keys keys;
