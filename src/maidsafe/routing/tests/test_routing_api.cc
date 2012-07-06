@@ -83,7 +83,6 @@ asymm::Keys GetKeys(const NodeInfo &node_info) {
 
 TEST(APITest, BEH_API_StandAloneNodeNotConnected) {
   asymm::Keys keys(MakeKeys());
-//  boost::filesystem::path good_file(fs::unique_path(fs::temp_directory_path() / "test"));
   Functors functors;
   EXPECT_NO_THROW({
     Routing RtAPI(keys, false);

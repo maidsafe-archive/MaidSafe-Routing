@@ -60,7 +60,11 @@ void Connect(RoutingTable &routing_table,
              protobuf::Message &message,
              RequestPublicKeyFunctor node_validation_functor) {
   if (message.destination_id() != routing_table.kKeys().identity) {
-    LOG(kVerbose) << "Connect -- not for us and we should not pass it on.";
+    LOG(kWarning) << "Connect -- not for us and we should not pass it on."
+                  << "Message destination id : "
+                  << HexSubstr(message.destination_id())
+                  << " . I am"
+                  << HexSubstr(routing_table.kKeys().identity);
     message.Clear();
     return;  // not for us and we should not pass it on.
   }

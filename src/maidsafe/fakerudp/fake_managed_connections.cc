@@ -37,7 +37,7 @@ namespace rudp {
 typedef boost::asio::ip::udp::endpoint Endpoint;
 
 ManagedConnections::ManagedConnections()
-    : asio_service_(0),
+    : asio_service_(2),
       message_received_functor_(),
       connection_lost_functor_(),
       transports_(),
@@ -47,6 +47,7 @@ ManagedConnections::ManagedConnections()
   Node node;
   bootstrap_endpoints_.push_back(node.endpoint);
   FakeNetwork::instance().AddEmptyNode(node);
+  asio_service_.Start();
 }
 
 ManagedConnections::~ManagedConnections() {
@@ -55,6 +56,7 @@ ManagedConnections::~ManagedConnections() {
   if (!FakeNetwork::instance().RemoveMyNode(my_node->endpoint)) {
     LOG(kVerbose) << "Failed to remove my node in destructor.";
   }*/
+  asio_service_.Stop();
 }
 
 Endpoint ManagedConnections::Bootstrap(const std::vector<Endpoint> &bootstrap_endpoints,
@@ -111,22 +113,26 @@ int ManagedConnections::GetAvailableEndpoint(const Endpoint& /*peer_endpoint*/,
 int ManagedConnections::Add(const Endpoint &this_endpoint,
                             const Endpoint &peer_endpoint,
                             const std::string &/*validation_data*/) {
-  FakeNetwork::instance().AddConnection(this_endpoint, peer_endpoint);
+  asio_service_.service().post([=]() {
+    FakeNetwork::instance().AddConnection(this_endpoint, peer_endpoint);
+  });
   return kSuccess;
 }
 
 void ManagedConnections::Send(const Endpoint &peer_endpoint,
                               const std::string &message,
                               MessageSentFunctor message_sent_functor) {
-  message_sent_functor(FakeNetwork::instance().SendMessageToNode(peer_endpoint, message));
+  asio_service_.service().post([=]() {
+    message_sent_functor(FakeNetwork::instance().SendMessageToNode(peer_endpoint, message));
+  });
 }
 
 void ManagedConnections::Remove(const Endpoint &peer_endpoint) {
-  if (!FakeNetwork::instance().RemoveConnection(bootstrap_endpoints_[0], peer_endpoint)) {
-    LOG(kVerbose) << "Failed to remove " << peer_endpoint;
-  }
+  asio_service_.service().post([=]() {
+    if (!FakeNetwork::instance().RemoveConnection(bootstrap_endpoints_[0], peer_endpoint))
+      LOG(kVerbose) << "Failed to remove " << peer_endpoint;
+  });
 }
-
 }  // namespace rudp
 
 }  // namespace maidsafe

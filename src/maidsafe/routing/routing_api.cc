@@ -235,17 +235,17 @@ int Routing::DoFindNode() {
   uint8_t poll_count(0);
   // TODO(Prakash) : Need to fix target min RT size.
   // TODO(Prakash) : workaround to allow fake rudp tests pass FIXME
-  uint8_t target_routing_table_size = 1;  // (impl_->client_mode_? 4 : 2);
+  uint8_t target_routing_table_size = 2;  // (impl_->client_mode_? 4 : 2);
   do {
     Sleep(boost::posix_time::milliseconds(100));
   } while ((impl_->routing_table_.Size() < target_routing_table_size) &&
            (++poll_count < 100));
   if (impl_->routing_table_.Size() >= target_routing_table_size) {
     LOG(kInfo) << (impl_->client_mode_? "Client ": "")
-               << "Node with id : " << HexSubstr(impl_->keys_.identity)
-               << " successfully joined network, bootstrap node - "
+               << " Node successfully joined network, bootstrap node - "
                << impl_->message_handler_.bootstrap_endpoint()
-               << ", Routing table size - " << impl_->routing_table_.Size();
+               << ", Routing table size - " << impl_->routing_table_.Size()
+               << ", Node id : " << HexSubstr(impl_->keys_.identity);
     return kSuccess;
   } else {
     LOG(kError) << "Failed to join network, bootstrap node - "
@@ -299,7 +299,9 @@ int Routing::ZeroStateJoin(Functors functors, const Endpoint &local_endpoint,
     Sleep(boost::posix_time::milliseconds(100));
   } while ((impl_->routing_table_.Size() == 0) && (++poll_count < 50));
   if (impl_->routing_table_.Size() != 0) {
-    LOG(kInfo) << "Successfully joined zero state network, with " << bootstrap_endpoint;
+    LOG(kInfo) << "Node Successfully joined zero state network, with " << bootstrap_endpoint
+               << ", Routing table size - " << impl_->routing_table_.Size()
+               << ", Node id : " << HexSubstr(impl_->keys_.identity);
     return kSuccess;
   } else {
     LOG(kError) << "Failed to join zero state network, with bootstrap_endpoint"
