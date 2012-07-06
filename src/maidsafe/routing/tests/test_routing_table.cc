@@ -110,7 +110,7 @@ TEST(RoutingTableTest, BEH_CloseAndInRangeCheck) {
   for (uint16_t i = 0; i < Parameters::closest_nodes_size; ++i)
     EXPECT_TRUE(std::find(close_nodes.begin(),
                           close_nodes.end(),
-                          RT.GetClosestNode(my_node, i).node_id)
+                          RT.GetNthClosestNode(my_node, i + 1).node_id)
                               != close_nodes.end());
   // add the node now
      NodeInfo node(MakeNode());
@@ -120,18 +120,17 @@ TEST(RoutingTableTest, BEH_CloseAndInRangeCheck) {
      node.endpoint.port(25000);
      EXPECT_TRUE(RT.AddNode(node));
   // should now be closest node to itself :-)
-  EXPECT_EQ(RT.GetClosestNode(my_closest_node, 0).node_id.String(),
-            my_closest_node.String());
+  EXPECT_EQ(RT.GetClosestNode(my_closest_node).node_id.String(), my_closest_node.String());
   EXPECT_EQ(RT.Size(), Parameters::max_routing_table_size);
-  EXPECT_TRUE(RT.DropNode(node.endpoint));
+  EXPECT_EQ(node.node_id, RT.DropNode(node.endpoint).node_id);
   EXPECT_EQ(RT.Size(), Parameters::max_routing_table_size - 1);
   EXPECT_TRUE(RT.AddNode(node));
   EXPECT_EQ(RT.Size(), Parameters::max_routing_table_size);
   EXPECT_FALSE(RT.AddNode(node));
   EXPECT_EQ(RT.Size(), Parameters::max_routing_table_size);
-  EXPECT_TRUE(RT.DropNode(node.endpoint));
+  EXPECT_EQ(node.node_id, RT.DropNode(node.endpoint).node_id);
   EXPECT_EQ(RT.Size(), Parameters::max_routing_table_size -1);
-  EXPECT_FALSE(RT.DropNode(node.endpoint));
+  EXPECT_EQ(NodeId(), RT.DropNode(node.endpoint).node_id);
 }
 
 }  // namespace test

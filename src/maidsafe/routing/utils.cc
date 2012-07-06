@@ -59,8 +59,8 @@ void ValidateThisNode(rudp::ManagedConnections &rudp,
   bool routing_accepted_node(false);
   if (client) {
     NodeId furthest_close_node_id =
-        routing_table.GetClosestNode(NodeId(routing_table.kKeys().identity),
-                                     Parameters::closest_nodes_size).node_id;
+        routing_table.GetNthClosestNode(NodeId(routing_table.kKeys().identity),
+                                        Parameters::closest_nodes_size).node_id;
 
     if (non_routing_table.AddNode(node_info, furthest_close_node_id)) {
       routing_accepted_node = true;

@@ -48,7 +48,7 @@ class RoutingTable {
                         CloseNodeReplacedFunctor close_node_replaced_functor);
   bool AddNode(NodeInfo &node);
   bool CheckNode(NodeInfo &node);
-  bool DropNode(const Endpoint &endpoint);
+  NodeInfo DropNode(const Endpoint &endpoint);
   bool GetNodeInfo(const Endpoint &endpoint, NodeInfo *node_info);
   bool IsMyNodeInRange(const NodeId &node_id, const uint16_t range);
   bool AmIClosestNode(const NodeId &node_id);
@@ -56,7 +56,7 @@ class RoutingTable {
   // Returns zero node id if RT size is zero
   NodeInfo GetClosestNode(const NodeId &from);
   // Returns max node id if RT size is lesser than requested node_number
-  NodeInfo GetClosestNode(const NodeId &from, const uint16_t &node_number);
+  NodeInfo GetNthClosestNode(const NodeId &from, const uint16_t &node_number);
   std::vector<NodeId> GetClosestNodes(const NodeId &from, const uint16_t &number_to_get);
 
   uint16_t Size();

@@ -123,7 +123,7 @@ void ProcessSend(protobuf::Message message,
         SendOn(message, rudp, routing_table, i.node_id, i.endpoint, false);
       }
     } else if (routing_table.Size() > 0) {  //  getting closer nodes from my RT
-      NodeInfo closest_node(routing_table.GetClosestNode(NodeId(message.destination_id()), 0));
+      NodeInfo closest_node(routing_table.GetClosestNode(NodeId(message.destination_id())));
       SendOn(message, rudp, routing_table, closest_node.node_id, closest_node.endpoint, true);
     } else {
       LOG(kError) << " No Endpoint to send to, Aborting Send!"

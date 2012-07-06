@@ -85,16 +85,18 @@ void RoutingTable::set_close_node_replaced_functor(CloseNodeReplacedFunctor clos
   close_node_replaced_functor_ = close_node_replaced;
 }
 
-bool RoutingTable::DropNode(const Endpoint &endpoint) {
+NodeInfo RoutingTable::DropNode(const Endpoint &endpoint) {
+  NodeInfo dropped_node;
   std::lock_guard<std::mutex> lock(mutex_);
   for (auto it = routing_table_nodes_.begin(); it != routing_table_nodes_.end(); ++it) {
     if (((*it).endpoint ==  endpoint)) {
+      dropped_node = (*it);
       routing_table_nodes_.erase(it);
       UpdateGroupChangeAndNotify();
-      return true;
+      break;
     }
   }
-  return false;
+  return dropped_node;
 }
 
 bool RoutingTable::GetNodeInfo(const Endpoint &endpoint, NodeInfo *node_info) {
@@ -293,15 +295,16 @@ int16_t RoutingTable::BucketIndex(const NodeId &rhs) const {
   return bucket;
 }
 
-NodeInfo RoutingTable::GetClosestNode(const NodeId &from, const uint16_t &node_number) {
+NodeInfo RoutingTable::GetNthClosestNode(const NodeId &from, const uint16_t &node_number) {
+  assert((node_number > 0) && "Node number starts with position 1");
   std::lock_guard<std::mutex> lock(mutex_);
   if (RoutingTableSize() < node_number) {
     NodeInfo node_info;
     node_info.node_id = NodeId(NodeId::kMaxId);
     return node_info;
   }
-  NthElementSortFromThisNode(from, node_number + 1);
-  return routing_table_nodes_[node_number];
+  NthElementSortFromThisNode(from, node_number);
+  return routing_table_nodes_[node_number - 1];
 }
 
 NodeInfo RoutingTable::GetClosestNode(const NodeId &from) {

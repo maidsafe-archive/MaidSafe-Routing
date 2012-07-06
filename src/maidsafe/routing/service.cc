@@ -60,11 +60,11 @@ void Connect(RoutingTable &routing_table,
              protobuf::Message &message,
              RequestPublicKeyFunctor node_validation_functor) {
   if (message.destination_id() != routing_table.kKeys().identity) {
-    LOG(kWarning) << "Connect -- not for us and we should not pass it on."
-                  << "Message destination id : "
-                  << HexSubstr(message.destination_id())
-                  << " . I am"
-                  << HexSubstr(routing_table.kKeys().identity);
+    LOG(kError) << "Connect -- not for us and we should not pass it on."
+                << "Message destination id : "
+                << HexSubstr(message.destination_id())
+                << " . I am"
+                << HexSubstr(routing_table.kKeys().identity);
     message.Clear();
     return;  // not for us and we should not pass it on.
   }
@@ -102,8 +102,8 @@ void Connect(RoutingTable &routing_table,
   if (message.client_node()) {  // Client node, check NRT
     LOG(kVerbose) << " client connect request - will check NRT";
     NodeId furthest_close_node_id =
-        routing_table.GetClosestNode(NodeId(routing_table.kKeys().identity),
-                                     Parameters::closest_nodes_size).node_id;
+        routing_table.GetNthClosestNode(NodeId(routing_table.kKeys().identity),
+                                        Parameters::closest_nodes_size).node_id;
     check_node_succeeded = non_routing_table.CheckNode(node, furthest_close_node_id);
   } else {
     LOG(kVerbose) << " server connect request - will check RT";
