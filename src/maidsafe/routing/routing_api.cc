@@ -60,7 +60,12 @@ Routing::Routing(const asymm::Keys &keys, const bool &client_mode)
   }
 }
 
-Routing::~Routing() {}
+Routing::~Routing() {
+  LOG(kVerbose) << "~Routing() - Disconnecting funtors"
+                << ", Routing table Size - " << impl_->routing_table_.Size();
+  impl_->message_handler_.set_tearing_down();
+  DisconnectFunctors();
+}
 
 int Routing::GetStatus() {
   if (impl_->routing_table_.Size() == 0) {
@@ -129,7 +134,7 @@ void Routing::ConnectFunctors(Functors functors) {
   impl_->functors_ = functors;
 }
 
-void Routing::DisconnectFunctors() {
+void Routing::DisconnectFunctors() {  // TODO(Prakash) : fix raise condition when functors in use
   impl_->routing_table_.set_close_node_replaced_functor(nullptr);
   impl_->message_handler_.set_message_received_functor(nullptr);
   impl_->message_handler_.set_node_validation_functor(nullptr);
@@ -148,7 +153,7 @@ int Routing::BootStrapFromThisEndpoint(Functors functors, const Endpoint &endpoi
     DisconnectFunctors();  // TODO(Prakash): Do we need this ?
     for (unsigned int i = 0; i < impl_->routing_table_.Size(); ++i) {
       NodeInfo remove_node =
-      impl_->routing_table_.GetClosestNode(NodeId(impl_->routing_table_.kKeys().identity), 0);
+      impl_->routing_table_.GetClosestNode(NodeId(impl_->routing_table_.kKeys().identity));
       impl_->rudp_.Remove(remove_node.endpoint);
       impl_->routing_table_.DropNode(remove_node.endpoint);
     }
@@ -363,6 +368,11 @@ void Routing::Send(const NodeId &destination_id,
 }
 
 void Routing::ReceiveMessage(const std::string &message) {
+  if (impl_->message_handler_.tearing_down()) {
+    LOG(kVerbose) << " Ignoring, Message received, shutting down";
+    return;
+  }
+
   protobuf::Message protobuf_message;
   protobuf::ConnectRequest connection_request;
   if (protobuf_message.ParseFromString(message)) {
@@ -380,38 +390,39 @@ void Routing::ReceiveMessage(const std::string &message) {
 }
 
 void Routing::ConnectionLost(const Endpoint &lost_endpoint) {
-  NodeInfo node_info;
-  if ((impl_->routing_table_.GetNodeInfo(lost_endpoint, &node_info) &&
-      (impl_->routing_table_.IsMyNodeInRange(node_info.node_id,
+  NodeInfo dropped_node;
+  if ((!impl_->message_handler_.tearing_down()) &&
+      (impl_->routing_table_.GetNodeInfo(lost_endpoint, &dropped_node) &&
+      (impl_->routing_table_.IsMyNodeInRange(dropped_node.node_id,
                                              Parameters::closest_nodes_size)))) {
-    // close node, get more
+    // close node lost, get more nodes
     ProcessSend(rpcs::FindNodes(NodeId(impl_->keys_.identity),
                                 NodeId(impl_->keys_.identity)),
                                 impl_->rudp_,
                                 impl_->routing_table_,
                                 impl_->non_routing_table_);
   }
-  if (!impl_->routing_table_.DropNode(lost_endpoint))
+
+  //  Checking RT
+  dropped_node = impl_->routing_table_.DropNode(lost_endpoint);
+  if (dropped_node.node_id != NodeId()) {
+    LOG(kWarning) << " Lost connection with routing node : "
+                  << HexSubstr(dropped_node.node_id.String())
+                  << ", endpoint : "
+                  << lost_endpoint;
     return;
-  for (auto it = impl_->direct_non_routing_table_connections_.begin();
-        it != impl_->direct_non_routing_table_connections_.end(); ++it) {
-    if ((*it).endpoint ==  lost_endpoint) {
-      impl_->direct_non_routing_table_connections_.erase(it);
-      return;
-    }
   }
-  for (auto it = impl_->direct_non_routing_table_connections_.begin();
-        it != impl_->direct_non_routing_table_connections_.end(); ++it) {
-    if ((*it).endpoint ==  lost_endpoint) {
-      impl_->direct_non_routing_table_connections_.erase(it);
-      // close node, get more
-      ProcessSend(rpcs::FindNodes(NodeId(impl_->keys_.identity),
-                                  NodeId(impl_->keys_.identity)),
-                                  impl_->rudp_,
-                                  impl_->routing_table_,
-                                  impl_->non_routing_table_);
-      return;
-    }
+
+  //  Checking NRT
+  dropped_node = impl_->non_routing_table_.DropNode(lost_endpoint);
+  if (dropped_node.node_id != NodeId()) {
+    LOG(kWarning) << " Lost connection with non routing node : "
+                  << HexSubstr(dropped_node.node_id.String())
+                  << ", endpoint : "
+                  << lost_endpoint;
+  } else {
+    LOG(kWarning) << " Lost connection with unknown/internal endpoint : "
+                  << lost_endpoint;
   }
 }
 

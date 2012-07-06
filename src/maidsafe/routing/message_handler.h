@@ -50,8 +50,10 @@ class MessageHandler {
   void set_my_relay_endpoint(Endpoint endpoint);
   void set_message_received_functor(MessageReceivedFunctor message_received);
   void set_node_validation_functor(RequestPublicKeyFunctor node_validation);
+  void set_tearing_down();
   Endpoint bootstrap_endpoint();
   Endpoint my_relay_endpoint();
+  bool tearing_down();
 
  private:
   MessageHandler(const MessageHandler&);  // no copy
@@ -65,6 +67,7 @@ class MessageHandler {
   bool RelayDirectMessageIfNeeded(protobuf::Message &message);
   void ClientMessage(protobuf::Message &message);
   void GroupMessage(protobuf::Message &message);
+
   std::shared_ptr<AsioService> asio_service_;
   RoutingTable &routing_table_;
   NonRoutingTable &non_routing_table_;
@@ -75,6 +78,7 @@ class MessageHandler {
   CacheManager cache_manager_;
   MessageReceivedFunctor message_received_functor_;
   RequestPublicKeyFunctor node_validation_functor_;
+  bool tearing_down_;
 };
 
 }  // namespace routing

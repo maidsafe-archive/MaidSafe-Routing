@@ -55,7 +55,8 @@ MessageHandler::MessageHandler(std::shared_ptr<AsioService> asio_service,
       timer_ptr_(timer_ptr),
       cache_manager_(),
       message_received_functor_(message_received_functor),
-      node_validation_functor_(node_validation_functor) {}
+      node_validation_functor_(node_validation_functor),
+      tearing_down_(false) {}
 
 void MessageHandler::Send(protobuf::Message& message) {
   ProcessSend(message, rudp_, routing_table_, non_routing_table_);
@@ -280,7 +281,7 @@ void MessageHandler::ProcessRelayRequest(protobuf::Message &message) {
     if (message.type() == 3) {
       service::FindNodes(routing_table_, message);
       ProcessSend(message, rudp_, routing_table_, non_routing_table_);
-        return;
+      return;
     }
   }
   // I am now the src id for the relay message and will forward back response to original node.
@@ -365,6 +366,14 @@ return my_relay_endpoint_;
 
 Endpoint MessageHandler::bootstrap_endpoint() {
 return bootstrap_endpoint_;
+}
+
+void MessageHandler::set_tearing_down() {
+  tearing_down_ = true;
+}
+
+bool MessageHandler::tearing_down() {
+  return tearing_down_;
 }
 
 }  // namespace routing

@@ -40,7 +40,7 @@ class NonRoutingTable {
   bool AddNode(NodeInfo &node, const NodeId &furthest_close_node_id);
   bool CheckNode(NodeInfo &node, const NodeId &furthest_close_node_id);
   int16_t DropNodes(const NodeId &node_id);
-  bool DropNode(const Endpoint &endpoint);
+  NodeInfo DropNode(const Endpoint &endpoint);
   NodeInfo GetNodeInfo(const Endpoint &endpoint);
   std::vector<NodeInfo> GetNodesInfo(const NodeId &node_id);
   bool AmIConnectedToEndpoint(const Endpoint& endpoint);
