@@ -79,7 +79,16 @@ bool FakeNetwork::AddConnection(const Endpoint &my_endpoint, const Endpoint &pee
     LOG(kError) << "Failed to find " << my_endpoint << " on network.";
     return false;
   }
-  iter->connected_endpoints.push_back(peer_endpoint);
+  auto itr = std::find_if(iter->connected_endpoints.begin(),
+                          iter->connected_endpoints.end(),
+                          [&](Endpoint &endpoint) {
+                              return (endpoint == peer_endpoint);
+                          });
+  if (itr == iter->connected_endpoints.end()) {
+    iter->connected_endpoints.push_back(peer_endpoint);
+  } else {
+    LOG(kInfo) << "Connection already exists between " << my_endpoint << " and " << peer_endpoint;
+  }
   return true;
 }
 
@@ -130,12 +139,13 @@ bool FakeNetwork::RemoveMyNode(Endpoint endpoint) {
     for (auto i : iter->connected_endpoints) {
       auto it = FindNode(i);
       if (it != nodes_.end()) {
-        it->connection_lost(endpoint);
-        it->connected_endpoints.erase(std::remove_if(it->connected_endpoints.begin(),
-                                                     it->connected_endpoints.end(),
-                                                     [&](Endpoint &element) {
-                                                        return element == endpoint;
-                                                     }));
+        // it->connection_lost(endpoint);
+        it->connected_endpoints.erase(
+            std::remove_if(it->connected_endpoints.begin(),
+                           it->connected_endpoints.end(),
+                           [&](Endpoint &element) {
+                              return element == endpoint;
+                           }));
       }
     }
     nodes_.erase(iter);
