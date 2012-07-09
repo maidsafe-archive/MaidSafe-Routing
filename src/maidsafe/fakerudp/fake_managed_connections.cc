@@ -51,11 +51,9 @@ ManagedConnections::ManagedConnections()
 }
 
 ManagedConnections::~ManagedConnections() {
-  asio_service_.service().dispatch([=] {
-    if (!FakeNetwork::instance().RemoveMyNode(bootstrap_endpoints_[0]))
-      LOG(kVerbose) << "Failed to remove my node in destructor.";
-  });
-  asio_service_.Stop();
+  if (!FakeNetwork::instance().RemoveMyNode(bootstrap_endpoints_[0])) {
+    LOG(kVerbose) << "Failed to remove my node in destructor.";
+  }
 }
 
 Endpoint ManagedConnections::Bootstrap(const std::vector<Endpoint> &bootstrap_endpoints,
