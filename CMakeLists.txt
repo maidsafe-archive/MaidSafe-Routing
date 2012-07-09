@@ -89,6 +89,7 @@ target_link_libraries(TESTroutingtable_fake_rudp maidsafe_routing_fake_rudp)
 
 rename_outdated_built_exes()
 
+set_target_properties(TESTrouting_fake_rudp PROPERTIES COMPILE_FLAGS -DFAKE_RUDP)
 
 ###################################################################################################
 # Set compiler and linker flags                                                                   #

@@ -226,6 +226,7 @@ void ProxyConnect(RoutingTable &routing_table, rudp::ManagedConnections &/*rudp*
   }
   message.set_type(-4);
   message.set_data(proxy_connect_response.SerializeAsString());
+  message.set_direct(true);
   message.set_destination_id(message.source_id());
   message.set_source_id(routing_table.kKeys().identity);
   assert(message.IsInitialized() && "unintialised message");

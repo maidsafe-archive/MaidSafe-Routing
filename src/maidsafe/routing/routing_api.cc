@@ -334,6 +334,14 @@ void Routing::Send(const NodeId &destination_id,
       response_functor(kEmptyData, "");
     return;
   }
+
+  if (100 >= type) {
+    LOG(kError) << "Type below 101 not allowed, aborted send";
+    if (response_functor)
+      response_functor(kTypeNotAllowed, "");
+    return;
+  }
+
   protobuf::Message proto_message;
   if (response_functor)
     proto_message.set_id(impl_->timer_.AddTask(timeout, response_functor));
@@ -363,7 +371,12 @@ void Routing::Send(const NodeId &destination_id,
 
   // Non Anonymous, normal node
   proto_message.set_source_id(impl_->routing_table_.kKeys().identity);
-  ProcessSend(proto_message, impl_->rudp_, impl_->routing_table_, impl_->non_routing_table_);
+  if (impl_->routing_table_.kKeys().identity != destination_id.String()) {
+    ProcessSend(proto_message, impl_->rudp_, impl_->routing_table_, impl_->non_routing_table_);
+  } else {
+    LOG(kInfo) << "Sending request to self";
+    ReceiveMessage(proto_message.SerializeAsString());
+  }
   return;
 }
 

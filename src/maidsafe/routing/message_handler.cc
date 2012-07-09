@@ -147,7 +147,12 @@ void MessageHandler::NodeLevelMessageForMe(protobuf::Message &message) {
           SetProtobufEndpoint(relay_endpoint, message_out.mutable_relay());
         }
 
-        ProcessSend(message_out, rudp_, routing_table_, non_routing_table_);
+        if (routing_table_.kKeys().identity != message_out.destination_id()) {
+          ProcessSend(message_out, rudp_, routing_table_, non_routing_table_);
+        } else {
+          LOG(kInfo) << "Sending response to self";
+          ProcessMessage(message_out);
+        }
       };
 
     if (message_received_functor_)
@@ -174,7 +179,7 @@ void MessageHandler::DirectMessage(protobuf::Message& message) {
 }
 
 void MessageHandler::CloseNodesMessage(protobuf::Message& message) {
-  if ((message.direct()) && (!routing_table_.AmIClosestNode(NodeId(message.destination_id())))) {
+  if ((message.direct()) || (!routing_table_.AmIClosestNode(NodeId(message.destination_id())))) {
     ProcessSend(message, rudp_, routing_table_, non_routing_table_);
     return;
   }
@@ -254,17 +259,12 @@ void MessageHandler::ProcessMessage(protobuf::Message &message) {
   if (routing_table_.IsMyNodeInRange(NodeId(message.destination_id()),
                                      Parameters::closest_nodes_size)) {
     LOG(kVerbose) <<"I am in closest proximity to this message";
-    if (IsRoutingMessage(message)) {
-      RoutingMessage(message);
-      return;
-    } else {
-      CloseNodesMessage(message);
-      return;
-    }
-  } else {
-    LOG(kVerbose) <<"I am not in closest proximity to this message";
-    ProcessSend(message, rudp_, routing_table_, non_routing_table_);
+    CloseNodesMessage(message);
+    return;
   }
+
+  LOG(kVerbose) <<"I am not in closest proximity to this message, sending on";
+  ProcessSend(message, rudp_, routing_table_, non_routing_table_);
 }
 
 void MessageHandler::ProcessRelayRequest(protobuf::Message &message) {

@@ -48,7 +48,8 @@ enum ReturnCode {
   kResponseTimeout = -303005,
   kAnonymousSessionEnded = -303006,
   kInvalidDestinationId = -303007,
-  kEmptyData = -303008
+  kEmptyData = -303008,
+  kTypeNotAllowed = -303009
 };
 
 }  // namespace routing

@@ -13,6 +13,7 @@
 #ifndef MAIDSAFE_ROUTING_MESSAGE_HANDLER_H_
 #define MAIDSAFE_ROUTING_MESSAGE_HANDLER_H_
 
+#include <atomic>
 #include <string>
 
 #include "maidsafe/rudp/managed_connections.h"
@@ -78,7 +79,7 @@ class MessageHandler {
   CacheManager cache_manager_;
   MessageReceivedFunctor message_received_functor_;
   RequestPublicKeyFunctor node_validation_functor_;
-  bool tearing_down_;
+  std::atomic<bool> tearing_down_;
 };
 
 }  // namespace routing
