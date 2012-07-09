@@ -52,7 +52,7 @@ struct RoutingPrivate {
   RoutingPrivate& operator=(const RoutingPrivate&);  // no assign
   RoutingPrivate(const asymm::Keys &keys, bool client_mode);
   friend class Routing;
-  std::shared_ptr<AsioService> asio_service_;
+  AsioService asio_service_;
   std::vector<Endpoint> bootstrap_nodes_;
   asymm::Keys keys_;  // FIXME
   Functors functors_;

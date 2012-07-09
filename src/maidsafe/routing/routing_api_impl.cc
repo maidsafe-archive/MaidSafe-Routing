@@ -31,14 +31,14 @@ namespace routing {
 
 RoutingPrivate::RoutingPrivate(const asymm::Keys &keys,
                                bool client_mode)
-    : asio_service_(new AsioService(2)),
+    : asio_service_(2),
       bootstrap_nodes_(),
       keys_(keys),
       functors_(),
       rudp_(),
       routing_table_(keys_, client_mode, CloseNodeReplacedFunctor()),
       non_routing_table_(keys_),  // TODO(Prakash) : don't create NRT for client nodes (wrap both)
-      timer_(*asio_service_),
+      timer_(asio_service_),
       waiting_for_response_(),
       direct_non_routing_table_connections_(),
       message_handler_(asio_service_, routing_table_, non_routing_table_,
@@ -48,7 +48,7 @@ RoutingPrivate::RoutingPrivate(const asymm::Keys &keys,
       bootstrap_file_path_(),
       client_mode_(client_mode),
       anonymous_node_(false) {
-  asio_service_->Start();
+  asio_service_.Start();
 }
 
 RoutingPrivate::~RoutingPrivate() {}

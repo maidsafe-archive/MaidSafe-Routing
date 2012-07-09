@@ -39,7 +39,7 @@ namespace routing {
 
 class Timer;
 
-MessageHandler::MessageHandler(std::shared_ptr<AsioService> asio_service,
+MessageHandler::MessageHandler(AsioService& asio_service,
                                RoutingTable &routing_table,
                                NonRoutingTable &non_routing_table,
                                rudp::ManagedConnections &rudp,

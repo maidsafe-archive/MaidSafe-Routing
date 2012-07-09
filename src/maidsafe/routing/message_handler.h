@@ -36,7 +36,7 @@ class Timer;
 
 class MessageHandler {
  public:
-  MessageHandler(std::shared_ptr<AsioService> asio_service,
+  MessageHandler(AsioService& asio_service,
                  RoutingTable &routing_table,
                  NonRoutingTable &non_routing_table,
                  rudp::ManagedConnections &rudp,
@@ -69,7 +69,7 @@ class MessageHandler {
   void ClientMessage(protobuf::Message &message);
   void GroupMessage(protobuf::Message &message);
 
-  std::shared_ptr<AsioService> asio_service_;
+  AsioService& asio_service_;
   RoutingTable &routing_table_;
   NonRoutingTable &non_routing_table_;
   rudp::ManagedConnections &rudp_;
