@@ -55,20 +55,18 @@ struct RoutingPrivate {
   AsioService asio_service_;
   std::vector<Endpoint> bootstrap_nodes_;
   asymm::Keys keys_;  // FIXME
-  Functors functors_;
-  rudp::ManagedConnections rudp_;
   RoutingTable routing_table_;
   NonRoutingTable non_routing_table_;
   Timer timer_;
   std::map<uint32_t, std::pair<std::unique_ptr<boost::asio::deadline_timer>,
                                MessageReceivedFunctor> > waiting_for_response_;
-  std::vector<NodeInfo> direct_non_routing_table_connections_;
-  // closest nodes to the client.
+  rudp::ManagedConnections rudp_;
   MessageHandler message_handler_;
   bool joined_;
   fs::path bootstrap_file_path_;
   bool client_mode_;
   bool anonymous_node_;
+  Functors functors_;
 };
 
 }  // namespace routing

@@ -120,7 +120,9 @@ void ManagedConnections::Send(const Endpoint &peer_endpoint,
                               const std::string &message,
                               MessageSentFunctor message_sent_functor) {
   asio_service_.service().post([=]() {
-    message_sent_functor(FakeNetwork::instance().SendMessageToNode(peer_endpoint, message));
+    bool message_sent(FakeNetwork::instance().SendMessageToNode(peer_endpoint, message));
+    if (message_sent_functor)
+      message_sent_functor(message_sent);
   });
 }
 

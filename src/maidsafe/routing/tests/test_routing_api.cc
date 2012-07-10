@@ -36,6 +36,8 @@ namespace routing {
 namespace test {
 namespace bptime = boost::posix_time;
 
+namespace {
+
 #ifdef FAKE_RUDP
   const int32_t kClientCount(10);
   const int32_t kServerCount(10);
@@ -71,6 +73,8 @@ asymm::Keys GetKeys(const NodeInfo &node_info) {
   keys.public_key = node_info.public_key;
   return keys;
 }
+
+}  // anonymous namespace
 
 // TEST(APITest, BEH_BadConfigFile) {
 //  // See bootstrap file tests for further interrogation of these files

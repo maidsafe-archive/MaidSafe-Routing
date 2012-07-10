@@ -117,13 +117,16 @@ void MessageHandler::RoutingMessage(protobuf::Message& message) {
   if (routing_table_.Size() == 0) {  // I can only send to bootstrap_endpoint
     direct_endpoint = bootstrap_endpoint_;
   }
-  ProcessSend(message, rudp_, routing_table_, non_routing_table_, direct_endpoint);
+  if (message.IsInitialized())
+    ProcessSend(message, rudp_, routing_table_, non_routing_table_, direct_endpoint);
 }
 
 void MessageHandler::NodeLevelMessageForMe(protobuf::Message &message) {
   if (IsRequest(message)) {  // request
     LOG(kInfo) <<"Node Level Request Message for me !! from "
-               << HexSubstr(message.source_id());
+               << HexSubstr(message.source_id())
+               << ". I am " << HexSubstr(routing_table_.kKeys().identity);
+
     ReplyFunctor response_functor = [=](const std::string& reply_message) {
         if (reply_message.empty())
           return;
@@ -162,7 +165,7 @@ void MessageHandler::NodeLevelMessageForMe(protobuf::Message &message) {
     timer_ptr_.ExecuteTaskNow(message);
     LOG(kInfo) <<"Node Level Response Message for me !! from "
                << HexSubstr(message.source_id())
-               << "I am " << HexSubstr(routing_table_.kKeys().identity);
+               << ". I am " << HexSubstr(routing_table_.kKeys().identity);
   }
 }
 

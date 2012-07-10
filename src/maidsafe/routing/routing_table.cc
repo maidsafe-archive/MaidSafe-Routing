@@ -262,6 +262,8 @@ void RoutingTable::PartialSortFromThisNode(const NodeId &from, const uint16_t &n
 }
 
 void RoutingTable::NthElementSortFromThisNode(const NodeId &from, const uint16_t &nth_element) {
+  assert((routing_table_nodes_.size() >= nth_element) &&
+         "This should only be called when n is at max the size of RT");
   std::nth_element(routing_table_nodes_.begin(), routing_table_nodes_.begin() + nth_element,
                    routing_table_nodes_.end(),
                    [this, from](const NodeInfo &i, const NodeInfo &j) {

@@ -33,65 +33,69 @@ void SendOn(protobuf::Message message,
             rudp::ManagedConnections &rudp,
             RoutingTable &routing_table,
             const NodeId &node_id,
-            const Endpoint &endpoint,
-            const bool &recursive_retry) {
+            const Endpoint &endpoint) {
   Endpoint peer_endpoint = endpoint;
   NodeId peer_node_id = node_id;
   const std::string my_node_id(HexSubstr(routing_table.kKeys().identity));
-  std::string serialised_message(message.SerializeAsString());
-  rudp::MessageSentFunctor message_sent_functor;
-  if (!recursive_retry) {  //  send only once to direct endpoint
-    message_sent_functor = [my_node_id, message, &routing_table, peer_node_id](bool message_sent) {
-        if (message_sent)
-          LOG(kInfo) << " Message sent, type: " << message.type()
-                     << " to "
-                     << HexSubstr(peer_node_id.String())
-                     << " I am " << my_node_id
-                     << " [destination id : "
-                     << HexSubstr(message.destination_id())
-                     << "]";
-        else
-          LOG(kError) << " Failed to send message, type: " << message.type()
-                      << " to "
-                      << HexSubstr(peer_node_id.String())
-                      << " I am " << my_node_id
-                      << " [destination id : "
-                      << HexSubstr(message.destination_id())
-                      << "]";
-      };
+  rudp::MessageSentFunctor message_sent_functor = [=](bool message_sent) {
+      if (message_sent)
+        LOG(kInfo) << " Message sent, type: " << message.type()
+                   << " to "
+                   << HexSubstr(peer_node_id.String())
+                   << " I am " << my_node_id
+                   << " [destination id : "
+                   << HexSubstr(message.destination_id())
+                   << "]";
+      else
+        LOG(kError) << " Failed to send message, type: " << message.type()
+                    << " to "
+                    << HexSubstr(peer_node_id.String())
+                    << " I am " << my_node_id
+                    << " [destination id : "
+                    << HexSubstr(message.destination_id())
+                    << "]";
+    };
 
-  } else {
-    message_sent_functor = [=, &rudp, &routing_table, &peer_endpoint](bool message_sent) {
-        if (!message_sent) {
-          NodeInfo new_node = routing_table.GetClosestNode(NodeId(message.destination_id()));
-          if (new_node.node_id == NodeId()) {
-            LOG(kError) << " My RT is empty now. Need to rebootstrap.";
-            return;
-          }
-          LOG(kError) << " Failed to send message, type: " << message.type()
-                      << " to "
-                      << HexSubstr(peer_node_id.String())
-                      << " I am " << my_node_id
-                      << " [ destination id : "
-                      << HexSubstr(message.destination_id())
-                      << "]"
-                      << " Retrying to send to : "
-                      << HexSubstr(new_node.node_id.String());
-          peer_endpoint = new_node.endpoint;
-          rudp.Send(peer_endpoint, serialised_message, message_sent_functor);
-        } else {
-          LOG(kInfo) << " Message sent, type: " << message.type()
-                     << " to "
-                     << HexSubstr(peer_node_id.String())
-                     << " I am " << my_node_id
-                     << " [ destination id : "
-                     << HexSubstr(message.destination_id())
-                     << "]";
-        }
-      };
-  }
   LOG(kVerbose) << " >>>>>>>>> rudp send message to " << peer_endpoint << " <<<<<<<<<<<<<<<<<<<<";
-  rudp.Send(peer_endpoint, serialised_message, message_sent_functor);
+  rudp.Send(peer_endpoint, message.SerializeAsString(), message_sent_functor);
+}
+
+void RecursiveSendOn(protobuf::Message message,
+                     rudp::ManagedConnections &rudp,
+                     RoutingTable &routing_table) {
+  NodeInfo closest_node(routing_table.GetClosestNode(NodeId(message.destination_id())));
+  if (closest_node.node_id == NodeId()) {
+    LOG(kError) << " My RT is empty now. Need to rebootstrap.";
+    return;
+  }
+
+  const std::string my_node_id(HexSubstr(routing_table.kKeys().identity));
+
+  rudp::MessageSentFunctor message_sent_functor;
+
+  message_sent_functor = [=, &routing_table, &rudp](bool message_sent) {
+      if (message_sent) {
+        LOG(kInfo) << " Message sent, type: " << message.type()
+                   << " to "
+                   << HexSubstr(closest_node.node_id.String())
+                   << " I am " << my_node_id
+                   << " [ destination id : "
+                   << HexSubstr(message.destination_id())
+                   << "]";
+      } else {
+        LOG(kError) << " Failed to send message, type: " << message.type()
+                    << " to "
+                    << HexSubstr(closest_node.node_id.String())
+                    << " I am " << my_node_id
+                    << " [ destination id : "
+                    << HexSubstr(message.destination_id())
+                    << "]"
+                    << " Will retrying to Send.";
+        RecursiveSendOn(message, rudp, routing_table);
+      }
+    };
+  LOG(kVerbose) << " >>>>>>> rudp recursive send message to " << closest_node.endpoint << " <<<<<";
+  rudp.Send(closest_node.endpoint, message.SerializeAsString(), message_sent_functor);
 }
 
 }  // anonymous namespace
@@ -108,7 +112,7 @@ void ProcessSend(protobuf::Message message,
 
   // Direct endpoint message
   if (!direct_endpoint.address().is_unspecified()) {  // direct endpoint provided
-    SendOn(message, rudp, routing_table, NodeId(), direct_endpoint, false);
+    SendOn(message, rudp, routing_table, NodeId(), direct_endpoint);
     return;
   }
 
@@ -120,11 +124,10 @@ void ProcessSend(protobuf::Message message,
       LOG(kInfo) <<"I have destination node in my NRT";
       for (auto i : non_routing_nodes) {
         LOG(kVerbose) <<"Sending message to my NRT node with id endpoint : " << i.endpoint;
-        SendOn(message, rudp, routing_table, i.node_id, i.endpoint, false);
+        SendOn(message, rudp, routing_table, i.node_id, i.endpoint);
       }
     } else if (routing_table.Size() > 0) {  //  getting closer nodes from my RT
-      NodeInfo closest_node(routing_table.GetClosestNode(NodeId(message.destination_id())));
-      SendOn(message, rudp, routing_table, closest_node.node_id, closest_node.endpoint, true);
+      RecursiveSendOn(message, rudp, routing_table);
     } else {
       LOG(kError) << " No Endpoint to send to, Aborting Send!"
                   << " Attempt to send a type : " << message.type() << " message"
@@ -138,7 +141,9 @@ void ProcessSend(protobuf::Message message,
   if (message.has_relay_id() && (IsResponse(message)) && message.has_relay()) {
     direct_endpoint = GetEndpointFromProtobuf(message.relay());
     message.set_destination_id(message.relay_id());  // so that peer identifies it as direct msg
-    SendOn(message, rudp, routing_table, NodeId(message.relay_id()), direct_endpoint, false);
+    SendOn(message, rudp, routing_table, NodeId(message.relay_id()), direct_endpoint);
+  } else {
+    LOG(kError) << " Unable to work out destination, Aborting Send!";
   }
 }
 
