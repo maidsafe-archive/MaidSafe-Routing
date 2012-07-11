@@ -62,6 +62,22 @@ Endpoint ManagedConnections::Bootstrap(const std::vector<Endpoint> &bootstrap_en
                                        Endpoint local_endpoint) {
   LOG(kVerbose) << "In Bootstrap";
 
+  if (!message_received_functor) {
+    LOG(kError) << "You must provide a valid MessageReceivedFunctor.";
+    return Endpoint();
+  }
+  message_received_functor_ = message_received_functor;
+  if (!connection_lost_functor) {
+    LOG(kError) << "You must provide a valid ConnectionLostFunctor.";
+    return Endpoint();
+  }
+  connection_lost_functor_ = connection_lost_functor;
+
+  if (bootstrap_endpoints.empty()) {
+    LOG(kError) << "You must provide at least one Bootstrap endpoint.";
+    return Endpoint();
+  }
+
   auto mynode = FakeNetwork::instance().FindNode(bootstrap_endpoints_[0]);  // me
   assert(mynode != FakeNetwork::instance().GetEndIterator() && "Apparently not in network.");
 

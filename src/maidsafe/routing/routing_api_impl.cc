@@ -50,7 +50,9 @@ RoutingPrivate::RoutingPrivate(const asymm::Keys &keys,
   asio_service_.Start();
 }
 
-RoutingPrivate::~RoutingPrivate() {}
+RoutingPrivate::~RoutingPrivate() {
+  asio_service_.Stop();
+}
 
 }  // namespace routing
 

@@ -85,8 +85,7 @@ ip::address GetLocalIp(ip::udp::endpoint peer_endpoint) {
     return socket.local_endpoint().address();
   }
   catch(const std::exception &e) {
-    LOG(kError) << "Failed trying to connect to " << peer_endpoint << " - "
-                << e.what();
+    LOG(kError) << "Failed trying to connect to " << peer_endpoint << " - " << e.what();
     return ip::address();
   }
 }
