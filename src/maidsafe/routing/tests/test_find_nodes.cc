@@ -140,7 +140,9 @@ TYPED_TEST_CASE_P(FindNodeNetwork);
 
 TYPED_TEST_P(FindNodeNetwork, FUNC_FindNodes) {
   this->SetUpNetwork(6);
-  uint32_t source(RandomUint32() % (this->nodes_.size() - 2) + 2), dest(this->nodes_.size());
+  uint32_t source(
+      RandomUint32() % (static_cast<uint32_t>(this->nodes_.size()) - 2) + 2),
+      dest(static_cast<uint32_t>(this->nodes_.size()));
 //  this->PrintAllRoutingTables();
   EXPECT_TRUE(this->AddNode(false, GenerateUniqueRandomId(this->nodes_[source]->Id(), 20)));
 //  LOG(kInfo) << "After Add " << HexSubstr(this->nodes_[source]->Id().String()) << ", "
