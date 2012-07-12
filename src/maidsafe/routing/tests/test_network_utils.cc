@@ -17,7 +17,6 @@
 #include <memory>
 #include <vector>
 
-#include "boost/asio.hpp"
 #include "boost/filesystem/exception.hpp"
 #include "boost/thread/future.hpp"
 
@@ -29,10 +28,8 @@
 #include "maidsafe/routing/node_id.h"
 #include "maidsafe/routing/non_routing_table.h"
 #include "maidsafe/routing/return_codes.h"
-#include "maidsafe/routing/routing_api.h"
 #include "maidsafe/routing/routing_table.h"
 #include "maidsafe/routing/routing_pb.h"
-#include "maidsafe/routing/routing_table.h"
 #include "maidsafe/routing/tests/test_utils.h"
 
 namespace maidsafe {
@@ -62,13 +59,6 @@ asymm::Keys MakeKeys() {
   return keys;
 }
 
-asymm::Keys GetKeys(const NodeInfo &node_info) {
-  asymm::Keys keys;
-  keys.identity = node_info.node_id.String();
-  keys.public_key = node_info.public_key;
-  return keys;
-}
-
 void SortFromThisNode(const NodeId &from, std::vector<NodeInfo> nodeInfos) {
   std::sort(nodeInfos.begin(), nodeInfos.end(), [from](const NodeInfo &i, const NodeInfo &j) {
                 return (i.node_id ^ from) < (j.node_id ^ from);
@@ -79,13 +69,13 @@ void SortFromThisNode(const NodeId &from, std::vector<NodeInfo> nodeInfos) {
 
 TEST(NetworkUtilsTest, BEH_ProcessSendDirectInvalidEndpoint) {
   protobuf::Message message;
+  message.set_data("data");
+  message.set_direct(1);
+  message.set_type(10);
   rudp::ManagedConnections rudp;
   asymm::Keys keys(MakeKeys());
-  Functors functors;
   RoutingTable routing_table(keys, false, nullptr);
-
   NonRoutingTable non_routing_table(keys);
-
   ProcessSend(message, rudp, routing_table, non_routing_table, Endpoint());
 }
 
@@ -96,11 +86,9 @@ TEST(NetworkUtilsTest, BEH_ProcessSendUnavailableDirectEndpoint) {
   message.set_type(10);
   rudp::ManagedConnections rudp;
   asymm::Keys keys(MakeKeys());
-  Functors functors;
   RoutingTable routing_table(keys, false, nullptr);
-
   NonRoutingTable non_routing_table(keys);
-  Endpoint endpoint(GetLocalIp(), 5000);
+  Endpoint endpoint(GetLocalIp(), GetRandomPort());
   ProcessSend(message, rudp, routing_table, non_routing_table, endpoint);
 }
 
@@ -109,6 +97,7 @@ TEST(NetworkUtilsTest, FUNC_ProcessSendDirectEndpoint) {
   rudp::ManagedConnections rudp1, rudp2, rudp3;
   Endpoint endpoint1(GetLocalIp(), GetRandomPort());
   Endpoint endpoint2(GetLocalIp(), GetRandomPort());
+
   boost::promise<bool> test_completion_promise;
   auto test_completion_future = test_completion_promise.get_future();
   uint32_t expected_message_at_node(kMessageCount + 1);
@@ -123,11 +112,13 @@ TEST(NetworkUtilsTest, FUNC_ProcessSendDirectEndpoint) {
 
   rudp::MessageReceivedFunctor message_received_functor2 = [&](const std::string& message) {
       ++message_count_at_node2;
-      LOG(kVerbose) << " -2- Received: " << message.substr(0, 10)
+      LOG(kVerbose) << " Node -2- Received: " << message.substr(0, 10)
                     << ", total count = " << message_count_at_node2;
       protobuf::Message received_message;
       if (received_message.ParseFromString(message))
         EXPECT_EQ(sent_message.data(), received_message.data());
+      else
+        EXPECT_EQ("validation", message.substr(0, 10));
       if (message_count_at_node2 == expected_message_at_node)
         test_completion_promise.set_value(true);
     };
@@ -160,7 +151,7 @@ TEST(NetworkUtilsTest, FUNC_ProcessSendDirectEndpoint) {
   EXPECT_EQ(endpoint1, a2.get());  // wait for promise !
   EXPECT_EQ(kSuccess, rudp1.Add(endpoint1, endpoint2, ""));
   EXPECT_EQ(kSuccess, rudp2.Add(endpoint2, endpoint1, ""));
-  LOG(kVerbose) << " ------------------------ Zero state setup --------------------------------- ";
+  LOG(kVerbose) << " ------------------------   Zero state setup done  ----------------------- ";
   std::vector<Endpoint> bootstrap_endpoint(1, endpoint2);
   EXPECT_NE(Endpoint(), rudp3.Bootstrap(bootstrap_endpoint,
                                         message_received_functor,
@@ -170,10 +161,11 @@ TEST(NetworkUtilsTest, FUNC_ProcessSendDirectEndpoint) {
   rudp2.GetAvailableEndpoint(endpoint_pair3.external, endpoint_pair2);
   EXPECT_EQ(kSuccess, rudp3.Add(endpoint_pair3.external, endpoint_pair2.external, "validation3"));
   EXPECT_EQ(kSuccess, rudp2.Add(endpoint_pair2.external, endpoint_pair3.external, "validation2"));
+
   asymm::Keys keys(MakeKeys());
   RoutingTable routing_table(keys, false, nullptr);
   NonRoutingTable non_routing_table(keys);
-  Endpoint endpoint(GetLocalIp(), 5000);
+
   for (auto i(0); i != kMessageCount; ++i)
     ProcessSend(sent_message, rudp3, routing_table, non_routing_table, endpoint_pair2.external);
   if (!test_completion_future.timed_wait(bptime::seconds(10))) {
@@ -184,21 +176,20 @@ TEST(NetworkUtilsTest, FUNC_ProcessSendDirectEndpoint) {
 
 // RT with only 1 active node and 7 inactive node
 TEST(NetworkUtilsTest, FUNC_ProcessSendRecursiveSendOn) {
-  const uint32_t kMessageCount(1);
+  const uint32_t kMessageCount(10);
   rudp::ManagedConnections rudp1, rudp2, rudp3;
   Endpoint endpoint1(GetLocalIp(), GetRandomPort());
   Endpoint endpoint2(GetLocalIp(), GetRandomPort());
+
   boost::promise<bool> test_completion_promise;
   auto test_completion_future = test_completion_promise.get_future();
   uint32_t expected_message_at_node(kMessageCount + 1);
   uint32_t message_count_at_node2(0);
 
   protobuf::Message sent_message;
-  sent_message.set_destination_id(NodeId(RandomString(64)).String());
-  sent_message.set_data(std::string(1024 * 256, 'A'));
+  sent_message.set_data(std::string(1024 * 256, 'B'));
   sent_message.set_direct(1);
   sent_message.set_type(10);
-
 
   rudp::MessageReceivedFunctor message_received_functor2 = [&](const std::string& message) {
       ++message_count_at_node2;
@@ -207,6 +198,8 @@ TEST(NetworkUtilsTest, FUNC_ProcessSendRecursiveSendOn) {
       protobuf::Message received_message;
       if (received_message.ParseFromString(message))
         EXPECT_EQ(sent_message.data(), received_message.data());
+      else
+        EXPECT_EQ("validation", message.substr(0, 10));
       if (message_count_at_node2 == expected_message_at_node)
         test_completion_promise.set_value(true);
     };
@@ -261,22 +254,19 @@ TEST(NetworkUtilsTest, FUNC_ProcessSendRecursiveSendOn) {
     node_infos.push_back(MakeNodeInfo());
   SortFromThisNode(NodeId(keys.identity), node_infos);
 
-  // add the active node at last of the RT
+  // add the active node at the end of the RT
   node_infos[7].endpoint = endpoint_pair2.external;  //  second node
+  sent_message.set_destination_id(NodeId(node_infos[0].node_id).String());
 
   for (auto i(0); i != 8; ++i)
     ASSERT_TRUE(routing_table.AddNode(node_infos[i]));
 
   NonRoutingTable non_routing_table(keys);
 
-  ProcessSend(sent_message, rudp3, routing_table, non_routing_table);
-  // Dropping all inactive nodes
-  for (auto i(0); i != 7; ++i) {
-    Sleep(bptime::milliseconds(100));
-    ASSERT_EQ(node_infos[i].node_id, routing_table.DropNode(node_infos[i].endpoint).node_id);
-    LOG(kVerbose) << "Removed node id from RT : " << HexSubstr(node_infos[i].node_id.String());
-  }
- if (!test_completion_future.timed_wait(bptime::seconds(10))) {
+  for (auto i(0); i != kMessageCount; ++i)
+    ProcessSend(sent_message, rudp3, routing_table, non_routing_table);
+
+  if (!test_completion_future.timed_wait(bptime::seconds(20))) {
    ASSERT_TRUE(false) << "Failed waiting for node-2 to receive "
                       << expected_message_at_node << "messsages";
  }

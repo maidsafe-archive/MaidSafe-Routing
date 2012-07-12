@@ -62,8 +62,22 @@ void SendOn(protobuf::Message message,
 
 void RecursiveSendOn(protobuf::Message message,
                      rudp::ManagedConnections &rudp,
-                     RoutingTable &routing_table) {
-  NodeInfo closest_node(routing_table.GetClosestNode(NodeId(message.destination_id())));
+                     RoutingTable &routing_table,
+                     NodeInfo last_node_attempted = NodeInfo(),
+                     int attempt_count = 0) {
+  NodeInfo closest_node;
+
+  if (attempt_count >= 3) {
+    LOG(kWarning) << " Retry attempts failed to send to ["
+                  << HexSubstr(last_node_attempted.node_id.String())
+                  << "] will drop this node now and try with another node";
+    attempt_count = 0;
+    // TODO (Prakash) : To move this to a free function.
+    routing_table.DropNode(last_node_attempted.endpoint);
+    rudp.Remove(last_node_attempted.endpoint);
+  }
+
+  closest_node = routing_table.GetClosestNode(NodeId(message.destination_id()));
   if (closest_node.node_id == NodeId()) {
     LOG(kError) << " My RT is empty now. Need to rebootstrap.";
     return;
@@ -71,9 +85,7 @@ void RecursiveSendOn(protobuf::Message message,
 
   const std::string my_node_id(HexSubstr(routing_table.kKeys().identity));
 
-  rudp::MessageSentFunctor message_sent_functor;
-
-  message_sent_functor = [=, &routing_table, &rudp](bool message_sent) {
+  rudp::MessageSentFunctor message_sent_functor = [=, &routing_table, &rudp](bool message_sent) {
       if (message_sent) {
         LOG(kInfo) << " Message sent, type: " << message.type()
                    << " to "
@@ -90,12 +102,14 @@ void RecursiveSendOn(protobuf::Message message,
                     << " [ destination id : "
                     << HexSubstr(message.destination_id())
                     << "]"
-                    << " Will retrying to Send.";
-        RecursiveSendOn(message, rudp, routing_table);
+                    << " Will retry to Send. Attempt count = "
+                    << attempt_count + 1;
+        RecursiveSendOn(message, rudp, routing_table, closest_node, attempt_count + 1);
       }
     };
   LOG(kVerbose) << " >>>>>>> rudp recursive send message to " << closest_node.endpoint << " <<<<<";
   rudp.Send(closest_node.endpoint, message.SerializeAsString(), message_sent_functor);
+  // TODO(Prakash) :  if send functor returns kNotConnected then DropNode(node);
 }
 
 }  // anonymous namespace
