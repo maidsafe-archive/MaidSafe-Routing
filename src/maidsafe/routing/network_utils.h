@@ -13,9 +13,14 @@
 #ifndef MAIDSAFE_ROUTING_NETWORK_UTILS_H_
 #define MAIDSAFE_ROUTING_NETWORK_UTILS_H_
 
+#include <atomic>
+
+#include "maidsafe/rudp/managed_connections.h"
 #include "maidsafe/routing/node_info.h"
 
 namespace maidsafe {
+
+namespace rudp {class ManagedConnections; } // namespace rudp
 
 namespace routing {
 
@@ -39,6 +44,59 @@ void ProcessSend(protobuf::Message message,
                  RoutingTable &routing_table,
                  NonRoutingTable &non_routing_table,
                  Endpoint peer_endpoint = Endpoint());
+
+class NetworkUtils {
+ public:
+  NetworkUtils(RoutingTable &routing_table,
+               NonRoutingTable &non_routing_table);
+
+  Endpoint Bootstrap(const std::vector<Endpoint> &bootstrap_endpoints,
+                     rudp::MessageReceivedFunctor message_received_functor,
+                     rudp::ConnectionLostFunctor connection_lost_functor,
+                     Endpoint local_endpoint = Endpoint());
+
+  int GetAvailableEndpoint(const Endpoint &peer_endpoint,
+                           rudp::EndpointPair &this_endpoint_pair);
+
+  int Add(const Endpoint &this_endpoint,
+          const Endpoint &peer_endpoint,
+          const std::string &validation_data);
+
+  void Remove(const Endpoint &peer_endpoint);
+
+// For sending relay requests, message with empty source id may be provided, along with
+// direct endpint.
+  void SendToDirectEndpoint(protobuf::Message message,
+                            Endpoint direct_endpoint);
+
+  void SendToDirectEndpoint(protobuf::Message message,
+                            Endpoint direct_endpoint,
+                            rudp::MessageSentFunctor message_sent_functor);
+
+  // Handles relay response messages also
+  // leave destination id empty if needs to send as a relay response message
+  void SendToClosestNode(protobuf::Message message);
+
+private:
+  void SendTo(protobuf::Message message,
+              const NodeId &node_id,
+              const Endpoint &endpoint);
+
+  void RecursiveSendOn(protobuf::Message message,
+                       NodeInfo last_node_attempted = NodeInfo(),
+                       int attempt_count = 0);
+  //  actual rudp send
+  void RudpSend(protobuf::Message message,
+                Endpoint endpoint,
+                rudp::MessageSentFunctor message_sent_functor);
+
+  void SignMessage(protobuf::Message &message);
+
+  RoutingTable &routing_table_;
+  NonRoutingTable &non_routing_table_;
+  rudp::ManagedConnections rudp_;
+  std::atomic<bool> tearing_down_;
+};
 
 }  // namespace routing
 
