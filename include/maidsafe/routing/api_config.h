@@ -53,7 +53,7 @@ enum class SendStatus : int32_t {
 * functors. The ResponseFunctor WILL ensure functors are deleted when the system timeouts.         *
 ***************************************************************************************************/
 typedef std::function<void(const int& /*return code*/,
-                           const std::string& /*message*/)> ResponseFunctor;
+                           const std::vector<std::string>& /*message*/)> ResponseFunctor;
 /***************************************************************************************************
 * They are passed as a parameter by MessageReceivedFunctor and should be called for responding to  *
 * the received message. Passing an empty message will mean you don't want to reply.                *

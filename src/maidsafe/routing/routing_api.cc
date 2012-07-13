@@ -325,20 +325,20 @@ void Routing::Send(const NodeId &destination_id,
   if (destination_id.String().empty()) {
     LOG(kError) << "No destination id, aborted send";
     if (response_functor)
-      response_functor(kInvalidDestinationId, "");
+      response_functor(kInvalidDestinationId, std::vector<std::string>());
     return;
   }
   if (data.empty() && (type != 100)) {
     LOG(kError) << "No data, aborted send";
     if (response_functor)
-      response_functor(kEmptyData, "");
+      response_functor(kEmptyData, std::vector<std::string>());
     return;
   }
 
   if (100 >= type) {
     LOG(kError) << "Type below 101 not allowed, aborted send";
     if (response_functor)
-      response_functor(kTypeNotAllowed, "");
+      response_functor(kTypeNotAllowed, std::vector<std::string>());
     return;
   }
 
@@ -346,7 +346,7 @@ void Routing::Send(const NodeId &destination_id,
   if (response_functor)
     proto_message.set_id(impl_->timer_.AddTask(timeout, response_functor));
   proto_message.set_destination_id(destination_id.String());
-  proto_message.set_data(data);
+  proto_message.add_data(data);
   proto_message.set_direct(static_cast<int32_t>(connect_type));
   proto_message.set_type(type);
   proto_message.set_client_node(impl_->client_mode_);

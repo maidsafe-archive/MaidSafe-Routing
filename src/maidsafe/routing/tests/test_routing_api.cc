@@ -199,9 +199,10 @@ TEST(APITest, FUNC_API_AnonymousNode) {
 
   EXPECT_EQ(kSuccess, R3.Join(functors3, node2.endpoint));  // NOLINT (Prakash)
 
-  ResponseFunctor response_functor = [=](const int& return_code, const std::string &message) {
+  ResponseFunctor response_functor = [=](const int& return_code,
+                                         const std::vector<std::string> &message) {
       ASSERT_EQ(kSuccess, return_code);
-      ASSERT_EQ("response to message_from_anonymous node", message);
+      ASSERT_EQ("response to message_from_anonymous node", message[0]);
       LOG(kVerbose) << "Got response !!";
     };
   //  Testing Send
@@ -209,9 +210,10 @@ TEST(APITest, FUNC_API_AnonymousNode) {
           boost::posix_time::seconds(10), ConnectType::kSingle);
 
   Sleep(boost::posix_time::seconds(61));  // to allow disconnection
-  ResponseFunctor failed_response = [=](const int& return_code, const std::string &message) {
+  ResponseFunctor failed_response = [=](const int& return_code,
+                                        const std::vector<std::string> &message) {
       EXPECT_EQ(kResponseTimeout, return_code);
-      ASSERT_EQ("", message);
+      ASSERT_TRUE(message.empty());
     };
   R3.Send(NodeId(node1.node_id), NodeId(), "message_2_from_anonymous node", 101, failed_response,
           boost::posix_time::seconds(60), ConnectType::kSingle);
@@ -240,8 +242,8 @@ TEST(APITest, BEH_API_SendToSelf) {
         give_key((*itr).second.public_key);
     };
 
-  functors1.message_received = [&] (const int32_t&, const std::string &message, const NodeId &,
-    ReplyFunctor reply_functor) {
+  functors1.message_received = [&] (const int32_t&, const std::string &message,
+                                    const NodeId &, ReplyFunctor reply_functor) {
       reply_functor("response to " + message);
       LOG(kVerbose) << "Message received and replied to message !!";
     };
@@ -264,9 +266,10 @@ TEST(APITest, BEH_API_SendToSelf) {
   //  Testing Send
   boost::promise<bool> response_promise;
   auto response_future = response_promise.get_future();
-  ResponseFunctor response_functor = [&](const int& return_code, const std::string &message) {
+  ResponseFunctor response_functor = [&](const int& return_code,
+                                         const std::vector<std::string> &message) {
       ASSERT_EQ(kSuccess, return_code);
-      ASSERT_EQ("response to message from my node", message);
+      ASSERT_EQ("response to message from my node", message[0]);
       LOG(kVerbose) << "Got response !!";
       response_promise.set_value(true);
     };
@@ -320,9 +323,10 @@ TEST(APITest, BEH_API_ClientNode) {
   //  Testing Send
   boost::promise<bool> response_promise;
   auto response_future = response_promise.get_future();
-  ResponseFunctor response_functor = [&](const int& return_code, const std::string &message) {
+  ResponseFunctor response_functor = [&](const int& return_code,
+                                         const std::vector<std::string> &message) {
       ASSERT_EQ(kSuccess, return_code);
-      ASSERT_EQ("response to message from client node", message);
+      ASSERT_EQ("response to message from client node", message[0]);
       LOG(kVerbose) << "Got response !!";
       response_promise.set_value(true);
     };

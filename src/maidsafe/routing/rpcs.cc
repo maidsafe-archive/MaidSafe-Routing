@@ -36,7 +36,7 @@ const protobuf::Message Ping(const NodeId &node_id, const std::string &identity)
   ping_request.set_timestamp(GetTimeStamp());
   message.set_destination_id(node_id.String());
   message.set_source_id(identity);
-  message.set_data(ping_request.SerializeAsString());
+  message.add_data(ping_request.SerializeAsString());
   message.set_direct(true);
   message.set_replication(1);
   message.set_type(1);
@@ -68,7 +68,7 @@ const protobuf::Message Connect(const NodeId &node_id, const rudp::EndpointPair 
   contact->set_node_id(my_node_id.String());
   protobuf_connect_request.set_timestamp(GetTimeStamp());
   message.set_destination_id(node_id.String());
-  message.set_data(protobuf_connect_request.SerializeAsString());
+  message.add_data(protobuf_connect_request.SerializeAsString());
   message.set_direct(true);
   message.set_replication(1);
   message.set_type(2);
@@ -99,7 +99,7 @@ const protobuf::Message FindNodes(const NodeId &node_id, const NodeId &my_node_i
   find_nodes.set_timestamp(GetTimeStamp());
   message.set_last_id(my_node_id.String());
   message.set_destination_id(node_id.String());
-  message.set_data(find_nodes.SerializeAsString());
+  message.add_data(find_nodes.SerializeAsString());
   message.set_direct(false);
   message.set_replication(1);
   message.set_type(3);
@@ -130,7 +130,7 @@ const protobuf::Message ProxyConnect(const NodeId &node_id, const NodeId &my_nod
   SetProtobufEndpoint(endpoint_pair.local, proxy_connect_request.mutable_local_endpoint());
   SetProtobufEndpoint(endpoint_pair.external, proxy_connect_request.mutable_external_endpoint());
   message.set_destination_id(node_id.String());
-  message.set_data(proxy_connect_request.SerializeAsString());
+  message.add_data(proxy_connect_request.SerializeAsString());
   message.set_direct(true);
   message.set_replication(1);
   message.set_type(4);

@@ -42,12 +42,12 @@ TEST(Services, BEH_Ping) {
   // somebody pings us
   protobuf::Message message = rpcs::Ping(NodeId(keys.identity), "me");
   EXPECT_TRUE(message.destination_id() == keys.identity);
-  EXPECT_TRUE(ping_request.ParseFromString(message.data()));  // us
+  EXPECT_TRUE(ping_request.ParseFromString(message.data(0)));  // us
   EXPECT_TRUE(ping_request.IsInitialized());
   // run message through Service
   service::Ping(RT, message);
   EXPECT_EQ(-1, message.type());
-  EXPECT_FALSE(message.data().empty());
+  EXPECT_NE(message.data_size(), 0);
   EXPECT_TRUE(message.source_id() == keys.identity);
   EXPECT_EQ(message.replication(), 1);
   EXPECT_EQ(message.type(), -1);
@@ -75,7 +75,7 @@ TEST(Services, DISABLED_BEH_Connect) {
   // we receive it
   service::Connect(RT, NRT, rudp, message, RequestPublicKeyFunctor());
   protobuf::ConnectResponse connect_response;
-  EXPECT_TRUE(connect_response.ParseFromString(message.data()));  // us
+  EXPECT_TRUE(connect_response.ParseFromString(message.data(0)));  // us
   EXPECT_TRUE(connect_response.answer());
   EXPECT_EQ(connect_response.contact().node_id(), us.node_id.String());
   EXPECT_TRUE(connect_response.has_timestamp());
@@ -83,7 +83,7 @@ TEST(Services, DISABLED_BEH_Connect) {
   EXPECT_TRUE(connect_response.timestamp() < static_cast<int32_t>(GetTimeStamp() + 1));
   EXPECT_EQ(message.destination_id(), them.node_id.String());
   EXPECT_EQ(message.source_id(), us.node_id.String());
-  EXPECT_FALSE(message.data().empty());
+  EXPECT_NE(message.data_size(), 0);
   EXPECT_EQ(message.replication(), 1);
   EXPECT_EQ(message.type(), -2);
   EXPECT_EQ(message.id(), 0);
@@ -101,7 +101,7 @@ TEST(Services, BEH_FindNodes) {
   protobuf::Message message = rpcs::FindNodes(us.node_id, us.node_id);
   service::FindNodes(RT, message);
   protobuf::FindNodesResponse find_nodes_respose;
-  EXPECT_TRUE(find_nodes_respose.ParseFromString(message.data()));
+  EXPECT_TRUE(find_nodes_respose.ParseFromString(message.data(0)));
 //  EXPECT_TRUE(find_nodes_respose.nodes().size() > 0);  // will only have us
 //  EXPECT_EQ(find_nodes_respose.nodes().Get(1), us.node_id.String());
   EXPECT_TRUE(find_nodes_respose.has_timestamp());
@@ -109,7 +109,7 @@ TEST(Services, BEH_FindNodes) {
   EXPECT_TRUE(find_nodes_respose.timestamp() < static_cast<int32_t>(GetTimeStamp() + 1));
   EXPECT_EQ(message.destination_id(), us.node_id.String());
   EXPECT_EQ(message.source_id(), us.node_id.String());
-  EXPECT_FALSE(message.data().empty());
+  EXPECT_NE(message.data_size(), 0);
   EXPECT_EQ(message.replication(), 1);
   EXPECT_EQ(message.type(), -3);
   EXPECT_EQ(message.id(), 0);
@@ -133,14 +133,14 @@ TEST(Services, BEH_ProxyConnect) {
   protobuf::Message message = rpcs::ProxyConnect(NodeId(keys.identity), NodeId(my_keys.identity),
                                                  endpoint_pair);
   EXPECT_TRUE(message.destination_id() == keys.identity);
-  EXPECT_TRUE(proxy_connect_request.ParseFromString(message.data()));  // us
+  EXPECT_TRUE(proxy_connect_request.ParseFromString(message.data(0)));  // us
   EXPECT_TRUE(proxy_connect_request.IsInitialized());
   // run message through Service
   service::ProxyConnect(RT, rudp, message);
   protobuf::ProxyConnectResponse proxy_connect_respose;
-  EXPECT_TRUE(proxy_connect_respose.ParseFromString(message.data()));
+  EXPECT_TRUE(proxy_connect_respose.ParseFromString(message.data(0)));
   EXPECT_EQ(protobuf::kFailure, proxy_connect_respose.result());
-  EXPECT_FALSE(message.data().empty());
+  EXPECT_NE(message.data_size(), 0);
   EXPECT_TRUE(message.source_id() == keys.identity);
   EXPECT_EQ(1, message.replication());
   EXPECT_EQ(-4, message.type());

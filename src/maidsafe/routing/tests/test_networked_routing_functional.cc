@@ -65,7 +65,8 @@ class RoutingNetworkTest : public GenericNetwork<NodeType> {
     for (size_t index = 0; index < messages; ++index) {
       for (auto source_node : GenericNetwork<NodeType>::nodes_) {
         for (auto dest_node : GenericNetwork<NodeType>::nodes_) {
-            auto callable = [&] (const int32_t& /*result*/, const std::string& /*message*/) {
+            auto callable = [&] (const int32_t& /*result*/,
+                                 const std::vector<std::string>& /*message*/) {
               std::lock_guard<std::mutex> lock(mutex);
               messages_count++;
               LOG(kVerbose) << "ResponseHandler .... " << messages_count;

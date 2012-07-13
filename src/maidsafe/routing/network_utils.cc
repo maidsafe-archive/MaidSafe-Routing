@@ -103,7 +103,7 @@ void ProcessSend(protobuf::Message message,
                  NonRoutingTable &non_routing_table,
                  Endpoint direct_endpoint) {
   std::string signature;
-  asymm::Sign(message.data(), routing_table.kKeys().private_key, &signature);
+  asymm::Sign(message.data(0), routing_table.kKeys().private_key, &signature);
   message.set_signature(signature);
 
   // Direct endpoint message
