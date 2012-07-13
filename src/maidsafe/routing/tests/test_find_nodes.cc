@@ -138,7 +138,7 @@ class FindNodeNetwork : public GenericNetwork<NodeType> {
 
 TYPED_TEST_CASE_P(FindNodeNetwork);
 
-TYPED_TEST_P(FindNodeNetwork, FUNC_FindNodes) {
+TYPED_TEST_P(FindNodeNetwork, DISABLED_FUNC_FindNodes) {
   this->SetUpNetwork(6);
   uint32_t source(
       RandomUint32() % (static_cast<uint32_t>(this->nodes_.size()) - 2) + 2),
@@ -162,7 +162,7 @@ TYPED_TEST_P(FindNodeNetwork, FUNC_FindNodes) {
 }
 
 
-REGISTER_TYPED_TEST_CASE_P(FindNodeNetwork, FUNC_FindNodes);
+REGISTER_TYPED_TEST_CASE_P(FindNodeNetwork, DISABLED_FUNC_FindNodes);
 INSTANTIATE_TYPED_TEST_CASE_P(MAIDSAFE, FindNodeNetwork, FindNode);
 
 }  // namespace test
