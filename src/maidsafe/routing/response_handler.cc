@@ -48,7 +48,7 @@ void Ping(protobuf::Message& message) {
 // the other node agreed to connect - he has accepted our connection
 void Connect(RoutingTable &routing_table,
              NonRoutingTable &non_routing_table,
-             rudp::ManagedConnections &rudp,
+             NetworkUtils &network,
              protobuf::Message& message,
              RequestPublicKeyFunctor node_validation_functor) {
   protobuf::ConnectResponse connect_response;
@@ -77,9 +77,9 @@ void Connect(RoutingTable &routing_table,
 
   if (node_validation_functor) {
     auto validate_node =
-      [=, &routing_table, &non_routing_table, &rudp] (const asymm::PublicKey &key) {
+      [=, &routing_table, &non_routing_table, &network] (const asymm::PublicKey &key) {
           LOG(kInfo) << "NEED TO VALIDATE THE NODE HERE";
-          ValidateThisNode(rudp,
+          ValidateThisNode(network,
                            routing_table,
                            non_routing_table,
                            NodeId(connect_response.contact().node_id()),
@@ -93,8 +93,8 @@ void Connect(RoutingTable &routing_table,
 }
 
 void FindNode(RoutingTable &routing_table,
-              NonRoutingTable &non_routing_table,
-              rudp::ManagedConnections &rudp,
+              NonRoutingTable &/*non_routing_table*/,
+              NetworkUtils &network,
               const protobuf::Message& message,
               const Endpoint &bootstrap_endpoint) {
   LOG(kVerbose) << "ResponseHandler::FindNode()";
@@ -126,7 +126,7 @@ void FindNode(RoutingTable &routing_table,
       if (routing_table.Size() == 0)  // Joining the network, and may connect to bootstrapping node.
         direct_endpoint = bootstrap_endpoint;
       rudp::EndpointPair endpoint;
-      if (kSuccess != rudp.GetAvailableEndpoint(direct_endpoint, endpoint)) {
+      if (kSuccess != network.GetAvailableEndpoint(direct_endpoint, endpoint)) {
         LOG(kWarning) << " Failed to get available endpoint for new connections";
         return;
       }
@@ -139,16 +139,16 @@ void FindNode(RoutingTable &routing_table,
         relay_message = true;
       }
       LOG(kVerbose) << " Sending Connect rpc to - " << HexSubstr(find_nodes.nodes(i));
-      ProcessSend(rpcs::Connect(NodeId(find_nodes.nodes(i)),
-                                endpoint,
-                                NodeId(routing_table.kKeys().identity),
-                                routing_table.client_mode(),
-                                relay_message,
-                                relay_endpoint),
-                  rudp,
-                  routing_table,
-                  non_routing_table,
-                  direct_endpoint);
+      protobuf::Message connect_rpc(rpcs::Connect(NodeId(find_nodes.nodes(i)),
+                                    endpoint,
+                                    NodeId(routing_table.kKeys().identity),
+                                    routing_table.client_mode(),
+                                    relay_message,
+                                    relay_endpoint));
+      if (routing_table.Size() == 0)
+        network.SendToDirectEndpoint(connect_rpc, bootstrap_endpoint);
+      else
+        network.SendToClosestNode(connect_rpc);
     }
   }
 }

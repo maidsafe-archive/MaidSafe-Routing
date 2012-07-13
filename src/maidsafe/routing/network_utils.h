@@ -39,11 +39,11 @@ class RoutingTable;
 //    the relay_endpoint provided in the message. On failure, it does nothing.
 // Note: For sending relay requests, message with empty source id may be provided, along with
 // direct endpint if RT is empty.
-void ProcessSend(protobuf::Message message,
-                 rudp::ManagedConnections &rudp,
-                 RoutingTable &routing_table,
-                 NonRoutingTable &non_routing_table,
-                 Endpoint peer_endpoint = Endpoint());
+//void ProcessSend(protobuf::Message message,
+//                 rudp::ManagedConnections &rudp,
+//                 RoutingTable &routing_table,
+//                 NonRoutingTable &non_routing_table,
+//                 Endpoint peer_endpoint = Endpoint());
 
 class NetworkUtils {
  public:
@@ -66,10 +66,10 @@ class NetworkUtils {
 
 // For sending relay requests, message with empty source id may be provided, along with
 // direct endpint.
-  void SendToDirectEndpoint(protobuf::Message message,
+  void SendToDirectEndpoint(const protobuf::Message &message,
                             Endpoint direct_endpoint);
 
-  void SendToDirectEndpoint(protobuf::Message message,
+  void SendToDirectEndpoint(const protobuf::Message &message,
                             Endpoint direct_endpoint,
                             rudp::MessageSentFunctor message_sent_functor);
 

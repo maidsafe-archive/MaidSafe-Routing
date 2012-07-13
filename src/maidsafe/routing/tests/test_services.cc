@@ -19,6 +19,7 @@
 #include "maidsafe/rudp/managed_connections.h"
 
 #include "maidsafe/routing/log.h"
+#include "maidsafe/routing/network_utils.h"
 #include "maidsafe/routing/non_routing_table.h"
 #include "maidsafe/routing/parameters.h"
 #include "maidsafe/routing/routing_pb.h"
@@ -65,7 +66,7 @@ TEST(Services, DISABLED_BEH_Connect) {
   RoutingTable RT(keys, false, nullptr);
   NonRoutingTable NRT(keys);
   NodeInfo node;
-  rudp::ManagedConnections rudp;
+  NetworkUtils network(RT, NRT);
   rudp::EndpointPair them_end;
   them_end.local = them.endpoint;
   them_end.external = them.endpoint;
@@ -73,7 +74,7 @@ TEST(Services, DISABLED_BEH_Connect) {
   protobuf::Message message = rpcs::Connect(us.node_id, them_end, them.node_id);
   EXPECT_TRUE(message.IsInitialized());
   // we receive it
-  service::Connect(RT, NRT, rudp, message, RequestPublicKeyFunctor());
+  service::Connect(RT, NRT, network, message, RequestPublicKeyFunctor());
   protobuf::ConnectResponse connect_response;
   EXPECT_TRUE(connect_response.ParseFromString(message.data()));  // us
   EXPECT_TRUE(connect_response.answer());
@@ -125,8 +126,9 @@ TEST(Services, BEH_ProxyConnect) {
   asymm::Keys keys;
   keys.identity = RandomString(64);
   RoutingTable RT(keys, false, nullptr);
+  NonRoutingTable NRT(keys);
   NodeInfo node;
-  rudp::ManagedConnections rudp;
+  NetworkUtils network(RT, NRT);
   protobuf::ProxyConnectRequest proxy_connect_request;
   // they send us an proxy connect rpc
   rudp::EndpointPair endpoint_pair;
@@ -138,7 +140,7 @@ TEST(Services, BEH_ProxyConnect) {
   EXPECT_TRUE(proxy_connect_request.ParseFromString(message.data()));  // us
   EXPECT_TRUE(proxy_connect_request.IsInitialized());
   // run message through Service
-  service::ProxyConnect(RT, rudp, message);
+  service::ProxyConnect(RT, network, message);
   protobuf::ProxyConnectResponse proxy_connect_respose;
   EXPECT_TRUE(proxy_connect_respose.ParseFromString(message.data()));
   EXPECT_EQ(protobuf::kFailure, proxy_connect_respose.result());

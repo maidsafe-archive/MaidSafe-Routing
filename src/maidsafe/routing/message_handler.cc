@@ -42,14 +42,14 @@ class Timer;
 MessageHandler::MessageHandler(AsioService& asio_service,
                                RoutingTable &routing_table,
                                NonRoutingTable &non_routing_table,
-                               rudp::ManagedConnections &rudp,
+                               NetworkUtils &network,
                                Timer &timer_ptr,
                                MessageReceivedFunctor message_received_functor,
                                RequestPublicKeyFunctor node_validation_functor)
     : asio_service_(asio_service),
       routing_table_(routing_table),
       non_routing_table_(non_routing_table),
-      rudp_(rudp),
+      network_(network),
       bootstrap_endpoint_(),
       my_relay_endpoint_(),
       timer_ptr_(timer_ptr),
@@ -58,17 +58,13 @@ MessageHandler::MessageHandler(AsioService& asio_service,
       node_validation_functor_(node_validation_functor),
       tearing_down_(false) {}
 
-void MessageHandler::Send(protobuf::Message& message) {
-  ProcessSend(message, rudp_, routing_table_, non_routing_table_);
-}
-
 bool MessageHandler::CheckCacheData(protobuf::Message &message) {
   if (message.type() == -100) {
     cache_manager_.AddToCache(message);
   } else  if (message.type() == 100) {
     if (cache_manager_.GetFromCache(message)) {
       message.set_source_id(routing_table_.kKeys().identity);
-      ProcessSend(message, rudp_, routing_table_, non_routing_table_);
+      network_.SendToClosestNode(message);
       return true;
     }
   } else {
@@ -88,15 +84,15 @@ void MessageHandler::RoutingMessage(protobuf::Message& message) {
       service::Ping(routing_table_, message);
       break;
     case -2 :  // connect
-      response::Connect(routing_table_, non_routing_table_, rudp_, message,
+      response::Connect(routing_table_, non_routing_table_, network_, message,
                         node_validation_functor_);
       break;
     case 2 :
-      service::Connect(routing_table_, non_routing_table_, rudp_, message,
+      service::Connect(routing_table_, non_routing_table_, network_, message,
                        node_validation_functor_);
       break;
     case -3 :  // find_nodes
-      response::FindNode(routing_table_, non_routing_table_, rudp_, message, bootstrap_endpoint_);
+      response::FindNode(routing_table_, non_routing_table_, network_, message, bootstrap_endpoint_);
       break;
     case 3 :
       service::FindNodes(routing_table_, message);
@@ -105,7 +101,7 @@ void MessageHandler::RoutingMessage(protobuf::Message& message) {
       response::ProxyConnect(message);
       break;
     case 4 :
-      service::ProxyConnect(routing_table_, rudp_, message);
+      service::ProxyConnect(routing_table_, network_, message);
       break;
     default:  // unknown (silent drop)
       return;
@@ -115,10 +111,11 @@ void MessageHandler::RoutingMessage(protobuf::Message& message) {
 
   Endpoint direct_endpoint;
   if (routing_table_.Size() == 0) {  // I can only send to bootstrap_endpoint
-    direct_endpoint = bootstrap_endpoint_;
-  }
+    network_.SendToDirectEndpoint(message, bootstrap_endpoint_);
+  } else {
   if (message.IsInitialized())
-    ProcessSend(message, rudp_, routing_table_, non_routing_table_, direct_endpoint);
+    network_.SendToClosestNode(message);
+  }
 }
 
 void MessageHandler::NodeLevelMessageForMe(protobuf::Message &message) {
@@ -151,7 +148,7 @@ void MessageHandler::NodeLevelMessageForMe(protobuf::Message &message) {
         }
 
         if (routing_table_.kKeys().identity != message_out.destination_id()) {
-          ProcessSend(message_out, rudp_, routing_table_, non_routing_table_);
+          network_.SendToClosestNode(message_out);
         } else {
           LOG(kInfo) << "Sending response to self";
           ProcessMessage(message_out);
@@ -183,7 +180,7 @@ void MessageHandler::DirectMessage(protobuf::Message& message) {
 
 void MessageHandler::CloseNodesMessage(protobuf::Message& message) {
   if ((message.direct()) || (!routing_table_.AmIClosestNode(NodeId(message.destination_id())))) {
-    ProcessSend(message, rudp_, routing_table_, non_routing_table_);
+    network_.SendToClosestNode(message);
     return;
   }
 
@@ -192,7 +189,7 @@ void MessageHandler::CloseNodesMessage(protobuf::Message& message) {
 
   if (!non_routing_nodes.empty()) {  // I have the destination id in my NRT
     LOG(kInfo) << "I have destination node in my NRT";
-    ProcessSend(message, rudp_, routing_table_, non_routing_table_);
+    network_.SendToClosestNode(message);
     return;
   }
 
@@ -203,7 +200,7 @@ void MessageHandler::CloseNodesMessage(protobuf::Message& message) {
                                      static_cast<uint16_t>(message.replication()));
   for (auto i : close) {
     message.set_destination_id(i.String());
-    ProcessSend(message, rudp_, routing_table_, non_routing_table_);
+    network_.SendToClosestNode(message);
   }
   if (IsRoutingMessage(message)) {
     LOG(kVerbose) <<"I am closest node RoutingMessage";
@@ -267,7 +264,7 @@ void MessageHandler::ProcessMessage(protobuf::Message &message) {
   }
 
   LOG(kVerbose) <<"I am not in closest proximity to this message, sending on";
-  ProcessSend(message, rudp_, routing_table_, non_routing_table_);
+  network_.SendToClosestNode(message);
 }
 
 void MessageHandler::ProcessRelayRequest(protobuf::Message &message) {
@@ -283,13 +280,13 @@ void MessageHandler::ProcessRelayRequest(protobuf::Message &message) {
   if (routing_table_.Size() <= Parameters::closest_nodes_size) {
     if (message.type() == 3) {
       service::FindNodes(routing_table_, message);
-      ProcessSend(message, rudp_, routing_table_, non_routing_table_);
+      network_.SendToClosestNode(message);
       return;
     }
   }
   // I am now the src id for the relay message and will forward back response to original node.
   message.set_source_id(routing_table_.kKeys().identity);
-  ProcessSend(message, rudp_, routing_table_, non_routing_table_);
+  network_.SendToClosestNode(message);
 }
 
 bool MessageHandler::RelayDirectMessageIfNeeded(protobuf::Message &message) {
@@ -302,7 +299,7 @@ bool MessageHandler::RelayDirectMessageIfNeeded(protobuf::Message &message) {
   if ((message.destination_id() != message.relay_id()) &&  IsResponse(message)) {
     message.clear_destination_id();  // to allow network util to identify it as relay message
     LOG(kVerbose) <<"Relaying response Message to " <<  HexSubstr(message.relay_id());
-    ProcessSend(message, rudp_, routing_table_, non_routing_table_);
+    network_.SendToClosestNode(message);
     return true;
   } else {  // not a relay message response, its for me!!
     LOG(kVerbose) << "not a relay message response, its for me!!";

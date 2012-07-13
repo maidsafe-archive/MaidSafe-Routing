@@ -22,6 +22,7 @@
 
 #include "maidsafe/routing/api_config.h"
 #include "maidsafe/routing/message_handler.h"
+#include "maidsafe/routing/network_utils.h"
 #include "maidsafe/routing/non_routing_table.h"
 #include "maidsafe/routing/parameters.h"
 #include "maidsafe/routing/routing_table.h"
@@ -60,7 +61,7 @@ struct RoutingPrivate {
   Timer timer_;
   std::map<uint32_t, std::pair<std::unique_ptr<boost::asio::deadline_timer>,
                                MessageReceivedFunctor> > waiting_for_response_;
-  rudp::ManagedConnections rudp_;
+  NetworkUtils network_;
   MessageHandler message_handler_;
   bool joined_;
   fs::path bootstrap_file_path_;

@@ -35,7 +35,7 @@ bool InClosestNodesToMe(protobuf::Message &message, RoutingTable &routing_table)
                                        Parameters::closest_nodes_size);
 }
 
-void ValidateThisNode(rudp::ManagedConnections &rudp,
+void ValidateThisNode(NetworkUtils &network_,
                       RoutingTable &routing_table,
                       NonRoutingTable &non_routing_table,
                       const NodeId& node_id,
@@ -49,7 +49,7 @@ void ValidateThisNode(rudp::ManagedConnections &rudp,
   node_info.endpoint = their_endpoint.external;
   LOG(kVerbose) << "Calling rudp Add on endpoint = " << our_endpoint.external
                 << ", their endpoint = " << their_endpoint.external;
-  int result = rudp.Add(our_endpoint.external, their_endpoint.external, node_id.String());
+  int result = network_.Add(our_endpoint.external, their_endpoint.external, node_id.String());
 
   if (result != 0) {
       LOG(kWarning) << "rudp add failed " << result;
@@ -83,7 +83,7 @@ void ValidateThisNode(rudp::ManagedConnections &rudp,
     LOG(kVerbose) << "Not adding node to " << (client?"non-": "") << "routing table  node id "
                   << HexSubstr(node_id.String())
                   << " just added rudp connection will be removed now";
-    rudp.Remove(their_endpoint.external);
+    network_.Remove(their_endpoint.external);
   }
 }
 

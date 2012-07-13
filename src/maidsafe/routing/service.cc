@@ -18,6 +18,7 @@
 #include "maidsafe/rudp/managed_connections.h"
 
 #include "maidsafe/routing/log.h"
+#include "maidsafe/routing/network_utils.h"
 #include "maidsafe/routing/node_id.h"
 #include "maidsafe/routing/non_routing_table.h"
 #include "maidsafe/routing/parameters.h"
@@ -56,7 +57,7 @@ void Ping(RoutingTable &routing_table, protobuf::Message &message) {
 
 void Connect(RoutingTable &routing_table,
              NonRoutingTable &non_routing_table,
-             rudp::ManagedConnections &rudp,
+             NetworkUtils &network,
              protobuf::Message &message,
              RequestPublicKeyFunctor node_validation_functor) {
   if (message.destination_id() != routing_table.kKeys().identity) {
@@ -89,7 +90,7 @@ void Connect(RoutingTable &routing_table,
   their_endpoint_pair.local = GetEndpointFromProtobuf(connect_request.contact().
                                                         private_endpoint());
   // TODO(dirvine) try both connections
-  if ((rudp.GetAvailableEndpoint(their_endpoint_pair.external, our_endpoint_pair)) != 0) {
+  if ((network.GetAvailableEndpoint(their_endpoint_pair.external, our_endpoint_pair)) != 0) {
     LOG(kError) << "Unable to get available endpoint to connect to"
                 << their_endpoint_pair.external;
     return;
@@ -115,9 +116,9 @@ void Connect(RoutingTable &routing_table,
                   << " node succeeded !!";
     if (node_validation_functor) {
       auto validate_node =
-          [=, &routing_table, &non_routing_table, &rudp] (const asymm::PublicKey &key)->void {
+          [=, &routing_table, &non_routing_table, &network] (const asymm::PublicKey &key)->void {
             LOG(kInfo) << "NEED TO VALIDATE THE NODE HERE";
-            ValidateThisNode(rudp,
+            ValidateThisNode(network,
                              routing_table,
                              non_routing_table,
                              NodeId(connect_request.contact().node_id()),
@@ -194,7 +195,7 @@ void FindNodes(RoutingTable &routing_table, protobuf::Message &message) {
   assert(message.IsInitialized() && "unintialised message");
 }
 
-void ProxyConnect(RoutingTable &routing_table, rudp::ManagedConnections &/*rudp*/,
+void ProxyConnect(RoutingTable &routing_table, NetworkUtils &/*network*/,
                   protobuf::Message &message) {
   if (message.destination_id() != routing_table.kKeys().identity) {
     LOG(kError) << "Message not for us";

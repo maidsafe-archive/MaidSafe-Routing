@@ -76,7 +76,8 @@ TEST(NetworkUtilsTest, BEH_ProcessSendDirectInvalidEndpoint) {
   asymm::Keys keys(MakeKeys());
   RoutingTable routing_table(keys, false, nullptr);
   NonRoutingTable non_routing_table(keys);
-  ProcessSend(message, rudp, routing_table, non_routing_table, Endpoint());
+  NetworkUtils network(routing_table, non_routing_table);
+  network.SendToClosestNode(message);
 }
 
 TEST(NetworkUtilsTest, BEH_ProcessSendUnavailableDirectEndpoint) {
@@ -89,12 +90,13 @@ TEST(NetworkUtilsTest, BEH_ProcessSendUnavailableDirectEndpoint) {
   RoutingTable routing_table(keys, false, nullptr);
   NonRoutingTable non_routing_table(keys);
   Endpoint endpoint(GetLocalIp(), GetRandomPort());
-  ProcessSend(message, rudp, routing_table, non_routing_table, endpoint);
+  NetworkUtils network(routing_table, non_routing_table);
+  network.SendToDirectEndpoint(message, endpoint);
 }
 
 TEST(NetworkUtilsTest, FUNC_ProcessSendDirectEndpoint) {
   const uint32_t kMessageCount(10);
-  rudp::ManagedConnections rudp1, rudp2, rudp3;
+  rudp::ManagedConnections rudp1, rudp2;
   Endpoint endpoint1(GetLocalIp(), GetRandomPort());
   Endpoint endpoint2(GetLocalIp(), GetRandomPort());
 
@@ -152,22 +154,23 @@ TEST(NetworkUtilsTest, FUNC_ProcessSendDirectEndpoint) {
   EXPECT_EQ(kSuccess, rudp1.Add(endpoint1, endpoint2, ""));
   EXPECT_EQ(kSuccess, rudp2.Add(endpoint2, endpoint1, ""));
   LOG(kVerbose) << " ------------------------   Zero state setup done  ----------------------- ";
-  std::vector<Endpoint> bootstrap_endpoint(1, endpoint2);
-  EXPECT_NE(Endpoint(), rudp3.Bootstrap(bootstrap_endpoint,
-                                        message_received_functor,
-                                        connection_lost_functor));
-  rudp::EndpointPair endpoint_pair2, endpoint_pair3;
-  rudp3.GetAvailableEndpoint(endpoint2, endpoint_pair3);
-  rudp2.GetAvailableEndpoint(endpoint_pair3.external, endpoint_pair2);
-  EXPECT_EQ(kSuccess, rudp3.Add(endpoint_pair3.external, endpoint_pair2.external, "validation3"));
-  EXPECT_EQ(kSuccess, rudp2.Add(endpoint_pair2.external, endpoint_pair3.external, "validation2"));
-
   asymm::Keys keys(MakeKeys());
   RoutingTable routing_table(keys, false, nullptr);
   NonRoutingTable non_routing_table(keys);
+  NetworkUtils network(routing_table, non_routing_table);
+
+  std::vector<Endpoint> bootstrap_endpoint(1, endpoint2);
+  EXPECT_NE(Endpoint(), network.Bootstrap(bootstrap_endpoint,
+                                          message_received_functor,
+                                          connection_lost_functor));
+  rudp::EndpointPair endpoint_pair2, endpoint_pair3;
+  network.GetAvailableEndpoint(endpoint2, endpoint_pair3);
+  rudp2.GetAvailableEndpoint(endpoint_pair3.external, endpoint_pair2);
+  EXPECT_EQ(kSuccess, network.Add(endpoint_pair3.external, endpoint_pair2.external, "validation3"));
+  EXPECT_EQ(kSuccess, rudp2.Add(endpoint_pair2.external, endpoint_pair3.external, "validation2"));
 
   for (auto i(0); i != kMessageCount; ++i)
-    ProcessSend(sent_message, rudp3, routing_table, non_routing_table, endpoint_pair2.external);
+    network.SendToDirectEndpoint(sent_message, endpoint_pair2.external);
   if (!test_completion_future.timed_wait(bptime::seconds(10))) {
     ASSERT_TRUE(false) << "Failed waiting for node-2 to receive "
                        << expected_message_at_node << "messsages";
@@ -177,7 +180,7 @@ TEST(NetworkUtilsTest, FUNC_ProcessSendDirectEndpoint) {
 // RT with only 1 active node and 7 inactive node
 TEST(NetworkUtilsTest, FUNC_ProcessSendRecursiveSendOn) {
   const uint32_t kMessageCount(10);
-  rudp::ManagedConnections rudp1, rudp2, rudp3;
+  rudp::ManagedConnections rudp1, rudp2;
   Endpoint endpoint1(GetLocalIp(), GetRandomPort());
   Endpoint endpoint2(GetLocalIp(), GetRandomPort());
 
@@ -234,19 +237,23 @@ TEST(NetworkUtilsTest, FUNC_ProcessSendRecursiveSendOn) {
   EXPECT_EQ(kSuccess, rudp2.Add(endpoint2, endpoint1, ""));
   LOG(kVerbose) << " ------------------------ Zero state setup done ---------------------------- ";
 
+  asymm::Keys keys(MakeKeys());
+  RoutingTable routing_table(keys, false, nullptr);
+  NonRoutingTable non_routing_table(keys);
+  NetworkUtils network(routing_table, non_routing_table);
+
   std::vector<Endpoint> bootstrap_endpoint(1, endpoint2);
-  EXPECT_NE(Endpoint(), rudp3.Bootstrap(bootstrap_endpoint,
-                                        message_received_functor,
-                                        connection_lost_functor));
+  EXPECT_NE(Endpoint(), network.Bootstrap(bootstrap_endpoint,
+                                          message_received_functor,
+                                          connection_lost_functor));
   rudp::EndpointPair endpoint_pair2, endpoint_pair3;
-  rudp3.GetAvailableEndpoint(endpoint2, endpoint_pair3);
+  network.GetAvailableEndpoint(endpoint2, endpoint_pair3);
   rudp2.GetAvailableEndpoint(endpoint_pair3.external, endpoint_pair2);
-  EXPECT_EQ(kSuccess, rudp3.Add(endpoint_pair3.external, endpoint_pair2.external, "validation3"));
+  EXPECT_EQ(kSuccess, network.Add(endpoint_pair3.external, endpoint_pair2.external, "validation3"));
   EXPECT_EQ(kSuccess, rudp2.Add(endpoint_pair2.external, endpoint_pair3.external, "validation2"));
   LOG(kVerbose) << " ------------------------ 3rd node setup done ------------------------------ ";
 
-  asymm::Keys keys(MakeKeys());
-  RoutingTable routing_table(keys, false, nullptr);
+
 
   // setup 7 inactive & 1 active node
   std::vector<NodeInfo> node_infos;
@@ -261,10 +268,9 @@ TEST(NetworkUtilsTest, FUNC_ProcessSendRecursiveSendOn) {
   for (auto i(0); i != 8; ++i)
     ASSERT_TRUE(routing_table.AddNode(node_infos[i]));
 
-  NonRoutingTable non_routing_table(keys);
-
   for (auto i(0); i != kMessageCount; ++i)
-    ProcessSend(sent_message, rudp3, routing_table, non_routing_table);
+    network.SendToClosestNode(sent_message);
+//    ProcessSend(sent_message, rudp3, routing_table, non_routing_table);
 
   if (!test_completion_future.timed_wait(bptime::seconds(20))) {
    ASSERT_TRUE(false) << "Failed waiting for node-2 to receive "

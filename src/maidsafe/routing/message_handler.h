@@ -30,6 +30,7 @@ namespace routing {
 namespace protobuf { class Message;}  // namespace protobuf
 
 class CacheManager;
+class NetworkUtils;
 class NonRoutingTable;
 class RoutingTable;
 class Timer;
@@ -39,14 +40,13 @@ class MessageHandler {
   MessageHandler(AsioService& asio_service,
                  RoutingTable &routing_table,
                  NonRoutingTable &non_routing_table,
-                 rudp::ManagedConnections &rudp,
+                 NetworkUtils &network,
                  Timer &timer_ptr,
                  MessageReceivedFunctor message_received_functor,
                  RequestPublicKeyFunctor node_validation_functor);
   void ProcessMessage(protobuf::Message &message);
   bool CheckCacheData(protobuf::Message &message);
   bool CheckAndSendToLocalClients(protobuf::Message &message);
-  void Send(protobuf::Message &message);
   void set_bootstrap_endpoint(Endpoint endpoint);
   void set_my_relay_endpoint(Endpoint endpoint);
   void set_message_received_functor(MessageReceivedFunctor message_received);
@@ -72,7 +72,7 @@ class MessageHandler {
   AsioService& asio_service_;
   RoutingTable &routing_table_;
   NonRoutingTable &non_routing_table_;
-  rudp::ManagedConnections &rudp_;
+  NetworkUtils &network_;
   Endpoint bootstrap_endpoint_;
   Endpoint my_relay_endpoint_;
   Timer &timer_ptr_;

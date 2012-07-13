@@ -70,7 +70,7 @@ Routing::~Routing() {
 int Routing::GetStatus() {
   if (impl_->routing_table_.Size() == 0) {
     rudp::EndpointPair endpoint;
-    int status = impl_->rudp_.GetAvailableEndpoint(Endpoint(), endpoint);
+    int status = impl_->network_.GetAvailableEndpoint(Endpoint(), endpoint);
     if (rudp::kSuccess != status) {
       if (status == rudp::kNoneAvailable)
         return kNotJoined;
@@ -154,7 +154,7 @@ int Routing::BootStrapFromThisEndpoint(Functors functors, const Endpoint &endpoi
     for (unsigned int i = 0; i < impl_->routing_table_.Size(); ++i) {
       NodeInfo remove_node =
       impl_->routing_table_.GetClosestNode(NodeId(impl_->routing_table_.kKeys().identity));
-      impl_->rudp_.Remove(remove_node.endpoint);
+      impl_->network_.Remove(remove_node.endpoint);
       impl_->routing_table_.DropNode(remove_node.endpoint);
     }
     if (impl_->functors_.network_status)
@@ -185,9 +185,9 @@ int Routing::DoBootstrap(Functors functors) {
   rudp::MessageReceivedFunctor message_recieved(std::bind(&Routing::ReceiveMessage, this,
                                                           args::_1));
   rudp::ConnectionLostFunctor connection_lost(std::bind(&Routing::ConnectionLost, this, args::_1));
-  Endpoint bootstrap_endpoint(impl_->rudp_.Bootstrap(impl_->bootstrap_nodes_,
-                                                     message_recieved,
-                                                     connection_lost));
+  Endpoint bootstrap_endpoint(impl_->network_.Bootstrap(impl_->bootstrap_nodes_,
+                                                        message_recieved,
+                                                        connection_lost));
 
   if (bootstrap_endpoint.address().is_unspecified()) {
     LOG(kError) << "No Online Bootstrap Node found.";
@@ -195,7 +195,7 @@ int Routing::DoBootstrap(Functors functors) {
   }
   LOG(kVerbose) << "Bootstrap successful, bootstrap node - " << bootstrap_endpoint;
   rudp::EndpointPair endpoint_pair;
-  if (kSuccess != impl_->rudp_.GetAvailableEndpoint(bootstrap_endpoint, endpoint_pair)) {
+  if (kSuccess != impl_->network_.GetAvailableEndpoint(bootstrap_endpoint, endpoint_pair)) {
     LOG(kError) << " Failed to get available endpoint for new connections";
     return kGeneralError;
   }
@@ -207,11 +207,11 @@ int Routing::DoBootstrap(Functors functors) {
 }
 
 int Routing::DoFindNode() {
-  std::string find_node_rpc(
+  protobuf::Message find_node_rpc(
       rpcs::FindNodes(NodeId(impl_->keys_.identity),
                       NodeId(impl_->keys_.identity),
                       true,
-                      impl_->message_handler_.my_relay_endpoint()).SerializeAsString());
+                      impl_->message_handler_.my_relay_endpoint()));
 
   boost::promise<bool> message_sent_promise;
   auto message_sent_future = message_sent_promise.get_future();
@@ -220,15 +220,16 @@ int Routing::DoFindNode() {
       if (message_sent) {
         message_sent_promise.set_value(true);
       } else if (attempt_count < 3) {
-        impl_->rudp_.Send(impl_->message_handler_.bootstrap_endpoint(),
-                          find_node_rpc, message_sent_functor);
+        impl_->network_.SendToDirectEndpoint(find_node_rpc,
+                                             impl_->message_handler_.bootstrap_endpoint(),
+                                             message_sent_functor);
       } else {
         message_sent_promise.set_value(false);
       }
     };
 
-  impl_->rudp_.Send(impl_->message_handler_.bootstrap_endpoint(),
-                    find_node_rpc, message_sent_functor);
+  impl_->network_.SendToDirectEndpoint(find_node_rpc, impl_->message_handler_.bootstrap_endpoint(),
+                                       message_sent_functor);
 
   if (!message_sent_future.timed_wait(boost::posix_time::seconds(10))) {
     LOG(kError) << "Unable to send FindValue rpc to bootstrap endpoint - "
@@ -275,10 +276,10 @@ int Routing::ZeroStateJoin(Functors functors, const Endpoint &local_endpoint,
                                                           args::_1));
   rudp::ConnectionLostFunctor connection_lost(std::bind(&Routing::ConnectionLost, this, args::_1));
 
-  Endpoint bootstrap_endpoint(impl_->rudp_.Bootstrap(impl_->bootstrap_nodes_,
-                                                     message_recieved,
-                                                     connection_lost,
-                                                     local_endpoint));
+  Endpoint bootstrap_endpoint(impl_->network_.Bootstrap(impl_->bootstrap_nodes_,
+                                                        message_recieved,
+                                                        connection_lost,
+                                                        local_endpoint));
 
   if (bootstrap_endpoint.address().is_unspecified() && local_endpoint.address().is_unspecified()) {
     LOG(kError) << "Could not bootstrap zero state node with " << bootstrap_endpoint;
@@ -294,7 +295,7 @@ int Routing::ZeroStateJoin(Functors functors, const Endpoint &local_endpoint,
   their_endpoint_pair.external = their_endpoint_pair.local = peer_node.endpoint;
   our_endpoint_pair.external = our_endpoint_pair.local = local_endpoint;
 
-  ValidateThisNode(impl_->rudp_, impl_->routing_table_, impl_->non_routing_table_,
+  ValidateThisNode(impl_->network_, impl_->routing_table_, impl_->non_routing_table_,
                    NodeId(peer_node.node_id), peer_node.public_key, their_endpoint_pair,
                    our_endpoint_pair, false);
 
@@ -365,14 +366,14 @@ void Routing::Send(const NodeId &destination_id,
         }
       };
 
-    impl_->rudp_.Send(bootstrap_endpoint, proto_message.SerializeAsString(), message_sent);
+    impl_->network_.SendToDirectEndpoint(proto_message, bootstrap_endpoint,  message_sent);
     return;
   }
 
   // Non Anonymous, normal node
   proto_message.set_source_id(impl_->routing_table_.kKeys().identity);
   if (impl_->routing_table_.kKeys().identity != destination_id.String()) {
-    ProcessSend(proto_message, impl_->rudp_, impl_->routing_table_, impl_->non_routing_table_);
+    impl_->network_.SendToClosestNode(proto_message);
   } else {
     LOG(kInfo) << "Sending request to self";
     ReceiveMessage(proto_message.SerializeAsString());
@@ -409,13 +410,9 @@ void Routing::ConnectionLost(const Endpoint &lost_endpoint) {
       (impl_->routing_table_.IsMyNodeInRange(dropped_node.node_id,
                                              Parameters::closest_nodes_size)))) {
     // close node lost, get more nodes
-    ProcessSend(rpcs::FindNodes(NodeId(impl_->keys_.identity),
-                                NodeId(impl_->keys_.identity)),
-                                impl_->rudp_,
-                                impl_->routing_table_,
-                                impl_->non_routing_table_);
+    impl_->network_.SendToClosestNode(rpcs::FindNodes(NodeId(impl_->keys_.identity),
+                                      NodeId(impl_->keys_.identity)));
   }
-
   //  Checking RT
   dropped_node = impl_->routing_table_.DropNode(lost_endpoint);
   if (dropped_node.node_id != NodeId()) {

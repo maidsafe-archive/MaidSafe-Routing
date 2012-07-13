@@ -140,12 +140,20 @@ bool FakeNetwork::RemoveMyNode(Endpoint endpoint) {
       auto it = FindNode(i);
       if (it != nodes_.end()) {
         // it->connection_lost(endpoint);
-        it->connected_endpoints.erase(
+        auto j = std::find_if(it->connected_endpoints.begin(),
+                              it->connected_endpoints.end(),
+                              [&](Endpoint &element) {
+                                  return element == endpoint;
+                              });
+        if (j != it->connected_endpoints.end()) {
+          it->connected_endpoints.erase(j);
+        }
+        /*it->connected_endpoints.erase(
             std::remove_if(it->connected_endpoints.begin(),
                            it->connected_endpoints.end(),
                            [&](Endpoint &element) {
                               return element == endpoint;
-                           }));
+                           }));*/
       }
     }
     nodes_.erase(iter);

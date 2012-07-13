@@ -25,6 +25,7 @@ class Message {
   explicit Message(protobuf::Message message);
 };
 
+class NetworkUtils;
 class NonRoutingTable;
 class RoutingTable;
 
@@ -32,7 +33,7 @@ bool ClosestToMe(protobuf::Message &message);
 
 bool InClosestNodesToMe(protobuf::Message &message);
 
-void ValidateThisNode(rudp::ManagedConnections &rudp,
+void ValidateThisNode(NetworkUtils &network_,
                       RoutingTable &routing_table,
                       NonRoutingTable &non_routing_table,
                       const NodeId& node_id,

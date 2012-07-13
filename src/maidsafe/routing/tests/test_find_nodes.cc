@@ -45,9 +45,9 @@ class FindNode : public GenericNode {
   virtual ~FindNode() {}
 
   void RudpSend(const Endpoint &peer_endpoint,
-                const std::string &message,
+                const protobuf::Message &message,
                 rudp::MessageSentFunctor message_sent_functor) {
-    routing_->impl_->rudp_.Send(peer_endpoint, message, message_sent_functor);
+    routing_->impl_->network_.SendToDirectEndpoint(message, peer_endpoint, message_sent_functor);
   }
 
   void PrintRoutingTable() {
@@ -96,7 +96,7 @@ class FindNodeNetwork : public GenericNetwork<NodeType> {
  protected:
   testing::AssertionResult Find(std::shared_ptr<NodeType> source,
                                 std::shared_ptr<NodeType> destination) {
-    std::string find_node_rpc(rpcs::FindNodes(destination->Id(), source->Id()).SerializeAsString());
+    protobuf::Message find_node_rpc(rpcs::FindNodes(destination->Id(), source->Id()));
     boost::promise<bool> message_sent_promise;
     auto message_sent_future = message_sent_promise.get_future();
     uint8_t attempts(0);

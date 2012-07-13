@@ -198,6 +198,20 @@ void NetworkUtils::RudpSend(protobuf::Message message,
   rudp_.Send(endpoint, message.SerializeAsString(), message_sent_functor);
 }
 
+void NetworkUtils::SendToDirectEndpoint(const protobuf::Message &message,
+                                        Endpoint direct_endpoint,
+                                        rudp::MessageSentFunctor message_sent_functor) {
+  RudpSend(message, direct_endpoint, message_sent_functor);
+}
+
+void NetworkUtils::SendToDirectEndpoint(const protobuf::Message &message,
+                                        Endpoint direct_endpoint) {
+  NodeId node_id;
+  if (message.has_destination_id())
+    node_id = NodeId(message.destination_id());
+  SendTo(message, node_id, direct_endpoint);
+}
+
 void NetworkUtils::SendToClosestNode(protobuf::Message message) {
   // Normal messages
   if (message.has_destination_id()) {  // message has destination id
