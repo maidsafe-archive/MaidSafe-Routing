@@ -62,10 +62,10 @@ asymm::Keys MakeKeys() {
 void SortFromThisNode(const NodeId &from, std::vector<NodeInfo> nodeInfos) {
   std::sort(nodeInfos.begin(), nodeInfos.end(), [from](const NodeInfo &i, const NodeInfo &j) {
                 return (i.node_id ^ from) < (j.node_id ^ from);
-              } );
+             });
 }
 
-} // namespace
+}  // anonymous namespace
 
 TEST(NetworkUtilsTest, BEH_ProcessSendDirectInvalidEndpoint) {
   protobuf::Message message;
@@ -171,7 +171,7 @@ TEST(NetworkUtilsTest, FUNC_ProcessSendDirectEndpoint) {
 
   for (auto i(0); i != kMessageCount; ++i)
     network.SendToDirectEndpoint(sent_message, endpoint_pair2.external);
-  if (!test_completion_future.timed_wait(bptime::seconds(10))) {
+  if (!test_completion_future.timed_wait(bptime::seconds(60))) {
     ASSERT_TRUE(false) << "Failed waiting for node-2 to receive "
                        << expected_message_at_node << "messsages";
   }
@@ -194,6 +194,11 @@ TEST(NetworkUtilsTest, FUNC_ProcessSendRecursiveSendOn) {
   sent_message.set_direct(1);
   sent_message.set_type(10);
 
+  asymm::Keys keys(MakeKeys());
+  RoutingTable routing_table(keys, false, nullptr);
+  NonRoutingTable non_routing_table(keys);
+  NetworkUtils network(routing_table, non_routing_table);
+
   rudp::MessageReceivedFunctor message_received_functor2 = [&](const std::string& message) {
       ++message_count_at_node2;
       LOG(kVerbose) << " -2- Received: " << message.substr(0, 10)
@@ -215,6 +220,10 @@ TEST(NetworkUtilsTest, FUNC_ProcessSendRecursiveSendOn) {
       LOG(kInfo) << " -- Lost Connection with : " << endpoint;
     };
 
+  rudp::ConnectionLostFunctor connection_lost_functor3 = [&](const Endpoint &endpoint) {
+      routing_table.DropNode(endpoint);
+      LOG(kInfo) << " -- Lost Connection with : " << endpoint;
+    };
   auto a1 = std::async(std::launch::async, [=, &rudp1]()-> Endpoint {
       std::vector<Endpoint> bootstrap_endpoint(1, endpoint2);
       return rudp1.Bootstrap(bootstrap_endpoint,
@@ -237,15 +246,12 @@ TEST(NetworkUtilsTest, FUNC_ProcessSendRecursiveSendOn) {
   EXPECT_EQ(kSuccess, rudp2.Add(endpoint2, endpoint1, ""));
   LOG(kVerbose) << " ------------------------ Zero state setup done ---------------------------- ";
 
-  asymm::Keys keys(MakeKeys());
-  RoutingTable routing_table(keys, false, nullptr);
-  NonRoutingTable non_routing_table(keys);
-  NetworkUtils network(routing_table, non_routing_table);
+
 
   std::vector<Endpoint> bootstrap_endpoint(1, endpoint2);
   EXPECT_NE(Endpoint(), network.Bootstrap(bootstrap_endpoint,
                                           message_received_functor,
-                                          connection_lost_functor));
+                                          connection_lost_functor3));
   rudp::EndpointPair endpoint_pair2, endpoint_pair3;
   network.GetAvailableEndpoint(endpoint2, endpoint_pair3);
   rudp2.GetAvailableEndpoint(endpoint_pair3.external, endpoint_pair2);
@@ -272,10 +278,10 @@ TEST(NetworkUtilsTest, FUNC_ProcessSendRecursiveSendOn) {
     network.SendToClosestNode(sent_message);
 //    ProcessSend(sent_message, rudp3, routing_table, non_routing_table);
 
-  if (!test_completion_future.timed_wait(bptime::seconds(20))) {
-   ASSERT_TRUE(false) << "Failed waiting for node-2 to receive "
-                      << expected_message_at_node << "messsages";
- }
+  if (!test_completion_future.timed_wait(bptime::seconds(60))) {
+    ASSERT_TRUE(false) << "Failed waiting for node-2 to receive "
+                       << expected_message_at_node << "messsages";
+  }
 }
 
 }  // namespace test
