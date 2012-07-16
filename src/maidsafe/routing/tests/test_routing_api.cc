@@ -336,7 +336,7 @@ TEST(APITest, BEH_API_NodeNetwork) {
   std::vector<NodeInfo> node_infos;
   std::vector<std::shared_ptr<Routing>> routing_node;
   std::map<NodeId, asymm::Keys> key_map;
-  for (auto i(0); i != kNetworkSize; ++i) {
+  for (uint32_t i(0); i != kNetworkSize; ++i) {
     NodeInfo node(MakeNodeInfo());
     node_infos.push_back(node);
     key_map.insert(std::make_pair(NodeId(node.node_id), GetKeys(node)));
@@ -361,7 +361,7 @@ TEST(APITest, BEH_API_NodeNetwork) {
   EXPECT_EQ(kSuccess, a2.get());  // wait for promise !
   EXPECT_EQ(kSuccess, a1.get());  // wait for promise !
 
-  for (auto i(2); i != kNetworkSize; ++i) {
+  for (uint32_t i(2); i != kNetworkSize; ++i) {
 //    std::async(std::launch::async, [&] {
     ASSERT_EQ(kSuccess, routing_node[i]->Join(functors, node_infos[i%2].endpoint));
     LOG(kVerbose) << "Joined !!!!!!!!!!!!!!!!! " << i + 1 << " nodes";
@@ -374,12 +374,13 @@ TEST(APITest, BEH_API_NodeNetworkWithClient) {
   std::vector<NodeInfo> node_infos;
   std::vector<std::shared_ptr<Routing>> routing_node;
   std::map<NodeId, asymm::Keys> key_map;
-  for (auto i(0); i != kNetworkSize; ++i) {
+  for (uint32_t i(0); i != kNetworkSize; ++i) {
     NodeInfo node(MakeNodeInfo());
     node_infos.push_back(node);
     key_map.insert(std::make_pair(NodeId(node.node_id), GetKeys(node)));
     routing_node.push_back(
-        std::make_shared<Routing>(GetKeys(node), ((i < kServerCount)? false: true)));
+        std::make_shared<Routing>(GetKeys(node),
+                                  static_cast<int32_t>(i) < kServerCount ? false : true));
   }
 
   Functors functors;
@@ -401,9 +402,10 @@ TEST(APITest, BEH_API_NodeNetworkWithClient) {
   client_functors.request_public_key = functors.request_public_key;
 
   client_functors.message_received = [&] (const int32_t&, const std::string &, const NodeId &,
-    ReplyFunctor reply_functor) {
-      ASSERT_TRUE(false);  //  Client should not receive incoming message
-    };
+                                          ReplyFunctor) {
+                                       //  Client should not receive incoming message
+                                       ASSERT_TRUE(false);
+                                     };
 
   auto a1 = std::async(std::launch::async, [&] {
     return routing_node[0]->ZeroStateJoin(functors, node_infos[0].endpoint,
@@ -421,7 +423,7 @@ TEST(APITest, BEH_API_NodeNetworkWithClient) {
                   << " joined !!!!!!!!!!!!!!!!! " << i + 1 << " nodes";
   }
 
-  for (auto i(kServerCount); i != kNetworkSize; ++i) {
+  for (uint32_t i(kServerCount); i != kNetworkSize; ++i) {
     ASSERT_EQ(kSuccess, routing_node[i]->Join(functors, node_infos[0].endpoint));
     LOG(kVerbose) << "Client - " << i - kServerCount << " joined !!!!!!!!!!!!!!!!! ";
     LOG(kVerbose) << " joined !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! ";

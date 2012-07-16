@@ -181,7 +181,7 @@ bool RoutingTable::MakeSpaceForNodeToBeAdded(NodeInfo &node, const bool &remove)
 
   PartialSortFromThisNode(kNodeId_, Parameters::closest_nodes_size);
   NodeInfo furthest_close_node = routing_table_nodes_[Parameters::closest_nodes_size - 1];
-  auto const  not_found = routing_table_nodes_.end();
+  auto const not_found = routing_table_nodes_.end();
   auto const furthest_close_node_iter =
       routing_table_nodes_.begin() + (Parameters::closest_nodes_size - 1);
 
@@ -195,18 +195,19 @@ bool RoutingTable::MakeSpaceForNodeToBeAdded(NodeInfo &node, const bool &remove)
     return true;
   }
 
+  uint16_t size(Parameters::bucket_target_size + 1);
   for (auto it = furthest_close_node_iter; it != not_found; ++it) {
     if (node.bucket >= (*it).bucket) {
       // stop searching as it's worthless
       return false;
     }
     // safety net
-    if ((not_found - it) < (Parameters::bucket_target_size + 1)) {
+    if ((not_found - it) < size) {
       // reached end of checkable area
       return false;
     }
 
-    if ((*it).bucket == (*(it + Parameters::bucket_target_size + 1)).bucket) {
+    if ((*it).bucket == (*(it + size)).bucket) {
       // here we know the node should fit into a bucket if
       // the bucket has too many nodes AND node to add
       // has a lower bucketindex

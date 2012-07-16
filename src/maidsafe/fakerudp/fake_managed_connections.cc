@@ -43,7 +43,8 @@ ManagedConnections::ManagedConnections()
       transports_(),
       connection_map_(),
       shared_mutex_(),
-      bootstrap_endpoints_() {
+      bootstrap_endpoints_(),
+      local_ip_() {
   Node node;
   bootstrap_endpoints_.push_back(node.endpoint);
   FakeNetwork::instance().AddEmptyNode(node);
