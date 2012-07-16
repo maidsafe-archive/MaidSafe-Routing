@@ -49,7 +49,8 @@ enum ReturnCode {
   kAnonymousSessionEnded = -303006,
   kInvalidDestinationId = -303007,
   kEmptyData = -303008,
-  kTypeNotAllowed = -303009
+  kTypeNotAllowed = -303009,
+  kFailedtoSendFindNode = -303010
 };
 
 }  // namespace routing

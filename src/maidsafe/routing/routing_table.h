@@ -61,6 +61,7 @@ class RoutingTable {
 
   uint16_t Size();
   asymm::Keys kKeys() const;
+  void set_network_status_functor(NetworkStatusFunctor network_status_functor);
   void set_close_node_replaced_functor(CloseNodeReplacedFunctor close_node_replaced);
   void set_keys(asymm::Keys keys);
   bool client_mode() { return client_mode_; }
@@ -83,15 +84,17 @@ class RoutingTable {
   bool AddcloseContact(const protobuf::Contact &contact);
   uint16_t RoutingTableSize();
   std::vector<NodeInfo> GetClosestNodeInfo(const NodeId &from, const uint16_t &number_to_get);
+  void update_network_status();
 
   bool client_mode_;
   asymm::Keys keys_;
   bool sorted_;
   const NodeId kNodeId_;
   NodeId furthest_group_node_id_;
-  std::vector<NodeInfo> routing_table_nodes_;
   std::mutex mutex_;
+  NetworkStatusFunctor network_status_functor_;
   CloseNodeReplacedFunctor close_node_replaced_functor_;
+  std::vector<NodeInfo> routing_table_nodes_;
 };
 
 }  // namespace routing

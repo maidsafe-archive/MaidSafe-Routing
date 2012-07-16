@@ -12,6 +12,8 @@
 
 #include "maidsafe/routing/network_utils.h"
 
+#include "boost/date_time/posix_time/posix_time_duration.hpp"
+
 #include "maidsafe/common/utils.h"
 
 #include "maidsafe/rudp/managed_connections.h"
@@ -24,6 +26,7 @@
 #include "maidsafe/routing/rpcs.h"
 #include "maidsafe/routing/utils.h"
 
+namespace bptime = boost::posix_time;
 
 namespace maidsafe {
 
@@ -160,6 +163,9 @@ void NetworkUtils::RecursiveSendOn(protobuf::Message message,
     rudp_.Remove(last_node_attempted.endpoint);
     OnConnectionLost(last_node_attempted.endpoint);
   }
+
+  if (attempt_count > 0)
+    Sleep(bptime::milliseconds(50));
 
   closest_node = routing_table_.GetClosestNode(NodeId(message.destination_id()));
   if (closest_node.node_id == NodeId()) {

@@ -79,7 +79,7 @@ typedef std::function<void(const std::string &/* data*/)> StoreCacheDataFunctor;
 /***************************************************************************************************
 * This functor fires a number from 0 to 100 and represents % network health                        *
 ***************************************************************************************************/
-typedef std::function<void(const int16_t& /*network_health*/)> NetworkStatusFunctor;
+typedef std::function<void(const int& /*network_health*/)> NetworkStatusFunctor;
 /***************************************************************************************************
 * This functor fires when a new close node is inserted in routing table. Upper layers responsible  *
 * for storing key/value pairs should send all key/values between itself and the new nodes address  *

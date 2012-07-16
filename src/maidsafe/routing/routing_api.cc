@@ -115,19 +115,24 @@ bool Routing::CheckBootStrapFilePath() {
 
 int Routing::Join(Functors functors, Endpoint peer_endpoint) {
   if (!peer_endpoint.address().is_unspecified()) {  // BootStrapFromThisEndpoint
-    return BootStrapFromThisEndpoint(functors, peer_endpoint);
+    BootStrapFromThisEndpoint(functors, peer_endpoint);
+    return 0;
   } else  {  // Default Join
     LOG(kInfo) << " Doing a default join";
     if (CheckBootStrapFilePath()) {
-      return DoJoin(functors);
+      DoJoin(functors);
+      return 0;
     } else {
       LOG(kError) << "Invalid Bootstrap Contacts";
-      return kInvalidBootstrapContacts;
+      if (functors.network_status)
+        functors.network_status(kInvalidBootstrapContacts);
+      return 0;
     }
   }
 }
 
 void Routing::ConnectFunctors(Functors functors) {
+  impl_->routing_table_.set_network_status_functor(functors.network_status);
   impl_->routing_table_.set_close_node_replaced_functor(functors.close_node_replaced);
   impl_->message_handler_.set_message_received_functor(functors.message_received);
   impl_->message_handler_.set_node_validation_functor(functors.request_public_key);
@@ -135,6 +140,7 @@ void Routing::ConnectFunctors(Functors functors) {
 }
 
 void Routing::DisconnectFunctors() {  // TODO(Prakash) : fix raise condition when functors in use
+  impl_->routing_table_.set_network_status_functor(nullptr);
   impl_->routing_table_.set_close_node_replaced_functor(nullptr);
   impl_->message_handler_.set_message_received_functor(nullptr);
   impl_->message_handler_.set_node_validation_functor(nullptr);
@@ -143,7 +149,7 @@ void Routing::DisconnectFunctors() {  // TODO(Prakash) : fix raise condition whe
 
 // drop existing routing table and restart
 // the endpoint is the endpoint to connect to.
-int Routing::BootStrapFromThisEndpoint(Functors functors, const Endpoint &endpoint) {
+void Routing::BootStrapFromThisEndpoint(Functors functors, const Endpoint &endpoint) {
   LOG(kInfo) << " Doing a BootStrapFromThisEndpoint Join."
              << " Entered bootstrap endpoint : " << endpoint
              << ", My Node id : " << HexSubstr(impl_->keys_.identity)
@@ -162,18 +168,25 @@ int Routing::BootStrapFromThisEndpoint(Functors functors, const Endpoint &endpoi
   }
   impl_->bootstrap_nodes_.clear();
   impl_->bootstrap_nodes_.push_back(endpoint);
-  return DoJoin(functors);
+  DoJoin(functors);
 }
 
-int Routing::DoJoin(Functors functors) {
+void Routing::DoJoin(Functors functors) {
   int return_value(DoBootstrap(functors));
-  if (kSuccess != return_value)
-    return return_value;
+  if (kSuccess != return_value) {
+    if (functors.network_status)
+      functors.network_status(return_value);
+    return;
+  }
 
-  if (impl_->anonymous_node_)  //  No need to do find value for anonymous node
-    return return_value;
+  if (impl_->anonymous_node_) {  //  No need to do find value for anonymous node
+    if (functors.network_status)
+      functors.network_status(return_value);
+   return;
+  }
 
-  return DoFindNode();
+  if (functors.network_status)
+    functors.network_status(DoFindNode());
 }
 
 int Routing::DoBootstrap(Functors functors) {
@@ -232,32 +245,37 @@ int Routing::DoFindNode() {
                                        message_sent_functor);
 
   if (!message_sent_future.timed_wait(boost::posix_time::seconds(10))) {
-    LOG(kError) << "Unable to send FindValue rpc to bootstrap endpoint - "
+    LOG(kError) << "Unable to send FindNode rpc to bootstrap endpoint - "
                 << impl_->message_handler_.bootstrap_endpoint();
-    return false;
+    return kFailedtoSendFindNode;
+  } else {
+    LOG(kInfo) << "Successfully sent FindNode rpc to bootstrap endpoint - "
+               << impl_->message_handler_.bootstrap_endpoint();
+    return kSuccess;
   }
+
   // now poll for routing table size to have at least one node available
 
-  uint8_t poll_count(0);
-  // TODO(Prakash) : Need to fix target min RT size.
-  // TODO(Prakash) : workaround to allow fake rudp tests pass FIXME
-  uint8_t target_routing_table_size = 2;  // (impl_->client_mode_? 4 : 2);
-  do {
-    Sleep(boost::posix_time::milliseconds(100));
-  } while ((impl_->routing_table_.Size() < target_routing_table_size) &&
-           (++poll_count < 100));
-  if (impl_->routing_table_.Size() >= target_routing_table_size) {
-    LOG(kInfo) << (impl_->client_mode_? "Client ": "")
-               << " Node successfully joined network, bootstrap node - "
-               << impl_->message_handler_.bootstrap_endpoint()
-               << ", Routing table size - " << impl_->routing_table_.Size()
-               << ", Node id : " << HexSubstr(impl_->keys_.identity);
-    return kSuccess;
-  } else {
-    LOG(kError) << "Failed to join network, bootstrap node - "
-                << impl_->message_handler_.bootstrap_endpoint();
-    return kNotJoined;
-  }
+  //uint8_t poll_count(0);
+  //// TODO(Prakash) : Need to fix target min RT size.
+  //// TODO(Prakash) : workaround to allow fake rudp tests pass FIXME
+  //uint8_t target_routing_table_size = 2;  // (impl_->client_mode_? 4 : 2);
+  //do {
+  //  Sleep(boost::posix_time::milliseconds(100));
+  //} while ((impl_->routing_table_.Size() < target_routing_table_size) &&
+  //         (++poll_count < 100));
+  //if (impl_->routing_table_.Size() >= target_routing_table_size) {
+  //  LOG(kInfo) << (impl_->client_mode_? "Client ": "")
+  //             << " Node successfully joined network, bootstrap node - "
+  //             << impl_->message_handler_.bootstrap_endpoint()
+  //             << ", Routing table size - " << impl_->routing_table_.Size()
+  //             << ", Node id : " << HexSubstr(impl_->keys_.identity);
+  //  return kSuccess;
+  //} else {
+  //  LOG(kError) << "Failed to join network, bootstrap node - "
+  //              << impl_->message_handler_.bootstrap_endpoint();
+  //  return kNotJoined;
+  //}
 }
 
 int Routing::ZeroStateJoin(Functors functors, const Endpoint &local_endpoint,
@@ -404,12 +422,14 @@ void Routing::ReceiveMessage(const std::string &message) {
 }
 
 void Routing::ConnectionLost(const Endpoint &lost_endpoint) {
+  LOG(kWarning) << " Routing::ConnectionLost--------------------------------------------------------------------------------------------------------------------------------------------------------------";
   NodeInfo dropped_node;
   if ((!impl_->message_handler_.tearing_down()) &&
       (impl_->routing_table_.GetNodeInfo(lost_endpoint, &dropped_node) &&
       (impl_->routing_table_.IsMyNodeInRange(dropped_node.node_id,
                                              Parameters::closest_nodes_size)))) {
     // close node lost, get more nodes
+    LOG(kWarning) << "Lost close node, getting more.";
     impl_->network_.SendToClosestNode(rpcs::FindNodes(NodeId(impl_->keys_.identity),
                                       NodeId(impl_->keys_.identity)));
   }
@@ -420,6 +440,7 @@ void Routing::ConnectionLost(const Endpoint &lost_endpoint) {
                   << HexSubstr(dropped_node.node_id.String())
                   << ", endpoint : "
                   << lost_endpoint;
+LOG(kWarning) << " Routing::ConnectionLost--------------------------------------------------------------------------------------------------------------------------------------------------------------Exiting";
     return;
   }
 
@@ -434,6 +455,7 @@ void Routing::ConnectionLost(const Endpoint &lost_endpoint) {
     LOG(kWarning) << " Lost connection with unknown/internal endpoint : "
                   << lost_endpoint;
   }
+LOG(kWarning) << " Routing::ConnectionLost--------------------------------------------------------------------------------------------------------------------------------------------------------------Exiting";
 }
 
 }  // namespace routing

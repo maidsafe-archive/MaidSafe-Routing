@@ -115,14 +115,15 @@ class Routing {
 
   void ConnectFunctors(const Functors functors);
   void DisconnectFunctors();
-  int BootStrapFromThisEndpoint(const Functors functors,
-                                const boost::asio::ip::udp::endpoint& endpoint);
-  int DoJoin(const Functors functors);
+  void BootStrapFromThisEndpoint(const Functors functors,
+                                 const boost::asio::ip::udp::endpoint& endpoint);
+  void DoJoin(const Functors functors);
   int DoBootstrap(const Functors functors);
   int DoFindNode();
   void ReceiveMessage(const std::string &message);
   void ConnectionLost(const Endpoint &lost_endpoint);
   bool CheckBootStrapFilePath();
+
   std::unique_ptr<RoutingPrivate> impl_;  // pimpl (data members only)
 };
 

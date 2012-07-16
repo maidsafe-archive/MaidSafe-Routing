@@ -161,9 +161,17 @@ TEST(APITest, BEH_API_ZeroState) {
   EXPECT_EQ(kSuccess, a2.get());  // wait for promise !
   EXPECT_EQ(kSuccess, a1.get());  // wait for promise !
 
-  auto a3 = std::async(std::launch::async,
-                       [&]{return R3.Join(functors3, node2.endpoint);});  // NOLINT (Prakash)
-  EXPECT_EQ(kSuccess, a3.get());  // wait for promise !
+  boost::promise<bool> join_promise;
+  auto join_future = join_promise.get_future();
+  functors3.network_status = [&join_promise](int result) {
+    ASSERT_GE(result, kSuccess);
+    if (result == 2)
+      join_promise.set_value(true);
+  };
+
+  R3.Join(functors3, node2.endpoint);  // NOLINT (Prakash)
+  EXPECT_TRUE(join_future.timed_wait(boost::posix_time::seconds(10)));
+  LOG(kWarning) << "Done";
 }
 
 TEST(APITest, FUNC_API_AnonymousNode) {
@@ -201,7 +209,17 @@ TEST(APITest, FUNC_API_AnonymousNode) {
   EXPECT_EQ(kSuccess, a2.get());  // wait for promise !
   EXPECT_EQ(kSuccess, a1.get());  // wait for promise !
 
-  EXPECT_EQ(kSuccess, R3.Join(functors3, node2.endpoint));  // NOLINT (Prakash)
+  boost::promise<bool> join_promise;
+  auto join_future = join_promise.get_future();
+  functors3.network_status = [&join_promise](int result) {
+    ASSERT_EQ(result, kSuccess);
+    if (result == 0) {
+      join_promise.set_value(true);
+      LOG(kVerbose) << "Anonymous Node joined";
+    }
+  };
+  R3.Join(functors3, node2.endpoint);
+  ASSERT_TRUE(join_future.timed_wait(boost::posix_time::seconds(10)));
 
   ResponseFunctor response_functor = [=](const int& return_code, const std::string &message) {
       ASSERT_EQ(kSuccess, return_code);

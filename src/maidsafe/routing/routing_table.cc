@@ -24,15 +24,16 @@ namespace routing {
 
 
 RoutingTable::RoutingTable(const asymm::Keys &keys, const bool &client_mode,
-                           CloseNodeReplacedFunctor close_node_replaced_functor)
+                           CloseNodeReplacedFunctor /*close_node_replaced_functor*/)
     : client_mode_(client_mode),
       keys_(keys),
       sorted_(false),
       kNodeId_(NodeId(keys_.identity)),
       furthest_group_node_id_(),
-      routing_table_nodes_(),
       mutex_(),
-      close_node_replaced_functor_(close_node_replaced_functor) {}
+      network_status_functor_(),
+      close_node_replaced_functor_(),
+      routing_table_nodes_() {}
 
 void RoutingTable::set_keys(asymm::Keys keys) {
   keys_ = keys;
@@ -61,6 +62,7 @@ bool RoutingTable::AddOrCheckNode(NodeInfo& node, const bool &remove) {
   if (MakeSpaceForNodeToBeAdded(node, remove)) {
     if (remove) {
       routing_table_nodes_.push_back(node);
+      update_network_status();
       UpdateGroupChangeAndNotify();
     }
     return true;
@@ -85,6 +87,15 @@ void RoutingTable::set_close_node_replaced_functor(CloseNodeReplacedFunctor clos
   close_node_replaced_functor_ = close_node_replaced;
 }
 
+void RoutingTable::set_network_status_functor(NetworkStatusFunctor network_status_functor) {
+  network_status_functor_ = network_status_functor;
+}
+
+void RoutingTable::update_network_status() {
+  if (network_status_functor_)
+    network_status_functor_(RoutingTableSize());
+}
+
 NodeInfo RoutingTable::DropNode(const Endpoint &endpoint) {
   NodeInfo dropped_node;
   std::lock_guard<std::mutex> lock(mutex_);
@@ -92,6 +103,7 @@ NodeInfo RoutingTable::DropNode(const Endpoint &endpoint) {
     if (((*it).endpoint ==  endpoint)) {
       dropped_node = (*it);
       routing_table_nodes_.erase(it);
+      update_network_status();
       UpdateGroupChangeAndNotify();
       break;
     }
