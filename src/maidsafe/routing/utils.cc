@@ -66,6 +66,9 @@ void ValidateThisNode(NetworkUtils &network_,
       routing_accepted_node = true;
       LOG(kVerbose) << "Added client node to non routing table. node id : "
                     << HexSubstr(node_id.String());
+    } else {
+      LOG(kVerbose) << "Failed to add client node to non routing table. node id : "
+                    << HexSubstr(node_id.String());
     }
   } else {
     if (routing_table.AddNode(node_info)) {
@@ -77,6 +80,9 @@ void ValidateThisNode(NetworkUtils &network_,
        //           rudp,
        //           routing_table,
        //           Endpoint());
+    } else {
+      LOG(kVerbose) << "failed to Add node to routing table. node id : "
+                    << HexSubstr(node_id.String());
     }
   }
   if (!routing_accepted_node) {

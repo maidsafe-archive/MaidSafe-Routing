@@ -430,8 +430,9 @@ void Routing::ConnectionLost(const Endpoint &lost_endpoint) {
                                              Parameters::closest_nodes_size)))) {
     // close node lost, get more nodes
     LOG(kWarning) << "Lost close node, getting more.";
-    impl_->network_.SendToClosestNode(rpcs::FindNodes(NodeId(impl_->keys_.identity),
-                                      NodeId(impl_->keys_.identity)));
+    //TODO(Prakash): uncomment once find node flooding is resolved.
+    //impl_->network_.SendToClosestNode(rpcs::FindNodes(NodeId(impl_->keys_.identity),
+    //                                  NodeId(impl_->keys_.identity)));
   }
   //  Checking RT
   dropped_node = impl_->routing_table_.DropNode(lost_endpoint);

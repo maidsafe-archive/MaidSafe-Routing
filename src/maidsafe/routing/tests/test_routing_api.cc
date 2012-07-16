@@ -11,6 +11,7 @@
  ******************************************************************************/
 
 #include <boost/exception/all.hpp>
+#include <algorithm>
 #include <chrono>
 #include <future>
 
@@ -39,14 +40,14 @@ namespace bptime = boost::posix_time;
 namespace {
 
 #ifdef FAKE_RUDP
-  const int32_t kClientCount(10);
-  const int32_t kServerCount(10);
+  const int kClientCount(10);
+  const int kServerCount(10);
 #else
-  const int32_t kClientCount(4);
-  const int32_t kServerCount(4);
+  const int kClientCount(4);
+  const int kServerCount(4);
 #endif
 
-const uint32_t kNetworkSize = kClientCount + kServerCount;
+const int kNetworkSize = kClientCount + kServerCount;
 
 NodeInfo MakeNodeInfo() {
   NodeInfo node;
@@ -171,7 +172,6 @@ TEST(APITest, BEH_API_ZeroState) {
 
   R3.Join(functors3, node2.endpoint);  // NOLINT (Prakash)
   EXPECT_TRUE(join_future.timed_wait(boost::posix_time::seconds(10)));
-  LOG(kWarning) << "Done";
 }
 
 TEST(APITest, FUNC_API_AnonymousNode) {
@@ -279,9 +279,18 @@ TEST(APITest, BEH_API_SendToSelf) {
   EXPECT_EQ(kSuccess, a2.get());  // wait for promise !
   EXPECT_EQ(kSuccess, a1.get());  // wait for promise !
 
-  auto a3 = std::async(std::launch::async,
-                       [&]{return R3.Join(functors3, node2.endpoint);});  // NOLINT (Prakash)
-  EXPECT_EQ(kSuccess, a3.get());  // wait for promise !
+  boost::promise<bool> join_promise;
+  auto join_future = join_promise.get_future();
+  functors3.network_status = [&join_promise](int result) {
+    ASSERT_GE(result, kSuccess);
+    if (result == 2) {
+      LOG(kVerbose) << "3rd node joined";
+      join_promise.set_value(true);
+    }
+  };
+
+  R3.Join(functors3, node2.endpoint);  // NOLINT (Prakash)
+  ASSERT_TRUE(join_future.timed_wait(boost::posix_time::seconds(10)));
 
   //  Testing Send
   boost::promise<bool> response_promise;
@@ -335,9 +344,18 @@ TEST(APITest, BEH_API_ClientNode) {
   EXPECT_EQ(kSuccess, a2.get());  // wait for promise !
   EXPECT_EQ(kSuccess, a1.get());  // wait for promise !
 
-  auto a3 = std::async(std::launch::async,
-                       [&]{return R3.Join(functors3, node2.endpoint);});  // NOLINT (Prakash)
-  EXPECT_EQ(kSuccess, a3.get());  // wait for promise !
+  boost::promise<bool> join_promise;
+  auto join_future = join_promise.get_future();
+  functors3.network_status = [&join_promise](int result) {
+    ASSERT_GE(result, kSuccess);
+    if (result == 2) {
+      LOG(kVerbose) << "3rd node joined";
+      join_promise.set_value(true);
+    }
+  };
+
+  R3.Join(functors3, node2.endpoint);  // NOLINT (Prakash)
+  ASSERT_TRUE(join_future.timed_wait(boost::posix_time::seconds(10)));
 
   //  Testing Send
   boost::promise<bool> response_promise;
@@ -383,13 +401,34 @@ TEST(APITest, BEH_API_NodeNetwork) {
   EXPECT_EQ(kSuccess, a2.get());  // wait for promise !
   EXPECT_EQ(kSuccess, a1.get());  // wait for promise !
 
-  for (auto i(2); i != kNetworkSize; ++i) {
-//    std::async(std::launch::async, [&] {
-    ASSERT_EQ(kSuccess, routing_node[i]->Join(functors, node_infos[i%2].endpoint));
-    LOG(kVerbose) << "Joined !!!!!!!!!!!!!!!!! " << i + 1 << " nodes";
-//  });
+  int min_join_status(4); // TODO(Prakash): To decide
+  std::vector<boost::promise<bool>> join_promises(kNetworkSize - 2);
+  std::vector<boost::unique_future<bool>> join_futures;
+  std::deque<bool> promised;
+  std::vector<NetworkStatusFunctor> status_vector;
+  boost::shared_mutex mutex;
+
+  for (auto i(0); i != (kNetworkSize - 2); ++i) {
+    join_futures.emplace_back(join_promises.at(i).get_future());
+    promised.push_back(true);
+    status_vector.emplace_back([=, &join_promises, &mutex, &promised](int result) {
+                                   ASSERT_GE(result, kSuccess);
+                                   if (result == (std::min(i + 2, min_join_status))) {
+                                     boost::unique_lock< boost::shared_mutex> lock(mutex);
+                                     if (promised.at(i)) {
+                                       join_promises.at(i).set_value(true);
+                                       promised.at(i) = false;
+                                       LOG(kVerbose) << "node - " << i << "joined";
+                                     }
+                                   }
+                                 });
   }
-  Sleep(boost::posix_time::seconds(2));
+
+  for (auto i(0); i != (kNetworkSize - 2); ++i) {
+    functors.network_status = status_vector.at(i);
+    routing_node[i + 2]->Join(functors, node_infos[i % 2].endpoint);
+    ASSERT_TRUE(join_futures.at(i).timed_wait(boost::posix_time::seconds(10)));
+  }
 }
 
 TEST(APITest, BEH_API_NodeNetworkWithClient) {
@@ -437,19 +476,35 @@ TEST(APITest, BEH_API_NodeNetworkWithClient) {
   EXPECT_EQ(kSuccess, a2.get());  // wait for promise !
   EXPECT_EQ(kSuccess, a1.get());  // wait for promise !
 
-  for (auto i(2); i != kServerCount; ++i) {
-    ASSERT_EQ(kSuccess, routing_node[i]->Join(functors, node_infos[i%2].endpoint));
-    LOG(kVerbose) << "Server - " << i
-                  << " joined !!!!!!!!!!!!!!!!! " << i + 1 << " nodes";
+
+  int min_join_status(4); // TODO(Prakash): To decide
+  std::vector<boost::promise<bool>> join_promises(kNetworkSize - 2);
+  std::vector<boost::unique_future<bool>> join_futures;
+  std::deque<bool> promised;
+  std::vector<NetworkStatusFunctor> status_vector;
+  boost::shared_mutex mutex;
+
+  for (auto i(0); i != (kNetworkSize - 2); ++i) {
+    join_futures.emplace_back(join_promises.at(i).get_future());
+    promised.push_back(true);
+    status_vector.emplace_back([=, &join_promises, &mutex, &promised](int result) {
+                                   ASSERT_GE(result, kSuccess);
+                                   if (result == (std::min(i + 2, min_join_status))) {
+                                     boost::unique_lock< boost::shared_mutex> lock(mutex);
+                                     if (promised.at(i)) {
+                                       join_promises.at(i).set_value(true);
+                                       promised.at(i) = false;
+                                       LOG(kVerbose) << "node - " << i << "joined";
+                                     }
+                                   }
+                                 });
   }
 
-  for (auto i(kServerCount); i != kNetworkSize; ++i) {
-    ASSERT_EQ(kSuccess, routing_node[i]->Join(functors, node_infos[0].endpoint));
-    LOG(kVerbose) << "Client - " << i - kServerCount << " joined !!!!!!!!!!!!!!!!! ";
-    LOG(kVerbose) << " joined !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! ";
+  for (auto i(0); i != (kNetworkSize - 2); ++i) {
+    functors.network_status = status_vector.at(i);
+    routing_node[i + 2]->Join(functors, node_infos[i % 2].endpoint);
+    ASSERT_TRUE(join_futures.at(i).timed_wait(boost::posix_time::seconds(10)));
   }
-
-  Sleep(boost::posix_time::seconds(2));
 }
 
 }  // namespace test

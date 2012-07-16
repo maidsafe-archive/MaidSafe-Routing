@@ -14,6 +14,8 @@
 #include <thread>
 #include <algorithm>
 
+#include "maidsafe/common/utils.h"
+
 #include "maidsafe/routing/log.h"
 
 namespace bs2 = boost::signals2;
@@ -57,8 +59,10 @@ bool RoutingTable::AddOrCheckNode(NodeInfo& node, const bool &remove) {
   if (std::find_if(routing_table_nodes_.begin(), routing_table_nodes_.end(),
                    [node](const NodeInfo &i)->bool
                    { return i.node_id ==  node.node_id; })
-                 != routing_table_nodes_.end())
+                 != routing_table_nodes_.end()) {
+    LOG(kInfo) << "Node already there in RT!!" << HexSubstr(node.node_id.String());
     return false;
+  }
   if (MakeSpaceForNodeToBeAdded(node, remove)) {
     if (remove) {
       routing_table_nodes_.push_back(node);
