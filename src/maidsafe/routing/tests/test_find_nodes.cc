@@ -99,7 +99,7 @@ TYPED_TEST_P(FindNodeNetwork, FUNC_FindExistingNode) {
 
 TYPED_TEST_P(FindNodeNetwork, FUNC_FindNonExistingNode) {
   this->SetUpNetwork(kServerSize);
-  uint8_t source(RandomUint32() % (this->nodes_.size() - 2) + 2);
+  uint32_t source(RandomUint32() % (this->nodes_.size() - 2) + 2);
   NodeId node_id(GenerateUniqueRandomId(this->nodes_[source]->node_id(), 6));
   EXPECT_TRUE(this->Find(this->nodes_[source], node_id));
   Sleep(boost::posix_time::seconds(3));
@@ -109,7 +109,7 @@ TYPED_TEST_P(FindNodeNetwork, FUNC_FindNonExistingNode) {
 
 TYPED_TEST_P(FindNodeNetwork, FUNC_FindNodeAfterDrop) {
   this->SetUpNetwork(kServerSize);
-  uint8_t source(RandomUint32() % (this->nodes_.size() - 2) + 2);
+  uint32_t source(RandomUint32() % (this->nodes_.size() - 2) + 2);
   NodeId node_id(GenerateUniqueRandomId(this->nodes_[source]->node_id(), 6));
   EXPECT_FALSE(this->nodes_[source]->RoutingTableHasNode(node_id));
   EXPECT_TRUE(this->AddNode(false, node_id));
