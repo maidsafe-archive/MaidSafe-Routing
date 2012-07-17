@@ -33,9 +33,6 @@
 namespace maidsafe {
 
 namespace rudp {
-namespace {
-std::vector<boost::asio::ip::udp::endpoint> bootstrap_endpoints_;
-}
 
 typedef boost::asio::ip::udp::endpoint Endpoint;
 
@@ -45,7 +42,8 @@ ManagedConnections::ManagedConnections()
       connection_lost_functor_(),
       transports_(),
       connection_map_(),
-      shared_mutex_() {
+      shared_mutex_(),
+      bootstrap_endpoints_() {
   Node node;
   bootstrap_endpoints_.push_back(node.endpoint);
   FakeNetwork::instance().AddEmptyNode(node);
@@ -150,7 +148,7 @@ void ManagedConnections::Send(const Endpoint &peer_endpoint,
   asio_service_.service().post([=]() {
     bool message_sent(FakeNetwork::instance().SendMessageToNode(peer_endpoint, message));
     if (message_sent_functor)
-      message_sent_functor(message_sent);
+      message_sent_functor(message_sent? kSuccess: kInvalidConnection);
   });
 }
 
