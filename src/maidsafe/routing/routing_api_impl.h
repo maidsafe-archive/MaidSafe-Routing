@@ -37,7 +37,7 @@ namespace routing {
 
 namespace test {
 
-class FindNode;
+class GenericNode;
 
 }  // namespace test
 
@@ -45,7 +45,7 @@ struct RoutingPrivate {
  public:
   ~RoutingPrivate();
 
-  friend class test::FindNode;
+  friend class test::GenericNode;
 
  private:
   RoutingPrivate(const RoutingPrivate&);  // no copy

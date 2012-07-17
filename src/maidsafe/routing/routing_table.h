@@ -34,7 +34,7 @@ namespace routing {
 
 namespace test {
 
-class FindNode;
+class GenericNode;
 
 }  // namespace test
 
@@ -66,7 +66,7 @@ class RoutingTable {
   void set_keys(asymm::Keys keys);
   bool client_mode() { return client_mode_; }
 
-  friend class test::FindNode;
+  friend class test::GenericNode;
 
  private:
   RoutingTable(const RoutingTable&);
