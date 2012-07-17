@@ -64,6 +64,13 @@ class FindNode : public GenericNode {
                  !=  routing_->impl_->routing_table_.routing_table_nodes_.end());
   }
 
+  bool NonRoutingTableHasNode(const NodeId &node_id) {
+    return (std::find_if(routing_->impl_->non_routing_table_.non_routing_table_nodes_.begin(),
+                         routing_->impl_->non_routing_table_.non_routing_table_nodes_.end(),
+                 [&node_id](const NodeInfo &node_info) { return (node_id == node_info.node_id); } )
+                 !=  routing_->impl_->non_routing_table_.non_routing_table_nodes_.end());
+  }
+
   bool DropNode(const NodeId &node_id) {
     auto iter = std::find_if(routing_->impl_->routing_table_.routing_table_nodes_.begin(),
         routing_->impl_->routing_table_.routing_table_nodes_.end(),
@@ -138,31 +145,122 @@ class FindNodeNetwork : public GenericNetwork<NodeType> {
 
 TYPED_TEST_CASE_P(FindNodeNetwork);
 
-TYPED_TEST_P(FindNodeNetwork, FUNC_FindNodes) {
+TYPED_TEST_P(FindNodeNetwork, FUNC_VaultFindVaultNode) {
   this->SetUpNetwork(6);
   uint32_t source(
       RandomUint32() % (static_cast<uint32_t>(this->nodes_.size()) - 2) + 2),
       dest(static_cast<uint32_t>(this->nodes_.size()));
-//  this->PrintAllRoutingTables();
+
   EXPECT_TRUE(this->AddNode(false, GenerateUniqueRandomId(this->nodes_[source]->Id(), 20)));
-//  LOG(kInfo) << "After Add " << HexSubstr(this->nodes_[source]->Id().String()) << ", "
-//             << HexSubstr(this->nodes_[dest]->Id().String());
-//  this->PrintAllRoutingTables();
-//  EXPECT_TRUE(this->DropNode(this->nodes_[dest]->Id()));
+  EXPECT_TRUE(this->nodes_[source]->RoutingTableHasNode(this->nodes_[dest]->Id()));
+
   EXPECT_TRUE(this->nodes_[dest]->DropNode(this->nodes_[source]->Id()));
   EXPECT_TRUE(this->nodes_[source]->DropNode(this->nodes_[dest]->Id()));
-  this->nodes_[source]->PrintRoutingTable();
   EXPECT_FALSE(this->nodes_[source]->RoutingTableHasNode(this->nodes_[dest]->Id()));
+
   EXPECT_TRUE(this->Find(this->nodes_[source], this->nodes_[dest]));
   Sleep(boost::posix_time::seconds(5));
-//  std::this_thread::sleep_for(std::chrono::seconds(5));
+
   LOG(kVerbose) << "after find " << HexSubstr(this->nodes_[dest]->Id().String());
   this->nodes_[source]->PrintRoutingTable();
   EXPECT_TRUE(this->nodes_[source]->RoutingTableHasNode(this->nodes_[dest]->Id()));
 }
 
+TYPED_TEST_P(FindNodeNetwork, DISABLED_FUNC_VaultFindClientNode) {
+  // Create a bootstrap network
+  this->SetUpNetwork(6);
+  uint32_t source(
+      RandomUint32() % (static_cast<uint32_t>(this->nodes_.size()) - 2) + 2),
+      dest(static_cast<uint32_t>(this->nodes_.size()));
 
-REGISTER_TYPED_TEST_CASE_P(FindNodeNetwork, FUNC_FindNodes);
+  // Add one client node
+  EXPECT_TRUE(this->AddNode(true, GenerateUniqueRandomId(this->nodes_[source]->Id(), 20)));
+
+  EXPECT_TRUE(this->nodes_[dest]->RoutingTableHasNode(this->nodes_[source]->Id()));
+  EXPECT_FALSE(this->nodes_[source]->RoutingTableHasNode(this->nodes_[dest]->Id()));
+  EXPECT_TRUE(this->nodes_[source]->NonRoutingTableHasNode(this->nodes_[dest]->Id()));
+  EXPECT_FALSE(this->nodes_[1]->RoutingTableHasNode(this->nodes_[dest]->Id()));
+  EXPECT_TRUE(this->nodes_[1]->NonRoutingTableHasNode(this->nodes_[dest]->Id()));
+
+  // clear up
+  EXPECT_TRUE(this->nodes_[dest]->DropNode(this->nodes_[source]->Id()));
+  EXPECT_TRUE(this->nodes_[source]->DropNode(this->nodes_[dest]->Id()));
+  EXPECT_FALSE(this->nodes_[dest]->RoutingTableHasNode(this->nodes_[source]->Id()));
+  EXPECT_FALSE(this->nodes_[source]->NonRoutingTableHasNode(this->nodes_[dest]->Id()));
+
+  // trying to find back
+  EXPECT_TRUE(this->Find(this->nodes_[source], this->nodes_[dest]));
+  Sleep(boost::posix_time::seconds(5));
+  EXPECT_FALSE(this->nodes_[source]->RoutingTableHasNode(this->nodes_[dest]->Id()));
+  EXPECT_FALSE(this->nodes_[source]->NonRoutingTableHasNode(this->nodes_[dest]->Id()));
+}
+
+TYPED_TEST_P(FindNodeNetwork, DISABLED_FUNC_ClientFindVaultNode) {
+  // Create a bootstrap network
+  this->SetUpNetwork(6);
+  uint32_t source(
+      RandomUint32() % (static_cast<uint32_t>(this->nodes_.size()) - 2) + 2),
+      client(static_cast<uint32_t>(this->nodes_.size())),
+      vault(client + 1);
+
+  // Add one client node
+  EXPECT_TRUE(this->AddNode(true, GenerateUniqueRandomId(this->nodes_[source]->Id(), 20)));
+  // Add one vault node
+  EXPECT_TRUE(this->AddNode(false, GenerateUniqueRandomId(this->nodes_[source]->Id(), 24)));
+
+  EXPECT_TRUE(this->nodes_[client]->RoutingTableHasNode(this->nodes_[source]->Id()));
+  EXPECT_FALSE(this->nodes_[source]->RoutingTableHasNode(this->nodes_[client]->Id()));
+  EXPECT_TRUE(this->nodes_[source]->NonRoutingTableHasNode(this->nodes_[client]->Id()));
+  EXPECT_FALSE(this->nodes_[1]->RoutingTableHasNode(this->nodes_[client]->Id()));
+  EXPECT_TRUE(this->nodes_[1]->NonRoutingTableHasNode(this->nodes_[client]->Id()));
+
+  EXPECT_FALSE(this->nodes_[client]->RoutingTableHasNode(this->nodes_[vault]->Id()));
+  EXPECT_FALSE(this->nodes_[vault]->RoutingTableHasNode(this->nodes_[client]->Id()));
+  EXPECT_FALSE(this->nodes_[vault]->NonRoutingTableHasNode(this->nodes_[client]->Id()));
+
+  // trying to find
+  EXPECT_FALSE(this->Find(this->nodes_[vault], this->nodes_[client]));
+  Sleep(boost::posix_time::seconds(5));
+  EXPECT_FALSE(this->nodes_[vault]->RoutingTableHasNode(this->nodes_[client]->Id()));
+  EXPECT_FALSE(this->nodes_[vault]->NonRoutingTableHasNode(this->nodes_[client]->Id()));
+}
+
+TYPED_TEST_P(FindNodeNetwork, DISABLED_FUNC_ClientFindClientNode) {
+  // Create a bootstrap network
+  this->SetUpNetwork(6);
+  uint32_t source(
+      RandomUint32() % (static_cast<uint32_t>(this->nodes_.size()) - 2) + 2),
+      client1(static_cast<uint32_t>(this->nodes_.size())),
+      client2(client1 + 1);
+
+  // Add two client nodes
+  EXPECT_TRUE(this->AddNode(true, GenerateUniqueRandomId(this->nodes_[source]->Id(), 20)));
+  EXPECT_TRUE(this->AddNode(true, GenerateUniqueRandomId(this->nodes_[source]->Id(), 24)));
+
+  EXPECT_TRUE(this->nodes_[client1]->RoutingTableHasNode(this->nodes_[source]->Id()));
+  EXPECT_TRUE(this->nodes_[client2]->RoutingTableHasNode(this->nodes_[source]->Id()));
+  EXPECT_FALSE(this->nodes_[source]->RoutingTableHasNode(this->nodes_[client1]->Id()));
+  EXPECT_TRUE(this->nodes_[source]->NonRoutingTableHasNode(this->nodes_[client1]->Id()));
+  EXPECT_FALSE(this->nodes_[source]->RoutingTableHasNode(this->nodes_[client2]->Id()));
+  EXPECT_TRUE(this->nodes_[source]->NonRoutingTableHasNode(this->nodes_[client2]->Id()));
+
+  EXPECT_FALSE(this->nodes_[client1]->RoutingTableHasNode(this->nodes_[client2]->Id()));
+  EXPECT_FALSE(this->nodes_[client1]->NonRoutingTableHasNode(this->nodes_[client2]->Id()));
+  EXPECT_FALSE(this->nodes_[client2]->RoutingTableHasNode(this->nodes_[client1]->Id()));
+  EXPECT_FALSE(this->nodes_[client2]->NonRoutingTableHasNode(this->nodes_[client1]->Id()));
+
+  // trying to find
+  EXPECT_FALSE(this->Find(this->nodes_[client1], this->nodes_[client2]));
+  Sleep(boost::posix_time::seconds(5));
+  EXPECT_FALSE(this->nodes_[client1]->RoutingTableHasNode(this->nodes_[client2]->Id()));
+  EXPECT_FALSE(this->nodes_[client1]->NonRoutingTableHasNode(this->nodes_[client2]->Id()));
+}
+
+
+REGISTER_TYPED_TEST_CASE_P(FindNodeNetwork, FUNC_VaultFindVaultNode,
+                                            DISABLED_FUNC_VaultFindClientNode,
+                                            DISABLED_FUNC_ClientFindVaultNode,
+                                            DISABLED_FUNC_ClientFindClientNode);
 INSTANTIATE_TYPED_TEST_CASE_P(MAIDSAFE, FindNodeNetwork, FindNode);
 
 }  // namespace test

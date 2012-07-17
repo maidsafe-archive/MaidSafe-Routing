@@ -32,6 +32,12 @@ namespace maidsafe {
 
 namespace routing {
 
+namespace test {
+
+class FindNode;
+
+}  // namespace test
+
 namespace protobuf { class Contact; }  //  namespace protobuf
 
 class NonRoutingTable {
@@ -48,6 +54,8 @@ class NonRoutingTable {
   asymm::Keys kKeys() const;
   bs2::signal<void(std::string, std::string)> &CloseNodeReplacedOldNewSignal();
   void set_keys(asymm::Keys keys);
+
+  friend class test::FindNode;
 
  private:
   NonRoutingTable(const NonRoutingTable&);
