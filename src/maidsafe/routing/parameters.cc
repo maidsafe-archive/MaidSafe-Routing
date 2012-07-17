@@ -25,6 +25,8 @@ uint16_t Parameters::node_group_size(3);
 uint16_t Parameters::max_routing_table_size(64);
 uint16_t Parameters::max_non_routing_table_size(8);
 uint16_t Parameters::bucket_target_size(1);
+uint16_t Parameters::max_data_size(63000);
+
 }  // namespace routing
 
 }  // namespace maidsafe

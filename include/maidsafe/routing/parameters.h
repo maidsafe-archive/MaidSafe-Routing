@@ -35,6 +35,8 @@ struct Parameters {
   static uint16_t max_client_routing_table_size;
   static uint16_t max_non_routing_table_size;
   static uint16_t bucket_target_size;
+  static uint16_t max_data_size;
+
  private:
   Parameters(const Parameters&);  // no copy
   Parameters(const Parameters&&);  // no move

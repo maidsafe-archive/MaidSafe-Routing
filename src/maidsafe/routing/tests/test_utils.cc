@@ -57,6 +57,37 @@ NodeInfo MakeNode() {
   return node;
 }
 
+NodeInfoAndPrivateKey MakeNodeInfoAndKeys() {
+  NodeInfo node;
+  node.node_id = NodeId(RandomString(64));
+  asymm::Keys keys;
+  asymm::GenerateKeyPair(&keys);
+  node.public_key = keys.public_key;
+  node.endpoint.address(GetLocalIp());
+  node.endpoint.port(GetRandomPort());
+  NodeInfoAndPrivateKey node_info_and_private_key;
+  node_info_and_private_key.node_info = node;
+  node_info_and_private_key.private_key = keys.private_key;
+  return node_info_and_private_key;
+}
+
+asymm::Keys MakeKeys() {
+  NodeInfoAndPrivateKey node(MakeNodeInfoAndKeys());
+  asymm::Keys keys;
+  keys.identity = node.node_info.node_id.String();
+  keys.public_key = node.node_info.public_key;
+  keys.private_key = node.private_key;
+  return keys;
+}
+
+asymm::Keys GetKeys(const NodeInfoAndPrivateKey &node) {
+  asymm::Keys keys;
+  keys.identity = node.node_info.node_id.String();
+  keys.public_key = node.node_info.public_key;
+  keys.private_key = node.private_key;
+  return keys;
+}
+
 NodeId GenerateUniqueRandomId(const NodeId &holder, const uint16_t &pos) {
   std::string holder_id = holder.ToStringEncoded(NodeId::kBinary);
   std::bitset<64*8> holder_id_binary_bitset(holder_id);

@@ -39,29 +39,10 @@ namespace test {
 namespace bptime = boost::posix_time;
 
 namespace {
-
-NodeInfo MakeNodeInfo() {
-  NodeInfo node;
-  node.node_id = NodeId(RandomString(64));
-  asymm::Keys keys;
-  asymm::GenerateKeyPair(&keys);
-  node.public_key = keys.public_key;
-  node.endpoint.address(GetLocalIp());
-  node.endpoint.port(GetRandomPort());
-  return node;
-}
-
-asymm::Keys MakeKeys() {
-  NodeInfo node(MakeNodeInfo());
-  asymm::Keys keys;
-  keys.identity = node.node_id.String();
-  keys.public_key = node.public_key;
-  return keys;
-}
-
-void SortFromThisNode(const NodeId &from, std::vector<NodeInfo> nodeInfos) {
-  std::sort(nodeInfos.begin(), nodeInfos.end(), [from](const NodeInfo &i, const NodeInfo &j) {
-                return (i.node_id ^ from) < (j.node_id ^ from);
+void SortFromThisNode(const NodeId &from, std::vector<NodeInfoAndPrivateKey> nodes) {
+  std::sort(nodes.begin(), nodes.end(), [from](const NodeInfoAndPrivateKey &i,
+                                               const NodeInfoAndPrivateKey &j) {
+                return (i.node_info.node_id ^ from) < (j.node_info.node_id ^ from);
              });
 }
 
@@ -136,19 +117,30 @@ TEST(NetworkUtilsTest, FUNC_ProcessSendDirectEndpoint) {
       LOG(kInfo) << " -- Lost Connection with : " << endpoint;
     };
 
+  asymm::Keys keys1(MakeKeys());
+ std::shared_ptr<asymm::PrivateKey>
+     private_key1(std::make_shared<asymm::PrivateKey>(keys1.private_key));
+ std::shared_ptr<asymm::PublicKey>
+     public_key1(std::make_shared<asymm::PublicKey>(keys1.public_key));
   auto a1 = std::async(std::launch::async, [=, &rudp1]()-> Endpoint {
       std::vector<Endpoint> bootstrap_endpoint(1, endpoint2);
       return rudp1.Bootstrap(bootstrap_endpoint,
                              message_received_functor,
                              connection_lost_functor,
+                             private_key1,
+                             public_key1,
                              endpoint1);
   });
-
+ asymm::Keys keys2(MakeKeys());
+ std::shared_ptr<asymm::PrivateKey> private_key2(new asymm::PrivateKey(keys2.private_key));
+ std::shared_ptr<asymm::PublicKey> public_key2(new asymm::PublicKey(keys2.public_key));
   auto a2 = std::async(std::launch::async, [=, &rudp2]()-> Endpoint {
       std::vector<Endpoint> bootstrap_endpoint(1, endpoint1);
       return rudp2.Bootstrap(bootstrap_endpoint,
                              message_received_functor2,
                              connection_lost_functor,
+                             private_key2,
+                             public_key2,
                              endpoint2);
   });
 
@@ -233,19 +225,30 @@ TEST(NetworkUtilsTest, FUNC_ProcessSendRecursiveSendOn) {
       routing_table.DropNode(endpoint);
       LOG(kInfo) << " -- Lost Connection with : " << endpoint;
     };
+
+  asymm::Keys keys1(MakeKeys());
+ std::shared_ptr<asymm::PrivateKey> private_key1(new asymm::PrivateKey(keys1.private_key));
+ std::shared_ptr<asymm::PublicKey> public_key1(new asymm::PublicKey(keys1.public_key));
   auto a1 = std::async(std::launch::async, [=, &rudp1]()-> Endpoint {
       std::vector<Endpoint> bootstrap_endpoint(1, endpoint2);
       return rudp1.Bootstrap(bootstrap_endpoint,
                              message_received_functor,
                              connection_lost_functor,
+                             private_key1,
+                             public_key1,
                              endpoint1);
   });
 
+ asymm::Keys keys2(MakeKeys());
+ std::shared_ptr<asymm::PrivateKey> private_key2(new asymm::PrivateKey(keys2.private_key));
+ std::shared_ptr<asymm::PublicKey> public_key2(new asymm::PublicKey(keys2.public_key));
   auto a2 = std::async(std::launch::async, [=, &rudp2]()-> Endpoint {
       std::vector<Endpoint> bootstrap_endpoint(1, endpoint1);
       return rudp2.Bootstrap(bootstrap_endpoint,
                              message_received_functor2,
                              connection_lost_functor,
+                             private_key2,
+                             public_key2,
                              endpoint2);
   });
 
@@ -271,17 +274,17 @@ TEST(NetworkUtilsTest, FUNC_ProcessSendRecursiveSendOn) {
   LOG(kVerbose) << " ------------------------ 3rd node setup done ------------------------------ ";
 
   // setup 7 inactive & 1 active node
-  std::vector<NodeInfo> node_infos;
+  std::vector<NodeInfoAndPrivateKey> nodes;
   for (auto i(0); i != 8; ++i)
-    node_infos.push_back(MakeNodeInfo());
-  SortFromThisNode(NodeId(keys.identity), node_infos);
+    nodes.push_back(MakeNodeInfoAndKeys());
+  SortFromThisNode(NodeId(keys.identity), nodes);
 
   // add the active node at the end of the RT
-  node_infos[7].endpoint = endpoint_pair2.external;  //  second node
-  sent_message.set_destination_id(NodeId(node_infos[0].node_id).String());
+  nodes.at(7).node_info.endpoint = endpoint_pair2.external;  //  second node
+  sent_message.set_destination_id(NodeId(nodes.at(0).node_info.node_id).String());
 
   for (auto i(0); i != 8; ++i)
-    ASSERT_TRUE(routing_table.AddNode(node_infos[i]));
+    ASSERT_TRUE(routing_table.AddNode(nodes.at(i).node_info));
 
   for (auto i(0); i != kMessageCount; ++i)
     network.SendToClosestNode(sent_message);

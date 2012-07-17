@@ -24,6 +24,17 @@ namespace routing {
 
 namespace test {
 
+struct NodeInfoAndPrivateKey {
+  NodeInfo node_info;
+  asymm::PrivateKey private_key;
+};
+
+NodeInfoAndPrivateKey MakeNodeInfoAndKeys();
+
+asymm::Keys MakeKeys();
+
+asymm::Keys GetKeys(const NodeInfoAndPrivateKey &node);
+
 uint16_t GetRandomPort();
 
 NodeInfo MakeNode();

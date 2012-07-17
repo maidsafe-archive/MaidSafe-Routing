@@ -33,6 +33,9 @@
 namespace maidsafe {
 
 namespace rudp {
+namespace {
+std::vector<boost::asio::ip::udp::endpoint> bootstrap_endpoints_;
+}
 
 typedef boost::asio::ip::udp::endpoint Endpoint;
 
@@ -42,8 +45,7 @@ ManagedConnections::ManagedConnections()
       connection_lost_functor_(),
       transports_(),
       connection_map_(),
-      shared_mutex_(),
-      bootstrap_endpoints_() {
+      shared_mutex_() {
   Node node;
   bootstrap_endpoints_.push_back(node.endpoint);
   FakeNetwork::instance().AddEmptyNode(node);
@@ -59,6 +61,8 @@ ManagedConnections::~ManagedConnections() {
 Endpoint ManagedConnections::Bootstrap(const std::vector<Endpoint> &bootstrap_endpoints,
                                        MessageReceivedFunctor message_received_functor,
                                        ConnectionLostFunctor connection_lost_functor,
+                                       std::shared_ptr<asymm::PrivateKey> private_key,
+                                       std::shared_ptr<asymm::PublicKey> public_key,
                                        Endpoint local_endpoint) {
   LOG(kVerbose) << "In Bootstrap";
 
@@ -75,6 +79,12 @@ Endpoint ManagedConnections::Bootstrap(const std::vector<Endpoint> &bootstrap_en
 
   if (bootstrap_endpoints.empty()) {
     LOG(kError) << "You must provide at least one Bootstrap endpoint.";
+    return Endpoint();
+  }
+
+  if (!private_key || !asymm::ValidateKey(*private_key) ||
+      !public_key || !asymm::ValidateKey(*public_key)) {
+    LOG(kError) << "You must provide a valid private and public key.";
     return Endpoint();
   }
 

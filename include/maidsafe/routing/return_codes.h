@@ -50,7 +50,8 @@ enum ReturnCode {
   kInvalidDestinationId = -303007,
   kEmptyData = -303008,
   kTypeNotAllowed = -303009,
-  kFailedtoSendFindNode = -303010
+  kFailedtoSendFindNode = -303010,
+  kDataSizeNotAllowed = -303011
 };
 
 }  // namespace routing

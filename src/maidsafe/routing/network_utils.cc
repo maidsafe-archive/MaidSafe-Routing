@@ -48,11 +48,19 @@ Endpoint NetworkUtils::Bootstrap(const std::vector<Endpoint> &bootstrap_endpoint
                                  rudp::MessageReceivedFunctor message_received_functor,
                                  rudp::ConnectionLostFunctor connection_lost_functor,
                                  Endpoint local_endpoint) {
-  assert(connection_lost_functor && "Must provide a valid functor");
+ assert(connection_lost_functor && "Must provide a valid functor");
+
+ std::shared_ptr<asymm::PrivateKey>
+     private_key(new asymm::PrivateKey(routing_table_.kKeys().private_key));
+ std::shared_ptr<asymm::PublicKey>
+     public_key(new asymm::PublicKey(routing_table_.kKeys().public_key));
+
   connection_lost_functor_ = connection_lost_functor;
   return rudp_.Bootstrap(bootstrap_endpoints,
                          message_received_functor,
                          [&](const Endpoint &endpoint) { OnConnectionLost(endpoint); },
+                         private_key,
+                         public_key,
                          local_endpoint);
   }
 
@@ -128,8 +136,8 @@ void NetworkUtils::SendTo(protobuf::Message message,
                           const Endpoint &endpoint) {
   NodeId peer_node_id = node_id;
   const std::string my_node_id(HexSubstr(routing_table_.kKeys().identity));
-  rudp::MessageSentFunctor message_sent_functor = [=](bool message_sent) {
-      if (message_sent)
+  rudp::MessageSentFunctor message_sent_functor = [=](int message_sent) {
+      if (rudp::kSuccess == message_sent)
         LOG(kInfo) << " Message sent, type: " << message.type()
                    << " to "
                    << HexSubstr(peer_node_id.String())
@@ -138,7 +146,10 @@ void NetworkUtils::SendTo(protobuf::Message message,
                    << HexSubstr(message.destination_id())
                    << "]";
       else
-        LOG(kError) << " Failed to send message, type: " << message.type()
+        LOG(kError) << " Failed to send message : "
+                    << message_sent
+                    << ", type: "
+                    << message.type()
                     << " to "
                     << HexSubstr(peer_node_id.String())
                     << " I am " << my_node_id
@@ -175,8 +186,8 @@ void NetworkUtils::RecursiveSendOn(protobuf::Message message,
 
   const std::string my_node_id(HexSubstr(routing_table_.kKeys().identity));
 
-  rudp::MessageSentFunctor message_sent_functor = [=](bool message_sent) {
-      if (message_sent) {
+  rudp::MessageSentFunctor message_sent_functor = [=](int message_sent) {
+      if (rudp::kSuccess == message_sent) {
         LOG(kInfo) << " Message sent, type: " << message.type()
                    << " to "
                    << HexSubstr(closest_node.node_id.String())
@@ -184,8 +195,11 @@ void NetworkUtils::RecursiveSendOn(protobuf::Message message,
                    << " [ destination id : "
                    << HexSubstr(message.destination_id())
                    << "]";
-      } else {
-        LOG(kError) << " Failed to send message, type: " << message.type()
+      } else if (rudp::kSendFailure == message_sent){
+        LOG(kError) << " Failed to send message : "
+                    << message_sent
+                    << ", type: "
+                    << message.type()
                     << " to "
                     << HexSubstr(closest_node.node_id.String())
                     << " I am " << my_node_id
@@ -195,6 +209,22 @@ void NetworkUtils::RecursiveSendOn(protobuf::Message message,
                     << " Will retry to Send. Attempt count = "
                     << attempt_count + 1;
         RecursiveSendOn(message, closest_node, attempt_count + 1);
+
+      } else {
+        LOG(kError) << " Failed to send message : "
+                    << message_sent
+                    << ", type: "
+                    << message.type()
+                    << " to "
+                    << HexSubstr(closest_node.node_id.String())
+                    << " I am " << my_node_id
+                    << " [ destination id : "
+                    << HexSubstr(message.destination_id())
+                    << "]"
+                    << " Will remove node";
+        rudp_.Remove(closest_node.endpoint);
+        OnConnectionLost(closest_node.endpoint);
+        RecursiveSendOn(message);
       }
     };
   LOG(kVerbose) << " >>>>>>> rudp recursive send message to " << closest_node.endpoint << " <<<<<";

@@ -49,32 +49,6 @@ namespace {
 
 const int kNetworkSize = kClientCount + kServerCount;
 
-NodeInfo MakeNodeInfo() {
-  NodeInfo node;
-  node.node_id = NodeId(RandomString(64));
-  asymm::Keys keys;
-  asymm::GenerateKeyPair(&keys);
-  node.public_key = keys.public_key;
-  node.endpoint.address(GetLocalIp());
-  node.endpoint.port(GetRandomPort());
-  return node;
-}
-
-asymm::Keys MakeKeys() {
-  NodeInfo node(MakeNodeInfo());
-  asymm::Keys keys;
-  keys.identity = node.node_id.String();
-  keys.public_key = node.public_key;
-  return keys;
-}
-
-asymm::Keys GetKeys(const NodeInfo &node_info) {
-  asymm::Keys keys;
-  keys.identity = node_info.node_id.String();
-  keys.public_key = node_info.public_key;
-  return keys;
-}
-
 }  // anonymous namespace
 
 // TEST(APITest, BEH_BadConfigFile) {
@@ -132,13 +106,13 @@ TEST(APITest, DISABLED_BEH_API_ManualBootstrap) {
 }
 
 TEST(APITest, BEH_API_ZeroState) {
-  NodeInfo node1(MakeNodeInfo());
-  NodeInfo node2(MakeNodeInfo());
-  NodeInfo node3(MakeNodeInfo());
+  NodeInfoAndPrivateKey node1(MakeNodeInfoAndKeys());
+  NodeInfoAndPrivateKey node2(MakeNodeInfoAndKeys());
+  NodeInfoAndPrivateKey node3(MakeNodeInfoAndKeys());
   std::map<NodeId, asymm::Keys> key_map;
-  key_map.insert(std::make_pair(NodeId(node1.node_id), GetKeys(node1)));
-  key_map.insert(std::make_pair(NodeId(node2.node_id), GetKeys(node2)));
-  key_map.insert(std::make_pair(NodeId(node3.node_id), GetKeys(node3)));
+  key_map.insert(std::make_pair(NodeId(node1.node_info.node_id), GetKeys(node1)));
+  key_map.insert(std::make_pair(NodeId(node2.node_info.node_id), GetKeys(node2)));
+  key_map.insert(std::make_pair(NodeId(node3.node_info.node_id), GetKeys(node3)));
 
   Routing R1(GetKeys(node1), false);
   Routing R2(GetKeys(node2), false);
@@ -155,9 +129,9 @@ TEST(APITest, BEH_API_ZeroState) {
   functors2.request_public_key = functors3.request_public_key = functors1.request_public_key;
 
   auto a1 = std::async(std::launch::async,
-      [&]{return R1.ZeroStateJoin(functors1, node1.endpoint, node2);});  // NOLINT (Prakash)
+    [&]{return R1.ZeroStateJoin(functors1, node1.node_info.endpoint, node2.node_info);});
   auto a2 = std::async(std::launch::async,
-      [&]{return R2.ZeroStateJoin(functors2, node2.endpoint, node1);});  // NOLINT (Prakash)
+      [&]{return R2.ZeroStateJoin(functors2, node2.node_info.endpoint, node1.node_info);});
 
   EXPECT_EQ(kSuccess, a2.get());  // wait for promise !
   EXPECT_EQ(kSuccess, a1.get());  // wait for promise !
@@ -170,16 +144,17 @@ TEST(APITest, BEH_API_ZeroState) {
       join_promise.set_value(true);
   };
 
-  R3.Join(functors3, node2.endpoint);  // NOLINT (Prakash)
+  R3.Join(functors3, node2.node_info.endpoint);
   EXPECT_TRUE(join_future.timed_wait(boost::posix_time::seconds(10)));
+  LOG(kWarning) << "done!!!";
 }
 
 TEST(APITest, FUNC_API_AnonymousNode) {
-  NodeInfo node1(MakeNodeInfo());
-  NodeInfo node2(MakeNodeInfo());
+  NodeInfoAndPrivateKey node1(MakeNodeInfoAndKeys());
+  NodeInfoAndPrivateKey node2(MakeNodeInfoAndKeys());
   std::map<NodeId, asymm::Keys> key_map;
-  key_map.insert(std::make_pair(NodeId(node1.node_id), GetKeys(node1)));
-  key_map.insert(std::make_pair(NodeId(node2.node_id), GetKeys(node2)));
+  key_map.insert(std::make_pair(NodeId(node1.node_info.node_id), GetKeys(node1)));
+  key_map.insert(std::make_pair(NodeId(node2.node_info.node_id), GetKeys(node2)));
 
   Routing R1(GetKeys(node1), false);
   Routing R2(GetKeys(node2), false);
@@ -202,9 +177,9 @@ TEST(APITest, FUNC_API_AnonymousNode) {
   functors2.request_public_key = functors1.request_public_key;
 
   auto a1 = std::async(std::launch::async,
-      [&]{return R1.ZeroStateJoin(functors1, node1.endpoint, node2);});  // NOLINT (Prakash)
+      [&]{return R1.ZeroStateJoin(functors1, node1.node_info.endpoint, node2.node_info);});
   auto a2 = std::async(std::launch::async,
-      [&]{return R2.ZeroStateJoin(functors2, node2.endpoint, node1);});  // NOLINT (Prakash)
+      [&]{return R2.ZeroStateJoin(functors2, node2.node_info.endpoint, node1.node_info);});
 
   EXPECT_EQ(kSuccess, a2.get());  // wait for promise !
   EXPECT_EQ(kSuccess, a1.get());  // wait for promise !
@@ -218,7 +193,7 @@ TEST(APITest, FUNC_API_AnonymousNode) {
       LOG(kVerbose) << "Anonymous Node joined";
     }
   };
-  R3.Join(functors3, node2.endpoint);
+  R3.Join(functors3, node2.node_info.endpoint);
   ASSERT_TRUE(join_future.timed_wait(boost::posix_time::seconds(10)));
 
   ResponseFunctor response_functor = [=](const int& return_code, const std::string &message) {
@@ -227,28 +202,28 @@ TEST(APITest, FUNC_API_AnonymousNode) {
       LOG(kVerbose) << "Got response !!";
     };
   //  Testing Send
-  R3.Send(NodeId(node1.node_id), NodeId(), "message_from_anonymous node", 101, response_functor,
-          boost::posix_time::seconds(10), ConnectType::kSingle);
+  R3.Send(NodeId(node1.node_info.node_id), NodeId(), "message_from_anonymous node", 101,
+          response_functor, boost::posix_time::seconds(10), ConnectType::kSingle);
 
   Sleep(boost::posix_time::seconds(61));  // to allow disconnection
   ResponseFunctor failed_response = [=](const int& return_code, const std::string &message) {
       EXPECT_EQ(kResponseTimeout, return_code);
       ASSERT_EQ("", message);
     };
-  R3.Send(NodeId(node1.node_id), NodeId(), "message_2_from_anonymous node", 101, failed_response,
-          boost::posix_time::seconds(60), ConnectType::kSingle);
+  R3.Send(NodeId(node1.node_info.node_id), NodeId(), "message_2_from_anonymous node", 101,
+          failed_response, boost::posix_time::seconds(60), ConnectType::kSingle);
   Sleep(boost::posix_time::seconds(1));
 }
 
 TEST(APITest, BEH_API_SendToSelf) {
-  NodeInfo node1(MakeNodeInfo());
-  NodeInfo node2(MakeNodeInfo());
-  NodeInfo node3(MakeNodeInfo());
+  NodeInfoAndPrivateKey node1(MakeNodeInfoAndKeys());
+  NodeInfoAndPrivateKey node2(MakeNodeInfoAndKeys());
+  NodeInfoAndPrivateKey node3(MakeNodeInfoAndKeys());
 
   std::map<NodeId, asymm::Keys> key_map;
-  key_map.insert(std::make_pair(NodeId(node1.node_id), GetKeys(node1)));
-  key_map.insert(std::make_pair(NodeId(node2.node_id), GetKeys(node2)));
-  key_map.insert(std::make_pair(NodeId(node3.node_id), GetKeys(node3)));
+  key_map.insert(std::make_pair(NodeId(node1.node_info.node_id), GetKeys(node1)));
+  key_map.insert(std::make_pair(NodeId(node2.node_info.node_id), GetKeys(node2)));
+  key_map.insert(std::make_pair(NodeId(node3.node_info.node_id), GetKeys(node3)));
 
   Routing R1(GetKeys(node1), false);
   Routing R2(GetKeys(node2), false);
@@ -272,9 +247,9 @@ TEST(APITest, BEH_API_SendToSelf) {
   functors2.message_received = functors3.message_received = functors1.message_received;
 
   auto a1 = std::async(std::launch::async,
-      [&]{return R1.ZeroStateJoin(functors1, node1.endpoint, node2);});  // NOLINT (Prakash)
+      [&]{return R1.ZeroStateJoin(functors1, node1.node_info.endpoint, node2.node_info);});
   auto a2 = std::async(std::launch::async,
-      [&]{return R2.ZeroStateJoin(functors2, node2.endpoint, node1);});  // NOLINT (Prakash)
+      [&]{return R2.ZeroStateJoin(functors2, node2.node_info.endpoint, node1.node_info);});
 
   EXPECT_EQ(kSuccess, a2.get());  // wait for promise !
   EXPECT_EQ(kSuccess, a1.get());  // wait for promise !
@@ -289,7 +264,7 @@ TEST(APITest, BEH_API_SendToSelf) {
     }
   };
 
-  R3.Join(functors3, node2.endpoint);  // NOLINT (Prakash)
+  R3.Join(functors3, node2.node_info.endpoint);
   ASSERT_TRUE(join_future.timed_wait(boost::posix_time::seconds(10)));
 
   //  Testing Send
@@ -301,20 +276,20 @@ TEST(APITest, BEH_API_SendToSelf) {
       LOG(kVerbose) << "Got response !!";
       response_promise.set_value(true);
     };
-  R3.Send(NodeId(node3.node_id), NodeId(), "message from my node", 101, response_functor,
+  R3.Send(NodeId(node3.node_info.node_id), NodeId(), "message from my node", 101, response_functor,
           boost::posix_time::seconds(10), ConnectType::kSingle);
   EXPECT_TRUE(response_future.timed_wait(boost::posix_time::seconds(10)));
 }
 
 TEST(APITest, BEH_API_ClientNode) {
-  NodeInfo node1(MakeNodeInfo());
-  NodeInfo node2(MakeNodeInfo());
-  NodeInfo node3(MakeNodeInfo());
+  NodeInfoAndPrivateKey node1(MakeNodeInfoAndKeys());
+  NodeInfoAndPrivateKey node2(MakeNodeInfoAndKeys());
+  NodeInfoAndPrivateKey node3(MakeNodeInfoAndKeys());
 
   std::map<NodeId, asymm::Keys> key_map;
-  key_map.insert(std::make_pair(NodeId(node1.node_id), GetKeys(node1)));
-  key_map.insert(std::make_pair(NodeId(node2.node_id), GetKeys(node2)));
-  key_map.insert(std::make_pair(NodeId(node3.node_id), GetKeys(node3)));
+  key_map.insert(std::make_pair(NodeId(node1.node_info.node_id), GetKeys(node1)));
+  key_map.insert(std::make_pair(NodeId(node2.node_info.node_id), GetKeys(node2)));
+  key_map.insert(std::make_pair(NodeId(node3.node_info.node_id), GetKeys(node3)));
 
   Routing R1(GetKeys(node1), false);
   Routing R2(GetKeys(node2), false);
@@ -337,9 +312,9 @@ TEST(APITest, BEH_API_ClientNode) {
   functors2.request_public_key = functors3.request_public_key = functors1.request_public_key;
 
   auto a1 = std::async(std::launch::async,
-      [&]{return R1.ZeroStateJoin(functors1, node1.endpoint, node2);});  // NOLINT (Prakash)
+      [&]{return R1.ZeroStateJoin(functors1, node1.node_info.endpoint, node2.node_info);});
   auto a2 = std::async(std::launch::async,
-      [&]{return R2.ZeroStateJoin(functors2, node2.endpoint, node1);});  // NOLINT (Prakash)
+      [&]{return R2.ZeroStateJoin(functors2, node2.node_info.endpoint, node1.node_info);});
 
   EXPECT_EQ(kSuccess, a2.get());  // wait for promise !
   EXPECT_EQ(kSuccess, a1.get());  // wait for promise !
@@ -354,7 +329,7 @@ TEST(APITest, BEH_API_ClientNode) {
     }
   };
 
-  R3.Join(functors3, node2.endpoint);  // NOLINT (Prakash)
+  R3.Join(functors3, node2.node_info.endpoint);  // NOLINT (Prakash)
   ASSERT_TRUE(join_future.timed_wait(boost::posix_time::seconds(10)));
 
   //  Testing Send
@@ -366,20 +341,27 @@ TEST(APITest, BEH_API_ClientNode) {
       LOG(kVerbose) << "Got response !!";
       response_promise.set_value(true);
     };
-  R3.Send(NodeId(node1.node_id), NodeId(), "message from client node", 101, response_functor,
-          boost::posix_time::seconds(10), ConnectType::kSingle);
+  R3.Send(NodeId(node1.node_info.node_id), NodeId(), "message from client node", 101,
+          response_functor, boost::posix_time::seconds(10), ConnectType::kSingle);
 
   EXPECT_TRUE(response_future.timed_wait(boost::posix_time::seconds(10)));
 }
 
 TEST(APITest, BEH_API_NodeNetwork) {
-  std::vector<NodeInfo> node_infos;
+  int min_join_status(4); // TODO(Prakash): To decide
+  std::vector<boost::promise<bool>> join_promises(kNetworkSize - 2);
+  std::vector<boost::unique_future<bool>> join_futures;
+  std::deque<bool> promised;
+  std::vector<NetworkStatusFunctor> status_vector;
+  boost::shared_mutex mutex;
+
+  std::vector<NodeInfoAndPrivateKey> nodes;
   std::vector<std::shared_ptr<Routing>> routing_node;
   std::map<NodeId, asymm::Keys> key_map;
   for (auto i(0); i != kNetworkSize; ++i) {
-    NodeInfo node(MakeNodeInfo());
-    node_infos.push_back(node);
-    key_map.insert(std::make_pair(NodeId(node.node_id), GetKeys(node)));
+    NodeInfoAndPrivateKey node(MakeNodeInfoAndKeys());
+    nodes.push_back(node);
+    key_map.insert(std::make_pair(NodeId(node.node_info.node_id), GetKeys(node)));
     routing_node.push_back(std::make_shared<Routing>(GetKeys(node), false));
   }
   Functors functors;
@@ -392,21 +374,14 @@ TEST(APITest, BEH_API_NodeNetwork) {
   };
 
   auto a1 = std::async(std::launch::async, [&] {
-    return routing_node[0]->ZeroStateJoin(functors, node_infos[0].endpoint,
-                                          node_infos[1]);});  // NOLINT (Prakash)
+    return routing_node[0]->ZeroStateJoin(functors, nodes[0].node_info.endpoint,
+                                          nodes[1].node_info);});
   auto a2 = std::async(std::launch::async, [&] {
-    return routing_node[1]->ZeroStateJoin(functors, node_infos[1].endpoint,
-                                          node_infos[0]);});  // NOLINT (Prakash)
+    return routing_node[1]->ZeroStateJoin(functors, nodes[1].node_info.endpoint,
+                                          nodes[0].node_info);});
 
   EXPECT_EQ(kSuccess, a2.get());  // wait for promise !
   EXPECT_EQ(kSuccess, a1.get());  // wait for promise !
-
-  int min_join_status(4); // TODO(Prakash): To decide
-  std::vector<boost::promise<bool>> join_promises(kNetworkSize - 2);
-  std::vector<boost::unique_future<bool>> join_futures;
-  std::deque<bool> promised;
-  std::vector<NetworkStatusFunctor> status_vector;
-  boost::shared_mutex mutex;
 
   for (auto i(0); i != (kNetworkSize - 2); ++i) {
     join_futures.emplace_back(join_promises.at(i).get_future());
@@ -418,7 +393,7 @@ TEST(APITest, BEH_API_NodeNetwork) {
                                      if (promised.at(i)) {
                                        join_promises.at(i).set_value(true);
                                        promised.at(i) = false;
-                                       LOG(kVerbose) << "node - " << i << "joined";
+                                       LOG(kVerbose) << "node - " << i + 2 << "joined";
                                      }
                                    }
                                  });
@@ -426,19 +401,26 @@ TEST(APITest, BEH_API_NodeNetwork) {
 
   for (auto i(0); i != (kNetworkSize - 2); ++i) {
     functors.network_status = status_vector.at(i);
-    routing_node[i + 2]->Join(functors, node_infos[i % 2].endpoint);
+    routing_node[i + 2]->Join(functors, nodes[i % 2].node_info.endpoint);
     ASSERT_TRUE(join_futures.at(i).timed_wait(boost::posix_time::seconds(10)));
   }
 }
 
 TEST(APITest, BEH_API_NodeNetworkWithClient) {
-  std::vector<NodeInfo> node_infos;
+  int min_join_status(4); // TODO(Prakash): To decide
+  std::vector<boost::promise<bool>> join_promises(kNetworkSize - 2);
+  std::vector<boost::unique_future<bool>> join_futures;
+  std::deque<bool> promised;
+  std::vector<NetworkStatusFunctor> status_vector;
+  boost::shared_mutex mutex;
+
+  std::vector<NodeInfoAndPrivateKey> nodes;
   std::vector<std::shared_ptr<Routing>> routing_node;
   std::map<NodeId, asymm::Keys> key_map;
   for (auto i(0); i != kNetworkSize; ++i) {
-    NodeInfo node(MakeNodeInfo());
-    node_infos.push_back(node);
-    key_map.insert(std::make_pair(NodeId(node.node_id), GetKeys(node)));
+    NodeInfoAndPrivateKey node(MakeNodeInfoAndKeys());
+    nodes.push_back(node);
+    key_map.insert(std::make_pair(NodeId(node.node_info.node_id), GetKeys(node)));
     routing_node.push_back(
         std::make_shared<Routing>(GetKeys(node), ((i < kServerCount)? false: true)));
   }
@@ -467,22 +449,14 @@ TEST(APITest, BEH_API_NodeNetworkWithClient) {
     };
 
   auto a1 = std::async(std::launch::async, [&] {
-    return routing_node[0]->ZeroStateJoin(functors, node_infos[0].endpoint,
-                                          node_infos[1]);});  // NOLINT (Prakash)
+    return routing_node[0]->ZeroStateJoin(functors, nodes[0].node_info.endpoint,
+                                          nodes[1].node_info);});
   auto a2 = std::async(std::launch::async, [&] {
-    return routing_node[1]->ZeroStateJoin(functors, node_infos[1].endpoint,
-                                          node_infos[0]);});  // NOLINT (Prakash)
+    return routing_node[1]->ZeroStateJoin(functors, nodes[1].node_info.endpoint,
+                                          nodes[0].node_info);});
 
   EXPECT_EQ(kSuccess, a2.get());  // wait for promise !
   EXPECT_EQ(kSuccess, a1.get());  // wait for promise !
-
-
-  int min_join_status(4); // TODO(Prakash): To decide
-  std::vector<boost::promise<bool>> join_promises(kNetworkSize - 2);
-  std::vector<boost::unique_future<bool>> join_futures;
-  std::deque<bool> promised;
-  std::vector<NetworkStatusFunctor> status_vector;
-  boost::shared_mutex mutex;
 
   for (auto i(0); i != (kNetworkSize - 2); ++i) {
     join_futures.emplace_back(join_promises.at(i).get_future());
@@ -494,7 +468,7 @@ TEST(APITest, BEH_API_NodeNetworkWithClient) {
                                      if (promised.at(i)) {
                                        join_promises.at(i).set_value(true);
                                        promised.at(i) = false;
-                                       LOG(kVerbose) << "node - " << i << "joined";
+                                       LOG(kVerbose) << "node - " << i + 2 << "joined";
                                      }
                                    }
                                  });
@@ -502,7 +476,7 @@ TEST(APITest, BEH_API_NodeNetworkWithClient) {
 
   for (auto i(0); i != (kNetworkSize - 2); ++i) {
     functors.network_status = status_vector.at(i);
-    routing_node[i + 2]->Join(functors, node_infos[i % 2].endpoint);
+    routing_node[i + 2]->Join(functors, nodes[i % 2].node_info.endpoint);
     ASSERT_TRUE(join_futures.at(i).timed_wait(boost::posix_time::seconds(10)));
   }
 }

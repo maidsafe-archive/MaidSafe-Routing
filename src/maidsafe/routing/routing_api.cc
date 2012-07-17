@@ -72,7 +72,7 @@ int Routing::GetStatus() {
     rudp::EndpointPair endpoint;
     int status = impl_->network_.GetAvailableEndpoint(Endpoint(), endpoint);
     if (rudp::kSuccess != status) {
-      if (status == rudp::kNoneAvailable)
+      if (status == rudp::kNotBootstrapped)
         return kNotJoined;
     }
   } else {
@@ -228,17 +228,11 @@ int Routing::DoFindNode() {
 
   boost::promise<bool> message_sent_promise;
   auto message_sent_future = message_sent_promise.get_future();
-  uint8_t attempt_count(0);
-  rudp::MessageSentFunctor message_sent_functor = [&](bool message_sent) {
-      if (message_sent) {
-        message_sent_promise.set_value(true);
-      } else if (attempt_count < 3) {
-        impl_->network_.SendToDirectEndpoint(find_node_rpc,
-                                             impl_->message_handler_.bootstrap_endpoint(),
-                                             message_sent_functor);
-      } else {
-        message_sent_promise.set_value(false);
-      }
+  rudp::MessageSentFunctor message_sent_functor = [&](int message_sent) {
+    if (rudp::kSuccess == message_sent)
+      message_sent_promise.set_value(true);
+    else
+      message_sent_promise.set_value(false);
     };
 
   impl_->network_.SendToDirectEndpoint(find_node_rpc, impl_->message_handler_.bootstrap_endpoint(),
@@ -253,29 +247,6 @@ int Routing::DoFindNode() {
                << impl_->message_handler_.bootstrap_endpoint();
     return kSuccess;
   }
-
-  // now poll for routing table size to have at least one node available
-
-  //uint8_t poll_count(0);
-  //// TODO(Prakash) : Need to fix target min RT size.
-  //// TODO(Prakash) : workaround to allow fake rudp tests pass FIXME
-  //uint8_t target_routing_table_size = 2;  // (impl_->client_mode_? 4 : 2);
-  //do {
-  //  Sleep(boost::posix_time::milliseconds(100));
-  //} while ((impl_->routing_table_.Size() < target_routing_table_size) &&
-  //         (++poll_count < 100));
-  //if (impl_->routing_table_.Size() >= target_routing_table_size) {
-  //  LOG(kInfo) << (impl_->client_mode_? "Client ": "")
-  //             << " Node successfully joined network, bootstrap node - "
-  //             << impl_->message_handler_.bootstrap_endpoint()
-  //             << ", Routing table size - " << impl_->routing_table_.Size()
-  //             << ", Node id : " << HexSubstr(impl_->keys_.identity);
-  //  return kSuccess;
-  //} else {
-  //  LOG(kError) << "Failed to join network, bootstrap node - "
-  //              << impl_->message_handler_.bootstrap_endpoint();
-  //  return kNotJoined;
-  //}
 }
 
 int Routing::ZeroStateJoin(Functors functors, const Endpoint &local_endpoint,
@@ -347,6 +318,14 @@ void Routing::Send(const NodeId &destination_id,
       response_functor(kInvalidDestinationId, "");
     return;
   }
+
+  if (data.size() > Parameters::max_data_size) {
+    LOG(kError) << "Data size not allowed";
+    if (response_functor)
+      response_functor(kDataSizeNotAllowed, "");
+    return;
+  }
+
   if (data.empty() && (type != 100)) {
     LOG(kError) << "No data, aborted send";
     if (response_functor)
@@ -375,8 +354,8 @@ void Routing::Send(const NodeId &destination_id,
     proto_message.set_relay_id(impl_->routing_table_.kKeys().identity);
     SetProtobufEndpoint(impl_->message_handler_.my_relay_endpoint(), proto_message.mutable_relay());
     Endpoint bootstrap_endpoint = impl_->message_handler_.bootstrap_endpoint();
-    rudp::MessageSentFunctor message_sent = [&] (bool result) {
-        if (!result) {
+    rudp::MessageSentFunctor message_sent = [&] (int result) {
+        if (rudp::kSuccess != result) {
           impl_->timer_.KillTask(proto_message.id());
           LOG(kError) << "Anonymous Session Ended, Send not allowed anymore";
         } else {

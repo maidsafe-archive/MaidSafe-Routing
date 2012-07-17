@@ -15,6 +15,9 @@
 
 #include "boost/thread/future.hpp"
 
+#include "maidsafe/rudp/managed_connections.h"
+#include "maidsafe/rudp/return_codes.h"
+
 #include "maidsafe/routing/routing_api.h"
 #include "maidsafe/routing/routing_api_impl.h"
 #include "maidsafe/routing/rpcs.h"
@@ -42,10 +45,10 @@ class FindNodeNetwork : public GenericNetwork<NodeType> {
     boost::promise<bool> message_sent_promise;
     auto message_sent_future = message_sent_promise.get_future();
     uint8_t attempts(0);
-    rudp::MessageSentFunctor message_sent_functor = [&] (bool message_sent) {
-        if (message_sent) {
+    rudp::MessageSentFunctor message_sent_functor = [&] (int message_sent) {
+        if (rudp::kSuccess == message_sent) {
           message_sent_promise.set_value(true);
-        } else if (attempts < 3) {
+        } else if ((rudp::kSendFailure == message_sent) && (attempts < 3)) {
           source->RudpSend(
               this->nodes_[1]->endpoint(),
               find_node_rpc,
