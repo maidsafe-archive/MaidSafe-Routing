@@ -30,64 +30,6 @@ namespace routing {
 
 namespace test {
 
-class FindNode : public GenericNode {
- public:
-  explicit FindNode(bool client_mode = false)
-      : GenericNode(client_mode),
-        messages_() {
-    LOG(kVerbose) << "RoutingNode constructor";
-  }
-
-  FindNode(bool client_mode, const NodeInfo &node_info)
-      : GenericNode(client_mode, node_info),
-        messages_() {}
-
-  virtual ~FindNode() {}
-
-  void RudpSend(const Endpoint &peer_endpoint,
-                const protobuf::Message &message,
-                rudp::MessageSentFunctor message_sent_functor) {
-    routing_->impl_->network_.SendToDirectEndpoint(message, peer_endpoint, message_sent_functor);
-  }
-
-  void PrintRoutingTable() {
-    LOG(kInfo) << " PrintRoutingTable of " << HexSubstr(node_info_.node_id.String());
-    for (auto node_info : routing_->impl_->routing_table_.routing_table_nodes_) {
-      LOG(kInfo) << "NodeId: " << HexSubstr(node_info.node_id.String());
-    }
-  }
-
-  bool RoutingTableHasNode(const NodeId &node_id) {
-    return (std::find_if(routing_->impl_->routing_table_.routing_table_nodes_.begin(),
-                         routing_->impl_->routing_table_.routing_table_nodes_.end(),
-                 [&node_id](const NodeInfo &node_info) { return (node_id == node_info.node_id); } )
-                 !=  routing_->impl_->routing_table_.routing_table_nodes_.end());
-  }
-
-  bool DropNode(const NodeId &node_id) {
-    auto iter = std::find_if(routing_->impl_->routing_table_.routing_table_nodes_.begin(),
-        routing_->impl_->routing_table_.routing_table_nodes_.end(),
-        [&node_id](const NodeInfo &node_info) {
-            return (node_id == node_info.node_id);
-          });
-    if (iter != routing_->impl_->routing_table_.routing_table_nodes_.end()) {
-      routing_->impl_->routing_table_.DropNode(iter->endpoint);
-    }
-    Sleep(boost::posix_time::seconds(3));
-//    std::this_thread::sleep_for(std::chrono::seconds(3));
-    iter = std::find_if(routing_->impl_->routing_table_.routing_table_nodes_.begin(),
-        routing_->impl_->routing_table_.routing_table_nodes_.end(),
-        [&node_id](const NodeInfo &node_info) {
-            return (node_id == node_info.node_id);
-          });
-    return (iter == routing_->impl_->routing_table_.routing_table_nodes_.end());
-  }
-
-
- protected:
-  std::vector<std::pair<int32_t, std::string> > messages_;
-};
-
 template <typename NodeType>
 class FindNodeNetwork : public GenericNetwork<NodeType> {
  public:
@@ -95,8 +37,8 @@ class FindNodeNetwork : public GenericNetwork<NodeType> {
 
  protected:
   testing::AssertionResult Find(std::shared_ptr<NodeType> source,
-                                std::shared_ptr<NodeType> destination) {
-    protobuf::Message find_node_rpc(rpcs::FindNodes(destination->Id(), source->Id()));
+                                const NodeId &node_id) {
+    protobuf::Message find_node_rpc(rpcs::FindNodes(node_id, source->node_id()));
     boost::promise<bool> message_sent_promise;
     auto message_sent_future = message_sent_promise.get_future();
     uint8_t attempts(0);
@@ -112,11 +54,11 @@ class FindNodeNetwork : public GenericNetwork<NodeType> {
           message_sent_promise.set_value(false);
         }
       };
-    source->PrintRoutingTable();
+//    source->PrintRoutingTable();
     source->RudpSend(this->nodes_[1]->endpoint(), find_node_rpc, message_sent_functor);
     if (!message_sent_future.timed_wait(boost::posix_time::seconds(10))) {
       return testing::AssertionFailure() << "Unable to send FindValue rpc to bootstrap endpoint - "
-                                         << destination->endpoint().port();
+                                         << this->nodes_[1]->endpoint().port();
     }
     return testing::AssertionSuccess();
   }
@@ -138,32 +80,65 @@ class FindNodeNetwork : public GenericNetwork<NodeType> {
 
 TYPED_TEST_CASE_P(FindNodeNetwork);
 
-TYPED_TEST_P(FindNodeNetwork, DISABLED_FUNC_FindNodes) {
-  this->SetUpNetwork(6);
-  uint32_t source(
-      RandomUint32() % (static_cast<uint32_t>(this->nodes_.size()) - 2) + 2),
-      dest(static_cast<uint32_t>(this->nodes_.size()));
-//  this->PrintAllRoutingTables();
-  EXPECT_TRUE(this->AddNode(false, GenerateUniqueRandomId(this->nodes_[source]->Id(), 20)));
-//  LOG(kInfo) << "After Add " << HexSubstr(this->nodes_[source]->Id().String()) << ", "
-//             << HexSubstr(this->nodes_[dest]->Id().String());
-//  this->PrintAllRoutingTables();
-//  EXPECT_TRUE(this->DropNode(this->nodes_[dest]->Id()));
-  EXPECT_TRUE(this->nodes_[dest]->DropNode(this->nodes_[source]->Id()));
-  EXPECT_TRUE(this->nodes_[source]->DropNode(this->nodes_[dest]->Id()));
-  this->nodes_[source]->PrintRoutingTable();
-  EXPECT_FALSE(this->nodes_[source]->RoutingTableHasNode(this->nodes_[dest]->Id()));
-  EXPECT_TRUE(this->Find(this->nodes_[source], this->nodes_[dest]));
-  Sleep(boost::posix_time::seconds(5));
-//  std::this_thread::sleep_for(std::chrono::seconds(5));
-  LOG(kVerbose) << "after find " << HexSubstr(this->nodes_[dest]->Id().String());
-  this->nodes_[source]->PrintRoutingTable();
-  EXPECT_TRUE(this->nodes_[source]->RoutingTableHasNode(this->nodes_[dest]->Id()));
+TYPED_TEST_P(FindNodeNetwork, FUNC_FindExistingNode) {
+  this->SetUpNetwork(kServerSize);
+  bool exists(false);
+  int index(0);
+  for (auto source : this->nodes_)
+    for (auto dest : this->nodes_)
+      if ((source->node_id() != dest->node_id()) &&
+          (source->node_id() != this->nodes_[1]->node_id()) &&
+          (dest->node_id() != this->nodes_[1]->node_id())) {
+        LOG(kInfo) << "index: " << index++;
+        exists = source->RoutingTableHasNode(dest->node_id());
+        EXPECT_TRUE(this->Find(source, dest->node_id()));
+        Sleep(boost::posix_time::seconds(3));
+        EXPECT_EQ(source->RoutingTableHasNode(dest->node_id()), exists);
+      }
 }
 
+TYPED_TEST_P(FindNodeNetwork, FUNC_FindNonExistingNode) {
+  this->SetUpNetwork(kServerSize);
+  uint8_t source(RandomUint32() % (this->nodes_.size() - 2) + 2);
+  NodeId node_id(GenerateUniqueRandomId(this->nodes_[source]->node_id(), 6));
+  EXPECT_TRUE(this->Find(this->nodes_[source], node_id));
+  Sleep(boost::posix_time::seconds(3));
+  EXPECT_FALSE(this->nodes_[source]->RoutingTableHasNode(node_id));
+  LOG(kVerbose) << "Test is over";
+}
 
-REGISTER_TYPED_TEST_CASE_P(FindNodeNetwork, DISABLED_FUNC_FindNodes);
-INSTANTIATE_TYPED_TEST_CASE_P(MAIDSAFE, FindNodeNetwork, FindNode);
+TYPED_TEST_P(FindNodeNetwork, FUNC_FindNodeAfterDrop) {
+  this->SetUpNetwork(kServerSize);
+  uint8_t source(RandomUint32() % (this->nodes_.size() - 2) + 2);
+  NodeId node_id(GenerateUniqueRandomId(this->nodes_[source]->node_id(), 6));
+  EXPECT_FALSE(this->nodes_[source]->RoutingTableHasNode(node_id));
+  EXPECT_TRUE(this->AddNode(false, node_id));
+  Sleep(boost::posix_time::seconds(1));
+  EXPECT_TRUE(this->nodes_[source]->RoutingTableHasNode(node_id));
+  EXPECT_TRUE(this->nodes_[source]->DropNode(node_id));
+  Sleep(boost::posix_time::seconds(20));
+  EXPECT_TRUE(this->nodes_[source]->RoutingTableHasNode(node_id));
+  LOG(kVerbose) << "Test is over";
+}
+
+TYPED_TEST_P(FindNodeNetwork, FUNC_FindNodeAfterLeaving) {
+//  this->SetUpNetwork(kServerSize);
+//  uint8_t index(RandomUint32() % (this->nodes_.size() - 2) + 2);
+//  NodeId node_id(this->nodes_[index]->node_id());
+//  EXPECT_TRUE(this->RemoveNode(node_id));
+//  EXPECT_EQ(this->nodes_.size(), kServerSize - 1);
+//  Sleep(boost::posix_time::seconds(15));
+//  for (auto node : this->nodes_)
+//    EXPECT_FALSE(node->RoutingTableHasNode(node_id));
+//  LOG(kVerbose) << "Test is over";
+}
+
+REGISTER_TYPED_TEST_CASE_P(FindNodeNetwork,
+                           FUNC_FindExistingNode,
+                           FUNC_FindNonExistingNode,
+                           FUNC_FindNodeAfterDrop,
+                           FUNC_FindNodeAfterLeaving);
+INSTANTIATE_TYPED_TEST_CASE_P(MAIDSAFE, FindNodeNetwork, GenericNode);
 
 }  // namespace test
 

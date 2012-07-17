@@ -31,6 +31,12 @@ namespace protobuf { class Message;}  // namespace protobuf
 class NonRoutingTable;
 class RoutingTable;
 
+namespace test {
+
+class GenericNode;
+
+}  // namespace test
+
 class NetworkUtils {
  public:
   NetworkUtils(RoutingTable &routing_table,
@@ -62,6 +68,8 @@ class NetworkUtils {
   // Handles relay response messages also
   // leave destination id empty if needs to send as a relay response message
   void SendToClosestNode(protobuf::Message message);
+
+  friend class test::GenericNode;
 
  private:
   NetworkUtils(const NetworkUtils&);  // no copy

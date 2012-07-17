@@ -17,10 +17,14 @@
 #include <string>
 #include <vector>
 
+#include "boost/thread/future.hpp"
+
 #include "maidsafe/common/test.h"
 #include "maidsafe/common/utils.h"
 #include "maidsafe/routing/return_codes.h"
 #include "maidsafe/routing/tests/test_utils.h"
+#include "maidsafe/routing/routing_pb.h"
+
 
 namespace args = std::placeholders;
 
@@ -32,6 +36,17 @@ class Routing;
 
 namespace test {
 
+#ifdef FAKE_RUDP
+  const uint32_t kClientSize(8);
+  const uint32_t kServerSize(8);
+#else
+  const uint32_t kClientSize(4);
+  const uint32_t kServerSize(6);
+#endif
+
+const uint32_t kNetworkSize = kClientSize + kServerSize;
+
+
 template <typename NodeType>
 class GenericNetwork;
 
@@ -42,10 +57,12 @@ class GenericNode {
   virtual ~GenericNode();
   asymm::Keys GetKeys() const;
   int GetStatus() const;
-  NodeId Id() const;
+  NodeId node_id() const;
+  size_t id() const;
   Endpoint endpoint() const;
   std::shared_ptr<Routing> routing() const;
   NodeInfo node_info() const;
+  bool IsClient() const;
   int ZeroStateJoin(const NodeInfo &peer_node_info);
   int Join(const Endpoint &peer_endpoint);
   void Send(const NodeId &destination_id,
@@ -55,6 +72,11 @@ class GenericNode {
             const ResponseFunctor response_functor,
             const boost::posix_time::time_duration &timeout,
             const ConnectType &connect_type);
+  void PrintRoutingTable();
+  void RudpSend(const Endpoint &peer_endpoint, const protobuf::Message &message,
+                rudp::MessageSentFunctor message_sent_functor);
+  bool RoutingTableHasNode(const NodeId &node_id);
+  testing::AssertionResult DropNode(const NodeId &node_id);
 
   static size_t next_node_id_;
 
@@ -67,6 +89,7 @@ class GenericNode {
   std::shared_ptr<Routing> routing_;
   Functors functors_;
   std::mutex mutex_;
+  bool client_mode_;
 };
 
 template <typename NodeType>
@@ -107,8 +130,19 @@ class GenericNetwork : public testing::Test {
     for (size_t index = 2; index < size; ++index) {
       NodePtr node(new NodeType(false));
       SetNodeValidationFunctor(node);
+      boost::promise<bool> join_promise;
+      auto join_future = join_promise.get_future();
+      int expected = (nodes_.size() > Parameters::closest_nodes_size) ?
+          Parameters::closest_nodes_size : nodes_.size();
+      node->functors_.network_status = [expected, &join_promise](const int &result)->void {
+        ASSERT_GE(result, kSuccess);
+        if (result == 2)
+          join_promise.set_value(true);
+      };
+
       nodes_.push_back(node);
       EXPECT_EQ(kSuccess, node->Join(nodes_[1]->endpoint()));
+      EXPECT_TRUE(join_future.timed_wait(boost::posix_time::seconds(10)));
     }
   }
 

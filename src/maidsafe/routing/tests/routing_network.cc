@@ -16,6 +16,7 @@
 #include <set>
 #include <string>
 
+#include "maidsafe/routing/routing_api_impl.h"
 #include "maidsafe/routing/return_codes.h"
 #include "maidsafe/routing/node_id.h"
 #include "maidsafe/routing/log.h"
@@ -37,7 +38,8 @@ GenericNode::GenericNode(bool client_mode, const NodeInfo &node_info)
       node_info_(node_info),
       routing_(),
       functors_(),
-      mutex_() {
+      mutex_(),
+      client_mode_(false) {
   functors_.close_node_replaced = nullptr;
   functors_.message_received = nullptr;
   functors_.network_status = nullptr;
@@ -52,7 +54,8 @@ GenericNode::GenericNode(bool client_mode)
       node_info_(MakeNode()),
       routing_(),
       functors_(),
-      mutex_() {
+      mutex_(),
+      client_mode_(false) {
   functors_.close_node_replaced = nullptr;
   functors_.message_received = nullptr;
   functors_.network_status = nullptr;
@@ -79,8 +82,16 @@ Endpoint GenericNode::endpoint() const {
   return node_info_.endpoint;
 }
 
-NodeId GenericNode::Id() const {
+NodeId GenericNode::node_id() const {
   return node_info_.node_id;
+}
+
+size_t GenericNode::id() const {
+  return id_;
+}
+
+bool GenericNode::IsClient() const {
+  return client_mode_;
 }
 
 void GenericNode::Send(const NodeId &destination_id,
@@ -95,6 +106,39 @@ void GenericNode::Send(const NodeId &destination_id,
     return;
 }
 
+void GenericNode::RudpSend(const Endpoint &peer_endpoint, const protobuf::Message &message,
+              rudp::MessageSentFunctor message_sent_functor) {
+  routing_->impl_->network_.RudpSend(message, peer_endpoint, message_sent_functor);
+}
+
+bool GenericNode::RoutingTableHasNode(const NodeId &node_id) {
+  return (std::find_if(routing_->impl_->routing_table_.routing_table_nodes_.begin(),
+                       routing_->impl_->routing_table_.routing_table_nodes_.end(),
+               [&node_id](const NodeInfo &node_info) { return node_id == node_info.node_id; })
+               !=  routing_->impl_->routing_table_.routing_table_nodes_.end());
+}
+
+testing::AssertionResult GenericNode::DropNode(const NodeId &node_id) {
+  LOG(kVerbose) << " DropNode " << HexSubstr(routing_->impl_->routing_table_.kNodeId_.String())
+                << " Removes " << HexSubstr(node_id.String());
+  auto iter = std::find_if(routing_->impl_->routing_table_.routing_table_nodes_.begin(),
+      routing_->impl_->routing_table_.routing_table_nodes_.end(),
+      [&node_id](const NodeInfo &node_info) {
+          return (node_id == node_info.node_id);
+      });
+  if (iter != routing_->impl_->routing_table_.routing_table_nodes_.end()) {
+    LOG(kVerbose) << HexSubstr(routing_->impl_->routing_table_.kNodeId_.String())
+               << " Removes " << HexSubstr(node_id.String());
+    routing_->impl_->network_.Remove(iter->endpoint);
+  } else {
+    testing::AssertionFailure() << HexSubstr(routing_->impl_->routing_table_.keys_.identity)
+                                << " does not have " << HexSubstr(node_id.String())
+                                << " in routing table of ";
+  }
+  return testing::AssertionSuccess();
+}
+
+
 NodeInfo GenericNode::node_info() const {
   return node_info_;
 }
@@ -106,6 +150,14 @@ int GenericNode::ZeroStateJoin(const NodeInfo &peer_node_info) {
 int GenericNode::Join(const Endpoint &peer_endpoint) {
   return routing_->Join(functors_, peer_endpoint);
 }
+
+void GenericNode::PrintRoutingTable() {
+  LOG(kInfo) << " PrintRoutingTable of " << HexSubstr(node_info_.node_id.String());
+  for (auto node_info : routing_->impl_->routing_table_.routing_table_nodes_) {
+    LOG(kInfo) << "NodeId: " << HexSubstr(node_info.node_id.String());
+  }
+}
+
 
 }  // namespace test
 
