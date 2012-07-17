@@ -102,7 +102,8 @@ TEST(NetworkUtilsTest, FUNC_ProcessSendDirectEndpoint) {
 
   boost::promise<bool> test_completion_promise;
   auto test_completion_future = test_completion_promise.get_future();
-  uint32_t expected_message_at_node(kMessageCount + 1);
+  bool promised(true);
+  uint32_t expected_message_at_node(kMessageCount + 2);
   uint32_t message_count_at_node2(0);
 
   protobuf::Message sent_message;
@@ -114,15 +115,17 @@ TEST(NetworkUtilsTest, FUNC_ProcessSendDirectEndpoint) {
 
   rudp::MessageReceivedFunctor message_received_functor2 = [&](const std::string& message) {
       ++message_count_at_node2;
-      LOG(kVerbose) << " Node -2- Received: " << message.substr(0, 10)
+      LOG(kVerbose) << " Node -2- Received: " << message.substr(0, 16)
                     << ", total count = " << message_count_at_node2;
       protobuf::Message received_message;
       if (received_message.ParseFromString(message))
         EXPECT_EQ(sent_message.data(), received_message.data());
       else
         EXPECT_EQ("validation", message.substr(0, 10));
-      if (message_count_at_node2 == expected_message_at_node)
+      if (promised && (message_count_at_node2 == expected_message_at_node)) {
         test_completion_promise.set_value(true);
+        promised = false;
+      }
     };
 
   rudp::MessageReceivedFunctor message_received_functor = [](const std::string& message) {
@@ -151,9 +154,10 @@ TEST(NetworkUtilsTest, FUNC_ProcessSendDirectEndpoint) {
 
   EXPECT_EQ(endpoint2, a1.get());  // wait for promise !
   EXPECT_EQ(endpoint1, a2.get());  // wait for promise !
-  EXPECT_EQ(kSuccess, rudp1.Add(endpoint1, endpoint2, ""));
-  EXPECT_EQ(kSuccess, rudp2.Add(endpoint2, endpoint1, ""));
+  EXPECT_EQ(kSuccess, rudp1.Add(endpoint1, endpoint2, "validation_1->2"));
+  EXPECT_EQ(kSuccess, rudp2.Add(endpoint2, endpoint1, "validation_2->1"));
   LOG(kVerbose) << " ------------------------   Zero state setup done  ----------------------- ";
+
   asymm::Keys keys(MakeKeys());
   RoutingTable routing_table(keys, false, nullptr);
   NonRoutingTable non_routing_table(keys);
@@ -166,8 +170,10 @@ TEST(NetworkUtilsTest, FUNC_ProcessSendDirectEndpoint) {
   rudp::EndpointPair endpoint_pair2, endpoint_pair3;
   network.GetAvailableEndpoint(endpoint2, endpoint_pair3);
   rudp2.GetAvailableEndpoint(endpoint_pair3.external, endpoint_pair2);
-  EXPECT_EQ(kSuccess, network.Add(endpoint_pair3.external, endpoint_pair2.external, "validation3"));
-  EXPECT_EQ(kSuccess, rudp2.Add(endpoint_pair2.external, endpoint_pair3.external, "validation2"));
+  EXPECT_EQ(kSuccess, network.Add(endpoint_pair3.external, endpoint_pair2.external,
+                                  "validation_3->2"));
+  EXPECT_EQ(kSuccess, rudp2.Add(endpoint_pair2.external, endpoint_pair3.external,
+                                "validation_2->3"));
 
   for (auto i(0); i != kMessageCount; ++i)
     network.SendToDirectEndpoint(sent_message, endpoint_pair2.external);
@@ -186,7 +192,8 @@ TEST(NetworkUtilsTest, FUNC_ProcessSendRecursiveSendOn) {
 
   boost::promise<bool> test_completion_promise;
   auto test_completion_future = test_completion_promise.get_future();
-  uint32_t expected_message_at_node(kMessageCount + 1);
+  bool promised(true);
+  uint32_t expected_message_at_node(kMessageCount + 2);
   uint32_t message_count_at_node2(0);
 
   protobuf::Message sent_message;
@@ -201,15 +208,17 @@ TEST(NetworkUtilsTest, FUNC_ProcessSendRecursiveSendOn) {
 
   rudp::MessageReceivedFunctor message_received_functor2 = [&](const std::string& message) {
       ++message_count_at_node2;
-      LOG(kVerbose) << " -2- Received: " << message.substr(0, 10)
+      LOG(kVerbose) << " -2- Received: " << message.substr(0, 16)
                     << ", total count = " << message_count_at_node2;
       protobuf::Message received_message;
       if (received_message.ParseFromString(message))
         EXPECT_EQ(sent_message.data(), received_message.data());
       else
         EXPECT_EQ("validation", message.substr(0, 10));
-      if (message_count_at_node2 == expected_message_at_node)
+      if (promised && (message_count_at_node2 == expected_message_at_node)) {
         test_completion_promise.set_value(true);
+        promised = false;
+      }
     };
 
   rudp::MessageReceivedFunctor message_received_functor = [](const std::string& message) {
@@ -242,8 +251,8 @@ TEST(NetworkUtilsTest, FUNC_ProcessSendRecursiveSendOn) {
 
   EXPECT_EQ(endpoint2, a1.get());  // wait for promise !
   EXPECT_EQ(endpoint1, a2.get());  // wait for promise !
-  EXPECT_EQ(kSuccess, rudp1.Add(endpoint1, endpoint2, ""));
-  EXPECT_EQ(kSuccess, rudp2.Add(endpoint2, endpoint1, ""));
+  EXPECT_EQ(kSuccess, rudp1.Add(endpoint1, endpoint2, "validation_1->2"));
+  EXPECT_EQ(kSuccess, rudp2.Add(endpoint2, endpoint1, "validation_2->1"));
   LOG(kVerbose) << " ------------------------ Zero state setup done ---------------------------- ";
 
 
@@ -255,11 +264,11 @@ TEST(NetworkUtilsTest, FUNC_ProcessSendRecursiveSendOn) {
   rudp::EndpointPair endpoint_pair2, endpoint_pair3;
   network.GetAvailableEndpoint(endpoint2, endpoint_pair3);
   rudp2.GetAvailableEndpoint(endpoint_pair3.external, endpoint_pair2);
-  EXPECT_EQ(kSuccess, network.Add(endpoint_pair3.external, endpoint_pair2.external, "validation3"));
-  EXPECT_EQ(kSuccess, rudp2.Add(endpoint_pair2.external, endpoint_pair3.external, "validation2"));
+  EXPECT_EQ(kSuccess, network.Add(endpoint_pair3.external, endpoint_pair2.external,
+                                  "validation_3->2"));
+  EXPECT_EQ(kSuccess, rudp2.Add(endpoint_pair2.external, endpoint_pair3.external,
+                                "validation_2->3"));
   LOG(kVerbose) << " ------------------------ 3rd node setup done ------------------------------ ";
-
-
 
   // setup 7 inactive & 1 active node
   std::vector<NodeInfo> node_infos;

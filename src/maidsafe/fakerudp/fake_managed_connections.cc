@@ -125,9 +125,11 @@ int ManagedConnections::GetAvailableEndpoint(const Endpoint& /*peer_endpoint*/,
 
 int ManagedConnections::Add(const Endpoint &this_endpoint,
                             const Endpoint &peer_endpoint,
-                            const std::string &/*validation_data*/) {
+                            const std::string &validation_data) {
   asio_service_.service().post([=]() {
     FakeNetwork::instance().AddConnection(this_endpoint, peer_endpoint);
+    if (!validation_data.empty())
+      FakeNetwork::instance().SendMessageToNode(peer_endpoint, validation_data);
   });
   return kSuccess;
 }
