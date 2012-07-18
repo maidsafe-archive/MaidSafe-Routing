@@ -25,6 +25,9 @@ namespace routing {
 namespace test {
 
 struct NodeInfoAndPrivateKey {
+  NodeInfoAndPrivateKey()
+      : node_info(),
+        private_key() {}
   NodeInfo node_info;
   asymm::PrivateKey private_key;
 };

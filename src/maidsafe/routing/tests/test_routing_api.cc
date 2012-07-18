@@ -444,7 +444,7 @@ TEST(APITest, BEH_API_NodeNetworkWithClient) {
   client_functors.request_public_key = functors.request_public_key;
 
   client_functors.message_received = [&] (const int32_t&, const std::string &, const NodeId &,
-    ReplyFunctor reply_functor) {
+    ReplyFunctor /*reply_functor*/) {
       ASSERT_TRUE(false);  //  Client should not receive incoming message
     };
 

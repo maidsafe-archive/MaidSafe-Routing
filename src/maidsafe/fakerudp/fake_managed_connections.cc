@@ -40,9 +40,12 @@ ManagedConnections::ManagedConnections()
     : asio_service_(2),
       message_received_functor_(),
       connection_lost_functor_(),
+      private_key_(),
+      public_key_(),
       transports_(),
       connection_map_(),
       shared_mutex_(),
+      local_ip_(),
       fake_endpoints_() {
   Node node;
   fake_endpoints_.push_back(node.endpoint);

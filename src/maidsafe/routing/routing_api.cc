@@ -64,6 +64,7 @@ Routing::~Routing() {
   LOG(kVerbose) << "~Routing() - Disconnecting funtors"
                 << ", Routing table Size - " << impl_->routing_table_.Size();
   impl_->message_handler_.set_tearing_down();
+  impl_->tearing_down_ = true;
   DisconnectFunctors();
 }
 
@@ -379,7 +380,7 @@ void Routing::Send(const NodeId &destination_id,
 }
 
 void Routing::ReceiveMessage(const std::string &message) {
-  if (impl_->message_handler_.tearing_down()) {
+  if (impl_->tearing_down_) {
     LOG(kVerbose) << " Ignoring, Message received, shutting down";
     return;
   }
