@@ -43,15 +43,15 @@ ManagedConnections::ManagedConnections()
       transports_(),
       connection_map_(),
       shared_mutex_(),
-      bootstrap_endpoints_() {
+      fake_endpoints_() {
   Node node;
-  bootstrap_endpoints_.push_back(node.endpoint);
+  fake_endpoints_.push_back(node.endpoint);
   FakeNetwork::instance().AddEmptyNode(node);
   asio_service_.Start();
 }
 
 ManagedConnections::~ManagedConnections() {
-  if (!FakeNetwork::instance().RemoveMyNode(bootstrap_endpoints_[0])) {
+  if (!FakeNetwork::instance().RemoveMyNode(fake_endpoints_[0])) {
     LOG(kVerbose) << "Failed to remove my node in destructor.";
   }
 }
@@ -86,13 +86,13 @@ Endpoint ManagedConnections::Bootstrap(const std::vector<Endpoint> &bootstrap_en
     return Endpoint();
   }
 
-  auto mynode = FakeNetwork::instance().FindNode(bootstrap_endpoints_[0]);  // me
+  auto mynode = FakeNetwork::instance().FindNode(fake_endpoints_[0]);  // me
   assert(mynode != FakeNetwork::instance().GetEndIterator() && "Apparently not in network.");
 
   Node &node = (*mynode);
   if (!local_endpoint.address().is_unspecified()) {
     node.endpoint = local_endpoint;
-    bootstrap_endpoints_[0] = local_endpoint;
+    fake_endpoints_[0] = local_endpoint;
   }
 
   if (connection_lost_functor)
@@ -123,9 +123,9 @@ Endpoint ManagedConnections::Bootstrap(const std::vector<Endpoint> &bootstrap_en
 
 int ManagedConnections::GetAvailableEndpoint(const Endpoint& /*peer_endpoint*/,
                                              EndpointPair &this_endpoint_pair) {
-  assert((bootstrap_endpoints_.size() != 0) && "I do not know my own endpoint");
-  this_endpoint_pair.external = bootstrap_endpoints_[0];
-  this_endpoint_pair.local = bootstrap_endpoints_[0];
+  assert((fake_endpoints_.size() != 0) && "I do not know my own endpoint");
+  this_endpoint_pair.external = fake_endpoints_[0];
+  this_endpoint_pair.local = fake_endpoints_[0];
   LOG(kInfo) << " endpoint ip address "
              << this_endpoint_pair.external.address().to_string() << "\n";
   return kSuccess;
@@ -154,7 +154,7 @@ void ManagedConnections::Send(const Endpoint &peer_endpoint,
 
 void ManagedConnections::Remove(const Endpoint &peer_endpoint) {
   asio_service_.service().post([=]() {
-    if (!FakeNetwork::instance().RemoveConnection(bootstrap_endpoints_[0], peer_endpoint))
+    if (!FakeNetwork::instance().RemoveConnection(fake_endpoints_[0], peer_endpoint))
       LOG(kVerbose) << "Failed to remove " << peer_endpoint;
   });
 }
