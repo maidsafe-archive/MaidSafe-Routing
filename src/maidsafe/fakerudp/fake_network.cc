@@ -35,11 +35,17 @@ namespace rudp {
 typedef boost::asio::ip::udp::endpoint Endpoint;
 
 
-Node::Node() {
-  endpoint = FakeNetwork::instance().GetEndpoint();
-}
+Node::Node()
+    : endpoint(FakeNetwork::instance().GetEndpoint()),
+      connection_lost(),
+      message_received(),
+      connected_endpoints() {}
 
-FakeNetwork::FakeNetwork() : next_port_(1500) {}
+FakeNetwork::FakeNetwork()
+    : nodes_(),
+      next_port_(1500),
+      local_ip_(),
+      mutex_() {}
 
 Endpoint FakeNetwork::GetEndpoint() {
   return Endpoint(boost::asio::ip::address::from_string("8.8.8.8"), ++next_port_);

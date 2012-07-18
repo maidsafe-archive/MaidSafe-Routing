@@ -33,7 +33,7 @@ namespace test {
 
 size_t GenericNode::next_node_id_(0);
 
-GenericNode::GenericNode(bool client_mode, const NodeInfo &node_info)
+GenericNode::GenericNode(bool client_mode, const NodeInfoAndPrivateKey &node_info)
     : id_(0),
       node_info_(node_info),
       routing_(),
@@ -43,7 +43,7 @@ GenericNode::GenericNode(bool client_mode, const NodeInfo &node_info)
   functors_.close_node_replaced = nullptr;
   functors_.message_received = nullptr;
   functors_.network_status = nullptr;
-  routing_.reset(new Routing(GetKeys(), client_mode));
+  routing_.reset(new Routing(GetKeys(node_info_), client_mode));
   LOG(kVerbose) << "Node constructor";
   std::lock_guard<std::mutex> lock(mutex_);
   id_ = next_node_id_++;
@@ -51,7 +51,7 @@ GenericNode::GenericNode(bool client_mode, const NodeInfo &node_info)
 
 GenericNode::GenericNode(bool client_mode)
     : id_(0),
-      node_info_(MakeNode()),
+      node_info_(MakeNodeInfoAndKeys()),
       routing_(),
       functors_(),
       mutex_(),
@@ -59,7 +59,7 @@ GenericNode::GenericNode(bool client_mode)
   functors_.close_node_replaced = nullptr;
   functors_.message_received = nullptr;
   functors_.network_status = nullptr;
-  routing_.reset(new Routing(GetKeys(), client_mode));
+  routing_.reset(new Routing(GetKeys(node_info_), client_mode));
   LOG(kVerbose) << "Node constructor";
   std::lock_guard<std::mutex> lock(mutex_);
   id_ = next_node_id_++;
@@ -67,23 +67,23 @@ GenericNode::GenericNode(bool client_mode)
 
 GenericNode::~GenericNode() {}
 
-asymm::Keys GenericNode::GetKeys() const {
-  asymm::Keys keys;
-  keys.identity = node_info_.node_id.String();
-  keys.public_key = node_info_.public_key;
-  return keys;
-}
+//asymm::Keys GenericNode::GetKeys() const {
+//  asymm::Keys keys;
+//  keys.identity = node_info_.node_info.node_id.String();
+//  keys.public_key = node_info_.node_info.public_key;
+//  return keys;
+//}
 
 int GenericNode::GetStatus() const {
   return routing_->GetStatus();
 }
 
 Endpoint GenericNode::endpoint() const {
-  return node_info_.endpoint;
+  return node_info_.node_info.endpoint;
 }
 
 NodeId GenericNode::node_id() const {
-  return node_info_.node_id;
+  return node_info_.node_info.node_id;
 }
 
 size_t GenericNode::id() const {
@@ -118,6 +118,13 @@ bool GenericNode::RoutingTableHasNode(const NodeId &node_id) {
                !=  routing_->impl_->routing_table_.routing_table_nodes_.end());
 }
 
+bool GenericNode::NonRoutingTableHasNode(const NodeId &node_id) {
+  return (std::find_if(routing_->impl_->non_routing_table_.non_routing_table_nodes_.begin(),
+                       routing_->impl_->non_routing_table_.non_routing_table_nodes_.end(),
+               [&node_id](const NodeInfo &node_info) { return (node_id == node_info.node_id); } )
+               !=  routing_->impl_->non_routing_table_.non_routing_table_nodes_.end());
+}
+
 testing::AssertionResult GenericNode::DropNode(const NodeId &node_id) {
   LOG(kVerbose) << " DropNode " << HexSubstr(routing_->impl_->routing_table_.kNodeId_.String())
                 << " Removes " << HexSubstr(node_id.String());
@@ -140,7 +147,7 @@ testing::AssertionResult GenericNode::DropNode(const NodeId &node_id) {
 
 
 NodeInfo GenericNode::node_info() const {
-  return node_info_;
+  return node_info_.node_info;
 }
 
 int GenericNode::ZeroStateJoin(const NodeInfo &peer_node_info) {
@@ -152,7 +159,7 @@ int GenericNode::Join(const Endpoint &peer_endpoint) {
 }
 
 void GenericNode::PrintRoutingTable() {
-  LOG(kInfo) << " PrintRoutingTable of " << HexSubstr(node_info_.node_id.String());
+  LOG(kInfo) << " PrintRoutingTable of " << HexSubstr(node_info_.node_info.node_id.String());
   for (auto node_info : routing_->impl_->routing_table_.routing_table_nodes_) {
     LOG(kInfo) << "NodeId: " << HexSubstr(node_info.node_id.String());
   }

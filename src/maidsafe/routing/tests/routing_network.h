@@ -52,10 +52,10 @@ class GenericNetwork;
 
 class GenericNode {
  public:
-  GenericNode(bool client_mode, const NodeInfo &node_info);
+  GenericNode(bool client_mode, const NodeInfoAndPrivateKey &node_info);
   explicit GenericNode(bool client_mode = false);
   virtual ~GenericNode();
-  asymm::Keys GetKeys() const;
+//  asymm::Keys GetKeys() const;
   int GetStatus() const;
   NodeId node_id() const;
   size_t id() const;
@@ -76,6 +76,7 @@ class GenericNode {
   void RudpSend(const Endpoint &peer_endpoint, const protobuf::Message &message,
                 rudp::MessageSentFunctor message_sent_functor);
   bool RoutingTableHasNode(const NodeId &node_id);
+  bool NonRoutingTableHasNode(const NodeId &node_id);
   testing::AssertionResult DropNode(const NodeId &node_id);
 
   static size_t next_node_id_;
@@ -85,7 +86,7 @@ class GenericNode {
 
  protected:
   size_t id_;
-  NodeInfo node_info_;
+  NodeInfoAndPrivateKey node_info_;
   std::shared_ptr<Routing> routing_;
   Functors functors_;
   std::mutex mutex_;
@@ -97,9 +98,9 @@ class GenericNetwork : public testing::Test {
  public:
   typedef std::shared_ptr<NodeType> NodePtr;
   GenericNetwork() : nodes_(),
-               bootstrap_endpoints_(),
-               bootstrap_path_("bootstrap") {
-      LOG(kVerbose) << "RoutingNetwork Constructor";
+      bootstrap_endpoints_(),
+      bootstrap_path_("bootstrap") {
+    LOG(kVerbose) << "RoutingNetwork Constructor";
   }
 
   ~GenericNetwork() {}
@@ -147,8 +148,9 @@ class GenericNetwork : public testing::Test {
   }
 
   bool AddNode(const bool &client_mode, const NodeId &node_id) {
-    NodeInfo node_info(MakeNode());
-    node_info.node_id = node_id;
+    NodeInfoAndPrivateKey node_info(MakeNodeInfoAndKeys());
+    if (node_id != NodeId())
+      node_info.node_info.node_id = node_id;
     NodePtr node(new NodeType(client_mode, node_info));
     SetNodeValidationFunctor(node);
     nodes_.push_back(node);
@@ -157,10 +159,10 @@ class GenericNetwork : public testing::Test {
 
   virtual void Validate(const NodeId& node_id, GivePublicKeyFunctor give_public_key) {
       auto iter = std::find_if(nodes_.begin(), nodes_.end(),
-          [&node_id](const NodePtr &node) { return node->GetKeys().identity == node_id.String(); });  // NOLINT (Mahmoud)
+          [&node_id](const NodePtr &node) { return GetKeys(node->node_info_).identity == node_id.String(); });  // NOLINT (Mahmoud)
       EXPECT_NE(iter, nodes_.end());
       if (iter != nodes_.end())
-        give_public_key((*iter)->GetKeys().public_key);  }
+        give_public_key(GetKeys((*iter)->node_info_).public_key);  }
 
   virtual void SetNodeValidationFunctor(NodePtr node) {
     node->functors_.request_public_key = [this](const NodeId& node_id,

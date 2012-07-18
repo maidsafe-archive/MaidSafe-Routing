@@ -40,7 +40,7 @@ class TestNode : public GenericNode {
     LOG(kVerbose) << "RoutingNode constructor";
   }
 
-  TestNode(bool client_mode, const NodeInfo& node_info)
+  TestNode(bool client_mode, const NodeInfoAndPrivateKey& node_info)
       : GenericNode(client_mode, node_info),
       messages_() {
     functors_.message_received = [&](const int32_t &mesasge_type,
