@@ -161,9 +161,22 @@ class RoutingFunctionalTest : public testing::Test {
     }
   }
 
+  void AddClientNodes(const size_t &size) {
+    size_t num_of_bootstrap_nodes(nodes_.size());
+    std::vector<std::future<int>> results;
+    for (size_t index(0); index < size; ++index) {
+      NodePtr node(new Node(true));
+      SetNodeValidationFunctor(node);
+      nodes_.push_back(node);
+      size_t join_point(RandomUint32() % num_of_bootstrap_nodes);
+      EXPECT_EQ(kSuccess, node->Join(nodes_[join_point]->endpoint()));
+    }
+  }
+
   /** Send messages from randomly chosen sources to randomly chosen destinations */
   testing::AssertionResult RandomSend(const size_t &sources,
                                       const size_t &destinations,
+                                      const size_t &num_of_vaults,
                                       const size_t &messages) {
     size_t messages_count(0), source_id(0), dest_id(0), network_size(nodes_.size());
     NodeId dest_node_id, group_id;
@@ -172,9 +185,9 @@ class RoutingFunctionalTest : public testing::Test {
     if (sources > network_size || sources < 1)
       return testing::AssertionFailure() << "The max and min number of source nodes is "
                                          << nodes_.size() << " and " << 1;
-    if (destinations < network_size)
+    if (destinations > num_of_vaults || destinations < 1)
       return testing::AssertionFailure() << "The max and min number of destination nodes is "
-                                         << nodes_.size() << " and " << 1;
+                                         << num_of_vaults << " and " << 1;
     std::vector<NodePtr> source_nodes, dest_nodes;
     while (source_nodes.size() < sources) {
       source_id = RandomUint32() % nodes_.size();
@@ -188,7 +201,7 @@ class RoutingFunctionalTest : public testing::Test {
       dest_nodes.push_back(nodes_[(source_nodes[0]->Id() +
           RandomUint32() % (network_size - 1) + 1) % network_size]);
     while (dest_nodes.size() < destinations) {
-      dest_id = RandomUint32() % network_size;
+      dest_id = RandomUint32() % num_of_vaults;
       if (std::find(dest_nodes.begin(), dest_nodes.end(),
                     nodes_[dest_id]) == dest_nodes.end())
         dest_nodes.push_back(nodes_[dest_id]);
@@ -286,8 +299,16 @@ TEST_F(RoutingFunctionalTest, FUNC_Send) {
 }
 
 TEST_F(RoutingFunctionalTest, FUNC_RandomSend) {
-  SetUpNetwork(9);
-  EXPECT_TRUE(RandomSend(9, 9, 10));
+  size_t num_of_vaults(9);
+  SetUpNetwork(num_of_vaults);
+  EXPECT_TRUE(RandomSend(num_of_vaults, num_of_vaults, num_of_vaults, 10));
+}
+
+TEST_F(RoutingFunctionalTest, DISABLED_FUNC_RandomSendIncludingClientNodes) {
+  size_t num_of_vaults(9), num_of_client(9);
+  SetUpNetwork(num_of_vaults);
+  AddClientNodes(num_of_client);
+  EXPECT_TRUE(RandomSend(num_of_vaults + num_of_client, 5, num_of_vaults, 10));
 }
 
 }  // namespace test
