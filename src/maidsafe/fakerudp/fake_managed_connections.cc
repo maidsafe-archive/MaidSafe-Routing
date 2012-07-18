@@ -46,6 +46,7 @@ ManagedConnections::ManagedConnections()
       connection_map_(),
       shared_mutex_(),
       local_ip_(),
+      resilience_transport_(),
       fake_endpoints_() {
   Node node;
   fake_endpoints_.push_back(node.endpoint);
@@ -161,6 +162,12 @@ void ManagedConnections::Remove(const Endpoint &peer_endpoint) {
       LOG(kVerbose) << "Failed to remove " << peer_endpoint;
   });
 }
+
+ManagedConnections::TransportAndSignalConnections::TransportAndSignalConnections()
+    : transport(),
+      on_message_connection(),
+      on_connection_added_connection(),
+      on_connection_lost_connection() {}
 }  // namespace rudp
 
 }  // namespace maidsafe
