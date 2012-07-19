@@ -64,6 +64,7 @@ Routing::~Routing() {
   LOG(kVerbose) << "~Routing() - Disconnecting funtors"
                 << ", Routing table Size - " << impl_->routing_table_.Size();
   impl_->message_handler_.set_tearing_down();
+  impl_->tearing_down_ = true;
   DisconnectFunctors();
 }
 
@@ -379,7 +380,7 @@ void Routing::Send(const NodeId &destination_id,
 }
 
 void Routing::ReceiveMessage(const std::string &message) {
-  if (impl_->message_handler_.tearing_down()) {
+  if (impl_->tearing_down_) {
     LOG(kVerbose) << " Ignoring, Message received, shutting down";
     return;
   }
@@ -403,7 +404,7 @@ void Routing::ReceiveMessage(const std::string &message) {
 void Routing::ConnectionLost(const Endpoint &lost_endpoint) {
   LOG(kWarning) << " Routing::ConnectionLost--------------------------------------------------------------------------------------------------------------------------------------------------------------";
   NodeInfo dropped_node;
-  if ((!impl_->message_handler_.tearing_down()) &&
+  if ((!impl_->tearing_down_) &&
       (impl_->routing_table_.GetNodeInfo(lost_endpoint, &dropped_node) &&
       (impl_->routing_table_.IsMyNodeInRange(dropped_node.node_id,
                                              Parameters::closest_nodes_size)))) {

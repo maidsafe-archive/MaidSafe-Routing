@@ -76,7 +76,7 @@ TEST(NetworkUtilsTest, BEH_ProcessSendUnavailableDirectEndpoint) {
 }
 
 TEST(NetworkUtilsTest, FUNC_ProcessSendDirectEndpoint) {
-  const uint32_t kMessageCount(10);
+  const int kMessageCount(10);
   rudp::ManagedConnections rudp1, rudp2;
   Endpoint endpoint1(GetLocalIp(), GetRandomPort());
   Endpoint endpoint2(GetLocalIp(), GetRandomPort());
@@ -177,7 +177,7 @@ TEST(NetworkUtilsTest, FUNC_ProcessSendDirectEndpoint) {
 
 // RT with only 1 active node and 7 inactive node
 TEST(NetworkUtilsTest, FUNC_ProcessSendRecursiveSendOn) {
-  const uint32_t kMessageCount(10);
+  const int kMessageCount(10);
   rudp::ManagedConnections rudp1, rudp2;
   Endpoint endpoint1(GetLocalIp(), GetRandomPort());
   Endpoint endpoint2(GetLocalIp(), GetRandomPort());

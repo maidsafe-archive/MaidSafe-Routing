@@ -56,6 +56,7 @@ struct RoutingPrivate {
   AsioService asio_service_;
   std::vector<Endpoint> bootstrap_nodes_;
   asymm::Keys keys_;  // FIXME
+  std::atomic<bool> tearing_down_;
   RoutingTable routing_table_;
   NonRoutingTable non_routing_table_;
   Timer timer_;
