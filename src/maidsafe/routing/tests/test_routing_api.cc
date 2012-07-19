@@ -348,7 +348,7 @@ TEST(APITest, BEH_API_ClientNode) {
 }
 
 TEST(APITest, BEH_API_NodeNetwork) {
-  int min_join_status(4); // TODO(Prakash): To decide
+  int min_join_status(8); // TODO(Prakash): To decide
   std::vector<boost::promise<bool>> join_promises(kNetworkSize - 2);
   std::vector<boost::unique_future<bool>> join_futures;
   std::deque<bool> promised;
@@ -403,11 +403,12 @@ TEST(APITest, BEH_API_NodeNetwork) {
     functors.network_status = status_vector.at(i);
     routing_node[i + 2]->Join(functors, nodes[i % 2].node_info.endpoint);
     ASSERT_TRUE(join_futures.at(i).timed_wait(boost::posix_time::seconds(10)));
+    LOG(kVerbose) << "node ------------------------------------------------------------------------------------------------------------------------------------- " << i + 2 << "joined";
   }
 }
 
 TEST(APITest, BEH_API_NodeNetworkWithClient) {
-  int min_join_status(4); // TODO(Prakash): To decide
+  int min_join_status(8); // TODO(Prakash): To decide
   std::vector<boost::promise<bool>> join_promises(kNetworkSize - 2);
   std::vector<boost::unique_future<bool>> join_futures;
   std::deque<bool> promised;

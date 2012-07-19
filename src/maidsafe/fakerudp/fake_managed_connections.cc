@@ -113,11 +113,13 @@ Endpoint ManagedConnections::Bootstrap(const std::vector<Endpoint> &bootstrap_en
         LOG(kVerbose) << "Found viable bootstrap node.\n";
         if (FakeNetwork::instance().BootStrap(node, i)) {
           LOG(kVerbose) << "Bootstrap sucessfull!!\n";
-          Add(node.endpoint, i, "");
+          FakeNetwork::instance().AddConnection(node.endpoint, i, true);
+          //Add(node.endpoint, i, "");
           return i;
         }
       } else {
-        Add(node.endpoint, i, "");
+        FakeNetwork::instance().AddConnection(node.endpoint, i, true);
+        //Add(node.endpoint, i, "");
         return i;
       }
     }
@@ -138,12 +140,12 @@ int ManagedConnections::GetAvailableEndpoint(const Endpoint& /*peer_endpoint*/,
 int ManagedConnections::Add(const Endpoint &this_endpoint,
                             const Endpoint &peer_endpoint,
                             const std::string &validation_data) {
+  int add_result(FakeNetwork::instance().AddConnection(this_endpoint, peer_endpoint));
   asio_service_.service().post([=]() {
-    FakeNetwork::instance().AddConnection(this_endpoint, peer_endpoint);
-    if (!validation_data.empty())
+    if (!validation_data.empty() && add_result == kSuccess)
       FakeNetwork::instance().SendMessageToNode(peer_endpoint, validation_data);
   });
-  return kSuccess;
+  return add_result;
 }
 
 void ManagedConnections::Send(const Endpoint &peer_endpoint,
