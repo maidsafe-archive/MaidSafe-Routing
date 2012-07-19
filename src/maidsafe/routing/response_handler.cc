@@ -111,7 +111,10 @@ void FindNode(RoutingTable &routing_table,
 //    return;  // we never requested this
 //  }
   for (int i = 0; i < find_nodes.nodes_size(); ++i) {
-    LOG(kVerbose) << " Find node returned - "  << HexSubstr(find_nodes.nodes(i));
+    LOG(kVerbose) << " Find node returned - "  << HexSubstr(find_nodes.nodes(i))
+                  << "("
+                  << find_nodes.nodes_size() << ") nodes, I am ["
+                  << HexSubstr(routing_table.kKeys().identity) << "]";
   }
 
   for (int i = 0; i < find_nodes.nodes_size(); ++i) {

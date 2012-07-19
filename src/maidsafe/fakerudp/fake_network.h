@@ -49,7 +49,7 @@ class FakeNetwork {
   bool BootStrap(Node &node, Endpoint &connect_to_endpoint);
   bool RemoveMyNode(Endpoint endpoint);
   bool SendMessageToNode(Endpoint endpoint, std::string message);
-  bool AddConnection(const Endpoint &my_endpoint, const Endpoint &peer_endpoint);
+  int AddConnection(const Endpoint &my_endpoint, const Endpoint &peer_endpoint, bool temp = false);
   bool RemoveConnection(const Endpoint &my_endpoint, const Endpoint &peer_endpoint);
   std::vector<Node>::iterator FindNode(Endpoint endpoint);
   std::vector<Node>::iterator GetEndIterator() { return nodes_.end(); }
@@ -67,6 +67,7 @@ struct Node {
   ConnectionLostFunctor connection_lost;
   MessageReceivedFunctor message_received;
   std::vector<Endpoint> connected_endpoints;
+  std::vector<Endpoint> temp_connections_;
 };
 
 
