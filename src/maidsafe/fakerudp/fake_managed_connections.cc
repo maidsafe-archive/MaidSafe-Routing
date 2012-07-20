@@ -21,7 +21,6 @@
 #include "boost/asio/ip/udp.hpp"
 #include "boost/date_time/posix_time/posix_time_duration.hpp"
 #include "boost/signals2/connection.hpp"
-#include "boost/thread/shared_mutex.hpp"
 
 #include "maidsafe/rudp/managed_connections.h"
 #include "maidsafe/rudp/return_codes.h"

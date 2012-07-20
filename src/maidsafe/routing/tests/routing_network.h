@@ -165,6 +165,7 @@ class GenericNetwork : public testing::Test {
   virtual void Validate(const NodeId& node_id, GivePublicKeyFunctor give_public_key) {
       auto iter = std::find_if(nodes_.begin(), nodes_.end(),
           [&node_id](const NodePtr &node)->bool {
+            EXPECT_FALSE(GetKeys(node->node_info_plus_).identity.empty());
             return GetKeys(node->node_info_plus_).identity == node_id.String();
       });
       EXPECT_NE(iter, nodes_.end());

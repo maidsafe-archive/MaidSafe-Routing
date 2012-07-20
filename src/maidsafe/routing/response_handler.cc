@@ -12,9 +12,6 @@
 
 #include "maidsafe/routing/response_handler.h"
 
-#include "boost/thread/shared_mutex.hpp"
-#include "boost/thread/mutex.hpp"
-
 #include "maidsafe/common/rsa.h"
 #include "maidsafe/common/utils.h"
 #include "maidsafe/rudp/managed_connections.h"
