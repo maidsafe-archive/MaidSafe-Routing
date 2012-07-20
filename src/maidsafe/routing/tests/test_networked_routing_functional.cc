@@ -186,10 +186,10 @@ TYPED_TEST_P(RoutingNetworkTest, FUNC_ClientSend) {
   uint8_t client_size(0);
   this->SetUpNetwork(kServerSize);
   while (client_size++ < kClientSize)
-    ASSERT_TRUE(this->AddNode(true, NodeId()));
-//  EXPECT_TRUE(this->Send(1));
-//  Sleep(boost::posix_time::seconds(21));  // This sleep is required for un-responded requests
-//  LOG(kVerbose) << "Func send is over";
+    this->AddNode(true, NodeId());
+  EXPECT_TRUE(this->Send(1));
+  Sleep(boost::posix_time::seconds(21));  // This sleep is required for un-responded requests
+  LOG(kVerbose) << "Func send is over";
 }
 
 TYPED_TEST_P(RoutingNetworkTest, FUNC_SendMulti) {
@@ -202,7 +202,7 @@ TYPED_TEST_P(RoutingNetworkTest, FUNC_ClientSendMulti) {
   uint8_t client_size(0);
   this->SetUpNetwork(kServerSize);
   while (client_size++ < kClientSize)
-    ASSERT_TRUE(this->AddNode(true, NodeId()));
+    this->AddNode(true, NodeId());
   EXPECT_TRUE(this->Send(3));
   Sleep(boost::posix_time::seconds(21));  // This sleep is required for un-responded requests
   LOG(kVerbose) << "Func send is over";
@@ -214,8 +214,8 @@ TYPED_TEST_P(RoutingNetworkTest, DISABLED_FUNC_SendToGroup) {
   this->SetUpNetwork(kServerSize);
   size_t last_index(this->nodes_.size() - 1);
   while (size++ < 3)
-    ASSERT_TRUE(this->AddNode(false, GenerateUniqueRandomId(this->nodes_[last_index]->node_id(),
-                                                            10)));
+    this->AddNode(false, GenerateUniqueRandomId(this->nodes_[last_index]->node_id(),
+                                                            10));
   NodeId dest_id(this->nodes_[last_index]->node_id());
   EXPECT_TRUE(this->GroupSend(dest_id, message_count));
   for (size_t index = last_index; index < this->nodes_.size(); ++index)

@@ -68,14 +68,16 @@ asymm::Keys NonRoutingTable::kKeys() const {
 }
 
 NodeInfo NonRoutingTable::DropNode(const Endpoint &endpoint) {
+  NodeInfo node_info;
   std::lock_guard<std::mutex> lock(mutex_);
   for (auto it = non_routing_table_nodes_.begin(); it != non_routing_table_nodes_.end(); ++it) {
-    if (((*it).endpoint ==  endpoint)) {
+    if ((*it).endpoint ==  endpoint) {
+      node_info = *it;
       non_routing_table_nodes_.erase(it);
-      return (*it);
+      break;
     }
   }
-  return NodeInfo();
+  return node_info;
 }
 
 // Note: std::remove algorithm does not eliminate elements from the container.
