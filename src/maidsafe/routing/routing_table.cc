@@ -147,6 +147,14 @@ bool RoutingTable::AmIConnectedToEndpoint(const Endpoint& endpoint) {
                      != routing_table_nodes_.end());
 }
 
+bool RoutingTable::AmIConnectedToNode(const NodeId& node_id) {
+  std::lock_guard<std::mutex> lock(mutex_);
+  return (std::find_if(routing_table_nodes_.begin(), routing_table_nodes_.end(),
+                       [node_id](const NodeInfo &i)->bool
+                       { return i.node_id == node_id; })
+                     != routing_table_nodes_.end());
+}
+
 // checks paramters are real
 bool RoutingTable::CheckValidParameters(const NodeInfo& node) const {
   if ((!asymm::ValidateKey(node.public_key, 0))) {

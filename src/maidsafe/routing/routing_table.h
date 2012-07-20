@@ -53,6 +53,7 @@ class RoutingTable {
   bool IsMyNodeInRange(const NodeId &node_id, const uint16_t range);
   bool AmIClosestNode(const NodeId &node_id);
   bool AmIConnectedToEndpoint(const Endpoint& endpoint);
+  bool AmIConnectedToNode(const NodeId &node_id);
   // Returns zero node id if RT size is zero
   NodeInfo GetClosestNode(const NodeId &from);
   // Returns max node id if RT size is lesser than requested node_number

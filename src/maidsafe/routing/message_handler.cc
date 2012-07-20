@@ -180,18 +180,28 @@ void MessageHandler::DirectMessage(protobuf::Message& message) {
 }
 
 void MessageHandler::CloseNodesMessage(protobuf::Message& message) {
-  if ((message.direct()) || (!routing_table_.AmIClosestNode(NodeId(message.destination_id())))) {
-    network_.SendToClosestNode(message);
-    return;
+  // Droping direct messages if I am closest and destination node is not in my RT and NRT.
+  if (message.direct()) {
+    NodeId destnation_node_id(message.destination_id());
+    if (routing_table_.AmIClosestNode(destnation_node_id)) {
+      if (routing_table_.AmIConnectedToNode(destnation_node_id) ||
+          non_routing_table_.AmIConnectedToNode(destnation_node_id)) {
+        network_.SendToClosestNode(message);
+        return;
+      } else {
+        LOG(kWarning) << "Dropping Mesage !! I am the closest but not connected to  dest node";
+        return;
+      }
+    } else {
+      network_.SendToClosestNode(message);
+      return;
+    }
   }
 
-  std::vector<NodeInfo>
-      non_routing_nodes(non_routing_table_.GetNodesInfo(NodeId(message.destination_id())));
-
-  if (!non_routing_nodes.empty()) {  // I have the destination id in my NRT
-    LOG(kInfo) << "I have destination node in my NRT";
-    network_.SendToClosestNode(message);
-    return;
+  //// I am not closest to the destination node for non-direct message.
+  if (!routing_table_.AmIClosestNode(NodeId(message.destination_id()))) {
+   network_.SendToClosestNode(message);
+   return;
   }
 
   // I am closest so will send to all my replicant nodes

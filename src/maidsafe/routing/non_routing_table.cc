@@ -120,8 +120,16 @@ bool NonRoutingTable::AmIConnectedToEndpoint(const Endpoint& endpoint) {
   std::lock_guard<std::mutex> lock(mutex_);
   return (std::find_if(non_routing_table_nodes_.begin(), non_routing_table_nodes_.end(),
                        [endpoint](const NodeInfo &i)->bool { return i.endpoint == endpoint; })
-                     != non_routing_table_nodes_.end());
+              != non_routing_table_nodes_.end());
 }
+
+bool NonRoutingTable::AmIConnectedToNode(const NodeId& node_id) {
+  std::lock_guard<std::mutex> lock(mutex_);
+  return (std::find_if(non_routing_table_nodes_.begin(), non_routing_table_nodes_.end(),
+                       [node_id](const NodeInfo &i)->bool { return i.node_id == node_id; })
+              != non_routing_table_nodes_.end());
+}
+
 // TODO(Prakash): re-order checks to increase performance if needed
 // checks paramters are real
 bool NonRoutingTable::CheckValidParameters(const NodeInfo& node) const {

@@ -50,6 +50,7 @@ class NonRoutingTable {
   NodeInfo GetNodeInfo(const Endpoint &endpoint);
   std::vector<NodeInfo> GetNodesInfo(const NodeId &node_id);
   bool AmIConnectedToEndpoint(const Endpoint& endpoint);
+  bool AmIConnectedToNode(const NodeId &node_id);
   uint16_t Size();
   asymm::Keys kKeys() const;
   bs2::signal<void(std::string, std::string)> &CloseNodeReplacedOldNewSignal();
