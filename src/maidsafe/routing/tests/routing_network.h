@@ -39,8 +39,8 @@ class Routing;
 namespace test {
 
 #ifdef FAKE_RUDP
-  const uint32_t kClientSize(10);
-  const uint32_t kServerSize(10);
+  const uint32_t kClientSize(8);
+  const uint32_t kServerSize(8);
 #else
   const uint32_t kClientSize(6);
   const uint32_t kServerSize(6);
@@ -178,8 +178,8 @@ class GenericNetwork : public testing::Test {
   }
 
  private:
-  size_t NonClientNodesSize() const {
-    ssize_t non_client_size(0);
+  uint16_t NonClientNodesSize() const {
+    uint16_t non_client_size(0);
     for (auto node : this->nodes_)
       if (!node->IsClient())
         non_client_size++;
@@ -196,7 +196,7 @@ class GenericNetwork : public testing::Test {
     std::mutex mutex;
     SetNodeValidationFunctor(node);
     node->client_mode_ = client_mode;
-    uint16_t node_size(boost::lexical_cast<uint16_t>(nodes_.size()));
+    uint16_t node_size(NonClientNodesSize());
     node->set_expected(std::min(node_size, Parameters::closest_nodes_size));
     nodes_.push_back(node);
     node->functors_.network_status = [&cond_var, node](const int &result)->void {

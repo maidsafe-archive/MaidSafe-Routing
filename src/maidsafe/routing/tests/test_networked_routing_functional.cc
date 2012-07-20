@@ -188,7 +188,7 @@ TYPED_TEST_P(RoutingNetworkTest, FUNC_ClientSend) {
   while (client_size++ < kClientSize)
     this->AddNode(true, NodeId());
   EXPECT_TRUE(this->Send(1));
-  Sleep(boost::posix_time::seconds(21));  // This sleep is required for un-responded requests
+  Sleep(boost::posix_time::seconds(12));  // This sleep is required for un-responded requests
   LOG(kVerbose) << "Func send is over";
 }
 
