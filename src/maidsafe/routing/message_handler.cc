@@ -189,7 +189,7 @@ void MessageHandler::CloseNodesMessage(protobuf::Message& message) {
         network_.SendToClosestNode(message);
         return;
       } else {
-        LOG(kWarning) << "Dropping Mesage !! I am the closest but not connected to  dest node";
+        LOG(kWarning) << "Dropping Message !! I am the closest but not connected to  dest node";
         return;
       }
     } else {
@@ -280,8 +280,7 @@ void MessageHandler::ProcessMessage(protobuf::Message &message) {
 
 void MessageHandler::ProcessRelayRequest(protobuf::Message &message) {
   assert(!message.has_source_id());
-  if ((message.destination_id() == routing_table_.kKeys().identity) &&
-    (message.type() > 0)) {
+  if ((message.destination_id() == routing_table_.kKeys().identity) && IsRequest(message)) {
     LOG(kVerbose) << "relay request with my destination id!";
     DirectMessage(message);
     return;

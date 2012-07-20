@@ -123,7 +123,8 @@ void FindNode(RoutingTable &routing_table,
       LOG(kVerbose) << " CheckNode succeeded for node "
                     << HexSubstr(node_to_add.node_id.String());
       Endpoint direct_endpoint;
-      if (routing_table.Size() == 0)  // Joining the network, and may connect to bootstrapping node.
+      bool routing_table_empty(routing_table.Size() == 0);
+      if (routing_table_empty)  // Joining the network, and may connect to bootstrapping node.
         direct_endpoint = bootstrap_endpoint;
       rudp::EndpointPair endpoint;
       if (kSuccess != network.GetAvailableEndpoint(direct_endpoint, endpoint)) {
@@ -134,7 +135,7 @@ void FindNode(RoutingTable &routing_table,
                     << " my endpoint - " << endpoint.external;
       Endpoint relay_endpoint;
       bool relay_message(false);
-      if (routing_table.Size() == 0) {  //  Not in anyones RT, need a path back through relay ip.
+      if (routing_table_empty) {  //  Not in anyones RT, need a path back through relay ip.
         relay_endpoint = endpoint.external;
         relay_message = true;
       }
@@ -145,7 +146,7 @@ void FindNode(RoutingTable &routing_table,
                                     routing_table.client_mode(),
                                     relay_message,
                                     relay_endpoint));
-      if (routing_table.Size() == 0)
+      if (routing_table_empty)
         network.SendToDirectEndpoint(connect_rpc, bootstrap_endpoint);
       else
         network.SendToClosestNode(connect_rpc);
