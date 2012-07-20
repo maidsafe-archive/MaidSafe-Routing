@@ -13,6 +13,7 @@
 #ifndef MAIDSAFE_ROUTING_TESTS_ROUTING_NETWORK_H_
 #define MAIDSAFE_ROUTING_TESTS_ROUTING_NETWORK_H_
 
+#include <chrono>
 #include <future>
 #include <string>
 #include <vector>
@@ -66,8 +67,8 @@ class GenericNode {
   void set_joined(const bool node_joined);
   bool joined() const;
   bool IsClient() const;
-  uint8_t expected();
-  void set_expected(const uint8_t &expected);
+  uint16_t expected();
+  void set_expected(const uint16_t &expected);
   int ZeroStateJoin(const NodeInfo &peer_node_info);
   int Join(const Endpoint &peer_endpoint);
   void Send(const NodeId &destination_id,
@@ -97,7 +98,7 @@ class GenericNode {
   std::mutex mutex_;
   bool client_mode_;
   bool joined_;
-  uint8_t expected_;
+  uint16_t expected_;
 };
 
 template <typename NodeType>
@@ -195,8 +196,8 @@ class GenericNetwork : public testing::Test {
     std::mutex mutex;
     SetNodeValidationFunctor(node);
     node->client_mode_ = client_mode;
-    node->set_expected(std::min(nodes_.size(),
-                       boost::lexical_cast<size_t>(Parameters::closest_nodes_size)));
+    uint16_t node_size(boost::lexical_cast<uint16_t>(nodes_.size()));
+    node->set_expected(std::min(node_size, Parameters::closest_nodes_size));
     nodes_.push_back(node);
     node->functors_.network_status = [&cond_var, node](const int &result)->void {
       ASSERT_GE(result, kSuccess);
@@ -207,7 +208,7 @@ class GenericNetwork : public testing::Test {
     };
     EXPECT_EQ(kSuccess, node->Join(nodes_[1]->endpoint()));
     std::unique_lock<std::mutex> lock(mutex);
-    std::cv_status result = cond_var.wait_for(lock, std::chrono::seconds(10));
+    auto result = cond_var.wait_for(lock, std::chrono::seconds(10));
     EXPECT_EQ(result, std::cv_status::no_timeout);
   }
 

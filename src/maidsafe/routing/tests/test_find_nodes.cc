@@ -124,7 +124,7 @@ TYPED_TEST_P(FindNodeNetwork, DISABLED_FUNC_FindNodeAfterDrop) {
 
 TYPED_TEST_P(FindNodeNetwork, DISABLED_FUNC_FindNodeAfterLeaving) {
   this->SetUpNetwork(kServerSize);
-  uint8_t index(RandomUint32() % (this->nodes_.size() - 2) + 2);
+  uint32_t index(RandomUint32() % (this->nodes_.size() - 2) + 2);
   NodeId node_id(this->nodes_[index]->node_id());
   EXPECT_TRUE(this->RemoveNode(node_id));
   EXPECT_EQ(this->nodes_.size(), kServerSize - 1);

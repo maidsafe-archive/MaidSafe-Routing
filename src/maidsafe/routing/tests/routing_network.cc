@@ -164,11 +164,11 @@ bool GenericNode::joined() const {
   return joined_;
 }
 
-uint8_t GenericNode::expected() {
+uint16_t GenericNode::expected() {
   return expected_;
 }
 
-void GenericNode::set_expected(const uint8_t &expected) {
+void GenericNode::set_expected(const uint16_t &expected) {
   expected_ = expected;
 }
 
