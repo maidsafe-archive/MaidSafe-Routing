@@ -38,10 +38,10 @@ class Routing;
 namespace test {
 
 #ifdef FAKE_RUDP
-  const uint32_t kClientSize(8);
-  const uint32_t kServerSize(8);
+  const uint32_t kClientSize(10);
+  const uint32_t kServerSize(10);
 #else
-  const uint32_t kClientSize(4);
+  const uint32_t kClientSize(6);
   const uint32_t kServerSize(6);
 #endif
 
@@ -138,6 +138,7 @@ class GenericNetwork : public testing::Test {
     for (size_t index = 2; index < size; ++index) {
       NodePtr node(new NodeType(false));
       AddNodeDetails(false, node);
+      LOG(kVerbose) << "Node # " << nodes_.size() << " added to network";
     }
   }
 
