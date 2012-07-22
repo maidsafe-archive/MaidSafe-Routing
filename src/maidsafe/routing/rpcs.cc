@@ -101,7 +101,7 @@ const protobuf::Message FindNodes(const NodeId &node_id, const NodeId &my_node_i
   message.set_destination_id(node_id.String());
   message.set_data(find_nodes.SerializeAsString());
   message.set_direct(false);
-  message.set_replication(1);
+  message.set_replication(2);
   message.set_type(3);
   message.set_id(0);
   message.set_client_node(false);
