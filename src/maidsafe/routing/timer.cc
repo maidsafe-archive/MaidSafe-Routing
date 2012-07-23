@@ -51,7 +51,7 @@ void Timer::KillTask(TaskId task_id) {
     auto const it = queue_.find(task_id);
     if (it != queue_.end()) {
       // message timed out or task killed
-      LOG(kVerbose) << "KillTask killed a task, with id" << task_id_;
+      LOG(kVerbose) << "KillTask killed a task, with id : " << task_id_;
       task_response_functor = (*it).second.second;
       queue_.erase(it);
     }

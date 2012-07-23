@@ -141,7 +141,7 @@ TEST(RPC, BEH_FindNodesMessageNode) {
   EXPECT_EQ(message.source_id(), us.node_id.String());
   EXPECT_NE(message.data_size(), 0);
   EXPECT_EQ(0, message.direct());
-  EXPECT_EQ(message.replication(), 1);
+  EXPECT_EQ(message.replication(), 2);
   EXPECT_EQ(message.type(), 3);
   EXPECT_EQ(message.id(), 0);
   EXPECT_FALSE(message.client_node());
@@ -165,7 +165,7 @@ TEST(RPC, BEH_FindNodesMessageNodeRelayMode) {
   EXPECT_FALSE(message.has_source_id());
   EXPECT_NE(message.data_size(), 0);
   EXPECT_EQ(0, message.direct());
-  EXPECT_EQ(message.replication(), 1);
+  EXPECT_EQ(message.replication(), 2);
   EXPECT_EQ(message.type(), 3);
   EXPECT_EQ(message.id(), 0);
   EXPECT_FALSE(message.client_node());

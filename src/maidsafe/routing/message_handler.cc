@@ -190,7 +190,18 @@ void MessageHandler::CloseNodesMessage(protobuf::Message& message) {
         network_.SendToClosestNode(message);
         return;
       } else {
-        LOG(kWarning) << "Dropping Message !! I am the closest but not connected to  dest node";
+        if (IsRoutingMessage(message)) {
+          if (message.has_relay_id() && (message.relay_id() == routing_table_.kKeys().identity)) {
+            RoutingMessage(message);
+            return;
+          }
+        }
+        LOG(kWarning) << "Dropping Message !! I am the closest but not connected to  destination node"
+                      << "Message type : " << message.type()
+                      << ", Destination id : " << HexSubstr(message.destination_id())
+                      << ", Src id : " << HexSubstr(message.source_id())
+                      << ", Relay id : " << HexSubstr(message.relay_id())
+                      << ". I am [" << HexSubstr(routing_table_.kKeys().identity);
         return;
       }
     } else {
