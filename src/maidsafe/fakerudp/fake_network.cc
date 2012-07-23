@@ -203,16 +203,13 @@ bool FakeNetwork::SendMessageToNode(Endpoint endpoint, std::string message) {
   {
     std::lock_guard<std::mutex> lock(mutex_);
     auto iter = FindNode(endpoint);
-    if (iter == nodes_.end())
+    if (iter == nodes_.end()) {
+      LOG(kWarning) << "Failed to find " << endpoint << " on network.";
       return false;
+    }
     if (iter->message_received)
-      message_received = iter->message_received;
-  }
-  if (message_received) {
-    message_received(message);
+      iter->message_received(message);
     return true;
-  } else {
-    return false;
   }
 }
 

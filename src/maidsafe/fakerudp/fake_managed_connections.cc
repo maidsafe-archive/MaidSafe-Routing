@@ -54,9 +54,12 @@ ManagedConnections::ManagedConnections()
 }
 
 ManagedConnections::~ManagedConnections() {
+  LOG(kVerbose) << " ManagedConnections::~ManagedConnections() ";
+  asio_service_.Stop();
   if (!FakeNetwork::instance().RemoveMyNode(fake_endpoints_[0])) {
     LOG(kVerbose) << "Failed to remove my node in destructor.";
   }
+  LOG(kVerbose) << " ManagedConnections::~ManagedConnections() exiting...";
 }
 
 Endpoint ManagedConnections::Bootstrap(const std::vector<Endpoint> &bootstrap_endpoints,
@@ -98,10 +101,18 @@ Endpoint ManagedConnections::Bootstrap(const std::vector<Endpoint> &bootstrap_en
     fake_endpoints_[0] = local_endpoint;
   }
 
-  if (connection_lost_functor)
-    node.connection_lost = connection_lost_functor;
-  if (message_received_functor)
-    node.message_received = message_received_functor;
+  if (connection_lost_functor) {
+    node.connection_lost = [&](const Endpoint &peer_endpoint) {
+                               OnConnectionLostSlot(peer_endpoint,
+                                                    std::shared_ptr<Transport>(),
+                                                    bool(), bool());
+                             };
+  }
+  if (message_received_functor) {
+    node.message_received = [&](const std::string &message) {
+                                OnMessageSlot(message);
+                              };
+  }
 
   for (auto i : bootstrap_endpoints) {
     for (int j = 0; j < 200; ++j) {
@@ -164,6 +175,22 @@ void ManagedConnections::Remove(const Endpoint &peer_endpoint) {
   });
 }
 
+void ManagedConnections::OnMessageSlot(const std::string& message) {
+  asio_service_.service().post([=]() {
+    if (message_received_functor_)
+      message_received_functor_(message);
+  });
+}
+
+void ManagedConnections::OnConnectionLostSlot(const Endpoint& peer_endpoint,
+                            std::shared_ptr<Transport> /*transport*/,
+                            bool /*connections_empty*/,
+                            bool /*temporary_connection*/) {
+   asio_service_.service().post([=]() {
+     if (connection_lost_functor_)
+       connection_lost_functor_(peer_endpoint);
+   });
+}
 ManagedConnections::TransportAndSignalConnections::TransportAndSignalConnections()
     : transport(),
       on_message_connection(),
