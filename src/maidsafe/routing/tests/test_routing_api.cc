@@ -140,7 +140,7 @@ TEST(APITest, BEH_API_ZeroState) {
   auto join_future = join_promise.get_future();
   functors3.network_status = [&join_promise](int result) {
     ASSERT_GE(result, kSuccess);
-    if (result == 2)
+    if (result == NetworkStatus(2))
       join_promise.set_value(true);
   };
 
@@ -188,7 +188,7 @@ TEST(APITest, FUNC_API_AnonymousNode) {
   auto join_future = join_promise.get_future();
   functors3.network_status = [&join_promise](int result) {
     ASSERT_EQ(result, kSuccess);
-    if (result == 0) {
+    if (result == NetworkStatus(0)) {
       join_promise.set_value(true);
       LOG(kVerbose) << "Anonymous Node joined";
     }
@@ -260,7 +260,7 @@ TEST(APITest, BEH_API_SendToSelf) {
   auto join_future = join_promise.get_future();
   functors3.network_status = [&join_promise](int result) {
     ASSERT_GE(result, kSuccess);
-    if (result == 2) {
+    if (result == NetworkStatus(2)) {
       LOG(kVerbose) << "3rd node joined";
       join_promise.set_value(true);
     }
@@ -326,7 +326,7 @@ TEST(APITest, BEH_API_ClientNode) {
   auto join_future = join_promise.get_future();
   functors3.network_status = [&join_promise](int result) {
     ASSERT_GE(result, kSuccess);
-    if (result == 2) {
+    if (result == NetworkStatus(2)) {
       LOG(kVerbose) << "3rd node joined";
       join_promise.set_value(true);
     }
@@ -392,7 +392,7 @@ TEST(APITest, BEH_API_NodeNetwork) {
     promised.push_back(true);
     status_vector.emplace_back([=, &join_promises, &mutex, &promised](int result) {
                                    ASSERT_GE(result, kSuccess);
-                                   if (result == (std::min(i + 2, min_join_status))) {
+                                   if (result == NetworkStatus(std::min(i + 2, min_join_status))) {
                                      boost::unique_lock< boost::shared_mutex> lock(mutex);
                                      if (promised.at(i)) {
                                        join_promises.at(i).set_value(true);

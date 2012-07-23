@@ -105,6 +105,10 @@ NodeId GenerateUniqueRandomId(const NodeId &holder, const uint16_t &pos) {
   return new_node;
 }
 
+uint16_t NetworkStatus(const uint16_t &non_client_routing_size) {
+  return non_client_routing_size * 100 / Parameters::max_routing_table_size;
+}
+
 ip::address GetLocalIp(ip::udp::endpoint peer_endpoint) {
   asio::io_service io_service;
   ip::udp::socket socket(io_service);

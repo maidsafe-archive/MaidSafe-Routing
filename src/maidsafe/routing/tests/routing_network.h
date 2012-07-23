@@ -60,7 +60,6 @@ class GenericNode {
   explicit GenericNode(bool client_mode = false);
   GenericNode(bool client_mode, const NodeInfoAndPrivateKey &node_info);
   virtual ~GenericNode();
-//  asymm::Keys GetKeys() const;
   int GetStatus() const;
   NodeId node_id() const;
   size_t id() const;
@@ -73,7 +72,7 @@ class GenericNode {
   uint16_t expected();
   void set_expected(const uint16_t &expected);
   int ZeroStateJoin(const NodeInfo &peer_node_info);
-  int Join(const Endpoint &peer_endpoint);
+  void Join(const Endpoint &peer_endpoint);
   void Send(const NodeId &destination_id,
             const NodeId &group_id,
             const std::string &data,
@@ -201,7 +200,7 @@ class GenericNetwork : public testing::Test {
     SetNodeValidationFunctor(node);
     node->client_mode_ = client_mode;
     uint16_t node_size(NonClientNodesSize());
-    node->set_expected(std::min(node_size, Parameters::closest_nodes_size));
+    node->set_expected(NetworkStatus(std::min(node_size, Parameters::closest_nodes_size)));
     nodes_.push_back(node);
     node->functors_.network_status = [&cond_var, node](const int &result)->void {
       ASSERT_GE(result, kSuccess);
@@ -210,7 +209,7 @@ class GenericNetwork : public testing::Test {
         cond_var.notify_one();
       }
     };
-    EXPECT_EQ(kSuccess, node->Join(nodes_[1]->endpoint()));
+    node->Join(nodes_[1]->endpoint());
     std::unique_lock<std::mutex> lock(mutex);
     auto result = cond_var.wait_for(lock, std::chrono::seconds(10));
     EXPECT_EQ(result, std::cv_status::no_timeout);

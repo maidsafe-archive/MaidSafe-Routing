@@ -114,20 +114,20 @@ bool Routing::CheckBootStrapFilePath() {
   return false;
 }
 
-int Routing::Join(Functors functors, Endpoint peer_endpoint) {
+void Routing::Join(Functors functors, Endpoint peer_endpoint) {
   if (!peer_endpoint.address().is_unspecified()) {  // BootStrapFromThisEndpoint
     BootStrapFromThisEndpoint(functors, peer_endpoint);
-    return 0;
+    return;
   } else  {  // Default Join
     LOG(kInfo) << " Doing a default join";
     if (CheckBootStrapFilePath()) {
       DoJoin(functors);
-      return 0;
+      return;
     } else {
       LOG(kError) << "Invalid Bootstrap Contacts";
       if (functors.network_status)
         functors.network_status(kInvalidBootstrapContacts);
-      return 0;
+      return;
     }
   }
 }

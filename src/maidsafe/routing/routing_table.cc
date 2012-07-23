@@ -97,7 +97,7 @@ void RoutingTable::set_network_status_functor(NetworkStatusFunctor network_statu
 
 void RoutingTable::update_network_status() {
   if (network_status_functor_)
-    network_status_functor_(RoutingTableSize());
+    network_status_functor_(RoutingTableSize() * 100 / Parameters::max_routing_table_size);
 }
 
 NodeInfo RoutingTable::DropNode(const Endpoint &endpoint) {

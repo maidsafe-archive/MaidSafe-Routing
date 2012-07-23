@@ -71,8 +71,8 @@ class Routing {
   * To force the node to use a specific endpoint for bootstrapping, provide *
   * peer_endpoint (i.e. private network).                                   *
   ***************************************************************************/
-  int Join(const Functors functors,
-           boost::asio::ip::udp::endpoint peer_endpoint = boost::asio::ip::udp::endpoint());
+  void Join(const Functors functors,
+            boost::asio::ip::udp::endpoint peer_endpoint = boost::asio::ip::udp::endpoint());
 
 /***************************************************************************
 *  WARNING THIS FUNCTION SHOULD BE ONLY USED TO JOIN FIRST TWO ZERO STATE  *
