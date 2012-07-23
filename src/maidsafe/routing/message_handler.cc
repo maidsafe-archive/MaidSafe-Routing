@@ -132,7 +132,8 @@ void MessageHandler::NodeLevelMessageForMe(protobuf::Message &message) {
         message_out.set_type(-message.type());
         message_out.set_destination_id(message.source_id());
         message_out.set_direct(static_cast<int32_t>(ConnectType::kSingle));
-        message_out.set_data(reply_message);
+        message_out.clear_data();
+        message_out.add_data(reply_message);
         message_out.set_last_id(routing_table_.kKeys().identity);
         message_out.set_source_id(routing_table_.kKeys().identity);
         if (message.has_id())
@@ -157,7 +158,7 @@ void MessageHandler::NodeLevelMessageForMe(protobuf::Message &message) {
       };
 
     if (message_received_functor_)
-      message_received_functor_(static_cast<int>(message.type()), message.data(), NodeId(),
+      message_received_functor_(static_cast<int>(message.type()), message.data(0), NodeId(),
                                 response_functor);
   } else {  // response
     timer_ptr_.ExecuteTaskNow(message);

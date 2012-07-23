@@ -55,6 +55,7 @@ class TestNode : public GenericNode {
     };
     LOG(kVerbose) << "RoutingNode constructor";
   }
+
   virtual ~TestNode() {}
   size_t MessagesSize() const { return messages_.size(); }
 
@@ -85,13 +86,13 @@ class RoutingNetworkTest : public GenericNetwork<NodeType> {
     for (size_t index = 0; index < messages; ++index) {
       for (auto source_node : this->nodes_) {
         for (auto dest_node : this->nodes_) {
-          auto callable = [&] (const int32_t& result, const std::string &message) {
+          auto callable = [&] (const int32_t& result, const std::vector<std::string> &message) {
               if (result != kSuccess)
                 return;
               std::lock_guard<std::mutex> lock(mutex);
               messages_count++;
-              std::string data_id(message.substr(message.find(">:<") + 3,
-                  message.find("<:>") - 3 - message.find(">:<")));
+              std::string data_id(message.at(0).substr(message.at(0).find(">:<") + 3,
+                  message.at(0).find("<:>") - 3 - message.at(0).find(">:<")));
               received_ids.insert(boost::lexical_cast<size_t>(data_id));
               LOG(kVerbose) << "ResponseHandler .... " << messages_count << " msg_id: "
                             << data_id;
@@ -142,7 +143,7 @@ class RoutingNetworkTest : public GenericNetwork<NodeType> {
     std::mutex mutex;
     std::condition_variable cond_var;
     for (size_t index = 0; index < messages; ++index) {
-      auto callable = [&] (const int32_t& result, const std::string /*message*/) {
+      auto callable = [&] (const int32_t& result, const std::vector<std::string> /*message*/) {
           if (result != kSuccess)
             return;
           std::lock_guard<std::mutex> lock(mutex);

@@ -50,7 +50,7 @@ void SortFromThisNode(const NodeId &from, std::vector<NodeInfoAndPrivateKey> nod
 
 TEST(NetworkUtilsTest, BEH_ProcessSendDirectInvalidEndpoint) {
   protobuf::Message message;
-  message.set_data("data");
+  message.add_data("data");
   message.set_direct(1);
   message.set_type(10);
   rudp::ManagedConnections rudp;
@@ -63,7 +63,7 @@ TEST(NetworkUtilsTest, BEH_ProcessSendDirectInvalidEndpoint) {
 
 TEST(NetworkUtilsTest, BEH_ProcessSendUnavailableDirectEndpoint) {
   protobuf::Message message;
-  message.set_data("data");
+  message.add_data("data");
   message.set_direct(1);
   message.set_type(10);
   rudp::ManagedConnections rudp;
@@ -89,7 +89,7 @@ TEST(NetworkUtilsTest, FUNC_ProcessSendDirectEndpoint) {
 
   protobuf::Message sent_message;
   sent_message.set_destination_id(NodeId(RandomString(64)).String());
-  sent_message.set_data(std::string(1024 * 256, 'A'));
+  sent_message.add_data(std::string(1024 * 256, 'A'));
   sent_message.set_direct(1);
   sent_message.set_type(10);
 
@@ -100,7 +100,7 @@ TEST(NetworkUtilsTest, FUNC_ProcessSendDirectEndpoint) {
                     << ", total count = " << message_count_at_node2;
       protobuf::Message received_message;
       if (received_message.ParseFromString(message))
-        EXPECT_EQ(sent_message.data(), received_message.data());
+        EXPECT_EQ(sent_message.data(0), received_message.data(0));
       else
         EXPECT_EQ("validation", message.substr(0, 10));
       if (promised && (message_count_at_node2 == expected_message_at_node)) {
@@ -189,7 +189,7 @@ TEST(NetworkUtilsTest, FUNC_ProcessSendRecursiveSendOn) {
   uint32_t message_count_at_node2(0);
 
   protobuf::Message sent_message;
-  sent_message.set_data(std::string(1024 * 256, 'B'));
+  sent_message.add_data(std::string(1024 * 256, 'B'));
   sent_message.set_direct(1);
   sent_message.set_type(10);
 
@@ -204,7 +204,7 @@ TEST(NetworkUtilsTest, FUNC_ProcessSendRecursiveSendOn) {
                     << ", total count = " << message_count_at_node2;
       protobuf::Message received_message;
       if (received_message.ParseFromString(message))
-        EXPECT_EQ(sent_message.data(), received_message.data());
+        EXPECT_EQ(sent_message.data(0), received_message.data(0));
       else
         EXPECT_EQ("validation", message.substr(0, 10));
       if (promised && (message_count_at_node2 == expected_message_at_node)) {

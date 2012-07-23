@@ -40,16 +40,17 @@ void Ping(RoutingTable &routing_table, protobuf::Message &message) {
   protobuf::PingResponse ping_response;
   protobuf::PingRequest ping_request;
 
-  if (!ping_request.ParseFromString(message.data())) {
+  if (!ping_request.ParseFromString(message.data(0))) {
     LOG(kError) << "No Data";
     return;
   }
   ping_response.set_pong(true);
-  ping_response.set_original_request(message.data());
+  ping_response.set_original_request(message.data(0));
   ping_response.set_original_signature(message.signature());
   ping_response.set_timestamp(GetTimeStamp());
   message.set_type(-1);
-  message.set_data(ping_response.SerializeAsString());
+  message.clear_data();
+  message.add_data(ping_response.SerializeAsString());
   message.set_destination_id(message.source_id());
   message.set_source_id(routing_table.kKeys().identity);
   assert(message.IsInitialized() && "unintialised message");
@@ -71,7 +72,7 @@ void Connect(RoutingTable &routing_table,
   }
   protobuf::ConnectRequest connect_request;
   protobuf::ConnectResponse connect_response;
-  if (!connect_request.ParseFromString(message.data())) {
+  if (!connect_request.ParseFromString(message.data(0))) {
     LOG(kVerbose) << "Unable to parse connect request";
     message.Clear();
     return;  // no need to reply
@@ -138,9 +139,10 @@ void Connect(RoutingTable &routing_table,
   }
 
   connect_response.set_timestamp(GetTimeStamp());
-  connect_response.set_original_request(message.data());
+  connect_response.set_original_request(message.data(0));
   connect_response.set_original_signature(message.signature());
-  message.set_data(connect_response.SerializeAsString());
+  message.clear_data();
+  message.add_data(connect_response.SerializeAsString());
   message.set_direct(true);
   message.set_replication(1);
   message.set_type(-2);
@@ -155,7 +157,7 @@ void Connect(RoutingTable &routing_table,
 void FindNodes(RoutingTable &routing_table, protobuf::Message &message) {
   LOG(kVerbose) << "FindNodes -- service()";
   protobuf::FindNodesRequest find_nodes;
-  if (!find_nodes.ParseFromString(message.data())) {
+  if (!find_nodes.ParseFromString(message.data(0))) {
     LOG(kWarning) << "Unable to parse find node request";
     message.Clear();
     return;  // no need to reply
@@ -177,7 +179,7 @@ void FindNodes(RoutingTable &routing_table, protobuf::Message &message) {
 
   LOG(kVerbose) << "Responding Find node with " << found_nodes.nodes_size()  << " contacts";
 
-  found_nodes.set_original_request(message.data());
+  found_nodes.set_original_request(message.data(0));
   found_nodes.set_original_signature(message.signature());
   found_nodes.set_timestamp(GetTimeStamp());
   assert(found_nodes.IsInitialized() && "unintialised found_nodes response");
@@ -188,7 +190,8 @@ void FindNodes(RoutingTable &routing_table, protobuf::Message &message) {
     LOG(kVerbose) << "Relay message, so not setting dst id";
   }
   message.set_source_id(routing_table.kKeys().identity);
-  message.set_data(found_nodes.SerializeAsString());
+  message.clear_data();
+  message.add_data(found_nodes.SerializeAsString());
   message.set_direct(true);
   message.set_replication(1);
   message.set_type(-3);
@@ -204,7 +207,7 @@ void ProxyConnect(RoutingTable &routing_table, NetworkUtils &/*network*/,
   protobuf::ProxyConnectResponse proxy_connect_response;
   protobuf::ProxyConnectRequest proxy_connect_request;
 
-  if (!proxy_connect_request.ParseFromString(message.data())) {
+  if (!proxy_connect_request.ParseFromString(message.data(0))) {
     LOG(kError) << "No Data";
     return;
   }
@@ -226,7 +229,8 @@ void ProxyConnect(RoutingTable &routing_table, NetworkUtils &/*network*/,
       proxy_connect_response.set_result(protobuf::kFailure);
   }
   message.set_type(-4);
-  message.set_data(proxy_connect_response.SerializeAsString());
+  message.clear_data();
+  message.add_data(proxy_connect_response.SerializeAsString());
   message.set_direct(true);
   message.set_destination_id(message.source_id());
   message.set_source_id(routing_table.kKeys().identity);

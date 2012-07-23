@@ -30,9 +30,9 @@ void CacheManager::AddToCache(const protobuf::Message &message) {
     std::pair<std::string, std::string> data;
   try {
     // check data is valid TODO FIXME - ask CAA
-    if (crypto::Hash<crypto::SHA512>(message.data()) != message.source_id())
+    if (crypto::Hash<crypto::SHA512>(message.data(0)) != message.source_id())
       return;
-    data = std::make_pair(message.source_id(), message.data());
+    data = std::make_pair(message.source_id(), message.data(0));
     cache_chunks_.push_back(data);
     boost::mutex::scoped_lock lock(mutex_);
     while (cache_chunks_.size() > Parameters::num_chunks_to_cache)
@@ -52,7 +52,7 @@ bool CacheManager::GetFromCache(protobuf::Message &message) {
     for (auto it = cache_chunks_.begin(); it != cache_chunks_.end(); ++it) {
       if ((*it).first == message.source_id()) {
         message.set_destination_id(message.source_id());
-        message.set_data((*it).second);
+        message.add_data((*it).second);
         message.set_direct(true);
         message.set_type(-message.type());
         return true;

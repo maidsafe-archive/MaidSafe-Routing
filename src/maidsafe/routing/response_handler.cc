@@ -37,7 +37,7 @@ namespace response {
 void Ping(protobuf::Message& message) {
   // TODO(dirvine): do we need this and where and how can I update the response
   protobuf::PingResponse ping_response;
-  if (ping_response.ParseFromString(message.data())) {
+  if (ping_response.ParseFromString(message.data(0))) {
     //  do stuff here
   }
 }
@@ -50,7 +50,7 @@ void Connect(RoutingTable &routing_table,
              RequestPublicKeyFunctor node_validation_functor) {
   protobuf::ConnectResponse connect_response;
   protobuf::ConnectRequest connect_request;
-  if (!connect_response.ParseFromString(message.data())) {
+  if (!connect_response.ParseFromString(message.data(0))) {
     LOG(kError) << "Could not parse connect response";
     return;
   }
@@ -96,7 +96,7 @@ void FindNode(RoutingTable &routing_table,
               const Endpoint &bootstrap_endpoint) {
   LOG(kVerbose) << "ResponseHandler::FindNode()";
   protobuf::FindNodesResponse find_nodes;
-  if (!find_nodes.ParseFromString(message.data())) {
+  if (!find_nodes.ParseFromString(message.data(0))) {
     LOG(kError) << "Could not parse find node response";
     return;
   }
@@ -156,7 +156,7 @@ void FindNode(RoutingTable &routing_table,
 
 void ProxyConnect(protobuf::Message& message) {
   protobuf::ProxyConnectResponse proxy_connect_response;
-  if (proxy_connect_response.ParseFromString(message.data())) {
+  if (proxy_connect_response.ParseFromString(message.data(0))) {
     //  do stuff here
     }
 }
