@@ -13,7 +13,7 @@
 #ifndef MAIDSAFE_ROUTING_NETWORK_UTILS_H_
 #define MAIDSAFE_ROUTING_NETWORK_UTILS_H_
 
-#include <atomic>
+#include <mutex>
 #include <string>
 #include <vector>
 
@@ -69,6 +69,8 @@ class NetworkUtils {
   // leave destination id empty if needs to send as a relay response message
   void SendToClosestNode(protobuf::Message message);
 
+  void Stop();
+
   friend class test::GenericNode;
 
  private:
@@ -95,8 +97,9 @@ class NetworkUtils {
   rudp::ConnectionLostFunctor connection_lost_functor_;
   RoutingTable &routing_table_;
   NonRoutingTable &non_routing_table_;
-  rudp::ManagedConnections rudp_;
-  std::atomic<bool> tearing_down_;
+  std::unique_ptr<rudp::ManagedConnections> rudp_;
+  boost::shared_mutex shared_mutex_;
+  bool stopped_;
 };
 
 }  // namespace routing

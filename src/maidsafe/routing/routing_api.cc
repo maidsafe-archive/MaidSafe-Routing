@@ -63,6 +63,7 @@ Routing::Routing(const asymm::Keys &keys, const bool &client_mode)
 Routing::~Routing() {
   LOG(kVerbose) << "~Routing() - Disconnecting funtors"
                 << ", Routing table Size - " << impl_->routing_table_.Size();
+  impl_->network_.Stop();
   impl_->message_handler_.set_tearing_down();
   impl_->tearing_down_ = true;
   DisconnectFunctors();
