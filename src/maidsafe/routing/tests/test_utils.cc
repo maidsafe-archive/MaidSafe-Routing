@@ -105,8 +105,8 @@ NodeId GenerateUniqueRandomId(const NodeId &holder, const uint16_t &pos) {
   return new_node;
 }
 
-uint16_t NetworkStatus(const uint16_t &non_client_routing_size) {
-  return non_client_routing_size * 100 / Parameters::max_routing_table_size;
+int NetworkStatus(const int &status) {
+  return (status > 0) ? (status * 100 / Parameters::max_routing_table_size) : status;
 }
 
 ip::address GetLocalIp(ip::udp::endpoint peer_endpoint) {

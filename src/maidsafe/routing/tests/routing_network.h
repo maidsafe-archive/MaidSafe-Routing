@@ -69,8 +69,8 @@ class GenericNode {
   void set_joined(const bool node_joined);
   bool joined() const;
   bool IsClient() const;
-  uint16_t expected();
-  void set_expected(const uint16_t &expected);
+  int expected();
+  void set_expected(const int &expected);
   int ZeroStateJoin(const NodeInfo &peer_node_info);
   void Join(const Endpoint &peer_endpoint);
   void Send(const NodeId &destination_id,
@@ -100,7 +100,7 @@ class GenericNode {
   std::mutex mutex_;
   bool client_mode_;
   bool joined_;
-  uint16_t expected_;
+  int expected_;
 };
 
 template <typename NodeType>
