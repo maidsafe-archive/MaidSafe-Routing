@@ -39,7 +39,7 @@ GenericNode::GenericNode(bool client_mode)
       routing_(),
       functors_(),
       mutex_(),
-      client_mode_(false),
+      client_mode_(client_mode),
       joined_(false),
       expected_(0) {
   functors_.close_node_replaced = nullptr;
@@ -57,7 +57,7 @@ GenericNode::GenericNode(bool client_mode, const NodeInfoAndPrivateKey &node_inf
       routing_(),
       functors_(),
       mutex_(),
-      client_mode_(false),
+      client_mode_(client_mode),
       joined_(false),
       expected_(0) {
   functors_.close_node_replaced = nullptr;
@@ -88,8 +88,12 @@ size_t GenericNode::id() const {
   return id_;
 }
 
-bool GenericNode::IsClient() const {
+bool GenericNode::client_mode() const {
   return client_mode_;
+}
+
+void GenericNode::set_client_mode(const bool &client_mode) {
+  client_mode_ = client_mode;
 }
 
 void GenericNode::Send(const NodeId &destination_id,

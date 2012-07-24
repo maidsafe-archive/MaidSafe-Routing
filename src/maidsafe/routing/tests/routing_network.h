@@ -68,7 +68,8 @@ class GenericNode {
   NodeInfo node_info() const;
   void set_joined(const bool node_joined);
   bool joined() const;
-  bool IsClient() const;
+  bool client_mode() const;
+  void set_client_mode(const bool &client_mode);
   int expected();
   void set_expected(const int &expected);
   int ZeroStateJoin(const NodeInfo &peer_node_info);
@@ -137,10 +138,19 @@ class GenericNetwork : public testing::Test {
     LOG(kVerbose) << "Setup succeeded";
   }
 
-  virtual void SetUpNetwork(const size_t &size) {
-    for (size_t index = 2; index < size; ++index) {
+  virtual void TearDown() {
+    nodes_.clear();
+  }
+
+  virtual void SetUpNetwork(const size_t &non_client_size, const size_t &client_size = 0) {
+    for (size_t index = 2; index < non_client_size; ++index) {
       NodePtr node(new NodeType(false));
-      AddNodeDetails(false, node);
+      AddNodeDetails(node);
+      LOG(kVerbose) << "Node # " << nodes_.size() << " added to network";
+    }
+    for (size_t index = 0; index < client_size; ++index) {
+      NodePtr node(new NodeType(true));
+      AddNodeDetails(node);
       LOG(kVerbose) << "Node # " << nodes_.size() << " added to network";
     }
   }
@@ -149,7 +159,8 @@ class GenericNetwork : public testing::Test {
     NodePtr node(new NodeType(client_mode));
     if (node_id != NodeId())
       node->node_info_plus_.node_info.node_id = node_id;
-    AddNodeDetails(client_mode, node);
+    node->set_client_mode(client_mode);
+    AddNodeDetails(node);
   }
 
   bool RemoveNode(const NodeId &node_id) {
@@ -184,7 +195,7 @@ class GenericNetwork : public testing::Test {
   uint16_t NonClientNodesSize() const {
     uint16_t non_client_size(0);
     for (auto node : this->nodes_)
-      if (!node->IsClient())
+      if (!node->client_mode())
         non_client_size++;
     return non_client_size;
   }
@@ -194,11 +205,10 @@ class GenericNetwork : public testing::Test {
       node->PrintRoutingTable();
   }
 
-  void AddNodeDetails(bool client_mode, NodePtr node) {
+  void AddNodeDetails(NodePtr node) {
     std::condition_variable cond_var;
     std::mutex mutex;
     SetNodeValidationFunctor(node);
-    node->client_mode_ = client_mode;
     uint16_t node_size(NonClientNodesSize());
     node->set_expected(NetworkStatus(std::min(node_size, Parameters::closest_nodes_size)));
     nodes_.push_back(node);
