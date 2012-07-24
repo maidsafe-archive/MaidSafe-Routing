@@ -197,7 +197,6 @@ TYPED_TEST_P(RoutingNetworkTest, FUNC_SendMulti) {
 }
 
 TYPED_TEST_P(RoutingNetworkTest, FUNC_ClientSendMulti) {
-  uint8_t client_size(0);
   this->SetUpNetwork(kServerSize, kClientSize);
   EXPECT_TRUE(this->Send(3));
   Sleep(boost::posix_time::seconds(21));  // This sleep is required for un-responded requests
