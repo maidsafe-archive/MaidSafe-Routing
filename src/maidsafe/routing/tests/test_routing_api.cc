@@ -347,7 +347,6 @@ TEST(APITest, BEH_API_SendToSelf) {
   R3.Send(NodeId(node3.node_info.node_id), NodeId(), "message from my node", 101, response_functor,
           boost::posix_time::seconds(10), ConnectType::kSingle);
   EXPECT_TRUE(response_future.timed_wait(boost::posix_time::seconds(10)));
-  Sleep(bptime::seconds(1));  // TODO(Prakash) : FIXME (crashing on destruction without sleep)
 }
 
 TEST(APITest, BEH_API_ClientNode) {

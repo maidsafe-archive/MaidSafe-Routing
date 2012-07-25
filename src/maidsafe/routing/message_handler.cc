@@ -180,7 +180,7 @@ void MessageHandler::DirectMessage(protobuf::Message& message) {
 
 void MessageHandler::CloseNodesMessage(protobuf::Message& message) {
   // Droping direct messages if I am closest and destination node is not in my RT and NRT.
-  if (message.direct()) {
+  if (message.direct() == 1) {
     NodeId destnation_node_id(message.destination_id());
     if (routing_table_.AmIClosestNode(destnation_node_id)) {
       if (routing_table_.AmIConnectedToNode(destnation_node_id) ||
@@ -214,8 +214,15 @@ void MessageHandler::CloseNodesMessage(protobuf::Message& message) {
     return;
   }
 
+  // FIXME GroupMessage workaround, currently only one node responds to a group message.
+  if ((message.direct() == 3) && IsNodeLevelMessage(message)) {
+    LOG(kVerbose) <<"I am closest of the group, node level Message";
+    NodeLevelMessageForMe(message);
+    return;
+  }
+
   // I am closest so will send to all my replicant nodes
-  message.set_direct(true);
+  message.set_direct(1);
   auto close =
       routing_table_.GetClosestNodes(NodeId(message.destination_id()),
                                      static_cast<uint16_t>(message.replication()));

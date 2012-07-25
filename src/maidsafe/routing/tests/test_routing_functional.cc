@@ -137,8 +137,8 @@ class RoutingNetworkTest : public GenericNetwork<NodeType> {
 
   testing::AssertionResult GroupSend(const NodeId &node_id, const size_t &messages) {
     NodeId  group_id;
-    size_t messages_count(0), expected_messages(4 * messages);
-    std::string data(RandomAlphaNumericString((RandomUint32() % 255 + 1) * 1024));
+    size_t messages_count(0), expected_messages(messages);
+    std::string data(RandomAlphaNumericString(2^10));
 
     std::mutex mutex;
     std::condition_variable cond_var;
@@ -154,7 +154,7 @@ class RoutingNetworkTest : public GenericNetwork<NodeType> {
             LOG(kVerbose) << "ResponseHandler .... DONE " << messages_count;
           }
       };
-      this->nodes_[0]->Send(node_id, group_id, data, 101, callable, boost::posix_time::seconds(10),
+      this->nodes_[0]->Send(node_id, group_id, data, 109, callable, boost::posix_time::seconds(10),
                       ConnectType::kGroup);
     }
 
@@ -200,20 +200,26 @@ TYPED_TEST_P(RoutingNetworkTest, FUNC_ClientSendMulti) {
 }
 
 
-TYPED_TEST_P(RoutingNetworkTest, DISABLED_FUNC_SendToGroup) {
-  uint8_t size(0), message_count(1);
+TYPED_TEST_P(RoutingNetworkTest, FUNC_SendToGroup) {
+  uint8_t message_count(20);
   this->SetUpNetwork(kServerSize);
   size_t last_index(this->nodes_.size() - 1);
-  while (size++ < 3)
-    this->AddNode(false, GenerateUniqueRandomId(this->nodes_[last_index]->node_id(), 10));
   NodeId dest_id(this->nodes_[last_index]->node_id());
   EXPECT_TRUE(this->GroupSend(dest_id, message_count));
   for (size_t index = last_index; index < this->nodes_.size(); ++index)
     EXPECT_EQ(this->nodes_[index]->MessagesSize(), message_count);
 }
 
+TYPED_TEST_P(RoutingNetworkTest, FUNC_SendToGroupRandomId) {
+  uint8_t message_count(20);
+  this->SetUpNetwork(kServerSize);
+  EXPECT_TRUE(this->GroupSend(NodeId(NodeId::kRandomId), message_count));
+}
+
+
 REGISTER_TYPED_TEST_CASE_P(RoutingNetworkTest, FUNC_Send, FUNC_ClientSend,
-                           FUNC_SendMulti, FUNC_ClientSendMulti, DISABLED_FUNC_SendToGroup);
+                           FUNC_SendMulti, FUNC_ClientSendMulti, FUNC_SendToGroup,
+                           FUNC_SendToGroupRandomId);
 INSTANTIATE_TYPED_TEST_CASE_P(MAIDSAFE, RoutingNetworkTest, TestNode);
 
 }  // namespace test
