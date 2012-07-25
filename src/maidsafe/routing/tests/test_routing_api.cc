@@ -11,9 +11,9 @@
  ******************************************************************************/
 
 #include <boost/exception/all.hpp>
-#include <algorithm>
 #include <chrono>
 #include <future>
+#include <algorithm>
 
 #include <memory>
 #include <vector>
@@ -129,10 +129,11 @@ TEST(APITest, BEH_API_ZeroState) {
   functors2.request_public_key = functors3.request_public_key = functors1.request_public_key;
 
   auto a1 = std::async(std::launch::async,
-    [&]{return R1.ZeroStateJoin(functors1, node1.node_info.endpoint, node2.node_info);});
+      [&] { return R1.ZeroStateJoin(functors1, node1.node_info.endpoint, node2.node_info);
+      });
   auto a2 = std::async(std::launch::async,
-      [&]{return R2.ZeroStateJoin(functors2, node2.node_info.endpoint, node1.node_info);});
-
+      [&] { return R2.ZeroStateJoin(functors2, node2.node_info.endpoint, node1.node_info);
+      });
   EXPECT_EQ(kSuccess, a2.get());  // wait for promise !
   EXPECT_EQ(kSuccess, a1.get());  // wait for promise !
 
@@ -177,10 +178,11 @@ TEST(APITest, FUNC_API_AnonymousNode) {
   functors2.request_public_key = functors1.request_public_key;
 
   auto a1 = std::async(std::launch::async,
-      [&]{return R1.ZeroStateJoin(functors1, node1.node_info.endpoint, node2.node_info);});
+      [&] { return R1.ZeroStateJoin(functors1, node1.node_info.endpoint, node2.node_info);
+      });
   auto a2 = std::async(std::launch::async,
-      [&]{return R2.ZeroStateJoin(functors2, node2.node_info.endpoint, node1.node_info);});
-
+      [&] { return R2.ZeroStateJoin(functors2, node2.node_info.endpoint, node1.node_info);
+      });
   EXPECT_EQ(kSuccess, a2.get());  // wait for promise !
   EXPECT_EQ(kSuccess, a1.get());  // wait for promise !
 
@@ -249,9 +251,11 @@ TEST(APITest, BEH_API_SendToSelf) {
   functors2.message_received = functors3.message_received = functors1.message_received;
 
   auto a1 = std::async(std::launch::async,
-      [&]{return R1.ZeroStateJoin(functors1, node1.node_info.endpoint, node2.node_info);});
+      [&] { return R1.ZeroStateJoin(functors1, node1.node_info.endpoint, node2.node_info);
+      });
   auto a2 = std::async(std::launch::async,
-      [&]{return R2.ZeroStateJoin(functors2, node2.node_info.endpoint, node1.node_info);});
+      [&] { return R2.ZeroStateJoin(functors2, node2.node_info.endpoint, node1.node_info);
+      });
 
   EXPECT_EQ(kSuccess, a2.get());  // wait for promise !
   EXPECT_EQ(kSuccess, a1.get());  // wait for promise !
@@ -315,10 +319,11 @@ TEST(APITest, BEH_API_ClientNode) {
   functors2.request_public_key = functors3.request_public_key = functors1.request_public_key;
 
   auto a1 = std::async(std::launch::async,
-      [&]{return R1.ZeroStateJoin(functors1, node1.node_info.endpoint, node2.node_info);});
+      [&] { return R1.ZeroStateJoin(functors1, node1.node_info.endpoint, node2.node_info);
+      });
   auto a2 = std::async(std::launch::async,
-      [&]{return R2.ZeroStateJoin(functors2, node2.node_info.endpoint, node1.node_info);});
-
+      [&] { return R2.ZeroStateJoin(functors2, node2.node_info.endpoint, node1.node_info);
+      });
   EXPECT_EQ(kSuccess, a2.get());  // wait for promise !
   EXPECT_EQ(kSuccess, a1.get());  // wait for promise !
 
@@ -352,7 +357,7 @@ TEST(APITest, BEH_API_ClientNode) {
 }
 
 TEST(APITest, BEH_API_NodeNetwork) {
-  int min_join_status(8); // TODO(Prakash): To decide
+  int min_join_status(8);  // TODO(Prakash): To decide
   std::vector<boost::promise<bool>> join_promises(kNetworkSize - 2);
   std::vector<boost::unique_future<bool>> join_futures;
   std::deque<bool> promised;
@@ -378,11 +383,13 @@ TEST(APITest, BEH_API_NodeNetwork) {
   };
 
   auto a1 = std::async(std::launch::async, [&] {
-    return routing_node[0]->ZeroStateJoin(functors, nodes[0].node_info.endpoint,
-                                          nodes[1].node_info);});
+      return routing_node[0]->ZeroStateJoin(functors, nodes[0].node_info.endpoint,
+                                          nodes[1].node_info);
+      });
   auto a2 = std::async(std::launch::async, [&] {
-    return routing_node[1]->ZeroStateJoin(functors, nodes[1].node_info.endpoint,
-                                          nodes[0].node_info);});
+      return routing_node[1]->ZeroStateJoin(functors, nodes[1].node_info.endpoint,
+                                          nodes[0].node_info);
+      });
 
   EXPECT_EQ(kSuccess, a2.get());  // wait for promise !
   EXPECT_EQ(kSuccess, a1.get());  // wait for promise !
@@ -407,12 +414,12 @@ TEST(APITest, BEH_API_NodeNetwork) {
     functors.network_status = status_vector.at(i);
     routing_node[i + 2]->Join(functors, nodes[i % 2].node_info.endpoint);
     ASSERT_TRUE(join_futures.at(i).timed_wait(boost::posix_time::seconds(10)));
-    LOG(kVerbose) << "node ------------------------------------------------------------------------------------------------------------------------------------- " << i + 2 << "joined";
+    LOG(kVerbose) << "node ---------------------------- " << i + 2 << "joined";
   }
 }
 
 TEST(APITest, BEH_API_NodeNetworkWithClient) {
-  int min_join_status(8); // TODO(Prakash): To decide
+  int min_join_status(8);  // TODO(Prakash): To decide
   std::vector<boost::promise<bool>> join_promises(kNetworkSize - 2);
   std::vector<boost::unique_future<bool>> join_futures;
   std::deque<bool> promised;
@@ -454,11 +461,13 @@ TEST(APITest, BEH_API_NodeNetworkWithClient) {
     };
 
   auto a1 = std::async(std::launch::async, [&] {
-    return routing_node[0]->ZeroStateJoin(functors, nodes[0].node_info.endpoint,
-                                          nodes[1].node_info);});
+      return routing_node[0]->ZeroStateJoin(functors, nodes[0].node_info.endpoint,
+                                          nodes[1].node_info);
+      });
   auto a2 = std::async(std::launch::async, [&] {
-    return routing_node[1]->ZeroStateJoin(functors, nodes[1].node_info.endpoint,
-                                          nodes[0].node_info);});
+      return routing_node[1]->ZeroStateJoin(functors, nodes[1].node_info.endpoint,
+                                          nodes[0].node_info);
+      });
 
   EXPECT_EQ(kSuccess, a2.get());  // wait for promise !
   EXPECT_EQ(kSuccess, a1.get());  // wait for promise !

@@ -183,7 +183,7 @@ void Routing::DoJoin(Functors functors) {
   if (impl_->anonymous_node_) {  //  No need to do find value for anonymous node
     if (functors.network_status)
       functors.network_status(return_value);
-   return;
+    return;
   }
 
   if (functors.network_status)
@@ -402,7 +402,7 @@ void Routing::ReceiveMessage(const std::string &message) {
 }
 
 void Routing::ConnectionLost(const Endpoint &lost_endpoint) {
-  LOG(kWarning) << " Routing::ConnectionLost--------------------------------------------------------------------------------------------------------------------------------------------------------------";
+  LOG(kWarning) << " Routing::ConnectionLost---------------------------------------------------";
   NodeInfo dropped_node;
   if ((!impl_->tearing_down_) &&
       (impl_->routing_table_.GetNodeInfo(lost_endpoint, &dropped_node) &&
@@ -410,9 +410,9 @@ void Routing::ConnectionLost(const Endpoint &lost_endpoint) {
                                              Parameters::closest_nodes_size)))) {
     // close node lost, get more nodes
     LOG(kWarning) << "Lost close node, getting more.";
-    //TODO(Prakash): uncomment once find node flooding is resolved.
-    //impl_->network_.SendToClosestNode(rpcs::FindNodes(NodeId(impl_->keys_.identity),
-    //                                  NodeId(impl_->keys_.identity)));
+    // TODO(Prakash): uncomment once find node flooding is resolved.
+    // impl_->network_.SendToClosestNode(rpcs::FindNodes(NodeId(impl_->keys_.identity),
+    //                                 NodeId(impl_->keys_.identity)));
   }
   //  Checking RT
   dropped_node = impl_->routing_table_.DropNode(lost_endpoint);
@@ -421,7 +421,7 @@ void Routing::ConnectionLost(const Endpoint &lost_endpoint) {
                   << HexSubstr(dropped_node.node_id.String())
                   << ", endpoint : "
                   << lost_endpoint;
-LOG(kWarning) << " Routing::ConnectionLost--------------------------------------------------------------------------------------------------------------------------------------------------------------Exiting";
+    LOG(kWarning) << " Routing::ConnectionLost-----------------------------------------Exiting";
     return;
   }
 
@@ -436,7 +436,7 @@ LOG(kWarning) << " Routing::ConnectionLost--------------------------------------
     LOG(kWarning) << " Lost connection with unknown/internal endpoint : "
                   << lost_endpoint;
   }
-LOG(kWarning) << " Routing::ConnectionLost--------------------------------------------------------------------------------------------------------------------------------------------------------------Exiting";
+  LOG(kWarning) << " Routing::ConnectionLost--------------------------------------------Exiting";
 }
 
 }  // namespace routing

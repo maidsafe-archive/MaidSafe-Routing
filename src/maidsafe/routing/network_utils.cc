@@ -48,12 +48,12 @@ Endpoint NetworkUtils::Bootstrap(const std::vector<Endpoint> &bootstrap_endpoint
                                  rudp::MessageReceivedFunctor message_received_functor,
                                  rudp::ConnectionLostFunctor connection_lost_functor,
                                  Endpoint local_endpoint) {
- assert(connection_lost_functor && "Must provide a valid functor");
+  assert(connection_lost_functor && "Must provide a valid functor");
 
- std::shared_ptr<asymm::PrivateKey>
-     private_key(new asymm::PrivateKey(routing_table_.kKeys().private_key));
- std::shared_ptr<asymm::PublicKey>
-     public_key(new asymm::PublicKey(routing_table_.kKeys().public_key));
+  std::shared_ptr<asymm::PrivateKey>
+      private_key(new asymm::PrivateKey(routing_table_.kKeys().private_key));
+  std::shared_ptr<asymm::PublicKey>
+      public_key(new asymm::PublicKey(routing_table_.kKeys().public_key));
 
   connection_lost_functor_ = connection_lost_functor;
   return rudp_.Bootstrap(bootstrap_endpoints,
@@ -62,7 +62,7 @@ Endpoint NetworkUtils::Bootstrap(const std::vector<Endpoint> &bootstrap_endpoint
                          private_key,
                          public_key,
                          local_endpoint);
-  }
+}
 
 int NetworkUtils::GetAvailableEndpoint(const Endpoint &peer_endpoint,
                                        rudp::EndpointPair &this_endpoint_pair) {
@@ -195,7 +195,7 @@ void NetworkUtils::RecursiveSendOn(protobuf::Message message,
                    << " [ destination id : "
                    << HexSubstr(message.destination_id())
                    << "]";
-      } else if (rudp::kSendFailure == message_sent){
+      } else if (rudp::kSendFailure == message_sent) {
         LOG(kError) << " Failed to send message : "
                     << message_sent
                     << ", type: "

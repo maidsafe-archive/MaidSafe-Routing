@@ -38,8 +38,6 @@ class Routing;
 
 namespace test {
 
-namespace {
-
 #ifdef FAKE_RUDP
   const uint32_t kClientSize(8);
   const uint32_t kServerSize(8);
@@ -49,8 +47,6 @@ namespace {
 #endif
 
 const uint32_t kNetworkSize = kClientSize + kServerSize;
-
-}  // anonymous namespace
 
 template <typename NodeType>
 class GenericNetwork;

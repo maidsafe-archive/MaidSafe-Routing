@@ -37,8 +37,6 @@ namespace maidsafe {
 
 namespace routing {
 
-class Timer;
-
 MessageHandler::MessageHandler(AsioService& asio_service,
                                RoutingTable &routing_table,
                                NonRoutingTable &non_routing_table,
@@ -196,7 +194,7 @@ void MessageHandler::CloseNodesMessage(protobuf::Message& message) {
             return;
           }
         }
-        LOG(kWarning) << "Dropping Message !! I am the closest but not connected to  destination node"
+        LOG(kWarning) << "Dropping Message! I am the closest but not connected to  destination node"
                       << "Message type : " << message.type()
                       << ", Destination id : " << HexSubstr(message.destination_id())
                       << ", Src id : " << HexSubstr(message.source_id())
@@ -210,10 +208,10 @@ void MessageHandler::CloseNodesMessage(protobuf::Message& message) {
     }
   }
 
-  //// I am not closest to the destination node for non-direct message.
+  //  I am not closest to the destination node for non-direct message.
   if (!routing_table_.AmIClosestNode(NodeId(message.destination_id()))) {
-   network_.SendToClosestNode(message);
-   return;
+    network_.SendToClosestNode(message);
+    return;
   }
 
   // I am closest so will send to all my replicant nodes

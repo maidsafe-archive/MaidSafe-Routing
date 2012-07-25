@@ -39,6 +39,7 @@ namespace test {
 namespace bptime = boost::posix_time;
 
 namespace {
+
 void SortFromThisNode(const NodeId &from, std::vector<NodeInfoAndPrivateKey> nodes) {
   std::sort(nodes.begin(), nodes.end(), [from](const NodeInfoAndPrivateKey &i,
                                                const NodeInfoAndPrivateKey &j) {
@@ -118,10 +119,10 @@ TEST(NetworkUtilsTest, FUNC_ProcessSendDirectEndpoint) {
     };
 
   asymm::Keys keys1(MakeKeys());
- std::shared_ptr<asymm::PrivateKey>
-     private_key1(std::make_shared<asymm::PrivateKey>(keys1.private_key));
- std::shared_ptr<asymm::PublicKey>
-     public_key1(std::make_shared<asymm::PublicKey>(keys1.public_key));
+  std::shared_ptr<asymm::PrivateKey>
+      private_key1(std::make_shared<asymm::PrivateKey>(keys1.private_key));
+  std::shared_ptr<asymm::PublicKey>
+      public_key1(std::make_shared<asymm::PublicKey>(keys1.public_key));
   auto a1 = std::async(std::launch::async, [=, &rudp1]()-> Endpoint {
       std::vector<Endpoint> bootstrap_endpoint(1, endpoint2);
       return rudp1.Bootstrap(bootstrap_endpoint,
@@ -131,9 +132,9 @@ TEST(NetworkUtilsTest, FUNC_ProcessSendDirectEndpoint) {
                              public_key1,
                              endpoint1);
   });
- asymm::Keys keys2(MakeKeys());
- std::shared_ptr<asymm::PrivateKey> private_key2(new asymm::PrivateKey(keys2.private_key));
- std::shared_ptr<asymm::PublicKey> public_key2(new asymm::PublicKey(keys2.public_key));
+  asymm::Keys keys2(MakeKeys());
+  std::shared_ptr<asymm::PrivateKey> private_key2(new asymm::PrivateKey(keys2.private_key));
+  std::shared_ptr<asymm::PublicKey> public_key2(new asymm::PublicKey(keys2.public_key));
   auto a2 = std::async(std::launch::async, [=, &rudp2]()-> Endpoint {
       std::vector<Endpoint> bootstrap_endpoint(1, endpoint1);
       return rudp2.Bootstrap(bootstrap_endpoint,
@@ -227,8 +228,8 @@ TEST(NetworkUtilsTest, FUNC_ProcessSendRecursiveSendOn) {
     };
 
   asymm::Keys keys1(MakeKeys());
- std::shared_ptr<asymm::PrivateKey> private_key1(new asymm::PrivateKey(keys1.private_key));
- std::shared_ptr<asymm::PublicKey> public_key1(new asymm::PublicKey(keys1.public_key));
+  std::shared_ptr<asymm::PrivateKey> private_key1(new asymm::PrivateKey(keys1.private_key));
+  std::shared_ptr<asymm::PublicKey> public_key1(new asymm::PublicKey(keys1.public_key));
   auto a1 = std::async(std::launch::async, [=, &rudp1]()-> Endpoint {
       std::vector<Endpoint> bootstrap_endpoint(1, endpoint2);
       return rudp1.Bootstrap(bootstrap_endpoint,
@@ -239,9 +240,9 @@ TEST(NetworkUtilsTest, FUNC_ProcessSendRecursiveSendOn) {
                              endpoint1);
   });
 
- asymm::Keys keys2(MakeKeys());
- std::shared_ptr<asymm::PrivateKey> private_key2(new asymm::PrivateKey(keys2.private_key));
- std::shared_ptr<asymm::PublicKey> public_key2(new asymm::PublicKey(keys2.public_key));
+  asymm::Keys keys2(MakeKeys());
+  std::shared_ptr<asymm::PrivateKey> private_key2(new asymm::PrivateKey(keys2.private_key));
+  std::shared_ptr<asymm::PublicKey> public_key2(new asymm::PublicKey(keys2.public_key));
   auto a2 = std::async(std::launch::async, [=, &rudp2]()-> Endpoint {
       std::vector<Endpoint> bootstrap_endpoint(1, endpoint1);
       return rudp2.Bootstrap(bootstrap_endpoint,
