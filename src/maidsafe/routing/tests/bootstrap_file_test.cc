@@ -43,6 +43,23 @@ TEST(BootStrapFileTest1, BEH_ReadValidFile) {
   EXPECT_TRUE(boost::filesystem::remove(good_file));
 }
 
+TEST(BootStrapFileTest1, DISABLED_BEH_ReadValidFileSysDir) {
+  std::vector<Endpoint>vec;
+  Endpoint endpoint;
+  endpoint.address(boost::asio::ip::address::from_string("192.168.1.1"));
+  endpoint.port(5000);
+  vec.push_back(endpoint);
+  fs::path good_file(GetSystemAppDir() / "test");
+  EXPECT_TRUE(ReadBootstrapFile(good_file).empty());
+  std::error_code error;
+  EXPECT_TRUE(WriteBootstrapFile(vec, good_file));
+  EXPECT_FALSE(error);
+  EXPECT_FALSE(ReadBootstrapFile(good_file).empty());
+  EXPECT_EQ(ReadBootstrapFile(good_file).size(), vec.size());
+  EXPECT_EQ(ReadBootstrapFile(good_file)[0], vec[0]);
+  EXPECT_TRUE(boost::filesystem::remove(good_file));
+}
+
 }  // namespace test
 }  // namespace routing
 }  // namespace maidsafe

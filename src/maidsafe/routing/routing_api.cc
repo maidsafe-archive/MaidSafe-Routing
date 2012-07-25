@@ -103,7 +103,6 @@ bool Routing::CheckBootStrapFilePath() {
     impl_->bootstrap_nodes_ = ReadBootstrapFile(impl_->bootstrap_file_path_);
     return true;
   } else {
-    path = GetUserAppDir() / file_name;
     if (fs::exists(path) && fs::is_regular_file(path)) {
       LOG(kVerbose) << "Found bootstrap file at " << path;
       impl_->bootstrap_file_path_ = path;
