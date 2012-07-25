@@ -208,10 +208,17 @@ class GenericNetwork : public testing::Test {
     uint16_t node_size(NonClientNodesSize());
     node->set_expected(NetworkStatus(std::min(node_size, Parameters::closest_nodes_size)));
     nodes_.push_back(node);
-    node->functors_.network_status = [&cond_var, node](const int &result)->void {
+    size_t node_id(node->id());
+    node->functors_.network_status = [&cond_var, node_id, this](const int &result)->void {
+      auto iter = std::find_if(this->nodes_.begin(), this->nodes_.end(),
+                               [this, node_id](const NodePtr node)->bool {
+                                 return node->id() == node_id;
+                               });
       ASSERT_GE(result, kSuccess);
-      if ((result == node->expected()) && (!node->joined())) {
-        node->set_joined(true);
+      if ((iter != this->nodes_.end()) &&
+          (result == (*iter)->expected()) &&
+          (!(*iter)->joined())) {
+        (*iter)->set_joined(true);
         cond_var.notify_one();
       }
     };
