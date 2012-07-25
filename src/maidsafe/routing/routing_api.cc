@@ -46,9 +46,7 @@ Routing::Routing(const asymm::Keys &keys, const bool &client_mode)
   if (!CheckBootStrapFilePath()) {
     LOG(kInfo) << " No bootstrap nodes, require BootStrapFromThisEndpoint()";
   }
-  if (client_mode) {
-    Parameters::max_routing_table_size = Parameters::closest_nodes_size;
-  } else {
+  if (!client_mode) {
     assert(!keys.identity.empty() && "Server Nodes cannot be created without valid keys");
   }
   if (keys.identity.empty()) {

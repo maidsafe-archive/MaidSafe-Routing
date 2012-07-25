@@ -206,7 +206,8 @@ class GenericNetwork : public testing::Test {
     std::mutex mutex;
     SetNodeValidationFunctor(node);
     uint16_t node_size(NonClientNodesSize());
-    node->set_expected(NetworkStatus(std::min(node_size, Parameters::closest_nodes_size)));
+    node->set_expected(NetworkStatus(node->client_mode(),
+                                     std::min(node_size, Parameters::closest_nodes_size)));
     nodes_.push_back(node);
     size_t node_id(node->id());
     node->functors_.network_status = [&cond_var, node_id, this](const int &result)->void {

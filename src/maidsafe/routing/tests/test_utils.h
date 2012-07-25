@@ -53,7 +53,7 @@ boost::asio::ip::address GetLocalIp(
 
 NodeId GenerateUniqueRandomId(const NodeId &holder, const uint16_t &pos);
 
-int NetworkStatus(const int &status);
+int NetworkStatus(const bool &client, const int &status);
 
 }  // namespace test
 
