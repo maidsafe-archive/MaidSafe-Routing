@@ -219,7 +219,7 @@ TEST(APITest, FUNC_API_AnonymousNode) {
           failed_response, boost::posix_time::seconds(60), ConnectType::kSingle);
   Sleep(boost::posix_time::seconds(1));
 }
-#endif // !FAKE_RUDP
+#endif  // !FAKE_RUDP
 
 TEST(APITest, BEH_API_SendToSelf) {
   NodeInfoAndPrivateKey node1(MakeNodeInfoAndKeys());
@@ -358,7 +358,6 @@ TEST(APITest, BEH_API_ClientNode) {
   EXPECT_TRUE(response_future.timed_wait(boost::posix_time::seconds(10)));
 }
 
-#ifndef FAKE_RUDP
 TEST(APITest, BEH_API_NodeNetwork) {
   int min_join_status(8);  // TODO(Prakash): To decide
   std::vector<boost::promise<bool>> join_promises(kNetworkSize - 2);
@@ -420,7 +419,6 @@ TEST(APITest, BEH_API_NodeNetwork) {
     LOG(kVerbose) << "node ---------------------------- " << i + 2 << "joined";
   }
 }
-#endif // !FAKE_RUDP
 
 TEST(APITest, DISABLED_BEH_API_NodeNetworkWithClient) {
   int min_join_status(8);  // TODO(Prakash): To decide
