@@ -80,6 +80,8 @@ int Routing::GetStatus() {
   return kSuccess;
 }
 
+// TODO(Prakash) : For client nodes, copy bootstrap file from sys dir if
+// it is not available at user dir.
 bool Routing::CheckBootStrapFilePath() {
   LOG(kVerbose) << "Application Path " << GetUserAppDir();
   LOG(kVerbose) << "System Path " << GetSystemAppDir();
