@@ -209,19 +209,14 @@ class GenericNetwork : public testing::Test {
     node->set_expected(NetworkStatus(node->client_mode(),
                                      std::min(node_size, Parameters::closest_nodes_size)));
     nodes_.push_back(node);
-    size_t node_id(node->id());
-    node->functors_.network_status = [&cond_var, node_id, this](const int &result)->void {
-      auto iter = std::find_if(this->nodes_.begin(), this->nodes_.end(),
-                               [this, node_id](const NodePtr node)->bool {
-                                 return node->id() == node_id;
-                               });
+    std::weak_ptr<NodeType> weak_node(node);
+    node->functors_.network_status = [&cond_var, weak_node](const int &result)->void {
       ASSERT_GE(result, kSuccess);
-      if ((iter != this->nodes_.end()) &&
-          (result == (*iter)->expected()) &&
-          (!(*iter)->joined())) {
-        (*iter)->set_joined(true);
-        cond_var.notify_one();
-      }
+      if (NodePtr node = weak_node.lock())
+        if ((result == node->expected()) && (!node->joined())) {
+          node->set_joined(true);
+          cond_var.notify_one();
+        }
     };
     node->Join(nodes_[1]->endpoint());
     std::unique_lock<std::mutex> lock(mutex);
