@@ -53,7 +53,7 @@ enum class SendStatus : int32_t {
 * functors. The ResponseFunctor WILL ensure functors are deleted when the system timeouts.         *
 ***************************************************************************************************/
 typedef std::function<void(const int& /*return code*/,
-                           const std::string& /*message*/)> ResponseFunctor;
+                           const std::vector<std::string>& /*message*/)> ResponseFunctor;
 /***************************************************************************************************
 * They are passed as a parameter by MessageReceivedFunctor and should be called for responding to  *
 * the received message. Passing an empty message will mean you don't want to reply.                *
@@ -79,7 +79,7 @@ typedef std::function<void(const std::string &/* data*/)> StoreCacheDataFunctor;
 /***************************************************************************************************
 * This functor fires a number from 0 to 100 and represents % network health                        *
 ***************************************************************************************************/
-typedef std::function<void(const int16_t& /*network_health*/)> NetworkStatusFunctor;
+typedef std::function<void(const int& /*network_health*/)> NetworkStatusFunctor;
 /***************************************************************************************************
 * This functor fires when a new close node is inserted in routing table. Upper layers responsible  *
 * for storing key/value pairs should send all key/values between itself and the new nodes address  *

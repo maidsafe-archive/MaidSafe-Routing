@@ -14,6 +14,8 @@
 #include <thread>
 #include <algorithm>
 
+#include "maidsafe/common/utils.h"
+
 #include "maidsafe/routing/log.h"
 
 namespace bs2 = boost::signals2;
@@ -24,15 +26,18 @@ namespace routing {
 
 
 RoutingTable::RoutingTable(const asymm::Keys &keys, const bool &client_mode,
-                           CloseNodeReplacedFunctor close_node_replaced_functor)
-    : client_mode_(client_mode),
+                           CloseNodeReplacedFunctor /*close_node_replaced_functor*/)
+    : max_size_(client_mode ? Parameters::max_client_routing_table_size :
+          Parameters::max_routing_table_size),
+      client_mode_(client_mode),
       keys_(keys),
       sorted_(false),
       kNodeId_(NodeId(keys_.identity)),
       furthest_group_node_id_(),
-      routing_table_nodes_(),
       mutex_(),
-      close_node_replaced_functor_(close_node_replaced_functor) {}
+      network_status_functor_(),
+      close_node_replaced_functor_(),
+      routing_table_nodes_() {}
 
 void RoutingTable::set_keys(asymm::Keys keys) {
   keys_ = keys;
@@ -56,11 +61,14 @@ bool RoutingTable::AddOrCheckNode(NodeInfo& node, const bool &remove) {
   if (std::find_if(routing_table_nodes_.begin(), routing_table_nodes_.end(),
                    [node](const NodeInfo &i)->bool
                    { return i.node_id ==  node.node_id; })
-                 != routing_table_nodes_.end())
+                 != routing_table_nodes_.end()) {
+    LOG(kInfo) << "Node already there in RT!!" << HexSubstr(node.node_id.String());
     return false;
+  }
   if (MakeSpaceForNodeToBeAdded(node, remove)) {
     if (remove) {
       routing_table_nodes_.push_back(node);
+      update_network_status();
       UpdateGroupChangeAndNotify();
     }
     return true;
@@ -85,6 +93,15 @@ void RoutingTable::set_close_node_replaced_functor(CloseNodeReplacedFunctor clos
   close_node_replaced_functor_ = close_node_replaced;
 }
 
+void RoutingTable::set_network_status_functor(NetworkStatusFunctor network_status_functor) {
+  network_status_functor_ = network_status_functor;
+}
+
+void RoutingTable::update_network_status() {
+  if (network_status_functor_)
+    network_status_functor_(RoutingTableSize() * 100 / max_size_);
+}
+
 NodeInfo RoutingTable::DropNode(const Endpoint &endpoint) {
   NodeInfo dropped_node;
   std::lock_guard<std::mutex> lock(mutex_);
@@ -92,6 +109,7 @@ NodeInfo RoutingTable::DropNode(const Endpoint &endpoint) {
     if (((*it).endpoint ==  endpoint)) {
       dropped_node = (*it);
       routing_table_nodes_.erase(it);
+      update_network_status();
       UpdateGroupChangeAndNotify();
       break;
     }
@@ -128,6 +146,14 @@ bool RoutingTable::AmIConnectedToEndpoint(const Endpoint& endpoint) {
   return (std::find_if(routing_table_nodes_.begin(), routing_table_nodes_.end(),
                        [endpoint](const NodeInfo &i)->bool
                        { return i.endpoint == endpoint; })
+                     != routing_table_nodes_.end());
+}
+
+bool RoutingTable::AmIConnectedToNode(const NodeId& node_id) {
+  std::lock_guard<std::mutex> lock(mutex_);
+  return (std::find_if(routing_table_nodes_.begin(), routing_table_nodes_.end(),
+                       [node_id](const NodeInfo &i)->bool
+                       { return i.node_id == node_id; })
                      != routing_table_nodes_.end());
 }
 
@@ -175,7 +201,7 @@ bool RoutingTable::MakeSpaceForNodeToBeAdded(NodeInfo &node, const bool &remove)
     return false;
   }
 
-  if (RoutingTableSize() < Parameters::max_routing_table_size) {
+  if (RoutingTableSize() < max_size_) {
     return true;
   }
 
@@ -263,6 +289,8 @@ void RoutingTable::PartialSortFromThisNode(const NodeId &from, const uint16_t &n
 }
 
 void RoutingTable::NthElementSortFromThisNode(const NodeId &from, const uint16_t &nth_element) {
+  assert((routing_table_nodes_.size() >= nth_element) &&
+         "This should only be called when n is at max the size of RT");
   std::nth_element(routing_table_nodes_.begin(), routing_table_nodes_.begin() + nth_element,
                    routing_table_nodes_.end(),
                    [this, from](const NodeInfo &i, const NodeInfo &j) {

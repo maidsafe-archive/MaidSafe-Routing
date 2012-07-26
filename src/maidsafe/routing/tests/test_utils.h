@@ -24,6 +24,20 @@ namespace routing {
 
 namespace test {
 
+struct NodeInfoAndPrivateKey {
+  NodeInfoAndPrivateKey()
+      : node_info(),
+        private_key() {}
+  NodeInfo node_info;
+  asymm::PrivateKey private_key;
+};
+
+NodeInfoAndPrivateKey MakeNodeInfoAndKeys();
+
+asymm::Keys MakeKeys();
+
+asymm::Keys GetKeys(const NodeInfoAndPrivateKey &node);
+
 uint16_t GetRandomPort();
 
 NodeInfo MakeNode();
@@ -38,6 +52,8 @@ boost::asio::ip::address GetLocalIp(
         Endpoint(boost::asio::ip::address_v4::from_string("8.8.8.8"), 0));
 
 NodeId GenerateUniqueRandomId(const NodeId &holder, const uint16_t &pos);
+
+int NetworkStatus(const bool &client, const int &status);
 
 }  // namespace test
 

@@ -42,7 +42,7 @@ namespace maidsafe {
 namespace routing {
 
 namespace test {
-  class FindNode;
+  class GenericNode;
 }  // namspace test
 
 struct RoutingPrivate;
@@ -71,8 +71,8 @@ class Routing {
   * To force the node to use a specific endpoint for bootstrapping, provide *
   * peer_endpoint (i.e. private network).                                   *
   ***************************************************************************/
-  int Join(const Functors functors,
-           boost::asio::ip::udp::endpoint peer_endpoint = boost::asio::ip::udp::endpoint());
+  void Join(const Functors functors,
+            boost::asio::ip::udp::endpoint peer_endpoint = boost::asio::ip::udp::endpoint());
 
 /***************************************************************************
 *  WARNING THIS FUNCTION SHOULD BE ONLY USED TO JOIN FIRST TWO ZERO STATE  *
@@ -106,7 +106,7 @@ class Routing {
   * NodeValidateFunctor to add the node in routing table.                    *
   ***************************************************************************/
 
-  friend class maidsafe::routing::test::FindNode;
+  friend class test::GenericNode;
 
  private:
   Routing(const Routing&);
@@ -115,14 +115,15 @@ class Routing {
 
   void ConnectFunctors(const Functors functors);
   void DisconnectFunctors();
-  int BootStrapFromThisEndpoint(const Functors functors,
-                                const boost::asio::ip::udp::endpoint& endpoint);
-  int DoJoin(const Functors functors);
+  void BootStrapFromThisEndpoint(const Functors functors,
+                                 const boost::asio::ip::udp::endpoint& endpoint);
+  void DoJoin(const Functors functors);
   int DoBootstrap(const Functors functors);
   int DoFindNode();
   void ReceiveMessage(const std::string &message);
   void ConnectionLost(const Endpoint &lost_endpoint);
   bool CheckBootStrapFilePath();
+
   std::unique_ptr<RoutingPrivate> impl_;  // pimpl (data members only)
 };
 

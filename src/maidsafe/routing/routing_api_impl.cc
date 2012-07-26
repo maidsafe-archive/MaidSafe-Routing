@@ -14,6 +14,7 @@
 
 #include "maidsafe/routing/bootstrap_file_handler.h"
 #include "maidsafe/routing/message_handler.h"
+#include "maidsafe/routing/network_utils.h"
 #include "maidsafe/routing/node_id.h"
 #include "maidsafe/routing/parameters.h"
 #include "maidsafe/routing/return_codes.h"
@@ -34,24 +35,26 @@ RoutingPrivate::RoutingPrivate(const asymm::Keys &keys,
     : asio_service_(2),
       bootstrap_nodes_(),
       keys_(keys),
-      functors_(),
-      rudp_(),
+      tearing_down_(false),
       routing_table_(keys_, client_mode, CloseNodeReplacedFunctor()),
       non_routing_table_(keys_),  // TODO(Prakash) : don't create NRT for client nodes (wrap both)
       timer_(asio_service_),
       waiting_for_response_(),
-      direct_non_routing_table_connections_(),
+      network_(routing_table_, non_routing_table_),
       message_handler_(asio_service_, routing_table_, non_routing_table_,
-                       rudp_, timer_, MessageReceivedFunctor(),
+                       network_, timer_, MessageReceivedFunctor(),
                        RequestPublicKeyFunctor()),
       joined_(false),
       bootstrap_file_path_(),
       client_mode_(client_mode),
-      anonymous_node_(false) {
+      anonymous_node_(false),
+      functors_() {
   asio_service_.Start();
 }
 
-RoutingPrivate::~RoutingPrivate() {}
+RoutingPrivate::~RoutingPrivate() {
+  asio_service_.Stop();
+}
 
 }  // namespace routing
 

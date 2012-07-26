@@ -29,6 +29,7 @@ namespace routing {
 
 namespace protobuf { class Message; }  // namespace protobuf
 
+class NetworkUtils;
 class NonRoutingTable;
 class RoutingTable;
 
@@ -37,12 +38,12 @@ namespace response {
 void Ping(protobuf::Message &message);
 void Connect(RoutingTable &routing_table,
              NonRoutingTable &non_routing_table,
-             rudp::ManagedConnections &rudp,
+             NetworkUtils &network,
              protobuf::Message &message,
              RequestPublicKeyFunctor node_validation_functor);
 void FindNode(RoutingTable &routing_table,
               NonRoutingTable &non_routing_table,
-              rudp::ManagedConnections &rudp,
+              NetworkUtils &network,
               const protobuf::Message &message,
               const Endpoint &bootstrap_endpoint);
 void ProxyConnect(protobuf::Message& message);

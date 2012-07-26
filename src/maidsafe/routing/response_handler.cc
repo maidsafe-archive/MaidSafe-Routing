@@ -12,9 +12,6 @@
 
 #include "maidsafe/routing/response_handler.h"
 
-#include "boost/thread/shared_mutex.hpp"
-#include "boost/thread/mutex.hpp"
-
 #include "maidsafe/common/rsa.h"
 #include "maidsafe/common/utils.h"
 #include "maidsafe/rudp/managed_connections.h"
@@ -40,7 +37,7 @@ namespace response {
 void Ping(protobuf::Message& message) {
   // TODO(dirvine): do we need this and where and how can I update the response
   protobuf::PingResponse ping_response;
-  if (ping_response.ParseFromString(message.data())) {
+  if (ping_response.ParseFromString(message.data(0))) {
     //  do stuff here
   }
 }
@@ -48,12 +45,12 @@ void Ping(protobuf::Message& message) {
 // the other node agreed to connect - he has accepted our connection
 void Connect(RoutingTable &routing_table,
              NonRoutingTable &non_routing_table,
-             rudp::ManagedConnections &rudp,
+             NetworkUtils &network,
              protobuf::Message& message,
              RequestPublicKeyFunctor node_validation_functor) {
   protobuf::ConnectResponse connect_response;
   protobuf::ConnectRequest connect_request;
-  if (!connect_response.ParseFromString(message.data())) {
+  if (!connect_response.ParseFromString(message.data(0))) {
     LOG(kError) << "Could not parse connect response";
     return;
   }
@@ -77,9 +74,9 @@ void Connect(RoutingTable &routing_table,
 
   if (node_validation_functor) {
     auto validate_node =
-      [=, &routing_table, &non_routing_table, &rudp] (const asymm::PublicKey &key) {
+      [=, &routing_table, &non_routing_table, &network] (const asymm::PublicKey &key) {
           LOG(kInfo) << "NEED TO VALIDATE THE NODE HERE";
-          ValidateThisNode(rudp,
+          ValidateThisNode(network,
                            routing_table,
                            non_routing_table,
                            NodeId(connect_response.contact().node_id()),
@@ -93,13 +90,13 @@ void Connect(RoutingTable &routing_table,
 }
 
 void FindNode(RoutingTable &routing_table,
-              NonRoutingTable &non_routing_table,
-              rudp::ManagedConnections &rudp,
+              NonRoutingTable &/*non_routing_table*/,
+              NetworkUtils &network,
               const protobuf::Message& message,
               const Endpoint &bootstrap_endpoint) {
   LOG(kVerbose) << "ResponseHandler::FindNode()";
   protobuf::FindNodesResponse find_nodes;
-  if (!find_nodes.ParseFromString(message.data())) {
+  if (!find_nodes.ParseFromString(message.data(0))) {
     LOG(kError) << "Could not parse find node response";
     return;
   }
@@ -111,7 +108,10 @@ void FindNode(RoutingTable &routing_table,
 //    return;  // we never requested this
 //  }
   for (int i = 0; i < find_nodes.nodes_size(); ++i) {
-    LOG(kVerbose) << " Find node returned - "  << HexSubstr(find_nodes.nodes(i));
+    LOG(kVerbose) << " Find node returned - "  << HexSubstr(find_nodes.nodes(i))
+                  << "("
+                  << find_nodes.nodes_size() << ") nodes, I am ["
+                  << HexSubstr(routing_table.kKeys().identity) << "]";
   }
 
   for (int i = 0; i < find_nodes.nodes_size(); ++i) {
@@ -123,10 +123,11 @@ void FindNode(RoutingTable &routing_table,
       LOG(kVerbose) << " CheckNode succeeded for node "
                     << HexSubstr(node_to_add.node_id.String());
       Endpoint direct_endpoint;
-      if (routing_table.Size() == 0)  // Joining the network, and may connect to bootstrapping node.
+      bool routing_table_empty(routing_table.Size() == 0);
+      if (routing_table_empty)  // Joining the network, and may connect to bootstrapping node.
         direct_endpoint = bootstrap_endpoint;
       rudp::EndpointPair endpoint;
-      if (kSuccess != rudp.GetAvailableEndpoint(direct_endpoint, endpoint)) {
+      if (kSuccess != network.GetAvailableEndpoint(direct_endpoint, endpoint)) {
         LOG(kWarning) << " Failed to get available endpoint for new connections";
         return;
       }
@@ -134,28 +135,28 @@ void FindNode(RoutingTable &routing_table,
                     << " my endpoint - " << endpoint.external;
       Endpoint relay_endpoint;
       bool relay_message(false);
-      if (routing_table.Size() == 0) {  //  Not in anyones RT, need a path back through relay ip.
+      if (routing_table_empty) {  //  Not in anyones RT, need a path back through relay ip.
         relay_endpoint = endpoint.external;
         relay_message = true;
       }
       LOG(kVerbose) << " Sending Connect rpc to - " << HexSubstr(find_nodes.nodes(i));
-      ProcessSend(rpcs::Connect(NodeId(find_nodes.nodes(i)),
-                                endpoint,
-                                NodeId(routing_table.kKeys().identity),
-                                routing_table.client_mode(),
-                                relay_message,
-                                relay_endpoint),
-                  rudp,
-                  routing_table,
-                  non_routing_table,
-                  direct_endpoint);
+      protobuf::Message connect_rpc(rpcs::Connect(NodeId(find_nodes.nodes(i)),
+                                    endpoint,
+                                    NodeId(routing_table.kKeys().identity),
+                                    routing_table.client_mode(),
+                                    relay_message,
+                                    relay_endpoint));
+      if (routing_table_empty)
+        network.SendToDirectEndpoint(connect_rpc, bootstrap_endpoint);
+      else
+        network.SendToClosestNode(connect_rpc);
     }
   }
 }
 
 void ProxyConnect(protobuf::Message& message) {
   protobuf::ProxyConnectResponse proxy_connect_response;
-  if (proxy_connect_response.ParseFromString(message.data())) {
+  if (proxy_connect_response.ParseFromString(message.data(0))) {
     //  do stuff here
     }
 }

@@ -57,6 +57,37 @@ NodeInfo MakeNode() {
   return node;
 }
 
+NodeInfoAndPrivateKey MakeNodeInfoAndKeys() {
+  NodeInfo node;
+  node.node_id = NodeId(RandomString(64));
+  asymm::Keys keys;
+  asymm::GenerateKeyPair(&keys);
+  node.public_key = keys.public_key;
+  node.endpoint.address(GetLocalIp());
+  node.endpoint.port(GetRandomPort());
+  NodeInfoAndPrivateKey node_info_and_private_key;
+  node_info_and_private_key.node_info = node;
+  node_info_and_private_key.private_key = keys.private_key;
+  return node_info_and_private_key;
+}
+
+asymm::Keys MakeKeys() {
+  NodeInfoAndPrivateKey node(MakeNodeInfoAndKeys());
+  asymm::Keys keys;
+  keys.identity = node.node_info.node_id.String();
+  keys.public_key = node.node_info.public_key;
+  keys.private_key = node.private_key;
+  return keys;
+}
+
+asymm::Keys GetKeys(const NodeInfoAndPrivateKey &node) {
+  asymm::Keys keys;
+  keys.identity = node.node_info.node_id.String();
+  keys.public_key = node.node_info.public_key;
+  keys.private_key = node.private_key;
+  return keys;
+}
+
 NodeId GenerateUniqueRandomId(const NodeId &holder, const uint16_t &pos) {
   std::string holder_id = holder.ToStringEncoded(NodeId::kBinary);
   std::bitset<64*8> holder_id_binary_bitset(holder_id);
@@ -74,6 +105,12 @@ NodeId GenerateUniqueRandomId(const NodeId &holder, const uint16_t &pos) {
   return new_node;
 }
 
+int NetworkStatus(const bool &client, const int &status) {
+  uint16_t max_size(client ? Parameters::max_client_routing_table_size :
+                      Parameters::max_routing_table_size);
+  return (status > 0) ? (status * 100 / max_size) : status;
+}
+
 ip::address GetLocalIp(ip::udp::endpoint peer_endpoint) {
   asio::io_service io_service;
   ip::udp::socket socket(io_service);
@@ -85,8 +122,7 @@ ip::address GetLocalIp(ip::udp::endpoint peer_endpoint) {
     return socket.local_endpoint().address();
   }
   catch(const std::exception &e) {
-    LOG(kError) << "Failed trying to connect to " << peer_endpoint << " - "
-                << e.what();
+    LOG(kError) << "Failed trying to connect to " << peer_endpoint << " - " << e.what();
     return ip::address();
   }
 }

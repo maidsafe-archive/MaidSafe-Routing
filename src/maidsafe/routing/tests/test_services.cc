@@ -19,6 +19,7 @@
 #include "maidsafe/rudp/managed_connections.h"
 
 #include "maidsafe/routing/log.h"
+#include "maidsafe/routing/network_utils.h"
 #include "maidsafe/routing/non_routing_table.h"
 #include "maidsafe/routing/parameters.h"
 #include "maidsafe/routing/routing_pb.h"
@@ -42,12 +43,12 @@ TEST(Services, BEH_Ping) {
   // somebody pings us
   protobuf::Message message = rpcs::Ping(NodeId(keys.identity), "me");
   EXPECT_TRUE(message.destination_id() == keys.identity);
-  EXPECT_TRUE(ping_request.ParseFromString(message.data()));  // us
+  EXPECT_TRUE(ping_request.ParseFromString(message.data(0)));  // us
   EXPECT_TRUE(ping_request.IsInitialized());
   // run message through Service
   service::Ping(RT, message);
   EXPECT_EQ(-1, message.type());
-  EXPECT_FALSE(message.data().empty());
+  EXPECT_NE(message.data_size(), 0);
   EXPECT_TRUE(message.source_id() == keys.identity);
   EXPECT_EQ(message.replication(), 1);
   EXPECT_EQ(message.type(), -1);
@@ -65,7 +66,7 @@ TEST(Services, DISABLED_BEH_Connect) {
   RoutingTable RT(keys, false, nullptr);
   NonRoutingTable NRT(keys);
   NodeInfo node;
-  rudp::ManagedConnections rudp;
+  NetworkUtils network(RT, NRT);
   rudp::EndpointPair them_end;
   them_end.local = them.endpoint;
   them_end.external = them.endpoint;
@@ -73,9 +74,9 @@ TEST(Services, DISABLED_BEH_Connect) {
   protobuf::Message message = rpcs::Connect(us.node_id, them_end, them.node_id);
   EXPECT_TRUE(message.IsInitialized());
   // we receive it
-  service::Connect(RT, NRT, rudp, message, RequestPublicKeyFunctor());
+  service::Connect(RT, NRT, network, message, RequestPublicKeyFunctor());
   protobuf::ConnectResponse connect_response;
-  EXPECT_TRUE(connect_response.ParseFromString(message.data()));  // us
+  EXPECT_TRUE(connect_response.ParseFromString(message.data(0)));  // us
   EXPECT_TRUE(connect_response.answer());
   EXPECT_EQ(connect_response.contact().node_id(), us.node_id.String());
   EXPECT_TRUE(connect_response.has_timestamp());
@@ -83,7 +84,8 @@ TEST(Services, DISABLED_BEH_Connect) {
   EXPECT_TRUE(connect_response.timestamp() < static_cast<int32_t>(GetTimeStamp() + 1));
   EXPECT_EQ(message.destination_id(), them.node_id.String());
   EXPECT_EQ(message.source_id(), us.node_id.String());
-  EXPECT_FALSE(message.data().empty());
+  EXPECT_NE(message.data_size(), 0);
+  EXPECT_EQ(1, message.direct());
   EXPECT_EQ(message.replication(), 1);
   EXPECT_EQ(message.type(), -2);
   EXPECT_EQ(message.id(), 0);
@@ -101,7 +103,7 @@ TEST(Services, BEH_FindNodes) {
   protobuf::Message message = rpcs::FindNodes(us.node_id, us.node_id);
   service::FindNodes(RT, message);
   protobuf::FindNodesResponse find_nodes_respose;
-  EXPECT_TRUE(find_nodes_respose.ParseFromString(message.data()));
+  EXPECT_TRUE(find_nodes_respose.ParseFromString(message.data(0)));
 //  EXPECT_TRUE(find_nodes_respose.nodes().size() > 0);  // will only have us
 //  EXPECT_EQ(find_nodes_respose.nodes().Get(1), us.node_id.String());
   EXPECT_TRUE(find_nodes_respose.has_timestamp());
@@ -109,7 +111,8 @@ TEST(Services, BEH_FindNodes) {
   EXPECT_TRUE(find_nodes_respose.timestamp() < static_cast<int32_t>(GetTimeStamp() + 1));
   EXPECT_EQ(message.destination_id(), us.node_id.String());
   EXPECT_EQ(message.source_id(), us.node_id.String());
-  EXPECT_FALSE(message.data().empty());
+  EXPECT_NE(message.data_size(), 0);
+  EXPECT_EQ(1, message.direct());
   EXPECT_EQ(message.replication(), 1);
   EXPECT_EQ(message.type(), -3);
   EXPECT_EQ(message.id(), 0);
@@ -123,8 +126,9 @@ TEST(Services, BEH_ProxyConnect) {
   asymm::Keys keys;
   keys.identity = RandomString(64);
   RoutingTable RT(keys, false, nullptr);
+  NonRoutingTable NRT(keys);
   NodeInfo node;
-  rudp::ManagedConnections rudp;
+  NetworkUtils network(RT, NRT);
   protobuf::ProxyConnectRequest proxy_connect_request;
   // they send us an proxy connect rpc
   rudp::EndpointPair endpoint_pair;
@@ -133,14 +137,15 @@ TEST(Services, BEH_ProxyConnect) {
   protobuf::Message message = rpcs::ProxyConnect(NodeId(keys.identity), NodeId(my_keys.identity),
                                                  endpoint_pair);
   EXPECT_TRUE(message.destination_id() == keys.identity);
-  EXPECT_TRUE(proxy_connect_request.ParseFromString(message.data()));  // us
+  EXPECT_TRUE(proxy_connect_request.ParseFromString(message.data(0)));  // us
   EXPECT_TRUE(proxy_connect_request.IsInitialized());
   // run message through Service
-  service::ProxyConnect(RT, rudp, message);
+  service::ProxyConnect(RT, network, message);
   protobuf::ProxyConnectResponse proxy_connect_respose;
-  EXPECT_TRUE(proxy_connect_respose.ParseFromString(message.data()));
+  EXPECT_TRUE(proxy_connect_respose.ParseFromString(message.data(0)));
   EXPECT_EQ(protobuf::kFailure, proxy_connect_respose.result());
-  EXPECT_FALSE(message.data().empty());
+  EXPECT_NE(message.data_size(), 0);
+  EXPECT_EQ(1, message.direct());
   EXPECT_TRUE(message.source_id() == keys.identity);
   EXPECT_EQ(1, message.replication());
   EXPECT_EQ(-4, message.type());

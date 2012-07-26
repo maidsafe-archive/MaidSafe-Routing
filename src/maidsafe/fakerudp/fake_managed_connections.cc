@@ -21,7 +21,6 @@
 #include "boost/asio/ip/udp.hpp"
 #include "boost/date_time/posix_time/posix_time_duration.hpp"
 #include "boost/signals2/connection.hpp"
-#include "boost/thread/shared_mutex.hpp"
 
 #include "maidsafe/rudp/managed_connections.h"
 #include "maidsafe/rudp/return_codes.h"
@@ -40,57 +39,94 @@ ManagedConnections::ManagedConnections()
     : asio_service_(2),
       message_received_functor_(),
       connection_lost_functor_(),
+      private_key_(),
+      public_key_(),
       transports_(),
       connection_map_(),
       shared_mutex_(),
-      bootstrap_endpoints_(),
-      local_ip_() {
+      local_ip_(),
+      resilience_transport_(),
+      fake_endpoints_() {
   Node node;
-  bootstrap_endpoints_.push_back(node.endpoint);
+  fake_endpoints_.push_back(node.endpoint);
   FakeNetwork::instance().AddEmptyNode(node);
   asio_service_.Start();
 }
 
 ManagedConnections::~ManagedConnections() {
-  if (!FakeNetwork::instance().RemoveMyNode(bootstrap_endpoints_[0])) {
+  LOG(kVerbose) << " ManagedConnections::~ManagedConnections() ";
+  asio_service_.Stop();
+  if (!FakeNetwork::instance().RemoveMyNode(fake_endpoints_[0])) {
     LOG(kVerbose) << "Failed to remove my node in destructor.";
   }
+  LOG(kVerbose) << " ManagedConnections::~ManagedConnections() exiting...";
 }
 
 Endpoint ManagedConnections::Bootstrap(const std::vector<Endpoint> &bootstrap_endpoints,
                                        MessageReceivedFunctor message_received_functor,
                                        ConnectionLostFunctor connection_lost_functor,
+                                       std::shared_ptr<asymm::PrivateKey> private_key,
+                                       std::shared_ptr<asymm::PublicKey> public_key,
                                        Endpoint local_endpoint) {
   LOG(kVerbose) << "In Bootstrap";
 
-  auto mynode = FakeNetwork::instance().FindNode(bootstrap_endpoints_[0]);  // me
+  if (!message_received_functor) {
+    LOG(kError) << "You must provide a valid MessageReceivedFunctor.";
+    return Endpoint();
+  }
+  message_received_functor_ = message_received_functor;
+  if (!connection_lost_functor) {
+    LOG(kError) << "You must provide a valid ConnectionLostFunctor.";
+    return Endpoint();
+  }
+  connection_lost_functor_ = connection_lost_functor;
+
+  if (bootstrap_endpoints.empty()) {
+    LOG(kError) << "You must provide at least one Bootstrap endpoint.";
+    return Endpoint();
+  }
+
+  if (!private_key || !asymm::ValidateKey(*private_key) ||
+      !public_key || !asymm::ValidateKey(*public_key)) {
+    LOG(kError) << "You must provide a valid private and public key.";
+    return Endpoint();
+  }
+
+  auto mynode = FakeNetwork::instance().FindNode(fake_endpoints_[0]);  // me
   assert(mynode != FakeNetwork::instance().GetEndIterator() && "Apparently not in network.");
 
   Node &node = (*mynode);
   if (!local_endpoint.address().is_unspecified()) {
     node.endpoint = local_endpoint;
-    bootstrap_endpoints_[0] = local_endpoint;
+    fake_endpoints_[0] = local_endpoint;
   }
 
-  if (connection_lost_functor)
-    node.connection_lost = connection_lost_functor;
-  if (message_received_functor)
-    node.message_received = message_received_functor;
+  if (connection_lost_functor) {
+    node.connection_lost = [&](const Endpoint &peer_endpoint) {
+                               OnConnectionLostSlot(peer_endpoint,
+                                                    std::shared_ptr<Transport>(),
+                                                    bool(), bool());
+                             };
+  }
+  if (message_received_functor) {
+    node.message_received = [&](const std::string &message) {
+                                OnMessageSlot(message);
+                              };
+  }
 
   for (auto i : bootstrap_endpoints) {
     for (int j = 0; j < 200; ++j) {
-//      std::this_thread::sleep_for(std::chrono::milliseconds(10));
       Sleep(boost::posix_time::milliseconds(10));
       if (local_endpoint.address().is_unspecified() &&
           (FakeNetwork::instance().FindNode(i) != FakeNetwork::instance().GetEndIterator())) {
         LOG(kVerbose) << "Found viable bootstrap node.\n";
         if (FakeNetwork::instance().BootStrap(node, i)) {
           LOG(kVerbose) << "Bootstrap sucessfull!!\n";
-          Add(node.endpoint, i, "");
+          FakeNetwork::instance().AddConnection(node.endpoint, i, true);
           return i;
         }
       } else {
-        Add(node.endpoint, i, "");
+        FakeNetwork::instance().AddConnection(node.endpoint, i, true);
         return i;
       }
     }
@@ -100,9 +136,9 @@ Endpoint ManagedConnections::Bootstrap(const std::vector<Endpoint> &bootstrap_en
 
 int ManagedConnections::GetAvailableEndpoint(const Endpoint& /*peer_endpoint*/,
                                              EndpointPair &this_endpoint_pair) {
-  assert((bootstrap_endpoints_.size() != 0) && "I do not know my own endpoint");
-  this_endpoint_pair.external = bootstrap_endpoints_[0];
-  this_endpoint_pair.local = bootstrap_endpoints_[0];
+  assert((fake_endpoints_.size() != 0) && "I do not know my own endpoint");
+  this_endpoint_pair.external = fake_endpoints_[0];
+  this_endpoint_pair.local = fake_endpoints_[0];
   LOG(kInfo) << " endpoint ip address "
              << this_endpoint_pair.external.address().to_string() << "\n";
   return kSuccess;
@@ -110,27 +146,54 @@ int ManagedConnections::GetAvailableEndpoint(const Endpoint& /*peer_endpoint*/,
 
 int ManagedConnections::Add(const Endpoint &this_endpoint,
                             const Endpoint &peer_endpoint,
-                            const std::string &/*validation_data*/) {
+                            const std::string &validation_data) {
+  int add_result(FakeNetwork::instance().AddConnection(this_endpoint, peer_endpoint));
   asio_service_.service().post([=]() {
-    FakeNetwork::instance().AddConnection(this_endpoint, peer_endpoint);
+    if (!validation_data.empty() && add_result == kSuccess)
+      FakeNetwork::instance().SendMessageToNode(peer_endpoint, validation_data);
   });
-  return kSuccess;
+  return add_result;
 }
 
 void ManagedConnections::Send(const Endpoint &peer_endpoint,
                               const std::string &message,
                               MessageSentFunctor message_sent_functor) {
   asio_service_.service().post([=]() {
-    message_sent_functor(FakeNetwork::instance().SendMessageToNode(peer_endpoint, message));
+    bool message_sent(FakeNetwork::instance().SendMessageToNode(peer_endpoint, message));
+    if (message_sent_functor)
+      message_sent_functor(message_sent? kSuccess: kInvalidConnection);
   });
 }
 
 void ManagedConnections::Remove(const Endpoint &peer_endpoint) {
   asio_service_.service().post([=]() {
-    if (!FakeNetwork::instance().RemoveConnection(bootstrap_endpoints_[0], peer_endpoint))
+    if (!FakeNetwork::instance().RemoveConnection(fake_endpoints_[0], peer_endpoint))
       LOG(kVerbose) << "Failed to remove " << peer_endpoint;
   });
 }
+
+void ManagedConnections::OnMessageSlot(const std::string& message) {
+  asio_service_.service().post([=]() {
+    if (message_received_functor_)
+      message_received_functor_(message);
+  });
+}
+
+void ManagedConnections::OnConnectionLostSlot(const Endpoint& peer_endpoint,
+                            std::shared_ptr<Transport> /*transport*/,
+                            bool /*connections_empty*/,
+                            bool /*temporary_connection*/) {
+  asio_service_.service().post([=]() {
+    if (connection_lost_functor_)
+      connection_lost_functor_(peer_endpoint);
+    });
+}
+
+ManagedConnections::TransportAndSignalConnections::TransportAndSignalConnections()
+    : transport(),
+      on_message_connection(),
+      on_connection_added_connection(),
+      on_connection_lost_connection() {}
 }  // namespace rudp
 
 }  // namespace maidsafe

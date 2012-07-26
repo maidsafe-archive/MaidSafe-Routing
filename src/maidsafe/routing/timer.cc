@@ -51,14 +51,14 @@ void Timer::KillTask(TaskId task_id) {
     auto const it = queue_.find(task_id);
     if (it != queue_.end()) {
       // message timed out or task killed
-      LOG(kVerbose) << "KillTask killed a task, with id" << task_id_;
+      LOG(kVerbose) << "KillTask killed a task, with id : " << task_id_;
       task_response_functor = (*it).second.second;
       queue_.erase(it);
     }
   }
   if (task_response_functor)
     io_service_.service().dispatch([=] {
-        task_response_functor(kResponseTimeout, "");
+        task_response_functor(kResponseTimeout, std::vector<std::string>());
       });
 }
 
@@ -82,10 +82,14 @@ void Timer::ExecuteTaskNow(protobuf::Message &message) {
   }
 
   //  posting messages
-  if (task_response_functor)
+  if (task_response_functor) {
+    std::vector<std::string> data_vector;
+    for (int index(0); index < message.data_size(); ++index)
+      data_vector.emplace_back(message.data(index));
     io_service_.service().dispatch([=] {
-        task_response_functor(kSuccess, message.data());
+        task_response_functor(kSuccess, data_vector);
       });
+  }
 }
 
 }  // namespace maidsafe

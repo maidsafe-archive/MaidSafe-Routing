@@ -34,7 +34,7 @@ namespace routing {
 
 namespace test {
 
-class FindNode;
+class GenericNode;
 
 }  // namespace test
 
@@ -53,6 +53,7 @@ class RoutingTable {
   bool IsMyNodeInRange(const NodeId &node_id, const uint16_t range);
   bool AmIClosestNode(const NodeId &node_id);
   bool AmIConnectedToEndpoint(const Endpoint& endpoint);
+  bool AmIConnectedToNode(const NodeId &node_id);
   // Returns zero node id if RT size is zero
   NodeInfo GetClosestNode(const NodeId &from);
   // Returns max node id if RT size is lesser than requested node_number
@@ -61,11 +62,12 @@ class RoutingTable {
 
   uint16_t Size();
   asymm::Keys kKeys() const;
+  void set_network_status_functor(NetworkStatusFunctor network_status_functor);
   void set_close_node_replaced_functor(CloseNodeReplacedFunctor close_node_replaced);
   void set_keys(asymm::Keys keys);
   bool client_mode() { return client_mode_; }
 
-  friend class test::FindNode;
+  friend class test::GenericNode;
 
  private:
   RoutingTable(const RoutingTable&);
@@ -83,15 +85,18 @@ class RoutingTable {
   bool AddcloseContact(const protobuf::Contact &contact);
   uint16_t RoutingTableSize();
   std::vector<NodeInfo> GetClosestNodeInfo(const NodeId &from, const uint16_t &number_to_get);
+  void update_network_status();
 
+  const uint16_t max_size_;
   bool client_mode_;
   asymm::Keys keys_;
   bool sorted_;
   const NodeId kNodeId_;
   NodeId furthest_group_node_id_;
-  std::vector<NodeInfo> routing_table_nodes_;
   std::mutex mutex_;
+  NetworkStatusFunctor network_status_functor_;
   CloseNodeReplacedFunctor close_node_replaced_functor_;
+  std::vector<NodeInfo> routing_table_nodes_;
 };
 
 }  // namespace routing

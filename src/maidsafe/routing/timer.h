@@ -18,6 +18,7 @@
 #include <map>
 #include <string>
 #include <utility>
+#include <vector>
 
 #include "boost/asio.hpp"
 
@@ -32,7 +33,7 @@ namespace routing {
 
 namespace protobuf { class Message;}  // namespace protobuf
 
-typedef std::function<void(int, std::string)> TaskResponseFunctor;
+typedef std::function<void(int, std::vector<std::string>)> TaskResponseFunctor;
 typedef uint32_t TaskId;
 
 class Timer {
