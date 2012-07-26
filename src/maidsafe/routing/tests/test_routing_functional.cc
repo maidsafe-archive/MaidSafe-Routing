@@ -213,7 +213,8 @@ TYPED_TEST_P(RoutingNetworkTest, FUNC_SendToGroup) {
 TYPED_TEST_P(RoutingNetworkTest, FUNC_SendToGroupRandomId) {
   uint8_t message_count(20);
   this->SetUpNetwork(kServerSize);
-  EXPECT_TRUE(this->GroupSend(NodeId(NodeId::kRandomId), message_count));
+  for (int index = 0; index < 200; ++index)
+    EXPECT_TRUE(this->GroupSend(NodeId(NodeId::kRandomId), message_count));
 }
 
 
