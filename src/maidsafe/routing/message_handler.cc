@@ -37,8 +37,6 @@ namespace maidsafe {
 
 namespace routing {
 
-class Timer;
-
 MessageHandler::MessageHandler(AsioService& asio_service,
                                RoutingTable &routing_table,
                                NonRoutingTable &non_routing_table,
@@ -182,7 +180,7 @@ void MessageHandler::DirectMessage(protobuf::Message& message) {
 
 void MessageHandler::CloseNodesMessage(protobuf::Message& message) {
   // Droping direct messages if I am closest and destination node is not in my RT and NRT.
-  if (message.direct()) {
+  if (message.direct() == 1) {
     NodeId destnation_node_id(message.destination_id());
     if (routing_table_.AmIClosestNode(destnation_node_id)) {
       if (routing_table_.AmIConnectedToNode(destnation_node_id) ||
@@ -196,7 +194,7 @@ void MessageHandler::CloseNodesMessage(protobuf::Message& message) {
             return;
           }
         }
-        LOG(kWarning) << "Dropping Message !! I am the closest but not connected to  destination node"
+        LOG(kWarning) << "Dropping Message! I am the closest but not connected to  destination node"
                       << "Message type : " << message.type()
                       << ", Destination id : " << HexSubstr(message.destination_id())
                       << ", Src id : " << HexSubstr(message.source_id())
@@ -210,14 +208,21 @@ void MessageHandler::CloseNodesMessage(protobuf::Message& message) {
     }
   }
 
-  //// I am not closest to the destination node for non-direct message.
+  //  I am not closest to the destination node for non-direct message.
   if (!routing_table_.AmIClosestNode(NodeId(message.destination_id()))) {
-   network_.SendToClosestNode(message);
-   return;
+    network_.SendToClosestNode(message);
+    return;
+  }
+
+  // FIXME GroupMessage workaround, currently only one node responds to a group message.
+  if ((message.direct() == 3) && IsNodeLevelMessage(message)) {
+    LOG(kVerbose) <<"I am closest of the group, node level Message";
+    NodeLevelMessageForMe(message);
+    return;
   }
 
   // I am closest so will send to all my replicant nodes
-  message.set_direct(true);
+  message.set_direct(1);
   auto close =
       routing_table_.GetClosestNodes(NodeId(message.destination_id()),
                                      static_cast<uint16_t>(message.replication()));

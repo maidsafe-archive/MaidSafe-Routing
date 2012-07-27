@@ -116,7 +116,6 @@ Endpoint ManagedConnections::Bootstrap(const std::vector<Endpoint> &bootstrap_en
 
   for (auto i : bootstrap_endpoints) {
     for (int j = 0; j < 200; ++j) {
-//      std::this_thread::sleep_for(std::chrono::milliseconds(10));
       Sleep(boost::posix_time::milliseconds(10));
       if (local_endpoint.address().is_unspecified() &&
           (FakeNetwork::instance().FindNode(i) != FakeNetwork::instance().GetEndIterator())) {
@@ -124,12 +123,10 @@ Endpoint ManagedConnections::Bootstrap(const std::vector<Endpoint> &bootstrap_en
         if (FakeNetwork::instance().BootStrap(node, i)) {
           LOG(kVerbose) << "Bootstrap sucessfull!!\n";
           FakeNetwork::instance().AddConnection(node.endpoint, i, true);
-          //Add(node.endpoint, i, "");
           return i;
         }
       } else {
         FakeNetwork::instance().AddConnection(node.endpoint, i, true);
-        //Add(node.endpoint, i, "");
         return i;
       }
     }
@@ -186,11 +183,12 @@ void ManagedConnections::OnConnectionLostSlot(const Endpoint& peer_endpoint,
                             std::shared_ptr<Transport> /*transport*/,
                             bool /*connections_empty*/,
                             bool /*temporary_connection*/) {
-   asio_service_.service().post([=]() {
-     if (connection_lost_functor_)
-       connection_lost_functor_(peer_endpoint);
-   });
+  asio_service_.service().post([=]() {
+    if (connection_lost_functor_)
+      connection_lost_functor_(peer_endpoint);
+    });
 }
+
 ManagedConnections::TransportAndSignalConnections::TransportAndSignalConnections()
     : transport(),
       on_message_connection(),

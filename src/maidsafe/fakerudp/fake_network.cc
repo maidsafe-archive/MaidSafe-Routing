@@ -66,10 +66,8 @@ bool FakeNetwork::BootStrap(Node &node, Endpoint &connect_to_endpoint) {
   std::lock_guard<std::mutex> lock(mutex_);
   for (int i = 0; i < 200; ++i) {
     Sleep(boost::posix_time::milliseconds(10));
-//    std::this_thread::sleep_for(std::chrono::milliseconds(10));
     auto iter2 = FindNode(connect_to_endpoint);
     if (iter2 != nodes_.end()) {
-      //iter2->connected_endpoints.push_back(node.endpoint);
       iter2->temp_connections_.push_back(node.endpoint);
       return true;
     }
@@ -77,7 +75,9 @@ bool FakeNetwork::BootStrap(Node &node, Endpoint &connect_to_endpoint) {
   return false;
 }
 
-int FakeNetwork::AddConnection(const Endpoint &my_endpoint, const Endpoint &peer_endpoint, bool temp) {
+int FakeNetwork::AddConnection(const Endpoint &my_endpoint,
+                               const Endpoint &peer_endpoint,
+                               bool temp) {
   std::lock_guard<std::mutex> lock(mutex_);
   auto iter = std::find_if(nodes_.begin(),
                            nodes_.end(),
@@ -105,8 +105,8 @@ int FakeNetwork::AddConnection(const Endpoint &my_endpoint, const Endpoint &peer
                                                   return (endpoint == peer_endpoint);
                                                 });
       if (temp_connection_itr != iter->temp_connections_.end())
-        LOG(kInfo) << "Temp Connection already exists between " << my_endpoint << " and " << peer_endpoint
-                   << "-- Made permanant!!";
+        LOG(kInfo) << "Temp Connection already exists between " << my_endpoint << " and "
+                   << peer_endpoint << "-- Made permanant!!";
     } else {
       auto temp_connection_itr = std::find_if(iter->temp_connections_.begin(),
                                               iter->temp_connections_.end(),
@@ -114,7 +114,8 @@ int FakeNetwork::AddConnection(const Endpoint &my_endpoint, const Endpoint &peer
                                                   return (endpoint == peer_endpoint);
                                               });
       if (temp_connection_itr != iter->temp_connections_.end()) {
-        LOG(kInfo) << "Temp Connection already exists between " << my_endpoint << " and " << peer_endpoint;
+        LOG(kInfo) << "Temp Connection already exists between " << my_endpoint << " and "
+                   << peer_endpoint;
         return rudp::kConnectionAlreadyExists;
       } else {
         iter->temp_connections_.push_back(peer_endpoint);
@@ -125,7 +126,6 @@ int FakeNetwork::AddConnection(const Endpoint &my_endpoint, const Endpoint &peer
     LOG(kInfo) << "Connection already exists between " << my_endpoint << " and " << peer_endpoint;
     return rudp::kConnectionAlreadyExists;
   }
-
 }
 
 bool FakeNetwork::RemoveConnection(const Endpoint &my_endpoint, const Endpoint &peer_endpoint) {

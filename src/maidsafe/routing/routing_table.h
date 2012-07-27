@@ -87,6 +87,7 @@ class RoutingTable {
   std::vector<NodeInfo> GetClosestNodeInfo(const NodeId &from, const uint16_t &number_to_get);
   void update_network_status();
 
+  const uint16_t max_size_;
   bool client_mode_;
   asymm::Keys keys_;
   bool sorted_;

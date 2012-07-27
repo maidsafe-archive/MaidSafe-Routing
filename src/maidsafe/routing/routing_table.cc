@@ -27,7 +27,9 @@ namespace routing {
 
 RoutingTable::RoutingTable(const asymm::Keys &keys, const bool &client_mode,
                            CloseNodeReplacedFunctor /*close_node_replaced_functor*/)
-    : client_mode_(client_mode),
+    : max_size_(client_mode ? Parameters::max_client_routing_table_size :
+          Parameters::max_routing_table_size),
+      client_mode_(client_mode),
       keys_(keys),
       sorted_(false),
       kNodeId_(NodeId(keys_.identity)),
@@ -97,7 +99,7 @@ void RoutingTable::set_network_status_functor(NetworkStatusFunctor network_statu
 
 void RoutingTable::update_network_status() {
   if (network_status_functor_)
-    network_status_functor_(RoutingTableSize() * 100 / Parameters::max_routing_table_size);
+    network_status_functor_(RoutingTableSize() * 100 / max_size_);
 }
 
 NodeInfo RoutingTable::DropNode(const Endpoint &endpoint) {
@@ -199,7 +201,7 @@ bool RoutingTable::MakeSpaceForNodeToBeAdded(NodeInfo &node, const bool &remove)
     return false;
   }
 
-  if (RoutingTableSize() < Parameters::max_routing_table_size) {
+  if (RoutingTableSize() < max_size_) {
     return true;
   }
 
