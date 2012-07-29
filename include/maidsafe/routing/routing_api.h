@@ -101,11 +101,10 @@ class Routing {
             const boost::posix_time::time_duration &timeout,
             const ConnectType &connect_type);  // is this to a close node group or direct
 
-  /***************************************************************************
-  * This method should be called by the user in response to                  *
-  * NodeValidateFunctor to add the node in routing table.                    *
-  ***************************************************************************/
-
+  /*-----------------------------------------------------------------------------
+   *  Confirm (if we can) two nodes are within a group range
+   *-----------------------------------------------------------------------------*/
+  bool ConfirmGroupMembers(const NodeId& node1, const NodeId& node2);
   friend class test::GenericNode;
 
  private:

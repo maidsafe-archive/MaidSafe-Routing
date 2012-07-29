@@ -104,7 +104,7 @@ Endpoint ManagedConnections::Bootstrap(const std::vector<Endpoint> &bootstrap_en
   if (connection_lost_functor) {
     node.connection_lost = [&](const Endpoint &peer_endpoint) {
                                OnConnectionLostSlot(peer_endpoint,
-                                                    std::shared_ptr<Transport>(),
+                                                    std::shared_ptr<detail::Transport>(),
                                                     bool(), bool());
                              };
   }
@@ -180,7 +180,7 @@ void ManagedConnections::OnMessageSlot(const std::string& message) {
 }
 
 void ManagedConnections::OnConnectionLostSlot(const Endpoint& peer_endpoint,
-                            std::shared_ptr<Transport> /*transport*/,
+                            std::shared_ptr<detail::Transport> /*transport*/,
                             bool /*connections_empty*/,
                             bool /*temporary_connection*/) {
   asio_service_.service().post([=]() {

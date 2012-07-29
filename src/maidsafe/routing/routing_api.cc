@@ -66,6 +66,10 @@ Routing::~Routing() {
   DisconnectFunctors();
 }
 
+bool Routing::ConfirmGroupMembers(const NodeId& node1, const NodeId& node2) {
+  return impl_->routing_table_.ConfirmGroupMembers(node1, node2); 
+}
+
 int Routing::GetStatus() {
   if (impl_->routing_table_.Size() == 0) {
     rudp::EndpointPair endpoint;

@@ -157,6 +157,16 @@ bool RoutingTable::AmIConnectedToNode(const NodeId& node_id) {
                      != routing_table_nodes_.end());
 }
 
+bool RoutingTable::ConfirmGroupMembers(const NodeId& node1, const NodeId& node2) {
+ NodeId difference = NodeId(kKeys().identity) ^ FurthestCloseNode(); 
+ return (node1 ^ node2) < difference;
+}
+
+NodeId RoutingTable::FurthestCloseNode() {
+  keys_
+  return GetNthClosestNode(NodeId(kKeys().identity), Parameters::closest_nodes_size).node_id;:q
+}
+
 // checks paramters are real
 bool RoutingTable::CheckValidParameters(const NodeInfo& node) const {
   if ((!asymm::ValidateKey(node.public_key, 0))) {
@@ -310,7 +320,7 @@ bool RoutingTable::IsMyNodeInRange(const NodeId& node_id, const uint16_t range) 
 
 // bucket 0 is us, 511 is furthest bucket (should fill first)
 int16_t RoutingTable::BucketIndex(const NodeId &rhs) const {
-  uint16_t bucket = kKeySizeBits - 1;  // (n-1)
+  uint16_t bucket = kKeySizeBits - 1;  // (n-1losestNode(my_closest_node
   std::string this_id_binary = kNodeId_.ToStringEncoded(NodeId::kBinary);
   std::string rhs_id_binary = rhs.ToStringEncoded(NodeId::kBinary);
   auto this_it = this_id_binary.begin();
