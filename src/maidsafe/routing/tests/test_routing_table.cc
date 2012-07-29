@@ -101,9 +101,9 @@ TEST(RoutingTableTest, BEH_CloseAndInRangeCheck) {
   EXPECT_TRUE(RT.AmIClosestNode(my_closest_node));
   EXPECT_TRUE(RT.IsMyNodeInRange(my_closest_node, 2));
   EXPECT_TRUE(RT.IsMyNodeInRange(my_closest_node, 200));
-  EXPECT_TRUE(RT.ConfirmGroupMembers(my_closest_node, 
+  EXPECT_TRUE(RT.ConfirmGroupMembers(my_closest_node,
                                      RT.GetNthClosestNode(my_closest_node, 1).node_id));
-  EXPECT_TRUE(RT.ConfirmGroupMembers(my_closest_node, 
+  EXPECT_TRUE(RT.ConfirmGroupMembers(my_closest_node,
                 RT.GetNthClosestNode(my_closest_node, Parameters::closest_nodes_size - 1).node_id));
   EXPECT_FALSE(RT.ConfirmGroupMembers(my_closest_node, RT.GetNthClosestNode(my_closest_node,
                                      Parameters::closest_nodes_size + 1).node_id));

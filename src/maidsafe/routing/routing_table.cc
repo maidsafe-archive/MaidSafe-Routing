@@ -158,13 +158,12 @@ bool RoutingTable::AmIConnectedToNode(const NodeId& node_id) {
 }
 
 bool RoutingTable::ConfirmGroupMembers(const NodeId& node1, const NodeId& node2) {
- NodeId difference = NodeId(kKeys().identity) ^ FurthestCloseNode(); 
- return (node1 ^ node2) < difference;
+  NodeId difference = NodeId(kKeys().identity) ^ FurthestCloseNode();
+  return (node1 ^ node2) < difference;
 }
 
 NodeId RoutingTable::FurthestCloseNode() {
-  keys_
-  return GetNthClosestNode(NodeId(kKeys().identity), Parameters::closest_nodes_size).node_id;:q
+  return GetNthClosestNode(NodeId(kKeys().identity), Parameters::closest_nodes_size).node_id;
 }
 
 // checks paramters are real

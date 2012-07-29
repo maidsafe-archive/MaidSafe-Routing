@@ -55,7 +55,7 @@ class RoutingTable {
   bool AmIConnectedToEndpoint(const Endpoint& endpoint);
   bool AmIConnectedToNode(const NodeId &node_id);
   bool ConfirmGroupMembers(const NodeId& node1, const NodeId& node2);
-  uint64_t NetworkPopulationEstimate(); 
+  uint64_t NetworkPopulationEstimate();
   // Returns zero node id if RT size is zero
   NodeInfo GetClosestNode(const NodeId &from);
   // Returns max node id if RT size is lesser than requested node_number
