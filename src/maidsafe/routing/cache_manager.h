@@ -19,24 +19,24 @@
 
 #include "boost/thread/mutex.hpp"
 
-#include "maidsafe/routing/log.h"
 
 namespace maidsafe {
 
 namespace routing {
 
-namespace protobuf { class Message;}  // namespace protobuf
+namespace protobuf { class Message; }
 
 class CacheManager {
  public:
   CacheManager();
   void AddToCache(const protobuf::Message &message);
   bool GetFromCache(protobuf::Message &message);
+
  private:
-  CacheManager(const CacheManager&);  // no copy
-  CacheManager(const CacheManager&&);  // no move
-  CacheManager& operator=(const CacheManager&);  // no assign
-  std::vector<std::pair<std::string, std::string> > cache_chunks_;
+  CacheManager(const CacheManager&);
+  CacheManager(const CacheManager&&);
+  CacheManager& operator=(const CacheManager&);
+  std::vector<std::pair<std::string, std::string>> cache_chunks_;
   boost::mutex mutex_;
 };
 

@@ -13,7 +13,8 @@
 #ifndef MAIDSAFE_ROUTING_PARAMETERS_H_
 #define MAIDSAFE_ROUTING_PARAMETERS_H_
 
-#include "maidsafe/routing/log.h"
+#include <cstdint>
+
 
 namespace maidsafe {
 
@@ -38,9 +39,9 @@ struct Parameters {
   static uint16_t max_data_size;
 
  private:
-  Parameters(const Parameters&);  // no copy
-  Parameters(const Parameters&&);  // no move
-  Parameters& operator=(const Parameters&);  // no assign
+  Parameters(const Parameters&);
+  Parameters(const Parameters&&);
+  Parameters& operator=(const Parameters&);
 };
 
 }  // namespace routing

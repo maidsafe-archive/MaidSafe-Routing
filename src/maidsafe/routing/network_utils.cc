@@ -12,8 +12,9 @@
 
 #include "maidsafe/routing/network_utils.h"
 
-#include "boost/date_time/posix_time/posix_time_duration.hpp"
+#include "boost/date_time/posix_time/posix_time_config.hpp"
 
+#include "maidsafe/common/log.h"
 #include "maidsafe/common/utils.h"
 
 #include "maidsafe/rudp/managed_connections.h"
@@ -27,12 +28,14 @@
 #include "maidsafe/routing/rpcs.h"
 #include "maidsafe/routing/utils.h"
 
+
 namespace bptime = boost::posix_time;
 
 namespace maidsafe {
 
 namespace {
 
+typedef boost::asio::ip::udp::endpoint Endpoint;
 typedef boost::shared_lock<boost::shared_mutex> SharedLock;
 typedef boost::unique_lock<boost::shared_mutex> UniqueLock;
 

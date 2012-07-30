@@ -13,10 +13,16 @@
 #ifndef MAIDSAFE_ROUTING_TESTS_TEST_UTILS_H_
 #define MAIDSAFE_ROUTING_TESTS_TEST_UTILS_H_
 
-#include "maidsafe/routing/routing_table.h"
+#include <cstdint>
 
 #include "boost/asio/ip/address.hpp"
 #include "boost/asio/ip/udp.hpp"
+
+#include "maidsafe/common/rsa.h"
+
+#include "maidsafe/routing/node_info.h"
+#include "maidsafe/routing/routing_table.h"
+
 
 namespace maidsafe {
 
@@ -49,7 +55,7 @@ NodeInfo MakeNode();
 // the function returns a default-constructed (invalid) address.
 boost::asio::ip::address GetLocalIp(
     boost::asio::ip::udp::endpoint peer_endpoint =
-        Endpoint(boost::asio::ip::address_v4::from_string("8.8.8.8"), 0));
+        boost::asio::ip::udp::endpoint(boost::asio::ip::address_v4::from_string("8.8.8.8"), 0));
 
 NodeId GenerateUniqueRandomId(const NodeId &holder, const uint16_t &pos);
 

@@ -16,6 +16,7 @@
 
 #include "boost/asio/ip/address.hpp"
 
+#include "maidsafe/common/log.h"
 #include "maidsafe/common/test.h"
 #include "maidsafe/common/utils.h"
 #include "maidsafe/rudp/managed_connections.h"
@@ -24,12 +25,19 @@
 #include "maidsafe/routing/routing_pb.h"
 #include "maidsafe/routing/routing_table.h"
 #include "maidsafe/routing/tests/test_utils.h"
-#include "maidsafe/routing/log.h"
 
 
 namespace maidsafe {
+
 namespace routing {
+
 namespace test {
+
+namespace {
+
+typedef boost::asio::ip::udp::endpoint Endpoint;
+
+}  // unnamed namespace
 
 
 TEST(RPC, BEH_PingMessageInitialised) {
@@ -186,10 +194,8 @@ TEST(RPC, BEH_ProxyConnectMessageInitialised) {
                                  endpoint_pair).IsInitialized());
 }
 
-
-
-
-
 }  // namespace test
+
 }  // namespace routing
+
 }  // namespace maidsafe

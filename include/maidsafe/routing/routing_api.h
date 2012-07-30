@@ -25,86 +25,66 @@
 #ifndef MAIDSAFE_ROUTING_ROUTING_API_H_
 #define MAIDSAFE_ROUTING_ROUTING_API_H_
 
-#include <functional>
 #include <memory>
 #include <string>
 
-#include "boost/date_time/posix_time/posix_time_duration.hpp"
+#include "boost/asio/ip/udp.hpp"
+#include "boost/date_time/posix_time/posix_time_config.hpp"
 #include "boost/filesystem/path.hpp"
-#include "boost/signals2/signal.hpp"
 
 #include "maidsafe/common/rsa.h"
-#include "maidsafe/routing/node_id.h"
+
 #include "maidsafe/routing/api_config.h"
+
 
 namespace maidsafe {
 
 namespace routing {
 
-namespace test {
-  class GenericNode;
-}  // namspace test
+namespace test { class GenericNode; }
 
 struct RoutingPrivate;
+struct NodeInfo;
+class NodeId;
 
-
-/***************************************************************************
-*  WARNING THIS CONSTRUCTOR WILL THROW A BOOST::FILESYSTEM_ERROR           *
-* if config file is invalid                                                *
-* Providing empty key means that, on Joins it will join the network        *
-* Anonymously. This will allow to Send/Recieve messages to/from network.   *
-* WARNING : CONNECTION TO NETWORK WILL STAY FOR 60 SEC.                    *
-* Users are expected to recreate routing object with right credentials and *
-* call Join() method to join the routing network.                          *
-* *************************************************************************/
 class Routing {
  public:
-  // pass empyt keys for temporary anonymous connection.
+  // WARNING: THIS CONSTRUCTOR WILL THROW A boost::filesystem_error IF CONFIG FILE IS INVALID.
+  // Providing empty key means that, on Join it will join the network anonymously.  This will allow
+  // Send/Recieve messages to/from network.
+  // WARNING: CONNECTION TO NETWORK WILL ONLY STAY FOR 60 SECONDS.
+  // Users are expected to recreate routing object with right credentials and call Join method to
+  // join the routing network.
   Routing(const asymm::Keys &keys, const bool &client_mode);
 
   ~Routing();
 
-  /**************************************************************************
-  * Joins the network. Valid functor for node validation must be passed to  *
-  * allow node validatation or else no node will be added to routing and    *
-  * will fail to  join the network.                                         *
-  * To force the node to use a specific endpoint for bootstrapping, provide *
-  * peer_endpoint (i.e. private network).                                   *
-  ***************************************************************************/
+  // Joins the network.  Valid functor for node validation must be passed to allow node validatation
+  // or else no node will be added to routing and will fail to  join the network.  To force the node
+  // to use a specific endpoint for bootstrapping, provide peer_endpoint (i.e. private network).
   void Join(const Functors functors,
             boost::asio::ip::udp::endpoint peer_endpoint = boost::asio::ip::udp::endpoint());
 
-/***************************************************************************
-*  WARNING THIS FUNCTION SHOULD BE ONLY USED TO JOIN FIRST TWO ZERO STATE  *
-*  NODES                                                                   *
-* *************************************************************************/
-  int ZeroStateJoin(Functors functors, const Endpoint &local_endpoint,
+  // WARNING: THIS FUNCTION SHOULD BE ONLY USED TO JOIN FIRST TWO ZERO STATE NODES.
+  int ZeroStateJoin(Functors functors,
+                    const boost::asio::ip::udp::endpoint &local_endpoint,
                     const NodeInfo &peer_node_info);
 
-  /**************************************************************************
-  * returns current network status as int (> 0 is connected)                *
-  ***************************************************************************/
+  // Returns current network status as int (> 0 is connected).
   int GetStatus();
-  /**************************************************************************
-  *The reply or error (timeout) will be passed to this response_functor     *
-  *error is passed as negative int (return code) and empty string           *
-  * otherwise a positive return code is message type and indicates success. *
-  * Sending a message to your own address will send to all connected        *
-  * clients with your address (except you). Pass an empty response_functor  *
-  * to indicate you do not care about a response.                           *
-  ***************************************************************************/
-  void Send(const NodeId &destination_id,  // id of final destination
-            const NodeId &group_id,  // id of sending group
+
+  // The reply or error (timeout) will be passed to this response_functor.  Error is passed as
+  // negative int (return code) and empty string, otherwise a positive return code is message type
+  // and indicates success.  Sending a message to your own address will send to all connected
+  // clients with your address (except you).  Pass an empty response_functor to indicate you do not
+  // care about a response.
+  void Send(const NodeId &destination_id,  // ID of final destination
+            const NodeId &group_id,  // ID of sending group
             const std::string &data,  // message content (serialised data)
             const int32_t &type,  // user defined message type
             const ResponseFunctor response_functor,
             const boost::posix_time::time_duration &timeout,
             const ConnectType &connect_type);  // is this to a close node group or direct
-
-  /***************************************************************************
-  * This method should be called by the user in response to                  *
-  * NodeValidateFunctor to add the node in routing table.                    *
-  ***************************************************************************/
 
   friend class test::GenericNode;
 
@@ -121,10 +101,11 @@ class Routing {
   int DoBootstrap(const Functors functors);
   int DoFindNode();
   void ReceiveMessage(const std::string &message);
-  void ConnectionLost(const Endpoint &lost_endpoint);
+  void ConnectionLost(const boost::asio::ip::udp::endpoint &lost_endpoint);
   bool CheckBootStrapFilePath();
 
-  std::unique_ptr<RoutingPrivate> impl_;  // pimpl (data members only)
+  // pimpl (data members only)
+  std::unique_ptr<RoutingPrivate> impl_;
 };
 
 }  // namespace routing

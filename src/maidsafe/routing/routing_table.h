@@ -13,46 +13,40 @@
 #ifndef MAIDSAFE_ROUTING_ROUTING_TABLE_H_
 #define MAIDSAFE_ROUTING_ROUTING_TABLE_H_
 
+#include <cstdint>
 #include <mutex>
-#include <string>
 #include <vector>
 
-#include "boost/signals2/signal.hpp"
+#include "boost/asio/ip/udp.hpp"
 
 #include "maidsafe/common/rsa.h"
 
 #include "maidsafe/routing/api_config.h"
 #include "maidsafe/routing/node_id.h"
-#include "maidsafe/routing/node_info.h"
-#include "maidsafe/routing/parameters.h"
 
-namespace bs2 = boost::signals2;
 
 namespace maidsafe {
 
 namespace routing {
 
-namespace test {
+namespace test { class GenericNode; }
 
-class GenericNode;
+namespace protobuf { class Contact; }
 
-}  // namespace test
-
-
-namespace protobuf { class Contact; }  //  namespace protobuf
+struct NodeInfo;
 
 class RoutingTable {
  public:
-  explicit RoutingTable(const asymm::Keys &keys,
-                        const bool &client_mode,
-                        CloseNodeReplacedFunctor close_node_replaced_functor);
+  RoutingTable(const asymm::Keys &keys,
+               const bool &client_mode,
+               CloseNodeReplacedFunctor close_node_replaced_functor);
   bool AddNode(NodeInfo &node);
   bool CheckNode(NodeInfo &node);
-  NodeInfo DropNode(const Endpoint &endpoint);
-  bool GetNodeInfo(const Endpoint &endpoint, NodeInfo *node_info);
+  NodeInfo DropNode(const boost::asio::ip::udp::endpoint &endpoint);
+  bool GetNodeInfo(const boost::asio::ip::udp::endpoint &endpoint, NodeInfo *node_info);
   bool IsMyNodeInRange(const NodeId &node_id, const uint16_t range);
   bool AmIClosestNode(const NodeId &node_id);
-  bool AmIConnectedToEndpoint(const Endpoint& endpoint);
+  bool AmIConnectedToEndpoint(const boost::asio::ip::udp::endpoint& endpoint);
   bool AmIConnectedToNode(const NodeId &node_id);
   // Returns zero node id if RT size is zero
   NodeInfo GetClosestNode(const NodeId &from);
@@ -65,7 +59,7 @@ class RoutingTable {
   void set_network_status_functor(NetworkStatusFunctor network_status_functor);
   void set_close_node_replaced_functor(CloseNodeReplacedFunctor close_node_replaced);
   void set_keys(asymm::Keys keys);
-  bool client_mode() { return client_mode_; }
+  bool client_mode() const { return client_mode_; }
 
   friend class test::GenericNode;
 

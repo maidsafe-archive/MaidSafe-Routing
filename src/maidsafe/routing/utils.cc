@@ -10,8 +10,10 @@
  *  the explicit written permission of the board of directors of maidsafe.net. *
  ******************************************************************************/
 
-#include "maidsafe/common/utils.h"
+#include "maidsafe/routing/utils.h"
 
+#include "maidsafe/common/log.h"
+#include "maidsafe/common/utils.h"
 #include "maidsafe/rudp/managed_connections.h"
 #include "maidsafe/rudp/return_codes.h"
 
@@ -109,18 +111,17 @@ bool IsResponse(const protobuf::Message &message) {
   return !IsRequest(message);
 }
 
-void SetProtobufEndpoint(const Endpoint& endpoint, protobuf::Endpoint *pbendpoint) {
+void SetProtobufEndpoint(const boost::asio::ip::udp::endpoint& endpoint,
+                         protobuf::Endpoint *pbendpoint) {
   if (pbendpoint) {
     pbendpoint->set_ip(endpoint.address().to_string().c_str());
     pbendpoint->set_port(endpoint.port());
   }
 }
 
-Endpoint GetEndpointFromProtobuf(const protobuf::Endpoint &pbendpoint) {
-  Endpoint endpoint;
-  endpoint.address(boost::asio::ip::address::from_string(pbendpoint.ip()));
-  endpoint.port(static_cast<uint16_t>(pbendpoint.port()));
-  return endpoint;
+boost::asio::ip::udp::endpoint GetEndpointFromProtobuf(const protobuf::Endpoint &pbendpoint) {
+  return boost::asio::ip::udp::endpoint(boost::asio::ip::address::from_string(pbendpoint.ip()),
+                                        static_cast<uint16_t>(pbendpoint.port()));
 }
 
 }  // namespace routing

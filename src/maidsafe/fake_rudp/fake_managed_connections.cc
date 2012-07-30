@@ -24,7 +24,7 @@
 
 #include "maidsafe/rudp/managed_connections.h"
 #include "maidsafe/rudp/return_codes.h"
-#include "maidsafe/fakerudp/fake_network.h"
+#include "maidsafe/fake_rudp/fake_network.h"
 #include "maidsafe/common/asio_service.h"
 #include "maidsafe/common/utils.h"
 #include "maidsafe/common/log.h"

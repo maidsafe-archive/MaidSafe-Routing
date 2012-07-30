@@ -13,13 +13,24 @@
 #ifndef MAIDSAFE_ROUTING_UTILS_H_
 #define MAIDSAFE_ROUTING_UTILS_H_
 
+#include "boost/asio/ip/udp.hpp"
+
+#include "maidsafe/common/rsa.h"
+#include "maidsafe/rudp/managed_connections.h"
+
 #include "maidsafe/routing/parameters.h"
+
 
 namespace maidsafe {
 
 namespace routing {
 
-namespace protobuf { class Message;}  // namespace protobuf
+namespace protobuf {
+
+class Message;
+class Endpoint;
+
+}  // namespace protobuf
 
 class Message {
   explicit Message(protobuf::Message message);
@@ -28,6 +39,7 @@ class Message {
 class NetworkUtils;
 class NonRoutingTable;
 class RoutingTable;
+class NodeId;
 
 bool ClosestToMe(protobuf::Message &message);
 
@@ -47,8 +59,9 @@ bool IsNodeLevelMessage(const protobuf::Message &message);
 bool IsRequest(const protobuf::Message &message);
 bool IsResponse(const protobuf::Message &message);
 
-void SetProtobufEndpoint(const Endpoint& endpoint, protobuf::Endpoint *pbendpoint);
-Endpoint GetEndpointFromProtobuf(const protobuf::Endpoint &pbendpoint);
+void SetProtobufEndpoint(const boost::asio::ip::udp::endpoint& endpoint,
+                         protobuf::Endpoint *pbendpoint);
+boost::asio::ip::udp::endpoint GetEndpointFromProtobuf(const protobuf::Endpoint &pbendpoint);
 
 }  // namespace routing
 

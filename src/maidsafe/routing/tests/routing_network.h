@@ -19,10 +19,13 @@
 #include <vector>
 #include <algorithm>
 
+#include "boost/asio/ip/udp.hpp"
 #include "boost/thread/future.hpp"
 
 #include "maidsafe/common/test.h"
 #include "maidsafe/common/utils.h"
+
+#include "maidsafe/routing/parameters.h"
 #include "maidsafe/routing/return_codes.h"
 #include "maidsafe/routing/tests/test_utils.h"
 #include "maidsafe/routing/routing_pb.h"
@@ -59,7 +62,7 @@ class GenericNode {
   int GetStatus() const;
   NodeId node_id() const;
   size_t id() const;
-  Endpoint endpoint() const;
+  boost::asio::ip::udp::endpoint endpoint() const;
   std::shared_ptr<Routing> routing() const;
   NodeInfo node_info() const;
   void set_joined(const bool node_joined);
@@ -69,7 +72,7 @@ class GenericNode {
   int expected();
   void set_expected(const int &expected);
   int ZeroStateJoin(const NodeInfo &peer_node_info);
-  void Join(const Endpoint &peer_endpoint);
+  void Join(const boost::asio::ip::udp::endpoint &peer_endpoint);
   void Send(const NodeId &destination_id,
             const NodeId &group_id,
             const std::string &data,
@@ -78,7 +81,8 @@ class GenericNode {
             const boost::posix_time::time_duration &timeout,
             const ConnectType &connect_type);
   void PrintRoutingTable();
-  void RudpSend(const Endpoint &peer_endpoint, const protobuf::Message &message,
+  void RudpSend(const boost::asio::ip::udp::endpoint &peer_endpoint,
+                const protobuf::Message &message,
                 rudp::MessageSentFunctor message_sent_functor);
   bool RoutingTableHasNode(const NodeId &node_id);
   bool NonRoutingTableHasNode(const NodeId &node_id);
@@ -229,7 +233,7 @@ class GenericNetwork : public testing::Test {
     EXPECT_EQ(result, std::cv_status::no_timeout);
   }
 
-  std::vector<Endpoint> bootstrap_endpoints_;
+  std::vector<boost::asio::ip::udp::endpoint> bootstrap_endpoints_;
   fs::path bootstrap_path_;
   std::mutex mutex_;
 };

@@ -34,13 +34,17 @@
 #include "maidsafe/routing/tests/test_utils.h"
 
 namespace maidsafe {
+
 namespace routing {
+
 namespace test {
 
 namespace bptime = boost::posix_time;
 namespace fs = boost::filesystem;
 
 namespace {
+
+typedef boost::asio::ip::udp::endpoint Endpoint;
 
 #ifdef FAKE_RUDP
   const int kClientCount(10);

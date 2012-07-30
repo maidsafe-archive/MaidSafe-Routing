@@ -13,12 +13,12 @@
 #include <memory>
 #include <vector>
 
+#include "maidsafe/common/log.h"
 #include "maidsafe/common/test.h"
 #include "maidsafe/common/utils.h"
 
 #include "maidsafe/rudp/managed_connections.h"
 
-#include "maidsafe/routing/log.h"
 #include "maidsafe/routing/network_utils.h"
 #include "maidsafe/routing/non_routing_table.h"
 #include "maidsafe/routing/parameters.h"
@@ -27,11 +27,18 @@
 #include "maidsafe/routing/service.h"
 #include "maidsafe/routing/tests/test_utils.h"
 
+
 namespace maidsafe {
 
 namespace routing {
 
 namespace test {
+
+namespace {
+
+typedef boost::asio::ip::udp::endpoint Endpoint;
+
+}  // unnamed namespace
 
 TEST(Services, BEH_Ping) {
   asymm::Keys keys;

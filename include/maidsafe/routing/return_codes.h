@@ -15,6 +15,7 @@
 
 
 namespace maidsafe {
+
 namespace routing {
 
 enum ReturnCode {
@@ -55,6 +56,7 @@ enum ReturnCode {
 };
 
 }  // namespace routing
+
 }  // namespace maidsafe
 
 #endif  // MAIDSAFE_ROUTING_RETURN_CODES_H_

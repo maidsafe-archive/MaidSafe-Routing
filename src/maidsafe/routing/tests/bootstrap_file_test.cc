@@ -10,21 +10,34 @@
  *  the explicit written permission of the board of directors of maidsafe.net. *
  ******************************************************************************/
 
+#include "maidsafe/routing/bootstrap_file_handler.h"
+
 #include <system_error>
 #include <memory>
 #include <vector>
 
+#include "boost/asio/ip/udp.hpp"
+
+#include "maidsafe/common/log.h"
 #include "maidsafe/common/test.h"
 #include "maidsafe/common/utils.h"
 #include "maidsafe/rudp/managed_connections.h"
+
 #include "maidsafe/routing/parameters.h"
-#include "maidsafe/routing/bootstrap_file_handler.h"
-#include "maidsafe/routing/log.h"
 
 
 namespace maidsafe {
+
 namespace routing {
+
 namespace test {
+
+namespace {
+
+typedef boost::asio::ip::udp::endpoint Endpoint;
+
+}  // unnamed namespace
+
 
 TEST(BootStrapFileTest1, BEH_ReadValidFile) {
   std::vector<Endpoint>vec;
@@ -61,5 +74,7 @@ TEST(BootStrapFileTest1, DISABLED_BEH_ReadValidFileSysDir) {
 }
 
 }  // namespace test
+
 }  // namespace routing
+
 }  // namespace maidsafe

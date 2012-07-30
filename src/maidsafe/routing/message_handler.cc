@@ -14,10 +14,10 @@
 
 #include <vector>
 
+#include "maidsafe/common/log.h"
 #include "maidsafe/common/rsa.h"
 #include "maidsafe/rudp/managed_connections.h"
 
-#include "maidsafe/routing/log.h"
 #include "maidsafe/routing/network_utils.h"
 #include "maidsafe/routing/node_id.h"
 #include "maidsafe/routing/non_routing_table.h"
@@ -31,7 +31,6 @@
 #include "maidsafe/routing/timer.h"
 #include "maidsafe/routing/utils.h"
 
-namespace bs2 = boost::signals2;
 
 namespace maidsafe {
 
@@ -137,7 +136,7 @@ void MessageHandler::NodeLevelMessageForMe(protobuf::Message &message) {
           message_out.set_relay_id(message.relay_id());
 
         if (message.has_relay()) {
-          Endpoint relay_endpoint = GetEndpointFromProtobuf(message.relay());
+          auto relay_endpoint = GetEndpointFromProtobuf(message.relay());
           SetProtobufEndpoint(relay_endpoint, message_out.mutable_relay());
         }
 
@@ -181,7 +180,7 @@ void MessageHandler::CloseNodesMessage(protobuf::Message& message) {
           non_routing_table_.AmIConnectedToNode(destnation_node_id)) {
         network_.SendToClosestNode(message);
         return;
-      } else { // Case when response comes back through different route for relay messages.
+      } else {  // Case when response comes back through different route for relay messages.
         if (IsRoutingMessage(message)) {
           if (message.has_relay_id() && (message.relay_id() == routing_table_.kKeys().identity)) {
             RoutingMessage(message);

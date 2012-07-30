@@ -14,18 +14,19 @@
 
 #include <string>
 
+#include "maidsafe/common/log.h"
 #include "maidsafe/common/utils.h"
 
-#include "maidsafe/routing/log.h"
 #include "maidsafe/routing/routing_pb.h"
+
 
 namespace maidsafe {
 
 namespace routing {
 
-std::vector<Endpoint> ReadBootstrapFile(const fs::path &path) {
+std::vector<boost::asio::ip::udp::endpoint> ReadBootstrapFile(const fs::path &path) {
   protobuf::Bootstrap protobuf_bootstrap;
-  std::vector<Endpoint> bootstrap_nodes;
+  std::vector<boost::asio::ip::udp::endpoint> bootstrap_nodes;
 
   std::string serialised_endpoints;
   if (!ReadFile(path, &serialised_endpoints)) {
@@ -37,7 +38,7 @@ std::vector<Endpoint> ReadBootstrapFile(const fs::path &path) {
     return bootstrap_nodes;
   }
   bootstrap_nodes.resize(protobuf_bootstrap.bootstrap_contacts().size());
-  Endpoint endpoint;
+  boost::asio::ip::udp::endpoint endpoint;
   for (int i = 0; i < protobuf_bootstrap.bootstrap_contacts().size(); ++i) {
     endpoint.address(
         boost::asio::ip::address::from_string(protobuf_bootstrap.bootstrap_contacts(i).ip()));
@@ -47,7 +48,8 @@ std::vector<Endpoint> ReadBootstrapFile(const fs::path &path) {
   return  bootstrap_nodes;
 }
 
-bool WriteBootstrapFile(const std::vector<Endpoint> &endpoints, const fs::path & path) {
+bool WriteBootstrapFile(const std::vector<boost::asio::ip::udp::endpoint> &endpoints,
+                        const fs::path & path) {
   protobuf::Bootstrap protobuf_bootstrap;
 
   for (size_t i = 0; i < endpoints.size(); ++i) {

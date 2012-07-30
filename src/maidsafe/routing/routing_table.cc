@@ -9,21 +9,28 @@
  *  You are not free to copy, amend or otherwise use this source code without  *
  *  the explicit written permission of the board of directors of maidsafe.net. *
  ******************************************************************************/
+
 #include "maidsafe/routing/routing_table.h"
 
 #include <thread>
 #include <algorithm>
 
+#include "maidsafe/common/log.h"
 #include "maidsafe/common/utils.h"
 
-#include "maidsafe/routing/log.h"
+#include "maidsafe/routing/parameters.h"
+#include "maidsafe/routing/node_info.h"
 
-namespace bs2 = boost::signals2;
 
 namespace maidsafe {
 
 namespace routing {
 
+namespace {
+
+typedef boost::asio::ip::udp::endpoint Endpoint;
+
+}  // unnamed namespace
 
 RoutingTable::RoutingTable(const asymm::Keys &keys, const bool &client_mode,
                            CloseNodeReplacedFunctor /*close_node_replaced_functor*/)

@@ -15,38 +15,46 @@
 
 #include <string>
 
+#include "boost/asio/ip/udp.hpp"
+
+#include "maidsafe/rudp/managed_connections.h"
+
 #include "maidsafe/routing/api_config.h"
-#include "maidsafe/routing/node_id.h"
-#include "maidsafe/routing/parameters.h"
+
 
 namespace maidsafe {
 
 namespace routing {
 
-namespace protobuf { class Message;}  // namespace protobuf
+namespace protobuf { class Message; }
+
+class NodeId;
 
 namespace rpcs {
 
-const protobuf::Message Ping(const NodeId &node_id,
-                             const std::string &identity);
+protobuf::Message Ping(const NodeId &node_id, const std::string &identity);
 
-const protobuf::Message Connect(const NodeId &node_id,
-                                const rudp::EndpointPair &our_endpoint,
-                                const NodeId &my_node_id,
-                                bool client_node = false,
-                                bool relay_message = false,
-                                Endpoint local_endpoint = Endpoint());
+protobuf::Message Connect(
+    const NodeId &node_id,
+    const rudp::EndpointPair &our_endpoint,
+    const NodeId &my_node_id,
+    bool client_node = false,
+    bool relay_message = false,
+    boost::asio::ip::udp::endpoint local_endpoint = boost::asio::ip::udp::endpoint());
 
-const protobuf::Message FindNodes(const NodeId &node_id,
-                                  const NodeId &my_node_id,
-                                  bool relay_message = false,
-                                  Endpoint local_endpoint = Endpoint());
+protobuf::Message FindNodes(
+    const NodeId &node_id,
+    const NodeId &my_node_id,
+    bool relay_message = false,
+    boost::asio::ip::udp::endpoint local_endpoint = boost::asio::ip::udp::endpoint());
 
-const protobuf::Message ProxyConnect(const NodeId &node_id,
-                                     const NodeId &my_node_id,
-                                     const rudp::EndpointPair &endpoint_pair,
-                                     bool relay_message = false,
-                                     Endpoint local_endpoint = Endpoint());
+protobuf::Message ProxyConnect(
+    const NodeId &node_id,
+    const NodeId &my_node_id,
+    const rudp::EndpointPair &endpoint_pair,
+    bool relay_message = false,
+    boost::asio::ip::udp::endpoint local_endpoint = boost::asio::ip::udp::endpoint());
+
 }  // namespace rpcs
 
 }  // namespace routing

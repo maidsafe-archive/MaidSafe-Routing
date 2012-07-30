@@ -22,19 +22,17 @@
 #include "maidsafe/routing/cache_manager.h"
 #include "maidsafe/routing/api_config.h"
 
-namespace bs2 = boost::signals2;
 
 namespace maidsafe {
 
 namespace routing {
 
-namespace protobuf { class Message;}  // namespace protobuf
+namespace protobuf { class Message; }
 
 class CacheManager;
 class NetworkUtils;
 class NonRoutingTable;
 class RoutingTable;
-
 class Timer;
 
 class MessageHandler {
@@ -53,9 +51,9 @@ class MessageHandler {
   bool tearing_down();
 
  private:
-  MessageHandler(const MessageHandler&);  // no copy
-  MessageHandler(const MessageHandler&&);  // no move
-  MessageHandler& operator=(const MessageHandler&);  // no assign
+  MessageHandler(const MessageHandler&);
+  MessageHandler(const MessageHandler&&);
+  MessageHandler& operator=(const MessageHandler&);
   void DirectMessage(protobuf::Message &message);
   void RoutingMessage(protobuf::Message &message);
   void NodeLevelMessageForMe(protobuf::Message &message);

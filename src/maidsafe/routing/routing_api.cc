@@ -16,6 +16,7 @@
 #include "boost/filesystem/fstream.hpp"
 #include "boost/thread/future.hpp"
 
+#include "maidsafe/common/log.h"
 #include "maidsafe/common/utils.h"
 #include "maidsafe/rudp/managed_connections.h"
 #include "maidsafe/rudp/return_codes.h"
@@ -26,20 +27,26 @@
 #include "maidsafe/routing/node_id.h"
 #include "maidsafe/routing/parameters.h"
 #include "maidsafe/routing/return_codes.h"
-#include "maidsafe/routing/routing_api_impl.h"
+#include "maidsafe/routing/routing_private.h"
 #include "maidsafe/routing/routing_pb.h"
 #include "maidsafe/routing/routing_table.h"
 #include "maidsafe/routing/rpcs.h"
 #include "maidsafe/routing/timer.h"
 #include "maidsafe/routing/utils.h"
 
+
 namespace args = std::placeholders;
-namespace bs2 = boost::signals2;
 namespace fs = boost::filesystem;
 
 namespace maidsafe {
 
 namespace routing {
+
+namespace {
+
+typedef boost::asio::ip::udp::endpoint Endpoint;
+
+}  // unnamed namespace
 
 Routing::Routing(const asymm::Keys &keys, const bool &client_mode)
     : impl_(new RoutingPrivate(keys, client_mode)) {
@@ -255,8 +262,8 @@ int Routing::ZeroStateJoin(Functors functors, const Endpoint &local_endpoint,
     return result;
   }
 
-   assert((impl_->network_.bootstrap_endpoint() == peer_node.endpoint) &&
-          "This should be only used in zero state network");
+  assert((impl_->network_.bootstrap_endpoint() == peer_node.endpoint) &&
+         "This should be only used in zero state network");
   LOG(kVerbose) << local_endpoint << " Bootstraped with remote endpoint " << peer_node.endpoint;
 
   rudp::EndpointPair their_endpoint_pair;  //  zero state nodes must be directly connected endpoint

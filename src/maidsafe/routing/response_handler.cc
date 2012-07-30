@@ -12,11 +12,11 @@
 
 #include "maidsafe/routing/response_handler.h"
 
+#include "maidsafe/common/log.h"
 #include "maidsafe/common/rsa.h"
 #include "maidsafe/common/utils.h"
 #include "maidsafe/rudp/managed_connections.h"
 
-#include "maidsafe/routing/log.h"
 #include "maidsafe/routing/network_utils.h"
 #include "maidsafe/routing/node_id.h"
 #include "maidsafe/routing/non_routing_table.h"
@@ -27,9 +27,16 @@
 #include "maidsafe/routing/rpcs.h"
 #include "maidsafe/routing/utils.h"
 
+
 namespace maidsafe {
 
 namespace routing {
+
+namespace {
+
+typedef boost::asio::ip::udp::endpoint Endpoint;
+
+}  // unnamed namespace
 
 ResponseHandler::ResponseHandler(AsioService &io_service,
                                  RoutingTable &routing_table,

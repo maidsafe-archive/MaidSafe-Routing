@@ -13,93 +13,91 @@
 #ifndef MAIDSAFE_ROUTING_NETWORK_UTILS_H_
 #define MAIDSAFE_ROUTING_NETWORK_UTILS_H_
 
-#include <mutex>
+#include <memory>
 #include <string>
 #include <vector>
 
+#include "boost/asio/ip/udp.hpp"
+#include "boost/thread/shared_mutex.hpp"
+
 #include "maidsafe/rudp/managed_connections.h"
+
 #include "maidsafe/routing/node_info.h"
+
 
 namespace maidsafe {
 
-namespace rudp {class ManagedConnections; }  // namespace rudp
-
 namespace routing {
 
-namespace protobuf { class Message;}  // namespace protobuf
+namespace protobuf { class Message; }
 
 class NonRoutingTable;
 class RoutingTable;
 
-namespace test {
-
-class GenericNode;
-
-}  // namespace test
+namespace test { class GenericNode; }
 
 class NetworkUtils {
  public:
-  NetworkUtils(RoutingTable &routing_table,
-               NonRoutingTable &non_routing_table);
+  NetworkUtils(RoutingTable &routing_table, NonRoutingTable &non_routing_table);
 
-  int Bootstrap(const std::vector<Endpoint> &bootstrap_endpoints,
+  int Bootstrap(const std::vector<boost::asio::ip::udp::endpoint> &bootstrap_endpoints,
                 rudp::MessageReceivedFunctor message_received_functor,
                 rudp::ConnectionLostFunctor connection_lost_functor,
-                Endpoint local_endpoint = Endpoint());
+                boost::asio::ip::udp::endpoint local_endpoint = boost::asio::ip::udp::endpoint());
 
-  int GetAvailableEndpoint(const Endpoint &peer_endpoint,
+  int GetAvailableEndpoint(const boost::asio::ip::udp::endpoint &peer_endpoint,
                            rudp::EndpointPair &this_endpoint_pair);
 
-  int Add(const Endpoint &this_endpoint,
-          const Endpoint &peer_endpoint,
+  int Add(const boost::asio::ip::udp::endpoint &this_endpoint,
+          const boost::asio::ip::udp::endpoint &peer_endpoint,
           const std::string &validation_data);
 
-  void Remove(const Endpoint &peer_endpoint);
+  void Remove(const boost::asio::ip::udp::endpoint &peer_endpoint);
 
 // For sending relay requests, message with empty source id may be provided, along with
 // direct endpint.
   void SendToDirectEndpoint(const protobuf::Message &message,
-                            Endpoint direct_endpoint);
+                            boost::asio::ip::udp::endpoint direct_endpoint);
 
   void SendToDirectEndpoint(const protobuf::Message &message,
-                            Endpoint direct_endpoint,
+                            boost::asio::ip::udp::endpoint direct_endpoint,
                             rudp::MessageSentFunctor message_sent_functor);
 
   // Handles relay response messages also
   // leave destination id empty if needs to send as a relay response message
   void SendToClosestNode(protobuf::Message message);
 
-  Endpoint bootstrap_endpoint() { return bootstrap_endpoint_;}
+  boost::asio::ip::udp::endpoint bootstrap_endpoint() const { return bootstrap_endpoint_; }
 
-  Endpoint my_relay_endpoint() { return my_relay_endpoint_;}
+  boost::asio::ip::udp::endpoint my_relay_endpoint() const { return my_relay_endpoint_; }
 
   void Stop();
 
   friend class test::GenericNode;
 
  private:
-  NetworkUtils(const NetworkUtils&);  // no copy
-  NetworkUtils(const NetworkUtils&&);  // no move
-  NetworkUtils& operator=(const NetworkUtils&);  // no assign
+  NetworkUtils(const NetworkUtils&);
+  NetworkUtils(const NetworkUtils&&);
+  NetworkUtils& operator=(const NetworkUtils&);
 
   void SendTo(protobuf::Message message,
               const NodeId &node_id,
-              const Endpoint &endpoint);
+              const boost::asio::ip::udp::endpoint &endpoint);
 
   void RecursiveSendOn(protobuf::Message message,
                        NodeInfo last_node_attempted = NodeInfo(),
                        int attempt_count = 0);
   //  actual rudp send
   void RudpSend(protobuf::Message message,
-                Endpoint endpoint,
+                boost::asio::ip::udp::endpoint endpoint,
                 rudp::MessageSentFunctor message_sent_functor);
 
   void SignMessage(protobuf::Message &message);
 
-  void OnConnectionLost(const Endpoint& endpoint);
+  void OnConnectionLost(const boost::asio::ip::udp::endpoint& endpoint);
 
-  Endpoint bootstrap_endpoint_;
-  Endpoint my_relay_endpoint_;
+  boost::asio::ip::udp::endpoint bootstrap_endpoint_;
+  boost::asio::ip::udp::endpoint my_relay_endpoint_;
   rudp::ConnectionLostFunctor connection_lost_functor_;
   RoutingTable &routing_table_;
   NonRoutingTable &non_routing_table_;

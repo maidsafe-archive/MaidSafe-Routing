@@ -13,32 +13,29 @@
 #ifndef MAIDSAFE_ROUTING_NON_ROUTING_TABLE_H_
 #define MAIDSAFE_ROUTING_NON_ROUTING_TABLE_H_
 
+#include <cstdint>
 #include <mutex>
 #include <string>
 #include <vector>
 
+#include "boost/asio/ip/udp.hpp"
 #include "boost/signals2/signal.hpp"
 
 #include "maidsafe/common/rsa.h"
 
 #include "maidsafe/routing/api_config.h"
 #include "maidsafe/routing/node_id.h"
-#include "maidsafe/routing/node_info.h"
-#include "maidsafe/routing/parameters.h"
 
-namespace bs2 = boost::signals2;
 
 namespace maidsafe {
 
 namespace routing {
 
-namespace test {
+struct NodeInfo;
 
-class GenericNode;
+namespace test { class GenericNode; }
 
-}  // namespace test
-
-namespace protobuf { class Contact; }  //  namespace protobuf
+namespace protobuf { class Contact; }
 
 class NonRoutingTable {
  public:
@@ -46,14 +43,14 @@ class NonRoutingTable {
   bool AddNode(NodeInfo &node, const NodeId &furthest_close_node_id);
   bool CheckNode(NodeInfo &node, const NodeId &furthest_close_node_id);
   int16_t DropNodes(const NodeId &node_id);
-  NodeInfo DropNode(const Endpoint &endpoint);
-  NodeInfo GetNodeInfo(const Endpoint &endpoint);
+  NodeInfo DropNode(const boost::asio::ip::udp::endpoint &endpoint);
+  NodeInfo GetNodeInfo(const boost::asio::ip::udp::endpoint &endpoint);
   std::vector<NodeInfo> GetNodesInfo(const NodeId &node_id);
-  bool AmIConnectedToEndpoint(const Endpoint& endpoint);
+  bool AmIConnectedToEndpoint(const boost::asio::ip::udp::endpoint& endpoint);
   bool AmIConnectedToNode(const NodeId &node_id);
   uint16_t Size();
   asymm::Keys kKeys() const;
-  bs2::signal<void(std::string, std::string)> &CloseNodeReplacedOldNewSignal();
+  boost::signals2::signal<void(std::string, std::string)> &CloseNodeReplacedOldNewSignal();
   void set_keys(asymm::Keys keys);
 
   friend class test::GenericNode;
@@ -73,7 +70,7 @@ class NonRoutingTable {
   const NodeId kNodeId_;
   std::vector<NodeInfo> non_routing_table_nodes_;
   std::mutex mutex_;
-  bs2::signal<void(std::string, std::string)> close_node_from_to_signal_;
+  boost::signals2::signal<void(std::string, std::string)> close_node_from_to_signal_;
 };
 
 }  // namespace routing

@@ -9,8 +9,8 @@
  *  You are not free to copy, amend or otherwise use this source code without  *
  *  the explicit written permission of the board of directors of maidsafe.net. *
  ******************************************************************************/
-#ifndef MAIDSAFE_FAKERUDP_FAKE_NETWORK_H_
-#define MAIDSAFE_FAKERUDP_FAKE_NETWORK_H_
+#ifndef MAIDSAFE_FAKE_RUDP_FAKE_NETWORK_H_
+#define MAIDSAFE_FAKE_RUDP_FAKE_NETWORK_H_
 
 #include <mutex>
 #include <functional>
@@ -75,4 +75,4 @@ struct Node {
 
 }  // namespace maidsafe
 
-#endif  // MAIDSAFE_FAKERUDP_FAKE_NETWORK_H_
+#endif  // MAIDSAFE_FAKE_RUDP_FAKE_NETWORK_H_

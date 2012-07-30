@@ -17,11 +17,12 @@
 
 #include "maidsafe/routing/api_config.h"
 
+
 namespace maidsafe {
 
 namespace routing {
 
-namespace protobuf { class Message;}  // namespace protobuf
+namespace protobuf { class Message; }
 
 class NetworkUtils;
 class NonRoutingTable;

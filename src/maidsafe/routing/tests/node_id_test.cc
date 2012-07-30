@@ -10,11 +10,13 @@
  *  the explicit written permission of the board of directors of maidsafe.net. *
  ******************************************************************************/
 
+#include "maidsafe/routing/node_id.h"
+
+#include "maidsafe/common/log.h"
 #include "maidsafe/common/test.h"
 #include "maidsafe/common/utils.h"
+
 #include "maidsafe/routing/routing_table.h"
-#include "maidsafe/routing/node_id.h"
-#include "maidsafe/routing/log.h"
 
 namespace maidsafe {
 

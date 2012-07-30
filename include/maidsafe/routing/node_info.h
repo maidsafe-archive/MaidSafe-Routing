@@ -13,18 +13,20 @@
 #ifndef MAIDSAFE_ROUTING_NODE_INFO_H_
 #define MAIDSAFE_ROUTING_NODE_INFO_H_
 
-#include "maidsafe/common/rsa.h"
+#include <cstdint>
+
 #include "boost/asio/ip/udp.hpp"
 
+#include "maidsafe/common/rsa.h"
+
 #include "maidsafe/routing/node_id.h"
+
 
 namespace maidsafe {
 
 namespace routing {
 
-namespace protobuf { class Contact; }  //  namespace protobuf
-
-typedef boost::asio::ip::udp::endpoint Endpoint;
+namespace protobuf { class Contact; }
 
 struct NodeInfo {
   NodeInfo();
@@ -32,7 +34,7 @@ struct NodeInfo {
   asymm::PublicKey public_key;
   int32_t rank;
   int32_t bucket;
-  Endpoint endpoint;
+  boost::asio::ip::udp::endpoint endpoint;
   int32_t dimension_1;
   int32_t dimension_2;
   int32_t dimension_3;

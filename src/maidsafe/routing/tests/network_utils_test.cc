@@ -32,13 +32,18 @@
 #include "maidsafe/routing/routing_pb.h"
 #include "maidsafe/routing/tests/test_utils.h"
 
+
 namespace maidsafe {
+
 namespace routing {
+
 namespace test {
 
 namespace bptime = boost::posix_time;
 
 namespace {
+
+typedef boost::asio::ip::udp::endpoint Endpoint;
 
 void SortFromThisNode(const NodeId &from, std::vector<NodeInfoAndPrivateKey> nodes) {
   std::sort(nodes.begin(), nodes.end(), [from](const NodeInfoAndPrivateKey &i,

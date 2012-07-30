@@ -15,13 +15,13 @@
 #include <vector>
 #include "maidsafe/common/test.h"
 
+#include "maidsafe/common/log.h"
 #include "maidsafe/common/utils.h"
 #include "maidsafe/routing/routing_table.h"
 #include "maidsafe/routing/parameters.h"
 #include "maidsafe/rudp/managed_connections.h"
 #include "maidsafe/routing/tests/test_utils.h"
 #include "maidsafe/routing/node_id.h"
-#include "maidsafe/routing/log.h"
 
 namespace maidsafe {
 namespace routing {

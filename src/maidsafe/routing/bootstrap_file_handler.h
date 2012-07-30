@@ -15,19 +15,17 @@
 
 #include <vector>
 
+#include "boost/asio/ip/udp.hpp"
 #include "boost/filesystem/path.hpp"
-
-#include "maidsafe/routing/api_config.h"
-
-namespace fs = boost::filesystem;
 
 namespace maidsafe {
 
 namespace routing {
 
-std::vector<Endpoint> ReadBootstrapFile(const fs::path &path);
+std::vector<boost::asio::ip::udp::endpoint> ReadBootstrapFile(const boost::filesystem::path &path);
 
-bool WriteBootstrapFile(const std::vector<Endpoint> &endpoints, const fs::path & path);
+bool WriteBootstrapFile(const std::vector<boost::asio::ip::udp::endpoint> &endpoints,
+                        const boost::filesystem::path & path);
 
 }  // namespace routing
 

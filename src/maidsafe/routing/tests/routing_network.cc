@@ -16,10 +16,11 @@
 #include <set>
 #include <string>
 
-#include "maidsafe/routing/routing_api_impl.h"
+#include "maidsafe/common/log.h"
+
+#include "maidsafe/routing/routing_private.h"
 #include "maidsafe/routing/return_codes.h"
 #include "maidsafe/routing/node_id.h"
-#include "maidsafe/routing/log.h"
 #include "maidsafe/routing/routing_api.h"
 
 namespace asio = boost::asio;
@@ -30,6 +31,12 @@ namespace maidsafe {
 namespace routing {
 
 namespace test {
+
+namespace {
+
+typedef boost::asio::ip::udp::endpoint Endpoint;
+
+}  // unnamed namespace
 
 size_t GenericNode::next_node_id_(0);
 

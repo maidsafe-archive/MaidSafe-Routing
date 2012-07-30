@@ -13,21 +13,18 @@
 #ifndef MAIDSAFE_ROUTING_RESPONSE_HANDLER_H_
 #define MAIDSAFE_ROUTING_RESPONSE_HANDLER_H_
 
-#include "boost/thread/shared_mutex.hpp"
-#include "boost/thread/mutex.hpp"
-
+#include "maidsafe/common/asio_service.h"
 #include "maidsafe/common/rsa.h"
 #include "maidsafe/rudp/managed_connections.h"
 
-#include "maidsafe/routing/log.h"
-#include "maidsafe/routing/node_id.h"
-#include "maidsafe/routing/rpcs.h"
+#include "maidsafe/routing/api_config.h"
+
 
 namespace maidsafe {
 
 namespace routing {
 
-namespace protobuf { class Message; }  // namespace protobuf
+namespace protobuf { class Message; }
 
 class NetworkUtils;
 class NonRoutingTable;

@@ -14,8 +14,9 @@
 
 #include <bitset>
 
-#include "maidsafe/routing/log.h"
+#include "maidsafe/common/log.h"
 #include "maidsafe/common/utils.h"
+
 
 namespace maidsafe {
 

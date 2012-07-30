@@ -10,7 +10,7 @@
  *  the explicit written permission of the board of directors of maidsafe.net. *
  ******************************************************************************/
 
-#include "maidsafe/routing/routing_api_impl.h"
+#include "maidsafe/routing/routing_private.h"
 
 #include "maidsafe/routing/bootstrap_file_handler.h"
 #include "maidsafe/routing/message_handler.h"
@@ -24,7 +24,6 @@
 #include "maidsafe/routing/timer.h"
 #include "maidsafe/routing/utils.h"
 
-namespace fs = boost::filesystem;
 
 namespace maidsafe {
 

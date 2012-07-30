@@ -15,8 +15,8 @@
 #include "maidsafe/routing/timer.h"
 
 #include "maidsafe/common/asio_service.h"
+#include "maidsafe/common/log.h"
 
-#include "maidsafe/routing/log.h"
 #include "maidsafe/routing/return_codes.h"
 #include "maidsafe/routing/routing_pb.h"
 
@@ -33,7 +33,7 @@ maidsafe::routing::Timer::Timer(AsioService &io_service)
 // put in another task with the same task_id
 TaskId Timer::AddTask(const boost::posix_time::time_duration &timeout,
                       const TaskResponseFunctor &response_functor) {
-  TimerPointer timer(new asio::deadline_timer(io_service_.service(), timeout));
+  TimerPointer timer(new boost::asio::deadline_timer(io_service_.service(), timeout));
   std::lock_guard<std::mutex> lock(mutex_);
   ++task_id_;
   LOG(kVerbose) << "AddTask added a task, with id : " << task_id_;

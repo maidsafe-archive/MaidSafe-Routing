@@ -9,7 +9,9 @@
  *  You are not free to copy, amend or otherwise use this source code without  *
  *  the explicit written permission of the board of directors of maidsafe.net. *
  ******************************************************************************/
+
 #include "maidsafe/routing/node_info.h"
+
 
 namespace maidsafe {
 
