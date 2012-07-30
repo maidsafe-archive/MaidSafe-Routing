@@ -85,11 +85,11 @@ void ResponseHandler::Connect(protobuf::Message& message) {
 
   if (request_public_key_functor_) {
     auto validate_node =
-      [=, &routing_table_, &non_routing_table_, &network_] (const asymm::PublicKey &key) {
+      [=] (const asymm::PublicKey &key) {
           LOG(kInfo) << "NEED TO VALIDATE THE NODE HERE";
-          ValidateThisNode(network_,
-                           routing_table_,
-                           non_routing_table_,
+          ValidateThisNode(this->network_,
+                           this->routing_table_,
+                           this->non_routing_table_,
                            NodeId(connect_response.contact().node_id()),
                            key,
                            their_endpoint_pair,

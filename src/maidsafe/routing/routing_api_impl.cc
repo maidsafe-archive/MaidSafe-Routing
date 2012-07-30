@@ -40,21 +40,22 @@ RoutingPrivate::RoutingPrivate(const asymm::Keys &keys,
       non_routing_table_(keys_),  // TODO(Prakash) : don't create NRT for client nodes (wrap both)
       timer_(asio_service_),
       waiting_for_response_(),
+      message_handler_(),
       network_(routing_table_, non_routing_table_),
-      message_handler_(asio_service_, routing_table_, non_routing_table_,
-                       network_, timer_),
       joined_(false),
       bootstrap_file_path_(),
       client_mode_(client_mode),
       anonymous_node_(false),
       functors_() {
+  message_handler_.reset(new MessageHandler(asio_service_, routing_table_, non_routing_table_,
+                                            network_, timer_)),
   asio_service_.Start();
 }
 
 RoutingPrivate::~RoutingPrivate() {
   asio_service_.Stop();
   network_.Stop();
-  message_handler_.set_tearing_down();
+  message_handler_->set_tearing_down();
   tearing_down_ = true;
 }
 

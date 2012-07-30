@@ -245,7 +245,7 @@ void NetworkUtils::RecursiveSendOn(protobuf::Message message,
 
   const std::string my_node_id(HexSubstr(routing_table_.kKeys().identity));
 
-  rudp::MessageSentFunctor message_sent_functor = [=, &shared_mutex_](int message_sent) {
+  rudp::MessageSentFunctor message_sent_functor = [=](int message_sent) {
       if (rudp::kSuccess == message_sent) {
         LOG(kInfo) << " Message sent, type: " << message.type()
                    << " to "
@@ -282,7 +282,7 @@ void NetworkUtils::RecursiveSendOn(protobuf::Message message,
                     << "]"
                     << " Will remove node";
         {
-          SharedLock shared_lock(shared_mutex_);
+          SharedLock shared_lock(this->shared_mutex_);
           if (stopped_)
             return;
           else

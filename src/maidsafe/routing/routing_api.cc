@@ -132,16 +132,16 @@ void Routing::Join(Functors functors, Endpoint peer_endpoint) {
 void Routing::ConnectFunctors(Functors functors) {
   impl_->routing_table_.set_network_status_functor(functors.network_status);
   impl_->routing_table_.set_close_node_replaced_functor(functors.close_node_replaced);
-  impl_->message_handler_.set_message_received_functor(functors.message_received);
-  impl_->message_handler_.set_request_public_key_functor(functors.request_public_key);
+  impl_->message_handler_->set_message_received_functor(functors.message_received);
+  impl_->message_handler_->set_request_public_key_functor(functors.request_public_key);
   impl_->functors_ = functors;
 }
 
 void Routing::DisconnectFunctors() {  // TODO(Prakash) : fix race condition when functors in use
   impl_->routing_table_.set_network_status_functor(nullptr);
   impl_->routing_table_.set_close_node_replaced_functor(nullptr);
-  impl_->message_handler_.set_message_received_functor(nullptr);
-  impl_->message_handler_.set_request_public_key_functor(nullptr);
+  impl_->message_handler_->set_message_received_functor(nullptr);
+  impl_->message_handler_->set_request_public_key_functor(nullptr);
   impl_->functors_ = Functors();
 }
 
@@ -375,7 +375,7 @@ void Routing::ReceiveMessage(const std::string &message) {
                      HexSubstr(protobuf_message.source_id()))
                << " I am " << HexSubstr(impl_->keys_.identity)
                << (relay_message? " -- RELAY REQUEST": "");
-    impl_->message_handler_.ProcessMessage(protobuf_message);
+    impl_->message_handler_->ProcessMessage(protobuf_message);
   } else {
     LOG(kWarning) << " Message received, failed to parse";
   }

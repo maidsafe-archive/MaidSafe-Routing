@@ -62,8 +62,8 @@ struct RoutingPrivate {
   Timer timer_;
   std::map<uint32_t, std::pair<std::unique_ptr<boost::asio::deadline_timer>,
                                MessageReceivedFunctor> > waiting_for_response_;
+  std::unique_ptr<MessageHandler> message_handler_;
   NetworkUtils network_;
-  MessageHandler message_handler_;
   bool joined_;
   fs::path bootstrap_file_path_;
   bool client_mode_;
