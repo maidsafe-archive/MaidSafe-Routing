@@ -36,7 +36,7 @@ TaskId Timer::AddTask(const boost::posix_time::time_duration &timeout,
   TimerPointer timer(new asio::deadline_timer(io_service_.service(), timeout));
   std::lock_guard<std::mutex> lock(mutex_);
   ++task_id_;
-  LOG(kVerbose) << "AddTask added a task, with id" << task_id_;
+  LOG(kVerbose) << "AddTask added a task, with id : " << task_id_;
   queue_.insert(std::make_pair(task_id_, std::make_pair(timer, response_functor)));
   timer->async_wait(std::bind(&Timer::KillTask, this, task_id_));
   return task_id_;
@@ -75,7 +75,7 @@ void Timer::ExecuteTaskNow(protobuf::Message &message) {
       // message all OK in routing
       task_response_functor = (*it).second.second;
       queue_.erase(it);
-      LOG(kVerbose) << "ExecuteTaskNow will execute a task, with id" << task_id_;
+      LOG(kVerbose) << "ExecuteTaskNow will execute a task, with id : " << task_id_;
     } else {
       LOG(kError) << "Attempt to run an expired or non existent task";
     }
