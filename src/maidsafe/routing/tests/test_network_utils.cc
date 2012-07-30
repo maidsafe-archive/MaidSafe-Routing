@@ -262,7 +262,7 @@ TEST(NetworkUtilsTest, FUNC_ProcessSendRecursiveSendOn) {
 
 
   std::vector<Endpoint> bootstrap_endpoint(1, endpoint2);
-  EXPECT_NE(kSuccess, network.Bootstrap(bootstrap_endpoint,
+  EXPECT_EQ(kSuccess, network.Bootstrap(bootstrap_endpoint,
                                         message_received_functor,
                                         connection_lost_functor3));
   rudp::EndpointPair endpoint_pair2, endpoint_pair3;
