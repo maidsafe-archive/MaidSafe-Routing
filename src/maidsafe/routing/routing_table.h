@@ -57,7 +57,7 @@ class RoutingTable {
   bool ConfirmGroupMembers(const NodeId& node1, const NodeId& node2);
   uint64_t NetworkPopulationEstimate();
   // Returns zero node id if RT size is zero
-  NodeInfo GetClosestNode(const NodeId &from);
+  NodeInfo GetClosestNode(const NodeId &from, bool ignore_exact_match = false);
   // Returns max node id if RT size is lesser than requested node_number
   NodeInfo GetNthClosestNode(const NodeId &from, const uint16_t &node_number);
   std::vector<NodeId> GetClosestNodes(const NodeId &from, const uint16_t &n);

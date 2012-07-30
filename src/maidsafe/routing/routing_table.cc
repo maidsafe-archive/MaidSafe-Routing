@@ -345,12 +345,14 @@ NodeInfo RoutingTable::GetNthClosestNode(const NodeId &from, const uint16_t &nod
   return routing_table_nodes_[node_number - 1];
 }
 
-NodeInfo RoutingTable::GetClosestNode(const NodeId &from) {
+NodeInfo RoutingTable::GetClosestNode(const NodeId &from, bool ignore_exact_match) {
   std::lock_guard<std::mutex> lock(mutex_);
   if (RoutingTableSize() == 0) {
     return NodeInfo();
   }
   NthElementSortFromThisNode(from, 1);
+  if ((routing_table_nodes_[0].node_id == from) && (ignore_exact_match))
+    NthElementSortFromThisNode(from, 2);
   return routing_table_nodes_[0];
 }
 
