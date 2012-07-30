@@ -157,6 +157,15 @@ bool RoutingTable::AmIConnectedToNode(const NodeId& node_id) {
                      != routing_table_nodes_.end());
 }
 
+bool RoutingTable::ConfirmGroupMembers(const NodeId& node1, const NodeId& node2) {
+  NodeId difference = NodeId(kKeys().identity) ^ FurthestCloseNode();
+  return (node1 ^ node2) < difference;
+}
+
+NodeId RoutingTable::FurthestCloseNode() {
+  return GetNthClosestNode(NodeId(kKeys().identity), Parameters::closest_nodes_size).node_id;
+}
+
 // checks paramters are real
 bool RoutingTable::CheckValidParameters(const NodeInfo& node) const {
   if ((!asymm::ValidateKey(node.public_key, 0))) {
@@ -310,7 +319,7 @@ bool RoutingTable::IsMyNodeInRange(const NodeId& node_id, const uint16_t range) 
 
 // bucket 0 is us, 511 is furthest bucket (should fill first)
 int16_t RoutingTable::BucketIndex(const NodeId &rhs) const {
-  uint16_t bucket = kKeySizeBits - 1;  // (n-1)
+  uint16_t bucket = kKeySizeBits - 1;  // (n-1losestNode(my_closest_node
   std::string this_id_binary = kNodeId_.ToStringEncoded(NodeId::kBinary);
   std::string rhs_id_binary = rhs.ToStringEncoded(NodeId::kBinary);
   auto this_it = this_id_binary.begin();
@@ -336,12 +345,14 @@ NodeInfo RoutingTable::GetNthClosestNode(const NodeId &from, const uint16_t &nod
   return routing_table_nodes_[node_number - 1];
 }
 
-NodeInfo RoutingTable::GetClosestNode(const NodeId &from) {
+NodeInfo RoutingTable::GetClosestNode(const NodeId &from, bool ignore_exact_match) {
   std::lock_guard<std::mutex> lock(mutex_);
   if (RoutingTableSize() == 0) {
     return NodeInfo();
   }
   NthElementSortFromThisNode(from, 1);
+  if ((routing_table_nodes_[0].node_id == from) && (ignore_exact_match))
+    NthElementSortFromThisNode(from, 2);
   return routing_table_nodes_[0];
 }
 

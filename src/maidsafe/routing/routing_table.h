@@ -54,12 +54,13 @@ class RoutingTable {
   bool AmIClosestNode(const NodeId &node_id);
   bool AmIConnectedToEndpoint(const Endpoint& endpoint);
   bool AmIConnectedToNode(const NodeId &node_id);
+  bool ConfirmGroupMembers(const NodeId& node1, const NodeId& node2);
+  uint64_t NetworkPopulationEstimate();
   // Returns zero node id if RT size is zero
-  NodeInfo GetClosestNode(const NodeId &from);
+  NodeInfo GetClosestNode(const NodeId &from, bool ignore_exact_match = false);
   // Returns max node id if RT size is lesser than requested node_number
   NodeInfo GetNthClosestNode(const NodeId &from, const uint16_t &node_number);
-  std::vector<NodeId> GetClosestNodes(const NodeId &from, const uint16_t &number_to_get);
-
+  std::vector<NodeId> GetClosestNodes(const NodeId &from, const uint16_t &n);
   uint16_t Size();
   asymm::Keys kKeys() const;
   void set_network_status_functor(NetworkStatusFunctor network_status_functor);
@@ -84,9 +85,10 @@ class RoutingTable {
   bool RemoveClosecontact(const NodeId &node_id);
   bool AddcloseContact(const protobuf::Contact &contact);
   uint16_t RoutingTableSize();
+  NodeId FurthestCloseNode();
+  NodeId GetLargestDistanceBetweenCloseNodes();
   std::vector<NodeInfo> GetClosestNodeInfo(const NodeId &from, const uint16_t &number_to_get);
   void update_network_status();
-
   const uint16_t max_size_;
   bool client_mode_;
   asymm::Keys keys_;

@@ -66,6 +66,10 @@ Routing::~Routing() {
   DisconnectFunctors();
 }
 
+bool Routing::ConfirmGroupMembers(const NodeId& node1, const NodeId& node2) {
+  return impl_->routing_table_.ConfirmGroupMembers(node1, node2);
+}
+
 int Routing::GetStatus() {
   if (impl_->routing_table_.Size() == 0) {
     rudp::EndpointPair endpoint;
@@ -154,7 +158,6 @@ void Routing::BootStrapFromThisEndpoint(Functors functors, const Endpoint &endpo
              << " Entered bootstrap endpoint : " << endpoint
              << ", My Node id : " << HexSubstr(impl_->keys_.identity)
              << (impl_->client_mode_ ? "Client" : "");
-
   if (impl_->routing_table_.Size() > 0) {
     DisconnectFunctors();  // TODO(Prakash): Do we need this ?
     for (unsigned int i = 0; i < impl_->routing_table_.Size(); ++i) {
