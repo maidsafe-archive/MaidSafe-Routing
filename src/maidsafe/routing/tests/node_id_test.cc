@@ -24,7 +24,7 @@ namespace routing {
 
 namespace test {
 
-NodeId IncreaseId(const NodeId &kad_id) {
+NodeId IncreaseId(const NodeId& kad_id) {
   std::string raw(kad_id.String());
   std::string::reverse_iterator rit = raw.rbegin();
   while (rit != raw.rend()) {
@@ -36,7 +36,7 @@ NodeId IncreaseId(const NodeId &kad_id) {
   return NodeId(raw);
 }
 
-const std::string ToBinary(const std::string &raw_id)  {
+const std::string ToBinary(const std::string& raw_id)  {
   std::string hex_encoded(EncodeToHex(raw_id));
   std::string result;
   for (size_t i = 0; i < hex_encoded.size(); ++i) {

@@ -37,10 +37,10 @@ namespace maidsafe {
 namespace routing {
 
 MessageHandler::MessageHandler(AsioService& asio_service,
-                               RoutingTable &routing_table,
-                               NonRoutingTable &non_routing_table,
-                               NetworkUtils &network,
-                               Timer &timer_ptr)
+                               RoutingTable& routing_table,
+                               NonRoutingTable& non_routing_table,
+                               NetworkUtils& network,
+                               Timer& timer_ptr)
     : asio_service_(asio_service),
       routing_table_(routing_table),
       non_routing_table_(non_routing_table),
@@ -52,7 +52,7 @@ MessageHandler::MessageHandler(AsioService& asio_service,
       request_public_key_functor_(),
       tearing_down_(false) {}
 
-bool MessageHandler::CheckCacheData(protobuf::Message &message) {
+bool MessageHandler::CheckCacheData(protobuf::Message& message) {
   if (message.type() == -100) {
     cache_manager_.AddToCache(message);
   } else  if (message.type() == 100) {
@@ -110,7 +110,7 @@ void MessageHandler::RoutingMessage(protobuf::Message& message) {
   }
 }
 
-void MessageHandler::NodeLevelMessageForMe(protobuf::Message &message) {
+void MessageHandler::NodeLevelMessageForMe(protobuf::Message& message) {
   if (IsRequest(message)) {  // request
     LOG(kInfo) <<"Node Level Request Message for me !! from "
                << HexSubstr(message.source_id())
@@ -238,7 +238,7 @@ void MessageHandler::CloseNodesMessage(protobuf::Message& message) {
   }
 }
 
-void MessageHandler::GroupMessage(protobuf::Message &message) {
+void MessageHandler::GroupMessage(protobuf::Message& message) {
   if (!routing_table_.IsMyNodeInRange(NodeId(message.destination_id()), 1))
     return;
 
@@ -250,7 +250,7 @@ void MessageHandler::GroupMessage(protobuf::Message &message) {
   }
 }
 
-void MessageHandler::ProcessMessage(protobuf::Message &message) {
+void MessageHandler::ProcessMessage(protobuf::Message& message) {
   // Invalid destination id, unknown message
   if (!(NodeId(message.destination_id()).IsValid())) {
     LOG(kWarning) << "Stray message dropped, need destination id for processing.";
@@ -294,7 +294,7 @@ void MessageHandler::ProcessMessage(protobuf::Message &message) {
   network_.SendToClosestNode(message);
 }
 
-void MessageHandler::ProcessRelayRequest(protobuf::Message &message) {
+void MessageHandler::ProcessRelayRequest(protobuf::Message& message) {
   assert(!message.has_source_id());
   if ((message.destination_id() == routing_table_.kKeys().identity) && IsRequest(message)) {
     LOG(kVerbose) << "relay request with my destination id!";
@@ -315,7 +315,7 @@ void MessageHandler::ProcessRelayRequest(protobuf::Message &message) {
   network_.SendToClosestNode(message);
 }
 
-bool MessageHandler::RelayDirectMessageIfNeeded(protobuf::Message &message) {
+bool MessageHandler::RelayDirectMessageIfNeeded(protobuf::Message& message) {
   assert(message.destination_id() == routing_table_.kKeys().identity);
   if (!message.has_relay_id()) {
     LOG(kVerbose) << "message don't have relay id, so its not a relay message";
@@ -333,7 +333,7 @@ bool MessageHandler::RelayDirectMessageIfNeeded(protobuf::Message &message) {
   }
 }
 
-void MessageHandler::ClientMessage(protobuf::Message &message) {
+void MessageHandler::ClientMessage(protobuf::Message& message) {
   assert(routing_table_.client_mode() && "Only client node should handle client messages");
   if (IsRequest(message) || message.source_id().empty()) {  // No requests/relays allowed on client.
     LOG(kWarning) << "Stray message at client node. No requests/relays allowed";
@@ -354,12 +354,12 @@ void MessageHandler::ClientMessage(protobuf::Message &message) {
 }
 
 // // TODO(dirvine) implement client handler
-// bool MessageHandler::CheckAndSendToLocalClients(protobuf::Message &message) {
+// bool MessageHandler::CheckAndSendToLocalClients(protobuf::Message& message) {
 //   bool found(false);
 // //   NodeId destination_node(message.destination_id());
 // //   std::for_each(client_connections_.begin(),
 // //                 client_connections_.end(),
-// //                 [&destination_node, &found](const NodeInfo &i)->bool
+// //                 [&destination_node, &found](const NodeInfo& i)->bool
 // //                 {
 // //                   if (i.node_id ==  destination_node) {
 // //                     found = true;

@@ -27,8 +27,8 @@ class TestNode : public GenericNode {
   explicit TestNode(bool client_mode = false)
       : GenericNode(client_mode),
         messages_() {
-    functors_.message_received = [&](const int32_t &mesasge_type,
-                                     const std::string &message,
+    functors_.message_received = [&](const int32_t& mesasge_type,
+                                     const std::string& message,
                                      const NodeId &/*group_id*/,
                                      ReplyFunctor reply_functor) {
         LOG(kInfo) << id_ << " -- Received: type <" << mesasge_type
@@ -43,8 +43,8 @@ class TestNode : public GenericNode {
   TestNode(bool client_mode, const NodeInfoAndPrivateKey& node_info)
       : GenericNode(client_mode, node_info),
       messages_() {
-    functors_.message_received = [&](const int32_t &mesasge_type,
-                                     const std::string &message,
+    functors_.message_received = [&](const int32_t& mesasge_type,
+                                     const std::string& message,
                                      const NodeId &/*group_id*/,
                                      ReplyFunctor reply_functor) {
       LOG(kInfo) << id_ << " -- Received: type <" << mesasge_type
@@ -70,7 +70,7 @@ class RoutingNetworkTest : public GenericNetwork<NodeType> {
 
  protected:
   /** Send messages from each source to each destination */
-  testing::AssertionResult Send(const size_t &messages) {
+  testing::AssertionResult Send(const size_t& messages) {
     NodeId  group_id;
     size_t message_id(0), client_size(0), non_client_size(0);
     std::set<size_t> received_ids;
@@ -135,7 +135,7 @@ class RoutingNetworkTest : public GenericNetwork<NodeType> {
     return testing::AssertionSuccess();
   }
 
-  testing::AssertionResult GroupSend(const NodeId &node_id, const size_t &messages) {
+  testing::AssertionResult GroupSend(const NodeId& node_id, const size_t& messages) {
     NodeId  group_id;
     size_t messages_count(0), expected_messages(messages);
     std::string data(RandomAlphaNumericString(2^10));

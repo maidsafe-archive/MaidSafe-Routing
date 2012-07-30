@@ -136,7 +136,6 @@ TEST(RPC, BEH_FindNodesMessageInitialised) {
 
 TEST(RPC, BEH_FindNodesMessageNode) {
   NodeInfo us(MakeNode());
-  std::string destination = RandomString(64);
   protobuf::Message message = rpcs::FindNodes(us.node_id, us.node_id);
   protobuf::FindNodesRequest find_nodes_request;
   EXPECT_TRUE(find_nodes_request.ParseFromString(message.data(0)));  // us
@@ -159,7 +158,6 @@ TEST(RPC, BEH_FindNodesMessageNode) {
 
 TEST(RPC, BEH_FindNodesMessageNodeRelayMode) {
   NodeInfo us(MakeNode());
-  std::string destination = RandomString(64);
   Endpoint relay_endpoint(boost::asio::ip::address_v4::loopback(), GetRandomPort());
   protobuf::Message message = rpcs::FindNodes(us.node_id, us.node_id, true, relay_endpoint);
   protobuf::FindNodesRequest find_nodes_request;

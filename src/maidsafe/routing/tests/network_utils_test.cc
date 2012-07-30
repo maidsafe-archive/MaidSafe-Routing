@@ -45,9 +45,9 @@ namespace {
 
 typedef boost::asio::ip::udp::endpoint Endpoint;
 
-void SortFromThisNode(const NodeId &from, std::vector<NodeInfoAndPrivateKey> nodes) {
-  std::sort(nodes.begin(), nodes.end(), [from](const NodeInfoAndPrivateKey &i,
-                                               const NodeInfoAndPrivateKey &j) {
+void SortFromThisNode(const NodeId& from, std::vector<NodeInfoAndPrivateKey> nodes) {
+  std::sort(nodes.begin(), nodes.end(), [from](const NodeInfoAndPrivateKey& i,
+                                               const NodeInfoAndPrivateKey& j) {
                 return (i.node_info.node_id ^ from) < (j.node_info.node_id ^ from);
              });
 }
@@ -119,7 +119,7 @@ TEST(NetworkUtilsTest, FUNC_ProcessSendDirectEndpoint) {
       LOG(kInfo) << " -- Received: " << message;
     };
 
-  rudp::ConnectionLostFunctor connection_lost_functor = [](const Endpoint &endpoint) {
+  rudp::ConnectionLostFunctor connection_lost_functor = [](const Endpoint& endpoint) {
       LOG(kInfo) << " -- Lost Connection with : " << endpoint;
     };
 
@@ -223,11 +223,11 @@ TEST(NetworkUtilsTest, FUNC_ProcessSendRecursiveSendOn) {
       LOG(kInfo) << " -- Received: " << message;
     };
 
-  rudp::ConnectionLostFunctor connection_lost_functor = [](const Endpoint &endpoint) {
+  rudp::ConnectionLostFunctor connection_lost_functor = [](const Endpoint& endpoint) {
       LOG(kInfo) << " -- Lost Connection with : " << endpoint;
     };
 
-  rudp::ConnectionLostFunctor connection_lost_functor3 = [&](const Endpoint &endpoint) {
+  rudp::ConnectionLostFunctor connection_lost_functor3 = [&](const Endpoint& endpoint) {
       routing_table.DropNode(endpoint);
       LOG(kInfo) << " -- Lost Connection with : " << endpoint;
     };

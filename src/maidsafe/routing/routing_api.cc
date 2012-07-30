@@ -48,7 +48,7 @@ typedef boost::asio::ip::udp::endpoint Endpoint;
 
 }  // unnamed namespace
 
-Routing::Routing(const asymm::Keys &keys, const bool &client_mode)
+Routing::Routing(const asymm::Keys& keys, const bool& client_mode)
     : impl_(new RoutingPrivate(keys, client_mode)) {
   if (!CheckBootStrapFilePath()) {
     LOG(kInfo) << " No bootstrap nodes, require BootStrapFromThisEndpoint()";
@@ -158,7 +158,7 @@ void Routing::DisconnectFunctors() {  // TODO(Prakash) : fix race condition when
 
 // drop existing routing table and restart
 // the endpoint is the endpoint to connect to.
-void Routing::BootStrapFromThisEndpoint(Functors functors, const Endpoint &endpoint) {
+void Routing::BootStrapFromThisEndpoint(Functors functors, const Endpoint& endpoint) {
   LOG(kInfo) << " Doing a BootStrapFromThisEndpoint Join."
              << " Entered bootstrap endpoint : " << endpoint
              << ", My Node id : " << HexSubstr(impl_->keys_.identity)
@@ -239,8 +239,8 @@ int Routing::DoFindNode() {
   }
 }
 
-int Routing::ZeroStateJoin(Functors functors, const Endpoint &local_endpoint,
-                           const NodeInfo &peer_node) {
+int Routing::ZeroStateJoin(Functors functors, const Endpoint& local_endpoint,
+                           const NodeInfo& peer_node) {
   assert((!impl_->client_mode_) && "no client nodes allowed in zero state network");
   assert((!impl_->anonymous_node_) && "not allwed on anonymous node");
   impl_->bootstrap_nodes_.clear();
@@ -296,13 +296,13 @@ int Routing::ZeroStateJoin(Functors functors, const Endpoint &local_endpoint,
   }
 }
 
-void Routing::Send(const NodeId &destination_id,
+void Routing::Send(const NodeId& destination_id,
                    const NodeId &/*group_id*/,
-                   const std::string &data,
-                   const int32_t &type,
+                   const std::string& data,
+                   const int32_t& type,
                    const ResponseFunctor response_functor,
-                   const boost::posix_time::time_duration &timeout,
-                   const ConnectType &connect_type) {
+                   const boost::posix_time::time_duration& timeout,
+                   const ConnectType& connect_type) {
   if (destination_id.String().empty()) {
     LOG(kError) << "No destination id, aborted send";
     if (response_functor)
@@ -369,7 +369,7 @@ void Routing::Send(const NodeId &destination_id,
   return;
 }
 
-void Routing::ReceiveMessage(const std::string &message) {
+void Routing::ReceiveMessage(const std::string& message) {
   if (impl_->tearing_down_) {
     LOG(kVerbose) << " Ignoring, Message received, shutting down";
     return;
@@ -391,7 +391,7 @@ void Routing::ReceiveMessage(const std::string &message) {
   }
 }
 
-void Routing::ConnectionLost(const Endpoint &lost_endpoint) {
+void Routing::ConnectionLost(const Endpoint& lost_endpoint) {
   LOG(kWarning) << " Routing::ConnectionLost---------------------------------------------------";
   NodeInfo dropped_node;
   if ((!impl_->tearing_down_) &&

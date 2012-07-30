@@ -29,7 +29,7 @@ namespace maidsafe {
 
 namespace routing {
 
-RoutingPrivate::RoutingPrivate(const asymm::Keys &keys,
+RoutingPrivate::RoutingPrivate(const asymm::Keys& keys,
                                bool client_mode)
     : asio_service_(2),
       bootstrap_nodes_(),

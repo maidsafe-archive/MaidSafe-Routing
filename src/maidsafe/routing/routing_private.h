@@ -54,7 +54,7 @@ struct RoutingPrivate {
   RoutingPrivate(const RoutingPrivate&);
   RoutingPrivate(const RoutingPrivate&&);
   RoutingPrivate& operator=(const RoutingPrivate&);
-  RoutingPrivate(const asymm::Keys &keys, bool client_mode);
+  RoutingPrivate(const asymm::Keys& keys, bool client_mode);
 
   AsioService asio_service_;
   std::vector<boost::asio::ip::udp::endpoint> bootstrap_nodes_;

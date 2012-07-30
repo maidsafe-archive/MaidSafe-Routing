@@ -27,7 +27,7 @@ CacheManager::CacheManager()
                     mutex_()
                     {}
 
-void CacheManager::AddToCache(const protobuf::Message &message) {
+void CacheManager::AddToCache(const protobuf::Message& message) {
     std::pair<std::string, std::string> data;
   try {
     // check data is valid TODO FIXME - ask CAA
@@ -48,7 +48,7 @@ void CacheManager::AddToCache(const protobuf::Message &message) {
   }
 }
 
-bool CacheManager::GetFromCache(protobuf::Message &message) {
+bool CacheManager::GetFromCache(protobuf::Message& message) {
     boost::mutex::scoped_lock lock(mutex_);
     for (auto it = cache_chunks_.begin(); it != cache_chunks_.end(); ++it) {
       if ((*it).first == message.source_id()) {

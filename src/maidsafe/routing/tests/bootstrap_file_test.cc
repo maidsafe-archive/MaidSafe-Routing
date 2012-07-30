@@ -39,7 +39,7 @@ typedef boost::asio::ip::udp::endpoint Endpoint;
 }  // unnamed namespace
 
 
-TEST(BootStrapFileTest1, BEH_ReadValidFile) {
+TEST(BootStrapFileTest, BEH_ReadValidFile) {
   std::vector<Endpoint>vec;
   Endpoint endpoint;
   endpoint.address(boost::asio::ip::address::from_string("192.168.1.1"));
@@ -56,7 +56,7 @@ TEST(BootStrapFileTest1, BEH_ReadValidFile) {
   EXPECT_TRUE(boost::filesystem::remove(good_file));
 }
 
-TEST(BootStrapFileTest1, DISABLED_BEH_ReadValidFileSysDir) {
+TEST(BootStrapFileTest, DISABLED_BEH_ReadValidFileSysDir) {
   std::vector<Endpoint>vec;
   Endpoint endpoint;
   endpoint.address(boost::asio::ip::address::from_string("192.168.1.1"));

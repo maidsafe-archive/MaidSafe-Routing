@@ -28,7 +28,7 @@ namespace routing {
 namespace rpcs {
 
 // this is maybe not required and might be removed
-protobuf::Message Ping(const NodeId &node_id, const std::string &identity) {
+protobuf::Message Ping(const NodeId& node_id, const std::string& identity) {
   assert(node_id.IsValid() && "Invalid node_id");
   assert(!identity.empty() && "Invalid identity");
   protobuf::Message message;
@@ -47,9 +47,9 @@ protobuf::Message Ping(const NodeId &node_id, const std::string &identity) {
   return message;
 }
 
-protobuf::Message Connect(const NodeId &node_id,
-                          const rudp::EndpointPair &our_endpoint,
-                          const NodeId &my_node_id,
+protobuf::Message Connect(const NodeId& node_id,
+                          const rudp::EndpointPair& our_endpoint,
+                          const NodeId& my_node_id,
                           bool client_node,
                           bool relay_message,
                           boost::asio::ip::udp::endpoint local_endpoint) {
@@ -58,9 +58,9 @@ protobuf::Message Connect(const NodeId &node_id,
 //  BOOST_ASSERT_MSG(!our_endpoint.external.address().is_unspecified(), "Unspecified endpoint");
 //  BOOST_ASSERT_MSG(!our_endpoint.local.address().is_unspecified(), "Unspecified endpoint");
   protobuf::Message message;
-  protobuf::Contact *contact;
-  protobuf::Endpoint *public_endpoint;
-  protobuf::Endpoint *private_endpoint;
+  protobuf::Contact* contact;
+  protobuf::Endpoint* public_endpoint;
+  protobuf::Endpoint* private_endpoint;
   protobuf::ConnectRequest protobuf_connect_request;
   contact = protobuf_connect_request.mutable_contact();
   public_endpoint = contact->mutable_public_endpoint();
@@ -93,8 +93,8 @@ protobuf::Message Connect(const NodeId &node_id,
   return message;
 }
 
-protobuf::Message FindNodes(const NodeId &node_id,
-                            const NodeId &my_node_id,
+protobuf::Message FindNodes(const NodeId& node_id,
+                            const NodeId& my_node_id,
                             bool relay_message,
                             boost::asio::ip::udp::endpoint local_endpoint) {
   assert(node_id.IsValid() && "Invalid node_id");
@@ -124,9 +124,9 @@ protobuf::Message FindNodes(const NodeId &node_id,
   return message;
 }
 
-protobuf::Message ProxyConnect(const NodeId &node_id,
-                               const NodeId &my_node_id,
-                               const rudp::EndpointPair &endpoint_pair,
+protobuf::Message ProxyConnect(const NodeId& node_id,
+                               const NodeId& my_node_id,
+                               const rudp::EndpointPair& endpoint_pair,
                                bool relay_message,
                                boost::asio::ip::udp::endpoint local_endpoint) {
   assert(node_id.IsValid() && "Invalid node_id");

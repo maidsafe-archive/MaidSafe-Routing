@@ -43,7 +43,7 @@ typedef boost::unique_lock<boost::shared_mutex> UniqueLock;
 
 namespace routing {
 
-NetworkUtils::NetworkUtils(RoutingTable &routing_table, NonRoutingTable &non_routing_table)
+NetworkUtils::NetworkUtils(RoutingTable& routing_table, NonRoutingTable& non_routing_table)
     : bootstrap_endpoint_(),
       my_relay_endpoint_(),
       connection_lost_functor_(),
@@ -82,7 +82,7 @@ int NetworkUtils::Bootstrap(const std::vector<Endpoint> &bootstrap_endpoints,
   connection_lost_functor_ = connection_lost_functor;
   bootstrap_endpoint_ = rudp_->Bootstrap(bootstrap_endpoints,
                                          message_received_functor,
-                                         [&](const Endpoint &endpoint) {
+                                         [&](const Endpoint& endpoint) {
                                              OnConnectionLost(endpoint); },
                                          private_key,
                                          public_key,
@@ -111,18 +111,18 @@ int NetworkUtils::Bootstrap(const std::vector<Endpoint> &bootstrap_endpoints,
   return kSuccess;
 }
 
-int NetworkUtils::GetAvailableEndpoint(const Endpoint &peer_endpoint,
-                                       rudp::EndpointPair &this_endpoint_pair) {
+int NetworkUtils::GetAvailableEndpoint(const Endpoint& peer_endpoint,
+                                       rudp::EndpointPair& this_endpoint_pair) {
   return rudp_->GetAvailableEndpoint(peer_endpoint, this_endpoint_pair);
 }
 
-int NetworkUtils::Add(const Endpoint &this_endpoint,
-                      const Endpoint &peer_endpoint,
-                      const std::string &validation_data) {
+int NetworkUtils::Add(const Endpoint& this_endpoint,
+                      const Endpoint& peer_endpoint,
+                      const std::string& validation_data) {
   return rudp_->Add(this_endpoint, peer_endpoint, validation_data);
 }
 
-void NetworkUtils::Remove(const Endpoint &peer_endpoint) {
+void NetworkUtils::Remove(const Endpoint& peer_endpoint) {
   rudp_->Remove(peer_endpoint);
 }
 
@@ -134,13 +134,13 @@ void NetworkUtils::RudpSend(protobuf::Message message,
     rudp_->Send(endpoint, message.SerializeAsString(), message_sent_functor);
 }
 
-void NetworkUtils::SendToDirectEndpoint(const protobuf::Message &message,
+void NetworkUtils::SendToDirectEndpoint(const protobuf::Message& message,
                                         Endpoint direct_endpoint,
                                         rudp::MessageSentFunctor message_sent_functor) {
   RudpSend(message, direct_endpoint, message_sent_functor);
 }
 
-void NetworkUtils::SendToDirectEndpoint(const protobuf::Message &message,
+void NetworkUtils::SendToDirectEndpoint(const protobuf::Message& message,
                                         Endpoint direct_endpoint) {
   NodeId node_id;
   if (message.has_destination_id())
@@ -181,8 +181,8 @@ void NetworkUtils::SendToClosestNode(protobuf::Message message) {
 }
 
 void NetworkUtils::SendTo(protobuf::Message message,
-                          const NodeId &node_id,
-                          const Endpoint &endpoint) {
+                          const NodeId& node_id,
+                          const Endpoint& endpoint) {
   NodeId peer_node_id = node_id;
   const std::string my_node_id(HexSubstr(routing_table_.kKeys().identity));
   rudp::MessageSentFunctor message_sent_functor = [=](int message_sent) {

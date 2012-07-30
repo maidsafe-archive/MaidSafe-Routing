@@ -32,26 +32,26 @@ class NodeId;
 
 namespace rpcs {
 
-protobuf::Message Ping(const NodeId &node_id, const std::string &identity);
+protobuf::Message Ping(const NodeId& node_id, const std::string& identity);
 
 protobuf::Message Connect(
-    const NodeId &node_id,
-    const rudp::EndpointPair &our_endpoint,
-    const NodeId &my_node_id,
+    const NodeId& node_id,
+    const rudp::EndpointPair& our_endpoint,
+    const NodeId& my_node_id,
     bool client_node = false,
     bool relay_message = false,
     boost::asio::ip::udp::endpoint local_endpoint = boost::asio::ip::udp::endpoint());
 
 protobuf::Message FindNodes(
-    const NodeId &node_id,
-    const NodeId &my_node_id,
+    const NodeId& node_id,
+    const NodeId& my_node_id,
     bool relay_message = false,
     boost::asio::ip::udp::endpoint local_endpoint = boost::asio::ip::udp::endpoint());
 
 protobuf::Message ProxyConnect(
-    const NodeId &node_id,
-    const NodeId &my_node_id,
-    const rudp::EndpointPair &endpoint_pair,
+    const NodeId& node_id,
+    const NodeId& my_node_id,
+    const rudp::EndpointPair& endpoint_pair,
     bool relay_message = false,
     boost::asio::ip::udp::endpoint local_endpoint = boost::asio::ip::udp::endpoint());
 

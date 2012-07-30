@@ -28,23 +28,23 @@ namespace maidsafe {
 
 namespace routing {
 
-bool ClosestToMe(protobuf::Message &message, RoutingTable &routing_table) {
+bool ClosestToMe(protobuf::Message& message, RoutingTable& routing_table) {
   return routing_table.AmIClosestNode(NodeId(message.destination_id()));
 }
 
-bool InClosestNodesToMe(protobuf::Message &message, RoutingTable &routing_table) {
+bool InClosestNodesToMe(protobuf::Message& message, RoutingTable& routing_table) {
   return routing_table.IsMyNodeInRange(NodeId(message.destination_id()),
                                        Parameters::closest_nodes_size);
 }
 
-void ValidateThisNode(NetworkUtils &network_,
-                      RoutingTable &routing_table,
-                      NonRoutingTable &non_routing_table,
+void ValidateThisNode(NetworkUtils& network_,
+                      RoutingTable& routing_table,
+                      NonRoutingTable& non_routing_table,
                       const NodeId& node_id,
-                      const asymm::PublicKey &public_key,
-                      const rudp::EndpointPair &their_endpoint,
-                      const rudp::EndpointPair &our_endpoint,
-                      const bool &client) {
+                      const asymm::PublicKey& public_key,
+                      const rudp::EndpointPair& their_endpoint,
+                      const rudp::EndpointPair& our_endpoint,
+                      const bool& client) {
   NodeInfo node_info;
   node_info.node_id = NodeId(node_id);
   node_info.public_key = public_key;
@@ -95,31 +95,31 @@ void ValidateThisNode(NetworkUtils &network_,
   }
 }
 
-bool IsRoutingMessage(const protobuf::Message &message) {
+bool IsRoutingMessage(const protobuf::Message& message) {
   return ((message.type() < 100) && (message.type() > -100));
 }
 
-bool IsNodeLevelMessage(const protobuf::Message &message) {
+bool IsNodeLevelMessage(const protobuf::Message& message) {
   return !IsRoutingMessage(message);
 }
 
-bool IsRequest(const protobuf::Message &message) {
+bool IsRequest(const protobuf::Message& message) {
   return (message.type() > 0);
 }
 
-bool IsResponse(const protobuf::Message &message) {
+bool IsResponse(const protobuf::Message& message) {
   return !IsRequest(message);
 }
 
 void SetProtobufEndpoint(const boost::asio::ip::udp::endpoint& endpoint,
-                         protobuf::Endpoint *pbendpoint) {
+                         protobuf::Endpoint* pbendpoint) {
   if (pbendpoint) {
     pbendpoint->set_ip(endpoint.address().to_string().c_str());
     pbendpoint->set_port(endpoint.port());
   }
 }
 
-boost::asio::ip::udp::endpoint GetEndpointFromProtobuf(const protobuf::Endpoint &pbendpoint) {
+boost::asio::ip::udp::endpoint GetEndpointFromProtobuf(const protobuf::Endpoint& pbendpoint) {
   return boost::asio::ip::udp::endpoint(boost::asio::ip::address::from_string(pbendpoint.ip()),
                                         static_cast<uint16_t>(pbendpoint.port()));
 }

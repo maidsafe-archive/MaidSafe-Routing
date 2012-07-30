@@ -62,8 +62,8 @@ set(SOURCE_FILES_FAKE_RUDP_DIR "${PROJECT_SOURCE_DIR}/src/maidsafe/fake_rudp/fak
                                "${PROJECT_SOURCE_DIR}/src/maidsafe/fake_rudp/fake_network.cc")
 set(HEADER_FILES_FAKE_RUDP_DIR "${PROJECT_SOURCE_DIR}/src/maidsafe/fake_rudp/fake_network.h")
 set(ALL_FILES_FAKE_RUDP_DIR ${SOURCE_FILES_FAKE_RUDP_DIR} ${HEADER_FILES_FAKE_RUDP_DIR})
-source_group("Routing Fake RUDP Source Files" FILES ${SOURCE_FILES_ROUTING_TESTS_DIR})
-source_group("Routing Fake RUDP Header Files" FILES ${HEADER_FILES_ROUTING_TESTS_DIR})
+source_group("Routing Fake RUDP Source Files" FILES ${SOURCE_FILES_FAKE_RUDP_DIR})
+source_group("Routing Fake RUDP Header Files" FILES ${HEADER_FILES_FAKE_RUDP_DIR})
 
 
 ###################################################################################################

@@ -32,16 +32,16 @@ class RoutingTable;
 
 class ResponseHandler {
  public:
-  ResponseHandler(AsioService &io_service,
-                  RoutingTable &routing_table,
-                  NonRoutingTable &non_routing_table,
-                  NetworkUtils &network);
+  ResponseHandler(AsioService& io_service,
+                  RoutingTable& routing_table,
+                  NonRoutingTable& non_routing_table,
+                  NetworkUtils& network);
 
-  void Ping(protobuf::Message &message);
+  void Ping(protobuf::Message& message);
 
-  void Connect(protobuf::Message &message);
+  void Connect(protobuf::Message& message);
 
-  void FindNode(const protobuf::Message &message);
+  void FindNode(const protobuf::Message& message);
 
   void ProxyConnect(protobuf::Message& message);
   void set_request_public_key_functor(RequestPublicKeyFunctor request_public_key);
@@ -49,10 +49,10 @@ class ResponseHandler {
  private:
   void ReSendFindNodeRequest();
 
-  AsioService &io_service_;
-  RoutingTable &routing_table_;
-  NonRoutingTable &non_routing_table_;
-  NetworkUtils &network_;
+  AsioService& io_service_;
+  RoutingTable& routing_table_;
+  NonRoutingTable& non_routing_table_;
+  NetworkUtils& network_;
   RequestPublicKeyFunctor request_public_key_functor_;
 };
 

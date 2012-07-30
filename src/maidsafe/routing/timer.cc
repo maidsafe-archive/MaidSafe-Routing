@@ -24,15 +24,15 @@ namespace maidsafe {
 
 namespace routing {
 
-maidsafe::routing::Timer::Timer(AsioService &io_service)
+maidsafe::routing::Timer::Timer(AsioService& io_service)
     : io_service_(io_service),
       task_id_(RandomUint32()),
       mutex_(),
       queue_() {}
 // below comment would require an overload or default here to
 // put in another task with the same task_id
-TaskId Timer::AddTask(const boost::posix_time::time_duration &timeout,
-                      const TaskResponseFunctor &response_functor) {
+TaskId Timer::AddTask(const boost::posix_time::time_duration& timeout,
+                      const TaskResponseFunctor& response_functor) {
   TimerPointer timer(new boost::asio::deadline_timer(io_service_.service(), timeout));
   std::lock_guard<std::mutex> lock(mutex_);
   ++task_id_;
@@ -62,7 +62,7 @@ void Timer::KillTask(TaskId task_id) {
       });
 }
 
-void Timer::ExecuteTaskNow(protobuf::Message &message) {
+void Timer::ExecuteTaskNow(protobuf::Message& message) {
   if (!message.has_id()) {
     LOG(kError) << "recieved response with no ID ABORT message";
     return;

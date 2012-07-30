@@ -42,7 +42,7 @@ NodeInfoAndPrivateKey MakeNodeInfoAndKeys();
 
 asymm::Keys MakeKeys();
 
-asymm::Keys GetKeys(const NodeInfoAndPrivateKey &node);
+asymm::Keys GetKeys(const NodeInfoAndPrivateKey& node);
 
 uint16_t GetRandomPort();
 
@@ -57,9 +57,9 @@ boost::asio::ip::address GetLocalIp(
     boost::asio::ip::udp::endpoint peer_endpoint =
         boost::asio::ip::udp::endpoint(boost::asio::ip::address_v4::from_string("8.8.8.8"), 0));
 
-NodeId GenerateUniqueRandomId(const NodeId &holder, const uint16_t &pos);
+NodeId GenerateUniqueRandomId(const NodeId& holder, const uint16_t& pos);
 
-int NetworkStatus(const bool &client, const int &status);
+int NetworkStatus(const bool& client, const int& status);
 
 }  // namespace test
 

@@ -55,7 +55,7 @@ class Routing {
   // WARNING: CONNECTION TO NETWORK WILL ONLY STAY FOR 60 SECONDS.
   // Users are expected to recreate routing object with right credentials and call Join method to
   // join the routing network.
-  Routing(const asymm::Keys &keys, const bool &client_mode);
+  Routing(const asymm::Keys& keys, const bool& client_mode);
 
   ~Routing();
 
@@ -67,8 +67,8 @@ class Routing {
 
   // WARNING: THIS FUNCTION SHOULD BE ONLY USED TO JOIN FIRST TWO ZERO STATE NODES.
   int ZeroStateJoin(Functors functors,
-                    const boost::asio::ip::udp::endpoint &local_endpoint,
-                    const NodeInfo &peer_node_info);
+                    const boost::asio::ip::udp::endpoint& local_endpoint,
+                    const NodeInfo& peer_node_info);
 
   // Returns current network status as int (> 0 is connected).
   int GetStatus();
@@ -78,13 +78,13 @@ class Routing {
   // and indicates success.  Sending a message to your own address will send to all connected
   // clients with your address (except you).  Pass an empty response_functor to indicate you do not
   // care about a response.
-  void Send(const NodeId &destination_id,  // ID of final destination
-            const NodeId &group_id,  // ID of sending group
-            const std::string &data,  // message content (serialised data)
-            const int32_t &type,  // user defined message type
+  void Send(const NodeId& destination_id,  // ID of final destination
+            const NodeId& group_id,  // ID of sending group
+            const std::string& data,  // message content (serialised data)
+            const int32_t& type,  // user defined message type
             const ResponseFunctor response_functor,
-            const boost::posix_time::time_duration &timeout,
-            const ConnectType &connect_type);  // is this to a close node group or direct
+            const boost::posix_time::time_duration& timeout,
+            const ConnectType& connect_type);  // is this to a close node group or direct
 
   // Confirm (if we can) two nodes are within a group range.
   bool ConfirmGroupMembers(const NodeId& node1, const NodeId& node2);
@@ -103,8 +103,8 @@ class Routing {
   void DoJoin(const Functors functors);
   int DoBootstrap(const Functors functors);
   int DoFindNode();
-  void ReceiveMessage(const std::string &message);
-  void ConnectionLost(const boost::asio::ip::udp::endpoint &lost_endpoint);
+  void ReceiveMessage(const std::string& message);
+  void ConnectionLost(const boost::asio::ip::udp::endpoint& lost_endpoint);
   bool CheckBootStrapFilePath();
 
   // pimpl (data members only)

@@ -38,13 +38,13 @@ class Timer;
 class MessageHandler {
  public:
   MessageHandler(AsioService& asio_service,
-                 RoutingTable &routing_table,
-                 NonRoutingTable &non_routing_table,
-                 NetworkUtils &network,
-                 Timer &timer_ptr);
-  void ProcessMessage(protobuf::Message &message);
-  bool CheckCacheData(protobuf::Message &message);
-  bool CheckAndSendToLocalClients(protobuf::Message &message);
+                 RoutingTable& routing_table,
+                 NonRoutingTable& non_routing_table,
+                 NetworkUtils& network,
+                 Timer& timer_ptr);
+  void ProcessMessage(protobuf::Message& message);
+  bool CheckCacheData(protobuf::Message& message);
+  bool CheckAndSendToLocalClients(protobuf::Message& message);
   void set_message_received_functor(MessageReceivedFunctor message_received);
   void set_request_public_key_functor(RequestPublicKeyFunctor node_validation);
   void set_tearing_down();
@@ -54,20 +54,20 @@ class MessageHandler {
   MessageHandler(const MessageHandler&);
   MessageHandler(const MessageHandler&&);
   MessageHandler& operator=(const MessageHandler&);
-  void DirectMessage(protobuf::Message &message);
-  void RoutingMessage(protobuf::Message &message);
-  void NodeLevelMessageForMe(protobuf::Message &message);
-  void CloseNodesMessage(protobuf::Message &message);
-  void ProcessRelayRequest(protobuf::Message &message);
-  bool RelayDirectMessageIfNeeded(protobuf::Message &message);
-  void ClientMessage(protobuf::Message &message);
-  void GroupMessage(protobuf::Message &message);
+  void DirectMessage(protobuf::Message& message);
+  void RoutingMessage(protobuf::Message& message);
+  void NodeLevelMessageForMe(protobuf::Message& message);
+  void CloseNodesMessage(protobuf::Message& message);
+  void ProcessRelayRequest(protobuf::Message& message);
+  bool RelayDirectMessageIfNeeded(protobuf::Message& message);
+  void ClientMessage(protobuf::Message& message);
+  void GroupMessage(protobuf::Message& message);
 
   AsioService& asio_service_;
-  RoutingTable &routing_table_;
-  NonRoutingTable &non_routing_table_;
-  NetworkUtils &network_;
-  Timer &timer_ptr_;
+  RoutingTable& routing_table_;
+  NonRoutingTable& non_routing_table_;
+  NetworkUtils& network_;
+  Timer& timer_ptr_;
   CacheManager cache_manager_;
   ResponseHandler response_handler_;
   MessageReceivedFunctor message_received_functor_;

@@ -33,7 +33,7 @@ namespace routing {
 
 namespace service {
 
-void Ping(RoutingTable &routing_table, protobuf::Message &message) {
+void Ping(RoutingTable& routing_table, protobuf::Message& message) {
   if (message.destination_id() != routing_table.kKeys().identity) {
     LOG(kError) << "Message not for us";
     return;  // not for us and we should not pass it on.
@@ -57,10 +57,10 @@ void Ping(RoutingTable &routing_table, protobuf::Message &message) {
   assert(message.IsInitialized() && "unintialised message");
 }
 
-void Connect(RoutingTable &routing_table,
-             NonRoutingTable &non_routing_table,
-             NetworkUtils &network,
-             protobuf::Message &message,
+void Connect(RoutingTable& routing_table,
+             NonRoutingTable& non_routing_table,
+             NetworkUtils& network,
+             protobuf::Message& message,
              RequestPublicKeyFunctor node_validation_functor) {
   if (message.destination_id() != routing_table.kKeys().identity) {
     LOG(kError) << "Connect -- not for us and we should not pass it on."
@@ -118,7 +118,7 @@ void Connect(RoutingTable &routing_table,
                   << " node succeeded !!";
     if (node_validation_functor) {
       auto validate_node =
-          [=, &routing_table, &non_routing_table, &network] (const asymm::PublicKey &key)->void {
+          [=, &routing_table, &non_routing_table, &network] (const asymm::PublicKey& key)->void {
             LOG(kInfo) << "NEED TO VALIDATE THE NODE HERE";
             ValidateThisNode(network,
                              routing_table,
@@ -155,7 +155,7 @@ void Connect(RoutingTable &routing_table,
   assert(message.IsInitialized() && "unintialised message");
 }
 
-void FindNodes(RoutingTable &routing_table, protobuf::Message &message) {
+void FindNodes(RoutingTable& routing_table, protobuf::Message& message) {
   LOG(kVerbose) << "FindNodes -- service()";
   protobuf::FindNodesRequest find_nodes;
   if (!find_nodes.ParseFromString(message.data(0))) {
@@ -199,8 +199,8 @@ void FindNodes(RoutingTable &routing_table, protobuf::Message &message) {
   assert(message.IsInitialized() && "unintialised message");
 }
 
-void ProxyConnect(RoutingTable &routing_table, NetworkUtils &/*network*/,
-                  protobuf::Message &message) {
+void ProxyConnect(RoutingTable& routing_table, NetworkUtils &/*network*/,
+                  protobuf::Message& message) {
   if (message.destination_id() != routing_table.kKeys().identity) {
     LOG(kError) << "Message not for us";
     return;  // not for us and we should not pass it on.

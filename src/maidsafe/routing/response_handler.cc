@@ -38,10 +38,10 @@ typedef boost::asio::ip::udp::endpoint Endpoint;
 
 }  // unnamed namespace
 
-ResponseHandler::ResponseHandler(AsioService &io_service,
-                                 RoutingTable &routing_table,
-                                 NonRoutingTable &non_routing_table,
-                                 NetworkUtils &network)
+ResponseHandler::ResponseHandler(AsioService& io_service,
+                                 RoutingTable& routing_table,
+                                 NonRoutingTable& non_routing_table,
+                                 NetworkUtils& network)
     : io_service_(io_service),
       routing_table_(routing_table),
       non_routing_table_(non_routing_table),
@@ -92,7 +92,7 @@ void ResponseHandler::Connect(protobuf::Message& message) {
 
   if (request_public_key_functor_) {
     auto validate_node =
-      [=] (const asymm::PublicKey &key) {
+      [=] (const asymm::PublicKey& key) {
           LOG(kInfo) << "NEED TO VALIDATE THE NODE HERE";
           ValidateThisNode(this->network_,
                            this->routing_table_,

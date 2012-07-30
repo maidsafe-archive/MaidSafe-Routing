@@ -29,8 +29,8 @@ namespace protobuf { class Message; }
 class CacheManager {
  public:
   CacheManager();
-  void AddToCache(const protobuf::Message &message);
-  bool GetFromCache(protobuf::Message &message);
+  void AddToCache(const protobuf::Message& message);
+  bool GetFromCache(protobuf::Message& message);
 
  private:
   CacheManager(const CacheManager&);

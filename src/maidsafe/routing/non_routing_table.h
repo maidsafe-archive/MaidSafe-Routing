@@ -39,15 +39,15 @@ namespace protobuf { class Contact; }
 
 class NonRoutingTable {
  public:
-  explicit NonRoutingTable(const asymm::Keys &keys);
-  bool AddNode(NodeInfo &node, const NodeId &furthest_close_node_id);
-  bool CheckNode(NodeInfo &node, const NodeId &furthest_close_node_id);
-  int16_t DropNodes(const NodeId &node_id);
-  NodeInfo DropNode(const boost::asio::ip::udp::endpoint &endpoint);
-  NodeInfo GetNodeInfo(const boost::asio::ip::udp::endpoint &endpoint);
-  std::vector<NodeInfo> GetNodesInfo(const NodeId &node_id);
+  explicit NonRoutingTable(const asymm::Keys& keys);
+  bool AddNode(NodeInfo& node, const NodeId& furthest_close_node_id);
+  bool CheckNode(NodeInfo& node, const NodeId& furthest_close_node_id);
+  int16_t DropNodes(const NodeId& node_id);
+  NodeInfo DropNode(const boost::asio::ip::udp::endpoint& endpoint);
+  NodeInfo GetNodeInfo(const boost::asio::ip::udp::endpoint& endpoint);
+  std::vector<NodeInfo> GetNodesInfo(const NodeId& node_id);
   bool AmIConnectedToEndpoint(const boost::asio::ip::udp::endpoint& endpoint);
-  bool AmIConnectedToNode(const NodeId &node_id);
+  bool AmIConnectedToNode(const NodeId& node_id);
   uint16_t Size();
   asymm::Keys kKeys() const;
   boost::signals2::signal<void(std::string, std::string)> &CloseNodeReplacedOldNewSignal();
@@ -58,12 +58,12 @@ class NonRoutingTable {
  private:
   NonRoutingTable(const NonRoutingTable&);
   NonRoutingTable& operator=(const NonRoutingTable&);
-  bool AddOrCheckNode(NodeInfo &node, const NodeId &furthest_close_node_id, const bool &add);
-  bool CheckValidParameters(const NodeInfo &node) const;
-  bool CheckParametersAreUnique(const NodeInfo &node) const;
-  bool CheckRangeForNodeToBeAdded(NodeInfo &node, const NodeId &furthest_close_node_id,
-                                  const bool &add);
-  bool IsMyNodeInRange(const NodeId &node_id, const NodeId &furthest_close_node_id);
+  bool AddOrCheckNode(NodeInfo& node, const NodeId& furthest_close_node_id, const bool& add);
+  bool CheckValidParameters(const NodeInfo& node) const;
+  bool CheckParametersAreUnique(const NodeInfo& node) const;
+  bool CheckRangeForNodeToBeAdded(NodeInfo& node, const NodeId& furthest_close_node_id,
+                                  const bool& add);
+  bool IsMyNodeInRange(const NodeId& node_id, const NodeId& furthest_close_node_id);
   uint16_t NonRoutingTableSize();
 
   asymm::Keys keys_;
