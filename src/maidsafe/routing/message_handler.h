@@ -18,6 +18,7 @@
 
 #include "maidsafe/rudp/managed_connections.h"
 
+#include "maidsafe/routing/response_handler.h"
 #include "maidsafe/routing/cache_manager.h"
 #include "maidsafe/routing/api_config.h"
 
@@ -33,6 +34,7 @@ class CacheManager;
 class NetworkUtils;
 class NonRoutingTable;
 class RoutingTable;
+
 class Timer;
 
 class MessageHandler {
@@ -41,19 +43,13 @@ class MessageHandler {
                  RoutingTable &routing_table,
                  NonRoutingTable &non_routing_table,
                  NetworkUtils &network,
-                 Timer &timer_ptr,
-                 MessageReceivedFunctor message_received_functor,
-                 RequestPublicKeyFunctor node_validation_functor);
+                 Timer &timer_ptr);
   void ProcessMessage(protobuf::Message &message);
   bool CheckCacheData(protobuf::Message &message);
   bool CheckAndSendToLocalClients(protobuf::Message &message);
-  void set_bootstrap_endpoint(Endpoint endpoint);
-  void set_my_relay_endpoint(Endpoint endpoint);
   void set_message_received_functor(MessageReceivedFunctor message_received);
-  void set_node_validation_functor(RequestPublicKeyFunctor node_validation);
+  void set_request_public_key_functor(RequestPublicKeyFunctor node_validation);
   void set_tearing_down();
-  Endpoint bootstrap_endpoint();
-  Endpoint my_relay_endpoint();
   bool tearing_down();
 
  private:
@@ -73,12 +69,11 @@ class MessageHandler {
   RoutingTable &routing_table_;
   NonRoutingTable &non_routing_table_;
   NetworkUtils &network_;
-  Endpoint bootstrap_endpoint_;
-  Endpoint my_relay_endpoint_;
   Timer &timer_ptr_;
   CacheManager cache_manager_;
+  ResponseHandler response_handler_;
   MessageReceivedFunctor message_received_functor_;
-  RequestPublicKeyFunctor node_validation_functor_;
+  RequestPublicKeyFunctor request_public_key_functor_;
   std::atomic<bool> tearing_down_;
 };
 

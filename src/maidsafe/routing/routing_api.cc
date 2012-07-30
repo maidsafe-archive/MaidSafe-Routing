@@ -61,9 +61,6 @@ Routing::Routing(const asymm::Keys &keys, const bool &client_mode)
 Routing::~Routing() {
   LOG(kVerbose) << "~Routing() - Disconnecting funtors"
                 << ", Routing table Size - " << impl_->routing_table_.Size();
-  impl_->network_.Stop();
-  impl_->message_handler_.set_tearing_down();
-  impl_->tearing_down_ = true;
   DisconnectFunctors();
 }
 
@@ -136,15 +133,15 @@ void Routing::ConnectFunctors(Functors functors) {
   impl_->routing_table_.set_network_status_functor(functors.network_status);
   impl_->routing_table_.set_close_node_replaced_functor(functors.close_node_replaced);
   impl_->message_handler_.set_message_received_functor(functors.message_received);
-  impl_->message_handler_.set_node_validation_functor(functors.request_public_key);
+  impl_->message_handler_.set_request_public_key_functor(functors.request_public_key);
   impl_->functors_ = functors;
 }
 
-void Routing::DisconnectFunctors() {  // TODO(Prakash) : fix raise condition when functors in use
+void Routing::DisconnectFunctors() {  // TODO(Prakash) : fix race condition when functors in use
   impl_->routing_table_.set_network_status_functor(nullptr);
   impl_->routing_table_.set_close_node_replaced_functor(nullptr);
   impl_->message_handler_.set_message_received_functor(nullptr);
-  impl_->message_handler_.set_node_validation_functor(nullptr);
+  impl_->message_handler_.set_request_public_key_functor(nullptr);
   impl_->functors_ = Functors();
 }
 
@@ -199,25 +196,7 @@ int Routing::DoBootstrap(Functors functors) {
   rudp::MessageReceivedFunctor message_recieved(std::bind(&Routing::ReceiveMessage, this,
                                                           args::_1));
   rudp::ConnectionLostFunctor connection_lost(std::bind(&Routing::ConnectionLost, this, args::_1));
-  Endpoint bootstrap_endpoint(impl_->network_.Bootstrap(impl_->bootstrap_nodes_,
-                                                        message_recieved,
-                                                        connection_lost));
-
-  if (bootstrap_endpoint.address().is_unspecified()) {
-    LOG(kError) << "No Online Bootstrap Node found.";
-    return kNoOnlineBootstrapContacts;
-  }
-  LOG(kVerbose) << "Bootstrap successful, bootstrap node - " << bootstrap_endpoint;
-  rudp::EndpointPair endpoint_pair;
-  if (kSuccess != impl_->network_.GetAvailableEndpoint(bootstrap_endpoint, endpoint_pair)) {
-    LOG(kError) << " Failed to get available endpoint for new connections";
-    return kGeneralError;
-  }
-  LOG(kVerbose) << " GetAvailableEndpoint for peer - "
-                << bootstrap_endpoint << " my endpoint - " << endpoint_pair.external;
-  impl_->message_handler_.set_bootstrap_endpoint(bootstrap_endpoint);
-  impl_->message_handler_.set_my_relay_endpoint(endpoint_pair.external);
-  return kSuccess;
+  return impl_->network_.Bootstrap(impl_->bootstrap_nodes_, message_recieved, connection_lost);
 }
 
 int Routing::DoFindNode() {
@@ -225,7 +204,7 @@ int Routing::DoFindNode() {
       rpcs::FindNodes(NodeId(impl_->keys_.identity),
                       NodeId(impl_->keys_.identity),
                       true,
-                      impl_->message_handler_.my_relay_endpoint()));
+                      impl_->network_.my_relay_endpoint()));
 
   boost::promise<bool> message_sent_promise;
   auto message_sent_future = message_sent_promise.get_future();
@@ -236,16 +215,16 @@ int Routing::DoFindNode() {
       message_sent_promise.set_value(false);
     };
 
-  impl_->network_.SendToDirectEndpoint(find_node_rpc, impl_->message_handler_.bootstrap_endpoint(),
+  impl_->network_.SendToDirectEndpoint(find_node_rpc, impl_->network_.bootstrap_endpoint(),
                                        message_sent_functor);
 
   if (!message_sent_future.timed_wait(boost::posix_time::seconds(10))) {
     LOG(kError) << "Unable to send FindNode rpc to bootstrap endpoint - "
-                << impl_->message_handler_.bootstrap_endpoint();
+                << impl_->network_.bootstrap_endpoint();
     return kFailedtoSendFindNode;
   } else {
     LOG(kInfo) << "Successfully sent FindNode rpc to bootstrap endpoint - "
-               << impl_->message_handler_.bootstrap_endpoint();
+               << impl_->network_.bootstrap_endpoint();
     return kSuccess;
   }
 }
@@ -266,20 +245,20 @@ int Routing::ZeroStateJoin(Functors functors, const Endpoint &local_endpoint,
                                                           args::_1));
   rudp::ConnectionLostFunctor connection_lost(std::bind(&Routing::ConnectionLost, this, args::_1));
 
-  Endpoint bootstrap_endpoint(impl_->network_.Bootstrap(impl_->bootstrap_nodes_,
-                                                        message_recieved,
-                                                        connection_lost,
-                                                        local_endpoint));
+  int result(impl_->network_.Bootstrap(impl_->bootstrap_nodes_,
+                                       message_recieved,
+                                       connection_lost,
+                                       local_endpoint));
 
-  if (bootstrap_endpoint.address().is_unspecified() && local_endpoint.address().is_unspecified()) {
-    LOG(kError) << "Could not bootstrap zero state node with " << bootstrap_endpoint;
-    return kNoOnlineBootstrapContacts;
+  if ((result != kSuccess)) {
+    LOG(kError) << "Could not bootstrap zero state node with " << peer_node.endpoint;
+    return result;
   }
-  assert((bootstrap_endpoint == peer_node.endpoint) &&
-         "This should be only used in zero state network");
-  LOG(kVerbose) << local_endpoint << " Bootstraped with remote endpoint " << bootstrap_endpoint;
-  impl_->message_handler_.set_bootstrap_endpoint(bootstrap_endpoint);
-  impl_->message_handler_.set_my_relay_endpoint(local_endpoint);
+
+   assert((impl_->network_.bootstrap_endpoint() == peer_node.endpoint) &&
+          "This should be only used in zero state network");
+  LOG(kVerbose) << local_endpoint << " Bootstraped with remote endpoint " << peer_node.endpoint;
+
   rudp::EndpointPair their_endpoint_pair;  //  zero state nodes must be directly connected endpoint
   rudp::EndpointPair our_endpoint_pair;
   their_endpoint_pair.external = their_endpoint_pair.local = peer_node.endpoint;
@@ -295,13 +274,14 @@ int Routing::ZeroStateJoin(Functors functors, const Endpoint &local_endpoint,
     Sleep(boost::posix_time::milliseconds(100));
   } while ((impl_->routing_table_.Size() == 0) && (++poll_count < 50));
   if (impl_->routing_table_.Size() != 0) {
-    LOG(kInfo) << "Node Successfully joined zero state network, with " << bootstrap_endpoint
+    LOG(kInfo) << "Node Successfully joined zero state network, with "
+               << impl_->network_.bootstrap_endpoint()
                << ", Routing table size - " << impl_->routing_table_.Size()
                << ", Node id : " << HexSubstr(impl_->keys_.identity);
     return kSuccess;
   } else {
     LOG(kError) << "Failed to join zero state network, with bootstrap_endpoint"
-                << bootstrap_endpoint;
+                << impl_->network_.bootstrap_endpoint();
     return kNotJoined;
   }
 }
@@ -353,8 +333,8 @@ void Routing::Send(const NodeId &destination_id,
   // Anonymous node
   if (impl_->anonymous_node_) {
     proto_message.set_relay_id(impl_->routing_table_.kKeys().identity);
-    SetProtobufEndpoint(impl_->message_handler_.my_relay_endpoint(), proto_message.mutable_relay());
-    Endpoint bootstrap_endpoint = impl_->message_handler_.bootstrap_endpoint();
+    SetProtobufEndpoint(impl_->network_.my_relay_endpoint(), proto_message.mutable_relay());
+    Endpoint bootstrap_endpoint = impl_->network_.bootstrap_endpoint();
     rudp::MessageSentFunctor message_sent = [&] (int result) {
         if (rudp::kSuccess != result) {
           impl_->timer_.KillTask(proto_message.id());

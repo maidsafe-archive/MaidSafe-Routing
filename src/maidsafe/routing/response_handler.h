@@ -33,22 +33,31 @@ class NetworkUtils;
 class NonRoutingTable;
 class RoutingTable;
 
-namespace response {
+class ResponseHandler {
+ public:
+  ResponseHandler(AsioService &io_service,
+                  RoutingTable &routing_table,
+                  NonRoutingTable &non_routing_table,
+                  NetworkUtils &network);
 
-void Ping(protobuf::Message &message);
-void Connect(RoutingTable &routing_table,
-             NonRoutingTable &non_routing_table,
-             NetworkUtils &network,
-             protobuf::Message &message,
-             RequestPublicKeyFunctor node_validation_functor);
-void FindNode(RoutingTable &routing_table,
-              NonRoutingTable &non_routing_table,
-              NetworkUtils &network,
-              const protobuf::Message &message,
-              const Endpoint &bootstrap_endpoint);
-void ProxyConnect(protobuf::Message& message);
+  void Ping(protobuf::Message &message);
 
-}  // namespace response
+  void Connect(protobuf::Message &message);
+
+  void FindNode(const protobuf::Message &message);
+
+  void ProxyConnect(protobuf::Message& message);
+  void set_request_public_key_functor(RequestPublicKeyFunctor request_public_key);
+
+ private:
+  void ReSendFindNodeRequest();
+
+  AsioService &io_service_;
+  RoutingTable &routing_table_;
+  NonRoutingTable &non_routing_table_;
+  NetworkUtils &network_;
+  RequestPublicKeyFunctor request_public_key_functor_;
+};
 
 }  // namespace routing
 

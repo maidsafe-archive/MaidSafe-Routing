@@ -41,19 +41,16 @@ MessageHandler::MessageHandler(AsioService& asio_service,
                                RoutingTable &routing_table,
                                NonRoutingTable &non_routing_table,
                                NetworkUtils &network,
-                               Timer &timer_ptr,
-                               MessageReceivedFunctor message_received_functor,
-                               RequestPublicKeyFunctor node_validation_functor)
+                               Timer &timer_ptr)
     : asio_service_(asio_service),
       routing_table_(routing_table),
       non_routing_table_(non_routing_table),
       network_(network),
-      bootstrap_endpoint_(),
-      my_relay_endpoint_(),
       timer_ptr_(timer_ptr),
       cache_manager_(),
-      message_received_functor_(message_received_functor),
-      node_validation_functor_(node_validation_functor),
+      response_handler_(asio_service, routing_table, non_routing_table, network_),
+      message_received_functor_(),
+      request_public_key_functor_(),
       tearing_down_(false) {}
 
 bool MessageHandler::CheckCacheData(protobuf::Message &message) {
@@ -76,28 +73,26 @@ void MessageHandler::RoutingMessage(protobuf::Message& message) {
   bool is_response(IsResponse(message));
   switch (message.type()) {
     case -1 :  // ping
-      response::Ping(message);
+      response_handler_.Ping(message);
       break;
     case 1 :
       service::Ping(routing_table_, message);
       break;
     case -2 :  // connect
-      response::Connect(routing_table_, non_routing_table_, network_, message,
-                        node_validation_functor_);
+      response_handler_.Connect(message);
       break;
     case 2 :
       service::Connect(routing_table_, non_routing_table_, network_, message,
-                       node_validation_functor_);
+                       request_public_key_functor_);
       break;
     case -3 :  // find_nodes
-      response::FindNode(routing_table_, non_routing_table_, network_, message,
-                         bootstrap_endpoint_);
+      response_handler_.FindNode(message);
       break;
     case 3 :
       service::FindNodes(routing_table_, message);
       break;
     case -4 :  // proxy_connect
-      response::ProxyConnect(message);
+      response_handler_.ProxyConnect(message);
       break;
     case 4 :
       service::ProxyConnect(routing_table_, network_, message);
@@ -108,9 +103,8 @@ void MessageHandler::RoutingMessage(protobuf::Message& message) {
   if (is_response)
     return;
 
-  Endpoint direct_endpoint;
   if (routing_table_.Size() == 0) {  // I can only send to bootstrap_endpoint
-    network_.SendToDirectEndpoint(message, bootstrap_endpoint_);
+    network_.SendToDirectEndpoint(message, network_.bootstrap_endpoint());
   } else {
   if (message.IsInitialized())
     network_.SendToClosestNode(message);
@@ -187,7 +181,7 @@ void MessageHandler::CloseNodesMessage(protobuf::Message& message) {
           non_routing_table_.AmIConnectedToNode(destnation_node_id)) {
         network_.SendToClosestNode(message);
         return;
-      } else {
+      } else { // Case when response comes back through different route for relay messages.
         if (IsRoutingMessage(message)) {
           if (message.has_relay_id() && (message.relay_id() == routing_table_.kKeys().identity)) {
             RoutingMessage(message);
@@ -208,8 +202,10 @@ void MessageHandler::CloseNodesMessage(protobuf::Message& message) {
     }
   }
 
+  bool have_node_with_group_id(routing_table_.AmIConnectedToNode(NodeId(message.destination_id())));
   //  I am not closest to the destination node for non-direct message.
-  if (!routing_table_.AmIClosestNode(NodeId(message.destination_id()))) {
+  if (!routing_table_.AmIClosestNode(NodeId(message.destination_id())) &&
+      !have_node_with_group_id) {
     network_.SendToClosestNode(message);
     return;
   }
@@ -222,10 +218,14 @@ void MessageHandler::CloseNodesMessage(protobuf::Message& message) {
   }
 
   // I am closest so will send to all my replicant nodes
+  uint16_t replication(static_cast<uint16_t>(message.replication()));
+  if (have_node_with_group_id)
+    ++replication;
   message.set_direct(1);
-  auto close =
-      routing_table_.GetClosestNodes(NodeId(message.destination_id()),
-                                     static_cast<uint16_t>(message.replication()));
+  auto close(routing_table_.GetClosestNodes(NodeId(message.destination_id()), replication));
+  if (have_node_with_group_id)
+    close.erase(close.begin());
+
   for (auto i : close) {
     message.set_destination_id(i.String());
     network_.SendToClosestNode(message);
@@ -375,25 +375,12 @@ void MessageHandler::set_message_received_functor(MessageReceivedFunctor message
   message_received_functor_ = message_received;
 }
 
-void MessageHandler::set_node_validation_functor(RequestPublicKeyFunctor node_validation) {
-  node_validation_functor_ = node_validation;
+void MessageHandler::set_request_public_key_functor(
+    RequestPublicKeyFunctor request_public_key_func) {
+  request_public_key_functor_ = request_public_key_func;
+  response_handler_.set_request_public_key_functor(request_public_key_functor_);
 }
 
-void MessageHandler::set_bootstrap_endpoint(Endpoint endpoint) {
-  bootstrap_endpoint_ = endpoint;
-}
-
-void MessageHandler::set_my_relay_endpoint(Endpoint endpoint) {
-  my_relay_endpoint_ = endpoint;
-}
-
-Endpoint MessageHandler::my_relay_endpoint() {
-return my_relay_endpoint_;
-}
-
-Endpoint MessageHandler::bootstrap_endpoint() {
-return bootstrap_endpoint_;
-}
 
 void MessageHandler::set_tearing_down() {
   tearing_down_ = true;

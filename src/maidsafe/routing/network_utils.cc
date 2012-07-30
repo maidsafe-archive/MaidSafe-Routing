@@ -21,6 +21,7 @@
 
 #include "maidsafe/routing/non_routing_table.h"
 #include "maidsafe/routing/parameters.h"
+#include "maidsafe/routing/return_codes.h"
 #include "maidsafe/routing/routing_pb.h"
 #include "maidsafe/routing/routing_table.h"
 #include "maidsafe/routing/rpcs.h"
@@ -40,7 +41,9 @@ typedef boost::unique_lock<boost::shared_mutex> UniqueLock;
 namespace routing {
 
 NetworkUtils::NetworkUtils(RoutingTable &routing_table, NonRoutingTable &non_routing_table)
-    : connection_lost_functor_(),
+    : bootstrap_endpoint_(),
+      my_relay_endpoint_(),
+      connection_lost_functor_(),
       routing_table_(routing_table),
       non_routing_table_(non_routing_table),
       rudp_(new rudp::ManagedConnections),
@@ -62,10 +65,10 @@ void NetworkUtils::OnConnectionLost(const Endpoint& endpoint) {
     connection_lost_functor_(endpoint);
 }
 
-Endpoint NetworkUtils::Bootstrap(const std::vector<Endpoint> &bootstrap_endpoints,
-                                 rudp::MessageReceivedFunctor message_received_functor,
-                                 rudp::ConnectionLostFunctor connection_lost_functor,
-                                 Endpoint local_endpoint) {
+int NetworkUtils::Bootstrap(const std::vector<Endpoint> &bootstrap_endpoints,
+                            rudp::MessageReceivedFunctor message_received_functor,
+                            rudp::ConnectionLostFunctor connection_lost_functor,
+                            Endpoint local_endpoint) {
   assert(connection_lost_functor && "Must provide a valid functor");
 
   std::shared_ptr<asymm::PrivateKey>
@@ -74,12 +77,35 @@ Endpoint NetworkUtils::Bootstrap(const std::vector<Endpoint> &bootstrap_endpoint
       public_key(new asymm::PublicKey(routing_table_.kKeys().public_key));
 
   connection_lost_functor_ = connection_lost_functor;
-  return rudp_->Bootstrap(bootstrap_endpoints,
-                          message_received_functor,
-                          [&](const Endpoint &endpoint) { OnConnectionLost(endpoint); },
-                          private_key,
-                          public_key,
-                          local_endpoint);
+  bootstrap_endpoint_ = rudp_->Bootstrap(bootstrap_endpoints,
+                                         message_received_functor,
+                                         [&](const Endpoint &endpoint) {
+                                             OnConnectionLost(endpoint); },
+                                         private_key,
+                                         public_key,
+                                         local_endpoint);
+
+  if (bootstrap_endpoint_.address().is_unspecified()) {
+    LOG(kError) << "No Online Bootstrap Node found.";
+    return kNoOnlineBootstrapContacts;
+  }
+
+  if (!local_endpoint.address().is_unspecified()) {  // Zerostate case
+    my_relay_endpoint_ = local_endpoint;
+    LOG(kVerbose) << "Zero state Bootstrap successful, bootstrap node - "
+                  << bootstrap_endpoint_;
+    return kSuccess;
+  }
+
+  rudp::EndpointPair endpoint_pair;
+  if (kSuccess != rudp_->GetAvailableEndpoint(bootstrap_endpoint_, endpoint_pair)) {
+    LOG(kError) << " Failed to get available endpoint for new connections";
+    return kGeneralError;
+  }
+  my_relay_endpoint_ = endpoint_pair.external;
+  LOG(kVerbose) << "Bootstrap successful, bootstrap node - "
+                << bootstrap_endpoint_;
+  return kSuccess;
 }
 
 int NetworkUtils::GetAvailableEndpoint(const Endpoint &peer_endpoint,

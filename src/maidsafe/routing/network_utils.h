@@ -42,10 +42,10 @@ class NetworkUtils {
   NetworkUtils(RoutingTable &routing_table,
                NonRoutingTable &non_routing_table);
 
-  Endpoint Bootstrap(const std::vector<Endpoint> &bootstrap_endpoints,
-                     rudp::MessageReceivedFunctor message_received_functor,
-                     rudp::ConnectionLostFunctor connection_lost_functor,
-                     Endpoint local_endpoint = Endpoint());
+  int Bootstrap(const std::vector<Endpoint> &bootstrap_endpoints,
+                rudp::MessageReceivedFunctor message_received_functor,
+                rudp::ConnectionLostFunctor connection_lost_functor,
+                Endpoint local_endpoint = Endpoint());
 
   int GetAvailableEndpoint(const Endpoint &peer_endpoint,
                            rudp::EndpointPair &this_endpoint_pair);
@@ -68,6 +68,10 @@ class NetworkUtils {
   // Handles relay response messages also
   // leave destination id empty if needs to send as a relay response message
   void SendToClosestNode(protobuf::Message message);
+
+  Endpoint bootstrap_endpoint() { return bootstrap_endpoint_;}
+
+  Endpoint my_relay_endpoint() { return my_relay_endpoint_;}
 
   void Stop();
 
@@ -94,6 +98,8 @@ class NetworkUtils {
 
   void OnConnectionLost(const Endpoint& endpoint);
 
+  Endpoint bootstrap_endpoint_;
+  Endpoint my_relay_endpoint_;
   rudp::ConnectionLostFunctor connection_lost_functor_;
   RoutingTable &routing_table_;
   NonRoutingTable &non_routing_table_;

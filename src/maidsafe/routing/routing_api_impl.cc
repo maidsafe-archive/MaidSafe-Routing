@@ -42,8 +42,7 @@ RoutingPrivate::RoutingPrivate(const asymm::Keys &keys,
       waiting_for_response_(),
       network_(routing_table_, non_routing_table_),
       message_handler_(asio_service_, routing_table_, non_routing_table_,
-                       network_, timer_, MessageReceivedFunctor(),
-                       RequestPublicKeyFunctor()),
+                       network_, timer_),
       joined_(false),
       bootstrap_file_path_(),
       client_mode_(client_mode),
@@ -54,6 +53,9 @@ RoutingPrivate::RoutingPrivate(const asymm::Keys &keys,
 
 RoutingPrivate::~RoutingPrivate() {
   asio_service_.Stop();
+  network_.Stop();
+  message_handler_.set_tearing_down();
+  tearing_down_ = true;
 }
 
 }  // namespace routing

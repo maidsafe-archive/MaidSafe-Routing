@@ -157,9 +157,9 @@ TEST(NetworkUtilsTest, FUNC_ProcessSendDirectEndpoint) {
   NetworkUtils network(routing_table, non_routing_table);
 
   std::vector<Endpoint> bootstrap_endpoint(1, endpoint2);
-  EXPECT_NE(Endpoint(), network.Bootstrap(bootstrap_endpoint,
-                                          message_received_functor,
-                                          connection_lost_functor));
+  EXPECT_EQ(kSuccess, network.Bootstrap(bootstrap_endpoint,
+                                        message_received_functor,
+                                        connection_lost_functor));
   rudp::EndpointPair endpoint_pair2, endpoint_pair3;
   network.GetAvailableEndpoint(endpoint2, endpoint_pair3);
   rudp2.GetAvailableEndpoint(endpoint_pair3.external, endpoint_pair2);
@@ -262,9 +262,9 @@ TEST(NetworkUtilsTest, FUNC_ProcessSendRecursiveSendOn) {
 
 
   std::vector<Endpoint> bootstrap_endpoint(1, endpoint2);
-  EXPECT_NE(Endpoint(), network.Bootstrap(bootstrap_endpoint,
-                                          message_received_functor,
-                                          connection_lost_functor3));
+  EXPECT_NE(kSuccess, network.Bootstrap(bootstrap_endpoint,
+                                        message_received_functor,
+                                        connection_lost_functor3));
   rudp::EndpointPair endpoint_pair2, endpoint_pair3;
   network.GetAvailableEndpoint(endpoint2, endpoint_pair3);
   rudp2.GetAvailableEndpoint(endpoint_pair3.external, endpoint_pair2);
