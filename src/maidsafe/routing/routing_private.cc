@@ -41,10 +41,9 @@ RoutingPrivate::RoutingPrivate(const asymm::Keys& keys, bool client_mode)
 }
 
 RoutingPrivate::~RoutingPrivate() {
+  tearing_down_ = true;
   asio_service_.Stop();
   network_.Stop();
-  message_handler_->set_tearing_down();
-  tearing_down_ = true;
 }
 
 }  // namespace routing

@@ -39,9 +39,9 @@ MessageHandler::MessageHandler(AsioService& asio_service,
       network_(network),
       timer_(timer),
       cache_manager_(),
-      response_handler_(asio_service, routing_table, non_routing_table, network_),
-      message_received_functor_(),
-      tearing_down_(false) {}
+      response_handler_(new ResponseHandler(asio_service, routing_table,
+                                            non_routing_table, network_)),
+      message_received_functor_() {}
 
 bool MessageHandler::CheckCacheData(protobuf::Message& message) {
   if (message.type() == -100) {
@@ -63,26 +63,26 @@ void MessageHandler::HandleRoutingMessage(protobuf::Message& message) {
   bool is_response(IsResponse(message));
   switch (message.type()) {
     case -1 :  // ping
-      response_handler_.Ping(message);
+      response_handler_->Ping(message);
       break;
     case 1 :
       service::Ping(routing_table_, message);
       break;
     case -2 :  // connect
-      response_handler_.Connect(message);
+      response_handler_->Connect(message);
       break;
     case 2 :
       service::Connect(routing_table_, non_routing_table_, network_, message,
-                       response_handler_.request_public_key_functor());
+                       response_handler_->request_public_key_functor());
       break;
     case -3 :  // find_nodes
-      response_handler_.FindNode(message);
+      response_handler_->FindNode(message);
       break;
     case 3 :
       service::FindNodes(routing_table_, message);
       break;
     case -4 :  // proxy_connect
-      response_handler_.ProxyConnect(message);
+      response_handler_->ProxyConnect(message);
       break;
     case 4 :
       service::ProxyConnect(routing_table_, network_, message);
@@ -344,11 +344,7 @@ void MessageHandler::set_message_received_functor(MessageReceivedFunctor message
 
 void MessageHandler::set_request_public_key_functor(
     RequestPublicKeyFunctor request_public_key_functor) {
-  response_handler_.set_request_public_key_functor(request_public_key_functor);
-}
-
-void MessageHandler::set_tearing_down() {
-  tearing_down_ = true;
+  response_handler_->set_request_public_key_functor(request_public_key_functor);
 }
 
 }  // namespace routing

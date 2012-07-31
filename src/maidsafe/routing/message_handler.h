@@ -44,7 +44,6 @@ class MessageHandler {
   void HandleMessage(protobuf::Message& message);
   void set_message_received_functor(MessageReceivedFunctor message_received_functor);
   void set_request_public_key_functor(RequestPublicKeyFunctor request_public_key_functor);
-  void set_tearing_down();
 
  private:
   MessageHandler(const MessageHandler&);
@@ -67,9 +66,8 @@ class MessageHandler {
   NetworkUtils& network_;
   Timer& timer_;
   CacheManager cache_manager_;
-  ResponseHandler response_handler_;
+  std::shared_ptr<ResponseHandler> response_handler_;
   MessageReceivedFunctor message_received_functor_;
-  std::atomic<bool> tearing_down_;
 };
 
 }  // namespace routing

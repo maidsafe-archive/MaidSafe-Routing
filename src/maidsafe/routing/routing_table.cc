@@ -14,6 +14,7 @@
 
 #include <thread>
 #include <algorithm>
+#include <string>
 
 #include "maidsafe/common/log.h"
 #include "maidsafe/common/utils.h"
@@ -65,7 +66,7 @@ bool RoutingTable::AddOrCheckNode(NodeInfo& peer, const bool& remove) {
                    nodes_.end(),
                    [peer](const NodeInfo& node_info) { return node_info.node_id == peer.node_id; })
           != nodes_.end()) {
-    LOG(kInfo) << "Node " << HexSubstr(peer.node_id.String()) << " already in routing table." ;
+    LOG(kInfo) << "Node " << HexSubstr(peer.node_id.String()) << " already in routing table.";
     return false;
   }
 
@@ -337,7 +338,7 @@ std::vector<NodeInfo> RoutingTable::GetClosestNodeInfo(const NodeId& from,
 
   for (unsigned int i = 0; i < count; ++i)
     close_nodes.push_back(nodes_[i]);
- 
+
   return close_nodes;
 }
 

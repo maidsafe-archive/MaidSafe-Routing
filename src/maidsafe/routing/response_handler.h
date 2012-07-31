@@ -30,7 +30,15 @@ class NetworkUtils;
 class NonRoutingTable;
 class RoutingTable;
 
-class ResponseHandler {
+#ifdef __GNUC__
+#  pragma GCC diagnostic push
+#  pragma GCC diagnostic ignored "-Weffc++"
+#endif
+class ResponseHandler  : public std::enable_shared_from_this<ResponseHandler> {
+#ifdef __GNUC__
+#  pragma GCC diagnostic pop
+#endif
+
  public:
   ResponseHandler(AsioService& io_service,
                   RoutingTable& routing_table,

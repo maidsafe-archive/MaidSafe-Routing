@@ -12,6 +12,8 @@
 
 #include "maidsafe/routing/response_handler.h"
 
+#include<memory>
+
 #include "maidsafe/common/log.h"
 #include "maidsafe/common/utils.h"
 
@@ -78,7 +80,8 @@ void ResponseHandler::Connect(protobuf::Message& message) {
                 << "] received connect response from "
                 << HexSubstr(connect_request.contact().node_id());
   rudp::EndpointPair this_endpoint_pair;
-  this_endpoint_pair.external = GetEndpointFromProtobuf(connect_request.contact().public_endpoint());
+  this_endpoint_pair.external =
+      GetEndpointFromProtobuf(connect_request.contact().public_endpoint());
   this_endpoint_pair.local = GetEndpointFromProtobuf(connect_request.contact().private_endpoint());
 
   rudp::EndpointPair peer_endpoint_pair;
@@ -86,19 +89,22 @@ void ResponseHandler::Connect(protobuf::Message& message) {
       GetEndpointFromProtobuf(connect_response.contact().public_endpoint());
   peer_endpoint_pair.local =
       GetEndpointFromProtobuf(connect_response.contact().private_endpoint());
-
+  std::weak_ptr<ResponseHandler> response_handler_weak_ptr = shared_from_this();
   if (request_public_key_functor_) {
     auto validate_node([=] (const asymm::PublicKey& key) {
                            LOG(kInfo) << "NEED TO VALIDATE THE NODE HERE";
-                           ValidatePeer(this->network_,
-                                        this->routing_table_,
-                                        this->non_routing_table_,
-                                        NodeId(connect_response.contact().node_id()),
-                                        key,
-                                        peer_endpoint_pair,
-                                        this_endpoint_pair,
-                                        false);
-                           });
+                           if (std::shared_ptr<ResponseHandler> response_handler =
+                               response_handler_weak_ptr.lock()) {
+                             ValidatePeer(response_handler->network_,
+                                          response_handler->routing_table_,
+                                          response_handler->non_routing_table_,
+                                          NodeId(connect_response.contact().node_id()),
+                                          key,
+                                          peer_endpoint_pair,
+                                          this_endpoint_pair,
+                                          false);
+                           }
+                         });
     request_public_key_functor_(NodeId(connect_response.contact().node_id()), validate_node);
   }
 }
@@ -163,9 +169,9 @@ void ResponseHandler::FindNode(const protobuf::Message& message) {
   }
 
   if (routing_table_.Size() < Parameters::closest_nodes_size) {
-  LOG(kVerbose) << "Routing table smaller than " << Parameters::closest_nodes_size
-                << " nodes.  Sending another FindNode...";
-    ReSendFindNodeRequest();
+    LOG(kVerbose) << "Routing table smaller than " << Parameters::closest_nodes_size
+                  << " nodes.  Sending another FindNode...";
+    // ReSendFindNodeRequest();
   }
 }
 
