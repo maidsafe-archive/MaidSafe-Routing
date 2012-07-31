@@ -20,6 +20,8 @@
 #include "maidsafe/routing/routing_pb.h"
 
 
+namespace fs = boost::filesystem;
+
 namespace maidsafe {
 
 namespace routing {
@@ -30,36 +32,47 @@ std::vector<boost::asio::ip::udp::endpoint> ReadBootstrapFile(const fs::path& pa
 
   std::string serialised_endpoints;
   if (!ReadFile(path, &serialised_endpoints)) {
-     LOG(kError) << "could not read bootstrap file";
+    LOG(kError) << "Could not read bootstrap file.";
     return bootstrap_nodes;
   }
+
   if (!protobuf_bootstrap.ParseFromString(serialised_endpoints)) {
-    LOG(kError) << "could not parse bootstrap file";
+    LOG(kError) << "Could not parse bootstrap file.";
     return bootstrap_nodes;
   }
-  bootstrap_nodes.resize(protobuf_bootstrap.bootstrap_contacts().size());
-  boost::asio::ip::udp::endpoint endpoint;
+
+  bootstrap_nodes.reserve(protobuf_bootstrap.bootstrap_contacts().size());
   for (int i = 0; i < protobuf_bootstrap.bootstrap_contacts().size(); ++i) {
-    endpoint.address(
-        boost::asio::ip::address::from_string(protobuf_bootstrap.bootstrap_contacts(i).ip()));
-    endpoint.port(static_cast<uint16_t>(protobuf_bootstrap.bootstrap_contacts(i).port()));
-    bootstrap_nodes[i] = endpoint;
+    bootstrap_nodes.push_back(boost::asio::ip::udp::endpoint(
+        boost::asio::ip::address::from_string(protobuf_bootstrap.bootstrap_contacts(i).ip()),
+        static_cast<uint16_t>(protobuf_bootstrap.bootstrap_contacts(i).port())));
   }
-  return  bootstrap_nodes;
+
+  return bootstrap_nodes;
 }
 
-bool WriteBootstrapFile(const std::vector<boost::asio::ip::udp::endpoint>& endpoints,
+bool WriteBootstrapFile(const std::vector<boost::asio::ip::udp::endpoint> &endpoints,
                         const fs::path& path) {
   protobuf::Bootstrap protobuf_bootstrap;
 
   for (size_t i = 0; i < endpoints.size(); ++i) {
-    protobuf::Endpoint *endpoint = protobuf_bootstrap.add_bootstrap_contacts();
+    protobuf::Endpoint* endpoint = protobuf_bootstrap.add_bootstrap_contacts();
     endpoint->set_ip(endpoints[i].address().to_string());
     endpoint->set_port(endpoints[i].port());
   }
+
   std::string serialised_bootstrap_nodes;
-  protobuf_bootstrap.SerializeToString(&serialised_bootstrap_nodes);
-  return (WriteFile(path, serialised_bootstrap_nodes));
+  if (!protobuf_bootstrap.SerializeToString(&serialised_bootstrap_nodes)) {
+    LOG(kError) << "Could not serialise bootstrap contacts.";
+    return false;
+  }
+
+  if (!WriteFile(path, serialised_bootstrap_nodes)) {
+    LOG(kError) << "Could not write bootstrap file.";
+    return false;
+  }
+
+  return true;
 }
 
 }  // namespace routing

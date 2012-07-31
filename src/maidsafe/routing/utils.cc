@@ -14,12 +14,10 @@
 
 #include "maidsafe/common/log.h"
 #include "maidsafe/common/utils.h"
-#include "maidsafe/rudp/managed_connections.h"
 #include "maidsafe/rudp/return_codes.h"
 
 #include "maidsafe/routing/network_utils.h"
 #include "maidsafe/routing/non_routing_table.h"
-#include "maidsafe/routing/parameters.h"
 #include "maidsafe/routing/routing_pb.h"
 #include "maidsafe/routing/routing_table.h"
 #include "maidsafe/routing/rpcs.h"
@@ -28,35 +26,27 @@ namespace maidsafe {
 
 namespace routing {
 
-bool ClosestToMe(protobuf::Message& message, RoutingTable& routing_table) {
-  return routing_table.AmIClosestNode(NodeId(message.destination_id()));
-}
+void ValidatePeer(NetworkUtils& network_,
+                  RoutingTable& routing_table,
+                  NonRoutingTable& non_routing_table,
+                  const NodeId& peer_id,
+                  const asymm::PublicKey& public_key,
+                  const rudp::EndpointPair& peer_endpoint,
+                  const rudp::EndpointPair& this_endpoint,
+                  const bool& client) {
+  NodeInfo peer;
+  peer.node_id = peer_id;
+  peer.public_key = public_key;
+  peer.endpoint = peer_endpoint.external;
+  LOG(kVerbose) << "Calling RUDP::Add on this node's endpoint " << this_endpoint.external
+                << ", peer's endpoint " << peer_endpoint.external;
+  int result = network_.Add(this_endpoint.external, peer_endpoint.external, peer_id.String());
 
-bool InClosestNodesToMe(protobuf::Message& message, RoutingTable& routing_table) {
-  return routing_table.IsMyNodeInRange(NodeId(message.destination_id()),
-                                       Parameters::closest_nodes_size);
-}
-
-void ValidateThisNode(NetworkUtils& network_,
-                      RoutingTable& routing_table,
-                      NonRoutingTable& non_routing_table,
-                      const NodeId& node_id,
-                      const asymm::PublicKey& public_key,
-                      const rudp::EndpointPair& their_endpoint,
-                      const rudp::EndpointPair& our_endpoint,
-                      const bool& client) {
-  NodeInfo node_info;
-  node_info.node_id = NodeId(node_id);
-  node_info.public_key = public_key;
-  node_info.endpoint = their_endpoint.external;
-  LOG(kVerbose) << "Calling rudp Add on endpoint = " << our_endpoint.external
-                << ", their endpoint = " << their_endpoint.external;
-  int result = network_.Add(our_endpoint.external, their_endpoint.external, node_id.String());
-
-  if (result != 0) {
-      LOG(kWarning) << "rudp add failed " << result;
+  if (result != rudp::kSuccess) {
+    LOG(kWarning) << "rudp add failed " << result;
     return;
   }
+
   LOG(kVerbose) << "rudp.Add result = " << result;
   bool routing_accepted_node(false);
   if (client) {
@@ -64,18 +54,18 @@ void ValidateThisNode(NetworkUtils& network_,
         routing_table.GetNthClosestNode(NodeId(routing_table.kKeys().identity),
                                         Parameters::closest_nodes_size).node_id;
 
-    if (non_routing_table.AddNode(node_info, furthest_close_node_id)) {
+    if (non_routing_table.AddNode(peer, furthest_close_node_id)) {
       routing_accepted_node = true;
-      LOG(kVerbose) << "Added client node to non routing table. node id : "
-                    << HexSubstr(node_id.String());
+      LOG(kVerbose) << "Added client node to non routing table.  Node ID: "
+                    << HexSubstr(peer_id.String());
     } else {
-      LOG(kVerbose) << "Failed to add client node to non routing table. node id : "
-                    << HexSubstr(node_id.String());
+      LOG(kVerbose) << "Failed to add client node to non routing table.  Node ID: "
+                    << HexSubstr(peer_id.String());
     }
   } else {
-    if (routing_table.AddNode(node_info)) {
+    if (routing_table.AddNode(peer)) {
       routing_accepted_node = true;
-      LOG(kVerbose) << "Added node to routing table. node id : " << HexSubstr(node_id.String());
+      LOG(kVerbose) << "Added node to routing table.  Node ID: " << HexSubstr(peer_id.String());
 
       // ProcessSend(rpcs::ProxyConnect(node_id, NodeId(routing_table.kKeys().identity),
        //                              their_endpoint),
@@ -83,15 +73,14 @@ void ValidateThisNode(NetworkUtils& network_,
        //           routing_table,
        //           Endpoint());
     } else {
-      LOG(kVerbose) << "failed to Add node to routing table. node id : "
-                    << HexSubstr(node_id.String());
+      LOG(kVerbose) << "Failed to add node to routing table.  Node id : "
+                    << HexSubstr(peer_id.String());
     }
   }
   if (!routing_accepted_node) {
-    LOG(kVerbose) << "Not adding node to " << (client?"non-": "") << "routing table  node id "
-                  << HexSubstr(node_id.String())
-                  << " just added rudp connection will be removed now";
-    network_.Remove(their_endpoint.external);
+    LOG(kVerbose) << "Not adding node to " << (client ? "non-" : "") << "routing table.  Node id "
+                  << HexSubstr(peer_id.String()) << " just added rudp connection will be removed.";
+    network_.Remove(peer_endpoint.external);
   }
 }
 
@@ -112,16 +101,16 @@ bool IsResponse(const protobuf::Message& message) {
 }
 
 void SetProtobufEndpoint(const boost::asio::ip::udp::endpoint& endpoint,
-                         protobuf::Endpoint* pbendpoint) {
-  if (pbendpoint) {
-    pbendpoint->set_ip(endpoint.address().to_string().c_str());
-    pbendpoint->set_port(endpoint.port());
+                         protobuf::Endpoint* pb_endpoint) {
+  if (pb_endpoint) {
+    pb_endpoint->set_ip(endpoint.address().to_string().c_str());
+    pb_endpoint->set_port(endpoint.port());
   }
 }
 
-boost::asio::ip::udp::endpoint GetEndpointFromProtobuf(const protobuf::Endpoint& pbendpoint) {
-  return boost::asio::ip::udp::endpoint(boost::asio::ip::address::from_string(pbendpoint.ip()),
-                                        static_cast<uint16_t>(pbendpoint.port()));
+boost::asio::ip::udp::endpoint GetEndpointFromProtobuf(const protobuf::Endpoint& pb_endpoint) {
+  return boost::asio::ip::udp::endpoint(boost::asio::ip::address::from_string(pb_endpoint.ip()),
+                                        static_cast<uint16_t>(pb_endpoint.port()));
 }
 
 }  // namespace routing

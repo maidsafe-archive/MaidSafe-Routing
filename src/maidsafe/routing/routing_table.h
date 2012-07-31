@@ -44,10 +44,10 @@ class RoutingTable {
   bool CheckNode(NodeInfo& node);
   NodeInfo DropNode(const boost::asio::ip::udp::endpoint& endpoint);
   bool GetNodeInfo(const boost::asio::ip::udp::endpoint& endpoint, NodeInfo* node_info);
-  bool IsMyNodeInRange(const NodeId& node_id, const uint16_t range);
+  bool IsThisNodeInRange(const NodeId& node_id, const uint16_t range);
   bool AmIClosestNode(const NodeId& node_id);
   bool AmIConnectedToEndpoint(const boost::asio::ip::udp::endpoint& endpoint);
-  bool AmIConnectedToNode(const NodeId& node_id);
+  bool IsConnected(const NodeId& node_id) const;
   bool ConfirmGroupMembers(const NodeId& node1, const NodeId& node2);
   uint64_t NetworkPopulationEstimate();
   // Returns zero node id if RT size is zero
@@ -83,13 +83,14 @@ class RoutingTable {
   NodeId GetLargestDistanceBetweenCloseNodes();
   std::vector<NodeInfo> GetClosestNodeInfo(const NodeId& from, const uint16_t& number_to_get);
   void update_network_status();
+
   const uint16_t max_size_;
   bool client_mode_;
   asymm::Keys keys_;
   bool sorted_;
   const NodeId kNodeId_;
   NodeId furthest_group_node_id_;
-  std::mutex mutex_;
+  mutable std::mutex mutex_;
   NetworkStatusFunctor network_status_functor_;
   CloseNodeReplacedFunctor close_node_replaced_functor_;
   std::vector<NodeInfo> routing_table_nodes_;

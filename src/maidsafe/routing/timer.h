@@ -41,20 +41,22 @@ typedef uint32_t TaskId;
 class Timer {
  public:
   explicit Timer(AsioService& io_service);
-  typedef std::shared_ptr<boost::asio::deadline_timer> TimerPointer;
   TaskId AddTask(const boost::posix_time::time_duration& timeout,
                  const TaskResponseFunctor& response_functor);
-  void KillTask(uint32_t task_id);  // removes from queue immediately no run
-  void ExecuteTaskNow(protobuf::Message& message);  // executes and removes task
+  // Removes task from queue immediately without executing it.
+  void KillTask(uint32_t task_id);
+  // Executes and removes task.
+  void ExecuteTask(protobuf::Message& message);
 
  private:
+  typedef std::shared_ptr<boost::asio::deadline_timer> TimerPtr;
   Timer& operator=(const Timer&);
   Timer(const Timer&);
   Timer(const Timer&&);
   AsioService& io_service_;
   TaskId task_id_;
   std::mutex mutex_;
-  std::map<uint32_t, std::pair<TimerPointer, TaskResponseFunctor>> queue_;
+  std::map<uint32_t, std::pair<TimerPtr, TaskResponseFunctor>> queue_;
 };
 
 }  // namespace routing

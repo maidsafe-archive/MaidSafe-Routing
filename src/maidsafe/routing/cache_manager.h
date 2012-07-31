@@ -13,11 +13,10 @@
 #ifndef MAIDSAFE_ROUTING_CACHE_MANAGER_H_
 #define MAIDSAFE_ROUTING_CACHE_MANAGER_H_
 
+#include <mutex>
 #include <string>
 #include <utility>
 #include <vector>
-
-#include "boost/thread/mutex.hpp"
 
 
 namespace maidsafe {
@@ -30,14 +29,14 @@ class CacheManager {
  public:
   CacheManager();
   void AddToCache(const protobuf::Message& message);
-  bool GetFromCache(protobuf::Message& message);
+  bool GetFromCache(protobuf::Message& message) const;
 
  private:
   CacheManager(const CacheManager&);
   CacheManager(const CacheManager&&);
   CacheManager& operator=(const CacheManager&);
   std::vector<std::pair<std::string, std::string>> cache_chunks_;
-  boost::mutex mutex_;
+  mutable std::mutex mutex_;
 };
 
 }  // namespace routing

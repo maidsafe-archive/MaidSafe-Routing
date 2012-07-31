@@ -29,11 +29,10 @@ maidsafe::routing::Timer::Timer(AsioService& io_service)
       task_id_(RandomUint32()),
       mutex_(),
       queue_() {}
-// below comment would require an overload or default here to
-// put in another task with the same task_id
+
 TaskId Timer::AddTask(const boost::posix_time::time_duration& timeout,
                       const TaskResponseFunctor& response_functor) {
-  TimerPointer timer(new boost::asio::deadline_timer(io_service_.service(), timeout));
+  TimerPtr timer(new boost::asio::deadline_timer(io_service_.service(), timeout));
   std::lock_guard<std::mutex> lock(mutex_);
   ++task_id_;
   LOG(kVerbose) << "AddTask added a task, with id : " << task_id_;
@@ -41,54 +40,53 @@ TaskId Timer::AddTask(const boost::posix_time::time_duration& timeout,
   timer->async_wait(std::bind(&Timer::KillTask, this, task_id_));
   return task_id_;
 }
-// TODO(dirvine)
-// we could change the find to iterate entire map if we want to be able to send
+
+// TODO(dirvine) we could change the find to iterate entire map if we want to be able to send
 // multiple requests and accept the first one back, dropping the rest.
 void Timer::KillTask(TaskId task_id) {
-  TaskResponseFunctor task_response_functor(nullptr);
+  TaskResponseFunctor task_response_functor;
   {
     std::lock_guard<std::mutex> lock(mutex_);
     auto const it = queue_.find(task_id);
     if (it != queue_.end()) {
       // message timed out or task killed
-      LOG(kVerbose) << "KillTask killed a task, with id : " << task_id_;
+      LOG(kVerbose) << "Killed task " << task_id;
       task_response_functor = (*it).second.second;
       queue_.erase(it);
     }
   }
-  if (task_response_functor)
+
+  if (task_response_functor) {
     io_service_.service().dispatch([=] {
         task_response_functor(kResponseTimeout, std::vector<std::string>());
-      });
+    });
+  }
 }
 
-void Timer::ExecuteTaskNow(protobuf::Message& message) {
+void Timer::ExecuteTask(protobuf::Message& message) {
   if (!message.has_id()) {
-    LOG(kError) << "recieved response with no ID ABORT message";
+    LOG(kError) << "Received response with no ID.  Abort message handling.";
     return;
   }
+
   TaskResponseFunctor task_response_functor(nullptr);
   {
     std::lock_guard<std::mutex> lock(mutex_);
     auto const it = queue_.find(message.id());
     if (it != queue_.end()) {
-      // message all OK in routing
       task_response_functor = (*it).second.second;
       queue_.erase(it);
-      LOG(kVerbose) << "ExecuteTaskNow will execute a task, with id : " << task_id_;
+      LOG(kVerbose) << "Executing task " << message.id();
     } else {
-      LOG(kError) << "Attempt to run an expired or non existent task";
+      LOG(kError) << "Attempted to execute expired or non-existent task " << message.id();
     }
   }
 
-  //  posting messages
   if (task_response_functor) {
     std::vector<std::string> data_vector;
     for (int index(0); index < message.data_size(); ++index)
       data_vector.emplace_back(message.data(index));
-    io_service_.service().dispatch([=] {
-        task_response_functor(kSuccess, data_vector);
-      });
+    io_service_.service().dispatch([=] { task_response_functor(kSuccess, data_vector); });
   }
 }
 

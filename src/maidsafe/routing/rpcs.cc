@@ -14,7 +14,6 @@
 
 #include "maidsafe/common/log.h"
 #include "maidsafe/common/utils.h"
-#include "maidsafe/rudp/managed_connections.h"
 
 #include "maidsafe/routing/node_id.h"
 #include "maidsafe/routing/routing_pb.h"
@@ -27,7 +26,7 @@ namespace routing {
 
 namespace rpcs {
 
-// this is maybe not required and might be removed
+// This is maybe not required and might be removed
 protobuf::Message Ping(const NodeId& node_id, const std::string& identity) {
   assert(node_id.IsValid() && "Invalid node_id");
   assert(!identity.empty() && "Invalid identity");
@@ -43,7 +42,7 @@ protobuf::Message Ping(const NodeId& node_id, const std::string& identity) {
   message.set_type(1);
   message.set_id(0);
   message.set_client_node(false);
-  assert(message.IsInitialized() && "Unintialised message");
+  assert(message.IsInitialized() && "Uninitialised message");
   return message;
 }
 
@@ -58,15 +57,12 @@ protobuf::Message Connect(const NodeId& node_id,
 //  BOOST_ASSERT_MSG(!our_endpoint.external.address().is_unspecified(), "Unspecified endpoint");
 //  BOOST_ASSERT_MSG(!our_endpoint.local.address().is_unspecified(), "Unspecified endpoint");
   protobuf::Message message;
-  protobuf::Contact* contact;
-  protobuf::Endpoint* public_endpoint;
-  protobuf::Endpoint* private_endpoint;
   protobuf::ConnectRequest protobuf_connect_request;
-  contact = protobuf_connect_request.mutable_contact();
-  public_endpoint = contact->mutable_public_endpoint();
+  protobuf::Contact* contact = protobuf_connect_request.mutable_contact();
+  protobuf::Endpoint* public_endpoint = contact->mutable_public_endpoint();
   public_endpoint->set_ip(our_endpoint.external.address().to_string());
   public_endpoint->set_port(our_endpoint.external.port());
-  private_endpoint = contact->mutable_private_endpoint();
+  protobuf::Endpoint* private_endpoint = contact->mutable_private_endpoint();
   private_endpoint->set_ip(our_endpoint.local.address().to_string());
   private_endpoint->set_port(our_endpoint.local.port());
   contact->set_node_id(my_node_id.String());
@@ -83,8 +79,9 @@ protobuf::Message Connect(const NodeId& node_id,
     message.set_source_id(my_node_id.String());
   } else {
     message.set_relay_id(my_node_id.String());
-    if (!local_endpoint.address().is_unspecified()) {  // I am not in anyones RT yet
-      LOG(kInfo) << "Connect RPC has relay ip : " << local_endpoint;
+    if (!local_endpoint.address().is_unspecified()) {
+      // This node is not in any peer's routing table yet
+      LOG(kInfo) << "Connect RPC has relay IP " << local_endpoint;
       SetProtobufEndpoint(local_endpoint, message.mutable_relay());
     }
   }
@@ -115,8 +112,9 @@ protobuf::Message FindNodes(const NodeId& node_id,
     message.set_source_id(my_node_id.String());
   } else {
     message.set_relay_id(my_node_id.String());
-    if (!local_endpoint.address().is_unspecified()) {  // I am not in anyones RT yet
-      LOG(kInfo) << "FindNode RPC has relay ip : " << local_endpoint;
+    if (!local_endpoint.address().is_unspecified()) {
+      // This node is not in any peer's routing table yet
+      LOG(kInfo) << "FindNode RPC has relay IP " << local_endpoint;
       SetProtobufEndpoint(local_endpoint, message.mutable_relay());
     }
   }
@@ -148,8 +146,9 @@ protobuf::Message ProxyConnect(const NodeId& node_id,
     message.set_source_id(my_node_id.String());
   } else {
     message.set_relay_id(my_node_id.String());
-    if (!local_endpoint.address().is_unspecified()) {  // I am not in anyones RT yet
-      LOG(kInfo) << "ProxyConnect RPC has relay ip : " << local_endpoint;
+    if (!local_endpoint.address().is_unspecified()) {
+      // This node is not in any peer's routing table yet
+      LOG(kInfo) << "ProxyConnect RPC has relay IP " << local_endpoint;
       SetProtobufEndpoint(local_endpoint, message.mutable_relay());
     }
   }

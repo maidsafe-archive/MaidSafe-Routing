@@ -29,7 +29,6 @@ namespace routing {
 
 namespace protobuf { class Message; }
 
-class CacheManager;
 class NetworkUtils;
 class NonRoutingTable;
 class RoutingTable;
@@ -41,37 +40,35 @@ class MessageHandler {
                  RoutingTable& routing_table,
                  NonRoutingTable& non_routing_table,
                  NetworkUtils& network,
-                 Timer& timer_ptr);
-  void ProcessMessage(protobuf::Message& message);
-  bool CheckCacheData(protobuf::Message& message);
-  bool CheckAndSendToLocalClients(protobuf::Message& message);
-  void set_message_received_functor(MessageReceivedFunctor message_received);
-  void set_request_public_key_functor(RequestPublicKeyFunctor node_validation);
+                 Timer& timer);
+  void HandleMessage(protobuf::Message& message);
+  void set_message_received_functor(MessageReceivedFunctor message_received_functor);
+  void set_request_public_key_functor(RequestPublicKeyFunctor request_public_key_functor);
   void set_tearing_down();
-  bool tearing_down();
 
  private:
   MessageHandler(const MessageHandler&);
   MessageHandler(const MessageHandler&&);
   MessageHandler& operator=(const MessageHandler&);
-  void DirectMessage(protobuf::Message& message);
-  void RoutingMessage(protobuf::Message& message);
-  void NodeLevelMessageForMe(protobuf::Message& message);
-  void CloseNodesMessage(protobuf::Message& message);
-  void ProcessRelayRequest(protobuf::Message& message);
+  bool CheckCacheData(protobuf::Message& message);
+  void HandleRoutingMessage(protobuf::Message& message);
+  void HandleNodeLevelMessageForThisNode(protobuf::Message& message);
+  void HandleDirectMessage(protobuf::Message& message);
+  void HandleMessageAsClosestNode(protobuf::Message& message);
+  void HandleGroupMessage(protobuf::Message& message);
+  void HandleRelayRequest(protobuf::Message& message);
   bool RelayDirectMessageIfNeeded(protobuf::Message& message);
-  void ClientMessage(protobuf::Message& message);
-  void GroupMessage(protobuf::Message& message);
+  void HandleClientMessage(protobuf::Message& message);
+//  bool CheckAndSendToLocalClients(protobuf::Message& message);
 
   AsioService& asio_service_;
   RoutingTable& routing_table_;
   NonRoutingTable& non_routing_table_;
   NetworkUtils& network_;
-  Timer& timer_ptr_;
+  Timer& timer_;
   CacheManager cache_manager_;
   ResponseHandler response_handler_;
   MessageReceivedFunctor message_received_functor_;
-  RequestPublicKeyFunctor request_public_key_functor_;
   std::atomic<bool> tearing_down_;
 };
 

@@ -40,13 +40,13 @@ typedef boost::asio::ip::udp::endpoint Endpoint;
 }  // unnamed namespace
 
 
-TEST(RPC, BEH_PingMessageInitialised) {
+TEST(RpcsTest, BEH_PingMessageInitialised) {
   // check with assert in debug mode, should NEVER fail
   std::string destination = RandomString(64);
   ASSERT_TRUE(rpcs::Ping(NodeId(destination), "me").IsInitialized());
 }
 
-TEST(RPC, BEH_PingMessageNode) {
+TEST(RpcsTest, BEH_PingMessageNode) {
   asymm::Keys keys;
   keys.identity = RandomString(64);
   NodeInfo node;
@@ -68,7 +68,7 @@ TEST(RPC, BEH_PingMessageNode) {
   EXPECT_FALSE(message.has_relay());
 }
 
-TEST(RPC, BEH_ConnectMessageInitialised) {
+TEST(RpcsTest, BEH_ConnectMessageInitialised) {
   rudp::EndpointPair our_endpoint;
   our_endpoint.local = Endpoint(boost::asio::ip::address_v4::loopback(), GetRandomPort());
   our_endpoint.external = Endpoint(boost::asio::ip::address_v4::loopback(), GetRandomPort());
@@ -76,7 +76,7 @@ TEST(RPC, BEH_ConnectMessageInitialised) {
                             NodeId(RandomString(64))).IsInitialized());
 }
 
-TEST(RPC, BEH_ConnectMessageNode) {
+TEST(RpcsTest, BEH_ConnectMessageNode) {
   NodeInfo us(MakeNode());
   rudp::EndpointPair endpoint;
   endpoint.local = us.endpoint;
@@ -101,7 +101,7 @@ TEST(RPC, BEH_ConnectMessageNode) {
   EXPECT_FALSE(message.has_relay());
 }
 
-TEST(RPC, BEH_ConnectMessageNodeRelayMode) {
+TEST(RpcsTest, BEH_ConnectMessageNodeRelayMode) {
   NodeInfo us(MakeNode());
   rudp::EndpointPair endpoint;
   endpoint.local = us.endpoint;
@@ -130,11 +130,11 @@ TEST(RPC, BEH_ConnectMessageNodeRelayMode) {
   EXPECT_EQ(us.node_id.String(), message.relay_id());
 }
 
-TEST(RPC, BEH_FindNodesMessageInitialised) {
+TEST(RpcsTest, BEH_FindNodesMessageInitialised) {
   ASSERT_TRUE(rpcs::FindNodes(NodeId(RandomString(64)), NodeId(RandomString(64))).IsInitialized());
 }
 
-TEST(RPC, BEH_FindNodesMessageNode) {
+TEST(RpcsTest, BEH_FindNodesMessageNode) {
   NodeInfo us(MakeNode());
   protobuf::Message message = rpcs::FindNodes(us.node_id, us.node_id);
   protobuf::FindNodesRequest find_nodes_request;
@@ -156,7 +156,7 @@ TEST(RPC, BEH_FindNodesMessageNode) {
   EXPECT_FALSE(message.has_relay_id());
 }
 
-TEST(RPC, BEH_FindNodesMessageNodeRelayMode) {
+TEST(RpcsTest, BEH_FindNodesMessageNodeRelayMode) {
   NodeInfo us(MakeNode());
   Endpoint relay_endpoint(boost::asio::ip::address_v4::loopback(), GetRandomPort());
   protobuf::Message message = rpcs::FindNodes(us.node_id, us.node_id, true, relay_endpoint);
@@ -182,7 +182,7 @@ TEST(RPC, BEH_FindNodesMessageNodeRelayMode) {
   ASSERT_TRUE(node.IsValid());
 }
 
-TEST(RPC, BEH_ProxyConnectMessageInitialised) {
+TEST(RpcsTest, BEH_ProxyConnectMessageInitialised) {
   std::string destination = RandomString(64);
   std::string source = RandomString(64);
   rudp::EndpointPair endpoint_pair;

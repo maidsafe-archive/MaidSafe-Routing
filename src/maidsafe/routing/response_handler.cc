@@ -48,16 +48,20 @@ ResponseHandler::ResponseHandler(AsioService& io_service,
       network_(network),
       request_public_key_functor_() {}
 
-
 void ResponseHandler::set_request_public_key_functor(RequestPublicKeyFunctor request_public_key) {
   request_public_key_functor_ = request_public_key;
 }
+
+RequestPublicKeyFunctor ResponseHandler::request_public_key_functor() const {
+  return request_public_key_functor_;
+}
+
 // always direct !! never pass on
 void ResponseHandler::Ping(protobuf::Message& message) {
   // TODO(dirvine): do we need this and where and how can I update the response
   protobuf::PingResponse ping_response;
   if (ping_response.ParseFromString(message.data(0))) {
-    //  do stuff here
+    // do stuff here
   }
 }
 
@@ -94,14 +98,14 @@ void ResponseHandler::Connect(protobuf::Message& message) {
     auto validate_node =
       [=] (const asymm::PublicKey& key) {
           LOG(kInfo) << "NEED TO VALIDATE THE NODE HERE";
-          ValidateThisNode(this->network_,
-                           this->routing_table_,
-                           this->non_routing_table_,
-                           NodeId(connect_response.contact().node_id()),
-                           key,
-                           their_endpoint_pair,
-                           our_endpoint_pair,
-                           false);
+          ValidatePeer(this->network_,
+                       this->routing_table_,
+                       this->non_routing_table_,
+                       NodeId(connect_response.contact().node_id()),
+                       key,
+                       their_endpoint_pair,
+                       our_endpoint_pair,
+                       false);
       };
     request_public_key_functor_(NodeId(connect_response.contact().node_id()), validate_node);
   }
@@ -149,8 +153,8 @@ void ResponseHandler::FindNode(const protobuf::Message& message) {
       }
       Endpoint relay_endpoint;
       bool relay_message(false);
-      if (routing_table_empty) {  //  Not in anyones RT, need a path back through relay ip.
-        relay_endpoint = network_.my_relay_endpoint();
+      if (routing_table_empty) {  // Not in anyones RT, need a path back through relay ip.
+        relay_endpoint = network_.this_node_relay_endpoint();
         relay_message = true;
       }
       LOG(kVerbose) << " Sending Connect rpc to - " << HexSubstr(find_nodes.nodes(i));
@@ -178,8 +182,8 @@ void ResponseHandler::ReSendFindNodeRequest() {
   bool relay_message(false);
   Endpoint relay_endpoint;
   bool routing_table_empty(routing_table_.Size() == 0);
-  if (routing_table_empty) {  //  Not in anyones RT, need a path back through relay ip.
-    relay_endpoint = network_.my_relay_endpoint();
+  if (routing_table_empty) {  // Not in anyones RT, need a path back through relay ip.
+    relay_endpoint = network_.this_node_relay_endpoint();
     relay_message = true;
   }
   protobuf::Message find_node_rpc(rpcs::FindNodes(NodeId(routing_table_.kKeys().identity),
@@ -195,7 +199,7 @@ void ResponseHandler::ReSendFindNodeRequest() {
 void ResponseHandler::ProxyConnect(protobuf::Message& message) {
   protobuf::ProxyConnectResponse proxy_connect_response;
   if (proxy_connect_response.ParseFromString(message.data(0))) {
-    //  do stuff here
+    // do stuff here
   }
 }
 

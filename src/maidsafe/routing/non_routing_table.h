@@ -42,16 +42,9 @@ class NonRoutingTable {
   explicit NonRoutingTable(const asymm::Keys& keys);
   bool AddNode(NodeInfo& node, const NodeId& furthest_close_node_id);
   bool CheckNode(NodeInfo& node, const NodeId& furthest_close_node_id);
-  int16_t DropNodes(const NodeId& node_id);
   NodeInfo DropNode(const boost::asio::ip::udp::endpoint& endpoint);
-  NodeInfo GetNodeInfo(const boost::asio::ip::udp::endpoint& endpoint);
-  std::vector<NodeInfo> GetNodesInfo(const NodeId& node_id);
-  bool AmIConnectedToEndpoint(const boost::asio::ip::udp::endpoint& endpoint);
-  bool AmIConnectedToNode(const NodeId& node_id);
-  uint16_t Size();
-  asymm::Keys kKeys() const;
-  boost::signals2::signal<void(std::string, std::string)> &CloseNodeReplacedOldNewSignal();
-  void set_keys(asymm::Keys keys);
+  std::vector<NodeInfo> GetNodesInfo(const NodeId& node_id) const;
+  bool IsConnected(const NodeId& node_id) const;
 
   friend class test::GenericNode;
 
@@ -61,16 +54,14 @@ class NonRoutingTable {
   bool AddOrCheckNode(NodeInfo& node, const NodeId& furthest_close_node_id, const bool& add);
   bool CheckValidParameters(const NodeInfo& node) const;
   bool CheckParametersAreUnique(const NodeInfo& node) const;
-  bool CheckRangeForNodeToBeAdded(NodeInfo& node, const NodeId& furthest_close_node_id,
-                                  const bool& add);
-  bool IsMyNodeInRange(const NodeId& node_id, const NodeId& furthest_close_node_id);
-  uint16_t NonRoutingTableSize();
+  bool CheckRangeForNodeToBeAdded(NodeInfo& node,
+                                  const NodeId& furthest_close_node_id,
+                                  const bool& add) const;
+  bool IsThisNodeInRange(const NodeId& node_id, const NodeId& furthest_close_node_id) const;
 
-  asymm::Keys keys_;
   const NodeId kNodeId_;
   std::vector<NodeInfo> non_routing_table_nodes_;
-  std::mutex mutex_;
-  boost::signals2::signal<void(std::string, std::string)> close_node_from_to_signal_;
+  mutable std::mutex mutex_;
 };
 
 }  // namespace routing

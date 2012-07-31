@@ -40,7 +40,7 @@ typedef boost::asio::ip::udp::endpoint Endpoint;
 
 }  // unnamed namespace
 
-TEST(Services, BEH_Ping) {
+TEST(ServicesTest, BEH_Ping) {
   asymm::Keys keys;
   keys.identity = RandomString(64);
   RoutingTable RT(keys, false, nullptr);
@@ -64,7 +64,7 @@ TEST(Services, BEH_Ping) {
   EXPECT_FALSE(message.has_relay());
 }
 
-TEST(Services, DISABLED_BEH_Connect) {
+TEST(ServicesTest, DISABLED_BEH_Connect) {
   NodeInfo us(MakeNode());
   NodeInfo them(MakeNode());
   asymm::Keys keys;
@@ -100,7 +100,7 @@ TEST(Services, DISABLED_BEH_Connect) {
   EXPECT_FALSE(message.has_relay());
 }
 
-TEST(Services, BEH_FindNodes) {
+TEST(ServicesTest, BEH_FindNodes) {
   NodeInfo us(MakeNode());
   NodeInfo them(MakeNode());
   asymm::Keys keys;
@@ -127,7 +127,7 @@ TEST(Services, BEH_FindNodes) {
   EXPECT_FALSE(message.has_relay());
 }
 
-TEST(Services, BEH_ProxyConnect) {
+TEST(ServicesTest, BEH_ProxyConnect) {
   asymm::Keys my_keys;
   my_keys.identity = RandomString(64);
   asymm::Keys keys;

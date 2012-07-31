@@ -99,8 +99,8 @@ TEST(RoutingTableTest, BEH_CloseAndInRangeCheck) {
   my_id_encoded[511] = (my_id_encoded[511] == '0' ? '1' : '0');
   NodeId my_closest_node(NodeId(my_id_encoded, NodeId::kBinary));
   EXPECT_TRUE(RT.AmIClosestNode(my_closest_node));
-  EXPECT_TRUE(RT.IsMyNodeInRange(my_closest_node, 2));
-  EXPECT_TRUE(RT.IsMyNodeInRange(my_closest_node, 200));
+  EXPECT_TRUE(RT.IsThisNodeInRange(my_closest_node, 2));
+  EXPECT_TRUE(RT.IsThisNodeInRange(my_closest_node, 200));
   EXPECT_TRUE(RT.ConfirmGroupMembers(my_closest_node,
                                      RT.GetNthClosestNode(my_closest_node, 1).node_id));
   EXPECT_TRUE(RT.ConfirmGroupMembers(my_closest_node,

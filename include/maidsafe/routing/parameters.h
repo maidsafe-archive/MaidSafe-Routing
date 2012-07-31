@@ -29,7 +29,7 @@ struct Parameters {
   // Thread count for use of asio::io_service
   static uint16_t thread_count;
   static uint16_t num_chunks_to_cache;
-  static uint16_t timout_in_seconds;
+  static uint16_t timeout_in_seconds;
   static uint16_t closest_nodes_size;
   static uint16_t node_group_size;
   static uint16_t max_routing_table_size;

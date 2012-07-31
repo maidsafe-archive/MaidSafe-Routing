@@ -29,7 +29,7 @@ class TestNode : public GenericNode {
         messages_() {
     functors_.message_received = [&](const int32_t& mesasge_type,
                                      const std::string& message,
-                                     const NodeId &/*group_id*/,
+                                     const NodeId& /*group_id*/,
                                      ReplyFunctor reply_functor) {
         LOG(kInfo) << id_ << " -- Received: type <" << mesasge_type
                    << "> message : " << message.substr(0, 10);
@@ -45,7 +45,7 @@ class TestNode : public GenericNode {
       messages_() {
     functors_.message_received = [&](const int32_t& mesasge_type,
                                      const std::string& message,
-                                     const NodeId &/*group_id*/,
+                                     const NodeId& /*group_id*/,
                                      ReplyFunctor reply_functor) {
       LOG(kInfo) << id_ << " -- Received: type <" << mesasge_type
                  << "> message : " << message.substr(0, 10);
@@ -69,7 +69,7 @@ class RoutingNetworkTest : public GenericNetwork<NodeType> {
   RoutingNetworkTest(void) : GenericNetwork<NodeType>() {}
 
  protected:
-  /** Send messages from each source to each destination */
+  // Send messages from each source to each destination
   testing::AssertionResult Send(const size_t& messages) {
     NodeId  group_id;
     size_t message_id(0), client_size(0), non_client_size(0);

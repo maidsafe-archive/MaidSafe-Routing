@@ -31,18 +31,17 @@ class RoutingTable;
 namespace service {
 
 // Handle all incoming requests and send back reply
-void Ping(RoutingTable& routing_table,
-          protobuf::Message& message);
+void Ping(RoutingTable& routing_table, protobuf::Message& message);
+
 void Connect(RoutingTable& routing_table,
              NonRoutingTable& non_routing_table,
              NetworkUtils& network,
              protobuf::Message& message,
              RequestPublicKeyFunctor node_validation_functor);
-void FindNodes(RoutingTable& routing_table,
-              protobuf::Message& message);
-void ProxyConnect(RoutingTable& routing_table,
-                  NetworkUtils& network,
-                  protobuf::Message& message);
+
+void FindNodes(RoutingTable& routing_table, protobuf::Message& message);
+
+void ProxyConnect(RoutingTable& routing_table, NetworkUtils& network, protobuf::Message& message);
 
 }  // namespace service
 

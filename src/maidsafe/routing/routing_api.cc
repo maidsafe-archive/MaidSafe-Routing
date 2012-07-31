@@ -187,7 +187,7 @@ void Routing::DoJoin(Functors functors) {
     return;
   }
 
-  if (impl_->anonymous_node_) {  //  No need to do find value for anonymous node
+  if (impl_->anonymous_node_) {  // No need to do find value for anonymous node
     if (functors.network_status)
       functors.network_status(return_value);
     return;
@@ -214,7 +214,7 @@ int Routing::DoFindNode() {
       rpcs::FindNodes(NodeId(impl_->keys_.identity),
                       NodeId(impl_->keys_.identity),
                       true,
-                      impl_->network_.my_relay_endpoint()));
+                      impl_->network_.this_node_relay_endpoint()));
 
   boost::promise<bool> message_sent_promise;
   auto message_sent_future = message_sent_promise.get_future();
@@ -269,14 +269,19 @@ int Routing::ZeroStateJoin(Functors functors, const Endpoint& local_endpoint,
          "This should be only used in zero state network");
   LOG(kVerbose) << local_endpoint << " Bootstraped with remote endpoint " << peer_node.endpoint;
 
-  rudp::EndpointPair their_endpoint_pair;  //  zero state nodes must be directly connected endpoint
+  rudp::EndpointPair their_endpoint_pair;  // zero state nodes must be directly connected endpoint
   rudp::EndpointPair our_endpoint_pair;
   their_endpoint_pair.external = their_endpoint_pair.local = peer_node.endpoint;
   our_endpoint_pair.external = our_endpoint_pair.local = local_endpoint;
 
-  ValidateThisNode(impl_->network_, impl_->routing_table_, impl_->non_routing_table_,
-                   NodeId(peer_node.node_id), peer_node.public_key, their_endpoint_pair,
-                   our_endpoint_pair, false);
+  ValidatePeer(impl_->network_,
+               impl_->routing_table_,
+               impl_->non_routing_table_,
+               NodeId(peer_node.node_id),
+               peer_node.public_key,
+               their_endpoint_pair,
+               our_endpoint_pair,
+               false);
 
   // now poll for routing table size to have at other node available
   uint8_t poll_count(0);
@@ -297,7 +302,7 @@ int Routing::ZeroStateJoin(Functors functors, const Endpoint& local_endpoint,
 }
 
 void Routing::Send(const NodeId& destination_id,
-                   const NodeId &/*group_id*/,
+                   const NodeId& /*group_id*/,
                    const std::string& data,
                    const int32_t& type,
                    const ResponseFunctor response_functor,
@@ -343,7 +348,7 @@ void Routing::Send(const NodeId& destination_id,
   // Anonymous node
   if (impl_->anonymous_node_) {
     proto_message.set_relay_id(impl_->routing_table_.kKeys().identity);
-    SetProtobufEndpoint(impl_->network_.my_relay_endpoint(), proto_message.mutable_relay());
+    SetProtobufEndpoint(impl_->network_.this_node_relay_endpoint(), proto_message.mutable_relay());
     Endpoint bootstrap_endpoint = impl_->network_.bootstrap_endpoint();
     rudp::MessageSentFunctor message_sent = [&] (int result) {
         if (rudp::kSuccess != result) {
@@ -385,7 +390,7 @@ void Routing::ReceiveMessage(const std::string& message) {
                      HexSubstr(protobuf_message.source_id()))
                << " I am " << HexSubstr(impl_->keys_.identity)
                << (relay_message? " -- RELAY REQUEST": "");
-    impl_->message_handler_->ProcessMessage(protobuf_message);
+    impl_->message_handler_->HandleMessage(protobuf_message);
   } else {
     LOG(kWarning) << " Message received, failed to parse";
   }
@@ -396,15 +401,15 @@ void Routing::ConnectionLost(const Endpoint& lost_endpoint) {
   NodeInfo dropped_node;
   if ((!impl_->tearing_down_) &&
       (impl_->routing_table_.GetNodeInfo(lost_endpoint, &dropped_node) &&
-      (impl_->routing_table_.IsMyNodeInRange(dropped_node.node_id,
-                                             Parameters::closest_nodes_size)))) {
+      (impl_->routing_table_.IsThisNodeInRange(dropped_node.node_id,
+                                               Parameters::closest_nodes_size)))) {
     // close node lost, get more nodes
     LOG(kWarning) << "Lost close node, getting more.";
     // TODO(Prakash): uncomment once find node flooding is resolved.
     // impl_->network_.SendToClosestNode(rpcs::FindNodes(NodeId(impl_->keys_.identity),
     //                                 NodeId(impl_->keys_.identity)));
   }
-  //  Checking RT
+  // Checking RT
   dropped_node = impl_->routing_table_.DropNode(lost_endpoint);
   if (dropped_node.node_id != NodeId()) {
     LOG(kWarning) << " Lost connection with routing node : "
@@ -415,7 +420,7 @@ void Routing::ConnectionLost(const Endpoint& lost_endpoint) {
     return;
   }
 
-  //  Checking NRT
+  // Checking NRT
   dropped_node = impl_->non_routing_table_.DropNode(lost_endpoint);
   if (dropped_node.node_id != NodeId()) {
     LOG(kWarning) << " Lost connection with non routing node : "

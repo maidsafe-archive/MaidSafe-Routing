@@ -59,8 +59,8 @@ typedef std::function<void(const std::string& /*message*/)> ReplyFunctor;
 
 // This is called on any message received that is NOT a reply to a request made by the Send method.
 typedef std::function<void(const int32_t& /*mesasge type*/,
-                           const std::string &/*message*/,
-                           const NodeId &/*group id*/,
+                           const std::string& /*message*/,
+                           const NodeId& /*group id*/,
                            ReplyFunctor /*reply functor*/)> MessageReceivedFunctor;
 
 // This is fired to validate a new peer node. User is supposed to validate the node and call
@@ -70,7 +70,7 @@ typedef std::function<void(const NodeId& /*node Id*/, GivePublicKeyFunctor)>
     RequestPublicKeyFunctor;
 
 typedef std::function<bool(const std::string& /*data*/)> HaveCacheDatafunctor;
-typedef std::function<void(const std::string &/* data*/)> StoreCacheDataFunctor;
+typedef std::function<void(const std::string& /* data*/)> StoreCacheDataFunctor;
 
 // This functor fires a number from 0 to 100 and represents % network health.
 typedef std::function<void(const int& /*network_health*/)> NetworkStatusFunctor;
@@ -88,15 +88,15 @@ struct Functors {
         close_node_replaced(),
         set_public_key(),
         request_public_key(),
-        have_cache_data_(),
-        store_cache_data_() {}
+        have_cache_data(),
+        store_cache_data() {}
   MessageReceivedFunctor message_received;
   NetworkStatusFunctor network_status;
   CloseNodeReplacedFunctor close_node_replaced;
   GivePublicKeyFunctor set_public_key;
   RequestPublicKeyFunctor request_public_key;
-  HaveCacheDatafunctor have_cache_data_;
-  StoreCacheDataFunctor store_cache_data_;
+  HaveCacheDatafunctor have_cache_data;
+  StoreCacheDataFunctor store_cache_data;
 };
 
 }  // namespace routing

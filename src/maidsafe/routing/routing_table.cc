@@ -156,12 +156,12 @@ bool RoutingTable::AmIConnectedToEndpoint(const Endpoint& endpoint) {
                      != routing_table_nodes_.end());
 }
 
-bool RoutingTable::AmIConnectedToNode(const NodeId& node_id) {
+bool RoutingTable::IsConnected(const NodeId& node_id) const {
   std::lock_guard<std::mutex> lock(mutex_);
-  return (std::find_if(routing_table_nodes_.begin(), routing_table_nodes_.end(),
-                       [node_id](const NodeInfo& i)->bool
-                       { return i.node_id == node_id; })
-                     != routing_table_nodes_.end());
+  return std::find_if(routing_table_nodes_.begin(),
+                      routing_table_nodes_.end(),
+                      [node_id](const NodeInfo& node_info) { return node_info.node_id == node_id; })
+             != routing_table_nodes_.end();
 }
 
 bool RoutingTable::ConfirmGroupMembers(const NodeId& node1, const NodeId& node2) {
@@ -314,7 +314,7 @@ void RoutingTable::NthElementSortFromThisNode(const NodeId& from, const uint16_t
                    } ); // NOLINT
 }
 
-bool RoutingTable::IsMyNodeInRange(const NodeId& node_id, const uint16_t range)  {
+bool RoutingTable::IsThisNodeInRange(const NodeId& node_id, const uint16_t range) {
   std::lock_guard<std::mutex> lock(mutex_);
   if (routing_table_nodes_.size() < range)
     return true;

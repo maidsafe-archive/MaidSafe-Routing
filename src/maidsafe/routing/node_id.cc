@@ -35,7 +35,7 @@ NodeId::NodeId() : raw_id_(kZeroId) {}
 
 NodeId::NodeId(const NodeId& other) : raw_id_(other.raw_id_) {}
 
-NodeId::NodeId(const KadIdType& type) : raw_id_(kKeySizeBytes, -1) {
+NodeId::NodeId(const IdType& type) : raw_id_(kKeySizeBytes, -1) {
   switch (type) {
     case kMaxId :
       break;  // already set
@@ -155,9 +155,7 @@ void NodeId::DecodeFromBinary(const std::string& binary_id) {
   }
 }
 
-bool NodeId::CloserToTarget(const NodeId& id1,
-                            const NodeId& id2,
-                            const NodeId& target_id) {
+bool NodeId::CloserToTarget(const NodeId& id1, const NodeId& id2, const NodeId& target_id) {
   if (!id1.IsValid() || !id2.IsValid() || !target_id.IsValid())
     return false;
   std::string raw_id1(id1.raw_id_);
