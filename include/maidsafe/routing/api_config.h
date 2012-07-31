@@ -19,7 +19,6 @@
 #include <vector>
 
 #include "boost/asio/ip/udp.hpp"
-#include "boost/signals2/signal.hpp"
 
 #include "maidsafe/common/rsa.h"
 #include "maidsafe/rudp/managed_connections.h"
