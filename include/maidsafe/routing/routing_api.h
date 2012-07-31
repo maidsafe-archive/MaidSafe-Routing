@@ -106,11 +106,11 @@ class Routing {
   void DoJoin(const Functors& functors);
   int DoBootstrap(const Functors& functors);
   int DoFindNode();
-  void ReceiveMessage(const std::string& message);
+  void ReceiveMessage(const std::string& message, std::weak_ptr<RoutingPrivate> impl);
   void ConnectionLost(const boost::asio::ip::udp::endpoint& lost_endpoint);
 
   // pimpl (data members only)
-  std::unique_ptr<RoutingPrivate> impl_;
+  std::shared_ptr<RoutingPrivate> impl_;
 };
 
 }  // namespace routing

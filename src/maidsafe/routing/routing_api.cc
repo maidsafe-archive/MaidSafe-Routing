@@ -203,7 +203,7 @@ int Routing::DoBootstrap(const Functors& functors) {
   ConnectFunctors(functors);
   return impl_->network_.Bootstrap(
       impl_->bootstrap_nodes_,
-      [this](const std::string& message) { ReceiveMessage(message); },
+      [this](const std::string& message) { ReceiveMessage(message, impl_); },
       [this](const Endpoint& lost_endpoint) { ConnectionLost(lost_endpoint); });  // NOLINT (Fraser)
 }
 
@@ -249,7 +249,7 @@ int Routing::ZeroStateJoin(Functors functors, const Endpoint& local_endpoint,
   ConnectFunctors(functors);
   int result(impl_->network_.Bootstrap(
       impl_->bootstrap_nodes_,
-      [this](const std::string& message) { ReceiveMessage(message); },
+      [this](const std::string& message) { ReceiveMessage(message, impl_); },
       [this](const Endpoint& lost_endpoint) { ConnectionLost(lost_endpoint); },
       local_endpoint));
 
@@ -367,7 +367,7 @@ void Routing::Send(const NodeId& destination_id,
           }
         });
 
-    impl_->network_.SendToDirectEndpoint(proto_message, bootstrap_endpoint,  message_sent);
+    impl_->network_.SendToDirectEndpoint(proto_message, bootstrap_endpoint, message_sent);
     return;
   }
 
@@ -377,12 +377,13 @@ void Routing::Send(const NodeId& destination_id,
     impl_->network_.SendToClosestNode(proto_message);
   } else {
     LOG(kInfo) << "Sending request to self";
-    ReceiveMessage(proto_message.SerializeAsString());
+    ReceiveMessage(proto_message.SerializeAsString(), impl_);
   }
 }
 
-void Routing::ReceiveMessage(const std::string& message) {
-  if (impl_->tearing_down_) {
+void Routing::ReceiveMessage(const std::string& message, std::weak_ptr<RoutingPrivate> impl) {
+  std::shared_ptr<RoutingPrivate> pimpl = impl.lock();
+  if (!pimpl) {
     LOG(kVerbose) << "Ignoring message received since this node is shutting down";
     return;
   }
