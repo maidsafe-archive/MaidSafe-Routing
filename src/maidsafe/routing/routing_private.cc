@@ -12,25 +12,14 @@
 
 #include "maidsafe/routing/routing_private.h"
 
-#include "maidsafe/routing/bootstrap_file_handler.h"
 #include "maidsafe/routing/message_handler.h"
-#include "maidsafe/routing/network_utils.h"
-#include "maidsafe/routing/node_id.h"
-#include "maidsafe/routing/parameters.h"
-#include "maidsafe/routing/return_codes.h"
-#include "maidsafe/routing/routing_api.h"
-#include "maidsafe/routing/routing_pb.h"
-#include "maidsafe/routing/routing_table.h"
-#include "maidsafe/routing/timer.h"
-#include "maidsafe/routing/utils.h"
 
 
 namespace maidsafe {
 
 namespace routing {
 
-RoutingPrivate::RoutingPrivate(const asymm::Keys& keys,
-                               bool client_mode)
+RoutingPrivate::RoutingPrivate(const asymm::Keys& keys, bool client_mode)
     : asio_service_(2),
       bootstrap_nodes_(),
       keys_(keys),

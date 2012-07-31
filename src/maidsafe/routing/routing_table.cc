@@ -173,7 +173,7 @@ void RoutingTable::UpdateGroupChangeAndNotify() {
 
 // bucket 0 is us, 511 is furthest bucket (should fill first)
 int16_t RoutingTable::BucketIndex(const NodeId& rhs) const {
-  uint16_t bucket = kKeySizeBits - 1;  // (n-1losestNode(my_closest_node
+  uint16_t bucket = kKeySizeBits - 1;
   std::string this_id_binary = kNodeId_.ToStringEncoded(NodeId::kBinary);
   std::string rhs_id_binary = rhs.ToStringEncoded(NodeId::kBinary);
   auto this_it = this_id_binary.begin();
@@ -188,20 +188,19 @@ int16_t RoutingTable::BucketIndex(const NodeId& rhs) const {
 }
 
 bool RoutingTable::CheckValidParameters(const NodeInfo& node) const {
-  if ((!asymm::ValidateKey(node.public_key, 0))) {
-    LOG(kInfo) << "invalid public key";
+  if (!asymm::ValidateKey(node.public_key, 0)) {
+    LOG(kInfo) << "Invalid public key";
     return false;
   }
-
   if (node.bucket == 99999) {
-    LOG(kInfo) << "invalid bucket index";
+    LOG(kInfo) << "Invalid bucket index";
     return false;
   }
   return CheckParametersAreUnique(node);
 }
 
 bool RoutingTable::CheckParametersAreUnique(const NodeInfo& node) const {
-  // if we already have a duplicate public key return false
+  // If we already have a duplicate public key return false
   if (std::find_if(nodes_.begin(),
                    nodes_.end(),
                    [node](const NodeInfo& node_info) {
@@ -211,7 +210,7 @@ bool RoutingTable::CheckParametersAreUnique(const NodeInfo& node) const {
     return false;
   }
 
-  // if we already have a duplicate endpoint return false
+  // If we already have a duplicate endpoint return false
   if (std::find_if(nodes_.begin(),
                    nodes_.end(),
                    [node](const NodeInfo& node_info) {
@@ -220,13 +219,13 @@ bool RoutingTable::CheckParametersAreUnique(const NodeInfo& node) const {
     LOG(kInfo) << "Already have node with this endpoint";
     return false;
   }
-  // node_id was checked in AddNode() so if were here then were unique
+
   return true;
 }
 
 bool RoutingTable::MakeSpaceForNodeToBeAdded(NodeInfo& node, const bool& remove) {
   node.bucket = BucketIndex(node.node_id);
-  if ((remove) && (!CheckValidParameters(node))) {
+  if (remove && !CheckValidParameters(node)) {
     LOG(kInfo) << "Invalid Parameters";
     return false;
   }
@@ -243,29 +242,23 @@ bool RoutingTable::MakeSpaceForNodeToBeAdded(NodeInfo& node, const bool& remove)
     BOOST_ASSERT_MSG(node.bucket <= furthest_close_node.bucket,
                      "close node replacement to a larger bucket");
 
-    if (remove) {
+    if (remove)
       nodes_.erase(furthest_close_node_iter);
-    }
     return true;
   }
 
   uint16_t size(Parameters::bucket_target_size + 1);
   for (auto it = furthest_close_node_iter; it != not_found; ++it) {
-    if (node.bucket >= (*it).bucket) {
-      // stop searching as it's worthless
+    if (node.bucket >= (*it).bucket)  // Stop searching as it's worthless
       return false;
-    }
-    // safety net
-    if ((not_found - it) < size) {
-      // reached end of checkable area
+    // Safety net
+    if ((not_found - it) < size)  // Reached end of checkable area
       return false;
-    }
 
     if ((*it).bucket == (*(it + size)).bucket) {
-      // here we know the node should fit into a bucket if
-      // the bucket has too many nodes AND node to add
-      // has a lower bucketindex
-      BOOST_ASSERT(node.bucket < (*it).bucket);  // , "node replacement to a larger bucket");
+      // Here we know the node should fit into a bucket if the bucket has too many nodes AND node to
+      // add has a lower bucket index
+      BOOST_ASSERT(node.bucket < (*it).bucket);
       if (remove)
         nodes_.erase(it);
       return true;
@@ -279,7 +272,7 @@ void RoutingTable::PartialSortFromTarget(const NodeId& target, const uint16_t& n
   std::partial_sort(nodes_.begin(),
                     nodes_.begin() + count,
                     nodes_.end(),
-                    [this, target](const NodeInfo& lhs, const NodeInfo& rhs) {
+                    [target](const NodeInfo& lhs, const NodeInfo& rhs) {
                       return (lhs.node_id ^ target) < (rhs.node_id ^ target);
                     });
 }
@@ -290,7 +283,7 @@ void RoutingTable::NthElementSortFromTarget(const NodeId& target, const uint16_t
   std::nth_element(nodes_.begin(),
                    nodes_.begin() + nth_element,
                    nodes_.end(),
-                   [this, target](const NodeInfo& lhs, const NodeInfo& rhs) {
+                   [target](const NodeInfo& lhs, const NodeInfo& rhs) {
                      return (lhs.node_id ^ target) < (rhs.node_id ^ target);
                    });
 }

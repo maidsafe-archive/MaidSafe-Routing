@@ -13,15 +13,12 @@
 #include "maidsafe/routing/response_handler.h"
 
 #include "maidsafe/common/log.h"
-#include "maidsafe/common/rsa.h"
 #include "maidsafe/common/utils.h"
-#include "maidsafe/rudp/managed_connections.h"
 
 #include "maidsafe/routing/network_utils.h"
 #include "maidsafe/routing/node_id.h"
 #include "maidsafe/routing/non_routing_table.h"
 #include "maidsafe/routing/return_codes.h"
-#include "maidsafe/routing/routing_api.h"
 #include "maidsafe/routing/routing_pb.h"
 #include "maidsafe/routing/routing_table.h"
 #include "maidsafe/routing/rpcs.h"
@@ -48,16 +45,9 @@ ResponseHandler::ResponseHandler(AsioService& io_service,
       network_(network),
       request_public_key_functor_() {}
 
-void ResponseHandler::set_request_public_key_functor(RequestPublicKeyFunctor request_public_key) {
-  request_public_key_functor_ = request_public_key;
-}
-
-RequestPublicKeyFunctor ResponseHandler::request_public_key_functor() const {
-  return request_public_key_functor_;
-}
-
-// always direct !! never pass on
 void ResponseHandler::Ping(protobuf::Message& message) {
+  // Always direct, never pass on
+
   // TODO(dirvine): do we need this and where and how can I update the response
   protobuf::PingResponse ping_response;
   if (ping_response.ParseFromString(message.data(0))) {
@@ -65,8 +55,8 @@ void ResponseHandler::Ping(protobuf::Message& message) {
   }
 }
 
-// the other node agreed to connect - he has accepted our connection
 void ResponseHandler::Connect(protobuf::Message& message) {
+  // The peer agreed to connect
   protobuf::ConnectResponse connect_response;
   protobuf::ConnectRequest connect_request;
   if (!connect_response.ParseFromString(message.data(0))) {
@@ -75,38 +65,40 @@ void ResponseHandler::Connect(protobuf::Message& message) {
   }
 
   if (!connect_response.answer()) {
-    LOG(kVerbose) << "ResponseHandler::Connect() they don't want us";
-    return;  // they don't want us
+    LOG(kVerbose) << "Peer rejected this node's connection request.";
+    return;
   }
-  if (!connect_request.ParseFromString(connect_response.original_request()))
-    return;  // invalid response
 
-  LOG(kVerbose) << "Received connect response from "
-                << HexSubstr(connect_request.contact().node_id())
-                << ", I am " << HexSubstr(routing_table_.kKeys().identity);
-  rudp::EndpointPair our_endpoint_pair;
-  our_endpoint_pair.external = GetEndpointFromProtobuf(connect_request.contact().public_endpoint());
-  our_endpoint_pair.local = GetEndpointFromProtobuf(connect_request.contact().private_endpoint());
+  if (!connect_request.ParseFromString(connect_response.original_request())) {
+    LOG(kError) << "Could not parse original connect request";
+    return;
+  }
 
-  rudp::EndpointPair their_endpoint_pair;
-  their_endpoint_pair.external =
+  LOG(kVerbose) << "This node [" << HexSubstr(routing_table_.kKeys().identity)
+                << "] received connect response from "
+                << HexSubstr(connect_request.contact().node_id());
+  rudp::EndpointPair this_endpoint_pair;
+  this_endpoint_pair.external = GetEndpointFromProtobuf(connect_request.contact().public_endpoint());
+  this_endpoint_pair.local = GetEndpointFromProtobuf(connect_request.contact().private_endpoint());
+
+  rudp::EndpointPair peer_endpoint_pair;
+  peer_endpoint_pair.external =
       GetEndpointFromProtobuf(connect_response.contact().public_endpoint());
-  their_endpoint_pair.local =
+  peer_endpoint_pair.local =
       GetEndpointFromProtobuf(connect_response.contact().private_endpoint());
 
   if (request_public_key_functor_) {
-    auto validate_node =
-      [=] (const asymm::PublicKey& key) {
-          LOG(kInfo) << "NEED TO VALIDATE THE NODE HERE";
-          ValidatePeer(this->network_,
-                       this->routing_table_,
-                       this->non_routing_table_,
-                       NodeId(connect_response.contact().node_id()),
-                       key,
-                       their_endpoint_pair,
-                       our_endpoint_pair,
-                       false);
-      };
+    auto validate_node([=] (const asymm::PublicKey& key) {
+                           LOG(kInfo) << "NEED TO VALIDATE THE NODE HERE";
+                           ValidatePeer(this->network_,
+                                        this->routing_table_,
+                                        this->non_routing_table_,
+                                        NodeId(connect_response.contact().node_id()),
+                                        key,
+                                        peer_endpoint_pair,
+                                        this_endpoint_pair,
+                                        false);
+                           });
     request_public_key_functor_(NodeId(connect_response.contact().node_id()), validate_node);
   }
 }
@@ -124,15 +116,14 @@ void ResponseHandler::FindNode(const protobuf::Message& message) {
 //    return;  // we never requested this
 //  }
 
-  LOG(kVerbose) << "Find node from "  << HexSubstr(message.source_id())
-                << ", returned " << find_nodes.nodes_size()
-                << ". I am [" << HexSubstr(routing_table_.kKeys().identity) << "]";
+  LOG(kVerbose) << "This node [" << HexSubstr(routing_table_.kKeys().identity)
+                << "] received FindNode response from " << HexSubstr(message.source_id());
+#ifndef NDEBUG
   for (int i = 0; i < find_nodes.nodes_size(); ++i) {
-    LOG(kVerbose) << " Find node from "  << HexSubstr(message.source_id())
-                  << " returned - "  << HexSubstr(find_nodes.nodes(i))
-                  << ". nodes, I am ["
-                  << HexSubstr(routing_table_.kKeys().identity) << "]";
+    LOG(kVerbose) << "FindNode from "  << HexSubstr(message.source_id())
+                  << " returned "  << HexSubstr(find_nodes.nodes(i));
   }
+#endif
 
   for (int i = 0; i < find_nodes.nodes_size(); ++i) {
     NodeInfo node_to_add;
@@ -140,24 +131,24 @@ void ResponseHandler::FindNode(const protobuf::Message& message) {
     if (node_to_add.node_id == NodeId(routing_table_.kKeys().identity))
       continue;  // TODO(Prakash): FIXME handle collision and return kIdCollision on join()
     if (routing_table_.CheckNode(node_to_add)) {
-      LOG(kVerbose) << " CheckNode succeeded for node "
-                    << HexSubstr(node_to_add.node_id.String());
+      LOG(kVerbose) << "CheckNode succeeded for node " << HexSubstr(node_to_add.node_id.String());
       Endpoint direct_endpoint;
       bool routing_table_empty(routing_table_.Size() == 0);
       if (routing_table_empty)  // Joining the network, and may connect to bootstrapping node.
         direct_endpoint = network_.bootstrap_endpoint();
       rudp::EndpointPair endpoint;
       if (kSuccess != network_.GetAvailableEndpoint(direct_endpoint, endpoint)) {
-        LOG(kWarning) << " Failed to get available endpoint for new connections";
+        LOG(kWarning) << "Failed to get available endpoint for new connections";
         return;
       }
       Endpoint relay_endpoint;
       bool relay_message(false);
-      if (routing_table_empty) {  // Not in anyones RT, need a path back through relay ip.
+      if (routing_table_empty) {
+        // Not in any peer's routing table, need a path back through relay IP.
         relay_endpoint = network_.this_node_relay_endpoint();
         relay_message = true;
       }
-      LOG(kVerbose) << " Sending Connect rpc to - " << HexSubstr(find_nodes.nodes(i));
+      LOG(kVerbose) << "Sending Connect RPC to " << HexSubstr(find_nodes.nodes(i));
       protobuf::Message connect_rpc(rpcs::Connect(NodeId(find_nodes.nodes(i)),
                                     endpoint,
                                     NodeId(routing_table_.kKeys().identity),
@@ -170,11 +161,11 @@ void ResponseHandler::FindNode(const protobuf::Message& message) {
         network_.SendToClosestNode(connect_rpc);
     }
   }
-// post it to timer
+
   if (routing_table_.Size() < Parameters::closest_nodes_size) {
-  LOG(kVerbose) << " Routing table smaller than " << Parameters::closest_nodes_size
-                << "Nodes. Sending another FindNode...";
-    // ReSendFindNodeRequest();
+  LOG(kVerbose) << "Routing table smaller than " << Parameters::closest_nodes_size
+                << " nodes.  Sending another FindNode...";
+    ReSendFindNodeRequest();
   }
 }
 
@@ -182,7 +173,7 @@ void ResponseHandler::ReSendFindNodeRequest() {
   bool relay_message(false);
   Endpoint relay_endpoint;
   bool routing_table_empty(routing_table_.Size() == 0);
-  if (routing_table_empty) {  // Not in anyones RT, need a path back through relay ip.
+  if (routing_table_empty) {  // Not in any peer's routing table, need a path back through relay IP.
     relay_endpoint = network_.this_node_relay_endpoint();
     relay_message = true;
   }
@@ -201,6 +192,14 @@ void ResponseHandler::ProxyConnect(protobuf::Message& message) {
   if (proxy_connect_response.ParseFromString(message.data(0))) {
     // do stuff here
   }
+}
+
+void ResponseHandler::set_request_public_key_functor(RequestPublicKeyFunctor request_public_key) {
+  request_public_key_functor_ = request_public_key;
+}
+
+RequestPublicKeyFunctor ResponseHandler::request_public_key_functor() const {
+  return request_public_key_functor_;
 }
 
 }  // namespace routing

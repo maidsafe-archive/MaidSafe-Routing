@@ -86,7 +86,10 @@ class Routing {
             const boost::posix_time::time_duration& timeout,
             const ConnectType& connect_type);  // is this to a close node group or direct
 
-  // Confirm (if we can) two nodes are within a group range.
+  // Confirm (if we can) two nodes are within a group range.  For small networks or new node on
+  // network, this function may yield many false negatives.  In the case of a negative, actual
+  // confirmation can be achieved by sending an indirect message to the node address and checking
+  // all returned NodeIds.
   bool ConfirmGroupMembers(const NodeId& node1, const NodeId& node2);
 
   friend class test::GenericNode;
