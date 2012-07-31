@@ -61,7 +61,7 @@ TEST(NetworkUtilsTest, BEH_ProcessSendDirectInvalidEndpoint) {
   message.set_type(10);
   rudp::ManagedConnections rudp;
   asymm::Keys keys(MakeKeys());
-  RoutingTable routing_table(keys, false, nullptr);
+  RoutingTable routing_table(keys, false);
   NonRoutingTable non_routing_table(keys);
   NetworkUtils network(routing_table, non_routing_table);
   network.SendToClosestNode(message);
@@ -74,7 +74,7 @@ TEST(NetworkUtilsTest, BEH_ProcessSendUnavailableDirectEndpoint) {
   message.set_type(10);
   rudp::ManagedConnections rudp;
   asymm::Keys keys(MakeKeys());
-  RoutingTable routing_table(keys, false, nullptr);
+  RoutingTable routing_table(keys, false);
   NonRoutingTable non_routing_table(keys);
   Endpoint endpoint(GetLocalIp(), GetRandomPort());
   NetworkUtils network(routing_table, non_routing_table);
@@ -157,7 +157,7 @@ TEST(NetworkUtilsTest, FUNC_ProcessSendDirectEndpoint) {
   LOG(kVerbose) << " ------------------------   Zero state setup done  ----------------------- ";
 
   asymm::Keys keys(MakeKeys());
-  RoutingTable routing_table(keys, false, nullptr);
+  RoutingTable routing_table(keys, false);
   NonRoutingTable non_routing_table(keys);
   NetworkUtils network(routing_table, non_routing_table);
 
@@ -200,7 +200,7 @@ TEST(NetworkUtilsTest, FUNC_ProcessSendRecursiveSendOn) {
   sent_message.set_type(10);
 
   asymm::Keys keys(MakeKeys());
-  RoutingTable routing_table(keys, false, nullptr);
+  RoutingTable routing_table(keys, false);
   NonRoutingTable non_routing_table(keys);
   NetworkUtils network(routing_table, non_routing_table);
 

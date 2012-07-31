@@ -121,28 +121,28 @@ void GenericNode::RudpSend(const Endpoint& peer_endpoint, const protobuf::Messag
 }
 
 bool GenericNode::RoutingTableHasNode(const NodeId& node_id) {
-  return (std::find_if(routing_->impl_->routing_table_.routing_table_nodes_.begin(),
-                       routing_->impl_->routing_table_.routing_table_nodes_.end(),
+  return (std::find_if(routing_->impl_->routing_table_.nodes_.begin(),
+                       routing_->impl_->routing_table_.nodes_.end(),
                [&node_id](const NodeInfo& node_info) { return node_id == node_info.node_id; })
-               !=  routing_->impl_->routing_table_.routing_table_nodes_.end());
+               !=  routing_->impl_->routing_table_.nodes_.end());
 }
 
 bool GenericNode::NonRoutingTableHasNode(const NodeId& node_id) {
-  return (std::find_if(routing_->impl_->non_routing_table_.non_routing_table_nodes_.begin(),
-                       routing_->impl_->non_routing_table_.non_routing_table_nodes_.end(),
+  return (std::find_if(routing_->impl_->non_routing_table_.nodes_.begin(),
+                       routing_->impl_->non_routing_table_.nodes_.end(),
                [&node_id](const NodeInfo& node_info) { return (node_id == node_info.node_id); } )
-               !=  routing_->impl_->non_routing_table_.non_routing_table_nodes_.end());
+               !=  routing_->impl_->non_routing_table_.nodes_.end());
 }
 
 testing::AssertionResult GenericNode::DropNode(const NodeId& node_id) {
   LOG(kVerbose) << " DropNode " << HexSubstr(routing_->impl_->routing_table_.kNodeId_.String())
                 << " Removes " << HexSubstr(node_id.String());
-  auto iter = std::find_if(routing_->impl_->routing_table_.routing_table_nodes_.begin(),
-      routing_->impl_->routing_table_.routing_table_nodes_.end(),
+  auto iter = std::find_if(routing_->impl_->routing_table_.nodes_.begin(),
+      routing_->impl_->routing_table_.nodes_.end(),
       [&node_id](const NodeInfo& node_info) {
           return (node_id == node_info.node_id);
       });
-  if (iter != routing_->impl_->routing_table_.routing_table_nodes_.end()) {
+  if (iter != routing_->impl_->routing_table_.nodes_.end()) {
     LOG(kVerbose) << HexSubstr(routing_->impl_->routing_table_.kNodeId_.String())
                << " Removes " << HexSubstr(node_id.String());
     routing_->impl_->network_.Remove(iter->endpoint);
@@ -185,7 +185,7 @@ void GenericNode::set_expected(const int& expected) {
 
 void GenericNode::PrintRoutingTable() {
   LOG(kInfo) << " PrintRoutingTable of " << HexSubstr(node_info_plus_.node_info.node_id.String());
-  for (auto node_info : routing_->impl_->routing_table_.routing_table_nodes_) {
+  for (auto node_info : routing_->impl_->routing_table_.nodes_) {
     LOG(kInfo) << "NodeId: " << HexSubstr(node_info.node_id.String());
   }
 }

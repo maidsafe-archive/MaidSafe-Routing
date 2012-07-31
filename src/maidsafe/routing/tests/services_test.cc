@@ -43,7 +43,7 @@ typedef boost::asio::ip::udp::endpoint Endpoint;
 TEST(ServicesTest, BEH_Ping) {
   asymm::Keys keys;
   keys.identity = RandomString(64);
-  RoutingTable RT(keys, false, nullptr);
+  RoutingTable RT(keys, false);
   NodeInfo node;
   rudp::ManagedConnections rudp;
   protobuf::PingRequest ping_request;
@@ -70,7 +70,7 @@ TEST(ServicesTest, DISABLED_BEH_Connect) {
   asymm::Keys keys;
   keys.identity = us.node_id.String();
   keys.public_key = us.public_key;
-  RoutingTable RT(keys, false, nullptr);
+  RoutingTable RT(keys, false);
   NonRoutingTable NRT(keys);
   NodeInfo node;
   NetworkUtils network(RT, NRT);
@@ -106,7 +106,7 @@ TEST(ServicesTest, BEH_FindNodes) {
   asymm::Keys keys;
   keys.identity = us.node_id.String();
   keys.public_key = us.public_key;
-  RoutingTable RT(keys, false, nullptr);
+  RoutingTable RT(keys, false);
   protobuf::Message message = rpcs::FindNodes(us.node_id, us.node_id);
   service::FindNodes(RT, message);
   protobuf::FindNodesResponse find_nodes_respose;
@@ -132,7 +132,7 @@ TEST(ServicesTest, BEH_ProxyConnect) {
   my_keys.identity = RandomString(64);
   asymm::Keys keys;
   keys.identity = RandomString(64);
-  RoutingTable RT(keys, false, nullptr);
+  RoutingTable RT(keys, false);
   NonRoutingTable NRT(keys);
   NodeInfo node;
   NetworkUtils network(RT, NRT);
