@@ -193,7 +193,7 @@ bool RoutingTable::CheckValidParameters(const NodeInfo& node) const {
     LOG(kInfo) << "Invalid public key";
     return false;
   }
-  if (node.bucket != NodeInfo::kInvalidBucket) {
+  if (node.bucket == NodeInfo::kInvalidBucket) {
     LOG(kInfo) << "Invalid bucket index";
     return false;
   }
