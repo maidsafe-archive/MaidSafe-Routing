@@ -61,7 +61,7 @@ bool MessageHandler::CheckCacheData(protobuf::Message& message) {
 void MessageHandler::HandleRoutingMessage(protobuf::Message& message) {
   LOG(kInfo) << "MessageHandler::RoutingMessage";
   bool is_response(IsResponse(message));
-  switch (message.type()) {
+  switch (static_cast<MessageType>(message.type())) {
     case MessageType::kPingRequest :
       service::Ping(routing_table_, message);
       break;
@@ -92,6 +92,11 @@ void MessageHandler::HandleRoutingMessage(protobuf::Message& message) {
   }
   if (is_response)
     return;
+
+  if (!message.IsInitialized()) {
+    LOG(kWarning) << "Uninitialised message dropped.";
+    return;
+  }
 
   if (routing_table_.Size() == 0)  // This node can only send to bootstrap_endpoint
     network_.SendToDirectEndpoint(message, network_.bootstrap_endpoint());
