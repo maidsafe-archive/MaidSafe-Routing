@@ -39,7 +39,7 @@ MessageHandler::MessageHandler(AsioService& asio_service,
       network_(network),
       timer_(timer),
       cache_manager_(),
-      response_handler_(new ResponseHandler(asio_service, routing_table,
+      response_handler_(new ResponseHandler(routing_table,
                                             non_routing_table, network_)),
       message_received_functor_() {}
 

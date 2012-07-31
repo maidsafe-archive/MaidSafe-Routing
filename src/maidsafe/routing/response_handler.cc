@@ -37,12 +37,10 @@ typedef boost::asio::ip::udp::endpoint Endpoint;
 
 }  // unnamed namespace
 
-ResponseHandler::ResponseHandler(AsioService& io_service,
-                                 RoutingTable& routing_table,
+ResponseHandler::ResponseHandler(RoutingTable& routing_table,
                                  NonRoutingTable& non_routing_table,
                                  NetworkUtils& network)
-    : io_service_(io_service),
-      routing_table_(routing_table),
+    : routing_table_(routing_table),
       non_routing_table_(non_routing_table),
       network_(network),
       request_public_key_functor_() {}
