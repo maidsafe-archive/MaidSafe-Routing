@@ -60,7 +60,7 @@ class NonRoutingTable {
   bool IsThisNodeInRange(const NodeId& node_id, const NodeId& furthest_close_node_id) const;
 
   const NodeId kNodeId_;
-  std::vector<NodeInfo> non_routing_table_nodes_;
+  std::vector<NodeInfo> nodes_;
   mutable std::mutex mutex_;
 };
 

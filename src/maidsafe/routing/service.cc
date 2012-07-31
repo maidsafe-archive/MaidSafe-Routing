@@ -222,7 +222,7 @@ void ProxyConnect(RoutingTable& routing_table,
   endpoint_pair.local = GetEndpointFromProtobuf(proxy_connect_request.local_endpoint());
 
   // TODO(Prakash): Also check NRT and if its my bootstrap endpoint.
-  if (routing_table.AmIConnectedToEndpoint(endpoint_pair.external)) {
+  if (routing_table.IsConnected(endpoint_pair.external)) {
     // If already in routing table
     proxy_connect_response.set_result(protobuf::kAlreadyConnected);
   } else {

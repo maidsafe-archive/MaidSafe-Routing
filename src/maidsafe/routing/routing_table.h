@@ -37,29 +37,26 @@ struct NodeInfo;
 
 class RoutingTable {
  public:
-  RoutingTable(const asymm::Keys& keys,
-               const bool& client_mode,
-               CloseNodeReplacedFunctor close_node_replaced_functor);
-  bool AddNode(NodeInfo& node);
-  bool CheckNode(NodeInfo& node);
+  RoutingTable(const asymm::Keys& keys, const bool& client_mode);
+  bool AddNode(NodeInfo& peer);
+  bool CheckNode(NodeInfo& peer);
   NodeInfo DropNode(const boost::asio::ip::udp::endpoint& endpoint);
-  bool GetNodeInfo(const boost::asio::ip::udp::endpoint& endpoint, NodeInfo* node_info);
-  bool IsThisNodeInRange(const NodeId& node_id, const uint16_t range);
-  bool AmIClosestNode(const NodeId& node_id);
-  bool AmIConnectedToEndpoint(const boost::asio::ip::udp::endpoint& endpoint);
+  bool GetNodeInfo(const boost::asio::ip::udp::endpoint& endpoint, NodeInfo& peer) const;
+  bool IsThisNodeInRange(const NodeId& target_id, const uint16_t range);
+  bool IsThisNodeClosestTo(const NodeId& target_id);
+  bool IsConnected(const boost::asio::ip::udp::endpoint& endpoint) const;
   bool IsConnected(const NodeId& node_id) const;
   bool ConfirmGroupMembers(const NodeId& node1, const NodeId& node2);
-  uint64_t NetworkPopulationEstimate();
-  // Returns zero node id if RT size is zero
-  NodeInfo GetClosestNode(const NodeId& from, bool ignore_exact_match = false);
-  // Returns max node id if RT size is lesser than requested node_number
-  NodeInfo GetNthClosestNode(const NodeId& from, const uint16_t& node_number);
-  std::vector<NodeId> GetClosestNodes(const NodeId& from, const uint16_t& n);
-  uint16_t Size();
+  // Returns default-constructed NodeId if routing table size is zero
+  NodeInfo GetClosestNode(const NodeId& target_id, bool ignore_exact_match = false);
+  // Returns max NodeId if routing table size is less than requested node_number
+  NodeInfo GetNthClosestNode(const NodeId& target_id, const uint16_t& node_number);
+  std::vector<NodeId> GetClosestNodes(const NodeId& target_id, const uint16_t& number_to_get);
+  uint16_t Size() const;
   asymm::Keys kKeys() const;
   void set_network_status_functor(NetworkStatusFunctor network_status_functor);
-  void set_close_node_replaced_functor(CloseNodeReplacedFunctor close_node_replaced);
-  void set_keys(asymm::Keys keys);
+  void set_close_node_replaced_functor(CloseNodeReplacedFunctor close_node_replaced_functor);
+  void set_keys(const asymm::Keys& keys);
   bool client_mode() const { return client_mode_; }
 
   friend class test::GenericNode;
@@ -73,16 +70,11 @@ class RoutingTable {
   bool CheckValidParameters(const NodeInfo& node) const;
   bool CheckParametersAreUnique(const NodeInfo& node) const;
   bool MakeSpaceForNodeToBeAdded(NodeInfo& node, const bool& remove);
-  void SortFromThisNode(const NodeId& from);
-  void PartialSortFromThisNode(const NodeId& from, const uint16_t& number);
-  void NthElementSortFromThisNode(const NodeId& from, const uint16_t& nth_element);
-  bool RemoveClosecontact(const NodeId& node_id);
-  bool AddcloseContact(const protobuf::Contact& contact);
-  uint16_t RoutingTableSize();
+  void PartialSortFromTarget(const NodeId& target, const uint16_t& number);
+  void NthElementSortFromTarget(const NodeId& target, const uint16_t& nth_element);
   NodeId FurthestCloseNode();
-  NodeId GetLargestDistanceBetweenCloseNodes();
   std::vector<NodeInfo> GetClosestNodeInfo(const NodeId& from, const uint16_t& number_to_get);
-  void update_network_status();
+  void update_network_status() const;
 
   const uint16_t max_size_;
   bool client_mode_;
@@ -93,7 +85,7 @@ class RoutingTable {
   mutable std::mutex mutex_;
   NetworkStatusFunctor network_status_functor_;
   CloseNodeReplacedFunctor close_node_replaced_functor_;
-  std::vector<NodeInfo> routing_table_nodes_;
+  std::vector<NodeInfo> nodes_;
 };
 
 }  // namespace routing

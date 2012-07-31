@@ -35,7 +35,7 @@ RoutingPrivate::RoutingPrivate(const asymm::Keys& keys,
       bootstrap_nodes_(),
       keys_(keys),
       tearing_down_(false),
-      routing_table_(keys_, client_mode, CloseNodeReplacedFunctor()),
+      routing_table_(keys_, client_mode),
       non_routing_table_(keys_),  // TODO(Prakash) : don't create NRT for client nodes (wrap both)
       timer_(asio_service_),
       waiting_for_response_(),

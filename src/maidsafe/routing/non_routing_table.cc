@@ -30,7 +30,7 @@ typedef boost::asio::ip::udp::endpoint Endpoint;
 
 NonRoutingTable::NonRoutingTable(const asymm::Keys& keys)
     : kNodeId_(NodeId(keys.identity)),
-      non_routing_table_nodes_(),
+      nodes_(),
       mutex_() {}
 
 bool NonRoutingTable::AddNode(NodeInfo& node, const NodeId& furthest_close_node_id) {
@@ -49,7 +49,7 @@ bool NonRoutingTable::AddOrCheckNode(NodeInfo& node,
   std::lock_guard<std::mutex> lock(mutex_);
   if (CheckRangeForNodeToBeAdded(node, furthest_close_node_id, add)) {
     if (add)
-      non_routing_table_nodes_.push_back(node);
+      nodes_.push_back(node);
     return true;
   }
   return false;
@@ -58,10 +58,10 @@ bool NonRoutingTable::AddOrCheckNode(NodeInfo& node,
 NodeInfo NonRoutingTable::DropNode(const Endpoint& endpoint) {
   NodeInfo node_info;
   std::lock_guard<std::mutex> lock(mutex_);
-  for (auto it = non_routing_table_nodes_.begin(); it != non_routing_table_nodes_.end(); ++it) {
+  for (auto it = nodes_.begin(); it != nodes_.end(); ++it) {
     if ((*it).endpoint ==  endpoint) {
       node_info = *it;
-      non_routing_table_nodes_.erase(it);
+      nodes_.erase(it);
       break;
     }
   }
@@ -71,7 +71,7 @@ NodeInfo NonRoutingTable::DropNode(const Endpoint& endpoint) {
 std::vector<NodeInfo> NonRoutingTable::GetNodesInfo(const NodeId& node_id) const {
   std::vector<NodeInfo> nodes_info;
   std::lock_guard<std::mutex> lock(mutex_);
-  for (auto it = non_routing_table_nodes_.begin(); it != non_routing_table_nodes_.end(); ++it) {
+  for (auto it = nodes_.begin(); it != nodes_.end(); ++it) {
     if ((*it).node_id == node_id)
       nodes_info.push_back(*it);
   }
@@ -80,10 +80,11 @@ std::vector<NodeInfo> NonRoutingTable::GetNodesInfo(const NodeId& node_id) const
 
 bool NonRoutingTable::IsConnected(const NodeId& node_id) const {
   std::lock_guard<std::mutex> lock(mutex_);
-  return std::find_if(non_routing_table_nodes_.begin(),
-                      non_routing_table_nodes_.end(),
-                      [node_id](const NodeInfo& node_info) { return node_info.node_id == node_id; })
-             != non_routing_table_nodes_.end();
+  return std::find_if(nodes_.begin(),
+                      nodes_.end(),
+                      [node_id](const NodeInfo& node_info) {
+                        return node_info.node_id == node_id;
+                      }) != nodes_.end();
 }
 
 // TODO(Prakash): re-order checks to increase performance if needed
@@ -102,22 +103,22 @@ bool NonRoutingTable::CheckValidParameters(const NodeInfo& node) const {
 
 bool NonRoutingTable::CheckParametersAreUnique(const NodeInfo& node) const {
   // If we already have a duplicate endpoint return false
-  if (std::find_if(non_routing_table_nodes_.begin(),
-                   non_routing_table_nodes_.end(),
+  if (std::find_if(nodes_.begin(),
+                   nodes_.end(),
                    [node](const NodeInfo& node_info) {
-                      return (node_info.endpoint == node.endpoint); })
-          != non_routing_table_nodes_.end()) {
+                     return (node_info.endpoint == node.endpoint);
+                   }) != nodes_.end()) {
     LOG(kInfo) << "Already have node with this endpoint.";
     return false;
   }
 
   // If we already have a duplicate public key under different node ID return false
-  if (std::find_if(non_routing_table_nodes_.begin(),
-                   non_routing_table_nodes_.end(),
+  if (std::find_if(nodes_.begin(),
+                   nodes_.end(),
                    [node](const NodeInfo& node_info) {
-                       return (asymm::MatchingPublicKeys(node_info.public_key, node.public_key) &&
-                               (node_info.node_id != node.node_id)); })
-          != non_routing_table_nodes_.end()) {
+                     return (asymm::MatchingPublicKeys(node_info.public_key, node.public_key) &&
+                             (node_info.node_id != node.node_id));
+                   }) != nodes_.end()) {
     LOG(kInfo) << "Already have a different node ID with this public key.";
     return false;
   }
@@ -127,7 +128,7 @@ bool NonRoutingTable::CheckParametersAreUnique(const NodeInfo& node) const {
 bool NonRoutingTable::CheckRangeForNodeToBeAdded(NodeInfo& node,
                                                  const NodeId& furthest_close_node_id,
                                                  const bool& add) const {
-  if (non_routing_table_nodes_.size() > Parameters::max_non_routing_table_size) {
+  if (nodes_.size() > Parameters::max_non_routing_table_size) {
     LOG(kInfo) << "Non Routing Table full.";
     return false;
   }
