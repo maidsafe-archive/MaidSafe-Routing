@@ -15,6 +15,7 @@
 #include "maidsafe/common/log.h"
 #include "maidsafe/common/utils.h"
 
+#include "maidsafe/routing/message_handler.h"
 #include "maidsafe/routing/node_id.h"
 #include "maidsafe/routing/routing_pb.h"
 #include "maidsafe/routing/utils.h"
@@ -39,7 +40,7 @@ protobuf::Message Ping(const NodeId& node_id, const std::string& identity) {
   message.add_data(ping_request.SerializeAsString());
   message.set_direct(true);
   message.set_replication(1);
-  message.set_type(1);
+  message.set_type(static_cast<int32_t>(MessageType::kPingRequest));
   message.set_id(0);
   message.set_client_node(false);
   assert(message.IsInitialized() && "Uninitialised message");
@@ -71,7 +72,7 @@ protobuf::Message Connect(const NodeId& node_id,
   message.add_data(protobuf_connect_request.SerializeAsString());
   message.set_direct(true);
   message.set_replication(1);
-  message.set_type(2);
+  message.set_type(static_cast<int32_t>(MessageType::kConnectRequest));
   message.set_id(0);
   message.set_client_node(client_node);
 
@@ -105,7 +106,7 @@ protobuf::Message FindNodes(const NodeId& node_id,
   message.add_data(find_nodes.SerializeAsString());
   message.set_direct(false);
   message.set_replication(2);
-  message.set_type(3);
+  message.set_type(static_cast<int32_t>(MessageType::kFindNodesRequest));
   message.set_id(0);
   message.set_client_node(false);
   if (!relay_message) {
@@ -114,7 +115,7 @@ protobuf::Message FindNodes(const NodeId& node_id,
     message.set_relay_id(my_node_id.String());
     if (!local_endpoint.address().is_unspecified()) {
       // This node is not in any peer's routing table yet
-      LOG(kInfo) << "FindNode RPC has relay IP " << local_endpoint;
+      LOG(kInfo) << "FindNodes RPC has relay IP " << local_endpoint;
       SetProtobufEndpoint(local_endpoint, message.mutable_relay());
     }
   }
@@ -139,7 +140,7 @@ protobuf::Message ProxyConnect(const NodeId& node_id,
   message.add_data(proxy_connect_request.SerializeAsString());
   message.set_direct(true);
   message.set_replication(1);
-  message.set_type(4);
+  message.set_type(static_cast<int32_t>(MessageType::kProxyConnectRequest));
   message.set_id(0);
   message.set_client_node(false);
   if (!relay_message) {

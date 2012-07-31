@@ -94,7 +94,7 @@ bool NonRoutingTable::CheckValidParameters(const NodeInfo& node) const {
     return false;
   }
   // bucket index is not used in non routing table
-  if (node.bucket != 99999) {
+  if (node.bucket != NodeInfo::kInvalidBucket) {
     LOG(kInfo) << "Invalid bucket index.";
     return false;
   }

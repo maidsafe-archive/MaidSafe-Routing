@@ -16,6 +16,7 @@
 #include "maidsafe/common/utils.h"
 #include "maidsafe/rudp/return_codes.h"
 
+#include "maidsafe/routing/message_handler.h"
 #include "maidsafe/routing/network_utils.h"
 #include "maidsafe/routing/non_routing_table.h"
 #include "maidsafe/routing/routing_pb.h"
@@ -85,7 +86,8 @@ void ValidatePeer(NetworkUtils& network_,
 }
 
 bool IsRoutingMessage(const protobuf::Message& message) {
-  return ((message.type() < 100) && (message.type() > -100));
+  return (message.type() < static_cast<int32_t>(MessageType::kMaxRouting)) &&
+         (message.type() > static_cast<int32_t>(MessageType::kMinRouting));
 }
 
 bool IsNodeLevelMessage(const protobuf::Message& message) {

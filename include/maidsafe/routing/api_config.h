@@ -38,15 +38,6 @@ enum class ConnectType : int32_t {
   kGroup
 };
 
-// Send method return codes
-enum class SendStatus : int32_t {
-  kSuccess = 0,
-  kInvalidDestinationId = -1,
-  kInvalidSourceId = -2,
-  kInvalidType = -3,
-  kEmptyData = -4
-};
-
 // If using boost::bind or std::bind, use **shared_from_this** pointers to preserve lifetimes of
 // functors. The ResponseFunctor WILL ensure functors are deleted when the system times out.
 typedef std::function<void(const int& /*return code*/,

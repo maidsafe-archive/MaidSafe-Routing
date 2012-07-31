@@ -44,9 +44,9 @@ MessageHandler::MessageHandler(AsioService& asio_service,
       message_received_functor_() {}
 
 bool MessageHandler::CheckCacheData(protobuf::Message& message) {
-  if (message.type() == -100) {
+  if (message.type() == static_cast<int32_t>(MessageType::kMinRouting)) {
     cache_manager_.AddToCache(message);
-  } else if (message.type() == 100) {
+  } else if (message.type() == static_cast<int32_t>(MessageType::kMaxRouting)) {
     if (cache_manager_.GetFromCache(message)) {
       message.set_source_id(routing_table_.kKeys().identity);
       network_.SendToClosestNode(message);
@@ -62,30 +62,30 @@ void MessageHandler::HandleRoutingMessage(protobuf::Message& message) {
   LOG(kInfo) << "MessageHandler::RoutingMessage";
   bool is_response(IsResponse(message));
   switch (message.type()) {
-    case -1 :  // ping
-      response_handler_->Ping(message);
-      break;
-    case 1 :
+    case MessageType::kPingRequest :
       service::Ping(routing_table_, message);
       break;
-    case -2 :  // connect
-      response_handler_->Connect(message);
+    case MessageType::kPingResponse :
+      response_handler_->Ping(message);
       break;
-    case 2 :
+    case MessageType::kConnectRequest :
       service::Connect(routing_table_, non_routing_table_, network_, message,
                        response_handler_->request_public_key_functor());
       break;
-    case -3 :  // find_nodes
-      response_handler_->FindNode(message);
+    case MessageType::kConnectResponse :
+      response_handler_->Connect(message);
       break;
-    case 3 :
+    case MessageType::kFindNodesRequest :
       service::FindNodes(routing_table_, message);
       break;
-    case -4 :  // proxy_connect
-      response_handler_->ProxyConnect(message);
+    case MessageType::kFindNodesResponse :
+      response_handler_->FindNodes(message);
       break;
-    case 4 :
+    case MessageType::kProxyConnectRequest :
       service::ProxyConnect(routing_table_, network_, message);
+      break;
+    case MessageType::kProxyConnectResponse :
+      response_handler_->ProxyConnect(message);
       break;
     default:  // unknown (silent drop)
       return;
@@ -276,7 +276,8 @@ void MessageHandler::HandleRelayRequest(protobuf::Message& message) {
   }
 
   // If small network yet, this node may be closest.
-  if ((routing_table_.Size() <= Parameters::closest_nodes_size) && (message.type() == 3)) {
+  if ((routing_table_.Size() <= Parameters::closest_nodes_size) &&
+      (message.type() == static_cast<int32_t>(MessageType::kFindNodesRequest))) {
     service::FindNodes(routing_table_, message);
     return network_.SendToClosestNode(message);
   }

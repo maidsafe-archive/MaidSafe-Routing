@@ -275,7 +275,7 @@ TEST(APITest, FUNC_API_AnonymousNode) {
   Sleep(boost::posix_time::seconds(61));  // to allow disconnection
   ResponseFunctor failed_response = [=](const int& return_code,
                                         const std::vector<std::string> &message) {
-      EXPECT_EQ(kResponseTimeout, return_code);
+      EXPECT_EQ(kResponseCancelled, return_code);
       ASSERT_TRUE(message.empty());
     };
   R3.Send(NodeId(node1.node_info.node_id), NodeId(), "message_2_from_anonymous node", 101,

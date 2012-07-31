@@ -39,6 +39,7 @@ struct NodeInfo {
   int32_t dimension_2;
   int32_t dimension_3;
   int32_t dimension_4;
+  static const int32_t kInvalidBucket;
 };
 
 }  // namespace routing

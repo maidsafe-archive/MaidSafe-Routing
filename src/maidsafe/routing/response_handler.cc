@@ -109,7 +109,7 @@ void ResponseHandler::Connect(protobuf::Message& message) {
   }
 }
 
-void ResponseHandler::FindNode(const protobuf::Message& message) {
+void ResponseHandler::FindNodes(const protobuf::Message& message) {
   protobuf::FindNodesResponse find_nodes;
   if (!find_nodes.ParseFromString(message.data(0))) {
     LOG(kError) << "Could not parse find node response";
@@ -123,10 +123,10 @@ void ResponseHandler::FindNode(const protobuf::Message& message) {
 //  }
 
   LOG(kVerbose) << "This node [" << HexSubstr(routing_table_.kKeys().identity)
-                << "] received FindNode response from " << HexSubstr(message.source_id());
+                << "] received FindNodes response from " << HexSubstr(message.source_id());
 #ifndef NDEBUG
   for (int i = 0; i < find_nodes.nodes_size(); ++i) {
-    LOG(kVerbose) << "FindNode from "  << HexSubstr(message.source_id())
+    LOG(kVerbose) << "FindNodes from "  << HexSubstr(message.source_id())
                   << " returned "  << HexSubstr(find_nodes.nodes(i));
   }
 #endif
@@ -170,7 +170,7 @@ void ResponseHandler::FindNode(const protobuf::Message& message) {
 
   if (routing_table_.Size() < Parameters::closest_nodes_size) {
     LOG(kVerbose) << "Routing table smaller than " << Parameters::closest_nodes_size
-                  << " nodes.  Sending another FindNode...";
+                  << " nodes.  Sending another FindNodes...";
     // ReSendFindNodeRequest();
   }
 }

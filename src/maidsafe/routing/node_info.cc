@@ -12,6 +12,8 @@
 
 #include "maidsafe/routing/node_info.h"
 
+#include <limits>
+
 
 namespace maidsafe {
 
@@ -21,12 +23,14 @@ NodeInfo::NodeInfo()
     : node_id(),
       public_key(),
       rank(),
-      bucket(99999),
+      bucket(kInvalidBucket),
       endpoint(),
       dimension_1(),
       dimension_2(),
       dimension_3(),
       dimension_4() {}
+
+const int32_t NodeInfo::kInvalidBucket(std::numeric_limits<int32_t>::max());
 
 }  // namespace routing
 

@@ -19,6 +19,7 @@
 #include "maidsafe/rudp/managed_connections.h"
 #include "maidsafe/rudp/return_codes.h"
 
+#include "maidsafe/routing/message_handler.h"
 #include "maidsafe/routing/network_utils.h"
 #include "maidsafe/routing/node_id.h"
 #include "maidsafe/routing/non_routing_table.h"
@@ -52,7 +53,7 @@ void Ping(RoutingTable& routing_table, protobuf::Message& message) {
   ping_response.set_original_request(message.data(0));
   ping_response.set_original_signature(message.signature());
   ping_response.set_timestamp(GetTimeStamp());
-  message.set_type(-1);
+  message.set_type(static_cast<int32_t>(MessageType::kPingResponse));
   message.clear_data();
   message.add_data(ping_response.SerializeAsString());
   message.set_destination_id(message.source_id());
@@ -145,7 +146,7 @@ void Connect(RoutingTable& routing_table,
   message.add_data(connect_response.SerializeAsString());
   message.set_direct(true);
   message.set_replication(1);
-  message.set_type(-2);
+  message.set_type(static_cast<int32_t>(MessageType::kConnectResponse));
   if (message.has_source_id())
     message.set_destination_id(message.source_id());
   else
@@ -194,7 +195,7 @@ void FindNodes(RoutingTable& routing_table, protobuf::Message& message) {
   message.add_data(found_nodes.SerializeAsString());
   message.set_direct(true);
   message.set_replication(1);
-  message.set_type(-3);
+  message.set_type(static_cast<int32_t>(MessageType::kFindNodesResponse));
   assert(message.IsInitialized() && "unintialised message");
 }
 
@@ -233,7 +234,7 @@ void ProxyConnect(RoutingTable& routing_table,
     else
       proxy_connect_response.set_result(protobuf::kFailure);
   }
-  message.set_type(-4);
+  message.set_type(static_cast<int32_t>(MessageType::kProxyConnectResponse));
   message.clear_data();
   message.add_data(proxy_connect_response.SerializeAsString());
   message.set_direct(true);

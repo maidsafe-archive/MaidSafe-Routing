@@ -225,11 +225,11 @@ int Routing::DoFindNode() {
                                        message_sent_functor);
 
   if (!message_sent_future.timed_wait(boost::posix_time::seconds(10))) {
-    LOG(kError) << "Unable to send FindNode RPC to bootstrap endpoint "
+    LOG(kError) << "Unable to send FindNodes RPC to bootstrap endpoint "
                 << impl_->network_.bootstrap_endpoint();
     return kFailedtoSendFindNode;
   } else {
-    LOG(kInfo) << "Successfully sent FindNode RPC to bootstrap endpoint "
+    LOG(kInfo) << "Successfully sent FindNodes RPC to bootstrap endpoint "
                << impl_->network_.bootstrap_endpoint();
     return kSuccess;
   }
@@ -329,14 +329,14 @@ void Routing::Send(const NodeId& destination_id,
     return;
   }
 
-  if (data.empty() && (type != 100)) {
+  if (data.empty() && (type != static_cast<int32_t>(MessageType::kMaxRouting))) {
     LOG(kError) << "No data, aborted send";
     if (response_functor)
       response_functor(kEmptyData, std::vector<std::string>());
     return;
   }
 
-  if (100 >= type) {
+  if (type <= static_cast<int32_t>(MessageType::kMaxRouting)) {
     LOG(kError) << "Type below 101 not allowed, aborted send";
     if (response_functor)
       response_functor(kTypeNotAllowed, std::vector<std::string>());

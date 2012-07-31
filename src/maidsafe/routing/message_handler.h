@@ -33,6 +33,19 @@ class NonRoutingTable;
 class RoutingTable;
 class Timer;
 
+enum class MessageType : int32_t {
+  kPingRequest = 1,
+  kPingResponse = -kPingRequest,
+  kConnectRequest = 2,
+  kConnectResponse = -kConnectRequest,
+  kFindNodesRequest = 3,
+  kFindNodesResponse = -kFindNodesRequest,
+  kProxyConnectRequest = 4,
+  kProxyConnectResponse = -kProxyConnectRequest,
+  kMaxRouting = 100,
+  kMinRouting = -kMaxRouting
+};
+
 class MessageHandler {
  public:
   MessageHandler(AsioService& asio_service,
