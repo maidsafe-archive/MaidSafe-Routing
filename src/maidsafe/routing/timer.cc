@@ -33,32 +33,41 @@ maidsafe::routing::Timer::Timer(AsioService& io_service)
 TaskId Timer::AddTask(const boost::posix_time::time_duration& timeout,
                       const TaskResponseFunctor& response_functor) {
   TimerPtr timer(new boost::asio::deadline_timer(io_service_.service(), timeout));
-  std::lock_guard<std::mutex> lock(mutex_);
-  ++task_id_;
-  LOG(kVerbose) << "AddTask added a task, with id : " << task_id_;
-  queue_.insert(std::make_pair(task_id_, std::make_pair(timer, response_functor)));
-  timer->async_wait(std::bind(&Timer::KillTask, this, task_id_));
-  return task_id_;
+  TaskId task_id;
+  {
+    std::lock_guard<std::mutex> lock(mutex_);
+    task_id = ++task_id_;
+    queue_.insert(std::make_pair(task_id, std::make_pair(timer, response_functor)));
+  }
+  LOG(kVerbose) << "AddTask added a task, with id " << task_id;
+  timer->async_wait([this, task_id](const boost::system::error_code& error) {
+      CancelTask(task_id, error);
+  });
+  return task_id;
 }
 
 // TODO(dirvine) we could change the find to iterate entire map if we want to be able to send
 // multiple requests and accept the first one back, dropping the rest.
-void Timer::KillTask(TaskId task_id) {
+void Timer::CancelTask(TaskId task_id, const boost::system::error_code& error) {
   TaskResponseFunctor task_response_functor;
   {
     std::lock_guard<std::mutex> lock(mutex_);
     auto const it = queue_.find(task_id);
     if (it != queue_.end()) {
       // message timed out or task killed
-      LOG(kVerbose) << "Killed task " << task_id;
+      LOG(kVerbose) << "Timed out task " << task_id;
       task_response_functor = (*it).second.second;
       queue_.erase(it);
     }
   }
 
   if (task_response_functor) {
+    int return_code(error == boost::asio::error::operation_aborted ? kResponseCancelled :
+                                                                     kResponseTimeout);
+    if (error && error != boost::asio::error::operation_aborted)
+      LOG(kError) << "Error waiting for task " << task_id << " - " << error.message();
     io_service_.service().dispatch([=] {
-        task_response_functor(kResponseTimeout, std::vector<std::string>());
+        task_response_functor(return_code, std::vector<std::string>());
     });
   }
 }
@@ -86,7 +95,7 @@ void Timer::ExecuteTask(protobuf::Message& message) {
     std::vector<std::string> data_vector;
     for (int index(0); index < message.data_size(); ++index)
       data_vector.emplace_back(message.data(index));
-    io_service_.service().dispatch([=] { task_response_functor(kSuccess, data_vector); });
+    io_service_.service().dispatch([=] { task_response_functor(kSuccess, data_vector); });  // NOLINT (Fraser)
   }
 }
 

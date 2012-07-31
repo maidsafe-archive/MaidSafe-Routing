@@ -23,6 +23,7 @@
 #include <vector>
 
 #include "boost/asio/deadline_timer.hpp"
+#include "boost/asio/error.hpp"
 #include "boost/date_time/posix_time/posix_time_config.hpp"
 
 #include "maidsafe/common/asio_service.h"
@@ -43,9 +44,10 @@ class Timer {
   explicit Timer(AsioService& io_service);
   TaskId AddTask(const boost::posix_time::time_duration& timeout,
                  const TaskResponseFunctor& response_functor);
-  // Removes task from queue immediately without executing it.
-  void KillTask(uint32_t task_id);
-  // Executes and removes task.
+  // Executes task with return code kResponseTimeout or kResponseCancelled and removes task.
+  void CancelTask(TaskId task_id,
+                  const boost::system::error_code& error = boost::asio::error::operation_aborted);
+  // Executes task with return code kSuccess and removes task.
   void ExecuteTask(protobuf::Message& message);
 
  private:

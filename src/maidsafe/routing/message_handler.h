@@ -13,7 +13,6 @@
 #ifndef MAIDSAFE_ROUTING_MESSAGE_HANDLER_H_
 #define MAIDSAFE_ROUTING_MESSAGE_HANDLER_H_
 
-#include <atomic>
 #include <string>
 
 #include "maidsafe/rudp/managed_connections.h"

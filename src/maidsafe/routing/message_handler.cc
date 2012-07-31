@@ -93,11 +93,10 @@ void MessageHandler::HandleRoutingMessage(protobuf::Message& message) {
   if (is_response)
     return;
 
-  if (routing_table_.Size() == 0) {  // I can only send to bootstrap_endpoint
+  if (routing_table_.Size() == 0)  // This node can only send to bootstrap_endpoint
     network_.SendToDirectEndpoint(message, network_.bootstrap_endpoint());
-  } else if (message.IsInitialized()) {
+  else
     network_.SendToClosestNode(message);
-  }
 }
 
 void MessageHandler::HandleNodeLevelMessageForThisNode(protobuf::Message& message) {
@@ -230,6 +229,11 @@ void MessageHandler::HandleGroupMessage(protobuf::Message& message) {
 }
 
 void MessageHandler::HandleMessage(protobuf::Message& message) {
+  if (!message.IsInitialized()) {
+    LOG(kWarning) << "Uninitialised message dropped.";
+    return;
+  }
+
   // Invalid destination id, unknown message
   if (!(NodeId(message.destination_id()).IsValid())) {
     LOG(kWarning) << "Stray message dropped, need destination ID for processing.";

@@ -49,7 +49,6 @@ class NodeId;
 
 class Routing {
  public:
-  // WARNING: THIS CONSTRUCTOR WILL THROW A boost::filesystem_error IF CONFIG FILE IS INVALID.
   // Providing empty key means that, on Join it will join the network anonymously.  This will allow
   // Send/Recieve messages to/from network.
   // WARNING: CONNECTION TO NETWORK WILL ONLY STAY FOR 60 SECONDS.
@@ -62,7 +61,7 @@ class Routing {
   // Joins the network.  Valid functor for node validation must be passed to allow node validatation
   // or else no node will be added to routing and will fail to  join the network.  To force the node
   // to use a specific endpoint for bootstrapping, provide peer_endpoint (i.e. private network).
-  void Join(const Functors functors,
+  void Join(Functors functors,
             boost::asio::ip::udp::endpoint peer_endpoint = boost::asio::ip::udp::endpoint());
 
   // WARNING: THIS FUNCTION SHOULD BE ONLY USED TO JOIN FIRST TWO ZERO STATE NODES.
@@ -71,20 +70,20 @@ class Routing {
                     const NodeInfo& peer_node_info);
 
   // Returns current network status as int (> 0 is connected).
-  int GetStatus();
+  int GetStatus() const;
 
   // The reply or error (timeout) will be passed to this response_functor.  Error is passed as
   // negative int (return code) and empty string, otherwise a positive return code is message type
   // and indicates success.  Sending a message to your own address will send to all connected
   // clients with your address (except you).  Pass an empty response_functor to indicate you do not
   // care about a response.
-  void Send(const NodeId& destination_id,  // ID of final destination
-            const NodeId& group_id,  // ID of sending group
-            const std::string& data,  // message content (serialised data)
-            const int32_t& type,  // user defined message type
-            const ResponseFunctor response_functor,
+  void Send(const NodeId& destination_id,      // ID of final destination
+            const NodeId& group_id,            // ID of sending group
+            const std::string& data,           // message content (serialised data)
+            const int32_t& type,               // user defined message type
+            ResponseFunctor response_functor,
             const boost::posix_time::time_duration& timeout,
-            const ConnectType& connect_type);  // is this to a close node group or direct
+            const ConnectType& connect_type);  // whether this is to a close node group or direct
 
   // Confirm (if we can) two nodes are within a group range.  For small networks or new node on
   // network, this function may yield many false negatives.  In the case of a negative, actual
@@ -99,16 +98,16 @@ class Routing {
   Routing(const Routing&&);
   Routing& operator=(const Routing&);
 
-  void ConnectFunctors(const Functors functors);
+  bool CheckBootstrapFilePath() const;
+  void ConnectFunctors(const Functors& functors);
   void DisconnectFunctors();
-  void BootStrapFromThisEndpoint(const Functors functors,
+  void BootstrapFromThisEndpoint(const Functors& functors,
                                  const boost::asio::ip::udp::endpoint& endpoint);
-  void DoJoin(const Functors functors);
-  int DoBootstrap(const Functors functors);
+  void DoJoin(const Functors& functors);
+  int DoBootstrap(const Functors& functors);
   int DoFindNode();
   void ReceiveMessage(const std::string& message);
   void ConnectionLost(const boost::asio::ip::udp::endpoint& lost_endpoint);
-  bool CheckBootStrapFilePath();
 
   // pimpl (data members only)
   std::unique_ptr<RoutingPrivate> impl_;

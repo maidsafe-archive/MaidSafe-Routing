@@ -47,12 +47,13 @@ enum ReturnCode {
   kNotListening = -303003,
   kNotJoined = -303004,
   kResponseTimeout = -303005,
-  kAnonymousSessionEnded = -303006,
-  kInvalidDestinationId = -303007,
-  kEmptyData = -303008,
-  kTypeNotAllowed = -303009,
-  kFailedtoSendFindNode = -303010,
-  kDataSizeNotAllowed = -303011
+  kResponseCancelled = -303006,
+  kAnonymousSessionEnded = -303007,
+  kInvalidDestinationId = -303008,
+  kEmptyData = -303009,
+  kTypeNotAllowed = -303010,
+  kFailedtoSendFindNode = -303011,
+  kDataSizeNotAllowed = -303012
 };
 
 }  // namespace routing
