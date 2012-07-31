@@ -106,6 +106,7 @@ class Routing {
   void DoJoin(const Functors& functors);
   int DoBootstrap(const Functors& functors);
   int DoFindNode();
+  void ReSendFindNodeRequest(boost::system::error_code error_code);
   void ReceiveMessage(const std::string& message, std::weak_ptr<RoutingPrivate> impl);
   void ConnectionLost(const boost::asio::ip::udp::endpoint& lost_endpoint,
                       std::weak_ptr<RoutingPrivate> impl);

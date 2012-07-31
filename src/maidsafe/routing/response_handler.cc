@@ -171,7 +171,7 @@ void ResponseHandler::FindNodes(const protobuf::Message& message) {
   if (routing_table_.Size() < Parameters::closest_nodes_size) {
     LOG(kVerbose) << "Routing table smaller than " << Parameters::closest_nodes_size
                   << " nodes.  Sending another FindNodes...";
-    ReSendFindNodeRequest();
+    //ReSendFindNodeRequest();
   }
 }
 

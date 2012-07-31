@@ -72,6 +72,7 @@ struct RoutingPrivate {
   bool client_mode_;
   bool anonymous_node_;
   Functors functors_;
+  boost::asio::deadline_timer recovery_timer_;
 };
 
 }  // namespace routing
