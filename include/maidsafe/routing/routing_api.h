@@ -107,7 +107,8 @@ class Routing {
   int DoBootstrap(const Functors& functors);
   int DoFindNode();
   void ReceiveMessage(const std::string& message, std::weak_ptr<RoutingPrivate> impl);
-  void ConnectionLost(const boost::asio::ip::udp::endpoint& lost_endpoint);
+  void ConnectionLost(const boost::asio::ip::udp::endpoint& lost_endpoint,
+                      std::weak_ptr<RoutingPrivate> impl);
 
   // pimpl (data members only)
   std::shared_ptr<RoutingPrivate> impl_;

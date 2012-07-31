@@ -201,10 +201,11 @@ int Routing::DoBootstrap(const Functors& functors) {
     return kInvalidBootstrapContacts;
   }
   ConnectFunctors(functors);
+  std::weak_ptr<RoutingPrivate> impl_weak_ptr(impl_);
   return impl_->network_.Bootstrap(
       impl_->bootstrap_nodes_,
-      [this](const std::string& message) { ReceiveMessage(message, impl_); },
-      [this](const Endpoint& lost_endpoint) { ConnectionLost(lost_endpoint); });  // NOLINT (Fraser)
+      [=](const std::string& message) { ReceiveMessage(message, impl_weak_ptr); },
+      [=](const Endpoint& lost_endpoint) { ConnectionLost(lost_endpoint, impl_weak_ptr); });  // NOLINT (Fraser)
 }
 
 int Routing::DoFindNode() {
@@ -235,7 +236,8 @@ int Routing::DoFindNode() {
   }
 }
 
-int Routing::ZeroStateJoin(Functors functors, const Endpoint& local_endpoint,
+int Routing::ZeroStateJoin(Functors functors,
+                           const Endpoint& local_endpoint,
                            const NodeInfo& peer_node) {
   assert((!impl_->client_mode_) && "no client nodes allowed in zero state network");
   assert((!impl_->anonymous_node_) && "not allwed on anonymous node");
@@ -247,10 +249,11 @@ int Routing::ZeroStateJoin(Functors functors, const Endpoint& local_endpoint,
   }
 
   ConnectFunctors(functors);
+  std::weak_ptr<RoutingPrivate> impl_weak_ptr(impl_);
   int result(impl_->network_.Bootstrap(
       impl_->bootstrap_nodes_,
-      [this](const std::string& message) { ReceiveMessage(message, impl_); },
-      [this](const Endpoint& lost_endpoint) { ConnectionLost(lost_endpoint); },
+      [=](const std::string& message) { ReceiveMessage(message, impl_weak_ptr); },
+      [=](const Endpoint& lost_endpoint) { ConnectionLost(lost_endpoint, impl_weak_ptr); },
       local_endpoint));
 
   if (result != kSuccess) {
@@ -392,32 +395,38 @@ void Routing::ReceiveMessage(const std::string& message, std::weak_ptr<RoutingPr
   protobuf::ConnectRequest connection_request;
   if (protobuf_message.ParseFromString(message)) {
     bool relay_message(!protobuf_message.has_source_id());
-    LOG(kInfo) << "This node [" << HexSubstr(impl_->keys_.identity) << "] received message type: "
+    LOG(kInfo) << "This node [" << HexSubstr(pimpl->keys_.identity) << "] received message type: "
                << protobuf_message.type() << " from "
                << (relay_message ? HexSubstr(protobuf_message.relay_id()) + " -- RELAY REQUEST" :
                                    HexSubstr(protobuf_message.source_id()));
-    impl_->message_handler_->HandleMessage(protobuf_message);
+    pimpl->message_handler_->HandleMessage(protobuf_message);
   } else {
     LOG(kWarning) << "Message received, failed to parse";
   }
 }
 
-void Routing::ConnectionLost(const Endpoint& lost_endpoint) {
+void Routing::ConnectionLost(const Endpoint& lost_endpoint, std::weak_ptr<RoutingPrivate> impl) {
+  std::shared_ptr<RoutingPrivate> pimpl = impl.lock();
+  if (!pimpl) {
+    LOG(kVerbose) << "Ignoring message received since this node is shutting down";
+    return;
+  }
+
   LOG(kWarning) << "Routing::ConnectionLost---------------------------------------------------";
   NodeInfo dropped_node;
-  if (!impl_->tearing_down_ &&
-      (impl_->routing_table_.GetNodeInfo(lost_endpoint, dropped_node) &&
-       impl_->routing_table_.IsThisNodeInRange(dropped_node.node_id,
+  if (!pimpl->tearing_down_ &&
+      (pimpl->routing_table_.GetNodeInfo(lost_endpoint, dropped_node) &&
+       pimpl->routing_table_.IsThisNodeInRange(dropped_node.node_id,
                                                Parameters::closest_nodes_size))) {
     // Close node lost, get more nodes
     LOG(kWarning) << "Lost close node, getting more.";
     // TODO(Prakash): uncomment once find node flooding is resolved.
-    // impl_->network_.SendToClosestNode(rpcs::FindNodes(NodeId(impl_->keys_.identity),
-    //                                 NodeId(impl_->keys_.identity)));
+    // pimpl->network_.SendToClosestNode(rpcs::FindNodes(NodeId(pimpl->keys_.identity),
+    //                                 NodeId(pimpl->keys_.identity)));
   }
 
   // Checking routing table
-  dropped_node = impl_->routing_table_.DropNode(lost_endpoint);
+  dropped_node = pimpl->routing_table_.DropNode(lost_endpoint);
   if (dropped_node.node_id != NodeId()) {
     LOG(kWarning) << "Lost connection with routing node "
                   << HexSubstr(dropped_node.node_id.String()) << ", endpoint " << lost_endpoint;
@@ -426,7 +435,7 @@ void Routing::ConnectionLost(const Endpoint& lost_endpoint) {
   }
 
   // Checking non-routing table
-  dropped_node = impl_->non_routing_table_.DropNode(lost_endpoint);
+  dropped_node = pimpl->non_routing_table_.DropNode(lost_endpoint);
   if (dropped_node.node_id != NodeId()) {
     LOG(kWarning) << "Lost connection with non-routing node "
                   << HexSubstr(dropped_node.node_id.String()) << ", endpoint " << lost_endpoint;

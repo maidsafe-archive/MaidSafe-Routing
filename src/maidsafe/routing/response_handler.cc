@@ -126,8 +126,8 @@ void ResponseHandler::FindNodes(const protobuf::Message& message) {
                 << "] received FindNodes response from " << HexSubstr(message.source_id());
 #ifndef NDEBUG
   for (int i = 0; i < find_nodes.nodes_size(); ++i) {
-    LOG(kVerbose) << "FindNodes from "  << HexSubstr(message.source_id())
-                  << " returned "  << HexSubstr(find_nodes.nodes(i));
+    LOG(kVerbose) << "FindNodes from " << HexSubstr(message.source_id())
+                  << " returned " << HexSubstr(find_nodes.nodes(i));
   }
 #endif
 
@@ -171,7 +171,7 @@ void ResponseHandler::FindNodes(const protobuf::Message& message) {
   if (routing_table_.Size() < Parameters::closest_nodes_size) {
     LOG(kVerbose) << "Routing table smaller than " << Parameters::closest_nodes_size
                   << " nodes.  Sending another FindNodes...";
-    // ReSendFindNodeRequest();
+    ReSendFindNodeRequest();
   }
 }
 
