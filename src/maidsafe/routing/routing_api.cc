@@ -195,10 +195,11 @@ void Routing::DoJoin(const Functors& functors) {
   if (functors.network_status)
     functors.network_status(DoFindNode());
 
-  impl_->recovery_timer_.expires_from_now(boost::posix_time::seconds(5));
-  impl_->recovery_timer_.async_wait([=](boost::system::error_code error_code) {
-    ReSendFindNodeRequest(error_code);
-  });
+  impl_->recovery_timer_.expires_from_now(boost::posix_time::seconds(
+      Parameters::recovery_timeout_in_seconds));
+  impl_->recovery_timer_.async_wait([=](const boost::system::error_code& error_code) {
+                                        ReSendFindNodeRequest(error_code);
+                                      });
 }
 
 int Routing::DoBootstrap(const Functors& functors) {
@@ -295,6 +296,13 @@ int Routing::ZeroStateJoin(Functors functors,
                << impl_->network_.bootstrap_endpoint()
                << ", Routing table size - " << impl_->routing_table_.Size()
                << ", Node id : " << HexSubstr(impl_->keys_.identity);
+
+    impl_->recovery_timer_.expires_from_now(
+        boost::posix_time::seconds(Parameters::recovery_timeout_in_seconds));
+    impl_->recovery_timer_.async_wait([=](const boost::system::error_code& error_code) {
+                                          ReSendFindNodeRequest(error_code);
+                                       });
+
     return kSuccess;
   } else {
     LOG(kError) << "Failed to join zero state network, with bootstrap_endpoint "
@@ -426,9 +434,7 @@ void Routing::ConnectionLost(const Endpoint& lost_endpoint, std::weak_ptr<Routin
                                                Parameters::closest_nodes_size))) {
     // Close node lost, get more nodes
     LOG(kWarning) << "Lost close node, getting more.";
-    // TODO(Prakash): uncomment once find node flooding is resolved.
-    // pimpl->network_.SendToClosestNode(rpcs::FindNodes(NodeId(pimpl->keys_.identity),
-    //                                 NodeId(pimpl->keys_.identity)));
+    ReSendFindNodeRequest(boost::system::error_code());
   }
 
   // Checking routing table
@@ -455,32 +461,29 @@ bool Routing::ConfirmGroupMembers(const NodeId& node1, const NodeId& node2) {
   return impl_->routing_table_.ConfirmGroupMembers(node1, node2);
 }
 
-void Routing::ReSendFindNodeRequest(boost::system::error_code error_code) {
+void Routing::ReSendFindNodeRequest(const boost::system::error_code& error_code) {
   if (error_code != boost::asio::error::operation_aborted) {
-    if (impl_->routing_table_.Size() < Parameters::closest_nodes_size) {
-      LOG(kInfo) << "Routing table smaller than " << Parameters::closest_nodes_size
+    if (impl_->routing_table_.Size() == 0) {
+      LOG(kInfo) << "This node's [" << HexSubstr(impl_->keys_.identity)
+                 << "] Routing table is empty."
+                 << " Need to rebootstrap !!!";
+      return;
+    } else if (impl_->routing_table_.Size() < Parameters::closest_nodes_size) {
+      LOG(kInfo) << "This node's [" << HexSubstr(impl_->keys_.identity)
+                 << "] Routing table smaller than " << Parameters::closest_nodes_size
                  << " nodes.  Sending another FindNodes..";
-      bool relay_message(false);
-      Endpoint relay_endpoint;
-      bool routing_table_empty(impl_->routing_table_.Size() == 0);
-      if (routing_table_empty) {  // Not in any peer's routing table, need a path back through relay IP.
-        relay_endpoint = impl_->network_.this_node_relay_endpoint();
-        relay_message = true;
-      }
-      protobuf::Message find_node_rpc(rpcs::FindNodes(NodeId(impl_->routing_table_.kKeys().identity),
-                                                      NodeId(impl_->routing_table_.kKeys().identity),
-                                                      relay_message,
-                                                      relay_endpoint));
-      if (routing_table_empty)
-        impl_->network_.SendToDirectEndpoint(find_node_rpc, impl_->network_.bootstrap_endpoint());
-      else
-        impl_->network_.SendToClosestNode(find_node_rpc);
+      protobuf::Message find_node_rpc(rpcs::FindNodes(NodeId(impl_->keys_.identity),
+                                                      NodeId(impl_->keys_.identity)));
+      impl_->network_.SendToClosestNode(find_node_rpc);
 
-      impl_->recovery_timer_.expires_from_now(boost::posix_time::seconds(5));
+      impl_->recovery_timer_.expires_from_now(
+          boost::posix_time::seconds(Parameters::recovery_timeout_in_seconds));
       impl_->recovery_timer_.async_wait([=](boost::system::error_code error_code) {
                                             ReSendFindNodeRequest(error_code);
                                           });
     }
+  } else {
+    LOG(kVerbose) << "Cancelled recovery loop!!";
   }
 }
 

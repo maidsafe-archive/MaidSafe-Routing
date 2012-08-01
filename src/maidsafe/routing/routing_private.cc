@@ -42,6 +42,7 @@ RoutingPrivate::RoutingPrivate(const asymm::Keys& keys, bool client_mode)
 }
 
 RoutingPrivate::~RoutingPrivate() {
+  recovery_timer_.cancel();
   tearing_down_ = true;
   asio_service_.Stop();
   network_.Stop();

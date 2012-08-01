@@ -28,6 +28,7 @@ uint16_t Parameters::max_client_routing_table_size(8);
 uint16_t Parameters::max_non_routing_table_size(8);
 uint16_t Parameters::bucket_target_size(1);
 uint16_t Parameters::max_data_size(63000);
+uint16_t Parameters::recovery_timeout_in_seconds(10);
 
 }  // namespace routing
 

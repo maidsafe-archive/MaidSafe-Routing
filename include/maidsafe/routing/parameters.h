@@ -37,6 +37,7 @@ struct Parameters {
   static uint16_t max_non_routing_table_size;
   static uint16_t bucket_target_size;
   static uint16_t max_data_size;
+  static uint16_t recovery_timeout_in_seconds;
 
  private:
   Parameters(const Parameters&);

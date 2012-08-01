@@ -168,30 +168,30 @@ void ResponseHandler::FindNodes(const protobuf::Message& message) {
     }
   }
 
-  if (routing_table_.Size() < Parameters::closest_nodes_size) {
-    LOG(kVerbose) << "Routing table smaller than " << Parameters::closest_nodes_size
-                  << " nodes.  Sending another FindNodes...";
-    //ReSendFindNodeRequest();
-  }
+//   if (routing_table_.Size() < Parameters::closest_nodes_size) {
+//     LOG(kVerbose) << "Routing table smaller than " << Parameters::closest_nodes_size
+//                   << " nodes.  Sending another FindNodes...";
+//     ReSendFindNodeRequest();
+//   }
 }
 
-void ResponseHandler::ReSendFindNodeRequest() {
-  bool relay_message(false);
-  Endpoint relay_endpoint;
-  bool routing_table_empty(routing_table_.Size() == 0);
-  if (routing_table_empty) {  // Not in any peer's routing table, need a path back through relay IP.
-    relay_endpoint = network_.this_node_relay_endpoint();
-    relay_message = true;
-  }
-  protobuf::Message find_node_rpc(rpcs::FindNodes(NodeId(routing_table_.kKeys().identity),
-                                                  NodeId(routing_table_.kKeys().identity),
-                                                  relay_message,
-                                                  relay_endpoint));
-  if (routing_table_empty)
-    network_.SendToDirectEndpoint(find_node_rpc, network_.bootstrap_endpoint());
-  else
-    network_.SendToClosestNode(find_node_rpc);
-}
+// void ResponseHandler::ReSendFindNodeRequest() {
+//   bool relay_message(false);
+//   Endpoint relay_endpoint;
+//   bool routing_table_empty(routing_table_.Size() == 0);
+//   if (routing_table_empty) {
+//     relay_endpoint = network_.this_node_relay_endpoint();
+//     relay_message = true;
+//   }
+//   protobuf::Message find_node_rpc(rpcs::FindNodes(NodeId(routing_table_.kKeys().identity),
+//                                                   NodeId(routing_table_.kKeys().identity),
+//                                                   relay_message,
+//                                                   relay_endpoint));
+//   if (routing_table_empty)
+//     network_.SendToDirectEndpoint(find_node_rpc, network_.bootstrap_endpoint());
+//   else
+//     network_.SendToClosestNode(find_node_rpc);
+// }
 
 void ResponseHandler::ProxyConnect(protobuf::Message& message) {
   protobuf::ProxyConnectResponse proxy_connect_response;
