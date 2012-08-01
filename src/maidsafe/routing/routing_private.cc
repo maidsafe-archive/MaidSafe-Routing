@@ -20,7 +20,7 @@ namespace maidsafe {
 namespace routing {
 
 RoutingPrivate::RoutingPrivate(const asymm::Keys& keys, bool client_mode)
-    : asio_service_(2),
+    : asio_service_(1),
       bootstrap_nodes_(),
       keys_(keys),
       tearing_down_(false),
@@ -37,7 +37,7 @@ RoutingPrivate::RoutingPrivate(const asymm::Keys& keys, bool client_mode)
       functors_(),
       recovery_timer_(asio_service_.service()) {
   message_handler_.reset(new MessageHandler(asio_service_, routing_table_, non_routing_table_,
-                                            network_, timer_)),
+                                            network_, timer_));
   asio_service_.Start();
 }
 
