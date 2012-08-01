@@ -215,6 +215,7 @@ bool FakeNetwork::SendMessageToNode(Endpoint endpoint, std::string message) {
 }
 
 void FakeNetwork::AddEmptyNode(Node node) {
+  std::lock_guard<std::mutex> lock(mutex_);
   nodes_.push_back(node);
 }
 
