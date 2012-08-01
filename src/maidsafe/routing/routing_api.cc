@@ -368,7 +368,10 @@ void Routing::Send(const NodeId& destination_id,
   proto_message.set_direct(static_cast<int32_t>(connect_type));
   proto_message.set_type(type);
   proto_message.set_client_node(impl_->client_mode_);
-
+  int replication(0);
+  if (2 == type)  // replication only in case of group message
+    replication = Parameters::node_group_size;
+  proto_message.set_replication(replication);
   // Anonymous node
   if (impl_->anonymous_node_) {
     proto_message.set_relay_id(impl_->routing_table_.kKeys().identity);
