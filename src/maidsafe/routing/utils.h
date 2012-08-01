@@ -46,6 +46,7 @@ bool IsRoutingMessage(const protobuf::Message &message);
 bool IsNodeLevelMessage(const protobuf::Message &message);
 bool IsRequest(const protobuf::Message &message);
 bool IsResponse(const protobuf::Message &message);
+bool ValidateMessage(const protobuf::Message &message);
 
 void SetProtobufEndpoint(const Endpoint& endpoint, protobuf::Endpoint *pbendpoint);
 Endpoint GetEndpointFromProtobuf(const protobuf::Endpoint &pbendpoint);

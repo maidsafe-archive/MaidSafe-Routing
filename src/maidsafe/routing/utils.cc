@@ -109,6 +109,32 @@ bool IsResponse(const protobuf::Message &message) {
   return !IsRequest(message);
 }
 
+bool ValidateMessage(const protobuf::Message &message) {
+  if (!IsRoutingMessage(message))
+    return true;
+
+  if (!NodeId(message.destination_id()).IsValid())
+    return false;
+
+  if (!NodeId(message.source_id()).IsValid() && !NodeId(message.relay_id()).IsValid())
+    return false;
+
+  if (message.type() == 2)
+    if (!message.direct())
+      return false;
+
+  if (message.type() == 3) {
+    if (IsRequest(message)) {
+      if (message.direct() || !NodeId(message.last_id()).IsValid())
+        return false;
+    } else {
+      if (!message.direct())
+        return false;
+    }
+  }
+  return true;
+}
+
 void SetProtobufEndpoint(const Endpoint& endpoint, protobuf::Endpoint *pbendpoint) {
   if (pbendpoint) {
     pbendpoint->set_ip(endpoint.address().to_string().c_str());

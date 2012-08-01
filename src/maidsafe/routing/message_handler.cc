@@ -252,6 +252,8 @@ void MessageHandler::GroupMessage(protobuf::Message &message) {
 }
 
 void MessageHandler::ProcessMessage(protobuf::Message &message) {
+  if (!ValidateMessage(message))
+    return;
   // Invalid destination id, unknown message
   if (!(NodeId(message.destination_id()).IsValid())) {
     LOG(kWarning) << "Stray message dropped, need destination id for processing.";
