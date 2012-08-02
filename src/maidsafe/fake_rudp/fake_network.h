@@ -9,8 +9,8 @@
  *  You are not free to copy, amend or otherwise use this source code without  *
  *  the explicit written permission of the board of directors of maidsafe.net. *
  ******************************************************************************/
-#ifndef MAIDSAFE_FAKERUDP_FAKE_NETWORK_H_
-#define MAIDSAFE_FAKERUDP_FAKE_NETWORK_H_
+#ifndef MAIDSAFE_FAKE_RUDP_FAKE_NETWORK_H_
+#define MAIDSAFE_FAKE_RUDP_FAKE_NETWORK_H_
 
 #include <mutex>
 #include <functional>
@@ -46,11 +46,11 @@ class FakeNetwork {
     return FakeNetwork;
   }
   Endpoint GetEndpoint();
-  bool BootStrap(Node &node, Endpoint &connect_to_endpoint);
+  bool BootStrap(Node& node, Endpoint& connect_to_endpoint);
   bool RemoveMyNode(Endpoint endpoint);
   bool SendMessageToNode(Endpoint endpoint, std::string message);
-  int AddConnection(const Endpoint &my_endpoint, const Endpoint &peer_endpoint, bool temp = false);
-  bool RemoveConnection(const Endpoint &my_endpoint, const Endpoint &peer_endpoint);
+  int AddConnection(const Endpoint& my_endpoint, const Endpoint& peer_endpoint, bool temp = false);
+  bool RemoveConnection(const Endpoint& my_endpoint, const Endpoint& peer_endpoint);
   std::vector<Node>::iterator FindNode(Endpoint endpoint);
   std::vector<Node>::iterator GetEndIterator() { return nodes_.end(); }
   void AddEmptyNode(Node node);
@@ -75,4 +75,4 @@ struct Node {
 
 }  // namespace maidsafe
 
-#endif  // MAIDSAFE_FAKERUDP_FAKE_NETWORK_H_
+#endif  // MAIDSAFE_FAKE_RUDP_FAKE_NETWORK_H_

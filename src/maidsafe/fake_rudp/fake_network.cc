@@ -9,7 +9,8 @@
  *  You are not free to copy, amend or otherwise use this source code without  *
  *  the explicit written permission of the board of directors of maidsafe.net. *
  ******************************************************************************/
-#include "maidsafe/fakerudp/fake_network.h"
+
+#include "maidsafe/fake_rudp/fake_network.h"
 
 #include <functional>
 #include <map>
@@ -62,7 +63,7 @@ std::vector<Node>::iterator FakeNetwork::FindNode(Endpoint endpoint) {
                        });
 }
 
-bool FakeNetwork::BootStrap(Node &node, Endpoint &connect_to_endpoint) {
+bool FakeNetwork::BootStrap(Node& node, Endpoint& connect_to_endpoint) {
   std::lock_guard<std::mutex> lock(mutex_);
   for (int i = 0; i < 200; ++i) {
     Sleep(boost::posix_time::milliseconds(10));
@@ -75,8 +76,8 @@ bool FakeNetwork::BootStrap(Node &node, Endpoint &connect_to_endpoint) {
   return false;
 }
 
-int FakeNetwork::AddConnection(const Endpoint &my_endpoint,
-                               const Endpoint &peer_endpoint,
+int FakeNetwork::AddConnection(const Endpoint& my_endpoint,
+                               const Endpoint& peer_endpoint,
                                bool temp) {
   std::lock_guard<std::mutex> lock(mutex_);
   auto iter = std::find_if(nodes_.begin(),
@@ -92,7 +93,7 @@ int FakeNetwork::AddConnection(const Endpoint &my_endpoint,
 
   auto itr = std::find_if(iter->connected_endpoints.begin(),
                           iter->connected_endpoints.end(),
-                          [&](Endpoint &endpoint) {
+                          [&](Endpoint& endpoint) {
                               return (endpoint == peer_endpoint);
                           });
   if (itr == iter->connected_endpoints.end()) {
@@ -128,13 +129,13 @@ int FakeNetwork::AddConnection(const Endpoint &my_endpoint,
   }
 }
 
-bool FakeNetwork::RemoveConnection(const Endpoint &my_endpoint, const Endpoint &peer_endpoint) {
+bool FakeNetwork::RemoveConnection(const Endpoint& my_endpoint, const Endpoint& peer_endpoint) {
   std::lock_guard<std::mutex> lock(mutex_);
   auto my_iter = FindNode(my_endpoint);
   if (my_iter != nodes_.end()) {
     auto itr = std::find_if(my_iter->connected_endpoints.begin(),
                             my_iter->connected_endpoints.end(),
-                            [&](Endpoint &endpoint) {
+                            [&](Endpoint& endpoint) {
                                 return (endpoint == peer_endpoint);
                             });
     if (itr != my_iter->connected_endpoints.end()) {
@@ -147,7 +148,7 @@ bool FakeNetwork::RemoveConnection(const Endpoint &my_endpoint, const Endpoint &
     if (peer_iter != nodes_.end()) {
       auto itr = std::find_if(peer_iter->connected_endpoints.begin(),
                               peer_iter->connected_endpoints.end(),
-                              [&](Endpoint &endpoint) {
+                              [&](Endpoint& endpoint) {
                                   return (endpoint == my_endpoint);
                               });
       if (itr != peer_iter->connected_endpoints.end()) {
@@ -178,7 +179,7 @@ bool FakeNetwork::RemoveMyNode(Endpoint endpoint) {
         // it->connection_lost(endpoint);
         auto j = std::find_if(it->connected_endpoints.begin(),
                               it->connected_endpoints.end(),
-                              [&](Endpoint &element) {
+                              [&](Endpoint& element) {
                                   return element == endpoint;
                               });
         if (j != it->connected_endpoints.end()) {
@@ -187,7 +188,7 @@ bool FakeNetwork::RemoveMyNode(Endpoint endpoint) {
         /*it->connected_endpoints.erase(
             std::remove_if(it->connected_endpoints.begin(),
                            it->connected_endpoints.end(),
-                           [&](Endpoint &element) {
+                           [&](Endpoint& element) {
                               return element == endpoint;
                            }));*/
       }
@@ -214,6 +215,7 @@ bool FakeNetwork::SendMessageToNode(Endpoint endpoint, std::string message) {
 }
 
 void FakeNetwork::AddEmptyNode(Node node) {
+  std::lock_guard<std::mutex> lock(mutex_);
   nodes_.push_back(node);
 }
 

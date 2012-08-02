@@ -10,49 +10,55 @@
  *  the explicit written permission of the board of directors of maidsafe.net. *
  ******************************************************************************/
 
-
 #ifndef MAIDSAFE_ROUTING_TIMER_H_
 #define MAIDSAFE_ROUTING_TIMER_H_
 
-#include<mutex>
+#include <mutex>
+#include <cstdint>
+#include <functional>
 #include <map>
+#include <memory>
 #include <string>
 #include <utility>
 #include <vector>
 
-#include "boost/asio.hpp"
+#include "boost/asio/deadline_timer.hpp"
+#include "boost/asio/error.hpp"
+#include "boost/date_time/posix_time/posix_time_config.hpp"
 
 #include "maidsafe/common/asio_service.h"
 #include "maidsafe/common/utils.h"
 
-namespace asio = boost::asio;
 
 namespace maidsafe {
 
 namespace routing {
 
-namespace protobuf { class Message;}  // namespace protobuf
+namespace protobuf { class Message; }
 
 typedef std::function<void(int, std::vector<std::string>)> TaskResponseFunctor;
 typedef uint32_t TaskId;
 
 class Timer {
  public:
-  explicit Timer(AsioService &io_service);
-  typedef std::shared_ptr<asio::deadline_timer> TimerPointer;
-  TaskId AddTask(const boost::posix_time::time_duration &timeout,
-                 const TaskResponseFunctor &response_functor);
-  void KillTask(uint32_t task_id);  // removes from queue immediately no run
-  void ExecuteTaskNow(protobuf::Message &message);  // executes and removes task
+  explicit Timer(AsioService& io_service);
+  TaskId AddTask(const boost::posix_time::time_duration& timeout,
+                 const TaskResponseFunctor& response_functor);
+  // Executes task with return code kResponseTimeout or kResponseCancelled and removes task.
+  void CancelTask(TaskId task_id,
+                  const boost::system::error_code& error = boost::asio::error::operation_aborted);
+  // Executes task with return code kSuccess and removes task.
+  void ExecuteTask(protobuf::Message& message);
 
  private:
-  Timer &operator=(const Timer&);
+  typedef std::shared_ptr<boost::asio::deadline_timer> TimerPtr;
+  Timer& operator=(const Timer&);
   Timer(const Timer&);
   Timer(const Timer&&);
-  AsioService &io_service_;
+  AsioService& io_service_;
   TaskId task_id_;
   std::mutex mutex_;
-  std::map<uint32_t, std::pair<TimerPointer, TaskResponseFunctor> > queue_;
+  std::map<uint32_t, std::pair<TimerPtr, TaskResponseFunctor>> queue_;
 };
 
 }  // namespace routing

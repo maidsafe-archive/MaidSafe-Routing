@@ -51,8 +51,8 @@ message Message {
   optional int32 id = 11;
   optional bool client_node = 12;
   optional Endpoint relay = 13;
-  optional bool ClosestToMe = 14;
-  optional bool CloseToMe = 15;
+  optional bool closest_to_this_node = 14;
+  optional bool close_to_this_node = 15;
 }
 
 message SignedMessage {

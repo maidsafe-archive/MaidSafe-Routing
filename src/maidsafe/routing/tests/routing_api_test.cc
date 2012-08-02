@@ -34,13 +34,17 @@
 #include "maidsafe/routing/tests/test_utils.h"
 
 namespace maidsafe {
+
 namespace routing {
+
 namespace test {
 
 namespace bptime = boost::posix_time;
 namespace fs = boost::filesystem;
 
 namespace {
+
+typedef boost::asio::ip::udp::endpoint Endpoint;
 
 #ifdef FAKE_RUDP
   const int kClientCount(10);
@@ -229,7 +233,7 @@ TEST(APITest, FUNC_API_AnonymousNode) {
         give_key((*itr).second.public_key);
     };
 
-  functors1.message_received = [&] (const int32_t&, const std::string &message, const NodeId &,
+  functors1.message_received = [&] (const int32_t&, const std::string& message, const NodeId &,
     ReplyFunctor reply_functor) {
     reply_functor("response to " + message);
     LOG(kVerbose) << "Message received and replied to message !!";
@@ -271,7 +275,7 @@ TEST(APITest, FUNC_API_AnonymousNode) {
   Sleep(boost::posix_time::seconds(61));  // to allow disconnection
   ResponseFunctor failed_response = [=](const int& return_code,
                                         const std::vector<std::string> &message) {
-      EXPECT_EQ(kResponseTimeout, return_code);
+      EXPECT_EQ(kResponseCancelled, return_code);
       ASSERT_TRUE(message.empty());
     };
   R3.Send(NodeId(node1.node_info.node_id), NodeId(), "message_2_from_anonymous node", 101,
@@ -302,7 +306,7 @@ TEST(APITest, BEH_API_SendToSelf) {
         give_key((*itr).second.public_key);
     };
 
-  functors1.message_received = [&] (const int32_t&, const std::string &message,
+  functors1.message_received = [&] (const int32_t&, const std::string& message,
                                     const NodeId &, ReplyFunctor reply_functor) {
       reply_functor("response to " + message);
       LOG(kVerbose) << "Message received and replied to message !!";
@@ -371,7 +375,7 @@ TEST(APITest, BEH_API_ClientNode) {
         give_key((*itr).second.public_key);
     };
 
-  functors1.message_received = [&] (const int32_t&, const std::string &message, const NodeId &,
+  functors1.message_received = [&] (const int32_t&, const std::string& message, const NodeId &,
     ReplyFunctor reply_functor) {
       reply_functor("response to " + message);
       LOG(kVerbose) << "Message received and replied to message !!";
@@ -439,7 +443,7 @@ TEST(APITest, BEH_API_ClientNodeWithBootstrapFile) {
         give_key((*itr).second.public_key);
     };
 
-  functors1.message_received = [&] (const int32_t&, const std::string &message, const NodeId &,
+  functors1.message_received = [&] (const int32_t&, const std::string& message, const NodeId &,
     ReplyFunctor reply_functor) {
       reply_functor("response to " + message);
       LOG(kVerbose) << "Message received and replied to message !!";
@@ -666,7 +670,7 @@ TEST(APITest, DISABLED_BEH_API_NodeNetworkWithClient) {
         give_key((*itr).second.public_key);
   };
 
-  functors.message_received = [&] (const int32_t&, const std::string &message, const NodeId &,
+  functors.message_received = [&] (const int32_t&, const std::string& message, const NodeId &,
     ReplyFunctor reply_functor) {
       reply_functor("response to " + message);
       LOG(kVerbose) << "Message received and replied to message !!";

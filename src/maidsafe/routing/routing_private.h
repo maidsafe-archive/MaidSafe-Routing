@@ -10,69 +10,73 @@
  *  the explicit written permission of the board of directors of maidsafe.net. *
  ******************************************************************************/
 
-#ifndef MAIDSAFE_ROUTING_ROUTING_API_IMPL_H_
-#define MAIDSAFE_ROUTING_ROUTING_API_IMPL_H_
+#ifndef MAIDSAFE_ROUTING_ROUTING_PRIVATE_H_
+#define MAIDSAFE_ROUTING_ROUTING_PRIVATE_H_
 
+#include <atomic>
+#include <cstdint>
 #include <map>
-#include <string>
+#include <memory>
 #include <utility>
 #include <vector>
 
+#include "boost/asio/deadline_timer.hpp"
+#include "boost/asio/ip/udp.hpp"
+#include "boost/filesystem/path.hpp"
+
+#include "maidsafe/common/rsa.h"
+#include "maidsafe/common/asio_service.h"
 #include "maidsafe/rudp/managed_connections.h"
 
 #include "maidsafe/routing/api_config.h"
-#include "maidsafe/routing/message_handler.h"
 #include "maidsafe/routing/network_utils.h"
 #include "maidsafe/routing/non_routing_table.h"
-#include "maidsafe/routing/parameters.h"
 #include "maidsafe/routing/routing_table.h"
 #include "maidsafe/routing/timer.h"
 
-namespace bs2 = boost::signals2;
-namespace fs = boost::filesystem;
 
 namespace maidsafe {
 
 namespace routing {
 
-namespace test {
+class MessageHandler;
 
-class GenericNode;
-
-}  // namespace test
+namespace test { class GenericNode; }
 
 struct RoutingPrivate {
  public:
   ~RoutingPrivate();
 
+  friend class Routing;
   friend class test::GenericNode;
 
  private:
-  RoutingPrivate(const RoutingPrivate&);  // no copy
-  RoutingPrivate(const RoutingPrivate&&);  // no move
-  RoutingPrivate& operator=(const RoutingPrivate&);  // no assign
-  RoutingPrivate(const asymm::Keys &keys, bool client_mode);
-  friend class Routing;
+  RoutingPrivate(const RoutingPrivate&);
+  RoutingPrivate(const RoutingPrivate&&);
+  RoutingPrivate& operator=(const RoutingPrivate&);
+  RoutingPrivate(const asymm::Keys& keys, bool client_mode);
+
   AsioService asio_service_;
-  std::vector<Endpoint> bootstrap_nodes_;
+  std::vector<boost::asio::ip::udp::endpoint> bootstrap_nodes_;
   asymm::Keys keys_;  // FIXME
   std::atomic<bool> tearing_down_;
   RoutingTable routing_table_;
   NonRoutingTable non_routing_table_;
   Timer timer_;
   std::map<uint32_t, std::pair<std::unique_ptr<boost::asio::deadline_timer>,
-                               MessageReceivedFunctor> > waiting_for_response_;
+                               MessageReceivedFunctor>> waiting_for_response_;
+  std::unique_ptr<MessageHandler> message_handler_;
   NetworkUtils network_;
-  MessageHandler message_handler_;
   bool joined_;
-  fs::path bootstrap_file_path_;
+  boost::filesystem::path bootstrap_file_path_;
   bool client_mode_;
   bool anonymous_node_;
   Functors functors_;
+  boost::asio::deadline_timer recovery_timer_;
 };
 
 }  // namespace routing
 
 }  // namespace maidsafe
 
-#endif  // MAIDSAFE_ROUTING_ROUTING_API_IMPL_H_
+#endif  // MAIDSAFE_ROUTING_ROUTING_PRIVATE_H_

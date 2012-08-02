@@ -15,13 +15,13 @@
 #include <vector>
 #include "maidsafe/common/test.h"
 
+#include "maidsafe/common/log.h"
 #include "maidsafe/common/utils.h"
 #include "maidsafe/routing/routing_table.h"
 #include "maidsafe/routing/parameters.h"
 #include "maidsafe/rudp/managed_connections.h"
 #include "maidsafe/routing/tests/test_utils.h"
 #include "maidsafe/routing/node_id.h"
-#include "maidsafe/routing/log.h"
 
 namespace maidsafe {
 namespace routing {
@@ -30,7 +30,7 @@ namespace test {
 TEST(RoutingTableTest, FUNC_AddCloseNodes) {
     asymm::Keys keys;
     keys.identity = RandomString(64);
-  RoutingTable RT(keys, false, nullptr);
+  RoutingTable RT(keys, false);
   NodeInfo node;
   // check the node is useful when false is set
   for (unsigned int i = 0; i < Parameters::closest_nodes_size ; ++i) {
@@ -62,7 +62,7 @@ TEST(RoutingTableTest, FUNC_AddCloseNodes) {
 TEST(RoutingTableTest, FUNC_AddTooManyNodes) {
     asymm::Keys keys;
     keys.identity = RandomString(64);
-  RoutingTable RT(keys, false, nullptr);
+  RoutingTable RT(keys, false);
   for (uint16_t i = 0; RT.Size() < Parameters::max_routing_table_size; ++i) {
     NodeInfo node(MakeNode());
     node.endpoint.port(i + 1501U);  // has to be unique
@@ -86,7 +86,7 @@ TEST(RoutingTableTest, FUNC_AddTooManyNodes) {
 TEST(RoutingTableTest, BEH_CloseAndInRangeCheck) {
   asymm::Keys keys;
   keys.identity = RandomString(64);
-  RoutingTable RT(keys, false, nullptr);
+  RoutingTable RT(keys, false);
   // Add some nodes to RT
   NodeId my_node(keys.identity);
   for (uint16_t i = 0; RT.Size() < Parameters::max_routing_table_size; ++i) {
@@ -98,16 +98,16 @@ TEST(RoutingTableTest, BEH_CloseAndInRangeCheck) {
   std::string my_id_encoded(my_node.ToStringEncoded(NodeId::kBinary));
   my_id_encoded[511] = (my_id_encoded[511] == '0' ? '1' : '0');
   NodeId my_closest_node(NodeId(my_id_encoded, NodeId::kBinary));
-  EXPECT_TRUE(RT.AmIClosestNode(my_closest_node));
-  EXPECT_TRUE(RT.IsMyNodeInRange(my_closest_node, 2));
-  EXPECT_TRUE(RT.IsMyNodeInRange(my_closest_node, 200));
+  EXPECT_TRUE(RT.IsThisNodeClosestTo(my_closest_node));
+  EXPECT_TRUE(RT.IsThisNodeInRange(my_closest_node, 2));
+  EXPECT_TRUE(RT.IsThisNodeInRange(my_closest_node, 200));
   EXPECT_TRUE(RT.ConfirmGroupMembers(my_closest_node,
                                      RT.GetNthClosestNode(my_closest_node, 1).node_id));
   EXPECT_TRUE(RT.ConfirmGroupMembers(my_closest_node,
                 RT.GetNthClosestNode(my_closest_node, Parameters::closest_nodes_size - 1).node_id));
   EXPECT_FALSE(RT.ConfirmGroupMembers(my_closest_node, RT.GetNthClosestNode(my_closest_node,
                                      Parameters::closest_nodes_size + 1).node_id));
-  EXPECT_TRUE(RT.AmIClosestNode(my_closest_node));
+  EXPECT_TRUE(RT.IsThisNodeClosestTo(my_closest_node));
   EXPECT_EQ(RT.Size(), Parameters::max_routing_table_size);
   // get closest nodes to me
   std::vector<NodeId> close_nodes(RT.GetClosestNodes(my_node,

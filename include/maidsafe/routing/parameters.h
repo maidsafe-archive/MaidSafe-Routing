@@ -13,7 +13,8 @@
 #ifndef MAIDSAFE_ROUTING_PARAMETERS_H_
 #define MAIDSAFE_ROUTING_PARAMETERS_H_
 
-#include "maidsafe/routing/log.h"
+#include <cstdint>
+
 
 namespace maidsafe {
 
@@ -28,7 +29,7 @@ struct Parameters {
   // Thread count for use of asio::io_service
   static uint16_t thread_count;
   static uint16_t num_chunks_to_cache;
-  static uint16_t timout_in_seconds;
+  static uint16_t timeout_in_seconds;
   static uint16_t closest_nodes_size;
   static uint16_t node_group_size;
   static uint16_t max_routing_table_size;
@@ -36,11 +37,12 @@ struct Parameters {
   static uint16_t max_non_routing_table_size;
   static uint16_t bucket_target_size;
   static uint16_t max_data_size;
+  static uint16_t recovery_timeout_in_seconds;
 
  private:
-  Parameters(const Parameters&);  // no copy
-  Parameters(const Parameters&&);  // no move
-  Parameters& operator=(const Parameters&);  // no assign
+  Parameters(const Parameters&);
+  Parameters(const Parameters&&);
+  Parameters& operator=(const Parameters&);
 };
 
 }  // namespace routing

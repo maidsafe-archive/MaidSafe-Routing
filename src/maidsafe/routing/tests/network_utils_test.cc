@@ -32,17 +32,22 @@
 #include "maidsafe/routing/routing_pb.h"
 #include "maidsafe/routing/tests/test_utils.h"
 
+
 namespace maidsafe {
+
 namespace routing {
+
 namespace test {
 
 namespace bptime = boost::posix_time;
 
 namespace {
 
-void SortFromThisNode(const NodeId &from, std::vector<NodeInfoAndPrivateKey> nodes) {
-  std::sort(nodes.begin(), nodes.end(), [from](const NodeInfoAndPrivateKey &i,
-                                               const NodeInfoAndPrivateKey &j) {
+typedef boost::asio::ip::udp::endpoint Endpoint;
+
+void SortFromThisNode(const NodeId& from, std::vector<NodeInfoAndPrivateKey> nodes) {
+  std::sort(nodes.begin(), nodes.end(), [from](const NodeInfoAndPrivateKey& i,
+                                               const NodeInfoAndPrivateKey& j) {
                 return (i.node_info.node_id ^ from) < (j.node_info.node_id ^ from);
              });
 }
@@ -56,7 +61,7 @@ TEST(NetworkUtilsTest, BEH_ProcessSendDirectInvalidEndpoint) {
   message.set_type(10);
   rudp::ManagedConnections rudp;
   asymm::Keys keys(MakeKeys());
-  RoutingTable routing_table(keys, false, nullptr);
+  RoutingTable routing_table(keys, false);
   NonRoutingTable non_routing_table(keys);
   NetworkUtils network(routing_table, non_routing_table);
   network.SendToClosestNode(message);
@@ -69,7 +74,7 @@ TEST(NetworkUtilsTest, BEH_ProcessSendUnavailableDirectEndpoint) {
   message.set_type(10);
   rudp::ManagedConnections rudp;
   asymm::Keys keys(MakeKeys());
-  RoutingTable routing_table(keys, false, nullptr);
+  RoutingTable routing_table(keys, false);
   NonRoutingTable non_routing_table(keys);
   Endpoint endpoint(GetLocalIp(), GetRandomPort());
   NetworkUtils network(routing_table, non_routing_table);
@@ -114,7 +119,7 @@ TEST(NetworkUtilsTest, FUNC_ProcessSendDirectEndpoint) {
       LOG(kInfo) << " -- Received: " << message;
     };
 
-  rudp::ConnectionLostFunctor connection_lost_functor = [](const Endpoint &endpoint) {
+  rudp::ConnectionLostFunctor connection_lost_functor = [](const Endpoint& endpoint) {
       LOG(kInfo) << " -- Lost Connection with : " << endpoint;
     };
 
@@ -152,14 +157,14 @@ TEST(NetworkUtilsTest, FUNC_ProcessSendDirectEndpoint) {
   LOG(kVerbose) << " ------------------------   Zero state setup done  ----------------------- ";
 
   asymm::Keys keys(MakeKeys());
-  RoutingTable routing_table(keys, false, nullptr);
+  RoutingTable routing_table(keys, false);
   NonRoutingTable non_routing_table(keys);
   NetworkUtils network(routing_table, non_routing_table);
 
   std::vector<Endpoint> bootstrap_endpoint(1, endpoint2);
-  EXPECT_NE(Endpoint(), network.Bootstrap(bootstrap_endpoint,
-                                          message_received_functor,
-                                          connection_lost_functor));
+  EXPECT_EQ(kSuccess, network.Bootstrap(bootstrap_endpoint,
+                                        message_received_functor,
+                                        connection_lost_functor));
   rudp::EndpointPair endpoint_pair2, endpoint_pair3;
   network.GetAvailableEndpoint(endpoint2, endpoint_pair3);
   rudp2.GetAvailableEndpoint(endpoint_pair3.external, endpoint_pair2);
@@ -195,7 +200,7 @@ TEST(NetworkUtilsTest, FUNC_ProcessSendRecursiveSendOn) {
   sent_message.set_type(10);
 
   asymm::Keys keys(MakeKeys());
-  RoutingTable routing_table(keys, false, nullptr);
+  RoutingTable routing_table(keys, false);
   NonRoutingTable non_routing_table(keys);
   NetworkUtils network(routing_table, non_routing_table);
 
@@ -218,11 +223,11 @@ TEST(NetworkUtilsTest, FUNC_ProcessSendRecursiveSendOn) {
       LOG(kInfo) << " -- Received: " << message;
     };
 
-  rudp::ConnectionLostFunctor connection_lost_functor = [](const Endpoint &endpoint) {
+  rudp::ConnectionLostFunctor connection_lost_functor = [](const Endpoint& endpoint) {
       LOG(kInfo) << " -- Lost Connection with : " << endpoint;
     };
 
-  rudp::ConnectionLostFunctor connection_lost_functor3 = [&](const Endpoint &endpoint) {
+  rudp::ConnectionLostFunctor connection_lost_functor3 = [&](const Endpoint& endpoint) {
       routing_table.DropNode(endpoint);
       LOG(kInfo) << " -- Lost Connection with : " << endpoint;
     };
@@ -262,9 +267,9 @@ TEST(NetworkUtilsTest, FUNC_ProcessSendRecursiveSendOn) {
 
 
   std::vector<Endpoint> bootstrap_endpoint(1, endpoint2);
-  EXPECT_NE(Endpoint(), network.Bootstrap(bootstrap_endpoint,
-                                          message_received_functor,
-                                          connection_lost_functor3));
+  EXPECT_EQ(kSuccess, network.Bootstrap(bootstrap_endpoint,
+                                        message_received_functor,
+                                        connection_lost_functor3));
   rudp::EndpointPair endpoint_pair2, endpoint_pair3;
   network.GetAvailableEndpoint(endpoint2, endpoint_pair3);
   rudp2.GetAvailableEndpoint(endpoint_pair3.external, endpoint_pair2);

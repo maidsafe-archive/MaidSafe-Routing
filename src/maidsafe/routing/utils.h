@@ -13,13 +13,24 @@
 #ifndef MAIDSAFE_ROUTING_UTILS_H_
 #define MAIDSAFE_ROUTING_UTILS_H_
 
+#include "boost/asio/ip/udp.hpp"
+
+#include "maidsafe/common/rsa.h"
+#include "maidsafe/rudp/managed_connections.h"
+
 #include "maidsafe/routing/parameters.h"
+
 
 namespace maidsafe {
 
 namespace routing {
 
-namespace protobuf { class Message;}  // namespace protobuf
+namespace protobuf {
+
+class Message;
+class Endpoint;
+
+}  // namespace protobuf
 
 class Message {
   explicit Message(protobuf::Message message);
@@ -28,28 +39,26 @@ class Message {
 class NetworkUtils;
 class NonRoutingTable;
 class RoutingTable;
+class NodeId;
 
-bool ClosestToMe(protobuf::Message &message);
+void ValidatePeer(NetworkUtils& network_,
+                  RoutingTable& routing_table,
+                  NonRoutingTable& non_routing_table,
+                  const NodeId& peer_id,
+                  const asymm::PublicKey& public_key,
+                  const rudp::EndpointPair& peer_endpoint,
+                  const rudp::EndpointPair& this_endpoint,
+                  const bool& client);
 
-bool InClosestNodesToMe(protobuf::Message &message);
-
-void ValidateThisNode(NetworkUtils &network_,
-                      RoutingTable &routing_table,
-                      NonRoutingTable &non_routing_table,
-                      const NodeId& node_id,
-                      const asymm::PublicKey &public_key,
-                      const rudp::EndpointPair &their_endpoint,
-                      const rudp::EndpointPair &our_endpoint,
-                      const bool &client);
-
-bool IsRoutingMessage(const protobuf::Message &message);
-bool IsNodeLevelMessage(const protobuf::Message &message);
-bool IsRequest(const protobuf::Message &message);
-bool IsResponse(const protobuf::Message &message);
+bool IsRoutingMessage(const protobuf::Message& message);
+bool IsNodeLevelMessage(const protobuf::Message& message);
+bool IsRequest(const protobuf::Message& message);
+bool IsResponse(const protobuf::Message& message);
 bool ValidateMessage(const protobuf::Message &message);
 
-void SetProtobufEndpoint(const Endpoint& endpoint, protobuf::Endpoint *pbendpoint);
-Endpoint GetEndpointFromProtobuf(const protobuf::Endpoint &pbendpoint);
+void SetProtobufEndpoint(const boost::asio::ip::udp::endpoint& endpoint,
+                         protobuf::Endpoint* pb_endpoint);
+boost::asio::ip::udp::endpoint GetEndpointFromProtobuf(const protobuf::Endpoint& pb_endpoint);
 
 }  // namespace routing
 

@@ -14,8 +14,9 @@
 
 #include <bitset>
 
-#include "maidsafe/routing/log.h"
+#include "maidsafe/common/log.h"
 #include "maidsafe/common/utils.h"
+
 
 namespace maidsafe {
 
@@ -26,15 +27,15 @@ const uint16_t kKeySizeBits = 8 * kKeySizeBytes;
 const std::string kZeroId(kKeySizeBytes, 0);
 
 
-size_t BitToByteCount(const size_t &bit_count) {
+size_t BitToByteCount(const size_t& bit_count) {
   return static_cast<size_t>(0.999999 + static_cast<double>(bit_count) / 8);
 }
 
 NodeId::NodeId() : raw_id_(kZeroId) {}
 
-NodeId::NodeId(const NodeId &other) : raw_id_(other.raw_id_) {}
+NodeId::NodeId(const NodeId& other) : raw_id_(other.raw_id_) {}
 
-NodeId::NodeId(const KadIdType &type) : raw_id_(kKeySizeBytes, -1) {
+NodeId::NodeId(const IdType& type) : raw_id_(kKeySizeBytes, -1) {
   switch (type) {
     case kMaxId :
       break;  // already set
@@ -47,14 +48,14 @@ NodeId::NodeId(const KadIdType &type) : raw_id_(kKeySizeBytes, -1) {
   }
 }
 
-NodeId::NodeId(const std::string &id) : raw_id_(id) {
+NodeId::NodeId(const std::string& id) : raw_id_(id) {
   if (!IsValid()) {
     raw_id_.clear();
     LOG(kError) << "Attempt to create ID from string != " << kKeySizeBytes;
   }
 }
 
-NodeId::NodeId(const std::string &id, const EncodingType &encoding_type)
+NodeId::NodeId(const std::string& id, const EncodingType& encoding_type)
     : raw_id_() {
   try {
     switch (encoding_type) {
@@ -69,7 +70,7 @@ NodeId::NodeId(const std::string &id, const EncodingType &encoding_type)
       default : raw_id_ = id;
     }
   }
-  catch(const std::exception &e) {
+  catch(const std::exception& e) {
     LOG(kError) << "NodeId Ctor: " << e.what();
     raw_id_.clear();
     return;
@@ -78,7 +79,7 @@ NodeId::NodeId(const std::string &id, const EncodingType &encoding_type)
     raw_id_.clear();
 }
 
-NodeId::NodeId(const uint16_t &power) : raw_id_(kZeroId) {
+NodeId::NodeId(const uint16_t& power) : raw_id_(kZeroId) {
   if (power >= kKeySizeBits) {
     raw_id_.clear();
     return;
@@ -91,7 +92,7 @@ NodeId::NodeId(const uint16_t &power) : raw_id_(kZeroId) {
   }
 }
 
-NodeId::NodeId(const NodeId &id1, const NodeId &id2) : raw_id_(kZeroId) {
+NodeId::NodeId(const NodeId& id1, const NodeId& id2) : raw_id_(kZeroId) {
   if (!id1.IsValid() || !id2.IsValid()) {
     raw_id_.clear();
     return;
@@ -143,7 +144,7 @@ std::string NodeId::EncodeToBinary() const {
   return binary;
 }
 
-void NodeId::DecodeFromBinary(const std::string &binary_id) {
+void NodeId::DecodeFromBinary(const std::string& binary_id) {
   std::bitset<kKeySizeBits> binary_bitset(binary_id);
   if (!IsValid()) {
     raw_id_.assign(kKeySizeBytes, 0);
@@ -154,9 +155,7 @@ void NodeId::DecodeFromBinary(const std::string &binary_id) {
   }
 }
 
-bool NodeId::CloserToTarget(const NodeId &id1,
-                            const NodeId &id2,
-                            const NodeId &target_id) {
+bool NodeId::CloserToTarget(const NodeId& id1, const NodeId& id2, const NodeId& target_id) {
   if (!id1.IsValid() || !id2.IsValid() || !target_id.IsValid())
     return false;
   std::string raw_id1(id1.raw_id_);
@@ -176,7 +175,7 @@ const std::string NodeId::String() const {
 }
 
 const std::string NodeId::ToStringEncoded(
-    const EncodingType &encoding_type) const {
+    const EncodingType& encoding_type) const {
   if (!IsValid())
     return "";
   switch (encoding_type) {
@@ -201,38 +200,38 @@ bool NodeId::operator()(const NodeId& lhs, const NodeId& rhs) const {
   return lhs.raw_id_ < rhs.raw_id_;
 }
 
-bool NodeId::operator == (const NodeId &rhs) const {
+bool NodeId::operator == (const NodeId& rhs) const {
   return raw_id_ == rhs.raw_id_;
 }
 
-bool NodeId::operator != (const NodeId &rhs) const {
+bool NodeId::operator != (const NodeId& rhs) const {
   return raw_id_ != rhs.raw_id_;
 }
 
-bool NodeId::operator < (const NodeId &rhs) const {
+bool NodeId::operator < (const NodeId& rhs) const {
   return raw_id_ < rhs.raw_id_;
 }
 
-bool NodeId::operator > (const NodeId &rhs) const {
+bool NodeId::operator > (const NodeId& rhs) const {
   return raw_id_ > rhs.raw_id_;
 }
 
-bool NodeId::operator <= (const NodeId &rhs) const {
+bool NodeId::operator <= (const NodeId& rhs) const {
   return raw_id_ <= rhs.raw_id_;
 }
 
-bool NodeId::operator >= (const NodeId &rhs) const {
+bool NodeId::operator >= (const NodeId& rhs) const {
   return raw_id_ >= rhs.raw_id_;
 }
 
-NodeId& NodeId::operator= (const NodeId &rhs) {
+NodeId& NodeId::operator= (const NodeId& rhs) {
   if (this == &rhs)
-    return *this;  // handle self assignment
+    return* this;  // handle self assignment
   this->raw_id_ = rhs.raw_id_;
-  return *this;
+  return* this;
 }
 
-const NodeId NodeId::operator ^ (const NodeId &rhs) const {
+const NodeId NodeId::operator ^ (const NodeId& rhs) const {
   NodeId result;
   BOOST_ASSERT_MSG(rhs.IsValid(), "Invalid nodeid");
   auto this_it = raw_id_.begin();
@@ -243,7 +242,7 @@ const NodeId NodeId::operator ^ (const NodeId &rhs) const {
   return result;
 }
 
-std::string DebugId(const NodeId &node_id) {
+std::string DebugId(const NodeId& node_id) {
   std::string hex(node_id.ToStringEncoded(NodeId::kHex));
   return hex.substr(0, 7) + ".." +hex.substr(hex.size() - 7);
 }

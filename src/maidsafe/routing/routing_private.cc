@@ -10,50 +10,42 @@
  *  the explicit written permission of the board of directors of maidsafe.net. *
  ******************************************************************************/
 
-#include "maidsafe/routing/routing_api_impl.h"
+#include "maidsafe/routing/routing_private.h"
 
-#include "maidsafe/routing/bootstrap_file_handler.h"
 #include "maidsafe/routing/message_handler.h"
-#include "maidsafe/routing/network_utils.h"
-#include "maidsafe/routing/node_id.h"
-#include "maidsafe/routing/parameters.h"
-#include "maidsafe/routing/return_codes.h"
-#include "maidsafe/routing/routing_api.h"
-#include "maidsafe/routing/routing_pb.h"
-#include "maidsafe/routing/routing_table.h"
-#include "maidsafe/routing/timer.h"
-#include "maidsafe/routing/utils.h"
 
-namespace fs = boost::filesystem;
 
 namespace maidsafe {
 
 namespace routing {
 
-RoutingPrivate::RoutingPrivate(const asymm::Keys &keys,
-                               bool client_mode)
-    : asio_service_(2),
+RoutingPrivate::RoutingPrivate(const asymm::Keys& keys, bool client_mode)
+    : asio_service_(1),
       bootstrap_nodes_(),
       keys_(keys),
       tearing_down_(false),
-      routing_table_(keys_, client_mode, CloseNodeReplacedFunctor()),
+      routing_table_(keys_, client_mode),
       non_routing_table_(keys_),  // TODO(Prakash) : don't create NRT for client nodes (wrap both)
       timer_(asio_service_),
       waiting_for_response_(),
+      message_handler_(),
       network_(routing_table_, non_routing_table_),
-      message_handler_(asio_service_, routing_table_, non_routing_table_,
-                       network_, timer_, MessageReceivedFunctor(),
-                       RequestPublicKeyFunctor()),
       joined_(false),
       bootstrap_file_path_(),
       client_mode_(client_mode),
       anonymous_node_(false),
-      functors_() {
+      functors_(),
+      recovery_timer_(asio_service_.service()) {
+  message_handler_.reset(new MessageHandler(asio_service_, routing_table_, non_routing_table_,
+                                            network_, timer_));
   asio_service_.Start();
 }
 
 RoutingPrivate::~RoutingPrivate() {
+  recovery_timer_.cancel();
+  tearing_down_ = true;
   asio_service_.Stop();
+  network_.Stop();
 }
 
 }  // namespace routing

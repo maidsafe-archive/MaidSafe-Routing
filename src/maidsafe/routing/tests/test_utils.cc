@@ -16,12 +16,12 @@
 #include <bitset>
 #include <string>
 
+#include "maidsafe/common/log.h"
 #include "maidsafe/common/utils.h"
 #include "maidsafe/routing/routing_table.h"
 #include "maidsafe/routing/parameters.h"
 #include "maidsafe/rudp/managed_connections.h"
 #include "maidsafe/routing/node_id.h"
-#include "maidsafe/routing/log.h"
 
 namespace asio = boost::asio;
 namespace ip = asio::ip;
@@ -80,7 +80,7 @@ asymm::Keys MakeKeys() {
   return keys;
 }
 
-asymm::Keys GetKeys(const NodeInfoAndPrivateKey &node) {
+asymm::Keys GetKeys(const NodeInfoAndPrivateKey& node) {
   asymm::Keys keys;
   keys.identity = node.node_info.node_id.String();
   keys.public_key = node.node_info.public_key;
@@ -88,7 +88,7 @@ asymm::Keys GetKeys(const NodeInfoAndPrivateKey &node) {
   return keys;
 }
 
-NodeId GenerateUniqueRandomId(const NodeId &holder, const uint16_t &pos) {
+NodeId GenerateUniqueRandomId(const NodeId& holder, const uint16_t& pos) {
   std::string holder_id = holder.ToStringEncoded(NodeId::kBinary);
   std::bitset<64*8> holder_id_binary_bitset(holder_id);
   NodeId new_node;
@@ -105,7 +105,7 @@ NodeId GenerateUniqueRandomId(const NodeId &holder, const uint16_t &pos) {
   return new_node;
 }
 
-int NetworkStatus(const bool &client, const int &status) {
+int NetworkStatus(const bool& client, const int& status) {
   uint16_t max_size(client ? Parameters::max_client_routing_table_size :
                       Parameters::max_routing_table_size);
   return (status > 0) ? (status * 100 / max_size) : status;
@@ -121,7 +121,7 @@ ip::address GetLocalIp(ip::udp::endpoint peer_endpoint) {
       return ip::address();
     return socket.local_endpoint().address();
   }
-  catch(const std::exception &e) {
+  catch(const std::exception& e) {
     LOG(kError) << "Failed trying to connect to " << peer_endpoint << " - " << e.what();
     return ip::address();
   }

@@ -24,7 +24,7 @@
 
 #include "maidsafe/rudp/managed_connections.h"
 #include "maidsafe/rudp/return_codes.h"
-#include "maidsafe/fakerudp/fake_network.h"
+#include "maidsafe/fake_rudp/fake_network.h"
 #include "maidsafe/common/asio_service.h"
 #include "maidsafe/common/utils.h"
 #include "maidsafe/common/log.h"
@@ -95,21 +95,21 @@ Endpoint ManagedConnections::Bootstrap(const std::vector<Endpoint> &bootstrap_en
   auto mynode = FakeNetwork::instance().FindNode(fake_endpoints_[0]);  // me
   assert(mynode != FakeNetwork::instance().GetEndIterator() && "Apparently not in network.");
 
-  Node &node = (*mynode);
+  Node& node = (*mynode);
   if (!local_endpoint.address().is_unspecified()) {
     node.endpoint = local_endpoint;
     fake_endpoints_[0] = local_endpoint;
   }
 
   if (connection_lost_functor) {
-    node.connection_lost = [&](const Endpoint &peer_endpoint) {
+    node.connection_lost = [&](const Endpoint& peer_endpoint) {
                                OnConnectionLostSlot(peer_endpoint,
                                                     std::shared_ptr<detail::Transport>(),
                                                     bool(), bool());
                              };
   }
   if (message_received_functor) {
-    node.message_received = [&](const std::string &message) {
+    node.message_received = [&](const std::string& message) {
                                 OnMessageSlot(message);
                               };
   }
@@ -135,7 +135,7 @@ Endpoint ManagedConnections::Bootstrap(const std::vector<Endpoint> &bootstrap_en
 }
 
 int ManagedConnections::GetAvailableEndpoint(const Endpoint& /*peer_endpoint*/,
-                                             EndpointPair &this_endpoint_pair) {
+                                             EndpointPair& this_endpoint_pair) {
   assert((fake_endpoints_.size() != 0) && "I do not know my own endpoint");
   this_endpoint_pair.external = fake_endpoints_[0];
   this_endpoint_pair.local = fake_endpoints_[0];
@@ -144,9 +144,9 @@ int ManagedConnections::GetAvailableEndpoint(const Endpoint& /*peer_endpoint*/,
   return kSuccess;
 }
 
-int ManagedConnections::Add(const Endpoint &this_endpoint,
-                            const Endpoint &peer_endpoint,
-                            const std::string &validation_data) {
+int ManagedConnections::Add(const Endpoint& this_endpoint,
+                            const Endpoint& peer_endpoint,
+                            const std::string& validation_data) {
   int add_result(FakeNetwork::instance().AddConnection(this_endpoint, peer_endpoint));
   asio_service_.service().post([=]() {
     if (!validation_data.empty() && add_result == kSuccess)
@@ -155,8 +155,8 @@ int ManagedConnections::Add(const Endpoint &this_endpoint,
   return add_result;
 }
 
-void ManagedConnections::Send(const Endpoint &peer_endpoint,
-                              const std::string &message,
+void ManagedConnections::Send(const Endpoint& peer_endpoint,
+                              const std::string& message,
                               MessageSentFunctor message_sent_functor) {
   asio_service_.service().post([=]() {
     bool message_sent(FakeNetwork::instance().SendMessageToNode(peer_endpoint, message));
@@ -165,7 +165,7 @@ void ManagedConnections::Send(const Endpoint &peer_endpoint,
   });
 }
 
-void ManagedConnections::Remove(const Endpoint &peer_endpoint) {
+void ManagedConnections::Remove(const Endpoint& peer_endpoint) {
   asio_service_.service().post([=]() {
     if (!FakeNetwork::instance().RemoveConnection(fake_endpoints_[0], peer_endpoint))
       LOG(kVerbose) << "Failed to remove " << peer_endpoint;

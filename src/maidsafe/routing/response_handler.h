@@ -13,42 +13,53 @@
 #ifndef MAIDSAFE_ROUTING_RESPONSE_HANDLER_H_
 #define MAIDSAFE_ROUTING_RESPONSE_HANDLER_H_
 
-#include "boost/thread/shared_mutex.hpp"
-#include "boost/thread/mutex.hpp"
-
+#include "maidsafe/common/asio_service.h"
 #include "maidsafe/common/rsa.h"
 #include "maidsafe/rudp/managed_connections.h"
 
-#include "maidsafe/routing/log.h"
-#include "maidsafe/routing/node_id.h"
-#include "maidsafe/routing/rpcs.h"
+#include "maidsafe/routing/api_config.h"
+
 
 namespace maidsafe {
 
 namespace routing {
 
-namespace protobuf { class Message; }  // namespace protobuf
+namespace protobuf { class Message; }
 
 class NetworkUtils;
 class NonRoutingTable;
 class RoutingTable;
 
-namespace response {
+#ifdef __GNUC__
+#  pragma GCC diagnostic push
+#  pragma GCC diagnostic ignored "-Weffc++"
+#endif
+class ResponseHandler : public std::enable_shared_from_this<ResponseHandler> {
+#ifdef __GNUC__
+#  pragma GCC diagnostic pop
+#endif
 
-void Ping(protobuf::Message &message);
-void Connect(RoutingTable &routing_table,
-             NonRoutingTable &non_routing_table,
-             NetworkUtils &network,
-             protobuf::Message &message,
-             RequestPublicKeyFunctor node_validation_functor);
-void FindNode(RoutingTable &routing_table,
-              NonRoutingTable &non_routing_table,
-              NetworkUtils &network,
-              const protobuf::Message &message,
-              const Endpoint &bootstrap_endpoint);
-void ProxyConnect(protobuf::Message& message);
+ public:
+  ResponseHandler(AsioService& io_service,
+                  RoutingTable& routing_table,
+                  NonRoutingTable& non_routing_table,
+                  NetworkUtils& network);
+  void Ping(protobuf::Message& message);
+  void Connect(protobuf::Message& message);
+  void FindNodes(const protobuf::Message& message);
+  void ProxyConnect(protobuf::Message& message);
+  void set_request_public_key_functor(RequestPublicKeyFunctor request_public_key);
+  RequestPublicKeyFunctor request_public_key_functor() const;
 
-}  // namespace response
+ private:
+  void ReSendFindNodeRequest();
+
+  AsioService& io_service_;
+  RoutingTable& routing_table_;
+  NonRoutingTable& non_routing_table_;
+  NetworkUtils& network_;
+  RequestPublicKeyFunctor request_public_key_functor_;
+};
 
 }  // namespace routing
 

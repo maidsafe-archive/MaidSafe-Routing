@@ -19,7 +19,7 @@
 #include "maidsafe/rudp/return_codes.h"
 
 #include "maidsafe/routing/routing_api.h"
-#include "maidsafe/routing/routing_api_impl.h"
+#include "maidsafe/routing/routing_private.h"
 #include "maidsafe/routing/rpcs.h"
 #include "maidsafe/routing/network_utils.h"
 #include "maidsafe/routing/routing_pb.h"
@@ -40,7 +40,7 @@ class FindNodeNetwork : public GenericNetwork<NodeType> {
 
  protected:
   testing::AssertionResult Find(std::shared_ptr<NodeType> source,
-                                const NodeId &node_id) {
+                                const NodeId& node_id) {
     protobuf::Message find_node_rpc(rpcs::FindNodes(node_id, source->node_id()));
     boost::promise<bool> message_sent_promise;
     auto message_sent_future = message_sent_promise.get_future();
@@ -66,7 +66,7 @@ class FindNodeNetwork : public GenericNetwork<NodeType> {
     return testing::AssertionSuccess();
   }
 
-  testing::AssertionResult DropNode(const NodeId &node_id) {
+  testing::AssertionResult DropNode(const NodeId& node_id) {
     for (auto node : this->nodes_)
       node->DropNode(node_id);
     return testing::AssertionSuccess();

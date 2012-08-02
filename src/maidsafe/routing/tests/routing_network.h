@@ -19,10 +19,13 @@
 #include <vector>
 #include <algorithm>
 
+#include "boost/asio/ip/udp.hpp"
 #include "boost/thread/future.hpp"
 
 #include "maidsafe/common/test.h"
 #include "maidsafe/common/utils.h"
+
+#include "maidsafe/routing/parameters.h"
 #include "maidsafe/routing/return_codes.h"
 #include "maidsafe/routing/tests/test_utils.h"
 #include "maidsafe/routing/routing_pb.h"
@@ -54,35 +57,36 @@ class GenericNetwork;
 class GenericNode {
  public:
   explicit GenericNode(bool client_mode = false);
-  GenericNode(bool client_mode, const NodeInfoAndPrivateKey &node_info);
+  GenericNode(bool client_mode, const NodeInfoAndPrivateKey& node_info);
   virtual ~GenericNode();
   int GetStatus() const;
   NodeId node_id() const;
   size_t id() const;
-  Endpoint endpoint() const;
+  boost::asio::ip::udp::endpoint endpoint() const;
   std::shared_ptr<Routing> routing() const;
   NodeInfo node_info() const;
   void set_joined(const bool node_joined);
   bool joined() const;
   bool client_mode() const;
-  void set_client_mode(const bool &client_mode);
+  void set_client_mode(const bool& client_mode);
   int expected();
-  void set_expected(const int &expected);
-  int ZeroStateJoin(const NodeInfo &peer_node_info);
-  void Join(const Endpoint &peer_endpoint);
-  void Send(const NodeId &destination_id,
-            const NodeId &group_id,
-            const std::string &data,
-            const int32_t &type,
+  void set_expected(const int& expected);
+  int ZeroStateJoin(const NodeInfo& peer_node_info);
+  void Join(const boost::asio::ip::udp::endpoint& peer_endpoint);
+  void Send(const NodeId& destination_id,
+            const NodeId& group_id,
+            const std::string& data,
+            const int32_t& type,
             const ResponseFunctor response_functor,
-            const boost::posix_time::time_duration &timeout,
-            const ConnectType &connect_type);
+            const boost::posix_time::time_duration& timeout,
+            const ConnectType& connect_type);
   void PrintRoutingTable();
-  void RudpSend(const Endpoint &peer_endpoint, const protobuf::Message &message,
+  void RudpSend(const boost::asio::ip::udp::endpoint& peer_endpoint,
+                const protobuf::Message& message,
                 rudp::MessageSentFunctor message_sent_functor);
-  bool RoutingTableHasNode(const NodeId &node_id);
-  bool NonRoutingTableHasNode(const NodeId &node_id);
-  testing::AssertionResult DropNode(const NodeId &node_id);
+  bool RoutingTableHasNode(const NodeId& node_id);
+  bool NonRoutingTableHasNode(const NodeId& node_id);
+  testing::AssertionResult DropNode(const NodeId& node_id);
 
   static size_t next_node_id_;
 
@@ -138,7 +142,7 @@ class GenericNetwork : public testing::Test {
     nodes_.clear();
   }
 
-  virtual void SetUpNetwork(const size_t &non_client_size, const size_t &client_size = 0) {
+  virtual void SetUpNetwork(const size_t& non_client_size, const size_t& client_size = 0) {
     for (size_t index = 2; index < non_client_size; ++index) {
       NodePtr node(new NodeType(false));
       AddNodeDetails(node);
@@ -151,7 +155,7 @@ class GenericNetwork : public testing::Test {
     }
   }
 
-  void AddNode(const bool &client_mode, const NodeId &node_id) {
+  void AddNode(const bool& client_mode, const NodeId& node_id) {
     NodePtr node(new NodeType(client_mode));
     if (node_id != NodeId())
       node->node_info_plus_.node_info.node_id = node_id;
@@ -159,7 +163,7 @@ class GenericNetwork : public testing::Test {
     AddNodeDetails(node);
   }
 
-  bool RemoveNode(const NodeId &node_id) {
+  bool RemoveNode(const NodeId& node_id) {
       std::lock_guard<std::mutex> lock(mutex_);
       auto iter = std::find_if(nodes_.begin(), nodes_.end(),
           [&node_id](const NodePtr node) {
@@ -173,7 +177,7 @@ class GenericNetwork : public testing::Test {
 
   virtual void Validate(const NodeId& node_id, GivePublicKeyFunctor give_public_key) {
       auto iter = std::find_if(nodes_.begin(), nodes_.end(),
-          [&node_id](const NodePtr &node)->bool {
+          [&node_id](const NodePtr& node)->bool {
             EXPECT_FALSE(GetKeys(node->node_info_plus_).identity.empty());
             return GetKeys(node->node_info_plus_).identity == node_id.String();
       });
@@ -210,7 +214,7 @@ class GenericNetwork : public testing::Test {
                                      std::min(node_size, Parameters::closest_nodes_size)));
     nodes_.push_back(node);
     std::weak_ptr<NodeType> weak_node(node);
-    node->functors_.network_status = [&cond_var, weak_node](const int &result)->void {
+    node->functors_.network_status = [&cond_var, weak_node](const int& result)->void {
       ASSERT_GE(result, kSuccess);
       if (NodePtr node = weak_node.lock())
         if ((result == node->expected()) && (!node->joined())) {
@@ -224,7 +228,7 @@ class GenericNetwork : public testing::Test {
     EXPECT_EQ(result, std::cv_status::no_timeout);
   }
 
-  std::vector<Endpoint> bootstrap_endpoints_;
+  std::vector<boost::asio::ip::udp::endpoint> bootstrap_endpoints_;
   fs::path bootstrap_path_;
   std::mutex mutex_;
 };

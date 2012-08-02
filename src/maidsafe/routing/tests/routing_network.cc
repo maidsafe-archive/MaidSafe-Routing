@@ -16,10 +16,11 @@
 #include <set>
 #include <string>
 
-#include "maidsafe/routing/routing_api_impl.h"
+#include "maidsafe/common/log.h"
+
+#include "maidsafe/routing/routing_private.h"
 #include "maidsafe/routing/return_codes.h"
 #include "maidsafe/routing/node_id.h"
-#include "maidsafe/routing/log.h"
 #include "maidsafe/routing/routing_api.h"
 
 namespace asio = boost::asio;
@@ -30,6 +31,12 @@ namespace maidsafe {
 namespace routing {
 
 namespace test {
+
+namespace {
+
+typedef boost::asio::ip::udp::endpoint Endpoint;
+
+}  // unnamed namespace
 
 size_t GenericNode::next_node_id_(0);
 
@@ -51,7 +58,7 @@ GenericNode::GenericNode(bool client_mode)
   id_ = next_node_id_++;
 }
 
-GenericNode::GenericNode(bool client_mode, const NodeInfoAndPrivateKey &node_info)
+GenericNode::GenericNode(bool client_mode, const NodeInfoAndPrivateKey& node_info)
     : id_(0),
       node_info_plus_(node_info),
       routing_(),
@@ -92,50 +99,50 @@ bool GenericNode::client_mode() const {
   return client_mode_;
 }
 
-void GenericNode::set_client_mode(const bool &client_mode) {
+void GenericNode::set_client_mode(const bool& client_mode) {
   client_mode_ = client_mode;
 }
 
-void GenericNode::Send(const NodeId &destination_id,
-                       const NodeId &group_id,
-                       const std::string &data,
-                       const int32_t &type,
+void GenericNode::Send(const NodeId& destination_id,
+                       const NodeId& group_id,
+                       const std::string& data,
+                       const int32_t& type,
                        const ResponseFunctor response_functor,
-                       const boost::posix_time::time_duration &timeout,
-                       const ConnectType &connect_type) {
+                       const boost::posix_time::time_duration& timeout,
+                       const ConnectType& connect_type) {
     routing_->Send(destination_id, group_id, data, type, response_functor,
                    timeout, connect_type);
     return;
 }
 
-void GenericNode::RudpSend(const Endpoint &peer_endpoint, const protobuf::Message &message,
+void GenericNode::RudpSend(const Endpoint& peer_endpoint, const protobuf::Message& message,
               rudp::MessageSentFunctor message_sent_functor) {
   routing_->impl_->network_.RudpSend(message, peer_endpoint, message_sent_functor);
 }
 
-bool GenericNode::RoutingTableHasNode(const NodeId &node_id) {
-  return (std::find_if(routing_->impl_->routing_table_.routing_table_nodes_.begin(),
-                       routing_->impl_->routing_table_.routing_table_nodes_.end(),
-               [&node_id](const NodeInfo &node_info) { return node_id == node_info.node_id; })
-               !=  routing_->impl_->routing_table_.routing_table_nodes_.end());
+bool GenericNode::RoutingTableHasNode(const NodeId& node_id) {
+  return (std::find_if(routing_->impl_->routing_table_.nodes_.begin(),
+                       routing_->impl_->routing_table_.nodes_.end(),
+               [&node_id](const NodeInfo& node_info) { return node_id == node_info.node_id; })
+               !=  routing_->impl_->routing_table_.nodes_.end());
 }
 
-bool GenericNode::NonRoutingTableHasNode(const NodeId &node_id) {
-  return (std::find_if(routing_->impl_->non_routing_table_.non_routing_table_nodes_.begin(),
-                       routing_->impl_->non_routing_table_.non_routing_table_nodes_.end(),
-               [&node_id](const NodeInfo &node_info) { return (node_id == node_info.node_id); } )
-               !=  routing_->impl_->non_routing_table_.non_routing_table_nodes_.end());
+bool GenericNode::NonRoutingTableHasNode(const NodeId& node_id) {
+  return (std::find_if(routing_->impl_->non_routing_table_.nodes_.begin(),
+                       routing_->impl_->non_routing_table_.nodes_.end(),
+               [&node_id](const NodeInfo& node_info) { return (node_id == node_info.node_id); } )
+               !=  routing_->impl_->non_routing_table_.nodes_.end());
 }
 
-testing::AssertionResult GenericNode::DropNode(const NodeId &node_id) {
+testing::AssertionResult GenericNode::DropNode(const NodeId& node_id) {
   LOG(kVerbose) << " DropNode " << HexSubstr(routing_->impl_->routing_table_.kNodeId_.String())
                 << " Removes " << HexSubstr(node_id.String());
-  auto iter = std::find_if(routing_->impl_->routing_table_.routing_table_nodes_.begin(),
-      routing_->impl_->routing_table_.routing_table_nodes_.end(),
-      [&node_id](const NodeInfo &node_info) {
+  auto iter = std::find_if(routing_->impl_->routing_table_.nodes_.begin(),
+      routing_->impl_->routing_table_.nodes_.end(),
+      [&node_id](const NodeInfo& node_info) {
           return (node_id == node_info.node_id);
       });
-  if (iter != routing_->impl_->routing_table_.routing_table_nodes_.end()) {
+  if (iter != routing_->impl_->routing_table_.nodes_.end()) {
     LOG(kVerbose) << HexSubstr(routing_->impl_->routing_table_.kNodeId_.String())
                << " Removes " << HexSubstr(node_id.String());
     routing_->impl_->network_.Remove(iter->endpoint);
@@ -152,11 +159,11 @@ NodeInfo GenericNode::node_info() const {
   return node_info_plus_.node_info;
 }
 
-int GenericNode::ZeroStateJoin(const NodeInfo &peer_node_info) {
+int GenericNode::ZeroStateJoin(const NodeInfo& peer_node_info) {
   return routing_->ZeroStateJoin(functors_, endpoint(), peer_node_info);
 }
 
-void GenericNode::Join(const Endpoint &peer_endpoint) {
+void GenericNode::Join(const Endpoint& peer_endpoint) {
   routing_->Join(functors_, peer_endpoint);
 }
 
@@ -172,13 +179,13 @@ int GenericNode::expected() {
   return expected_;
 }
 
-void GenericNode::set_expected(const int &expected) {
+void GenericNode::set_expected(const int& expected) {
   expected_ = expected;
 }
 
 void GenericNode::PrintRoutingTable() {
   LOG(kInfo) << " PrintRoutingTable of " << HexSubstr(node_info_plus_.node_info.node_id.String());
-  for (auto node_info : routing_->impl_->routing_table_.routing_table_nodes_) {
+  for (auto node_info : routing_->impl_->routing_table_.nodes_) {
     LOG(kInfo) << "NodeId: " << HexSubstr(node_info.node_id.String());
   }
 }

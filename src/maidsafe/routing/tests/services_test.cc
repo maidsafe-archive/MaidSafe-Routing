@@ -13,12 +13,12 @@
 #include <memory>
 #include <vector>
 
+#include "maidsafe/common/log.h"
 #include "maidsafe/common/test.h"
 #include "maidsafe/common/utils.h"
 
 #include "maidsafe/rudp/managed_connections.h"
 
-#include "maidsafe/routing/log.h"
 #include "maidsafe/routing/network_utils.h"
 #include "maidsafe/routing/non_routing_table.h"
 #include "maidsafe/routing/parameters.h"
@@ -27,16 +27,23 @@
 #include "maidsafe/routing/service.h"
 #include "maidsafe/routing/tests/test_utils.h"
 
+
 namespace maidsafe {
 
 namespace routing {
 
 namespace test {
 
-TEST(Services, BEH_Ping) {
+namespace {
+
+typedef boost::asio::ip::udp::endpoint Endpoint;
+
+}  // unnamed namespace
+
+TEST(ServicesTest, BEH_Ping) {
   asymm::Keys keys;
   keys.identity = RandomString(64);
-  RoutingTable RT(keys, false, nullptr);
+  RoutingTable RT(keys, false);
   NodeInfo node;
   rudp::ManagedConnections rudp;
   protobuf::PingRequest ping_request;
@@ -57,13 +64,13 @@ TEST(Services, BEH_Ping) {
   EXPECT_FALSE(message.has_relay());
 }
 
-TEST(Services, DISABLED_BEH_Connect) {
+TEST(ServicesTest, DISABLED_BEH_Connect) {
   NodeInfo us(MakeNode());
   NodeInfo them(MakeNode());
   asymm::Keys keys;
   keys.identity = us.node_id.String();
   keys.public_key = us.public_key;
-  RoutingTable RT(keys, false, nullptr);
+  RoutingTable RT(keys, false);
   NonRoutingTable NRT(keys);
   NodeInfo node;
   NetworkUtils network(RT, NRT);
@@ -93,13 +100,13 @@ TEST(Services, DISABLED_BEH_Connect) {
   EXPECT_FALSE(message.has_relay());
 }
 
-TEST(Services, BEH_FindNodes) {
+TEST(ServicesTest, BEH_FindNodes) {
   NodeInfo us(MakeNode());
   NodeInfo them(MakeNode());
   asymm::Keys keys;
   keys.identity = us.node_id.String();
   keys.public_key = us.public_key;
-  RoutingTable RT(keys, false, nullptr);
+  RoutingTable RT(keys, false);
   protobuf::Message message = rpcs::FindNodes(us.node_id, us.node_id);
   service::FindNodes(RT, message);
   protobuf::FindNodesResponse find_nodes_respose;
@@ -120,12 +127,12 @@ TEST(Services, BEH_FindNodes) {
   EXPECT_FALSE(message.has_relay());
 }
 
-TEST(Services, BEH_ProxyConnect) {
+TEST(ServicesTest, BEH_ProxyConnect) {
   asymm::Keys my_keys;
   my_keys.identity = RandomString(64);
   asymm::Keys keys;
   keys.identity = RandomString(64);
-  RoutingTable RT(keys, false, nullptr);
+  RoutingTable RT(keys, false);
   NonRoutingTable NRT(keys);
   NodeInfo node;
   NetworkUtils network(RT, NRT);
