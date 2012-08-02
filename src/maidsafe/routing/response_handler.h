@@ -13,7 +13,6 @@
 #ifndef MAIDSAFE_ROUTING_RESPONSE_HANDLER_H_
 #define MAIDSAFE_ROUTING_RESPONSE_HANDLER_H_
 
-#include "maidsafe/common/asio_service.h"
 #include "maidsafe/common/rsa.h"
 #include "maidsafe/rudp/managed_connections.h"
 
@@ -40,8 +39,7 @@ class ResponseHandler : public std::enable_shared_from_this<ResponseHandler> {
 #endif
 
  public:
-  ResponseHandler(AsioService& io_service,
-                  RoutingTable& routing_table,
+  ResponseHandler(RoutingTable& routing_table,
                   NonRoutingTable& non_routing_table,
                   NetworkUtils& network);
   void Ping(protobuf::Message& message);
@@ -54,7 +52,6 @@ class ResponseHandler : public std::enable_shared_from_this<ResponseHandler> {
  private:
   void ReSendFindNodeRequest();
 
-  AsioService& io_service_;
   RoutingTable& routing_table_;
   NonRoutingTable& non_routing_table_;
   NetworkUtils& network_;
