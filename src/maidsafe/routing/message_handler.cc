@@ -239,8 +239,10 @@ void MessageHandler::HandleMessage(protobuf::Message& message) {
     return;
   }
 
-  if (!ValidateMessage(message))
+  if (!ValidateMessage(message)) {
+    LOG(kWarning) << "Validate message failed.";
     return;
+  }
 
   // Invalid destination id, unknown message
   if (!(NodeId(message.destination_id()).IsValid())) {
