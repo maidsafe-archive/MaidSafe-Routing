@@ -137,14 +137,14 @@ class RoutingNetworkTest : public GenericNetwork<NodeType> {
 
   testing::AssertionResult GroupSend(const NodeId& node_id, const size_t& messages) {
     NodeId  group_id;
-    size_t messages_count(0), expected_messages(messages);
-    std::string data(RandomAlphaNumericString(2^10));
+    size_t messages_count(0), expected_messages(messages * 4);
+    std::string data(RandomAlphaNumericString(2 ^ 10));
 
     std::mutex mutex;
     std::condition_variable cond_var;
     for (size_t index = 0; index < messages; ++index) {
-      auto callable = [&] (const int32_t& result, const std::vector<std::string> /*message*/) {
-          if (result != kSuccess)
+      auto callable = [&] (const int32_t& result, const std::vector<std::string> message) {
+          if ((result != kSuccess) || message.empty())
             return;
           std::lock_guard<std::mutex> lock(mutex);
           messages_count++;
@@ -201,20 +201,24 @@ TYPED_TEST_P(RoutingNetworkTest, FUNC_ClientSendMulti) {
 
 
 TYPED_TEST_P(RoutingNetworkTest, FUNC_SendToGroup) {
-  uint8_t message_count(20);
+  uint8_t message_count(2);
   this->SetUpNetwork(kServerSize);
   size_t last_index(this->nodes_.size() - 1);
   NodeId dest_id(this->nodes_[last_index]->node_id());
+  for (uint16_t index = 0; index < Parameters::node_group_size; ++index)
+    this->AddNode(false, GenerateUniqueRandomId(dest_id, 10));
   EXPECT_TRUE(this->GroupSend(dest_id, message_count));
   for (size_t index = last_index; index < this->nodes_.size(); ++index)
     EXPECT_EQ(this->nodes_[index]->MessagesSize(), message_count);
 }
 
 TYPED_TEST_P(RoutingNetworkTest, FUNC_SendToGroupRandomId) {
-  uint8_t message_count(20);
+  uint16_t message_count(20), receivers_message_count(0);
   this->SetUpNetwork(kServerSize);
-  for (int index = 0; index < 200; ++index)
-    EXPECT_TRUE(this->GroupSend(NodeId(NodeId::kRandomId), message_count));
+  EXPECT_TRUE(this->GroupSend(NodeId(NodeId::kRandomId), message_count));
+  for (auto node : this->nodes_)
+    receivers_message_count += node->MessagesSize();
+  EXPECT_EQ(receivers_message_count, message_count * Parameters::node_group_size);
 }
 
 
