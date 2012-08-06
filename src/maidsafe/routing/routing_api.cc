@@ -78,16 +78,38 @@ bool Routing::CheckBootstrapFilePath() const {
   LOG(kVerbose) << "Application Path " << GetUserAppDir();
   LOG(kVerbose) << "System Path " << GetSystemAppDir();
   fs::path path;
+  fs::path global_bootstrap_file_path(GetSystemAppDir() / "bootstrap-global.dat");
+
+  // Global bootstrap file
+  std::vector<Endpoint> global_bootstrap_nodes;
+  boost::system::error_code exists_error_code, is_regular_file_error_code;
+  if (!fs::exists(global_bootstrap_file_path, exists_error_code) ||
+      !fs::is_regular_file(global_bootstrap_file_path, is_regular_file_error_code) ||
+      exists_error_code || is_regular_file_error_code) {
+    if (exists_error_code) {
+      LOG(kWarning) << "Failed to check for global bootstrap file at "
+                    << global_bootstrap_file_path << ".  " << exists_error_code.message();
+    }
+    if (is_regular_file_error_code) {
+      LOG(kWarning) << "Failed to check for global bootstrap file at " << path << ".  "
+                    << is_regular_file_error_code.message();
+    }
+  } else {
+    global_bootstrap_nodes = ReadBootstrapFile(global_bootstrap_file_path);
+  }
+
   std::string file_name;
   if (impl_->client_mode_) {
     file_name = "bootstrap";
     path = GetUserAppDir() / file_name;
   } else {
-    file_name = "bootstrap." + EncodeToBase32(impl_->keys_.identity);
+    std::string file_id(
+        EncodeToBase32(maidsafe::crypto::Hash<maidsafe::crypto::SHA1>(impl_->keys_.identity)));
+    file_name = "bootstrap-" + file_id + ".dat";
     path = GetSystemAppDir() / file_name;
   }
   fs::path local_file = fs::current_path() / file_name;
-  boost::system::error_code exists_error_code, is_regular_file_error_code;
+
   if (!fs::exists(local_file, exists_error_code) ||
       !fs::is_regular_file(local_file, is_regular_file_error_code) ||
       exists_error_code || is_regular_file_error_code) {
@@ -103,6 +125,11 @@ bool Routing::CheckBootstrapFilePath() const {
     LOG(kVerbose) << "Found bootstrap file at " << local_file;
     impl_->bootstrap_file_path_ = local_file;
     impl_->bootstrap_nodes_ = ReadBootstrapFile(impl_->bootstrap_file_path_);
+    impl_->routing_table_.set_bootstrap_file_path(impl_->bootstrap_file_path_);
+
+    // Appending global_bootstrap_file's contents
+    for (auto i: global_bootstrap_nodes)
+      impl_->bootstrap_nodes_.push_back(i);
     return true;
   }
 
@@ -122,6 +149,11 @@ bool Routing::CheckBootstrapFilePath() const {
     LOG(kVerbose) << "Found bootstrap file at " << path;
     impl_->bootstrap_file_path_ = path;
     impl_->bootstrap_nodes_ = ReadBootstrapFile(impl_->bootstrap_file_path_);
+    impl_->routing_table_.set_bootstrap_file_path(impl_->bootstrap_file_path_);
+
+    // Appending global_bootstrap_file's contents
+    for (auto i: global_bootstrap_nodes)
+      impl_->bootstrap_nodes_.push_back(i);
     return true;
   }
 }

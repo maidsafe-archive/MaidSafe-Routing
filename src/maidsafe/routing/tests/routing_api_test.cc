@@ -190,7 +190,9 @@ TEST(APITest, BEH_API_JoinWithBootstrapFile) {
   EXPECT_EQ(kSuccess, a1.get());  // wait for promise !
 
   //  Writing bootstrap file
-  std::string bootstrap_file_name("bootstrap." + EncodeToBase32(GetKeys(node3).identity));
+  std::string file_id(
+      EncodeToBase32(maidsafe::crypto::Hash<maidsafe::crypto::SHA1>(GetKeys(node3).identity)));
+  std::string bootstrap_file_name("bootstrap-" + file_id + ".dat");
   std::vector<Endpoint> bootstrap_endpoints;
   bootstrap_endpoints.push_back(node1.node_info.endpoint);
   bootstrap_endpoints.push_back(node2.node_info.endpoint);
@@ -606,8 +608,11 @@ TEST(APITest, BEH_API_NodeNetworkWithBootstrapFile) {
 
   std::vector<fs::path> paths;
   for (auto i(2); i != kNetworkSize; ++i) {
-    std::string bootstrap_file_name("bootstrap." +
-                                      EncodeToBase32(GetKeys(nodes.at(i)).identity));
+    std::string file_id(
+        EncodeToBase32(
+            maidsafe::crypto::Hash<maidsafe::crypto::SHA1>(GetKeys(nodes.at(i)).identity)));
+
+    std::string bootstrap_file_name("bootstrap-" + file_id + ".dat");
     fs::path bootstrap_file_path(fs::current_path() / bootstrap_file_name);
     // fs::path bootstrap_file_path(GetSystemAppDir() / bootstrap_file_name);
     ASSERT_TRUE(WriteBootstrapFile(bootstrap_endpoints, bootstrap_file_path));

@@ -75,6 +75,34 @@ bool WriteBootstrapFile(const std::vector<boost::asio::ip::udp::endpoint> &endpo
   return true;
 }
 
+void UpdateBootstrapFile(const boost::filesystem::path& path,
+                         const boost::asio::ip::udp::endpoint& endpoint,
+                         const bool& remove) {
+  if (path.empty()) {
+    LOG(kError) << "Empty bootstrap file path" << path;
+    return;
+  }
+
+  std::vector<boost::asio::ip::udp::endpoint> bootstrap_endpoints(ReadBootstrapFile(path));
+  if (remove) {
+    auto itr(std::find_if(bootstrap_endpoints.begin(),
+                          bootstrap_endpoints.end(),
+                          [endpoint](const boost::asio::ip::udp::endpoint& ep) {
+                              return ep == endpoint;
+                          }));
+    if (itr != bootstrap_endpoints.end())
+      bootstrap_endpoints.erase(itr);
+  } else {
+    bootstrap_endpoints.push_back(endpoint);
+  }
+
+  if (!WriteBootstrapFile(bootstrap_endpoints, path))
+    LOG(kError) << "Failed to write bootstrap file back to " << path;
+  else
+    LOG(kVerbose) << "Updated bootstrap file : " << path;
+  return;
+}
+
 }  // namespace routing
 
 }  // namespace maidsafe

@@ -18,6 +18,7 @@
 #include <vector>
 
 #include "boost/asio/ip/udp.hpp"
+#include "boost/filesystem/path.hpp"
 
 #include "maidsafe/common/rsa.h"
 
@@ -58,7 +59,7 @@ class RoutingTable {
   void set_close_node_replaced_functor(CloseNodeReplacedFunctor close_node_replaced_functor);
   void set_keys(const asymm::Keys& keys);
   bool client_mode() const { return client_mode_; }
-
+  void set_bootstrap_file_path(const boost::filesystem::path& path);
   friend class test::GenericNode;
 
  private:
@@ -85,6 +86,7 @@ class RoutingTable {
   mutable std::mutex mutex_;
   NetworkStatusFunctor network_status_functor_;
   CloseNodeReplacedFunctor close_node_replaced_functor_;
+  boost::filesystem::path bootstrap_file_path_;
   std::vector<NodeInfo> nodes_;
 };
 

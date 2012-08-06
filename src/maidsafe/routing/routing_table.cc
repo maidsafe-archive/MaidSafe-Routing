@@ -19,6 +19,7 @@
 #include "maidsafe/common/log.h"
 #include "maidsafe/common/utils.h"
 
+#include "maidsafe/routing/bootstrap_file_handler.h"
 #include "maidsafe/routing/parameters.h"
 #include "maidsafe/routing/node_info.h"
 
@@ -44,6 +45,7 @@ RoutingTable::RoutingTable(const asymm::Keys& keys, const bool& client_mode)
       mutex_(),
       network_status_functor_(),
       close_node_replaced_functor_(),
+      bootstrap_file_path_(),
       nodes_() {}
 
 bool RoutingTable::AddNode(NodeInfo& peer) {
@@ -75,6 +77,7 @@ bool RoutingTable::AddOrCheckNode(NodeInfo& peer, const bool& remove) {
       nodes_.push_back(peer);
       update_network_status();
       UpdateGroupChangeAndNotify();
+      UpdateBootstrapFile(bootstrap_file_path_, peer.endpoint, false);
     }
     return true;
   }
@@ -367,6 +370,11 @@ void RoutingTable::set_close_node_replaced_functor(
 
 void RoutingTable::set_keys(const asymm::Keys& keys) {
   keys_ = keys;
+}
+
+void RoutingTable::set_bootstrap_file_path(const boost::filesystem::path& path) {
+  LOG(kInfo) << "set bootstrap file path : " << path;
+  bootstrap_file_path_ = path;
 }
 
 }  // namespace routing
