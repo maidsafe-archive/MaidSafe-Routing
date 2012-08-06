@@ -197,12 +197,6 @@ void MessageHandler::HandleMessageAsClosestNode(protobuf::Message& message) {
     return network_.SendToClosestNode(message);
   }
 
-  // FIXME GroupMessage workaround, currently only one node responds to a group message.
-  if ((message.direct() == 3) && IsNodeLevelMessage(message)) {
-    LOG(kVerbose) << "This node is closest of the group, node level Message.";
-    return HandleNodeLevelMessageForThisNode(message);
-  }
-
   // This node is closest so will send to all replicant nodes
   uint16_t replication(static_cast<uint16_t>(message.replication()));
   if (have_node_with_group_id)

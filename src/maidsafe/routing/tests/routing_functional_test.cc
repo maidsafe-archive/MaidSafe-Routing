@@ -217,7 +217,7 @@ TYPED_TEST_P(RoutingNetworkTest, FUNC_SendToGroupRandomId) {
   this->SetUpNetwork(kServerSize);
   EXPECT_TRUE(this->GroupSend(NodeId(NodeId::kRandomId), message_count));
   for (auto node : this->nodes_)
-    receivers_message_count += node->MessagesSize();
+    receivers_message_count += static_cast<uint16_t>(node->MessagesSize());
   EXPECT_EQ(receivers_message_count, message_count * Parameters::node_group_size);
 }
 

@@ -16,7 +16,6 @@
 #include <mutex>
 #include <cstdint>
 #include <functional>
-#include <map>
 #include <memory>
 #include <string>
 #include <utility>
@@ -37,11 +36,11 @@ namespace routing {
 namespace protobuf { class Message; }
 
 typedef std::function<void(int, std::vector<std::string>)> TaskResponseFunctor;
-typedef uint32_t TaskId;
+typedef int32_t TaskId;
 
 class Timer {
  public:
-  explicit Timer(AsioService& io_service);
+  explicit Timer(AsioService& asio_service);
   TaskId AddTask(const boost::posix_time::time_duration& timeout,
                  const TaskResponseFunctor& response_functor);
   // Executes task with return code kResponseTimeout or kResponseCancelled and removes task.
@@ -51,14 +50,26 @@ class Timer {
   void ExecuteTask(protobuf::Message& message);
 
  private:
-  typedef std::shared_ptr<boost::asio::deadline_timer> TimerPtr;
+  struct Task {
+    Task(const TaskId& id_in,
+         boost::asio::io_service& io_service,
+         const boost::posix_time::time_duration& timeout,
+         TaskResponseFunctor functor_in);
+    TaskId id;
+    boost::asio::deadline_timer timer;
+    TaskResponseFunctor functor;
+    std::vector<std::string> responses;
+  };
+  typedef std::shared_ptr<Task> TaskPtr;
+
   Timer& operator=(const Timer&);
   Timer(const Timer&);
   Timer(const Timer&&);
-  AsioService& io_service_;
+
+  AsioService& asio_service_;
   TaskId task_id_;
   std::mutex mutex_;
-  std::map<uint32_t, std::pair<TimerPtr, TaskResponseFunctor>> queue_;
+  std::vector<TaskPtr> tasks_;
 };
 
 }  // namespace routing
