@@ -361,16 +361,22 @@ void Routing::Send(const NodeId& destination_id,
   }
 
   protobuf::Message proto_message;
-  if (response_functor)
-    proto_message.set_id(impl_->timer_.AddTask(timeout, response_functor));
   proto_message.set_destination_id(destination_id.String());
   proto_message.add_data(data);
   proto_message.set_direct(static_cast<int32_t>(connect_type));
   proto_message.set_type(type);
   proto_message.set_client_node(impl_->client_mode_);
-  int replication(0);
-  if (2 == type)  // replication only in case of group message
+  uint16_t replication(0);
+  if (ConnectType::kGroup == connect_type) {
     replication = Parameters::node_group_size;
+    if (response_functor)
+      proto_message.set_id(impl_->timer_.AddTask(timeout, response_functor,
+                                                 Parameters::node_group_size + 1));
+  } else {
+    if (response_functor)
+      proto_message.set_id(impl_->timer_.AddTask(timeout, response_functor));
+  }
+
   proto_message.set_replication(replication);
   // Anonymous node
   if (impl_->anonymous_node_) {

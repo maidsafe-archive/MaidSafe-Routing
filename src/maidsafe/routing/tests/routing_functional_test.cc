@@ -137,7 +137,7 @@ class RoutingNetworkTest : public GenericNetwork<NodeType> {
 
   testing::AssertionResult GroupSend(const NodeId& node_id, const size_t& messages) {
     NodeId  group_id;
-    size_t messages_count(0), expected_messages(messages * 4);
+    size_t messages_count(0), expected_messages(messages);
     std::string data(RandomAlphaNumericString(2 ^ 10));
 
     std::mutex mutex;
@@ -199,7 +199,6 @@ TYPED_TEST_P(RoutingNetworkTest, FUNC_ClientSendMulti) {
   Sleep(boost::posix_time::seconds(21));  // This sleep is required for un-responded requests
 }
 
-
 TYPED_TEST_P(RoutingNetworkTest, FUNC_SendToGroup) {
   uint8_t message_count(2);
   this->SetUpNetwork(kServerSize);
@@ -213,14 +212,13 @@ TYPED_TEST_P(RoutingNetworkTest, FUNC_SendToGroup) {
 }
 
 TYPED_TEST_P(RoutingNetworkTest, FUNC_SendToGroupRandomId) {
-  uint16_t message_count(20), receivers_message_count(0);
+  uint16_t message_count(200), receivers_message_count(0);
   this->SetUpNetwork(kServerSize);
   EXPECT_TRUE(this->GroupSend(NodeId(NodeId::kRandomId), message_count));
   for (auto node : this->nodes_)
     receivers_message_count += static_cast<uint16_t>(node->MessagesSize());
-  EXPECT_EQ(receivers_message_count, message_count * Parameters::node_group_size);
+  EXPECT_EQ(receivers_message_count, message_count * (Parameters::node_group_size + 1));
 }
-
 
 REGISTER_TYPED_TEST_CASE_P(RoutingNetworkTest, FUNC_Send, FUNC_ClientSend,
                            FUNC_SendMulti, FUNC_ClientSendMulti, FUNC_SendToGroup,

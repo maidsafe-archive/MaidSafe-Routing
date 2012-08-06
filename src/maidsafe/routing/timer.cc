@@ -28,13 +28,13 @@ namespace routing {
 Timer::Task::Task(const TaskId& id_in,
                   boost::asio::io_service& io_service,
                   const boost::posix_time::time_duration& timeout,
-                  TaskResponseFunctor functor_in)
+                  TaskResponseFunctor functor_in,
+                  int expected_count_in)
     : id(id_in),
       timer(io_service, timeout),
       functor(functor_in),
-      responses() {}
-
-
+      responses(),
+      expected_count(expected_count_in) {}
 
 Timer::Timer(AsioService& asio_service)
     : asio_service_(asio_service),
@@ -43,10 +43,12 @@ Timer::Timer(AsioService& asio_service)
       tasks_() {}
 
 TaskId Timer::AddTask(const boost::posix_time::time_duration& timeout,
-                      const TaskResponseFunctor& response_functor) {
+                      const TaskResponseFunctor& response_functor,
+                      int expected_count) {
   std::lock_guard<std::mutex> lock(mutex_);
   TaskId task_id = ++task_id_;
-  tasks_.push_back(TaskPtr(new Task(task_id, asio_service_.service(), timeout, response_functor)));
+  tasks_.push_back(TaskPtr(new Task(task_id, asio_service_.service(), timeout, response_functor,
+                                    expected_count)));
   tasks_.back()->timer.async_wait([this, task_id](const boost::system::error_code& error) {
     CancelTask(task_id, error);
   });
@@ -101,22 +103,26 @@ void Timer::ExecuteTask(protobuf::Message& message) {
       return;
     }
     task = *itr;
-    tasks_.erase(itr);
-    LOG(kVerbose) << "Executing task " << message.id();
+
+    task->responses.emplace_back(message.data(0));
+
+    if (task->responses.size() >= task->expected_count) {
+      LOG(kVerbose) << "Executing task " << message.id();
+      tasks_.erase(itr);
+    } else {
+      LOG(kVerbose) << "Recieved " << task->responses.size() << " response(s). Waiting for "
+                    << (task->expected_count - task->responses.size())
+                    << " responses for Task id "
+                    << message.id();
+    }
   }
 
   if (!task->functor)
     return;
 
-  for (int index(0); index < message.data_size(); ++index)
-    task->responses.emplace_back(message.data(index));
-
-  int replication(message.has_replication() ?
-                  message.replication() :
-                      (message.direct() ? 1 : Parameters::node_group_size));
-
-  if (task->responses.size() >= replication)
+  if (task->responses.size() >= task->expected_count) {
     asio_service_.service().dispatch([=] { task->functor(kSuccess, task->responses); });  // NOLINT (Fraser)
+  }
 }
 
 }  // namespace maidsafe

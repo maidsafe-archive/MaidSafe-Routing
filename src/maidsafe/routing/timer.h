@@ -42,7 +42,8 @@ class Timer {
  public:
   explicit Timer(AsioService& asio_service);
   TaskId AddTask(const boost::posix_time::time_duration& timeout,
-                 const TaskResponseFunctor& response_functor);
+                 const TaskResponseFunctor& response_functor,
+                 int expected_count = 1);
   // Executes task with return code kResponseTimeout or kResponseCancelled and removes task.
   void CancelTask(TaskId task_id,
                   const boost::system::error_code& error = boost::asio::error::operation_aborted);
@@ -54,11 +55,13 @@ class Timer {
     Task(const TaskId& id_in,
          boost::asio::io_service& io_service,
          const boost::posix_time::time_duration& timeout,
-         TaskResponseFunctor functor_in);
+         TaskResponseFunctor functor_in,
+         int expected_count_in);
     TaskId id;
     boost::asio::deadline_timer timer;
     TaskResponseFunctor functor;
     std::vector<std::string> responses;
+    int expected_count;
   };
   typedef std::shared_ptr<Task> TaskPtr;
 
