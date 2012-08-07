@@ -156,10 +156,10 @@ class GenericNetwork : public testing::Test {
   }
 
   void AddNode(const bool& client_mode, const NodeId& node_id) {
-    NodePtr node(new NodeType(client_mode));
+    NodeInfoAndPrivateKey node_info(MakeNodeInfoAndKeys());
     if (node_id != NodeId())
-      node->node_info_plus_.node_info.node_id = node_id;
-    node->set_client_mode(client_mode);
+      node_info.node_info.node_id = node_id;
+    NodePtr node(new NodeType(client_mode, node_info));
     AddNodeDetails(node);
   }
 
