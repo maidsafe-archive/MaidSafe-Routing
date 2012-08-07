@@ -209,7 +209,7 @@ TYPED_TEST_P(RoutingNetworkTest, FUNC_SendToGroup) {
   this->SetUpNetwork(kServerSize);
   size_t last_index(this->nodes_.size() - 1);
   NodeId dest_id(this->nodes_[last_index]->node_id());
-  for (uint16_t index = 0; index < (Parameters::node_group_size + 1); ++index)
+  for (uint16_t index = 0; index < (Parameters::node_group_size + 1U); ++index)
     this->AddNode(false, GenerateUniqueRandomId(dest_id, 10));
   EXPECT_TRUE(this->GroupSend(dest_id, message_count));
   for (size_t index = last_index; index < this->nodes_.size(); ++index)

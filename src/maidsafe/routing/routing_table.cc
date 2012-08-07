@@ -155,17 +155,17 @@ bool RoutingTable::ConfirmGroupMembers(const NodeId& node1, const NodeId& node2)
 void RoutingTable::UpdateGroupChangeAndNotify() {
   if (close_node_replaced_functor_) {
     if (nodes_.size() >= Parameters::node_group_size) {
-      NthElementSortFromTarget(kNodeId_, Parameters::node_group_size);
-      NodeId new_furthest_group_node_id = nodes_[Parameters::node_group_size - 1].node_id;
+      NthElementSortFromTarget(kNodeId_, Parameters::node_group_size - 1);
+      NodeId new_furthest_group_node_id = nodes_[Parameters::node_group_size - 2].node_id;
       if (furthest_group_node_id_ != new_furthest_group_node_id) {
         std::vector<NodeInfo> new_close_nodes(GetClosestNodeInfo(kNodeId_,
             Parameters::node_group_size));
-        furthest_group_node_id_ = new_close_nodes[Parameters::node_group_size - 1].node_id;
+        furthest_group_node_id_ = new_close_nodes[Parameters::node_group_size - 2].node_id;
         close_node_replaced_functor_(new_close_nodes);
       }
     } else {
        std::vector<NodeInfo> new_close_nodes(GetClosestNodeInfo(kNodeId_,
-           Parameters::node_group_size));
+                                                                Parameters::node_group_size - 1));
        furthest_group_node_id_ = new_close_nodes[nodes_.size() - 1].node_id;
        close_node_replaced_functor_(new_close_nodes);
     }
@@ -319,13 +319,14 @@ std::vector<NodeId> RoutingTable::GetClosestNodes(const NodeId& target_id,
                                                   const uint16_t& number_to_get) {
   std::vector<NodeId>close_nodes;
   std::lock_guard<std::mutex> lock(mutex_);
+  if (0 == nodes_.size())
+    return std::vector<NodeId>();
+
   uint16_t count = std::min(number_to_get, static_cast<uint16_t>(nodes_.size()));
   PartialSortFromTarget(target_id, count);
-  close_nodes.reserve(count);
 
   for (unsigned int i = 0; i < count; ++i)
     close_nodes.push_back(nodes_[i].node_id);
-
   return close_nodes;
 }
 

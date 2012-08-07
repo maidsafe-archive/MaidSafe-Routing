@@ -200,6 +200,12 @@ void MessageHandler::HandleMessageAsClosestNode(protobuf::Message& message) {
 
   // This node is closest so will send to all replicant nodes
   uint16_t replication(static_cast<uint16_t>(message.replication()));
+  if ((replication < 1) || (replication > Parameters::node_group_size)) {
+    LOG(kError) << "Dropping invalid non-direct message.";
+    return;
+  }
+
+  --replication;  // This node will be one of the group member.
   message.set_direct(static_cast<int32_t>(ConnectType::kSingle));
   if (have_node_with_group_id)
     ++replication;
@@ -212,6 +218,9 @@ void MessageHandler::HandleMessageAsClosestNode(protobuf::Message& message) {
     message.set_destination_id(i.String());
     network_.SendToClosestNode(message);
   }
+
+  message.set_destination_id(routing_table_.kKeys().identity);
+
   if (IsRoutingMessage(message))
     HandleRoutingMessage(message);
   else
