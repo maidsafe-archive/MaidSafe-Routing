@@ -79,7 +79,7 @@ void UpdateBootstrapFile(const boost::filesystem::path& path,
                          const boost::asio::ip::udp::endpoint& endpoint,
                          const bool& remove) {
   if (path.empty()) {
-    LOG(kError) << "Empty bootstrap file path" << path;
+    LOG(kWarning) << "Empty bootstrap file path" << path;
     return;
   }
 

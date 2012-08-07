@@ -106,7 +106,7 @@ void Timer::ExecuteTask(protobuf::Message& message) {
 
     task->responses.emplace_back(message.data(0));
 
-    if (task->responses.size() >= task->expected_count) {
+    if (static_cast<int>(task->responses.size()) >= task->expected_count) {
       LOG(kVerbose) << "Executing task " << message.id();
       tasks_.erase(itr);
     } else {
@@ -120,7 +120,7 @@ void Timer::ExecuteTask(protobuf::Message& message) {
   if (!task->functor)
     return;
 
-  if (task->responses.size() >= task->expected_count) {
+  if (static_cast<int>(task->responses.size()) >= task->expected_count) {
     asio_service_.service().dispatch([=] { task->functor(kSuccess, task->responses); });  // NOLINT (Fraser)
   }
 }

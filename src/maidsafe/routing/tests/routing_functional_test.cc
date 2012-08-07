@@ -204,16 +204,36 @@ TYPED_TEST_P(RoutingNetworkTest, FUNC_ClientSendMulti) {
   Sleep(boost::posix_time::seconds(21));  // This sleep is required for un-responded requests
 }
 
+// TODO(Prakash): Add more tests for special cases in group messages.
+// TYPED_TEST_P(RoutingNetworkTest, FUNC_SendToGroup) {
+//   uint8_t message_count(1);
+//   this->SetUpNetwork(kServerSize);
+//   size_t last_index(this->nodes_.size() - 1);
+//   NodeId dest_id(this->nodes_[last_index]->node_id());
+//   for (uint16_t index = 0; index < (Parameters::node_group_size); ++index)
+//     this->AddNode(false, GenerateUniqueRandomId(dest_id, 10));
+//   Sleep(boost::posix_time::seconds(1));
+//   EXPECT_TRUE(this->GroupSend(dest_id, message_count));
+//   for (size_t index = last_index + 1; index < this->nodes_.size(); ++index)
+//     EXPECT_EQ(message_count, this->nodes_[index]->MessagesSize())
+//         << "Expected message at Node : "
+//         << HexSubstr(this->nodes_[index]->node_id().String());
+// }
+
 TYPED_TEST_P(RoutingNetworkTest, FUNC_SendToGroup) {
-  uint8_t message_count(1);
+  uint8_t message_count(1), receivers_message_count(0);
   this->SetUpNetwork(kServerSize);
   size_t last_index(this->nodes_.size() - 1);
   NodeId dest_id(this->nodes_[last_index]->node_id());
-  for (uint16_t index = 0; index < (Parameters::node_group_size + 1U); ++index)
-    this->AddNode(false, GenerateUniqueRandomId(dest_id, 10));
+
   EXPECT_TRUE(this->GroupSend(dest_id, message_count));
-  for (size_t index = last_index; index < this->nodes_.size(); ++index)
-    EXPECT_EQ(this->nodes_[index]->MessagesSize(), message_count);
+  for (size_t index = 0; index != (last_index); ++index)
+    receivers_message_count += static_cast<uint16_t>(this->nodes_.at(index)->MessagesSize());
+
+  EXPECT_EQ(0, this->nodes_[last_index]->MessagesSize())
+        << "Expected message at Node : "
+        << HexSubstr(this->nodes_[last_index]->node_id().String());
+  EXPECT_EQ(message_count * (Parameters::node_group_size), receivers_message_count);
 }
 
 TYPED_TEST_P(RoutingNetworkTest, FUNC_SendToGroupRandomId) {
@@ -226,9 +246,9 @@ TYPED_TEST_P(RoutingNetworkTest, FUNC_SendToGroupRandomId) {
       node->ClearMessages();
     }
   }
-  EXPECT_EQ(message_count * (Parameters::node_group_size + 1), receivers_message_count);
+  EXPECT_EQ(message_count * (Parameters::node_group_size), receivers_message_count);
   LOG(kVerbose) << "Total message received count : "
-                << message_count * (Parameters::node_group_size + 1);
+                << message_count * (Parameters::node_group_size);
 }
 
 REGISTER_TYPED_TEST_CASE_P(RoutingNetworkTest, FUNC_Send, FUNC_ClientSend,

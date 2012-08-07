@@ -163,7 +163,9 @@ void MessageHandler::HandleDirectMessage(protobuf::Message& message) {
 }
 
 void MessageHandler::HandleMessageAsClosestNode(protobuf::Message& message) {
-  LOG(kVerbose) << "This node is in closest proximity to this message destination ID.";
+  LOG(kVerbose) << "This node is in closest proximity to this message destination ID [ "
+                <<  HexSubstr(message.destination_id())
+                << " ].";
   // Dropping direct messages if this node is closest and destination node is not in routing_table_
   // or non_routing_table_.
   if (message.direct() == static_cast<int32_t>(ConnectType::kSingle)) {
@@ -213,8 +215,10 @@ void MessageHandler::HandleMessageAsClosestNode(protobuf::Message& message) {
 
   if (have_node_with_group_id)
     close.erase(close.begin());
-
+  std::string group_id(message.destination_id());
   for (auto i : close) {
+    LOG(kInfo) << "Replicating message to : " << HexSubstr(i.String())
+               << " [ group_id : " << HexSubstr(group_id)  << "]";
     message.set_destination_id(i.String());
     network_.SendToClosestNode(message);
   }
@@ -225,6 +229,19 @@ void MessageHandler::HandleMessageAsClosestNode(protobuf::Message& message) {
     HandleRoutingMessage(message);
   else
     HandleNodeLevelMessageForThisNode(message);
+}
+
+void MessageHandler::HandleMessageAsFarNode(protobuf::Message& message) {
+  if ((static_cast<ConnectType>(message.type()) == ConnectType::kGroup) &&
+      routing_table_.IsConnected(NodeId(message.destination_id()))) {
+    LOG(kVerbose) << "Group Id collision detected. Handling this message as closest node";
+    HandleMessageAsClosestNode(message);
+    return;
+  }
+  LOG(kVerbose) << "This node is not closest to this message destination ID [ "
+                <<  HexSubstr(message.destination_id())
+                <<" ]; sending on.";
+  network_.SendToClosestNode(message);
 }
 
 void MessageHandler::HandleGroupMessage(protobuf::Message& message) {
@@ -277,10 +294,9 @@ void MessageHandler::HandleMessage(protobuf::Message& message) {
   if (routing_table_.IsThisNodeInRange(NodeId(message.destination_id()),
                                        Parameters::closest_nodes_size)) {
     return HandleMessageAsClosestNode(message);
+  } else {
+    return HandleMessageAsFarNode(message);
   }
-
-  LOG(kVerbose) << "This node is not closest to this message destination ID; sending on.";
-  network_.SendToClosestNode(message);
 }
 
 void MessageHandler::HandleRelayRequest(protobuf::Message& message) {
