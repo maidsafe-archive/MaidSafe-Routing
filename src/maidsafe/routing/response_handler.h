@@ -50,8 +50,6 @@ class ResponseHandler : public std::enable_shared_from_this<ResponseHandler> {
   RequestPublicKeyFunctor request_public_key_functor() const;
 
  private:
-  void ReSendFindNodeRequest();
-
   RoutingTable& routing_table_;
   NonRoutingTable& non_routing_table_;
   NetworkUtils& network_;

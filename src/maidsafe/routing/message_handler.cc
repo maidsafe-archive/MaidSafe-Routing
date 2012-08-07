@@ -145,9 +145,9 @@ void MessageHandler::HandleNodeLevelMessageForThisNode(protobuf::Message& messag
       message_received_functor_(static_cast<int>(message.type()), message.data(0), NodeId(),
                                 response_functor);
   } else {  // response
-    timer_.ExecuteTask(message);
     LOG(kInfo) << "Node Level Response for " << HexSubstr(routing_table_.kKeys().identity)
                << " from " << HexSubstr(message.source_id());
+    timer_.ExecuteTask(message);
   }
 }
 
@@ -166,7 +166,7 @@ void MessageHandler::HandleMessageAsClosestNode(protobuf::Message& message) {
   LOG(kVerbose) << "This node is in closest proximity to this message destination ID.";
   // Dropping direct messages if this node is closest and destination node is not in routing_table_
   // or non_routing_table_.
-  if (message.direct() == 1) {
+  if (message.direct() == static_cast<int32_t>(ConnectType::kSingle)) {
     NodeId destination_node_id(message.destination_id());
     if (routing_table_.IsThisNodeClosestTo(destination_node_id)) {
       if (routing_table_.IsConnected(destination_node_id) ||
@@ -194,21 +194,23 @@ void MessageHandler::HandleMessageAsClosestNode(protobuf::Message& message) {
   // This node is not closest to the destination node for non-direct message.
   if (!routing_table_.IsThisNodeClosestTo(NodeId(message.destination_id())) &&
       !have_node_with_group_id) {
+    LOG(kInfo) << "This node is not closest, passing it on.";
     return network_.SendToClosestNode(message);
-  }
-
-  // FIXME GroupMessage workaround, currently only one node responds to a group message.
-  if ((message.direct() == 3) && IsNodeLevelMessage(message)) {
-    LOG(kVerbose) << "This node is closest of the group, node level Message.";
-    return HandleNodeLevelMessageForThisNode(message);
   }
 
   // This node is closest so will send to all replicant nodes
   uint16_t replication(static_cast<uint16_t>(message.replication()));
+  if ((replication < 1) || (replication > Parameters::node_group_size)) {
+    LOG(kError) << "Dropping invalid non-direct message.";
+    return;
+  }
+
+  --replication;  // This node will be one of the group member.
+  message.set_direct(static_cast<int32_t>(ConnectType::kSingle));
   if (have_node_with_group_id)
     ++replication;
-  message.set_direct(1);
   auto close(routing_table_.GetClosestNodes(NodeId(message.destination_id()), replication));
+
   if (have_node_with_group_id)
     close.erase(close.begin());
 
@@ -216,6 +218,9 @@ void MessageHandler::HandleMessageAsClosestNode(protobuf::Message& message) {
     message.set_destination_id(i.String());
     network_.SendToClosestNode(message);
   }
+
+  message.set_destination_id(routing_table_.kKeys().identity);
+
   if (IsRoutingMessage(message))
     HandleRoutingMessage(message);
   else

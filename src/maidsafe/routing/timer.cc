@@ -10,13 +10,14 @@
  *  the explicit written permission of the board of directors of maidsafe.net. *
  ******************************************************************************/
 
-
-
 #include "maidsafe/routing/timer.h"
+
+#include <algorithm>
 
 #include "maidsafe/common/asio_service.h"
 #include "maidsafe/common/log.h"
 
+#include "maidsafe/routing/parameters.h"
 #include "maidsafe/routing/return_codes.h"
 #include "maidsafe/routing/routing_pb.h"
 
@@ -24,52 +25,64 @@ namespace maidsafe {
 
 namespace routing {
 
-maidsafe::routing::Timer::Timer(AsioService& io_service)
-    : io_service_(io_service),
-      task_id_(RandomUint32()),
+Timer::Task::Task(const TaskId& id_in,
+                  boost::asio::io_service& io_service,
+                  const boost::posix_time::time_duration& timeout,
+                  TaskResponseFunctor functor_in,
+                  int expected_count_in)
+    : id(id_in),
+      timer(io_service, timeout),
+      functor(functor_in),
+      responses(),
+      expected_count(expected_count_in) {}
+
+Timer::Timer(AsioService& asio_service)
+    : asio_service_(asio_service),
+      task_id_(RandomInt32()),
       mutex_(),
-      queue_() {}
+      tasks_() {}
 
 TaskId Timer::AddTask(const boost::posix_time::time_duration& timeout,
-                      const TaskResponseFunctor& response_functor) {
-  TimerPtr timer(new boost::asio::deadline_timer(io_service_.service(), timeout));
-  TaskId task_id;
-  {
-    std::lock_guard<std::mutex> lock(mutex_);
-    task_id = ++task_id_;
-    queue_.insert(std::make_pair(task_id, std::make_pair(timer, response_functor)));
-  }
-  LOG(kVerbose) << "AddTask added a task, with id " << task_id;
-  timer->async_wait([this, task_id](const boost::system::error_code& error) {
-      CancelTask(task_id, error);
+                      const TaskResponseFunctor& response_functor,
+                      int expected_count) {
+  std::lock_guard<std::mutex> lock(mutex_);
+  TaskId task_id = ++task_id_;
+  tasks_.push_back(TaskPtr(new Task(task_id, asio_service_.service(), timeout, response_functor,
+                                    expected_count)));
+  tasks_.back()->timer.async_wait([this, task_id](const boost::system::error_code& error) {
+    CancelTask(task_id, error);
   });
+  LOG(kVerbose) << "AddTask added a task, with id " << task_id;
   return task_id;
 }
 
 // TODO(dirvine) we could change the find to iterate entire map if we want to be able to send
 // multiple requests and accept the first one back, dropping the rest.
 void Timer::CancelTask(TaskId task_id, const boost::system::error_code& error) {
-  TaskResponseFunctor task_response_functor;
+  TaskPtr task;
   {
     std::lock_guard<std::mutex> lock(mutex_);
-    auto const it = queue_.find(task_id);
-    if (it != queue_.end()) {
-      // message timed out or task killed
-      LOG(kVerbose) << "Timed out task " << task_id;
-      task_response_functor = (*it).second.second;
-      queue_.erase(it);
+    auto const itr = std::find_if(tasks_.begin(),
+                                  tasks_.end(),
+                                  [task_id](const TaskPtr& task) { return task->id == task_id; });  // NOLINT (Fraser)
+    if (itr == tasks_.end()) {
+      LOG(kWarning) << "Task " << task_id << " not held by Timer.";
+      return;
     }
+    // message timed out or task killed
+    LOG(kVerbose) << "Timed out task " << task_id;
+    task = *itr;
+    tasks_.erase(itr);
   }
 
-  if (task_response_functor) {
-    int return_code(error == boost::asio::error::operation_aborted ? kResponseCancelled :
-                                                                     kResponseTimeout);
-    if (error && error != boost::asio::error::operation_aborted)
-      LOG(kError) << "Error waiting for task " << task_id << " - " << error.message();
-    io_service_.service().dispatch([=] {
-        task_response_functor(return_code, std::vector<std::string>());
-    });
-  }
+  if (!task->functor)
+    return;
+
+  int return_code(error == boost::asio::error::operation_aborted ? kResponseCancelled :
+                                                                    kResponseTimeout);
+  if (error && error != boost::asio::error::operation_aborted)
+    LOG(kError) << "Error waiting for task " << task_id << " - " << error.message();
+  asio_service_.service().dispatch([=] { task->functor(return_code, task->responses); });  // NOLINT (Fraser)
 }
 
 void Timer::ExecuteTask(protobuf::Message& message) {
@@ -78,24 +91,37 @@ void Timer::ExecuteTask(protobuf::Message& message) {
     return;
   }
 
-  TaskResponseFunctor task_response_functor(nullptr);
+  TaskPtr task;
   {
     std::lock_guard<std::mutex> lock(mutex_);
-    auto const it = queue_.find(message.id());
-    if (it != queue_.end()) {
-      task_response_functor = (*it).second.second;
-      queue_.erase(it);
+    auto const itr =
+        std::find_if(tasks_.begin(),
+                    tasks_.end(),
+                    [&message](const TaskPtr& task) { return task->id == message.id(); });  // NOLINT (Fraser)
+    if (itr == tasks_.end()) {
+      LOG(kWarning) << "Attempted to execute expired or non-existent task " << message.id();
+      return;
+    }
+    task = *itr;
+
+    task->responses.emplace_back(message.data(0));
+
+    if (task->responses.size() >= task->expected_count) {
       LOG(kVerbose) << "Executing task " << message.id();
+      tasks_.erase(itr);
     } else {
-      LOG(kError) << "Attempted to execute expired or non-existent task " << message.id();
+      LOG(kVerbose) << "Recieved " << task->responses.size() << " response(s). Waiting for "
+                    << (task->expected_count - task->responses.size())
+                    << " responses for Task id "
+                    << message.id();
     }
   }
 
-  if (task_response_functor) {
-    std::vector<std::string> data_vector;
-    for (int index(0); index < message.data_size(); ++index)
-      data_vector.emplace_back(message.data(index));
-    io_service_.service().dispatch([=] { task_response_functor(kSuccess, data_vector); });  // NOLINT (Fraser)
+  if (!task->functor)
+    return;
+
+  if (task->responses.size() >= task->expected_count) {
+    asio_service_.service().dispatch([=] { task->functor(kSuccess, task->responses); });  // NOLINT (Fraser)
   }
 }
 
