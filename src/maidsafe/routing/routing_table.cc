@@ -301,8 +301,10 @@ NodeInfo RoutingTable::GetClosestNode(const NodeId& target_id, bool ignore_exact
   if (nodes_.empty())
     return NodeInfo();
   NthElementSortFromTarget(target_id, 1);
-  if ((nodes_[0].node_id == target_id) && (ignore_exact_match))
+  if ((nodes_[0].node_id == target_id) && (ignore_exact_match)) {
     NthElementSortFromTarget(target_id, 2);
+    return nodes_[1];
+  }
   return nodes_[0];
 }
 
@@ -337,9 +339,7 @@ std::vector<NodeInfo> RoutingTable::GetClosestNodeInfo(const NodeId& from,
                                                        const uint16_t& number_to_get) {
   std::vector<NodeInfo>close_nodes;
   unsigned int count = std::min(number_to_get, static_cast<uint16_t>(nodes_.size()));
-  PartialSortFromTarget(from, number_to_get);
-  close_nodes.resize(count);
-
+  PartialSortFromTarget(from, count);
   for (unsigned int i = 0; i < count; ++i)
     close_nodes.push_back(nodes_[i]);
 

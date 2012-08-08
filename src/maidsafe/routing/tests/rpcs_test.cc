@@ -61,7 +61,7 @@ TEST(RpcsTest, BEH_PingMessageNode) {
   EXPECT_TRUE(ping_request.timestamp() > static_cast<int32_t>(GetTimeStamp() - 2));
   EXPECT_TRUE(ping_request.timestamp() < static_cast<int32_t>(GetTimeStamp() + 1));
   EXPECT_EQ(destination, message.destination_id());
-  EXPECT_EQ( keys.identity, message.source_id());
+  EXPECT_EQ(keys.identity, message.source_id());
   EXPECT_NE(0, message.data_size());
   EXPECT_EQ(1, message.replication());
   EXPECT_EQ(static_cast<int32_t>(MessageType::kPingRequest), message.type());

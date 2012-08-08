@@ -232,12 +232,6 @@ void MessageHandler::HandleMessageAsClosestNode(protobuf::Message& message) {
 }
 
 void MessageHandler::HandleMessageAsFarNode(protobuf::Message& message) {
-  if ((static_cast<ConnectType>(message.type()) == ConnectType::kGroup) &&
-      routing_table_.IsConnected(NodeId(message.destination_id()))) {
-    LOG(kVerbose) << "Group Id collision detected. Handling this message as closest node";
-    HandleMessageAsClosestNode(message);
-    return;
-  }
   LOG(kVerbose) << "This node is not closest to this message destination ID [ "
                 <<  HexSubstr(message.destination_id())
                 <<" ]; sending on.";

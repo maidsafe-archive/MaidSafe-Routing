@@ -432,12 +432,7 @@ void Routing::Send(const NodeId& destination_id,
   // Non Anonymous, normal node
   proto_message.set_source_id(impl_->routing_table_.kKeys().identity);
 
-  // Check for group id collision
-  bool group_id_node_connected((ConnectType::kGroup == connect_type) &&
-                               impl_->routing_table_.IsConnected(destination_id));
-
-  if (impl_->routing_table_.kKeys().identity != destination_id.String() &&
-      !group_id_node_connected) {
+  if (impl_->routing_table_.kKeys().identity != destination_id.String()) {
     impl_->network_.SendToClosestNode(proto_message);
   } else {
     LOG(kInfo) << "Sending request to self";

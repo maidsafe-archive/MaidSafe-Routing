@@ -102,51 +102,55 @@ bool IsResponse(const protobuf::Message& message) {
   return !IsRequest(message);
 }
 
+bool IsDirect(const protobuf::Message& message) {
+  return (message.direct() == static_cast<int32_t>(ConnectType::kSingle));
+}
+
 bool ValidateMessage(const protobuf::Message &message) {
   if (!IsRoutingMessage(message))
     return true;
 
   if (!NodeId(message.destination_id()).IsValid()) {
-    LOG (kWarning) << "Message should have valid destination id.";
+    LOG(kWarning) << "Message should have valid destination id.";
     return false;
   }
 
   if (!(message.has_source_id() || (message.has_relay_id() && message.has_relay()))) {
-    LOG (kWarning) << "Message should have either src id or relay information.";
+    LOG(kWarning) << "Message should have either src id or relay information.";
     return false;
   }
 
   if (message.has_source_id() && !NodeId(message.source_id()).IsValid()) {
-    LOG (kWarning) << "Invalid source id field.";
+    LOG(kWarning) << "Invalid source id field.";
     return false;
   }
 
   if (message.has_relay_id() && !NodeId(message.relay_id()).IsValid()) {
-    LOG (kWarning) << "Invalid relay id field.";
+    LOG(kWarning) << "Invalid relay id field.";
     return false;
   }
 
   if (message.has_relay() &&
       GetEndpointFromProtobuf(message.relay()).address().is_unspecified()) {
-    LOG (kWarning) << "Invalid relay endpoint field.";
+    LOG(kWarning) << "Invalid relay endpoint field.";
     return false;
   }
 
   if (static_cast<MessageType>(message.type()) == MessageType::kConnectRequest)
     if (message.direct() != static_cast<int32_t>(ConnectType::kSingle)) {
-      LOG (kWarning) << "kConnectRequest type message must be kSingle connect type.";
+      LOG(kWarning) << "kConnectRequest type message must be kSingle connect type.";
       return false;
     }
 
   if (static_cast<MessageType>(message.type()) == MessageType::kConnectResponse)
     if (message.direct() != static_cast<int32_t>(ConnectType::kSingle)) {
-      LOG (kWarning) << "kConnectResponse type message must be kSingle connect type.";
+      LOG(kWarning) << "kConnectResponse type message must be kSingle connect type.";
       return false;
     }
 
   if (static_cast<MessageType>(message.type()) == MessageType::kFindNodesResponse)
     if ((message.direct() != static_cast<int32_t>(ConnectType::kSingle))) {
-      LOG (kWarning) << "kFindNodesResponse type message must be kSingle connect type.";
+      LOG(kWarning) << "kFindNodesResponse type message must be kSingle connect type.";
       return false;
     }
   return true;

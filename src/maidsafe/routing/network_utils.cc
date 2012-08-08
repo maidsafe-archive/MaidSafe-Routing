@@ -225,7 +225,10 @@ void NetworkUtils::RecursiveSendOn(const protobuf::Message& message,
   if (attempt_count > 0)
     Sleep(bptime::milliseconds(50));
 
-  closest_node = routing_table_.GetClosestNode(NodeId(message.destination_id()));
+  bool ignore_exact_match(!IsDirect(message));
+
+  closest_node = routing_table_.GetClosestNode(NodeId(message.destination_id()),
+                                               ignore_exact_match);
   if (closest_node.node_id == NodeId()) {
     LOG(kError) << "This node's routing table is empty now.  Need to re-bootstrap.";
     return;
