@@ -221,7 +221,7 @@ TYPED_TEST_P(RoutingNetworkTest, FUNC_ClientSendMulti) {
 // }
 
 TYPED_TEST_P(RoutingNetworkTest, FUNC_SendToGroup) {
-  uint8_t message_count(1), receivers_message_count(0);
+  uint16_t message_count(1), receivers_message_count(0);
   this->SetUpNetwork(kServerSize);
   size_t last_index(this->nodes_.size() - 1);
   NodeId dest_id(this->nodes_[last_index]->node_id());

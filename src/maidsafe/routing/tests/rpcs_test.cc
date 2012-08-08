@@ -20,6 +20,8 @@
 #include "maidsafe/common/test.h"
 #include "maidsafe/common/utils.h"
 #include "maidsafe/rudp/managed_connections.h"
+
+#include "maidsafe/routing/message_handler.h"
 #include "maidsafe/routing/parameters.h"
 #include "maidsafe/routing/rpcs.h"
 #include "maidsafe/routing/routing_pb.h"
@@ -58,12 +60,12 @@ TEST(RpcsTest, BEH_PingMessageNode) {
   EXPECT_TRUE(ping_request.has_timestamp());
   EXPECT_TRUE(ping_request.timestamp() > static_cast<int32_t>(GetTimeStamp() - 2));
   EXPECT_TRUE(ping_request.timestamp() < static_cast<int32_t>(GetTimeStamp() + 1));
-  EXPECT_EQ(message.destination_id(), destination);
-  EXPECT_EQ(message.source_id(), keys.identity);
-  EXPECT_NE(message.data_size(), 0);
-  EXPECT_EQ(message.replication(), 1);
-  EXPECT_EQ(message.type(), 1);
-  EXPECT_EQ(message.id(), 0);
+  EXPECT_EQ(destination, message.destination_id());
+  EXPECT_EQ( keys.identity, message.source_id());
+  EXPECT_NE(0, message.data_size());
+  EXPECT_EQ(1, message.replication());
+  EXPECT_EQ(static_cast<int32_t>(MessageType::kPingRequest), message.type());
+  EXPECT_EQ(0, message.id());
   EXPECT_FALSE(message.client_node());
   EXPECT_FALSE(message.has_relay());
 }
@@ -90,12 +92,12 @@ TEST(RpcsTest, BEH_ConnectMessageNode) {
   EXPECT_TRUE(connect_request.has_timestamp());
   EXPECT_TRUE(connect_request.timestamp() > static_cast<int32_t>(GetTimeStamp() - 2));
   EXPECT_TRUE(connect_request.timestamp() < static_cast<int32_t>(GetTimeStamp() + 1));
-  EXPECT_EQ(message.destination_id(), destination);
-  EXPECT_EQ(message.source_id(), us.node_id.String());
-  EXPECT_NE(message.data_size(), 0);
-  EXPECT_EQ(1, message.direct());
-  EXPECT_EQ(message.replication(), 1);
-  EXPECT_EQ(message.type(), 2);
+  EXPECT_EQ(destination, message.destination_id());
+  EXPECT_EQ(us.node_id.String(), message.source_id());
+  EXPECT_NE(0, message.data_size());
+  EXPECT_EQ(static_cast<int32_t>(ConnectType::kSingle), message.direct());
+  EXPECT_EQ(1, message.replication());
+  EXPECT_EQ(static_cast<int32_t>(MessageType::kConnectRequest), message.type());
   EXPECT_EQ(message.id(), 0);
   EXPECT_FALSE(message.client_node());
   EXPECT_FALSE(message.has_relay());
@@ -117,13 +119,13 @@ TEST(RpcsTest, BEH_ConnectMessageNodeRelayMode) {
   EXPECT_TRUE(connect_request.has_timestamp());
   EXPECT_TRUE(connect_request.timestamp() > static_cast<int32_t>(GetTimeStamp() - 2));
   EXPECT_TRUE(connect_request.timestamp() < static_cast<int32_t>(GetTimeStamp() + 1));
-  EXPECT_EQ(message.destination_id(), destination);
+  EXPECT_EQ(destination, message.destination_id());
   EXPECT_FALSE(message.has_source_id());
-  EXPECT_NE(message.data_size(), 0);
-  EXPECT_EQ(1, message.direct());
+  EXPECT_NE(0, message.data_size());
+  EXPECT_EQ(static_cast<int32_t>(ConnectType::kSingle), message.direct());
   EXPECT_EQ(message.replication(), 1);
-  EXPECT_EQ(message.type(), 2);
-  EXPECT_EQ(message.id(), 0);
+  EXPECT_EQ(static_cast<int32_t>(MessageType::kConnectRequest), message.type());
+  EXPECT_EQ(0, message.id());
   EXPECT_FALSE(message.client_node());
   EXPECT_TRUE(message.has_relay());
   EXPECT_TRUE(message.has_relay_id());
@@ -140,17 +142,17 @@ TEST(RpcsTest, BEH_FindNodesMessageNode) {
   protobuf::FindNodesRequest find_nodes_request;
   EXPECT_TRUE(find_nodes_request.ParseFromString(message.data(0)));  // us
   EXPECT_TRUE(find_nodes_request.num_nodes_requested() == Parameters::closest_nodes_size);
-  EXPECT_EQ(find_nodes_request.target_node(), us.node_id.String());
+  EXPECT_EQ(us.node_id.String(), find_nodes_request.target_node());
   EXPECT_TRUE(find_nodes_request.has_timestamp());
   EXPECT_TRUE(find_nodes_request.timestamp() > static_cast<int32_t>(GetTimeStamp() - 2));
   EXPECT_TRUE(find_nodes_request.timestamp() < static_cast<int32_t>(GetTimeStamp() + 1));
-  EXPECT_EQ(message.destination_id(), us.node_id.String());
-  EXPECT_EQ(message.source_id(), us.node_id.String());
-  EXPECT_NE(message.data_size(), 0);
-  EXPECT_EQ(0, message.direct());
-  EXPECT_EQ(message.replication(), 2);
-  EXPECT_EQ(message.type(), 3);
-  EXPECT_EQ(message.id(), 0);
+  EXPECT_EQ(us.node_id.String(), message.destination_id());
+  EXPECT_EQ(us.node_id.String(), message.source_id());
+  EXPECT_NE(0, message.data_size());
+  EXPECT_EQ(static_cast<int32_t>(ConnectType::kGroup), message.direct());
+  EXPECT_EQ(2, message.replication());
+  EXPECT_EQ(static_cast<int32_t>(MessageType::kFindNodesRequest), message.type());
+  EXPECT_EQ(0, message.id());
   EXPECT_FALSE(message.client_node());
   EXPECT_FALSE(message.has_relay());
   EXPECT_FALSE(message.has_relay_id());
@@ -163,17 +165,17 @@ TEST(RpcsTest, BEH_FindNodesMessageNodeRelayMode) {
   protobuf::FindNodesRequest find_nodes_request;
   EXPECT_TRUE(find_nodes_request.ParseFromString(message.data(0)));  // us
   EXPECT_TRUE(find_nodes_request.num_nodes_requested() == Parameters::closest_nodes_size);
-  EXPECT_EQ(find_nodes_request.target_node(), us.node_id.String());
+  EXPECT_EQ(us.node_id.String(), find_nodes_request.target_node());
   EXPECT_TRUE(find_nodes_request.has_timestamp());
   EXPECT_TRUE(find_nodes_request.timestamp() > static_cast<int32_t>(GetTimeStamp() - 2));
   EXPECT_TRUE(find_nodes_request.timestamp() < static_cast<int32_t>(GetTimeStamp() + 1));
-  EXPECT_EQ(message.destination_id(), us.node_id.String());
+  EXPECT_EQ(us.node_id.String(), message.destination_id());
   EXPECT_FALSE(message.has_source_id());
-  EXPECT_NE(message.data_size(), 0);
-  EXPECT_EQ(0, message.direct());
-  EXPECT_EQ(message.replication(), 2);
-  EXPECT_EQ(message.type(), 3);
-  EXPECT_EQ(message.id(), 0);
+  EXPECT_NE(0, message.data_size());
+  EXPECT_EQ(static_cast<int32_t>(ConnectType::kGroup), message.direct());
+  EXPECT_EQ(2, message.replication());
+  EXPECT_EQ(static_cast<int32_t>(MessageType::kFindNodesRequest), message.type());
+  EXPECT_EQ(0, message.id());
   EXPECT_FALSE(message.client_node());
   EXPECT_TRUE(message.has_relay());
   EXPECT_TRUE(message.has_relay_id());

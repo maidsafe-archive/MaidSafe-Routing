@@ -92,7 +92,7 @@ TEST(ServicesTest, DISABLED_BEH_Connect) {
   EXPECT_EQ(message.destination_id(), them.node_id.String());
   EXPECT_EQ(message.source_id(), us.node_id.String());
   EXPECT_NE(message.data_size(), 0);
-  EXPECT_EQ(1, message.direct());
+  EXPECT_EQ(static_cast<int32_t>(ConnectType::kSingle), message.direct());
   EXPECT_EQ(message.replication(), 1);
   EXPECT_EQ(message.type(), -2);
   EXPECT_EQ(message.id(), 0);
@@ -119,7 +119,7 @@ TEST(ServicesTest, BEH_FindNodes) {
   EXPECT_EQ(message.destination_id(), us.node_id.String());
   EXPECT_EQ(message.source_id(), us.node_id.String());
   EXPECT_NE(message.data_size(), 0);
-  EXPECT_EQ(1, message.direct());
+  EXPECT_EQ(static_cast<int32_t>(ConnectType::kSingle), message.direct());
   EXPECT_EQ(message.replication(), 1);
   EXPECT_EQ(message.type(), -3);
   EXPECT_EQ(message.id(), 0);
@@ -152,7 +152,7 @@ TEST(ServicesTest, BEH_ProxyConnect) {
   EXPECT_TRUE(proxy_connect_respose.ParseFromString(message.data(0)));
   EXPECT_EQ(protobuf::kFailure, proxy_connect_respose.result());
   EXPECT_NE(message.data_size(), 0);
-  EXPECT_EQ(1, message.direct());
+  EXPECT_EQ(static_cast<int32_t>(ConnectType::kSingle), message.direct());
   EXPECT_TRUE(message.source_id() == keys.identity);
   EXPECT_EQ(1, message.replication());
   EXPECT_EQ(-4, message.type());

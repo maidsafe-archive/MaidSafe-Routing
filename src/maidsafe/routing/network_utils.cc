@@ -56,6 +56,7 @@ void NetworkUtils::Stop() {
   {
     UniqueLock unique_lock(shared_mutex_);
     stopped_ = true;
+    boost::this_thread::disable_interruption disable_interruption;
     rudp_.reset();
   }
   LOG(kVerbose) << "NetworkUtils::Stop(), exiting ...";
