@@ -43,6 +43,7 @@ class RoutingTable {
   bool CheckNode(NodeInfo& peer);
   NodeInfo DropNode(const boost::asio::ip::udp::endpoint& endpoint);
   bool GetNodeInfo(const boost::asio::ip::udp::endpoint& endpoint, NodeInfo& peer) const;
+  bool GetNodeInfo(const NodeId& node_id, NodeInfo& peer) const;
   bool IsThisNodeInRange(const NodeId& target_id, const uint16_t range);
   bool IsThisNodeClosestTo(const NodeId& target_id);
   bool IsConnected(const boost::asio::ip::udp::endpoint& endpoint) const;

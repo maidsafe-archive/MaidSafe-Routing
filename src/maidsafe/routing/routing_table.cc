@@ -110,6 +110,17 @@ bool RoutingTable::GetNodeInfo(const Endpoint& endpoint, NodeInfo& peer) const {
   return false;
 }
 
+bool RoutingTable::GetNodeInfo(const NodeId& node_id, NodeInfo& peer) const {
+  std::lock_guard<std::mutex> lock(mutex_);
+  for (auto it = nodes_.begin(); it != nodes_.end(); ++it) {
+    if ((*it).node_id == node_id) {
+      peer = *it;
+      return true;
+    }
+  }
+  return false;
+}
+
 bool RoutingTable::IsThisNodeInRange(const NodeId& target_id, const uint16_t range) {
   std::lock_guard<std::mutex> lock(mutex_);
   if (nodes_.size() < range)
@@ -302,7 +313,10 @@ NodeInfo RoutingTable::GetClosestNode(const NodeId& target_id, bool ignore_exact
     return NodeInfo();
   NthElementSortFromTarget(target_id, 1);
   if ((nodes_[0].node_id == target_id) && (ignore_exact_match)) {
-    NthElementSortFromTarget(target_id, 2);
+    if (nodes_.size() >= 2)
+      NthElementSortFromTarget(target_id, 2);
+    else
+      return NodeInfo();
     return nodes_[1];
   }
   return nodes_[0];

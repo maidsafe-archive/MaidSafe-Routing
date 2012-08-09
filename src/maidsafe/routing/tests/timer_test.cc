@@ -69,7 +69,6 @@ TEST(TimerTest, BEH_SingleResponseTimedOut) {
   message.set_direct(static_cast<int32_t>(ConnectType::kGroup));
   message.add_data("response data");
   message.set_source_id("source_id");
-  timer.ExecuteTask(message);
   Sleep(boost::posix_time::milliseconds(200));
 }
 

@@ -220,7 +220,9 @@ void MessageHandler::HandleMessageAsClosestNode(protobuf::Message& message) {
     LOG(kInfo) << "Replicating message to : " << HexSubstr(i.String())
                << " [ group_id : " << HexSubstr(group_id)  << "]";
     message.set_destination_id(i.String());
-    network_.SendToClosestNode(message);
+    NodeInfo node;
+    if (routing_table_.GetNodeInfo(i, node))
+      network_.SendToDirectEndpoint(message, node.endpoint);
   }
 
   message.set_destination_id(routing_table_.kKeys().identity);
