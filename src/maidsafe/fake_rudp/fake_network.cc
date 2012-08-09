@@ -51,7 +51,7 @@ FakeNetwork::FakeNetwork()
       mutex_() {}
 
 Endpoint FakeNetwork::GetEndpoint() {
-  return Endpoint(boost::asio::ip::address::from_string("8.8.8.8"), ++next_port_);
+  return Endpoint(boost::asio::ip::address::from_string("203.0.113.0"), ++next_port_);
 }
 
 std::vector<Node>::iterator FakeNetwork::FindNode(Endpoint endpoint) {

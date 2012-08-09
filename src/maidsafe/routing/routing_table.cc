@@ -338,7 +338,7 @@ std::vector<NodeId> RoutingTable::GetClosestNodes(const NodeId& target_id,
 std::vector<NodeInfo> RoutingTable::GetClosestNodeInfo(const NodeId& from,
                                                        const uint16_t& number_to_get) {
   std::vector<NodeInfo>close_nodes;
-  unsigned int count = std::min(number_to_get, static_cast<uint16_t>(nodes_.size()));
+  uint16_t count = std::min(number_to_get, static_cast<uint16_t>(nodes_.size()));
   PartialSortFromTarget(from, count);
   for (unsigned int i = 0; i < count; ++i)
     close_nodes.push_back(nodes_[i]);

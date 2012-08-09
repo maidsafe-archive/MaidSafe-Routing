@@ -55,7 +55,7 @@ NodeInfo MakeNode();
 // the function returns a default-constructed (invalid) address.
 boost::asio::ip::address GetLocalIp(
     boost::asio::ip::udp::endpoint peer_endpoint =
-        boost::asio::ip::udp::endpoint(boost::asio::ip::address_v4::from_string("8.8.8.8"), 0));
+        boost::asio::ip::udp::endpoint(boost::asio::ip::address_v4::from_string("203.0.113.0"), 0));
 
 NodeId GenerateUniqueRandomId(const NodeId& holder, const uint16_t& pos);
 
