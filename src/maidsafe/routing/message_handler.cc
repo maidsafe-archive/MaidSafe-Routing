@@ -166,32 +166,42 @@ void MessageHandler::HandleMessageAsClosestNode(protobuf::Message& message) {
   LOG(kVerbose) << "This node is in closest proximity to this message destination ID [ "
                 <<  HexSubstr(message.destination_id())
                 << " ].";
+  if (IsDirect(message)) {
+    return HandleDirectMessageAsClosestNode(message);
+  } else {
+    return HandleGroupMessageAsClosestNode(message);
+  }
+}
+
+void MessageHandler::HandleDirectMessageAsClosestNode(protobuf::Message& message) {
+  assert(message.direct() == static_cast<int32_t>(ConnectType::kSingle));
   // Dropping direct messages if this node is closest and destination node is not in routing_table_
   // or non_routing_table_.
-  if (message.direct() == static_cast<int32_t>(ConnectType::kSingle)) {
-    NodeId destination_node_id(message.destination_id());
-    if (routing_table_.IsThisNodeClosestTo(destination_node_id)) {
-      if (routing_table_.IsConnected(destination_node_id) ||
-          non_routing_table_.IsConnected(destination_node_id)) {
-        return network_.SendToClosestNode(message);
-      } else {  // Case when response comes back through different route for relay messages.
-        if (IsRoutingMessage(message)) {
-          if (message.has_relay_id() && (message.relay_id() == routing_table_.kKeys().identity))
-            return HandleRoutingMessage(message);
-        }
-        LOG(kWarning) << "Dropping message. This node ["
-                      << HexSubstr(routing_table_.kKeys().identity)
-                      << "] is the closest but is not connected to destination node ["
-                      << HexSubstr(message.destination_id()) << "].  Message type: "
-                      << message.type() << ", Src ID: " << HexSubstr(message.source_id())
-                      << ", Relay ID: " << HexSubstr(message.relay_id());
-        return;
-      }
-    } else {
+  NodeId destination_node_id(message.destination_id());
+  if (routing_table_.IsThisNodeClosestTo(destination_node_id)) {
+    if (routing_table_.IsConnected(destination_node_id) ||
+      non_routing_table_.IsConnected(destination_node_id)) {
       return network_.SendToClosestNode(message);
+    } else {  // Case when response comes back through different route for relay messages.
+      if (IsRoutingMessage(message)) {
+        if (message.has_relay_id() && (message.relay_id() == routing_table_.kKeys().identity))
+          return HandleRoutingMessage(message);
+      }
+      LOG(kWarning) << "Dropping message. This node ["
+                    << HexSubstr(routing_table_.kKeys().identity)
+                    << "] is the closest but is not connected to destination node ["
+                    << HexSubstr(message.destination_id()) << "].  Message type: "
+                    << message.type() << ", Src ID: " << HexSubstr(message.source_id())
+                    << ", Relay ID: " << HexSubstr(message.relay_id());
+      return;
     }
+  } else {
+    return network_.SendToClosestNode(message);
   }
+}
 
+void MessageHandler::HandleGroupMessageAsClosestNode(protobuf::Message& message) {
+  assert(message.direct() != static_cast<int32_t>(ConnectType::kSingle));
   bool have_node_with_group_id(routing_table_.IsConnected(NodeId(message.destination_id())));
   // This node is not closest to the destination node for non-direct message.
   if (!routing_table_.IsThisNodeClosestTo(NodeId(message.destination_id())) &&

@@ -66,6 +66,8 @@ class MessageHandler {
   void HandleNodeLevelMessageForThisNode(protobuf::Message& message);
   void HandleDirectMessage(protobuf::Message& message);
   void HandleMessageAsClosestNode(protobuf::Message& message);
+  void HandleDirectMessageAsClosestNode(protobuf::Message& message);
+  void HandleGroupMessageAsClosestNode(protobuf::Message& message);
   void HandleMessageAsFarNode(protobuf::Message& message);
   void HandleGroupMessage(protobuf::Message& message);
   void HandleRelayRequest(protobuf::Message& message);
