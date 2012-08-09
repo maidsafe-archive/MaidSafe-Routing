@@ -105,6 +105,11 @@ NodeId GenerateUniqueRandomId(const NodeId& holder, const uint16_t& pos) {
   return new_node;
 }
 
+NodeId GenerateUniqueRandomId(const uint16_t& pos) {
+  NodeId holder(NodeId(NodeId::kMaxId) ^ NodeId(NodeId::kMaxId));
+  return GenerateUniqueRandomId(holder, pos);
+}
+
 int NetworkStatus(const bool& client, const int& status) {
   uint16_t max_size(client ? Parameters::max_client_routing_table_size :
                       Parameters::max_routing_table_size);

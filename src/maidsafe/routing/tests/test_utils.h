@@ -59,6 +59,7 @@ boost::asio::ip::address GetLocalIp(
             boost::asio::ip::address_v4::from_string("203.0.113.0"), 80));
 
 NodeId GenerateUniqueRandomId(const NodeId& holder, const uint16_t& pos);
+NodeId GenerateUniqueRandomId(const uint16_t& pos);
 
 int NetworkStatus(const bool& client, const int& status);
 

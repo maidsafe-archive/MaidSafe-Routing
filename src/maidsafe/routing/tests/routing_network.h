@@ -191,6 +191,12 @@ class GenericNetwork : public testing::Test {
     };
   }
 
+  void PrintRoutingTables() {
+    for (auto node : this->nodes_)
+      node->PrintRoutingTable();
+  }
+
+
  private:
   uint16_t NonClientNodesSize() const {
     uint16_t non_client_size(0);
@@ -198,11 +204,6 @@ class GenericNetwork : public testing::Test {
       if (!node->client_mode())
         non_client_size++;
     return non_client_size;
-  }
-
-  void PrintRoutingTables() {
-    for (auto node : this->nodes_)
-      node->PrintRoutingTable();
   }
 
   void AddNodeDetails(NodePtr node) {
