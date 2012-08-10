@@ -109,7 +109,7 @@ TYPED_TEST_P(FindNodeNetwork, FUNC_FindNonExistingNode) {
   EXPECT_FALSE(this->nodes_[source]->RoutingTableHasNode(node_id));
 }
 
-TYPED_TEST_P(FindNodeNetwork, DISABLED_FUNC_FindNodeAfterDrop) {
+TYPED_TEST_P(FindNodeNetwork, FUNC_FindNodeAfterDrop) {
   this->SetUpNetwork(kServerSize);
   uint32_t source(RandomUint32() % (this->nodes_.size() - 2) + 2);
   NodeId node_id(GenerateUniqueRandomId(this->nodes_[source]->node_id(), 6));
@@ -118,7 +118,7 @@ TYPED_TEST_P(FindNodeNetwork, DISABLED_FUNC_FindNodeAfterDrop) {
   Sleep(boost::posix_time::seconds(1));
   EXPECT_TRUE(this->nodes_[source]->RoutingTableHasNode(node_id));
   EXPECT_TRUE(this->nodes_[source]->DropNode(node_id));
-  Sleep(boost::posix_time::seconds(20));
+  Sleep(boost::posix_time::seconds(10));
   EXPECT_TRUE(this->nodes_[source]->RoutingTableHasNode(node_id));
 }
 
@@ -133,28 +133,29 @@ TYPED_TEST_P(FindNodeNetwork, DISABLED_FUNC_FindNodeAfterLeaving) {
     EXPECT_FALSE(node->RoutingTableHasNode(node_id));
 }
 
-TYPED_TEST_P(FindNodeNetwork, DISABLED_FUNC_VaultFindVaultNode) {
+TYPED_TEST_P(FindNodeNetwork, FUNC_VaultFindVaultNode) {
   this->SetUpNetwork(6);
   uint32_t source(
       RandomUint32() % (static_cast<uint32_t>(this->nodes_.size()) - 2) + 2),
       dest(static_cast<uint32_t>(this->nodes_.size()));
 
   this->AddNode(false, GenerateUniqueRandomId(this->nodes_[source]->node_id(), 20));
-  this->nodes_[source]->RoutingTableHasNode(this->nodes_[dest]->node_id());
+  EXPECT_TRUE(this->nodes_[source]->RoutingTableHasNode(this->nodes_[dest]->node_id()));
 
   EXPECT_TRUE(this->nodes_[dest]->DropNode(this->nodes_[source]->node_id()));
-  EXPECT_TRUE(this->nodes_[source]->DropNode(this->nodes_[dest]->node_id()));
+//  EXPECT_TRUE(this->nodes_[source]->DropNode(this->nodes_[dest]->node_id()));
+  Sleep(boost::posix_time::seconds(2));
   EXPECT_FALSE(this->nodes_[source]->RoutingTableHasNode(this->nodes_[dest]->node_id()));
 
   EXPECT_TRUE(this->Find(this->nodes_[source], this->nodes_[dest]->node_id()));
   Sleep(boost::posix_time::seconds(5));
 
   LOG(kVerbose) << "after find " << HexSubstr(this->nodes_[dest]->node_id().String());
-  this->nodes_[source]->PrintRoutingTable();
+//  this->nodes_[source]->PrintRoutingTable();
   EXPECT_TRUE(this->nodes_[source]->RoutingTableHasNode(this->nodes_[dest]->node_id()));
 }
 
-TYPED_TEST_P(FindNodeNetwork, DISABLED_FUNC_VaultFindClientNode) {
+TYPED_TEST_P(FindNodeNetwork, FUNC_VaultFindClientNode) {
   // Create a bootstrap network
   this->SetUpNetwork(6);
   uint32_t source(
@@ -172,7 +173,8 @@ TYPED_TEST_P(FindNodeNetwork, DISABLED_FUNC_VaultFindClientNode) {
 
   // clear up
   EXPECT_TRUE(this->nodes_[dest]->DropNode(this->nodes_[source]->node_id()));
-  EXPECT_TRUE(this->nodes_[source]->DropNode(this->nodes_[dest]->node_id()));
+//  EXPECT_TRUE(this->nodes_[source]->DropNode(this->nodes_[dest]->node_id()));
+  Sleep(boost::posix_time::seconds(5));
   EXPECT_FALSE(this->nodes_[dest]->RoutingTableHasNode(this->nodes_[source]->node_id()));
   EXPECT_FALSE(this->nodes_[source]->NonRoutingTableHasNode(this->nodes_[dest]->node_id()));
 
@@ -183,9 +185,9 @@ TYPED_TEST_P(FindNodeNetwork, DISABLED_FUNC_VaultFindClientNode) {
   EXPECT_FALSE(this->nodes_[source]->NonRoutingTableHasNode(this->nodes_[dest]->node_id()));
 }
 
-TYPED_TEST_P(FindNodeNetwork, DISABLED_FUNC_ClientFindVaultNode) {
+TYPED_TEST_P(FindNodeNetwork, FUNC_ClientFindVaultNode) {
   // Create a bootstrap network
-  this->SetUpNetwork(6);
+  this->SetUpNetwork(kServerSize);
   uint32_t source(
       RandomUint32() % (static_cast<uint32_t>(this->nodes_.size()) - 2) + 2),
       client(static_cast<uint32_t>(this->nodes_.size())),
@@ -207,15 +209,15 @@ TYPED_TEST_P(FindNodeNetwork, DISABLED_FUNC_ClientFindVaultNode) {
   EXPECT_FALSE(this->nodes_[vault]->NonRoutingTableHasNode(this->nodes_[client]->node_id()));
 
   // trying to find
-  EXPECT_FALSE(this->Find(this->nodes_[vault], this->nodes_[client]->node_id()));
+  EXPECT_TRUE(this->Find(this->nodes_[vault], this->nodes_[client]->node_id()));
   Sleep(boost::posix_time::seconds(5));
   EXPECT_FALSE(this->nodes_[vault]->RoutingTableHasNode(this->nodes_[client]->node_id()));
   EXPECT_FALSE(this->nodes_[vault]->NonRoutingTableHasNode(this->nodes_[client]->node_id()));
 }
 
-TYPED_TEST_P(FindNodeNetwork, DISABLED_FUNC_ClientFindClientNode) {
+TYPED_TEST_P(FindNodeNetwork, FUNC_ClientFindClientNode) {
   // Create a bootstrap network
-  this->SetUpNetwork(6);
+  this->SetUpNetwork(kServerSize);
   uint32_t source(
       RandomUint32() % (static_cast<uint32_t>(this->nodes_.size()) - 2) + 2),
       client1(static_cast<uint32_t>(this->nodes_.size())),
@@ -238,7 +240,7 @@ TYPED_TEST_P(FindNodeNetwork, DISABLED_FUNC_ClientFindClientNode) {
   EXPECT_FALSE(this->nodes_[client2]->NonRoutingTableHasNode(this->nodes_[client1]->node_id()));
 
   // trying to find
-  EXPECT_FALSE(this->Find(this->nodes_[client1], this->nodes_[client2]->node_id()));
+  EXPECT_TRUE(this->Find(this->nodes_[client1], this->nodes_[client2]->node_id()));
   Sleep(boost::posix_time::seconds(5));
   EXPECT_FALSE(this->nodes_[client1]->RoutingTableHasNode(this->nodes_[client2]->node_id()));
   EXPECT_FALSE(this->nodes_[client1]->NonRoutingTableHasNode(this->nodes_[client2]->node_id()));
@@ -246,12 +248,12 @@ TYPED_TEST_P(FindNodeNetwork, DISABLED_FUNC_ClientFindClientNode) {
 
 REGISTER_TYPED_TEST_CASE_P(FindNodeNetwork, FUNC_FindExistingNode,
                                             FUNC_FindNonExistingNode,
-                                            DISABLED_FUNC_FindNodeAfterDrop,
+                                            FUNC_FindNodeAfterDrop,
                                             DISABLED_FUNC_FindNodeAfterLeaving,
-                                            DISABLED_FUNC_VaultFindVaultNode,
-                                            DISABLED_FUNC_VaultFindClientNode,
-                                            DISABLED_FUNC_ClientFindVaultNode,
-                                            DISABLED_FUNC_ClientFindClientNode);
+                                            FUNC_VaultFindVaultNode,
+                                            FUNC_VaultFindClientNode,
+                                            FUNC_ClientFindVaultNode,
+                                            FUNC_ClientFindClientNode);
 INSTANTIATE_TYPED_TEST_CASE_P(MAIDSAFE, FindNodeNetwork, GenericNode);
 
 

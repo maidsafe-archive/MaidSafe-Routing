@@ -469,15 +469,8 @@ void Routing::ConnectionLost(const Endpoint& lost_endpoint, std::weak_ptr<Routin
   }
 
   LOG(kWarning) << "Routing::ConnectionLost---------------------------------------------------";
+
   NodeInfo dropped_node;
-  if (!pimpl->tearing_down_ &&
-      (pimpl->routing_table_.GetNodeInfo(lost_endpoint, dropped_node) &&
-       pimpl->routing_table_.IsThisNodeInRange(dropped_node.node_id,
-                                               Parameters::closest_nodes_size))) {
-    // Close node lost, get more nodes
-    LOG(kWarning) << "Lost close node, getting more.";
-    ReSendFindNodeRequest(boost::system::error_code());
-  }
 
   // Checking routing table
   dropped_node = pimpl->routing_table_.DropNode(lost_endpoint);
@@ -496,6 +489,16 @@ void Routing::ConnectionLost(const Endpoint& lost_endpoint, std::weak_ptr<Routin
   } else {
     LOG(kWarning) << "Lost connection with unknown/internal endpoint " << lost_endpoint;
   }
+
+  if (!pimpl->tearing_down_ &&
+      (pimpl->routing_table_.GetNodeInfo(lost_endpoint, dropped_node) &&
+       pimpl->routing_table_.IsThisNodeInRange(dropped_node.node_id,
+                                               Parameters::closest_nodes_size))) {
+    // Close node lost, get more nodes
+    LOG(kWarning) << "Lost close node, getting more.";
+    ReSendFindNodeRequest(boost::system::error_code());
+  }
+
   LOG(kWarning) << "Routing::ConnectionLost--------------------------------------------Exiting";
 }
 

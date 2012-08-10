@@ -135,7 +135,7 @@ bool GenericNode::NonRoutingTableHasNode(const NodeId& node_id) {
 }
 
 testing::AssertionResult GenericNode::DropNode(const NodeId& node_id) {
-  LOG(kVerbose) << " DropNode " << HexSubstr(routing_->impl_->routing_table_.kNodeId_.String())
+  LOG(kInfo) << " DropNode " << HexSubstr(routing_->impl_->routing_table_.kNodeId_.String())
                 << " Removes " << HexSubstr(node_id.String());
   auto iter = std::find_if(routing_->impl_->routing_table_.nodes_.begin(),
       routing_->impl_->routing_table_.nodes_.end(),
