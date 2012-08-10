@@ -704,9 +704,9 @@ TEST(APITest, BEH_API_NodeNetworkWithClient) {
   // Ignoring 2 zero state nodes
   promised.push_back(false);
   promised.push_back(false);
-  status_vector.emplace_back([](int) {});
-  status_vector.emplace_back([](int) {});
-  boost::promise<bool> promise1, promise2;;
+  status_vector.emplace_back([](int /*x*/) {});
+  status_vector.emplace_back([](int /*x*/) {});
+  boost::promise<bool> promise1, promise2;
   join_futures.emplace_back(promise1.get_future());
   join_futures.emplace_back(promise2.get_future());
 
