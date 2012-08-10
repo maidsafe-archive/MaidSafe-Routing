@@ -647,9 +647,9 @@ TEST(APITest, BEH_API_NodeNetworkWithBootstrapFile) {
     EXPECT_TRUE(fs::remove(i));
 }
 
-TEST(APITest, DISABLED_BEH_API_NodeNetworkWithClient) {
-  int min_join_status(8);  // TODO(Prakash): To decide
-  std::vector<boost::promise<bool>> join_promises(kNetworkSize - 2);
+TEST(APITest, BEH_API_NodeNetworkWithClient) {
+  int min_join_status(std::min(kServerCount, 8));
+  std::vector<boost::promise<bool>> join_promises(kNetworkSize);
   std::vector<boost::unique_future<bool>> join_futures;
   std::deque<bool> promised;
   std::vector<NetworkStatusFunctor> status_vector;
@@ -701,25 +701,36 @@ TEST(APITest, DISABLED_BEH_API_NodeNetworkWithClient) {
   EXPECT_EQ(kSuccess, a2.get());  // wait for promise !
   EXPECT_EQ(kSuccess, a1.get());  // wait for promise !
 
-  for (auto i(0); i != (kNetworkSize - 2); ++i) {
+  // Ignoring 2 zero state nodes
+  promised.push_back(false);
+  promised.push_back(false);
+  status_vector.emplace_back([](int) {});
+  status_vector.emplace_back([](int) {});
+  boost::promise<bool> promise1, promise2;;
+  join_futures.emplace_back(promise1.get_future());
+  join_futures.emplace_back(promise2.get_future());
+
+  // Joining remaining server & client nodes
+  for (auto i(2); i != (kNetworkSize); ++i) {
     join_futures.emplace_back(join_promises.at(i).get_future());
     promised.push_back(true);
     status_vector.emplace_back([=, &join_promises, &mutex, &promised](int result) {
                                    ASSERT_GE(result, kSuccess);
-                                   if (result == (std::min(i + 2, min_join_status))) {
+                                   if (result == NetworkStatus((i < kServerCount)? false: true,
+                                                               std::min(i, min_join_status))) {
                                      boost::unique_lock< boost::shared_mutex> lock(mutex);
                                      if (promised.at(i)) {
                                        join_promises.at(i).set_value(true);
                                        promised.at(i) = false;
-                                       LOG(kVerbose) << "node - " << i + 2 << "joined";
+                                       LOG(kVerbose) << "node - " << i << "joined";
                                      }
                                    }
                                  });
   }
 
-  for (auto i(0); i != (kNetworkSize - 2); ++i) {
+  for (auto i(2); i != (kNetworkSize); ++i) {
     functors.network_status = status_vector.at(i);
-    routing_node[i + 2]->Join(functors, nodes[i % 2].node_info.endpoint);
+    routing_node[i]->Join(functors, nodes[0].node_info.endpoint);
     ASSERT_TRUE(join_futures.at(i).timed_wait(boost::posix_time::seconds(10)));
   }
 }
