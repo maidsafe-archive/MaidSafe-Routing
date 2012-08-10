@@ -64,7 +64,7 @@ TaskId Timer::AddTask(const boost::posix_time::time_duration& timeout,
   return task_id;
 }
 
-std::vector<Timer::TaskPtr>::const_iterator Timer::FindTask(const TaskId& task_id) {
+std::vector<Timer::TaskPtr>::iterator Timer::FindTask(const TaskId& task_id) {
   return std::find_if(tasks_.begin(),
                       tasks_.end(),
                       [task_id](const TaskPtr& task) { return task->id == task_id; });  // NOLINT (Fraser)

@@ -76,7 +76,7 @@ class Timer {
   Timer& operator=(const Timer&);
   Timer(const Timer&);
   Timer(const Timer&&);
-  std::vector<TaskPtr>::const_iterator FindTask(const TaskId& task_id);
+  std::vector<TaskPtr>::iterator FindTask(const TaskId& task_id);
   void ExecuteTask(TaskId task_id, const boost::system::error_code& error);
 
   AsioService& asio_service_;
