@@ -147,7 +147,7 @@ void MessageHandler::HandleNodeLevelMessageForThisNode(protobuf::Message& messag
   } else {  // response
     LOG(kInfo) << "Node Level Response for " << HexSubstr(routing_table_.kKeys().identity)
                << " from " << HexSubstr(message.source_id());
-    timer_.ExecuteTask(message);
+    timer_.AddResponse(message);
   }
 }
 
@@ -359,7 +359,7 @@ void MessageHandler::HandleClientMessage(protobuf::Message& message) {
   } else if ((message.destination_id() == routing_table_.kKeys().identity)) {
     LOG(kInfo) << "Client Node Level Response for " << HexSubstr(routing_table_.kKeys().identity)
                << " from " << HexSubstr(message.source_id());
-    timer_.ExecuteTask(message);
+    timer_.AddResponse(message);
   }
 }
 

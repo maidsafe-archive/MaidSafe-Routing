@@ -13,6 +13,7 @@
 #ifndef MAIDSAFE_ROUTING_TIMER_H_
 #define MAIDSAFE_ROUTING_TIMER_H_
 
+#include <condition_variable>
 #include <mutex>
 #include <cstdint>
 #include <functional>
@@ -41,14 +42,21 @@ typedef int32_t TaskId;
 class Timer {
  public:
   explicit Timer(AsioService& asio_service);
+  // Cancels all tasks and blocks until all functors have been executed and all tasks removed.
+  ~Timer();
+  // Adds a task with a deadline, and returns a unique ID for the task.  If expected_response_count
+  // responses are added before timeout duration elapses, response_functor is invoked with kSuccess.
+  // If the task is cancelled, times out, or the wait fails in some other way, the response_functor
+  // is invoked with an appropriate error code.
   TaskId AddTask(const boost::posix_time::time_duration& timeout,
                  const TaskResponseFunctor& response_functor,
-                 int expected_count = 1);
-  // Executes task with return code kResponseTimeout or kResponseCancelled and removes task.
-  void CancelTask(TaskId task_id,
-                  const boost::system::error_code& error = boost::asio::error::operation_aborted);
-  // Executes task with return code kSuccess and removes task.
-  void ExecuteTask(protobuf::Message& message);
+                 uint16_t expected_response_count);
+  // Removes the task and invokes its functor with kResponseCancelled and whatever responses have
+  // been added up to that point.
+  void CancelTask(TaskId task_id);
+  // Registers a response against the task indicated by response.id().  Once expected_response_count
+  // responses have been added, the task is removed and its functor invoked with kSuccess.
+  void AddResponse(const protobuf::Message& response);
 
  private:
   struct Task {
@@ -56,22 +64,25 @@ class Timer {
          boost::asio::io_service& io_service,
          const boost::posix_time::time_duration& timeout,
          TaskResponseFunctor functor_in,
-         int expected_count_in);
+         uint16_t expected_response_count_in);
     TaskId id;
     boost::asio::deadline_timer timer;
     TaskResponseFunctor functor;
     std::vector<std::string> responses;
-    int expected_count;
+    uint16_t expected_response_count;
   };
   typedef std::shared_ptr<Task> TaskPtr;
 
   Timer& operator=(const Timer&);
   Timer(const Timer&);
   Timer(const Timer&&);
+  std::vector<TaskPtr>::const_iterator FindTask(const TaskId& task_id);
+  void ExecuteTask(TaskId task_id, const boost::system::error_code& error);
 
   AsioService& asio_service_;
   TaskId task_id_;
   std::mutex mutex_;
+  std::condition_variable cond_var_;
   std::vector<TaskPtr> tasks_;
 };
 

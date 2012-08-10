@@ -29,99 +29,126 @@ Timer::Task::Task(const TaskId& id_in,
                   boost::asio::io_service& io_service,
                   const boost::posix_time::time_duration& timeout,
                   TaskResponseFunctor functor_in,
-                  int expected_count_in)
+                  uint16_t expected_response_count_in)
     : id(id_in),
       timer(io_service, timeout),
       functor(functor_in),
       responses(),
-      expected_count(expected_count_in) {}
+      expected_response_count(expected_response_count_in) {}
 
 Timer::Timer(AsioService& asio_service)
     : asio_service_(asio_service),
       task_id_(RandomInt32()),
       mutex_(),
+      cond_var_(),
       tasks_() {}
+
+Timer::~Timer() {
+  std::unique_lock<std::mutex> lock(mutex_);
+  for (TaskPtr& task : tasks_)
+    task->timer.cancel();
+  cond_var_.wait(lock, [&] { return tasks_.empty(); });  // NOLINT (Fraser)
+}
 
 TaskId Timer::AddTask(const boost::posix_time::time_duration& timeout,
                       const TaskResponseFunctor& response_functor,
-                      int expected_count) {
+                      uint16_t expected_response_count) {
   std::lock_guard<std::mutex> lock(mutex_);
   TaskId task_id = ++task_id_;
   tasks_.push_back(TaskPtr(new Task(task_id, asio_service_.service(), timeout, response_functor,
-                                    expected_count)));
+                                    expected_response_count)));
   tasks_.back()->timer.async_wait([this, task_id](const boost::system::error_code& error) {
-    CancelTask(task_id, error);
+    ExecuteTask(task_id, error);
   });
   LOG(kVerbose) << "AddTask added a task, with id " << task_id;
   return task_id;
 }
 
-// TODO(dirvine) we could change the find to iterate entire map if we want to be able to send
-// multiple requests and accept the first one back, dropping the rest.
-void Timer::CancelTask(TaskId task_id, const boost::system::error_code& error) {
+std::vector<Timer::TaskPtr>::const_iterator Timer::FindTask(const TaskId& task_id) {
+  return std::find_if(tasks_.begin(),
+                      tasks_.end(),
+                      [task_id](const TaskPtr& task) { return task->id == task_id; });  // NOLINT (Fraser)
+}
+
+void Timer::ExecuteTask(TaskId task_id, const boost::system::error_code& error) {
   TaskPtr task;
   {
     std::lock_guard<std::mutex> lock(mutex_);
-    auto const itr = std::find_if(tasks_.begin(),
-                                  tasks_.end(),
-                                  [task_id](const TaskPtr& task) { return task->id == task_id; });  // NOLINT (Fraser)
+    auto itr(FindTask(task_id));
     if (itr == tasks_.end()) {
       LOG(kWarning) << "Task " << task_id << " not held by Timer.";
       return;
     }
-    // message timed out or task killed
-    LOG(kVerbose) << "Timed out task " << task_id;
     task = *itr;
-    tasks_.erase(itr);
   }
 
-  if (!task->functor)
-    return;
+  int return_code(kSuccess);
+  switch (error.value()) {
+    case boost::system::errc::success:
+      // Task's timer has expired
+      return_code = kResponseTimeout;
+      LOG(kWarning) << "Timed out waiting for task " << task->id;
+      break;
+    case boost::asio::error::operation_aborted:
+      assert(task->responses.size() <= task->expected_response_count);
+      if (task->responses.size() == task->expected_response_count) {
+        // Cancelled via AddResponse
+        return_code = kSuccess;
+      } else {
+        // Cancelled via CancelTask
+        return_code = kResponseCancelled;
+        LOG(kInfo) << "Cancelled task " << task->id;
+      }
+      break;
+    default:
+      return_code = kGeneralError;
+      LOG(kError) << "Error waiting for task " << task->id << " - " << error.message();
+  }
 
-  int return_code(error == boost::asio::error::operation_aborted ? kResponseCancelled :
-                                                                    kResponseTimeout);
-  if (error && error != boost::asio::error::operation_aborted)
-    LOG(kError) << "Error waiting for task " << task_id << " - " << error.message();
-  asio_service_.service().dispatch([=] { task->functor(return_code, task->responses); });  // NOLINT (Fraser)
+  asio_service_.service().dispatch([=] {
+    if (task->functor)
+      task->functor(return_code, task->responses);
+    std::lock_guard<std::mutex> lock(mutex_);
+    auto itr(FindTask(task_id));
+    if (itr != tasks_.end()) {
+      tasks_.erase(itr);
+      cond_var_.notify_one();
+    }
+  });
 }
 
-void Timer::ExecuteTask(protobuf::Message& message) {
-  if (!message.has_id()) {
+void Timer::CancelTask(TaskId task_id) {
+  std::lock_guard<std::mutex> lock(mutex_);
+  auto itr(FindTask(task_id));
+  if (itr == tasks_.end()) {
+    LOG(kWarning) << "Task " << task_id << " not held by Timer.";
+    return;
+  }
+  (*itr)->timer.cancel();
+}
+
+void Timer::AddResponse(const protobuf::Message& response) {
+  if (!response.has_id()) {
     LOG(kError) << "Received response with no ID.  Abort message handling.";
     return;
   }
 
-  TaskPtr task;
-  {
-    std::lock_guard<std::mutex> lock(mutex_);
-    auto const itr =
-        std::find_if(tasks_.begin(),
-                    tasks_.end(),
-                    [&message](const TaskPtr& task) { return task->id == message.id(); });  // NOLINT (Fraser)
-    if (itr == tasks_.end()) {
-      LOG(kWarning) << "Attempted to execute expired or non-existent task " << message.id();
-      return;
-    }
-    task = *itr;
-
-    task->responses.emplace_back(message.data(0));
-
-    if (static_cast<int>(task->responses.size()) >= task->expected_count) {
-      LOG(kVerbose) << "Executing task " << message.id();
-      tasks_.erase(itr);
-    } else {
-      LOG(kVerbose) << "Recieved " << task->responses.size() << " response(s). Waiting for "
-                    << (task->expected_count - task->responses.size())
-                    << " responses for Task id "
-                    << message.id();
-    }
+  std::lock_guard<std::mutex> lock(mutex_);
+  auto itr(FindTask(response.id()));
+  if (itr == tasks_.end()) {
+    LOG(kWarning) << "Attempted to AddResponse to expired or non-existent task " << response.id();
+    return;
   }
 
-  if (!task->functor)
-    return;
+  (*itr)->responses.emplace_back(response.data(0));
 
-  if (static_cast<int>(task->responses.size()) >= task->expected_count) {
-    asio_service_.service().dispatch([=] { task->functor(kSuccess, task->responses); });  // NOLINT (Fraser)
+  if ((*itr)->responses.size() == (*itr)->expected_response_count) {
+    LOG(kVerbose) << "Executing task " << response.id();
+    (*itr)->timer.cancel();
+  } else {
+    LOG(kVerbose) << "Received " << (*itr)->responses.size() << " response(s). Waiting for "
+                  << ((*itr)->expected_response_count - (*itr)->responses.size())
+                  << " responses for task " << response.id();
   }
 }
 

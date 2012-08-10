@@ -268,7 +268,7 @@ TYPED_TEST_P(RoutingNetworkTest, DISABLED_FUNC_RecursiveCall) {
 
 REGISTER_TYPED_TEST_CASE_P(RoutingNetworkTest, FUNC_Send, FUNC_ClientSend,
                            FUNC_SendMulti, FUNC_ClientSendMulti, FUNC_SendToGroup,
-                           FUNC_SendToGroupRandomId, FUNC_RecursiveCall);
+                           FUNC_SendToGroupRandomId, DISABLED_FUNC_RecursiveCall);
 INSTANTIATE_TYPED_TEST_CASE_P(MAIDSAFE, RoutingNetworkTest, TestNode);
 
 }  // namespace test

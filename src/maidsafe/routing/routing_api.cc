@@ -406,7 +406,7 @@ void Routing::Send(const NodeId& destination_id,
                                                  Parameters::node_group_size));
   } else {
     if (response_functor)
-      proto_message.set_id(impl_->timer_.AddTask(timeout, response_functor));
+      proto_message.set_id(impl_->timer_.AddTask(timeout, response_functor, 1));
   }
 
   proto_message.set_replication(replication);
