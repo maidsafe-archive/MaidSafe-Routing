@@ -454,7 +454,8 @@ void Routing::ReceiveMessage(const std::string& message, std::weak_ptr<RoutingPr
     LOG(kInfo) << "This node [" << HexSubstr(pimpl->keys_.identity) << "] received message type: "
                << protobuf_message.type() << " from "
                << (relay_message ? HexSubstr(protobuf_message.relay_id()) + " -- RELAY REQUEST" :
-                                   HexSubstr(protobuf_message.source_id()));
+                                   HexSubstr(protobuf_message.source_id()))
+                << " id: " << protobuf_message.id();
     pimpl->message_handler_->HandleMessage(protobuf_message);
   } else {
     LOG(kWarning) << "Message received, failed to parse";

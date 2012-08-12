@@ -16,6 +16,7 @@
 #include <cstdint>
 #include <mutex>
 #include <vector>
+#include <string>
 
 #include "boost/asio/ip/udp.hpp"
 #include "boost/filesystem/path.hpp"
@@ -51,6 +52,8 @@ class RoutingTable {
   bool ConfirmGroupMembers(const NodeId& node1, const NodeId& node2);
   // Returns default-constructed NodeId if routing table size is zero
   NodeInfo GetClosestNode(const NodeId& target_id, bool ignore_exact_match = false);
+  NodeInfo GetClosestNode(const NodeId& target_id, const std::vector<std::string>& exclude,
+                          bool ignore_exact_match = false);
   // Returns max NodeId if routing table size is less than requested node_number
   NodeInfo GetNthClosestNode(const NodeId& target_id, const uint16_t& node_number);
   std::vector<NodeId> GetClosestNodes(const NodeId& target_id, const uint16_t& number_to_get);
@@ -75,7 +78,8 @@ class RoutingTable {
   void PartialSortFromTarget(const NodeId& target, const uint16_t& number);
   void NthElementSortFromTarget(const NodeId& target, const uint16_t& nth_element);
   NodeId FurthestCloseNode();
-  std::vector<NodeInfo> GetClosestNodeInfo(const NodeId& from, const uint16_t& number_to_get);
+  std::vector<NodeInfo> GetClosestNodeInfo(const NodeId& from, const uint16_t& number_to_get,
+                                           bool ignore_exact_match = false);
   void update_network_status() const;
 
   const uint16_t max_size_;

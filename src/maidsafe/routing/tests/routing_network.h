@@ -45,8 +45,8 @@ namespace test {
   const uint32_t kClientSize(8);
   const uint32_t kServerSize(8);
 #else
-  const uint32_t kClientSize(6);
-  const uint32_t kServerSize(6);
+  const uint32_t kClientSize(8);
+  const uint32_t kServerSize(8);
 #endif
 
 const uint32_t kNetworkSize = kClientSize + kServerSize;
@@ -136,6 +136,8 @@ class GenericNetwork : public testing::Test {
     EXPECT_EQ(kSuccess, f2.get());
     EXPECT_EQ(kSuccess, f1.get());
     LOG(kVerbose) << "Setup succeeded";
+//    node1->PrintRoutingTable();
+//    node2->PrintRoutingTable();
   }
 
   virtual void TearDown() {
@@ -147,12 +149,14 @@ class GenericNetwork : public testing::Test {
       NodePtr node(new NodeType(false));
       AddNodeDetails(node);
       LOG(kVerbose) << "Node # " << nodes_.size() << " added to network";
+//      node->PrintRoutingTable();
     }
     for (size_t index = 0; index < client_size; ++index) {
       NodePtr node(new NodeType(true));
       AddNodeDetails(node);
       LOG(kVerbose) << "Node # " << nodes_.size() << " added to network";
     }
+    PrintRoutingTables();
   }
 
   void AddNode(const bool& client_mode, const NodeId& node_id) {
@@ -161,6 +165,8 @@ class GenericNetwork : public testing::Test {
       node_info.node_info.node_id = node_id;
     NodePtr node(new NodeType(client_mode, node_info));
     AddNodeDetails(node);
+    LOG(kVerbose) << "Node # " << nodes_.size() << " added to network";
+//    node->PrintRoutingTable();
   }
 
   bool RemoveNode(const NodeId& node_id) {

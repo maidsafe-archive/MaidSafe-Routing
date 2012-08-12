@@ -53,6 +53,7 @@ message Message {
   optional Endpoint relay = 13;
   optional bool closest_to_this_node = 14;
   optional bool close_to_this_node = 15;
+  repeated bytes route_history = 16;
 }
 
 message SignedMessage {

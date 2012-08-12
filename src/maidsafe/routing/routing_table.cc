@@ -14,7 +14,6 @@
 
 #include <thread>
 #include <algorithm>
-#include <string>
 
 #include "maidsafe/common/log.h"
 #include "maidsafe/common/utils.h"
@@ -322,6 +321,26 @@ NodeInfo RoutingTable::GetClosestNode(const NodeId& target_id, bool ignore_exact
   return nodes_[0];
 }
 
+NodeInfo RoutingTable::GetClosestNode(const NodeId& target_id,
+                                      const std::vector<std::string>& exclude,
+                                      bool ignore_exact_match) {
+  std::lock_guard<std::mutex> lock(mutex_);
+  std::vector<NodeInfo> closest_nodes(GetClosestNodeInfo(target_id,
+                                                         Parameters::closest_nodes_size,
+                                                         ignore_exact_match));
+  if (closest_nodes.empty())
+    return NodeInfo();
+
+  if (exclude.empty())
+    return closest_nodes[0];
+
+  for (auto node_info : closest_nodes) {
+    if (std::find(exclude.begin(), exclude.end(), node_info.node_id.String()) == exclude.end())
+      return node_info;
+  }
+  return NodeInfo();
+}
+
 NodeInfo RoutingTable::GetNthClosestNode(const NodeId& target_id, const uint16_t& node_number) {
   assert((node_number > 0) && "Node number starts with position 1");
   std::lock_guard<std::mutex> lock(mutex_);
@@ -350,11 +369,22 @@ std::vector<NodeId> RoutingTable::GetClosestNodes(const NodeId& target_id,
 }
 
 std::vector<NodeInfo> RoutingTable::GetClosestNodeInfo(const NodeId& from,
-                                                       const uint16_t& number_to_get) {
-  std::vector<NodeInfo>close_nodes;
+                                                       const uint16_t& number_to_get,
+                                                       bool ignore_exact_match) {
+  std::vector<NodeInfo> close_nodes;
+  bool exact_match_exist(false);
   uint16_t count = std::min(number_to_get, static_cast<uint16_t>(nodes_.size()));
+  if (ignore_exact_match && (nodes_.size() > count))
+    if (std::find_if(nodes_.begin(), nodes_.end(),
+                     [&](const NodeInfo& node_info) {
+                       return node_info.node_id == from;
+                     }) != nodes_.end()) {
+      count++;
+      exact_match_exist = true;
+    }
   PartialSortFromTarget(from, count);
-  for (unsigned int i = 0; i < count; ++i)
+  for (uint16_t i = static_cast<uint16_t>(ignore_exact_match && exact_match_exist);
+       i < count; ++i)
     close_nodes.push_back(nodes_[i]);
 
   return close_nodes;

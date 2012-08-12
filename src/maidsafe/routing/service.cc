@@ -54,6 +54,7 @@ void Ping(RoutingTable& routing_table, protobuf::Message& message) {
   ping_response.set_original_signature(message.signature());
   ping_response.set_timestamp(GetTimeStamp());
   message.set_type(static_cast<int32_t>(MessageType::kPingResponse));
+  message.clear_route_history();
   message.clear_data();
   message.add_data(ping_response.SerializeAsString());
   message.set_destination_id(message.source_id());
@@ -142,6 +143,7 @@ void Connect(RoutingTable& routing_table,
   connect_response.set_timestamp(GetTimeStamp());
   connect_response.set_original_request(message.data(0));
   connect_response.set_original_signature(message.signature());
+  message.clear_route_history();
   message.clear_data();
   message.add_data(connect_response.SerializeAsString());
   message.set_direct(static_cast<int32_t>(ConnectType::kSingle));
@@ -191,6 +193,7 @@ void FindNodes(RoutingTable& routing_table, protobuf::Message& message) {
     LOG(kVerbose) << "Relay message, so not setting destination ID.";
   }
   message.set_source_id(routing_table.kKeys().identity);
+  message.clear_route_history();
   message.clear_data();
   message.add_data(found_nodes.SerializeAsString());
   message.set_direct(static_cast<int32_t>(ConnectType::kSingle));
@@ -235,6 +238,7 @@ void ProxyConnect(RoutingTable& routing_table,
       proxy_connect_response.set_result(protobuf::kFailure);
   }
   message.set_type(static_cast<int32_t>(MessageType::kProxyConnectResponse));
+  message.clear_route_history();
   message.clear_data();
   message.add_data(proxy_connect_response.SerializeAsString());
   message.set_direct(static_cast<int32_t>(ConnectType::kSingle));
