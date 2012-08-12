@@ -106,7 +106,7 @@ TEST(RoutingTableTest, BEH_CloseAndInRangeCheck) {
   EXPECT_TRUE(RT.ConfirmGroupMembers(my_closest_node,
                 RT.GetNthClosestNode(my_closest_node, Parameters::closest_nodes_size - 1).node_id));
   EXPECT_FALSE(RT.ConfirmGroupMembers(my_closest_node, RT.GetNthClosestNode(my_closest_node,
-                                     Parameters::closest_nodes_size + 1).node_id));
+                                     Parameters::closest_nodes_size + 2).node_id));
   EXPECT_TRUE(RT.IsThisNodeClosestTo(my_closest_node));
   EXPECT_EQ(RT.Size(), Parameters::max_routing_table_size);
   // get closest nodes to me
