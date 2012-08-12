@@ -184,7 +184,7 @@ TYPED_TEST_CASE_P(RoutingNetworkTest);
 
 TYPED_TEST_P(RoutingNetworkTest, FUNC_Send) {
   this->SetUpNetwork(kNetworkSize);
-//  EXPECT_TRUE(this->Send(1));
+  EXPECT_TRUE(this->Send(1));
 }
 
 TYPED_TEST_P(RoutingNetworkTest, FUNC_ClientSend) {
