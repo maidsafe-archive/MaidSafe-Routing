@@ -228,12 +228,17 @@ void NetworkUtils::RecursiveSendOn(protobuf::Message message,
   if (attempt_count > 0)
     Sleep(bptime::milliseconds(50));
 
+  const std::string kThisId(HexSubstr(routing_table_.kKeys().identity));
+
   bool ignore_exact_match(!IsDirect(message));
 
   std::vector<std::string> route_history;
   if (message.route_history().size() > 1)
     route_history = std::vector<std::string>(message.route_history().begin(),
                                              message.route_history().end() - 1);
+  else if ((message.route_history().size() == 1) &&
+           (message.route_history(0) != routing_table_.kKeys().identity))
+    route_history.push_back(message.route_history(0));
   auto closest_node(routing_table_.GetClosestNode(NodeId(message.destination_id()), route_history,
                                                   ignore_exact_match));
   if (closest_node.node_id == NodeId()) {
@@ -243,7 +248,6 @@ void NetworkUtils::RecursiveSendOn(protobuf::Message message,
 
   AdjustRouteHistory(message);
 
-  const std::string kThisId(HexSubstr(routing_table_.kKeys().identity));
   rudp::MessageSentFunctor message_sent_functor = [=](int message_sent) {
       if (rudp::kSuccess == message_sent) {
         LOG(kInfo) << "Type " << message.type() << " message successfully sent from "
