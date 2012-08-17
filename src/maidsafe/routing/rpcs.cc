@@ -50,6 +50,7 @@ protobuf::Message Ping(const NodeId& node_id, const std::string& identity) {
 protobuf::Message Connect(const NodeId& node_id,
                           const rudp::EndpointPair& our_endpoint,
                           const NodeId& my_node_id,
+                          const std::vector<std::string>& exclude_ids,
                           bool client_node,
                           bool relay_message,
                           boost::asio::ip::udp::endpoint local_endpoint) {
@@ -67,6 +68,8 @@ protobuf::Message Connect(const NodeId& node_id,
   private_endpoint->set_ip(our_endpoint.local.address().to_string());
   private_endpoint->set_port(our_endpoint.local.port());
   contact->set_node_id(my_node_id.String());
+  for (auto node_id : exclude_ids)
+    protobuf_connect_request.add_exclude_id(node_id);
   protobuf_connect_request.set_timestamp(GetTimeStamp());
   message.set_destination_id(node_id.String());
   message.add_data(protobuf_connect_request.SerializeAsString());
@@ -74,6 +77,7 @@ protobuf::Message Connect(const NodeId& node_id,
   message.set_replication(1);
   message.set_type(static_cast<int32_t>(MessageType::kConnectRequest));
   message.set_id(0);
+  message.set_id(RandomUint32() % 10000);
   message.set_client_node(client_node);
 
   if (!relay_message) {
@@ -108,6 +112,7 @@ protobuf::Message FindNodes(const NodeId& node_id,
   message.set_replication(1);
   message.set_type(static_cast<int32_t>(MessageType::kFindNodesRequest));
   message.set_id(0);
+  message.set_id(RandomUint32() % 10000);
   message.add_route_history(my_node_id.String());
   message.set_client_node(false);
   if (!relay_message) {

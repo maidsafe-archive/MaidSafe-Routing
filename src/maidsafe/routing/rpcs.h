@@ -14,6 +14,7 @@
 #define MAIDSAFE_ROUTING_RPCS_H_
 
 #include <string>
+#include <vector>
 
 #include "boost/asio/ip/udp.hpp"
 
@@ -38,6 +39,7 @@ protobuf::Message Connect(
     const NodeId& node_id,
     const rudp::EndpointPair& our_endpoint,
     const NodeId& my_node_id,
+    const std::vector<std::string>& exclude_ids = std::vector<std::string>(),
     bool client_node = false,
     bool relay_message = false,
     boost::asio::ip::udp::endpoint local_endpoint = boost::asio::ip::udp::endpoint());

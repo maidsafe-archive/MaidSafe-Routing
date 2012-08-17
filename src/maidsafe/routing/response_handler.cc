@@ -13,6 +13,8 @@
 #include "maidsafe/routing/response_handler.h"
 
 #include<memory>
+#include<vector>
+#include<string>
 
 #include "maidsafe/common/log.h"
 #include "maidsafe/common/utils.h"
@@ -106,6 +108,44 @@ void ResponseHandler::Connect(protobuf::Message& message) {
                          });
     request_public_key_functor_(NodeId(connect_response.contact().node_id()), validate_node);
   }
+//  Sleep(boost::posix_time::microseconds(1000)); // To allow connection added to RT
+  for (int i = 0; i < connect_response.close_id_size(); ++i) {
+    NodeInfo node_to_add;
+    node_to_add.node_id = NodeId(connect_response.close_id(i));
+    if (node_to_add.node_id == NodeId(routing_table_.kKeys().identity))
+      continue;  // TODO(Prakash): FIXME handle collision and return kIdCollision on join()
+    if (routing_table_.CheckNode(node_to_add)) {
+      LOG(kVerbose) << "CheckNode succeeded for node " << HexSubstr(node_to_add.node_id.String());
+      Endpoint direct_endpoint;
+      bool routing_table_empty(routing_table_.Size() == 0);
+      if (routing_table_empty)  // Joining the network, and may connect to bootstrapping node.
+        direct_endpoint = network_.bootstrap_endpoint();
+      rudp::EndpointPair endpoint;
+      if (kSuccess != network_.GetAvailableEndpoint(direct_endpoint, endpoint)) {
+        LOG(kWarning) << "Failed to get available endpoint for new connections";
+        return;
+      }
+      Endpoint relay_endpoint;
+      bool relay_message(false);
+      if (routing_table_empty) {
+        // Not in any peer's routing table, need a path back through relay IP.
+        relay_endpoint = network_.this_node_relay_endpoint();
+        relay_message = true;
+      }
+      LOG(kVerbose) << "Sending Connect RPC to " << HexSubstr(connect_response.close_id(i));
+      protobuf::Message connect_rpc(rpcs::Connect(NodeId(connect_response.close_id(i)),
+                                    endpoint,
+                                    NodeId(routing_table_.kKeys().identity),
+                                    std::vector<std::string>(),
+                                    routing_table_.client_mode(),
+                                    relay_message,
+                                    relay_endpoint));
+      if (routing_table_empty)
+        network_.SendToDirectEndpoint(connect_rpc, network_.bootstrap_endpoint());
+      else
+        network_.SendToClosestNode(connect_rpc);
+    }
+  }
 }
 
 void ResponseHandler::FindNodes(const protobuf::Message& message) {
@@ -157,6 +197,8 @@ void ResponseHandler::FindNodes(const protobuf::Message& message) {
       protobuf::Message connect_rpc(rpcs::Connect(NodeId(find_nodes.nodes(i)),
                                     endpoint,
                                     NodeId(routing_table_.kKeys().identity),
+                                    std::vector<std::string>(find_nodes.nodes().begin(),
+                                                             find_nodes.nodes().end()),
                                     routing_table_.client_mode(),
                                     relay_message,
                                     relay_endpoint));
