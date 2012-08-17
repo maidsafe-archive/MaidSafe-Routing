@@ -144,13 +144,13 @@ void Connect(RoutingTable& routing_table,
   connect_response.set_original_request(message.data(0));
   connect_response.set_original_signature(message.signature());
   NodeId source((message.has_relay() ? message.relay_id() : message.source_id()));
-  if (connect_request.exclude_id_size() > 0) {
+  if (connect_request.closest_id_size() > 0) {
     for (auto node_id : routing_table.GetClosestNodes(source, Parameters::closest_nodes_size - 1)) {
-      if (std::find(connect_request.exclude_id().begin(), connect_request.exclude_id().end(),
-                    node_id.String()) == connect_request.exclude_id().end() &&
+      if (std::find(connect_request.closest_id().begin(), connect_request.closest_id().end(),
+                    node_id.String()) == connect_request.closest_id().end() &&
            NodeId::CloserToTarget(node_id,
-               NodeId(connect_request.exclude_id(connect_request.exclude_id_size() - 1)), source))
-        connect_response.add_close_id(node_id.String());
+               NodeId(connect_request.closest_id(connect_request.closest_id_size() - 1)), source))
+        connect_response.add_closer_id(node_id.String());
     }
   }
   message.clear_route_history();

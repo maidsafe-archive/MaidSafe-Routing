@@ -66,7 +66,7 @@ message ConnectRequest {
   required Contact contact = 1;
   optional bool bootstrap = 2;
   required int32 timestamp = 3;
-  repeated bytes exclude_id = 4;
+  repeated bytes closest_id = 4;
 }
 
 message ConnectResponse {
@@ -76,7 +76,7 @@ message ConnectResponse {
   required int32 timestamp = 4;
   required bytes original_request = 5;
   required bytes original_signature = 6;
-  repeated bytes close_id = 7;
+  repeated bytes closer_id = 7;
 }
 
 message FindNodesRequest {
