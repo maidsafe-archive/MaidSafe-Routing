@@ -110,32 +110,13 @@ void ResponseHandler::Connect(protobuf::Message& message) {
     request_public_key_functor_(NodeId(connect_response.contact().node_id()), validate_node);
   }
 
-  auto closest_nodes(routing_table_.GetClosestNodes(NodeId(routing_table_.kKeys().identity),
-                                                    Parameters::closest_nodes_size));
-  if (std::find(closest_nodes.begin(), closest_nodes.end(),
-                NodeId(message.source_id())) == closest_nodes.end()) {
-    if (closest_nodes.size() == Parameters::closest_nodes_size) {
-      if (NodeId::CloserToTarget(NodeId(message.source_id()),
-                                        closest_nodes.at(closest_nodes.size() - 1),
-                                        NodeId(routing_table_.kKeys().identity))) {
-        closest_nodes[closest_nodes.size() - 1] = NodeId(message.source_id());
-        std::sort(closest_nodes.begin(), closest_nodes.end(),
-                  [=](const NodeId& lhs, const NodeId& rhs)->bool {
-                    return NodeId::CloserToTarget(lhs, rhs,
-                                                  NodeId(routing_table_.kKeys().identity));
-                  });
-      }
-    } else {
-      closest_nodes.push_back(NodeId(message.source_id()));
-    }
-  }
+  std::vector<std::string> closest_nodes(connect_request.closest_id().begin(),
+                                         connect_request.closest_id().end());
+  closest_nodes.push_back(message.source_id());
 
-  std::vector<std::string> closest_nodes_string;
-  for (auto node_id : closest_nodes)
-    closest_nodes_string.push_back(node_id.String());
   ConnectTo(std::vector<std::string>(connect_response.closer_id().begin(),
-                                     connect_response.closer_id().begin()),
-            closest_nodes_string);
+                                     connect_response.closer_id().end()),
+            closest_nodes);
 }
 
 void ResponseHandler::FindNodes(const protobuf::Message& message) {
@@ -165,6 +146,27 @@ void ResponseHandler::FindNodes(const protobuf::Message& message) {
 
 void ResponseHandler::ConnectTo(const std::vector<std::string>& nodes,
                                 const std::vector<std::string>& closest_nodes) {
+  std::vector<std::string> closest_node_ids;
+  auto routing_table_closest_nodes(routing_table_.GetClosestNodes(
+                                       NodeId(routing_table_.kKeys().identity),
+                                       Parameters::closest_nodes_size));
+
+  for (auto node_id : routing_table_closest_nodes)
+    closest_node_ids.push_back(node_id.String());
+
+  closest_node_ids.insert(closest_node_ids.end(),
+                          closest_nodes.begin(),
+                          closest_nodes.end());
+
+  std::sort(closest_node_ids.begin(), closest_node_ids.end(),
+            [=](const std::string& lhs, const std::string& rhs)->bool {
+              return NodeId::CloserToTarget(NodeId(lhs), NodeId(rhs),
+                                            NodeId(routing_table_.kKeys().identity));
+            });
+  auto iter(std::unique(closest_node_ids.begin(), closest_node_ids.end()));
+  closest_node_ids.resize(
+      std::min(static_cast<uint16_t>(std::distance(iter, closest_node_ids.begin())),
+                                     Parameters::closest_nodes_size));
   for (uint16_t i = 0; i < nodes.size(); ++i) {
     NodeInfo node_to_add;
     node_to_add.node_id = NodeId(nodes.at(i));
@@ -192,7 +194,7 @@ void ResponseHandler::ConnectTo(const std::vector<std::string>& nodes,
       protobuf::Message connect_rpc(rpcs::Connect(NodeId(nodes.at(i)),
                                     endpoint,
                                     NodeId(routing_table_.kKeys().identity),
-                                    closest_nodes,
+                                    closest_node_ids,
                                     routing_table_.client_mode(),
                                     relay_message,
                                     relay_endpoint));

@@ -143,15 +143,12 @@ TYPED_TEST_P(FindNodeNetwork, FUNC_VaultFindVaultNode) {
   EXPECT_TRUE(this->nodes_[source]->RoutingTableHasNode(this->nodes_[dest]->node_id()));
 
   EXPECT_TRUE(this->nodes_[dest]->DropNode(this->nodes_[source]->node_id()));
-//  EXPECT_TRUE(this->nodes_[source]->DropNode(this->nodes_[dest]->node_id()));
-  Sleep(boost::posix_time::seconds(2));
-  EXPECT_FALSE(this->nodes_[source]->RoutingTableHasNode(this->nodes_[dest]->node_id()));
+
+  Sleep(boost::posix_time::seconds(3));
 
   EXPECT_TRUE(this->Find(this->nodes_[source], this->nodes_[dest]->node_id()));
-  Sleep(boost::posix_time::seconds(5));
 
   LOG(kVerbose) << "after find " << HexSubstr(this->nodes_[dest]->node_id().String());
-//  this->nodes_[source]->PrintRoutingTable();
   EXPECT_TRUE(this->nodes_[source]->RoutingTableHasNode(this->nodes_[dest]->node_id()));
 }
 
@@ -168,8 +165,6 @@ TYPED_TEST_P(FindNodeNetwork, FUNC_VaultFindClientNode) {
   EXPECT_TRUE(this->nodes_[dest]->RoutingTableHasNode(this->nodes_[source]->node_id()));
   EXPECT_FALSE(this->nodes_[source]->RoutingTableHasNode(this->nodes_[dest]->node_id()));
   EXPECT_TRUE(this->nodes_[source]->NonRoutingTableHasNode(this->nodes_[dest]->node_id()));
-  EXPECT_FALSE(this->nodes_[1]->RoutingTableHasNode(this->nodes_[dest]->node_id()));
-  EXPECT_TRUE(this->nodes_[1]->NonRoutingTableHasNode(this->nodes_[dest]->node_id()));
 
   // clear up
   EXPECT_TRUE(this->nodes_[dest]->DropNode(this->nodes_[source]->node_id()));
@@ -201,8 +196,6 @@ TYPED_TEST_P(FindNodeNetwork, FUNC_ClientFindVaultNode) {
   EXPECT_TRUE(this->nodes_[client]->RoutingTableHasNode(this->nodes_[source]->node_id()));
   EXPECT_FALSE(this->nodes_[source]->RoutingTableHasNode(this->nodes_[client]->node_id()));
   EXPECT_TRUE(this->nodes_[source]->NonRoutingTableHasNode(this->nodes_[client]->node_id()));
-  EXPECT_FALSE(this->nodes_[1]->RoutingTableHasNode(this->nodes_[client]->node_id()));
-  EXPECT_TRUE(this->nodes_[1]->NonRoutingTableHasNode(this->nodes_[client]->node_id()));
 
   EXPECT_FALSE(this->nodes_[client]->RoutingTableHasNode(this->nodes_[vault]->node_id()));
   EXPECT_FALSE(this->nodes_[vault]->RoutingTableHasNode(this->nodes_[client]->node_id()));

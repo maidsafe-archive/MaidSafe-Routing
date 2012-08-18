@@ -97,10 +97,9 @@ NodeId GenerateUniqueRandomId(const NodeId& holder, const uint16_t& pos) {
   new_node = NodeId(NodeId::kRandomId);
   std::string new_id = new_node.ToStringEncoded(NodeId::kBinary);
   std::bitset<64*8> binary_bitset(new_id);
-  for (uint16_t i = kKeySizeBits - 1; i >= pos; --i)
-    binary_bitset[i] = holder_id_binary_bitset[i];
-  binary_bitset[pos].flip();
-  new_node_string = binary_bitset.to_string();
+  for (uint16_t i(0); i < pos; ++i)
+    holder_id_binary_bitset[i] = binary_bitset[i];
+  new_node_string = holder_id_binary_bitset.to_string();
   new_node = NodeId(new_node_string, NodeId::kBinary);
   return new_node;
 }
