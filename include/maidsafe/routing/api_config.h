@@ -48,8 +48,7 @@ typedef std::function<void(const int& /*return code*/,
 typedef std::function<void(const std::string& /*message*/)> ReplyFunctor;
 
 // This is called on any message received that is NOT a reply to a request made by the Send method.
-typedef std::function<void(const int32_t& /*mesasge type*/,
-                           const std::string& /*message*/,
+typedef std::function<void(const std::string& /*message*/,
                            const NodeId& /*group id*/,
                            ReplyFunctor /*reply functor*/)> MessageReceivedFunctor;
 

@@ -34,16 +34,10 @@ class RoutingTable;
 class Timer;
 
 enum class MessageType : int32_t {
-  kPingRequest = 1,
-  kPingResponse = -kPingRequest,
-  kConnectRequest = 2,
-  kConnectResponse = -kConnectRequest,
-  kFindNodesRequest = 3,
-  kFindNodesResponse = -kFindNodesRequest,
-  kProxyConnectRequest = 4,
-  kProxyConnectResponse = -kProxyConnectRequest,
-  kMaxRouting = 100,
-  kMinRouting = -kMaxRouting
+  kPing = 1,
+  kConnect = 2,
+  kFindNodes = 3,
+  kProxyConnect = 4,
 };
 
 class MessageHandler {

@@ -46,14 +46,15 @@ message Message {
   optional bytes signature = 6;
   required int32 direct = 7;
   optional int32 replication = 8;
-  required sint32 type = 9; // type of data - used in signal to upper layers
+  optional sint32 type = 9; // type of data - used in signal to upper layers
   optional bool cacheable = 10;
   optional int32 id = 11;
-  optional bool client_node = 12;
+  required bool client_node = 12;
   optional Endpoint relay = 13;
   optional bool closest_to_this_node = 14;
   optional bool close_to_this_node = 15;
   repeated bytes route_history = 16;
+  required bool request = 17;
 }
 
 message SignedMessage {

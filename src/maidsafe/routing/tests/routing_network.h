@@ -76,10 +76,10 @@ class GenericNode {
   void Send(const NodeId& destination_id,
             const NodeId& group_id,
             const std::string& data,
-            const int32_t& type,
             const ResponseFunctor response_functor,
             const boost::posix_time::time_duration& timeout,
-            const ConnectType& connect_type);
+            const ConnectType& connect_type,
+            bool cache);
   void PrintRoutingTable();
   void RudpSend(const boost::asio::ip::udp::endpoint& peer_endpoint,
                 const protobuf::Message& message,

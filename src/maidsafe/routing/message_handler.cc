@@ -43,59 +43,28 @@ MessageHandler::MessageHandler(AsioService& asio_service,
                                             non_routing_table, network_)),
       message_received_functor_() {}
 
-bool MessageHandler::CheckCacheData(protobuf::Message& message) {
-  if (message.type() == static_cast<int32_t>(MessageType::kMinRouting)) {
-    cache_manager_.AddToCache(message);
-  } else if (message.type() == static_cast<int32_t>(MessageType::kMaxRouting)) {
-    if (cache_manager_.GetFromCache(message)) {
-      message.set_source_id(routing_table_.kKeys().identity);
-      network_.SendToClosestNode(message);
-      return true;
-    }
-  } else {
-    return false;  // means this message is not finished processing
-  }
-  return false;
-}
-
 void MessageHandler::HandleRoutingMessage(protobuf::Message& message) {
   LOG(kInfo) << "MessageHandler::RoutingMessage" << " id: " << message.id();
-  bool is_response(IsResponse(message));
   switch (static_cast<MessageType>(message.type())) {
-    case MessageType::kPingRequest :
-      service::Ping(routing_table_, message);
+    case MessageType::kPing :
+      message.request() ? service::Ping(routing_table_, message) : response_handler_->Ping(message);
       break;
-    case MessageType::kPingResponse :
-      response_handler_->Ping(message);
+    case MessageType::kConnect :
+      message.request() ? service::Connect(routing_table_, 
+                                           non_routing_table_, 
+                                           network_, 
+                                           message,
+                                           response_handler_->request_public_key_functor()) : 
+                                           response_handler_->Connect(message);
       break;
-    case MessageType::kConnectRequest :
-      service::Connect(routing_table_, non_routing_table_, network_, message,
-                       response_handler_->request_public_key_functor());
+    case MessageType::kFindNodes :
+      message.request() ? service::FindNodes(routing_table_, message) :  response_handler_->FindNodes(message) ;
       break;
-    case MessageType::kConnectResponse :
-      response_handler_->Connect(message);
-      break;
-    case MessageType::kFindNodesRequest :
-      service::FindNodes(routing_table_, message);
-      break;
-    case MessageType::kFindNodesResponse :
-      response_handler_->FindNodes(message);
-      break;
-    case MessageType::kProxyConnectRequest :
-      service::ProxyConnect(routing_table_, network_, message);
-      break;
-    case MessageType::kProxyConnectResponse :
-      response_handler_->ProxyConnect(message);
+    case MessageType::kProxyConnect :
+      message.request() ?  service::ProxyConnect(routing_table_, network_, message) :  response_handler_->ProxyConnect(message);
       break;
     default:  // unknown (silent drop)
       return;
-  }
-  if (is_response)
-    return;
-
-  if (!message.IsInitialized()) {
-    LOG(kWarning) << "Uninitialised message dropped.";
-    return;
   }
 
   if (routing_table_.Size() == 0)  // This node can only send to bootstrap_endpoint
@@ -113,7 +82,7 @@ void MessageHandler::HandleNodeLevelMessageForThisNode(protobuf::Message& messag
         if (reply_message.empty())
           return;
         protobuf::Message message_out;
-        message_out.set_type(-message.type());
+        message_out.set_request(false);
         message_out.set_destination_id(message.source_id());
         message_out.set_direct(static_cast<int32_t>(ConnectType::kSingle));
         message_out.clear_data();
@@ -142,7 +111,7 @@ void MessageHandler::HandleNodeLevelMessageForThisNode(protobuf::Message& messag
     };
 
     if (message_received_functor_)
-      message_received_functor_(static_cast<int>(message.type()), message.data(0), NodeId(),
+      message_received_functor_(message.data(0), NodeId(),
                                 response_functor);
   } else {  // response
     LOG(kInfo) << "Node Level Response for " << HexSubstr(routing_table_.kKeys().identity)
@@ -186,8 +155,7 @@ void MessageHandler::HandleDirectMessageAsClosestNode(protobuf::Message& message
       LOG(kWarning) << "Dropping message. This node ["
                     << HexSubstr(routing_table_.kKeys().identity)
                     << "] is the closest but is not connected to destination node ["
-                    << HexSubstr(message.destination_id()) << "].  Message type: "
-                    << message.type() << ", Src ID: " << HexSubstr(message.source_id())
+                    << HexSubstr(message.destination_id()) << "], Src ID: " << HexSubstr(message.source_id())
                     << ", Relay ID: " << HexSubstr(message.relay_id()) << " id: " << message.id();
       return;
     }
@@ -268,13 +236,6 @@ void MessageHandler::HandleMessage(protobuf::Message& message) {
     return;
   }
 
-  // Invalid destination id, unknown message
-  if (!(NodeId(message.destination_id()).IsValid())) {
-    LOG(kWarning) << "Stray message dropped, need destination ID for processing."
-                  << " id: " << message.id();
-    return;
-  }
-
   // If this node is a client
   if (routing_table_.client_mode())
     return HandleClientMessage(message);
@@ -318,7 +279,8 @@ void MessageHandler::HandleRelayRequest(protobuf::Message& message) {
 
   // If small network yet, this node may be closest.
   if ((routing_table_.Size() <= Parameters::closest_nodes_size) &&
-      (message.type() == static_cast<int32_t>(MessageType::kFindNodesRequest))) {
+      (message.type() == static_cast<int32_t>(MessageType::kFindNodes) &&
+                                              message.request())) {
     service::FindNodes(routing_table_, message);
     return network_.SendToClosestNode(message);
   }
@@ -332,7 +294,7 @@ void MessageHandler::HandleRelayRequest(protobuf::Message& message) {
 bool MessageHandler::IsRelayResponseForThisNode(protobuf::Message& message) {
   if (IsRoutingMessage(message) && message.has_relay_id() &&
       (message.relay_id() == routing_table_.kKeys().identity)) {
-    LOG(kVerbose) << "Relay response through alternative route" << message.id();
+    LOG(kVerbose) << "Relay response through alternative route";
     return true;
   } else {
     return false;
@@ -341,10 +303,10 @@ bool MessageHandler::IsRelayResponseForThisNode(protobuf::Message& message) {
 
 bool MessageHandler::RelayDirectMessageIfNeeded(protobuf::Message& message) {
   assert(message.destination_id() == routing_table_.kKeys().identity);
-  LOG(kVerbose) << "Relaying Direct Message." << " id: " << message.id();
+  LOG(kVerbose) << "Relaying Direct Message.";
 
   if (!message.has_relay_id()) {
-    LOG(kVerbose) << "Message don't have relay ID." << " id: " << message.id();
+    LOG(kVerbose) << "Message don't have relay ID.";
     return false;
   }
 

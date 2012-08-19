@@ -360,10 +360,10 @@ int Routing::GetStatus() const {
 void Routing::Send(const NodeId& destination_id,
                    const NodeId& /*group_id*/,
                    const std::string& data,
-                   const int32_t& type,
                    ResponseFunctor response_functor,
                    const boost::posix_time::time_duration& timeout,
-                   const ConnectType& connect_type) {
+                   const ConnectType& connect_type,
+                   bool cache) {
   if (destination_id.String().empty()) {
     LOG(kError) << "No destination ID, aborted send";
     if (response_functor)
@@ -378,26 +378,20 @@ void Routing::Send(const NodeId& destination_id,
     return;
   }
 
-  if (data.empty() && (type != static_cast<int32_t>(MessageType::kMaxRouting))) {
+  if (data.empty()) {
     LOG(kError) << "No data, aborted send";
     if (response_functor)
       response_functor(kEmptyData, std::vector<std::string>());
     return;
   }
 
-  if (type <= static_cast<int32_t>(MessageType::kMaxRouting)) {
-    LOG(kError) << "Type below 101 not allowed, aborted send";
-    if (response_functor)
-      response_functor(kTypeNotAllowed, std::vector<std::string>());
-    return;
-  }
-
   protobuf::Message proto_message;
   proto_message.set_destination_id(destination_id.String());
   proto_message.add_data(data);
+  proto_message.set_cacheable(cache);
   proto_message.set_direct(static_cast<int32_t>(connect_type));
-  proto_message.set_type(type);
   proto_message.set_client_node(impl_->client_mode_);
+  proto_message.set_request(true);
   uint16_t replication(1);
   if (ConnectType::kGroup == connect_type) {
     replication = Parameters::node_group_size;
