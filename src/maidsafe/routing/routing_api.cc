@@ -456,11 +456,30 @@ void Routing::ReceiveMessage(const std::string& message, std::weak_ptr<RoutingPr
                << (relay_message ? HexSubstr(protobuf_message.relay_id()) + " -- RELAY REQUEST" :
                                    HexSubstr(protobuf_message.source_id()))
                 << " id: " << protobuf_message.id();
+    if (protobuf_message.has_source_id())
+      AddExistingRandomNode(NodeId(protobuf_message.source_id()));
     pimpl->message_handler_->HandleMessage(protobuf_message);
   } else {
     LOG(kWarning) << "Message received, failed to parse";
   }
 }
+
+NodeId Routing::GetRandomExistingNode() {
+  NodeId node;
+  impl_->random_node_queue_.TryPop(node);
+  LOG(kVerbose) << "RandomNodeQueue : Getting node, queue size now " << impl_->random_node_queue_.Size(); 
+  return node;
+}
+
+void Routing::AddExistingRandomNode(NodeId node) {
+  if (node.IsValid()) {
+    impl_->random_node_queue_.Push(node);
+    LOG(kVerbose) << "RandomNodeQueue : Added node, queue size now " << impl_->random_node_queue_.Size(); 
+    }
+  if (impl_->random_node_queue_.Size() > 6)
+    GetRandomExistingNode();
+}
+
 
 void Routing::ConnectionLost(const Endpoint& lost_endpoint, std::weak_ptr<RoutingPrivate> impl) {
   std::shared_ptr<RoutingPrivate> pimpl = impl.lock();

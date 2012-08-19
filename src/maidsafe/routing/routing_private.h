@@ -25,6 +25,7 @@
 #include "boost/filesystem/path.hpp"
 
 #include "maidsafe/common/rsa.h"
+#include "maidsafe/common/safe_queue.h"
 #include "maidsafe/common/asio_service.h"
 #include "maidsafe/rudp/managed_connections.h"
 
@@ -72,6 +73,7 @@ struct RoutingPrivate {
   bool client_mode_;
   bool anonymous_node_;
   Functors functors_;
+  SafeQueue<NodeId> random_node_queue_;
   boost::asio::deadline_timer recovery_timer_;
 };
 
