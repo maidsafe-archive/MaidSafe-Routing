@@ -28,7 +28,6 @@ class TestNode : public GenericNode {
       : GenericNode(client_mode),
         messages_() {
     functors_.message_received = [&](const std::string& message,
-                                     const NodeId& /*group_id*/,
                                      ReplyFunctor reply_functor) {
         LOG(kInfo) << id_ << " -- Received:  message : " << message.substr(0, 10);
         std::lock_guard<std::mutex> guard(mutex_);
@@ -41,9 +40,7 @@ class TestNode : public GenericNode {
   TestNode(bool client_mode, const NodeInfoAndPrivateKey& node_info)
       : GenericNode(client_mode, node_info),
       messages_() {
-    functors_.message_received = [&](const std::string& message,
-                                     const NodeId& /*group_id*/,
-                                     ReplyFunctor reply_functor) {
+    functors_.message_received = [&](const std::string& message, ReplyFunctor reply_functor) {
       LOG(kInfo) << id_ << " -- Received: message : " << message.substr(0, 10);
       std::lock_guard<std::mutex> guard(mutex_);
       messages_.push_back(message);
@@ -87,8 +84,8 @@ class RoutingNetworkTest : public GenericNetwork<NodeType> {
     for (size_t index = 0; index < messages; ++index) {
       for (auto source_node : this->nodes_) {
         for (auto dest_node : this->nodes_) {
-          auto callable = [&] (const int32_t& result, const std::vector<std::string> &message) {
-              if (result != kSuccess)
+          auto callable = [&] (const std::vector<std::string> &message) {
+              if (message.empty())
                 return;
               std::lock_guard<std::mutex> lock(mutex);
               messages_count++;
@@ -145,8 +142,8 @@ class RoutingNetworkTest : public GenericNetwork<NodeType> {
     std::mutex mutex;
     std::condition_variable cond_var;
     for (size_t index = 0; index < messages; ++index) {
-      auto callable = [&] (const int32_t& result, const std::vector<std::string> message) {
-          if ((result != kSuccess) || message.empty())
+      auto callable = [&] (const std::vector<std::string> message) {
+          if (message.empty())
             return;
           std::lock_guard<std::mutex> lock(mutex);
           messages_count++;

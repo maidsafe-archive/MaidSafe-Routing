@@ -366,26 +366,27 @@ void Routing::Send(const NodeId& destination_id,
   if (destination_id.String().empty()) {
     LOG(kError) << "No destination ID, aborted send";
     if (response_functor)
-      response_functor(kInvalidDestinationId, std::vector<std::string>());
+      response_functor(std::vector<std::string>());
     return;
   }
 
   if (data.size() > Parameters::max_data_size) {
     LOG(kError) << "Data size not allowed";
     if (response_functor)
-      response_functor(kDataSizeNotAllowed, std::vector<std::string>());
+      response_functor(std::vector<std::string>());
     return;
   }
 
   if (data.empty()) {
     LOG(kError) << "No data, aborted send";
     if (response_functor)
-      response_functor(kEmptyData, std::vector<std::string>());
+      response_functor(std::vector<std::string>());
     return;
   }
 
   protobuf::Message proto_message;
   proto_message.set_destination_id(destination_id.String());
+  proto_message.set_routing_message(false);
   proto_message.add_data(data);
   proto_message.set_cacheable(cache);
   proto_message.set_direct(direct);

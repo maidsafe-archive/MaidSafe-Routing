@@ -31,17 +31,9 @@ namespace routing {
 class NodeId;
 struct NodeInfo;
 
-// Send method connection types
-enum class ConnectType : int32_t {
-  kSingle = 1,
-  kClosest,
-  kGroup
-};
-
 // If using boost::bind or std::bind, use **shared_from_this** pointers to preserve lifetimes of
 // functors. The ResponseFunctor WILL ensure functors are deleted when the system times out.
-typedef std::function<void(const int& /*return code*/,
-                           const std::vector<std::string>& /*message*/)> ResponseFunctor;
+typedef std::function<void(const std::vector<std::string>& /*message*/)> ResponseFunctor;
 
 // They are passed as a parameter by MessageReceivedFunctor and should be called for responding to
 // the received message. Passing an empty message will mean you don't want to reply.
@@ -49,7 +41,6 @@ typedef std::function<void(const std::string& /*message*/)> ReplyFunctor;
 
 // This is called on any message received that is NOT a reply to a request made by the Send method.
 typedef std::function<void(const std::string& /*message*/,
-                           const NodeId& /*group id*/,
                            ReplyFunctor /*reply functor*/)> MessageReceivedFunctor;
 
 // This is fired to validate a new peer node. User is supposed to validate the node and call

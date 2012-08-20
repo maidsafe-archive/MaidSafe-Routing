@@ -84,8 +84,10 @@ void MessageHandler::HandleNodeLevelMessageForThisNode(protobuf::Message& messag
         protobuf::Message message_out;
         message_out.set_request(false);
         message_out.set_destination_id(message.source_id());
-        message_out.set_direct(static_cast<int32_t>(ConnectType::kSingle));
+        message_out.set_direct(true);
         message_out.clear_data();
+        message_out.set_client_node(message.client_node());
+        message_out.set_routing_message(message.routing_message());
         message_out.add_data(reply_message);
         message_out.set_last_id(routing_table_.kKeys().identity);
         message_out.set_source_id(routing_table_.kKeys().identity);
@@ -111,8 +113,7 @@ void MessageHandler::HandleNodeLevelMessageForThisNode(protobuf::Message& messag
     };
 
     if (message_received_functor_)
-      message_received_functor_(message.data(0), NodeId(),
-                                response_functor);
+      message_received_functor_(message.data(0), response_functor);
   } else {  // response
     LOG(kInfo) << "Node Level Response for " << HexSubstr(routing_table_.kKeys().identity)
                << " from " << HexSubstr(message.source_id()) << " id: " << message.id();
@@ -143,7 +144,7 @@ void MessageHandler::HandleMessageAsClosestNode(protobuf::Message& message) {
 }
 
 void MessageHandler::HandleDirectMessageAsClosestNode(protobuf::Message& message) {
-  assert(message.direct() == static_cast<int32_t>(ConnectType::kSingle));
+  assert(message.direct());
   // Dropping direct messages if this node is closest and destination node is not in routing_table_
   // or non_routing_table_.
   NodeId destination_node_id(message.destination_id());
@@ -165,7 +166,7 @@ void MessageHandler::HandleDirectMessageAsClosestNode(protobuf::Message& message
 }
 
 void MessageHandler::HandleGroupMessageAsClosestNode(protobuf::Message& message) {
-  assert(message.direct() != static_cast<int32_t>(ConnectType::kSingle));
+  assert(!message.direct());
   bool have_node_with_group_id(routing_table_.IsConnected(NodeId(message.destination_id())));
   // This node is not closest to the destination node for non-direct message.
   if (!routing_table_.IsThisNodeClosestTo(NodeId(message.destination_id())) &&
@@ -182,7 +183,7 @@ void MessageHandler::HandleGroupMessageAsClosestNode(protobuf::Message& message)
   }
 
   --replication;  // This node will be one of the group member.
-  message.set_direct(static_cast<int32_t>(ConnectType::kSingle));
+  message.set_direct(true);
   if (have_node_with_group_id)
     ++replication;
   auto close(routing_table_.GetClosestNodes(NodeId(message.destination_id()), replication));

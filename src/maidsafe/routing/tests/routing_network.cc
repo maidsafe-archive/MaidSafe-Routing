@@ -109,9 +109,9 @@ void GenericNode::Send(const NodeId& destination_id,
                        const ResponseFunctor response_functor,
                        const boost::posix_time::time_duration& timeout,
                        bool direct,
-                       bool /* cache */) {
+                       bool cache) {
     routing_->Send(destination_id, data, response_functor,
-                   timeout, true, false);
+                   timeout, direct, cache);
     return;
 }
 

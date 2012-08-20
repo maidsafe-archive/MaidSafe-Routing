@@ -40,21 +40,23 @@ message Bootstrap {
 message Message {
   optional bytes source_id = 1; // in response this is name of data
   optional bytes destination_id = 2;
-  optional bytes last_id = 3;
-  optional bytes relay_id = 4;
-  repeated bytes data = 5; // serialised protobuf - possibly encrypted
-  optional bytes signature = 6;
-  required bool direct = 7;
-  optional int32 replication = 8;
-  optional sint32 type = 9; // type of data - used in signal to upper layers
-  optional bool cacheable = 10;
-  optional int32 id = 11;
-  required bool client_node = 12;
-  optional Endpoint relay = 13;
-  optional bool closest_to_this_node = 14;
-  optional bool close_to_this_node = 15;
-  repeated bytes route_history = 16;
-  required bool request = 17;
+  required bool routing_message = 3;
+  optional bytes last_id = 4;
+  optional bytes relay_id = 5;
+  repeated bytes data = 6; // serialised protobuf - possibly encrypted
+  optional bytes signature = 7;
+  required bool direct = 8;
+  optional int32 replication = 9;
+  optional sint32 type = 10; // type of data - used in signal to upper layers
+  optional bool cacheable = 11;
+  optional int32 id = 12;
+  required bool client_node = 13;
+  optional Endpoint relay = 14;
+  optional bool closest_to_this_node = 15;
+  optional bool close_to_this_node = 16;
+  repeated bytes route_history = 17;
+  required bool request = 18;
+
 }
 
 message SignedMessage {

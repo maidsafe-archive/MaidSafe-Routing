@@ -86,7 +86,7 @@ void ValidatePeer(NetworkUtils& network_,
 }
 
 bool IsRoutingMessage(const protobuf::Message& message) {
-        return message.has_type() && !message.has_id();
+  return message.routing_message();
 }
 
 bool IsNodeLevelMessage(const protobuf::Message& message) {
@@ -102,7 +102,7 @@ bool IsResponse(const protobuf::Message& message) {
 }
 
 bool IsDirect(const protobuf::Message& message) {
-  return (message.direct() == static_cast<int32_t>(ConnectType::kSingle));
+  return message.direct();
 }
 
 bool ValidateMessage(const protobuf::Message &message) {
@@ -145,21 +145,16 @@ bool ValidateMessage(const protobuf::Message &message) {
   }
 
   if (static_cast<MessageType>(message.type()) == MessageType::kConnect)
-    if (message.direct() != static_cast<int32_t>(ConnectType::kSingle)) {
-      LOG(kWarning) << "kConnectRequest type message must be kSingle connect type.";
+    if (!message.direct()) {
+      LOG(kWarning) << "kConnectRequest type message must be direct.";
       return false;
     }
 
   if (static_cast<MessageType>(message.type()) == MessageType::kFindNodes && (message.request() == false))
-    if ((message.direct() != static_cast<int32_t>(ConnectType::kSingle))) {
-      LOG(kWarning) << "kFindNodesResponse type message must be kSingle connect type.";
+    if ((!message.direct())) {
+      LOG(kWarning) << "kFindNodesResponse type message must be direct.";
       return false;
     }
-  
-  if(message.has_id() && message.has_type()) {
-    LOG(kWarning) << "Message cannot have id and type";
-    return false;
-  }
 
   return true;
 }

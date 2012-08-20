@@ -56,8 +56,11 @@ void SortFromThisNode(const NodeId& from, std::vector<NodeInfoAndPrivateKey> nod
 
 TEST(NetworkUtilsTest, BEH_ProcessSendDirectInvalidEndpoint) {
   protobuf::Message message;
+  message.set_routing_message(true);
+  message.set_client_node(false);
   message.add_data("data");
-  message.set_direct(static_cast<int32_t>(ConnectType::kSingle));
+  message.set_request(true);
+  message.set_direct(true);
   message.set_type(10);
   rudp::ManagedConnections rudp;
   asymm::Keys keys(MakeKeys());
@@ -69,8 +72,11 @@ TEST(NetworkUtilsTest, BEH_ProcessSendDirectInvalidEndpoint) {
 
 TEST(NetworkUtilsTest, BEH_ProcessSendUnavailableDirectEndpoint) {
   protobuf::Message message;
+  message.set_routing_message(true);
+  message.set_client_node(false);
+  message.set_request(true);
   message.add_data("data");
-  message.set_direct(static_cast<int32_t>(ConnectType::kSingle));
+  message.set_direct(true);
   message.set_type(10);
   rudp::ManagedConnections rudp;
   asymm::Keys keys(MakeKeys());
@@ -95,10 +101,12 @@ TEST(NetworkUtilsTest, FUNC_ProcessSendDirectEndpoint) {
 
   protobuf::Message sent_message;
   sent_message.set_destination_id(NodeId(RandomString(64)).String());
+  sent_message.set_routing_message(true);
+  sent_message.set_request(true);
   sent_message.add_data(std::string(1024 * 256, 'A'));
-  sent_message.set_direct(static_cast<int32_t>(ConnectType::kSingle));
+  sent_message.set_direct(true);
   sent_message.set_type(10);
-
+  sent_message.set_client_node(false);
 
   rudp::MessageReceivedFunctor message_received_functor2 = [&](const std::string& message) {
       ++message_count_at_node2;
@@ -196,9 +204,11 @@ TEST(NetworkUtilsTest, FUNC_ProcessSendRecursiveSendOn) {
 
   protobuf::Message sent_message;
   sent_message.add_data(std::string(1024 * 256, 'B'));
-  sent_message.set_direct(static_cast<int32_t>(ConnectType::kSingle));
+  sent_message.set_direct(true);
   sent_message.set_type(10);
-
+  sent_message.set_routing_message(true);
+  sent_message.set_request(true);
+  sent_message.set_client_node(false);
   asymm::Keys keys(MakeKeys());
   RoutingTable routing_table(keys, false);
   NonRoutingTable non_routing_table(keys);

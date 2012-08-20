@@ -37,8 +37,9 @@ protobuf::Message Ping(const NodeId& node_id, const std::string& identity) {
   ping_request.set_timestamp(GetTimeStamp());
   message.set_destination_id(node_id.String());
   message.set_source_id(identity);
+  message.set_routing_message(true);
   message.add_data(ping_request.SerializeAsString());
-  message.set_direct(static_cast<int32_t>(ConnectType::kSingle));
+  message.set_direct(true);
   message.set_replication(1);
   message.set_type(static_cast<int32_t>(MessageType::kPing));
   message.set_request(true);
@@ -69,8 +70,9 @@ protobuf::Message Connect(const NodeId& node_id,
   contact->set_node_id(my_node_id.String());
   protobuf_connect_request.set_timestamp(GetTimeStamp());
   message.set_destination_id(node_id.String());
+  message.set_routing_message(true);
   message.add_data(protobuf_connect_request.SerializeAsString());
-  message.set_direct(static_cast<int32_t>(ConnectType::kSingle));
+  message.set_direct(true);
   message.set_replication(1);
   message.set_type(static_cast<int32_t>(MessageType::kConnect));
   message.set_request(true);
@@ -103,8 +105,9 @@ protobuf::Message FindNodes(const NodeId& node_id,
   find_nodes.set_timestamp(GetTimeStamp());
   message.set_last_id(my_node_id.String());
   message.set_destination_id(node_id.String());
+  message.set_routing_message(true);
   message.add_data(find_nodes.SerializeAsString());
-  message.set_direct(static_cast<int32_t>(ConnectType::kGroup));
+  message.set_direct(false);
   message.set_replication(1);
   message.set_type(static_cast<int32_t>(MessageType::kFindNodes));
   message.set_request(true);
@@ -138,8 +141,9 @@ protobuf::Message ProxyConnect(const NodeId& node_id,
   SetProtobufEndpoint(endpoint_pair.local, proxy_connect_request.mutable_local_endpoint());
   SetProtobufEndpoint(endpoint_pair.external, proxy_connect_request.mutable_external_endpoint());
   message.set_destination_id(node_id.String());
+  message.set_routing_message(true);
   message.add_data(proxy_connect_request.SerializeAsString());
-  message.set_direct(static_cast<int32_t>(ConnectType::kSingle));
+  message.set_direct(true);
   message.set_replication(1);
   message.set_type(static_cast<int32_t>(MessageType::kProxyConnect));
   message.set_request(true);
