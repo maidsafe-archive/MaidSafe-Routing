@@ -80,7 +80,7 @@ class RoutingNetworkTest : public GenericNetwork<NodeType> {
     size_t message_id(0), client_size(0), non_client_size(0);
     std::set<size_t> received_ids;
     for (auto node : this->nodes_)
-      (node->client_mode()) ? client_size++ : non_client_size++;
+      (node->IsClient()) ? client_size++ : non_client_size++;
 
     LOG(kVerbose) << "Network node size: " << client_size << " : " << non_client_size;
 
@@ -183,6 +183,10 @@ class RoutingNetworkTest : public GenericNetwork<NodeType> {
 
 TYPED_TEST_CASE_P(RoutingNetworkTest);
 
+TYPED_TEST_P(RoutingNetworkTest, FUNC_SetupNetwork) {
+  this->SetUpNetwork(kNetworkSize);
+}
+
 TYPED_TEST_P(RoutingNetworkTest, FUNC_Send) {
   this->SetUpNetwork(kNetworkSize);
   EXPECT_TRUE(this->Send(1));
@@ -267,7 +271,7 @@ TYPED_TEST_P(RoutingNetworkTest, FUNC_RecursiveCall) {
   this->PrintRoutingTables();
 }
 
-REGISTER_TYPED_TEST_CASE_P(RoutingNetworkTest, FUNC_Send, FUNC_ClientSend,
+REGISTER_TYPED_TEST_CASE_P(RoutingNetworkTest, FUNC_SetupNetwork, FUNC_Send, FUNC_ClientSend,
                            FUNC_SendMulti, FUNC_ClientSendMulti, FUNC_SendToGroup,
                            FUNC_SendToGroupRandomId, FUNC_RecursiveCall);
 INSTANTIATE_TYPED_TEST_CASE_P(MAIDSAFE, RoutingNetworkTest, TestNode);

@@ -114,6 +114,9 @@ void ResponseHandler::Connect(protobuf::Message& message) {
                                          connect_request.closest_id().end());
   closest_nodes.push_back(message.source_id());
 
+  for (auto node_id : connect_response.closer_id())
+    LOG(kVerbose) << "Connecting to closer id: " << HexSubstr(node_id);
+
   ConnectTo(std::vector<std::string>(connect_response.closer_id().begin(),
                                      connect_response.closer_id().end()),
             closest_nodes);
@@ -137,7 +140,8 @@ void ResponseHandler::FindNodes(const protobuf::Message& message) {
 #ifndef NDEBUG
   for (int i = 0; i < find_nodes.nodes_size(); ++i) {
     LOG(kVerbose) << "FindNodes from " << HexSubstr(message.source_id())
-                  << " returned " << HexSubstr(find_nodes.nodes(i));
+                  << " returned " << HexSubstr(find_nodes.nodes(i))
+                  << " id: " << message.id();
   }
 #endif
   ConnectTo(std::vector<std::string>(find_nodes.nodes().begin(), find_nodes.nodes().end()),
@@ -175,7 +179,7 @@ void ResponseHandler::ConnectTo(const std::vector<std::string>& nodes,
     if (routing_table_.CheckNode(node_to_add)) {
       LOG(kVerbose) << "CheckNode succeeded for node " << HexSubstr(node_to_add.node_id.String());
       Endpoint direct_endpoint;
-      bool routing_table_empty(routing_table_.Size() == 0);
+      bool routing_table_empty(true);
       if (routing_table_empty)  // Joining the network, and may connect to bootstrapping node.
         direct_endpoint = network_.bootstrap_endpoint();
       rudp::EndpointPair endpoint;
@@ -196,12 +200,13 @@ void ResponseHandler::ConnectTo(const std::vector<std::string>& nodes,
                                     NodeId(routing_table_.kKeys().identity),
                                     closest_node_ids,
                                     routing_table_.client_mode(),
-                                    relay_message,
+                                    true,
                                     relay_endpoint));
       if (routing_table_empty)
         network_.SendToDirectEndpoint(connect_rpc, network_.bootstrap_endpoint());
       else
-        network_.SendToClosestNode(connect_rpc);
+        network_.SendToDirectEndpoint(connect_rpc, network_.bootstrap_endpoint());
+//        network_.SendToClosestNode(connect_rpc);
     }
   }
 }

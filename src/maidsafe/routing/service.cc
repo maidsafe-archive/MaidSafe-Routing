@@ -148,8 +148,9 @@ void Connect(RoutingTable& routing_table,
     for (auto node_id : routing_table.GetClosestNodes(source, Parameters::closest_nodes_size - 1)) {
       if (std::find(connect_request.closest_id().begin(), connect_request.closest_id().end(),
                     node_id.String()) == connect_request.closest_id().end() &&
-           NodeId::CloserToTarget(node_id,
-               NodeId(connect_request.closest_id(connect_request.closest_id_size() - 1)), source))
+          NodeId::CloserToTarget(node_id,
+              NodeId(connect_request.closest_id(connect_request.closest_id_size() - 1)), source) &&
+          source != node_id)
         connect_response.add_closer_id(node_id.String());
     }
   }

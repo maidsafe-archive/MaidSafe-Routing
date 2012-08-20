@@ -67,7 +67,7 @@ class GenericNode {
   NodeInfo node_info() const;
   void set_joined(const bool node_joined);
   bool joined() const;
-  bool client_mode() const;
+  bool IsClient() const;
   void set_client_mode(const bool& client_mode);
   int expected();
   void set_expected(const int& expected);
@@ -87,6 +87,7 @@ class GenericNode {
   bool RoutingTableHasNode(const NodeId& node_id);
   bool NonRoutingTableHasNode(const NodeId& node_id);
   testing::AssertionResult DropNode(const NodeId& node_id);
+  std::vector<NodeInfo> RoutingTable() const;
 
   static size_t next_node_id_;
 
@@ -141,6 +142,7 @@ class GenericNetwork : public testing::Test {
   }
 
   virtual void TearDown() {
+    GenericNode::next_node_id_ = 1;
     nodes_.clear();
   }
 
@@ -156,7 +158,9 @@ class GenericNetwork : public testing::Test {
       AddNodeDetails(node);
       LOG(kVerbose) << "Node # " << nodes_.size() << " added to network";
     }
+    Sleep(boost::posix_time::seconds(1));
     PrintRoutingTables();
+//    EXPECT_TRUE(ValidateRoutingTables());
   }
 
   void AddNode(const bool& client_mode, const NodeId& node_id) {
@@ -207,9 +211,50 @@ class GenericNetwork : public testing::Test {
   uint16_t NonClientNodesSize() const {
     uint16_t non_client_size(0);
     for (auto node : this->nodes_)
-      if (!node->client_mode())
+      if (!node->IsClient())
         non_client_size++;
     return non_client_size;
+  }
+
+  bool ValidateRoutingTables() {
+    std::vector<NodeId> node_ids;
+    for (auto node : this->nodes_)
+      if (!node->IsClient())
+        node_ids.push_back(node->node_id());
+    for (auto node : nodes_) {
+      LOG(kVerbose) << "Reference node: " << HexSubstr(node->node_id().String());
+      std::sort(node_ids.begin(), node_ids.end(),
+                [=](const NodeId& lhs, const NodeId& rhs)->bool {
+                  return NodeId::CloserToTarget(lhs, rhs, node->node_id());
+                });
+      for (auto node_id : node_ids)
+        LOG(kVerbose) << HexSubstr(node_id.String());
+//      node->PrintRoutingTable();
+      auto routing_table(node->RoutingTable());
+      EXPECT_FALSE(routing_table.size() < Parameters::closest_nodes_size);
+      std::sort(routing_table.begin(), routing_table.end(),
+                [&, this](const NodeInfo& lhs, const NodeInfo& rhs)->bool {
+                  return NodeId::CloserToTarget(lhs.node_id, rhs.node_id, node->node_id());
+                });
+      LOG(kVerbose) << "Print ordered RT";
+      for (auto node_info : routing_table)
+        LOG(kVerbose) << HexSubstr(node_info.node_id.String());
+      for (auto iter(routing_table.begin());
+           iter < routing_table.begin() + Parameters::closest_nodes_size -1;
+           ++iter) {
+        uint16_t distance(std::distance(node_ids.begin(), std::find(node_ids.begin(),
+                                                                    node_ids.end(),
+                                                                    (*iter).node_id)));
+         LOG(kVerbose) << "distance: " << distance << " from "
+                       << HexSubstr((*iter).node_id.String());
+        if (distance > Parameters::closest_nodes_size) {
+//          return false;
+          LOG(kVerbose) << "BAD ROUTING TABLE ENTRY!!!!!!!!!!";
+          Sleep(boost::posix_time::seconds(1));
+        }
+      }
+    }
+    return true;
   }
 
   void AddNodeDetails(NodePtr node) {
@@ -217,7 +262,7 @@ class GenericNetwork : public testing::Test {
     std::mutex mutex;
     SetNodeValidationFunctor(node);
     uint16_t node_size(NonClientNodesSize());
-    node->set_expected(NetworkStatus(node->client_mode(),
+    node->set_expected(NetworkStatus(node->IsClient(),
                                      std::min(node_size, Parameters::closest_nodes_size)));
     nodes_.push_back(node);
     std::weak_ptr<NodeType> weak_node(node);
@@ -231,8 +276,10 @@ class GenericNetwork : public testing::Test {
     };
     node->Join(nodes_[1]->endpoint());
     std::unique_lock<std::mutex> lock(mutex);
-    auto result = cond_var.wait_for(lock, std::chrono::seconds(10));
+    auto result = cond_var.wait_for(lock, std::chrono::seconds(15));
     EXPECT_EQ(result, std::cv_status::no_timeout);
+    Sleep(boost::posix_time::millisec(600));
+    PrintRoutingTables();
   }
 
   std::vector<boost::asio::ip::udp::endpoint> bootstrap_endpoints_;
