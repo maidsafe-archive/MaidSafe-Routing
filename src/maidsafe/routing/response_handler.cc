@@ -65,18 +65,19 @@ void ResponseHandler::Connect(protobuf::Message& message) {
   }
 
   if (!connect_response.answer()) {
-    LOG(kVerbose) << "Peer rejected this node's connection request.";
+    LOG(kVerbose) << "Peer rejected this node's connection request." << " id: " << message.id();
     return;
   }
 
   if (!connect_request.ParseFromString(connect_response.original_request())) {
-    LOG(kError) << "Could not parse original connect request";
+    LOG(kError) << "Could not parse original connect request" << " id: " << message.id();
     return;
   }
 
   LOG(kVerbose) << "This node [" << HexSubstr(routing_table_.kKeys().identity)
                 << "] received connect response from "
-                << HexSubstr(connect_request.contact().node_id());
+                << HexSubstr(connect_request.contact().node_id())
+                << " id: " << message.id();
   rudp::EndpointPair this_endpoint_pair;
   this_endpoint_pair.external =
       GetEndpointFromProtobuf(connect_request.contact().public_endpoint());

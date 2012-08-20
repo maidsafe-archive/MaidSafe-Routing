@@ -134,7 +134,7 @@ TYPED_TEST_P(FindNodeNetwork, DISABLED_FUNC_FindNodeAfterLeaving) {
 }
 
 TYPED_TEST_P(FindNodeNetwork, FUNC_VaultFindVaultNode) {
-  this->SetUpNetwork(6);
+  this->SetUpNetwork(kNetworkSize);
   uint32_t source(
       RandomUint32() % (static_cast<uint32_t>(this->nodes_.size()) - 2) + 2),
       dest(static_cast<uint32_t>(this->nodes_.size()));
@@ -157,7 +157,7 @@ TYPED_TEST_P(FindNodeNetwork, FUNC_VaultFindVaultNode) {
 
 TYPED_TEST_P(FindNodeNetwork, FUNC_VaultFindClientNode) {
   // Create a bootstrap network
-  this->SetUpNetwork(6);
+  this->SetUpNetwork(kNetworkSize);
   uint32_t source(
       RandomUint32() % (static_cast<uint32_t>(this->nodes_.size()) - 2) + 2),
       dest(static_cast<uint32_t>(this->nodes_.size()));
@@ -187,7 +187,7 @@ TYPED_TEST_P(FindNodeNetwork, FUNC_VaultFindClientNode) {
 
 TYPED_TEST_P(FindNodeNetwork, FUNC_ClientFindVaultNode) {
   // Create a bootstrap network
-  this->SetUpNetwork(kServerSize);
+  this->SetUpNetwork(kNetworkSize);
   uint32_t source(
       RandomUint32() % (static_cast<uint32_t>(this->nodes_.size()) - 2) + 2),
       client(static_cast<uint32_t>(this->nodes_.size())),
@@ -217,7 +217,7 @@ TYPED_TEST_P(FindNodeNetwork, FUNC_ClientFindVaultNode) {
 
 TYPED_TEST_P(FindNodeNetwork, FUNC_ClientFindClientNode) {
   // Create a bootstrap network
-  this->SetUpNetwork(kServerSize);
+  this->SetUpNetwork(kNetworkSize);
   uint32_t source(
       RandomUint32() % (static_cast<uint32_t>(this->nodes_.size()) - 2) + 2),
       client1(static_cast<uint32_t>(this->nodes_.size())),

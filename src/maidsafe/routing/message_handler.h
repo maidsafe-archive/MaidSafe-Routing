@@ -71,6 +71,7 @@ class MessageHandler {
   void HandleMessageAsFarNode(protobuf::Message& message);
   void HandleGroupMessage(protobuf::Message& message);
   void HandleRelayRequest(protobuf::Message& message);
+  bool IsRelayResponseForThisNode(protobuf::Message& message);
   bool RelayDirectMessageIfNeeded(protobuf::Message& message);
   void HandleClientMessage(protobuf::Message& message);
 //  bool CheckAndSendToLocalClients(protobuf::Message& message);

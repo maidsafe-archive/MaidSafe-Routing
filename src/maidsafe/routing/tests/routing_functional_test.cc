@@ -112,15 +112,16 @@ class RoutingNetworkTest : public GenericNetwork<NodeType> {
               std::lock_guard<std::mutex> lock(mutex);
               data = boost::lexical_cast<std::string>(++message_id) + "<:>" + data;
             }
+            Sleep(boost::posix_time::millisec(50));
             source_node->Send(NodeId(dest_node->node_id()), group_id, data, 101, callable,
-                boost::posix_time::seconds(10), ConnectType::kSingle);
+                boost::posix_time::seconds(12), ConnectType::kSingle);
           }
         }
       }
     }
 
     std::unique_lock<std::mutex> lock(mutex);
-    bool result = cond_var.wait_for(lock, std::chrono::seconds(60),
+    bool result = cond_var.wait_for(lock, std::chrono::seconds(20),
         [&]()->bool {
           LOG(kInfo) << " message count " << messages_count << " expected "
                      << expected_messages << "\n";
@@ -183,14 +184,14 @@ class RoutingNetworkTest : public GenericNetwork<NodeType> {
 TYPED_TEST_CASE_P(RoutingNetworkTest);
 
 TYPED_TEST_P(RoutingNetworkTest, FUNC_Send) {
-  this->SetUpNetwork(kServerSize);
+  this->SetUpNetwork(kNetworkSize);
   EXPECT_TRUE(this->Send(1));
 }
 
 TYPED_TEST_P(RoutingNetworkTest, FUNC_ClientSend) {
   this->SetUpNetwork(kServerSize, kClientSize);
   EXPECT_TRUE(this->Send(1));
-  Sleep(boost::posix_time::seconds(12));  // This sleep is required for un-responded requests
+  Sleep(boost::posix_time::seconds(21));  // This sleep is required for un-responded requests
 }
 
 TYPED_TEST_P(RoutingNetworkTest, FUNC_SendMulti) {
@@ -222,7 +223,7 @@ TYPED_TEST_P(RoutingNetworkTest, FUNC_ClientSendMulti) {
 
 TYPED_TEST_P(RoutingNetworkTest, FUNC_SendToGroup) {
   uint16_t message_count(1), receivers_message_count(0);
-  this->SetUpNetwork(kServerSize);
+  this->SetUpNetwork(kNetworkSize);
   size_t last_index(this->nodes_.size() - 1);
   NodeId dest_id(this->nodes_[last_index]->node_id());
 
@@ -252,7 +253,7 @@ TYPED_TEST_P(RoutingNetworkTest, FUNC_SendToGroupRandomId) {
 }
 
 // This test produces the recursive call.
-TYPED_TEST_P(RoutingNetworkTest, DISABLED_FUNC_RecursiveCall) {
+TYPED_TEST_P(RoutingNetworkTest, FUNC_RecursiveCall) {
   this->SetUpNetwork(kNetworkSize);
   for (int index(0); index < 8; ++index)
     this->AddNode(false, GenerateUniqueRandomId(20));
@@ -268,7 +269,7 @@ TYPED_TEST_P(RoutingNetworkTest, DISABLED_FUNC_RecursiveCall) {
 
 REGISTER_TYPED_TEST_CASE_P(RoutingNetworkTest, FUNC_Send, FUNC_ClientSend,
                            FUNC_SendMulti, FUNC_ClientSendMulti, FUNC_SendToGroup,
-                           FUNC_SendToGroupRandomId, DISABLED_FUNC_RecursiveCall);
+                           FUNC_SendToGroupRandomId, FUNC_RecursiveCall);
 INSTANTIATE_TYPED_TEST_CASE_P(MAIDSAFE, RoutingNetworkTest, TestNode);
 
 }  // namespace test

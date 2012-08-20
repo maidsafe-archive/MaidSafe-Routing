@@ -52,6 +52,7 @@ GenericNode::GenericNode(bool client_mode)
   functors_.close_node_replaced = nullptr;
   functors_.message_received = nullptr;
   functors_.network_status = nullptr;
+//  node_info_plus_.node_info.node_id = GenerateUniqueRandomId(30);
   routing_.reset(new Routing(GetKeys(node_info_plus_), client_mode));
   LOG(kVerbose) << "Node constructor";
   std::lock_guard<std::mutex> lock(mutex_);

@@ -77,9 +77,10 @@ class NetworkUtils {
   void SendTo(const protobuf::Message& message,
               const NodeId& node_id,
               const boost::asio::ip::udp::endpoint& endpoint);
-  void RecursiveSendOn(const protobuf::Message& message,
+  void RecursiveSendOn(protobuf::Message message,
                        NodeInfo last_node_attempted = NodeInfo(),
                        int attempt_count = 0);
+  void AdjustRouteHistory(protobuf::Message& message);
 //  void SignMessage(protobuf::Message& message);
 
   boost::asio::ip::udp::endpoint bootstrap_endpoint_, this_node_relay_endpoint_;
