@@ -187,6 +187,10 @@ TYPED_TEST_P(RoutingNetworkTest, FUNC_SetupNetwork) {
   this->SetUpNetwork(kNetworkSize);
 }
 
+TYPED_TEST_P(RoutingNetworkTest, FUNC_SetupHybridNetwork) {
+  this->SetUpNetwork(kServerSize, kClientSize);
+}
+
 TYPED_TEST_P(RoutingNetworkTest, FUNC_Send) {
   this->SetUpNetwork(kNetworkSize);
   EXPECT_TRUE(this->Send(1));

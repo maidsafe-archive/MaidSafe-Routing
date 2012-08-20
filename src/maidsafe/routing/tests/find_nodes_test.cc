@@ -84,7 +84,7 @@ class FindNodeNetwork : public GenericNetwork<NodeType> {
 TYPED_TEST_CASE_P(FindNodeNetwork);
 
 TYPED_TEST_P(FindNodeNetwork, FUNC_FindExistingNode) {
-  this->SetUpNetwork(kServerSize);
+  this->SetUpNetwork(kNetworkSize);
   bool exists(false);
   int index(0);
   for (auto source : this->nodes_)
@@ -95,22 +95,22 @@ TYPED_TEST_P(FindNodeNetwork, FUNC_FindExistingNode) {
         LOG(kInfo) << "index: " << index++;
         exists = source->RoutingTableHasNode(dest->node_id());
         EXPECT_TRUE(this->Find(source, dest->node_id()));
-        Sleep(boost::posix_time::seconds(3));
+        Sleep(boost::posix_time::seconds(1));
         EXPECT_EQ(source->RoutingTableHasNode(dest->node_id()), exists);
       }
 }
 
 TYPED_TEST_P(FindNodeNetwork, FUNC_FindNonExistingNode) {
-  this->SetUpNetwork(kServerSize);
+  this->SetUpNetwork(kNetworkSize);
   uint32_t source(RandomUint32() % (this->nodes_.size() - 2) + 2);
   NodeId node_id(GenerateUniqueRandomId(this->nodes_[source]->node_id(), 6));
   EXPECT_TRUE(this->Find(this->nodes_[source], node_id));
-  Sleep(boost::posix_time::seconds(3));
+  Sleep(boost::posix_time::seconds(1));
   EXPECT_FALSE(this->nodes_[source]->RoutingTableHasNode(node_id));
 }
 
 TYPED_TEST_P(FindNodeNetwork, FUNC_FindNodeAfterDrop) {
-  this->SetUpNetwork(kServerSize);
+  this->SetUpNetwork(kNetworkSize);
   uint32_t source(RandomUint32() % (this->nodes_.size() - 2) + 2);
   NodeId node_id(GenerateUniqueRandomId(this->nodes_[source]->node_id(), 6));
   EXPECT_FALSE(this->nodes_[source]->RoutingTableHasNode(node_id));
@@ -144,9 +144,7 @@ TYPED_TEST_P(FindNodeNetwork, FUNC_VaultFindVaultNode) {
 
   EXPECT_TRUE(this->nodes_[dest]->DropNode(this->nodes_[source]->node_id()));
 
-  Sleep(boost::posix_time::seconds(3));
-
-//  EXPECT_TRUE(this->Find(this->nodes_[source], this->nodes_[dest]->node_id()));
+  Sleep(boost::posix_time::seconds(1));
 
   LOG(kVerbose) << "after find " << HexSubstr(this->nodes_[dest]->node_id().String());
   this->nodes_[source]->PrintRoutingTable();
@@ -161,7 +159,7 @@ TYPED_TEST_P(FindNodeNetwork, FUNC_VaultFindClientNode) {
       dest(static_cast<uint32_t>(this->nodes_.size()));
 
   // Add one client node
-  this->AddNode(true, GenerateUniqueRandomId(this->nodes_[source]->node_id(), 8));
+  this->AddNode(true, GenerateUniqueRandomId(this->nodes_[source]->node_id(), 20));
 
   EXPECT_TRUE(this->nodes_[dest]->RoutingTableHasNode(this->nodes_[source]->node_id()));
   EXPECT_FALSE(this->nodes_[source]->RoutingTableHasNode(this->nodes_[dest]->node_id()));
@@ -169,8 +167,7 @@ TYPED_TEST_P(FindNodeNetwork, FUNC_VaultFindClientNode) {
 
   // clear up
   EXPECT_TRUE(this->nodes_[dest]->DropNode(this->nodes_[source]->node_id()));
-//  EXPECT_TRUE(this->nodes_[source]->DropNode(this->nodes_[dest]->node_id()));
-  Sleep(boost::posix_time::seconds(5));
+  Sleep(boost::posix_time::seconds(1));
   EXPECT_FALSE(this->nodes_[dest]->RoutingTableHasNode(this->nodes_[source]->node_id()));
   EXPECT_FALSE(this->nodes_[source]->NonRoutingTableHasNode(this->nodes_[dest]->node_id()));
 

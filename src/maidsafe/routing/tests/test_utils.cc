@@ -88,23 +88,23 @@ asymm::Keys GetKeys(const NodeInfoAndPrivateKey& node) {
   return keys;
 }
 
-//NodeId GenerateUniqueRandomId(const NodeId& holder, const uint16_t& pos) {
-//  std::string holder_id = holder.ToStringEncoded(NodeId::kBinary);
-//  std::bitset<64*8> holder_id_binary_bitset(holder_id);
-//  NodeId new_node;
-//  std::string new_node_string;
-//  // generate a random ID and make sure it has not been generated previously
-//  new_node = NodeId(NodeId::kRandomId);
-//  std::string new_id = new_node.ToStringEncoded(NodeId::kBinary);
-//  std::bitset<64*8> binary_bitset(new_id);
-//  for (uint16_t i(0); i < pos; ++i)
-//    holder_id_binary_bitset[i] = binary_bitset[i];
-//  new_node_string = holder_id_binary_bitset.to_string();
-//  new_node = NodeId(new_node_string, NodeId::kBinary);
-//  return new_node;
-//}
-
 NodeId GenerateUniqueRandomId(const NodeId& holder, const uint16_t& pos) {
+  std::string holder_id = holder.ToStringEncoded(NodeId::kBinary);
+  std::bitset<64*8> holder_id_binary_bitset(holder_id);
+  NodeId new_node;
+  std::string new_node_string;
+  // generate a random ID and make sure it has not been generated previously
+  new_node = NodeId(NodeId::kRandomId);
+  std::string new_id = new_node.ToStringEncoded(NodeId::kBinary);
+  std::bitset<64*8> binary_bitset(new_id);
+  for (uint16_t i(0); i < pos; ++i)
+    holder_id_binary_bitset[i] = binary_bitset[i];
+  new_node_string = holder_id_binary_bitset.to_string();
+  new_node = NodeId(new_node_string, NodeId::kBinary);
+  return new_node;
+}
+
+NodeId GenerateUniqueNonRandomId(const NodeId& holder, const uint64_t& id) {
   std::string holder_id = holder.ToStringEncoded(NodeId::kBinary);
   std::bitset<64*8> holder_id_binary_bitset(holder_id);
   NodeId new_node;
@@ -112,8 +112,8 @@ NodeId GenerateUniqueRandomId(const NodeId& holder, const uint16_t& pos) {
     // generate a random ID and make sure it has not been generated previously
   new_node = NodeId(NodeId::kRandomId);
   std::string new_id = new_node.ToStringEncoded(NodeId::kBinary);
-  std::bitset<64*8> binary_bitset(pos);
-  for (uint16_t i(0); i < 16; ++i)
+  std::bitset<64> binary_bitset(id);
+  for (uint16_t i(0); i < 64; ++i)
     holder_id_binary_bitset[i] = binary_bitset[i];
   new_node_string = holder_id_binary_bitset.to_string();
   new_node = NodeId(new_node_string, NodeId::kBinary);
@@ -124,6 +124,11 @@ NodeId GenerateUniqueRandomId(const NodeId& holder, const uint16_t& pos) {
 NodeId GenerateUniqueRandomId(const uint16_t& pos) {
   NodeId holder(NodeId(NodeId::kMaxId) ^ NodeId(NodeId::kMaxId));
   return GenerateUniqueRandomId(holder, pos);
+}
+
+NodeId GenerateUniqueNonRandomId(const uint64_t& pos) {
+  NodeId holder(NodeId(NodeId::kMaxId) ^ NodeId(NodeId::kMaxId));
+  return GenerateUniqueNonRandomId(holder, pos);
 }
 
 int NetworkStatus(const bool& client, const int& status) {
