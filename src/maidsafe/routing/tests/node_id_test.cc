@@ -404,52 +404,6 @@ TEST(NodeIdTest, BEH_OperatorEql) {
   ASSERT_EQ(kadid1.String(), kadid2.String());
 }
 
-TEST(NodeIdTest, BEH_TempTest) {
-  NodeId reference(GenerateUniqueRandomId(12));
-  std::vector<std::string> closest_node_ids;
-  std::vector<std::string> closest_nodes;
-
-  for (int index(0); index < 0; ++index)
-    closest_node_ids.push_back(GenerateUniqueRandomId(12).String());
-
-  for (auto node_id : closest_node_ids)
-    LOG(kVerbose) << HexSubstr(node_id);
-
-  for (int index(0); index < 5; ++index)
-    closest_nodes.push_back(GenerateUniqueRandomId(12).String());
-
-  LOG(kVerbose) << closest_nodes.size();
-  for (auto node_id : closest_nodes)
-    LOG(kVerbose) << HexSubstr(node_id);
-
-  closest_node_ids.insert(closest_node_ids.end(),
-                          closest_nodes.begin(),
-                          closest_nodes.end());
-
-  LOG(kVerbose) << closest_node_ids.size();
-  for (auto node_id : closest_node_ids)
-    LOG(kVerbose) << HexSubstr(node_id);
-
-  std::sort(closest_node_ids.begin(), closest_node_ids.end(),
-            [=](const std::string& lhs, const std::string& rhs)->bool {
-              return NodeId::CloserToTarget(NodeId(lhs), NodeId(rhs),
-                                            NodeId(reference));
-            });
-
-  LOG(kVerbose) << closest_node_ids.size();
-  for (auto node_id : closest_node_ids)
-    LOG(kVerbose) << HexSubstr(node_id);
-
-  auto iter(std::unique(closest_node_ids.begin(), closest_node_ids.end()));
-  closest_node_ids.resize(
-      std::min(static_cast<uint16_t>(std::distance(iter, closest_node_ids.begin())),
-                                     Parameters::closest_nodes_size));
-
-  LOG(kVerbose) << closest_node_ids.size();
-  for (auto node_id : closest_node_ids)
-    LOG(kVerbose) << HexSubstr(node_id);
-}
-
 }  // namespace test
 
 }  // namespace routing
