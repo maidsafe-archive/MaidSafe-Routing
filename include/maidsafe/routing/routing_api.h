@@ -88,8 +88,10 @@ class Routing {
   // Confirm (if we can) two nodes are within a group range.  For small networks or new node on
   // network, this function may yield many false negatives.  In the case of a negative, actual
   // confirmation can be achieved by sending an indirect message to the node address and checking
-  // all returned NodeIds.
+  // all returned Node Ids.
   bool ConfirmGroupMembers(const NodeId& node1, const NodeId& node2);
+  // A queue with recently found nodes that can be extracted for upper layers to communicate with.
+  NodeId GetRandomExistingNode();
 
   friend class test::GenericNode;
 
@@ -99,6 +101,7 @@ class Routing {
   Routing& operator=(const Routing&);
 
   bool CheckBootstrapFilePath() const;
+  void AddExistingRandomNode(NodeId node);
   void ConnectFunctors(const Functors& functors);
   void DisconnectFunctors();
   void BootstrapFromThisEndpoint(const Functors& functors,

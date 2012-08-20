@@ -35,6 +35,7 @@ RoutingPrivate::RoutingPrivate(const asymm::Keys& keys, bool client_mode)
       client_mode_(client_mode),
       anonymous_node_(false),
       functors_(),
+      random_node_queue_(),
       recovery_timer_(asio_service_.service()) {
   message_handler_.reset(new MessageHandler(asio_service_, routing_table_, non_routing_table_,
                                             network_, timer_));

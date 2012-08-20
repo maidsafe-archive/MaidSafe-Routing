@@ -275,9 +275,9 @@ TYPED_TEST_P(RoutingNetworkTest, FUNC_RecursiveCall) {
   this->PrintRoutingTables();
 }
 
-REGISTER_TYPED_TEST_CASE_P(RoutingNetworkTest, FUNC_SetupNetwork, FUNC_Send, FUNC_ClientSend,
-                           FUNC_SendMulti, FUNC_ClientSendMulti, FUNC_SendToGroup,
-                           FUNC_SendToGroupRandomId, FUNC_RecursiveCall);
+REGISTER_TYPED_TEST_CASE_P(RoutingNetworkTest, FUNC_SetupNetwork, FUNC_SetupHybridNetwork,
+                           FUNC_Send, FUNC_ClientSend, FUNC_SendMulti, FUNC_ClientSendMulti,
+                           FUNC_SendToGroup, FUNC_SendToGroupRandomId, FUNC_RecursiveCall);
 INSTANTIATE_TYPED_TEST_CASE_P(MAIDSAFE, RoutingNetworkTest, TestNode);
 
 }  // namespace test
