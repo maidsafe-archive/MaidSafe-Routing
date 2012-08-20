@@ -74,11 +74,10 @@ class GenericNode {
   int ZeroStateJoin(const NodeInfo& peer_node_info);
   void Join(const boost::asio::ip::udp::endpoint& peer_endpoint);
   void Send(const NodeId& destination_id,
-            const NodeId& group_id,
             const std::string& data,
             const ResponseFunctor response_functor,
             const boost::posix_time::time_duration& timeout,
-            const ConnectType& connect_type,
+            bool direct,
             bool cache);
   void PrintRoutingTable();
   void RudpSend(const boost::asio::ip::udp::endpoint& peer_endpoint,

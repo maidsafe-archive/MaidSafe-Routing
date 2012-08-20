@@ -78,11 +78,10 @@ class Routing {
   // clients with your address (except you).  Pass an empty response_functor to indicate you do not
   // care about a response.
   void Send(const NodeId& destination_id,      // ID of final destination
-            const NodeId& group_id,            // ID of sending group
             const std::string& data,           // message content (serialised data)
             ResponseFunctor response_functor,
             const boost::posix_time::time_duration& timeout,
-            const ConnectType& connect_type, // whether this is to a close node group or direct
+            bool direct, // whether this is to a close node group or direct
             bool cachable); 
   // Confirm (if we can) two nodes are within a group range.  For small networks or new node on
   // network, this function may yield many false negatives.  In the case of a negative, actual

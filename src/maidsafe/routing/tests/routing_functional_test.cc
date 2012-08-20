@@ -109,8 +109,8 @@ class RoutingNetworkTest : public GenericNetwork<NodeType> {
               data = boost::lexical_cast<std::string>(++message_id) + "<:>" + data;
             }
             Sleep(boost::posix_time::millisec(50));
-            source_node->Send(NodeId(dest_node->node_id()), group_id, data, callable,
-                boost::posix_time::seconds(12), ConnectType::kSingle, false);
+            source_node->Send(NodeId(dest_node->node_id()), data, callable,
+                boost::posix_time::seconds(12), true, false);
           }
         }
       }
@@ -156,8 +156,8 @@ class RoutingNetworkTest : public GenericNetwork<NodeType> {
             LOG(kVerbose) << "ResponseHandler .... DONE " << messages_count;
           }
       };
-      this->nodes_[0]->Send(node_id, group_id, data, callable, boost::posix_time::seconds(10),
-                      ConnectType::kGroup, false);
+      this->nodes_[0]->Send(node_id, data, callable, boost::posix_time::seconds(10),
+                      false, false);
     }
 
     std::unique_lock<std::mutex> lock(mutex);

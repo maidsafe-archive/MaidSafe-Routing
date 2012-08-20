@@ -358,11 +358,10 @@ int Routing::GetStatus() const {
 }
 
 void Routing::Send(const NodeId& destination_id,
-                   const NodeId& /*group_id*/,
                    const std::string& data,
                    ResponseFunctor response_functor,
                    const boost::posix_time::time_duration& timeout,
-                   const ConnectType& connect_type,
+                   bool direct,
                    bool cache) {
   if (destination_id.String().empty()) {
     LOG(kError) << "No destination ID, aborted send";
@@ -389,11 +388,11 @@ void Routing::Send(const NodeId& destination_id,
   proto_message.set_destination_id(destination_id.String());
   proto_message.add_data(data);
   proto_message.set_cacheable(cache);
-  proto_message.set_direct(static_cast<int32_t>(connect_type));
+  proto_message.set_direct(direct);
   proto_message.set_client_node(impl_->client_mode_);
   proto_message.set_request(true);
   uint16_t replication(1);
-  if (ConnectType::kGroup == connect_type) {
+  if (!direct) {
     replication = Parameters::node_group_size;
     if (response_functor)
       proto_message.set_id(impl_->timer_.AddTask(timeout, response_functor,

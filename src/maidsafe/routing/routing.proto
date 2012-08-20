@@ -44,7 +44,7 @@ message Message {
   optional bytes relay_id = 4;
   repeated bytes data = 5; // serialised protobuf - possibly encrypted
   optional bytes signature = 6;
-  required int32 direct = 7;
+  required bool direct = 7;
   optional int32 replication = 8;
   optional sint32 type = 9; // type of data - used in signal to upper layers
   optional bool cacheable = 10;
