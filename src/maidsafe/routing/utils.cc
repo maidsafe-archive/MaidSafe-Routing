@@ -149,10 +149,10 @@ bool ValidateMessage(const protobuf::Message &message) {
     return false;
   }
 
-  if (!(message.has_source_id() || (message.has_relay_id() && message.has_relay()))) {
-    LOG(kWarning) << "Message should have either src id or relay information.";
-    return false;
-  }
+//   if (!(message.has_source_id() || (message.has_relay_id() && message.has_relay()))) {
+//     LOG(kWarning) << "Message should have either src id or relay information.";
+//     return false;
+//   }
 
   if (message.has_source_id() && !NodeId(message.source_id()).IsValid()) {
     LOG(kWarning) << "Invalid source id field.";

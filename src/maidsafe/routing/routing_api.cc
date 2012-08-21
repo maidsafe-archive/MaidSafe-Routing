@@ -87,11 +87,11 @@ bool Routing::CheckBootstrapFilePath() const {
       !fs::is_regular_file(global_bootstrap_file_path, is_regular_file_error_code) ||
       exists_error_code || is_regular_file_error_code) {
     if (exists_error_code) {
-      LOG(kWarning) << "Failed to check for global bootstrap file at "
+      LOG(kWarning) << "Failed to find global bootstrap file at "
                     << global_bootstrap_file_path << ".  " << exists_error_code.message();
     }
     if (is_regular_file_error_code) {
-      LOG(kWarning) << "Failed to check for global bootstrap file at " << path << ".  "
+      LOG(kWarning) << "Failed to find global bootstrap file at " << path << ".  "
                     << is_regular_file_error_code.message();
     }
   } else {
@@ -114,7 +114,7 @@ bool Routing::CheckBootstrapFilePath() const {
       !fs::is_regular_file(local_file, is_regular_file_error_code) ||
       exists_error_code || is_regular_file_error_code) {
     if (exists_error_code) {
-      LOG(kError) << "Failed to check for bootstrap file at " << local_file << ".  "
+      LOG(kError) << "Failed to find bootstrap file at " << local_file << ".  "
                   << exists_error_code.message();
     }
     if (is_regular_file_error_code) {
@@ -411,6 +411,8 @@ void Routing::Send(const NodeId& destination_id,
     proto_message.set_relay_id(impl_->routing_table_.kKeys().identity);
     SetProtobufEndpoint(impl_->network_.this_node_relay_endpoint(), proto_message.mutable_relay());
     Endpoint bootstrap_endpoint = impl_->network_.bootstrap_endpoint();
+    assert(proto_message.has_relay() && "did not set endpoint") ;
+    assert((impl_->network_.this_node_relay_endpoint() == GetEndpointFromProtobuf(proto_message.relay())) && "Endpoint was not set properly");
     rudp::MessageSentFunctor message_sent(
         [&](int result) {
           if (rudp::kSuccess != result) {
