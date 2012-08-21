@@ -30,6 +30,7 @@ uint16_t Parameters::bucket_target_size(1);
 uint32_t Parameters::max_data_size(67107840);
 uint16_t Parameters::recovery_timeout_in_seconds(10);
 uint16_t Parameters::max_route_history(5);
+uint16_t Parameters::hops_to_live(20);
 
 }  // namespace routing
 

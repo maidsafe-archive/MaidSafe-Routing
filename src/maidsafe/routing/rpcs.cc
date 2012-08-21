@@ -44,6 +44,7 @@ protobuf::Message Ping(const NodeId& node_id, const std::string& identity) {
   message.set_type(static_cast<int32_t>(MessageType::kPing));
   message.set_request(true);
   message.set_client_node(false);
+  message.set_hops_to_live(Parameters::hops_to_live);
   assert(message.IsInitialized() && "Uninitialised message");
   return message;
 }
@@ -80,6 +81,7 @@ protobuf::Message Connect(const NodeId& node_id,
   message.set_type(static_cast<int32_t>(MessageType::kConnect));
   message.set_request(true);
   message.set_client_node(client_node);
+  message.set_hops_to_live(Parameters::hops_to_live);
 
   if (!relay_message) {
     message.set_source_id(my_node_id.String());
@@ -126,6 +128,7 @@ protobuf::Message FindNodes(const NodeId& node_id,
       SetProtobufEndpoint(local_endpoint, message.mutable_relay());
     }
   }
+  message.set_hops_to_live(Parameters::hops_to_live);
   assert(message.IsInitialized() && "Unintialised message");
   return message;
 }
@@ -151,6 +154,7 @@ protobuf::Message ProxyConnect(const NodeId& node_id,
   message.set_type(static_cast<int32_t>(MessageType::kProxyConnect));
   message.set_request(true);
   message.set_client_node(false);
+  message.set_hops_to_live(Parameters::hops_to_live);
   if (!relay_message) {
     message.set_source_id(my_node_id.String());
   } else {

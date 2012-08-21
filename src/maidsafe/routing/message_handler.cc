@@ -89,6 +89,7 @@ void MessageHandler::HandleNodeLevelMessageForThisNode(protobuf::Message& messag
           return;
         protobuf::Message message_out;
         message_out.set_request(false);
+        message_out.set_hops_to_live(Parameters::hops_to_live);
         message_out.set_destination_id(message.source_id());
         message_out.set_direct(true);
         message_out.clear_data();
@@ -234,15 +235,15 @@ void MessageHandler::HandleGroupMessage(protobuf::Message& message) {
 }
 
 void MessageHandler::HandleMessage(protobuf::Message& message) {
-  if (!message.IsInitialized()) {
-    LOG(kWarning) << "Uninitialised message dropped.";
+  LOG(kVerbose) << "MessageHandler::HandleMessage id: " << message.id();
+  if (!ValidateMessage(message)) {
+    LOG(kWarning) << "Validate message failed." << " id: " << message.id();
+    assert((message.hops_to_live() > 0) &&
+           "Message has traversed maximum number of hops allowed");
     return;
   }
 
-  if (!ValidateMessage(message)) {
-    LOG(kWarning) << "Validate message failed." << " id: " << message.id();
-    return;
-  }
+  DecreamentHopsToLive(message);
 
   // If this node is a client
   if (routing_table_.client_mode())
@@ -374,6 +375,10 @@ void MessageHandler::set_message_received_functor(MessageReceivedFunctor message
 void MessageHandler::set_request_public_key_functor(
     RequestPublicKeyFunctor request_public_key_functor) {
   response_handler_->set_request_public_key_functor(request_public_key_functor);
+}
+
+void MessageHandler::DecreamentHopsToLive(protobuf::Message& message) {
+  message.set_hops_to_live(message.hops_to_live() - 1);
 }
 
 }  // namespace routing

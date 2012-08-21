@@ -68,6 +68,7 @@ class MessageHandler {
   bool IsRelayResponseForThisNode(protobuf::Message& message);
   bool RelayDirectMessageIfNeeded(protobuf::Message& message);
   void HandleClientMessage(protobuf::Message& message);
+  void DecreamentHopsToLive(protobuf::Message& message);
 //  bool CheckAndSendToLocalClients(protobuf::Message& message);
 
   AsioService& asio_service_;

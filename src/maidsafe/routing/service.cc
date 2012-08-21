@@ -59,6 +59,7 @@ void Ping(RoutingTable& routing_table, protobuf::Message& message) {
   message.add_data(ping_response.SerializeAsString());
   message.set_destination_id(message.source_id());
   message.set_source_id(routing_table.kKeys().identity);
+  message.set_hops_to_live(Parameters::hops_to_live);
   assert(message.IsInitialized() && "unintialised message");
 }
 
@@ -160,6 +161,7 @@ void Connect(RoutingTable& routing_table,
   message.set_direct(true);
   message.set_replication(1);
   message.set_request(false);
+  message.set_hops_to_live(Parameters::hops_to_live);
   if (message.has_source_id())
     message.set_destination_id(message.source_id());
   else
@@ -210,6 +212,7 @@ void FindNodes(RoutingTable& routing_table, protobuf::Message& message) {
   message.set_direct(true);
   message.set_replication(1);
   message.set_request(false);
+  message.set_hops_to_live(Parameters::hops_to_live);
   assert(message.IsInitialized() && "unintialised message");
 }
 
@@ -255,6 +258,7 @@ void ProxyConnect(RoutingTable& routing_table,
   message.set_direct(true);
   message.set_destination_id(message.source_id());
   message.set_source_id(routing_table.kKeys().identity);
+  message.set_hops_to_live(Parameters::hops_to_live);
   assert(message.IsInitialized() && "unintialised message");
 }
 

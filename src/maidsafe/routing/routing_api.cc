@@ -393,6 +393,7 @@ void Routing::Send(const NodeId& destination_id,
   proto_message.set_direct(direct);
   proto_message.set_client_node(impl_->client_mode_);
   proto_message.set_request(true);
+  proto_message.set_hops_to_live(Parameters::hops_to_live);
   uint16_t replication(1);
   if (group_claim.IsValid() && group_claim != NodeId())
     proto_message.set_group_claim(group_claim.String());

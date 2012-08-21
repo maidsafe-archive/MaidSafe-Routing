@@ -10,6 +10,8 @@
  *  the explicit written permission of the board of directors of maidsafe.net. *
  ******************************************************************************/
 
+#include <string>
+
 #include "maidsafe/routing/utils.h"
 
 #include "maidsafe/common/log.h"
@@ -106,10 +108,25 @@ bool IsDirect(const protobuf::Message& message) {
 }
 
 bool ValidateMessage(const protobuf::Message &message) {
-    if (!message.IsInitialized()) {
-      LOG(kWarning) << "Uninitialised message dropped.";
-      return false;
-    }
+  if (!message.IsInitialized()) {
+    LOG(kWarning) << "Uninitialised message dropped.";
+    return false;
+  }
+
+  // Message has traversed more hops than expected
+  if (message.hops_to_live() <= 0) {
+    std::string route_history;
+    for (auto route : message.route_history())
+      route_history += HexSubstr(route) + ", ";
+    LOG(kError) << "Message has traversed more hops than expected. "
+                <<  Parameters::max_route_history << " last hops in route history are: "
+                 << route_history
+                 << " \nMessage source: " << HexSubstr(message.source_id())
+                 << ", \nMessage destination: " << HexSubstr(message.destination_id())
+                 << ", \nMessage type: " << message.type()
+                 << ", \nMessage id: " << message.id();
+    return false;
+  }
 
   // Invalid destination id, unknown message
   if (!(NodeId(message.destination_id()).IsValid())) {
