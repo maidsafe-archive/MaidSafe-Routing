@@ -358,6 +358,7 @@ int Routing::GetStatus() const {
 }
 
 void Routing::Send(const NodeId& destination_id,
+                   const NodeId& group_claim,
                    const std::string& data,
                    ResponseFunctor response_functor,
                    const boost::posix_time::time_duration& timeout,
@@ -393,6 +394,9 @@ void Routing::Send(const NodeId& destination_id,
   proto_message.set_client_node(impl_->client_mode_);
   proto_message.set_request(true);
   uint16_t replication(1);
+  if (group_claim.IsValid() && group_claim != NodeId())
+    proto_message.set_group_claim(group_claim.String());
+
   if (!direct) {
     replication = Parameters::node_group_size;
     if (response_functor)
@@ -461,19 +465,21 @@ void Routing::ReceiveMessage(const std::string& message, std::weak_ptr<RoutingPr
 NodeId Routing::GetRandomExistingNode() {
   NodeId node;
   impl_->random_node_queue_.TryPop(node);
-  LOG(kVerbose) << "RandomNodeQueue : Getting node, queue size now " << impl_->random_node_queue_.Size(); 
+  LOG(kVerbose) << "RandomNodeQueue : Getting node, queue size now "
+                << impl_->random_node_queue_.Size();
   return node;
 }
 
 void Routing::AddExistingRandomNode(NodeId node) {
   if (node.IsValid()) {
     impl_->random_node_queue_.Push(node);
-    LOG(kVerbose) << "RandomNodeQueue : Added node, queue size now " << impl_->random_node_queue_.Size(); 
-    }
-  if (impl_->random_node_queue_.Size() > 6)
-    GetRandomExistingNode();
+    unsigned int queue_size = impl_->random_node_queue_.Size();
+    LOG(kVerbose) << "RandomNodeQueue : Added node, queue size now "
+                  << queue_size;
+    if (queue_size > 6)
+      GetRandomExistingNode();
+  }
 }
-
 
 void Routing::ConnectionLost(const Endpoint& lost_endpoint, std::weak_ptr<RoutingPrivate> impl) {
   std::shared_ptr<RoutingPrivate> pimpl = impl.lock();

@@ -105,12 +105,13 @@ void GenericNode::set_client_mode(const bool& client_mode) {
 }
 
 void GenericNode::Send(const NodeId& destination_id,
+                       const NodeId& group_claim,
                        const std::string& data,
                        const ResponseFunctor response_functor,
                        const boost::posix_time::time_duration& timeout,
                        bool direct,
                        bool cache) {
-    routing_->Send(destination_id, data, response_functor,
+    routing_->Send(destination_id, group_claim, data, response_functor,
                    timeout, direct, cache);
     return;
 }

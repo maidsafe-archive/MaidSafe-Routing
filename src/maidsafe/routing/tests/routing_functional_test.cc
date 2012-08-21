@@ -27,7 +27,7 @@ class TestNode : public GenericNode {
   explicit TestNode(bool client_mode = false)
       : GenericNode(client_mode),
         messages_() {
-    functors_.message_received = [&](const std::string& message,
+    functors_.message_received = [&](const std::string& message, const NodeId&,
                                      ReplyFunctor reply_functor) {
         LOG(kInfo) << id_ << " -- Received:  message : " << message.substr(0, 10);
         std::lock_guard<std::mutex> guard(mutex_);
@@ -40,7 +40,8 @@ class TestNode : public GenericNode {
   TestNode(bool client_mode, const NodeInfoAndPrivateKey& node_info)
       : GenericNode(client_mode, node_info),
       messages_() {
-    functors_.message_received = [&](const std::string& message, ReplyFunctor reply_functor) {
+    functors_.message_received = [&](const std::string& message, const NodeId&,
+                                     ReplyFunctor reply_functor) {
       LOG(kInfo) << id_ << " -- Received: message : " << message.substr(0, 10);
       std::lock_guard<std::mutex> guard(mutex_);
       messages_.push_back(message);
@@ -106,7 +107,7 @@ class RoutingNetworkTest : public GenericNetwork<NodeType> {
               data = boost::lexical_cast<std::string>(++message_id) + "<:>" + data;
             }
             Sleep(boost::posix_time::millisec(50));
-            source_node->Send(NodeId(dest_node->node_id()), data, callable,
+            source_node->Send(NodeId(dest_node->node_id()), NodeId(), data, callable,
                 boost::posix_time::seconds(12), true, false);
           }
         }
@@ -153,8 +154,8 @@ class RoutingNetworkTest : public GenericNetwork<NodeType> {
             LOG(kVerbose) << "ResponseHandler .... DONE " << messages_count;
           }
       };
-      this->nodes_[0]->Send(node_id, data, callable, boost::posix_time::seconds(10),
-                      false, false);
+      this->nodes_[0]->Send(node_id, NodeId(), data, callable, boost::posix_time::seconds(10),
+                            false, false);
     }
 
     std::unique_lock<std::mutex> lock(mutex);

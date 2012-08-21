@@ -235,7 +235,8 @@ TEST(APITest, FUNC_API_AnonymousNode) {
         give_key((*itr).second.public_key);
     };
 
-  functors1.message_received = [&] (const std::string& message, ReplyFunctor reply_functor) {
+  functors1.message_received = [&] (const std::string& message, const NodeId&,
+                                    ReplyFunctor reply_functor) {
     reply_functor("response to " + message);
     LOG(kVerbose) << "Message received and replied to message !!";
   };
@@ -269,14 +270,14 @@ TEST(APITest, FUNC_API_AnonymousNode) {
       LOG(kVerbose) << "Got response !!";
     };
   //  Testing Send
-  R3.Send(NodeId(node1.node_info.node_id), "message_from_anonymous node",
+  R3.Send(NodeId(node1.node_info.node_id), NodeId(), "message_from_anonymous node",
           response_functor, boost::posix_time::seconds(10), true, false);
 
   Sleep(boost::posix_time::seconds(61));  // to allow disconnection
   ResponseFunctor failed_response = [=](const std::vector<std::string> &message) {
       ASSERT_TRUE(message.empty());
     };
-  R3.Send(NodeId(node1.node_info.node_id), "message_2_from_anonymous node", 
+  R3.Send(NodeId(node1.node_info.node_id), NodeId(), "message_2_from_anonymous node", 
           failed_response, boost::posix_time::seconds(60), true, false);
   Sleep(boost::posix_time::seconds(1));
 }
@@ -304,7 +305,8 @@ TEST(APITest, BEH_API_SendToSelf) {
         give_key((*itr).second.public_key);
     };
 
-  functors1.message_received = [&] (const std::string& message, ReplyFunctor reply_functor) {
+  functors1.message_received = [&] (const std::string& message, const NodeId&,
+                                    ReplyFunctor reply_functor) {
       reply_functor("response to " + message);
       LOG(kVerbose) << "Message received and replied to message !!";
     };
@@ -344,7 +346,7 @@ TEST(APITest, BEH_API_SendToSelf) {
       LOG(kVerbose) << "Got response !!";
       response_promise.set_value(true);
     };
-  R3.Send(NodeId(node3.node_info.node_id), "message from my node", response_functor,
+  R3.Send(NodeId(node3.node_info.node_id), NodeId(), "message from my node", response_functor,
           boost::posix_time::seconds(10), true, false);
   EXPECT_TRUE(response_future.timed_wait(boost::posix_time::seconds(10)));
 }
@@ -371,7 +373,8 @@ TEST(APITest, BEH_API_ClientNode) {
         give_key((*itr).second.public_key);
     };
 
-  functors1.message_received = [&] (const std::string& message, ReplyFunctor reply_functor) {
+  functors1.message_received = [&] (const std::string& message, const NodeId&,
+                                    ReplyFunctor reply_functor) {
       reply_functor("response to " + message);
       LOG(kVerbose) << "Message received and replied to message !!";
     };
@@ -413,7 +416,7 @@ TEST(APITest, BEH_API_ClientNode) {
       LOG(kVerbose) << "Got response !!";
       response_promise.set_value(true);
     };
-  R3.Send(NodeId(node1.node_info.node_id), "message from client node",
+  R3.Send(NodeId(node1.node_info.node_id), NodeId(), "message from client node",
           response_functor, boost::posix_time::seconds(10), true, false);
 
   EXPECT_TRUE(response_future.timed_wait(boost::posix_time::seconds(10)));
@@ -441,7 +444,8 @@ TEST(APITest, BEH_API_ClientNodeWithBootstrapFile) {
         give_key((*itr).second.public_key);
     };
 
-  functors1.message_received = [&] (const std::string& message, ReplyFunctor reply_functor) {
+  functors1.message_received = [&] (const std::string& message,const NodeId&,
+                                    ReplyFunctor reply_functor) {
       reply_functor("response to " + message);
       LOG(kVerbose) << "Message received and replied to message !!";
     };
@@ -489,7 +493,7 @@ TEST(APITest, BEH_API_ClientNodeWithBootstrapFile) {
       LOG(kVerbose) << "Got response !!";
       response_promise.set_value(true);
     };
-  R3.Send(NodeId(node1.node_info.node_id), "message from client node",
+  R3.Send(NodeId(node1.node_info.node_id), NodeId(), "message from client node",
           response_functor, boost::posix_time::seconds(10), true, false);
 
   EXPECT_TRUE(response_future.timed_wait(boost::posix_time::seconds(10)));
@@ -669,7 +673,8 @@ TEST(APITest, BEH_API_NodeNetworkWithClient) {
         give_key((*itr).second.public_key);
   };
 
-  functors.message_received = [&] (const std::string& message, ReplyFunctor reply_functor) {
+  functors.message_received = [&] (const std::string& message, const NodeId&,
+                                   ReplyFunctor reply_functor) {
       reply_functor("response to " + message);
       LOG(kVerbose) << "Message received and replied to message !!";
     };
@@ -677,7 +682,8 @@ TEST(APITest, BEH_API_NodeNetworkWithClient) {
   Functors client_functors;
   client_functors.request_public_key = functors.request_public_key;
 
-  client_functors.message_received = [&] (const std::string &, ReplyFunctor /*reply_functor*/) {
+  client_functors.message_received = [&] (const std::string &, const NodeId&,
+                                          ReplyFunctor /*reply_functor*/) {
       ASSERT_TRUE(false);  //  Client should not receive incoming message
     };
 

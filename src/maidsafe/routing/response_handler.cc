@@ -74,6 +74,11 @@ void ResponseHandler::Connect(protobuf::Message& message) {
     return;
   }
 
+  if (!NodeId(connect_response.contact().node_id()).IsValid()) {
+    LOG(kError) << "Invalid contact details";
+    return;
+  }
+
   LOG(kVerbose) << "This node [" << HexSubstr(routing_table_.kKeys().identity)
                 << "] received connect response from "
                 << HexSubstr(connect_request.contact().node_id())
