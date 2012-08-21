@@ -64,8 +64,8 @@ TEST(RpcsTest, BEH_PingMessageNode) {
   EXPECT_EQ(keys.identity, message.source_id());
   EXPECT_NE(0, message.data_size());
   EXPECT_EQ(1, message.replication());
-  EXPECT_EQ(static_cast<int32_t>(MessageType::kPingRequest), message.type());
-  EXPECT_EQ(0, message.id());
+  EXPECT_EQ(static_cast<int32_t>(MessageType::kPing), message.type());
+  EXPECT_TRUE(message.request());
   EXPECT_FALSE(message.client_node());
   EXPECT_FALSE(message.has_relay());
 }
@@ -95,10 +95,10 @@ TEST(RpcsTest, BEH_ConnectMessageNode) {
   EXPECT_EQ(destination, message.destination_id());
   EXPECT_EQ(us.node_id.String(), message.source_id());
   EXPECT_NE(0, message.data_size());
-  EXPECT_EQ(static_cast<int32_t>(ConnectType::kSingle), message.direct());
+  EXPECT_TRUE(message.direct());
   EXPECT_EQ(1, message.replication());
-  EXPECT_EQ(static_cast<int32_t>(MessageType::kConnectRequest), message.type());
-  EXPECT_EQ(message.id(), 0);
+  EXPECT_EQ(static_cast<int32_t>(MessageType::kConnect), message.type());
+  EXPECT_TRUE(message.request());
   EXPECT_FALSE(message.client_node());
   EXPECT_FALSE(message.has_relay());
 }
@@ -111,8 +111,8 @@ TEST(RpcsTest, BEH_ConnectMessageNodeRelayMode) {
   Endpoint relay_endpoint(boost::asio::ip::address_v4::loopback(), GetRandomPort());
   std::string destination = RandomString(64);
   protobuf::Message message = rpcs::Connect(NodeId(destination), endpoint, us.node_id,
-                                            std::vector<std::string>(),
-                                            false, true, relay_endpoint);
+                                            std::vector<std::string>(), false, true,
+                                            relay_endpoint);
   protobuf::ConnectRequest connect_request;
   EXPECT_TRUE(message.IsInitialized());
   EXPECT_TRUE(connect_request.ParseFromString(message.data(0)));  // us
@@ -123,10 +123,10 @@ TEST(RpcsTest, BEH_ConnectMessageNodeRelayMode) {
   EXPECT_EQ(destination, message.destination_id());
   EXPECT_FALSE(message.has_source_id());
   EXPECT_NE(0, message.data_size());
-  EXPECT_EQ(static_cast<int32_t>(ConnectType::kSingle), message.direct());
+  EXPECT_TRUE(message.direct());
   EXPECT_EQ(message.replication(), 1);
-  EXPECT_EQ(static_cast<int32_t>(MessageType::kConnectRequest), message.type());
-  EXPECT_EQ(0, message.id());
+  EXPECT_EQ(static_cast<int32_t>(MessageType::kConnect), message.type());
+  EXPECT_TRUE(message.request());
   EXPECT_FALSE(message.client_node());
   EXPECT_TRUE(message.has_relay());
   EXPECT_TRUE(message.has_relay_id());
@@ -150,10 +150,10 @@ TEST(RpcsTest, BEH_FindNodesMessageNode) {
   EXPECT_EQ(us.node_id.String(), message.destination_id());
   EXPECT_EQ(us.node_id.String(), message.source_id());
   EXPECT_NE(0, message.data_size());
-  EXPECT_EQ(static_cast<int32_t>(ConnectType::kGroup), message.direct());
-  EXPECT_EQ(1, message.replication());
-  EXPECT_EQ(static_cast<int32_t>(MessageType::kFindNodesRequest), message.type());
-  EXPECT_EQ(0, message.id());
+  EXPECT_FALSE(message.direct());
+  EXPECT_EQ(2, message.replication());
+  EXPECT_EQ(static_cast<int32_t>(MessageType::kFindNodes), message.type());
+  EXPECT_TRUE(message.request());
   EXPECT_FALSE(message.client_node());
   EXPECT_FALSE(message.has_relay());
   EXPECT_FALSE(message.has_relay_id());
@@ -173,10 +173,10 @@ TEST(RpcsTest, BEH_FindNodesMessageNodeRelayMode) {
   EXPECT_EQ(us.node_id.String(), message.destination_id());
   EXPECT_FALSE(message.has_source_id());
   EXPECT_NE(0, message.data_size());
-  EXPECT_EQ(static_cast<int32_t>(ConnectType::kGroup), message.direct());
-  EXPECT_EQ(1, message.replication());
-  EXPECT_EQ(static_cast<int32_t>(MessageType::kFindNodesRequest), message.type());
-  EXPECT_EQ(0, message.id());
+  EXPECT_FALSE(message.direct());
+  EXPECT_EQ(2, message.replication());
+  EXPECT_EQ(static_cast<int32_t>(MessageType::kFindNodes), message.type());
+  EXPECT_TRUE(message.request());
   EXPECT_FALSE(message.client_node());
   EXPECT_TRUE(message.has_relay());
   EXPECT_TRUE(message.has_relay_id());

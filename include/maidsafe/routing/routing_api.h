@@ -78,18 +78,12 @@ class Routing {
   // clients with your address (except you).  Pass an empty response_functor to indicate you do not
   // care about a response.
   void Send(const NodeId& destination_id,      // ID of final destination
-            const NodeId& group_id,            // ID of sending group
+            const NodeId& group_claim,         // ID claimed of sending group
             const std::string& data,           // message content (serialised data)
-            const int32_t& type,               // user defined message type
             ResponseFunctor response_functor,
             const boost::posix_time::time_duration& timeout,
-            const ConnectType& connect_type);  // whether this is to a close node group or direct
-
-  // Confirm (if we can) two nodes are within a group range.  For small networks or new node on
-  // network, this function may yield many false negatives.  In the case of a negative, actual
-  // confirmation can be achieved by sending an indirect message to the node address and checking
-  // all returned Node Ids.
-  bool ConfirmGroupMembers(const NodeId& node1, const NodeId& node2);
+            bool direct,  // whether this is to a close node group or direct
+            bool cachable);
   // A queue with recently found nodes that can be extracted for upper layers to communicate with.
   NodeId GetRandomExistingNode();
 
@@ -113,6 +107,11 @@ class Routing {
   void ReceiveMessage(const std::string& message, std::weak_ptr<RoutingPrivate> impl);
   void ConnectionLost(const boost::asio::ip::udp::endpoint& lost_endpoint,
                       std::weak_ptr<RoutingPrivate> impl);
+  // Confirm (if we can) two nodes are within a group range.  For small networks or new node on
+  // network, this function may yield many false negatives.  In the case of a negative, actual
+  // confirmation can be achieved by sending an indirect message to the node address and checking
+  // all returned Node Ids.
+  bool ConfirmGroupMembers(const NodeId& node1, const NodeId& node2);
 
   // pimpl (data members only)
   std::shared_ptr<RoutingPrivate> impl_;

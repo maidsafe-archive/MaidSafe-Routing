@@ -36,7 +36,7 @@ namespace routing {
 
 namespace protobuf { class Message; }
 
-typedef std::function<void(int, std::vector<std::string>)> TaskResponseFunctor;
+typedef std::function<void(std::vector<std::string>)> TaskResponseFunctor;
 typedef int32_t TaskId;
 
 class Timer {

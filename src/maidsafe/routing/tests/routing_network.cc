@@ -108,14 +108,14 @@ std::vector<NodeInfo> GenericNode::RoutingTable() const {
 }
 
 void GenericNode::Send(const NodeId& destination_id,
-                       const NodeId& group_id,
+                       const NodeId& group_claim,
                        const std::string& data,
-                       const int32_t& type,
                        const ResponseFunctor response_functor,
                        const boost::posix_time::time_duration& timeout,
-                       const ConnectType& connect_type) {
-    routing_->Send(destination_id, group_id, data, type, response_functor,
-                   timeout, connect_type);
+                       bool direct,
+                       bool cache) {
+    routing_->Send(destination_id, group_claim, data, response_functor,
+                   timeout, direct, cache);
     return;
 }
 

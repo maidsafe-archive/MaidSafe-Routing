@@ -82,32 +82,32 @@ void Timer::ExecuteTask(TaskId task_id, const boost::system::error_code& error) 
     task = *itr;
   }
 
-  int return_code(kSuccess);
+//  int return_code(kSuccess);
   switch (error.value()) {
     case boost::system::errc::success:
       // Task's timer has expired
-      return_code = kResponseTimeout;
+//      return_code = kResponseTimeout;
       LOG(kWarning) << "Timed out waiting for task " << task->id;
       break;
     case boost::asio::error::operation_aborted:
       assert(task->responses.size() <= task->expected_response_count);
       if (task->responses.size() == task->expected_response_count) {
         // Cancelled via AddResponse
-        return_code = kSuccess;
+//        return_code = kSuccess;
       } else {
         // Cancelled via CancelTask
-        return_code = kResponseCancelled;
+//        return_code = kResponseCancelled;
         LOG(kInfo) << "Cancelled task " << task->id;
       }
       break;
     default:
-      return_code = kGeneralError;
+//      return_code = kGeneralError;
       LOG(kError) << "Error waiting for task " << task->id << " - " << error.message();
   }
 
   asio_service_.service().dispatch([=] {
     if (task->functor)
-      task->functor(return_code, task->responses);
+      task->functor(task->responses);
     std::lock_guard<std::mutex> lock(mutex_);
     auto itr(FindTask(task_id));
     if (itr != tasks_.end()) {

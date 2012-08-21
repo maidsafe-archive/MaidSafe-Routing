@@ -53,7 +53,7 @@ void Ping(RoutingTable& routing_table, protobuf::Message& message) {
   ping_response.set_original_request(message.data(0));
   ping_response.set_original_signature(message.signature());
   ping_response.set_timestamp(GetTimeStamp());
-  message.set_type(static_cast<int32_t>(MessageType::kPingResponse));
+  message.set_request(false);
   message.clear_route_history();
   message.clear_data();
   message.add_data(ping_response.SerializeAsString());
@@ -156,10 +156,10 @@ void Connect(RoutingTable& routing_table,
   message.clear_route_history();
   message.clear_data();
   message.add_data(connect_response.SerializeAsString());
-  message.set_direct(static_cast<int32_t>(ConnectType::kSingle));
+  message.set_direct(true);
   message.set_replication(1);
-  message.set_type(static_cast<int32_t>(MessageType::kConnectResponse));
   message.set_client_node(routing_table.client_mode());
+  message.set_request(false);
   if (message.has_source_id())
     message.set_destination_id(message.source_id());
   else
@@ -207,10 +207,10 @@ void FindNodes(RoutingTable& routing_table, protobuf::Message& message) {
   message.clear_route_history();
   message.clear_data();
   message.add_data(found_nodes.SerializeAsString());
-  message.set_direct(static_cast<int32_t>(ConnectType::kSingle));
+  message.set_direct(true);
   message.set_replication(1);
-  message.set_type(static_cast<int32_t>(MessageType::kFindNodesResponse));
   message.set_client_node(routing_table.client_mode());
+  message.set_request(false);
   assert(message.IsInitialized() && "unintialised message");
 }
 
@@ -249,11 +249,11 @@ void ProxyConnect(RoutingTable& routing_table,
     else
       proxy_connect_response.set_result(protobuf::kFailure);
   }
-  message.set_type(static_cast<int32_t>(MessageType::kProxyConnectResponse));
+  message.set_request(false);
   message.clear_route_history();
   message.clear_data();
   message.add_data(proxy_connect_response.SerializeAsString());
-  message.set_direct(static_cast<int32_t>(ConnectType::kSingle));
+  message.set_direct(true);
   message.set_destination_id(message.source_id());
   message.set_source_id(routing_table.kKeys().identity);
   message.set_client_node(routing_table.client_mode());

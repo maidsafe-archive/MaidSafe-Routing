@@ -48,26 +48,22 @@ class TimerTest : public testing::Test {
         message_() {
     asio_service_.Start();
 
-    single_good_response_functor_ = [=](int result, std::vector<std::string> response) {
-      ASSERT_EQ(kSuccess, result);
+    single_good_response_functor_ = [=](std::vector<std::string> response) {
       ASSERT_EQ(1U, response.size());
     };
-    single_failed_response_functor_ = [=](int result, std::vector<std::string> response) {
-      ASSERT_EQ(kResponseTimeout, result);
+    single_failed_response_functor_ = [=](std::vector<std::string> response) {
       ASSERT_TRUE(response.empty());
     };
-    group_good_response_functor_ = [=](int result, std::vector<std::string> response) {
-      ASSERT_EQ(kSuccess, result);
+    group_good_response_functor_ = [=](std::vector<std::string> response) {
       ASSERT_EQ(kGroupSize_, response.size());
     };
-    group_failed_response_functor_ = [=](int result, std::vector<std::string> response) {
-      ASSERT_EQ(kResponseTimeout, result);
+    group_failed_response_functor_ = [=](std::vector<std::string> response) {
       ASSERT_EQ(kGroupSize_ - 1, response.size());
     };
 
     message_.set_type(-200);
     message_.set_destination_id("destination_id");
-    message_.set_direct(static_cast<int32_t>(ConnectType::kGroup));
+    message_.set_direct(false);
     message_.add_data("response data");
     message_.set_source_id("source_id");
   }

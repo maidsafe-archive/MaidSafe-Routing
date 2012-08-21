@@ -112,8 +112,7 @@ void ValidateAndAddToRoutingTable(NetworkUtils& network_,
 }
 
 bool IsRoutingMessage(const protobuf::Message& message) {
-  return (message.type() < static_cast<int32_t>(MessageType::kMaxRouting)) &&
-         (message.type() > static_cast<int32_t>(MessageType::kMinRouting));
+  return message.routing_message();
 }
 
 bool IsNodeLevelMessage(const protobuf::Message& message) {
@@ -121,7 +120,7 @@ bool IsNodeLevelMessage(const protobuf::Message& message) {
 }
 
 bool IsRequest(const protobuf::Message& message) {
-  return (message.type() > 0);
+  return (message.request());
 }
 
 bool IsResponse(const protobuf::Message& message) {
@@ -129,12 +128,21 @@ bool IsResponse(const protobuf::Message& message) {
 }
 
 bool IsDirect(const protobuf::Message& message) {
-  return (message.direct() == static_cast<int32_t>(ConnectType::kSingle));
+  return message.direct();
 }
 
 bool ValidateMessage(const protobuf::Message &message) {
-  if (!IsRoutingMessage(message))
-    return true;
+    if (!message.IsInitialized()) {
+      LOG(kWarning) << "Uninitialised message dropped.";
+      return false;
+    }
+
+  // Invalid destination id, unknown message
+  if (!(NodeId(message.destination_id()).IsValid())) {
+    LOG(kWarning) << "Stray message dropped, need destination ID for processing."
+                  << " id: " << message.id();
+    return false;
+  }
 
   if (!NodeId(message.destination_id()).IsValid()) {
     LOG(kWarning) << "Message should have valid destination id.";
@@ -162,23 +170,19 @@ bool ValidateMessage(const protobuf::Message &message) {
     return false;
   }
 
-  if (static_cast<MessageType>(message.type()) == MessageType::kConnectRequest)
-    if (message.direct() != static_cast<int32_t>(ConnectType::kSingle)) {
-      LOG(kWarning) << "kConnectRequest type message must be kSingle connect type.";
+  if (static_cast<MessageType>(message.type()) == MessageType::kConnect)
+    if (!message.direct()) {
+      LOG(kWarning) << "kConnectRequest type message must be direct.";
       return false;
     }
 
-  if (static_cast<MessageType>(message.type()) == MessageType::kConnectResponse)
-    if (message.direct() != static_cast<int32_t>(ConnectType::kSingle)) {
-      LOG(kWarning) << "kConnectResponse type message must be kSingle connect type.";
+  if (static_cast<MessageType>(message.type()) == MessageType::kFindNodes &&
+      (message.request() == false))
+    if ((!message.direct())) {
+      LOG(kWarning) << "kFindNodesResponse type message must be direct.";
       return false;
     }
 
-  if (static_cast<MessageType>(message.type()) == MessageType::kFindNodesResponse)
-    if ((message.direct() != static_cast<int32_t>(ConnectType::kSingle))) {
-      LOG(kWarning) << "kFindNodesResponse type message must be kSingle connect type.";
-      return false;
-    }
   return true;
 }
 

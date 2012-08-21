@@ -37,11 +37,12 @@ protobuf::Message Ping(const NodeId& node_id, const std::string& identity) {
   ping_request.set_timestamp(GetTimeStamp());
   message.set_destination_id(node_id.String());
   message.set_source_id(identity);
+  message.set_routing_message(true);
   message.add_data(ping_request.SerializeAsString());
-  message.set_direct(static_cast<int32_t>(ConnectType::kSingle));
+  message.set_direct(true);
   message.set_replication(1);
-  message.set_type(static_cast<int32_t>(MessageType::kPingRequest));
-  message.set_id(0);
+  message.set_type(static_cast<int32_t>(MessageType::kPing));
+  message.set_request(true);
   message.set_client_node(false);
   assert(message.IsInitialized() && "Uninitialised message");
   return message;
@@ -72,11 +73,12 @@ protobuf::Message Connect(const NodeId& node_id,
     protobuf_connect_request.add_closest_id(node_id);
   protobuf_connect_request.set_timestamp(GetTimeStamp());
   message.set_destination_id(node_id.String());
+  message.set_routing_message(true);
   message.add_data(protobuf_connect_request.SerializeAsString());
-  message.set_direct(static_cast<int32_t>(ConnectType::kSingle));
+  message.set_direct(true);
   message.set_replication(1);
-  message.set_type(static_cast<int32_t>(MessageType::kConnectRequest));
-  message.set_id(0);
+  message.set_type(static_cast<int32_t>(MessageType::kConnect));
+  message.set_request(true);
   message.set_client_node(client_node);
 
   if (!relay_message) {
@@ -106,11 +108,12 @@ protobuf::Message FindNodes(const NodeId& node_id,
   find_nodes.set_timestamp(GetTimeStamp());
   message.set_last_id(my_node_id.String());
   message.set_destination_id(node_id.String());
+  message.set_routing_message(true);
   message.add_data(find_nodes.SerializeAsString());
-  message.set_direct(static_cast<int32_t>(ConnectType::kGroup));
+  message.set_direct(false);
   message.set_replication(1);
-  message.set_type(static_cast<int32_t>(MessageType::kFindNodesRequest));
-  message.set_id(0);
+  message.set_type(static_cast<int32_t>(MessageType::kFindNodes));
+  message.set_request(true);
   message.add_route_history(my_node_id.String());
   message.set_client_node(false);
   if (!relay_message) {
@@ -141,11 +144,12 @@ protobuf::Message ProxyConnect(const NodeId& node_id,
   SetProtobufEndpoint(endpoint_pair.local, proxy_connect_request.mutable_local_endpoint());
   SetProtobufEndpoint(endpoint_pair.external, proxy_connect_request.mutable_external_endpoint());
   message.set_destination_id(node_id.String());
+  message.set_routing_message(true);
   message.add_data(proxy_connect_request.SerializeAsString());
-  message.set_direct(static_cast<int32_t>(ConnectType::kSingle));
+  message.set_direct(true);
   message.set_replication(1);
-  message.set_type(static_cast<int32_t>(MessageType::kProxyConnectRequest));
-  message.set_id(0);
+  message.set_type(static_cast<int32_t>(MessageType::kProxyConnect));
+  message.set_request(true);
   message.set_client_node(false);
   if (!relay_message) {
     message.set_source_id(my_node_id.String());
@@ -172,13 +176,15 @@ protobuf::Message ConnectSuccess(const NodeId& node_id,
   SetProtobufEndpoint(endpoint, protobuf_connect_success.mutable_endpoint());
   protobuf_connect_success.set_node_id(my_node_id.String());
   message.set_destination_id(node_id.String());
+  message.set_routing_message(true);
   message.add_data(protobuf_connect_success.SerializeAsString());
-  message.set_direct(static_cast<int32_t>(ConnectType::kSingle));
+  message.set_direct(true);
   message.set_replication(1);
   message.set_type(static_cast<int32_t>(MessageType::kConnectSuccess));
   message.set_id(0);
   message.set_client_node(client_node);
   message.set_source_id(my_node_id.String());
+  message.set_request(false);
   assert(message.IsInitialized() && "Unintialised message");
   return message;
 }

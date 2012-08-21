@@ -27,14 +27,11 @@ class TestNode : public GenericNode {
   explicit TestNode(bool client_mode = false)
       : GenericNode(client_mode),
         messages_() {
-    functors_.message_received = [&](const int32_t& mesasge_type,
-                                     const std::string& message,
-                                     const NodeId& /*group_id*/,
+    functors_.message_received = [&](const std::string& message, const NodeId&,
                                      ReplyFunctor reply_functor) {
-        LOG(kInfo) << id_ << " -- Received: type <" << mesasge_type
-                   << "> message : " << message.substr(0, 10);
+        LOG(kInfo) << id_ << " -- Received:  message : " << message.substr(0, 10);
         std::lock_guard<std::mutex> guard(mutex_);
-        messages_.push_back(std::make_pair(mesasge_type, message));
+        messages_.push_back(message);
         reply_functor("Response to >:<" + message);
     };
     LOG(kVerbose) << "RoutingNode constructor";
@@ -43,14 +40,11 @@ class TestNode : public GenericNode {
   TestNode(bool client_mode, const NodeInfoAndPrivateKey& node_info)
       : GenericNode(client_mode, node_info),
       messages_() {
-    functors_.message_received = [&](const int32_t& mesasge_type,
-                                     const std::string& message,
-                                     const NodeId& /*group_id*/,
+    functors_.message_received = [&](const std::string& message, const NodeId&,
                                      ReplyFunctor reply_functor) {
-      LOG(kInfo) << id_ << " -- Received: type <" << mesasge_type
-                 << "> message : " << message.substr(0, 10);
+      LOG(kInfo) << id_ << " -- Received: message : " << message.substr(0, 10);
       std::lock_guard<std::mutex> guard(mutex_);
-      messages_.push_back(std::make_pair(mesasge_type, message));
+      messages_.push_back(message);
       reply_functor("Response to " + message);
     };
     LOG(kVerbose) << "RoutingNode constructor";
@@ -65,7 +59,7 @@ class TestNode : public GenericNode {
   }
 
  protected:
-  std::vector<std::pair<int32_t, std::string> > messages_;
+  std::vector<std::string> messages_;
 };
 
 template <typename NodeType>
@@ -91,8 +85,8 @@ class RoutingNetworkTest : public GenericNetwork<NodeType> {
     for (size_t index = 0; index < messages; ++index) {
       for (auto source_node : this->nodes_) {
         for (auto dest_node : this->nodes_) {
-          auto callable = [&] (const int32_t& result, const std::vector<std::string> &message) {
-              if (result != kSuccess)
+          auto callable = [&] (const std::vector<std::string> &message) {
+              if (message.empty())
                 return;
               std::lock_guard<std::mutex> lock(mutex);
               messages_count++;
@@ -113,8 +107,8 @@ class RoutingNetworkTest : public GenericNetwork<NodeType> {
               data = boost::lexical_cast<std::string>(++message_id) + "<:>" + data;
             }
             Sleep(boost::posix_time::millisec(50));
-            source_node->Send(NodeId(dest_node->node_id()), group_id, data, 101, callable,
-                boost::posix_time::seconds(12), ConnectType::kSingle);
+            source_node->Send(NodeId(dest_node->node_id()), NodeId(), data, callable,
+                boost::posix_time::seconds(12), true, false);
           }
         }
       }
@@ -149,8 +143,8 @@ class RoutingNetworkTest : public GenericNetwork<NodeType> {
     std::mutex mutex;
     std::condition_variable cond_var;
     for (size_t index = 0; index < messages; ++index) {
-      auto callable = [&] (const int32_t& result, const std::vector<std::string> message) {
-          if ((result != kSuccess) || message.empty())
+      auto callable = [&] (const std::vector<std::string> message) {
+          if (message.empty())
             return;
           std::lock_guard<std::mutex> lock(mutex);
           messages_count++;
@@ -160,8 +154,8 @@ class RoutingNetworkTest : public GenericNetwork<NodeType> {
             LOG(kVerbose) << "ResponseHandler .... DONE " << messages_count;
           }
       };
-      this->nodes_[0]->Send(node_id, group_id, data, 109, callable, boost::posix_time::seconds(10),
-                      ConnectType::kGroup);
+      this->nodes_[0]->Send(node_id, NodeId(), data, callable, boost::posix_time::seconds(10),
+                            false, false);
     }
 
     std::unique_lock<std::mutex> lock(mutex);
