@@ -309,15 +309,13 @@ int Routing::ZeroStateJoin(Functors functors,
   peer_endpoint_pair.external = peer_endpoint_pair.local = peer_node.endpoint;
   this_endpoint_pair.external = this_endpoint_pair.local = local_endpoint;
 
-  ValidatePeer(impl_->network_,
-               impl_->routing_table_,
-               impl_->non_routing_table_,
-               NodeId(peer_node.node_id),
-               peer_node.public_key,
-               peer_endpoint_pair,
-               this_endpoint_pair,
-               false);
-
+  ValidateAndAddToRoutingTable(impl_->network_,
+                               impl_->routing_table_,
+                               impl_->non_routing_table_,
+                               NodeId(peer_node.node_id),
+                               peer_node.public_key,
+                               peer_endpoint_pair.external,
+                               false);
   // Now poll for routing table size to have at other node available
   uint8_t poll_count(0);
   do {

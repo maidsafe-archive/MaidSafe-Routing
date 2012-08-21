@@ -42,6 +42,7 @@ enum class MessageType : int32_t {
   kFindNodesResponse = -kFindNodesRequest,
   kProxyConnectRequest = 4,
   kProxyConnectResponse = -kProxyConnectRequest,
+  kConnectSuccess = -5,
   kMaxRouting = 100,
   kMinRouting = -kMaxRouting
 };

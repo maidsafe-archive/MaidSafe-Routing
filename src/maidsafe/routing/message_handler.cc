@@ -72,6 +72,9 @@ void MessageHandler::HandleRoutingMessage(protobuf::Message& message) {
       service::Connect(routing_table_, non_routing_table_, network_, message,
                        response_handler_->request_public_key_functor());
       break;
+    case MessageType::kConnectSuccess :
+      response_handler_->ConnectSuccess(message);
+      break;
     case MessageType::kConnectResponse :
       response_handler_->Connect(message);
       break;

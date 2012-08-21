@@ -161,6 +161,28 @@ protobuf::Message ProxyConnect(const NodeId& node_id,
   return message;
 }
 
+protobuf::Message ConnectSuccess(const NodeId& node_id,
+                                 const NodeId& my_node_id,
+                                 const boost::asio::ip::udp::endpoint& endpoint,
+                                 bool client_node) {
+  assert(node_id.IsValid() && "Invalid node_id");
+  assert(my_node_id.IsValid() && "Invalid my node_id");
+  protobuf::Message message;
+  protobuf::ConnectSuccess protobuf_connect_success;
+  SetProtobufEndpoint(endpoint, protobuf_connect_success.mutable_endpoint());
+  protobuf_connect_success.set_node_id(my_node_id.String());
+  message.set_destination_id(node_id.String());
+  message.add_data(protobuf_connect_success.SerializeAsString());
+  message.set_direct(static_cast<int32_t>(ConnectType::kSingle));
+  message.set_replication(1);
+  message.set_type(static_cast<int32_t>(MessageType::kConnectSuccess));
+  message.set_id(0);
+  message.set_client_node(client_node);
+  message.set_source_id(my_node_id.String());
+  assert(message.IsInitialized() && "Unintialised message");
+  return message;
+}
+
 }  // namespace rpcs
 
 }  // namespace routing

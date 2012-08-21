@@ -97,14 +97,14 @@ void ResponseHandler::Connect(protobuf::Message& message) {
                            LOG(kInfo) << "NEED TO VALIDATE THE NODE HERE";
                            if (std::shared_ptr<ResponseHandler> response_handler =
                                response_handler_weak_ptr.lock()) {
-                             ValidatePeer(response_handler->network_,
-                                          response_handler->routing_table_,
-                                          response_handler->non_routing_table_,
-                                          NodeId(connect_response.contact().node_id()),
-                                          key,
-                                          peer_endpoint_pair,
-                                          this_endpoint_pair,
-                                          false);
+                             ValidateAndAddToRudp(
+                                 response_handler->network_,
+                                 NodeId(response_handler->routing_table_.kKeys().identity),
+                                 NodeId(message.source_id()),
+                                 key,
+                                 peer_endpoint_pair,
+                                 this_endpoint_pair,
+                                 response_handler->routing_table_.client_mode());
                            }
                          });
     request_public_key_functor_(NodeId(connect_response.contact().node_id()), validate_node);
@@ -211,6 +211,36 @@ void ResponseHandler::ConnectTo(const std::vector<std::string>& nodes,
   }
 }
 
+void ResponseHandler::ConnectSuccess(protobuf::Message& message) {
+  protobuf::ConnectSuccess connect_success;
+
+  if (!connect_success.ParseFromString(message.data(0))) {
+    LOG(kVerbose) << "Unable to parse connect success.";
+    message.Clear();
+    return;
+  }
+  boost::asio::ip::udp::endpoint peer_endpoint =
+      GetEndpointFromProtobuf(connect_success.endpoint());
+
+  std::weak_ptr<ResponseHandler> response_handler_weak_ptr = shared_from_this();
+  if (request_public_key_functor_) {
+    auto validate_node([=] (const asymm::PublicKey& key) {
+                           LOG(kInfo) << "NEED TO VALIDATE & ADD THE NODE HERE";
+                           if (std::shared_ptr<ResponseHandler> response_handler =
+                               response_handler_weak_ptr.lock()) {
+                             ValidateAndAddToRoutingTable(
+                                 response_handler->network_,
+                                 response_handler->routing_table_,
+                                 response_handler->non_routing_table_,
+                                 NodeId(connect_success.node_id()),
+                                 key,
+                                 peer_endpoint,
+                                 message.client_node());
+                           }
+                         });
+      request_public_key_functor_(NodeId(connect_success.node_id()), validate_node);
+  }
+}
 
 void ResponseHandler::ProxyConnect(protobuf::Message& message) {
   protobuf::ProxyConnectResponse proxy_connect_response;
