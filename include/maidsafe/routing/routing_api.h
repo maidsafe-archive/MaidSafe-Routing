@@ -82,10 +82,10 @@ class Routing {
             const std::string& data,           // message content (serialised data)
             ResponseFunctor response_functor,
             const boost::posix_time::time_duration& timeout,
-            bool direct, // whether this is to a close node group or direct
-            bool cachable); 
+            bool direct,  // whether this is to a close node group or direct
+            bool cachable);
   // A queue with recently found nodes that can be extracted for upper layers to communicate with.
-  NodeId GetRandomExistingNode(); 
+  NodeId GetRandomExistingNode();
 
   friend class test::GenericNode;
 
@@ -103,7 +103,7 @@ class Routing {
   void DoJoin(const Functors& functors);
   int DoBootstrap(const Functors& functors);
   int DoFindNode();
-  void ReSendFindNodeRequest(const boost::system::error_code& error_code);
+  void ReSendFindNodeRequest(const boost::system::error_code& error_code, bool ignore_size = false);
   void ReceiveMessage(const std::string& message, std::weak_ptr<RoutingPrivate> impl);
   void ConnectionLost(const boost::asio::ip::udp::endpoint& lost_endpoint,
                       std::weak_ptr<RoutingPrivate> impl);

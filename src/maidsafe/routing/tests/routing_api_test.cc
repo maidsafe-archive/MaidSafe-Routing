@@ -277,7 +277,7 @@ TEST(APITest, FUNC_API_AnonymousNode) {
   ResponseFunctor failed_response = [=](const std::vector<std::string> &message) {
       ASSERT_TRUE(message.empty());
     };
-  R3.Send(NodeId(node1.node_info.node_id), NodeId(), "message_2_from_anonymous node", 
+  R3.Send(NodeId(node1.node_info.node_id), NodeId(), "message_2_from_anonymous node",
           failed_response, boost::posix_time::seconds(60), true, false);
   Sleep(boost::posix_time::seconds(1));
 }
@@ -444,7 +444,7 @@ TEST(APITest, BEH_API_ClientNodeWithBootstrapFile) {
         give_key((*itr).second.public_key);
     };
 
-  functors1.message_received = [&] (const std::string& message,const NodeId&,
+  functors1.message_received = [&] (const std::string& message, const NodeId&,
                                     ReplyFunctor reply_functor) {
       reply_functor("response to " + message);
       LOG(kVerbose) << "Message received and replied to message !!";

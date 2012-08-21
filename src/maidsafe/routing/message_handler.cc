@@ -45,27 +45,33 @@ MessageHandler::MessageHandler(AsioService& asio_service,
 
 void MessageHandler::HandleRoutingMessage(protobuf::Message& message) {
   LOG(kInfo) << "MessageHandler::RoutingMessage" << " id: " << message.id();
+  bool request(message.request());
   switch (static_cast<MessageType>(message.type())) {
     case MessageType::kPing :
       message.request() ? service::Ping(routing_table_, message) : response_handler_->Ping(message);
       break;
     case MessageType::kConnect :
-      message.request() ? service::Connect(routing_table_, 
-                                           non_routing_table_, 
-                                           network_, 
+      message.request() ? service::Connect(routing_table_,
+                                           non_routing_table_,
+                                           network_,
                                            message,
-                                           response_handler_->request_public_key_functor()) : 
+                                           response_handler_->request_public_key_functor()) :
                                            response_handler_->Connect(message);
       break;
     case MessageType::kFindNodes :
-      message.request() ? service::FindNodes(routing_table_, message) :  response_handler_->FindNodes(message) ;
+      message.request() ? service::FindNodes(routing_table_, message) :
+                          response_handler_->FindNodes(message);
       break;
     case MessageType::kProxyConnect :
-      message.request() ?  service::ProxyConnect(routing_table_, network_, message) :  response_handler_->ProxyConnect(message);
+      message.request() ?  service::ProxyConnect(routing_table_, network_, message) :
+                           response_handler_->ProxyConnect(message);
       break;
     default:  // unknown (silent drop)
       return;
   }
+
+  if (!request)
+    return;
 
   if (routing_table_.Size() == 0)  // This node can only send to bootstrap_endpoint
     network_.SendToDirectEndpoint(message, network_.bootstrap_endpoint());
@@ -156,7 +162,8 @@ void MessageHandler::HandleDirectMessageAsClosestNode(protobuf::Message& message
       LOG(kWarning) << "Dropping message. This node ["
                     << HexSubstr(routing_table_.kKeys().identity)
                     << "] is the closest but is not connected to destination node ["
-                    << HexSubstr(message.destination_id()) << "], Src ID: " << HexSubstr(message.source_id())
+                    << HexSubstr(message.destination_id()) << "], Src ID: "
+                    << HexSubstr(message.source_id())
                     << ", Relay ID: " << HexSubstr(message.relay_id()) << " id: " << message.id();
       return;
     }

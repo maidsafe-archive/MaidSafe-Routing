@@ -13,6 +13,9 @@
 #ifndef MAIDSAFE_ROUTING_RESPONSE_HANDLER_H_
 #define MAIDSAFE_ROUTING_RESPONSE_HANDLER_H_
 
+#include <string>
+#include <vector>
+
 #include "maidsafe/common/rsa.h"
 #include "maidsafe/rudp/managed_connections.h"
 
@@ -50,6 +53,9 @@ class ResponseHandler : public std::enable_shared_from_this<ResponseHandler> {
   RequestPublicKeyFunctor request_public_key_functor() const;
 
  private:
+  void ConnectTo(const std::vector<std::string>& nodes,
+                 const std::vector<std::string>& closest_nodes);
+
   RoutingTable& routing_table_;
   NonRoutingTable& non_routing_table_;
   NetworkUtils& network_;

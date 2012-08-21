@@ -296,11 +296,6 @@ void NetworkUtils::AdjustRouteHistory(protobuf::Message& message) {
         message.add_route_history(route);
     }
   }
-//  std::string hops;
-//  for (auto hop : message.route_history())
-//     hops += " " + HexSubstr(hop);
-//  LOG(kVerbose) << "Hops in " << HexSubstr(routing_table_.kKeys().identity)
-//                << " are " << hops << " id: " << message.id();
   assert(message.route_history().size() <= Parameters::max_routing_table_size);
 }
 

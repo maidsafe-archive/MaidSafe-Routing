@@ -111,7 +111,8 @@ TEST(RpcsTest, BEH_ConnectMessageNodeRelayMode) {
   Endpoint relay_endpoint(boost::asio::ip::address_v4::loopback(), GetRandomPort());
   std::string destination = RandomString(64);
   protobuf::Message message = rpcs::Connect(NodeId(destination), endpoint, us.node_id,
-                                            false, true, relay_endpoint);
+                                            std::vector<std::string>(), false, true,
+                                            relay_endpoint);
   protobuf::ConnectRequest connect_request;
   EXPECT_TRUE(message.IsInitialized());
   EXPECT_TRUE(connect_request.ParseFromString(message.data(0)));  // us

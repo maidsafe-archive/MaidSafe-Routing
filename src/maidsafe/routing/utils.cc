@@ -150,7 +150,8 @@ bool ValidateMessage(const protobuf::Message &message) {
       return false;
     }
 
-  if (static_cast<MessageType>(message.type()) == MessageType::kFindNodes && (message.request() == false))
+  if (static_cast<MessageType>(message.type()) == MessageType::kFindNodes &&
+      (message.request() == false))
     if ((!message.direct())) {
       LOG(kWarning) << "kFindNodesResponse type message must be direct.";
       return false;

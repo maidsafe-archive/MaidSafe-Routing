@@ -51,6 +51,7 @@ protobuf::Message Ping(const NodeId& node_id, const std::string& identity) {
 protobuf::Message Connect(const NodeId& node_id,
                           const rudp::EndpointPair& our_endpoint,
                           const NodeId& my_node_id,
+                          const std::vector<std::string>& closest_ids,
                           bool client_node,
                           bool relay_message,
                           boost::asio::ip::udp::endpoint local_endpoint) {
@@ -68,6 +69,8 @@ protobuf::Message Connect(const NodeId& node_id,
   private_endpoint->set_ip(our_endpoint.local.address().to_string());
   private_endpoint->set_port(our_endpoint.local.port());
   contact->set_node_id(my_node_id.String());
+  for (auto node_id : closest_ids)
+    protobuf_connect_request.add_closest_id(node_id);
   protobuf_connect_request.set_timestamp(GetTimeStamp());
   message.set_destination_id(node_id.String());
   message.set_routing_message(true);

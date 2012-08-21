@@ -38,7 +38,7 @@ typedef boost::asio::ip::udp::endpoint Endpoint;
 
 }  // unnamed namespace
 
-size_t GenericNode::next_node_id_(0);
+size_t GenericNode::next_node_id_(1);
 
 GenericNode::GenericNode(bool client_mode)
     : id_(0),
@@ -52,7 +52,6 @@ GenericNode::GenericNode(bool client_mode)
   functors_.close_node_replaced = nullptr;
   functors_.message_received = nullptr;
   functors_.network_status = nullptr;
-//  node_info_plus_.node_info.node_id = GenerateUniqueRandomId(30);
   routing_.reset(new Routing(GetKeys(node_info_plus_), client_mode));
   LOG(kVerbose) << "Node constructor";
   std::lock_guard<std::mutex> lock(mutex_);
@@ -96,12 +95,16 @@ size_t GenericNode::id() const {
   return id_;
 }
 
-bool GenericNode::client_mode() const {
+bool GenericNode::IsClient() const {
   return client_mode_;
 }
 
 void GenericNode::set_client_mode(const bool& client_mode) {
   client_mode_ = client_mode;
+}
+
+std::vector<NodeInfo> GenericNode::RoutingTable() const {
+  return routing_->impl_->routing_table_.nodes_;
 }
 
 void GenericNode::Send(const NodeId& destination_id,

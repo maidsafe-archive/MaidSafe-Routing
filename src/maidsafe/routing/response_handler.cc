@@ -13,6 +13,9 @@
 #include "maidsafe/routing/response_handler.h"
 
 #include<memory>
+#include<vector>
+#include<string>
+#include <algorithm>
 
 #include "maidsafe/common/log.h"
 #include "maidsafe/common/utils.h"
@@ -111,6 +114,17 @@ void ResponseHandler::Connect(protobuf::Message& message) {
                          });
     request_public_key_functor_(NodeId(connect_response.contact().node_id()), validate_node);
   }
+
+  std::vector<std::string> closest_nodes(connect_request.closest_id().begin(),
+                                         connect_request.closest_id().end());
+  closest_nodes.push_back(message.source_id());
+
+  for (auto node_id : connect_response.closer_id())
+    LOG(kVerbose) << "Connecting to closer id: " << HexSubstr(node_id);
+
+  ConnectTo(std::vector<std::string>(connect_response.closer_id().begin(),
+                                     connect_response.closer_id().end()),
+            closest_nodes);
 }
 
 void ResponseHandler::FindNodes(const protobuf::Message& message) {
@@ -131,15 +145,43 @@ void ResponseHandler::FindNodes(const protobuf::Message& message) {
 #ifndef NDEBUG
   for (int i = 0; i < find_nodes.nodes_size(); ++i) {
     LOG(kVerbose) << "FindNodes from " << HexSubstr(message.source_id())
-                  << " returned " << HexSubstr(find_nodes.nodes(i));
+                  << " returned " << HexSubstr(find_nodes.nodes(i))
+                  << " id: " << message.id();
   }
 #endif
+  ConnectTo(std::vector<std::string>(find_nodes.nodes().begin(), find_nodes.nodes().end()),
+            std::vector<std::string>(find_nodes.nodes().begin(), find_nodes.nodes().end()));
+}
 
-  for (int i = 0; i < find_nodes.nodes_size(); ++i) {
+void ResponseHandler::ConnectTo(const std::vector<std::string>& nodes,
+                                const std::vector<std::string>& closest_nodes) {
+  std::vector<std::string> closest_node_ids;
+  auto routing_table_closest_nodes(routing_table_.GetClosestNodes(
+                                       NodeId(routing_table_.kKeys().identity),
+                                       Parameters::closest_nodes_size));
+
+  for (auto node_id : routing_table_closest_nodes)
+    closest_node_ids.push_back(node_id.String());
+
+  closest_node_ids.insert(closest_node_ids.end(),
+                          closest_nodes.begin(),
+                          closest_nodes.end());
+
+  std::sort(closest_node_ids.begin(), closest_node_ids.end(),
+            [=](const std::string& lhs, const std::string& rhs)->bool {
+              return NodeId::CloserToTarget(NodeId(lhs), NodeId(rhs),
+                                            NodeId(routing_table_.kKeys().identity));
+            });
+  auto iter(std::unique(closest_node_ids.begin(), closest_node_ids.end()));
+  closest_node_ids.resize(
+      std::min(static_cast<uint16_t>(std::distance(iter, closest_node_ids.begin())),
+                                     Parameters::closest_nodes_size));
+  for (uint16_t i = 0; i < nodes.size(); ++i) {
     NodeInfo node_to_add;
-    node_to_add.node_id = NodeId(find_nodes.nodes(i));
+    node_to_add.node_id = NodeId(nodes.at(i));
     if (node_to_add.node_id == NodeId(routing_table_.kKeys().identity))
       continue;  // TODO(Prakash): FIXME handle collision and return kIdCollision on join()
+
     if (routing_table_.CheckNode(node_to_add)) {
       LOG(kVerbose) << "CheckNode succeeded for node " << HexSubstr(node_to_add.node_id.String());
       Endpoint direct_endpoint;
@@ -158,10 +200,11 @@ void ResponseHandler::FindNodes(const protobuf::Message& message) {
         relay_endpoint = network_.this_node_relay_endpoint();
         relay_message = true;
       }
-      LOG(kVerbose) << "Sending Connect RPC to " << HexSubstr(find_nodes.nodes(i));
-      protobuf::Message connect_rpc(rpcs::Connect(NodeId(find_nodes.nodes(i)),
+      LOG(kVerbose) << "Sending Connect RPC to " << HexSubstr(nodes.at(i));
+      protobuf::Message connect_rpc(rpcs::Connect(NodeId(nodes.at(i)),
                                     endpoint,
                                     NodeId(routing_table_.kKeys().identity),
+                                    closest_node_ids,
                                     routing_table_.client_mode(),
                                     relay_message,
                                     relay_endpoint));
@@ -172,6 +215,7 @@ void ResponseHandler::FindNodes(const protobuf::Message& message) {
     }
   }
 }
+
 
 void ResponseHandler::ProxyConnect(protobuf::Message& message) {
   protobuf::ProxyConnectResponse proxy_connect_response;

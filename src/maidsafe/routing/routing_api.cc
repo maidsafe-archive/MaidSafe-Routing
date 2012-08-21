@@ -491,6 +491,10 @@ void Routing::ConnectionLost(const Endpoint& lost_endpoint, std::weak_ptr<Routin
   LOG(kWarning) << "Routing::ConnectionLost---------------------------------------------------";
 
   NodeInfo dropped_node;
+  bool resend(!pimpl->tearing_down_ &&
+              (pimpl->routing_table_.GetNodeInfo(lost_endpoint, dropped_node) &&
+              pimpl->routing_table_.IsThisNodeInRange(dropped_node.node_id,
+                                                      Parameters::closest_nodes_size)));
 
   // Checking routing table
   dropped_node = pimpl->routing_table_.DropNode(lost_endpoint);
@@ -498,25 +502,23 @@ void Routing::ConnectionLost(const Endpoint& lost_endpoint, std::weak_ptr<Routin
     LOG(kWarning) << "Lost connection with routing node "
                   << HexSubstr(dropped_node.node_id.String()) << ", endpoint " << lost_endpoint;
     LOG(kWarning) << "Routing::ConnectionLost-----------------------------------------Exiting";
-    return;
   }
 
   // Checking non-routing table
-  dropped_node = pimpl->non_routing_table_.DropNode(lost_endpoint);
   if (dropped_node.node_id != NodeId()) {
-    LOG(kWarning) << "Lost connection with non-routing node "
-                  << HexSubstr(dropped_node.node_id.String()) << ", endpoint " << lost_endpoint;
-  } else {
-    LOG(kWarning) << "Lost connection with unknown/internal endpoint " << lost_endpoint;
+    dropped_node = pimpl->non_routing_table_.DropNode(lost_endpoint);
+    if (dropped_node.node_id != NodeId()) {
+      LOG(kWarning) << "Lost connection with non-routing node "
+                    << HexSubstr(dropped_node.node_id.String()) << ", endpoint " << lost_endpoint;
+    } else {
+      LOG(kWarning) << "Lost connection with unknown/internal endpoint " << lost_endpoint;
+    }
   }
 
-  if (!pimpl->tearing_down_ &&
-      (pimpl->routing_table_.GetNodeInfo(lost_endpoint, dropped_node) &&
-       pimpl->routing_table_.IsThisNodeInRange(dropped_node.node_id,
-                                               Parameters::closest_nodes_size))) {
+  if (resend) {
     // Close node lost, get more nodes
     LOG(kWarning) << "Lost close node, getting more.";
-    ReSendFindNodeRequest(boost::system::error_code());
+    ReSendFindNodeRequest(boost::system::error_code(), true);
   }
 
   LOG(kWarning) << "Routing::ConnectionLost--------------------------------------------Exiting";
@@ -526,14 +528,15 @@ bool Routing::ConfirmGroupMembers(const NodeId& node1, const NodeId& node2) {
   return impl_->routing_table_.ConfirmGroupMembers(node1, node2);
 }
 
-void Routing::ReSendFindNodeRequest(const boost::system::error_code& error_code) {
+void Routing::ReSendFindNodeRequest(const boost::system::error_code& error_code,
+                                    bool ignore_size) {
   if (error_code != boost::asio::error::operation_aborted) {
     if (impl_->routing_table_.Size() == 0) {
       LOG(kInfo) << "This node's [" << HexSubstr(impl_->keys_.identity)
                  << "] Routing table is empty."
                  << " Need to rebootstrap !!!";
       return;
-    } else if (impl_->routing_table_.Size() < Parameters::closest_nodes_size) {
+    } else if (ignore_size ||  (impl_->routing_table_.Size() < Parameters::closest_nodes_size)) {
       LOG(kInfo) << "This node's [" << HexSubstr(impl_->keys_.identity)
                  << "] Routing table smaller than " << Parameters::closest_nodes_size
                  << " nodes.  Sending another FindNodes..";
