@@ -49,17 +49,17 @@ void ValidateAndAddToRudp(NetworkUtils& network_,
   else
     LOG(kVerbose) << "rudp.Add succeeded on external endpoint";
 
-  protobuf::Message connect_success_local_endpoint(
-      rpcs::ConnectSuccess(peer_id, this_node_id, this_endpoint.local, client));
-  LOG(kVerbose) << "Calling RUDP::Add on this node's endpoint " << this_endpoint.local
-                << ", peer's endpoint " << peer_endpoint.local;
-  result = network_.Add(this_endpoint.local, peer_endpoint.local,
-                        connect_success_local_endpoint.SerializeAsString());
-
-  if (result != rudp::kSuccess)
-    LOG(kWarning) << "rudp add failed on local endpoint" << result;
-  else
-    LOG(kVerbose) << "rudp.Add succeeded on local endpoint";
+//   protobuf::Message connect_success_local_endpoint(
+//       rpcs::ConnectSuccess(peer_id, this_node_id, this_endpoint.local, client));
+//   LOG(kVerbose) << "Calling RUDP::Add on this node's endpoint " << this_endpoint.local
+//                 << ", peer's endpoint " << peer_endpoint.local;
+//   result = network_.Add(this_endpoint.local, peer_endpoint.local,
+//                         connect_success_local_endpoint.SerializeAsString());
+//
+//   if (result != rudp::kSuccess)
+//     LOG(kWarning) << "rudp add failed on local endpoint" << result;
+//   else
+//     LOG(kVerbose) << "rudp.Add succeeded on local endpoint";
 }
 
 void ValidateAndAddToRoutingTable(NetworkUtils& network_,
