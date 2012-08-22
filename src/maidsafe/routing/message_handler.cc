@@ -66,6 +66,9 @@ void MessageHandler::HandleRoutingMessage(protobuf::Message& message) {
       message.request() ?  service::ProxyConnect(routing_table_, network_, message) :
                            response_handler_->ProxyConnect(message);
       break;
+    case MessageType::kConnectSuccess :
+      response_handler_->ConnectSuccess(message);
+      break;
     default:  // unknown (silent drop)
       return;
   }

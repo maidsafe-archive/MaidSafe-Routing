@@ -83,6 +83,11 @@ message ConnectResponse {
   repeated bytes closer_id = 7;
 }
 
+message ConnectSuccess {
+  required bytes node_id = 1;
+  required Endpoint endpoint = 2;
+}
+
 message FindNodesRequest {
   required int32 num_nodes_requested = 1;
   required bytes target_node = 2;

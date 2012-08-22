@@ -122,14 +122,13 @@ void Connect(RoutingTable& routing_table,
       auto validate_node =
           [=, &routing_table, &non_routing_table, &network] (const asymm::PublicKey& key)->void {
             LOG(kInfo) << "NEED TO VALIDATE THE NODE HERE";
-            ValidatePeer(network,
-                         routing_table,
-                         non_routing_table,
-                         NodeId(connect_request.contact().node_id()),
-                         key,
-                         peer_endpoint_pair,
-                         this_endpoint_pair,
-                         message.client_node());
+            ValidateAndAddToRudp(network,
+                                 NodeId(routing_table.kKeys().identity),
+                                 NodeId(connect_request.contact().node_id()),
+                                 key,
+                                 peer_endpoint_pair,
+                                 this_endpoint_pair,
+                                 routing_table.client_mode());
           };
       node_validation_functor(NodeId(connect_request.contact().node_id()), validate_node);
       connect_response.set_answer(true);
@@ -160,6 +159,7 @@ void Connect(RoutingTable& routing_table,
   message.add_data(connect_response.SerializeAsString());
   message.set_direct(true);
   message.set_replication(1);
+  message.set_client_node(routing_table.client_mode());
   message.set_request(false);
   message.set_hops_to_live(Parameters::hops_to_live);
   if (message.has_source_id())
@@ -211,6 +211,7 @@ void FindNodes(RoutingTable& routing_table, protobuf::Message& message) {
   message.add_data(found_nodes.SerializeAsString());
   message.set_direct(true);
   message.set_replication(1);
+  message.set_client_node(routing_table.client_mode());
   message.set_request(false);
   message.set_hops_to_live(Parameters::hops_to_live);
   assert(message.IsInitialized() && "unintialised message");
@@ -259,6 +260,7 @@ void ProxyConnect(RoutingTable& routing_table,
   message.set_destination_id(message.source_id());
   message.set_source_id(routing_table.kKeys().identity);
   message.set_hops_to_live(Parameters::hops_to_live);
+  message.set_client_node(routing_table.client_mode());
   assert(message.IsInitialized() && "unintialised message");
 }
 

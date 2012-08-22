@@ -169,13 +169,16 @@ void NetworkUtils::SendToClosestNode(const protobuf::Message& message) {
   }
 
   // Relay message responses only
-  if (message.has_relay_id() && (IsResponse(message)) && message.has_relay()) {
+  if (message.has_relay_id() && (IsResponse(message)) && message.has_relay()) {  //TODO FIXME(prakash / david)
     Endpoint direct_endpoint = GetEndpointFromProtobuf(message.relay());
     protobuf::Message relay_message(message);
     relay_message.set_destination_id(message.relay_id());  // so that peer identifies it as direct
     SendTo(relay_message, NodeId(relay_message.relay_id()), direct_endpoint);
   } else {
-    LOG(kError) << "Unable to work out destination; aborting send." << " id: " << message.id();
+    LOG(kError) << "Unable to work out destination; aborting send." << " id: " << message.id()
+    << " message.has_relay_id() ; " << std::boolalpha << message.has_relay_id()
+    << " Isresponse(message) : " << std::boolalpha << IsResponse(message)
+    << " message.has_relay() : "  << std::boolalpha << message.has_relay();
   }
 }
 

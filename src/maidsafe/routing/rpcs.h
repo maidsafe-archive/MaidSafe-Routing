@@ -57,6 +57,10 @@ protobuf::Message ProxyConnect(
     bool relay_message = false,
     boost::asio::ip::udp::endpoint local_endpoint = boost::asio::ip::udp::endpoint());
 
+protobuf::Message ConnectSuccess(const NodeId& node_id,
+                                 const NodeId& my_node_id,
+                                 const boost::asio::ip::udp::endpoint& this_endpoint,
+                                 bool client_node);
 }  // namespace rpcs
 
 }  // namespace routing

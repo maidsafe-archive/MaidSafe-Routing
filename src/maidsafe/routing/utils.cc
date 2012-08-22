@@ -29,28 +29,53 @@ namespace maidsafe {
 
 namespace routing {
 
-void ValidatePeer(NetworkUtils& network_,
-                  RoutingTable& routing_table,
-                  NonRoutingTable& non_routing_table,
-                  const NodeId& peer_id,
-                  const asymm::PublicKey& public_key,
-                  const rudp::EndpointPair& peer_endpoint,
-                  const rudp::EndpointPair& this_endpoint,
-                  const bool& client) {
+void ValidateAndAddToRudp(NetworkUtils& network_,
+                          const NodeId& this_node_id,
+                          const NodeId& peer_id,
+                          const asymm::PublicKey& public_key,
+                          const rudp::EndpointPair& peer_endpoint,
+                          const rudp::EndpointPair& this_endpoint,
+                          const bool& client) {
   NodeInfo peer;
   peer.node_id = peer_id;
   peer.public_key = public_key;
   peer.endpoint = peer_endpoint.external;
+  protobuf::Message connect_success_external_endpoint(
+      rpcs::ConnectSuccess(peer_id, this_node_id, this_endpoint.external, client));
   LOG(kVerbose) << "Calling RUDP::Add on this node's endpoint " << this_endpoint.external
                 << ", peer's endpoint " << peer_endpoint.external;
-  int result = network_.Add(this_endpoint.external, peer_endpoint.external, peer_id.String());
+  int result = network_.Add(this_endpoint.external, peer_endpoint.external,
+                            connect_success_external_endpoint.SerializeAsString());
+  if (result != rudp::kSuccess)
+    LOG(kWarning) << "rudp add failed on external endpoint" << result;
+  else
+    LOG(kVerbose) << "rudp.Add succeeded on external endpoint";
 
-  if (result != rudp::kSuccess) {
-    LOG(kWarning) << "rudp add failed " << result;
-    return;
-  }
+//   protobuf::Message connect_success_local_endpoint(
+//       rpcs::ConnectSuccess(peer_id, this_node_id, this_endpoint.local, client));
+//   LOG(kVerbose) << "Calling RUDP::Add on this node's endpoint " << this_endpoint.local
+//                 << ", peer's endpoint " << peer_endpoint.local;
+//   result = network_.Add(this_endpoint.local, peer_endpoint.local,
+//                         connect_success_local_endpoint.SerializeAsString());
+//
+//   if (result != rudp::kSuccess)
+//     LOG(kWarning) << "rudp add failed on local endpoint" << result;
+//   else
+//     LOG(kVerbose) << "rudp.Add succeeded on local endpoint";
+}
 
-  LOG(kVerbose) << "rudp.Add result = " << result;
+void ValidateAndAddToRoutingTable(NetworkUtils& network_,
+                                  RoutingTable& routing_table,
+                                  NonRoutingTable& non_routing_table,
+                                  const NodeId& peer_id,
+                                  const asymm::PublicKey& public_key,
+                                  const boost::asio::ip::udp::endpoint& peer_endpoint,
+                                  const bool& client) {
+  LOG(kVerbose) << "ValidateAndAddToRoutingTable";
+  NodeInfo peer;
+  peer.node_id = peer_id;
+  peer.public_key = public_key;
+  peer.endpoint = peer_endpoint;
   bool routing_accepted_node(false);
   if (client) {
     NodeId furthest_close_node_id =
@@ -68,7 +93,8 @@ void ValidatePeer(NetworkUtils& network_,
   } else {
     if (routing_table.AddNode(peer)) {
       routing_accepted_node = true;
-      LOG(kVerbose) << "Added node to routing table.  Node ID: " << HexSubstr(peer_id.String());
+      LOG(kVerbose) << "[" << HexSubstr(routing_table.kKeys().identity) << "] "
+                    << "added node to routing table.  Node ID: " << HexSubstr(peer_id.String());
 
       // ProcessSend(rpcs::ProxyConnect(node_id, NodeId(routing_table.kKeys().identity),
        //                              their_endpoint),
@@ -83,7 +109,7 @@ void ValidatePeer(NetworkUtils& network_,
   if (!routing_accepted_node) {
     LOG(kVerbose) << "Not adding node to " << (client ? "non-" : "") << "routing table.  Node id "
                   << HexSubstr(peer_id.String()) << " just added rudp connection will be removed.";
-    network_.Remove(peer_endpoint.external);
+    network_.Remove(peer_endpoint);
   }
 }
 
@@ -142,6 +168,7 @@ bool ValidateMessage(const protobuf::Message &message) {
 
   if (!(message.has_source_id() || (message.has_relay_id() && message.has_relay()))) {
     LOG(kWarning) << "Message should have either src id or relay information.";
+    assert(false && "Message should have either src id or relay information.");
     return false;
   }
 

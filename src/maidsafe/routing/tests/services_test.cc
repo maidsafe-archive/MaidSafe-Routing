@@ -54,11 +54,13 @@ TEST(ServicesTest, BEH_Ping) {
   EXPECT_TRUE(ping_request.IsInitialized());
   // run message through Service
   service::Ping(RT, message);
-  EXPECT_EQ(-1, message.type());
+  EXPECT_EQ(1, message.type());
+  EXPECT_EQ(message.request(), false);
   EXPECT_NE(message.data_size(), 0);
   EXPECT_TRUE(message.source_id() == keys.identity);
   EXPECT_EQ(message.replication(), 1);
-  EXPECT_EQ(message.type(), -1);
+  EXPECT_EQ(message.type(), 1);
+  EXPECT_EQ(message.request(), false);
   EXPECT_EQ(message.id(), 0);
   EXPECT_FALSE(message.client_node());
   EXPECT_FALSE(message.has_relay());
@@ -94,7 +96,8 @@ TEST(ServicesTest, DISABLED_BEH_Connect) {
   EXPECT_NE(message.data_size(), 0);
   EXPECT_TRUE(message.direct());
   EXPECT_EQ(message.replication(), 1);
-  EXPECT_EQ(message.type(), -2);
+  EXPECT_EQ(message.type(), 2);
+  EXPECT_EQ(message.request(), false);
   EXPECT_EQ(message.id(), 0);
   EXPECT_FALSE(message.client_node());
   EXPECT_FALSE(message.has_relay());
@@ -121,7 +124,8 @@ TEST(ServicesTest, BEH_FindNodes) {
   EXPECT_NE(message.data_size(), 0);
   EXPECT_TRUE(message.direct());
   EXPECT_EQ(message.replication(), 1);
-  EXPECT_EQ(message.type(), -3);
+  EXPECT_EQ(message.type(), 3);
+  EXPECT_EQ(message.request(), false);
   EXPECT_EQ(message.id(), 0);
   EXPECT_FALSE(message.client_node());
   EXPECT_FALSE(message.has_relay());
@@ -155,7 +159,8 @@ TEST(ServicesTest, BEH_ProxyConnect) {
   EXPECT_TRUE(message.direct());
   EXPECT_TRUE(message.source_id() == keys.identity);
   EXPECT_EQ(1, message.replication());
-  EXPECT_EQ(-4, message.type());
+  EXPECT_EQ(4, message.type());
+  EXPECT_EQ(message.request(), false);
   EXPECT_EQ(0, message.id());
   EXPECT_FALSE(message.client_node());
   EXPECT_FALSE(message.has_relay());

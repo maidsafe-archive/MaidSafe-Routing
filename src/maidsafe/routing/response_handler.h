@@ -49,6 +49,7 @@ class ResponseHandler : public std::enable_shared_from_this<ResponseHandler> {
   void Connect(protobuf::Message& message);
   void FindNodes(const protobuf::Message& message);
   void ProxyConnect(protobuf::Message& message);
+  void ConnectSuccess(protobuf::Message& message);
   void set_request_public_key_functor(RequestPublicKeyFunctor request_public_key);
   RequestPublicKeyFunctor request_public_key_functor() const;
 
