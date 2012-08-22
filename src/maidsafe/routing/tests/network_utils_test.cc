@@ -250,7 +250,7 @@ TEST(NetworkUtilsTest, FUNC_ProcessSendRecursiveSendOn) {
       }
     };
 
-    rudp::MessageReceivedFunctor message_received_functor3 = [&](const std::string& message) {
+  rudp::MessageReceivedFunctor message_received_functor3 = [&](const std::string& message) {
       LOG(kInfo) << " -- Received: " << message;
       if ("validation" == message.substr(0, 10)) {
         connection_completion_promise.set_value(true);
@@ -326,7 +326,7 @@ TEST(NetworkUtilsTest, FUNC_ProcessSendRecursiveSendOn) {
   SortFromThisNode(NodeId(keys.identity), nodes);
 
   // add the active node at the end of the RT
-  nodes.at(7).node_info.endpoint = endpoint_pair2.external;  //  second node
+  nodes.at(7).node_info.endpoint = endpoint_pair2.local;  //  second node
   sent_message.set_destination_id(NodeId(nodes.at(0).node_info.node_id).String());
 
   for (auto i(0); i != 8; ++i)
