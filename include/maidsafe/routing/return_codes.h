@@ -53,7 +53,8 @@ enum ReturnCode {
   kEmptyData = -303009,
   kTypeNotAllowed = -303010,
   kFailedtoSendFindNode = -303011,
-  kDataSizeNotAllowed = -303012
+  kDataSizeNotAllowed = -303012,
+  kFailedtoGetEndpoint = -303013
 };
 
 }  // namespace routing

@@ -88,20 +88,32 @@ void Connect(RoutingTable& routing_table,
     return;  // FIXME
   }
   connect_response.set_answer(false);
-  rudp::EndpointPair this_endpoint_pair;
-  rudp::EndpointPair peer_endpoint_pair;
+  rudp::EndpointPair this_endpoint_pair1, this_endpoint_pair2, peer_endpoint_pair;
   peer_endpoint_pair.external =
       GetEndpointFromProtobuf(connect_request.contact().public_endpoint());
   peer_endpoint_pair.local = GetEndpointFromProtobuf(connect_request.contact().private_endpoint());
-  // TODO(dirvine) try both connections
-  if (network.GetAvailableEndpoint(peer_endpoint_pair.external, this_endpoint_pair) !=
+
+  if (network.GetAvailableEndpoint(peer_endpoint_pair.external, this_endpoint_pair1) !=
       rudp::kSuccess) {
-    LOG(kError) << "Unable to get available endpoint to connect to " << peer_endpoint_pair.external;
-    return;
+    LOG(kWarning) << "Unable to get available endpoint to connect to "
+                  << peer_endpoint_pair.external;
   }
 
-  LOG(kVerbose) << " GetAvailableEndpoint for peer's endpoint " << peer_endpoint_pair.external
-                << ", this node's endpoint - " << this_endpoint_pair.external;
+  if (network.GetAvailableEndpoint(peer_endpoint_pair.local, this_endpoint_pair2) !=
+      rudp::kSuccess) {
+    LOG(kWarning) << "Unable to get available endpoint to connect to "
+                  << peer_endpoint_pair.local;
+  }
+
+  rudp::EndpointPair this_endpoint_pair;
+  this_endpoint_pair.external = this_endpoint_pair1.external;
+  this_endpoint_pair.local = this_endpoint_pair2.local;
+
+  if (this_endpoint_pair.external.address().is_unspecified() &&
+      this_endpoint_pair.local.address().is_unspecified()) {
+    LOG(kError) << "Unable to get any available endpoint to connect to ";
+    return;
+  }
 
   bool check_node_succeeded(false);
   if (message.client_node()) {  // Client node, check non-routing table

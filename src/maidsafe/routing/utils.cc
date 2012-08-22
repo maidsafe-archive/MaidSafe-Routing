@@ -40,28 +40,34 @@ void ValidateAndAddToRudp(NetworkUtils& network_,
   peer.node_id = peer_id;
   peer.public_key = public_key;
   peer.endpoint = peer_endpoint.external;
-  protobuf::Message connect_success_external_endpoint(
-      rpcs::ConnectSuccess(peer_id, this_node_id, this_endpoint.external, client));
-  LOG(kVerbose) << "Calling RUDP::Add on this node's endpoint " << this_endpoint.external
-                << ", peer's endpoint " << peer_endpoint.external;
-  int result = network_.Add(this_endpoint.external, peer_endpoint.external,
-                            connect_success_external_endpoint.SerializeAsString());
-  if (result != rudp::kSuccess)
-    LOG(kWarning) << "rudp add failed on external endpoint" << result;
-  else
-    LOG(kVerbose) << "rudp.Add succeeded on external endpoint";
+  if (!this_endpoint.external.address().is_unspecified() &&
+      !peer_endpoint.external.address().is_unspecified()) {
+    protobuf::Message connect_success_external_endpoint(
+        rpcs::ConnectSuccess(peer_id, this_node_id, this_endpoint.external, client));
+    LOG(kVerbose) << "Calling RUDP::Add on this node's endpoint " << this_endpoint.external
+                  << ", peer's endpoint " << peer_endpoint.external;
+    int result = network_.Add(this_endpoint.external, peer_endpoint.external,
+                              connect_success_external_endpoint.SerializeAsString());
+    if (result != rudp::kSuccess)
+      LOG(kWarning) << "rudp add failed on external endpoint" << result;
+    else
+      LOG(kVerbose) << "rudp.Add succeeded on external endpoint";
+  }
 
-//   protobuf::Message connect_success_local_endpoint(
-//       rpcs::ConnectSuccess(peer_id, this_node_id, this_endpoint.local, client));
-//   LOG(kVerbose) << "Calling RUDP::Add on this node's endpoint " << this_endpoint.local
-//                 << ", peer's endpoint " << peer_endpoint.local;
-//   result = network_.Add(this_endpoint.local, peer_endpoint.local,
-//                         connect_success_local_endpoint.SerializeAsString());
-//
-//   if (result != rudp::kSuccess)
-//     LOG(kWarning) << "rudp add failed on local endpoint" << result;
-//   else
-//     LOG(kVerbose) << "rudp.Add succeeded on local endpoint";
+  if (!this_endpoint.local.address().is_unspecified() &&
+      !peer_endpoint.local.address().is_unspecified()) {
+    protobuf::Message connect_success_local_endpoint(
+        rpcs::ConnectSuccess(peer_id, this_node_id, this_endpoint.local, client));
+    LOG(kVerbose) << "Calling RUDP::Add on this node's endpoint " << this_endpoint.local
+                  << ", peer's endpoint " << peer_endpoint.local;
+    int result = network_.Add(this_endpoint.local, peer_endpoint.local,
+                              connect_success_local_endpoint.SerializeAsString());
+
+    if (result != rudp::kSuccess)
+      LOG(kWarning) << "rudp add failed on local endpoint" << result;
+    else
+      LOG(kVerbose) << "rudp.Add succeeded on local endpoint";
+  }
 }
 
 void ValidateAndAddToRoutingTable(NetworkUtils& network_,

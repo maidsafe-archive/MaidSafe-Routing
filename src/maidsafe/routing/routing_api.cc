@@ -306,8 +306,8 @@ int Routing::ZeroStateJoin(Functors functors,
 
   rudp::EndpointPair peer_endpoint_pair;  // zero state nodes must be directly connected endpoint
   rudp::EndpointPair this_endpoint_pair;
-  peer_endpoint_pair.external = peer_endpoint_pair.local = peer_node.endpoint;
-  this_endpoint_pair.external = this_endpoint_pair.local = local_endpoint;
+  peer_endpoint_pair.external = peer_node.endpoint;
+  this_endpoint_pair.external = local_endpoint;
 
   ValidateAndAddToRoutingTable(impl_->network_,
                                impl_->routing_table_,

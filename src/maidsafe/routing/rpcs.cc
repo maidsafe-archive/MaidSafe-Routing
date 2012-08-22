@@ -63,12 +63,8 @@ protobuf::Message Connect(const NodeId& node_id,
   protobuf::Message message;
   protobuf::ConnectRequest protobuf_connect_request;
   protobuf::Contact* contact = protobuf_connect_request.mutable_contact();
-  protobuf::Endpoint* public_endpoint = contact->mutable_public_endpoint();
-  public_endpoint->set_ip(our_endpoint.external.address().to_string());
-  public_endpoint->set_port(our_endpoint.external.port());
-  protobuf::Endpoint* private_endpoint = contact->mutable_private_endpoint();
-  private_endpoint->set_ip(our_endpoint.local.address().to_string());
-  private_endpoint->set_port(our_endpoint.local.port());
+  SetProtobufEndpoint(our_endpoint.external, contact->mutable_public_endpoint());
+  SetProtobufEndpoint(our_endpoint.local, contact->mutable_private_endpoint());
   contact->set_node_id(my_node_id.String());
   for (auto node_id : closest_ids)
     protobuf_connect_request.add_closest_id(node_id);

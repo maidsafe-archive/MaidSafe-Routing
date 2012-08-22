@@ -101,10 +101,20 @@ int NetworkUtils::Bootstrap(const std::vector<Endpoint> &bootstrap_endpoints,
   rudp::EndpointPair endpoint_pair;
   if (kSuccess != rudp_->GetAvailableEndpoint(bootstrap_endpoint_, endpoint_pair)) {
     LOG(kError) << " Failed to get available endpoint for new connections";
-    return kGeneralError;
+    return kFailedtoGetEndpoint;
   }
-  this_node_relay_endpoint_ = endpoint_pair.external;
-  LOG(kVerbose) << "Bootstrap successful, bootstrap node - " << bootstrap_endpoint_;
+  LOG(kVerbose) << "Getavailable endpoint returned, endpoint_pair.external - "
+                << endpoint_pair.external
+                << " , endpoint_pair.local - " << endpoint_pair.local;
+  if (!endpoint_pair.local.address().is_unspecified())
+    this_node_relay_endpoint_ = endpoint_pair.local;
+  else if (!endpoint_pair.external.address().is_unspecified())
+    this_node_relay_endpoint_ = endpoint_pair.external;
+  else
+    return kFailedtoGetEndpoint;
+
+  LOG(kVerbose) << "Bootstrap successful, bootstrap endpoint - " << bootstrap_endpoint_
+                << " , my relay endpoint - " << this_node_relay_endpoint_;
   return kSuccess;
 }
 
@@ -169,7 +179,7 @@ void NetworkUtils::SendToClosestNode(const protobuf::Message& message) {
   }
 
   // Relay message responses only
-  if (message.has_relay_id() && (IsResponse(message)) && message.has_relay()) {  //TODO FIXME(prakash / david)
+  if (message.has_relay_id() && (IsResponse(message)) && message.has_relay()) {
     Endpoint direct_endpoint = GetEndpointFromProtobuf(message.relay());
     protobuf::Message relay_message(message);
     relay_message.set_destination_id(message.relay_id());  // so that peer identifies it as direct
