@@ -557,7 +557,7 @@ TEST(APITest, BEH_API_NodeNetwork) {
   for (auto i(0); i != (kNetworkSize - 2); ++i) {
     functors.network_status = status_vector.at(i);
     routing_node[i + 2]->Join(functors, nodes[i % 2].node_info.endpoint);
-    join_futures.at(i).timed_wait(boost::posix_time::seconds(10));
+    ASSERT_TRUE(join_futures.at(i).timed_wait(boost::posix_time::seconds(10)));
     LOG(kVerbose) << "node ---------------------------- " << i + 2 << "joined";
   }
 }
@@ -729,8 +729,7 @@ TEST(APITest, BEH_API_NodeNetworkWithClient) {
   for (auto i(2); i != (kNetworkSize); ++i) {
     functors.network_status = status_vector.at(i);
     routing_node[i]->Join(functors, nodes[0].node_info.endpoint);
-    // ASSERT_TRUE(join_futures.at(i).timed_wait(boost::posix_time::seconds(10)));
-    join_futures.at(i).timed_wait(boost::posix_time::seconds(10));
+    ASSERT_TRUE(join_futures.at(i).timed_wait(boost::posix_time::seconds(10)));
   }
 }
 

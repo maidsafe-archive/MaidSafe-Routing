@@ -169,7 +169,7 @@ void NetworkUtils::SendToClosestNode(const protobuf::Message& message) {
   }
 
   // Relay message responses only
-  if (message.has_relay_id() && (IsResponse(message))) { //  && message.has_relay()) {  //TODO FIXME(prakash / david)
+  if (message.has_relay_id() && (IsResponse(message)) && message.has_relay()) {  //TODO FIXME(prakash / david)
     Endpoint direct_endpoint = GetEndpointFromProtobuf(message.relay());
     protobuf::Message relay_message(message);
     relay_message.set_destination_id(message.relay_id());  // so that peer identifies it as direct
