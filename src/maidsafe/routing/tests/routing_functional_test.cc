@@ -239,6 +239,23 @@ TYPED_TEST_P(RoutingNetworkTest, FUNC_SendToGroup) {
   EXPECT_EQ(message_count * (Parameters::node_group_size), receivers_message_count);
 }
 
+TYPED_TEST_P(RoutingNetworkTest, FUNC_SendToGroupInHybridNetwork) {
+  uint16_t message_count(1), receivers_message_count(0);
+  this->SetUpNetwork(kServerSize, 2);
+  LOG(kVerbose) << "Network created";
+  size_t last_index(this->nodes_.size() - 1);
+  NodeId dest_id(this->nodes_[last_index]->node_id());
+
+  EXPECT_TRUE(this->GroupSend(dest_id, message_count));
+  for (size_t index = 0; index != (last_index); ++index)
+    receivers_message_count += static_cast<uint16_t>(this->nodes_.at(index)->MessagesSize());
+
+  EXPECT_EQ(0, this->nodes_[last_index]->MessagesSize())
+        << "Expected message at Node : "
+        << HexSubstr(this->nodes_[last_index]->node_id().String());
+  EXPECT_EQ(message_count * (Parameters::node_group_size), receivers_message_count);
+}
+
 TYPED_TEST_P(RoutingNetworkTest, FUNC_SendToGroupRandomId) {
   uint16_t message_count(200), receivers_message_count(0);
   this->SetUpNetwork(kServerSize);
@@ -271,7 +288,8 @@ TYPED_TEST_P(RoutingNetworkTest, FUNC_RecursiveCall) {
 
 REGISTER_TYPED_TEST_CASE_P(RoutingNetworkTest, FUNC_SetupNetwork, FUNC_SetupHybridNetwork,
                            FUNC_Send, FUNC_ClientSend, FUNC_SendMulti, FUNC_ClientSendMulti,
-                           FUNC_SendToGroup, FUNC_SendToGroupRandomId, FUNC_RecursiveCall);
+                           FUNC_SendToGroup, FUNC_SendToGroupInHybridNetwork,
+                           FUNC_SendToGroupRandomId, FUNC_RecursiveCall);
 INSTANTIATE_TYPED_TEST_CASE_P(MAIDSAFE, RoutingNetworkTest, TestNode);
 
 }  // namespace test

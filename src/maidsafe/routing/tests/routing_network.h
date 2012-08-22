@@ -45,7 +45,7 @@ namespace test {
   const uint32_t kClientSize(8);
   const uint32_t kServerSize(8);
 #else
-  const uint32_t kClientSize(2);
+  const uint32_t kClientSize(6);
   const uint32_t kServerSize(6);
 #endif
 
@@ -186,14 +186,18 @@ class GenericNetwork : public testing::Test {
   }
 
   virtual void Validate(const NodeId& node_id, GivePublicKeyFunctor give_public_key) {
-      auto iter = std::find_if(nodes_.begin(), nodes_.end(),
-          [&node_id](const NodePtr& node)->bool {
-            EXPECT_FALSE(GetKeys(node->node_info_plus_).identity.empty());
-            return GetKeys(node->node_info_plus_).identity == node_id.String();
-      });
-      EXPECT_NE(iter, nodes_.end());
-      if (iter != nodes_.end())
-        give_public_key(GetKeys((*iter)->node_info_plus_).public_key);  }
+    if (node_id == NodeId())
+      return;
+
+    auto iter = std::find_if(nodes_.begin(), nodes_.end(),
+        [&node_id](const NodePtr& node)->bool {
+          EXPECT_FALSE(GetKeys(node->node_info_plus_).identity.empty());
+          return GetKeys(node->node_info_plus_).identity == node_id.String();
+    });
+    EXPECT_NE(iter, nodes_.end());
+    if (iter != nodes_.end())
+      give_public_key(GetKeys((*iter)->node_info_plus_).public_key);
+  }
 
   virtual void SetNodeValidationFunctor(NodePtr node) {
     node->functors_.request_public_key = [this](const NodeId& node_id,

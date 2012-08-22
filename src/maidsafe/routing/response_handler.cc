@@ -186,7 +186,7 @@ void ResponseHandler::ConnectTo(const std::vector<std::string>& nodes,
     if (routing_table_.CheckNode(node_to_add)) {
       LOG(kVerbose) << "CheckNode succeeded for node " << HexSubstr(node_to_add.node_id.String());
       Endpoint direct_endpoint;
-      bool routing_table_empty(routing_table_.Size() == 0);
+      bool routing_table_empty(routing_table_.Size() < Parameters::closest_nodes_size);
       if (routing_table_empty)  // Joining the network, and may connect to bootstrapping node.
         direct_endpoint = network_.bootstrap_endpoint();
       rudp::EndpointPair endpoint;

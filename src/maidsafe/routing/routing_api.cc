@@ -418,8 +418,9 @@ void Routing::Send(const NodeId& destination_id,
     proto_message.set_relay_id(impl_->routing_table_.kKeys().identity);
     SetProtobufEndpoint(impl_->network_.this_node_relay_endpoint(), proto_message.mutable_relay());
     Endpoint bootstrap_endpoint = impl_->network_.bootstrap_endpoint();
-    assert(proto_message.has_relay() && "did not set endpoint") ;
-    assert((impl_->network_.this_node_relay_endpoint() == GetEndpointFromProtobuf(proto_message.relay())) && "Endpoint was not set properly");
+    assert(proto_message.has_relay() && "did not set endpoint");
+    assert((impl_->network_.this_node_relay_endpoint() ==
+            GetEndpointFromProtobuf(proto_message.relay())) && "Endpoint was not set properly");
     rudp::MessageSentFunctor message_sent(
         [&](int result) {
           if (rudp::kSuccess != result) {
