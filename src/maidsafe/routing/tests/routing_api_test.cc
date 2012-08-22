@@ -50,8 +50,8 @@ typedef boost::asio::ip::udp::endpoint Endpoint;
   const int kClientCount(10);
   const int kServerCount(10);
 #else
-  const int kClientCount(8);
-  const int kServerCount(8);
+  const int kClientCount(2);
+  const int kServerCount(6);
 #endif
 
 const int kNetworkSize = kClientCount + kServerCount;

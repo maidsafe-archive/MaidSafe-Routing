@@ -173,9 +173,10 @@ void ResponseHandler::ConnectTo(const std::vector<std::string>& nodes,
                                             NodeId(routing_table_.kKeys().identity));
             });
   auto iter(std::unique(closest_node_ids.begin(), closest_node_ids.end()));
-  closest_node_ids.resize(
-      std::min(static_cast<uint16_t>(std::distance(iter, closest_node_ids.begin())),
-                                     Parameters::closest_nodes_size));
+  auto resize =  std::min(static_cast<uint16_t>(std::distance(iter, closest_node_ids.begin())),
+                          Parameters::closest_nodes_size);
+  if (closest_node_ids.size() > resize)
+    closest_node_ids.resize(resize);
   for (uint16_t i = 0; i < nodes.size(); ++i) {
     NodeInfo node_to_add;
     node_to_add.node_id = NodeId(nodes.at(i));

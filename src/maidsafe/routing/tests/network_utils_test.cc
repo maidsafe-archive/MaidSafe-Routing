@@ -99,6 +99,9 @@ TEST(NetworkUtilsTest, FUNC_ProcessSendDirectEndpoint) {
   uint32_t expected_message_at_node(kMessageCount + 2);
   uint32_t message_count_at_node2(0);
 
+  boost::promise<bool> connection_completion_promise;
+  auto connection_completion_future = connection_completion_promise.get_future();
+
   protobuf::Message sent_message;
   sent_message.set_destination_id(NodeId(RandomString(64)).String());
   sent_message.set_routing_message(true);
@@ -107,6 +110,10 @@ TEST(NetworkUtilsTest, FUNC_ProcessSendDirectEndpoint) {
   sent_message.set_direct(true);
   sent_message.set_type(10);
   sent_message.set_client_node(false);
+
+  rudp::MessageReceivedFunctor message_received_functor1 = [](const std::string& message) {
+      LOG(kInfo) << " -- Received: " << message;
+    };
 
   rudp::MessageReceivedFunctor message_received_functor2 = [&](const std::string& message) {
       ++message_count_at_node2;
@@ -123,8 +130,12 @@ TEST(NetworkUtilsTest, FUNC_ProcessSendDirectEndpoint) {
       }
     };
 
-  rudp::MessageReceivedFunctor message_received_functor = [](const std::string& message) {
+    rudp::MessageReceivedFunctor message_received_functor3 = [&](const std::string& message) {
       LOG(kInfo) << " -- Received: " << message;
+      if ("validation" == message.substr(0, 10)) {
+        connection_completion_promise.set_value(true);
+        LOG(kInfo) << " -- Set promise";
+      }
     };
 
   rudp::ConnectionLostFunctor connection_lost_functor = [](const Endpoint& endpoint) {
@@ -139,7 +150,7 @@ TEST(NetworkUtilsTest, FUNC_ProcessSendDirectEndpoint) {
   auto a1 = std::async(std::launch::async, [=, &rudp1]()-> Endpoint {
       std::vector<Endpoint> bootstrap_endpoint(1, endpoint2);
       return rudp1.Bootstrap(bootstrap_endpoint,
-                             message_received_functor,
+                             message_received_functor1,
                              connection_lost_functor,
                              private_key1,
                              public_key1,
@@ -171,18 +182,21 @@ TEST(NetworkUtilsTest, FUNC_ProcessSendDirectEndpoint) {
 
   std::vector<Endpoint> bootstrap_endpoint(1, endpoint2);
   EXPECT_EQ(kSuccess, network.Bootstrap(bootstrap_endpoint,
-                                        message_received_functor,
+                                        message_received_functor3,
                                         connection_lost_functor));
   rudp::EndpointPair endpoint_pair2, endpoint_pair3;
   network.GetAvailableEndpoint(endpoint2, endpoint_pair3);
-  rudp2.GetAvailableEndpoint(endpoint_pair3.external, endpoint_pair2);
-  EXPECT_EQ(kSuccess, network.Add(endpoint_pair3.external, endpoint_pair2.external,
+  rudp2.GetAvailableEndpoint(endpoint_pair3.local, endpoint_pair2);
+  EXPECT_EQ(kSuccess, network.Add(endpoint_pair3.local, endpoint_pair2.local,
                                   "validation_3->2"));
-  EXPECT_EQ(kSuccess, rudp2.Add(endpoint_pair2.external, endpoint_pair3.external,
+  EXPECT_EQ(kSuccess, rudp2.Add(endpoint_pair2.local, endpoint_pair3.local,
                                 "validation_2->3"));
+  if (!connection_completion_future.timed_wait(bptime::seconds(10))) {
+    ASSERT_TRUE(false) << "Failed waiting for node-3 to receive validation data";
+  }
 
   for (auto i(0); i != kMessageCount; ++i)
-    network.SendToDirectEndpoint(sent_message, endpoint_pair2.external);
+    network.SendToDirectEndpoint(sent_message, endpoint_pair2.local);
   if (!test_completion_future.timed_wait(bptime::seconds(60))) {
     ASSERT_TRUE(false) << "Failed waiting for node-2 to receive "
                        << expected_message_at_node << "messsages";
@@ -202,6 +216,9 @@ TEST(NetworkUtilsTest, FUNC_ProcessSendRecursiveSendOn) {
   uint32_t expected_message_at_node(kMessageCount + 2);
   uint32_t message_count_at_node2(0);
 
+  boost::promise<bool> connection_completion_promise;
+  auto connection_completion_future = connection_completion_promise.get_future();
+
   protobuf::Message sent_message;
   sent_message.add_data(std::string(1024 * 256, 'B'));
   sent_message.set_direct(true);
@@ -213,6 +230,10 @@ TEST(NetworkUtilsTest, FUNC_ProcessSendRecursiveSendOn) {
   RoutingTable routing_table(keys, false);
   NonRoutingTable non_routing_table(keys);
   NetworkUtils network(routing_table, non_routing_table);
+
+  rudp::MessageReceivedFunctor message_received_functor1 = [](const std::string& message) {
+      LOG(kInfo) << " -- Received: " << message;
+    };
 
   rudp::MessageReceivedFunctor message_received_functor2 = [&](const std::string& message) {
       ++message_count_at_node2;
@@ -229,8 +250,12 @@ TEST(NetworkUtilsTest, FUNC_ProcessSendRecursiveSendOn) {
       }
     };
 
-  rudp::MessageReceivedFunctor message_received_functor = [](const std::string& message) {
+    rudp::MessageReceivedFunctor message_received_functor3 = [&](const std::string& message) {
       LOG(kInfo) << " -- Received: " << message;
+      if ("validation" == message.substr(0, 10)) {
+        connection_completion_promise.set_value(true);
+        LOG(kInfo) << " -- Set promise";
+      }
     };
 
   rudp::ConnectionLostFunctor connection_lost_functor = [](const Endpoint& endpoint) {
@@ -248,7 +273,7 @@ TEST(NetworkUtilsTest, FUNC_ProcessSendRecursiveSendOn) {
   auto a1 = std::async(std::launch::async, [=, &rudp1]()-> Endpoint {
       std::vector<Endpoint> bootstrap_endpoint(1, endpoint2);
       return rudp1.Bootstrap(bootstrap_endpoint,
-                             message_received_functor,
+                             message_received_functor1,
                              connection_lost_functor,
                              private_key1,
                              public_key1,
@@ -278,15 +303,20 @@ TEST(NetworkUtilsTest, FUNC_ProcessSendRecursiveSendOn) {
 
   std::vector<Endpoint> bootstrap_endpoint(1, endpoint2);
   EXPECT_EQ(kSuccess, network.Bootstrap(bootstrap_endpoint,
-                                        message_received_functor,
+                                        message_received_functor3,
                                         connection_lost_functor3));
   rudp::EndpointPair endpoint_pair2, endpoint_pair3;
   network.GetAvailableEndpoint(endpoint2, endpoint_pair3);
-  rudp2.GetAvailableEndpoint(endpoint_pair3.external, endpoint_pair2);
-  EXPECT_EQ(kSuccess, network.Add(endpoint_pair3.external, endpoint_pair2.external,
+  rudp2.GetAvailableEndpoint(endpoint_pair3.local, endpoint_pair2);
+  EXPECT_EQ(kSuccess, network.Add(endpoint_pair3.local, endpoint_pair2.local,
                                   "validation_3->2"));
-  EXPECT_EQ(kSuccess, rudp2.Add(endpoint_pair2.external, endpoint_pair3.external,
+  EXPECT_EQ(kSuccess, rudp2.Add(endpoint_pair2.local, endpoint_pair3.local,
                                 "validation_2->3"));
+
+  if (!connection_completion_future.timed_wait(bptime::seconds(10))) {
+    ASSERT_TRUE(false) << "Failed waiting for node-3 to receive validation data";
+  }
+
   LOG(kVerbose) << " ------------------------ 3rd node setup done ------------------------------ ";
 
   // setup 7 inactive & 1 active node

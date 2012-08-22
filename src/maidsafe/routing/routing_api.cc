@@ -309,6 +309,12 @@ int Routing::ZeroStateJoin(Functors functors,
   peer_endpoint_pair.external = peer_node.endpoint;
   this_endpoint_pair.external = local_endpoint;
 
+  result = impl_->network_.Add(local_endpoint, peer_node.endpoint, "junk");
+  if (result != kSuccess) {
+    LOG(kError) << "Failed to add zero state node : " << peer_node.endpoint;
+    return result;
+  }
+
   ValidateAndAddToRoutingTable(impl_->network_,
                                impl_->routing_table_,
                                impl_->non_routing_table_,
