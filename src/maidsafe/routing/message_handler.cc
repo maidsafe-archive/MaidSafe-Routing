@@ -94,6 +94,7 @@ void MessageHandler::HandleNodeLevelMessageForThisNode(protobuf::Message& messag
         message_out.set_request(false);
         message_out.set_hops_to_live(Parameters::hops_to_live);
         message_out.set_destination_id(message.source_id());
+        message_out.set_type(message.type());
         message_out.set_direct(true);
         message_out.clear_data();
         message_out.set_client_node(message.client_node());
@@ -270,9 +271,9 @@ void MessageHandler::HandleMessage(protobuf::Message& message) {
   if (IsRelayResponseForThisNode(message))
     return HandleRoutingMessage(message);
 
-  // TODO (Team) : Needs to handle this case for low rank vaults present in Non RTs.
+  // TODO(Team) : Needs to handle this case for low rank vaults present in Non RTs.
   if (non_routing_table_.IsConnected(NodeId(message.destination_id())) &&
-      IsRequest(message)) {
+      IsRequest(message) && IsDirect(message)) {
     LOG(kInfo) << "Dropping a request message destined to client with id: "
                << HexSubstr(message.destination_id()) << " message id: " << message.id();
     return;
