@@ -393,6 +393,7 @@ void Routing::Send(const NodeId& destination_id,
   proto_message.set_destination_id(destination_id.String());
   proto_message.set_routing_message(false);
   proto_message.add_data(data);
+  proto_message.set_type(static_cast<int32_t>(MessageType::kNodeLevel));
   proto_message.set_cacheable(cache);
   proto_message.set_direct(direct);
   proto_message.set_client_node(impl_->client_mode_);

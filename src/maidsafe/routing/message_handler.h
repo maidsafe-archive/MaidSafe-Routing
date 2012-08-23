@@ -38,7 +38,9 @@ enum class MessageType : int32_t {
   kConnect = 2,
   kFindNodes = 3,
   kProxyConnect = 4,
-  kConnectSuccess = 5
+  kConnectSuccess = 5,
+  kMaxRouting = 100,
+  kNodeLevel = 101
 };
 
 class MessageHandler {

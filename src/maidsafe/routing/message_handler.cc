@@ -94,6 +94,7 @@ void MessageHandler::HandleNodeLevelMessageForThisNode(protobuf::Message& messag
         message_out.set_request(false);
         message_out.set_hops_to_live(Parameters::hops_to_live);
         message_out.set_destination_id(message.source_id());
+        message_out.set_type(message.type());
         message_out.set_direct(true);
         message_out.clear_data();
         message_out.set_client_node(message.client_node());
