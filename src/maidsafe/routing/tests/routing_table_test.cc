@@ -139,7 +139,7 @@ TEST(RoutingTableTest, BEH_CloseAndInRangeCheck) {
   EXPECT_EQ(NodeId(), RT.DropNode(node.endpoint).node_id);
 }
 
-TEST(RoutingTableTest, GetClosestNodeWithExclusion) {
+TEST(RoutingTableTest, BEH_GetClosestNodeWithExclusion) {
   std::vector<NodeId> nodes_id;
   std::vector<std::string> exclude;
   asymm::Keys keys;
