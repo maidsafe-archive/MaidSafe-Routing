@@ -188,8 +188,13 @@ void GenericNode::set_expected(const int& expected) {
 }
 
 void GenericNode::PrintRoutingTable() {
-  LOG(kInfo) << " PrintRoutingTable of " << HexSubstr(node_info_plus_.node_info.node_id.String());
+  LOG(kInfo) << " PrintRoutingTable of " << HexSubstr(node_info_plus_.node_info.node_id.String())
+             << (IsClient() ? " Client" : "Vault");
   for (auto node_info : routing_->impl_->routing_table_.nodes_) {
+    LOG(kInfo) << "NodeId: " << HexSubstr(node_info.node_id.String());
+  }
+  LOG(kInfo) << "Non-RoutingTable of " << HexSubstr(node_info_plus_.node_info.node_id.String());
+  for (auto node_info : routing_->impl_->non_routing_table_.nodes_) {
     LOG(kInfo) << "NodeId: " << HexSubstr(node_info.node_id.String());
   }
 }

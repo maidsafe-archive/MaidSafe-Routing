@@ -270,6 +270,14 @@ void MessageHandler::HandleMessage(protobuf::Message& message) {
   if (IsRelayResponseForThisNode(message))
     return HandleRoutingMessage(message);
 
+  // TODO (Team) : Needs to handle this case for low rank vaults present in Non RTs.
+  if (non_routing_table_.IsConnected(NodeId(message.destination_id())) &&
+      IsRequest(message)) {
+    LOG(kInfo) << "Dropping a request message destined to client with id: "
+               << HexSubstr(message.destination_id()) << " message id: " << message.id();
+    return;
+  }
+
   // This node is in closest proximity to this message
   if (routing_table_.IsThisNodeInRange(NodeId(message.destination_id()),
                                        Parameters::closest_nodes_size) ||
