@@ -85,23 +85,25 @@ TYPED_TEST_CASE_P(FindNodeNetwork);
 
 TYPED_TEST_P(FindNodeNetwork, FUNC_FindExistingNode) {
   this->SetUpNetwork(kNetworkSize);
-  bool exists(false);
-  int index(0);
-  for (auto source : this->nodes_)
-    for (auto dest : this->nodes_)
-      if ((source->node_id() != dest->node_id()) &&
-          (source->node_id() != this->nodes_[1]->node_id()) &&
-          (dest->node_id() != this->nodes_[1]->node_id())) {
-        LOG(kInfo) << "index: " << index++;
-        exists = source->RoutingTableHasNode(dest->node_id());
-        EXPECT_TRUE(this->Find(source, dest->node_id()));
-        Sleep(boost::posix_time::seconds(1));
-        EXPECT_EQ(source->RoutingTableHasNode(dest->node_id()), exists);
-      }
+  for (auto source : this->nodes_) {
+    EXPECT_TRUE(this->Find(source, source->node_id()));
+    Sleep(boost::posix_time::seconds(1));
+  }
+  EXPECT_TRUE(this->ValidateRoutingTables());
 }
 
+TYPED_TEST_P(FindNodeNetwork, FUNC_FindExistingNodeInHybridNetwork) {
+  this->SetUpNetwork(kServerSize, kClientSize);
+  for (auto source : this->nodes_) {
+    EXPECT_TRUE(this->Find(source, source->node_id()));
+    Sleep(boost::posix_time::seconds(1));
+  }
+  EXPECT_TRUE(this->ValidateRoutingTables());
+}
+
+
 TYPED_TEST_P(FindNodeNetwork, FUNC_FindNonExistingNode) {
-  this->SetUpNetwork(kNetworkSize);
+  this->SetUpNetwork(kServerSize, kClientSize);
   uint32_t source(RandomUint32() % (this->nodes_.size() - 2) + 2);
   NodeId node_id(GenerateUniqueRandomId(this->nodes_[source]->node_id(), 6));
   EXPECT_TRUE(this->Find(this->nodes_[source], node_id));
@@ -118,19 +120,8 @@ TYPED_TEST_P(FindNodeNetwork, FUNC_FindNodeAfterDrop) {
   Sleep(boost::posix_time::seconds(1));
   EXPECT_TRUE(this->nodes_[source]->RoutingTableHasNode(node_id));
   EXPECT_TRUE(this->nodes_[source]->DropNode(node_id));
-  Sleep(boost::posix_time::seconds(10));
+  Sleep(boost::posix_time::seconds(2));
   EXPECT_TRUE(this->nodes_[source]->RoutingTableHasNode(node_id));
-}
-
-TYPED_TEST_P(FindNodeNetwork, DISABLED_FUNC_FindNodeAfterLeaving) {
-  this->SetUpNetwork(kServerSize);
-  uint32_t index(RandomUint32() % (this->nodes_.size() - 2) + 2);
-  NodeId node_id(this->nodes_[index]->node_id());
-  EXPECT_TRUE(this->RemoveNode(node_id));
-  EXPECT_EQ(this->nodes_.size(), kServerSize - 1);
-  Sleep(boost::posix_time::seconds(15));
-  for (auto node : this->nodes_)
-    EXPECT_FALSE(node->RoutingTableHasNode(node_id));
 }
 
 TYPED_TEST_P(FindNodeNetwork, FUNC_VaultFindVaultNode) {
@@ -142,12 +133,11 @@ TYPED_TEST_P(FindNodeNetwork, FUNC_VaultFindVaultNode) {
   this->AddNode(false, GenerateUniqueRandomId(this->nodes_[source]->node_id(), 20));
   EXPECT_TRUE(this->nodes_[source]->RoutingTableHasNode(this->nodes_[dest]->node_id()));
 
-  EXPECT_TRUE(this->nodes_[dest]->DropNode(this->nodes_[source]->node_id()));
+  EXPECT_TRUE(this->nodes_[source]->DropNode(this->nodes_[dest]->node_id()));
 
-  Sleep(boost::posix_time::seconds(1));
+  Sleep(boost::posix_time::seconds(2));
 
   LOG(kVerbose) << "after find " << HexSubstr(this->nodes_[dest]->node_id().String());
-  this->nodes_[source]->PrintRoutingTable();
   EXPECT_TRUE(this->nodes_[source]->RoutingTableHasNode(this->nodes_[dest]->node_id()));
 }
 
@@ -169,13 +159,7 @@ TYPED_TEST_P(FindNodeNetwork, FUNC_VaultFindClientNode) {
   EXPECT_TRUE(this->nodes_[dest]->DropNode(this->nodes_[source]->node_id()));
   Sleep(boost::posix_time::seconds(1));
   EXPECT_FALSE(this->nodes_[dest]->RoutingTableHasNode(this->nodes_[source]->node_id()));
-  EXPECT_FALSE(this->nodes_[source]->NonRoutingTableHasNode(this->nodes_[dest]->node_id()));
-
-  // trying to find back
-  EXPECT_TRUE(this->Find(this->nodes_[source], this->nodes_[dest]->node_id()));
-  Sleep(boost::posix_time::seconds(5));
-  EXPECT_FALSE(this->nodes_[source]->RoutingTableHasNode(this->nodes_[dest]->node_id()));
-  EXPECT_FALSE(this->nodes_[source]->NonRoutingTableHasNode(this->nodes_[dest]->node_id()));
+  EXPECT_TRUE(this->nodes_[source]->NonRoutingTableHasNode(this->nodes_[dest]->node_id()));
 }
 
 TYPED_TEST_P(FindNodeNetwork, FUNC_ClientFindVaultNode) {
@@ -191,6 +175,8 @@ TYPED_TEST_P(FindNodeNetwork, FUNC_ClientFindVaultNode) {
   // Add one vault node
   this->AddNode(false, GenerateUniqueRandomId(this->nodes_[source]->node_id(), 24));
 
+  Sleep(boost::posix_time::seconds(1));
+
   EXPECT_TRUE(this->nodes_[client]->RoutingTableHasNode(this->nodes_[source]->node_id()));
   EXPECT_FALSE(this->nodes_[source]->RoutingTableHasNode(this->nodes_[client]->node_id()));
   EXPECT_TRUE(this->nodes_[source]->NonRoutingTableHasNode(this->nodes_[client]->node_id()));
@@ -200,8 +186,8 @@ TYPED_TEST_P(FindNodeNetwork, FUNC_ClientFindVaultNode) {
   EXPECT_FALSE(this->nodes_[vault]->NonRoutingTableHasNode(this->nodes_[client]->node_id()));
 
   // trying to find
-  EXPECT_TRUE(this->Find(this->nodes_[vault], this->nodes_[client]->node_id()));
-  Sleep(boost::posix_time::seconds(5));
+  EXPECT_TRUE(this->Find(this->nodes_[vault], this->nodes_[vault]->node_id()));
+  Sleep(boost::posix_time::seconds(1));
   EXPECT_FALSE(this->nodes_[vault]->RoutingTableHasNode(this->nodes_[client]->node_id()));
   EXPECT_FALSE(this->nodes_[vault]->NonRoutingTableHasNode(this->nodes_[client]->node_id()));
 }
@@ -217,6 +203,7 @@ TYPED_TEST_P(FindNodeNetwork, FUNC_ClientFindClientNode) {
   // Add two client nodes
   this->AddNode(true, GenerateUniqueRandomId(this->nodes_[source]->node_id(), 8));
   this->AddNode(true, GenerateUniqueRandomId(this->nodes_[source]->node_id(), 12));
+  Sleep(boost::posix_time::seconds(1));
 
   EXPECT_TRUE(this->nodes_[client1]->RoutingTableHasNode(this->nodes_[source]->node_id()));
   EXPECT_TRUE(this->nodes_[client2]->RoutingTableHasNode(this->nodes_[source]->node_id()));
@@ -231,16 +218,16 @@ TYPED_TEST_P(FindNodeNetwork, FUNC_ClientFindClientNode) {
   EXPECT_FALSE(this->nodes_[client2]->NonRoutingTableHasNode(this->nodes_[client1]->node_id()));
 
   // trying to find
-  EXPECT_TRUE(this->Find(this->nodes_[client1], this->nodes_[client2]->node_id()));
+  EXPECT_TRUE(this->Find(this->nodes_[client1], this->nodes_[client1]->node_id()));
   Sleep(boost::posix_time::seconds(5));
   EXPECT_FALSE(this->nodes_[client1]->RoutingTableHasNode(this->nodes_[client2]->node_id()));
   EXPECT_FALSE(this->nodes_[client1]->NonRoutingTableHasNode(this->nodes_[client2]->node_id()));
 }
 
 REGISTER_TYPED_TEST_CASE_P(FindNodeNetwork, FUNC_FindExistingNode,
+                                            FUNC_FindExistingNodeInHybridNetwork,
                                             FUNC_FindNonExistingNode,
                                             FUNC_FindNodeAfterDrop,
-                                            DISABLED_FUNC_FindNodeAfterLeaving,
                                             FUNC_VaultFindVaultNode,
                                             FUNC_VaultFindClientNode,
                                             FUNC_ClientFindVaultNode,

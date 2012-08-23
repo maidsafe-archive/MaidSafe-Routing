@@ -210,16 +210,6 @@ class GenericNetwork : public testing::Test {
       node->PrintRoutingTable();
   }
 
-
- private:
-  uint16_t NonClientNodesSize() const {
-    uint16_t non_client_size(0);
-    for (auto node : this->nodes_)
-      if (!node->IsClient())
-        non_client_size++;
-    return non_client_size;
-  }
-
   bool ValidateRoutingTables() {
     std::vector<NodeId> node_ids;
     for (auto node : this->nodes_)
@@ -235,30 +225,38 @@ class GenericNetwork : public testing::Test {
         LOG(kVerbose) << HexSubstr(node_id.String());
 //      node->PrintRoutingTable();
       auto routing_table(node->RoutingTable());
-      EXPECT_FALSE(routing_table.size() < Parameters::closest_nodes_size);
+//      EXPECT_FALSE(routing_table.size() < Parameters::closest_nodes_size);
       std::sort(routing_table.begin(), routing_table.end(),
                 [&, this](const NodeInfo& lhs, const NodeInfo& rhs)->bool {
                   return NodeId::CloserToTarget(lhs.node_id, rhs.node_id, node->node_id());
                 });
       LOG(kVerbose) << "Print ordered RT";
+      uint16_t size(std::min(static_cast<uint16_t>(routing_table.size()),
+                             Parameters::closest_nodes_size));
       for (auto node_info : routing_table)
         LOG(kVerbose) << HexSubstr(node_info.node_id.String());
       for (auto iter(routing_table.begin());
-           iter < routing_table.begin() + Parameters::closest_nodes_size -1;
+           iter < routing_table.begin() + size -1;
            ++iter) {
         uint16_t distance(std::distance(node_ids.begin(), std::find(node_ids.begin(),
                                                                     node_ids.end(),
                                                                     (*iter).node_id)));
          LOG(kVerbose) << "distance: " << distance << " from "
                        << HexSubstr((*iter).node_id.String());
-        if (distance > Parameters::closest_nodes_size) {
-//          return false;
-          LOG(kVerbose) << "BAD ROUTING TABLE ENTRY!!!!!!!!!!";
-          Sleep(boost::posix_time::seconds(1));
-        }
+         if (distance > size)
+          return false;
       }
     }
     return true;
+  }
+
+ private:
+  uint16_t NonClientNodesSize() const {
+    uint16_t non_client_size(0);
+    for (auto node : this->nodes_)
+      if (!node->IsClient())
+        non_client_size++;
+        return non_client_size;
   }
 
   void AddNodeDetails(NodePtr node) {
