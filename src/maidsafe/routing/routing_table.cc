@@ -374,17 +374,18 @@ std::vector<NodeInfo> RoutingTable::GetClosestNodeInfo(const NodeId& from,
   std::vector<NodeInfo> close_nodes;
   bool exact_match_exist(false);
   uint16_t count = std::min(number_to_get, static_cast<uint16_t>(nodes_.size()));
-  if (ignore_exact_match && (nodes_.size() > count))
+  if (ignore_exact_match && (nodes_.size() >= count))
     if (std::find_if(nodes_.begin(), nodes_.end(),
                      [&](const NodeInfo& node_info) {
-                       return node_info.node_id == from;
+                       return (node_info.node_id == from);
                      }) != nodes_.end()) {
       count++;
       exact_match_exist = true;
     }
+  count = std::min(static_cast<uint16_t>(nodes_.size()), count);
   PartialSortFromTarget(from, count);
   for (uint16_t i = static_cast<uint16_t>(ignore_exact_match && exact_match_exist);
-       i < count; ++i)
+         i < count; ++i)
     close_nodes.push_back(nodes_[i]);
 
   return close_nodes;
