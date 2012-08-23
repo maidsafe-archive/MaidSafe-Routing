@@ -75,10 +75,10 @@ Routing::~Routing() {
 
 // TODO(Prakash) For client nodes, copy bootstrap file from sys dir if it's not available @ user dir
 bool Routing::CheckBootstrapFilePath() const {
-  LOG(kVerbose) << "Application Path " << GetUserAppDir();
-  LOG(kVerbose) << "System Path " << GetSystemAppDir();
+  LOG(kVerbose) << "Application Path " << GetAppInstallDir();
+  LOG(kVerbose) << "System Path " << GetSystemAppSupportDir();
   fs::path path;
-  fs::path global_bootstrap_file_path(GetSystemAppDir() / "bootstrap-global.dat");
+  fs::path global_bootstrap_file_path(GetSystemAppSupportDir() / "bootstrap-global.dat");
 
   // Global bootstrap file
   std::vector<Endpoint> global_bootstrap_nodes;
@@ -106,7 +106,7 @@ bool Routing::CheckBootstrapFilePath() const {
     std::string file_id(
         EncodeToBase32(maidsafe::crypto::Hash<maidsafe::crypto::SHA1>(impl_->keys_.identity)));
     file_name = "bootstrap-" + file_id + ".dat";
-    path = GetSystemAppDir() / file_name;
+    path = GetSystemAppSupportDir() / file_name;
   }
   fs::path local_file = fs::current_path() / file_name;
 

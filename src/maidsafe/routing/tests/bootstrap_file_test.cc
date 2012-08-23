@@ -62,7 +62,7 @@ TEST(BootstrapFileTest, DISABLED_BEH_ReadValidFileSysDir) {
   endpoint.address(boost::asio::ip::address::from_string("192.168.1.1"));
   endpoint.port(5000);
   vec.push_back(endpoint);
-  fs::path good_file(GetSystemAppDir() / "test");
+  fs::path good_file(GetSystemAppSupportDir() / "test");
   EXPECT_TRUE(ReadBootstrapFile(good_file).empty());
   std::error_code error;
   EXPECT_TRUE(WriteBootstrapFile(vec, good_file));
