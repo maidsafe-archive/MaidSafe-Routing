@@ -459,7 +459,7 @@ void Routing::ReceiveMessage(const std::string& message, std::weak_ptr<RoutingPr
   if (protobuf_message.ParseFromString(message)) {
     bool relay_message(!protobuf_message.has_source_id());
     LOG(kInfo) << "This node [" << HexSubstr(pimpl->keys_.identity) << "] received message type: "
-               << protobuf_message.type() << " from "
+               << MessageTypeString(protobuf_message) << " from "
                << (relay_message ? HexSubstr(protobuf_message.relay_id()) + " -- RELAY REQUEST" :
                                    HexSubstr(protobuf_message.source_id()))
                 << " id: " << protobuf_message.id();
@@ -540,25 +540,25 @@ bool Routing::ConfirmGroupMembers(const NodeId& node1, const NodeId& node2) {
 void Routing::ReSendFindNodeRequest(const boost::system::error_code& error_code,
                                     bool ignore_size) {
   if (error_code != boost::asio::error::operation_aborted) {
-    if (impl_->routing_table_.Size() == 0) {
-      LOG(kInfo) << "This node's [" << HexSubstr(impl_->keys_.identity)
-                 << "] Routing table is empty."
-                 << " Need to rebootstrap !!!";
-      return;
-    } else if (ignore_size ||  (impl_->routing_table_.Size() < Parameters::closest_nodes_size)) {
-      LOG(kInfo) << "This node's [" << HexSubstr(impl_->keys_.identity)
-                 << "] Routing table smaller than " << Parameters::closest_nodes_size
-                 << " nodes.  Sending another FindNodes..";
-      protobuf::Message find_node_rpc(rpcs::FindNodes(NodeId(impl_->keys_.identity),
-                                                      NodeId(impl_->keys_.identity)));
-      impl_->network_.SendToClosestNode(find_node_rpc);
-
-      impl_->recovery_timer_.expires_from_now(
-          boost::posix_time::seconds(Parameters::recovery_timeout_in_seconds));
-      impl_->recovery_timer_.async_wait([=](boost::system::error_code error_code) {
-                                            ReSendFindNodeRequest(error_code);
-                                          });
-    }
+//     if (impl_->routing_table_.Size() == 0) {
+//       LOG(kInfo) << "This node's [" << HexSubstr(impl_->keys_.identity)
+//                  << "] Routing table is empty."
+//                  << " Need to rebootstrap !!!";
+//       return;
+//     } else if (ignore_size ||  (impl_->routing_table_.Size() < Parameters::closest_nodes_size)) {
+//       LOG(kInfo) << "This node's [" << HexSubstr(impl_->keys_.identity)
+//                  << "] Routing table smaller than " << Parameters::closest_nodes_size
+//                  << " nodes.  Sending another FindNodes..";
+//       protobuf::Message find_node_rpc(rpcs::FindNodes(NodeId(impl_->keys_.identity),
+//                                                       NodeId(impl_->keys_.identity)));
+//       impl_->network_.SendToClosestNode(find_node_rpc);
+// 
+//       impl_->recovery_timer_.expires_from_now(
+//           boost::posix_time::seconds(Parameters::recovery_timeout_in_seconds));
+//       impl_->recovery_timer_.async_wait([=](boost::system::error_code error_code) {
+//                                             ReSendFindNodeRequest(error_code);
+//                                           });
+//     }
   } else {
     LOG(kVerbose) << "Cancelled recovery loop!!";
   }
