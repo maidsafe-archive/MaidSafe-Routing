@@ -49,7 +49,8 @@ NetworkUtils::NetworkUtils(RoutingTable& routing_table, NonRoutingTable& non_rou
       non_routing_table_(non_routing_table),
       rudp_(new rudp::ManagedConnections),
       shared_mutex_(),
-      stopped_(false) {}
+      stopped_(false),
+      symmetric_(false) {}
 
 void NetworkUtils::Stop() {
   LOG(kVerbose) << "NetworkUtils::Stop()";
@@ -97,6 +98,7 @@ int NetworkUtils::Bootstrap(const std::vector<Endpoint> &bootstrap_endpoints,
     LOG(kVerbose) << "Zero state Bootstrap successful, bootstrap node - " << bootstrap_endpoint_;
     return kSuccess;
   }
+  symmetric_ = false; // TODO(Prakash): Get this from rudp_->Bootstrap() api change
 
   rudp::EndpointPair endpoint_pair;
   if (kSuccess != rudp_->GetAvailableEndpoint(bootstrap_endpoint_, endpoint_pair)) {

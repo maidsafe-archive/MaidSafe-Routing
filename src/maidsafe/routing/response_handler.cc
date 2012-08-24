@@ -207,6 +207,7 @@ void ResponseHandler::ConnectTo(const std::vector<std::string>& nodes,
                                     NodeId(routing_table_.kKeys().identity),
                                     closest_node_ids,
                                     routing_table_.client_mode(),
+                                    false,
                                     relay_message,
                                     relay_endpoint));
       if (routing_table_empty)

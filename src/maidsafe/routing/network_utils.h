@@ -89,7 +89,7 @@ class NetworkUtils {
   NonRoutingTable& non_routing_table_;
   std::unique_ptr<rudp::ManagedConnections> rudp_;
   boost::shared_mutex shared_mutex_;
-  bool stopped_;
+  bool stopped_, symmetric_;
 };
 
 }  // namespace routing

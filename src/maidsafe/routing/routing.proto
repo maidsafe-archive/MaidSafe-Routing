@@ -14,7 +14,8 @@ message Contact {
   required bytes node_id = 1;
   required Endpoint private_endpoint = 2;
   required Endpoint public_endpoint = 3;
-  optional bool tcp = 4;
+  optional bool symmetric = 4;
+  optional bool tcp = 5;
 }
 
 message ConfigFile {
