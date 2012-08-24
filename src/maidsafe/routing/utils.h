@@ -13,6 +13,9 @@
 #ifndef MAIDSAFE_ROUTING_UTILS_H_
 #define MAIDSAFE_ROUTING_UTILS_H_
 
+
+#include <string>
+
 #include "boost/asio/ip/udp.hpp"
 
 #include "maidsafe/common/rsa.h"
@@ -65,6 +68,8 @@ bool ValidateMessage(const protobuf::Message &message);
 void SetProtobufEndpoint(const boost::asio::ip::udp::endpoint& endpoint,
                          protobuf::Endpoint* pb_endpoint);
 boost::asio::ip::udp::endpoint GetEndpointFromProtobuf(const protobuf::Endpoint& pb_endpoint);
+
+std::string MessageTypeString(const protobuf::Message& message);
 
 }  // namespace routing
 

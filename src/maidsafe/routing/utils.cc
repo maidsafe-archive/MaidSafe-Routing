@@ -223,6 +223,37 @@ boost::asio::ip::udp::endpoint GetEndpointFromProtobuf(const protobuf::Endpoint&
                                         static_cast<uint16_t>(pb_endpoint.port()));
 }
 
+std::string MessageTypeString(const protobuf::Message& message) {
+  std::string message_type;
+  switch (static_cast<MessageType>(message.type())) {
+    case MessageType::kPing :
+      message_type = "kPing";
+      break;
+    case MessageType::kConnect :
+      message_type = "kConnect";
+      break;
+    case MessageType::kFindNodes :
+      message_type = "kFindNodes";
+      break;
+    case MessageType::kProxyConnect :
+      message_type = "kProxyConnect";
+      break;
+    case MessageType::kConnectSuccess :
+      message_type = "kConnectSuccess";
+      break;
+    case MessageType::kNodeLevel :
+      message_type = "kNodeLevel";
+      break;
+    default:
+      message_type = "Unknown";
+  }
+  if (message.request())
+    message_type = message_type + " Request";
+  else
+    message_type = message_type + " Response";
+  return message_type;
+}
+
 }  // namespace routing
 
 }  // namespace maidsafe
