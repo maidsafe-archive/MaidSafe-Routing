@@ -85,7 +85,7 @@ class RoutingNetworkTest : public GenericNetwork<NodeType> {
     for (size_t index = 0; index < messages; ++index) {
       for (auto source_node : this->nodes_) {
         for (auto dest_node : this->nodes_) {
-          auto callable = [&] (const std::vector<std::string> &message) {
+          auto callable = [&](const std::vector<std::string> &message) {
               if (message.empty())
                 return;
               std::lock_guard<std::mutex> lock(mutex);
@@ -173,6 +173,65 @@ class RoutingNetworkTest : public GenericNetwork<NodeType> {
     }
     return testing::AssertionSuccess();
   }
+
+  testing::AssertionResult Send(const NodeId& node_id) {
+    std::set<size_t> received_ids;
+    std::mutex mutex;
+    std::condition_variable cond_var;
+    size_t messages_count(0), message_id(0), expected_messages(0);
+    auto node(std::find_if(this->nodes_.begin(), this->nodes_.end(),
+                           [&](const std::shared_ptr<TestNode> node) {
+                             return node->node_id() == node_id;
+                           }));
+    if ((node != this->nodes_.end()) && !((*node)->IsClient()))
+      expected_messages = this->nodes_.size() - 1;
+    for (auto source_node : this->nodes_) {
+      auto callable = [&](const std::vector<std::string> &message) {
+        if (message.empty())
+          return;
+        std::lock_guard<std::mutex> lock(mutex);
+        messages_count++;
+        std::string data_id(message.at(0).substr(message.at(0).find(">:<") + 3,
+            message.at(0).find("<:>") - 3 - message.at(0).find(">:<")));
+        received_ids.insert(boost::lexical_cast<size_t>(data_id));
+        LOG(kVerbose) << "ResponseHandler .... " << messages_count << " msg_id: "
+                      << data_id;
+        if (messages_count == expected_messages) {
+          cond_var.notify_one();
+          LOG(kVerbose) << "ResponseHandler .... DONE " << messages_count;
+        }
+      };
+      if (source_node->node_id() != node_id) {
+          std::string data(RandomAlphaNumericString((RandomUint32() % 255 + 1) * 2^10));
+          {
+            std::lock_guard<std::mutex> lock(mutex);
+            data = boost::lexical_cast<std::string>(++message_id) + "<:>" + data;
+          }
+          source_node->Send(node_id, NodeId(), data, callable,
+              boost::posix_time::seconds(12), true, false);
+      }
+    }
+
+    std::unique_lock<std::mutex> lock(mutex);
+    bool result = cond_var.wait_for(lock, std::chrono::seconds(20),
+        [&]()->bool {
+          LOG(kInfo) << " message count " << messages_count << " expected "
+                     << expected_messages << "\n";
+          return messages_count == expected_messages;
+        });
+    EXPECT_TRUE(result);
+    if (!result) {
+      for (size_t id(1); id <= expected_messages; ++id) {
+        auto iter = received_ids.find(id);
+        if (iter == received_ids.end())
+          LOG(kVerbose) << "missing id: " << id;
+      }
+      return testing::AssertionFailure() << "Send operarion timed out: "
+                                         << expected_messages - messages_count
+                                         << " failed to reply.";
+    }
+    return testing::AssertionSuccess();
+  }
 };
 
 TYPED_TEST_CASE_P(RoutingNetworkTest);
@@ -188,6 +247,12 @@ TYPED_TEST_P(RoutingNetworkTest, FUNC_SetupHybridNetwork) {
 TYPED_TEST_P(RoutingNetworkTest, FUNC_Send) {
   this->SetUpNetwork(kNetworkSize);
   EXPECT_TRUE(this->Send(1));
+}
+
+TYPED_TEST_P(RoutingNetworkTest, FUNC_SendToNonExistingNode) {
+  this->SetUpNetwork(kNetworkSize);
+  EXPECT_TRUE(this->Send(NodeId(NodeId::kRandomId)));
+  EXPECT_TRUE(this->Send(this->nodes_[RandomUint32() % kNetworkSize]->node_id()));
 }
 
 TYPED_TEST_P(RoutingNetworkTest, FUNC_ClientSend) {
@@ -287,8 +352,8 @@ TYPED_TEST_P(RoutingNetworkTest, FUNC_RecursiveCall) {
 }
 
 REGISTER_TYPED_TEST_CASE_P(RoutingNetworkTest, FUNC_SetupNetwork, FUNC_SetupHybridNetwork,
-                           FUNC_Send, FUNC_ClientSend, FUNC_SendMulti, FUNC_ClientSendMulti,
-                           FUNC_SendToGroup, FUNC_SendToGroupInHybridNetwork,
+                           FUNC_Send, FUNC_SendToNonExistingNode, FUNC_ClientSend, FUNC_SendMulti,
+                           FUNC_ClientSendMulti, FUNC_SendToGroup, FUNC_SendToGroupInHybridNetwork,
                            FUNC_SendToGroupRandomId, FUNC_RecursiveCall);
 INSTANTIATE_TYPED_TEST_CASE_P(MAIDSAFE, RoutingNetworkTest, TestNode);
 
