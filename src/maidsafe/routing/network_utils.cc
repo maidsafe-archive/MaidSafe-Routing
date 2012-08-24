@@ -63,8 +63,10 @@ void NetworkUtils::Stop() {
 }
 
 void NetworkUtils::OnConnectionLost(const Endpoint& endpoint) {
-  if (connection_lost_functor_)
+  if (connection_lost_functor_) {
+    LOG(kWarning) << " Routing -> removing connection " << endpoint;
     connection_lost_functor_(endpoint);
+  }
 }
 
 int NetworkUtils::Bootstrap(const std::vector<Endpoint> &bootstrap_endpoints,
