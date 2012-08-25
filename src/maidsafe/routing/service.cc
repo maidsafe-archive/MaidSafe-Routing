@@ -83,23 +83,21 @@ void Connect(RoutingTable& routing_table,
   }
   NodeInfo node;
   node.node_id = NodeId(connect_request.contact().node_id());
-  if (connect_request.bootstrap()) {
-    // Already connected
-    return;  // FIXME
-  }
+
   connect_response.set_answer(false);
   rudp::EndpointPair this_endpoint_pair1, this_endpoint_pair2, peer_endpoint_pair;
   peer_endpoint_pair.external =
       GetEndpointFromProtobuf(connect_request.contact().public_endpoint());
   peer_endpoint_pair.local = GetEndpointFromProtobuf(connect_request.contact().private_endpoint());
 
-  if (network.GetAvailableEndpoint(peer_endpoint_pair.external, this_endpoint_pair1) !=
+  rudp::NatType nat_type = static_cast<rudp::NatType>(connect_request.contact().nat_type());
+  if (network.GetAvailableEndpoint(peer_endpoint_pair.external, nat_type, this_endpoint_pair1) !=
       rudp::kSuccess) {
     LOG(kWarning) << "Unable to get available endpoint to connect to "
                   << peer_endpoint_pair.external;
   }
 
-  if (network.GetAvailableEndpoint(peer_endpoint_pair.local, this_endpoint_pair2) !=
+  if (network.GetAvailableEndpoint(peer_endpoint_pair.local, nat_type, this_endpoint_pair2) !=
       rudp::kSuccess) {
     LOG(kWarning) << "Unable to get available endpoint to connect to "
                   << peer_endpoint_pair.local;
@@ -108,6 +106,9 @@ void Connect(RoutingTable& routing_table,
   rudp::EndpointPair this_endpoint_pair;
   this_endpoint_pair.external = this_endpoint_pair1.external;
   this_endpoint_pair.local = this_endpoint_pair2.local;
+
+// Handling the case when this node and peer node are behind symmetric router
+
 
   if (this_endpoint_pair.external.address().is_unspecified() &&
       this_endpoint_pair.local.address().is_unspecified()) {

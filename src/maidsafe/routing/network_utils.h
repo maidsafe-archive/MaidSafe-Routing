@@ -45,6 +45,7 @@ class NetworkUtils {
                 rudp::ConnectionLostFunctor connection_lost_functor,
                 boost::asio::ip::udp::endpoint local_endpoint = boost::asio::ip::udp::endpoint());
   int GetAvailableEndpoint(const boost::asio::ip::udp::endpoint& peer_endpoint,
+                           const rudp::NatType& peer_nat_type,
                            rudp::EndpointPair& this_endpoint_pair);
   int Add(const boost::asio::ip::udp::endpoint& this_endpoint,
           const boost::asio::ip::udp::endpoint& peer_endpoint,
@@ -62,7 +63,7 @@ class NetworkUtils {
   void SendToClosestNode(const protobuf::Message& message);
   boost::asio::ip::udp::endpoint bootstrap_endpoint() const;
   boost::asio::ip::udp::endpoint this_node_relay_endpoint() const;
-
+  rudp::NatType nat_type();
   friend class test::GenericNode;
 
  private:
@@ -89,7 +90,8 @@ class NetworkUtils {
   NonRoutingTable& non_routing_table_;
   std::unique_ptr<rudp::ManagedConnections> rudp_;
   boost::shared_mutex shared_mutex_;
-  bool stopped_, symmetric_;
+  bool stopped_;
+  rudp::NatType nat_type_;
 };
 
 }  // namespace routing

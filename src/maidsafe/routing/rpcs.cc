@@ -54,7 +54,8 @@ protobuf::Message Connect(const NodeId& node_id,
                           const NodeId& my_node_id,
                           const std::vector<std::string>& closest_ids,
                           bool client_node,
-                          bool symmetric,
+                          rudp::NatType nat_type,
+                          NodeId nat_relay_id,
                           bool relay_message,
                           boost::asio::ip::udp::endpoint local_endpoint) {
   assert(node_id.IsValid() && "Invalid node_id");
@@ -67,8 +68,10 @@ protobuf::Message Connect(const NodeId& node_id,
   SetProtobufEndpoint(our_endpoint.external, contact->mutable_public_endpoint());
   SetProtobufEndpoint(our_endpoint.local, contact->mutable_private_endpoint());
   contact->set_node_id(my_node_id.String());
-  if (symmetric)
-    contact->set_symmetric(true);
+  contact->set_nat_type(static_cast<protobuf::NatType>(nat_type));
+  if ((nat_type == rudp::NatType::kSymmetric) && (nat_relay_id != NodeId()))
+    contact->set_nat_relay_id(nat_relay_id.String());
+
   for (auto node_id : closest_ids)
     protobuf_connect_request.add_closest_id(node_id);
   protobuf_connect_request.set_timestamp(GetTimeStamp());

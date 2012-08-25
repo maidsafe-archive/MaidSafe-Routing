@@ -50,7 +50,7 @@ NetworkUtils::NetworkUtils(RoutingTable& routing_table, NonRoutingTable& non_rou
       rudp_(new rudp::ManagedConnections),
       shared_mutex_(),
       stopped_(false),
-      symmetric_(false) {}
+      nat_type_(rudp::NatType::kUnknown) {}
 
 void NetworkUtils::Stop() {
   LOG(kVerbose) << "NetworkUtils::Stop()";
@@ -80,12 +80,14 @@ int NetworkUtils::Bootstrap(const std::vector<Endpoint> &bootstrap_endpoints,
       public_key(new asymm::PublicKey(routing_table_.kKeys().public_key));
 
   connection_lost_functor_ = connection_lost_functor;
+
   bootstrap_endpoint_ = rudp_->Bootstrap(bootstrap_endpoints,
                                          message_received_functor,
                                          [&](const Endpoint& endpoint) {
                                              OnConnectionLost(endpoint); },
                                          private_key,
                                          public_key,
+                                         nat_type_,
                                          local_endpoint);
 
   if (bootstrap_endpoint_.address().is_unspecified()) {
@@ -98,10 +100,10 @@ int NetworkUtils::Bootstrap(const std::vector<Endpoint> &bootstrap_endpoints,
     LOG(kVerbose) << "Zero state Bootstrap successful, bootstrap node - " << bootstrap_endpoint_;
     return kSuccess;
   }
-  symmetric_ = false; // TODO(Prakash): Get this from rudp_->Bootstrap() api change
 
   rudp::EndpointPair endpoint_pair;
-  if (kSuccess != rudp_->GetAvailableEndpoint(bootstrap_endpoint_, endpoint_pair)) {
+  if (kSuccess != rudp_->GetAvailableEndpoint(bootstrap_endpoint_, rudp::NatType::kUnknown,
+                                              endpoint_pair)) {
     LOG(kError) << " Failed to get available endpoint for new connections";
     return kFailedtoGetEndpoint;
   }
@@ -121,8 +123,9 @@ int NetworkUtils::Bootstrap(const std::vector<Endpoint> &bootstrap_endpoints,
 }
 
 int NetworkUtils::GetAvailableEndpoint(const Endpoint& peer_endpoint,
+                                       const rudp::NatType& peer_nat_type,
                                        rudp::EndpointPair& this_endpoint_pair) {
-  return rudp_->GetAvailableEndpoint(peer_endpoint, this_endpoint_pair);
+  return rudp_->GetAvailableEndpoint(peer_endpoint, peer_nat_type, this_endpoint_pair);
 }
 
 int NetworkUtils::Add(const Endpoint& this_endpoint,
@@ -321,6 +324,10 @@ boost::asio::ip::udp::endpoint NetworkUtils::bootstrap_endpoint() const {
 
 boost::asio::ip::udp::endpoint NetworkUtils::this_node_relay_endpoint() const {
   return this_node_relay_endpoint_;
+}
+
+rudp::NatType NetworkUtils::nat_type() {
+  return nat_type_;
 }
 
 }  // namespace routing

@@ -21,6 +21,7 @@
 #include "maidsafe/rudp/managed_connections.h"
 
 #include "maidsafe/routing/api_config.h"
+#include "maidsafe/routing/node_id.h"
 
 
 namespace maidsafe {
@@ -28,8 +29,6 @@ namespace maidsafe {
 namespace routing {
 
 namespace protobuf { class Message; }
-
-class NodeId;
 
 namespace rpcs {
 
@@ -41,7 +40,8 @@ protobuf::Message Connect(
     const NodeId& my_node_id,
     const std::vector<std::string>& closest_ids = std::vector<std::string>(),
     bool client_node = false,
-    bool symmetric = false,
+    rudp::NatType nat_type = rudp::NatType::kUnknown,
+    NodeId nat_relay_id = NodeId(),
     bool relay_message = false,
     boost::asio::ip::udp::endpoint local_endpoint = boost::asio::ip::udp::endpoint());
 

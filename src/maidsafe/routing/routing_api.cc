@@ -350,7 +350,9 @@ int Routing::ZeroStateJoin(Functors functors,
 int Routing::GetStatus() const {
   if (impl_->routing_table_.Size() == 0) {
     rudp::EndpointPair endpoint;
-    int status = impl_->network_.GetAvailableEndpoint(Endpoint(), endpoint);
+    int status = impl_->network_.GetAvailableEndpoint(Endpoint(),
+                                                      rudp::NatType::kUnknown,
+                                                      endpoint);
     if (rudp::kSuccess != status) {
       if (status == rudp::kNotBootstrapped)
         return kNotJoined;

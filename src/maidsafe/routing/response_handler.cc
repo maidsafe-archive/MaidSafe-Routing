@@ -190,7 +190,9 @@ void ResponseHandler::ConnectTo(const std::vector<std::string>& nodes,
       if (routing_table_empty)  // Joining the network, and may connect to bootstrapping node.
         direct_endpoint = network_.bootstrap_endpoint();
       rudp::EndpointPair endpoint;
-      if (kSuccess != network_.GetAvailableEndpoint(direct_endpoint, endpoint)) {
+      if (kSuccess != network_.GetAvailableEndpoint(direct_endpoint,
+                                                    rudp::NatType::kUnknown,
+                                                    endpoint)) {
         LOG(kWarning) << "Failed to get available endpoint for new connections";
         return;
       }
@@ -201,13 +203,19 @@ void ResponseHandler::ConnectTo(const std::vector<std::string>& nodes,
         relay_endpoint = network_.this_node_relay_endpoint();
         relay_message = true;
       }
+      NodeId nat_relay_id;
+      if (network_.nat_type() == rudp::NatType::kSymmetric)
+        nat_relay_id =
+            routing_table_.GetClosestNode(NodeId(routing_table_.kKeys().identity)).node_id;
+
       LOG(kVerbose) << "Sending Connect RPC to " << HexSubstr(nodes.at(i));
       protobuf::Message connect_rpc(rpcs::Connect(NodeId(nodes.at(i)),
                                     endpoint,
                                     NodeId(routing_table_.kKeys().identity),
                                     closest_node_ids,
                                     routing_table_.client_mode(),
-                                    false,
+                                    network_.nat_type(),
+                                    nat_relay_id,
                                     relay_message,
                                     relay_endpoint));
       if (routing_table_empty)
