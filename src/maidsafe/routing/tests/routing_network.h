@@ -57,6 +57,7 @@ class GenericNetwork;
 class GenericNode {
  public:
   explicit GenericNode(bool client_mode = false);
+  GenericNode(bool client_mode, const rudp::NatType& nat_type);
   GenericNode(bool client_mode, const NodeInfoAndPrivateKey& node_info);
   virtual ~GenericNode();
   int GetStatus() const;
@@ -103,6 +104,7 @@ class GenericNode {
   bool client_mode_;
   bool joined_;
   int expected_;
+  rudp::NatType nat_type_;
 };
 
 template <typename NodeType>
@@ -172,6 +174,15 @@ class GenericNetwork : public testing::Test {
     LOG(kVerbose) << "Node # " << nodes_.size() << " added to network";
 //    node->PrintRoutingTable();
   }
+
+  void AddNode(const bool& client_mode, const rudp::NatType& nat_type) {
+    NodeInfoAndPrivateKey node_info(MakeNodeInfoAndKeys());
+    NodePtr node(new NodeType(client_mode, nat_type));
+    AddNodeDetails(node);
+    LOG(kVerbose) << "Node # " << nodes_.size() << " added to network";
+//    node->PrintRoutingTable();
+  }
+
 
   bool RemoveNode(const NodeId& node_id) {
       std::lock_guard<std::mutex> lock(mutex_);
