@@ -23,6 +23,7 @@
 #include "maidsafe/rudp/managed_connections.h"
 
 #include "maidsafe/routing/node_info.h"
+#include "maidsafe/routing/timer.h"
 
 
 namespace maidsafe {
@@ -38,7 +39,8 @@ namespace test { class GenericNode; }
 
 class NetworkUtils {
  public:
-  NetworkUtils(RoutingTable& routing_table, NonRoutingTable& non_routing_table);
+  NetworkUtils(RoutingTable& routing_table, NonRoutingTable& non_routing_table,
+                Timer& timer);
   void Stop();
   int Bootstrap(const std::vector<boost::asio::ip::udp::endpoint> &bootstrap_endpoints,
                 rudp::MessageReceivedFunctor message_received_functor,
@@ -64,6 +66,7 @@ class NetworkUtils {
   boost::asio::ip::udp::endpoint bootstrap_endpoint() const;
   boost::asio::ip::udp::endpoint this_node_relay_endpoint() const;
   rudp::NatType nat_type();
+  Timer& timer();
   friend class test::GenericNode;
 
  private:
@@ -88,6 +91,7 @@ class NetworkUtils {
   rudp::ConnectionLostFunctor connection_lost_functor_;
   RoutingTable& routing_table_;
   NonRoutingTable& non_routing_table_;
+  Timer& timer_;
   std::unique_ptr<rudp::ManagedConnections> rudp_;
   boost::shared_mutex shared_mutex_;
   bool stopped_;

@@ -41,12 +41,14 @@ typedef boost::unique_lock<boost::shared_mutex> UniqueLock;
 
 namespace routing {
 
-NetworkUtils::NetworkUtils(RoutingTable& routing_table, NonRoutingTable& non_routing_table)
+NetworkUtils::NetworkUtils(RoutingTable& routing_table, NonRoutingTable& non_routing_table,
+                           Timer& timer)
     : bootstrap_endpoint_(),
       this_node_relay_endpoint_(),
       connection_lost_functor_(),
       routing_table_(routing_table),
       non_routing_table_(non_routing_table),
+      timer_(timer),
       rudp_(new rudp::ManagedConnections),
       shared_mutex_(),
       stopped_(false),
@@ -328,6 +330,10 @@ boost::asio::ip::udp::endpoint NetworkUtils::this_node_relay_endpoint() const {
 
 rudp::NatType NetworkUtils::nat_type() {
   return nat_type_;
+}
+
+Timer& NetworkUtils::timer() {
+  return timer_;
 }
 
 }  // namespace routing

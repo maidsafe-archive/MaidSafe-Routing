@@ -19,7 +19,7 @@
 
 #include "maidsafe/common/rsa.h"
 
-#include "maidsafe/rudp/managed_connections.h" 
+#include "maidsafe/rudp/managed_connections.h"
 
 #include "maidsafe/routing/node_id.h"
 

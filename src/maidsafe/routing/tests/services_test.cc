@@ -75,7 +75,9 @@ TEST(ServicesTest, DISABLED_BEH_Connect) {
   RoutingTable RT(keys, false);
   NonRoutingTable NRT(keys);
   NodeInfo node;
-  NetworkUtils network(RT, NRT);
+  AsioService asio_service(0);
+  Timer timer(asio_service);
+  NetworkUtils network(RT, NRT, timer);
   rudp::EndpointPair them_end;
   them_end.local = them.endpoint;
   them_end.external = them.endpoint;
@@ -138,8 +140,10 @@ TEST(ServicesTest, BEH_ProxyConnect) {
   keys.identity = RandomString(64);
   RoutingTable RT(keys, false);
   NonRoutingTable NRT(keys);
+  AsioService asio_service(0);
+  Timer timer(asio_service);
   NodeInfo node;
-  NetworkUtils network(RT, NRT);
+  NetworkUtils network(RT, NRT, timer);
   protobuf::ProxyConnectRequest proxy_connect_request;
   // they send us an proxy connect rpc
   rudp::EndpointPair endpoint_pair;

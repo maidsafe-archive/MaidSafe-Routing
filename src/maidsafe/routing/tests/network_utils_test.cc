@@ -66,7 +66,9 @@ TEST(NetworkUtilsTest, BEH_ProcessSendDirectInvalidEndpoint) {
   asymm::Keys keys(MakeKeys());
   RoutingTable routing_table(keys, false);
   NonRoutingTable non_routing_table(keys);
-  NetworkUtils network(routing_table, non_routing_table);
+  AsioService asio_service(0);
+  Timer timer(asio_service);
+  NetworkUtils network(routing_table, non_routing_table, timer);
   network.SendToClosestNode(message);
 }
 
@@ -83,7 +85,9 @@ TEST(NetworkUtilsTest, BEH_ProcessSendUnavailableDirectEndpoint) {
   RoutingTable routing_table(keys, false);
   NonRoutingTable non_routing_table(keys);
   Endpoint endpoint(GetLocalIp(), GetRandomPort());
-  NetworkUtils network(routing_table, non_routing_table);
+  AsioService asio_service(0);
+  Timer timer(asio_service);
+  NetworkUtils network(routing_table, non_routing_table, timer);
   network.SendToDirectEndpoint(message, endpoint);
 }
 
@@ -181,7 +185,9 @@ TEST(NetworkUtilsTest, FUNC_ProcessSendDirectEndpoint) {
   asymm::Keys keys(MakeKeys());
   RoutingTable routing_table(keys, false);
   NonRoutingTable non_routing_table(keys);
-  NetworkUtils network(routing_table, non_routing_table);
+  AsioService asio_service(0);
+  Timer timer(asio_service);
+  NetworkUtils network(routing_table, non_routing_table, timer);
 
   std::vector<Endpoint> bootstrap_endpoint(1, endpoint2);
   EXPECT_EQ(kSuccess, network.Bootstrap(bootstrap_endpoint,
@@ -232,7 +238,9 @@ TEST(NetworkUtilsTest, FUNC_ProcessSendRecursiveSendOn) {
   asymm::Keys keys(MakeKeys());
   RoutingTable routing_table(keys, false);
   NonRoutingTable non_routing_table(keys);
-  NetworkUtils network(routing_table, non_routing_table);
+  AsioService asio_service(0);
+  Timer timer(asio_service);
+  NetworkUtils network(routing_table, non_routing_table, timer);
 
   rudp::MessageReceivedFunctor message_received_functor1 = [](const std::string& message) {
       LOG(kInfo) << " -- Received: " << message;

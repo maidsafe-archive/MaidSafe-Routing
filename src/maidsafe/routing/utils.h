@@ -58,6 +58,8 @@ void ValidateAndAddToRoutingTable(NetworkUtils& network_,
                                   const asymm::PublicKey& public_key,
                                   const boost::asio::ip::udp::endpoint& peer_endpoint,
                                   const bool& client);
+void HandleSymmetricNodeAdd(RoutingTable& routing_table, const NodeId& peer_id,
+                            const NodeId& nat_relay_id, const asymm::PublicKey& public_key);
 bool IsRoutingMessage(const protobuf::Message& message);
 bool IsNodeLevelMessage(const protobuf::Message& message);
 bool IsRequest(const protobuf::Message& message);

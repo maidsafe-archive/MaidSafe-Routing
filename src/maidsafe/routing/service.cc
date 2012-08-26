@@ -12,6 +12,7 @@
 
 #include "maidsafe/routing/service.h"
 
+#include <string>
 #include <vector>
 
 #include "maidsafe/common/log.h"
@@ -32,6 +33,12 @@
 namespace maidsafe {
 
 namespace routing {
+
+namespace {
+
+typedef boost::asio::ip::udp::endpoint Endpoint;
+
+}  // unnamed namespace
 
 namespace service {
 
@@ -67,7 +74,7 @@ void Connect(RoutingTable& routing_table,
              NonRoutingTable& non_routing_table,
              NetworkUtils& network,
              protobuf::Message& message,
-             RequestPublicKeyFunctor node_validation_functor) {
+             RequestPublicKeyFunctor request_public_key_functor) {
   if (message.destination_id() != routing_table.kKeys().identity) {
     // Message not for this node and we should not pass it on.
     LOG(kError) << "Message not for this node.";
@@ -108,7 +115,27 @@ void Connect(RoutingTable& routing_table,
   this_endpoint_pair.local = this_endpoint_pair2.local;
 
 // Handling the case when this node and peer node are behind symmetric router
+  if ((nat_type == rudp::NatType::kSymmetric) &&
+      (network.nat_type() == rudp::NatType::kSymmetric)) {
+    peer_endpoint_pair.external = Endpoint();  // No need to try connction on external endpoint.
+    connect_response.mutable_contact()->set_nat_relay_id(
+        routing_table.GetClosestNode(NodeId(routing_table.kKeys().identity)).node_id.String());
 
+    auto validate_node = [&] (const asymm::PublicKey& key)->void {
+        LOG(kInfo) << "NEED TO VALIDATE THE SYMMETRIC NODE HERE";
+        HandleSymmetricNodeAdd(routing_table, NodeId(connect_request.contact().node_id()),
+                               NodeId(connect_request.contact().nat_relay_id()),
+                               key);
+      };
+
+    TaskResponseFunctor add_symmetric_node =
+      [=, &routing_table, &request_public_key_functor](std::vector<std::string>) {
+        if (request_public_key_functor) {
+          request_public_key_functor(NodeId(connect_request.contact().node_id()), validate_node);
+        }
+      };
+    network.timer().AddTask(boost::posix_time::seconds(5), add_symmetric_node, 1);
+  }
 
   if (this_endpoint_pair.external.address().is_unspecified() &&
       this_endpoint_pair.local.address().is_unspecified()) {
@@ -131,7 +158,7 @@ void Connect(RoutingTable& routing_table,
   if (check_node_succeeded) {
     LOG(kVerbose) << "CheckNode(node) for " << (message.client_node() ? "client" : "server")
                   << " node succeeded.";
-    if (node_validation_functor) {
+    if (request_public_key_functor) {
       auto validate_node =
           [=, &routing_table, &non_routing_table, &network] (const asymm::PublicKey& key)->void {
             LOG(kInfo) << "NEED TO VALIDATE THE NODE HERE";
@@ -143,7 +170,7 @@ void Connect(RoutingTable& routing_table,
                                  this_endpoint_pair,
                                  routing_table.client_mode());
           };
-      node_validation_functor(NodeId(connect_request.contact().node_id()), validate_node);
+      request_public_key_functor(NodeId(connect_request.contact().node_id()), validate_node);
       connect_response.set_answer(true);
       connect_response.mutable_contact()->set_node_id(routing_table.kKeys().identity);
       SetProtobufEndpoint(this_endpoint_pair.local,

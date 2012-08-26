@@ -96,6 +96,28 @@ void ResponseHandler::Connect(protobuf::Message& message) {
       GetEndpointFromProtobuf(connect_response.contact().public_endpoint());
   peer_endpoint_pair.local =
       GetEndpointFromProtobuf(connect_response.contact().private_endpoint());
+
+  // Handling the case when this node and peer node are behind symmetric router
+  rudp::NatType nat_type = static_cast<rudp::NatType>(connect_response.contact().nat_type());
+
+  if ((nat_type == rudp::NatType::kSymmetric) &&
+      (network_.nat_type() == rudp::NatType::kSymmetric)) {
+    peer_endpoint_pair.external = Endpoint();  // No need to try connction on external endpoint.
+    auto validate_node = [&] (const asymm::PublicKey& key)->void {
+        LOG(kInfo) << "NEED TO VALIDATE THE SYMMETRIC NODE HERE";
+        HandleSymmetricNodeAdd(routing_table_, NodeId(connect_response.contact().node_id()),
+                               NodeId(connect_response.contact().nat_relay_id()),
+                               key);
+      };
+
+    TaskResponseFunctor add_symmetric_node = [&](std::vector<std::string>) {
+      if (request_public_key_functor_) {
+        request_public_key_functor_(NodeId(connect_response.contact().node_id()), validate_node);
+      }
+      };
+    network_.timer().AddTask(boost::posix_time::seconds(5), add_symmetric_node, 1);
+  }
+
   std::weak_ptr<ResponseHandler> response_handler_weak_ptr = shared_from_this();
   if (request_public_key_functor_) {
     auto validate_node([=] (const asymm::PublicKey& key) {
