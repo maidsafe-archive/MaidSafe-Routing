@@ -249,10 +249,9 @@ class RoutingNetworkTest : public GenericNetwork<NodeType> {
   }
 
   testing::AssertionResult Send(std::shared_ptr<TestNode> source_node, const NodeId& node_id) {
-    std::set<size_t> received_ids;
     std::mutex mutex;
     std::condition_variable cond_var;
-    size_t messages_count(0), message_id(0), expected_messages(0);
+    size_t messages_count(0), expected_messages(0);
     auto node(std::find_if(this->nodes_.begin(), this->nodes_.end(),
                            [&](const std::shared_ptr<TestNode> node) {
                               return node->node_id() == node_id;
@@ -264,11 +263,7 @@ class RoutingNetworkTest : public GenericNetwork<NodeType> {
         return;
       std::lock_guard<std::mutex> lock(mutex);
       messages_count++;
-      std::string data_id(message.at(0).substr(message.at(0).find(">:<") + 3,
-          message.at(0).find("<:>") - 3 - message.at(0).find(">:<")));
-      received_ids.insert(boost::lexical_cast<size_t>(data_id));
-      LOG(kVerbose) << "ResponseHandler .... " << messages_count << " msg_id: "
-                    << data_id;
+      LOG(kVerbose) << "ResponseHandler .... " << messages_count;
       if (messages_count == expected_messages) {
         cond_var.notify_one();
         LOG(kVerbose) << "ResponseHandler .... DONE " << messages_count;
@@ -276,10 +271,6 @@ class RoutingNetworkTest : public GenericNetwork<NodeType> {
     };
     if (source_node->node_id() != node_id) {
         std::string data(RandomAlphaNumericString((RandomUint32() % 255 + 1) * 2^10));
-        {
-          std::lock_guard<std::mutex> lock(mutex);
-          data = boost::lexical_cast<std::string>(++message_id) + "<:>" + data;
-        }
         source_node->Send(node_id, NodeId(), data, callable,
             boost::posix_time::seconds(12), true, false);
     }
@@ -293,11 +284,6 @@ class RoutingNetworkTest : public GenericNetwork<NodeType> {
         });
     EXPECT_TRUE(result);
     if (!result) {
-      for (size_t id(1); id <= expected_messages; ++id) {
-        auto iter = received_ids.find(id);
-        if (iter == received_ids.end())
-          LOG(kVerbose) << "missing id: " << id;
-      }
       return testing::AssertionFailure() << "Send operarion timed out: "
                                          << expected_messages - messages_count
                                          << " failed to reply.";
