@@ -67,6 +67,15 @@ const std::string ToBinary(const std::string& raw_id)  {
   return result;
 }
 
+TEST(NodeIdTest, BEH_DistanceCheck) {
+  for (size_t i(0); i < 10000; ++i) {
+    NodeId one(NodeId::kRandomId);
+    NodeId two(NodeId::kRandomId);
+    EXPECT_FALSE(one == two);
+    EXPECT_TRUE((one ^ two) == (two ^ one));
+  }
+}
+
 TEST(NodeIdTest, BEH_BitToByteCount) {
   for (size_t i = 0; i < kKeySizeBytes; ++i) {
     ASSERT_EQ(i, BitToByteCount(8 * i));
