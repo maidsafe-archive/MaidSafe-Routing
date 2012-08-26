@@ -211,10 +211,11 @@ void ResponseHandler::ConnectTo(const std::vector<std::string>& nodes,
       bool routing_table_empty(routing_table_.Size() == 0);
       if (routing_table_empty)  // Joining the network, and may connect to bootstrapping node.
         direct_endpoint = network_.bootstrap_endpoint();
-      rudp::EndpointPair endpoint;
+      rudp::EndpointPair endpoint_pair;
+      rudp::NatType this_nat_type;
       if (kSuccess != network_.GetAvailableEndpoint(direct_endpoint,
-                                                    rudp::NatType::kUnknown,
-                                                    endpoint)) {
+                                                    endpoint_pair,
+                                                    this_nat_type)) {
         LOG(kWarning) << "Failed to get available endpoint for new connections";
         return;
       }
@@ -226,20 +227,21 @@ void ResponseHandler::ConnectTo(const std::vector<std::string>& nodes,
         relay_message = true;
       }
       NodeId nat_relay_id;
-      if (network_.nat_type() == rudp::NatType::kSymmetric)
+      if (this_nat_type == rudp::NatType::kSymmetric)
         nat_relay_id =
             routing_table_.GetClosestNode(NodeId(routing_table_.kKeys().identity)).node_id;
 
       LOG(kVerbose) << "Sending Connect RPC to " << HexSubstr(nodes.at(i));
-      protobuf::Message connect_rpc(rpcs::Connect(NodeId(nodes.at(i)),
-                                    endpoint,
-                                    NodeId(routing_table_.kKeys().identity),
-                                    closest_node_ids,
-                                    routing_table_.client_mode(),
-                                    network_.nat_type(),
-                                    nat_relay_id,
-                                    relay_message,
-                                    relay_endpoint));
+      protobuf::Message connect_rpc(
+          rpcs::Connect(NodeId(nodes.at(i)),
+          endpoint_pair,
+          NodeId(routing_table_.kKeys().identity),
+          closest_node_ids,
+          routing_table_.client_mode(),
+          this_nat_type,
+          nat_relay_id,
+          relay_message,
+          relay_endpoint));
       if (routing_table_empty)
         network_.SendToDirectEndpoint(connect_rpc, network_.bootstrap_endpoint());
       else

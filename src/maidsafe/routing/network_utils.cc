@@ -104,8 +104,8 @@ int NetworkUtils::Bootstrap(const std::vector<Endpoint> &bootstrap_endpoints,
   }
 
   rudp::EndpointPair endpoint_pair;
-  if (kSuccess != rudp_->GetAvailableEndpoint(bootstrap_endpoint_, rudp::NatType::kUnknown,
-                                              endpoint_pair)) {
+  if (kSuccess != rudp_->GetAvailableEndpoint(bootstrap_endpoint_, endpoint_pair,
+                                              nat_type_)) {
     LOG(kError) << " Failed to get available endpoint for new connections";
     return kFailedtoGetEndpoint;
   }
@@ -125,9 +125,9 @@ int NetworkUtils::Bootstrap(const std::vector<Endpoint> &bootstrap_endpoints,
 }
 
 int NetworkUtils::GetAvailableEndpoint(const Endpoint& peer_endpoint,
-                                       const rudp::NatType& peer_nat_type,
-                                       rudp::EndpointPair& this_endpoint_pair) {
-  return rudp_->GetAvailableEndpoint(peer_endpoint, peer_nat_type, this_endpoint_pair);
+                                       rudp::EndpointPair& this_endpoint_pair,
+                                       rudp::NatType& this_nat_type) {
+  return rudp_->GetAvailableEndpoint(peer_endpoint, this_endpoint_pair, this_nat_type);
 }
 
 int NetworkUtils::Add(const Endpoint& this_endpoint,

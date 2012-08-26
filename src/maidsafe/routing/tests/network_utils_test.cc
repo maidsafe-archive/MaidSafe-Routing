@@ -194,8 +194,9 @@ TEST(NetworkUtilsTest, FUNC_ProcessSendDirectEndpoint) {
                                         message_received_functor3,
                                         connection_lost_functor));
   rudp::EndpointPair endpoint_pair2, endpoint_pair3;
-  network.GetAvailableEndpoint(endpoint2, rudp::NatType::kUnknown, endpoint_pair3);
-  rudp2.GetAvailableEndpoint(endpoint_pair3.local, rudp::NatType::kUnknown, endpoint_pair2);
+  rudp::NatType this_nat_type;
+  network.GetAvailableEndpoint(endpoint2, endpoint_pair3, this_nat_type);
+  rudp2.GetAvailableEndpoint(endpoint_pair3.local, endpoint_pair2, this_nat_type);
   EXPECT_EQ(kSuccess, network.Add(endpoint_pair3.local, endpoint_pair2.local,
                                   "validation_3->2"));
   EXPECT_EQ(kSuccess, rudp2.Add(endpoint_pair2.local, endpoint_pair3.local,
@@ -320,8 +321,9 @@ TEST(NetworkUtilsTest, FUNC_ProcessSendRecursiveSendOn) {
                                         message_received_functor3,
                                         connection_lost_functor3));
   rudp::EndpointPair endpoint_pair2, endpoint_pair3;
-  network.GetAvailableEndpoint(endpoint2, rudp::NatType::kUnknown, endpoint_pair3);
-  rudp2.GetAvailableEndpoint(endpoint_pair3.local, rudp::NatType::kUnknown, endpoint_pair2);
+  rudp::NatType this_nat_type;
+  network.GetAvailableEndpoint(endpoint2, endpoint_pair3, this_nat_type);
+  rudp2.GetAvailableEndpoint(endpoint_pair3.local, endpoint_pair2, this_nat_type);
   EXPECT_EQ(kSuccess, network.Add(endpoint_pair3.local, endpoint_pair2.local,
                                   "validation_3->2"));
   EXPECT_EQ(kSuccess, rudp2.Add(endpoint_pair2.local, endpoint_pair3.local,

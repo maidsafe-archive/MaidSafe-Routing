@@ -98,14 +98,15 @@ void Connect(RoutingTable& routing_table,
   peer_endpoint_pair.local = GetEndpointFromProtobuf(connect_request.contact().private_endpoint());
 
   rudp::NatType nat_type = static_cast<rudp::NatType>(connect_request.contact().nat_type());
-  if (network.GetAvailableEndpoint(peer_endpoint_pair.external, nat_type, this_endpoint_pair1) !=
-      rudp::kSuccess) {
+  rudp::NatType this_nat_type;
+  if (network.GetAvailableEndpoint(peer_endpoint_pair.external, this_endpoint_pair1,
+                                   this_nat_type) != rudp::kSuccess) {
     LOG(kWarning) << "Unable to get available endpoint to connect to "
                   << peer_endpoint_pair.external;
   }
 
-  if (network.GetAvailableEndpoint(peer_endpoint_pair.local, nat_type, this_endpoint_pair2) !=
-      rudp::kSuccess) {
+  if (network.GetAvailableEndpoint(peer_endpoint_pair.local, this_endpoint_pair2,
+                                   this_nat_type) != rudp::kSuccess) {
     LOG(kWarning) << "Unable to get available endpoint to connect to "
                   << peer_endpoint_pair.local;
   }
@@ -115,8 +116,7 @@ void Connect(RoutingTable& routing_table,
   this_endpoint_pair.local = this_endpoint_pair2.local;
 
 // Handling the case when this node and peer node are behind symmetric router
-  if ((nat_type == rudp::NatType::kSymmetric) &&
-      (network.nat_type() == rudp::NatType::kSymmetric)) {
+  if ((nat_type == rudp::NatType::kSymmetric) && (this_nat_type == rudp::NatType::kSymmetric)) {
     peer_endpoint_pair.external = Endpoint();  // No need to try connction on external endpoint.
     connect_response.mutable_contact()->set_nat_relay_id(
         routing_table.GetClosestNode(NodeId(routing_table.kKeys().identity)).node_id.String());

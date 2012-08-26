@@ -47,8 +47,8 @@ class NetworkUtils {
                 rudp::ConnectionLostFunctor connection_lost_functor,
                 boost::asio::ip::udp::endpoint local_endpoint = boost::asio::ip::udp::endpoint());
   int GetAvailableEndpoint(const boost::asio::ip::udp::endpoint& peer_endpoint,
-                           const rudp::NatType& peer_nat_type,
-                           rudp::EndpointPair& this_endpoint_pair);
+                           rudp::EndpointPair& this_endpoint_pair,
+                           rudp::NatType& this_nat_type);
   int Add(const boost::asio::ip::udp::endpoint& this_endpoint,
           const boost::asio::ip::udp::endpoint& peer_endpoint,
           const std::string& validation_data);
