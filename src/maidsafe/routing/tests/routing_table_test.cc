@@ -235,6 +235,78 @@ TEST(RoutingTableTest, BEH_GetClosestNodeWithExclusion) {
   EXPECT_EQ(node_info.node_id, NodeInfo().node_id);
 }
 
+TEST(RoutingTableTest, BEH_GetClosestNodeWithExclusionAndAssymetric) {
+  std::vector<NodeId> nodes_id;
+  std::vector<std::string> exclude;
+  asymm::Keys keys;
+  keys.identity = RandomString(64);
+  RoutingTable RT(keys, false);
+  NodeInfo node_info;
+  NodeId my_node(keys.identity);
+
+  // Empty RT
+  node_info = RT.GetClosestNode(my_node, exclude, false, true);
+  NodeInfo node_info2(RT.GetClosestNode(my_node, exclude, true, true));
+  EXPECT_EQ(node_info.node_id, node_info2.node_id);
+  EXPECT_EQ(node_info.node_id, NodeInfo().node_id);
+
+  // RT with one element
+  NodeInfo node(MakeNode());
+  node.endpoint.port(1501U);  // has to be unique
+  nodes_id.push_back(node.node_id);
+  node.nat_type = rudp::NatType::kSymmetric;
+  EXPECT_TRUE(RT.AddNode(node));
+
+  node_info = RT.GetClosestNode(my_node, exclude, false, true);
+  node_info2 = RT.GetClosestNode(my_node, exclude, true, true);
+  EXPECT_EQ(node_info.node_id, node_info2.node_id);
+
+  node_info = RT.GetClosestNode(nodes_id[0], exclude, false, true);
+  node_info2 = RT.GetClosestNode(nodes_id[0], exclude, true, true);
+  EXPECT_EQ(node_info.node_id, node_info2.node_id);
+
+  exclude.push_back(nodes_id[0].String());
+  node_info = RT.GetClosestNode(nodes_id[0], exclude, false, true);
+  node_info2 = RT.GetClosestNode(nodes_id[0], exclude, true, true);
+  EXPECT_EQ(node_info.node_id, node_info2.node_id);
+  EXPECT_EQ(node_info.node_id, NodeInfo().node_id);
+
+  // RT with Parameters::Parameters::max_routing_table_size elements
+  exclude.clear();
+  for (uint16_t i = RT.Size(); RT.Size() < Parameters::max_routing_table_size; ++i) {
+    NodeInfo node(MakeNode());
+    node.endpoint.port(i + 1501U);  // has to be unique
+    node.nat_type = (i % 2 == 0) ? rudp::NatType::kSymmetric : rudp::NatType::kUnknown;
+    nodes_id.push_back(node.node_id);
+    EXPECT_TRUE(RT.AddNode(node));
+  }
+
+  node_info = RT.GetClosestNode(my_node, exclude, false, true);
+  node_info2 = RT.GetClosestNode(my_node, exclude, true, true);
+  EXPECT_EQ(node_info.node_id, node_info2.node_id);
+
+  uint16_t random_index = RandomUint32() % Parameters::max_routing_table_size;
+  node_info = RT.GetClosestNode(nodes_id[random_index], exclude, false, true);
+  node_info2 = RT.GetClosestNode(nodes_id[random_index], exclude, true, true);
+  if (random_index % 2 == 0)
+    EXPECT_EQ(node_info.node_id, node_info2.node_id);
+  else
+    EXPECT_NE(node_info.node_id, node_info2.node_id);
+
+  exclude.push_back(nodes_id[random_index].String());
+  node_info = RT.GetClosestNode(nodes_id[random_index], exclude, false, true);
+  node_info2 = RT.GetClosestNode(nodes_id[random_index], exclude, true, true);
+  EXPECT_EQ(node_info.node_id, node_info2.node_id);
+
+  for (auto node_id : nodes_id)
+    exclude.push_back(node_id.String());
+  node_info = RT.GetClosestNode(nodes_id[random_index], exclude, false, true);
+  node_info2 = RT.GetClosestNode(nodes_id[random_index], exclude, true, true);
+  EXPECT_EQ(node_info.node_id, node_info2.node_id);
+  EXPECT_EQ(node_info.node_id, NodeInfo().node_id);
+}
+
+
 }  // namespace test
 }  // namespace routing
 }  // namespace maidsafe
