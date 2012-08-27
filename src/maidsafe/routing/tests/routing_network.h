@@ -249,7 +249,7 @@ class GenericNetwork : public testing::Test {
       for (auto iter(routing_table.begin());
            iter < routing_table.begin() + size -1;
            ++iter) {
-        uint16_t distance(std::distance(node_ids.begin(), std::find(node_ids.begin(),
+        size_t distance(std::distance(node_ids.begin(), std::find(node_ids.begin(),
                                                                     node_ids.end(),
                                                                     (*iter).node_id)));
          LOG(kVerbose) << "distance: " << distance << " from "
