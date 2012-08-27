@@ -323,11 +323,12 @@ NodeInfo RoutingTable::GetClosestNode(const NodeId& target_id, bool ignore_exact
 
 NodeInfo RoutingTable::GetClosestNode(const NodeId& target_id,
                                       const std::vector<std::string>& exclude,
-                                      bool ignore_exact_match) {
+                                      bool ignore_exact_match,
+                                      bool ignore_symmetric) {
   std::lock_guard<std::mutex> lock(mutex_);
   std::vector<NodeInfo> closest_nodes(GetClosestNodeInfo(target_id,
                                                          Parameters::closest_nodes_size,
-                                                         ignore_exact_match));
+                                                         ignore_exact_match, ignore_symmetric));
   if (closest_nodes.empty())
     return NodeInfo();
 
@@ -389,6 +390,38 @@ std::vector<NodeInfo> RoutingTable::GetClosestNodeInfo(const NodeId& from,
     close_nodes.push_back(nodes_[i]);
 
   return close_nodes;
+}
+
+std::vector<NodeInfo> RoutingTable::GetClosestNodeInfo(const NodeId& from,
+                                                       const uint16_t& number_to_get,
+                                                       bool ignore_exact_match,
+                                                       bool ignore_symmetric) {
+  std::vector<NodeInfo> close_nodes, return_close_nodes;
+  bool exact_match_exist(false);
+  for (auto node_info : nodes_) {
+    if (!ignore_symmetric ||
+        (ignore_symmetric && (node_info.nat_type != rudp::NatType::kSymmetric)))
+      close_nodes.push_back(node_info);
+  }
+  uint16_t count = std::min(static_cast<uint16_t>(close_nodes.size()), number_to_get);
+  if (ignore_exact_match && (close_nodes.size() >= count))
+    if (std::find_if(close_nodes.begin(), close_nodes.end(),
+                     [&](const NodeInfo& node_info) {
+                       return (node_info.node_id == from);
+                     }) != close_nodes.end()) {
+      count++;
+      exact_match_exist = true;
+    }
+  count = std::min(static_cast<uint16_t>(close_nodes.size()), count);
+  std::partial_sort(close_nodes.begin(), close_nodes.begin() + count, close_nodes.end(),
+                    [&](const NodeInfo& lhs, const NodeInfo& rhs)->bool {
+                      return NodeId::CloserToTarget(lhs.node_id, rhs.node_id, from);
+                    });
+  for (uint16_t i = static_cast<uint16_t>(ignore_exact_match && exact_match_exist);
+         i < count; ++i)
+    return_close_nodes.push_back(close_nodes[i]);
+
+  return return_close_nodes;
 }
 
 void RoutingTable::update_network_status() const {

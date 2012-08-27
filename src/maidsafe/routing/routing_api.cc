@@ -484,7 +484,7 @@ NodeId Routing::GetRandomExistingNode() {
 void Routing::AddExistingRandomNode(NodeId node) {
   if (node.IsValid()) {
     impl_->random_node_queue_.Push(node);
-    unsigned int queue_size = impl_->random_node_queue_.Size();
+    size_t queue_size = impl_->random_node_queue_.Size();
     LOG(kVerbose) << "RandomNodeQueue : Added node, queue size now "
                   << queue_size;
     if (queue_size > 6)
@@ -540,7 +540,7 @@ bool Routing::ConfirmGroupMembers(const NodeId& node1, const NodeId& node2) {
 }
 
 void Routing::ReSendFindNodeRequest(const boost::system::error_code& error_code,
-                                    bool ignore_size) {
+                                    bool /*ignore_size*/) {
   if (error_code != boost::asio::error::operation_aborted) {
 //     if (impl_->routing_table_.Size() == 0) {
 //       LOG(kInfo) << "This node's [" << HexSubstr(impl_->keys_.identity)

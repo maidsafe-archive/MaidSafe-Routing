@@ -261,7 +261,7 @@ void NetworkUtils::RecursiveSendOn(protobuf::Message message,
            (message.route_history(0) != routing_table_.kKeys().identity))
     route_history.push_back(message.route_history(0));
   auto closest_node(routing_table_.GetClosestNode(NodeId(message.destination_id()), route_history,
-                                                  ignore_exact_match));
+                                                  ignore_exact_match, true));
   if (closest_node.node_id == NodeId()) {
     LOG(kError) << "This node's routing table is empty now.  Need to re-bootstrap.";
     return;
