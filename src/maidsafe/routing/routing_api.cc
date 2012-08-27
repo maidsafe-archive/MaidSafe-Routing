@@ -308,11 +308,13 @@ int Routing::ZeroStateJoin(Functors functors,
   rudp::EndpointPair this_endpoint_pair;
   peer_endpoint_pair.external = peer_node.endpoint;
   this_endpoint_pair.external = local_endpoint;
-
+  LOG(kInfo) << "Attempting to add bootstrap endpoint us -> " << local_endpoint << " peer -> " << peer_node.endpoint;
   result = impl_->network_.Add(local_endpoint, peer_node.endpoint, "junk");
   if (result != kSuccess) {
     LOG(kError) << "Failed to add zero state node : " << peer_node.endpoint;
     return result;
+  } else {
+    LOG(kInfo) << " Added zero state node ->" << peer_node.endpoint;
   }
 
   ValidateAndAddToRoutingTable(impl_->network_,

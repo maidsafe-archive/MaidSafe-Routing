@@ -72,12 +72,14 @@ source_group("Routing Tests Header Files" FILES ${HEADER_FILES_ROUTING_TESTS_DIR
 ms_add_static_library(routing ${ALL_FILES_ROUTING_DIR})
 #ms_add_static_library(routing_fake_rudp ${ALL_FILES_ROUTING_DIR} ${ALL_FILES_FAKE_RUDP_DIR})
 ms_add_executable(TESTrouting "Tests/Routing" ${ALL_FILES_ROUTING_TESTS_DIR})
+ms_add_executable(create_lifestuff_bootstrap "Tools"  "${PROJECT_SOURCE_DIR}/src/maidsafe/tools/create_bootstrap.cc")
 #ms_add_executable(TESTrouting_fake_rudp "Tests/Routing" ${ALL_FILES_ROUTING_TESTS_DIR})
 
 target_link_libraries(maidsafe_routing maidsafe_rudp)
 #target_link_libraries(maidsafe_routing_fake_rudp maidsafe_common)
 target_link_libraries(TESTrouting maidsafe_routing)
 #target_link_libraries(TESTrouting_fake_rudp maidsafe_routing_fake_rudp)
+target_link_libraries(create_lifestuff_bootstrap maidsafe_routing)
 
 rename_outdated_built_exes()
 
