@@ -41,7 +41,6 @@ protobuf::Message Connect(
     const std::vector<std::string>& closest_ids = std::vector<std::string>(),
     bool client_node = false,
     rudp::NatType nat_type = rudp::NatType::kUnknown,
-    NodeId nat_relay_id = NodeId(),
     bool relay_message = false,
     boost::asio::ip::udp::endpoint local_endpoint = boost::asio::ip::udp::endpoint());
 

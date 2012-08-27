@@ -59,7 +59,9 @@ void ValidateAndAddToRudp(NetworkUtils& network_,
     protobuf::Message connect_success_local_endpoint(
         rpcs::ConnectSuccess(peer_id, this_node_id, this_endpoint.local, client));
     LOG(kVerbose) << "Calling RUDP::Add on this node's endpoint " << this_endpoint.local
-                  << ", peer's endpoint " << peer_endpoint.local;
+                  << ", peer's endpoint " << peer_endpoint.local
+                  << ", This node id : " << HexSubstr(this_node_id.String())
+                  << ", Peer node id : " << HexSubstr(peer_id.String());
     int result = network_.Add(this_endpoint.local, peer_endpoint.local,
                               connect_success_local_endpoint.SerializeAsString());
 
@@ -120,7 +122,7 @@ void ValidateAndAddToRoutingTable(NetworkUtils& network_,
 }
 
 void HandleSymmetricNodeAdd(RoutingTable& routing_table, const NodeId& peer_id,
-                            const NodeId& nat_relay_id, const asymm::PublicKey& public_key) {
+                            const asymm::PublicKey& public_key) {
   if (routing_table.IsConnected(peer_id)) {
     LOG(kVerbose) << "[" << HexSubstr(routing_table.kKeys().identity) << "] "
                   << "already added node to routing table.  Node ID: "
@@ -132,7 +134,6 @@ void HandleSymmetricNodeAdd(RoutingTable& routing_table, const NodeId& peer_id,
   peer.node_id = peer_id;
   peer.public_key = public_key;
   peer.endpoint = rudp::kNonRoutable;
-  peer.nat_relay_id = nat_relay_id;
   peer.nat_type = rudp::NatType::kSymmetric;
 
   if (routing_table.AddNode(peer)) {

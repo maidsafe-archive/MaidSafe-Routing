@@ -263,7 +263,7 @@ void NetworkUtils::RecursiveSendOn(protobuf::Message message,
            (message.route_history(0) != routing_table_.kKeys().identity))
     route_history.push_back(message.route_history(0));
   auto closest_node(routing_table_.GetClosestNode(NodeId(message.destination_id()), route_history,
-                                                  ignore_exact_match));
+                                                  ignore_exact_match, true));
   if (closest_node.node_id == NodeId()) {
     LOG(kError) << "This node's routing table is empty now.  Need to re-bootstrap.";
     return;
@@ -273,12 +273,12 @@ void NetworkUtils::RecursiveSendOn(protobuf::Message message,
 
   rudp::MessageSentFunctor message_sent_functor = [=](int message_sent) {
       if (rudp::kSuccess == message_sent) {
-        LOG(kInfo) << "Type " << message.type() << " message successfully sent from "
+        LOG(kInfo) << "Type " << MessageTypeString(message) << " message successfully sent from "
                    << kThisId << " to " << HexSubstr(closest_node.node_id.String())
                    << " with destination ID " << HexSubstr(message.destination_id())
                    << " id: " << message.id();
       } else if (rudp::kSendFailure == message_sent) {
-        LOG(kError) << "Sending type " << message.type() << " message from "
+        LOG(kError) << "Sending type " << MessageTypeString(message) << " message from "
                     << kThisId << " to " << HexSubstr(closest_node.node_id.String())
                     << " with destination ID " << HexSubstr(message.destination_id())
                     << " failed with code " << message_sent
@@ -286,7 +286,7 @@ void NetworkUtils::RecursiveSendOn(protobuf::Message message,
                      << " id: " << message.id();
         RecursiveSendOn(message, closest_node, attempt_count + 1);
       } else {
-        LOG(kError) << "Sending type " << message.type() << " message from "
+        LOG(kError) << "Sending type " << MessageTypeString(message) << " message from "
                     << kThisId << " to " << HexSubstr(closest_node.node_id.String())
                     << " with destination ID " << HexSubstr(message.destination_id())
                     << " failed with code " << message_sent << "  Will remove node."

@@ -21,7 +21,6 @@ message Contact {
   required Endpoint private_endpoint = 2;
   required Endpoint public_endpoint = 3;
   optional NatType nat_type = 4;
-  optional bytes nat_relay_id = 5;
   optional bool tcp = 6;
 }
 

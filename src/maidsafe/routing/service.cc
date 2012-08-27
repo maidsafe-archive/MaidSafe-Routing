@@ -90,7 +90,8 @@ void Connect(RoutingTable& routing_table,
   }
   NodeInfo node;
   node.node_id = NodeId(connect_request.contact().node_id());
-
+  LOG(kVerbose) <<"[" << HexSubstr(routing_table.kKeys().identity) << "]" << " received Connect request from "
+                << HexSubstr(connect_request.contact().node_id());
   connect_response.set_answer(false);
   rudp::EndpointPair this_endpoint_pair1, this_endpoint_pair2, peer_endpoint_pair;
   peer_endpoint_pair.external =
@@ -117,15 +118,11 @@ void Connect(RoutingTable& routing_table,
 
 // Handling the case when this node and peer node are behind symmetric router
   if ((nat_type == rudp::NatType::kSymmetric) && (this_nat_type == rudp::NatType::kSymmetric)) {
-    peer_endpoint_pair.external = Endpoint();  // No need to try connction on external endpoint.
-    connect_response.mutable_contact()->set_nat_relay_id(
-        routing_table.GetClosestNode(NodeId(routing_table.kKeys().identity)).node_id.String());
+//    peer_endpoint_pair.external = Endpoint();  // No need to try connction on external endpoint.
 
     auto validate_node = [&] (const asymm::PublicKey& key)->void {
         LOG(kInfo) << "NEED TO VALIDATE THE SYMMETRIC NODE HERE";
-        HandleSymmetricNodeAdd(routing_table, NodeId(connect_request.contact().node_id()),
-                               NodeId(connect_request.contact().nat_relay_id()),
-                               key);
+        HandleSymmetricNodeAdd(routing_table, NodeId(connect_request.contact().node_id()), key);
       };
 
     TaskResponseFunctor add_symmetric_node =
@@ -211,7 +208,6 @@ void Connect(RoutingTable& routing_table,
 }
 
 void FindNodes(RoutingTable& routing_table, protobuf::Message& message) {
-  LOG(kVerbose) << "FindNodes -- service()";
   protobuf::FindNodesRequest find_nodes;
   if (!find_nodes.ParseFromString(message.data(0))) {
     LOG(kWarning) << "Unable to parse find node request.";
@@ -223,7 +219,9 @@ void FindNodes(RoutingTable& routing_table, protobuf::Message& message) {
     message.Clear();
     return;
   }
-  LOG(kVerbose) << "Parsed find node request -- " << HexSubstr(find_nodes.target_node());
+
+  LOG(kVerbose) << "[" << HexSubstr(routing_table.kKeys().identity) << "]"
+                << " parsed find node request for : " << HexSubstr(find_nodes.target_node());
   protobuf::FindNodesResponse found_nodes;
   std::vector<NodeId> nodes(routing_table.GetClosestNodes(NodeId(find_nodes.target_node()),
                               static_cast<uint16_t>(find_nodes.num_nodes_requested() - 1)));
