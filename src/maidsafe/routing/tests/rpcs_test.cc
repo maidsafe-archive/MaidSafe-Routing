@@ -112,8 +112,7 @@ TEST(RpcsTest, BEH_ConnectMessageNodeRelayMode) {
   std::string destination = RandomString(64);
   protobuf::Message message = rpcs::Connect(NodeId(destination), endpoint, us.node_id,
                                             std::vector<std::string>(), false,
-                                            rudp::NatType::kUnknown, NodeId(), true,
-                                            relay_endpoint);
+                                            rudp::NatType::kUnknown, true, relay_endpoint);
   protobuf::ConnectRequest connect_request;
   EXPECT_TRUE(message.IsInitialized());
   EXPECT_TRUE(connect_request.ParseFromString(message.data(0)));  // us

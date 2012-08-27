@@ -118,15 +118,11 @@ void Connect(RoutingTable& routing_table,
 
 // Handling the case when this node and peer node are behind symmetric router
   if ((nat_type == rudp::NatType::kSymmetric) && (this_nat_type == rudp::NatType::kSymmetric)) {
-    peer_endpoint_pair.external = Endpoint();  // No need to try connction on external endpoint.
-    connect_response.mutable_contact()->set_nat_relay_id(
-        routing_table.GetClosestNode(NodeId(routing_table.kKeys().identity)).node_id.String());
+//    peer_endpoint_pair.external = Endpoint();  // No need to try connction on external endpoint.
 
     auto validate_node = [&] (const asymm::PublicKey& key)->void {
         LOG(kInfo) << "NEED TO VALIDATE THE SYMMETRIC NODE HERE";
-        HandleSymmetricNodeAdd(routing_table, NodeId(connect_request.contact().node_id()),
-                               NodeId(connect_request.contact().nat_relay_id()),
-                               key);
+        HandleSymmetricNodeAdd(routing_table, NodeId(connect_request.contact().node_id()), key);
       };
 
     TaskResponseFunctor add_symmetric_node =

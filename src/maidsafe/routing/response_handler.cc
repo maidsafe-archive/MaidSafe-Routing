@@ -102,12 +102,10 @@ void ResponseHandler::Connect(protobuf::Message& message) {
 
   if ((nat_type == rudp::NatType::kSymmetric) &&
       (network_.nat_type() == rudp::NatType::kSymmetric)) {
-    peer_endpoint_pair.external = Endpoint();  // No need to try connction on external endpoint.
+//     peer_endpoint_pair.external = Endpoint();  // No need to try connction on external endpoint.
     auto validate_node = [&] (const asymm::PublicKey& key)->void {
         LOG(kInfo) << "NEED TO VALIDATE THE SYMMETRIC NODE HERE";
-        HandleSymmetricNodeAdd(routing_table_, NodeId(connect_response.contact().node_id()),
-                               NodeId(connect_response.contact().nat_relay_id()),
-                               key);
+        HandleSymmetricNodeAdd(routing_table_, NodeId(connect_response.contact().node_id()), key);
       };
 
     TaskResponseFunctor add_symmetric_node = [&](std::vector<std::string>) {
@@ -226,10 +224,6 @@ void ResponseHandler::ConnectTo(const std::vector<std::string>& nodes,
         relay_endpoint = network_.this_node_relay_endpoint();
         relay_message = true;
       }
-      NodeId nat_relay_id;
-      if (this_nat_type == rudp::NatType::kSymmetric)
-        nat_relay_id =
-            routing_table_.GetClosestNode(NodeId(routing_table_.kKeys().identity)).node_id;
 
       LOG(kVerbose) << "Sending Connect RPC to " << HexSubstr(nodes.at(i));
       protobuf::Message connect_rpc(
@@ -239,7 +233,6 @@ void ResponseHandler::ConnectTo(const std::vector<std::string>& nodes,
           closest_node_ids,
           routing_table_.client_mode(),
           this_nat_type,
-          nat_relay_id,
           relay_message,
           relay_endpoint));
       if (routing_table_empty)

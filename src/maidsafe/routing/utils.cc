@@ -122,7 +122,7 @@ void ValidateAndAddToRoutingTable(NetworkUtils& network_,
 }
 
 void HandleSymmetricNodeAdd(RoutingTable& routing_table, const NodeId& peer_id,
-                            const NodeId& nat_relay_id, const asymm::PublicKey& public_key) {
+                            const asymm::PublicKey& public_key) {
   if (routing_table.IsConnected(peer_id)) {
     LOG(kVerbose) << "[" << HexSubstr(routing_table.kKeys().identity) << "] "
                   << "already added node to routing table.  Node ID: "
@@ -134,7 +134,6 @@ void HandleSymmetricNodeAdd(RoutingTable& routing_table, const NodeId& peer_id,
   peer.node_id = peer_id;
   peer.public_key = public_key;
   peer.endpoint = rudp::kNonRoutable;
-  peer.nat_relay_id = nat_relay_id;
   peer.nat_type = rudp::NatType::kSymmetric;
 
   if (routing_table.AddNode(peer)) {
