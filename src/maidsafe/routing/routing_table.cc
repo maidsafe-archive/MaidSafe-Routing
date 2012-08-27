@@ -143,6 +143,7 @@ bool RoutingTable::IsThisNodeClosestTo(const NodeId& target_id) {
 }
 
 bool RoutingTable::IsConnected(const Endpoint& endpoint) const {
+  assert((endpoint != rudp::kNonRoutable) && "Should not be called with kNonRoutable endpoint");
   std::lock_guard<std::mutex> lock(mutex_);
   return (std::find_if(nodes_.begin(),
                        nodes_.end(),
@@ -224,6 +225,9 @@ bool RoutingTable::CheckParametersAreUnique(const NodeInfo& node) const {
     return false;
   }
 
+  // If the endpoint is kNonRoutable then no need to check for endpoint duplication.
+  if (node.endpoint == rudp::kNonRoutable)
+    return true;
   // If we already have a duplicate endpoint return false
   if (std::find_if(nodes_.begin(),
                    nodes_.end(),

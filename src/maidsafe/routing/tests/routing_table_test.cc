@@ -235,7 +235,7 @@ TEST(RoutingTableTest, BEH_GetClosestNodeWithExclusion) {
   EXPECT_EQ(node_info.node_id, NodeInfo().node_id);
 }
 
-TEST(RoutingTableTest, BEH_GetClosestNodeWithExclusionAndAssymetric) {
+TEST(RoutingTableTest, BEH_GetClosestNodeWithExclusionAndIgnoreNonRoutable) {
   std::vector<NodeId> nodes_id;
   std::vector<std::string> exclude;
   asymm::Keys keys;
@@ -255,6 +255,7 @@ TEST(RoutingTableTest, BEH_GetClosestNodeWithExclusionAndAssymetric) {
   node.endpoint.port(1501U);  // has to be unique
   nodes_id.push_back(node.node_id);
   node.nat_type = rudp::NatType::kSymmetric;
+  node.endpoint = rudp::kNonRoutable;
   EXPECT_TRUE(RT.AddNode(node));
 
   node_info = RT.GetClosestNode(my_node, exclude, false, true);
@@ -276,7 +277,13 @@ TEST(RoutingTableTest, BEH_GetClosestNodeWithExclusionAndAssymetric) {
   for (uint16_t i = RT.Size(); RT.Size() < Parameters::max_routing_table_size; ++i) {
     NodeInfo node(MakeNode());
     node.endpoint.port(i + 1501U);  // has to be unique
-    node.nat_type = (i % 2 == 0) ? rudp::NatType::kSymmetric : rudp::NatType::kUnknown;
+    if (i % 2 == 0) {
+      node.nat_type = rudp::NatType::kSymmetric;
+      node.endpoint = rudp::kNonRoutable;
+    } else {
+      node.nat_type = rudp::NatType::kUnknown;
+    }
+
     nodes_id.push_back(node.node_id);
     EXPECT_TRUE(RT.AddNode(node));
   }
