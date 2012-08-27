@@ -90,7 +90,8 @@ void Connect(RoutingTable& routing_table,
   }
   NodeInfo node;
   node.node_id = NodeId(connect_request.contact().node_id());
-  LOG(kVerbose) <<"[" << HexSubstr(routing_table.kKeys().identity) << "]" << " received Connect request from "
+  LOG(kVerbose) <<"[" << HexSubstr(routing_table.kKeys().identity) << "]"
+                << " received Connect request from "
                 << HexSubstr(connect_request.contact().node_id());
   connect_response.set_answer(false);
   rudp::EndpointPair this_endpoint_pair1, this_endpoint_pair2, peer_endpoint_pair;
