@@ -59,7 +59,9 @@ void ValidateAndAddToRudp(NetworkUtils& network_,
     protobuf::Message connect_success_local_endpoint(
         rpcs::ConnectSuccess(peer_id, this_node_id, this_endpoint.local, client));
     LOG(kVerbose) << "Calling RUDP::Add on this node's endpoint " << this_endpoint.local
-                  << ", peer's endpoint " << peer_endpoint.local;
+                  << ", peer's endpoint " << peer_endpoint.local
+                  << ", This node id : " << HexSubstr(this_node_id.String())
+                  << ", Peer node id : " << HexSubstr(peer_id.String());
     int result = network_.Add(this_endpoint.local, peer_endpoint.local,
                               connect_success_local_endpoint.SerializeAsString());
 

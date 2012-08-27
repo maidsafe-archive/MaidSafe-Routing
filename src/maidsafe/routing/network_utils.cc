@@ -271,12 +271,12 @@ void NetworkUtils::RecursiveSendOn(protobuf::Message message,
 
   rudp::MessageSentFunctor message_sent_functor = [=](int message_sent) {
       if (rudp::kSuccess == message_sent) {
-        LOG(kInfo) << "Type " << message.type() << " message successfully sent from "
+        LOG(kInfo) << "Type " << MessageTypeString(message) << " message successfully sent from "
                    << kThisId << " to " << HexSubstr(closest_node.node_id.String())
                    << " with destination ID " << HexSubstr(message.destination_id())
                    << " id: " << message.id();
       } else if (rudp::kSendFailure == message_sent) {
-        LOG(kError) << "Sending type " << message.type() << " message from "
+        LOG(kError) << "Sending type " << MessageTypeString(message) << " message from "
                     << kThisId << " to " << HexSubstr(closest_node.node_id.String())
                     << " with destination ID " << HexSubstr(message.destination_id())
                     << " failed with code " << message_sent
@@ -284,7 +284,7 @@ void NetworkUtils::RecursiveSendOn(protobuf::Message message,
                      << " id: " << message.id();
         RecursiveSendOn(message, closest_node, attempt_count + 1);
       } else {
-        LOG(kError) << "Sending type " << message.type() << " message from "
+        LOG(kError) << "Sending type " << MessageTypeString(message) << " message from "
                     << kThisId << " to " << HexSubstr(closest_node.node_id.String())
                     << " with destination ID " << HexSubstr(message.destination_id())
                     << " failed with code " << message_sent << "  Will remove node."

@@ -84,7 +84,7 @@ void ResponseHandler::Connect(protobuf::Message& message) {
 
   LOG(kVerbose) << "This node [" << HexSubstr(routing_table_.kKeys().identity)
                 << "] received connect response from "
-                << HexSubstr(connect_request.contact().node_id())
+                << HexSubstr(connect_response.contact().node_id())
                 << " id: " << message.id();
   rudp::EndpointPair this_endpoint_pair;
   this_endpoint_pair.external =
