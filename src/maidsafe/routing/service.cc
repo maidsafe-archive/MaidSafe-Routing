@@ -100,7 +100,7 @@ void Connect(RoutingTable& routing_table,
   peer_endpoint_pair.local = GetEndpointFromProtobuf(connect_request.contact().private_endpoint());
 
   rudp::NatType nat_type = static_cast<rudp::NatType>(connect_request.contact().nat_type());
-  rudp::NatType this_nat_type;
+  rudp::NatType this_nat_type(rudp::NatType::kUnknown);
   if (!peer_endpoint_pair.external.address().is_unspecified()) {
     if (network.GetAvailableEndpoint(peer_endpoint_pair.external, this_endpoint_pair1,
                                      this_nat_type) != rudp::kSuccess) {
