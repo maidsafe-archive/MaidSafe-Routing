@@ -395,12 +395,11 @@ std::vector<NodeInfo> RoutingTable::GetClosestNodeInfo(const NodeId& from,
 std::vector<NodeInfo> RoutingTable::GetClosestNodeInfo(const NodeId& from,
                                                        const uint16_t& number_to_get,
                                                        bool ignore_exact_match,
-                                                       bool ignore_symmetric) {
+                                                       bool ignore_non_routable) {
   std::vector<NodeInfo> close_nodes, return_close_nodes;
   bool exact_match_exist(false);
   for (auto node_info : nodes_) {
-    if (!ignore_symmetric ||
-        (ignore_symmetric && (node_info.nat_type != rudp::NatType::kSymmetric)))
+    if (!ignore_non_routable || (ignore_non_routable && (node_info.endpoint != rudp::kNonRoutable)))
       close_nodes.push_back(node_info);
   }
   uint16_t count = std::min(static_cast<uint16_t>(close_nodes.size()), number_to_get);
