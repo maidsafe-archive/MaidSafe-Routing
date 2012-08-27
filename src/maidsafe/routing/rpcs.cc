@@ -59,8 +59,8 @@ protobuf::Message Connect(const NodeId& node_id,
                           boost::asio::ip::udp::endpoint local_endpoint) {
   assert(node_id.IsValid() && "Invalid node_id");
   assert(my_node_id.IsValid() && "Invalid my node_id");
-//  BOOST_ASSERT_MSG(!our_endpoint.external.address().is_unspecified(), "Unspecified endpoint");
-//  BOOST_ASSERT_MSG(!our_endpoint.local.address().is_unspecified(), "Unspecified endpoint");
+  assert((!our_endpoint.external.address().is_unspecified() ||
+          !our_endpoint.local.address().is_unspecified()) && "Unspecified endpoint");
   protobuf::Message message;
   protobuf::ConnectRequest protobuf_connect_request;
   protobuf::Contact* contact = protobuf_connect_request.mutable_contact();

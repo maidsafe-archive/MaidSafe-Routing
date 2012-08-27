@@ -101,21 +101,32 @@ void Connect(RoutingTable& routing_table,
 
   rudp::NatType nat_type = static_cast<rudp::NatType>(connect_request.contact().nat_type());
   rudp::NatType this_nat_type;
-  if (network.GetAvailableEndpoint(peer_endpoint_pair.external, this_endpoint_pair1,
-                                   this_nat_type) != rudp::kSuccess) {
-    LOG(kWarning) << "Unable to get available endpoint to connect to "
-                  << peer_endpoint_pair.external;
+  if (!peer_endpoint_pair.external.address().is_unspecified()) {
+    if (network.GetAvailableEndpoint(peer_endpoint_pair.external, this_endpoint_pair1,
+                                     this_nat_type) != rudp::kSuccess) {
+      LOG(kWarning) << "Unable to get available endpoint to connect to "
+                    << peer_endpoint_pair.external;
+    }
   }
 
-  if (network.GetAvailableEndpoint(peer_endpoint_pair.local, this_endpoint_pair2,
-                                   this_nat_type) != rudp::kSuccess) {
-    LOG(kWarning) << "Unable to get available endpoint to connect to "
-                  << peer_endpoint_pair.local;
+  if (!peer_endpoint_pair.local.address().is_unspecified() &&
+      (peer_endpoint_pair.local != peer_endpoint_pair.external)) {
+    if (network.GetAvailableEndpoint(peer_endpoint_pair.local, this_endpoint_pair2,
+                                     this_nat_type) != rudp::kSuccess) {
+      LOG(kWarning) << "Unable to get available endpoint to connect to "
+                    << peer_endpoint_pair.local;
+    }
   }
 
   rudp::EndpointPair this_endpoint_pair;
   this_endpoint_pair.external = this_endpoint_pair1.external;
   this_endpoint_pair.local = this_endpoint_pair2.local;
+
+  if (this_endpoint_pair.external.address().is_unspecified() &&
+      this_endpoint_pair.local.address().is_unspecified()) {
+    LOG(kError) << "Unable to get any available endpoint to connect to ";
+    return;
+  }
 
 // Handling the case when this node and peer node are behind symmetric router
   if ((nat_type == rudp::NatType::kSymmetric) && (this_nat_type == rudp::NatType::kSymmetric)) {
@@ -133,12 +144,6 @@ void Connect(RoutingTable& routing_table,
         }
       };
     network.timer().AddTask(boost::posix_time::seconds(5), add_symmetric_node, 1);
-  }
-
-  if (this_endpoint_pair.external.address().is_unspecified() &&
-      this_endpoint_pair.local.address().is_unspecified()) {
-    LOG(kError) << "Unable to get any available endpoint to connect to ";
-    return;
   }
 
   bool check_node_succeeded(false);
