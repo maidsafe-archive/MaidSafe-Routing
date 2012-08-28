@@ -402,7 +402,7 @@ void Routing::Send(const NodeId& destination_id,
   proto_message.set_request(true);
   proto_message.set_hops_to_live(Parameters::hops_to_live);
   uint16_t replication(1);
-  if (group_claim.IsValid() && group_claim != NodeId())
+  if (group_claim.IsValid() && !group_claim.Empty())
     proto_message.set_group_claim(group_claim.String());
 
   if (!direct) {
@@ -509,16 +509,16 @@ void Routing::ConnectionLost(const Endpoint& lost_endpoint, std::weak_ptr<Routin
 
   // Checking routing table
   dropped_node = pimpl->routing_table_.DropNode(lost_endpoint);
-  if (dropped_node.node_id != NodeId()) {
+  if (!dropped_node.node_id.Empty()) {
     LOG(kWarning) << "Lost connection with routing node "
                   << HexSubstr(dropped_node.node_id.String()) << ", endpoint " << lost_endpoint;
     LOG(kWarning) << "Routing::ConnectionLost-----------------------------------------Exiting";
   }
 
   // Checking non-routing table
-  if (dropped_node.node_id != NodeId()) {
+  if (!dropped_node.node_id.Empty()) {
     dropped_node = pimpl->non_routing_table_.DropNode(lost_endpoint);
-    if (dropped_node.node_id != NodeId()) {
+    if (!dropped_node.node_id.Empty()) {
       LOG(kWarning) << "Lost connection with non-routing node "
                     << HexSubstr(dropped_node.node_id.String()) << ", endpoint " << lost_endpoint;
     } else {

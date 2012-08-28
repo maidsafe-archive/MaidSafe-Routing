@@ -67,6 +67,13 @@ const std::string ToBinary(const std::string& raw_id)  {
   return result;
 }
 
+TEST(NodeIdTest, BEH_Empty) {
+  NodeId empty;
+  EXPECT_TRUE(empty.Empty());
+  EXPECT_FALSE(!empty.Empty());
+  EXPECT_TRUE(empty == NodeId(kZeroId));
+}
+
 TEST(NodeIdTest, BEH_DistanceCheck) {
   for (size_t i(0); i < 10000; ++i) {
     NodeId one(NodeId::kRandomId);

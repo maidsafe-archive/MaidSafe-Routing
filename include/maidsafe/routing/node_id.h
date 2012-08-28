@@ -67,6 +67,8 @@ class NodeId {
   // Checks that raw_id_ has size kKeySizeBytes.
   bool IsValid() const;
 
+  bool Empty() const;
+
   bool operator() (const NodeId& lhs, const NodeId& rhs) const;
   bool operator == (const NodeId& rhs) const;
   bool operator != (const NodeId& rhs) const;

@@ -196,6 +196,10 @@ bool NodeId::IsValid() const {
   return ((raw_id_.size() == kKeySizeBytes) && (!raw_id_.empty()));
 }
 
+bool NodeId::Empty() const {
+  return raw_id_ == kZeroId;
+}
+
 bool NodeId::operator()(const NodeId& lhs, const NodeId& rhs) const {
   return lhs.raw_id_ < rhs.raw_id_;
 }
