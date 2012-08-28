@@ -132,16 +132,15 @@ void Connect(RoutingTable& routing_table,
   if ((nat_type == rudp::NatType::kSymmetric) && (this_nat_type == rudp::NatType::kSymmetric)) {
 //    peer_endpoint_pair.external = Endpoint();  // No need to try connction on external endpoint.
 
-    auto validate_node = [&] (const asymm::PublicKey& key)->void {
+    auto validate_node = [=, &routing_table] (const asymm::PublicKey& key)->void {
         LOG(kInfo) << "NEED TO VALIDATE THE SYMMETRIC NODE HERE";
         HandleSymmetricNodeAdd(routing_table, NodeId(connect_request.contact().node_id()), key);
       };
 
     TaskResponseFunctor add_symmetric_node =
       [=, &routing_table, &request_public_key_functor](std::vector<std::string>) {
-        if (request_public_key_functor) {
+        if (request_public_key_functor)
           request_public_key_functor(NodeId(connect_request.contact().node_id()), validate_node);
-        }
       };
     network.timer().AddTask(boost::posix_time::seconds(5), add_symmetric_node, 1);
   }
