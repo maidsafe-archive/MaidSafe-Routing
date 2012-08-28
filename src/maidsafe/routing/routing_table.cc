@@ -441,6 +441,10 @@ asymm::Keys RoutingTable::kKeys() const {
   return keys_;
 }
 
+NodeId RoutingTable::kNodeId() const {
+  return kNodeId_;
+}
+
 void RoutingTable::set_network_status_functor(NetworkStatusFunctor network_status_functor) {
   network_status_functor_ = network_status_functor;
 }
@@ -448,10 +452,6 @@ void RoutingTable::set_network_status_functor(NetworkStatusFunctor network_statu
 void RoutingTable::set_close_node_replaced_functor(
     CloseNodeReplacedFunctor close_node_replaced_functor) {
   close_node_replaced_functor_ = close_node_replaced_functor;
-}
-
-void RoutingTable::set_keys(const asymm::Keys& keys) {
-  keys_ = keys;
 }
 
 void RoutingTable::set_bootstrap_file_path(const boost::filesystem::path& path) {

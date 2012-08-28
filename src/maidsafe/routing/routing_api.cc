@@ -60,9 +60,6 @@ Routing::Routing(const asymm::Keys& keys, const bool& client_mode)
 
   if (keys.identity.empty()) {
     impl_->anonymous_node_ = true;
-    asymm::GenerateKeyPair(&impl_->keys_);
-    impl_->keys_.identity = NodeId(RandomString(64)).String();
-    impl_->routing_table_.set_keys(impl_->keys_);
     LOG(kInfo) << "Anonymous node ID: " << HexSubstr(impl_->keys_.identity);
   }
 }

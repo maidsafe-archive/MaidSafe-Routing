@@ -22,7 +22,14 @@ namespace routing {
 RoutingPrivate::RoutingPrivate(const asymm::Keys& keys, bool client_mode)
     : asio_service_(1),
       bootstrap_nodes_(),
-      keys_(keys),
+      keys_([&keys]()->asymm::Keys {
+          if (!keys.identity.empty())
+            return keys;
+          asymm::Keys keys_temp;
+          asymm::GenerateKeyPair(&keys_temp);
+          keys_temp.identity = NodeId(NodeId::kRandomId).String();
+        return keys_temp;
+      }()),
       tearing_down_(false),
       routing_table_(keys_, client_mode),
       non_routing_table_(keys_),  // TODO(Prakash) : don't create NRT for client nodes (wrap both)

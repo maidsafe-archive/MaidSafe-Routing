@@ -59,9 +59,9 @@ class RoutingTable {
   std::vector<NodeId> GetClosestNodes(const NodeId& target_id, const uint16_t& number_to_get);
   uint16_t Size() const;
   asymm::Keys kKeys() const;
+  NodeId kNodeId() const;
   void set_network_status_functor(NetworkStatusFunctor network_status_functor);
   void set_close_node_replaced_functor(CloseNodeReplacedFunctor close_node_replaced_functor);
-  void set_keys(const asymm::Keys& keys);
   bool client_mode() const { return client_mode_; }
   void set_bootstrap_file_path(const boost::filesystem::path& path);
   friend class test::GenericNode;
@@ -88,7 +88,7 @@ class RoutingTable {
 
   const uint16_t max_size_;
   bool client_mode_;
-  asymm::Keys keys_;
+  const asymm::Keys keys_;
   bool sorted_;
   const NodeId kNodeId_;
   NodeId furthest_group_node_id_;
