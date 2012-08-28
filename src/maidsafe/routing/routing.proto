@@ -10,11 +10,18 @@ message Endpoint {
   required int32 port = 2;
 }
 
+enum NatType {
+  kSymmetric = 0;
+  kOther = 1;
+  kUnknown = 2;
+}
+
 message Contact {
   required bytes node_id = 1;
   required Endpoint private_endpoint = 2;
   required Endpoint public_endpoint = 3;
-  optional bool tcp = 4;
+  optional NatType nat_type = 4;
+  optional bool tcp = 6;
 }
 
 message ConfigFile {

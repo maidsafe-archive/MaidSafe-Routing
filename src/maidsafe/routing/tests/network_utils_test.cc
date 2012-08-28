@@ -66,7 +66,9 @@ TEST(NetworkUtilsTest, BEH_ProcessSendDirectInvalidEndpoint) {
   asymm::Keys keys(MakeKeys());
   RoutingTable routing_table(keys, false);
   NonRoutingTable non_routing_table(keys);
-  NetworkUtils network(routing_table, non_routing_table);
+  AsioService asio_service(0);
+  Timer timer(asio_service);
+  NetworkUtils network(routing_table, non_routing_table, timer);
   network.SendToClosestNode(message);
 }
 
@@ -83,7 +85,9 @@ TEST(NetworkUtilsTest, BEH_ProcessSendUnavailableDirectEndpoint) {
   RoutingTable routing_table(keys, false);
   NonRoutingTable non_routing_table(keys);
   Endpoint endpoint(GetLocalIp(), GetRandomPort());
-  NetworkUtils network(routing_table, non_routing_table);
+  AsioService asio_service(0);
+  Timer timer(asio_service);
+  NetworkUtils network(routing_table, non_routing_table, timer);
   network.SendToDirectEndpoint(message, endpoint);
 }
 
@@ -147,25 +151,28 @@ TEST(NetworkUtilsTest, FUNC_ProcessSendDirectEndpoint) {
       private_key1(std::make_shared<asymm::PrivateKey>(keys1.private_key));
   std::shared_ptr<asymm::PublicKey>
       public_key1(std::make_shared<asymm::PublicKey>(keys1.public_key));
-  auto a1 = std::async(std::launch::async, [=, &rudp1]()-> Endpoint {
+  rudp::NatType nat_type;
+  auto a1 = std::async(std::launch::async, [=, &rudp1, &nat_type]()-> Endpoint {
       std::vector<Endpoint> bootstrap_endpoint(1, endpoint2);
       return rudp1.Bootstrap(bootstrap_endpoint,
                              message_received_functor1,
                              connection_lost_functor,
                              private_key1,
                              public_key1,
+                             nat_type,
                              endpoint1);
   });
   asymm::Keys keys2(MakeKeys());
   std::shared_ptr<asymm::PrivateKey> private_key2(new asymm::PrivateKey(keys2.private_key));
   std::shared_ptr<asymm::PublicKey> public_key2(new asymm::PublicKey(keys2.public_key));
-  auto a2 = std::async(std::launch::async, [=, &rudp2]()-> Endpoint {
+  auto a2 = std::async(std::launch::async, [=, &rudp2, &nat_type]()-> Endpoint {
       std::vector<Endpoint> bootstrap_endpoint(1, endpoint1);
       return rudp2.Bootstrap(bootstrap_endpoint,
                              message_received_functor2,
                              connection_lost_functor,
                              private_key2,
                              public_key2,
+                             nat_type,
                              endpoint2);
   });
 
@@ -178,17 +185,22 @@ TEST(NetworkUtilsTest, FUNC_ProcessSendDirectEndpoint) {
   asymm::Keys keys(MakeKeys());
   RoutingTable routing_table(keys, false);
   NonRoutingTable non_routing_table(keys);
-  NetworkUtils network(routing_table, non_routing_table);
+  AsioService asio_service(0);
+  Timer timer(asio_service);
+  NetworkUtils network(routing_table, non_routing_table, timer);
 
   std::vector<Endpoint> bootstrap_endpoint(1, endpoint2);
   EXPECT_EQ(kSuccess, network.Bootstrap(bootstrap_endpoint,
                                         message_received_functor3,
                                         connection_lost_functor));
   rudp::EndpointPair endpoint_pair2, endpoint_pair3;
-  network.GetAvailableEndpoint(endpoint2, endpoint_pair3);
-  rudp2.GetAvailableEndpoint(endpoint_pair3.local, endpoint_pair2);
+  rudp::NatType this_nat_type;
+  network.GetAvailableEndpoint(endpoint2, endpoint_pair3, this_nat_type);
+  EXPECT_EQ(kSuccess,
+            rudp2.GetAvailableEndpoint(endpoint_pair3.local, endpoint_pair2, this_nat_type));
   EXPECT_EQ(kSuccess, network.Add(endpoint_pair3.local, endpoint_pair2.local,
                                   "validation_3->2"));
+
   EXPECT_EQ(kSuccess, rudp2.Add(endpoint_pair2.local, endpoint_pair3.local,
                                 "validation_2->3"));
   if (!connection_completion_future.timed_wait(bptime::seconds(10))) {
@@ -229,7 +241,9 @@ TEST(NetworkUtilsTest, FUNC_ProcessSendRecursiveSendOn) {
   asymm::Keys keys(MakeKeys());
   RoutingTable routing_table(keys, false);
   NonRoutingTable non_routing_table(keys);
-  NetworkUtils network(routing_table, non_routing_table);
+  AsioService asio_service(0);
+  Timer timer(asio_service);
+  NetworkUtils network(routing_table, non_routing_table, timer);
 
   rudp::MessageReceivedFunctor message_received_functor1 = [](const std::string& message) {
       LOG(kInfo) << " -- Received: " << message;
@@ -270,26 +284,29 @@ TEST(NetworkUtilsTest, FUNC_ProcessSendRecursiveSendOn) {
   asymm::Keys keys1(MakeKeys());
   std::shared_ptr<asymm::PrivateKey> private_key1(new asymm::PrivateKey(keys1.private_key));
   std::shared_ptr<asymm::PublicKey> public_key1(new asymm::PublicKey(keys1.public_key));
-  auto a1 = std::async(std::launch::async, [=, &rudp1]()-> Endpoint {
+  rudp::NatType nat_type;
+  auto a1 = std::async(std::launch::async, [=, &rudp1, &nat_type]()-> Endpoint {
       std::vector<Endpoint> bootstrap_endpoint(1, endpoint2);
       return rudp1.Bootstrap(bootstrap_endpoint,
                              message_received_functor1,
                              connection_lost_functor,
                              private_key1,
                              public_key1,
+                             nat_type,
                              endpoint1);
   });
 
   asymm::Keys keys2(MakeKeys());
   std::shared_ptr<asymm::PrivateKey> private_key2(new asymm::PrivateKey(keys2.private_key));
   std::shared_ptr<asymm::PublicKey> public_key2(new asymm::PublicKey(keys2.public_key));
-  auto a2 = std::async(std::launch::async, [=, &rudp2]()-> Endpoint {
+  auto a2 = std::async(std::launch::async, [=, &rudp2, &nat_type]()-> Endpoint {
       std::vector<Endpoint> bootstrap_endpoint(1, endpoint1);
       return rudp2.Bootstrap(bootstrap_endpoint,
                              message_received_functor2,
                              connection_lost_functor,
                              private_key2,
                              public_key2,
+                             nat_type,
                              endpoint2);
   });
 
@@ -306,8 +323,10 @@ TEST(NetworkUtilsTest, FUNC_ProcessSendRecursiveSendOn) {
                                         message_received_functor3,
                                         connection_lost_functor3));
   rudp::EndpointPair endpoint_pair2, endpoint_pair3;
-  network.GetAvailableEndpoint(endpoint2, endpoint_pair3);
-  rudp2.GetAvailableEndpoint(endpoint_pair3.local, endpoint_pair2);
+  rudp::NatType this_nat_type;
+  EXPECT_EQ(kSuccess, network.GetAvailableEndpoint(endpoint2, endpoint_pair3, this_nat_type));
+  EXPECT_EQ(kSuccess,
+            rudp2.GetAvailableEndpoint(endpoint_pair3.local, endpoint_pair2, this_nat_type));
   EXPECT_EQ(kSuccess, network.Add(endpoint_pair3.local, endpoint_pair2.local,
                                   "validation_3->2"));
   EXPECT_EQ(kSuccess, rudp2.Add(endpoint_pair2.local, endpoint_pair3.local,

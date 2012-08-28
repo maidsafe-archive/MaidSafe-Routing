@@ -19,6 +19,8 @@
 
 #include "maidsafe/common/rsa.h"
 
+#include "maidsafe/rudp/managed_connections.h"
+
 #include "maidsafe/routing/node_id.h"
 
 
@@ -35,6 +37,8 @@ struct NodeInfo {
   int32_t rank;
   int32_t bucket;
   boost::asio::ip::udp::endpoint endpoint;
+  rudp::NatType nat_type;
+  NodeId nat_relay_id;
   int32_t dimension_1;
   int32_t dimension_2;
   int32_t dimension_3;

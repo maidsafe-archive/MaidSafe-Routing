@@ -14,7 +14,7 @@
 
 int main(int argc, char **argv) {
   maidsafe::log::FilterMap filter;
-  // filter["rudp"] = maidsafe::log::kError;
+  filter["rudp"] = maidsafe::log::kError;
   // filter["fakerudp"] = maidsafe::log::kInfo;
   filter["routing"] = maidsafe::log::kInfo;
   return ExecuteMain(argc, argv, filter, true);

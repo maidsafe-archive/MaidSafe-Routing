@@ -352,7 +352,9 @@ int Routing::ZeroStateJoin(Functors functors,
 int Routing::GetStatus() const {
   if (impl_->routing_table_.Size() == 0) {
     rudp::EndpointPair endpoint;
-    int status = impl_->network_.GetAvailableEndpoint(Endpoint(), endpoint);
+    rudp::NatType this_nat_type;
+    int status = impl_->network_.GetAvailableEndpoint(Endpoint(),
+                                                      endpoint, this_nat_type);
     if (rudp::kSuccess != status) {
       if (status == rudp::kNotBootstrapped)
         return kNotJoined;
@@ -484,7 +486,7 @@ NodeId Routing::GetRandomExistingNode() {
 void Routing::AddExistingRandomNode(NodeId node) {
   if (node.IsValid()) {
     impl_->random_node_queue_.Push(node);
-    unsigned int queue_size = impl_->random_node_queue_.Size();
+    size_t queue_size = impl_->random_node_queue_.Size();
     LOG(kVerbose) << "RandomNodeQueue : Added node, queue size now "
                   << queue_size;
     if (queue_size > 6)
@@ -540,7 +542,7 @@ bool Routing::ConfirmGroupMembers(const NodeId& node1, const NodeId& node2) {
 }
 
 void Routing::ReSendFindNodeRequest(const boost::system::error_code& error_code,
-                                    bool ignore_size) {
+                                    bool /*ignore_size*/) {
   if (error_code != boost::asio::error::operation_aborted) {
 //     if (impl_->routing_table_.Size() == 0) {
 //       LOG(kInfo) << "This node's [" << HexSubstr(impl_->keys_.identity)

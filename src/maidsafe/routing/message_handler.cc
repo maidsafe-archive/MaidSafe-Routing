@@ -208,8 +208,12 @@ void MessageHandler::HandleGroupMessageAsClosestNode(protobuf::Message& message)
                << " [ group_id : " << HexSubstr(group_id)  << "]" << " id: " << message.id();
     message.set_destination_id(i.String());
     NodeInfo node;
-    if (routing_table_.GetNodeInfo(i, node))
-      network_.SendToDirectEndpoint(message, node.endpoint);
+    if (routing_table_.GetNodeInfo(i, node)) {
+      if (node.endpoint != rudp::kNonRoutable)
+        network_.SendToDirectEndpoint(message, node.endpoint);
+      else
+        network_.SendToClosestNode(message);
+    }
   }
 
   message.set_destination_id(routing_table_.kKeys().identity);

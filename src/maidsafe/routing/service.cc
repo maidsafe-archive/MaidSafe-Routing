@@ -12,6 +12,7 @@
 
 #include "maidsafe/routing/service.h"
 
+#include <string>
 #include <vector>
 
 #include "maidsafe/common/log.h"
@@ -32,6 +33,12 @@
 namespace maidsafe {
 
 namespace routing {
+
+namespace {
+
+typedef boost::asio::ip::udp::endpoint Endpoint;
+
+}  // unnamed namespace
 
 namespace service {
 
@@ -67,7 +74,7 @@ void Connect(RoutingTable& routing_table,
              NonRoutingTable& non_routing_table,
              NetworkUtils& network,
              protobuf::Message& message,
-             RequestPublicKeyFunctor node_validation_functor) {
+             RequestPublicKeyFunctor request_public_key_functor) {
   if (message.destination_id() != routing_table.kKeys().identity) {
     // Message not for this node and we should not pass it on.
     LOG(kError) << "Message not for this node.";
@@ -83,26 +90,32 @@ void Connect(RoutingTable& routing_table,
   }
   NodeInfo node;
   node.node_id = NodeId(connect_request.contact().node_id());
-  if (connect_request.bootstrap()) {
-    // Already connected
-    return;  // FIXME
-  }
+  LOG(kVerbose) <<"[" << HexSubstr(routing_table.kKeys().identity) << "]"
+                << " received Connect request from "
+                << HexSubstr(connect_request.contact().node_id());
   connect_response.set_answer(false);
   rudp::EndpointPair this_endpoint_pair1, this_endpoint_pair2, peer_endpoint_pair;
   peer_endpoint_pair.external =
       GetEndpointFromProtobuf(connect_request.contact().public_endpoint());
   peer_endpoint_pair.local = GetEndpointFromProtobuf(connect_request.contact().private_endpoint());
 
-  if (network.GetAvailableEndpoint(peer_endpoint_pair.external, this_endpoint_pair1) !=
-      rudp::kSuccess) {
-    LOG(kWarning) << "Unable to get available endpoint to connect to "
-                  << peer_endpoint_pair.external;
+  rudp::NatType nat_type = static_cast<rudp::NatType>(connect_request.contact().nat_type());
+  rudp::NatType this_nat_type(rudp::NatType::kUnknown);
+  if (!peer_endpoint_pair.external.address().is_unspecified()) {
+    if (network.GetAvailableEndpoint(peer_endpoint_pair.external, this_endpoint_pair1,
+                                     this_nat_type) != rudp::kSuccess) {
+      LOG(kWarning) << "Unable to get available endpoint to connect to "
+                    << peer_endpoint_pair.external;
+    }
   }
 
-  if (network.GetAvailableEndpoint(peer_endpoint_pair.local, this_endpoint_pair2) !=
-      rudp::kSuccess) {
-    LOG(kWarning) << "Unable to get available endpoint to connect to "
-                  << peer_endpoint_pair.local;
+  if (!peer_endpoint_pair.local.address().is_unspecified() &&
+      (peer_endpoint_pair.local != peer_endpoint_pair.external)) {
+    if (network.GetAvailableEndpoint(peer_endpoint_pair.local, this_endpoint_pair2,
+                                     this_nat_type) != rudp::kSuccess) {
+      LOG(kWarning) << "Unable to get available endpoint to connect to "
+                    << peer_endpoint_pair.local;
+    }
   }
 
   rudp::EndpointPair this_endpoint_pair;
@@ -113,6 +126,24 @@ void Connect(RoutingTable& routing_table,
       this_endpoint_pair.local.address().is_unspecified()) {
     LOG(kError) << "Unable to get any available endpoint to connect to ";
     return;
+  }
+
+// Handling the case when this node and peer node are behind symmetric router
+  if ((nat_type == rudp::NatType::kSymmetric) && (this_nat_type == rudp::NatType::kSymmetric)) {
+//    peer_endpoint_pair.external = Endpoint();  // No need to try connction on external endpoint.
+
+    auto validate_node = [&] (const asymm::PublicKey& key)->void {
+        LOG(kInfo) << "NEED TO VALIDATE THE SYMMETRIC NODE HERE";
+        HandleSymmetricNodeAdd(routing_table, NodeId(connect_request.contact().node_id()), key);
+      };
+
+    TaskResponseFunctor add_symmetric_node =
+      [=, &routing_table, &request_public_key_functor](std::vector<std::string>) {
+        if (request_public_key_functor) {
+          request_public_key_functor(NodeId(connect_request.contact().node_id()), validate_node);
+        }
+      };
+    network.timer().AddTask(boost::posix_time::seconds(5), add_symmetric_node, 1);
   }
 
   bool check_node_succeeded(false);
@@ -130,7 +161,7 @@ void Connect(RoutingTable& routing_table,
   if (check_node_succeeded) {
     LOG(kVerbose) << "CheckNode(node) for " << (message.client_node() ? "client" : "server")
                   << " node succeeded.";
-    if (node_validation_functor) {
+    if (request_public_key_functor) {
       auto validate_node =
           [=, &routing_table, &non_routing_table, &network] (const asymm::PublicKey& key)->void {
             LOG(kInfo) << "NEED TO VALIDATE THE NODE HERE";
@@ -142,7 +173,7 @@ void Connect(RoutingTable& routing_table,
                                  this_endpoint_pair,
                                  routing_table.client_mode());
           };
-      node_validation_functor(NodeId(connect_request.contact().node_id()), validate_node);
+      request_public_key_functor(NodeId(connect_request.contact().node_id()), validate_node);
       connect_response.set_answer(true);
       connect_response.mutable_contact()->set_node_id(routing_table.kKeys().identity);
       SetProtobufEndpoint(this_endpoint_pair.local,
@@ -183,7 +214,6 @@ void Connect(RoutingTable& routing_table,
 }
 
 void FindNodes(RoutingTable& routing_table, protobuf::Message& message) {
-  LOG(kVerbose) << "FindNodes -- service()";
   protobuf::FindNodesRequest find_nodes;
   if (!find_nodes.ParseFromString(message.data(0))) {
     LOG(kWarning) << "Unable to parse find node request.";
@@ -195,7 +225,9 @@ void FindNodes(RoutingTable& routing_table, protobuf::Message& message) {
     message.Clear();
     return;
   }
-  LOG(kVerbose) << "Parsed find node request -- " << HexSubstr(find_nodes.target_node());
+
+  LOG(kVerbose) << "[" << HexSubstr(routing_table.kKeys().identity) << "]"
+                << " parsed find node request for : " << HexSubstr(find_nodes.target_node());
   protobuf::FindNodesResponse found_nodes;
   std::vector<NodeId> nodes(routing_table.GetClosestNodes(NodeId(find_nodes.target_node()),
                               static_cast<uint16_t>(find_nodes.num_nodes_requested() - 1)));

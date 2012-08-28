@@ -54,18 +54,20 @@ protobuf::Message Connect(const NodeId& node_id,
                           const NodeId& my_node_id,
                           const std::vector<std::string>& closest_ids,
                           bool client_node,
+                          rudp::NatType nat_type,
                           bool relay_message,
                           boost::asio::ip::udp::endpoint local_endpoint) {
   assert(node_id.IsValid() && "Invalid node_id");
   assert(my_node_id.IsValid() && "Invalid my node_id");
-//  BOOST_ASSERT_MSG(!our_endpoint.external.address().is_unspecified(), "Unspecified endpoint");
-//  BOOST_ASSERT_MSG(!our_endpoint.local.address().is_unspecified(), "Unspecified endpoint");
+  assert((!our_endpoint.external.address().is_unspecified() ||
+          !our_endpoint.local.address().is_unspecified()) && "Unspecified endpoint");
   protobuf::Message message;
   protobuf::ConnectRequest protobuf_connect_request;
   protobuf::Contact* contact = protobuf_connect_request.mutable_contact();
   SetProtobufEndpoint(our_endpoint.external, contact->mutable_public_endpoint());
   SetProtobufEndpoint(our_endpoint.local, contact->mutable_private_endpoint());
   contact->set_node_id(my_node_id.String());
+  contact->set_nat_type(static_cast<protobuf::NatType>(nat_type));
   for (auto node_id : closest_ids)
     protobuf_connect_request.add_closest_id(node_id);
   protobuf_connect_request.set_timestamp(GetTimeStamp());

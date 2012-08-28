@@ -59,7 +59,9 @@ void ValidateAndAddToRudp(NetworkUtils& network_,
     protobuf::Message connect_success_local_endpoint(
         rpcs::ConnectSuccess(peer_id, this_node_id, this_endpoint.local, client));
     LOG(kVerbose) << "Calling RUDP::Add on this node's endpoint " << this_endpoint.local
-                  << ", peer's endpoint " << peer_endpoint.local;
+                  << ", peer's endpoint " << peer_endpoint.local
+                  << ", This node id : " << HexSubstr(this_node_id.String())
+                  << ", Peer node id : " << HexSubstr(peer_id.String());
     int result = network_.Add(this_endpoint.local, peer_endpoint.local,
                               connect_success_local_endpoint.SerializeAsString());
 
@@ -116,6 +118,31 @@ void ValidateAndAddToRoutingTable(NetworkUtils& network_,
     LOG(kVerbose) << "Not adding node to " << (client ? "non-" : "") << "routing table.  Node id "
                   << HexSubstr(peer_id.String()) << " just added rudp connection will be removed.";
     network_.Remove(peer_endpoint);
+  }
+}
+
+void HandleSymmetricNodeAdd(RoutingTable& routing_table, const NodeId& peer_id,
+                            const asymm::PublicKey& public_key) {
+  if (routing_table.IsConnected(peer_id)) {
+    LOG(kVerbose) << "[" << HexSubstr(routing_table.kKeys().identity) << "] "
+                  << "already added node to routing table.  Node ID: "
+                  << HexSubstr(peer_id.String())
+                  << "Node is behind symmetric router but connected on local endpoint";
+    return;
+  }
+  NodeInfo peer;
+  peer.node_id = peer_id;
+  peer.public_key = public_key;
+  peer.endpoint = rudp::kNonRoutable;
+  peer.nat_type = rudp::NatType::kSymmetric;
+
+  if (routing_table.AddNode(peer)) {
+    LOG(kVerbose) << "[" << HexSubstr(routing_table.kKeys().identity) << "] "
+                  << "added node to routing table.  Node ID: " << HexSubstr(peer_id.String())
+                  << "Node is behind symmetric router !";
+  } else {
+    LOG(kVerbose) << "Failed to add node to routing table.  Node id : "
+                  << HexSubstr(peer_id.String());
   }
 }
 

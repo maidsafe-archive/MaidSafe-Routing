@@ -48,11 +48,32 @@ GenericNode::GenericNode(bool client_mode)
       mutex_(),
       client_mode_(client_mode),
       joined_(false),
-      expected_(0) {
+      expected_(0),
+      nat_type_(rudp::NatType::kUnknown) {
   functors_.close_node_replaced = nullptr;
   functors_.message_received = nullptr;
   functors_.network_status = nullptr;
   routing_.reset(new Routing(GetKeys(node_info_plus_), client_mode));
+  LOG(kVerbose) << "Node constructor";
+  std::lock_guard<std::mutex> lock(mutex_);
+  id_ = next_node_id_++;
+}
+
+GenericNode::GenericNode(bool client_mode, const rudp::NatType& nat_type)
+    : id_(0),
+      node_info_plus_(MakeNodeInfoAndKeys()),
+      routing_(),
+      functors_(),
+      mutex_(),
+      client_mode_(client_mode),
+      joined_(false),
+      expected_(0),
+      nat_type_(nat_type) {
+  functors_.close_node_replaced = nullptr;
+  functors_.message_received = nullptr;
+  functors_.network_status = nullptr;
+  routing_.reset(new Routing(GetKeys(node_info_plus_), client_mode));
+  routing_->impl_->network_.nat_type_ = nat_type_;
   LOG(kVerbose) << "Node constructor";
   std::lock_guard<std::mutex> lock(mutex_);
   id_ = next_node_id_++;
@@ -66,7 +87,8 @@ GenericNode::GenericNode(bool client_mode, const NodeInfoAndPrivateKey& node_inf
       mutex_(),
       client_mode_(client_mode),
       joined_(false),
-      expected_(0) {
+      expected_(0),
+      nat_type_(rudp::NatType::kUnknown) {
   functors_.close_node_replaced = nullptr;
   functors_.message_received = nullptr;
   functors_.network_status = nullptr;

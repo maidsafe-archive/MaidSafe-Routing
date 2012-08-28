@@ -29,7 +29,7 @@ RoutingPrivate::RoutingPrivate(const asymm::Keys& keys, bool client_mode)
       timer_(asio_service_),
       waiting_for_response_(),
       message_handler_(),
-      network_(routing_table_, non_routing_table_),
+      network_(routing_table_, non_routing_table_, timer_),
       joined_(false),
       bootstrap_file_path_(),
       client_mode_(client_mode),

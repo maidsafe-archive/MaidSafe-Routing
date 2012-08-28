@@ -84,7 +84,7 @@ void ResponseHandler::Connect(protobuf::Message& message) {
 
   LOG(kVerbose) << "This node [" << HexSubstr(routing_table_.kKeys().identity)
                 << "] received connect response from "
-                << HexSubstr(connect_request.contact().node_id())
+                << HexSubstr(connect_response.contact().node_id())
                 << " id: " << message.id();
   rudp::EndpointPair this_endpoint_pair;
   this_endpoint_pair.external =
@@ -96,6 +96,26 @@ void ResponseHandler::Connect(protobuf::Message& message) {
       GetEndpointFromProtobuf(connect_response.contact().public_endpoint());
   peer_endpoint_pair.local =
       GetEndpointFromProtobuf(connect_response.contact().private_endpoint());
+
+  // Handling the case when this node and peer node are behind symmetric router
+  rudp::NatType nat_type = static_cast<rudp::NatType>(connect_response.contact().nat_type());
+
+  if ((nat_type == rudp::NatType::kSymmetric) &&
+      (network_.nat_type() == rudp::NatType::kSymmetric)) {
+//     peer_endpoint_pair.external = Endpoint();  // No need to try connction on external endpoint.
+    auto validate_node = [&] (const asymm::PublicKey& key)->void {
+        LOG(kInfo) << "NEED TO VALIDATE THE SYMMETRIC NODE HERE";
+        HandleSymmetricNodeAdd(routing_table_, NodeId(connect_response.contact().node_id()), key);
+      };
+
+    TaskResponseFunctor add_symmetric_node = [&](std::vector<std::string>) {
+      if (request_public_key_functor_) {
+        request_public_key_functor_(NodeId(connect_response.contact().node_id()), validate_node);
+      }
+      };
+    network_.timer().AddTask(boost::posix_time::seconds(5), add_symmetric_node, 1);
+  }
+
   std::weak_ptr<ResponseHandler> response_handler_weak_ptr = shared_from_this();
   if (request_public_key_functor_) {
     auto validate_node([=] (const asymm::PublicKey& key) {
@@ -189,8 +209,11 @@ void ResponseHandler::ConnectTo(const std::vector<std::string>& nodes,
       bool routing_table_empty(routing_table_.Size() == 0);
       if (routing_table_empty)  // Joining the network, and may connect to bootstrapping node.
         direct_endpoint = network_.bootstrap_endpoint();
-      rudp::EndpointPair endpoint;
-      if (kSuccess != network_.GetAvailableEndpoint(direct_endpoint, endpoint)) {
+      rudp::EndpointPair endpoint_pair;
+      rudp::NatType this_nat_type;
+      if (kSuccess != network_.GetAvailableEndpoint(direct_endpoint,
+                                                    endpoint_pair,
+                                                    this_nat_type)) {
         LOG(kWarning) << "Failed to get available endpoint for new connections";
         return;
       }
@@ -201,14 +224,17 @@ void ResponseHandler::ConnectTo(const std::vector<std::string>& nodes,
         relay_endpoint = network_.this_node_relay_endpoint();
         relay_message = true;
       }
+
       LOG(kVerbose) << "Sending Connect RPC to " << HexSubstr(nodes.at(i));
-      protobuf::Message connect_rpc(rpcs::Connect(NodeId(nodes.at(i)),
-                                    endpoint,
-                                    NodeId(routing_table_.kKeys().identity),
-                                    closest_node_ids,
-                                    routing_table_.client_mode(),
-                                    relay_message,
-                                    relay_endpoint));
+      protobuf::Message connect_rpc(
+          rpcs::Connect(NodeId(nodes.at(i)),
+          endpoint_pair,
+          NodeId(routing_table_.kKeys().identity),
+          closest_node_ids,
+          routing_table_.client_mode(),
+          this_nat_type,
+          relay_message,
+          relay_endpoint));
       if (routing_table_empty)
         network_.SendToDirectEndpoint(connect_rpc, network_.bootstrap_endpoint());
       else
