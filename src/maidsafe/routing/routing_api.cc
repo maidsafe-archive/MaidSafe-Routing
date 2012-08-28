@@ -308,7 +308,8 @@ int Routing::ZeroStateJoin(Functors functors,
   rudp::EndpointPair this_endpoint_pair;
   peer_endpoint_pair.external = peer_node.endpoint;
   this_endpoint_pair.external = local_endpoint;
-  LOG(kInfo) << "Attempting to add bootstrap endpoint us -> " << local_endpoint << " peer -> " << peer_node.endpoint;
+  LOG(kInfo) << "Attempting to add bootstrap endpoint us -> " << local_endpoint << " peer -> "
+             << peer_node.endpoint;
   result = impl_->network_.Add(local_endpoint, peer_node.endpoint, "junk");
   if (result != kSuccess) {
     LOG(kError) << "Failed to add zero state node : " << peer_node.endpoint;
@@ -556,7 +557,7 @@ void Routing::ReSendFindNodeRequest(const boost::system::error_code& error_code,
 //       protobuf::Message find_node_rpc(rpcs::FindNodes(NodeId(impl_->keys_.identity),
 //                                                       NodeId(impl_->keys_.identity)));
 //       impl_->network_.SendToClosestNode(find_node_rpc);
-// 
+//
 //       impl_->recovery_timer_.expires_from_now(
 //           boost::posix_time::seconds(Parameters::recovery_timeout_in_seconds));
 //       impl_->recovery_timer_.async_wait([=](boost::system::error_code error_code) {

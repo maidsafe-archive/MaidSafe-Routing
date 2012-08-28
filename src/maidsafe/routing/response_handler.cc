@@ -211,7 +211,7 @@ void ResponseHandler::ConnectTo(const std::vector<std::string>& nodes,
         direct_endpoint = network_.bootstrap_endpoint();
       rudp::EndpointPair endpoint_pair;
       rudp::NatType this_nat_type;
-      if (kSuccess != network_.GetAvailableEndpoint(direct_endpoint,
+      if (kSuccess != network_.GetAvailableEndpoint(Endpoint(),  /*direct_endpoint,*/
                                                     endpoint_pair,
                                                     this_nat_type)) {
         LOG(kWarning) << "Failed to get available endpoint for new connections";
