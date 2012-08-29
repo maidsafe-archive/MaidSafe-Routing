@@ -23,7 +23,6 @@
 #include "maidsafe/common/rsa.h"
 #include "maidsafe/rudp/managed_connections.h"
 
-#define LOCAL_TEST
 
 namespace maidsafe {
 

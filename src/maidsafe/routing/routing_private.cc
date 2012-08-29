@@ -64,6 +64,7 @@ RoutingPrivate::~RoutingPrivate() {
   network_.Stop();
 }
 
+#ifdef LOCAL_TEST
 void RoutingPrivate::LocalTestUtility(const protobuf::Message message,
                                       uint16_t& expected_connect_response) {
   protobuf::FindNodesResponse findnodes_response;
@@ -90,6 +91,7 @@ void RoutingPrivate::LocalTestUtility(const protobuf::Message message,
       LOG(kVerbose) << "bootstrap port: " << endpoint.port();
   }
 }
+#endif
 
 }  // namespace routing
 

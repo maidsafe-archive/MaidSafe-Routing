@@ -195,12 +195,12 @@ void Routing::DisconnectFunctors() {  // TODO(Prakash) : fix race condition when
 }
 
 #ifdef LOCAL_TEST
-void Routing::BootstrapFromThisEndpoint(const Functors& functors, const Endpoint& endpoint) {
+void Routing::BootstrapFromThisEndpoint(const Functors& functors, const Endpoint& ) {
 #else
-void Routing::BootstrapFromThisEndpoint(const Functors& functors, const Endpoint&) {
+void Routing::BootstrapFromThisEndpoint(const Functors& functors, const Endpoint& endpoint) {
 #endif
   LOG(kInfo) << "Doing a BootstrapFromThisEndpoint Join.  Entered bootstrap endpoint: "
-             << RoutingPrivate::bootstraps_[0]
+//             << RoutingPrivate::bootstraps_[0]
              << ", this node's ID: " << HexSubstr(impl_->keys_.identity)
              << (impl_->client_mode_ ? " Client" : "");
   if (impl_->routing_table_.Size() > 0) {
@@ -356,8 +356,10 @@ int Routing::ZeroStateJoin(Functors functors,
     impl_->recovery_timer_.async_wait([=](const boost::system::error_code& error_code) {
                                           ReSendFindNodeRequest(error_code);
                                        });
+#ifdef LOCAL_TEST
     std::lock_guard<std::mutex> lock(RoutingPrivate::mutex_);
     RoutingPrivate::bootstraps_.push_back(local_endpoint);
+#endif
     return kSuccess;
   } else {
     LOG(kError) << "Failed to join zero state network, with bootstrap_endpoint "
