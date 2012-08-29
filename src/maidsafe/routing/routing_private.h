@@ -75,6 +75,10 @@ struct RoutingPrivate {
   Functors functors_;
   SafeQueue<NodeId> random_node_queue_;
   boost::asio::deadline_timer recovery_timer_;
+#ifdef LOCAL_TEST
+  static std::vector<boost::asio::ip::udp::endpoint> bootstraps_;
+  static std::mutex mutex_;
+#endif
 };
 
 }  // namespace routing

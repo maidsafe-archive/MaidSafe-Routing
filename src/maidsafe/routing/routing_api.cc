@@ -47,6 +47,9 @@ namespace routing {
 namespace {
 
 typedef boost::asio::ip::udp::endpoint Endpoint;
+#ifdef LOCAL_TEST
+uint16_t expected_connect_response = 0;
+#endif
 
 }  // unnamed namespace
 
@@ -156,7 +159,11 @@ bool Routing::CheckBootstrapFilePath() const {
 }
 
 void Routing::Join(Functors functors, Endpoint peer_endpoint) {
+#ifdef LOCAL_TEST
+  if (!RoutingPrivate::bootstraps_.empty()) {
+#else
   if (!peer_endpoint.address().is_unspecified()) {
+#endif
     return BootstrapFromThisEndpoint(functors, peer_endpoint);
   } else {
     LOG(kInfo) << "Doing a default join";
@@ -188,7 +195,8 @@ void Routing::DisconnectFunctors() {  // TODO(Prakash) : fix race condition when
 }
 
 void Routing::BootstrapFromThisEndpoint(const Functors& functors, const Endpoint& endpoint) {
-  LOG(kInfo) << "Doing a BootstrapFromThisEndpoint Join.  Entered bootstrap endpoint: " << endpoint
+  LOG(kInfo) << "Doing a BootstrapFromThisEndpoint Join.  Entered bootstrap endpoint: "
+             << RoutingPrivate::bootstraps_[0]
              << ", this node's ID: " << HexSubstr(impl_->keys_.identity)
              << (impl_->client_mode_ ? " Client" : "");
   if (impl_->routing_table_.Size() > 0) {
@@ -203,7 +211,13 @@ void Routing::BootstrapFromThisEndpoint(const Functors& functors, const Endpoint
       impl_->functors_.network_status(impl_->routing_table_.Size());
   }
   impl_->bootstrap_nodes_.clear();
+#ifdef LOCAL_TEST
+  impl_->bootstrap_nodes_.insert(impl_->bootstrap_nodes_.begin(),
+                                 RoutingPrivate::bootstraps_.begin(),
+                                 RoutingPrivate::bootstraps_.end());
+#else
   impl_->bootstrap_nodes_.push_back(endpoint);
+#endif
   DoJoin(functors);
 }
 
@@ -338,7 +352,8 @@ int Routing::ZeroStateJoin(Functors functors,
     impl_->recovery_timer_.async_wait([=](const boost::system::error_code& error_code) {
                                           ReSendFindNodeRequest(error_code);
                                        });
-
+    std::lock_guard<std::mutex> lock(RoutingPrivate::mutex_);
+    RoutingPrivate::bootstraps_.push_back(local_endpoint);
     return kSuccess;
   } else {
     LOG(kError) << "Failed to join zero state network, with bootstrap_endpoint "
@@ -471,6 +486,34 @@ void Routing::ReceiveMessage(const std::string& message, std::weak_ptr<RoutingPr
   } else {
     LOG(kWarning) << "Message received, failed to parse";
   }
+#ifdef LOCAL_TEST
+  protobuf::FindNodesResponse findnodes_response;
+  if ((protobuf_message.data_size() > 0) &&
+      (findnodes_response.ParseFromString(protobuf_message.data(0)))) {
+    expected_connect_response = findnodes_response.nodes_size();
+    LOG(kVerbose) << "expected_connect_response: " << expected_connect_response;
+    return;
+  }
+  protobuf::ConnectResponse connect_response;
+  std::lock_guard<std::mutex>  lock(RoutingPrivate::mutex_);
+  if ((protobuf_message.data_size() > 0) &&
+      connect_response.ParseFromString(protobuf_message.data(0)) &&
+      (impl_->routing_table_.Size() >= expected_connect_response - 1) &&
+      (std::find(RoutingPrivate::bootstraps_.begin(),
+                 RoutingPrivate::bootstraps_.end(),
+                 impl_->network_.this_node_relay_endpoint_) == RoutingPrivate::bootstraps_.end())) {
+    Sleep(boost::posix_time::millisec(100));
+    rudp::EndpointPair endpoint_pair;
+    rudp::NatType nat_type;
+    impl_->network_.GetAvailableEndpoint(impl_->routing_table_.nodes_[0].endpoint,
+                                         endpoint_pair,
+                                         nat_type);
+    RoutingPrivate::bootstraps_.push_back(endpoint_pair.local);
+    std::random_shuffle(RoutingPrivate::bootstraps_.begin(), RoutingPrivate::bootstraps_.end());
+    for (auto endpoint : RoutingPrivate::bootstraps_)
+      LOG(kVerbose) << "bootstrap port: " << endpoint.port();
+  }
+#endif
 }
 
 NodeId Routing::GetRandomExistingNode() {

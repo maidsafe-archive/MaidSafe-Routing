@@ -65,6 +65,9 @@ class RoutingTable {
   bool client_mode() const { return client_mode_; }
   void set_bootstrap_file_path(const boost::filesystem::path& path);
   friend class test::GenericNode;
+#ifdef LOCAL_TEST
+  friend class Routing;
+#endif
 
  private:
   RoutingTable(const RoutingTable&);

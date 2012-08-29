@@ -19,6 +19,11 @@ namespace maidsafe {
 
 namespace routing {
 
+#ifdef LOCAL_TEST
+std::vector<boost::asio::ip::udp::endpoint> RoutingPrivate::bootstraps_;
+std::mutex RoutingPrivate::mutex_;
+#endif
+
 RoutingPrivate::RoutingPrivate(const asymm::Keys& keys, bool client_mode)
     : asio_service_(1),
       bootstrap_nodes_(),
