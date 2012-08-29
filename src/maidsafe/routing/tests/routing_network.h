@@ -287,7 +287,11 @@ class GenericNetwork : public testing::Test {
           cond_var.notify_one();
         }
     };
+#ifdef LOCAL_TEST
     node->Join();
+#else
+    node->Join(this->nodes_[1]->endpoint());
+#endif
     std::unique_lock<std::mutex> lock(mutex);
     auto result = cond_var.wait_for(lock, std::chrono::seconds(15));
     EXPECT_EQ(result, std::cv_status::no_timeout);
