@@ -12,7 +12,9 @@
 
 #include "maidsafe/routing/routing_private.h"
 
+#include "maidsafe/common/log.h"
 #include "maidsafe/routing/message_handler.h"
+#include "maidsafe/routing/routing_pb.h"
 
 
 namespace maidsafe {
@@ -60,6 +62,33 @@ RoutingPrivate::~RoutingPrivate() {
   boost::this_thread::disable_interruption disable_interruption;
   asio_service_.Stop();
   network_.Stop();
+}
+
+void RoutingPrivate::LocalTestUtility(const protobuf::Message message,
+                                      uint16_t& expected_connect_response) {
+  protobuf::FindNodesResponse findnodes_response;
+  if ((message.data_size() > 0) &&
+      (findnodes_response.ParseFromString(message.data(0)))) {
+    expected_connect_response = findnodes_response.nodes_size();
+    LOG(kVerbose) << "expected_connect_response: " << expected_connect_response;
+    return;
+  }
+  protobuf::ConnectResponse connect_response;
+  std::lock_guard<std::mutex>  lock(RoutingPrivate::mutex_);
+  if ((message.data_size() > 0) &&
+      connect_response.ParseFromString(message.data(0)) &&
+      (routing_table_.Size() >= expected_connect_response - 1)) {
+    Sleep(boost::posix_time::millisec(100));
+    rudp::EndpointPair endpoint_pair;
+    rudp::NatType nat_type;
+    network_.GetAvailableEndpoint(routing_table_.nodes_[0].endpoint,
+                                  endpoint_pair,
+                                  nat_type);
+    RoutingPrivate::bootstraps_.push_back(endpoint_pair.local);
+    std::random_shuffle(RoutingPrivate::bootstraps_.begin(), RoutingPrivate::bootstraps_.end());
+    for (auto endpoint : RoutingPrivate::bootstraps_)
+      LOG(kVerbose) << "bootstrap port: " << endpoint.port();
+  }
 }
 
 }  // namespace routing

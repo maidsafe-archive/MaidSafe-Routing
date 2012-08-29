@@ -78,6 +78,7 @@ struct RoutingPrivate {
 #ifdef LOCAL_TEST
   static std::vector<boost::asio::ip::udp::endpoint> bootstraps_;
   static std::mutex mutex_;
+  void LocalTestUtility(const protobuf::Message message, uint16_t& expected_connect_response);
 #endif
 };
 

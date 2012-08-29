@@ -194,7 +194,11 @@ void Routing::DisconnectFunctors() {  // TODO(Prakash) : fix race condition when
   impl_->functors_ = Functors();
 }
 
+#ifdef LOCAL_TEST
 void Routing::BootstrapFromThisEndpoint(const Functors& functors, const Endpoint& endpoint) {
+#else
+void Routing::BootstrapFromThisEndpoint(const Functors& functors, const Endpoint&) {
+#endif
   LOG(kInfo) << "Doing a BootstrapFromThisEndpoint Join.  Entered bootstrap endpoint: "
              << RoutingPrivate::bootstraps_[0]
              << ", this node's ID: " << HexSubstr(impl_->keys_.identity)
@@ -487,32 +491,7 @@ void Routing::ReceiveMessage(const std::string& message, std::weak_ptr<RoutingPr
     LOG(kWarning) << "Message received, failed to parse";
   }
 #ifdef LOCAL_TEST
-  protobuf::FindNodesResponse findnodes_response;
-  if ((protobuf_message.data_size() > 0) &&
-      (findnodes_response.ParseFromString(protobuf_message.data(0)))) {
-    expected_connect_response = findnodes_response.nodes_size();
-    LOG(kVerbose) << "expected_connect_response: " << expected_connect_response;
-    return;
-  }
-  protobuf::ConnectResponse connect_response;
-  std::lock_guard<std::mutex>  lock(RoutingPrivate::mutex_);
-  if ((protobuf_message.data_size() > 0) &&
-      connect_response.ParseFromString(protobuf_message.data(0)) &&
-      (impl_->routing_table_.Size() >= expected_connect_response - 1) &&
-      (std::find(RoutingPrivate::bootstraps_.begin(),
-                 RoutingPrivate::bootstraps_.end(),
-                 impl_->network_.this_node_relay_endpoint_) == RoutingPrivate::bootstraps_.end())) {
-    Sleep(boost::posix_time::millisec(100));
-    rudp::EndpointPair endpoint_pair;
-    rudp::NatType nat_type;
-    impl_->network_.GetAvailableEndpoint(impl_->routing_table_.nodes_[0].endpoint,
-                                         endpoint_pair,
-                                         nat_type);
-    RoutingPrivate::bootstraps_.push_back(endpoint_pair.local);
-    std::random_shuffle(RoutingPrivate::bootstraps_.begin(), RoutingPrivate::bootstraps_.end());
-    for (auto endpoint : RoutingPrivate::bootstraps_)
-      LOG(kVerbose) << "bootstrap port: " << endpoint.port();
-  }
+  pimpl->LocalTestUtility(protobuf_message, expected_connect_response);
 #endif
 }
 

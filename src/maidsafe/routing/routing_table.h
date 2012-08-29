@@ -66,7 +66,7 @@ class RoutingTable {
   void set_bootstrap_file_path(const boost::filesystem::path& path);
   friend class test::GenericNode;
 #ifdef LOCAL_TEST
-  friend class Routing;
+  friend class RoutingPrivate;
 #endif
 
  private:
