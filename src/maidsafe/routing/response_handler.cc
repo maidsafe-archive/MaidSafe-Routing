@@ -197,6 +197,7 @@ void ResponseHandler::ConnectTo(const std::vector<std::string>& nodes,
                           Parameters::closest_nodes_size);
   if (closest_node_ids.size() > resize)
     closest_node_ids.resize(resize);
+  bool routing_table_empty(routing_table_.Size() == 0);
   for (uint16_t i = 0; i < nodes.size(); ++i) {
     NodeInfo node_to_add;
     node_to_add.node_id = NodeId(nodes.at(i));
@@ -206,7 +207,6 @@ void ResponseHandler::ConnectTo(const std::vector<std::string>& nodes,
     if (routing_table_.CheckNode(node_to_add)) {
       LOG(kVerbose) << "CheckNode succeeded for node " << HexSubstr(node_to_add.node_id.String());
       Endpoint direct_endpoint;
-      bool routing_table_empty(routing_table_.Size() == 0);
       if (routing_table_empty)  // Joining the network, and may connect to bootstrapping node.
         direct_endpoint = network_.bootstrap_endpoint();
       rudp::EndpointPair endpoint_pair;
