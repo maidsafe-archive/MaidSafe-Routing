@@ -22,7 +22,6 @@
 #include "maidsafe/rudp/managed_connections.h"
 
 #include "maidsafe/routing/parameters.h"
-#include "maidsafe/routing/routing_private.h"
 
 
 namespace maidsafe {
@@ -67,12 +66,9 @@ bool IsRequest(const protobuf::Message& message);
 bool IsResponse(const protobuf::Message& message);
 bool IsDirect(const protobuf::Message& message);
 bool ValidateMessage(const protobuf::Message &message);
-
 void SetProtobufEndpoint(const boost::asio::ip::udp::endpoint& endpoint,
                          protobuf::Endpoint* pb_endpoint);
 boost::asio::ip::udp::endpoint GetEndpointFromProtobuf(const protobuf::Endpoint& pb_endpoint);
-void TestUtility(const protobuf::Message message, std::weak_ptr<RoutingPrivate> impl);
-
 std::string MessageTypeString(const protobuf::Message& message);
 
 }  // namespace routing
