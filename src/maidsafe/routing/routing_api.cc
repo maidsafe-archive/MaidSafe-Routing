@@ -160,6 +160,7 @@ bool Routing::CheckBootstrapFilePath() const {
 
 void Routing::Join(Functors functors, Endpoint peer_endpoint) {
 #ifdef LOCAL_TEST
+  LOG(kInfo) << "RoutingPrivate::bootstraps_.size(): " << RoutingPrivate::bootstraps_.size();
   if (!RoutingPrivate::bootstraps_.empty()) {
 #else
   if (!peer_endpoint.address().is_unspecified()) {

@@ -24,6 +24,8 @@ namespace routing {
 #ifdef LOCAL_TEST
 std::vector<boost::asio::ip::udp::endpoint> RoutingPrivate::bootstraps_;
 std::mutex RoutingPrivate::mutex_;
+uint16_t RoutingPrivate::network_size_(0);
+typedef boost::asio::ip::udp::endpoint Endpoint;
 #endif
 
 RoutingPrivate::RoutingPrivate(const asymm::Keys& keys, bool client_mode)
@@ -54,6 +56,10 @@ RoutingPrivate::RoutingPrivate(const asymm::Keys& keys, bool client_mode)
   message_handler_.reset(new MessageHandler(asio_service_, routing_table_, non_routing_table_,
                                             network_, timer_));
   asio_service_.Start();
+#ifdef LOCAL_TEST
+  std::lock_guard<std::mutex> lock(RoutingPrivate::mutex_);
+  ++RoutingPrivate::network_size_;
+#endif
 }
 
 RoutingPrivate::~RoutingPrivate() {
@@ -62,6 +68,13 @@ RoutingPrivate::~RoutingPrivate() {
   boost::this_thread::disable_interruption disable_interruption;
   asio_service_.Stop();
   network_.Stop();
+#ifdef LOCAL_TEST
+  std::lock_guard<std::mutex> lock(RoutingPrivate::mutex_);
+  if (--RoutingPrivate::network_size_ == 0) {
+    RoutingPrivate::bootstraps_.clear();
+    LOG(kInfo) << "static RoutingPrivate::bootstraps_ cleared.";
+  }
+#endif
 }
 
 #ifdef LOCAL_TEST
@@ -71,24 +84,29 @@ void RoutingPrivate::LocalTestUtility(const protobuf::Message message,
   if ((message.data_size() > 0) &&
       (findnodes_response.ParseFromString(message.data(0)))) {
     expected_connect_response = findnodes_response.nodes_size();
-    LOG(kVerbose) << "expected_connect_response: " << expected_connect_response;
+//    LOG(kVerbose) << "expected_connect_response: " << expected_connect_response;
     return;
   }
   protobuf::ConnectResponse connect_response;
   std::lock_guard<std::mutex>  lock(RoutingPrivate::mutex_);
   if ((message.data_size() > 0) &&
       connect_response.ParseFromString(message.data(0)) &&
-      (routing_table_.Size() >= expected_connect_response - 1)) {
-    Sleep(boost::posix_time::millisec(100));
+      (routing_table_.Size() == expected_connect_response)) {
+    expected_connect_response = 0;
     rudp::EndpointPair endpoint_pair;
     rudp::NatType nat_type;
     network_.GetAvailableEndpoint(routing_table_.nodes_[0].endpoint,
                                   endpoint_pair,
                                   nat_type);
-    RoutingPrivate::bootstraps_.push_back(endpoint_pair.local);
-    std::random_shuffle(RoutingPrivate::bootstraps_.begin(), RoutingPrivate::bootstraps_.end());
+    if (std::find_if(RoutingPrivate::bootstraps_.begin(), RoutingPrivate::bootstraps_.end(),
+                    [=](const Endpoint& endpoint) {
+                      return endpoint.port() == endpoint_pair.local.port();
+                    }) == RoutingPrivate::bootstraps_.end()) {
+      std::random_shuffle(RoutingPrivate::bootstraps_.begin(), RoutingPrivate::bootstraps_.end());
+      RoutingPrivate::bootstraps_.push_back(endpoint_pair.local);
+    }
     for (auto endpoint : RoutingPrivate::bootstraps_)
-      LOG(kVerbose) << "bootstrap port: " << endpoint.port();
+      LOG(kInfo) << "bootstrap port: " << endpoint.port();
   }
 }
 #endif

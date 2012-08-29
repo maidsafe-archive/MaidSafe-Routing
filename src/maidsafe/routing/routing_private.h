@@ -76,9 +76,10 @@ struct RoutingPrivate {
   SafeQueue<NodeId> random_node_queue_;
   boost::asio::deadline_timer recovery_timer_;
 #ifdef LOCAL_TEST
+  void LocalTestUtility(const protobuf::Message message, uint16_t& expected_connect_response);
   static std::vector<boost::asio::ip::udp::endpoint> bootstraps_;
   static std::mutex mutex_;
-  void LocalTestUtility(const protobuf::Message message, uint16_t& expected_connect_response);
+  static uint16_t network_size_;
 #endif
 };
 
