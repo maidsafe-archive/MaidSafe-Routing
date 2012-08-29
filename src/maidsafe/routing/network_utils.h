@@ -69,7 +69,7 @@ class NetworkUtils {
   Timer& timer();
   friend class test::GenericNode;
 #ifdef LOCAL_TEST
-friend class RoutingPrivate;
+friend struct RoutingPrivate;
 #endif
 
  private:
