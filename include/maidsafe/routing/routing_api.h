@@ -95,7 +95,7 @@ class Routing {
   Routing& operator=(const Routing&);
 
   bool CheckBootstrapFilePath() const;
-  void AddExistingRandomNode(NodeId node);
+  void AddExistingRandomNode(NodeId node, std::weak_ptr<RoutingPrivate> impl);
   void ConnectFunctors(const Functors& functors);
   void DisconnectFunctors();
   void BootstrapFromThisEndpoint(const Functors& functors,
@@ -103,7 +103,9 @@ class Routing {
   void DoJoin(const Functors& functors);
   int DoBootstrap(const Functors& functors);
   int DoFindNode();
-  void ReSendFindNodeRequest(const boost::system::error_code& error_code, bool ignore_size = false);
+  void ReSendFindNodeRequest(const boost::system::error_code& error_code,
+                             std::weak_ptr<RoutingPrivate> impl,
+                             bool ignore_size = false);
   void ReceiveMessage(const std::string& message, std::weak_ptr<RoutingPrivate> impl);
   void ConnectionLost(const boost::asio::ip::udp::endpoint& lost_endpoint,
                       std::weak_ptr<RoutingPrivate> impl);

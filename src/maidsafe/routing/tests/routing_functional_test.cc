@@ -150,7 +150,8 @@ class RoutingNetworkTest : public GenericNetwork<NodeType> {
     return testing::AssertionSuccess();
   }
 
-  testing::AssertionResult GroupSend(const NodeId& node_id, const size_t& messages) {
+  testing::AssertionResult GroupSend(const NodeId& node_id, const size_t& messages,
+                                     uint16_t source_index = 0) {
     NodeId  group_id;
     size_t messages_count(0), expected_messages(messages);
     std::string data(RandomAlphaNumericString(2 ^ 10));
@@ -169,8 +170,8 @@ class RoutingNetworkTest : public GenericNetwork<NodeType> {
             LOG(kVerbose) << "ResponseHandler .... DONE " << messages_count;
           }
       };
-      this->nodes_[0]->Send(node_id, NodeId(), data, callable, boost::posix_time::seconds(10),
-                            false, false);
+      this->nodes_[source_index]->Send(node_id, NodeId(), data, callable,
+                                       boost::posix_time::seconds(10), false, false);
     }
 
     std::unique_lock<std::mutex> lock(mutex);
@@ -347,7 +348,7 @@ TYPED_TEST_P(RoutingNetworkTest, FUNC_ClientSendMulti) {
 // }
 
 TYPED_TEST_P(RoutingNetworkTest, FUNC_SendToGroup) {
-  uint16_t message_count(1), receivers_message_count(0);
+  uint16_t message_count(10), receivers_message_count(0);
   this->SetUpNetwork(kNetworkSize);
   size_t last_index(this->nodes_.size() - 1);
   NodeId dest_id(this->nodes_[last_index]->node_id());
@@ -357,8 +358,41 @@ TYPED_TEST_P(RoutingNetworkTest, FUNC_SendToGroup) {
     receivers_message_count += static_cast<uint16_t>(this->nodes_.at(index)->MessagesSize());
 
   EXPECT_EQ(0, this->nodes_[last_index]->MessagesSize())
-        << "Expected message at Node : "
+        << "Not expected message at Node : "
         << HexSubstr(this->nodes_[last_index]->node_id().String());
+  EXPECT_EQ(message_count * (Parameters::node_group_size), receivers_message_count);
+}
+
+TYPED_TEST_P(RoutingNetworkTest, FUNC_SendToGroupSelfId) {
+  uint16_t message_count(10), receivers_message_count(0);
+  this->SetUpNetwork(kNetworkSize);
+  size_t last_index(this->nodes_.size());
+  NodeId dest_id(this->nodes_[0]->node_id());
+
+  EXPECT_TRUE(this->GroupSend(dest_id, message_count));
+  for (size_t index = 0; index != (last_index); ++index)
+    receivers_message_count += static_cast<uint16_t>(this->nodes_.at(index)->MessagesSize());
+
+  EXPECT_EQ(0, this->nodes_[0]->MessagesSize())
+        << "Not expected message at Node : "
+        << HexSubstr(this->nodes_[0]->node_id().String());
+  EXPECT_EQ(message_count * (Parameters::node_group_size), receivers_message_count);
+}
+
+TYPED_TEST_P(RoutingNetworkTest, FUNC_SendToGroupClientSelfId) {
+  uint16_t message_count(10), receivers_message_count(0);
+  this->SetUpNetwork(kNetworkSize, 2);
+  uint16_t client_index = kNetworkSize + 1;
+  size_t last_index(this->nodes_.size());
+  NodeId dest_id(this->nodes_[client_index]->node_id());
+
+  EXPECT_TRUE(this->GroupSend(dest_id, message_count, client_index));  // from client
+  for (size_t index = 0; index != (last_index); ++index)
+    receivers_message_count += static_cast<uint16_t>(this->nodes_.at(index)->MessagesSize());
+
+  EXPECT_EQ(0, this->nodes_[client_index]->MessagesSize())
+        << "Not expected message at Node : "
+        << HexSubstr(this->nodes_[client_index]->node_id().String());
   EXPECT_EQ(message_count * (Parameters::node_group_size), receivers_message_count);
 }
 
@@ -374,7 +408,7 @@ TYPED_TEST_P(RoutingNetworkTest, FUNC_SendToGroupInHybridNetwork) {
     receivers_message_count += static_cast<uint16_t>(this->nodes_.at(index)->MessagesSize());
 
   EXPECT_EQ(0, this->nodes_[last_index]->MessagesSize())
-        << "Expected message at Node : "
+        << "Not expected message at Node : "
         << HexSubstr(this->nodes_[last_index]->node_id().String());
   EXPECT_EQ(message_count * (Parameters::node_group_size), receivers_message_count);
 }
@@ -398,7 +432,7 @@ TYPED_TEST_P(RoutingNetworkTest, FUNC_JoinAfterBootstrapLeaves) {
   this->SetUpNetwork(kNetworkSize);
   this->nodes_.erase(this->nodes_.begin(), this->nodes_.begin() + 2);
   LOG(kVerbose) << "Network Size " << this->nodes_.size();
-  Sleep(boost::posix_time::seconds(2));
+  Sleep(boost::posix_time::seconds(10));
   LOG(kVerbose) << "RIse ";
   this->AddNode(false, NodeId());
 //  this->AddNode(true, NodeId());
@@ -442,11 +476,13 @@ TYPED_TEST_P(RoutingNetworkTest, FUNC_SymmetricRouter) {
                          this->nodes_[kNetworkSize + 1]->node_id()));
 }
 
-REGISTER_TYPED_TEST_CASE_P(RoutingNetworkTest, FUNC_SetupNetwork, FUNC_SetupHybridNetwork,
-                           FUNC_Send, FUNC_SendToNonExistingNode, FUNC_ClientSend, FUNC_SendMulti,
-                           FUNC_ClientSendMulti, FUNC_SendToGroup, FUNC_SendToGroupInHybridNetwork,
-                           FUNC_SendToGroupRandomId, FUNC_JoinAfterBootstrapLeaves,
-                           FUNC_RecursiveCall, FUNC_SymmetricRouter);
+REGISTER_TYPED_TEST_CASE_P(RoutingNetworkTest, FUNC_SetupNetwork, FUNC_SendToGroupSelfId,
+                           FUNC_SendToGroupClientSelfId,
+                           FUNC_SetupHybridNetwork, FUNC_Send, FUNC_SendToNonExistingNode,
+                           FUNC_ClientSend, FUNC_SendMulti, FUNC_ClientSendMulti, FUNC_SendToGroup,
+                           FUNC_SendToGroupInHybridNetwork, FUNC_SendToGroupRandomId,
+                           FUNC_JoinAfterBootstrapLeaves, FUNC_RecursiveCall,
+                           FUNC_SymmetricRouter);
 INSTANTIATE_TYPED_TEST_CASE_P(MAIDSAFE, RoutingNetworkTest, TestNode);
 
 }  // namespace test

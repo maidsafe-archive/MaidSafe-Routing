@@ -256,7 +256,7 @@ void Routing::DoJoin(const Functors& functors) {
   impl_->recovery_timer_.expires_from_now(boost::posix_time::seconds(
       Parameters::recovery_timeout_in_seconds));
   impl_->recovery_timer_.async_wait([=](const boost::system::error_code& error_code) {
-                                        ReSendFindNodeRequest(error_code);
+                                        ReSendFindNodeRequest(error_code, impl_);
                                       });
 }
 
@@ -365,7 +365,7 @@ int Routing::ZeroStateJoin(Functors functors,
     impl_->recovery_timer_.expires_from_now(
         boost::posix_time::seconds(Parameters::recovery_timeout_in_seconds));
     impl_->recovery_timer_.async_wait([=](const boost::system::error_code& error_code) {
-                                          ReSendFindNodeRequest(error_code);
+                                          ReSendFindNodeRequest(error_code, impl_);
                                        });
 #ifdef LOCAL_TEST
     std::lock_guard<std::mutex> lock(RoutingPrivate::mutex_);
@@ -499,7 +499,7 @@ void Routing::ReceiveMessage(const std::string& message, std::weak_ptr<RoutingPr
                                    HexSubstr(protobuf_message.source_id()))
                 << " id: " << protobuf_message.id();
     if (protobuf_message.has_source_id())
-      AddExistingRandomNode(NodeId(protobuf_message.source_id()));
+      AddExistingRandomNode(NodeId(protobuf_message.source_id()), pimpl);
     pimpl->message_handler_->HandleMessage(protobuf_message);
   } else {
     LOG(kWarning) << "Message received, failed to parse";
@@ -512,19 +512,26 @@ void Routing::ReceiveMessage(const std::string& message, std::weak_ptr<RoutingPr
 NodeId Routing::GetRandomExistingNode() {
   NodeId node;
   impl_->random_node_queue_.TryPop(node);
+  auto queue_size = impl_->random_node_queue_.Size();
   LOG(kVerbose) << "RandomNodeQueue : Getting node, queue size now "
-                << impl_->random_node_queue_.Size();
+                << queue_size;
   return node;
 }
 
-void Routing::AddExistingRandomNode(NodeId node) {
+void Routing::AddExistingRandomNode(NodeId node, std::weak_ptr<RoutingPrivate> impl) {
+  std::shared_ptr<RoutingPrivate> pimpl = impl.lock();
+  if (!pimpl) {
+    LOG(kVerbose) << "Ignoring message received since this node is shutting down";
+    return;
+  }
+
   if (node.IsValid()) {
-    impl_->random_node_queue_.Push(node);
-    size_t queue_size = impl_->random_node_queue_.Size();
+    pimpl->random_node_queue_.Push(node);
+    auto queue_size = pimpl->random_node_queue_.Size();
     LOG(kVerbose) << "RandomNodeQueue : Added node, queue size now "
                   << queue_size;
     if (queue_size > 6)
-      GetRandomExistingNode();
+      pimpl->random_node_queue_.TryPop(node);
   }
 }
 
@@ -548,11 +555,11 @@ void Routing::ConnectionLost(const Endpoint& lost_endpoint, std::weak_ptr<Routin
   if (!dropped_node.node_id.Empty()) {
     LOG(kWarning) << "Lost connection with routing node "
                   << HexSubstr(dropped_node.node_id.String()) << ", endpoint " << lost_endpoint;
-    LOG(kWarning) << "Routing::ConnectionLost-----------------------------------------Exiting";
   }
 
   // Checking non-routing table
-  if (!dropped_node.node_id.Empty()) {
+  if (dropped_node.node_id.Empty()) {
+    resend = false;
     dropped_node = pimpl->non_routing_table_.DropNode(lost_endpoint);
     if (!dropped_node.node_id.Empty()) {
       LOG(kWarning) << "Lost connection with non-routing node "
@@ -565,10 +572,9 @@ void Routing::ConnectionLost(const Endpoint& lost_endpoint, std::weak_ptr<Routin
   if (resend) {
     // Close node lost, get more nodes
     LOG(kWarning) << "Lost close node, getting more.";
-    ReSendFindNodeRequest(boost::system::error_code(), true);
+    ReSendFindNodeRequest(boost::system::error_code(), pimpl, true);
   }
 
-  LOG(kWarning) << "Routing::ConnectionLost--------------------------------------------Exiting";
 #ifdef LOCAL_TEST
   pimpl->RemoveConnectionFromBootstrapList(lost_endpoint);
 #endif
@@ -579,27 +585,34 @@ bool Routing::ConfirmGroupMembers(const NodeId& node1, const NodeId& node2) {
 }
 
 void Routing::ReSendFindNodeRequest(const boost::system::error_code& error_code,
-                                    bool /*ignore_size*/) {
+                                    std::weak_ptr<RoutingPrivate> impl,
+                                    bool ignore_size) {
+  std::shared_ptr<RoutingPrivate> pimpl = impl.lock();
+  if (!pimpl) {
+    LOG(kVerbose) << "Ignoring message received since this node is shutting down";
+    return;
+  }
+
   if (error_code != boost::asio::error::operation_aborted) {
-//     if (impl_->routing_table_.Size() == 0) {
-//       LOG(kInfo) << "This node's [" << HexSubstr(impl_->keys_.identity)
-//                  << "] Routing table is empty."
-//                  << " Need to rebootstrap !!!";
-//       return;
-//     } else if (ignore_size ||  (impl_->routing_table_.Size() < Parameters::closest_nodes_size)) {
-//       LOG(kInfo) << "This node's [" << HexSubstr(impl_->keys_.identity)
-//                  << "] Routing table smaller than " << Parameters::closest_nodes_size
-//                  << " nodes.  Sending another FindNodes..";
-//       protobuf::Message find_node_rpc(rpcs::FindNodes(NodeId(impl_->keys_.identity),
-//                                                       NodeId(impl_->keys_.identity)));
-//       impl_->network_.SendToClosestNode(find_node_rpc);
-//
-//       impl_->recovery_timer_.expires_from_now(
-//           boost::posix_time::seconds(Parameters::recovery_timeout_in_seconds));
-//       impl_->recovery_timer_.async_wait([=](boost::system::error_code error_code) {
-//                                             ReSendFindNodeRequest(error_code);
-//                                           });
-//     }
+    if (pimpl->routing_table_.Size() == 0) {
+      LOG(kInfo) << "This node's [" << HexSubstr(pimpl->keys_.identity)
+                 << "] Routing table is empty."
+                 << " Need to rebootstrap !!!";
+      return;
+    } else if (ignore_size ||  (pimpl->routing_table_.Size() < Parameters::closest_nodes_size)) {
+      LOG(kInfo) << "This node's [" << HexSubstr(pimpl->keys_.identity)
+                 << "] Routing table smaller than " << Parameters::closest_nodes_size
+                 << " nodes.  Sending another FindNodes..";
+      protobuf::Message find_node_rpc(rpcs::FindNodes(NodeId(pimpl->keys_.identity),
+                                                      NodeId(pimpl->keys_.identity)));
+      pimpl->network_.SendToClosestNode(find_node_rpc);
+
+      pimpl->recovery_timer_.expires_from_now(
+          boost::posix_time::seconds(Parameters::recovery_timeout_in_seconds));
+      pimpl->recovery_timer_.async_wait([=](boost::system::error_code error_code) {
+                                            ReSendFindNodeRequest(error_code, pimpl);
+                                          });
+    }
   } else {
     LOG(kVerbose) << "Cancelled recovery loop!!";
   }

@@ -253,6 +253,10 @@ void MessageHandler::HandleMessage(protobuf::Message& message) {
 
   DecreamentHopsToLive(message);
 
+  // If group message request to self id
+  if (IsGroupMessageRequestToSelfId(message))
+    return HandleGroupMessageToSelfId(message);
+
   // If this node is a client
   if (routing_table_.client_mode())
     return HandleClientMessage(message);
@@ -367,6 +371,22 @@ void MessageHandler::HandleClientMessage(protobuf::Message& message) {
   }
 }
 
+// Special case : If group message request to self id
+bool MessageHandler::IsGroupMessageRequestToSelfId(protobuf::Message& message) {
+  return ((message.source_id() == routing_table_.kKeys().identity) &&
+          (message.destination_id() == routing_table_.kKeys().identity) &&
+          message.request() &&
+          !message.direct());
+}
+
+void MessageHandler::HandleGroupMessageToSelfId(protobuf::Message& message) {
+  assert(message.source_id() == routing_table_.kKeys().identity);
+  assert(message.destination_id() == routing_table_.kKeys().identity);
+  assert(message.request());
+  assert(!message.direct());
+  LOG(kInfo) << "Sending group message to self id. Passing on to the closest peer to replicate";
+  network_.SendToClosestNode(message);
+}
 // // TODO(dirvine) implement client handler
 // bool MessageHandler::CheckAndSendToLocalClients(protobuf::Message& message) {
 //   bool found(false);
