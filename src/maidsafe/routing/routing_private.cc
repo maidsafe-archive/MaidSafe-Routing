@@ -83,7 +83,7 @@ void RoutingPrivate::LocalTestUtility(const protobuf::Message message,
   protobuf::FindNodesResponse findnodes_response;
   if ((message.data_size() > 0) &&
       (findnodes_response.ParseFromString(message.data(0)))) {
-    expected_connect_response = findnodes_response.nodes_size();
+    expected_connect_response = static_cast<uint16_t>(findnodes_response.nodes_size());
 //    LOG(kVerbose) << "expected_connect_response: " << expected_connect_response;
     return;
   }
