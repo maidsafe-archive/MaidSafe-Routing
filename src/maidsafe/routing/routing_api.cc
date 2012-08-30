@@ -439,7 +439,7 @@ void Routing::Send(const NodeId& destination_id,
 
   proto_message.set_replication(replication);
   // Anonymous node
-  if (impl_->anonymous_node_) {
+  if (impl_->anonymous_node_ || (impl_->routing_table_.Size() == 0)) {
     proto_message.set_relay_id(impl_->routing_table_.kKeys().identity);
     SetProtobufEndpoint(impl_->network_.this_node_relay_endpoint(), proto_message.mutable_relay());
     Endpoint bootstrap_endpoint = impl_->network_.bootstrap_endpoint();
@@ -450,7 +450,10 @@ void Routing::Send(const NodeId& destination_id,
         [&](int result) {
           if (rudp::kSuccess != result) {
             impl_->timer_.CancelTask(proto_message.id());
-            LOG(kError) << "Anonymous Session Ended, Send not allowed anymore";
+            if (impl_->anonymous_node_)
+              LOG(kError) << "Anonymous Session Ended, Send not allowed anymore";
+            else
+              LOG(kError) << "Partial join Session Ended, Send not allowed anymore";
           } else {
             LOG(kInfo) << "Message Sent from Anonymous node";
           }
