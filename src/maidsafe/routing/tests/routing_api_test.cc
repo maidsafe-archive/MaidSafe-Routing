@@ -254,11 +254,18 @@ TEST(APITest, FUNC_API_AnonymousNode) {
 
   boost::promise<bool> join_promise;
   auto join_future = join_promise.get_future();
-  functors3.network_status = [&join_promise](int result) {
-    ASSERT_EQ(result, kSuccess);
+  bool promised(true);
+  functors3.network_status = [&join_promise, &promised](int result) {
     if (result == NetworkStatus(true, 0)) {
-      join_promise.set_value(true);
-      LOG(kVerbose) << "Anonymous Node joined";
+      if (promised) {
+        ASSERT_EQ(kSuccess, result);
+        promised = false;
+        join_promise.set_value(true);
+        LOG(kVerbose) << "Anonymous Node joined";
+      } else {
+        ASSERT_EQ(kAnonymousSessionEnded, result);
+      }
+      LOG(kVerbose) << "Recieved network status of : " << result;
     }
   };
   R3.Join(functors3, node2.node_info.endpoint);

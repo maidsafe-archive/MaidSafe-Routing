@@ -450,7 +450,7 @@ void Routing::Send(const NodeId& destination_id,
 
   proto_message.set_replication(replication);
   // Anonymous node
-  if (impl_->anonymous_node_) {
+  if (impl_->anonymous_node_ || (impl_->routing_table_.Size() == 0)) {
     proto_message.set_relay_id(impl_->routing_table_.kKeys().identity);
     SetProtobufEndpoint(impl_->network_.this_node_relay_endpoint(), proto_message.mutable_relay());
     Endpoint bootstrap_endpoint = impl_->network_.bootstrap_endpoint();
@@ -461,9 +461,16 @@ void Routing::Send(const NodeId& destination_id,
         [&](int result) {
           if (rudp::kSuccess != result) {
             impl_->timer_.CancelTask(proto_message.id());
-            LOG(kError) << "Anonymous Session Ended, Send not allowed anymore";
+            if (impl_->anonymous_node_) {
+              LOG(kError) << "Anonymous Session Ended, Send not allowed anymore";
+              impl_->functors_.network_status(kAnonymousSessionEnded);
+            } else {
+              LOG(kError) << "Partial join Session Ended, Send not allowed anymore";
+              if (impl_->functors_.network_status)
+                impl_->functors_.network_status(kPartialJoinSessionEnded);
+            }
           } else {
-            LOG(kInfo) << "Message Sent from Anonymous node";
+            LOG(kInfo) << "Message Sent from Anonymous/Partial joined node";
           }
         });
 
@@ -542,7 +549,7 @@ void Routing::ConnectionLost(const Endpoint& lost_endpoint, std::weak_ptr<Routin
     return;
   }
 
-  LOG(kWarning) << "Routing::ConnectionLost---------------------------------------------------";
+  LOG(kVerbose) << "Routing::ConnectionLost with ----------------------------" << lost_endpoint;
 
   NodeInfo dropped_node;
   bool resend(!pimpl->tearing_down_ &&
@@ -587,6 +594,7 @@ bool Routing::ConfirmGroupMembers(const NodeId& node1, const NodeId& node2) {
 void Routing::ReSendFindNodeRequest(const boost::system::error_code& error_code,
                                     std::weak_ptr<RoutingPrivate> impl,
                                     bool ignore_size) {
+#ifndef LOCAL_TEST
   std::shared_ptr<RoutingPrivate> pimpl = impl.lock();
   if (!pimpl) {
     LOG(kVerbose) << "Ignoring message received since this node is shutting down";
@@ -616,6 +624,7 @@ void Routing::ReSendFindNodeRequest(const boost::system::error_code& error_code,
   } else {
     LOG(kVerbose) << "Cancelled recovery loop!!";
   }
+#endif
 }
 
 }  // namespace routing
