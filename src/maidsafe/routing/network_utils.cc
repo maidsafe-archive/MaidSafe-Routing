@@ -181,7 +181,7 @@ void NetworkUtils::SendToClosestNode(const protobuf::Message& message) {
       RecursiveSendOn(message);
     } else {
       LOG(kError) << " No endpoint to send to; aborting send.  Attempt to send a type "
-                  << message.type() << " message to " << HexSubstr(message.source_id())
+                  << MessageTypeString(message) << " message to " << HexSubstr(message.source_id())
                   << " from " << HexSubstr(routing_table_.kKeys().identity)
                   << " id: " << message.id();
     }
@@ -208,11 +208,11 @@ void NetworkUtils::SendTo(const protobuf::Message& message,
   const std::string kThisId(HexSubstr(routing_table_.kKeys().identity));
   rudp::MessageSentFunctor message_sent_functor = [=](int message_sent) {
       if (rudp::kSuccess == message_sent) {
-        LOG(kInfo) << "Type " << message.type() << " message successfully sent from "
+        LOG(kInfo) << "Type " << MessageTypeString(message) << " message successfully sent from "
                    << kThisId << " to " << HexSubstr(node_id.String()) << " with destination ID "
                    << HexSubstr(message.destination_id()) << " id: " << message.id();
       } else {
-        LOG(kError) << "Sending type " << message.type() << " message from "
+        LOG(kError) << "Sending type " << MessageTypeString(message) << " message from "
                     << kThisId << " to " << HexSubstr(node_id.String()) << " with destination ID "
                     << HexSubstr(message.destination_id()) << " failed with code " << message_sent
                     << " id: " << message.id();
