@@ -450,12 +450,16 @@ void Routing::Send(const NodeId& destination_id,
         [&](int result) {
           if (rudp::kSuccess != result) {
             impl_->timer_.CancelTask(proto_message.id());
-            if (impl_->anonymous_node_)
+            if (impl_->anonymous_node_) {
               LOG(kError) << "Anonymous Session Ended, Send not allowed anymore";
-            else
+              impl_->functors_.network_status(kAnonymousSessionEnded);
+            } else {
               LOG(kError) << "Partial join Session Ended, Send not allowed anymore";
+              if (impl_->functors_.network_status)
+                impl_->functors_.network_status(kPartialJoinSessionEnded);
+            }
           } else {
-            LOG(kInfo) << "Message Sent from Anonymous node";
+            LOG(kInfo) << "Message Sent from Anonymous/Partial joined node";
           }
         });
 
