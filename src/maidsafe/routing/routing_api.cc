@@ -47,9 +47,6 @@ namespace routing {
 namespace {
 
 typedef boost::asio::ip::udp::endpoint Endpoint;
-#ifdef LOCAL_TEST
-uint16_t expected_connect_response = 0;
-#endif
 
 }  // unnamed namespace
 
@@ -217,9 +214,22 @@ void Routing::BootstrapFromThisEndpoint(const Functors& functors, const Endpoint
   }
   impl_->bootstrap_nodes_.clear();
 #ifdef LOCAL_TEST
-  impl_->bootstrap_nodes_.insert(impl_->bootstrap_nodes_.begin(),
-                                 RoutingPrivate::bootstraps_.begin(),
-                                 RoutingPrivate::bootstraps_.end());
+  uint16_t start_index(0);
+  start_index = (RoutingPrivate::bootstraps_.size() > 2) ? 2 : 0;
+  if (start_index == 0) {
+    impl_->bootstrap_nodes_.insert(impl_->bootstrap_nodes_.begin(),
+                                   RoutingPrivate::bootstraps_.begin() + start_index,
+                                   RoutingPrivate::bootstraps_.end());
+  } else {
+    uint16_t random(RandomUint32() % (RoutingPrivate::bootstraps_.size() - 2));
+    for (auto index(0); index < (RoutingPrivate::bootstraps_.size() - 2); ++index) {
+      impl_->bootstrap_nodes_.push_back(
+          RoutingPrivate::bootstraps_[(random + index) %
+              (RoutingPrivate::bootstraps_.size() - 2) + 2]);
+    }
+  }
+  for (auto endpoint : impl_->bootstrap_nodes_)
+    LOG(kVerbose) << "Static ep: " << endpoint;
 #else
   impl_->bootstrap_nodes_.push_back(endpoint);
 #endif
@@ -360,6 +370,7 @@ int Routing::ZeroStateJoin(Functors functors,
 #ifdef LOCAL_TEST
     std::lock_guard<std::mutex> lock(RoutingPrivate::mutex_);
     RoutingPrivate::bootstraps_.push_back(local_endpoint);
+    RoutingPrivate::bootstrap_nodes_id_.insert(NodeId(impl_->keys_.identity));
 #endif
     return kSuccess;
   } else {
@@ -494,7 +505,7 @@ void Routing::ReceiveMessage(const std::string& message, std::weak_ptr<RoutingPr
     LOG(kWarning) << "Message received, failed to parse";
   }
 #ifdef LOCAL_TEST
-  pimpl->LocalTestUtility(protobuf_message, expected_connect_response);
+  pimpl->LocalTestUtility(protobuf_message);
 #endif
 }
 
@@ -558,6 +569,9 @@ void Routing::ConnectionLost(const Endpoint& lost_endpoint, std::weak_ptr<Routin
   }
 
   LOG(kWarning) << "Routing::ConnectionLost--------------------------------------------Exiting";
+#ifdef LOCAL_TEST
+  pimpl->RemoveConnectionFromBootstrapList(lost_endpoint);
+#endif
 }
 
 bool Routing::ConfirmGroupMembers(const NodeId& node1, const NodeId& node2) {

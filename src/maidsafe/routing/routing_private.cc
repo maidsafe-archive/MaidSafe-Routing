@@ -10,12 +10,15 @@
  *  the explicit written permission of the board of directors of maidsafe.net. *
  ******************************************************************************/
 
+#ifdef LOCAL_TEST
+#include "maidsafe/routing/utils.h"
+#endif
+
 #include "maidsafe/routing/routing_private.h"
 
 #include "maidsafe/common/log.h"
 #include "maidsafe/routing/message_handler.h"
 #include "maidsafe/routing/routing_pb.h"
-
 
 namespace maidsafe {
 
@@ -23,6 +26,7 @@ namespace routing {
 
 #ifdef LOCAL_TEST
 std::vector<boost::asio::ip::udp::endpoint> RoutingPrivate::bootstraps_;
+std::set<NodeId> RoutingPrivate::bootstrap_nodes_id_;
 std::mutex RoutingPrivate::mutex_;
 uint16_t RoutingPrivate::network_size_(0);
 typedef boost::asio::ip::udp::endpoint Endpoint;
@@ -72,42 +76,54 @@ RoutingPrivate::~RoutingPrivate() {
   std::lock_guard<std::mutex> lock(RoutingPrivate::mutex_);
   if (--RoutingPrivate::network_size_ == 0) {
     RoutingPrivate::bootstraps_.clear();
-    LOG(kInfo) << "static RoutingPrivate::bootstraps_ cleared.";
+    RoutingPrivate::bootstrap_nodes_id_.clear();
+    LOG(kVerbose) << "static RoutingPrivate::bootstraps_ cleared.";
   }
 #endif
 }
 
 #ifdef LOCAL_TEST
-void RoutingPrivate::LocalTestUtility(const protobuf::Message message,
-                                      uint16_t& expected_connect_response) {
-  protobuf::FindNodesResponse findnodes_response;
-  if ((message.data_size() > 0) &&
-      (findnodes_response.ParseFromString(message.data(0)))) {
-    expected_connect_response = static_cast<uint16_t>(findnodes_response.nodes_size());
-//    LOG(kVerbose) << "expected_connect_response: " << expected_connect_response;
-    return;
-  }
+void RoutingPrivate::LocalTestUtility(const protobuf::Message message) {
   protobuf::ConnectResponse connect_response;
   std::lock_guard<std::mutex>  lock(RoutingPrivate::mutex_);
   if ((message.data_size() > 0) &&
       connect_response.ParseFromString(message.data(0)) &&
-      (routing_table_.Size() == expected_connect_response)) {
-    expected_connect_response = 0;
-    rudp::EndpointPair endpoint_pair;
-    rudp::NatType nat_type;
-    network_.GetAvailableEndpoint(routing_table_.nodes_[0].endpoint,
-                                  endpoint_pair,
-                                  nat_type);
+      (message.destination_id() == routing_table_.kKeys().identity) &&
+      (std::find(RoutingPrivate::bootstrap_nodes_id_.begin(),
+                 RoutingPrivate::bootstrap_nodes_id_.end(),
+                 NodeId(keys_.identity)) == RoutingPrivate::bootstrap_nodes_id_.end())) {
+    Endpoint endpoint;
+    if (connect_response.answer()) {
+        protobuf::ConnectRequest oirginal_request;
+        oirginal_request.ParseFromString(connect_response.original_request());
+        endpoint = GetEndpointFromProtobuf(oirginal_request.contact().private_endpoint());
+        LOG(kVerbose) << "LocalTestUtility: endpoint: " << endpoint;
+    } else {
+      return;
+    }
+
     if (std::find_if(RoutingPrivate::bootstraps_.begin(), RoutingPrivate::bootstraps_.end(),
-                    [=](const Endpoint& endpoint) {
-                      return endpoint.port() == endpoint_pair.local.port();
+                    [=](const Endpoint& ep) {
+                      return endpoint == ep;
                     }) == RoutingPrivate::bootstraps_.end()) {
-      std::random_shuffle(RoutingPrivate::bootstraps_.begin(), RoutingPrivate::bootstraps_.end());
-      RoutingPrivate::bootstraps_.push_back(endpoint_pair.local);
+      RoutingPrivate::bootstraps_.push_back(endpoint);
     }
     for (auto endpoint : RoutingPrivate::bootstraps_)
-      LOG(kInfo) << "bootstrap port: " << endpoint.port();
+      LOG(kVerbose) << "bootstrap port: " << endpoint.port();
   }
+}
+
+void RoutingPrivate::RemoveConnectionFromBootstrapList(
+    const boost::asio::ip::udp::endpoint& lost_endpoint) {
+  std::remove_if(RoutingPrivate::bootstraps_.begin(),
+                 RoutingPrivate::bootstraps_.end(),
+                 [=](const boost::asio::ip::udp::endpoint& endpoint)->bool {
+                   bool result(lost_endpoint == endpoint);
+                   if (result) {
+                     LOG(kVerbose) << "Connection Removed from bootstrap list: " << lost_endpoint;
+                   }
+                   return result;
+                 });
 }
 #endif
 

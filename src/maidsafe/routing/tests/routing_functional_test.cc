@@ -394,6 +394,17 @@ TYPED_TEST_P(RoutingNetworkTest, FUNC_SendToGroupRandomId) {
                 << message_count * (Parameters::node_group_size);
 }
 
+TYPED_TEST_P(RoutingNetworkTest, FUNC_JoinAfterBootstrapLeaves) {
+  this->SetUpNetwork(kNetworkSize);
+  this->nodes_.erase(this->nodes_.begin(), this->nodes_.begin() + 2);
+  LOG(kVerbose) << "Network Size " << this->nodes_.size();
+  Sleep(boost::posix_time::seconds(2));
+  LOG(kVerbose) << "RIse ";
+  this->AddNode(false, NodeId());
+//  this->AddNode(true, NodeId());
+}
+
+
 // This test produces the recursive call.
 TYPED_TEST_P(RoutingNetworkTest, FUNC_RecursiveCall) {
   this->SetUpNetwork(kNetworkSize);
@@ -434,7 +445,8 @@ TYPED_TEST_P(RoutingNetworkTest, FUNC_SymmetricRouter) {
 REGISTER_TYPED_TEST_CASE_P(RoutingNetworkTest, FUNC_SetupNetwork, FUNC_SetupHybridNetwork,
                            FUNC_Send, FUNC_SendToNonExistingNode, FUNC_ClientSend, FUNC_SendMulti,
                            FUNC_ClientSendMulti, FUNC_SendToGroup, FUNC_SendToGroupInHybridNetwork,
-                           FUNC_SendToGroupRandomId, FUNC_RecursiveCall, FUNC_SymmetricRouter);
+                           FUNC_SendToGroupRandomId, FUNC_JoinAfterBootstrapLeaves,
+                           FUNC_RecursiveCall, FUNC_SymmetricRouter);
 INSTANTIATE_TYPED_TEST_CASE_P(MAIDSAFE, RoutingNetworkTest, TestNode);
 
 }  // namespace test
