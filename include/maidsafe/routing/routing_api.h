@@ -109,6 +109,7 @@ class Routing {
   void ReceiveMessage(const std::string& message, std::weak_ptr<RoutingPrivate> impl);
   void ConnectionLost(const boost::asio::ip::udp::endpoint& lost_endpoint,
                       std::weak_ptr<RoutingPrivate> impl);
+  void RemoveNode(const NodeInfo& node);
   // Confirm (if we can) two nodes are within a group range.  For small networks or new node on
   // network, this function may yield many false negatives.  In the case of a negative, actual
   // confirmation can be achieved by sending an indirect message to the node address and checking

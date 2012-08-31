@@ -63,6 +63,7 @@ TEST(RoutingTableTest, FUNC_AddTooManyNodes) {
     asymm::Keys keys;
     keys.identity = RandomString(64);
   RoutingTable RT(keys, false);
+  RT.set_remove_node_functor([](const NodeInfo&) {});
   for (uint16_t i = 0; RT.Size() < Parameters::max_routing_table_size; ++i) {
     NodeInfo node(MakeNode());
     node.endpoint.port(i + 1501U);  // has to be unique

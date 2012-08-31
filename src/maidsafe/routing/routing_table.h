@@ -62,6 +62,7 @@ class RoutingTable {
   NodeId kNodeId() const;
   void set_network_status_functor(NetworkStatusFunctor network_status_functor);
   void set_close_node_replaced_functor(CloseNodeReplacedFunctor close_node_replaced_functor);
+  void set_remove_node_functor(std::function<void(const NodeInfo&)> remove_node_functor);
   bool client_mode() const { return client_mode_; }
   void set_bootstrap_file_path(const boost::filesystem::path& path);
   friend class test::GenericNode;
@@ -77,7 +78,7 @@ class RoutingTable {
   int16_t BucketIndex(const NodeId& rhs) const;
   bool CheckValidParameters(const NodeInfo& node) const;
   bool CheckParametersAreUnique(const NodeInfo& node) const;
-  bool MakeSpaceForNodeToBeAdded(NodeInfo& node, const bool& remove);
+  bool MakeSpaceForNodeToBeAdded(NodeInfo& node, const bool& remove, NodeInfo& removed_node);
   void PartialSortFromTarget(const NodeId& target, const uint16_t& number);
   void NthElementSortFromTarget(const NodeId& target, const uint16_t& nth_element);
   NodeId FurthestCloseNode();
@@ -96,6 +97,7 @@ class RoutingTable {
   const NodeId kNodeId_;
   NodeId furthest_group_node_id_;
   mutable std::mutex mutex_;
+  std::function<void(const NodeInfo&)> remove_node_functor_;
   NetworkStatusFunctor network_status_functor_;
   CloseNodeReplacedFunctor close_node_replaced_functor_;
   boost::filesystem::path bootstrap_file_path_;
