@@ -95,18 +95,7 @@ bool Routing::CheckBootstrapFilePath() const {
     global_bootstrap_nodes = ReadBootstrapFile(global_bootstrap_file_path);
   }
 
-  std::string file_name;
-  if (impl_->client_mode_) {
-    file_name = "bootstrap";
-    path = GetUserAppDir() / file_name;
-  } else {
-    std::string file_id(
-        EncodeToBase32(maidsafe::crypto::Hash<maidsafe::crypto::SHA1>(impl_->keys_.identity)));
-    file_name = "bootstrap-" + file_id + ".dat";
-    path = GetSystemAppSupportDir() / file_name;
-  }
-  fs::path local_file = fs::current_path() / file_name;
-
+  fs::path local_file = fs::current_path() / "bootstrap";
   if (!fs::exists(local_file, exists_error_code) ||
       !fs::is_regular_file(local_file, is_regular_file_error_code) ||
       exists_error_code || is_regular_file_error_code) {
