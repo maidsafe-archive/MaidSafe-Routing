@@ -79,6 +79,8 @@ struct RoutingPrivate {
   Functors functors_;
   SafeQueue<NodeId> random_node_queue_;
   boost::asio::deadline_timer recovery_timer_;
+  std::vector<NodeId> random_node_vector_;
+  std::mutex random_node_mutex_;
 #ifdef LOCAL_TEST
   void LocalTestUtility(const protobuf::Message message);
   void RemoveConnectionFromBootstrapList(const boost::asio::ip::udp::endpoint& lost_endpoint);
