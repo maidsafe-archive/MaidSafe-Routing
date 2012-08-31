@@ -38,7 +38,6 @@ struct NodeInfo {
   int32_t bucket;
   boost::asio::ip::udp::endpoint endpoint;
   rudp::NatType nat_type;
-  NodeId nat_relay_id;
   int32_t dimension_1;
   int32_t dimension_2;
   int32_t dimension_3;

@@ -166,6 +166,9 @@ void Routing::Join(Functors functors, Endpoint peer_endpoint) {
 }
 
 void Routing::ConnectFunctors(const Functors& functors) {
+  impl_->routing_table_.set_remove_node_functor([&](const NodeInfo& node){
+      RemoveNode(node);
+  });
   impl_->routing_table_.set_network_status_functor(functors.network_status);
   impl_->routing_table_.set_close_node_replaced_functor(functors.close_node_replaced);
   impl_->message_handler_->set_message_received_functor(functors.message_received);
@@ -174,6 +177,7 @@ void Routing::ConnectFunctors(const Functors& functors) {
 }
 
 void Routing::DisconnectFunctors() {  // TODO(Prakash) : fix race condition when functors in use
+  impl_->routing_table_.set_remove_node_functor(nullptr);
   impl_->routing_table_.set_network_status_functor(nullptr);
   impl_->routing_table_.set_close_node_replaced_functor(nullptr);
   impl_->message_handler_->set_message_received_functor(nullptr);
@@ -242,10 +246,11 @@ void Routing::DoJoin(const Functors& functors) {
   if (functors.network_status)
     functors.network_status(DoFindNode());
 
-  impl_->recovery_timer_.expires_from_now(boost::posix_time::seconds(
-      Parameters::recovery_timeout_in_seconds));
+  impl_->recovery_timer_.expires_from_now(
+      boost::posix_time::seconds(Parameters::recovery_timeout_in_seconds));
+  std::weak_ptr<RoutingPrivate> impl_weak_ptr(impl_);
   impl_->recovery_timer_.async_wait([=](const boost::system::error_code& error_code) {
-                                        ReSendFindNodeRequest(error_code, impl_);
+                                        ReSendFindNodeRequest(error_code, impl_weak_ptr);
                                       });
 }
 
@@ -354,8 +359,8 @@ int Routing::ZeroStateJoin(Functors functors,
     impl_->recovery_timer_.expires_from_now(
         boost::posix_time::seconds(Parameters::recovery_timeout_in_seconds));
     impl_->recovery_timer_.async_wait([=](const boost::system::error_code& error_code) {
-                                          ReSendFindNodeRequest(error_code, impl_);
-                                       });
+                                          ReSendFindNodeRequest(error_code, impl_weak_ptr);
+                                        });
 #ifdef LOCAL_TEST
     std::lock_guard<std::mutex> lock(RoutingPrivate::mutex_);
     RoutingPrivate::bootstraps_.push_back(local_endpoint);
@@ -524,11 +529,11 @@ void Routing::AddExistingRandomNode(NodeId node, std::weak_ptr<RoutingPrivate> i
   }
 
   if (node.IsValid()) {
-    std::lock_guard<std::mutex> lock(impl_->random_node_mutex_);
-    if(std::find_if(impl_->random_node_vector_.begin(), impl_->random_node_vector_.end(),
+    std::lock_guard<std::mutex> lock(pimpl->random_node_mutex_);
+    if(std::find_if(pimpl->random_node_vector_.begin(), pimpl->random_node_vector_.end(),
                    [node] (const NodeId& vect_node) {
                      return vect_node == node;
-                     } ) !=  impl_->random_node_vector_.end())
+                     } ) !=  pimpl->random_node_vector_.end())
       return;
     pimpl->random_node_vector_.push_back(node);
     auto queue_size = pimpl->random_node_vector_.size();
@@ -558,7 +563,7 @@ void Routing::ConnectionLost(const Endpoint& lost_endpoint, std::weak_ptr<Routin
   dropped_node = pimpl->routing_table_.DropNode(lost_endpoint);
   if (!dropped_node.node_id.Empty()) {
     LOG(kWarning) << "Lost connection with routing node "
-                  << HexSubstr(dropped_node.node_id.String()) << ", endpoint " << lost_endpoint;
+                  << DebugId(dropped_node.node_id) << ", endpoint " << lost_endpoint;
   }
 
   // Checking non-routing table
@@ -584,6 +589,28 @@ void Routing::ConnectionLost(const Endpoint& lost_endpoint, std::weak_ptr<Routin
 #endif
 }
 
+void Routing::RemoveNode(const NodeInfo& node) {
+  if (node.endpoint.address().is_unspecified() || node.node_id.Empty()) {
+    return;
+  }
+
+  if (node.endpoint != rudp::kNonRoutable) {
+    impl_->network_.Remove(node.endpoint);
+    impl_->routing_table_.DropNode(node.endpoint);
+    LOG(kInfo) << "Routing: removed node : " << HexSubstr(node.node_id.String())
+               << ". Removed rudp endpoint : " << node.endpoint;
+  }
+
+  // TODO(Prakash): Handle pseudo connection removal here and NRT node removal
+  bool resend(impl_->routing_table_.IsThisNodeInRange(node.node_id,
+                                                      Parameters::closest_nodes_size));
+  if (resend) {
+    // Close node removed by routing, get more nodes
+    LOG(kWarning) << "Removed close node, sending find node to get more nodes.";
+    ReSendFindNodeRequest(boost::system::error_code(), impl_, true);
+  }
+}
+
 bool Routing::ConfirmGroupMembers(const NodeId& node1, const NodeId& node2) {
   return impl_->routing_table_.ConfirmGroupMembers(node1, node2);
 }
@@ -591,14 +618,14 @@ bool Routing::ConfirmGroupMembers(const NodeId& node1, const NodeId& node2) {
 void Routing::ReSendFindNodeRequest(const boost::system::error_code& error_code,
                                     std::weak_ptr<RoutingPrivate> impl,
                                     bool ignore_size) {
-#ifndef LOCAL_TEST
-  std::shared_ptr<RoutingPrivate> pimpl = impl.lock();
-  if (!pimpl) {
-    LOG(kVerbose) << "Ignoring message received since this node is shutting down";
-    return;
-  }
-
   if (error_code != boost::asio::error::operation_aborted) {
+#ifndef LOCAL_TEST
+    std::shared_ptr<RoutingPrivate> pimpl = impl.lock();
+    if (!pimpl) {
+      LOG(kVerbose) << "Ignoring message received since this node is shutting down";
+      return;
+    }
+
     if (pimpl->routing_table_.Size() == 0) {
       LOG(kInfo) << "This node's [" << HexSubstr(pimpl->keys_.identity)
                  << "] Routing table is empty."
@@ -614,14 +641,15 @@ void Routing::ReSendFindNodeRequest(const boost::system::error_code& error_code,
 
       pimpl->recovery_timer_.expires_from_now(
           boost::posix_time::seconds(Parameters::recovery_timeout_in_seconds));
-      pimpl->recovery_timer_.async_wait([=](boost::system::error_code error_code) {
-                                            ReSendFindNodeRequest(error_code, pimpl);
+      std::weak_ptr<RoutingPrivate> impl_weak_ptr(pimpl);
+      pimpl->recovery_timer_.async_wait([=](boost::system::error_code error_code_local) {
+                                            ReSendFindNodeRequest(error_code_local, impl_weak_ptr);
                                           });
     }
+#endif
   } else {
     LOG(kVerbose) << "Cancelled recovery loop!!";
   }
-#endif
 }
 
 }  // namespace routing

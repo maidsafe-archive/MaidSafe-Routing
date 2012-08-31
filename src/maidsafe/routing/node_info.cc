@@ -26,7 +26,6 @@ NodeInfo::NodeInfo()
       bucket(kInvalidBucket),
       endpoint(),
       nat_type(rudp::NatType::kUnknown),
-      nat_relay_id(),
       dimension_1(),
       dimension_2(),
       dimension_3(),

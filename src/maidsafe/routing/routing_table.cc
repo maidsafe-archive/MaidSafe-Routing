@@ -42,6 +42,7 @@ RoutingTable::RoutingTable(const asymm::Keys& keys, const bool& client_mode)
       kNodeId_(NodeId(keys_.identity)),
       furthest_group_node_id_(),
       mutex_(),
+      remove_node_functor_(),
       network_status_functor_(),
       close_node_replaced_functor_(),
       bootstrap_file_path_(),
@@ -56,31 +57,41 @@ bool RoutingTable::CheckNode(NodeInfo& peer) {
 }
 
 bool RoutingTable::AddOrCheckNode(NodeInfo& peer, const bool& remove) {
-  std::lock_guard<std::mutex> lock(mutex_);
-  if (peer.node_id == kNodeId_) {
-    LOG(kError) << "Tried to add this node";
-    return false;
-  }
-
-  // If we already have node, return false.
-  if (std::find_if(nodes_.begin(),
-                   nodes_.end(),
-                   [peer](const NodeInfo& node_info) { return node_info.node_id == peer.node_id; })
-          != nodes_.end()) {
-    LOG(kInfo) << "Node " << HexSubstr(peer.node_id.String()) << " already in routing table.";
-    return false;
-  }
-
-  if (MakeSpaceForNodeToBeAdded(peer, remove)) {
-    if (remove) {
-      nodes_.push_back(peer);
-      update_network_status();
-      UpdateGroupChangeAndNotify();
-      UpdateBootstrapFile(bootstrap_file_path_, peer.endpoint, false);
+  bool return_value(false);
+  NodeInfo removed_node;
+  {
+    std::lock_guard<std::mutex> lock(mutex_);
+    if (peer.node_id == kNodeId_) {
+      LOG(kError) << "Tried to add this node";
+      return false;
     }
-    return true;
+
+    // If we already have node, return false.
+    if (std::find_if(nodes_.begin(),
+                     nodes_.end(),
+                     [peer](const NodeInfo& node_info) {
+                         return node_info.node_id == peer.node_id; })
+            != nodes_.end()) {
+      LOG(kInfo) << "Node " << HexSubstr(peer.node_id.String()) << " already in routing table.";
+      return false;
+    }
+
+    if (MakeSpaceForNodeToBeAdded(peer, remove, removed_node)) {
+      if (remove) {
+        nodes_.push_back(peer);
+        update_network_status();
+        UpdateGroupChangeAndNotify();
+        UpdateBootstrapFile(bootstrap_file_path_, peer.endpoint, false);
+      }
+      return_value = true;
+    }
   }
-  return false;
+  if (return_value && !removed_node.node_id.Empty() && remove_node_functor_) {
+    LOG(kVerbose) << "Routing table removed node id : " << DebugId(removed_node.node_id)
+                  << ", endpoint : " << removed_node.endpoint;
+    remove_node_functor_(removed_node);
+  }
+  return return_value;
 }
 
 NodeInfo RoutingTable::DropNode(const Endpoint& endpoint) {
@@ -241,7 +252,8 @@ bool RoutingTable::CheckParametersAreUnique(const NodeInfo& node) const {
   return true;
 }
 
-bool RoutingTable::MakeSpaceForNodeToBeAdded(NodeInfo& node, const bool& remove) {
+bool RoutingTable::MakeSpaceForNodeToBeAdded(NodeInfo& node, const bool& remove,
+                                             NodeInfo& removed_node) {
   node.bucket = BucketIndex(node.node_id);
   if (remove && !CheckValidParameters(node)) {
     LOG(kInfo) << "Invalid Parameters";
@@ -260,8 +272,10 @@ bool RoutingTable::MakeSpaceForNodeToBeAdded(NodeInfo& node, const bool& remove)
     BOOST_ASSERT_MSG(node.bucket <= furthest_close_node.bucket,
                      "close node replacement to a larger bucket");
 
-    if (remove)
+    if (remove) {
+      removed_node = *furthest_close_node_iter;
       nodes_.erase(furthest_close_node_iter);
+    }
     return true;
   }
 
@@ -277,8 +291,10 @@ bool RoutingTable::MakeSpaceForNodeToBeAdded(NodeInfo& node, const bool& remove)
       // Here we know the node should fit into a bucket if the bucket has too many nodes AND node to
       // add has a lower bucket index
       BOOST_ASSERT(node.bucket < (*it).bucket);
-      if (remove)
+      if (remove) {
+        removed_node = *it;
         nodes_.erase(it);
+      }
       return true;
     }
   }
@@ -443,6 +459,11 @@ asymm::Keys RoutingTable::kKeys() const {
 
 NodeId RoutingTable::kNodeId() const {
   return kNodeId_;
+}
+
+void RoutingTable::set_remove_node_functor(
+    std::function<void(const NodeInfo&)> remove_node_functor) {
+  remove_node_functor_ = remove_node_functor;
 }
 
 void RoutingTable::set_network_status_functor(NetworkStatusFunctor network_status_functor) {
