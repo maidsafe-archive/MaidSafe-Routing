@@ -84,6 +84,32 @@ TEST(RoutingTableTest, FUNC_AddTooManyNodes) {
   EXPECT_EQ(RT.Size(), Parameters::max_routing_table_size);
 }
 
+TEST(RoutingTableTest, FUNC_AddUsableBootstrapNodes) {
+    asymm::Keys keys;
+    keys.identity = RandomString(64);
+  RoutingTable RT(keys, false);
+  std::vector<boost::asio::ip::udp::endpoint> expected_bootstrap_endpoints,
+      actual_bootstrap_endpoints;
+  RT.set_new_bootstrap_endpoint_functor([&](const boost::asio::ip::udp::endpoint& ep) {
+      actual_bootstrap_endpoints.push_back(ep);
+    });
+
+  for (uint16_t i = 0; RT.Size() < Parameters::max_routing_table_size; ++i) {
+    NodeInfo node(MakeNode());
+    node.endpoint.port(i + 1501U);  // has to be unique
+    if (i % 2) {
+      node.nat_type = rudp::NatType::kOther;
+      expected_bootstrap_endpoints.push_back(node.endpoint);
+    }
+    ASSERT_TRUE(RT.AddNode(node));
+  }
+  ASSERT_EQ(RT.Size(), Parameters::max_routing_table_size);
+  ASSERT_EQ(expected_bootstrap_endpoints.size(), actual_bootstrap_endpoints.size());
+  for (size_t i(0); i != expected_bootstrap_endpoints.size(); ++i) {
+    EXPECT_EQ(expected_bootstrap_endpoints.at(i), actual_bootstrap_endpoints.at(i));
+  }
+}
+
 TEST(RoutingTableTest, BEH_CloseAndInRangeCheck) {
   asymm::Keys keys;
   keys.identity = RandomString(64);
