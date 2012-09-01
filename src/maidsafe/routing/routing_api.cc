@@ -212,7 +212,7 @@ void Routing::BootstrapFromTheseEndpoints(const Functors& functors,
                                    endpoints.begin(),
                                    endpoints.end());
   } else {
-    uint16_t random(RandomUint32() % (endpoints.size() - 2));
+    uint16_t random(static_cast<uint16_t>(RandomUint32() % (endpoints.size() - 2)));
     for (auto index(0); index < (endpoints.size() - 2); ++index) {
       impl_->bootstrap_nodes_.push_back(
           endpoints[(random + index) % (endpoints.size() - 2) + 2]);
