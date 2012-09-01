@@ -55,6 +55,10 @@ typedef std::function<void(const std::string& /* data*/)> StoreCacheDataFunctor;
 // This functor fires a number from 0 to 100 and represents % network health.
 typedef std::function<void(const int& /*network_health*/)> NetworkStatusFunctor;
 
+// This functor fires a validated endpoint which is usable for bootstrapping
+typedef std::function<void(const boost::asio::ip::udp::endpoint& /*new_endpoint*/)>
+    NewBootstrapEndpointFunctor;
+
 // This functor fires when a new close node is inserted in routing table. Upper layers responsible
 // for storing key/value pairs should send all key/values between itself and the new node's address
 // to the new node. Keys further than the furthest node can safely be deleted (if any).
@@ -69,7 +73,8 @@ struct Functors {
         set_public_key(),
         request_public_key(),
         have_cache_data(),
-        store_cache_data() {}
+        store_cache_data(),
+        new_bootstrap_endpoint() {}
   MessageReceivedFunctor message_received;
   NetworkStatusFunctor network_status;
   CloseNodeReplacedFunctor close_node_replaced;
@@ -77,6 +82,7 @@ struct Functors {
   RequestPublicKeyFunctor request_public_key;
   HaveCacheDatafunctor have_cache_data;
   StoreCacheDataFunctor store_cache_data;
+  NewBootstrapEndpointFunctor new_bootstrap_endpoint;
 };
 
 }  // namespace routing
