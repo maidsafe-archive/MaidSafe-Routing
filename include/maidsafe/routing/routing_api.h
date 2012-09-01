@@ -27,6 +27,7 @@
 
 #include <memory>
 #include <string>
+#include <vector>
 
 #include "boost/asio/ip/udp.hpp"
 #include "boost/date_time/posix_time/posix_time_config.hpp"
@@ -62,7 +63,8 @@ class Routing {
   // or else no node will be added to routing and will fail to  join the network.  To force the node
   // to use a specific endpoint for bootstrapping, provide peer_endpoint (i.e. private network).
   void Join(Functors functors,
-            boost::asio::ip::udp::endpoint peer_endpoint = boost::asio::ip::udp::endpoint());
+            std::vector<boost::asio::ip::udp::endpoint> peer_endpoints =
+                std::vector<boost::asio::ip::udp::endpoint>());
 
   // WARNING: THIS FUNCTION SHOULD BE ONLY USED TO JOIN FIRST TWO ZERO STATE NODES.
   int ZeroStateJoin(Functors functors,
@@ -98,8 +100,8 @@ class Routing {
   void AddExistingRandomNode(NodeId node, std::weak_ptr<RoutingPrivate> impl);
   void ConnectFunctors(const Functors& functors);
   void DisconnectFunctors();
-  void BootstrapFromThisEndpoint(const Functors& functors,
-                                 const boost::asio::ip::udp::endpoint& endpoint);
+  void BootstrapFromTheseEndpoints(const Functors& functors,
+                                   const std::vector<boost::asio::ip::udp::endpoint>& endpoints);
   void DoJoin(const Functors& functors);
   int DoBootstrap(const Functors& functors);
   int DoFindNode();

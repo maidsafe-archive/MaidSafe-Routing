@@ -73,7 +73,8 @@ class GenericNode {
   int expected();
   void set_expected(const int& expected);
   int ZeroStateJoin(const NodeInfo& peer_node_info);
-  void Join(const boost::asio::ip::udp::endpoint& peer_endpoint = boost::asio::ip::udp::endpoint());
+  void Join(const std::vector<boost::asio::ip::udp::endpoint>& peer_endpoints =
+      std::vector<boost::asio::ip::udp::endpoint>());
   void Send(const NodeId& destination_id,
             const NodeId& group_claim,
             const std::string& data,
@@ -290,7 +291,9 @@ class GenericNetwork : public testing::Test {
 #ifdef LOCAL_TEST
     node->Join();
 #else
-    node->Join(this->nodes_[1]->endpoint());
+    bootstrap_endpoints_.clear();
+    bootstrap_endpoints_.push_back(nodes_[1]->endpoint());
+    node->Join(bootstrap_endpoints_);
 #endif
     std::unique_lock<std::mutex> lock(mutex);
     auto result = cond_var.wait_for(lock, std::chrono::seconds(15));

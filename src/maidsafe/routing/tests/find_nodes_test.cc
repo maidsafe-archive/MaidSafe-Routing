@@ -158,7 +158,7 @@ TYPED_TEST_P(FindNodeNetwork, FUNC_VaultFindClientNode) {
   // clear up
   EXPECT_TRUE(this->nodes_[dest]->DropNode(this->nodes_[source]->node_id()));
   Sleep(boost::posix_time::seconds(1));
-  EXPECT_FALSE(this->nodes_[dest]->RoutingTableHasNode(this->nodes_[source]->node_id()));
+  EXPECT_TRUE(this->nodes_[dest]->RoutingTableHasNode(this->nodes_[source]->node_id()));
   EXPECT_TRUE(this->nodes_[source]->NonRoutingTableHasNode(this->nodes_[dest]->node_id()));
 }
 

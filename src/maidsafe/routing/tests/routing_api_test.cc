@@ -56,6 +56,12 @@ typedef boost::asio::ip::udp::endpoint Endpoint;
 
 const int kNetworkSize = kClientCount + kServerCount;
 
+std::vector<Endpoint> Vectorise(const Endpoint& endpoint) {
+  std::vector<Endpoint> vector;
+  vector.push_back(endpoint);
+  return vector;
+}
+
 }  // anonymous namespace
 
 // TEST(APITest, BEH_BadConfigFile) {
@@ -106,8 +112,8 @@ TEST(APITest, DISABLED_BEH_API_ManualBootstrap) {
   EXPECT_EQ(kNotJoined, R2.GetStatus());
   Endpoint endpoint1g(GetLocalIp(), 5000);
   Endpoint endpoint2g(GetLocalIp(), 5001);
-  R1.Join(functors, endpoint2g);
-  R2.Join(functors, endpoint1g);
+  R1.Join(functors, Vectorise(endpoint2g));
+  R2.Join(functors, Vectorise(endpoint1g));
   EXPECT_EQ(kSuccess, R1.GetStatus());
   EXPECT_EQ(kSuccess, R2.GetStatus());
 }
@@ -152,7 +158,7 @@ TEST(APITest, BEH_API_ZeroState) {
       join_promise.set_value(true);
   };
 
-  R3.Join(functors3, node2.node_info.endpoint);
+  R3.Join(functors3, Vectorise(node2.node_info.endpoint));
   EXPECT_TRUE(join_future.timed_wait(boost::posix_time::seconds(10)));
   LOG(kWarning) << "done!!!";
 }
@@ -268,7 +274,7 @@ TEST(APITest, FUNC_API_AnonymousNode) {
       LOG(kVerbose) << "Recieved network status of : " << result;
     }
   };
-  R3.Join(functors3, node2.node_info.endpoint);
+  R3.Join(functors3, Vectorise(node2.node_info.endpoint));
   ASSERT_TRUE(join_future.timed_wait(boost::posix_time::seconds(10)));
 
   ResponseFunctor response_functor = [=](const std::vector<std::string> &message) {
@@ -341,7 +347,7 @@ TEST(APITest, BEH_API_SendToSelf) {
     }
   };
 
-  R3.Join(functors3, node2.node_info.endpoint);
+  R3.Join(functors3, Vectorise(node2.node_info.endpoint));
   ASSERT_TRUE(join_future.timed_wait(boost::posix_time::seconds(10)));
 
   //  Testing Send
@@ -411,7 +417,7 @@ TEST(APITest, BEH_API_ClientNode) {
     }
   };
 
-  R3.Join(functors3, node2.node_info.endpoint);  // NOLINT (Prakash)
+  R3.Join(functors3, Vectorise(node2.node_info.endpoint));  // NOLINT (Prakash)
   ASSERT_TRUE(join_future.timed_wait(boost::posix_time::seconds(10)));
 
   //  Testing Send
@@ -563,7 +569,7 @@ TEST(APITest, BEH_API_NodeNetwork) {
 
   for (auto i(0); i != (kNetworkSize - 2); ++i) {
     functors.network_status = status_vector.at(i);
-    routing_node[i + 2]->Join(functors, nodes[i % 2].node_info.endpoint);
+    routing_node[i + 2]->Join(functors, Vectorise(nodes[i % 2].node_info.endpoint));
     ASSERT_TRUE(join_futures.at(i).timed_wait(boost::posix_time::seconds(10)));
     LOG(kVerbose) << "node ---------------------------- " << i + 2 << "joined";
   }
@@ -735,7 +741,7 @@ TEST(APITest, BEH_API_NodeNetworkWithClient) {
 
   for (auto i(2); i != (kNetworkSize); ++i) {
     functors.network_status = status_vector.at(i);
-    routing_node[i]->Join(functors, nodes[0].node_info.endpoint);
+    routing_node[i]->Join(functors, Vectorise(nodes[0].node_info.endpoint));
     ASSERT_TRUE(join_futures.at(i).timed_wait(boost::posix_time::seconds(10)));
   }
 }

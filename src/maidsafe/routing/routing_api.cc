@@ -144,14 +144,15 @@ bool Routing::CheckBootstrapFilePath() const {
   }
 }
 
-void Routing::Join(Functors functors, Endpoint peer_endpoint) {
+void Routing::Join(Functors functors,
+                   std::vector<boost::asio::ip::udp::endpoint> peer_endpoints) {
 #ifdef LOCAL_TEST
-  LOG(kInfo) << "RoutingPrivate::bootstraps_.size(): " << RoutingPrivate::bootstraps_.size();
-  if (!RoutingPrivate::bootstraps_.empty()) {
-#else
-  if (!peer_endpoint.address().is_unspecified()) {
+  LOG(kVerbose) << "RoutingPrivate::bootstraps_.size(): " << RoutingPrivate::bootstraps_.size();
+  for (auto endpoint : RoutingPrivate::bootstraps_)
+    peer_endpoints.push_back(endpoint);
 #endif
-    return BootstrapFromThisEndpoint(functors, peer_endpoint);
+  if (!peer_endpoints.empty()) {
+    return BootstrapFromTheseEndpoints(functors, peer_endpoints);
   } else {
     LOG(kInfo) << "Doing a default join";
     if (CheckBootstrapFilePath()) {
@@ -166,7 +167,7 @@ void Routing::Join(Functors functors, Endpoint peer_endpoint) {
 }
 
 void Routing::ConnectFunctors(const Functors& functors) {
-  impl_->routing_table_.set_remove_node_functor([&](const NodeInfo& node){
+  impl_->routing_table_.set_remove_node_functor([&](const NodeInfo& node) {
       RemoveNode(node);
   });
   impl_->routing_table_.set_network_status_functor(functors.network_status);
@@ -185,13 +186,10 @@ void Routing::DisconnectFunctors() {  // TODO(Prakash) : fix race condition when
   impl_->functors_ = Functors();
 }
 
-#ifdef LOCAL_TEST
-void Routing::BootstrapFromThisEndpoint(const Functors& functors, const Endpoint& ) {
-#else
-void Routing::BootstrapFromThisEndpoint(const Functors& functors, const Endpoint& endpoint) {
-#endif
-  LOG(kInfo) << "Doing a BootstrapFromThisEndpoint Join.  Entered bootstrap endpoint: "
-//             << RoutingPrivate::bootstraps_[0]
+void Routing::BootstrapFromTheseEndpoints(const Functors& functors,
+                                          const std::vector<Endpoint>& endpoints) {
+  LOG(kInfo) << "Doing a BootstrapFromThisEndpoint Join.  Entered first bootstrap endpoint: "
+             << endpoints[0]
              << ", this node's ID: " << HexSubstr(impl_->keys_.identity)
              << (impl_->client_mode_ ? " Client" : "");
   if (impl_->routing_table_.Size() > 0) {
@@ -208,23 +206,24 @@ void Routing::BootstrapFromThisEndpoint(const Functors& functors, const Endpoint
   impl_->bootstrap_nodes_.clear();
 #ifdef LOCAL_TEST
   uint16_t start_index(0);
-  start_index = (RoutingPrivate::bootstraps_.size() > 2) ? 2 : 0;
+  start_index = (endpoints.size() > 2) ? 2 : 0;
   if (start_index == 0) {
     impl_->bootstrap_nodes_.insert(impl_->bootstrap_nodes_.begin(),
-                                   RoutingPrivate::bootstraps_.begin() + start_index,
-                                   RoutingPrivate::bootstraps_.end());
+                                   endpoints.begin(),
+                                   endpoints.end());
   } else {
-    uint16_t random(RandomUint32() % (RoutingPrivate::bootstraps_.size() - 2));
-    for (auto index(0); index < (RoutingPrivate::bootstraps_.size() - 2); ++index) {
+    uint16_t random(RandomUint32() % (endpoints.size() - 2));
+    for (auto index(0); index < (endpoints.size() - 2); ++index) {
       impl_->bootstrap_nodes_.push_back(
-          RoutingPrivate::bootstraps_[(random + index) %
-              (RoutingPrivate::bootstraps_.size() - 2) + 2]);
+          endpoints[(random + index) % (endpoints.size() - 2) + 2]);
     }
   }
   for (auto endpoint : impl_->bootstrap_nodes_)
     LOG(kVerbose) << "Static ep: " << endpoint;
 #else
-  impl_->bootstrap_nodes_.push_back(endpoint);
+  impl_->bootstrap_nodes_.insert(impl_->bootstrap_nodes_.begin(),
+                                 endpoints.begin(),
+                                 endpoints.end());
 #endif
   DoJoin(functors);
 }
@@ -530,10 +529,10 @@ void Routing::AddExistingRandomNode(NodeId node, std::weak_ptr<RoutingPrivate> i
 
   if (node.IsValid()) {
     std::lock_guard<std::mutex> lock(pimpl->random_node_mutex_);
-    if(std::find_if(pimpl->random_node_vector_.begin(), pimpl->random_node_vector_.end(),
+    if (std::find_if(pimpl->random_node_vector_.begin(), pimpl->random_node_vector_.end(),
                    [node] (const NodeId& vect_node) {
                      return vect_node == node;
-                     } ) !=  pimpl->random_node_vector_.end())
+                     }) !=  pimpl->random_node_vector_.end())
       return;
     pimpl->random_node_vector_.push_back(node);
     auto queue_size = pimpl->random_node_vector_.size();
