@@ -215,7 +215,7 @@ void Routing::BootstrapFromThisEndpoint(const Functors& functors, const Endpoint
                                    RoutingPrivate::bootstraps_.end());
   } else {
     uint16_t random(RandomUint32() % (RoutingPrivate::bootstraps_.size() - 2));
-    for (auto index(0); index < (RoutingPrivate::bootstraps_.size() - 2); ++index) {
+    for (size_t index(0); index < (RoutingPrivate::bootstraps_.size() - 2); ++index) {
       impl_->bootstrap_nodes_.push_back(
           RoutingPrivate::bootstraps_[(random + index) %
               (RoutingPrivate::bootstraps_.size() - 2) + 2]);
@@ -646,6 +646,9 @@ void Routing::ReSendFindNodeRequest(const boost::system::error_code& error_code,
                                             ReSendFindNodeRequest(error_code_local, impl_weak_ptr);
                                           });
     }
+#else
+    (void)impl;
+    (void)ignore_size;
 #endif
   } else {
     LOG(kVerbose) << "Cancelled recovery loop!!";
