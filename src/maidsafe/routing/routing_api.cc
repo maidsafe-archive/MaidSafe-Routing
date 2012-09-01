@@ -645,6 +645,9 @@ void Routing::ReSendFindNodeRequest(const boost::system::error_code& error_code,
                                             ReSendFindNodeRequest(error_code_local, impl_weak_ptr);
                                           });
     }
+#else
+    (void)impl;
+    (void)ignore_size;
 #endif
   } else {
     LOG(kVerbose) << "Cancelled recovery loop!!";
