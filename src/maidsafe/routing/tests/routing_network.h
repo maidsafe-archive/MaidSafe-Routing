@@ -45,7 +45,7 @@ namespace test {
   const uint32_t kClientSize(8);
   const uint32_t kServerSize(8);
 #else
-  const uint32_t kClientSize(4);
+  const uint32_t kClientSize(2);
   const uint32_t kServerSize(6);
 #endif
 

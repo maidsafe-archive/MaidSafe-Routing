@@ -474,12 +474,15 @@ void Routing::Send(const NodeId& destination_id,
   // Non Anonymous, normal node
   proto_message.set_source_id(impl_->routing_table_.kKeys().identity);
 
-//  if (impl_->routing_table_.kKeys().identity != destination_id.String()) {
+  if (impl_->routing_table_.kKeys().identity != destination_id.String()) {
     impl_->network_.SendToClosestNode(proto_message);
-//  } else {
-//    LOG(kInfo) << "Sending request to self";
+  } else if (impl_->client_mode_) {
+    impl_->network_.SendToClosestNode(proto_message);
 //    ReceiveMessage(proto_message.SerializeAsString(), impl_);
-//  }
+  } else {
+    LOG(kInfo) << "Sending request to self";
+    ReceiveMessage(proto_message.SerializeAsString(), impl_);
+  }
 }
 
 void Routing::ReceiveMessage(const std::string& message, std::weak_ptr<RoutingPrivate> impl) {

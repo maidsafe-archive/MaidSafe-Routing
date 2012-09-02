@@ -33,7 +33,8 @@ class TestNode : public GenericNode {
         LOG(kInfo) << id_ << " -- Received:  message : " << message.substr(0, 10);
         std::lock_guard<std::mutex> guard(mutex_);
         messages_.push_back(message);
-        reply_functor("Response to >:<" + message);
+        if (!IsClient())
+          reply_functor("Response to >:<" + message);
     };
     LOG(kVerbose) << "RoutingNode constructor";
   }
@@ -46,7 +47,8 @@ class TestNode : public GenericNode {
       LOG(kInfo) << id_ << " -- Received: message : " << message.substr(0, 10);
       std::lock_guard<std::mutex> guard(mutex_);
       messages_.push_back(message);
-      reply_functor("Response to " + message);
+      if (!IsClient())
+        reply_functor("Response to " + message);
     };
     LOG(kVerbose) << "RoutingNode constructor";
   }
@@ -59,7 +61,8 @@ class TestNode : public GenericNode {
       LOG(kInfo) << id_ << " -- Received: message : " << message.substr(0, 10);
       std::lock_guard<std::mutex> guard(mutex_);
       messages_.push_back(message);
-      reply_functor("Response to " + message);
+      if (!IsClient())
+        reply_functor("Response to " + message);
     };
     LOG(kVerbose) << "RoutingNode constructor";
   }
@@ -249,45 +252,52 @@ class RoutingNetworkTest : public GenericNetwork<NodeType> {
     return testing::AssertionSuccess();
   }
 
-  testing::AssertionResult Send(std::shared_ptr<TestNode> source_node, const NodeId& node_id) {
+  testing::AssertionResult Send(std::shared_ptr<TestNode> source_node, const NodeId& node_id,
+                                bool no_response_expected = false) {
     std::mutex mutex;
     std::condition_variable cond_var;
     size_t messages_count(0), expected_messages(0);
-    expected_messages = std::count_if(this->nodes_.begin() ,this->nodes_.end(),
-        [=](const std::shared_ptr<NodeType> node)->bool {
-          return node_id ==  node->node_id();
-        });
-    auto callable = [&](const std::vector<std::string> &message) {
-      if (message.empty())
-        return;
-      std::lock_guard<std::mutex> lock(mutex);
-      messages_count++;
-      LOG(kVerbose) << "ResponseHandler .... " << messages_count;
-      if (messages_count == expected_messages) {
-        cond_var.notify_one();
-        LOG(kVerbose) << "ResponseHandler .... DONE " << messages_count;
-      }
-    };
-//    if (source_node->node_id() != node_id) {
-        std::string data(RandomAlphaNumericString((RandomUint32() % 255 + 1) * 2^10));
-        source_node->Send(node_id, NodeId(), data, callable,
-            boost::posix_time::seconds(12), true, false);
-//    }
+    ResponseFunctor callable;
+    if (!no_response_expected) {
+      expected_messages = std::count_if(this->nodes_.begin(), this->nodes_.end(),
+          [=](const std::shared_ptr<NodeType> node)->bool {
+            return node_id ==  node->node_id();
+          });
 
-    std::unique_lock<std::mutex> lock(mutex);
-    bool result = cond_var.wait_for(lock, std::chrono::seconds(20),
-        [&]()->bool {
-          LOG(kInfo) << " message count " << messages_count << " expected "
-                     << expected_messages << "\n";
-          return messages_count == expected_messages;
-        });
-    EXPECT_TRUE(result);
-    if (!result) {
-      return testing::AssertionFailure() << "Send operarion timed out: "
-                                         << expected_messages - messages_count
-                                         << " failed to reply.";
+      callable = [&](const std::vector<std::string> &message) {
+        if (message.empty())
+          return;
+        std::lock_guard<std::mutex> lock(mutex);
+        messages_count++;
+        LOG(kVerbose) << "ResponseHandler .... " << messages_count;
+        if (messages_count == expected_messages) {
+          cond_var.notify_one();
+          LOG(kVerbose) << "ResponseHandler .... DONE " << messages_count;
+        }
+      };
     }
-    return testing::AssertionSuccess();
+    std::string data(RandomAlphaNumericString((RandomUint32() % 255 + 1) * 2^10));
+    source_node->Send(node_id, NodeId(), data, callable,
+                      boost::posix_time::seconds(12), true, false);
+
+    if (!no_response_expected) {
+      std::unique_lock<std::mutex> lock(mutex);
+      bool result = cond_var.wait_for(lock, std::chrono::seconds(20),
+          [&]()->bool {
+            LOG(kInfo) << " message count " << messages_count << " expected "
+                      << expected_messages << "\n";
+            return messages_count == expected_messages;
+          });
+      EXPECT_TRUE(result);
+      if (!result) {
+        return testing::AssertionFailure() << "Send operarion timed out: "
+                                           << expected_messages - messages_count
+                                           << " failed to reply.";
+      }
+      return testing::AssertionSuccess();
+    } else {
+      return testing::AssertionSuccess();
+    }
   }
 };
 
@@ -466,18 +476,35 @@ TYPED_TEST_P(RoutingNetworkTest, FUNC_JoinWithSameId) {
 TYPED_TEST_P(RoutingNetworkTest, FUNC_SendToClientsWithSameId) {
   this->SetUpNetwork(kNetworkSize);
   NodeId node_id(NodeId::kRandomId);
-  this->AddNode(true, node_id);
-  this->AddNode(true, node_id);
-  this->AddNode(true, node_id);
-  this->AddNode(true, node_id);
-  EXPECT_TRUE(this->Send(this->nodes_[kNetworkSize], node_id));
+  for (uint16_t index(0); index < 4; ++index)
+    this->AddNode(true, node_id);
+  uint16_t size(0);
+
+  for (uint16_t index(0); index < 100; ++index)
+    EXPECT_TRUE(this->Send(this->nodes_[kNetworkSize],
+                          this->nodes_[kNetworkSize]->node_id(),
+                          true));
+
+  Sleep(boost::posix_time::seconds(10));  // TODO(Mahmoud) : FIXME
+
+  for (auto node : this->nodes_) {
+    size += node->MessagesSize();
+  }
+  EXPECT_EQ(4 * 100, size);
 }
 
 TYPED_TEST_P(RoutingNetworkTest, FUNC_SendToClientWithSameId) {
   this->SetUpNetwork(kNetworkSize, 1);
   this->AddNode(true, this->nodes_[kNetworkSize]->node_id());
+  uint16_t size(0);
   EXPECT_TRUE(this->Send(this->nodes_[kNetworkSize],
-                         this->nodes_[kNetworkSize]->node_id()));
+                         this->nodes_[kNetworkSize]->node_id(),
+                         true));
+  Sleep(boost::posix_time::seconds(1));
+  for (auto node : this->nodes_) {
+    size += node->MessagesSize();
+  }
+  EXPECT_EQ(2, size);
 }
 
 
