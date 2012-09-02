@@ -72,28 +72,11 @@ Routing::~Routing() {
 
 // TODO(Prakash) For client nodes, copy bootstrap file from sys dir if it's not available @ user dir
 bool Routing::CheckBootstrapFilePath() const {
-  LOG(kVerbose) << "Application Path " << GetAppInstallDir();
-  LOG(kVerbose) << "System Path " << GetSystemAppSupportDir();
   fs::path path;
-  fs::path global_bootstrap_file_path(GetSystemAppSupportDir() / "bootstrap-global.dat");
 
   // Global bootstrap file
   std::vector<Endpoint> global_bootstrap_nodes;
   boost::system::error_code exists_error_code, is_regular_file_error_code;
-  if (!fs::exists(global_bootstrap_file_path, exists_error_code) ||
-      !fs::is_regular_file(global_bootstrap_file_path, is_regular_file_error_code) ||
-      exists_error_code || is_regular_file_error_code) {
-    if (exists_error_code) {
-      LOG(kWarning) << "Failed to find global bootstrap file at "
-                    << global_bootstrap_file_path << ".  " << exists_error_code.message();
-    }
-    if (is_regular_file_error_code) {
-      LOG(kWarning) << "Failed to find global bootstrap file at " << path << ".  "
-                    << is_regular_file_error_code.message();
-    }
-  } else {
-    global_bootstrap_nodes = ReadBootstrapFile(global_bootstrap_file_path);
-  }
 
   fs::path local_file = fs::current_path() / "bootstrap";
   if (!fs::exists(local_file, exists_error_code) ||
@@ -104,36 +87,13 @@ bool Routing::CheckBootstrapFilePath() const {
                   << exists_error_code.message();
     }
     if (is_regular_file_error_code) {
-      LOG(kError) << "Failed to check for bootstrap file at " << local_file << ".  "
-                  << is_regular_file_error_code.message();
-    }
-  } else {
-    LOG(kVerbose) << "Found bootstrap file at " << local_file;
-    impl_->bootstrap_file_path_ = local_file;
-    impl_->bootstrap_nodes_ = ReadBootstrapFile(impl_->bootstrap_file_path_);
-    impl_->routing_table_.set_bootstrap_file_path(impl_->bootstrap_file_path_);
-
-    // Appending global_bootstrap_file's contents
-    for (auto i: global_bootstrap_nodes)
-      impl_->bootstrap_nodes_.push_back(i);
-    return true;
-  }
-
-  if (!fs::exists(path, exists_error_code) ||
-      !fs::is_regular_file(path, is_regular_file_error_code) ||
-      exists_error_code || is_regular_file_error_code) {
-    if (exists_error_code) {
-      LOG(kError) << "Failed to check for bootstrap file at " << path << ".  "
-                  << exists_error_code.message();
-    }
-    if (is_regular_file_error_code) {
-      LOG(kError) << "Failed to check for bootstrap file at " << path << ".  "
+      LOG(kError) << "bootstrap file is not a regular file " << local_file << ".  "
                   << is_regular_file_error_code.message();
     }
     return false;
   } else {
-    LOG(kVerbose) << "Found bootstrap file at " << path;
-    impl_->bootstrap_file_path_ = path;
+    LOG(kVerbose) << "Found bootstrap file at " << local_file;
+    impl_->bootstrap_file_path_ = local_file;
     impl_->bootstrap_nodes_ = ReadBootstrapFile(impl_->bootstrap_file_path_);
     impl_->routing_table_.set_bootstrap_file_path(impl_->bootstrap_file_path_);
 
@@ -213,7 +173,7 @@ void Routing::BootstrapFromTheseEndpoints(const Functors& functors,
                                    endpoints.end());
   } else {
     uint16_t random(static_cast<uint16_t>(RandomUint32() % (endpoints.size() - 2)));
-    for (auto index(0); index < (endpoints.size() - 2); ++index) {
+    for (size_t index(0); index < (endpoints.size() - 2); ++index) {
       impl_->bootstrap_nodes_.push_back(
           endpoints[(random + index) % (endpoints.size() - 2) + 2]);
     }
