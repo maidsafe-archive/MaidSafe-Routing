@@ -70,7 +70,6 @@ Routing::~Routing() {
   DisconnectFunctors();
 }
 
-// TODO(Prakash) For client nodes, copy bootstrap file from sys dir if it's not available @ user dir
 bool Routing::CheckBootstrapFilePath() const {
   fs::path path;
 
@@ -153,7 +152,7 @@ void Routing::BootstrapFromTheseEndpoints(const Functors& functors,
              << ", this node's ID: " << HexSubstr(impl_->keys_.identity)
              << (impl_->client_mode_ ? " Client" : "");
   if (impl_->routing_table_.Size() > 0) {
-    DisconnectFunctors();  // TODO(Prakash): Do we need this ?
+    // DisconnectFunctors();  // TODO(Prakash): Do we need this ?
     for (uint16_t i = 0; i < impl_->routing_table_.Size(); ++i) {
       NodeInfo remove_node =
           impl_->routing_table_.GetClosestNode(NodeId(impl_->routing_table_.kKeys().identity));

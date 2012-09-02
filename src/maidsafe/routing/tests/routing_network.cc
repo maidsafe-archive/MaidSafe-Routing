@@ -146,10 +146,10 @@ void GenericNode::RudpSend(const Endpoint& peer_endpoint, const protobuf::Messag
   routing_->impl_->network_.RudpSend(message, peer_endpoint, message_sent_functor);
 }
 
-bool GenericNode::RoutingTableHasNode(const NodeId& node_id) {
+bool GenericNode::RoutingTableHasNode(const NodeId node_id) {
   return (std::find_if(routing_->impl_->routing_table_.nodes_.begin(),
                        routing_->impl_->routing_table_.nodes_.end(),
-               [&node_id](const NodeInfo& node_info) { return node_id == node_info.node_id; })
+               [node_id](const NodeInfo& node_info) { return node_id == node_info.node_id; })
                !=  routing_->impl_->routing_table_.nodes_.end());
 }
 

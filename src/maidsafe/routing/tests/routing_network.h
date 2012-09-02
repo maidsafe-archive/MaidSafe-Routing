@@ -86,7 +86,7 @@ class GenericNode {
   void RudpSend(const boost::asio::ip::udp::endpoint& peer_endpoint,
                 const protobuf::Message& message,
                 rudp::MessageSentFunctor message_sent_functor);
-  bool RoutingTableHasNode(const NodeId& node_id);
+  bool RoutingTableHasNode(const NodeId node_id);
   bool NonRoutingTableHasNode(const NodeId& node_id);
   testing::AssertionResult DropNode(const NodeId& node_id);
   std::vector<NodeInfo> RoutingTable() const;

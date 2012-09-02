@@ -64,60 +64,6 @@ std::vector<Endpoint> Vectorise(const Endpoint& endpoint) {
 
 }  // anonymous namespace
 
-// TEST(APITest, BEH_BadConfigFile) {
-//  // See bootstrap file tests for further interrogation of these files
-//  asymm::Keys keys(MakeKeys());
-//  boost::filesystem::path bad_file("/bad file/ not found/ I hope/");
-//  boost::filesystem::path good_file
-//              (fs::unique_path(fs::temp_directory_path() / "test"));
-//  Functors functors;
-//  EXPECT_THROW({Routing RtAPI(keys, bad_file, functors, false);},
-//              boost::filesystem::filesystem_error)  << "should not accept invalid files";
-//  EXPECT_NO_THROW({
-//    Routing RtAPI(keys, good_file, functors, false);
-//  });
-//  EXPECT_TRUE(WriteFile(good_file, "not a vector of endpoints"));
-//  EXPECT_NO_THROW({
-//    Routing RtAPI(keys, good_file, functors, false);
-//  }) << "cannot handle corrupt files";
-//  EXPECT_TRUE(boost::filesystem::remove(good_file));
-// }
-
-TEST(APITest, DISABLED_BEH_API_StandAloneNodeNotConnected) {
-  asymm::Keys keys(MakeKeys());
-  Functors functors;
-  EXPECT_NO_THROW({
-    Routing RtAPI(keys, false);
-  });
-  Routing RAPI(keys, false);
-  Endpoint empty_endpoint;
-//  EXPECT_EQ(RAPI.GetStatus(), kNotJoined);
-//  EXPECT_TRUE(boost::filesystem::remove(good_file));
-}
-
-TEST(APITest, DISABLED_BEH_API_ManualBootstrap) {
-  asymm::Keys keys1(MakeKeys());
-  asymm::Keys keys2(MakeKeys());
-  Functors functors;
-  EXPECT_NO_THROW({
-    Routing RtAPI(keys1, false);
-  });
-  EXPECT_NO_THROW({
-    Routing RtAPI(keys2, false);
-  });
-  Routing R1(keys1, false);
-  Routing R2(keys2, false);
-  boost::asio::ip::udp::endpoint empty_endpoint;
-  EXPECT_EQ(kNotJoined, R1.GetStatus());
-  EXPECT_EQ(kNotJoined, R2.GetStatus());
-  Endpoint endpoint1g(GetLocalIp(), 5000);
-  Endpoint endpoint2g(GetLocalIp(), 5001);
-  R1.Join(functors, Vectorise(endpoint2g));
-  R2.Join(functors, Vectorise(endpoint1g));
-  EXPECT_EQ(kSuccess, R1.GetStatus());
-  EXPECT_EQ(kSuccess, R2.GetStatus());
-}
-
 TEST(APITest, BEH_API_ZeroState) {
   NodeInfoAndPrivateKey node1(MakeNodeInfoAndKeys());
   NodeInfoAndPrivateKey node2(MakeNodeInfoAndKeys());
@@ -198,7 +144,7 @@ TEST(APITest, BEH_API_JoinWithBootstrapFile) {
   //  Writing bootstrap file
   std::string file_id(
       EncodeToBase32(maidsafe::crypto::Hash<maidsafe::crypto::SHA1>(GetKeys(node3).identity)));
-  std::string bootstrap_file_name("bootstrap-" + file_id + ".dat");
+  std::string bootstrap_file_name("bootstrap");
   std::vector<Endpoint> bootstrap_endpoints;
   bootstrap_endpoints.push_back(node1.node_info.endpoint);
   bootstrap_endpoints.push_back(node2.node_info.endpoint);
@@ -617,18 +563,11 @@ TEST(APITest, BEH_API_NodeNetworkWithBootstrapFile) {
   bootstrap_endpoints.push_back(nodes.at(0).node_info.endpoint);
   bootstrap_endpoints.push_back(nodes.at(1).node_info.endpoint);
 
-  std::vector<fs::path> paths;
   for (auto i(2); i != kNetworkSize; ++i) {
-    std::string file_id(
-        EncodeToBase32(
-            maidsafe::crypto::Hash<maidsafe::crypto::SHA1>(GetKeys(nodes.at(i)).identity)));
-
-    std::string bootstrap_file_name("bootstrap-" + file_id + ".dat");
+    std::string bootstrap_file_name("bootstrap");
     fs::path bootstrap_file_path(fs::current_path() / bootstrap_file_name);
-    // fs::path bootstrap_file_path(GetSystemAppDir() / bootstrap_file_name);
     ASSERT_TRUE(WriteBootstrapFile(bootstrap_endpoints, bootstrap_file_path));
     LOG(kInfo) << "Created bootstrap file at : " << bootstrap_file_path;
-    paths.push_back(bootstrap_file_path);
   }
 
   //  Bootstraping with created file
@@ -654,8 +593,7 @@ TEST(APITest, BEH_API_NodeNetworkWithBootstrapFile) {
     ASSERT_TRUE(join_futures.at(i).timed_wait(boost::posix_time::seconds(10)));
     LOG(kVerbose) << "node ---------------------------- " << i + 2 << "joined";
   }
-  for (auto i : paths)
-    EXPECT_TRUE(fs::remove(i));
+    EXPECT_TRUE(fs::remove("bootstrap"));
 }
 
 TEST(APITest, BEH_API_NodeNetworkWithClient) {

@@ -66,45 +66,6 @@ TEST(ServicesTest, BEH_Ping) {
   EXPECT_FALSE(message.has_relay());
 }
 
-TEST(ServicesTest, DISABLED_BEH_Connect) {
-  NodeInfo us(MakeNode());
-  NodeInfo them(MakeNode());
-  asymm::Keys keys;
-  keys.identity = us.node_id.String();
-  keys.public_key = us.public_key;
-  RoutingTable RT(keys, false);
-  NonRoutingTable NRT(keys);
-  NodeInfo node;
-  AsioService asio_service(0);
-  Timer timer(asio_service);
-  NetworkUtils network(RT, NRT, timer);
-  rudp::EndpointPair them_end;
-  them_end.local = them.endpoint;
-  them_end.external = them.endpoint;
-  // they send us an rpc
-  protobuf::Message message = rpcs::Connect(us.node_id, them_end, them.node_id);
-  EXPECT_TRUE(message.IsInitialized());
-  // we receive it
-  service::Connect(RT, NRT, network, message, RequestPublicKeyFunctor());
-  protobuf::ConnectResponse connect_response;
-  EXPECT_TRUE(connect_response.ParseFromString(message.data(0)));  // us
-  EXPECT_TRUE(connect_response.answer());
-  EXPECT_EQ(connect_response.contact().node_id(), us.node_id.String());
-  EXPECT_TRUE(connect_response.has_timestamp());
-  EXPECT_TRUE(connect_response.timestamp() > static_cast<int32_t>(GetTimeStamp() - 2));
-  EXPECT_TRUE(connect_response.timestamp() < static_cast<int32_t>(GetTimeStamp() + 1));
-  EXPECT_EQ(message.destination_id(), them.node_id.String());
-  EXPECT_EQ(message.source_id(), us.node_id.String());
-  EXPECT_NE(message.data_size(), 0);
-  EXPECT_TRUE(message.direct());
-  EXPECT_EQ(message.replication(), 1);
-  EXPECT_EQ(message.type(), 2);
-  EXPECT_EQ(message.request(), false);
-  EXPECT_EQ(message.id(), 0);
-  EXPECT_FALSE(message.client_node());
-  EXPECT_FALSE(message.has_relay());
-}
-
 TEST(ServicesTest, BEH_FindNodes) {
   NodeInfo us(MakeNode());
   NodeInfo them(MakeNode());
