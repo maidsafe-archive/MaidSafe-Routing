@@ -79,6 +79,7 @@ class RoutingTable {
   int16_t BucketIndex(const NodeId& rhs) const;
   bool CheckValidParameters(const NodeInfo& node) const;
   bool CheckParametersAreUnique(const NodeInfo& node) const;
+  std::vector<NodeInfo> CheckGroupChange();
   bool MakeSpaceForNodeToBeAdded(NodeInfo& node, const bool& remove, NodeInfo& removed_node);
   void PartialSortFromTarget(const NodeId& target, const uint16_t& number);
   void NthElementSortFromTarget(const NodeId& target, const uint16_t& nth_element);
@@ -89,7 +90,7 @@ class RoutingTable {
                                            bool ignore_exact_match,
                                            bool ignore_symmetric);
 
-  void update_network_status() const;
+  void update_network_status(const uint16_t& size) const;
 
   const uint16_t max_size_;
   bool client_mode_;

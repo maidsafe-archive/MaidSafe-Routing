@@ -59,7 +59,9 @@ bool RoutingTable::CheckNode(NodeInfo& peer) {
 
 bool RoutingTable::AddOrCheckNode(NodeInfo& peer, const bool& remove) {
   bool return_value(false);
+  std::vector<NodeInfo> new_close_nodes;
   NodeInfo removed_node;
+  uint16_t routing_table_size;
   {
     std::lock_guard<std::mutex> lock(mutex_);
     if (peer.node_id == kNodeId_) {
@@ -80,18 +82,27 @@ bool RoutingTable::AddOrCheckNode(NodeInfo& peer, const bool& remove) {
     if (MakeSpaceForNodeToBeAdded(peer, remove, removed_node)) {
       if (remove) {
         nodes_.push_back(peer);
-        update_network_status();
-        UpdateGroupChangeAndNotify();
+        routing_table_size = static_cast<uint16_t>(nodes_.size());
+        new_close_nodes = CheckGroupChange();
         UpdateBootstrapFile(bootstrap_file_path_, peer.endpoint, false);
       }
       return_value = true;
     }
   }
+
   if (return_value) {
-    if (!removed_node.node_id.Empty() && remove_node_functor_) {
+    update_network_status(routing_table_size);
+
+    if (!removed_node.node_id.Empty()) {
       LOG(kVerbose) << "Routing table removed node id : " << DebugId(removed_node.node_id)
                     << ", endpoint : " << removed_node.endpoint;
-      remove_node_functor_(removed_node);
+      if (remove_node_functor_)
+        remove_node_functor_(removed_node);
+    }
+
+    if (!new_close_nodes.empty()) {
+      if (close_node_replaced_functor_)
+        close_node_replaced_functor_(new_close_nodes);
     }
 
     if (peer.nat_type == rudp::NatType::kOther) {  // Usable as bootstrap endpoint
@@ -103,16 +114,27 @@ bool RoutingTable::AddOrCheckNode(NodeInfo& peer, const bool& remove) {
 }
 
 NodeInfo RoutingTable::DropNode(const Endpoint& endpoint) {
+  std::vector<NodeInfo> new_close_nodes;
+  uint16_t routing_table_size;
   NodeInfo dropped_node;
-  std::lock_guard<std::mutex> lock(mutex_);
-  for (auto it = nodes_.begin(); it != nodes_.end(); ++it) {
-    if ((*it).endpoint == endpoint) {
-      dropped_node = (*it);
-      nodes_.erase(it);
-      update_network_status();
-      UpdateGroupChangeAndNotify();
-      break;
+  {
+    std::lock_guard<std::mutex> lock(mutex_);
+    for (auto it = nodes_.begin(); it != nodes_.end(); ++it) {
+      if ((*it).endpoint == endpoint) {
+        dropped_node = (*it);
+        nodes_.erase(it);
+        routing_table_size = static_cast<uint16_t>(nodes_.size());
+        new_close_nodes = CheckGroupChange();
+        break;
+      }
     }
+  }
+
+  update_network_status(routing_table_size);
+
+  if (!new_close_nodes.empty()) {
+    if (close_node_replaced_functor_)
+      close_node_replaced_functor_(new_close_nodes);
   }
   return dropped_node;
 }
@@ -183,6 +205,23 @@ bool RoutingTable::IsConnected(const NodeId& node_id) const {
 bool RoutingTable::ConfirmGroupMembers(const NodeId& node1, const NodeId& node2) {
   NodeId difference = NodeId(kKeys().identity) ^ FurthestCloseNode();
   return (node1 ^ node2) < difference;
+}
+
+std::vector<NodeInfo> RoutingTable::CheckGroupChange() {
+  PartialSortFromTarget(kNodeId_, std::min(Parameters::closest_nodes_size,
+                                           static_cast<uint16_t>(nodes_.size())));
+  if (nodes_.size() >= Parameters::closest_nodes_size) {
+    NodeId new_furthest_group_node_id = nodes_[Parameters::closest_nodes_size - 1].node_id;
+    if (furthest_group_node_id_ != new_furthest_group_node_id) {
+      furthest_group_node_id_ = nodes_[Parameters::closest_nodes_size - 1].node_id;
+      return (std::vector<NodeInfo>(nodes_.begin(), nodes_.begin() + Parameters::closest_nodes_size));
+    } else {  // No change
+      return std::vector<NodeInfo>();
+    }
+  } else {
+    furthest_group_node_id_ = nodes_[nodes_.size() - 1].node_id;
+    return nodes_;
+  }
 }
 
 void RoutingTable::UpdateGroupChangeAndNotify() {
@@ -451,9 +490,9 @@ std::vector<NodeInfo> RoutingTable::GetClosestNodeInfo(const NodeId& from,
   return return_close_nodes;
 }
 
-void RoutingTable::update_network_status() const {
+void RoutingTable::update_network_status(const uint16_t& size) const {
   if (network_status_functor_)
-    network_status_functor_(static_cast<int>(nodes_.size()) * 100 / max_size_);
+    network_status_functor_(static_cast<int>(size) * 100 / max_size_);
 }
 
 uint16_t RoutingTable::Size() const {
