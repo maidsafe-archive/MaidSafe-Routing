@@ -354,8 +354,8 @@ bool MessageHandler::RelayDirectMessageIfNeeded(protobuf::Message& message) {
 
 void MessageHandler::HandleClientMessage(protobuf::Message& message) {
   assert(routing_table_.client_mode() && "Only client node should handle client messages");
-  if (IsRequest(message) || message.source_id().empty()) {  // No requests/relays allowed on client.
-    LOG(kWarning) << "Stray message at client node. No requests/relays allowed."
+  if (message.source_id().empty()) {  // No relays allowed on client.
+    LOG(kWarning) << "Stray message at client node. No relays allowed."
                   << " id: " << message.id();
     return;
   }
@@ -365,9 +365,10 @@ void MessageHandler::HandleClientMessage(protobuf::Message& message) {
                << " from " << HexSubstr(message.source_id()) << " id: " << message.id();
     HandleRoutingMessage(message);
   } else if ((message.destination_id() == routing_table_.kKeys().identity)) {
-    LOG(kInfo) << "Client Node Level Response for " << HexSubstr(routing_table_.kKeys().identity)
-               << " from " << HexSubstr(message.source_id()) << " id: " << message.id();
-    timer_.AddResponse(message);
+    HandleNodeLevelMessageForThisNode(message);
+//     LOG(kInfo) << "Client Node Level Response for " << HexSubstr(routing_table_.kKeys().identity)
+//                << " from " << HexSubstr(message.source_id()) << " id: " << message.id();
+//     timer_.AddResponse(message);
   }
 }
 

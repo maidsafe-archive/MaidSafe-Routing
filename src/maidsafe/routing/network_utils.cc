@@ -169,7 +169,7 @@ void NetworkUtils::SendToClosestNode(const protobuf::Message& message) {
   if (message.has_destination_id()) {  // message has destination ID
     auto non_routing_nodes(non_routing_table_.GetNodesInfo(NodeId(message.destination_id())));
     // have the destination ID in non-routing table
-    if (!non_routing_nodes.empty() && IsResponse(message)) {
+    if (!non_routing_nodes.empty() && (IsResponse(message) || message.client_node())) {
       LOG(kInfo) << "This node has the destination node in its non-routing table."
                  << " id: " << message.id();
       for (auto i : non_routing_nodes) {
@@ -177,6 +177,7 @@ void NetworkUtils::SendToClosestNode(const protobuf::Message& message) {
                       << " id: " << message.id();
         SendTo(message, i.node_id, i.endpoint);
       }
+      RecursiveSendOn(message);  // FIXME  In case other nodes have client connected ??
     } else if (routing_table_.Size() > 0) {  // getting closer nodes from routing table
       RecursiveSendOn(message);
     } else {
