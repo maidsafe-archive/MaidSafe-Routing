@@ -253,12 +253,10 @@ class RoutingNetworkTest : public GenericNetwork<NodeType> {
     std::mutex mutex;
     std::condition_variable cond_var;
     size_t messages_count(0), expected_messages(0);
-    auto node(std::find_if(this->nodes_.begin(), this->nodes_.end(),
-                           [&](const std::shared_ptr<TestNode> node) {
-                              return node->node_id() == node_id;
-                           }));
-    if ((node != this->nodes_.end()) && !((*node)->IsClient()))
-      expected_messages = 1;
+    expected_messages = std::count_if(this->nodes_.begin() ,this->nodes_.end(),
+        [=](const std::shared_ptr<NodeType> node)->bool {
+          return node_id ==  node->node_id();
+        });
     auto callable = [&](const std::vector<std::string> &message) {
       if (message.empty())
         return;
@@ -270,11 +268,11 @@ class RoutingNetworkTest : public GenericNetwork<NodeType> {
         LOG(kVerbose) << "ResponseHandler .... DONE " << messages_count;
       }
     };
-    if (source_node->node_id() != node_id) {
+//    if (source_node->node_id() != node_id) {
         std::string data(RandomAlphaNumericString((RandomUint32() % 255 + 1) * 2^10));
         source_node->Send(node_id, NodeId(), data, callable,
             boost::posix_time::seconds(12), true, false);
-    }
+//    }
 
     std::unique_lock<std::mutex> lock(mutex);
     bool result = cond_var.wait_for(lock, std::chrono::seconds(20),
@@ -456,27 +454,32 @@ TYPED_TEST_P(RoutingNetworkTest, FUNC_RecursiveCall) {
   this->PrintRoutingTables();
 }
 
-TYPED_TEST_P(RoutingNetworkTest, FUNC_SymmetricRouter) {
-  this->SetUpNetwork(kNetworkSize);
-  this->AddNode(false, rudp::NatType::kSymmetric);
-  this->AddNode(false, rudp::NatType::kSymmetric);
-
-  // non-symmetric to non-symmetric
-  EXPECT_TRUE(this->Send(this->nodes_[0],
-                         this->nodes_[(RandomUint32() % (kNetworkSize - 1)) + 1]->node_id()));
-
-  // symmetric to non-symmetric
-  EXPECT_TRUE(this->Send(this->nodes_[kNetworkSize],
-                         this->nodes_[RandomUint32() % kNetworkSize]->node_id()));
-
-  // non-symmetric to symmetric
-  EXPECT_TRUE(this->Send(this->nodes_[RandomUint32() % kNetworkSize],
-                         this->nodes_[kNetworkSize]->node_id()));
-
-  // symmetric to symmetric
-  EXPECT_TRUE(this->Send(this->nodes_[kNetworkSize],
-                         this->nodes_[kNetworkSize + 1]->node_id()));
+TYPED_TEST_P(RoutingNetworkTest, FUNC_JoinWithSameId) {
+  this->SetUpNetwork(4);
+  NodeId node_id(NodeId::kRandomId);
+  this->AddNode(true, node_id);
+  this->AddNode(true, node_id);
+  this->AddNode(true, node_id);
+  this->AddNode(true, node_id);
 }
+
+TYPED_TEST_P(RoutingNetworkTest, FUNC_SendToClientsWithSameId) {
+  this->SetUpNetwork(kNetworkSize);
+  NodeId node_id(NodeId::kRandomId);
+  this->AddNode(true, node_id);
+  this->AddNode(true, node_id);
+  this->AddNode(true, node_id);
+  this->AddNode(true, node_id);
+  EXPECT_TRUE(this->Send(this->nodes_[kNetworkSize], node_id));
+}
+
+TYPED_TEST_P(RoutingNetworkTest, FUNC_SendToClientWithSameId) {
+  this->SetUpNetwork(kNetworkSize, 1);
+  this->AddNode(true, this->nodes_[kNetworkSize]->node_id());
+  EXPECT_TRUE(this->Send(this->nodes_[kNetworkSize],
+                         this->nodes_[kNetworkSize]->node_id()));
+}
+
 
 REGISTER_TYPED_TEST_CASE_P(RoutingNetworkTest, FUNC_SetupNetwork, FUNC_SendToGroupSelfId,
                            FUNC_SendToGroupClientSelfId,
@@ -484,7 +487,8 @@ REGISTER_TYPED_TEST_CASE_P(RoutingNetworkTest, FUNC_SetupNetwork, FUNC_SendToGro
                            FUNC_ClientSend, FUNC_SendMulti, FUNC_ClientSendMulti, FUNC_SendToGroup,
                            FUNC_SendToGroupInHybridNetwork, FUNC_SendToGroupRandomId,
                            FUNC_JoinAfterBootstrapLeaves, FUNC_RecursiveCall,
-                           FUNC_SymmetricRouter);
+                           FUNC_JoinWithSameId, FUNC_SendToClientsWithSameId,
+                           FUNC_SendToClientWithSameId);
 INSTANTIATE_TYPED_TEST_CASE_P(MAIDSAFE, RoutingNetworkTest, TestNode);
 
 }  // namespace test
