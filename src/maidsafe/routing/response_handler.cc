@@ -210,7 +210,7 @@ void ResponseHandler::ConnectTo(const std::vector<std::string>& nodes,
       if (routing_table_empty)  // Joining the network, and may connect to bootstrapping node.
         direct_endpoint = network_.bootstrap_endpoint();
       rudp::EndpointPair endpoint_pair;
-      rudp::NatType this_nat_type;
+      rudp::NatType this_nat_type(rudp::NatType::kUnknown);
       if (kSuccess != network_.GetAvailableEndpoint(Endpoint(),  /*direct_endpoint,*/
                                                     endpoint_pair,
                                                     this_nat_type)) {

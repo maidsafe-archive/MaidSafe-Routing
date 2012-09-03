@@ -289,11 +289,9 @@ protobuf::NatType NatTypeProtobuf(const rudp::NatType& nat_type) {
     case rudp::NatType::kOther :
       return protobuf::NatType::kOther;
       break;
-    case rudp::NatType::kUnknown :
+    default :
       return protobuf::NatType::kUnknown;
       break;
-    default:
-      assert(false && "Invalid Nat type provided ");
   }
 }
 
