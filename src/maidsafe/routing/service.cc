@@ -175,6 +175,8 @@ void Connect(RoutingTable& routing_table,
       request_public_key_functor(NodeId(connect_request.contact().node_id()), validate_node);
       connect_response.set_answer(true);
       connect_response.mutable_contact()->set_node_id(routing_table.kKeys().identity);
+      connect_response.mutable_contact()->set_nat_type(
+          static_cast<protobuf::NatType>(this_nat_type));
       SetProtobufEndpoint(this_endpoint_pair.local,
                           connect_response.mutable_contact()->mutable_private_endpoint());
       SetProtobufEndpoint(this_endpoint_pair.external,
