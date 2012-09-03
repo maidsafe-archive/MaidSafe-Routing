@@ -478,7 +478,7 @@ TYPED_TEST_P(RoutingNetworkTest, FUNC_SendToClientsWithSameId) {
   NodeId node_id(NodeId::kRandomId);
   for (uint16_t index(0); index < 4; ++index)
     this->AddNode(true, node_id);
-  uint16_t size(0);
+  size_t size(0);
 
   for (uint16_t index(0); index < 100; ++index)
     EXPECT_TRUE(this->Send(this->nodes_[kNetworkSize],
@@ -496,7 +496,7 @@ TYPED_TEST_P(RoutingNetworkTest, FUNC_SendToClientsWithSameId) {
 TYPED_TEST_P(RoutingNetworkTest, FUNC_SendToClientWithSameId) {
   this->SetUpNetwork(kNetworkSize, 1);
   this->AddNode(true, this->nodes_[kNetworkSize]->node_id());
-  uint16_t size(0);
+  size_t size(0);
   EXPECT_TRUE(this->Send(this->nodes_[kNetworkSize],
                          this->nodes_[kNetworkSize]->node_id(),
                          true));
