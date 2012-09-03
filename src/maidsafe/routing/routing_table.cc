@@ -225,7 +225,7 @@ std::vector<NodeInfo> RoutingTable::CheckGroupChange() {
       return std::vector<NodeInfo>();
     }
   } else {
-    if (!nodes_.empty()) 
+    if (!nodes_.empty())
        furthest_group_node_id_ = nodes_.back().node_id;
     return nodes_;
   }
