@@ -22,6 +22,7 @@
 #include "maidsafe/rudp/managed_connections.h"
 
 #include "maidsafe/routing/parameters.h"
+#include "maidsafe/routing/routing_pb.h"
 
 
 namespace maidsafe {
@@ -70,6 +71,8 @@ void SetProtobufEndpoint(const boost::asio::ip::udp::endpoint& endpoint,
                          protobuf::Endpoint* pb_endpoint);
 boost::asio::ip::udp::endpoint GetEndpointFromProtobuf(const protobuf::Endpoint& pb_endpoint);
 std::string MessageTypeString(const protobuf::Message& message);
+
+protobuf::NatType NatTypeProtobuf(const rudp::NatType& nat_type);
 
 }  // namespace routing
 
