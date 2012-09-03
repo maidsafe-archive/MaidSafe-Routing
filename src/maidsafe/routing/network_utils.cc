@@ -178,7 +178,6 @@ void NetworkUtils::SendToClosestNode(const protobuf::Message& message) {
                       << " id: " << message.id();
         SendTo(message, i.node_id, i.endpoint);
       }
-      RecursiveSendOn(message);  // FIXME  In case other nodes have client connected ??
     } else if (routing_table_.Size() > 0) {  // getting closer nodes from routing table
       RecursiveSendOn(message);
     } else {
