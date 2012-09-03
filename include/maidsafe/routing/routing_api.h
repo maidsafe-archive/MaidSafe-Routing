@@ -103,7 +103,7 @@ class Routing {
   void BootstrapFromTheseEndpoints(const Functors& functors,
                                    const std::vector<boost::asio::ip::udp::endpoint>& endpoints);
   void DoJoin(const Functors& functors);
-  int DoBootstrap(const Functors& functors);
+  int DoBootstrap();
   int DoFindNode();
   void ReSendFindNodeRequest(const boost::system::error_code& error_code,
                              std::weak_ptr<RoutingPrivate> impl,
