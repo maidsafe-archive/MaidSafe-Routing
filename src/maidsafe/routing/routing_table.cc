@@ -213,34 +213,19 @@ std::vector<NodeInfo> RoutingTable::CheckGroupChange() {
   if (nodes_.size() >= Parameters::closest_nodes_size) {
     NodeId new_furthest_group_node_id = nodes_[Parameters::closest_nodes_size - 1].node_id;
     if (furthest_group_node_id_ != new_furthest_group_node_id) {
+      LOG(kVerbose) << "Group change !. old furthest_close_node : "
+                    << DebugId(furthest_group_node_id_)
+                    << "new_furthest_group_node_id : "
+                    << DebugId(new_furthest_group_node_id);
       furthest_group_node_id_ = nodes_[Parameters::closest_nodes_size - 1].node_id;
-      return (std::vector<NodeInfo>(nodes_.begin(), nodes_.begin() + Parameters::closest_nodes_size));
+      return (std::vector<NodeInfo>(nodes_.begin(), nodes_.begin() +
+                Parameters::closest_nodes_size));
     } else {  // No change
       return std::vector<NodeInfo>();
     }
   } else {
     furthest_group_node_id_ = nodes_[nodes_.size() - 1].node_id;
     return nodes_;
-  }
-}
-
-void RoutingTable::UpdateGroupChangeAndNotify() {
-  if (close_node_replaced_functor_) {
-    if (nodes_.size() >= Parameters::node_group_size) {
-      NthElementSortFromTarget(kNodeId_, Parameters::node_group_size - 1);
-      NodeId new_furthest_group_node_id = nodes_[Parameters::node_group_size - 2].node_id;
-      if (furthest_group_node_id_ != new_furthest_group_node_id) {
-        std::vector<NodeInfo> new_close_nodes(GetClosestNodeInfo(kNodeId_,
-            Parameters::node_group_size));
-        furthest_group_node_id_ = new_close_nodes[Parameters::node_group_size - 2].node_id;
-        close_node_replaced_functor_(new_close_nodes);
-      }
-    } else {
-       std::vector<NodeInfo> new_close_nodes(GetClosestNodeInfo(kNodeId_,
-                                                                Parameters::node_group_size - 1));
-       furthest_group_node_id_ = new_close_nodes[nodes_.size() - 1].node_id;
-       close_node_replaced_functor_(new_close_nodes);
-    }
   }
 }
 

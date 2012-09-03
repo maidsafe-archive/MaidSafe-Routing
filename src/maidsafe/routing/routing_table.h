@@ -75,7 +75,6 @@ class RoutingTable {
   RoutingTable(const RoutingTable&);
   RoutingTable& operator=(const RoutingTable&);
   bool AddOrCheckNode(NodeInfo& node, const bool& remove);
-  void UpdateGroupChangeAndNotify();
   int16_t BucketIndex(const NodeId& rhs) const;
   bool CheckValidParameters(const NodeInfo& node) const;
   bool CheckParametersAreUnique(const NodeInfo& node) const;

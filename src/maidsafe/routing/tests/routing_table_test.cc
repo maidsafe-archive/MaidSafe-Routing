@@ -27,6 +27,13 @@ namespace maidsafe {
 namespace routing {
 namespace test {
 
+void SortFromTarget(const NodeId& target, std::vector<NodeInfo>& nodes) {
+  std::sort(nodes.begin(), nodes.end(),
+            [target](const NodeInfo& lhs, const NodeInfo& rhs) {
+                return (lhs.node_id ^ target) < (rhs.node_id ^ target);
+              });
+}
+
 TEST(RoutingTableTest, FUNC_AddCloseNodes) {
     asymm::Keys keys;
     keys.identity = RandomString(64);
@@ -103,11 +110,51 @@ TEST(RoutingTableTest, FUNC_AddUsableBootstrapNodes) {
     }
     ASSERT_TRUE(RT.AddNode(node));
   }
+
+  for (uint16_t i = 0; RT.Size() < Parameters::max_routing_table_size; ++i) {
+    NodeInfo node(MakeNode());
+    if (i % 2) {
+      node.nat_type = rudp::NatType::kOther;
+    }
+    RT.CheckNode(node);
+  }
+
   ASSERT_EQ(RT.Size(), Parameters::max_routing_table_size);
   ASSERT_EQ(expected_bootstrap_endpoints.size(), actual_bootstrap_endpoints.size());
   for (size_t i(0); i != expected_bootstrap_endpoints.size(); ++i) {
     EXPECT_EQ(expected_bootstrap_endpoints.at(i), actual_bootstrap_endpoints.at(i));
   }
+}
+
+TEST(RoutingTableTest, FUNC_GroupChange) {
+  asymm::Keys keys;
+  keys.identity = RandomString(64);
+  RoutingTable RT(keys, false);
+  std::vector<NodeInfo> nodes;
+  for (uint16_t i = 0; i < Parameters::max_routing_table_size; ++i)
+    nodes.push_back(MakeNode());
+
+  SortFromTarget(RT.kNodeId(), nodes);
+
+  int count(0);
+  RT.set_close_node_replaced_functor([&count](const std::vector<NodeInfo> nodes) {
+    ++count;
+    LOG(kInfo) << "Close node replaced. count : " << count;
+    EXPECT_GE(8, count);
+    for (auto i: nodes) {
+      LOG(kVerbose) << "NodeId : " << DebugId(i.node_id);
+    }
+  });
+
+  RT.set_network_status_functor([](const int& status) {
+    LOG(kVerbose) << "Status : " << status;
+  });
+  for (uint16_t i = 0; i < Parameters::max_routing_table_size; ++i) {
+    ASSERT_TRUE(RT.AddNode(nodes.at(i)));
+    LOG(kVerbose) << "Added  to RT : " << DebugId(nodes.at(i).node_id);
+  }
+
+  ASSERT_EQ(RT.Size(), Parameters::max_routing_table_size);
 }
 
 TEST(RoutingTableTest, BEH_CloseAndInRangeCheck) {
