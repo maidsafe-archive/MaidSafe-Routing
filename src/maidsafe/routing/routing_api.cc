@@ -55,9 +55,7 @@ Routing::Routing(const asymm::Keys& keys, const bool& client_mode)
   if (!CheckBootstrapFilePath())
     LOG(kInfo) << "No bootstrap nodes, require BootStrapFromThisEndpoint()";
 
-  if (!client_mode)
-    assert(!keys.identity.empty() && "Server Nodes cannot be created without valid keys");
-
+  assert((client_mode || !keys.identity.empty()) && "Server Nodes cannot be created without valid keys");
   if (keys.identity.empty()) {
     impl_->anonymous_node_ = true;
     LOG(kInfo) << "Anonymous node ID: " << HexSubstr(impl_->keys_.identity);
