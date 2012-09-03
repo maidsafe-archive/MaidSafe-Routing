@@ -166,8 +166,7 @@ bool RoutingTable::IsThisNodeInRange(const NodeId& target_id, const uint16_t ran
   std::lock_guard<std::mutex> lock(mutex_);
   if (nodes_.size() < range)
     return true;
-  if (target_id.Empty())
-    return false;
+
   PartialSortFromTarget(kNodeId_, range);
 
   return (nodes_[range - 1].node_id ^ kNodeId_) > (target_id ^ kNodeId_);
@@ -481,7 +480,7 @@ std::vector<NodeInfo> RoutingTable::GetClosestNodeInfo(const NodeId& from,
 void RoutingTable::update_network_status(const uint16_t& size) const {
   if (network_status_functor_)
     network_status_functor_(static_cast<int>(size) * 100 / max_size_);
-  LOG(kVerbose) << DebugId(kNodeId_) << "Updating network status !!!";
+  LOG(kInfo) << DebugId(kNodeId_) << "Updating network status !!!" << (size * 100) / max_size_;
 }
 
 uint16_t RoutingTable::Size() const {

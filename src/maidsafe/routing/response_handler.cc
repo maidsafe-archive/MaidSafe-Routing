@@ -257,7 +257,7 @@ void ResponseHandler::ConnectSuccess(protobuf::Message& message) {
   std::weak_ptr<ResponseHandler> response_handler_weak_ptr = shared_from_this();
   if (request_public_key_functor_) {
     auto validate_node([=] (const asymm::PublicKey& key) {
-                           LOG(kInfo) << "NEED TO VALIDATE & ADD THE NODE HERE";
+                           LOG(kInfo) << "need to validate & add the node here";
                            if (std::shared_ptr<ResponseHandler> response_handler =
                                response_handler_weak_ptr.lock()) {
                              ValidateAndAddToRoutingTable(
