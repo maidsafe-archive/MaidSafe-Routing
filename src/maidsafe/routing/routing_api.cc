@@ -474,7 +474,7 @@ NodeId Routing::GetRandomExistingNode() {
     std::lock_guard<std::mutex> lock(impl_->random_node_mutex_);
   if (impl_->random_node_vector_.empty())
     return NodeId();
-  NodeId node(impl_->random_node_vector_.back());
+  NodeId node(impl_->random_node_vector_.front());
   auto queue_size = impl_->random_node_vector_.size();
   LOG(kVerbose) << "RandomNodeQueue : Getting node, queue size now "
                 << queue_size;
