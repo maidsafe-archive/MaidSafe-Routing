@@ -480,7 +480,7 @@ TYPED_TEST_P(RoutingNetworkTest, FUNC_SendToClientsWithSameId) {
     this->AddNode(true, node_id);
   size_t size(0);
 
-  for (uint16_t index(0); index < 100; ++index)
+  for (uint16_t index(0); index < 50; ++index)
     EXPECT_TRUE(this->Send(this->nodes_[kNetworkSize],
                           this->nodes_[kNetworkSize]->node_id(),
                           true));
@@ -490,7 +490,7 @@ TYPED_TEST_P(RoutingNetworkTest, FUNC_SendToClientsWithSameId) {
   for (auto node : this->nodes_) {
     size += node->MessagesSize();
   }
-  EXPECT_EQ(4 * 100, size);
+  EXPECT_EQ(4 * 50, size);
 }
 
 TYPED_TEST_P(RoutingNetworkTest, FUNC_SendToClientWithSameId) {

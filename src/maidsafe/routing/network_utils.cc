@@ -67,7 +67,6 @@ void NetworkUtils::Stop() {
 
 void NetworkUtils::OnConnectionLost(const Endpoint& endpoint) {
   if (connection_lost_functor_) {
-    LOG(kWarning) << " Routing -> removing connection " << endpoint;
     connection_lost_functor_(endpoint);
   }
 }
@@ -246,6 +245,7 @@ void NetworkUtils::RecursiveSendOn(protobuf::Message message,
       else
         rudp_->Remove(last_node_attempted.endpoint);
     }
+    LOG(kWarning) << " Routing -> removing connection " << last_node_attempted.endpoint;
     OnConnectionLost(last_node_attempted.endpoint);
   }
 
@@ -299,6 +299,7 @@ void NetworkUtils::RecursiveSendOn(protobuf::Message message,
           else
            rudp_->Remove(closest_node.endpoint);
         }
+        LOG(kWarning) << " Routing -> removing connection " << closest_node.endpoint;
         OnConnectionLost(closest_node.endpoint);
         RecursiveSendOn(message);
       }

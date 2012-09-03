@@ -130,7 +130,8 @@ NodeInfo RoutingTable::DropNode(const Endpoint& endpoint) {
     }
   }
 
-  update_network_status(routing_table_size);
+  if (!dropped_node.node_id.Empty())
+    update_network_status(routing_table_size);
 
   if (!new_close_nodes.empty()) {
     if (close_node_replaced_functor_)
@@ -478,6 +479,7 @@ std::vector<NodeInfo> RoutingTable::GetClosestNodeInfo(const NodeId& from,
 void RoutingTable::update_network_status(const uint16_t& size) const {
   if (network_status_functor_)
     network_status_functor_(static_cast<int>(size) * 100 / max_size_);
+  LOG(kVerbose) << DebugId(kNodeId_) << "Updating network status !!!";
 }
 
 uint16_t RoutingTable::Size() const {

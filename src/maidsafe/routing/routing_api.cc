@@ -523,7 +523,8 @@ void Routing::ConnectionLost(const Endpoint& lost_endpoint, std::weak_ptr<Routin
   // Checking routing table
   dropped_node = pimpl->routing_table_.DropNode(lost_endpoint);
   if (!dropped_node.node_id.Empty()) {
-    LOG(kWarning) << "Lost connection with routing node "
+    LOG(kWarning) << "[" <<HexSubstr(impl_->keys_.identity) << "]"
+                  << "Lost connection with routing node "
                   << DebugId(dropped_node.node_id) << ", endpoint " << lost_endpoint;
   }
 
@@ -532,10 +533,12 @@ void Routing::ConnectionLost(const Endpoint& lost_endpoint, std::weak_ptr<Routin
     resend = false;
     dropped_node = pimpl->non_routing_table_.DropNode(lost_endpoint);
     if (!dropped_node.node_id.Empty()) {
-      LOG(kWarning) << "Lost connection with non-routing node "
+      LOG(kWarning) << "[" <<HexSubstr(impl_->keys_.identity) << "]"
+                    << "Lost connection with non-routing node "
                     << HexSubstr(dropped_node.node_id.String()) << ", endpoint " << lost_endpoint;
     } else {
-      LOG(kWarning) << "Lost connection with unknown/internal endpoint " << lost_endpoint;
+      LOG(kWarning) << "[" <<HexSubstr(impl_->keys_.identity) << "]"
+                    << "Lost connection with unknown/internal endpoint " << lost_endpoint;
     }
   }
 

@@ -208,6 +208,7 @@ TEST(APITest, FUNC_API_AnonymousNode) {
   auto join_future = join_promise.get_future();
   bool promised(true);
   functors3.network_status = [&join_promise, &promised](int result) {
+    LOG(kVerbose) << "Network status for anonymous node called: " << result;
     if (result == NetworkStatus(true, 0)) {
       if (promised) {
         ASSERT_EQ(kSuccess, result);
