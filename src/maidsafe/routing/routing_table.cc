@@ -166,7 +166,8 @@ bool RoutingTable::IsThisNodeInRange(const NodeId& target_id, const uint16_t ran
   std::lock_guard<std::mutex> lock(mutex_);
   if (nodes_.size() < range)
     return true;
-
+  if (target_id.Empty())
+    return false;
   PartialSortFromTarget(kNodeId_, range);
 
   return (nodes_[range - 1].node_id ^ kNodeId_) > (target_id ^ kNodeId_);
