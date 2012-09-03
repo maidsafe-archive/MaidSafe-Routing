@@ -597,7 +597,8 @@ void Routing::ReSendFindNodeRequest(const boost::system::error_code& error_code,
     } else if (ignore_size ||  (pimpl->routing_table_.Size() < Parameters::closest_nodes_size)) {
       LOG(kInfo) << "This node's [" << HexSubstr(pimpl->keys_.identity)
                  << "] Routing table smaller than " << Parameters::closest_nodes_size
-                 << " nodes.  Sending another FindNodes..";
+                 << " nodes.  Sending another FindNodes. Current routing table size : "
+                 << pimpl->routing_table_.Size();
       protobuf::Message find_node_rpc(rpcs::FindNodes(NodeId(pimpl->keys_.identity),
                                                       NodeId(pimpl->keys_.identity)));
       pimpl->network_.SendToClosestNode(find_node_rpc);

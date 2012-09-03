@@ -119,12 +119,13 @@ class RoutingNetworkTest : public GenericNetwork<NodeType> {
               }
             };
           if (source_node->node_id() != dest_node->node_id()) {
-            std::string data(RandomAlphaNumericString((RandomUint32() % 255 + 1) * 2^10));
+            std::string data(RandomAlphaNumericString(512 * 2^10));
             {
               std::lock_guard<std::mutex> lock(mutex);
               data = boost::lexical_cast<std::string>(++message_id) + "<:>" + data;
             }
             Sleep(boost::posix_time::millisec(50));
+            assert(!data.empty() && "Send Data Empty !");
             source_node->Send(NodeId(dest_node->node_id()), NodeId(), data, callable,
                 boost::posix_time::seconds(12), true, false);
           }
@@ -276,7 +277,8 @@ class RoutingNetworkTest : public GenericNetwork<NodeType> {
         }
       };
     }
-    std::string data(RandomAlphaNumericString((RandomUint32() % 255 + 1) * 2^10));
+    std::string data(RandomAlphaNumericString(512 * 2^10));
+    assert(!data.empty() && "Send Data Empty !");
     source_node->Send(node_id, NodeId(), data, callable,
                       boost::posix_time::seconds(12), true, false);
 
@@ -474,13 +476,14 @@ TYPED_TEST_P(RoutingNetworkTest, FUNC_JoinWithSameId) {
 }
 
 TYPED_TEST_P(RoutingNetworkTest, FUNC_SendToClientsWithSameId) {
+  const uint16_t kMessageCount(50);
   this->SetUpNetwork(kNetworkSize);
   NodeId node_id(NodeId::kRandomId);
   for (uint16_t index(0); index < 4; ++index)
     this->AddNode(true, node_id);
   size_t size(0);
 
-  for (uint16_t index(0); index < 50; ++index)
+  for (uint16_t index(0); index < kMessageCount; ++index)
     EXPECT_TRUE(this->Send(this->nodes_[kNetworkSize],
                           this->nodes_[kNetworkSize]->node_id(),
                           true));
@@ -490,7 +493,7 @@ TYPED_TEST_P(RoutingNetworkTest, FUNC_SendToClientsWithSameId) {
   for (auto node : this->nodes_) {
     size += node->MessagesSize();
   }
-  EXPECT_EQ(4 * 50, size);
+  EXPECT_EQ(4 * kMessageCount, size);
 }
 
 TYPED_TEST_P(RoutingNetworkTest, FUNC_SendToClientWithSameId) {
