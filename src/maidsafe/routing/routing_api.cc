@@ -110,6 +110,7 @@ void Routing::Join(Functors functors,
   for (auto endpoint : RoutingPrivate::bootstraps_)
     peer_endpoints.push_back(endpoint);
 #endif
+  ConnectFunctors(functors);
   if (!peer_endpoints.empty()) {
     return BootstrapFromTheseEndpoints(functors, peer_endpoints);
   } else {
@@ -188,7 +189,7 @@ void Routing::BootstrapFromTheseEndpoints(const Functors& functors,
 }
 
 void Routing::DoJoin(const Functors& functors) {
-  int return_value(DoBootstrap(functors));
+  int return_value(DoBootstrap());
   if (kSuccess != return_value) {
     if (functors.network_status)
       functors.network_status(return_value);
@@ -212,12 +213,11 @@ void Routing::DoJoin(const Functors& functors) {
                                       });
 }
 
-int Routing::DoBootstrap(const Functors& functors) {
+int Routing::DoBootstrap() {
   if (impl_->bootstrap_nodes_.empty()) {
     LOG(kError) << "No bootstrap nodes.  Aborted join.";
     return kInvalidBootstrapContacts;
   }
-  ConnectFunctors(functors);
   std::weak_ptr<RoutingPrivate> impl_weak_ptr(impl_);
   return impl_->network_.Bootstrap(
       impl_->bootstrap_nodes_,
@@ -590,8 +590,8 @@ void Routing::ReSendFindNodeRequest(const boost::system::error_code& error_code,
     if (pimpl->routing_table_.Size() == 0) {
       LOG(kInfo) << "This node's [" << HexSubstr(pimpl->keys_.identity)
                  << "] Routing table is empty."
-                 << " Need to rebootstrap !!!";
-      return;
+                 << " Reconnecting .... !!!";
+      DoJoin(impl_->functors_);
     } else if (ignore_size ||  (pimpl->routing_table_.Size() < Parameters::closest_nodes_size)) {
       LOG(kInfo) << "This node's [" << HexSubstr(pimpl->keys_.identity)
                  << "] Routing table smaller than " << Parameters::closest_nodes_size
