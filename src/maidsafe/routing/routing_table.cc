@@ -137,6 +137,10 @@ NodeInfo RoutingTable::DropNode(const Endpoint& endpoint) {
     if (close_node_replaced_functor_)
       close_node_replaced_functor_(new_close_nodes);
   }
+
+  if (!dropped_node.node_id.Empty())
+    UpdateBootstrapFile(bootstrap_file_path_, dropped_node.endpoint, true);
+
   return dropped_node;
 }
 
