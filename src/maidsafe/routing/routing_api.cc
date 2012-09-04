@@ -478,6 +478,8 @@ NodeId Routing::GetRandomExistingNode() {
   auto queue_size = impl_->random_node_vector_.size();
   LOG(kVerbose) << "RandomNodeQueue : Getting node, queue size now "
                 << queue_size;
+    if (queue_size < 98)
+      impl_->random_node_vector_.push_back(node);
   return node;
 }
 
