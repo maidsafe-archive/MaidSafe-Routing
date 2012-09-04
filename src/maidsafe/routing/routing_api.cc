@@ -480,6 +480,7 @@ NodeId Routing::GetRandomExistingNode() {
                 << queue_size;
     if (queue_size < 98)
       impl_->random_node_vector_.push_back(node);
+  impl_->random_node_vector_.erase(impl_->random_node_vector_.begin());
   return node;
 }
 
