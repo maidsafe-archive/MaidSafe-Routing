@@ -296,7 +296,7 @@ class GenericNetwork : public testing::Test {
     node->Join(bootstrap_endpoints_);
 #endif
     std::unique_lock<std::mutex> lock(mutex);
-    auto result = cond_var.wait_for(lock, std::chrono::seconds(15));
+    auto result = cond_var.wait_for(lock, std::chrono::seconds(20));
     EXPECT_EQ(result, std::cv_status::no_timeout);
     Sleep(boost::posix_time::millisec(600));
     PrintRoutingTables();

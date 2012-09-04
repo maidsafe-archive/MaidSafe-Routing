@@ -157,7 +157,7 @@ TEST(RoutingTableTest, FUNC_GroupChange) {
   ASSERT_EQ(RT.Size(), Parameters::max_routing_table_size);
 }
 
-TEST(RoutingTableTest, BEH_CloseAndInRangeCheck) {
+TEST(RoutingTableTest, FUNC_CloseAndInRangeCheck) {
   asymm::Keys keys;
   keys.identity = RandomString(64);
   RoutingTable RT(keys, false);
@@ -213,7 +213,7 @@ TEST(RoutingTableTest, BEH_CloseAndInRangeCheck) {
   EXPECT_EQ(NodeId(), RT.DropNode(node.endpoint).node_id);
 }
 
-TEST(RoutingTableTest, BEH_GetClosestNodeWithExclusion) {
+TEST(RoutingTableTest, FUNC_GetClosestNodeWithExclusion) {
   std::vector<NodeId> nodes_id;
   std::vector<std::string> exclude;
   asymm::Keys keys;
@@ -309,7 +309,7 @@ TEST(RoutingTableTest, BEH_GetClosestNodeWithExclusion) {
   EXPECT_EQ(node_info.node_id, NodeInfo().node_id);
 }
 
-TEST(RoutingTableTest, BEH_GetClosestNodeWithExclusionAndIgnoreNonRoutable) {
+TEST(RoutingTableTest, FUNC_GetClosestNodeWithExclusionAndIgnoreNonRoutable) {
   std::vector<NodeId> nodes_id;
   std::vector<std::string> exclude;
   asymm::Keys keys;
