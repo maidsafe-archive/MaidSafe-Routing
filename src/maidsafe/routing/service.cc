@@ -99,7 +99,7 @@ void Connect(RoutingTable& routing_table,
       GetEndpointFromProtobuf(connect_request.contact().public_endpoint());
   peer_endpoint_pair.local = GetEndpointFromProtobuf(connect_request.contact().private_endpoint());
 
-  rudp::NatType nat_type = static_cast<rudp::NatType>(connect_request.contact().nat_type());
+  rudp::NatType nat_type = NatTypeFromProtobuf(connect_request.contact().nat_type());
   rudp::NatType this_nat_type(rudp::NatType::kUnknown);
   if (!peer_endpoint_pair.external.address().is_unspecified()) {
     if (network.GetAvailableEndpoint(peer_endpoint_pair.external, this_endpoint_pair1,
@@ -128,19 +128,20 @@ void Connect(RoutingTable& routing_table,
     return;
   }
 
+  NodeId peer_node_id(connect_request.contact().node_id());
 // Handling the case when this node and peer node are behind symmetric router
   if ((nat_type == rudp::NatType::kSymmetric) && (this_nat_type == rudp::NatType::kSymmetric)) {
 //    peer_endpoint_pair.external = Endpoint();  // No need to try connction on external endpoint.
-
     auto validate_node = [=, &routing_table] (const asymm::PublicKey& key)->void {
-        LOG(kInfo) << "NEED TO VALIDATE THE SYMMETRIC NODE HERE";
-        HandleSymmetricNodeAdd(routing_table, NodeId(connect_request.contact().node_id()), key);
+        LOG(kInfo) << "validation callback called with public key for" << DebugId(peer_node_id)
+                   << " -- pseudo connection";
+        HandleSymmetricNodeAdd(routing_table, peer_node_id, key);
       };
 
     TaskResponseFunctor add_symmetric_node =
       [=, &routing_table, &request_public_key_functor](std::vector<std::string>) {
         if (request_public_key_functor)
-          request_public_key_functor(NodeId(connect_request.contact().node_id()), validate_node);
+          request_public_key_functor(peer_node_id, validate_node);
       };
     network.timer().AddTask(boost::posix_time::seconds(5), add_symmetric_node, 1);
   }
@@ -163,16 +164,16 @@ void Connect(RoutingTable& routing_table,
     if (request_public_key_functor) {
       auto validate_node =
           [=, &routing_table, &non_routing_table, &network] (const asymm::PublicKey& key)->void {
-            LOG(kInfo) << "NEED TO VALIDATE THE NODE HERE";
+            LOG(kInfo) << "validation callback called with public key for" << DebugId(peer_node_id);
             ValidateAndAddToRudp(network,
                                  NodeId(routing_table.kKeys().identity),
-                                 NodeId(connect_request.contact().node_id()),
+                                 peer_node_id,
                                  key,
                                  peer_endpoint_pair,
                                  this_endpoint_pair,
                                  routing_table.client_mode());
           };
-      request_public_key_functor(NodeId(connect_request.contact().node_id()), validate_node);
+      request_public_key_functor(peer_node_id, validate_node);
       connect_response.set_answer(true);
       connect_response.mutable_contact()->set_node_id(routing_table.kKeys().identity);
       connect_response.mutable_contact()->set_nat_type(NatTypeProtobuf(this_nat_type));

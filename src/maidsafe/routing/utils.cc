@@ -295,6 +295,20 @@ protobuf::NatType NatTypeProtobuf(const rudp::NatType& nat_type) {
   }
 }
 
+rudp::NatType NatTypeFromProtobuf(const protobuf::NatType& nat_type_proto) {
+  switch (nat_type_proto) {
+    case protobuf::NatType::kSymmetric :
+      return rudp::NatType::kSymmetric;
+      break;
+    case protobuf::NatType::kOther :
+      return rudp::NatType::kOther;
+      break;
+    default :
+      return rudp::NatType::kUnknown;
+      break;
+  }
+}
+
 }  // namespace routing
 
 }  // namespace maidsafe

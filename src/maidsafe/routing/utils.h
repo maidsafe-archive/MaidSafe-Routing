@@ -73,6 +73,7 @@ boost::asio::ip::udp::endpoint GetEndpointFromProtobuf(const protobuf::Endpoint&
 std::string MessageTypeString(const protobuf::Message& message);
 
 protobuf::NatType NatTypeProtobuf(const rudp::NatType& nat_type);
+rudp::NatType NatTypeFromProtobuf(const protobuf::NatType& nat_type_proto);
 
 }  // namespace routing
 

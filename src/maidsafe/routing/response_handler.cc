@@ -97,20 +97,22 @@ void ResponseHandler::Connect(protobuf::Message& message) {
   peer_endpoint_pair.local =
       GetEndpointFromProtobuf(connect_response.contact().private_endpoint());
 
+  NodeId peer_node_id(connect_response.contact().node_id());
   // Handling the case when this node and peer node are behind symmetric router
-  rudp::NatType nat_type = static_cast<rudp::NatType>(connect_response.contact().nat_type());
+  rudp::NatType nat_type = NatTypeFromProtobuf(connect_response.contact().nat_type());
 
   if ((nat_type == rudp::NatType::kSymmetric) &&
       (network_.nat_type() == rudp::NatType::kSymmetric)) {
 //     peer_endpoint_pair.external = Endpoint();  // No need to try connction on external endpoint.
     auto validate_node = [&] (const asymm::PublicKey& key)->void {
-        LOG(kInfo) << "NEED TO VALIDATE THE SYMMETRIC NODE HERE";
-        HandleSymmetricNodeAdd(routing_table_, NodeId(connect_response.contact().node_id()), key);
+        LOG(kInfo) << "validation callback called with public key for" << DebugId(peer_node_id)
+                   << " -- pseudo connection";
+        HandleSymmetricNodeAdd(routing_table_, peer_node_id, key);
       };
 
     TaskResponseFunctor add_symmetric_node = [&](std::vector<std::string>) {
       if (request_public_key_functor_) {
-        request_public_key_functor_(NodeId(connect_response.contact().node_id()), validate_node);
+        request_public_key_functor_(peer_node_id, validate_node);
       }
       };
     network_.timer().AddTask(boost::posix_time::seconds(5), add_symmetric_node, 1);
@@ -132,7 +134,7 @@ void ResponseHandler::Connect(protobuf::Message& message) {
                                  response_handler->routing_table_.client_mode());
                            }
                          });
-    request_public_key_functor_(NodeId(connect_response.contact().node_id()), validate_node);
+    request_public_key_functor_(peer_node_id, validate_node);
   }
 
   std::vector<std::string> closest_nodes(connect_request.closest_id().begin(),
