@@ -255,7 +255,8 @@ void ResponseHandler::ConnectSuccess(protobuf::Message& message) {
   }
   boost::asio::ip::udp::endpoint peer_endpoint =
       GetEndpointFromProtobuf(connect_success.endpoint());
-
+  bool local_enpoint(connect_success.local_endpoint());
+  NodeId peer_node_id(connect_success.node_id());
   std::weak_ptr<ResponseHandler> response_handler_weak_ptr = shared_from_this();
   if (request_public_key_functor_) {
     auto validate_node([=] (const asymm::PublicKey& key) {
@@ -269,10 +270,11 @@ void ResponseHandler::ConnectSuccess(protobuf::Message& message) {
                                  NodeId(connect_success.node_id()),
                                  key,
                                  peer_endpoint,
+                                 local_enpoint,
                                  message.client_node());
                            }
                          });
-      request_public_key_functor_(NodeId(connect_success.node_id()), validate_node);
+      request_public_key_functor_(peer_node_id, validate_node);
   }
 }
 

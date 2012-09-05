@@ -137,6 +137,10 @@ int NetworkUtils::Add(const Endpoint& this_endpoint,
   return rudp_->Add(this_endpoint, peer_endpoint, validation_data);
 }
 
+int NetworkUtils::MarkConnectionAsValid(const boost::asio::ip::udp::endpoint& peer_endpoint) {
+  return rudp_->MarkConnectionAsValid(peer_endpoint);
+}
+
 void NetworkUtils::Remove(const Endpoint& peer_endpoint) {
   rudp_->Remove(peer_endpoint);
 }

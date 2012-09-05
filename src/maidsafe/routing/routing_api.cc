@@ -126,8 +126,9 @@ void Routing::Join(Functors functors,
 }
 
 void Routing::ConnectFunctors(const Functors& functors) {
-  impl_->routing_table_.set_remove_node_functor([&](const NodeInfo& node) {
-      RemoveNode(node);
+  impl_->routing_table_.set_remove_node_functor([&](const NodeInfo& node,
+                                                    const bool& internal_rudp_only) {
+      RemoveNode(node, internal_rudp_only);
   });
   impl_->routing_table_.set_network_status_functor(functors.network_status);
   impl_->routing_table_.set_close_node_replaced_functor(functors.close_node_replaced);
@@ -301,6 +302,7 @@ int Routing::ZeroStateJoin(Functors functors,
                                NodeId(peer_node.node_id),
                                peer_node.public_key,
                                peer_endpoint_pair.external,
+                               false,
                                false);
   // Now poll for routing table size to have at other node available
   uint8_t poll_count(0);
@@ -555,8 +557,15 @@ void Routing::ConnectionLost(const Endpoint& lost_endpoint, std::weak_ptr<Routin
 #endif
 }
 
-void Routing::RemoveNode(const NodeInfo& node) {
+void Routing::RemoveNode(const NodeInfo& node, const bool& internal_rudp_only) {
   if (node.endpoint.address().is_unspecified() || node.node_id.Empty()) {
+    return;
+  }
+  if (internal_rudp_only) {
+    impl_->network_.Remove(node.endpoint);
+    LOG(kInfo) << "Routing: removed internal duplicate rudp connection : "
+               << HexSubstr(node.node_id.String())
+               << ". Removed rudp endpoint : " << node.endpoint;
     return;
   }
 

@@ -60,6 +60,7 @@ protobuf::Message ProxyConnect(
 protobuf::Message ConnectSuccess(const NodeId& node_id,
                                  const NodeId& my_node_id,
                                  const boost::asio::ip::udp::endpoint& this_endpoint,
+                                 const bool& local_endpoint,
                                  bool client_node);
 }  // namespace rpcs
 

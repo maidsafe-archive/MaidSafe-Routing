@@ -349,7 +349,7 @@ TEST(NetworkUtilsTest, FUNC_ProcessSendRecursiveSendOn) {
   sent_message.set_destination_id(NodeId(nodes.at(0).node_info.node_id).String());
 
   for (auto i(0); i != 8; ++i)
-    ASSERT_TRUE(routing_table.AddNode(nodes.at(i).node_info));
+    ASSERT_TRUE(routing_table.AddNode(nodes.at(i).node_info, false));
 
   for (auto i(0); i != kMessageCount; ++i)
     network.SendToClosestNode(sent_message);

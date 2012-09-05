@@ -21,6 +21,7 @@
 #include "maidsafe/routing/message_handler.h"
 #include "maidsafe/routing/network_utils.h"
 #include "maidsafe/routing/non_routing_table.h"
+#include "maidsafe/routing/return_codes.h"
 #include "maidsafe/routing/routing_pb.h"
 #include "maidsafe/routing/routing_table.h"
 #include "maidsafe/routing/rpcs.h"
@@ -43,7 +44,7 @@ void ValidateAndAddToRudp(NetworkUtils& network_,
   if (!this_endpoint.external.address().is_unspecified() &&
       !peer_endpoint.external.address().is_unspecified()) {
     protobuf::Message connect_success_external_endpoint(
-        rpcs::ConnectSuccess(peer_id, this_node_id, this_endpoint.external, client));
+        rpcs::ConnectSuccess(peer_id, this_node_id, this_endpoint.external, false, client));
     LOG(kVerbose) << "Calling RUDP::Add on this node's endpoint " << this_endpoint.external
                   << ", peer's endpoint " << peer_endpoint.external;
     int result = network_.Add(this_endpoint.external, peer_endpoint.external,
@@ -57,7 +58,7 @@ void ValidateAndAddToRudp(NetworkUtils& network_,
   if (!this_endpoint.local.address().is_unspecified() &&
       !peer_endpoint.local.address().is_unspecified()) {
     protobuf::Message connect_success_local_endpoint(
-        rpcs::ConnectSuccess(peer_id, this_node_id, this_endpoint.local, client));
+        rpcs::ConnectSuccess(peer_id, this_node_id, this_endpoint.local, true, client));
     LOG(kVerbose) << "Calling RUDP::Add on this node's endpoint " << this_endpoint.local
                   << ", peer's endpoint " << peer_endpoint.local
                   << ", This node id : " << HexSubstr(this_node_id.String())
@@ -72,14 +73,24 @@ void ValidateAndAddToRudp(NetworkUtils& network_,
   }
 }
 
-void ValidateAndAddToRoutingTable(NetworkUtils& network_,
+void ValidateAndAddToRoutingTable(NetworkUtils& network,
                                   RoutingTable& routing_table,
                                   NonRoutingTable& non_routing_table,
                                   const NodeId& peer_id,
                                   const asymm::PublicKey& public_key,
                                   const boost::asio::ip::udp::endpoint& peer_endpoint,
+                                  const bool& local_endpoint,
                                   const bool& client) {
   LOG(kVerbose) << "ValidateAndAddToRoutingTable";
+  int ret_val(network.MarkConnectionAsValid(peer_endpoint));
+  if ( ret_val != kSuccess) {
+    LOG(kError) << "[" << HexSubstr(routing_table.kKeys().identity) << "] "
+                << ". Rudp failed to validate connection with : " <<peer_endpoint
+                << " Peer id : " << HexSubstr(peer_id.String())
+                << ". rudp returned : " << ret_val;
+    return;
+  }
+
   NodeInfo peer;
   peer.node_id = peer_id;
   peer.public_key = public_key;
@@ -99,25 +110,20 @@ void ValidateAndAddToRoutingTable(NetworkUtils& network_,
                     << HexSubstr(peer_id.String());
     }
   } else {
-    if (routing_table.AddNode(peer)) {
+    if (routing_table.AddNode(peer, local_endpoint)) {
       routing_accepted_node = true;
       LOG(kVerbose) << "[" << HexSubstr(routing_table.kKeys().identity) << "] "
                     << "added node to routing table.  Node ID: " << HexSubstr(peer_id.String());
-
-      // ProcessSend(rpcs::ProxyConnect(node_id, NodeId(routing_table.kKeys().identity),
-       //                              their_endpoint),
-       //           rudp,
-       //           routing_table,
-       //           Endpoint());
     } else {
       LOG(kVerbose) << "Failed to add node to routing table.  Node id : "
                     << HexSubstr(peer_id.String());
     }
   }
+
   if (!routing_accepted_node) {
     LOG(kVerbose) << "Not adding node to " << (client ? "non-" : "") << "routing table.  Node id "
                   << HexSubstr(peer_id.String()) << " just added rudp connection will be removed.";
-    network_.Remove(peer_endpoint);
+    network.Remove(peer_endpoint);
   }
 }
 
@@ -136,7 +142,7 @@ void HandleSymmetricNodeAdd(RoutingTable& routing_table, const NodeId& peer_id,
   peer.endpoint = rudp::kNonRoutable;
   peer.nat_type = rudp::NatType::kSymmetric;
 
-  if (routing_table.AddNode(peer)) {
+  if (routing_table.AddNode(peer, false)) {
     LOG(kVerbose) << "[" << HexSubstr(routing_table.kKeys().identity) << "] "
                   << "added node to routing table.  Node ID: " << HexSubstr(peer_id.String())
                   << "Node is behind symmetric router !";

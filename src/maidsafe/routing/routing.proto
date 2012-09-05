@@ -93,6 +93,7 @@ message ConnectResponse {
 message ConnectSuccess {
   required bytes node_id = 1;
   required Endpoint endpoint = 2;
+  required bool local_endpoint = 3;
 }
 
 message FindNodesRequest {

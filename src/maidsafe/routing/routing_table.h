@@ -40,7 +40,7 @@ struct NodeInfo;
 class RoutingTable {
  public:
   RoutingTable(const asymm::Keys& keys, const bool& client_mode);
-  bool AddNode(NodeInfo& peer);
+  bool AddNode(NodeInfo& peer, const bool& local_endpoint);
   bool CheckNode(NodeInfo& peer);
   NodeInfo DropNode(const boost::asio::ip::udp::endpoint& endpoint);
   bool GetNodeInfo(const boost::asio::ip::udp::endpoint& endpoint, NodeInfo& peer) const;
@@ -63,7 +63,8 @@ class RoutingTable {
   void set_network_status_functor(NetworkStatusFunctor network_status_functor);
   void set_close_node_replaced_functor(CloseNodeReplacedFunctor close_node_replaced_functor);
   void set_new_bootstrap_endpoint_functor(NewBootstrapEndpointFunctor new_bootstrap_endpoint);
-  void set_remove_node_functor(std::function<void(const NodeInfo&)> remove_node_functor);
+  void set_remove_node_functor(std::function<void(const NodeInfo&,
+                                                  const bool&)> remove_node_functor);
   bool client_mode() const { return client_mode_; }
   void set_bootstrap_file_path(const boost::filesystem::path& path);
   friend class test::GenericNode;
@@ -74,10 +75,13 @@ class RoutingTable {
  private:
   RoutingTable(const RoutingTable&);
   RoutingTable& operator=(const RoutingTable&);
-  bool AddOrCheckNode(NodeInfo& node, const bool& remove);
+  bool AddOrCheckNode(NodeInfo& node, const bool& local_endpoint, const bool& remove);
   int16_t BucketIndex(const NodeId& rhs) const;
   bool CheckValidParameters(const NodeInfo& node) const;
   bool CheckParametersAreUnique(const NodeInfo& node) const;
+  NodeInfo ResolveConnectionDuplication(const NodeInfo& new_duplicate_node,
+                                        const bool& local_endpoint,
+                                        NodeInfo& existing_node);
   std::vector<NodeInfo> CheckGroupChange();
   bool MakeSpaceForNodeToBeAdded(NodeInfo& node, const bool& remove, NodeInfo& removed_node);
   void PartialSortFromTarget(const NodeId& target, const uint16_t& number);
@@ -98,7 +102,7 @@ class RoutingTable {
   const NodeId kNodeId_;
   NodeId furthest_group_node_id_;
   mutable std::mutex mutex_;
-  std::function<void(const NodeInfo&)> remove_node_functor_;
+  std::function<void(const NodeInfo&, const bool&)> remove_node_functor_;
   NetworkStatusFunctor network_status_functor_;
   CloseNodeReplacedFunctor close_node_replaced_functor_;
   NewBootstrapEndpointFunctor new_bootstrap_endpoint_;

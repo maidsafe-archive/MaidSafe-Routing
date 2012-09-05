@@ -51,7 +51,7 @@ TEST(RoutingTableTest, FUNC_AddCloseNodes) {
      NodeInfo node(MakeNode());
      node.endpoint.port(i + 1501U);  // has to be unique
      node.public_key = dummy_key;
-     EXPECT_FALSE(RT.AddNode(node));
+     EXPECT_FALSE(RT.AddNode(node, false));
   }
   EXPECT_EQ(0, RT.Size());
 
@@ -61,7 +61,7 @@ TEST(RoutingTableTest, FUNC_AddCloseNodes) {
   for (uint16_t i = 0; i < Parameters::closest_nodes_size ; ++i) {
     node = MakeNode();
     node.endpoint.port(i + 1501U);  // has to be unique
-    EXPECT_TRUE(RT.AddNode(node));
+    EXPECT_TRUE(RT.AddNode(node, false));
   }
   EXPECT_EQ(Parameters::closest_nodes_size, RT.Size());
 }
@@ -70,11 +70,11 @@ TEST(RoutingTableTest, FUNC_AddTooManyNodes) {
     asymm::Keys keys;
     keys.identity = RandomString(64);
   RoutingTable RT(keys, false);
-  RT.set_remove_node_functor([](const NodeInfo&) {});
+  RT.set_remove_node_functor([](const NodeInfo&, const bool&) {});
   for (uint16_t i = 0; RT.Size() < Parameters::max_routing_table_size; ++i) {
     NodeInfo node(MakeNode());
     node.endpoint.port(i + 1501U);  // has to be unique
-    EXPECT_TRUE(RT.AddNode(node));
+    EXPECT_TRUE(RT.AddNode(node, false));
   }
   EXPECT_EQ(RT.Size(), Parameters::max_routing_table_size);
   size_t count(0);
@@ -82,7 +82,7 @@ TEST(RoutingTableTest, FUNC_AddTooManyNodes) {
     NodeInfo node(MakeNode());
     node.endpoint.port(i + 1700U);  // has to be unique
     if (RT.CheckNode(node)) {
-      EXPECT_TRUE(RT.AddNode(node));
+      EXPECT_TRUE(RT.AddNode(node, false));
       ++count;
     }
   }
@@ -108,7 +108,7 @@ TEST(RoutingTableTest, FUNC_AddUsableBootstrapNodes) {
       node.nat_type = rudp::NatType::kOther;
       expected_bootstrap_endpoints.push_back(node.endpoint);
     }
-    ASSERT_TRUE(RT.AddNode(node));
+    ASSERT_TRUE(RT.AddNode(node, false));
   }
 
   for (uint16_t i = 0; RT.Size() < Parameters::max_routing_table_size; ++i) {
@@ -150,7 +150,7 @@ TEST(RoutingTableTest, FUNC_GroupChange) {
     LOG(kVerbose) << "Status : " << status;
   });
   for (uint16_t i = 0; i < Parameters::max_routing_table_size; ++i) {
-    ASSERT_TRUE(RT.AddNode(nodes.at(i)));
+    ASSERT_TRUE(RT.AddNode(nodes.at(i), false));
     LOG(kVerbose) << "Added  to RT : " << DebugId(nodes.at(i).node_id);
   }
 
@@ -166,7 +166,7 @@ TEST(RoutingTableTest, FUNC_CloseAndInRangeCheck) {
   for (uint16_t i = 0; RT.Size() < Parameters::max_routing_table_size; ++i) {
     NodeInfo node(MakeNode());
     node.endpoint.port(i + 1501U);  // has to be unique
-    EXPECT_TRUE(RT.AddNode(node));
+    EXPECT_TRUE(RT.AddNode(node, false));
   }
   EXPECT_EQ(RT.Size(), Parameters::max_routing_table_size);
   std::string my_id_encoded(my_node.ToStringEncoded(NodeId::kBinary));
@@ -196,17 +196,17 @@ TEST(RoutingTableTest, FUNC_CloseAndInRangeCheck) {
      NodeInfo node(MakeNode());
      node.endpoint.port(1502);  // duplicate endpoint
      node.node_id = my_closest_node;
-     EXPECT_FALSE(RT.AddNode(node));
+     EXPECT_FALSE(RT.AddNode(node, false));
      node.endpoint.port(25000);
-     EXPECT_TRUE(RT.AddNode(node));
+     EXPECT_TRUE(RT.AddNode(node, false));
   // should now be closest node to itself :-)
   EXPECT_EQ(RT.GetClosestNode(my_closest_node).node_id.String(), my_closest_node.String());
   EXPECT_EQ(RT.Size(), Parameters::max_routing_table_size);
   EXPECT_EQ(node.node_id, RT.DropNode(node.endpoint).node_id);
   EXPECT_EQ(RT.Size(), Parameters::max_routing_table_size - 1);
-  EXPECT_TRUE(RT.AddNode(node));
+  EXPECT_TRUE(RT.AddNode(node, false));
   EXPECT_EQ(RT.Size(), Parameters::max_routing_table_size);
-  EXPECT_FALSE(RT.AddNode(node));
+  EXPECT_FALSE(RT.AddNode(node, false));
   EXPECT_EQ(RT.Size(), Parameters::max_routing_table_size);
   EXPECT_EQ(node.node_id, RT.DropNode(node.endpoint).node_id);
   EXPECT_EQ(RT.Size(), Parameters::max_routing_table_size -1);
@@ -232,7 +232,7 @@ TEST(RoutingTableTest, FUNC_GetClosestNodeWithExclusion) {
   NodeInfo node(MakeNode());
   node.endpoint.port(1501U);  // has to be unique
   nodes_id.push_back(node.node_id);
-  EXPECT_TRUE(RT.AddNode(node));
+  EXPECT_TRUE(RT.AddNode(node, false));
 
   node_info = RT.GetClosestNode(my_node, exclude, false);
   node_info2 = RT.GetClosestNode(my_node, exclude, true);
@@ -254,7 +254,7 @@ TEST(RoutingTableTest, FUNC_GetClosestNodeWithExclusion) {
     NodeInfo node(MakeNode());
     node.endpoint.port(i + 1501U);  // has to be unique
     nodes_id.push_back(node.node_id);
-    EXPECT_TRUE(RT.AddNode(node));
+    EXPECT_TRUE(RT.AddNode(node, false));
   }
 
   node_info = RT.GetClosestNode(my_node, exclude, false);
@@ -284,7 +284,7 @@ TEST(RoutingTableTest, FUNC_GetClosestNodeWithExclusion) {
     NodeInfo node(MakeNode());
     node.endpoint.port(i + 1501U);  // has to be unique
     nodes_id.push_back(node.node_id);
-    EXPECT_TRUE(RT.AddNode(node));
+    EXPECT_TRUE(RT.AddNode(node, false));
   }
 
   node_info = RT.GetClosestNode(my_node, exclude, false);
@@ -330,7 +330,7 @@ TEST(RoutingTableTest, FUNC_GetClosestNodeWithExclusionAndIgnoreNonRoutable) {
   nodes_id.push_back(node.node_id);
   node.nat_type = rudp::NatType::kSymmetric;
   node.endpoint = rudp::kNonRoutable;
-  EXPECT_TRUE(RT.AddNode(node));
+  EXPECT_TRUE(RT.AddNode(node, false));
 
   node_info = RT.GetClosestNode(my_node, exclude, false, true);
   node_info2 = RT.GetClosestNode(my_node, exclude, true, true);
@@ -359,7 +359,7 @@ TEST(RoutingTableTest, FUNC_GetClosestNodeWithExclusionAndIgnoreNonRoutable) {
     }
 
     nodes_id.push_back(node.node_id);
-    EXPECT_TRUE(RT.AddNode(node));
+    EXPECT_TRUE(RT.AddNode(node, false));
   }
 
   node_info = RT.GetClosestNode(my_node, exclude, false, true);
