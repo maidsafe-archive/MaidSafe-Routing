@@ -91,6 +91,7 @@ int NetworkUtils::Bootstrap(const std::vector<Endpoint> &bootstrap_endpoints,
     sorted_bootstrap_endpoints = bootstrap_endpoints;
   }
   bootstrap_endpoint_ = rudp_->Bootstrap(sorted_bootstrap_endpoints,
+                                         !client,
                                          message_received_functor,
                                          [&](const Endpoint& endpoint) {
                                              OnConnectionLost(endpoint); },

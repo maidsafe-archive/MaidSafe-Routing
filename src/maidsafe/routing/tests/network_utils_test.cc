@@ -155,6 +155,7 @@ TEST(NetworkUtilsTest, FUNC_ProcessSendDirectEndpoint) {
   auto a1 = std::async(std::launch::async, [=, &rudp1, &nat_type]()-> Endpoint {
       std::vector<Endpoint> bootstrap_endpoint(1, endpoint2);
       return rudp1.Bootstrap(bootstrap_endpoint,
+                             true,
                              message_received_functor1,
                              connection_lost_functor,
                              private_key1,
@@ -168,6 +169,7 @@ TEST(NetworkUtilsTest, FUNC_ProcessSendDirectEndpoint) {
   auto a2 = std::async(std::launch::async, [=, &rudp2, &nat_type]()-> Endpoint {
       std::vector<Endpoint> bootstrap_endpoint(1, endpoint1);
       return rudp2.Bootstrap(bootstrap_endpoint,
+                             true,
                              message_received_functor2,
                              connection_lost_functor,
                              private_key2,
@@ -289,6 +291,7 @@ TEST(NetworkUtilsTest, FUNC_ProcessSendRecursiveSendOn) {
   auto a1 = std::async(std::launch::async, [=, &rudp1, &nat_type]()-> Endpoint {
       std::vector<Endpoint> bootstrap_endpoint(1, endpoint2);
       return rudp1.Bootstrap(bootstrap_endpoint,
+                             true,
                              message_received_functor1,
                              connection_lost_functor,
                              private_key1,
@@ -303,6 +306,7 @@ TEST(NetworkUtilsTest, FUNC_ProcessSendRecursiveSendOn) {
   auto a2 = std::async(std::launch::async, [=, &rudp2, &nat_type]()-> Endpoint {
       std::vector<Endpoint> bootstrap_endpoint(1, endpoint1);
       return rudp2.Bootstrap(bootstrap_endpoint,
+                             true,
                              message_received_functor2,
                              connection_lost_functor,
                              private_key2,
