@@ -157,6 +157,72 @@ TEST(RoutingTableTest, FUNC_GroupChange) {
   ASSERT_EQ(RT.Size(), Parameters::max_routing_table_size);
 }
 
+TEST(RoutingTableTest, FUNC_DuplicateConnection) {
+  asymm::Keys keys;
+  keys.identity = RandomString(64);
+  RoutingTable RT(keys, false);
+  std::vector<NodeInfo> nodes, removed_nodes;
+  for (uint16_t i = 0; i < Parameters::max_routing_table_size; ++i)
+    nodes.push_back(MakeNode());
+  for (uint16_t i = 0; i < (Parameters::max_routing_table_size / 2); ++i)
+    removed_nodes.push_back(nodes.at(i));
+
+  int expected_status(100);
+  bool status_reached(false);
+  RT.set_network_status_functor([&](const int& status) {
+    LOG(kVerbose) << "Status : " << status;
+    if (!status_reached) {
+      ASSERT_LE(status, expected_status);
+      if (status == expected_status)
+        status_reached = true;
+    } else {
+      ASSERT_TRUE(false) << "Status should not change after reaching expected.";
+    }
+  });
+
+  int remove_node_count(0), expected_remove_node_count(Parameters::max_routing_table_size / 2);
+
+  RT.set_remove_node_functor([&](const NodeInfo& removed_node, const bool& internal_rudp_only) {
+    ++remove_node_count;
+    ASSERT_LE(remove_node_count, expected_remove_node_count);
+    ASSERT_TRUE(internal_rudp_only);
+    ASSERT_TRUE(std::find_if(removed_nodes.begin(),
+                             removed_nodes.end(),
+                             [=](const NodeInfo& node) {
+                               return ((node.endpoint == removed_node.endpoint) &&
+                                       (node.node_id == removed_node.node_id));
+                             }) != removed_nodes.end());
+  });
+
+  for (uint16_t i = 0; i < Parameters::max_routing_table_size; ++i) {
+    ASSERT_TRUE(RT.AddNode(nodes.at(i), false));
+    LOG(kVerbose) << "Added  to RT : " << DebugId(nodes.at(i).node_id);
+  }
+
+  for (uint16_t i = 0; i < (Parameters::max_routing_table_size / 2); ++i) {
+    ASSERT_FALSE(RT.AddNode(nodes.at(i), true));
+    LOG(kVerbose) << "Added  to RT : " << DebugId(nodes.at(i).node_id);
+  }
+  ASSERT_EQ(RT.Size(), Parameters::max_routing_table_size);
+
+  for (uint16_t i = 0; i < (Parameters::max_routing_table_size / 2); ++i) {
+    nodes.at(i).endpoint.address(GetLocalIp());
+    nodes.at(i).endpoint.port(GetRandomPort());
+    ASSERT_TRUE(RT.AddNode(nodes.at(i), true));
+    LOG(kVerbose) << "Added  to RT : " << DebugId(nodes.at(i).node_id);
+  }
+
+  for (uint16_t i = 0; i < Parameters::max_routing_table_size; ++i) {
+    ASSERT_FALSE(RT.AddNode(nodes.at(i), true));
+  }
+
+  ASSERT_EQ(RT.Size(), Parameters::max_routing_table_size);
+
+  for (uint16_t i = 0; i < Parameters::max_routing_table_size; ++i) {
+    ASSERT_TRUE(RT.IsConnected(nodes.at(i).endpoint));
+  }
+}
+
 TEST(RoutingTableTest, FUNC_CloseAndInRangeCheck) {
   asymm::Keys keys;
   keys.identity = RandomString(64);

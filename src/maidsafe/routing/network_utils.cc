@@ -72,6 +72,7 @@ void NetworkUtils::OnConnectionLost(const Endpoint& endpoint) {
 }
 
 int NetworkUtils::Bootstrap(const std::vector<Endpoint> &bootstrap_endpoints,
+                            const bool& client,
                             rudp::MessageReceivedFunctor message_received_functor,
                             rudp::ConnectionLostFunctor connection_lost_functor,
                             Endpoint local_endpoint) {

@@ -221,6 +221,7 @@ int Routing::DoBootstrap() {
   std::weak_ptr<RoutingPrivate> impl_weak_ptr(impl_);
   return impl_->network_.Bootstrap(
       impl_->bootstrap_nodes_,
+      impl_->client_mode_,
       [=](const std::string& message) { ReceiveMessage(message, impl_weak_ptr); },
       [=](const Endpoint& lost_endpoint) { ConnectionLost(lost_endpoint, impl_weak_ptr); });  // NOLINT (Fraser)
 }
@@ -269,6 +270,7 @@ int Routing::ZeroStateJoin(Functors functors,
   std::weak_ptr<RoutingPrivate> impl_weak_ptr(impl_);
   int result(impl_->network_.Bootstrap(
       impl_->bootstrap_nodes_,
+      impl_->client_mode_,
       [=](const std::string& message) { ReceiveMessage(message, impl_weak_ptr); },
       [=](const Endpoint& lost_endpoint) { ConnectionLost(lost_endpoint, impl_weak_ptr); },
       local_endpoint));

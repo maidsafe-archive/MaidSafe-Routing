@@ -43,6 +43,7 @@ class NetworkUtils {
                 Timer& timer);
   void Stop();
   int Bootstrap(const std::vector<boost::asio::ip::udp::endpoint> &bootstrap_endpoints,
+                const bool& client,
                 rudp::MessageReceivedFunctor message_received_functor,
                 rudp::ConnectionLostFunctor connection_lost_functor,
                 boost::asio::ip::udp::endpoint local_endpoint = boost::asio::ip::udp::endpoint());

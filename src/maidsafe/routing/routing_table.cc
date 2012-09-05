@@ -131,8 +131,9 @@ NodeInfo RoutingTable::ResolveConnectionDuplication(const NodeInfo& new_duplicat
                                                     NodeInfo& existing_node) {
   assert((new_duplicate_node.node_id == existing_node.node_id) &&
          "This should only called on duplicate node case.");
-  if (local_endpoint && (rsa::MatchingPublicKeys(new_duplicate_node.public_key,
-                                                 existing_node.public_key))) {
+  if (local_endpoint &&
+      (new_duplicate_node.endpoint != existing_node.endpoint) &&
+      rsa::MatchingPublicKeys(new_duplicate_node.public_key, existing_node.public_key)) {
     NodeInfo removed_duplicate;
     removed_duplicate = existing_node;
     existing_node.endpoint = new_duplicate_node.endpoint;
