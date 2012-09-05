@@ -75,6 +75,7 @@ std::string MessageTypeString(const protobuf::Message& message);
 std::vector<boost::asio::ip::udp::endpoint> OrderBootstrapList(
                                   std::vector<boost::asio::ip::udp::endpoint> peer_endpoints);
 protobuf::NatType NatTypeProtobuf(const rudp::NatType& nat_type);
+rudp::NatType NatTypeFromProtobuf(const protobuf::NatType& nat_type_proto);
 
 }  // namespace routing
 
