@@ -15,6 +15,7 @@
 
 
 #include <string>
+#include <vector>
 
 #include "boost/asio/ip/udp.hpp"
 
@@ -72,7 +73,8 @@ void SetProtobufEndpoint(const boost::asio::ip::udp::endpoint& endpoint,
                          protobuf::Endpoint* pb_endpoint);
 boost::asio::ip::udp::endpoint GetEndpointFromProtobuf(const protobuf::Endpoint& pb_endpoint);
 std::string MessageTypeString(const protobuf::Message& message);
-
+std::vector<boost::asio::ip::udp::endpoint> OrderBootstrapList(
+                                  std::vector<boost::asio::ip::udp::endpoint> peer_endpoints);
 protobuf::NatType NatTypeProtobuf(const rudp::NatType& nat_type);
 rudp::NatType NatTypeFromProtobuf(const protobuf::NatType& nat_type_proto);
 
