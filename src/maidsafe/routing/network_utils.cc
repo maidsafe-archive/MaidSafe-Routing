@@ -83,8 +83,13 @@ int NetworkUtils::Bootstrap(const std::vector<Endpoint> &bootstrap_endpoints,
       public_key(new asymm::PublicKey(routing_table_.kKeys().public_key));
 
   connection_lost_functor_ = connection_lost_functor;
-
-  bootstrap_endpoint_ = rudp_->Bootstrap(bootstrap_endpoints,
+  std::vector<Endpoint> sorted_bootstrap_endpoints;
+  if (local_endpoint.address().is_unspecified()) {  // not zero state case
+    sorted_bootstrap_endpoints = OrderBootstrapList(bootstrap_endpoints);
+  }  else {
+    sorted_bootstrap_endpoints = bootstrap_endpoints;
+  }
+  bootstrap_endpoint_ = rudp_->Bootstrap(sorted_bootstrap_endpoints,
                                          message_received_functor,
                                          [&](const Endpoint& endpoint) {
                                              OnConnectionLost(endpoint); },
@@ -98,7 +103,7 @@ int NetworkUtils::Bootstrap(const std::vector<Endpoint> &bootstrap_endpoints,
     return kNoOnlineBootstrapContacts;
   }
 
-  if (!local_endpoint.address().is_unspecified()) {  // Zero state case
+  if (!local_endpoint.address().is_unspecified()) {  // zero state case
     this_node_relay_endpoint_ = local_endpoint;
     LOG(kVerbose) << "Zero state Bootstrap successful, bootstrap node - " << bootstrap_endpoint_;
     return kSuccess;

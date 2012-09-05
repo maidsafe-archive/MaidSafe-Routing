@@ -11,6 +11,8 @@
  ******************************************************************************/
 
 #include <string>
+#include <algorithm>
+#include <vector>
 
 #include "maidsafe/routing/utils.h"
 
@@ -279,6 +281,24 @@ std::string MessageTypeString(const protobuf::Message& message) {
   else
     message_type = message_type + " Response";
   return message_type;
+}
+
+std::vector<boost::asio::ip::udp::endpoint> OrderBootstrapList(
+                    std::vector<boost::asio::ip::udp::endpoint> peer_endpoints) {
+  if (peer_endpoints.empty())
+    return peer_endpoints;
+  auto copy_vector(peer_endpoints);
+  for (auto &endpoint : copy_vector) {
+    endpoint.port(5483);
+  }
+  auto it = std::unique(copy_vector.begin(), copy_vector.end());
+  copy_vector.resize(it - copy_vector.begin());
+  std::reverse(peer_endpoints.begin(), peer_endpoints.end());
+  peer_endpoints.resize(peer_endpoints.size() + copy_vector.size());
+  for (auto& i : copy_vector)
+    peer_endpoints.push_back(i);
+  std::reverse(peer_endpoints.begin(), peer_endpoints.end());
+  return peer_endpoints;
 }
 
 protobuf::NatType NatTypeProtobuf(const rudp::NatType& nat_type) {
