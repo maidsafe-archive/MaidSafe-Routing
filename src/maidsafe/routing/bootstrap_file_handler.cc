@@ -48,6 +48,7 @@ std::vector<boost::asio::ip::udp::endpoint> ReadBootstrapFile(const fs::path& pa
         static_cast<uint16_t>(protobuf_bootstrap.bootstrap_contacts(i).port())));
   }
 
+  std::reverse(bootstrap_nodes.begin(), bootstrap_nodes.end());
   return bootstrap_nodes;
 }
 
