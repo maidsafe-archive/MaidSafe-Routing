@@ -83,7 +83,7 @@ void ValidateAndAddToRoutingTable(NetworkUtils& network,
                                   const bool& client) {
   LOG(kVerbose) << "ValidateAndAddToRoutingTable";
   int ret_val(network.MarkConnectionAsValid(peer_endpoint));
-  if ( ret_val != kSuccess) {
+  if (ret_val != kSuccess) {
     LOG(kError) << "[" << HexSubstr(routing_table.kKeys().identity) << "] "
                 << ". Rudp failed to validate connection with : " <<peer_endpoint
                 << " Peer id : " << HexSubstr(peer_id.String())
