@@ -85,12 +85,12 @@ int NetworkUtils::Bootstrap(const std::vector<Endpoint> &bootstrap_endpoints,
 
   connection_lost_functor_ = connection_lost_functor;
   std::vector<Endpoint> sorted_bootstrap_endpoints;
-  if (local_endpoint.address().is_unspecified()) {  // not zero state case
-    sorted_bootstrap_endpoints = OrderBootstrapList(bootstrap_endpoints);
-  }  else {
-    sorted_bootstrap_endpoints = bootstrap_endpoints;
-  }
-  bootstrap_endpoint_ = rudp_->Bootstrap(sorted_bootstrap_endpoints,
+  // if (local_endpoint.address().is_unspecified()) {  // not zero state case
+  //   sorted_bootstrap_endpoints = OrderBootstrapList(bootstrap_endpoints);
+  // }  else {
+  //   sorted_bootstrap_endpoints = bootstrap_endpoints;
+  // }
+  bootstrap_endpoint_ = rudp_->Bootstrap(bootstrap_endpoints,
                                          !client,
                                          message_received_functor,
                                          [&](const Endpoint& endpoint) {
