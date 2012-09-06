@@ -413,7 +413,7 @@ void Routing::Send(const NodeId& destination_id,
     assert((impl_->network_.this_node_relay_endpoint() ==
             GetEndpointFromProtobuf(proto_message.relay())) && "Endpoint was not set properly");
     rudp::MessageSentFunctor message_sent(
-        [&](int result) {
+        [=](int result) {
           if (rudp::kSuccess != result) {
             impl_->timer_.CancelTask(proto_message.id());
             if (impl_->anonymous_node_) {
