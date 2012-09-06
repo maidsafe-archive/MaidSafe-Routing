@@ -126,11 +126,15 @@ void Routing::Join(Functors functors,
 }
 
 void Routing::ConnectFunctors(const Functors& functors) {
-  impl_->routing_table_.set_remove_node_functor([&](const NodeInfo& node,
-                                                    const bool& internal_rudp_only) {
+  impl_->routing_table_.set_remove_node_functor([this](const NodeInfo& node,
+                                                       const bool& internal_rudp_only) {
       RemoveNode(node, internal_rudp_only);
   });
-  impl_->routing_table_.set_network_status_functor(functors.network_status);
+
+  impl_->routing_table_.set_network_status_functor([this](const int& network_health) {
+      NetworkStatus(network_health);
+  });
+
   impl_->routing_table_.set_close_node_replaced_functor(functors.close_node_replaced);
   impl_->message_handler_->set_message_received_functor(functors.message_received);
   impl_->message_handler_->set_request_public_key_functor(functors.request_public_key);
@@ -587,6 +591,14 @@ void Routing::RemoveNode(const NodeInfo& node, const bool& internal_rudp_only) {
   if (resend) {
     // Close node removed by routing, get more nodes
     LOG(kWarning) << "Removed close node, sending find node to get more nodes.";
+    ReSendFindNodeRequest(boost::system::error_code(), impl_, true);
+  }
+}
+
+void Routing::NetworkStatus(const int& network_health) {
+  if (impl_->functors_.network_status)
+    impl_->functors_.network_status(network_health);
+  if (network_health == 1) {  // Connected to the closest node
     ReSendFindNodeRequest(boost::system::error_code(), impl_, true);
   }
 }
