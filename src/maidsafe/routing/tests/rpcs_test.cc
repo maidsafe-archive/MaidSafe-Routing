@@ -134,12 +134,14 @@ TEST(RpcsTest, BEH_ConnectMessageNodeRelayMode) {
 }
 
 TEST(RpcsTest, BEH_FindNodesMessageInitialised) {
-  ASSERT_TRUE(rpcs::FindNodes(NodeId(RandomString(64)), NodeId(RandomString(64))).IsInitialized());
+  ASSERT_TRUE(rpcs::FindNodes(NodeId(RandomString(64)),
+                              NodeId(RandomString(64)),
+                              8).IsInitialized());
 }
 
 TEST(RpcsTest, BEH_FindNodesMessageNode) {
   NodeInfo us(MakeNode());
-  protobuf::Message message = rpcs::FindNodes(us.node_id, us.node_id);
+  protobuf::Message message = rpcs::FindNodes(us.node_id, us.node_id, 8);
   protobuf::FindNodesRequest find_nodes_request;
   EXPECT_TRUE(find_nodes_request.ParseFromString(message.data(0)));  // us
   EXPECT_TRUE(find_nodes_request.num_nodes_requested() == Parameters::closest_nodes_size);
@@ -162,7 +164,7 @@ TEST(RpcsTest, BEH_FindNodesMessageNode) {
 TEST(RpcsTest, BEH_FindNodesMessageNodeRelayMode) {
   NodeInfo us(MakeNode());
   Endpoint relay_endpoint(boost::asio::ip::address_v4::loopback(), GetRandomPort());
-  protobuf::Message message = rpcs::FindNodes(us.node_id, us.node_id, true, relay_endpoint);
+  protobuf::Message message = rpcs::FindNodes(us.node_id, us.node_id, 8, true, relay_endpoint);
   protobuf::FindNodesRequest find_nodes_request;
   EXPECT_TRUE(find_nodes_request.ParseFromString(message.data(0)));  // us
   EXPECT_TRUE(find_nodes_request.num_nodes_requested() == Parameters::closest_nodes_size);

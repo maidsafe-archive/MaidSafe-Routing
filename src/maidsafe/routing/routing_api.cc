@@ -230,6 +230,7 @@ int Routing::DoFindNode() {
   protobuf::Message find_node_rpc(
       rpcs::FindNodes(NodeId(impl_->keys_.identity),
                       NodeId(impl_->keys_.identity),
+                      1,
                       true,
                       impl_->network_.this_node_relay_endpoint()));
 
@@ -616,7 +617,8 @@ void Routing::ReSendFindNodeRequest(const boost::system::error_code& error_code,
                  << " nodes.  Sending another FindNodes. Current routing table size : "
                  << pimpl->routing_table_.Size();
       protobuf::Message find_node_rpc(rpcs::FindNodes(NodeId(pimpl->keys_.identity),
-                                                      NodeId(pimpl->keys_.identity)));
+                                                      NodeId(pimpl->keys_.identity),
+                                                      Parameters::closest_nodes_size));
       pimpl->network_.SendToClosestNode(find_node_rpc);
 
       pimpl->recovery_timer_.expires_from_now(

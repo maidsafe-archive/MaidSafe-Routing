@@ -98,12 +98,13 @@ protobuf::Message Connect(const NodeId& node_id,
 
 protobuf::Message FindNodes(const NodeId& node_id,
                             const NodeId& my_node_id,
+                            const int& num_nodes_requested,
                             bool relay_message,
                             boost::asio::ip::udp::endpoint local_endpoint) {
   assert(node_id.IsValid() && "Invalid node_id");
   protobuf::Message message;
   protobuf::FindNodesRequest find_nodes;
-  find_nodes.set_num_nodes_requested(Parameters::max_routing_table_size);
+  find_nodes.set_num_nodes_requested(num_nodes_requested);
   find_nodes.set_target_node(node_id.String());
   find_nodes.set_timestamp(GetTimeStamp());
   message.set_last_id(my_node_id.String());

@@ -24,6 +24,7 @@ uint16_t Parameters::timeout_in_seconds(5);
 uint16_t Parameters::closest_nodes_size(8);
 uint16_t Parameters::node_group_size(4);
 uint16_t Parameters::max_routing_table_size(64);
+uint16_t Parameters::routing_table_size_threshold(max_routing_table_size / 2);
 uint16_t Parameters::max_client_routing_table_size(8);
 uint16_t Parameters::max_non_routing_table_size(8);
 uint16_t Parameters::bucket_target_size(1);
