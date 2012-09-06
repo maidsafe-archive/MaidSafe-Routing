@@ -44,7 +44,8 @@ void ValidateAndAddToRudp(NetworkUtils& network_,
   peer.public_key = public_key;
   peer.endpoint = peer_endpoint.external;
 
-  bool external_only(peer_endpoint.external == peer_endpoint.local);
+  bool external_only((peer_endpoint.external == peer_endpoint.local) ||
+                     (this_endpoint.external == this_endpoint.local));
 
   if (!this_endpoint.external.address().is_unspecified() &&
       !peer_endpoint.external.address().is_unspecified()) {
