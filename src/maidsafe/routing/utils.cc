@@ -43,6 +43,9 @@ void ValidateAndAddToRudp(NetworkUtils& network_,
   peer.node_id = peer_id;
   peer.public_key = public_key;
   peer.endpoint = peer_endpoint.external;
+
+  bool external_only(peer_endpoint.external == peer_endpoint.local);
+
   if (!this_endpoint.external.address().is_unspecified() &&
       !peer_endpoint.external.address().is_unspecified()) {
     protobuf::Message connect_success_external_endpoint(
@@ -57,7 +60,7 @@ void ValidateAndAddToRudp(NetworkUtils& network_,
       LOG(kVerbose) << "rudp.Add succeeded on external endpoint";
   }
 
-  if (!this_endpoint.local.address().is_unspecified() &&
+  if (!external_only && !this_endpoint.local.address().is_unspecified() &&
       !peer_endpoint.local.address().is_unspecified()) {
     protobuf::Message connect_success_local_endpoint(
         rpcs::ConnectSuccess(peer_id, this_node_id, this_endpoint.local, true, client));

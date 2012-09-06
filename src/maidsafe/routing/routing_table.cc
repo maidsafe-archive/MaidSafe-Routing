@@ -118,6 +118,7 @@ bool RoutingTable::AddOrCheckNode(NodeInfo& peer, const bool& local_endpoint, co
       if (new_bootstrap_endpoint_)
         new_bootstrap_endpoint_(peer.endpoint);
     }
+    std::cout << PrintRoutingTable();
   }
   if (duplication && !duplicate_removed_node.endpoint.address().is_unspecified()) {
     if (remove_node_functor_)
@@ -170,7 +171,7 @@ NodeInfo RoutingTable::DropNode(const Endpoint& endpoint) {
 
   if (!dropped_node.node_id.Empty())
     UpdateBootstrapFile(bootstrap_file_path_, dropped_node.endpoint, true);
-
+  std::cout << PrintRoutingTable();
   return dropped_node;
 }
 
@@ -552,6 +553,17 @@ void RoutingTable::set_new_bootstrap_endpoint_functor(
 void RoutingTable::set_bootstrap_file_path(const boost::filesystem::path& path) {
   LOG(kInfo) << "set bootstrap file path : " << path;
   bootstrap_file_path_ = path;
+}
+
+std::string RoutingTable::PrintRoutingTable() {
+  auto rt(nodes_);
+  std::string s = "\n\nThis node's own routing table and peer connections:\n";
+  for (auto node : rt) {
+    s += std::string("\tPeer ") + "[" + DebugId(node.node_id) + "]"+ "-->";
+    s += boost::lexical_cast<std::string>(node.endpoint)+ "\n";
+  }
+  s += "\n\n";
+  return s;
 }
 
 }  // namespace routing

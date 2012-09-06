@@ -94,7 +94,7 @@ class RoutingTable {
                                            bool ignore_symmetric);
 
   void update_network_status(const uint16_t& size) const;
-
+  std::string PrintRoutingTable();
   const uint16_t max_size_;
   bool client_mode_;
   const asymm::Keys keys_;
