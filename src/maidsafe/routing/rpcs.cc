@@ -103,7 +103,7 @@ protobuf::Message FindNodes(const NodeId& node_id,
   assert(node_id.IsValid() && "Invalid node_id");
   protobuf::Message message;
   protobuf::FindNodesRequest find_nodes;
-  find_nodes.set_num_nodes_requested(Parameters::closest_nodes_size);
+  find_nodes.set_num_nodes_requested(Parameters::max_routing_table_size);
   find_nodes.set_target_node(node_id.String());
   find_nodes.set_timestamp(GetTimeStamp());
   message.set_last_id(my_node_id.String());

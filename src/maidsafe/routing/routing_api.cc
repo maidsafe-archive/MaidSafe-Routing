@@ -484,10 +484,9 @@ NodeId Routing::GetRandomExistingNode() {
                                (impl_->random_node_vector_[RandomUint32() % queue_size]);
   LOG(kVerbose) << "RandomNodeQueue : Getting node, queue size now "
                 << queue_size;
-//  if (queue_size < 98)
-//    impl_->random_node_vector_.push_back(node);
-//  if (queue_size > 98)
-//    impl_->random_node_vector_.erase(impl_->random_node_vector_.begin());
+  if (queue_size >= 100) {
+    impl_->random_node_vector_.erase(impl_->random_node_vector_.begin());
+  }
   return node;
 }
 

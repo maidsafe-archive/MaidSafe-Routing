@@ -189,11 +189,14 @@ void Connect(RoutingTable& routing_table,
   connect_response.set_original_signature(message.signature());
   NodeId source((message.has_relay() ? message.relay_id() : message.source_id()));
   if (connect_request.closest_id_size() > 0) {
-    for (auto node_id : routing_table.GetClosestNodes(source, Parameters::closest_nodes_size - 1)) {
+    for (auto node_id : routing_table.GetClosestNodes(source,
+                                                      Parameters::max_routing_table_size)) {
       if (std::find(connect_request.closest_id().begin(), connect_request.closest_id().end(),
                     node_id.String()) == connect_request.closest_id().end() &&
-          NodeId::CloserToTarget(node_id,
-              NodeId(connect_request.closest_id(connect_request.closest_id_size() - 1)), source) &&
+          (NodeId::CloserToTarget(node_id,
+              NodeId(connect_request.closest_id(connect_request.closest_id_size() - 1)), source) ||
+           (connect_request.closest_id_size() + connect_response.closer_id_size() <
+            Parameters::max_routing_table_size)) &&
           source != node_id)
         connect_response.add_closer_id(node_id.String());
     }
