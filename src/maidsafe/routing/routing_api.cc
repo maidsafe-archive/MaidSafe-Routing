@@ -478,13 +478,16 @@ NodeId Routing::GetRandomExistingNode() {
     std::lock_guard<std::mutex> lock(impl_->random_node_mutex_);
   if (impl_->random_node_vector_.empty())
     return NodeId();
-  NodeId node(impl_->random_node_vector_.front());
+  NodeId node;
   auto queue_size = impl_->random_node_vector_.size();
+  node = (queue_size >= 100) ? (impl_->random_node_vector_[0]) :
+                               (impl_->random_node_vector_[RandomUint32() % queue_size]);
   LOG(kVerbose) << "RandomNodeQueue : Getting node, queue size now "
                 << queue_size;
-    if (queue_size < 98)
-      impl_->random_node_vector_.push_back(node);
-  impl_->random_node_vector_.erase(impl_->random_node_vector_.begin());
+//  if (queue_size < 98)
+//    impl_->random_node_vector_.push_back(node);
+//  if (queue_size > 98)
+//    impl_->random_node_vector_.erase(impl_->random_node_vector_.begin());
   return node;
 }
 
@@ -506,8 +509,8 @@ void Routing::AddExistingRandomNode(NodeId node, std::weak_ptr<RoutingPrivate> i
     auto queue_size = pimpl->random_node_vector_.size();
     LOG(kVerbose) << "RandomNodeQueue : Added node, queue size now "
                   << queue_size;
-    if (queue_size > 99)
-      pimpl->random_node_vector_.erase(pimpl->random_node_vector_.begin() + 99);
+    if (queue_size > 100)
+      pimpl->random_node_vector_.erase(pimpl->random_node_vector_.begin());
   }
 }
 
