@@ -90,6 +90,9 @@ class GenericNode {
   bool NonRoutingTableHasNode(const NodeId& node_id);
   testing::AssertionResult DropNode(const NodeId& node_id);
   std::vector<NodeInfo> RoutingTable() const;
+  std::vector<NodeId> RandomNodeVector();
+  NodeId GetRandomExistingNode();
+  void AddExistingRandomNode(const NodeId& node_id);
 
   static size_t next_node_id_;
 

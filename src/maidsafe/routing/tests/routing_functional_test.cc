@@ -510,6 +510,42 @@ TYPED_TEST_P(RoutingNetworkTest, FUNC_SendToClientWithSameId) {
   EXPECT_EQ(2, size);
 }
 
+TYPED_TEST_P(RoutingNetworkTest, FUNC_GetRandomExistingNode) {
+  this->SetUpNetwork(kNetworkSize);
+  uint32_t collisions(0), random_node((RandomUint32() % kNetworkSize - 2) + 2);
+  EXPECT_TRUE(this->Send(1));
+  EXPECT_LT(this->nodes_[random_node]->RandomNodeVector().size(), 98);
+  for (auto node : this->nodes_[random_node]->RandomNodeVector())
+    LOG(kVerbose) << HexSubstr(node.String());
+  NodeId last_node(NodeId::kRandomId), last_random(NodeId::kRandomId);
+  for (auto index(0); index < 100; ++index) {
+    last_node = this->nodes_[random_node]->GetRandomExistingNode();
+    if (last_node == last_random) {
+      LOG(kVerbose) << HexSubstr(last_random.String()) << ", " << HexSubstr(last_node.String());
+      collisions++;
+      for (auto node : this->nodes_[random_node]->RandomNodeVector())
+        LOG(kVerbose) << HexSubstr(node.String());
+    }
+    last_random = last_node;
+  }
+  EXPECT_LT(collisions, 50);
+  while (this->nodes_[random_node]->RandomNodeVector().size() < 100)
+    this->nodes_[random_node]->AddExistingRandomNode(NodeId(NodeId::kRandomId));
+    this->nodes_[random_node]->AddExistingRandomNode(NodeId(NodeId::kRandomId));
+
+
+
+  last_random = NodeId(NodeId::kRandomId);
+  for (auto index(0); index < 1000; ++index) {
+    last_node = this->nodes_[random_node]->RandomNodeVector().at(0);
+    EXPECT_EQ(last_node, this->nodes_[random_node]->GetRandomExistingNode());
+    EXPECT_NE(last_random, last_node) << HexSubstr(last_random.String()) << ", "
+                                      << HexSubstr(last_node.String()) << "," << index;
+    last_random = last_node;
+    this->nodes_[random_node]->AddExistingRandomNode(NodeId(NodeId::kRandomId));
+  }
+}
+
 
 REGISTER_TYPED_TEST_CASE_P(RoutingNetworkTest, FUNC_SetupNetwork, FUNC_SendToGroupSelfId,
                            FUNC_SendToGroupClientSelfId,
@@ -518,7 +554,7 @@ REGISTER_TYPED_TEST_CASE_P(RoutingNetworkTest, FUNC_SetupNetwork, FUNC_SendToGro
                            FUNC_SendToGroupInHybridNetwork, FUNC_SendToGroupRandomId,
                            FUNC_JoinAfterBootstrapLeaves, FUNC_RecursiveCall,
                            FUNC_JoinWithSameId, FUNC_SendToClientsWithSameId,
-                           FUNC_SendToClientWithSameId);
+                           FUNC_SendToClientWithSameId, FUNC_GetRandomExistingNode);
 INSTANTIATE_TYPED_TEST_CASE_P(MAIDSAFE, RoutingNetworkTest, TestNode);
 
 }  // namespace test

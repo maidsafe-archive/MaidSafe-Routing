@@ -129,6 +129,18 @@ std::vector<NodeInfo> GenericNode::RoutingTable() const {
   return routing_->impl_->routing_table_.nodes_;
 }
 
+std::vector<NodeId> GenericNode::RandomNodeVector() {
+  return routing_->impl_->random_node_vector_;
+}
+
+NodeId GenericNode::GetRandomExistingNode() {
+  return routing_->GetRandomExistingNode();
+}
+
+void GenericNode::AddExistingRandomNode(const NodeId& node_id) {
+  routing_->AddExistingRandomNode(node_id, routing_->impl_);
+}
+
 void GenericNode::Send(const NodeId& destination_id,
                        const NodeId& group_claim,
                        const std::string& data,

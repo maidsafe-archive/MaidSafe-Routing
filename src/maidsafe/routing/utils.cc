@@ -88,19 +88,20 @@ void ValidateAndAddToRoutingTable(NetworkUtils& network,
                                   const bool& local_endpoint,
                                   const bool& client) {
   LOG(kVerbose) << "ValidateAndAddToRoutingTable";
-  int ret_val(network.MarkConnectionAsValid(peer_endpoint));
-  if (ret_val != kSuccess) {
+  // actual_peer_endpoint could have a different port to peer_endpoint if the peer is behind
+  // symmetric NAT and passed this node a best-guess endpoint.
+  boost::asio::ip::udp::endpoint actual_peer_endpoint(network.MarkConnectionAsValid(peer_endpoint));
+  if (actual_peer_endpoint.address().is_unspecified()) {
     LOG(kError) << "[" << HexSubstr(routing_table.kKeys().identity) << "] "
-                << ". Rudp failed to validate connection with : " <<peer_endpoint
-                << " Peer id : " << HexSubstr(peer_id.String())
-                << ". rudp returned : " << ret_val;
+                << ". Rudp failed to validate connection with : " << peer_endpoint
+                << " Peer id : " << HexSubstr(peer_id.String());
     return;
   }
 
   NodeInfo peer;
   peer.node_id = peer_id;
   peer.public_key = public_key;
-  peer.endpoint = peer_endpoint;
+  peer.endpoint = actual_peer_endpoint;
   bool routing_accepted_node(false);
   if (client) {
     NodeId furthest_close_node_id =
@@ -129,7 +130,7 @@ void ValidateAndAddToRoutingTable(NetworkUtils& network,
   if (!routing_accepted_node) {
     LOG(kVerbose) << "Not adding node to " << (client ? "non-" : "") << "routing table.  Node id "
                   << HexSubstr(peer_id.String()) << " just added rudp connection will be removed.";
-    network.Remove(peer_endpoint);
+    network.Remove(actual_peer_endpoint);
   }
 }
 
