@@ -53,7 +53,8 @@ class NetworkUtils {
   int Add(const boost::asio::ip::udp::endpoint& this_endpoint,
           const boost::asio::ip::udp::endpoint& peer_endpoint,
           const std::string& validation_data);
-  int MarkConnectionAsValid(const boost::asio::ip::udp::endpoint& peer_endpoint);
+  boost::asio::ip::udp::endpoint MarkConnectionAsValid(
+      const boost::asio::ip::udp::endpoint& peer_endpoint);
   void Remove(const boost::asio::ip::udp::endpoint& peer_endpoint);
   // For sending relay requests, message with empty source ID may be provided, along with
   // direct endpoint.
