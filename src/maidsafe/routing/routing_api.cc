@@ -599,7 +599,7 @@ void Routing::NetworkStatus(const int& network_health) {
   if (impl_->functors_.network_status)
     impl_->functors_.network_status(network_health);
   if (network_health == 1) {  // Connected to the closest node
-    ReSendFindNodeRequest(boost::system::error_code(), impl_, true);
+    ReSendFindNodeRequest(boost::system::error_code(), impl_, false);
   }
 }
 
@@ -623,11 +623,24 @@ void Routing::ReSendFindNodeRequest(const boost::system::error_code& error_code,
                  << "] Routing table is empty."
                  << " Reconnecting .... !!!";
       DoJoin(impl_->functors_);
-    } else if (ignore_size ||  (pimpl->routing_table_.Size() < Parameters::closest_nodes_size)) {
-      LOG(kInfo) << "This node's [" << HexSubstr(pimpl->keys_.identity)
-                 << "] Routing table smaller than " << Parameters::closest_nodes_size
-                 << " nodes.  Sending another FindNodes. Current routing table size : "
-                 << pimpl->routing_table_.Size();
+    } else if (ignore_size ||
+               (pimpl->routing_table_.Size() < Parameters::routing_table_size_threshold)) {
+      if (!ignore_size)
+        LOG(kInfo) << "This node's [" << HexSubstr(pimpl->keys_.identity)
+                   << "] Routing table smaller than " << Parameters::closest_nodes_size
+                   << " nodes.  Sending another FindNodes. Current routing table size : "
+                   << pimpl->routing_table_.Size();
+      else
+        LOG(kInfo) << "This node's [" << HexSubstr(pimpl->keys_.identity) << "Close node lost."
+                   << "Sending another FindNodes. Current routing table size : "
+                   << pimpl->routing_table_.Size();
+
+      int num_nodes_requested;
+      if (ignore_size && (pimpl->routing_table_.Size() > Parameters::routing_table_size_threshold))
+        num_nodes_requested = static_cast<int>(Parameters::closest_nodes_size);
+      else
+        num_nodes_requested = static_cast<int>(Parameters::max_routing_table_size);
+
       protobuf::Message find_node_rpc(rpcs::FindNodes(NodeId(pimpl->keys_.identity),
                                                       NodeId(pimpl->keys_.identity),
                                                       Parameters::closest_nodes_size));
