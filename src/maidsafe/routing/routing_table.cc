@@ -118,7 +118,7 @@ bool RoutingTable::AddOrCheckNode(NodeInfo& peer, const bool& local_endpoint, co
       if (new_bootstrap_endpoint_)
         new_bootstrap_endpoint_(peer.endpoint);
     }
-    std::cout << PrintRoutingTable();
+    LOG(kInfo) << PrintRoutingTable();
   }
   if (duplication && !duplicate_removed_node.endpoint.address().is_unspecified()) {
     if (remove_node_functor_)
