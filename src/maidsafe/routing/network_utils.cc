@@ -93,20 +93,20 @@ int NetworkUtils::Bootstrap(const std::vector<Endpoint> &bootstrap_endpoints,
   bootstrap_endpoint_ = rudp_->Bootstrap(bootstrap_endpoints,
                                          !client,
                                          message_received_functor,
-                                         [&](const Endpoint& endpoint) {
-                                             OnConnectionLost(endpoint); },
+                                         [&](const std::string& dead_node) {
+                                             OnConnectionLost(dead_node); },
                                          private_key,
                                          public_key,
                                          nat_type_,
                                          local_endpoint);
 
-  if (bootstrap_endpoint_.address().is_unspecified()) {
+  if (bootstrap_endpoint_.empty()) {
     LOG(kError) << "No Online Bootstrap Node found.";
     return kNoOnlineBootstrapContacts;
   }
 
   if (!local_endpoint.address().is_unspecified()) {  // zero state case
-    this_node_relay_endpoint_ = local_endpoint;
+    this_relay_node_ = local_endpoint;
     LOG(kVerbose) << "Zero state Bootstrap successful, bootstrap node - " << bootstrap_endpoint_;
     return kSuccess;
   }
@@ -138,10 +138,9 @@ int NetworkUtils::GetAvailableEndpoint(const Endpoint& peer_endpoint,
   return rudp_->GetAvailableEndpoint(peer_endpoint, this_endpoint_pair, this_nat_type);
 }
 
-int NetworkUtils::Add(const Endpoint& this_endpoint,
-                      const Endpoint& peer_endpoint,
-                      const std::string& validation_data) {
-  return rudp_->Add(this_endpoint, peer_endpoint, validation_data);
+int NetworkUtils::Add(onst std::string peer_node,
+                      const std::string validation_data) {
+  return rudp_->Add(peer_node, validation_data);
 }
 
 boost::asio::ip::udp::endpoint NetworkUtils::MarkConnectionAsValid(

@@ -50,19 +50,17 @@ class NetworkUtils {
   int GetAvailableEndpoint(const boost::asio::ip::udp::endpoint& peer_endpoint,
                            rudp::EndpointPair& this_endpoint_pair,
                            rudp::NatType& this_nat_type);
-  int Add(const boost::asio::ip::udp::endpoint& this_endpoint,
-          const boost::asio::ip::udp::endpoint& peer_endpoint,
-          const std::string& validation_data);
-  boost::asio::ip::udp::endpoint MarkConnectionAsValid(
-      const boost::asio::ip::udp::endpoint& peer_endpoint);
+  int Add(const std::string peer_endpoint,
+          const std::string validation_data);
+  int MarkConnectionAsValid(std::string peer_endpoint);
   void Remove(const boost::asio::ip::udp::endpoint& peer_endpoint);
   // For sending relay requests, message with empty source ID may be provided, along with
   // direct endpoint.
   void SendToDirectEndpoint(const protobuf::Message& message,
-                            boost::asio::ip::udp::endpoint direct_endpoint,
+                            std::string  direct_node,
                             rudp::MessageSentFunctor message_sent_functor);
   void SendToDirectEndpoint(const protobuf::Message& message,
-                            boost::asio::ip::udp::endpoint direct_endpoint);
+                            std:string direct_node);
   // Handles relay response messages.  Also leave destination ID empty if needs to send as a relay
   // response message
   void SendToClosestNode(const protobuf::Message& message);
@@ -93,7 +91,7 @@ friend struct RoutingPrivate;
   void AdjustRouteHistory(protobuf::Message& message);
 //  void SignMessage(protobuf::Message& message);
 
-  boost::asio::ip::udp::endpoint bootstrap_endpoint_, this_node_relay_endpoint_;
+  std::string bootstrap_node_, this_relay_node_;
   rudp::ConnectionLostFunctor connection_lost_functor_;
   RoutingTable& routing_table_;
   NonRoutingTable& non_routing_table_;
