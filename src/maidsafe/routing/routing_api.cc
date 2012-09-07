@@ -131,10 +131,7 @@ void Routing::ConnectFunctors(const Functors& functors) {
       RemoveNode(node, internal_rudp_only);
   });
 
-  impl_->routing_table_.set_network_status_functor([this](const int& network_health) {
-      NetworkStatus(network_health);
-  });
-
+  impl_->routing_table_.set_network_status_functor(functors.network_status);
   impl_->routing_table_.set_close_node_replaced_functor(functors.close_node_replaced);
   impl_->message_handler_->set_message_received_functor(functors.message_received);
   impl_->message_handler_->set_request_public_key_functor(functors.request_public_key);
@@ -595,14 +592,6 @@ void Routing::RemoveNode(const NodeInfo& node, const bool& internal_rudp_only) {
   }
 }
 
-void Routing::NetworkStatus(const int& network_health) {
-  if (impl_->functors_.network_status)
-    impl_->functors_.network_status(network_health);
-  if (network_health == 1) {  // Connected to the closest node
-    ReSendFindNodeRequest(boost::system::error_code(), impl_, false);
-  }
-}
-
 bool Routing::ConfirmGroupMembers(const NodeId& node1, const NodeId& node2) {
   return impl_->routing_table_.ConfirmGroupMembers(node1, node2);
 }
@@ -627,7 +616,7 @@ void Routing::ReSendFindNodeRequest(const boost::system::error_code& error_code,
                (pimpl->routing_table_.Size() < Parameters::routing_table_size_threshold)) {
       if (!ignore_size)
         LOG(kInfo) << "This node's [" << HexSubstr(pimpl->keys_.identity)
-                   << "] Routing table smaller than " << Parameters::closest_nodes_size
+                   << "] Routing table smaller than " << Parameters::routing_table_size_threshold
                    << " nodes.  Sending another FindNodes. Current routing table size : "
                    << pimpl->routing_table_.Size();
       else
