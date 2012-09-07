@@ -624,7 +624,7 @@ void Routing::ReSendFindNodeRequest(const boost::system::error_code& error_code,
                    << "Sending another FindNodes. Current routing table size : "
                    << pimpl->routing_table_.Size();
 
-      int num_nodes_requested;
+      int num_nodes_requested(0);
       if (ignore_size && (pimpl->routing_table_.Size() > Parameters::routing_table_size_threshold))
         num_nodes_requested = static_cast<int>(Parameters::closest_nodes_size);
       else
@@ -632,7 +632,7 @@ void Routing::ReSendFindNodeRequest(const boost::system::error_code& error_code,
 
       protobuf::Message find_node_rpc(rpcs::FindNodes(NodeId(pimpl->keys_.identity),
                                                       NodeId(pimpl->keys_.identity),
-                                                      Parameters::closest_nodes_size));
+                                                      num_nodes_requested));
       pimpl->network_.SendToClosestNode(find_node_rpc);
 
       pimpl->recovery_timer_.expires_from_now(
