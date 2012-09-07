@@ -126,10 +126,11 @@ void Routing::Join(Functors functors,
 }
 
 void Routing::ConnectFunctors(const Functors& functors) {
-  impl_->routing_table_.set_remove_node_functor([&](const NodeInfo& node,
-                                                    const bool& internal_rudp_only) {
+  impl_->routing_table_.set_remove_node_functor([this](const NodeInfo& node,
+                                                       const bool& internal_rudp_only) {
       RemoveNode(node, internal_rudp_only);
   });
+
   impl_->routing_table_.set_network_status_functor(functors.network_status);
   impl_->routing_table_.set_close_node_replaced_functor(functors.close_node_replaced);
   impl_->message_handler_->set_message_received_functor(functors.message_received);
@@ -230,6 +231,7 @@ int Routing::DoFindNode() {
   protobuf::Message find_node_rpc(
       rpcs::FindNodes(NodeId(impl_->keys_.identity),
                       NodeId(impl_->keys_.identity),
+                      1,
                       true,
                       impl_->network_.this_node_relay_endpoint()));
 
@@ -610,13 +612,27 @@ void Routing::ReSendFindNodeRequest(const boost::system::error_code& error_code,
                  << "] Routing table is empty."
                  << " Reconnecting .... !!!";
       DoJoin(impl_->functors_);
-    } else if (ignore_size ||  (pimpl->routing_table_.Size() < Parameters::closest_nodes_size)) {
-      LOG(kInfo) << "This node's [" << HexSubstr(pimpl->keys_.identity)
-                 << "] Routing table smaller than " << Parameters::closest_nodes_size
-                 << " nodes.  Sending another FindNodes. Current routing table size : "
-                 << pimpl->routing_table_.Size();
+    } else if (ignore_size ||
+               (pimpl->routing_table_.Size() < Parameters::routing_table_size_threshold)) {
+      if (!ignore_size)
+        LOG(kInfo) << "This node's [" << HexSubstr(pimpl->keys_.identity)
+                   << "] Routing table smaller than " << Parameters::routing_table_size_threshold
+                   << " nodes.  Sending another FindNodes. Current routing table size : "
+                   << pimpl->routing_table_.Size();
+      else
+        LOG(kInfo) << "This node's [" << HexSubstr(pimpl->keys_.identity) << "Close node lost."
+                   << "Sending another FindNodes. Current routing table size : "
+                   << pimpl->routing_table_.Size();
+
+      int num_nodes_requested;
+      if (ignore_size && (pimpl->routing_table_.Size() > Parameters::routing_table_size_threshold))
+        num_nodes_requested = static_cast<int>(Parameters::closest_nodes_size);
+      else
+        num_nodes_requested = static_cast<int>(Parameters::max_routing_table_size);
+
       protobuf::Message find_node_rpc(rpcs::FindNodes(NodeId(pimpl->keys_.identity),
-                                                      NodeId(pimpl->keys_.identity)));
+                                                      NodeId(pimpl->keys_.identity),
+                                                      Parameters::closest_nodes_size));
       pimpl->network_.SendToClosestNode(find_node_rpc);
 
       pimpl->recovery_timer_.expires_from_now(
