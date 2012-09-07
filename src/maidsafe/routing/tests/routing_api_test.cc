@@ -242,7 +242,7 @@ TEST(APITest, FUNC_API_AnonymousNode) {
   R3.Send(NodeId(node1.node_info.node_id), NodeId(), "message_2_from_anonymous node",
           failed_response, boost::posix_time::seconds(10), true, false);
   Sleep(boost::posix_time::seconds(1));
-  rudp::Parameters::bootstrap_connection_lifespan = boost::posix_time::seconds(10);
+  rudp::Parameters::bootstrap_connection_lifespan = boost::posix_time::minutes(10);
 }
 #endif  // !FAKE_RUDP
 
