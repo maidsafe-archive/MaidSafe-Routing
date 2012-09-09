@@ -19,6 +19,3 @@ int main(int argc, char **argv) {
   // filter["routing"] = maidsafe::log::kVerbose;
   return ExecuteMain(argc, argv, filter, false);
 }
-  // filter["routing"] = maidsafe::log::kVerbose;
-  return ExecuteMain(argc, argv, filter, false);
-}
