@@ -42,12 +42,10 @@ class RoutingTable {
   RoutingTable(const asymm::Keys& keys, const bool& client_mode);
   bool AddNode(NodeInfo& peer, const bool& local_endpoint);
   bool CheckNode(NodeInfo& peer);
-  NodeInfo DropNode(const boost::asio::ip::udp::endpoint& endpoint);
-  bool GetNodeInfo(const boost::asio::ip::udp::endpoint& endpoint, NodeInfo& peer) const;
-  bool GetNodeInfo(const NodeId& node_id, NodeInfo& peer) const;
+  NodeInfo DropNode(NodeId node_to_drop);
+  bool GetNodeInfo(const NodeId& node_id, NodeInfo& node_info) const;
   bool IsThisNodeInRange(const NodeId& target_id, const uint16_t range);
   bool IsThisNodeClosestTo(const NodeId& target_id);
-  bool IsConnected(const boost::asio::ip::udp::endpoint& endpoint) const;
   bool IsConnected(const NodeId& node_id) const;
   bool ConfirmGroupMembers(const NodeId& node1, const NodeId& node2);
   // Returns default-constructed NodeId if routing table size is zero

@@ -14,6 +14,7 @@
 
 #include <cstdint>
 #include <functional>
+#include <future>
 
 #include "boost/asio/deadline_timer.hpp"
 #include "boost/thread/future.hpp"
@@ -609,7 +610,11 @@ void Routing::ReSendFindNodeRequest(const boost::system::error_code& error_code,
       LOG(kInfo) << "This node's [" << HexSubstr(pimpl->keys_.identity)
                  << "] Routing table is empty."
                  << " Reconnecting .... !!!";
-      DoJoin(impl_->functors_);
+      std::async(std::launch::async, [&] {
+                 boost::this_thread::sleep(boost::posix_time::seconds(10));
+                 if (pimpl->routing_table_.Size() == 0)
+                   DoJoin(impl_->functors_);
+                 } );
     } else if (ignore_size ||  (pimpl->routing_table_.Size() < Parameters::closest_nodes_size)) {
       LOG(kInfo) << "This node's [" << HexSubstr(pimpl->keys_.identity)
                  << "] Routing table smaller than " << Parameters::closest_nodes_size

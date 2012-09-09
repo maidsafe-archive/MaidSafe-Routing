@@ -386,22 +386,6 @@ void MessageHandler::HandleGroupMessageToSelfId(protobuf::Message& message) {
   LOG(kInfo) << "Sending group message to self id. Passing on to the closest peer to replicate";
   network_.SendToClosestNode(message);
 }
-// // TODO(dirvine) implement client handler
-// bool MessageHandler::CheckAndSendToLocalClients(protobuf::Message& message) {
-//   bool found(false);
-// //   NodeId destination_node(message.destination_id());
-// //   std::for_each(client_connections_.begin(),
-// //                 client_connections_.end(),
-// //                 [&destination_node, &found](const NodeInfo& i)->bool
-// //                 {
-// //                   if (i.node_id ==  destination_node) {
-// //                     found = true;
-// //                     // rudp send TODO(dirvine)
-// //                   }
-// //                   return found;  // lambda return
-// //                 });
-//   return found;
-// }
 
 void MessageHandler::set_message_received_functor(MessageReceivedFunctor message_received_functor) {
   message_received_functor_ = message_received_functor;

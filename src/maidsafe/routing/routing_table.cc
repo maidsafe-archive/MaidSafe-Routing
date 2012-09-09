@@ -20,7 +20,7 @@
 
 #include "maidsafe/routing/bootstrap_file_handler.h"
 #include "maidsafe/routing/parameters.h"
-#include "maidsafe/routing/node_info.h"
+#include "maidsafe/common/node_info.h"
 
 
 namespace maidsafe {
@@ -33,7 +33,7 @@ typedef boost::asio::ip::udp::endpoint Endpoint;
 
 }  // unnamed namespace
 
-RoutingTable::RoutingTable(const asymm::Keys& keys, const bool& client_mode)
+RoutingTable::RoutingTable(const asymm::Keys& keys, const bool client_mode)
     : max_size_(client_mode ? Parameters::max_client_routing_table_size :
                               Parameters::max_routing_table_size),
       client_mode_(client_mode),
@@ -144,17 +144,15 @@ NodeInfo RoutingTable::ResolveConnectionDuplication(const NodeInfo& new_duplicat
   }
 }
 
-NodeInfo RoutingTable::DropNode(const Endpoint& endpoint) {
+NodeInfo RoutingTable::DropNode(NodeId node_to_drop) {
   std::vector<NodeInfo> new_close_nodes;
-  uint16_t routing_table_size;
   NodeInfo dropped_node;
   {
     std::lock_guard<std::mutex> lock(mutex_);
     for (auto it = nodes_.begin(); it != nodes_.end(); ++it) {
-      if ((*it).endpoint == endpoint) {
+      if ((*it).node_id == node_to_drop) {
         dropped_node = (*it);
         nodes_.erase(it);
-        routing_table_size = static_cast<uint16_t>(nodes_.size());
         new_close_nodes = CheckGroupChange();
         break;
       }
@@ -162,7 +160,7 @@ NodeInfo RoutingTable::DropNode(const Endpoint& endpoint) {
   }
 
   if (!dropped_node.node_id.Empty())
-    update_network_status(routing_table_size);
+    update_network_status(nodes_.size());
 
   if (!new_close_nodes.empty()) {
     if (close_node_replaced_functor_)
@@ -173,17 +171,6 @@ NodeInfo RoutingTable::DropNode(const Endpoint& endpoint) {
     UpdateBootstrapFile(bootstrap_file_path_, dropped_node.endpoint, true);
   std::cout << PrintRoutingTable();
   return dropped_node;
-}
-
-bool RoutingTable::GetNodeInfo(const Endpoint& endpoint, NodeInfo& peer) const {
-  std::lock_guard<std::mutex> lock(mutex_);
-  for (auto it = nodes_.begin(); it != nodes_.end(); ++it) {
-    if ((*it).endpoint == endpoint) {
-      peer = *it;
-      return true;
-    }
-  }
-  return false;
 }
 
 bool RoutingTable::GetNodeInfo(const NodeId& node_id, NodeInfo& peer) const {
@@ -208,7 +195,7 @@ bool RoutingTable::IsThisNodeInRange(const NodeId& target_id, const uint16_t ran
 }
 
 bool RoutingTable::IsThisNodeClosestTo(const NodeId& target_id) {
-  if (!target_id.IsValid()) {
+  if (!target_id.IsValid() || target_id.Empty()) {
     LOG(kError) << "Invalid target_id passed.";
     return false;
   }

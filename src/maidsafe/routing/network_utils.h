@@ -47,27 +47,23 @@ class NetworkUtils {
                 rudp::MessageReceivedFunctor message_received_functor,
                 rudp::ConnectionLostFunctor connection_lost_functor,
                 boost::asio::ip::udp::endpoint local_endpoint = boost::asio::ip::udp::endpoint());
-  int GetAvailableEndpoint(const boost::asio::ip::udp::endpoint& peer_endpoint,
+  int GetAvailableEndpoint(NodeId peer_id,
+                           rudp::EndpointPair& peer_endpoint_pair,
                            rudp::EndpointPair& this_endpoint_pair,
                            rudp::NatType& this_nat_type);
-  int Add(const boost::asio::ip::udp::endpoint& this_endpoint,
-          const boost::asio::ip::udp::endpoint& peer_endpoint,
-          const std::string& validation_data);
-  boost::asio::ip::udp::endpoint MarkConnectionAsValid(
-      const boost::asio::ip::udp::endpoint& peer_endpoint);
-  void Remove(const boost::asio::ip::udp::endpoint& peer_endpoint);
+  int Add(NodeId peer, const std::string& validation_data);
+  int MarkConnectionAsValid(NodeId peer);
+  void Remove(NodeId peer);
   // For sending relay requests, message with empty source ID may be provided, along with
   // direct endpoint.
-  void SendToDirectEndpoint(const protobuf::Message& message,
-                            boost::asio::ip::udp::endpoint direct_endpoint,
-                            rudp::MessageSentFunctor message_sent_functor);
-  void SendToDirectEndpoint(const protobuf::Message& message,
-                            boost::asio::ip::udp::endpoint direct_endpoint);
+  void SendToDirect(const protobuf::Message& message,
+                    NodeId peer,
+                    rudp::MessageSentFunctor message_sent_functor);
   // Handles relay response messages.  Also leave destination ID empty if needs to send as a relay
   // response message
   void SendToClosestNode(const protobuf::Message& message);
-  boost::asio::ip::udp::endpoint bootstrap_endpoint() const;
-  boost::asio::ip::udp::endpoint this_node_relay_endpoint() const;
+  NodeId bootstrap_endpoint() const;
+  NodeId this_node_relay_endpoint() const;
   rudp::NatType nat_type();
   Timer& timer();
   friend class test::GenericNode;
@@ -80,20 +76,20 @@ friend struct RoutingPrivate;
   NetworkUtils(const NetworkUtils&&);
   NetworkUtils& operator=(const NetworkUtils&);
 
-  void OnConnectionLost(const boost::asio::ip::udp::endpoint& endpoint);
+  void OnConnectionLost(NodeId peer_lost);
   void RudpSend(const protobuf::Message& message,
-                boost::asio::ip::udp::endpoint endpoint,
+                NodeId peer,
                 rudp::MessageSentFunctor message_sent_functor);
   void SendTo(const protobuf::Message& message,
-              const NodeId& node_id,
-              const boost::asio::ip::udp::endpoint& endpoint);
+              const NodeId peer);
   void RecursiveSendOn(protobuf::Message message,
                        NodeInfo last_node_attempted = NodeInfo(),
                        int attempt_count = 0);
   void AdjustRouteHistory(protobuf::Message& message);
 //  void SignMessage(protobuf::Message& message);
 
-  boost::asio::ip::udp::endpoint bootstrap_endpoint_, this_node_relay_endpoint_;
+  NodeId bootstrap_node_;
+  NodeId this_node_relay_id_;
   rudp::ConnectionLostFunctor connection_lost_functor_;
   RoutingTable& routing_table_;
   NonRoutingTable& non_routing_table_;

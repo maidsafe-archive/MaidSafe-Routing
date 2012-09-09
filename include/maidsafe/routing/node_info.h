@@ -33,10 +33,10 @@ namespace protobuf { class Contact; }
 struct NodeInfo {
   NodeInfo();
   NodeId node_id;
+  NodeId connection_id;  // Id of a node as far as rudp is conscerned
   asymm::PublicKey public_key;
   int32_t rank;
   int32_t bucket;
-  boost::asio::ip::udp::endpoint endpoint;
   rudp::NatType nat_type;
   int32_t dimension_1;
   int32_t dimension_2;

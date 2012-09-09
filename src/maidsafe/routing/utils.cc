@@ -36,16 +36,11 @@ void ValidateAndAddToRudp(NetworkUtils& network_,
                           const NodeId& this_node_id,
                           const NodeId& peer_id,
                           const asymm::PublicKey& public_key,
-                          const rudp::EndpointPair& peer_endpoint,
-                          const rudp::EndpointPair& this_endpoint,
                           const bool& client) {
   NodeInfo peer;
   peer.node_id = peer_id;
   peer.public_key = public_key;
-  peer.endpoint = peer_endpoint.external;
-
-  bool external_only((peer_endpoint.external == peer_endpoint.local) ||
-                     (this_endpoint.external == this_endpoint.local));
+  peer.connection_id = peer_id;
 
   if (!this_endpoint.external.address().is_unspecified() &&
       !peer_endpoint.external.address().is_unspecified()) {
@@ -53,8 +48,7 @@ void ValidateAndAddToRudp(NetworkUtils& network_,
         rpcs::ConnectSuccess(peer_id, this_node_id, this_endpoint.external, false, client));
     LOG(kVerbose) << "Calling RUDP::Add on this node's endpoint " << this_endpoint.external
                   << ", peer's endpoint " << peer_endpoint.external;
-    int result = network_.Add(this_endpoint.external, peer_endpoint.external,
-                              connect_success_external_endpoint.SerializeAsString());
+    int result = network_.Add(peer_id, connect_success_external_endpoint.SerializeAsString());
     if (result != rudp::kSuccess)
       LOG(kWarning) << "rudp add failed on external endpoint" << result;
     else
@@ -90,11 +84,11 @@ void ValidateAndAddToRoutingTable(NetworkUtils& network,
   LOG(kVerbose) << "ValidateAndAddToRoutingTable";
   // actual_peer_endpoint could have a different port to peer_endpoint if the peer is behind
   // symmetric NAT and passed this node a best-guess endpoint.
-  boost::asio::ip::udp::endpoint actual_peer_endpoint(network.MarkConnectionAsValid(peer_endpoint));
-  if (actual_peer_endpoint.address().is_unspecified()) {
+                                                      ;
+  if (network.MarkConnectionAsValid(peer_id) != kSuccess) {
     LOG(kError) << "[" << HexSubstr(routing_table.kKeys().identity) << "] "
-                << ". Rudp failed to validate connection with : " << peer_endpoint
-                << " Peer id : " << HexSubstr(peer_id.String());
+                << ". Rudp failed to validate connection with  Peer id : "
+                << HexSubstr(peer_id.String());
     return;
   }
 

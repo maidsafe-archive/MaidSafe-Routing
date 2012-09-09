@@ -28,6 +28,7 @@
 
 namespace maidsafe {
 
+class NodeId;
 namespace routing {
 
 namespace protobuf {
@@ -44,21 +45,17 @@ class Message {
 class NetworkUtils;
 class NonRoutingTable;
 class RoutingTable;
-class NodeId;
 
 void ValidateAndAddToRudp(NetworkUtils& network_,
                           const NodeId& this_node_id,
                           const NodeId& peer_id,
                           const asymm::PublicKey& public_key,
-                          const rudp::EndpointPair& peer_endpoint,
-                          const rudp::EndpointPair& this_endpoint,
                           const bool& client);
 void ValidateAndAddToRoutingTable(NetworkUtils& network,
                                   RoutingTable& routing_table,
                                   NonRoutingTable& non_routing_table,
                                   const NodeId& peer_id,
                                   const asymm::PublicKey& public_key,
-                                  const boost::asio::ip::udp::endpoint& peer_endpoint,
                                   const bool& local_endpoint,
                                   const bool& client);
 void HandleSymmetricNodeAdd(RoutingTable& routing_table, const NodeId& peer_id,

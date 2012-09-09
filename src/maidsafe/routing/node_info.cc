@@ -21,10 +21,10 @@ namespace routing {
 
 NodeInfo::NodeInfo()
     : node_id(),
+      connection_id(),
       public_key(),
       rank(),
       bucket(kInvalidBucket),
-      endpoint(),
       nat_type(rudp::NatType::kUnknown),
       dimension_1(),
       dimension_2(),

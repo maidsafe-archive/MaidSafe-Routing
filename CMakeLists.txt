@@ -58,6 +58,7 @@ set(STYLE_ROUTING ${STYLE_ROUTING} ${ALL_FILES_ROUTING_TESTS_DIR})
 source_group("Routing Tests Source Files" FILES ${SOURCE_FILES_ROUTING_TESTS_DIR})
 source_group("Routing Tests Header Files" FILES ${HEADER_FILES_ROUTING_TESTS_DIR})
 
+set(SOURCE_FILES_STUB_RUDP"${PROJECT_SOURCE_DIR}/src/maidsafe/fake_rudp/stub_managed_connections.cc")
 #set(SOURCE_FILES_FAKE_RUDP_DIR "${PROJECT_SOURCE_DIR}/src/maidsafe/fake_rudp/fake_managed_connections.cc"
 #                               "${PROJECT_SOURCE_DIR}/src/maidsafe/fake_rudp/fake_network.cc")
 #set(HEADER_FILES_FAKE_RUDP_DIR "${PROJECT_SOURCE_DIR}/src/maidsafe/fake_rudp/fake_network.h")
@@ -72,6 +73,7 @@ source_group("Routing Tests Header Files" FILES ${HEADER_FILES_ROUTING_TESTS_DIR
 ms_add_static_library(routing ${ALL_FILES_ROUTING_DIR})
 ms_add_static_library(routing_local ${ALL_FILES_ROUTING_DIR})
 #ms_add_static_library(routing_fake_rudp ${ALL_FILES_ROUTING_DIR} ${ALL_FILES_FAKE_RUDP_DIR})
+ms_add_static_library(routing_stub_rudp ${ALL_FILES_ROUTING_DIR} ${SOURCE_FILES_STUB_RUDP})
 ms_add_executable(TESTrouting "Tests/Routing" ${ALL_FILES_ROUTING_TESTS_DIR})
 ms_add_executable(TESTrouting_local "Tests/Routing" ${ALL_FILES_ROUTING_TESTS_DIR})
 ms_add_executable(create_lifestuff_bootstrap "Tools"  "${PROJECT_SOURCE_DIR}/src/maidsafe/tools/create_bootstrap.cc")
@@ -79,6 +81,7 @@ ms_add_executable(create_lifestuff_bootstrap "Tools"  "${PROJECT_SOURCE_DIR}/src
 
 target_link_libraries(maidsafe_routing maidsafe_rudp)
 target_link_libraries(maidsafe_routing_local maidsafe_rudp)
+target_link_libraries(maidsafe_routing_stub_rudp maidsafe_common)
 #target_link_libraries(maidsafe_routing_fake_rudp maidsafe_common)
 target_link_libraries(TESTrouting maidsafe_routing)
 #target_link_libraries(TESTrouting_fake_rudp maidsafe_routing_fake_rudp)
