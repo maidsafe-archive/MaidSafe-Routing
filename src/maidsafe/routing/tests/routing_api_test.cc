@@ -25,6 +25,7 @@
 #include "maidsafe/common/test.h"
 #include "maidsafe/common/utils.h"
 #include "maidsafe/rudp/managed_connections.h"
+#include "maidsafe/rudp/parameters.h"
 
 #include "maidsafe/routing/bootstrap_file_handler.h"
 #include "maidsafe/routing/node_id.h"
@@ -169,6 +170,7 @@ TEST(APITest, BEH_API_JoinWithBootstrapFile) {
 
 #ifndef FAKE_RUDP
 TEST(APITest, FUNC_API_AnonymousNode) {
+  rudp::Parameters::bootstrap_connection_lifespan = boost::posix_time::seconds(10);
   NodeInfoAndPrivateKey node1(MakeNodeInfoAndKeys());
   NodeInfoAndPrivateKey node2(MakeNodeInfoAndKeys());
   std::map<NodeId, asymm::Keys> key_map;
@@ -233,13 +235,14 @@ TEST(APITest, FUNC_API_AnonymousNode) {
   R3.Send(NodeId(node1.node_info.node_id), NodeId(), "message_from_anonymous node",
           response_functor, boost::posix_time::seconds(10), true, false);
 
-  Sleep(boost::posix_time::seconds(61));  // to allow disconnection
+  Sleep(boost::posix_time::seconds(11));  // to allow disconnection
   ResponseFunctor failed_response = [=](const std::vector<std::string> &message) {
       ASSERT_TRUE(message.empty());
     };
   R3.Send(NodeId(node1.node_info.node_id), NodeId(), "message_2_from_anonymous node",
-          failed_response, boost::posix_time::seconds(60), true, false);
+          failed_response, boost::posix_time::seconds(10), true, false);
   Sleep(boost::posix_time::seconds(1));
+  rudp::Parameters::bootstrap_connection_lifespan = boost::posix_time::minutes(10);
 }
 #endif  // !FAKE_RUDP
 

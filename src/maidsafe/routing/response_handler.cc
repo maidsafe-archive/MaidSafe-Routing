@@ -189,13 +189,17 @@ void ResponseHandler::ConnectTo(const std::vector<std::string>& nodes,
                           closest_nodes.begin(),
                           closest_nodes.end());
 
+  closest_node_ids.insert(closest_node_ids.end(),
+                          nodes.begin(),
+                          nodes.end());
+
   std::sort(closest_node_ids.begin(), closest_node_ids.end(),
             [=](const std::string& lhs, const std::string& rhs)->bool {
               return NodeId::CloserToTarget(NodeId(lhs), NodeId(rhs),
                                             NodeId(routing_table_.kKeys().identity));
             });
   auto iter(std::unique(closest_node_ids.begin(), closest_node_ids.end()));
-  auto resize =  std::min(static_cast<uint16_t>(std::distance(iter, closest_node_ids.begin())),
+  auto resize = std::min(static_cast<uint16_t>(std::distance(iter, closest_node_ids.begin())),
                           Parameters::max_routing_table_size);
   if (closest_node_ids.size() > resize)
     closest_node_ids.resize(resize);

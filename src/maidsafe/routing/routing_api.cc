@@ -127,10 +127,11 @@ void Routing::Join(Functors functors,
 }
 
 void Routing::ConnectFunctors(const Functors& functors) {
-  impl_->routing_table_.set_remove_node_functor([&](const NodeInfo& node,
-                                                    const bool& internal_rudp_only) {
+  impl_->routing_table_.set_remove_node_functor([this](const NodeInfo& node,
+                                                       const bool& internal_rudp_only) {
       RemoveNode(node, internal_rudp_only);
   });
+
   impl_->routing_table_.set_network_status_functor(functors.network_status);
   impl_->routing_table_.set_close_node_replaced_functor(functors.close_node_replaced);
   impl_->message_handler_->set_message_received_functor(functors.message_received);
@@ -231,6 +232,7 @@ int Routing::DoFindNode() {
   protobuf::Message find_node_rpc(
       rpcs::FindNodes(NodeId(impl_->keys_.identity),
                       NodeId(impl_->keys_.identity),
+                      1,
                       true,
                       impl_->network_.this_node_relay_endpoint()));
 
@@ -414,7 +416,7 @@ void Routing::Send(const NodeId& destination_id,
     assert((impl_->network_.this_node_relay_endpoint() ==
             GetEndpointFromProtobuf(proto_message.relay())) && "Endpoint was not set properly");
     rudp::MessageSentFunctor message_sent(
-        [&](int result) {
+        [=](int result) {
           if (rudp::kSuccess != result) {
             impl_->timer_.CancelTask(proto_message.id());
             if (impl_->anonymous_node_) {
@@ -610,18 +612,38 @@ void Routing::ReSendFindNodeRequest(const boost::system::error_code& error_code,
       LOG(kInfo) << "This node's [" << HexSubstr(pimpl->keys_.identity)
                  << "] Routing table is empty."
                  << " Reconnecting .... !!!";
-      std::async(std::launch::async, [&] {
-                 boost::this_thread::sleep(boost::posix_time::seconds(10));
-                 if (pimpl->routing_table_.Size() == 0)
-                   DoJoin(impl_->functors_);
-                 } );
-    } else if (ignore_size ||  (pimpl->routing_table_.Size() < Parameters::closest_nodes_size)) {
-      LOG(kInfo) << "This node's [" << HexSubstr(pimpl->keys_.identity)
-                 << "] Routing table smaller than " << Parameters::closest_nodes_size
-                 << " nodes.  Sending another FindNodes. Current routing table size : "
-                 << pimpl->routing_table_.Size();
+       std::async(std::launch::async, [=]
+                  {
+                  std::shared_ptr<RoutingPrivate> pimpl = impl.lock();
+                  if (!pimpl) {
+                  LOG(kVerbose) << "Not re bootstrapping since this node is shutting down";
+                  return;
+                  }
+
+                  Sleep(boost::posix_time::seconds(10));
+                  DoJoin(impl_->functors_);
+                  } );
+    } else if (ignore_size ||
+               (pimpl->routing_table_.Size() < Parameters::routing_table_size_threshold)) {
+      if (!ignore_size)
+        LOG(kInfo) << "This node's [" << HexSubstr(pimpl->keys_.identity)
+                   << "] Routing table smaller than " << Parameters::routing_table_size_threshold
+                   << " nodes.  Sending another FindNodes. Current routing table size : "
+                   << pimpl->routing_table_.Size();
+      else
+        LOG(kInfo) << "This node's [" << HexSubstr(pimpl->keys_.identity) << "Close node lost."
+                   << "Sending another FindNodes. Current routing table size : "
+                   << pimpl->routing_table_.Size();
+
+      int num_nodes_requested(0);
+      if (ignore_size && (pimpl->routing_table_.Size() > Parameters::routing_table_size_threshold))
+        num_nodes_requested = static_cast<int>(Parameters::closest_nodes_size);
+      else
+        num_nodes_requested = static_cast<int>(Parameters::max_routing_table_size);
+
       protobuf::Message find_node_rpc(rpcs::FindNodes(NodeId(pimpl->keys_.identity),
-                                                      NodeId(pimpl->keys_.identity)));
+                                                      NodeId(pimpl->keys_.identity),
+                                                      num_nodes_requested));
       pimpl->network_.SendToClosestNode(find_node_rpc);
 
       pimpl->recovery_timer_.expires_from_now(

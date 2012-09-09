@@ -47,6 +47,7 @@ protobuf::Message Connect(
 protobuf::Message FindNodes(
     const NodeId& node_id,
     const NodeId& my_node_id,
+    const int& num_nodes_requested,
     bool relay_message = false,
     boost::asio::ip::udp::endpoint local_endpoint = boost::asio::ip::udp::endpoint());
 
