@@ -21,6 +21,7 @@
 #include "boost/asio/ip/udp.hpp"
 
 #include "maidsafe/common/rsa.h"
+#include "maidsafe/common/node_id.h"
 #include "maidsafe/rudp/managed_connections.h"
 
 
@@ -28,7 +29,6 @@ namespace maidsafe {
 
 namespace routing {
 
-class NodeId;
 struct NodeInfo;
 
 // If using boost::bind or std::bind, use **shared_from_this** pointers to preserve lifetimes of
