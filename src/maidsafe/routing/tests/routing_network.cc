@@ -17,6 +17,7 @@
 #include <string>
 
 #include "maidsafe/common/log.h"
+#include "maidsafe/common/utils.h"
 
 #include "maidsafe/routing/routing_private.h"
 #include "maidsafe/routing/return_codes.h"
@@ -51,8 +52,8 @@ GenericNode::GenericNode(bool client_mode)
       expected_(0),
       nat_type_(rudp::NatType::kUnknown),
       endpoint_() {
-  endpoint_.address(GetLocalIp());
-  endpoint_.port(GetRandomPort());
+  endpoint_.address(maidsafe::GetLocalIp());
+  endpoint_.port(maidsafe::GetRandomPort());
   functors_.close_node_replaced = nullptr;
   functors_.message_received = nullptr;
   functors_.network_status = nullptr;

@@ -32,20 +32,6 @@ namespace routing {
 
 namespace test {
 
-uint16_t GetRandomPort() {
-  static std::set<uint16_t> already_used_ports;
-  bool unique(false);
-  uint16_t port(0);
-  uint16_t failed_attempts(0);
-  do {
-    port = (RandomUint32() % 48126) + 1025;
-    unique = (already_used_ports.insert(port)).second;
-  } while (!unique && failed_attempts++ < 1000);
-  if (failed_attempts > 1000)
-    LOG(kError) << "Unable to generate unique ports";
-  return port;
-}
-
 NodeInfo MakeNode() {
   NodeInfo node;
   node.node_id = NodeId(RandomString(64));
@@ -135,22 +121,6 @@ int NetworkStatus(const bool& client, const int& status) {
   uint16_t max_size(client ? Parameters::max_client_routing_table_size :
                       Parameters::max_routing_table_size);
   return (status > 0) ? (status * 100 / max_size) : status;
-}
-
-ip::address GetLocalIp(ip::udp::endpoint peer_endpoint) {
-  asio::io_service io_service;
-  ip::udp::socket socket(io_service);
-  try {
-    socket.connect(peer_endpoint);
-    if (socket.local_endpoint().address().is_unspecified() ||
-        socket.local_endpoint().address().is_loopback())
-      return ip::address();
-    return socket.local_endpoint().address();
-  }
-  catch(const std::exception& e) {
-    LOG(kError) << "Failed trying to connect to " << peer_endpoint << " - " << e.what();
-    return ip::address();
-  }
 }
 
 }  // namespace test

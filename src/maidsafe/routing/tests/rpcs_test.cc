@@ -72,8 +72,8 @@ TEST(RpcsTest, BEH_PingMessageNode) {
 
 TEST(RpcsTest, BEH_ConnectMessageInitialised) {
   rudp::EndpointPair our_endpoint;
-  our_endpoint.local = Endpoint(boost::asio::ip::address_v4::loopback(), GetRandomPort());
-  our_endpoint.external = Endpoint(boost::asio::ip::address_v4::loopback(), GetRandomPort());
+  our_endpoint.local = Endpoint(boost::asio::ip::address_v4::loopback(), maidsafe::GetRandomPort());
+  our_endpoint.external = Endpoint(boost::asio::ip::address_v4::loopback(), maidsafe::GetRandomPort());
   ASSERT_TRUE(rpcs::Connect(NodeId(RandomString(64)), our_endpoint,
                             NodeId(RandomString(64))).IsInitialized());
 }
@@ -81,8 +81,8 @@ TEST(RpcsTest, BEH_ConnectMessageInitialised) {
 TEST(RpcsTest, BEH_ConnectMessageNode) {
   NodeInfo us(MakeNode());
   rudp::EndpointPair endpoint;
-  endpoint.local = Endpoint(boost::asio::ip::address_v4::loopback(), GetRandomPort());
-  endpoint.external = Endpoint(boost::asio::ip::address_v4::loopback(), GetRandomPort());
+  endpoint.local = Endpoint(boost::asio::ip::address_v4::loopback(), maidsafe::GetRandomPort());
+  endpoint.external = Endpoint(boost::asio::ip::address_v4::loopback(), maidsafe::GetRandomPort());
   std::string destination = RandomString(64);
   protobuf::Message message = rpcs::Connect(NodeId(destination), endpoint, us.node_id);
   protobuf::ConnectRequest connect_request;
@@ -106,8 +106,8 @@ TEST(RpcsTest, BEH_ConnectMessageNode) {
 TEST(RpcsTest, BEH_ConnectMessageNodeRelayMode) {
   NodeInfo us(MakeNode());
   rudp::EndpointPair endpoint;
-  endpoint.local = Endpoint(boost::asio::ip::address_v4::loopback(), GetRandomPort());
-  endpoint.external = Endpoint(boost::asio::ip::address_v4::loopback(), GetRandomPort());
+  endpoint.local = Endpoint(boost::asio::ip::address_v4::loopback(), maidsafe::GetRandomPort());
+  endpoint.external = Endpoint(boost::asio::ip::address_v4::loopback(), maidsafe::GetRandomPort());
   std::string destination = RandomString(64);
   protobuf::Message message = rpcs::Connect(NodeId(destination), endpoint, us.node_id,
                                             std::vector<std::string>(), false,
@@ -160,7 +160,7 @@ TEST(RpcsTest, BEH_FindNodesMessageNode) {
 
 TEST(RpcsTest, BEH_FindNodesMessageNodeRelayMode) {
   NodeInfo us(MakeNode());
-  Endpoint relay_endpoint(boost::asio::ip::address_v4::loopback(), GetRandomPort());
+  Endpoint relay_endpoint(boost::asio::ip::address_v4::loopback(), maidsafe::GetRandomPort());
   protobuf::Message message = rpcs::FindNodes(us.node_id, us.node_id, 8, true,
                                               NodeId(NodeId::kRandomId));
   protobuf::FindNodesRequest find_nodes_request;
@@ -188,8 +188,8 @@ TEST(RpcsTest, BEH_ProxyConnectMessageInitialised) {
   std::string destination = RandomString(64);
   std::string source = RandomString(64);
   rudp::EndpointPair endpoint_pair;
-  endpoint_pair.external =  Endpoint(boost::asio::ip::address_v4::loopback(), GetRandomPort());
-  endpoint_pair.local =  Endpoint(boost::asio::ip::address_v4::loopback(), GetRandomPort());
+  endpoint_pair.external =  Endpoint(boost::asio::ip::address_v4::loopback(), maidsafe::GetRandomPort());
+  endpoint_pair.local =  Endpoint(boost::asio::ip::address_v4::loopback(), maidsafe::GetRandomPort());
   ASSERT_TRUE(rpcs::ProxyConnect(NodeId(destination), NodeId(source),
                                  endpoint_pair).IsInitialized());
 }

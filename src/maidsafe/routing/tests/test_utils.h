@@ -44,19 +44,7 @@ asymm::Keys MakeKeys();
 
 asymm::Keys GetKeys(const NodeInfoAndPrivateKey& node);
 
-uint16_t GetRandomPort();
-
 NodeInfo MakeNode();
-
-// TODO(Prakash): Copying from rudp utils for test purpose. need to expose it if needed.
-// Makes a udp socket connection to peer_endpoint.  Note, no data is sent, so
-// no information about the validity or availability of the peer is deduced.
-// If the retrieved local endpoint is unspecified or is the loopback address,
-// the function returns a default-constructed (invalid) address.
-boost::asio::ip::address GetLocalIp(
-    boost::asio::ip::udp::endpoint peer_endpoint =
-        boost::asio::ip::udp::endpoint(
-            boost::asio::ip::address_v4::from_string("203.0.113.0"), 80));
 
 NodeId GenerateUniqueRandomId(const NodeId& holder, const uint16_t& pos);
 NodeId GenerateUniqueRandomId(const uint16_t& pos);
