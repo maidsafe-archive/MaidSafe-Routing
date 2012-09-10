@@ -71,8 +71,8 @@ class Routing {
                     const boost::asio::ip::udp::endpoint& peer_endpoint,
                     const NodeInfo& peer_node_info);
 
-  // Returns current network status as int (> 0 is connected).
-  int GetStatus() const;
+// Returns current network status as int (> 0 is connected).
+//  int GetStatus() const;
 
   // The reply or error (timeout) will be passed to this response_functor.  Error is passed as
   // negative int (return code) and empty string, otherwise a positive return code is message type

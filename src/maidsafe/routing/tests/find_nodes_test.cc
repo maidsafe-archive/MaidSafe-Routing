@@ -50,7 +50,7 @@ class FindNodeNetwork : public GenericNetwork<NodeType> {
           message_sent_promise.set_value(true);
         } else if ((rudp::kSendFailure == message_sent) && (attempts < 3)) {
           source->RudpSend(
-              this->nodes_[1]->endpoint(),
+              this->nodes_[1]->connection_id(),
               find_node_rpc,
               message_sent_functor);
         } else {
@@ -58,10 +58,10 @@ class FindNodeNetwork : public GenericNetwork<NodeType> {
         }
       };
 //    source->PrintRoutingTable();
-    source->RudpSend(this->nodes_[1]->endpoint(), find_node_rpc, message_sent_functor);
+    source->RudpSend(this->nodes_[1]->connection_id(), find_node_rpc, message_sent_functor);
     if (!message_sent_future.timed_wait(boost::posix_time::seconds(10))) {
       return testing::AssertionFailure() << "Unable to send FindValue rpc to bootstrap endpoint - "
-                                         << this->nodes_[1]->endpoint().port();
+                                         << this->nodes_[1]->endpoint();
     }
     return testing::AssertionSuccess();
   }

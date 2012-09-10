@@ -306,7 +306,7 @@ class RoutingNetworkTest : public GenericNetwork<NodeType> {
 TYPED_TEST_CASE_P(RoutingNetworkTest);
 
 TYPED_TEST_P(RoutingNetworkTest, FUNC_SetupNetwork) {
-  this->SetUpNetwork(kNetworkSize);
+  this->SetUpNetwork(2);
 }
 
 TYPED_TEST_P(RoutingNetworkTest, FUNC_SetupHybridNetwork) {

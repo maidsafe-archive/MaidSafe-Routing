@@ -62,10 +62,10 @@ void MessageHandler::HandleRoutingMessage(protobuf::Message& message) {
       message.request() ? service::FindNodes(routing_table_, message) :
                           response_handler_->FindNodes(message);
       break;
-    case MessageType::kProxyConnect :
-      message.request() ?  service::ProxyConnect(routing_table_, network_, message) :
-                           response_handler_->ProxyConnect(message);
-      break;
+//    case MessageType::kProxyConnect :
+//      message.request() ?  service::ProxyConnect(routing_table_, network_, message) :
+//                           response_handler_->ProxyConnect(message);
+//      break;
     case MessageType::kConnectSuccess :
       response_handler_->ConnectSuccess(message);
       break;

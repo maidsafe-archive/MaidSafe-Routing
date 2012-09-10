@@ -63,6 +63,7 @@ class GenericNode {
   int GetStatus() const;
   NodeId node_id() const;
   size_t id() const;
+  NodeId connection_id() const;
   boost::asio::ip::udp::endpoint endpoint() const;
   std::shared_ptr<Routing> routing() const;
   NodeInfo node_info() const;
@@ -72,7 +73,8 @@ class GenericNode {
   void set_client_mode(const bool& client_mode);
   int expected();
   void set_expected(const int& expected);
-  int ZeroStateJoin(const NodeInfo& peer_node_info);
+  int ZeroStateJoin(const boost::asio::ip::udp::endpoint& peer_endpoint,
+                    const NodeInfo& peer_node_info);
   void Join(const std::vector<boost::asio::ip::udp::endpoint>& peer_endpoints =
       std::vector<boost::asio::ip::udp::endpoint>());
   void Send(const NodeId& destination_id,
@@ -83,7 +85,7 @@ class GenericNode {
             bool direct,
             bool cache);
   void PrintRoutingTable();
-  void RudpSend(const boost::asio::ip::udp::endpoint& peer_endpoint,
+  void RudpSend(const NodeId& peer_endpoint,
                 const protobuf::Message& message,
                 rudp::MessageSentFunctor message_sent_functor);
   bool RoutingTableHasNode(const NodeId node_id);
@@ -109,6 +111,7 @@ class GenericNode {
   bool joined_;
   int expected_;
   rudp::NatType nat_type_;
+  boost::asio::ip::udp::endpoint endpoint_;
 };
 
 template <typename NodeType>
@@ -135,10 +138,10 @@ class GenericNetwork : public testing::Test {
     SetNodeValidationFunctor(node2);
     LOG(kVerbose) << "Setup started";
     auto f1 = std::async(std::launch::async, [=, &node2] ()->int {
-      return node1->ZeroStateJoin(node2->node_info());
+      return node1->ZeroStateJoin(node2->endpoint(), node2->node_info());
     });
     auto f2 = std::async(std::launch::async, [=, &node1] ()->int {
-      return node2->ZeroStateJoin(node1->node_info());
+      return node2->ZeroStateJoin(node2->endpoint(), node1->node_info());
     });
     EXPECT_EQ(kSuccess, f2.get());
     EXPECT_EQ(kSuccess, f1.get());

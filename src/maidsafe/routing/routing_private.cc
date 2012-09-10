@@ -116,16 +116,16 @@ void RoutingPrivate::LocalTestUtility(const protobuf::Message message) {
 }
 
 void RoutingPrivate::RemoveConnectionFromBootstrapList(
-    const boost::asio::ip::udp::endpoint& lost_endpoint) {
-  std::remove_if(RoutingPrivate::bootstraps_.begin(),
-                 RoutingPrivate::bootstraps_.end(),
-                 [=](const boost::asio::ip::udp::endpoint& endpoint)->bool {
-                   bool result(lost_endpoint == endpoint);
-                   if (result) {
-                     LOG(kVerbose) << "Connection Removed from bootstrap list: " << lost_endpoint;
-                   }
-                   return result;
-                 });
+    const NodeId& node_id) {
+//  std::remove_if(RoutingPrivate::bootstraps_.begin(),
+//                 RoutingPrivate::bootstraps_.end(),
+//                 [=](const boost::asio::ip::udp::endpoint& endpoint)->bool {
+//                   bool result(lost_endpoint == endpoint);
+//                   if (result) {
+//                     LOG(kVerbose) << "Connection Removed from bootstrap list: " << lost_endpoint;
+//                   }
+//                   return result;
+//                 });
 }
 #endif
 

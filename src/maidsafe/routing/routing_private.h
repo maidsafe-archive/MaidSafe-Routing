@@ -83,7 +83,7 @@ struct RoutingPrivate {
   std::mutex random_node_mutex_;
 #ifdef LOCAL_TEST
   void LocalTestUtility(const protobuf::Message message);
-  void RemoveConnectionFromBootstrapList(const boost::asio::ip::udp::endpoint& lost_endpoint);
+  void RemoveConnectionFromBootstrapList(const NodeId& node_id);
   static std::vector<boost::asio::ip::udp::endpoint> bootstraps_;
   static std::set<NodeId> bootstrap_nodes_id_;
   static std::mutex mutex_;

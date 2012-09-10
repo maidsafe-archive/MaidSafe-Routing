@@ -49,7 +49,10 @@ GenericNode::GenericNode(bool client_mode)
       client_mode_(client_mode),
       joined_(false),
       expected_(0),
-      nat_type_(rudp::NatType::kUnknown) {
+      nat_type_(rudp::NatType::kUnknown),
+      endpoint_() {
+  endpoint_.address(GetLocalIp());
+  endpoint_.port(GetRandomPort());
   functors_.close_node_replaced = nullptr;
   functors_.message_received = nullptr;
   functors_.network_status = nullptr;
@@ -68,7 +71,10 @@ GenericNode::GenericNode(bool client_mode, const rudp::NatType& nat_type)
       client_mode_(client_mode),
       joined_(false),
       expected_(0),
-      nat_type_(nat_type) {
+      nat_type_(nat_type),
+      endpoint_() {
+  endpoint_.address(GetLocalIp());
+  endpoint_.port(GetRandomPort());
   functors_.close_node_replaced = nullptr;
   functors_.message_received = nullptr;
   functors_.network_status = nullptr;
@@ -88,7 +94,10 @@ GenericNode::GenericNode(bool client_mode, const NodeInfoAndPrivateKey& node_inf
       client_mode_(client_mode),
       joined_(false),
       expected_(0),
-      nat_type_(rudp::NatType::kUnknown) {
+      nat_type_(rudp::NatType::kUnknown),
+      endpoint_() {
+  endpoint_.address(GetLocalIp());
+  endpoint_.port(GetRandomPort());
   functors_.close_node_replaced = nullptr;
   functors_.message_received = nullptr;
   functors_.network_status = nullptr;
@@ -102,11 +111,15 @@ GenericNode::GenericNode(bool client_mode, const NodeInfoAndPrivateKey& node_inf
 GenericNode::~GenericNode() {}
 
 int GenericNode::GetStatus() const {
-  return routing_->GetStatus();
+  return /*routing_->GetStatus()*/0;
 }
 
 Endpoint GenericNode::endpoint() const {
-  return node_info_plus_.node_info.endpoint;
+  return endpoint_;
+}
+
+NodeId GenericNode::connection_id() const {
+  return node_info_plus_.node_info.connection_id;
 }
 
 NodeId GenericNode::node_id() const {
@@ -153,9 +166,9 @@ void GenericNode::Send(const NodeId& destination_id,
     return;
 }
 
-void GenericNode::RudpSend(const Endpoint& peer_endpoint, const protobuf::Message& message,
+void GenericNode::RudpSend(const NodeId& peer_node_id, const protobuf::Message& message,
               rudp::MessageSentFunctor message_sent_functor) {
-  routing_->impl_->network_.RudpSend(message, peer_endpoint, message_sent_functor);
+  routing_->impl_->network_.RudpSend(message, peer_node_id, message_sent_functor);
 }
 
 bool GenericNode::RoutingTableHasNode(const NodeId node_id) {
@@ -183,7 +196,7 @@ testing::AssertionResult GenericNode::DropNode(const NodeId& node_id) {
   if (iter != routing_->impl_->routing_table_.nodes_.end()) {
     LOG(kVerbose) << HexSubstr(routing_->impl_->routing_table_.kNodeId_.String())
                << " Removes " << HexSubstr(node_id.String());
-    routing_->impl_->network_.Remove(iter->endpoint);
+    routing_->impl_->network_.Remove(iter->connection_id);
   } else {
     testing::AssertionFailure() << HexSubstr(routing_->impl_->routing_table_.keys_.identity)
                                 << " does not have " << HexSubstr(node_id.String())
@@ -197,8 +210,10 @@ NodeInfo GenericNode::node_info() const {
   return node_info_plus_.node_info;
 }
 
-int GenericNode::ZeroStateJoin(const NodeInfo& peer_node_info) {
-  return routing_->ZeroStateJoin(functors_, endpoint(), peer_node_info);
+int GenericNode::ZeroStateJoin(const Endpoint& peer_endpoint,
+                               const NodeInfo& peer_node_info) {
+  return routing_->ZeroStateJoin(functors_, endpoint(), peer_endpoint,
+                                 peer_node_info);
 }
 
 void GenericNode::Join(const std::vector<Endpoint>& peer_endpoints) {

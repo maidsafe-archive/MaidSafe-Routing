@@ -107,7 +107,7 @@ int NetworkUtils::Bootstrap(const std::vector<Endpoint> &bootstrap_endpoints,
   }
 
   LOG(kVerbose) << "Bootstrap successful, bootstrap connection id - "
-                << bootstrap_connection_id_.String();
+                << HexSubstr(bootstrap_connection_id_.String());
   return kSuccess;
 }
 
@@ -145,7 +145,7 @@ void NetworkUtils::RudpSend(const protobuf::Message& message,
 void NetworkUtils::SendToDirect(const protobuf::Message& message,
                                 NodeId peer,
                                 rudp::MessageSentFunctor message_sent_functor) {
-  
+
   SharedLock shared_lock(shared_mutex_);
   if (stopped_)
     return;
@@ -208,7 +208,7 @@ void NetworkUtils::SendTo(const protobuf::Message& message,
                    << kThisId << " to " << HexSubstr(peer.String());
       } else {
         LOG(kError) << "Sending type " << MessageTypeString(message) << " message from "
-                    << kThisId << " to " << HexSubstr(peer.String()) <<  " failed with code " 
+                    << kThisId << " to " << HexSubstr(peer.String()) <<  " failed with code "
                     << message_sent
                     << " id: " << message.id();
       }

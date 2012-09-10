@@ -283,6 +283,10 @@ int Routing::ZeroStateJoin(Functors functors,
     return result;
   }
 
+  LOG(kVerbose) << "impl_->network_.bootstrap_connection_id() "
+                << HexSubstr(impl_->network_.bootstrap_connection_id().String())
+                << "peer_node.node_id: "
+                << HexSubstr(peer_node.node_id.String());
   assert((impl_->network_.bootstrap_connection_id() == peer_node.node_id) &&
          "This should be only used in zero state network");
   LOG(kVerbose) << local_endpoint << " Bootstrapped with remote endpoint " << peer_endpoint;
@@ -560,7 +564,7 @@ void Routing::ConnectionLost(const NodeId& lost_connection_id, std::weak_ptr<Rou
   }
 
 #ifdef LOCAL_TEST
-  pimpl->RemoveConnectionFromBootstrapList(lost_endpoint);
+  pimpl->RemoveConnectionFromBootstrapList(lost_connection_id);
 #endif
 }
 

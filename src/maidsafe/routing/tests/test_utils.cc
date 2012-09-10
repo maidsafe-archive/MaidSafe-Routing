@@ -52,8 +52,9 @@ NodeInfo MakeNode() {
   asymm::Keys keys;
   asymm::GenerateKeyPair(&keys);
   node.public_key = keys.public_key;
-  node.endpoint.address(GetLocalIp());
-  node.endpoint.port(GetRandomPort());
+//  node.endpoint.address(GetLocalIp());
+//  node.endpoint.port(GetRandomPort());
+  node.connection_id = NodeId(NodeId::kRandomId);
   return node;
 }
 
@@ -63,8 +64,9 @@ NodeInfoAndPrivateKey MakeNodeInfoAndKeys() {
   asymm::Keys keys;
   asymm::GenerateKeyPair(&keys);
   node.public_key = keys.public_key;
-  node.endpoint.address(GetLocalIp());
-  node.endpoint.port(GetRandomPort());
+//  node.endpoint.address(GetLocalIp());
+//  node.endpoint.port(GetRandomPort());
+  node.connection_id = NodeId(NodeId::kRandomId);
   NodeInfoAndPrivateKey node_info_and_private_key;
   node_info_and_private_key.node_info = node;
   node_info_and_private_key.private_key = keys.private_key;
