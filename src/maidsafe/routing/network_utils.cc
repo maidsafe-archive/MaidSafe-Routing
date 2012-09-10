@@ -44,8 +44,8 @@ namespace routing {
 
 NetworkUtils::NetworkUtils(RoutingTable& routing_table, NonRoutingTable& non_routing_table,
                            Timer& timer)
-    : bootstrap_node_(),
-      this_node_relay_id_(),
+    : bootstrap_connection_id_(),
+      this_node_relay_connection_id_(),
       connection_lost_functor_(),
       routing_table_(routing_table),
       non_routing_table_(non_routing_table),
@@ -89,23 +89,25 @@ int NetworkUtils::Bootstrap(const std::vector<Endpoint> &bootstrap_endpoints,
   // }  else {
   //   sorted_bootstrap_endpoints = bootstrap_endpoints;
   // }
-  bootstrap_node_ = NodeId(rudp_->Bootstrap(/* sorted_ */bootstrap_endpoints,
-                                         !client,
-                                         message_received_functor,
-                                         [&](NodeId dropped_node) {
-                                             OnConnectionLost(dropped_node); },
-                                         routing_table_.kNodeId(),
-                                         private_key,
-                                         public_key,
-                                         nat_type_,
-                                         local_endpoint));
+  bootstrap_connection_id_ = NodeId(rudp_->Bootstrap(/* sorted_ */bootstrap_endpoints,
+                                                     !client,
+                                                     message_received_functor,
+                                                     [&](NodeId dropped_node) {
+                                                         OnConnectionLost(dropped_node);
+                                                     },
+                                                     routing_table_.kNodeId(),
+                                                     private_key,
+                                                     public_key,
+                                                     nat_type_,
+                                                     local_endpoint));
 //  RUDP will return a kZeroId for zero state !!
-  if (!bootstrap_node_.IsValid()) {
+  if (!bootstrap_connection_id_.IsValid()) {
     LOG(kError) << "No Online Bootstrap Node found.";
     return kNoOnlineBootstrapContacts;
   }
 
-  LOG(kVerbose) << "Bootstrap successful, bootstrap node - " << bootstrap_node_.String();
+  LOG(kVerbose) << "Bootstrap successful, bootstrap connection id - "
+                << bootstrap_connection_id_.String();
   return kSuccess;
 }
 
@@ -119,8 +121,9 @@ int NetworkUtils::GetAvailableEndpoint(NodeId peer_id,
                                      this_nat_type);
 }
 
-int NetworkUtils::Add(NodeId peer_id, const std::string& validation_data) {
-  return rudp_->Add(peer_id, validation_data);
+int NetworkUtils::Add(NodeId peer_id, rudp::EndpointPair peer_endpoint_pair,
+                      const std::string& validation_data) {
+  return rudp_->Add(peer_id, peer_endpoint_pair, validation_data);
 }
 
 int NetworkUtils::MarkConnectionAsValid(NodeId peer) {
@@ -147,10 +150,15 @@ void NetworkUtils::SendToDirect(const protobuf::Message& message,
   if (stopped_)
     return;
   if (message_sent_functor) {
-  rudp_->Send(peer, message.SerializeAsString(), message_sent_functor);
+    rudp_->Send(peer, message.SerializeAsString(), message_sent_functor);
   } else {
-  rudp_->Send(peer, message.SerializeAsString(), nullptr);
+    rudp_->Send(peer, message.SerializeAsString(), nullptr);
   }
+}
+
+void NetworkUtils::SendToDirect(const protobuf::Message& message,
+                                NodeId peer) {
+  SendTo(message, peer);
 }
 
 void NetworkUtils::SendToClosestNode(const protobuf::Message& message) {
@@ -187,7 +195,7 @@ void NetworkUtils::SendToClosestNode(const protobuf::Message& message) {
     LOG(kError) << "Unable to work out destination; aborting send." << " id: " << message.id()
     << " message.has_relay_id() ; " << std::boolalpha << message.has_relay_id()
     << " Isresponse(message) : " << std::boolalpha << IsResponse(message)
-    << " message.has_relay() : "  << std::boolalpha << message.has_relay();
+    << " message.has_relay_connection_id() : "  << std::boolalpha << message.has_relay_connection_id();
   }
 }
 
@@ -312,12 +320,12 @@ void NetworkUtils::AdjustRouteHistory(protobuf::Message& message) {
   assert(message.route_history().size() <= Parameters::max_routing_table_size);
 }
 
-NodeId NetworkUtils::bootstrap_endpoint() const {
-  return bootstrap_node_;
+maidsafe::NodeId NetworkUtils::bootstrap_connection_id() const {
+  return bootstrap_connection_id_;
 }
 
-NodeId NetworkUtils::this_node_relay_endpoint() const {
-  return this_node_relay_id_;
+maidsafe::NodeId NetworkUtils::this_node_relay_connection_id() const {
+  return this_node_relay_connection_id_;
 }
 
 rudp::NatType NetworkUtils::nat_type() {

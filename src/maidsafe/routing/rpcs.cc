@@ -56,7 +56,7 @@ protobuf::Message Connect(const NodeId& node_id,
                           bool client_node,
                           rudp::NatType nat_type,
                           bool relay_message,
-                          boost::asio::ip::udp::endpoint local_endpoint) {
+                          NodeId relay_connection_id) {
   assert(node_id.IsValid() && "Invalid node_id");
   assert(my_node_id.IsValid() && "Invalid my node_id");
   assert((!our_endpoint.external.address().is_unspecified() ||
@@ -85,11 +85,9 @@ protobuf::Message Connect(const NodeId& node_id,
     message.set_source_id(my_node_id.String());
   } else {
     message.set_relay_id(my_node_id.String());
-    if (!local_endpoint.address().is_unspecified()) {
-      // This node is not in any peer's routing table yet
-      LOG(kInfo) << "Connect RPC has relay IP " << local_endpoint;
-      SetProtobufEndpoint(local_endpoint, message.mutable_relay());
-    }
+    // This node is not in any peer's routing table yet
+    LOG(kInfo) << "Connect RPC has relay connection id " << DebugId(relay_connection_id);
+    message.set_relay_connection_id(relay_connection_id.String());
   }
 
   assert(message.IsInitialized() && "Unintialised message");
@@ -100,7 +98,7 @@ protobuf::Message FindNodes(const NodeId& node_id,
                             const NodeId& my_node_id,
                             const int& num_nodes_requested,
                             bool relay_message,
-                            boost::asio::ip::udp::endpoint local_endpoint) {
+                            NodeId relay_connection_id) {
   assert(node_id.IsValid() && "Invalid node_id");
   protobuf::Message message;
   protobuf::FindNodesRequest find_nodes;
@@ -121,11 +119,9 @@ protobuf::Message FindNodes(const NodeId& node_id,
     message.set_source_id(my_node_id.String());
   } else {
     message.set_relay_id(my_node_id.String());
-    if (!local_endpoint.address().is_unspecified()) {
-      // This node is not in any peer's routing table yet
-      LOG(kInfo) << "FindNodes RPC has relay IP " << local_endpoint;
-      SetProtobufEndpoint(local_endpoint, message.mutable_relay());
-    }
+   // This node is not in any peer's routing table yet
+   LOG(kInfo) << "FindNodes RPC has relay connection id " << DebugId(relay_connection_id);
+   message.set_relay_connection_id(relay_connection_id.String());
   }
   message.set_hops_to_live(Parameters::hops_to_live);
   assert(message.IsInitialized() && "Unintialised message");
@@ -136,7 +132,7 @@ protobuf::Message ProxyConnect(const NodeId& node_id,
                                const NodeId& my_node_id,
                                const rudp::EndpointPair& endpoint_pair,
                                bool relay_message,
-                               boost::asio::ip::udp::endpoint local_endpoint) {
+                               NodeId relay_connection_id) {
   assert(node_id.IsValid() && "Invalid node_id");
   assert(my_node_id.IsValid() && "Invalid my node_id");
   assert(!endpoint_pair.external.address().is_unspecified() && "Unspecified external endpoint");
@@ -158,11 +154,9 @@ protobuf::Message ProxyConnect(const NodeId& node_id,
     message.set_source_id(my_node_id.String());
   } else {
     message.set_relay_id(my_node_id.String());
-    if (!local_endpoint.address().is_unspecified()) {
-      // This node is not in any peer's routing table yet
-      LOG(kInfo) << "ProxyConnect RPC has relay IP " << local_endpoint;
-      SetProtobufEndpoint(local_endpoint, message.mutable_relay());
-    }
+   // This node is not in any peer's routing table yet
+   LOG(kInfo) << "ProxyConnect RPC has relay connection id " << DebugId(relay_connection_id);
+   message.set_relay_connection_id(relay_connection_id.String());
   }
   assert(message.IsInitialized() && "Unintialised message");
   return message;
@@ -170,16 +164,16 @@ protobuf::Message ProxyConnect(const NodeId& node_id,
 
 protobuf::Message ConnectSuccess(const NodeId& node_id,
                                  const NodeId& my_node_id,
-                                 const boost::asio::ip::udp::endpoint& endpoint,
-                                 const bool& local_endpoint,
+//                                 const boost::asio::ip::udp::endpoint& endpoint,
+//                                 const bool& local_endpoint,
                                  bool client_node) {
   assert(node_id.IsValid() && "Invalid node_id");
   assert(my_node_id.IsValid() && "Invalid my node_id");
   protobuf::Message message;
   protobuf::ConnectSuccess protobuf_connect_success;
-  SetProtobufEndpoint(endpoint, protobuf_connect_success.mutable_endpoint());
+//  SetProtobufEndpoint(endpoint, protobuf_connect_success.mutable_endpoint());
   protobuf_connect_success.set_node_id(my_node_id.String());
-  protobuf_connect_success.set_local_endpoint(local_endpoint);
+//  protobuf_connect_success.set_local_endpoint(local_endpoint);
   message.set_destination_id(node_id.String());
   message.set_routing_message(true);
   message.add_data(protobuf_connect_success.SerializeAsString());

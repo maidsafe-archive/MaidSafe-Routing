@@ -42,26 +42,24 @@ protobuf::Message Connect(
     bool client_node = false,
     rudp::NatType nat_type = rudp::NatType::kUnknown,
     bool relay_message = false,
-    boost::asio::ip::udp::endpoint local_endpoint = boost::asio::ip::udp::endpoint());
+    NodeId relay_connection_id = NodeId());
 
 protobuf::Message FindNodes(
     const NodeId& node_id,
     const NodeId& my_node_id,
     const int& num_nodes_requested,
     bool relay_message = false,
-    boost::asio::ip::udp::endpoint local_endpoint = boost::asio::ip::udp::endpoint());
+    NodeId relay_connection_id = NodeId());
 
 protobuf::Message ProxyConnect(
     const NodeId& node_id,
     const NodeId& my_node_id,
     const rudp::EndpointPair& endpoint_pair,
     bool relay_message = false,
-    boost::asio::ip::udp::endpoint local_endpoint = boost::asio::ip::udp::endpoint());
+    NodeId relay_connection_id = NodeId());
 
 protobuf::Message ConnectSuccess(const NodeId& node_id,
                                  const NodeId& my_node_id,
-                                 const boost::asio::ip::udp::endpoint& this_endpoint,
-                                 const bool& local_endpoint,
                                  bool client_node);
 }  // namespace rpcs
 

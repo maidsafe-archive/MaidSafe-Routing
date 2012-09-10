@@ -51,7 +51,7 @@ class NetworkUtils {
                            rudp::EndpointPair& peer_endpoint_pair,
                            rudp::EndpointPair& this_endpoint_pair,
                            rudp::NatType& this_nat_type);
-  int Add(NodeId peer, const std::string& validation_data);
+  int Add(NodeId peer, rudp::EndpointPair peer_endpoint_pair, const std::string& validation_data);
   int MarkConnectionAsValid(NodeId peer);
   void Remove(NodeId peer);
   // For sending relay requests, message with empty source ID may be provided, along with
@@ -59,11 +59,12 @@ class NetworkUtils {
   void SendToDirect(const protobuf::Message& message,
                     NodeId peer,
                     rudp::MessageSentFunctor message_sent_functor);
+  void SendToDirect(const protobuf::Message& message, NodeId peer);
   // Handles relay response messages.  Also leave destination ID empty if needs to send as a relay
   // response message
   void SendToClosestNode(const protobuf::Message& message);
-  NodeId bootstrap_endpoint() const;
-  NodeId this_node_relay_endpoint() const;
+  NodeId bootstrap_connection_id() const;
+  NodeId this_node_relay_connection_id() const;
   rudp::NatType nat_type();
   Timer& timer();
   friend class test::GenericNode;
@@ -88,8 +89,8 @@ friend struct RoutingPrivate;
   void AdjustRouteHistory(protobuf::Message& message);
 //  void SignMessage(protobuf::Message& message);
 
-  NodeId bootstrap_node_;
-  NodeId this_node_relay_id_;
+  maidsafe::NodeId bootstrap_connection_id_;
+  maidsafe::NodeId this_node_relay_connection_id_;
   rudp::ConnectionLostFunctor connection_lost_functor_;
   RoutingTable& routing_table_;
   NonRoutingTable& non_routing_table_;

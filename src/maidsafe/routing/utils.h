@@ -49,14 +49,15 @@ class RoutingTable;
 void ValidateAndAddToRudp(NetworkUtils& network_,
                           const NodeId& this_node_id,
                           const NodeId& peer_id,
+                          rudp::EndpointPair peer_endpoint_pair,
                           const asymm::PublicKey& public_key,
                           const bool& client);
 void ValidateAndAddToRoutingTable(NetworkUtils& network,
                                   RoutingTable& routing_table,
                                   NonRoutingTable& non_routing_table,
                                   const NodeId& peer_id,
+                                  const NodeId& connection_id,
                                   const asymm::PublicKey& public_key,
-                                  const bool& local_endpoint,
                                   const bool& client);
 void HandleSymmetricNodeAdd(RoutingTable& routing_table, const NodeId& peer_id,
                             const asymm::PublicKey& public_key);

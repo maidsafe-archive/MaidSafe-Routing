@@ -128,9 +128,8 @@ void ResponseHandler::Connect(protobuf::Message& message) {
                                  response_handler->network_,
                                  NodeId(response_handler->routing_table_.kKeys().identity),
                                  NodeId(message.source_id()),
-                                 key,
                                  peer_endpoint_pair,
-                                 this_endpoint_pair,
+                                 key,
                                  response_handler->routing_table_.client_mode());
                            }
                          });
@@ -212,22 +211,24 @@ void ResponseHandler::ConnectTo(const std::vector<std::string>& nodes,
 
     if (routing_table_.CheckNode(node_to_add)) {
       LOG(kVerbose) << "CheckNode succeeded for node " << HexSubstr(node_to_add.node_id.String());
-      Endpoint direct_endpoint;
+      NodeId direct_connection_id;
       if (routing_table_empty)  // Joining the network, and may connect to bootstrapping node.
-        direct_endpoint = network_.bootstrap_endpoint();
+        direct_connection_id = network_.bootstrap_connection_id();
       rudp::EndpointPair endpoint_pair;
       rudp::NatType this_nat_type(rudp::NatType::kUnknown);
-      if (kSuccess != network_.GetAvailableEndpoint(Endpoint(),  /*direct_endpoint,*/
+      rudp::EndpointPair peer_endpoint_pair;
+      if (kSuccess != network_.GetAvailableEndpoint(NodeId(nodes.at(i)),
+                                                    peer_endpoint_pair,
                                                     endpoint_pair,
                                                     this_nat_type)) {
         LOG(kWarning) << "Failed to get available endpoint for new connections";
         return;
       }
-      Endpoint relay_endpoint;
+      NodeId relay_connection_id;
       bool relay_message(false);
       if (routing_table_empty) {
         // Not in any peer's routing table, need a path back through relay IP.
-        relay_endpoint = network_.this_node_relay_endpoint();
+        relay_connection_id = network_.this_node_relay_connection_id();
         relay_message = true;
       }
 
@@ -240,9 +241,9 @@ void ResponseHandler::ConnectTo(const std::vector<std::string>& nodes,
           routing_table_.client_mode(),
           this_nat_type,
           relay_message,
-          relay_endpoint));
+          relay_connection_id));
       if (routing_table_empty)
-        network_.SendToDirectEndpoint(connect_rpc, network_.bootstrap_endpoint());
+        network_.SendToDirect(connect_rpc, network_.bootstrap_connection_id());
       else
         network_.SendToClosestNode(connect_rpc);
     }
@@ -257,9 +258,9 @@ void ResponseHandler::ConnectSuccess(protobuf::Message& message) {
     message.Clear();
     return;
   }
-  boost::asio::ip::udp::endpoint peer_endpoint =
-      GetEndpointFromProtobuf(connect_success.endpoint());
-  bool local_enpoint(connect_success.local_endpoint());
+//  boost::asio::ip::udp::endpoint peer_endpoint =
+//      GetEndpointFromProtobuf(connect_success.endpoint());
+//  bool local_enpoint(connect_success.local_endpoint());
   NodeId peer_node_id(connect_success.node_id());
   std::weak_ptr<ResponseHandler> response_handler_weak_ptr = shared_from_this();
   if (request_public_key_functor_) {
@@ -271,10 +272,9 @@ void ResponseHandler::ConnectSuccess(protobuf::Message& message) {
                                  response_handler->network_,
                                  response_handler->routing_table_,
                                  response_handler->non_routing_table_,
-                                 NodeId(connect_success.node_id()),
+                                 peer_node_id,
+                                 peer_node_id,
                                  key,
-                                 peer_endpoint,
-                                 local_enpoint,
                                  message.client_node());
                            }
                          });

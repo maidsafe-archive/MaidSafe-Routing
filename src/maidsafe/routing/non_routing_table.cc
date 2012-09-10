@@ -55,11 +55,11 @@ bool NonRoutingTable::AddOrCheckNode(NodeInfo& node,
   return false;
 }
 
-NodeInfo NonRoutingTable::DropNode(const Endpoint& endpoint) {
+NodeInfo NonRoutingTable::DropNode(const NodeId &node_to_drop) {
   NodeInfo node_info;
   std::lock_guard<std::mutex> lock(mutex_);
   for (auto it = nodes_.begin(); it != nodes_.end(); ++it) {
-    if ((*it).endpoint ==  endpoint) {
+    if ((*it).connection_id == node_to_drop) {
       node_info = *it;
       nodes_.erase(it);
       break;
@@ -103,14 +103,14 @@ bool NonRoutingTable::CheckValidParameters(const NodeInfo& node) const {
 
 bool NonRoutingTable::CheckParametersAreUnique(const NodeInfo& node) const {
   // If we already have a duplicate endpoint return false
-  if (std::find_if(nodes_.begin(),
-                   nodes_.end(),
-                   [node](const NodeInfo& node_info) {
-                     return (node_info.endpoint == node.endpoint);
-                   }) != nodes_.end()) {
-    LOG(kInfo) << "Already have node with this endpoint.";
-    return false;
-  }
+//  if (std::find_if(nodes_.begin(),
+//                   nodes_.end(),
+//                   [node](const NodeInfo& node_info) {
+//                     return (node_info.endpoint == node.endpoint);
+//                   }) != nodes_.end()) {
+//    LOG(kInfo) << "Already have node with this endpoint.";
+//    return false;
+//  }
 
   // If we already have a duplicate public key under different node ID return false
   if (std::find_if(nodes_.begin(),

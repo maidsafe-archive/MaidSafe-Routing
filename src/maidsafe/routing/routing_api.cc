@@ -158,8 +158,8 @@ void Routing::BootstrapFromTheseEndpoints(const Functors& functors,
     for (uint16_t i = 0; i < impl_->routing_table_.Size(); ++i) {
       NodeInfo remove_node =
           impl_->routing_table_.GetClosestNode(NodeId(impl_->routing_table_.kKeys().identity));
-      impl_->network_.Remove(remove_node.endpoint);
-      impl_->routing_table_.DropNode(remove_node.endpoint);
+      impl_->network_.Remove(remove_node.connection_id);
+      impl_->routing_table_.DropNode(remove_node.node_id);
     }
     if (impl_->functors_.network_status)
       impl_->functors_.network_status(impl_->routing_table_.Size());
@@ -224,7 +224,7 @@ int Routing::DoBootstrap() {
       impl_->bootstrap_nodes_,
       impl_->client_mode_,
       [=](const std::string& message) { ReceiveMessage(message, impl_weak_ptr); },
-      [=](const Endpoint& lost_endpoint) { ConnectionLost(lost_endpoint, impl_weak_ptr); });  // NOLINT (Fraser)
+      [=](const NodeId& lost_connection_id) { ConnectionLost(lost_connection_id, impl_weak_ptr); });  // NOLINT (Fraser)
 }
 
 int Routing::DoFindNode() {
@@ -233,7 +233,7 @@ int Routing::DoFindNode() {
                       NodeId(impl_->keys_.identity),
                       1,
                       true,
-                      impl_->network_.this_node_relay_endpoint()));
+                      impl_->network_.this_node_relay_connection_id()));
 
   boost::promise<bool> message_sent_promise;
   auto message_sent_future = message_sent_promise.get_future();
@@ -242,27 +242,28 @@ int Routing::DoFindNode() {
         message_sent_promise.set_value(rudp::kSuccess == message_sent);
       });
 
-  impl_->network_.SendToDirectEndpoint(find_node_rpc, impl_->network_.bootstrap_endpoint(),
-                                       message_sent_functor);
+  impl_->network_.SendToDirect(find_node_rpc, impl_->network_.bootstrap_connection_id(),
+                               message_sent_functor);
 
   if (!message_sent_future.timed_wait(boost::posix_time::seconds(10))) {
-    LOG(kError) << "Unable to send FindNodes RPC to bootstrap endpoint "
-                << impl_->network_.bootstrap_endpoint();
+    LOG(kError) << "Unable to send FindNodes RPC to bootstrap connection id : "
+                << DebugId(impl_->network_.bootstrap_connection_id());
     return kFailedtoSendFindNode;
   } else {
     LOG(kInfo) << "Successfully sent FindNodes RPC to bootstrap endpoint "
-               << impl_->network_.bootstrap_endpoint();
+               << DebugId(impl_->network_.bootstrap_connection_id());
     return kSuccess;
   }
 }
 
 int Routing::ZeroStateJoin(Functors functors,
                            const Endpoint& local_endpoint,
+                           const Endpoint& peer_endpoint,
                            const NodeInfo& peer_node) {
   assert((!impl_->client_mode_) && "no client nodes allowed in zero state network");
   assert((!impl_->anonymous_node_) && "not allwed on anonymous node");
   impl_->bootstrap_nodes_.clear();
-  impl_->bootstrap_nodes_.push_back(peer_node.endpoint);
+  impl_->bootstrap_nodes_.push_back(peer_endpoint);
   if (impl_->bootstrap_nodes_.empty()) {
     LOG(kError) << "No bootstrap nodes.  Aborted join.";
     return kInvalidBootstrapContacts;
@@ -274,39 +275,38 @@ int Routing::ZeroStateJoin(Functors functors,
       impl_->bootstrap_nodes_,
       impl_->client_mode_,
       [=](const std::string& message) { ReceiveMessage(message, impl_weak_ptr); },
-      [=](const Endpoint& lost_endpoint) { ConnectionLost(lost_endpoint, impl_weak_ptr); },
+      [=](const NodeId& lost_connection_id) { ConnectionLost(lost_connection_id, impl_weak_ptr); },
       local_endpoint));
 
   if (result != kSuccess) {
-    LOG(kError) << "Could not bootstrap zero state node with " << peer_node.endpoint;
+    LOG(kError) << "Could not bootstrap zero state node with " << peer_endpoint;
     return result;
   }
 
-  assert((impl_->network_.bootstrap_endpoint() == peer_node.endpoint) &&
+  assert((impl_->network_.bootstrap_connection_id() == peer_node.node_id) &&
          "This should be only used in zero state network");
-  LOG(kVerbose) << local_endpoint << " Bootstrapped with remote endpoint " << peer_node.endpoint;
+  LOG(kVerbose) << local_endpoint << " Bootstrapped with remote endpoint " << peer_endpoint;
 
   rudp::EndpointPair peer_endpoint_pair;  // zero state nodes must be directly connected endpoint
   rudp::EndpointPair this_endpoint_pair;
-  peer_endpoint_pair.external = peer_node.endpoint;
+  peer_endpoint_pair.external = peer_endpoint;
   this_endpoint_pair.external = local_endpoint;
   LOG(kInfo) << "Attempting to add bootstrap endpoint us -> " << local_endpoint << " peer -> "
-             << peer_node.endpoint;
-  result = impl_->network_.Add(local_endpoint, peer_node.endpoint, "junk");
+             << peer_endpoint;
+  result = impl_->network_.Add(peer_node.node_id, peer_endpoint_pair, "junk");
   if (result != kSuccess) {
-    LOG(kError) << "Failed to add zero state node : " << peer_node.endpoint;
+    LOG(kError) << "Failed to add zero state node : " << peer_endpoint;
     return result;
   } else {
-    LOG(kInfo) << " Added zero state node ->" << peer_node.endpoint;
+    LOG(kInfo) << " Added zero state node ->" << peer_endpoint;
   }
 
   ValidateAndAddToRoutingTable(impl_->network_,
                                impl_->routing_table_,
                                impl_->non_routing_table_,
                                NodeId(peer_node.node_id),
+                               NodeId(peer_node.node_id),
                                peer_node.public_key,
-                               peer_endpoint_pair.external,
-                               false,
                                false);
   // Now poll for routing table size to have at other node available
   uint8_t poll_count(0);
@@ -315,7 +315,7 @@ int Routing::ZeroStateJoin(Functors functors,
   } while ((impl_->routing_table_.Size() == 0) && (++poll_count < 50));
   if (impl_->routing_table_.Size() != 0) {
     LOG(kInfo) << "Node Successfully joined zero state network, with "
-               << impl_->network_.bootstrap_endpoint()
+               << DebugId(impl_->network_.bootstrap_connection_id())
                << ", Routing table size - " << impl_->routing_table_.Size()
                << ", Node id : " << HexSubstr(impl_->keys_.identity);
 
@@ -332,26 +332,26 @@ int Routing::ZeroStateJoin(Functors functors,
     return kSuccess;
   } else {
     LOG(kError) << "Failed to join zero state network, with bootstrap_endpoint "
-                << impl_->network_.bootstrap_endpoint();
+                << peer_endpoint;
     return kNotJoined;
   }
 }
 
-int Routing::GetStatus() const {
-  if (impl_->routing_table_.Size() == 0) {
-    rudp::EndpointPair endpoint;
-    rudp::NatType this_nat_type;
-    int status = impl_->network_.GetAvailableEndpoint(Endpoint(),
-                                                      endpoint, this_nat_type);
-    if (rudp::kSuccess != status) {
-      if (status == rudp::kNotBootstrapped)
-        return kNotJoined;
-    }
-  } else {
-    return impl_->routing_table_.Size();
-  }
-  return kSuccess;
-}
+//int Routing::GetStatus() const {
+//  if (impl_->routing_table_.Size() == 0) {
+//    rudp::EndpointPair endpoint;
+//    rudp::NatType this_nat_type;
+//    int status = impl_->network_.GetAvailableEndpoint(Endpoint(),
+//                                                      endpoint, this_nat_type);
+//    if (rudp::kSuccess != status) {
+//      if (status == rudp::kNotBootstrapped)
+//        return kNotJoined;
+//    }
+//  } else {
+//    return impl_->routing_table_.Size();
+//  }
+//  return kSuccess;
+//}
 
 void Routing::Send(const NodeId& destination_id,
                    const NodeId& group_claim,
@@ -409,11 +409,12 @@ void Routing::Send(const NodeId& destination_id,
   // Anonymous node
   if (impl_->anonymous_node_ || (impl_->routing_table_.Size() == 0)) {
     proto_message.set_relay_id(impl_->routing_table_.kKeys().identity);
-    SetProtobufEndpoint(impl_->network_.this_node_relay_endpoint(), proto_message.mutable_relay());
-    Endpoint bootstrap_endpoint = impl_->network_.bootstrap_endpoint();
-    assert(proto_message.has_relay() && "did not set endpoint");
-    assert((impl_->network_.this_node_relay_endpoint() ==
-            GetEndpointFromProtobuf(proto_message.relay())) && "Endpoint was not set properly");
+//    SetProtobufEndpoint(impl_->network_.this_node_relay_endpoint(), proto_message.mutable_relay());
+    proto_message.set_relay_connection_id(impl_->network_.this_node_relay_connection_id().String());
+    NodeId bootstrap_connection_id(impl_->network_.bootstrap_connection_id());
+    assert(proto_message.has_relay_connection_id() && "did not set this_node_relay_connection_id");
+    assert((impl_->network_.this_node_relay_connection_id().String() ==
+            proto_message.relay_connection_id()) && "Endpoint was not set properly");
     rudp::MessageSentFunctor message_sent(
         [=](int result) {
           if (rudp::kSuccess != result) {
@@ -431,7 +432,7 @@ void Routing::Send(const NodeId& destination_id,
           }
         });
 
-    impl_->network_.SendToDirectEndpoint(proto_message, bootstrap_endpoint, message_sent);
+    impl_->network_.SendToDirect(proto_message, bootstrap_connection_id, message_sent);
     return;
   }
 
@@ -515,40 +516,40 @@ void Routing::AddExistingRandomNode(NodeId node, std::weak_ptr<RoutingPrivate> i
   }
 }
 
-void Routing::ConnectionLost(const Endpoint& lost_endpoint, std::weak_ptr<RoutingPrivate> impl) {
+void Routing::ConnectionLost(const NodeId& lost_connection_id, std::weak_ptr<RoutingPrivate> impl) {
   std::shared_ptr<RoutingPrivate> pimpl = impl.lock();
   if (!pimpl) {
     LOG(kVerbose) << "Ignoring message received since this node is shutting down";
     return;
   }
 
-  LOG(kVerbose) << "Routing::ConnectionLost with ----------------------------" << lost_endpoint;
+  LOG(kVerbose) << "Routing::ConnectionLost with ----------------------------" << DebugId(lost_connection_id);
 
   NodeInfo dropped_node;
   bool resend(!pimpl->tearing_down_ &&
-              (pimpl->routing_table_.GetNodeInfo(lost_endpoint, dropped_node) &&
+              (pimpl->routing_table_.GetNodeInfo(lost_connection_id, dropped_node) &&
               pimpl->routing_table_.IsThisNodeInRange(dropped_node.node_id,
                                                       Parameters::closest_nodes_size)));
 
   // Checking routing table
-  dropped_node = pimpl->routing_table_.DropNode(lost_endpoint);
+  dropped_node = pimpl->routing_table_.DropNode(lost_connection_id);
   if (!dropped_node.node_id.Empty()) {
     LOG(kWarning) << "[" <<HexSubstr(impl_->keys_.identity) << "]"
                   << "Lost connection with routing node "
-                  << DebugId(dropped_node.node_id) << ", endpoint " << lost_endpoint;
+                  << DebugId(dropped_node.node_id);
   }
 
   // Checking non-routing table
   if (dropped_node.node_id.Empty()) {
     resend = false;
-    dropped_node = pimpl->non_routing_table_.DropNode(lost_endpoint);
+    dropped_node = pimpl->non_routing_table_.DropNode(lost_connection_id);
     if (!dropped_node.node_id.Empty()) {
       LOG(kWarning) << "[" <<HexSubstr(impl_->keys_.identity) << "]"
                     << "Lost connection with non-routing node "
-                    << HexSubstr(dropped_node.node_id.String()) << ", endpoint " << lost_endpoint;
+                    << HexSubstr(dropped_node.node_id.String());
     } else {
       LOG(kWarning) << "[" <<HexSubstr(impl_->keys_.identity) << "]"
-                    << "Lost connection with unknown/internal endpoint " << lost_endpoint;
+                    << "Lost connection with unknown/internal connection id " << DebugId(lost_connection_id);
     }
   }
 
@@ -564,23 +565,23 @@ void Routing::ConnectionLost(const Endpoint& lost_endpoint, std::weak_ptr<Routin
 }
 
 void Routing::RemoveNode(const NodeInfo& node, const bool& internal_rudp_only) {
-  if (node.endpoint.address().is_unspecified() || node.node_id.Empty()) {
+  if (node.connection_id.Empty() || node.node_id.Empty()) {
     return;
   }
   if (internal_rudp_only) {
-    impl_->network_.Remove(node.endpoint);
+    impl_->network_.Remove(node.connection_id);
     LOG(kInfo) << "Routing: removed internal duplicate rudp connection : "
                << HexSubstr(node.node_id.String())
-               << ". Removed rudp endpoint : " << node.endpoint;
+               << ". Removed rudp connection id : " << DebugId(node.connection_id);
     return;
   }
-
-  if (node.endpoint != rudp::kNonRoutable) {
-    impl_->network_.Remove(node.endpoint);
-    impl_->routing_table_.DropNode(node.endpoint);
+// TODO(Prakash) : Pseudo connection can be identified by Zero node id
+//  if (node.endpoint != rudp::kNonRoutable) {
+    impl_->network_.Remove(node.connection_id);
+    impl_->routing_table_.DropNode(node.node_id);
     LOG(kInfo) << "Routing: removed node : " << HexSubstr(node.node_id.String())
-               << ". Removed rudp endpoint : " << node.endpoint;
-  }
+               << ". Removed rudp connection id : " << DebugId(node.connection_id);
+//  }
 
   // TODO(Prakash): Handle pseudo connection removal here and NRT node removal
   bool resend(impl_->routing_table_.IsThisNodeInRange(node.node_id,

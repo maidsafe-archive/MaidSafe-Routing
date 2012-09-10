@@ -35,51 +35,27 @@ namespace routing {
 void ValidateAndAddToRudp(NetworkUtils& network_,
                           const NodeId& this_node_id,
                           const NodeId& peer_id,
-                          const asymm::PublicKey& public_key,
+                          rudp::EndpointPair peer_endpoint_pair,
+                          const asymm::PublicKey& /*public_key*/,
                           const bool& client) {
-  NodeInfo peer;
-  peer.node_id = peer_id;
-  peer.public_key = public_key;
-  peer.connection_id = peer_id;
-
-  if (!this_endpoint.external.address().is_unspecified() &&
-      !peer_endpoint.external.address().is_unspecified()) {
-    protobuf::Message connect_success_external_endpoint(
-        rpcs::ConnectSuccess(peer_id, this_node_id, this_endpoint.external, false, client));
-    LOG(kVerbose) << "Calling RUDP::Add on this node's endpoint " << this_endpoint.external
-                  << ", peer's endpoint " << peer_endpoint.external;
-    int result = network_.Add(peer_id, connect_success_external_endpoint.SerializeAsString());
-    if (result != rudp::kSuccess)
-      LOG(kWarning) << "rudp add failed on external endpoint" << result;
-    else
-      LOG(kVerbose) << "rudp.Add succeeded on external endpoint";
-  }
-
-  if (!external_only && !this_endpoint.local.address().is_unspecified() &&
-      !peer_endpoint.local.address().is_unspecified()) {
-    protobuf::Message connect_success_local_endpoint(
-        rpcs::ConnectSuccess(peer_id, this_node_id, this_endpoint.local, true, client));
-    LOG(kVerbose) << "Calling RUDP::Add on this node's endpoint " << this_endpoint.local
-                  << ", peer's endpoint " << peer_endpoint.local
-                  << ", This node id : " << HexSubstr(this_node_id.String())
-                  << ", Peer node id : " << HexSubstr(peer_id.String());
-    int result = network_.Add(this_endpoint.local, peer_endpoint.local,
-                              connect_success_local_endpoint.SerializeAsString());
-
-    if (result != rudp::kSuccess)
-      LOG(kWarning) << "rudp add failed on local endpoint" << result;
-    else
-      LOG(kVerbose) << "rudp.Add succeeded on local endpoint";
-  }
+  protobuf::Message connect_success(
+      rpcs::ConnectSuccess(peer_id, this_node_id, client));
+  int result = network_.Add(peer_id, peer_endpoint_pair, connect_success.SerializeAsString());
+  if (result != rudp::kSuccess)
+    LOG(kWarning) << "rudp add failed for peer node ["
+                  << DebugId(peer_id) << "]. result : "
+                  << result;
+  else
+    LOG(kVerbose) << "rudp.Add succeeded for peer node ["
+                  << DebugId(peer_id) << "].";
 }
 
 void ValidateAndAddToRoutingTable(NetworkUtils& network,
                                   RoutingTable& routing_table,
                                   NonRoutingTable& non_routing_table,
                                   const NodeId& peer_id,
+                                  const NodeId& connection_id,
                                   const asymm::PublicKey& public_key,
-                                  const boost::asio::ip::udp::endpoint& peer_endpoint,
-                                  const bool& local_endpoint,
                                   const bool& client) {
   LOG(kVerbose) << "ValidateAndAddToRoutingTable";
   // actual_peer_endpoint could have a different port to peer_endpoint if the peer is behind
@@ -95,7 +71,7 @@ void ValidateAndAddToRoutingTable(NetworkUtils& network,
   NodeInfo peer;
   peer.node_id = peer_id;
   peer.public_key = public_key;
-  peer.endpoint = actual_peer_endpoint;
+  peer.connection_id = connection_id;
   bool routing_accepted_node(false);
   if (client) {
     NodeId furthest_close_node_id =
@@ -111,7 +87,7 @@ void ValidateAndAddToRoutingTable(NetworkUtils& network,
                     << HexSubstr(peer_id.String());
     }
   } else {
-    if (routing_table.AddNode(peer, local_endpoint)) {
+    if (routing_table.AddNode(peer)) {
       routing_accepted_node = true;
       LOG(kVerbose) << "[" << HexSubstr(routing_table.kKeys().identity) << "] "
                     << "added node to routing table.  Node ID: " << HexSubstr(peer_id.String());
@@ -124,10 +100,11 @@ void ValidateAndAddToRoutingTable(NetworkUtils& network,
   if (!routing_accepted_node) {
     LOG(kVerbose) << "Not adding node to " << (client ? "non-" : "") << "routing table.  Node id "
                   << HexSubstr(peer_id.String()) << " just added rudp connection will be removed.";
-    network.Remove(actual_peer_endpoint);
+    network.Remove(connection_id);
   }
 }
 
+// FIXME
 void HandleSymmetricNodeAdd(RoutingTable& routing_table, const NodeId& peer_id,
                             const asymm::PublicKey& public_key) {
   if (routing_table.IsConnected(peer_id)) {
@@ -140,10 +117,10 @@ void HandleSymmetricNodeAdd(RoutingTable& routing_table, const NodeId& peer_id,
   NodeInfo peer;
   peer.node_id = peer_id;
   peer.public_key = public_key;
-  peer.endpoint = rudp::kNonRoutable;
+//  peer.endpoint = rudp::kNonRoutable;
   peer.nat_type = rudp::NatType::kSymmetric;
 
-  if (routing_table.AddNode(peer, false)) {
+  if (routing_table.AddNode(peer)) {
     LOG(kVerbose) << "[" << HexSubstr(routing_table.kKeys().identity) << "] "
                   << "added node to routing table.  Node ID: " << HexSubstr(peer_id.String())
                   << "Node is behind symmetric router !";
@@ -206,7 +183,8 @@ bool ValidateMessage(const protobuf::Message &message) {
     return false;
   }
 
-  if (!(message.has_source_id() || (message.has_relay_id() && message.has_relay()))) {
+  if (!(message.has_source_id() || (message.has_relay_id() &&
+                                    message.has_relay_connection_id()))) {
     LOG(kWarning) << "Message should have either src id or relay information.";
     assert(false && "Message should have either src id or relay information.");
     return false;
@@ -222,9 +200,8 @@ bool ValidateMessage(const protobuf::Message &message) {
     return false;
   }
 
-  if (message.has_relay() &&
-      GetEndpointFromProtobuf(message.relay()).address().is_unspecified()) {
-    LOG(kWarning) << "Invalid relay endpoint field.";
+  if (message.has_relay_connection_id() && NodeId(message.relay_connection_id()).Empty()) {
+    LOG(kWarning) << "Invalid relay connection id field.";
     return false;
   }
 

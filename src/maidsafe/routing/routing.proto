@@ -58,7 +58,7 @@ message Message {
   optional bool cacheable = 11;
   optional int32 id = 12;
   required bool client_node = 13;
-  optional Endpoint relay = 14;
+  optional bytes relay_connection_id = 14;
   optional bool closest_to_this_node = 15;
   optional bool close_to_this_node = 16;
   repeated bytes route_history = 17;
@@ -92,8 +92,6 @@ message ConnectResponse {
 
 message ConnectSuccess {
   required bytes node_id = 1;
-  required Endpoint endpoint = 2;
-  required bool local_endpoint = 3;
 }
 
 message FindNodesRequest {

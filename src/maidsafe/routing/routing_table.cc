@@ -20,20 +20,14 @@
 
 #include "maidsafe/routing/bootstrap_file_handler.h"
 #include "maidsafe/routing/parameters.h"
-#include "maidsafe/common/node_info.h"
+#include "maidsafe/routing/node_info.h"
 
 
 namespace maidsafe {
 
 namespace routing {
 
-namespace {
-
-typedef boost::asio::ip::udp::endpoint Endpoint;
-
-}  // unnamed namespace
-
-RoutingTable::RoutingTable(const asymm::Keys& keys, const bool client_mode)
+RoutingTable::RoutingTable(const asymm::Keys& keys, const bool& client_mode)
     : max_size_(client_mode ? Parameters::max_client_routing_table_size :
                               Parameters::max_routing_table_size),
       client_mode_(client_mode),
@@ -49,16 +43,16 @@ RoutingTable::RoutingTable(const asymm::Keys& keys, const bool client_mode)
       bootstrap_file_path_(),
       nodes_() {}
 
-bool RoutingTable::AddNode(NodeInfo& peer, const bool& local_endpoint) {
-  return AddOrCheckNode(peer, local_endpoint, true);
+bool RoutingTable::AddNode(NodeInfo& peer) {
+  return AddOrCheckNode(peer, true);
 }
 
 bool RoutingTable::CheckNode(NodeInfo& peer) {
-  return AddOrCheckNode(peer, false, false);
+  return AddOrCheckNode(peer, false);
 }
 
-bool RoutingTable::AddOrCheckNode(NodeInfo& peer, const bool& local_endpoint, const bool& remove) {
-  bool return_value(false), duplication(false);
+bool RoutingTable::AddOrCheckNode(NodeInfo& peer, const bool& remove) {
+  bool return_value(false);
   std::vector<NodeInfo> new_close_nodes;
   NodeInfo removed_node, duplicate_removed_node;
   uint16_t routing_table_size;
@@ -76,35 +70,27 @@ bool RoutingTable::AddOrCheckNode(NodeInfo& peer, const bool& local_endpoint, co
                               return node_info.node_id == peer.node_id;
                           }));
     if (itr != nodes_.end()) {
-      duplicate_removed_node = ResolveConnectionDuplication(peer, local_endpoint, *itr);
-      if (duplicate_removed_node.endpoint.address().is_unspecified()) {
-        LOG(kInfo) << "Node " << HexSubstr(peer.node_id.String()) << " already in routing table.";
-        return false;
-      } else {
-        duplication = true;
-        return_value = true;
-        LOG(kInfo) << "Node " << HexSubstr(peer.node_id.String())
-                   << " already in routing table. Connection upgraded to local endpoint";
+      LOG(kInfo) << "Node " << HexSubstr(peer.node_id.String()) << " already in routing table.";
+      return false;
+    }
+
+    if (MakeSpaceForNodeToBeAdded(peer, remove, removed_node)) {
+      if (remove) {
+        nodes_.push_back(peer);
+        routing_table_size = static_cast<uint16_t>(nodes_.size());
+        new_close_nodes = CheckGroupChange();
+//        UpdateBootstrapFile(bootstrap_file_path_, peer.endpoint, false);
       }
-    } else {
-      if (MakeSpaceForNodeToBeAdded(peer, remove, removed_node)) {
-        if (remove) {
-          nodes_.push_back(peer);
-          routing_table_size = static_cast<uint16_t>(nodes_.size());
-          new_close_nodes = CheckGroupChange();
-          UpdateBootstrapFile(bootstrap_file_path_, peer.endpoint, false);
-        }
-        return_value = true;
-      }
+      return_value = true;
     }
   }
 
-  if (!duplication && (return_value && remove)) {  // Firing functors on Add only
+  if (return_value && remove) {  // Firing functors on Add only
     update_network_status(routing_table_size);
 
     if (!removed_node.node_id.Empty()) {
       LOG(kVerbose) << "Routing table removed node id : " << DebugId(removed_node.node_id)
-                    << ", endpoint : " << removed_node.endpoint;
+                    << ", connection id : " << DebugId(removed_node.connection_id);
       if (remove_node_functor_)
         remove_node_functor_(removed_node, false);
     }
@@ -115,36 +101,15 @@ bool RoutingTable::AddOrCheckNode(NodeInfo& peer, const bool& local_endpoint, co
     }
 
     if (peer.nat_type == rudp::NatType::kOther) {  // Usable as bootstrap endpoint
-      if (new_bootstrap_endpoint_)
-        new_bootstrap_endpoint_(peer.endpoint);
+//      if (new_bootstrap_endpoint_)
+//        new_bootstrap_endpoint_(peer.endpoint);
     }
     LOG(kInfo) << PrintRoutingTable();
-  }
-  if (duplication && !duplicate_removed_node.endpoint.address().is_unspecified()) {
-    if (remove_node_functor_)
-      remove_node_functor_(duplicate_removed_node, true);
   }
   return return_value;
 }
 
-NodeInfo RoutingTable::ResolveConnectionDuplication(const NodeInfo& new_duplicate_node,
-                                                    const bool& local_endpoint,
-                                                    NodeInfo& existing_node) {
-  assert((new_duplicate_node.node_id == existing_node.node_id) &&
-         "This should only called on duplicate node case.");
-  if (local_endpoint &&
-      (new_duplicate_node.endpoint != existing_node.endpoint) &&
-      rsa::MatchingPublicKeys(new_duplicate_node.public_key, existing_node.public_key)) {
-    NodeInfo removed_duplicate;
-    removed_duplicate = existing_node;
-    existing_node.endpoint = new_duplicate_node.endpoint;
-    return removed_duplicate;
-  } else {
-    return NodeInfo();
-  }
-}
-
-NodeInfo RoutingTable::DropNode(NodeId node_to_drop) {
+NodeInfo RoutingTable::DropNode(const NodeId& node_to_drop) {
   std::vector<NodeInfo> new_close_nodes;
   NodeInfo dropped_node;
   {
@@ -167,8 +132,8 @@ NodeInfo RoutingTable::DropNode(NodeId node_to_drop) {
       close_node_replaced_functor_(new_close_nodes);
   }
 
-  if (!dropped_node.node_id.Empty())
-    UpdateBootstrapFile(bootstrap_file_path_, dropped_node.endpoint, true);
+//  if (!dropped_node.node_id.Empty())
+//    UpdateBootstrapFile(bootstrap_file_path_, dropped_node.endpoint, true);
   std::cout << PrintRoutingTable();
   return dropped_node;
 }
@@ -206,15 +171,15 @@ bool RoutingTable::IsThisNodeClosestTo(const NodeId& target_id) {
   return (kNodeId_ ^ target_id) < (target_id ^ nodes_[0].node_id);
 }
 
-bool RoutingTable::IsConnected(const Endpoint& endpoint) const {
-  assert((endpoint != rudp::kNonRoutable) && "Should not be called with kNonRoutable endpoint");
-  std::lock_guard<std::mutex> lock(mutex_);
-  return (std::find_if(nodes_.begin(),
-                       nodes_.end(),
-                       [endpoint](const NodeInfo& node_info) {
-                         return node_info.endpoint == endpoint;
-                       }) != nodes_.end());
-}
+//bool RoutingTable::IsConnected(const Endpoint& endpoint) const {
+//  assert((endpoint != rudp::kNonRoutable) && "Should not be called with kNonRoutable endpoint");
+//  std::lock_guard<std::mutex> lock(mutex_);
+//  return (std::find_if(nodes_.begin(),
+//                       nodes_.end(),
+//                       [endpoint](const NodeInfo& node_info) {
+//                         return node_info.endpoint == endpoint;
+//                       }) != nodes_.end());
+//}
 
 bool RoutingTable::IsConnected(const NodeId& node_id) const {
   std::lock_guard<std::mutex> lock(mutex_);
@@ -293,17 +258,17 @@ bool RoutingTable::CheckParametersAreUnique(const NodeInfo& node) const {
   }
 
   // If the endpoint is kNonRoutable then no need to check for endpoint duplication.
-  if (node.endpoint == rudp::kNonRoutable)
-    return true;
+//  if (node.endpoint == rudp::kNonRoutable)
+//    return true;
   // If we already have a duplicate endpoint return false
-  if (std::find_if(nodes_.begin(),
-                   nodes_.end(),
-                   [node](const NodeInfo& node_info) {
-                     return (node_info.endpoint == node.endpoint);
-                   }) != nodes_.end()) {
-    LOG(kInfo) << "Already have node with this endpoint";
-    return false;
-  }
+//  if (std::find_if(nodes_.begin(),
+//                   nodes_.end(),
+//                   [node](const NodeInfo& node_info) {
+//                     return (node_info.endpoint == node.endpoint);
+//                   }) != nodes_.end()) {
+//    LOG(kInfo) << "Already have node with this endpoint";
+//    return false;
+//  }
 
   return true;
 }
@@ -471,13 +436,13 @@ std::vector<NodeInfo> RoutingTable::GetClosestNodeInfo(const NodeId& from,
 std::vector<NodeInfo> RoutingTable::GetClosestNodeInfo(const NodeId& from,
                                                        const uint16_t& number_to_get,
                                                        bool ignore_exact_match,
-                                                       bool ignore_non_routable) {
+                                                       bool /*ignore_non_routable*/) {
   std::vector<NodeInfo> close_nodes, return_close_nodes;
   bool exact_match_exist(false);
-  for (auto node_info : nodes_) {
-    if (!ignore_non_routable || (ignore_non_routable && (node_info.endpoint != rudp::kNonRoutable)))
-      close_nodes.push_back(node_info);
-  }
+//  for (auto node_info : nodes_) {
+//    if (!ignore_non_routable || (ignore_non_routable && (node_info.endpoint != rudp::kNonRoutable)))
+//      close_nodes.push_back(node_info);
+//  }
   uint16_t count = std::min(static_cast<uint16_t>(close_nodes.size()), number_to_get);
   if (ignore_exact_match && (close_nodes.size() >= count))
     if (std::find_if(close_nodes.begin(), close_nodes.end(),
@@ -547,7 +512,7 @@ std::string RoutingTable::PrintRoutingTable() {
   std::string s = "\n\nThis node's own routing table and peer connections:\n";
   for (auto node : rt) {
     s += std::string("\tPeer ") + "[" + DebugId(node.node_id) + "]"+ "-->";
-    s += boost::lexical_cast<std::string>(node.endpoint)+ "\n";
+    s += DebugId(node.connection_id)+ "\n";
   }
   s += "\n\n";
   return s;

@@ -46,7 +46,6 @@ namespace test { class GenericNode; }
 
 struct RoutingPrivate;
 struct NodeInfo;
-class NodeId;
 
 class Routing {
  public:
@@ -69,6 +68,7 @@ class Routing {
   // WARNING: THIS FUNCTION SHOULD BE ONLY USED TO JOIN FIRST TWO ZERO STATE NODES.
   int ZeroStateJoin(Functors functors,
                     const boost::asio::ip::udp::endpoint& local_endpoint,
+                    const boost::asio::ip::udp::endpoint& peer_endpoint,
                     const NodeInfo& peer_node_info);
 
   // Returns current network status as int (> 0 is connected).
@@ -109,7 +109,7 @@ class Routing {
                              std::weak_ptr<RoutingPrivate> impl,
                              bool ignore_size = false);
   void ReceiveMessage(const std::string& message, std::weak_ptr<RoutingPrivate> impl);
-  void ConnectionLost(const boost::asio::ip::udp::endpoint& lost_endpoint,
+  void ConnectionLost(const NodeId& lost_connection_id,
                       std::weak_ptr<RoutingPrivate> impl);
   void RemoveNode(const NodeInfo& node, const bool& internal_rudp_only);
   // Confirm (if we can) two nodes are within a group range.  For small networks or new node on

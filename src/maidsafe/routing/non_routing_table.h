@@ -41,7 +41,7 @@ class NonRoutingTable {
   explicit NonRoutingTable(const asymm::Keys& keys);
   bool AddNode(NodeInfo& node, const NodeId& furthest_close_node_id);
   bool CheckNode(NodeInfo& node, const NodeId& furthest_close_node_id);
-  NodeInfo DropNode(const boost::asio::ip::udp::endpoint& endpoint);
+  NodeInfo DropNode(const NodeId &node_to_drop);
   std::vector<NodeInfo> GetNodesInfo(const NodeId& node_id) const;
   bool IsConnected(const NodeId& node_id) const;
 

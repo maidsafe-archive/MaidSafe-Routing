@@ -40,9 +40,9 @@ struct NodeInfo;
 class RoutingTable {
  public:
   RoutingTable(const asymm::Keys& keys, const bool& client_mode);
-  bool AddNode(NodeInfo& peer, const bool& local_endpoint);
+  bool AddNode(NodeInfo& peer);
   bool CheckNode(NodeInfo& peer);
-  NodeInfo DropNode(NodeId node_to_drop);
+  NodeInfo DropNode(const NodeId &node_to_drop);
   bool GetNodeInfo(const NodeId& node_id, NodeInfo& node_info) const;
   bool IsThisNodeInRange(const NodeId& target_id, const uint16_t range);
   bool IsThisNodeClosestTo(const NodeId& target_id);
@@ -73,7 +73,7 @@ class RoutingTable {
  private:
   RoutingTable(const RoutingTable&);
   RoutingTable& operator=(const RoutingTable&);
-  bool AddOrCheckNode(NodeInfo& node, const bool& local_endpoint, const bool& remove);
+  bool AddOrCheckNode(NodeInfo& node, const bool& remove);
   int16_t BucketIndex(const NodeId& rhs) const;
   bool CheckValidParameters(const NodeInfo& node) const;
   bool CheckParametersAreUnique(const NodeInfo& node) const;

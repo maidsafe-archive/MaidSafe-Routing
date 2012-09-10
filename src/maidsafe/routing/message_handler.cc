@@ -77,7 +77,7 @@ void MessageHandler::HandleRoutingMessage(protobuf::Message& message) {
     return;
 
   if (routing_table_.Size() == 0)  // This node can only send to bootstrap_endpoint
-    network_.SendToDirectEndpoint(message, network_.bootstrap_endpoint());
+    network_.SendToDirect(message, network_.bootstrap_connection_id());
   else
     network_.SendToClosestNode(message);
 }
@@ -110,9 +110,8 @@ void MessageHandler::HandleNodeLevelMessageForThisNode(protobuf::Message& messag
         if (message.has_relay_id())
           message_out.set_relay_id(message.relay_id());
 
-        if (message.has_relay()) {
-          auto relay_endpoint = GetEndpointFromProtobuf(message.relay());
-          SetProtobufEndpoint(relay_endpoint, message_out.mutable_relay());
+        if (message.has_relay_connection_id()) {
+          message_out.set_relay_connection_id(message.relay_connection_id());
         }
 
         if (routing_table_.kKeys().identity != message_out.destination_id()) {
@@ -209,9 +208,9 @@ void MessageHandler::HandleGroupMessageAsClosestNode(protobuf::Message& message)
     message.set_destination_id(i.String());
     NodeInfo node;
     if (routing_table_.GetNodeInfo(i, node)) {
-      if (node.endpoint != rudp::kNonRoutable)
-        network_.SendToDirectEndpoint(message, node.endpoint);
-      else
+//      if (node.endpoint != rudp::kNonRoutable)
+//        network_.SendToDirectEndpoint(message, node.endpoint);
+//      else
         network_.SendToClosestNode(message);
     }
   }
