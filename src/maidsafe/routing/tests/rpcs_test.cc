@@ -67,7 +67,7 @@ TEST(RpcsTest, BEH_PingMessageNode) {
   EXPECT_EQ(static_cast<int32_t>(MessageType::kPing), message.type());
   EXPECT_TRUE(message.request());
   EXPECT_FALSE(message.client_node());
-  EXPECT_FALSE(message.has_relay());
+  // EXPECT_FALSE(message.has_relay());
 }
 
 TEST(RpcsTest, BEH_ConnectMessageInitialised) {
@@ -81,8 +81,8 @@ TEST(RpcsTest, BEH_ConnectMessageInitialised) {
 TEST(RpcsTest, BEH_ConnectMessageNode) {
   NodeInfo us(MakeNode());
   rudp::EndpointPair endpoint;
-  endpoint.local = us.endpoint;
-  endpoint.external = us.endpoint;
+  endpoint.local = Endpoint(boost::asio::ip::address_v4::loopback(), GetRandomPort());
+  endpoint.external = Endpoint(boost::asio::ip::address_v4::loopback(), GetRandomPort());
   std::string destination = RandomString(64);
   protobuf::Message message = rpcs::Connect(NodeId(destination), endpoint, us.node_id);
   protobuf::ConnectRequest connect_request;
@@ -100,19 +100,18 @@ TEST(RpcsTest, BEH_ConnectMessageNode) {
   EXPECT_EQ(static_cast<int32_t>(MessageType::kConnect), message.type());
   EXPECT_TRUE(message.request());
   EXPECT_FALSE(message.client_node());
-  EXPECT_FALSE(message.has_relay());
+  // EXPECT_FALSE(message.has_relay());
 }
 
 TEST(RpcsTest, BEH_ConnectMessageNodeRelayMode) {
   NodeInfo us(MakeNode());
   rudp::EndpointPair endpoint;
-  endpoint.local = us.endpoint;
-  endpoint.external = us.endpoint;
-  Endpoint relay_endpoint(boost::asio::ip::address_v4::loopback(), GetRandomPort());
+  endpoint.local = Endpoint(boost::asio::ip::address_v4::loopback(), GetRandomPort());
+  endpoint.external = Endpoint(boost::asio::ip::address_v4::loopback(), GetRandomPort());
   std::string destination = RandomString(64);
   protobuf::Message message = rpcs::Connect(NodeId(destination), endpoint, us.node_id,
                                             std::vector<std::string>(), false,
-                                            rudp::NatType::kUnknown, true, relay_endpoint);
+                                            rudp::NatType::kUnknown, true, NodeId(destination));
   protobuf::ConnectRequest connect_request;
   EXPECT_TRUE(message.IsInitialized());
   EXPECT_TRUE(connect_request.ParseFromString(message.data(0)));  // us
@@ -128,7 +127,6 @@ TEST(RpcsTest, BEH_ConnectMessageNodeRelayMode) {
   EXPECT_EQ(static_cast<int32_t>(MessageType::kConnect), message.type());
   EXPECT_TRUE(message.request());
   EXPECT_FALSE(message.client_node());
-  EXPECT_TRUE(message.has_relay());
   EXPECT_TRUE(message.has_relay_id());
   EXPECT_EQ(us.node_id.String(), message.relay_id());
 }
@@ -157,14 +155,14 @@ TEST(RpcsTest, BEH_FindNodesMessageNode) {
   EXPECT_EQ(static_cast<int32_t>(MessageType::kFindNodes), message.type());
   EXPECT_TRUE(message.request());
   EXPECT_FALSE(message.client_node());
-  EXPECT_FALSE(message.has_relay());
   EXPECT_FALSE(message.has_relay_id());
 }
 
 TEST(RpcsTest, BEH_FindNodesMessageNodeRelayMode) {
   NodeInfo us(MakeNode());
   Endpoint relay_endpoint(boost::asio::ip::address_v4::loopback(), GetRandomPort());
-  protobuf::Message message = rpcs::FindNodes(us.node_id, us.node_id, 8, true, relay_endpoint);
+  protobuf::Message message = rpcs::FindNodes(us.node_id, us.node_id, 8, true,
+                                              NodeId(NodeId::kRandomId));
   protobuf::FindNodesRequest find_nodes_request;
   EXPECT_TRUE(find_nodes_request.ParseFromString(message.data(0)));  // us
   EXPECT_TRUE(find_nodes_request.num_nodes_requested() == Parameters::closest_nodes_size);
@@ -180,7 +178,6 @@ TEST(RpcsTest, BEH_FindNodesMessageNodeRelayMode) {
   EXPECT_EQ(static_cast<int32_t>(MessageType::kFindNodes), message.type());
   EXPECT_TRUE(message.request());
   EXPECT_FALSE(message.client_node());
-  EXPECT_TRUE(message.has_relay());
   EXPECT_TRUE(message.has_relay_id());
   EXPECT_EQ(us.node_id.String(), message.relay_id());
   NodeId node(message.relay_id());

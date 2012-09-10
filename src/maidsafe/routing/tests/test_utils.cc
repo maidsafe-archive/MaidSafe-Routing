@@ -52,9 +52,7 @@ NodeInfo MakeNode() {
   asymm::Keys keys;
   asymm::GenerateKeyPair(&keys);
   node.public_key = keys.public_key;
-//  node.endpoint.address(GetLocalIp());
-//  node.endpoint.port(GetRandomPort());
-  node.connection_id = NodeId(NodeId::kRandomId);
+  node.connection_id = node.node_id;
   return node;
 }
 

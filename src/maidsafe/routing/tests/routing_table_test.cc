@@ -49,19 +49,15 @@ TEST(RoutingTableTest, FUNC_AddCloseNodes) {
   // check we cannot input nodes with invalid public_keys
   for (uint16_t i = 0; i < Parameters::closest_nodes_size ; ++i) {
      NodeInfo node(MakeNode());
-     node.endpoint.port(i + 1501U);  // has to be unique
      node.public_key = dummy_key;
-     EXPECT_FALSE(RT.AddNode(node, false));
+     EXPECT_FALSE(RT.AddNode(node));
   }
   EXPECT_EQ(0, RT.Size());
 
   // everything should be set to go now
-  // TODO(dirvine): should we also test for valid enpoints ??
-  // TODO(dirvine): we should fail when public keys are the same
   for (uint16_t i = 0; i < Parameters::closest_nodes_size ; ++i) {
     node = MakeNode();
-    node.endpoint.port(i + 1501U);  // has to be unique
-    EXPECT_TRUE(RT.AddNode(node, false));
+    EXPECT_TRUE(RT.AddNode(node));
   }
   EXPECT_EQ(Parameters::closest_nodes_size, RT.Size());
 }
@@ -73,16 +69,14 @@ TEST(RoutingTableTest, FUNC_AddTooManyNodes) {
   RT.set_remove_node_functor([](const NodeInfo&, const bool&) {});
   for (uint16_t i = 0; RT.Size() < Parameters::max_routing_table_size; ++i) {
     NodeInfo node(MakeNode());
-    node.endpoint.port(i + 1501U);  // has to be unique
-    EXPECT_TRUE(RT.AddNode(node, false));
+    EXPECT_TRUE(RT.AddNode(node));
   }
   EXPECT_EQ(RT.Size(), Parameters::max_routing_table_size);
   size_t count(0);
   for (uint16_t i = 0; i < 100; ++i) {
     NodeInfo node(MakeNode());
-    node.endpoint.port(i + 1700U);  // has to be unique
     if (RT.CheckNode(node)) {
-      EXPECT_TRUE(RT.AddNode(node, false));
+      EXPECT_TRUE(RT.AddNode(node));
       ++count;
     }
   }
@@ -91,40 +85,39 @@ TEST(RoutingTableTest, FUNC_AddTooManyNodes) {
   EXPECT_EQ(RT.Size(), Parameters::max_routing_table_size);
 }
 
-TEST(RoutingTableTest, FUNC_AddUsableBootstrapNodes) {
-    asymm::Keys keys;
-    keys.identity = RandomString(64);
-  RoutingTable RT(keys, false);
-  std::vector<boost::asio::ip::udp::endpoint> expected_bootstrap_endpoints,
-      actual_bootstrap_endpoints;
-  RT.set_new_bootstrap_endpoint_functor([&](const boost::asio::ip::udp::endpoint& ep) {
-      actual_bootstrap_endpoints.push_back(ep);
-    });
-
-  for (uint16_t i = 0; RT.Size() < Parameters::max_routing_table_size; ++i) {
-    NodeInfo node(MakeNode());
-    node.endpoint.port(i + 1501U);  // has to be unique
-    if (i % 2) {
-      node.nat_type = rudp::NatType::kOther;
-      expected_bootstrap_endpoints.push_back(node.endpoint);
-    }
-    ASSERT_TRUE(RT.AddNode(node, false));
-  }
-
-  for (uint16_t i = 0; RT.Size() < Parameters::max_routing_table_size; ++i) {
-    NodeInfo node(MakeNode());
-    if (i % 2) {
-      node.nat_type = rudp::NatType::kOther;
-    }
-    RT.CheckNode(node);
-  }
-
-  ASSERT_EQ(RT.Size(), Parameters::max_routing_table_size);
-  ASSERT_EQ(expected_bootstrap_endpoints.size(), actual_bootstrap_endpoints.size());
-  for (size_t i(0); i != expected_bootstrap_endpoints.size(); ++i) {
-    EXPECT_EQ(expected_bootstrap_endpoints.at(i), actual_bootstrap_endpoints.at(i));
-  }
-}
+// TEST(RoutingTableTest, FUNC_AddUsableBootstrapNodes) {
+//     asymm::Keys keys;
+//     keys.identity = RandomString(64);
+//   RoutingTable RT(keys, false);
+//   std::vector<boost::asio::ip::udp::endpoint> expected_bootstrap_endpoints,
+//       actual_bootstrap_endpoints;
+//   RT.set_new_bootstrap_endpoint_functor([&](const boost::asio::ip::udp::endpoint& ep) {
+//       actual_bootstrap_endpoints.push_back(ep);
+//     });
+// 
+//   for (uint16_t i = 0; RT.Size() < Parameters::max_routing_table_size; ++i) {
+//     NodeInfo node(MakeNode());
+//     if (i % 2) {
+//       node.nat_type = rudp::NatType::kOther;
+//       expected_bootstrap_endpoints.push_back(node.endpoint);
+//     }
+//     ASSERT_TRUE(RT.AddNode(node, false));
+//   }
+// 
+//   for (uint16_t i = 0; RT.Size() < Parameters::max_routing_table_size; ++i) {
+//     NodeInfo node(MakeNode());
+//     if (i % 2) {
+//       node.nat_type = rudp::NatType::kOther;
+//     }
+//     RT.CheckNode(node);
+//   }
+// 
+//   ASSERT_EQ(RT.Size(), Parameters::max_routing_table_size);
+//   ASSERT_EQ(expected_bootstrap_endpoints.size(), actual_bootstrap_endpoints.size());
+//   for (size_t i(0); i != expected_bootstrap_endpoints.size(); ++i) {
+//     EXPECT_EQ(expected_bootstrap_endpoints.at(i), actual_bootstrap_endpoints.at(i));
+//   }
+// }
 
 TEST(RoutingTableTest, FUNC_GroupChange) {
   asymm::Keys keys;
@@ -150,7 +143,7 @@ TEST(RoutingTableTest, FUNC_GroupChange) {
     LOG(kVerbose) << "Status : " << status;
   });
   for (uint16_t i = 0; i < Parameters::max_routing_table_size; ++i) {
-    ASSERT_TRUE(RT.AddNode(nodes.at(i), false));
+    ASSERT_TRUE(RT.AddNode(nodes.at(i)));
     LOG(kVerbose) << "Added  to RT : " << DebugId(nodes.at(i).node_id);
   }
 
@@ -189,37 +182,35 @@ TEST(RoutingTableTest, FUNC_DuplicateConnection) {
     ASSERT_TRUE(std::find_if(removed_nodes.begin(),
                              removed_nodes.end(),
                              [=](const NodeInfo& node) {
-                               return ((node.endpoint == removed_node.endpoint) &&
+                               return ((node.connection_id == removed_node.connection_id) &&
                                        (node.node_id == removed_node.node_id));
                              }) != removed_nodes.end());
   });
 
   for (uint16_t i = 0; i < Parameters::max_routing_table_size; ++i) {
-    ASSERT_TRUE(RT.AddNode(nodes.at(i), false));
+    ASSERT_TRUE(RT.AddNode(nodes.at(i)));
     LOG(kVerbose) << "Added  to RT : " << DebugId(nodes.at(i).node_id);
   }
 
   for (uint16_t i = 0; i < (Parameters::max_routing_table_size / 2); ++i) {
-    ASSERT_FALSE(RT.AddNode(nodes.at(i), true));
+    ASSERT_FALSE(RT.AddNode(nodes.at(i)));
     LOG(kVerbose) << "Added  to RT : " << DebugId(nodes.at(i).node_id);
   }
   ASSERT_EQ(RT.Size(), Parameters::max_routing_table_size);
 
   for (uint16_t i = 0; i < (Parameters::max_routing_table_size / 2); ++i) {
-    nodes.at(i).endpoint.address(GetLocalIp());
-    nodes.at(i).endpoint.port(GetRandomPort());
-    ASSERT_TRUE(RT.AddNode(nodes.at(i), true));
+    ASSERT_TRUE(RT.AddNode(nodes.at(i)));
     LOG(kVerbose) << "Added  to RT : " << DebugId(nodes.at(i).node_id);
   }
 
   for (uint16_t i = 0; i < Parameters::max_routing_table_size; ++i) {
-    ASSERT_FALSE(RT.AddNode(nodes.at(i), true));
+    ASSERT_FALSE(RT.AddNode(nodes.at(i)));
   }
 
   ASSERT_EQ(RT.Size(), Parameters::max_routing_table_size);
 
   for (uint16_t i = 0; i < Parameters::max_routing_table_size; ++i) {
-    ASSERT_TRUE(RT.IsConnected(nodes.at(i).endpoint));
+    ASSERT_TRUE(RT.IsConnected(nodes.at(i).connection_id));
   }
 }
 
@@ -231,8 +222,7 @@ TEST(RoutingTableTest, FUNC_CloseAndInRangeCheck) {
   NodeId my_node(keys.identity);
   for (uint16_t i = 0; RT.Size() < Parameters::max_routing_table_size; ++i) {
     NodeInfo node(MakeNode());
-    node.endpoint.port(i + 1501U);  // has to be unique
-    EXPECT_TRUE(RT.AddNode(node, false));
+    EXPECT_TRUE(RT.AddNode(node));
   }
   EXPECT_EQ(RT.Size(), Parameters::max_routing_table_size);
   std::string my_id_encoded(my_node.ToStringEncoded(NodeId::kBinary));
@@ -260,23 +250,21 @@ TEST(RoutingTableTest, FUNC_CloseAndInRangeCheck) {
                               != close_nodes.end());
   // add the node now
      NodeInfo node(MakeNode());
-     node.endpoint.port(1502);  // duplicate endpoint
      node.node_id = my_closest_node;
-     EXPECT_FALSE(RT.AddNode(node, false));
-     node.endpoint.port(25000);
-     EXPECT_TRUE(RT.AddNode(node, false));
+     EXPECT_FALSE(RT.AddNode(node));
+     EXPECT_TRUE(RT.AddNode(node));
   // should now be closest node to itself :-)
   EXPECT_EQ(RT.GetClosestNode(my_closest_node).node_id.String(), my_closest_node.String());
   EXPECT_EQ(RT.Size(), Parameters::max_routing_table_size);
-  EXPECT_EQ(node.node_id, RT.DropNode(node.endpoint).node_id);
+  EXPECT_EQ(node.node_id, RT.DropNode(node.node_id).node_id);
   EXPECT_EQ(RT.Size(), Parameters::max_routing_table_size - 1);
-  EXPECT_TRUE(RT.AddNode(node, false));
+  EXPECT_TRUE(RT.AddNode(node));
   EXPECT_EQ(RT.Size(), Parameters::max_routing_table_size);
-  EXPECT_FALSE(RT.AddNode(node, false));
+  EXPECT_FALSE(RT.AddNode(node));
   EXPECT_EQ(RT.Size(), Parameters::max_routing_table_size);
-  EXPECT_EQ(node.node_id, RT.DropNode(node.endpoint).node_id);
+  EXPECT_EQ(node.node_id, RT.DropNode(node.node_id).node_id);
   EXPECT_EQ(RT.Size(), Parameters::max_routing_table_size -1);
-  EXPECT_EQ(NodeId(), RT.DropNode(node.endpoint).node_id);
+  EXPECT_EQ(NodeId(), RT.DropNode(node.node_id).node_id);
 }
 
 TEST(RoutingTableTest, FUNC_GetClosestNodeWithExclusion) {
@@ -296,9 +284,8 @@ TEST(RoutingTableTest, FUNC_GetClosestNodeWithExclusion) {
 
   // RT with one element
   NodeInfo node(MakeNode());
-  node.endpoint.port(1501U);  // has to be unique
   nodes_id.push_back(node.node_id);
-  EXPECT_TRUE(RT.AddNode(node, false));
+  EXPECT_TRUE(RT.AddNode(node));
 
   node_info = RT.GetClosestNode(my_node, exclude, false);
   node_info2 = RT.GetClosestNode(my_node, exclude, true);
@@ -318,9 +305,8 @@ TEST(RoutingTableTest, FUNC_GetClosestNodeWithExclusion) {
   exclude.clear();
   for (uint16_t i(RT.Size()); RT.Size() < Parameters::node_group_size; ++i) {
     NodeInfo node(MakeNode());
-    node.endpoint.port(i + 1501U);  // has to be unique
     nodes_id.push_back(node.node_id);
-    EXPECT_TRUE(RT.AddNode(node, false));
+    EXPECT_TRUE(RT.AddNode(node));
   }
 
   node_info = RT.GetClosestNode(my_node, exclude, false);
@@ -348,9 +334,8 @@ TEST(RoutingTableTest, FUNC_GetClosestNodeWithExclusion) {
   exclude.clear();
   for (uint16_t i = RT.Size(); RT.Size() < Parameters::max_routing_table_size; ++i) {
     NodeInfo node(MakeNode());
-    node.endpoint.port(i + 1501U);  // has to be unique
     nodes_id.push_back(node.node_id);
-    EXPECT_TRUE(RT.AddNode(node, false));
+    EXPECT_TRUE(RT.AddNode(node));
   }
 
   node_info = RT.GetClosestNode(my_node, exclude, false);
@@ -392,11 +377,9 @@ TEST(RoutingTableTest, FUNC_GetClosestNodeWithExclusionAndIgnoreNonRoutable) {
 
   // RT with one element
   NodeInfo node(MakeNode());
-  node.endpoint.port(1501U);  // has to be unique
   nodes_id.push_back(node.node_id);
   node.nat_type = rudp::NatType::kSymmetric;
-  node.endpoint = rudp::kNonRoutable;
-  EXPECT_TRUE(RT.AddNode(node, false));
+  EXPECT_TRUE(RT.AddNode(node));
 
   node_info = RT.GetClosestNode(my_node, exclude, false, true);
   node_info2 = RT.GetClosestNode(my_node, exclude, true, true);
@@ -416,16 +399,14 @@ TEST(RoutingTableTest, FUNC_GetClosestNodeWithExclusionAndIgnoreNonRoutable) {
   exclude.clear();
   for (uint16_t i = RT.Size(); RT.Size() < Parameters::max_routing_table_size; ++i) {
     NodeInfo node(MakeNode());
-    node.endpoint.port(i + 1501U);  // has to be unique
     if (i % 2 == 0) {
       node.nat_type = rudp::NatType::kSymmetric;
-      node.endpoint = rudp::kNonRoutable;
     } else {
       node.nat_type = rudp::NatType::kUnknown;
     }
 
     nodes_id.push_back(node.node_id);
-    EXPECT_TRUE(RT.AddNode(node, false));
+    EXPECT_TRUE(RT.AddNode(node));
   }
 
   node_info = RT.GetClosestNode(my_node, exclude, false, true);
