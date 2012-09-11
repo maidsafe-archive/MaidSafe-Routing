@@ -20,10 +20,10 @@
 
 #include "boost/asio/ip/udp.hpp"
 
+#include "maidsafe/common/node_id.h"
 #include "maidsafe/common/rsa.h"
 
 #include "maidsafe/routing/api_config.h"
-#include "maidsafe/routing/node_id.h"
 
 
 namespace maidsafe {

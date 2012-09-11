@@ -40,6 +40,8 @@
 
 namespace maidsafe {
 
+class NodeId;
+
 namespace routing {
 
 namespace test { class GenericNode; }

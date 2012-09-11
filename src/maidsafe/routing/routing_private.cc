@@ -116,7 +116,7 @@ void RoutingPrivate::LocalTestUtility(const protobuf::Message message) {
 }
 
 void RoutingPrivate::RemoveConnectionFromBootstrapList(
-    const NodeId& node_id) {
+    const NodeId& /*node_id*/) {
 //  std::remove_if(RoutingPrivate::bootstraps_.begin(),
 //                 RoutingPrivate::bootstraps_.end(),
 //                 [=](const boost::asio::ip::udp::endpoint& endpoint)->bool {

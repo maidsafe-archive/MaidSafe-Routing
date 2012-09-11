@@ -19,13 +19,14 @@
 #include "boost/thread/future.hpp"
 
 #include "maidsafe/common/log.h"
+#include "maidsafe/common/node_id.h"
+
 #include "maidsafe/rudp/managed_connections.h"
 #include "maidsafe/rudp/return_codes.h"
 
 #include "maidsafe/routing/bootstrap_file_handler.h"
 #include "maidsafe/routing/message_handler.h"
 #include "maidsafe/routing/network_utils.h"
-#include "maidsafe/routing/node_id.h"
 #include "maidsafe/routing/non_routing_table.h"
 #include "maidsafe/routing/parameters.h"
 #include "maidsafe/routing/return_codes.h"

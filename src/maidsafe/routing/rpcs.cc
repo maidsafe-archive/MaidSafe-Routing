@@ -13,10 +13,10 @@
 #include "maidsafe/routing/rpcs.h"
 
 #include "maidsafe/common/log.h"
+#include "maidsafe/common/node_id.h"
 #include "maidsafe/common/utils.h"
 
 #include "maidsafe/routing/message_handler.h"
-#include "maidsafe/routing/node_id.h"
 #include "maidsafe/routing/routing_pb.h"
 #include "maidsafe/routing/utils.h"
 
