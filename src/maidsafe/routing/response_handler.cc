@@ -59,7 +59,6 @@ void ResponseHandler::Ping(protobuf::Message& message) {
 }
 
 void ResponseHandler::Connect(protobuf::Message& message) {
-  // The peer agreed to connect
   protobuf::ConnectResponse connect_response;
   protobuf::ConnectRequest connect_request;
   if (!connect_response.ParseFromString(message.data(0))) {
@@ -77,19 +76,11 @@ void ResponseHandler::Connect(protobuf::Message& message) {
     return;
   }
 
-  if (!NodeId(connect_response.contact().node_id()).IsValid()) {
+  if (!NodeId(connect_response.contact().node_id()).IsValid() ||
+      NodeId(connect_response.contact().node_id()).Empty()) {
     LOG(kError) << "Invalid contact details";
     return;
   }
-
-  LOG(kVerbose) << "This node [" << HexSubstr(routing_table_.kKeys().identity)
-                << "] received connect response from "
-                << HexSubstr(connect_response.contact().node_id())
-                << " id: " << message.id();
-  rudp::EndpointPair this_endpoint_pair;
-  this_endpoint_pair.external =
-      GetEndpointFromProtobuf(connect_request.contact().public_endpoint());
-  this_endpoint_pair.local = GetEndpointFromProtobuf(connect_request.contact().private_endpoint());
 
   rudp::EndpointPair peer_endpoint_pair;
   peer_endpoint_pair.external =
@@ -97,13 +88,23 @@ void ResponseHandler::Connect(protobuf::Message& message) {
   peer_endpoint_pair.local =
       GetEndpointFromProtobuf(connect_response.contact().private_endpoint());
 
+  if (peer_endpoint_pair.external.address().is_unspecified() &&
+      peer_endpoint_pair.local.address().is_unspecified()) {
+    LOG(kError) << "Invalid peer endpoint details";
+    return;
+  }
+
   NodeId peer_node_id(connect_response.contact().node_id());
-  // Handling the case when this node and peer node are behind symmetric router
+  LOG(kVerbose) << "This node [" << DebugId(routing_table_.kNodeId())
+                << "] received connect response from "
+                << DebugId(peer_node_id)
+                << " id: " << message.id();
+
+  // Handling the case when this and peer node are behind symmetric router
   rudp::NatType nat_type = NatTypeFromProtobuf(connect_response.contact().nat_type());
 
   if ((nat_type == rudp::NatType::kSymmetric) &&
       (network_.nat_type() == rudp::NatType::kSymmetric)) {
-//     peer_endpoint_pair.external = Endpoint();  // No need to try connction on external endpoint.
     auto validate_node = [&] (const asymm::PublicKey& key)->void {
         LOG(kInfo) << "validation callback called with public key for" << DebugId(peer_node_id)
                    << " -- pseudo connection";
@@ -111,9 +112,9 @@ void ResponseHandler::Connect(protobuf::Message& message) {
       };
 
     TaskResponseFunctor add_symmetric_node = [&](std::vector<std::string>) {
-      if (request_public_key_functor_) {
-        request_public_key_functor_(peer_node_id, validate_node);
-      }
+        if (request_public_key_functor_) {
+          request_public_key_functor_(peer_node_id, validate_node);
+        }
       };
     network_.timer().AddTask(boost::posix_time::seconds(5), add_symmetric_node, 1);
   }
@@ -121,13 +122,14 @@ void ResponseHandler::Connect(protobuf::Message& message) {
   std::weak_ptr<ResponseHandler> response_handler_weak_ptr = shared_from_this();
   if (request_public_key_functor_) {
     auto validate_node([=] (const asymm::PublicKey& key) {
-                           LOG(kInfo) << "NEED TO VALIDATE THE NODE HERE";
+                           LOG(kInfo) << "Validation callback called with public key for"
+                                      << DebugId(peer_node_id);
                            if (std::shared_ptr<ResponseHandler> response_handler =
                                response_handler_weak_ptr.lock()) {
                              ValidateAndAddToRudp(
                                  response_handler->network_,
-                                 NodeId(response_handler->routing_table_.kKeys().identity),
-                                 NodeId(message.source_id()),
+                                 response_handler->routing_table_.kNodeId(),
+                                 peer_node_id,
                                  peer_endpoint_pair,
                                  key,
                                  response_handler->routing_table_.client_mode());
@@ -161,15 +163,16 @@ void ResponseHandler::FindNodes(const protobuf::Message& message) {
 //    return;  // we never requested this
 //  }
 
-  LOG(kVerbose) << "This node [" << HexSubstr(routing_table_.kKeys().identity)
-                << "] received FindNodes response from " << HexSubstr(message.source_id());
-#ifndef NDEBUG
+  LOG(kVerbose) << "This node [" << DebugId(routing_table_.kNodeId())
+                << "] received FindNodes response from " << HexSubstr(message.source_id())
+                << " id: " << message.id();
+  std::string find_node_result = "FindNodes from " + HexSubstr(message.source_id()) +
+          " returned :\n";
   for (int i = 0; i < find_nodes.nodes_size(); ++i) {
-    LOG(kVerbose) << "FindNodes from " << HexSubstr(message.source_id())
-                  << " returned " << HexSubstr(find_nodes.nodes(i))
-                  << " id: " << message.id();
+    find_node_result += "\t[" + HexSubstr(find_nodes.nodes(i)) + "]\t";
   }
-#endif
+  LOG(kVerbose) << find_node_result;
+
   ConnectTo(std::vector<std::string>(find_nodes.nodes().begin(), find_nodes.nodes().end()),
             std::vector<std::string>(find_nodes.nodes().begin(), find_nodes.nodes().end()));
 }
@@ -178,8 +181,8 @@ void ResponseHandler::ConnectTo(const std::vector<std::string>& nodes,
                                 const std::vector<std::string>& closest_nodes) {
   std::vector<std::string> closest_node_ids;
   auto routing_table_closest_nodes(routing_table_.GetClosestNodes(
-                                       NodeId(routing_table_.kKeys().identity),
-                                       Parameters::max_routing_table_size));
+                                   routing_table_.kNodeId(),
+                                   Parameters::max_routing_table_size));
 
   for (auto node_id : routing_table_closest_nodes)
     closest_node_ids.push_back(node_id.String());
@@ -202,7 +205,8 @@ void ResponseHandler::ConnectTo(const std::vector<std::string>& nodes,
                           Parameters::max_routing_table_size);
   if (closest_node_ids.size() > resize)
     closest_node_ids.resize(resize);
-  bool routing_table_empty(routing_table_.Size() == 0);
+
+  bool send_to_bootstrap_connection(routing_table_.Size() == 0);
   for (uint16_t i = 0; i < nodes.size(); ++i) {
     NodeInfo node_to_add;
     node_to_add.node_id = NodeId(nodes.at(i));
@@ -210,39 +214,37 @@ void ResponseHandler::ConnectTo(const std::vector<std::string>& nodes,
       continue;  // TODO(Prakash): FIXME handle collision and return kIdCollision on join()
 
     if (routing_table_.CheckNode(node_to_add)) {
-      LOG(kVerbose) << "CheckNode succeeded for node " << HexSubstr(node_to_add.node_id.String());
-      NodeId direct_connection_id;
-      if (routing_table_empty)  // Joining the network, and may connect to bootstrapping node.
-        direct_connection_id = network_.bootstrap_connection_id();
-      rudp::EndpointPair endpoint_pair;
+      LOG(kVerbose) << "CheckNode succeeded for node " << DebugId(node_to_add.node_id);
+      rudp::EndpointPair this_endpoint_pair, peer_endpoint_pair;
       rudp::NatType this_nat_type(rudp::NatType::kUnknown);
-      rudp::EndpointPair peer_endpoint_pair;
-      if (kSuccess != network_.GetAvailableEndpoint(NodeId(nodes.at(i)),
-                                                    peer_endpoint_pair,
-                                                    endpoint_pair,
-                                                    this_nat_type)) {
-        LOG(kWarning) << "Failed to get available endpoint for new connections";
+      int ret_val = network_.GetAvailableEndpoint(NodeId(nodes.at(i)),
+                                                  peer_endpoint_pair,
+                                                  this_endpoint_pair,
+                                                  this_nat_type);
+      if (kSuccess != ret_val) {
+        LOG(kWarning) << "Failed to get available endpoint for new connections : " << ret_val;
         return;
       }
+
       NodeId relay_connection_id;
       bool relay_message(false);
-      if (routing_table_empty) {
+      if (send_to_bootstrap_connection) {
         // Not in any peer's routing table, need a path back through relay IP.
         relay_connection_id = network_.this_node_relay_connection_id();
         relay_message = true;
       }
 
-      LOG(kVerbose) << "Sending Connect RPC to " << HexSubstr(nodes.at(i));
       protobuf::Message connect_rpc(
           rpcs::Connect(NodeId(nodes.at(i)),
-          endpoint_pair,
-          NodeId(routing_table_.kKeys().identity),
+          this_endpoint_pair,
+          routing_table_.kNodeId(),
           closest_node_ids,
           routing_table_.client_mode(),
           this_nat_type,
           relay_message,
           relay_connection_id));
-      if (routing_table_empty)
+      LOG(kVerbose) << "Sending Connect RPC to " << HexSubstr(nodes.at(i));
+      if (send_to_bootstrap_connection)
         network_.SendToDirect(connect_rpc, network_.bootstrap_connection_id());
       else
         network_.SendToClosestNode(connect_rpc);
@@ -254,18 +256,22 @@ void ResponseHandler::ConnectSuccess(protobuf::Message& message) {
   protobuf::ConnectSuccess connect_success;
 
   if (!connect_success.ParseFromString(message.data(0))) {
-    LOG(kVerbose) << "Unable to parse connect success.";
+    LOG(kWarning) << "Unable to parse connect success.";
     message.Clear();
     return;
   }
-//  boost::asio::ip::udp::endpoint peer_endpoint =
-//      GetEndpointFromProtobuf(connect_success.endpoint());
-//  bool local_enpoint(connect_success.local_endpoint());
+
   NodeId peer_node_id(connect_success.node_id());
+  if (peer_node_id.Empty() || !peer_node_id.IsValid()) {
+    LOG(kWarning) << "Invalid node id provided";
+    return;
+  }
+
   std::weak_ptr<ResponseHandler> response_handler_weak_ptr = shared_from_this();
   if (request_public_key_functor_) {
     auto validate_node([=] (const asymm::PublicKey& key) {
-                           LOG(kInfo) << "need to validate & add the node here";
+                           LOG(kInfo) << "Validation callback called with public key for"
+                                      << DebugId(peer_node_id);
                            if (std::shared_ptr<ResponseHandler> response_handler =
                                response_handler_weak_ptr.lock()) {
                              ValidateAndAddToRoutingTable(
@@ -279,13 +285,6 @@ void ResponseHandler::ConnectSuccess(protobuf::Message& message) {
                            }
                          });
       request_public_key_functor_(peer_node_id, validate_node);
-  }
-}
-
-void ResponseHandler::ProxyConnect(protobuf::Message& message) {
-  protobuf::ProxyConnectResponse proxy_connect_response;
-  if (proxy_connect_response.ParseFromString(message.data(0))) {
-    // do stuff here
   }
 }
 

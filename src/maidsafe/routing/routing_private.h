@@ -64,6 +64,7 @@ struct RoutingPrivate {
   AsioService asio_service_;
   std::vector<boost::asio::ip::udp::endpoint> bootstrap_nodes_;
   const asymm::Keys keys_;
+  const NodeId kNodeId_;
   std::atomic<bool> tearing_down_;
   RoutingTable routing_table_;
   NonRoutingTable non_routing_table_;

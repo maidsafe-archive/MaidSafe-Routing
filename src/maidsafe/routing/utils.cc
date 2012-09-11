@@ -58,10 +58,7 @@ void ValidateAndAddToRoutingTable(NetworkUtils& network,
                                   const asymm::PublicKey& public_key,
                                   const bool& client) {
   LOG(kVerbose) << "ValidateAndAddToRoutingTable";
-  // actual_peer_endpoint could have a different port to peer_endpoint if the peer is behind
-  // symmetric NAT and passed this node a best-guess endpoint.
-  boost::asio::ip::udp::endpoint endpoint;  // TODO(dirvine) update bootstrap
-  if (network.MarkConnectionAsValid(peer_id, endpoint) != kSuccess) {
+  if (network.MarkConnectionAsValid(peer_id) != kSuccess) {
     LOG(kError) << "[" << HexSubstr(routing_table.kKeys().identity) << "] "
                 << ". Rudp failed to validate connection with  Peer id : "
                 << HexSubstr(peer_id.String());
@@ -105,29 +102,29 @@ void ValidateAndAddToRoutingTable(NetworkUtils& network,
 }
 
 // FIXME
-void HandleSymmetricNodeAdd(RoutingTable& routing_table, const NodeId& peer_id,
-                            const asymm::PublicKey& public_key) {
-  if (routing_table.IsConnected(peer_id)) {
-    LOG(kVerbose) << "[" << HexSubstr(routing_table.kKeys().identity) << "] "
-                  << "already added node to routing table.  Node ID: "
-                  << HexSubstr(peer_id.String())
-                  << "Node is behind symmetric router but connected on local endpoint";
-    return;
-  }
-  NodeInfo peer;
-  peer.node_id = peer_id;
-  peer.public_key = public_key;
-//  peer.endpoint = rudp::kNonRoutable;
-  peer.nat_type = rudp::NatType::kSymmetric;
+void HandleSymmetricNodeAdd(RoutingTable& /*routing_table*/, const NodeId& /*peer_id*/,
+                            const asymm::PublicKey& /*public_key*/) {
+//  if (routing_table.IsConnected(peer_id)) {
+//    LOG(kVerbose) << "[" << HexSubstr(routing_table.kKeys().identity) << "] "
+//                  << "already added node to routing table.  Node ID: "
+//                  << HexSubstr(peer_id.String())
+//                  << "Node is behind symmetric router but connected on local endpoint";
+//    return;
+//  }
+//  NodeInfo peer;
+//  peer.node_id = peer_id;
+//  peer.public_key = public_key;
+////  peer.endpoint = rudp::kNonRoutable;
+//  peer.nat_type = rudp::NatType::kSymmetric;
 
-  if (routing_table.AddNode(peer)) {
-    LOG(kVerbose) << "[" << HexSubstr(routing_table.kKeys().identity) << "] "
-                  << "added node to routing table.  Node ID: " << HexSubstr(peer_id.String())
-                  << "Node is behind symmetric router !";
-  } else {
-    LOG(kVerbose) << "Failed to add node to routing table.  Node id : "
-                  << HexSubstr(peer_id.String());
-  }
+//  if (routing_table.AddNode(peer)) {
+//    LOG(kVerbose) << "[" << HexSubstr(routing_table.kKeys().identity) << "] "
+//                  << "added node to routing table.  Node ID: " << HexSubstr(peer_id.String())
+//                  << "Node is behind symmetric router !";
+//  } else {
+//    LOG(kVerbose) << "Failed to add node to routing table.  Node id : "
+//                  << HexSubstr(peer_id.String());
+//  }
 }
 
 bool IsRoutingMessage(const protobuf::Message& message) {

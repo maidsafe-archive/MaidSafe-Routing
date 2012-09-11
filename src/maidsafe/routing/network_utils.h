@@ -23,6 +23,7 @@
 
 #include "maidsafe/rudp/managed_connections.h"
 
+#include "maidsafe/routing/api_config.h"
 #include "maidsafe/routing/node_info.h"
 #include "maidsafe/routing/timer.h"
 
@@ -53,7 +54,7 @@ class NetworkUtils {
                            rudp::EndpointPair& this_endpoint_pair,
                            rudp::NatType& this_nat_type);
   int Add(NodeId peer, rudp::EndpointPair peer_endpoint_pair, const std::string& validation_data);
-  int MarkConnectionAsValid(NodeId peer, boost::asio::ip::udp::endpoint& endpoint);
+  int MarkConnectionAsValid(NodeId peer);
 
   void Remove(NodeId peer);
   // For sending relay requests, message with empty source ID may be provided, along with
@@ -65,6 +66,8 @@ class NetworkUtils {
   // Handles relay response messages.  Also leave destination ID empty if needs to send as a relay
   // response message
   void SendToClosestNode(const protobuf::Message& message);
+  void clear_bootstrap_connection();
+  void set_new_bootstrap_endpoint_functor(NewBootstrapEndpointFunctor new_bootstrap_endpoint);
   NodeId bootstrap_connection_id() const;
   NodeId this_node_relay_connection_id() const;
   rudp::NatType nat_type();
@@ -101,6 +104,7 @@ friend struct RoutingPrivate;
   boost::shared_mutex shared_mutex_;
   bool stopped_;
   rudp::NatType nat_type_;
+  NewBootstrapEndpointFunctor new_bootstrap_endpoint_;
 };
 
 }  // namespace routing

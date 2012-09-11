@@ -59,7 +59,6 @@ class RoutingTable {
   NodeId kNodeId() const;
   void set_network_status_functor(NetworkStatusFunctor network_status_functor);
   void set_close_node_replaced_functor(CloseNodeReplacedFunctor close_node_replaced_functor);
-  void set_new_bootstrap_endpoint_functor(NewBootstrapEndpointFunctor new_bootstrap_endpoint);
   void set_remove_node_functor(std::function<void(const NodeInfo&,
                                                   const bool&)> remove_node_functor);
   bool client_mode() const { return client_mode_; }
@@ -102,7 +101,6 @@ class RoutingTable {
   std::function<void(const NodeInfo&, const bool&)> remove_node_functor_;
   NetworkStatusFunctor network_status_functor_;
   CloseNodeReplacedFunctor close_node_replaced_functor_;
-  NewBootstrapEndpointFunctor new_bootstrap_endpoint_;
   boost::filesystem::path bootstrap_file_path_;
   std::vector<NodeInfo> nodes_;
 };

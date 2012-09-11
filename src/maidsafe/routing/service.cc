@@ -89,48 +89,50 @@ void Connect(RoutingTable& routing_table,
     message.Clear();
     return;
   }
-  NodeInfo node;
-  node.node_id = NodeId(connect_request.contact().node_id());
-  LOG(kVerbose) <<"[" << HexSubstr(routing_table.kKeys().identity) << "]"
+  NodeInfo peer_node;
+  peer_node.node_id = NodeId(connect_request.contact().node_id());
+  LOG(kVerbose) <<"[" << DebugId(routing_table.kNodeId()) << "]"
                 << " received Connect request from "
-                << HexSubstr(connect_request.contact().node_id());
+                << DebugId(peer_node.node_id);
   connect_response.set_answer(false);
   rudp::EndpointPair this_endpoint_pair, peer_endpoint_pair;
   peer_endpoint_pair.external =
       GetEndpointFromProtobuf(connect_request.contact().public_endpoint());
   peer_endpoint_pair.local = GetEndpointFromProtobuf(connect_request.contact().private_endpoint());
-  NodeId peer_node_id(connect_request.contact().node_id());
 
   if (peer_endpoint_pair.external.address().is_unspecified() &&
       peer_endpoint_pair.local.address().is_unspecified()) {
-      LOG(kWarning) << "Invalid endpoint pair provided in connect request.";
+    LOG(kWarning) << "Invalid endpoint pair provided in connect request.";
+    message.Clear();
     return;
   }
 
   rudp::NatType peer_nat_type = NatTypeFromProtobuf(connect_request.contact().nat_type());
   rudp::NatType this_nat_type(rudp::NatType::kUnknown);
 
-  if (network.GetAvailableEndpoint(peer_node_id, peer_endpoint_pair, this_endpoint_pair,
-                                   this_nat_type) != rudp::kSuccess) {
-      LOG(kWarning) << "Unable to get available endpoint to connect to "
-                    << DebugId(peer_node_id);
-      return;
+  int ret_val = network.GetAvailableEndpoint(peer_node.node_id, peer_endpoint_pair,
+                                             this_endpoint_pair, this_nat_type);
+  if (ret_val != rudp::kSuccess) {
+    LOG(kWarning) << "Failed to get available endpoint to connect to "
+                  << DebugId(peer_node.node_id)
+                  << " : " << ret_val;
+    message.Clear();
+    return;
   }
-
 
 // Handling the case when this node and peer node are behind symmetric router
   if ((peer_nat_type == rudp::NatType::kSymmetric) &&
       (this_nat_type == rudp::NatType::kSymmetric)) {
     auto validate_node = [=, &routing_table] (const asymm::PublicKey& key)->void {
-        LOG(kInfo) << "validation callback called with public key for" << DebugId(peer_node_id)
+        LOG(kInfo) << "Validation callback called with public key for" << DebugId(peer_node.node_id)
                    << " -- pseudo connection";
-        HandleSymmetricNodeAdd(routing_table, peer_node_id, key);
+        HandleSymmetricNodeAdd(routing_table, peer_node.node_id, key);
       };
 
     TaskResponseFunctor add_symmetric_node =
       [=, &routing_table, &request_public_key_functor](std::vector<std::string>) {
         if (request_public_key_functor)
-          request_public_key_functor(peer_node_id, validate_node);
+          request_public_key_functor(peer_node.node_id, validate_node);
       };
     network.timer().AddTask(boost::posix_time::seconds(5), add_symmetric_node, 1);
   }
@@ -139,12 +141,12 @@ void Connect(RoutingTable& routing_table,
   if (message.client_node()) {  // Client node, check non-routing table
     LOG(kVerbose) << "Client connect request - will check non-routing table.";
     NodeId furthest_close_node_id =
-        routing_table.GetNthClosestNode(NodeId(routing_table.kKeys().identity),
+        routing_table.GetNthClosestNode(routing_table.kNodeId(),
                                         Parameters::closest_nodes_size).node_id;
-    check_node_succeeded = non_routing_table.CheckNode(node, furthest_close_node_id);
+    check_node_succeeded = non_routing_table.CheckNode(peer_node, furthest_close_node_id);
   } else {
     LOG(kVerbose) << "Server connect request - will check routing table.";
-    check_node_succeeded = routing_table.CheckNode(node);
+    check_node_succeeded = routing_table.CheckNode(peer_node);
   }
 
   if (check_node_succeeded) {
@@ -153,15 +155,16 @@ void Connect(RoutingTable& routing_table,
     if (request_public_key_functor) {
       auto validate_node =
           [=, &routing_table, &non_routing_table, &network] (const asymm::PublicKey& key)->void {
-            LOG(kInfo) << "validation callback called with public key for" << DebugId(peer_node_id);
+            LOG(kInfo) << "validation callback called with public key for"
+                       << DebugId(peer_node.node_id);
             ValidateAndAddToRudp(network,
                                  NodeId(routing_table.kKeys().identity),
-                                 peer_node_id,
+                                 peer_node.node_id,
                                  peer_endpoint_pair,
                                  key,
                                  routing_table.client_mode());
           };
-      request_public_key_functor(peer_node_id, validate_node);
+      request_public_key_functor(peer_node.node_id, validate_node);
       connect_response.set_answer(true);
       connect_response.mutable_contact()->set_node_id(routing_table.kKeys().identity);
       connect_response.mutable_contact()->set_nat_type(NatTypeProtobuf(this_nat_type));
@@ -212,14 +215,17 @@ void FindNodes(RoutingTable& routing_table, protobuf::Message& message) {
     message.Clear();
     return;
   }
-  if (0 == find_nodes.num_nodes_requested()) {
+  if ((0 == find_nodes.num_nodes_requested() ||
+      NodeId(find_nodes.target_node()).Empty() ||
+      !NodeId(find_nodes.target_node()).IsValid())) {
     LOG(kWarning) << "Invalid find node request.";
     message.Clear();
     return;
   }
 
-  LOG(kVerbose) << "[" << HexSubstr(routing_table.kKeys().identity) << "]"
-                << " parsed find node request for : " << HexSubstr(find_nodes.target_node());
+  LOG(kVerbose) << "[" << DebugId(routing_table.kNodeId()) << "]"
+                << " parsed find node request for target id : "
+                << HexSubstr(find_nodes.target_node());
   protobuf::FindNodesResponse found_nodes;
   std::vector<NodeId> nodes(routing_table.GetClosestNodes(NodeId(find_nodes.target_node()),
                               static_cast<uint16_t>(find_nodes.num_nodes_requested() - 1)));
@@ -252,53 +258,6 @@ void FindNodes(RoutingTable& routing_table, protobuf::Message& message) {
   message.set_hops_to_live(Parameters::hops_to_live);
   assert(message.IsInitialized() && "unintialised message");
 }
-
-//void ProxyConnect(RoutingTable& routing_table,
-//                  NetworkUtils& /*network*/,
-//                  protobuf::Message& message) {
-//  if (message.destination_id() != routing_table.kKeys().identity) {
-//    // Message not for this node and we should not pass it on.
-//    LOG(kError) << "Message not for this node.";
-//    message.Clear();
-//    return;
-//  }
-//  protobuf::ProxyConnectResponse proxy_connect_response;
-//  protobuf::ProxyConnectRequest proxy_connect_request;
-
-//  if (!proxy_connect_request.ParseFromString(message.data(0))) {
-//    LOG(kError) << "No Data";
-//    message.Clear();
-//    return;
-//  }
-
-//  // TODO(Prakash): any validation needed?
-//  rudp::EndpointPair endpoint_pair;
-//  endpoint_pair.external = GetEndpointFromProtobuf(proxy_connect_request.external_endpoint());
-//  endpoint_pair.local = GetEndpointFromProtobuf(proxy_connect_request.local_endpoint());
-
-//  // TODO(Prakash): Also check NRT and if its my bootstrap endpoint.
-//  if (routing_table.IsConnected(endpoint_pair.external)) {
-//    // If already in routing table
-//    proxy_connect_response.set_result(protobuf::kAlreadyConnected);
-//  } else {
-//    bool connect_result(false);
-//    // TODO(Prakash):  connect_result = rudp.TryConnect(endpoint);
-//    if (connect_result)
-//      proxy_connect_response.set_result(protobuf::kSuccess);
-//    else
-//      proxy_connect_response.set_result(protobuf::kFailure);
-//  }
-//  message.set_request(false);
-//  message.clear_route_history();
-//  message.clear_data();
-//  message.add_data(proxy_connect_response.SerializeAsString());
-//  message.set_direct(true);
-//  message.set_destination_id(message.source_id());
-//  message.set_source_id(routing_table.kKeys().identity);
-//  message.set_hops_to_live(Parameters::hops_to_live);
-//  message.set_client_node(routing_table.client_mode());
-//  assert(message.IsInitialized() && "unintialised message");
-//}
 
 }  // namespace service
 

@@ -39,7 +39,6 @@ RoutingTable::RoutingTable(const asymm::Keys& keys, const bool& client_mode)
       remove_node_functor_(),
       network_status_functor_(),
       close_node_replaced_functor_(),
-      new_bootstrap_endpoint_(),
       bootstrap_file_path_(),
       nodes_() {}
 
@@ -495,11 +494,6 @@ void RoutingTable::set_network_status_functor(NetworkStatusFunctor network_statu
 void RoutingTable::set_close_node_replaced_functor(
     CloseNodeReplacedFunctor close_node_replaced_functor) {
   close_node_replaced_functor_ = close_node_replaced_functor;
-}
-
-void RoutingTable::set_new_bootstrap_endpoint_functor(
-    NewBootstrapEndpointFunctor new_bootstrap_endpoint) {
-  new_bootstrap_endpoint_ = new_bootstrap_endpoint;
 }
 
 void RoutingTable::set_bootstrap_file_path(const boost::filesystem::path& path) {

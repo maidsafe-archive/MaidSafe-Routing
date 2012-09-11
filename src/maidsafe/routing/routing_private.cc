@@ -43,6 +43,7 @@ RoutingPrivate::RoutingPrivate(const asymm::Keys& keys, bool client_mode)
           keys_temp.identity = NodeId(NodeId::kRandomId).String();
         return keys_temp;
       }()),
+      kNodeId_(NodeId(keys_.identity)),
       tearing_down_(false),
       routing_table_(keys_, client_mode),
       non_routing_table_(keys_),  // TODO(Prakash) : don't create NRT for client nodes (wrap both)

@@ -53,7 +53,8 @@ NetworkUtils::NetworkUtils(RoutingTable& routing_table, NonRoutingTable& non_rou
       rudp_(new rudp::ManagedConnections),
       shared_mutex_(),
       stopped_(false),
-      nat_type_(rudp::NatType::kUnknown) {}
+      nat_type_(rudp::NatType::kUnknown),
+      new_bootstrap_endpoint_() {}
 
 void NetworkUtils::Stop() {
   LOG(kVerbose) << "NetworkUtils::Stop()";
@@ -106,6 +107,7 @@ int NetworkUtils::Bootstrap(const std::vector<Endpoint> &bootstrap_endpoints,
     return kNoOnlineBootstrapContacts;
   }
 
+  this_node_relay_connection_id_ = routing_table_.kNodeId();
   LOG(kVerbose) << "Bootstrap successful, bootstrap connection id - "
                 << HexSubstr(bootstrap_connection_id_.String());
   return kSuccess;
@@ -126,8 +128,16 @@ int NetworkUtils::Add(NodeId peer_id, rudp::EndpointPair peer_endpoint_pair,
   return rudp_->Add(peer_id, peer_endpoint_pair, validation_data);
 }
 
-int NetworkUtils::MarkConnectionAsValid(NodeId peer, Endpoint& endpoint) {
-  return rudp_->MarkConnectionAsValid(peer, endpoint);
+int NetworkUtils::MarkConnectionAsValid(NodeId peer) {
+  Endpoint new_bootstrap_endpoint;
+  int ret_val(rudp_->MarkConnectionAsValid(peer, new_bootstrap_endpoint));
+  if ((ret_val == kSuccess) && !new_bootstrap_endpoint.address().is_unspecified()) {
+    LOG(kVerbose) << "Found usable endpoint for bootstraping : " << new_bootstrap_endpoint;
+    //TODO(Prakash): Is separate thread needed here ?
+    if (new_bootstrap_endpoint_)
+      new_bootstrap_endpoint_(new_bootstrap_endpoint);
+  }
+  return ret_val;
 }
 
 void NetworkUtils::Remove(NodeId peer_id) {
@@ -318,6 +328,16 @@ void NetworkUtils::AdjustRouteHistory(protobuf::Message& message) {
     }
   }
   assert(message.route_history().size() <= Parameters::max_routing_table_size);
+}
+
+void NetworkUtils::set_new_bootstrap_endpoint_functor(
+    NewBootstrapEndpointFunctor new_bootstrap_endpoint) {
+  new_bootstrap_endpoint_ = new_bootstrap_endpoint;
+}
+
+void NetworkUtils::clear_bootstrap_connection() {
+  bootstrap_connection_id_ = NodeId();
+  this_node_relay_connection_id_ = NodeId();
 }
 
 maidsafe::NodeId NetworkUtils::bootstrap_connection_id() const {

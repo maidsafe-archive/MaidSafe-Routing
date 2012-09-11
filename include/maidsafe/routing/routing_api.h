@@ -73,9 +73,6 @@ class Routing {
                     const boost::asio::ip::udp::endpoint& peer_endpoint,
                     const NodeInfo& peer_node_info);
 
-// Returns current network status as int (> 0 is connected).
-//  int GetStatus() const;
-
   // The reply or error (timeout) will be passed to this response_functor.  Error is passed as
   // negative int (return code) and empty string, otherwise a positive return code is message type
   // and indicates success.  Sending a message to your own address will send to all connected
@@ -106,7 +103,7 @@ class Routing {
                                    const std::vector<boost::asio::ip::udp::endpoint>& endpoints);
   void DoJoin(const Functors& functors);
   int DoBootstrap();
-  int DoFindNode();
+  int FindClosestNode();
   void ReSendFindNodeRequest(const boost::system::error_code& error_code,
                              std::weak_ptr<RoutingPrivate> impl,
                              bool ignore_size = false);
