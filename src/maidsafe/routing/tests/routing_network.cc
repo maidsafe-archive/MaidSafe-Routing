@@ -53,7 +53,7 @@ GenericNode::GenericNode(bool client_mode)
       nat_type_(rudp::NatType::kUnknown),
       endpoint_() {
   endpoint_.address(maidsafe::GetLocalIp());
-  endpoint_.port( maidsafe::test::GetRandomPort());
+  endpoint_.port(maidsafe::test::GetRandomPort());
   functors_.close_node_replaced = nullptr;
   functors_.message_received = nullptr;
   functors_.network_status = nullptr;
@@ -75,7 +75,7 @@ GenericNode::GenericNode(bool client_mode, const rudp::NatType& nat_type)
       nat_type_(nat_type),
       endpoint_() {
   endpoint_.address(GetLocalIp());
-  endpoint_.port( maidsafe::test::GetRandomPort());
+  endpoint_.port(maidsafe::test::GetRandomPort());
   functors_.close_node_replaced = nullptr;
   functors_.message_received = nullptr;
   functors_.network_status = nullptr;
@@ -98,7 +98,7 @@ GenericNode::GenericNode(bool client_mode, const NodeInfoAndPrivateKey& node_inf
       nat_type_(rudp::NatType::kUnknown),
       endpoint_() {
   endpoint_.address(GetLocalIp());
-  endpoint_.port( maidsafe::test::GetRandomPort());
+  endpoint_.port(maidsafe::test::GetRandomPort());
   functors_.close_node_replaced = nullptr;
   functors_.message_received = nullptr;
   functors_.network_status = nullptr;

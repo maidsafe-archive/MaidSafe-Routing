@@ -170,16 +170,6 @@ bool RoutingTable::IsThisNodeClosestTo(const NodeId& target_id) {
   return (kNodeId_ ^ target_id) < (target_id ^ nodes_[0].node_id);
 }
 
-//bool RoutingTable::IsConnected(const Endpoint& endpoint) const {
-//  assert((endpoint != rudp::kNonRoutable) && "Should not be called with kNonRoutable endpoint");
-//  std::lock_guard<std::mutex> lock(mutex_);
-//  return (std::find_if(nodes_.begin(),
-//                       nodes_.end(),
-//                       [endpoint](const NodeInfo& node_info) {
-//                         return node_info.endpoint == endpoint;
-//                       }) != nodes_.end());
-//}
-
 bool RoutingTable::IsConnected(const NodeId& node_id) const {
   std::lock_guard<std::mutex> lock(mutex_);
   return std::find_if(nodes_.begin(),
@@ -439,7 +429,7 @@ std::vector<NodeInfo> RoutingTable::GetClosestNodeInfo(const NodeId& from,
   std::vector<NodeInfo> close_nodes, return_close_nodes;
   bool exact_match_exist(false);
 //  for (auto node_info : nodes_) {
-//    if (!ignore_non_routable || (ignore_non_routable && (node_info.endpoint != rudp::kNonRoutable)))
+//  if (!ignore_non_routable || (ignore_non_routable && (node_info.endpoint != rudp::kNonRoutable)))
 //      close_nodes.push_back(node_info);
 //  }
   uint16_t count = std::min(static_cast<uint16_t>(close_nodes.size()), number_to_get);

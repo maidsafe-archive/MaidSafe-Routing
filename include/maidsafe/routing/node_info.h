@@ -22,9 +22,6 @@
 
 #include "maidsafe/rudp/managed_connections.h"
 
-#include "maidsafe/common/node_id.h"
-
-
 namespace maidsafe {
 
 namespace routing {

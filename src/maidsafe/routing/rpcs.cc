@@ -119,9 +119,9 @@ protobuf::Message FindNodes(const NodeId& node_id,
     message.set_source_id(my_node_id.String());
   } else {
     message.set_relay_id(my_node_id.String());
-   // This node is not in any peer's routing table yet
-   LOG(kInfo) << "FindNodes RPC has relay connection id " << DebugId(relay_connection_id);
-   message.set_relay_connection_id(relay_connection_id.String());
+    // This node is not in any peer's routing table yet
+    LOG(kInfo) << "FindNodes RPC has relay connection id " << DebugId(relay_connection_id);
+    message.set_relay_connection_id(relay_connection_id.String());
   }
   message.set_hops_to_live(Parameters::hops_to_live);
   assert(message.IsInitialized() && "Unintialised message");
@@ -154,9 +154,9 @@ protobuf::Message ProxyConnect(const NodeId& node_id,
     message.set_source_id(my_node_id.String());
   } else {
     message.set_relay_id(my_node_id.String());
-   // This node is not in any peer's routing table yet
-   LOG(kInfo) << "ProxyConnect RPC has relay connection id " << DebugId(relay_connection_id);
-   message.set_relay_connection_id(relay_connection_id.String());
+    // This node is not in any peer's routing table yet
+    LOG(kInfo) << "ProxyConnect RPC has relay connection id " << DebugId(relay_connection_id);
+    message.set_relay_connection_id(relay_connection_id.String());
   }
   assert(message.IsInitialized() && "Unintialised message");
   return message;

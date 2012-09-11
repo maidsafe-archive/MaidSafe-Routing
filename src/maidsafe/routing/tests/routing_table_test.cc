@@ -95,7 +95,7 @@ TEST(RoutingTableTest, FUNC_AddTooManyNodes) {
 //   RT.set_new_bootstrap_endpoint_functor([&](const boost::asio::ip::udp::endpoint& ep) {
 //       actual_bootstrap_endpoints.push_back(ep);
 //     });
-// 
+
 //   for (uint16_t i = 0; RT.Size() < Parameters::max_routing_table_size; ++i) {
 //     NodeInfo node(MakeNode());
 //     if (i % 2) {
@@ -104,7 +104,7 @@ TEST(RoutingTableTest, FUNC_AddTooManyNodes) {
 //     }
 //     ASSERT_TRUE(RT.AddNode(node, false));
 //   }
-// 
+
 //   for (uint16_t i = 0; RT.Size() < Parameters::max_routing_table_size; ++i) {
 //     NodeInfo node(MakeNode());
 //     if (i % 2) {
@@ -112,7 +112,7 @@ TEST(RoutingTableTest, FUNC_AddTooManyNodes) {
 //     }
 //     RT.CheckNode(node);
 //   }
-// 
+
 //   ASSERT_EQ(RT.Size(), Parameters::max_routing_table_size);
 //   ASSERT_EQ(expected_bootstrap_endpoints.size(), actual_bootstrap_endpoints.size());
 //   for (size_t i(0); i != expected_bootstrap_endpoints.size(); ++i) {

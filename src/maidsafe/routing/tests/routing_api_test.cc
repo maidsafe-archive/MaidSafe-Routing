@@ -144,7 +144,7 @@ TEST(APITest, BEH_API_JoinWithBootstrapFile) {
   bootstrap_endpoints.push_back(endpoint1);
   bootstrap_endpoints.push_back(endpoint2);
   fs::path bootstrap_file_path(fs::current_path() / bootstrap_file_name);
- //  fs::path bootstrap_file_path(GetSystemAppDir() / bootstrap_file_name);
+  //  fs::path bootstrap_file_path(GetSystemAppDir() / bootstrap_file_name);
   ASSERT_TRUE(WriteBootstrapFile(bootstrap_endpoints, bootstrap_file_path));
   LOG(kInfo) << "Created bootstrap file at : " << bootstrap_file_path;
 
@@ -184,9 +184,9 @@ TEST(APITest, FUNC_API_AnonymousNode) {
 
   functors1.message_received = [&] (const std::string& message, const NodeId&,
                                      ReplyFunctor reply_functor) {
-     reply_functor("response to " + message);
-     LOG(kVerbose) << "Message received and replied to message !!";
-   };
+      reply_functor("response to " + message);
+      LOG(kVerbose) << "Message received and replied to message !!";
+    };
 
   functors2.request_public_key = functors1.request_public_key;
   Endpoint endpoint1(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort()),
@@ -224,7 +224,7 @@ TEST(APITest, FUNC_API_AnonymousNode) {
       ASSERT_EQ("response to message_from_anonymous node", message[0]);
       LOG(kVerbose) << "Got response !!";
     };
-   //  Testing Send
+  // Testing Send
   R3.Send(NodeId(node1.node_info.node_id), NodeId(), "message_from_anonymous node",
           response_functor, boost::posix_time::seconds(10), true, false);
   Sleep(boost::posix_time::seconds(11));  // to allow disconnection
@@ -375,7 +375,7 @@ TEST(APITest, BEH_API_ClientNode) {
     };
   R3.Send(NodeId(node1.node_info.node_id), NodeId(), "message from client node",
           response_functor, boost::posix_time::seconds(10), true, false);
-   EXPECT_TRUE(response_future.timed_wait(boost::posix_time::seconds(10)));
+  EXPECT_TRUE(response_future.timed_wait(boost::posix_time::seconds(10)));
 }
 
 TEST(APITest, BEH_API_ClientNodeWithBootstrapFile) {

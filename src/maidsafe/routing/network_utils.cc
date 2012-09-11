@@ -133,7 +133,7 @@ int NetworkUtils::MarkConnectionAsValid(NodeId peer) {
   int ret_val(rudp_->MarkConnectionAsValid(peer, new_bootstrap_endpoint));
   if ((ret_val == kSuccess) && !new_bootstrap_endpoint.address().is_unspecified()) {
     LOG(kVerbose) << "Found usable endpoint for bootstraping : " << new_bootstrap_endpoint;
-    //TODO(Prakash): Is separate thread needed here ?
+    // TODO(Prakash): Is separate thread needed here ?
     if (new_bootstrap_endpoint_)
       new_bootstrap_endpoint_(new_bootstrap_endpoint);
   }
@@ -155,7 +155,6 @@ void NetworkUtils::RudpSend(const protobuf::Message& message,
 void NetworkUtils::SendToDirect(const protobuf::Message& message,
                                 NodeId peer,
                                 rudp::MessageSentFunctor message_sent_functor) {
-
   SharedLock shared_lock(shared_mutex_);
   if (stopped_)
     return;
@@ -205,7 +204,8 @@ void NetworkUtils::SendToClosestNode(const protobuf::Message& message) {
     LOG(kError) << "Unable to work out destination; aborting send." << " id: " << message.id()
     << " message.has_relay_id() ; " << std::boolalpha << message.has_relay_id()
     << " Isresponse(message) : " << std::boolalpha << IsResponse(message)
-    << " message.has_relay_connection_id() : "  << std::boolalpha << message.has_relay_connection_id();
+    << " message.has_relay_connection_id() : "
+    << std::boolalpha << message.has_relay_connection_id();
   }
 }
 
@@ -252,7 +252,7 @@ void NetworkUtils::RecursiveSendOn(protobuf::Message message,
     }
     LOG(kWarning) << " Routing -> removing connection " << last_node_attempted.node_id.String();
     OnConnectionLost(last_node_attempted.connection_id);
-    // Should we remove this node or let rudp handle that                               !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    // FIXME Should we remove this node or let rudp handle that?
   }
 
   if (attempt_count > 0)
@@ -310,7 +310,8 @@ void NetworkUtils::RecursiveSendOn(protobuf::Message message,
         RecursiveSendOn(message);
       }
   };
-  LOG(kVerbose) << " >>>>>>> rudp recursive send message to " << closest_node.connection_id.String();
+  LOG(kVerbose) << " >>>>>>> rudp recursive send message to "
+                << closest_node.connection_id.String();
   RudpSend(message, closest_node.connection_id, message_sent_functor);
 }
 
