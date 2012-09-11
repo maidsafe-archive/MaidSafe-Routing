@@ -104,7 +104,6 @@ TEST(RpcsTest, BEH_ConnectMessageNode) {
   EXPECT_EQ(static_cast<int32_t>(MessageType::kConnect), message.type());
   EXPECT_TRUE(message.request());
   EXPECT_FALSE(message.client_node());
-  // EXPECT_FALSE(message.has_relay());
 }
 
 TEST(RpcsTest, BEH_ConnectMessageNodeRelayMode) {
@@ -166,8 +165,6 @@ TEST(RpcsTest, BEH_FindNodesMessageNode) {
 
 TEST(RpcsTest, BEH_FindNodesMessageNodeRelayMode) {
   NodeInfo us(MakeNode());
-  Endpoint relay_endpoint(boost::asio::ip::address_v4::loopback(),
-                          maidsafe::test::GetRandomPort());
   protobuf::Message message = rpcs::FindNodes(us.node_id, us.node_id, 8, true,
                                               NodeId(NodeId::kRandomId));
   protobuf::FindNodesRequest find_nodes_request;
