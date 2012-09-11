@@ -28,6 +28,8 @@
 
 namespace maidsafe {
 
+class NodeId;
+
 namespace routing {
 
 namespace protobuf {
@@ -44,7 +46,6 @@ class Message {
 class NetworkUtils;
 class NonRoutingTable;
 class RoutingTable;
-class NodeId;
 
 void ValidateAndAddToRudp(NetworkUtils& network_,
                           const NodeId& this_node_id,

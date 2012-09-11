@@ -20,12 +20,12 @@
 #include "boost/filesystem/exception.hpp"
 #include "boost/thread/future.hpp"
 
+#include "maidsafe/common/node_id.h"
 #include "maidsafe/common/test.h"
 #include "maidsafe/common/utils.h"
 
 #include "maidsafe/rudp/managed_connections.h"
 #include "maidsafe/routing/network_utils.h"
-#include "maidsafe/routing/node_id.h"
 #include "maidsafe/routing/non_routing_table.h"
 #include "maidsafe/routing/return_codes.h"
 #include "maidsafe/routing/routing_table.h"

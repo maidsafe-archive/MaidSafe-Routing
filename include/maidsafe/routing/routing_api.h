@@ -40,13 +40,14 @@
 
 namespace maidsafe {
 
+class NodeId;
+
 namespace routing {
 
 namespace test { class GenericNode; }
 
 struct RoutingPrivate;
 struct NodeInfo;
-class NodeId;
 
 class Routing {
  public:

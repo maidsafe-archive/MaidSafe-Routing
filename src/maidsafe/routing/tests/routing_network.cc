@@ -17,10 +17,10 @@
 #include <string>
 
 #include "maidsafe/common/log.h"
+#include "maidsafe/common/node_id.h"
 
 #include "maidsafe/routing/routing_private.h"
 #include "maidsafe/routing/return_codes.h"
-#include "maidsafe/routing/node_id.h"
 #include "maidsafe/routing/routing_api.h"
 
 namespace asio = boost::asio;
