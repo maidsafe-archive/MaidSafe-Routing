@@ -18,6 +18,7 @@
 #include <vector>
 
 #include "boost/asio/ip/udp.hpp"
+#include "boost/asio.hpp"
 #include "boost/thread/shared_mutex.hpp"
 
 #include "maidsafe/rudp/managed_connections.h"
@@ -52,7 +53,8 @@ class NetworkUtils {
                            rudp::EndpointPair& this_endpoint_pair,
                            rudp::NatType& this_nat_type);
   int Add(NodeId peer, rudp::EndpointPair peer_endpoint_pair, const std::string& validation_data);
-  int MarkConnectionAsValid(NodeId peer);
+  int MarkConnectionAsValid(NodeId peer, boost::asio::ip::udp::endpoint& endpoint);
+
   void Remove(NodeId peer);
   // For sending relay requests, message with empty source ID may be provided, along with
   // direct endpoint.

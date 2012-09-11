@@ -60,8 +60,8 @@ void ValidateAndAddToRoutingTable(NetworkUtils& network,
   LOG(kVerbose) << "ValidateAndAddToRoutingTable";
   // actual_peer_endpoint could have a different port to peer_endpoint if the peer is behind
   // symmetric NAT and passed this node a best-guess endpoint.
-                                                      ;
-  if (network.MarkConnectionAsValid(peer_id) != kSuccess) {
+  boost::asio::ip::udp::endpoint endpoint;  // TODO(dirvine) update bootstrap
+  if (network.MarkConnectionAsValid(peer_id, endpoint) != kSuccess) {
     LOG(kError) << "[" << HexSubstr(routing_table.kKeys().identity) << "] "
                 << ". Rudp failed to validate connection with  Peer id : "
                 << HexSubstr(peer_id.String());

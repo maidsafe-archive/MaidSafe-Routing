@@ -126,8 +126,8 @@ int NetworkUtils::Add(NodeId peer_id, rudp::EndpointPair peer_endpoint_pair,
   return rudp_->Add(peer_id, peer_endpoint_pair, validation_data);
 }
 
-int NetworkUtils::MarkConnectionAsValid(NodeId peer) {
-  return rudp_->MarkConnectionAsValid(peer);
+int NetworkUtils::MarkConnectionAsValid(NodeId peer, Endpoint& endpoint) {
+  return rudp_->MarkConnectionAsValid(peer, endpoint);
 }
 
 void NetworkUtils::Remove(NodeId peer_id) {
