@@ -84,7 +84,7 @@ TEST(NetworkUtilsTest, BEH_ProcessSendDirectInvalidEndpoint) {
    asymm::Keys keys(MakeKeys());
    RoutingTable routing_table(keys, false);
    NonRoutingTable non_routing_table(keys);
-   Endpoint endpoint(GetLocalIp(), GetRandomPort());
+   Endpoint endpoint(GetLocalIp(),  maidsafe::test::GetRandomPort());
    AsioService asio_service(0);
    Timer timer(asio_service);
    NetworkUtils network(routing_table, non_routing_table, timer);
@@ -94,8 +94,8 @@ TEST(NetworkUtilsTest, BEH_ProcessSendDirectInvalidEndpoint) {
  TEST(NetworkUtilsTest, FUNC_ProcessSendDirectEndpoint) {
    const int kMessageCount(10);
    rudp::ManagedConnections rudp1, rudp2;
-   Endpoint endpoint1(GetLocalIp(), GetRandomPort());
-   Endpoint endpoint2(GetLocalIp(), GetRandomPort());
+   Endpoint endpoint1(GetLocalIp(),  maidsafe::test::GetRandomPort());
+   Endpoint endpoint2(GetLocalIp(),  maidsafe::test::GetRandomPort());
 
    boost::promise<bool> test_completion_promise;
    auto test_completion_future = test_completion_promise.get_future();
@@ -227,8 +227,8 @@ TEST(NetworkUtilsTest, BEH_ProcessSendDirectInvalidEndpoint) {
  TEST(NetworkUtilsTest, FUNC_ProcessSendRecursiveSendOn) {
    const int kMessageCount(10);
    rudp::ManagedConnections rudp1, rudp2;
-   Endpoint endpoint1(GetLocalIp(), GetRandomPort());
-   Endpoint endpoint2(GetLocalIp(), GetRandomPort());
+   Endpoint endpoint1(GetLocalIp(),  maidsafe::test::GetRandomPort());
+   Endpoint endpoint2(GetLocalIp(),  maidsafe::test::GetRandomPort());
 
    boost::promise<bool> test_completion_promise;
    auto test_completion_future = test_completion_promise.get_future();
