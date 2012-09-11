@@ -213,7 +213,7 @@ void NetworkUtils::SendTo(const protobuf::Message& message,
                     << " id: " << message.id();
       }
   };
-  LOG(kVerbose) << " >>>>>>>>> rudp send message to " << peer.String() << " <<<<<<<<<<<<<<<<<<<<";
+  LOG(kVerbose) << " >>>>>>>>> rudp send message to " << HexSubstr(peer.String()) << " <<";
   rudp_->Send(peer, message.SerializeAsString(), message_sent_functor);
 }
 
