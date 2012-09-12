@@ -393,9 +393,6 @@ void Routing::Send(const NodeId& destination_id,
     proto_message.set_relay_connection_id(impl_->network_.this_node_relay_connection_id().String());
     NodeId bootstrap_connection_id(impl_->network_.bootstrap_connection_id());
     assert(proto_message.has_relay_connection_id() && "did not set this_node_relay_connection_id");
-    assert((impl_->network_.this_node_relay_connection_id().String() ==
-            proto_message.relay_connection_id()) && "Connection id was not set properly");
-    assert(!bootstrap_connection_id.Empty());
     rudp::MessageSentFunctor message_sent(
         [=](int result) {
           if (rudp::kSuccess != result) {

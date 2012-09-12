@@ -46,7 +46,7 @@ class NetworkUtils;
 class NonRoutingTable;
 class RoutingTable;
 
-void ValidateAndAddToRudp(NetworkUtils& network_,
+void ValidateAndAddToRudp(NetworkUtils& network,
                           const NodeId& this_node_id,
                           const NodeId& peer_id,
                           rudp::EndpointPair peer_endpoint_pair,

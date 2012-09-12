@@ -311,8 +311,7 @@ void NetworkUtils::RecursiveSendOn(protobuf::Message message,
         RecursiveSendOn(message);
       }
   };
-  LOG(kVerbose) << " >>>>>>> rudp recursive send message to "
-                << closest_node.connection_id.String();
+  LOG(kVerbose) << "Rudp recursive send message to " << DebugId(closest_node.connection_id);
   RudpSend(message, closest_node.connection_id, message_sent_functor);
 }
 
