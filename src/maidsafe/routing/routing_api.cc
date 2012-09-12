@@ -262,8 +262,10 @@ int Routing::ZeroStateJoin(Functors functors,
                            const Endpoint& local_endpoint,
                            const Endpoint& peer_endpoint,
                            const NodeInfo& peer_node) {
+  std::weak_ptr<RoutingPrivate> impl_weak_ptr(impl_);
+  assert(impl_weak_ptr.lock());
   assert((!impl_->client_mode_) && "no client nodes allowed in zero state network");
-  assert((!impl_->anonymous_node_) && "not allwed on anonymous node");
+  assert((!impl_->anonymous_node_) && "not allowed on anonymous node");
   impl_->bootstrap_nodes_.clear();
   impl_->bootstrap_nodes_.push_back(peer_endpoint);
   if (impl_->bootstrap_nodes_.empty()) {
@@ -272,7 +274,6 @@ int Routing::ZeroStateJoin(Functors functors,
   }
 
   ConnectFunctors(functors);
-  std::weak_ptr<RoutingPrivate> impl_weak_ptr(impl_);
   int result(impl_->network_.Bootstrap(
       impl_->bootstrap_nodes_,
       impl_->client_mode_,
@@ -290,6 +291,7 @@ int Routing::ZeroStateJoin(Functors functors,
                 << DebugId(impl_->network_.bootstrap_connection_id())
                 << "peer_node.node_id: "
                 << DebugId(peer_node.node_id);
+  assert(!peer_node.node_id.Empty() && "empty nodeid passed");
   assert((impl_->network_.bootstrap_connection_id() == peer_node.node_id) &&
          "Should bootstrap only with known peer for zero state network");
   LOG(kVerbose) << local_endpoint << " Bootstrapped with remote endpoint " << peer_endpoint;
