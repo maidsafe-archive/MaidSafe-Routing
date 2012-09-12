@@ -493,7 +493,8 @@ void RoutingTable::set_bootstrap_file_path(const boost::filesystem::path& path) 
 
 std::string RoutingTable::PrintRoutingTable() {
   auto rt(nodes_);
-  std::string s = "\n\nThis node's own routing table and peer connections:\n";
+  std::string s = "\n\n[" + DebugId(kNodeId_) +
+      "] This node's own routing table and peer connections:\n";
   for (auto node : rt) {
     s += std::string("\tPeer ") + "[" + DebugId(node.node_id) + "]"+ "-->";
     s += DebugId(node.connection_id)+ "\n";

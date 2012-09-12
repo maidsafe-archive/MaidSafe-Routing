@@ -269,6 +269,7 @@ void NetworkUtils::RecursiveSendOn(protobuf::Message message,
   else if ((message.route_history().size() == 1) &&
            (message.route_history(0) != routing_table_.kKeys().identity))
     route_history.push_back(message.route_history(0));
+
   auto closest_node(routing_table_.GetClosestNode(NodeId(message.destination_id()), route_history,
                                                   ignore_exact_match, true));
   if (closest_node.node_id == NodeId()) {

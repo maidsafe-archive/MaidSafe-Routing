@@ -122,7 +122,7 @@ void ResponseHandler::Connect(protobuf::Message& message) {
   std::weak_ptr<ResponseHandler> response_handler_weak_ptr = shared_from_this();
   if (request_public_key_functor_) {
     auto validate_node([=] (const asymm::PublicKey& key) {
-                           LOG(kInfo) << "Validation callback called with public key for"
+                           LOG(kInfo) << "Validation callback called with public key for "
                                       << DebugId(peer_node_id);
                            if (std::shared_ptr<ResponseHandler> response_handler =
                                response_handler_weak_ptr.lock()) {
