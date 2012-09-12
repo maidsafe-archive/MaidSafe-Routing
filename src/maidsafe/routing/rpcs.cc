@@ -71,6 +71,7 @@ protobuf::Message Connect(const NodeId& node_id,
   for (auto node_id : closest_ids)
     protobuf_connect_request.add_closest_id(node_id);
   protobuf_connect_request.set_timestamp(GetTimeStamp());
+//  message.set_id(RandomUint32());
   message.set_destination_id(node_id.String());
   message.set_routing_message(true);
   message.add_data(protobuf_connect_request.SerializeAsString());

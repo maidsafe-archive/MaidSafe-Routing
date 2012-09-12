@@ -168,7 +168,8 @@ void MessageHandler::HandleDirectMessageAsClosestNode(protobuf::Message& message
                     << "] is the closest but is not connected to destination node ["
                     << HexSubstr(message.destination_id()) << "], Src ID: "
                     << HexSubstr(message.source_id())
-                    << ", Relay ID: " << HexSubstr(message.relay_id()) << " id: " << message.id();
+                    << ", Relay ID: " << HexSubstr(message.relay_id()) << " id: " << message.id()
+                    << PrintMessage(message);
       return;
     }
   } else {
@@ -329,8 +330,6 @@ bool MessageHandler::IsRelayResponseForThisNode(protobuf::Message& message) {
 
 bool MessageHandler::RelayDirectMessageIfNeeded(protobuf::Message& message) {
   assert(message.destination_id() == routing_table_.kKeys().identity);
-  LOG(kVerbose) << "Relaying Direct Message.";
-
   if (!message.has_relay_id()) {
     LOG(kVerbose) << "Message don't have relay ID.";
     return false;

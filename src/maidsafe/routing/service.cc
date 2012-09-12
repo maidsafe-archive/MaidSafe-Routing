@@ -107,36 +107,6 @@ void Connect(RoutingTable& routing_table,
     return;
   }
 
-  rudp::NatType peer_nat_type = NatTypeFromProtobuf(connect_request.contact().nat_type());
-  rudp::NatType this_nat_type(rudp::NatType::kUnknown);
-
-  int ret_val = network.GetAvailableEndpoint(peer_node.node_id, peer_endpoint_pair,
-                                             this_endpoint_pair, this_nat_type);
-  if (ret_val != rudp::kSuccess) {
-    LOG(kWarning) << "Failed to get available endpoint to connect to "
-                  << DebugId(peer_node.node_id)
-                  << " : " << ret_val;
-    message.Clear();
-    return;
-  }
-
-// Handling the case when this node and peer node are behind symmetric router
-  if ((peer_nat_type == rudp::NatType::kSymmetric) &&
-      (this_nat_type == rudp::NatType::kSymmetric)) {
-    auto validate_node = [=, &routing_table] (const asymm::PublicKey& key)->void {
-        LOG(kInfo) << "Validation callback called with public key for" << DebugId(peer_node.node_id)
-                   << " -- pseudo connection";
-        HandleSymmetricNodeAdd(routing_table, peer_node.node_id, key);
-      };
-
-    TaskResponseFunctor add_symmetric_node =
-      [=, &routing_table, &request_public_key_functor](std::vector<std::string>) {
-        if (request_public_key_functor)
-          request_public_key_functor(peer_node.node_id, validate_node);
-      };
-    network.timer().AddTask(boost::posix_time::seconds(5), add_symmetric_node, 1);
-  }
-
   bool check_node_succeeded(false);
   if (message.client_node()) {  // Client node, check non-routing table
     LOG(kVerbose) << "Client connect request - will check non-routing table.";
@@ -152,10 +122,40 @@ void Connect(RoutingTable& routing_table,
   if (check_node_succeeded) {
     LOG(kVerbose) << "CheckNode(node) for " << (message.client_node() ? "client" : "server")
                   << " node succeeded.";
+    rudp::NatType peer_nat_type = NatTypeFromProtobuf(connect_request.contact().nat_type());
+    rudp::NatType this_nat_type(rudp::NatType::kUnknown);
+
+    int ret_val = network.GetAvailableEndpoint(peer_node.node_id, peer_endpoint_pair,
+                                               this_endpoint_pair, this_nat_type);
+    if (ret_val != rudp::kSuccess) {
+      LOG(kWarning) << "Failed to get available endpoint to connect to "
+                    << DebugId(peer_node.node_id)
+                    << " : " << ret_val;
+      message.Clear();
+      return;
+    }
+
+  // Handling the case when this node and peer node are behind symmetric router
+    if ((peer_nat_type == rudp::NatType::kSymmetric) &&
+        (this_nat_type == rudp::NatType::kSymmetric)) {
+      auto validate_node = [=, &routing_table] (const asymm::PublicKey& key)->void {
+          LOG(kInfo) << "Validation callback called with public key for "
+                     << DebugId(peer_node.node_id)
+                     << " -- pseudo connection";
+          HandleSymmetricNodeAdd(routing_table, peer_node.node_id, key);
+        };
+
+      TaskResponseFunctor add_symmetric_node =
+        [=, &routing_table, &request_public_key_functor](std::vector<std::string>) {
+          if (request_public_key_functor)
+            request_public_key_functor(peer_node.node_id, validate_node);
+        };
+      network.timer().AddTask(boost::posix_time::seconds(5), add_symmetric_node, 1);
+    }
     if (request_public_key_functor) {
       auto validate_node =
           [=, &routing_table, &non_routing_table, &network] (const asymm::PublicKey& key)->void {
-            LOG(kInfo) << "validation callback called with public key for"
+            LOG(kInfo) << "validation callback called with public key for "
                        << DebugId(peer_node.node_id);
             ValidateAndAddToRudp(network,
                                  NodeId(routing_table.kKeys().identity),

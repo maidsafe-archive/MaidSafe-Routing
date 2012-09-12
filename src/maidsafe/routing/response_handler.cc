@@ -169,7 +169,7 @@ void ResponseHandler::FindNodes(const protobuf::Message& message) {
   std::string find_node_result = "FindNodes from " + HexSubstr(message.source_id()) +
           " returned :\n";
   for (int i = 0; i < find_nodes.nodes_size(); ++i) {
-    find_node_result += "\t[" + HexSubstr(find_nodes.nodes(i)) + "]\t";
+    find_node_result += "[" + HexSubstr(find_nodes.nodes(i)) + "]\t";
   }
   LOG(kVerbose) << find_node_result;
 
@@ -205,8 +205,13 @@ void ResponseHandler::ConnectTo(const std::vector<std::string>& nodes,
                           Parameters::max_routing_table_size);
   if (closest_node_ids.size() > resize)
     closest_node_ids.resize(resize);
+  if (network_.bootstrap_connection_id().Empty() && (routing_table_.Size() == 0)) {
+      LOG(kWarning) << "Need to re bootstrap !";
+    return;
+  }
 
-  bool send_to_bootstrap_connection(routing_table_.Size() == 0);
+  bool send_to_bootstrap_connection((routing_table_.Size() < Parameters::closest_nodes_size) &&
+                                    !network_.bootstrap_connection_id().Empty());
   for (uint16_t i = 0; i < nodes.size(); ++i) {
     NodeInfo node_to_add;
     node_to_add.node_id = NodeId(nodes.at(i));
@@ -243,7 +248,8 @@ void ResponseHandler::ConnectTo(const std::vector<std::string>& nodes,
           this_nat_type,
           relay_message,
           relay_connection_id));
-      LOG(kVerbose) << "Sending Connect RPC to " << HexSubstr(nodes.at(i));
+      LOG(kVerbose) << "Sending Connect RPC to " << HexSubstr(nodes.at(i))
+                    << " message id : " << connect_rpc.id();
       if (send_to_bootstrap_connection)
         network_.SendToDirect(connect_rpc, network_.bootstrap_connection_id());
       else
@@ -270,7 +276,7 @@ void ResponseHandler::ConnectSuccess(protobuf::Message& message) {
   std::weak_ptr<ResponseHandler> response_handler_weak_ptr = shared_from_this();
   if (request_public_key_functor_) {
     auto validate_node([=] (const asymm::PublicKey& key) {
-                           LOG(kInfo) << "Validation callback called with public key for"
+                           LOG(kInfo) << "Validation callback called with public key for "
                                       << DebugId(peer_node_id);
                            if (std::shared_ptr<ResponseHandler> response_handler =
                                response_handler_weak_ptr.lock()) {

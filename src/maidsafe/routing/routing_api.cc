@@ -80,8 +80,8 @@ bool Routing::CheckBootstrapFilePath() const {
       !fs::is_regular_file(local_file, is_regular_file_error_code) ||
       exists_error_code || is_regular_file_error_code) {
     if (exists_error_code) {
-      LOG(kError) << "Failed to find bootstrap file at " << local_file << ".  "
-                  << exists_error_code.message();
+      LOG(kWarning) << "Failed to find bootstrap file at " << local_file << ".  "
+                    << exists_error_code.message();
     }
     if (is_regular_file_error_code) {
       LOG(kError) << "bootstrap file is not a regular file " << local_file << ".  "

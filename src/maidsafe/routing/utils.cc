@@ -316,6 +316,27 @@ rudp::NatType NatTypeFromProtobuf(const protobuf::NatType& nat_type_proto) {
   }
 }
 
+std::string PrintMessage(const protobuf::Message& message) {
+  std::string s = "\n\n Message type : ";
+  s += MessageTypeString(message);
+  std::string direct((message.direct() ? "direct" : "group"));
+  s += std::string("\n direct : " + direct);
+  if (message.has_source_id())
+      s += std::string("\n source_id : " + HexSubstr(message.source_id()));
+  if (message.has_destination_id())
+    s += std::string("\n destination_id : " + HexSubstr(message.destination_id()));
+  if (message.has_relay_id())
+    s += std::string("\n relay_id : " + HexSubstr(message.relay_id()));
+  if (message.has_relay_connection_id())
+    s += std::string("\n relay_connection_id : " + HexSubstr(message.relay_connection_id()));
+  std::stringstream id;
+  id << message.id();
+  if (message.has_id())
+    s += std::string("\n id : "+ id.str());
+  s += "\n\n";
+  return s;
+}
+
 }  // namespace routing
 
 }  // namespace maidsafe
