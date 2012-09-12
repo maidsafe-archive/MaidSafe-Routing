@@ -141,7 +141,7 @@ class GenericNetwork : public testing::Test {
       return node1->ZeroStateJoin(node2->endpoint(), node2->node_info());
     });
     auto f2 = std::async(std::launch::async, [=, &node1] ()->int {
-      return node2->ZeroStateJoin(node2->endpoint(), node1->node_info());
+      return node2->ZeroStateJoin(node1->endpoint(), node1->node_info());
     });
     EXPECT_EQ(kSuccess, f2.get());
     EXPECT_EQ(kSuccess, f1.get());

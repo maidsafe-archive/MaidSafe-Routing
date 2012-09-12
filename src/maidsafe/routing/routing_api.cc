@@ -289,7 +289,7 @@ int Routing::ZeroStateJoin(Functors functors,
 
   LOG(kVerbose) << "bootstrap connection id : "
                 << DebugId(impl_->network_.bootstrap_connection_id())
-                << "peer_node.node_id: "
+                << ", peer_node.node_id: "
                 << DebugId(peer_node.node_id);
   assert(!peer_node.node_id.Empty() && "empty nodeid passed");
   assert((impl_->network_.bootstrap_connection_id() == peer_node.node_id) &&
