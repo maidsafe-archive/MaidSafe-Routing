@@ -128,9 +128,9 @@ void Connect(RoutingTable& routing_table,
     int ret_val = network.GetAvailableEndpoint(peer_node.node_id, peer_endpoint_pair,
                                                this_endpoint_pair, this_nat_type);
     if (ret_val != rudp::kSuccess) {
-      LOG(kWarning) << "Failed to get available endpoint to connect to "
-                    << DebugId(peer_node.node_id)
-                    << " : " << ret_val;
+      LOG(kError) << "Failed to get available endpoint to connect to "
+                  << DebugId(peer_node.node_id)
+                  << " : " << ret_val;
       message.Clear();
       return;
     }

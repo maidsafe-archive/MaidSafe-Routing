@@ -82,66 +82,73 @@ void ResponseHandler::Connect(protobuf::Message& message) {
     return;
   }
 
-  rudp::EndpointPair peer_endpoint_pair;
-  peer_endpoint_pair.external =
-      GetEndpointFromProtobuf(connect_response.contact().public_endpoint());
-  peer_endpoint_pair.local =
-      GetEndpointFromProtobuf(connect_response.contact().private_endpoint());
+  NodeInfo node_to_add;
+  node_to_add.node_id = NodeId(connect_response.contact().node_id());
 
-  if (peer_endpoint_pair.external.address().is_unspecified() &&
-      peer_endpoint_pair.local.address().is_unspecified()) {
-    LOG(kError) << "Invalid peer endpoint details";
-    return;
-  }
+  if (routing_table_.CheckNode(node_to_add) ||
+      (node_to_add.node_id == network_.bootstrap_connection_id())) {
+    rudp::EndpointPair peer_endpoint_pair;
+    peer_endpoint_pair.external =
+        GetEndpointFromProtobuf(connect_response.contact().public_endpoint());
+    peer_endpoint_pair.local =
+        GetEndpointFromProtobuf(connect_response.contact().private_endpoint());
 
-  NodeId peer_node_id(connect_response.contact().node_id());
-  LOG(kVerbose) << "This node [" << DebugId(routing_table_.kNodeId())
-                << "] received connect response from "
-                << DebugId(peer_node_id)
-                << " id: " << message.id();
+    if (peer_endpoint_pair.external.address().is_unspecified() &&
+        peer_endpoint_pair.local.address().is_unspecified()) {
+      LOG(kError) << "Invalid peer endpoint details";
+      return;
+    }
 
-  // Handling the case when this and peer node are behind symmetric router
-  rudp::NatType nat_type = NatTypeFromProtobuf(connect_response.contact().nat_type());
+    NodeId peer_node_id(connect_response.contact().node_id());
+    LOG(kVerbose) << "This node [" << DebugId(routing_table_.kNodeId())
+                  << "] received connect response from "
+                  << DebugId(peer_node_id)
+                  << " id: " << message.id();
 
-  if ((nat_type == rudp::NatType::kSymmetric) &&
-      (network_.nat_type() == rudp::NatType::kSymmetric)) {
-    auto validate_node = [&] (const asymm::PublicKey& key)->void {
-        LOG(kInfo) << "validation callback called with public key for" << DebugId(peer_node_id)
-                   << " -- pseudo connection";
-        HandleSymmetricNodeAdd(routing_table_, peer_node_id, key);
-      };
+    // Handling the case when this and peer node are behind symmetric router
+    rudp::NatType nat_type = NatTypeFromProtobuf(connect_response.contact().nat_type());
 
-    TaskResponseFunctor add_symmetric_node = [&](std::vector<std::string>) {
-        if (request_public_key_functor_) {
-          request_public_key_functor_(peer_node_id, validate_node);
-        }
-      };
-    network_.timer().AddTask(boost::posix_time::seconds(5), add_symmetric_node, 1);
-  }
+    if ((nat_type == rudp::NatType::kSymmetric) &&
+        (network_.nat_type() == rudp::NatType::kSymmetric)) {
+      auto validate_node = [&] (const asymm::PublicKey& key)->void {
+          LOG(kInfo) << "validation callback called with public key for" << DebugId(peer_node_id)
+                     << " -- pseudo connection";
+          HandleSymmetricNodeAdd(routing_table_, peer_node_id, key);
+        };
 
-  std::weak_ptr<ResponseHandler> response_handler_weak_ptr = shared_from_this();
-  if (request_public_key_functor_) {
-    auto validate_node([=] (const asymm::PublicKey& key) {
-                           LOG(kInfo) << "Validation callback called with public key for "
-                                      << DebugId(peer_node_id);
-                           if (std::shared_ptr<ResponseHandler> response_handler =
-                               response_handler_weak_ptr.lock()) {
-                             ValidateAndAddToRudp(
-                                 response_handler->network_,
-                                 response_handler->routing_table_.kNodeId(),
-                                 peer_node_id,
-                                 peer_endpoint_pair,
-                                 key,
-                                 response_handler->routing_table_.client_mode());
-                           }
-                         });
-    request_public_key_functor_(peer_node_id, validate_node);
+      TaskResponseFunctor add_symmetric_node = [&](std::vector<std::string>) {
+          if (request_public_key_functor_) {
+            request_public_key_functor_(peer_node_id, validate_node);
+          }
+        };
+      network_.timer().AddTask(boost::posix_time::seconds(5), add_symmetric_node, 1);
+    }
+
+    std::weak_ptr<ResponseHandler> response_handler_weak_ptr = shared_from_this();
+    if (request_public_key_functor_) {
+      auto validate_node([=] (const asymm::PublicKey& key) {
+                             LOG(kInfo) << "Validation callback called with public key for "
+                                        << DebugId(peer_node_id);
+                             if (std::shared_ptr<ResponseHandler> response_handler =
+                                 response_handler_weak_ptr.lock()) {
+                               ValidateAndAddToRudp(
+                                   response_handler->network_,
+                                   response_handler->routing_table_.kNodeId(),
+                                   peer_node_id,
+                                   peer_endpoint_pair,
+                                   key,
+                                   response_handler->routing_table_.client_mode());
+                             }
+                           });
+      request_public_key_functor_(peer_node_id, validate_node);
+    }
+  } else {
+    LOG(kInfo) << "Already added node, will check other closest_nodes";
   }
 
   std::vector<std::string> closest_nodes(connect_request.closest_id().begin(),
                                          connect_request.closest_id().end());
   closest_nodes.push_back(message.source_id());
-
   for (auto node_id : connect_response.closer_id())
     LOG(kVerbose) << "Connecting to closer id: " << HexSubstr(node_id);
 
@@ -227,7 +234,7 @@ void ResponseHandler::ConnectTo(const std::vector<std::string>& nodes,
                                                   this_endpoint_pair,
                                                   this_nat_type);
       if (kSuccess != ret_val) {
-        LOG(kWarning) << "Failed to get available endpoint for new connections : " << ret_val;
+        LOG(kError) << "Failed to get available endpoint for new connections : " << ret_val;
         return;
       }
 

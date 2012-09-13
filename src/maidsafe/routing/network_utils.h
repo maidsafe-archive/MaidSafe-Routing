@@ -68,6 +68,7 @@ class NetworkUtils {
   void SendToClosestNode(const protobuf::Message& message);
   void clear_bootstrap_connection();
   void set_new_bootstrap_endpoint_functor(NewBootstrapEndpointFunctor new_bootstrap_endpoint);
+  void set_bootstrap_file_path(const boost::filesystem::path& path);
   NodeId bootstrap_connection_id() const;
   NodeId this_node_relay_connection_id() const;
   rudp::NatType nat_type();
@@ -105,6 +106,7 @@ friend struct RoutingPrivate;
   bool stopped_;
   rudp::NatType nat_type_;
   NewBootstrapEndpointFunctor new_bootstrap_endpoint_;
+  boost::filesystem::path bootstrap_file_path_;
 };
 
 }  // namespace routing

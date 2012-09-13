@@ -62,7 +62,6 @@ class RoutingTable {
   void set_remove_node_functor(std::function<void(const NodeInfo&,
                                                   const bool&)> remove_node_functor);
   bool client_mode() const { return client_mode_; }
-  void set_bootstrap_file_path(const boost::filesystem::path& path);
   friend class test::GenericNode;
 #ifdef LOCAL_TEST
   friend struct RoutingPrivate;
@@ -97,7 +96,6 @@ class RoutingTable {
   std::function<void(const NodeInfo&, const bool&)> remove_node_functor_;
   NetworkStatusFunctor network_status_functor_;
   CloseNodeReplacedFunctor close_node_replaced_functor_;
-  boost::filesystem::path bootstrap_file_path_;
   std::vector<NodeInfo> nodes_;
 };
 

@@ -21,6 +21,7 @@
 #include "maidsafe/rudp/managed_connections.h"
 #include "maidsafe/rudp/return_codes.h"
 
+#include "maidsafe/routing/bootstrap_file_handler.h"
 #include "maidsafe/routing/non_routing_table.h"
 #include "maidsafe/routing/return_codes.h"
 #include "maidsafe/routing/routing_pb.h"
@@ -54,7 +55,8 @@ NetworkUtils::NetworkUtils(RoutingTable& routing_table, NonRoutingTable& non_rou
       shared_mutex_(),
       stopped_(false),
       nat_type_(rudp::NatType::kUnknown),
-      new_bootstrap_endpoint_() {}
+      new_bootstrap_endpoint_(),
+      bootstrap_file_path_() {}
 
 void NetworkUtils::Stop() {
   LOG(kVerbose) << "NetworkUtils::Stop()";
@@ -117,10 +119,17 @@ int NetworkUtils::GetAvailableEndpoint(NodeId peer_id,
                                        rudp::EndpointPair& peer_endpoint_pair,
                                        rudp::EndpointPair& this_endpoint_pair,
                                        rudp::NatType& this_nat_type) {
-  return rudp_->GetAvailableEndpoint(peer_id,
-                                     peer_endpoint_pair,
-                                     this_endpoint_pair,
-                                     this_nat_type);
+  int ret_val = rudp_->GetAvailableEndpoint(peer_id,
+                                            peer_endpoint_pair,
+                                            this_endpoint_pair,
+                                            this_nat_type);
+  if (ret_val == kSuccess) {
+    if (!peer_endpoint_pair.external.address().is_unspecified())
+      UpdateBootstrapFile(bootstrap_file_path_, peer_endpoint_pair.external, false);
+    else if (!peer_endpoint_pair.local.address().is_unspecified())
+      UpdateBootstrapFile(bootstrap_file_path_, peer_endpoint_pair.local, false);
+  }
+  return ret_val;
 }
 
 int NetworkUtils::Add(NodeId peer_id, rudp::EndpointPair peer_endpoint_pair,
@@ -223,7 +232,7 @@ void NetworkUtils::SendTo(const protobuf::Message& message,
                     << " id: " << message.id();
       }
   };
-  LOG(kVerbose) << " >>>>>>>>> rudp send message to " << HexSubstr(peer.String()) << " <<";
+  LOG(kVerbose) << " >>>>>>>>> rudp send message to " << HexSubstr(peer.String());
   rudp_->Send(peer, message.SerializeAsString(), message_sent_functor);
 }
 
@@ -355,6 +364,11 @@ rudp::NatType NetworkUtils::nat_type() {
 
 Timer& NetworkUtils::timer() {
   return timer_;
+}
+
+void NetworkUtils::set_bootstrap_file_path(const boost::filesystem::path& path) {
+  LOG(kInfo) << "set bootstrap file path : " << path;
+  bootstrap_file_path_ = path;
 }
 
 }  // namespace routing

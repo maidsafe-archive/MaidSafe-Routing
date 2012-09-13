@@ -92,7 +92,7 @@ bool Routing::CheckBootstrapFilePath() const {
     LOG(kVerbose) << "Found bootstrap file at " << local_file;
     impl_->bootstrap_file_path_ = local_file;
     impl_->bootstrap_nodes_ = ReadBootstrapFile(impl_->bootstrap_file_path_);
-    impl_->routing_table_.set_bootstrap_file_path(impl_->bootstrap_file_path_);
+    impl_->network_.set_bootstrap_file_path(impl_->bootstrap_file_path_);
 
     // Appending global_bootstrap_file's contents
     for (auto i: global_bootstrap_nodes)
@@ -287,24 +287,33 @@ int Routing::ZeroStateJoin(Functors functors,
     return result;
   }
 
-  LOG(kVerbose) << "bootstrap connection id : "
-                << DebugId(impl_->network_.bootstrap_connection_id())
-                << ", peer_node.node_id: "
-                << DebugId(peer_node.node_id);
+  LOG(kInfo) << "This Node [" << DebugId(impl_->kNodeId_) << "]"
+             << "bootstrap connection id : "
+             << DebugId(impl_->network_.bootstrap_connection_id());
+
   assert(!peer_node.node_id.Empty() && "empty nodeid passed");
   assert((impl_->network_.bootstrap_connection_id() == peer_node.node_id) &&
          "Should bootstrap only with known peer for zero state network");
   LOG(kVerbose) << local_endpoint << " Bootstrapped with remote endpoint " << peer_endpoint;
-
+  rudp::NatType nat_type(rudp::NatType::kUnknown);
   rudp::EndpointPair peer_endpoint_pair;  // zero state nodes must be directly connected endpoint
   rudp::EndpointPair this_endpoint_pair;
   peer_endpoint_pair.external = peer_endpoint_pair.local = peer_endpoint;
   this_endpoint_pair.external = this_endpoint_pair.local = local_endpoint;
+
+  result = impl_->network_.GetAvailableEndpoint(peer_node.node_id, peer_endpoint_pair,
+                                                this_endpoint_pair, nat_type);
+  if (result != kSuccess) {
+    LOG(kError) << "Failed to get available endpoint to add zero state node : " << peer_endpoint;
+    return result;
+  }
+
   result = impl_->network_.Add(peer_node.node_id, peer_endpoint_pair, "junk");
   if (result != kSuccess) {
     LOG(kError) << "Failed to add zero state node : " << peer_endpoint;
     return result;
   }
+
   ValidateAndAddToRoutingTable(impl_->network_,
                                impl_->routing_table_,
                                impl_->non_routing_table_,
