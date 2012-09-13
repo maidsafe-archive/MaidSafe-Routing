@@ -191,7 +191,8 @@ void Connect(RoutingTable& routing_table,
   NodeId source((message.has_relay() ? message.relay_id() : message.source_id()));
   if (connect_request.closest_id_size() > 0) {
     for (auto node_id : routing_table.GetClosestNodes(source,
-                                                      Parameters::max_routing_table_size)) {
+        ((message.client_node()) ? Parameters::closest_nodes_size - 1 :
+                                   Parameters::max_routing_table_size - 1))) {
       if (std::find(connect_request.closest_id().begin(), connect_request.closest_id().end(),
                     node_id.String()) == connect_request.closest_id().end() &&
           (NodeId::CloserToTarget(node_id,
