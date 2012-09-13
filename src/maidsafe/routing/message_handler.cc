@@ -209,10 +209,7 @@ void MessageHandler::HandleGroupMessageAsClosestNode(protobuf::Message& message)
     message.set_destination_id(i.String());
     NodeInfo node;
     if (routing_table_.GetNodeInfo(i, node)) {
-//      if (node.endpoint != rudp::kNonRoutable)
-//        network_.SendToDirectEndpoint(message, node.endpoint);
-//      else
-        network_.SendToClosestNode(message);
+      network_.SendToDirect(message, node.connection_id);
     }
   }
 
@@ -287,9 +284,9 @@ void MessageHandler::HandleMessage(protobuf::Message& message) {
 
   // This node is in closest proximity to this message
   if (routing_table_.IsThisNodeInRange(NodeId(message.destination_id()),
-                                       Parameters::closest_nodes_size) ||
+                                       Parameters::closest_nodes_size)/* ||
       (IsRoutingMessage(message) &&
-       routing_table_.IsThisNodeClosestTo(NodeId(message.destination_id())))) {
+       routing_table_.IsThisNodeClosestTo(NodeId(message.destination_id())))*/) {
     return HandleMessageAsClosestNode(message);
   } else {
     return HandleMessageAsFarNode(message);
