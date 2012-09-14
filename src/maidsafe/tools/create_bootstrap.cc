@@ -75,7 +75,8 @@ void AddEndPoint() {
 void ListEndPoints() {
   int count = 1;
   for(auto i = endpoints.begin(); endpoints.end() != i; ++i, ++count ) {
-    std::cout << " ID: " <<  count << " IP Address : " << (*i).second << " Port : " << (*i).first << "\n";
+    std::cout << " ID: " <<  count << " IP Address : " << (*i).second << " Port : "
+      << (*i).first << "\n";
   }
 }
 
@@ -100,15 +101,14 @@ void ReadFile() {
   if (!protobuf_bootstrap.ParseFromString(serialised_endpoints)) {
     std::cout << "Could not parse bootstrap file.";
     return;
-  
   }
   endpoints.clear();
   endpoints.reserve(protobuf_bootstrap.bootstrap_contacts().size());
   for (int i = 0; i < protobuf_bootstrap.bootstrap_contacts().size(); ++i) {
-    endpoints.push_back(std::make_pair(static_cast<int>(protobuf_bootstrap.bootstrap_contacts(i).port()),
-                       protobuf_bootstrap.bootstrap_contacts(i).ip()));
+    endpoints.push_back(std::make_pair(static_cast<int>(
+          protobuf_bootstrap.bootstrap_contacts(i).port()),
+        protobuf_bootstrap.bootstrap_contacts(i).ip()));
   }
-
 }
 
 void WriteFile() {
@@ -132,9 +132,7 @@ void WriteFile() {
     std::cout << "Could not write bootstrap file.";
     return;
   }
-
   return;
-
 }
 
 void exit() {
