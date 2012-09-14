@@ -222,7 +222,7 @@ void MessageHandler::HandleGroupMessageAsClosestNode(protobuf::Message& message)
 }
 
 void MessageHandler::HandleMessageAsFarNode(protobuf::Message& message) {
-  LOG(kVerbose) << "This node is not closest to this message destination ID [ "
+  LOG(kVerbose) << "This node is not in closest proximity to this message destination ID [ "
                 <<  HexSubstr(message.destination_id())
                 <<" ]; sending on." << " id: " << message.id();
   network_.SendToClosestNode(message);
@@ -284,9 +284,7 @@ void MessageHandler::HandleMessage(protobuf::Message& message) {
 
   // This node is in closest proximity to this message
   if (routing_table_.IsThisNodeInRange(NodeId(message.destination_id()),
-                                       Parameters::closest_nodes_size)/* ||
-      (IsRoutingMessage(message) &&
-       routing_table_.IsThisNodeClosestTo(NodeId(message.destination_id())))*/) {
+                                       Parameters::closest_nodes_size)) {
     return HandleMessageAsClosestNode(message);
   } else {
     return HandleMessageAsFarNode(message);
