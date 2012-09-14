@@ -155,7 +155,19 @@ bool RoutingTable::IsThisNodeInRange(const NodeId& target_id, const uint16_t ran
   return (nodes_[range - 1].node_id ^ kNodeId_) > (target_id ^ kNodeId_);
 }
 
-bool RoutingTable::IsThisNodeClosestTo(const NodeId& target_id) {
+//bool RoutingTable::IsThisNodeClosestTo(const NodeId& target_id) {
+//  if (!target_id.IsValid() || target_id.Empty()) {
+//    LOG(kError) << "Invalid target_id passed.";
+//    return false;
+//  }
+//  std::lock_guard<std::mutex> lock(mutex_);
+//  if (nodes_.empty())
+//    return true;
+//  NthElementSortFromTarget(target_id, 1);
+//  return (kNodeId_ ^ target_id) < (target_id ^ nodes_[0].node_id);
+//}
+
+bool RoutingTable::IsThisNodeClosestTo(const NodeId& target_id, bool ignore_exact_match) {
   if (!target_id.IsValid() || target_id.Empty()) {
     LOG(kError) << "Invalid target_id passed.";
     return false;
@@ -163,8 +175,19 @@ bool RoutingTable::IsThisNodeClosestTo(const NodeId& target_id) {
   std::lock_guard<std::mutex> lock(mutex_);
   if (nodes_.empty())
     return true;
-  NthElementSortFromTarget(target_id, 1);
-  return (kNodeId_ ^ target_id) < (target_id ^ nodes_[0].node_id);
+
+  if (nodes_.size() == 1) {
+    if (ignore_exact_match && (nodes_[0].node_id == target_id))
+      return true;
+    else
+      return (kNodeId_ ^ target_id) < (target_id ^ nodes_[0].node_id);
+  }
+
+  PartialSortFromTarget(target_id, 2);
+  int index(0);
+  if (ignore_exact_match && (nodes_[0].node_id == target_id))
+    index = 1;
+  return (kNodeId_ ^ target_id) < (target_id ^ nodes_[index].node_id);
 }
 
 bool RoutingTable::IsConnected(const NodeId& node_id) const {

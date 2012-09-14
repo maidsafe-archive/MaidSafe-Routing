@@ -456,13 +456,13 @@ TYPED_TEST_P(RoutingNetworkTest, FUNC_RecursiveCall) {
   this->SetUpNetwork(kNetworkSize);
   for (int index(0); index < 8; ++index)
     this->AddNode(false, GenerateUniqueRandomId(20));
-  this->AddNode(false, GenerateUniqueRandomId(40));
+  this->AddNode(true, GenerateUniqueRandomId(40));
   this->AddNode(false, GenerateUniqueRandomId(35));
   this->AddNode(false, GenerateUniqueRandomId(30));
   this->AddNode(false, GenerateUniqueRandomId(25));
   this->AddNode(false, GenerateUniqueRandomId(20));
   this->AddNode(false, GenerateUniqueRandomId(10));
-  this->AddNode(false, GenerateUniqueRandomId(10));
+  this->AddNode(true, GenerateUniqueRandomId(10));
   this->PrintRoutingTables();
 }
 

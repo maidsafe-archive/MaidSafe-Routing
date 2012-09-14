@@ -44,7 +44,7 @@ class RoutingTable {
   NodeInfo DropNode(const NodeId &node_to_drop);
   bool GetNodeInfo(const NodeId& node_id, NodeInfo& node_info) const;
   bool IsThisNodeInRange(const NodeId& target_id, const uint16_t range);
-  bool IsThisNodeClosestTo(const NodeId& target_id);
+  bool IsThisNodeClosestTo(const NodeId& target_id, bool ignore_exact_match = false);
   bool IsConnected(const NodeId& node_id) const;
   bool ConfirmGroupMembers(const NodeId& node1, const NodeId& node2);
   // Returns default-constructed NodeId if routing table size is zero
