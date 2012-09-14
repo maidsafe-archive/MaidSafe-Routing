@@ -82,7 +82,7 @@ bool RoutingTable::AddOrCheckNode(NodeInfo& peer, const bool& remove) {
   }
 
   if (return_value && remove) {  // Firing functors on Add only
-    update_network_status(routing_table_size);
+    UpdateNetworkStatus(routing_table_size);
 
     if (!removed_node.node_id.Empty()) {
       LOG(kVerbose) << "Routing table removed node id : " << DebugId(removed_node.node_id)
@@ -120,8 +120,10 @@ NodeInfo RoutingTable::DropNode(const NodeId& node_to_drop) {
     }
   }
 
-  if (!dropped_node.node_id.Empty())
-    update_network_status(nodes_.size());
+  if (!dropped_node.node_id.Empty()) {
+    assert(nodes_.size() <= std::numeric_limits<uint16_t>::max());
+    UpdateNetworkStatus(static_cast<uint16_t>(nodes_.size()));
+  }
 
   if (!new_close_nodes.empty()) {
     if (close_node_replaced_functor_)
@@ -441,7 +443,7 @@ std::vector<NodeInfo> RoutingTable::GetClosestNodeInfo(const NodeId& from,
   return close_nodes;
 }
 
-void RoutingTable::update_network_status(const uint16_t& size) const {
+void RoutingTable::UpdateNetworkStatus(const uint16_t& size) const {
   if (network_status_functor_)
     network_status_functor_(static_cast<int>(size) * 100 / max_size_);
   LOG(kInfo) << DebugId(kNodeId_) << "Updating network status !!!" << (size * 100) / max_size_;
