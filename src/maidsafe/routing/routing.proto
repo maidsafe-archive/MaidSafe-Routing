@@ -83,15 +83,17 @@ message ConnectRequest {
 message ConnectResponse {
   required bool answer = 1;
   optional Contact contact = 2;
-  optional Endpoint seen_endpoint = 3;
-  required int32 timestamp = 4;
-  required bytes original_request = 5;
-  required bytes original_signature = 6;
-  repeated bytes closer_id = 7;
+  optional bytes connection_id = 3;
+  optional Endpoint seen_endpoint = 4;
+  required int32 timestamp = 5;
+  required bytes original_request = 6;
+  required bytes original_signature = 7;
+  repeated bytes closer_id = 8;
 }
 
 message ConnectSuccess {
   required bytes node_id = 1;
+  required bytes connection_id = 2;
 }
 
 message FindNodesRequest {

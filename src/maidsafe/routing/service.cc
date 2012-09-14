@@ -108,12 +108,16 @@ void Connect(RoutingTable& routing_table,
   }
 
   bool check_node_succeeded(false);
+  //  For handling connection to multilple client with same id
+  NodeId peer_connection_id(routing_table.kNodeId());
   if (message.client_node()) {  // Client node, check non-routing table
     LOG(kVerbose) << "Client connect request - will check non-routing table.";
     NodeId furthest_close_node_id =
         routing_table.GetNthClosestNode(routing_table.kNodeId(),
                                         Parameters::closest_nodes_size).node_id;
     check_node_succeeded = non_routing_table.CheckNode(peer_node, furthest_close_node_id);
+    if (check_node_succeeded && non_routing_table.IsConnected(peer_node.node_id))
+      peer_connection_id =  NodeId(NodeId::kRandomId);  // Duplication, so create random id
   } else {
     LOG(kVerbose) << "Server connect request - will check routing table.";
     check_node_succeeded = routing_table.CheckNode(peer_node);
@@ -122,7 +126,7 @@ void Connect(RoutingTable& routing_table,
   if (check_node_succeeded) {
     LOG(kVerbose) << "CheckNode(node) for " << (message.client_node() ? "client" : "server")
                   << " node succeeded.";
-    rudp::NatType peer_nat_type = NatTypeFromProtobuf(connect_request.contact().nat_type());
+//    rudp::NatType peer_nat_type = NatTypeFromProtobuf(connect_request.contact().nat_type());
     rudp::NatType this_nat_type(rudp::NatType::kUnknown);
 
     int ret_val = network.GetAvailableEndpoint(peer_node.node_id, peer_endpoint_pair,
@@ -135,23 +139,23 @@ void Connect(RoutingTable& routing_table,
       return;
     }
 
-  // Handling the case when this node and peer node are behind symmetric router
-    if ((peer_nat_type == rudp::NatType::kSymmetric) &&
-        (this_nat_type == rudp::NatType::kSymmetric)) {
-      auto validate_node = [=, &routing_table] (const asymm::PublicKey& key)->void {
-          LOG(kInfo) << "Validation callback called with public key for "
-                     << DebugId(peer_node.node_id)
-                     << " -- pseudo connection";
-          HandleSymmetricNodeAdd(routing_table, peer_node.node_id, key);
-        };
+//  // Handling the case when this node and peer node are behind symmetric router
+//    if ((peer_nat_type == rudp::NatType::kSymmetric) &&
+//        (this_nat_type == rudp::NatType::kSymmetric)) {
+//      auto validate_node = [=, &routing_table] (const asymm::PublicKey& key)->void {
+//          LOG(kInfo) << "Validation callback called with public key for "
+//                     << DebugId(peer_node.node_id)
+//                     << " -- pseudo connection";
+//          HandleSymmetricNodeAdd(routing_table, peer_node.node_id, key);
+//        };
 
-      TaskResponseFunctor add_symmetric_node =
-        [=, &routing_table, &request_public_key_functor](std::vector<std::string>) {
-          if (request_public_key_functor)
-            request_public_key_functor(peer_node.node_id, validate_node);
-        };
-      network.timer().AddTask(boost::posix_time::seconds(5), add_symmetric_node, 1);
-    }
+//      TaskResponseFunctor add_symmetric_node =
+//        [=, &routing_table, &request_public_key_functor](std::vector<std::string>) {
+//          if (request_public_key_functor)
+//            request_public_key_functor(peer_node.node_id, validate_node);
+//        };
+//      network.timer().AddTask(boost::posix_time::seconds(5), add_symmetric_node, 1);
+//    }
     if (request_public_key_functor) {
       auto validate_node =
           [=, &routing_table, &non_routing_table, &network] (const asymm::PublicKey& key)->void {
@@ -159,7 +163,9 @@ void Connect(RoutingTable& routing_table,
                        << DebugId(peer_node.node_id);
             ValidateAndAddToRudp(network,
                                  NodeId(routing_table.kKeys().identity),
+                                 NodeId(routing_table.kKeys().identity),
                                  peer_node.node_id,
+                                 peer_connection_id,
                                  peer_endpoint_pair,
                                  key,
                                  routing_table.client_mode());
@@ -168,10 +174,14 @@ void Connect(RoutingTable& routing_table,
       connect_response.set_answer(true);
       connect_response.mutable_contact()->set_node_id(routing_table.kKeys().identity);
       connect_response.mutable_contact()->set_nat_type(NatTypeProtobuf(this_nat_type));
+      if (peer_connection_id != routing_table.kNodeId())
+        connect_response.set_connection_id(peer_connection_id.String());
       SetProtobufEndpoint(this_endpoint_pair.local,
                           connect_response.mutable_contact()->mutable_private_endpoint());
       SetProtobufEndpoint(this_endpoint_pair.external,
                           connect_response.mutable_contact()->mutable_public_endpoint());
+    } else {
+        LOG(kError) << "request_public_key_functor not available for getting key";
     }
   }
 

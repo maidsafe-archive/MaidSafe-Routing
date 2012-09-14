@@ -165,17 +165,15 @@ protobuf::Message ProxyConnect(const NodeId& node_id,
 }
 
 protobuf::Message ConnectSuccess(const NodeId& node_id,
+                                 const NodeId& this_node_seen_connection_id,
                                  const NodeId& my_node_id,
-//                                 const boost::asio::ip::udp::endpoint& endpoint,
-//                                 const bool& local_endpoint,
                                  bool client_node) {
   assert(node_id.IsValid() && "Invalid node_id");
   assert(my_node_id.IsValid() && "Invalid my node_id");
   protobuf::Message message;
   protobuf::ConnectSuccess protobuf_connect_success;
-//  SetProtobufEndpoint(endpoint, protobuf_connect_success.mutable_endpoint());
   protobuf_connect_success.set_node_id(my_node_id.String());
-//  protobuf_connect_success.set_local_endpoint(local_endpoint);
+  protobuf_connect_success.set_connection_id(this_node_seen_connection_id.String());
   message.set_destination_id(node_id.String());
   message.set_routing_message(true);
   message.add_data(protobuf_connect_success.SerializeAsString());
