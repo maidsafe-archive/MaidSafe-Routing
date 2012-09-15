@@ -88,7 +88,8 @@ friend struct RoutingPrivate;
                 NodeId peer,
                 rudp::MessageSentFunctor message_sent_functor);
   void SendTo(const protobuf::Message& message,
-              const NodeId peer);
+              const NodeId peer,
+              const NodeId connection_id);
   void RecursiveSendOn(protobuf::Message message,
                        NodeInfo last_node_attempted = NodeInfo(),
                        int attempt_count = 0);

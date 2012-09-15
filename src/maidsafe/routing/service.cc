@@ -109,15 +109,18 @@ void Connect(RoutingTable& routing_table,
 
   bool check_node_succeeded(false);
   //  For handling connection to multilple client with same id
-  NodeId peer_connection_id(routing_table.kNodeId());
+  NodeId peer_connection_id(peer_node.node_id);
   if (message.client_node()) {  // Client node, check non-routing table
     LOG(kVerbose) << "Client connect request - will check non-routing table.";
     NodeId furthest_close_node_id =
         routing_table.GetNthClosestNode(routing_table.kNodeId(),
                                         Parameters::closest_nodes_size).node_id;
     check_node_succeeded = non_routing_table.CheckNode(peer_node, furthest_close_node_id);
-    if (check_node_succeeded && non_routing_table.IsConnected(peer_node.node_id))
+    if (check_node_succeeded && non_routing_table.IsConnected(peer_node.node_id)) {
       peer_connection_id =  NodeId(NodeId::kRandomId);  // Duplication, so create random id
+      LOG(kInfo) << "Id Duplication, so created random id : " << DebugId(peer_connection_id)
+                 << " for peer id : " << DebugId(peer_node.node_id);
+    }
   } else {
     LOG(kVerbose) << "Server connect request - will check routing table.";
     check_node_succeeded = routing_table.CheckNode(peer_node);
@@ -129,7 +132,7 @@ void Connect(RoutingTable& routing_table,
 //    rudp::NatType peer_nat_type = NatTypeFromProtobuf(connect_request.contact().nat_type());
     rudp::NatType this_nat_type(rudp::NatType::kUnknown);
 
-    int ret_val = network.GetAvailableEndpoint(peer_node.node_id, peer_endpoint_pair,
+    int ret_val = network.GetAvailableEndpoint(peer_connection_id, peer_endpoint_pair,
                                                this_endpoint_pair, this_nat_type);
     if (ret_val != rudp::kSuccess) {
       LOG(kError) << "Failed to get available endpoint to connect to "

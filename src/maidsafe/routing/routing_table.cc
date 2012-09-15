@@ -121,7 +121,7 @@ NodeInfo RoutingTable::DropNode(const NodeId& node_to_drop) {
   }
 
   if (!dropped_node.node_id.Empty())
-    update_network_status(nodes_.size());
+    update_network_status(static_cast<uint16_t>(nodes_.size()));
 
   if (!new_close_nodes.empty()) {
     if (close_node_replaced_functor_)

@@ -378,6 +378,107 @@ TEST(APITest, BEH_API_ClientNode) {
   EXPECT_TRUE(response_future.timed_wait(boost::posix_time::seconds(10)));
 }
 
+TEST(APITest, BEH_API_ClientNodeSameId) {
+  NodeInfoAndPrivateKey node1(MakeNodeInfoAndKeys());
+  NodeInfoAndPrivateKey node2(MakeNodeInfoAndKeys());
+  NodeInfoAndPrivateKey node3(MakeNodeInfoAndKeys());
+
+  std::map<NodeId, asymm::Keys> key_map;
+  key_map.insert(std::make_pair(NodeId(node1.node_info.node_id), GetKeys(node1)));
+  key_map.insert(std::make_pair(NodeId(node2.node_info.node_id), GetKeys(node2)));
+  key_map.insert(std::make_pair(NodeId(node3.node_info.node_id), GetKeys(node3)));
+
+  Routing R1(GetKeys(node1), false);
+  Routing R2(GetKeys(node2), false);
+  Routing R3(GetKeys(node3), true);  // client mode
+  Routing R4(GetKeys(node3), true);  // client mode
+  Functors functors1, functors2, functors3, functors4;
+
+  functors1.request_public_key = [=](const NodeId& node_id, GivePublicKeyFunctor give_key ) {
+      LOG(kWarning) << "node_validation called for " << HexSubstr(node_id.String());
+      auto itr(key_map.find(NodeId(node_id)));
+      if (key_map.end() != itr)
+        give_key((*itr).second.public_key);
+    };
+
+  functors1.message_received = [&] (const std::string& message, const NodeId&,
+                                    ReplyFunctor reply_functor) {
+      reply_functor("response to " + message);
+        LOG(kVerbose) << "Message received and replied to message !!";
+    };
+
+  functors4.request_public_key = functors2.request_public_key = functors3.request_public_key =
+      functors1.request_public_key;
+  Endpoint endpoint1(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort()),
+           endpoint2(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort());
+  auto a1 = std::async(std::launch::async,
+      [&] { return R1.ZeroStateJoin(functors1, endpoint1, endpoint2, node2.node_info);
+       });
+  auto a2 = std::async(std::launch::async,
+      [&] { return R2.ZeroStateJoin(functors2, endpoint2, endpoint1, node1.node_info);
+      });
+  EXPECT_EQ(kSuccess, a2.get());  // wait for promise !
+  EXPECT_EQ(kSuccess, a1.get());  // wait for promise !
+
+  boost::promise<bool> join_promise1;
+  bool promised(true);
+  auto join_future1 = join_promise1.get_future();
+  functors3.network_status = [&join_promise1, &promised](int result) {
+    ASSERT_GE(result, kSuccess);
+    if (result == NetworkStatus(true, 2)) {
+      LOG(kVerbose) << "3rd node joined";
+      if (promised) {
+        promised = false;
+        join_promise1.set_value(true);
+      }
+    }
+  };
+
+  R3.Join(functors3, std::vector<Endpoint>(1, endpoint1));
+  ASSERT_TRUE(join_future1.timed_wait(boost::posix_time::seconds(10)));
+  boost::promise<bool> join_promise2;
+  promised = true;
+  auto join_future2 = join_promise2.get_future();
+  functors4.network_status = [&join_promise2, &promised](int result) {
+    ASSERT_GE(result, kSuccess);
+    if (result == NetworkStatus(true, 2)) {
+      LOG(kVerbose) << "4th node joined";
+      if (promised) {
+        promised = false;
+        join_promise2.set_value(true);
+      }
+    }
+  };
+
+  R4.Join(functors4, std::vector<Endpoint>(1, endpoint2));
+  ASSERT_TRUE(join_future2.timed_wait(boost::posix_time::seconds(10)));
+
+  //  Testing Send
+  boost::promise<bool> response_promise1;
+  auto response_future = response_promise1.get_future();
+  ResponseFunctor response_functor = [&](const std::vector<std::string> &message) {
+      ASSERT_EQ(1U, message.size());
+      ASSERT_EQ("response to message from client node", message[0]);
+      LOG(kVerbose) << "Got response !!";
+      response_promise1.set_value(true);
+    };
+  R3.Send(NodeId(node1.node_info.node_id), NodeId(), "message from client node",
+          response_functor, boost::posix_time::seconds(10), true, false);
+  EXPECT_TRUE(response_future.timed_wait(boost::posix_time::seconds(10)));
+
+  boost::promise<bool> response_promise2;
+  response_future = response_promise2.get_future();
+  response_functor = [&](const std::vector<std::string> &message) {
+      ASSERT_EQ(1U, message.size());
+      ASSERT_EQ("response to message from client node", message[0]);
+      LOG(kVerbose) << "Got response !!";
+      response_promise2.set_value(true);
+    };
+  R4.Send(NodeId(node1.node_info.node_id), NodeId(), "message from client node",
+          response_functor, boost::posix_time::seconds(10), true, false);
+  EXPECT_TRUE(response_future.timed_wait(boost::posix_time::seconds(10)));
+
+}
 TEST(APITest, BEH_API_ClientNodeWithBootstrapFile) {
   NodeInfoAndPrivateKey node1(MakeNodeInfoAndKeys());
   NodeInfoAndPrivateKey node2(MakeNodeInfoAndKeys());

@@ -281,6 +281,7 @@ void ResponseHandler::ConnectSuccess(protobuf::Message& message) {
   }
 
   NodeId peer_node_id(connect_success.node_id());
+  NodeId peer_connection_id(connect_success.connection_id());
   if (peer_node_id.Empty() || !peer_node_id.IsValid()) {
     LOG(kWarning) << "Invalid node id provided";
     return;
@@ -298,7 +299,7 @@ void ResponseHandler::ConnectSuccess(protobuf::Message& message) {
                                  response_handler->routing_table_,
                                  response_handler->non_routing_table_,
                                  peer_node_id,
-                                 peer_node_id,
+                                 peer_connection_id,
                                  key,
                                  message.client_node());
                            }

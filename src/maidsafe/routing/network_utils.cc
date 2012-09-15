@@ -176,7 +176,7 @@ void NetworkUtils::SendToDirect(const protobuf::Message& message,
 
 void NetworkUtils::SendToDirect(const protobuf::Message& message,
                                 NodeId peer) {
-  SendTo(message, peer);
+  SendTo(message, peer, peer);
 }
 
 void NetworkUtils::SendToClosestNode(const protobuf::Message& message) {
@@ -191,7 +191,7 @@ void NetworkUtils::SendToClosestNode(const protobuf::Message& message) {
                     << " id: " << message.id();
       for (auto i : non_routing_nodes) {
         LOG(kVerbose) << "Sending message to NRT node with ID " << message.id();
-        SendTo(message, i.node_id);
+        SendTo(message, i.node_id, i.connection_id);
       }
     } else if (routing_table_.Size() > 0) {  // getting closer nodes from routing table
       RecursiveSendOn(message);
@@ -208,7 +208,8 @@ void NetworkUtils::SendToClosestNode(const protobuf::Message& message) {
   if (message.has_relay_id() && (IsResponse(message))) {
     protobuf::Message relay_message(message);
     relay_message.set_destination_id(message.relay_id());  // so that peer identifies it as direct
-    SendTo(relay_message, NodeId(relay_message.relay_id()));
+    SendTo(relay_message, NodeId(relay_message.relay_id()),
+           NodeId(relay_message.relay_connection_id()));
   } else {
     LOG(kError) << "Unable to work out destination; aborting send." << " id: " << message.id()
     << " message.has_relay_id() ; " << std::boolalpha << message.has_relay_id()
@@ -219,7 +220,8 @@ void NetworkUtils::SendToClosestNode(const protobuf::Message& message) {
 }
 
 void NetworkUtils::SendTo(const protobuf::Message& message,
-                          const NodeId peer) {
+                          const NodeId peer,
+                          const NodeId connection_id) {
   const std::string kThisId(HexSubstr(routing_table_.kKeys().identity));
   rudp::MessageSentFunctor message_sent_functor = [=](int message_sent) {
       if (rudp::kSuccess == message_sent) {
@@ -232,8 +234,8 @@ void NetworkUtils::SendTo(const protobuf::Message& message,
                     << " id: " << message.id();
       }
   };
-  LOG(kVerbose) << " >>>>>>>>> rudp send message to " << HexSubstr(peer.String());
-  rudp_->Send(peer, message.SerializeAsString(), message_sent_functor);
+  LOG(kVerbose) << " >>>>>>>>> rudp send message to connection id" << HexSubstr(connection_id.String());
+  rudp_->Send(connection_id, message.SerializeAsString(), message_sent_functor);
 }
 
 void NetworkUtils::RecursiveSendOn(protobuf::Message message,
