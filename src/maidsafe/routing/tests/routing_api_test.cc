@@ -477,8 +477,8 @@ TEST(APITest, BEH_API_ClientNodeSameId) {
   R4.Send(NodeId(node1.node_info.node_id), NodeId(), "message from client node",
           response_functor, boost::posix_time::seconds(10), true, false);
   EXPECT_TRUE(response_future.timed_wait(boost::posix_time::seconds(10)));
-
 }
+
 TEST(APITest, BEH_API_ClientNodeWithBootstrapFile) {
   NodeInfoAndPrivateKey node1(MakeNodeInfoAndKeys());
   NodeInfoAndPrivateKey node2(MakeNodeInfoAndKeys());

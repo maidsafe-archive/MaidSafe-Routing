@@ -142,6 +142,11 @@ void Connect(RoutingTable& routing_table,
       return;
     }
 
+    assert((!this_endpoint_pair.external.address().is_unspecified() ||
+            !this_endpoint_pair.local.address().is_unspecified()) &&
+           "Unspecified endpoint after GetAvailableEndpoint success.");
+
+
 //  // Handling the case when this node and peer node are behind symmetric router
 //    if ((peer_nat_type == rudp::NatType::kSymmetric) &&
 //        (this_nat_type == rudp::NatType::kSymmetric)) {

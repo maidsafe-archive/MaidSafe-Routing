@@ -98,6 +98,11 @@ void ResponseHandler::Connect(protobuf::Message& message) {
       LOG(kError) << "Invalid peer endpoint details";
       return;
     }
+    // Updating bootstrap only for test local network
+    if (!peer_endpoint_pair.external.address().is_unspecified())
+      network_.AddToBootstrapFile(peer_endpoint_pair.external);
+    else
+      network_.AddToBootstrapFile(peer_endpoint_pair.local);
 
     NodeId peer_node_id(connect_response.contact().node_id());
     NodeId this_node_seen_connection_id;
@@ -243,7 +248,9 @@ void ResponseHandler::ConnectTo(const std::vector<std::string>& nodes,
         LOG(kError) << "Failed to get available endpoint for new connections : " << ret_val;
         return;
       }
-
+      assert((!this_endpoint_pair.external.address().is_unspecified() ||
+              !this_endpoint_pair.local.address().is_unspecified()) &&
+             "Unspecified endpoint after GetAvailableEndpoint success.");
       NodeId relay_connection_id;
       bool relay_message(false);
       if (send_to_bootstrap_connection) {

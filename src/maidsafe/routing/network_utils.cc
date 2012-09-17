@@ -119,17 +119,10 @@ int NetworkUtils::GetAvailableEndpoint(NodeId peer_id,
                                        rudp::EndpointPair& peer_endpoint_pair,
                                        rudp::EndpointPair& this_endpoint_pair,
                                        rudp::NatType& this_nat_type) {
-  int ret_val = rudp_->GetAvailableEndpoint(peer_id,
-                                            peer_endpoint_pair,
-                                            this_endpoint_pair,
-                                            this_nat_type);
-  if (ret_val == kSuccess) {
-    if (!peer_endpoint_pair.external.address().is_unspecified())
-      UpdateBootstrapFile(bootstrap_file_path_, peer_endpoint_pair.external, false);
-    else if (!peer_endpoint_pair.local.address().is_unspecified())
-      UpdateBootstrapFile(bootstrap_file_path_, peer_endpoint_pair.local, false);
-  }
-  return ret_val;
+  return rudp_->GetAvailableEndpoint(peer_id,
+                                     peer_endpoint_pair,
+                                     this_endpoint_pair,
+                                     this_nat_type);
 }
 
 int NetworkUtils::Add(NodeId peer_id, rudp::EndpointPair peer_endpoint_pair,
@@ -185,10 +178,20 @@ void NetworkUtils::SendToClosestNode(const protobuf::Message& message) {
     auto non_routing_nodes(non_routing_table_.GetNodesInfo(NodeId(message.destination_id())));
     // have the destination ID in non-routing table
     if (!non_routing_nodes.empty() && message.direct()) {
+      if (IsRequest(message) &&
+          (!message.client_node() ||
+           (message.source_id() != message.destination_id()))) {
+        LOG(kWarning) << "This node ["
+                      << HexSubstr(routing_table_.kKeys().identity)
+                      << " Dropping message as non-client to client message not allowed."
+                      << PrintMessage(message);
+        return;
+      }
       LOG(kVerbose) << "This node [" << DebugId(routing_table_.kNodeId()) << "] has "
                     << non_routing_nodes.size()
                     << " destination node(s) in its non-routing table."
                     << " id: " << message.id();
+
       for (auto i : non_routing_nodes) {
         LOG(kVerbose) << "Sending message to NRT node with ID " << message.id();
         SendTo(message, i.node_id, i.connection_id);
@@ -234,7 +237,8 @@ void NetworkUtils::SendTo(const protobuf::Message& message,
                     << " id: " << message.id();
       }
   };
-  LOG(kVerbose) << " >>>>>>>>> rudp send message to connection id" << HexSubstr(connection_id.String());
+  LOG(kVerbose) << " >>>>>>>>> rudp send message to connection id"
+                << HexSubstr(connection_id.String());
   rudp_->Send(connection_id, message.SerializeAsString(), message_sent_functor);
 }
 
@@ -340,6 +344,11 @@ void NetworkUtils::AdjustRouteHistory(protobuf::Message& message) {
     }
   }
   assert(message.route_history().size() <= Parameters::max_routing_table_size);
+}
+
+void NetworkUtils::AddToBootstrapFile(const Endpoint& endpoint) {
+if (!endpoint.address().is_unspecified())
+  UpdateBootstrapFile(bootstrap_file_path_, endpoint, false);
 }
 
 void NetworkUtils::set_new_bootstrap_endpoint_functor(
