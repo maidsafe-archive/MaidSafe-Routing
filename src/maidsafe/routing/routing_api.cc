@@ -227,7 +227,8 @@ int Routing::DoBootstrap() {
 
 int Routing::FindClosestNode() {
   assert(!impl_->anonymous_node_ && "Not allowed for anonymous nodes");
-  // assert(!impl_->network_.bootstrap_connection_id().Empty() && "Only after bootstraping succeeds");
+  // assert(!impl_->network_.bootstrap_connection_id().Empty() 
+  // && "Only after bootstraping succeeds");
   assert(!impl_->network_.this_node_relay_connection_id().Empty() &&
          "This should be set after bootstraping succeeds");
   protobuf::Message find_node_rpc(
