@@ -43,6 +43,7 @@ class NetworkUtils {
  public:
   NetworkUtils(RoutingTable& routing_table, NonRoutingTable& non_routing_table,
                 Timer& timer);
+  virtual ~NetworkUtils();
   void Stop();
   int Bootstrap(const std::vector<boost::asio::ip::udp::endpoint> &bootstrap_endpoints,
                 const bool& client,
@@ -62,10 +63,10 @@ class NetworkUtils {
   void SendToDirect(const protobuf::Message& message,
                     NodeId peer,
                     rudp::MessageSentFunctor message_sent_functor);
-  void SendToDirect(const protobuf::Message& message, NodeId peer);
+  virtual void SendToDirect(const protobuf::Message& message, NodeId peer);
   // Handles relay response messages.  Also leave destination ID empty if needs to send as a relay
   // response message
-  void SendToClosestNode(const protobuf::Message& message);
+  virtual void SendToClosestNode(const protobuf::Message& message);
   void AddToBootstrapFile(const boost::asio::ip::udp::endpoint& endpoint);
   void clear_bootstrap_connection();
   void set_new_bootstrap_endpoint_functor(NewBootstrapEndpointFunctor new_bootstrap_endpoint);

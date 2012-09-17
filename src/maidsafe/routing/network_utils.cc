@@ -58,6 +58,8 @@ NetworkUtils::NetworkUtils(RoutingTable& routing_table, NonRoutingTable& non_rou
       new_bootstrap_endpoint_(),
       bootstrap_file_path_() {}
 
+NetworkUtils::~NetworkUtils() {}
+
 void NetworkUtils::Stop() {
   LOG(kVerbose) << "NetworkUtils::Stop()";
   {
