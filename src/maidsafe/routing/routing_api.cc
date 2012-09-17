@@ -160,7 +160,7 @@ void Routing::BootstrapFromTheseEndpoints(const Functors& functors,
       impl_->routing_table_.DropNode(remove_node.node_id);
     }
     if (impl_->functors_.network_status)
-      impl_->functors_.network_status(impl_->routing_table_.Size());
+      impl_->functors_.network_status(static_cast<int>(impl_->routing_table_.Size()));
   }
   impl_->bootstrap_nodes_.clear();
 #ifdef LOCAL_TEST

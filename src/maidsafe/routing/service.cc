@@ -190,7 +190,7 @@ void Connect(RoutingTable& routing_table,
       SetProtobufEndpoint(this_endpoint_pair.external,
                           connect_response.mutable_contact()->mutable_public_endpoint());
     } else {
-        LOG(kError) << "request_public_key_functor not available for getting key";
+      LOG(kError) << "request_public_key_functor not available for getting key";
     }
   }
 
@@ -199,11 +199,17 @@ void Connect(RoutingTable& routing_table,
   connect_response.set_original_signature(message.signature());
   NodeId source((message.has_relay_connection_id() ? message.relay_id() : message.source_id()));
   if (connect_request.closest_id_size() > 0) {
-    size_t request_size = connect_request.closest_id_size();
-    size_t close_nodes_size = message.client_node() ? Parameters::closest_nodes_size :
+    if (connect_request.closest_id_size() > std::numeric_limits<uint16_t>::max()) {
+      LOG(kError) << "Requested " << connect_request.closest_id_size()
+                  << " closest nodes which is greater than max supported of "
+                  << std::numeric_limits<uint16_t>::max();
+      return;
+    }
+    uint16_t request_size = static_cast<uint16_t>(connect_request.closest_id_size());
+    uint16_t close_nodes_size = message.client_node() ? Parameters::closest_nodes_size :
                                               Parameters::max_routing_table_size;
-    size_t supply_size = std::min(routing_table.Size(), close_nodes_size);
-    size_t search_size = std::min(supply_size, request_size);
+    uint16_t supply_size = std::min(static_cast<uint16_t>(routing_table.Size()), close_nodes_size);
+    uint16_t search_size = std::min(supply_size, request_size);
     for (auto node_id : routing_table.GetClosestNodes(source, search_size)) {
       if (std::find(connect_request.closest_id().begin(), connect_request.closest_id().end(),
                     node_id.String()) == connect_request.closest_id().end() &&

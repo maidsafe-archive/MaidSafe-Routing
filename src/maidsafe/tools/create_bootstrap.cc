@@ -74,7 +74,7 @@ void AddEndPoint() {
 }
 void ListEndPoints() {
   int count = 1;
-  for(auto i = endpoints.begin(); endpoints.end() != i; ++i, ++count ) {
+  for (auto i = endpoints.begin(); endpoints.end() != i; ++i, ++count) {
     std::cout << " ID: " <<  count << " IP Address : " << (*i).second << " Port : "
       << (*i).first << "\n";
   }
