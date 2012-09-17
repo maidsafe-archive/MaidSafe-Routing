@@ -69,10 +69,6 @@ void NetworkUtils::Stop() {
   LOG(kVerbose) << "NetworkUtils::Stop(), exiting ...";
 }
 
-void NetworkUtils::OnConnectionLost(NodeId  lost_node) {
-    connection_lost_functor_(lost_node);
-}
-
 int NetworkUtils::Bootstrap(const std::vector<Endpoint> &bootstrap_endpoints,
                             const bool& client,
                             rudp::MessageReceivedFunctor message_received_functor,
@@ -95,9 +91,7 @@ int NetworkUtils::Bootstrap(const std::vector<Endpoint> &bootstrap_endpoints,
   bootstrap_connection_id_ = NodeId(rudp_->Bootstrap(/* sorted_ */bootstrap_endpoints,
                                                      !client,
                                                      message_received_functor,
-                                                     [&](NodeId dropped_node) {
-                                                         OnConnectionLost(dropped_node);
-                                                     },
+                                                     connection_lost_functor,
                                                      routing_table_.kNodeId(),
                                                      private_key,
                                                      public_key,
@@ -266,8 +260,8 @@ void NetworkUtils::RecursiveSendOn(protobuf::Message message,
         rudp_->Remove(last_node_attempted.connection_id);
     }
     LOG(kWarning) << " Routing -> removing connection " << last_node_attempted.node_id.String();
-    OnConnectionLost(last_node_attempted.connection_id);
     // FIXME Should we remove this node or let rudp handle that?
+    routing_table_.DropNode(last_node_attempted.connection_id, false);
   }
 
   if (attempt_count > 0)
@@ -313,7 +307,7 @@ void NetworkUtils::RecursiveSendOn(protobuf::Message message,
                     << kThisId << " to " << HexSubstr(closest_node.node_id.String())
                     << " with destination ID " << HexSubstr(message.destination_id())
                     << " failed with code " << message_sent << "  Will remove node."
-                     << " id: " << message.id();
+                     << " message id: " << message.id();
         {
           SharedLock shared_lock(this->shared_mutex_);
           if (stopped_)
@@ -321,8 +315,8 @@ void NetworkUtils::RecursiveSendOn(protobuf::Message message,
           else
            rudp_->Remove(closest_node.connection_id);
         }
-        LOG(kWarning) << " Routing -> removing connection " << closest_node.connection_id.String();
-        OnConnectionLost(closest_node.connection_id);
+        LOG(kWarning) << " Routing -> removing connection " << DebugId(closest_node.connection_id);
+        routing_table_.DropNode(closest_node.node_id, false);
         RecursiveSendOn(message);
       }
   };

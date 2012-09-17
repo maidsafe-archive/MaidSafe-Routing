@@ -84,7 +84,6 @@ friend struct RoutingPrivate;
   NetworkUtils(const NetworkUtils&&);
   NetworkUtils& operator=(const NetworkUtils&);
 
-  void OnConnectionLost(NodeId peer_lost);
   void RudpSend(const protobuf::Message& message,
                 NodeId peer,
                 rudp::MessageSentFunctor message_sent_functor);

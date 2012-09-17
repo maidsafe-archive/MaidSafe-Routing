@@ -157,7 +157,7 @@ void Routing::BootstrapFromTheseEndpoints(const Functors& functors,
       NodeInfo remove_node =
           impl_->routing_table_.GetClosestNode(impl_->kNodeId_);
       impl_->network_.Remove(remove_node.connection_id);
-      impl_->routing_table_.DropNode(remove_node.node_id);
+      impl_->routing_table_.DropNode(remove_node.node_id, true);
     }
     if (impl_->functors_.network_status)
       impl_->functors_.network_status(static_cast<int>(impl_->routing_table_.Size()));
@@ -519,7 +519,7 @@ void Routing::ConnectionLost(const NodeId& lost_connection_id, std::weak_ptr<Rou
                                                       Parameters::closest_nodes_size)));
 
   // Checking routing table
-  dropped_node = pimpl->routing_table_.DropNode(lost_connection_id);
+  dropped_node = pimpl->routing_table_.DropNode(lost_connection_id, true);
   if (!dropped_node.node_id.Empty()) {
     LOG(kWarning) << "[" <<HexSubstr(impl_->keys_.identity) << "]"
                   << "Lost connection with routing node "
@@ -564,20 +564,12 @@ void Routing::RemoveNode(const NodeInfo& node, const bool& internal_rudp_only) {
   }
   if (internal_rudp_only) {
     impl_->network_.Remove(node.connection_id);
-    LOG(kInfo) << "Routing: removed rudp connection : "
-               << DebugId(node.node_id)
+    LOG(kInfo) << "Routing: removed node : " << DebugId(node.node_id)
                << ". Removed rudp connection id : " << DebugId(node.connection_id);
     return;
   }
-// TODO(Prakash) : Pseudo connection can be identified by Zero node id
-//  if (node.endpoint != rudp::kNonRoutable) {
-  impl_->network_.Remove(node.connection_id);
-  impl_->routing_table_.DropNode(node.node_id);
-  LOG(kInfo) << "Routing: removed node : " << DebugId(node.node_id)
-             << ". Removed rudp connection id : " << DebugId(node.connection_id);
-//  }
-
   // TODO(Prakash): Handle pseudo connection removal here and NRT node removal
+
   bool resend(impl_->routing_table_.IsThisNodeInRange(node.node_id,
                                                       Parameters::closest_nodes_size));
   if (resend) {

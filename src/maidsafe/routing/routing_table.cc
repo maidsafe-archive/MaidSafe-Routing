@@ -106,7 +106,7 @@ bool RoutingTable::AddOrCheckNode(NodeInfo& peer, const bool& remove) {
   return return_value;
 }
 
-NodeInfo RoutingTable::DropNode(const NodeId& node_to_drop) {
+NodeInfo RoutingTable::DropNode(const NodeId& node_to_drop, const bool& routing_only) {
   std::vector<NodeInfo> new_close_nodes;
   NodeInfo dropped_node;
   {
@@ -125,16 +125,18 @@ NodeInfo RoutingTable::DropNode(const NodeId& node_to_drop) {
     assert(nodes_.size() <= std::numeric_limits<uint16_t>::max());
     UpdateNetworkStatus(static_cast<uint16_t>(nodes_.size()));
   }
-  // if (!dropped_node.node_id.Empty())
-  //   update_network_status(static_cast<uint16_t>(nodes_.size()));
 
   if (!new_close_nodes.empty()) {
     if (close_node_replaced_functor_)
       close_node_replaced_functor_(new_close_nodes);
   }
 
-//  if (!dropped_node.node_id.Empty())
-//    UpdateBootstrapFile(bootstrap_file_path_, dropped_node.endpoint, true);
+  if (!dropped_node.node_id.Empty()) {
+    LOG(kVerbose) << "Routing table dropped node id : " << DebugId(dropped_node.node_id)
+                  << ", connection id : " << DebugId(dropped_node.connection_id);
+    if (remove_node_functor_  && !routing_only)
+      remove_node_functor_(dropped_node, false);
+  }
   LOG(kInfo) << PrintRoutingTable();
   return dropped_node;
 }

@@ -100,7 +100,7 @@ TEST(NetworkUtilsTest, FUNC_ProcessSendDirectEndpoint) {
   boost::promise<bool> test_completion_promise;
   auto test_completion_future = test_completion_promise.get_future();
   bool promised(true);
-  uint32_t expected_message_at_node(kMessageCount + 2);
+  uint32_t expected_message_at_node(kMessageCount + 1);
   uint32_t message_count_at_node2(0);
 
   boost::promise<bool> connection_completion_promise;
@@ -147,7 +147,7 @@ TEST(NetworkUtilsTest, FUNC_ProcessSendDirectEndpoint) {
     };
 
   asymm::Keys keys1(MakeKeys());
-  NodeId node_id1(NodeId::kRandomId);
+  NodeId node_id1(keys1.identity);
   std::shared_ptr<asymm::PrivateKey>
       private_key1(std::make_shared<asymm::PrivateKey>(keys1.private_key));
   std::shared_ptr<asymm::PublicKey>
@@ -166,7 +166,7 @@ TEST(NetworkUtilsTest, FUNC_ProcessSendDirectEndpoint) {
                              endpoint1);
   });
   asymm::Keys keys2(MakeKeys());
-  NodeId node_id2(NodeId::kRandomId);
+  NodeId node_id2(keys2.identity);
   std::shared_ptr<asymm::PrivateKey> private_key2(new asymm::PrivateKey(keys2.private_key));
   std::shared_ptr<asymm::PublicKey> public_key2(new asymm::PublicKey(keys2.public_key));
   auto a2 = std::async(std::launch::async, [=, &rudp2, &nat_type]()->NodeId {
@@ -184,14 +184,18 @@ TEST(NetworkUtilsTest, FUNC_ProcessSendDirectEndpoint) {
 
   EXPECT_EQ(node_id2, a1.get());  // wait for promise !
   EXPECT_EQ(node_id1, a2.get());  // wait for promise !
-  rudp::EndpointPair endpoint_pair_1, endpoint_pair_2;
+  rudp::EndpointPair endpoint_pair_1, endpoint_pair_2, endpoint_pair_3;
   endpoint_pair_1.local = endpoint1;
   endpoint_pair_2.local = endpoint2;
-  EXPECT_EQ(kSuccess, rudp1.Add(node_id2, endpoint_pair_2, "validation_1->2"));
-  EXPECT_EQ(kSuccess, rudp2.Add(node_id1, endpoint_pair_1, "validation_2->1"));
+//  EXPECT_EQ(kSuccess, rudp1.Add(node_id2, endpoint_pair_2, "validation_1->2"));
+//  EXPECT_EQ(kSuccess, rudp2.Add(node_id1, endpoint_pair_1, "validation_2->1"));
+  Endpoint endpoint;
+  rudp1.MarkConnectionAsValid(node_id2, endpoint);
+  rudp2.MarkConnectionAsValid(node_id1, endpoint);
   LOG(kVerbose) << " ------------------------   Zero state setup done  ----------------------- ";
 
   asymm::Keys keys(MakeKeys());
+  NodeId node_id3(keys.identity);
   RoutingTable routing_table(keys, false);
   NonRoutingTable non_routing_table(keys);
   AsioService asio_service(0);
@@ -205,18 +209,20 @@ TEST(NetworkUtilsTest, FUNC_ProcessSendDirectEndpoint) {
                                         connection_lost_functor));
 //   rudp::EndpointPair endpoint_pair2, endpoint_pair3;
   rudp::NatType this_nat_type;
-  network.GetAvailableEndpoint(node_id2, endpoint_pair_2, endpoint_pair_1, this_nat_type);
+  network.GetAvailableEndpoint(node_id2, endpoint_pair_2, endpoint_pair_3, this_nat_type);
   EXPECT_EQ(kSuccess,
-            rudp2.GetAvailableEndpoint(node_id2, endpoint_pair_2, endpoint_pair_1, this_nat_type));
-  EXPECT_EQ(kSuccess, network.Add(node_id2, endpoint_pair_2, "validation_2->1"));
+            rudp2.GetAvailableEndpoint(node_id3, endpoint_pair_3, endpoint_pair_2, this_nat_type));
+  EXPECT_EQ(kSuccess, network.Add(node_id2, endpoint_pair_2, "validation_3->2"));
 
-  EXPECT_EQ(kSuccess, rudp2.Add(node_id1, endpoint_pair_1, "validation_1->2"));
+  EXPECT_EQ(kSuccess, rudp2.Add(node_id3, endpoint_pair_3, "validation_2->3"));
   if (!connection_completion_future.timed_wait(bptime::seconds(10))) {
     ASSERT_TRUE(false) << "Failed waiting for node-3 to receive validation data";
   }
 
-  for (auto i(0); i != kMessageCount; ++i)
+  for (auto i(0); i != kMessageCount; ++i) {
     network.SendToDirect(sent_message, node_id2);
+    Sleep(boost::posix_time::milliseconds(100));
+  }
   if (!test_completion_future.timed_wait(bptime::seconds(60))) {
     ASSERT_TRUE(false) << "Failed waiting for node-2 to receive "
                        << expected_message_at_node << "messsages";
@@ -225,7 +231,7 @@ TEST(NetworkUtilsTest, FUNC_ProcessSendDirectEndpoint) {
 
 // RT with only 1 active node and 7 inactive node
 TEST(NetworkUtilsTest, FUNC_ProcessSendRecursiveSendOn) {
-  const int kMessageCount(10);
+  const int kMessageCount(1);
   rudp::ManagedConnections rudp1, rudp2;
   Endpoint endpoint1(GetLocalIp(),  maidsafe::test::GetRandomPort());
   Endpoint endpoint2(GetLocalIp(),  maidsafe::test::GetRandomPort());
@@ -233,20 +239,22 @@ TEST(NetworkUtilsTest, FUNC_ProcessSendRecursiveSendOn) {
   boost::promise<bool> test_completion_promise;
   auto test_completion_future = test_completion_promise.get_future();
   bool promised(true);
-  uint32_t expected_message_at_node(kMessageCount + 2);
+  uint32_t expected_message_at_node(kMessageCount + 1);
   uint32_t message_count_at_node2(0);
 
   boost::promise<bool> connection_completion_promise;
   auto connection_completion_future = connection_completion_promise.get_future();
 
   protobuf::Message sent_message;
-  sent_message.add_data(std::string(1024 * 256, 'B'));
+//  sent_message.add_data(std::string(1024 * 256, 'B'));
+  sent_message.add_data(std::string(10, 'B'));
   sent_message.set_direct(true);
   sent_message.set_type(10);
   sent_message.set_routing_message(true);
   sent_message.set_request(true);
   sent_message.set_client_node(false);
   asymm::Keys keys(MakeKeys());
+  NodeId node_id3(keys.identity);
   RoutingTable routing_table(keys, false);
   NonRoutingTable non_routing_table(keys);
   AsioService asio_service(0);
@@ -285,12 +293,12 @@ TEST(NetworkUtilsTest, FUNC_ProcessSendRecursiveSendOn) {
     };
 
   rudp::ConnectionLostFunctor connection_lost_functor3 = [&](const NodeId& node_id) {
-      routing_table.DropNode(node_id);
+      routing_table.DropNode(node_id, true);
       LOG(kInfo) << " -- Lost Connection with : " << HexSubstr(node_id.String());
     };
 
   asymm::Keys keys1(MakeKeys());
-  NodeId node_id1(NodeId::kRandomId);
+  NodeId node_id1(keys1.identity);
   std::shared_ptr<asymm::PrivateKey> private_key1(new asymm::PrivateKey(keys1.private_key));
   std::shared_ptr<asymm::PublicKey> public_key1(new asymm::PublicKey(keys1.public_key));
   rudp::NatType nat_type;
@@ -306,9 +314,9 @@ TEST(NetworkUtilsTest, FUNC_ProcessSendRecursiveSendOn) {
                              nat_type,
                              endpoint1);
   });
-
-  asymm::Keys keys2(MakeKeys());
-  NodeId node_id2(NodeId::kRandomId);
+  NodeInfoAndPrivateKey node2 = MakeNodeInfoAndKeys();
+  asymm::Keys keys2(GetKeys(node2));
+  NodeId node_id2(keys2.identity);
   std::shared_ptr<asymm::PrivateKey> private_key2(new asymm::PrivateKey(keys2.private_key));
   std::shared_ptr<asymm::PublicKey> public_key2(new asymm::PublicKey(keys2.public_key));
   auto a2 = std::async(std::launch::async, [=, &rudp2, &nat_type]()->NodeId {
@@ -329,8 +337,11 @@ TEST(NetworkUtilsTest, FUNC_ProcessSendRecursiveSendOn) {
   rudp::EndpointPair endpoint_pair_1, endpoint_pair_2;
   endpoint_pair_1.local = endpoint1;
   endpoint_pair_2.local = endpoint2;
-  EXPECT_EQ(kSuccess, rudp1.Add(node_id2, endpoint_pair_2, "validation_1->2"));
-  EXPECT_EQ(kSuccess, rudp2.Add(node_id1, endpoint_pair_1, "validation_2->1"));
+//  EXPECT_EQ(kSuccess, rudp1.Add(node_id2, endpoint_pair_2, "validation_1->2"));
+//  EXPECT_EQ(kSuccess, rudp2.Add(node_id1, endpoint_pair_1, "validation_2->1"));
+  Endpoint endpoint;
+  rudp1.MarkConnectionAsValid(node_id2, endpoint);
+  rudp2.MarkConnectionAsValid(node_id1, endpoint);
   LOG(kVerbose) << " ------------------------   Zero state setup done  ----------------------- ";
 
 
@@ -345,9 +356,9 @@ TEST(NetworkUtilsTest, FUNC_ProcessSendRecursiveSendOn) {
   EXPECT_EQ(kSuccess, network.GetAvailableEndpoint(node_id2, endpoint_pair_2,
                                                    endpoint_pair3, this_nat_type));
   EXPECT_EQ(kSuccess,
-            rudp2.GetAvailableEndpoint(node_id1, endpoint_pair3, endpoint_pair2, this_nat_type));
-  EXPECT_EQ(kSuccess, network.Add(node_id1, endpoint_pair3, "validation_3->2"));
-  EXPECT_EQ(kSuccess, rudp2.Add(node_id2, endpoint_pair2, "validation_2->3"));
+            rudp2.GetAvailableEndpoint(node_id3, endpoint_pair3, endpoint_pair2, this_nat_type));
+  EXPECT_EQ(kSuccess, network.Add(node_id2, endpoint_pair2, "validation_3->2"));
+  EXPECT_EQ(kSuccess, rudp2.Add(node_id3, endpoint_pair3, "validation_2->3"));
 
   if (!connection_completion_future.timed_wait(bptime::seconds(10))) {
     ASSERT_TRUE(false) << "Failed waiting for node-3 to receive validation data";
@@ -362,15 +373,15 @@ TEST(NetworkUtilsTest, FUNC_ProcessSendRecursiveSendOn) {
   SortFromThisNode(NodeId(keys.identity), nodes);
 
   // add the active node at the end of the RT
-//   nodes.at(7).node_info.endpoint = endpoint_pair2.local;  //  second node
+  nodes.at(7) = node2;  //  second node
   sent_message.set_destination_id(NodeId(nodes.at(0).node_info.node_id).String());
 
   for (auto i(0); i != 8; ++i)
     ASSERT_TRUE(routing_table.AddNode(nodes.at(i).node_info));
 
+  ASSERT_EQ(8, routing_table.Size());
   for (auto i(0); i != kMessageCount; ++i)
     network.SendToClosestNode(sent_message);
-//    ProcessSend(sent_message, rudp3, routing_table, non_routing_table);
 
   if (!test_completion_future.timed_wait(bptime::seconds(60))) {
     ASSERT_TRUE(false) << "Failed waiting for node-2 to receive "
