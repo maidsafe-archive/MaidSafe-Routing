@@ -39,6 +39,7 @@ struct Parameters {
   static uint16_t bucket_target_size;
   static uint32_t max_data_size;
   static uint16_t recovery_timeout_in_seconds;
+  static uint16_t setup_timeout_in_seconds;
   static uint16_t max_route_history;
   static uint16_t hops_to_live;
 

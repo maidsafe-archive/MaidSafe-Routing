@@ -201,15 +201,11 @@ void Routing::DoJoin(const Functors& functors) {
     return;
   }
 
-  if (functors.network_status)
-    functors.network_status(FindClosestNode());
+  assert(!impl_->anonymous_node_&& "Not allowed for anonymous nodes");
+  FindClosestNode(boost::system::error_code(), impl_, 0);
 
-  impl_->recovery_timer_.expires_from_now(
-      boost::posix_time::seconds(Parameters::recovery_timeout_in_seconds));
-  std::weak_ptr<RoutingPrivate> impl_weak_ptr(impl_);
-  impl_->recovery_timer_.async_wait([=](const boost::system::error_code& error_code) {
-                                        ReSendFindNodeRequest(error_code, impl_weak_ptr);
-                                      });
+  if (functors.network_status)
+    functors.network_status(return_value);
 }
 
 int Routing::DoBootstrap() {
@@ -225,37 +221,79 @@ int Routing::DoBootstrap() {
       [=](const NodeId& lost_connection_id) { ConnectionLost(lost_connection_id, impl_weak_ptr);});  // NOLINT
 }
 
-int Routing::FindClosestNode() {
-  assert(!impl_->anonymous_node_ && "Not allowed for anonymous nodes");
-  // assert(!impl_->network_.bootstrap_connection_id().Empty()
-  // && "Only after bootstraping succeeds");
-  assert(!impl_->network_.this_node_relay_connection_id().Empty() &&
-         "This should be set after bootstraping succeeds");
-  protobuf::Message find_node_rpc(
-      rpcs::FindNodes(impl_->kNodeId_,
-                      impl_->kNodeId_,
-                      1,
-                      true,
-                      impl_->network_.this_node_relay_connection_id()));
+void Routing::FindClosestNode(const boost::system::error_code& error_code,
+                              std::weak_ptr<RoutingPrivate> impl,
+                              int attempts) {
+  if (error_code != boost::asio::error::operation_aborted) {
+    std::shared_ptr<RoutingPrivate> pimpl = impl.lock();
+    if (!pimpl) {
+      LOG(kVerbose) << "Ignoring another FindClosestNode, since this node is shutting down";
+      return;
+    }
+    assert(!pimpl->anonymous_node_ && "Not allowed for anonymous nodes");
+    if (attempts == 0) {
+      assert(!pimpl->network_.bootstrap_connection_id().Empty()
+             && "Only after bootstraping succeeds");
+      assert(!pimpl->network_.this_node_relay_connection_id().Empty() &&
+             "This should be set after bootstraping succeeds");
+    } else {
+      if (pimpl->routing_table_.Size() > 0) {
+        // Exit the loop & start recovery loop
+        LOG(kInfo) << "Added a node in routing table."
+                   << " Terminating setup loop & Scheduling recovery loop.";
+        pimpl->recovery_timer_.expires_from_now(
+            boost::posix_time::seconds(Parameters::recovery_timeout_in_seconds));
+        std::weak_ptr<RoutingPrivate> impl_weak_ptr(pimpl);
+        pimpl->recovery_timer_.async_wait([=](const boost::system::error_code& error_code) {
+                                                ReSendFindNodeRequest(error_code, impl_weak_ptr);
+                                              });
+        return;
+      }
 
-  boost::promise<bool> message_sent_promise;
-  auto message_sent_future = message_sent_promise.get_future();
-  rudp::MessageSentFunctor message_sent_functor(
-      [&message_sent_promise](int message_sent) {
-        message_sent_promise.set_value(rudp::kSuccess == message_sent);
-      });
+      if (attempts >= 10) {
+        LOG(kError) << "This node's [" << HexSubstr(pimpl->keys_.identity)
+                    << "] failed to get closest node."
+                    << " Reconnecting ....";
+        // TODO(Prakash) : Remove the bootstrap node from the list
+        std::weak_ptr<RoutingPrivate> impl_weak_ptr(pimpl);
+        std::async(std::launch::async, [=] {
+                     std::shared_ptr<RoutingPrivate> pimpl = impl_weak_ptr.lock();
+                     if (!pimpl) {
+                       LOG(kVerbose) << "Not re bootstrapping since this node is shutting down";
+                       return;
+                     }
+                     Sleep(boost::posix_time::seconds(3));
+                     DoJoin(impl_->functors_);
+                  });
+      }
+    }
 
-  impl_->network_.SendToDirect(find_node_rpc, impl_->network_.bootstrap_connection_id(),
-                               message_sent_functor);
+    protobuf::Message find_node_rpc(
+        rpcs::FindNodes(pimpl->kNodeId_,
+                        pimpl->kNodeId_,
+                        1,
+                        true,
+                        pimpl->network_.this_node_relay_connection_id()));
 
-  if (!message_sent_future.timed_wait(boost::posix_time::seconds(10))) {
-    LOG(kError) << "Unable to send FindNodes RPC to bootstrap connection id : "
-                << DebugId(impl_->network_.bootstrap_connection_id());
-    return kFailedtoSendFindNode;
-  } else {
-    LOG(kInfo) << "Successfully sent FindNodes RPC to bootstrap connection id : "
-               << DebugId(impl_->network_.bootstrap_connection_id());
-    return kSuccess;
+    rudp::MessageSentFunctor message_sent_functor(
+        [=](int message_sent) {
+          if (message_sent == kSuccess)
+            LOG(kInfo) << "Successfully sent FindNodes RPC to bootstrap connection id : "
+                       << DebugId(pimpl->network_.bootstrap_connection_id());
+          else
+            LOG(kError) << "Failed to send FindNodes RPC to bootstrap connection id : "
+                        << DebugId(pimpl->network_.bootstrap_connection_id());
+        });
+
+    ++attempts;
+    pimpl->network_.SendToDirect(find_node_rpc, pimpl->network_.bootstrap_connection_id(),
+                                 message_sent_functor);
+    pimpl->setup_timer_.expires_from_now(boost::posix_time::seconds(
+                                         Parameters::setup_timeout_in_seconds));
+    std::weak_ptr<RoutingPrivate> impl_weak_ptr(pimpl);
+    pimpl->setup_timer_.async_wait([=](boost::system::error_code error_code_local) {
+                                       FindClosestNode(error_code_local, impl_weak_ptr, attempts);
+                                     });
   }
 }
 
@@ -595,9 +633,9 @@ void Routing::ReSendFindNodeRequest(const boost::system::error_code& error_code,
     }
 
     if (pimpl->routing_table_.Size() == 0) {
-      LOG(kInfo) << "This node's [" << HexSubstr(pimpl->keys_.identity)
-                 << "] Routing table is empty."
-                 << " Reconnecting .... !!!";
+      LOG(kError) << "This node's [" << HexSubstr(pimpl->keys_.identity)
+                  << "] Routing table is empty."
+                  << " Reconnecting .... !!!";
        std::async(std::launch::async, [=]
                   {
                   std::shared_ptr<RoutingPrivate> pimpl = impl.lock();
