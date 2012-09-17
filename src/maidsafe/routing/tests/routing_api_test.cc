@@ -101,7 +101,7 @@ TEST(APITest, BEH_API_ZeroState) {
         join_promise.set_value(true);
     };
 
-  R3.Join(functors3, std::vector<Endpoint>(0, endpoint2));
+  R3.Join(functors3, std::vector<Endpoint>(1, endpoint2));
   EXPECT_TRUE(join_future.timed_wait(boost::posix_time::seconds(10)));
   LOG(kInfo) << "done!!!";
 }
