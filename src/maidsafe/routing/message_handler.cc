@@ -44,7 +44,6 @@ MessageHandler::MessageHandler(AsioService& asio_service,
       message_received_functor_() {}
 
 void MessageHandler::HandleRoutingMessage(protobuf::Message& message) {
-  LOG(kInfo) << "MessageHandler::RoutingMessage" << " id: " << message.id();
   bool request(message.request());
   switch (static_cast<MessageType>(message.type())) {
     case MessageType::kPing :
@@ -62,10 +61,6 @@ void MessageHandler::HandleRoutingMessage(protobuf::Message& message) {
       message.request() ? service::FindNodes(routing_table_, message) :
                           response_handler_->FindNodes(message);
       break;
-//    case MessageType::kProxyConnect :
-//      message.request() ?  service::ProxyConnect(routing_table_, network_, message) :
-//                           response_handler_->ProxyConnect(message);
-//      break;
     case MessageType::kConnectSuccess :
       response_handler_->ConnectSuccess(message);
       break;
@@ -131,11 +126,11 @@ void MessageHandler::HandleNodeLevelMessageForThisNode(protobuf::Message& messag
   }
 }
 
-void MessageHandler::HandleDirectMessage(protobuf::Message& message) {
+void MessageHandler::HandleMessageForThisNode(protobuf::Message& message) {
   if (RelayDirectMessageIfNeeded(message))
     return;
 
-  LOG(kVerbose) << "Direct Message for this node." << " id: " << message.id();
+  LOG(kVerbose) << "Message for this node." << " id: " << message.id();
   if (IsRoutingMessage(message))
     HandleRoutingMessage(message);
   else
@@ -240,7 +235,6 @@ void MessageHandler::HandleGroupMessage(protobuf::Message& message) {
 }
 
 void MessageHandler::HandleMessage(protobuf::Message& message) {
-  LOG(kVerbose) << "MessageHandler::HandleMessage id: " << message.id();
   if (!ValidateMessage(message)) {
     LOG(kWarning) << "Validate message failed." << " id: " << message.id();
     assert((message.hops_to_live() > 0) &&
@@ -271,7 +265,7 @@ void MessageHandler::HandleMessage(protobuf::Message& message) {
 
   // Direct message
   if (message.destination_id() == routing_table_.kKeys().identity)
-    return HandleDirectMessage(message);
+    return HandleMessageForThisNode(message);
 
   if (IsRelayResponseForThisNode(message))
     return HandleRoutingMessage(message);
@@ -312,7 +306,7 @@ void MessageHandler::HandleRelayRequest(protobuf::Message& message) {
   if ((message.destination_id() == routing_table_.kKeys().identity) && IsRequest(message)) {
     LOG(kVerbose) << "Relay request with this node's ID as destination ID"
                   << " id: " << message.id();
-    return HandleDirectMessage(message);
+    return HandleMessageForThisNode(message);
   }
 
   // If small network yet, this node may be closest.
@@ -354,7 +348,7 @@ bool MessageHandler::RelayDirectMessageIfNeeded(protobuf::Message& message) {
     network_.SendToClosestNode(message);
     return true;
   } else {  // not a relay message response, its for this node
-    LOG(kVerbose) << "Not a relay message response, it's for this node";
+//    LOG(kVerbose) << "Not a relay message response, it's for this node";
     return false;
   }
 }
