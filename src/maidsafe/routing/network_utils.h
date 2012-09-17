@@ -66,6 +66,7 @@ class NetworkUtils {
   // Handles relay response messages.  Also leave destination ID empty if needs to send as a relay
   // response message
   void SendToClosestNode(const protobuf::Message& message);
+  void AddToBootstrapFile(const boost::asio::ip::udp::endpoint& endpoint);
   void clear_bootstrap_connection();
   void set_new_bootstrap_endpoint_functor(NewBootstrapEndpointFunctor new_bootstrap_endpoint);
   void set_bootstrap_file_path(const boost::filesystem::path& path);
@@ -88,7 +89,8 @@ friend struct RoutingPrivate;
                 NodeId peer,
                 rudp::MessageSentFunctor message_sent_functor);
   void SendTo(const protobuf::Message& message,
-              const NodeId peer);
+              const NodeId peer,
+              const NodeId connection_id);
   void RecursiveSendOn(protobuf::Message message,
                        NodeInfo last_node_attempted = NodeInfo(),
                        int attempt_count = 0);

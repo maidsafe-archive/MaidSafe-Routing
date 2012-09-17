@@ -277,9 +277,7 @@ void MessageHandler::HandleMessage(protobuf::Message& message) {
     return HandleRoutingMessage(message);
 
   if (non_routing_table_.IsConnected(NodeId(message.destination_id())) && IsDirect(message)) {
-    LOG(kInfo) << "This node has message destination in its non routing table. Dest id : "
-               << HexSubstr(message.destination_id()) << " message id: " << message.id();
-    return network_.SendToClosestNode(message);
+    return HandleMessageForNonRoutingNodes(message);
   }
 
   // This node is in closest proximity to this message
@@ -290,6 +288,23 @@ void MessageHandler::HandleMessage(protobuf::Message& message) {
   } else {
     return HandleMessageAsFarNode(message);
   }
+}
+
+void MessageHandler::HandleMessageForNonRoutingNodes(protobuf::Message& message) {
+  auto non_routing_nodes(non_routing_table_.GetNodesInfo(NodeId(message.destination_id())));
+  assert(!non_routing_nodes.empty() && message.direct());
+  if (IsRequest(message) &&
+      (!message.client_node() ||
+       (message.source_id() != message.destination_id()))) {
+    LOG(kWarning) << "This node ["
+                  << HexSubstr(routing_table_.kKeys().identity)
+                  << " Dropping message as non-client to client message not allowed."
+                  << PrintMessage(message);
+    return;
+  }
+  LOG(kInfo) << "This node has message destination in its non routing table. Dest id : "
+             << HexSubstr(message.destination_id()) << " message id: " << message.id();
+  return network_.SendToClosestNode(message);
 }
 
 void MessageHandler::HandleRelayRequest(protobuf::Message& message) {

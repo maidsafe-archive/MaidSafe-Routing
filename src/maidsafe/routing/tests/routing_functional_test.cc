@@ -528,7 +528,7 @@ TYPED_TEST_P(RoutingNetworkTest, FUNC_GetRandomExistingNode) {
     }
     last_random = last_node;
   }
-  EXPECT_LT(collisions, 50);
+  ASSERT_LT(collisions, 50);
   while (this->nodes_[random_node]->RandomNodeVector().size() < 100)
     this->nodes_[random_node]->AddExistingRandomNode(NodeId(NodeId::kRandomId));
     this->nodes_[random_node]->AddExistingRandomNode(NodeId(NodeId::kRandomId));

@@ -124,6 +124,8 @@ NodeInfo RoutingTable::DropNode(const NodeId& node_to_drop) {
     assert(nodes_.size() <= std::numeric_limits<uint16_t>::max());
     UpdateNetworkStatus(static_cast<uint16_t>(nodes_.size()));
   }
+  // if (!dropped_node.node_id.Empty())
+  //   update_network_status(static_cast<uint16_t>(nodes_.size()));
 
   if (!new_close_nodes.empty()) {
     if (close_node_replaced_functor_)
@@ -157,7 +159,7 @@ bool RoutingTable::IsThisNodeInRange(const NodeId& target_id, const uint16_t ran
   return (nodes_[range - 1].node_id ^ kNodeId_) > (target_id ^ kNodeId_);
 }
 
-//bool RoutingTable::IsThisNodeClosestTo(const NodeId& target_id) {
+// bool RoutingTable::IsThisNodeClosestTo(const NodeId& target_id) {
 //  if (!target_id.IsValid() || target_id.Empty()) {
 //    LOG(kError) << "Invalid target_id passed.";
 //    return false;
@@ -167,7 +169,7 @@ bool RoutingTable::IsThisNodeInRange(const NodeId& target_id, const uint16_t ran
 //    return true;
 //  NthElementSortFromTarget(target_id, 1);
 //  return (kNodeId_ ^ target_id) < (target_id ^ nodes_[0].node_id);
-//}
+// }
 
 bool RoutingTable::IsThisNodeClosestTo(const NodeId& target_id, bool ignore_exact_match) {
   if (!target_id.IsValid() || target_id.Empty()) {

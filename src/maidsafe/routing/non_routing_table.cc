@@ -48,8 +48,11 @@ bool NonRoutingTable::AddOrCheckNode(NodeInfo& node,
     return false;
   std::lock_guard<std::mutex> lock(mutex_);
   if (CheckRangeForNodeToBeAdded(node, furthest_close_node_id, add)) {
-    if (add)
+    if (add) {
       nodes_.push_back(node);
+      LOG(kInfo) << "Added to non routing table :" << DebugId(node.node_id);
+      LOG(kInfo) << PrintNonRoutingTable();
+    }
     return true;
   }
   return false;
@@ -103,14 +106,14 @@ bool NonRoutingTable::CheckValidParameters(const NodeInfo& node) const {
 
 bool NonRoutingTable::CheckParametersAreUnique(const NodeInfo& node) const {
   // If we already have a duplicate endpoint return false
-//  if (std::find_if(nodes_.begin(),
-//                   nodes_.end(),
-//                   [node](const NodeInfo& node_info) {
-//                     return (node_info.endpoint == node.endpoint);
-//                   }) != nodes_.end()) {
-//    LOG(kInfo) << "Already have node with this endpoint.";
-//    return false;
-//  }
+  if (std::find_if(nodes_.begin(),
+                   nodes_.end(),
+                   [node](const NodeInfo& node_info) {
+                     return (node_info.connection_id == node.connection_id);
+                   }) != nodes_.end()) {
+    LOG(kInfo) << "Already have node with this connection_id.";
+    return false;
+  }
 
   // If we already have a duplicate public key under different node ID return false
   if (std::find_if(nodes_.begin(),
@@ -144,6 +147,18 @@ bool NonRoutingTable::CheckRangeForNodeToBeAdded(NodeInfo& node,
 bool NonRoutingTable::IsThisNodeInRange(const NodeId& node_id,
                                         const NodeId& furthest_close_node_id) const {
   return (furthest_close_node_id ^ kNodeId_) > (node_id ^ kNodeId_);
+}
+
+std::string NonRoutingTable::PrintNonRoutingTable() {
+  auto rt(nodes_);
+  std::string s = "\n\n[" + DebugId(kNodeId_) +
+      "] This node's own non routing table and peer connections:\n";
+  for (auto node : rt) {
+    s += std::string("\tPeer ") + "[" + DebugId(node.node_id) + "]"+ "-->";
+    s += DebugId(node.connection_id)+ "\n";
+  }
+  s += "\n\n";
+  return s;
 }
 
 }  // namespace routing

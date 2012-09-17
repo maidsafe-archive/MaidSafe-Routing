@@ -98,31 +98,40 @@ void ResponseHandler::Connect(protobuf::Message& message) {
       LOG(kError) << "Invalid peer endpoint details";
       return;
     }
+    // Updating bootstrap only for test local network
+    if (!peer_endpoint_pair.external.address().is_unspecified())
+      network_.AddToBootstrapFile(peer_endpoint_pair.external);
+    else
+      network_.AddToBootstrapFile(peer_endpoint_pair.local);
 
     NodeId peer_node_id(connect_response.contact().node_id());
+    NodeId this_node_seen_connection_id;
+    if (connect_response.has_connection_id())
+      this_node_seen_connection_id = NodeId((connect_response.connection_id()));
+
     LOG(kVerbose) << "This node [" << DebugId(routing_table_.kNodeId())
                   << "] received connect response from "
                   << DebugId(peer_node_id)
                   << " id: " << message.id();
 
     // Handling the case when this and peer node are behind symmetric router
-    rudp::NatType nat_type = NatTypeFromProtobuf(connect_response.contact().nat_type());
+//    rudp::NatType nat_type = NatTypeFromProtobuf(connect_response.contact().nat_type());
 
-    if ((nat_type == rudp::NatType::kSymmetric) &&
-        (network_.nat_type() == rudp::NatType::kSymmetric)) {
-      auto validate_node = [&] (const asymm::PublicKey& key)->void {
-          LOG(kInfo) << "validation callback called with public key for" << DebugId(peer_node_id)
-                     << " -- pseudo connection";
-          HandleSymmetricNodeAdd(routing_table_, peer_node_id, key);
-        };
+//    if ((nat_type == rudp::NatType::kSymmetric) &&
+//        (network_.nat_type() == rudp::NatType::kSymmetric)) {
+//      auto validate_node = [&] (const asymm::PublicKey& key)->void {
+//          LOG(kInfo) << "validation callback called with public key for" << DebugId(peer_node_id)
+//                     << " -- pseudo connection";
+//          HandleSymmetricNodeAdd(routing_table_, peer_node_id, key);
+//        };
 
-      TaskResponseFunctor add_symmetric_node = [&](std::vector<std::string>) {
-          if (request_public_key_functor_) {
-            request_public_key_functor_(peer_node_id, validate_node);
-          }
-        };
-      network_.timer().AddTask(boost::posix_time::seconds(5), add_symmetric_node, 1);
-    }
+//      TaskResponseFunctor add_symmetric_node = [&](std::vector<std::string>) {
+//          if (request_public_key_functor_) {
+//            request_public_key_functor_(peer_node_id, validate_node);
+//          }
+//        };
+//      network_.timer().AddTask(boost::posix_time::seconds(5), add_symmetric_node, 1);
+//    }
 
     std::weak_ptr<ResponseHandler> response_handler_weak_ptr = shared_from_this();
     if (request_public_key_functor_) {
@@ -134,6 +143,8 @@ void ResponseHandler::Connect(protobuf::Message& message) {
                                ValidateAndAddToRudp(
                                    response_handler->network_,
                                    response_handler->routing_table_.kNodeId(),
+                                   this_node_seen_connection_id,
+                                   peer_node_id,
                                    peer_node_id,
                                    peer_endpoint_pair,
                                    key,
@@ -240,7 +251,9 @@ void ResponseHandler::ConnectTo(const std::vector<std::string>& nodes,
         LOG(kError) << "Failed to get available endpoint for new connections : " << ret_val;
         return;
       }
-
+      // assert((!this_endpoint_pair.external.address().is_unspecified() ||
+      //         !this_endpoint_pair.local.address().is_unspecified()) &&
+      //        "Unspecified endpoint after GetAvailableEndpoint success.");
       NodeId relay_connection_id;
       bool relay_message(false);
       if (send_to_bootstrap_connection) {
@@ -278,6 +291,7 @@ void ResponseHandler::ConnectSuccess(protobuf::Message& message) {
   }
 
   NodeId peer_node_id(connect_success.node_id());
+  NodeId peer_connection_id(connect_success.connection_id());
   if (peer_node_id.Empty() || !peer_node_id.IsValid()) {
     LOG(kWarning) << "Invalid node id provided";
     return;
@@ -295,7 +309,7 @@ void ResponseHandler::ConnectSuccess(protobuf::Message& message) {
                                  response_handler->routing_table_,
                                  response_handler->non_routing_table_,
                                  peer_node_id,
-                                 peer_node_id,
+                                 peer_connection_id,
                                  key,
                                  message.client_node());
                            }

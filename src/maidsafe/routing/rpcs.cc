@@ -71,7 +71,7 @@ protobuf::Message Connect(const NodeId& node_id,
   for (auto node_id : closest_ids)
     protobuf_connect_request.add_closest_id(node_id);
   protobuf_connect_request.set_timestamp(GetTimeStamp());
-  message.set_id(RandomUint32());
+//  message.set_id(RandomUint32());
   message.set_destination_id(node_id.String());
   message.set_routing_message(true);
   message.add_data(protobuf_connect_request.SerializeAsString());
@@ -106,7 +106,7 @@ protobuf::Message FindNodes(const NodeId& node_id,
   find_nodes.set_num_nodes_requested(num_nodes_requested);
   find_nodes.set_target_node(node_id.String());
   find_nodes.set_timestamp(GetTimeStamp());
-  message.set_id(RandomUint32());
+//  message.set_id(RandomUint32());
   message.set_last_id(my_node_id.String());
   message.set_destination_id(node_id.String());
   message.set_routing_message(true);
@@ -165,17 +165,15 @@ protobuf::Message ProxyConnect(const NodeId& node_id,
 }
 
 protobuf::Message ConnectSuccess(const NodeId& node_id,
+                                 const NodeId& this_node_seen_connection_id,
                                  const NodeId& my_node_id,
-//                                 const boost::asio::ip::udp::endpoint& endpoint,
-//                                 const bool& local_endpoint,
                                  bool client_node) {
   assert(node_id.IsValid() && "Invalid node_id");
   assert(my_node_id.IsValid() && "Invalid my node_id");
   protobuf::Message message;
   protobuf::ConnectSuccess protobuf_connect_success;
-//  SetProtobufEndpoint(endpoint, protobuf_connect_success.mutable_endpoint());
   protobuf_connect_success.set_node_id(my_node_id.String());
-//  protobuf_connect_success.set_local_endpoint(local_endpoint);
+  protobuf_connect_success.set_connection_id(this_node_seen_connection_id.String());
   message.set_destination_id(node_id.String());
   message.set_routing_message(true);
   message.add_data(protobuf_connect_success.SerializeAsString());
