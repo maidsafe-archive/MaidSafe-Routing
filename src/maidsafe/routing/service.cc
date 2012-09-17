@@ -13,6 +13,7 @@
 #include "maidsafe/routing/service.h"
 
 #include <string>
+#include <algorithm>
 #include <vector>
 
 #include "maidsafe/common/log.h"
@@ -199,7 +200,7 @@ void Connect(RoutingTable& routing_table,
   NodeId source((message.has_relay_connection_id() ? message.relay_id() : message.source_id()));
   if (connect_request.closest_id_size() > 0) {
     size_t request_size = connect_request.closest_id_size();
-    size_t close_nodes_size = message.client_node() ? Parameters::closest_nodes_size : 
+    size_t close_nodes_size = message.client_node() ? Parameters::closest_nodes_size :
                                               Parameters::max_routing_table_size;
     size_t supply_size = std::min(routing_table.Size(), close_nodes_size);
     size_t search_size = std::min(supply_size, request_size);

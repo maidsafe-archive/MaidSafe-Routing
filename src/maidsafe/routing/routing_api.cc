@@ -222,7 +222,7 @@ int Routing::DoBootstrap() {
       impl_->bootstrap_nodes_,
       impl_->client_mode_,
       [=](const std::string& message) { ReceiveMessage(message, impl_weak_ptr); },
-      [=](const NodeId& lost_connection_id) { ConnectionLost(lost_connection_id, impl_weak_ptr); });
+      [=](const NodeId& lost_connection_id) { ConnectionLost(lost_connection_id, impl_weak_ptr);});  // NOLINT
 }
 
 int Routing::FindClosestNode() {
@@ -539,9 +539,10 @@ void Routing::ConnectionLost(const NodeId& lost_connection_id, std::weak_ptr<Rou
                     << "Lost temporary connection with bootstrap node. connection id :"
                     << DebugId(lost_connection_id);
       pimpl->network_.clear_bootstrap_connection();
-    }else {
+    } else {
       LOG(kWarning) << "[" <<HexSubstr(impl_->keys_.identity) << "]"
-                    << "Lost connection with unknown/internal connection id " << DebugId(lost_connection_id);
+                    << "Lost connection with unknown/internal connection id "
+                    << DebugId(lost_connection_id);
     }
   }
 
@@ -614,7 +615,7 @@ void Routing::ReSendFindNodeRequest(const boost::system::error_code& error_code,
 
                   Sleep(boost::posix_time::seconds(10));
                   DoJoin(impl_->functors_);
-                  } );
+                  });
     } else if (ignore_size ||
                (pimpl->routing_table_.Size() < Parameters::routing_table_size_threshold)) {
       if (!ignore_size)

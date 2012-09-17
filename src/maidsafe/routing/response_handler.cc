@@ -206,12 +206,12 @@ void ResponseHandler::ConnectTo(const std::vector<std::string>& nodes,
     closest_node_ids.push_back(node_id.String());
 
   for (auto &node_string : closest_nodes) {
-    if(node_string.size() == 64)
+    if (node_string.size() == 64)
       closest_node_ids.push_back(node_string);
   }
 
   for (auto &node_string : nodes) {
-    if(node_string.size() == 64)
+    if (node_string.size() == 64)
       closest_node_ids.push_back(node_string);
   }
 

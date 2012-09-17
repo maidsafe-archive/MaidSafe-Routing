@@ -14,6 +14,7 @@
 
 #include <thread>
 #include <algorithm>
+#include <limits>
 
 #include "maidsafe/common/log.h"
 #include "maidsafe/common/utils.h"
