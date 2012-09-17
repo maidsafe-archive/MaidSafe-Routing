@@ -120,7 +120,7 @@ TYPED_TEST_P(FindNodeNetwork, FUNC_FindNodeAfterDrop) {
   Sleep(boost::posix_time::seconds(1));
   EXPECT_TRUE(this->nodes_[source]->RoutingTableHasNode(node_id));
   EXPECT_TRUE(this->nodes_[source]->DropNode(node_id));
-  Sleep(boost::posix_time::seconds(11));
+  Sleep(boost::posix_time::seconds(15));
   EXPECT_TRUE(this->nodes_[source]->RoutingTableHasNode(node_id));
 }
 
@@ -135,7 +135,7 @@ TYPED_TEST_P(FindNodeNetwork, FUNC_VaultFindVaultNode) {
 
   EXPECT_TRUE(this->nodes_[source]->DropNode(this->nodes_[dest]->node_id()));
 
-  Sleep(boost::posix_time::seconds(5));
+  Sleep(boost::posix_time::seconds(15));
 
   LOG(kVerbose) << "after find " << HexSubstr(this->nodes_[dest]->node_id().String());
   EXPECT_TRUE(this->nodes_[source]->RoutingTableHasNode(this->nodes_[dest]->node_id()));
