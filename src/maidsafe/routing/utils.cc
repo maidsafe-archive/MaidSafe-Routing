@@ -18,6 +18,8 @@
 
 #include "maidsafe/common/log.h"
 #include "maidsafe/common/utils.h"
+#include "maidsafe/common/error.h"
+#include "maidsafe/common/node_id.h"
 #include "maidsafe/rudp/return_codes.h"
 
 #include "maidsafe/routing/message_handler.h"
@@ -155,6 +157,10 @@ bool IsDirect(const protobuf::Message& message) {
   return message.direct();
 }
 
+bool CheckId(const std::string id_to_test) {
+  return id_to_test.size() == kKeySizeBytes;
+}
+
 bool ValidateMessage(const protobuf::Message &message) {
   if (!message.IsInitialized()) {
     LOG(kWarning) << "Uninitialised message dropped.";
@@ -175,18 +181,13 @@ bool ValidateMessage(const protobuf::Message &message) {
                  << ", \nMessage id: " << message.id();
     return false;
   }
-
   // Invalid destination id, unknown message
-  if (!(NodeId(message.destination_id()).IsValid())) {
+  if (!CheckId(message.destination_id())) {
     LOG(kWarning) << "Stray message dropped, need destination ID for processing."
                   << " id: " << message.id();
     return false;
   }
 
-  if (!NodeId(message.destination_id()).IsValid()) {
-    LOG(kWarning) << "Message should have valid destination id.";
-    return false;
-  }
 
   if (!(message.has_source_id() || (message.has_relay_id() &&
                                     message.has_relay_connection_id()))) {
@@ -195,9 +196,9 @@ bool ValidateMessage(const protobuf::Message &message) {
     return false;
   }
 
-  if (message.has_source_id() && !NodeId(message.source_id()).IsValid()) {
-    LOG(kWarning) << "Invalid source id field.";
-    return false;
+  if (message.has_source_id() && !CheckId(message.source_id())) {
+      LOG(kWarning) << "Invalid source id field.";
+      return false;
   }
 
   if (message.has_relay_id() && !NodeId(message.relay_id()).IsValid()) {

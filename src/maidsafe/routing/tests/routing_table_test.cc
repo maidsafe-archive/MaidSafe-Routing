@@ -134,12 +134,6 @@ TEST(RoutingTableTest, FUNC_CloseAndInRangeCheck) {
   EXPECT_TRUE(RT.IsThisNodeClosestTo(my_closest_node));
   EXPECT_TRUE(RT.IsThisNodeInRange(my_closest_node, 2));
   EXPECT_TRUE(RT.IsThisNodeInRange(my_closest_node, 200));
-  EXPECT_TRUE(RT.ConfirmGroupMembers(my_closest_node,
-                                     RT.GetNthClosestNode(my_closest_node, 1).node_id));
-  EXPECT_TRUE(RT.ConfirmGroupMembers(my_closest_node,
-                RT.GetNthClosestNode(my_closest_node, Parameters::closest_nodes_size - 2).node_id));
-  EXPECT_FALSE(RT.ConfirmGroupMembers(my_closest_node, RT.GetNthClosestNode(my_closest_node,
-                                     Parameters::closest_nodes_size + 2).node_id));
   EXPECT_TRUE(RT.IsThisNodeClosestTo(my_closest_node));
   EXPECT_EQ(RT.Size(), Parameters::max_routing_table_size);
   // get closest nodes to me
@@ -154,8 +148,14 @@ TEST(RoutingTableTest, FUNC_CloseAndInRangeCheck) {
   // add the node now
      NodeInfo node(MakeNode());
      node.node_id = my_closest_node;
-     EXPECT_FALSE(RT.AddNode(node));
      EXPECT_TRUE(RT.AddNode(node));
+     EXPECT_FALSE(RT.AddNode(node));
+  EXPECT_TRUE(RT.ConfirmGroupMembers(my_closest_node,
+                                     RT.GetNthClosestNode(my_closest_node, 1).node_id));
+  EXPECT_TRUE(RT.ConfirmGroupMembers(my_closest_node,
+                RT.GetNthClosestNode(my_closest_node, Parameters::closest_nodes_size - 1).node_id));
+  EXPECT_FALSE(RT.ConfirmGroupMembers(my_closest_node, RT.GetNthClosestNode(my_closest_node,
+                                     Parameters::closest_nodes_size + 1).node_id));
   // should now be closest node to itself :-)
   EXPECT_EQ(RT.GetClosestNode(my_closest_node).node_id.String(), my_closest_node.String());
   EXPECT_EQ(RT.Size(), Parameters::max_routing_table_size);

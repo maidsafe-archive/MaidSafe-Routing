@@ -222,7 +222,7 @@ int Routing::DoBootstrap() {
       impl_->bootstrap_nodes_,
       impl_->client_mode_,
       [=](const std::string& message) { ReceiveMessage(message, impl_weak_ptr); },
-      [=](const NodeId& lost_connection_id) { ConnectionLost(lost_connection_id, impl_weak_ptr); });  // NOLINT (Fraser)
+      [=](const NodeId& lost_connection_id) { ConnectionLost(lost_connection_id, impl_weak_ptr); });
 }
 
 int Routing::FindClosestNode() {
@@ -308,7 +308,7 @@ int Routing::ZeroStateJoin(Functors functors,
     return result;
   }
 
-  result = impl_->network_.Add(peer_node.node_id, peer_endpoint_pair, "junk");
+  result = impl_->network_.Add(peer_node.node_id, peer_endpoint_pair, "invalid");
   if (result != kSuccess) {
     LOG(kError) << "Failed to add zero state node : " << peer_endpoint;
     return result;

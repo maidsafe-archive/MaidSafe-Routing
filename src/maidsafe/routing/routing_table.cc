@@ -130,7 +130,7 @@ NodeInfo RoutingTable::DropNode(const NodeId& node_to_drop) {
 
 //  if (!dropped_node.node_id.Empty())
 //    UpdateBootstrapFile(bootstrap_file_path_, dropped_node.endpoint, true);
-  std::cout << PrintRoutingTable();
+  LOG(kInfo) << PrintRoutingTable();
   return dropped_node;
 }
 
@@ -447,7 +447,7 @@ void RoutingTable::update_network_status(const uint16_t& size) const {
   LOG(kInfo) << DebugId(kNodeId_) << "Updating network status !!!" << (size * 100) / max_size_;
 }
 
-uint16_t RoutingTable::Size() const {
+size_t RoutingTable::Size() const {
   std::lock_guard<std::mutex> lock(mutex_);
   return static_cast<uint16_t>(nodes_.size());
 }

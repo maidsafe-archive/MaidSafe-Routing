@@ -45,7 +45,7 @@ message Bootstrap {
 
 
 message Message {
-  optional bytes source_id = 1; // in response this is name of data
+  optional bytes source_id = 1;
   optional bytes destination_id = 2;
   required bool routing_message = 3;
   optional bytes last_id = 4;

@@ -194,15 +194,18 @@ void ResponseHandler::ConnectTo(const std::vector<std::string>& nodes,
   for (auto node_id : routing_table_closest_nodes)
     closest_node_ids.push_back(node_id.String());
 
-  closest_node_ids.insert(closest_node_ids.end(),
-                          closest_nodes.begin(),
-                          closest_nodes.end());
+  for (auto &node_string : closest_nodes) {
+    if(node_string.size() == 64)
+      closest_node_ids.push_back(node_string);
+  }
 
-  closest_node_ids.insert(closest_node_ids.end(),
-                          nodes.begin(),
-                          nodes.end());
+  for (auto &node_string : nodes) {
+    if(node_string.size() == 64)
+      closest_node_ids.push_back(node_string);
+  }
 
-  std::sort(closest_node_ids.begin(), closest_node_ids.end(),
+  if (closest_node_ids.size() > 1)
+    std::sort(closest_node_ids.begin(), closest_node_ids.end(),
             [=](const std::string& lhs, const std::string& rhs)->bool {
               return NodeId::CloserToTarget(NodeId(lhs), NodeId(rhs),
                                             NodeId(routing_table_.kKeys().identity));

@@ -180,15 +180,17 @@ void Connect(RoutingTable& routing_table,
   connect_response.set_original_signature(message.signature());
   NodeId source((message.has_relay_connection_id() ? message.relay_id() : message.source_id()));
   if (connect_request.closest_id_size() > 0) {
-    for (auto node_id : routing_table.GetClosestNodes(source,
-        ((message.client_node()) ? Parameters::closest_nodes_size - 1 :
-                                   Parameters::max_routing_table_size - 1))) {
+    size_t request_size = connect_request.closest_id_size();
+    size_t close_nodes_size = message.client_node() ? Parameters::closest_nodes_size : 
+                                              Parameters::max_routing_table_size;
+    size_t supply_size = std::min(routing_table.Size(), close_nodes_size);
+    size_t search_size = std::min(supply_size, request_size);
+    for (auto node_id : routing_table.GetClosestNodes(source, search_size)) {
       if (std::find(connect_request.closest_id().begin(), connect_request.closest_id().end(),
                     node_id.String()) == connect_request.closest_id().end() &&
           (NodeId::CloserToTarget(node_id,
-              NodeId(connect_request.closest_id(connect_request.closest_id_size() - 1)), source) ||
-           (connect_request.closest_id_size() + connect_response.closer_id_size() <
-            Parameters::max_routing_table_size)) &&
+                                  NodeId(connect_request.closest_id(
+                                      connect_request.closest_id_size() -1)), source)) &&
           source != node_id)
         connect_response.add_closer_id(node_id.String());
     }
