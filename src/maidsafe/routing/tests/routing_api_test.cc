@@ -147,7 +147,7 @@ TEST(APITest, BEH_API_JoinWithBootstrapFile) {
   //  fs::path bootstrap_file_path(GetSystemAppDir() / bootstrap_file_name);
   try {
   fs::remove(bootstrap_file_path);
-  } catch (std::exception &e) {
+  } catch(std::exception &e) {
     LOG(kInfo) << e.what();
   }
   EXPECT_TRUE(WriteBootstrapFile(bootstrap_endpoints, bootstrap_file_path));
@@ -533,7 +533,7 @@ TEST(APITest, BEH_API_ClientNodeWithBootstrapFile) {
   // fs::path bootstrap_file_path(GetUserAppDir() / bootstrap_file_name);
   try {
   fs::remove(bootstrap_file_path);
-  } catch (std::exception &e) {
+  } catch(std::exception &e) {
     LOG(kInfo) << e.what();
   }
   ASSERT_TRUE(WriteBootstrapFile(bootstrap_endpoints, bootstrap_file_path));
@@ -681,7 +681,7 @@ TEST(APITest, BEH_API_NodeNetworkWithBootstrapFile) {
     fs::path bootstrap_file_path(fs::current_path() / bootstrap_file_name);
     try {
       fs::remove(bootstrap_file_path);
-    } catch (std::exception &e) {
+    } catch(std::exception &e) {
       LOG(kInfo) << e.what();
     }
   // for (auto i(2); i != kNetworkSize; ++i) {
@@ -710,7 +710,7 @@ TEST(APITest, BEH_API_NodeNetworkWithBootstrapFile) {
     functors.network_status = status_vector.at(i);
     routing_node[i + 2]->Join(functors);
     Sleep(boost::posix_time::seconds(2));
-    EXPECT_TRUE(join_futures.at(i).timed_wait(boost::posix_time::seconds(10))) << "node ---------------------------- " << i + 2 ;
+    EXPECT_TRUE(join_futures.at(i).timed_wait(boost::posix_time::seconds(10))) << "node " << i + 2;
     LOG(kVerbose) << "node ---------------------------- " << i + 2 << "joined";
   }
     EXPECT_TRUE(fs::remove("bootstrap"));
