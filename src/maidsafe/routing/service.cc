@@ -211,6 +211,8 @@ void Connect(RoutingTable& routing_table,
                                        Parameters::max_routing_table_size))) &&
           source != node_id)
         connect_response.add_closer_id(node_id.String());
+      LOG(kVerbose) << "Returning closer id size" << connect_response.closer_id_size()
+                    << ", RT size : " << routing_table.Size();
     }
   }
   message.clear_route_history();

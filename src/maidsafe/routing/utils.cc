@@ -52,7 +52,7 @@ void ValidateAndAddToRudp(NetworkUtils& network,
       LOG(kInfo) << "rudp add special case, trying to add bootstrap node ["
                  << DebugId(peer_id) << "] Connection id : "
                  << DebugId(peer_connection_id);
-      network.SendToDirect(connect_success, network.bootstrap_connection_id());
+//      network.SendToDirect(connect_success, network.bootstrap_connection_id());
     } else {
       LOG(kError) << "rudp add failed for peer node [" << DebugId(peer_id) << "]. Connection id : "
                   << DebugId(peer_connection_id) << ". result : " << result;
@@ -161,7 +161,7 @@ bool IsDirect(const protobuf::Message& message) {
   return message.direct();
 }
 
-bool CheckId(const std::string id_to_test) {
+bool CheckId(const std::string& id_to_test) {
   return id_to_test.size() == kKeySizeBytes;
 }
 
