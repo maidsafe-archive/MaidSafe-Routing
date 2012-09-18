@@ -525,7 +525,7 @@ void Routing::AddExistingRandomNode(NodeId node, std::weak_ptr<RoutingPrivate> i
     return;
   }
 
-  if (node.IsValid() && node.Empty()) {
+  if (node.IsValid() && !node.Empty()) {
     std::lock_guard<std::mutex> lock(pimpl->random_node_mutex_);
     if (std::find_if(pimpl->random_node_vector_.begin(), pimpl->random_node_vector_.end(),
                    [node] (const NodeId& vect_node) {
