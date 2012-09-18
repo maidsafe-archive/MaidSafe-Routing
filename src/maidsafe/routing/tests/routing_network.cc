@@ -172,6 +172,10 @@ void GenericNode::RudpSend(const NodeId& peer_node_id, const protobuf::Message& 
   routing_->impl_->network_.RudpSend(message, peer_node_id, message_sent_functor);
 }
 
+void GenericNode::SendToClosestNode(const protobuf::Message& message) {
+  routing_->impl_->network_.SendToClosestNode(message);
+}
+
 bool GenericNode::RoutingTableHasNode(const NodeId node_id) {
   return (std::find_if(routing_->impl_->routing_table_.nodes_.begin(),
                        routing_->impl_->routing_table_.nodes_.end(),
