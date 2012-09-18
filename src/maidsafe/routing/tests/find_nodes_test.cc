@@ -100,7 +100,7 @@ TYPED_TEST_P(FindNodeNetwork, FUNC_FindNodeAfterDrop) {
   Sleep(boost::posix_time::seconds(1));
   EXPECT_TRUE(this->nodes_[source]->RoutingTableHasNode(node_id));
   EXPECT_TRUE(this->nodes_[source]->DropNode(node_id));
-  Sleep(boost::posix_time::seconds(15));
+  Sleep(boost::posix_time::seconds(20));
   EXPECT_TRUE(this->nodes_[source]->RoutingTableHasNode(node_id));
 }
 

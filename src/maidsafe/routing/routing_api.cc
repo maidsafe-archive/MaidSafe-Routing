@@ -600,11 +600,14 @@ void Routing::RemoveNode(const NodeInfo& node, const bool& internal_rudp_only) {
   if (node.connection_id.Empty() || node.node_id.Empty()) {
     return;
   }
-  if (internal_rudp_only) {
-    impl_->network_.Remove(node.connection_id);
+  impl_->network_.Remove(node.connection_id);
+  if (internal_rudp_only) {  // No recovery
     LOG(kInfo) << "Routing: removed node : " << DebugId(node.node_id)
-               << ". Removed rudp connection id : " << DebugId(node.connection_id);
+               << ". Removed internal rudp connection id : " << DebugId(node.connection_id);
     return;
+  } else {
+      LOG(kInfo) << "Routing: removed node : " << DebugId(node.node_id)
+                 << ". Removed rudp connection id : " << DebugId(node.connection_id);
   }
   // TODO(Prakash): Handle pseudo connection removal here and NRT node removal
 

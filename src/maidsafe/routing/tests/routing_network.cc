@@ -201,7 +201,8 @@ testing::AssertionResult GenericNode::DropNode(const NodeId& node_id) {
   if (iter != routing_->impl_->routing_table_.nodes_.end()) {
     LOG(kVerbose) << HexSubstr(routing_->impl_->routing_table_.kNodeId_.String())
                << " Removes " << HexSubstr(node_id.String());
-    routing_->impl_->network_.Remove(iter->connection_id);
+//    routing_->impl_->network_.Remove(iter->connection_id);
+    routing_->impl_->routing_table_.DropNode(iter->connection_id, false);
   } else {
     testing::AssertionFailure() << HexSubstr(routing_->impl_->routing_table_.keys_.identity)
                                 << " does not have " << HexSubstr(node_id.String())
