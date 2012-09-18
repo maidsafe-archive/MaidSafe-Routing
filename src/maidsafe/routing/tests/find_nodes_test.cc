@@ -42,27 +42,7 @@ class FindNodeNetwork : public GenericNetwork<NodeType> {
   testing::AssertionResult Find(std::shared_ptr<NodeType> source,
                                 const NodeId& node_id) {
     protobuf::Message find_node_rpc(rpcs::FindNodes(node_id, source->node_id(), 8));
-    boost::promise<bool> message_sent_promise;
-    auto message_sent_future = message_sent_promise.get_future();
-    uint8_t attempts(0);
-    rudp::MessageSentFunctor message_sent_functor = [&] (int message_sent) {
-        if (rudp::kSuccess == message_sent) {
-          message_sent_promise.set_value(true);
-        } else if ((rudp::kSendFailure == message_sent) && (attempts < 3)) {
-          source->RudpSend(
-              this->nodes_[1]->connection_id(),
-              find_node_rpc,
-              message_sent_functor);
-        } else {
-          message_sent_promise.set_value(false);
-        }
-      };
-//    source->PrintRoutingTable();
-    source->RudpSend(this->nodes_[1]->connection_id(), find_node_rpc, message_sent_functor);
-    if (!message_sent_future.timed_wait(boost::posix_time::seconds(10))) {
-      return testing::AssertionFailure() << "Unable to send FindValue rpc to bootstrap endpoint - "
-                                         << this->nodes_[1]->endpoint();
-    }
+    source->SendToClosestNode(find_node_rpc);
     return testing::AssertionSuccess();
   }
 

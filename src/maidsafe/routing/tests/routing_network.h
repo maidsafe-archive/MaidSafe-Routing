@@ -84,10 +84,11 @@ class GenericNode {
             const boost::posix_time::time_duration& timeout,
             bool direct,
             bool cache);
-  void PrintRoutingTable();
+  void SendToClosestNode(const protobuf::Message& message);
   void RudpSend(const NodeId& peer_endpoint,
                 const protobuf::Message& message,
                 rudp::MessageSentFunctor message_sent_functor);
+  void PrintRoutingTable();
   bool RoutingTableHasNode(const NodeId node_id);
   bool NonRoutingTableHasNode(const NodeId& node_id);
   testing::AssertionResult DropNode(const NodeId& node_id);
