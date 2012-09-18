@@ -52,7 +52,7 @@ NodeInfoAndPrivateKey MakeNodeInfoAndKeys() {
   node.public_key = keys.public_key;
 //  node.endpoint.address(GetLocalIp());
 //  node.endpoint.port(GetRandomPort());
-  node.connection_id = NodeId(NodeId::kRandomId);
+  node.connection_id = node.node_id;
   NodeInfoAndPrivateKey node_info_and_private_key;
   node_info_and_private_key.node_info = node;
   node_info_and_private_key.private_key = keys.private_key;

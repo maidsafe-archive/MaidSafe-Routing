@@ -41,7 +41,7 @@ class RoutingTable {
   RoutingTable(const asymm::Keys& keys, const bool& client_mode);
   bool AddNode(NodeInfo& peer);
   bool CheckNode(NodeInfo& peer);
-  NodeInfo DropNode(const NodeId &node_to_drop);
+  NodeInfo DropNode(const NodeId &node_to_drop, const bool& routing_only);
   bool GetNodeInfo(const NodeId& node_id, NodeInfo& node_info) const;
   bool IsThisNodeInRange(const NodeId& target_id, const uint16_t range);
   bool IsThisNodeClosestTo(const NodeId& target_id, bool ignore_exact_match = false);
