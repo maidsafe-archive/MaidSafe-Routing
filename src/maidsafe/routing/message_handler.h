@@ -61,7 +61,7 @@ class MessageHandler {
   bool CheckCacheData(protobuf::Message& message);
   void HandleRoutingMessage(protobuf::Message& message);
   void HandleNodeLevelMessageForThisNode(protobuf::Message& message);
-  void HandleDirectMessage(protobuf::Message& message);
+  void HandleMessageForThisNode(protobuf::Message& message);
   void HandleMessageAsClosestNode(protobuf::Message& message);
   void HandleDirectMessageAsClosestNode(protobuf::Message& message);
   void HandleGroupMessageAsClosestNode(protobuf::Message& message);

@@ -164,15 +164,15 @@ TEST(RoutingTableTest, FUNC_CloseAndInRangeCheck) {
   EXPECT_EQ(routing_table.GetClosestNode(my_closest_node).node_id.String(),
             my_closest_node.String());
   EXPECT_EQ(routing_table.Size(), Parameters::max_routing_table_size);
-  EXPECT_EQ(node.node_id, routing_table.DropNode(node.node_id).node_id);
+  EXPECT_EQ(node.node_id, routing_table.DropNode(node.node_id, true).node_id);
   EXPECT_EQ(routing_table.Size(), Parameters::max_routing_table_size - 1);
   EXPECT_TRUE(routing_table.AddNode(node));
   EXPECT_EQ(routing_table.Size(), Parameters::max_routing_table_size);
   EXPECT_FALSE(routing_table.AddNode(node));
   EXPECT_EQ(routing_table.Size(), Parameters::max_routing_table_size);
-  EXPECT_EQ(node.node_id, routing_table.DropNode(node.node_id).node_id);
+  EXPECT_EQ(node.node_id, routing_table.DropNode(node.node_id, true).node_id);
   EXPECT_EQ(routing_table.Size(), Parameters::max_routing_table_size -1);
-  EXPECT_EQ(NodeId(), routing_table.DropNode(node.node_id).node_id);
+  EXPECT_EQ(NodeId(), routing_table.DropNode(node.node_id, true).node_id);
 }
 
 TEST(RoutingTableTest, FUNC_GetClosestNodeWithExclusion) {

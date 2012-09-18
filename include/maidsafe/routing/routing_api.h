@@ -103,7 +103,9 @@ class Routing {
                                    const std::vector<boost::asio::ip::udp::endpoint>& endpoints);
   void DoJoin(const Functors& functors);
   int DoBootstrap();
-  int FindClosestNode();
+  void FindClosestNode(const boost::system::error_code& error_code,
+                       std::weak_ptr<RoutingPrivate> impl,
+                       int attempts);
   void ReSendFindNodeRequest(const boost::system::error_code& error_code,
                              std::weak_ptr<RoutingPrivate> impl,
                              bool ignore_size = false);
