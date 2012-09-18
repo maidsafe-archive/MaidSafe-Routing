@@ -206,7 +206,7 @@ void Connect(RoutingTable& routing_table,
                     node_id.String()) == connect_request.closest_id().end() &&
           (NodeId::CloserToTarget(node_id,
               NodeId(connect_request.closest_id(connect_request.closest_id_size() - 1)), source) ||
-              (connect_request.closest_id_size() + connect_response.closer_id_size() <
+              (connect_request.closest_id_size() + connect_response.closer_id_size() <=
             ((message.client_node()) ? Parameters::closest_nodes_size :
                                        Parameters::max_routing_table_size))) &&
           source != node_id)
