@@ -56,6 +56,12 @@ bool RoutingTable::AddOrCheckNode(NodeInfo& peer, const bool& remove) {
   uint16_t routing_table_size;
   {
     std::lock_guard<std::mutex> lock(mutex_);
+
+    if (!peer.node_id.IsValid() || peer.node_id.Empty()) {
+      LOG(kError) << "Attempt to add an invalid node";
+      return false;
+    }
+
     if (peer.node_id == kNodeId_) {
       LOG(kError) << "Tried to add this node";
       return false;

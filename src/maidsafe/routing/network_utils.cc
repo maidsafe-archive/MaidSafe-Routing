@@ -335,8 +335,10 @@ void NetworkUtils::AdjustRouteHistory(protobuf::Message& message) {
       std::vector<std::string> route_history(message.route_history().begin() + 1,
                                              message.route_history().end());
       message.clear_route_history();
-      for (auto route : route_history)
-        message.add_route_history(route);
+      for (auto route : route_history) {
+        if (NodeId(route).IsValid() && !NodeId(route).Empty())
+          message.add_route_history(route);
+      }
     }
   }
   assert(message.route_history().size() <= Parameters::max_routing_table_size);

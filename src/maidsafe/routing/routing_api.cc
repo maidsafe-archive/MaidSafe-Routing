@@ -605,6 +605,9 @@ void Routing::RemoveNode(const NodeInfo& node, const bool& internal_rudp_only) {
     LOG(kInfo) << "Routing: removed node : " << DebugId(node.node_id)
                << ". Removed internal rudp connection id : " << DebugId(node.connection_id);
     return;
+  } else {
+      LOG(kInfo) << "Routing: removed node : " << DebugId(node.node_id)
+                 << ". Removed rudp connection id : " << DebugId(node.connection_id);
   }
 
   LOG(kInfo) << "Routing: removed node : " << DebugId(node.node_id)
