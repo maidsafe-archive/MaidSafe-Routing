@@ -212,7 +212,6 @@ void MessageHandler::HandleGroupMessageAsClosestNode(protobuf::Message& message)
     NodeInfo node;
     if (routing_table_.GetNodeInfo(i, node)) {
       network_.SendToDirect(message, node.connection_id);
-      Sleep(boost::posix_time::milliseconds(100));  // FIXME remove this after rudp fix
     }
   }
 
