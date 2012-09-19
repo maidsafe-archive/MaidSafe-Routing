@@ -467,7 +467,7 @@ TYPED_TEST_P(RoutingNetworkTest, FUNC_RecursiveCall) {
 }
 
 TYPED_TEST_P(RoutingNetworkTest, FUNC_JoinWithSameId) {
-  this->SetUpNetwork(4);
+  this->SetUpNetwork(10);
   NodeId node_id(NodeId::kRandomId);
   this->AddNode(true, node_id);
   this->AddNode(true, node_id);

@@ -136,16 +136,23 @@ void Connect(RoutingTable& routing_table,
     int ret_val = network.GetAvailableEndpoint(peer_connection_id, peer_endpoint_pair,
                                                this_endpoint_pair, this_nat_type);
     if (ret_val != rudp::kSuccess) {
-      LOG(kError) << "Failed to get available endpoint to connect to "
-                  << DebugId(peer_node.node_id)
-                  << " : " << ret_val;
+      LOG(kError) << "[" << DebugId(routing_table.kNodeId()) << "] Service: "
+                  << "Failed to get available endpoint for new connection to : "
+                  << DebugId(peer_connection_id)
+                  << ". peer_endpoint_pair.external = "
+                  << peer_endpoint_pair.external
+                  << ", peer_endpoint_pair.local = "
+                  << peer_endpoint_pair.local
+                  << ". Rudp returned :"
+                  << ret_val;
+
       message.Clear();
       return;
     }
 
-    // assert((!this_endpoint_pair.external.address().is_unspecified() ||
-    //         !this_endpoint_pair.local.address().is_unspecified()) &&
-    //        "Unspecified endpoint after GetAvailableEndpoint success.");
+    assert((!this_endpoint_pair.external.address().is_unspecified() ||
+            !this_endpoint_pair.local.address().is_unspecified()) &&
+           "Unspecified endpoint after GetAvailableEndpoint success.");
 
 
 //  // Handling the case when this node and peer node are behind symmetric router

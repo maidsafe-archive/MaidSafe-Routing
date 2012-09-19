@@ -248,12 +248,20 @@ void ResponseHandler::ConnectTo(const std::vector<std::string>& nodes,
                                                   this_endpoint_pair,
                                                   this_nat_type);
       if (kSuccess != ret_val) {
-        LOG(kError) << "Failed to get available endpoint for new connections : " << ret_val;
+        LOG(kError) << "[" << DebugId(routing_table_.kNodeId()) << "] Response Handler"
+                    << "Failed to get available endpoint for new connection to : "
+                    << HexSubstr(nodes.at(i))
+                    << "peer_endpoint_pair.external = "
+                    << peer_endpoint_pair.external
+                    << ", peer_endpoint_pair.local = "
+                    << peer_endpoint_pair.local
+                    << ". Rudp returned :"
+                    << ret_val;
         return;
       }
-      // assert((!this_endpoint_pair.external.address().is_unspecified() ||
-      //         !this_endpoint_pair.local.address().is_unspecified()) &&
-      //        "Unspecified endpoint after GetAvailableEndpoint success.");
+      assert((!this_endpoint_pair.external.address().is_unspecified() ||
+              !this_endpoint_pair.local.address().is_unspecified()) &&
+             "Unspecified endpoint after GetAvailableEndpoint success.");
       NodeId relay_connection_id;
       bool relay_message(false);
       if (send_to_bootstrap_connection) {
