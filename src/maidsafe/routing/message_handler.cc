@@ -210,8 +210,10 @@ void MessageHandler::HandleGroupMessageAsClosestNode(protobuf::Message& message)
                << " [ group_id : " << HexSubstr(group_id)  << "]" << " id: " << message.id();
     message.set_destination_id(i.String());
     NodeInfo node;
-    if (routing_table_.GetNodeInfo(i, node))
+    if (routing_table_.GetNodeInfo(i, node)) {
       network_.SendToDirect(message, node.connection_id);
+      Sleep(boost::posix_time::milliseconds(100));  // FIXME remove this after rudp fix
+    }
   }
 
   message.set_destination_id(routing_table_.kKeys().identity);

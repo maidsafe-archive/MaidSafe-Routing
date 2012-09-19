@@ -206,12 +206,12 @@ void ResponseHandler::ConnectTo(const std::vector<std::string>& nodes,
     closest_node_ids.push_back(node_id.String());
 
   for (auto &node_string : closest_nodes) {
-    if (node_string.size() == 64)
+    if (NodeId(node_string).IsValid() && !NodeId(node_string).Empty())
       closest_node_ids.push_back(node_string);
   }
 
   for (auto &node_string : nodes) {
-    if (node_string.size() == 64)
+    if (NodeId(node_string).IsValid() && !NodeId(node_string).Empty())
       closest_node_ids.push_back(node_string);
   }
 
@@ -223,9 +223,15 @@ void ResponseHandler::ConnectTo(const std::vector<std::string>& nodes,
             });
   auto iter(std::unique(closest_node_ids.begin(), closest_node_ids.end()));
   auto resize = std::min(static_cast<uint16_t>(std::distance(iter, closest_node_ids.begin())),
-                          Parameters::max_routing_table_size);
+                         Parameters::max_routing_table_size);
   if (closest_node_ids.size() > resize)
     closest_node_ids.resize(resize);
+
+  std::remove_if(closest_node_ids.begin(), closest_node_ids.end(),
+                 [=](const std::string& closet_node_id)->bool {
+                   return (!NodeId(closet_node_id).IsValid() || NodeId(closet_node_id).Empty());
+                 });
+
   if (network_.bootstrap_connection_id().Empty() && (routing_table_.Size() == 0)) {
       LOG(kWarning) << "Need to re bootstrap !";
     return;
