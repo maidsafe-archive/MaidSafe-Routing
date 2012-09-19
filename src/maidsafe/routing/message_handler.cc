@@ -68,7 +68,7 @@ void MessageHandler::HandleRoutingMessage(protobuf::Message& message) {
       return;
   }
 
-  if (!request)
+  if (!request || !message.IsInitialized())
     return;
 
   if (routing_table_.Size() == 0)  // This node can only send to bootstrap_endpoint
@@ -198,6 +198,13 @@ void MessageHandler::HandleGroupMessageAsClosestNode(protobuf::Message& message)
   if (have_node_with_group_id)
     close.erase(close.begin());
   std::string group_id(message.destination_id());
+  std::string group_members("[" + DebugId(routing_table_.kNodeId()) + "]");
+
+  for (auto i : close)
+    group_members+=std::string("[" + DebugId(i) +"]");
+  LOG(kInfo) << "Group members for group_id " << HexSubstr(group_id) << " are: "
+             << group_members;
+
   for (auto i : close) {
     LOG(kInfo) << "Replicating message to : " << HexSubstr(i.String())
                << " [ group_id : " << HexSubstr(group_id)  << "]" << " id: " << message.id();
@@ -205,6 +212,7 @@ void MessageHandler::HandleGroupMessageAsClosestNode(protobuf::Message& message)
     NodeInfo node;
     if (routing_table_.GetNodeInfo(i, node)) {
       network_.SendToDirect(message, node.connection_id);
+      Sleep(boost::posix_time::milliseconds(100));                  // FIXME remove this after rudp fix
     }
   }
 
@@ -336,7 +344,7 @@ bool MessageHandler::IsRelayResponseForThisNode(protobuf::Message& message) {
 bool MessageHandler::RelayDirectMessageIfNeeded(protobuf::Message& message) {
   assert(message.destination_id() == routing_table_.kKeys().identity);
   if (!message.has_relay_id()) {
-    LOG(kVerbose) << "Message don't have relay ID.";
+//    LOG(kVerbose) << "Message don't have relay ID.";
     return false;
   }
 

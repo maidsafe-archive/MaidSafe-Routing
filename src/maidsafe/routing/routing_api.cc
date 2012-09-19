@@ -525,7 +525,7 @@ void Routing::AddExistingRandomNode(NodeId node, std::weak_ptr<RoutingPrivate> i
     return;
   }
 
-  if (node.IsValid() && node.Empty()) {
+  if (node.IsValid() && !node.Empty()) {
     std::lock_guard<std::mutex> lock(pimpl->random_node_mutex_);
     if (std::find_if(pimpl->random_node_vector_.begin(), pimpl->random_node_vector_.end(),
                    [node] (const NodeId& vect_node) {
@@ -609,6 +609,10 @@ void Routing::RemoveNode(const NodeInfo& node, const bool& internal_rudp_only) {
       LOG(kInfo) << "Routing: removed node : " << DebugId(node.node_id)
                  << ". Removed rudp connection id : " << DebugId(node.connection_id);
   }
+
+  LOG(kInfo) << "Routing: removed node : " << DebugId(node.node_id)
+             << ". Removed rudp connection id : " << DebugId(node.connection_id);
+
   // TODO(Prakash): Handle pseudo connection removal here and NRT node removal
 
   bool resend(impl_->routing_table_.IsThisNodeInRange(node.node_id,
