@@ -68,7 +68,7 @@ class NetworkUtils {
   // response message
   virtual void SendToClosestNode(const protobuf::Message& message);
   void AddToBootstrapFile(const boost::asio::ip::udp::endpoint& endpoint);
-  void clear_bootstrap_connection();
+  void clear_bootstrap_connection_info();
   void set_new_bootstrap_endpoint_functor(NewBootstrapEndpointFunctor new_bootstrap_endpoint);
   void set_bootstrap_file_path(const boost::filesystem::path& path);
   NodeId bootstrap_connection_id() const;

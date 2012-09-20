@@ -205,7 +205,8 @@ bool ValidateMessage(const protobuf::Message &message) {
       return false;
   }
 
-  if (message.has_relay_id() && !NodeId(message.relay_id()).IsValid()) {
+  if (message.has_relay_id() &&
+      (!NodeId(message.relay_id()).IsValid() || NodeId(message.relay_id()).Empty())) {
     LOG(kWarning) << "Invalid relay id field.";
     return false;
   }
