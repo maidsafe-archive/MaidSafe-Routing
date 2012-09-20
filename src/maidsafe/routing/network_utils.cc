@@ -170,7 +170,7 @@ void NetworkUtils::SendToDirect(const protobuf::Message& message,
 
 void NetworkUtils::SendToClosestNode(const protobuf::Message& message) {
   // Normal messages
-  if (message.has_destination_id()) {
+  if (message.has_destination_id() && !message.destination_id().empty()) {
     auto non_routing_nodes(non_routing_table_.GetNodesInfo(NodeId(message.destination_id())));
     // have the destination ID in non-routing table
     if (!non_routing_nodes.empty() && message.direct()) {
