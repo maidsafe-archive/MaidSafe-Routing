@@ -29,6 +29,8 @@ namespace routing {
 
 namespace protobuf { class Message; }
 
+namespace test { class MessageHandlerTest; }
+
 class NetworkUtils;
 class NonRoutingTable;
 class RoutingTable;
@@ -77,6 +79,8 @@ class MessageHandler {
   void DecreamentHopsToLive(protobuf::Message& message);
   void HandleMessageForNonRoutingNodes(protobuf::Message& message);
 //  bool CheckAndSendToLocalClients(protobuf::Message& message);
+
+  friend class test::MessageHandlerTest;
 
   AsioService& asio_service_;
   RoutingTable& routing_table_;
