@@ -39,27 +39,21 @@ MessageHandler::MessageHandler(AsioService& asio_service,
       network_(network),
       timer_(timer),
       cache_manager_(),
-      response_handler_(new ResponseHandler(routing_table,
-                                            non_routing_table, network_)),
+      response_handler_(new ResponseHandler(routing_table, non_routing_table, network_)),
+      service_(new Service(routing_table, non_routing_table, network_)),
       message_received_functor_() {}
 
 void MessageHandler::HandleRoutingMessage(protobuf::Message& message) {
   bool request(message.request());
   switch (static_cast<MessageType>(message.type())) {
     case MessageType::kPing :
-      message.request() ? service::Ping(routing_table_, message) : response_handler_->Ping(message);
+      message.request() ? service_->Ping(message) : response_handler_->Ping(message);
       break;
     case MessageType::kConnect :
-      message.request() ? service::Connect(routing_table_,
-                                           non_routing_table_,
-                                           network_,
-                                           message,
-                                           response_handler_->request_public_key_functor()) :
-                                           response_handler_->Connect(message);
+      message.request() ? service_->Connect(message) : response_handler_->Connect(message);
       break;
     case MessageType::kFindNodes :
-      message.request() ? service::FindNodes(routing_table_, message) :
-                          response_handler_->FindNodes(message);
+      message.request() ? service_->FindNodes(message) : response_handler_->FindNodes(message);
       break;
     case MessageType::kConnectSuccess :
       response_handler_->ConnectSuccess(message);
@@ -320,7 +314,7 @@ void MessageHandler::HandleRelayRequest(protobuf::Message& message) {
   if ((routing_table_.Size() <= Parameters::closest_nodes_size) &&
       (message.type() == static_cast<int32_t>(MessageType::kFindNodes) &&
                                               message.request())) {
-    service::FindNodes(routing_table_, message);
+    service_->FindNodes(message);
     return network_.SendToClosestNode(message);
   }
 
@@ -367,7 +361,6 @@ void MessageHandler::HandleClientMessage(protobuf::Message& message) {
                   << " id: " << message.id();
     return;
   }
-
   if (IsRoutingMessage(message)) {
     LOG(kInfo) << "Client Routing Response for " << HexSubstr(routing_table_.kKeys().identity)
                << " from " << HexSubstr(message.source_id()) << " id: " << message.id();
@@ -404,6 +397,7 @@ void MessageHandler::set_message_received_functor(MessageReceivedFunctor message
 void MessageHandler::set_request_public_key_functor(
     RequestPublicKeyFunctor request_public_key_functor) {
   response_handler_->set_request_public_key_functor(request_public_key_functor);
+  service_->set_request_public_key_functor(request_public_key_functor);
 }
 
 void MessageHandler::DecreamentHopsToLive(protobuf::Message& message) {

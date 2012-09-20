@@ -18,6 +18,7 @@
 #include "maidsafe/rudp/managed_connections.h"
 
 #include "maidsafe/routing/response_handler.h"
+#include "maidsafe/routing/service.h"
 #include "maidsafe/routing/cache_manager.h"
 #include "maidsafe/routing/api_config.h"
 
@@ -84,6 +85,7 @@ class MessageHandler {
   Timer& timer_;
   CacheManager cache_manager_;
   std::shared_ptr<ResponseHandler> response_handler_;
+  std::shared_ptr<Service> service_;
   MessageReceivedFunctor message_received_functor_;
 };
 

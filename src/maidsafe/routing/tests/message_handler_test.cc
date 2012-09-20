@@ -1,4 +1,4 @@
-/*******************************************************************************
+ /*******************************************************************************
  *  Copyright 2012 maidsafe.net limited                                        *
  *                                                                             *
  *  The following source code is property of maidsafe.net limited and is not   *
@@ -15,6 +15,7 @@
 #include "maidsafe/common/asio_service.h"
 #include "maidsafe/common/utils.h"
 #include "maidsafe/common/test.h"
+#include "maidsafe/common/node_id.h"
 
 #include "maidsafe/routing/message_handler.h"
 #include "maidsafe/routing/tests/mock_network_utils.h"
@@ -44,6 +45,7 @@ class MessageHandlerTest : public testing::Test {
         ntable_(),
         table_(),
         utils_(),
+        service_(),
         close_info_() {
     message_received_functor_ = [this] (const std::string& message,
                                                const NodeId& /*group claim*/,
@@ -52,8 +54,7 @@ class MessageHandlerTest : public testing::Test {
                                                  reply_functor("reply");
                                                };
     asio_service_.Start();
-    std::string identity(RandomString(64));
-    keys_.identity = identity;
+    keys_.identity = RandomString(64);
     ntable_.reset(new NonRoutingTable(keys_));
     table_.reset(new RoutingTable(keys_, false));
     utils_.reset(new MockNetworkUtils(*table_, *ntable_, timer_));
@@ -79,6 +80,7 @@ void MessageReceived(const std::string& /*message*/) {
   std::shared_ptr<NonRoutingTable> ntable_;
   std::shared_ptr<RoutingTable> table_;
   std::shared_ptr<MockNetworkUtils> utils_;
+  std::shared_ptr<Service> service_;
   NodeInfo close_info_;
 };
 
@@ -217,7 +219,7 @@ TEST_F(MessageHandlerTest, BEH_ClientRoutingTable) {
   message.set_destination_id(keys_.identity);
   message.add_data("DATA");
   message_handler.set_message_received_functor(message_received_functor_);
-  {  // Handle node level response to this node
+  {  // Handle node level request to this node
     EXPECT_CALL(*utils_, SendToClosestNode(testing::_)).Times(1).RetiresOnSaturation();
     EXPECT_CALL(*utils_, SendToDirect(testing::_, testing::_)).Times(0);
     message.set_request(true);
@@ -228,6 +230,50 @@ TEST_F(MessageHandlerTest, BEH_ClientRoutingTable) {
                                    [this]()->bool { return messages_received_ != 0; } ));  // NOLINT
     EXPECT_EQ(messages_received_, 1);
     messages_received_ = 0;
+  }
+  {  // Handle routing FindNodes request to this node
+    EXPECT_CALL(*utils_, SendToClosestNode(testing::_)).Times(0);
+    EXPECT_CALL(*utils_, SendToDirect(testing::_, testing::_)).Times(0);
+    message.set_request(true);
+    message.set_routing_message(true);
+    message.set_direct(true);
+    message.set_client_node(true);
+    message.add_data("DATA");
+    message.set_source_id(RandomString(64));
+    message.set_destination_id(keys_.identity);
+    message.set_hops_to_live(1);
+    message.set_type(static_cast<uint32_t>(MessageType::kFindNodes));
+    message_handler.HandleMessage(message);
+  }
+  {  // Handle routing Connect request to this node
+    NodeId peer_id(NodeId::kRandomId), connection_id(NodeId::kRandomId);
+    EXPECT_CALL(*utils_, SendToClosestNode(testing::_)).Times(1).RetiresOnSaturation();
+    EXPECT_CALL(*utils_, SendToDirect(testing::_, testing::_)).Times(0);
+    protobuf::Message connect_message;
+    connect_message.set_request(true);
+    connect_message.set_routing_message(true);
+    connect_message.set_direct(true);
+    connect_message.set_client_node(true);
+    connect_message.add_data("DATA");
+    connect_message.set_source_id(RandomString(64));
+    connect_message.set_destination_id(keys_.identity);
+    connect_message.set_hops_to_live(1);
+    connect_message.set_type(static_cast<int32_t>(MessageType::kConnect));
+    message_handler.HandleMessage(connect_message);
+  }
+  {  // Handle routing Ping request to this node
+    EXPECT_CALL(*utils_, SendToClosestNode(testing::_)).Times(1).RetiresOnSaturation();
+    EXPECT_CALL(*utils_, SendToDirect(testing::_, testing::_)).Times(0);
+    message.set_request(true);
+    message.set_routing_message(true);
+    message.set_hops_to_live(1);
+    message.set_direct(true);
+    message.set_client_node(true);
+    message.add_data("DATA");
+    message.set_source_id(RandomString(64));
+    message.set_destination_id(keys_.identity);
+    message.set_type(static_cast<uint32_t>(MessageType::kPing));
+    message_handler.HandleMessage(message);
   }
 }
 

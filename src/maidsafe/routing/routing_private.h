@@ -38,7 +38,7 @@
 #include "maidsafe/routing/non_routing_table.h"
 #include "maidsafe/routing/routing_table.h"
 #include "maidsafe/routing/timer.h"
-
+#include "maidsafe/routing/service.h"
 
 namespace maidsafe {
 
