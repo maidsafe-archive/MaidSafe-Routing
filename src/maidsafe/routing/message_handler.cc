@@ -212,7 +212,6 @@ void MessageHandler::HandleGroupMessageAsClosestNode(protobuf::Message& message)
     NodeInfo node;
     if (routing_table_.GetNodeInfo(i, node)) {
       network_.SendToDirect(message, node.connection_id);
-      Sleep(boost::posix_time::milliseconds(100));                  // FIXME remove this after rudp fix
     }
   }
 
@@ -265,7 +264,7 @@ void MessageHandler::HandleMessage(protobuf::Message& message) {
     return HandleRelayRequest(message);
 
   // Invalid source id, unknown message
-  if (!(NodeId(message.source_id()).IsValid())) {
+  if (!NodeId(message.source_id()).IsValid() || NodeId(message.source_id()).Empty()) {
     LOG(kWarning) << "Stray message dropped, need valid source ID for processing."
                   << " id: " << message.id();
     return;

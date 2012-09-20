@@ -194,7 +194,9 @@ void Routing::DoJoin(const Functors& functors) {
       functors.network_status(return_value);
     return;
   }
-
+  assert((!impl_->network_.bootstrap_connection_id().Empty() &&
+          impl_->network_.bootstrap_connection_id().IsValid()) &&
+         "Bootstrap connection id must be populated by now.");
   if (impl_->anonymous_node_) {  // No need to do find node for anonymous node
     if (functors.network_status)
       functors.network_status(return_value);
@@ -213,6 +215,17 @@ int Routing::DoBootstrap() {
     LOG(kError) << "No bootstrap nodes.  Aborted join.";
     return kInvalidBootstrapContacts;
   }
+  assert(impl_->routing_table_.Size() == 0);
+  impl_->recovery_timer_.cancel();
+  impl_->setup_timer_.cancel();
+  if (!impl_->network_.bootstrap_connection_id().Empty() &&
+      impl_->network_.bootstrap_connection_id().IsValid()) {
+    LOG(kInfo) << "Removing bootstrap connection to rebootstrap. Connection id : "
+               << DebugId(impl_->network_.bootstrap_connection_id());
+    impl_->network_.Remove(impl_->network_.bootstrap_connection_id());
+    impl_->network_.clear_bootstrap_connection_info();
+  }
+
   std::weak_ptr<RoutingPrivate> impl_weak_ptr(impl_);
   return impl_->network_.Bootstrap(
       impl_->bootstrap_nodes_,
@@ -232,10 +245,12 @@ void Routing::FindClosestNode(const boost::system::error_code& error_code,
     }
     assert(!pimpl->anonymous_node_ && "Not allowed for anonymous nodes");
     if (attempts == 0) {
-      assert(!pimpl->network_.bootstrap_connection_id().Empty()
+      assert((!pimpl->network_.bootstrap_connection_id().Empty() &&
+              (pimpl->network_.bootstrap_connection_id().IsValid()))
              && "Only after bootstraping succeeds");
-      assert(!pimpl->network_.this_node_relay_connection_id().Empty() &&
-             "This should be set after bootstraping succeeds");
+      assert((!pimpl->network_.this_node_relay_connection_id().Empty() &&
+              pimpl->network_.this_node_relay_connection_id().IsValid()) &&
+             "Relay connection id should be set after bootstraping succeeds");
     } else {
       if (pimpl->routing_table_.Size() > 0) {
         // Exit the loop & start recovery loop
@@ -577,7 +592,7 @@ void Routing::ConnectionLost(const NodeId& lost_connection_id, std::weak_ptr<Rou
       LOG(kWarning) << "[" <<HexSubstr(impl_->keys_.identity) << "]"
                     << "Lost temporary connection with bootstrap node. connection id :"
                     << DebugId(lost_connection_id);
-      pimpl->network_.clear_bootstrap_connection();
+      pimpl->network_.clear_bootstrap_connection_info();
     } else {
       LOG(kWarning) << "[" <<HexSubstr(impl_->keys_.identity) << "]"
                     << "Lost connection with unknown/internal connection id "
@@ -605,6 +620,9 @@ void Routing::RemoveNode(const NodeInfo& node, const bool& internal_rudp_only) {
     LOG(kInfo) << "Routing: removed node : " << DebugId(node.node_id)
                << ". Removed internal rudp connection id : " << DebugId(node.connection_id);
     return;
+  } else {
+      LOG(kInfo) << "Routing: removed node : " << DebugId(node.node_id)
+                 << ". Removed rudp connection id : " << DebugId(node.connection_id);
   }
 
   LOG(kInfo) << "Routing: removed node : " << DebugId(node.node_id)

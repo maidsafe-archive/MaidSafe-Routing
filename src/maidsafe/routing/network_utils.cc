@@ -77,7 +77,7 @@ int NetworkUtils::Bootstrap(const std::vector<Endpoint> &bootstrap_endpoints,
                             rudp::ConnectionLostFunctor connection_lost_functor,
                             Endpoint local_endpoint) {
   assert(connection_lost_functor && "Must provide a valid functor");
-
+  assert(bootstrap_connection_id_.Empty() && "bootstrap_connection_id_ must be empty");
   std::shared_ptr<asymm::PrivateKey>
       private_key(new asymm::PrivateKey(routing_table_.kKeys().private_key));
   std::shared_ptr<asymm::PublicKey>
@@ -100,14 +100,14 @@ int NetworkUtils::Bootstrap(const std::vector<Endpoint> &bootstrap_endpoints,
                                                      nat_type_,
                                                      local_endpoint));
 //  RUDP will return a kZeroId for zero state !!
-  if (!bootstrap_connection_id_.IsValid()) {
+  if (!bootstrap_connection_id_.IsValid() || bootstrap_connection_id_.Empty()) {
     LOG(kError) << "No Online Bootstrap Node found.";
     return kNoOnlineBootstrapContacts;
   }
 
   this_node_relay_connection_id_ = routing_table_.kNodeId();
-  LOG(kVerbose) << "Bootstrap successful, bootstrap connection id - "
-                << HexSubstr(bootstrap_connection_id_.String());
+  LOG(kInfo) << "Bootstrap successful, bootstrap connection id - "
+             << HexSubstr(bootstrap_connection_id_.String());
   return kSuccess;
 }
 
@@ -170,7 +170,7 @@ void NetworkUtils::SendToDirect(const protobuf::Message& message,
 
 void NetworkUtils::SendToClosestNode(const protobuf::Message& message) {
   // Normal messages
-  if (message.has_destination_id()) {
+  if (message.has_destination_id() && !message.destination_id().empty()) {
     auto non_routing_nodes(non_routing_table_.GetNodesInfo(NodeId(message.destination_id())));
     // have the destination ID in non-routing table
     if (!non_routing_nodes.empty() && message.direct()) {
@@ -335,8 +335,10 @@ void NetworkUtils::AdjustRouteHistory(protobuf::Message& message) {
       std::vector<std::string> route_history(message.route_history().begin() + 1,
                                              message.route_history().end());
       message.clear_route_history();
-      for (auto route : route_history)
-        message.add_route_history(route);
+      for (auto route : route_history) {
+        if (NodeId(route).IsValid() && !NodeId(route).Empty())
+          message.add_route_history(route);
+      }
     }
   }
   assert(message.route_history().size() <= Parameters::max_routing_table_size);
@@ -352,7 +354,7 @@ void NetworkUtils::set_new_bootstrap_endpoint_functor(
   new_bootstrap_endpoint_ = new_bootstrap_endpoint;
 }
 
-void NetworkUtils::clear_bootstrap_connection() {
+void NetworkUtils::clear_bootstrap_connection_info() {
   bootstrap_connection_id_ = NodeId();
   this_node_relay_connection_id_ = NodeId();
 }

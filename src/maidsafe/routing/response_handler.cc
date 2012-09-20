@@ -202,16 +202,16 @@ void ResponseHandler::ConnectTo(const std::vector<std::string>& nodes,
                                    routing_table_.kNodeId(),
                                    Parameters::max_routing_table_size));
 
-  for (auto node_id : routing_table_closest_nodes)
+  for (const auto& node_id : routing_table_closest_nodes)
     closest_node_ids.push_back(node_id.String());
 
-  for (auto &node_string : closest_nodes) {
-    if (node_string.size() == 64)
+  for (const auto& node_string : closest_nodes) {
+    if (NodeId(node_string).IsValid() && !NodeId(node_string).Empty())
       closest_node_ids.push_back(node_string);
   }
 
-  for (auto &node_string : nodes) {
-    if (node_string.size() == 64)
+  for (const auto& node_string : nodes) {
+    if (NodeId(node_string).IsValid() && !NodeId(node_string).Empty())
       closest_node_ids.push_back(node_string);
   }
 
@@ -222,10 +222,16 @@ void ResponseHandler::ConnectTo(const std::vector<std::string>& nodes,
                                             NodeId(routing_table_.kKeys().identity));
             });
   auto iter(std::unique(closest_node_ids.begin(), closest_node_ids.end()));
-  auto resize = std::min(static_cast<uint16_t>(std::distance(iter, closest_node_ids.begin())),
-                          Parameters::max_routing_table_size);
+  auto resize = std::min(static_cast<uint16_t>(std::distance(closest_node_ids.begin(), iter)),
+                         Parameters::max_routing_table_size);
   if (closest_node_ids.size() > resize)
     closest_node_ids.resize(resize);
+
+  std::remove_if(closest_node_ids.begin(), closest_node_ids.end(),
+                 [=](const std::string& closet_node_id)->bool {
+                   return (!NodeId(closet_node_id).IsValid() || NodeId(closet_node_id).Empty());
+                 });
+
   if (network_.bootstrap_connection_id().Empty() && (routing_table_.Size() == 0)) {
       LOG(kWarning) << "Need to re bootstrap !";
     return;
@@ -248,12 +254,20 @@ void ResponseHandler::ConnectTo(const std::vector<std::string>& nodes,
                                                   this_endpoint_pair,
                                                   this_nat_type);
       if (kSuccess != ret_val) {
-        LOG(kError) << "Failed to get available endpoint for new connections : " << ret_val;
+        LOG(kError) << "[" << DebugId(routing_table_.kNodeId()) << "] Response Handler"
+                    << "Failed to get available endpoint for new connection to : "
+                    << HexSubstr(nodes.at(i))
+                    << "peer_endpoint_pair.external = "
+                    << peer_endpoint_pair.external
+                    << ", peer_endpoint_pair.local = "
+                    << peer_endpoint_pair.local
+                    << ". Rudp returned :"
+                    << ret_val;
         return;
       }
-      // assert((!this_endpoint_pair.external.address().is_unspecified() ||
-      //         !this_endpoint_pair.local.address().is_unspecified()) &&
-      //        "Unspecified endpoint after GetAvailableEndpoint success.");
+      assert((!this_endpoint_pair.external.address().is_unspecified() ||
+              !this_endpoint_pair.local.address().is_unspecified()) &&
+             "Unspecified endpoint after GetAvailableEndpoint success.");
       NodeId relay_connection_id;
       bool relay_message(false);
       if (send_to_bootstrap_connection) {

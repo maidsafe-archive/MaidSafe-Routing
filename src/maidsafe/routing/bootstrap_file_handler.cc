@@ -85,16 +85,25 @@ void UpdateBootstrapFile(const boost::filesystem::path& path,
   }
 
   std::vector<boost::asio::ip::udp::endpoint> bootstrap_endpoints(ReadBootstrapFile(path));
+  auto itr(std::find_if(bootstrap_endpoints.begin(),
+                        bootstrap_endpoints.end(),
+                        [endpoint](const boost::asio::ip::udp::endpoint& ep) {
+                            return ep == endpoint;
+                        }));
   if (remove) {
-    auto itr(std::find_if(bootstrap_endpoints.begin(),
-                          bootstrap_endpoints.end(),
-                          [endpoint](const boost::asio::ip::udp::endpoint& ep) {
-                              return ep == endpoint;
-                          }));
-    if (itr != bootstrap_endpoints.end())
+    if (itr != bootstrap_endpoints.end()) {
       bootstrap_endpoints.erase(itr);
+    } else {
+        LOG(kVerbose) << "Can't find endpoint to remove : " << endpoint;
+      return;
+    }
   } else {
-    bootstrap_endpoints.push_back(endpoint);
+    if (itr == bootstrap_endpoints.end()) {
+      bootstrap_endpoints.insert(bootstrap_endpoints.begin(), endpoint);
+    }  else {
+      LOG(kVerbose) << "Endpoint already in the list : " << endpoint;
+      return;
+    }
   }
 
   if (!WriteBootstrapFile(bootstrap_endpoints, path))
