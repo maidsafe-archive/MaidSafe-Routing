@@ -202,15 +202,15 @@ void ResponseHandler::ConnectTo(const std::vector<std::string>& nodes,
                                    routing_table_.kNodeId(),
                                    Parameters::max_routing_table_size));
 
-  for (auto node_id : routing_table_closest_nodes)
+  for (const auto& node_id : routing_table_closest_nodes)
     closest_node_ids.push_back(node_id.String());
 
-  for (auto &node_string : closest_nodes) {
+  for (const auto& node_string : closest_nodes) {
     if (NodeId(node_string).IsValid() && !NodeId(node_string).Empty())
       closest_node_ids.push_back(node_string);
   }
 
-  for (auto &node_string : nodes) {
+  for (const auto& node_string : nodes) {
     if (NodeId(node_string).IsValid() && !NodeId(node_string).Empty())
       closest_node_ids.push_back(node_string);
   }
@@ -222,7 +222,7 @@ void ResponseHandler::ConnectTo(const std::vector<std::string>& nodes,
                                             NodeId(routing_table_.kKeys().identity));
             });
   auto iter(std::unique(closest_node_ids.begin(), closest_node_ids.end()));
-  auto resize = std::min(static_cast<uint16_t>(std::distance(iter, closest_node_ids.begin())),
+  auto resize = std::min(static_cast<uint16_t>(std::distance(closest_node_ids.begin(), iter)),
                          Parameters::max_routing_table_size);
   if (closest_node_ids.size() > resize)
     closest_node_ids.resize(resize);
