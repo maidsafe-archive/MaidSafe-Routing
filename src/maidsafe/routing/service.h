@@ -43,9 +43,9 @@ class Service : public std::enable_shared_from_this<Service> {
           NetworkUtils& network);
   virtual ~Service();
   // Handle all incoming requests and send back reply
-  void Ping(protobuf::Message& message);
-  void Connect(protobuf::Message& message);
-  void FindNodes(protobuf::Message& message);
+  virtual void Ping(protobuf::Message& message);
+  virtual void Connect(protobuf::Message& message);
+  virtual void FindNodes(protobuf::Message& message);
   void ProxyConnect(protobuf::Message& message);
   void set_request_public_key_functor(RequestPublicKeyFunctor request_public_key);
   RequestPublicKeyFunctor request_public_key_functor() const;
