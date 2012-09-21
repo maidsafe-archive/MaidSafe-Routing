@@ -109,6 +109,7 @@ class GenericNode {
   Functors functors_;
   std::mutex mutex_;
   bool client_mode_;
+  bool anonymous_;
   bool joined_;
   int expected_;
   rudp::NatType nat_type_;
@@ -173,10 +174,13 @@ class GenericNetwork : public testing::Test {
 //    EXPECT_TRUE(ValidateRoutingTables());
   }
 
-  void AddNode(const bool& client_mode, const NodeId& node_id) {
-    NodeInfoAndPrivateKey node_info(MakeNodeInfoAndKeys());
-    if (node_id != NodeId())
-      node_info.node_info.node_id = node_id;
+  void AddNode(const bool& client_mode, const NodeId& node_id, bool anonymous = false) {
+    NodeInfoAndPrivateKey node_info;
+    if (!anonymous) {
+      node_info = MakeNodeInfoAndKeys();
+      if (node_id != NodeId())
+        node_info.node_info.node_id = node_id;
+    }
     NodePtr node(new NodeType(client_mode, node_info));
     AddNodeDetails(node);
     LOG(kVerbose) << "Node # " << nodes_.size() << " added to network";
@@ -289,11 +293,12 @@ class GenericNetwork : public testing::Test {
     std::weak_ptr<NodeType> weak_node(node);
     node->functors_.network_status = [&cond_var, weak_node](const int& result)->void {
       ASSERT_GE(result, kSuccess);
-      if (NodePtr node = weak_node.lock())
-        if ((result == node->expected()) && (!node->joined())) {
+      if (NodePtr node = weak_node.lock()) {
+        if (((result == node->expected()) && (!node->joined())) || node->anonymous_) {
           node->set_joined(true);
           cond_var.notify_one();
         }
+      }
     };
 #ifdef LOCAL_TEST
     node->Join();
@@ -301,11 +306,14 @@ class GenericNetwork : public testing::Test {
     bootstrap_endpoints_.clear();
     bootstrap_endpoints_.push_back(nodes_[1]->endpoint());
     node->Join(bootstrap_endpoints_);
+
 #endif
-    std::unique_lock<std::mutex> lock(mutex);
-    auto result = cond_var.wait_for(lock, std::chrono::seconds(20));
-    EXPECT_EQ(result, std::cv_status::no_timeout);
-    Sleep(boost::posix_time::millisec(600));
+    if (!node->joined()) {
+      std::unique_lock<std::mutex> lock(mutex);
+      auto result = cond_var.wait_for(lock, std::chrono::seconds(20));
+      EXPECT_EQ(result, std::cv_status::no_timeout);
+      Sleep(boost::posix_time::millisec(600));
+    }
     PrintRoutingTables();
   }
 

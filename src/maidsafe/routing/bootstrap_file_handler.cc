@@ -84,6 +84,11 @@ void UpdateBootstrapFile(const boost::filesystem::path& path,
     return;
   }
 
+  if (endpoint.address().is_unspecified()) {
+    LOG(kWarning) << "Invalid Endpoint" << endpoint;
+    return;
+  }
+
   std::vector<boost::asio::ip::udp::endpoint> bootstrap_endpoints(ReadBootstrapFile(path));
   auto itr(std::find_if(bootstrap_endpoints.begin(),
                         bootstrap_endpoints.end(),
