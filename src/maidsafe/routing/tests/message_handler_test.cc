@@ -18,9 +18,12 @@
 #include "maidsafe/common/node_id.h"
 
 #include "maidsafe/routing/message_handler.h"
+#include "maidsafe/routing/tests/mock_service.h"
+#include "maidsafe/routing/tests/mock_response_handler.h"
 #include "maidsafe/routing/tests/mock_network_utils.h"
 #include "maidsafe/routing/tests/test_utils.h"
 #include "maidsafe/routing/non_routing_table.h"
+#include "maidsafe/routing/parameters.h"
 #include "maidsafe/routing/routing_pb.h"
 #include "maidsafe/routing/routing_table.h"
 #include "maidsafe/routing/timer.h"
@@ -46,6 +49,7 @@ class MessageHandlerTest : public testing::Test {
         table_(),
         utils_(),
         service_(),
+        response_handler_(),
         close_info_() {
     message_received_functor_ = [this] (const std::string& message,
                                                const NodeId& /*group claim*/,
@@ -58,6 +62,8 @@ class MessageHandlerTest : public testing::Test {
     ntable_.reset(new NonRoutingTable(keys_));
     table_.reset(new RoutingTable(keys_, false));
     utils_.reset(new MockNetworkUtils(*table_, *ntable_, timer_));
+    service_.reset(new MockService(*table_, *ntable_, *utils_));
+    response_handler_.reset(new MockResponseHandler(*table_, *ntable_, *utils_));
     close_info_ = MakeNodeInfoAndKeys().node_info;
     table_->AddNode(close_info_);
   }
@@ -80,18 +86,29 @@ void MessageReceived(const std::string& /*message*/) {
   std::shared_ptr<NonRoutingTable> ntable_;
   std::shared_ptr<RoutingTable> table_;
   std::shared_ptr<MockNetworkUtils> utils_;
-  std::shared_ptr<Service> service_;
+  std::shared_ptr<MockService> service_;
+  std::shared_ptr<MockResponseHandler> response_handler_;
   NodeInfo close_info_;
 };
 
 TEST_F(MessageHandlerTest, BEH_HandleInvalidMessage) {
   MessageHandler message_handler(asio_service_, *table_, *ntable_, *utils_, timer_);
+  // Reset the service and response handler inside the message handler to be mocks
+  message_handler.service_ = service_;
+  message_handler.response_handler_ = response_handler_;
   protobuf::Message message;
   message.set_hops_to_live(1);
 
   // MessageHandler should not try to use any network operations during this test.
   EXPECT_CALL(*utils_, SendToClosestNode(testing::_)).Times(0);
   EXPECT_CALL(*utils_, SendToDirect(testing::_, testing::_)).Times(0);
+  EXPECT_CALL(*service_, FindNodes(testing::_)).Times(0);
+  EXPECT_CALL(*service_, Ping(testing::_)).Times(0);
+  EXPECT_CALL(*service_, Connect(testing::_)).Times(0);
+  EXPECT_CALL(*response_handler_, FindNodes(testing::_)).Times(0);
+  EXPECT_CALL(*response_handler_, Ping(testing::_)).Times(0);
+  EXPECT_CALL(*response_handler_, Connect(testing::_)).Times(0);
+  EXPECT_CALL(*response_handler_, ConnectSuccess(testing::_)).Times(0);
   message_handler.HandleMessage(message);  // Handle uninitialised message
   message.set_routing_message(true);
   message.set_direct(true);
@@ -104,15 +121,25 @@ TEST_F(MessageHandlerTest, BEH_HandleInvalidMessage) {
 
 TEST_F(MessageHandlerTest, BEH_HandleRelay) {
   MessageHandler message_handler(asio_service_, *table_, *ntable_, *utils_, timer_);
-  protobuf::Message message;
-  message.set_hops_to_live(1);
-  message.set_routing_message(true);
-  message.set_direct(true);
-  message.set_request(true);
-  message.set_client_node(true);
+  message_handler.service_ = service_;
+  message_handler.response_handler_ = response_handler_;
+
   {  // Handle direct relay request to self
     EXPECT_CALL(*utils_, SendToClosestNode(testing::_)).Times(0);
     EXPECT_CALL(*utils_, SendToDirect(testing::_, testing::_)).Times(0);
+    EXPECT_CALL(*service_, FindNodes(testing::_)).Times(0);
+    EXPECT_CALL(*service_, Ping(testing::_)).Times(0);
+    EXPECT_CALL(*service_, Connect(testing::_)).Times(0);
+    EXPECT_CALL(*response_handler_, FindNodes(testing::_)).Times(0);
+    EXPECT_CALL(*response_handler_, Ping(testing::_)).Times(0);
+    EXPECT_CALL(*response_handler_, Connect(testing::_)).Times(0);
+    EXPECT_CALL(*response_handler_, ConnectSuccess(testing::_)).Times(0);
+    protobuf::Message message;
+    message.set_hops_to_live(1);
+    message.set_routing_message(true);
+    message.set_direct(true);
+    message.set_request(true);
+    message.set_client_node(true);
     message.set_destination_id(table_->kKeys().identity);
     std::string relay_id(RandomString(64)), relay_connection_id(RandomString(64));
     message.set_relay_connection_id(relay_connection_id);
@@ -122,21 +149,55 @@ TEST_F(MessageHandlerTest, BEH_HandleRelay) {
   {  // Handle direct relay request to other
     EXPECT_CALL(*utils_, SendToClosestNode(testing::_)).Times(1).RetiresOnSaturation();
     EXPECT_CALL(*utils_, SendToDirect(testing::_, testing::_)).Times(0);
+    EXPECT_CALL(*service_, FindNodes(testing::_)).Times(0);
+    EXPECT_CALL(*service_, Ping(testing::_)).Times(0);
+    EXPECT_CALL(*service_, Connect(testing::_)).Times(0);
+    EXPECT_CALL(*response_handler_, FindNodes(testing::_)).Times(0);
+    EXPECT_CALL(*response_handler_, Ping(testing::_)).Times(0);
+    EXPECT_CALL(*response_handler_, Connect(testing::_)).Times(0);
+    EXPECT_CALL(*response_handler_, ConnectSuccess(testing::_)).Times(0);
+    protobuf::Message message;
+    message.set_routing_message(true);
+    message.set_direct(true);
+    message.set_request(true);
+    message.set_client_node(true);
+    std::string relay_id(RandomString(64)), relay_connection_id(RandomString(64));
+    message.set_relay_connection_id(relay_connection_id);
+    message.set_relay_id(relay_id);
     message.set_hops_to_live(1);
     message.set_destination_id(RandomString(64));
     message_handler.HandleMessage(message);
   }
   {  // Handle FindNodes on small network
-    EXPECT_CALL(*utils_, SendToClosestNode(testing::_)).Times(0);
+    EXPECT_CALL(*utils_, SendToClosestNode(testing::_)).Times(1).RetiresOnSaturation();
     EXPECT_CALL(*utils_, SendToDirect(testing::_, testing::_)).Times(0);
+    EXPECT_CALL(*service_, FindNodes(testing::_)).Times(1).RetiresOnSaturation();
+    EXPECT_CALL(*service_, Ping(testing::_)).Times(0);
+    EXPECT_CALL(*service_, Connect(testing::_)).Times(0);
+    EXPECT_CALL(*response_handler_, FindNodes(testing::_)).Times(0);
+    EXPECT_CALL(*response_handler_, Ping(testing::_)).Times(0);
+    EXPECT_CALL(*response_handler_, Connect(testing::_)).Times(0);
+    EXPECT_CALL(*response_handler_, ConnectSuccess(testing::_)).Times(0);
+    protobuf::Message message;
+    message.set_destination_id(table_->kKeys().identity);
+    message.set_routing_message(true);
+    message.set_direct(true);
+    message.set_request(true);
+    message.set_client_node(true);
+    std::string relay_id(RandomString(64)), relay_connection_id(RandomString(64));
+    message.set_relay_connection_id(relay_connection_id);
+    message.set_relay_id(relay_id);
     message.set_type(static_cast<uint32_t>(MessageType::kFindNodes));
     message.set_hops_to_live(1);
+    message.set_destination_id(RandomString(64));
     message_handler.HandleMessage(message);
   }
 }
 
 TEST_F(MessageHandlerTest, BEH_HandleGroupMessage) {
   MessageHandler message_handler(asio_service_, *table_, *ntable_, *utils_, timer_);
+  message_handler.service_ = service_;
+  message_handler.response_handler_ = response_handler_;
   protobuf::Message message;
   message.set_hops_to_live(1);
   message.set_routing_message(true);
@@ -146,6 +207,13 @@ TEST_F(MessageHandlerTest, BEH_HandleGroupMessage) {
   {  // Handle group message to self
     EXPECT_CALL(*utils_, SendToClosestNode(testing::_)).Times(1).RetiresOnSaturation();
     EXPECT_CALL(*utils_, SendToDirect(testing::_, testing::_)).Times(0);
+    EXPECT_CALL(*service_, FindNodes(testing::_)).Times(0);
+    EXPECT_CALL(*service_, Ping(testing::_)).Times(0);
+    EXPECT_CALL(*service_, Connect(testing::_)).Times(0);
+    EXPECT_CALL(*response_handler_, FindNodes(testing::_)).Times(0);
+    EXPECT_CALL(*response_handler_, Ping(testing::_)).Times(0);
+    EXPECT_CALL(*response_handler_, Connect(testing::_)).Times(0);
+    EXPECT_CALL(*response_handler_, ConnectSuccess(testing::_)).Times(0);
     message.set_source_id(table_->kKeys().identity);
     message.set_destination_id(table_->kKeys().identity);
     message_handler.HandleMessage(message);
@@ -155,8 +223,19 @@ TEST_F(MessageHandlerTest, BEH_HandleGroupMessage) {
       NodeInfo node_info = MakeNodeInfoAndKeys().node_info;
       table_->AddNode(node_info);
     }
+    if (!table_->IsConnected(close_info_.node_id)) {
+      LOG(kError) << "Re-adding close_info_";
+      table_->AddNode(close_info_);
+    }
     EXPECT_CALL(*utils_, SendToClosestNode(testing::_)).Times(0);
     EXPECT_CALL(*utils_, SendToDirect(testing::_, testing::_)).Times(3).RetiresOnSaturation();
+    EXPECT_CALL(*service_, FindNodes(testing::_)).Times(0);
+    EXPECT_CALL(*service_, Ping(testing::_)).Times(0);
+    EXPECT_CALL(*service_, Connect(testing::_)).Times(0);
+    EXPECT_CALL(*response_handler_, FindNodes(testing::_)).Times(0);
+    EXPECT_CALL(*response_handler_, Ping(testing::_)).Times(0);
+    EXPECT_CALL(*response_handler_, Connect(testing::_)).Times(0);
+    EXPECT_CALL(*response_handler_, ConnectSuccess(testing::_)).Times(0);
     message.set_hops_to_live(1);
     message.set_replication(4);
     message.set_source_id(RandomString(64));
@@ -166,14 +245,39 @@ TEST_F(MessageHandlerTest, BEH_HandleGroupMessage) {
   {  // Handle group message to node not in routing table's closest
     EXPECT_CALL(*utils_, SendToClosestNode(testing::_)).Times(1).RetiresOnSaturation();
     EXPECT_CALL(*utils_, SendToDirect(testing::_, testing::_)).Times(0);
+    EXPECT_CALL(*service_, FindNodes(testing::_)).Times(0);
+    EXPECT_CALL(*service_, Ping(testing::_)).Times(0);
+    EXPECT_CALL(*service_, Connect(testing::_)).Times(0);
+    EXPECT_CALL(*response_handler_, FindNodes(testing::_)).Times(0);
+    EXPECT_CALL(*response_handler_, Ping(testing::_)).Times(0);
+    EXPECT_CALL(*response_handler_, Connect(testing::_)).Times(0);
+    EXPECT_CALL(*response_handler_, ConnectSuccess(testing::_)).Times(0);
     message.set_hops_to_live(1);
-    message.set_destination_id(RandomString(64));
+    NodeId destination_id(GenerateUniqueRandomId(close_info_.node_id, 4));
+    message.set_destination_id(destination_id.String());
+    message_handler.HandleMessage(message);
+  }
+  {  // Handle group message to node closest to us, but not in routing table
+    EXPECT_CALL(*utils_, SendToClosestNode(testing::_)).Times(0);
+    EXPECT_CALL(*utils_, SendToDirect(testing::_, testing::_)).Times(0);
+    EXPECT_CALL(*service_, FindNodes(testing::_)).Times(0);
+    EXPECT_CALL(*service_, Ping(testing::_)).Times(0);
+    EXPECT_CALL(*service_, Connect(testing::_)).Times(0);
+    EXPECT_CALL(*response_handler_, FindNodes(testing::_)).Times(0);
+    EXPECT_CALL(*response_handler_, Ping(testing::_)).Times(0);
+    EXPECT_CALL(*response_handler_, Connect(testing::_)).Times(0);
+    EXPECT_CALL(*response_handler_, ConnectSuccess(testing::_)).Times(0);
+    message.set_hops_to_live(1);
+    NodeId destination_id(GenerateUniqueRandomId(NodeId(table_->kKeys().identity), 4));
+    message.set_destination_id(destination_id.String());
     message_handler.HandleMessage(message);
   }
 }
 
 TEST_F(MessageHandlerTest, BEH_HandleNodeLevelMessage) {
   MessageHandler message_handler(asio_service_, *table_, *ntable_, *utils_, timer_);
+  message_handler.service_ = service_;
+  message_handler.response_handler_ = response_handler_;
   protobuf::Message message;
   message.set_hops_to_live(1);
   message.set_routing_message(false);
@@ -186,6 +290,13 @@ TEST_F(MessageHandlerTest, BEH_HandleNodeLevelMessage) {
   {  // Handle node level request to this node
     EXPECT_CALL(*utils_, SendToClosestNode(testing::_)).Times(1).RetiresOnSaturation();
     EXPECT_CALL(*utils_, SendToDirect(testing::_, testing::_)).Times(0);
+    EXPECT_CALL(*service_, FindNodes(testing::_)).Times(0);
+    EXPECT_CALL(*service_, Ping(testing::_)).Times(0);
+    EXPECT_CALL(*service_, Connect(testing::_)).Times(0);
+    EXPECT_CALL(*response_handler_, FindNodes(testing::_)).Times(0);
+    EXPECT_CALL(*response_handler_, Ping(testing::_)).Times(0);
+    EXPECT_CALL(*response_handler_, Connect(testing::_)).Times(0);
+    EXPECT_CALL(*response_handler_, ConnectSuccess(testing::_)).Times(0);
     message.set_destination_id(keys_.identity);
     message.add_data("DATA");
     message_handler.set_message_received_functor(message_received_functor_);
@@ -200,6 +311,13 @@ TEST_F(MessageHandlerTest, BEH_HandleNodeLevelMessage) {
   {  // Handle node level response to this node
     EXPECT_CALL(*utils_, SendToClosestNode(testing::_)).Times(0);
     EXPECT_CALL(*utils_, SendToDirect(testing::_, testing::_)).Times(0);
+    EXPECT_CALL(*service_, FindNodes(testing::_)).Times(0);
+    EXPECT_CALL(*service_, Ping(testing::_)).Times(0);
+    EXPECT_CALL(*service_, Connect(testing::_)).Times(0);
+    EXPECT_CALL(*response_handler_, FindNodes(testing::_)).Times(0);
+    EXPECT_CALL(*response_handler_, Ping(testing::_)).Times(0);
+    EXPECT_CALL(*response_handler_, Connect(testing::_)).Times(0);
+    EXPECT_CALL(*response_handler_, ConnectSuccess(testing::_)).Times(0);
     message.set_hops_to_live(1);
     message.set_request(false);
     message_handler.HandleMessage(message);
@@ -210,6 +328,8 @@ TEST_F(MessageHandlerTest, BEH_ClientRoutingTable) {
   table_.reset(new RoutingTable(keys_, true));
   table_->AddNode(close_info_);
   MessageHandler message_handler(asio_service_, *table_, *ntable_, *utils_, timer_);
+  message_handler.service_ = service_;
+  message_handler.response_handler_ = response_handler_;
   protobuf::Message message;
   message.set_hops_to_live(2);
   message.set_routing_message(false);
@@ -222,6 +342,13 @@ TEST_F(MessageHandlerTest, BEH_ClientRoutingTable) {
   {  // Handle node level request to this node
     EXPECT_CALL(*utils_, SendToClosestNode(testing::_)).Times(1).RetiresOnSaturation();
     EXPECT_CALL(*utils_, SendToDirect(testing::_, testing::_)).Times(0);
+    EXPECT_CALL(*service_, FindNodes(testing::_)).Times(0);
+    EXPECT_CALL(*service_, Ping(testing::_)).Times(0);
+    EXPECT_CALL(*service_, Connect(testing::_)).Times(0);
+    EXPECT_CALL(*response_handler_, FindNodes(testing::_)).Times(0);
+    EXPECT_CALL(*response_handler_, Ping(testing::_)).Times(0);
+    EXPECT_CALL(*response_handler_, Connect(testing::_)).Times(0);
+    EXPECT_CALL(*response_handler_, ConnectSuccess(testing::_)).Times(0);
     message.set_request(true);
     message_handler.HandleMessage(message);
     std::unique_lock<std::mutex> lock(mutex_);
@@ -232,8 +359,15 @@ TEST_F(MessageHandlerTest, BEH_ClientRoutingTable) {
     messages_received_ = 0;
   }
   {  // Handle routing FindNodes request to this node
-    EXPECT_CALL(*utils_, SendToClosestNode(testing::_)).Times(0);
+    EXPECT_CALL(*utils_, SendToClosestNode(testing::_)).Times(1).RetiresOnSaturation();
     EXPECT_CALL(*utils_, SendToDirect(testing::_, testing::_)).Times(0);
+    EXPECT_CALL(*service_, FindNodes(testing::_)).Times(1).RetiresOnSaturation();
+    EXPECT_CALL(*service_, Ping(testing::_)).Times(0);
+    EXPECT_CALL(*service_, Connect(testing::_)).Times(0);
+    EXPECT_CALL(*response_handler_, FindNodes(testing::_)).Times(0);
+    EXPECT_CALL(*response_handler_, Ping(testing::_)).Times(0);
+    EXPECT_CALL(*response_handler_, Connect(testing::_)).Times(0);
+    EXPECT_CALL(*response_handler_, ConnectSuccess(testing::_)).Times(0);
     message.set_request(true);
     message.set_routing_message(true);
     message.set_direct(true);
@@ -249,6 +383,13 @@ TEST_F(MessageHandlerTest, BEH_ClientRoutingTable) {
     NodeId peer_id(NodeId::kRandomId), connection_id(NodeId::kRandomId);
     EXPECT_CALL(*utils_, SendToClosestNode(testing::_)).Times(1).RetiresOnSaturation();
     EXPECT_CALL(*utils_, SendToDirect(testing::_, testing::_)).Times(0);
+    EXPECT_CALL(*service_, FindNodes(testing::_)).Times(0);
+    EXPECT_CALL(*service_, Ping(testing::_)).Times(0);
+    EXPECT_CALL(*service_, Connect(testing::_)).Times(1).RetiresOnSaturation();
+    EXPECT_CALL(*response_handler_, FindNodes(testing::_)).Times(0);
+    EXPECT_CALL(*response_handler_, Ping(testing::_)).Times(0);
+    EXPECT_CALL(*response_handler_, Connect(testing::_)).Times(0);
+    EXPECT_CALL(*response_handler_, ConnectSuccess(testing::_)).Times(0);
     protobuf::Message connect_message;
     connect_message.set_request(true);
     connect_message.set_routing_message(true);
@@ -258,12 +399,19 @@ TEST_F(MessageHandlerTest, BEH_ClientRoutingTable) {
     connect_message.set_source_id(RandomString(64));
     connect_message.set_destination_id(keys_.identity);
     connect_message.set_hops_to_live(1);
-    connect_message.set_type(static_cast<int32_t>(MessageType::kConnect));
+    connect_message.set_type(static_cast<uint32_t>(MessageType::kConnect));
     message_handler.HandleMessage(connect_message);
   }
   {  // Handle routing Ping request to this node
     EXPECT_CALL(*utils_, SendToClosestNode(testing::_)).Times(1).RetiresOnSaturation();
     EXPECT_CALL(*utils_, SendToDirect(testing::_, testing::_)).Times(0);
+    EXPECT_CALL(*service_, FindNodes(testing::_)).Times(0);
+    EXPECT_CALL(*service_, Ping(testing::_)).Times(1).RetiresOnSaturation();
+    EXPECT_CALL(*service_, Connect(testing::_)).Times(0);
+    EXPECT_CALL(*response_handler_, FindNodes(testing::_)).Times(0);
+    EXPECT_CALL(*response_handler_, Ping(testing::_)).Times(0);
+    EXPECT_CALL(*response_handler_, Connect(testing::_)).Times(0);
+    EXPECT_CALL(*response_handler_, ConnectSuccess(testing::_)).Times(0);
     message.set_request(true);
     message.set_routing_message(true);
     message.set_hops_to_live(1);

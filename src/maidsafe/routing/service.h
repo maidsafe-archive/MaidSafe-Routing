@@ -55,19 +55,6 @@ class Service : public std::enable_shared_from_this<Service> {
   NonRoutingTable& non_routing_table_;
   NetworkUtils& network_;
   RequestPublicKeyFunctor request_public_key_functor_;
-
-/*void Ping(RoutingTable& routing_table, protobuf::Message& message);
-
-void Connect(RoutingTable& routing_table,
-             NonRoutingTable& non_routing_table,
-             NetworkUtils& network,
-             protobuf::Message& message,
-             RequestPublicKeyFunctor request_public_key_functor);
-
-void FindNodes(RoutingTable& routing_table, protobuf::Message& message);
-
-void ProxyConnect(RoutingTable& routing_table, NetworkUtils& network, protobuf::Message& message);
-*/
 };
 
 }  // namespace routing

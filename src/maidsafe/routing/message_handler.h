@@ -29,7 +29,14 @@ namespace routing {
 
 namespace protobuf { class Message; }
 
-namespace test { class MessageHandlerTest; }
+namespace test {
+  class MessageHandlerTest;
+  class MessageHandlerTest_BEH_HandleInvalidMessage_Test;
+  class MessageHandlerTest_BEH_HandleRelay_Test;
+  class MessageHandlerTest_BEH_HandleGroupMessage_Test;
+  class MessageHandlerTest_BEH_HandleNodeLevelMessage_Test;
+  class MessageHandlerTest_BEH_ClientRoutingTable_Test;
+}
 
 class NetworkUtils;
 class NonRoutingTable;
@@ -81,6 +88,11 @@ class MessageHandler {
 //  bool CheckAndSendToLocalClients(protobuf::Message& message);
 
   friend class test::MessageHandlerTest;
+  friend class test::MessageHandlerTest_BEH_HandleInvalidMessage_Test;
+  friend class test::MessageHandlerTest_BEH_HandleRelay_Test;
+  friend class test::MessageHandlerTest_BEH_HandleGroupMessage_Test;
+  friend class test::MessageHandlerTest_BEH_HandleNodeLevelMessage_Test;
+  friend class test::MessageHandlerTest_BEH_ClientRoutingTable_Test;
 
   AsioService& asio_service_;
   RoutingTable& routing_table_;
