@@ -60,7 +60,7 @@ TaskId Timer::AddTask(const boost::posix_time::time_duration& timeout,
   tasks_.back()->timer.async_wait([this, task_id](const boost::system::error_code& error) {
     ExecuteTask(task_id, error);
   });
-  LOG(kVerbose) << "AddTask added a task, with id " << task_id;
+  LOG(kInfo) << "AddTask added a task, with id " << task_id;
   return task_id;
 }
 
@@ -146,9 +146,9 @@ void Timer::AddResponse(const protobuf::Message& response) {
     LOG(kVerbose) << "Executing task " << response.id();
     (*itr)->timer.cancel();
   } else {
-    LOG(kVerbose) << "Received " << (*itr)->responses.size() << " response(s). Waiting for "
-                  << ((*itr)->expected_response_count - (*itr)->responses.size())
-                  << " responses for task " << response.id();
+    LOG(kInfo) << "Received " << (*itr)->responses.size() << " response(s). Waiting for "
+               << ((*itr)->expected_response_count - (*itr)->responses.size())
+               << " responses for task " << response.id();
   }
 }
 
