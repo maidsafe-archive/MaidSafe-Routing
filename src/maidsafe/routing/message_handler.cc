@@ -307,20 +307,105 @@ void MessageHandler::HandleRelayRequest(protobuf::Message& message) {
   if ((message.destination_id() == routing_table_.kKeys().identity) && IsRequest(message)) {
     LOG(kVerbose) << "Relay request with this node's ID as destination ID"
                   << " id: " << message.id();
-    return HandleMessageForThisNode(message);
+    // If group message request to this node's id sent by relay requester node
+    if ((message.destination_id() == routing_table_.kKeys().identity) &&
+        message.request() && !message.direct()) {
+      message.set_source_id(routing_table_.kKeys().identity);
+      return HandleGroupMessageToSelfId(message);
+    } else {
+      return HandleMessageForThisNode(message);
+    }
   }
 
-  // If small network yet, this node may be closest.
-  if ((routing_table_.Size() <= Parameters::closest_nodes_size) &&
-      (message.type() == static_cast<int32_t>(MessageType::kFindNodes) &&
-                                              message.request())) {
-    service_->FindNodes(message);
-    return network_.SendToClosestNode(message);
+  // This node may be closest for group messages.
+  if (message.request() && routing_table_.IsThisNodeClosestTo(NodeId(message.destination_id()))) {
+    if (message.direct()) {
+      return HandleDirectRelayRequestMessageAsClosestNode(message);
+    } else {
+      return HandleGroupRelayRequestMessageAsClosestNode(message);
+    }
   }
 
   // This node is now the src ID for the relay message and will send back response to original node.
   message.set_source_id(routing_table_.kKeys().identity);
   network_.SendToClosestNode(message);
+}
+
+void MessageHandler::HandleDirectRelayRequestMessageAsClosestNode(protobuf::Message& message) {
+  assert(message.direct());
+  // Dropping direct messages if this node is closest and destination node is not in routing_table_
+  // or non_routing_table_.
+  NodeId destination_node_id(message.destination_id());
+  if (routing_table_.IsThisNodeClosestTo(destination_node_id)) {
+    if (routing_table_.IsConnected(destination_node_id) ||
+      non_routing_table_.IsConnected(destination_node_id)) {
+      message.set_source_id(routing_table_.kKeys().identity);
+      return network_.SendToClosestNode(message);
+    } else {
+      LOG(kWarning) << "Dropping message. This node ["
+                    << HexSubstr(routing_table_.kKeys().identity)
+                    << "] is the closest but is not connected to destination node ["
+                    << HexSubstr(message.destination_id()) << "], Src ID: "
+                    << HexSubstr(message.source_id())
+                    << ", Relay ID: " << HexSubstr(message.relay_id()) << " id: " << message.id()
+                    << PrintMessage(message);
+      return;
+    }
+  } else {
+    return network_.SendToClosestNode(message);
+  }
+}
+
+void MessageHandler::HandleGroupRelayRequestMessageAsClosestNode(protobuf::Message& message) {
+  assert(!message.direct());
+  bool have_node_with_group_id(routing_table_.IsConnected(NodeId(message.destination_id())));
+  // This node is not closest to the destination node for non-direct message.
+  if (!routing_table_.IsThisNodeClosestTo(NodeId(message.destination_id()), !IsDirect(message)) &&
+      !have_node_with_group_id) {
+    LOG(kInfo) << "This node is not closest, passing it on." << " id: " << message.id();
+    message.set_source_id(routing_table_.kKeys().identity);
+    return network_.SendToClosestNode(message);
+  }
+
+  // This node is closest so will send to all replicant nodes
+  uint16_t replication(static_cast<uint16_t>(message.replication()));
+  if ((replication < 1) || (replication > Parameters::node_group_size)) {
+    LOG(kError) << "Dropping invalid non-direct message." << " id: " << message.id();
+    return;
+  }
+
+  --replication;  // This node will be one of the group member.
+  message.set_direct(true);
+  if (have_node_with_group_id)
+    ++replication;
+  auto close(routing_table_.GetClosestNodes(NodeId(message.destination_id()), replication));
+
+  if (have_node_with_group_id)
+    close.erase(close.begin());
+  std::string group_id(message.destination_id());
+  std::string group_members("[" + DebugId(routing_table_.kNodeId()) + "]");
+
+  for (auto i : close)
+    group_members+=std::string("[" + DebugId(i) +"]");
+  LOG(kInfo) << "Group members for group_id " << HexSubstr(group_id) << " are: "
+             << group_members;
+  message.set_source_id(routing_table_.kKeys().identity);  // This node relays back the responses
+  for (auto i : close) {
+    LOG(kInfo) << "Replicating message to : " << HexSubstr(i.String())
+               << " [ group_id : " << HexSubstr(group_id)  << "]" << " id: " << message.id();
+    message.set_destination_id(i.String());
+    NodeInfo node;
+    if (routing_table_.GetNodeInfo(i, node)) {
+      network_.SendToDirect(message, node.connection_id);
+    }
+  }
+
+  message.set_destination_id(routing_table_.kKeys().identity);
+  message.clear_source_id();
+  if (IsRoutingMessage(message))
+    HandleRoutingMessage(message);
+  else
+    HandleNodeLevelMessageForThisNode(message);
 }
 
 // Special case when response of a relay comes through an alternative route.

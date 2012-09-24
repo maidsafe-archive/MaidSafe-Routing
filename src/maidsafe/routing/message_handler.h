@@ -85,6 +85,8 @@ class MessageHandler {
   void HandleClientMessage(protobuf::Message& message);
   void DecreamentHopsToLive(protobuf::Message& message);
   void HandleMessageForNonRoutingNodes(protobuf::Message& message);
+  void HandleDirectRelayRequestMessageAsClosestNode(protobuf::Message& message);
+  void HandleGroupRelayRequestMessageAsClosestNode(protobuf::Message& message);
 //  bool CheckAndSendToLocalClients(protobuf::Message& message);
 
   friend class test::MessageHandlerTest;
