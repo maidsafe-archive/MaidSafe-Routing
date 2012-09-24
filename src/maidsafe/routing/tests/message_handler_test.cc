@@ -146,7 +146,7 @@ TEST_F(MessageHandlerTest, BEH_HandleRelay) {
     message.set_relay_id(relay_id);
     message_handler.HandleMessage(message);
   }
-  {  // Handle direct relay request to other
+  {  // Handle direct relay request to other not in routing table
     EXPECT_CALL(*utils_, SendToClosestNode(testing::_)).Times(1).RetiresOnSaturation();
     EXPECT_CALL(*utils_, SendToDirect(testing::_, testing::_)).Times(0);
     EXPECT_CALL(*service_, FindNodes(testing::_)).Times(0);
@@ -165,13 +165,14 @@ TEST_F(MessageHandlerTest, BEH_HandleRelay) {
     message.set_relay_connection_id(relay_connection_id);
     message.set_relay_id(relay_id);
     message.set_hops_to_live(1);
-    message.set_destination_id(RandomString(64));
+    NodeId destination_id(GenerateUniqueRandomId(close_info_.node_id, 4));
+    message.set_destination_id(destination_id.String());
     message_handler.HandleMessage(message);
   }
-  {  // Handle FindNodes on small network
+  {  // Handle direct relay request to other in routing table
     EXPECT_CALL(*utils_, SendToClosestNode(testing::_)).Times(1).RetiresOnSaturation();
     EXPECT_CALL(*utils_, SendToDirect(testing::_, testing::_)).Times(0);
-    EXPECT_CALL(*service_, FindNodes(testing::_)).Times(1).RetiresOnSaturation();
+    EXPECT_CALL(*service_, FindNodes(testing::_)).Times(0);
     EXPECT_CALL(*service_, Ping(testing::_)).Times(0);
     EXPECT_CALL(*service_, Connect(testing::_)).Times(0);
     EXPECT_CALL(*response_handler_, FindNodes(testing::_)).Times(0);
@@ -179,7 +180,6 @@ TEST_F(MessageHandlerTest, BEH_HandleRelay) {
     EXPECT_CALL(*response_handler_, Connect(testing::_)).Times(0);
     EXPECT_CALL(*response_handler_, ConnectSuccess(testing::_)).Times(0);
     protobuf::Message message;
-    message.set_destination_id(table_->kKeys().identity);
     message.set_routing_message(true);
     message.set_direct(true);
     message.set_request(true);
@@ -187,9 +187,8 @@ TEST_F(MessageHandlerTest, BEH_HandleRelay) {
     std::string relay_id(RandomString(64)), relay_connection_id(RandomString(64));
     message.set_relay_connection_id(relay_connection_id);
     message.set_relay_id(relay_id);
-    message.set_type(static_cast<uint32_t>(MessageType::kFindNodes));
     message.set_hops_to_live(1);
-    message.set_destination_id(RandomString(64));
+    message.set_destination_id(close_info_.node_id.String());
     message_handler.HandleMessage(message);
   }
 }
