@@ -33,7 +33,7 @@ typedef boost::asio::ip::udp::endpoint Endpoint;
 #endif
 
 RoutingPrivate::RoutingPrivate(const asymm::Keys& keys, bool client_mode)
-    : asio_service_(1),
+    : asio_service_(2),
       bootstrap_nodes_(),
       keys_([&keys]()->asymm::Keys {
           if (!keys.identity.empty())

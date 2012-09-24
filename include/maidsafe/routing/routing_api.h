@@ -109,9 +109,12 @@ class Routing {
   void ReSendFindNodeRequest(const boost::system::error_code& error_code,
                              std::weak_ptr<RoutingPrivate> impl,
                              bool ignore_size = false);
-  void ReceiveMessage(const std::string& message, std::weak_ptr<RoutingPrivate> impl);
-  void ConnectionLost(const NodeId& lost_connection_id,
-                      std::weak_ptr<RoutingPrivate> impl);
+  void OnMessageReceived(const std::string& message, std::weak_ptr<RoutingPrivate> impl);
+  void DoOnMessageReceived(const std::string& message, std::weak_ptr<RoutingPrivate> impl);
+  void OnConnectionLost(const NodeId& lost_connection_id,
+                        std::weak_ptr<RoutingPrivate> impl);
+  void DoOnConnectionLost(const NodeId& lost_connection_id,
+                          std::weak_ptr<RoutingPrivate> impl);
   void RemoveNode(const NodeInfo& node, const bool& internal_rudp_only);
   // Confirm (if we can) two nodes are within a group range.  For small networks or new node on
   // network, this function may yield many false negatives.  In the case of a negative, actual

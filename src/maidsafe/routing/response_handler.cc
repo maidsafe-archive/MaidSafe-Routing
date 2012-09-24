@@ -202,15 +202,15 @@ void ResponseHandler::ConnectTo(const std::vector<std::string>& nodes,
                                    routing_table_.kNodeId(),
                                    Parameters::max_routing_table_size));
 
-  for (const auto& node_id : routing_table_closest_nodes)
+  for (const NodeId& node_id : routing_table_closest_nodes)
     closest_node_ids.push_back(node_id.String());
 
-  for (const auto& node_string : closest_nodes) {
+  for (const std::string& node_string : closest_nodes) {
     if (NodeId(node_string).IsValid() && !NodeId(node_string).Empty())
       closest_node_ids.push_back(node_string);
   }
 
-  for (const auto& node_string : nodes) {
+  for (const std::string& node_string : nodes) {
     if (NodeId(node_string).IsValid() && !NodeId(node_string).Empty())
       closest_node_ids.push_back(node_string);
   }
