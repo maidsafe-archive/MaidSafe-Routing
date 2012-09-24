@@ -593,6 +593,14 @@ void Routing::ConnectionLost(const NodeId& lost_connection_id, std::weak_ptr<Rou
                     << "Lost temporary connection with bootstrap node. connection id :"
                     << DebugId(lost_connection_id);
       pimpl->network_.clear_bootstrap_connection_info();
+      if (pimpl->anonymous_node_) {
+        LOG(kError) << "Anonymous Session Ended, Send not allowed anymore";
+        impl_->functors_.network_status(kAnonymousSessionEnded);
+        return;
+      }
+
+      if (pimpl->routing_table_.Size() == 0)
+        resend = true;  // This will trigger rebootstrap
     } else {
       LOG(kWarning) << "[" <<HexSubstr(impl_->keys_.identity) << "]"
                     << "Lost connection with unknown/internal connection id "
