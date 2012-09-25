@@ -82,12 +82,16 @@ NodeId GenerateUniqueRandomId(const NodeId& holder, const uint16_t& pos) {
   NodeId new_node;
   std::string new_node_string;
   // generate a random ID and make sure it has not been generated previously
-  new_node = NodeId(NodeId::kRandomId);
-  std::string new_id = new_node.ToStringEncoded(NodeId::kBinary);
-  std::bitset<64*8> binary_bitset(new_id);
-  for (uint16_t i(0); i < pos; ++i)
-    holder_id_binary_bitset[i] = binary_bitset[i];
-  new_node_string = holder_id_binary_bitset.to_string();
+  while (new_node_string == "" || new_node_string == holder_id) {
+    new_node = NodeId(NodeId::kRandomId);
+    std::string new_id = new_node.ToStringEncoded(NodeId::kBinary);
+    std::bitset<64*8> binary_bitset(new_id);
+    for (uint16_t i(0); i < pos; ++i)
+      holder_id_binary_bitset[i] = binary_bitset[i];
+    new_node_string = holder_id_binary_bitset.to_string();
+    if (pos == 0)
+      break;
+  }
   new_node = NodeId(new_node_string, NodeId::kBinary);
   return new_node;
 }
