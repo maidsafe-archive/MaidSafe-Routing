@@ -230,8 +230,8 @@ int Routing::DoBootstrap() {
   return impl_->network_.Bootstrap(
       impl_->bootstrap_nodes_,
       impl_->client_mode_,
-      [=](const std::string& message) { ReceiveMessage(message, impl_weak_ptr); },
-      [=](const NodeId& lost_connection_id) { ConnectionLost(lost_connection_id, impl_weak_ptr);});  // NOLINT
+      [=](const std::string& message) { OnMessageReceived(message, impl_weak_ptr); },
+      [=](const NodeId& lost_connection_id) { OnConnectionLost(lost_connection_id, impl_weak_ptr);});  // NOLINT
 }
 
 void Routing::FindClosestNode(const boost::system::error_code& error_code,
@@ -331,8 +331,8 @@ int Routing::ZeroStateJoin(Functors functors,
   int result(impl_->network_.Bootstrap(
       impl_->bootstrap_nodes_,
       impl_->client_mode_,
-      [=](const std::string& message) { ReceiveMessage(message, impl_weak_ptr); },
-      [=](const NodeId& lost_connection_id) { ConnectionLost(lost_connection_id, impl_weak_ptr); },
+      [=](const std::string& message) { OnMessageReceived(message, impl_weak_ptr); },
+      [=](const NodeId& lost_connection_id) { OnConnectionLost(lost_connection_id, impl_weak_ptr); },
       local_endpoint));
 
   if (result != kSuccess) {
@@ -487,11 +487,22 @@ void Routing::Send(const NodeId& destination_id,
     impl_->network_.SendToClosestNode(proto_message);
   } else {
     LOG(kInfo) << "Sending request to self";
-    ReceiveMessage(proto_message.SerializeAsString(), impl_);
+    OnMessageReceived(proto_message.SerializeAsString(), impl_);
   }
 }
 
-void Routing::ReceiveMessage(const std::string& message, std::weak_ptr<RoutingPrivate> impl) {
+void Routing::OnMessageReceived(const std::string& message, std::weak_ptr<RoutingPrivate> impl) {
+  std::shared_ptr<RoutingPrivate> pimpl = impl.lock();
+  if (!pimpl) {
+    LOG(kVerbose) << "Ignoring message received since this node is shutting down";
+    return;
+  }
+  pimpl->asio_service_.service().post([=]() {
+                                        DoOnMessageReceived(message, impl);
+                                      });
+}
+
+void Routing::DoOnMessageReceived(const std::string& message, std::weak_ptr<RoutingPrivate> impl) {
   std::shared_ptr<RoutingPrivate> pimpl = impl.lock();
   if (!pimpl) {
     LOG(kVerbose) << "Ignoring message received since this node is shutting down";
@@ -556,7 +567,20 @@ void Routing::AddExistingRandomNode(NodeId node, std::weak_ptr<RoutingPrivate> i
   }
 }
 
-void Routing::ConnectionLost(const NodeId& lost_connection_id, std::weak_ptr<RoutingPrivate> impl) {
+void Routing::OnConnectionLost(const NodeId& lost_connection_id,
+                                 std::weak_ptr<RoutingPrivate> impl) {
+  std::shared_ptr<RoutingPrivate> pimpl = impl.lock();
+  if (!pimpl) {
+    LOG(kVerbose) << "Ignoring connection lost callback since this node is shutting down";
+    return;
+  }
+  pimpl->asio_service_.service().post([=]() {
+                                        DoOnConnectionLost(lost_connection_id, impl);
+                                      });
+}
+
+void Routing::DoOnConnectionLost(const NodeId& lost_connection_id,
+                                 std::weak_ptr<RoutingPrivate> impl) {
   std::shared_ptr<RoutingPrivate> pimpl = impl.lock();
   if (!pimpl) {
     LOG(kVerbose) << "Ignoring connection lost callback since this node is shutting down";
@@ -593,6 +617,15 @@ void Routing::ConnectionLost(const NodeId& lost_connection_id, std::weak_ptr<Rou
                     << "Lost temporary connection with bootstrap node. connection id :"
                     << DebugId(lost_connection_id);
       pimpl->network_.clear_bootstrap_connection_info();
+      if (pimpl->anonymous_node_) {
+        LOG(kError) << "Anonymous Session Ended, Send not allowed anymore";
+        impl_->functors_.network_status(kAnonymousSessionEnded);
+        // TODO(Prakash) cancell all pending tasks
+        return;
+      }
+
+      if (pimpl->routing_table_.Size() == 0)
+        resend = true;  // This will trigger rebootstrap
     } else {
       LOG(kWarning) << "[" <<HexSubstr(impl_->keys_.identity) << "]"
                     << "Lost connection with unknown/internal connection id "
