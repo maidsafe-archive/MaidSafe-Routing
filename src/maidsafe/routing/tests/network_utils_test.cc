@@ -88,7 +88,7 @@ TEST(NetworkUtilsTest, BEH_ProcessSendUnavailableDirectEndpoint) {
   AsioService asio_service(0);
   Timer timer(asio_service);
   NetworkUtils network(routing_table, non_routing_table, timer);
-  network.SendToDirect(message, NodeId(NodeId::kRandomId));
+  network.SendToDirect(message, NodeId(NodeId::kRandomId), NodeId(NodeId::kRandomId));
 }
 
 TEST(NetworkUtilsTest, FUNC_ProcessSendDirectEndpoint) {
@@ -212,7 +212,6 @@ TEST(NetworkUtilsTest, FUNC_ProcessSendDirectEndpoint) {
 
   std::vector<Endpoint> bootstrap_endpoint(1, endpoint2);
   EXPECT_EQ(kSuccess, network.Bootstrap(bootstrap_endpoint,
-                                        false,
                                         message_received_functor3,
                                         connection_lost_functor));
 //   rudp::EndpointPair endpoint_pair2, endpoint_pair3;
@@ -228,7 +227,7 @@ TEST(NetworkUtilsTest, FUNC_ProcessSendDirectEndpoint) {
   }
 
   for (auto i(0); i != kMessageCount; ++i) {
-    network.SendToDirect(sent_message, node_id2);
+    network.SendToDirect(sent_message, node_id2, node_id2);
     Sleep(boost::posix_time::milliseconds(100));
   }
   if (!test_completion_future.timed_wait(bptime::seconds(60))) {
@@ -364,7 +363,6 @@ TEST(NetworkUtilsTest, FUNC_ProcessSendRecursiveSendOn) {
 
   std::vector<Endpoint> bootstrap_endpoint(1, endpoint2);
   EXPECT_EQ(kSuccess, network.Bootstrap(bootstrap_endpoint,
-                                        false,
                                         message_received_functor3,
                                         connection_lost_functor3));
   rudp::EndpointPair endpoint_pair2, endpoint_pair3;

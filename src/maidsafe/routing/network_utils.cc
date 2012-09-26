@@ -72,7 +72,6 @@ void NetworkUtils::Stop() {
 }
 
 int NetworkUtils::Bootstrap(const std::vector<Endpoint> &bootstrap_endpoints,
-                            const bool& /*client*/,
                             rudp::MessageReceivedFunctor message_received_functor,
                             rudp::ConnectionLostFunctor connection_lost_functor,
                             Endpoint local_endpoint) {
@@ -93,7 +92,7 @@ int NetworkUtils::Bootstrap(const std::vector<Endpoint> &bootstrap_endpoints,
   int result(rudp_->Bootstrap(/* sorted_ */bootstrap_endpoints,
                               message_received_functor,
                               connection_lost_functor,
-                              routing_table_.kNodeId(),
+                              routing_table_.kConnectionId(),
                               private_key,
                               public_key,
                               bootstrap_connection_id_,
@@ -105,7 +104,7 @@ int NetworkUtils::Bootstrap(const std::vector<Endpoint> &bootstrap_endpoints,
     return kNoOnlineBootstrapContacts;
   }
 
-  this_node_relay_connection_id_ = routing_table_.kNodeId();
+  this_node_relay_connection_id_ = routing_table_.kConnectionId();
   LOG(kInfo) << "Bootstrap successful, bootstrap connection id - "
              << HexSubstr(bootstrap_connection_id_.String());
   return kSuccess;
@@ -151,21 +150,22 @@ void NetworkUtils::RudpSend(const protobuf::Message& message,
 }
 
 void NetworkUtils::SendToDirect(const protobuf::Message& message,
-                                NodeId peer,
+                                NodeId peer_connection_id,
                                 rudp::MessageSentFunctor message_sent_functor) {
   SharedLock shared_lock(shared_mutex_);
   if (stopped_)
     return;
   if (message_sent_functor) {
-    rudp_->Send(peer, message.SerializeAsString(), message_sent_functor);
+    rudp_->Send(peer_connection_id, message.SerializeAsString(), message_sent_functor);
   } else {
-    rudp_->Send(peer, message.SerializeAsString(), nullptr);
+    rudp_->Send(peer_connection_id, message.SerializeAsString(), nullptr);
   }
 }
 
 void NetworkUtils::SendToDirect(const protobuf::Message& message,
-                                NodeId peer) {
-  SendTo(message, peer, peer);
+                                NodeId peer_node_id,
+                                NodeId peer_connection_id) {
+  SendTo(message, peer_node_id, peer_connection_id);
 }
 
 void NetworkUtils::SendToClosestNode(const protobuf::Message& message) {
@@ -219,16 +219,16 @@ void NetworkUtils::SendToClosestNode(const protobuf::Message& message) {
 }
 
 void NetworkUtils::SendTo(const protobuf::Message& message,
-                          const NodeId peer,
+                          const NodeId node_id,
                           const NodeId connection_id) {
   const std::string kThisId(HexSubstr(routing_table_.kKeys().identity));
   rudp::MessageSentFunctor message_sent_functor = [=](int message_sent) {
       if (rudp::kSuccess == message_sent) {
         LOG(kInfo) << "Type " << MessageTypeString(message) << " message successfully sent from "
-                   << kThisId << " to " << HexSubstr(peer.String());
+                   << kThisId << " to " << HexSubstr(node_id.String());
       } else {
         LOG(kError) << "Sending type " << MessageTypeString(message) << " message from "
-                    << kThisId << " to " << HexSubstr(peer.String()) <<  " failed with code "
+                    << kThisId << " to " << HexSubstr(node_id.String()) <<  " failed with code "
                     << message_sent
                     << " id: " << message.id();
       }

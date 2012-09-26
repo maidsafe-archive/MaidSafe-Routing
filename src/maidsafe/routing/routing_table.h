@@ -57,6 +57,7 @@ class RoutingTable {
   size_t Size() const;
   asymm::Keys kKeys() const;
   NodeId kNodeId() const;
+  NodeId kConnectionId() const;
   void set_network_status_functor(NetworkStatusFunctor network_status_functor);
   void set_close_node_replaced_functor(CloseNodeReplacedFunctor close_node_replaced_functor);
   void set_remove_node_functor(std::function<void(const NodeInfo&,
@@ -91,6 +92,7 @@ class RoutingTable {
   const asymm::Keys keys_;
   bool sorted_;
   const NodeId kNodeId_;
+  const NodeId kConnectionId_;
   NodeId furthest_group_node_id_;
   mutable std::mutex mutex_;
   std::function<void(const NodeInfo&, const bool&)> remove_node_functor_;

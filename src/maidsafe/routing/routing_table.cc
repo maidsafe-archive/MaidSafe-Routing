@@ -34,6 +34,7 @@ RoutingTable::RoutingTable(const asymm::Keys& keys, const bool& client_mode)
       keys_(keys),
       sorted_(false),
       kNodeId_(NodeId(keys_.identity)),
+      kConnectionId_((client_mode ? NodeId(NodeId::kRandomId) : kNodeId_)),
       furthest_group_node_id_(),
       mutex_(),
       remove_node_functor_(),
@@ -471,6 +472,10 @@ asymm::Keys RoutingTable::kKeys() const {
 
 NodeId RoutingTable::kNodeId() const {
   return kNodeId_;
+}
+
+NodeId RoutingTable::kConnectionId() const {
+  return kConnectionId_;
 }
 
 void RoutingTable::set_remove_node_functor(

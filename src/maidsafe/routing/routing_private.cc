@@ -74,7 +74,7 @@ RoutingPrivate::~RoutingPrivate() {
   recovery_timer_.cancel();
   tearing_down_ = true;
   network_.Stop();
-//  boost::this_thread::disable_interruption disable_interruption;
+  boost::this_thread::disable_interruption disable_interruption;
   asio_service_.Stop();
 #ifdef LOCAL_TEST
   std::lock_guard<std::mutex> lock(RoutingPrivate::mutex_);
