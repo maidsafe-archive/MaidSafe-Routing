@@ -100,7 +100,7 @@ int NetworkUtils::Bootstrap(const std::vector<Endpoint> &bootstrap_endpoints,
                               nat_type_,
                               local_endpoint));
   // RUDP will return a kZeroId for zero state !!
-  if (result != kSuccess || !bootstrap_connection_id_.Empty()) {
+  if (result != kSuccess || bootstrap_connection_id_.Empty()) {
     LOG(kError) << "No Online Bootstrap Node found.";
     return kNoOnlineBootstrapContacts;
   }
