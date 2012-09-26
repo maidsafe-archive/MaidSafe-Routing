@@ -13,10 +13,6 @@
 #ifndef MAIDSAFE_ROUTING_ROUTING_PRIVATE_H_
 #define MAIDSAFE_ROUTING_ROUTING_PRIVATE_H_
 
-#ifdef LOCAL_TEST
-#include <set>
-#endif
-
 #include <atomic>
 #include <cstdint>
 #include <map>
@@ -83,14 +79,6 @@ struct RoutingPrivate {
   boost::asio::deadline_timer setup_timer_;
   std::vector<NodeId> random_node_vector_;
   std::mutex random_node_mutex_;
-#ifdef LOCAL_TEST
-  void LocalTestUtility(const protobuf::Message message);
-  void RemoveConnectionFromBootstrapList(const NodeId& node_id);
-  static std::vector<boost::asio::ip::udp::endpoint> bootstraps_;
-  static std::set<NodeId> bootstrap_nodes_id_;
-  static std::mutex mutex_;
-  static uint16_t network_size_;
-#endif
 };
 
 }  // namespace routing

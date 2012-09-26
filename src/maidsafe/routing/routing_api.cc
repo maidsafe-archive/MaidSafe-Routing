@@ -103,11 +103,6 @@ bool Routing::CheckBootstrapFilePath() const {
 
 void Routing::Join(Functors functors,
                    std::vector<boost::asio::ip::udp::endpoint> peer_endpoints) {
-#ifdef LOCAL_TEST
-  LOG(kVerbose) << "RoutingPrivate::bootstraps_.size(): " << RoutingPrivate::bootstraps_.size();
-  for (auto endpoint : RoutingPrivate::bootstraps_)
-    peer_endpoints.push_back(endpoint);
-#endif
   ConnectFunctors(functors);
   if (!peer_endpoints.empty()) {
     return BootstrapFromTheseEndpoints(functors, peer_endpoints);
@@ -163,27 +158,9 @@ void Routing::BootstrapFromTheseEndpoints(const Functors& functors,
       impl_->functors_.network_status(static_cast<int>(impl_->routing_table_.Size()));
   }
   impl_->bootstrap_nodes_.clear();
-#ifdef LOCAL_TEST
-  uint16_t start_index(0);
-  start_index = (endpoints.size() > 2) ? 2 : 0;
-  if (start_index == 0) {
-    impl_->bootstrap_nodes_.insert(impl_->bootstrap_nodes_.begin(),
-                                   endpoints.begin(),
-                                   endpoints.end());
-  } else {
-    uint16_t random(static_cast<uint16_t>(RandomUint32() % (endpoints.size() - 2)));
-    for (size_t index(0); index < (endpoints.size() - 2); ++index) {
-      impl_->bootstrap_nodes_.push_back(
-          endpoints[(random + index) % (endpoints.size() - 2) + 2]);
-    }
-  }
-  for (auto endpoint : impl_->bootstrap_nodes_)
-    LOG(kVerbose) << "Static ep: " << endpoint;
-#else
   impl_->bootstrap_nodes_.insert(impl_->bootstrap_nodes_.begin(),
                                  endpoints.begin(),
                                  endpoints.end());
-#endif
   DoJoin(functors);
 }
 
@@ -332,7 +309,9 @@ int Routing::ZeroStateJoin(Functors functors,
       impl_->bootstrap_nodes_,
       impl_->client_mode_,
       [=](const std::string& message) { OnMessageReceived(message, impl_weak_ptr); },
-      [=](const NodeId& lost_connection_id) { OnConnectionLost(lost_connection_id, impl_weak_ptr); },
+      [=](const NodeId& lost_connection_id) {
+          OnConnectionLost(lost_connection_id, impl_weak_ptr);
+        },
       local_endpoint));
 
   if (result != kSuccess) {
@@ -391,11 +370,6 @@ int Routing::ZeroStateJoin(Functors functors,
     impl_->recovery_timer_.async_wait([=](const boost::system::error_code& error_code) {
                                           ReSendFindNodeRequest(error_code, impl_weak_ptr);
                                         });
-#ifdef LOCAL_TEST
-    std::lock_guard<std::mutex> lock(RoutingPrivate::mutex_);
-    RoutingPrivate::bootstraps_.push_back(local_endpoint);
-    RoutingPrivate::bootstrap_nodes_id_.insert(NodeId(impl_->keys_.identity));
-#endif
     return kSuccess;
   } else {
     LOG(kError) << "Failed to join zero state network, with bootstrap_endpoint "
@@ -523,9 +497,6 @@ void Routing::DoOnMessageReceived(const std::string& message, std::weak_ptr<Rout
   } else {
     LOG(kWarning) << "Message received, failed to parse";
   }
-#ifdef LOCAL_TEST
-  pimpl->LocalTestUtility(protobuf_message);
-#endif
 }
 
 NodeId Routing::GetRandomExistingNode() {
@@ -638,10 +609,6 @@ void Routing::DoOnConnectionLost(const NodeId& lost_connection_id,
     LOG(kWarning) << "Lost close node, getting more.";
     ReSendFindNodeRequest(boost::system::error_code(), pimpl, true);
   }
-
-#ifdef LOCAL_TEST
-  pimpl->RemoveConnectionFromBootstrapList(lost_connection_id);
-#endif
 }
 
 void Routing::RemoveNode(const NodeInfo& node, const bool& internal_rudp_only) {
@@ -680,7 +647,6 @@ void Routing::ReSendFindNodeRequest(const boost::system::error_code& error_code,
                                     std::weak_ptr<RoutingPrivate> impl,
                                     bool ignore_size) {
   if (error_code != boost::asio::error::operation_aborted) {
-#ifndef LOCAL_TEST
     std::shared_ptr<RoutingPrivate> pimpl = impl.lock();
     if (!pimpl) {
       LOG(kVerbose) << "Ignoring message received since this node is shutting down";
@@ -732,10 +698,6 @@ void Routing::ReSendFindNodeRequest(const boost::system::error_code& error_code,
                                             ReSendFindNodeRequest(error_code_local, impl_weak_ptr);
                                           });
     }
-#else
-    (void)impl;
-    (void)ignore_size;
-#endif
   } else {
     LOG(kVerbose) << "Cancelled recovery loop!!";
   }
