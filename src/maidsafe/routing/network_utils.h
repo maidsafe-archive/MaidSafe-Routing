@@ -46,7 +46,6 @@ class NetworkUtils {
   virtual ~NetworkUtils();
   void Stop();
   int Bootstrap(const std::vector<boost::asio::ip::udp::endpoint> &bootstrap_endpoints,
-                const bool& client,
                 rudp::MessageReceivedFunctor message_received_functor,
                 rudp::ConnectionLostFunctor connection_lost_functor,
                 boost::asio::ip::udp::endpoint local_endpoint = boost::asio::ip::udp::endpoint());
@@ -61,9 +60,11 @@ class NetworkUtils {
   // For sending relay requests, message with empty source ID may be provided, along with
   // direct endpoint.
   void SendToDirect(const protobuf::Message& message,
-                    NodeId peer,
+                    NodeId peer_connection_id,
                     rudp::MessageSentFunctor message_sent_functor);
-  virtual void SendToDirect(const protobuf::Message& message, NodeId peer);
+  virtual void SendToDirect(const protobuf::Message& message,
+                            NodeId peer_node_id,
+                            NodeId peer_connection_id);
   // Handles relay response messages.  Also leave destination ID empty if needs to send as a relay
   // response message
   virtual void SendToClosestNode(const protobuf::Message& message);

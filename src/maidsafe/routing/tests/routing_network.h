@@ -292,8 +292,16 @@ class GenericNetwork : public testing::Test {
     nodes_.push_back(node);
     std::weak_ptr<NodeType> weak_node(node);
     node->functors_.network_status = [&cond_var, weak_node](const int& result)->void {
-      ASSERT_GE(result, kSuccess);
       if (NodePtr node = weak_node.lock()) {
+        if (!node->anonymous_) {
+          ASSERT_GE(result, kSuccess);
+        } else  {
+          if (!node->joined()) {
+            ASSERT_EQ(result, kSuccess);
+          } else if (node->joined()) {
+            ASSERT_EQ(result, kAnonymousSessionEnded);
+          }
+        }
         if (((result == node->expected()) && (!node->joined())) || node->anonymous_) {
           node->set_joined(true);
           cond_var.notify_one();

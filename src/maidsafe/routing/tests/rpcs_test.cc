@@ -76,7 +76,7 @@ TEST(RpcsTest, BEH_ConnectMessageInitialised) {
   our_endpoint.external = Endpoint(boost::asio::ip::address_v4::loopback(),
                                    maidsafe::test::GetRandomPort());
   ASSERT_TRUE(rpcs::Connect(NodeId(RandomString(64)), our_endpoint,
-                            NodeId(RandomString(64))).IsInitialized());
+                            NodeId(RandomString(64)), NodeId(RandomString(64))).IsInitialized());
 }
 
 TEST(RpcsTest, BEH_ConnectMessageNode) {
@@ -87,7 +87,8 @@ TEST(RpcsTest, BEH_ConnectMessageNode) {
   endpoint.external = Endpoint(boost::asio::ip::address_v4::loopback(),
                                maidsafe::test::GetRandomPort());
   std::string destination = RandomString(64);
-  protobuf::Message message = rpcs::Connect(NodeId(destination), endpoint, us.node_id);
+  protobuf::Message message = rpcs::Connect(NodeId(destination), endpoint, us.node_id,
+                                            us.connection_id);
   protobuf::ConnectRequest connect_request;
   EXPECT_TRUE(message.IsInitialized());
   EXPECT_TRUE(connect_request.ParseFromString(message.data(0)));  // us
@@ -95,6 +96,8 @@ TEST(RpcsTest, BEH_ConnectMessageNode) {
   EXPECT_TRUE(connect_request.has_timestamp());
   EXPECT_TRUE(connect_request.timestamp() > static_cast<int32_t>(GetTimeStamp() - 2));
   EXPECT_TRUE(connect_request.timestamp() < static_cast<int32_t>(GetTimeStamp() + 1));
+  EXPECT_EQ(us.node_id.String(), connect_request.contact().node_id());
+  EXPECT_EQ(us.connection_id.String(), connect_request.contact().connection_id());
   EXPECT_EQ(destination, message.destination_id());
   EXPECT_EQ(us.node_id.String(), message.source_id());
   EXPECT_NE(0, message.data_size());
@@ -114,7 +117,7 @@ TEST(RpcsTest, BEH_ConnectMessageNodeRelayMode) {
                                maidsafe::test::GetRandomPort());
   std::string destination = RandomString(64);
   protobuf::Message message = rpcs::Connect(NodeId(destination), endpoint, us.node_id,
-                                            std::vector<std::string>(), false,
+                                            us.connection_id, std::vector<std::string>(), false,
                                             rudp::NatType::kUnknown, true, NodeId(destination));
   protobuf::ConnectRequest connect_request;
   EXPECT_TRUE(message.IsInitialized());
@@ -123,6 +126,8 @@ TEST(RpcsTest, BEH_ConnectMessageNodeRelayMode) {
   EXPECT_TRUE(connect_request.has_timestamp());
   EXPECT_TRUE(connect_request.timestamp() > static_cast<int32_t>(GetTimeStamp() - 2));
   EXPECT_TRUE(connect_request.timestamp() < static_cast<int32_t>(GetTimeStamp() + 1));
+  EXPECT_EQ(us.node_id.String(), connect_request.contact().node_id());
+  EXPECT_EQ(us.connection_id.String(), connect_request.contact().connection_id());
   EXPECT_EQ(destination, message.destination_id());
   EXPECT_FALSE(message.has_source_id());
   EXPECT_NE(0, message.data_size());

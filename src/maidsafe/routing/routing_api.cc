@@ -192,6 +192,7 @@ int Routing::DoBootstrap() {
     LOG(kError) << "No bootstrap nodes.  Aborted join.";
     return kInvalidBootstrapContacts;
   }
+  // FIXME race condition if a new connection appears at rudp
   assert(impl_->routing_table_.Size() == 0);
   impl_->recovery_timer_.cancel();
   impl_->setup_timer_.cancel();
@@ -206,7 +207,6 @@ int Routing::DoBootstrap() {
   std::weak_ptr<RoutingPrivate> impl_weak_ptr(impl_);
   return impl_->network_.Bootstrap(
       impl_->bootstrap_nodes_,
-      impl_->client_mode_,
       [=](const std::string& message) { OnMessageReceived(message, impl_weak_ptr); },
       [=](const NodeId& lost_connection_id) { OnConnectionLost(lost_connection_id, impl_weak_ptr);});  // NOLINT
 }
@@ -216,7 +216,7 @@ void Routing::FindClosestNode(const boost::system::error_code& error_code,
                               int attempts) {
   if (error_code != boost::asio::error::operation_aborted) {
     std::shared_ptr<RoutingPrivate> pimpl = impl.lock();
-    if (!pimpl) {
+    if (!pimpl || pimpl->tearing_down_) {
       LOG(kVerbose) << "Ignoring another FindClosestNode, since this node is shutting down";
       return;
     }
@@ -250,7 +250,7 @@ void Routing::FindClosestNode(const boost::system::error_code& error_code,
         std::weak_ptr<RoutingPrivate> impl_weak_ptr(pimpl);
         std::async(std::launch::async, [=] {
                      std::shared_ptr<RoutingPrivate> pimpl = impl_weak_ptr.lock();
-                     if (!pimpl) {
+                     if (!pimpl  || pimpl->tearing_down_) {
                        LOG(kVerbose) << "Not re bootstrapping since this node is shutting down";
                        return;
                      }
@@ -307,7 +307,6 @@ int Routing::ZeroStateJoin(Functors functors,
   ConnectFunctors(functors);
   int result(impl_->network_.Bootstrap(
       impl_->bootstrap_nodes_,
-      impl_->client_mode_,
       [=](const std::string& message) { OnMessageReceived(message, impl_weak_ptr); },
       [=](const NodeId& lost_connection_id) {
           OnConnectionLost(lost_connection_id, impl_weak_ptr);
@@ -467,7 +466,7 @@ void Routing::Send(const NodeId& destination_id,
 
 void Routing::OnMessageReceived(const std::string& message, std::weak_ptr<RoutingPrivate> impl) {
   std::shared_ptr<RoutingPrivate> pimpl = impl.lock();
-  if (!pimpl) {
+  if (!pimpl || pimpl->tearing_down_) {
     LOG(kVerbose) << "Ignoring message received since this node is shutting down";
     return;
   }
@@ -478,7 +477,7 @@ void Routing::OnMessageReceived(const std::string& message, std::weak_ptr<Routin
 
 void Routing::DoOnMessageReceived(const std::string& message, std::weak_ptr<RoutingPrivate> impl) {
   std::shared_ptr<RoutingPrivate> pimpl = impl.lock();
-  if (!pimpl) {
+  if (!pimpl || pimpl->tearing_down_) {
     LOG(kVerbose) << "Ignoring message received since this node is shutting down";
     return;
   }
@@ -541,7 +540,7 @@ void Routing::AddExistingRandomNode(NodeId node, std::weak_ptr<RoutingPrivate> i
 void Routing::OnConnectionLost(const NodeId& lost_connection_id,
                                  std::weak_ptr<RoutingPrivate> impl) {
   std::shared_ptr<RoutingPrivate> pimpl = impl.lock();
-  if (!pimpl) {
+  if (!pimpl || pimpl->tearing_down_) {
     LOG(kVerbose) << "Ignoring connection lost callback since this node is shutting down";
     return;
   }
@@ -553,7 +552,7 @@ void Routing::OnConnectionLost(const NodeId& lost_connection_id,
 void Routing::DoOnConnectionLost(const NodeId& lost_connection_id,
                                  std::weak_ptr<RoutingPrivate> impl) {
   std::shared_ptr<RoutingPrivate> pimpl = impl.lock();
-  if (!pimpl) {
+  if (!pimpl || pimpl->tearing_down_) {
     LOG(kVerbose) << "Ignoring connection lost callback since this node is shutting down";
     return;
   }
@@ -569,7 +568,7 @@ void Routing::DoOnConnectionLost(const NodeId& lost_connection_id,
   // Checking routing table
   dropped_node = pimpl->routing_table_.DropNode(lost_connection_id, true);
   if (!dropped_node.node_id.Empty()) {
-    LOG(kWarning) << "[" <<HexSubstr(impl_->keys_.identity) << "]"
+    LOG(kWarning) << "[" << HexSubstr(pimpl->keys_.identity) << "]"
                   << "Lost connection with routing node "
                   << DebugId(dropped_node.node_id);
   }
@@ -579,26 +578,26 @@ void Routing::DoOnConnectionLost(const NodeId& lost_connection_id,
     resend = false;
     dropped_node = pimpl->non_routing_table_.DropNode(lost_connection_id);
     if (!dropped_node.node_id.Empty()) {
-      LOG(kWarning) << "[" <<HexSubstr(impl_->keys_.identity) << "]"
+      LOG(kWarning) << "[" << HexSubstr(pimpl->keys_.identity) << "]"
                     << "Lost connection with non-routing node "
                     << HexSubstr(dropped_node.node_id.String());
     } else if (!pimpl->network_.bootstrap_connection_id().Empty() &&
                lost_connection_id == pimpl->network_.bootstrap_connection_id()) {
-      LOG(kWarning) << "[" <<HexSubstr(impl_->keys_.identity) << "]"
+      LOG(kWarning) << "[" << HexSubstr(pimpl->keys_.identity) << "]"
                     << "Lost temporary connection with bootstrap node. connection id :"
                     << DebugId(lost_connection_id);
       pimpl->network_.clear_bootstrap_connection_info();
       if (pimpl->anonymous_node_) {
         LOG(kError) << "Anonymous Session Ended, Send not allowed anymore";
-        impl_->functors_.network_status(kAnonymousSessionEnded);
-        // TODO(Prakash) cancell all pending tasks
+        pimpl->functors_.network_status(kAnonymousSessionEnded);
+        // TODO(Prakash) cancel all pending tasks
         return;
       }
 
       if (pimpl->routing_table_.Size() == 0)
         resend = true;  // This will trigger rebootstrap
     } else {
-      LOG(kWarning) << "[" <<HexSubstr(impl_->keys_.identity) << "]"
+      LOG(kWarning) << "[" << HexSubstr(pimpl->keys_.identity) << "]"
                     << "Lost connection with unknown/internal connection id "
                     << DebugId(lost_connection_id);
     }
@@ -648,7 +647,7 @@ void Routing::ReSendFindNodeRequest(const boost::system::error_code& error_code,
                                     bool ignore_size) {
   if (error_code != boost::asio::error::operation_aborted) {
     std::shared_ptr<RoutingPrivate> pimpl = impl.lock();
-    if (!pimpl) {
+    if (!pimpl || pimpl->tearing_down_) {
       LOG(kVerbose) << "Ignoring message received since this node is shutting down";
       return;
     }
@@ -657,17 +656,15 @@ void Routing::ReSendFindNodeRequest(const boost::system::error_code& error_code,
       LOG(kError) << "This node's [" << HexSubstr(pimpl->keys_.identity)
                   << "] Routing table is empty."
                   << " Reconnecting .... !!!";
-       std::async(std::launch::async, [=]
-                  {
-                  std::shared_ptr<RoutingPrivate> pimpl = impl.lock();
-                  if (!pimpl) {
-                  LOG(kVerbose) << "Not re bootstrapping since this node is shutting down";
-                  return;
-                  }
-
-                  Sleep(boost::posix_time::seconds(10));
-                  DoJoin(impl_->functors_);
-                  });
+       std::async(std::launch::async, [=] {
+           std::shared_ptr<RoutingPrivate> pimpl = impl.lock();
+           if (!pimpl || pimpl->tearing_down_) {
+             LOG(kVerbose) << "Not re bootstrapping since this node is shutting down";
+             return;
+           }
+           Sleep(boost::posix_time::seconds(10));
+           DoJoin(impl_->functors_);
+       });
     } else if (ignore_size ||
                (pimpl->routing_table_.Size() < Parameters::routing_table_size_threshold)) {
       if (!ignore_size)

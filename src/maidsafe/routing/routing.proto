@@ -18,9 +18,10 @@ enum NatType {
 
 message Contact {
   required bytes node_id = 1;
-  required Endpoint private_endpoint = 2;
-  required Endpoint public_endpoint = 3;
-  optional NatType nat_type = 4;
+  required bytes connection_id = 2;
+  required Endpoint private_endpoint = 3;
+  required Endpoint public_endpoint = 4;
+  optional NatType nat_type = 5;
   optional bool tcp = 6;
 }
 
