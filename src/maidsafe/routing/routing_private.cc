@@ -73,9 +73,9 @@ RoutingPrivate::RoutingPrivate(const asymm::Keys& keys, bool client_mode)
 RoutingPrivate::~RoutingPrivate() {
   recovery_timer_.cancel();
   tearing_down_ = true;
-  boost::this_thread::disable_interruption disable_interruption;
-  asio_service_.Stop();
   network_.Stop();
+//  boost::this_thread::disable_interruption disable_interruption;
+  asio_service_.Stop();
 #ifdef LOCAL_TEST
   std::lock_guard<std::mutex> lock(RoutingPrivate::mutex_);
   if (--RoutingPrivate::network_size_ == 0) {

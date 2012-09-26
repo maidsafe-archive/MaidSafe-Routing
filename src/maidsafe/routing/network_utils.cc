@@ -72,7 +72,7 @@ void NetworkUtils::Stop() {
 }
 
 int NetworkUtils::Bootstrap(const std::vector<Endpoint> &bootstrap_endpoints,
-                            const bool& client,
+                            const bool& /*client*/,
                             rudp::MessageReceivedFunctor message_received_functor,
                             rudp::ConnectionLostFunctor connection_lost_functor,
                             Endpoint local_endpoint) {
@@ -91,7 +91,6 @@ int NetworkUtils::Bootstrap(const std::vector<Endpoint> &bootstrap_endpoints,
   //   sorted_bootstrap_endpoints = bootstrap_endpoints;
   // }
   bootstrap_connection_id_ = NodeId(rudp_->Bootstrap(/* sorted_ */bootstrap_endpoints,
-                                                     !client,
                                                      message_received_functor,
                                                      connection_lost_functor,
                                                      routing_table_.kNodeId(),

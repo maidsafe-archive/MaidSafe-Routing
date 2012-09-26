@@ -488,7 +488,11 @@ void RoutingTable::set_close_node_replaced_functor(
 }
 
 std::string RoutingTable::PrintRoutingTable() {
-  auto rt(nodes_);
+  std::vector<NodeInfo> rt;
+  {
+    std::lock_guard<std::mutex> lock(mutex_);
+    rt = nodes_;
+  }
   std::string s = "\n\n[" + DebugId(kNodeId_) +
       "] This node's own routing table and peer connections:\n";
   for (auto node : rt) {

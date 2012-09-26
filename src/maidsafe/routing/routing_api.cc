@@ -598,7 +598,7 @@ void Routing::DoOnConnectionLost(const NodeId& lost_connection_id,
   // Checking routing table
   dropped_node = pimpl->routing_table_.DropNode(lost_connection_id, true);
   if (!dropped_node.node_id.Empty()) {
-    LOG(kWarning) << "[" <<HexSubstr(impl_->keys_.identity) << "]"
+    LOG(kWarning) << "[" << HexSubstr(pimpl->keys_.identity) << "]"
                   << "Lost connection with routing node "
                   << DebugId(dropped_node.node_id);
   }
@@ -608,26 +608,26 @@ void Routing::DoOnConnectionLost(const NodeId& lost_connection_id,
     resend = false;
     dropped_node = pimpl->non_routing_table_.DropNode(lost_connection_id);
     if (!dropped_node.node_id.Empty()) {
-      LOG(kWarning) << "[" <<HexSubstr(impl_->keys_.identity) << "]"
+      LOG(kWarning) << "[" << HexSubstr(pimpl->keys_.identity) << "]"
                     << "Lost connection with non-routing node "
                     << HexSubstr(dropped_node.node_id.String());
     } else if (!pimpl->network_.bootstrap_connection_id().Empty() &&
                lost_connection_id == pimpl->network_.bootstrap_connection_id()) {
-      LOG(kWarning) << "[" <<HexSubstr(impl_->keys_.identity) << "]"
+      LOG(kWarning) << "[" << HexSubstr(pimpl->keys_.identity) << "]"
                     << "Lost temporary connection with bootstrap node. connection id :"
                     << DebugId(lost_connection_id);
       pimpl->network_.clear_bootstrap_connection_info();
       if (pimpl->anonymous_node_) {
         LOG(kError) << "Anonymous Session Ended, Send not allowed anymore";
-        impl_->functors_.network_status(kAnonymousSessionEnded);
-        // TODO(Prakash) cancell all pending tasks
+        pimpl->functors_.network_status(kAnonymousSessionEnded);
+        // TODO(Prakash) cancel all pending tasks
         return;
       }
 
       if (pimpl->routing_table_.Size() == 0)
         resend = true;  // This will trigger rebootstrap
     } else {
-      LOG(kWarning) << "[" <<HexSubstr(impl_->keys_.identity) << "]"
+      LOG(kWarning) << "[" << HexSubstr(pimpl->keys_.identity) << "]"
                     << "Lost connection with unknown/internal connection id "
                     << DebugId(lost_connection_id);
     }
