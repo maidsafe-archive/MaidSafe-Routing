@@ -332,7 +332,7 @@ int Routing::ZeroStateJoin(Functors functors,
   rudp::EndpointPair this_endpoint_pair;
   peer_endpoint_pair.external = peer_endpoint_pair.local = peer_endpoint;
   this_endpoint_pair.external = this_endpoint_pair.local = local_endpoint;
-
+  Sleep(boost::posix_time::milliseconds(100));  // FIXME avoiding assert in rudp
   result = impl_->network_.GetAvailableEndpoint(peer_node.node_id, peer_endpoint_pair,
                                                 this_endpoint_pair, nat_type);
   if (result != kSuccess) {
