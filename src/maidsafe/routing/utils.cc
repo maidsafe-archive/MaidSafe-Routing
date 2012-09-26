@@ -46,17 +46,8 @@ void ValidateAndAddToRudp(NetworkUtils& network,
   int result = network.Add(peer_connection_id, peer_endpoint_pair,
                            connect_success.SerializeAsString());
   if (result != rudp::kSuccess) {
-    if ((result == rudp::kConnectionAlreadyExists) &&
-        (peer_connection_id == network.bootstrap_connection_id() &&
-        (peer_id == network.bootstrap_connection_id()))) {
-      LOG(kInfo) << "rudp add special case, trying to add bootstrap node ["
-                 << DebugId(peer_id) << "] Connection id : "
-                 << DebugId(peer_connection_id);
-//      network.SendToDirect(connect_success, network.bootstrap_connection_id());
-    } else {
-      LOG(kError) << "rudp add failed for peer node [" << DebugId(peer_id) << "]. Connection id : "
-                  << DebugId(peer_connection_id) << ". result : " << result;
-    }
+    LOG(kError) << "rudp add failed for peer node [" << DebugId(peer_id) << "]. Connection id : "
+                << DebugId(peer_connection_id) << ". result : " << result;
   } else {
     LOG(kVerbose) << "rudp.Add succeeded for peer node ["
                   << DebugId(peer_id) << "]. Connection id : "
