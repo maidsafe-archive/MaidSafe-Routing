@@ -154,8 +154,10 @@ class RoutingNetworkTest : public GenericNetwork<NodeType> {
     return testing::AssertionSuccess();
   }
 
-  testing::AssertionResult GroupSend(const NodeId& node_id, const size_t& messages,
+  testing::AssertionResult GroupSend(const NodeId& node_id,
+                                     const size_t& messages,
                                      uint16_t source_index = 0) {
+    assert(10 * messages < std::numeric_limits<long>::max());  // NOLINT (Fraser)
     size_t messages_count(0), expected_messages(messages);
     std::string data(RandomAlphaNumericString((2 ^ 10) * 256));
 
@@ -174,7 +176,8 @@ class RoutingNetworkTest : public GenericNetwork<NodeType> {
           }
       };
       this->nodes_[source_index]->Send(node_id, NodeId(), data, callable,
-                                       boost::posix_time::seconds(10 * messages), false, false);
+                                       boost::posix_time::seconds(static_cast<long>(10 * messages)),  // NOLINT (Fraser)
+                                       false, false);
     }
 
     std::unique_lock<std::mutex> lock(mutex);
@@ -425,8 +428,10 @@ TYPED_TEST_P(RoutingNetworkTest, FUNC_AnonymousSendToGroupRandomId) {
   uint16_t message_count(200), receivers_message_count(0);
   this->SetUpNetwork(kNetworkSize + kClientSize);
   this->AddNode(true, NodeId(), true);
+  assert(this->nodes_.size() - 1 < std::numeric_limits<uint16_t>::max());
   for (int index = 0; index < message_count; ++index) {
-    EXPECT_TRUE(this->GroupSend(NodeId(NodeId::kRandomId), 1, this->nodes_.size() - 1));
+    EXPECT_TRUE(this->GroupSend(NodeId(NodeId::kRandomId), 1,
+                                static_cast<uint16_t>(this->nodes_.size() - 1)));
     for (auto node : this->nodes_) {
       receivers_message_count += static_cast<uint16_t>(node->MessagesSize());
       node->ClearMessages();
@@ -441,10 +446,11 @@ TYPED_TEST_P(RoutingNetworkTest, FUNC_AnonymousSendToGroupExistingId) {
   uint16_t message_count(200), receivers_message_count(0);
   this->SetUpNetwork(kNetworkSize + kClientSize);
   this->AddNode(true, NodeId(), true);
+  assert(this->nodes_.size() - 1 < std::numeric_limits<uint16_t>::max());
   for (int index = 0; index < message_count; ++index) {
     int group_id_index = index % (kNetworkSize + kClientSize -1);  // all other nodes
     NodeId group_id(this->nodes_[group_id_index]->node_id());
-    EXPECT_TRUE(this->GroupSend(group_id, 1, this->nodes_.size() - 1));
+    EXPECT_TRUE(this->GroupSend(group_id, 1, static_cast<uint16_t>(this->nodes_.size() - 1)));
     for (auto node : this->nodes_) {
       receivers_message_count += static_cast<uint16_t>(node->MessagesSize());
       node->ClearMessages();

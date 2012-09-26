@@ -332,7 +332,9 @@ int Routing::ZeroStateJoin(Functors functors,
       impl_->bootstrap_nodes_,
       impl_->client_mode_,
       [=](const std::string& message) { OnMessageReceived(message, impl_weak_ptr); },
-      [=](const NodeId& lost_connection_id) { OnConnectionLost(lost_connection_id, impl_weak_ptr); },
+      [=](const NodeId& lost_connection_id) {
+          OnConnectionLost(lost_connection_id, impl_weak_ptr);
+      },
       local_endpoint));
 
   if (result != kSuccess) {

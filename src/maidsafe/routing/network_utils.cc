@@ -90,16 +90,17 @@ int NetworkUtils::Bootstrap(const std::vector<Endpoint> &bootstrap_endpoints,
   // }  else {
   //   sorted_bootstrap_endpoints = bootstrap_endpoints;
   // }
-  bootstrap_connection_id_ = NodeId(rudp_->Bootstrap(/* sorted_ */bootstrap_endpoints,
-                                                     message_received_functor,
-                                                     connection_lost_functor,
-                                                     routing_table_.kNodeId(),
-                                                     private_key,
-                                                     public_key,
-                                                     nat_type_,
-                                                     local_endpoint));
-//  RUDP will return a kZeroId for zero state !!
-  if (!bootstrap_connection_id_.IsValid() || bootstrap_connection_id_.Empty()) {
+  int result(rudp_->Bootstrap(/* sorted_ */bootstrap_endpoints,
+                              message_received_functor,
+                              connection_lost_functor,
+                              routing_table_.kNodeId(),
+                              private_key,
+                              public_key,
+                              bootstrap_connection_id_,
+                              nat_type_,
+                              local_endpoint));
+  // RUDP will return a kZeroId for zero state !!
+  if (result != kSuccess || !bootstrap_connection_id_.Empty()) {
     LOG(kError) << "No Online Bootstrap Node found.";
     return kNoOnlineBootstrapContacts;
   }
