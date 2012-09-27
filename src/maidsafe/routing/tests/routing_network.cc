@@ -23,6 +23,8 @@
 #include "maidsafe/routing/routing_private.h"
 #include "maidsafe/routing/return_codes.h"
 #include "maidsafe/routing/routing_api.h"
+#include "maidsafe/routing/tests/test_utils.h"
+#include "maidsafe/routing/routing_pb.h"
 
 namespace asio = boost::asio;
 namespace ip = asio::ip;
@@ -43,7 +45,7 @@ size_t GenericNode::next_node_id_(1);
 
 GenericNode::GenericNode(bool client_mode)
     : id_(0),
-      node_info_plus_(MakeNodeInfoAndKeys()),
+      node_info_plus_(std::make_shared<NodeInfoAndPrivateKey>(MakeNodeInfoAndKeys())),
       routing_(),
       functors_(),
       mutex_(),
@@ -52,13 +54,23 @@ GenericNode::GenericNode(bool client_mode)
       joined_(false),
       expected_(0),
       nat_type_(rudp::NatType::kUnknown),
-      endpoint_() {
+      endpoint_(),
+      messages_() {
   endpoint_.address(maidsafe::GetLocalIp());
   endpoint_.port(maidsafe::test::GetRandomPort());
   functors_.close_node_replaced = nullptr;
-  functors_.message_received = nullptr;
+  functors_.message_received = [&] (const std::string& message,
+                                    const NodeId&,
+                                    ReplyFunctor reply_functor) {
+                                 LOG(kInfo) << id_ << " -- Received: message : "
+                                            << message.substr(0, 10);
+                                 std::lock_guard<std::mutex> guard(mutex_);
+                                 messages_.push_back(message);
+                                 if (!IsClient())
+                                   reply_functor("Response to " + message);
+                               };
   functors_.network_status = nullptr;
-  routing_.reset(new Routing(GetKeys(node_info_plus_), client_mode));
+  routing_.reset(new Routing(GetKeys(*node_info_plus_), client_mode));
   LOG(kVerbose) << "Node constructor";
   std::lock_guard<std::mutex> lock(mutex_);
   id_ = next_node_id_++;
@@ -66,7 +78,7 @@ GenericNode::GenericNode(bool client_mode)
 
 GenericNode::GenericNode(bool client_mode, const rudp::NatType& nat_type)
     : id_(0),
-      node_info_plus_(MakeNodeInfoAndKeys()),
+      node_info_plus_(std::make_shared<NodeInfoAndPrivateKey>(MakeNodeInfoAndKeys())),
       routing_(),
       functors_(),
       mutex_(),
@@ -75,13 +87,23 @@ GenericNode::GenericNode(bool client_mode, const rudp::NatType& nat_type)
       joined_(false),
       expected_(0),
       nat_type_(nat_type),
-      endpoint_() {
+      endpoint_(),
+      messages_() {
   endpoint_.address(GetLocalIp());
   endpoint_.port(maidsafe::test::GetRandomPort());
   functors_.close_node_replaced = nullptr;
-  functors_.message_received = nullptr;
+  functors_.message_received = [&] (const std::string& message,
+                                    const NodeId&,
+                                    ReplyFunctor reply_functor) {
+                                 LOG(kInfo) << id_ << " -- Received: message : "
+                                            << message.substr(0, 10);
+                                 std::lock_guard<std::mutex> guard(mutex_);
+                                 messages_.push_back(message);
+                                 if (!IsClient())
+                                   reply_functor("Response to " + message);
+                               };
   functors_.network_status = nullptr;
-  routing_.reset(new Routing(GetKeys(node_info_plus_), client_mode));
+  routing_.reset(new Routing(GetKeys(*node_info_plus_), client_mode));
   routing_->impl_->network_.nat_type_ = nat_type_;
   LOG(kVerbose) << "Node constructor";
   std::lock_guard<std::mutex> lock(mutex_);
@@ -90,7 +112,7 @@ GenericNode::GenericNode(bool client_mode, const rudp::NatType& nat_type)
 
 GenericNode::GenericNode(bool client_mode, const NodeInfoAndPrivateKey& node_info)
     : id_(0),
-      node_info_plus_(node_info),
+      node_info_plus_(std::make_shared<NodeInfoAndPrivateKey>(node_info)),
       routing_(),
       functors_(),
       mutex_(),
@@ -99,14 +121,24 @@ GenericNode::GenericNode(bool client_mode, const NodeInfoAndPrivateKey& node_inf
       joined_(false),
       expected_(0),
       nat_type_(rudp::NatType::kUnknown),
-      endpoint_() {
+      endpoint_(),
+      messages_() {
   endpoint_.address(GetLocalIp());
   endpoint_.port(maidsafe::test::GetRandomPort());
   functors_.close_node_replaced = nullptr;
-  functors_.message_received = nullptr;
+  functors_.message_received = [&] (const std::string& message,
+                                    const NodeId&,
+                                    ReplyFunctor reply_functor) {
+                                 LOG(kInfo) << id_ << " -- Received: message : "
+                                            << message.substr(0, 10);
+                                 std::lock_guard<std::mutex> guard(mutex_);
+                                 messages_.push_back(message);
+                                 if (!IsClient())
+                                   reply_functor("Response to " + message);
+                               };
   functors_.network_status = nullptr;
-  asymm::Keys keys(GetKeys(node_info_plus_));
-  if (node_info_plus_.node_info.node_id.Empty()) {
+  asymm::Keys keys(GetKeys(*node_info_plus_));
+  if (node_info_plus_->node_info.node_id.Empty()) {
     anonymous_ = true;
     keys.identity.clear();
   }
@@ -128,11 +160,11 @@ Endpoint GenericNode::endpoint() const {
 }
 
 NodeId GenericNode::connection_id() const {
-  return node_info_plus_.node_info.connection_id;
+  return node_info_plus_->node_info.connection_id;
 }
 
 NodeId GenericNode::node_id() const {
-  return node_info_plus_.node_info.node_id;
+  return node_info_plus_->node_info.node_id;
 }
 
 size_t GenericNode::id() const {
@@ -166,7 +198,7 @@ void GenericNode::AddExistingRandomNode(const NodeId& node_id) {
 void GenericNode::Send(const NodeId& destination_id,
                        const NodeId& group_claim,
                        const std::string& data,
-                       const ResponseFunctor response_functor,
+                       const ResponseFunctor& response_functor,
                        const boost::posix_time::time_duration& timeout,
                        bool direct,
                        bool cache) {
@@ -184,11 +216,13 @@ void GenericNode::SendToClosestNode(const protobuf::Message& message) {
   routing_->impl_->network_.SendToClosestNode(message);
 }
 
-bool GenericNode::RoutingTableHasNode(const NodeId node_id) {
-  return (std::find_if(routing_->impl_->routing_table_.nodes_.begin(),
-                       routing_->impl_->routing_table_.nodes_.end(),
-               [node_id](const NodeInfo& node_info) { return node_id == node_info.node_id; })
-               !=  routing_->impl_->routing_table_.nodes_.end());
+bool GenericNode::RoutingTableHasNode(const NodeId& node_id) {
+  return std::find_if(routing_->impl_->routing_table_.nodes_.begin(),
+                      routing_->impl_->routing_table_.nodes_.end(),
+                      [node_id](const NodeInfo& node_info) {
+                        return node_id == node_info.node_id;
+                      }) !=
+         routing_->impl_->routing_table_.nodes_.end();
 }
 
 bool GenericNode::NonRoutingTableHasNode(const NodeId& node_id) {
@@ -221,7 +255,7 @@ testing::AssertionResult GenericNode::DropNode(const NodeId& node_id) {
 
 
 NodeInfo GenericNode::node_info() const {
-  return node_info_plus_.node_info;
+  return node_info_plus_->node_info;
 }
 
 int GenericNode::ZeroStateJoin(const Endpoint& peer_endpoint,
@@ -251,15 +285,221 @@ void GenericNode::set_expected(const int& expected) {
 }
 
 void GenericNode::PrintRoutingTable() {
-  LOG(kVerbose) << " PrintRoutingTable of " << HexSubstr(node_info_plus_.node_info.node_id.String())
-             << (IsClient() ? " Client" : "Vault");
+  LOG(kVerbose) << " PrintRoutingTable of "
+                << HexSubstr(node_info_plus_->node_info.node_id.String())
+                << (IsClient() ? " Client" : "Vault");
   for (auto node_info : routing_->impl_->routing_table_.nodes_) {
     LOG(kVerbose) << "NodeId: " << HexSubstr(node_info.node_id.String());
   }
-  LOG(kInfo) << "Non-RoutingTable of " << HexSubstr(node_info_plus_.node_info.node_id.String());
+  LOG(kInfo) << "Non-RoutingTable of " << HexSubstr(node_info_plus_->node_info.node_id.String());
   for (auto node_info : routing_->impl_->non_routing_table_.nodes_) {
     LOG(kVerbose) << "NodeId: " << HexSubstr(node_info.node_id.String());
   }
+}
+
+size_t GenericNode::MessagesSize() const { return messages_.size(); }
+
+void GenericNode::ClearMessages() {
+  std::lock_guard<std::mutex> lock(mutex_);
+  messages_.clear();
+}
+
+
+GenericNetwork::GenericNetwork()
+    : nodes_(),
+      bootstrap_endpoints_(),
+      bootstrap_path_("bootstrap"),
+      mutex_() {
+  LOG(kVerbose) << "RoutingNetwork Constructor";
+}
+
+GenericNetwork::~GenericNetwork() {}
+
+void GenericNetwork::SetUp() {
+  NodePtr node1(new GenericNode(false)), node2(new GenericNode(false));
+  nodes_.push_back(node1);
+  nodes_.push_back(node2);
+  SetNodeValidationFunctor(node1);
+  SetNodeValidationFunctor(node2);
+  LOG(kVerbose) << "Setup started";
+  auto f1 = std::async(std::launch::async, [=, &node2] ()->int {
+    return node1->ZeroStateJoin(node2->endpoint(), node2->node_info());
+  });
+  auto f2 = std::async(std::launch::async, [=, &node1] ()->int {
+    return node2->ZeroStateJoin(node1->endpoint(), node1->node_info());
+  });
+  EXPECT_EQ(kSuccess, f2.get());
+  EXPECT_EQ(kSuccess, f1.get());
+  LOG(kVerbose) << "Setup succeeded";
+//    node1->PrintRoutingTable();
+//    node2->PrintRoutingTable();
+}
+
+void GenericNetwork::TearDown() {
+  GenericNode::next_node_id_ = 1;
+  nodes_.clear();
+}
+
+void GenericNetwork::SetUpNetwork(const size_t& non_client_size, const size_t& client_size) {
+  for (size_t index = 2; index < non_client_size; ++index) {
+    NodePtr node(new GenericNode(false));
+    AddNodeDetails(node);
+    LOG(kVerbose) << "Node # " << nodes_.size() << " added to network";
+//      node->PrintRoutingTable();
+  }
+  for (size_t index = 0; index < client_size; ++index) {
+    NodePtr node(new GenericNode(true));
+    AddNodeDetails(node);
+    LOG(kVerbose) << "Node # " << nodes_.size() << " added to network";
+  }
+  Sleep(boost::posix_time::seconds(1));
+  PrintRoutingTables();
+//    EXPECT_TRUE(ValidateRoutingTables());
+}
+
+void GenericNetwork::AddNode(const bool& client_mode, const NodeId& node_id, bool anonymous) {
+  NodeInfoAndPrivateKey node_info;
+  if (!anonymous) {
+    node_info = MakeNodeInfoAndKeys();
+    if (node_id != NodeId())
+      node_info.node_info.node_id = node_id;
+  }
+  NodePtr node(new GenericNode(client_mode, node_info));
+  AddNodeDetails(node);
+  LOG(kVerbose) << "Node # " << nodes_.size() << " added to network";
+//    node->PrintRoutingTable();
+}
+
+void GenericNetwork::AddNode(const bool& client_mode, const rudp::NatType& nat_type) {
+  NodeInfoAndPrivateKey node_info(MakeNodeInfoAndKeys());
+  NodePtr node(new GenericNode(client_mode, nat_type));
+  AddNodeDetails(node);
+  LOG(kVerbose) << "Node # " << nodes_.size() << " added to network";
+//    node->PrintRoutingTable();
+}
+
+bool GenericNetwork::RemoveNode(const NodeId& node_id) {
+  std::lock_guard<std::mutex> lock(mutex_);
+  auto iter = std::find_if(nodes_.begin(), nodes_.end(),
+      [&node_id](const NodePtr node) {
+          return node_id == node->node_id();
+      });
+  if (iter == nodes_.end())
+    return false;
+  nodes_.erase(iter);
+  return true;
+}
+
+void GenericNetwork::Validate(const NodeId& node_id, GivePublicKeyFunctor give_public_key) {
+  if (node_id == NodeId())
+    return;
+
+  auto iter = std::find_if(nodes_.begin(), nodes_.end(),
+      [&node_id](const NodePtr& node)->bool {
+        EXPECT_FALSE(GetKeys(*node->node_info_plus_).identity.empty());
+        return GetKeys(*node->node_info_plus_).identity == node_id.String();
+  });
+  EXPECT_NE(iter, nodes_.end());
+  if (iter != nodes_.end())
+    give_public_key(GetKeys(*(*iter)->node_info_plus_).public_key);
+}
+
+void GenericNetwork::SetNodeValidationFunctor(NodePtr node) {
+  node->functors_.request_public_key = [this](const NodeId& node_id,
+      GivePublicKeyFunctor give_public_key) { this->Validate(node_id, give_public_key);
+  };
+}
+
+void GenericNetwork::PrintRoutingTables() {
+  for (auto node : this->nodes_)
+    node->PrintRoutingTable();
+}
+
+bool GenericNetwork::ValidateRoutingTables() {
+  std::vector<NodeId> node_ids;
+  for (auto node : this->nodes_)
+    if (!node->IsClient())
+      node_ids.push_back(node->node_id());
+  for (auto node : nodes_) {
+    LOG(kVerbose) << "Reference node: " << HexSubstr(node->node_id().String());
+    std::sort(node_ids.begin(), node_ids.end(),
+              [=](const NodeId& lhs, const NodeId& rhs)->bool {
+                return NodeId::CloserToTarget(lhs, rhs, node->node_id());
+              });
+    for (auto node_id : node_ids)
+      LOG(kVerbose) << HexSubstr(node_id.String());
+//      node->PrintRoutingTable();
+    auto routing_table(node->RoutingTable());
+//      EXPECT_FALSE(routing_table.size() < Parameters::closest_nodes_size);
+    std::sort(routing_table.begin(), routing_table.end(),
+              [&, this](const NodeInfo& lhs, const NodeInfo& rhs)->bool {
+                return NodeId::CloserToTarget(lhs.node_id, rhs.node_id, node->node_id());
+              });
+    LOG(kVerbose) << "Print ordered RT";
+    uint16_t size(std::min(static_cast<uint16_t>(routing_table.size()),
+                           Parameters::closest_nodes_size));
+    for (auto node_info : routing_table)
+      LOG(kVerbose) << HexSubstr(node_info.node_id.String());
+    for (auto iter(routing_table.begin());
+         iter < routing_table.begin() + size -1;
+         ++iter) {
+      size_t distance(std::distance(node_ids.begin(), std::find(node_ids.begin(),
+                                                                  node_ids.end(),
+                                                                  (*iter).node_id)));
+       LOG(kVerbose) << "distance: " << distance << " from "
+                     << HexSubstr((*iter).node_id.String());
+       if (distance > size)
+        return false;
+    }
+  }
+  return true;
+}
+
+uint16_t GenericNetwork::NonClientNodesSize() const {
+  uint16_t non_client_size(0);
+  for (auto node : this->nodes_)
+    if (!node->IsClient())
+      non_client_size++;
+      return non_client_size;
+}
+
+void GenericNetwork::AddNodeDetails(NodePtr node) {
+  std::condition_variable cond_var;
+  std::mutex mutex;
+  SetNodeValidationFunctor(node);
+  uint16_t node_size(NonClientNodesSize());
+  node->set_expected(NetworkStatus(node->IsClient(),
+                                   std::min(node_size, Parameters::closest_nodes_size)));
+  nodes_.push_back(node);
+  std::weak_ptr<GenericNode> weak_node(node);
+  node->functors_.network_status = [&cond_var, weak_node](const int& result)->void {
+    if (NodePtr node = weak_node.lock()) {
+      if (!node->anonymous_) {
+        ASSERT_GE(result, kSuccess);
+      } else  {
+        if (!node->joined()) {
+          ASSERT_EQ(result, kSuccess);
+        } else if (node->joined()) {
+          ASSERT_EQ(result, kAnonymousSessionEnded);
+        }
+      }
+      if (((result == node->expected()) && (!node->joined())) || node->anonymous_) {
+        node->set_joined(true);
+        cond_var.notify_one();
+      }
+    }
+  };
+  bootstrap_endpoints_.clear();
+  bootstrap_endpoints_.push_back(nodes_[1]->endpoint());
+  node->Join(bootstrap_endpoints_);
+
+  if (!node->joined()) {
+    std::unique_lock<std::mutex> lock(mutex);
+    auto result = cond_var.wait_for(lock, std::chrono::seconds(20));
+    EXPECT_EQ(result, std::cv_status::no_timeout);
+    Sleep(boost::posix_time::millisec(600));
+  }
+  PrintRoutingTables();
 }
 
 

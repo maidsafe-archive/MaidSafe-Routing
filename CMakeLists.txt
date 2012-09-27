@@ -36,7 +36,8 @@ file(GLOB HEADER_FILES_ROUTING_DIR "${PROJECT_SOURCE_DIR}/src/maidsafe/routing/*
 file(GLOB PROTO_FILES_ROUTING_DIR "${PROJECT_SOURCE_DIR}/src/maidsafe/routing/*.proto")
 file(GLOB SOURCE_PROTO_FILES_ROUTING_DIR "${PROJECT_SOURCE_DIR}/src/maidsafe/routing/*.pb.cc")
 file(GLOB HEADER_PROTO_FILES_ROUTING_DIR "${PROJECT_SOURCE_DIR}/src/maidsafe/routing/*pb.h")
-file(GLOB API_FILES_ROUTING_DIR "${PROJECT_SOURCE_DIR}/include/maidsafe/routing/*.h")
+file(GLOB API_FILES_ROUTING_DIR "${PROJECT_SOURCE_DIR}/include/maidsafe/routing/*.h"
+                                "${PROJECT_SOURCE_DIR}/include/maidsafe/routing/tests/*.h")
 
 source_group("Routing Source Files" FILES ${SOURCE_FILES_ROUTING_DIR})
 source_group("Routing Header Files" FILES ${HEADER_FILES_ROUTING_DIR})

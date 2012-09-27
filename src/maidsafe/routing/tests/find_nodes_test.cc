@@ -24,6 +24,7 @@
 #include "maidsafe/routing/network_utils.h"
 #include "maidsafe/routing/routing_pb.h"
 #include "maidsafe/routing/tests/routing_network.h"
+#include "maidsafe/routing/tests/test_utils.h"
 
 namespace args = std::placeholders;
 
@@ -33,14 +34,12 @@ namespace routing {
 
 namespace test {
 
-template <typename NodeType>
-class FindNodeNetwork : public GenericNetwork<NodeType> {
+class FindNodeNetwork : public GenericNetwork {
  public:
-  FindNodeNetwork(void) : GenericNetwork<NodeType>() {}
+  FindNodeNetwork(void) : GenericNetwork() {}
 
  protected:
-  testing::AssertionResult Find(std::shared_ptr<NodeType> source,
-                                const NodeId& node_id) {
+  testing::AssertionResult Find(std::shared_ptr<GenericNode> source, const NodeId& node_id) {
     protobuf::Message find_node_rpc(rpcs::FindNodes(node_id, source->node_id(), 8));
     source->SendToClosestNode(find_node_rpc);
     return testing::AssertionSuccess();
@@ -60,10 +59,7 @@ class FindNodeNetwork : public GenericNetwork<NodeType> {
   }
 };
 
-
-TYPED_TEST_CASE_P(FindNodeNetwork);
-
-TYPED_TEST_P(FindNodeNetwork, FUNC_FindExistingNode) {
+TEST_F(FindNodeNetwork, FUNC_FindExistingNode) {
   this->SetUpNetwork(kNetworkSize);
   for (auto source : this->nodes_) {
     EXPECT_TRUE(this->Find(source, source->node_id()));
@@ -72,7 +68,7 @@ TYPED_TEST_P(FindNodeNetwork, FUNC_FindExistingNode) {
   EXPECT_TRUE(this->ValidateRoutingTables());
 }
 
-TYPED_TEST_P(FindNodeNetwork, FUNC_FindExistingNodeInHybridNetwork) {
+TEST_F(FindNodeNetwork, FUNC_FindExistingNodeInHybridNetwork) {
   this->SetUpNetwork(kServerSize, kClientSize);
   for (auto source : this->nodes_) {
     EXPECT_TRUE(this->Find(source, source->node_id()));
@@ -82,7 +78,7 @@ TYPED_TEST_P(FindNodeNetwork, FUNC_FindExistingNodeInHybridNetwork) {
 }
 
 
-TYPED_TEST_P(FindNodeNetwork, FUNC_FindNonExistingNode) {
+TEST_F(FindNodeNetwork, FUNC_FindNonExistingNode) {
   this->SetUpNetwork(kServerSize, kClientSize);
   uint32_t source(RandomUint32() % (this->nodes_.size() - 2) + 2);
   NodeId node_id(GenerateUniqueRandomId(this->nodes_[source]->node_id(), 6));
@@ -91,7 +87,7 @@ TYPED_TEST_P(FindNodeNetwork, FUNC_FindNonExistingNode) {
   EXPECT_FALSE(this->nodes_[source]->RoutingTableHasNode(node_id));
 }
 
-TYPED_TEST_P(FindNodeNetwork, FUNC_FindNodeAfterDrop) {
+TEST_F(FindNodeNetwork, FUNC_FindNodeAfterDrop) {
   this->SetUpNetwork(kNetworkSize);
   uint32_t source(RandomUint32() % (this->nodes_.size() - 2) + 2);
   NodeId node_id(GenerateUniqueRandomId(this->nodes_[source]->node_id(), 6));
@@ -104,7 +100,7 @@ TYPED_TEST_P(FindNodeNetwork, FUNC_FindNodeAfterDrop) {
   EXPECT_TRUE(this->nodes_[source]->RoutingTableHasNode(node_id));
 }
 
-TYPED_TEST_P(FindNodeNetwork, FUNC_VaultFindVaultNode) {
+TEST_F(FindNodeNetwork, FUNC_VaultFindVaultNode) {
   this->SetUpNetwork(kNetworkSize);
   uint32_t source(
       RandomUint32() % (static_cast<uint32_t>(this->nodes_.size()) - 2) + 2),
@@ -121,7 +117,7 @@ TYPED_TEST_P(FindNodeNetwork, FUNC_VaultFindVaultNode) {
   EXPECT_TRUE(this->nodes_[source]->RoutingTableHasNode(this->nodes_[dest]->node_id()));
 }
 
-TYPED_TEST_P(FindNodeNetwork, FUNC_VaultFindClientNode) {
+TEST_F(FindNodeNetwork, FUNC_VaultFindClientNode) {
   // Create a bootstrap network
   this->SetUpNetwork(kNetworkSize);
   uint32_t source(
@@ -142,7 +138,7 @@ TYPED_TEST_P(FindNodeNetwork, FUNC_VaultFindClientNode) {
   EXPECT_TRUE(this->nodes_[source]->NonRoutingTableHasNode(this->nodes_[dest]->node_id()));
 }
 
-TYPED_TEST_P(FindNodeNetwork, FUNC_ClientFindVaultNode) {
+TEST_F(FindNodeNetwork, FUNC_ClientFindVaultNode) {
   // Create a bootstrap network
   this->SetUpNetwork(kNetworkSize);
   uint32_t source(
@@ -172,7 +168,7 @@ TYPED_TEST_P(FindNodeNetwork, FUNC_ClientFindVaultNode) {
   EXPECT_FALSE(this->nodes_[vault]->NonRoutingTableHasNode(this->nodes_[client]->node_id()));
 }
 
-TYPED_TEST_P(FindNodeNetwork, FUNC_ClientFindClientNode) {
+TEST_F(FindNodeNetwork, FUNC_ClientFindClientNode) {
   // Create a bootstrap network
   this->SetUpNetwork(kNetworkSize);
   uint32_t source(
@@ -203,17 +199,6 @@ TYPED_TEST_P(FindNodeNetwork, FUNC_ClientFindClientNode) {
   EXPECT_FALSE(this->nodes_[client1]->RoutingTableHasNode(this->nodes_[client2]->node_id()));
   EXPECT_FALSE(this->nodes_[client1]->NonRoutingTableHasNode(this->nodes_[client2]->node_id()));
 }
-
-REGISTER_TYPED_TEST_CASE_P(FindNodeNetwork, FUNC_FindExistingNode,
-                                            FUNC_FindExistingNodeInHybridNetwork,
-                                            FUNC_FindNonExistingNode,
-                                            FUNC_FindNodeAfterDrop,
-                                            FUNC_VaultFindVaultNode,
-                                            FUNC_VaultFindClientNode,
-                                            FUNC_ClientFindVaultNode,
-                                            FUNC_ClientFindClientNode);
-INSTANTIATE_TYPED_TEST_CASE_P(MAIDSAFE, FindNodeNetwork, GenericNode);
-
 
 }  // namespace test
 
