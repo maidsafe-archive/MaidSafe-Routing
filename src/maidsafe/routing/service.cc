@@ -132,7 +132,7 @@ void Service::Connect(protobuf::Message& message) {
 //    rudp::NatType peer_nat_type = NatTypeFromProtobuf(connect_request.contact().nat_type());
     rudp::NatType this_nat_type(rudp::NatType::kUnknown);
 
-    int ret_val = network.GetAvailableEndpoint(peer_node.connection_id, peer_endpoint_pair,
+    int ret_val = network_.GetAvailableEndpoint(peer_node.connection_id, peer_endpoint_pair,
                                                this_endpoint_pair, this_nat_type);
     if (ret_val != rudp::kSuccess) {
       LOG(kError) << "[" << DebugId(routing_table_.kNodeId()) << "] Service: "
