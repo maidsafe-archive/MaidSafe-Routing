@@ -157,7 +157,7 @@ class RoutingNetworkTest : public GenericNetwork<NodeType> {
   testing::AssertionResult GroupSend(const NodeId& node_id,
                                      const size_t& messages,
                                      uint16_t source_index = 0) {
-    assert(10 * messages < std::numeric_limits<long>::max());  // NOLINT (Fraser)
+    assert(static_cast<unsigned int> (10 * messages) < std::numeric_limits<long>::max());  // NOLINT (Fraser)
     size_t messages_count(0), expected_messages(messages);
     std::string data(RandomAlphaNumericString((2 ^ 10) * 256));
 
