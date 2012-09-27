@@ -35,28 +35,19 @@ namespace routing {
 
 void ValidateAndAddToRudp(NetworkUtils& network,
                           const NodeId& this_node_id,
-                          const NodeId& this_node_seen_connection_id,
+                          const NodeId& this_connection_id,
                           const NodeId& peer_id,
                           const NodeId& peer_connection_id,
                           rudp::EndpointPair peer_endpoint_pair,
                           const asymm::PublicKey& /*public_key*/,
                           const bool& client) {
   protobuf::Message connect_success(
-      rpcs::ConnectSuccess(peer_id, this_node_id, this_node_seen_connection_id, client));
+      rpcs::ConnectSuccess(peer_id, this_node_id, this_connection_id, client));
   int result = network.Add(peer_connection_id, peer_endpoint_pair,
                            connect_success.SerializeAsString());
   if (result != rudp::kSuccess) {
-    if ((result == rudp::kConnectionAlreadyExists) &&
-        (peer_connection_id == network.bootstrap_connection_id() &&
-        (peer_id == network.bootstrap_connection_id()))) {
-      LOG(kInfo) << "rudp add special case, trying to add bootstrap node ["
-                 << DebugId(peer_id) << "] Connection id : "
-                 << DebugId(peer_connection_id);
-//      network.SendToDirect(connect_success, network.bootstrap_connection_id());
-    } else {
-      LOG(kError) << "rudp add failed for peer node [" << DebugId(peer_id) << "]. Connection id : "
-                  << DebugId(peer_connection_id) << ". result : " << result;
-    }
+    LOG(kError) << "rudp add failed for peer node [" << DebugId(peer_id) << "]. Connection id : "
+                << DebugId(peer_connection_id) << ". result : " << result;
   } else {
     LOG(kVerbose) << "rudp.Add succeeded for peer node ["
                   << DebugId(peer_id) << "]. Connection id : "
@@ -72,10 +63,12 @@ void ValidateAndAddToRoutingTable(NetworkUtils& network,
                                   const asymm::PublicKey& public_key,
                                   const bool& client) {
   LOG(kVerbose) << "ValidateAndAddToRoutingTable";
-  if (network.MarkConnectionAsValid(peer_id) != kSuccess) {
+  if (network.MarkConnectionAsValid(connection_id) != kSuccess) {
     LOG(kError) << "[" << HexSubstr(routing_table.kKeys().identity) << "] "
                 << ". Rudp failed to validate connection with  Peer id : "
-                << HexSubstr(peer_id.String());
+                << DebugId(peer_id)
+                << " , Connection id : "
+                << DebugId(connection_id);
     return;
   }
 

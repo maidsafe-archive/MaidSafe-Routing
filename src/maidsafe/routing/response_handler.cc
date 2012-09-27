@@ -145,7 +145,7 @@ void ResponseHandler::Connect(protobuf::Message& message) {
                                ValidateAndAddToRudp(
                                    response_handler->network_,
                                    response_handler->routing_table_.kNodeId(),
-                                   this_node_seen_connection_id,
+                                   response_handler->routing_table_.kConnectionId(),
                                    peer_node_id,
                                    peer_node_id,
                                    peer_endpoint_pair,
@@ -282,6 +282,7 @@ void ResponseHandler::ConnectTo(const std::vector<std::string>& nodes,
           rpcs::Connect(NodeId(nodes.at(i)),
           this_endpoint_pair,
           routing_table_.kNodeId(),
+          routing_table_.kConnectionId(),
           closest_node_ids,
           routing_table_.client_mode(),
           this_nat_type,
@@ -290,7 +291,8 @@ void ResponseHandler::ConnectTo(const std::vector<std::string>& nodes,
       LOG(kVerbose) << "Sending Connect RPC to " << HexSubstr(nodes.at(i))
                     << " message id : " << connect_rpc.id();
       if (send_to_bootstrap_connection)
-        network_.SendToDirect(connect_rpc, network_.bootstrap_connection_id());
+        network_.SendToDirect(connect_rpc, network_.bootstrap_connection_id(),
+                              network_.bootstrap_connection_id());
       else
         network_.SendToClosestNode(connect_rpc);
     }
@@ -310,6 +312,10 @@ void ResponseHandler::ConnectSuccess(protobuf::Message& message) {
   NodeId peer_connection_id(connect_success.connection_id());
   if (peer_node_id.Empty() || !peer_node_id.IsValid()) {
     LOG(kWarning) << "Invalid node id provided";
+    return;
+  }
+  if (peer_connection_id.Empty() || !peer_connection_id.IsValid()) {
+    LOG(kWarning) << "Invalid peer_connection_id provided";
     return;
   }
 

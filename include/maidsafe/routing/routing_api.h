@@ -52,7 +52,7 @@ struct NodeInfo;
 class Routing {
  public:
   // Providing empty key means that, on Join it will join the network anonymously.  This will allow
-  // Send/Recieve messages to/from network.
+  // Send/Receive messages to/from network.
   // WARNING: CONNECTION TO NETWORK WILL ONLY STAY FOR 60 SECONDS.
   // Users are expected to recreate routing object with right credentials and call Join method to
   // join the routing network.

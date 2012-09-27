@@ -97,7 +97,8 @@ void Service::Connect(protobuf::Message& message) {
   }
   NodeInfo peer_node;
   peer_node.node_id = NodeId(connect_request.contact().node_id());
-  LOG(kVerbose) <<"[" << DebugId(routing_table_.kNodeId()) << "]"
+  peer_node.connection_id = NodeId(connect_request.contact().connection_id());
+  LOG(kVerbose) << "[" << DebugId(routing_table_.kNodeId()) << "]"
                 << " received Connect request from "
                 << DebugId(peer_node.node_id);
   connect_response.set_answer(false);
@@ -114,19 +115,12 @@ void Service::Connect(protobuf::Message& message) {
   }
 
   bool check_node_succeeded(false);
-  //  For handling connection to multilple client with same id
-  NodeId peer_connection_id(peer_node.node_id);
   if (message.client_node()) {  // Client node, check non-routing table
     LOG(kVerbose) << "Client connect request - will check non-routing table.";
     NodeId furthest_close_node_id =
         routing_table_.GetNthClosestNode(routing_table_.kNodeId(),
                                          Parameters::closest_nodes_size).node_id;
     check_node_succeeded = non_routing_table_.CheckNode(peer_node, furthest_close_node_id);
-    if (check_node_succeeded && non_routing_table_.IsConnected(peer_node.node_id)) {
-      peer_connection_id =  NodeId(NodeId::kRandomId);  // Duplication, so create random id
-      LOG(kInfo) << "Id Duplication, so created random id : " << DebugId(peer_connection_id)
-                 << " for peer id : " << DebugId(peer_node.node_id);
-    }
   } else {
     LOG(kVerbose) << "Server connect request - will check routing table.";
     check_node_succeeded = routing_table_.CheckNode(peer_node);
@@ -138,12 +132,14 @@ void Service::Connect(protobuf::Message& message) {
 //    rudp::NatType peer_nat_type = NatTypeFromProtobuf(connect_request.contact().nat_type());
     rudp::NatType this_nat_type(rudp::NatType::kUnknown);
 
-    int ret_val = network_.GetAvailableEndpoint(peer_connection_id, peer_endpoint_pair,
+    int ret_val = network.GetAvailableEndpoint(peer_node.connection_id, peer_endpoint_pair,
                                                this_endpoint_pair, this_nat_type);
     if (ret_val != rudp::kSuccess) {
       LOG(kError) << "[" << DebugId(routing_table_.kNodeId()) << "] Service: "
-                  << "Failed to get available endpoint for new connection to : "
-                  << DebugId(peer_connection_id)
+                  << "Failed to get available endpoint for new connection to node id : "
+                  << DebugId(peer_node.node_id)
+                  << ", Connection id :"
+                  << DebugId(peer_node.connection_id)
                   << ". peer_endpoint_pair.external = "
                   << peer_endpoint_pair.external
                   << ", peer_endpoint_pair.local = "
@@ -182,20 +178,22 @@ void Service::Connect(protobuf::Message& message) {
             LOG(kInfo) << "validation callback called with public key for "
                        << DebugId(peer_node.node_id);
             ValidateAndAddToRudp(network_,
-                                 NodeId(routing_table_.kKeys().identity),
-                                 NodeId(routing_table_.kKeys().identity),
+                                 routing_table_.kNodeId(),
+                                 routing_table_.kConnectionId(),
                                  peer_node.node_id,
-                                 peer_connection_id,
+                                 peer_node.connection_id,
                                  peer_endpoint_pair,
                                  key,
                                  routing_table_.client_mode());
           };
       request_public_key_functor_(peer_node.node_id, validate_node);
       connect_response.set_answer(true);
-      connect_response.mutable_contact()->set_node_id(routing_table_.kKeys().identity);
+
+      connect_response.mutable_contact()->set_node_id(routing_table_.kNodeId().String());
+      connect_response.mutable_contact()->set_connection_id(
+          routing_table_.kConnectionId().String());
       connect_response.mutable_contact()->set_nat_type(NatTypeProtobuf(this_nat_type));
-      if (peer_connection_id != routing_table_.kNodeId())
-        connect_response.set_connection_id(peer_connection_id.String());
+
       SetProtobufEndpoint(this_endpoint_pair.local,
                           connect_response.mutable_contact()->mutable_private_endpoint());
       SetProtobufEndpoint(this_endpoint_pair.external,

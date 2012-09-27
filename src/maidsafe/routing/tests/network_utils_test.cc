@@ -88,7 +88,7 @@ TEST(NetworkUtilsTest, BEH_ProcessSendUnavailableDirectEndpoint) {
   AsioService asio_service(0);
   Timer timer(asio_service);
   NetworkUtils network(routing_table, non_routing_table, timer);
-  network.SendToDirect(message, NodeId(NodeId::kRandomId));
+  network.SendToDirect(message, NodeId(NodeId::kRandomId), NodeId(NodeId::kRandomId));
 }
 
 TEST(NetworkUtilsTest, FUNC_ProcessSendDirectEndpoint) {
@@ -155,15 +155,19 @@ TEST(NetworkUtilsTest, FUNC_ProcessSendDirectEndpoint) {
   rudp::NatType nat_type;
   auto a1 = std::async(std::launch::async, [=, &rudp1, &nat_type]()->NodeId {
       std::vector<Endpoint> bootstrap_endpoint(1, endpoint2);
-      return rudp1.Bootstrap(bootstrap_endpoint,
-                             true,
-                             message_received_functor1,
-                             connection_lost_functor,
-                             node_id1,
-                             private_key1,
-                             public_key1,
-                             nat_type,
-                             endpoint1);
+      NodeId chosen_bootstrap_peer;
+      if (rudp1.Bootstrap(bootstrap_endpoint,
+                          message_received_functor1,
+                          connection_lost_functor,
+                          node_id1,
+                          private_key1,
+                          public_key1,
+                          chosen_bootstrap_peer,
+                          nat_type,
+                          endpoint1) != kSuccess) {
+        chosen_bootstrap_peer = NodeId();
+      }
+      return chosen_bootstrap_peer;
   });
   asymm::Keys keys2(MakeKeys());
   NodeId node_id2(keys2.identity);
@@ -171,15 +175,19 @@ TEST(NetworkUtilsTest, FUNC_ProcessSendDirectEndpoint) {
   std::shared_ptr<asymm::PublicKey> public_key2(new asymm::PublicKey(keys2.public_key));
   auto a2 = std::async(std::launch::async, [=, &rudp2, &nat_type]()->NodeId {
       std::vector<Endpoint> bootstrap_endpoint(1, endpoint1);
-      return rudp2.Bootstrap(bootstrap_endpoint,
-                             true,
-                             message_received_functor2,
-                             connection_lost_functor,
-                             node_id2,
-                             private_key2,
-                             public_key2,
-                             nat_type,
-                             endpoint2);
+      NodeId chosen_bootstrap_peer;
+      if (rudp2.Bootstrap(bootstrap_endpoint,
+                          message_received_functor2,
+                          connection_lost_functor,
+                          node_id2,
+                          private_key2,
+                          public_key2,
+                          chosen_bootstrap_peer,
+                          nat_type,
+                          endpoint2) != kSuccess) {
+        chosen_bootstrap_peer = NodeId();
+      }
+      return chosen_bootstrap_peer;
   });
 
   EXPECT_EQ(node_id2, a1.get());  // wait for promise !
@@ -204,7 +212,6 @@ TEST(NetworkUtilsTest, FUNC_ProcessSendDirectEndpoint) {
 
   std::vector<Endpoint> bootstrap_endpoint(1, endpoint2);
   EXPECT_EQ(kSuccess, network.Bootstrap(bootstrap_endpoint,
-                                        false,
                                         message_received_functor3,
                                         connection_lost_functor));
 //   rudp::EndpointPair endpoint_pair2, endpoint_pair3;
@@ -220,7 +227,7 @@ TEST(NetworkUtilsTest, FUNC_ProcessSendDirectEndpoint) {
   }
 
   for (auto i(0); i != kMessageCount; ++i) {
-    network.SendToDirect(sent_message, node_id2);
+    network.SendToDirect(sent_message, node_id2, node_id2);
     Sleep(boost::posix_time::milliseconds(100));
   }
   if (!test_completion_future.timed_wait(bptime::seconds(60))) {
@@ -304,15 +311,19 @@ TEST(NetworkUtilsTest, FUNC_ProcessSendRecursiveSendOn) {
   rudp::NatType nat_type;
   auto a1 = std::async(std::launch::async, [=, &rudp1, &nat_type]()->NodeId {
       std::vector<Endpoint> bootstrap_endpoint(1, endpoint2);
-      return rudp1.Bootstrap(bootstrap_endpoint,
-                             true,
-                             message_received_functor1,
-                             connection_lost_functor,
-                             node_id1,
-                             private_key1,
-                             public_key1,
-                             nat_type,
-                             endpoint1);
+      NodeId chosen_bootstrap_peer;
+      if (rudp1.Bootstrap(bootstrap_endpoint,
+                          message_received_functor1,
+                          connection_lost_functor,
+                          node_id1,
+                          private_key1,
+                          public_key1,
+                          chosen_bootstrap_peer,
+                          nat_type,
+                          endpoint1) != kSuccess) {
+        chosen_bootstrap_peer = NodeId();
+      }
+      return chosen_bootstrap_peer;
   });
   NodeInfoAndPrivateKey node2 = MakeNodeInfoAndKeys();
   asymm::Keys keys2(GetKeys(node2));
@@ -321,15 +332,19 @@ TEST(NetworkUtilsTest, FUNC_ProcessSendRecursiveSendOn) {
   std::shared_ptr<asymm::PublicKey> public_key2(new asymm::PublicKey(keys2.public_key));
   auto a2 = std::async(std::launch::async, [=, &rudp2, &nat_type]()->NodeId {
       std::vector<Endpoint> bootstrap_endpoint(1, endpoint1);
-      return rudp2.Bootstrap(bootstrap_endpoint,
-                             true,
-                             message_received_functor2,
-                             connection_lost_functor,
-                             node_id2,
-                             private_key2,
-                             public_key2,
-                             nat_type,
-                             endpoint2);
+      NodeId chosen_bootstrap_peer;
+      if (rudp2.Bootstrap(bootstrap_endpoint,
+                          message_received_functor2,
+                          connection_lost_functor,
+                          node_id2,
+                          private_key2,
+                          public_key2,
+                          chosen_bootstrap_peer,
+                          nat_type,
+                          endpoint2) != kSuccess) {
+        chosen_bootstrap_peer = NodeId();
+      }
+      return chosen_bootstrap_peer;
   });
 
   EXPECT_EQ(node_id2, a1.get());  // wait for promise !
@@ -348,7 +363,6 @@ TEST(NetworkUtilsTest, FUNC_ProcessSendRecursiveSendOn) {
 
   std::vector<Endpoint> bootstrap_endpoint(1, endpoint2);
   EXPECT_EQ(kSuccess, network.Bootstrap(bootstrap_endpoint,
-                                        false,
                                         message_received_functor3,
                                         connection_lost_functor3));
   rudp::EndpointPair endpoint_pair2, endpoint_pair3;

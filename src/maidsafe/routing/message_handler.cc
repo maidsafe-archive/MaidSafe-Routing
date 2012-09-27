@@ -66,7 +66,9 @@ void MessageHandler::HandleRoutingMessage(protobuf::Message& message) {
     return;
 
   if (routing_table_.Size() == 0)  // This node can only send to bootstrap_endpoint
-    network_.SendToDirect(message, network_.bootstrap_connection_id());
+    network_.SendToDirect(message,
+                          network_.bootstrap_connection_id(),
+                          network_.bootstrap_connection_id());
   else
     network_.SendToClosestNode(message);
 }
@@ -205,7 +207,7 @@ void MessageHandler::HandleGroupMessageAsClosestNode(protobuf::Message& message)
     message.set_destination_id(i.String());
     NodeInfo node;
     if (routing_table_.GetNodeInfo(i, node)) {
-      network_.SendToDirect(message, node.connection_id);
+      network_.SendToDirect(message, node.node_id, node.connection_id);
     }
   }
 
@@ -396,7 +398,7 @@ void MessageHandler::HandleGroupRelayRequestMessageAsClosestNode(protobuf::Messa
     message.set_destination_id(i.String());
     NodeInfo node;
     if (routing_table_.GetNodeInfo(i, node)) {
-      network_.SendToDirect(message, node.connection_id);
+      network_.SendToDirect(message, node.node_id, node.connection_id);
     }
   }
 

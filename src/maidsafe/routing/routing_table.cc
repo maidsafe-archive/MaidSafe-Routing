@@ -34,6 +34,7 @@ RoutingTable::RoutingTable(const asymm::Keys& keys, const bool& client_mode)
       keys_(keys),
       sorted_(false),
       kNodeId_(NodeId(keys_.identity)),
+      kConnectionId_((client_mode ? NodeId(NodeId::kRandomId) : kNodeId_)),
       furthest_group_node_id_(),
       mutex_(),
       remove_node_functor_(),
@@ -473,6 +474,10 @@ NodeId RoutingTable::kNodeId() const {
   return kNodeId_;
 }
 
+NodeId RoutingTable::kConnectionId() const {
+  return kConnectionId_;
+}
+
 void RoutingTable::set_remove_node_functor(
     std::function<void(const NodeInfo&, const bool&)> remove_node_functor) {
   remove_node_functor_ = remove_node_functor;
@@ -488,7 +493,11 @@ void RoutingTable::set_close_node_replaced_functor(
 }
 
 std::string RoutingTable::PrintRoutingTable() {
-  auto rt(nodes_);
+  std::vector<NodeInfo> rt;
+  {
+    std::lock_guard<std::mutex> lock(mutex_);
+    rt = nodes_;
+  }
   std::string s = "\n\n[" + DebugId(kNodeId_) +
       "] This node's own routing table and peer connections:\n";
   for (auto node : rt) {
