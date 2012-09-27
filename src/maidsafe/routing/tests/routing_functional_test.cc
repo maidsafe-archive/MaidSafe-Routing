@@ -463,9 +463,6 @@ TYPED_TEST_P(RoutingNetworkTest, FUNC_AnonymousSendToGroupExistingId) {
 
 TYPED_TEST_P(RoutingNetworkTest, FUNC_JoinAfterBootstrapLeaves) {
   this->SetUpNetwork(kNetworkSize);
-#ifdef  LOCAL_TEST
-  this->nodes_.erase(this->nodes_.begin(), this->nodes_.begin() + 2);
-#endif
   LOG(kVerbose) << "Network Size " << this->nodes_.size();
   Sleep(boost::posix_time::seconds(10));
   LOG(kVerbose) << "RIse ";

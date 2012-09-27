@@ -308,14 +308,10 @@ class GenericNetwork : public testing::Test {
         }
       }
     };
-#ifdef LOCAL_TEST
-    node->Join();
-#else
     bootstrap_endpoints_.clear();
     bootstrap_endpoints_.push_back(nodes_[1]->endpoint());
     node->Join(bootstrap_endpoints_);
 
-#endif
     if (!node->joined()) {
       std::unique_lock<std::mutex> lock(mutex);
       auto result = cond_var.wait_for(lock, std::chrono::seconds(20));

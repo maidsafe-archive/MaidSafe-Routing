@@ -64,9 +64,6 @@ class RoutingTable {
                                                   const bool&)> remove_node_functor);
   bool client_mode() const { return client_mode_; }
   friend class test::GenericNode;
-#ifdef LOCAL_TEST
-  friend struct RoutingPrivate;
-#endif
 
  private:
   RoutingTable(const RoutingTable&);

@@ -77,9 +77,6 @@ class NetworkUtils {
   rudp::NatType nat_type();
   Timer& timer();
   friend class test::GenericNode;
-#ifdef LOCAL_TEST
-friend struct RoutingPrivate;
-#endif
 
  private:
   NetworkUtils(const NetworkUtils&);
