@@ -241,7 +241,7 @@ void FindNodes(RoutingTable& routing_table, protobuf::Message& message) {
     return;
   }
   if ((0 == find_nodes.num_nodes_requested() ||
-      NodeId(find_nodes.target_node()).Empty() ||
+      NodeId(find_nodes.target_node()).IsZero() ||
       !NodeId(find_nodes.target_node()).IsValid())) {
     LOG(kWarning) << "Invalid find node request.";
     message.Clear();

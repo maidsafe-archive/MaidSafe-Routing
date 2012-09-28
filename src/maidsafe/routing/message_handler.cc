@@ -266,7 +266,7 @@ void MessageHandler::HandleMessage(protobuf::Message& message) {
     return HandleRelayRequest(message);
 
   // Invalid source id, unknown message
-  if (!NodeId(message.source_id()).IsValid() || NodeId(message.source_id()).Empty()) {
+  if (!NodeId(message.source_id()).IsValid() || NodeId(message.source_id()).IsZero()) {
     LOG(kWarning) << "Stray message dropped, need valid source ID for processing."
                   << " id: " << message.id();
     return;

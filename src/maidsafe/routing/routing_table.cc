@@ -58,7 +58,7 @@ bool RoutingTable::AddOrCheckNode(NodeInfo& peer, const bool& remove) {
   {
     std::lock_guard<std::mutex> lock(mutex_);
 
-    if (!peer.node_id.IsValid() || peer.node_id.Empty()) {
+    if (!peer.node_id.IsValid() || peer.node_id.IsZero()) {
       LOG(kError) << "Attempt to add an invalid node";
       return false;
     }
@@ -92,7 +92,7 @@ bool RoutingTable::AddOrCheckNode(NodeInfo& peer, const bool& remove) {
   if (return_value && remove) {  // Firing functors on Add only
     UpdateNetworkStatus(routing_table_size);
 
-    if (!removed_node.node_id.Empty()) {
+    if (!removed_node.node_id.IsZero()) {
       LOG(kVerbose) << "Routing table removed node id : " << DebugId(removed_node.node_id)
                     << ", connection id : " << DebugId(removed_node.connection_id);
       if (remove_node_functor_)
@@ -128,7 +128,7 @@ NodeInfo RoutingTable::DropNode(const NodeId& node_to_drop, const bool& routing_
     }
   }
 
-  if (!dropped_node.node_id.Empty()) {
+  if (!dropped_node.node_id.IsZero()) {
     assert(nodes_.size() <= std::numeric_limits<uint16_t>::max());
     UpdateNetworkStatus(static_cast<uint16_t>(nodes_.size()));
   }
@@ -138,7 +138,7 @@ NodeInfo RoutingTable::DropNode(const NodeId& node_to_drop, const bool& routing_
       close_node_replaced_functor_(new_close_nodes);
   }
 
-  if (!dropped_node.node_id.Empty()) {
+  if (!dropped_node.node_id.IsZero()) {
     LOG(kVerbose) << "Routing table dropped node id : " << DebugId(dropped_node.node_id)
                   << ", connection id : " << DebugId(dropped_node.connection_id);
     if (remove_node_functor_  && !routing_only)
@@ -170,7 +170,7 @@ bool RoutingTable::IsThisNodeInRange(const NodeId& target_id, const uint16_t ran
 }
 
 // bool RoutingTable::IsThisNodeClosestTo(const NodeId& target_id) {
-//  if (!target_id.IsValid() || target_id.Empty()) {
+//  if (!target_id.IsValid() || target_id.IsZero()) {
 //    LOG(kError) << "Invalid target_id passed.";
 //    return false;
 //  }
@@ -182,7 +182,7 @@ bool RoutingTable::IsThisNodeInRange(const NodeId& target_id, const uint16_t ran
 // }
 
 bool RoutingTable::IsThisNodeClosestTo(const NodeId& target_id, bool ignore_exact_match) {
-  if (!target_id.IsValid() || target_id.Empty()) {
+  if (!target_id.IsValid() || target_id.IsZero()) {
     LOG(kError) << "Invalid target_id passed.";
     return false;
   }

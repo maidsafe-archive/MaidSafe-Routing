@@ -138,7 +138,7 @@ GenericNode::GenericNode(bool client_mode, const NodeInfoAndPrivateKey& node_inf
                                };
   functors_.network_status = nullptr;
   asymm::Keys keys(GetKeys(*node_info_plus_));
-  if (node_info_plus_->node_info.node_id.Empty()) {
+  if (node_info_plus_->node_info.node_id.IsZeroId()) {
     anonymous_ = true;
     keys.identity.clear();
   }

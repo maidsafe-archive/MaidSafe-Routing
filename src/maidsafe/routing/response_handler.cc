@@ -77,7 +77,7 @@ void ResponseHandler::Connect(protobuf::Message& message) {
   }
 
   if (!NodeId(connect_response.contact().node_id()).IsValid() ||
-      NodeId(connect_response.contact().node_id()).Empty()) {
+      NodeId(connect_response.contact().node_id()).IsZero()) {
     LOG(kError) << "Invalid contact details";
     return;
   }
@@ -206,12 +206,12 @@ void ResponseHandler::ConnectTo(const std::vector<std::string>& nodes,
     closest_node_ids.push_back(node_id.String());
 
   for (const std::string& node_string : closest_nodes) {
-    if (NodeId(node_string).IsValid() && !NodeId(node_string).Empty())
+    if (NodeId(node_string).IsValid() && !NodeId(node_string).IsZero())
       closest_node_ids.push_back(node_string);
   }
 
   for (const std::string& node_string : nodes) {
-    if (NodeId(node_string).IsValid() && !NodeId(node_string).Empty())
+    if (NodeId(node_string).IsValid() && !NodeId(node_string).IsZero())
       closest_node_ids.push_back(node_string);
   }
 
@@ -229,16 +229,16 @@ void ResponseHandler::ConnectTo(const std::vector<std::string>& nodes,
 
   std::remove_if(closest_node_ids.begin(), closest_node_ids.end(),
                  [=](const std::string& closet_node_id)->bool {
-                   return (!NodeId(closet_node_id).IsValid() || NodeId(closet_node_id).Empty());
+                   return (!NodeId(closet_node_id).IsValid() || NodeId(closet_node_id).IsZero());
                  });
 
-  if (network_.bootstrap_connection_id().Empty() && (routing_table_.Size() == 0)) {
+  if (network_.bootstrap_connection_id().IsZero() && (routing_table_.Size() == 0)) {
       LOG(kWarning) << "Need to re bootstrap !";
     return;
   }
 
   bool send_to_bootstrap_connection((routing_table_.Size() < Parameters::closest_nodes_size) &&
-                                    !network_.bootstrap_connection_id().Empty());
+                                    !network_.bootstrap_connection_id().IsZero());
   for (uint16_t i = 0; i < nodes.size(); ++i) {
     NodeInfo node_to_add;
     node_to_add.node_id = NodeId(nodes.at(i));
@@ -308,11 +308,11 @@ void ResponseHandler::ConnectSuccess(protobuf::Message& message) {
 
   NodeId peer_node_id(connect_success.node_id());
   NodeId peer_connection_id(connect_success.connection_id());
-  if (peer_node_id.Empty() || !peer_node_id.IsValid()) {
+  if (peer_node_id.IsZero() || !peer_node_id.IsValid()) {
     LOG(kWarning) << "Invalid node id provided";
     return;
   }
-  if (peer_connection_id.Empty() || !peer_connection_id.IsValid()) {
+  if (peer_connection_id.IsZero() || !peer_connection_id.IsValid()) {
     LOG(kWarning) << "Invalid peer_connection_id provided";
     return;
   }

@@ -29,7 +29,7 @@ namespace rpcs {
 
 // This is maybe not required and might be removed
 protobuf::Message Ping(const NodeId& node_id, const std::string& identity) {
-  assert(node_id.IsValid() && !node_id.Empty() && "Invalid node_id");
+  assert(node_id.IsValid() && !node_id.IsZero() && "Invalid node_id");
   assert(!identity.empty() && "Invalid identity");
   protobuf::Message message;
   protobuf::PingRequest ping_request;
@@ -58,9 +58,9 @@ protobuf::Message Connect(const NodeId& node_id,
                           rudp::NatType nat_type,
                           bool relay_message,
                           NodeId relay_connection_id) {
-  assert(node_id.IsValid() && !node_id.Empty() && "Invalid node_id");
-  assert(this_node_id.IsValid() && !this_node_id.Empty() && "Invalid my node_id");
-  assert(this_connection_id.IsValid() && !this_connection_id.Empty() &&
+  assert(node_id.IsValid() && !node_id.IsZero() && "Invalid node_id");
+  assert(this_node_id.IsValid() && !this_node_id.IsZero() && "Invalid my node_id");
+  assert(this_connection_id.IsValid() && !this_connection_id.IsZero() &&
          "Invalid this_connection_id");
   assert((!our_endpoint.external.address().is_unspecified() ||
           !our_endpoint.local.address().is_unspecified()) && "Unspecified endpoint");
@@ -104,8 +104,8 @@ protobuf::Message FindNodes(const NodeId& node_id,
                             const int& num_nodes_requested,
                             bool relay_message,
                             NodeId relay_connection_id) {
-  assert(node_id.IsValid() && !node_id.Empty() && "Invalid node_id");
-  assert(this_node_id.IsValid() && !this_node_id.Empty() && "Invalid my node_id");
+  assert(node_id.IsValid() && !node_id.IsZero() && "Invalid node_id");
+  assert(this_node_id.IsValid() && !this_node_id.IsZero() && "Invalid my node_id");
   protobuf::Message message;
   protobuf::FindNodesRequest find_nodes;
   find_nodes.set_num_nodes_requested(num_nodes_requested);
@@ -140,8 +140,8 @@ protobuf::Message ProxyConnect(const NodeId& node_id,
                                const rudp::EndpointPair& endpoint_pair,
                                bool relay_message,
                                NodeId relay_connection_id) {
-  assert(node_id.IsValid() && !node_id.Empty() && "Invalid node_id");
-  assert(this_node_id.IsValid() && !this_node_id.Empty() && "Invalid my node_id");
+  assert(node_id.IsValid() && !node_id.IsZero() && "Invalid node_id");
+  assert(this_node_id.IsValid() && !this_node_id.IsZero() && "Invalid my node_id");
   assert(!endpoint_pair.external.address().is_unspecified() && "Unspecified external endpoint");
   assert(!endpoint_pair.local.address().is_unspecified() && "Unspecified local endpoint");
   protobuf::Message message;
@@ -173,9 +173,9 @@ protobuf::Message ConnectSuccess(const NodeId& node_id,
                                  const NodeId& this_node_id,
                                  const NodeId& this_connection_id,
                                  bool client_node) {
-  assert(node_id.IsValid() && !node_id.Empty() && "Invalid node_id");
-  assert(this_node_id.IsValid() && !this_node_id.Empty() && "Invalid my node_id");
-  assert(this_connection_id.IsValid() && !this_connection_id.Empty() &&
+  assert(node_id.IsValid() && !node_id.IsZero() && "Invalid node_id");
+  assert(this_node_id.IsValid() && !this_node_id.IsZero() && "Invalid my node_id");
+  assert(this_connection_id.IsValid() && !this_connection_id.IsZero() &&
          "Invalid this_connection_id");
   protobuf::Message message;
   protobuf::ConnectSuccess protobuf_connect_success;

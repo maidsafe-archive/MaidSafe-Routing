@@ -76,7 +76,7 @@ int NetworkUtils::Bootstrap(const std::vector<Endpoint> &bootstrap_endpoints,
                             rudp::ConnectionLostFunctor connection_lost_functor,
                             Endpoint local_endpoint) {
   assert(connection_lost_functor && "Must provide a valid functor");
-  assert(bootstrap_connection_id_.Empty() && "bootstrap_connection_id_ must be empty");
+  assert(bootstrap_connection_id_.IsZero() && "bootstrap_connection_id_ must be empty");
   std::shared_ptr<asymm::PrivateKey>
       private_key(new asymm::PrivateKey(routing_table_.kKeys().private_key));
   std::shared_ptr<asymm::PublicKey>
@@ -99,7 +99,7 @@ int NetworkUtils::Bootstrap(const std::vector<Endpoint> &bootstrap_endpoints,
                               nat_type_,
                               local_endpoint));
   // RUDP will return a kZeroId for zero state !!
-  if (result != kSuccess || bootstrap_connection_id_.Empty()) {
+  if (result != kSuccess || bootstrap_connection_id_.IsZero()) {
     LOG(kError) << "No Online Bootstrap Node found.";
     return kNoOnlineBootstrapContacts;
   }
@@ -336,7 +336,7 @@ void NetworkUtils::AdjustRouteHistory(protobuf::Message& message) {
                                              message.route_history().end());
       message.clear_route_history();
       for (auto route : route_history) {
-        if (NodeId(route).IsValid() && !NodeId(route).Empty())
+        if (NodeId(route).IsValid() && !NodeId(route).IsZero())
           message.add_route_history(route);
       }
     }

@@ -171,7 +171,7 @@ void Routing::DoJoin(const Functors& functors) {
       functors.network_status(return_value);
     return;
   }
-  assert((!impl_->network_.bootstrap_connection_id().Empty() &&
+  assert((!impl_->network_.bootstrap_connection_id().IsZero() &&
           impl_->network_.bootstrap_connection_id().IsValid()) &&
          "Bootstrap connection id must be populated by now.");
   if (impl_->anonymous_node_) {  // No need to do find node for anonymous node
@@ -196,7 +196,7 @@ int Routing::DoBootstrap() {
   assert(impl_->routing_table_.Size() == 0);
   impl_->recovery_timer_.cancel();
   impl_->setup_timer_.cancel();
-  if (!impl_->network_.bootstrap_connection_id().Empty() &&
+  if (!impl_->network_.bootstrap_connection_id().IsZero() &&
       impl_->network_.bootstrap_connection_id().IsValid()) {
     LOG(kInfo) << "Removing bootstrap connection to rebootstrap. Connection id : "
                << DebugId(impl_->network_.bootstrap_connection_id());
@@ -222,10 +222,10 @@ void Routing::FindClosestNode(const boost::system::error_code& error_code,
     }
     assert(!pimpl->anonymous_node_ && "Not allowed for anonymous nodes");
     if (attempts == 0) {
-      assert((!pimpl->network_.bootstrap_connection_id().Empty() &&
+      assert((!pimpl->network_.bootstrap_connection_id().IsZero() &&
               (pimpl->network_.bootstrap_connection_id().IsValid()))
              && "Only after bootstraping succeeds");
-      assert((!pimpl->network_.this_node_relay_connection_id().Empty() &&
+      assert((!pimpl->network_.this_node_relay_connection_id().IsZero() &&
               pimpl->network_.this_node_relay_connection_id().IsValid()) &&
              "Relay connection id should be set after bootstraping succeeds");
     } else {
@@ -323,7 +323,7 @@ int Routing::ZeroStateJoin(Functors functors,
              << "bootstrap connection id : "
              << DebugId(impl_->network_.bootstrap_connection_id());
 
-  assert(!peer_node.node_id.Empty() && "empty nodeid passed");
+  assert(!peer_node.node_id.IsZero() && "empty nodeid passed");
   assert((impl_->network_.bootstrap_connection_id() == peer_node.node_id) &&
          "Should bootstrap only with known peer for zero state network");
   LOG(kVerbose) << local_endpoint << " Bootstrapped with remote endpoint " << peer_endpoint;
@@ -384,7 +384,7 @@ void Routing::Send(const NodeId& destination_id,
                    const boost::posix_time::time_duration& timeout,
                    bool direct,
                    bool cache) {
-  if (destination_id.Empty() || !destination_id.IsValid()) {
+  if (destination_id.IsZero() || !destination_id.IsValid()) {
     LOG(kError) << "Invalid destination ID, aborted send";
     if (response_functor)
       response_functor(std::vector<std::string>());
@@ -409,7 +409,7 @@ void Routing::Send(const NodeId& destination_id,
   proto_message.set_request(true);
   proto_message.set_hops_to_live(Parameters::hops_to_live);
   uint16_t replication(1);
-  if (group_claim.IsValid() && !group_claim.Empty())
+  if (group_claim.IsValid() && !group_claim.IsZero())
     proto_message.set_group_claim(group_claim.String());
 
   if (!direct) {
@@ -521,7 +521,7 @@ void Routing::AddExistingRandomNode(NodeId node, std::weak_ptr<RoutingPrivate> i
     return;
   }
 
-  if (node.IsValid() && !node.Empty()) {
+  if (node.IsValid() && !node.IsZero()) {
     std::lock_guard<std::mutex> lock(pimpl->random_node_mutex_);
     if (std::find_if(pimpl->random_node_vector_.begin(), pimpl->random_node_vector_.end(),
                    [node] (const NodeId& vect_node) {
@@ -567,21 +567,21 @@ void Routing::DoOnConnectionLost(const NodeId& lost_connection_id,
 
   // Checking routing table
   dropped_node = pimpl->routing_table_.DropNode(lost_connection_id, true);
-  if (!dropped_node.node_id.Empty()) {
+  if (!dropped_node.node_id.IsZero()) {
     LOG(kWarning) << "[" << HexSubstr(pimpl->keys_.identity) << "]"
                   << "Lost connection with routing node "
                   << DebugId(dropped_node.node_id);
   }
 
   // Checking non-routing table
-  if (dropped_node.node_id.Empty()) {
+  if (dropped_node.node_id.IsZero()) {
     resend = false;
     dropped_node = pimpl->non_routing_table_.DropNode(lost_connection_id);
-    if (!dropped_node.node_id.Empty()) {
+    if (!dropped_node.node_id.IsZero()) {
       LOG(kWarning) << "[" << HexSubstr(pimpl->keys_.identity) << "]"
                     << "Lost connection with non-routing node "
                     << HexSubstr(dropped_node.node_id.String());
-    } else if (!pimpl->network_.bootstrap_connection_id().Empty() &&
+    } else if (!pimpl->network_.bootstrap_connection_id().IsZero() &&
                lost_connection_id == pimpl->network_.bootstrap_connection_id()) {
       LOG(kWarning) << "[" << HexSubstr(pimpl->keys_.identity) << "]"
                     << "Lost temporary connection with bootstrap node. connection id :"
@@ -611,7 +611,7 @@ void Routing::DoOnConnectionLost(const NodeId& lost_connection_id,
 }
 
 void Routing::RemoveNode(const NodeInfo& node, const bool& internal_rudp_only) {
-  if (node.connection_id.Empty() || node.node_id.Empty()) {
+  if (node.connection_id.IsZero() || node.node_id.IsZero()) {
     return;
   }
   impl_->network_.Remove(node.connection_id);
