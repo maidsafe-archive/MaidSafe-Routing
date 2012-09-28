@@ -32,7 +32,9 @@ class MockNetworkUtils : public NetworkUtils {
   virtual ~MockNetworkUtils();
 
   MOCK_METHOD1(SendToClosestNode, void(const protobuf::Message& message));
-  MOCK_METHOD2(SendToDirect, void(const protobuf::Message& message, NodeId peer));
+  MOCK_METHOD3(SendToDirect, void(const protobuf::Message& message,
+                                  NodeId peer,
+                                  NodeId connection));
 
  private:
   MockNetworkUtils &operator=(const MockNetworkUtils&);
