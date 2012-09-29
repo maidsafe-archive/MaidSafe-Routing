@@ -44,10 +44,10 @@ typedef boost::asio::ip::udp::endpoint Endpoint;
 size_t GenericNode::next_node_id_(1);
 
 GenericNode::GenericNode(bool client_mode)
-    : id_(0),
+    : functors_(),
+      id_(0),
       node_info_plus_(std::make_shared<NodeInfoAndPrivateKey>(MakeNodeInfoAndKeys())),
       routing_(),
-      functors_(),
       mutex_(),
       client_mode_(client_mode),
       anonymous_(false),
@@ -77,10 +77,10 @@ GenericNode::GenericNode(bool client_mode)
 }
 
 GenericNode::GenericNode(bool client_mode, const rudp::NatType& nat_type)
-    : id_(0),
+    : functors_(),
+      id_(0),
       node_info_plus_(std::make_shared<NodeInfoAndPrivateKey>(MakeNodeInfoAndKeys())),
       routing_(),
-      functors_(),
       mutex_(),
       client_mode_(client_mode),
       anonymous_(false),
@@ -111,10 +111,10 @@ GenericNode::GenericNode(bool client_mode, const rudp::NatType& nat_type)
 }
 
 GenericNode::GenericNode(bool client_mode, const NodeInfoAndPrivateKey& node_info)
-    : id_(0),
+    : functors_(),
+      id_(0),
       node_info_plus_(std::make_shared<NodeInfoAndPrivateKey>(node_info)),
       routing_(),
-      functors_(),
       mutex_(),
       client_mode_(client_mode),
       anonymous_(false),

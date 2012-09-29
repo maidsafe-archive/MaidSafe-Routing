@@ -106,12 +106,12 @@ class GenericNode {
   void ClearMessages();
 
   friend class GenericNetwork;
+  Functors functors_;
 
  protected:
   size_t id_;
   std::shared_ptr<NodeInfoAndPrivateKey> node_info_plus_;
   std::shared_ptr<Routing> routing_;
-  Functors functors_;
   std::mutex mutex_;
   bool client_mode_;
   bool anonymous_;

@@ -459,7 +459,7 @@ void Routing::Send(const NodeId& destination_id,
     LOG(kVerbose) << "Client sending request to self id";
     impl_->network_.SendToClosestNode(proto_message);
   } else {
-    LOG(kInfo) << "Sending request to self";
+    LOG(kError) << "Sending request to self";
     OnMessageReceived(proto_message.SerializeAsString(), impl_);
   }
 }

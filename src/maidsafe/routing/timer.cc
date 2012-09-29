@@ -87,7 +87,8 @@ void Timer::ExecuteTask(TaskId task_id, const boost::system::error_code& error) 
     case boost::system::errc::success:
       // Task's timer has expired
 //      return_code = kResponseTimeout;
-      LOG(kWarning) << "Timed out waiting for task " << task->id;
+      LOG(kError) << "Timed out waiting for task " << task->id;
+      std::cout << "Timed out waiting for task " << task->id << "\n";
       break;
     case boost::asio::error::operation_aborted:
       assert(task->responses.size() <= task->expected_response_count);

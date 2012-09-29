@@ -85,6 +85,7 @@ void MessageHandler::HandleNodeLevelMessageForThisNode(protobuf::Message& messag
                << " from " << HexSubstr(message.source_id()) << " id: " << message.id();
 
     ReplyFunctor response_functor = [=](const std::string& reply_message) {
+        LOG(kInfo) << "Using the response functor!!!!!!!!!!!!!!!!!!!!!!!!";
         if (reply_message.empty())
           return;
         protobuf::Message message_out;
