@@ -67,7 +67,7 @@ GenericNode::GenericNode(bool client_mode)
                                  std::lock_guard<std::mutex> guard(mutex_);
                                  messages_.push_back(message);
                                  if (!IsClient())
-                                   reply_functor("Response to " + message);
+                                   reply_functor("Response to >:<" + message);
                                };
   functors_.network_status = nullptr;
   routing_.reset(new Routing(GetKeys(*node_info_plus_), client_mode));
@@ -100,7 +100,7 @@ GenericNode::GenericNode(bool client_mode, const rudp::NatType& nat_type)
                                  std::lock_guard<std::mutex> guard(mutex_);
                                  messages_.push_back(message);
                                  if (!IsClient())
-                                   reply_functor("Response to " + message);
+                                   reply_functor("Response to >:<" + message);
                                };
   functors_.network_status = nullptr;
   routing_.reset(new Routing(GetKeys(*node_info_plus_), client_mode));
@@ -134,7 +134,7 @@ GenericNode::GenericNode(bool client_mode, const NodeInfoAndPrivateKey& node_inf
                                  std::lock_guard<std::mutex> guard(mutex_);
                                  messages_.push_back(message);
                                  if (!IsClient())
-                                   reply_functor("Response to " + message);
+                                   reply_functor("Response to >:<" + message);
                                };
   functors_.network_status = nullptr;
   asymm::Keys keys(GetKeys(*node_info_plus_));
