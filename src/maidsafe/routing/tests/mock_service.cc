@@ -10,14 +10,7 @@
  *  the explicit written permission of the board of directors of maidsafe.net. *
  ******************************************************************************/
 
-#ifndef MAIDSAFE_ROUTING_TESTS_MOCK_NETWORK_UTILS_H_
-#define MAIDSAFE_ROUTING_TESTS_MOCK_NETWORK_UTILS_H_
-
-#include "gmock/gmock.h"
-
-#include "maidsafe/routing/network_utils.h"
-#include "maidsafe/routing/routing_pb.h"
-
+#include "maidsafe/routing/tests/mock_service.h"
 
 namespace maidsafe {
 
@@ -25,21 +18,12 @@ namespace routing {
 
 namespace test {
 
-class MockNetworkUtils : public NetworkUtils {
- public:
-  MockNetworkUtils(RoutingTable& routing_table, NonRoutingTable& non_routing_table,
-                   Timer& timer);
-  virtual ~MockNetworkUtils();
+MockService::MockService(RoutingTable& routing_table,
+                         NonRoutingTable& non_routing_table,
+                         NetworkUtils& utils)
+    : Service(routing_table, non_routing_table, utils) {}
 
-  MOCK_METHOD1(SendToClosestNode, void(const protobuf::Message& message));
-  MOCK_METHOD3(SendToDirect, void(const protobuf::Message& message,
-                                  NodeId peer,
-                                  NodeId connection));
-
- private:
-  MockNetworkUtils &operator=(const MockNetworkUtils&);
-  MockNetworkUtils(const MockNetworkUtils&);
-};
+MockService::~MockService() {}
 
 }  // namespace test
 
@@ -47,4 +31,4 @@ class MockNetworkUtils : public NetworkUtils {
 
 }  // namespace maidsafe
 
-#endif  // MAIDSAFE_ROUTING_TESTS_MOCK_NETWORK_UTILS_H_
+
