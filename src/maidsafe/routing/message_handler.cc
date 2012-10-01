@@ -85,7 +85,6 @@ void MessageHandler::HandleNodeLevelMessageForThisNode(protobuf::Message& messag
                << " from " << HexSubstr(message.source_id()) << " id: " << message.id();
 
     ReplyFunctor response_functor = [=](const std::string& reply_message) {
-        LOG(kInfo) << "Using the response functor!!!!!!!!!!!!!!!!!!!!!!!!";
         if (reply_message.empty())
           return;
         protobuf::Message message_out;
@@ -111,7 +110,11 @@ void MessageHandler::HandleNodeLevelMessageForThisNode(protobuf::Message& messag
         if (message.has_relay_connection_id()) {
           message_out.set_relay_connection_id(message.relay_connection_id());
         }
-
+        if (routing_table_.client_mode() &&
+            routing_table_.kKeys().identity == message_out.destination_id()) {
+          network_.SendToClosestNode(message_out);
+          return;
+        }
         if (routing_table_.kKeys().identity != message_out.destination_id()) {
           network_.SendToClosestNode(message_out);
         } else {
