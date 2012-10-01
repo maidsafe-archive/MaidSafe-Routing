@@ -61,14 +61,14 @@ NetworkUtils::NetworkUtils(RoutingTable& routing_table, NonRoutingTable& non_rou
 NetworkUtils::~NetworkUtils() {}
 
 void NetworkUtils::Stop() {
-  LOG(kVerbose) << "NetworkUtils::Stop()";
+  LOG(kVerbose) << "NetworkUtils::Stop() : " << DebugId(routing_table_.kNodeId());
   {
     UniqueLock unique_lock(shared_mutex_);
     stopped_ = true;
     boost::this_thread::disable_interruption disable_interruption;
     rudp_.reset();
   }
-  LOG(kVerbose) << "NetworkUtils::Stop(), exiting ...";
+  LOG(kVerbose) << "NetworkUtils::Stop(), exiting ... : " <<  DebugId(routing_table_.kNodeId());
 }
 
 int NetworkUtils::Bootstrap(const std::vector<Endpoint> &bootstrap_endpoints,

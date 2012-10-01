@@ -620,7 +620,8 @@ void Routing::DoOnConnectionLost(const NodeId& lost_connection_id,
   if (resend) {
     // Close node lost, get more nodes
     LOG(kWarning) << "Lost close node, getting more.";
-    ReSendFindNodeRequest(boost::system::error_code(), pimpl, true);
+    std::weak_ptr<RoutingPrivate> impl_weak_ptr(pimpl);
+    ReSendFindNodeRequest(boost::system::error_code(), impl_weak_ptr, true);
   }
 }
 
@@ -648,7 +649,8 @@ void Routing::RemoveNode(const NodeInfo& node, const bool& internal_rudp_only) {
   if (resend) {
     // Close node removed by routing, get more nodes
     LOG(kWarning) << "Removed close node, sending find node to get more nodes.";
-    ReSendFindNodeRequest(boost::system::error_code(), impl_, true);
+    std::weak_ptr<RoutingPrivate> impl_weak_ptr(impl_);
+    ReSendFindNodeRequest(boost::system::error_code(), impl_weak_ptr, true);
   }
 }
 

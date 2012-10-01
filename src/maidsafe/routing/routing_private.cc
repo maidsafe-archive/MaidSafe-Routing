@@ -55,6 +55,7 @@ RoutingPrivate::RoutingPrivate(const asymm::Keys& keys, bool client_mode)
 }
 
 RoutingPrivate::~RoutingPrivate() {
+  LOG(kVerbose) << "RoutingPrivate::~RoutingPrivate() " << DebugId(kNodeId_);
   tearing_down_ = true;
   setup_timer_.cancel();
   recovery_timer_.cancel();
