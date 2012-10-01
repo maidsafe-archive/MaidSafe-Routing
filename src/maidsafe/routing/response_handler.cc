@@ -48,6 +48,8 @@ ResponseHandler::ResponseHandler(RoutingTable& routing_table,
       network_(network),
       request_public_key_functor_() {}
 
+ResponseHandler::~ResponseHandler() {}
+
 void ResponseHandler::Ping(protobuf::Message& message) {
   // Always direct, never pass on
 

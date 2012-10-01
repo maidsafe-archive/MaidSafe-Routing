@@ -29,6 +29,10 @@ class RoutingNetworkTest : public GenericNetwork {
  public:
   RoutingNetworkTest(void) : GenericNetwork() {}
 
+  virtual void TearDown() {
+    Sleep(boost::posix_time::microseconds(100));
+  }
+
  protected:
   // Send messages from each source to each destination
   testing::AssertionResult Send(const size_t& messages) {
@@ -68,7 +72,6 @@ class RoutingNetworkTest : public GenericNetwork {
               std::lock_guard<std::mutex> lock(mutex);
               data = boost::lexical_cast<std::string>(++message_id) + "<:>" + data;
             }
-            Sleep(boost::posix_time::millisec(50));
             assert(!data.empty() && "Send Data Empty !");
             source_node->Send(NodeId(dest_node->node_id()), NodeId(), data, callable,
                 boost::posix_time::seconds(12), true, false);
@@ -256,7 +259,7 @@ class RoutingNetworkTest : public GenericNetwork {
 };
 
 TEST_F(RoutingNetworkTest, FUNC_SetupNetwork) {
-  this->SetUpNetwork(2);
+  this->SetUpNetwork(10);
 }
 
 TEST_F(RoutingNetworkTest, FUNC_SetupHybridNetwork) {

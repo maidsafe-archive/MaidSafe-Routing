@@ -105,15 +105,16 @@ void Routing::Join(Functors functors,
                    std::vector<boost::asio::ip::udp::endpoint> peer_endpoints) {
   ConnectFunctors(functors);
   if (!peer_endpoints.empty()) {
-    return BootstrapFromTheseEndpoints(functors, peer_endpoints);
+    return BootstrapFromTheseEndpoints(peer_endpoints);
   } else {
     LOG(kInfo) << "Doing a default join";
     if (CheckBootstrapFilePath()) {
-      return DoJoin(functors);
+      std::weak_ptr<RoutingPrivate> impl_weak_ptr(impl_);
+      return DoJoin(impl_weak_ptr);
     } else {
       LOG(kError) << "Invalid Bootstrap Contacts";
-      if (functors.network_status)
-        functors.network_status(kInvalidBootstrapContacts);
+      if (impl_->functors_.network_status)
+        impl_->functors_.network_status(kInvalidBootstrapContacts);
       return;
     }
   }
@@ -141,8 +142,7 @@ void Routing::DisconnectFunctors() {  // TODO(Prakash) : fix race condition when
   impl_->functors_ = Functors();
 }
 
-void Routing::BootstrapFromTheseEndpoints(const Functors& functors,
-                                          const std::vector<Endpoint>& endpoints) {
+void Routing::BootstrapFromTheseEndpoints(const std::vector<Endpoint>& endpoints) {
   LOG(kInfo) << "Doing a BootstrapFromThisEndpoint Join.  Entered first bootstrap endpoint: "
              << endpoints[0]
              << ", this node's ID: " << DebugId(impl_->kNodeId_)
@@ -161,52 +161,65 @@ void Routing::BootstrapFromTheseEndpoints(const Functors& functors,
   impl_->bootstrap_nodes_.insert(impl_->bootstrap_nodes_.begin(),
                                  endpoints.begin(),
                                  endpoints.end());
-  DoJoin(functors);
+  std::weak_ptr<RoutingPrivate> impl_weak_ptr(impl_);
+  DoJoin(impl_weak_ptr);
 }
 
-void Routing::DoJoin(const Functors& functors) {
-  int return_value(DoBootstrap());
+void Routing::DoJoin(std::weak_ptr<RoutingPrivate> impl) {
+  std::shared_ptr<RoutingPrivate> pimpl = impl.lock();
+  if (!pimpl || pimpl->tearing_down_) {
+    LOG(kVerbose) << "Ignoring DoJoin, since this node is shutting down";
+    return;
+  }
+  std::weak_ptr<RoutingPrivate> impl_weak_ptr(pimpl);
+  int return_value(DoBootstrap(impl_weak_ptr));
   if (kSuccess != return_value) {
-    if (functors.network_status)
-      functors.network_status(return_value);
+    if (pimpl->functors_.network_status)
+      pimpl->functors_.network_status(return_value);
     return;
   }
-  assert((!impl_->network_.bootstrap_connection_id().IsZero() &&
-          impl_->network_.bootstrap_connection_id().IsValid()) &&
+  assert((!pimpl->network_.bootstrap_connection_id().IsZero() &&
+          pimpl->network_.bootstrap_connection_id().IsValid()) &&
          "Bootstrap connection id must be populated by now.");
-  if (impl_->anonymous_node_) {  // No need to do find node for anonymous node
-    if (functors.network_status)
-      functors.network_status(return_value);
+  if (pimpl->anonymous_node_) {  // No need to do find node for anonymous node
+    if (pimpl->functors_.network_status)
+      pimpl->functors_.network_status(return_value);
     return;
   }
 
-  assert(!impl_->anonymous_node_&& "Not allowed for anonymous nodes");
-  FindClosestNode(boost::system::error_code(), impl_, 0);
+  assert(!pimpl->anonymous_node_&& "Not allowed for anonymous nodes");
+  FindClosestNode(boost::system::error_code(), impl_weak_ptr, 0);
 
-  if (functors.network_status)
-    functors.network_status(return_value);
+  if (pimpl->functors_.network_status)
+    pimpl->functors_.network_status(return_value);
 }
 
-int Routing::DoBootstrap() {
-  if (impl_->bootstrap_nodes_.empty()) {
+int Routing::DoBootstrap(std::weak_ptr<RoutingPrivate> impl) {
+  std::shared_ptr<RoutingPrivate> pimpl = impl.lock();
+  if (!pimpl || pimpl->tearing_down_) {
+    LOG(kVerbose) << "Ignoring DoBootstrap, since this node is shutting down";
+    return kGeneralError;
+  }
+
+  if (pimpl->bootstrap_nodes_.empty()) {
     LOG(kError) << "No bootstrap nodes.  Aborted join.";
     return kInvalidBootstrapContacts;
   }
   // FIXME race condition if a new connection appears at rudp
-  assert(impl_->routing_table_.Size() == 0);
-  impl_->recovery_timer_.cancel();
-  impl_->setup_timer_.cancel();
-  if (!impl_->network_.bootstrap_connection_id().IsZero() &&
-      impl_->network_.bootstrap_connection_id().IsValid()) {
+  assert(pimpl->routing_table_.Size() == 0);
+  pimpl->recovery_timer_.cancel();
+  pimpl->setup_timer_.cancel();
+  if (!pimpl->network_.bootstrap_connection_id().IsZero() &&
+      pimpl->network_.bootstrap_connection_id().IsValid()) {
     LOG(kInfo) << "Removing bootstrap connection to rebootstrap. Connection id : "
-               << DebugId(impl_->network_.bootstrap_connection_id());
-    impl_->network_.Remove(impl_->network_.bootstrap_connection_id());
-    impl_->network_.clear_bootstrap_connection_info();
+               << DebugId(pimpl->network_.bootstrap_connection_id());
+    pimpl->network_.Remove(pimpl->network_.bootstrap_connection_id());
+    pimpl->network_.clear_bootstrap_connection_info();
   }
 
-  std::weak_ptr<RoutingPrivate> impl_weak_ptr(impl_);
-  return impl_->network_.Bootstrap(
-      impl_->bootstrap_nodes_,
+  std::weak_ptr<RoutingPrivate> impl_weak_ptr(pimpl);
+  return pimpl->network_.Bootstrap(
+      pimpl->bootstrap_nodes_,
       [=](const std::string& message) { OnMessageReceived(message, impl_weak_ptr); },
       [=](const NodeId& lost_connection_id) { OnConnectionLost(lost_connection_id, impl_weak_ptr);});  // NOLINT
 }
@@ -255,7 +268,8 @@ void Routing::FindClosestNode(const boost::system::error_code& error_code,
                        return;
                      }
                      Sleep(boost::posix_time::seconds(3));
-                     DoJoin(impl_->functors_);
+                     std::weak_ptr<RoutingPrivate> impl_weak_ptr(pimpl);
+                     DoJoin(impl_weak_ptr);
                   });
       }
     }
@@ -606,7 +620,8 @@ void Routing::DoOnConnectionLost(const NodeId& lost_connection_id,
   if (resend) {
     // Close node lost, get more nodes
     LOG(kWarning) << "Lost close node, getting more.";
-    ReSendFindNodeRequest(boost::system::error_code(), pimpl, true);
+    std::weak_ptr<RoutingPrivate> impl_weak_ptr(pimpl);
+    ReSendFindNodeRequest(boost::system::error_code(), impl_weak_ptr, true);
   }
 }
 
@@ -634,7 +649,8 @@ void Routing::RemoveNode(const NodeInfo& node, const bool& internal_rudp_only) {
   if (resend) {
     // Close node removed by routing, get more nodes
     LOG(kWarning) << "Removed close node, sending find node to get more nodes.";
-    ReSendFindNodeRequest(boost::system::error_code(), impl_, true);
+    std::weak_ptr<RoutingPrivate> impl_weak_ptr(impl_);
+    ReSendFindNodeRequest(boost::system::error_code(), impl_weak_ptr, true);
   }
 }
 
@@ -663,7 +679,8 @@ void Routing::ReSendFindNodeRequest(const boost::system::error_code& error_code,
              return;
            }
            Sleep(boost::posix_time::seconds(10));
-           DoJoin(impl_->functors_);
+           std::weak_ptr<RoutingPrivate> impl_weak_ptr(pimpl);
+           DoJoin(impl_weak_ptr);
        });
     } else if (ignore_size ||
                (pimpl->routing_table_.Size() < Parameters::routing_table_size_threshold)) {

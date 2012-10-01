@@ -99,10 +99,9 @@ class Routing {
   void AddExistingRandomNode(NodeId node, std::weak_ptr<RoutingPrivate> impl);
   void ConnectFunctors(const Functors& functors);
   void DisconnectFunctors();
-  void BootstrapFromTheseEndpoints(const Functors& functors,
-                                   const std::vector<boost::asio::ip::udp::endpoint>& endpoints);
-  void DoJoin(const Functors& functors);
-  int DoBootstrap();
+  void BootstrapFromTheseEndpoints(const std::vector<boost::asio::ip::udp::endpoint>& endpoints);
+  void DoJoin(std::weak_ptr<RoutingPrivate> impl);
+  int DoBootstrap(std::weak_ptr<RoutingPrivate> impl);
   void FindClosestNode(const boost::system::error_code& error_code,
                        std::weak_ptr<RoutingPrivate> impl,
                        int attempts);

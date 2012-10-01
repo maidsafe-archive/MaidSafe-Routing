@@ -45,10 +45,11 @@ class ResponseHandler : public std::enable_shared_from_this<ResponseHandler> {
   ResponseHandler(RoutingTable& routing_table,
                   NonRoutingTable& non_routing_table,
                   NetworkUtils& network);
-  void Ping(protobuf::Message& message);
-  void Connect(protobuf::Message& message);
-  void FindNodes(const protobuf::Message& message);
-  void ConnectSuccess(protobuf::Message& message);
+  virtual ~ResponseHandler();
+  virtual void Ping(protobuf::Message& message);
+  virtual void Connect(protobuf::Message& message);
+  virtual void FindNodes(const protobuf::Message& message);
+  virtual void ConnectSuccess(protobuf::Message& message);
   void set_request_public_key_functor(RequestPublicKeyFunctor request_public_key);
   RequestPublicKeyFunctor request_public_key_functor() const;
 

@@ -28,22 +28,34 @@ class NetworkUtils;
 class NonRoutingTable;
 class RoutingTable;
 
-namespace service {
+#ifdef __GNUC__
+#  pragma GCC diagnostic push
+#  pragma GCC diagnostic ignored "-Weffc++"
+#endif
+class Service : public std::enable_shared_from_this<Service> {
+#ifdef __GNUC__
+#  pragma GCC diagnostic pop
+#endif
 
-// Handle all incoming requests and send back reply
-void Ping(RoutingTable& routing_table, protobuf::Message& message);
+ public:
+  Service(RoutingTable& routing_table,
+          NonRoutingTable& non_routing_table,
+          NetworkUtils& network);
+  virtual ~Service();
+  // Handle all incoming requests and send back reply
+  virtual void Ping(protobuf::Message& message);
+  virtual void Connect(protobuf::Message& message);
+  virtual void FindNodes(protobuf::Message& message);
+  void ProxyConnect(protobuf::Message& message);
+  void set_request_public_key_functor(RequestPublicKeyFunctor request_public_key);
+  RequestPublicKeyFunctor request_public_key_functor() const;
 
-void Connect(RoutingTable& routing_table,
-             NonRoutingTable& non_routing_table,
-             NetworkUtils& network,
-             protobuf::Message& message,
-             RequestPublicKeyFunctor node_validation_functor);
-
-void FindNodes(RoutingTable& routing_table, protobuf::Message& message);
-
-void ProxyConnect(RoutingTable& routing_table, NetworkUtils& network, protobuf::Message& message);
-
-}  // namespace service
+ private:
+  RoutingTable& routing_table_;
+  NonRoutingTable& non_routing_table_;
+  NetworkUtils& network_;
+  RequestPublicKeyFunctor request_public_key_functor_;
+};
 
 }  // namespace routing
 

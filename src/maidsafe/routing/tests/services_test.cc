@@ -44,6 +44,11 @@ TEST(ServicesTest, BEH_Ping) {
   asymm::Keys keys;
   keys.identity = RandomString(64);
   RoutingTable RT(keys, false);
+  NonRoutingTable NRT(keys);
+  AsioService asio_service(1);
+  Timer timer(asio_service);
+  NetworkUtils network(RT, NRT, timer);
+  Service service(RT, NRT, network);
   NodeInfo node;
   rudp::ManagedConnections rudp;
   protobuf::PingRequest ping_request;
@@ -53,7 +58,7 @@ TEST(ServicesTest, BEH_Ping) {
   EXPECT_TRUE(ping_request.ParseFromString(message.data(0)));  // us
   EXPECT_TRUE(ping_request.IsInitialized());
   // run message through Service
-  service::Ping(RT, message);
+  service.Ping(message);
   EXPECT_EQ(1, message.type());
   EXPECT_EQ(message.request(), false);
   EXPECT_NE(message.data_size(), 0);
@@ -73,8 +78,13 @@ TEST(ServicesTest, BEH_FindNodes) {
   keys.identity = us.node_id.String();
   keys.public_key = us.public_key;
   RoutingTable RT(keys, false);
+  NonRoutingTable NRT(keys);
+  AsioService asio_service(1);
+  Timer timer(asio_service);
+  NetworkUtils network(RT, NRT, timer);
+  Service service(RT, NRT, network);
   protobuf::Message message = rpcs::FindNodes(us.node_id, us.node_id, 8);
-  service::FindNodes(RT, message);
+  service.FindNodes(message);
   protobuf::FindNodesResponse find_nodes_respose;
   EXPECT_TRUE(find_nodes_respose.ParseFromString(message.data(0)));
 //  EXPECT_TRUE(find_nodes_respose.nodes().size() > 0);  // will only have us

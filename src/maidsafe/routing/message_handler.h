@@ -18,6 +18,7 @@
 #include "maidsafe/rudp/managed_connections.h"
 
 #include "maidsafe/routing/response_handler.h"
+#include "maidsafe/routing/service.h"
 #include "maidsafe/routing/cache_manager.h"
 #include "maidsafe/routing/api_config.h"
 
@@ -27,6 +28,15 @@ namespace maidsafe {
 namespace routing {
 
 namespace protobuf { class Message; }
+
+namespace test {
+  class MessageHandlerTest;
+  class MessageHandlerTest_BEH_HandleInvalidMessage_Test;
+  class MessageHandlerTest_BEH_HandleRelay_Test;
+  class MessageHandlerTest_BEH_HandleGroupMessage_Test;
+  class MessageHandlerTest_BEH_HandleNodeLevelMessage_Test;
+  class MessageHandlerTest_BEH_ClientRoutingTable_Test;
+}
 
 class NetworkUtils;
 class NonRoutingTable;
@@ -79,6 +89,13 @@ class MessageHandler {
   void HandleGroupRelayRequestMessageAsClosestNode(protobuf::Message& message);
 //  bool CheckAndSendToLocalClients(protobuf::Message& message);
 
+  friend class test::MessageHandlerTest;
+  friend class test::MessageHandlerTest_BEH_HandleInvalidMessage_Test;
+  friend class test::MessageHandlerTest_BEH_HandleRelay_Test;
+  friend class test::MessageHandlerTest_BEH_HandleGroupMessage_Test;
+  friend class test::MessageHandlerTest_BEH_HandleNodeLevelMessage_Test;
+  friend class test::MessageHandlerTest_BEH_ClientRoutingTable_Test;
+
   AsioService& asio_service_;
   RoutingTable& routing_table_;
   NonRoutingTable& non_routing_table_;
@@ -86,6 +103,7 @@ class MessageHandler {
   Timer& timer_;
   CacheManager cache_manager_;
   std::shared_ptr<ResponseHandler> response_handler_;
+  std::shared_ptr<Service> service_;
   MessageReceivedFunctor message_received_functor_;
 };
 

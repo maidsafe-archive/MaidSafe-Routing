@@ -10,12 +10,39 @@
  *  the explicit written permission of the board of directors of maidsafe.net. *
  ******************************************************************************/
 
-#include "maidsafe/common/test.h"
+#ifndef MAIDSAFE_ROUTING_TESTS_MOCK_SERVICE_H_
+#define MAIDSAFE_ROUTING_TESTS_MOCK_SERVICE_H_
 
-int main(int argc, char **argv) {
-  maidsafe::log::FilterMap filter;
-  filter["common"] = maidsafe::log::kError;
-  filter["rudp"] = maidsafe::log::kError;
-  filter["routing"] = maidsafe::log::kVerbose;
-  return ExecuteMain(argc, argv, filter, false, maidsafe::log::ColourMode::kPartialLine);
-}
+#include "gmock/gmock.h"
+
+#include "maidsafe/routing/routing_pb.h"
+#include "maidsafe/routing/service.h"
+
+namespace maidsafe {
+
+namespace routing {
+
+namespace test {
+
+class MockService : public Service {
+ public:
+  MockService(RoutingTable& routing_table, NonRoutingTable& non_routing_table,
+                   NetworkUtils& network_utils);
+  virtual ~MockService();
+
+  MOCK_METHOD1(Ping, void(protobuf::Message& message));
+  MOCK_METHOD1(Connect, void(protobuf::Message& message));
+  MOCK_METHOD1(FindNodes, void(protobuf::Message& message));
+
+ private:
+  MockService &operator=(const MockService&);
+  MockService(const MockService&);
+};
+
+}  // namespace test
+
+}  // namespace routing
+
+}  // namespace maidsafe
+
+#endif  // MAIDSAFE_ROUTING_TESTS_MOCK_SERVICE_H_

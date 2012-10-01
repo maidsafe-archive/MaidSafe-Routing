@@ -10,12 +10,24 @@
  *  the explicit written permission of the board of directors of maidsafe.net. *
  ******************************************************************************/
 
-#include "maidsafe/common/test.h"
+#include "maidsafe/routing/tests/mock_response_handler.h"
 
-int main(int argc, char **argv) {
-  maidsafe::log::FilterMap filter;
-  filter["common"] = maidsafe::log::kError;
-  filter["rudp"] = maidsafe::log::kError;
-  filter["routing"] = maidsafe::log::kVerbose;
-  return ExecuteMain(argc, argv, filter, false, maidsafe::log::ColourMode::kPartialLine);
-}
+namespace maidsafe {
+
+namespace routing {
+
+namespace test {
+
+MockResponseHandler::MockResponseHandler(RoutingTable& routing_table,
+                         NonRoutingTable& non_routing_table,
+                         NetworkUtils& utils)
+    : ResponseHandler(routing_table, non_routing_table, utils) {}
+
+MockResponseHandler::~MockResponseHandler() {}
+
+}  // namespace test
+
+}  // namespace routing
+
+}  // namespace maidsafe
+
