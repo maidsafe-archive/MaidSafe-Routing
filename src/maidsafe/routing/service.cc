@@ -174,7 +174,7 @@ void Service::Connect(protobuf::Message& message) {
 //    }
     if (request_public_key_functor_) {
       auto validate_node =
-          [=, &routing_table_, &non_routing_table_, &network_] (const asymm::PublicKey& key)->void {
+          [=] (const asymm::PublicKey& key) {
             LOG(kInfo) << "validation callback called with public key for "
                        << DebugId(peer_node.node_id);
             ValidateAndAddToRudp(network_,
