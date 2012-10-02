@@ -88,6 +88,10 @@ class Routing {
   // A queue with recently found nodes that can be extracted for upper layers to communicate with.
   NodeId GetRandomExistingNode();
 
+  //TODO(TEAM): This method shall be in private, however a temp solution in Lifestuff requires
+  // calling this function to solve segmentation problem during tearing down of Credential Tests
+  void DisconnectFunctors();
+
   friend class test::GenericNode;
 
  private:
@@ -98,7 +102,6 @@ class Routing {
   bool CheckBootstrapFilePath() const;
   void AddExistingRandomNode(NodeId node, std::weak_ptr<RoutingPrivate> impl);
   void ConnectFunctors(const Functors& functors);
-  void DisconnectFunctors();
   void BootstrapFromTheseEndpoints(const std::vector<boost::asio::ip::udp::endpoint>& endpoints);
   void DoJoin(std::weak_ptr<RoutingPrivate> impl);
   int DoBootstrap(std::weak_ptr<RoutingPrivate> impl);
