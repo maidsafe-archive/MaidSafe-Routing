@@ -34,19 +34,19 @@
 #include "boost/filesystem/path.hpp"
 
 #include "maidsafe/common/rsa.h"
+#include "maidsafe/common/node_id.h"
 
 #include "maidsafe/routing/api_config.h"
 
 
 namespace maidsafe {
 
-class NodeId;
+class RoutingPrivate;
 
 namespace routing {
 
 namespace test { class GenericNode; }
 
-struct RoutingPrivate;
 struct NodeInfo;
 
 class Routing {
@@ -99,33 +99,8 @@ class Routing {
   Routing(const Routing&&);
   Routing& operator=(const Routing&);
 
-  bool CheckBootstrapFilePath() const;
-  void AddExistingRandomNode(NodeId node, std::weak_ptr<RoutingPrivate> impl);
-  void ConnectFunctors(const Functors& functors);
-  void BootstrapFromTheseEndpoints(const std::vector<boost::asio::ip::udp::endpoint>& endpoints);
-  void DoJoin(std::weak_ptr<RoutingPrivate> impl);
-  int DoBootstrap(std::weak_ptr<RoutingPrivate> impl);
-  void FindClosestNode(const boost::system::error_code& error_code,
-                       std::weak_ptr<RoutingPrivate> impl,
-                       int attempts);
-  void ReSendFindNodeRequest(const boost::system::error_code& error_code,
-                             std::weak_ptr<RoutingPrivate> impl,
-                             bool ignore_size = false);
-  void OnMessageReceived(const std::string& message, std::weak_ptr<RoutingPrivate> impl);
-  void DoOnMessageReceived(const std::string& message, std::weak_ptr<RoutingPrivate> impl);
-  void OnConnectionLost(const NodeId& lost_connection_id,
-                        std::weak_ptr<RoutingPrivate> impl);
-  void DoOnConnectionLost(const NodeId& lost_connection_id,
-                          std::weak_ptr<RoutingPrivate> impl);
-  void RemoveNode(const NodeInfo& node, const bool& internal_rudp_only);
-  // Confirm (if we can) two nodes are within a group range.  For small networks or new node on
-  // network, this function may yield many false negatives.  In the case of a negative, actual
-  // confirmation can be achieved by sending an indirect message to the node address and checking
-  // all returned Node Ids.
-  bool ConfirmGroupMembers(const NodeId& node1, const NodeId& node2);
-
   // pimpl (data members only)
-  std::shared_ptr<RoutingPrivate> impl_;
+  std::unique_ptr<RoutingPrivate> impl_;
 };
 
 }  // namespace routing
