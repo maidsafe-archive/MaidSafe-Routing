@@ -289,6 +289,7 @@ void NetworkUtils::RecursiveSendOn(protobuf::Message message,
     LOG(kWarning) << " Routing -> removing connection " << last_node_attempted.node_id.String();
     // FIXME Should we remove this node or let rudp handle that?
     routing_table_.DropNode(last_node_attempted.connection_id, false);
+    non_routing_table_.DropConnection(last_node_attempted.connection_id);
   }
 
   if (attempt_count > 0)
@@ -344,8 +345,7 @@ void NetworkUtils::RecursiveSendOn(protobuf::Message message,
         }
         LOG(kWarning) << " Routing -> removing connection " << DebugId(closest_node.connection_id);
         routing_table_.DropNode(closest_node.node_id, false);
-// TODO : prakash
-//        non_routing_table_.DropNode(closest_node.node_id);
+        non_routing_table_.DropConnection(closest_node.connection_id);
         RecursiveSendOn(message);
       }
   };

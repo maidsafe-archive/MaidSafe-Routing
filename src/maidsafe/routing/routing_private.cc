@@ -569,7 +569,7 @@ void RoutingPrivate::DoOnConnectionLost(const NodeId& lost_connection_id) {
   // Checking non-routing table
   if (dropped_node.node_id.Empty()) {
     resend = false;
-    dropped_node = non_routing_table_.DropNode(lost_connection_id);
+    dropped_node = non_routing_table_.DropConnection(lost_connection_id);
     if (!dropped_node.node_id.Empty()) {
       LOG(kWarning) << "[" << HexSubstr(keys_.identity) << "]"
                     << "Lost connection with non-routing node "
@@ -636,7 +636,7 @@ bool RoutingPrivate::ConfirmGroupMembers(const NodeId& node1, const NodeId& node
 
 void RoutingPrivate::ReSendFindNodeRequest(const boost::system::error_code& error_code,
                                            bool ignore_size) {
-  if (error_code != boost::asio::error::operation_aborted) {
+  if ((error_code != boost::asio::error::operation_aborted) || tearing_down_) {
     if (routing_table_.Size() == 0) {
       LOG(kError) << "This node's [" << HexSubstr(keys_.identity)
                   << "] Routing table is empty."
