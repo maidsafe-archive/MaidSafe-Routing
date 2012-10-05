@@ -17,6 +17,7 @@
 #include <cstdint>
 #include <map>
 #include <memory>
+#include <string>
 #include <utility>
 #include <vector>
 
@@ -48,7 +49,7 @@ class RoutingPrivate {
  public:
   RoutingPrivate(const asymm::Keys& keys, bool client_mode);
   ~RoutingPrivate();
-
+  void Stop();
   void Join(Functors functors,
             std::vector<boost::asio::ip::udp::endpoint> peer_endpoints =
                 std::vector<boost::asio::ip::udp::endpoint>());
@@ -74,15 +75,17 @@ class RoutingPrivate {
 
  private:
   RoutingPrivate(const RoutingPrivate&);
-//  RoutingPrivate(const RoutingPrivate&&);
+  RoutingPrivate(const RoutingPrivate&&);
   RoutingPrivate& operator=(const RoutingPrivate&);
 
-  bool CheckBootstrapFilePath() const;
+  bool CheckBootstrapFilePath();
   void AddExistingRandomNode(NodeId node);
   void ConnectFunctors(const Functors& functors);
   void BootstrapFromTheseEndpoints(const std::vector<boost::asio::ip::udp::endpoint>& endpoints);
   void DoJoin();
   int DoBootstrap();
+  void ReBootstrap();
+  void DoReBootstrap(const boost::system::error_code &error_code);
   void FindClosestNode(const boost::system::error_code& error_code, int attempts);
   void ReSendFindNodeRequest(const boost::system::error_code& error_code, bool ignore_size = false);
   void OnMessageReceived(const std::string& message);
@@ -110,6 +113,7 @@ class RoutingPrivate {
   SafeQueue<NodeId> random_node_queue_;
   boost::asio::deadline_timer recovery_timer_;
   boost::asio::deadline_timer setup_timer_;
+  boost::asio::deadline_timer re_bootstrap_timer_;
   std::vector<NodeId> random_node_vector_;
   std::mutex random_node_mutex_;
 };

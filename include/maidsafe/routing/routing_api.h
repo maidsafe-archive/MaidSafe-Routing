@@ -33,17 +33,16 @@
 #include "boost/date_time/posix_time/posix_time_config.hpp"
 #include "boost/filesystem/path.hpp"
 
-#include "maidsafe/common/rsa.h"
 #include "maidsafe/common/node_id.h"
+#include "maidsafe/common/rsa.h"
 
 #include "maidsafe/routing/api_config.h"
 
-
 namespace maidsafe {
 
-class RoutingPrivate;
-
 namespace routing {
+
+class RoutingPrivate;
 
 namespace test { class GenericNode; }
 
@@ -85,10 +84,11 @@ class Routing {
             const boost::posix_time::time_duration& timeout,
             bool direct,  // whether this is to a close node group or direct
             bool cachable);
+
   // A queue with recently found nodes that can be extracted for upper layers to communicate with.
   NodeId GetRandomExistingNode();
 
-  //TODO(TEAM): This method shall be in private, however a temp solution in Lifestuff requires
+  // TODO(TEAM): This method shall be in private, however a temp solution in Lifestuff requires
   // calling this function to solve segmentation problem during tearing down of Credential Tests
   void DisconnectFunctors();
 

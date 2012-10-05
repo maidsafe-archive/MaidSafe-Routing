@@ -12,33 +12,16 @@
 
 #include "maidsafe/routing/routing_api.h"
 
-#include <functional>
-#include <future>
-#include "boost/asio/deadline_timer.hpp"
-#include "boost/thread/future.hpp"
-
 #include "maidsafe/common/log.h"
 #include "maidsafe/common/node_id.h"
 
 #include "maidsafe/rudp/managed_connections.h"
 #include "maidsafe/rudp/return_codes.h"
 
-#include "maidsafe/routing/bootstrap_file_handler.h"
-#include "maidsafe/routing/message_handler.h"
-#include "maidsafe/routing/network_utils.h"
-#include "maidsafe/routing/non_routing_table.h"
-#include "maidsafe/routing/parameters.h"
-#include "maidsafe/routing/return_codes.h"
 #include "maidsafe/routing/routing_private.h"
-#include "maidsafe/routing/routing_pb.h"
-#include "maidsafe/routing/routing_table.h"
-#include "maidsafe/routing/rpcs.h"
-#include "maidsafe/routing/timer.h"
-#include "maidsafe/routing/utils.h"
-
+#include "maidsafe/routing/return_codes.h"
 
 namespace args = std::placeholders;
-namespace fs = boost::filesystem;
 
 namespace maidsafe {
 
@@ -55,27 +38,29 @@ Routing::Routing(const asymm::Keys& keys, const bool& client_mode)
 }
 
 Routing::~Routing() {
-//  impl_.Stop()
+  impl_->Stop();
 }
 
 void Routing::Join(Functors functors, std::vector<Endpoint> peer_endpoints) {
-//  if (impl_)
-//    impl_->Join(functors, peer_endpoints);
+  if (impl_)
+    impl_->Join(functors, peer_endpoints);
 }
 
 void Routing::DisconnectFunctors() {  // TODO(Prakash) : fix race condition when functors in use
-//  if (impl_)
-//    impl_->DisconnectFunctors();
+  if (impl_)
+    impl_->DisconnectFunctors();
 }
 
 int Routing::ZeroStateJoin(Functors functors,
                            const Endpoint& local_endpoint,
                            const Endpoint& peer_endpoint,
                            const NodeInfo& peer_node) {
-//  if (impl_)
-//    return impl_->ZeroStateJoin(functors, local_endpoint, peer_endpoint, peer_node);
-//else
+  if (impl_) {
+    return impl_->ZeroStateJoin(functors, local_endpoint, peer_endpoint, peer_node);
+  } else {
+    assert(false);
     return kGeneralError;
+  }
 }
 
 void Routing::Send(const NodeId& destination_id,
@@ -85,17 +70,17 @@ void Routing::Send(const NodeId& destination_id,
                    const boost::posix_time::time_duration& timeout,
                    bool direct,
                    bool cache) {
-//  if (impl_)
-//    impl_->Send(destination_id, group_claim, data, response_functor, timeout, direct, cache);
+  if (impl_)
+    impl_->Send(destination_id, group_claim, data, response_functor, timeout, direct, cache);
 }
 
 NodeId Routing::GetRandomExistingNode() {
-//  if (impl_) {
-//    return  impl_->GetRandomExistingNode();
-//  } else {
-//    assert(false);
+  if (impl_) {
+    return  impl_->GetRandomExistingNode();
+  } else {
+    assert(false);
     return NodeId();
-//  }
+  }
 }
 
 }  // namespace routing

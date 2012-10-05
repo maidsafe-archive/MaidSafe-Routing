@@ -192,7 +192,7 @@ NodeId GenericNode::GetRandomExistingNode() {
 }
 
 void GenericNode::AddExistingRandomNode(const NodeId& node_id) {
-  routing_->AddExistingRandomNode(node_id, routing_->impl_);
+  routing_->impl_->AddExistingRandomNode(node_id);
 }
 
 void GenericNode::Send(const NodeId& destination_id,
@@ -208,7 +208,7 @@ void GenericNode::Send(const NodeId& destination_id,
 void GenericNode::RudpSend(const NodeId& peer_node_id,
                            const protobuf::Message& message,
                            rudp::MessageSentFunctor message_sent_functor) {
-  routing_->impl_->network_.RudpSend(message, peer_node_id, message_sent_functor);
+  routing_->impl_->network_.RudpSend(peer_node_id, message, message_sent_functor);
 }
 
 void GenericNode::SendToClosestNode(const protobuf::Message& message) {

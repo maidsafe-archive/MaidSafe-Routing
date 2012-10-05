@@ -16,6 +16,7 @@
 #include <functional>
 #include <future>
 #include "boost/asio/deadline_timer.hpp"
+#include "boost/asio/ip/udp.hpp"
 #include "boost/filesystem/path.hpp"
 #include "boost/thread/future.hpp"
 
@@ -31,7 +32,6 @@
 #include "maidsafe/routing/non_routing_table.h"
 #include "maidsafe/routing/parameters.h"
 #include "maidsafe/routing/return_codes.h"
-#include "maidsafe/routing/routing_private.h"
 #include "maidsafe/routing/routing_pb.h"
 #include "maidsafe/routing/routing_table.h"
 #include "maidsafe/routing/rpcs.h"
@@ -77,6 +77,7 @@ RoutingPrivate::RoutingPrivate(const asymm::Keys& keys, bool client_mode)
       random_node_queue_(),
       recovery_timer_(asio_service_.service()),
       setup_timer_(asio_service_.service()),
+      re_bootstrap_timer_(asio_service_.service()),
       random_node_vector_(),
       random_node_mutex_() {
   message_handler_.reset(new MessageHandler(asio_service_, routing_table_, non_routing_table_,
@@ -90,588 +91,603 @@ RoutingPrivate::RoutingPrivate(const asymm::Keys& keys, bool client_mode)
          "Server Nodes cannot be created without valid keys");
   if (keys.identity.empty()) {
     anonymous_node_ = true;
-    LOG(kInfo) << "Anonymous node ID: " << DebugId(kNodeId_);
+    LOG(kInfo) << "Anonymous node id: " << DebugId(kNodeId_)
+               << ", connection id" << DebugId(routing_table_.kConnectionId());
   }
 }
 
-RoutingPrivate::~RoutingPrivate() {
-  LOG(kVerbose) << "~Routing() - Disconnecting functors.  Routing table Size: "
-                << routing_table_.Size();
-  DisconnectFunctors();
-  LOG(kVerbose) << "RoutingPrivate::~RoutingPrivate() " << DebugId(kNodeId_);
+void RoutingPrivate::Stop() {
   tearing_down_ = true;
   setup_timer_.cancel();
   recovery_timer_.cancel();
+  re_bootstrap_timer_.cancel();
   network_.Stop();
-  boost::this_thread::disable_interruption disable_interruption;
   asio_service_.Stop();
+  DisconnectFunctors();
 }
 
-//bool RoutingPrivate::CheckBootstrapFilePath() const {
-//  // Global bootstrap file
-//  std::vector<Endpoint> global_bootstrap_nodes;
-//  boost::system::error_code exists_error_code, is_regular_file_error_code;
+RoutingPrivate::~RoutingPrivate() {
+  LOG(kVerbose) << "RoutingPrivate::~RoutingPrivate() " << DebugId(kNodeId_)
+                << ", connection id" << DebugId(routing_table_.kConnectionId());
+}
 
-//  fs::path local_file = fs::current_path() / "bootstrap";
-//  if (!fs::exists(local_file, exists_error_code) ||
-//      !fs::is_regular_file(local_file, is_regular_file_error_code) ||
-//      exists_error_code || is_regular_file_error_code) {
-//    if (exists_error_code) {
-//      LOG(kWarning) << "Failed to find bootstrap file at " << local_file << ".  "
-//                    << exists_error_code.message();
-//    }
-//    if (is_regular_file_error_code) {
-//      LOG(kError) << "bootstrap file is not a regular file " << local_file << ".  "
-//                  << is_regular_file_error_code.message();
-//    }
-//    return false;
-//  } else {
-//    LOG(kVerbose) << "Found bootstrap file at " << local_file;
-//    bootstrap_file_path_ = local_file;
-//    bootstrap_nodes_ = ReadBootstrapFile(bootstrap_file_path_);
-//    network_.set_bootstrap_file_path(bootstrap_file_path_);
+bool RoutingPrivate::CheckBootstrapFilePath()  {
+  // Global bootstrap file
+  std::vector<Endpoint> global_bootstrap_nodes;
+  boost::system::error_code exists_error_code, is_regular_file_error_code;
 
-//    // Appending global_bootstrap_file's contents
-//    for (auto i: global_bootstrap_nodes)
-//      bootstrap_nodes_.push_back(i);
-//    return true;
-//  }
-//}
+  fs::path local_file = fs::current_path() / "bootstrap";
 
-//void RoutingPrivate::Join(Functors functors,
-//                          std::vector<boost::asio::ip::udp::endpoint> peer_endpoints) {
-//  ConnectFunctors(functors);
-//  if (!peer_endpoints.empty()) {
-//    return BootstrapFromTheseEndpoints(peer_endpoints);
-//  } else {
-//    LOG(kInfo) << "Doing a default join";
-//    if (CheckBootstrapFilePath()) {
-//      return DoJoin();
-//    } else {
-//      LOG(kError) << "Invalid Bootstrap Contacts";
-//      if (functors_.network_status)
-//        functors_.network_status(kInvalidBootstrapContacts);
-//      return;
-//    }
-//  }
-//}
+  if (!fs::exists(local_file, exists_error_code) ||
+      !fs::is_regular_file(local_file, is_regular_file_error_code) ||
+      exists_error_code || is_regular_file_error_code) {
+    if (exists_error_code) {
+      LOG(kWarning) << "Failed to find bootstrap file at " << local_file << ".  "
+                    << exists_error_code.message();
+    }
+    if (is_regular_file_error_code) {
+      LOG(kWarning) << "bootstrap file is not a regular file " << local_file << ".  "
+                    << is_regular_file_error_code.message();
+    }
+    return false;
+  } else {
+    LOG(kVerbose) << "Found bootstrap file at " << local_file;
+    bootstrap_file_path_ = local_file;
+    bootstrap_nodes_ = ReadBootstrapFile(bootstrap_file_path_);
+    network_.set_bootstrap_file_path(bootstrap_file_path_);
 
-//void RoutingPrivate::ConnectFunctors(const Functors& functors) {
-//  routing_table_.set_remove_node_functor([this](const NodeInfo& node,
-//                                                const bool& internal_rudp_only) {
-//      RemoveNode(node, internal_rudp_only);
-//  });
+    // Appending global_bootstrap_file's contents
+    for (auto i: global_bootstrap_nodes)
+      bootstrap_nodes_.push_back(i);
+    return true;
+  }
+}
 
-//  routing_table_.set_network_status_functor(functors.network_status);
-//  routing_table_.set_close_node_replaced_functor(functors.close_node_replaced);
-//  message_handler_->set_message_received_functor(functors.message_received);
-//  message_handler_->set_request_public_key_functor(functors.request_public_key);
-//  functors_ = functors;
-//}
+void RoutingPrivate::Join(Functors functors, std::vector<Endpoint> peer_endpoints) {
+  ConnectFunctors(functors);
+  if (!peer_endpoints.empty()) {
+    return BootstrapFromTheseEndpoints(peer_endpoints);
+  } else {
+    LOG(kInfo) << "Doing a default join";
+    if (CheckBootstrapFilePath()) {
+      return DoJoin();
+    } else {
+      LOG(kError) << "Invalid Bootstrap Contacts";
+      if (functors_.network_status)
+        functors_.network_status(kInvalidBootstrapContacts);
+      return;
+    }
+  }
+}
 
-//void RoutingPrivate::DisconnectFunctors() {  // TODO(Prakash) : fix race condition when functors in use
-//  routing_table_.set_remove_node_functor(nullptr);
-//  routing_table_.set_network_status_functor(nullptr);
-//  routing_table_.set_close_node_replaced_functor(nullptr);
-//  message_handler_->set_message_received_functor(nullptr);
-//  message_handler_->set_request_public_key_functor(nullptr);
-//  functors_ = Functors();
-//}
+void RoutingPrivate::ConnectFunctors(const Functors& functors) {
+  routing_table_.set_remove_node_functor([this](const NodeInfo& node,
+                                                const bool& internal_rudp_only) {
+      RemoveNode(node, internal_rudp_only);
+  });
 
-//void RoutingPrivate::BootstrapFromTheseEndpoints(const std::vector<Endpoint>& endpoints) {
-//  LOG(kInfo) << "Doing a BootstrapFromThisEndpoint Join.  Entered first bootstrap endpoint: "
-//             << endpoints[0]
-//             << ", this node's ID: " << DebugId(kNodeId_)
-//             << (client_mode_ ? " Client" : "");
-//  if (routing_table_.Size() > 0) {
-//    for (uint16_t i = 0; i < routing_table_.Size(); ++i) {
-//      NodeInfo remove_node =
-//          routing_table_.GetClosestNode(kNodeId_);
-//      network_.Remove(remove_node.connection_id);
-//      routing_table_.DropNode(remove_node.node_id, true);
-//    }
-//    if (functors_.network_status)
-//      functors_.network_status(static_cast<int>(routing_table_.Size()));
-//  }
-//  bootstrap_nodes_.clear();
-//  bootstrap_nodes_.insert(bootstrap_nodes_.begin(),
-//                          endpoints.begin(),
-//                          endpoints.end());
-//  DoJoin();
-//}
+  routing_table_.set_network_status_functor(functors.network_status);
+  routing_table_.set_close_node_replaced_functor(functors.close_node_replaced);
+  message_handler_->set_message_received_functor(functors.message_received);
+  message_handler_->set_request_public_key_functor(functors.request_public_key);
+  functors_ = functors;
+}
 
-//void RoutingPrivate::DoJoin() {
-//  int return_value(DoBootstrap());
-//  if (kSuccess != return_value) {
-//    if (functors_.network_status)
-//      functors_.network_status(return_value);
-//    return;
-//  }
-//  assert((!network_.bootstrap_connection_id().Empty() &&
-//          network_.bootstrap_connection_id().IsValid()) &&
-//         "Bootstrap connection id must be populated by now.");
-//  if (anonymous_node_) {  // No need to do find node for anonymous node
-//    if (functors_.network_status)
-//      functors_.network_status(return_value);
-//    return;
-//  }
+void RoutingPrivate::DisconnectFunctors() {
+  routing_table_.set_remove_node_functor(nullptr);
+  routing_table_.set_network_status_functor(nullptr);
+  routing_table_.set_close_node_replaced_functor(nullptr);
+  message_handler_->set_message_received_functor(nullptr);
+  message_handler_->set_request_public_key_functor(nullptr);
+  functors_ = Functors();
+}
 
-//  assert(!anonymous_node_&& "Not allowed for anonymous nodes");
-//  FindClosestNode(boost::system::error_code(), 0);
+void RoutingPrivate::BootstrapFromTheseEndpoints(const std::vector<Endpoint>& endpoints) {
+  LOG(kInfo) << "Doing a BootstrapFromThisEndpoint Join.  Entered first bootstrap endpoint: "
+             << endpoints[0]
+             << ", this node's ID: " << DebugId(kNodeId_)
+             << (client_mode_ ? " Client" : "");
+  if (routing_table_.Size() > 0) {
+    for (uint16_t i = 0; i < routing_table_.Size(); ++i) {
+      NodeInfo remove_node =
+          routing_table_.GetClosestNode(kNodeId_);
+      network_.Remove(remove_node.connection_id);
+      routing_table_.DropNode(remove_node.node_id, true);
+    }
+    if (functors_.network_status)
+      functors_.network_status(static_cast<int>(routing_table_.Size()));
+  }
+  bootstrap_nodes_.clear();
+  bootstrap_nodes_.insert(bootstrap_nodes_.begin(),
+                          endpoints.begin(),
+                          endpoints.end());
+  DoJoin();
+}
 
-//  if (functors_.network_status)
-//    functors_.network_status(return_value);
-//}
+void RoutingPrivate::DoJoin() {
+  int return_value(DoBootstrap());
+  if (kSuccess != return_value) {
+    if (functors_.network_status)
+      functors_.network_status(return_value);
+    return;
+  }
+  assert((!network_.bootstrap_connection_id().Empty() &&
+          network_.bootstrap_connection_id().IsValid()) &&
+         "Bootstrap connection id must be populated by now.");
+  if (anonymous_node_) {  // No need to do find node for anonymous node
+    if (functors_.network_status)
+      functors_.network_status(return_value);
+    return;
+  }
 
-//int RoutingPrivate::DoBootstrap() {
-//  if (bootstrap_nodes_.empty()) {
-//    LOG(kError) << "No bootstrap nodes.  Aborted join.";
-//    return kInvalidBootstrapContacts;
-//  }
-//  // FIXME race condition if a new connection appears at rudp
-//  assert(routing_table_.Size() == 0);
-//  recovery_timer_.cancel();
-//  setup_timer_.cancel();
-//  if (!network_.bootstrap_connection_id().Empty() &&
-//      network_.bootstrap_connection_id().IsValid()) {
-//    LOG(kInfo) << "Removing bootstrap connection to rebootstrap. Connection id : "
-//               << DebugId(network_.bootstrap_connection_id());
-//    network_.Remove(network_.bootstrap_connection_id());
-//    network_.clear_bootstrap_connection_info();
-//  }
+  assert(!anonymous_node_&& "Not allowed for anonymous nodes");
+  FindClosestNode(boost::system::error_code(), 0);
 
-//  return network_.Bootstrap(
-//      bootstrap_nodes_,
-//      [=](const std::string& message) { OnMessageReceived(message); },
-//      [=](const NodeId& lost_connection_id) { OnConnectionLost(lost_connection_id);});  // NOLINT
-//}
+  if (functors_.network_status)
+    functors_.network_status(return_value);
+}
 
-//void RoutingPrivate::FindClosestNode(const boost::system::error_code& error_code,
-//                                     int attempts) {
-//  if (error_code != boost::asio::error::operation_aborted) {
-//    assert(!anonymous_node_ && "Not allowed for anonymous nodes");
-//    if (attempts == 0) {
-//      assert((!network_.bootstrap_connection_id().Empty() &&
-//              (network_.bootstrap_connection_id().IsValid()))
-//             && "Only after bootstraping succeeds");
-//      assert((!network_.this_node_relay_connection_id().Empty() &&
-//              network_.this_node_relay_connection_id().IsValid()) &&
-//             "Relay connection id should be set after bootstraping succeeds");
-//    } else {
-//      if (routing_table_.Size() > 0) {
-//        // Exit the loop & start recovery loop
-//        LOG(kInfo) << "Added a node in routing table."
-//                   << " Terminating setup loop & Scheduling recovery loop.";
-//        recovery_timer_.expires_from_now(
-//            boost::posix_time::seconds(Parameters::recovery_timeout_in_seconds));
-//        recovery_timer_.async_wait([=](const boost::system::error_code& error_code) {
-//                                       ReSendFindNodeRequest(error_code);
-//                                     });
-//        return;
-//      }
+int RoutingPrivate::DoBootstrap() {
+  if (bootstrap_nodes_.empty()) {
+    LOG(kError) << "No bootstrap nodes.  Aborted join.";
+    return kInvalidBootstrapContacts;
+  }
+  // FIXME race condition if a new connection appears at rudp -- rudp should handle this
+  assert(routing_table_.Size() == 0);
+  recovery_timer_.cancel();
+  setup_timer_.cancel();
+  if (!network_.bootstrap_connection_id().Empty() &&
+      network_.bootstrap_connection_id().IsValid()) {
+    LOG(kInfo) << "Removing bootstrap connection to rebootstrap. Connection id : "
+               << DebugId(network_.bootstrap_connection_id());
+    network_.Remove(network_.bootstrap_connection_id());
+    network_.clear_bootstrap_connection_info();
+  }
 
-//      if (attempts >= 10) {
-//        LOG(kError) << "This node's [" << HexSubstr(keys_.identity)
-//                    << "] failed to get closest node."
-//                    << " Reconnecting ....";
-//        // TODO(Prakash) : Remove the bootstrap node from the list
-//        std::async(std::launch::async, [=] {
-//                     Sleep(boost::posix_time::seconds(3));
-//                     DoJoin();
-//                  });
-//      }
-//    }
+  return network_.Bootstrap(
+      bootstrap_nodes_,
+      [=](const std::string& message) { OnMessageReceived(message); },
+      [=](const NodeId& lost_connection_id) { OnConnectionLost(lost_connection_id);});  // NOLINT
+}
 
-//    protobuf::Message find_node_rpc(
-//        rpcs::FindNodes(kNodeId_,
-//                        kNodeId_,
-//                        1,
-//                        true,
-//                        network_.this_node_relay_connection_id()));
+void RoutingPrivate::FindClosestNode(const boost::system::error_code& error_code,
+                                     int attempts) {
+  if (error_code != boost::asio::error::operation_aborted) {
+    assert(!anonymous_node_ && "Not allowed for anonymous nodes");
+    if (attempts == 0) {
+      assert((!network_.bootstrap_connection_id().Empty() &&
+              (network_.bootstrap_connection_id().IsValid()))
+             && "Only after bootstraping succeeds");
+      assert((!network_.this_node_relay_connection_id().Empty() &&
+              network_.this_node_relay_connection_id().IsValid()) &&
+             "Relay connection id should be set after bootstraping succeeds");
+    } else {
+      if (routing_table_.Size() > 0) {
+        // Exit the loop & start recovery loop
+        LOG(kInfo) << "Added a node in routing table."
+                   << " Terminating setup loop & Scheduling recovery loop.";
+        recovery_timer_.expires_from_now(
+            boost::posix_time::seconds(Parameters::recovery_timeout_in_seconds));
+        recovery_timer_.async_wait([=](const boost::system::error_code& error_code) {
+                                       ReSendFindNodeRequest(error_code);
+                                     });
+        return;
+      }
 
-//    rudp::MessageSentFunctor message_sent_functor(
-//        [=](int message_sent) {
-//          if (message_sent == kSuccess)
-//            LOG(kInfo) << "Successfully sent FindNodes RPC to bootstrap connection id : "
-//                       << DebugId(network_.bootstrap_connection_id());
-//          else
-//            LOG(kError) << "Failed to send FindNodes RPC to bootstrap connection id : "
-//                        << DebugId(network_.bootstrap_connection_id());
-//        });
+      if (attempts >= 10) {
+        LOG(kError) << "This node's [" << HexSubstr(keys_.identity)
+                    << "] failed to get closest node."
+                    << " Reconnecting ....";
+        // TODO(Prakash) : Remove the bootstrap node from the list
+        ReBootstrap();
+      }
+    }
 
-//    ++attempts;
-//    network_.SendToDirect(find_node_rpc, network_.bootstrap_connection_id(),
-//                          message_sent_functor);
-//    setup_timer_.expires_from_now(boost::posix_time::seconds(
-//                                  Parameters::setup_timeout_in_seconds));
-//    setup_timer_.async_wait([=](boost::system::error_code error_code_local) {
-//                                FindClosestNode(error_code_local, attempts);
-//                              });
-//  }
-//}
+    protobuf::Message find_node_rpc(
+        rpcs::FindNodes(kNodeId_,
+                        kNodeId_,
+                        1,
+                        true,
+                        network_.this_node_relay_connection_id()));
 
-//int RoutingPrivate::ZeroStateJoin(Functors functors,
-//                                  const Endpoint& local_endpoint,
-//                                  const Endpoint& peer_endpoint,
-//                                  const NodeInfo& peer_node) {
-//  assert((!client_mode_) && "no client nodes allowed in zero state network");
-//  assert((!anonymous_node_) && "not allowed on anonymous node");
-//  bootstrap_nodes_.clear();
-//  bootstrap_nodes_.push_back(peer_endpoint);
-//  if (bootstrap_nodes_.empty()) {
-//    LOG(kError) << "No bootstrap nodes.  Aborted join.";
-//    return kInvalidBootstrapContacts;
-//  }
+    rudp::MessageSentFunctor message_sent_functor(
+        [=](int message_sent) {
+          if (message_sent == kSuccess)
+            LOG(kInfo) << "Successfully sent FindNodes RPC to bootstrap connection id : "
+                       << DebugId(network_.bootstrap_connection_id());
+          else
+            LOG(kError) << "Failed to send FindNodes RPC to bootstrap connection id : "
+                        << DebugId(network_.bootstrap_connection_id());
+        });
 
-//  ConnectFunctors(functors);
-//  int result(network_.Bootstrap(
-//      bootstrap_nodes_,
-//      [=](const std::string& message) { OnMessageReceived(message); },
-//      [=](const NodeId& lost_connection_id) {
-//          OnConnectionLost(lost_connection_id);
-//        },
-//      local_endpoint));
+    ++attempts;
+    network_.SendToDirect(find_node_rpc, network_.bootstrap_connection_id(),
+                          message_sent_functor);
+    setup_timer_.expires_from_now(boost::posix_time::seconds(
+                                  Parameters::setup_timeout_in_seconds));
+    setup_timer_.async_wait([=](boost::system::error_code error_code_local) {
+                                FindClosestNode(error_code_local, attempts);
+                              });
+  }
+}
 
-//  if (result != kSuccess) {
-//    LOG(kError) << "Could not bootstrap zero state node from local endpoint : "
-//                << local_endpoint << " with peer endpoint : " << peer_endpoint;
-//    return result;
-//  }
+int RoutingPrivate::ZeroStateJoin(Functors functors,
+                                  const Endpoint& local_endpoint,
+                                  const Endpoint& peer_endpoint,
+                                  const NodeInfo& peer_node) {
+  assert((!client_mode_) && "no client nodes allowed in zero state network");
+  assert((!anonymous_node_) && "not allowed on anonymous node");
+  bootstrap_nodes_.clear();
+  bootstrap_nodes_.push_back(peer_endpoint);
+  if (bootstrap_nodes_.empty()) {
+    LOG(kError) << "No bootstrap nodes.  Aborted join.";
+    return kInvalidBootstrapContacts;
+  }
 
-//  LOG(kInfo) << "This Node [" << DebugId(kNodeId_) << "]"
-//             << "bootstrap connection id : "
-//             << DebugId(network_.bootstrap_connection_id());
+  ConnectFunctors(functors);
+  int result(network_.Bootstrap(
+      bootstrap_nodes_,
+      [=](const std::string& message) { OnMessageReceived(message); },
+      [=](const NodeId& lost_connection_id) {
+          OnConnectionLost(lost_connection_id);
+        },
+      local_endpoint));
 
-//  assert(!peer_node.node_id.Empty() && "empty nodeid passed");
-//  assert((network_.bootstrap_connection_id() == peer_node.node_id) &&
-//         "Should bootstrap only with known peer for zero state network");
-//  LOG(kVerbose) << local_endpoint << " Bootstrapped with remote endpoint " << peer_endpoint;
-//  rudp::NatType nat_type(rudp::NatType::kUnknown);
-//  rudp::EndpointPair peer_endpoint_pair;  // zero state nodes must be directly connected endpoint
-//  rudp::EndpointPair this_endpoint_pair;
-//  peer_endpoint_pair.external = peer_endpoint_pair.local = peer_endpoint;
-//  this_endpoint_pair.external = this_endpoint_pair.local = local_endpoint;
-//  Sleep(boost::posix_time::milliseconds(100));  // FIXME avoiding assert in rudp
-//  result = network_.GetAvailableEndpoint(peer_node.node_id, peer_endpoint_pair,
-//                                         this_endpoint_pair, nat_type);
-//  if (result != kSuccess) {
-//    LOG(kError) << "Failed to get available endpoint to add zero state node : " << peer_endpoint;
-//    return result;
-//  }
+  if (result != kSuccess) {
+    LOG(kError) << "Could not bootstrap zero state node from local endpoint : "
+                << local_endpoint << " with peer endpoint : " << peer_endpoint;
+    return result;
+  }
 
-//  result = network_.Add(peer_node.node_id, peer_endpoint_pair, "invalid");
-//  if (result != kSuccess) {
-//    LOG(kError) << "Failed to add zero state node : " << peer_endpoint;
-//    return result;
-//  }
+  LOG(kInfo) << "This Node [" << DebugId(kNodeId_) << "]"
+             << "bootstrap connection id : "
+             << DebugId(network_.bootstrap_connection_id());
 
-//  ValidateAndAddToRoutingTable(network_,
-//                               routing_table_,
-//                               non_routing_table_,
-//                               peer_node.node_id,
-//                               peer_node.node_id,
-//                               peer_node.public_key,
-//                               false);
-//  // Now poll for routing table size to have other zero state peer.
-//  uint8_t poll_count(0);
-//  do {
-//    Sleep(boost::posix_time::milliseconds(100));
-//  } while ((routing_table_.Size() == 0) && (++poll_count < 50));
-//  if (routing_table_.Size() != 0) {
-//    LOG(kInfo) << "Node Successfully joined zero state network, with "
-//               << DebugId(network_.bootstrap_connection_id())
-//               << ", Routing table size - " << routing_table_.Size()
-//               << ", Node id : " << DebugId(kNodeId_);
+  assert(!peer_node.node_id.Empty() && "empty nodeid passed");
+  assert((network_.bootstrap_connection_id() == peer_node.node_id) &&
+         "Should bootstrap only with known peer for zero state network");
+  LOG(kVerbose) << local_endpoint << " Bootstrapped with remote endpoint " << peer_endpoint;
+  rudp::NatType nat_type(rudp::NatType::kUnknown);
+  rudp::EndpointPair peer_endpoint_pair;  // zero state nodes must be directly connected endpoint
+  rudp::EndpointPair this_endpoint_pair;
+  peer_endpoint_pair.external = peer_endpoint_pair.local = peer_endpoint;
+  this_endpoint_pair.external = this_endpoint_pair.local = local_endpoint;
+  Sleep(boost::posix_time::milliseconds(100));  // FIXME avoiding assert in rudp
+  result = network_.GetAvailableEndpoint(peer_node.node_id, peer_endpoint_pair,
+                                         this_endpoint_pair, nat_type);
+  if (result != kSuccess) {
+    LOG(kError) << "Failed to get available endpoint to add zero state node : " << peer_endpoint;
+    return result;
+  }
 
-//    recovery_timer_.expires_from_now(
-//        boost::posix_time::seconds(Parameters::recovery_timeout_in_seconds));
-//    recovery_timer_.async_wait([=](const boost::system::error_code& error_code) {
-//                                   ReSendFindNodeRequest(error_code);
-//                                 });
-//    return kSuccess;
-//  } else {
-//    LOG(kError) << "Failed to join zero state network, with bootstrap_endpoint "
-//                << peer_endpoint;
-//    return kNotJoined;
-//  }
-//}
+  result = network_.Add(peer_node.node_id, peer_endpoint_pair, "invalid");
+  if (result != kSuccess) {
+    LOG(kError) << "Failed to add zero state node : " << peer_endpoint;
+    return result;
+  }
 
-//void RoutingPrivate::Send(const NodeId& destination_id,
-//                          const NodeId& group_claim,
-//                          const std::string& data,
-//                          ResponseFunctor response_functor,
-//                          const boost::posix_time::time_duration& timeout,
-//                          bool direct,
-//                          bool cache) {
-//  if (destination_id.Empty() || !destination_id.IsValid()) {
-//    LOG(kError) << "Invalid destination ID, aborted send";
-//    if (response_functor)
-//      response_functor(std::vector<std::string>());
-//    return;
-//  }
+  ValidateAndAddToRoutingTable(network_,
+                               routing_table_,
+                               non_routing_table_,
+                               peer_node.node_id,
+                               peer_node.node_id,
+                               peer_node.public_key,
+                               false);
+  // Now poll for routing table size to have other zero state peer.
+  uint8_t poll_count(0);
+  do {
+    Sleep(boost::posix_time::milliseconds(100));
+  } while ((routing_table_.Size() == 0) && (++poll_count < 50));
+  if (routing_table_.Size() != 0) {
+    LOG(kInfo) << "Node Successfully joined zero state network, with "
+               << DebugId(network_.bootstrap_connection_id())
+               << ", Routing table size - " << routing_table_.Size()
+               << ", Node id : " << DebugId(kNodeId_);
 
-//  if (data.empty() || (data.size() > Parameters::max_data_size)) {
-//    LOG(kError) << "Data size not allowed : " << data.size();
-//    if (response_functor)
-//      response_functor(std::vector<std::string>());
-//    return;
-//  }
+    recovery_timer_.expires_from_now(
+        boost::posix_time::seconds(Parameters::recovery_timeout_in_seconds));
+    recovery_timer_.async_wait([=](const boost::system::error_code& error_code) {
+                                   ReSendFindNodeRequest(error_code);
+                                 });
+    return kSuccess;
+  } else {
+    LOG(kError) << "Failed to join zero state network, with bootstrap_endpoint "
+                << peer_endpoint;
+    return kNotJoined;
+  }
+}
 
-//  protobuf::Message proto_message;
-//  proto_message.set_destination_id(destination_id.String());
-//  proto_message.set_routing_message(false);
-//  proto_message.add_data(data);
-//  proto_message.set_type(static_cast<int32_t>(MessageType::kNodeLevel));
-//  proto_message.set_cacheable(cache);
-//  proto_message.set_direct(direct);
-//  proto_message.set_client_node(client_mode_);
-//  proto_message.set_request(true);
-//  proto_message.set_hops_to_live(Parameters::hops_to_live);
-//  uint16_t replication(1);
-//  if (group_claim.IsValid() && !group_claim.Empty())
-//    proto_message.set_group_claim(group_claim.String());
+void RoutingPrivate::Send(const NodeId& destination_id,
+                          const NodeId& group_claim,
+                          const std::string& data,
+                          ResponseFunctor response_functor,
+                          const boost::posix_time::time_duration& timeout,
+                          bool direct,
+                          bool cache) {
+  if (destination_id.Empty() || !destination_id.IsValid()) {
+    LOG(kError) << "Invalid destination ID, aborted send";
+    if (response_functor)
+      response_functor(std::vector<std::string>());
+    return;
+  }
 
-//  if (!direct) {
-//    replication = Parameters::node_group_size;
-//    if (response_functor)
-//      proto_message.set_id(timer_.AddTask(timeout, response_functor,
-//                                          Parameters::node_group_size));
-//  } else {
-//    if (response_functor)
-//      proto_message.set_id(timer_.AddTask(timeout, response_functor, 1));
-//  }
+  if (data.empty() || (data.size() > Parameters::max_data_size)) {
+    LOG(kError) << "Data size not allowed : " << data.size();
+    if (response_functor)
+      response_functor(std::vector<std::string>());
+    return;
+  }
 
-//  proto_message.set_replication(replication);
-//  // Anonymous node /Partial join state
-//  if (anonymous_node_ || (routing_table_.Size() == 0)) {
-//    proto_message.set_relay_id(kNodeId_.String());
-//    proto_message.set_relay_connection_id(network_.this_node_relay_connection_id().String());
-//    NodeId bootstrap_connection_id(network_.bootstrap_connection_id());
-//    assert(proto_message.has_relay_connection_id() && "did not set this_node_relay_connection_id");
-//    rudp::MessageSentFunctor message_sent(
-//        [=](int result) {
-//          if (rudp::kSuccess != result) {
-//            timer_.CancelTask(proto_message.id());
-//            if (anonymous_node_) {
-//              LOG(kError) << "Anonymous Session Ended, Send not allowed anymore";
-//              functors_.network_status(kAnonymousSessionEnded);
-//            } else {
-//              LOG(kError) << "Partial join Session Ended, Send not allowed anymore";
-//              if (functors_.network_status)
-//                functors_.network_status(kPartialJoinSessionEnded);
-//            }
-//          } else {
-//            LOG(kInfo) << "Message Sent from Anonymous/Partial joined node";
-//          }
-//        });
+  protobuf::Message proto_message;
+  proto_message.set_destination_id(destination_id.String());
+  proto_message.set_routing_message(false);
+  proto_message.add_data(data);
+  proto_message.set_type(static_cast<int32_t>(MessageType::kNodeLevel));
+  proto_message.set_cacheable(cache);
+  proto_message.set_direct(direct);
+  proto_message.set_client_node(client_mode_);
+  proto_message.set_request(true);
+  proto_message.set_hops_to_live(Parameters::hops_to_live);
+  uint16_t replication(1);
+  if (group_claim.IsValid() && !group_claim.Empty())
+    proto_message.set_group_claim(group_claim.String());
 
-//    network_.SendToDirect(proto_message, bootstrap_connection_id, message_sent);
-//    return;
-//  }
+  if (!direct) {
+    replication = Parameters::node_group_size;
+    if (response_functor)
+      proto_message.set_id(timer_.AddTask(timeout, response_functor,
+                                          Parameters::node_group_size));
+  } else {
+    if (response_functor)
+      proto_message.set_id(timer_.AddTask(timeout, response_functor, 1));
+  }
 
-//  // Non Anonymous, normal node
-//  proto_message.set_source_id(kNodeId_.String());
+  proto_message.set_replication(replication);
+  // Anonymous node /Partial join state
+  if (anonymous_node_ || (routing_table_.Size() == 0)) {
+    proto_message.set_relay_id(kNodeId_.String());
+    proto_message.set_relay_connection_id(network_.this_node_relay_connection_id().String());
+    NodeId bootstrap_connection_id(network_.bootstrap_connection_id());
+    assert(proto_message.has_relay_connection_id() && "did not set this_node_relay_connection_id");
+    rudp::MessageSentFunctor message_sent(
+        [=](int result) {
+          asio_service_.service().post([=]() {
+              if (rudp::kSuccess != result) {
+                timer_.CancelTask(proto_message.id());
+                if (anonymous_node_) {
+                  LOG(kError) << "Anonymous Session Ended, Send not allowed anymore";
+                  functors_.network_status(kAnonymousSessionEnded);
+                } else {
+                  LOG(kError) << "Partial join Session Ended, Send not allowed anymore";
+                  if (functors_.network_status)  // FIXME do we need this?
+                  functors_.network_status(kPartialJoinSessionEnded);
+                }
+              } else {
+                LOG(kInfo) << "Message Sent from Anonymous/Partial joined node";
+              }
+            });
+          });
+    network_.SendToDirect(proto_message, bootstrap_connection_id, message_sent);
+    return;
+  }
 
-//  if (kNodeId_ != destination_id) {
-//    network_.SendToClosestNode(proto_message);
-//  } else if (client_mode_) {
-//    LOG(kVerbose) << "Client sending request to self id";
-//    network_.SendToClosestNode(proto_message);
-//  } else {
-//    LOG(kError) << "Sending request to self";
-//    OnMessageReceived(proto_message.SerializeAsString());
-//  }
-//}
+  // Non Anonymous, normal node
+  proto_message.set_source_id(kNodeId_.String());
 
-//void RoutingPrivate::OnMessageReceived(const std::string& message) {
-//  asio_service_.service().post([=]() {
-//                                   DoOnMessageReceived(message);
-//                                 });
-//}
+  if (kNodeId_ != destination_id) {
+    network_.SendToClosestNode(proto_message);
+  } else if (client_mode_) {
+    LOG(kVerbose) << "Client sending request to self id";
+    network_.SendToClosestNode(proto_message);
+  } else {
+    LOG(kError) << "Sending request to self";
+    OnMessageReceived(proto_message.SerializeAsString());
+  }
+}
 
-//void RoutingPrivate::DoOnMessageReceived(const std::string& message) {
-//  protobuf::Message protobuf_message;
-//  if (protobuf_message.ParseFromString(message)) {
-//    bool relay_message(!protobuf_message.has_source_id());
-//    LOG(kInfo) << "This node [" << DebugId(kNodeId_) << "] received message type: "
-//               << MessageTypeString(protobuf_message) << " from "
-//               << (relay_message ? HexSubstr(protobuf_message.relay_id()) + " -- RELAY REQUEST" :
-//                                   HexSubstr(protobuf_message.source_id()))
-//               << " id: " << protobuf_message.id();
-//    if (protobuf_message.has_source_id())
-//      AddExistingRandomNode(NodeId(protobuf_message.source_id()));
-//    message_handler_->HandleMessage(protobuf_message);
-//  } else {
-//    LOG(kWarning) << "Message received, failed to parse";
-//  }
-//}
+void RoutingPrivate::OnMessageReceived(const std::string& message) {
+  asio_service_.service().post([=]() {
+                                   DoOnMessageReceived(message);
+                                 });
+}
 
-//NodeId RoutingPrivate::GetRandomExistingNode() {
-//  std::lock_guard<std::mutex> lock(random_node_mutex_);
-//  if (random_node_vector_.empty())
-//    return NodeId();
-//  NodeId node;
-//  auto queue_size = random_node_vector_.size();
-//  node = (queue_size >= 100) ? (random_node_vector_[0]) :
-//                               (random_node_vector_[RandomUint32() % queue_size]);
-//  LOG(kVerbose) << "RandomNodeQueue : Getting node, queue size now "
-//                << queue_size;
-//  if (queue_size >= 100) {
-//    random_node_vector_.erase(random_node_vector_.begin());
-//  }
-//  return node;
-//}
+void RoutingPrivate::DoOnMessageReceived(const std::string& message) {
+  protobuf::Message protobuf_message;
+  if (protobuf_message.ParseFromString(message)) {
+    bool relay_message(!protobuf_message.has_source_id());
+    LOG(kInfo) << "This node [" << DebugId(kNodeId_) << "] received message type: "
+               << MessageTypeString(protobuf_message) << " from "
+               << (relay_message ? HexSubstr(protobuf_message.relay_id()) + " -- RELAY REQUEST" :
+                                   HexSubstr(protobuf_message.source_id()))
+               << " id: " << protobuf_message.id();
+    if (protobuf_message.has_source_id())
+      AddExistingRandomNode(NodeId(protobuf_message.source_id()));
+    message_handler_->HandleMessage(protobuf_message);
+  } else {
+    LOG(kWarning) << "Message received, failed to parse";
+  }
+}
 
-//void RoutingPrivate::AddExistingRandomNode(NodeId node) {
-//  if (node.IsValid() && !node.Empty()) {
-//    std::lock_guard<std::mutex> lock(random_node_mutex_);
-//    if (std::find_if(random_node_vector_.begin(), random_node_vector_.end(),
-//                   [node] (const NodeId& vect_node) {
-//                       return vect_node == node;
-//                     }) !=  random_node_vector_.end())
-//      return;
-//    random_node_vector_.push_back(node);
-//    auto queue_size = random_node_vector_.size();
-//    LOG(kVerbose) << "RandomNodeQueue : Added node, queue size now "
-//                  << queue_size;
-//    if (queue_size > 100)
-//      random_node_vector_.erase(random_node_vector_.begin());
-//  }
-//}
+NodeId RoutingPrivate::GetRandomExistingNode() {
+  std::lock_guard<std::mutex> lock(random_node_mutex_);
+  if (random_node_vector_.empty())
+    return NodeId();
+  NodeId node;
+  auto queue_size = random_node_vector_.size();
+  node = (queue_size >= 100) ? (random_node_vector_[0]) :
+                               (random_node_vector_[RandomUint32() % queue_size]);
+  LOG(kVerbose) << "RandomNodeQueue : Getting node, queue size now "
+                << queue_size;
+  if (queue_size >= 100) {
+    random_node_vector_.erase(random_node_vector_.begin());
+  }
+  return node;
+}
 
-//void RoutingPrivate::OnConnectionLost(const NodeId& lost_connection_id) {
-//  asio_service_.service().post([=]() {
-//                                   DoOnConnectionLost(lost_connection_id);
-//                                 });
-//}
+void RoutingPrivate::AddExistingRandomNode(NodeId node) {
+  if (node.IsValid() && !node.Empty()) {
+    std::lock_guard<std::mutex> lock(random_node_mutex_);
+    if (std::find_if(random_node_vector_.begin(), random_node_vector_.end(),
+                   [node] (const NodeId& vect_node) {
+                       return vect_node == node;
+                     }) !=  random_node_vector_.end())
+      return;
+    random_node_vector_.push_back(node);
+    auto queue_size = random_node_vector_.size();
+    LOG(kVerbose) << "RandomNodeQueue : Added node, queue size now "
+                  << queue_size;
+    if (queue_size > 100)
+      random_node_vector_.erase(random_node_vector_.begin());
+  }
+}
 
-//void RoutingPrivate::DoOnConnectionLost(const NodeId& lost_connection_id) {
-//  LOG(kVerbose) << "Routing::ConnectionLost with ----------------------------"
-//                << DebugId(lost_connection_id);
-//  NodeInfo dropped_node;
-//  bool resend(!tearing_down_ &&
-//              (routing_table_.GetNodeInfo(lost_connection_id, dropped_node) &&
-//               routing_table_.IsThisNodeInRange(dropped_node.node_id,
-//                                                Parameters::closest_nodes_size)));
+void RoutingPrivate::OnConnectionLost(const NodeId& lost_connection_id) {
+  asio_service_.service().post([=]() {
+                                   DoOnConnectionLost(lost_connection_id);
+                                 });
+}
 
-//  // Checking routing table
-//  dropped_node = routing_table_.DropNode(lost_connection_id, true);
-//  if (!dropped_node.node_id.Empty()) {
-//    LOG(kWarning) << "[" << HexSubstr(keys_.identity) << "]"
-//                  << "Lost connection with routing node "
-//                  << DebugId(dropped_node.node_id);
-//  }
+void RoutingPrivate::DoOnConnectionLost(const NodeId& lost_connection_id) {
+  LOG(kVerbose) << "Routing::ConnectionLost with ----------------------------"
+                << DebugId(lost_connection_id);
+  NodeInfo dropped_node;
+  bool resend(!tearing_down_ &&
+              (routing_table_.GetNodeInfo(lost_connection_id, dropped_node) &&
+               routing_table_.IsThisNodeInRange(dropped_node.node_id,
+                                                Parameters::closest_nodes_size)));
 
-//  // Checking non-routing table
-//  if (dropped_node.node_id.Empty()) {
-//    resend = false;
-//    dropped_node = non_routing_table_.DropNode(lost_connection_id);
-//    if (!dropped_node.node_id.Empty()) {
-//      LOG(kWarning) << "[" << HexSubstr(keys_.identity) << "]"
-//                    << "Lost connection with non-routing node "
-//                    << HexSubstr(dropped_node.node_id.String());
-//    } else if (!network_.bootstrap_connection_id().Empty() &&
-//               lost_connection_id == network_.bootstrap_connection_id()) {
-//      LOG(kWarning) << "[" << HexSubstr(keys_.identity) << "]"
-//                    << "Lost temporary connection with bootstrap node. connection id :"
-//                    << DebugId(lost_connection_id);
-//      network_.clear_bootstrap_connection_info();
-//      if (anonymous_node_) {
-//        LOG(kError) << "Anonymous Session Ended, Send not allowed anymore";
-//        functors_.network_status(kAnonymousSessionEnded);
-//        // TODO(Prakash) cancel all pending tasks
-//        return;
-//      }
+  // Checking routing table
+  dropped_node = routing_table_.DropNode(lost_connection_id, true);
+  if (!dropped_node.node_id.Empty()) {
+    LOG(kWarning) << "[" << HexSubstr(keys_.identity) << "]"
+                  << "Lost connection with routing node "
+                  << DebugId(dropped_node.node_id);
+  }
 
-//      if (routing_table_.Size() == 0)
-//        resend = true;  // This will trigger rebootstrap
-//    } else {
-//      LOG(kWarning) << "[" << HexSubstr(keys_.identity) << "]"
-//                    << "Lost connection with unknown/internal connection id "
-//                    << DebugId(lost_connection_id);
-//    }
-//  }
+  // Checking non-routing table
+  if (dropped_node.node_id.Empty()) {
+    resend = false;
+    dropped_node = non_routing_table_.DropNode(lost_connection_id);
+    if (!dropped_node.node_id.Empty()) {
+      LOG(kWarning) << "[" << HexSubstr(keys_.identity) << "]"
+                    << "Lost connection with non-routing node "
+                    << HexSubstr(dropped_node.node_id.String());
+    } else if (!network_.bootstrap_connection_id().Empty() &&
+               lost_connection_id == network_.bootstrap_connection_id()) {
+      LOG(kWarning) << "[" << HexSubstr(keys_.identity) << "]"
+                    << "Lost temporary connection with bootstrap node. connection id :"
+                    << DebugId(lost_connection_id);
+      network_.clear_bootstrap_connection_info();
+      if (anonymous_node_) {
+        LOG(kError) << "Anonymous Session Ended, Send not allowed anymore";
+        functors_.network_status(kAnonymousSessionEnded);
+        // TODO(Prakash) cancel all pending tasks
+        return;
+      }
 
-//  if (resend) {
-//    // Close node lost, get more nodes
-//    LOG(kWarning) << "Lost close node, getting more.";
-//    ReSendFindNodeRequest(boost::system::error_code(), true);
-//  }
-//}
+      if (routing_table_.Size() == 0)
+        resend = true;  // This will trigger rebootstrap
+    } else {
+      LOG(kWarning) << "[" << HexSubstr(keys_.identity) << "]"
+                    << "Lost connection with unknown/internal connection id "
+                    << DebugId(lost_connection_id);
+    }
+  }
 
-//void RoutingPrivate::RemoveNode(const NodeInfo& node, const bool& internal_rudp_only) {
-//  if (node.connection_id.Empty() || node.node_id.Empty()) {
-//    return;
-//  }
-//  network_.Remove(node.connection_id);
-//  if (internal_rudp_only) {  // No recovery
-//    LOG(kInfo) << "Routing: removed node : " << DebugId(node.node_id)
-//               << ". Removed internal rudp connection id : " << DebugId(node.connection_id);
-//    return;
-//  } else {
-//      LOG(kInfo) << "Routing: removed node : " << DebugId(node.node_id)
-//                 << ". Removed rudp connection id : " << DebugId(node.connection_id);
-//  }
+  if (resend) {
+    // Close node lost, get more nodes
+    LOG(kWarning) << "Lost close node, getting more.";
+    ReSendFindNodeRequest(boost::system::error_code(), true);
+  }
+}
 
-//  LOG(kInfo) << "Routing: removed node : " << DebugId(node.node_id)
-//             << ". Removed rudp connection id : " << DebugId(node.connection_id);
+void RoutingPrivate::RemoveNode(const NodeInfo& node, const bool& internal_rudp_only) {
+  if (node.connection_id.Empty() || node.node_id.Empty()) {
+    return;
+  }
+  network_.Remove(node.connection_id);
+  if (internal_rudp_only) {  // No recovery
+    LOG(kInfo) << "Routing: removed node : " << DebugId(node.node_id)
+               << ". Removed internal rudp connection id : " << DebugId(node.connection_id);
+    return;
+  } else {
+      LOG(kInfo) << "Routing: removed node : " << DebugId(node.node_id)
+                 << ". Removed rudp connection id : " << DebugId(node.connection_id);
+  }
 
-//  // TODO(Prakash): Handle pseudo connection removal here and NRT node removal
+  LOG(kInfo) << "Routing: removed node : " << DebugId(node.node_id)
+             << ". Removed rudp connection id : " << DebugId(node.connection_id);
 
-//  bool resend(routing_table_.IsThisNodeInRange(node.node_id, Parameters::closest_nodes_size));
-//  if (resend) {
-//    // Close node removed by routing, get more nodes
-//    LOG(kWarning) << "Removed close node, sending find node to get more nodes.";
-//    ReSendFindNodeRequest(boost::system::error_code(), true);
-//  }
-//}
+  // TODO(Prakash): Handle pseudo connection removal here and NRT node removal
 
-//bool RoutingPrivate::ConfirmGroupMembers(const NodeId& node1, const NodeId& node2) {
-//  return routing_table_.ConfirmGroupMembers(node1, node2);
-//}
+  bool resend(routing_table_.IsThisNodeInRange(node.node_id, Parameters::closest_nodes_size));
+  if (resend) {
+    // Close node removed by routing, get more nodes
+    LOG(kWarning) << "Removed close node, sending find node to get more nodes.";
+    ReSendFindNodeRequest(boost::system::error_code(), true);
+  }
+}
 
-//void RoutingPrivate::ReSendFindNodeRequest(const boost::system::error_code& error_code,
-//                                           bool ignore_size) {
-//  if (error_code != boost::asio::error::operation_aborted) {
-//    if (routing_table_.Size() == 0) {
-//      LOG(kError) << "This node's [" << HexSubstr(keys_.identity)
-//                  << "] Routing table is empty."
-//                  << " Reconnecting .... !!!";
-//       std::async(std::launch::async, [=] {
-//           Sleep(boost::posix_time::seconds(10));
-//           DoJoin();
-//       });
-//    } else if (ignore_size ||
-//               (routing_table_.Size() < Parameters::routing_table_size_threshold)) {
-//      if (!ignore_size)
-//        LOG(kInfo) << "This node's [" << DebugId(kNodeId_)
-//                   << "] Routing table smaller than " << Parameters::routing_table_size_threshold
-//                   << " nodes.  Sending another FindNodes. Current routing table size : "
-//                   << routing_table_.Size();
-//      else
-//        LOG(kInfo) << "This node's [" << DebugId(kNodeId_) << "] close node lost."
-//                   << "Sending another FindNodes. Current routing table size : "
-//                   << routing_table_.Size();
+bool RoutingPrivate::ConfirmGroupMembers(const NodeId& node1, const NodeId& node2) {
+  return routing_table_.ConfirmGroupMembers(node1, node2);
+}
 
-//      int num_nodes_requested(0);
-//      if (ignore_size && (routing_table_.Size() > Parameters::routing_table_size_threshold))
-//        num_nodes_requested = static_cast<int>(Parameters::closest_nodes_size);
-//      else
-//        num_nodes_requested = static_cast<int>(Parameters::max_routing_table_size);
+void RoutingPrivate::ReSendFindNodeRequest(const boost::system::error_code& error_code,
+                                           bool ignore_size) {
+  if (error_code != boost::asio::error::operation_aborted) {
+    if (routing_table_.Size() == 0) {
+      LOG(kError) << "This node's [" << HexSubstr(keys_.identity)
+                  << "] Routing table is empty."
+                  << " Scheduling Re-Bootstrap .... !!!";
+      ReBootstrap();
+    } else if (ignore_size ||
+               (routing_table_.Size() < Parameters::routing_table_size_threshold)) {
+      if (!ignore_size)
+        LOG(kInfo) << "This node's [" << DebugId(kNodeId_)
+                   << "] Routing table smaller than " << Parameters::routing_table_size_threshold
+                   << " nodes.  Sending another FindNodes. Current routing table size : "
+                   << routing_table_.Size();
+      else
+        LOG(kInfo) << "This node's [" << DebugId(kNodeId_) << "] close node lost."
+                   << "Sending another FindNodes. Current routing table size : "
+                   << routing_table_.Size();
 
-//      protobuf::Message find_node_rpc(rpcs::FindNodes(kNodeId_, kNodeId_, num_nodes_requested));
-//      network_.SendToClosestNode(find_node_rpc);
+      int num_nodes_requested(0);
+      if (ignore_size && (routing_table_.Size() > Parameters::routing_table_size_threshold))
+        num_nodes_requested = static_cast<int>(Parameters::closest_nodes_size);
+      else
+        num_nodes_requested = static_cast<int>(Parameters::max_routing_table_size);
 
-//      recovery_timer_.expires_from_now(
-//          boost::posix_time::seconds(Parameters::recovery_timeout_in_seconds));
-//      recovery_timer_.async_wait([=](boost::system::error_code error_code_local) {
-//                                     ReSendFindNodeRequest(error_code_local);
-//                                   });
-//    }
-//  } else {
-//    LOG(kVerbose) << "Cancelled recovery loop!!";
-//  }
-//}
+      protobuf::Message find_node_rpc(rpcs::FindNodes(kNodeId_, kNodeId_, num_nodes_requested));
+      network_.SendToClosestNode(find_node_rpc);
+
+      recovery_timer_.expires_from_now(
+          boost::posix_time::seconds(Parameters::recovery_timeout_in_seconds));
+      recovery_timer_.async_wait([=](boost::system::error_code error_code_local) {
+                                     ReSendFindNodeRequest(error_code_local);
+                                   });
+    }
+  } else {
+    LOG(kVerbose) << "Cancelled recovery loop!!";
+  }
+}
+
+void RoutingPrivate::ReBootstrap() {
+  re_bootstrap_timer_.expires_from_now(boost::posix_time::seconds(
+                                       Parameters::re_bootstrap_timeout_in_seconds));
+  re_bootstrap_timer_.async_wait([=](boost::system::error_code error_code_local) {
+                              DoReBootstrap(error_code_local);
+                            });
+}
+
+void RoutingPrivate::DoReBootstrap(const boost::system::error_code& error_code) {
+  if (error_code != boost::asio::error::operation_aborted) {
+    LOG(kError) << "This node's [" << HexSubstr(keys_.identity)
+                << "] Routing table is empty."
+                << " Reconnecting .... !!!";
+    DoJoin();
+  }
+}
 
 }  // namespace routing
 

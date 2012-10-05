@@ -23,6 +23,8 @@
 
 #include "maidsafe/rudp/managed_connections.h"
 
+#include "maidsafe/common/active.h"
+
 #include "maidsafe/routing/api_config.h"
 #include "maidsafe/routing/node_info.h"
 #include "maidsafe/routing/timer.h"
@@ -83,8 +85,8 @@ class NetworkUtils {
   NetworkUtils(const NetworkUtils&&);
   NetworkUtils& operator=(const NetworkUtils&);
 
-  void RudpSend(const protobuf::Message& message,
-                NodeId peer,
+  void RudpSend(NodeId peer,
+                const protobuf::Message& message,
                 rudp::MessageSentFunctor message_sent_functor);
   void SendTo(const protobuf::Message& message,
               const NodeId peer,
@@ -101,6 +103,7 @@ class NetworkUtils {
   RoutingTable& routing_table_;
   NonRoutingTable& non_routing_table_;
   Timer& timer_;
+  std::unique_ptr<Active> message_sent_thread_object_;
   std::unique_ptr<rudp::ManagedConnections> rudp_;
   boost::shared_mutex shared_mutex_;
   bool stopped_;
