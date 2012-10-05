@@ -486,9 +486,10 @@ void RoutingPrivate::Send(const NodeId& destination_id,
 }
 
 void RoutingPrivate::OnMessageReceived(const std::string& message) {
-  asio_service_.service().post([=]() {
-                                   DoOnMessageReceived(message);
-                                 });
+  if (!tearing_down_)
+    asio_service_.service().post([=]() {
+                                     DoOnMessageReceived(message);
+                                   });
 }
 
 void RoutingPrivate::DoOnMessageReceived(const std::string& message) {
@@ -542,9 +543,10 @@ void RoutingPrivate::AddExistingRandomNode(NodeId node) {
 }
 
 void RoutingPrivate::OnConnectionLost(const NodeId& lost_connection_id) {
-  asio_service_.service().post([=]() {
-                                   DoOnConnectionLost(lost_connection_id);
-                                 });
+  if (!tearing_down_)
+    asio_service_.service().post([=]() {
+                                     DoOnConnectionLost(lost_connection_id);
+                                   });
 }
 
 void RoutingPrivate::DoOnConnectionLost(const NodeId& lost_connection_id) {
@@ -640,6 +642,7 @@ void RoutingPrivate::ReSendFindNodeRequest(const boost::system::error_code& erro
                   << "] Routing table is empty."
                   << " Scheduling Re-Bootstrap .... !!!";
       ReBootstrap();
+      return;
     } else if (ignore_size ||
                (routing_table_.Size() < Parameters::routing_table_size_threshold)) {
       if (!ignore_size)
@@ -675,9 +678,10 @@ void RoutingPrivate::ReSendFindNodeRequest(const boost::system::error_code& erro
 void RoutingPrivate::ReBootstrap() {
   re_bootstrap_timer_.expires_from_now(boost::posix_time::seconds(
                                        Parameters::re_bootstrap_timeout_in_seconds));
-  re_bootstrap_timer_.async_wait([=](boost::system::error_code error_code_local) {
-                              DoReBootstrap(error_code_local);
-                            });
+  if (!tearing_down_)
+    re_bootstrap_timer_.async_wait([=](boost::system::error_code error_code_local) {
+                                       DoReBootstrap(error_code_local);
+                                     });
 }
 
 void RoutingPrivate::DoReBootstrap(const boost::system::error_code& error_code) {

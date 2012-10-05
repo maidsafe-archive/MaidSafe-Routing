@@ -78,7 +78,7 @@ int NetworkUtils::Bootstrap(const std::vector<Endpoint> &bootstrap_endpoints,
                             Endpoint local_endpoint) {
   SharedLock shared_lock(shared_mutex_);
   if (stopped_)
-    return kGeneralError;
+    return kNetworkShuttingDown;
 
   assert(connection_lost_functor && "Must provide a valid functor");
   assert(bootstrap_connection_id_.Empty() && "bootstrap_connection_id_ must be empty");
@@ -121,7 +121,7 @@ int NetworkUtils::GetAvailableEndpoint(NodeId peer_id,
                                        rudp::NatType& this_nat_type) {
   SharedLock shared_lock(shared_mutex_);
   if (stopped_)
-    return kGeneralError;
+    return kNetworkShuttingDown;
 
   return rudp_->GetAvailableEndpoint(peer_id,
                                      peer_endpoint_pair,
@@ -133,7 +133,7 @@ int NetworkUtils::Add(NodeId peer_id, rudp::EndpointPair peer_endpoint_pair,
                       const std::string& validation_data) {
   SharedLock shared_lock(shared_mutex_);
   if (stopped_)
-    return kGeneralError;
+    return kNetworkShuttingDown;
 
   return rudp_->Add(peer_id, peer_endpoint_pair, validation_data);
 }
@@ -141,7 +141,7 @@ int NetworkUtils::Add(NodeId peer_id, rudp::EndpointPair peer_endpoint_pair,
 int NetworkUtils::MarkConnectionAsValid(NodeId peer) {
   SharedLock shared_lock(shared_mutex_);
   if (stopped_)
-    return kGeneralError;
+    return kNetworkShuttingDown;
   Endpoint new_bootstrap_endpoint;
   int ret_val(rudp_->MarkConnectionAsValid(peer, new_bootstrap_endpoint));
   if ((ret_val == kSuccess) && !new_bootstrap_endpoint.address().is_unspecified()) {
@@ -169,19 +169,17 @@ void NetworkUtils::RudpSend(NodeId peer,
   rudp::MessageSentFunctor callable([=](int result) {
       if (!stopped_)
         message_sent_thread_object_->Send([=]() {
-                                              message_sent_functor(result);
+                                              if (message_sent_functor)
+                                                message_sent_functor(result);
                                             });
     });
 
-    rudp_->Send(peer, message.SerializeAsString(), message_sent_functor);
+    rudp_->Send(peer, message.SerializeAsString(), callable);
 }
 
 void NetworkUtils::SendToDirect(const protobuf::Message& message,
                                 NodeId peer_connection_id,
                                 rudp::MessageSentFunctor message_sent_functor) {
-  SharedLock shared_lock(shared_mutex_);
-  if (stopped_)
-    return;
   if (message_sent_functor) {
     RudpSend(peer_connection_id, message, message_sent_functor);
   } else {
@@ -262,7 +260,7 @@ void NetworkUtils::SendTo(const protobuf::Message& message,
   };
   LOG(kVerbose) << " >>>>>>>>> rudp send message to connection id"
                 << HexSubstr(connection_id.String());
-  rudp_->Send(connection_id, message.SerializeAsString(), message_sent_functor);
+  RudpSend(connection_id, message, message_sent_functor);
 }
 
 void NetworkUtils::RecursiveSendOn(protobuf::Message message,
@@ -346,6 +344,8 @@ void NetworkUtils::RecursiveSendOn(protobuf::Message message,
         }
         LOG(kWarning) << " Routing -> removing connection " << DebugId(closest_node.connection_id);
         routing_table_.DropNode(closest_node.node_id, false);
+// TODO : prakash
+//        non_routing_table_.DropNode(closest_node.node_id);
         RecursiveSendOn(message);
       }
   };
