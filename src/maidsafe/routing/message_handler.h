@@ -55,8 +55,7 @@ enum class MessageType : int32_t {
 
 class MessageHandler {
  public:
-  MessageHandler(AsioService& asio_service,
-                 RoutingTable& routing_table,
+  MessageHandler(RoutingTable& routing_table,
                  NonRoutingTable& non_routing_table,
                  NetworkUtils& network,
                  Timer& timer);
@@ -96,7 +95,6 @@ class MessageHandler {
   friend class test::MessageHandlerTest_BEH_HandleNodeLevelMessage_Test;
   friend class test::MessageHandlerTest_BEH_ClientRoutingTable_Test;
 
-  AsioService& asio_service_;
   RoutingTable& routing_table_;
   NonRoutingTable& non_routing_table_;
   NetworkUtils& network_;

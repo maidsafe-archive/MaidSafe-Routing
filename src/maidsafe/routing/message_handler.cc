@@ -28,13 +28,11 @@ namespace maidsafe {
 
 namespace routing {
 
-MessageHandler::MessageHandler(AsioService& asio_service,
-                               RoutingTable& routing_table,
+MessageHandler::MessageHandler(RoutingTable& routing_table,
                                NonRoutingTable& non_routing_table,
                                NetworkUtils& network,
                                Timer& timer)
-    : asio_service_(asio_service),
-      routing_table_(routing_table),
+    : routing_table_(routing_table),
       non_routing_table_(non_routing_table),
       network_(network),
       timer_(timer),

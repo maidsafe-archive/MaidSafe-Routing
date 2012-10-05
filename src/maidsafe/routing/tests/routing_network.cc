@@ -303,12 +303,17 @@ void GenericNode::ClearMessages() {
   messages_.clear();
 }
 
+asymm::Keys GenericNode::keys() {
+  std::lock_guard<std::mutex> lock(mutex_);
+  return GetKeys(*node_info_plus_);
+}
 
 GenericNetwork::GenericNetwork()
     : nodes_(),
       bootstrap_endpoints_(),
       bootstrap_path_("bootstrap"),
-      mutex_() {
+      mutex_(),
+      key_pairs_() {
   LOG(kVerbose) << "RoutingNetwork Constructor";
 }
 
@@ -318,6 +323,8 @@ void GenericNetwork::SetUp() {
   NodePtr node1(new GenericNode(false)), node2(new GenericNode(false));
   nodes_.push_back(node1);
   nodes_.push_back(node2);
+  key_pairs_.push_back(node1->keys());
+  key_pairs_.push_back(node2->keys());
   SetNodeValidationFunctor(node1);
   SetNodeValidationFunctor(node2);
   LOG(kVerbose) << "Setup started";
@@ -391,16 +398,21 @@ bool GenericNetwork::RemoveNode(const NodeId& node_id) {
 void GenericNetwork::Validate(const NodeId& node_id, GivePublicKeyFunctor give_public_key) {
   if (node_id == NodeId())
     return;
-
-  auto iter = std::find_if(nodes_.begin(),
-                           nodes_.end(),
-                           [&node_id] (const NodePtr& node)->bool {
-                             EXPECT_FALSE(GetKeys(*node->node_info_plus_).identity.empty());
-                             return GetKeys(*node->node_info_plus_).identity == node_id.String();
-                           });
-  EXPECT_NE(iter, nodes_.end());
-  if (iter != nodes_.end())
-    give_public_key(GetKeys(*(*iter)->node_info_plus_).public_key);
+  std::lock_guard<std::mutex> lock(mutex_);
+  auto iter = std::find_if(key_pairs_.begin(),
+                           key_pairs_.end(),
+                           [node_id] (const asymm::Keys key)->bool {
+                               return (key.identity == node_id.String());
+                             });
+//  auto iter = std::find_if(nodes_.begin(),
+//                           nodes_.end(),
+//                           [&node_id] (const NodePtr& node)->bool {
+//                             EXPECT_FALSE(GetKeys(*node->node_info_plus_).identity.empty());
+//                             return GetKeys(*node->node_info_plus_).identity == node_id.String();
+//                           });
+  EXPECT_NE(iter, key_pairs_.end());
+  if (iter != key_pairs_.end())
+    give_public_key((*iter).public_key);
 }
 
 void GenericNetwork::SetNodeValidationFunctor(NodePtr node) {
@@ -470,6 +482,7 @@ uint16_t GenericNetwork::NonClientNodesSize() const {
 void GenericNetwork::AddNodeDetails(NodePtr node) {
   std::condition_variable cond_var;
   std::mutex mutex;
+  key_pairs_.push_back(node->keys());
   SetNodeValidationFunctor(node);
   uint16_t node_size(NonClientNodesSize());
   node->set_expected(NetworkStatus(node->IsClient(),

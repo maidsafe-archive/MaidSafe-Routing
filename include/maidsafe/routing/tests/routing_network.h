@@ -51,7 +51,7 @@ struct NodeInfoAndPrivateKey;
   const uint32_t kServerSize(8);
 #else
   const uint32_t kClientSize(2);
-  const uint32_t kServerSize(6);
+  const uint32_t kServerSize(9);
 #endif
 
 const uint32_t kNetworkSize = kClientSize + kServerSize;
@@ -104,7 +104,7 @@ class GenericNode {
   static size_t next_node_id_;
   size_t MessagesSize() const;
   void ClearMessages();
-
+  asymm::Keys keys();
   friend class GenericNetwork;
   Functors functors_;
 
@@ -149,6 +149,7 @@ class GenericNetwork : public testing::Test {
   std::vector<boost::asio::ip::udp::endpoint> bootstrap_endpoints_;
   fs::path bootstrap_path_;
   std::mutex mutex_;
+  std::vector<asymm::Keys> key_pairs_;
 };
 
 }  // namespace test

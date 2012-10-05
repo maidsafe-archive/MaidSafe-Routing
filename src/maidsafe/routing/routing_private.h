@@ -95,13 +95,14 @@ class RoutingPrivate {
   void RemoveNode(const NodeInfo& node, const bool& internal_rudp_only);
   bool ConfirmGroupMembers(const NodeId& node1, const NodeId& node2);
 
-  AsioService asio_service_;
+  Functors functors_;
   std::vector<boost::asio::ip::udp::endpoint> bootstrap_nodes_;
   const asymm::Keys keys_;
   const NodeId kNodeId_;
   std::atomic<bool> tearing_down_;
   RoutingTable routing_table_;
   NonRoutingTable non_routing_table_;
+  AsioService asio_service_;
   Timer timer_;
   std::unique_ptr<MessageHandler> message_handler_;
   NetworkUtils network_;
@@ -109,7 +110,6 @@ class RoutingPrivate {
   boost::filesystem::path bootstrap_file_path_;
   bool client_mode_;
   bool anonymous_node_;
-  Functors functors_;
   SafeQueue<NodeId> random_node_queue_;
   boost::asio::deadline_timer recovery_timer_;
   boost::asio::deadline_timer setup_timer_;

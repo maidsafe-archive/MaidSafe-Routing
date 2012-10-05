@@ -52,7 +52,7 @@ namespace {
 }  // unnamed namespace
 
 RoutingPrivate::RoutingPrivate(const asymm::Keys& keys, bool client_mode)
-    : asio_service_(2),
+    : functors_(),
       bootstrap_nodes_(),
       keys_([&keys]()->asymm::Keys {
           if (!keys.identity.empty())
@@ -66,6 +66,7 @@ RoutingPrivate::RoutingPrivate(const asymm::Keys& keys, bool client_mode)
       tearing_down_(false),
       routing_table_(keys_, client_mode),
       non_routing_table_(keys_),  // TODO(Prakash) : don't create NRT for client nodes (wrap both)
+      asio_service_(2),
       timer_(asio_service_),
       message_handler_(),
       network_(routing_table_, non_routing_table_, timer_),
@@ -73,17 +74,14 @@ RoutingPrivate::RoutingPrivate(const asymm::Keys& keys, bool client_mode)
       bootstrap_file_path_(),
       client_mode_(client_mode),
       anonymous_node_(false),
-      functors_(),
       random_node_queue_(),
       recovery_timer_(asio_service_.service()),
       setup_timer_(asio_service_.service()),
       re_bootstrap_timer_(asio_service_.service()),
       random_node_vector_(),
       random_node_mutex_() {
-  message_handler_.reset(new MessageHandler(asio_service_, routing_table_, non_routing_table_,
-                                            network_, timer_));
   asio_service_.Start();
-
+  message_handler_.reset(new MessageHandler(routing_table_, non_routing_table_, network_, timer_));
   if (!CheckBootstrapFilePath())
     LOG(kInfo) << "No bootstrap nodes, require BootStrapFromThisEndpoint()";
 
@@ -252,7 +250,7 @@ int RoutingPrivate::DoBootstrap() {
 
 void RoutingPrivate::FindClosestNode(const boost::system::error_code& error_code,
                                      int attempts) {
-  if (error_code != boost::asio::error::operation_aborted) {
+  if (error_code != boost::asio::error::operation_aborted && !tearing_down_) {
     assert(!anonymous_node_ && "Not allowed for anonymous nodes");
     if (attempts == 0) {
       assert((!network_.bootstrap_connection_id().Empty() &&
@@ -487,9 +485,7 @@ void RoutingPrivate::Send(const NodeId& destination_id,
 
 void RoutingPrivate::OnMessageReceived(const std::string& message) {
   if (!tearing_down_)
-    asio_service_.service().post([=]() {
-                                     DoOnMessageReceived(message);
-                                   });
+    asio_service_.service().post([=]() { DoOnMessageReceived(message); });  // NOLINT (Fraser)
 }
 
 void RoutingPrivate::DoOnMessageReceived(const std::string& message) {
@@ -544,9 +540,7 @@ void RoutingPrivate::AddExistingRandomNode(NodeId node) {
 
 void RoutingPrivate::OnConnectionLost(const NodeId& lost_connection_id) {
   if (!tearing_down_)
-    asio_service_.service().post([=]() {
-                                     DoOnConnectionLost(lost_connection_id);
-                                   });
+    asio_service_.service().post([=]() { DoOnConnectionLost(lost_connection_id); });  // NOLINT (Fraser)
 }
 
 void RoutingPrivate::DoOnConnectionLost(const NodeId& lost_connection_id) {
@@ -636,7 +630,7 @@ bool RoutingPrivate::ConfirmGroupMembers(const NodeId& node1, const NodeId& node
 
 void RoutingPrivate::ReSendFindNodeRequest(const boost::system::error_code& error_code,
                                            bool ignore_size) {
-  if ((error_code != boost::asio::error::operation_aborted) || tearing_down_) {
+  if ((error_code != boost::asio::error::operation_aborted) && !tearing_down_) {
     if (routing_table_.Size() == 0) {
       LOG(kError) << "This node's [" << HexSubstr(keys_.identity)
                   << "] Routing table is empty."
@@ -685,7 +679,7 @@ void RoutingPrivate::ReBootstrap() {
 }
 
 void RoutingPrivate::DoReBootstrap(const boost::system::error_code& error_code) {
-  if (error_code != boost::asio::error::operation_aborted) {
+  if (error_code != boost::asio::error::operation_aborted && !tearing_down_) {
     LOG(kError) << "This node's [" << HexSubstr(keys_.identity)
                 << "] Routing table is empty."
                 << " Reconnecting .... !!!";
