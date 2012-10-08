@@ -55,7 +55,8 @@ enum ReturnCode {
   kFailedtoSendFindNode = -303011,
   kDataSizeNotAllowed = -303012,
   kFailedtoGetEndpoint = -303013,
-  kPartialJoinSessionEnded = -303014
+  kPartialJoinSessionEnded = -303014,
+  kNetworkShuttingDown = -303015
 };
 
 }  // namespace routing

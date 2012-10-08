@@ -71,6 +71,19 @@ NodeInfo NonRoutingTable::DropNode(const NodeId &node_to_drop) {
   return node_info;
 }
 
+NodeInfo NonRoutingTable::DropConnection(const NodeId &connection_to_drop) {
+  NodeInfo node_info;
+  std::lock_guard<std::mutex> lock(mutex_);
+  for (auto it = nodes_.begin(); it != nodes_.end(); ++it) {
+    if ((*it).connection_id == connection_to_drop) {
+      node_info = *it;
+      nodes_.erase(it);
+      break;
+    }
+  }
+  return node_info;
+}
+
 std::vector<NodeInfo> NonRoutingTable::GetNodesInfo(const NodeId& node_id) const {
   std::vector<NodeInfo> nodes_info;
   std::lock_guard<std::mutex> lock(mutex_);

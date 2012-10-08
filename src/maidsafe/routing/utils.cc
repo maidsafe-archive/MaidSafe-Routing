@@ -41,6 +41,8 @@ void ValidateAndAddToRudp(NetworkUtils& network,
                           rudp::EndpointPair peer_endpoint_pair,
                           const asymm::PublicKey& /*public_key*/,
                           const bool& client) {
+  LOG(kVerbose) << "ValidateAndAddToRudp. peer_id : " << DebugId(peer_id)
+                << " , connection id : " << DebugId(peer_connection_id);
   protobuf::Message connect_success(
       rpcs::ConnectSuccess(peer_id, this_node_id, this_connection_id, client));
   int result = network.Add(peer_connection_id, peer_endpoint_pair,
@@ -155,7 +157,7 @@ bool IsDirect(const protobuf::Message& message) {
 }
 
 bool CheckId(const std::string& id_to_test) {
-  return id_to_test.size() == kKeySizeBytes;
+  return id_to_test.size() == NodeId::kSize;
 }
 
 bool ValidateMessage(const protobuf::Message &message) {

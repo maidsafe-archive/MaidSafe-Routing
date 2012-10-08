@@ -17,6 +17,7 @@
 #include <cstdint>
 #include <map>
 #include <memory>
+#include <string>
 #include <utility>
 #include <vector>
 
@@ -44,39 +45,75 @@ class MessageHandler;
 
 namespace test { class GenericNode; }
 
-struct RoutingPrivate {
+class RoutingPrivate {
  public:
+  RoutingPrivate(const asymm::Keys& keys, bool client_mode);
   ~RoutingPrivate();
+  void Stop();
+  void Join(Functors functors,
+            std::vector<boost::asio::ip::udp::endpoint> peer_endpoints =
+                std::vector<boost::asio::ip::udp::endpoint>());
 
-  friend class Routing;
+  int ZeroStateJoin(Functors functors,
+                    const boost::asio::ip::udp::endpoint& local_endpoint,
+                    const boost::asio::ip::udp::endpoint& peer_endpoint,
+                    const NodeInfo& peer_node_info);
+
+  void Send(const NodeId& destination_id,      // ID of final destination
+            const NodeId& group_claim,         // ID claimed of sending group
+            const std::string& data,           // message content (serialised data)
+            ResponseFunctor response_functor,
+            const boost::posix_time::time_duration& timeout,
+            bool direct,  // whether this is to a close node group or direct
+            bool cachable);
+
+  NodeId GetRandomExistingNode();
+
+  void DisconnectFunctors();
+
   friend class test::GenericNode;
 
  private:
   RoutingPrivate(const RoutingPrivate&);
   RoutingPrivate(const RoutingPrivate&&);
   RoutingPrivate& operator=(const RoutingPrivate&);
-  RoutingPrivate(const asymm::Keys& keys, bool client_mode);
 
-  AsioService asio_service_;
+  bool CheckBootstrapFilePath();
+  void AddExistingRandomNode(NodeId node);
+  void ConnectFunctors(const Functors& functors);
+  void BootstrapFromTheseEndpoints(const std::vector<boost::asio::ip::udp::endpoint>& endpoints);
+  void DoJoin();
+  int DoBootstrap();
+  void ReBootstrap();
+  void DoReBootstrap(const boost::system::error_code &error_code);
+  void FindClosestNode(const boost::system::error_code& error_code, int attempts);
+  void ReSendFindNodeRequest(const boost::system::error_code& error_code, bool ignore_size = false);
+  void OnMessageReceived(const std::string& message);
+  void DoOnMessageReceived(const std::string& message);
+  void OnConnectionLost(const NodeId& lost_connection_id);
+  void DoOnConnectionLost(const NodeId& lost_connection_id);
+  void RemoveNode(const NodeInfo& node, const bool& internal_rudp_only);
+  bool ConfirmGroupMembers(const NodeId& node1, const NodeId& node2);
+
+  Functors functors_;
   std::vector<boost::asio::ip::udp::endpoint> bootstrap_nodes_;
   const asymm::Keys keys_;
   const NodeId kNodeId_;
   std::atomic<bool> tearing_down_;
   RoutingTable routing_table_;
   NonRoutingTable non_routing_table_;
+  AsioService asio_service_;
   Timer timer_;
-  std::map<uint32_t, std::pair<std::unique_ptr<boost::asio::deadline_timer>,
-                               MessageReceivedFunctor>> waiting_for_response_;
   std::unique_ptr<MessageHandler> message_handler_;
   NetworkUtils network_;
   bool joined_;
   boost::filesystem::path bootstrap_file_path_;
   bool client_mode_;
   bool anonymous_node_;
-  Functors functors_;
   SafeQueue<NodeId> random_node_queue_;
   boost::asio::deadline_timer recovery_timer_;
   boost::asio::deadline_timer setup_timer_;
+  boost::asio::deadline_timer re_bootstrap_timer_;
   std::vector<NodeId> random_node_vector_;
   std::mutex random_node_mutex_;
 };

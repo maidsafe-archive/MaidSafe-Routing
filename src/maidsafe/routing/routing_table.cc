@@ -243,7 +243,7 @@ std::vector<NodeInfo> RoutingTable::CheckGroupChange() {
 
 // bucket 0 is us, 511 is furthest bucket (should fill first)
 int16_t RoutingTable::BucketIndex(const NodeId& rhs) const {
-  uint16_t bucket = kKeySizeBits - 1;
+  uint16_t bucket = (8 * NodeId::kSize) - 1;
   std::string this_id_binary = kNodeId_.ToStringEncoded(NodeId::kBinary);
   std::string rhs_id_binary = rhs.ToStringEncoded(NodeId::kBinary);
   auto this_it = this_id_binary.begin();
