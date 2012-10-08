@@ -54,8 +54,10 @@ void MessageHandler::HandleRoutingMessage(protobuf::Message& message) {
       message.request() ? service_->FindNodes(message) : response_handler_->FindNodes(message);
       break;
     case MessageType::kConnectSuccess :
-      response_handler_->ConnectSuccess(message);
+      service_->ConnectSuccess(message);
       break;
+    case MessageType::kConnectSuccessAcknowledgement :
+      response_handler_->ConnectSuccessAcknowledgement(message);
     default:  // unknown (silent drop)
       return;
   }

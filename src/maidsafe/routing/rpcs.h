@@ -60,10 +60,20 @@ protobuf::Message ProxyConnect(
     bool relay_message = false,
     NodeId relay_connection_id = NodeId());
 
-protobuf::Message ConnectSuccess(const NodeId& node_id,
+protobuf::Message ConnectSuccess(
+    const NodeId& node_id,
     const NodeId& this_node_id,
     const NodeId& this_connection_id,
-    bool client_node);
+    const bool& requestor,
+    const bool& client_node);
+
+protobuf::Message ConnectSuccessAcknoledgement(
+    const NodeId& node_id,
+    const NodeId& this_node_id,
+    const NodeId& this_connection_id,
+    const bool& requestor,
+    const std::vector<NodeId>& close_ids,
+    const bool& client_node);
 
 }  // namespace rpcs
 

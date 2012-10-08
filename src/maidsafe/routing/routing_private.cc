@@ -478,7 +478,7 @@ void RoutingPrivate::Send(const NodeId& destination_id,
     LOG(kVerbose) << "Client sending request to self id";
     network_.SendToClosestNode(proto_message);
   } else {
-    LOG(kError) << "Sending request to self";
+    LOG(kInfo) << "Sending request to self";
     OnMessageReceived(proto_message.SerializeAsString());
   }
 }

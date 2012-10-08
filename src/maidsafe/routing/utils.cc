@@ -33,18 +33,18 @@ namespace maidsafe {
 
 namespace routing {
 
-void ValidateAndAddToRudp(NetworkUtils& network,
-                          const NodeId& this_node_id,
-                          const NodeId& this_connection_id,
-                          const NodeId& peer_id,
-                          const NodeId& peer_connection_id,
-                          rudp::EndpointPair peer_endpoint_pair,
-                          const asymm::PublicKey& /*public_key*/,
-                          const bool& client) {
-  LOG(kVerbose) << "ValidateAndAddToRudp. peer_id : " << DebugId(peer_id)
+int AddToRudp(NetworkUtils& network,
+              const NodeId& this_node_id,
+              const NodeId& this_connection_id,
+              const NodeId& peer_id,
+              const NodeId& peer_connection_id,
+              rudp::EndpointPair peer_endpoint_pair,
+              const bool& requestor,
+              const bool& client) {
+  LOG(kVerbose) << "AddToRudp. peer_id : " << DebugId(peer_id)
                 << " , connection id : " << DebugId(peer_connection_id);
   protobuf::Message connect_success(
-      rpcs::ConnectSuccess(peer_id, this_node_id, this_connection_id, client));
+      rpcs::ConnectSuccess(peer_id, this_node_id, this_connection_id, client, requestor));
   int result = network.Add(peer_connection_id, peer_endpoint_pair,
                            connect_success.SerializeAsString());
   if (result != rudp::kSuccess) {
@@ -55,9 +55,10 @@ void ValidateAndAddToRudp(NetworkUtils& network,
                   << DebugId(peer_id) << "]. Connection id : "
                   << DebugId(peer_connection_id);
   }
+  return result;
 }
 
-void ValidateAndAddToRoutingTable(NetworkUtils& network,
+bool ValidateAndAddToRoutingTable(NetworkUtils& network,
                                   RoutingTable& routing_table,
                                   NonRoutingTable& non_routing_table,
                                   const NodeId& peer_id,
@@ -71,7 +72,7 @@ void ValidateAndAddToRoutingTable(NetworkUtils& network,
                 << DebugId(peer_id)
                 << " , Connection id : "
                 << DebugId(connection_id);
-    return;
+    return false;
   }
 
   NodeInfo peer;
@@ -88,18 +89,22 @@ void ValidateAndAddToRoutingTable(NetworkUtils& network,
       routing_accepted_node = true;
       LOG(kVerbose) << "Added client node to non routing table.  Node ID: "
                     << HexSubstr(peer_id.String());
+      return true;
     } else {
       LOG(kVerbose) << "Failed to add client node to non routing table.  Node ID: "
                     << HexSubstr(peer_id.String());
+      return false;
     }
   } else {
     if (routing_table.AddNode(peer)) {
       routing_accepted_node = true;
       LOG(kVerbose) << "[" << HexSubstr(routing_table.kKeys().identity) << "] "
                     << "added node to routing table.  Node ID: " << HexSubstr(peer_id.String());
+      return true;
     } else {
       LOG(kVerbose) << "Failed to add node to routing table.  Node id : "
                     << HexSubstr(peer_id.String());
+      return false;
     }
   }
 
@@ -107,7 +112,9 @@ void ValidateAndAddToRoutingTable(NetworkUtils& network,
     LOG(kVerbose) << "Not adding node to " << (client ? "non-" : "") << "routing table.  Node id "
                   << HexSubstr(peer_id.String()) << " just added rudp connection will be removed.";
     network.Remove(connection_id);
+    return false;
   }
+  return false;
 }
 
 // FIXME
@@ -257,6 +264,9 @@ std::string MessageTypeString(const protobuf::Message& message) {
       break;
     case MessageType::kConnectSuccess :
       message_type = "kConnectSuccess";
+      break;
+    case MessageType::kConnectSuccessAcknowledgement :
+      message_type = "kConnectSuccessAcknowledgement";
       break;
     case MessageType::kNodeLevel :
       message_type = "kNodeLevel";
