@@ -21,6 +21,7 @@
 
 #include "maidsafe/routing/parameters.h"
 #include "maidsafe/routing/node_info.h"
+#include "maidsafe/routing/return_codes.h"
 
 
 namespace maidsafe {
@@ -40,7 +41,8 @@ RoutingTable::RoutingTable(const asymm::Keys& keys, const bool& client_mode)
       remove_node_functor_(),
       network_status_functor_(),
       close_node_replaced_functor_(),
-      nodes_() {}
+      nodes_(),
+      pending_nodes_() {}
 
 bool RoutingTable::AddNode(NodeInfo& peer) {
   return AddOrCheckNode(peer, true);
@@ -146,6 +148,48 @@ NodeInfo RoutingTable::DropNode(const NodeId& node_to_drop, const bool& routing_
   }
   LOG(kInfo) << PrintRoutingTable();
   return dropped_node;
+}
+
+int RoutingTable::AddPendingNode(NodeInfo& peer) {
+  if (peer.node_id.Empty() || peer.connection_id.Empty())
+    return kInvalidNodeId;
+  if (peer.node_id == kNodeId_)
+    return kOwnIdNotIncludable;
+
+  std::lock_guard<std::mutex> lock(mutex_);
+  if(std::find_if(pending_nodes_.begin(),
+                  pending_nodes_.end(),
+                  [peer](const NodeInfo& node_info) {
+                      return ((node_info.node_id == peer.node_id) &&
+                              (node_info.connection_id == peer.connection_id));
+                    }) != pending_nodes_.end()) {
+    pending_nodes_.push_back(peer);
+    return kSuccess;
+  }
+  return kFailedToFindContact;
+}
+
+bool RoutingTable::IsPendingNode(const NodeInfo& peer) {
+  std::lock_guard<std::mutex> lock(mutex_);
+  return std::find_if(pending_nodes_.begin(),
+                      pending_nodes_.end(),
+                      [peer](const NodeInfo& node_info) {
+                        return ((node_info.node_id == peer.node_id) &&
+                                (node_info.connection_id == peer.connection_id));
+                      }) != pending_nodes_.end();
+}
+
+void RoutingTable::ClearPendingNode(const NodeInfo& peer) {
+  std::lock_guard<std::mutex> lock(mutex_);
+  auto itr =  std::find_if(pending_nodes_.begin(),
+                           pending_nodes_.end(),
+                           [peer](const NodeInfo& node_info) {
+                               return ((node_info.node_id == peer.node_id) &&
+                                       (node_info.connection_id == peer.connection_id));
+                             });
+  if (itr != pending_nodes_.end()) {
+    pending_nodes_.erase(itr);
+  }
 }
 
 bool RoutingTable::GetNodeInfo(const NodeId& node_id, NodeInfo& peer) const {

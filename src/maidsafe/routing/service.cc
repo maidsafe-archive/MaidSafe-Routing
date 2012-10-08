@@ -29,6 +29,7 @@
 #include "maidsafe/routing/parameters.h"
 #include "maidsafe/routing/routing_pb.h"
 #include "maidsafe/routing/routing_table.h"
+#include "maidsafe/routing/rpcs.h"
 #include "maidsafe/routing/utils.h"
 
 
@@ -154,39 +155,15 @@ void Service::Connect(protobuf::Message& message) {
             !this_endpoint_pair.local.address().is_unspecified()) &&
            "Unspecified endpoint after GetAvailableEndpoint success.");
 
-
-//  // Handling the case when this node and peer node are behind symmetric router
-//    if ((peer_nat_type == rudp::NatType::kSymmetric) &&
-//        (this_nat_type == rudp::NatType::kSymmetric)) {
-//      auto validate_node = [=, &routing_table] (const asymm::PublicKey& key)->void {
-//          LOG(kInfo) << "Validation callback called with public key for "
-//                     << DebugId(peer_node.node_id)
-//                     << " -- pseudo connection";
-//          HandleSymmetricNodeAdd(routing_table, peer_node.node_id, key);
-//        };
-
-//      TaskResponseFunctor add_symmetric_node =
-//        [=, &routing_table, &request_public_key_functor](std::vector<std::string>) {
-//          if (request_public_key_functor)
-//            request_public_key_functor(peer_node.node_id, validate_node);
-//        };
-//      network.timer().AddTask(boost::posix_time::seconds(5), add_symmetric_node, 1);
-//    }
-    if (request_public_key_functor_) {
-      auto validate_node =
-          [=] (const asymm::PublicKey& key) {
-            LOG(kInfo) << "validation callback called with public key for "
-                       << DebugId(peer_node.node_id);
-            ValidateAndAddToRudp(network_,
-                                 routing_table_.kNodeId(),
-                                 routing_table_.kConnectionId(),
-                                 peer_node.node_id,
-                                 peer_node.connection_id,
-                                 peer_endpoint_pair,
-                                 key,
-                                 routing_table_.client_mode());
-          };
-      request_public_key_functor_(peer_node.node_id, validate_node);
+    int add_result(AddToRudp(network_,
+                             routing_table_.kNodeId(),
+                             routing_table_.kConnectionId(),
+                             peer_node.node_id,
+                             peer_node.connection_id,
+                             peer_endpoint_pair,
+                             false,
+                             routing_table_.client_mode()));
+    if (rudp::kSuccess == add_result) {
       connect_response.set_answer(true);
 
       connect_response.mutable_contact()->set_node_id(routing_table_.kNodeId().String());
@@ -198,32 +175,32 @@ void Service::Connect(protobuf::Message& message) {
                           connect_response.mutable_contact()->mutable_private_endpoint());
       SetProtobufEndpoint(this_endpoint_pair.external,
                           connect_response.mutable_contact()->mutable_public_endpoint());
-    } else {
-      LOG(kError) << "request_public_key_functor not available for getting key";
     }
+  } else {
+    LOG(kError) << "request_public_key_functor not available for getting key";
   }
 
   connect_response.set_timestamp(GetTimeStamp());
   connect_response.set_original_request(message.data(0));
   connect_response.set_original_signature(message.signature());
-  NodeId source((message.has_relay_connection_id() ? message.relay_id() : message.source_id()));
-  if (connect_request.closest_id_size() > 0) {
-    for (auto node_id : routing_table_.GetClosestNodes(source,
-        ((message.client_node()) ? Parameters::closest_nodes_size - 1 :
-                                   Parameters::max_routing_table_size - 1))) {
-      if (std::find(connect_request.closest_id().begin(), connect_request.closest_id().end(),
-                    node_id.String()) == connect_request.closest_id().end() &&
-          (NodeId::CloserToTarget(node_id,
-              NodeId(connect_request.closest_id(connect_request.closest_id_size() - 1)), source) ||
-              (connect_request.closest_id_size() + connect_response.closer_id_size() <=
-            ((message.client_node()) ? Parameters::closest_nodes_size :
-                                       Parameters::max_routing_table_size))) &&
-          source != node_id)
-        connect_response.add_closer_id(node_id.String());
-      LOG(kVerbose) << "Returning closer id size" << connect_response.closer_id_size()
-                    << ", RT size : " << routing_table_.Size();
-    }
-  }
+//  NodeId source((message.has_relay_connection_id() ? message.relay_id() : message.source_id()));
+//  if (connect_request.closest_id_size() > 0) {
+//    for (auto node_id : routing_table_.GetClosestNodes(source,
+//        ((message.client_node()) ? Parameters::closest_nodes_size - 1 :
+//                                   Parameters::max_routing_table_size - 1))) {
+//      if (std::find(connect_request.closest_id().begin(), connect_request.closest_id().end(),
+//                    node_id.String()) == connect_request.closest_id().end() &&
+//          (NodeId::CloserToTarget(node_id,
+//              NodeId(connect_request.closest_id(connect_request.closest_id_size() - 1)), source) ||
+//              (connect_request.closest_id_size() + connect_response.closer_id_size() <=
+//            ((message.client_node()) ? Parameters::closest_nodes_size :
+//                                       Parameters::max_routing_table_size))) &&
+//          source != node_id)
+//        connect_response.add_closer_id(node_id.String());
+//      LOG(kVerbose) << "Returning closer id size" << connect_response.closer_id_size()
+//                    << ", RT size : " << routing_table_.Size();
+//    }
+//  }
   message.clear_route_history();
   message.clear_data();
   message.add_data(connect_response.SerializeAsString());
@@ -288,6 +265,52 @@ void Service::FindNodes(protobuf::Message& message) {
   message.set_request(false);
   message.set_hops_to_live(Parameters::hops_to_live);
   assert(message.IsInitialized() && "unintialised message");
+}
+
+void Service::ConnectSuccess(protobuf::Message& message) {
+  protobuf::ConnectSuccess connect_success;
+
+  if (!connect_success.ParseFromString(message.data(0))) {
+    LOG(kWarning) << "Unable to parse connect success.";
+    message.Clear();
+    return;
+  }
+
+  NodeInfo peer;
+  peer.node_id = NodeId(connect_success.node_id());
+  peer.connection_id = NodeId(connect_success.connection_id());
+
+  if (peer.node_id.Empty() || peer.connection_id.Empty()) {
+    LOG(kWarning) << "Invalid node_id / connection_id provided";
+    return;
+  }
+
+  if (connect_success.requestor()) {
+    ConnectSuccessFromRequester(peer);
+  } else {
+    ConnectSuccessFromResponder(peer);
+  }
+  message.Clear(); // message is sent directly to the peer
+}
+
+void Service::ConnectSuccessFromRequester(NodeInfo& peer) {
+  // add peer to pending list
+  routing_table_.AddPendingNode(peer);
+}
+
+void Service::ConnectSuccessFromResponder(NodeInfo& peer) {
+// reply with ConnectSuccessAcknoledgement immediately
+LOG(kWarning) << "ConnectSuccessFromResponder";
+  const std::vector<NodeId> close_ids; // add closer ids!!!
+
+  protobuf::Message connect_success_ack(
+      rpcs::ConnectSuccessAcknoledgement(peer.node_id,
+                                         routing_table_.kNodeId(),
+                                         routing_table_.kConnectionId(),
+                                         true,  // this node is requestor
+                                         close_ids,
+                                         routing_table_.client_mode()));
+  network_.SendToDirect(connect_success_ack, peer.node_id, peer.connection_id);
 }
 
 void Service::set_request_public_key_functor(RequestPublicKeyFunctor request_public_key) {
