@@ -70,6 +70,7 @@ TEST(NetworkUtilsTest, BEH_ProcessSendDirectInvalidEndpoint) {
   Timer timer(asio_service);
   NetworkUtils network(routing_table, non_routing_table, timer);
   network.SendToClosestNode(message);
+  network.Stop();
 }
 
 TEST(NetworkUtilsTest, BEH_ProcessSendUnavailableDirectEndpoint) {
@@ -89,6 +90,7 @@ TEST(NetworkUtilsTest, BEH_ProcessSendUnavailableDirectEndpoint) {
   Timer timer(asio_service);
   NetworkUtils network(routing_table, non_routing_table, timer);
   network.SendToDirect(message, NodeId(NodeId::kRandomId), NodeId(NodeId::kRandomId));
+  network.Stop();
 }
 
 TEST(NetworkUtilsTest, FUNC_ProcessSendDirectEndpoint) {
@@ -234,6 +236,7 @@ TEST(NetworkUtilsTest, FUNC_ProcessSendDirectEndpoint) {
     ASSERT_TRUE(false) << "Failed waiting for node-2 to receive "
                        << expected_message_at_node << "messsages";
   }
+  network.Stop();
 }
 
 // RT with only 1 active node and 7 inactive node
@@ -401,6 +404,8 @@ TEST(NetworkUtilsTest, FUNC_ProcessSendRecursiveSendOn) {
     ASSERT_TRUE(false) << "Failed waiting for node-2 to receive "
                        << expected_message_at_node << "messsages";
   }
+
+  network.Stop();
 }
 
 }  // namespace test

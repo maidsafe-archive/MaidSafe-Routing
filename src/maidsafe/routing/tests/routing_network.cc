@@ -317,7 +317,10 @@ GenericNetwork::GenericNetwork()
   LOG(kVerbose) << "RoutingNetwork Constructor";
 }
 
-GenericNetwork::~GenericNetwork() {}
+GenericNetwork::~GenericNetwork() {
+  std::lock_guard<std::mutex> lock(mutex_);
+  key_pairs_.clear();
+}
 
 void GenericNetwork::SetUp() {
   NodePtr node1(new GenericNode(false)), node2(new GenericNode(false));
@@ -343,6 +346,9 @@ void GenericNetwork::SetUp() {
 
 void GenericNetwork::TearDown() {
   GenericNode::next_node_id_ = 1;
+  for (auto &node : nodes_) {
+    node->functors_.network_status = nullptr;
+  }
   nodes_.clear();
 }
 
@@ -399,18 +405,27 @@ void GenericNetwork::Validate(const NodeId& node_id, GivePublicKeyFunctor give_p
   if (node_id == NodeId())
     return;
   std::lock_guard<std::mutex> lock(mutex_);
-  auto iter = std::find_if(key_pairs_.begin(),
-                           key_pairs_.end(),
-                           [node_id] (const asymm::Keys key)->bool {
-                               return (key.identity == node_id.String());
-                             });
+
+  auto iter(key_pairs_.begin());
+  bool find(false);
+  while ((iter != key_pairs_.end()) && (!find)) {
+    if ((iter->identity.size() > 0) && (iter->identity.size() < 2048)) {
+      if (iter->identity == node_id.String())
+        find = true;
+      else
+        ++iter;
+    } else {
+      ++iter;
+    }
+  }
 //  auto iter = std::find_if(nodes_.begin(),
 //                           nodes_.end(),
 //                           [&node_id] (const NodePtr& node)->bool {
 //                             EXPECT_FALSE(GetKeys(*node->node_info_plus_).identity.empty());
 //                             return GetKeys(*node->node_info_plus_).identity == node_id.String();
 //                           });
-  EXPECT_NE(iter, key_pairs_.end());
+  if (key_pairs_.size() != 0)
+    EXPECT_NE(iter, key_pairs_.end());
   if (iter != key_pairs_.end())
     give_public_key((*iter).public_key);
 }
@@ -518,6 +533,7 @@ void GenericNetwork::AddNodeDetails(NodePtr node) {
     Sleep(boost::posix_time::millisec(600));
   }
   PrintRoutingTables();
+  node->functors_.network_status = nullptr;
 }
 
 
