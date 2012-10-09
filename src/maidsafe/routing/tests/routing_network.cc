@@ -346,6 +346,9 @@ void GenericNetwork::SetUp() {
 
 void GenericNetwork::TearDown() {
   GenericNode::next_node_id_ = 1;
+  for (auto &node : nodes_) {
+    node->functors_.network_status = nullptr;
+  }
   nodes_.clear();
 }
 
@@ -526,6 +529,7 @@ void GenericNetwork::AddNodeDetails(NodePtr node) {
     Sleep(boost::posix_time::millisec(600));
   }
   PrintRoutingTables();
+  node->functors_.network_status = nullptr;
 }
 
 
