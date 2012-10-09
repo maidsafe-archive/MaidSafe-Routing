@@ -36,6 +36,8 @@
 #include "maidsafe/common/node_id.h"
 #include "maidsafe/common/rsa.h"
 
+#include "maidsafe/private/utils/fob.h"
+
 #include "maidsafe/routing/api_config.h"
 
 namespace maidsafe {
@@ -55,7 +57,7 @@ class Routing {
   // WARNING: CONNECTION TO NETWORK WILL ONLY STAY FOR 60 SECONDS.
   // Users are expected to recreate routing object with right credentials and call Join method to
   // join the routing network.
-  Routing(const asymm::Keys& keys, const bool& client_mode);
+  Routing(const Fob& fob, bool client_mode);
 
   ~Routing();
 

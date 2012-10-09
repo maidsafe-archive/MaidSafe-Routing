@@ -78,8 +78,7 @@ void ResponseHandler::Connect(protobuf::Message& message) {
     return;
   }
 
-  if (!NodeId(connect_response.contact().node_id()).IsValid() ||
-      NodeId(connect_response.contact().node_id()).IsZero()) {
+  if (NodeId(connect_response.contact().node_id()).IsZero()) {
     LOG(kError) << "Invalid contact details";
     return;
   }
@@ -205,15 +204,15 @@ void ResponseHandler::ConnectTo(const std::vector<std::string>& nodes,
                                    Parameters::max_routing_table_size));
 
   for (const NodeId& node_id : routing_table_closest_nodes)
-    closest_node_ids.push_back(node_id.String());
+    closest_node_ids.push_back(node_id.string());
 
   for (const std::string& node_string : closest_nodes) {
-    if (NodeId(node_string).IsValid() && !NodeId(node_string).IsZero())
+    if (!NodeId(node_string).IsZero())
       closest_node_ids.push_back(node_string);
   }
 
   for (const std::string& node_string : nodes) {
-    if (NodeId(node_string).IsValid() && !NodeId(node_string).IsZero())
+    if (!NodeId(node_string).IsZero())
       closest_node_ids.push_back(node_string);
   }
 
@@ -221,7 +220,7 @@ void ResponseHandler::ConnectTo(const std::vector<std::string>& nodes,
     std::sort(closest_node_ids.begin(), closest_node_ids.end(),
             [=](const std::string& lhs, const std::string& rhs)->bool {
               return NodeId::CloserToTarget(NodeId(lhs), NodeId(rhs),
-                                            NodeId(routing_table_.kKeys().identity));
+                                            NodeId(routing_table_.kFob().identity));
             });
   auto iter(std::unique(closest_node_ids.begin(), closest_node_ids.end()));
   auto resize = std::min(static_cast<uint16_t>(std::distance(closest_node_ids.begin(), iter)),
@@ -231,7 +230,7 @@ void ResponseHandler::ConnectTo(const std::vector<std::string>& nodes,
 
   std::remove_if(closest_node_ids.begin(), closest_node_ids.end(),
                  [=](const std::string& closet_node_id)->bool {
-                   return (!NodeId(closet_node_id).IsValid() || NodeId(closet_node_id).IsZero());
+                   return (NodeId(closet_node_id).IsZero());
                  });
 
   if (network_.bootstrap_connection_id().IsZero() && (routing_table_.Size() == 0)) {
@@ -244,7 +243,7 @@ void ResponseHandler::ConnectTo(const std::vector<std::string>& nodes,
   for (uint16_t i = 0; i < nodes.size(); ++i) {
     NodeInfo node_to_add;
     node_to_add.node_id = NodeId(nodes.at(i));
-    if (node_to_add.node_id == NodeId(routing_table_.kKeys().identity))
+    if (node_to_add.node_id == NodeId(routing_table_.kFob().identity))
       continue;  // TODO(Prakash): FIXME handle collision and return kIdCollision on join()
 
     if (routing_table_.CheckNode(node_to_add)) {
@@ -310,11 +309,11 @@ void ResponseHandler::ConnectSuccess(protobuf::Message& message) {
 
   NodeId peer_node_id(connect_success.node_id());
   NodeId peer_connection_id(connect_success.connection_id());
-  if (peer_node_id.IsZero() || !peer_node_id.IsValid()) {
+  if (peer_node_id.IsZero()) {
     LOG(kWarning) << "Invalid node id provided";
     return;
   }
-  if (peer_connection_id.IsZero() || !peer_connection_id.IsValid()) {
+  if (peer_connection_id.IsZero()) {
     LOG(kWarning) << "Invalid peer_connection_id provided";
     return;
   }

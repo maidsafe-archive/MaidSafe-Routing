@@ -24,7 +24,10 @@
 #include "maidsafe/common/node_id.h"
 #include "maidsafe/common/rsa.h"
 
+#include "maidsafe/private/utils/fob.h"
+
 #include "maidsafe/routing/api_config.h"
+
 
 namespace maidsafe {
 
@@ -38,7 +41,7 @@ struct NodeInfo;
 
 class RoutingTable {
  public:
-  RoutingTable(const asymm::Keys& keys, const bool& client_mode);
+  RoutingTable(const Fob& fob, const bool& client_mode);
   bool AddNode(NodeInfo& peer);
   bool CheckNode(NodeInfo& peer);
   NodeInfo DropNode(const NodeId &node_to_drop, const bool& routing_only);
@@ -55,7 +58,7 @@ class RoutingTable {
   NodeInfo GetNthClosestNode(const NodeId& target_id, const uint16_t& node_number);
   std::vector<NodeId> GetClosestNodes(const NodeId& target_id, const uint16_t& number_to_get);
   size_t Size() const;
-  asymm::Keys kKeys() const;
+  Fob kFob() const;
   NodeId kNodeId() const;
   NodeId kConnectionId() const;
   void set_network_status_functor(NetworkStatusFunctor network_status_functor);
@@ -86,7 +89,7 @@ class RoutingTable {
   std::string PrintRoutingTable();
   const uint16_t max_size_;
   bool client_mode_;
-  const asymm::Keys keys_;
+  const Fob fob_;
   bool sorted_;
   const NodeId kNodeId_;
   const NodeId kConnectionId_;

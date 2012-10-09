@@ -25,6 +25,7 @@
 #include "maidsafe/routing/routing_table.h"
 #include "maidsafe/routing/parameters.h"
 
+
 namespace asio = boost::asio;
 namespace ip = asio::ip;
 
@@ -37,9 +38,9 @@ namespace test {
 NodeInfo MakeNode() {
   NodeInfo node;
   node.node_id = NodeId(RandomString(64));
-  asymm::Keys keys;
-  asymm::GenerateKeyPair(&keys);
-  node.public_key = keys.public_key;
+  Fob fob;
+  fob.keys = asymm::GenerateKeyPair();
+  node.public_key = fob.keys.public_key;
   node.connection_id = node.node_id;
   return node;
 }
@@ -47,33 +48,29 @@ NodeInfo MakeNode() {
 NodeInfoAndPrivateKey MakeNodeInfoAndKeys() {
   NodeInfo node;
   node.node_id = NodeId(RandomString(64));
-  asymm::Keys keys;
-  asymm::GenerateKeyPair(&keys);
-  node.public_key = keys.public_key;
+  Fob fob;
+  fob.keys = asymm::GenerateKeyPair();
+  node.public_key = fob.keys.public_key;
 //  node.endpoint.address(GetLocalIp());
 //  node.endpoint.port(GetRandomPort());
   node.connection_id = node.node_id;
   NodeInfoAndPrivateKey node_info_and_private_key;
   node_info_and_private_key.node_info = node;
-  node_info_and_private_key.private_key = keys.private_key;
+  node_info_and_private_key.private_key = fob.keys.private_key;
   return node_info_and_private_key;
 }
 
-asymm::Keys MakeKeys() {
+Fob MakeFob() {
   NodeInfoAndPrivateKey node(MakeNodeInfoAndKeys());
-  asymm::Keys keys;
-  keys.identity = node.node_info.node_id.String();
-  keys.public_key = node.node_info.public_key;
-  keys.private_key = node.private_key;
-  return keys;
+  return GetFob(node);
 }
 
-asymm::Keys GetKeys(const NodeInfoAndPrivateKey& node) {
-  asymm::Keys keys;
-  keys.identity = node.node_info.node_id.String();
-  keys.public_key = node.node_info.public_key;
-  keys.private_key = node.private_key;
-  return keys;
+Fob GetFob(const NodeInfoAndPrivateKey& node) {
+  Fob fob;
+  fob.identity = Identity(node.node_info.node_id.string());
+  fob.keys.public_key = node.node_info.public_key;
+  fob.keys.private_key = node.private_key;
+  return fob;
 }
 
 NodeId GenerateUniqueRandomId(const NodeId& holder, const uint16_t& pos) {

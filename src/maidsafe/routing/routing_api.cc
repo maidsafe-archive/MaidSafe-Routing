@@ -33,9 +33,7 @@ typedef boost::asio::ip::udp::endpoint Endpoint;
 
 }  // unnamed namespace
 
-Routing::Routing(const asymm::Keys& keys, const bool& client_mode)
-    : impl_(new RoutingPrivate(keys, client_mode)) {
-}
+Routing::Routing(const Fob& fob, bool client_mode) : impl_(new RoutingPrivate(fob, client_mode)) {}
 
 Routing::~Routing() {
   impl_->Stop();

@@ -25,7 +25,8 @@ include(../../cmake_modules/maidsafe_standard_setup.cmake)
 
 include_directories(${common_SOURCE_DIR}/include)
 include_directories(${rudp_SOURCE_DIR}/include)
-
+include_directories(${private_SOURCE_DIR}/include)
+message("\${private_SOURCE_DIR} - ${private_SOURCE_DIR}")
 
 ###################################################################################################
 # Set up all files as GLOBs                                                                       #
@@ -84,7 +85,7 @@ ms_add_executable(TESTrouting "Tests/Routing" ${ALL_FILES_ROUTING_TESTS_DIR})
 ms_add_executable(create_lifestuff_bootstrap "Tools"  "${PROJECT_SOURCE_DIR}/src/maidsafe/tools/create_bootstrap.cc")
 #ms_add_executable(TESTrouting_fake_rudp "Tests/Routing" ${ALL_FILES_ROUTING_TESTS_DIR})
 
-target_link_libraries(maidsafe_routing maidsafe_rudp)
+target_link_libraries(maidsafe_routing maidsafe_rudp maidsafe_utilities)
 target_link_libraries(maidsafe_routing_stub_rudp maidsafe_common)
 #target_link_libraries(maidsafe_routing_fake_rudp maidsafe_common)
 target_link_libraries(TESTrouting maidsafe_routing)

@@ -27,7 +27,7 @@ CacheManager::CacheManager() : cache_chunks_(), mutex_() {}
 void CacheManager::AddToCache(const protobuf::Message& message) {
   try {
     // check data is valid TODO FIXME - ask CAA
-    if (crypto::Hash<crypto::SHA512>(message.data(0)) != message.source_id())
+    if (crypto::Hash<crypto::SHA512>(message.data(0)).string() != message.source_id())
       return;
     std::lock_guard<std::mutex> lock(mutex_);
     cache_chunks_.push_back(std::make_pair(message.source_id(), message.data(0)));

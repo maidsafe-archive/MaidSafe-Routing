@@ -29,6 +29,7 @@
 #include "maidsafe/common/safe_queue.h"
 #include "maidsafe/common/asio_service.h"
 #include "maidsafe/rudp/managed_connections.h"
+#include "maidsafe/private/utils/fob.h"
 
 #include "maidsafe/routing/api_config.h"
 #include "maidsafe/routing/network_utils.h"
@@ -47,7 +48,7 @@ namespace test { class GenericNode; }
 
 class RoutingPrivate {
  public:
-  RoutingPrivate(const asymm::Keys& keys, bool client_mode);
+  RoutingPrivate(const Fob& fob, bool client_mode);
   ~RoutingPrivate();
   void Stop();
   void Join(Functors functors,
@@ -97,7 +98,7 @@ class RoutingPrivate {
 
   Functors functors_;
   std::vector<boost::asio::ip::udp::endpoint> bootstrap_nodes_;
-  const asymm::Keys keys_;
+  const Fob kFob_;
   const NodeId kNodeId_;
   std::atomic<bool> tearing_down_;
   RoutingTable routing_table_;

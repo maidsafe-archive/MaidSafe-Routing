@@ -20,6 +20,8 @@
 
 #include "maidsafe/common/rsa.h"
 
+#include "maidsafe/private/utils/fob.h"
+
 #include "maidsafe/routing/node_info.h"
 #include "maidsafe/routing/routing_table.h"
 
@@ -40,9 +42,9 @@ struct NodeInfoAndPrivateKey {
 
 NodeInfoAndPrivateKey MakeNodeInfoAndKeys();
 
-asymm::Keys MakeKeys();
+Fob MakeFob();
 
-asymm::Keys GetKeys(const NodeInfoAndPrivateKey& node);
+Fob GetFob(const NodeInfoAndPrivateKey& node);
 
 NodeInfo MakeNode();
 

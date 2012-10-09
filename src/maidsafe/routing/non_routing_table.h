@@ -23,6 +23,8 @@
 #include "maidsafe/common/node_id.h"
 #include "maidsafe/common/rsa.h"
 
+#include "maidsafe/private/utils/fob.h"
+
 #include "maidsafe/routing/api_config.h"
 
 
@@ -38,7 +40,7 @@ namespace protobuf { class Contact; }
 
 class NonRoutingTable {
  public:
-  explicit NonRoutingTable(const asymm::Keys& keys);
+  explicit NonRoutingTable(const Fob& fob);
   bool AddNode(NodeInfo& node, const NodeId& furthest_close_node_id);
   bool CheckNode(NodeInfo& node, const NodeId& furthest_close_node_id);
   NodeInfo DropNode(const NodeId &node_to_drop);

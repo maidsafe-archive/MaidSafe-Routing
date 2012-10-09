@@ -53,7 +53,7 @@ Service::Service(RoutingTable& routing_table,
 Service::~Service() {}
 
 void Service::Ping(protobuf::Message& message) {
-  if (message.destination_id() != routing_table_.kKeys().identity) {
+  if (message.destination_id() != routing_table_.kFob().identity.string()) {
     // Message not for this node and we should not pass it on.
     LOG(kError) << "Message not for this node.";
     message.Clear();
@@ -75,14 +75,13 @@ void Service::Ping(protobuf::Message& message) {
   message.clear_data();
   message.add_data(ping_response.SerializeAsString());
   message.set_destination_id(message.source_id());
-  message.set_source_id(routing_table_.kKeys().identity);
+  message.set_source_id(routing_table_.kFob().identity.string());
   message.set_hops_to_live(Parameters::hops_to_live);
   assert(message.IsInitialized() && "unintialised message");
 }
 
 void Service::Connect(protobuf::Message& message) {
-  asymm::Keys keys = routing_table_.kKeys();
-  if (message.destination_id() != routing_table_.kKeys().identity) {
+  if (message.destination_id() != routing_table_.kFob().identity.string()) {
     // Message not for this node and we should not pass it on.
     LOG(kError) << "Message not for this node.";
     message.Clear();
@@ -189,9 +188,9 @@ void Service::Connect(protobuf::Message& message) {
       request_public_key_functor_(peer_node.node_id, validate_node);
       connect_response.set_answer(true);
 
-      connect_response.mutable_contact()->set_node_id(routing_table_.kNodeId().String());
+      connect_response.mutable_contact()->set_node_id(routing_table_.kNodeId().string());
       connect_response.mutable_contact()->set_connection_id(
-          routing_table_.kConnectionId().String());
+          routing_table_.kConnectionId().string());
       connect_response.mutable_contact()->set_nat_type(NatTypeProtobuf(this_nat_type));
 
       SetProtobufEndpoint(this_endpoint_pair.local,
@@ -212,14 +211,14 @@ void Service::Connect(protobuf::Message& message) {
         ((message.client_node()) ? Parameters::closest_nodes_size - 1 :
                                    Parameters::max_routing_table_size - 1))) {
       if (std::find(connect_request.closest_id().begin(), connect_request.closest_id().end(),
-                    node_id.String()) == connect_request.closest_id().end() &&
+                    node_id.string()) == connect_request.closest_id().end() &&
           (NodeId::CloserToTarget(node_id,
               NodeId(connect_request.closest_id(connect_request.closest_id_size() - 1)), source) ||
               (connect_request.closest_id_size() + connect_response.closer_id_size() <=
             ((message.client_node()) ? Parameters::closest_nodes_size :
                                        Parameters::max_routing_table_size))) &&
           source != node_id)
-        connect_response.add_closer_id(node_id.String());
+        connect_response.add_closer_id(node_id.string());
       LOG(kVerbose) << "Returning closer id size" << connect_response.closer_id_size()
                     << ", RT size : " << routing_table_.Size();
     }
@@ -236,7 +235,7 @@ void Service::Connect(protobuf::Message& message) {
     message.set_destination_id(message.source_id());
   else
     message.clear_destination_id();
-  message.set_source_id(routing_table_.kKeys().identity);
+  message.set_source_id(routing_table_.kFob().identity.string());
   assert(message.IsInitialized() && "unintialised message");
 }
 
@@ -247,9 +246,7 @@ void Service::FindNodes(protobuf::Message& message) {
     message.Clear();
     return;
   }
-  if ((0 == find_nodes.num_nodes_requested() ||
-      NodeId(find_nodes.target_node()).IsZero() ||
-      !NodeId(find_nodes.target_node()).IsValid())) {
+  if (0 == find_nodes.num_nodes_requested() || NodeId(find_nodes.target_node()).IsZero()) {
     LOG(kWarning) << "Invalid find node request.";
     message.Clear();
     return;
@@ -261,10 +258,10 @@ void Service::FindNodes(protobuf::Message& message) {
   protobuf::FindNodesResponse found_nodes;
   std::vector<NodeId> nodes(routing_table_.GetClosestNodes(NodeId(find_nodes.target_node()),
                               static_cast<uint16_t>(find_nodes.num_nodes_requested() - 1)));
-  found_nodes.add_nodes(routing_table_.kKeys().identity);
+  found_nodes.add_nodes(routing_table_.kFob().identity.string());
 
   for (auto node : nodes)
-    found_nodes.add_nodes(node.String());
+    found_nodes.add_nodes(node.string());
 
   LOG(kVerbose) << "Responding Find node with " << found_nodes.nodes_size()  << " contacts.";
 
@@ -278,7 +275,7 @@ void Service::FindNodes(protobuf::Message& message) {
     message.clear_destination_id();
     LOG(kVerbose) << "Relay message, so not setting destination ID.";
   }
-  message.set_source_id(routing_table_.kKeys().identity);
+  message.set_source_id(routing_table_.kFob().identity.string());
   message.clear_route_history();
   message.clear_data();
   message.add_data(found_nodes.SerializeAsString());

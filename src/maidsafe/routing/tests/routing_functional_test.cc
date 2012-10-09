@@ -306,7 +306,7 @@ TEST_F(RoutingNetworkTest, FUNC_SendToGroup) {
 
   EXPECT_EQ(0, this->nodes_[last_index]->MessagesSize())
         << "Not expected message at Node : "
-        << HexSubstr(this->nodes_[last_index]->node_id().String());
+        << HexSubstr(this->nodes_[last_index]->node_id().string());
   EXPECT_EQ(message_count * (Parameters::node_group_size), receivers_message_count);
 }
 
@@ -322,7 +322,7 @@ TEST_F(RoutingNetworkTest, FUNC_SendToGroupSelfId) {
 
   EXPECT_EQ(0, this->nodes_[0]->MessagesSize())
         << "Not expected message at Node : "
-        << HexSubstr(this->nodes_[0]->node_id().String());
+        << HexSubstr(this->nodes_[0]->node_id().string());
   EXPECT_EQ(message_count * (Parameters::node_group_size), receivers_message_count);
 }
 
@@ -339,7 +339,7 @@ TEST_F(RoutingNetworkTest, FUNC_SendToGroupClientSelfId) {
 
   EXPECT_EQ(0, this->nodes_[client_index]->MessagesSize())
         << "Not expected message at Node : "
-        << HexSubstr(this->nodes_[client_index]->node_id().String());
+        << HexSubstr(this->nodes_[client_index]->node_id().string());
   EXPECT_EQ(message_count * (Parameters::node_group_size), receivers_message_count);
 }
 
@@ -356,7 +356,7 @@ TEST_F(RoutingNetworkTest, FUNC_SendToGroupInHybridNetwork) {
 
   EXPECT_EQ(0, this->nodes_[last_index]->MessagesSize())
         << "Not expected message at Node : "
-        << HexSubstr(this->nodes_[last_index]->node_id().String());
+        << HexSubstr(this->nodes_[last_index]->node_id().string());
   EXPECT_EQ(message_count * (Parameters::node_group_size), receivers_message_count);
 }
 
@@ -487,15 +487,15 @@ TEST_F(RoutingNetworkTest, FUNC_GetRandomExistingNode) {
   EXPECT_TRUE(this->Send(1));
   EXPECT_LT(this->nodes_[random_node]->RandomNodeVector().size(), 98);
   for (auto node : this->nodes_[random_node]->RandomNodeVector())
-    LOG(kVerbose) << HexSubstr(node.String());
+    LOG(kVerbose) << HexSubstr(node.string());
   NodeId last_node(NodeId::kRandomId), last_random(NodeId::kRandomId);
   for (auto index(0); index < 100; ++index) {
     last_node = this->nodes_[random_node]->GetRandomExistingNode();
     if (last_node == last_random) {
-      LOG(kVerbose) << HexSubstr(last_random.String()) << ", " << HexSubstr(last_node.String());
+      LOG(kVerbose) << HexSubstr(last_random.string()) << ", " << HexSubstr(last_node.string());
       collisions++;
       for (auto node : this->nodes_[random_node]->RandomNodeVector())
-        LOG(kVerbose) << HexSubstr(node.String());
+        LOG(kVerbose) << HexSubstr(node.string());
     }
     last_random = last_node;
   }
@@ -510,8 +510,8 @@ TEST_F(RoutingNetworkTest, FUNC_GetRandomExistingNode) {
   for (auto index(0); index < 1000; ++index) {
     last_node = this->nodes_[random_node]->RandomNodeVector().at(0);
     EXPECT_EQ(last_node, this->nodes_[random_node]->GetRandomExistingNode());
-    EXPECT_NE(last_random, last_node) << HexSubstr(last_random.String()) << ", "
-                                      << HexSubstr(last_node.String()) << "," << index;
+    EXPECT_NE(last_random, last_node) << HexSubstr(last_random.string()) << ", "
+                                      << HexSubstr(last_node.string()) << "," << index;
     last_random = last_node;
     this->nodes_[random_node]->AddExistingRandomNode(NodeId(NodeId::kRandomId));
   }

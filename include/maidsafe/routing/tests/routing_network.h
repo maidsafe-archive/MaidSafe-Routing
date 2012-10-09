@@ -28,6 +28,8 @@
 
 #include "maidsafe/rudp/nat_type.h"
 
+#include "maidsafe/private/utils/fob.h"
+
 #include "maidsafe/routing/api_config.h"
 #include "maidsafe/routing/node_info.h"
 #include "maidsafe/routing/parameters.h"
@@ -104,7 +106,7 @@ class GenericNode {
   static size_t next_node_id_;
   size_t MessagesSize() const;
   void ClearMessages();
-  asymm::Keys keys();
+  Fob fob();
   friend class GenericNetwork;
   Functors functors_;
 
@@ -149,7 +151,7 @@ class GenericNetwork : public testing::Test {
   std::vector<boost::asio::ip::udp::endpoint> bootstrap_endpoints_;
   fs::path bootstrap_path_;
   std::mutex mutex_;
-  std::vector<asymm::Keys> key_pairs_;
+  std::vector<Fob> fobs_;
 };
 
 }  // namespace test

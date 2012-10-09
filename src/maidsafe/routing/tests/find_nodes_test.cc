@@ -113,7 +113,7 @@ TEST_F(FindNodeNetwork, FUNC_VaultFindVaultNode) {
 
   Sleep(boost::posix_time::seconds(15));
 
-  LOG(kVerbose) << "after find " << HexSubstr(this->nodes_[dest]->node_id().String());
+  LOG(kVerbose) << "after find " << HexSubstr(this->nodes_[dest]->node_id().string());
   EXPECT_TRUE(this->nodes_[source]->RoutingTableHasNode(this->nodes_[dest]->node_id()));
 }
 

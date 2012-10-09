@@ -28,8 +28,8 @@ typedef boost::asio::ip::udp::endpoint Endpoint;
 
 }  // unnamed namespace
 
-NonRoutingTable::NonRoutingTable(const asymm::Keys& keys)
-    : kNodeId_(NodeId(keys.identity)),
+NonRoutingTable::NonRoutingTable(const Fob& fob)
+    : kNodeId_(NodeId(fob.identity)),
       nodes_(),
       mutex_() {}
 
@@ -105,7 +105,7 @@ bool NonRoutingTable::IsConnected(const NodeId& node_id) const {
 
 // TODO(Prakash): re-order checks to increase performance if needed
 bool NonRoutingTable::CheckValidParameters(const NodeInfo& node) const {
-  if (!asymm::ValidateKey(node.public_key, 0)) {
+  if (!asymm::ValidateKey(node.public_key)) {
     LOG(kInfo) << "Invalid public key.";
     return false;
   }
@@ -132,7 +132,7 @@ bool NonRoutingTable::CheckParametersAreUnique(const NodeInfo& node) const {
   if (std::find_if(nodes_.begin(),
                    nodes_.end(),
                    [node](const NodeInfo& node_info) {
-                     return (asymm::MatchingPublicKeys(node_info.public_key, node.public_key) &&
+                     return (asymm::MatchingKeys(node_info.public_key, node.public_key) &&
                              (node_info.node_id != node.node_id));
                    }) != nodes_.end()) {
     LOG(kInfo) << "Already have a different node ID with this public key.";
