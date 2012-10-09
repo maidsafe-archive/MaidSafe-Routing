@@ -66,7 +66,7 @@ TEST(NetworkUtilsTest, BEH_ProcessSendDirectInvalidEndpoint) {
   Fob fob(MakeFob());
   RoutingTable routing_table(fob, false);
   NonRoutingTable non_routing_table(fob);
-  AsioService asio_service(0);
+  AsioService asio_service(1);
   Timer timer(asio_service);
   NetworkUtils network(routing_table, non_routing_table, timer);
   network.SendToClosestNode(message);
@@ -86,7 +86,7 @@ TEST(NetworkUtilsTest, BEH_ProcessSendUnavailableDirectEndpoint) {
   RoutingTable routing_table(fob, false);
   NonRoutingTable non_routing_table(fob);
   Endpoint endpoint(GetLocalIp(),  maidsafe::test::GetRandomPort());
-  AsioService asio_service(0);
+  AsioService asio_service(1);
   Timer timer(asio_service);
   NetworkUtils network(routing_table, non_routing_table, timer);
   network.SendToDirect(message, NodeId(NodeId::kRandomId), NodeId(NodeId::kRandomId));
@@ -208,7 +208,7 @@ TEST(NetworkUtilsTest, FUNC_ProcessSendDirectEndpoint) {
   NodeId node_id3(fob.identity);
   RoutingTable routing_table(fob, false);
   NonRoutingTable non_routing_table(fob);
-  AsioService asio_service(0);
+  AsioService asio_service(1);
   Timer timer(asio_service);
   NetworkUtils network(routing_table, non_routing_table, timer);
 
@@ -267,7 +267,7 @@ TEST(NetworkUtilsTest, FUNC_ProcessSendRecursiveSendOn) {
   NodeId node_id3(fob.identity);
   RoutingTable routing_table(fob, false);
   NonRoutingTable non_routing_table(fob);
-  AsioService asio_service(0);
+  AsioService asio_service(1);
   Timer timer(asio_service);
   NetworkUtils network(routing_table, non_routing_table, timer);
 
