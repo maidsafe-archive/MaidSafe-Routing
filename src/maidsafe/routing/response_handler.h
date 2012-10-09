@@ -49,18 +49,15 @@ class ResponseHandler : public std::enable_shared_from_this<ResponseHandler> {
   virtual void Ping(protobuf::Message& message);
   virtual void Connect(protobuf::Message& message);
   virtual void FindNodes(const protobuf::Message& message);
-//  virtual void ConnectSuccess(protobuf::Message& message);
   virtual void ConnectSuccessAcknowledgement(protobuf::Message& message);
   void set_request_public_key_functor(RequestPublicKeyFunctor request_public_key);
   void HandleSuccessAcknowledgementAsRequestor(std::vector<NodeId> close_ids);
-  void HandleSuccessAcknowledgementAsReponder(NodeInfo peer);
+  void HandleSuccessAcknowledgementAsReponder(NodeInfo peer, const bool& client,
+                                              std::vector<NodeId> close_ids);
   RequestPublicKeyFunctor request_public_key_functor() const;
 
  private:
   void SendConnectRequest(const NodeId peer_node_id);
-//  void ConnectTo(const std::vector<std::string>& nodes,
-//                 const std::vector<std::string>& closest_nodes);
-
 
   RoutingTable& routing_table_;
   NonRoutingTable& non_routing_table_;

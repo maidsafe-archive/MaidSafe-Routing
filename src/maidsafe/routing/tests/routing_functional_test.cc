@@ -469,7 +469,7 @@ TEST_F(RoutingNetworkTest, FUNC_SendToClientsWithSameId) {
       done = true;
     ++num_of_tries;
   } while ((!done) && (num_of_tries < 20));
-  EXPECT_LT(num_of_tries, 20); // the number of 20 may need to be increased
+  EXPECT_LT(num_of_tries, 20);  // the number of 20 may need to be increased
 }
 
 TEST_F(RoutingNetworkTest, FUNC_SendToClientWithSameId) {

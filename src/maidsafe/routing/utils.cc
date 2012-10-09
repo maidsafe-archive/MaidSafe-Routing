@@ -65,7 +65,7 @@ bool ValidateAndAddToRoutingTable(NetworkUtils& network,
                                   const NodeId& connection_id,
                                   const asymm::PublicKey& public_key,
                                   const bool& client) {
-  LOG(kVerbose) << "ValidateAndAddToRoutingTable";
+  LOG(kVerbose) << "ValidateAndAddToRoutingTable" << DebugId(peer_id);
   if (network.MarkConnectionAsValid(connection_id) != kSuccess) {
     LOG(kError) << "[" << HexSubstr(routing_table.kKeys().identity) << "] "
                 << ". Rudp failed to validate connection with  Peer id : "

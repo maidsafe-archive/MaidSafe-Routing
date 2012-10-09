@@ -184,24 +184,7 @@ void Service::Connect(protobuf::Message& message) {
   connect_response.set_timestamp(GetTimeStamp());
   connect_response.set_original_request(message.data(0));
   connect_response.set_original_signature(message.signature());
-//  NodeId source((message.has_relay_connection_id() ? message.relay_id() : message.source_id()));
-//  if (connect_request.closest_id_size() > 0) {
-//    for (auto node_id : routing_table_.GetClosestNodes(source,
-//        ((message.client_node()) ? Parameters::closest_nodes_size - 1 :
-//                                   Parameters::max_routing_table_size - 1))) {
-//      if (std::find(connect_request.closest_id().begin(), connect_request.closest_id().end(),
-//                    node_id.String()) == connect_request.closest_id().end() &&
-//          (NodeId::CloserToTarget(node_id,
-//              NodeId(connect_request.closest_id(connect_request.closest_id_size() - 1)), source) ||
-//              (connect_request.closest_id_size() + connect_response.closer_id_size() <=
-//            ((message.client_node()) ? Parameters::closest_nodes_size :
-//                                       Parameters::max_routing_table_size))) &&
-//          source != node_id)
-//        connect_response.add_closer_id(node_id.String());
-//      LOG(kVerbose) << "Returning closer id size" << connect_response.closer_id_size()
-//                    << ", RT size : " << routing_table_.Size();
-//    }
-//  }
+
   message.clear_route_history();
   message.clear_data();
   message.add_data(connect_response.SerializeAsString());
@@ -286,31 +269,41 @@ void Service::ConnectSuccess(protobuf::Message& message) {
     return;
   }
 
-  if (connect_success.requestor()) {
-    ConnectSuccessFromRequester(peer);
-  } else {
-    ConnectSuccessFromResponder(peer);
+  if (!connect_success.requestor()) {
+    ConnectSuccessFromResponder(peer, message.client_node());
   }
-  message.Clear(); // message is sent directly to the peer
+  message.Clear();  // message is sent directly to the peer
 }
 
-void Service::ConnectSuccessFromRequester(NodeInfo& peer) {
-  // add peer to pending list
-  routing_table_.AddPendingNode(peer);
-}
+void Service::ConnectSuccessFromRequester(NodeInfo& /*peer*/) {}
 
-void Service::ConnectSuccessFromResponder(NodeInfo& peer) {
-// Reply with ConnectSuccessAcknoledgement immediately
-LOG(kVerbose) << "ConnectSuccessFromResponder peer id : " << DebugId(peer.node_id);
-  const std::vector<NodeId> close_ids; // add closer ids!!!
+void Service::ConnectSuccessFromResponder(NodeInfo& peer, const bool& client) {
+  // Reply with ConnectSuccessAcknowledgement immediately
+  LOG(kVerbose) << "ConnectSuccessFromResponder peer id : " << DebugId(peer.node_id);
+  if (peer.connection_id == network_.bootstrap_connection_id()) {
+    LOG(kVerbose) << "Special case : kConnectSuccess from bootstraping node: "
+                  << DebugId(peer.node_id);
+    return;
+  }
+  auto count =
+      (client ? Parameters::max_client_routing_table_size: Parameters::max_routing_table_size);
+  std::vector<NodeId> close_ids_for_peer(
+      routing_table_.GetClosestNodes(peer.node_id, count));
+
+  auto itr(std::find_if(close_ids_for_peer.begin(), close_ids_for_peer.end(),
+                        [=](const NodeId& node_id)->bool {
+                            return (peer.node_id == node_id);
+                          }));
+  if (itr != close_ids_for_peer.end())
+    close_ids_for_peer.erase(itr);
 
   protobuf::Message connect_success_ack(
-      rpcs::ConnectSuccessAcknoledgement(peer.node_id,
-                                         routing_table_.kNodeId(),
-                                         routing_table_.kConnectionId(),
-                                         true,  // this node is requestor
-                                         close_ids,
-                                         routing_table_.client_mode()));
+      rpcs::ConnectSuccessAcknowledgement(peer.node_id,
+                                          routing_table_.kNodeId(),
+                                          routing_table_.kConnectionId(),
+                                          true,  // this node is requestor
+                                          close_ids_for_peer,
+                                          routing_table_.client_mode()));
   network_.SendToDirect(connect_success_ack, peer.node_id, peer.connection_id);
 }
 

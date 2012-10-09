@@ -642,8 +642,8 @@ void RoutingPrivate::ReSendFindNodeRequest(const boost::system::error_code& erro
       if (!ignore_size)
         LOG(kInfo) << "This node's [" << DebugId(kNodeId_)
                    << "] Routing table smaller than " << Parameters::routing_table_size_threshold
-                   << " nodes.  Sending another FindNodes. Current routing table size : "
-                   << routing_table_.Size();
+                   << " nodes.  Sending another FindNodes. Routing table size < "
+                   << routing_table_.Size() << " >";
       else
         LOG(kInfo) << "This node's [" << DebugId(kNodeId_) << "] close node lost."
                    << "Sending another FindNodes. Current routing table size : "

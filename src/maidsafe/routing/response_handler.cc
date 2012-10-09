@@ -87,8 +87,8 @@ void ResponseHandler::Connect(protobuf::Message& message) {
   NodeInfo node_to_add;
   node_to_add.node_id = NodeId(connect_response.contact().node_id());
 
-  if (routing_table_.CheckNode(node_to_add) /*||
-      (node_to_add.node_id == network_.bootstrap_connection_id())*/) {
+  if (routing_table_.CheckNode(node_to_add) ||
+      (node_to_add.node_id == network_.bootstrap_connection_id())) {
     rudp::EndpointPair peer_endpoint_pair;
     peer_endpoint_pair.external =
         GetEndpointFromProtobuf(connect_response.contact().public_endpoint());
@@ -107,42 +107,59 @@ void ResponseHandler::Connect(protobuf::Message& message) {
       network_.AddToBootstrapFile(peer_endpoint_pair.local);
 
     NodeId peer_node_id(connect_response.contact().node_id());
-//    NodeId this_node_seen_connection_id;
-//    if (connect_response.has_connection_id())
-//      this_node_seen_connection_id = NodeId((connect_response.connection_id()));
+    NodeId peer_connection_id(connect_response.contact().connection_id());
 
     LOG(kVerbose) << "This node [" << DebugId(routing_table_.kNodeId())
                   << "] received connect response from "
                   << DebugId(peer_node_id)
                   << " id: " << message.id();
 
-    AddToRudp(network_, routing_table_.kNodeId(),
-              routing_table_.kConnectionId(),
-              peer_node_id,
-              peer_node_id,
-              peer_endpoint_pair,
-              true,  // requestor
-              routing_table_.client_mode());
+    int result = AddToRudp(network_, routing_table_.kNodeId(),
+                           routing_table_.kConnectionId(),
+                           peer_node_id,
+                           peer_connection_id,
+                           peer_endpoint_pair,
+                           true,  // requestor
+                           routing_table_.client_mode());
+    if (result == kSuccess) {
+      // Special case with bootstrapping peer in which kSuccess comes before connect respons
+      if (peer_node_id == network_.bootstrap_connection_id()) {
+        LOG(kInfo) << "Special case with bootstrapping peer : "  << DebugId(peer_node_id);
+        const std::vector<NodeId> close_ids;  // add closer ids if needed
+        protobuf::Message connect_success_ack(
+            rpcs::ConnectSuccessAcknowledgement(peer_node_id,
+            routing_table_.kNodeId(),
+            routing_table_.kConnectionId(),
+            true,  // this node is requestor
+            close_ids,
+            routing_table_.client_mode()));
+        network_.SendToDirect(connect_success_ack, peer_node_id, peer_connection_id);
+      }
+    }
   } else {
-    LOG(kInfo) << "Already added node";
+    LOG(kVerbose) << "Already added node";
   }
-
-//  std::vector<std::string> closest_nodes(connect_request.closest_id().begin(),
-//                                         connect_request.closest_id().end());
-//  closest_nodes.push_back(message.source_id());
-//  for (auto node_id : connect_response.closer_id())
-//    LOG(kVerbose) << "Connecting to closer id: " << HexSubstr(node_id);
-
-//  ConnectTo(std::vector<std::string>(connect_response.closer_id().begin(),
-//                                     connect_response.closer_id().end()),
-//            closest_nodes);
 }
 
 void ResponseHandler::FindNodes(const protobuf::Message& message) {
-  protobuf::FindNodesResponse find_nodes;
-  if (!find_nodes.ParseFromString(message.data(0))) {
+  protobuf::FindNodesResponse find_nodes_response;
+  protobuf::FindNodesRequest find_nodes_request;
+  if (!find_nodes_response.ParseFromString(message.data(0))) {
     LOG(kError) << "Could not parse find node response";
     return;
+  }
+  if (!find_nodes_request.ParseFromString(find_nodes_response.original_request())) {
+    LOG(kError) << "Could not parse original find node request";
+    return;
+  }
+
+  if (find_nodes_request.num_nodes_requested() == 1) {  // detect collision
+    if ((find_nodes_response.nodes_size() == 1) &&
+      find_nodes_response.nodes(0) == routing_table_.kNodeId().String()) {
+      LOG(kWarning) << "Collision detected";
+      // TODO(Prakash): FIXME handle collision and return kIdCollision on join()
+      return;
+    }
   }
 //  if (asymm::CheckSignature(find_nodes.original_request(),
 //                            find_nodes.original_signature(),
@@ -156,31 +173,32 @@ void ResponseHandler::FindNodes(const protobuf::Message& message) {
                 << " id: " << message.id();
   std::string find_node_result = "FindNodes from " + HexSubstr(message.source_id()) +
           " returned :\n";
-  for (int i = 0; i < find_nodes.nodes_size(); ++i) {
-    find_node_result += "[" + HexSubstr(find_nodes.nodes(i)) + "]\t";
+  for (int i = 0; i < find_nodes_response.nodes_size(); ++i) {
+    find_node_result += "[" + HexSubstr(find_nodes_response.nodes(i)) + "]\t";
   }
 
   LOG(kVerbose) << find_node_result;
 
-  for (int i = 0; i < find_nodes.nodes_size(); ++i) {
-    if (!find_nodes.nodes(i).empty())
-      SendConnectRequest(NodeId(find_nodes.nodes(i)));
+  for (int i = 0; i < find_nodes_response.nodes_size(); ++i) {
+    if (!find_nodes_response.nodes(i).empty())
+      SendConnectRequest(NodeId(find_nodes_response.nodes(i)));
   }
 }
 
 void ResponseHandler::SendConnectRequest(const NodeId peer_node_id) {
+  LOG(kVerbose) << "SendConnectRequest " << DebugId(peer_node_id);
   if (network_.bootstrap_connection_id().Empty() && (routing_table_.Size() == 0)) {
       LOG(kWarning) << "Need to re bootstrap !";
     return;
   }
-
+  LOG(kVerbose) << "SendConnectRequest 2" << DebugId(peer_node_id);
   bool send_to_bootstrap_connection((routing_table_.Size() < Parameters::closest_nodes_size) &&
                                     !network_.bootstrap_connection_id().Empty());
   NodeInfo peer;
   peer.node_id = peer_node_id;
   if (peer.node_id == NodeId(routing_table_.kKeys().identity)) {
-    LOG(kWarning) << "Collision detected";
-    return;  // TODO(Prakash): FIXME handle collision and return kIdCollision on join()
+//    LOG(kWarning) << "Collision detected";
+    return;
   }
   if (routing_table_.CheckNode(peer)) {
     LOG(kVerbose) << "CheckNode succeeded for node " << DebugId(peer.node_id);
@@ -212,13 +230,11 @@ void ResponseHandler::SendConnectRequest(const NodeId peer_node_id) {
       relay_connection_id = network_.this_node_relay_connection_id();
       relay_message = true;
     }
-                                                                 std::vector<std::string> closest_node_ids;
     protobuf::Message connect_rpc(
         rpcs::Connect(peer.node_id,
         this_endpoint_pair,
         routing_table_.kNodeId(),
         routing_table_.kConnectionId(),
-        closest_node_ids,
         routing_table_.client_mode(),
         this_nat_type,
         relay_message,
@@ -232,108 +248,6 @@ void ResponseHandler::SendConnectRequest(const NodeId peer_node_id) {
       network_.SendToClosestNode(connect_rpc);
   }
 }
-
-//void ResponseHandler::ConnectTo(const std::vector<std::string>& nodes,
-//                                const std::vector<std::string>& closest_nodes) {
-//  std::vector<std::string> closest_node_ids;
-//  auto routing_table_closest_nodes(routing_table_.GetClosestNodes(
-//                                   routing_table_.kNodeId(),
-//                                   Parameters::max_routing_table_size));
-
-//  for (const NodeId& node_id : routing_table_closest_nodes)
-//    closest_node_ids.push_back(node_id.String());
-
-//  for (const std::string& node_string : closest_nodes) {
-//    if (NodeId(node_string).IsValid() && !NodeId(node_string).Empty())
-//      closest_node_ids.push_back(node_string);
-//  }
-
-//  for (const std::string& node_string : nodes) {
-//    if (NodeId(node_string).IsValid() && !NodeId(node_string).Empty())
-//      closest_node_ids.push_back(node_string);
-//  }
-
-//  if (closest_node_ids.size() > 1)
-//    std::sort(closest_node_ids.begin(), closest_node_ids.end(),
-//            [=](const std::string& lhs, const std::string& rhs)->bool {
-//              return NodeId::CloserToTarget(NodeId(lhs), NodeId(rhs),
-//                                            NodeId(routing_table_.kKeys().identity));
-//            });
-//  auto iter(std::unique(closest_node_ids.begin(), closest_node_ids.end()));
-//  auto resize = std::min(static_cast<uint16_t>(std::distance(closest_node_ids.begin(), iter)),
-//                         Parameters::max_routing_table_size);
-//  if (closest_node_ids.size() > resize)
-//    closest_node_ids.resize(resize);
-
-//  std::remove_if(closest_node_ids.begin(), closest_node_ids.end(),
-//                 [=](const std::string& closet_node_id)->bool {
-//                   return (!NodeId(closet_node_id).IsValid() || NodeId(closet_node_id).Empty());
-//                 });
-
-//  if (network_.bootstrap_connection_id().Empty() && (routing_table_.Size() == 0)) {
-//      LOG(kWarning) << "Need to re bootstrap !";
-//    return;
-//  }
-
-//  bool send_to_bootstrap_connection((routing_table_.Size() < Parameters::closest_nodes_size) &&
-//                                    !network_.bootstrap_connection_id().Empty());
-//  for (uint16_t i = 0; i < nodes.size(); ++i) {
-//    NodeInfo node_to_add;
-//    node_to_add.node_id = NodeId(nodes.at(i));
-//    if (node_to_add.node_id == NodeId(routing_table_.kKeys().identity))
-//      continue;  // TODO(Prakash): FIXME handle collision and return kIdCollision on join()
-
-//    if (routing_table_.CheckNode(node_to_add)) {
-//      LOG(kVerbose) << "CheckNode succeeded for node " << DebugId(node_to_add.node_id);
-//      rudp::EndpointPair this_endpoint_pair, peer_endpoint_pair;
-//      rudp::NatType this_nat_type(rudp::NatType::kUnknown);
-//      int ret_val = network_.GetAvailableEndpoint(NodeId(nodes.at(i)),
-//                                                  peer_endpoint_pair,
-//                                                  this_endpoint_pair,
-//                                                  this_nat_type);
-//      if (kSuccess != ret_val) {
-//        LOG(kError) << "[" << DebugId(routing_table_.kNodeId()) << "] Response Handler"
-//                    << "Failed to get available endpoint for new connection to : "
-//                    << HexSubstr(nodes.at(i))
-//                    << "peer_endpoint_pair.external = "
-//                    << peer_endpoint_pair.external
-//                    << ", peer_endpoint_pair.local = "
-//                    << peer_endpoint_pair.local
-//                    << ". Rudp returned :"
-//                    << ret_val;
-//        return;
-//      }
-//      assert((!this_endpoint_pair.external.address().is_unspecified() ||
-//              !this_endpoint_pair.local.address().is_unspecified()) &&
-//             "Unspecified endpoint after GetAvailableEndpoint success.");
-//      NodeId relay_connection_id;
-//      bool relay_message(false);
-//      if (send_to_bootstrap_connection) {
-//        // Not in any peer's routing table, need a path back through relay IP.
-//        relay_connection_id = network_.this_node_relay_connection_id();
-//        relay_message = true;
-//      }
-
-//      protobuf::Message connect_rpc(
-//          rpcs::Connect(NodeId(nodes.at(i)),
-//          this_endpoint_pair,
-//          routing_table_.kNodeId(),
-//          routing_table_.kConnectionId(),
-//          closest_node_ids,
-//          routing_table_.client_mode(),
-//          this_nat_type,
-//          relay_message,
-//          relay_connection_id));
-//      LOG(kVerbose) << "Sending Connect RPC to " << HexSubstr(nodes.at(i))
-//                    << " message id : " << connect_rpc.id();
-//      if (send_to_bootstrap_connection)
-//        network_.SendToDirect(connect_rpc, network_.bootstrap_connection_id(),
-//                              network_.bootstrap_connection_id());
-//      else
-//        network_.SendToClosestNode(connect_rpc);
-//    }
-//  }
-//}
 
 void ResponseHandler::ConnectSuccessAcknowledgement(protobuf::Message& message) {
   protobuf::ConnectSuccessAcknowledgement connect_success_ack;
@@ -359,6 +273,7 @@ void ResponseHandler::ConnectSuccessAcknowledgement(protobuf::Message& message) 
   }
 
   bool from_requestor(connect_success_ack.requestor());
+  bool client_node(message.client_node());
   std::vector<NodeId> close_ids;
   for (auto itr = connect_success_ack.close_ids().begin();
            itr != connect_success_ack.close_ids().end(); ++itr) {
@@ -381,11 +296,13 @@ void ResponseHandler::ConnectSuccessAcknowledgement(protobuf::Message& message) 
                                  peer.node_id,
                                  peer.connection_id,
                                  key,
-                                 message.client_node())) {
+                                 client_node)) {
                                if (from_requestor) {
-                                 response_handler->HandleSuccessAcknowledgementAsReponder(peer);
+                                 response_handler->HandleSuccessAcknowledgementAsReponder(
+                                       peer, client_node, close_ids);
                                } else {
-                                 response_handler->HandleSuccessAcknowledgementAsRequestor(close_ids);
+                                 response_handler->HandleSuccessAcknowledgementAsRequestor(
+                                       close_ids);
                                }
                              }
                            }
@@ -395,32 +312,42 @@ void ResponseHandler::ConnectSuccessAcknowledgement(protobuf::Message& message) 
 }
 
 // FIXME life time issue with weak pointers
-void ResponseHandler::HandleSuccessAcknowledgementAsReponder(NodeInfo peer) {
-  LOG(kVerbose) << "HandleSuccessAcknowledgementAsReponder";
-  if (routing_table_.IsPendingNode(peer)) {
-    std::vector<NodeId> close_ids(
-        routing_table_.GetClosestNodes(peer.node_id, Parameters::max_routing_table_size));
-    std::remove_if(close_ids.begin(), close_ids.end(),
-                   [=](const NodeId& node_id)->bool {
-                       return (peer.node_id == node_id);
-                     });
-    protobuf::Message connect_success_ack(
-        rpcs::ConnectSuccessAcknoledgement(peer.node_id,
-                                           routing_table_.kNodeId(),
-                                           routing_table_.kConnectionId(),
-                                           false,  // this node is responder
-                                           close_ids,
-                                           routing_table_.client_mode()));
-    network_.SendToDirect(connect_success_ack, peer.node_id, peer.connection_id);
-    routing_table_.ClearPendingNode(peer);
-  }
+void ResponseHandler::HandleSuccessAcknowledgementAsReponder(NodeInfo peer,
+                                                             const bool &client,
+                                                             std::vector<NodeId> /*close_ids*/) {
+  auto count =
+      (client ? Parameters::max_client_routing_table_size: Parameters::max_routing_table_size);
+  std::vector<NodeId> close_ids_for_peer(
+      routing_table_.GetClosestNodes(peer.node_id, count));
+  auto itr(std::find_if(close_ids_for_peer.begin(), close_ids_for_peer.end(),
+                        [=](const NodeId& node_id)->bool {
+                            return (peer.node_id == node_id);
+                          }));
+  if (itr != close_ids_for_peer.end())
+    close_ids_for_peer.erase(itr);
+
+  protobuf::Message connect_success_ack(
+      rpcs::ConnectSuccessAcknowledgement(peer.node_id,
+                                          routing_table_.kNodeId(),
+                                          routing_table_.kConnectionId(),
+                                          false,  // this node is responder
+                                          close_ids_for_peer,
+                                          routing_table_.client_mode()));
+  network_.SendToDirect(connect_success_ack, peer.node_id, peer.connection_id);
+
+// Connect to close ids provided by peer
+// TODO(Prakash) : uncomment below once GetavailableEndpoint returns alreadyConnected
+//  for (auto i : close_ids) {
+//    LOG(kVerbose) << "HandleSuccessAcknowledgementAsReponder: connecting " <<DebugId(i);
+//    if (!i.Empty()) {
+//      SendConnectRequest(i);
+//    }
+//  }
 }
 
 void ResponseHandler::HandleSuccessAcknowledgementAsRequestor(std::vector<NodeId> close_ids) {
-LOG(kVerbose) << "HandleSuccessAcknowledgementAsRequestor: connecting to closer nodes "
-              << close_ids.size();
   for (auto i : close_ids) {
-    if (i.Empty()) {
+    if (!i.Empty()) {
       SendConnectRequest(i);
     }
   }

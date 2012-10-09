@@ -35,12 +35,10 @@ namespace rpcs {
 
 protobuf::Message Ping(const NodeId& node_id, const std::string& identity);
 
-protobuf::Message Connect(
-    const NodeId& node_id,
+protobuf::Message Connect(const NodeId& node_id,
     const rudp::EndpointPair& our_endpoint,
     const NodeId& this_node_id,
     const NodeId& this_connection_id,
-    const std::vector<std::string>& closest_ids = std::vector<std::string>(),
     bool client_node = false,
     rudp::NatType nat_type = rudp::NatType::kUnknown,
     bool relay_message = false,
@@ -67,7 +65,7 @@ protobuf::Message ConnectSuccess(
     const bool& requestor,
     const bool& client_node);
 
-protobuf::Message ConnectSuccessAcknoledgement(
+protobuf::Message ConnectSuccessAcknowledgement(
     const NodeId& node_id,
     const NodeId& this_node_id,
     const NodeId& this_connection_id,
