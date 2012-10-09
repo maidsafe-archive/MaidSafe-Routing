@@ -522,6 +522,102 @@ TEST_F(RoutingNetworkTest, FUNC_GetRandomExistingNode) {
   }
 }
 
+TEST_F(RoutingNetworkTest, FUNC_BasicNetworkChurn) {
+  size_t rand(RandomUint32());
+  const size_t vault_network_size(10 + rand % 10);
+  const size_t clients_in_network(2 + rand % 3);
+  SetUpNetwork(vault_network_size, clients_in_network);
+
+  // Existing vault node ids
+  std::vector<NodeId> existing_client_node_ids, existing_vault_node_ids;
+  for (size_t i(1); i < nodes_.size(); ++i) {
+    if (nodes_[i]->IsClient())
+      existing_client_node_ids.push_back(nodes_[i]->node_id());
+    else
+      existing_vault_node_ids.push_back(nodes_[i]->node_id());
+  }
+
+  for (int n(1); n < 51; ++n) {
+    if (n % 2 == 0) {
+      NodeId new_node(NodeId::kRandomId);
+      while (std::find_if(existing_vault_node_ids.begin(),
+                          existing_vault_node_ids.end(),
+                          [&new_node] (const NodeId& element) { return element == new_node; }) !=
+             existing_vault_node_ids.end()) {
+        new_node = NodeId(NodeId::kRandomId);
+      }
+      this->AddNode(false, new_node);
+      existing_vault_node_ids.push_back(new_node);
+      Sleep(boost::posix_time::milliseconds(500 + RandomUint32() % 200));
+    }
+
+    if (n % 3 == 0) {
+      std::random_shuffle(existing_vault_node_ids.begin(), existing_vault_node_ids.end());
+      this->RemoveNode(existing_vault_node_ids.back());
+      existing_vault_node_ids.pop_back();
+      Sleep(boost::posix_time::milliseconds(500 + RandomUint32() % 200));
+    }
+  }
+}
+
+TEST_F(RoutingNetworkTest, DISABLED_FUNC_MessagingNetworkChurn) {
+//  // Existing node ids
+//  std::set<NodeId> existing_client_node_ids, existing_vault_node_ids;
+//  for (auto& node : nodes_) {
+//    existing_node_ids.insert(node->node_id());
+//  }
+
+//  // Nodes to be taken down and added
+//  std::set<size_t> index_of_down_nodes;
+//  const size_t down_count(vault_network_size / 5);
+//  while (index_of_down_nodes.size() < down_count)
+//    index_of_down_nodes.insert(RandomUint32() % vault_network_size);
+
+//  std::set<NodeId> new_node_ids;
+//  const size_t up_count(vault_network_size / 3);
+//  while (new_node_ids.size() < up_count) {
+//    NodeId new_id(NodeId::kRandomId);
+//    if (existing_node_ids.find(new_id) == existing_node_ids.end())
+//      new_node_ids.insert(new_id);
+//  }
+
+//  // Start thread for messaging between clients and clients to groups
+//  std::string message(RandomString(4096));
+//  std::mutex existing_node_ids_mutex;
+//  volatile bool run(true);
+//  auto messaging_handle = [&, this] {
+//                            while (run) {
+//                              // Choose random client nodes for direct message
+
+//                              // Choose random client node for group message to random env
+
+//                              // Choose random vault node for group message to random env
+//                              NodePtr vault_node;
+//                              {
+//                                size_t client_position(RandomUint32() % existing_node_ids.size());
+//                                client_node = *(existing_node_ids.begin() + client_position);
+//                              }
+//                              client_node->Send(NodeId(NodeId::kRandomId), NodeId(), message,
+//                                                nullptr, boost::posix_time::seconds(2), false,
+//                                                false);
+
+//                              // Wait before going again
+//                              Sleep(boost::posix_time::milliseconds(900 + RandomUint32() % 200));
+//                            }
+//                          };
+
+//  // Start thread to bring down nodes
+
+//  // Start thread to bring up nodes
+
+//  // Let stuff run for a while
+//  Sleep(boost::posix_time::minutes(3));
+
+//  // Stop all threads
+//  run = false;
+//  messaging_handle.get();
+}
+
 }  // namespace test
 
 }  // namespace routing
