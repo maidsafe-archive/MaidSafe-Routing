@@ -452,19 +452,24 @@ TEST_F(RoutingNetworkTest, FUNC_SendToClientsWithSameId) {
   NodeId node_id(NodeId::kRandomId);
   for (uint16_t index(0); index < 4; ++index)
     this->AddNode(true, node_id);
-  size_t size(0);
 
   for (uint16_t index(0); index < kMessageCount; ++index)
     EXPECT_TRUE(this->Send(this->nodes_[kNetworkSize],
                           this->nodes_[kNetworkSize]->node_id(),
                           true));
-
-  Sleep(boost::posix_time::seconds(10));  // TODO(Mahmoud) : FIXME
-
-  for (auto node : this->nodes_) {
-    size += node->MessagesSize();
-  }
-  EXPECT_EQ(4 * kMessageCount, size);
+  int num_of_tries(0);
+  bool done(false);
+  do {
+    Sleep(boost::posix_time::seconds(1));
+    size_t size(0);
+    for (auto node : this->nodes_) {
+      size += node->MessagesSize();
+    }
+    if (4 * kMessageCount == size)
+      done = true;
+    ++num_of_tries;
+  } while ((!done) && (num_of_tries < 20));
+  EXPECT_LT(num_of_tries, 20); // the number of 20 may need to be increased
 }
 
 TEST_F(RoutingNetworkTest, FUNC_SendToClientWithSameId) {
