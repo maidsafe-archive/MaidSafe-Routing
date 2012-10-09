@@ -81,7 +81,7 @@ int NetworkUtils::Bootstrap(const std::vector<Endpoint> &bootstrap_endpoints,
     return kNetworkShuttingDown;
 
   assert(connection_lost_functor && "Must provide a valid functor");
-//              assert(bootstrap_connection_id_.IsZero() && "bootstrap_connection_id_ must be empty");
+  assert(bootstrap_connection_id_.IsZero() && "bootstrap_connection_id_ must be empty");
   std::shared_ptr<asymm::PrivateKey>
       private_key(new asymm::PrivateKey(routing_table_.kFob().keys.private_key));
   std::shared_ptr<asymm::PublicKey>
