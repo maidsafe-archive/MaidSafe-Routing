@@ -177,7 +177,8 @@ void Service::Connect(protobuf::Message& message) {
                           connect_response.mutable_contact()->mutable_public_endpoint());
     }
   } else {
-    LOG(kError) << "request_public_key_functor not available for getting key";
+    LOG(kVerbose) << "CheckNode(node) for " << (message.client_node() ? "client" : "server")
+                  << " node failed.";
   }
 
   connect_response.set_timestamp(GetTimeStamp());
@@ -299,8 +300,8 @@ void Service::ConnectSuccessFromRequester(NodeInfo& peer) {
 }
 
 void Service::ConnectSuccessFromResponder(NodeInfo& peer) {
-// reply with ConnectSuccessAcknoledgement immediately
-LOG(kWarning) << "ConnectSuccessFromResponder";
+// Reply with ConnectSuccessAcknoledgement immediately
+LOG(kVerbose) << "ConnectSuccessFromResponder peer id : " << DebugId(peer.node_id);
   const std::vector<NodeId> close_ids; // add closer ids!!!
 
   protobuf::Message connect_success_ack(

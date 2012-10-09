@@ -44,7 +44,7 @@ int AddToRudp(NetworkUtils& network,
   LOG(kVerbose) << "AddToRudp. peer_id : " << DebugId(peer_id)
                 << " , connection id : " << DebugId(peer_connection_id);
   protobuf::Message connect_success(
-      rpcs::ConnectSuccess(peer_id, this_node_id, this_connection_id, client, requestor));
+      rpcs::ConnectSuccess(peer_id, this_node_id, this_connection_id, requestor, client));
   int result = network.Add(peer_connection_id, peer_endpoint_pair,
                            connect_success.SerializeAsString());
   if (result != rudp::kSuccess) {

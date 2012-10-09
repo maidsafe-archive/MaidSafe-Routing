@@ -393,21 +393,22 @@ void ResponseHandler::ConnectSuccessAcknowledgement(protobuf::Message& message) 
       request_public_key_functor_(peer.node_id, validate_node);
   }
 }
+
 // FIXME life time issue with weak pointers
-//  This should be used by responder only
 void ResponseHandler::HandleSuccessAcknowledgementAsReponder(NodeInfo peer) {
-  LOG(kWarning) << "HandleSuccessAcknowledgementAsReponder";
+  LOG(kVerbose) << "HandleSuccessAcknowledgementAsReponder";
   if (routing_table_.IsPendingNode(peer)) {
-    const std::vector<NodeId> close_ids(
+    std::vector<NodeId> close_ids(
         routing_table_.GetClosestNodes(peer.node_id, Parameters::max_routing_table_size));
-//  std::remove_if(close_ids.begin(), close_ids.end(), [=](std::string node_id) {
-//                                                         return(peer.node_id.String() == node_id);
-//                                                       });
+    std::remove_if(close_ids.begin(), close_ids.end(),
+                   [=](const NodeId& node_id)->bool {
+                       return (peer.node_id == node_id);
+                     });
     protobuf::Message connect_success_ack(
         rpcs::ConnectSuccessAcknoledgement(peer.node_id,
                                            routing_table_.kNodeId(),
                                            routing_table_.kConnectionId(),
-                                           false,  // this node is requestor
+                                           false,  // this node is responder
                                            close_ids,
                                            routing_table_.client_mode()));
     network_.SendToDirect(connect_success_ack, peer.node_id, peer.connection_id);
@@ -416,52 +417,14 @@ void ResponseHandler::HandleSuccessAcknowledgementAsReponder(NodeInfo peer) {
 }
 
 void ResponseHandler::HandleSuccessAcknowledgementAsRequestor(std::vector<NodeId> close_ids) {
-LOG(kWarning) << "HandleSuccessAcknowledgementAsRequestor" << close_ids.size();
+LOG(kVerbose) << "HandleSuccessAcknowledgementAsRequestor: connecting to closer nodes "
+              << close_ids.size();
   for (auto i : close_ids) {
-    if (i.Empty())
+    if (i.Empty()) {
       SendConnectRequest(i);
+    }
   }
 }
-//void ResponseHandler::ConnectSuccess(protobuf::Message& message) {
-//  protobuf::ConnectSuccess connect_success;
-
-//  if (!connect_success.ParseFromString(message.data(0))) {
-//    LOG(kWarning) << "Unable to parse connect success.";
-//    message.Clear();
-//    return;
-//  }
-
-//  NodeId peer_node_id(connect_success.node_id());
-//  NodeId peer_connection_id(connect_success.connection_id());
-//  if (peer_node_id.Empty() || !peer_node_id.IsValid()) {
-//    LOG(kWarning) << "Invalid node id provided";
-//    return;
-//  }
-//  if (peer_connection_id.Empty() || !peer_connection_id.IsValid()) {
-//    LOG(kWarning) << "Invalid peer_connection_id provided";
-//    return;
-//  }
-
-//  std::weak_ptr<ResponseHandler> response_handler_weak_ptr = shared_from_this();
-//  if (request_public_key_functor_) {
-//    auto validate_node([=] (const asymm::PublicKey& key) {
-//                           LOG(kInfo) << "Validation callback called with public key for "
-//                                      << DebugId(peer_node_id);
-//                           if (std::shared_ptr<ResponseHandler> response_handler =
-//                               response_handler_weak_ptr.lock()) {
-//                             ValidateAndAddToRoutingTable(
-//                                 response_handler->network_,
-//                                 response_handler->routing_table_,
-//                                 response_handler->non_routing_table_,
-//                                 peer_node_id,
-//                                 peer_connection_id,
-//                                 key,
-//                                 message.client_node());
-//                           }
-//                         });
-//      request_public_key_functor_(peer_node_id, validate_node);
-//  }
-//}
 
 void ResponseHandler::set_request_public_key_functor(RequestPublicKeyFunctor request_public_key) {
   request_public_key_functor_ = request_public_key;

@@ -157,12 +157,13 @@ int RoutingTable::AddPendingNode(NodeInfo& peer) {
     return kOwnIdNotIncludable;
 
   std::lock_guard<std::mutex> lock(mutex_);
+  LOG(kVerbose) << "AddPendingNode" << DebugId(peer.node_id);
   if(std::find_if(pending_nodes_.begin(),
                   pending_nodes_.end(),
                   [peer](const NodeInfo& node_info) {
                       return ((node_info.node_id == peer.node_id) &&
                               (node_info.connection_id == peer.connection_id));
-                    }) != pending_nodes_.end()) {
+                    }) == pending_nodes_.end()) {
     pending_nodes_.push_back(peer);
     return kSuccess;
   }
