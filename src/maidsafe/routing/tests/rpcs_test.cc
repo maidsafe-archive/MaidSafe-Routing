@@ -117,7 +117,7 @@ TEST(RpcsTest, BEH_ConnectMessageNodeRelayMode) {
                                maidsafe::test::GetRandomPort());
   std::string destination = RandomString(64);
   protobuf::Message message = rpcs::Connect(NodeId(destination), endpoint, us.node_id,
-                                            us.connection_id, std::vector<std::string>(), false,
+                                            us.connection_id, false,
                                             rudp::NatType::kUnknown, true, NodeId(destination));
   protobuf::ConnectRequest connect_request;
   EXPECT_TRUE(message.IsInitialized());

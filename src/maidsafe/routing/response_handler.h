@@ -13,6 +13,7 @@
 #ifndef MAIDSAFE_ROUTING_RESPONSE_HANDLER_H_
 #define MAIDSAFE_ROUTING_RESPONSE_HANDLER_H_
 
+#include <mutex>
 #include <string>
 #include <vector>
 
@@ -27,6 +28,10 @@ namespace maidsafe {
 namespace routing {
 
 namespace protobuf { class Message; }
+
+namespace test {
+class ResponseHandlerTest_BEH_ConnectAttempts_Test;
+}  // namespace test
 
 class NetworkUtils;
 class NonRoutingTable;
@@ -49,21 +54,32 @@ class ResponseHandler : public std::enable_shared_from_this<ResponseHandler> {
   virtual void Ping(protobuf::Message& message);
   virtual void Connect(protobuf::Message& message);
   virtual void FindNodes(const protobuf::Message& message);
-//  virtual void ConnectSuccess(protobuf::Message& message);
   virtual void ConnectSuccessAcknowledgement(protobuf::Message& message);
   void set_request_public_key_functor(RequestPublicKeyFunctor request_public_key);
   void HandleSuccessAcknowledgementAsRequestor(std::vector<NodeId> close_ids);
-  void HandleSuccessAcknowledgementAsReponder(NodeInfo peer);
+  void HandleSuccessAcknowledgementAsReponder(NodeInfo peer, const bool& client,
+                                              std::vector<NodeId> close_ids);
   RequestPublicKeyFunctor request_public_key_functor() const;
 
+  friend class test::ResponseHandlerTest_BEH_ConnectAttempts_Test;
+
  private:
+  struct PendingRpc {
+    explicit PendingRpc(const NodeId& peer_node_id);
+    NodeId node_id;
+    int attempts;
+    boost::posix_time::time_duration timestamp;
+  };
+
+  bool AddPendingConnect(NodeId node_id);
+  void ClearPendingConnect(NodeId node_id);
+  void PrunePendingConnect();
   void SendConnectRequest(const NodeId peer_node_id);
-//  void ConnectTo(const std::vector<std::string>& nodes,
-//                 const std::vector<std::string>& closest_nodes);
 
-
+  mutable std::mutex mutex_;
   RoutingTable& routing_table_;
   NonRoutingTable& non_routing_table_;
+  std::vector<PendingRpc> pending_connect_rpc_;
   NetworkUtils& network_;
   RequestPublicKeyFunctor request_public_key_functor_;
 };

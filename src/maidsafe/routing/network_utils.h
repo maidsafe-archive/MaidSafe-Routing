@@ -95,7 +95,6 @@ class NetworkUtils {
                        NodeInfo last_node_attempted = NodeInfo(),
                        int attempt_count = 0);
   void AdjustRouteHistory(protobuf::Message& message);
-//  void SignMessage(protobuf::Message& message);
 
   maidsafe::NodeId bootstrap_connection_id_;
   maidsafe::NodeId this_node_relay_connection_id_;

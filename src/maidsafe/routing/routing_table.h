@@ -54,10 +54,6 @@ class RoutingTable {
   // Returns max NodeId if routing table size is less than requested node_number
   NodeInfo GetNthClosestNode(const NodeId& target_id, const uint16_t& node_number);
   std::vector<NodeId> GetClosestNodes(const NodeId& target_id, const uint16_t& number_to_get);
-  int AddPendingNode(NodeInfo& peer);
-  bool IsPendingNode(const NodeInfo& peer);
-  void ClearPendingNode(const NodeInfo& peer);
-
   size_t Size() const;
   asymm::Keys kKeys() const;
   NodeId kNodeId() const;
@@ -88,6 +84,7 @@ class RoutingTable {
                                            bool ignore_exact_match = false);
   void UpdateNetworkStatus(const uint16_t& size) const;
   std::string PrintRoutingTable();
+
   const uint16_t max_size_;
   bool client_mode_;
   const asymm::Keys keys_;
