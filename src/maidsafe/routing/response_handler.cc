@@ -42,7 +42,8 @@ typedef boost::asio::ip::udp::endpoint Endpoint;
 
 ResponseHandler::PendingRpc::PendingRpc(const NodeId& peer_node_id)
     : node_id(peer_node_id),
-      attempts(1) {}
+      attempts(1),
+      timestamp(GetDurationSinceEpoch()) {}
 
 bool ResponseHandler::AddPendingConnect(NodeId node_id) {
   std::lock_guard<std::mutex> lock(mutex_);
@@ -52,15 +53,12 @@ bool ResponseHandler::AddPendingConnect(NodeId node_id) {
                           }));
   if (itr == pending_connect_rpc_.end()) {
     pending_connect_rpc_.push_back(PendingRpc(node_id));
-    LOG(kVerbose) << "Added 1st attempt to connect to : " << DebugId(node_id);
     return true;
   }
   if ((*itr).attempts < 2) {
     ++(*itr).attempts;
-    LOG(kVerbose) << "Added 2nd attempt to connect to : " << DebugId(node_id);
     return true;
   } else {
-    LOG(kVerbose) << "Already 2 attempts are in progress to connect to : " << DebugId(node_id);
     return false;
   }
 }
@@ -74,12 +72,23 @@ void ResponseHandler::ClearPendingConnect(NodeId node_id) {
   if (itr != pending_connect_rpc_.end()) {
     if ((*itr).attempts == 2) {
       --(*itr).attempts;
-      LOG(kVerbose) << "Cleared ist attempt : " << DebugId(node_id);
     } else {
       pending_connect_rpc_.erase(itr);
     }
-  } else {
-    LOG(kVerbose) << "Not found : " << DebugId(node_id);
+  }
+}
+
+void ResponseHandler::PrunePendingConnect() {
+  std::lock_guard<std::mutex> lock(mutex_);
+  auto itr(pending_connect_rpc_.begin());
+  while (itr != pending_connect_rpc_.end()) {
+    boost::posix_time::time_duration now(GetDurationSinceEpoch());
+    if ((now.total_milliseconds() - (*itr).timestamp.total_milliseconds()) >
+        Parameters::connect_rpc_prune_timeout.total_milliseconds()) {
+      itr = pending_connect_rpc_.erase(itr);
+    } else {
+      ++itr;
+    }
   }
 }
 
@@ -231,20 +240,20 @@ void ResponseHandler::FindNodes(const protobuf::Message& message) {
 }
 
 void ResponseHandler::SendConnectRequest(const NodeId peer_node_id) {
-  LOG(kVerbose) << "SendConnectRequest " << DebugId(peer_node_id);
+  PrunePendingConnect();
   if (network_.bootstrap_connection_id().Empty() && (routing_table_.Size() == 0)) {
       LOG(kWarning) << "Need to re bootstrap !";
     return;
   }
-  LOG(kVerbose) << "SendConnectRequest 2" << DebugId(peer_node_id);
   bool send_to_bootstrap_connection((routing_table_.Size() < Parameters::closest_nodes_size) &&
                                     !network_.bootstrap_connection_id().Empty());
   NodeInfo peer;
   peer.node_id = peer_node_id;
+
   if (peer.node_id == NodeId(routing_table_.kKeys().identity)) {
-//    LOG(kWarning) << "Collision detected";
     return;
   }
+
   if (routing_table_.CheckNode(peer) && AddPendingConnect(peer.node_id)) {
     LOG(kVerbose) << "CheckNode succeeded for node " << DebugId(peer.node_id);
     rudp::EndpointPair this_endpoint_pair, peer_endpoint_pair;

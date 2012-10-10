@@ -68,11 +68,12 @@ class ResponseHandler : public std::enable_shared_from_this<ResponseHandler> {
     explicit PendingRpc(const NodeId& peer_node_id);
     NodeId node_id;
     int attempts;
+    boost::posix_time::time_duration timestamp;
   };
 
   bool AddPendingConnect(NodeId node_id);
   void ClearPendingConnect(NodeId node_id);
-
+  void PrunePendingConnect();
   void SendConnectRequest(const NodeId peer_node_id);
 
   mutable std::mutex mutex_;

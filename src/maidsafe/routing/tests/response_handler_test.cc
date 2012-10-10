@@ -78,6 +78,25 @@ TEST(ResponseHandlerTest, BEH_ConnectAttempts) {
       response_handler.ClearPendingConnect(i);
   }
   EXPECT_EQ(0, response_handler.pending_connect_rpc_.size());
+
+  for (auto i(0); i != 100; ++i) {
+    std::random_shuffle(nodes.begin(), nodes.end());
+    for (auto i : nodes)
+      response_handler.AddPendingConnect(i);
+  }
+  EXPECT_EQ(nodes.size(), response_handler.pending_connect_rpc_.size());
+  Parameters::connect_rpc_prune_timeout = boost::posix_time::seconds(1);
+  Sleep(boost::posix_time::seconds(1));
+  response_handler.PrunePendingConnect();
+  EXPECT_EQ(0, response_handler.pending_connect_rpc_.size());
+  // After pruning
+  for (auto i(0); i != 100; ++i) {
+    std::random_shuffle(nodes.begin(), nodes.end());
+    for (auto i : nodes)
+      response_handler.AddPendingConnect(i);
+  }
+  EXPECT_EQ(nodes.size(), response_handler.pending_connect_rpc_.size());
+  Parameters::connect_rpc_prune_timeout = boost::posix_time::seconds(10);
 }
 
 
