@@ -310,12 +310,11 @@ asymm::Keys GenericNode::keys() {
 
 GenericNetwork::GenericNetwork()
     : nodes_(),
+      mutex_(),
       bootstrap_endpoints_(),
       bootstrap_path_("bootstrap"),
-      mutex_(),
-      key_pairs_() {
-  LOG(kVerbose) << "RoutingNetwork Constructor";
-}
+      key_pairs_(),
+      client_index_(0) { LOG(kVerbose) << "RoutingNetwork Constructor"; }
 
 GenericNetwork::~GenericNetwork() {
   std::lock_guard<std::mutex> lock(mutex_);
@@ -345,6 +344,7 @@ void GenericNetwork::SetUp() {
 }
 
 void GenericNetwork::TearDown() {
+  std::lock_guard<std::mutex> loch(mutex_);
   GenericNode::next_node_id_ = 1;
   for (auto &node : nodes_) {
     node->functors_.network_status = nullptr;
@@ -366,6 +366,7 @@ void GenericNetwork::SetUpNetwork(const size_t& non_client_size, const size_t& c
   }
   Sleep(boost::posix_time::seconds(1));
   PrintRoutingTables();
+  client_index_ = non_client_size;
 //    EXPECT_TRUE(ValidateRoutingTables());
 }
 
@@ -397,7 +398,11 @@ bool GenericNetwork::RemoveNode(const NodeId& node_id) {
                            [&node_id] (const NodePtr node) { return node_id == node->node_id(); });  // NOLINT (Dan)
   if (iter == nodes_.end())
     return false;
+
+  if (!(*iter)->IsClient())
+    --client_index_;
   nodes_.erase(iter);
+
   return true;
 }
 
@@ -438,13 +443,14 @@ void GenericNetwork::SetNodeValidationFunctor(NodePtr node) {
 }
 
 void GenericNetwork::PrintRoutingTables() {
-  for (auto node : this->nodes_)
+  std::lock_guard<std::mutex> loch(mutex_);
+  for (auto node : nodes_)
     node->PrintRoutingTable();
 }
 
 bool GenericNetwork::ValidateRoutingTables() {
   std::vector<NodeId> node_ids;
-  for (auto node : this->nodes_) {
+  for (auto node : nodes_) {
     if (!node->IsClient())
       node_ids.push_back(node->node_id());
   }
@@ -485,9 +491,34 @@ bool GenericNetwork::ValidateRoutingTables() {
   return true;
 }
 
+GenericNetwork::NodePtr GenericNetwork::RandomClientNode() {
+ std::lock_guard<std::mutex> loch(mutex_);
+ size_t client_count(nodes_.size() - client_index_);
+ NodePtr random(nodes_.at((RandomUint32() % client_count) + client_index_));
+ return random;
+}
+
+GenericNetwork::NodePtr GenericNetwork::RandomVaultNode() {
+ std::lock_guard<std::mutex> loch(mutex_);
+ NodePtr random(nodes_.at(RandomUint32() % client_index_));
+ return random;
+}
+
+void GenericNetwork::RemoveRandomClient() {
+  std::lock_guard<std::mutex> loch(mutex_);
+  size_t client_count(nodes_.size() - client_index_);
+  nodes_.erase(nodes_.begin() + ((RandomUint32() % client_count) + client_index_));
+}
+
+void GenericNetwork::RemoveRandomVault() {
+  std::lock_guard<std::mutex> loch(mutex_);
+  nodes_.erase(nodes_.begin() + (RandomUint32() % client_index_));
+  --client_index_;
+}
+
 uint16_t GenericNetwork::NonClientNodesSize() const {
   uint16_t non_client_size(0);
-  for (auto node : this->nodes_) {
+  for (auto node : nodes_) {
     if (!node->IsClient())
       non_client_size++;
   }
@@ -497,12 +528,18 @@ uint16_t GenericNetwork::NonClientNodesSize() const {
 void GenericNetwork::AddNodeDetails(NodePtr node) {
   std::condition_variable cond_var;
   std::mutex mutex;
-  key_pairs_.push_back(node->keys());
-  SetNodeValidationFunctor(node);
-  uint16_t node_size(NonClientNodesSize());
-  node->set_expected(NetworkStatus(node->IsClient(),
-                                   std::min(node_size, Parameters::closest_nodes_size)));
-  nodes_.push_back(node);
+  {
+    std::lock_guard<std::mutex> loch(mutex_);
+    key_pairs_.push_back(node->keys());
+    SetNodeValidationFunctor(node);
+    uint16_t node_size(NonClientNodesSize());
+    node->set_expected(NetworkStatus(node->IsClient(),
+                                     std::min(node_size, Parameters::closest_nodes_size)));
+    if (node->IsClient())
+      nodes_.push_back(node);
+    else
+      nodes_.insert(nodes_.begin() + (nodes_.size() - client_index_), node);
+  }
   std::weak_ptr<GenericNode> weak_node(node);
   node->functors_.network_status =
       [&cond_var, weak_node] (const int& result) {
@@ -522,8 +559,11 @@ void GenericNetwork::AddNodeDetails(NodePtr node) {
           }
         }
       };
-  bootstrap_endpoints_.clear();
-  bootstrap_endpoints_.push_back(nodes_[1]->endpoint());
+  {
+    std::lock_guard<std::mutex> loch(mutex_);
+    bootstrap_endpoints_.clear();
+    bootstrap_endpoints_.push_back(nodes_[1]->endpoint());
+  }
   node->Join(bootstrap_endpoints_);
 
   if (!node->joined()) {
@@ -535,7 +575,6 @@ void GenericNetwork::AddNodeDetails(NodePtr node) {
   PrintRoutingTables();
   node->functors_.network_status = nullptr;
 }
-
 
 }  // namespace test
 
