@@ -530,9 +530,9 @@ TEST_F(RoutingNetworkTest, FUNC_GetRandomExistingNode) {
 }
 
 TEST_F(RoutingNetworkTest, FUNC_BasicNetworkChurn) {
-  size_t rand(RandomUint32());
-  const size_t vault_network_size(10 + rand % 10);
-  const size_t clients_in_network(2 + rand % 3);
+  size_t random(RandomUint32());
+  const size_t vault_network_size(10 + random % 10);
+  const size_t clients_in_network(2 + random % 3);
   SetUpNetwork(vault_network_size, clients_in_network);
 
   // Existing vault node ids
@@ -568,9 +568,9 @@ TEST_F(RoutingNetworkTest, FUNC_BasicNetworkChurn) {
 }
 
 TEST_F(RoutingNetworkTest, FUNC_MessagingNetworkChurn) {
-  size_t rand(RandomUint32());
-  const size_t vault_network_size(40 + rand % 10);
-  const size_t clients_in_network(10 + rand % 3);
+  size_t random(RandomUint32());
+  const size_t vault_network_size(40 + random % 10);
+  const size_t clients_in_network(10 + random % 3);
   SetUpNetwork(vault_network_size, clients_in_network);
   LOG(kInfo) << "Finished setting up network\n\n\n\n";
 
