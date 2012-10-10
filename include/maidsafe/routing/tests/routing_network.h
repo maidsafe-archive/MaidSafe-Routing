@@ -141,15 +141,20 @@ class GenericNetwork : public testing::Test {
   virtual void SetNodeValidationFunctor(NodePtr node);
   void PrintRoutingTables();
   bool ValidateRoutingTables();
+  NodePtr RandomClientNode();
+  NodePtr RandomVaultNode();
+  void RemoveRandomClient();
+  void RemoveRandomVault();
 
  private:
   uint16_t NonClientNodesSize() const;
   void AddNodeDetails(NodePtr node);
 
+  mutable std::mutex mutex_;
   std::vector<boost::asio::ip::udp::endpoint> bootstrap_endpoints_;
   fs::path bootstrap_path_;
-  std::mutex mutex_;
   std::vector<asymm::Keys> key_pairs_;
+  size_t client_index_;
 };
 
 }  // namespace test
