@@ -40,11 +40,56 @@ typedef boost::asio::ip::udp::endpoint Endpoint;
 
 }  // unnamed namespace
 
+ResponseHandler::PendingRpc::PendingRpc(const NodeId& peer_node_id)
+    : node_id(peer_node_id),
+      attempts(1) {}
+
+bool ResponseHandler::AddPendingConnect(NodeId node_id) {
+  std::lock_guard<std::mutex> lock(mutex_);
+  auto itr(std::find_if(pending_connect_rpc_.begin(),
+                        pending_connect_rpc_.end(), [node_id](PendingRpc pending_rpc) {
+                            return (pending_rpc.node_id == node_id);
+                          }));
+  if (itr == pending_connect_rpc_.end()) {
+    pending_connect_rpc_.push_back(PendingRpc(node_id));
+    LOG(kVerbose) << "Added 1st attempt to connect to : " << DebugId(node_id);
+    return true;
+  }
+  if ((*itr).attempts < 2) {
+    ++(*itr).attempts;
+    LOG(kVerbose) << "Added 2nd attempt to connect to : " << DebugId(node_id);
+    return true;
+  } else {
+    LOG(kVerbose) << "Already 2 attempts are in progress to connect to : " << DebugId(node_id);
+    return false;
+  }
+}
+
+void ResponseHandler::ClearPendingConnect(NodeId node_id) {
+  std::lock_guard<std::mutex> lock(mutex_);
+  auto itr(std::find_if(pending_connect_rpc_.begin(),
+                        pending_connect_rpc_.end(), [node_id](PendingRpc pending_rpc) {
+                            return (pending_rpc.node_id == node_id);
+                          }));
+  if (itr != pending_connect_rpc_.end()) {
+    if ((*itr).attempts == 2) {
+      --(*itr).attempts;
+      LOG(kVerbose) << "Cleared ist attempt : " << DebugId(node_id);
+    } else {
+      pending_connect_rpc_.erase(itr);
+    }
+  } else {
+    LOG(kVerbose) << "Not found : " << DebugId(node_id);
+  }
+}
+
 ResponseHandler::ResponseHandler(RoutingTable& routing_table,
                                  NonRoutingTable& non_routing_table,
                                  NetworkUtils& network)
-    : routing_table_(routing_table),
+    : mutex_(),
+      routing_table_(routing_table),
       non_routing_table_(non_routing_table),
+      pending_connect_rpc_(),
       network_(network),
       request_public_key_functor_() {}
 
@@ -86,7 +131,7 @@ void ResponseHandler::Connect(protobuf::Message& message) {
 
   NodeInfo node_to_add;
   node_to_add.node_id = NodeId(connect_response.contact().node_id());
-
+  ClearPendingConnect(node_to_add.node_id);
   if (routing_table_.CheckNode(node_to_add) ||
       (node_to_add.node_id == network_.bootstrap_connection_id())) {
     rudp::EndpointPair peer_endpoint_pair;
@@ -200,7 +245,7 @@ void ResponseHandler::SendConnectRequest(const NodeId peer_node_id) {
 //    LOG(kWarning) << "Collision detected";
     return;
   }
-  if (routing_table_.CheckNode(peer)) {
+  if (routing_table_.CheckNode(peer) && AddPendingConnect(peer.node_id)) {
     LOG(kVerbose) << "CheckNode succeeded for node " << DebugId(peer.node_id);
     rudp::EndpointPair this_endpoint_pair, peer_endpoint_pair;
     rudp::NatType this_nat_type(rudp::NatType::kUnknown);
