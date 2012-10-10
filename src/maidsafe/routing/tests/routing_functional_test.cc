@@ -27,9 +27,9 @@ namespace test {
 
 template <typename T>
 typename std::vector<T>::const_iterator Find(const T& t, const std::vector<T>& v) {
-  return std::find_if(v.begin(),
-                      v.end(),
-                      [&t] (const T& element) { return element == t; });
+  return std::find_if(v.begin(), v.end(), [&t] (const T& element) {
+                                              return element == t;
+                                            });
 }
 
 class RoutingNetworkTest : public GenericNetwork {

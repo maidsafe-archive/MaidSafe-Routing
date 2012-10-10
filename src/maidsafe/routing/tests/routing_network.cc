@@ -492,16 +492,16 @@ bool GenericNetwork::ValidateRoutingTables() {
 }
 
 GenericNetwork::NodePtr GenericNetwork::RandomClientNode() {
- std::lock_guard<std::mutex> loch(mutex_);
- size_t client_count(nodes_.size() - client_index_);
- NodePtr random(nodes_.at((RandomUint32() % client_count) + client_index_));
- return random;
+  std::lock_guard<std::mutex> loch(mutex_);
+  size_t client_count(nodes_.size() - client_index_);
+  NodePtr random(nodes_.at((RandomUint32() % client_count) + client_index_));
+  return random;
 }
 
 GenericNetwork::NodePtr GenericNetwork::RandomVaultNode() {
- std::lock_guard<std::mutex> loch(mutex_);
- NodePtr random(nodes_.at(RandomUint32() % client_index_));
- return random;
+  std::lock_guard<std::mutex> loch(mutex_);
+  NodePtr random(nodes_.at(RandomUint32() % client_index_));
+  return random;
 }
 
 void GenericNetwork::RemoveRandomClient() {
