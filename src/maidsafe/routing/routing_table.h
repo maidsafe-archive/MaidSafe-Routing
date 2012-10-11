@@ -87,6 +87,7 @@ class RoutingTable {
                                            bool ignore_exact_match = false);
   void UpdateNetworkStatus(const uint16_t& size) const;
   std::string PrintRoutingTable();
+
   const uint16_t max_size_;
   bool client_mode_;
   const Fob fob_;
@@ -99,6 +100,7 @@ class RoutingTable {
   NetworkStatusFunctor network_status_functor_;
   CloseNodeReplacedFunctor close_node_replaced_functor_;
   std::vector<NodeInfo> nodes_;
+  std::vector<NodeInfo> pending_nodes_;
 };
 
 }  // namespace routing

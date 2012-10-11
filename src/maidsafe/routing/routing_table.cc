@@ -21,6 +21,7 @@
 
 #include "maidsafe/routing/parameters.h"
 #include "maidsafe/routing/node_info.h"
+#include "maidsafe/routing/return_codes.h"
 
 
 namespace maidsafe {
@@ -40,7 +41,8 @@ RoutingTable::RoutingTable(const Fob& fob, const bool& client_mode)
       remove_node_functor_(),
       network_status_functor_(),
       close_node_replaced_functor_(),
-      nodes_() {}
+      nodes_(),
+      pending_nodes_() {}
 
 bool RoutingTable::AddNode(NodeInfo& peer) {
   return AddOrCheckNode(peer, true);
@@ -75,7 +77,7 @@ bool RoutingTable::AddOrCheckNode(NodeInfo& peer, const bool& remove) {
                               return node_info.node_id == peer.node_id;
                           }));
     if (itr != nodes_.end()) {
-      LOG(kInfo) << "Node " << HexSubstr(peer.node_id.string()) << " already in routing table.";
+      LOG(kVerbose) << "Node " << HexSubstr(peer.node_id.string()) << " already in routing table.";
       return false;
     }
 

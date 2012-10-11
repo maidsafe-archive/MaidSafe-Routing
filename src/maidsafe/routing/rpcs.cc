@@ -53,7 +53,6 @@ protobuf::Message Connect(const NodeId& node_id,
                           const rudp::EndpointPair& our_endpoint,
                           const NodeId& this_node_id,
                           const NodeId& this_connection_id,
-                          const std::vector<std::string>& closest_ids,
                           bool client_node,
                           rudp::NatType nat_type,
                           bool relay_message,
@@ -71,8 +70,6 @@ protobuf::Message Connect(const NodeId& node_id,
   contact->set_node_id(this_node_id.string());
   contact->set_connection_id(this_connection_id.string());
   contact->set_nat_type(NatTypeProtobuf(nat_type));
-  for (auto node_id : closest_ids)
-    protobuf_connect_request.add_closest_id(node_id);
   protobuf_connect_request.set_timestamp(GetTimeStamp());
 //  message.set_id(RandomUint32());
   message.set_destination_id(node_id.string());
@@ -171,7 +168,8 @@ protobuf::Message ProxyConnect(const NodeId& node_id,
 protobuf::Message ConnectSuccess(const NodeId& node_id,
                                  const NodeId& this_node_id,
                                  const NodeId& this_connection_id,
-                                 bool client_node) {
+                                 const bool& requestor,
+                                 const bool& client_node) {
   assert(!node_id.IsZero() && "Invalid node_id");
   assert(!this_node_id.IsZero() && "Invalid my node_id");
   assert(!this_connection_id.IsZero() && "Invalid this_connection_id");
@@ -179,12 +177,47 @@ protobuf::Message ConnectSuccess(const NodeId& node_id,
   protobuf::ConnectSuccess protobuf_connect_success;
   protobuf_connect_success.set_node_id(this_node_id.string());
   protobuf_connect_success.set_connection_id(this_connection_id.string());
+  protobuf_connect_success.set_requestor(requestor);
   message.set_destination_id(node_id.string());
   message.set_routing_message(true);
   message.add_data(protobuf_connect_success.SerializeAsString());
   message.set_direct(true);
   message.set_replication(1);
   message.set_type(static_cast<int32_t>(MessageType::kConnectSuccess));
+  message.set_id(0);
+  message.set_client_node(client_node);
+  message.set_hops_to_live(Parameters::hops_to_live);
+  message.set_source_id(this_node_id.string());
+  message.set_request(true);
+  assert(message.IsInitialized() && "Unintialised message");
+  return message;
+}
+
+protobuf::Message ConnectSuccessAcknowledgement(const NodeId& node_id,
+                                                const NodeId& this_node_id,
+                                                const NodeId& this_connection_id,
+                                                const bool& requestor,
+                                                const std::vector<NodeId>& close_ids,
+                                                const bool& client_node) {
+  assert(!node_id.IsZero() && "Invalid node_id");
+  assert(!this_node_id.IsZero() && "Invalid my node_id");
+  assert(!this_connection_id.IsZero() && "Invalid this_connection_id");
+  protobuf::Message message;
+  protobuf::ConnectSuccessAcknowledgement protobuf_connect_success_ack;
+  protobuf_connect_success_ack.set_node_id(this_node_id.string());
+  protobuf_connect_success_ack.set_connection_id(this_connection_id.string());
+  protobuf_connect_success_ack.set_requestor(requestor);
+  for (auto i : close_ids) {
+    protobuf_connect_success_ack.add_close_ids(i.string());
+  }
+  message.set_destination_id(node_id.string());
+  message.set_routing_message(true);
+  message.add_data(protobuf_connect_success_ack.SerializeAsString());
+  message.set_direct(true);
+  message.set_replication(1);
+//  message.set_id(RandomUint32());
+  message.set_type(
+      static_cast<int32_t>(MessageType::kConnectSuccessAcknowledgement));
   message.set_id(0);
   message.set_client_node(client_node);
   message.set_hops_to_live(Parameters::hops_to_live);

@@ -78,7 +78,6 @@ message ConnectRequest {
   required Contact contact = 1;
   optional bool bootstrap = 2;
   required int32 timestamp = 3;
-  repeated bytes closest_id = 4;
 }
 
 message ConnectResponse {
@@ -89,12 +88,19 @@ message ConnectResponse {
   required int32 timestamp = 5;
   required bytes original_request = 6;
   required bytes original_signature = 7;
-  repeated bytes closer_id = 8;
 }
 
 message ConnectSuccess {
   required bytes node_id = 1;
   required bytes connection_id = 2;
+  required bool requestor = 3;
+}
+
+message ConnectSuccessAcknowledgement {
+  required bytes node_id = 1;
+  required bytes connection_id = 2;
+  repeated bytes close_ids = 3;
+  required bool requestor = 4;
 }
 
 message FindNodesRequest {

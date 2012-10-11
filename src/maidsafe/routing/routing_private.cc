@@ -259,8 +259,7 @@ void RoutingPrivate::FindClosestNode(const boost::system::error_code& error_code
         // Exit the loop & start recovery loop
         LOG(kInfo) << "Added a node in routing table."
                    << " Terminating setup loop & Scheduling recovery loop.";
-        recovery_timer_.expires_from_now(
-            boost::posix_time::seconds(Parameters::recovery_timeout_in_seconds));
+        recovery_timer_.expires_from_now(Parameters::recovery_timeout);
         recovery_timer_.async_wait([=](const boost::system::error_code& error_code) {
                                        ReSendFindNodeRequest(error_code);
                                      });
@@ -296,8 +295,7 @@ void RoutingPrivate::FindClosestNode(const boost::system::error_code& error_code
     ++attempts;
     network_.SendToDirect(find_node_rpc, network_.bootstrap_connection_id(),
                           message_sent_functor);
-    setup_timer_.expires_from_now(boost::posix_time::seconds(
-                                  Parameters::setup_timeout_in_seconds));
+    setup_timer_.expires_from_now(Parameters::setup_timeout);
     setup_timer_.async_wait([=](boost::system::error_code error_code_local) {
                                 FindClosestNode(error_code_local, attempts);
                               });
@@ -377,8 +375,7 @@ int RoutingPrivate::ZeroStateJoin(Functors functors,
                << ", Routing table size - " << routing_table_.Size()
                << ", Node id : " << DebugId(kNodeId_);
 
-    recovery_timer_.expires_from_now(
-        boost::posix_time::seconds(Parameters::recovery_timeout_in_seconds));
+    recovery_timer_.expires_from_now(Parameters::recovery_timeout);
     recovery_timer_.async_wait([=](const boost::system::error_code& error_code) {
                                    ReSendFindNodeRequest(error_code);
                                  });
@@ -473,7 +470,7 @@ void RoutingPrivate::Send(const NodeId& destination_id,
     LOG(kVerbose) << "Client sending request to self id";
     network_.SendToClosestNode(proto_message);
   } else {
-    LOG(kError) << "Sending request to self";
+    LOG(kInfo) << "Sending request to self";
     OnMessageReceived(proto_message.SerializeAsString());
   }
 }
@@ -636,8 +633,8 @@ void RoutingPrivate::ReSendFindNodeRequest(const boost::system::error_code& erro
       if (!ignore_size)
         LOG(kInfo) << "This node's [" << DebugId(kNodeId_)
                    << "] Routing table smaller than " << Parameters::routing_table_size_threshold
-                   << " nodes.  Sending another FindNodes. Current routing table size : "
-                   << routing_table_.Size();
+                   << " nodes.  Sending another FindNodes. Routing table size < "
+                   << routing_table_.Size() << " >";
       else
         LOG(kInfo) << "This node's [" << DebugId(kNodeId_) << "] close node lost."
                    << "Sending another FindNodes. Current routing table size : "
@@ -652,8 +649,7 @@ void RoutingPrivate::ReSendFindNodeRequest(const boost::system::error_code& erro
       protobuf::Message find_node_rpc(rpcs::FindNodes(kNodeId_, kNodeId_, num_nodes_requested));
       network_.SendToClosestNode(find_node_rpc);
 
-      recovery_timer_.expires_from_now(
-          boost::posix_time::seconds(Parameters::recovery_timeout_in_seconds));
+      recovery_timer_.expires_from_now(Parameters::recovery_timeout);
       recovery_timer_.async_wait([=](boost::system::error_code error_code_local) {
                                      ReSendFindNodeRequest(error_code_local);
                                    });
@@ -664,8 +660,7 @@ void RoutingPrivate::ReSendFindNodeRequest(const boost::system::error_code& erro
 }
 
 void RoutingPrivate::ReBootstrap() {
-  re_bootstrap_timer_.expires_from_now(boost::posix_time::seconds(
-                                       Parameters::re_bootstrap_timeout_in_seconds));
+  re_bootstrap_timer_.expires_from_now(Parameters::re_bootstrap_timeout);
   if (!tearing_down_)
     re_bootstrap_timer_.async_wait([=](boost::system::error_code error_code_local) {
                                        DoReBootstrap(error_code_local);

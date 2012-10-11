@@ -40,6 +40,7 @@ enum ReturnCode {
   kFailedToUpdateRankInfo = -302005,
   kFailedToSetPreferredEndpoint = -302006,
   kFailedToIncrementFailedRpcCount = -302007,
+  kInvalidNodeId = -302008,
 
   // Node
   kNoOnlineBootstrapContacts = -303001,

@@ -28,15 +28,7 @@ class NetworkUtils;
 class NonRoutingTable;
 class RoutingTable;
 
-#ifdef __GNUC__
-#  pragma GCC diagnostic push
-#  pragma GCC diagnostic ignored "-Weffc++"
-#endif
-class Service : public std::enable_shared_from_this<Service> {
-#ifdef __GNUC__
-#  pragma GCC diagnostic pop
-#endif
-
+class Service {
  public:
   Service(RoutingTable& routing_table,
           NonRoutingTable& non_routing_table,
@@ -46,11 +38,15 @@ class Service : public std::enable_shared_from_this<Service> {
   virtual void Ping(protobuf::Message& message);
   virtual void Connect(protobuf::Message& message);
   virtual void FindNodes(protobuf::Message& message);
+  virtual void ConnectSuccess(protobuf::Message& message);
   void ProxyConnect(protobuf::Message& message);
   void set_request_public_key_functor(RequestPublicKeyFunctor request_public_key);
   RequestPublicKeyFunctor request_public_key_functor() const;
 
  private:
+  void ConnectSuccessFromRequester(NodeInfo& peer);
+  void ConnectSuccessFromResponder(NodeInfo& peer, const bool &client);
+
   RoutingTable& routing_table_;
   NonRoutingTable& non_routing_table_;
   NetworkUtils& network_;

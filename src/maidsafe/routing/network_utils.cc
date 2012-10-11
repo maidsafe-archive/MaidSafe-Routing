@@ -260,7 +260,7 @@ void NetworkUtils::SendTo(const protobuf::Message& message,
                     << " id: " << message.id();
       }
   };
-  LOG(kVerbose) << " >>>>>>>>> rudp send message to connection id"
+  LOG(kVerbose) << " >>>>>>>>> rudp send message to connection id "
                 << HexSubstr(connection_id.string());
   RudpSend(connection_id, message, message_sent_functor);
 }
