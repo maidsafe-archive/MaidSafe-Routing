@@ -100,6 +100,7 @@ void RoutingPrivate::Stop() {
   recovery_timer_.cancel();
   re_bootstrap_timer_.cancel();
   network_.Stop();
+  timer_.CancelAllTask();
   asio_service_.Stop();
   DisconnectFunctors();
 }
