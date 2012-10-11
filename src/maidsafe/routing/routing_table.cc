@@ -223,7 +223,7 @@ bool RoutingTable::ConfirmGroupMembers(const NodeId& node1, const NodeId& node2)
 std::vector<NodeInfo> RoutingTable::CheckGroupChange() {
   PartialSortFromTarget(kNodeId_, std::min(Parameters::closest_nodes_size,
                                            static_cast<uint16_t>(nodes_.size())));
-  if (nodes_.size() >= Parameters::closest_nodes_size) {
+  if (nodes_.size() > Parameters::closest_nodes_size) {
     NodeId new_furthest_group_node_id = nodes_[Parameters::closest_nodes_size - 1].node_id;
     if (furthest_group_node_id_ != new_furthest_group_node_id) {
       LOG(kVerbose) << "Group change !. old furthest_close_node : "
