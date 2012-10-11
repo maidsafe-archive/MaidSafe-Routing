@@ -80,6 +80,7 @@ class RoutingPrivate {
 
   bool CheckBootstrapFilePath();
   void AddExistingRandomNode(NodeId node);
+  void RemoveLostRandomNode(NodeId node);
   void ConnectFunctors(const Functors& functors);
   void BootstrapFromTheseEndpoints(const std::vector<boost::asio::ip::udp::endpoint>& endpoints);
   void DoJoin();

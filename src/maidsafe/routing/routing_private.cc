@@ -495,7 +495,7 @@ void RoutingPrivate::DoOnMessageReceived(const std::string& message) {
                << (relay_message ? HexSubstr(protobuf_message.relay_id()) + " -- RELAY REQUEST" :
                                    HexSubstr(protobuf_message.source_id()))
                << " id: " << protobuf_message.id();
-    if (protobuf_message.has_source_id())
+    if (!protobuf_message.client_node() && protobuf_message.has_source_id())
       AddExistingRandomNode(NodeId(protobuf_message.source_id()));
     message_handler_->HandleMessage(protobuf_message);
   } else {
@@ -523,9 +523,9 @@ void RoutingPrivate::AddExistingRandomNode(NodeId node) {
   if (node.IsValid() && !node.Empty()) {
     std::lock_guard<std::mutex> lock(random_node_mutex_);
     if (std::find_if(random_node_vector_.begin(), random_node_vector_.end(),
-                   [node] (const NodeId& vect_node) {
-                       return vect_node == node;
-                     }) !=  random_node_vector_.end())
+                     [node] (const NodeId& vect_node) {
+                         return vect_node == node;
+                       }) !=  random_node_vector_.end())
       return;
     random_node_vector_.push_back(node);
     auto queue_size = random_node_vector_.size();
@@ -533,6 +533,18 @@ void RoutingPrivate::AddExistingRandomNode(NodeId node) {
                   << queue_size;
     if (queue_size > 100)
       random_node_vector_.erase(random_node_vector_.begin());
+  }
+}
+
+void RoutingPrivate::RemoveLostRandomNode(NodeId node) {
+  if (node.IsValid() && !node.Empty()) {
+    std::lock_guard<std::mutex> lock(random_node_mutex_);
+    auto itr(std::find_if(random_node_vector_.begin(), random_node_vector_.end(),
+                          [node] (const NodeId& vect_node) {
+                              return vect_node == node;
+                            }));
+    if (random_node_vector_.end() != itr)
+      random_node_vector_.erase(itr);
   }
 }
 
@@ -556,6 +568,7 @@ void RoutingPrivate::DoOnConnectionLost(const NodeId& lost_connection_id) {
     LOG(kWarning) << "[" << HexSubstr(keys_.identity) << "]"
                   << "Lost connection with routing node "
                   << DebugId(dropped_node.node_id);
+    RemoveLostRandomNode(dropped_node.node_id);
   }
 
   // Checking non-routing table
