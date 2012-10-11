@@ -44,6 +44,10 @@ Timer::Timer(AsioService& asio_service)
       tasks_() {}
 
 Timer::~Timer() {
+  CancelAllTask();
+}
+
+void Timer::CancelAllTask() {
   std::unique_lock<std::mutex> lock(mutex_);
   for (TaskPtr& task : tasks_)
     task->timer.cancel();
