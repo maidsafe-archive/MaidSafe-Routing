@@ -65,7 +65,6 @@ bool ValidateAndAddToRoutingTable(NetworkUtils& network,
                                   const NodeId& connection_id,
                                   const asymm::PublicKey& public_key,
                                   const bool& client) {
-  LOG(kVerbose) << "ValidateAndAddToRoutingTable" << DebugId(peer_id);
   if (network.MarkConnectionAsValid(connection_id) != kSuccess) {
     LOG(kError) << "[" << HexSubstr(routing_table.kFob().identity) << "] "
                 << ". Rudp failed to validate connection with  Peer id : "
@@ -85,35 +84,27 @@ bool ValidateAndAddToRoutingTable(NetworkUtils& network,
         routing_table.GetNthClosestNode(NodeId(routing_table.kFob().identity),
                                         Parameters::closest_nodes_size).node_id;
 
-    if (non_routing_table.AddNode(peer, furthest_close_node_id)) {
+    if (non_routing_table.AddNode(peer, furthest_close_node_id))
       routing_accepted_node = true;
-      LOG(kVerbose) << "Added client node to non routing table.  Node ID: "
-                    << HexSubstr(peer_id.string());
-      return true;
-    } else {
-      LOG(kVerbose) << "Failed to add client node to non routing table.  Node ID: "
-                    << HexSubstr(peer_id.string());
-      return false;
-    }
-  } else {
-    if (routing_table.AddNode(peer)) {
+  } else {  // Vaults
+    if (routing_table.AddNode(peer))
       routing_accepted_node = true;
-      LOG(kVerbose) << "[" << HexSubstr(routing_table.kFob().identity) << "] "
-                    << "added node to routing table.  Node ID: " << HexSubstr(peer_id.string());
-      return true;
-    } else {
-      LOG(kVerbose) << "Failed to add node to routing table.  Node id : "
-                    << HexSubstr(peer_id.string());
-      return false;
-    }
   }
 
-  if (!routing_accepted_node) {
-    LOG(kVerbose) << "Not adding node to " << (client ? "non-" : "") << "routing table.  Node id "
-                  << HexSubstr(peer_id.string()) << " just added rudp connection will be removed.";
-    network.Remove(connection_id);
-    return false;
+  if (routing_accepted_node) {
+    LOG(kVerbose) << "[" << DebugId(routing_table.kNodeId()) << "] "
+                  << "added " << (client ? "client-" : "") << "node to "
+                  << (client ? "non-" : "") << "routing table.  Node ID: "
+                  << HexSubstr(peer_id.string());
+    return true;
   }
+
+  LOG(kInfo) << "[" << DebugId(routing_table.kNodeId()) << "] "
+             << "failed to add " << (client ? "client-" : "") << "node to "
+             << (client ? "non-" : "") << "routing table.  Node ID: "
+             << HexSubstr(peer_id.string())
+             << ". Added rudp connection will be removed.";
+  network.Remove(connection_id);
   return false;
 }
 
