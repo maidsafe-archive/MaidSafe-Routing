@@ -487,17 +487,18 @@ void RoutingPrivate::OnMessageReceived(const std::string& message) {
 }
 
 void RoutingPrivate::DoOnMessageReceived(const std::string& message) {
-  protobuf::Message protobuf_message;
-  if (protobuf_message.ParseFromString(message)) {
-    bool relay_message(!protobuf_message.has_source_id());
+  protobuf::Message pb_message;
+  if (pb_message.ParseFromString(message)) {
+    bool relay_message(!pb_message.has_source_id());
     LOG(kInfo) << "This node [" << DebugId(kNodeId_) << "] received message type: "
-               << MessageTypeString(protobuf_message) << " from "
-               << (relay_message ? HexSubstr(protobuf_message.relay_id()) + " -- RELAY REQUEST" :
-                                   HexSubstr(protobuf_message.source_id()))
-               << " id: " << protobuf_message.id();
-    if (!protobuf_message.client_node() && protobuf_message.has_source_id())
-      AddExistingRandomNode(NodeId(protobuf_message.source_id()));
-    message_handler_->HandleMessage(protobuf_message);
+               << MessageTypeString(pb_message) << " from "
+               << (relay_message ? HexSubstr(pb_message.relay_id()) + " -- RELAY REQUEST" :
+                                   HexSubstr(pb_message.source_id()))
+               << " id: " << pb_message.id();
+    if (((anonymous_node_ || !pb_message.client_node()) && pb_message.has_source_id()) ||
+        (!pb_message.direct() && !pb_message.request()))
+      AddExistingRandomNode(NodeId(pb_message.source_id()));
+    message_handler_->HandleMessage(pb_message);
   } else {
     LOG(kWarning) << "Message received, failed to parse";
   }
