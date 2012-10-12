@@ -42,7 +42,7 @@ TEST(ResponseHandlerTest, BEH_ConnectAttempts) {
   Fob fob(MakeFob());
   RoutingTable routing_table(fob, false);
   NonRoutingTable non_routing_table(fob);
-  AsioService asio_service(0);
+  AsioService asio_service(1);
   Timer timer(asio_service);
   NetworkUtils network(routing_table, non_routing_table, timer);
   ResponseHandler response_handler(routing_table, non_routing_table, network);
