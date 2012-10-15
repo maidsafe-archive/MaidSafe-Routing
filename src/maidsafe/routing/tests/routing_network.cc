@@ -339,8 +339,9 @@ void GenericNetwork::SetUp() {
   EXPECT_EQ(kSuccess, f2.get());
   EXPECT_EQ(kSuccess, f1.get());
   LOG(kVerbose) << "Setup succeeded";
-//    node1->PrintRoutingTable();
-//    node2->PrintRoutingTable();
+  bootstrap_endpoints_.clear();
+  bootstrap_endpoints_.push_back(node1->endpoint());
+  bootstrap_endpoints_.push_back(node2->endpoint());
 }
 
 void GenericNetwork::TearDown() {
@@ -555,11 +556,6 @@ void GenericNetwork::AddNodeDetails(NodePtr node) {
           }
         }
       };
-  {
-    std::lock_guard<std::mutex> loch(mutex_);
-    bootstrap_endpoints_.clear();
-    bootstrap_endpoints_.push_back(nodes_[1]->endpoint());
-  }
   node->Join(bootstrap_endpoints_);
 
   if (!node->joined()) {
