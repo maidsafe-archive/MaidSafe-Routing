@@ -509,7 +509,9 @@ void GenericNetwork::RemoveRandomClient() {
 
 void GenericNetwork::RemoveRandomVault() {
   std::lock_guard<std::mutex> loch(mutex_);
-  nodes_.erase(nodes_.begin() + (RandomUint32() % client_index_));
+  assert(nodes_.size() > 2);
+  assert(client_index_ > 2);
+  nodes_.erase(nodes_.begin() + 2 + (RandomUint32() % client_index_));  // +2 to avoid zero state
   --client_index_;
 }
 

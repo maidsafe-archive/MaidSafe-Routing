@@ -569,8 +569,8 @@ TEST_F(RoutingNetworkTest, FUNC_BasicNetworkChurn) {
 
 TEST_F(RoutingNetworkTest, FUNC_MessagingNetworkChurn) {
   size_t random(RandomUint32());
-  const size_t vault_network_size(40 + random % 10);
-  const size_t clients_in_network(10 + random % 3);
+  const size_t vault_network_size(20 + random % 10);
+  const size_t clients_in_network(5 + random % 3);
   SetUpNetwork(vault_network_size, clients_in_network);
   LOG(kInfo) << "Finished setting up network\n\n\n\n";
 
@@ -581,7 +581,8 @@ TEST_F(RoutingNetworkTest, FUNC_MessagingNetworkChurn) {
 
   std::vector<NodeId> new_node_ids;
   const size_t up_count(vault_network_size / 3);
-  const size_t down_count(vault_network_size / 5), downed(0);
+  const size_t down_count(vault_network_size / 5);
+  size_t downed(0);
   while (new_node_ids.size() < up_count) {
     NodeId new_id(NodeId::kRandomId);
     auto itr(Find(new_id, existing_node_ids));
@@ -635,6 +636,7 @@ TEST_F(RoutingNetworkTest, FUNC_MessagingNetworkChurn) {
 //                                      this->RemoveRandomClient();
 //                                    else
                                       this->RemoveRandomVault();
+                                      ++downed;
                                     Sleep(boost::posix_time::seconds(10));
                                   }
                                 });
@@ -662,6 +664,14 @@ TEST_F(RoutingNetworkTest, FUNC_MessagingNetworkChurn) {
   // Stop all threads
   run = false;
   messaging_handle.get();
+
+  LOG(kInfo) << "\n\t Initial count of Vault nodes : " << vault_network_size
+             << "\n\t Initial count of client nodes : " << clients_in_network
+             << "\n\t Current count of nodes : " << this->nodes_.size()
+             << "\n\t Up count of nodes : " << up_count
+             << "\n\t down_count count of nodes : " << down_count;
+  auto expected_current_size = vault_network_size + clients_in_network + up_count - down_count;
+  EXPECT_EQ(expected_current_size, nodes_.size());
 }
 
 }  // namespace test
