@@ -532,10 +532,12 @@ void GenericNetwork::AddNodeDetails(NodePtr node) {
     uint16_t node_size(NonClientNodesSize());
     node->set_expected(NetworkStatus(node->IsClient(),
                                      std::min(node_size, Parameters::closest_nodes_size)));
-    if (node->IsClient())
+    if (node->IsClient()) {
       nodes_.push_back(node);
-    else
+    } else {
       nodes_.insert(nodes_.begin() + (nodes_.size() - client_index_), node);
+      ++client_index_;
+    }
   }
   std::weak_ptr<GenericNode> weak_node(node);
   node->functors_.network_status =
