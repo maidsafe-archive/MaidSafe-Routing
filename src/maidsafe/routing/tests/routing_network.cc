@@ -290,7 +290,7 @@ void GenericNode::PrintRoutingTable() {
   for (auto node_info : routing_->impl_->routing_table_.nodes_) {
     LOG(kVerbose) << "NodeId: " << HexSubstr(node_info.node_id.string());
   }
-  LOG(kInfo) << "Non-RoutingTable of " << HexSubstr(node_info_plus_->node_info.node_id.string());
+  LOG(kVerbose) << "Non-RoutingTable of " << HexSubstr(node_info_plus_->node_info.node_id.string());
   for (auto node_info : routing_->impl_->non_routing_table_.nodes_) {
     LOG(kVerbose) << "NodeId: " << HexSubstr(node_info.node_id.string());
   }

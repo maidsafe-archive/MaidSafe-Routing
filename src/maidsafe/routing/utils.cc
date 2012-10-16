@@ -241,33 +241,33 @@ std::string MessageTypeString(const protobuf::Message& message) {
   std::string message_type;
   switch (static_cast<MessageType>(message.type())) {
     case MessageType::kPing :
-      message_type = "kPing";
+      message_type = "kPing     ";
       break;
     case MessageType::kConnect :
-      message_type = "kConnect";
+      message_type = "kConnect  ";
       break;
     case MessageType::kFindNodes :
       message_type = "kFindNodes";
       break;
     case MessageType::kProxyConnect :
-      message_type = "kProxyConnect";
+      message_type = "kPxConnect";
       break;
     case MessageType::kConnectSuccess :
-      message_type = "kConnectSuccess";
+      message_type = "kC-Success";
       break;
     case MessageType::kConnectSuccessAcknowledgement :
-      message_type = "kConnectSuccessAcknowledgement";
+      message_type = "kC-Suc-Ack";
       break;
     case MessageType::kNodeLevel :
       message_type = "kNodeLevel";
       break;
     default:
-      message_type = "Unknown";
+      message_type = "Unknown  ";
   }
   if (message.request())
-    message_type = message_type + " Request";
+    message_type = message_type + " Req";
   else
-    message_type = message_type + " Response";
+    message_type = message_type + " Res";
   return message_type;
 }
 

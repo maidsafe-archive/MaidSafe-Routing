@@ -258,19 +258,19 @@ void RoutingPrivate::FindClosestNode(const boost::system::error_code& error_code
     } else {
       if (routing_table_.Size() > 0) {
         // Exit the loop & start recovery loop
-        LOG(kInfo) << "Added a node in routing table."
-                   << " Terminating setup loop & Scheduling recovery loop.";
-        recovery_timer_.expires_from_now(Parameters::recovery_timeout);
+        LOG(kVerbose) << "Added a node in routing table."
+                      << " Terminating setup loop & Scheduling recovery loop.";
+        recovery_timer_.expires_from_now(Parameters::find_node_interval);
         recovery_timer_.async_wait([=](const boost::system::error_code& error_code) {
                                        ReSendFindNodeRequest(error_code);
                                      });
         return;
       }
 
-      if (attempts >= 10) {
-        LOG(kError) << "This node's [" << HexSubstr(kFob_.identity)
+      if (attempts >= Parameters::maximum_find_close_node_failures) {
+        LOG(kError) << "[" << HexSubstr(kFob_.identity)
                     << "] failed to get closest node."
-                    << " Reconnecting ....";
+                    << " ReBootstraping ...";
         // TODO(Prakash) : Remove the bootstrap node from the list
         ReBootstrap();
       }
@@ -286,8 +286,10 @@ void RoutingPrivate::FindClosestNode(const boost::system::error_code& error_code
     rudp::MessageSentFunctor message_sent_functor(
         [=](int message_sent) {
           if (message_sent == kSuccess)
-            LOG(kInfo) << "Successfully sent FindNodes RPC to bootstrap connection id : "
-                       << DebugId(network_.bootstrap_connection_id());
+             LOG(kInfo) << "  [" << DebugId(kNodeId_) << "] sent : "
+                        << MessageTypeString(find_node_rpc) << " to   "
+                        << DebugId(network_.bootstrap_connection_id())
+                        << "   (id: " << find_node_rpc.id() << ")";
           else
             LOG(kError) << "Failed to send FindNodes RPC to bootstrap connection id : "
                         << DebugId(network_.bootstrap_connection_id());
@@ -296,7 +298,7 @@ void RoutingPrivate::FindClosestNode(const boost::system::error_code& error_code
     ++attempts;
     network_.SendToDirect(find_node_rpc, network_.bootstrap_connection_id(),
                           message_sent_functor);
-    setup_timer_.expires_from_now(Parameters::setup_timeout);
+    setup_timer_.expires_from_now(Parameters::find_close_node_interval);
     setup_timer_.async_wait([=](boost::system::error_code error_code_local) {
                                 FindClosestNode(error_code_local, attempts);
                               });
@@ -331,8 +333,8 @@ int RoutingPrivate::ZeroStateJoin(Functors functors,
     return result;
   }
 
-  LOG(kInfo) << "This Node [" << DebugId(kNodeId_) << "]"
-             << "bootstrap connection id : "
+  LOG(kInfo) << "[" << DebugId(kNodeId_) << "]'s"
+             << " bootstrap connection id : "
              << DebugId(network_.bootstrap_connection_id());
 
   assert(!peer_node.node_id.IsZero() && "empty nodeid passed");
@@ -376,7 +378,7 @@ int RoutingPrivate::ZeroStateJoin(Functors functors,
                << ", Routing table size - " << routing_table_.Size()
                << ", Node id : " << DebugId(kNodeId_);
 
-    recovery_timer_.expires_from_now(Parameters::recovery_timeout);
+    recovery_timer_.expires_from_now(Parameters::find_node_interval);
     recovery_timer_.async_wait([=](const boost::system::error_code& error_code) {
                                    ReSendFindNodeRequest(error_code);
                                  });
@@ -485,11 +487,12 @@ void RoutingPrivate::DoOnMessageReceived(const std::string& message) {
   protobuf::Message pb_message;
   if (pb_message.ParseFromString(message)) {
     bool relay_message(!pb_message.has_source_id());
-    LOG(kInfo) << "This node [" << DebugId(kNodeId_) << "] received message type: "
+    LOG(kInfo) << "[" << DebugId(kNodeId_) << "] rcvd : "
                << MessageTypeString(pb_message) << " from "
-               << (relay_message ? HexSubstr(pb_message.relay_id()) + " -- RELAY REQUEST" :
+               << (relay_message ? HexSubstr(pb_message.relay_id()) :
                                    HexSubstr(pb_message.source_id()))
-               << " id: " << pb_message.id();
+               << "   (id: " << pb_message.id() << ")"
+               << (relay_message ? " --Relay--" : "");
     if (((anonymous_node_ || !pb_message.client_node()) && pb_message.has_source_id()) ||
         (!pb_message.direct() && !pb_message.request()))
       AddExistingRandomNode(NodeId(pb_message.source_id()));
@@ -599,7 +602,10 @@ void RoutingPrivate::DoOnConnectionLost(const NodeId& lost_connection_id) {
   if (resend) {
     // Close node lost, get more nodes
     LOG(kWarning) << "Lost close node, getting more.";
-    ReSendFindNodeRequest(boost::system::error_code(), true);
+    recovery_timer_.expires_from_now(Parameters::recovery_time_lag);
+    recovery_timer_.async_wait([=](const boost::system::error_code& error_code) {
+                                   ReSendFindNodeRequest(error_code, true);
+                                 });
   }
 }
 
@@ -612,9 +618,6 @@ void RoutingPrivate::RemoveNode(const NodeInfo& node, const bool& internal_rudp_
     LOG(kInfo) << "Routing: removed node : " << DebugId(node.node_id)
                << ". Removed internal rudp connection id : " << DebugId(node.connection_id);
     return;
-  } else {
-      LOG(kInfo) << "Routing: removed node : " << DebugId(node.node_id)
-                 << ". Removed rudp connection id : " << DebugId(node.connection_id);
   }
 
   LOG(kInfo) << "Routing: removed node : " << DebugId(node.node_id)
@@ -626,7 +629,10 @@ void RoutingPrivate::RemoveNode(const NodeInfo& node, const bool& internal_rudp_
   if (resend) {
     // Close node removed by routing, get more nodes
     LOG(kWarning) << "Removed close node, sending find node to get more nodes.";
-    ReSendFindNodeRequest(boost::system::error_code(), true);
+    recovery_timer_.expires_from_now(Parameters::recovery_time_lag);
+    recovery_timer_.async_wait([=](const boost::system::error_code& error_code) {
+                                   ReSendFindNodeRequest(error_code, true);
+                                 });
   }
 }
 
@@ -638,20 +644,20 @@ void RoutingPrivate::ReSendFindNodeRequest(const boost::system::error_code& erro
                                            bool ignore_size) {
   if ((error_code != boost::asio::error::operation_aborted) && !tearing_down_) {
     if (routing_table_.Size() == 0) {
-      LOG(kError) << "This node's [" << HexSubstr(kFob_.identity)
-                  << "] Routing table is empty."
+      LOG(kError) << "[" << HexSubstr(kFob_.identity)
+                  << "]'s' Routing table is empty."
                   << " Scheduling Re-Bootstrap .... !!!";
       ReBootstrap();
       return;
     } else if (ignore_size ||
                (routing_table_.Size() < Parameters::routing_table_size_threshold)) {
       if (!ignore_size)
-        LOG(kInfo) << "This node's [" << DebugId(kNodeId_)
+        LOG(kInfo) << "[" << DebugId(kNodeId_)
                    << "] Routing table smaller than " << Parameters::routing_table_size_threshold
                    << " nodes.  Sending another FindNodes. Routing table size < "
                    << routing_table_.Size() << " >";
       else
-        LOG(kInfo) << "This node's [" << DebugId(kNodeId_) << "] close node lost."
+        LOG(kInfo) << "[" << DebugId(kNodeId_) << "] lost close node."
                    << "Sending another FindNodes. Current routing table size : "
                    << routing_table_.Size();
 
@@ -664,18 +670,16 @@ void RoutingPrivate::ReSendFindNodeRequest(const boost::system::error_code& erro
       protobuf::Message find_node_rpc(rpcs::FindNodes(kNodeId_, kNodeId_, num_nodes_requested));
       network_.SendToClosestNode(find_node_rpc);
 
-      recovery_timer_.expires_from_now(Parameters::recovery_timeout);
+      recovery_timer_.expires_from_now(Parameters::find_node_interval);
       recovery_timer_.async_wait([=](boost::system::error_code error_code_local) {
                                      ReSendFindNodeRequest(error_code_local);
                                    });
     }
-  } else {
-    LOG(kVerbose) << "Cancelled recovery loop!!";
   }
 }
 
 void RoutingPrivate::ReBootstrap() {
-  re_bootstrap_timer_.expires_from_now(Parameters::re_bootstrap_timeout);
+  re_bootstrap_timer_.expires_from_now(Parameters::re_bootstrap_time_lag);
   if (!tearing_down_)
     re_bootstrap_timer_.async_wait([=](boost::system::error_code error_code_local) {
                                        DoReBootstrap(error_code_local);
@@ -684,9 +688,9 @@ void RoutingPrivate::ReBootstrap() {
 
 void RoutingPrivate::DoReBootstrap(const boost::system::error_code& error_code) {
   if (error_code != boost::asio::error::operation_aborted && !tearing_down_) {
-    LOG(kError) << "This node's [" << HexSubstr(kFob_.identity)
-                << "] Routing table is empty."
-                << " Reconnecting .... !!!";
+    LOG(kError) << "[" << HexSubstr(kFob_.identity)
+                << "]'s' Routing table is empty."
+                << " ReBootstraping ....";
     DoJoin();
   }
 }

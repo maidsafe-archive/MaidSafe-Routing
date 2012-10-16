@@ -96,7 +96,8 @@ TEST_F(FindNodeNetwork, FUNC_FindNodeAfterDrop) {
   Sleep(boost::posix_time::seconds(1));
   EXPECT_TRUE(this->nodes_[source]->RoutingTableHasNode(node_id));
   EXPECT_TRUE(this->nodes_[source]->DropNode(node_id));
-  Sleep(boost::posix_time::seconds(20));
+  Sleep(Parameters::recovery_time_lag + Parameters::find_node_interval +
+          boost::posix_time::seconds(5));
   EXPECT_TRUE(this->nodes_[source]->RoutingTableHasNode(node_id));
 }
 
@@ -111,7 +112,8 @@ TEST_F(FindNodeNetwork, FUNC_VaultFindVaultNode) {
 
   EXPECT_TRUE(this->nodes_[source]->DropNode(this->nodes_[dest]->node_id()));
 
-  Sleep(boost::posix_time::seconds(15));
+  Sleep(Parameters::recovery_time_lag + Parameters::find_node_interval +
+          boost::posix_time::seconds(5));
 
   LOG(kVerbose) << "after find " << HexSubstr(this->nodes_[dest]->node_id().string());
   EXPECT_TRUE(this->nodes_[source]->RoutingTableHasNode(this->nodes_[dest]->node_id()));
@@ -133,7 +135,8 @@ TEST_F(FindNodeNetwork, FUNC_VaultFindClientNode) {
 
   // clear up
   EXPECT_TRUE(this->nodes_[dest]->DropNode(this->nodes_[source]->node_id()));
-  Sleep(boost::posix_time::seconds(1));
+  Sleep(Parameters::recovery_time_lag + Parameters::find_node_interval +
+          boost::posix_time::seconds(5));
   EXPECT_TRUE(this->nodes_[dest]->RoutingTableHasNode(this->nodes_[source]->node_id()));
   EXPECT_TRUE(this->nodes_[source]->NonRoutingTableHasNode(this->nodes_[dest]->node_id()));
 }

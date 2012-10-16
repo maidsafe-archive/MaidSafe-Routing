@@ -87,7 +87,7 @@ protobuf::Message Connect(const NodeId& node_id,
   } else {
     message.set_relay_id(this_node_id.string());
     // This node is not in any peer's routing table yet
-    LOG(kInfo) << "Connect RPC has relay connection id " << DebugId(relay_connection_id);
+    LOG(kVerbose) << "Connect RPC has relay connection id " << DebugId(relay_connection_id);
     message.set_relay_connection_id(relay_connection_id.string());
   }
 
@@ -123,7 +123,7 @@ protobuf::Message FindNodes(const NodeId& node_id,
   } else {
     message.set_relay_id(this_node_id.string());
     // This node is not in any peer's routing table yet
-    LOG(kInfo) << "FindNodes RPC has relay connection id " << DebugId(relay_connection_id);
+    LOG(kVerbose) << "FindNodes RPC has relay connection id " << DebugId(relay_connection_id);
     message.set_relay_connection_id(relay_connection_id.string());
   }
   message.set_hops_to_live(Parameters::hops_to_live);
@@ -158,7 +158,7 @@ protobuf::Message ProxyConnect(const NodeId& node_id,
   } else {
     message.set_relay_id(this_node_id.string());
     // This node is not in any peer's routing table yet
-    LOG(kInfo) << "ProxyConnect RPC has relay connection id " << DebugId(relay_connection_id);
+    LOG(kVerbose) << "ProxyConnect RPC has relay connection id " << DebugId(relay_connection_id);
     message.set_relay_connection_id(relay_connection_id.string());
   }
   assert(message.IsInitialized() && "Unintialised message");

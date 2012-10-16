@@ -251,15 +251,17 @@ void NetworkUtils::SendTo(const protobuf::Message& message,
   const std::string kThisId(HexSubstr(routing_table_.kFob().identity));
   rudp::MessageSentFunctor message_sent_functor = [=](int message_sent) {
       if (rudp::kSuccess == message_sent) {
-        LOG(kInfo) << "Type " << MessageTypeString(message) << " message successfully sent from "
-                   << kThisId << " to " << HexSubstr(node_id.string());
+        LOG(kInfo) << "  [" << HexSubstr(kThisId) << "] sent : "
+                   << MessageTypeString(message) << " to   "
+                   << HexSubstr(node_id.string())
+                   << "   (id: " << message.id() << ")";
       } else {
         LOG(kError) << "Sending type " << MessageTypeString(message) << " message from "
                     << kThisId << " to " << HexSubstr(node_id.string()) <<  " failed with code "
                     << message_sent
                     << " id: " << message.id();
       }
-  };
+    };
   LOG(kVerbose) << " >>>>>>>>> rudp send message to connection id "
                 << HexSubstr(connection_id.string());
   RudpSend(connection_id, message, message_sent_functor);
@@ -319,10 +321,11 @@ void NetworkUtils::RecursiveSendOn(protobuf::Message message,
 
   rudp::MessageSentFunctor message_sent_functor = [=](int message_sent) {
       if (rudp::kSuccess == message_sent) {
-        LOG(kInfo) << "Type " << MessageTypeString(message) << " message successfully sent from "
-                   << kThisId << " to " << HexSubstr(closest_node.node_id.string())
-                   << " with destination ID " << HexSubstr(message.destination_id())
-                   << " id: " << message.id();
+        LOG(kInfo) << "  [" << HexSubstr(kThisId) << "] sent : "
+                   << MessageTypeString(message) << " to   "
+                   << HexSubstr(closest_node.node_id.string())
+                   << "   (id: " << message.id() << ")"
+                   << " dst : " << HexSubstr(message.destination_id());
       } else if (rudp::kSendFailure == message_sent) {
         LOG(kError) << "Sending type " << MessageTypeString(message) << " message from "
                     << kThisId << " to " << HexSubstr(closest_node.node_id.string())

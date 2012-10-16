@@ -75,9 +75,10 @@ void MessageHandler::HandleRoutingMessage(protobuf::Message& message) {
 
 void MessageHandler::HandleNodeLevelMessageForThisNode(protobuf::Message& message) {
   if (IsRequest(message)) {
-    LOG(kInfo) << "Node Level Request for " << HexSubstr(routing_table_.kFob().identity)
-               << " from " << HexSubstr(message.source_id()) << " id: " << message.id();
-
+      LOG(kInfo) << " [" << DebugId(routing_table_.kNodeId()) << "] rcvd : "
+               << MessageTypeString(message) << " from "
+               << HexSubstr(message.source_id())
+               << "   (id: " << message.id() << ")  --NodeLevel--";
     ReplyFunctor response_functor = [=](const std::string& reply_message) {
         if (reply_message.empty())
           return;
@@ -120,8 +121,10 @@ void MessageHandler::HandleNodeLevelMessageForThisNode(protobuf::Message& messag
     if (message_received_functor_)
       message_received_functor_(message.data(0), group_claim, response_functor);
   } else {  // response
-    LOG(kInfo) << "Node Level Response for " << HexSubstr(routing_table_.kFob().identity)
-               << " from " << HexSubstr(message.source_id()) << " id: " << message.id();
+    LOG(kInfo) << "[" << DebugId(routing_table_.kNodeId()) << "] rcvd : "
+               << MessageTypeString(message) << " from "
+               << HexSubstr(message.source_id())
+               << "   (id: " << message.id() << ")  --NodeLevel--";
     timer_.AddResponse(message);
   }
 }
@@ -202,7 +205,7 @@ void MessageHandler::HandleGroupMessageAsClosestNode(protobuf::Message& message)
 
   for (auto i : close)
     group_members+=std::string("[" + DebugId(i) +"]");
-  LOG(kInfo) << "Group members for group_id " << HexSubstr(group_id) << " are: "
+  LOG(kInfo) << "Group nodes for group_id " << HexSubstr(group_id) << " : "
              << group_members;
 
   for (auto i : close) {

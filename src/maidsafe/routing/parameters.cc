@@ -18,21 +18,21 @@ namespace maidsafe {
 
 namespace routing {
 
-bool Parameters::encryption_required(false);
 uint16_t Parameters::thread_count(8);
 uint16_t Parameters::num_chunks_to_cache(100);
-Timeout Parameters::timeout(bptime::seconds(5));
 uint16_t Parameters::closest_nodes_size(8);
 uint16_t Parameters::node_group_size(4);
 uint16_t Parameters::max_routing_table_size(64);
 uint16_t Parameters::routing_table_size_threshold(max_routing_table_size / 2);
 uint16_t Parameters::max_client_routing_table_size(8);
-uint16_t Parameters::max_non_routing_table_size(8);
+uint16_t Parameters::max_non_routing_table_size(64);
 uint16_t Parameters::bucket_target_size(1);
 uint32_t Parameters::max_data_size(67107840);
-Timeout Parameters::recovery_timeout(bptime::seconds(10));
-Timeout Parameters::setup_timeout(bptime::seconds(3));
-Timeout Parameters::re_bootstrap_timeout(bptime::seconds(10));
+Timeout Parameters::find_node_interval(bptime::seconds(10));
+Timeout Parameters::recovery_time_lag(bptime::seconds(5));
+Timeout Parameters::re_bootstrap_time_lag(bptime::seconds(10));
+Timeout Parameters::find_close_node_interval(bptime::seconds(3));
+uint16_t Parameters::maximum_find_close_node_failures(10);
 uint16_t Parameters::max_route_history(5);
 uint16_t Parameters::hops_to_live(20);
 Timeout Parameters::connect_rpc_prune_timeout(bptime::seconds(10));
