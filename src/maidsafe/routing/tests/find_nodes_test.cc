@@ -142,14 +142,15 @@ TEST_F(FindNodeNetwork, FUNC_ClientFindVaultNode) {
   // Create a bootstrap network
   this->SetUpNetwork(kNetworkSize);
   uint32_t source(
-      RandomUint32() % (static_cast<uint32_t>(this->nodes_.size()) - 2) + 2),
-      client(static_cast<uint32_t>(this->nodes_.size())),
-      vault(client + 1);
+      RandomUint32() % (static_cast<uint32_t>(this->nodes_.size()) - 2) + 2);
 
   // Add one client node
   this->AddNode(true, GenerateUniqueRandomId(this->nodes_[source]->node_id(), 8));
   // Add one vault node
   this->AddNode(false, GenerateUniqueRandomId(this->nodes_[source]->node_id(), 24));
+
+  uint32_t client(this->nodes_.size() - 1);
+  uint32_t vault(kNetworkSize);
 
   Sleep(boost::posix_time::seconds(1));
 

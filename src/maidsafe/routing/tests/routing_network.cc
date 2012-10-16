@@ -325,6 +325,7 @@ void GenericNetwork::SetUp() {
   NodePtr node1(new GenericNode(false)), node2(new GenericNode(false));
   nodes_.push_back(node1);
   nodes_.push_back(node2);
+  client_index_ = 2;
   fobs_.push_back(node1->fob());
   fobs_.push_back(node2->fob());
   SetNodeValidationFunctor(node1);
@@ -367,7 +368,6 @@ void GenericNetwork::SetUpNetwork(const size_t& non_client_size, const size_t& c
   }
   Sleep(boost::posix_time::seconds(1));
   PrintRoutingTables();
-  client_index_ = non_client_size;
 //    EXPECT_TRUE(ValidateRoutingTables());
 }
 
@@ -537,7 +537,7 @@ void GenericNetwork::AddNodeDetails(NodePtr node) {
     if (node->IsClient()) {
       nodes_.push_back(node);
     } else {
-      nodes_.insert(nodes_.begin() + (nodes_.size() - client_index_), node);
+      nodes_.insert(nodes_.begin() + client_index_, node);
       ++client_index_;
     }
   }
