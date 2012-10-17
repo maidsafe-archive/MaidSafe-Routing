@@ -457,14 +457,11 @@ void MessageHandler::HandleClientMessage(protobuf::Message& message) {
     return;
   }
   if (IsRoutingMessage(message)) {
-    LOG(kInfo) << "Client Routing Response for " << HexSubstr(routing_table_.kFob().identity)
-               << " from " << HexSubstr(message.source_id()) << " id: " << message.id();
+    LOG(kVerbose) << "Client Routing Response for " << HexSubstr(routing_table_.kFob().identity)
+                  << " from " << HexSubstr(message.source_id()) << " id: " << message.id();
     HandleRoutingMessage(message);
   } else if ((message.destination_id() == routing_table_.kFob().identity.string())) {
     HandleNodeLevelMessageForThisNode(message);
-//     LOG(kInfo) << "Client Node Level Response for " << HexSubstr(routing_table_.kFob().identity)
-//                << " from " << HexSubstr(message.source_id()) << " id: " << message.id();
-//     timer_.AddResponse(message);
   }
 }
 

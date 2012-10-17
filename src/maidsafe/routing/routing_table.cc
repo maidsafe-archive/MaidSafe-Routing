@@ -460,7 +460,7 @@ std::vector<NodeInfo> RoutingTable::GetClosestNodeInfo(const NodeId& from,
 void RoutingTable::UpdateNetworkStatus(const uint16_t& size) const {
   if (network_status_functor_)
     network_status_functor_(static_cast<int>(size) * 100 / max_size_);
-  LOG(kInfo) << DebugId(kNodeId_) << "Updating network status !!!" << (size * 100) / max_size_;
+  LOG(kVerbose) << DebugId(kNodeId_) << "Updating network status !!! " << (size * 100) / max_size_;
 }
 
 size_t RoutingTable::Size() const {

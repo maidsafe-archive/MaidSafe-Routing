@@ -286,7 +286,7 @@ void RoutingPrivate::FindClosestNode(const boost::system::error_code& error_code
     rudp::MessageSentFunctor message_sent_functor(
         [=](int message_sent) {
           if (message_sent == kSuccess)
-             LOG(kInfo) << "  [" << DebugId(kNodeId_) << "] sent : "
+             LOG(kInfo) << "[" << DebugId(kNodeId_) << "] sent : "
                         << MessageTypeString(find_node_rpc) << " to   "
                         << DebugId(network_.bootstrap_connection_id())
                         << "   (id: " << find_node_rpc.id() << ")";
