@@ -67,7 +67,6 @@ class ResponseHandler : public std::enable_shared_from_this<ResponseHandler> {
   struct PendingRpc {
     explicit PendingRpc(const NodeId& peer_node_id);
     NodeId node_id;
-    int attempts;
     boost::posix_time::time_duration timestamp;
   };
 

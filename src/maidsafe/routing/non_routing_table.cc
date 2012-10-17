@@ -51,7 +51,7 @@ bool NonRoutingTable::AddOrCheckNode(NodeInfo& node,
     if (add) {
       nodes_.push_back(node);
       LOG(kInfo) << "Added to non routing table :" << DebugId(node.node_id);
-      LOG(kInfo) << PrintNonRoutingTable();
+      LOG(kVerbose) << PrintNonRoutingTable();
     }
     return true;
   }

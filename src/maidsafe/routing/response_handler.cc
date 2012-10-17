@@ -29,6 +29,7 @@
 #include "maidsafe/routing/rpcs.h"
 #include "maidsafe/routing/utils.h"
 
+namespace bptime = boost::posix_time;
 
 namespace maidsafe {
 
@@ -42,7 +43,6 @@ typedef boost::asio::ip::udp::endpoint Endpoint;
 
 ResponseHandler::PendingRpc::PendingRpc(const NodeId& peer_node_id)
     : node_id(peer_node_id),
-      attempts(1),
       timestamp(GetDurationSinceEpoch()) {}
 
 bool ResponseHandler::AddPendingConnect(NodeId node_id) {
@@ -53,10 +53,6 @@ bool ResponseHandler::AddPendingConnect(NodeId node_id) {
                           }));
   if (itr == pending_connect_rpc_.end()) {
     pending_connect_rpc_.push_back(PendingRpc(node_id));
-    return true;
-  }
-  if ((*itr).attempts < 2) {
-    ++(*itr).attempts;
     return true;
   } else {
     return false;
@@ -70,11 +66,7 @@ void ResponseHandler::ClearPendingConnect(NodeId node_id) {
                             return (pending_rpc.node_id == node_id);
                           }));
   if (itr != pending_connect_rpc_.end()) {
-    if ((*itr).attempts == 2) {
-      --(*itr).attempts;
-    } else {
       pending_connect_rpc_.erase(itr);
-    }
   }
 }
 
@@ -82,9 +74,10 @@ void ResponseHandler::PrunePendingConnect() {
   std::lock_guard<std::mutex> lock(mutex_);
   auto itr(pending_connect_rpc_.begin());
   while (itr != pending_connect_rpc_.end()) {
-    boost::posix_time::time_duration now(GetDurationSinceEpoch());
+    bptime::time_duration now(GetDurationSinceEpoch());
     if ((now.total_milliseconds() - (*itr).timestamp.total_milliseconds()) >
-        Parameters::connect_rpc_prune_timeout.total_milliseconds()) {
+          (Parameters::connect_rpc_prune_timeout +
+             bptime::milliseconds(RandomInt32() % 500)).total_milliseconds()) {
       itr = pending_connect_rpc_.erase(itr);
     } else {
       ++itr;

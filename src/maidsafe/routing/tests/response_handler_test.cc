@@ -42,7 +42,8 @@ TEST(ResponseHandlerTest, BEH_ConnectAttempts) {
   Fob fob(MakeFob());
   RoutingTable routing_table(fob, false);
   NonRoutingTable non_routing_table(fob);
-  AsioService asio_service(1);
+  AsioService asio_service(4);
+  asio_service.Start();
   Timer timer(asio_service);
   NetworkUtils network(routing_table, non_routing_table, timer);
   ResponseHandler response_handler(routing_table, non_routing_table, network);
@@ -51,8 +52,10 @@ TEST(ResponseHandlerTest, BEH_ConnectAttempts) {
   for (auto i(0); i != 100; ++i)
     response_handler.AddPendingConnect(node_id);
   EXPECT_EQ(1, response_handler.pending_connect_rpc_.size());
-  for (auto i(0); i != 100; ++i)
-    response_handler.ClearPendingConnect(node_id);
+  for (auto i(0); i != 100; ++i) {
+    asio_service.service().post([=, &response_handler]() { response_handler.ClearPendingConnect(node_id);}); //NOLINT
+  }
+  Sleep(boost::posix_time::seconds(1));
   EXPECT_EQ(0, response_handler.pending_connect_rpc_.size());
 
   std::vector<NodeId> nodes;
@@ -63,14 +66,21 @@ TEST(ResponseHandlerTest, BEH_ConnectAttempts) {
 
   for (auto i(0); i != 100; ++i) {
     std::random_shuffle(nodes.begin(), nodes.end());
-    for (auto i : nodes)
-      response_handler.AddPendingConnect(i);
+    for (auto i : nodes) {
+      asio_service.service().post([=, &response_handler]() {
+                                      response_handler.AddPendingConnect(i);
+                                    });
+    }
   }
   EXPECT_EQ(nodes.size(), response_handler.pending_connect_rpc_.size());
-
-  for (auto i : nodes)
-    response_handler.ClearPendingConnect(i);
-  EXPECT_EQ(nodes.size(), response_handler.pending_connect_rpc_.size());
+  Sleep(boost::posix_time::seconds(2));
+  for (auto i : nodes) {
+    asio_service.service().post([=, &response_handler]() {
+                                    response_handler.ClearPendingConnect(i);
+                                  });
+  }
+  Sleep(boost::posix_time::seconds(2));
+  EXPECT_EQ(0, response_handler.pending_connect_rpc_.size());
 
   for (auto i(0); i != 100; ++i) {
     std::random_shuffle(nodes.begin(), nodes.end());
@@ -86,7 +96,7 @@ TEST(ResponseHandlerTest, BEH_ConnectAttempts) {
   }
   EXPECT_EQ(nodes.size(), response_handler.pending_connect_rpc_.size());
   Parameters::connect_rpc_prune_timeout = boost::posix_time::seconds(1);
-  Sleep(boost::posix_time::seconds(1));
+  Sleep(boost::posix_time::seconds(2));
   response_handler.PrunePendingConnect();
   EXPECT_EQ(0, response_handler.pending_connect_rpc_.size());
   // After pruning
