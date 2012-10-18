@@ -127,10 +127,14 @@ void MessageHandler::HandleNodeLevelMessageForThisNode(protobuf::Message& messag
 }
 
 void MessageHandler::HandleMessageForThisNode(protobuf::Message& message) {
+  LOG(kVerbose) << "This node [" << HexSubstr(routing_table_.kKeys().identity)
+                << "] received a message, id: " << message.id();
+
   if (RelayDirectMessageIfNeeded(message))
     return;
 
-  LOG(kVerbose) << "Message for this node." << " id: " << message.id();
+  LOG(kVerbose) << "Message for this node [" << HexSubstr(routing_table_.kKeys().identity)
+                << "]." << " id: " << message.id();
   if (IsRoutingMessage(message))
     HandleRoutingMessage(message);
   else
@@ -207,12 +211,25 @@ void MessageHandler::HandleGroupMessageAsClosestNode(protobuf::Message& message)
 
   for (auto i : close) {
     LOG(kInfo) << "Replicating message to : " << HexSubstr(i.String())
-               << " [ group_id : " << HexSubstr(group_id)  << "]" << " id: " << message.id();
-    message.set_destination_id(i.String());
+               << " [ group_id : " << HexSubstr(group_id)  << "]" << " id: " << message.id()
+               << " , from source : " << HexSubstr(message.source_id());
     NodeInfo node;
-    if (routing_table_.GetNodeInfo(i, node)) {
-      network_.SendToDirect(message, node.node_id, node.connection_id);
+    std::string destination_id(i.String());
+    bool send(false);
+    if (message.source_id() == destination_id) {
+      LOG(kInfo) << "Requester is already a group member, pick an outside one";
+      node = routing_table_.GetNthClosestNode(NodeId(message.destination_id()), replication + 1);
+//       if (node != NodeInfo()) {
+        destination_id = node.node_id.String();
+        send = true;
+//       }
+    } else {
+      if (routing_table_.GetNodeInfo(i, node))
+        send = true;
     }
+    message.set_destination_id(destination_id);
+    if (send)
+      network_.SendToDirect(message, node.node_id, node.connection_id);
   }
 
   message.set_destination_id(routing_table_.kKeys().identity);
