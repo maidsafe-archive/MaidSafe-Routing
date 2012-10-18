@@ -152,7 +152,7 @@ TEST_F(FindNodeNetwork, FUNC_ClientFindVaultNode) {
   // Add one vault node
   this->AddNode(false, GenerateUniqueRandomId(this->nodes_[source]->node_id(), 24));
 
-  uint32_t client(this->nodes_.size() - 1);
+  size_t client(this->nodes_.size() - 1);
   uint32_t vault(kNetworkSize);
 
   Sleep(boost::posix_time::seconds(1));
