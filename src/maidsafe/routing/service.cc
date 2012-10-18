@@ -134,18 +134,23 @@ void Service::Connect(protobuf::Message& message) {
 
     int ret_val = network_.GetAvailableEndpoint(peer_node.connection_id, peer_endpoint_pair,
                                                this_endpoint_pair, this_nat_type);
-    if (ret_val != rudp::kSuccess) {
-      LOG(kError) << "[" << DebugId(routing_table_.kNodeId()) << "] Service: "
-                  << "Failed to get available endpoint for new connection to node id : "
-                  << DebugId(peer_node.node_id)
-                  << ", Connection id :"
-                  << DebugId(peer_node.connection_id)
-                  << ". peer_endpoint_pair.external = "
-                  << peer_endpoint_pair.external
-                  << ", peer_endpoint_pair.local = "
-                  << peer_endpoint_pair.local
-                  << ". Rudp returned :"
-                  << ret_val;
+    if (ret_val != rudp::kSuccess && ret_val != rudp::kBootstrapConnectionAlreadyExists) {
+      if (rudp::kUnvalidatedConnectionAlreadyExists != ret_val &&
+            rudp::kConnectAttemptAlreadyRunning != ret_val) {
+        LOG(kError) << "[" << DebugId(routing_table_.kNodeId()) << "] Service: "
+                    << "Failed to get available endpoint for new connection to node id : "
+                    << DebugId(peer_node.node_id)
+                    << ", Connection id :"
+                    << DebugId(peer_node.connection_id)
+                    << ". peer_endpoint_pair.external = "
+                    << peer_endpoint_pair.external
+                    << ", peer_endpoint_pair.local = "
+                    << peer_endpoint_pair.local
+                    << ". Rudp returned :"
+                    << ret_val;
+      } else {
+        LOG(kInfo) << "Already ongoing attempt to : " << DebugId(peer_node.connection_id);
+      }
       message.Clear();
       return;
     }

@@ -349,7 +349,7 @@ int RoutingPrivate::ZeroStateJoin(Functors functors,
   Sleep(boost::posix_time::milliseconds(100));  // FIXME avoiding assert in rudp
   result = network_.GetAvailableEndpoint(peer_node.node_id, peer_endpoint_pair,
                                          this_endpoint_pair, nat_type);
-  if (result != kSuccess) {
+  if (result != rudp::kBootstrapConnectionAlreadyExists) {
     LOG(kError) << "Failed to get available endpoint to add zero state node : " << peer_endpoint;
     return result;
   }

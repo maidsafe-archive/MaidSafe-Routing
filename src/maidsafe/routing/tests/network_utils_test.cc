@@ -23,6 +23,7 @@
 #include "maidsafe/common/node_id.h"
 #include "maidsafe/common/test.h"
 #include "maidsafe/common/utils.h"
+#include "maidsafe/rudp/return_codes.h"
 
 #include "maidsafe/rudp/managed_connections.h"
 #include "maidsafe/routing/network_utils.h"
@@ -219,9 +220,9 @@ TEST(NetworkUtilsTest, FUNC_ProcessSendDirectEndpoint) {
 //   rudp::EndpointPair endpoint_pair2, endpoint_pair3;
   rudp::NatType this_nat_type;
   network.GetAvailableEndpoint(node_id2, endpoint_pair_2, endpoint_pair_3, this_nat_type);
-  EXPECT_EQ(kSuccess,
+  EXPECT_EQ(rudp::kBootstrapConnectionAlreadyExists,
             rudp2.GetAvailableEndpoint(node_id3, endpoint_pair_3, endpoint_pair_2, this_nat_type));
-  EXPECT_EQ(kSuccess, network.Add(node_id2, endpoint_pair_2, "validation_3->2"));
+  EXPECT_EQ(rudp::kSuccess, network.Add(node_id2, endpoint_pair_2, "validation_3->2"));
 
   EXPECT_EQ(kSuccess, rudp2.Add(node_id3, endpoint_pair_3, "validation_2->3"));
   if (!connection_completion_future.timed_wait(bptime::seconds(10))) {
@@ -370,9 +371,9 @@ TEST(NetworkUtilsTest, FUNC_ProcessSendRecursiveSendOn) {
                                         connection_lost_functor3));
   rudp::EndpointPair endpoint_pair2, endpoint_pair3;
   rudp::NatType this_nat_type;
-  EXPECT_EQ(kSuccess, network.GetAvailableEndpoint(node_id2, endpoint_pair_2,
-                                                   endpoint_pair3, this_nat_type));
-  EXPECT_EQ(kSuccess,
+  EXPECT_EQ(rudp::kBootstrapConnectionAlreadyExists,
+            network.GetAvailableEndpoint(node_id2, endpoint_pair_2, endpoint_pair3, this_nat_type));
+  EXPECT_EQ(rudp::kBootstrapConnectionAlreadyExists,
             rudp2.GetAvailableEndpoint(node_id3, endpoint_pair3, endpoint_pair2, this_nat_type));
   EXPECT_EQ(kSuccess, network.Add(node_id2, endpoint_pair2, "validation_3->2"));
   EXPECT_EQ(kSuccess, rudp2.Add(node_id3, endpoint_pair3, "validation_2->3"));
