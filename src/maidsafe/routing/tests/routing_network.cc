@@ -20,7 +20,7 @@
 #include "maidsafe/common/node_id.h"
 #include "maidsafe/common/utils.h"
 
-#include "maidsafe/routing/routing_private.h"
+#include "maidsafe/routing/routing_impl.h"
 #include "maidsafe/routing/return_codes.h"
 #include "maidsafe/routing/routing_api.h"
 #include "maidsafe/routing/tests/test_utils.h"
@@ -104,7 +104,7 @@ GenericNode::GenericNode(bool client_mode, const rudp::NatType& nat_type)
                                };
   functors_.network_status = nullptr;
   routing_.reset(new Routing(GetFob(*node_info_plus_), client_mode));
-  routing_->impl_->network_.nat_type_ = nat_type_;
+  routing_->pimpl_->network_.nat_type_ = nat_type_;
   LOG(kVerbose) << "Node constructor";
   std::lock_guard<std::mutex> lock(mutex_);
   id_ = next_node_id_++;
@@ -180,11 +180,11 @@ void GenericNode::set_client_mode(const bool& client_mode) {
 }
 
 std::vector<NodeInfo> GenericNode::RoutingTable() const {
-  return routing_->impl_->routing_table_.nodes_;
+  return routing_->pimpl_->routing_table_.nodes_;
 }
 
 std::vector<NodeId> GenericNode::RandomNodeVector() {
-  return routing_->impl_->random_node_vector_;
+  return routing_->pimpl_->random_node_vector_;
 }
 
 NodeId GenericNode::GetRandomExistingNode() {
@@ -192,7 +192,7 @@ NodeId GenericNode::GetRandomExistingNode() {
 }
 
 void GenericNode::AddExistingRandomNode(const NodeId& node_id) {
-  routing_->impl_->AddExistingRandomNode(node_id);
+  routing_->pimpl_->AddExistingRandomNode(node_id);
 }
 
 void GenericNode::Send(const NodeId& destination_id,
@@ -208,46 +208,46 @@ void GenericNode::Send(const NodeId& destination_id,
 void GenericNode::RudpSend(const NodeId& peer_node_id,
                            const protobuf::Message& message,
                            rudp::MessageSentFunctor message_sent_functor) {
-  routing_->impl_->network_.RudpSend(peer_node_id, message, message_sent_functor);
+  routing_->pimpl_->network_.RudpSend(peer_node_id, message, message_sent_functor);
 }
 
 void GenericNode::SendToClosestNode(const protobuf::Message& message) {
-  routing_->impl_->network_.SendToClosestNode(message);
+  routing_->pimpl_->network_.SendToClosestNode(message);
 }
 
 bool GenericNode::RoutingTableHasNode(const NodeId& node_id) {
-  return std::find_if(routing_->impl_->routing_table_.nodes_.begin(),
-                      routing_->impl_->routing_table_.nodes_.end(),
+  return std::find_if(routing_->pimpl_->routing_table_.nodes_.begin(),
+                      routing_->pimpl_->routing_table_.nodes_.end(),
                       [node_id](const NodeInfo& node_info) {
                         return node_id == node_info.node_id;
                       }) !=
-         routing_->impl_->routing_table_.nodes_.end();
+         routing_->pimpl_->routing_table_.nodes_.end();
 }
 
 bool GenericNode::NonRoutingTableHasNode(const NodeId& node_id) {
-  return std::find_if(routing_->impl_->non_routing_table_.nodes_.begin(),
-                      routing_->impl_->non_routing_table_.nodes_.end(),
+  return std::find_if(routing_->pimpl_->non_routing_table_.nodes_.begin(),
+                      routing_->pimpl_->non_routing_table_.nodes_.end(),
                       [&node_id](const NodeInfo& node_info) {
                         return (node_id == node_info.node_id);
                       }) !=
-         routing_->impl_->non_routing_table_.nodes_.end();
+         routing_->pimpl_->non_routing_table_.nodes_.end();
 }
 
 testing::AssertionResult GenericNode::DropNode(const NodeId& node_id) {
-  LOG(kInfo) << " DropNode " << HexSubstr(routing_->impl_->routing_table_.kNodeId_.string())
+  LOG(kInfo) << " DropNode " << HexSubstr(routing_->pimpl_->routing_table_.kNodeId_.string())
              << " Removes " << HexSubstr(node_id.string());
-  auto iter = std::find_if(routing_->impl_->routing_table_.nodes_.begin(),
-                           routing_->impl_->routing_table_.nodes_.end(),
+  auto iter = std::find_if(routing_->pimpl_->routing_table_.nodes_.begin(),
+                           routing_->pimpl_->routing_table_.nodes_.end(),
                            [&node_id] (const NodeInfo& node_info) {
                              return (node_id == node_info.node_id);
                            });
-  if (iter != routing_->impl_->routing_table_.nodes_.end()) {
-    LOG(kVerbose) << HexSubstr(routing_->impl_->routing_table_.kNodeId_.string())
+  if (iter != routing_->pimpl_->routing_table_.nodes_.end()) {
+    LOG(kVerbose) << HexSubstr(routing_->pimpl_->routing_table_.kNodeId_.string())
                   << " Removes " << HexSubstr(node_id.string());
-//    routing_->impl_->network_.Remove(iter->connection_id);
-    routing_->impl_->routing_table_.DropNode(iter->connection_id, false);
+//    routing_->pimpl_->network_.Remove(iter->connection_id);
+    routing_->pimpl_->routing_table_.DropNode(iter->connection_id, false);
   } else {
-    testing::AssertionFailure() << HexSubstr(routing_->impl_->routing_table_.fob_.identity)
+    testing::AssertionFailure() << HexSubstr(routing_->pimpl_->routing_table_.fob_.identity)
                                 << " does not have " << HexSubstr(node_id.string())
                                 << " in routing table of ";
   }
@@ -287,11 +287,11 @@ void GenericNode::PrintRoutingTable() {
   LOG(kVerbose) << " PrintRoutingTable of "
                 << HexSubstr(node_info_plus_->node_info.node_id.string())
                 << (IsClient() ? " Client" : "Vault");
-  for (auto node_info : routing_->impl_->routing_table_.nodes_) {
+  for (auto node_info : routing_->pimpl_->routing_table_.nodes_) {
     LOG(kVerbose) << "NodeId: " << HexSubstr(node_info.node_id.string());
   }
   LOG(kVerbose) << "Non-RoutingTable of " << HexSubstr(node_info_plus_->node_info.node_id.string());
-  for (auto node_info : routing_->impl_->non_routing_table_.nodes_) {
+  for (auto node_info : routing_->pimpl_->non_routing_table_.nodes_) {
     LOG(kVerbose) << "NodeId: " << HexSubstr(node_info.node_id.string());
   }
 }

@@ -34,9 +34,11 @@
 #include "maidsafe/routing/api_config.h"
 #include "maidsafe/routing/network_utils.h"
 #include "maidsafe/routing/non_routing_table.h"
+#include "maidsafe/routing/routing_api.h"
 #include "maidsafe/routing/routing_table.h"
 #include "maidsafe/routing/timer.h"
 #include "maidsafe/routing/service.h"
+
 
 namespace maidsafe {
 
@@ -46,27 +48,27 @@ class MessageHandler;
 
 namespace test { class GenericNode; }
 
-class RoutingPrivate {
+class Routing::Impl {
  public:
-  RoutingPrivate(const Fob& fob, bool client_mode);
-  ~RoutingPrivate();
+  Impl(const Fob& fob, bool client_mode);
+  ~Impl();
   void Stop();
-  void Join(Functors functors,
-            std::vector<boost::asio::ip::udp::endpoint> peer_endpoints =
+  void Join(const Functors& functors,
+            const std::vector<boost::asio::ip::udp::endpoint>& peer_endpoints =
                 std::vector<boost::asio::ip::udp::endpoint>());
 
-  int ZeroStateJoin(Functors functors,
+  int ZeroStateJoin(const Functors& functors,
                     const boost::asio::ip::udp::endpoint& local_endpoint,
                     const boost::asio::ip::udp::endpoint& peer_endpoint,
-                    const NodeInfo& peer_node_info);
+                    const NodeInfo& peer_info);
 
   void Send(const NodeId& destination_id,      // ID of final destination
             const NodeId& group_claim,         // ID claimed of sending group
             const std::string& data,           // message content (serialised data)
-            ResponseFunctor response_functor,
+            const ResponseFunctor& response_functor,
             const boost::posix_time::time_duration& timeout,
             bool direct,  // whether this is to a close node group or direct
-            bool cachable);
+            bool cacheable);
 
   NodeId GetRandomExistingNode();
 
@@ -75,9 +77,9 @@ class RoutingPrivate {
   friend class test::GenericNode;
 
  private:
-  RoutingPrivate(const RoutingPrivate&);
-  RoutingPrivate(const RoutingPrivate&&);
-  RoutingPrivate& operator=(const RoutingPrivate&);
+  Impl(const Impl&);
+  Impl(const Impl&&);
+  Impl& operator=(const Impl&);
 
   bool CheckBootstrapFilePath();
   void AddExistingRandomNode(NodeId node);
@@ -96,6 +98,7 @@ class RoutingPrivate {
   void DoOnConnectionLost(const NodeId& lost_connection_id);
   void RemoveNode(const NodeInfo& node, const bool& internal_rudp_only);
   bool ConfirmGroupMembers(const NodeId& node1, const NodeId& node2);
+  void NotifyNetworkStatus(int return_code) const;
 
   Functors functors_;
   std::vector<boost::asio::ip::udp::endpoint> bootstrap_nodes_;
