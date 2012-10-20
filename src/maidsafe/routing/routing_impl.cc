@@ -13,32 +13,22 @@
 #include "maidsafe/routing/routing_impl.h"
 
 #include <cstdint>
-#include <functional>
-#include <future>
-#include "boost/asio/deadline_timer.hpp"
-#include "boost/asio/ip/udp.hpp"
-#include "boost/filesystem/path.hpp"
-#include "boost/thread/future.hpp"
 
 #include "maidsafe/common/log.h"
-#include "maidsafe/common/node_id.h"
 
 #include "maidsafe/rudp/managed_connections.h"
 #include "maidsafe/rudp/return_codes.h"
 
 #include "maidsafe/routing/bootstrap_file_handler.h"
 #include "maidsafe/routing/message_handler.h"
-#include "maidsafe/routing/network_utils.h"
-#include "maidsafe/routing/non_routing_table.h"
+#include "maidsafe/routing/node_info.h"
 #include "maidsafe/routing/parameters.h"
 #include "maidsafe/routing/return_codes.h"
 #include "maidsafe/routing/routing_pb.h"
-#include "maidsafe/routing/routing_table.h"
 #include "maidsafe/routing/rpcs.h"
-#include "maidsafe/routing/timer.h"
 #include "maidsafe/routing/utils.h"
 
-namespace args = std::placeholders;
+
 namespace fs = boost::filesystem;
 
 namespace maidsafe {
@@ -47,7 +37,7 @@ namespace routing {
 
 namespace {
 
-  typedef boost::asio::ip::udp::endpoint Endpoint;
+typedef boost::asio::ip::udp::endpoint Endpoint;
 
 }  // unnamed namespace
 
@@ -74,12 +64,10 @@ Routing::Impl::Impl(const Fob& fob, bool client_mode)
       bootstrap_file_path_(),
       client_mode_(client_mode),
       anonymous_node_(false),
-      random_node_queue_(),
       recovery_timer_(asio_service_.service()),
       setup_timer_(asio_service_.service()),
       re_bootstrap_timer_(asio_service_.service()),
-      random_node_vector_(),
-      random_node_mutex_() {
+      random_node_helper_() {
   asio_service_.Start();
   message_handler_.reset(new MessageHandler(routing_table_, non_routing_table_, network_, timer_));
   if (!CheckBootstrapFilePath())
@@ -94,7 +82,9 @@ Routing::Impl::Impl(const Fob& fob, bool client_mode)
   }
 }
 
-void Routing::Impl::Stop() {
+Routing::Impl::~Impl() {
+  LOG(kVerbose) << "~Impl " << DebugId(kNodeId_) << ", connection id "
+                << DebugId(routing_table_.kConnectionId());
   tearing_down_ = true;
   setup_timer_.cancel();
   recovery_timer_.cancel();
@@ -103,11 +93,6 @@ void Routing::Impl::Stop() {
   timer_.CancelAllTask();
   asio_service_.Stop();
   DisconnectFunctors();
-}
-
-Routing::Impl::~Impl() {
-  LOG(kVerbose) << "~Impl " << DebugId(kNodeId_) << ", connection id "
-                << DebugId(routing_table_.kConnectionId());
 }
 
 bool Routing::Impl::CheckBootstrapFilePath() {
@@ -252,7 +237,7 @@ void Routing::Impl::FindClosestNode(const boost::system::error_code& error_code,
                       << " Terminating setup loop & Scheduling recovery loop.";
         recovery_timer_.expires_from_now(Parameters::find_node_interval);
         recovery_timer_.async_wait([=](const boost::system::error_code& error_code) {
-                                       ReSendFindNodeRequest(error_code);
+                                       ReSendFindNodeRequest(error_code, false);
                                      });
         return;
       }
@@ -370,7 +355,7 @@ int Routing::Impl::ZeroStateJoin(const Functors& functors,
 
     recovery_timer_.expires_from_now(Parameters::find_node_interval);
     recovery_timer_.async_wait([=](const boost::system::error_code& error_code) {
-                                   ReSendFindNodeRequest(error_code);
+                                   ReSendFindNodeRequest(error_code, false);
                                  });
     return kSuccess;
   } else {
@@ -483,52 +468,14 @@ void Routing::Impl::DoOnMessageReceived(const std::string& message) {
                << "   (id: " << pb_message.id() << ")"
                << (relay_message ? " --Relay--" : "");
     if (((anonymous_node_ || !pb_message.client_node()) && pb_message.has_source_id()) ||
-        (!pb_message.direct() && !pb_message.request()))
-      AddExistingRandomNode(NodeId(pb_message.source_id()));
+        (!pb_message.direct() && !pb_message.request())) {
+      NodeId source_id(pb_message.source_id());
+      if (!source_id.IsZero())
+        random_node_helper_.Add(source_id);
+    }
     message_handler_->HandleMessage(pb_message);
   } else {
     LOG(kWarning) << "Message received, failed to parse";
-  }
-}
-
-NodeId Routing::Impl::GetRandomExistingNode() {
-  NodeId node;
-  std::lock_guard<std::mutex> lock(random_node_mutex_);
-  if (!random_node_vector_.empty()) {
-    auto queue_size = random_node_vector_.size();
-    node = random_node_vector_[(queue_size >= 100) ? 0 : RandomUint32() % queue_size];
-    if (queue_size >= 100)
-      random_node_vector_.erase(random_node_vector_.begin());
-  }
-  return node;
-}
-
-void Routing::Impl::AddExistingRandomNode(NodeId node) {
-  if (!node.IsZero()) {
-    std::lock_guard<std::mutex> lock(random_node_mutex_);
-    if (std::find_if(random_node_vector_.begin(), random_node_vector_.end(),
-                     [node] (const NodeId& vect_node) {
-                         return vect_node == node;
-                       }) !=  random_node_vector_.end())
-      return;
-    random_node_vector_.push_back(node);
-    auto queue_size = random_node_vector_.size();
-    LOG(kVerbose) << "RandomNodeQueue : Added node, queue size now "
-                  << queue_size;
-    if (queue_size > 100)
-      random_node_vector_.erase(random_node_vector_.begin());
-  }
-}
-
-void Routing::Impl::RemoveLostRandomNode(NodeId node) {
-  if (!node.IsZero()) {
-    std::lock_guard<std::mutex> lock(random_node_mutex_);
-    auto itr(std::find_if(random_node_vector_.begin(), random_node_vector_.end(),
-                          [node] (const NodeId& vect_node) {
-                              return vect_node == node;
-                            }));
-    if (random_node_vector_.end() != itr)
-      random_node_vector_.erase(itr);
   }
 }
 
@@ -551,7 +498,7 @@ void Routing::Impl::DoOnConnectionLost(const NodeId& lost_connection_id) {
   if (!dropped_node.node_id.IsZero()) {
     LOG(kWarning) << "[" << HexSubstr(kFob_.identity) << "]"
                   << "Lost connection with routing node " << DebugId(dropped_node.node_id);
-    RemoveLostRandomNode(dropped_node.node_id);
+    random_node_helper_.Remove(dropped_node.node_id);
   }
 
   // Checking non-routing table
@@ -594,7 +541,7 @@ void Routing::Impl::DoOnConnectionLost(const NodeId& lost_connection_id) {
   }
 }
 
-void Routing::Impl::RemoveNode(const NodeInfo& node, const bool& internal_rudp_only) {
+void Routing::Impl::RemoveNode(const NodeInfo& node, bool internal_rudp_only) {
   if (node.connection_id.IsZero() || node.node_id.IsZero()) {
     return;
   }
@@ -657,7 +604,7 @@ void Routing::Impl::ReSendFindNodeRequest(const boost::system::error_code& error
 
       recovery_timer_.expires_from_now(Parameters::find_node_interval);
       recovery_timer_.async_wait([=](boost::system::error_code error_code_local) {
-                                     ReSendFindNodeRequest(error_code_local);
+                                     ReSendFindNodeRequest(error_code_local, false);
                                    });
     }
   }

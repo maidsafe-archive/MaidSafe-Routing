@@ -23,10 +23,6 @@ namespace { typedef boost::asio::ip::udp::endpoint Endpoint; }
 
 Routing::Routing(const Fob& fob, bool client_mode) : pimpl_(new Impl(fob, client_mode)) {}
 
-Routing::~Routing() {
-  pimpl_->Stop();
-}
-
 void Routing::Join(Functors functors, std::vector<Endpoint> peer_endpoints) {
   pimpl_->Join(functors, peer_endpoints);
 }
@@ -52,7 +48,7 @@ void Routing::Send(const NodeId& destination_id,
   pimpl_->Send(destination_id, group_claim, data, response_functor, timeout, direct, cacheable);
 }
 
-NodeId Routing::GetRandomExistingNode() {
+NodeId Routing::GetRandomExistingNode() const {
   return pimpl_->GetRandomExistingNode();
 }
 

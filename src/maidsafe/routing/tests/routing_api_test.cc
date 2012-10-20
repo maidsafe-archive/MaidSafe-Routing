@@ -32,6 +32,7 @@
 #include "maidsafe/routing/bootstrap_file_handler.h"
 #include "maidsafe/routing/return_codes.h"
 #include "maidsafe/routing/routing_api.h"
+#include "maidsafe/routing/routing_impl.h"
 #include "maidsafe/routing/routing_table.h"
 #include "maidsafe/routing/tests/test_utils.h"
 

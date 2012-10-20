@@ -58,8 +58,6 @@ class Routing {
   // join the routing network.
   Routing(const Fob& fob, bool client_mode);
 
-  ~Routing();
-
   // Joins the network.  Valid functor for node validation must be passed to allow node validatation
   // or else no node will be added to routing and will fail to  join the network.  To force the node
   // to use a specific endpoint for bootstrapping, provide peer_endpoint (i.e. private network).
@@ -83,11 +81,11 @@ class Routing {
             const std::string& data,           // message content (serialised data)
             ResponseFunctor response_functor,
             const boost::posix_time::time_duration& timeout,
-            bool direct,  // whether this is to a close node group or direct
+            bool direct,                       // whether this is to a close node group or direct
             bool cacheable);
 
   // A queue with recently found nodes that can be extracted for upper layers to communicate with.
-  NodeId GetRandomExistingNode();
+  NodeId GetRandomExistingNode() const;
 
   // TODO(TEAM): This method shall be in private, however a temp solution in Lifestuff requires
   // calling this function to solve segmentation problem during tearing down of Credential Tests
