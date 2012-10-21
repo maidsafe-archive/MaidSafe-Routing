@@ -247,7 +247,7 @@ testing::AssertionResult GenericNode::DropNode(const NodeId& node_id) {
 //    routing_->pimpl_->network_.Remove(iter->connection_id);
     routing_->pimpl_->routing_table_.DropNode(iter->connection_id, false);
   } else {
-    testing::AssertionFailure() << HexSubstr(routing_->pimpl_->routing_table_.fob_.identity)
+    testing::AssertionFailure() << HexSubstr(routing_->pimpl_->routing_table_.kFob_.identity)
                                 << " does not have " << HexSubstr(node_id.string())
                                 << " in routing table of ";
   }

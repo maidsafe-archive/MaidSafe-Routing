@@ -81,11 +81,10 @@ class Routing::Impl {
   Impl(const Impl&&);
   Impl& operator=(const Impl&);
 
-  bool CheckBootstrapFilePath();
   void ConnectFunctors(const Functors& functors);
   void BootstrapFromTheseEndpoints(const std::vector<boost::asio::ip::udp::endpoint>& endpoints);
-  void DoJoin();
-  int DoBootstrap();
+  void DoJoin(const std::vector<boost::asio::ip::udp::endpoint>& endpoints);
+  int DoBootstrap(const std::vector<boost::asio::ip::udp::endpoint>& endpoints);
   void ReBootstrap();
   void DoReBootstrap(const boost::system::error_code &error_code);
   void FindClosestNode(const boost::system::error_code& error_code, int attempts);
@@ -98,26 +97,22 @@ class Routing::Impl {
   bool ConfirmGroupMembers(const NodeId& node1, const NodeId& node2);
   void NotifyNetworkStatus(int return_code) const;
 
-  Functors functors_;
-  std::vector<boost::asio::ip::udp::endpoint> bootstrap_nodes_;
   const Fob kFob_;
   const NodeId kNodeId_;
-  std::atomic<bool> tearing_down_;
+  const bool kAnonymousNode_;
+  std::atomic<bool> joined_, tearing_down_;
+  Functors functors_;
+  RandomNodeHelper random_node_helper_;
+
   RoutingTable routing_table_;
   NonRoutingTable non_routing_table_;
+
   AsioService asio_service_;
   Timer timer_;
+  boost::asio::deadline_timer re_bootstrap_timer_, recovery_timer_, setup_timer_;
+
   std::unique_ptr<MessageHandler> message_handler_;
   NetworkUtils network_;
-  bool joined_;
-  boost::filesystem::path bootstrap_file_path_;
-  bool client_mode_;
-  bool anonymous_node_;
-  SafeQueue<NodeId> random_node_queue_;
-  boost::asio::deadline_timer recovery_timer_;
-  boost::asio::deadline_timer setup_timer_;
-  boost::asio::deadline_timer re_bootstrap_timer_;
-  RandomNodeHelper random_node_helper_;
 };
 
 }  // namespace routing

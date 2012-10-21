@@ -46,8 +46,7 @@ TEST(ServicesTest, BEH_Ping) {
   RoutingTable RT(fob, false);
   NonRoutingTable NRT(fob);
   AsioService asio_service(1);
-  Timer timer(asio_service);
-  NetworkUtils network(RT, NRT, timer);
+  NetworkUtils network(RT, NRT);
   Service service(RT, NRT, network);
   NodeInfo node;
   rudp::ManagedConnections rudp;
@@ -80,8 +79,7 @@ TEST(ServicesTest, BEH_FindNodes) {
   RoutingTable RT(fob, false);
   NonRoutingTable NRT(fob);
   AsioService asio_service(1);
-  Timer timer(asio_service);
-  NetworkUtils network(RT, NRT, timer);
+  NetworkUtils network(RT, NRT);
   Service service(RT, NRT, network);
   protobuf::Message message = rpcs::FindNodes(us.node_id, us.node_id, 8);
   service.FindNodes(message);

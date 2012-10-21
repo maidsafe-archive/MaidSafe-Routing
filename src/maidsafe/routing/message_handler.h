@@ -17,10 +17,10 @@
 
 #include "maidsafe/rudp/managed_connections.h"
 
+#include "maidsafe/routing/api_config.h"
+#include "maidsafe/routing/cache_manager.h"
 #include "maidsafe/routing/response_handler.h"
 #include "maidsafe/routing/service.h"
-#include "maidsafe/routing/cache_manager.h"
-#include "maidsafe/routing/api_config.h"
 
 
 namespace maidsafe {
@@ -83,7 +83,6 @@ class MessageHandler {
   bool IsGroupMessageRequestToSelfId(protobuf::Message& message);
   bool RelayDirectMessageIfNeeded(protobuf::Message& message);
   void HandleClientMessage(protobuf::Message& message);
-  void DecreamentHopsToLive(protobuf::Message& message);
   void HandleMessageForNonRoutingNodes(protobuf::Message& message);
   void HandleDirectRelayRequestMessageAsClosestNode(protobuf::Message& message);
   void HandleGroupRelayRequestMessageAsClosestNode(protobuf::Message& message);

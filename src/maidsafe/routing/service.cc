@@ -283,7 +283,7 @@ void Service::ConnectSuccessFromResponder(NodeInfo& peer, const bool& client) {
   // Reply with ConnectSuccessAcknowledgement immediately
   LOG(kVerbose) << "ConnectSuccessFromResponder peer id : " << DebugId(peer.node_id);
   if (peer.connection_id == network_.bootstrap_connection_id()) {
-    LOG(kVerbose) << "Special case : kConnectSuccess from bootstraping node: "
+    LOG(kVerbose) << "Special case : kConnectSuccess from bootstrapping node: "
                   << DebugId(peer.node_id);
     return;
   }

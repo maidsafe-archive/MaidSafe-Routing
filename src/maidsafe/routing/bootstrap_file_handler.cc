@@ -26,16 +26,46 @@ namespace maidsafe {
 
 namespace routing {
 
-std::vector<boost::asio::ip::udp::endpoint> ReadBootstrapFile(const fs::path& path) {
-  protobuf::Bootstrap protobuf_bootstrap;
-  std::vector<boost::asio::ip::udp::endpoint> bootstrap_nodes;
+namespace {
 
+fs::path BootstrapFilePath() {
+  static fs::path bootstrap_file_path;
+  if (bootstrap_file_path.empty()) {
+    boost::system::error_code exists_error_code, is_regular_file_error_code;
+    bootstrap_file_path = fs::current_path() / "bootstrap";
+
+    if (!fs::exists(bootstrap_file_path, exists_error_code) ||
+        !fs::is_regular_file(bootstrap_file_path, is_regular_file_error_code) ||
+        exists_error_code || is_regular_file_error_code) {
+      if (exists_error_code) {
+        LOG(kWarning) << "Failed to find bootstrap file at " << bootstrap_file_path << ".  "
+                      << exists_error_code.message();
+      }
+      if (is_regular_file_error_code) {
+        LOG(kWarning) << "bootstrap file is not a regular file " << bootstrap_file_path << ".  "
+                      << is_regular_file_error_code.message();
+      }
+      LOG(kInfo) << "No bootstrap file";
+      bootstrap_file_path.clear();
+    } else {
+      LOG(kVerbose) << "Found bootstrap file at " << bootstrap_file_path;
+    }
+  }
+  return bootstrap_file_path;
+}
+
+}  // unnamed namespace
+
+std::vector<boost::asio::ip::udp::endpoint> ReadBootstrapFile() {
+  fs::path bootstrap_file_path(BootstrapFilePath());
+  std::vector<boost::asio::ip::udp::endpoint> bootstrap_nodes;
   std::string serialised_endpoints;
-  if (!ReadFile(path, &serialised_endpoints)) {
+  if (bootstrap_file_path.empty() || !ReadFile(bootstrap_file_path, &serialised_endpoints)) {
     LOG(kError) << "Could not read bootstrap file.";
     return bootstrap_nodes;
   }
 
+  protobuf::Bootstrap protobuf_bootstrap;
   if (!protobuf_bootstrap.ParseFromString(serialised_endpoints)) {
     LOG(kError) << "Could not parse bootstrap file.";
     return bootstrap_nodes;
@@ -52,8 +82,8 @@ std::vector<boost::asio::ip::udp::endpoint> ReadBootstrapFile(const fs::path& pa
   return bootstrap_nodes;
 }
 
-bool WriteBootstrapFile(const std::vector<boost::asio::ip::udp::endpoint> &endpoints,
-                        const fs::path& path) {
+bool WriteBootstrapFile(const std::vector<boost::asio::ip::udp::endpoint>& endpoints,
+                        const fs::path& bootstrap_file_path) {
   protobuf::Bootstrap protobuf_bootstrap;
 
   for (size_t i = 0; i < endpoints.size(); ++i) {
@@ -68,7 +98,7 @@ bool WriteBootstrapFile(const std::vector<boost::asio::ip::udp::endpoint> &endpo
     return false;
   }
 
-  if (!WriteFile(path, serialised_bootstrap_nodes)) {
+  if (!WriteFile(bootstrap_file_path, serialised_bootstrap_nodes)) {
     LOG(kError) << "Could not write bootstrap file.";
     return false;
   }
@@ -76,10 +106,9 @@ bool WriteBootstrapFile(const std::vector<boost::asio::ip::udp::endpoint> &endpo
   return true;
 }
 
-void UpdateBootstrapFile(const boost::filesystem::path& path,
-                         const boost::asio::ip::udp::endpoint& endpoint,
-                         const bool& remove) {
-  if (path.empty()) {
+void UpdateBootstrapFile(const boost::asio::ip::udp::endpoint& endpoint, bool remove) {
+  fs::path bootstrap_file_path(BootstrapFilePath());
+  if (bootstrap_file_path.empty()) {
 //     LOG(kWarning) << "Empty bootstrap file path" << path;
     return;
   }
@@ -89,17 +118,13 @@ void UpdateBootstrapFile(const boost::filesystem::path& path,
     return;
   }
 
-  std::vector<boost::asio::ip::udp::endpoint> bootstrap_endpoints(ReadBootstrapFile(path));
-  auto itr(std::find_if(bootstrap_endpoints.begin(),
-                        bootstrap_endpoints.end(),
-                        [endpoint](const boost::asio::ip::udp::endpoint& ep) {
-                            return ep == endpoint;
-                        }));
+  std::vector<boost::asio::ip::udp::endpoint> bootstrap_endpoints(ReadBootstrapFile());
+  auto itr(std::find(bootstrap_endpoints.begin(), bootstrap_endpoints.end(), endpoint));
   if (remove) {
     if (itr != bootstrap_endpoints.end()) {
       bootstrap_endpoints.erase(itr);
     } else {
-        LOG(kVerbose) << "Can't find endpoint to remove : " << endpoint;
+      LOG(kVerbose) << "Can't find endpoint to remove : " << endpoint;
       return;
     }
   } else {
@@ -111,10 +136,10 @@ void UpdateBootstrapFile(const boost::filesystem::path& path,
     }
   }
 
-  if (!WriteBootstrapFile(bootstrap_endpoints, path))
-    LOG(kError) << "Failed to write bootstrap file back to " << path;
+  if (!WriteBootstrapFile(bootstrap_endpoints, bootstrap_file_path))
+    LOG(kError) << "Failed to write bootstrap file back to " << bootstrap_file_path;
   else
-    LOG(kVerbose) << "Updated bootstrap file : " << path;
+    LOG(kVerbose) << "Updated bootstrap file : " << bootstrap_file_path;
   return;
 }
 

@@ -43,41 +43,39 @@ namespace test { class GenericNode; }
 
 class NetworkUtils {
  public:
-  NetworkUtils(RoutingTable& routing_table, NonRoutingTable& non_routing_table,
-                Timer& timer);
+  NetworkUtils(RoutingTable& routing_table, NonRoutingTable& non_routing_table);
   virtual ~NetworkUtils();
-  void Stop();
-  int Bootstrap(const std::vector<boost::asio::ip::udp::endpoint> &bootstrap_endpoints,
-                rudp::MessageReceivedFunctor message_received_functor,
-                rudp::ConnectionLostFunctor connection_lost_functor,
+  int Bootstrap(const std::vector<boost::asio::ip::udp::endpoint>& bootstrap_endpoints,
+                const rudp::MessageReceivedFunctor& message_received_functor,
+                const rudp::ConnectionLostFunctor& connection_lost_functor,
                 boost::asio::ip::udp::endpoint local_endpoint = boost::asio::ip::udp::endpoint());
-  int GetAvailableEndpoint(NodeId peer_id,
-                           rudp::EndpointPair& peer_endpoint_pair,
+  int GetAvailableEndpoint(const NodeId& peer_id,
+                           const rudp::EndpointPair& peer_endpoint_pair,
                            rudp::EndpointPair& this_endpoint_pair,
                            rudp::NatType& this_nat_type);
-  int Add(NodeId peer, rudp::EndpointPair peer_endpoint_pair, const std::string& validation_data);
-  int MarkConnectionAsValid(NodeId peer);
-
-  void Remove(NodeId peer);
+  int Add(const NodeId& peer_id,
+          const rudp::EndpointPair& peer_endpoint_pair,
+          const std::string& validation_data);
+  int MarkConnectionAsValid(const NodeId& peer_id);
+  void Remove(const NodeId& peer_id);
   // For sending relay requests, message with empty source ID may be provided, along with
   // direct endpoint.
   void SendToDirect(const protobuf::Message& message,
-                    NodeId peer_connection_id,
-                    rudp::MessageSentFunctor message_sent_functor);
+                    const NodeId& peer_connection_id,
+                    const rudp::MessageSentFunctor& message_sent_functor);
   virtual void SendToDirect(const protobuf::Message& message,
-                            NodeId peer_node_id,
-                            NodeId peer_connection_id);
+                            const NodeId& peer_node_id,
+                            const NodeId& peer_connection_id);
   // Handles relay response messages.  Also leave destination ID empty if needs to send as a relay
   // response message
   virtual void SendToClosestNode(const protobuf::Message& message);
   void AddToBootstrapFile(const boost::asio::ip::udp::endpoint& endpoint);
   void clear_bootstrap_connection_info();
   void set_new_bootstrap_endpoint_functor(NewBootstrapEndpointFunctor new_bootstrap_endpoint);
-  void set_bootstrap_file_path(const boost::filesystem::path& path);
   NodeId bootstrap_connection_id() const;
   NodeId this_node_relay_connection_id() const;
-  rudp::NatType nat_type();
-  Timer& timer();
+  rudp::NatType nat_type() const;
+
   friend class test::GenericNode;
 
  private:
@@ -85,30 +83,29 @@ class NetworkUtils {
   NetworkUtils(const NetworkUtils&&);
   NetworkUtils& operator=(const NetworkUtils&);
 
-  void RudpSend(NodeId peer,
+  void RudpSend(const NodeId& peer_id,
                 const protobuf::Message& message,
-                rudp::MessageSentFunctor message_sent_functor);
+                const rudp::MessageSentFunctor& message_sent_functor);
   void SendTo(const protobuf::Message& message,
-              const NodeId peer,
-              const NodeId connection_id);
+              const NodeId& peer_node_id,
+              const NodeId& peer_connection_id);
   void RecursiveSendOn(protobuf::Message message,
                        NodeInfo last_node_attempted = NodeInfo(),
                        int attempt_count = 0);
   void AdjustRouteHistory(protobuf::Message& message);
 
-  maidsafe::NodeId bootstrap_connection_id_;
-  maidsafe::NodeId this_node_relay_connection_id_;
-  rudp::ConnectionLostFunctor connection_lost_functor_;
-  RoutingTable& routing_table_;
-  NonRoutingTable& non_routing_table_;
-  Timer& timer_;
-  std::unique_ptr<Active> message_sent_thread_object_;
-  std::unique_ptr<rudp::ManagedConnections> rudp_;
   boost::shared_mutex shared_mutex_;
   bool stopped_;
+  std::vector<boost::asio::ip::udp::endpoint> bootstrap_endpoints_;
+  maidsafe::NodeId bootstrap_connection_id_;
+  maidsafe::NodeId this_node_relay_connection_id_;
+  RoutingTable& routing_table_;
+  NonRoutingTable& non_routing_table_;
   rudp::NatType nat_type_;
   NewBootstrapEndpointFunctor new_bootstrap_endpoint_;
-  boost::filesystem::path bootstrap_file_path_;
+
+  //Active message_sent_thread_object_;
+  rudp::ManagedConnections rudp_;
 };
 
 }  // namespace routing

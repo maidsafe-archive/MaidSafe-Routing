@@ -252,7 +252,8 @@ void MessageHandler::HandleMessage(protobuf::Message& message) {
     return;
   }
 
-  DecreamentHopsToLive(message);
+  // Decrement hops_to_live
+  message.set_hops_to_live(message.hops_to_live() - 1);
 
   // If group message request to self id
   if (IsGroupMessageRequestToSelfId(message))
@@ -490,10 +491,6 @@ void MessageHandler::set_request_public_key_functor(
     RequestPublicKeyFunctor request_public_key_functor) {
   response_handler_->set_request_public_key_functor(request_public_key_functor);
   service_->set_request_public_key_functor(request_public_key_functor);
-}
-
-void MessageHandler::DecreamentHopsToLive(protobuf::Message& message) {
-  message.set_hops_to_live(message.hops_to_live() - 1);
 }
 
 }  // namespace routing
