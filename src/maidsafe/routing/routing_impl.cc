@@ -591,9 +591,11 @@ void Routing::Impl::ReBootstrap() {
 void Routing::Impl::DoReBootstrap(const boost::system::error_code& error_code) {
   if (error_code == boost::asio::error::operation_aborted)
     return;
-  std::lock_guard<std::mutex> lock(running_mutex_);
-  if (!running_)
-    return;
+  {
+    std::lock_guard<std::mutex> lock(running_mutex_);
+    if (!running_)
+      return;
+  }
   LOG(kError) << "[" << HexSubstr(kFob_.identity) << "]'s' Routing table is empty."
               << " ReBootstrapping ....";
   DoJoin(std::vector<Endpoint>());

@@ -17,5 +17,5 @@ int main(int argc, char **argv) {
   filter["common"] = maidsafe::log::kError;
   filter["rudp"] = maidsafe::log::kError;
   filter["routing"] = maidsafe::log::kInfo;
-  return ExecuteMain(argc, argv, filter, false, maidsafe::log::ColourMode::kPartialLine);
+  return ExecuteMain(argc, argv, filter, true, maidsafe::log::ColourMode::kPartialLine);
 }

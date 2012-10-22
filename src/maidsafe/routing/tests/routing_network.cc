@@ -310,6 +310,7 @@ Fob GenericNode::fob() {
 
 GenericNetwork::GenericNetwork()
     : mutex_(),
+      fobs_mutex_(),
       bootstrap_endpoints_(),
       bootstrap_path_("bootstrap"),
       fobs_(),
@@ -403,7 +404,7 @@ bool GenericNetwork::RemoveNode(const NodeId& node_id) {
 void GenericNetwork::Validate(const NodeId& node_id, GivePublicKeyFunctor give_public_key) {
   if (node_id == NodeId())
     return;
-  std::lock_guard<std::mutex> lock(mutex_);
+  std::lock_guard<std::mutex> lock(fobs_mutex_);
 
   auto iter(fobs_.begin());
   bool find(false);
@@ -520,10 +521,12 @@ uint16_t GenericNetwork::NonClientNodesSize() const {
 void GenericNetwork::AddNodeDetails(NodePtr node) {
   std::shared_ptr<std::condition_variable> cond_var(new std::condition_variable);
   std::weak_ptr<std::condition_variable> cond_var_weak(cond_var);
-  std::mutex mutex;
   {
+    {
+      std::lock_guard<std::mutex> fobs_lock(fobs_mutex_);
+      fobs_.push_back(node->fob());
+    }
     std::lock_guard<std::mutex> lock(mutex_);
-    fobs_.push_back(node->fob());
     SetNodeValidationFunctor(node);
     uint16_t node_size(NonClientNodesSize());
     node->set_expected(NetworkStatus(node->IsClient(),
@@ -558,6 +561,7 @@ void GenericNetwork::AddNodeDetails(NodePtr node) {
       };
   node->Join(bootstrap_endpoints_);
 
+  std::mutex mutex;
   if (!node->joined()) {
     std::unique_lock<std::mutex> lock(mutex);
     auto result = cond_var->wait_for(lock, std::chrono::seconds(20));

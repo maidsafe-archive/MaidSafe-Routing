@@ -150,7 +150,7 @@ class GenericNetwork : public testing::Test {
   uint16_t NonClientNodesSize() const;
   void AddNodeDetails(NodePtr node);
 
-  mutable std::mutex mutex_;
+  mutable std::mutex mutex_, fobs_mutex_;
   std::vector<boost::asio::ip::udp::endpoint> bootstrap_endpoints_;
   fs::path bootstrap_path_;
   std::vector<Fob> fobs_;
