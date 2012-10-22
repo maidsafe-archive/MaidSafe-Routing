@@ -46,10 +46,15 @@ NodeInfo MakeNode() {
 }
 
 NodeInfoAndPrivateKey MakeNodeInfoAndKeys() {
-  NodeInfo node;
-  node.node_id = NodeId(RandomString(64));
   Fob fob;
+  fob.identity = NonEmptyString(RandomString(64));
   fob.keys = asymm::GenerateKeyPair();
+  return MakeNodeInfoAndKeysWithFob(fob);
+}
+
+NodeInfoAndPrivateKey MakeNodeInfoAndKeysWithFob(Fob fob) {
+  NodeInfo node;
+  node.node_id = NodeId(fob.identity);
   node.public_key = fob.keys.public_key;
 //  node.endpoint.address(GetLocalIp());
 //  node.endpoint.port(GetRandomPort());

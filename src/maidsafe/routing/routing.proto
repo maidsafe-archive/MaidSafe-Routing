@@ -142,3 +142,10 @@ message ProxyConnectRequest {
 message ProxyConnectResponse {
   required ProxyConnectResultType result = 1;
 }
+
+message FobList {
+  message Fob {
+    required bytes fob = 1;
+  }
+  repeated Fob fobs = 1;
+}

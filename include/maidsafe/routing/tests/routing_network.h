@@ -34,6 +34,8 @@
 #include "maidsafe/routing/node_info.h"
 #include "maidsafe/routing/parameters.h"
 #include "maidsafe/routing/return_codes.h"
+#include "maidsafe/routing/routing_api.h"
+#include "maidsafe/routing/routing_private.h"
 
 namespace args = std::placeholders;
 
@@ -76,6 +78,7 @@ class GenericNode {
   void set_joined(const bool node_joined);
   bool joined() const;
   bool IsClient() const;
+  bool anonymous() { return anonymous_; }
   void set_client_mode(const bool& client_mode);
   int expected();
   void set_expected(const int& expected);
@@ -102,6 +105,10 @@ class GenericNode {
   std::vector<NodeId> RandomNodeVector();
   NodeId GetRandomExistingNode();
   void AddExistingRandomNode(const NodeId& node_id);
+
+  void PostTaskToAsioService(std::function<void()> functor) {
+    routing_->impl_->asio_service_.service().post(functor);
+  };
 
   static size_t next_node_id_;
   size_t MessagesSize() const;
