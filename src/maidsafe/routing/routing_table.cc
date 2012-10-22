@@ -108,7 +108,7 @@ bool RoutingTable::AddOrCheckNode(NodeInfo& peer, const bool& remove) {
 //      if (new_bootstrap_endpoint_)
 //        new_bootstrap_endpoint_(peer.endpoint);
     }
-    LOG(kVerbose) << PrintRoutingTable();
+    LOG(kInfo) << PrintRoutingTable();
   }
   return return_value;
 }
@@ -144,7 +144,7 @@ NodeInfo RoutingTable::DropNode(const NodeId& node_to_drop, const bool& routing_
     if (remove_node_functor_ && !routing_only)
       remove_node_functor_(dropped_node, false);
   }
-  LOG(kVerbose) << PrintRoutingTable();
+  LOG(kInfo) << PrintRoutingTable();
   return dropped_node;
 }
 
