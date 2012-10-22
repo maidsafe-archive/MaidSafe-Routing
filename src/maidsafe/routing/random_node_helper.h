@@ -10,53 +10,38 @@
  *  the explicit written permission of the board of directors of maidsafe.net. *
  ******************************************************************************/
 
-#ifndef MAIDSAFE_ROUTING_TESTS_TEST_UTILS_H_
-#define MAIDSAFE_ROUTING_TESTS_TEST_UTILS_H_
+#ifndef MAIDSAFE_ROUTING_RANDOM_NODE_HELPER_H_
+#define MAIDSAFE_ROUTING_RANDOM_NODE_HELPER_H_
 
-#include <cstdint>
+#include <mutex>
+#include <vector>
 
-#include "boost/asio/ip/address.hpp"
-#include "boost/asio/ip/udp.hpp"
-
-#include "maidsafe/common/rsa.h"
-
-#include "maidsafe/private/utils/fob.h"
-
-#include "maidsafe/routing/node_info.h"
-#include "maidsafe/routing/routing_table.h"
+#include "maidsafe/common/node_id.h"
 
 
 namespace maidsafe {
 
 namespace routing {
 
-namespace test {
+class RandomNodeHelper {
+ public:
+  RandomNodeHelper() : node_ids_(), mutex_(), kMaxSize_(100) {}
+  NodeId Get() const;
+  void Add(const NodeId& node_id);
+  void Remove(const NodeId& node_id);
 
-struct NodeInfoAndPrivateKey {
-  NodeInfoAndPrivateKey()
-      : node_info(),
-        private_key() {}
-  NodeInfo node_info;
-  asymm::PrivateKey private_key;
+ private:
+  RandomNodeHelper(const RandomNodeHelper&);
+  RandomNodeHelper(const RandomNodeHelper&&);
+  RandomNodeHelper& operator=(const RandomNodeHelper&);
+
+  std::vector<NodeId> node_ids_;
+  mutable std::mutex mutex_;
+  const size_t kMaxSize_;
 };
-
-NodeInfoAndPrivateKey MakeNodeInfoAndKeys();
-
-Fob MakeFob();
-
-Fob GetFob(const NodeInfoAndPrivateKey& node);
-
-NodeInfo MakeNode();
-
-NodeId GenerateUniqueRandomId(const NodeId& holder, const uint16_t& pos);
-NodeId GenerateUniqueRandomId(const uint16_t& pos);
-
-int NetworkStatus(const bool& client, const int& status);
-
-}  // namespace test
 
 }  // namespace routing
 
 }  // namespace maidsafe
 
-#endif  // MAIDSAFE_ROUTING_TESTS_TEST_UTILS_H_
+#endif  // MAIDSAFE_ROUTING_RANDOM_NODE_HELPER_H_

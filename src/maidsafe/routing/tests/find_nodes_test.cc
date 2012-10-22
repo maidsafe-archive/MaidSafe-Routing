@@ -19,7 +19,6 @@
 #include "maidsafe/rudp/return_codes.h"
 
 #include "maidsafe/routing/routing_api.h"
-#include "maidsafe/routing/routing_private.h"
 #include "maidsafe/routing/rpcs.h"
 #include "maidsafe/routing/network_utils.h"
 #include "maidsafe/routing/routing_pb.h"
@@ -77,7 +76,6 @@ TEST_F(FindNodeNetwork, FUNC_FindExistingNodeInHybridNetwork) {
   EXPECT_TRUE(this->ValidateRoutingTables());
 }
 
-
 TEST_F(FindNodeNetwork, FUNC_FindNonExistingNode) {
   this->SetUpNetwork(kServerSize, kClientSize);
   uint32_t source(RandomUint32() % (this->nodes_.size() - 2) + 2);
@@ -96,7 +94,8 @@ TEST_F(FindNodeNetwork, FUNC_FindNodeAfterDrop) {
   Sleep(boost::posix_time::seconds(1));
   EXPECT_TRUE(this->nodes_[source]->RoutingTableHasNode(node_id));
   EXPECT_TRUE(this->nodes_[source]->DropNode(node_id));
-  Sleep(boost::posix_time::seconds(20));
+  Sleep(Parameters::recovery_time_lag + Parameters::find_node_interval +
+          boost::posix_time::seconds(5));
   EXPECT_TRUE(this->nodes_[source]->RoutingTableHasNode(node_id));
 }
 
@@ -111,9 +110,10 @@ TEST_F(FindNodeNetwork, FUNC_VaultFindVaultNode) {
 
   EXPECT_TRUE(this->nodes_[source]->DropNode(this->nodes_[dest]->node_id()));
 
-  Sleep(boost::posix_time::seconds(15));
+  Sleep(Parameters::recovery_time_lag + Parameters::find_node_interval +
+          boost::posix_time::seconds(5));
 
-  LOG(kVerbose) << "after find " << HexSubstr(this->nodes_[dest]->node_id().String());
+  LOG(kVerbose) << "after find " << HexSubstr(this->nodes_[dest]->node_id().string());
   EXPECT_TRUE(this->nodes_[source]->RoutingTableHasNode(this->nodes_[dest]->node_id()));
 }
 
@@ -133,7 +133,8 @@ TEST_F(FindNodeNetwork, FUNC_VaultFindClientNode) {
 
   // clear up
   EXPECT_TRUE(this->nodes_[dest]->DropNode(this->nodes_[source]->node_id()));
-  Sleep(boost::posix_time::seconds(1));
+  Sleep(Parameters::recovery_time_lag + Parameters::find_node_interval +
+          boost::posix_time::seconds(5));
   EXPECT_TRUE(this->nodes_[dest]->RoutingTableHasNode(this->nodes_[source]->node_id()));
   EXPECT_TRUE(this->nodes_[source]->NonRoutingTableHasNode(this->nodes_[dest]->node_id()));
 }
@@ -142,14 +143,15 @@ TEST_F(FindNodeNetwork, FUNC_ClientFindVaultNode) {
   // Create a bootstrap network
   this->SetUpNetwork(kNetworkSize);
   uint32_t source(
-      RandomUint32() % (static_cast<uint32_t>(this->nodes_.size()) - 2) + 2),
-      client(static_cast<uint32_t>(this->nodes_.size())),
-      vault(client + 1);
+      RandomUint32() % (static_cast<uint32_t>(this->nodes_.size()) - 2) + 2);
 
   // Add one client node
   this->AddNode(true, GenerateUniqueRandomId(this->nodes_[source]->node_id(), 8));
   // Add one vault node
   this->AddNode(false, GenerateUniqueRandomId(this->nodes_[source]->node_id(), 24));
+
+  size_t client(this->nodes_.size() - 1);
+  uint32_t vault(kNetworkSize);
 
   Sleep(boost::posix_time::seconds(1));
 

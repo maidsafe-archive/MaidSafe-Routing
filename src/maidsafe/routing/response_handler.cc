@@ -20,6 +20,7 @@
 #include "maidsafe/common/log.h"
 #include "maidsafe/common/node_id.h"
 #include "maidsafe/common/utils.h"
+#include "maidsafe/rudp/return_codes.h"
 
 #include "maidsafe/routing/network_utils.h"
 #include "maidsafe/routing/non_routing_table.h"
@@ -29,6 +30,7 @@
 #include "maidsafe/routing/rpcs.h"
 #include "maidsafe/routing/utils.h"
 
+namespace bptime = boost::posix_time;
 
 namespace maidsafe {
 
@@ -40,65 +42,12 @@ typedef boost::asio::ip::udp::endpoint Endpoint;
 
 }  // unnamed namespace
 
-ResponseHandler::PendingRpc::PendingRpc(const NodeId& peer_node_id)
-    : node_id(peer_node_id),
-      attempts(1),
-      timestamp(GetDurationSinceEpoch()) {}
-
-bool ResponseHandler::AddPendingConnect(NodeId node_id) {
-  std::lock_guard<std::mutex> lock(mutex_);
-  auto itr(std::find_if(pending_connect_rpc_.begin(),
-                        pending_connect_rpc_.end(), [node_id](PendingRpc pending_rpc) {
-                            return (pending_rpc.node_id == node_id);
-                          }));
-  if (itr == pending_connect_rpc_.end()) {
-    pending_connect_rpc_.push_back(PendingRpc(node_id));
-    return true;
-  }
-  if ((*itr).attempts < 2) {
-    ++(*itr).attempts;
-    return true;
-  } else {
-    return false;
-  }
-}
-
-void ResponseHandler::ClearPendingConnect(NodeId node_id) {
-  std::lock_guard<std::mutex> lock(mutex_);
-  auto itr(std::find_if(pending_connect_rpc_.begin(),
-                        pending_connect_rpc_.end(), [node_id](PendingRpc pending_rpc) {
-                            return (pending_rpc.node_id == node_id);
-                          }));
-  if (itr != pending_connect_rpc_.end()) {
-    if ((*itr).attempts == 2) {
-      --(*itr).attempts;
-    } else {
-      pending_connect_rpc_.erase(itr);
-    }
-  }
-}
-
-void ResponseHandler::PrunePendingConnect() {
-  std::lock_guard<std::mutex> lock(mutex_);
-  auto itr(pending_connect_rpc_.begin());
-  while (itr != pending_connect_rpc_.end()) {
-    boost::posix_time::time_duration now(GetDurationSinceEpoch());
-    if ((now.total_milliseconds() - (*itr).timestamp.total_milliseconds()) >
-        Parameters::connect_rpc_prune_timeout.total_milliseconds()) {
-      itr = pending_connect_rpc_.erase(itr);
-    } else {
-      ++itr;
-    }
-  }
-}
-
 ResponseHandler::ResponseHandler(RoutingTable& routing_table,
                                  NonRoutingTable& non_routing_table,
                                  NetworkUtils& network)
     : mutex_(),
       routing_table_(routing_table),
       non_routing_table_(non_routing_table),
-      pending_connect_rpc_(),
       network_(network),
       request_public_key_functor_() {}
 
@@ -132,15 +81,13 @@ void ResponseHandler::Connect(protobuf::Message& message) {
     return;
   }
 
-  if (!NodeId(connect_response.contact().node_id()).IsValid() ||
-      NodeId(connect_response.contact().node_id()).Empty()) {
+  if (NodeId(connect_response.contact().node_id()).IsZero()) {
     LOG(kError) << "Invalid contact details";
     return;
   }
 
   NodeInfo node_to_add;
   node_to_add.node_id = NodeId(connect_response.contact().node_id());
-  ClearPendingConnect(node_to_add.node_id);
   if (routing_table_.CheckNode(node_to_add) ||
       (node_to_add.node_id == network_.bootstrap_connection_id())) {
     rudp::EndpointPair peer_endpoint_pair;
@@ -209,7 +156,7 @@ void ResponseHandler::FindNodes(const protobuf::Message& message) {
 
   if (find_nodes_request.num_nodes_requested() == 1) {  // detect collision
     if ((find_nodes_response.nodes_size() == 1) &&
-      find_nodes_response.nodes(0) == routing_table_.kNodeId().String()) {
+      find_nodes_response.nodes(0) == routing_table_.kNodeId().string()) {
       LOG(kWarning) << "Collision detected";
       // TODO(Prakash): FIXME handle collision and return kIdCollision on join()
       return;
@@ -240,21 +187,20 @@ void ResponseHandler::FindNodes(const protobuf::Message& message) {
 }
 
 void ResponseHandler::SendConnectRequest(const NodeId peer_node_id) {
-  PrunePendingConnect();
-  if (network_.bootstrap_connection_id().Empty() && (routing_table_.Size() == 0)) {
+  if (network_.bootstrap_connection_id().IsZero() && (routing_table_.Size() == 0)) {
       LOG(kWarning) << "Need to re bootstrap !";
     return;
   }
   bool send_to_bootstrap_connection((routing_table_.Size() < Parameters::closest_nodes_size) &&
-                                    !network_.bootstrap_connection_id().Empty());
+                                    !network_.bootstrap_connection_id().IsZero());
   NodeInfo peer;
   peer.node_id = peer_node_id;
 
-  if (peer.node_id == NodeId(routing_table_.kKeys().identity)) {
+  if (peer.node_id == NodeId(routing_table_.kFob().identity)) {
     return;
   }
 
-  if (routing_table_.CheckNode(peer) && AddPendingConnect(peer.node_id)) {
+  if (routing_table_.CheckNode(peer)) {
     LOG(kVerbose) << "CheckNode succeeded for node " << DebugId(peer.node_id);
     rudp::EndpointPair this_endpoint_pair, peer_endpoint_pair;
     rudp::NatType this_nat_type(rudp::NatType::kUnknown);
@@ -262,16 +208,21 @@ void ResponseHandler::SendConnectRequest(const NodeId peer_node_id) {
                                                 peer_endpoint_pair,
                                                 this_endpoint_pair,
                                                 this_nat_type);
-    if (kSuccess != ret_val) {
-      LOG(kError) << "[" << DebugId(routing_table_.kNodeId()) << "] Response Handler"
-                  << "Failed to get available endpoint for new connection to : "
-                  << DebugId(peer.node_id)
-                  << "peer_endpoint_pair.external = "
-                  << peer_endpoint_pair.external
-                  << ", peer_endpoint_pair.local = "
-                  << peer_endpoint_pair.local
-                  << ". Rudp returned :"
-                  << ret_val;
+    if (rudp::kSuccess != ret_val && rudp::kBootstrapConnectionAlreadyExists != ret_val) {
+      if (rudp::kUnvalidatedConnectionAlreadyExists != ret_val &&
+            rudp::kConnectAttemptAlreadyRunning != ret_val) {
+        LOG(kError) << "[" << DebugId(routing_table_.kNodeId()) << "] Response Handler"
+                    << "Failed to get available endpoint for new connection to : "
+                    << DebugId(peer.node_id)
+                    << "peer_endpoint_pair.external = "
+                    << peer_endpoint_pair.external
+                    << ", peer_endpoint_pair.local = "
+                    << peer_endpoint_pair.local
+                    << ". Rudp returned :"
+                    << ret_val;
+      } else {
+        LOG(kVerbose) << "Already ongoing attempt to : " << DebugId(peer.node_id);
+      }
       return;
     }
     assert((!this_endpoint_pair.external.address().is_unspecified() ||
@@ -317,11 +268,11 @@ void ResponseHandler::ConnectSuccessAcknowledgement(protobuf::Message& message) 
     peer.node_id = NodeId(connect_success_ack.node_id());
   if (!connect_success_ack.connection_id().empty())
     peer.connection_id = NodeId(connect_success_ack.connection_id());
-  if (peer.node_id.Empty() || !peer.node_id.IsValid()) {
+  if (peer.node_id.IsZero()) {
     LOG(kWarning) << "Invalid node id provided";
     return;
   }
-  if (peer.connection_id.Empty() || !peer.connection_id.IsValid()) {
+  if (peer.connection_id.IsZero()) {
     LOG(kWarning) << "Invalid peer connection_id provided";
     return;
   }
@@ -401,7 +352,7 @@ void ResponseHandler::HandleSuccessAcknowledgementAsReponder(NodeInfo peer,
 
 void ResponseHandler::HandleSuccessAcknowledgementAsRequestor(std::vector<NodeId> close_ids) {
   for (auto i : close_ids) {
-    if (!i.Empty()) {
+    if (!i.IsZero()) {
       SendConnectRequest(i);
     }
   }

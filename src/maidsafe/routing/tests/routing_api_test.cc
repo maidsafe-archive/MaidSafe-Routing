@@ -32,6 +32,7 @@
 #include "maidsafe/routing/bootstrap_file_handler.h"
 #include "maidsafe/routing/return_codes.h"
 #include "maidsafe/routing/routing_api.h"
+#include "maidsafe/routing/routing_impl.h"
 #include "maidsafe/routing/routing_table.h"
 #include "maidsafe/routing/tests/test_utils.h"
 
@@ -64,21 +65,21 @@ TEST(APITest, BEH_API_ZeroState) {
   NodeInfoAndPrivateKey node1(MakeNodeInfoAndKeys());
   NodeInfoAndPrivateKey node2(MakeNodeInfoAndKeys());
   NodeInfoAndPrivateKey node3(MakeNodeInfoAndKeys());
-  std::map<NodeId, asymm::Keys> key_map;
-  key_map.insert(std::make_pair(NodeId(node1.node_info.node_id), GetKeys(node1)));
-  key_map.insert(std::make_pair(NodeId(node2.node_info.node_id), GetKeys(node2)));
-  key_map.insert(std::make_pair(NodeId(node3.node_info.node_id), GetKeys(node3)));
+  std::map<NodeId, Fob> fob_map;
+  fob_map.insert(std::make_pair(NodeId(node1.node_info.node_id), GetFob(node1)));
+  fob_map.insert(std::make_pair(NodeId(node2.node_info.node_id), GetFob(node2)));
+  fob_map.insert(std::make_pair(NodeId(node3.node_info.node_id), GetFob(node3)));
 
   Functors functors1, functors2, functors3;
-  Routing R1(GetKeys(node1), false);
-  Routing R2(GetKeys(node2), false);
-  Routing R3(GetKeys(node3), false);
+  Routing R1(GetFob(node1), false);
+  Routing R2(GetFob(node2), false);
+  Routing R3(GetFob(node3), false);
 
   functors1.request_public_key = [&](const NodeId& node_id, GivePublicKeyFunctor give_key ) {
-      LOG(kWarning) << "node_validation called for " << HexSubstr(node_id.String());
-      auto itr(key_map.find(NodeId(node_id)));
-      if (key_map.end() != itr)
-        give_key((*itr).second.public_key);
+      LOG(kWarning) << "node_validation called for " << HexSubstr(node_id.string());
+      auto itr(fob_map.find(NodeId(node_id)));
+      if (fob_map.end() != itr)
+        give_key((*itr).second.keys.public_key);
     };
 
   functors2.request_public_key = functors3.request_public_key = functors1.request_public_key;
@@ -110,20 +111,20 @@ TEST(APITest, BEH_API_JoinWithBootstrapFile) {
   NodeInfoAndPrivateKey node1(MakeNodeInfoAndKeys());
   NodeInfoAndPrivateKey node2(MakeNodeInfoAndKeys());
   NodeInfoAndPrivateKey node3(MakeNodeInfoAndKeys());
-  std::map<NodeId, asymm::Keys> key_map;
-  key_map.insert(std::make_pair(NodeId(node1.node_info.node_id), GetKeys(node1)));
-  key_map.insert(std::make_pair(NodeId(node2.node_info.node_id), GetKeys(node2)));
-  key_map.insert(std::make_pair(NodeId(node3.node_info.node_id), GetKeys(node3)));
+  std::map<NodeId, Fob> fob_map;
+  fob_map.insert(std::make_pair(NodeId(node1.node_info.node_id), GetFob(node1)));
+  fob_map.insert(std::make_pair(NodeId(node2.node_info.node_id), GetFob(node2)));
+  fob_map.insert(std::make_pair(NodeId(node3.node_info.node_id), GetFob(node3)));
   Functors functors1, functors2, functors3;
-  Routing R1(GetKeys(node1), false);
-  Routing R2(GetKeys(node2), false);
-  Routing R3(GetKeys(node3), false);
+  Routing R1(GetFob(node1), false);
+  Routing R2(GetFob(node2), false);
+  Routing R3(GetFob(node3), false);
 
   functors1.request_public_key = [&](const NodeId& node_id, GivePublicKeyFunctor give_key ) {
-      LOG(kWarning) << "node_validation called for " << HexSubstr(node_id.String());
-      auto itr(key_map.find(NodeId(node_id)));
-      if (key_map.end() != itr)
-        give_key((*itr).second.public_key);
+      LOG(kWarning) << "node_validation called for " << HexSubstr(node_id.string());
+      auto itr(fob_map.find(NodeId(node_id)));
+      if (fob_map.end() != itr)
+        give_key((*itr).second.keys.public_key);
     };
   functors2.request_public_key = functors3.request_public_key = functors1.request_public_key;
   Endpoint endpoint1(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort()),
@@ -139,7 +140,7 @@ TEST(APITest, BEH_API_JoinWithBootstrapFile) {
 
   //  Writing bootstrap file
   std::string file_id(
-      EncodeToBase32(maidsafe::crypto::Hash<maidsafe::crypto::SHA1>(GetKeys(node3).identity)));
+      EncodeToBase32(maidsafe::crypto::Hash<maidsafe::crypto::SHA1>(GetFob(node3).identity)));
   std::string bootstrap_file_name("bootstrap");
   std::vector<Endpoint> bootstrap_endpoints;
   bootstrap_endpoints.push_back(endpoint1);
@@ -147,14 +148,14 @@ TEST(APITest, BEH_API_JoinWithBootstrapFile) {
   fs::path bootstrap_file_path(fs::current_path() / bootstrap_file_name);
   //  fs::path bootstrap_file_path(GetSystemAppDir() / bootstrap_file_name);
   try {
-  fs::remove(bootstrap_file_path);
+    fs::remove(bootstrap_file_path);
   } catch(std::exception &e) {
     LOG(kInfo) << e.what();
   }
   EXPECT_TRUE(WriteBootstrapFile(bootstrap_endpoints, bootstrap_file_path));
   LOG(kInfo) << "Created bootstrap file at : " << bootstrap_file_path;
 
-  //  Bootstraping with created file
+  //  Bootstrapping with created file
   boost::promise<bool> join_promise;
   auto join_future = join_promise.get_future();
   functors3.network_status = [&join_promise](int result) {
@@ -173,21 +174,21 @@ TEST(APITest, FUNC_API_AnonymousNode) {
   rudp::Parameters::bootstrap_connection_lifespan = boost::posix_time::seconds(10);
   NodeInfoAndPrivateKey node1(MakeNodeInfoAndKeys());
   NodeInfoAndPrivateKey node2(MakeNodeInfoAndKeys());
-  std::map<NodeId, asymm::Keys> key_map;
-  key_map.insert(std::make_pair(NodeId(node1.node_info.node_id), GetKeys(node1)));
-  key_map.insert(std::make_pair(NodeId(node2.node_info.node_id), GetKeys(node2)));
+  std::map<NodeId, Fob> fob_map;
+  fob_map.insert(std::make_pair(NodeId(node1.node_info.node_id), GetFob(node1)));
+  fob_map.insert(std::make_pair(NodeId(node2.node_info.node_id), GetFob(node2)));
 
   Functors functors1, functors2, functors3;
 
-  Routing R1(GetKeys(node1), false);
-  Routing R2(GetKeys(node2), false);
-  Routing R3(asymm::Keys(), true);  // Anonymous node
+  Routing R1(GetFob(node1), false);
+  Routing R2(GetFob(node2), false);
+  Routing R3(Fob(), true);  // Anonymous node
 
   functors1.request_public_key = [=](const NodeId& node_id, GivePublicKeyFunctor give_key) {
-      LOG(kWarning) << "node_validation called for " << HexSubstr(node_id.String());
-      auto itr(key_map.find(NodeId(node_id)));
-      if (key_map.end() != itr)
-        give_key((*itr).second.public_key);
+      LOG(kWarning) << "node_validation called for " << HexSubstr(node_id.string());
+      auto itr(fob_map.find(NodeId(node_id)));
+      if (fob_map.end() != itr)
+        give_key((*itr).second.keys.public_key);
     };
 
   functors1.message_received = [&] (const std::string& message, const NodeId&,
@@ -250,22 +251,22 @@ TEST(APITest, BEH_API_SendToSelf) {
   NodeInfoAndPrivateKey node2(MakeNodeInfoAndKeys());
   NodeInfoAndPrivateKey node3(MakeNodeInfoAndKeys());
 
-  std::map<NodeId, asymm::Keys> key_map;
-  key_map.insert(std::make_pair(NodeId(node1.node_info.node_id), GetKeys(node1)));
-  key_map.insert(std::make_pair(NodeId(node2.node_info.node_id), GetKeys(node2)));
-  key_map.insert(std::make_pair(NodeId(node3.node_info.node_id), GetKeys(node3)));
+  std::map<NodeId, Fob> fob_map;
+  fob_map.insert(std::make_pair(NodeId(node1.node_info.node_id), GetFob(node1)));
+  fob_map.insert(std::make_pair(NodeId(node2.node_info.node_id), GetFob(node2)));
+  fob_map.insert(std::make_pair(NodeId(node3.node_info.node_id), GetFob(node3)));
 
   Functors functors1, functors2, functors3;
 
-  Routing R1(GetKeys(node1), false);
-  Routing R2(GetKeys(node2), false);
-  Routing R3(GetKeys(node3), false);  // client mode
+  Routing R1(GetFob(node1), false);
+  Routing R2(GetFob(node2), false);
+  Routing R3(GetFob(node3), false);  // client mode
 
   functors1.request_public_key = [=](const NodeId& node_id, GivePublicKeyFunctor give_key ) {
-      LOG(kWarning) << "node_validation called for " << HexSubstr(node_id.String());
-      auto itr(key_map.find(NodeId(node_id)));
-      if (key_map.end() != itr)
-        give_key((*itr).second.public_key);
+      LOG(kWarning) << "node_validation called for " << HexSubstr(node_id.string());
+      auto itr(fob_map.find(NodeId(node_id)));
+      if (fob_map.end() != itr)
+        give_key((*itr).second.keys.public_key);
     };
 
   functors1.message_received = [&] (const std::string& message, const NodeId&,
@@ -321,22 +322,22 @@ TEST(APITest, BEH_API_ClientNode) {
   NodeInfoAndPrivateKey node2(MakeNodeInfoAndKeys());
   NodeInfoAndPrivateKey node3(MakeNodeInfoAndKeys());
 
-  std::map<NodeId, asymm::Keys> key_map;
-  key_map.insert(std::make_pair(NodeId(node1.node_info.node_id), GetKeys(node1)));
-  key_map.insert(std::make_pair(NodeId(node2.node_info.node_id), GetKeys(node2)));
-  key_map.insert(std::make_pair(NodeId(node3.node_info.node_id), GetKeys(node3)));
+  std::map<NodeId, Fob> fob_map;
+  fob_map.insert(std::make_pair(NodeId(node1.node_info.node_id), GetFob(node1)));
+  fob_map.insert(std::make_pair(NodeId(node2.node_info.node_id), GetFob(node2)));
+  fob_map.insert(std::make_pair(NodeId(node3.node_info.node_id), GetFob(node3)));
 
   Functors functors1, functors2, functors3;
 
-  Routing R1(GetKeys(node1), false);
-  Routing R2(GetKeys(node2), false);
-  Routing R3(GetKeys(node3), true);  // client mode
+  Routing R1(GetFob(node1), false);
+  Routing R2(GetFob(node2), false);
+  Routing R3(GetFob(node3), true);  // client mode
 
   functors1.request_public_key = [=](const NodeId& node_id, GivePublicKeyFunctor give_key ) {
-      LOG(kWarning) << "node_validation called for " << HexSubstr(node_id.String());
-      auto itr(key_map.find(NodeId(node_id)));
-      if (key_map.end() != itr)
-        give_key((*itr).second.public_key);
+      LOG(kWarning) << "node_validation called for " << HexSubstr(node_id.string());
+      auto itr(fob_map.find(NodeId(node_id)));
+      if (fob_map.end() != itr)
+        give_key((*itr).second.keys.public_key);
     };
 
   functors1.message_received = [&] (const std::string& message, const NodeId&,
@@ -393,23 +394,23 @@ TEST(APITest, BEH_API_ClientNodeSameId) {
   NodeInfoAndPrivateKey node2(MakeNodeInfoAndKeys());
   NodeInfoAndPrivateKey node3(MakeNodeInfoAndKeys());
 
-  std::map<NodeId, asymm::Keys> key_map;
-  key_map.insert(std::make_pair(NodeId(node1.node_info.node_id), GetKeys(node1)));
-  key_map.insert(std::make_pair(NodeId(node2.node_info.node_id), GetKeys(node2)));
-  key_map.insert(std::make_pair(NodeId(node3.node_info.node_id), GetKeys(node3)));
+  std::map<NodeId, Fob> fob_map;
+  fob_map.insert(std::make_pair(NodeId(node1.node_info.node_id), GetFob(node1)));
+  fob_map.insert(std::make_pair(NodeId(node2.node_info.node_id), GetFob(node2)));
+  fob_map.insert(std::make_pair(NodeId(node3.node_info.node_id), GetFob(node3)));
 
   Functors functors1, functors2, functors3, functors4;
 
-  Routing R1(GetKeys(node1), false);
-  Routing R2(GetKeys(node2), false);
-  Routing R3(GetKeys(node3), true);  // client mode
-  Routing R4(GetKeys(node3), true);  // client mode
+  Routing R1(GetFob(node1), false);
+  Routing R2(GetFob(node2), false);
+  Routing R3(GetFob(node3), true);  // client mode
+  Routing R4(GetFob(node3), true);  // client mode
 
   functors1.request_public_key = [=](const NodeId& node_id, GivePublicKeyFunctor give_key ) {
-      LOG(kWarning) << "node_validation called for " << HexSubstr(node_id.String());
-      auto itr(key_map.find(NodeId(node_id)));
-      if (key_map.end() != itr)
-        give_key((*itr).second.public_key);
+      LOG(kWarning) << "node_validation called for " << HexSubstr(node_id.string());
+      auto itr(fob_map.find(NodeId(node_id)));
+      if (fob_map.end() != itr)
+        give_key((*itr).second.keys.public_key);
     };
 
   functors1.message_received = [&] (const std::string& message, const NodeId&,
@@ -495,22 +496,22 @@ TEST(APITest, BEH_API_ClientNodeWithBootstrapFile) {
   NodeInfoAndPrivateKey node2(MakeNodeInfoAndKeys());
   NodeInfoAndPrivateKey node3(MakeNodeInfoAndKeys());
 
-  std::map<NodeId, asymm::Keys> key_map;
-  key_map.insert(std::make_pair(NodeId(node1.node_info.node_id), GetKeys(node1)));
-  key_map.insert(std::make_pair(NodeId(node2.node_info.node_id), GetKeys(node2)));
-  key_map.insert(std::make_pair(NodeId(node3.node_info.node_id), GetKeys(node3)));
+  std::map<NodeId, Fob> fob_map;
+  fob_map.insert(std::make_pair(NodeId(node1.node_info.node_id), GetFob(node1)));
+  fob_map.insert(std::make_pair(NodeId(node2.node_info.node_id), GetFob(node2)));
+  fob_map.insert(std::make_pair(NodeId(node3.node_info.node_id), GetFob(node3)));
 
   Functors functors1, functors2, functors3;
 
-  Routing R1(GetKeys(node1), false);
-  Routing R2(GetKeys(node2), false);
-  Routing R3(GetKeys(node3), true);  // client mode
+  Routing R1(GetFob(node1), false);
+  Routing R2(GetFob(node2), false);
+  Routing R3(GetFob(node3), true);  // client mode
 
   functors1.request_public_key = [=](const NodeId& node_id, GivePublicKeyFunctor give_key ) {
-      LOG(kWarning) << "node_validation called for " << HexSubstr(node_id.String());
-      auto itr(key_map.find(NodeId(node_id)));
-      if (key_map.end() != itr)
-        give_key((*itr).second.public_key);
+      LOG(kWarning) << "node_validation called for " << HexSubstr(node_id.string());
+      auto itr(fob_map.find(NodeId(node_id)));
+      if (fob_map.end() != itr)
+        give_key((*itr).second.keys.public_key);
     };
 
   functors1.message_received = [&] (const std::string& message, const NodeId&,
@@ -545,7 +546,7 @@ TEST(APITest, BEH_API_ClientNodeWithBootstrapFile) {
   ASSERT_TRUE(WriteBootstrapFile(bootstrap_endpoints, bootstrap_file_path));
   LOG(kInfo) << "Created bootstrap file at : " << bootstrap_file_path;
 
-  //  Bootstraping with created file
+  //  Bootstrapping with created file
   boost::promise<bool> join_promise;
   auto join_future = join_promise.get_future();
   functors3.network_status = [&join_promise](int result) {
@@ -587,19 +588,19 @@ TEST(APITest, BEH_API_NodeNetwork) {
 
   std::vector<NodeInfoAndPrivateKey> nodes;
   std::vector<std::shared_ptr<Routing>> routing_node;
-  std::map<NodeId, asymm::Keys> key_map;
+  std::map<NodeId, Fob> fob_map;
   for (auto i(0); i != kNetworkSize; ++i) {
     NodeInfoAndPrivateKey node(MakeNodeInfoAndKeys());
     nodes.push_back(node);
-    key_map.insert(std::make_pair(NodeId(node.node_info.node_id), GetKeys(node)));
-    routing_node.push_back(std::make_shared<Routing>(GetKeys(node), false));
+    fob_map.insert(std::make_pair(NodeId(node.node_info.node_id), GetFob(node)));
+    routing_node.push_back(std::make_shared<Routing>(GetFob(node), false));
   }
 
   functors.request_public_key = [=](const NodeId& node_id, GivePublicKeyFunctor give_key ) {
-      LOG(kInfo) << "node_validation called for " << HexSubstr(node_id.String());
-      auto itr(key_map.find(NodeId(node_id)));
-      if (key_map.end() != itr)
-        give_key((*itr).second.public_key);
+      LOG(kInfo) << "node_validation called for " << HexSubstr(node_id.string());
+      auto itr(fob_map.find(NodeId(node_id)));
+      if (fob_map.end() != itr)
+        give_key((*itr).second.keys.public_key);
   };
   Endpoint endpoint1(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort()),
            endpoint2(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort());
@@ -651,19 +652,19 @@ TEST(APITest, BEH_API_NodeNetworkWithBootstrapFile) {
 
   std::vector<NodeInfoAndPrivateKey> nodes;
   std::vector<std::shared_ptr<Routing>> routing_node;
-  std::map<NodeId, asymm::Keys> key_map;
+  std::map<NodeId, Fob> fob_map;
   for (auto i(0); i != kNetworkSize; ++i) {
     NodeInfoAndPrivateKey node(MakeNodeInfoAndKeys());
     nodes.push_back(node);
-    key_map.insert(std::make_pair(NodeId(node.node_info.node_id), GetKeys(node)));
-    routing_node.push_back(std::make_shared<Routing>(GetKeys(node), false));
+    fob_map.insert(std::make_pair(NodeId(node.node_info.node_id), GetFob(node)));
+    routing_node.push_back(std::make_shared<Routing>(GetFob(node), false));
   }
 
   functors.request_public_key = [=](const NodeId& node_id, GivePublicKeyFunctor give_key ) {
-      LOG(kInfo) << "node_validation called for " << HexSubstr(node_id.String());
-      auto itr(key_map.find(NodeId(node_id)));
-      if (key_map.end() != itr)
-        give_key((*itr).second.public_key);
+      LOG(kInfo) << "node_validation called for " << HexSubstr(node_id.string());
+      auto itr(fob_map.find(NodeId(node_id)));
+      if (fob_map.end() != itr)
+        give_key((*itr).second.keys.public_key);
   };
   Endpoint endpoint1(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort()),
            endpoint2(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort());
@@ -695,7 +696,7 @@ TEST(APITest, BEH_API_NodeNetworkWithBootstrapFile) {
     LOG(kInfo) << "Created bootstrap file at : " << bootstrap_file_path;
   // }
 
-  //  Bootstraping with created file
+  //  Bootstrapping with created file
   for (auto i(0); i != (kNetworkSize - 2); ++i) {
     join_futures.emplace_back(join_promises.at(i).get_future());
     promised.push_back(true);
@@ -733,20 +734,20 @@ TEST(APITest, BEH_API_NodeNetworkWithClient) {
 
   std::vector<NodeInfoAndPrivateKey> nodes;
   std::vector<std::shared_ptr<Routing>> routing_node;
-  std::map<NodeId, asymm::Keys> key_map;
+  std::map<NodeId, Fob> fob_map;
   for (auto i(0); i != kNetworkSize; ++i) {
     NodeInfoAndPrivateKey node(MakeNodeInfoAndKeys());
     nodes.push_back(node);
-    key_map.insert(std::make_pair(NodeId(node.node_info.node_id), GetKeys(node)));
+    fob_map.insert(std::make_pair(NodeId(node.node_info.node_id), GetFob(node)));
     routing_node.push_back(
-        std::make_shared<Routing>(GetKeys(node), ((i < kServerCount)? false: true)));
+        std::make_shared<Routing>(GetFob(node), ((i < kServerCount)? false: true)));
   }
 
   functors.request_public_key = [=](const NodeId& node_id, GivePublicKeyFunctor give_key ) {
-      LOG(kInfo) << "node_validation called for " << HexSubstr(node_id.String());
-      auto itr(key_map.find(NodeId(node_id)));
-      if (key_map.end() != itr)
-        give_key((*itr).second.public_key);
+      LOG(kInfo) << "node_validation called for " << HexSubstr(node_id.string());
+      auto itr(fob_map.find(NodeId(node_id)));
+      if (fob_map.end() != itr)
+        give_key((*itr).second.keys.public_key);
   };
 
   functors.message_received = [&] (const std::string& message, const NodeId&,

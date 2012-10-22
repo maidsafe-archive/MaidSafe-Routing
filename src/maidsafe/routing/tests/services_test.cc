@@ -41,20 +41,19 @@ typedef boost::asio::ip::udp::endpoint Endpoint;
 }  // unnamed namespace
 
 TEST(ServicesTest, BEH_Ping) {
-  asymm::Keys keys;
-  keys.identity = RandomString(64);
-  RoutingTable RT(keys, false);
-  NonRoutingTable NRT(keys);
+  Fob fob;
+  fob.identity = Identity(RandomString(64));
+  RoutingTable RT(fob, false);
+  NonRoutingTable NRT(fob);
   AsioService asio_service(1);
-  Timer timer(asio_service);
-  NetworkUtils network(RT, NRT, timer);
+  NetworkUtils network(RT, NRT);
   Service service(RT, NRT, network);
   NodeInfo node;
   rudp::ManagedConnections rudp;
   protobuf::PingRequest ping_request;
   // somebody pings us
-  protobuf::Message message = rpcs::Ping(NodeId(keys.identity), "me");
-  EXPECT_TRUE(message.destination_id() == keys.identity);
+  protobuf::Message message = rpcs::Ping(NodeId(fob.identity), "me");
+  EXPECT_TRUE(message.destination_id() == fob.identity.string());
   EXPECT_TRUE(ping_request.ParseFromString(message.data(0)));  // us
   EXPECT_TRUE(ping_request.IsInitialized());
   // run message through Service
@@ -62,7 +61,7 @@ TEST(ServicesTest, BEH_Ping) {
   EXPECT_EQ(1, message.type());
   EXPECT_EQ(message.request(), false);
   EXPECT_NE(message.data_size(), 0);
-  EXPECT_TRUE(message.source_id() == keys.identity);
+  EXPECT_TRUE(message.source_id() == fob.identity.string());
   EXPECT_EQ(message.replication(), 1);
   EXPECT_EQ(message.type(), 1);
   EXPECT_EQ(message.request(), false);
@@ -74,26 +73,25 @@ TEST(ServicesTest, BEH_Ping) {
 TEST(ServicesTest, BEH_FindNodes) {
   NodeInfo us(MakeNode());
   NodeInfo them(MakeNode());
-  asymm::Keys keys;
-  keys.identity = us.node_id.String();
-  keys.public_key = us.public_key;
-  RoutingTable RT(keys, false);
-  NonRoutingTable NRT(keys);
+  Fob fob;
+  fob.identity = Identity(us.node_id.string());
+  fob.keys.public_key = us.public_key;
+  RoutingTable RT(fob, false);
+  NonRoutingTable NRT(fob);
   AsioService asio_service(1);
-  Timer timer(asio_service);
-  NetworkUtils network(RT, NRT, timer);
+  NetworkUtils network(RT, NRT);
   Service service(RT, NRT, network);
   protobuf::Message message = rpcs::FindNodes(us.node_id, us.node_id, 8);
   service.FindNodes(message);
   protobuf::FindNodesResponse find_nodes_respose;
   EXPECT_TRUE(find_nodes_respose.ParseFromString(message.data(0)));
 //  EXPECT_TRUE(find_nodes_respose.nodes().size() > 0);  // will only have us
-//  EXPECT_EQ(find_nodes_respose.nodes().Get(1), us.node_id.String());
+//  EXPECT_EQ(find_nodes_respose.nodes().Get(1), us.node_id.string());
   EXPECT_TRUE(find_nodes_respose.has_timestamp());
   EXPECT_TRUE(find_nodes_respose.timestamp() > static_cast<int32_t>(GetTimeStamp() - 2));
   EXPECT_TRUE(find_nodes_respose.timestamp() < static_cast<int32_t>(GetTimeStamp() + 1));
-  EXPECT_EQ(message.destination_id(), us.node_id.String());
-  EXPECT_EQ(message.source_id(), us.node_id.String());
+  EXPECT_EQ(message.destination_id(), us.node_id.string());
+  EXPECT_EQ(message.source_id(), us.node_id.string());
   EXPECT_NE(message.data_size(), 0);
   EXPECT_TRUE(message.direct());
   EXPECT_EQ(message.replication(), 1);

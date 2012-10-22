@@ -54,7 +54,7 @@ Service::Service(RoutingTable& routing_table,
 Service::~Service() {}
 
 void Service::Ping(protobuf::Message& message) {
-  if (message.destination_id() != routing_table_.kKeys().identity) {
+  if (message.destination_id() != routing_table_.kFob().identity.string()) {
     // Message not for this node and we should not pass it on.
     LOG(kError) << "Message not for this node.";
     message.Clear();
@@ -76,14 +76,13 @@ void Service::Ping(protobuf::Message& message) {
   message.clear_data();
   message.add_data(ping_response.SerializeAsString());
   message.set_destination_id(message.source_id());
-  message.set_source_id(routing_table_.kKeys().identity);
+  message.set_source_id(routing_table_.kFob().identity.string());
   message.set_hops_to_live(Parameters::hops_to_live);
   assert(message.IsInitialized() && "unintialised message");
 }
 
 void Service::Connect(protobuf::Message& message) {
-  asymm::Keys keys = routing_table_.kKeys();
-  if (message.destination_id() != routing_table_.kKeys().identity) {
+  if (message.destination_id() != routing_table_.kFob().identity.string()) {
     // Message not for this node and we should not pass it on.
     LOG(kError) << "Message not for this node.";
     message.Clear();
@@ -135,18 +134,23 @@ void Service::Connect(protobuf::Message& message) {
 
     int ret_val = network_.GetAvailableEndpoint(peer_node.connection_id, peer_endpoint_pair,
                                                this_endpoint_pair, this_nat_type);
-    if (ret_val != rudp::kSuccess) {
-      LOG(kError) << "[" << DebugId(routing_table_.kNodeId()) << "] Service: "
-                  << "Failed to get available endpoint for new connection to node id : "
-                  << DebugId(peer_node.node_id)
-                  << ", Connection id :"
-                  << DebugId(peer_node.connection_id)
-                  << ". peer_endpoint_pair.external = "
-                  << peer_endpoint_pair.external
-                  << ", peer_endpoint_pair.local = "
-                  << peer_endpoint_pair.local
-                  << ". Rudp returned :"
-                  << ret_val;
+    if (ret_val != rudp::kSuccess && ret_val != rudp::kBootstrapConnectionAlreadyExists) {
+      if (rudp::kUnvalidatedConnectionAlreadyExists != ret_val &&
+            rudp::kConnectAttemptAlreadyRunning != ret_val) {
+        LOG(kError) << "[" << DebugId(routing_table_.kNodeId()) << "] Service: "
+                    << "Failed to get available endpoint for new connection to node id : "
+                    << DebugId(peer_node.node_id)
+                    << ", Connection id :"
+                    << DebugId(peer_node.connection_id)
+                    << ". peer_endpoint_pair.external = "
+                    << peer_endpoint_pair.external
+                    << ", peer_endpoint_pair.local = "
+                    << peer_endpoint_pair.local
+                    << ". Rudp returned :"
+                    << ret_val;
+      } else {
+        LOG(kInfo) << "Already ongoing attempt to : " << DebugId(peer_node.connection_id);
+      }
       message.Clear();
       return;
     }
@@ -166,9 +170,9 @@ void Service::Connect(protobuf::Message& message) {
     if (rudp::kSuccess == add_result) {
       connect_response.set_answer(true);
 
-      connect_response.mutable_contact()->set_node_id(routing_table_.kNodeId().String());
+      connect_response.mutable_contact()->set_node_id(routing_table_.kNodeId().string());
       connect_response.mutable_contact()->set_connection_id(
-          routing_table_.kConnectionId().String());
+          routing_table_.kConnectionId().string());
       connect_response.mutable_contact()->set_nat_type(NatTypeProtobuf(this_nat_type));
 
       SetProtobufEndpoint(this_endpoint_pair.local,
@@ -197,7 +201,7 @@ void Service::Connect(protobuf::Message& message) {
     message.set_destination_id(message.source_id());
   else
     message.clear_destination_id();
-  message.set_source_id(routing_table_.kKeys().identity);
+  message.set_source_id(routing_table_.kFob().identity.string());
   assert(message.IsInitialized() && "unintialised message");
 }
 
@@ -208,9 +212,7 @@ void Service::FindNodes(protobuf::Message& message) {
     message.Clear();
     return;
   }
-  if ((0 == find_nodes.num_nodes_requested() ||
-      NodeId(find_nodes.target_node()).Empty() ||
-      !NodeId(find_nodes.target_node()).IsValid())) {
+  if (0 == find_nodes.num_nodes_requested() || NodeId(find_nodes.target_node()).IsZero()) {
     LOG(kWarning) << "Invalid find node request.";
     message.Clear();
     return;
@@ -222,10 +224,10 @@ void Service::FindNodes(protobuf::Message& message) {
   protobuf::FindNodesResponse found_nodes;
   std::vector<NodeId> nodes(routing_table_.GetClosestNodes(NodeId(find_nodes.target_node()),
                               static_cast<uint16_t>(find_nodes.num_nodes_requested() - 1)));
-  found_nodes.add_nodes(routing_table_.kKeys().identity);
+  found_nodes.add_nodes(routing_table_.kFob().identity.string());
 
   for (auto node : nodes)
-    found_nodes.add_nodes(node.String());
+    found_nodes.add_nodes(node.string());
 
   LOG(kVerbose) << "Responding Find node with " << found_nodes.nodes_size()  << " contacts.";
 
@@ -239,7 +241,7 @@ void Service::FindNodes(protobuf::Message& message) {
     message.clear_destination_id();
     LOG(kVerbose) << "Relay message, so not setting destination ID.";
   }
-  message.set_source_id(routing_table_.kKeys().identity);
+  message.set_source_id(routing_table_.kFob().identity.string());
   message.clear_route_history();
   message.clear_data();
   message.add_data(found_nodes.SerializeAsString());
@@ -264,7 +266,7 @@ void Service::ConnectSuccess(protobuf::Message& message) {
   peer.node_id = NodeId(connect_success.node_id());
   peer.connection_id = NodeId(connect_success.connection_id());
 
-  if (peer.node_id.Empty() || peer.connection_id.Empty()) {
+  if (peer.node_id.IsZero() || peer.connection_id.IsZero()) {
     LOG(kWarning) << "Invalid node_id / connection_id provided";
     return;
   }
@@ -281,7 +283,7 @@ void Service::ConnectSuccessFromResponder(NodeInfo& peer, const bool& client) {
   // Reply with ConnectSuccessAcknowledgement immediately
   LOG(kVerbose) << "ConnectSuccessFromResponder peer id : " << DebugId(peer.node_id);
   if (peer.connection_id == network_.bootstrap_connection_id()) {
-    LOG(kVerbose) << "Special case : kConnectSuccess from bootstraping node: "
+    LOG(kVerbose) << "Special case : kConnectSuccess from bootstrapping node: "
                   << DebugId(peer.node_id);
     return;
   }

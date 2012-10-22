@@ -27,14 +27,13 @@ namespace test {
 
 class MockNetworkUtils : public NetworkUtils {
  public:
-  MockNetworkUtils(RoutingTable& routing_table, NonRoutingTable& non_routing_table,
-                   Timer& timer);
+  MockNetworkUtils(RoutingTable& routing_table, NonRoutingTable& non_routing_table);
   virtual ~MockNetworkUtils();
 
   MOCK_METHOD1(SendToClosestNode, void(const protobuf::Message& message));
   MOCK_METHOD3(SendToDirect, void(const protobuf::Message& message,
-                                  NodeId peer,
-                                  NodeId connection));
+                                  const NodeId& peer,
+                                  const NodeId& connection));
 
  private:
   MockNetworkUtils &operator=(const MockNetworkUtils&);

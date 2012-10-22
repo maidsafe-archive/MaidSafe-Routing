@@ -313,7 +313,7 @@ TEST_F(RoutingNetworkTest, FUNC_SendToGroup) {
 
   EXPECT_EQ(0, this->nodes_[last_index]->MessagesSize())
         << "Not expected message at Node : "
-        << HexSubstr(this->nodes_[last_index]->node_id().String());
+        << HexSubstr(this->nodes_[last_index]->node_id().string());
   EXPECT_EQ(message_count * (Parameters::node_group_size), receivers_message_count);
 }
 
@@ -329,7 +329,7 @@ TEST_F(RoutingNetworkTest, FUNC_SendToGroupSelfId) {
 
   EXPECT_EQ(0, this->nodes_[0]->MessagesSize())
         << "Not expected message at Node : "
-        << HexSubstr(this->nodes_[0]->node_id().String());
+        << HexSubstr(this->nodes_[0]->node_id().string());
   EXPECT_EQ(message_count * (Parameters::node_group_size), receivers_message_count);
 }
 
@@ -346,7 +346,7 @@ TEST_F(RoutingNetworkTest, FUNC_SendToGroupClientSelfId) {
 
   EXPECT_EQ(0, this->nodes_[client_index]->MessagesSize())
         << "Not expected message at Node : "
-        << HexSubstr(this->nodes_[client_index]->node_id().String());
+        << HexSubstr(this->nodes_[client_index]->node_id().string());
   EXPECT_EQ(message_count * (Parameters::node_group_size), receivers_message_count);
 }
 
@@ -363,7 +363,7 @@ TEST_F(RoutingNetworkTest, FUNC_SendToGroupInHybridNetwork) {
 
   EXPECT_EQ(0, this->nodes_[last_index]->MessagesSize())
         << "Not expected message at Node : "
-        << HexSubstr(this->nodes_[last_index]->node_id().String());
+        << HexSubstr(this->nodes_[last_index]->node_id().string());
   EXPECT_EQ(message_count * (Parameters::node_group_size), receivers_message_count);
 }
 
@@ -427,7 +427,6 @@ TEST_F(RoutingNetworkTest, FUNC_JoinAfterBootstrapLeaves) {
   this->AddNode(false, NodeId());
 //  this->AddNode(true, NodeId());
 }
-
 
 // This test produces the recursive call.
 TEST_F(RoutingNetworkTest, FUNC_RecursiveCall) {
@@ -495,38 +494,36 @@ TEST_F(RoutingNetworkTest, FUNC_SendToClientWithSameId) {
 
 TEST_F(RoutingNetworkTest, FUNC_GetRandomExistingNode) {
   this->SetUpNetwork(kNetworkSize);
-  uint32_t collisions(0), random_node((RandomUint32() % kNetworkSize - 2) + 2);
+  uint32_t collisions(0);
+  uint32_t kChoseIndex((RandomUint32() % kNetworkSize - 2) + 2);
   EXPECT_TRUE(this->Send(1));
-  EXPECT_LT(this->nodes_[random_node]->RandomNodeVector().size(), 98);
-  for (auto node : this->nodes_[random_node]->RandomNodeVector())
-    LOG(kVerbose) << HexSubstr(node.String());
+//  EXPECT_LT(this->nodes_[random_node]->RandomNodeVector().size(), 98);
+//  for (auto node : this->nodes_[random_node]->RandomNodeVector())
+//    LOG(kVerbose) << HexSubstr(node.string());
   NodeId last_node(NodeId::kRandomId), last_random(NodeId::kRandomId);
   for (auto index(0); index < 100; ++index) {
-    last_node = this->nodes_[random_node]->GetRandomExistingNode();
+    last_node = this->nodes_[kChoseIndex]->GetRandomExistingNode();
     if (last_node == last_random) {
-      LOG(kVerbose) << HexSubstr(last_random.String()) << ", " << HexSubstr(last_node.String());
+      LOG(kVerbose) << HexSubstr(last_random.string()) << ", " << HexSubstr(last_node.string());
       collisions++;
-      for (auto node : this->nodes_[random_node]->RandomNodeVector())
-        LOG(kVerbose) << HexSubstr(node.String());
+//      for (auto node : this->nodes_[random_node]->RandomNodeVector())
+//        LOG(kVerbose) << HexSubstr(node.string());
     }
     last_random = last_node;
   }
   ASSERT_LT(collisions, 50);
-  while (this->nodes_[random_node]->RandomNodeVector().size() < 100)
-    this->nodes_[random_node]->AddExistingRandomNode(NodeId(NodeId::kRandomId));
-    this->nodes_[random_node]->AddExistingRandomNode(NodeId(NodeId::kRandomId));
+  for (int i(0); i < 120; ++i)
+    this->nodes_[kChoseIndex]->AddNodeToRandomNodeHelper(NodeId(NodeId::kRandomId));
 
-
-
-  last_random = NodeId(NodeId::kRandomId);
-  for (auto index(0); index < 1000; ++index) {
-    last_node = this->nodes_[random_node]->RandomNodeVector().at(0);
-    EXPECT_EQ(last_node, this->nodes_[random_node]->GetRandomExistingNode());
-    EXPECT_NE(last_random, last_node) << HexSubstr(last_random.String()) << ", "
-                                      << HexSubstr(last_node.String()) << "," << index;
-    last_random = last_node;
-    this->nodes_[random_node]->AddExistingRandomNode(NodeId(NodeId::kRandomId));
+  // Check there are 100 unique IDs in the RandomNodeHelper
+  std::set<NodeId> random_node_ids;
+  int attempts(0);
+  while (attempts < 10000 && random_node_ids.size() < 100) {
+    NodeId retrieved_id(this->nodes_[kChoseIndex]->GetRandomExistingNode());
+    this->nodes_[kChoseIndex]->RemoveNodeFromRandomNodeHelper(retrieved_id);
+    random_node_ids.insert(retrieved_id);
   }
+  EXPECT_EQ(100, random_node_ids.size());
 }
 
 TEST_F(RoutingNetworkTest, FUNC_BasicNetworkChurn) {
@@ -569,8 +566,8 @@ TEST_F(RoutingNetworkTest, FUNC_BasicNetworkChurn) {
 
 TEST_F(RoutingNetworkTest, FUNC_MessagingNetworkChurn) {
   size_t random(RandomUint32());
-  const size_t vault_network_size(40 + random % 10);
-  const size_t clients_in_network(10 + random % 3);
+  const size_t vault_network_size(20 + random % 10);
+  const size_t clients_in_network(5 + random % 3);
   SetUpNetwork(vault_network_size, clients_in_network);
   LOG(kInfo) << "Finished setting up network\n\n\n\n";
 
@@ -581,7 +578,8 @@ TEST_F(RoutingNetworkTest, FUNC_MessagingNetworkChurn) {
 
   std::vector<NodeId> new_node_ids;
   const size_t up_count(vault_network_size / 3);
-  const size_t down_count(vault_network_size / 5), downed(0);
+  const size_t down_count(vault_network_size / 5);
+  size_t downed(0);
   while (new_node_ids.size() < up_count) {
     NodeId new_id(NodeId::kRandomId);
     auto itr(Find(new_id, existing_node_ids));
@@ -635,6 +633,7 @@ TEST_F(RoutingNetworkTest, FUNC_MessagingNetworkChurn) {
 //                                      this->RemoveRandomClient();
 //                                    else
                                       this->RemoveRandomVault();
+                                      ++downed;
                                     Sleep(boost::posix_time::seconds(10));
                                   }
                                 });
@@ -645,7 +644,6 @@ TEST_F(RoutingNetworkTest, FUNC_MessagingNetworkChurn) {
                                 while (run) {
                                   if (new_node_ids.empty())
                                     return;
-
 //                                  if (RandomUint32() % 5 == 0)
 //                                    this->AddNode(true, new_node_ids.back());
 //                                  else
@@ -662,6 +660,14 @@ TEST_F(RoutingNetworkTest, FUNC_MessagingNetworkChurn) {
   // Stop all threads
   run = false;
   messaging_handle.get();
+
+  LOG(kInfo) << "\n\t Initial count of Vault nodes : " << vault_network_size
+             << "\n\t Initial count of client nodes : " << clients_in_network
+             << "\n\t Current count of nodes : " << this->nodes_.size()
+             << "\n\t Up count of nodes : " << up_count
+             << "\n\t down_count count of nodes : " << down_count;
+  auto expected_current_size = vault_network_size + clients_in_network + up_count - down_count;
+  EXPECT_EQ(expected_current_size, nodes_.size());
 }
 
 }  // namespace test

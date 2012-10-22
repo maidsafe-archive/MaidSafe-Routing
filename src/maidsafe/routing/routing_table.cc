@@ -28,21 +28,19 @@ namespace maidsafe {
 
 namespace routing {
 
-RoutingTable::RoutingTable(const asymm::Keys& keys, const bool& client_mode)
+RoutingTable::RoutingTable(const Fob& fob, const bool& client_mode)
     : max_size_(client_mode ? Parameters::max_client_routing_table_size :
                               Parameters::max_routing_table_size),
-      client_mode_(client_mode),
-      keys_(keys),
-      sorted_(false),
-      kNodeId_(NodeId(keys_.identity)),
+      kClientMode_(client_mode),
+      kFob_(fob),
+      kNodeId_(NodeId(kFob_.identity)),
       kConnectionId_((client_mode ? NodeId(NodeId::kRandomId) : kNodeId_)),
       furthest_group_node_id_(),
       mutex_(),
       remove_node_functor_(),
       network_status_functor_(),
       close_node_replaced_functor_(),
-      nodes_(),
-      pending_nodes_() {}
+      nodes_() {}
 
 bool RoutingTable::AddNode(NodeInfo& peer) {
   return AddOrCheckNode(peer, true);
@@ -60,7 +58,7 @@ bool RoutingTable::AddOrCheckNode(NodeInfo& peer, const bool& remove) {
   {
     std::lock_guard<std::mutex> lock(mutex_);
 
-    if (!peer.node_id.IsValid() || peer.node_id.Empty()) {
+    if (peer.node_id.IsZero()) {
       LOG(kError) << "Attempt to add an invalid node";
       return false;
     }
@@ -77,7 +75,7 @@ bool RoutingTable::AddOrCheckNode(NodeInfo& peer, const bool& remove) {
                               return node_info.node_id == peer.node_id;
                           }));
     if (itr != nodes_.end()) {
-      LOG(kVerbose) << "Node " << HexSubstr(peer.node_id.String()) << " already in routing table.";
+      LOG(kVerbose) << "Node " << HexSubstr(peer.node_id.string()) << " already in routing table.";
       return false;
     }
 
@@ -94,7 +92,7 @@ bool RoutingTable::AddOrCheckNode(NodeInfo& peer, const bool& remove) {
   if (return_value && remove) {  // Firing functors on Add only
     UpdateNetworkStatus(routing_table_size);
 
-    if (!removed_node.node_id.Empty()) {
+    if (!removed_node.node_id.IsZero()) {
       LOG(kVerbose) << "Routing table removed node id : " << DebugId(removed_node.node_id)
                     << ", connection id : " << DebugId(removed_node.connection_id);
       if (remove_node_functor_)
@@ -130,7 +128,7 @@ NodeInfo RoutingTable::DropNode(const NodeId& node_to_drop, const bool& routing_
     }
   }
 
-  if (!dropped_node.node_id.Empty()) {
+  if (!dropped_node.node_id.IsZero()) {
     assert(nodes_.size() <= std::numeric_limits<uint16_t>::max());
     UpdateNetworkStatus(static_cast<uint16_t>(nodes_.size()));
   }
@@ -140,10 +138,10 @@ NodeInfo RoutingTable::DropNode(const NodeId& node_to_drop, const bool& routing_
       close_node_replaced_functor_(new_close_nodes);
   }
 
-  if (!dropped_node.node_id.Empty()) {
+  if (!dropped_node.node_id.IsZero()) {
     LOG(kVerbose) << "Routing table dropped node id : " << DebugId(dropped_node.node_id)
                   << ", connection id : " << DebugId(dropped_node.connection_id);
-    if (remove_node_functor_  && !routing_only)
+    if (remove_node_functor_ && !routing_only)
       remove_node_functor_(dropped_node, false);
   }
   LOG(kInfo) << PrintRoutingTable();
@@ -172,7 +170,7 @@ bool RoutingTable::IsThisNodeInRange(const NodeId& target_id, const uint16_t ran
 }
 
 // bool RoutingTable::IsThisNodeClosestTo(const NodeId& target_id) {
-//  if (!target_id.IsValid() || target_id.Empty()) {
+//  if (!target_id.IsValid() || target_id.IsZero()) {
 //    LOG(kError) << "Invalid target_id passed.";
 //    return false;
 //  }
@@ -184,7 +182,7 @@ bool RoutingTable::IsThisNodeInRange(const NodeId& target_id, const uint16_t ran
 // }
 
 bool RoutingTable::IsThisNodeClosestTo(const NodeId& target_id, bool ignore_exact_match) {
-  if (!target_id.IsValid() || target_id.Empty()) {
+  if (target_id.IsZero()) {
     LOG(kError) << "Invalid target_id passed.";
     return false;
   }
@@ -216,7 +214,7 @@ bool RoutingTable::IsConnected(const NodeId& node_id) const {
 }
 
 bool RoutingTable::ConfirmGroupMembers(const NodeId& node1, const NodeId& node2) {
-  NodeId difference = NodeId(kKeys().identity) ^ FurthestCloseNode();
+  NodeId difference = NodeId(kFob().identity) ^ FurthestCloseNode();
   return (node1 ^ node2) < difference;
 }
 
@@ -245,7 +243,7 @@ std::vector<NodeInfo> RoutingTable::CheckGroupChange() {
 
 // bucket 0 is us, 511 is furthest bucket (should fill first)
 int16_t RoutingTable::BucketIndex(const NodeId& rhs) const {
-  uint16_t bucket = kKeySizeBits - 1;
+  uint16_t bucket = (8 * NodeId::kSize) - 1;
   std::string this_id_binary = kNodeId_.ToStringEncoded(NodeId::kBinary);
   std::string rhs_id_binary = rhs.ToStringEncoded(NodeId::kBinary);
   auto this_it = this_id_binary.begin();
@@ -260,7 +258,7 @@ int16_t RoutingTable::BucketIndex(const NodeId& rhs) const {
 }
 
 bool RoutingTable::CheckValidParameters(const NodeInfo& node) const {
-  if (!asymm::ValidateKey(node.public_key, 0)) {
+  if (!asymm::ValidateKey(node.public_key)) {
     LOG(kInfo) << "Invalid public key";
     return false;
   }
@@ -276,7 +274,7 @@ bool RoutingTable::CheckParametersAreUnique(const NodeInfo& node) const {
   if (std::find_if(nodes_.begin(),
                    nodes_.end(),
                    [node](const NodeInfo& node_info) {
-                     return asymm::MatchingPublicKeys(node_info.public_key, node.public_key);
+                     return asymm::MatchingKeys(node_info.public_key, node.public_key);
                    }) != nodes_.end()) {
     LOG(kInfo) << "Already have node with this public key";
     return false;
@@ -369,7 +367,7 @@ void RoutingTable::NthElementSortFromTarget(const NodeId& target, const uint16_t
 }
 
 NodeId RoutingTable::FurthestCloseNode() {
-  return GetNthClosestNode(NodeId(kKeys().identity), Parameters::closest_nodes_size).node_id;
+  return GetNthClosestNode(NodeId(kFob().identity), Parameters::closest_nodes_size).node_id;
 }
 
 NodeInfo RoutingTable::GetClosestNode(const NodeId& target_id, bool ignore_exact_match) {
@@ -401,7 +399,7 @@ NodeInfo RoutingTable::GetClosestNode(const NodeId& target_id,
     return closest_nodes[0];
 
   for (auto node_info : closest_nodes) {
-    if (std::find(exclude.begin(), exclude.end(), node_info.node_id.String()) == exclude.end())
+    if (std::find(exclude.begin(), exclude.end(), node_info.node_id.string()) == exclude.end())
       return node_info;
   }
   return NodeInfo();
@@ -460,7 +458,7 @@ std::vector<NodeInfo> RoutingTable::GetClosestNodeInfo(const NodeId& from,
 void RoutingTable::UpdateNetworkStatus(const uint16_t& size) const {
   if (network_status_functor_)
     network_status_functor_(static_cast<int>(size) * 100 / max_size_);
-  LOG(kInfo) << DebugId(kNodeId_) << "Updating network status !!!" << (size * 100) / max_size_;
+  LOG(kVerbose) << DebugId(kNodeId_) << "Updating network status !!! " << (size * 100) / max_size_;
 }
 
 size_t RoutingTable::Size() const {
@@ -468,8 +466,8 @@ size_t RoutingTable::Size() const {
   return static_cast<uint16_t>(nodes_.size());
 }
 
-asymm::Keys RoutingTable::kKeys() const {
-  return keys_;
+Fob RoutingTable::kFob() const {
+  return kFob_;
 }
 
 NodeId RoutingTable::kNodeId() const {

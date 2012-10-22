@@ -66,7 +66,7 @@ bool ValidateAndAddToRoutingTable(NetworkUtils& network,
                                   const asymm::PublicKey& public_key,
                                   const bool& client) {
   if (network.MarkConnectionAsValid(connection_id) != kSuccess) {
-    LOG(kError) << "[" << HexSubstr(routing_table.kKeys().identity) << "] "
+    LOG(kError) << "[" << HexSubstr(routing_table.kFob().identity) << "] "
                 << ". Rudp failed to validate connection with  Peer id : "
                 << DebugId(peer_id)
                 << " , Connection id : "
@@ -81,7 +81,7 @@ bool ValidateAndAddToRoutingTable(NetworkUtils& network,
   bool routing_accepted_node(false);
   if (client) {
     NodeId furthest_close_node_id =
-        routing_table.GetNthClosestNode(NodeId(routing_table.kKeys().identity),
+        routing_table.GetNthClosestNode(NodeId(routing_table.kFob().identity),
                                         Parameters::closest_nodes_size).node_id;
 
     if (non_routing_table.AddNode(peer, furthest_close_node_id))
@@ -95,14 +95,14 @@ bool ValidateAndAddToRoutingTable(NetworkUtils& network,
     LOG(kVerbose) << "[" << DebugId(routing_table.kNodeId()) << "] "
                   << "added " << (client ? "client-" : "") << "node to "
                   << (client ? "non-" : "") << "routing table.  Node ID: "
-                  << HexSubstr(peer_id.String());
+                  << HexSubstr(peer_id.string());
     return true;
   }
 
   LOG(kInfo) << "[" << DebugId(routing_table.kNodeId()) << "] "
              << "failed to add " << (client ? "client-" : "") << "node to "
              << (client ? "non-" : "") << "routing table.  Node ID: "
-             << HexSubstr(peer_id.String())
+             << HexSubstr(peer_id.string())
              << ". Added rudp connection will be removed.";
   network.Remove(connection_id);
   return false;
@@ -114,7 +114,7 @@ void HandleSymmetricNodeAdd(RoutingTable& /*routing_table*/, const NodeId& /*pee
 //  if (routing_table.IsConnected(peer_id)) {
 //    LOG(kVerbose) << "[" << HexSubstr(routing_table.kKeys().identity) << "] "
 //                  << "already added node to routing table.  Node ID: "
-//                  << HexSubstr(peer_id.String())
+//                  << HexSubstr(peer_id.string())
 //                  << "Node is behind symmetric router but connected on local endpoint";
 //    return;
 //  }
@@ -126,11 +126,11 @@ void HandleSymmetricNodeAdd(RoutingTable& /*routing_table*/, const NodeId& /*pee
 
 //  if (routing_table.AddNode(peer)) {
 //    LOG(kVerbose) << "[" << HexSubstr(routing_table.kKeys().identity) << "] "
-//                  << "added node to routing table.  Node ID: " << HexSubstr(peer_id.String())
+//                  << "added node to routing table.  Node ID: " << HexSubstr(peer_id.string())
 //                  << "Node is behind symmetric router !";
 //  } else {
 //    LOG(kVerbose) << "Failed to add node to routing table.  Node id : "
-//                  << HexSubstr(peer_id.String());
+//                  << HexSubstr(peer_id.string());
 //  }
 }
 
@@ -155,7 +155,7 @@ bool IsDirect(const protobuf::Message& message) {
 }
 
 bool CheckId(const std::string& id_to_test) {
-  return id_to_test.size() == kKeySizeBytes;
+  return id_to_test.size() == NodeId::kSize;
 }
 
 bool ValidateMessage(const protobuf::Message &message) {
@@ -198,13 +198,12 @@ bool ValidateMessage(const protobuf::Message &message) {
       return false;
   }
 
-  if (message.has_relay_id() &&
-      (!NodeId(message.relay_id()).IsValid() || NodeId(message.relay_id()).Empty())) {
+  if (message.has_relay_id() && NodeId(message.relay_id()).IsZero()) {
     LOG(kWarning) << "Invalid relay id field.";
     return false;
   }
 
-  if (message.has_relay_connection_id() && NodeId(message.relay_connection_id()).Empty()) {
+  if (message.has_relay_connection_id() && NodeId(message.relay_connection_id()).IsZero()) {
     LOG(kWarning) << "Invalid relay connection id field.";
     return false;
   }
@@ -242,33 +241,33 @@ std::string MessageTypeString(const protobuf::Message& message) {
   std::string message_type;
   switch (static_cast<MessageType>(message.type())) {
     case MessageType::kPing :
-      message_type = "kPing";
+      message_type = "kPing     ";
       break;
     case MessageType::kConnect :
-      message_type = "kConnect";
+      message_type = "kConnect  ";
       break;
     case MessageType::kFindNodes :
       message_type = "kFindNodes";
       break;
     case MessageType::kProxyConnect :
-      message_type = "kProxyConnect";
+      message_type = "kPxConnect";
       break;
     case MessageType::kConnectSuccess :
-      message_type = "kConnectSuccess";
+      message_type = "kC-Success";
       break;
     case MessageType::kConnectSuccessAcknowledgement :
-      message_type = "kConnectSuccessAcknowledgement";
+      message_type = "kC-Suc-Ack";
       break;
     case MessageType::kNodeLevel :
       message_type = "kNodeLevel";
       break;
     default:
-      message_type = "Unknown";
+      message_type = "Unknown  ";
   }
   if (message.request())
-    message_type = message_type + " Request";
+    message_type = message_type + " Req";
   else
-    message_type = message_type + " Response";
+    message_type = message_type + " Res";
   return message_type;
 }
 

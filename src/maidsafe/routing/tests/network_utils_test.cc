@@ -23,6 +23,7 @@
 #include "maidsafe/common/node_id.h"
 #include "maidsafe/common/test.h"
 #include "maidsafe/common/utils.h"
+#include "maidsafe/rudp/return_codes.h"
 
 #include "maidsafe/rudp/managed_connections.h"
 #include "maidsafe/routing/network_utils.h"
@@ -63,14 +64,12 @@ TEST(NetworkUtilsTest, BEH_ProcessSendDirectInvalidEndpoint) {
   message.set_direct(true);
   message.set_type(10);
   rudp::ManagedConnections rudp;
-  asymm::Keys keys(MakeKeys());
-  RoutingTable routing_table(keys, false);
-  NonRoutingTable non_routing_table(keys);
-  AsioService asio_service(0);
-  Timer timer(asio_service);
-  NetworkUtils network(routing_table, non_routing_table, timer);
+  Fob fob(MakeFob());
+  RoutingTable routing_table(fob, false);
+  NonRoutingTable non_routing_table(fob);
+  AsioService asio_service(1);
+  NetworkUtils network(routing_table, non_routing_table);
   network.SendToClosestNode(message);
-  network.Stop();
 }
 
 TEST(NetworkUtilsTest, BEH_ProcessSendUnavailableDirectEndpoint) {
@@ -82,15 +81,13 @@ TEST(NetworkUtilsTest, BEH_ProcessSendUnavailableDirectEndpoint) {
   message.set_direct(true);
   message.set_type(10);
   rudp::ManagedConnections rudp;
-  asymm::Keys keys(MakeKeys());
-  RoutingTable routing_table(keys, false);
-  NonRoutingTable non_routing_table(keys);
+  Fob fob(MakeFob());
+  RoutingTable routing_table(fob, false);
+  NonRoutingTable non_routing_table(fob);
   Endpoint endpoint(GetLocalIp(),  maidsafe::test::GetRandomPort());
-  AsioService asio_service(0);
-  Timer timer(asio_service);
-  NetworkUtils network(routing_table, non_routing_table, timer);
+  AsioService asio_service(1);
+  NetworkUtils network(routing_table, non_routing_table);
   network.SendToDirect(message, NodeId(NodeId::kRandomId), NodeId(NodeId::kRandomId));
-  network.Stop();
 }
 
 TEST(NetworkUtilsTest, FUNC_ProcessSendDirectEndpoint) {
@@ -109,7 +106,7 @@ TEST(NetworkUtilsTest, FUNC_ProcessSendDirectEndpoint) {
   auto connection_completion_future = connection_completion_promise.get_future();
 
   protobuf::Message sent_message;
-  sent_message.set_destination_id(NodeId(RandomString(64)).String());
+  sent_message.set_destination_id(NodeId(RandomString(64)).string());
   sent_message.set_routing_message(true);
   sent_message.set_request(true);
   sent_message.add_data(std::string(1024 * 256, 'A'));
@@ -145,15 +142,15 @@ TEST(NetworkUtilsTest, FUNC_ProcessSendDirectEndpoint) {
     };
 
   rudp::ConnectionLostFunctor connection_lost_functor = [](const NodeId& node_id) {
-          LOG(kInfo) << " -- Lost Connection with : " << HexSubstr(node_id.String());
+          LOG(kInfo) << " -- Lost Connection with : " << HexSubstr(node_id.string());
     };
 
-  asymm::Keys keys1(MakeKeys());
-  NodeId node_id1(keys1.identity);
+  Fob fob1(MakeFob());
+  NodeId node_id1(fob1.identity);
   std::shared_ptr<asymm::PrivateKey>
-      private_key1(std::make_shared<asymm::PrivateKey>(keys1.private_key));
+      private_key1(std::make_shared<asymm::PrivateKey>(fob1.keys.private_key));
   std::shared_ptr<asymm::PublicKey>
-      public_key1(std::make_shared<asymm::PublicKey>(keys1.public_key));
+      public_key1(std::make_shared<asymm::PublicKey>(fob1.keys.public_key));
   rudp::NatType nat_type;
   auto a1 = std::async(std::launch::async, [=, &rudp1, &nat_type]()->NodeId {
       std::vector<Endpoint> bootstrap_endpoint(1, endpoint2);
@@ -171,10 +168,10 @@ TEST(NetworkUtilsTest, FUNC_ProcessSendDirectEndpoint) {
       }
       return chosen_bootstrap_peer;
   });
-  asymm::Keys keys2(MakeKeys());
-  NodeId node_id2(keys2.identity);
-  std::shared_ptr<asymm::PrivateKey> private_key2(new asymm::PrivateKey(keys2.private_key));
-  std::shared_ptr<asymm::PublicKey> public_key2(new asymm::PublicKey(keys2.public_key));
+  Fob fob2(MakeFob());
+  NodeId node_id2(fob2.identity);
+  std::shared_ptr<asymm::PrivateKey> private_key2(new asymm::PrivateKey(fob2.keys.private_key));
+  std::shared_ptr<asymm::PublicKey> public_key2(new asymm::PublicKey(fob2.keys.public_key));
   auto a2 = std::async(std::launch::async, [=, &rudp2, &nat_type]()->NodeId {
       std::vector<Endpoint> bootstrap_endpoint(1, endpoint1);
       NodeId chosen_bootstrap_peer;
@@ -204,13 +201,12 @@ TEST(NetworkUtilsTest, FUNC_ProcessSendDirectEndpoint) {
   rudp2.MarkConnectionAsValid(node_id1, endpoint);
   LOG(kVerbose) << " ------------------------   Zero state setup done  ----------------------- ";
 
-  asymm::Keys keys(MakeKeys());
-  NodeId node_id3(keys.identity);
-  RoutingTable routing_table(keys, false);
-  NonRoutingTable non_routing_table(keys);
-  AsioService asio_service(0);
-  Timer timer(asio_service);
-  NetworkUtils network(routing_table, non_routing_table, timer);
+  Fob fob(MakeFob());
+  NodeId node_id3(fob.identity);
+  RoutingTable routing_table(fob, false);
+  NonRoutingTable non_routing_table(fob);
+  AsioService asio_service(1);
+  NetworkUtils network(routing_table, non_routing_table);
 
   std::vector<Endpoint> bootstrap_endpoint(1, endpoint2);
   EXPECT_EQ(kSuccess, network.Bootstrap(bootstrap_endpoint,
@@ -219,9 +215,9 @@ TEST(NetworkUtilsTest, FUNC_ProcessSendDirectEndpoint) {
 //   rudp::EndpointPair endpoint_pair2, endpoint_pair3;
   rudp::NatType this_nat_type;
   network.GetAvailableEndpoint(node_id2, endpoint_pair_2, endpoint_pair_3, this_nat_type);
-  EXPECT_EQ(kSuccess,
+  EXPECT_EQ(rudp::kBootstrapConnectionAlreadyExists,
             rudp2.GetAvailableEndpoint(node_id3, endpoint_pair_3, endpoint_pair_2, this_nat_type));
-  EXPECT_EQ(kSuccess, network.Add(node_id2, endpoint_pair_2, "validation_3->2"));
+  EXPECT_EQ(rudp::kSuccess, network.Add(node_id2, endpoint_pair_2, "validation_3->2"));
 
   EXPECT_EQ(kSuccess, rudp2.Add(node_id3, endpoint_pair_3, "validation_2->3"));
   if (!connection_completion_future.timed_wait(bptime::seconds(10))) {
@@ -236,7 +232,6 @@ TEST(NetworkUtilsTest, FUNC_ProcessSendDirectEndpoint) {
     ASSERT_TRUE(false) << "Failed waiting for node-2 to receive "
                        << expected_message_at_node << "messsages";
   }
-  network.Stop();
 }
 
 // RT with only 1 active node and 7 inactive node
@@ -263,13 +258,12 @@ TEST(NetworkUtilsTest, FUNC_ProcessSendRecursiveSendOn) {
   sent_message.set_routing_message(true);
   sent_message.set_request(true);
   sent_message.set_client_node(false);
-  asymm::Keys keys(MakeKeys());
-  NodeId node_id3(keys.identity);
-  RoutingTable routing_table(keys, false);
-  NonRoutingTable non_routing_table(keys);
-  AsioService asio_service(0);
-  Timer timer(asio_service);
-  NetworkUtils network(routing_table, non_routing_table, timer);
+  Fob fob(MakeFob());
+  NodeId node_id3(fob.identity);
+  RoutingTable routing_table(fob, false);
+  NonRoutingTable non_routing_table(fob);
+  AsioService asio_service(1);
+  NetworkUtils network(routing_table, non_routing_table);
 
   rudp::MessageReceivedFunctor message_received_functor1 = [](const std::string& message) {
       LOG(kInfo) << " -- Received: " << message;
@@ -299,18 +293,18 @@ TEST(NetworkUtilsTest, FUNC_ProcessSendRecursiveSendOn) {
     };
 
   rudp::ConnectionLostFunctor connection_lost_functor = [](const NodeId& node_id) {
-      LOG(kInfo) << " -- Lost Connection with : " << HexSubstr(node_id.String());
+      LOG(kInfo) << " -- Lost Connection with : " << HexSubstr(node_id.string());
     };
 
   rudp::ConnectionLostFunctor connection_lost_functor3 = [&](const NodeId& node_id) {
       routing_table.DropNode(node_id, true);
-      LOG(kInfo) << " -- Lost Connection with : " << HexSubstr(node_id.String());
+      LOG(kInfo) << " -- Lost Connection with : " << HexSubstr(node_id.string());
     };
 
-  asymm::Keys keys1(MakeKeys());
-  NodeId node_id1(keys1.identity);
-  std::shared_ptr<asymm::PrivateKey> private_key1(new asymm::PrivateKey(keys1.private_key));
-  std::shared_ptr<asymm::PublicKey> public_key1(new asymm::PublicKey(keys1.public_key));
+  Fob fob1(MakeFob());
+  NodeId node_id1(fob1.identity);
+  std::shared_ptr<asymm::PrivateKey> private_key1(new asymm::PrivateKey(fob1.keys.private_key));
+  std::shared_ptr<asymm::PublicKey> public_key1(new asymm::PublicKey(fob1.keys.public_key));
   rudp::NatType nat_type;
   auto a1 = std::async(std::launch::async, [=, &rudp1, &nat_type]()->NodeId {
       std::vector<Endpoint> bootstrap_endpoint(1, endpoint2);
@@ -329,10 +323,10 @@ TEST(NetworkUtilsTest, FUNC_ProcessSendRecursiveSendOn) {
       return chosen_bootstrap_peer;
   });
   NodeInfoAndPrivateKey node2 = MakeNodeInfoAndKeys();
-  asymm::Keys keys2(GetKeys(node2));
-  NodeId node_id2(keys2.identity);
-  std::shared_ptr<asymm::PrivateKey> private_key2(new asymm::PrivateKey(keys2.private_key));
-  std::shared_ptr<asymm::PublicKey> public_key2(new asymm::PublicKey(keys2.public_key));
+  Fob fob2(GetFob(node2));
+  NodeId node_id2(fob2.identity);
+  std::shared_ptr<asymm::PrivateKey> private_key2(new asymm::PrivateKey(fob2.keys.private_key));
+  std::shared_ptr<asymm::PublicKey> public_key2(new asymm::PublicKey(fob2.keys.public_key));
   auto a2 = std::async(std::launch::async, [=, &rudp2, &nat_type]()->NodeId {
       std::vector<Endpoint> bootstrap_endpoint(1, endpoint1);
       NodeId chosen_bootstrap_peer;
@@ -370,9 +364,9 @@ TEST(NetworkUtilsTest, FUNC_ProcessSendRecursiveSendOn) {
                                         connection_lost_functor3));
   rudp::EndpointPair endpoint_pair2, endpoint_pair3;
   rudp::NatType this_nat_type;
-  EXPECT_EQ(kSuccess, network.GetAvailableEndpoint(node_id2, endpoint_pair_2,
-                                                   endpoint_pair3, this_nat_type));
-  EXPECT_EQ(kSuccess,
+  EXPECT_EQ(rudp::kBootstrapConnectionAlreadyExists,
+            network.GetAvailableEndpoint(node_id2, endpoint_pair_2, endpoint_pair3, this_nat_type));
+  EXPECT_EQ(rudp::kBootstrapConnectionAlreadyExists,
             rudp2.GetAvailableEndpoint(node_id3, endpoint_pair3, endpoint_pair2, this_nat_type));
   EXPECT_EQ(kSuccess, network.Add(node_id2, endpoint_pair2, "validation_3->2"));
   EXPECT_EQ(kSuccess, rudp2.Add(node_id3, endpoint_pair3, "validation_2->3"));
@@ -387,11 +381,11 @@ TEST(NetworkUtilsTest, FUNC_ProcessSendRecursiveSendOn) {
   std::vector<NodeInfoAndPrivateKey> nodes;
   for (auto i(0); i != 8; ++i)
     nodes.push_back(MakeNodeInfoAndKeys());
-  SortFromThisNode(NodeId(keys.identity), nodes);
+  SortFromThisNode(NodeId(fob.identity), nodes);
 
   // add the active node at the end of the RT
   nodes.at(7) = node2;  //  second node
-  sent_message.set_destination_id(NodeId(nodes.at(0).node_info.node_id).String());
+  sent_message.set_destination_id(NodeId(nodes.at(0).node_info.node_id).string());
 
   for (auto i(0); i != 8; ++i)
     ASSERT_TRUE(routing_table.AddNode(nodes.at(i).node_info));
@@ -404,8 +398,6 @@ TEST(NetworkUtilsTest, FUNC_ProcessSendRecursiveSendOn) {
     ASSERT_TRUE(false) << "Failed waiting for node-2 to receive "
                        << expected_message_at_node << "messsages";
   }
-
-  network.Stop();
 }
 
 }  // namespace test

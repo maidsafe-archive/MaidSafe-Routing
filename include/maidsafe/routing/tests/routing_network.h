@@ -28,6 +28,8 @@
 
 #include "maidsafe/rudp/nat_type.h"
 
+#include "maidsafe/private/utils/fob.h"
+
 #include "maidsafe/routing/api_config.h"
 #include "maidsafe/routing/node_info.h"
 #include "maidsafe/routing/parameters.h"
@@ -97,21 +99,20 @@ class GenericNode {
   bool NonRoutingTableHasNode(const NodeId& node_id);
   testing::AssertionResult DropNode(const NodeId& node_id);
   std::vector<NodeInfo> RoutingTable() const;
-  std::vector<NodeId> RandomNodeVector();
-  NodeId GetRandomExistingNode();
-  void AddExistingRandomNode(const NodeId& node_id);
+  NodeId GetRandomExistingNode() const;
+  void AddNodeToRandomNodeHelper(const NodeId& node_id);
+  void RemoveNodeFromRandomNodeHelper(const NodeId& node_id);
 
   static size_t next_node_id_;
   size_t MessagesSize() const;
   void ClearMessages();
-  asymm::Keys keys();
+  Fob fob();
   friend class GenericNetwork;
   Functors functors_;
 
  protected:
   size_t id_;
   std::shared_ptr<NodeInfoAndPrivateKey> node_info_plus_;
-  std::shared_ptr<Routing> routing_;
   std::mutex mutex_;
   bool client_mode_;
   bool anonymous_;
@@ -120,6 +121,7 @@ class GenericNode {
   rudp::NatType nat_type_;
   boost::asio::ip::udp::endpoint endpoint_;
   std::vector<std::string> messages_;
+  std::shared_ptr<Routing> routing_;
 };
 
 class GenericNetwork : public testing::Test {
@@ -127,8 +129,6 @@ class GenericNetwork : public testing::Test {
   typedef std::shared_ptr<GenericNode> NodePtr;
   GenericNetwork();
   ~GenericNetwork();
-
-  std::vector<NodePtr> nodes_;
 
  protected:
   virtual void SetUp();
@@ -150,11 +150,14 @@ class GenericNetwork : public testing::Test {
   uint16_t NonClientNodesSize() const;
   void AddNodeDetails(NodePtr node);
 
-  mutable std::mutex mutex_;
+  mutable std::mutex mutex_, fobs_mutex_;
   std::vector<boost::asio::ip::udp::endpoint> bootstrap_endpoints_;
   fs::path bootstrap_path_;
-  std::vector<asymm::Keys> key_pairs_;
+  std::vector<Fob> fobs_;
   size_t client_index_;
+
+ public:
+  std::vector<NodePtr> nodes_;
 };
 
 }  // namespace test
