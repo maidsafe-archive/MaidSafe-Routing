@@ -221,7 +221,7 @@ void ResponseHandler::SendConnectRequest(const NodeId peer_node_id) {
                     << ". Rudp returned :"
                     << ret_val;
       } else {
-        LOG(kInfo) << "Already ongoing attempt to : " << DebugId(peer.node_id);
+        LOG(kVerbose) << "Already ongoing attempt to : " << DebugId(peer.node_id);
       }
       return;
     }

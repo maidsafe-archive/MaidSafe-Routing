@@ -101,6 +101,7 @@ void Routing::Impl::ConnectFunctors(const Functors& functors) {
   routing_table_.set_close_node_replaced_functor(functors.close_node_replaced);
   message_handler_->set_message_received_functor(functors.message_received);
   message_handler_->set_request_public_key_functor(functors.request_public_key);
+  network_.set_new_bootstrap_endpoint_functor(functors.new_bootstrap_endpoint);
   functors_ = functors;
 }
 
@@ -209,7 +210,7 @@ void Routing::Impl::FindClosestNode(const boost::system::error_code& error_code,
   rudp::MessageSentFunctor message_sent_functor(
       [=](int message_sent) {
         if (message_sent == kSuccess)
-            LOG(kInfo) << "[" << DebugId(kNodeId_) << "] sent : "
+            LOG(kInfo) << "   [" << DebugId(kNodeId_) << "] sent : "
                       << MessageTypeString(find_node_rpc) << " to   "
                       << DebugId(network_.bootstrap_connection_id())
                       << "   (id: " << find_node_rpc.id() << ")";
@@ -406,7 +407,7 @@ void Routing::Impl::DoOnMessageReceived(const std::string& message) {
   protobuf::Message pb_message;
   if (pb_message.ParseFromString(message)) {
     bool relay_message(!pb_message.has_source_id());
-    LOG(kInfo) << "[" << DebugId(kNodeId_) << "] rcvd : "
+    LOG(kInfo) << "   [" << DebugId(kNodeId_) << "] rcvd : "
                << MessageTypeString(pb_message) << " from "
                << (relay_message ? HexSubstr(pb_message.relay_id()) :
                                    HexSubstr(pb_message.source_id()))
