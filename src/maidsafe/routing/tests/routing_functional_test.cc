@@ -428,7 +428,6 @@ TEST_F(RoutingNetworkTest, FUNC_JoinAfterBootstrapLeaves) {
 //  this->AddNode(true, NodeId());
 }
 
-
 // This test produces the recursive call.
 TEST_F(RoutingNetworkTest, FUNC_RecursiveCall) {
   this->SetUpNetwork(kNetworkSize);
@@ -645,7 +644,6 @@ TEST_F(RoutingNetworkTest, FUNC_MessagingNetworkChurn) {
                                 while (run) {
                                   if (new_node_ids.empty())
                                     return;
-
 //                                  if (RandomUint32() % 5 == 0)
 //                                    this->AddNode(true, new_node_ids.back());
 //                                  else

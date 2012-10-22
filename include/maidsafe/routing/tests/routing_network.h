@@ -113,7 +113,6 @@ class GenericNode {
  protected:
   size_t id_;
   std::shared_ptr<NodeInfoAndPrivateKey> node_info_plus_;
-  std::shared_ptr<Routing> routing_;
   std::mutex mutex_;
   bool client_mode_;
   bool anonymous_;
@@ -122,6 +121,7 @@ class GenericNode {
   rudp::NatType nat_type_;
   boost::asio::ip::udp::endpoint endpoint_;
   std::vector<std::string> messages_;
+  std::shared_ptr<Routing> routing_;
 };
 
 class GenericNetwork : public testing::Test {
@@ -129,8 +129,6 @@ class GenericNetwork : public testing::Test {
   typedef std::shared_ptr<GenericNode> NodePtr;
   GenericNetwork();
   ~GenericNetwork();
-
-  std::vector<NodePtr> nodes_;
 
  protected:
   virtual void SetUp();
@@ -157,6 +155,9 @@ class GenericNetwork : public testing::Test {
   fs::path bootstrap_path_;
   std::vector<Fob> fobs_;
   size_t client_index_;
+
+ public:
+  std::vector<NodePtr> nodes_;
 };
 
 }  // namespace test

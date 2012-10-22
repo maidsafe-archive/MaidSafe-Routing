@@ -13,17 +13,14 @@
 #ifndef MAIDSAFE_ROUTING_NETWORK_UTILS_H_
 #define MAIDSAFE_ROUTING_NETWORK_UTILS_H_
 
-#include <memory>
+#include <mutex>
 #include <string>
 #include <vector>
 
 #include "boost/asio/ip/udp.hpp"
-#include "boost/asio.hpp"
-#include "boost/thread/shared_mutex.hpp"
 
+#include "maidsafe/common/node_id.h"
 #include "maidsafe/rudp/managed_connections.h"
-
-#include "maidsafe/common/active.h"
 
 #include "maidsafe/routing/api_config.h"
 #include "maidsafe/routing/node_info.h"
@@ -94,17 +91,15 @@ class NetworkUtils {
                        int attempt_count = 0);
   void AdjustRouteHistory(protobuf::Message& message);
 
-  boost::shared_mutex shared_mutex_;
-  bool stopped_;
+  bool running_;
+  std::mutex running_mutex_;
   std::vector<boost::asio::ip::udp::endpoint> bootstrap_endpoints_;
-  maidsafe::NodeId bootstrap_connection_id_;
-  maidsafe::NodeId this_node_relay_connection_id_;
+  NodeId bootstrap_connection_id_;
+  NodeId this_node_relay_connection_id_;
   RoutingTable& routing_table_;
   NonRoutingTable& non_routing_table_;
   rudp::NatType nat_type_;
   NewBootstrapEndpointFunctor new_bootstrap_endpoint_;
-
-  //Active message_sent_thread_object_;
   rudp::ManagedConnections rudp_;
 };
 

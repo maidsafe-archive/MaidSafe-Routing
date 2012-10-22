@@ -10,24 +10,21 @@
  *  the explicit written permission of the board of directors of maidsafe.net. *
  ******************************************************************************/
 
-#ifndef MAIDSAFE_ROUTING_ROUTING_PRIVATE_H_
-#define MAIDSAFE_ROUTING_ROUTING_PRIVATE_H_
+#ifndef MAIDSAFE_ROUTING_ROUTING_IMPL_H_
+#define MAIDSAFE_ROUTING_ROUTING_IMPL_H_
 
-#include <atomic>
 #include <memory>
+#include <mutex>
 #include <string>
 #include <vector>
 
 #include "boost/asio/deadline_timer.hpp"
 #include "boost/asio/ip/udp.hpp"
 #include "boost/date_time/posix_time/posix_time_config.hpp"
-#include "boost/filesystem/path.hpp"
 #include "boost/system/error_code.hpp"
 
 #include "maidsafe/common/asio_service.h"
 #include "maidsafe/common/node_id.h"
-#include "maidsafe/common/safe_queue.h"
-
 #include "maidsafe/private/utils/fob.h"
 
 #include "maidsafe/routing/api_config.h"
@@ -100,23 +97,21 @@ class Routing::Impl {
   const Fob kFob_;
   const NodeId kNodeId_;
   const bool kAnonymousNode_;
-  std::atomic<bool> joined_, tearing_down_;
+  bool running_;
+  std::mutex running_mutex_;
   Functors functors_;
   RandomNodeHelper random_node_helper_;
-
   RoutingTable routing_table_;
   NonRoutingTable non_routing_table_;
-
+  std::unique_ptr<MessageHandler> message_handler_;
   AsioService asio_service_;
+  NetworkUtils network_;
   Timer timer_;
   boost::asio::deadline_timer re_bootstrap_timer_, recovery_timer_, setup_timer_;
-
-  std::unique_ptr<MessageHandler> message_handler_;
-  NetworkUtils network_;
 };
 
 }  // namespace routing
 
 }  // namespace maidsafe
 
-#endif  // MAIDSAFE_ROUTING_ROUTING_PRIVATE_H_
+#endif  // MAIDSAFE_ROUTING_ROUTING_IMPL_H_

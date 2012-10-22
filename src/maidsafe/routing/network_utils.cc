@@ -16,9 +16,6 @@
 
 #include "maidsafe/common/log.h"
 #include "maidsafe/common/utils.h"
-#include "maidsafe/common/node_id.h"
-
-#include "maidsafe/rudp/managed_connections.h"
 #include "maidsafe/rudp/return_codes.h"
 
 #include "maidsafe/routing/bootstrap_file_handler.h"
@@ -44,8 +41,8 @@ typedef boost::unique_lock<boost::shared_mutex> UniqueLock;
 namespace routing {
 
 NetworkUtils::NetworkUtils(RoutingTable& routing_table, NonRoutingTable& non_routing_table)
-    : shared_mutex_(),
-      stopped_(false),
+    : running_(true),
+      running_mutex_(),
       bootstrap_endpoints_(),
       bootstrap_connection_id_(),
       this_node_relay_connection_id_(),
@@ -53,21 +50,22 @@ NetworkUtils::NetworkUtils(RoutingTable& routing_table, NonRoutingTable& non_rou
       non_routing_table_(non_routing_table),
       nat_type_(rudp::NatType::kUnknown),
       new_bootstrap_endpoint_(),
-      //message_sent_thread_object_(),
       rudp_() {}
 
 NetworkUtils::~NetworkUtils() {
-  UniqueLock unique_lock(shared_mutex_);
-  stopped_ = true;
+  std::lock_guard<std::mutex> lock(running_mutex_);
+  running_ = false;
 }
 
 int NetworkUtils::Bootstrap(const std::vector<Endpoint>& bootstrap_endpoints,
                             const rudp::MessageReceivedFunctor& message_received_functor,
                             const rudp::ConnectionLostFunctor& connection_lost_functor,
                             Endpoint local_endpoint) {
-  SharedLock shared_lock(shared_mutex_, boost::try_to_lock);
-  if (!shared_lock.owns_lock() || stopped_)
-    return kNetworkShuttingDown;
+  {
+    std::lock_guard<std::mutex> lock(running_mutex_);
+    if (!running_)
+      return kNetworkShuttingDown;
+  }
 
   assert(connection_lost_functor && "Must provide a valid functor");
   assert(bootstrap_connection_id_.IsZero() && "bootstrap_connection_id_ must be empty");
@@ -110,27 +108,31 @@ int NetworkUtils::GetAvailableEndpoint(const NodeId& peer_id,
                                        const rudp::EndpointPair& peer_endpoint_pair,
                                        rudp::EndpointPair& this_endpoint_pair,
                                        rudp::NatType& this_nat_type) {
-  SharedLock shared_lock(shared_mutex_, boost::try_to_lock);
-  if (!shared_lock.owns_lock() || stopped_)
-    return kNetworkShuttingDown;
-
+  {
+    std::lock_guard<std::mutex> lock(running_mutex_);
+    if (!running_)
+      return kNetworkShuttingDown;
+  }
   return rudp_.GetAvailableEndpoint(peer_id, peer_endpoint_pair, this_endpoint_pair, this_nat_type);
 }
 
 int NetworkUtils::Add(const NodeId& peer_id,
                       const rudp::EndpointPair& peer_endpoint_pair,
                       const std::string& validation_data) {
-  SharedLock shared_lock(shared_mutex_, boost::try_to_lock);
-  if (!shared_lock.owns_lock() || stopped_)
-    return kNetworkShuttingDown;
-
+  {
+    std::lock_guard<std::mutex> lock(running_mutex_);
+    if (!running_)
+      return kNetworkShuttingDown;
+  }
   return rudp_.Add(peer_id, peer_endpoint_pair, validation_data);
 }
 
 int NetworkUtils::MarkConnectionAsValid(const NodeId& peer_id) {
-  SharedLock shared_lock(shared_mutex_, boost::try_to_lock);
-  if (!shared_lock.owns_lock() || stopped_)
-    return kNetworkShuttingDown;
+  {
+    std::lock_guard<std::mutex> lock(running_mutex_);
+    if (!running_)
+      return kNetworkShuttingDown;
+  }
   Endpoint new_bootstrap_endpoint;
   int ret_val(rudp_.MarkConnectionAsValid(peer_id, new_bootstrap_endpoint));
   if ((ret_val == kSuccess) && !new_bootstrap_endpoint.address().is_unspecified()) {
@@ -143,41 +145,29 @@ int NetworkUtils::MarkConnectionAsValid(const NodeId& peer_id) {
 }
 
 void NetworkUtils::Remove(const NodeId& peer_id) {
-  SharedLock shared_lock(shared_mutex_, boost::try_to_lock);
-  if (!shared_lock.owns_lock() || stopped_)
-    return;
-
+  {
+    std::lock_guard<std::mutex> lock(running_mutex_);
+    if (!running_)
+      return;
+  }
   rudp_.Remove(peer_id);
 }
 
 void NetworkUtils::RudpSend(const NodeId& peer_id,
                             const protobuf::Message& message,
                             const rudp::MessageSentFunctor& message_sent_functor) {
-  SharedLock shared_lock(shared_mutex_, boost::try_to_lock);
-  if (!shared_lock.owns_lock() || stopped_)
-    return;
-
-  //rudp::MessageSentFunctor callable([this, message_sent_functor](int result) {
-  //    SharedLock shared_lock(shared_mutex_, boost::try_to_lock);
-  //    if (!shared_lock.owns_lock() || stopped_)
-  //      return;
-  //    message_sent_thread_object_.Send([message_sent_functor, result] {
-  //                                       if (message_sent_functor)
-  //                                         message_sent_functor(result);
-  //                                       });
-  //  });
-
+  {
+    std::lock_guard<std::mutex> lock(running_mutex_);
+    if (!running_)
+      return;
+  }
   rudp_.Send(peer_id, message.SerializeAsString(), message_sent_functor);
 }
 
 void NetworkUtils::SendToDirect(const protobuf::Message& message,
                                 const NodeId& peer_connection_id,
                                 const rudp::MessageSentFunctor& message_sent_functor) {
-  if (message_sent_functor) {
-    RudpSend(peer_connection_id, message, message_sent_functor);
-  } else {
-    RudpSend(peer_connection_id, message, nullptr);
-  }
+  RudpSend(peer_connection_id, message, message_sent_functor ? message_sent_functor : nullptr);
 }
 
 void NetworkUtils::SendToDirect(const protobuf::Message& message,
@@ -256,55 +246,62 @@ void NetworkUtils::RecursiveSendOn(protobuf::Message message,
                                    NodeInfo last_node_attempted,
                                    int attempt_count) {
   {
-    SharedLock shared_lock(shared_mutex_, boost::try_to_lock);
-    if (!shared_lock.owns_lock() || stopped_)
-     return;
+    std::lock_guard<std::mutex> lock(running_mutex_);
+    if (!running_)
+      return;
   }
-
   if (attempt_count >= 3) {
     LOG(kWarning) << " Retry attempts failed to send to ["
                   << HexSubstr(last_node_attempted.node_id.string())
                   << "] will drop this node now and try with another node."
                   << " id: " << message.id();
     attempt_count = 0;
-
     {
-      SharedLock shared_lock(shared_mutex_, boost::try_to_lock);
-      if (!shared_lock.owns_lock() || stopped_)
+      std::lock_guard<std::mutex> lock(running_mutex_);
+      if (!running_)
         return;
       rudp_.Remove(last_node_attempted.connection_id);
+      LOG(kWarning) << " Routing -> removing connection " << last_node_attempted.node_id.string();
+      // FIXME Should we remove this node or let rudp handle that?
+      routing_table_.DropNode(last_node_attempted.connection_id, false);
+      non_routing_table_.DropConnection(last_node_attempted.connection_id);
     }
-    LOG(kWarning) << " Routing -> removing connection " << last_node_attempted.node_id.string();
-    // FIXME Should we remove this node or let rudp handle that?
-    routing_table_.DropNode(last_node_attempted.connection_id, false);
-    non_routing_table_.DropConnection(last_node_attempted.connection_id);
   }
 
   if (attempt_count > 0)
     Sleep(bptime::milliseconds(50));
 
   const std::string kThisId(HexSubstr(routing_table_.kFob().identity));
-
   bool ignore_exact_match(!IsDirect(message));
-
   std::vector<std::string> route_history;
-  if (message.route_history().size() > 1)
-    route_history = std::vector<std::string>(message.route_history().begin(),
-                                             message.route_history().end() - 1);
-  else if ((message.route_history().size() == 1) &&
-           (message.route_history(0) != routing_table_.kFob().identity.string()))
-    route_history.push_back(message.route_history(0));
+  NodeInfo closest_node;
+  {
+    std::lock_guard<std::mutex> lock(running_mutex_);
+    if (!running_)
+      return;
+    if (message.route_history().size() > 1)
+      route_history = std::vector<std::string>(message.route_history().begin(),
+                                               message.route_history().end() - 1);
+    else if ((message.route_history().size() == 1) &&
+             (message.route_history(0) != routing_table_.kFob().identity.string()))
+      route_history.push_back(message.route_history(0));
 
-  auto closest_node(routing_table_.GetClosestNode(NodeId(message.destination_id()), route_history,
-                                                  ignore_exact_match));
-  if (closest_node.node_id == NodeId()) {
-    LOG(kError) << "This node's routing table is empty now.  Need to re-bootstrap.";
-    return;
+    closest_node = routing_table_.GetClosestNode(NodeId(message.destination_id()), route_history,
+                                                 ignore_exact_match);
+    if (closest_node.node_id == NodeId()) {
+      LOG(kError) << "This node's routing table is empty now.  Need to re-bootstrap.";
+      return;
+    }
+
+    AdjustRouteHistory(message);
   }
 
-  AdjustRouteHistory(message);
-
   rudp::MessageSentFunctor message_sent_functor = [=](int message_sent) {
+      {
+        std::lock_guard<std::mutex> lock(running_mutex_);
+        if (!running_)
+          return;
+      }
       if (rudp::kSuccess == message_sent) {
         LOG(kInfo) << "  [" << HexSubstr(kThisId) << "] sent : "
                    << MessageTypeString(message) << " to   "
@@ -326,12 +323,12 @@ void NetworkUtils::RecursiveSendOn(protobuf::Message message,
                     << " failed with code " << message_sent << "  Will remove node."
                      << " message id: " << message.id();
         {
-          SharedLock shared_lock(shared_mutex_, boost::try_to_lock);
-          if (!shared_lock.owns_lock() || stopped_)
+          std::lock_guard<std::mutex> lock(running_mutex_);
+          if (!running_)
             return;
-          rudp_.Remove(closest_node.connection_id);
+          rudp_.Remove(last_node_attempted.connection_id);
         }
-        LOG(kWarning) << " Routing -> removing connection " << DebugId(closest_node.connection_id);
+        LOG(kWarning) << " Routing-> removing connection " << DebugId(closest_node.connection_id);
         routing_table_.DropNode(closest_node.node_id, false);
         non_routing_table_.DropConnection(closest_node.connection_id);
         RecursiveSendOn(message);
