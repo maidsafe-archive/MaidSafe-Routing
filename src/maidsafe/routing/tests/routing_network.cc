@@ -284,15 +284,17 @@ void GenericNode::set_expected(const int& expected) {
 }
 
 void GenericNode::PrintRoutingTable() {
-  LOG(kVerbose) << " PrintRoutingTable of "
-                << HexSubstr(node_info_plus_->node_info.node_id.string())
-                << (IsClient() ? " Client" : "Vault");
+  std::cout << "Print RoutingTable of "
+            << HexSubstr(node_info_plus_->node_info.node_id.string())
+            << (IsClient() ? " Client" : " Vault :") << std::endl;
   for (auto node_info : routing_->impl_->routing_table_.nodes_) {
-    LOG(kVerbose) << "NodeId: " << HexSubstr(node_info.node_id.string());
+    std::cout << "\tNodeId : " << HexSubstr(node_info.node_id.string()) << std::endl;
   }
-  LOG(kVerbose) << "Non-RoutingTable of " << HexSubstr(node_info_plus_->node_info.node_id.string());
+  std::cout << "Print Non-RoutingTable of "
+            << HexSubstr(node_info_plus_->node_info.node_id.string())
+            << " :"<< std::endl;
   for (auto node_info : routing_->impl_->non_routing_table_.nodes_) {
-    LOG(kVerbose) << "NodeId: " << HexSubstr(node_info.node_id.string());
+    std::cout << "\tNodeId : " << HexSubstr(node_info.node_id.string()) << std::endl;
   }
 }
 

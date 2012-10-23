@@ -136,11 +136,11 @@ fs::path GetPathFromProgramOption(const std::string &option_name,
 }
 
 int main(int argc, char **argv) {
-  maidsafe::log::Logging::instance().AddFilter("common", maidsafe::log::kError);
-  maidsafe::log::Logging::instance().AddFilter("private", maidsafe::log::kError);
-  maidsafe::log::Logging::instance().AddFilter("passport", maidsafe::log::kError);
-  maidsafe::log::Logging::instance().AddFilter("rudp", maidsafe::log::kError);
-  maidsafe::log::Logging::instance().AddFilter("routing", maidsafe::log::kVerbose);
+  maidsafe::log::Logging::instance().AddFilter("common", maidsafe::log::kFatal);
+  maidsafe::log::Logging::instance().AddFilter("private", maidsafe::log::kFatal);
+  maidsafe::log::Logging::instance().AddFilter("passport", maidsafe::log::kFatal);
+  maidsafe::log::Logging::instance().AddFilter("rudp", maidsafe::log::kFatal);
+  maidsafe::log::Logging::instance().AddFilter("routing", maidsafe::log::kFatal);
 
   try {
     int identity_index;
@@ -149,9 +149,9 @@ int main(int argc, char **argv) {
     options_description.add_options()
         ("help,h", "Print options.")
         ("start,s", "Start a node (default as vault)")
-        ("client,c", "Start as client (default is vault)")
+        ("client,c", po::bool_switch(), "Start as client (default is vault)")
         ("bootstrap,b", "Start as bootstrap (default is non-bootstrap)")
-        ("identity_index,i", po::value<int>(&identity_index)->default_value(13),
+        ("identity_index,i", po::value<int>(&identity_index)->default_value(-1),
             "Entry from keys file to use as ID (starts from 0)")
         ("fobs_path",
             po::value<std::string>()->default_value(

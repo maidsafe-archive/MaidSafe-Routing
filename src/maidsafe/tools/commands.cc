@@ -194,7 +194,7 @@ void Commands::ProcessCommand(const std::string &cmdline) {
     std::cout << "Exiting application...\n";
     finish_ = true;
   } else {
-    std::cout << "Invalid command: \n" << cmd;
+    std::cout << "Invalid command : " << cmd << std::endl;
     PrintUsage();
   }
   demo_node_->PostTaskToAsioService(mark_results_arrived_);
