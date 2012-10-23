@@ -52,8 +52,15 @@ Commands::Commands(DemoNodePtr demo_node,
                                          mark_results_arrived_() {
   demo_node->functors_.request_public_key = [this] (const NodeId& node_id,
                                                     GivePublicKeyFunctor give_public_key) {
-                                              this->Validate(node_id, give_public_key);
-                                            };
+      this->Validate(node_id, give_public_key);
+  };
+  demo_node->functors_.message_received = [this] (const std::string &wrapped_message,
+                                                  const NodeId &group_claim,
+                                                  const ReplyFunctor &reply_functor) {
+//     std::cout << "msg : (" << wrapped_message << ") ,received on : "
+//               << maidsafe::HexSubstr(demo_node_->fob().identity) << std::endl;
+    reply_functor(wrapped_message + "+++" + demo_node_->fob().identity.string());
+  };
   mark_results_arrived_ = std::bind(&Commands::MarkResultArrived, this);
 }
 
@@ -151,12 +158,15 @@ void Commands::Send(int identity_index) {
   auto callable = [&](const std::vector<std::string> &message) {
 // std::cout << "message vector size : " << message.size() << std::endl;
 // for (auto &msg : message)
-//  std::cout << "\tmsg : " << msg << std::endl;
+//   std::cout << "\tmsg (" << msg << ")" << std::endl;
 
     if (message.empty())
       return;
     std::lock_guard<std::mutex> lock(mutex);
     messages_count++;
+    std::string msg(message.at(0));
+    std::string response_id(msg.substr(msg.find("+++") + 3, 64));
+
     std::string data_id(message.at(0).substr(message.at(0).find(">:<") + 3,
         message.at(0).find("<:>") - 3 - message.at(0).find(">:<")));
     received_ids.insert(boost::lexical_cast<size_t>(data_id));
@@ -171,7 +181,7 @@ void Commands::Send(int identity_index) {
   std::string data("test"/*RandomAlphaNumericString((RandomUint32() % 255 + 1) * 2^10)*/);
   {
     std::lock_guard<std::mutex> lock(mutex);
-    data = boost::lexical_cast<std::string>(++message_id) + "<:>" + data;
+    data = ">:<" + boost::lexical_cast<std::string>(++message_id) + "<:>" + data;
   }
   boost::posix_time::ptime now = boost::posix_time::microsec_clock::universal_time();
   demo_node_->Send(dest_id, NodeId(), data, callable,
@@ -198,7 +208,7 @@ void Commands::SendToGroup(int identity_index) {
   if (identity_index >= 0)
     dest_id = NodeId(all_fobs_[identity_index].identity);
 
-  std::set<size_t> received_ids;
+  std::set<NodeId> responsed_nodes;
   std::mutex mutex;
   std::condition_variable cond_var;
   size_t messages_count(0), message_id(0), expected_messages(1);
@@ -206,16 +216,15 @@ void Commands::SendToGroup(int identity_index) {
   auto callable = [&](const std::vector<std::string> &message) {
     if (message.empty())
       return;
-std::cout << "message vector size : " << message.size() << std::endl;
-for (auto &msg : message)
-  std::cout << "\tmsg : " << msg << std::endl;
+// std::cout << "message vector size : " << message.size() << std::endl;
+// for (auto &msg : message)
+//   std::cout << "\tmsg (" << msg << ")" << std::endl;
 
     std::lock_guard<std::mutex> lock(mutex);
     messages_count++;
     for (auto &msg : message) {
-      std::string data_id(msg.substr(message.at(0).find(">:<") + 3,
-          message.at(0).find("<:>") - 3 - message.at(0).find(">:<")));
-      received_ids.insert(boost::lexical_cast<size_t>(data_id));
+      std::string response_id(msg.substr(msg.find("+++") + 3, 64));
+      responsed_nodes.insert(NodeId(response_id));
     }
     if (message.size() == 4) {
       cond_var.notify_one();
@@ -226,7 +235,7 @@ for (auto &msg : message)
   std::string data("test"/*RandomAlphaNumericString((RandomUint32() % 255 + 1) * 2^10)*/);
   {
     std::lock_guard<std::mutex> lock(mutex);
-    data = boost::lexical_cast<std::string>(++message_id) + "<:>" + data;
+    data = ">:<" + boost::lexical_cast<std::string>(++message_id) + "<:>" + data;
   }
   boost::posix_time::ptime now = boost::posix_time::microsec_clock::universal_time();
   demo_node_->Send(dest_id, NodeId(), data, callable,
