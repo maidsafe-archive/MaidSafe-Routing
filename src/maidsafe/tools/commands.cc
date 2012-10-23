@@ -50,7 +50,27 @@ Commands::Commands(DemoNodePtr demo_node,
                                          wait_mutex_(),
                                          wait_cond_var_(),
                                          mark_results_arrived_() {
+  demo_node->functors_.request_public_key = [this] (const NodeId& node_id,
+                                                    GivePublicKeyFunctor give_public_key) {
+                                              this->Validate(node_id, give_public_key);
+                                            };
   mark_results_arrived_ = std::bind(&Commands::MarkResultArrived, this);
+}
+
+void Commands::Validate(const NodeId& node_id, GivePublicKeyFunctor give_public_key) {
+  if (node_id == NodeId())
+    return;
+
+  auto iter(all_fobs_.begin());
+  bool find(false);
+  while ((iter != all_fobs_.end()) && !find) {
+    if (iter->identity.string() == node_id.string())
+      find = true;
+    else
+      ++iter;
+  }
+  if (iter != all_fobs_.end())
+    give_public_key((*iter).keys.public_key);
 }
 
 void Commands::Run() {

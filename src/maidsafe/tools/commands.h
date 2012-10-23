@@ -56,6 +56,7 @@ class Commands {
   void PrintRoutingTable();
   void ZeroStateJoin();
   void Join();
+  void Validate(const NodeId& node_id, GivePublicKeyFunctor give_public_key);
 
   std::shared_ptr<GenericNode> demo_node_;
   std::vector<maidsafe::Fob> all_fobs_;
