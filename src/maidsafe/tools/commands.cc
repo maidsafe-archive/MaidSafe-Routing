@@ -133,6 +133,58 @@ void Commands::ZeroStateJoin() {
   EXPECT_EQ(kSuccess, f1.get());
 }
 
+void Commands::Send(int identity_index) {
+  if (identity_index >= all_fobs_.size()) {
+    std::cout << "ERROR : detination index out of range" << std::endl;
+    return;
+  }
+  if (identity_index == identity_index_) {
+    std::cout << "ERROR : trying to send to self" << std::endl;
+    return;
+  }
+  NodeId dest_id(all_fobs_[identity_index].identity);
+  std::set<size_t> received_ids;
+  std::mutex mutex;
+  std::condition_variable cond_var;
+  size_t messages_count(0), message_id(0), expected_messages(1);
+
+  auto callable = [&](const std::vector<std::string> &message) {
+    if (message.empty())
+      return;
+    std::lock_guard<std::mutex> lock(mutex);
+    messages_count++;
+    std::string data_id(message.at(0).substr(message.at(0).find(">:<") + 3,
+        message.at(0).find("<:>") - 3 - message.at(0).find(">:<")));
+    received_ids.insert(boost::lexical_cast<size_t>(data_id));
+    std::cout << "ResponseHandler .... " << messages_count << " msg_id: "
+              << data_id << std::endl;
+    if (messages_count == expected_messages) {
+      cond_var.notify_one();
+      std::cout << "ResponseHandler .... DONE " << messages_count << std::endl;
+    }
+  };
+
+  std::string data(RandomAlphaNumericString((RandomUint32() % 255 + 1) * 2^10));
+  {
+    std::lock_guard<std::mutex> lock(mutex);
+    data = boost::lexical_cast<std::string>(++message_id) + "<:>" + data;
+  }
+  boost::posix_time::ptime now = boost::posix_time::microsec_clock::universal_time();
+  demo_node_->Send(dest_id, NodeId(), data, callable,
+      boost::posix_time::seconds(12), true, false);
+
+  std::unique_lock<std::mutex> lock(mutex);
+  bool result = cond_var.wait_for(lock, std::chrono::seconds(20),
+      [&]()->bool {
+        std::cout << " message count " << messages_count << " expected "
+                  << expected_messages << "\n";
+        return messages_count == expected_messages;
+      });
+  std::cout << "Response received in "
+            << boost::posix_time::microsec_clock::universal_time() - now << std::endl;
+  EXPECT_TRUE(result) << "Failure in sending message";
+}
+
 void Commands::Join() {
   if (demo_node_->joined()) {
     std::cout << "Current node already joined" << std::endl;
@@ -177,10 +229,11 @@ void Commands::Join() {
 
 void Commands::PrintUsage() {
   std::cout << "\thelp Print options.\n";
-  std::cout << "\tprt Print Routing Table.\n";
   std::cout << "\tpeer <endpoint> Set BootStrap peer endpoint.\n";
   std::cout << "\tzerostatejoin ZeroStateJoin.\n";
   std::cout << "\tjoin Normal Join.\n";
+  std::cout << "\tprt Print Routing Table.\n";
+  std::cout << "\tsend <dest_index> Send a msg to specified identity-index destination.\n";
   std::cout << "\texit Exit application.\n";
 }
 
@@ -216,6 +269,8 @@ void Commands::ProcessCommand(const std::string &cmdline) {
     ZeroStateJoin();
   } else if (cmd == "join") {
     Join();
+  } else if (cmd == "send") {
+    Send(boost::lexical_cast<int>(args[0]));
   } else if (cmd == "exit") {
     std::cout << "Exiting application...\n";
     finish_ = true;

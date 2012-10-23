@@ -57,6 +57,7 @@ class Commands {
   void ZeroStateJoin();
   void Join();
   void Validate(const NodeId& node_id, GivePublicKeyFunctor give_public_key);
+  void Send(int identity_index);
 
   std::shared_ptr<GenericNode> demo_node_;
   std::vector<maidsafe::Fob> all_fobs_;
