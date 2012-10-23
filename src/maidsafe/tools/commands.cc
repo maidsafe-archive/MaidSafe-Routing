@@ -55,6 +55,14 @@ Commands::Commands(DemoNodePtr demo_node,
 
 void Commands::Run() {
   PrintUsage();
+
+  if ((!demo_node_->joined()) && (identity_index_ >= 2) &&
+      (bootstrap_peer_ep_ != boost::asio::ip::udp::endpoint())) {
+    // All parameters have been setup via cmdline directly, join the node immediately
+    std::cout << "Joining the node ......" << std::endl;
+    Join();
+  }
+
   while (!finish_) {
     std::cout << std::endl << std::endl << "Enter command > ";
     std::string cmdline;
@@ -72,13 +80,7 @@ void Commands::PrintRoutingTable() {
   demo_node_->PrintRoutingTable();
 }
 
-void Commands::GetPeer(const Arguments &args) {
-  if (args.size() != 1U) {
-    std::cout << "Invalid number of arguments for GetPeer command.";
-    return;
-  }
-
-  std::string peer(args[0]);
+void Commands::GetPeer(const std::string &peer) {
   size_t delim = peer.rfind(':');
   try {
     bootstrap_peer_ep_.port(boost::lexical_cast<uint16_t>(peer.substr(delim + 1)));
@@ -112,6 +114,10 @@ void Commands::ZeroStateJoin() {
 }
 
 void Commands::Join() {
+  if (demo_node_->joined()) {
+    std::cout << "Current node already joined" << std::endl;
+    return;
+  }
   std::condition_variable cond_var;
   std::mutex mutex;
 
@@ -185,7 +191,7 @@ void Commands::ProcessCommand(const std::string &cmdline) {
   } else if (cmd == "prt") {
     PrintRoutingTable();
   } else if (cmd == "peer") {
-    GetPeer(args);
+    GetPeer(args[0]);
   } else if (cmd == "zerostatejoin") {
     ZeroStateJoin();
   } else if (cmd == "join") {

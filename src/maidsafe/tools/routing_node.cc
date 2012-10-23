@@ -151,6 +151,7 @@ int main(int argc, char **argv) {
         ("start,s", "Start a node (default as vault)")
         ("client,c", po::bool_switch(), "Start as client (default is vault)")
         ("bootstrap,b", "Start as bootstrap (default is non-bootstrap)")
+        ("peer,p", po::value<std::string>()->default_value(""), "Endpoint of bootstrap peer")
         ("identity_index,i", po::value<int>(&identity_index)->default_value(-1),
             "Entry from keys file to use as ID (starts from 0)")
         ("fobs_path",
@@ -191,6 +192,7 @@ int main(int argc, char **argv) {
 
     ConflictingOptions(variables_map, "client", "bootstrap");
     OptionDependency(variables_map, "start", "identity_index");
+    OptionDependency(variables_map, "peer", "identity_index");
 
     // Initial demo_node
     bool client_only_node(variables_map["client"].as<bool>());
@@ -210,6 +212,10 @@ int main(int argc, char **argv) {
     }
 
     maidsafe::routing::test::Commands commands(demo_node, all_fobs, identity_index);
+    std::string peer(variables_map.at("peer").as<std::string>());
+    if (!peer.empty()) {
+      commands.GetPeer(peer);
+    }
     commands.Run();
 
     std::cout << "Node stopped successfully." << std::endl;

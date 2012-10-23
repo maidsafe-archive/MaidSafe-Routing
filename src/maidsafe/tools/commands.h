@@ -43,6 +43,7 @@ class Commands {
                     std::vector<maidsafe::Fob> all_fobs,
                     int identity_index);
   void Run();
+  void GetPeer(const std::string &peer);
 
  private:
   typedef std::vector<std::string> Arguments;
@@ -53,7 +54,6 @@ class Commands {
   bool ResultArrived() { return result_arrived_; }
 
   void PrintRoutingTable();
-  void GetPeer(const Arguments &args);
   void ZeroStateJoin();
   void Join();
 
