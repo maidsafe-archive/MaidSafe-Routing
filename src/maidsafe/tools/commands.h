@@ -57,11 +57,15 @@ class Commands {
   void ZeroStateJoin();
   void Join();
   void Validate(const NodeId& node_id, GivePublicKeyFunctor give_public_key);
-  void Send(int identity_index);
-  void SendToGroup(int identity_index);
+  void SendAMsg(int identity_index, bool direct);
+
+  NodeId CalculateClosests(const NodeId& target_id,
+                           std::vector<NodeId>& closests,
+                           uint16_t num_of_closests);
 
   std::shared_ptr<GenericNode> demo_node_;
   std::vector<maidsafe::Fob> all_fobs_;
+  std::vector<NodeId> all_ids_;
   int identity_index_;
   boost::asio::ip::udp::endpoint bootstrap_peer_ep_;
   bool result_arrived_, finish_;

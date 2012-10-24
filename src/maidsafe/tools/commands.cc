@@ -43,6 +43,7 @@ Commands::Commands(DemoNodePtr demo_node,
                    std::vector<maidsafe::Fob> all_fobs,
                    int identity_index) : demo_node_(demo_node),
                                          all_fobs_(all_fobs),
+                                         all_ids_(),
                                          identity_index_(identity_index),
                                          bootstrap_peer_ep_(),
                                          result_arrived_(false),
@@ -50,6 +51,9 @@ Commands::Commands(DemoNodePtr demo_node,
                                          wait_mutex_(),
                                          wait_cond_var_(),
                                          mark_results_arrived_() {
+  for (auto &fob : all_fobs_)
+    all_ids_.push_back(NodeId(fob.identity));
+
   demo_node->functors_.request_public_key = [this] (const NodeId& node_id,
                                                     GivePublicKeyFunctor give_public_key) {
       this->Validate(node_id, give_public_key);
@@ -140,66 +144,7 @@ void Commands::ZeroStateJoin() {
   EXPECT_EQ(kSuccess, f1.get());
 }
 
-void Commands::Send(int identity_index) {
-  if (identity_index >= all_fobs_.size()) {
-    std::cout << "ERROR : detination index out of range" << std::endl;
-    return;
-  }
-//   if (identity_index == identity_index_) {
-//     std::cout << "ERROR : trying to send to self" << std::endl;
-//     return;
-//   }
-  NodeId dest_id(all_fobs_[identity_index].identity);
-  std::set<size_t> received_ids;
-  std::mutex mutex;
-  std::condition_variable cond_var;
-  size_t messages_count(0), message_id(0), expected_messages(1);
-
-  auto callable = [&](const std::vector<std::string> &message) {
-// std::cout << "message vector size : " << message.size() << std::endl;
-// for (auto &msg : message)
-//   std::cout << "\tmsg (" << msg << ")" << std::endl;
-
-    if (message.empty())
-      return;
-    std::lock_guard<std::mutex> lock(mutex);
-    messages_count++;
-    std::string msg(message.at(0));
-    std::string response_id(msg.substr(msg.find("+++") + 3, 64));
-
-    std::string data_id(message.at(0).substr(message.at(0).find(">:<") + 3,
-        message.at(0).find("<:>") - 3 - message.at(0).find(">:<")));
-    received_ids.insert(boost::lexical_cast<size_t>(data_id));
-    std::cout << "ResponseHandler .... " << messages_count << " msg_id: "
-              << data_id << std::endl;
-    if (messages_count == expected_messages) {
-      cond_var.notify_one();
-      std::cout << "ResponseHandler .... DONE " << messages_count << std::endl;
-    }
-  };
-
-  std::string data("test"/*RandomAlphaNumericString((RandomUint32() % 255 + 1) * 2^10)*/);
-  {
-    std::lock_guard<std::mutex> lock(mutex);
-    data = ">:<" + boost::lexical_cast<std::string>(++message_id) + "<:>" + data;
-  }
-  boost::posix_time::ptime now = boost::posix_time::microsec_clock::universal_time();
-  demo_node_->Send(dest_id, NodeId(), data, callable,
-      boost::posix_time::seconds(12), true, false);
-
-  std::unique_lock<std::mutex> lock(mutex);
-  bool result = cond_var.wait_for(lock, std::chrono::seconds(20),
-      [&]()->bool {
-        std::cout << " message count " << messages_count << " expected "
-                  << expected_messages << "\n";
-        return messages_count == expected_messages;
-      });
-  std::cout << "Response received in "
-            << boost::posix_time::microsec_clock::universal_time() - now << std::endl;
-  EXPECT_TRUE(result) << "Failure in sending message";
-}
-
-void Commands::SendToGroup(int identity_index) {
+void Commands::SendAMsg(int identity_index, bool direct) {
   if ((identity_index >= 0) && (identity_index >= all_fobs_.size())) {
     std::cout << "ERROR : detination index out of range" << std::endl;
     return;
@@ -208,49 +153,55 @@ void Commands::SendToGroup(int identity_index) {
   if (identity_index >= 0)
     dest_id = NodeId(all_fobs_[identity_index].identity);
 
+  std::cout << "Sending a msg from : " << maidsafe::HexSubstr(demo_node_->fob().identity)
+            << " to " << (direct ? ": " : "group : ") << maidsafe::HexSubstr(dest_id.string())
+            << " , expect receive response from :" << std::endl;
+  size_t expected_respodents(direct ? 1 : 4);
+  std::vector<NodeId> closests;
+  NodeId farthest_closests(CalculateClosests(dest_id, closests, expected_respodents));
+  for (auto &node_id : closests)
+    std::cout << "\t" << maidsafe::HexSubstr(node_id.string()) << std::endl;
+
   std::set<NodeId> responsed_nodes;
   std::mutex mutex;
   std::condition_variable cond_var;
   size_t messages_count(0), message_id(0), expected_messages(1);
-
   auto callable = [&](const std::vector<std::string> &message) {
     if (message.empty())
       return;
-// std::cout << "message vector size : " << message.size() << std::endl;
-// for (auto &msg : message)
-//   std::cout << "\tmsg (" << msg << ")" << std::endl;
-
     std::lock_guard<std::mutex> lock(mutex);
     messages_count++;
     for (auto &msg : message) {
       std::string response_id(msg.substr(msg.find("+++") + 3, 64));
       responsed_nodes.insert(NodeId(response_id));
     }
-    if (message.size() == 4) {
+    if (responsed_nodes.size() == expected_respodents)
       cond_var.notify_one();
-      std::cout << "ResponseHandler .... DONE " << message.size() << std::endl;
-    }
   };
-
   std::string data("test"/*RandomAlphaNumericString((RandomUint32() % 255 + 1) * 2^10)*/);
   {
     std::lock_guard<std::mutex> lock(mutex);
     data = ">:<" + boost::lexical_cast<std::string>(++message_id) + "<:>" + data;
   }
+
   boost::posix_time::ptime now = boost::posix_time::microsec_clock::universal_time();
   demo_node_->Send(dest_id, NodeId(), data, callable,
-      boost::posix_time::seconds(12), false, false);
+                   boost::posix_time::seconds(12), direct, false);
 
   std::unique_lock<std::mutex> lock(mutex);
   bool result = cond_var.wait_for(lock, std::chrono::seconds(20),
-      [&]()->bool {
-        std::cout << " message count " << messages_count << " expected "
-                  << expected_messages << "\n";
-        return messages_count == expected_messages;
-      });
+      [&]()->bool { return messages_count == expected_messages; });
+
   std::cout << "Response received in "
             << boost::posix_time::microsec_clock::universal_time() - now << std::endl;
   EXPECT_TRUE(result) << "Failure in sending group message";
+
+  std::cout << "Received response from following nodes :" << std::endl;
+  for(auto &responsed_node : responsed_nodes) {
+    std::cout << "\t" << maidsafe::HexSubstr(responsed_node.string()) << std::endl;
+    if (responsed_node != farthest_closests)
+      EXPECT_TRUE(NodeId::CloserToTarget(responsed_node, farthest_closests, dest_id));
+  }
 }
 
 void Commands::Join() {
@@ -301,7 +252,7 @@ void Commands::PrintUsage() {
   std::cout << "\tzerostatejoin ZeroStateJoin.\n";
   std::cout << "\tjoin Normal Join.\n";
   std::cout << "\tprt Print Routing Table.\n";
-  std::cout << "\tsend <dest_index> Send a msg to specified identity-index destination.\n";
+  std::cout << "\tsenddirect <dest_index> Send a msg to a node with specified identity-index.\n";
   std::cout << "\tsendgroup <dest_index> Send a msg to group (default is Random GroupId,"
             << " dest_index for using existing identity as a group_id)\n";
   std::cout << "\texit Exit application.\n";
@@ -339,13 +290,13 @@ void Commands::ProcessCommand(const std::string &cmdline) {
     ZeroStateJoin();
   } else if (cmd == "join") {
     Join();
-  } else if (cmd == "send") {
-    Send(boost::lexical_cast<int>(args[0]));
+  } else if (cmd == "senddirect") {
+    SendAMsg(boost::lexical_cast<int>(args[0]), true);
   } else if (cmd == "sendgroup") {
     if (args.empty())
-      SendToGroup(-1);
+      SendAMsg(-1, false);
     else
-      SendToGroup(boost::lexical_cast<int>(args[0]));
+      SendAMsg(boost::lexical_cast<int>(args[0]), false);
   } else if (cmd == "exit") {
     std::cout << "Exiting application...\n";
     finish_ = true;
@@ -360,6 +311,20 @@ void Commands::MarkResultArrived() {
   boost::mutex::scoped_lock lock(wait_mutex_);
   result_arrived_ = true;
   wait_cond_var_.notify_one();
+}
+
+NodeId Commands::CalculateClosests(const NodeId& target_id,
+                                   std::vector<NodeId>& closests,
+                                   uint16_t num_of_closests) {
+  std::sort(all_ids_.begin(), all_ids_.end(),
+            [&](const NodeId &i, const NodeId &j) {
+              return (NodeId::CloserToTarget(i, j, target_id));
+            });
+  if (num_of_closests > all_ids_.size())
+    num_of_closests = all_ids_.size();
+  closests.resize(num_of_closests);
+  std::copy(all_ids_.begin(), all_ids_.begin() + num_of_closests, closests.begin());
+  return all_ids_[num_of_closests - 1];
 }
 
 
