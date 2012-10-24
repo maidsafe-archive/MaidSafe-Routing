@@ -194,8 +194,22 @@ int main(int argc, char **argv) {
     OptionDependency(variables_map, "start", "identity_index");
     OptionDependency(variables_map, "peer", "identity_index");
 
-    // Initial demo_node
+    // Ensure correct index range is being used
     bool client_only_node(variables_map["client"].as<bool>());
+    if (client_only_node)
+      if (identity_index < (all_fobs.size() / 2)) {
+        std::cout << "ERROR : Incorrect identity_index used for a client, must between "
+                  << all_fobs.size() / 2 << " and " << all_fobs.size() - 1 << std::endl;
+        return 0;
+      }
+    else
+      if (identity_index >= (all_fobs.size() / 2)) {
+        std::cout << "ERROR : Incorrect identity_index used for a vault, must between 0 and "
+                  << all_fobs.size() / 2 - 1 << std::endl;
+        return 0;
+      }
+
+    // Initial demo_node
     std::cout << "Creating node..." << std::endl;
     maidsafe::routing::test::NodeInfoAndPrivateKey node_info(
         maidsafe::routing::test::MakeNodeInfoAndKeysWithFob(this_fob));

@@ -52,8 +52,12 @@ Commands::Commands(DemoNodePtr demo_node,
                                          wait_mutex_(),
                                          wait_cond_var_(),
                                          mark_results_arrived_() {
-  for (auto &fob : all_fobs_)
-    all_ids_.push_back(NodeId(fob.identity));
+  // CalculateClosests will only use all_ids_ to calculate expected respondents
+  // here it is assumed that the first half of fobs will be used as vault
+  // and the latter half part will be used as client, which shall not respond msg
+  // i.e. shall not be put into all_ids_
+  for (size_t i(0); i < (all_fobs_.size() / 2); ++i)
+    all_ids_.push_back(NodeId(all_fobs_[i].identity));
 
   demo_node->functors_.request_public_key = [this] (const NodeId& node_id,
                                                     GivePublicKeyFunctor give_public_key) {
