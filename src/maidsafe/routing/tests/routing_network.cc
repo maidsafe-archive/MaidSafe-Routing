@@ -25,6 +25,7 @@
 #include "maidsafe/routing/routing_api.h"
 #include "maidsafe/routing/tests/test_utils.h"
 #include "maidsafe/routing/routing_pb.h"
+#include "maidsafe/routing/utils.h"
 
 namespace asio = boost::asio;
 namespace ip = asio::ip;
@@ -296,6 +297,13 @@ void GenericNode::PrintRoutingTable() {
   for (auto node_info : routing_->impl_->non_routing_table_.nodes_) {
     std::cout << "\tNodeId : " << HexSubstr(node_info.node_id.string()) << std::endl;
   }
+}
+
+std::string GenericNode::SerializeRoutingTable() {
+  std::vector<NodeId> node_list;
+  for (auto node_info : routing_->impl_->routing_table_.nodes_)
+    node_list.push_back(node_info.node_id);
+  return SerializeNodeIdList(node_list);
 }
 
 size_t GenericNode::MessagesSize() const { return messages_.size(); }

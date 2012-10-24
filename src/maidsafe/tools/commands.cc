@@ -62,9 +62,10 @@ Commands::Commands(DemoNodePtr demo_node,
   demo_node->functors_.message_received = [this] (const std::string &wrapped_message,
                                                   const NodeId &group_claim,
                                                   const ReplyFunctor &reply_functor) {
-//     std::cout << "msg : (" << wrapped_message << ") ,received on : "
-//               << maidsafe::HexSubstr(demo_node_->fob().identity) << std::endl;
-    reply_functor(wrapped_message + "+++" + demo_node_->fob().identity.string());
+    std::string reply_msg(wrapped_message + "+++" + demo_node_->fob().identity.string());
+    if (std::string::npos != wrapped_message.find("request_routing_table"))
+      reply_msg = reply_msg + "---" + demo_node_->SerializeRoutingTable();
+    reply_functor(reply_msg);
   };
   mark_results_arrived_ = std::bind(&Commands::MarkResultArrived, this);
 }
@@ -145,7 +146,7 @@ void Commands::ZeroStateJoin() {
   EXPECT_EQ(kSuccess, f1.get());
 }
 
-void Commands::SendAMsg(int identity_index, bool direct) {
+void Commands::SendAMsg(int identity_index, bool direct, std::string &data) {
   if ((identity_index >= 0) && (identity_index >= all_fobs_.size())) {
     std::cout << "ERROR : detination index out of range" << std::endl;
     return;
@@ -164,6 +165,7 @@ void Commands::SendAMsg(int identity_index, bool direct) {
     std::cout << "\t" << maidsafe::HexSubstr(node_id.string()) << std::endl;
 
   std::set<NodeId> responsed_nodes;
+  std::string received_response_msg;
   std::mutex mutex;
   std::condition_variable cond_var;
   size_t messages_count(0), message_id(0), expected_messages(1);
@@ -175,11 +177,12 @@ void Commands::SendAMsg(int identity_index, bool direct) {
     for (auto &msg : message) {
       std::string response_id(msg.substr(msg.find("+++") + 3, 64));
       responsed_nodes.insert(NodeId(response_id));
+      received_response_msg = msg;
     }
     if (responsed_nodes.size() == expected_respodents)
       cond_var.notify_one();
   };
-  std::string data(RandomAlphaNumericString(data_size_));
+
   {
     std::lock_guard<std::mutex> lock(mutex);
     data = ">:<" + boost::lexical_cast<std::string>(++message_id) + "<:>" + data;
@@ -202,6 +205,17 @@ void Commands::SendAMsg(int identity_index, bool direct) {
     std::cout << "\t" << maidsafe::HexSubstr(responsed_node.string()) << std::endl;
     if (responsed_node != farthest_closests)
       EXPECT_TRUE(NodeId::CloserToTarget(responsed_node, farthest_closests, dest_id));
+  }
+
+  if (std::string::npos != received_response_msg.find("request_routing_table")) {
+    std::string response_node_list_msg(
+        received_response_msg.substr(received_response_msg.find("---") + 3,
+            received_response_msg.size() - (received_response_msg.find("---") + 3)));
+    std::vector<NodeId> node_list(
+        maidsafe::routing::DeserializeNodeIdList(response_node_list_msg));
+    std::cout << "Received routing table from peer is :" << std::endl;
+    for (auto &node_id : node_list)
+      std::cout << "\t" << maidsafe::HexSubstr(node_id.string()) << std::endl;
   }
 }
 
@@ -254,7 +268,8 @@ void Commands::PrintUsage() {
   std::cout << "\tpeer <endpoint> Set BootStrap peer endpoint.\n";
   std::cout << "\tzerostatejoin ZeroStateJoin.\n";
   std::cout << "\tjoin Normal Join.\n";
-  std::cout << "\tprt Print Routing Table.\n";
+  std::cout << "\tprt Print Local Routing Table.\n";
+  std::cout << "\trrt <dest_index> Request Routing Table from peer node with the specified identity-index.\n";
   std::cout << "\tsenddirect <dest_index> Send a msg to a node with specified identity-index.\n";
   std::cout << "\tsendgroup <dest_index> Send a msg to group (default is Random GroupId,"
             << " dest_index for using existing identity as a group_id)\n";
@@ -289,6 +304,9 @@ void Commands::ProcessCommand(const std::string &cmdline) {
     PrintUsage();
   } else if (cmd == "prt") {
     PrintRoutingTable();
+  } else if (cmd == "rrt") {
+    std::string data("request_routing_table");
+    SendAMsg(boost::lexical_cast<int>(args[0]), true, data);
   } else if (cmd == "peer") {
     GetPeer(args[0]);
   } else if (cmd == "zerostatejoin") {
@@ -296,12 +314,14 @@ void Commands::ProcessCommand(const std::string &cmdline) {
   } else if (cmd == "join") {
     Join();
   } else if (cmd == "senddirect") {
-    SendAMsg(boost::lexical_cast<int>(args[0]), true);
+    std::string data(RandomAlphaNumericString(data_size_));
+    SendAMsg(boost::lexical_cast<int>(args[0]), true, data);
   } else if (cmd == "sendgroup") {
+    std::string data(RandomAlphaNumericString(data_size_));
     if (args.empty())
-      SendAMsg(-1, false);
+      SendAMsg(-1, false, data);
     else
-      SendAMsg(boost::lexical_cast<int>(args[0]), false);
+      SendAMsg(boost::lexical_cast<int>(args[0]), false, data);
   } else if (cmd == "datasize") {
     data_size_ = boost::lexical_cast<int>(args[0]);
   } else if (cmd == "nattype") {

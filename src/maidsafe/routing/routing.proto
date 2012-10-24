@@ -149,3 +149,10 @@ message FobList {
   }
   repeated Fob fobs = 1;
 }
+
+message NodeIdList {
+  message NodeId {
+    required bytes node_id = 1;
+  }
+  repeated NodeId node_id_list = 1;
+}

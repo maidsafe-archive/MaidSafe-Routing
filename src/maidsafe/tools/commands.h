@@ -26,6 +26,7 @@
 
 #include "maidsafe/routing/tests/routing_network.h"
 #include "maidsafe/routing/tests/test_utils.h"
+#include "maidsafe/routing/utils.h"
 
 namespace bptime = boost::posix_time;
 
@@ -57,7 +58,7 @@ class Commands {
   void ZeroStateJoin();
   void Join();
   void Validate(const NodeId& node_id, GivePublicKeyFunctor give_public_key);
-  void SendAMsg(int identity_index, bool direct);
+  void SendAMsg(int identity_index, bool direct, std::string &data);
 
   NodeId CalculateClosests(const NodeId& target_id,
                            std::vector<NodeId>& closests,

@@ -112,6 +112,7 @@ class GenericNode {
   rudp::NatType nat_type() {
     return routing_->impl_->network_.nat_type();
   }
+  std::string SerializeRoutingTable();
 
   static size_t next_node_id_;
   size_t MessagesSize() const;

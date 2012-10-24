@@ -357,6 +357,24 @@ bool WriteFobList(const fs::path &file_path, const std::vector<Fob> &fob_list) {
   return WriteFile(file_path, fob_list_msg.SerializeAsString());
 }
 
+std::vector<NodeId> DeserializeNodeIdList(const std::string &node_list_str) {
+  std::vector<NodeId> node_list;
+  protobuf::NodeIdList node_list_msg;
+  node_list_msg.ParseFromString(node_list_str);
+  for (int i = 0; i < node_list_msg.node_id_list_size(); ++i)
+    node_list.push_back(NodeId(node_list_msg.node_id_list(i).node_id()));
+  return node_list;
+}
+
+std::string SerializeNodeIdList(const std::vector<NodeId> &node_list) {
+  protobuf::NodeIdList node_list_msg;
+  for (auto &node_id : node_list) {
+    auto entry = node_list_msg.add_node_id_list();
+    entry->set_node_id(node_id.string());
+  }
+  return node_list_msg.SerializeAsString();
+}
+
 }  // namespace routing
 
 }  // namespace maidsafe
