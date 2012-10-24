@@ -109,6 +109,9 @@ class GenericNode {
   void PostTaskToAsioService(std::function<void()> functor) {
     routing_->impl_->asio_service_.service().post(functor);
   };
+  rudp::NatType nat_type() {
+    return routing_->impl_->network_.nat_type();
+  }
 
   static size_t next_node_id_;
   size_t MessagesSize() const;

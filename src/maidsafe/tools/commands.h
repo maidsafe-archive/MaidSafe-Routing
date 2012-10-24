@@ -68,6 +68,7 @@ class Commands {
   std::vector<NodeId> all_ids_;
   int identity_index_;
   boost::asio::ip::udp::endpoint bootstrap_peer_ep_;
+  size_t data_size_;
   bool result_arrived_, finish_;
   boost::mutex wait_mutex_;
   boost::condition_variable wait_cond_var_;

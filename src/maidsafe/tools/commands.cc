@@ -46,6 +46,7 @@ Commands::Commands(DemoNodePtr demo_node,
                                          all_ids_(),
                                          identity_index_(identity_index),
                                          bootstrap_peer_ep_(),
+                                         data_size_(256 * 1024),
                                          result_arrived_(false),
                                          finish_(false),
                                          wait_mutex_(),
@@ -178,7 +179,7 @@ void Commands::SendAMsg(int identity_index, bool direct) {
     if (responsed_nodes.size() == expected_respodents)
       cond_var.notify_one();
   };
-  std::string data("test"/*RandomAlphaNumericString((RandomUint32() % 255 + 1) * 2^10)*/);
+  std::string data(RandomAlphaNumericString(data_size_));
   {
     std::lock_guard<std::mutex> lock(mutex);
     data = ">:<" + boost::lexical_cast<std::string>(++message_id) + "<:>" + data;
@@ -214,7 +215,7 @@ void Commands::Join() {
 
   std::weak_ptr<GenericNode> weak_node(demo_node_);
   demo_node_->functors_.network_status =
-      [&cond_var, weak_node] (const int& result) {
+      [this, &cond_var, weak_node] (const int& result) {
         if (std::shared_ptr<GenericNode> node = weak_node.lock()) {
           if (!node->anonymous()) {
             ASSERT_GE(result, kSuccess);
@@ -228,6 +229,9 @@ void Commands::Join() {
           if ((result == node->expected() && !node->joined()) || node->anonymous()) {
             node->set_joined(true);
             cond_var.notify_one();
+          } else {
+            std::cout << "Network Status Changed" << std::endl;
+            this->PrintRoutingTable();
           }
         }
       };
@@ -243,7 +247,6 @@ void Commands::Join() {
   }
   std::cout << "Current Node joined, following is the routing table :" << std::endl;
   PrintRoutingTable();
-  demo_node_->functors_.network_status = nullptr;
 }
 
 void Commands::PrintUsage() {
@@ -255,6 +258,8 @@ void Commands::PrintUsage() {
   std::cout << "\tsenddirect <dest_index> Send a msg to a node with specified identity-index.\n";
   std::cout << "\tsendgroup <dest_index> Send a msg to group (default is Random GroupId,"
             << " dest_index for using existing identity as a group_id)\n";
+  std::cout << "\tdatasize <data_size> Set the data_size for the message.\n";
+  std::cout << "\nattype Print the NatType of this node.\n";
   std::cout << "\texit Exit application.\n";
 }
 
@@ -297,6 +302,10 @@ void Commands::ProcessCommand(const std::string &cmdline) {
       SendAMsg(-1, false);
     else
       SendAMsg(boost::lexical_cast<int>(args[0]), false);
+  } else if (cmd == "datasize") {
+    data_size_ = boost::lexical_cast<int>(args[0]);
+  } else if (cmd == "nattype") {
+    std::cout << "NatType for this node is : " << demo_node_->nat_type() << std::endl;
   } else if (cmd == "exit") {
     std::cout << "Exiting application...\n";
     finish_ = true;
@@ -324,6 +333,18 @@ NodeId Commands::CalculateClosests(const NodeId& target_id,
     num_of_closests = all_ids_.size();
   closests.resize(num_of_closests);
   std::copy(all_ids_.begin(), all_ids_.begin() + num_of_closests, closests.begin());
+
+  // For group msg, sending to an existing node shall exclude that node from expected list
+  if (num_of_closests != 1) {
+    for (auto node_id(closests.begin()); node_id != closests.end(); ++node_id)
+      if (*node_id == target_id) {
+        closests.erase(node_id);
+        break;
+      }
+    if (all_ids_.size() > num_of_closests)
+      closests.push_back(all_ids_[num_of_closests]);
+  }
+
   return all_ids_[num_of_closests - 1];
 }
 
