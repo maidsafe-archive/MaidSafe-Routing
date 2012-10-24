@@ -35,7 +35,6 @@
 #include "maidsafe/routing/parameters.h"
 #include "maidsafe/routing/return_codes.h"
 #include "maidsafe/routing/routing_api.h"
-#include "maidsafe/routing/routing_private.h"
 
 namespace args = std::placeholders;
 
@@ -106,12 +105,8 @@ class GenericNode {
   void AddNodeToRandomNodeHelper(const NodeId& node_id);
   void RemoveNodeFromRandomNodeHelper(const NodeId& node_id);
 
-  void PostTaskToAsioService(std::function<void()> functor) {
-    routing_->impl_->asio_service_.service().post(functor);
-  };
-  rudp::NatType nat_type() {
-    return routing_->impl_->network_.nat_type();
-  }
+  void PostTaskToAsioService(std::function<void()> functor);
+  rudp::NatType nat_type();
   std::string SerializeRoutingTable();
 
   static size_t next_node_id_;

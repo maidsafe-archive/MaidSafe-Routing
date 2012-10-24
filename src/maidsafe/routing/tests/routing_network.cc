@@ -301,7 +301,7 @@ void GenericNode::PrintRoutingTable() {
 
 std::string GenericNode::SerializeRoutingTable() {
   std::vector<NodeId> node_list;
-  for (auto node_info : routing_->impl_->routing_table_.nodes_)
+  for (auto node_info : routing_->pimpl_->routing_table_.nodes_)
     node_list.push_back(node_info.node_id);
   return SerializeNodeIdList(node_list);
 }
@@ -316,6 +316,14 @@ void GenericNode::ClearMessages() {
 Fob GenericNode::fob() {
   std::lock_guard<std::mutex> lock(mutex_);
   return GetFob(*node_info_plus_);
+}
+
+void GenericNode::PostTaskToAsioService(std::function<void()> functor) {
+  routing_->pimpl_->asio_service_.service().post(functor);
+}
+
+rudp::NatType GenericNode::nat_type() {
+  return routing_->pimpl_->network_.nat_type();
 }
 
 GenericNetwork::GenericNetwork()
