@@ -148,7 +148,7 @@ void Commands::ZeroStateJoin() {
 
 void Commands::SendAMsg(int identity_index, bool direct, std::string &data) {
   if ((identity_index >= 0) && (identity_index >= all_fobs_.size())) {
-    std::cout << "ERROR : detination index out of range" << std::endl;
+    std::cout << "ERROR : destination index out of range" << std::endl;
     return;
   }
   NodeId dest_id(RandomString(64));
@@ -274,6 +274,7 @@ void Commands::PrintUsage() {
   std::cout << "\tsenddirect <dest_index> Send a msg to a node with specified identity-index.\n";
   std::cout << "\tsendgroup <dest_index> Send a msg to group (default is Random GroupId,"
             << " dest_index for using existing identity as a group_id)\n";
+  std::cout << "\tsendmultiple <num_msg> Send num of msg to randomly picked-up destination.\n";
   std::cout << "\tdatasize <data_size> Set the data_size for the message.\n";
   std::cout << "\nattype Print the NatType of this node.\n";
   std::cout << "\texit Exit application.\n";
@@ -323,6 +324,15 @@ void Commands::ProcessCommand(const std::string &cmdline) {
       SendAMsg(-1, false, data);
     else
       SendAMsg(boost::lexical_cast<int>(args[0]), false, data);
+  } else if (cmd == "sendmultiple") {
+    int num_msg(boost::lexical_cast<int>(args[0]));
+    std::string data(RandomAlphaNumericString(data_size_));
+    boost::posix_time::ptime now = boost::posix_time::microsec_clock::universal_time();
+    for (int i(0); i < num_msg; ++i) {
+      SendAMsg(RandomUint32() % all_fobs_.size(), true, data);
+    }
+    std::cout << "Sent " << num_msg << " messages to randomly picked-up targets. Finished in :"
+              << boost::posix_time::microsec_clock::universal_time() - now << std::endl;
   } else if (cmd == "datasize") {
     data_size_ = boost::lexical_cast<int>(args[0]);
   } else if (cmd == "nattype") {
