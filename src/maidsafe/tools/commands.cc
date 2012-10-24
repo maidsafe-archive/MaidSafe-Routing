@@ -89,8 +89,8 @@ void Commands::Validate(const NodeId& node_id, GivePublicKeyFunctor give_public_
 void Commands::Run() {
   PrintUsage();
 
-  if ((!demo_node_->joined()) && (identity_index_ >= 2) &&
-      (bootstrap_peer_ep_ != boost::asio::ip::udp::endpoint())) {
+  if ((!demo_node_->joined()) && (identity_index_ >= 2)/* &&
+      (bootstrap_peer_ep_ != boost::asio::ip::udp::endpoint())*/) {
     // All parameters have been setup via cmdline directly, join the node immediately
     std::cout << "Joining the node ......" << std::endl;
     Join();
@@ -250,7 +250,8 @@ void Commands::Join() {
         }
       };
   std::vector<boost::asio::ip::udp::endpoint> bootstrap_endpoints;
-  bootstrap_endpoints.push_back(bootstrap_peer_ep_);
+  if (bootstrap_peer_ep_ != boost::asio::ip::udp::endpoint())
+    bootstrap_endpoints.push_back(bootstrap_peer_ep_);
   demo_node_->Join(bootstrap_endpoints);
 
   if (!demo_node_->joined()) {
