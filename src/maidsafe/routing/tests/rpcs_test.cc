@@ -192,18 +192,6 @@ TEST(RpcsTest, BEH_FindNodesMessageNodeRelayMode) {
   ASSERT_FALSE(node.IsZero());
 }
 
-TEST(RpcsTest, BEH_ProxyConnectMessageInitialised) {
-  std::string destination = RandomString(64);
-  std::string source = RandomString(64);
-  rudp::EndpointPair endpoint_pair;
-  endpoint_pair.external =  Endpoint(boost::asio::ip::address_v4::loopback(),
-                                     maidsafe::test::GetRandomPort());
-  endpoint_pair.local =  Endpoint(boost::asio::ip::address_v4::loopback(),
-                                  maidsafe::test::GetRandomPort());
-  ASSERT_TRUE(rpcs::ProxyConnect(NodeId(destination), NodeId(source),
-                                 endpoint_pair).IsInitialized());
-}
-
 }  // namespace test
 
 }  // namespace routing

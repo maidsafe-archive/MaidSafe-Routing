@@ -95,13 +95,19 @@ void Service::Connect(protobuf::Message& message) {
     message.Clear();
     return;
   }
+
+  if (connect_request.peer_id() != routing_table_.kFob().identity.string()) {
+    LOG(kError) << "Message not for this node.";
+    message.Clear();
+    return;
+  }
+
   NodeInfo peer_node;
   peer_node.node_id = NodeId(connect_request.contact().node_id());
   peer_node.connection_id = NodeId(connect_request.contact().connection_id());
   LOG(kVerbose) << "[" << DebugId(routing_table_.kNodeId()) << "]"
                 << " received Connect request from "
                 << DebugId(peer_node.node_id);
-  connect_response.set_answer(false);
   rudp::EndpointPair this_endpoint_pair, peer_endpoint_pair;
   peer_endpoint_pair.external =
       GetEndpointFromProtobuf(connect_request.contact().public_endpoint());
@@ -114,6 +120,26 @@ void Service::Connect(protobuf::Message& message) {
     return;
   }
 
+  // Prepare response
+  connect_response.set_answer(protobuf::ConnectResponseType::kRejected);
+  connect_response.set_timestamp(GetTimeStamp());
+  connect_response.set_original_request(message.data(0));
+  connect_response.set_original_signature(message.signature());
+
+  message.clear_route_history();
+  message.clear_data();
+  message.set_direct(true);
+  message.set_replication(1);
+  message.set_client_node(routing_table_.client_mode());
+  message.set_request(false);
+  message.set_hops_to_live(Parameters::hops_to_live);
+  if (message.has_source_id())
+    message.set_destination_id(message.source_id());
+  else
+    message.clear_destination_id();
+  message.set_source_id(routing_table_.kFob().identity.string());
+
+  // Check rudp & routing
   bool check_node_succeeded(false);
   if (message.client_node()) {  // Client node, check non-routing table
     LOG(kVerbose) << "Client connect request - will check non-routing table.";
@@ -129,9 +155,7 @@ void Service::Connect(protobuf::Message& message) {
   if (check_node_succeeded) {
     LOG(kVerbose) << "CheckNode(node) for " << (message.client_node() ? "client" : "server")
                   << " node succeeded.";
-//    rudp::NatType peer_nat_type = NatTypeFromProtobuf(connect_request.contact().nat_type());
     rudp::NatType this_nat_type(rudp::NatType::kUnknown);
-
     int ret_val = network_.GetAvailableEndpoint(peer_node.connection_id, peer_endpoint_pair,
                                                this_endpoint_pair, this_nat_type);
     if (ret_val != rudp::kSuccess && ret_val != rudp::kBootstrapConnectionAlreadyExists) {
@@ -150,8 +174,11 @@ void Service::Connect(protobuf::Message& message) {
                     << ret_val;
       } else {
         LOG(kInfo) << "Already ongoing attempt to : " << DebugId(peer_node.connection_id);
+        connect_response.set_answer(protobuf::ConnectResponseType::kConnectAttemptAlreadyRunning);
+        message.add_data(connect_response.SerializeAsString());
+        return;
       }
-      message.Clear();
+      message.add_data(connect_response.SerializeAsString());
       return;
     }
 
@@ -168,7 +195,7 @@ void Service::Connect(protobuf::Message& message) {
                              false,
                              routing_table_.client_mode()));
     if (rudp::kSuccess == add_result) {
-      connect_response.set_answer(true);
+      connect_response.set_answer(protobuf::ConnectResponseType::kAccepted);
 
       connect_response.mutable_contact()->set_node_id(routing_table_.kNodeId().string());
       connect_response.mutable_contact()->set_connection_id(
@@ -185,23 +212,7 @@ void Service::Connect(protobuf::Message& message) {
                   << " node failed.";
   }
 
-  connect_response.set_timestamp(GetTimeStamp());
-  connect_response.set_original_request(message.data(0));
-  connect_response.set_original_signature(message.signature());
-
-  message.clear_route_history();
-  message.clear_data();
   message.add_data(connect_response.SerializeAsString());
-  message.set_direct(true);
-  message.set_replication(1);
-  message.set_client_node(routing_table_.client_mode());
-  message.set_request(false);
-  message.set_hops_to_live(Parameters::hops_to_live);
-  if (message.has_source_id())
-    message.set_destination_id(message.source_id());
-  else
-    message.clear_destination_id();
-  message.set_source_id(routing_table_.kFob().identity.string());
   assert(message.IsInitialized() && "unintialised message");
 }
 

@@ -249,9 +249,6 @@ std::string MessageTypeString(const protobuf::Message& message) {
     case MessageType::kFindNodes :
       message_type = "kFindNodes";
       break;
-    case MessageType::kProxyConnect :
-      message_type = "kPxConnect";
-      break;
     case MessageType::kConnectSuccess :
       message_type = "kC-Success";
       break;

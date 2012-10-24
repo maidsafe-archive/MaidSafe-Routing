@@ -64,6 +64,7 @@ protobuf::Message Connect(const NodeId& node_id,
           !our_endpoint.local.address().is_unspecified()) && "Unspecified endpoint");
   protobuf::Message message;
   protobuf::ConnectRequest protobuf_connect_request;
+  protobuf_connect_request.set_peer_id(node_id.string());
   protobuf::Contact* contact = protobuf_connect_request.mutable_contact();
   SetProtobufEndpoint(our_endpoint.external, contact->mutable_public_endpoint());
   SetProtobufEndpoint(our_endpoint.local, contact->mutable_private_endpoint());
@@ -127,40 +128,6 @@ protobuf::Message FindNodes(const NodeId& node_id,
     message.set_relay_connection_id(relay_connection_id.string());
   }
   message.set_hops_to_live(Parameters::hops_to_live);
-  assert(message.IsInitialized() && "Unintialised message");
-  return message;
-}
-
-protobuf::Message ProxyConnect(const NodeId& node_id,
-                               const NodeId& this_node_id,
-                               const rudp::EndpointPair& endpoint_pair,
-                               bool relay_message,
-                               NodeId relay_connection_id) {
-  assert(!node_id.IsZero() && "Invalid node_id");
-  assert(!this_node_id.IsZero() && "Invalid my node_id");
-  assert(!endpoint_pair.external.address().is_unspecified() && "Unspecified external endpoint");
-  assert(!endpoint_pair.local.address().is_unspecified() && "Unspecified local endpoint");
-  protobuf::Message message;
-  protobuf::ProxyConnectRequest proxy_connect_request;
-  SetProtobufEndpoint(endpoint_pair.local, proxy_connect_request.mutable_local_endpoint());
-  SetProtobufEndpoint(endpoint_pair.external, proxy_connect_request.mutable_external_endpoint());
-  message.set_destination_id(node_id.string());
-  message.set_routing_message(true);
-  message.add_data(proxy_connect_request.SerializeAsString());
-  message.set_direct(true);
-  message.set_replication(1);
-  message.set_type(static_cast<int32_t>(MessageType::kProxyConnect));
-  message.set_request(true);
-  message.set_client_node(false);
-  message.set_hops_to_live(Parameters::hops_to_live);
-  if (!relay_message) {
-    message.set_source_id(this_node_id.string());
-  } else {
-    message.set_relay_id(this_node_id.string());
-    // This node is not in any peer's routing table yet
-    LOG(kVerbose) << "ProxyConnect RPC has relay connection id " << DebugId(relay_connection_id);
-    message.set_relay_connection_id(relay_connection_id.string());
-  }
   assert(message.IsInitialized() && "Unintialised message");
   return message;
 }
