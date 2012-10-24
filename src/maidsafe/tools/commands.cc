@@ -356,17 +356,16 @@ NodeId Commands::CalculateClosests(const NodeId& target_id,
   std::copy(all_ids_.begin(), all_ids_.begin() + num_of_closests, closests.begin());
 
   // For group msg, sending to an existing node shall exclude that node from expected list
-  if (num_of_closests != 1) {
+  if (num_of_closests != 1)
     for (auto node_id(closests.begin()); node_id != closests.end(); ++node_id)
       if (*node_id == target_id) {
         closests.erase(node_id);
-        break;
-      }
-    if (all_ids_.size() > num_of_closests)
-      closests.push_back(all_ids_[num_of_closests]);
-  }
+      if (all_ids_.size() > num_of_closests)
+        closests.push_back(all_ids_[num_of_closests]);
+      break;
+    }
 
-  return all_ids_[num_of_closests - 1];
+  return closests[closests.size() - 1];
 }
 
 
