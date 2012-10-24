@@ -16,16 +16,13 @@
 #include <cstdint>
 #include "boost/date_time/posix_time/posix_time_duration.hpp"
 
+
 namespace maidsafe {
 
 namespace routing {
 
-typedef boost::posix_time::time_duration Timeout;
-
 struct Parameters {
  public:
-  Parameters();
-  ~Parameters();
   // Thread count for use of asio::io_service
   static uint16_t thread_count;
   static uint16_t num_chunks_to_cache;
@@ -37,16 +34,18 @@ struct Parameters {
   static uint16_t max_non_routing_table_size;
   static uint16_t bucket_target_size;
   static uint32_t max_data_size;
-  static Timeout find_node_interval;
-  static Timeout recovery_time_lag;
-  static Timeout re_bootstrap_time_lag;
-  static Timeout find_close_node_interval;
+  static boost::posix_time::time_duration find_node_interval;
+  static boost::posix_time::time_duration recovery_time_lag;
+  static boost::posix_time::time_duration re_bootstrap_time_lag;
+  static boost::posix_time::time_duration find_close_node_interval;
   static uint16_t maximum_find_close_node_failures;
   static uint16_t max_route_history;
   static uint16_t hops_to_live;
-  static Timeout connect_rpc_prune_timeout;
+  static boost::posix_time::time_duration connect_rpc_prune_timeout;
 
  private:
+  Parameters();
+  ~Parameters();
   Parameters(const Parameters&);
   Parameters(const Parameters&&);
   Parameters& operator=(const Parameters&);

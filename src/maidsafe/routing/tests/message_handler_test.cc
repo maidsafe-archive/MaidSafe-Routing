@@ -61,7 +61,7 @@ class MessageHandlerTest : public testing::Test {
     fob_.identity = Identity(RandomString(64));
     ntable_.reset(new NonRoutingTable(fob_));
     table_.reset(new RoutingTable(fob_, false));
-    utils_.reset(new MockNetworkUtils(*table_, *ntable_, timer_));
+    utils_.reset(new MockNetworkUtils(*table_, *ntable_));
     service_.reset(new MockService(*table_, *ntable_, *utils_));
     response_handler_.reset(new MockResponseHandler(*table_, *ntable_, *utils_));
     close_info_ = MakeNodeInfoAndKeys().node_info;

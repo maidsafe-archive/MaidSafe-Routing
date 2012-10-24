@@ -31,18 +31,16 @@ namespace routing {
 RoutingTable::RoutingTable(const Fob& fob, const bool& client_mode)
     : max_size_(client_mode ? Parameters::max_client_routing_table_size :
                               Parameters::max_routing_table_size),
-      client_mode_(client_mode),
-      fob_(fob),
-      sorted_(false),
-      kNodeId_(NodeId(fob_.identity)),
+      kClientMode_(client_mode),
+      kFob_(fob),
+      kNodeId_(NodeId(kFob_.identity)),
       kConnectionId_((client_mode ? NodeId(NodeId::kRandomId) : kNodeId_)),
       furthest_group_node_id_(),
       mutex_(),
       remove_node_functor_(),
       network_status_functor_(),
       close_node_replaced_functor_(),
-      nodes_(),
-      pending_nodes_() {}
+      nodes_() {}
 
 bool RoutingTable::AddNode(NodeInfo& peer) {
   return AddOrCheckNode(peer, true);
@@ -110,7 +108,7 @@ bool RoutingTable::AddOrCheckNode(NodeInfo& peer, const bool& remove) {
 //      if (new_bootstrap_endpoint_)
 //        new_bootstrap_endpoint_(peer.endpoint);
     }
-    LOG(kVerbose) << PrintRoutingTable();
+    LOG(kInfo) << PrintRoutingTable();
   }
   return return_value;
 }
@@ -143,10 +141,10 @@ NodeInfo RoutingTable::DropNode(const NodeId& node_to_drop, const bool& routing_
   if (!dropped_node.node_id.IsZero()) {
     LOG(kVerbose) << "Routing table dropped node id : " << DebugId(dropped_node.node_id)
                   << ", connection id : " << DebugId(dropped_node.connection_id);
-    if (remove_node_functor_  && !routing_only)
+    if (remove_node_functor_ && !routing_only)
       remove_node_functor_(dropped_node, false);
   }
-  LOG(kVerbose) << PrintRoutingTable();
+  LOG(kInfo) << PrintRoutingTable();
   return dropped_node;
 }
 
@@ -469,7 +467,7 @@ size_t RoutingTable::Size() const {
 }
 
 Fob RoutingTable::kFob() const {
-  return fob_;
+  return kFob_;
 }
 
 NodeId RoutingTable::kNodeId() const {

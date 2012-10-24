@@ -19,7 +19,6 @@
 #include "maidsafe/rudp/return_codes.h"
 
 #include "maidsafe/routing/routing_api.h"
-#include "maidsafe/routing/routing_private.h"
 #include "maidsafe/routing/rpcs.h"
 #include "maidsafe/routing/network_utils.h"
 #include "maidsafe/routing/routing_pb.h"
@@ -76,7 +75,6 @@ TEST_F(FindNodeNetwork, FUNC_FindExistingNodeInHybridNetwork) {
   }
   EXPECT_TRUE(this->ValidateRoutingTables());
 }
-
 
 TEST_F(FindNodeNetwork, FUNC_FindNonExistingNode) {
   this->SetUpNetwork(kServerSize, kClientSize);

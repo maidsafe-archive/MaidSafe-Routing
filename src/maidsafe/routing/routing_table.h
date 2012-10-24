@@ -65,7 +65,7 @@ class RoutingTable {
   void set_close_node_replaced_functor(CloseNodeReplacedFunctor close_node_replaced_functor);
   void set_remove_node_functor(std::function<void(const NodeInfo&,
                                                   const bool&)> remove_node_functor);
-  bool client_mode() const { return client_mode_; }
+  bool client_mode() const { return kClientMode_; }
   friend class test::GenericNode;
 
  private:
@@ -89,9 +89,8 @@ class RoutingTable {
   std::string PrintRoutingTable();
 
   const uint16_t max_size_;
-  bool client_mode_;
-  const Fob fob_;
-  bool sorted_;
+  const bool kClientMode_;
+  const Fob kFob_;
   const NodeId kNodeId_;
   const NodeId kConnectionId_;
   NodeId furthest_group_node_id_;
@@ -100,7 +99,6 @@ class RoutingTable {
   NetworkStatusFunctor network_status_functor_;
   CloseNodeReplacedFunctor close_node_replaced_functor_;
   std::vector<NodeInfo> nodes_;
-  std::vector<NodeInfo> pending_nodes_;
 };
 
 }  // namespace routing

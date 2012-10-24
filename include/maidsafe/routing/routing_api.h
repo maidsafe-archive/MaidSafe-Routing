@@ -31,7 +31,6 @@
 
 #include "boost/asio/ip/udp.hpp"
 #include "boost/date_time/posix_time/posix_time_config.hpp"
-#include "boost/filesystem/path.hpp"
 
 #include "maidsafe/common/node_id.h"
 #include "maidsafe/common/rsa.h"
@@ -40,15 +39,15 @@
 
 #include "maidsafe/routing/api_config.h"
 
+
 namespace maidsafe {
 
 namespace routing {
 
-class RoutingPrivate;
+struct NodeInfo;
 
 namespace test { class GenericNode; }
 
-struct NodeInfo;
 
 class Routing {
  public:
@@ -58,8 +57,6 @@ class Routing {
   // Users are expected to recreate routing object with right credentials and call Join method to
   // join the routing network.
   Routing(const Fob& fob, bool client_mode);
-
-  ~Routing();
 
   // Joins the network.  Valid functor for node validation must be passed to allow node validatation
   // or else no node will be added to routing and will fail to  join the network.  To force the node
@@ -72,7 +69,7 @@ class Routing {
   int ZeroStateJoin(Functors functors,
                     const boost::asio::ip::udp::endpoint& local_endpoint,
                     const boost::asio::ip::udp::endpoint& peer_endpoint,
-                    const NodeInfo& peer_node_info);
+                    const NodeInfo& peer_info);
 
   // The reply or error (timeout) will be passed to this response_functor.  Error is passed as
   // negative int (return code) and empty string, otherwise a positive return code is message type
@@ -84,11 +81,11 @@ class Routing {
             const std::string& data,           // message content (serialised data)
             ResponseFunctor response_functor,
             const boost::posix_time::time_duration& timeout,
-            bool direct,  // whether this is to a close node group or direct
-            bool cachable);
+            bool direct,                       // whether this is to a close node group or direct
+            bool cacheable);
 
   // A queue with recently found nodes that can be extracted for upper layers to communicate with.
-  NodeId GetRandomExistingNode();
+  NodeId GetRandomExistingNode() const;
 
   // TODO(TEAM): This method shall be in private, however a temp solution in Lifestuff requires
   // calling this function to solve segmentation problem during tearing down of Credential Tests
@@ -101,8 +98,8 @@ class Routing {
   Routing(const Routing&&);
   Routing& operator=(const Routing&);
 
-  // pimpl (data members only)
-  std::unique_ptr<RoutingPrivate> impl_;
+  class Impl;
+  std::shared_ptr<Impl> pimpl_;
 };
 
 }  // namespace routing

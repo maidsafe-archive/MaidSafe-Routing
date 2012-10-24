@@ -10,22 +10,38 @@
  *  the explicit written permission of the board of directors of maidsafe.net. *
  ******************************************************************************/
 
-#include "maidsafe/routing/tests/mock_network_utils.h"
+#ifndef MAIDSAFE_ROUTING_RANDOM_NODE_HELPER_H_
+#define MAIDSAFE_ROUTING_RANDOM_NODE_HELPER_H_
+
+#include <mutex>
+#include <vector>
+
+#include "maidsafe/common/node_id.h"
+
 
 namespace maidsafe {
 
 namespace routing {
 
-namespace test {
+class RandomNodeHelper {
+ public:
+  RandomNodeHelper() : node_ids_(), mutex_(), kMaxSize_(100) {}
+  NodeId Get() const;
+  void Add(const NodeId& node_id);
+  void Remove(const NodeId& node_id);
 
-MockNetworkUtils::MockNetworkUtils(RoutingTable& routing_table, NonRoutingTable& non_routing_table)
-    : NetworkUtils(routing_table, non_routing_table) {}
+ private:
+  RandomNodeHelper(const RandomNodeHelper&);
+  RandomNodeHelper(const RandomNodeHelper&&);
+  RandomNodeHelper& operator=(const RandomNodeHelper&);
 
-MockNetworkUtils::~MockNetworkUtils() {}
-
-}  // namespace test
+  std::vector<NodeId> node_ids_;
+  mutable std::mutex mutex_;
+  const size_t kMaxSize_;
+};
 
 }  // namespace routing
 
 }  // namespace maidsafe
 
+#endif  // MAIDSAFE_ROUTING_RANDOM_NODE_HELPER_H_

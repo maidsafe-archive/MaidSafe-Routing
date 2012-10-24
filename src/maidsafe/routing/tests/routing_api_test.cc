@@ -32,6 +32,7 @@
 #include "maidsafe/routing/bootstrap_file_handler.h"
 #include "maidsafe/routing/return_codes.h"
 #include "maidsafe/routing/routing_api.h"
+#include "maidsafe/routing/routing_impl.h"
 #include "maidsafe/routing/routing_table.h"
 #include "maidsafe/routing/tests/test_utils.h"
 
@@ -147,14 +148,14 @@ TEST(APITest, BEH_API_JoinWithBootstrapFile) {
   fs::path bootstrap_file_path(fs::current_path() / bootstrap_file_name);
   //  fs::path bootstrap_file_path(GetSystemAppDir() / bootstrap_file_name);
   try {
-  fs::remove(bootstrap_file_path);
+    fs::remove(bootstrap_file_path);
   } catch(std::exception &e) {
     LOG(kInfo) << e.what();
   }
   EXPECT_TRUE(WriteBootstrapFile(bootstrap_endpoints, bootstrap_file_path));
   LOG(kInfo) << "Created bootstrap file at : " << bootstrap_file_path;
 
-  //  Bootstraping with created file
+  //  Bootstrapping with created file
   boost::promise<bool> join_promise;
   auto join_future = join_promise.get_future();
   functors3.network_status = [&join_promise](int result) {
@@ -545,7 +546,7 @@ TEST(APITest, BEH_API_ClientNodeWithBootstrapFile) {
   ASSERT_TRUE(WriteBootstrapFile(bootstrap_endpoints, bootstrap_file_path));
   LOG(kInfo) << "Created bootstrap file at : " << bootstrap_file_path;
 
-  //  Bootstraping with created file
+  //  Bootstrapping with created file
   boost::promise<bool> join_promise;
   auto join_future = join_promise.get_future();
   functors3.network_status = [&join_promise](int result) {
@@ -695,7 +696,7 @@ TEST(APITest, BEH_API_NodeNetworkWithBootstrapFile) {
     LOG(kInfo) << "Created bootstrap file at : " << bootstrap_file_path;
   // }
 
-  //  Bootstraping with created file
+  //  Bootstrapping with created file
   for (auto i(0); i != (kNetworkSize - 2); ++i) {
     join_futures.emplace_back(join_promises.at(i).get_future());
     promised.push_back(true);

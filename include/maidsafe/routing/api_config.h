@@ -13,7 +13,6 @@
 #ifndef MAIDSAFE_ROUTING_API_CONFIG_H_
 #define MAIDSAFE_ROUTING_API_CONFIG_H_
 
-#include <cstdint>
 #include <functional>
 #include <string>
 #include <vector>
@@ -49,8 +48,8 @@ typedef std::function<void(const std::string& /*message*/,
 typedef std::function<void(asymm::PublicKey /*public_key*/)> GivePublicKeyFunctor;
 typedef std::function<void(NodeId /*node Id*/, GivePublicKeyFunctor)> RequestPublicKeyFunctor;
 
-typedef std::function<bool(const std::string& /*data*/)> HaveCacheDatafunctor;
-typedef std::function<void(const std::string& /* data*/)> StoreCacheDataFunctor;
+typedef std::function<bool(const std::string& /*data*/)> HaveCacheDataFunctor;
+typedef std::function<void(const std::string& /*data*/)> StoreCacheDataFunctor;
 
 // This functor fires a number from 0 to 100 and represents % network health.
 typedef std::function<void(const int& /*network_health*/)> NetworkStatusFunctor;
@@ -80,7 +79,7 @@ struct Functors {
   CloseNodeReplacedFunctor close_node_replaced;
   GivePublicKeyFunctor set_public_key;
   RequestPublicKeyFunctor request_public_key;
-  HaveCacheDatafunctor have_cache_data;
+  HaveCacheDataFunctor have_cache_data;
   StoreCacheDataFunctor store_cache_data;
   NewBootstrapEndpointFunctor new_bootstrap_endpoint;
 };

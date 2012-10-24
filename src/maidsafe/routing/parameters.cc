@@ -12,6 +12,7 @@
 
 #include "maidsafe/routing/parameters.h"
 
+
 namespace bptime = boost::posix_time;
 
 namespace maidsafe {
@@ -28,14 +29,14 @@ uint16_t Parameters::max_client_routing_table_size(8);
 uint16_t Parameters::max_non_routing_table_size(64);
 uint16_t Parameters::bucket_target_size(1);
 uint32_t Parameters::max_data_size(67107840);
-Timeout Parameters::find_node_interval(bptime::seconds(10));
-Timeout Parameters::recovery_time_lag(bptime::seconds(5));
-Timeout Parameters::re_bootstrap_time_lag(bptime::seconds(10));
-Timeout Parameters::find_close_node_interval(bptime::seconds(3));
+bptime::time_duration Parameters::find_node_interval(bptime::seconds(10));
+bptime::time_duration Parameters::recovery_time_lag(bptime::seconds(5));
+bptime::time_duration Parameters::re_bootstrap_time_lag(bptime::seconds(10));
+bptime::time_duration Parameters::find_close_node_interval(bptime::seconds(3));
 uint16_t Parameters::maximum_find_close_node_failures(10);
 uint16_t Parameters::max_route_history(5);
 uint16_t Parameters::hops_to_live(20);
-Timeout Parameters::connect_rpc_prune_timeout(bptime::seconds(10));
+bptime::time_duration Parameters::connect_rpc_prune_timeout(bptime::seconds(10));
 
 }  // namespace routing
 
