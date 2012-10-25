@@ -187,11 +187,11 @@ void ResponseHandler::FindNodes(const protobuf::Message& message) {
 }
 
 void ResponseHandler::SendConnectRequest(const NodeId peer_node_id) {
-  if (network_.bootstrap_connection_id().IsZero() && (routing_table_.Size() == 0)) {
+  if (network_.bootstrap_connection_id().IsZero() && (routing_table_.size() == 0)) {
       LOG(kWarning) << "Need to re bootstrap !";
     return;
   }
-  bool send_to_bootstrap_connection((routing_table_.Size() < Parameters::closest_nodes_size) &&
+  bool send_to_bootstrap_connection((routing_table_.size() < Parameters::closest_nodes_size) &&
                                     !network_.bootstrap_connection_id().IsZero());
   NodeInfo peer;
   peer.node_id = peer_node_id;

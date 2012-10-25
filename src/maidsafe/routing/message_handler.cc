@@ -65,7 +65,7 @@ void MessageHandler::HandleRoutingMessage(protobuf::Message& message) {
   if (!request || !message.IsInitialized())
     return;
 
-  if (routing_table_.Size() == 0)  // This node can only send to bootstrap_endpoint
+  if (routing_table_.size() == 0)  // This node can only send to bootstrap_endpoint
     network_.SendToDirect(message,
                           network_.bootstrap_connection_id(),
                           network_.bootstrap_connection_id());

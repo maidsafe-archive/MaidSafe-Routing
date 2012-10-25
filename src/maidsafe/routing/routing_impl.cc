@@ -94,11 +94,11 @@ void Routing::Impl::Join(const Functors& functors, const std::vector<Endpoint>& 
 }
 
 void Routing::Impl::ConnectFunctors(const Functors& functors) {
-  routing_table_.set_remove_node_functor([this](const NodeInfo& node, bool internal_rudp_only) {
+  routing_table_.InitialiseFunctors(functors.network_status,
+                                    [this](const NodeInfo& node, bool internal_rudp_only) {
                                              RemoveNode(node, internal_rudp_only);
-                                           });
-  routing_table_.set_network_status_functor(functors.network_status);
-  routing_table_.set_close_node_replaced_functor(functors.close_node_replaced);
+                                           },
+                                    functors.close_node_replaced);
   message_handler_->set_message_received_functor(functors.message_received);
   message_handler_->set_request_public_key_functor(functors.request_public_key);
   network_.set_new_bootstrap_endpoint_functor(functors.new_bootstrap_endpoint);
@@ -106,9 +106,6 @@ void Routing::Impl::ConnectFunctors(const Functors& functors) {
 }
 
 void Routing::Impl::DisconnectFunctors() {
-  routing_table_.set_remove_node_functor(nullptr);
-  routing_table_.set_network_status_functor(nullptr);
-  routing_table_.set_close_node_replaced_functor(nullptr);
   message_handler_->set_message_received_functor(nullptr);
   message_handler_->set_request_public_key_functor(nullptr);
   functors_ = Functors();
@@ -118,13 +115,13 @@ void Routing::Impl::BootstrapFromTheseEndpoints(const std::vector<Endpoint>& end
   LOG(kInfo) << "Doing a BootstrapFromTheseEndpoints Join.  Entered first bootstrap endpoint: "
              << endpoints[0] << ", this node's ID: " << DebugId(kNodeId_)
              << (routing_table_.client_mode() ? " Client" : "");
-  if (routing_table_.Size() > 0) {
-    for (uint16_t i = 0; i < routing_table_.Size(); ++i) {
+  if (routing_table_.size() > 0) {
+    for (uint16_t i = 0; i < routing_table_.size(); ++i) {
       NodeInfo remove_node = routing_table_.GetClosestNode(kNodeId_);
       network_.Remove(remove_node.connection_id);
       routing_table_.DropNode(remove_node.node_id, true);
     }
-    NotifyNetworkStatus(static_cast<int>(routing_table_.Size()));
+    NotifyNetworkStatus(static_cast<int>(routing_table_.size()));
   }
   DoJoin(endpoints);
 }
@@ -146,7 +143,7 @@ void Routing::Impl::DoJoin(const std::vector<Endpoint>& endpoints) {
 
 int Routing::Impl::DoBootstrap(const std::vector<Endpoint>& endpoints) {
   // FIXME race condition if a new connection appears at rudp -- rudp should handle this
-  assert(routing_table_.Size() == 0);
+  assert(routing_table_.size() == 0);
   recovery_timer_.cancel();
   setup_timer_.cancel();
   std::lock_guard<std::mutex> lock(running_mutex_);
@@ -180,7 +177,7 @@ void Routing::Impl::FindClosestNode(const boost::system::error_code& error_code,
     assert(!network_.this_node_relay_connection_id().IsZero() &&
             "Relay connection id should be set after bootstrapping succeeds");
   } else {
-    if (routing_table_.Size() > 0) {
+    if (routing_table_.size() > 0) {
       std::lock_guard<std::mutex> lock(running_mutex_);
       if (!running_)
         return;
@@ -288,11 +285,11 @@ int Routing::Impl::ZeroStateJoin(const Functors& functors,
   uint8_t poll_count(0);
   do {
     Sleep(boost::posix_time::milliseconds(100));
-  } while ((routing_table_.Size() == 0) && (++poll_count < 50));
-  if (routing_table_.Size() != 0) {
+  } while ((routing_table_.size() == 0) && (++poll_count < 50));
+  if (routing_table_.size() != 0) {
     LOG(kInfo) << "Node Successfully joined zero state network, with "
                << DebugId(network_.bootstrap_connection_id())
-               << ", Routing table size - " << routing_table_.Size()
+               << ", Routing table size - " << routing_table_.size()
                << ", Node id : " << DebugId(kNodeId_);
 
     std::lock_guard<std::mutex> lock(running_mutex_);
@@ -357,7 +354,7 @@ void Routing::Impl::Send(const NodeId& destination_id,
 
   proto_message.set_replication(replication);
   // Anonymous node /Partial join state
-  if (kAnonymousNode_ || (routing_table_.Size() == 0)) {
+  if (kAnonymousNode_ || (routing_table_.size() == 0)) {
     proto_message.set_relay_id(kNodeId_.string());
     proto_message.set_relay_connection_id(network_.this_node_relay_connection_id().string());
     NodeId bootstrap_connection_id(network_.bootstrap_connection_id());
@@ -478,7 +475,7 @@ void Routing::Impl::DoOnConnectionLost(const NodeId& lost_connection_id) {
         return;
       }
 
-      if (routing_table_.Size() == 0)
+      if (routing_table_.size() == 0)
         resend = true;  // This will trigger rebootstrap
     } else {
       LOG(kWarning) << "[" << HexSubstr(kFob_.identity) << "]"
@@ -541,25 +538,25 @@ void Routing::Impl::ReSendFindNodeRequest(const boost::system::error_code& error
   if (error_code == boost::asio::error::operation_aborted)
     return;
 
-  if (routing_table_.Size() == 0) {
+  if (routing_table_.size() == 0) {
     LOG(kError) << "[" << HexSubstr(kFob_.identity)
                 << "]'s' Routing table is empty."
                 << " Scheduling Re-Bootstrap .... !!!";
     ReBootstrap();
     return;
-  } else if (ignore_size || (routing_table_.Size() < Parameters::routing_table_size_threshold)) {
+  } else if (ignore_size || (routing_table_.size() < Parameters::routing_table_size_threshold)) {
     if (!ignore_size)
       LOG(kInfo) << "[" << DebugId(kNodeId_)
                   << "] Routing table smaller than " << Parameters::routing_table_size_threshold
                   << " nodes.  Sending another FindNodes. Routing table size < "
-                  << routing_table_.Size() << " >";
+                  << routing_table_.size() << " >";
     else
       LOG(kInfo) << "[" << DebugId(kNodeId_) << "] lost close node."
                   << "Sending another FindNodes. Current routing table size : "
-                  << routing_table_.Size();
+                  << routing_table_.size();
 
     int num_nodes_requested(0);
-    if (ignore_size && (routing_table_.Size() > Parameters::routing_table_size_threshold))
+    if (ignore_size && (routing_table_.size() > Parameters::routing_table_size_threshold))
       num_nodes_requested = static_cast<int>(Parameters::closest_nodes_size);
     else
       num_nodes_requested = static_cast<int>(Parameters::max_routing_table_size);

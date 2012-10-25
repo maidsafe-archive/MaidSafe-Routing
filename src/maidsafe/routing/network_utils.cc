@@ -198,7 +198,7 @@ void NetworkUtils::SendToClosestNode(const protobuf::Message& message) {
         LOG(kVerbose) << "Sending message to NRT node with ID " << message.id();
         SendTo(message, i.node_id, i.connection_id);
       }
-    } else if (routing_table_.Size() > 0) {  // getting closer nodes from routing table
+    } else if (routing_table_.size() > 0) {  // getting closer nodes from routing table
       RecursiveSendOn(message);
     } else {
       LOG(kError) << " No endpoint to send to; aborting send.  Attempt to send a type "

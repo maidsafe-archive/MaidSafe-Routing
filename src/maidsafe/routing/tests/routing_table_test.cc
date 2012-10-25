@@ -31,7 +31,7 @@ namespace test {
 void SortFromTarget(const NodeId& target, std::vector<NodeInfo>& nodes) {
   std::sort(nodes.begin(), nodes.end(),
             [target](const NodeInfo& lhs, const NodeInfo& rhs) {
-                return (lhs.node_id ^ target) < (rhs.node_id ^ target);
+                return NodeId::CloserToTarget(lhs.node_id, rhs.node_id, target);
               });
 }
 
@@ -45,7 +45,7 @@ TEST(RoutingTableTest, FUNC_AddCloseNodes) {
      node.node_id = NodeId(RandomString(64));
      EXPECT_TRUE(routing_table.CheckNode(node));
   }
-  EXPECT_EQ(routing_table.Size(), 0);
+  EXPECT_EQ(routing_table.size(), 0);
   asymm::PublicKey dummy_key;
   // check we cannot input nodes with invalid public_keys
   for (uint16_t i = 0; i < Parameters::closest_nodes_size ; ++i) {
@@ -53,26 +53,25 @@ TEST(RoutingTableTest, FUNC_AddCloseNodes) {
      node.public_key = dummy_key;
      EXPECT_FALSE(routing_table.AddNode(node));
   }
-  EXPECT_EQ(0, routing_table.Size());
+  EXPECT_EQ(0, routing_table.size());
 
   // everything should be set to go now
   for (uint16_t i = 0; i < Parameters::closest_nodes_size ; ++i) {
     node = MakeNode();
     EXPECT_TRUE(routing_table.AddNode(node));
   }
-  EXPECT_EQ(Parameters::closest_nodes_size, routing_table.Size());
+  EXPECT_EQ(Parameters::closest_nodes_size, routing_table.size());
 }
 
 TEST(RoutingTableTest, FUNC_AddTooManyNodes) {
   Fob fob;
   fob.identity = Identity(RandomString(64));
   RoutingTable routing_table(fob, false);
-  routing_table.set_remove_node_functor([](const NodeInfo&, const bool&) {});
-  for (uint16_t i = 0; routing_table.Size() < Parameters::max_routing_table_size; ++i) {
+  for (uint16_t i = 0; routing_table.size() < Parameters::max_routing_table_size; ++i) {
     NodeInfo node(MakeNode());
     EXPECT_TRUE(routing_table.AddNode(node));
   }
-  EXPECT_EQ(routing_table.Size(), Parameters::max_routing_table_size);
+  EXPECT_EQ(routing_table.size(), Parameters::max_routing_table_size);
   size_t count(0);
   for (uint16_t i = 0; i < 100; ++i) {
     NodeInfo node(MakeNode());
@@ -83,7 +82,7 @@ TEST(RoutingTableTest, FUNC_AddTooManyNodes) {
   }
   if (count > 0)
     LOG(kInfo) << "made space for " << count << " node(s) in routing table";
-  EXPECT_EQ(routing_table.Size(), Parameters::max_routing_table_size);
+  EXPECT_EQ(routing_table.size(), Parameters::max_routing_table_size);
 }
 
 TEST(RoutingTableTest, FUNC_GroupChange) {
@@ -97,7 +96,7 @@ TEST(RoutingTableTest, FUNC_GroupChange) {
   SortFromTarget(routing_table.kNodeId(), nodes);
 
   int count(0);
-  routing_table.set_close_node_replaced_functor([&count](const std::vector<NodeInfo> nodes) {
+  auto close_node_replaced_functor([&count](const std::vector<NodeInfo> nodes) {
     ++count;
     LOG(kInfo) << "Close node replaced. count : " << count;
     EXPECT_GE(8, count);
@@ -106,15 +105,17 @@ TEST(RoutingTableTest, FUNC_GroupChange) {
     }
   });
 
-  routing_table.set_network_status_functor([](const int& status) {
-    LOG(kVerbose) << "Status : " << status;
-  });
+  routing_table.InitialiseFunctors(
+      [](const int& status) { LOG(kVerbose) << "Status : " << status; },
+      [](const NodeInfo&, bool) {},
+      close_node_replaced_functor);
+
   for (uint16_t i = 0; i < Parameters::max_routing_table_size; ++i) {
     ASSERT_TRUE(routing_table.AddNode(nodes.at(i)));
     LOG(kVerbose) << "Added to routing_table : " << DebugId(nodes.at(i).node_id);
   }
 
-  ASSERT_EQ(routing_table.Size(), Parameters::max_routing_table_size);
+  ASSERT_EQ(routing_table.size(), Parameters::max_routing_table_size);
 }
 
 TEST(RoutingTableTest, FUNC_CloseAndInRangeCheck) {
@@ -123,11 +124,11 @@ TEST(RoutingTableTest, FUNC_CloseAndInRangeCheck) {
   RoutingTable routing_table(fob, false);
   // Add some nodes to routing_table
   NodeId my_node(fob.identity);
-  for (uint16_t i = 0; routing_table.Size() < Parameters::max_routing_table_size; ++i) {
+  for (uint16_t i = 0; routing_table.size() < Parameters::max_routing_table_size; ++i) {
     NodeInfo node(MakeNode());
     EXPECT_TRUE(routing_table.AddNode(node));
   }
-  EXPECT_EQ(routing_table.Size(), Parameters::max_routing_table_size);
+  EXPECT_EQ(routing_table.size(), Parameters::max_routing_table_size);
   std::string my_id_encoded(my_node.ToStringEncoded(NodeId::kBinary));
   my_id_encoded[511] = (my_id_encoded[511] == '0' ? '1' : '0');
   NodeId my_closest_node(NodeId(my_id_encoded, NodeId::kBinary));
@@ -135,7 +136,7 @@ TEST(RoutingTableTest, FUNC_CloseAndInRangeCheck) {
   EXPECT_TRUE(routing_table.IsThisNodeInRange(my_closest_node, 2));
   EXPECT_TRUE(routing_table.IsThisNodeInRange(my_closest_node, 200));
   EXPECT_TRUE(routing_table.IsThisNodeClosestTo(my_closest_node));
-  EXPECT_EQ(routing_table.Size(), Parameters::max_routing_table_size);
+  EXPECT_EQ(routing_table.size(), Parameters::max_routing_table_size);
   // get closest nodes to me
   std::vector<NodeId> close_nodes(routing_table.GetClosestNodes(my_node,
                                               Parameters::closest_nodes_size));
@@ -162,15 +163,15 @@ TEST(RoutingTableTest, FUNC_CloseAndInRangeCheck) {
                                       Parameters::closest_nodes_size + 1).node_id));
   // should now be closest node to itself :-)
   EXPECT_EQ(routing_table.GetClosestNode(my_closest_node).node_id, my_closest_node);
-  EXPECT_EQ(routing_table.Size(), Parameters::max_routing_table_size);
+  EXPECT_EQ(routing_table.size(), Parameters::max_routing_table_size);
   EXPECT_EQ(node.node_id, routing_table.DropNode(node.node_id, true).node_id);
-  EXPECT_EQ(routing_table.Size(), Parameters::max_routing_table_size - 1);
+  EXPECT_EQ(routing_table.size(), Parameters::max_routing_table_size - 1);
   EXPECT_TRUE(routing_table.AddNode(node));
-  EXPECT_EQ(routing_table.Size(), Parameters::max_routing_table_size);
+  EXPECT_EQ(routing_table.size(), Parameters::max_routing_table_size);
   EXPECT_FALSE(routing_table.AddNode(node));
-  EXPECT_EQ(routing_table.Size(), Parameters::max_routing_table_size);
+  EXPECT_EQ(routing_table.size(), Parameters::max_routing_table_size);
   EXPECT_EQ(node.node_id, routing_table.DropNode(node.node_id, true).node_id);
-  EXPECT_EQ(routing_table.Size(), Parameters::max_routing_table_size -1);
+  EXPECT_EQ(routing_table.size(), Parameters::max_routing_table_size -1);
   EXPECT_EQ(NodeId(), routing_table.DropNode(node.node_id, true).node_id);
 }
 
@@ -209,8 +210,8 @@ TEST(RoutingTableTest, FUNC_GetClosestNodeWithExclusion) {
 
   // routing_table with Parameters::node_group_size elements
   exclude.clear();
-  for (uint16_t i(static_cast<uint16_t>(routing_table.Size()));
-       routing_table.Size() < Parameters::node_group_size; ++i) {
+  for (uint16_t i(static_cast<uint16_t>(routing_table.size()));
+       routing_table.size() < Parameters::node_group_size; ++i) {
     NodeInfo node(MakeNode());
     nodes_id.push_back(node.node_id);
     EXPECT_TRUE(routing_table.AddNode(node));
@@ -239,8 +240,8 @@ TEST(RoutingTableTest, FUNC_GetClosestNodeWithExclusion) {
 
   // routing_table with Parameters::Parameters::max_routing_table_size elements
   exclude.clear();
-  for (uint16_t i = static_cast<uint16_t>(routing_table.Size());
-       routing_table.Size() < Parameters::max_routing_table_size; ++i) {
+  for (uint16_t i = static_cast<uint16_t>(routing_table.size());
+       routing_table.size() < Parameters::max_routing_table_size; ++i) {
     NodeInfo node(MakeNode());
     nodes_id.push_back(node.node_id);
     EXPECT_TRUE(routing_table.AddNode(node));

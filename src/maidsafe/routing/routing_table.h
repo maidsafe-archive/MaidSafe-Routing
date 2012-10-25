@@ -15,8 +15,9 @@
 
 #include <cstdint>
 #include <mutex>
-#include <vector>
 #include <string>
+#include <utility>
+#include <vector>
 
 #include "boost/asio/ip/udp.hpp"
 #include "boost/filesystem/path.hpp"
@@ -41,61 +42,63 @@ struct NodeInfo;
 
 class RoutingTable {
  public:
-  RoutingTable(const Fob& fob, const bool& client_mode);
-  bool AddNode(NodeInfo& peer);
-  bool CheckNode(NodeInfo& peer);
-  NodeInfo DropNode(const NodeId &node_to_drop, const bool& routing_only);
+  RoutingTable(const Fob& fob, bool client_mode);
+  void InitialiseFunctors(NetworkStatusFunctor network_status_functor,
+                          std::function<void(const NodeInfo&, bool)> remove_node_functor,
+                          CloseNodeReplacedFunctor close_node_replaced_functor);
+  bool AddNode(const NodeInfo& peer);
+  bool CheckNode(const NodeInfo& peer);
+  NodeInfo DropNode(const NodeId &node_to_drop, bool routing_only);
   bool GetNodeInfo(const NodeId& node_id, NodeInfo& node_info) const;
-  bool IsThisNodeInRange(const NodeId& target_id, const uint16_t range);
+  bool IsThisNodeInRange(const NodeId& target_id, uint16_t range);
   bool IsThisNodeClosestTo(const NodeId& target_id, bool ignore_exact_match = false);
   bool IsConnected(const NodeId& node_id) const;
   bool ConfirmGroupMembers(const NodeId& node1, const NodeId& node2);
   // Returns default-constructed NodeId if routing table size is zero
   NodeInfo GetClosestNode(const NodeId& target_id, bool ignore_exact_match = false);
-  NodeInfo GetClosestNode(const NodeId& target_id, const std::vector<std::string>& exclude,
+  NodeInfo GetClosestNode(const NodeId& target_id,
+                          const std::vector<std::string>& exclude,
                           bool ignore_exact_match = false);
   // Returns max NodeId if routing table size is less than requested node_number
-  NodeInfo GetNthClosestNode(const NodeId& target_id, const uint16_t& node_number);
-  std::vector<NodeId> GetClosestNodes(const NodeId& target_id, const uint16_t& number_to_get);
-  size_t Size() const;
-  Fob kFob() const;
-  NodeId kNodeId() const;
-  NodeId kConnectionId() const;
-  void set_network_status_functor(NetworkStatusFunctor network_status_functor);
-  void set_close_node_replaced_functor(CloseNodeReplacedFunctor close_node_replaced_functor);
-  void set_remove_node_functor(std::function<void(const NodeInfo&,
-                                                  const bool&)> remove_node_functor);
+  NodeInfo GetNthClosestNode(const NodeId& target_id, uint16_t node_number);
+  std::vector<NodeId> GetClosestNodes(const NodeId& target_id, uint16_t number_to_get);
+  size_t size() const;
+  Fob kFob() const { return kFob_; }
+  NodeId kNodeId() const { return kNodeId_; }
+  NodeId kConnectionId() const { return kConnectionId_; }
   bool client_mode() const { return kClientMode_; }
   friend class test::GenericNode;
 
  private:
   RoutingTable(const RoutingTable&);
   RoutingTable& operator=(const RoutingTable&);
-  bool AddOrCheckNode(NodeInfo& node, const bool& remove);
-  int16_t BucketIndex(const NodeId& rhs) const;
-  bool CheckValidParameters(const NodeInfo& node) const;
-  bool CheckParametersAreUnique(const NodeInfo& node) const;
+  bool AddOrCheckNode(NodeInfo node, bool remove);
+  void SetBucketIndex(NodeInfo& node_info) const;
+  bool CheckPublicKeyIsUnique(const NodeInfo& node) const;
   NodeInfo ResolveConnectionDuplication(const NodeInfo& new_duplicate_node,
-                                        const bool& local_endpoint,
+                                        bool local_endpoint,
                                         NodeInfo& existing_node);
   std::vector<NodeInfo> CheckGroupChange();
-  bool MakeSpaceForNodeToBeAdded(NodeInfo& node, const bool& remove, NodeInfo& removed_node);
-  void PartialSortFromTarget(const NodeId& target, const uint16_t& number);
-  void NthElementSortFromTarget(const NodeId& target, const uint16_t& nth_element);
+  bool MakeSpaceForNodeToBeAdded(const NodeInfo& node, bool remove, NodeInfo& removed_node);
+  uint16_t PartialSortFromTarget(const NodeId& target, uint16_t number);
+  void NthElementSortFromTarget(const NodeId& target, uint16_t nth_element);
   NodeId FurthestCloseNode();
-  std::vector<NodeInfo> GetClosestNodeInfo(const NodeId& from, const uint16_t& number_to_get,
+  std::vector<NodeInfo> GetClosestNodeInfo(const NodeId& target_id,
+                                           uint16_t number_to_get,
                                            bool ignore_exact_match = false);
-  void UpdateNetworkStatus(const uint16_t& size) const;
+  std::pair<bool, std::vector<NodeInfo>::iterator> Find(const NodeId& node_id);
+  std::pair<bool, std::vector<NodeInfo>::const_iterator> Find(const NodeId& node_id) const;
+  void UpdateNetworkStatus(uint16_t size) const;
   std::string PrintRoutingTable();
 
-  const uint16_t max_size_;
+  const uint16_t kMaxSize_;
   const bool kClientMode_;
   const Fob kFob_;
   const NodeId kNodeId_;
   const NodeId kConnectionId_;
-  NodeId furthest_group_node_id_;
   mutable std::mutex mutex_;
-  std::function<void(const NodeInfo&, const bool&)> remove_node_functor_;
+  NodeId furthest_group_node_id_;
+  std::function<void(const NodeInfo&, bool)> remove_node_functor_;
   NetworkStatusFunctor network_status_functor_;
   CloseNodeReplacedFunctor close_node_replaced_functor_;
   std::vector<NodeInfo> nodes_;

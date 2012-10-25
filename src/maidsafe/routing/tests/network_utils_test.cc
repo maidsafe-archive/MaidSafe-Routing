@@ -390,7 +390,7 @@ TEST(NetworkUtilsTest, FUNC_ProcessSendRecursiveSendOn) {
   for (auto i(0); i != 8; ++i)
     ASSERT_TRUE(routing_table.AddNode(nodes.at(i).node_info));
 
-  ASSERT_EQ(8, routing_table.Size());
+  ASSERT_EQ(8, routing_table.size());
   for (auto i(0); i != kMessageCount; ++i)
     network.SendToClosestNode(sent_message);
 
