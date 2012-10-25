@@ -120,12 +120,14 @@ TEST(APITest, BEH_API_JoinWithBootstrapFile) {
   Routing R2(GetFob(node2), false);
   Routing R3(GetFob(node3), false);
 
+  functors1.network_status = [](const int&) {};
   functors1.request_public_key = [&](const NodeId& node_id, GivePublicKeyFunctor give_key ) {
       LOG(kWarning) << "node_validation called for " << HexSubstr(node_id.string());
       auto itr(fob_map.find(NodeId(node_id)));
       if (fob_map.end() != itr)
         give_key((*itr).second.keys.public_key);
     };
+  functors2.network_status = [](const int&) {};
   functors2.request_public_key = functors3.request_public_key = functors1.request_public_key;
   Endpoint endpoint1(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort()),
            endpoint2(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort());

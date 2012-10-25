@@ -61,7 +61,7 @@ typedef std::function<void(const boost::asio::ip::udp::endpoint& /*new_endpoint*
 // This functor fires when a new close node is inserted in routing table. Upper layers responsible
 // for storing key/value pairs should send all key/values between itself and the new node's address
 // to the new node. Keys further than the furthest node can safely be deleted (if any).
-typedef std::function<void(const std::vector<NodeInfo> /*new_close_nodes*/)>
+typedef std::function<void(const std::vector<NodeInfo>& /*new_close_nodes*/)>
     CloseNodeReplacedFunctor;
 
 struct Functors {

@@ -122,6 +122,9 @@ class GenericNode {
   boost::asio::ip::udp::endpoint endpoint_;
   std::vector<std::string> messages_;
   std::shared_ptr<Routing> routing_;
+
+ private:
+  void InitialiseFunctors();
 };
 
 class GenericNetwork : public testing::Test {

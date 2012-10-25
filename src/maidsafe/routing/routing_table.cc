@@ -78,6 +78,10 @@ bool RoutingTable::AddOrCheckNode(NodeInfo peer, bool remove) {
   std::vector<NodeInfo> new_close_nodes;
   NodeInfo removed_node;
   uint16_t routing_table_size(0);
+
+  if (remove)
+    SetBucketIndex(peer);
+
   {
     std::lock_guard<std::mutex> lock(mutex_);
     auto found(Find(peer.node_id));
@@ -88,7 +92,6 @@ bool RoutingTable::AddOrCheckNode(NodeInfo peer, bool remove) {
 
     if (MakeSpaceForNodeToBeAdded(peer, remove, removed_node)) {
       if (remove) {
-        SetBucketIndex(peer);
         assert(peer.bucket != NodeInfo::kInvalidBucket);
         nodes_.push_back(peer);
         new_close_nodes = CheckGroupChange();
@@ -282,8 +285,9 @@ bool RoutingTable::MakeSpaceForNodeToBeAdded(const NodeInfo& node,
   auto const furthest_close_node_iter = nodes_.begin() + (Parameters::closest_nodes_size - 1);
 
   if (NodeId::CloserToTarget(node.node_id, furthest_close_node.node_id, kNodeId_)) {
-    assert(node.bucket <= furthest_close_node.bucket && "close node replacement to higher bucket");
     if (remove) {
+      assert(node.bucket <= furthest_close_node.bucket &&
+             "close node replacement to higher bucket");
       removed_node = *furthest_close_node_iter;
       nodes_.erase(furthest_close_node_iter);
     }

@@ -58,18 +58,7 @@ GenericNode::GenericNode(bool client_mode)
       routing_() {
   endpoint_.address(maidsafe::GetLocalIp());
   endpoint_.port(maidsafe::test::GetRandomPort());
-  functors_.close_node_replaced = nullptr;
-  functors_.message_received = [&] (const std::string& message,
-                                    const NodeId&,
-                                    ReplyFunctor reply_functor) {
-                                 LOG(kInfo) << id_ << " -- Received: message : "
-                                            << message.substr(0, 10);
-                                 std::lock_guard<std::mutex> guard(mutex_);
-                                 messages_.push_back(message);
-                                 if (!IsClient())
-                                   reply_functor("Response to >:<" + message);
-                               };
-  functors_.network_status = nullptr;
+  InitialiseFunctors();
   routing_.reset(new Routing(GetFob(*node_info_plus_), client_mode));
   LOG(kVerbose) << "Node constructor";
   std::lock_guard<std::mutex> lock(mutex_);
@@ -91,18 +80,7 @@ GenericNode::GenericNode(bool client_mode, const rudp::NatType& nat_type)
       routing_() {
   endpoint_.address(GetLocalIp());
   endpoint_.port(maidsafe::test::GetRandomPort());
-  functors_.close_node_replaced = nullptr;
-  functors_.message_received = [&] (const std::string& message,
-                                    const NodeId&,
-                                    ReplyFunctor reply_functor) {
-                                 LOG(kInfo) << id_ << " -- Received: message : "
-                                            << message.substr(0, 10);
-                                 std::lock_guard<std::mutex> guard(mutex_);
-                                 messages_.push_back(message);
-                                 if (!IsClient())
-                                   reply_functor("Response to >:<" + message);
-                               };
-  functors_.network_status = nullptr;
+  InitialiseFunctors();
   routing_.reset(new Routing(GetFob(*node_info_plus_), client_mode));
   routing_->pimpl_->network_.nat_type_ = nat_type_;
   LOG(kVerbose) << "Node constructor";
@@ -125,18 +103,7 @@ GenericNode::GenericNode(bool client_mode, const NodeInfoAndPrivateKey& node_inf
       routing_() {
   endpoint_.address(GetLocalIp());
   endpoint_.port(maidsafe::test::GetRandomPort());
-  functors_.close_node_replaced = nullptr;
-  functors_.message_received = [&] (const std::string& message,
-                                    const NodeId&,
-                                    ReplyFunctor reply_functor) {
-                                 LOG(kInfo) << id_ << " -- Received: message : "
-                                            << message.substr(0, 10);
-                                 std::lock_guard<std::mutex> guard(mutex_);
-                                 messages_.push_back(message);
-                                 if (!IsClient())
-                                   reply_functor("Response to >:<" + message);
-                               };
-  functors_.network_status = nullptr;
+  InitialiseFunctors();
   Fob fob(GetFob(*node_info_plus_));
   if (node_info_plus_->node_info.node_id.IsZero()) {
     anonymous_ = true;
@@ -150,6 +117,21 @@ GenericNode::GenericNode(bool client_mode, const NodeInfoAndPrivateKey& node_inf
 
 
 GenericNode::~GenericNode() {}
+
+void GenericNode::InitialiseFunctors() {
+  functors_.close_node_replaced = [](const std::vector<NodeInfo>&) {};  // NOLINT (Fraser)
+  functors_.message_received = [&] (const std::string& message,
+                                    const NodeId&,
+                                    ReplyFunctor reply_functor) {
+                                 LOG(kInfo) << id_ << " -- Received: message : "
+                                            << message.substr(0, 10);
+                                 std::lock_guard<std::mutex> guard(mutex_);
+                                 messages_.push_back(message);
+                                 if (!IsClient())
+                                   reply_functor("Response to >:<" + message);
+                               };
+  functors_.network_status = [](const int&) {};  // NOLINT (Fraser)
+}
 
 int GenericNode::GetStatus() const {
   return /*routing_->GetStatus()*/0;
