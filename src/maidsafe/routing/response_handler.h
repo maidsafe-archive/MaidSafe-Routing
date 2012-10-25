@@ -17,6 +17,9 @@
 #include <string>
 #include <vector>
 
+#include "boost/asio/deadline_timer.hpp"
+#include "boost/date_time/posix_time/ptime.hpp"
+
 #include "maidsafe/common/rsa.h"
 #include "maidsafe/rudp/managed_connections.h"
 
@@ -64,13 +67,27 @@ class ResponseHandler : public std::enable_shared_from_this<ResponseHandler> {
   friend class test::ResponseHandlerTest_BEH_ConnectAttempts_Test;
 
  private:
+  struct PendingRpc {
+    PendingRpc(const NodeId& node_id_in, boost::asio::io_service &io_service);
+    NodeId node_id;
+    boost::asio::deadline_timer timer;
+  };
+
+  void AddPending(const NodeId& node_id);
+  void RemovePending(const NodeId& node_id);
+  bool IsPending(const NodeId& node_id);
+  std::vector<std::unique_ptr<PendingRpc>>::iterator  //NOLINT
+      FindPendingRpcWithNodeId(const NodeId& node_id);
+
   void SendConnectRequest(const NodeId peer_node_id);
 
   mutable std::mutex mutex_;
   RoutingTable& routing_table_;
   NonRoutingTable& non_routing_table_;
   NetworkUtils& network_;
+  std::vector<std::unique_ptr<PendingRpc>> pending_connects_;
   RequestPublicKeyFunctor request_public_key_functor_;
+  AsioService asio_service_;
 };
 
 }  // namespace routing

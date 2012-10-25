@@ -76,12 +76,13 @@ message SignedMessage {
 
 message ConnectRequest {
   required Contact contact = 1;
-  optional bool bootstrap = 2;
-  required int32 timestamp = 3;
+  required bytes peer_id = 2;
+  optional bool bootstrap = 3;
+  required int32 timestamp = 4;
 }
 
 message ConnectResponse {
-  required bool answer = 1;
+  required ConnectResponseType answer = 1;
   optional Contact contact = 2;
   optional bytes connection_id = 3;
   optional Endpoint seen_endpoint = 4;
@@ -128,17 +129,9 @@ message PingResponse {
   required bytes original_signature = 4;
 }
 
-enum ProxyConnectResultType {
-  kSuccess = 0;
-  kFailure = 1;
-  kAlreadyConnected = 2;
+enum ConnectResponseType {
+  kAccepted = 0;
+  kRejected = 1;
+  kConnectAttemptAlreadyRunning = 2;
 }
 
-message ProxyConnectRequest {
-  required Endpoint local_endpoint = 1;
-  required Endpoint external_endpoint = 2;
-}
-
-message ProxyConnectResponse {
-  required ProxyConnectResultType result = 1;
-}

@@ -49,7 +49,11 @@ ResponseHandler::ResponseHandler(RoutingTable& routing_table,
       routing_table_(routing_table),
       non_routing_table_(non_routing_table),
       network_(network),
-      request_public_key_functor_() {}
+      pending_connects_(),
+      request_public_key_functor_(),
+      asio_service_(1) {
+  asio_service_.Start();
+}  // TODO(Prakash) Remove asio service with other alternative
 
 ResponseHandler::~ResponseHandler() {}
 
@@ -71,13 +75,20 @@ void ResponseHandler::Connect(protobuf::Message& message) {
     return;
   }
 
-  if (!connect_response.answer()) {
-    LOG(kVerbose) << "Peer rejected this node's connection request." << " id: " << message.id();
+  if (!connect_request.ParseFromString(connect_response.original_request())) {
+    LOG(kError) << "Could not parse original connect request" << " id: " << message.id();
     return;
   }
 
-  if (!connect_request.ParseFromString(connect_response.original_request())) {
-    LOG(kError) << "Could not parse original connect request" << " id: " << message.id();
+  if (connect_response.answer() == protobuf::ConnectResponseType::kRejected) {
+    LOG(kInfo) << "Peer rejected this node's connection request." << " id: " << message.id();
+    return;
+  }
+
+  if (connect_response.answer() ==
+        protobuf::ConnectResponseType::kConnectAttemptAlreadyRunning) {
+    if (CheckId(connect_request.peer_id()))
+      AddPending(NodeId(connect_request.peer_id()));
     return;
   }
 
@@ -169,7 +180,7 @@ void ResponseHandler::FindNodes(const protobuf::Message& message) {
 //    return;  // we never requested this
 //  }
 
-  LOG(kVerbose) << "This node [" << DebugId(routing_table_.kNodeId())
+  LOG(kVerbose) << "[" << DebugId(routing_table_.kNodeId())
                 << "] received FindNodes response from " << HexSubstr(message.source_id())
                 << " id: " << message.id();
   std::string find_node_result = "FindNodes from " + HexSubstr(message.source_id()) +
@@ -197,6 +208,11 @@ void ResponseHandler::SendConnectRequest(const NodeId peer_node_id) {
   peer.node_id = peer_node_id;
 
   if (peer.node_id == NodeId(routing_table_.kFob().identity)) {
+    return;
+  }
+
+  if (IsPending(peer.node_id)) {
+    LOG(kVerbose) << "Already ongoing connect attempt " << DebugId(peer.node_id);
     return;
   }
 
@@ -356,6 +372,46 @@ void ResponseHandler::HandleSuccessAcknowledgementAsRequestor(std::vector<NodeId
       SendConnectRequest(i);
     }
   }
+}
+
+ResponseHandler::PendingRpc::PendingRpc(const NodeId& node_id_in,
+                                        boost::asio::io_service &io_service)
+  : node_id(node_id_in),
+    timer(io_service, bptime::microsec_clock::universal_time() +
+            Parameters::connect_rpc_prune_timeout) {}
+
+void ResponseHandler::AddPending(const NodeId& node_id) {
+  std::lock_guard<std::mutex> lock(mutex_);
+  if (FindPendingRpcWithNodeId(node_id) != pending_connects_.end())
+    return;
+  std::unique_ptr<PendingRpc> pending_connect(new PendingRpc(node_id, asio_service_.service()));
+  pending_connect->timer.async_wait([node_id, this](const boost::system::error_code& ec) {
+                                        if (ec != boost::asio::error::operation_aborted) {
+                                          RemovePending(node_id);
+                                        }
+                                      });
+  pending_connects_.push_back(std::move(pending_connect));
+}
+
+void ResponseHandler::RemovePending(const NodeId& node_id) {
+  std::lock_guard<std::mutex> lock(mutex_);
+  auto itr(FindPendingRpcWithNodeId(node_id));
+  if (itr != pending_connects_.end())
+    pending_connects_.erase(itr);
+}
+
+bool ResponseHandler::IsPending(const NodeId& node_id) {
+  std::lock_guard<std::mutex> lock(mutex_);
+  return (FindPendingRpcWithNodeId(node_id) != pending_connects_.end());
+}
+
+std::vector<std::unique_ptr<ResponseHandler::PendingRpc>>::iterator  // NOLINT
+    ResponseHandler::FindPendingRpcWithNodeId(const NodeId& node_id) {
+  return std::find_if(pending_connects_.begin(),
+                      pending_connects_.end(),
+                      [node_id] (const std::unique_ptr<PendingRpc>& element) {
+                          return element->node_id == node_id;
+                        });
 }
 
 void ResponseHandler::set_request_public_key_functor(RequestPublicKeyFunctor request_public_key) {

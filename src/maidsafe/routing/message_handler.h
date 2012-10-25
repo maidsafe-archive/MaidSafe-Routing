@@ -47,9 +47,8 @@ enum class MessageType : int32_t {
   kPing = 1,
   kConnect = 2,
   kFindNodes = 3,
-  kProxyConnect = 4,
-  kConnectSuccess = 5,
-  kConnectSuccessAcknowledgement = 6,
+  kConnectSuccess = 4,
+  kConnectSuccessAcknowledgement = 5,
   kMaxRouting = 100,
   kNodeLevel = 101
 };

@@ -49,14 +49,8 @@ namespace {
 
 typedef boost::asio::ip::udp::endpoint Endpoint;
 
-#ifdef FAKE_RUDP
-  const int kClientCount(10);
-  const int kServerCount(10);
-#else
-  const int kClientCount(2);
-  const int kServerCount(6);
-#endif
-
+const int kClientCount(4);
+const int kServerCount(10);
 const int kNetworkSize = kClientCount + kServerCount;
 
 }  // anonymous namespace
