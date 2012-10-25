@@ -46,10 +46,15 @@ void RoutingTable::InitialiseFunctors(
     NetworkStatusFunctor network_status_functor,
     std::function<void(const NodeInfo&, bool)> remove_node_functor,
     CloseNodeReplacedFunctor close_node_replaced_functor) {
-  assert(network_status_functor);
+  // TODO(Prakash#5#): 2012-10-25 - Consider asserting network_status_functor != nullptr here.
+  if (!network_status_functor)
+    LOG(kWarning) << "NULL network_status_functor passed.";
   assert(remove_node_functor);
-  assert(close_node_replaced_functor);
-  if (!network_status_functor_) {
+  if (!kClientMode_ && !close_node_replaced_functor)
+    LOG(kWarning) << "NULL close_node_replaced_functor passed.";
+  // TODO(Prakash#5#): 2012-10-25 - Handle once we change to matrix.
+//  assert(close_node_replaced_functor);
+  if (!remove_node_functor_) {
     network_status_functor_ = network_status_functor;
     remove_node_functor_ = remove_node_functor;
     close_node_replaced_functor_ = close_node_replaced_functor;

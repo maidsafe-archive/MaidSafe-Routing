@@ -75,6 +75,7 @@ TEST(APITest, BEH_API_ZeroState) {
   Routing R2(GetFob(node2), false);
   Routing R3(GetFob(node3), false);
 
+  functors1.network_status = [](const int&) {};  // NOLINT (Fraser)
   functors1.request_public_key = [&](const NodeId& node_id, GivePublicKeyFunctor give_key ) {
       LOG(kWarning) << "node_validation called for " << HexSubstr(node_id.string());
       auto itr(fob_map.find(NodeId(node_id)));
@@ -82,6 +83,7 @@ TEST(APITest, BEH_API_ZeroState) {
         give_key((*itr).second.keys.public_key);
     };
 
+  functors2.network_status = functors3.network_status = functors1.network_status;
   functors2.request_public_key = functors3.request_public_key = functors1.request_public_key;
   Endpoint endpoint1(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort()),
     endpoint2(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort());
@@ -120,14 +122,14 @@ TEST(APITest, BEH_API_JoinWithBootstrapFile) {
   Routing R2(GetFob(node2), false);
   Routing R3(GetFob(node3), false);
 
-  functors1.network_status = [](const int&) {};
+  functors1.network_status = [](const int&) {};  // NOLINT (Fraser)
   functors1.request_public_key = [&](const NodeId& node_id, GivePublicKeyFunctor give_key ) {
       LOG(kWarning) << "node_validation called for " << HexSubstr(node_id.string());
       auto itr(fob_map.find(NodeId(node_id)));
       if (fob_map.end() != itr)
         give_key((*itr).second.keys.public_key);
     };
-  functors2.network_status = [](const int&) {};
+  functors2.network_status = functors3.network_status = functors1.network_status;
   functors2.request_public_key = functors3.request_public_key = functors1.request_public_key;
   Endpoint endpoint1(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort()),
            endpoint2(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort());
@@ -186,6 +188,7 @@ TEST(APITest, FUNC_API_AnonymousNode) {
   Routing R2(GetFob(node2), false);
   Routing R3(Fob(), true);  // Anonymous node
 
+  functors1.network_status = [](const int&) {};  // NOLINT (Fraser)
   functors1.request_public_key = [=](const NodeId& node_id, GivePublicKeyFunctor give_key) {
       LOG(kWarning) << "node_validation called for " << HexSubstr(node_id.string());
       auto itr(fob_map.find(NodeId(node_id)));
@@ -199,6 +202,7 @@ TEST(APITest, FUNC_API_AnonymousNode) {
       LOG(kVerbose) << "Message received and replied to message !!";
     };
 
+  functors2.network_status = functors1.network_status;
   functors2.request_public_key = functors1.request_public_key;
   Endpoint endpoint1(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort()),
            endpoint2(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort());
@@ -264,6 +268,7 @@ TEST(APITest, BEH_API_SendToSelf) {
   Routing R2(GetFob(node2), false);
   Routing R3(GetFob(node3), false);  // client mode
 
+  functors1.network_status = [](const int&) {};  // NOLINT (Fraser)
   functors1.request_public_key = [=](const NodeId& node_id, GivePublicKeyFunctor give_key ) {
       LOG(kWarning) << "node_validation called for " << HexSubstr(node_id.string());
       auto itr(fob_map.find(NodeId(node_id)));
@@ -277,6 +282,7 @@ TEST(APITest, BEH_API_SendToSelf) {
       LOG(kVerbose) << "Message received and replied to message !!";
     };
 
+  functors2.network_status = functors3.network_status = functors1.network_status;
   functors2.request_public_key = functors3.request_public_key = functors1.request_public_key;
   functors2.message_received = functors3.message_received = functors1.message_received;
 
@@ -335,6 +341,7 @@ TEST(APITest, BEH_API_ClientNode) {
   Routing R2(GetFob(node2), false);
   Routing R3(GetFob(node3), true);  // client mode
 
+  functors1.network_status = [](const int&) {};  // NOLINT (Fraser)
   functors1.request_public_key = [=](const NodeId& node_id, GivePublicKeyFunctor give_key ) {
       LOG(kWarning) << "node_validation called for " << HexSubstr(node_id.string());
       auto itr(fob_map.find(NodeId(node_id)));
@@ -348,6 +355,7 @@ TEST(APITest, BEH_API_ClientNode) {
         LOG(kVerbose) << "Message received and replied to message !!";
     };
 
+  functors2.network_status = functors3.network_status = functors1.network_status;
   functors2.request_public_key = functors3.request_public_key = functors1.request_public_key;
   Endpoint endpoint1(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort()),
            endpoint2(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort());
@@ -408,6 +416,7 @@ TEST(APITest, BEH_API_ClientNodeSameId) {
   Routing R3(GetFob(node3), true);  // client mode
   Routing R4(GetFob(node3), true);  // client mode
 
+  functors1.network_status = [](const int&) {};  // NOLINT (Fraser)
   functors1.request_public_key = [=](const NodeId& node_id, GivePublicKeyFunctor give_key ) {
       LOG(kWarning) << "node_validation called for " << HexSubstr(node_id.string());
       auto itr(fob_map.find(NodeId(node_id)));
@@ -421,6 +430,8 @@ TEST(APITest, BEH_API_ClientNodeSameId) {
         LOG(kVerbose) << "Message received and replied to message !!";
     };
 
+  functors4.network_status = functors2.network_status = functors3.network_status =
+      functors1.network_status;
   functors4.request_public_key = functors2.request_public_key = functors3.request_public_key =
       functors1.request_public_key;
   Endpoint endpoint1(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort()),
@@ -509,6 +520,7 @@ TEST(APITest, BEH_API_ClientNodeWithBootstrapFile) {
   Routing R2(GetFob(node2), false);
   Routing R3(GetFob(node3), true);  // client mode
 
+  functors1.network_status = [](const int&) {};  // NOLINT (Fraser)
   functors1.request_public_key = [=](const NodeId& node_id, GivePublicKeyFunctor give_key ) {
       LOG(kWarning) << "node_validation called for " << HexSubstr(node_id.string());
       auto itr(fob_map.find(NodeId(node_id)));
@@ -522,6 +534,7 @@ TEST(APITest, BEH_API_ClientNodeWithBootstrapFile) {
       LOG(kVerbose) << "Message received and replied to message !!";
     };
 
+  functors2.network_status = functors3.network_status = functors1.network_status;
   functors2.request_public_key = functors3.request_public_key = functors1.request_public_key;
   Endpoint endpoint1(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort()),
            endpoint2(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort());
@@ -598,6 +611,7 @@ TEST(APITest, BEH_API_NodeNetwork) {
     routing_node.push_back(std::make_shared<Routing>(GetFob(node), false));
   }
 
+  functors.network_status = [](const int&) {};  // NOLINT (Fraser)
   functors.request_public_key = [=](const NodeId& node_id, GivePublicKeyFunctor give_key ) {
       LOG(kInfo) << "node_validation called for " << HexSubstr(node_id.string());
       auto itr(fob_map.find(NodeId(node_id)));
@@ -662,6 +676,7 @@ TEST(APITest, BEH_API_NodeNetworkWithBootstrapFile) {
     routing_node.push_back(std::make_shared<Routing>(GetFob(node), false));
   }
 
+  functors.network_status = [](const int&) {};  // NOLINT (Fraser)
   functors.request_public_key = [=](const NodeId& node_id, GivePublicKeyFunctor give_key ) {
       LOG(kInfo) << "node_validation called for " << HexSubstr(node_id.string());
       auto itr(fob_map.find(NodeId(node_id)));
@@ -745,6 +760,7 @@ TEST(APITest, BEH_API_NodeNetworkWithClient) {
         std::make_shared<Routing>(GetFob(node), ((i < kServerCount)? false: true)));
   }
 
+  functors.network_status = [](const int&) {};  // NOLINT (Fraser)
   functors.request_public_key = [=](const NodeId& node_id, GivePublicKeyFunctor give_key ) {
       LOG(kInfo) << "node_validation called for " << HexSubstr(node_id.string());
       auto itr(fob_map.find(NodeId(node_id)));
@@ -759,6 +775,7 @@ TEST(APITest, BEH_API_NodeNetworkWithClient) {
     };
 
   Functors client_functors;
+  client_functors.network_status = [](const int&) {};  // NOLINT (Fraser)
   client_functors.request_public_key = functors.request_public_key;
   client_functors.message_received = [&] (const std::string &, const NodeId&,
                                           ReplyFunctor /*reply_functor*/) {
