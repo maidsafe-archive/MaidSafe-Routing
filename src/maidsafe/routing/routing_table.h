@@ -74,20 +74,30 @@ class RoutingTable {
   RoutingTable& operator=(const RoutingTable&);
   bool AddOrCheckNode(NodeInfo node, bool remove);
   void SetBucketIndex(NodeInfo& node_info) const;
-  bool CheckPublicKeyIsUnique(const NodeInfo& node) const;
+  bool CheckPublicKeyIsUnique(const NodeInfo& node, std::unique_lock<std::mutex>& lock) const;
   NodeInfo ResolveConnectionDuplication(const NodeInfo& new_duplicate_node,
                                         bool local_endpoint,
                                         NodeInfo& existing_node);
-  std::vector<NodeInfo> CheckGroupChange();
-  bool MakeSpaceForNodeToBeAdded(const NodeInfo& node, bool remove, NodeInfo& removed_node);
-  uint16_t PartialSortFromTarget(const NodeId& target, uint16_t number);
-  void NthElementSortFromTarget(const NodeId& target, uint16_t nth_element);
+  std::vector<NodeInfo> CheckGroupChange(std::unique_lock<std::mutex>& lock);
+  bool MakeSpaceForNodeToBeAdded(const NodeInfo& node,
+                                 bool remove,
+                                 NodeInfo& removed_node,
+                                 std::unique_lock<std::mutex>& lock);
+  uint16_t PartialSortFromTarget(const NodeId& target,
+                                 uint16_t number,
+                                 std::unique_lock<std::mutex>& lock);
+  void NthElementSortFromTarget(const NodeId& target,
+                                uint16_t nth_element,
+                                std::unique_lock<std::mutex>& lock);
   NodeId FurthestCloseNode();
   std::vector<NodeInfo> GetClosestNodeInfo(const NodeId& target_id,
                                            uint16_t number_to_get,
                                            bool ignore_exact_match = false);
-  std::pair<bool, std::vector<NodeInfo>::iterator> Find(const NodeId& node_id);
-  std::pair<bool, std::vector<NodeInfo>::const_iterator> Find(const NodeId& node_id) const;
+  std::pair<bool, std::vector<NodeInfo>::iterator> Find(const NodeId& node_id,
+                                                        std::unique_lock<std::mutex>& lock);
+  std::pair<bool, std::vector<NodeInfo>::const_iterator> Find(
+      const NodeId& node_id,
+      std::unique_lock<std::mutex>& lock) const;
   void UpdateNetworkStatus(uint16_t size) const;
   std::string PrintRoutingTable();
 
