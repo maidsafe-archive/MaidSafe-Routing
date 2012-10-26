@@ -61,7 +61,7 @@ std::vector<boost::asio::ip::udp::endpoint> ReadBootstrapFile() {
   std::vector<boost::asio::ip::udp::endpoint> bootstrap_nodes;
   std::string serialised_endpoints;
   if (bootstrap_file_path.empty() || !ReadFile(bootstrap_file_path, &serialised_endpoints)) {
-    LOG(kError) << "Could not read bootstrap file.";
+    LOG(kError) << "Could not read bootstrap file : " << bootstrap_file_path.string();
     return bootstrap_nodes;
   }
 

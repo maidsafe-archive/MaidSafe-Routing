@@ -157,7 +157,7 @@ void Service::Connect(protobuf::Message& message) {
                   << " node succeeded.";
     rudp::NatType this_nat_type(rudp::NatType::kUnknown);
     int ret_val = network_.GetAvailableEndpoint(peer_node.connection_id, peer_endpoint_pair,
-                                               this_endpoint_pair, this_nat_type);
+                                                this_endpoint_pair, this_nat_type);
     if (ret_val != rudp::kSuccess && ret_val != rudp::kBootstrapConnectionAlreadyExists) {
       if (rudp::kUnvalidatedConnectionAlreadyExists != ret_val &&
             rudp::kConnectAttemptAlreadyRunning != ret_val) {
@@ -172,14 +172,16 @@ void Service::Connect(protobuf::Message& message) {
                     << peer_endpoint_pair.local
                     << ". Rudp returned :"
                     << ret_val;
-      } else {
-        LOG(kInfo) << "Already ongoing attempt to : " << DebugId(peer_node.connection_id);
-        connect_response.set_answer(protobuf::ConnectResponseType::kConnectAttemptAlreadyRunning);
         message.add_data(connect_response.SerializeAsString());
         return;
+      } else {  // Resolving collision by giving priority to lesser node id.
+        if (!CheckPriority(peer_node.node_id, routing_table_.kNodeId())) {
+          LOG(kInfo) << "Already ongoing attempt with : " << DebugId(peer_node.connection_id);
+          connect_response.set_answer(protobuf::ConnectResponseType::kConnectAttemptAlreadyRunning);
+          message.add_data(connect_response.SerializeAsString());
+          return;
+        }
       }
-      message.add_data(connect_response.SerializeAsString());
-      return;
     }
 
     assert((!this_endpoint_pair.external.address().is_unspecified() ||
@@ -214,6 +216,11 @@ void Service::Connect(protobuf::Message& message) {
 
   message.add_data(connect_response.SerializeAsString());
   assert(message.IsInitialized() && "unintialised message");
+}
+
+bool Service::CheckPriority(const NodeId& this_node, const NodeId& peer_node) {
+  assert(this_node != peer_node);
+  return (this_node > peer_node);
 }
 
 void Service::FindNodes(protobuf::Message& message) {
