@@ -88,18 +88,18 @@ bool RoutingTable::AddOrCheckNode(NodeInfo peer, bool remove) {
     SetBucketIndex(peer);
 
   {
-    std::lock_guard<std::mutex> lock(mutex_);
-    auto found(Find(peer.node_id));
+    std::unique_lock<std::mutex> lock(mutex_);
+    auto found(Find(peer.node_id, lock));
     if (found.first) {
       LOG(kVerbose) << "Node " << DebugId(peer.node_id) << " already in routing table.";
       return false;
     }
 
-    if (MakeSpaceForNodeToBeAdded(peer, remove, removed_node)) {
+    if (MakeSpaceForNodeToBeAdded(peer, remove, removed_node, lock)) {
       if (remove) {
         assert(peer.bucket != NodeInfo::kInvalidBucket);
         nodes_.push_back(peer);
-        new_close_nodes = CheckGroupChange();
+        new_close_nodes = CheckGroupChange(lock);
       }
       return_value = true;
     }
@@ -134,12 +134,12 @@ NodeInfo RoutingTable::DropNode(const NodeId& node_to_drop, bool routing_only) {
   std::vector<NodeInfo> new_close_nodes;
   NodeInfo dropped_node;
   {
-    std::lock_guard<std::mutex> lock(mutex_);
-    auto found(Find(node_to_drop));
+    std::unique_lock<std::mutex> lock(mutex_);
+    auto found(Find(node_to_drop, lock));
     if (found.first) {
       dropped_node = *found.second;
       nodes_.erase(found.second);
-      new_close_nodes = CheckGroupChange();
+      new_close_nodes = CheckGroupChange(lock);
     }
   }
 
@@ -164,18 +164,18 @@ NodeInfo RoutingTable::DropNode(const NodeId& node_to_drop, bool routing_only) {
 }
 
 bool RoutingTable::GetNodeInfo(const NodeId& node_id, NodeInfo& peer) const {
-  std::lock_guard<std::mutex> lock(mutex_);
-  auto found(Find(node_id));
+  std::unique_lock<std::mutex> lock(mutex_);
+  auto found(Find(node_id, lock));
   if (found.first)
     peer = *found.second;
   return found.first;
 }
 
 bool RoutingTable::IsThisNodeInRange(const NodeId& target_id, const uint16_t range) {
-  std::lock_guard<std::mutex> lock(mutex_);
+  std::unique_lock<std::mutex> lock(mutex_);
   if (nodes_.size() < range)
     return true;
-  NthElementSortFromTarget(kNodeId_, range);
+  NthElementSortFromTarget(kNodeId_, range, lock);
   return NodeId::CloserToTarget(target_id, nodes_[range - 1].node_id, kNodeId_);
 }
 
@@ -190,8 +190,8 @@ bool RoutingTable::IsThisNodeClosestTo(const NodeId& target_id, bool ignore_exac
 }
 
 bool RoutingTable::IsConnected(const NodeId& node_id) const {
-  std::lock_guard<std::mutex> lock(mutex_);
-  return Find(node_id).first;
+  std::unique_lock<std::mutex> lock(mutex_);
+  return Find(node_id, lock).first;
 }
 
 bool RoutingTable::ConfirmGroupMembers(const NodeId& node1, const NodeId& node2) {
@@ -199,10 +199,10 @@ bool RoutingTable::ConfirmGroupMembers(const NodeId& node1, const NodeId& node2)
   return (node1 ^ node2) < difference;
 }
 
-std::vector<NodeInfo> RoutingTable::CheckGroupChange() {
-  assert(!mutex_.try_lock());
+std::vector<NodeInfo> RoutingTable::CheckGroupChange(std::unique_lock<std::mutex>& lock) {
+  assert(lock.owns_lock());
 
-  PartialSortFromTarget(kNodeId_, Parameters::closest_nodes_size);
+  PartialSortFromTarget(kNodeId_, Parameters::closest_nodes_size, lock);
 
   if (nodes_.size() > Parameters::closest_nodes_size) {
     NodeId new_furthest_group_node_id = nodes_[Parameters::closest_nodes_size - 1].node_id;
@@ -246,8 +246,10 @@ void RoutingTable::SetBucketIndex(NodeInfo &node_info) const {
   node_info.bucket = 0;
 }
 
-bool RoutingTable::CheckPublicKeyIsUnique(const NodeInfo& node) const {
-  assert(!mutex_.try_lock());
+bool RoutingTable::CheckPublicKeyIsUnique(const NodeInfo& node,
+                                          std::unique_lock<std::mutex>& lock) const {
+  assert(lock.owns_lock());
+  static_cast<void>(lock);
   // If we already have a duplicate public key return false
   if (std::find_if(nodes_.begin(),
                    nodes_.end(),
@@ -276,16 +278,17 @@ bool RoutingTable::CheckPublicKeyIsUnique(const NodeInfo& node) const {
 
 bool RoutingTable::MakeSpaceForNodeToBeAdded(const NodeInfo& node,
                                              bool remove,
-                                             NodeInfo& removed_node) {
-  assert(!mutex_.try_lock());
+                                             NodeInfo& removed_node,
+                                             std::unique_lock<std::mutex>& lock) {
+  assert(lock.owns_lock());
 
-  if (remove && !CheckPublicKeyIsUnique(node))
+  if (remove && !CheckPublicKeyIsUnique(node, lock))
     return false;
 
   if (nodes_.size() < kMaxSize_)
     return true;
 
-  PartialSortFromTarget(kNodeId_, Parameters::closest_nodes_size);
+  PartialSortFromTarget(kNodeId_, Parameters::closest_nodes_size, lock);
   NodeInfo furthest_close_node = nodes_[Parameters::closest_nodes_size - 1];
   auto const furthest_close_node_iter = nodes_.begin() + (Parameters::closest_nodes_size - 1);
 
@@ -321,8 +324,11 @@ bool RoutingTable::MakeSpaceForNodeToBeAdded(const NodeInfo& node,
   return false;
 }
 
-uint16_t RoutingTable::PartialSortFromTarget(const NodeId& target, uint16_t number) {
-  assert(!mutex_.try_lock());
+uint16_t RoutingTable::PartialSortFromTarget(const NodeId& target,
+                                             uint16_t number,
+                                             std::unique_lock<std::mutex>& lock) {
+  assert(lock.owns_lock());
+  static_cast<void>(lock);
   uint16_t count = std::min(number, static_cast<uint16_t>(nodes_.size()));
   std::partial_sort(nodes_.begin(),
                     nodes_.begin() + count,
@@ -333,8 +339,11 @@ uint16_t RoutingTable::PartialSortFromTarget(const NodeId& target, uint16_t numb
   return count;
 }
 
-void RoutingTable::NthElementSortFromTarget(const NodeId& target, uint16_t nth_element) {
-  assert(!mutex_.try_lock());
+void RoutingTable::NthElementSortFromTarget(const NodeId& target,
+                                            uint16_t nth_element,
+                                            std::unique_lock<std::mutex>& lock) {
+  assert(lock.owns_lock());
+  static_cast<void>(lock);
   assert((nodes_.size() >= nth_element) &&
          "This should only be called when n is at max the size of RT");
   std::nth_element(nodes_.begin(),
@@ -350,8 +359,8 @@ NodeId RoutingTable::FurthestCloseNode() {
 }
 
 NodeInfo RoutingTable::GetClosestNode(const NodeId& target_id, bool ignore_exact_match) {
-  std::lock_guard<std::mutex> lock(mutex_);
-  int sorted_count(PartialSortFromTarget(target_id, 2));
+  std::unique_lock<std::mutex> lock(mutex_);
+  int sorted_count(PartialSortFromTarget(target_id, 2, lock));
   if (sorted_count == 0)
     return NodeInfo();
   if (ignore_exact_match && (nodes_[0].node_id == target_id))
@@ -373,20 +382,20 @@ NodeInfo RoutingTable::GetClosestNode(const NodeId& target_id,
 
 NodeInfo RoutingTable::GetNthClosestNode(const NodeId& target_id, uint16_t node_number) {
   assert((node_number > 0) && "Node number starts with position 1");
-  std::lock_guard<std::mutex> lock(mutex_);
+  std::unique_lock<std::mutex> lock(mutex_);
   if (nodes_.size() < node_number) {
     NodeInfo node_info;
     node_info.node_id = NodeId(NodeId::kMaxId);
     return node_info;
   }
-  NthElementSortFromTarget(target_id, node_number);
+  NthElementSortFromTarget(target_id, node_number, lock);
   return nodes_[node_number - 1];
 }
 
 std::vector<NodeId> RoutingTable::GetClosestNodes(const NodeId& target_id, uint16_t number_to_get) {
   std::vector<NodeId> close_nodes;
-  std::lock_guard<std::mutex> lock(mutex_);
-  int sorted_count(PartialSortFromTarget(target_id, number_to_get));
+  std::unique_lock<std::mutex> lock(mutex_);
+  int sorted_count(PartialSortFromTarget(target_id, number_to_get, lock));
 
   for (int i = 0; i != sorted_count; ++i)
     close_nodes.push_back(nodes_[i].node_id);
@@ -396,8 +405,8 @@ std::vector<NodeId> RoutingTable::GetClosestNodes(const NodeId& target_id, uint1
 std::vector<NodeInfo> RoutingTable::GetClosestNodeInfo(const NodeId& target_id,
                                                        uint16_t number_to_get,
                                                        bool ignore_exact_match) {
-  std::lock_guard<std::mutex> lock(mutex_);
-  int sorted_count(PartialSortFromTarget(target_id, number_to_get + 1));
+  std::unique_lock<std::mutex> lock(mutex_);
+  int sorted_count(PartialSortFromTarget(target_id, number_to_get + 1, lock));
   if (sorted_count == 0)
     return std::vector<NodeInfo>();
 
@@ -411,8 +420,11 @@ std::vector<NodeInfo> RoutingTable::GetClosestNodeInfo(const NodeId& target_id,
       nodes_.begin() + std::min(sorted_count, static_cast<int>(number_to_get)));
 }
 
-std::pair<bool, std::vector<NodeInfo>::iterator> RoutingTable::Find(const NodeId& node_id) {
-  assert(!mutex_.try_lock());
+std::pair<bool, std::vector<NodeInfo>::iterator> RoutingTable::Find(
+    const NodeId& node_id,
+    std::unique_lock<std::mutex>& lock) {
+  assert(lock.owns_lock());
+  static_cast<void>(lock);
   auto itr(std::find_if(nodes_.begin(),
                         nodes_.end(),
                         [&node_id](const NodeInfo& node_info) {
@@ -422,8 +434,10 @@ std::pair<bool, std::vector<NodeInfo>::iterator> RoutingTable::Find(const NodeId
 }
 
 std::pair<bool, std::vector<NodeInfo>::const_iterator> RoutingTable::Find(
-    const NodeId& node_id) const {
-  assert(!mutex_.try_lock());
+    const NodeId& node_id,
+    std::unique_lock<std::mutex>& lock) const {
+  assert(lock.owns_lock());
+  static_cast<void>(lock);
   auto itr(std::find_if(nodes_.begin(),
                         nodes_.end(),
                         [&node_id](const NodeInfo& node_info) {

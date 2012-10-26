@@ -269,10 +269,14 @@ void GenericNode::PrintRoutingTable() {
   LOG(kVerbose) << " PrintRoutingTable of "
                 << HexSubstr(node_info_plus_->node_info.node_id.string())
                 << (IsClient() ? " Client" : "Vault");
-  for (auto node_info : routing_->pimpl_->routing_table_.nodes_) {
-    LOG(kVerbose) << "NodeId: " << HexSubstr(node_info.node_id.string());
+  {
+    std::lock_guard<std::mutex> lock(routing_->pimpl_->routing_table_.mutex_);
+    for (auto node_info : routing_->pimpl_->routing_table_.nodes_) {
+      LOG(kVerbose) << "NodeId: " << HexSubstr(node_info.node_id.string());
+    }
   }
   LOG(kVerbose) << "Non-RoutingTable of " << HexSubstr(node_info_plus_->node_info.node_id.string());
+  std::lock_guard<std::mutex> lock(routing_->pimpl_->non_routing_table_.mutex_);
   for (auto node_info : routing_->pimpl_->non_routing_table_.nodes_) {
     LOG(kVerbose) << "NodeId: " << HexSubstr(node_info.node_id.string());
   }
