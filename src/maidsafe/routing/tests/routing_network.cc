@@ -267,20 +267,20 @@ void GenericNode::set_expected(const int& expected) {
 }
 
 void GenericNode::PrintRoutingTable() {
-  std::cout << "Print RoutingTable of "
-            << HexSubstr(node_info_plus_->node_info.node_id.string())
-            << (IsClient() ? " Client" : " Vault :") << std::endl;
+  std::cout << "[" << HexSubstr(node_info_plus_->node_info.node_id.string())
+            << "]'s RoutingTable "
+
+            << (IsClient() ? " (Client)" : " (Vault) :") << std::endl;
   {
     std::lock_guard<std::mutex> lock(routing_->pimpl_->routing_table_.mutex_);
     for (auto node_info : routing_->pimpl_->routing_table_.nodes_) {
       std::cout << "\tNodeId : " << HexSubstr(node_info.node_id.string()) << std::endl;
     }
   }
-  std::cout << "Print Non-RoutingTable of "
-            << HexSubstr(node_info_plus_->node_info.node_id.string())
+  std::cout << "[" << HexSubstr(node_info_plus_->node_info.node_id.string())
+            << "]'s Non-RoutingTable : "
             << " :"<< std::endl;
   std::lock_guard<std::mutex> lock(routing_->pimpl_->non_routing_table_.mutex_);
-
   for (auto node_info : routing_->pimpl_->non_routing_table_.nodes_) {
     std::cout << "\tNodeId : " << HexSubstr(node_info.node_id.string()) << std::endl;
   }

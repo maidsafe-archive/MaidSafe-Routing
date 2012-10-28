@@ -178,7 +178,7 @@ int main(int argc, char **argv) {
     if (fs::exists(fobs_path, error_code)) {
       all_fobs = maidsafe::routing::ReadFobList(fobs_path);
       std::cout << "Loaded " << all_fobs.size() << " fobs." << std::endl;
-      if (identity_index >= all_fobs.size() || identity_index < 0) {
+      if (static_cast<uint32_t>(identity_index) >= all_fobs.size() || identity_index < 0) {
         std::cout << "ERROR : index exceeds fob pool -- pool has "
                   << all_fobs.size() << " fobs, while identity_index is "
                   << identity_index << std::endl;
@@ -196,19 +196,19 @@ int main(int argc, char **argv) {
 
     // Ensure correct index range is being used
     bool client_only_node(variables_map["client"].as<bool>());
-    if (client_only_node)
+    if (client_only_node) {
       if (identity_index < (all_fobs.size() / 2)) {
         std::cout << "ERROR : Incorrect identity_index used for a client, must between "
                   << all_fobs.size() / 2 << " and " << all_fobs.size() - 1 << std::endl;
         return 0;
       }
-    else
+    } else {
       if (identity_index >= (all_fobs.size() / 2)) {
         std::cout << "ERROR : Incorrect identity_index used for a vault, must between 0 and "
                   << all_fobs.size() / 2 - 1 << std::endl;
         return 0;
       }
-
+    }
     // Initial demo_node
     std::cout << "Creating node..." << std::endl;
     maidsafe::routing::test::NodeInfoAndPrivateKey node_info(
