@@ -42,6 +42,8 @@ struct NodeInfoAndPrivateKey {
 
 NodeInfoAndPrivateKey MakeNodeInfoAndKeys();
 
+NodeInfoAndPrivateKey MakeNodeInfoAndKeysWithFob(Fob fob);
+
 Fob MakeFob();
 
 Fob GetFob(const NodeInfoAndPrivateKey& node);

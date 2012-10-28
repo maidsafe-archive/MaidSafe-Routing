@@ -21,6 +21,7 @@
 
 #include "maidsafe/common/rsa.h"
 #include "maidsafe/rudp/managed_connections.h"
+#include "maidsafe/private/utils/fob.h"
 
 #include "maidsafe/routing/parameters.h"
 #include "maidsafe/routing/routing_pb.h"
@@ -30,6 +31,8 @@ namespace maidsafe {
 
 class NodeId;
 namespace routing {
+
+namespace fs = boost::filesystem;
 
 namespace protobuf {
 
@@ -80,6 +83,10 @@ std::vector<boost::asio::ip::udp::endpoint> OrderBootstrapList(
 protobuf::NatType NatTypeProtobuf(const rudp::NatType& nat_type);
 rudp::NatType NatTypeFromProtobuf(const protobuf::NatType& nat_type_proto);
 std::string PrintMessage(const protobuf::Message& message);
+std::vector<Fob> ReadFobList(const fs::path &file_path);
+bool WriteFobList(const fs::path &file_path, const std::vector<Fob> &fob_list);
+std::vector<NodeId> DeserializeNodeIdList(const std::string &node_list_str);
+std::string SerializeNodeIdList(const std::vector<NodeId> &node_list);
 }  // namespace routing
 
 }  // namespace maidsafe

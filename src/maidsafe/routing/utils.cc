@@ -335,6 +335,43 @@ std::string PrintMessage(const protobuf::Message& message) {
   return s;
 }
 
+std::vector<Fob> ReadFobList(const fs::path &file_path) {
+  std::vector<Fob> fob_list;
+  protobuf::FobList fob_list_msg;
+  fob_list_msg.ParseFromString(ReadFile(file_path).string());
+  for (int i = 0; i < fob_list_msg.fobs_size(); ++i)
+    fob_list.push_back(std::move(
+        priv::utils::ParseFob(NonEmptyString(fob_list_msg.fobs(i).fob()))));
+  return fob_list;
+}
+
+bool WriteFobList(const fs::path &file_path, const std::vector<Fob> &fob_list) {
+  protobuf::FobList fob_list_msg;
+  for (auto &fob : fob_list) {
+    auto entry = fob_list_msg.add_fobs();
+    entry->set_fob(priv::utils::SerialiseFob(fob).string());
+  }
+  return WriteFile(file_path, fob_list_msg.SerializeAsString());
+}
+
+std::vector<NodeId> DeserializeNodeIdList(const std::string &node_list_str) {
+  std::vector<NodeId> node_list;
+  protobuf::NodeIdList node_list_msg;
+  node_list_msg.ParseFromString(node_list_str);
+  for (int i = 0; i < node_list_msg.node_id_list_size(); ++i)
+    node_list.push_back(NodeId(node_list_msg.node_id_list(i).node_id()));
+  return node_list;
+}
+
+std::string SerializeNodeIdList(const std::vector<NodeId> &node_list) {
+  protobuf::NodeIdList node_list_msg;
+  for (auto &node_id : node_list) {
+    auto entry = node_list_msg.add_node_id_list();
+    entry->set_node_id(node_id.string());
+  }
+  return node_list_msg.SerializeAsString();
+}
+
 }  // namespace routing
 
 }  // namespace maidsafe

@@ -25,6 +25,7 @@
 #include "maidsafe/routing/routing_api.h"
 #include "maidsafe/routing/tests/test_utils.h"
 #include "maidsafe/routing/routing_pb.h"
+#include "maidsafe/routing/utils.h"
 
 namespace asio = boost::asio;
 namespace ip = asio::ip;
@@ -266,20 +267,30 @@ void GenericNode::set_expected(const int& expected) {
 }
 
 void GenericNode::PrintRoutingTable() {
-  LOG(kVerbose) << " PrintRoutingTable of "
-                << HexSubstr(node_info_plus_->node_info.node_id.string())
-                << (IsClient() ? " Client" : "Vault");
+  std::cout << "Print RoutingTable of "
+            << HexSubstr(node_info_plus_->node_info.node_id.string())
+            << (IsClient() ? " Client" : " Vault :") << std::endl;
   {
     std::lock_guard<std::mutex> lock(routing_->pimpl_->routing_table_.mutex_);
     for (auto node_info : routing_->pimpl_->routing_table_.nodes_) {
-      LOG(kVerbose) << "NodeId: " << HexSubstr(node_info.node_id.string());
+      std::cout << "\tNodeId : " << HexSubstr(node_info.node_id.string()) << std::endl;
     }
   }
-  LOG(kVerbose) << "Non-RoutingTable of " << HexSubstr(node_info_plus_->node_info.node_id.string());
+  std::cout << "Print Non-RoutingTable of "
+            << HexSubstr(node_info_plus_->node_info.node_id.string())
+            << " :"<< std::endl;
   std::lock_guard<std::mutex> lock(routing_->pimpl_->non_routing_table_.mutex_);
+
   for (auto node_info : routing_->pimpl_->non_routing_table_.nodes_) {
-    LOG(kVerbose) << "NodeId: " << HexSubstr(node_info.node_id.string());
+    std::cout << "\tNodeId : " << HexSubstr(node_info.node_id.string()) << std::endl;
   }
+}
+
+std::string GenericNode::SerializeRoutingTable() {
+  std::vector<NodeId> node_list;
+  for (auto node_info : routing_->pimpl_->routing_table_.nodes_)
+    node_list.push_back(node_info.node_id);
+  return SerializeNodeIdList(node_list);
 }
 
 size_t GenericNode::MessagesSize() const { return messages_.size(); }
@@ -292,6 +303,14 @@ void GenericNode::ClearMessages() {
 Fob GenericNode::fob() {
   std::lock_guard<std::mutex> lock(mutex_);
   return GetFob(*node_info_plus_);
+}
+
+void GenericNode::PostTaskToAsioService(std::function<void()> functor) {
+  routing_->pimpl_->asio_service_.service().post(functor);
+}
+
+rudp::NatType GenericNode::nat_type() {
+  return routing_->pimpl_->network_.nat_type();
 }
 
 GenericNetwork::GenericNetwork()

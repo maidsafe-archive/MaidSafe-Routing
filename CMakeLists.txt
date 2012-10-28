@@ -83,6 +83,10 @@ ms_add_static_library(routing ${ALL_FILES_ROUTING_DIR})
 ms_add_static_library(routing_stub_rudp ${ALL_FILES_ROUTING_DIR} ${SOURCE_FILES_STUB_RUDP})
 ms_add_executable(TESTrouting "Tests/Routing" ${ALL_FILES_ROUTING_TESTS_DIR})
 ms_add_executable(create_lifestuff_bootstrap "Tools"  "${PROJECT_SOURCE_DIR}/src/maidsafe/tools/create_bootstrap.cc")
+ms_add_executable(routing_key_helper "Tools"  "${PROJECT_SOURCE_DIR}/src/maidsafe/tools/key_helper.cc")
+ms_add_executable(routing_node "Tools"  "${PROJECT_SOURCE_DIR}/src/maidsafe/tools/routing_node.cc"
+                                        "${PROJECT_SOURCE_DIR}/src/maidsafe/tools/commands.h"
+                                        "${PROJECT_SOURCE_DIR}/src/maidsafe/tools/commands.cc")
 #ms_add_executable(TESTrouting_fake_rudp "Tests/Routing" ${ALL_FILES_ROUTING_TESTS_DIR})
 
 target_link_libraries(maidsafe_routing maidsafe_rudp maidsafe_utilities)
@@ -91,6 +95,8 @@ target_link_libraries(maidsafe_routing_stub_rudp maidsafe_common)
 target_link_libraries(TESTrouting maidsafe_routing)
 #target_link_libraries(TESTrouting_fake_rudp maidsafe_routing_fake_rudp)
 target_link_libraries(create_lifestuff_bootstrap maidsafe_routing)
+target_link_libraries(routing_key_helper maidsafe_routing ${BoostProgramOptionsLibs})
+target_link_libraries(routing_node maidsafe_routing ${BoostProgramOptionsLibs})
 
 rename_outdated_built_exes()
 #set_target_properties(maidsafe_routing_fake_rudp TESTrouting_fake_rudp PROPERTIES COMPILE_FLAGS -DFAKE_RUDP)
