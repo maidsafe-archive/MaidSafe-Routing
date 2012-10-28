@@ -28,6 +28,8 @@ namespace routing {
 
 namespace {
 
+typedef boost::asio::ip::udp::endpoint Endpoint;
+
 fs::path BootstrapFilePath() {
   static fs::path bootstrap_file_path;
   if (bootstrap_file_path.empty()) {
@@ -141,6 +143,29 @@ void UpdateBootstrapFile(const boost::asio::ip::udp::endpoint& endpoint, bool re
   else
     LOG(kVerbose) << "Updated bootstrap file : " << bootstrap_file_path;
   return;
+}
+
+std::vector<boost::asio::ip::udp::endpoint> MaidSafeEndpoints() {
+  std::vector<std::string> endpoint_string = {"176.58.120.133",
+                                              "178.79.163.139",
+                                              "176.58.102.53",
+                                              "176.58.113.214",
+                                              "106.187.49.208",
+                                              "198.74.60.81",
+                                              "198.74.60.83",
+                                              "198.74.60.84",
+                                              "198.74.60.85",
+                                              "198.74.60.86",
+                                              "176.58.103.83",
+                                              "106.187.102.233",
+                                              "106.187.47.248",
+                                              "106.187.93.100",
+                                              "106.186.16.51"
+                                             };
+  std::vector<boost::asio::ip::udp::endpoint> maidsafe_endpoints;
+  for (auto i : endpoint_string)
+    maidsafe_endpoints.push_back(Endpoint(boost::asio::ip::address::from_string(i), 5483));
+  return maidsafe_endpoints;
 }
 
 }  // namespace routing

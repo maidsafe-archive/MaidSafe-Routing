@@ -93,6 +93,7 @@ class NetworkUtils {
 
   bool running_;
   std::mutex running_mutex_;
+  uint16_t bootstrap_attempt_;
   std::vector<boost::asio::ip::udp::endpoint> bootstrap_endpoints_;
   NodeId bootstrap_connection_id_;
   NodeId this_node_relay_connection_id_;

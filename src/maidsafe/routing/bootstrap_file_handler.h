@@ -30,6 +30,8 @@ bool WriteBootstrapFile(const std::vector<boost::asio::ip::udp::endpoint> &endpo
 
 void UpdateBootstrapFile(const boost::asio::ip::udp::endpoint& endpoint, bool remove);
 
+std::vector<boost::asio::ip::udp::endpoint> MaidSafeEndpoints();
+
 }  // namespace routing
 
 }  // namespace maidsafe

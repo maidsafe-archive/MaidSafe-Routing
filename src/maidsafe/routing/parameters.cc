@@ -39,6 +39,7 @@ uint16_t Parameters::hops_to_live(20);
 bptime::time_duration Parameters::connect_rpc_prune_timeout(
     rudp::Parameters::rendezvous_connect_timeout * 2);
 uint32_t Parameters::max_data_size(rudp::Parameters::max_data_size - 10240);  // 10 KB for Routing
+bool Parameters::append_maidsafe_endpoints(false);
 
 }  // namespace routing
 

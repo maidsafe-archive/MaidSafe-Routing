@@ -20,11 +20,11 @@
 
 #include "maidsafe/routing/bootstrap_file_handler.h"
 #include "maidsafe/routing/non_routing_table.h"
+#include "maidsafe/routing/parameters.h"
 #include "maidsafe/routing/return_codes.h"
 #include "maidsafe/routing/routing_pb.h"
 #include "maidsafe/routing/routing_table.h"
 #include "maidsafe/routing/utils.h"
-
 
 namespace bptime = boost::posix_time;
 
@@ -43,6 +43,7 @@ namespace routing {
 NetworkUtils::NetworkUtils(RoutingTable& routing_table, NonRoutingTable& non_routing_table)
     : running_(true),
       running_mutex_(),
+      bootstrap_attempt_(0),
       bootstrap_endpoints_(),
       bootstrap_connection_id_(),
       this_node_relay_connection_id_(),
@@ -80,6 +81,13 @@ int NetworkUtils::Bootstrap(const std::vector<Endpoint>& bootstrap_endpoints,
   if (bootstrap_endpoints_.empty())
     bootstrap_endpoints_ = ReadBootstrapFile();
 
+  if (Parameters::append_maidsafe_endpoints && bootstrap_attempt_ == 0) {
+    LOG(kInfo) << "Appending Maidsafe Endpoints";
+    std::vector<Endpoint> maidsafe_endpoints(MaidSafeEndpoints());
+    bootstrap_endpoints_.insert(bootstrap_endpoints_.end(), maidsafe_endpoints.begin(),
+                                maidsafe_endpoints.end());
+  }
+
   if (bootstrap_endpoints_.empty())
     return kInvalidBootstrapContacts;
 
@@ -92,6 +100,7 @@ int NetworkUtils::Bootstrap(const std::vector<Endpoint>& bootstrap_endpoints,
                              bootstrap_connection_id_,
                              nat_type_,
                              local_endpoint));
+  ++bootstrap_attempt_;
   // RUDP will return a kZeroId for zero state !!
   if (result != kSuccess || bootstrap_connection_id_.IsZero()) {
     LOG(kError) << "No Online Bootstrap Node found.";
