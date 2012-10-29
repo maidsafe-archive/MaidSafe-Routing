@@ -13,6 +13,7 @@
 #include "maidsafe/routing/parameters.h"
 
 #include "maidsafe/rudp/parameters.h"
+#include "maidsafe/rudp/managed_connections.h"
 
 namespace bptime = boost::posix_time;
 
@@ -38,7 +39,8 @@ uint16_t Parameters::max_route_history(5);
 uint16_t Parameters::hops_to_live(20);
 bptime::time_duration Parameters::connect_rpc_prune_timeout(
     rudp::Parameters::rendezvous_connect_timeout * 2);
-uint32_t Parameters::max_data_size(rudp::Parameters::max_data_size - 10240);  // 10 KB for Routing
+// 10 KB of book keeping data for Routing
+uint32_t Parameters::max_data_size(rudp::ManagedConnections::kMaxMessageSize() - 10240);
 bool Parameters::append_maidsafe_endpoints(false);
 
 }  // namespace routing
