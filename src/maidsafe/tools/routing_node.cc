@@ -191,13 +191,13 @@ int main(int argc, char **argv) {
     // Ensure correct index range is being used
     bool client_only_node(variables_map["client"].as<bool>());
     if (client_only_node) {
-      if (identity_index < (all_fobs.size() / 2)) {
+      if (identity_index < static_cast<int>(all_fobs.size() / 2)) {
         std::cout << "ERROR : Incorrect identity_index used for a client, must between "
                   << all_fobs.size() / 2 << " and " << all_fobs.size() - 1 << std::endl;
         return 0;
       }
     } else {
-      if (identity_index >= (all_fobs.size() / 2)) {
+      if (identity_index >= static_cast<int>(all_fobs.size() / 2)) {
         std::cout << "ERROR : Incorrect identity_index used for a vault, must between 0 and "
                   << all_fobs.size() / 2 - 1 << std::endl;
         return 0;
