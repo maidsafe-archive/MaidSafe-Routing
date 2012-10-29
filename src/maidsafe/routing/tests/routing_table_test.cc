@@ -28,13 +28,6 @@ namespace maidsafe {
 namespace routing {
 namespace test {
 
-void SortFromTarget(const NodeId& target, std::vector<NodeInfo>& nodes) {
-  std::sort(nodes.begin(), nodes.end(),
-            [target](const NodeInfo& lhs, const NodeInfo& rhs) {
-                return NodeId::CloserToTarget(lhs.node_id, rhs.node_id, target);
-              });
-}
-
 TEST(RoutingTableTest, FUNC_AddCloseNodes) {
   Fob fob;
   fob.identity = Identity(RandomString(64));

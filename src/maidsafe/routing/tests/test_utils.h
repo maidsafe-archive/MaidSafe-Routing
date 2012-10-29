@@ -14,6 +14,7 @@
 #define MAIDSAFE_ROUTING_TESTS_TEST_UTILS_H_
 
 #include <cstdint>
+#include <vector>
 
 #include "boost/asio/ip/address.hpp"
 #include "boost/asio/ip/udp.hpp"
@@ -54,6 +55,10 @@ NodeId GenerateUniqueRandomId(const NodeId& holder, const uint16_t& pos);
 NodeId GenerateUniqueRandomId(const uint16_t& pos);
 
 int NetworkStatus(const bool& client, const int& status);
+
+void SortFromTarget(const NodeId& target, std::vector<NodeInfo>& nodes);
+
+void SortIdsFromTarget(const NodeId& target, std::vector<NodeId>& nodes);
 
 }  // namespace test
 

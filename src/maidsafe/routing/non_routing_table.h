@@ -34,7 +34,11 @@ namespace routing {
 
 struct NodeInfo;
 
-namespace test { class GenericNode; }
+namespace test {
+  class GenericNode;
+  class BasicNonRoutingTableTest;
+  class BasicNonRoutingTableTest_BEH_IsThisNodeInRange_Test;
+}
 
 namespace protobuf { class Contact; }
 
@@ -43,10 +47,12 @@ class NonRoutingTable {
   explicit NonRoutingTable(const Fob& fob);
   bool AddNode(NodeInfo& node, const NodeId& furthest_close_node_id);
   bool CheckNode(NodeInfo& node, const NodeId& furthest_close_node_id);
-  NodeInfo DropNode(const NodeId &node_to_drop);
+  std::vector<NodeInfo> DropNodes(const NodeId &node_to_drop);
   NodeInfo DropConnection(const NodeId &connection_to_drop);
   std::vector<NodeInfo> GetNodesInfo(const NodeId& node_id) const;
   bool IsConnected(const NodeId& node_id) const;
+  size_t size() const;
+  NodeId kNodeId() const { return kNodeId_; }
 
   friend class test::GenericNode;
 
@@ -61,6 +67,10 @@ class NonRoutingTable {
                                   const bool& add) const;
   bool IsThisNodeInRange(const NodeId& node_id, const NodeId& furthest_close_node_id) const;
   std::string PrintNonRoutingTable();
+
+  friend class test::BasicNonRoutingTableTest;
+  friend class test::BasicNonRoutingTableTest_BEH_IsThisNodeInRange_Test;
+
   const NodeId kNodeId_;
   std::vector<NodeInfo> nodes_;
   mutable std::mutex mutex_;
