@@ -146,7 +146,7 @@ void UpdateBootstrapFile(const boost::asio::ip::udp::endpoint& endpoint, bool re
 }
 
 std::vector<boost::asio::ip::udp::endpoint> MaidSafeEndpoints() {
-  std::vector<std::string> endpoint_string = {"176.58.120.133",
+  /*std::vector<std::string> endpoint_string = {"176.58.120.133",
                                               "178.79.163.139",
                                               "176.58.102.53",
                                               "176.58.113.214",
@@ -161,7 +161,25 @@ std::vector<boost::asio::ip::udp::endpoint> MaidSafeEndpoints() {
                                               "106.187.47.248",
                                               "106.187.93.100",
                                               "106.186.16.51"
-                                             };
+                                             };*/
+  std::vector<std::string> endpoint_string;
+  endpoint_string.reserve(15);
+  endpoint_string.push_back("176.58.120.133");
+  endpoint_string.push_back("178.79.163.139");
+  endpoint_string.push_back("176.58.102.53");
+  endpoint_string.push_back("176.58.113.214");
+  endpoint_string.push_back("106.187.49.208");
+  endpoint_string.push_back("198.74.60.81");
+  endpoint_string.push_back("198.74.60.83");
+  endpoint_string.push_back("198.74.60.84");
+  endpoint_string.push_back("198.74.60.85");
+  endpoint_string.push_back("198.74.60.86");
+  endpoint_string.push_back("176.58.103.83");
+  endpoint_string.push_back("106.187.102.233");
+  endpoint_string.push_back("106.187.47.248");
+  endpoint_string.push_back("106.187.93.100");
+  endpoint_string.push_back("106.186.16.51");
+
   std::vector<boost::asio::ip::udp::endpoint> maidsafe_endpoints;
   for (auto i : endpoint_string)
     maidsafe_endpoints.push_back(Endpoint(boost::asio::ip::address::from_string(i), 5483));
