@@ -20,15 +20,6 @@
 #include "maidsafe/common/crypto.h"
 #include "maidsafe/common/utils.h"
 
-#ifdef __MSVC__
-# pragma warning(push)
-# pragma warning(disable: 4127 4244 4267)
-#endif
-
-#ifdef __MSVC__
-# pragma warning(pop)
-#endif
-
 #include "maidsafe/tools/commands.h"
 #include "maidsafe/routing/utils.h"
 
@@ -45,6 +36,13 @@ struct PortRange {
 };
 
 namespace {
+
+// This function is needed to avoid use of po::bool_switch causing MSVC warning C4505:
+// 'boost::program_options::typed_value<bool>::name' : unreferenced local function has been removed.
+void UseUnreferenced() {
+  auto dummy = po::typed_value<bool>(nullptr);
+  (void)dummy;
+}
 
 void ConflictingOptions(const po::variables_map &variables_map,
                         const char *opt1,
@@ -136,11 +134,7 @@ fs::path GetPathFromProgramOption(const std::string &option_name,
 }
 
 int main(int argc, char **argv) {
-  maidsafe::log::Logging::instance().AddFilter("common", maidsafe::log::kFatal);
-  maidsafe::log::Logging::instance().AddFilter("private", maidsafe::log::kFatal);
-  maidsafe::log::Logging::instance().AddFilter("passport", maidsafe::log::kFatal);
-  maidsafe::log::Logging::instance().AddFilter("rudp", maidsafe::log::kFatal);
-  maidsafe::log::Logging::instance().AddFilter("routing", maidsafe::log::kFatal);
+  maidsafe::log::Logging::Instance().Initialise(argc, argv);
 
   try {
     int identity_index;

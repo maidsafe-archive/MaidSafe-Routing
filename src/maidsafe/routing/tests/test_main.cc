@@ -13,9 +13,5 @@
 #include "maidsafe/common/test.h"
 
 int main(int argc, char **argv) {
-  maidsafe::log::FilterMap filter;
-  filter["common"] = maidsafe::log::kError;
-  filter["rudp"] = maidsafe::log::kError;
-  filter["routing"] = maidsafe::log::kInfo;
-  return ExecuteMain(argc, argv, filter, true, maidsafe::log::ColourMode::kPartialLine);
+  return maidsafe::test::ExecuteMain(argc, argv);
 }

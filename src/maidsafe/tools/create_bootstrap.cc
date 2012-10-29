@@ -34,6 +34,9 @@
 #include "maidsafe/common/rsa.h"
 #include "maidsafe/routing/routing_pb.h"
 
+
+namespace fs = boost::filesystem;
+
 typedef std::pair<int, std::string> Endpoint;
 
 static std::string prompt(">> ");

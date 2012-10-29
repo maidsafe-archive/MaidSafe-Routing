@@ -152,11 +152,7 @@ fs::path GetPathFromProgramOption(const std::string &option_name,
 }
 
 int main(int argc, char* argv[]) {
-  maidsafe::log::Logging::instance().AddFilter("common", maidsafe::log::kError);
-  maidsafe::log::Logging::instance().AddFilter("private", maidsafe::log::kError);
-  maidsafe::log::Logging::instance().AddFilter("passport", maidsafe::log::kError);
-  maidsafe::log::Logging::instance().AddFilter("rudp", maidsafe::log::kError);
-  maidsafe::log::Logging::instance().AddFilter("routing", maidsafe::log::kError);
+  maidsafe::log::Logging::Instance().Initialise(argc, argv);
 
   std::cout << kHelperVersion << std::endl;
 

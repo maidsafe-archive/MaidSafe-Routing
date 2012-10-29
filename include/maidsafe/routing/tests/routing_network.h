@@ -161,7 +161,7 @@ class GenericNetwork : public testing::Test {
 
   mutable std::mutex mutex_, fobs_mutex_;
   std::vector<boost::asio::ip::udp::endpoint> bootstrap_endpoints_;
-  fs::path bootstrap_path_;
+  boost::filesystem::path bootstrap_path_;
   std::vector<Fob> fobs_;
   size_t client_index_;
 

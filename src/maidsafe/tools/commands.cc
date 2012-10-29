@@ -162,7 +162,7 @@ void Commands::SendAMsg(int identity_index, bool direct, std::string &data) {
   std::cout << "Sending a msg from : " << maidsafe::HexSubstr(demo_node_->fob().identity)
             << " to " << (direct ? ": " : "group : ") << maidsafe::HexSubstr(dest_id.string())
             << " , expect receive response from :" << std::endl;
-  size_t expected_respodents(direct ? 1 : 4);
+  uint16_t expected_respodents(direct ? 1 : 4);
   std::vector<NodeId> closests;
   NodeId farthest_closests(CalculateClosests(dest_id, closests, expected_respodents));
   for (auto &node_id : closests)
@@ -365,7 +365,7 @@ NodeId Commands::CalculateClosests(const NodeId& target_id,
               return (NodeId::CloserToTarget(i, j, target_id));
             });
   if (num_of_closests > all_ids_.size())
-    num_of_closests = all_ids_.size();
+    num_of_closests = static_cast<uint16_t>(all_ids_.size());
   closests.resize(num_of_closests);
   std::copy(all_ids_.begin(), all_ids_.begin() + num_of_closests, closests.begin());
 
