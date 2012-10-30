@@ -20,15 +20,6 @@
 #include "maidsafe/common/crypto.h"
 #include "maidsafe/common/utils.h"
 
-#ifdef __MSVC__
-# pragma warning(push)
-# pragma warning(disable: 4127 4244 4267)
-#endif
-
-#ifdef __MSVC__
-# pragma warning(pop)
-#endif
-
 #include "maidsafe/tools/commands.h"
 #include "maidsafe/routing/utils.h"
 
@@ -45,6 +36,13 @@ struct PortRange {
 };
 
 namespace {
+
+// This function is needed to avoid use of po::bool_switch causing MSVC warning C4505:
+// 'boost::program_options::typed_value<bool>::name' : unreferenced local function has been removed.
+void UseUnreferenced() {
+  auto dummy = po::typed_value<bool>(nullptr);
+  (void)dummy;
+}
 
 void ConflictingOptions(const po::variables_map &variables_map,
                         const char *opt1,
@@ -136,11 +134,7 @@ fs::path GetPathFromProgramOption(const std::string &option_name,
 }
 
 int main(int argc, char **argv) {
-  maidsafe::log::Logging::instance().AddFilter("common", maidsafe::log::kFatal);
-  maidsafe::log::Logging::instance().AddFilter("private", maidsafe::log::kFatal);
-  maidsafe::log::Logging::instance().AddFilter("passport", maidsafe::log::kFatal);
-  maidsafe::log::Logging::instance().AddFilter("rudp", maidsafe::log::kFatal);
-  maidsafe::log::Logging::instance().AddFilter("routing", maidsafe::log::kFatal);
+  maidsafe::log::Logging::Instance().Initialise(argc, argv);
 
   try {
     int identity_index;
@@ -197,13 +191,13 @@ int main(int argc, char **argv) {
     // Ensure correct index range is being used
     bool client_only_node(variables_map["client"].as<bool>());
     if (client_only_node) {
-      if (identity_index < (all_fobs.size() / 2)) {
+      if (identity_index < static_cast<int>(all_fobs.size() / 2)) {
         std::cout << "ERROR : Incorrect identity_index used for a client, must between "
                   << all_fobs.size() / 2 << " and " << all_fobs.size() - 1 << std::endl;
         return 0;
       }
     } else {
-      if (identity_index >= (all_fobs.size() / 2)) {
+      if (identity_index >= static_cast<int>(all_fobs.size() / 2)) {
         std::cout << "ERROR : Incorrect identity_index used for a vault, must between 0 and "
                   << all_fobs.size() / 2 - 1 << std::endl;
         return 0;
