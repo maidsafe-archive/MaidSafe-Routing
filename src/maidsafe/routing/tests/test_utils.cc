@@ -12,6 +12,7 @@
 
 #include "maidsafe/routing/tests/test_utils.h"
 
+#include <algorithm>
 #include <set>
 #include <bitset>
 #include <string>
@@ -127,6 +128,20 @@ int NetworkStatus(const bool& client, const int& status) {
   uint16_t max_size(client ? Parameters::max_client_routing_table_size :
                       Parameters::max_routing_table_size);
   return (status > 0) ? (status * 100 / max_size) : status;
+}
+
+void SortFromTarget(const NodeId& target, std::vector<NodeInfo>& nodes) {
+  std::sort(nodes.begin(), nodes.end(),
+            [target](const NodeInfo& lhs, const NodeInfo& rhs) {
+                return NodeId::CloserToTarget(lhs.node_id, rhs.node_id, target);
+              });
+}
+
+void SortIdsFromTarget(const NodeId& target, std::vector<NodeId>& nodes) {
+  std::sort(nodes.begin(), nodes.end(),
+            [target] (const NodeId& lhs, const NodeId& rhs) {
+                return (lhs ^ target) < (rhs ^ target);
+              });
 }
 
 }  // namespace test

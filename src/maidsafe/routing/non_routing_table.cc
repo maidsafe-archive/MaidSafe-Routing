@@ -58,17 +58,19 @@ bool NonRoutingTable::AddOrCheckNode(NodeInfo& node,
   return false;
 }
 
-NodeInfo NonRoutingTable::DropNode(const NodeId &node_to_drop) {
-  NodeInfo node_info;
+std::vector<NodeInfo> NonRoutingTable::DropNodes(const NodeId &node_to_drop) {
+  std::vector<NodeInfo> nodes_info;
   std::lock_guard<std::mutex> lock(mutex_);
-  for (auto it = nodes_.begin(); it != nodes_.end(); ++it) {
-    if ((*it).connection_id == node_to_drop) {
-      node_info = *it;
-      nodes_.erase(it);
-      break;
+  uint16_t i(0);
+  while (i < nodes_.size()) {
+    if (nodes_.at(i).node_id == node_to_drop) {
+      nodes_info.push_back(nodes_.at(i));
+      nodes_.erase(nodes_.begin() + i);
+    } else {
+      ++i;
     }
   }
-  return node_info;
+  return nodes_info;
 }
 
 NodeInfo NonRoutingTable::DropConnection(const NodeId &connection_to_drop) {
@@ -101,6 +103,11 @@ bool NonRoutingTable::IsConnected(const NodeId& node_id) const {
                       [node_id](const NodeInfo& node_info) {
                         return node_info.node_id == node_id;
                       }) != nodes_.end();
+}
+
+size_t NonRoutingTable::size() const {
+  std::lock_guard<std::mutex> lock(mutex_);
+  return nodes_.size();
 }
 
 // TODO(Prakash): re-order checks to increase performance if needed
@@ -144,7 +151,7 @@ bool NonRoutingTable::CheckParametersAreUnique(const NodeInfo& node) const {
 bool NonRoutingTable::CheckRangeForNodeToBeAdded(NodeInfo& node,
                                                  const NodeId& furthest_close_node_id,
                                                  const bool& add) const {
-  if (nodes_.size() > Parameters::max_non_routing_table_size) {
+  if (nodes_.size() >= Parameters::max_non_routing_table_size) {
     LOG(kInfo) << "Non Routing Table full.";
     return false;
   }
@@ -154,11 +161,15 @@ bool NonRoutingTable::CheckRangeForNodeToBeAdded(NodeInfo& node,
     return false;
   }
 
-  return IsThisNodeInRange(kNodeId_, furthest_close_node_id);
+  return IsThisNodeInRange(node.node_id, furthest_close_node_id);
 }
 
 bool NonRoutingTable::IsThisNodeInRange(const NodeId& node_id,
                                         const NodeId& furthest_close_node_id) const {
+  if (furthest_close_node_id == node_id) {
+    assert(false && "node_id (client) and furthest_close_node_id (vault) should not be equal.");
+    return false;
+  }
   return (furthest_close_node_id ^ kNodeId_) > (node_id ^ kNodeId_);
 }
 

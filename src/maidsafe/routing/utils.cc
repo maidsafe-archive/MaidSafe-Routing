@@ -82,7 +82,7 @@ bool ValidateAndAddToRoutingTable(NetworkUtils& network,
   if (client) {
     NodeId furthest_close_node_id =
         routing_table.GetNthClosestNode(NodeId(routing_table.kFob().identity),
-                                        Parameters::closest_nodes_size).node_id;
+                                        2 * Parameters::closest_nodes_size).node_id;
 
     if (non_routing_table.AddNode(peer, furthest_close_node_id))
       routing_accepted_node = true;

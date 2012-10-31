@@ -145,7 +145,7 @@ void Service::Connect(protobuf::Message& message) {
     LOG(kVerbose) << "Client connect request - will check non-routing table.";
     NodeId furthest_close_node_id =
         routing_table_.GetNthClosestNode(routing_table_.kNodeId(),
-                                         Parameters::closest_nodes_size).node_id;
+                                         2 * Parameters::closest_nodes_size).node_id;
     check_node_succeeded = non_routing_table_.CheckNode(peer_node, furthest_close_node_id);
   } else {
     LOG(kVerbose) << "Server connect request - will check routing table.";
