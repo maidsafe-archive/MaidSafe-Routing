@@ -186,7 +186,8 @@ int main(int argc, char* argv[]) {
     cmdline_options.add(generic_options).add(config_file_options);
 
     po::variables_map variables_map;
-    po::store(po::command_line_parser(argc, argv).options(cmdline_options).run(), variables_map);
+    po::store(po::command_line_parser(argc, argv).options(cmdline_options).allow_unregistered().
+                                                  run(), variables_map);
     po::notify(variables_map);
 
     bool do_create(variables_map.count("create") != 0);
