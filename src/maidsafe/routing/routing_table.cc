@@ -385,7 +385,7 @@ NodeInfo RoutingTable::GetNthClosestNode(const NodeId& target_id, uint16_t node_
   std::unique_lock<std::mutex> lock(mutex_);
   if (nodes_.size() < node_number) {
     NodeInfo node_info;
-    node_info.node_id = NodeId(NodeId::kMaxId);
+    node_info.node_id = (NodeId(NodeId::kMaxId) ^ kNodeId_);
     return node_info;
   }
   NthElementSortFromTarget(target_id, node_number, lock);

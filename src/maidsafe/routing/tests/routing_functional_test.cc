@@ -269,6 +269,10 @@ TEST_F(RoutingNetworkTest, FUNC_SetupNetwork) {
   this->SetUpNetwork(10);
 }
 
+TEST_F(RoutingNetworkTest, FUNC_SetupSingleClientHybridNetwork) {
+  this->SetUpNetwork(kServerSize, 1);
+}
+
 TEST_F(RoutingNetworkTest, FUNC_SetupHybridNetwork) {
   this->SetUpNetwork(kServerSize, kClientSize);
 }
