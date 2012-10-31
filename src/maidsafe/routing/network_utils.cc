@@ -236,7 +236,7 @@ void NetworkUtils::SendToClosestNode(const protobuf::Message& message) {
 void NetworkUtils::SendTo(const protobuf::Message& message,
                           const NodeId& peer_node_id,
                           const NodeId& peer_connection_id) {
-  const std::string kThisId(HexSubstr(routing_table_.kFob().identity));
+  const std::string kThisId(routing_table_.kNodeId().string());
   rudp::MessageSentFunctor message_sent_functor = [=](int message_sent) {
       if (rudp::kSuccess == message_sent) {
         LOG(kInfo) << "  [" << HexSubstr(kThisId) << "] sent : " << MessageTypeString(message)
@@ -280,7 +280,7 @@ void NetworkUtils::RecursiveSendOn(protobuf::Message message,
   if (attempt_count > 0)
     Sleep(bptime::milliseconds(50));
 
-  const std::string kThisId(HexSubstr(routing_table_.kFob().identity));
+  const std::string kThisId(routing_table_.kNodeId().string());
   bool ignore_exact_match(!IsDirect(message));
   std::vector<std::string> route_history;
   NodeInfo closest_node;
