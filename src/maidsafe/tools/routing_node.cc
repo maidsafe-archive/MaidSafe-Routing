@@ -156,7 +156,8 @@ int main(int argc, char **argv) {
     po::variables_map variables_map;
 //     po::store(po::parse_command_line(argc, argv, options_description),
 //               variables_map);
-    po::store(po::command_line_parser(argc, argv).options(options_description).run(), variables_map);
+    po::store(po::command_line_parser(argc, argv).options(options_description).allow_unregistered().
+                                                  run(), variables_map);
     po::notify(variables_map);
 
     if (variables_map.count("help") || (!variables_map.count("start"))) {
