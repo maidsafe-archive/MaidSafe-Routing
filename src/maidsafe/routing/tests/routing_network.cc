@@ -270,7 +270,9 @@ void GenericNode::PrintRoutingTable() {
   std::cout << "[" << HexSubstr(node_info_plus_->node_info.node_id.string())
             << "]'s RoutingTable "
 
-            << (IsClient() ? " (Client)" : " (Vault) :") << std::endl;
+            << (IsClient() ? " (Client)" : " (Vault) :")
+            << "Routing table size: " << routing_->pimpl_->routing_table_.nodes_.size()
+            << std::endl;
   {
     std::lock_guard<std::mutex> lock(routing_->pimpl_->routing_table_.mutex_);
     for (auto node_info : routing_->pimpl_->routing_table_.nodes_) {
@@ -514,6 +516,11 @@ void GenericNetwork::RemoveRandomVault() {
   --client_index_;
 }
 
+void GenericNetwork::ClearMessages() {
+  for (auto node : this->nodes_)
+    node->ClearMessages();
+}
+
 uint16_t GenericNetwork::NonClientNodesSize() const {
   uint16_t non_client_size(0);
   for (auto node : nodes_) {
@@ -571,7 +578,7 @@ void GenericNetwork::AddNodeDetails(NodePtr node) {
     std::unique_lock<std::mutex> lock(mutex);
     auto result = cond_var->wait_for(lock, std::chrono::seconds(20));
     EXPECT_EQ(result, std::cv_status::no_timeout);
-    Sleep(boost::posix_time::millisec(600));
+    Sleep(boost::posix_time::millisec(1600));
   }
   PrintRoutingTables();
 }

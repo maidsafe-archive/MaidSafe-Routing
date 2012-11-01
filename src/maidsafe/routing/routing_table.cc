@@ -464,7 +464,8 @@ std::string RoutingTable::PrintRoutingTable() {
     rt = nodes_;
   }
   std::string s = "\n\n[" + DebugId(kNodeId_) +
-      "] This node's own routing table and peer connections:\n";
+      "] This node's own routing table and peer connections:\n" +
+      "Routing table size: " + boost::lexical_cast<std::string>(nodes_.size()) + "\n";
   for (auto node : rt) {
     s += std::string("\tPeer ") + "[" + DebugId(node.node_id) + "]"+ "-->";
     s += DebugId(node.connection_id)+ "\n";

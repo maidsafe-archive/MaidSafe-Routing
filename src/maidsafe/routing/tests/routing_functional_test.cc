@@ -299,6 +299,15 @@ TEST_F(RoutingNetworkTest, FUNC_SendMulti) {
   EXPECT_TRUE(this->Send(40));
 }
 
+TEST_F(RoutingNetworkTest, DISABLED_FUNC_ExtendedSendMulti) {
+  this->SetUpNetwork(kServerSize);
+  uint16_t loop(100);
+  while (loop-- > 0) {
+    EXPECT_TRUE(this->Send(40));
+    this->ClearMessages();
+  }
+}
+
 TEST_F(RoutingNetworkTest, FUNC_ClientSendMulti) {
   this->SetUpNetwork(kServerSize, kClientSize);
   EXPECT_TRUE(this->Send(3));
@@ -307,7 +316,7 @@ TEST_F(RoutingNetworkTest, FUNC_ClientSendMulti) {
 
 TEST_F(RoutingNetworkTest, FUNC_SendToGroup) {
   uint16_t message_count(10), receivers_message_count(0);
-  this->SetUpNetwork(kNetworkSize);
+  this->SetUpNetwork(kServerSize);
   size_t last_index(this->nodes_.size() - 1);
   NodeId dest_id(this->nodes_[last_index]->node_id());
 
@@ -316,9 +325,30 @@ TEST_F(RoutingNetworkTest, FUNC_SendToGroup) {
     receivers_message_count += static_cast<uint16_t>(this->nodes_.at(index)->MessagesSize());
 
   EXPECT_EQ(0, this->nodes_[last_index]->MessagesSize())
-        << "Not expected message at Node : "
-        << HexSubstr(this->nodes_[last_index]->node_id().string());
+      << "Not expected message at Node : "
+      << HexSubstr(this->nodes_[last_index]->node_id().string());
   EXPECT_EQ(message_count * (Parameters::node_group_size), receivers_message_count);
+}
+
+TEST_F(RoutingNetworkTest, DISABLED_FUNC_ExtendedSendToGroup) {
+  uint16_t message_count(10), receivers_message_count(0);
+  this->SetUpNetwork(kServerSize);
+  size_t last_index(this->nodes_.size() - 1);
+  NodeId dest_id(this->nodes_[last_index]->node_id());
+
+  uint16_t loop(100);
+  while (loop-- > 0) {
+    EXPECT_TRUE(this->GroupSend(dest_id, message_count));
+    for (size_t index = 0; index != (last_index); ++index)
+      receivers_message_count += static_cast<uint16_t>(this->nodes_.at(index)->MessagesSize());
+
+    EXPECT_EQ(0, this->nodes_[last_index]->MessagesSize())
+          << "Not expected message at Node : "
+          << HexSubstr(this->nodes_[last_index]->node_id().string());
+    EXPECT_EQ(message_count * (Parameters::node_group_size), receivers_message_count);
+    receivers_message_count = 0;
+    this->ClearMessages();
+  }
 }
 
 TEST_F(RoutingNetworkTest, FUNC_SendToGroupSelfId) {
@@ -384,6 +414,26 @@ TEST_F(RoutingNetworkTest, FUNC_SendToGroupRandomId) {
   EXPECT_EQ(message_count * (Parameters::node_group_size), receivers_message_count);
   LOG(kVerbose) << "Total message received count : "
                 << message_count * (Parameters::node_group_size);
+}
+
+TEST_F(RoutingNetworkTest, DISABLED_FUNC_ExtendedSendToGroupRandomId) {
+  uint16_t message_count(200), receivers_message_count(0);
+  this->SetUpNetwork(kServerSize);
+  uint16_t loop(3);
+  while (loop-- > 0) {
+    for (int index = 0; index < message_count; ++index) {
+      EXPECT_TRUE(this->GroupSend(NodeId(NodeId::kRandomId), 1));
+      for (auto node : this->nodes_) {
+        receivers_message_count += static_cast<uint16_t>(node->MessagesSize());
+        node->ClearMessages();
+      }
+    }
+    EXPECT_EQ(message_count * (Parameters::node_group_size), receivers_message_count);
+    LOG(kVerbose) << "Total message received count : "
+                  << message_count * (Parameters::node_group_size);
+    receivers_message_count = 0;
+    this->ClearMessages();
+  }
 }
 
 TEST_F(RoutingNetworkTest, FUNC_AnonymousSendToGroupRandomId) {
