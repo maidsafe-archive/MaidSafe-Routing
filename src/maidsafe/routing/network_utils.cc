@@ -86,6 +86,10 @@ int NetworkUtils::Bootstrap(const std::vector<Endpoint>& bootstrap_endpoints,
     std::vector<Endpoint> maidsafe_endpoints(MaidSafeEndpoints());
     bootstrap_endpoints_.insert(bootstrap_endpoints_.end(), maidsafe_endpoints.begin(),
                                 maidsafe_endpoints.end());
+  } else if (Parameters::append_maidsafe_local_endpoints && bootstrap_attempt_ == 0) {
+    std::vector<Endpoint> maidsafe_local_endpoints(MaidSafeLocalEndpoints());
+    bootstrap_endpoints_.insert(bootstrap_endpoints_.end(), maidsafe_local_endpoints.begin(),
+                                maidsafe_local_endpoints.end());
   }
 
   if (bootstrap_endpoints_.empty())
