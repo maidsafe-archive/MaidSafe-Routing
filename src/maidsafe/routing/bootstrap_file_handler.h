@@ -32,6 +32,9 @@ void UpdateBootstrapFile(const boost::asio::ip::udp::endpoint& endpoint, bool re
 
 std::vector<boost::asio::ip::udp::endpoint> MaidSafeEndpoints();
 
+// TODO(Prakash) : BEFORE_RELEASE remove using local endpoints
+std::vector<boost::asio::ip::udp::endpoint> MaidSafeLocalEndpoints();
+
 }  // namespace routing
 
 }  // namespace maidsafe

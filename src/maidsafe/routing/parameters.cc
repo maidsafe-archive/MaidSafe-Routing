@@ -42,6 +42,7 @@ bptime::time_duration Parameters::connect_rpc_prune_timeout(
 // 10 KB of book keeping data for Routing
 uint32_t Parameters::max_data_size(rudp::ManagedConnections::kMaxMessageSize() - 10240);
 bool Parameters::append_maidsafe_endpoints(false);
+bool Parameters::append_maidsafe_local_endpoints(false);
 
 }  // namespace routing
 
