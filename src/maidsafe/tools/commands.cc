@@ -278,7 +278,8 @@ void Commands::PrintUsage() {
   std::cout << "\tsenddirect <dest_index> Send a msg to a node with specified identity-index.\n";
   std::cout << "\tsendgroup <dest_index> Send a msg to group (default is Random GroupId,"
             << " dest_index for using existing identity as a group_id)\n";
-  std::cout << "\tsendmultiple <num_msg> Send num of msg to randomly picked-up destination.\n";
+  std::cout << "\tsendmultiple <num_msg> Send num of msg to randomly picked-up destination."
+            << " -1 for infinite (Default 10)\n";
   std::cout << "\tdatasize <data_size> Set the data_size for the message.\n";
   std::cout << "\nattype Print the NatType of this node.\n";
   std::cout << "\texit Exit application.\n";
@@ -329,11 +330,22 @@ void Commands::ProcessCommand(const std::string &cmdline) {
     else
       SendAMsg(boost::lexical_cast<int>(args[0]), false, data);
   } else if (cmd == "sendmultiple") {
-    int num_msg(boost::lexical_cast<int>(args[0]));
+    int num_msg(10);
+    if (!args.empty())
+      num_msg = boost::lexical_cast<int>(args[0]);
+    bool infinite(false);
+    if (num_msg == -1) {
+      infinite = true;
+      std::cout << " Running infinite messeging test. press Ctrl + C to terminate the program"
+                << std::endl;
+    }
     std::string data(RandomAlphaNumericString(data_size_));
     boost::posix_time::ptime now = boost::posix_time::microsec_clock::universal_time();
+    while (infinite)
+      SendAMsg(RandomUint32() % (all_fobs_.size() / 2), true, data);
+
     for (int i(0); i < num_msg; ++i) {
-      SendAMsg(RandomUint32() % all_fobs_.size(), true, data);
+      SendAMsg(RandomUint32() % (all_fobs_.size() / 2), true, data);
     }
     std::cout << "Sent " << num_msg << " messages to randomly picked-up targets. Finished in :"
               << boost::posix_time::microsec_clock::universal_time() - now << std::endl;
