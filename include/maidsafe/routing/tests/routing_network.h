@@ -154,6 +154,7 @@ class GenericNetwork : public testing::Test {
   NodePtr RandomVaultNode();
   void RemoveRandomClient();
   void RemoveRandomVault();
+  void ClearMessages();
 
  private:
   uint16_t NonClientNodesSize() const;
