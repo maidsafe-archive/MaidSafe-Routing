@@ -450,9 +450,9 @@ std::vector<NodeId> GenericNetwork::GroupIds(const NodeId& node_id) {
                     [&](const NodeId& lhs, const NodeId& rhs) {
                       return NodeId::CloserToTarget(lhs, rhs, node_id);
                     });
-  return std::vector<NodeId>(all_ids.begin() + static_cast<uint>(all_ids[0] == node_id),
+  return std::vector<NodeId>(all_ids.begin() + static_cast<uint16_t>(all_ids[0] == node_id),
                              all_ids.begin() + Parameters::node_group_size +
-                                 static_cast<uint>(all_ids[0] == node_id));
+                                 static_cast<uint16_t>(all_ids[0] == node_id));
 }
 
 void GenericNetwork::PrintRoutingTables() {
