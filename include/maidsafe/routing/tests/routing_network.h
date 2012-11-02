@@ -54,7 +54,7 @@ struct NodeInfoAndPrivateKey;
   const uint32_t kServerSize(8);
 #else
   const uint32_t kClientSize(2);
-  const uint32_t kServerSize(9);
+  const uint32_t kServerSize(10);
 #endif
 
 const uint32_t kNetworkSize = kClientSize + kServerSize;
@@ -148,6 +148,7 @@ class GenericNetwork : public testing::Test {
   bool RemoveNode(const NodeId& node_id);
   virtual void Validate(const NodeId& node_id, GivePublicKeyFunctor give_public_key);
   virtual void SetNodeValidationFunctor(NodePtr node);
+  std::vector<NodeId> GroupIds(const NodeId& node_id);
   void PrintRoutingTables();
   bool ValidateRoutingTables();
   NodePtr RandomClientNode();

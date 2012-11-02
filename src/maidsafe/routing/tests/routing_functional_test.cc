@@ -419,13 +419,18 @@ TEST_F(RoutingNetworkTest, FUNC_SendToGroupRandomId) {
 TEST_F(RoutingNetworkTest, DISABLED_FUNC_ExtendedSendToGroupRandomId) {
   uint16_t message_count(200), receivers_message_count(0);
   this->SetUpNetwork(kServerSize);
-  uint16_t loop(3);
+  uint16_t loop(10);
   while (loop-- > 0) {
     for (int index = 0; index < message_count; ++index) {
-      EXPECT_TRUE(this->GroupSend(NodeId(NodeId::kRandomId), 1));
+      NodeId random_id(NodeId::kRandomId);
+      std::vector<NodeId> groupd_ids(this->GroupIds(random_id));
+      EXPECT_TRUE(this->GroupSend(random_id, 1));
       for (auto node : this->nodes_) {
-        receivers_message_count += static_cast<uint16_t>(node->MessagesSize());
-        node->ClearMessages();
+        if (std::find(groupd_ids.begin(), groupd_ids.end(), node->node_id()) !=
+            groupd_ids.end()) {
+          receivers_message_count += static_cast<uint16_t>(node->MessagesSize());
+          node->ClearMessages();
+        }
       }
     }
     EXPECT_EQ(message_count * (Parameters::node_group_size), receivers_message_count);
