@@ -440,6 +440,21 @@ void GenericNetwork::SetNodeValidationFunctor(NodePtr node) {
                                        };
 }
 
+std::vector<NodeId> GenericNetwork::GroupIds(const NodeId& node_id) {
+  std::vector<NodeId> all_ids;
+  for (auto node : this->nodes_)
+    all_ids.push_back(node->node_id());
+  std::partial_sort(all_ids.begin(),
+                    all_ids.begin() + Parameters::node_group_size + 1,
+                    all_ids.end(),
+                    [&](const NodeId& lhs, const NodeId& rhs) {
+                      return NodeId::CloserToTarget(lhs, rhs, node_id);
+                    });
+  return std::vector<NodeId>(all_ids.begin() + static_cast<uint>(all_ids[0] == node_id),
+                             all_ids.begin() + Parameters::node_group_size +
+                                 static_cast<uint>(all_ids[0] == node_id));
+}
+
 void GenericNetwork::PrintRoutingTables() {
   std::lock_guard<std::mutex> lock(mutex_);
   for (auto node : nodes_)
