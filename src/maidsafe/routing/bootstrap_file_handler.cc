@@ -173,8 +173,8 @@ std::vector<boost::asio::ip::udp::endpoint> MaidSafeEndpoints() {
 std::vector<boost::asio::ip::udp::endpoint> MaidSafeLocalEndpoints() {
   std::vector<std::string> endpoint_string;
   endpoint_string.reserve(2);
-  endpoint_string.push_back("192.168.0.114");
-  endpoint_string.push_back("192.168.0.132");
+  endpoint_string.push_back("192.168.0.109");
+  endpoint_string.push_back("192.168.0.130");
   std::vector<boost::asio::ip::udp::endpoint> maidsafe_endpoints;
   for (auto i : endpoint_string)
     maidsafe_endpoints.push_back(Endpoint(boost::asio::ip::address::from_string(i), 5483));
