@@ -275,7 +275,8 @@ void Commands::PrintUsage() {
   std::cout << "\tjoin Normal Join.\n";
   std::cout << "\tprt Print Local Routing Table.\n";
   std::cout << "\trrt <dest_index> Request Routing Table from peer node with the specified identity-index.\n";
-  std::cout << "\tsenddirect <dest_index> Send a msg to a node with specified identity-index.\n";
+  std::cout << "\tsenddirect <dest_index> <num_msg> Send a msg to a node with specified identity-index."
+            << " -1 for infinite (Default 1)\n";
   std::cout << "\tsendgroup <dest_index> Send a msg to group (default is Random GroupId,"
             << " dest_index for using existing identity as a group_id)\n";
   std::cout << "\tsendmultiple <num_msg> Send num of msg to randomly picked-up destination."
@@ -322,7 +323,17 @@ void Commands::ProcessCommand(const std::string &cmdline) {
     Join();
   } else if (cmd == "senddirect") {
     std::string data(RandomAlphaNumericString(data_size_));
-    SendAMsg(boost::lexical_cast<int>(args[0]), true, data);
+    if (args.size() == 1) {
+      SendAMsg(boost::lexical_cast<int>(args[0]), true, data);
+    } else if (args.size() == 2) {
+      int count(boost::lexical_cast<int>(args[1]));
+      bool infinite(count < 0);
+      if (infinite)
+        std::cout << " Running infinite messaging test. press Ctrl + C to terminate the program"
+                  << std::endl;
+      for (auto i(0); (i < count) || infinite; ++i)
+        SendAMsg(boost::lexical_cast<int>(args[0]), true, data);
+    }
   } else if (cmd == "sendgroup") {
     std::string data(RandomAlphaNumericString(data_size_));
     if (args.empty())
@@ -336,7 +347,7 @@ void Commands::ProcessCommand(const std::string &cmdline) {
     bool infinite(false);
     if (num_msg == -1) {
       infinite = true;
-      std::cout << " Running infinite messeging test. press Ctrl + C to terminate the program"
+      std::cout << " Running infinite messaging test. press Ctrl + C to terminate the program"
                 << std::endl;
     }
     std::string data(RandomAlphaNumericString(data_size_));
