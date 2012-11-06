@@ -96,6 +96,27 @@ protobuf::Message Connect(const NodeId& node_id,
   return message;
 }
 
+protobuf::Message Remove(const NodeId& node_id,
+                         const NodeId& this_node_id,
+                         const NodeId& this_connection_id) {
+  assert(!node_id.IsZero() && "Invalid node_id");
+  assert(!this_node_id.IsZero() && "Invalid my node_id");
+  assert(!this_connection_id.IsZero() && "Invalid this_connection_id");
+  protobuf::Message message;
+  message.set_destination_id(node_id.string());
+  message.set_routing_message(true);
+  message.set_direct(true);
+  message.set_replication(1);
+  message.set_type(static_cast<int32_t>(MessageType::kRemove));
+  message.set_id(0);
+  message.set_client_node(false);
+  message.set_hops_to_live(Parameters::hops_to_live);
+  message.set_source_id(this_node_id.string());
+  message.set_request(true);
+  assert(message.IsInitialized() && "Unintialised message");
+  return message;
+}
+
 protobuf::Message FindNodes(const NodeId& node_id,
                             const NodeId& this_node_id,
                             const int& num_nodes_requested,

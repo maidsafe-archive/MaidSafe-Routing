@@ -101,7 +101,8 @@ TEST(RoutingTableTest, FUNC_GroupChange) {
   routing_table.InitialiseFunctors(
       [](const int& status) { LOG(kVerbose) << "Status : " << status; },
       [](const NodeInfo&, bool) {},
-      close_node_replaced_functor);
+      close_node_replaced_functor,
+      []() {});
 
   for (uint16_t i = 0; i < Parameters::max_routing_table_size; ++i) {
     ASSERT_TRUE(routing_table.AddNode(nodes.at(i)));

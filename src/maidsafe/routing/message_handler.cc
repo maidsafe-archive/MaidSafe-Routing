@@ -20,6 +20,7 @@
 #include "maidsafe/routing/routing_pb.h"
 #include "maidsafe/routing/routing_table.h"
 #include "maidsafe/routing/service.h"
+#include "maidsafe/routing/remove_furthest_node.h"
 #include "maidsafe/routing/timer.h"
 #include "maidsafe/routing/utils.h"
 
@@ -31,10 +32,12 @@ namespace routing {
 MessageHandler::MessageHandler(RoutingTable& routing_table,
                                NonRoutingTable& non_routing_table,
                                NetworkUtils& network,
+                               RemoveFurthestNode& remove_furthest_node,
                                Timer& timer)
     : routing_table_(routing_table),
       non_routing_table_(non_routing_table),
       network_(network),
+      remove_furthest_node_(remove_furthest_node),
       timer_(timer),
       cache_manager_(),
       response_handler_(new ResponseHandler(routing_table, non_routing_table, network_)),
@@ -58,6 +61,11 @@ void MessageHandler::HandleRoutingMessage(protobuf::Message& message) {
       break;
     case MessageType::kConnectSuccessAcknowledgement :
       response_handler_->ConnectSuccessAcknowledgement(message);
+      break;
+    case MessageType::kRemove :
+      message.request() ? remove_furthest_node_.RemoveRequest(message) :
+                          remove_furthest_node_.RemoveResponse(message);
+      break;
     default:  // unknown (silent drop)
       return;
   }

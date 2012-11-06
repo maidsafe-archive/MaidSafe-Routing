@@ -40,16 +40,19 @@ RoutingTable::RoutingTable(const Fob& fob, bool client_mode)
       remove_node_functor_(),
       network_status_functor_(),
       close_node_replaced_functor_(),
+      remove_furthest_node_(),
       nodes_() {}
 
 void RoutingTable::InitialiseFunctors(
     NetworkStatusFunctor network_status_functor,
     std::function<void(const NodeInfo&, bool)> remove_node_functor,
-    CloseNodeReplacedFunctor close_node_replaced_functor) {
+    CloseNodeReplacedFunctor close_node_replaced_functor,
+    RemoveFurthestUnnecessaryNode remove_furthest_node) {
   // TODO(Prakash#5#): 2012-10-25 - Consider asserting network_status_functor != nullptr here.
   if (!network_status_functor)
     LOG(kWarning) << "NULL network_status_functor passed.";
   assert(remove_node_functor);
+  assert(remove_furthest_node);
   if (!kClientMode_ && !close_node_replaced_functor)
     LOG(kWarning) << "NULL close_node_replaced_functor passed.";
   // TODO(Prakash#5#): 2012-10-25 - Handle once we change to matrix.
@@ -58,6 +61,7 @@ void RoutingTable::InitialiseFunctors(
     network_status_functor_ = network_status_functor;
     remove_node_functor_ = remove_node_functor;
     close_node_replaced_functor_ = close_node_replaced_functor;
+    remove_furthest_node_ = remove_furthest_node;
   }
 }
 
@@ -79,7 +83,7 @@ bool RoutingTable::AddOrCheckNode(NodeInfo peer, bool remove) {
     return false;
   }
 
-  bool return_value(false);
+  bool return_value(false), remove_furthest_node(false);
   std::vector<NodeInfo> new_close_nodes;
   NodeInfo removed_node;
   uint16_t routing_table_size(0);
@@ -100,6 +104,8 @@ bool RoutingTable::AddOrCheckNode(NodeInfo peer, bool remove) {
         assert(peer.bucket != NodeInfo::kInvalidBucket);
         nodes_.push_back(peer);
         new_close_nodes = CheckGroupChange(lock);
+        if (nodes_.size() > Parameters::greedy_fraction)
+          remove_furthest_node = true;
       }
       return_value = true;
     }
@@ -125,7 +131,13 @@ bool RoutingTable::AddOrCheckNode(NodeInfo peer, bool remove) {
 //      if (new_bootstrap_endpoint_)
 //        new_bootstrap_endpoint_(peer.endpoint);
     }
-    LOG(kInfo) << PrintRoutingTable();
+    if (remove_furthest_node) {
+      LOG(kVerbose) << "Removing furthest node....";
+      if (remove_furthest_node_)
+        remove_furthest_node_();
+    }
+
+      LOG(kInfo) << PrintRoutingTable();
   }
   return return_value;
 }
@@ -378,6 +390,34 @@ NodeInfo RoutingTable::GetClosestNode(const NodeId& target_id,
       return node_info;
   }
   return NodeInfo();
+}
+
+NodeInfo RoutingTable::GetClosestTo(const NodeId& node_id, bool backward) {
+  std::unique_lock<std::mutex> lock(mutex_);
+  int sorted_count(PartialSortFromTarget(kNodeId(), nodes_.size(), lock));
+  if (sorted_count == 0)
+    return NodeInfo();
+  auto iterator(std::find_if(nodes_.begin(),
+                             nodes_.end(),
+                             [&](const NodeInfo& node_info) {
+                               return node_info.node_id == node_id;
+                             }));
+  size_t index(std::distance(nodes_.begin(), iterator));
+  if (index == nodes_.size())
+    return NodeInfo();
+  if (backward && (index > 0))
+    return nodes_[index - 1];
+  if (!backward && (index < nodes_.size() - 1))
+    return nodes_[index + 1];
+  return NodeInfo();
+}
+
+NodeInfo RoutingTable::GetFurthestNode() {
+  std::unique_lock<std::mutex> lock(mutex_);
+  int sorted_count(PartialSortFromTarget(kNodeId(), nodes_.size(), lock));
+  if (sorted_count == 0)
+    return NodeInfo();
+  return nodes_[nodes_.size() - 1];
 }
 
 NodeInfo RoutingTable::GetNthClosestNode(const NodeId& target_id, uint16_t node_number) {

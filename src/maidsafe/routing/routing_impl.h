@@ -34,6 +34,7 @@
 #include "maidsafe/routing/routing_api.h"
 #include "maidsafe/routing/routing_table.h"
 #include "maidsafe/routing/timer.h"
+#include "maidsafe/routing/remove_furthest_node.h"
 
 
 namespace maidsafe {
@@ -106,6 +107,7 @@ class Routing::Impl {
   std::unique_ptr<MessageHandler> message_handler_;
   AsioService asio_service_;
   NetworkUtils network_;
+  RemoveFurthestNode remove_furthest_node_;
   Timer timer_;
   boost::asio::deadline_timer re_bootstrap_timer_, recovery_timer_, setup_timer_;
 };

@@ -361,7 +361,12 @@ void ResponseHandler::HandleSuccessAcknowledgementAsReponder(NodeInfo peer,
 void ResponseHandler::HandleSuccessAcknowledgementAsRequestor(std::vector<NodeId> close_ids) {
   for (auto i : close_ids) {
     if (!i.IsZero()) {
-      SendConnectRequest(i);
+      if ((routing_table_.size() < Parameters::greedy_fraction) ||
+          NodeId::CloserToTarget(i,
+                                 routing_table_.GetNthClosestNode(routing_table_.kNodeId(),
+                                     Parameters::greedy_fraction).node_id,
+                                 routing_table_.kNodeId()))
+        SendConnectRequest(i);
     }
   }
 }

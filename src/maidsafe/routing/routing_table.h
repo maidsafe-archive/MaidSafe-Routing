@@ -45,7 +45,8 @@ class RoutingTable {
   RoutingTable(const Fob& fob, bool client_mode);
   void InitialiseFunctors(NetworkStatusFunctor network_status_functor,
                           std::function<void(const NodeInfo&, bool)> remove_node_functor,
-                          CloseNodeReplacedFunctor close_node_replaced_functor);
+                          CloseNodeReplacedFunctor close_node_replaced_functor,
+                          RemoveFurthestUnnecessaryNode remove_furthest_node);
   bool AddNode(const NodeInfo& peer);
   bool CheckNode(const NodeInfo& peer);
   NodeInfo DropNode(const NodeId &node_to_drop, bool routing_only);
@@ -59,6 +60,8 @@ class RoutingTable {
   NodeInfo GetClosestNode(const NodeId& target_id,
                           const std::vector<std::string>& exclude,
                           bool ignore_exact_match = false);
+  NodeInfo GetClosestTo(const NodeId& node_id, bool backward = true);
+  NodeInfo GetFurthestNode();
   // Returns max NodeId if routing table size is less than requested node_number
   NodeInfo GetNthClosestNode(const NodeId& target_id, uint16_t node_number);
   std::vector<NodeId> GetClosestNodes(const NodeId& target_id, uint16_t number_to_get);
@@ -111,6 +114,7 @@ class RoutingTable {
   std::function<void(const NodeInfo&, bool)> remove_node_functor_;
   NetworkStatusFunctor network_status_functor_;
   CloseNodeReplacedFunctor close_node_replaced_functor_;
+  RemoveFurthestUnnecessaryNode remove_furthest_node_;
   std::vector<NodeInfo> nodes_;
 };
 

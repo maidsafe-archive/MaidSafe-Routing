@@ -61,12 +61,17 @@ Routing::Impl::Impl(const Fob& fob, bool client_mode)
       message_handler_(),
       asio_service_(2),
       network_(routing_table_, non_routing_table_),
+      remove_furthest_node_(routing_table_, network_),
       timer_(asio_service_),
       re_bootstrap_timer_(asio_service_.service()),
       recovery_timer_(asio_service_.service()),
       setup_timer_(asio_service_.service()) {
   asio_service_.Start();
-  message_handler_.reset(new MessageHandler(routing_table_, non_routing_table_, network_, timer_));
+  message_handler_.reset(new MessageHandler(routing_table_,
+                                            non_routing_table_,
+                                            network_,
+                                            remove_furthest_node_,
+                                            timer_));
 
   assert((client_mode || fob.identity.IsInitialised()) &&
          "Server Nodes cannot be created without valid keys");
@@ -98,7 +103,10 @@ void Routing::Impl::ConnectFunctors(const Functors& functors) {
                                     [this](const NodeInfo& node, bool internal_rudp_only) {
                                              RemoveNode(node, internal_rudp_only);
                                            },
-                                    functors.close_node_replaced);
+                                    functors.close_node_replaced,
+                                    [this]() {
+                                      remove_furthest_node_.RemoveNodeRequest();
+                                    });
   message_handler_->set_message_received_functor(functors.message_received);
   message_handler_->set_request_public_key_functor(functors.request_public_key);
   network_.set_new_bootstrap_endpoint_functor(functors.new_bootstrap_endpoint);

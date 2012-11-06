@@ -129,6 +129,15 @@ message PingResponse {
   required bytes original_signature = 4;
 }
 
+message RemoveRequest {
+  required bytes peer_id = 1;
+}
+
+message RemoveResponse {
+  required bool success = 1;
+  required bytes peer_id = 2;
+}
+
 enum ConnectResponseType {
   kAccepted = 0;
   kRejected = 1;
