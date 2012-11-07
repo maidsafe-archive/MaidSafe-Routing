@@ -235,13 +235,13 @@ TEST(APITest, FUNC_API_AnonymousNode) {
     };
   // Testing Send
   R3.Send(NodeId(node1.node_info.node_id), NodeId(), "message_from_anonymous node",
-          response_functor, boost::posix_time::seconds(10), true, false);
+          response_functor, boost::posix_time::seconds(10), DestinationType::kDirect, false);
   Sleep(boost::posix_time::seconds(11));  // to allow disconnection
   ResponseFunctor failed_response = [=](const std::vector<std::string> &message) {
       ASSERT_TRUE(message.empty());
     };
   R3.Send(NodeId(node1.node_info.node_id), NodeId(), "message_2_from_anonymous node",
-           failed_response, boost::posix_time::seconds(10), true, false);
+           failed_response, boost::posix_time::seconds(10), DestinationType::kDirect, false);
   Sleep(boost::posix_time::seconds(1));
   rudp::Parameters::bootstrap_connection_lifespan = boost::posix_time::minutes(10);
 }
@@ -315,7 +315,7 @@ TEST(APITest, BEH_API_SendToSelf) {
       response_promise.set_value(true);
     };
   R3.Send(NodeId(node3.node_info.node_id), NodeId(), "message from my node", response_functor,
-          boost::posix_time::seconds(10), true, false);
+          boost::posix_time::seconds(10), DestinationType::kDirect, false);
   EXPECT_TRUE(response_future.timed_wait(boost::posix_time::seconds(10)));
 }
 
@@ -389,7 +389,7 @@ TEST(APITest, BEH_API_ClientNode) {
       response_promise.set_value(true);
     };
   R3.Send(NodeId(node1.node_info.node_id), NodeId(), "message from client node",
-          response_functor, boost::posix_time::seconds(10), true, false);
+          response_functor, boost::posix_time::seconds(10), DestinationType::kDirect, false);
   EXPECT_TRUE(response_future.timed_wait(boost::posix_time::seconds(10)));
 }
 
@@ -482,7 +482,7 @@ TEST(APITest, BEH_API_ClientNodeSameId) {
       response_promise1.set_value(true);
     };
   R3.Send(NodeId(node1.node_info.node_id), NodeId(), "message from client node",
-          response_functor, boost::posix_time::seconds(10), true, false);
+          response_functor, boost::posix_time::seconds(10), DestinationType::kDirect, false);
   EXPECT_TRUE(response_future.timed_wait(boost::posix_time::seconds(10)));
 
   boost::promise<bool> response_promise2;
@@ -494,7 +494,7 @@ TEST(APITest, BEH_API_ClientNodeSameId) {
       response_promise2.set_value(true);
     };
   R4.Send(NodeId(node1.node_info.node_id), NodeId(), "message from client node",
-          response_functor, boost::posix_time::seconds(10), true, false);
+          response_functor, boost::posix_time::seconds(10), DestinationType::kDirect, false);
   EXPECT_TRUE(response_future.timed_wait(boost::posix_time::seconds(10)));
 }
 
@@ -580,7 +580,7 @@ TEST(APITest, BEH_API_ClientNodeWithBootstrapFile) {
       response_promise.set_value(true);
     };
   R3.Send(NodeId(node1.node_info.node_id), NodeId(), "message from client node",
-          response_functor, boost::posix_time::seconds(10), true, false);
+          response_functor, boost::posix_time::seconds(10), DestinationType::kDirect, false);
 
   EXPECT_TRUE(response_future.timed_wait(boost::posix_time::seconds(10)));
   EXPECT_TRUE(fs::remove(bootstrap_file_path));

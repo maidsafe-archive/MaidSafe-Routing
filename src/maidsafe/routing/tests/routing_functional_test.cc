@@ -81,7 +81,7 @@ class RoutingNetworkTest : public GenericNetwork {
             }
             assert(!data.empty() && "Send Data Empty !");
             source_node->Send(NodeId(dest_node->node_id()), NodeId(), data, callable,
-                boost::posix_time::seconds(12), true, false);
+                boost::posix_time::seconds(12), DestinationType::kDirect, false);
           }
         }
       }
@@ -134,7 +134,7 @@ class RoutingNetworkTest : public GenericNetwork {
                                        data,
                                        callable,
                                        boost::posix_time::seconds(static_cast<long>(10 * messages)),  // NOLINT (Fraser)
-                                       false,
+                                       DestinationType::kGroup,
                                        false);
     }
 
@@ -189,7 +189,7 @@ class RoutingNetworkTest : public GenericNetwork {
             data = boost::lexical_cast<std::string>(++message_id) + "<:>" + data;
           }
           source_node->Send(node_id, NodeId(), data, callable,
-              boost::posix_time::seconds(12), true, false);
+              boost::posix_time::seconds(12), DestinationType::kDirect, false);
       }
     }
 
@@ -242,7 +242,7 @@ class RoutingNetworkTest : public GenericNetwork {
     std::string data(RandomAlphaNumericString(512 * 2^10));
     assert(!data.empty() && "Send Data Empty !");
     source_node->Send(node_id, NodeId(), data, callable,
-                      boost::posix_time::seconds(12), true, false);
+                      boost::posix_time::seconds(12), DestinationType::kDirect, false);
 
     if (!no_response_expected) {
       std::unique_lock<std::mutex> lock(mutex);
@@ -660,19 +660,22 @@ TEST_F(RoutingNetworkTest, FUNC_MessagingNetworkChurn) {
                                          // Choose random client nodes for direct message
                                          sender_client->Send(receiver_client->node_id(), NodeId(),
                                                              message, nullptr,
-                                                             boost::posix_time::seconds(2), true,
+                                                             boost::posix_time::seconds(2),
+                                                             DestinationType::kDirect,
                                                              false);
                                          // Choose random client for group message to random env
                                          sender_client->Send(NodeId(NodeId::kRandomId), NodeId(),
                                                              message, nullptr,
-                                                             boost::posix_time::seconds(2), false,
+                                                             boost::posix_time::seconds(2),
+                                                             DestinationType::kGroup,
                                                              false);
 
 
                                          // Choose random vault for group message to random env
                                          vault_node->Send(NodeId(NodeId::kRandomId), NodeId(),
                                                           message, nullptr,
-                                                          boost::posix_time::seconds(2), false,
+                                                          boost::posix_time::seconds(2),
+                                                          DestinationType::kGroup,
                                                           false);
                                          // Wait before going again
                                          Sleep(boost::posix_time::milliseconds(900 +

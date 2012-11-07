@@ -30,6 +30,12 @@ namespace routing {
 
 struct NodeInfo;
 
+enum class DestinationType : int {
+  kDirect = 0,
+  kClosest,
+  kGroup
+};
+
 // If using boost::bind or std::bind, use **shared_from_this** pointers to preserve lifetimes of
 // functors. The ResponseFunctor WILL ensure functors are deleted when the system times out.
 typedef std::function<void(const std::vector<std::string>& /*message*/)> ResponseFunctor;

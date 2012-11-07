@@ -43,9 +43,10 @@ void Routing::Send(const NodeId& destination_id,
                    const std::string& data,
                    ResponseFunctor response_functor,
                    const boost::posix_time::time_duration& timeout,
-                   bool direct,
-                   bool cacheable) {
-  pimpl_->Send(destination_id, group_claim, data, response_functor, timeout, direct, cacheable);
+                   const DestinationType &destination_type,
+                   const bool &cacheable) {
+  pimpl_->Send(destination_id, group_claim, data, response_functor, timeout, destination_type,
+               cacheable);
 }
 
 NodeId Routing::GetRandomExistingNode() const {
