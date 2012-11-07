@@ -173,8 +173,16 @@ std::vector<boost::asio::ip::udp::endpoint> MaidSafeEndpoints() {
 std::vector<boost::asio::ip::udp::endpoint> MaidSafeLocalEndpoints() {
   std::vector<std::string> endpoint_string;
   endpoint_string.reserve(2);
-  endpoint_string.push_back("192.168.0.109");
+#if defined QA_BUILD
+  LOG(kVerbose) << "Appending 192.168.0.130:5483 to bootstrap endpoints";
   endpoint_string.push_back("192.168.0.130");
+#elif defined TESTING
+  LOG(kVerbose) << "Appending 192.168.0.109:5483 to bootstrap endpoints";
+  endpoint_string.push_back("192.168.0.109");
+#endif
+  assert(endpoint_string.size() &&
+         "Either QA_BUILD or TESTING must be defined to use maidsafe local endpoint option");
+
   std::vector<boost::asio::ip::udp::endpoint> maidsafe_endpoints;
   for (auto i : endpoint_string)
     maidsafe_endpoints.push_back(Endpoint(boost::asio::ip::address::from_string(i), 5483));
