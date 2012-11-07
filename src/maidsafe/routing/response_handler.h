@@ -59,15 +59,16 @@ class ResponseHandler : public std::enable_shared_from_this<ResponseHandler> {
   virtual void FindNodes(const protobuf::Message& message);
   virtual void ConnectSuccessAcknowledgement(protobuf::Message& message);
   void set_request_public_key_functor(RequestPublicKeyFunctor request_public_key);
-  void HandleSuccessAcknowledgementAsRequestor(std::vector<NodeId> close_ids);
-  void HandleSuccessAcknowledgementAsReponder(NodeInfo peer, const bool& client,
-                                              std::vector<NodeId> close_ids);
   RequestPublicKeyFunctor request_public_key_functor() const;
 
   friend class test::ResponseHandlerTest_BEH_ConnectAttempts_Test;
 
  private:
   void SendConnectRequest(const NodeId peer_node_id);
+  void CheckAndSendConnectRequest(const NodeId& node_id);
+  void HandleSuccessAcknowledgementAsRequestor(std::vector<NodeId> close_ids);
+  void HandleSuccessAcknowledgementAsReponder(NodeInfo peer, const bool& client,
+                                              std::vector<NodeId> close_ids);
 
   mutable std::mutex mutex_;
   RoutingTable& routing_table_;

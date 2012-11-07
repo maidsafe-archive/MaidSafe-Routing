@@ -216,6 +216,15 @@ bool GenericNode::NonRoutingTableHasNode(const NodeId& node_id) {
          routing_->pimpl_->non_routing_table_.nodes_.end();
 }
 
+NodeInfo GenericNode::GetFurthestNode() {
+  return routing_->pimpl_->routing_table_.GetFurthestNode();
+}
+
+NodeInfo GenericNode::GetNthClosestNode(const NodeId& target_id, uint16_t node_number) {
+  return routing_->pimpl_->routing_table_.GetNthClosestNode(target_id, node_number);
+}
+
+
 testing::AssertionResult GenericNode::DropNode(const NodeId& node_id) {
   LOG(kInfo) << " DropNode " << HexSubstr(routing_->pimpl_->routing_table_.kNodeId_.string())
              << " Removes " << HexSubstr(node_id.string());
@@ -534,6 +543,13 @@ void GenericNetwork::RemoveRandomVault() {
 void GenericNetwork::ClearMessages() {
   for (auto node : this->nodes_)
     node->ClearMessages();
+}
+
+int GenericNetwork::NodeIndex(const NodeId& node_id) {
+  for (size_t index(0); index < nodes_.size(); ++index)
+    if (nodes_[index]->node_id() == node_id)
+      return index;
+  return -1;
 }
 
 uint16_t GenericNetwork::NonClientNodesSize() const {

@@ -99,6 +99,8 @@ class GenericNode {
   void PrintRoutingTable();
   bool RoutingTableHasNode(const NodeId& node_id);
   bool NonRoutingTableHasNode(const NodeId& node_id);
+  NodeInfo GetFurthestNode();
+  NodeInfo GetNthClosestNode(const NodeId& target_id, uint16_t node_number);
   testing::AssertionResult DropNode(const NodeId& node_id);
   std::vector<NodeInfo> RoutingTable() const;
   NodeId GetRandomExistingNode() const;
@@ -156,6 +158,7 @@ class GenericNetwork : public testing::Test {
   void RemoveRandomClient();
   void RemoveRandomVault();
   void ClearMessages();
+  int NodeIndex(const NodeId& node_id);
 
  private:
   uint16_t NonClientNodesSize() const;

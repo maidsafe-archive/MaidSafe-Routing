@@ -30,6 +30,8 @@ RemoveFurthestNode::RemoveFurthestNode(RoutingTable& routing_table, NetworkUtils
     network_(network) {}
 
 void RemoveFurthestNode::RemoveRequest(protobuf::Message& message) {
+  LOG(kVerbose) << "[" << HexSubstr(routing_table_.kNodeId().string())
+                << "] Request to drop, id: "  << message.id();
   protobuf::RemoveResponse remove_response;
   if (message.destination_id() != routing_table_.kFob().identity.string()) {
     // Message not for this node and we should not pass it on.
@@ -38,27 +40,42 @@ void RemoveFurthestNode::RemoveRequest(protobuf::Message& message) {
     return;
   }
   if (!IsRemovable(NodeId(message.source_id()))) {
+    LOG(kVerbose) << "[" << HexSubstr(routing_table_.kNodeId().string())
+                  << "] failed to qualify to drop, id: " << message.id();
     RejectRemoval(message);
   } else {
+    LOG(kVerbose) << "[" << HexSubstr(routing_table_.kNodeId().string())
+                  << "] attempt to drop, id: " << message.id();
     HandleRemoveRequest(NodeId(message.source_id()));
+    message.Clear();
   }
 }
 
 void RemoveFurthestNode::HandleRemoveRequest(const NodeId& node_id) {
+  LOG(kVerbose) << "[" << HexSubstr(routing_table_.kNodeId().string())
+                << "] drops " << HexSubstr(node_id.string());
   routing_table_.DropNode(node_id, false);
 }
 
 bool RemoveFurthestNode::IsRemovable(const NodeId& node_id) {
+  if (routing_table_.size() <= Parameters::closest_nodes_size)
+    return false;
   return !routing_table_.IsThisNodeInRange(node_id, Parameters::closest_nodes_size);
 }
 
 void RemoveFurthestNode::RejectRemoval(protobuf::Message& message) {
   protobuf::RemoveResponse remove_response;
   message.clear_data();
+  message.clear_route_history();
   message.set_request(false);
   remove_response.set_success(false);
   remove_response.set_peer_id(routing_table_.kFob().identity.string());
+  message.set_hops_to_live(Parameters::hops_to_live);
+  message.set_destination_id(message.source_id());
+  message.set_source_id(routing_table_.kNodeId().string());
+  assert(remove_response.IsInitialized() && "Remove Response is not initialised");
   message.add_data(remove_response.SerializeAsString());
+  assert(message.IsInitialized() && "Message is not initialised");
 }
 
 void RemoveFurthestNode::RemoveResponse(protobuf::Message& message) {
@@ -79,7 +96,8 @@ void RemoveFurthestNode::RemoveResponse(protobuf::Message& message) {
                                                       routing_table_.kNodeId(),
                                                       routing_table_.kConnectionId()));
         LOG(kInfo) << "Request to remove " << HexSubstr(remove_request.destination_id())
-                   << " is prepared";
+                   << " is re-prepared, message id:" << message.id();
+        remove_request.set_id(message.id());
         network_.SendToDirect(remove_request, next_node.node_id, next_node.connection_id);
       }
     }
@@ -94,9 +112,8 @@ void RemoveFurthestNode::RemoveNodeRequest() {
                                          routing_table_.kNodeId(),
                                          routing_table_.kConnectionId()));
   LOG(kInfo) << "Request to remove " << HexSubstr(message.destination_id())
-             << " is prepared";
+             << " is prepared, message id: " << message.id();
   network_.SendToDirect(message, furthest_node.node_id, furthest_node.connection_id);
-  LOG(kVerbose) << "RemoveFurthestNode::RemoveNodeRequest()";
 }
 
 }  // namespace routing
