@@ -12,8 +12,6 @@
 
 #include "maidsafe/routing/cache_manager.h"
 
-#include "maidsafe/common/crypto.h"
-
 #include "maidsafe/routing/parameters.h"
 #include "maidsafe/routing/routing_pb.h"
 
@@ -22,35 +20,30 @@ namespace maidsafe {
 
 namespace routing {
 
-CacheManager::CacheManager() : cache_chunks_(), mutex_() {}
+CacheManager::CacheManager() : have_cache_data_(), store_cache_data_() {}
+
+void CacheManager::InitialiseFunctors(HaveCacheDataFunctor have_cache_data,
+                                      StoreCacheDataFunctor store_cache_data) {
+  assert(have_cache_data);
+  assert(store_cache_data);
+  have_cache_data_ = have_cache_data;
+  store_cache_data_ = store_cache_data;
+}
 
 void CacheManager::AddToCache(const protobuf::Message& message) {
-  try {
-    // check data is valid TODO FIXME - ask CAA
-    if (crypto::Hash<crypto::SHA512>(message.data(0)).string() != message.source_id())
-      return;
-    std::lock_guard<std::mutex> lock(mutex_);
-    cache_chunks_.push_back(std::make_pair(message.source_id(), message.data(0)));
-    while (cache_chunks_.size() > Parameters::num_chunks_to_cache)
-      cache_chunks_.erase(cache_chunks_.begin());
-  }
-  catch(const std::exception& /*e*/) {
-    // oohps reduce cache size quickly
-    Parameters::num_chunks_to_cache = Parameters::num_chunks_to_cache / 2;
-    std::lock_guard<std::mutex> lock(mutex_);
-    while (cache_chunks_.size() > Parameters::num_chunks_to_cache)
-      cache_chunks_.erase(cache_chunks_.begin() + 1);
-  }
+  assert(!message.request());
+  if (store_cache_data_)
+    store_cache_data_(message.data(0));
 }
 
 bool CacheManager::GetFromCache(protobuf::Message& message) const {
-  std::lock_guard<std::mutex> lock(mutex_);
-  for (auto it = cache_chunks_.begin(); it != cache_chunks_.end(); ++it) {
-    if ((*it).first == message.source_id()) {
-      message.set_destination_id(message.source_id());
-      message.add_data((*it).second);
-      message.set_direct(true);
-      message.set_type(-message.type());
+  assert(message.request());
+  if (have_cache_data_) {
+    std::string data(message.data(0));
+    have_cache_data_(data);
+    if (!data.empty()) {
+
+      // TODO(Prakash) : Prepate response
       return true;
     }
   }
@@ -58,4 +51,5 @@ bool CacheManager::GetFromCache(protobuf::Message& message) const {
 }
 
 }  // namespace routing
+
 }  // namespace maidsafe

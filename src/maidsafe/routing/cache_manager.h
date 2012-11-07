@@ -13,11 +13,9 @@
 #ifndef MAIDSAFE_ROUTING_CACHE_MANAGER_H_
 #define MAIDSAFE_ROUTING_CACHE_MANAGER_H_
 
-#include <mutex>
 #include <string>
-#include <utility>
-#include <vector>
 
+#include "maidsafe/routing/api_config.h"
 
 namespace maidsafe {
 
@@ -28,6 +26,8 @@ namespace protobuf { class Message; }
 class CacheManager {
  public:
   CacheManager();
+  void InitialiseFunctors(HaveCacheDataFunctor have_cache_data,
+                          StoreCacheDataFunctor store_cache_data);
   void AddToCache(const protobuf::Message& message);
   bool GetFromCache(protobuf::Message& message) const;
 
@@ -35,8 +35,9 @@ class CacheManager {
   CacheManager(const CacheManager&);
   CacheManager(const CacheManager&&);
   CacheManager& operator=(const CacheManager&);
-  std::vector<std::pair<std::string, std::string>> cache_chunks_;
-  mutable std::mutex mutex_;
+
+  HaveCacheDataFunctor have_cache_data_;
+  StoreCacheDataFunctor store_cache_data_;
 };
 
 }  // namespace routing

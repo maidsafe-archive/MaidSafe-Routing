@@ -54,7 +54,7 @@ typedef std::function<void(const std::string& /*message*/,
 typedef std::function<void(asymm::PublicKey /*public_key*/)> GivePublicKeyFunctor;
 typedef std::function<void(NodeId /*node Id*/, GivePublicKeyFunctor)> RequestPublicKeyFunctor;
 
-typedef std::function<bool(const std::string& /*data*/)> HaveCacheDataFunctor;
+typedef std::function<bool(std::string& /*data*/)> HaveCacheDataFunctor;
 typedef std::function<void(const std::string& /*data*/)> StoreCacheDataFunctor;
 
 // This functor fires a number from 0 to 100 and represents % network health.
