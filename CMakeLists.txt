@@ -79,8 +79,8 @@ ms_add_executable(routing_node "Tools"  "${PROJECT_SOURCE_DIR}/src/maidsafe/tool
 target_link_libraries(maidsafe_routing maidsafe_rudp maidsafe_utilities)
 target_link_libraries(TESTrouting maidsafe_routing)
 target_link_libraries(create_lifestuff_bootstrap maidsafe_routing)
-target_link_libraries(routing_key_helper maidsafe_routing ${BoostProgramOptionsLibs})
-target_link_libraries(routing_node maidsafe_routing ${BoostProgramOptionsLibs})
+target_link_libraries(routing_key_helper maidsafe_routing)
+target_link_libraries(routing_node maidsafe_routing)
 
 rename_outdated_built_exes()
 
@@ -88,6 +88,11 @@ rename_outdated_built_exes()
 # Set compiler and linker flags                                                                   #
 ###################################################################################################
 include(maidsafe_standard_flags)
+
+if(QA_BUILD)
+  add_definitions(-DQA_BUILD)
+endif()
+
 ms_disable_warnings(${SOURCE_PROTO_FILES_ROUTING_DIR})
 if(UNIX)
   set_source_files_properties(

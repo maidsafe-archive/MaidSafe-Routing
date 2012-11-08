@@ -44,7 +44,7 @@
 #include "maidsafe/private/chunk_actions/chunk_type.h"
 #include "maidsafe/private/chunk_store/buffered_chunk_store.h"
 #include "maidsafe/private/chunk_store/remote_chunk_store.h"
-#include "maidsafe/private/process_management/client_controller.h"
+#include "maidsafe/private/lifestuff_manager/client_controller.h"
 #include "maidsafe/private/utils/utilities.h"
 
 #include "maidsafe/routing/node_info.h"
