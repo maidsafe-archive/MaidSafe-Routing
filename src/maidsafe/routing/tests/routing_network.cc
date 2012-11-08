@@ -283,17 +283,18 @@ void GenericNode::PrintRoutingTable() {
             << "Routing table size: " << routing_->pimpl_->routing_table_.nodes_.size()
             << std::endl;
   {
-    std::lock_guard<std::mutex> lock(routing_->pimpl_->routing_table_.mutex_);
-    for (auto node_info : routing_->pimpl_->routing_table_.nodes_) {
-      std::cout << "\tNodeId : " << HexSubstr(node_info.node_id.string()) << std::endl;
-    }
-  }
-  std::cout << "[" << HexSubstr(node_info_plus_->node_info.node_id.string())
-            << "]'s Non-RoutingTable : "
-            << " :"<< std::endl;
-  std::lock_guard<std::mutex> lock(routing_->pimpl_->non_routing_table_.mutex_);
-  for (auto node_info : routing_->pimpl_->non_routing_table_.nodes_) {
-    std::cout << "\tNodeId : " << HexSubstr(node_info.node_id.string()) << std::endl;
+    std::cout << routing_->pimpl_->routing_table_.PrintRoutingTable();
+//    std::lock_guard<std::mutex> lock(routing_->pimpl_->routing_table_.mutex_);
+//    for (auto node_info : routing_->pimpl_->routing_table_.nodes_) {
+//      std::cout << "\tNodeId : " << HexSubstr(node_info.node_id.string()) << std::endl;
+//    }
+//  }
+//  std::cout << "[" << HexSubstr(node_info_plus_->node_info.node_id.string())
+//            << "]'s Non-RoutingTable : "
+//            << " :"<< std::endl;
+//  std::lock_guard<std::mutex> lock(routing_->pimpl_->non_routing_table_.mutex_);
+//  for (auto node_info : routing_->pimpl_->non_routing_table_.nodes_) {
+//    std::cout << "\tNodeId : " << HexSubstr(node_info.node_id.string()) << std::endl;
   }
 }
 
@@ -609,7 +610,7 @@ void GenericNetwork::AddNodeDetails(NodePtr node) {
     std::unique_lock<std::mutex> lock(mutex);
     auto result = cond_var->wait_for(lock, std::chrono::seconds(20));
     EXPECT_EQ(result, std::cv_status::no_timeout);
-    Sleep(boost::posix_time::millisec(1600));
+    Sleep(boost::posix_time::millisec(2600));
   }
   PrintRoutingTables();
 }

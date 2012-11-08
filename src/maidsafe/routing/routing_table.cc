@@ -197,7 +197,7 @@ bool RoutingTable::IsThisNodeClosestTo(const NodeId& target_id, bool ignore_exac
     return false;
   }
   NodeInfo closest_node(GetClosestNode(target_id, ignore_exact_match));
-  return (closest_node.bucket == NodeInfo::kInvalidBucket) ? true :
+  return (closest_node.bucket == NodeInfo::kInvalidBucket) ? false :
          NodeId::CloserToTarget(kNodeId_, closest_node.node_id, target_id);
 }
 
@@ -501,14 +501,22 @@ std::string RoutingTable::PrintRoutingTable() {
   std::vector<NodeInfo> rt;
   {
     std::lock_guard<std::mutex> lock(mutex_);
+    std::sort(nodes_.begin(),
+              nodes_.end(),
+              [&](const NodeInfo& lhs, const NodeInfo& rhs) {
+                return NodeId::CloserToTarget(lhs.node_id, rhs.node_id, kNodeId_);
+              });
     rt = nodes_;
   }
   std::string s = "\n\n[" + DebugId(kNodeId_) +
       "] This node's own routing table and peer connections:\n" +
-      "Routing table size: " + boost::lexical_cast<std::string>(nodes_.size()) + "\n";
+      "Routing table size: " + boost::lexical_cast<std::string>(nodes_.size()) + "\n" +
+      "Binary: " + (kNodeId_.ToStringEncoded(NodeId::kBinary)).substr(0, 32) + "\n";
   for (auto node : rt) {
-    s += std::string("\tPeer ") + "[" + DebugId(node.node_id) + "]"+ "-->";
-    s += DebugId(node.connection_id)+ "\n";
+    s += std::string("\tPeer ") + "[" + DebugId(node.node_id) + "]" + "-->";
+    s += DebugId(node.connection_id) + " && ";
+    s += (node.node_id.ToStringEncoded(NodeId::kBinary)).substr(0, 32) + " xored ";
+    s += DebugId(kNodeId_ ^ node.node_id) + "\n";
   }
   s += "\n\n";
   return s;

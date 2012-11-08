@@ -552,7 +552,7 @@ TEST_F(RoutingNetworkTest, FUNC_SendToClientWithSameId) {
 }
 
 TEST_F(RoutingNetworkTest, FUNC_FurthestNodeRemoved) {
-  this->SetUpNetwork(24);
+  this->SetUpNetwork(Parameters::max_routing_table_size * 4 / 3);
   bool drop(false);
   // B = find furthest node from a node A
   // add  a node in a network with id close to of node A
@@ -561,6 +561,10 @@ TEST_F(RoutingNetworkTest, FUNC_FurthestNodeRemoved) {
   size_t random_index(RandomUint32() % this->nodes_.size());
   NodeId new_node_id(GenerateUniqueRandomId(this->nodes_[random_index]->node_id(), 20));
   NodeInfo furthest_node_info(this->nodes_[random_index]->GetFurthestNode());
+  LOG(kVerbose) << "Random node: " << HexSubstr(this->nodes_[random_index]->node_id().string())
+                << "\nNew node: " << HexSubstr(new_node_id.string())
+                << "\nFurthest node " << HexSubstr(furthest_node_info.node_id.string());
+
   int furthest_node_index(this->nodes_[this->NodeIndex(furthest_node_info.node_id)]);
   NodeInfo nth_closest(
       this->nodes_[furthest_node_index]->GetNthClosestNode(furthest_node_info.node_id,
@@ -575,7 +579,7 @@ TEST_F(RoutingNetworkTest, FUNC_FurthestNodeRemoved) {
                              furthest_node_info.node_id))
     drop = true;
   this->AddNode(false, new_node_id);
-  Sleep(boost::posix_time::seconds(1));
+  Sleep(boost::posix_time::seconds(3));
   if (drop) {
     LOG(kVerbose) << "A successful drop is expected.";
     EXPECT_FALSE(this->nodes_[random_index]->RoutingTableHasNode(furthest_node_info.node_id));
