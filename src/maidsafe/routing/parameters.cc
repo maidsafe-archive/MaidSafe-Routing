@@ -48,7 +48,7 @@ bool Parameters::append_maidsafe_local_endpoints(true);
 #else
 bool Parameters::append_maidsafe_local_endpoints(false);
 #endif
-
+bool Parameters::caching(false);
 }  // namespace routing
 
 }  // namespace maidsafe

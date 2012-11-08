@@ -75,7 +75,6 @@ class MessageHandler {
   void HandleDirectMessageAsClosestNode(protobuf::Message& message);
   void HandleGroupMessageAsClosestNode(protobuf::Message& message);
   void HandleMessageAsFarNode(protobuf::Message& message);
-  void HandleGroupMessage(protobuf::Message& message);
   void HandleRelayRequest(protobuf::Message& message);
   void HandleGroupMessageToSelfId(protobuf::Message& message);
   bool IsRelayResponseForThisNode(protobuf::Message& message);
@@ -85,7 +84,8 @@ class MessageHandler {
   void HandleMessageForNonRoutingNodes(protobuf::Message& message);
   void HandleDirectRelayRequestMessageAsClosestNode(protobuf::Message& message);
   void HandleGroupRelayRequestMessageAsClosestNode(protobuf::Message& message);
-//  bool CheckAndSendToLocalClients(protobuf::Message& message);
+  void HandleCacheLookup(protobuf::Message& message);
+  void StoreCacheCopy(const protobuf::Message& message);
 
   friend class test::MessageHandlerTest;
   friend class test::MessageHandlerTest_BEH_HandleInvalidMessage_Test;
@@ -97,8 +97,8 @@ class MessageHandler {
   RoutingTable& routing_table_;
   NonRoutingTable& non_routing_table_;
   NetworkUtils& network_;
+  std::unique_ptr<CacheManager> cache_manager_;
   Timer& timer_;
-  CacheManager cache_manager_;
   std::shared_ptr<ResponseHandler> response_handler_;
   std::shared_ptr<Service> service_;
   MessageReceivedFunctor message_received_functor_;

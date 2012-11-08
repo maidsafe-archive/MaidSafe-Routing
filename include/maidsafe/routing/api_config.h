@@ -47,6 +47,7 @@ typedef std::function<void(const std::string& /*message*/)> ReplyFunctor;
 // This is called on any message received that is NOT a reply to a request made by the Send method.
 typedef std::function<void(const std::string& /*message*/,
                            const NodeId& /*group claim*/,
+                           const bool& /*cache_lookup*/,
                            ReplyFunctor /*reply functor*/)> MessageReceivedFunctor;
 
 // This is fired to validate a new peer node. User is supposed to validate the node and call

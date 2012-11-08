@@ -190,7 +190,7 @@ TEST(APITest, FUNC_API_AnonymousNode) {
         give_key((*itr).second.keys.public_key);
     };
 
-  functors1.message_received = [&] (const std::string& message, const NodeId&,
+  functors1.message_received = [&] (const std::string& message, const NodeId&, const bool&,
                                      ReplyFunctor reply_functor) {
       reply_functor("response to " + message);
       LOG(kVerbose) << "Message received and replied to message !!";
@@ -270,7 +270,7 @@ TEST(APITest, BEH_API_SendToSelf) {
         give_key((*itr).second.keys.public_key);
     };
 
-  functors1.message_received = [&] (const std::string& message, const NodeId&,
+  functors1.message_received = [&] (const std::string& message, const NodeId&, const bool&,
                                      ReplyFunctor reply_functor) {
       reply_functor("response to " + message);
       LOG(kVerbose) << "Message received and replied to message !!";
@@ -343,7 +343,7 @@ TEST(APITest, BEH_API_ClientNode) {
         give_key((*itr).second.keys.public_key);
     };
 
-  functors1.message_received = [&] (const std::string& message, const NodeId&,
+  functors1.message_received = [&] (const std::string& message, const NodeId&, const bool&,
                                     ReplyFunctor reply_functor) {
       reply_functor("response to " + message);
         LOG(kVerbose) << "Message received and replied to message !!";
@@ -418,7 +418,7 @@ TEST(APITest, BEH_API_ClientNodeSameId) {
         give_key((*itr).second.keys.public_key);
     };
 
-  functors1.message_received = [&] (const std::string& message, const NodeId&,
+  functors1.message_received = [&] (const std::string& message, const NodeId&, const bool&,
                                     ReplyFunctor reply_functor) {
       reply_functor("response to " + message);
         LOG(kVerbose) << "Message received and replied to message !!";
@@ -522,7 +522,7 @@ TEST(APITest, BEH_API_ClientNodeWithBootstrapFile) {
         give_key((*itr).second.keys.public_key);
     };
 
-  functors1.message_received = [&] (const std::string& message, const NodeId&,
+  functors1.message_received = [&] (const std::string& message, const NodeId&, const bool&,
                                     ReplyFunctor reply_functor) {
       reply_functor("response to " + message);
       LOG(kVerbose) << "Message received and replied to message !!";
@@ -762,7 +762,7 @@ TEST(APITest, BEH_API_NodeNetworkWithClient) {
         give_key((*itr).second.keys.public_key);
   };
 
-  functors.message_received = [&] (const std::string& message, const NodeId&,
+  functors.message_received = [&] (const std::string& message, const NodeId&, const bool&,
                                    ReplyFunctor reply_functor) {
      reply_functor("response to " + message);
       LOG(kVerbose) << "Message received and replied to message !!";
@@ -771,7 +771,7 @@ TEST(APITest, BEH_API_NodeNetworkWithClient) {
   Functors client_functors;
   client_functors.network_status = [](const int&) {};  // NOLINT (Fraser)
   client_functors.request_public_key = functors.request_public_key;
-  client_functors.message_received = [&] (const std::string &, const NodeId&,
+  client_functors.message_received = [&] (const std::string &, const NodeId&, const bool&,
                                           ReplyFunctor /*reply_functor*/) {
       ASSERT_TRUE(false);  //  Client should not receive incoming message
     };

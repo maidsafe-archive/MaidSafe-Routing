@@ -23,20 +23,25 @@ namespace routing {
 
 namespace protobuf { class Message; }
 
+class NetworkUtils;
+
 class CacheManager {
  public:
-  CacheManager();
-  void InitialiseFunctors(HaveCacheDataFunctor have_cache_data,
+  CacheManager(const NodeId& node_id, NetworkUtils &network);
+
+  void InitialiseFunctors(MessageReceivedFunctor message_received_functor,
                           StoreCacheDataFunctor store_cache_data);
   void AddToCache(const protobuf::Message& message);
-  bool GetFromCache(protobuf::Message& message) const;
+  void HandleGetFromCache(protobuf::Message& message);
 
  private:
   CacheManager(const CacheManager&);
   CacheManager(const CacheManager&&);
   CacheManager& operator=(const CacheManager&);
 
-  HaveCacheDataFunctor have_cache_data_;
+  const NodeId kNodeId_;
+  NetworkUtils& network_;
+  MessageReceivedFunctor message_received_functor_;
   StoreCacheDataFunctor store_cache_data_;
 };
 
