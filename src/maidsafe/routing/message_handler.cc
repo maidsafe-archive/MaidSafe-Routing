@@ -173,6 +173,11 @@ void MessageHandler::HandleDirectMessageAsClosestNode(protobuf::Message& message
       return;
     }
   } else {
+    if (IsCacheableRequest(message))
+      return HandleCacheLookup(message);  // forwarding message is done by cache manager
+    else if (IsCacheableResponse(message))
+      StoreCacheCopy(message);  //  Upper layer should take this on seperate thread
+
     return network_.SendToClosestNode(message);
   }
 }
@@ -184,6 +189,11 @@ void MessageHandler::HandleGroupMessageAsClosestNode(protobuf::Message& message)
   if (!routing_table_.IsThisNodeClosestTo(NodeId(message.destination_id()), !IsDirect(message)) &&
       !have_node_with_group_id) {
     LOG(kInfo) << "This node is not closest, passing it on." << " id: " << message.id();
+    if (IsCacheableRequest(message))
+      return HandleCacheLookup(message);  // forwarding message is done by cache manager
+    else if (IsCacheableResponse(message))
+      StoreCacheCopy(message);  // Upper layer should take this on seperate thread
+
     return network_.SendToClosestNode(message);
   }
 
@@ -485,12 +495,25 @@ void MessageHandler::set_request_public_key_functor(
 }
 
 void MessageHandler::HandleCacheLookup(protobuf::Message& message) {
+  assert(!routing_table_.client_mode());
   assert(IsCacheable(message) && IsRequest(message));
   cache_manager_->HandleGetFromCache(message);
 }
 
 void MessageHandler::StoreCacheCopy(const protobuf::Message& message) {
+  assert(!routing_table_.client_mode());
+  assert(IsCacheable(message) && !IsRequest(message));
   cache_manager_->AddToCache(message);
+}
+
+bool MessageHandler::IsCacheableRequest(const protobuf::Message& message) {
+  return (IsNodeLevelMessage(message) && Parameters::caching && !routing_table_.client_mode() &&
+          IsCacheable(message) && IsRequest(message));
+}
+
+bool MessageHandler::IsCacheableResponse(const protobuf::Message& message) {
+  return (IsNodeLevelMessage(message) && Parameters::caching && !routing_table_.client_mode()
+          && IsCacheable(message) && !IsRequest(message));
 }
 
 }  // namespace routing
