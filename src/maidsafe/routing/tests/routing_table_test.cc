@@ -283,7 +283,7 @@ TEST(RoutingTableTest, FUNC_GetFurthestNode) {
       ++count;
     }
   }
-  NodeInfo furthest_node(routing_table.GetFurthestNode());
+  NodeInfo furthest_node(routing_table.GetFurthestRemovableNode());
   NodeInfo node_info;
   for (auto node_id : node_ids) {
     if (routing_table.GetNodeInfo(node_id, node_info))

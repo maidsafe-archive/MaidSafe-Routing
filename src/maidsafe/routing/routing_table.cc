@@ -132,7 +132,7 @@ bool RoutingTable::AddOrCheckNode(NodeInfo peer, bool remove) {
 //        new_bootstrap_endpoint_(peer.endpoint);
     }
     if (remove_furthest_node) {
-      LOG(kVerbose) << "Removing furthest node....";
+      LOG(kVerbose) << "[" << DebugId(kNodeId_) <<  "] Removing furthest node....";
       if (remove_furthest_node_)
         remove_furthest_node_();
     }
@@ -197,7 +197,7 @@ bool RoutingTable::IsThisNodeClosestTo(const NodeId& target_id, bool ignore_exac
     return false;
   }
   NodeInfo closest_node(GetClosestNode(target_id, ignore_exact_match));
-  return (closest_node.bucket == NodeInfo::kInvalidBucket) ? false :
+  return (closest_node.bucket == NodeInfo::kInvalidBucket) ? true :
          NodeId::CloserToTarget(kNodeId_, closest_node.node_id, target_id);
 }
 
@@ -412,13 +412,23 @@ NodeInfo RoutingTable::GetClosestTo(const NodeId& node_id, bool backward) {
   return NodeInfo();
 }
 
-NodeInfo RoutingTable::GetFurthestNode() {
+NodeInfo RoutingTable::GetFurthestRemovableNode() {
+  std::vector<NodeInfo> sorted_routing_table;
   std::unique_lock<std::mutex> lock(mutex_);
   int sorted_count(PartialSortFromTarget(kNodeId(), nodes_.size(), lock));
   if (sorted_count == 0)
     return NodeInfo();
-  return nodes_[nodes_.size() - 1];
+  sorted_routing_table = nodes_;
+  for (size_t index(sorted_routing_table.size() - 1);
+       index > Parameters::closest_nodes_size;
+       --index) {
+    PartialSortFromTarget(sorted_routing_table[index].node_id, 2, lock);
+    if (NodeId::CloserToTarget(nodes_[1].node_id, kNodeId(), nodes_[0].node_id))
+        return nodes_[0];
+  }
+  return NodeInfo();
 }
+
 
 NodeInfo RoutingTable::GetNthClosestNode(const NodeId& target_id, uint16_t node_number) {
   assert((node_number > 0) && "Node number starts with position 1");

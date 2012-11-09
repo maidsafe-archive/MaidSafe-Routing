@@ -90,7 +90,7 @@ void RemoveFurthestNode::RemoveResponse(protobuf::Message& message) {
     NodeInfo next_node;
     next_node = routing_table_.GetClosestTo(NodeId(remove_response.peer_id()), true);
     if (next_node.node_id == NodeInfo().node_id) {
-      next_node = routing_table_.GetFurthestNode();
+      next_node = routing_table_.GetFurthestRemovableNode();
       if (next_node.node_id != NodeInfo().node_id) {
         protobuf::Message remove_request(rpcs::Remove(next_node.node_id,
                                                       routing_table_.kNodeId(),
@@ -107,11 +107,14 @@ void RemoveFurthestNode::RemoveResponse(protobuf::Message& message) {
 }
 
 void RemoveFurthestNode::RemoveNodeRequest() {
-  NodeInfo furthest_node(routing_table_.GetFurthestNode());
+  NodeInfo furthest_node(routing_table_.GetFurthestRemovableNode());
+  if (furthest_node.node_id == NodeInfo().node_id)
+    return;
   protobuf::Message message(rpcs::Remove(furthest_node.node_id,
                                          routing_table_.kNodeId(),
                                          routing_table_.kConnectionId()));
-  LOG(kInfo) << "Request to remove " << HexSubstr(message.destination_id())
+  LOG(kInfo) << "[" << DebugId(routing_table_.kNodeId())
+             << "] Request to remove " << HexSubstr(message.destination_id())
              << " is prepared, message id: " << message.id();
   network_.SendToDirect(message, furthest_node.node_id, furthest_node.connection_id);
 }

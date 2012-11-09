@@ -552,11 +552,11 @@ TEST_F(RoutingNetworkTest, FUNC_SendToClientWithSameId) {
 }
 
 TEST_F(RoutingNetworkTest, FUNC_FurthestNodeRemoved) {
-  this->SetUpNetwork(Parameters::max_routing_table_size * 4 / 3);
+  this->SetUpNetwork(70);
   bool drop(false);
-  // B = find furthest node from a node A
-  // add  a node in a network with id close to of node A
-  // if A is not a closest nodes of B, it has to be dropped from A's RT
+  // B = find furthest node from a node A's RT
+  // add  a node in a network with id close to of node A's Id
+  // if A is not a closest nodes to B, it has to be dropped from A's RT
   // otherwise the next one must be tried
   size_t random_index(RandomUint32() % this->nodes_.size());
   NodeId new_node_id(GenerateUniqueRandomId(this->nodes_[random_index]->node_id(), 20));
@@ -565,20 +565,22 @@ TEST_F(RoutingNetworkTest, FUNC_FurthestNodeRemoved) {
                 << "\nNew node: " << HexSubstr(new_node_id.string())
                 << "\nFurthest node " << HexSubstr(furthest_node_info.node_id.string());
 
-  int furthest_node_index(this->nodes_[this->NodeIndex(furthest_node_info.node_id)]);
-  NodeInfo nth_closest(
-      this->nodes_[furthest_node_index]->GetNthClosestNode(furthest_node_info.node_id,
-                                                           Parameters::closest_nodes_size));
-  if (NodeId::CloserToTarget(nth_closest.node_id,
-                             this->nodes_[random_index]->node_id(),
-                             furthest_node_info.node_id))
-    drop = true;
-  if ((nth_closest.node_id == this->nodes_[random_index]->node_id()) &&
-      NodeId::CloserToTarget(new_node_id,
-                             this->nodes_[random_index]->node_id(),
-                             furthest_node_info.node_id))
-    drop = true;
-  this->AddNode(false, new_node_id);
+  if (this->nodes_[random_index]->RoutingTable().size() > Parameters::greedy_fraction) {
+    int furthest_node_index(this->nodes_[this->NodeIndex(furthest_node_info.node_id)]);
+    NodeInfo nth_closest(
+        this->nodes_[furthest_node_index]->GetNthClosestNode(furthest_node_info.node_id,
+                                                             Parameters::closest_nodes_size));
+    if (NodeId::CloserToTarget(nth_closest.node_id,
+                               this->nodes_[random_index]->node_id(),
+                               furthest_node_info.node_id))
+      drop = true;
+    if ((nth_closest.node_id == this->nodes_[random_index]->node_id()) &&
+        NodeId::CloserToTarget(new_node_id,
+                               this->nodes_[random_index]->node_id(),
+                               furthest_node_info.node_id))
+      drop = true;
+    this->AddNode(false, new_node_id);
+  }
   Sleep(boost::posix_time::seconds(3));
   if (drop) {
     LOG(kVerbose) << "A successful drop is expected.";
