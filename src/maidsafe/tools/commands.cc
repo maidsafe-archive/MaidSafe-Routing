@@ -65,6 +65,7 @@ Commands::Commands(DemoNodePtr demo_node,
   };
   demo_node->functors_.message_received = [this] (const std::string &wrapped_message,
                                                   const NodeId &/*group_claim*/,
+                                                  bool /* cache */,
                                                   const ReplyFunctor &reply_functor) {
     std::string reply_msg(wrapped_message + "+++" + demo_node_->fob().identity.string());
     if (std::string::npos != wrapped_message.find("request_routing_table"))
@@ -151,7 +152,7 @@ void Commands::ZeroStateJoin() {
 }
 
 void Commands::SendAMsg(const int& identity_index, const DestinationType& destination_type,
-                        const std::string &data) {
+                        std::string &data) {
   if ((identity_index >= 0) && (static_cast<uint32_t>(identity_index) >= all_fobs_.size())) {
     std::cout << "ERROR : destination index out of range" << std::endl;
     return;

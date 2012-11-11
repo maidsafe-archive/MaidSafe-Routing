@@ -59,7 +59,7 @@ class Commands {
   void Join();
   void Validate(const NodeId& node_id, GivePublicKeyFunctor give_public_key);
   void SendAMsg(const int& identity_index, const DestinationType& destination_type,
-                const std::string &data);
+                std::string &data);
 
   NodeId CalculateClosests(const NodeId& target_id,
                            std::vector<NodeId>& closests,
