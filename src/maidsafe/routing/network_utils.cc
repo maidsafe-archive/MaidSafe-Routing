@@ -247,7 +247,7 @@ void NetworkUtils::SendTo(const protobuf::Message& message,
                    << " to   " << DebugId(peer_node_id) << "   (id: " << message.id() << ")";
       } else {
         LOG(kError) << "Sending type " << MessageTypeString(message) << " message from "
-                    << kThisId << " to " << DebugId(peer_node_id) <<  " failed with code "
+                    << HexSubstr(kThisId) << " to " << DebugId(peer_node_id) <<  " failed with code "
                     << message_sent << " id: " << message.id();
       }
     };
@@ -323,7 +323,7 @@ void NetworkUtils::RecursiveSendOn(protobuf::Message message,
                    << " dst : " << HexSubstr(message.destination_id());
       } else if (rudp::kSendFailure == message_sent) {
         LOG(kError) << "Sending type " << MessageTypeString(message) << " message from "
-                    << kThisId << " to " << HexSubstr(closest_node.node_id.string())
+                    << HexSubstr(kThisId) << " to " << HexSubstr(closest_node.node_id.string())
                     << " with destination ID " << HexSubstr(message.destination_id())
                     << " failed with code " << message_sent
                     << ".  Will retry to Send.  Attempt count = " << attempt_count + 1
@@ -331,7 +331,7 @@ void NetworkUtils::RecursiveSendOn(protobuf::Message message,
         RecursiveSendOn(message, closest_node, attempt_count + 1);
       } else {
         LOG(kError) << "Sending type " << MessageTypeString(message) << " message from "
-                    << kThisId << " to " << HexSubstr(closest_node.node_id.string())
+                    << HexSubstr(kThisId) << " to " << HexSubstr(closest_node.node_id.string())
                     << " with destination ID " << HexSubstr(message.destination_id())
                     << " failed with code " << message_sent << "  Will remove node."
                      << " message id: " << message.id();

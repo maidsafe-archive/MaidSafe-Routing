@@ -295,8 +295,8 @@ void MessageHandler::HandleMessage(protobuf::Message& message) {
 
   // This node is in closest proximity to this message
   if (routing_table_.IsThisNodeInRange(NodeId(message.destination_id()),
-                                       Parameters::closest_nodes_size) ||
-      routing_table_.IsThisNodeClosestTo(NodeId(message.destination_id()), !message.direct())) {
+                                       Parameters::closest_nodes_size)/* ||
+      routing_table_.IsThisNodeClosestTo(NodeId(message.destination_id()), !message.direct())*/) {
     return HandleMessageAsClosestNode(message);
   } else {
     return HandleMessageAsFarNode(message);
