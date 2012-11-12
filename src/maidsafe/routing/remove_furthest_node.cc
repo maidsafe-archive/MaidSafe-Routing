@@ -60,7 +60,9 @@ void RemoveFurthestNode::HandleRemoveRequest(const NodeId& node_id) {
 bool RemoveFurthestNode::IsRemovable(const NodeId& node_id) {
   if (routing_table_.size() <= Parameters::closest_nodes_size)
     return false;
-  return !routing_table_.IsThisNodeInRange(node_id, Parameters::closest_nodes_size);
+  if (routing_table_.IsThisNodeInRange(node_id, Parameters::closest_nodes_size))
+    return false;
+  return routing_table_.IsRemovable(node_id);
 }
 
 void RemoveFurthestNode::RejectRemoval(protobuf::Message& message) {
@@ -80,7 +82,7 @@ void RemoveFurthestNode::RejectRemoval(protobuf::Message& message) {
 
 void RemoveFurthestNode::RemoveResponse(protobuf::Message& message) {
   protobuf::RemoveResponse remove_response;
-  if (remove_response.ParseFromString(message.data(0))) {
+  if (!remove_response.ParseFromString(message.data(0))) {
     LOG(kError) << "Could not parse remove node response";
     return;
   }

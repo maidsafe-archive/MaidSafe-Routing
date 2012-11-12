@@ -206,6 +206,19 @@ bool RoutingTable::IsConnected(const NodeId& node_id) const {
   return Find(node_id, lock).first;
 }
 
+bool RoutingTable::IsRemovable(const NodeId& node_id) {
+  std::unique_lock<std::mutex> lock(mutex_);
+  int sorted_count(PartialSortFromTarget(node_id, nodes_.size(), lock));
+  if (sorted_count == 0)
+    return false;
+  if (nodes_[0].node_id != node_id)
+    return false;
+  if (NodeId::CloserToTarget(kNodeId(), nodes_[1].node_id, node_id))
+    return false;
+  return true;
+}
+
+
 bool RoutingTable::ConfirmGroupMembers(const NodeId& node1, const NodeId& node2) {
   NodeId difference = NodeId(kFob().identity) ^ FurthestCloseNode();
   return (node1 ^ node2) < difference;
