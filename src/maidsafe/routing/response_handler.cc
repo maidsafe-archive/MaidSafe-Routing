@@ -109,11 +109,6 @@ void ResponseHandler::Connect(protobuf::Message& message) {
       LOG(kError) << "Invalid peer endpoint details";
       return;
     }
-    // Updating bootstrap only for test local network
-    if (!peer_endpoint_pair.external.address().is_unspecified())
-      network_.AddToBootstrapFile(peer_endpoint_pair.external);
-    else
-      network_.AddToBootstrapFile(peer_endpoint_pair.local);
 
     NodeId peer_node_id(connect_response.contact().node_id());
     NodeId peer_connection_id(connect_response.contact().connection_id());
