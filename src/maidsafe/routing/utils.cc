@@ -154,6 +154,10 @@ bool IsDirect(const protobuf::Message& message) {
   return message.direct();
 }
 
+bool IsCacheable(const protobuf::Message& message) {
+  return (message.has_cacheable() && message.cacheable());
+}
+
 bool CheckId(const std::string& id_to_test) {
   return id_to_test.size() == NodeId::kSize;
 }

@@ -313,8 +313,8 @@ void Routing::Impl::Send(const NodeId& destination_id,
                          const std::string& data,
                          const ResponseFunctor& response_functor,
                          const boost::posix_time::time_duration& timeout,
-                         bool direct,
-                         bool cacheable) {
+                         const DestinationType& destination_type,
+                         const bool& cacheable) {
   if (destination_id.IsZero()) {
     LOG(kError) << "Invalid destination ID, aborted send";
     if (response_functor)
@@ -335,7 +335,7 @@ void Routing::Impl::Send(const NodeId& destination_id,
   proto_message.add_data(data);
   proto_message.set_type(static_cast<int32_t>(MessageType::kNodeLevel));
   proto_message.set_cacheable(cacheable);
-  proto_message.set_direct(direct);
+  proto_message.set_direct((DestinationType::kDirect == destination_type));
   proto_message.set_client_node(routing_table_.client_mode());
   proto_message.set_request(true);
   proto_message.set_hops_to_live(Parameters::hops_to_live);
@@ -343,7 +343,7 @@ void Routing::Impl::Send(const NodeId& destination_id,
   if (!group_claim.IsZero())
     proto_message.set_group_claim(group_claim.string());
 
-  if (!direct) {
+  if (DestinationType::kGroup == destination_type) {
     replication = Parameters::node_group_size;
     if (response_functor)
       proto_message.set_id(timer_.AddTask(timeout, response_functor, Parameters::node_group_size));

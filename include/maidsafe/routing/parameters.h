@@ -44,6 +44,7 @@ struct Parameters {
   static boost::posix_time::time_duration connect_rpc_prune_timeout;
   static bool append_maidsafe_endpoints;
   static bool append_maidsafe_local_endpoints;
+  static bool caching;
 
  private:
   Parameters();

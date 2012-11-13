@@ -35,8 +35,10 @@ MessageHandler::MessageHandler(RoutingTable& routing_table,
     : routing_table_(routing_table),
       non_routing_table_(non_routing_table),
       network_(network),
+      cache_manager_(routing_table_.client_mode() ? nullptr :
+                                                    (new CacheManager(routing_table_.kNodeId(),
+                                                                      network_))),
       timer_(timer),
-      cache_manager_(),
       response_handler_(new ResponseHandler(routing_table, non_routing_table, network_)),
       service_(new Service(routing_table, non_routing_table, network_)),
       message_received_functor_() {}
@@ -119,7 +121,7 @@ void MessageHandler::HandleNodeLevelMessageForThisNode(protobuf::Message& messag
     };
     NodeId group_claim(message.has_group_claim() ? NodeId(message.group_claim()) : NodeId());
     if (message_received_functor_)
-      message_received_functor_(message.data(0), group_claim, response_functor);
+      message_received_functor_(message.data(0), group_claim, false, response_functor);
   } else {  // response
     LOG(kInfo) << "[" << DebugId(routing_table_.kNodeId()) << "] rcvd : "
                << MessageTypeString(message) << " from "
@@ -171,6 +173,11 @@ void MessageHandler::HandleDirectMessageAsClosestNode(protobuf::Message& message
       return;
     }
   } else {
+    if (IsCacheableRequest(message))
+      return HandleCacheLookup(message);  // forwarding message is done by cache manager
+    else if (IsCacheableResponse(message))
+      StoreCacheCopy(message);  //  Upper layer should take this on seperate thread
+
     return network_.SendToClosestNode(message);
   }
 }
@@ -182,6 +189,11 @@ void MessageHandler::HandleGroupMessageAsClosestNode(protobuf::Message& message)
   if (!routing_table_.IsThisNodeClosestTo(NodeId(message.destination_id()), !IsDirect(message)) &&
       !have_node_with_group_id) {
     LOG(kInfo) << "This node is not closest, passing it on." << " id: " << message.id();
+    if (IsCacheableRequest(message))
+      return HandleCacheLookup(message);  // forwarding message is done by cache manager
+    else if (IsCacheableResponse(message))
+      StoreCacheCopy(message);  // Upper layer should take this on seperate thread
+
     return network_.SendToClosestNode(message);
   }
 
@@ -231,17 +243,6 @@ void MessageHandler::HandleMessageAsFarNode(protobuf::Message& message) {
                 <<  HexSubstr(message.destination_id())
                 <<" ]; sending on." << " id: " << message.id();
   network_.SendToClosestNode(message);
-}
-
-void MessageHandler::HandleGroupMessage(protobuf::Message& message) {
-  if (!routing_table_.IsThisNodeInRange(NodeId(message.destination_id()), 1))
-    return;
-
-  LOG(kVerbose) << "This node is in closest proximity to this group message";
-  if (IsRoutingMessage(message))
-    HandleRoutingMessage(message);
-  else
-    HandleNodeLevelMessageForThisNode(message);
 }
 
 void MessageHandler::HandleMessage(protobuf::Message& message) {
@@ -491,6 +492,28 @@ void MessageHandler::set_request_public_key_functor(
     RequestPublicKeyFunctor request_public_key_functor) {
   response_handler_->set_request_public_key_functor(request_public_key_functor);
   service_->set_request_public_key_functor(request_public_key_functor);
+}
+
+void MessageHandler::HandleCacheLookup(protobuf::Message& message) {
+  assert(!routing_table_.client_mode());
+  assert(IsCacheable(message) && IsRequest(message));
+  cache_manager_->HandleGetFromCache(message);
+}
+
+void MessageHandler::StoreCacheCopy(const protobuf::Message& message) {
+  assert(!routing_table_.client_mode());
+  assert(IsCacheable(message) && !IsRequest(message));
+  cache_manager_->AddToCache(message);
+}
+
+bool MessageHandler::IsCacheableRequest(const protobuf::Message& message) {
+  return (IsNodeLevelMessage(message) && Parameters::caching && !routing_table_.client_mode() &&
+          IsCacheable(message) && IsRequest(message));
+}
+
+bool MessageHandler::IsCacheableResponse(const protobuf::Message& message) {
+  return (IsNodeLevelMessage(message) && Parameters::caching && !routing_table_.client_mode()
+          && IsCacheable(message) && !IsRequest(message));
 }
 
 }  // namespace routing

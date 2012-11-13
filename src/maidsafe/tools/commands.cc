@@ -65,6 +65,7 @@ Commands::Commands(DemoNodePtr demo_node,
   };
   demo_node->functors_.message_received = [this] (const std::string &wrapped_message,
                                                   const NodeId &/*group_claim*/,
+                                                  bool /* cache */,
                                                   const ReplyFunctor &reply_functor) {
     std::string reply_msg(wrapped_message + "+++" + demo_node_->fob().identity.string());
     if (std::string::npos != wrapped_message.find("request_routing_table"))
@@ -150,7 +151,8 @@ void Commands::ZeroStateJoin() {
   EXPECT_EQ(kSuccess, f1.get());
 }
 
-void Commands::SendAMsg(int identity_index, bool direct, std::string &data) {
+void Commands::SendAMsg(const int& identity_index, const DestinationType& destination_type,
+                        std::string &data) {
   if ((identity_index >= 0) && (static_cast<uint32_t>(identity_index) >= all_fobs_.size())) {
     std::cout << "ERROR : destination index out of range" << std::endl;
     return;
@@ -160,9 +162,10 @@ void Commands::SendAMsg(int identity_index, bool direct, std::string &data) {
     dest_id = NodeId(all_fobs_[identity_index].identity);
 
   std::cout << "Sending a msg from : " << maidsafe::HexSubstr(demo_node_->fob().identity)
-            << " to " << (direct ? ": " : "group : ") << maidsafe::HexSubstr(dest_id.string())
+            << " to " << (destination_type != DestinationType::kGroup ? ": " : "group : ")
+            << maidsafe::HexSubstr(dest_id.string())
             << " , expect receive response from :" << std::endl;
-  uint16_t expected_respodents(direct ? 1 : 4);
+  uint16_t expected_respodents(destination_type != DestinationType::kGroup ? 1 : 4);
   std::vector<NodeId> closests;
   NodeId farthest_closests(CalculateClosests(dest_id, closests, expected_respodents));
   for (auto &node_id : closests)
@@ -194,7 +197,7 @@ void Commands::SendAMsg(int identity_index, bool direct, std::string &data) {
 
   boost::posix_time::ptime now = boost::posix_time::microsec_clock::universal_time();
   demo_node_->Send(dest_id, NodeId(), data, callable,
-                   boost::posix_time::seconds(12), direct, false);
+                   boost::posix_time::seconds(12), destination_type, false);
 
   std::unique_lock<std::mutex> lock(mutex);
   bool result = cond_var.wait_for(lock, std::chrono::seconds(20),
@@ -314,7 +317,7 @@ void Commands::ProcessCommand(const std::string &cmdline) {
     PrintRoutingTable();
   } else if (cmd == "rrt") {
     std::string data("request_routing_table");
-    SendAMsg(boost::lexical_cast<int>(args[0]), true, data);
+    SendAMsg(boost::lexical_cast<int>(args[0]), DestinationType::kDirect, data);
   } else if (cmd == "peer") {
     GetPeer(args[0]);
   } else if (cmd == "zerostatejoin") {
@@ -324,7 +327,7 @@ void Commands::ProcessCommand(const std::string &cmdline) {
   } else if (cmd == "senddirect") {
     std::string data(RandomAlphaNumericString(data_size_));
     if (args.size() == 1) {
-      SendAMsg(boost::lexical_cast<int>(args[0]), true, data);
+      SendAMsg(boost::lexical_cast<int>(args[0]), DestinationType::kDirect, data);
     } else if (args.size() == 2) {
       int count(boost::lexical_cast<int>(args[1]));
       bool infinite(count < 0);
@@ -332,14 +335,14 @@ void Commands::ProcessCommand(const std::string &cmdline) {
         std::cout << " Running infinite messaging test. press Ctrl + C to terminate the program"
                   << std::endl;
       for (auto i(0); (i < count) || infinite; ++i)
-        SendAMsg(boost::lexical_cast<int>(args[0]), true, data);
+        SendAMsg(boost::lexical_cast<int>(args[0]), DestinationType::kDirect, data);
     }
   } else if (cmd == "sendgroup") {
     std::string data(RandomAlphaNumericString(data_size_));
     if (args.empty())
-      SendAMsg(-1, false, data);
+      SendAMsg(-1, DestinationType::kGroup, data);
     else
-      SendAMsg(boost::lexical_cast<int>(args[0]), false, data);
+      SendAMsg(boost::lexical_cast<int>(args[0]), DestinationType::kGroup, data);
   } else if (cmd == "sendmultiple") {
     int num_msg(10);
     if (!args.empty())
@@ -353,10 +356,10 @@ void Commands::ProcessCommand(const std::string &cmdline) {
     std::string data(RandomAlphaNumericString(data_size_));
     boost::posix_time::ptime now = boost::posix_time::microsec_clock::universal_time();
     while (infinite)
-      SendAMsg(RandomUint32() % (all_fobs_.size() / 2), true, data);
+      SendAMsg(RandomUint32() % (all_fobs_.size() / 2), DestinationType::kDirect, data);
 
     for (int i(0); i < num_msg; ++i) {
-      SendAMsg(RandomUint32() % (all_fobs_.size() / 2), true, data);
+      SendAMsg(RandomUint32() % (all_fobs_.size() / 2), DestinationType::kDirect, data);
     }
     std::cout << "Sent " << num_msg << " messages to randomly picked-up targets. Finished in :"
               << boost::posix_time::microsec_clock::universal_time() - now << std::endl;

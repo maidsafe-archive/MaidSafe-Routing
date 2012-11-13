@@ -123,7 +123,9 @@ void GenericNode::InitialiseFunctors() {
   functors_.close_node_replaced = [](const std::vector<NodeInfo>&) {};  // NOLINT (Fraser)
   functors_.message_received = [&] (const std::string& message,
                                     const NodeId&,
+                                    const bool& cache_lookup,
                                     ReplyFunctor reply_functor) {
+                                 assert(!cache_lookup && "CacheLookup should be disabled for test");
                                  LOG(kInfo) << id_ << " -- Received: message : "
                                             << message.substr(0, 10);
                                  std::lock_guard<std::mutex> guard(mutex_);
@@ -183,9 +185,10 @@ void GenericNode::Send(const NodeId& destination_id,
                        const std::string& data,
                        const ResponseFunctor& response_functor,
                        const boost::posix_time::time_duration& timeout,
-                       bool direct,
-                       bool cache) {
-    routing_->Send(destination_id, group_claim, data, response_functor, timeout, direct, cache);
+                       const DestinationType& destination_type,
+                       const bool& cache) {
+    routing_->Send(destination_id, group_claim, data, response_functor, timeout, destination_type,
+                   cache);
 }
 
 void GenericNode::RudpSend(const NodeId& peer_node_id,

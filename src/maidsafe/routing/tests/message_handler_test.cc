@@ -53,6 +53,7 @@ class MessageHandlerTest : public testing::Test {
         close_info_() {
     message_received_functor_ = [this] (const std::string& message,
                                                const NodeId& /*group claim*/,
+                                               const bool& /*cache_lookup*/,
                                                ReplyFunctor reply_functor) {
                                                  MessageReceived(message);
                                                  reply_functor("reply");
