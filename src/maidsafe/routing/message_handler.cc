@@ -235,6 +235,11 @@ void MessageHandler::HandleGroupMessageAsClosestNode(protobuf::Message& message)
 }
 
 void MessageHandler::HandleMessageAsFarNode(protobuf::Message& message) {
+  if (message.has_visited() &&
+      routing_table_.IsThisNodeClosestTo(NodeId(message.destination_id()), !message.direct()) &&
+      !message.direct() &&
+      !message.visited())
+    message.set_visited(true);
   LOG(kVerbose) << "This node is not in closest proximity to this message destination ID [ "
                 <<  HexSubstr(message.destination_id())
                 <<" ]; sending on." << " id: " << message.id();
@@ -295,8 +300,9 @@ void MessageHandler::HandleMessage(protobuf::Message& message) {
 
   // This node is in closest proximity to this message
   if (routing_table_.IsThisNodeInRange(NodeId(message.destination_id()),
-                                       Parameters::closest_nodes_size)/* ||
-      routing_table_.IsThisNodeClosestTo(NodeId(message.destination_id()), !message.direct())*/) {
+                                       Parameters::closest_nodes_size) ||
+      (routing_table_.IsThisNodeClosestTo(NodeId(message.destination_id()), !message.direct()) &&
+       message.visited())) {
     return HandleMessageAsClosestNode(message);
   } else {
     return HandleMessageAsFarNode(message);

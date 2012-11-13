@@ -66,6 +66,7 @@ message Message {
   required bool request = 18;
   optional bytes group_claim = 19;
   optional int32 hops_to_live = 20;
+  optional bool visited = 21;
 }
 
 message SignedMessage {

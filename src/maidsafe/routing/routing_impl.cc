@@ -352,6 +352,7 @@ void Routing::Impl::Send(const NodeId& destination_id,
     proto_message.set_group_claim(group_claim.string());
 
   if (!direct) {
+    proto_message.set_visited(false);
     replication = Parameters::node_group_size;
     if (response_functor)
       proto_message.set_id(timer_.AddTask(timeout, response_functor, Parameters::node_group_size));

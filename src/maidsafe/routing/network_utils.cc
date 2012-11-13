@@ -322,19 +322,20 @@ void NetworkUtils::RecursiveSendOn(protobuf::Message message,
                    << "   (id: " << message.id() << ")"
                    << " dst : " << HexSubstr(message.destination_id());
       } else if (rudp::kSendFailure == message_sent) {
-        LOG(kError) << "Sending type " << MessageTypeString(message) << " message from "
-                    << HexSubstr(kThisId) << " to " << HexSubstr(closest_node.node_id.string())
+        LOG(kError) << "Sending type " << MessageTypeString(message)
+                    << " message from " << HexSubstr(routing_table_.kNodeId().string())
+                    << " to " << HexSubstr(closest_node.node_id.string())
                     << " with destination ID " << HexSubstr(message.destination_id())
                     << " failed with code " << message_sent
                     << ".  Will retry to Send.  Attempt count = " << attempt_count + 1
-                     << " id: " << message.id();
+                    << " id: " << message.id();
         RecursiveSendOn(message, closest_node, attempt_count + 1);
       } else {
         LOG(kError) << "Sending type " << MessageTypeString(message) << " message from "
                     << HexSubstr(kThisId) << " to " << HexSubstr(closest_node.node_id.string())
                     << " with destination ID " << HexSubstr(message.destination_id())
                     << " failed with code " << message_sent << "  Will remove node."
-                     << " message id: " << message.id();
+                    << " message id: " << message.id();
         {
           std::lock_guard<std::mutex> lock(running_mutex_);
           if (!running_)

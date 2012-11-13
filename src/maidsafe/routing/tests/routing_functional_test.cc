@@ -296,7 +296,7 @@ TEST_F(RoutingNetworkTest, FUNC_ClientSend) {
 
 TEST_F(RoutingNetworkTest, FUNC_SendMulti) {
   this->SetUpNetwork(kServerSize);
-  EXPECT_TRUE(this->Send(40));
+  EXPECT_TRUE(this->Send(4));
 }
 
 TEST_F(RoutingNetworkTest, DISABLED_FUNC_ExtendedSendMulti) {
@@ -552,7 +552,7 @@ TEST_F(RoutingNetworkTest, FUNC_SendToClientWithSameId) {
 }
 
 TEST_F(RoutingNetworkTest, FUNC_FurthestNodeRemoved) {
-  this->SetUpNetwork(85);
+  this->SetUpNetwork(64);
   bool drop(false);
   // B = find furthest node from a node A's RT
   // add  a node in a network with id close to of node A's Id

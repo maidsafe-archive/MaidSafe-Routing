@@ -139,6 +139,7 @@ protobuf::Message FindNodes(const NodeId& node_id,
   message.set_request(true);
   message.add_route_history(this_node_id.string());
   message.set_client_node(false);
+  message.set_visited(false);
   if (!relay_message) {
     message.set_source_id(this_node_id.string());
   } else {
