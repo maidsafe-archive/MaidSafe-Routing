@@ -173,10 +173,10 @@ void MessageHandler::HandleDirectMessageAsClosestNode(protobuf::Message& message
       return;
     }
   } else {
-    if (IsCacheableRequest(message))
-      return HandleCacheLookup(message);  // forwarding message is done by cache manager
-    else if (IsCacheableResponse(message))
-      StoreCacheCopy(message);  //  Upper layer should take this on seperate thread
+    // if (IsCacheableRequest(message))
+    //   return HandleCacheLookup(message);  // forwarding message is done by cache manager
+    // else if (IsCacheableResponse(message))
+    //   StoreCacheCopy(message);  //  Upper layer should take this on seperate thread
 
     return network_.SendToClosestNode(message);
   }
@@ -189,10 +189,10 @@ void MessageHandler::HandleGroupMessageAsClosestNode(protobuf::Message& message)
   if (!routing_table_.IsThisNodeClosestTo(NodeId(message.destination_id()), !IsDirect(message)) &&
       !have_node_with_group_id) {
     LOG(kInfo) << "This node is not closest, passing it on." << " id: " << message.id();
-    if (IsCacheableRequest(message))
-      return HandleCacheLookup(message);  // forwarding message is done by cache manager
-    else if (IsCacheableResponse(message))
-      StoreCacheCopy(message);  // Upper layer should take this on seperate thread
+    // if (IsCacheableRequest(message))
+    //   return HandleCacheLookup(message);  // forwarding message is done by cache manager
+    // else if (IsCacheableResponse(message))
+    //   StoreCacheCopy(message);  // Upper layer should take this on seperate thread
 
     return network_.SendToClosestNode(message);
   }
@@ -256,6 +256,10 @@ void MessageHandler::HandleMessage(protobuf::Message& message) {
   // Decrement hops_to_live
   message.set_hops_to_live(message.hops_to_live() - 1);
 
+  if (!routing_table_.client_mode() && IsCacheableRequest(message))
+    return HandleCacheLookup(message);  // forwarding message is done by cache manager
+  if (!routing_table_.client_mode() && IsCacheableResponse(message))
+    StoreCacheCopy(message);  //  Upper layer should take this on seperate thread
   // If group message request to self id
   if (IsGroupMessageRequestToSelfId(message))
     return HandleGroupMessageToSelfId(message);
