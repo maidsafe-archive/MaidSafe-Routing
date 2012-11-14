@@ -193,6 +193,13 @@ void MessageHandler::HandleGroupMessageAsClosestNode(protobuf::Message& message)
     return network_.SendToClosestNode(message);
   }
 
+  if (message.has_visited() &&
+      !message.visited() &&
+      (routing_table_.size() > Parameters::closest_nodes_size)) {
+    message.set_visited(true);
+    return network_.SendToClosestNode(message);
+  }
+
   // This node is closest so will send to all replicant nodes
   uint16_t replication(static_cast<uint16_t>(message.replication()));
   if ((replication < 1) || (replication > Parameters::node_group_size)) {
