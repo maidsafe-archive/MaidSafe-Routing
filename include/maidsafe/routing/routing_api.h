@@ -81,8 +81,8 @@ class Routing {
             const std::string& data,           // message content (serialised data)
             ResponseFunctor response_functor,
             const boost::posix_time::time_duration& timeout,
-            bool direct,                       // whether this is to a close node group or direct
-            bool cacheable);
+            const DestinationType& destination_type,  // whether this is to a direct/close/group
+            const bool& cacheable);
 
   // A queue with recently found nodes that can be extracted for upper layers to communicate with.
   NodeId GetRandomExistingNode() const;

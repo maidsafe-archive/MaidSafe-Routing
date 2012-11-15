@@ -90,8 +90,8 @@ class GenericNode {
             const std::string& data,
             const ResponseFunctor& response_functor,
             const boost::posix_time::time_duration& timeout,
-            bool direct,
-            bool cache);
+            const DestinationType& destination_type,
+            const bool& cache);
   void SendToClosestNode(const protobuf::Message& message);
   void RudpSend(const NodeId& peer_endpoint,
                 const protobuf::Message& message,

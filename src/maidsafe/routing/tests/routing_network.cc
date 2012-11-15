@@ -121,9 +121,12 @@ GenericNode::~GenericNode() {}
 
 void GenericNode::InitialiseFunctors() {
   functors_.close_node_replaced = [](const std::vector<NodeInfo>&) {};  // NOLINT (Fraser)
-  functors_.message_received = [&] (const std::string& message,
-                                    const NodeId&,
-                                    ReplyFunctor reply_functor) {
+  functors_.message_received = [this] (const std::string& message,
+                                       const NodeId&,
+                                       const bool& cache_lookup,
+                                       ReplyFunctor reply_functor) {
+                                 assert(!cache_lookup && "CacheLookup should be disabled for test");
+                                 static_cast<void>(cache_lookup);
                                  LOG(kInfo) << id_ << " -- Received: message : "
                                             << message.substr(0, 10);
                                  std::lock_guard<std::mutex> guard(mutex_);
@@ -183,9 +186,10 @@ void GenericNode::Send(const NodeId& destination_id,
                        const std::string& data,
                        const ResponseFunctor& response_functor,
                        const boost::posix_time::time_duration& timeout,
-                       bool direct,
-                       bool cache) {
-    routing_->Send(destination_id, group_claim, data, response_functor, timeout, direct, cache);
+                       const DestinationType& destination_type,
+                       const bool& cache) {
+    routing_->Send(destination_id, group_claim, data, response_functor, timeout, destination_type,
+                   cache);
 }
 
 void GenericNode::RudpSend(const NodeId& peer_node_id,
@@ -276,25 +280,22 @@ void GenericNode::set_expected(const int& expected) {
 }
 
 void GenericNode::PrintRoutingTable() {
-  std::cout << "[" << HexSubstr(node_info_plus_->node_info.node_id.string())
+  LOG(kInfo) << "[" << HexSubstr(node_info_plus_->node_info.node_id.string())
             << "]'s RoutingTable "
 
             << (IsClient() ? " (Client)" : " (Vault) :")
-            << "Routing table size: " << routing_->pimpl_->routing_table_.nodes_.size()
-            << std::endl;
+            << "Routing table size: " << routing_->pimpl_->routing_table_.nodes_.size();
   {
-    std::cout << routing_->pimpl_->routing_table_.PrintRoutingTable();
-//    std::lock_guard<std::mutex> lock(routing_->pimpl_->routing_table_.mutex_);
-//    for (auto node_info : routing_->pimpl_->routing_table_.nodes_) {
-//      std::cout << "\tNodeId : " << HexSubstr(node_info.node_id.string()) << std::endl;
-//    }
-//  }
-//  std::cout << "[" << HexSubstr(node_info_plus_->node_info.node_id.string())
-//            << "]'s Non-RoutingTable : "
-//            << " :"<< std::endl;
-//  std::lock_guard<std::mutex> lock(routing_->pimpl_->non_routing_table_.mutex_);
-//  for (auto node_info : routing_->pimpl_->non_routing_table_.nodes_) {
-//    std::cout << "\tNodeId : " << HexSubstr(node_info.node_id.string()) << std::endl;
+    std::lock_guard<std::mutex> lock(routing_->pimpl_->routing_table_.mutex_);
+    for (auto node_info : routing_->pimpl_->routing_table_.nodes_) {
+      LOG(kInfo) << "\tNodeId : " << HexSubstr(node_info.node_id.string());
+    }
+  }
+  LOG(kInfo) << "[" << HexSubstr(node_info_plus_->node_info.node_id.string())
+            << "]'s Non-RoutingTable : ";
+  std::lock_guard<std::mutex> lock(routing_->pimpl_->non_routing_table_.mutex_);
+  for (auto node_info : routing_->pimpl_->non_routing_table_.nodes_) {
+    LOG(kInfo) << "\tNodeId : " << HexSubstr(node_info.node_id.string());
   }
 }
 

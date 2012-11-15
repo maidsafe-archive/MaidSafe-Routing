@@ -78,9 +78,6 @@ int NetworkUtils::Bootstrap(const std::vector<Endpoint>& bootstrap_endpoints,
   if (!bootstrap_endpoints.empty())
     bootstrap_endpoints_ = bootstrap_endpoints;
 
-  if (bootstrap_endpoints_.empty())
-    bootstrap_endpoints_ = ReadBootstrapFile();
-
   if (Parameters::append_maidsafe_endpoints && bootstrap_attempt_ == 0) {
     LOG(kInfo) << "Appending Maidsafe Endpoints";
     std::vector<Endpoint> maidsafe_endpoints(MaidSafeEndpoints());
@@ -368,11 +365,6 @@ void NetworkUtils::AdjustRouteHistory(protobuf::Message& message) {
     }
   }
   assert(message.route_history().size() <= Parameters::max_routing_table_size);
-}
-
-void NetworkUtils::AddToBootstrapFile(const Endpoint& endpoint) {
-  if (!endpoint.address().is_unspecified())
-    UpdateBootstrapFile(endpoint, false);
 }
 
 void NetworkUtils::set_new_bootstrap_endpoint_functor(

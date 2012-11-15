@@ -65,8 +65,8 @@ class Routing::Impl {
             const std::string& data,
             const ResponseFunctor& response_functor,
             const boost::posix_time::time_duration& timeout,
-            bool direct,
-            bool cacheable);
+            const DestinationType& destination_type,
+            const bool& cacheable);
 
   NodeId GetRandomExistingNode() const { return random_node_helper_.Get(); }
 

@@ -30,6 +30,12 @@ namespace routing {
 
 struct NodeInfo;
 
+enum class DestinationType : int {
+  kDirect = 0,
+  kClosest,
+  kGroup
+};
+
 // If using boost::bind or std::bind, use **shared_from_this** pointers to preserve lifetimes of
 // functors. The ResponseFunctor WILL ensure functors are deleted when the system times out.
 typedef std::function<void(const std::vector<std::string>& /*message*/)> ResponseFunctor;
@@ -41,6 +47,7 @@ typedef std::function<void(const std::string& /*message*/)> ReplyFunctor;
 // This is called on any message received that is NOT a reply to a request made by the Send method.
 typedef std::function<void(const std::string& /*message*/,
                            const NodeId& /*group claim*/,
+                           const bool& /*cache_lookup*/,
                            ReplyFunctor /*reply functor*/)> MessageReceivedFunctor;
 
 // This is fired to validate a new peer node. User is supposed to validate the node and call
@@ -48,7 +55,7 @@ typedef std::function<void(const std::string& /*message*/,
 typedef std::function<void(asymm::PublicKey /*public_key*/)> GivePublicKeyFunctor;
 typedef std::function<void(NodeId /*node Id*/, GivePublicKeyFunctor)> RequestPublicKeyFunctor;
 
-typedef std::function<bool(const std::string& /*data*/)> HaveCacheDataFunctor;
+typedef std::function<bool(std::string& /*data*/)> HaveCacheDataFunctor;
 typedef std::function<void(const std::string& /*data*/)> StoreCacheDataFunctor;
 
 // This functor fires a number from 0 to 100 and represents % network health.
