@@ -216,7 +216,7 @@ bool RoutingTable::IsRemovable(const NodeId& node_id) {
                           [&](const NodeInfo& node_info) {
                             return (node_info.node_id > node_id);
                           }));
-  if ((size < nodes_.size() / 10) || (size > ((nodes_.size() * 9) / 10) ))
+  if ((size < Parameters::split_avoidance) || (size > Parameters::split_avoidance))
     return false;
   sorted_count = PartialSortFromTarget(node_id, nodes_.size(), lock);
   if (sorted_count == 0)

@@ -297,7 +297,7 @@ TEST_F(RoutingNetworkTest, FUNC_ClientSend) {
 
 TEST_F(RoutingNetworkTest, FUNC_SendMulti) {
   this->SetUpNetwork(kServerSize);
-  EXPECT_TRUE(this->Send(10));
+  EXPECT_TRUE(this->Send(5));
 }
 
 TEST_F(RoutingNetworkTest, DISABLED_FUNC_ExtendedSendMulti) {
@@ -311,7 +311,7 @@ TEST_F(RoutingNetworkTest, DISABLED_FUNC_ExtendedSendMulti) {
 
 TEST_F(RoutingNetworkTest, FUNC_ClientSendMulti) {
   this->SetUpNetwork(kServerSize, kClientSize);
-  EXPECT_TRUE(this->Send(5));
+  EXPECT_TRUE(this->Send(3));
 // This sleep is required for un-responded requests
   Sleep(boost::posix_time::seconds(nodes_.size() + 1));
 }

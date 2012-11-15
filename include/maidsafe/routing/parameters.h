@@ -42,7 +42,7 @@ struct Parameters {
   static uint16_t max_route_history;
   static uint16_t hops_to_live;
   static uint16_t greedy_fraction;
-  static uint16_t ungreedy_fraction;
+  static uint16_t split_avoidance;
   static boost::posix_time::time_duration connect_rpc_prune_timeout;
   static bool append_maidsafe_endpoints;
   static bool append_maidsafe_local_endpoints;

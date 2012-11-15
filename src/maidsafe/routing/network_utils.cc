@@ -247,7 +247,7 @@ void NetworkUtils::SendTo(const protobuf::Message& message,
                    << " to   " << DebugId(peer_node_id) << "   (id: " << message.id() << ")";
       } else {
         LOG(kError) << "Sending type " << MessageTypeString(message) << " message from "
-                    << HexSubstr(kThisId) << " to " << DebugId(peer_node_id) <<  " failed with code "
+                    << HexSubstr(kThisId) << " to " << DebugId(peer_node_id) << " failed with code "
                     << message_sent << " id: " << message.id();
       }
     };

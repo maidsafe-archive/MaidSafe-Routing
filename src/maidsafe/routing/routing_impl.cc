@@ -568,7 +568,7 @@ void Routing::Impl::ReSendFindNodeRequest(const boost::system::error_code& error
     if (ignore_size && (routing_table_.size() > Parameters::routing_table_size_threshold))
       num_nodes_requested = static_cast<int>(Parameters::closest_nodes_size);
     else
-      num_nodes_requested = static_cast<int>(Parameters::max_routing_table_size);
+      num_nodes_requested = static_cast<int>(Parameters::greedy_fraction);
 
     protobuf::Message find_node_rpc(rpcs::FindNodes(kNodeId_, kNodeId_, num_nodes_requested));
     network_.SendToClosestNode(find_node_rpc);
