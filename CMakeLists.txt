@@ -65,6 +65,10 @@ set(ALL_FILES_ROUTING_TESTS_DIR ${SOURCE_FILES_ROUTING_TESTS_DIR} ${HEADER_FILES
 set(STYLE_ROUTING ${STYLE_ROUTING} ${ALL_FILES_ROUTING_TESTS_DIR})
 source_group("Routing Tests Source Files" FILES ${SOURCE_FILES_ROUTING_TESTS_DIR})
 source_group("Routing Tests Header Files" FILES ${HEADER_FILES_ROUTING_TESTS_DIR})
+list(REMOVE_ITEM ALL_FILES_ROUTING_TESTS_DIR "${PROJECT_SOURCE_DIR}/src/maidsafe/routing/tests/routing_api_test.cc")
+file(GLOB ALL_FILES_ROUTING_API_TEST "${PROJECT_SOURCE_DIR}/src/maidsafe/routing/tests/routing_api_test.cc"
+                                     "${PROJECT_SOURCE_DIR}/src/maidsafe/routing/tests/test_main.cc")
+
 
 ###################################################################################################
 # Define MaidSafe libraries and executables                                                       #
@@ -74,12 +78,14 @@ target_link_libraries(maidsafe_routing maidsafe_rudp maidsafe_utilities)
 
 if(MAIDSAFE_TESTING)
   ms_add_executable(TESTrouting "Tests/Routing" ${ALL_FILES_ROUTING_TESTS_DIR})
+  ms_add_executable(TESTrouting_api "Tests/Routing" ${ALL_FILES_ROUTING_API_TEST})
   ms_add_executable(create_lifestuff_bootstrap "Tools" "${PROJECT_SOURCE_DIR}/src/maidsafe/tools/create_bootstrap.cc")
   ms_add_executable(routing_key_helper "Tools" "${PROJECT_SOURCE_DIR}/src/maidsafe/tools/key_helper.cc")
   ms_add_executable(routing_node "Tools" "${PROJECT_SOURCE_DIR}/src/maidsafe/tools/routing_node.cc"
                                          "${PROJECT_SOURCE_DIR}/src/maidsafe/tools/commands.h"
                                          "${PROJECT_SOURCE_DIR}/src/maidsafe/tools/commands.cc")
   target_link_libraries(TESTrouting maidsafe_routing)
+  target_link_libraries(TESTrouting_api maidsafe_routing)
   target_link_libraries(create_lifestuff_bootstrap maidsafe_routing)
   target_link_libraries(routing_key_helper maidsafe_routing)
   target_link_libraries(routing_node maidsafe_routing)
@@ -112,6 +118,7 @@ endif()
 if(MAIDSAFE_TESTING)
   add_style_test(${STYLE_ROUTING})
   add_gtests(TESTrouting)
+  add_gtests(TESTrouting_api)
   add_project_experimental()
   test_summary_output()
 endif()
