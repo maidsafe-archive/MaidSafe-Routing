@@ -168,6 +168,9 @@ void MessageHandler::HandleDirectMessageAsClosestNode(protobuf::Message& message
     if (routing_table_.IsConnected(destination_node_id) ||
       non_routing_table_.IsConnected(destination_node_id)) {
       return network_.SendToClosestNode(message);
+    } else if (!message.has_visited() || !message.visited()) {
+      message.set_visited(true);
+      return network_.SendToClosestNode(message);
     } else {
       LOG(kWarning) << "Dropping message. This node ["
                     << HexSubstr(routing_table_.kFob().identity)
