@@ -35,7 +35,6 @@ class RemoveFurthestNode {
              NetworkUtils& network);
   void RemoveRequest(protobuf::Message& message);
   void HandleRemoveRequest(const NodeId& node_id);
-  bool IsRemovable(const NodeId& node_id);
   void RejectRemoval(protobuf::Message& message);
   void RemoveResponse(protobuf::Message& message);
   void RemoveNodeRequest();
@@ -43,6 +42,7 @@ class RemoveFurthestNode {
  private:
   RoutingTable& routing_table_;
   NetworkUtils& network_;
+  bool IsRemovable(const NodeId& node_id);
 };
 
 }  // namespace routing

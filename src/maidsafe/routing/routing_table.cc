@@ -208,6 +208,8 @@ bool RoutingTable::IsConnected(const NodeId& node_id) const {
 
 bool RoutingTable::IsRemovable(const NodeId& node_id) {
   std::unique_lock<std::mutex> lock(mutex_);
+  if (nodes_.size() < Parameters::routing_table_size_threshold)
+    return false;
   int sorted_count(PartialSortFromTarget(NodeId(), nodes_.size(), lock));
   if (sorted_count == 0)
     return false;
@@ -216,11 +218,10 @@ bool RoutingTable::IsRemovable(const NodeId& node_id) {
                           [&](const NodeInfo& node_info) {
                             return (node_info.node_id > node_id);
                           }));
-  if ((size < Parameters::split_avoidance) || (size > Parameters::split_avoidance))
+if ((size < Parameters::split_avoidance) ||
+    (size >= (Parameters::max_routing_table_size - Parameters::split_avoidance)))
     return false;
-  sorted_count = PartialSortFromTarget(node_id, nodes_.size(), lock);
-  if (sorted_count == 0)
-    return false;
+  PartialSortFromTarget(node_id, nodes_.size(), lock);
   if (nodes_[0].node_id != node_id)
     return false;
   if (NodeId::CloserToTarget(kNodeId(), nodes_[1].node_id, node_id))

@@ -67,6 +67,7 @@ class MessageHandlerTest : public testing::Test {
     service_.reset(new MockService(*table_, *ntable_, *utils_));
     response_handler_.reset(new MockResponseHandler(*table_, *ntable_, *utils_));
     close_info_ = MakeNodeInfoAndKeys().node_info;
+    close_info_.node_id = GenerateUniqueRandomId(table_->kNodeId(), 20);
     table_->AddNode(close_info_);
   }
 
@@ -254,11 +255,13 @@ TEST_F(MessageHandlerTest, BEH_HandleGroupMessage) {
     message.set_direct(false);
     message.set_request(true);
     message.set_client_node(true);
+    message.set_visited(true);
     std::vector<NodeId> closest_nodes(table_->GetClosestNodes(close_info_.node_id, 4));
-    for (auto itr(closest_nodes.begin()); itr != closest_nodes.end(); ++itr) {
-      if ((*itr).string() == close_info_.node_id.string())
-        itr = closest_nodes.erase(itr);
-    }
+    closest_nodes.erase(std::remove_if(closest_nodes.begin(),
+                                       closest_nodes.end(),
+                                       [&](const NodeId& node_id) {
+                                         return node_id == close_info_.node_id;
+                                       }));
     EXPECT_CALL(*utils_, SendToClosestNode(testing::_)).Times(0);
     EXPECT_CALL(*utils_, SendToDirect(testing::AllOf(
                                           testing::Property(&protobuf::Message::destination_id,

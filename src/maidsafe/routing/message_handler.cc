@@ -261,7 +261,8 @@ void MessageHandler::HandleMessageAsFarNode(protobuf::Message& message) {
       !message.direct() &&
       !message.visited())
     message.set_visited(true);
-  LOG(kVerbose) << "This node is not in closest proximity to this message destination ID [ "
+  LOG(kVerbose) << "[" << DebugId(routing_table_.kNodeId())
+                << "] is not in closest proximity to this message destination ID [ "
                 <<  HexSubstr(message.destination_id())
                 <<" ]; sending on." << " id: " << message.id();
   network_.SendToClosestNode(message);
