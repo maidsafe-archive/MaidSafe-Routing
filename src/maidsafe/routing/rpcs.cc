@@ -149,7 +149,7 @@ protobuf::Message FindNodes(const NodeId& node_id,
     message.set_relay_connection_id(relay_connection_id.string());
   }
   message.set_hops_to_live(Parameters::hops_to_live);
-  message.set_id(RandomUint32() % 10000);
+//  message.set_id(RandomUint32() % 10000);
   assert(message.IsInitialized() && "Unintialised message");
   return message;
 }

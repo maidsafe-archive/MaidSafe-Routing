@@ -34,15 +34,19 @@ class RemoveFurthestNode {
   RemoveFurthestNode(RoutingTable& routing_table,
              NetworkUtils& network);
   void RemoveRequest(protobuf::Message& message);
-  void HandleRemoveRequest(const NodeId& node_id);
   void RejectRemoval(protobuf::Message& message);
   void RemoveResponse(protobuf::Message& message);
   void RemoveNodeRequest();
 
  private:
+  RemoveFurthestNode(const RemoveFurthestNode&);
+  RemoveFurthestNode(const RemoveFurthestNode&&);
+  RemoveFurthestNode& operator=(const RemoveFurthestNode&);
+  bool IsRemovable(const NodeId& node_id);
+  void HandleRemoveRequest(const NodeId& node_id);
+
   RoutingTable& routing_table_;
   NetworkUtils& network_;
-  bool IsRemovable(const NodeId& node_id);
 };
 
 }  // namespace routing
