@@ -66,6 +66,7 @@ message Message {
   required bool request = 18;
   optional bytes group_claim = 19;
   optional int32 hops_to_live = 20;
+  optional bool visited = 21;
 }
 
 message SignedMessage {
@@ -127,6 +128,15 @@ message PingResponse {
   required int32 timestamp = 2;
   required bytes original_request = 3;
   required bytes original_signature = 4;
+}
+
+message RemoveRequest {
+  required bytes peer_id = 1;
+}
+
+message RemoveResponse {
+  required bool success = 1;
+  required bytes peer_id = 2;
 }
 
 enum ConnectResponseType {

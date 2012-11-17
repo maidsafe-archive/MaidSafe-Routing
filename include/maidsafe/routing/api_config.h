@@ -71,6 +71,11 @@ typedef std::function<void(const boost::asio::ip::udp::endpoint& /*new_endpoint*
 typedef std::function<void(const std::vector<NodeInfo>& /*new_close_nodes*/)>
     CloseNodeReplacedFunctor;
 
+// This functor fires when routing table size is over greedy limit. The furthest unnecessary
+// node in routing table is dropped. Unnecessary is defined as a node who does not have us in
+// it clsoest nodes.
+typedef std::function<void()> RemoveFurthestUnnecessaryNode;
+
 struct Functors {
   Functors()
       : message_received(),

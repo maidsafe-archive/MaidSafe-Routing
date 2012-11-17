@@ -306,7 +306,7 @@ void Service::ConnectSuccessFromResponder(NodeInfo& peer, const bool& client) {
     return;
   }
   auto count =
-      (client ? Parameters::max_client_routing_table_size: Parameters::max_routing_table_size);
+      (client ? Parameters::max_client_routing_table_size: Parameters::greedy_fraction);
   std::vector<NodeId> close_ids_for_peer(
       routing_table_.GetClosestNodes(peer.node_id, count));
 

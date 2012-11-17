@@ -185,7 +185,7 @@ void ResponseHandler::FindNodes(const protobuf::Message& message) {
 
   for (int i = 0; i < find_nodes_response.nodes_size(); ++i) {
     if (!find_nodes_response.nodes(i).empty())
-      SendConnectRequest(NodeId(find_nodes_response.nodes(i)));
+      CheckAndSendConnectRequest(NodeId(find_nodes_response.nodes(i)));
   }
 }
 
@@ -356,11 +356,19 @@ void ResponseHandler::HandleSuccessAcknowledgementAsReponder(NodeInfo peer,
 void ResponseHandler::HandleSuccessAcknowledgementAsRequestor(std::vector<NodeId> close_ids) {
   for (auto i : close_ids) {
     if (!i.IsZero()) {
-      SendConnectRequest(i);
+      CheckAndSendConnectRequest(i);
     }
   }
 }
 
+void ResponseHandler::CheckAndSendConnectRequest(const NodeId& node_id) {
+  if ((routing_table_.size() < Parameters::greedy_fraction) ||
+      NodeId::CloserToTarget(node_id,
+                             routing_table_.GetNthClosestNode(routing_table_.kNodeId(),
+                                                              Parameters::greedy_fraction).node_id,
+                             routing_table_.kNodeId()))
+    SendConnectRequest(node_id);
+}
 void ResponseHandler::set_request_public_key_functor(RequestPublicKeyFunctor request_public_key) {
   request_public_key_functor_ = request_public_key;
 }

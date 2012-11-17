@@ -20,6 +20,7 @@
 #include "maidsafe/routing/routing_pb.h"
 #include "maidsafe/routing/routing_table.h"
 #include "maidsafe/routing/service.h"
+#include "maidsafe/routing/remove_furthest_node.h"
 #include "maidsafe/routing/timer.h"
 #include "maidsafe/routing/utils.h"
 
@@ -31,10 +32,12 @@ namespace routing {
 MessageHandler::MessageHandler(RoutingTable& routing_table,
                                NonRoutingTable& non_routing_table,
                                NetworkUtils& network,
+                               RemoveFurthestNode& remove_furthest_node,
                                Timer& timer)
     : routing_table_(routing_table),
       non_routing_table_(non_routing_table),
       network_(network),
+      remove_furthest_node_(remove_furthest_node),
       cache_manager_(routing_table_.client_mode() ? nullptr :
                                                     (new CacheManager(routing_table_.kNodeId(),
                                                                       network_))),
@@ -60,6 +63,11 @@ void MessageHandler::HandleRoutingMessage(protobuf::Message& message) {
       break;
     case MessageType::kConnectSuccessAcknowledgement :
       response_handler_->ConnectSuccessAcknowledgement(message);
+      break;
+    case MessageType::kRemove :
+      message.request() ? remove_furthest_node_.RemoveRequest(message) :
+                          remove_furthest_node_.RemoveResponse(message);
+      break;
     default:  // unknown (silent drop)
       return;
   }
@@ -162,6 +170,9 @@ void MessageHandler::HandleDirectMessageAsClosestNode(protobuf::Message& message
     if (routing_table_.IsConnected(destination_node_id) ||
       non_routing_table_.IsConnected(destination_node_id)) {
       return network_.SendToClosestNode(message);
+    } else if (!message.has_visited() || !message.visited()) {
+      message.set_visited(true);
+      return network_.SendToClosestNode(message);
     } else {
       LOG(kWarning) << "Dropping message. This node ["
                     << HexSubstr(routing_table_.kFob().identity)
@@ -193,7 +204,13 @@ void MessageHandler::HandleGroupMessageAsClosestNode(protobuf::Message& message)
     //   return HandleCacheLookup(message);  // forwarding message is done by cache manager
     // else if (IsCacheableResponse(message))
     //   StoreCacheCopy(message);  // Upper layer should take this on seperate thread
+    return network_.SendToClosestNode(message);
+  }
 
+  if (message.has_visited() &&
+      !message.visited() &&
+      (routing_table_.size() > Parameters::closest_nodes_size)) {
+    message.set_visited(true);
     return network_.SendToClosestNode(message);
   }
 
@@ -239,7 +256,13 @@ void MessageHandler::HandleGroupMessageAsClosestNode(protobuf::Message& message)
 }
 
 void MessageHandler::HandleMessageAsFarNode(protobuf::Message& message) {
-  LOG(kVerbose) << "This node is not in closest proximity to this message destination ID [ "
+  if (message.has_visited() &&
+      routing_table_.IsThisNodeClosestTo(NodeId(message.destination_id()), !message.direct()) &&
+      !message.direct() &&
+      !message.visited())
+    message.set_visited(true);
+  LOG(kVerbose) << "[" << DebugId(routing_table_.kNodeId())
+                << "] is not in closest proximity to this message destination ID [ "
                 <<  HexSubstr(message.destination_id())
                 <<" ]; sending on." << " id: " << message.id();
   network_.SendToClosestNode(message);
@@ -292,8 +315,9 @@ void MessageHandler::HandleMessage(protobuf::Message& message) {
 
   // This node is in closest proximity to this message
   if (routing_table_.IsThisNodeInRange(NodeId(message.destination_id()),
-                                       Parameters::closest_nodes_size) ||
-      routing_table_.IsThisNodeClosestTo(NodeId(message.destination_id()), !message.direct())) {
+                                       Parameters::node_group_size) ||
+      (routing_table_.IsThisNodeClosestTo(NodeId(message.destination_id()), !message.direct()) &&
+       message.visited())) {
     return HandleMessageAsClosestNode(message);
   } else {
     return HandleMessageAsFarNode(message);

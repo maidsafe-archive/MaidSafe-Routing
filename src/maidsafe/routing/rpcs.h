@@ -44,6 +44,10 @@ protobuf::Message Connect(const NodeId& node_id,
     bool relay_message = false,
     NodeId relay_connection_id = NodeId());
 
+protobuf::Message Remove(const NodeId& node_id,
+                         const NodeId& this_node_id,
+                         const NodeId& this_connection_id);
+
 protobuf::Message FindNodes(
     const NodeId& node_id,
     const NodeId& this_node_id,

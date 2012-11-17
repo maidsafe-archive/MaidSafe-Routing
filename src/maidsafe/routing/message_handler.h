@@ -41,6 +41,7 @@ namespace test {
 class NetworkUtils;
 class NonRoutingTable;
 class RoutingTable;
+class RemoveFurthestNode;
 class Timer;
 
 enum class MessageType : int32_t {
@@ -49,6 +50,7 @@ enum class MessageType : int32_t {
   kFindNodes = 3,
   kConnectSuccess = 4,
   kConnectSuccessAcknowledgement = 5,
+  kRemove = 6,
   kMaxRouting = 100,
   kNodeLevel = 101
 };
@@ -58,6 +60,7 @@ class MessageHandler {
   MessageHandler(RoutingTable& routing_table,
                  NonRoutingTable& non_routing_table,
                  NetworkUtils& network,
+                 RemoveFurthestNode& remove_node,
                  Timer& timer);
   void HandleMessage(protobuf::Message& message);
   void set_message_received_functor(MessageReceivedFunctor message_received_functor);
@@ -98,6 +101,7 @@ class MessageHandler {
   RoutingTable& routing_table_;
   NonRoutingTable& non_routing_table_;
   NetworkUtils& network_;
+  RemoveFurthestNode& remove_furthest_node_;
   std::unique_ptr<CacheManager> cache_manager_;
   Timer& timer_;
   std::shared_ptr<ResponseHandler> response_handler_;

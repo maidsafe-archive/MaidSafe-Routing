@@ -220,6 +220,15 @@ bool GenericNode::NonRoutingTableHasNode(const NodeId& node_id) {
          routing_->pimpl_->non_routing_table_.nodes_.end();
 }
 
+NodeInfo GenericNode::GetFurthestNode() {
+  return routing_->pimpl_->routing_table_.GetFurthestRemovableNode();
+}
+
+NodeInfo GenericNode::GetNthClosestNode(const NodeId& target_id, uint16_t node_number) {
+  return routing_->pimpl_->routing_table_.GetNthClosestNode(target_id, node_number);
+}
+
+
 testing::AssertionResult GenericNode::DropNode(const NodeId& node_id) {
   LOG(kInfo) << " DropNode " << HexSubstr(routing_->pimpl_->routing_table_.kNodeId_.string())
              << " Removes " << HexSubstr(node_id.string());
@@ -538,6 +547,13 @@ void GenericNetwork::ClearMessages() {
     node->ClearMessages();
 }
 
+int GenericNetwork::NodeIndex(const NodeId& node_id) {
+  for (size_t index(0); index < nodes_.size(); ++index)
+    if (nodes_[index]->node_id() == node_id)
+      return index;
+  return -1;
+}
+
 uint16_t GenericNetwork::NonClientNodesSize() const {
   uint16_t non_client_size(0);
   for (auto node : nodes_) {
@@ -595,7 +611,7 @@ void GenericNetwork::AddNodeDetails(NodePtr node) {
     std::unique_lock<std::mutex> lock(mutex);
     auto result = cond_var->wait_for(lock, std::chrono::seconds(20));
     EXPECT_EQ(result, std::cv_status::no_timeout);
-    Sleep(boost::posix_time::millisec(1600));
+    Sleep(boost::posix_time::millisec(2600));
   }
   PrintRoutingTables();
 }

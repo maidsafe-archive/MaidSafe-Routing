@@ -259,6 +259,9 @@ std::string MessageTypeString(const protobuf::Message& message) {
     case MessageType::kConnectSuccessAcknowledgement :
       message_type = "kC-Suc-Ack";
       break;
+    case MessageType::kRemove :
+      message_type = "kRemove";
+      break;
     case MessageType::kNodeLevel :
       message_type = "kNodeLevel";
       break;

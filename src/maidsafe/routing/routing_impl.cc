@@ -61,12 +61,17 @@ Routing::Impl::Impl(const Fob& fob, bool client_mode)
       message_handler_(),
       asio_service_(2),
       network_(routing_table_, non_routing_table_),
+      remove_furthest_node_(routing_table_, network_),
       timer_(asio_service_),
       re_bootstrap_timer_(asio_service_.service()),
       recovery_timer_(asio_service_.service()),
       setup_timer_(asio_service_.service()) {
   asio_service_.Start();
-  message_handler_.reset(new MessageHandler(routing_table_, non_routing_table_, network_, timer_));
+  message_handler_.reset(new MessageHandler(routing_table_,
+                                            non_routing_table_,
+                                            network_,
+                                            remove_furthest_node_,
+                                            timer_));
 
   assert((client_mode || fob.identity.IsInitialised()) &&
          "Server Nodes cannot be created without valid keys");
@@ -98,7 +103,10 @@ void Routing::Impl::ConnectFunctors(const Functors& functors) {
                                     [this](const NodeInfo& node, bool internal_rudp_only) {
                                              RemoveNode(node, internal_rudp_only);
                                            },
-                                    functors.close_node_replaced);
+                                    functors.close_node_replaced,
+                                    [this]() {
+                                      remove_furthest_node_.RemoveNodeRequest();
+                                    });
   message_handler_->set_message_received_functor(functors.message_received);
   message_handler_->set_request_public_key_functor(functors.request_public_key);
   network_.set_new_bootstrap_endpoint_functor(functors.new_bootstrap_endpoint);
@@ -344,6 +352,7 @@ void Routing::Impl::Send(const NodeId& destination_id,
     proto_message.set_group_claim(group_claim.string());
 
   if (DestinationType::kGroup == destination_type) {
+    proto_message.set_visited(false);
     replication = Parameters::node_group_size;
     if (response_functor)
       proto_message.set_id(timer_.AddTask(timeout, response_functor, Parameters::node_group_size));
@@ -559,7 +568,7 @@ void Routing::Impl::ReSendFindNodeRequest(const boost::system::error_code& error
     if (ignore_size && (routing_table_.size() > Parameters::routing_table_size_threshold))
       num_nodes_requested = static_cast<int>(Parameters::closest_nodes_size);
     else
-      num_nodes_requested = static_cast<int>(Parameters::max_routing_table_size);
+      num_nodes_requested = static_cast<int>(Parameters::greedy_fraction);
 
     protobuf::Message find_node_rpc(rpcs::FindNodes(kNodeId_, kNodeId_, num_nodes_requested));
     network_.SendToClosestNode(find_node_rpc);

@@ -101,7 +101,8 @@ TEST(RoutingTableTest, FUNC_GroupChange) {
   routing_table.InitialiseFunctors(
       [](const int& status) { LOG(kVerbose) << "Status : " << status; },
       [](const NodeInfo&, bool) {},
-      close_node_replaced_functor);
+      close_node_replaced_functor,
+      []() {});
 
   for (uint16_t i = 0; i < Parameters::max_routing_table_size; ++i) {
     ASSERT_TRUE(routing_table.AddNode(nodes.at(i)));
@@ -261,6 +262,70 @@ TEST(RoutingTableTest, FUNC_GetClosestNodeWithExclusion) {
   EXPECT_EQ(node_info.node_id, node_info2.node_id);
   EXPECT_EQ(node_info.node_id, NodeInfo().node_id);
 }
+
+TEST(RoutingTableTest, FUNC_GetFurthestNode) {
+  std::vector<NodeId> node_ids;
+  Fob fob;
+  fob.identity = Identity(RandomString(64));
+  RoutingTable routing_table(fob, false);
+  for (uint16_t i = 0; routing_table.size() < Parameters::max_routing_table_size; ++i) {
+    NodeInfo node(MakeNode());
+    node_ids.push_back(node.node_id);
+    EXPECT_TRUE(routing_table.AddNode(node));
+  }
+  EXPECT_EQ(routing_table.size(), Parameters::max_routing_table_size);
+  size_t count(0);
+  for (uint16_t i = 0; i < 100; ++i) {
+    NodeInfo node(MakeNode());
+    if (routing_table.CheckNode(node)) {
+      node_ids.push_back(node.node_id);
+      EXPECT_TRUE(routing_table.AddNode(node));
+      ++count;
+    }
+  }
+  NodeInfo furthest_node(routing_table.GetFurthestRemovableNode());
+  NodeInfo node_info;
+  for (auto node_id : node_ids) {
+    if (routing_table.GetNodeInfo(node_id, node_info))
+      EXPECT_FALSE(NodeId::CloserToTarget(furthest_node.node_id,
+                                          node_id,
+                                          routing_table.kNodeId()));
+  }
+}
+
+TEST(RoutingTableTest, FUNC_GetClosestTo) {
+  std::vector<NodeId> node_ids;
+  Fob fob;
+  fob.identity = Identity(RandomString(64));
+  RoutingTable routing_table(fob, false);
+  for (uint16_t i = 0; routing_table.size() < Parameters::max_routing_table_size; ++i) {
+    NodeInfo node(MakeNode());
+    node_ids.push_back(node.node_id);
+    EXPECT_TRUE(routing_table.AddNode(node));
+  }
+  std::sort(node_ids.begin(), node_ids.end(),
+            [&](const NodeId& lhs, const NodeId& rhs) {
+              return NodeId::CloserToTarget(lhs, rhs, routing_table.kNodeId());
+            });
+  NodeInfo node_info;
+  for (size_t index(0); index < node_ids.size(); ++index) {
+    node_info = routing_table.GetClosestTo(node_ids[index], true);
+    if (index == 0) {
+      EXPECT_EQ(node_info.node_id, NodeId());
+    } else {
+      EXPECT_EQ(node_info.node_id, node_ids[index - 1]);
+    }
+  }
+  for (size_t index(0); index < node_ids.size(); ++index) {
+    node_info = routing_table.GetClosestTo(node_ids[index], false);
+    if (index == node_ids.size() - 1) {
+      EXPECT_EQ(node_info.node_id, NodeId());
+    } else {
+      EXPECT_EQ(node_info.node_id, node_ids[index + 1]);
+    }
+  }
+}
+
 
 }  // namespace test
 }  // namespace routing
