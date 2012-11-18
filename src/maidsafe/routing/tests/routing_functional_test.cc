@@ -568,7 +568,7 @@ TEST_F(RoutingNetworkTest, FUNC_FurthestNodeRemoved) {
                 << "\nFurthest node " << HexSubstr(furthest_node_info.node_id.string());
 
   if (this->nodes_[random_index]->RoutingTable().size() > Parameters::greedy_fraction) {
-    int furthest_node_index(this->nodes_[this->NodeIndex(furthest_node_info.node_id)]);
+    int furthest_node_index(this->NodeIndex(furthest_node_info.node_id));
     NodeInfo nth_closest(
         this->nodes_[furthest_node_index]->GetNthClosestNode(furthest_node_info.node_id,
                                                              Parameters::closest_nodes_size));
