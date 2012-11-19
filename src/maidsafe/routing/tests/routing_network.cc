@@ -548,9 +548,10 @@ void GenericNetwork::ClearMessages() {
 }
 
 int GenericNetwork::NodeIndex(const NodeId& node_id) {
-  for (size_t index(0); index < nodes_.size(); ++index)
+  for (int index(0); index < static_cast<int>(nodes_.size()); ++index) {
     if (nodes_[index]->node_id() == node_id)
       return index;
+  }
   return -1;
 }
 

@@ -81,7 +81,8 @@ class RoutingNetworkTest : public GenericNetwork {
             }
             assert(!data.empty() && "Send Data Empty !");
             source_node->Send(NodeId(dest_node->node_id()), NodeId(), data, callable,
-                boost::posix_time::seconds(nodes_.size()), DestinationType::kDirect, false);
+                boost::posix_time::seconds(static_cast<long>(nodes_.size())),  // NOLINT (Fraser)
+                DestinationType::kDirect, false);
             Sleep(boost::posix_time::microseconds(21));
           }
         }
@@ -313,7 +314,7 @@ TEST_F(RoutingNetworkTest, FUNC_ClientSendMulti) {
   this->SetUpNetwork(kServerSize, kClientSize);
   EXPECT_TRUE(this->Send(3));
 // This sleep is required for un-responded requests
-  Sleep(boost::posix_time::seconds(nodes_.size() + 1));
+  Sleep(boost::posix_time::seconds(static_cast<long>(nodes_.size() + 1)));  // NOLINT (Fraser)
 }
 
 TEST_F(RoutingNetworkTest, FUNC_SendToGroup) {

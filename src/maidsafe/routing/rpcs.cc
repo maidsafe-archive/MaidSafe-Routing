@@ -102,6 +102,7 @@ protobuf::Message Remove(const NodeId& node_id,
   assert(!node_id.IsZero() && "Invalid node_id");
   assert(!this_node_id.IsZero() && "Invalid my node_id");
   assert(!this_connection_id.IsZero() && "Invalid this_connection_id");
+  static_cast<void>(this_connection_id);
   protobuf::Message message;
   message.set_destination_id(node_id.string());
   message.set_routing_message(true);
