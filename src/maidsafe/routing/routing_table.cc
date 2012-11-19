@@ -214,7 +214,7 @@ bool RoutingTable::IsRemovable(const NodeId& node_id) {
       static_cast<uint16_t>(nodes_.size()), lock));
   if (sorted_count == 0)
     return false;
-  size_t size(std::count_if(nodes_.begin(),
+  auto size(std::count_if(nodes_.begin(),
                           nodes_.end(),
                           [&](const NodeInfo& node_info) {
                             return (node_info.node_id > node_id);
