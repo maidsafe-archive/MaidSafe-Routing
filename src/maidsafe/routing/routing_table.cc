@@ -210,7 +210,8 @@ bool RoutingTable::IsRemovable(const NodeId& node_id) {
   std::unique_lock<std::mutex> lock(mutex_);
   if (nodes_.size() < Parameters::routing_table_size_threshold)
     return false;
-  int sorted_count(PartialSortFromTarget(NodeId(), static_cast<uint16_t>(nodes_.size()), lock));
+  uint16_t sorted_count(PartialSortFromTarget(NodeId(), 
+      static_cast<uint16_t>(nodes_.size()), lock));
   if (sorted_count == 0)
     return false;
   size_t size(std::count_if(nodes_.begin(),
@@ -419,7 +420,8 @@ NodeInfo RoutingTable::GetClosestNode(const NodeId& target_id,
 
 NodeInfo RoutingTable::GetClosestTo(const NodeId& node_id, bool backward) {
   std::unique_lock<std::mutex> lock(mutex_);
-  int sorted_count(PartialSortFromTarget(kNodeId(), static_cast<uint16_t>(nodes_.size()), lock));
+  uint16_t sorted_count(PartialSortFromTarget(kNodeId(), 
+      static_cast<uint16_t>(nodes_.size()), lock));
   if (sorted_count == 0)
     return NodeInfo();
   auto iterator(std::find_if(nodes_.begin(),
@@ -440,7 +442,8 @@ NodeInfo RoutingTable::GetClosestTo(const NodeId& node_id, bool backward) {
 NodeInfo RoutingTable::GetFurthestRemovableNode() {
   std::vector<NodeInfo> sorted_routing_table;
   std::unique_lock<std::mutex> lock(mutex_);
-  int sorted_count(PartialSortFromTarget(kNodeId(), static_cast<uint16_t>(nodes_.size()), lock));
+  uint16_t sorted_count(PartialSortFromTarget(kNodeId(), 
+      static_cast<uint16_t>(nodes_.size()), lock));
   if (sorted_count == 0)
     return NodeInfo();
   sorted_routing_table = nodes_;
