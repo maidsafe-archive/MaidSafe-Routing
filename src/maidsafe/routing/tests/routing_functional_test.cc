@@ -268,7 +268,7 @@ class RoutingNetworkTest : public GenericNetwork {
 };
 
 TEST_F(RoutingNetworkTest, FUNC_SetupNetwork) {
-  this->SetUpNetwork(10);
+  this->SetUpNetwork(kServerSize);
 }
 
 TEST_F(RoutingNetworkTest, FUNC_SetupSingleClientHybridNetwork) {

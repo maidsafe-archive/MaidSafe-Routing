@@ -132,11 +132,13 @@ message PingResponse {
 
 message RemoveRequest {
   required bytes peer_id = 1;
+  repeated bytes attempted_nodes = 2;
 }
 
 message RemoveResponse {
   required bool success = 1;
   required bytes peer_id = 2;
+  required bytes original_request = 3;
 }
 
 enum ConnectResponseType {

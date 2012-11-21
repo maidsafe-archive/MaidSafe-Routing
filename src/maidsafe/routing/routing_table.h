@@ -61,11 +61,10 @@ class RoutingTable {
   NodeInfo GetClosestNode(const NodeId& target_id,
                           const std::vector<std::string>& exclude,
                           bool ignore_exact_match = false);
-  NodeInfo GetClosestTo(const NodeId& node_id, bool backward = true);
-  NodeInfo GetFurthestRemovableNode();
   // Returns max NodeId if routing table size is less than requested node_number
   NodeInfo GetNthClosestNode(const NodeId& target_id, uint16_t node_number);
   std::vector<NodeId> GetClosestNodes(const NodeId& target_id, uint16_t number_to_get);
+  NodeInfo GetRemovableNode(std::vector<std::string> attempted = std::vector<std::string>());
   size_t size() const;
   Fob kFob() const { return kFob_; }
   NodeId kNodeId() const { return kNodeId_; }

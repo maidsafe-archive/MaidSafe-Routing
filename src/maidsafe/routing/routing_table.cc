@@ -15,6 +15,7 @@
 #include <algorithm>
 #include <bitset>
 #include <limits>
+#include <map>
 
 #include "maidsafe/common/log.h"
 #include "maidsafe/common/utils.h"
@@ -208,26 +209,6 @@ bool RoutingTable::IsConnected(const NodeId& node_id) const {
 
 bool RoutingTable::IsRemovable(const NodeId& node_id) {
   std::unique_lock<std::mutex> lock(mutex_);
-  if (nodes_.size() < Parameters::routing_table_size_threshold)
-    return false;
-  uint16_t sorted_count(PartialSortFromTarget(NodeId(), 
-      static_cast<uint16_t>(nodes_.size()), lock));
-  if (sorted_count == 0)
-    return false;
-  auto size(std::count_if(nodes_.begin(),
-                          nodes_.end(),
-                          [&](const NodeInfo& node_info) {
-                            return (node_info.node_id > node_id);
-                          }));
-  if ((size < Parameters::split_avoidance) ||
-      (size >= (Parameters::max_routing_table_size - Parameters::split_avoidance))) {
-    return false;
-  }
-  PartialSortFromTarget(node_id, static_cast<uint16_t>(nodes_.size()), lock);
-  if (nodes_[0].node_id != node_id)
-    return false;
-  if (NodeId::CloserToTarget(kNodeId(), nodes_[1].node_id, node_id))
-    return false;
   return true;
 }
 
@@ -418,44 +399,56 @@ NodeInfo RoutingTable::GetClosestNode(const NodeId& target_id,
   return NodeInfo();
 }
 
-NodeInfo RoutingTable::GetClosestTo(const NodeId& node_id, bool backward) {
+NodeInfo RoutingTable::GetRemovableNode(std::vector<std::string> attempted) {
+  NodeInfo removable_node;
+  std::map<uint32_t, uint16_t> bucket_rank_map;
+  std::map<uint32_t, uint16_t>::iterator bucket_iter;
+
   std::unique_lock<std::mutex> lock(mutex_);
-  uint16_t sorted_count(PartialSortFromTarget(kNodeId(), 
-      static_cast<uint16_t>(nodes_.size()), lock));
-  if (sorted_count == 0)
-    return NodeInfo();
-  auto iterator(std::find_if(nodes_.begin(),
-                             nodes_.end(),
-                             [&](const NodeInfo& node_info) {
-                               return node_info.node_id == node_id;
-                             }));
-  size_t index(std::distance(nodes_.begin(), iterator));
-  if (index == nodes_.size())
-    return NodeInfo();
-  if (backward && (index > 0))
-    return nodes_[index - 1];
-  if (!backward && (index < nodes_.size() - 1))
-    return nodes_[index + 1];
-  return NodeInfo();
+  PartialSortFromTarget(kNodeId_, nodes_.size(), lock);
+
+  auto const from_ierator(nodes_.begin() + Parameters::closest_nodes_size);
+
+  for (auto it = from_ierator; it != nodes_.end(); ++it) {
+    LOG(kVerbose) << DebugId((*it).node_id) << " >>>>>>>> <<<<<<< " << (*it).bucket;
+    if (std::find(attempted.begin(), attempted.end(), ((*it).node_id.string())) ==
+           attempted.end()) {
+      bucket_iter = bucket_rank_map.find((*it).bucket);
+      if (bucket_iter != bucket_rank_map.end()) {
+        (*bucket_iter).second++;
+      } else {
+        bucket_rank_map.insert(bucket_rank_map.begin(), std::pair<int, int>((*it).bucket, 1));
+      }
+    }
+  }
+
+  int32_t max_bucket(0), max_bucket_count(1);
+  for (auto it(bucket_rank_map.begin()); it != bucket_rank_map.end(); ++it) {
+    if ((*it).second >= max_bucket_count) {
+      max_bucket = (*it).first;
+      max_bucket_count = (*it).second;
+    }
+  }
+
+  LOG(kVerbose) << "[" << DebugId(kNodeId_) << "] max_bucket " << max_bucket
+                << " count " << max_bucket_count;
+  if (max_bucket_count == 1) {
+    return nodes_[nodes_.size() - 1];
+  }
+
+  for (auto it(nodes_.end() - 1) ; it != (from_ierator - 1); --it) {
+    if (((*it).bucket == max_bucket) &&
+        std::find(attempted.begin(), attempted.end(), (*it).node_id.string()) ==
+            attempted.end()) {
+      removable_node = (*it);
+      break;
+    }
+  }
+  LOG(kVerbose) << "[" << DebugId(kNodeId_) << "] Removable ["
+                << DebugId(removable_node.node_id) << "]";
+  return removable_node;
 }
 
-NodeInfo RoutingTable::GetFurthestRemovableNode() {
-  std::vector<NodeInfo> sorted_routing_table;
-  std::unique_lock<std::mutex> lock(mutex_);
-  uint16_t sorted_count(PartialSortFromTarget(kNodeId(), 
-      static_cast<uint16_t>(nodes_.size()), lock));
-  if (sorted_count == 0)
-    return NodeInfo();
-  sorted_routing_table = nodes_;
-  for (size_t index(sorted_routing_table.size() - 1);
-       index > Parameters::closest_nodes_size;
-       --index) {
-    PartialSortFromTarget(sorted_routing_table[index].node_id, 2, lock);
-    if (NodeId::CloserToTarget(nodes_[1].node_id, kNodeId(), nodes_[0].node_id))
-        return nodes_[0];
-  }
-  return NodeInfo();
-}
 
 NodeInfo RoutingTable::GetNthClosestNode(const NodeId& target_id, uint16_t node_number) {
   assert((node_number > 0) && "Node number starts with position 1");
@@ -553,7 +546,8 @@ std::string RoutingTable::PrintRoutingTable() {
     s += std::string("\tPeer ") + "[" + DebugId(node.node_id) + "]" + "-->";
     s += DebugId(node.connection_id) + " && ";
     s += (node.node_id.ToStringEncoded(NodeId::kBinary)).substr(0, 32) + " xored ";
-    s += DebugId(kNodeId_ ^ node.node_id) + "\n";
+    s += DebugId(kNodeId_ ^ node.node_id) + " bucket ";
+    s += boost::lexical_cast<std::string>(node.bucket) + "\n";
   }
   s += "\n\n";
   return s;

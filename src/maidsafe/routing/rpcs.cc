@@ -98,12 +98,18 @@ protobuf::Message Connect(const NodeId& node_id,
 
 protobuf::Message Remove(const NodeId& node_id,
                          const NodeId& this_node_id,
-                         const NodeId& this_connection_id) {
+                         const NodeId& this_connection_id,
+                         const std::vector<std::string>& attempted_nodes) {
   assert(!node_id.IsZero() && "Invalid node_id");
   assert(!this_node_id.IsZero() && "Invalid my node_id");
   assert(!this_connection_id.IsZero() && "Invalid this_connection_id");
   static_cast<void>(this_connection_id);
+  protobuf::RemoveRequest remove_request;
+  for (auto& node : attempted_nodes)
+    remove_request.add_attempted_nodes(node);
+  remove_request.set_peer_id(this_node_id.string());
   protobuf::Message message;
+  message.add_data(remove_request.SerializeAsString());
   message.set_destination_id(node_id.string());
   message.set_routing_message(true);
   message.set_direct(true);

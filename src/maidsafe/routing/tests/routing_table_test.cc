@@ -263,7 +263,7 @@ TEST(RoutingTableTest, FUNC_GetClosestNodeWithExclusion) {
   EXPECT_EQ(node_info.node_id, NodeInfo().node_id);
 }
 
-TEST(RoutingTableTest, FUNC_GetFurthestNode) {
+TEST(RoutingTableTest, DISABLED_FUNC_GetFirstRemovableNode) {
   std::vector<NodeId> node_ids;
   Fob fob;
   fob.identity = Identity(RandomString(64));
@@ -283,7 +283,7 @@ TEST(RoutingTableTest, FUNC_GetFurthestNode) {
       ++count;
     }
   }
-  NodeInfo furthest_node(routing_table.GetFurthestRemovableNode());
+  NodeInfo furthest_node(routing_table.GetRemovableNode());
   NodeInfo node_info;
   for (auto node_id : node_ids) {
     if (routing_table.GetNodeInfo(node_id, node_info))
@@ -293,7 +293,7 @@ TEST(RoutingTableTest, FUNC_GetFurthestNode) {
   }
 }
 
-TEST(RoutingTableTest, FUNC_GetClosestTo) {
+TEST(RoutingTableTest, DISABLED_FUNC_GetNetxRemovableNode) {
   std::vector<NodeId> node_ids;
   Fob fob;
   fob.identity = Identity(RandomString(64));
@@ -309,7 +309,7 @@ TEST(RoutingTableTest, FUNC_GetClosestTo) {
             });
   NodeInfo node_info;
   for (size_t index(0); index < node_ids.size(); ++index) {
-    node_info = routing_table.GetClosestTo(node_ids[index], true);
+    node_info = routing_table.GetRemovableNode();
     if (index == 0) {
       EXPECT_EQ(node_info.node_id, NodeId());
     } else {
@@ -317,7 +317,7 @@ TEST(RoutingTableTest, FUNC_GetClosestTo) {
     }
   }
   for (size_t index(0); index < node_ids.size(); ++index) {
-    node_info = routing_table.GetClosestTo(node_ids[index], false);
+    node_info = routing_table.GetRemovableNode();
     if (index == node_ids.size() - 1) {
       EXPECT_EQ(node_info.node_id, NodeId());
     } else {
