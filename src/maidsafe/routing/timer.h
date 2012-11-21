@@ -49,7 +49,7 @@ class Timer {
   // If the task is cancelled, times out, or the wait fails in some other way, the response_functor
   // is invoked with an appropriate error code.
   TaskId AddTask(const boost::posix_time::time_duration& timeout,
-                 TaskResponseFunctor response_functor,
+                 const TaskResponseFunctor& response_functor,
                  uint16_t expected_response_count);
   // Removes the task and invokes its functor with kResponseCancelled and whatever responses have
   // been added up to that point.
