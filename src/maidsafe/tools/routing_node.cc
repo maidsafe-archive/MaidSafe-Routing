@@ -39,11 +39,12 @@ namespace {
 
 // This function is needed to avoid use of po::bool_switch causing MSVC warning C4505:
 // 'boost::program_options::typed_value<bool>::name' : unreferenced local function has been removed.
+#ifdef MAIDSAFE_WIN32
 void UseUnreferenced() {
   auto dummy = po::typed_value<bool>(nullptr);
   (void)dummy;
 }
-
+#endif
 void ConflictingOptions(const po::variables_map &variables_map,
                         const char *opt1,
                         const char *opt2) {
@@ -69,10 +70,10 @@ void OptionDependency(const po::variables_map &variables_map,
 }
 
 volatile bool ctrlc_pressed(false);
-
-void CtrlCHandler(int /*a*/) {
-  ctrlc_pressed = true;
-}
+// reported unused (dirvine)
+// void CtrlCHandler(int /*a*/) {
+//   ctrlc_pressed = true;
+// }
 
 } // unnamed namespace
 
