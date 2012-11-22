@@ -554,44 +554,11 @@ TEST_F(RoutingNetworkTest, FUNC_SendToClientWithSameId) {
   EXPECT_EQ(2, size);
 }
 
-TEST_F(RoutingNetworkTest, FUNC_FurthestNodeRemoved) {
-  this->SetUpNetwork(64);
-  bool drop(false);
-  // B = find furthest node from a node A's RT
-  // add  a node in a network with id close to of node A's Id
-  // if A is not a closest nodes to B, it has to be dropped from A's RT
-  // otherwise the next one must be tried
+TEST_F(RoutingNetworkTest, FUNC_NodeRemoved) {
+  this->SetUpNetwork(kServerSize);
   size_t random_index(RandomUint32() % this->nodes_.size());
-  NodeId new_node_id(GenerateUniqueRandomId(this->nodes_[random_index]->node_id(), 20));
-  NodeInfo furthest_node_info(this->nodes_[random_index]->GetFurthestNode());
-  LOG(kVerbose) << "Random node: " << HexSubstr(this->nodes_[random_index]->node_id().string())
-                << "\nNew node: " << HexSubstr(new_node_id.string())
-                << "\nFurthest node " << HexSubstr(furthest_node_info.node_id.string());
-
-  if (this->nodes_[random_index]->RoutingTable().size() > Parameters::greedy_fraction) {
-    int furthest_node_index(this->NodeIndex(furthest_node_info.node_id));
-    NodeInfo nth_closest(
-        this->nodes_[furthest_node_index]->GetNthClosestNode(furthest_node_info.node_id,
-                                                             Parameters::closest_nodes_size));
-    if (NodeId::CloserToTarget(nth_closest.node_id,
-                               this->nodes_[random_index]->node_id(),
-                               furthest_node_info.node_id))
-      drop = true;
-    if ((nth_closest.node_id == this->nodes_[random_index]->node_id()) &&
-        NodeId::CloserToTarget(new_node_id,
-                               this->nodes_[random_index]->node_id(),
-                               furthest_node_info.node_id))
-      drop = true;
-    this->AddNode(false, new_node_id);
-  }
-  Sleep(boost::posix_time::seconds(3));
-  if (drop) {
-    LOG(kVerbose) << "A successful drop is expected.";
-    EXPECT_FALSE(this->nodes_[random_index]->RoutingTableHasNode(furthest_node_info.node_id));
-  } else {
-    LOG(kVerbose) << "An unsuccessful drop is expected.";
-    EXPECT_TRUE(this->nodes_[random_index]->RoutingTableHasNode(furthest_node_info.node_id));
-  }
+  NodeInfo removed_node_info(nodes_[random_index]->GetRemovableNode());
+  EXPECT_GE(removed_node_info.bucket, 510);
 }
 
 TEST_F(RoutingNetworkTest, FUNC_GetRandomExistingNode) {

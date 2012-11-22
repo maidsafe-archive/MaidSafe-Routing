@@ -220,7 +220,7 @@ bool GenericNode::NonRoutingTableHasNode(const NodeId& node_id) {
          routing_->pimpl_->non_routing_table_.nodes_.end();
 }
 
-NodeInfo GenericNode::GetFurthestNode() {
+NodeInfo GenericNode::GetRemovableNode() {
   return routing_->pimpl_->routing_table_.GetRemovableNode();
 }
 
