@@ -526,7 +526,6 @@ TEST_F(RoutingNetworkTest, FUNC_SendToClientsWithSameId) {
                           this->nodes_[kNetworkSize]->node_id(),
                           true));
   int num_of_tries(0);
-  bool done(false);
   do {
     Sleep(boost::posix_time::seconds(1));
     size_t size(0);
@@ -534,9 +533,9 @@ TEST_F(RoutingNetworkTest, FUNC_SendToClientsWithSameId) {
       size += node->MessagesSize();
     }
     if (4 * kMessageCount == size)
-      done = true;
+      num_of_tries = 19;
     ++num_of_tries;
-  } while ((!done) && (num_of_tries < 20));
+  } while (num_of_tries < 20);
   EXPECT_LT(num_of_tries, 20);  // the number of 20 may need to be increased
 }
 

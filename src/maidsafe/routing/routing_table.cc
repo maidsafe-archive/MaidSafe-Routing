@@ -442,7 +442,6 @@ NodeInfo RoutingTable::GetRemovableNode(std::vector<std::string> attempted) {
   return removable_node;
 }
 
-
 NodeInfo RoutingTable::GetNthClosestNode(const NodeId& target_id, uint16_t node_number) {
   assert((node_number > 0) && "Node number starts with position 1");
   std::unique_lock<std::mutex> lock(mutex_);
