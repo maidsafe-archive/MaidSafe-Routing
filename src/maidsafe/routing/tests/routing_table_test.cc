@@ -112,63 +112,6 @@ TEST(RoutingTableTest, FUNC_GroupChange) {
   ASSERT_EQ(routing_table.size(), Parameters::max_routing_table_size);
 }
 
-TEST(RoutingTableTest, FUNC_CloseAndInRangeCheck) {
-  Fob fob;
-  fob.identity = Identity(RandomString(64));
-  RoutingTable routing_table(fob, false);
-  // Add some nodes to routing_table
-  NodeId my_node(fob.identity);
-  for (uint16_t i = 0; routing_table.size() < Parameters::max_routing_table_size; ++i) {
-    NodeInfo node(MakeNode());
-    EXPECT_TRUE(routing_table.AddNode(node));
-  }
-  EXPECT_EQ(routing_table.size(), Parameters::max_routing_table_size);
-  std::string my_id_encoded(my_node.ToStringEncoded(NodeId::kBinary));
-  my_id_encoded[511] = (my_id_encoded[511] == '0' ? '1' : '0');
-  NodeId my_closest_node(NodeId(my_id_encoded, NodeId::kBinary));
-  EXPECT_TRUE(routing_table.IsThisNodeClosestTo(my_closest_node));
-  EXPECT_TRUE(routing_table.IsThisNodeInRange(my_closest_node, 2));
-  EXPECT_TRUE(routing_table.IsThisNodeInRange(my_closest_node, 200));
-  EXPECT_TRUE(routing_table.IsThisNodeClosestTo(my_closest_node));
-  EXPECT_EQ(routing_table.size(), Parameters::max_routing_table_size);
-  // get closest nodes to me
-  std::vector<NodeId> close_nodes(routing_table.GetClosestNodes(my_node,
-                                              Parameters::closest_nodes_size));
-  // Check against individually selected close nodes
-  for (uint16_t i = 0; i < Parameters::closest_nodes_size; ++i)
-    EXPECT_TRUE(std::find(close_nodes.begin(),
-                          close_nodes.end(),
-                          routing_table.GetNthClosestNode(my_node, i + 1).node_id)
-                              != close_nodes.end());
-  // add the node now
-     NodeInfo node(MakeNode());
-     node.node_id = my_closest_node;
-     EXPECT_TRUE(routing_table.AddNode(node));
-     EXPECT_FALSE(routing_table.AddNode(node));
-  EXPECT_TRUE(routing_table.ConfirmGroupMembers(
-      my_closest_node,
-      routing_table.GetNthClosestNode(my_closest_node, 1).node_id));
-  EXPECT_TRUE(routing_table.ConfirmGroupMembers(
-      my_closest_node,
-      routing_table.GetNthClosestNode(my_closest_node,
-                                      Parameters::closest_nodes_size - 1).node_id));
-  EXPECT_FALSE(routing_table.ConfirmGroupMembers(my_closest_node,
-      routing_table.GetNthClosestNode(my_closest_node,
-                                      Parameters::closest_nodes_size + 1).node_id));
-  // should now be closest node to itself :-)
-  EXPECT_EQ(routing_table.GetClosestNode(my_closest_node).node_id, my_closest_node);
-  EXPECT_EQ(routing_table.size(), Parameters::max_routing_table_size);
-  EXPECT_EQ(node.node_id, routing_table.DropNode(node.node_id, true).node_id);
-  EXPECT_EQ(routing_table.size(), Parameters::max_routing_table_size - 1);
-  EXPECT_TRUE(routing_table.AddNode(node));
-  EXPECT_EQ(routing_table.size(), Parameters::max_routing_table_size);
-  EXPECT_FALSE(routing_table.AddNode(node));
-  EXPECT_EQ(routing_table.size(), Parameters::max_routing_table_size);
-  EXPECT_EQ(node.node_id, routing_table.DropNode(node.node_id, true).node_id);
-  EXPECT_EQ(routing_table.size(), Parameters::max_routing_table_size -1);
-  EXPECT_EQ(NodeId(), routing_table.DropNode(node.node_id, true).node_id);
-}
-
 TEST(RoutingTableTest, FUNC_GetClosestNodeWithExclusion) {
   std::vector<NodeId> nodes_id;
   std::vector<std::string> exclude;
