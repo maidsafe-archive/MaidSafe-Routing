@@ -263,10 +263,11 @@ TEST(RoutingTableTest, FUNC_GetClosestNodeWithExclusion) {
   EXPECT_EQ(node_info.node_id, NodeInfo().node_id);
 }
 
-TEST(RoutingTableTest, DISABLED_FUNC_GetFirstRemovableNode) {
+TEST(RoutingTableTest, GetRemovableNode) {
   std::vector<NodeId> node_ids;
   Fob fob;
-  fob.identity = Identity(RandomString(64));
+  std::string random_string(RandomString(64));
+  fob.identity = Identity(random_string);
   RoutingTable routing_table(fob, false);
   for (uint16_t i = 0; routing_table.size() < Parameters::max_routing_table_size; ++i) {
     NodeInfo node(MakeNode());
@@ -275,7 +276,7 @@ TEST(RoutingTableTest, DISABLED_FUNC_GetFirstRemovableNode) {
   }
   EXPECT_EQ(routing_table.size(), Parameters::max_routing_table_size);
   size_t count(0);
-  for (uint16_t i = 0; i < 100; ++i) {
+  for (uint16_t i = 0; i < 70; ++i) {
     NodeInfo node(MakeNode());
     if (routing_table.CheckNode(node)) {
       node_ids.push_back(node.node_id);
@@ -283,49 +284,29 @@ TEST(RoutingTableTest, DISABLED_FUNC_GetFirstRemovableNode) {
       ++count;
     }
   }
-  NodeInfo furthest_node(routing_table.GetRemovableNode());
-  NodeInfo node_info;
-  for (auto node_id : node_ids) {
-    if (routing_table.GetNodeInfo(node_id, node_info))
-      EXPECT_FALSE(NodeId::CloserToTarget(furthest_node.node_id,
-                                          node_id,
-                                          routing_table.kNodeId()));
-  }
-}
-
-TEST(RoutingTableTest, DISABLED_FUNC_GetNetxRemovableNode) {
-  std::vector<NodeId> node_ids;
-  Fob fob;
-  fob.identity = Identity(RandomString(64));
-  RoutingTable routing_table(fob, false);
-  for (uint16_t i = 0; routing_table.size() < Parameters::max_routing_table_size; ++i) {
+  std::vector<NodeId> close_buckets;
+  for (uint16_t i = 0; i < 30; ++i) {
     NodeInfo node(MakeNode());
-    node_ids.push_back(node.node_id);
-    EXPECT_TRUE(routing_table.AddNode(node));
-  }
-  std::sort(node_ids.begin(), node_ids.end(),
-            [&](const NodeId& lhs, const NodeId& rhs) {
-              return NodeId::CloserToTarget(lhs, rhs, routing_table.kNodeId());
-            });
-  NodeInfo node_info;
-  for (size_t index(0); index < node_ids.size(); ++index) {
-    node_info = routing_table.GetRemovableNode();
-    if (index == 0) {
-      EXPECT_EQ(node_info.node_id, NodeId());
-    } else {
-      EXPECT_EQ(node_info.node_id, node_ids[index - 1]);
+    node.node_id = GenerateUniqueRandomId(NodeId(random_string), 100);
+    if (routing_table.CheckNode(node)) {
+      close_buckets.push_back(node.node_id);
+      EXPECT_TRUE(routing_table.AddNode(node));
+      ++count;
     }
   }
-  for (size_t index(0); index < node_ids.size(); ++index) {
-    node_info = routing_table.GetRemovableNode();
-    if (index == node_ids.size() - 1) {
-      EXPECT_EQ(node_info.node_id, NodeId());
-    } else {
-      EXPECT_EQ(node_info.node_id, node_ids[index + 1]);
-    }
+
+  NodeInfo removed_node;
+  removed_node = routing_table.GetRemovableNode();
+  EXPECT_GE(removed_node.bucket, 510);
+  std::vector<std::string> attempted_nodes;
+  for (size_t index(0);  index < 10; ++index) {
+    removed_node = routing_table.GetRemovableNode(attempted_nodes);
+    EXPECT_EQ(std::find(attempted_nodes.begin(),
+                        attempted_nodes.end(),
+                        removed_node.node_id.string()), attempted_nodes.end());
+    attempted_nodes.push_back(removed_node.node_id.string());
   }
 }
-
 
 }  // namespace test
 }  // namespace routing

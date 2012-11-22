@@ -54,7 +54,7 @@ struct NodeInfoAndPrivateKey;
   const uint32_t kServerSize(8);
 #else
   const uint32_t kClientSize(5);
-  const uint32_t kServerSize(48);
+  const uint32_t kServerSize(70);
 #endif
 
 const uint32_t kNetworkSize = kClientSize + kServerSize;
