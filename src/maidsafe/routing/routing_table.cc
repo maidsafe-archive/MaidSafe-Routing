@@ -207,12 +207,6 @@ bool RoutingTable::IsConnected(const NodeId& node_id) const {
   return Find(node_id, lock).first;
 }
 
-bool RoutingTable::IsRemovable(const NodeId& node_id) {
-  std::unique_lock<std::mutex> lock(mutex_);
-  return true;
-}
-
-
 bool RoutingTable::ConfirmGroupMembers(const NodeId& node1, const NodeId& node2) {
   NodeId difference = NodeId(kFob().identity) ^ FurthestCloseNode();
   return (node1 ^ node2) < difference;
@@ -410,7 +404,6 @@ NodeInfo RoutingTable::GetRemovableNode(std::vector<std::string> attempted) {
   auto const from_ierator(nodes_.begin() + Parameters::closest_nodes_size);
 
   for (auto it = from_ierator; it != nodes_.end(); ++it) {
-    LOG(kVerbose) << DebugId((*it).node_id) << " >>>>>>>> <<<<<<< " << (*it).bucket;
     if (std::find(attempted.begin(), attempted.end(), ((*it).node_id.string())) ==
            attempted.end()) {
       bucket_iter = bucket_rank_map.find((*it).bucket);
@@ -444,7 +437,7 @@ NodeInfo RoutingTable::GetRemovableNode(std::vector<std::string> attempted) {
       break;
     }
   }
-  LOG(kVerbose) << "[" << DebugId(kNodeId_) << "] Removable ["
+  LOG(kVerbose) << "[" << DebugId(kNodeId_) << "] Proposed removable ["
                 << DebugId(removable_node.node_id) << "]";
   return removable_node;
 }
