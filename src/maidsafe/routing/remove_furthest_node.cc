@@ -13,6 +13,7 @@
 #include "maidsafe/routing/remove_furthest_node.h"
 
 #include <string>
+#include <vector>
 
 #include "maidsafe/routing/parameters.h"
 #include "maidsafe/routing/rpcs.h"
@@ -58,15 +59,15 @@ void RemoveFurthestNode::HandleRemoveRequest(const NodeId& node_id) {
 }
 
 bool RemoveFurthestNode::IsRemovable(const NodeId& node_id) {
-  if (routing_table_.size() <= Parameters::closest_nodes_size)
+  if ((routing_table_.size() <= Parameters::closest_nodes_size) ||
+      (routing_table_.IsThisNodeInRange(node_id, Parameters::closest_nodes_size)))
     return false;
-  if (routing_table_.IsThisNodeInRange(node_id, Parameters::closest_nodes_size))
-    return false;
-  return routing_table_.IsRemovable(node_id);
+  return true;
 }
 
 void RemoveFurthestNode::RejectRemoval(protobuf::Message& message) {
   protobuf::RemoveResponse remove_response;
+  remove_response.set_original_request(message.data(0));
   message.clear_data();
   message.clear_route_history();
   message.set_request(false);
@@ -82,6 +83,7 @@ void RemoveFurthestNode::RejectRemoval(protobuf::Message& message) {
 
 void RemoveFurthestNode::RemoveResponse(protobuf::Message& message) {
   protobuf::RemoveResponse remove_response;
+  protobuf::RemoveRequest remove_request;
   if (!remove_response.ParseFromString(message.data(0))) {
     LOG(kError) << "Could not parse remove node response";
     return;
@@ -89,32 +91,38 @@ void RemoveFurthestNode::RemoveResponse(protobuf::Message& message) {
   if (!remove_response.success()) {
     LOG(kInfo) << "Request to remove " << HexSubstr(message.source_id())
                << " failed, another node will be tried";
-    NodeInfo next_node;
-    next_node = routing_table_.GetClosestTo(NodeId(remove_response.peer_id()), true);
-    if (next_node.node_id == NodeInfo().node_id) {
-      next_node = routing_table_.GetFurthestRemovableNode();
-      if (next_node.node_id != NodeInfo().node_id) {
-        protobuf::Message remove_request(rpcs::Remove(next_node.node_id,
-                                                      routing_table_.kNodeId(),
-                                                      routing_table_.kConnectionId()));
-        LOG(kInfo) << "Request to remove " << HexSubstr(remove_request.destination_id())
-                   << " is re-prepared, message id:" << message.id();
-        remove_request.set_id(message.id());
-        network_.SendToDirect(remove_request, next_node.node_id, next_node.connection_id);
-      }
+    if (!remove_request.ParseFromString(remove_response.original_request())) {
+      LOG(kError) << "Could not parse remove node request";
+      return;
     }
-  } else {
-    LOG(kInfo) << "Request to remove " << HexSubstr(message.source_id()) << " succeeded";
+    NodeInfo next_node;
+    std::vector<std::string> attempted_nodes(remove_request.attempted_nodes().begin(),
+                                             remove_request.attempted_nodes().end());
+    next_node = routing_table_.GetRemovableNode(attempted_nodes);
+    if (next_node.node_id != NodeInfo().node_id) {
+      attempted_nodes.push_back(remove_response.peer_id());
+      protobuf::Message remove_request(rpcs::Remove(next_node.node_id,
+                                                    routing_table_.kNodeId(),
+                                                    routing_table_.kConnectionId(),
+                                                    attempted_nodes));
+      LOG(kInfo) << "Request to remove " << HexSubstr(remove_request.destination_id())
+                 << " is re-prepared, message id:" << message.id();
+      remove_request.set_id(message.id());
+      network_.SendToDirect(remove_request, next_node.node_id, next_node.connection_id);
+    } else {
+      LOG(kInfo) << "Request to remove " << HexSubstr(message.source_id()) << " succeeded";
+    }
   }
 }
 
 void RemoveFurthestNode::RemoveNodeRequest() {
-  NodeInfo furthest_node(routing_table_.GetFurthestRemovableNode());
+  NodeInfo furthest_node(routing_table_.GetRemovableNode(std::vector<std::string>()));
   if (furthest_node.node_id == NodeInfo().node_id)
     return;
   protobuf::Message message(rpcs::Remove(furthest_node.node_id,
                                          routing_table_.kNodeId(),
-                                         routing_table_.kConnectionId()));
+                                         routing_table_.kConnectionId(),
+                                         std::vector<std::string>()));
   LOG(kInfo) << "[" << DebugId(routing_table_.kNodeId())
              << "] Request to remove " << HexSubstr(message.destination_id())
              << " is prepared, message id: " << message.id();

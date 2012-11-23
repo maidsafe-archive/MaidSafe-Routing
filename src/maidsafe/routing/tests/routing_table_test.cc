@@ -112,63 +112,6 @@ TEST(RoutingTableTest, FUNC_GroupChange) {
   ASSERT_EQ(routing_table.size(), Parameters::max_routing_table_size);
 }
 
-TEST(RoutingTableTest, FUNC_CloseAndInRangeCheck) {
-  Fob fob;
-  fob.identity = Identity(RandomString(64));
-  RoutingTable routing_table(fob, false);
-  // Add some nodes to routing_table
-  NodeId my_node(fob.identity);
-  for (uint16_t i = 0; routing_table.size() < Parameters::max_routing_table_size; ++i) {
-    NodeInfo node(MakeNode());
-    EXPECT_TRUE(routing_table.AddNode(node));
-  }
-  EXPECT_EQ(routing_table.size(), Parameters::max_routing_table_size);
-  std::string my_id_encoded(my_node.ToStringEncoded(NodeId::kBinary));
-  my_id_encoded[511] = (my_id_encoded[511] == '0' ? '1' : '0');
-  NodeId my_closest_node(NodeId(my_id_encoded, NodeId::kBinary));
-  EXPECT_TRUE(routing_table.IsThisNodeClosestTo(my_closest_node));
-  EXPECT_TRUE(routing_table.IsThisNodeInRange(my_closest_node, 2));
-  EXPECT_TRUE(routing_table.IsThisNodeInRange(my_closest_node, 200));
-  EXPECT_TRUE(routing_table.IsThisNodeClosestTo(my_closest_node));
-  EXPECT_EQ(routing_table.size(), Parameters::max_routing_table_size);
-  // get closest nodes to me
-  std::vector<NodeId> close_nodes(routing_table.GetClosestNodes(my_node,
-                                              Parameters::closest_nodes_size));
-  // Check against individually selected close nodes
-  for (uint16_t i = 0; i < Parameters::closest_nodes_size; ++i)
-    EXPECT_TRUE(std::find(close_nodes.begin(),
-                          close_nodes.end(),
-                          routing_table.GetNthClosestNode(my_node, i + 1).node_id)
-                              != close_nodes.end());
-  // add the node now
-     NodeInfo node(MakeNode());
-     node.node_id = my_closest_node;
-     EXPECT_TRUE(routing_table.AddNode(node));
-     EXPECT_FALSE(routing_table.AddNode(node));
-  EXPECT_TRUE(routing_table.ConfirmGroupMembers(
-      my_closest_node,
-      routing_table.GetNthClosestNode(my_closest_node, 1).node_id));
-  EXPECT_TRUE(routing_table.ConfirmGroupMembers(
-      my_closest_node,
-      routing_table.GetNthClosestNode(my_closest_node,
-                                      Parameters::closest_nodes_size - 1).node_id));
-  EXPECT_FALSE(routing_table.ConfirmGroupMembers(my_closest_node,
-      routing_table.GetNthClosestNode(my_closest_node,
-                                      Parameters::closest_nodes_size + 1).node_id));
-  // should now be closest node to itself :-)
-  EXPECT_EQ(routing_table.GetClosestNode(my_closest_node).node_id, my_closest_node);
-  EXPECT_EQ(routing_table.size(), Parameters::max_routing_table_size);
-  EXPECT_EQ(node.node_id, routing_table.DropNode(node.node_id, true).node_id);
-  EXPECT_EQ(routing_table.size(), Parameters::max_routing_table_size - 1);
-  EXPECT_TRUE(routing_table.AddNode(node));
-  EXPECT_EQ(routing_table.size(), Parameters::max_routing_table_size);
-  EXPECT_FALSE(routing_table.AddNode(node));
-  EXPECT_EQ(routing_table.size(), Parameters::max_routing_table_size);
-  EXPECT_EQ(node.node_id, routing_table.DropNode(node.node_id, true).node_id);
-  EXPECT_EQ(routing_table.size(), Parameters::max_routing_table_size -1);
-  EXPECT_EQ(NodeId(), routing_table.DropNode(node.node_id, true).node_id);
-}
-
 TEST(RoutingTableTest, FUNC_GetClosestNodeWithExclusion) {
   std::vector<NodeId> nodes_id;
   std::vector<std::string> exclude;
@@ -263,10 +206,11 @@ TEST(RoutingTableTest, FUNC_GetClosestNodeWithExclusion) {
   EXPECT_EQ(node_info.node_id, NodeInfo().node_id);
 }
 
-TEST(RoutingTableTest, FUNC_GetFurthestNode) {
+TEST(RoutingTableTest, BEH_GetRemovableNode) {
   std::vector<NodeId> node_ids;
   Fob fob;
-  fob.identity = Identity(RandomString(64));
+  std::string random_string(RandomString(64));
+  fob.identity = Identity(random_string);
   RoutingTable routing_table(fob, false);
   for (uint16_t i = 0; routing_table.size() < Parameters::max_routing_table_size; ++i) {
     NodeInfo node(MakeNode());
@@ -275,7 +219,7 @@ TEST(RoutingTableTest, FUNC_GetFurthestNode) {
   }
   EXPECT_EQ(routing_table.size(), Parameters::max_routing_table_size);
   size_t count(0);
-  for (uint16_t i = 0; i < 100; ++i) {
+  for (uint16_t i = 0; i < 70; ++i) {
     NodeInfo node(MakeNode());
     if (routing_table.CheckNode(node)) {
       node_ids.push_back(node.node_id);
@@ -283,49 +227,29 @@ TEST(RoutingTableTest, FUNC_GetFurthestNode) {
       ++count;
     }
   }
-  NodeInfo furthest_node(routing_table.GetFurthestRemovableNode());
-  NodeInfo node_info;
-  for (auto node_id : node_ids) {
-    if (routing_table.GetNodeInfo(node_id, node_info))
-      EXPECT_FALSE(NodeId::CloserToTarget(furthest_node.node_id,
-                                          node_id,
-                                          routing_table.kNodeId()));
-  }
-}
-
-TEST(RoutingTableTest, FUNC_GetClosestTo) {
-  std::vector<NodeId> node_ids;
-  Fob fob;
-  fob.identity = Identity(RandomString(64));
-  RoutingTable routing_table(fob, false);
-  for (uint16_t i = 0; routing_table.size() < Parameters::max_routing_table_size; ++i) {
+  std::vector<NodeId> close_buckets;
+  for (uint16_t i = 0; i < 30; ++i) {
     NodeInfo node(MakeNode());
-    node_ids.push_back(node.node_id);
-    EXPECT_TRUE(routing_table.AddNode(node));
-  }
-  std::sort(node_ids.begin(), node_ids.end(),
-            [&](const NodeId& lhs, const NodeId& rhs) {
-              return NodeId::CloserToTarget(lhs, rhs, routing_table.kNodeId());
-            });
-  NodeInfo node_info;
-  for (size_t index(0); index < node_ids.size(); ++index) {
-    node_info = routing_table.GetClosestTo(node_ids[index], true);
-    if (index == 0) {
-      EXPECT_EQ(node_info.node_id, NodeId());
-    } else {
-      EXPECT_EQ(node_info.node_id, node_ids[index - 1]);
+    node.node_id = GenerateUniqueRandomId(NodeId(random_string), 100);
+    if (routing_table.CheckNode(node)) {
+      close_buckets.push_back(node.node_id);
+      EXPECT_TRUE(routing_table.AddNode(node));
+      ++count;
     }
   }
-  for (size_t index(0); index < node_ids.size(); ++index) {
-    node_info = routing_table.GetClosestTo(node_ids[index], false);
-    if (index == node_ids.size() - 1) {
-      EXPECT_EQ(node_info.node_id, NodeId());
-    } else {
-      EXPECT_EQ(node_info.node_id, node_ids[index + 1]);
-    }
+
+  NodeInfo removed_node;
+  removed_node = routing_table.GetRemovableNode();
+  EXPECT_GE(removed_node.bucket, 510);
+  std::vector<std::string> attempted_nodes;
+  for (size_t index(0);  index < 10; ++index) {
+    removed_node = routing_table.GetRemovableNode(attempted_nodes);
+    EXPECT_EQ(std::find(attempted_nodes.begin(),
+                        attempted_nodes.end(),
+                        removed_node.node_id.string()), attempted_nodes.end());
+    attempted_nodes.push_back(removed_node.node_id.string());
   }
 }
-
 
 }  // namespace test
 }  // namespace routing

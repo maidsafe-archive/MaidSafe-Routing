@@ -99,7 +99,7 @@ class GenericNode {
   void PrintRoutingTable();
   bool RoutingTableHasNode(const NodeId& node_id);
   bool NonRoutingTableHasNode(const NodeId& node_id);
-  NodeInfo GetFurthestNode();
+  NodeInfo GetRemovableNode();
   NodeInfo GetNthClosestNode(const NodeId& target_id, uint16_t node_number);
   testing::AssertionResult DropNode(const NodeId& node_id);
   std::vector<NodeInfo> RoutingTable() const;

@@ -46,7 +46,8 @@ protobuf::Message Connect(const NodeId& node_id,
 
 protobuf::Message Remove(const NodeId& node_id,
                          const NodeId& this_node_id,
-                         const NodeId& this_connection_id);
+                         const NodeId& this_connection_id,
+                         const std::vector<std::string>& attempted_nodes);
 
 protobuf::Message FindNodes(
     const NodeId& node_id,
