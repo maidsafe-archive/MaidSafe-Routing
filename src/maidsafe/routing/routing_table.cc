@@ -32,6 +32,8 @@ namespace routing {
 RoutingTable::RoutingTable(const Fob& fob, bool client_mode)
     : kMaxSize_(client_mode ? Parameters::max_client_routing_table_size :
                               Parameters::max_routing_table_size),
+      kThresholdSize_(client_mode ? Parameters::max_client_routing_table_size :
+                                    Parameters::routing_table_size_threshold),
       kClientMode_(client_mode),
       kFob_(fob),
       kNodeId_(NodeId(kFob_.identity)),

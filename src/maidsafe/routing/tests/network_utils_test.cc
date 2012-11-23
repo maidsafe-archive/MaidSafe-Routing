@@ -194,8 +194,15 @@ TEST(NetworkUtilsTest, FUNC_ProcessSendDirectEndpoint) {
   rudp::EndpointPair endpoint_pair_1, endpoint_pair_2, endpoint_pair_3;
   endpoint_pair_1.local = endpoint1;
   endpoint_pair_2.local = endpoint2;
-//  EXPECT_EQ(kSuccess, rudp1.Add(node_id2, endpoint_pair_2, "validation_1->2"));
-//  EXPECT_EQ(kSuccess, rudp2.Add(node_id1, endpoint_pair_1, "validation_2->1"));
+
+  Sleep(boost::posix_time::milliseconds(250));
+  EXPECT_EQ(rudp::kBootstrapConnectionAlreadyExists,
+            rudp1.GetAvailableEndpoint(node_id2, endpoint_pair_2, endpoint_pair_1, nat_type));
+  EXPECT_EQ(rudp::kBootstrapConnectionAlreadyExists,
+            rudp2.GetAvailableEndpoint(node_id1, endpoint_pair_1, endpoint_pair_2, nat_type));
+
+  EXPECT_EQ(kSuccess, rudp1.Add(node_id2, endpoint_pair_2, "validation_1->2"));
+  EXPECT_EQ(kSuccess, rudp2.Add(node_id1, endpoint_pair_1, "validation_2->1"));
   Endpoint endpoint;
   rudp1.MarkConnectionAsValid(node_id2, endpoint);
   rudp2.MarkConnectionAsValid(node_id1, endpoint);
@@ -212,9 +219,10 @@ TEST(NetworkUtilsTest, FUNC_ProcessSendDirectEndpoint) {
   EXPECT_EQ(kSuccess, network.Bootstrap(bootstrap_endpoint,
                                         message_received_functor3,
                                         connection_lost_functor));
-//   rudp::EndpointPair endpoint_pair2, endpoint_pair3;
   rudp::NatType this_nat_type;
-  network.GetAvailableEndpoint(node_id2, endpoint_pair_2, endpoint_pair_3, this_nat_type);
+  EXPECT_EQ(rudp::kBootstrapConnectionAlreadyExists,
+            network.GetAvailableEndpoint(node_id2, endpoint_pair_2, endpoint_pair_3,
+                                         this_nat_type));
   EXPECT_EQ(rudp::kBootstrapConnectionAlreadyExists,
             rudp2.GetAvailableEndpoint(node_id3, endpoint_pair_3, endpoint_pair_2, this_nat_type));
   EXPECT_EQ(rudp::kSuccess, network.Add(node_id2, endpoint_pair_2, "validation_3->2"));
@@ -349,8 +357,15 @@ TEST(NetworkUtilsTest, FUNC_ProcessSendRecursiveSendOn) {
   rudp::EndpointPair endpoint_pair_1, endpoint_pair_2;
   endpoint_pair_1.local = endpoint1;
   endpoint_pair_2.local = endpoint2;
-//  EXPECT_EQ(kSuccess, rudp1.Add(node_id2, endpoint_pair_2, "validation_1->2"));
-//  EXPECT_EQ(kSuccess, rudp2.Add(node_id1, endpoint_pair_1, "validation_2->1"));
+
+  Sleep(boost::posix_time::milliseconds(250));
+  EXPECT_EQ(rudp::kBootstrapConnectionAlreadyExists,
+            rudp1.GetAvailableEndpoint(node_id2, endpoint_pair_2, endpoint_pair_1, nat_type));
+  EXPECT_EQ(rudp::kBootstrapConnectionAlreadyExists,
+            rudp2.GetAvailableEndpoint(node_id1, endpoint_pair_1, endpoint_pair_2, nat_type));
+
+  EXPECT_EQ(kSuccess, rudp1.Add(node_id2, endpoint_pair_2, "validation_1->2"));
+  EXPECT_EQ(kSuccess, rudp2.Add(node_id1, endpoint_pair_1, "validation_2->1"));
   Endpoint endpoint;
   rudp1.MarkConnectionAsValid(node_id2, endpoint);
   rudp2.MarkConnectionAsValid(node_id1, endpoint);
