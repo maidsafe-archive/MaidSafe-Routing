@@ -206,7 +206,7 @@ TEST(RoutingTableTest, FUNC_GetClosestNodeWithExclusion) {
   EXPECT_EQ(node_info.node_id, NodeInfo().node_id);
 }
 
-TEST(RoutingTableTest, GetRemovableNode) {
+TEST(RoutingTableTest, BEH_GetRemovableNode) {
   std::vector<NodeId> node_ids;
   Fob fob;
   std::string random_string(RandomString(64));
