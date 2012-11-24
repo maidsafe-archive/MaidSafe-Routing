@@ -65,6 +65,7 @@ class RoutingTable {
   std::vector<NodeId> GetClosestNodes(const NodeId& target_id, uint16_t number_to_get);
   NodeInfo GetRemovableNode(std::vector<std::string> attempted = std::vector<std::string>());
   size_t size() const;
+  uint16_t kThresholdSize() const { return kThresholdSize_; }
   Fob kFob() const { return kFob_; }
   NodeId kNodeId() const { return kNodeId_; }
   NodeId kConnectionId() const { return kConnectionId_; }
@@ -104,6 +105,7 @@ class RoutingTable {
   std::string PrintRoutingTable();
 
   const uint16_t kMaxSize_;
+  const uint16_t kThresholdSize_;
   const bool kClientMode_;
   const Fob kFob_;
   const NodeId kNodeId_;

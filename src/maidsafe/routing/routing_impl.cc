@@ -553,10 +553,10 @@ void Routing::Impl::ReSendFindNodeRequest(const boost::system::error_code& error
                 << " Scheduling Re-Bootstrap .... !!!";
     ReBootstrap();
     return;
-  } else if (ignore_size || (routing_table_.size() < Parameters::routing_table_size_threshold)) {
+  } else if (ignore_size || (routing_table_.size() < routing_table_.kThresholdSize())) {
     if (!ignore_size)
       LOG(kInfo) << "[" << DebugId(kNodeId_)
-                  << "] Routing table smaller than " << Parameters::routing_table_size_threshold
+                  << "] Routing table smaller than " << routing_table_.kThresholdSize()
                   << " nodes.  Sending another FindNodes. Routing table size < "
                   << routing_table_.size() << " >";
     else
@@ -565,7 +565,7 @@ void Routing::Impl::ReSendFindNodeRequest(const boost::system::error_code& error
                   << routing_table_.size();
 
     int num_nodes_requested(0);
-    if (ignore_size && (routing_table_.size() > Parameters::routing_table_size_threshold))
+    if (ignore_size && (routing_table_.size() > routing_table_.kThresholdSize()))
       num_nodes_requested = static_cast<int>(Parameters::closest_nodes_size);
     else
       num_nodes_requested = static_cast<int>(Parameters::greedy_fraction);
