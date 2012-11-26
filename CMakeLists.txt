@@ -119,6 +119,46 @@ if(MAIDSAFE_TESTING)
   add_style_test(${STYLE_ROUTING})
   add_gtests(TESTrouting)
   add_gtests(TESTrouting_api)
+  set_tests_properties(RoutingNetworkTest.FUNC_SetupNetwork
+                       RoutingNetworkTest.FUNC_SetupSingleClientHybridNetwork
+                       RoutingNetworkTest.FUNC_SetupHybridNetwork
+                       RoutingNetworkTest.FUNC_Send
+                       RoutingNetworkTest.FUNC_SendToNonExistingNode
+                       RoutingNetworkTest.FUNC_ClientSend
+                       RoutingNetworkTest.FUNC_SendMulti
+                       RoutingNetworkTest.FUNC_ClientSendMulti
+                       RoutingNetworkTest.FUNC_SendToGroup
+                       RoutingNetworkTest.FUNC_SendToGroupSelfId
+                       RoutingNetworkTest.FUNC_SendToGroupClientSelfId
+                       RoutingNetworkTest.FUNC_SendToGroupInHybridNetwork
+                       RoutingNetworkTest.FUNC_SendToGroupRandomId
+                       RoutingNetworkTest.FUNC_AnonymousSendToGroupRandomId
+                       RoutingNetworkTest.FUNC_AnonymousSendToGroupExistingId
+                       RoutingNetworkTest.FUNC_JoinAfterBootstrapLeaves
+                       RoutingNetworkTest.FUNC_RecursiveCall
+                       RoutingNetworkTest.FUNC_JoinWithSameId
+                       RoutingNetworkTest.FUNC_SendToClientsWithSameId
+                       RoutingNetworkTest.FUNC_SendToClientWithSameId
+                       RoutingNetworkTest.FUNC_NodeRemoved
+                       RoutingNetworkTest.FUNC_GetRandomExistingNode
+                       RoutingNetworkTest.FUNC_BasicNetworkChurn
+                       RoutingNetworkTest.FUNC_MessagingNetworkChurn
+                       FindNodeNetwork.FUNC_FindExistingNode
+                       FindNodeNetwork.FUNC_FindExistingNodeInHybridNetwork
+                       FindNodeNetwork.FUNC_FindNonExistingNode
+                       FindNodeNetwork.FUNC_FindNodeAfterDrop
+                       FindNodeNetwork.FUNC_VaultFindVaultNode
+                       FindNodeNetwork.FUNC_VaultFindClientNode
+                       FindNodeNetwork.FUNC_ClientFindVaultNode
+                       FindNodeNetwork.FUNC_ClientFindClientNode
+                       APITest.BEH_API_ZeroState
+                       APITest.FUNC_API_AnonymousNode
+                       APITest.BEH_API_SendToSelf
+                       APITest.BEH_API_ClientNode
+                       APITest.BEH_API_ClientNodeSameId
+                       APITest.BEH_API_NodeNetwork
+                       APITest.BEH_API_NodeNetworkWithClient
+                       PROPERTIES LABELS Critical)
   add_project_experimental()
   test_summary_output()
 endif()
