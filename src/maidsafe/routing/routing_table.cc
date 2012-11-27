@@ -394,19 +394,16 @@ NodeInfo RoutingTable::GetClosestNode(const NodeId& target_id,
 }
 
 NodeInfo RoutingTable::GetRemovableNode(std::vector<std::string> attempted) {
-  NodeInfo removable_node;
   std::map<uint32_t, uint16_t> bucket_rank_map;
-  std::map<uint32_t, uint16_t>::iterator bucket_iter;
-
   std::unique_lock<std::mutex> lock(mutex_);
-  PartialSortFromTarget(kNodeId_, nodes_.size(), lock);
+  PartialSortFromTarget(kNodeId_, static_cast<uint16_t>(nodes_.size()), lock);
 
-  auto const from_ierator(nodes_.begin() + Parameters::closest_nodes_size);
+  auto const from_iterator(nodes_.begin() + Parameters::closest_nodes_size);
 
-  for (auto it = from_ierator; it != nodes_.end(); ++it) {
+  for (auto it = from_iterator; it != nodes_.end(); ++it) {
     if (std::find(attempted.begin(), attempted.end(), ((*it).node_id.string())) ==
            attempted.end()) {
-      bucket_iter = bucket_rank_map.find((*it).bucket);
+      auto bucket_iter = bucket_rank_map.find((*it).bucket);
       if (bucket_iter != bucket_rank_map.end()) {
         (*bucket_iter).second++;
       } else {
@@ -429,7 +426,8 @@ NodeInfo RoutingTable::GetRemovableNode(std::vector<std::string> attempted) {
     return nodes_[nodes_.size() - 1];
   }
 
-  for (auto it(nodes_.end() - 1) ; it != (from_ierator - 1); --it) {
+  NodeInfo removable_node;
+  for (auto it(nodes_.end() - 1) ; it != (from_iterator - 1); --it) {
     if (((*it).bucket == max_bucket) &&
         std::find(attempted.begin(), attempted.end(), (*it).node_id.string()) ==
             attempted.end()) {
