@@ -34,6 +34,10 @@ class MockNetworkUtils : public NetworkUtils {
   MOCK_METHOD3(SendToDirect, void(const protobuf::Message& message,
                                   const NodeId& peer,
                                   const NodeId& connection));
+  MOCK_METHOD4(GetAvailableEndpoint, int(const NodeId& peer_id,
+                                         const rudp::EndpointPair& peer_endpoint_pair,
+                                         rudp::EndpointPair& this_endpoint_pair,
+                                         rudp::NatType& this_nat_type));
 
  private:
   MockNetworkUtils &operator=(const MockNetworkUtils&);
