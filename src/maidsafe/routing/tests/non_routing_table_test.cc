@@ -109,7 +109,7 @@ TEST_F(NonRoutingTableTest, BEH_CheckAddFarAwayNode) {
   EXPECT_FALSE(non_routing_table.AddNode(nodes_.at(1), nodes_.at(0).node_id));
 }
 
-TEST_F(NonRoutingTableTest, BEH_CheckAddSurplusNodes) {
+TEST_F(NonRoutingTableTest, FUNC_CheckAddSurplusNodes) {
   NonRoutingTable non_routing_table(fob_);
 
   PopulateNodesSetFurthestCloseNode(2 * Parameters::max_non_routing_table_size,
@@ -211,7 +211,7 @@ TEST_F(NonRoutingTableTest, BEH_AddThenCheckNode) {
   EXPECT_FALSE(non_routing_table.AddNode(nodes_.at(0), nodes_.at(1).node_id));
 }
 
-TEST_F(NonRoutingTableTest, BEH_DropNodes) {
+TEST_F(NonRoutingTableTest, FUNC_DropNodes) {
   NonRoutingTable non_routing_table(fob_);
 
   PopulateNodesSetFurthestCloseNode(Parameters::max_non_routing_table_size,
@@ -241,7 +241,7 @@ TEST_F(NonRoutingTableTest, BEH_DropNodes) {
   }
 }
 
-TEST_F(NonRoutingTableTest, BEH_DropConnection) {
+TEST_F(NonRoutingTableTest, FUNC_DropConnection) {
   NonRoutingTable non_routing_table(fob_);
 
   PopulateNodesSetFurthestCloseNode(Parameters::max_non_routing_table_size,
@@ -263,7 +263,7 @@ TEST_F(NonRoutingTableTest, BEH_DropConnection) {
   EXPECT_EQ(0, non_routing_table.size());
 }
 
-TEST_F(NonRoutingTableTest, BEH_GetNodesInfo) {
+TEST_F(NonRoutingTableTest, FUNC_GetNodesInfo) {
   NonRoutingTable non_routing_table(fob_);
 
   PopulateNodesSetFurthestCloseNode(Parameters::max_non_routing_table_size,
@@ -292,7 +292,7 @@ TEST_F(NonRoutingTableTest, BEH_GetNodesInfo) {
   }
 }
 
-TEST_F(NonRoutingTableTest, BEH_IsConnected) {
+TEST_F(NonRoutingTableTest, FUNC_IsConnected) {
   NonRoutingTable non_routing_table(fob_);
 
   PopulateNodesSetFurthestCloseNode(2 * Parameters::max_non_routing_table_size,

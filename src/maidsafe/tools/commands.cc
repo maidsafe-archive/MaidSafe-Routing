@@ -386,7 +386,7 @@ void Commands::MarkResultArrived() {
 NodeId Commands::CalculateClosests(const NodeId& target_id,
                                    std::vector<NodeId>& closests,
                                    uint16_t num_of_closests) {
-  std::sort(all_ids_.begin(), all_ids_.end(),
+  std::sort(all_ids_.begin(), all_ids_.begin() + all_ids_.size() / 2,
             [&](const NodeId &i, const NodeId &j) {
               return (NodeId::CloserToTarget(i, j, target_id));
             });
