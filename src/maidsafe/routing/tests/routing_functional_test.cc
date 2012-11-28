@@ -525,7 +525,7 @@ TEST_F(RoutingNetworkTest, FUNC_SendToClientsWithSameId) {
     EXPECT_TRUE(this->Send(this->nodes_[kNetworkSize],
                           this->nodes_[kNetworkSize]->node_id(),
                           true));
-  int num_of_tries(0);
+  uint16_t num_of_tries(0);
   bool done(false);
   do {
     Sleep(boost::posix_time::seconds(1));
