@@ -31,6 +31,7 @@
 #include "maidsafe/routing/routing_table.h"
 #include "maidsafe/routing/rpcs.h"
 #include "maidsafe/routing/utils.h"
+#include "maidsafe/routing/group_change_handler.h"
 
 
 namespace maidsafe {
@@ -45,10 +46,12 @@ typedef boost::asio::ip::udp::endpoint Endpoint;
 
 Service::Service(RoutingTable& routing_table,
                  NonRoutingTable& non_routing_table,
-                 NetworkUtils& network)
+                 NetworkUtils& network,
+                 GroupChangeHandler& group_change_handler)
   : routing_table_(routing_table),
     non_routing_table_(non_routing_table),
     network_(network),
+    group_change_handler_(group_change_handler),
     request_public_key_functor_() {}
 
 Service::~Service() {}
@@ -293,6 +296,35 @@ void Service::ConnectSuccess(protobuf::Message& message) {
     ConnectSuccessFromResponder(peer, message.client_node());
   }
   message.Clear();  // message is sent directly to the peer
+}
+
+void Service::CloseNodeChange(protobuf::Message& message) {
+  if (message.destination_id() != routing_table_.kFob().identity.string()) {
+    // Message not for this node and we should not pass it on.
+    LOG(kError) << "Message not for this node.";
+    message.Clear();
+    return;
+  }
+  protobuf::CloseNodeChange close_node_change;
+  if (!close_node_change.ParseFromString(message.data(0))) {
+    LOG(kError) << "No Data.";
+    return;
+  }
+
+  if (close_node_change.node().empty() || !CheckId(close_node_change.node())) {
+    LOG(kError) << "Invalid node id provided.";
+    return;
+  }
+
+  NodeId peer(NodeId(close_node_change.node()));
+  std::vector<NodeId> close_nodes;
+  for (const std::string& node : close_node_change.close_nodes()) {
+    if (CheckId(node))
+      close_nodes.push_back(NodeId(node));
+  }
+  if (!close_nodes.empty())
+    group_change_handler_.UpdateGroupChange(peer, close_nodes);
+  message.Clear();  // No response
 }
 
 void Service::ConnectSuccessFromRequester(NodeInfo& /*peer*/) {}

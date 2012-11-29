@@ -89,20 +89,20 @@ TEST(RoutingTableTest, FUNC_GroupChange) {
   SortFromTarget(routing_table.kNodeId(), nodes);
 
   int count(0);
-  auto close_node_replaced_functor([&count](const std::vector<NodeInfo> nodes) {
-    ++count;
-    LOG(kInfo) << "Close node replaced. count : " << count;
-    EXPECT_GE(8, count);
-    for (auto i: nodes) {
-      LOG(kVerbose) << "NodeId : " << DebugId(i.node_id);
-    }
-  });
+  GroupChangeFunctor group_change_functor = [&count](const std::vector<NodeInfo> nodes) {
+      ++count;
+      LOG(kInfo) << "Group changed. count : " << count;
+      EXPECT_GE(Parameters::closest_nodes_size, count);
+      for (auto i: nodes) {
+        LOG(kVerbose) << "NodeId : " << DebugId(i.node_id);
+      }
+    };
 
   routing_table.InitialiseFunctors(
       [](const int& status) { LOG(kVerbose) << "Status : " << status; },
       [](const NodeInfo&, bool) {},
-      close_node_replaced_functor,
-      []() {});
+      []() {},
+      group_change_functor);
 
   for (uint16_t i = 0; i < Parameters::max_routing_table_size; ++i) {
     ASSERT_TRUE(routing_table.AddNode(nodes.at(i)));

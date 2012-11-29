@@ -38,11 +38,14 @@ namespace test {
   class MessageHandlerTest_BEH_ClientRoutingTable_Test;
 }
 
+
 class NetworkUtils;
 class NonRoutingTable;
 class RoutingTable;
-class RemoveFurthestNode;
 class Timer;
+class RemoveFurthestNode;
+class GroupChangeHandler;
+
 
 enum class MessageType : int32_t {
   kPing = 1,
@@ -51,6 +54,7 @@ enum class MessageType : int32_t {
   kConnectSuccess = 4,
   kConnectSuccessAcknowledgement = 5,
   kRemove = 6,
+  kCloseNodeChange = 7,
   kMaxRouting = 100,
   kNodeLevel = 101
 };
@@ -60,8 +64,9 @@ class MessageHandler {
   MessageHandler(RoutingTable& routing_table,
                  NonRoutingTable& non_routing_table,
                  NetworkUtils& network,
+                 Timer& timer,
                  RemoveFurthestNode& remove_node,
-                 Timer& timer);
+                 GroupChangeHandler& group_change_handler);
   void HandleMessage(protobuf::Message& message);
   void set_message_received_functor(MessageReceivedFunctor message_received_functor);
   void set_request_public_key_functor(RequestPublicKeyFunctor request_public_key_functor);
@@ -102,6 +107,7 @@ class MessageHandler {
   NonRoutingTable& non_routing_table_;
   NetworkUtils& network_;
   RemoveFurthestNode& remove_furthest_node_;
+  GroupChangeHandler& group_change_handler_;
   std::unique_ptr<CacheManager> cache_manager_;
   Timer& timer_;
   std::shared_ptr<ResponseHandler> response_handler_;

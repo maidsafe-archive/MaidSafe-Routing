@@ -61,8 +61,9 @@ Routing::Impl::Impl(const Fob& fob, bool client_mode)
       message_handler_(),
       asio_service_(2),
       network_(routing_table_, non_routing_table_),
-      remove_furthest_node_(routing_table_, network_),
       timer_(asio_service_),
+      remove_furthest_node_(routing_table_, network_),
+      group_change_handler_(routing_table_, network_),
       re_bootstrap_timer_(asio_service_.service()),
       recovery_timer_(asio_service_.service()),
       setup_timer_(asio_service_.service()) {
@@ -70,8 +71,9 @@ Routing::Impl::Impl(const Fob& fob, bool client_mode)
   message_handler_.reset(new MessageHandler(routing_table_,
                                             non_routing_table_,
                                             network_,
+                                            timer_,
                                             remove_furthest_node_,
-                                            timer_));
+                                            group_change_handler_));
 
   assert((client_mode || fob.identity.IsInitialised()) &&
          "Server Nodes cannot be created without valid keys");
@@ -103,9 +105,13 @@ void Routing::Impl::ConnectFunctors(const Functors& functors) {
                                     [this](const NodeInfo& node, bool internal_rudp_only) {
                                              RemoveNode(node, internal_rudp_only);
                                            },
-                                    functors.close_node_replaced,
                                     [this]() {
                                       remove_furthest_node_.RemoveNodeRequest();
+                                    },
+                                    [this] (const std::vector<NodeInfo> nodes) {
+                                      std::lock_guard<std::mutex> lock(running_mutex_);
+                                      if (running_)
+                                        group_change_handler_.SendCloseNodeChangeRpcs(nodes);
                                     });
   message_handler_->set_message_received_functor(functors.message_received);
   message_handler_->set_request_public_key_functor(functors.request_public_key);
