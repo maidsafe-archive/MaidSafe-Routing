@@ -13,6 +13,8 @@
 #ifndef MAIDSAFE_ROUTING_TESTS_MOCK_NETWORK_UTILS_H_
 #define MAIDSAFE_ROUTING_TESTS_MOCK_NETWORK_UTILS_H_
 
+#include <string>
+
 #include "gmock/gmock.h"
 
 #include "maidsafe/routing/network_utils.h"
@@ -31,6 +33,7 @@ class MockNetworkUtils : public NetworkUtils {
   virtual ~MockNetworkUtils();
 
   MOCK_METHOD1(SendToClosestNode, void(const protobuf::Message& message));
+  MOCK_METHOD1(MarkConnectionAsValid, int(const NodeId& peer_id));
   MOCK_METHOD3(SendToDirect, void(const protobuf::Message& message,
                                   const NodeId& peer,
                                   const NodeId& connection));

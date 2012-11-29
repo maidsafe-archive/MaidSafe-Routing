@@ -61,6 +61,10 @@ class ResponseHandlerTest : public testing::Test {
     return kSuccess;
   }
 
+  void RequestPublicKey(NodeId /*node_id*/, GivePublicKeyFunctor give_public_key) {
+    give_public_key(MakeFob().keys.public_key);
+  }
+
  protected:
   void SetUp() {}
 
@@ -118,6 +122,18 @@ class ResponseHandlerTest : public testing::Test {
     return connect_response;
   }
 
+  protobuf::ConnectSuccessAcknowledgement ComposeConnectSuccessAcknowledgement(
+      const NodeId &node_id, const NodeId &connection_id, bool requestor = true,
+      const std::vector<std::string> &close_ids = std::vector<std::string>()) {
+    protobuf::ConnectSuccessAcknowledgement connect_ack;
+    connect_ack.set_node_id(node_id.string());
+    connect_ack.set_connection_id(connection_id.string());
+    for (auto &close_id : close_ids)
+      connect_ack.add_close_ids(close_id);
+    connect_ack.set_requestor(requestor);
+    return connect_ack;
+  }
+
   protobuf::Message ComposeMsg(const std::string &data) {
     protobuf::Message message;
 //     message.set_destination_id(message.source_id());
@@ -169,15 +185,11 @@ class ResponseHandlerTest : public testing::Test {
 TEST_F(ResponseHandlerTest, BEH_FindNodes) {
   protobuf::Message message;
   // Incorrect FindNodeResponse msg
-  message = ComposeFindNodesResponseMsg(4);
-  message.clear_data();
-  message.add_data(RandomString(128));
+  message = ComposeMsg(RandomString(128));
   response_handler_.FindNodes(message);
 
   // Incorrect Original FindNodesRequest part
-  message = ComposeFindNodesResponseMsg(4);
-  message.clear_data();
-  message.add_data(ComposeFindNodesResponse(RandomString(128), 4).SerializeAsString());
+  message = ComposeMsg(ComposeFindNodesResponse(RandomString(128), 4).SerializeAsString());
   response_handler_.FindNodes(message);
 
   // In case of collision
@@ -247,15 +259,11 @@ TEST_F(ResponseHandlerTest, BEH_FindNodes) {
 TEST_F(ResponseHandlerTest, BEH_Connect) {
   protobuf::Message message;
   // Incorrect ConnectResponse msg
-  message = ComposeConnectResponseMsg(protobuf::ConnectResponseType::kAccepted);
-  message.clear_data();
-  message.add_data(RandomString(128));
+  message = ComposeMsg(RandomString(128));
   response_handler_.Connect(message);
 
   // Incorrect Original ConnectRequest part
-  message = ComposeConnectResponseMsg(protobuf::ConnectResponseType::kAccepted);
-  message.clear_data();
-  message.add_data(ComposeConnectResponse(protobuf::ConnectResponseType::kAccepted,
+  message = ComposeMsg(ComposeConnectResponse(protobuf::ConnectResponseType::kAccepted,
       RandomString(128), NodeId(RandomString(64)), true).SerializeAsString());
   response_handler_.Connect(message);
 
@@ -302,6 +310,65 @@ TEST_F(ResponseHandlerTest, BEH_Connect) {
       .WillOnce(testing::Return(kSuccess));
   EXPECT_CALL(network_, SendToDirect(testing::_, testing::_, testing::_)).Times(1);
   response_handler_.Connect(message);
+}
+
+TEST_F(ResponseHandlerTest, BEH_ConnectSuccessAcknowledgement) {
+  protobuf::Message message;
+  NodeId node_id(RandomString(64)), connection_id(RandomString(64));
+  // Incorrect ConnectSuccessAcknowledgement msg
+  message = ComposeMsg(RandomString(128));
+  response_handler_.ConnectSuccessAcknowledgement(message);
+
+  // Invalid node_id
+  message = ComposeMsg(ComposeConnectSuccessAcknowledgement(NodeId(),
+                                                            connection_id).SerializeAsString());
+  response_handler_.ConnectSuccessAcknowledgement(message);
+
+  // Invalid peer connection_id
+  message = ComposeMsg(ComposeConnectSuccessAcknowledgement(node_id,
+                                                            NodeId()).SerializeAsString());
+  response_handler_.ConnectSuccessAcknowledgement(message);
+
+  // shared_from_this function inside requires the response_handler holder to be shared_ptr
+  // if holding as a normal object, shared_from_this will throw an exception
+  std::shared_ptr<ResponseHandler> response_handler(
+      std::make_shared<ResponseHandler>(routing_table_, non_routing_table_, network_));
+
+  // request_public_key_functor_ doesn't setup
+  message = ComposeMsg(ComposeConnectSuccessAcknowledgement(node_id,
+                                                            connection_id).SerializeAsString());
+  response_handler->ConnectSuccessAcknowledgement(message);
+
+  // Setup request_public_key_functor_
+  response_handler->set_request_public_key_functor(
+      boost::bind(&ResponseHandlerTest::RequestPublicKey, this, _1, _2));
+
+  // Rudp failed to validate connection
+  EXPECT_CALL(network_, MarkConnectionAsValid(testing::_))
+      .WillOnce(testing::Return(-350020));
+  response_handler->ConnectSuccessAcknowledgement(message);
+
+  // Rudp succeed to validate connection, HandleSuccessAcknowledgementAsReponder
+  EXPECT_CALL(network_, MarkConnectionAsValid(testing::_))
+      .WillOnce(testing::Return(kSuccess));
+  EXPECT_CALL(network_, SendToDirect(testing::_, testing::_, testing::_)).Times(1);
+  response_handler->ConnectSuccessAcknowledgement(message);
+
+  // Rudp succeed to validate connection, HandleSuccessAcknowledgementAsRequestor
+  std::vector<std::string> close_ids;
+  size_t num_close_ids(4);
+  for (size_t i(0); i < num_close_ids; ++i)
+    close_ids.push_back(RandomString(64));
+  message = ComposeMsg(ComposeConnectSuccessAcknowledgement(NodeId(RandomString(64)),
+                connection_id, false, close_ids).SerializeAsString());
+  EXPECT_CALL(network_, MarkConnectionAsValid(testing::_))
+      .WillOnce(testing::Return(kSuccess));
+  EXPECT_CALL(network_, GetAvailableEndpoint(testing::_, testing::_, testing::_, testing::_))
+      .Times(num_close_ids)
+      .WillRepeatedly(testing::WithArgs<2, 3>(testing::Invoke(
+            boost::bind(&ResponseHandlerTest::GetAvailableEndpoint, this, _1, _2))));
+  EXPECT_CALL(network_, SendToClosestNode(testing::_)).Times(num_close_ids);
+  response_handler->ConnectSuccessAcknowledgement(message);
 }
 
 }  // namespace test

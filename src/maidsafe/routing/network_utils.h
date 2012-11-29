@@ -56,7 +56,7 @@ class NetworkUtils {
   virtual int Add(const NodeId& peer_id,
                   const rudp::EndpointPair& peer_endpoint_pair,
                   const std::string& validation_data);
-  int MarkConnectionAsValid(const NodeId& peer_id);
+  virtual int MarkConnectionAsValid(const NodeId& peer_id);
   void Remove(const NodeId& peer_id);
   // For sending relay requests, message with empty source ID may be provided, along with
   // direct endpoint.
