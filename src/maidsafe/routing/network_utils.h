@@ -36,7 +36,10 @@ namespace protobuf { class Message; }
 class NonRoutingTable;
 class RoutingTable;
 
-namespace test { class GenericNode; }
+namespace test {
+  class GenericNode;
+  class MockNetworkUtils;
+}
 
 class NetworkUtils {
  public:
@@ -50,9 +53,9 @@ class NetworkUtils {
                                    const rudp::EndpointPair& peer_endpoint_pair,
                                    rudp::EndpointPair& this_endpoint_pair,
                                    rudp::NatType& this_nat_type);
-  int Add(const NodeId& peer_id,
-          const rudp::EndpointPair& peer_endpoint_pair,
-          const std::string& validation_data);
+  virtual int Add(const NodeId& peer_id,
+                  const rudp::EndpointPair& peer_endpoint_pair,
+                  const std::string& validation_data);
   int MarkConnectionAsValid(const NodeId& peer_id);
   void Remove(const NodeId& peer_id);
   // For sending relay requests, message with empty source ID may be provided, along with
@@ -74,6 +77,7 @@ class NetworkUtils {
   rudp::NatType nat_type() const;
 
   friend class test::GenericNode;
+  friend class test::MockNetworkUtils;
 
  private:
   NetworkUtils(const NetworkUtils&);

@@ -34,10 +34,16 @@ class MockNetworkUtils : public NetworkUtils {
   MOCK_METHOD3(SendToDirect, void(const protobuf::Message& message,
                                   const NodeId& peer,
                                   const NodeId& connection));
+  MOCK_METHOD3(Add, int(const NodeId& peer_id,
+                        const rudp::EndpointPair& peer_endpoint_pair,
+                        const std::string& validation_data));
   MOCK_METHOD4(GetAvailableEndpoint, int(const NodeId& peer_id,
                                          const rudp::EndpointPair& peer_endpoint_pair,
                                          rudp::EndpointPair& this_endpoint_pair,
                                          rudp::NatType& this_nat_type));
+  void SetBootstrapConnectionId(const NodeId &node_id) {
+    this->bootstrap_connection_id_ = node_id;
+  }
 
  private:
   MockNetworkUtils &operator=(const MockNetworkUtils&);
