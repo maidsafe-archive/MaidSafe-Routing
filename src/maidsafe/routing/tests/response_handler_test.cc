@@ -19,6 +19,7 @@
 #include "maidsafe/common/utils.h"
 
 #include "maidsafe/rudp/managed_connections.h"
+#include "maidsafe/rudp/return_codes.h"
 
 #include "maidsafe/routing/message_handler.h"
 #include "maidsafe/routing/non_routing_table.h"
@@ -50,7 +51,8 @@ class ResponseHandlerTest : public testing::Test {
        response_handler_(routing_table_, non_routing_table_, network_) {}
 
   int GetAvailableEndpoint(rudp::EndpointPair& this_endpoint_pair,
-                           rudp::NatType& this_nat_type) {
+                           rudp::NatType& this_nat_type,
+                           int return_val) {
     this_endpoint_pair.local = boost::asio::ip::udp::endpoint(
                                   boost::asio::ip::address_v4::loopback(),
                                   maidsafe::test::GetRandomPort());
@@ -58,7 +60,7 @@ class ResponseHandlerTest : public testing::Test {
                                       boost::asio::ip::address_v4::loopback(),
                                       maidsafe::test::GetRandomPort());
     this_nat_type = rudp::NatType::kUnknown;
-    return kSuccess;
+    return return_val;
   }
 
   void RequestPublicKey(NodeId /*node_id*/, GivePublicKeyFunctor give_public_key) {
@@ -134,6 +136,15 @@ class ResponseHandlerTest : public testing::Test {
     return connect_ack;
   }
 
+  protobuf::PingResponse ComposePingResponse(const std::string &ori_ping_request) {
+    protobuf::PingResponse ping_response;
+    ping_response.set_pong(true);
+    ping_response.set_timestamp(GetTimeStamp());
+    ping_response.set_original_request(ori_ping_request);
+    ping_response.set_original_signature(RandomString(128));
+    return ping_response;
+  }
+
   protobuf::Message ComposeMsg(const std::string &data) {
     protobuf::Message message;
 //     message.set_destination_id(message.source_id());
@@ -175,6 +186,13 @@ class ResponseHandlerTest : public testing::Test {
         respondent_contact_node_id, respondent_contact_peer_endpoint).SerializeAsString());
   }
 
+  protobuf::Message ComposePingResponseMsg() {
+    protobuf::PingRequest ping_request;
+    ping_request.set_ping(true);
+    ping_request.set_timestamp(GetTimeStamp());
+    return ComposeMsg(ComposePingResponse(ping_request.SerializeAsString()).SerializeAsString());
+  }
+
   Fob fob_;
   RoutingTable routing_table_;
   NonRoutingTable non_routing_table_;
@@ -210,7 +228,7 @@ TEST_F(ResponseHandlerTest, BEH_FindNodes) {
   message = ComposeFindNodesResponseMsg(2, nodes);
   EXPECT_CALL(network_, GetAvailableEndpoint(testing::_, testing::_, testing::_, testing::_))
       .WillOnce(testing::WithArgs<2, 3>(testing::Invoke(
-            boost::bind(&ResponseHandlerTest::GetAvailableEndpoint, this, _1, _2))));
+            boost::bind(&ResponseHandlerTest::GetAvailableEndpoint, this, _1, _2, kSuccess))));
   EXPECT_CALL(network_, SendToClosestNode(testing::_)).Times(1);
   response_handler_.FindNodes(message);
 
@@ -219,7 +237,7 @@ TEST_F(ResponseHandlerTest, BEH_FindNodes) {
   EXPECT_CALL(network_, GetAvailableEndpoint(testing::_, testing::_, testing::_, testing::_))
       .Times(4)
       .WillRepeatedly(testing::WithArgs<2, 3>(testing::Invoke(
-            boost::bind(&ResponseHandlerTest::GetAvailableEndpoint, this, _1, _2))));
+            boost::bind(&ResponseHandlerTest::GetAvailableEndpoint, this, _1, _2, kSuccess))));
   EXPECT_CALL(network_, SendToClosestNode(testing::_)).Times(4);
   response_handler_.FindNodes(message);
 
@@ -251,7 +269,7 @@ TEST_F(ResponseHandlerTest, BEH_FindNodes) {
   EXPECT_CALL(network_, GetAvailableEndpoint(testing::_, testing::_, testing::_, testing::_))
       .Times(num_of_closer)
       .WillRepeatedly(testing::WithArgs<2, 3>(testing::Invoke(
-            boost::bind(&ResponseHandlerTest::GetAvailableEndpoint, this, _1, _2))));
+            boost::bind(&ResponseHandlerTest::GetAvailableEndpoint, this, _1, _2, kSuccess))));
   EXPECT_CALL(network_, SendToClosestNode(testing::_)).Times(num_of_closer);
   response_handler_.FindNodes(message);
 }
@@ -339,9 +357,11 @@ TEST_F(ResponseHandlerTest, BEH_ConnectSuccessAcknowledgement) {
                                                             connection_id).SerializeAsString());
   response_handler->ConnectSuccessAcknowledgement(message);
 
-  // Setup request_public_key_functor_
+  // Setup request_public_key_functor_ testing accessor/modifier
+  EXPECT_EQ(nullptr, response_handler->request_public_key_functor());
   response_handler->set_request_public_key_functor(
       boost::bind(&ResponseHandlerTest::RequestPublicKey, this, _1, _2));
+  EXPECT_NE(nullptr, response_handler->request_public_key_functor());
 
   // Rudp failed to validate connection
   EXPECT_CALL(network_, MarkConnectionAsValid(testing::_))
@@ -366,9 +386,72 @@ TEST_F(ResponseHandlerTest, BEH_ConnectSuccessAcknowledgement) {
   EXPECT_CALL(network_, GetAvailableEndpoint(testing::_, testing::_, testing::_, testing::_))
       .Times(num_close_ids)
       .WillRepeatedly(testing::WithArgs<2, 3>(testing::Invoke(
-            boost::bind(&ResponseHandlerTest::GetAvailableEndpoint, this, _1, _2))));
+            boost::bind(&ResponseHandlerTest::GetAvailableEndpoint, this, _1, _2, kSuccess))));
   EXPECT_CALL(network_, SendToClosestNode(testing::_)).Times(num_close_ids);
   response_handler->ConnectSuccessAcknowledgement(message);
+
+  // Rudp succeed to validate connection, HandleSuccessAcknowledgementAsRequestor
+  // rudp::kUnvalidatedConnectionAlreadyExists
+  close_ids.clear();
+  num_close_ids = 1;
+  for (size_t i(0); i < num_close_ids; ++i)
+    close_ids.push_back(RandomString(64));
+  message = ComposeMsg(ComposeConnectSuccessAcknowledgement(NodeId(RandomString(64)),
+                connection_id, false, close_ids).SerializeAsString());
+  EXPECT_CALL(network_, MarkConnectionAsValid(testing::_))
+      .WillOnce(testing::Return(kSuccess));
+  EXPECT_CALL(network_, GetAvailableEndpoint(testing::_, testing::_, testing::_, testing::_))
+      .Times(num_close_ids)
+      .WillRepeatedly(testing::WithArgs<2, 3>(testing::Invoke(
+            boost::bind(&ResponseHandlerTest::GetAvailableEndpoint, this, _1, _2,
+                        rudp::kUnvalidatedConnectionAlreadyExists))));
+  response_handler->ConnectSuccessAcknowledgement(message);
+
+  // Rudp succeed to validate connection, HandleSuccessAcknowledgementAsRequestor
+  // rudp::kInvalidAddress
+  close_ids.clear();
+  num_close_ids = 1;
+  for (size_t i(0); i < num_close_ids; ++i)
+    close_ids.push_back(RandomString(64));
+  message = ComposeMsg(ComposeConnectSuccessAcknowledgement(NodeId(RandomString(64)),
+                connection_id, false, close_ids).SerializeAsString());
+  EXPECT_CALL(network_, MarkConnectionAsValid(testing::_))
+      .WillOnce(testing::Return(kSuccess));
+  EXPECT_CALL(network_, GetAvailableEndpoint(testing::_, testing::_, testing::_, testing::_))
+      .Times(num_close_ids)
+      .WillRepeatedly(testing::WithArgs<2, 3>(testing::Invoke(
+            boost::bind(&ResponseHandlerTest::GetAvailableEndpoint, this, _1, _2,
+                        rudp::kInvalidAddress))));
+  response_handler->ConnectSuccessAcknowledgement(message);
+
+  // Not in any peer's routing table, need a path back through relay IP.
+  network_.SetBootstrapConnectionId(NodeId(RandomString(64)));
+  close_ids.clear();
+  num_close_ids = 1;
+  for (size_t i(0); i < num_close_ids; ++i)
+    close_ids.push_back(RandomString(64));
+  message = ComposeMsg(ComposeConnectSuccessAcknowledgement(NodeId(RandomString(64)),
+                connection_id, false, close_ids).SerializeAsString());
+  EXPECT_CALL(network_, MarkConnectionAsValid(testing::_))
+      .WillOnce(testing::Return(kSuccess));
+  EXPECT_CALL(network_, GetAvailableEndpoint(testing::_, testing::_, testing::_, testing::_))
+      .Times(num_close_ids)
+      .WillRepeatedly(testing::WithArgs<2, 3>(testing::Invoke(
+            boost::bind(&ResponseHandlerTest::GetAvailableEndpoint, this, _1, _2,
+                        rudp::kSuccess))));
+  EXPECT_CALL(network_, SendToDirect(testing::_, testing::_, testing::_)).Times(num_close_ids);
+  response_handler->ConnectSuccessAcknowledgement(message);
+}
+
+TEST_F(ResponseHandlerTest, BEH_Ping) {
+  protobuf::Message message;
+  // Incorrect Ping msg
+  message = ComposeMsg(RandomString(128));
+  response_handler_.Ping(message);
+
+  // Correct Ping msg
+  message = ComposePingResponseMsg();
+  response_handler_.Ping(message);
 }
 
 }  // namespace test
