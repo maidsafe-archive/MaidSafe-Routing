@@ -35,7 +35,14 @@ namespace maidsafe {
 
 namespace routing {
 
-namespace test { class GenericNode; }
+namespace test {
+  class GenericNode;
+  class RoutingTableTest;
+  class RoutingTableTest_BEH_OrderedGroupChange_Test;
+  class RoutingTableTest_BEH_ReverseOrderedGroupChange_Test;
+  class RoutingTableTest_FUNC_CheckMockSendGroupChangeRpcs_Test;
+  class RoutingTableTest_BEH_GroupUpdateFromConnectedPeer_Test;
+}
 
 namespace protobuf { class Contact; }
 
@@ -111,6 +118,13 @@ class RoutingTable {
   void UpdateNetworkStatus(uint16_t size) const;
   std::string PrintRoutingTable();
   void PrintGroupMatrix();
+
+  friend class test::RoutingTableTest;
+  friend class test::RoutingTableTest_BEH_OrderedGroupChange_Test;
+  friend class test::RoutingTableTest_BEH_ReverseOrderedGroupChange_Test;
+  friend class test::RoutingTableTest_FUNC_CheckMockSendGroupChangeRpcs_Test;
+  friend class test::RoutingTableTest_BEH_GroupUpdateFromConnectedPeer_Test;
+
 
   const uint16_t kMaxSize_;
   const uint16_t kThresholdSize_;

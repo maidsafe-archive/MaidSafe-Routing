@@ -316,7 +316,7 @@ void ResponseHandler::ConnectSuccessAcknowledgement(protobuf::Message& message) 
                                  response_handler->HandleSuccessAcknowledgementAsRequestor(
                                        close_ids);
                                }
-                               if (client_node)
+                               if (!client_node)
                                  response_handler->group_change_handler_.UpdatePendingGroupChange(
                                      peer.node_id);
                              }

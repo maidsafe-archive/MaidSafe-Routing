@@ -48,7 +48,7 @@ void GroupChangeHandler::UpdateGroupChange(const NodeId& node_id, std::vector<No
 
 void GroupChangeHandler::UpdatePendingGroupChange(const NodeId& node_id) {
   std::lock_guard<std::mutex> lock(mutex_);
-  assert(routing_table_.IsConnected(node_id));
+//  assert(routing_table_.IsConnected(node_id));
   std::vector<NodeId> close_nodes(GetAndRemovePendingNotification(node_id));
   if (!close_nodes.empty())
     routing_table_.GroupUpdateFromConnectedPeer(node_id, close_nodes);

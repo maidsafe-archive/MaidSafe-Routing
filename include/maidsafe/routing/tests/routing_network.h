@@ -35,6 +35,7 @@
 #include "maidsafe/routing/parameters.h"
 #include "maidsafe/routing/return_codes.h"
 #include "maidsafe/routing/routing_api.h"
+#include "maidsafe/routing/group_matrix.h"
 
 namespace args = std::placeholders;
 
@@ -97,6 +98,7 @@ class GenericNode {
                 const protobuf::Message& message,
                 rudp::MessageSentFunctor message_sent_functor);
   void PrintRoutingTable();
+  void PrintGroupMatrix();
   bool RoutingTableHasNode(const NodeId& node_id);
   bool NonRoutingTableHasNode(const NodeId& node_id);
   NodeInfo GetRemovableNode();
