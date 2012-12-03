@@ -160,3 +160,8 @@ message NodeIdList {
   }
   repeated NodeId node_id_list = 1;
 }
+
+message CloseNodeChange {
+  required bytes node = 1;
+  repeated bytes close_nodes = 2;
+}

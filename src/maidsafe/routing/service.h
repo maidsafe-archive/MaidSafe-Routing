@@ -27,18 +27,21 @@ namespace protobuf { class Message; }
 class NetworkUtils;
 class NonRoutingTable;
 class RoutingTable;
+class GroupChangeHandler;
 
 class Service {
  public:
   Service(RoutingTable& routing_table,
           NonRoutingTable& non_routing_table,
-          NetworkUtils& network);
+          NetworkUtils& network,
+          GroupChangeHandler& group_change_handler);
   virtual ~Service();
   // Handle all incoming requests and send back reply
   virtual void Ping(protobuf::Message& message);
   virtual void Connect(protobuf::Message& message);
   virtual void FindNodes(protobuf::Message& message);
   virtual void ConnectSuccess(protobuf::Message& message);
+  virtual void CloseNodeChange(protobuf::Message& message);
   void set_request_public_key_functor(RequestPublicKeyFunctor request_public_key);
   RequestPublicKeyFunctor request_public_key_functor() const;
 
@@ -50,6 +53,7 @@ class Service {
   RoutingTable& routing_table_;
   NonRoutingTable& non_routing_table_;
   NetworkUtils& network_;
+  GroupChangeHandler& group_change_handler_;
   RequestPublicKeyFunctor request_public_key_functor_;
 };
 

@@ -20,8 +20,9 @@ namespace test {
 
 MockService::MockService(RoutingTable& routing_table,
                          NonRoutingTable& non_routing_table,
-                         NetworkUtils& utils)
-    : Service(routing_table, non_routing_table, utils) {}
+                         NetworkUtils& utils,
+                         GroupChangeHandler& group_change_handler)
+    : Service(routing_table, non_routing_table, utils, group_change_handler) {}
 
 MockService::~MockService() {}
 
@@ -30,5 +31,3 @@ MockService::~MockService() {}
 }  // namespace routing
 
 }  // namespace maidsafe
-
-

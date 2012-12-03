@@ -78,6 +78,11 @@ protobuf::Message ConnectSuccessAcknowledgement(
     const std::vector<NodeId>& close_ids,
     const bool& client_node);
 
+protobuf::Message CloseNodeChange(
+    const NodeId& node_id,
+    const NodeId& my_node_id,
+    const std::vector<NodeId>& close_nodes);
+
 }  // namespace rpcs
 
 }  // namespace routing

@@ -224,6 +224,32 @@ protobuf::Message ConnectSuccessAcknowledgement(const NodeId& node_id,
   return message;
 }
 
+protobuf::Message CloseNodeChange(
+    const NodeId& node_id,
+    const NodeId& my_node_id,
+    const std::vector<NodeId>& close_nodes) {
+  assert(!node_id.IsZero() && "Invalid node_id");
+  assert(!my_node_id.IsZero() && "Invalid my node_id");
+  // assert(!close_nodes.empty() && "Empty close nodes");
+  protobuf::Message message;
+  protobuf::CloseNodeChange close_node_change;
+  close_node_change.set_node(my_node_id.string());
+  for (auto i : close_nodes)
+    close_node_change.add_close_nodes(i.string());
+  message.set_destination_id(node_id.string());
+  message.set_source_id(my_node_id.string());
+  message.set_routing_message(true);
+  message.add_data(close_node_change.SerializeAsString());
+  message.set_direct(true);
+  message.set_replication(1);
+  message.set_type(static_cast<int32_t>(MessageType::kCloseNodeChange));
+  message.set_request(true);
+  message.set_client_node(false);
+  message.set_hops_to_live(Parameters::hops_to_live);
+  assert(message.IsInitialized() && "Unintialised message");
+  return message;
+}
+
 }  // namespace rpcs
 
 }  // namespace routing

@@ -29,6 +29,8 @@
 #include "maidsafe/routing/routing_table.h"
 #include "maidsafe/routing/rpcs.h"
 #include "maidsafe/routing/utils.h"
+#include "maidsafe/routing/group_change_handler.h"
+
 
 namespace bptime = boost::posix_time;
 
@@ -44,11 +46,13 @@ typedef boost::asio::ip::udp::endpoint Endpoint;
 
 ResponseHandler::ResponseHandler(RoutingTable& routing_table,
                                  NonRoutingTable& non_routing_table,
-                                 NetworkUtils& network)
+                                 NetworkUtils& network,
+                                 GroupChangeHandler &group_change_handler)
     : mutex_(),
       routing_table_(routing_table),
       non_routing_table_(non_routing_table),
       network_(network),
+      group_change_handler_(group_change_handler),
       request_public_key_functor_() {
 }
 
@@ -312,6 +316,9 @@ void ResponseHandler::ConnectSuccessAcknowledgement(protobuf::Message& message) 
                                  response_handler->HandleSuccessAcknowledgementAsRequestor(
                                        close_ids);
                                }
+                               if (!client_node)
+                                 response_handler->group_change_handler_.UpdatePendingGroupChange(
+                                     peer.node_id);
                              }
                            }
                          });
