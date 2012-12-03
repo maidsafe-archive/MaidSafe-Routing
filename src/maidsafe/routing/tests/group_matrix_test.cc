@@ -101,7 +101,7 @@ TEST(GroupMatrixTest, FUNC_OneRowOnly) {
   EXPECT_TRUE(matrix.IsThisNodeGroupMemberFor(target_id_1, is_group_leader));
 
   // Fully populate row
-  while (row_entries_1.size() < (Parameters::closest_nodes_size - 1)) {
+  while (row_entries_1.size() < size_t(Parameters::closest_nodes_size - 1)) {
     row_entries_1.push_back(NodeId(NodeId::kRandomId));
   }
   matrix.UpdateFromConnectedPeer(row_id_1, row_entries_1);
@@ -498,7 +498,7 @@ TEST(GroupMatrixTest, FUNC_CheckUniqueNodeList) {
   std::vector<NodeId> row_entries;
   NodeId new_row_entry;
   for (auto row_id : row_ids) {
-    if (row_entries.size() < (Parameters::closest_nodes_size - 1)) {
+    if (row_entries.size() < size_t(Parameters::closest_nodes_size - 1)) {
       new_row_entry = NodeId(NodeId::kRandomId);
       row_entries.push_back(new_row_entry);
       node_ids.push_back(new_row_entry);

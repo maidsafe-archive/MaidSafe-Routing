@@ -643,7 +643,7 @@ TEST(RoutingTableTest, FUNC_CheckMockSendGroupChangeRpcs) {
   SortFromTarget(NodeId(NodeId::kRandomId), extra_nodes);
   std::vector<NodeId> expected_close_nodes;
   for (auto node_info : extra_nodes) {
-    if (expected_close_nodes.size() < (Parameters::closest_nodes_size - 1)) {
+    if (expected_close_nodes.size() < size_t(Parameters::closest_nodes_size - 1)) {
       expected_close_nodes.push_back(node_info.node_id);
       SortIdsFromTarget(node_id_1, expected_close_nodes);
       ++expected_count;
