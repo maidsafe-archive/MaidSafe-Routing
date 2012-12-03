@@ -50,14 +50,8 @@ namespace test {
 
 struct NodeInfoAndPrivateKey;
 
-#ifdef FAKE_RUDP
-  const uint32_t kClientSize(8);
-  const uint32_t kServerSize(8);
-#else
-  const uint32_t kClientSize(5);
-  const uint32_t kServerSize(70);
-#endif
-
+const uint32_t kClientSize(5);
+const uint32_t kServerSize(20);
 const uint32_t kNetworkSize = kClientSize + kServerSize;
 
 class GenericNetwork;

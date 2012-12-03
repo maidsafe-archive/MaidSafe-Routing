@@ -109,7 +109,8 @@ TEST(RoutingTableTest, BEH_PopulateAndDepopulateGroupCheckGroupChange) {
   routing_table.InitialiseFunctors(network_status_functor,
                                    remove_node_functor,
                                    []() {},
-                                   group_change_functor);
+                                   group_change_functor,
+                                   [](const std::vector<NodeInfo>& ) {});
   for (uint16_t i = 0; i < Parameters::closest_nodes_size; ++i) {
     ASSERT_TRUE(routing_table.AddNode(nodes.at(i)));
     LOG(kVerbose) << "Added to routing_table : " << DebugId(nodes.at(i).node_id);
@@ -153,7 +154,8 @@ TEST(RoutingTableTest, BEH_OrderedGroupChange) {
       [](const int& status) { LOG(kVerbose) << "Status : " << status; },
       [](const NodeInfo&, bool) {},
       []() {},
-      group_change_functor);
+      group_change_functor,
+      [](const std::vector<NodeInfo>&) {});
 
   for (uint16_t i = 0; i < Parameters::max_routing_table_size; ++i) {
     ASSERT_TRUE(routing_table.AddNode(nodes.at(i)));
@@ -212,7 +214,8 @@ TEST(RoutingTableTest, BEH_ReverseOrderedGroupChange) {
   routing_table.InitialiseFunctors(network_status_functor,
                                    remove_node_functor,
                                    []() {},
-                                   group_change_functor);
+                                   group_change_functor,
+                                   [](const std::vector<NodeInfo>&) {});
 
   // Add nodes to routing table
   for (auto ritr = nodes.rbegin(); ritr < nodes.rend(); ++ritr) {
@@ -302,7 +305,8 @@ TEST(RoutingTableTest, BEH_CheckGroupChangeRemoveNodesFromGroup) {
   routing_table.InitialiseFunctors(network_status_functor,
                                    remove_node_functor,
                                    []() {},
-                                   group_change_functor);
+                                   group_change_functor,
+                                   [](const std::vector<NodeInfo>&) {});
 
   // Populate routing table
   for (uint16_t i = 0; i < Parameters::max_routing_table_size; ++i) {
@@ -391,7 +395,8 @@ TEST(RoutingTableTest, BEH_CheckGroupChangeAddGroupNodesToFullTable) {
   routing_table.InitialiseFunctors(network_status_functor,
                                    remove_node_functor,
                                    []() {},
-                                   group_change_functor);
+                                   group_change_functor,
+                                   [](const std::vector<NodeInfo>&) {});
 
   // Populate routing table
   for (uint16_t i = 0; i < Parameters::max_routing_table_size; ++i) {
@@ -485,7 +490,8 @@ TEST(RoutingTableTest, BEH_FillEmptyRefillRoutingTable) {
   routing_table.InitialiseFunctors(network_status_functor,
                                    remove_node_functor,
                                    [] () {},
-                                   group_change_functor);
+                                   group_change_functor,
+                                   [](const std::vector<NodeInfo>&) {});
   // Fill routing table
   for (uint16_t i = 0; i < Parameters::max_routing_table_size; ++i) {
     if (expected_group.size() < Parameters::closest_nodes_size) {
@@ -636,7 +642,8 @@ TEST(RoutingTableTest, FUNC_CheckMockSendGroupChangeRpcs) {
   routing_table_1.InitialiseFunctors(network_status_functor,
                                      remove_node_functor,
                                      []() {},
-                                     group_change_functor);
+                                     group_change_functor,
+                                     [](const std::vector<NodeInfo>&) {});
 
   // Check that 2's group matrix is updated correctly - Add nodes
   std::vector<NodeId> close_nodes;

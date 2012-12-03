@@ -58,7 +58,8 @@ class RoutingTable {
   void InitialiseFunctors(NetworkStatusFunctor network_status_functor,
                           std::function<void(const NodeInfo&, bool)> remove_node_functor,
                           RemoveFurthestUnnecessaryNode remove_furthest_node,
-                          GroupChangeFunctor group_change_functor);
+                          GroupChangeFunctor group_change_functor,
+                          CloseNodeReplacedFunctor close_node_replaced_functor);
   bool AddNode(const NodeInfo& peer);
   bool CheckNode(const NodeInfo& peer);
   NodeInfo DropNode(const NodeId &node_to_drop, bool routing_only);
@@ -138,6 +139,7 @@ class RoutingTable {
   NetworkStatusFunctor network_status_functor_;
   RemoveFurthestUnnecessaryNode remove_furthest_node_;
   GroupChangeFunctor group_change_functor_;
+  CloseNodeReplacedFunctor close_node_replaced_functor_;
   std::vector<NodeInfo> nodes_;
   GroupMatrix group_matrix_;
 };

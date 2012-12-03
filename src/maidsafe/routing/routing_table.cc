@@ -44,6 +44,7 @@ RoutingTable::RoutingTable(const Fob& fob, bool client_mode)
       network_status_functor_(),
       remove_furthest_node_(),
       group_change_functor_(),
+      close_node_replaced_functor_(),
       nodes_(),
       group_matrix_(kNodeId_) {}
 
@@ -51,7 +52,8 @@ void RoutingTable::InitialiseFunctors(
     NetworkStatusFunctor network_status_functor,
     std::function<void(const NodeInfo&, bool)> remove_node_functor,
     RemoveFurthestUnnecessaryNode remove_furthest_node,
-    GroupChangeFunctor group_change_functor) {
+    GroupChangeFunctor group_change_functor,
+    CloseNodeReplacedFunctor close_node_replaced_functor) {
   // TODO(Prakash#5#): 2012-10-25 - Consider asserting network_status_functor != nullptr here.
   if (!network_status_functor)
     LOG(kWarning) << "NULL network_status_functor passed.";
@@ -61,12 +63,13 @@ void RoutingTable::InitialiseFunctors(
     LOG(kWarning) << "NULL close_node_replaced_functor passed.";
   // TODO(Prakash#5#): 2012-10-25 - Handle once we change to matrix.
 //  assert(close_node_replaced_functor);
-  if (!remove_node_functor_) {
+//  if (!remove_node_functor_) {
     network_status_functor_ = network_status_functor;
     remove_node_functor_ = remove_node_functor;
     remove_furthest_node_ = remove_furthest_node;
     group_change_functor_ = group_change_functor;
-  }
+    close_node_replaced_functor_ = close_node_replaced_functor;
+//  }
 }
 
 bool RoutingTable::AddNode(const NodeInfo& peer) {
@@ -129,6 +132,8 @@ bool RoutingTable::AddOrCheckNode(NodeInfo peer, bool remove) {
     if (!new_close_nodes.empty()) {
       if (group_change_functor_)
         group_change_functor_(new_close_nodes);
+      if (close_node_replaced_functor_)
+        close_node_replaced_functor_(new_close_nodes);
     }
 
     if (peer.nat_type == rudp::NatType::kOther) {  // Usable as bootstrap endpoint
