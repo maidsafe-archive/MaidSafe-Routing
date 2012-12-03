@@ -299,10 +299,6 @@ void GenericNode::PrintRoutingTable() {
   }
 }
 
-void GenericNode::PrintGroupMatrix() {
-  routing_->pimpl_->routing_table_.PrintGroupMatrix();
-}
-
 std::string GenericNode::SerializeRoutingTable() {
   std::vector<NodeId> node_list;
   for (auto node_info : routing_->pimpl_->routing_table_.nodes_)

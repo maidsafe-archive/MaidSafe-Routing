@@ -92,7 +92,6 @@ class GenericNode {
                 const protobuf::Message& message,
                 rudp::MessageSentFunctor message_sent_functor);
   void PrintRoutingTable();
-  void PrintGroupMatrix();
   bool RoutingTableHasNode(const NodeId& node_id);
   bool NonRoutingTableHasNode(const NodeId& node_id);
   NodeInfo GetRemovableNode();

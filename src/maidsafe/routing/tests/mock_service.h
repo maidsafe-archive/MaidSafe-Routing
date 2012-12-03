@@ -27,7 +27,7 @@ namespace test {
 class MockService : public Service {
  public:
   MockService(RoutingTable& routing_table, NonRoutingTable& non_routing_table,
-                   NetworkUtils& network_utils, GroupChangeHandler& group_change_handler);
+                   NetworkUtils& network_utils);
   virtual ~MockService();
 
   MOCK_METHOD1(Ping, void(protobuf::Message& message));

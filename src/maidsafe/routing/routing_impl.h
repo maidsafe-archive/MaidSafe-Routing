@@ -35,8 +35,6 @@
 #include "maidsafe/routing/routing_table.h"
 #include "maidsafe/routing/timer.h"
 #include "maidsafe/routing/remove_furthest_node.h"
-#include "maidsafe/routing/group_change_handler.h"
-
 
 namespace maidsafe {
 
@@ -110,7 +108,6 @@ class Routing::Impl {
   NetworkUtils network_;
   Timer timer_;
   RemoveFurthestNode remove_furthest_node_;
-  GroupChangeHandler group_change_handler_;
   boost::asio::deadline_timer re_bootstrap_timer_, recovery_timer_, setup_timer_;
 };
 
