@@ -421,10 +421,9 @@ TEST(RoutingTableTest, BEH_CheckGroupChangeAddGroupNodesToFullTable) {
     found_node = false;
     bucket_edge = expected_close_nodes.at(Parameters::closest_nodes_size - 1).node_id;
     int k(0);
-    while (!found_node && k < 70) {
+    while (!found_node && k++ < 70) {
       new_node = MakeNode();
       found_node = (bucket_centre ^ new_node.node_id) < (bucket_centre ^ bucket_edge);
-      ++k;
     }
     if (!found_node)
       break;
@@ -575,7 +574,8 @@ TEST(RoutingTableTest, FUNC_CheckMockSendGroupChangeRpcs) {
 
   // Generate other NodeInfo
   std::vector<NodeInfo> extra_nodes;
-  for (uint16_t i = 0; i < 2 * Parameters::closest_nodes_size + 1; ++i)
+  uint16_t limit(2 * Parameters::closest_nodes_size + 1);
+  for (uint16_t i = 0; i < limit; ++i)
     extra_nodes.push_back(MakeNode());
   SortFromTarget(node_id_1, extra_nodes);
 
