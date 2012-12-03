@@ -290,7 +290,8 @@ TEST(RoutingTableTest, BEH_CheckGroupChangeRemoveNodesFromGroup) {
         LOG(kVerbose) << "Expected Id : " << DebugId(i.node_id);
       }
       EXPECT_EQ(nodes.size(), expected_close_nodes.size());
-      int max_index(std::min(expected_close_nodes.size(), nodes.size()));
+      uint16_t max_index(
+          static_cast<uint16_t>(std::min(expected_close_nodes.size(), nodes.size())));
       for (uint16_t i(0); i < max_index; ++i) {
         EXPECT_EQ(nodes.at(i).node_id, expected_close_nodes.at(i).node_id) <<
             "actual node: " << DebugId(nodes.at(i).node_id) <<
@@ -378,7 +379,8 @@ TEST(RoutingTableTest, BEH_CheckGroupChangeAddGroupNodesToFullTable) {
         LOG(kVerbose) << "Expected Id : " << DebugId(i.node_id);
       }
       EXPECT_EQ(nodes.size(), expected_close_nodes.size());
-      int max_index(std::min(expected_close_nodes.size(), nodes.size()));
+      uint16_t max_index(
+          static_cast<uint16_t>(std::min(expected_close_nodes.size(), nodes.size())));
       for (uint16_t i(0); i < max_index; ++i) {
         EXPECT_EQ(nodes.at(i).node_id, expected_close_nodes.at(i).node_id) <<
             "actual node: " << DebugId(nodes.at(i).node_id) <<
@@ -680,12 +682,12 @@ TEST(RoutingTableTest, FUNC_CheckMockSendGroupChangeRpcs) {
   NodeInfo removal_node;
   uint16_t removal_index;
   while (extra_nodes.size() > 0) {
-    removal_index = RandomUint32() % extra_nodes.size();
+    removal_index = static_cast<uint16_t>(RandomUint32() % extra_nodes.size());
     removal_node = extra_nodes.at(removal_index);
     extra_nodes.erase(extra_nodes.begin() + removal_index);
     if (removal_index < (Parameters::closest_nodes_size - 1)) {
       expected_close_nodes.clear();
-      int extra_nodes_size = extra_nodes.size();
+      int extra_nodes_size = static_cast<int>(extra_nodes.size());
       for (int i(0);
            i < std::min(extra_nodes_size, Parameters::closest_nodes_size - 1);
            ++i) {

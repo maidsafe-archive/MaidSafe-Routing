@@ -35,7 +35,7 @@
 #include "maidsafe/routing/parameters.h"
 #include "maidsafe/routing/return_codes.h"
 #include "maidsafe/routing/routing_api.h"
-#include "maidsafe/routing/group_matrix.h"
+
 
 namespace args = std::placeholders;
 
