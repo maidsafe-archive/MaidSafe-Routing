@@ -67,12 +67,13 @@ source_group("Routing Tests Source Files" FILES ${SOURCE_FILES_ROUTING_TESTS_DIR
 source_group("Routing Tests Header Files" FILES ${HEADER_FILES_ROUTING_TESTS_DIR})
 list(REMOVE_ITEM ALL_FILES_ROUTING_TESTS_DIR "${PROJECT_SOURCE_DIR}/src/maidsafe/routing/tests/routing_api_test.cc"
                                              "${PROJECT_SOURCE_DIR}/src/maidsafe/routing/tests/find_nodes_test.cc"
-                                             "${PROJECT_SOURCE_DIR}/src/maidsafe/routing/tests/routing_functional_test.cc")
+                                             "${PROJECT_SOURCE_DIR}/src/maidsafe/routing/tests/routing_functional_test.cc"
+                                             "${PROJECT_SOURCE_DIR}/src/maidsafe/routing/tests/test_big_main.cc")
 file(GLOB ALL_FILES_ROUTING_API_TEST "${PROJECT_SOURCE_DIR}/src/maidsafe/routing/tests/routing_api_test.cc"
                                      "${PROJECT_SOURCE_DIR}/src/maidsafe/routing/tests/test_main.cc")
 file(GLOB ALL_FILES_ROUTING_BIG_TESTS_DIR "${PROJECT_SOURCE_DIR}/src/maidsafe/routing/tests/find_nodes_test.cc"
                                           "${PROJECT_SOURCE_DIR}/src/maidsafe/routing/tests/routing_functional_test.cc"
-                                          "${PROJECT_SOURCE_DIR}/src/maidsafe/routing/tests/test_main.cc")
+                                          "${PROJECT_SOURCE_DIR}/src/maidsafe/routing/tests/test_big_main.cc")
 
 
 ###################################################################################################

@@ -61,6 +61,7 @@ struct NodeInfoAndPrivateKey;
 const uint32_t kNetworkSize = kClientSize + kServerSize;
 
 class GenericNetwork;
+class NodesEnvironment;
 
 class GenericNode {
  public:
@@ -137,30 +138,32 @@ class GenericNode {
   void InitialiseFunctors();
 };
 
-class GenericNetwork : public testing::Test {
+class GenericNetwork {
  public:
   typedef std::shared_ptr<GenericNode> NodePtr;
   GenericNetwork();
-  ~GenericNetwork();
+  virtual ~GenericNetwork();
 
- protected:
+  bool ValidateRoutingTables();
+  void AddNode(const bool& client_mode, const NodeId& node_id, bool anonymous = false);
   virtual void SetUp();
   virtual void TearDown();
-  virtual void SetUpNetwork(const size_t& non_client_size, const size_t& client_size = 0);
-  void AddNode(const bool& client_mode, const NodeId& node_id, bool anonymous = false);
+  void SetUpNetwork(const size_t& non_client_size, const size_t& client_size = 0);
   void AddNode(const bool& client_mode, const rudp::NatType& nat_type);
   bool RemoveNode(const NodeId& node_id);
-  virtual void Validate(const NodeId& node_id, GivePublicKeyFunctor give_public_key);
-  virtual void SetNodeValidationFunctor(NodePtr node);
+  void Validate(const NodeId& node_id, GivePublicKeyFunctor give_public_key);
+  void SetNodeValidationFunctor(NodePtr node);
   std::vector<NodeId> GroupIds(const NodeId& node_id);
   void PrintRoutingTables();
-  bool ValidateRoutingTables();
   NodePtr RandomClientNode();
   NodePtr RandomVaultNode();
   void RemoveRandomClient();
   void RemoveRandomVault();
   void ClearMessages();
   int NodeIndex(const NodeId& node_id);
+  size_t ClientIndex() { return client_index_; }
+
+  friend class NodesEnvironment;
 
  private:
   uint16_t NonClientNodesSize() const;
@@ -174,6 +177,29 @@ class GenericNetwork : public testing::Test {
 
  public:
   std::vector<NodePtr> nodes_;
+};
+
+class NodesEnvironment : public testing::Environment {
+ public:
+  NodesEnvironment(size_t num_server_nodes, size_t num_client_nodes)
+    : num_server_nodes_(num_server_nodes),
+      num_client_nodes_(num_client_nodes) {}
+
+  void SetUp() {
+    g_env_->GenericNetwork::SetUp();
+    g_env_->SetUpNetwork(num_server_nodes_, num_client_nodes_);
+  }
+  void TearDown() {
+    g_env_->GenericNetwork::TearDown();
+  }
+
+  static std::shared_ptr<GenericNetwork> g_environment() {
+    return g_env_;
+  }
+ private:
+  size_t num_server_nodes_;
+  size_t num_client_nodes_;
+  static std::shared_ptr<GenericNetwork> g_env_;
 };
 
 }  // namespace test

@@ -621,6 +621,9 @@ void GenericNetwork::AddNodeDetails(NodePtr node) {
   PrintRoutingTables();
 }
 
+std::shared_ptr<GenericNetwork> NodesEnvironment::g_env_ =
+  std::shared_ptr<GenericNetwork>(new GenericNetwork());
+
 }  // namespace test
 
 }  // namespace routing
