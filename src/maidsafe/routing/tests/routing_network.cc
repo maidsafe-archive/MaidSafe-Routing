@@ -29,12 +29,29 @@
 
 namespace asio = boost::asio;
 namespace ip = asio::ip;
+namespace bs = boost::system;
 
 namespace maidsafe {
 
 namespace routing {
 
 namespace test {
+
+bool IsPortAvailable(ip::udp::endpoint endpoint) {
+  asio::io_service asio_service;
+  asio::ip::udp::socket socket(asio_service);
+  bs::error_code ec;
+  socket.open(endpoint.protocol(), ec);
+  if (ec) {
+    LOG(kError) << "Open error: " << ec.message();
+  }
+  socket.bind(endpoint, ec);
+  if (ec) {
+    LOG(kError) << "Bind error: " << ec.message();
+    return false;
+  }
+  return true;
+}
 
 namespace {
 

@@ -48,6 +48,8 @@ namespace protobuf { class Message; }
 
 namespace test {
 
+bool IsPortAvailable(boost::asio::ip::udp::endpoint endpoint);
+
 struct NodeInfoAndPrivateKey;
 
 const uint32_t kClientSize(5);
