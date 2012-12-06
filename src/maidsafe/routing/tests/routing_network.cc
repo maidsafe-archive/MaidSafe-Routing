@@ -572,6 +572,22 @@ int GenericNetwork::NodeIndex(const NodeId& node_id) {
   return -1;
 }
 
+std::vector<NodeId> GenericNetwork::GetGroupForId(const NodeId& node_id) {
+  std::vector<NodeId> group_ids;
+  for (auto& node : nodes_) {
+    if (!node->IsClient() && (node->node_id() != node_id))
+      group_ids.push_back(node->node_id());
+  }
+  std::partial_sort(group_ids.begin(),
+                    group_ids.begin() + Parameters::node_group_size - 1,
+                    group_ids.end(),
+                    [&](const NodeId& lhs, const NodeId& rhs) {
+                      return NodeId::CloserToTarget(lhs, rhs, node_id);
+                    });
+  return std::vector<NodeId>(group_ids.begin(),
+                             group_ids.begin() + Parameters::node_group_size - 1);
+}
+
 uint16_t GenericNetwork::NonClientNodesSize() const {
   uint16_t non_client_size(0);
   for (auto node : nodes_) {

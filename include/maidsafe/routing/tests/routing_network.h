@@ -156,6 +156,7 @@ class GenericNetwork : public testing::Test {
   void RemoveRandomVault();
   void ClearMessages();
   int NodeIndex(const NodeId& node_id);
+  std::vector<NodeId> GetGroupForId(const NodeId& node_id);
 
  private:
   uint16_t NonClientNodesSize() const;

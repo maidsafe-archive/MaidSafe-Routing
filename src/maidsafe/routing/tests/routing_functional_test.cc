@@ -744,6 +744,68 @@ TEST_F(RoutingNetworkTest, FUNC_MessagingNetworkChurn) {
   EXPECT_EQ(expected_current_size, nodes_.size());
 }
 
+TEST_F(RoutingNetworkTest, FUNC_SanityCheck) {
+  SetUpNetwork(kServerSize, kClientSize);
+  {
+    EXPECT_TRUE(this->Send(3));
+    // This sleep is required for un-responded requests
+    Sleep(boost::posix_time::seconds(static_cast<long>(nodes_.size() + 1)));  // NOLINT (Fraser)
+    this->ClearMessages();
+  }
+  {
+    //  GroupSend
+    uint32_t random_node(RandomUint32() % kServerSize);
+    NodeId target_id(this->nodes_[random_node]->node_id());
+    std::vector<NodeId> group_Ids(this->GetGroupForId(target_id));
+    EXPECT_TRUE(this->GroupSend(target_id, 1));
+    for (auto& group_id : group_Ids)
+      EXPECT_EQ(1, this->nodes_.at(this->NodeIndex(group_id))->MessagesSize());
+    this->ClearMessages();
+
+    // GroupSend SelfId
+    EXPECT_TRUE(this->GroupSend(target_id, 1, random_node));
+    for (auto& group_id : group_Ids)
+      EXPECT_EQ(1, this->nodes_.at(this->NodeIndex(group_id))->MessagesSize());
+    this->ClearMessages();
+
+    // Client groupsend
+    EXPECT_TRUE(this->GroupSend(target_id, 1, kNetworkSize - 1));
+    for (auto& group_id : group_Ids)
+      EXPECT_EQ(1, this->nodes_.at(this->NodeIndex(group_id))->MessagesSize());
+    this->ClearMessages();
+
+    // GroupSend RandomId
+    target_id = NodeId(NodeId::kRandomId);
+    group_Ids = this->GetGroupForId(target_id);
+    EXPECT_TRUE(this->GroupSend(target_id, 1));
+    for (auto& group_id : group_Ids)
+      EXPECT_EQ(1, this->nodes_.at(this->NodeIndex(group_id))->MessagesSize());
+    this->ClearMessages();
+  }
+  {
+    // Join client with same Id
+    this->AddNode(true, this->nodes_[kNetworkSize -1]->node_id());
+
+    // Send to client with same Id
+    EXPECT_TRUE(this->Send(this->nodes_[kNetworkSize],
+                           this->nodes_[kNetworkSize]->node_id(),
+                           true));
+    this->ClearMessages();
+  }
+  {
+    // Anonymous join
+    this->AddNode(true, NodeId(), true);
+
+    // Anonymous group send
+    NodeId target_id(NodeId(NodeId::kRandomId));
+    std::vector<NodeId> group_Ids(this->GetGroupForId(target_id));
+    EXPECT_TRUE(this->GroupSend(target_id, 1, static_cast<uint16_t>(this->nodes_.size() - 1)));
+    for (auto& group_id : group_Ids)
+      EXPECT_EQ(1, this->nodes_.at(this->NodeIndex(group_id))->MessagesSize());
+    this->ClearMessages();
+  }
+}
+
 }  // namespace test
 
 }  // namespace routing
