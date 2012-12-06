@@ -754,7 +754,7 @@ TEST_F(RoutingNetworkTest, FUNC_SanityCheck) {
   }
   {
     //  GroupSend
-    uint32_t random_node(RandomUint32() % kServerSize);
+    uint16_t random_node(RandomUint32() % kServerSize);
     NodeId target_id(this->nodes_[random_node]->node_id());
     std::vector<NodeId> group_Ids(this->GetGroupForId(target_id));
     EXPECT_TRUE(this->GroupSend(target_id, 1));
@@ -797,7 +797,7 @@ TEST_F(RoutingNetworkTest, FUNC_SanityCheck) {
     this->AddNode(true, NodeId(), true);
 
     // Anonymous group send
-    NodeId target_id(NodeId(NodeId::kRandomId));
+    NodeId target_id(NodeId::kRandomId);
     std::vector<NodeId> group_Ids(this->GetGroupForId(target_id));
     EXPECT_TRUE(this->GroupSend(target_id, 1, static_cast<uint16_t>(this->nodes_.size() - 1)));
     for (auto& group_id : group_Ids)
