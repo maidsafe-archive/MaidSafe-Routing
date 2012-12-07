@@ -381,7 +381,12 @@ void Routing::Impl::Send(const NodeId& destination_id,
                   NotifyNetworkStatus(kPartialJoinSessionEnded);
                 }
               } else {
-                LOG(kInfo) << "Message Sent from Anonymous/Partial joined node";
+                LOG(kInfo) << "   [" << DebugId(kNodeId_) << "] sent : "
+                           << MessageTypeString(proto_message) << " to   "
+                           << HexSubstr(bootstrap_connection_id.string())
+                           << "   (id: " << proto_message.id() << ")"
+                           << " dst : " << HexSubstr(proto_message.destination_id())
+                           << " --Anonymous/Partial-joined--";
               }
             });
           });

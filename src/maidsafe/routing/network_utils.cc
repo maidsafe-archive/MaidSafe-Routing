@@ -172,6 +172,10 @@ void NetworkUtils::RudpSend(const NodeId& peer_id,
       return;
   }
   rudp_.Send(peer_id, message.SerializeAsString(), message_sent_functor);
+  LOG(kInfo) << "  [" << DebugId(routing_table_.kNodeId())
+             << "] send : " << MessageTypeString(message)
+             << " to   " << DebugId(peer_id) << "   (id: " << message.id() << ")"
+             << " --To Rudp--";
 }
 
 void NetworkUtils::SendToDirect(const protobuf::Message& message,

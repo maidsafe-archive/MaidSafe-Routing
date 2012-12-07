@@ -46,7 +46,8 @@ uint32_t Parameters::max_data_size(rudp::ManagedConnections::kMaxMessageSize() -
 bool Parameters::append_maidsafe_endpoints(false);
 // TODO(Prakash): BEFORE_RELEASE revisit below preprocessor directives to remove internal endpoints
 #if defined QA_BUILD || defined TESTING
-bool Parameters::append_maidsafe_local_endpoints(true);
+// TODO(Prakash) : Revert append_maidsafe_local_endpoints to true once local network available.
+bool Parameters::append_maidsafe_local_endpoints(false);
 #else
 bool Parameters::append_maidsafe_local_endpoints(false);
 #endif

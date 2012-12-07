@@ -85,13 +85,19 @@ void MessageHandler::HandleRoutingMessage(protobuf::Message& message) {
 
 void MessageHandler::HandleNodeLevelMessageForThisNode(protobuf::Message& message) {
   if (IsRequest(message)) {
-      LOG(kInfo) << " [" << DebugId(routing_table_.kNodeId()) << "] rcvd : "
+    LOG(kInfo) << " [" << DebugId(routing_table_.kNodeId()) << "] rcvd : "
                << MessageTypeString(message) << " from "
                << HexSubstr(message.source_id())
                << "   (id: " << message.id() << ")  --NodeLevel--";
     ReplyFunctor response_functor = [=](const std::string& reply_message) {
-        if (reply_message.empty())
+        if (reply_message.empty()) {
+          LOG(kInfo) << "Empty response for message id :" << message.id();
           return;
+        }
+        LOG(kInfo) << " [" << DebugId(routing_table_.kNodeId()) << "] repl : "
+                   << MessageTypeString(message) << " from "
+                   << HexSubstr(message.source_id())
+                   << "   (id: " << message.id() << ")  --NodeLevel Replied--";
         protobuf::Message message_out;
         message_out.set_request(false);
         message_out.set_hops_to_live(Parameters::hops_to_live);
