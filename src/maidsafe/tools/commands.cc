@@ -284,6 +284,8 @@ void Commands::PrintUsage() {
             << " dest_index for using existing identity as a group_id)\n";
   std::cout << "\tsendmultiple <num_msg> Send num of msg to randomly picked-up destination."
             << " -1 for infinite (Default 10)\n";
+  std::cout << "\tsendgroupmultiple <num_msg> Send num of group msg to randomly "
+            << " picked-up destination. -1 for infinite\n";
   std::cout << "\tdatasize <data_size> Set the data_size for the message.\n";
   std::cout << "\nattype Print the NatType of this node.\n";
   std::cout << "\texit Exit application.\n";
@@ -334,8 +336,10 @@ void Commands::ProcessCommand(const std::string &cmdline) {
       if (infinite)
         std::cout << " Running infinite messaging test. press Ctrl + C to terminate the program"
                   << std::endl;
-      for (auto i(0); (i < count) || infinite; ++i)
+      for (auto i(0); (i < count) || infinite; ++i) {
+        std::cout << "sending " << i << "th message" << std::endl;
         SendAMsg(boost::lexical_cast<int>(args[0]), DestinationType::kDirect, data);
+      }
     }
   } else if (cmd == "sendgroup") {
     std::string data(RandomAlphaNumericString(data_size_));
@@ -343,6 +347,15 @@ void Commands::ProcessCommand(const std::string &cmdline) {
       SendAMsg(-1, DestinationType::kGroup, data);
     else
       SendAMsg(boost::lexical_cast<int>(args[0]), DestinationType::kGroup, data);
+  } else if (cmd == "sendgroupmultiple") {
+    if (args.size() == 1) {
+      int index(0);
+      while(index++ != boost::lexical_cast<int>(args[0])) {
+        std::cout << "sending " << index << "th group message" << std::endl;
+        std::string data(RandomAlphaNumericString(data_size_));
+        SendAMsg(-1, DestinationType::kGroup, data);
+      }
+    }
   } else if (cmd == "sendmultiple") {
     int num_msg(10);
     if (!args.empty())
