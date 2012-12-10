@@ -164,7 +164,7 @@ class ResponseHandlerTest : public testing::Test {
       size_t num_of_requested,
       std::vector<NodeId> nodes = std::vector<NodeId>()) {
     protobuf::FindNodesRequest find_nodes;
-    find_nodes.set_num_nodes_requested(num_of_requested);
+    find_nodes.set_num_nodes_requested(static_cast<int32_t>(num_of_requested));
     find_nodes.set_target_node(routing_table_.kFob().identity.string());
     find_nodes.set_timestamp(GetTimeStamp());
     return ComposeMsg(ComposeFindNodesResponse(find_nodes.SerializeAsString(),
@@ -267,10 +267,10 @@ TEST_F(ResponseHandlerTest, BEH_FindNodes) {
   }
   message = ComposeFindNodesResponseMsg(num_of_found_nodes, nodes);
   EXPECT_CALL(network_, GetAvailableEndpoint(testing::_, testing::_, testing::_, testing::_))
-      .Times(num_of_closer)
+      .Times(static_cast<int>(num_of_closer))
       .WillRepeatedly(testing::WithArgs<2, 3>(testing::Invoke(
             boost::bind(&ResponseHandlerTest::GetAvailableEndpoint, this, _1, _2, kSuccess))));
-  EXPECT_CALL(network_, SendToClosestNode(testing::_)).Times(num_of_closer);
+  EXPECT_CALL(network_, SendToClosestNode(testing::_)).Times(static_cast<int>(num_of_closer));
   response_handler_.FindNodes(message);
 }
 
@@ -384,10 +384,10 @@ TEST_F(ResponseHandlerTest, BEH_ConnectSuccessAcknowledgement) {
   EXPECT_CALL(network_, MarkConnectionAsValid(testing::_))
       .WillOnce(testing::Return(kSuccess));
   EXPECT_CALL(network_, GetAvailableEndpoint(testing::_, testing::_, testing::_, testing::_))
-      .Times(num_close_ids)
+      .Times(static_cast<int>(num_close_ids))
       .WillRepeatedly(testing::WithArgs<2, 3>(testing::Invoke(
             boost::bind(&ResponseHandlerTest::GetAvailableEndpoint, this, _1, _2, kSuccess))));
-  EXPECT_CALL(network_, SendToClosestNode(testing::_)).Times(num_close_ids);
+  EXPECT_CALL(network_, SendToClosestNode(testing::_)).Times(static_cast<int>(num_close_ids));
   response_handler->ConnectSuccessAcknowledgement(message);
 
   // Rudp succeed to validate connection, HandleSuccessAcknowledgementAsRequestor
@@ -401,7 +401,7 @@ TEST_F(ResponseHandlerTest, BEH_ConnectSuccessAcknowledgement) {
   EXPECT_CALL(network_, MarkConnectionAsValid(testing::_))
       .WillOnce(testing::Return(kSuccess));
   EXPECT_CALL(network_, GetAvailableEndpoint(testing::_, testing::_, testing::_, testing::_))
-      .Times(num_close_ids)
+      .Times(static_cast<int>(num_close_ids))
       .WillRepeatedly(testing::WithArgs<2, 3>(testing::Invoke(
             boost::bind(&ResponseHandlerTest::GetAvailableEndpoint, this, _1, _2,
                         rudp::kUnvalidatedConnectionAlreadyExists))));
@@ -418,7 +418,7 @@ TEST_F(ResponseHandlerTest, BEH_ConnectSuccessAcknowledgement) {
   EXPECT_CALL(network_, MarkConnectionAsValid(testing::_))
       .WillOnce(testing::Return(kSuccess));
   EXPECT_CALL(network_, GetAvailableEndpoint(testing::_, testing::_, testing::_, testing::_))
-      .Times(num_close_ids)
+      .Times(static_cast<int>(num_close_ids))
       .WillRepeatedly(testing::WithArgs<2, 3>(testing::Invoke(
             boost::bind(&ResponseHandlerTest::GetAvailableEndpoint, this, _1, _2,
                         rudp::kInvalidAddress))));
@@ -435,11 +435,12 @@ TEST_F(ResponseHandlerTest, BEH_ConnectSuccessAcknowledgement) {
   EXPECT_CALL(network_, MarkConnectionAsValid(testing::_))
       .WillOnce(testing::Return(kSuccess));
   EXPECT_CALL(network_, GetAvailableEndpoint(testing::_, testing::_, testing::_, testing::_))
-      .Times(num_close_ids)
+      .Times(static_cast<int>(num_close_ids))
       .WillRepeatedly(testing::WithArgs<2, 3>(testing::Invoke(
             boost::bind(&ResponseHandlerTest::GetAvailableEndpoint, this, _1, _2,
                         rudp::kSuccess))));
-  EXPECT_CALL(network_, SendToDirect(testing::_, testing::_, testing::_)).Times(num_close_ids);
+  EXPECT_CALL(network_,
+    SendToDirect(testing::_, testing::_, testing::_)).Times(static_cast<int>(num_close_ids));
   response_handler->ConnectSuccessAcknowledgement(message);
 }
 
