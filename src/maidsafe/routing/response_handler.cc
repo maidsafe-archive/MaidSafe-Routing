@@ -127,7 +127,7 @@ void ResponseHandler::Connect(protobuf::Message& message) {
                            true,  // requestor
                            routing_table_.client_mode());
     if (result == kSuccess) {
-      // Special case with bootstrapping peer in which kSuccess comes before connect respons
+      // Special case with bootstrapping peer in which kSuccess comes before connect response
       if (peer_node_id == network_.bootstrap_connection_id()) {
         LOG(kInfo) << "Special case with bootstrapping peer : "  << DebugId(peer_node_id);
         const std::vector<NodeId> close_ids;  // add closer ids if needed
@@ -201,6 +201,7 @@ void ResponseHandler::SendConnectRequest(const NodeId peer_node_id) {
   peer.node_id = peer_node_id;
 
   if (peer.node_id == NodeId(routing_table_.kFob().identity)) {
+    LOG(kWarning) << "Can't send connect request to self !";
     return;
   }
 

@@ -36,7 +36,10 @@ namespace protobuf { class Message; }
 class NonRoutingTable;
 class RoutingTable;
 
-namespace test { class GenericNode; }
+namespace test {
+  class GenericNode;
+  class MockNetworkUtils;
+}
 
 class NetworkUtils {
  public:
@@ -46,14 +49,14 @@ class NetworkUtils {
                 const rudp::MessageReceivedFunctor& message_received_functor,
                 const rudp::ConnectionLostFunctor& connection_lost_functor,
                 boost::asio::ip::udp::endpoint local_endpoint = boost::asio::ip::udp::endpoint());
-  int GetAvailableEndpoint(const NodeId& peer_id,
-                           const rudp::EndpointPair& peer_endpoint_pair,
-                           rudp::EndpointPair& this_endpoint_pair,
-                           rudp::NatType& this_nat_type);
-  int Add(const NodeId& peer_id,
-          const rudp::EndpointPair& peer_endpoint_pair,
-          const std::string& validation_data);
-  int MarkConnectionAsValid(const NodeId& peer_id);
+  virtual int GetAvailableEndpoint(const NodeId& peer_id,
+                                   const rudp::EndpointPair& peer_endpoint_pair,
+                                   rudp::EndpointPair& this_endpoint_pair,
+                                   rudp::NatType& this_nat_type);
+  virtual int Add(const NodeId& peer_id,
+                  const rudp::EndpointPair& peer_endpoint_pair,
+                  const std::string& validation_data);
+  virtual int MarkConnectionAsValid(const NodeId& peer_id);
   void Remove(const NodeId& peer_id);
   // For sending relay requests, message with empty source ID may be provided, along with
   // direct endpoint.
@@ -74,6 +77,7 @@ class NetworkUtils {
   rudp::NatType nat_type() const;
 
   friend class test::GenericNode;
+  friend class test::MockNetworkUtils;
 
  private:
   NetworkUtils(const NetworkUtils&);
