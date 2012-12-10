@@ -21,6 +21,7 @@
 #include "maidsafe/rudp/managed_connections.h"
 #include "maidsafe/rudp/return_codes.h"
 
+#include "maidsafe/routing/group_change_handler.h"
 #include "maidsafe/routing/message_handler.h"
 #include "maidsafe/routing/non_routing_table.h"
 #include "maidsafe/routing/parameters.h"
@@ -48,7 +49,8 @@ class ResponseHandlerTest : public testing::Test {
        routing_table_(fob_, false),
        non_routing_table_(fob_),
        network_(routing_table_, non_routing_table_),
-       response_handler_(routing_table_, non_routing_table_, network_) {}
+       group_change_handler_(routing_table_, network_),
+       response_handler_(routing_table_, non_routing_table_, network_, group_change_handler_) {}
 
   int GetAvailableEndpoint(rudp::EndpointPair& this_endpoint_pair,
                            rudp::NatType& this_nat_type,
@@ -197,6 +199,7 @@ class ResponseHandlerTest : public testing::Test {
   RoutingTable routing_table_;
   NonRoutingTable non_routing_table_;
   MockNetworkUtils network_;
+  GroupChangeHandler group_change_handler_;
   ResponseHandler response_handler_;
 };
 
@@ -350,7 +353,8 @@ TEST_F(ResponseHandlerTest, BEH_ConnectSuccessAcknowledgement) {
   // shared_from_this function inside requires the response_handler holder to be shared_ptr
   // if holding as a normal object, shared_from_this will throw an exception
   std::shared_ptr<ResponseHandler> response_handler(
-      std::make_shared<ResponseHandler>(routing_table_, non_routing_table_, network_));
+      std::make_shared<ResponseHandler>(routing_table_, non_routing_table_, network_,
+                                        group_change_handler_));
 
   // request_public_key_functor_ doesn't setup
   message = ComposeMsg(ComposeConnectSuccessAcknowledgement(node_id,
