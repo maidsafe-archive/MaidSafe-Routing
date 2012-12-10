@@ -210,8 +210,10 @@ void Commands::SendAMsg(const int& identity_index, const DestinationType& destin
   std::cout << "Received response from following nodes :" << std::endl;
   for(auto &responsed_node : responsed_nodes) {
     std::cout << "\t" << maidsafe::HexSubstr(responsed_node.string()) << std::endl;
-    if (responsed_node != farthest_closests)
-      EXPECT_TRUE(NodeId::CloserToTarget(responsed_node, farthest_closests, dest_id));
+    if (destination_type == DestinationType::kGroup)
+      EXPECT_TRUE(std::find(closests.begin(), closests.end(), responsed_node) != closests.end());
+    else
+      EXPECT_EQ(responsed_node, dest_id);
   }
 
   if (std::string::npos != received_response_msg.find("request_routing_table")) {
