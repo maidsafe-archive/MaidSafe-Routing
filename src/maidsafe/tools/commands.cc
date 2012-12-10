@@ -399,25 +399,18 @@ void Commands::MarkResultArrived() {
 NodeId Commands::CalculateClosests(const NodeId& target_id,
                                    std::vector<NodeId>& closests,
                                    uint16_t num_of_closests) {
-  std::sort(all_ids_.begin(), all_ids_.begin() + all_ids_.size() / 2,
-            [&](const NodeId &i, const NodeId &j) {
-              return (NodeId::CloserToTarget(i, j, target_id));
+  if (all_ids_.size() <= num_of_closests) {
+    closests = all_ids_;
+    return closests[closests.size() - 1];
+  }
+  std::sort(all_ids_.begin(), all_ids_.end(),
+            [&](const NodeId& lhs, const NodeId& rhs) {
+              return NodeId::CloserToTarget(lhs, rhs, target_id);
             });
-  if (num_of_closests > all_ids_.size())
-    num_of_closests = static_cast<uint16_t>(all_ids_.size());
-  closests.resize(num_of_closests);
-  std::copy(all_ids_.begin(), all_ids_.begin() + num_of_closests, closests.begin());
-
-  // For group msg, sending to an existing node shall exclude that node from expected list
-  if (num_of_closests != 1)
-    for (auto node_id(closests.begin()); node_id != closests.end(); ++node_id)
-      if (*node_id == target_id) {
-        closests.erase(node_id);
-      if (all_ids_.size() > num_of_closests)
-        closests.push_back(all_ids_[num_of_closests]);
-      break;
-    }
-
+  closests = std::vector<NodeId>(all_ids_.begin() +
+                                     boost::lexical_cast<bool>(all_ids_[0] == target_id),
+                                 all_ids_.begin() + num_of_closests +
+                                     boost::lexical_cast<bool>(all_ids_[0] == target_id));
   return closests[closests.size() - 1];
 }
 
