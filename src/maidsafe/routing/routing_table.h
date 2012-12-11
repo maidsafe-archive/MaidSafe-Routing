@@ -70,6 +70,8 @@ class RoutingTable {
   bool IsConnected(const NodeId& node_id) const;
   bool ConfirmGroupMembers(const NodeId& node1, const NodeId& node2);
   void GroupUpdateFromConnectedPeer(const NodeId& peer, std::vector<NodeId> nodes);
+  NodeInfo GetConnectedPeerFromGroupMatrixFor(const NodeId& target_node_id);
+  NodeInfo GetConnectedPeerFromGroupMatrixClosestTo(const NodeId& target_id);
   // Returns default-constructed NodeId if routing table size is zero
   NodeInfo GetClosestNode(const NodeId& target_id, bool ignore_exact_match = false);
   NodeInfo GetClosestNode(const NodeId& target_id,

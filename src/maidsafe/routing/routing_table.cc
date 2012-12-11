@@ -198,6 +198,14 @@ bool RoutingTable::IsThisNodeInGroupForId(const NodeId& target_id, bool& is_grou
   return routing_table_result;
 }
 
+NodeInfo RoutingTable::GetConnectedPeerFromGroupMatrixFor(const NodeId& /*target_node_id*/) {
+  return NodeInfo();
+}
+
+NodeInfo RoutingTable::GetConnectedPeerFromGroupMatrixClosestTo(const NodeId& /*target_id*/) {
+  return NodeInfo();
+}
+
 bool RoutingTable::GetNodeInfo(const NodeId& node_id, NodeInfo& peer) const {
   std::unique_lock<std::mutex> lock(mutex_);
   auto found(Find(node_id, lock));
