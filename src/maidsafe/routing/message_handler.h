@@ -65,8 +65,7 @@ class MessageHandler {
                  NonRoutingTable& non_routing_table,
                  NetworkUtils& network,
                  Timer& timer,
-                 RemoveFurthestNode& remove_node,
-                 GroupChangeHandler& group_change_handler);
+                 RemoveFurthestNode& remove_node);
   void HandleMessage(protobuf::Message& message);
   void set_message_received_functor(MessageReceivedFunctor message_received_functor);
   void set_request_public_key_functor(RequestPublicKeyFunctor request_public_key_functor);
@@ -107,7 +106,6 @@ class MessageHandler {
   NonRoutingTable& non_routing_table_;
   NetworkUtils& network_;
   RemoveFurthestNode& remove_furthest_node_;
-  GroupChangeHandler& group_change_handler_;
   std::unique_ptr<CacheManager> cache_manager_;
   Timer& timer_;
   std::shared_ptr<ResponseHandler> response_handler_;

@@ -28,8 +28,6 @@
 #include "maidsafe/private/utils/fob.h"
 
 #include "maidsafe/routing/api_config.h"
-#include "maidsafe/routing/group_matrix.h"
-
 
 namespace maidsafe {
 
@@ -57,8 +55,8 @@ class RoutingTable {
   RoutingTable(const Fob& fob, bool client_mode);
   void InitialiseFunctors(NetworkStatusFunctor network_status_functor,
                           std::function<void(const NodeInfo&, bool)> remove_node_functor,
-                          RemoveFurthestUnnecessaryNode remove_furthest_node,
-                          GroupChangeFunctor group_change_functor);
+                          CloseNodeReplacedFunctor close_node_replaced_functor,
+                          RemoveFurthestUnnecessaryNode remove_furthest_node);
   bool AddNode(const NodeInfo& peer);
   bool CheckNode(const NodeInfo& peer);
   NodeInfo DropNode(const NodeId &node_to_drop, bool routing_only);
@@ -90,6 +88,7 @@ class RoutingTable {
   RoutingTable(const RoutingTable&);
   RoutingTable& operator=(const RoutingTable&);
   bool AddOrCheckNode(NodeInfo node, bool remove);
+  std::vector<NodeInfo> CheckGroupChange(std::unique_lock<std::mutex>& lock);
   void SetBucketIndex(NodeInfo& node_info) const;
   bool CheckPublicKeyIsUnique(const NodeInfo& node, std::unique_lock<std::mutex>& lock) const;
   NodeInfo ResolveConnectionDuplication(const NodeInfo& new_duplicate_node,
@@ -117,7 +116,6 @@ class RoutingTable {
       std::unique_lock<std::mutex>& lock) const;
   void UpdateNetworkStatus(uint16_t size) const;
   std::string PrintRoutingTable();
-  void PrintGroupMatrix();
 
   friend class test::RoutingTableTest;
   friend class test::RoutingTableTest_BEH_OrderedGroupChange_Test;
@@ -137,9 +135,8 @@ class RoutingTable {
   std::function<void(const NodeInfo&, bool)> remove_node_functor_;
   NetworkStatusFunctor network_status_functor_;
   RemoveFurthestUnnecessaryNode remove_furthest_node_;
-  GroupChangeFunctor group_change_functor_;
+  CloseNodeReplacedFunctor close_node_replaced_functor_;
   std::vector<NodeInfo> nodes_;
-  GroupMatrix group_matrix_;
 };
 
 }  // namespace routing

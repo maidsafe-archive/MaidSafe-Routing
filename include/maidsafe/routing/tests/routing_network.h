@@ -48,16 +48,12 @@ namespace protobuf { class Message; }
 
 namespace test {
 
+bool IsPortAvailable(boost::asio::ip::udp::endpoint endpoint);
+
 struct NodeInfoAndPrivateKey;
 
-#ifdef FAKE_RUDP
-  const uint32_t kClientSize(8);
-  const uint32_t kServerSize(8);
-#else
-  const uint32_t kClientSize(5);
-  const uint32_t kServerSize(70);
-#endif
-
+const uint32_t kClientSize(5);
+const uint32_t kServerSize(20);
 const uint32_t kNetworkSize = kClientSize + kServerSize;
 
 class GenericNetwork;
@@ -99,7 +95,6 @@ class GenericNode {
                 const protobuf::Message& message,
                 rudp::MessageSentFunctor message_sent_functor);
   void PrintRoutingTable();
-  void PrintGroupMatrix();
   bool RoutingTableHasNode(const NodeId& node_id);
   bool NonRoutingTableHasNode(const NodeId& node_id);
   NodeInfo GetRemovableNode();
@@ -162,6 +157,7 @@ class GenericNetwork {
   void ClearMessages();
   int NodeIndex(const NodeId& node_id);
   size_t ClientIndex() { return client_index_; }
+  std::vector<NodeId> GetGroupForId(const NodeId& node_id);
 
   friend class NodesEnvironment;
 

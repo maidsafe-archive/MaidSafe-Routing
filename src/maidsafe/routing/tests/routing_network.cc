@@ -29,12 +29,29 @@
 
 namespace asio = boost::asio;
 namespace ip = asio::ip;
+namespace bs = boost::system;
 
 namespace maidsafe {
 
 namespace routing {
 
 namespace test {
+
+bool IsPortAvailable(ip::udp::endpoint endpoint) {
+  asio::io_service asio_service;
+  asio::ip::udp::socket socket(asio_service);
+  bs::error_code ec;
+  socket.open(endpoint.protocol(), ec);
+  if (ec) {
+    LOG(kError) << "Open error: " << ec.message();
+  }
+  socket.bind(endpoint, ec);
+  if (ec) {
+    LOG(kError) << "Bind error: " << ec.message();
+    return false;
+  }
+  return true;
+}
 
 namespace {
 
@@ -299,10 +316,6 @@ void GenericNode::PrintRoutingTable() {
   }
 }
 
-void GenericNode::PrintGroupMatrix() {
-  routing_->pimpl_->routing_table_.PrintGroupMatrix();
-}
-
 std::string GenericNode::SerializeRoutingTable() {
   std::vector<NodeId> node_list;
   for (auto node_info : routing_->pimpl_->routing_table_.nodes_)
@@ -557,6 +570,22 @@ int GenericNetwork::NodeIndex(const NodeId& node_id) {
       return index;
   }
   return -1;
+}
+
+std::vector<NodeId> GenericNetwork::GetGroupForId(const NodeId& node_id) {
+  std::vector<NodeId> group_ids;
+  for (auto& node : nodes_) {
+    if (!node->IsClient() && (node->node_id() != node_id))
+      group_ids.push_back(node->node_id());
+  }
+  std::partial_sort(group_ids.begin(),
+                    group_ids.begin() + Parameters::node_group_size - 1,
+                    group_ids.end(),
+                    [&](const NodeId& lhs, const NodeId& rhs) {
+                      return NodeId::CloserToTarget(lhs, rhs, node_id);
+                    });
+  return std::vector<NodeId>(group_ids.begin(),
+                             group_ids.begin() + Parameters::node_group_size - 1);
 }
 
 uint16_t GenericNetwork::NonClientNodesSize() const {

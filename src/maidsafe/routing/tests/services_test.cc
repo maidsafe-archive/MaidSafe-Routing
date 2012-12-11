@@ -26,7 +26,6 @@
 #include "maidsafe/routing/rpcs.h"
 #include "maidsafe/routing/service.h"
 #include "maidsafe/routing/tests/test_utils.h"
-#include "maidsafe/routing/group_change_handler.h"
 
 
 namespace maidsafe {
@@ -48,8 +47,7 @@ TEST(ServicesTest, BEH_Ping) {
   NonRoutingTable NRT(fob);
   AsioService asio_service(1);
   NetworkUtils network(RT, NRT);
-  GroupChangeHandler group_change_handler(RT, network);
-  Service service(RT, NRT, network, group_change_handler);
+  Service service(RT, NRT, network);
   NodeInfo node;
   rudp::ManagedConnections rudp;
   protobuf::PingRequest ping_request;
@@ -82,8 +80,7 @@ TEST(ServicesTest, BEH_FindNodes) {
   NonRoutingTable NRT(fob);
   AsioService asio_service(1);
   NetworkUtils network(RT, NRT);
-  GroupChangeHandler group_change_handler(RT, network);
-  Service service(RT, NRT, network, group_change_handler);
+  Service service(RT, NRT, network);
   protobuf::Message message = rpcs::FindNodes(us.node_id, us.node_id, 8);
   service.FindNodes(message);
   protobuf::FindNodesResponse find_nodes_respose;

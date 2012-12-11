@@ -210,8 +210,10 @@ void Commands::SendAMsg(const int& identity_index, const DestinationType& destin
   std::cout << "Received response from following nodes :" << std::endl;
   for(auto &responsed_node : responsed_nodes) {
     std::cout << "\t" << maidsafe::HexSubstr(responsed_node.string()) << std::endl;
-    if (responsed_node != farthest_closests)
-      EXPECT_TRUE(NodeId::CloserToTarget(responsed_node, farthest_closests, dest_id));
+    if (destination_type == DestinationType::kGroup)
+      EXPECT_TRUE(std::find(closests.begin(), closests.end(), responsed_node) != closests.end());
+    else
+      EXPECT_EQ(responsed_node, dest_id);
   }
 
   if (std::string::npos != received_response_msg.find("request_routing_table")) {
@@ -284,6 +286,8 @@ void Commands::PrintUsage() {
             << " dest_index for using existing identity as a group_id)\n";
   std::cout << "\tsendmultiple <num_msg> Send num of msg to randomly picked-up destination."
             << " -1 for infinite (Default 10)\n";
+  std::cout << "\tsendgroupmultiple <num_msg> Send num of group msg to randomly "
+            << " picked-up destination. -1 for infinite\n";
   std::cout << "\tdatasize <data_size> Set the data_size for the message.\n";
   std::cout << "\nattype Print the NatType of this node.\n";
   std::cout << "\texit Exit application.\n";
@@ -334,8 +338,10 @@ void Commands::ProcessCommand(const std::string &cmdline) {
       if (infinite)
         std::cout << " Running infinite messaging test. press Ctrl + C to terminate the program"
                   << std::endl;
-      for (auto i(0); (i < count) || infinite; ++i)
+      for (auto i(0); (i < count) || infinite; ++i) {
+        std::cout << "sending " << i << "th message" << std::endl;
         SendAMsg(boost::lexical_cast<int>(args[0]), DestinationType::kDirect, data);
+      }
     }
   } else if (cmd == "sendgroup") {
     std::string data(RandomAlphaNumericString(data_size_));
@@ -343,6 +349,15 @@ void Commands::ProcessCommand(const std::string &cmdline) {
       SendAMsg(-1, DestinationType::kGroup, data);
     else
       SendAMsg(boost::lexical_cast<int>(args[0]), DestinationType::kGroup, data);
+  } else if (cmd == "sendgroupmultiple") {
+    if (args.size() == 1) {
+      int index(0);
+      while(index++ != boost::lexical_cast<int>(args[0])) {
+        std::cout << "sending " << index << "th group message" << std::endl;
+        std::string data(RandomAlphaNumericString(data_size_));
+        SendAMsg(-1, DestinationType::kGroup, data);
+      }
+    }
   } else if (cmd == "sendmultiple") {
     int num_msg(10);
     if (!args.empty())
@@ -386,25 +401,18 @@ void Commands::MarkResultArrived() {
 NodeId Commands::CalculateClosests(const NodeId& target_id,
                                    std::vector<NodeId>& closests,
                                    uint16_t num_of_closests) {
-  std::sort(all_ids_.begin(), all_ids_.begin() + all_ids_.size() / 2,
-            [&](const NodeId &i, const NodeId &j) {
-              return (NodeId::CloserToTarget(i, j, target_id));
+  if (all_ids_.size() <= num_of_closests) {
+    closests = all_ids_;
+    return closests[closests.size() - 1];
+  }
+  std::sort(all_ids_.begin(), all_ids_.end(),
+            [&](const NodeId& lhs, const NodeId& rhs) {
+              return NodeId::CloserToTarget(lhs, rhs, target_id);
             });
-  if (num_of_closests > all_ids_.size())
-    num_of_closests = static_cast<uint16_t>(all_ids_.size());
-  closests.resize(num_of_closests);
-  std::copy(all_ids_.begin(), all_ids_.begin() + num_of_closests, closests.begin());
-
-  // For group msg, sending to an existing node shall exclude that node from expected list
-  if (num_of_closests != 1)
-    for (auto node_id(closests.begin()); node_id != closests.end(); ++node_id)
-      if (*node_id == target_id) {
-        closests.erase(node_id);
-      if (all_ids_.size() > num_of_closests)
-        closests.push_back(all_ids_[num_of_closests]);
-      break;
-    }
-
+  closests = std::vector<NodeId>(all_ids_.begin() +
+                                     boost::lexical_cast<bool>(all_ids_[0] == target_id),
+                                 all_ids_.begin() + num_of_closests +
+                                     boost::lexical_cast<bool>(all_ids_[0] == target_id));
   return closests[closests.size() - 1];
 }
 

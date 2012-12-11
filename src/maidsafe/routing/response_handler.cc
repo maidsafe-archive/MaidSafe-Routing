@@ -29,7 +29,6 @@
 #include "maidsafe/routing/routing_table.h"
 #include "maidsafe/routing/rpcs.h"
 #include "maidsafe/routing/utils.h"
-#include "maidsafe/routing/group_change_handler.h"
 
 
 namespace bptime = boost::posix_time;
@@ -46,13 +45,11 @@ typedef boost::asio::ip::udp::endpoint Endpoint;
 
 ResponseHandler::ResponseHandler(RoutingTable& routing_table,
                                  NonRoutingTable& non_routing_table,
-                                 NetworkUtils& network,
-                                 GroupChangeHandler &group_change_handler)
+                                 NetworkUtils& network)
     : mutex_(),
       routing_table_(routing_table),
       non_routing_table_(non_routing_table),
       network_(network),
-      group_change_handler_(group_change_handler),
       request_public_key_functor_() {
 }
 
@@ -130,7 +127,7 @@ void ResponseHandler::Connect(protobuf::Message& message) {
                            true,  // requestor
                            routing_table_.client_mode());
     if (result == kSuccess) {
-      // Special case with bootstrapping peer in which kSuccess comes before connect respons
+      // Special case with bootstrapping peer in which kSuccess comes before connect response
       if (peer_node_id == network_.bootstrap_connection_id()) {
         LOG(kInfo) << "Special case with bootstrapping peer : "  << DebugId(peer_node_id);
         const std::vector<NodeId> close_ids;  // add closer ids if needed
@@ -204,6 +201,7 @@ void ResponseHandler::SendConnectRequest(const NodeId peer_node_id) {
   peer.node_id = peer_node_id;
 
   if (peer.node_id == NodeId(routing_table_.kFob().identity)) {
+    LOG(kWarning) << "Can't send connect request to self !";
     return;
   }
 
@@ -316,9 +314,6 @@ void ResponseHandler::ConnectSuccessAcknowledgement(protobuf::Message& message) 
                                  response_handler->HandleSuccessAcknowledgementAsRequestor(
                                        close_ids);
                                }
-                               if (!client_node)
-                                 response_handler->group_change_handler_.UpdatePendingGroupChange(
-                                     peer.node_id);
                              }
                            }
                          });

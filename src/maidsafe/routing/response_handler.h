@@ -53,8 +53,7 @@ class ResponseHandler : public std::enable_shared_from_this<ResponseHandler> {
  public:
   ResponseHandler(RoutingTable& routing_table,
                   NonRoutingTable& non_routing_table,
-                  NetworkUtils& network,
-                  GroupChangeHandler& group_change_handler);
+                  NetworkUtils& network);
   virtual ~ResponseHandler();
   virtual void Ping(protobuf::Message& message);
   virtual void Connect(protobuf::Message& message);
@@ -76,7 +75,6 @@ class ResponseHandler : public std::enable_shared_from_this<ResponseHandler> {
   RoutingTable& routing_table_;
   NonRoutingTable& non_routing_table_;
   NetworkUtils& network_;
-  GroupChangeHandler& group_change_handler_;
   RequestPublicKeyFunctor request_public_key_functor_;
 };
 

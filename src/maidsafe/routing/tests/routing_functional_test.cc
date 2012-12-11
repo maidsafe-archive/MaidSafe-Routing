@@ -269,6 +269,67 @@ class RoutingNetworkTest : public testing::Test {
   std::shared_ptr<GenericNetwork> env_;
 };
 
+TEST_F(RoutingNetworkTest, FUNC_SanityCheck) {
+  {
+    EXPECT_TRUE(Send(3));
+    // This sleep is required for un-responded requests
+    Sleep(boost::posix_time::seconds(static_cast<long>(env_->nodes_.size() + 1)));  // NOLINT (Fraser)
+    env_->ClearMessages();
+  }
+  {
+    //  GroupSend
+    uint16_t random_node(RandomUint32() % kServerSize);
+    NodeId target_id(env_->nodes_[random_node]->node_id());
+    std::vector<NodeId> group_Ids(env_->GetGroupForId(target_id));
+    EXPECT_TRUE(GroupSend(target_id, 1));
+    for (auto& group_id : group_Ids)
+      EXPECT_EQ(1, env_->nodes_.at(env_->NodeIndex(group_id))->MessagesSize());
+    env_->ClearMessages();
+
+    // GroupSend SelfId
+    EXPECT_TRUE(GroupSend(target_id, 1, random_node));
+    for (auto& group_id : group_Ids)
+      EXPECT_EQ(1, env_->nodes_.at(env_->NodeIndex(group_id))->MessagesSize());
+    env_->ClearMessages();
+
+    // Client groupsend
+    EXPECT_TRUE(GroupSend(target_id, 1, kNetworkSize - 1));
+    for (auto& group_id : group_Ids)
+      EXPECT_EQ(1, env_->nodes_.at(env_->NodeIndex(group_id))->MessagesSize());
+    env_->ClearMessages();
+
+    // GroupSend RandomId
+    target_id = NodeId(NodeId::kRandomId);
+    group_Ids = env_->GetGroupForId(target_id);
+    EXPECT_TRUE(GroupSend(target_id, 1));
+    for (auto& group_id : group_Ids)
+      EXPECT_EQ(1, env_->nodes_.at(env_->NodeIndex(group_id))->MessagesSize());
+    env_->ClearMessages();
+  }
+  {
+    // Join client with same Id
+    env_->AddNode(true, env_->nodes_[kNetworkSize -1]->node_id());
+
+    // Send to client with same Id
+    EXPECT_TRUE(Send(env_->nodes_[kNetworkSize],
+                     env_->nodes_[kNetworkSize]->node_id(),
+                     true));
+    env_->ClearMessages();
+  }
+  {
+    // Anonymous join
+    env_->AddNode(true, NodeId(), true);
+
+    // Anonymous group send
+    NodeId target_id(NodeId::kRandomId);
+    std::vector<NodeId> group_Ids(env_->GetGroupForId(target_id));
+    EXPECT_TRUE(GroupSend(target_id, 1, static_cast<uint16_t>(env_->nodes_.size() - 1)));
+    for (auto& group_id : group_Ids)
+      EXPECT_EQ(1, env_->nodes_.at(env_->NodeIndex(group_id))->MessagesSize());
+    env_->ClearMessages();
+  }
+}
+
 // Test disabled as already get covered by global environment setup
 TEST_F(RoutingNetworkTest, DISABLED_FUNC_SetupNetwork) {
   env_->SetUpNetwork(kServerSize);
@@ -721,7 +782,6 @@ TEST_F(RoutingNetworkTest, FUNC_MessagingNetworkChurn) {
   auto expected_current_size = vault_network_size + clients_in_network + up_count - down_count;
   EXPECT_EQ(expected_current_size, env_->nodes_.size());
 }
-
 }  // namespace test
 
 }  // namespace routing
