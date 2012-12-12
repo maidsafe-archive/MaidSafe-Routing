@@ -73,7 +73,9 @@ GenericNode::GenericNode(bool client_mode)
       nat_type_(rudp::NatType::kUnknown),
       endpoint_(),
       messages_(),
-      routing_() {
+      routing_(),
+      health_mutex_(),
+      health_(0) {
   endpoint_.address(maidsafe::GetLocalIp());
   endpoint_.port(maidsafe::test::GetRandomPort());
   InitialiseFunctors();
@@ -95,7 +97,9 @@ GenericNode::GenericNode(bool client_mode, const rudp::NatType& nat_type)
       nat_type_(nat_type),
       endpoint_(),
       messages_(),
-      routing_() {
+      routing_(),
+      health_mutex_(),
+      health_(0) {
   endpoint_.address(GetLocalIp());
   endpoint_.port(maidsafe::test::GetRandomPort());
   InitialiseFunctors();
@@ -118,7 +122,9 @@ GenericNode::GenericNode(bool client_mode, const NodeInfoAndPrivateKey& node_inf
       nat_type_(rudp::NatType::kUnknown),
       endpoint_(),
       messages_(),
-      routing_() {
+      routing_(),
+      health_mutex_(),
+      health_(0) {
   endpoint_.address(GetLocalIp());
   endpoint_.port(maidsafe::test::GetRandomPort());
   InitialiseFunctors();
@@ -151,7 +157,7 @@ void GenericNode::InitialiseFunctors() {
                                  if (!IsClient())
                                    reply_functor("Response to >:<" + message);
                                };
-  functors_.network_status = [](const int&) {};  // NOLINT (Fraser)
+  functors_.network_status = [&](const int& health) { SetHealth(health); };  // NOLINT (Alison)
 }
 
 int GenericNode::GetStatus() const {
@@ -333,6 +339,16 @@ void GenericNode::ClearMessages() {
 Fob GenericNode::fob() {
   std::lock_guard<std::mutex> lock(mutex_);
   return GetFob(*node_info_plus_);
+}
+
+int GenericNode::Health() {
+  std::lock_guard<std::mutex> health_lock(health_mutex_);
+  return health_;
+}
+
+void GenericNode::SetHealth(const int &health) {
+  std::lock_guard<std::mutex> health_lock(health_mutex_);
+  health_ = health;
 }
 
 void GenericNode::PostTaskToAsioService(std::function<void()> functor) {
@@ -599,6 +615,80 @@ std::vector<NodeId> GenericNetwork::GetGroupForId(const NodeId& node_id) {
                              group_ids.begin() + Parameters::node_group_size - 1);
 }
 
+bool GenericNetwork::RestoreComposition() {
+  // Intended for use in test SetUp/TearDown
+  while (ClientIndex() > kServerSize) {
+    RemoveNode(nodes_.at(ClientIndex() - 1)->node_id());
+  }
+  while (ClientIndex() < kServerSize) {
+    AddNode(false, NodeId());
+  }
+  if (!ClientIndex() == kServerSize) {
+    LOG(kError) << "Failed to restore number of servers. Actual: " << ClientIndex() <<
+                   " Sought: " << kServerSize;
+    return false;
+  }
+
+  while (nodes_.size() > kNetworkSize) {
+    RemoveNode(nodes_.at(nodes_.size() - 1)->node_id());
+  }
+  while (nodes_.size() < kNetworkSize) {
+    AddNode(true, NodeId());
+  }
+  if (!ClientIndex() == kServerSize) {
+    LOG(kError) << "Failed to maintain number of servers. Actual: " << ClientIndex() <<
+                   " Sought: " << kServerSize;
+    return false;
+  }
+  if (!nodes_.size() == kNetworkSize) {
+    LOG(kError) << "Failed to restore number of clients. Actual: "
+                << nodes_.size() - ClientIndex()
+                << " Sought: " << kClientSize;
+    return false;
+  }
+  return true;
+}
+
+bool GenericNetwork::WaitForHealthToStabilise() {
+  // Intended for use in test SetUp/TearDown
+  int i(0);
+  bool healthy(false);
+  int vault_health(100);
+  int client_health(100);
+  if (kServerSize <= Parameters::max_routing_table_size)
+    vault_health = (kServerSize - 1) * 100 / Parameters::max_routing_table_size;
+  if (kServerSize <= Parameters::max_client_routing_table_size)
+    client_health = (kServerSize - 1) * 100 /Parameters::max_client_routing_table_size;
+
+  while (i < 10 && !healthy) {
+    ++i;
+    healthy = true;
+    for (auto node: nodes_) {
+      int node_health = node->Health();
+      if (node->IsClient()) {
+        if (node_health != client_health) {
+          LOG(kError) << "Bad client health. Expected: "
+                      << client_health << " Got: " << node_health;
+          healthy = false;
+          break;
+        }
+      } else {
+        if (node_health != vault_health) {
+          LOG(kError) << "Bad vault health. Expected: "
+                      << vault_health << " Got: " << node_health;
+          healthy = false;
+          break;
+        }
+      }
+    }
+    if (!healthy)
+      Sleep(boost::posix_time::seconds(1));
+  }
+  if (!healthy)
+    LOG(kError) << "Health failed to stabilise in 10 seconds.";
+  return healthy;
+}
+
 uint16_t GenericNetwork::NonClientNodesSize() const {
   uint16_t non_client_size(0);
   for (auto node : nodes_) {
@@ -633,8 +723,12 @@ void GenericNetwork::AddNodeDetails(NodePtr node) {
       [cond_var_weak, weak_node] (const int& result) {
         std::shared_ptr<std::condition_variable> cond_var(cond_var_weak.lock());
         NodePtr node(weak_node.lock());
+        if (node) {
+          node->SetHealth(result);
+        }
         if (!cond_var || !node)
           return;
+
         if (!node->anonymous_) {
           ASSERT_GE(result, kSuccess);
         } else  {

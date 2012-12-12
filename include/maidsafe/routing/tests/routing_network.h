@@ -113,6 +113,8 @@ class GenericNode {
   size_t MessagesSize() const;
   void ClearMessages();
   Fob fob();
+  int Health();
+  void SetHealth(const int& health);
   friend class GenericNetwork;
   Functors functors_;
 
@@ -130,6 +132,8 @@ class GenericNode {
   std::shared_ptr<Routing> routing_;
 
  private:
+  std::mutex health_mutex_;
+  int health_;
   void InitialiseFunctors();
 };
 
@@ -160,6 +164,8 @@ class GenericNetwork {
   int NodeIndex(const NodeId& node_id);
   size_t ClientIndex() { return client_index_; }
   std::vector<NodeId> GetGroupForId(const NodeId& node_id);
+  bool RestoreComposition();
+  bool WaitForHealthToStabilise();
 
   friend class NodesEnvironment;
 

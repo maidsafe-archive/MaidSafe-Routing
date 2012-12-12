@@ -37,31 +37,12 @@ class RoutingNetworkTest : public testing::Test {
   RoutingNetworkTest(void) : env_(NodesEnvironment::g_environment()) {}
 
   void SetUp() {
-    EXPECT_EQ(env_->ClientIndex(), kServerSize);
-    EXPECT_EQ(env_->nodes_.size(), kNetworkSize);
-    // TODO(Alison) - measure health
+    EXPECT_TRUE(env_->RestoreComposition());
+    EXPECT_TRUE(env_->WaitForHealthToStabilise());
   }
 
   void TearDown() {
-    while (env_->ClientIndex() > kServerSize) {
-      EXPECT_TRUE(env_->RemoveNode(env_->nodes_.at(env_->ClientIndex() - 1)->node_id()));
-    }
-    while (env_->ClientIndex() < kServerSize) {
-      env_->AddNode(false, NodeId());
-    }
-    EXPECT_EQ(env_->ClientIndex(), kServerSize);
-
-    while (env_->nodes_.size() > kNetworkSize) {
-      EXPECT_TRUE(env_->RemoveNode(env_->nodes_.at(env_->nodes_.size() - 1)->node_id()));
-    }
-    while (env_->nodes_.size() < kNetworkSize) {
-      env_->AddNode(true, NodeId());
-    }
-    EXPECT_EQ(env_->ClientIndex(), kServerSize);
-    EXPECT_EQ(env_->nodes_.size(), kNetworkSize);
-
-    // TODO(Alison) - wait for health to restore - how?
-    Sleep(boost::posix_time::microseconds(100));
+    EXPECT_TRUE(env_->RestoreComposition());
   }
 
  protected:

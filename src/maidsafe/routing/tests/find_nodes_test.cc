@@ -37,6 +37,15 @@ class FindNodeNetwork : public testing::Test  {
  public:
   FindNodeNetwork(void) : env_(NodesEnvironment::g_environment()) {}
 
+  void SetUp() {
+    EXPECT_TRUE(env_->RestoreComposition());
+    EXPECT_TRUE(env_->WaitForHealthToStabilise());
+  }
+
+  void TearDown() {
+    EXPECT_TRUE(env_->RestoreComposition());
+  }
+
  protected:
   testing::AssertionResult Find(std::shared_ptr<GenericNode> source, const NodeId& node_id) {
     protobuf::Message find_node_rpc(rpcs::FindNodes(node_id, source->node_id(), 8));
@@ -61,14 +70,6 @@ class FindNodeNetwork : public testing::Test  {
 };
 
 TEST_F(FindNodeNetwork, FUNC_FindExistingNode) {
-  for (auto source : env_->nodes_) {
-    EXPECT_TRUE(Find(source, source->node_id()));
-    Sleep(boost::posix_time::seconds(1));
-  }
-  EXPECT_TRUE(env_->ValidateRoutingTables());
-}
-
-TEST_F(FindNodeNetwork, FUNC_FindExistingNodeInHybridNetwork) {
   for (auto source : env_->nodes_) {
     EXPECT_TRUE(Find(source, source->node_id()));
     Sleep(boost::posix_time::seconds(1));
