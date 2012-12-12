@@ -87,6 +87,11 @@ NodeInfo GroupMatrix::GetConnectedPeerFor(const NodeId& target_node_id) {
   return NodeInfo();
 }
 
+NodeId GetConnectedPeerClosestTo(const NodeId& target_node_id) {
+  // TODO:(Prakash) : Implement
+  return target_node_id;
+}
+
 bool GroupMatrix::IsThisNodeGroupMemberFor(const NodeId& target_id, bool& is_group_leader) {
   std::lock_guard<std::mutex> lock(mutex_);
   is_group_leader = false;
