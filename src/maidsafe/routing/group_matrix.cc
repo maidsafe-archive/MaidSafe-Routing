@@ -79,17 +79,26 @@ NodeId GroupMatrix::GetConnectedPeerFor(const NodeId& target_node_id) {
   for (auto nodes : matrix_) {
     if (std::find_if(nodes.begin(), nodes.end(),
                      [target_node_id](const NodeId& node_id) {
-                         return (node_id == target_node_id);
-                       }) != nodes.end()) {
+                       return (node_id == target_node_id);
+                     }) != nodes.end()) {
       return nodes.at(0);
     }
   }
   return NodeId();
 }
 
-NodeId GetConnectedPeerClosestTo(const NodeId& target_node_id) {
-  // TODO:(Prakash) : Implement
-  return target_node_id;
+NodeId GroupMatrix::GetConnectedPeerClosestTo(const NodeId& target_id) {
+  std::lock_guard<std::mutex> lock(mutex_);
+  NodeId peer, closest(kNodeId_);
+  for (auto nodes : matrix_) {
+    for (auto node : nodes) {
+      if (NodeId::CloserToTarget(node, closest, target_id)) {
+          peer = nodes.at(0);
+          closest = node;
+      }
+    }
+  }
+  return peer;
 }
 
 bool GroupMatrix::IsThisNodeGroupMemberFor(const NodeId& target_id, bool& is_group_leader) {

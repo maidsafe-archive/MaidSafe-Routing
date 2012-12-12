@@ -198,12 +198,18 @@ bool RoutingTable::IsThisNodeInGroupForId(const NodeId& target_id, bool& is_grou
   return routing_table_result;
 }
 
-NodeInfo RoutingTable::GetConnectedPeerFromGroupMatrixFor(const NodeId& /*target_node_id*/) {
-  return NodeInfo();
+NodeInfo RoutingTable::GetConnectedPeerFromGroupMatrixFor(const NodeId& target_node_id) {
+  std::unique_lock<std::mutex> lock(mutex_);
+  NodeInfo node_info;
+  node_info.node_id = group_matrix_.GetConnectedPeerFor(target_node_id);
+  return node_info;
 }
 
-NodeInfo RoutingTable::GetConnectedPeerFromGroupMatrixClosestTo(const NodeId& /*target_id*/) {
-  return NodeInfo();
+NodeInfo RoutingTable::GetConnectedPeerFromGroupMatrixClosestTo(const NodeId& target_id) {
+  std::unique_lock<std::mutex> lock(mutex_);
+  NodeInfo node_info;
+  node_info.node_id = group_matrix_.GetConnectedPeerClosestTo(target_id);
+  return node_info;
 }
 
 bool RoutingTable::GetNodeInfo(const NodeId& node_id, NodeInfo& peer) const {

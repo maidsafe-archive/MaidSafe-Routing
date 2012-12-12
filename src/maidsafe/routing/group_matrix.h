@@ -43,7 +43,7 @@ class GroupMatrix {
   NodeId GetConnectedPeerFor(const NodeId& target_node_id);
 
   // Returns the peer which has node closest to target_id in its row (1st occurrence).
-  NodeId GetConnectedPeerClosestTo(const NodeId& target_node_id);
+  NodeId GetConnectedPeerClosestTo(const NodeId& targetid);
 
   // Checks if this node id is a group member for target id.
   // Group size is determined by Parameters::node_group_size.
