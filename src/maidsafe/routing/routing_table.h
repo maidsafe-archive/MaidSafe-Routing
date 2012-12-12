@@ -49,7 +49,7 @@ namespace protobuf { class Contact; }
 struct NodeInfo;
 
 typedef std::function<void(const std::vector<NodeInfo> /*new_group*/)>
-    GroupChangeFunctor;
+    ConnectedGroupChangeFunctor;
 
 
 class RoutingTable {
@@ -58,7 +58,7 @@ class RoutingTable {
   void InitialiseFunctors(NetworkStatusFunctor network_status_functor,
                           std::function<void(const NodeInfo&, bool)> remove_node_functor,
                           RemoveFurthestUnnecessaryNode remove_furthest_node,
-                          GroupChangeFunctor group_change_functor,
+                          ConnectedGroupChangeFunctor connected_group_change_functor,
                           CloseNodeReplacedFunctor close_node_replaced_functor);
   bool AddNode(const NodeInfo& peer);
   bool CheckNode(const NodeInfo& peer);
@@ -69,7 +69,7 @@ class RoutingTable {
   bool IsThisNodeClosestTo(const NodeId& target_id, bool ignore_exact_match = false);
   bool IsConnected(const NodeId& node_id) const;
   bool ConfirmGroupMembers(const NodeId& node1, const NodeId& node2);
-  void GroupUpdateFromConnectedPeer(const NodeId& peer, std::vector<NodeId> nodes);
+  void GroupUpdateFromConnectedPeer(const NodeId& peer, const std::vector<NodeInfo>& nodes);
   // Returns default-constructed NodeId if routing table size is zero
   NodeInfo GetClosestNode(const NodeId& target_id, bool ignore_exact_match = false);
   NodeInfo GetClosestNode(const NodeId& target_id,
@@ -96,7 +96,12 @@ class RoutingTable {
   NodeInfo ResolveConnectionDuplication(const NodeInfo& new_duplicate_node,
                                         bool local_endpoint,
                                         NodeInfo& existing_node);
-  std::vector<NodeInfo> UpdateCloseNodeChange(std::unique_lock<std::mutex>& lock);
+  void UpdateCloseNodeChange(std::unique_lock<std::mutex>& lock,
+                             bool& connected_close_changed,
+                             std::vector<NodeInfo>& new_connected_close_nodes,
+                             NodeInfo& connected_not_close,
+                             bool& close_nodes_changed,
+                             std::vector<NodeInfo>& new_close_nodes);
   bool MakeSpaceForNodeToBeAdded(const NodeInfo& node,
                                  bool remove,
                                  NodeInfo& removed_node,
@@ -138,7 +143,7 @@ class RoutingTable {
   std::function<void(const NodeInfo&, bool)> remove_node_functor_;
   NetworkStatusFunctor network_status_functor_;
   RemoveFurthestUnnecessaryNode remove_furthest_node_;
-  GroupChangeFunctor group_change_functor_;
+  ConnectedGroupChangeFunctor connected_group_change_functor_;
   CloseNodeReplacedFunctor close_node_replaced_functor_;
   std::vector<NodeInfo> nodes_;
   GroupMatrix group_matrix_;

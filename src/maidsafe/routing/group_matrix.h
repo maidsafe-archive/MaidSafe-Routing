@@ -19,6 +19,7 @@
 #include <string>
 
 #include "maidsafe/common/node_id.h"
+#include "maidsafe/routing/node_info.h"
 
 namespace maidsafe {
 
@@ -32,15 +33,15 @@ class GroupMatrix {
  public:
   explicit GroupMatrix(const NodeId& this_node_id);
 
-  void AddConnectedPeer(const NodeId& node_id);
+  void AddConnectedPeer(const NodeInfo& node_info);
 
-  void RemoveConnectedPeer(const NodeId& node_id);
+  void RemoveConnectedPeer(const NodeInfo& node_info);
 
   // Returns the connected peers sorted to node ids from kNodeId_
-  std::vector<NodeId> GetConnectedPeers();
+  std::vector<NodeInfo> GetConnectedPeers();
 
-  // Returns the peer which has target_id in its row (1st occurrence).
-  NodeId GetConnectedPeerFor(const NodeId& target_node_id);
+  // Returns the peer which has target_info in its row (1st occurrence).
+  NodeInfo GetConnectedPeerFor(const NodeId& target_node_id);
 
   // Checks if this node id is a group member for target id.
   // Group size is determined by Parameters::node_group_size.
@@ -48,11 +49,13 @@ class GroupMatrix {
   bool IsThisNodeGroupMemberFor(const NodeId& target_id, bool& is_group_leader);
 
   // Updates group matrix if peer is present in 1st column of matrix
-  void UpdateFromConnectedPeer(const NodeId& peer, std::vector<NodeId> nodes);
+  void UpdateFromConnectedPeer(const NodeId& peer, const std::vector<NodeInfo>& nodes);
 
-  bool GetRow(const NodeId& row_id, std::vector<NodeId>& row_entries);
+  bool GetRow(const NodeId& row_id, std::vector<NodeInfo>& row_entries);
 
-  std::vector<NodeId> GetUniqueNodes();
+  std::vector<NodeInfo> GetUniqueNodes();
+
+  std::vector<NodeInfo> GetClosestNodes(const uint32_t& size);
 
   void Clear();
 
@@ -63,13 +66,13 @@ class GroupMatrix {
   GroupMatrix& operator=(const GroupMatrix&);
   void UpdateUniqueNodeList();
   void PartialSortFromTarget(const NodeId& target, const uint16_t& number,
-                             std::vector<NodeId> &nodes);
+                             std::vector<NodeInfo> &nodes);
   void PrintGroupMatrix();
 
   const NodeId kNodeId_;
   mutable std::mutex mutex_;
-  std::vector<NodeId> unique_nodes_;
-  std::vector<std::vector<NodeId>> matrix_;
+  std::vector<NodeInfo> unique_nodes_;
+  std::vector<std::vector<NodeInfo>> matrix_;
 };
 
 }  // namespace routing
