@@ -532,7 +532,18 @@ bool GenericNetwork::ValidateRoutingTables() {
   return true;
 }
 
+size_t GenericNetwork::RandomClientIndex() {
+  assert(nodes_.size() > client_index_);
+  size_t client_count(nodes_.size() - client_index_);
+  return (RandomUint32() % client_count) + client_index_;
+}
+
+size_t GenericNetwork::RandomVaultIndex() {
+  return RandomUint32() % client_index_;
+}
+
 GenericNetwork::NodePtr GenericNetwork::RandomClientNode() {
+  assert(nodes_.size() > client_index_);
   std::lock_guard<std::mutex> lock(mutex_);
   size_t client_count(nodes_.size() - client_index_);
   NodePtr random(nodes_.at((RandomUint32() % client_count) + client_index_));

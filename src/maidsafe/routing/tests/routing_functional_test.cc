@@ -36,7 +36,31 @@ class RoutingNetworkTest : public testing::Test {
  public:
   RoutingNetworkTest(void) : env_(NodesEnvironment::g_environment()) {}
 
-  virtual void TearDown() {
+  void SetUp() {
+    EXPECT_EQ(env_->ClientIndex(), kServerSize);
+    EXPECT_EQ(env_->nodes_.size(), kNetworkSize);
+    // TODO(Alison) - measure health
+  }
+
+  void TearDown() {
+    while (env_->ClientIndex() > kServerSize) {
+      EXPECT_TRUE(env_->RemoveNode(env_->nodes_.at(env_->ClientIndex() - 1)->node_id()));
+    }
+    while (env_->ClientIndex() < kServerSize) {
+      env_->AddNode(false, NodeId());
+    }
+    EXPECT_EQ(env_->ClientIndex(), kServerSize);
+
+    while (env_->nodes_.size() > kNetworkSize) {
+      EXPECT_TRUE(env_->RemoveNode(env_->nodes_.at(env_->nodes_.size() - 1)->node_id()));
+    }
+    while (env_->nodes_.size() < kNetworkSize) {
+      env_->AddNode(true, NodeId());
+    }
+    EXPECT_EQ(env_->ClientIndex(), kServerSize);
+    EXPECT_EQ(env_->nodes_.size(), kNetworkSize);
+
+    // TODO(Alison) - wait for health to restore - how?
     Sleep(boost::posix_time::microseconds(100));
   }
 
@@ -308,7 +332,7 @@ TEST_F(RoutingNetworkTest, FUNC_SanityCheck) {
   }
   {
     // Join client with same Id
-    env_->AddNode(true, env_->nodes_[kNetworkSize -1]->node_id());
+    env_->AddNode(true, env_->nodes_[env_->RandomClientIndex()]->node_id());
 
     // Send to client with same Id
     EXPECT_TRUE(Send(env_->nodes_[kNetworkSize],
@@ -382,6 +406,7 @@ TEST_F(RoutingNetworkTest, FUNC_SendToGroup) {
   size_t last_index(kServerSize - 1);
   NodeId dest_id(env_->nodes_[last_index]->node_id());
 
+  env_->ClearMessages();
   EXPECT_TRUE(GroupSend(dest_id, message_count));
   for (size_t index = 0; index != (last_index); ++index)
     receivers_message_count += static_cast<uint16_t>(env_->nodes_.at(index)->MessagesSize());
@@ -417,6 +442,7 @@ TEST_F(RoutingNetworkTest, FUNC_SendToGroupSelfId) {
   size_t last_index(kServerSize - 1);
   NodeId dest_id(env_->nodes_[0]->node_id());
 
+  env_->ClearMessages();
   EXPECT_TRUE(GroupSend(dest_id, message_count));
   for (size_t index = 0; index != (last_index); ++index)
     receivers_message_count += static_cast<uint16_t>(env_->nodes_.at(index)->MessagesSize());
@@ -430,10 +456,12 @@ TEST_F(RoutingNetworkTest, FUNC_SendToGroupSelfId) {
 TEST_F(RoutingNetworkTest, FUNC_SendToGroupClientSelfId) {
   uint16_t message_count(100), receivers_message_count(0);
 
-  uint16_t client_index = kNetworkSize + 1;
+  size_t client_index(env_->RandomClientIndex());
+
   size_t last_index(env_->nodes_.size());
   NodeId dest_id(env_->nodes_[client_index]->node_id());
 
+  env_->ClearMessages();
   EXPECT_TRUE(GroupSend(dest_id, message_count, client_index));  // from client
   for (size_t index = 0; index != (last_index); ++index)
     receivers_message_count += static_cast<uint16_t>(env_->nodes_.at(index)->MessagesSize());
@@ -450,6 +478,7 @@ TEST_F(RoutingNetworkTest, FUNC_SendToGroupInHybridNetwork) {
   size_t last_index(env_->nodes_.size() - 1);
   NodeId dest_id(env_->nodes_[last_index]->node_id());
 
+  env_->ClearMessages();
   EXPECT_TRUE(GroupSend(dest_id, message_count));
   for (size_t index = 0; index != (last_index); ++index)
     receivers_message_count += static_cast<uint16_t>(env_->nodes_.at(index)->MessagesSize());
@@ -462,6 +491,7 @@ TEST_F(RoutingNetworkTest, FUNC_SendToGroupInHybridNetwork) {
 
 TEST_F(RoutingNetworkTest, FUNC_SendToGroupRandomId) {
   uint16_t message_count(200), receivers_message_count(0);
+  env_->ClearMessages();
   for (int index = 0; index < message_count; ++index) {
     EXPECT_TRUE(GroupSend(NodeId(NodeId::kRandomId), 1));
     for (auto node : env_->nodes_) {
@@ -517,10 +547,11 @@ TEST_F(RoutingNetworkTest, FUNC_AnonymousSendToGroupRandomId) {
 
 TEST_F(RoutingNetworkTest, FUNC_AnonymousSendToGroupExistingId) {
   uint16_t message_count(200), receivers_message_count(0);
+  size_t initial_network_size(env_->nodes_.size());
   env_->AddNode(true, NodeId(), true);
   assert(env_->nodes_.size() - 1 < std::numeric_limits<uint16_t>::max());
   for (int index = 0; index < message_count; ++index) {
-    int group_id_index = index % (kNetworkSize + kClientSize -1);  // all other nodes
+    int group_id_index = index % initial_network_size;  // all other nodes
     NodeId group_id(env_->nodes_[group_id_index]->node_id());
     EXPECT_TRUE(GroupSend(group_id, 1, static_cast<uint16_t>(env_->nodes_.size() - 1)));
     for (auto node : env_->nodes_) {
@@ -591,10 +622,14 @@ TEST_F(RoutingNetworkTest, FUNC_SendToClientsWithSameId) {
 }
 
 TEST_F(RoutingNetworkTest, FUNC_SendToClientWithSameId) {
-  env_->AddNode(true, env_->nodes_[kNetworkSize]->node_id());
+  NodeId node_id(env_->nodes_.at(env_->RandomClientIndex())->node_id());
+  uint32_t new_index(env_->nodes_.size());
+  env_->AddNode(true, node_id);
   size_t size(0);
-  EXPECT_TRUE(Send(env_->nodes_[kNetworkSize],
-                   env_->nodes_[kNetworkSize]->node_id(),
+
+  env_->ClearMessages();
+  EXPECT_TRUE(Send(env_->nodes_[new_index],
+                   node_id,
                    true));
   Sleep(boost::posix_time::seconds(1));
   for (auto node : env_->nodes_) {
@@ -642,146 +677,148 @@ TEST_F(RoutingNetworkTest, FUNC_GetRandomExistingNode) {
   EXPECT_EQ(100, random_node_ids.size());
 }
 
-TEST_F(RoutingNetworkTest, FUNC_BasicNetworkChurn) {
-  // Existing vault node ids
-  std::vector<NodeId> existing_client_node_ids, existing_vault_node_ids;
-  for (size_t i(1); i < env_->nodes_.size(); ++i) {
-    if (env_->nodes_[i]->IsClient())
-      existing_client_node_ids.push_back(env_->nodes_[i]->node_id());
-    else
-      existing_vault_node_ids.push_back(env_->nodes_[i]->node_id());
-  }
+// TODO(Alison) - move churn tests to separate file/target, and run each with its own network.
+// TEST_F(RoutingNetworkTest, FUNC_BasicNetworkChurn) {
+//  // Existing vault node ids
+//  std::vector<NodeId> existing_client_node_ids, existing_vault_node_ids;
+//  for (size_t i(1); i < env_->nodes_.size(); ++i) {
+//    if (env_->nodes_[i]->IsClient())
+//      existing_client_node_ids.push_back(env_->nodes_[i]->node_id());
+//    else
+//      existing_vault_node_ids.push_back(env_->nodes_[i]->node_id());
+//  }
 
-  for (int n(1); n < 51; ++n) {
-    if (n % 2 == 0) {
-      NodeId new_node(NodeId::kRandomId);
-      while (std::find_if(existing_vault_node_ids.begin(),
-                          existing_vault_node_ids.end(),
-                          [&new_node] (const NodeId& element) { return element == new_node; }) !=
-             existing_vault_node_ids.end()) {
-        new_node = NodeId(NodeId::kRandomId);
-      }
-      env_->AddNode(false, new_node);
-      existing_vault_node_ids.push_back(new_node);
-      Sleep(boost::posix_time::milliseconds(500 + RandomUint32() % 200));
-    }
+//  for (int n(1); n < 51; ++n) {
+//    if (n % 2 == 0) {
+//      NodeId new_node(NodeId::kRandomId);
+//      while (std::find_if(existing_vault_node_ids.begin(),
+//                          existing_vault_node_ids.end(),
+//                          [&new_node] (const NodeId& element) { return element == new_node; }) !=
+//             existing_vault_node_ids.end()) {
+//        new_node = NodeId(NodeId::kRandomId);
+//      }
+//      env_->AddNode(false, new_node);
+//      existing_vault_node_ids.push_back(new_node);
+//      Sleep(boost::posix_time::milliseconds(500 + RandomUint32() % 200));
+//    }
 
-    if (n % 3 == 0) {
-      std::random_shuffle(existing_vault_node_ids.begin(), existing_vault_node_ids.end());
-      env_->RemoveNode(existing_vault_node_ids.back());
-      existing_vault_node_ids.pop_back();
-      Sleep(boost::posix_time::milliseconds(500 + RandomUint32() % 200));
-    }
-  }
-}
+//    if (n % 3 == 0) {
+//      std::random_shuffle(existing_vault_node_ids.begin(), existing_vault_node_ids.end());
+//      env_->RemoveNode(existing_vault_node_ids.back());
+//      existing_vault_node_ids.pop_back();
+//      Sleep(boost::posix_time::milliseconds(500 + RandomUint32() % 200));
+//    }
+//  }
+// }
 
-TEST_F(RoutingNetworkTest, FUNC_MessagingNetworkChurn) {
-  const size_t vault_network_size(env_->ClientIndex());
-  const size_t clients_in_network(env_->nodes_.size() - env_->ClientIndex());
+// TEST_F(RoutingNetworkTest, FUNC_MessagingNetworkChurn) {
+//  const size_t vault_network_size(env_->ClientIndex());
+//  const size_t clients_in_network(env_->nodes_.size() - env_->ClientIndex());
 
-  std::vector<NodeId> existing_node_ids;
-  for (auto& node : env_->nodes_)
-    existing_node_ids.push_back(node->node_id());
-  LOG(kInfo) << "After harvesting node ids\n\n\n\n";
+//  std::vector<NodeId> existing_node_ids;
+//  for (auto& node : env_->nodes_)
+//    existing_node_ids.push_back(node->node_id());
+//  LOG(kInfo) << "After harvesting node ids\n\n\n\n";
 
-  std::vector<NodeId> new_node_ids;
-  const size_t up_count(vault_network_size / 3), down_count(vault_network_size / 5);
-  size_t downed(0);
-  while (new_node_ids.size() < up_count) {
-    NodeId new_id(NodeId::kRandomId);
-    auto itr(Find(new_id, existing_node_ids));
-    if (itr == existing_node_ids.end())
-      new_node_ids.push_back(new_id);
-  }
-  LOG(kInfo) << "After generating new ids\n\n\n\n";
+//  std::vector<NodeId> new_node_ids;
+//  const size_t up_count(vault_network_size / 3), down_count(vault_network_size / 5);
+//  size_t downed(0);
+//  while (new_node_ids.size() < up_count) {
+//    NodeId new_id(NodeId::kRandomId);
+//    auto itr(Find(new_id, existing_node_ids));
+//    if (itr == existing_node_ids.end())
+//      new_node_ids.push_back(new_id);
+//  }
+//  LOG(kInfo) << "After generating new ids\n\n\n\n";
 
-  // Start thread for messaging between clients and clients to groups
-  std::string message(RandomString(4096));
-  volatile bool run(true);
-  auto messaging_handle = std::async(std::launch::async,
-                                     [=, &run] {
-                                       LOG(kInfo) << "Before messaging loop";
-                                       while (run) {
-                                         GenericNetwork::NodePtr sender_client(
-                                            env_->RandomClientNode());
-                                         GenericNetwork::NodePtr receiver_client(
-                                            env_->RandomClientNode());
-                                         GenericNetwork::NodePtr vault_node(
-                                            env_->RandomVaultNode());
-                                         // Choose random client nodes for direct message
-                                         sender_client->Send(receiver_client->node_id(), NodeId(),
-                                                             message, nullptr,
-                                                             boost::posix_time::seconds(2),
-                                                             DestinationType::kDirect,
-                                                             false);
-                                         // Choose random client for group message to random env
-                                         sender_client->Send(NodeId(NodeId::kRandomId), NodeId(),
-                                                             message, nullptr,
-                                                             boost::posix_time::seconds(2),
-                                                             DestinationType::kGroup,
-                                                             false);
+//  // Start thread for messaging between clients and clients to groups
+//  std::string message(RandomString(4096));
+//  volatile bool run(true);
+//  auto messaging_handle = std::async(std::launch::async,
+//                                     [=, &run] {
+//                                       LOG(kInfo) << "Before messaging loop";
+//                                       while (run) {
+//                                         GenericNetwork::NodePtr sender_client(
+//                                            env_->RandomClientNode());
+//                                         GenericNetwork::NodePtr receiver_client(
+//                                            env_->RandomClientNode());
+//                                         GenericNetwork::NodePtr vault_node(
+//                                            env_->RandomVaultNode());
+//                                         // Choose random client nodes for direct message
+//                                         sender_client->Send(receiver_client->node_id(), NodeId(),
+//                                                             message, nullptr,
+//                                                             boost::posix_time::seconds(2),
+//                                                             DestinationType::kDirect,
+//                                                             false);
+//                                         // Choose random client for group message to random env
+//                                         sender_client->Send(NodeId(NodeId::kRandomId), NodeId(),
+//                                                             message, nullptr,
+//                                                             boost::posix_time::seconds(2),
+//                                                             DestinationType::kGroup,
+//                                                             false);
 
 
-                                         // Choose random vault for group message to random env
-                                         vault_node->Send(NodeId(NodeId::kRandomId), NodeId(),
-                                                          message, nullptr,
-                                                          boost::posix_time::seconds(2),
-                                                          DestinationType::kGroup,
-                                                          false);
-                                         // Wait before going again
-                                         Sleep(boost::posix_time::milliseconds(900 +
-                                                                               RandomUint32() %
-                                                                               200));
-                                         LOG(kInfo) << "Ran messaging iteration";
-                                       }
-                                       LOG(kInfo) << "After messaging loop";
-                                     });
-  LOG(kInfo) << "Started messaging thread\n\n\n\n";
+//                                         // Choose random vault for group message to random env
+//                                         vault_node->Send(NodeId(NodeId::kRandomId), NodeId(),
+//                                                          message, nullptr,
+//                                                          boost::posix_time::seconds(2),
+//                                                          DestinationType::kGroup,
+//                                                          false);
+//                                         // Wait before going again
+//                                         Sleep(boost::posix_time::milliseconds(900 +
+//                                                                               RandomUint32() %
+//                                                                               200));
+//                                         LOG(kInfo) << "Ran messaging iteration";
+//                                       }
+//                                       LOG(kInfo) << "After messaging loop";
+//                                     });
+//  LOG(kInfo) << "Started messaging thread\n\n\n\n";
 
-  // Start thread to bring down nodes
-  auto down_handle = std::async(std::launch::async,
-                                [=, &run, &down_count, &downed] {
-                                  while (run && downed < down_count) {
-//                                    if (RandomUint32() % 5 == 0)
-//                                      env_->RemoveRandomClient();
-//                                    else
-                                      env_->RemoveRandomVault();
-                                      ++downed;
-                                    Sleep(boost::posix_time::seconds(10));
-                                  }
-                                });
+//  // Start thread to bring down nodes
+//  auto down_handle = std::async(std::launch::async,
+//                                [=, &run, &down_count, &downed] {
+//                                  while (run && downed < down_count) {
+////                                    if (RandomUint32() % 5 == 0)
+////                                      env_->RemoveRandomClient();
+////                                    else
+//                                      env_->RemoveRandomVault();
+//                                      ++downed;
+//                                    Sleep(boost::posix_time::seconds(10));
+//                                  }
+//                                });
 
-  // Start thread to bring up nodes
-  auto up_handle = std::async(std::launch::async,
-                              [=, &run, &new_node_ids] {
-                                while (run) {
-                                  if (new_node_ids.empty())
-                                    return;
-//                                  if (RandomUint32() % 5 == 0)
-//                                    env_->AddNode(true, new_node_ids.back());
-//                                  else
-                                    env_->AddNode(false, new_node_ids.back());
-                                  new_node_ids.pop_back();
-                                  Sleep(boost::posix_time::seconds(3));
-                                }
-                              });
+//  // Start thread to bring up nodes
+//  auto up_handle = std::async(std::launch::async,
+//                              [=, &run, &new_node_ids] {
+//                                while (run) {
+//                                  if (new_node_ids.empty())
+//                                    return;
+////                                  if (RandomUint32() % 5 == 0)
+////                                    env_->AddNode(true, new_node_ids.back());
+////                                  else
+//                                    env_->AddNode(false, new_node_ids.back());
+//                                  new_node_ids.pop_back();
+//                                  Sleep(boost::posix_time::seconds(3));
+//                                }
+//                              });
 
-  // Let stuff run for a while
-  down_handle.get();
-  up_handle.get();
+//  // Let stuff run for a while
+//  down_handle.get();
+//  up_handle.get();
 
-  // Stop all threads
-  run = false;
-  messaging_handle.get();
+//  // Stop all threads
+//  run = false;
+//  messaging_handle.get();
 
-  LOG(kInfo) << "\n\t Initial count of Vault nodes : " << vault_network_size
-             << "\n\t Initial count of client nodes : " << clients_in_network
-             << "\n\t Current count of nodes : " << env_->nodes_.size()
-             << "\n\t Up count of nodes : " << up_count
-             << "\n\t down_count count of nodes : " << down_count;
-  auto expected_current_size = vault_network_size + clients_in_network + up_count - down_count;
-  EXPECT_EQ(expected_current_size, env_->nodes_.size());
-}
+//  LOG(kInfo) << "\n\t Initial count of Vault nodes : " << vault_network_size
+//             << "\n\t Initial count of client nodes : " << clients_in_network
+//             << "\n\t Current count of nodes : " << env_->nodes_.size()
+//             << "\n\t Up count of nodes : " << up_count
+//             << "\n\t down_count count of nodes : " << down_count;
+//  auto expected_current_size = vault_network_size + clients_in_network + up_count - down_count;
+//  EXPECT_EQ(expected_current_size, env_->nodes_.size());
+// }
+
 }  // namespace test
 
 }  // namespace routing
