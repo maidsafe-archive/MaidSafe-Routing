@@ -16,6 +16,7 @@
 #include "maidsafe/tools/commands.h"
 
 #include <iostream> // NOLINT
+#include <sstream>
 
 #include "boost/format.hpp"
 #include "boost/filesystem.hpp"
@@ -39,19 +40,65 @@ namespace routing {
 
 namespace test {
 
-Commands::Commands(DemoNodePtr demo_node,
-                   std::vector<maidsafe::Fob> all_fobs,
-                   int identity_index) : demo_node_(demo_node),
-                                         all_fobs_(all_fobs),
+Commands::Commands(std::string fobs_path_str,
+                   bool client_only_node,
+                   int identity_index) : demo_node_(),
+                                         all_fobs_(),
                                          all_ids_(),
                                          identity_index_(identity_index),
+                                         node_info_(),
                                          bootstrap_peer_ep_(),
                                          data_size_(256 * 1024),
                                          result_arrived_(false),
                                          finish_(false),
-                                         wait_mutex_(),
-                                         wait_cond_var_(),
+                                         boot_strap_(),
+                                         peer_routing_table_(),
+                                         wait_mutex_(new boost::mutex()),
+                                         wait_cond_var_(new boost::condition_variable()),
                                          mark_results_arrived_() {
+  boost::system::error_code error_code;
+  maidsafe::Fob this_fob;
+  fs::path fobs_path;
+  if (fobs_path_str.empty())
+    fobs_path = fs::path(fs::temp_directory_path(error_code) / "fob_list.dat");
+  else
+    fobs_path = fs::path(fobs_path_str);
+  if (fs::exists(fobs_path, error_code)) {
+    all_fobs_ = maidsafe::routing::ReadFobList(fobs_path);
+#ifndef ROUTING_PYTHON_API
+    std::cout << "Loaded " << all_fobs_.size() << " fobs." << std::endl;
+#endif
+    if (static_cast<uint32_t>(identity_index) >= all_fobs_.size() || identity_index < 0) {
+      std::cout << "ERROR : index exceeds fob pool -- pool has "
+                << all_fobs_.size() << " fobs, while identity_index is "
+                << identity_index << std::endl;
+// shall throw here
+      return;
+    } else {
+      this_fob = all_fobs_[identity_index];
+#ifndef ROUTING_PYTHON_API
+      std::cout << "Using identity #" << identity_index << " from keys file"
+                << " , value is : " << maidsafe::HexSubstr(this_fob.identity) << std::endl;
+#endif
+    }
+  }
+  // Ensure correct index range is being used
+  if (client_only_node) {
+    if (identity_index < static_cast<int>(all_fobs_.size() / 2)) {
+      std::cout << "ERROR : Incorrect identity_index used for a client, must between "
+                << all_fobs_.size() / 2 << " and " << all_fobs_.size() - 1 << std::endl;
+// shall throw here
+      return;
+    }
+  } else {
+    if (identity_index >= static_cast<int>(all_fobs_.size() / 2)) {
+      std::cout << "ERROR : Incorrect identity_index used for a vault, must between 0 and "
+                << all_fobs_.size() / 2 - 1 << std::endl;
+// shall throw here
+      return;
+    }
+  }
+
   // CalculateClosests will only use all_ids_ to calculate expected respondents
   // here it is assumed that the first half of fobs will be used as vault
   // and the latter half part will be used as client, which shall not respond msg
@@ -59,20 +106,38 @@ Commands::Commands(DemoNodePtr demo_node,
   for (size_t i(0); i < (all_fobs_.size() / 2); ++i)
     all_ids_.push_back(NodeId(all_fobs_[i].identity));
 
-  demo_node->functors_.request_public_key = [this] (const NodeId& node_id,
-                                                    GivePublicKeyFunctor give_public_key) {
+  mark_results_arrived_ = std::bind(&Commands::MarkResultArrived, this);
+
+  InitDemoNode(client_only_node, this_fob);
+}
+
+void Commands::InitDemoNode(bool client_only_node, const Fob& this_fob) {
+  maidsafe::routing::test::NodeInfoAndPrivateKey node_info(
+      maidsafe::routing::test::MakeNodeInfoAndKeysWithFob(this_fob));
+  demo_node_.reset(new maidsafe::routing::test::GenericNode(client_only_node, node_info));
+  if (identity_index_ < 2) {
+#ifndef ROUTING_PYTHON_API
+    std::cout << "------ Current BootStrap node endpoint info : "
+              << demo_node_->endpoint() << " ------ " << std::endl;
+#endif
+  }
+  std::ostringstream convert;
+  convert <<  demo_node_->endpoint();
+  node_info_ = convert.str();
+
+  demo_node_->functors_.request_public_key = [this] (const NodeId& node_id,
+                                                     GivePublicKeyFunctor give_public_key) {
       this->Validate(node_id, give_public_key);
   };
-  demo_node->functors_.message_received = [this] (const std::string &wrapped_message,
-                                                  const NodeId &/*group_claim*/,
-                                                  bool /* cache */,
-                                                  const ReplyFunctor &reply_functor) {
+  demo_node_->functors_.message_received = [this] (const std::string &wrapped_message,
+                                                   const NodeId &/*group_claim*/,
+                                                   bool /* cache */,
+                                                   const ReplyFunctor &reply_functor) {
     std::string reply_msg(wrapped_message + "+++" + demo_node_->fob().identity.string());
     if (std::string::npos != wrapped_message.find("request_routing_table"))
       reply_msg = reply_msg + "---" + demo_node_->SerializeRoutingTable();
     reply_functor(reply_msg);
   };
-  mark_results_arrived_ = std::bind(&Commands::MarkResultArrived, this);
 }
 
 void Commands::Validate(const NodeId& node_id, GivePublicKeyFunctor give_public_key) {
@@ -106,9 +171,9 @@ void Commands::Run() {
     std::string cmdline;
     std::getline(std::cin, cmdline);
     {
-      boost::mutex::scoped_lock lock(wait_mutex_);
+      boost::mutex::scoped_lock lock(*wait_mutex_);
       ProcessCommand(cmdline);
-      wait_cond_var_.wait(lock, boost::bind(&Commands::ResultArrived, this));
+      wait_cond_var_->wait(lock, boost::bind(&Commands::ResultArrived, this));
       result_arrived_ = false;
     }
   }
@@ -118,12 +183,14 @@ void Commands::PrintRoutingTable() {
   demo_node_->PrintRoutingTable();
 }
 
-void Commands::GetPeer(const std::string &peer) {
+void Commands::SetPeer(std::string peer) {
   size_t delim = peer.rfind(':');
   try {
     bootstrap_peer_ep_.port(boost::lexical_cast<uint16_t>(peer.substr(delim + 1)));
     bootstrap_peer_ep_.address(boost::asio::ip::address::from_string(peer.substr(0, delim)));
+#ifndef ROUTING_PYTHON_API
     std::cout << "Going to bootstrap from endpoint " << bootstrap_peer_ep_ << std::endl;
+#endif
   }
   catch(...) {
     std::cout << "Could not parse IPv4 peer endpoint from " << peer << std::endl;
@@ -144,32 +211,59 @@ void Commands::ZeroStateJoin() {
     peer_node_info.public_key = all_fobs_[0].keys.public_key;
   }
   peer_node_info.connection_id = peer_node_info.node_id;
-
-  auto f1 = std::async(std::launch::async, [=] ()->int {
-    return demo_node_->ZeroStateJoin(bootstrap_peer_ep_, peer_node_info);
-  });
-  EXPECT_EQ(kSuccess, f1.get());
+  boot_strap_.reset(new std::future<int>(std::async(std::launch::async, [=] ()->int {
+    return demo_node_->ZeroStateJoin(bootstrap_peer_ep_, peer_node_info);})));
 }
 
-void Commands::SendAMsg(const int& identity_index, const DestinationType& destination_type,
-                        std::string &data) {
+bool Commands::SendAMessage(int identity_index, int destination_type, int data_size) {
+  std::string data(RandomAlphaNumericString(data_size));
+  switch (destination_type) {
+    case 0 :
+      return SendAMsg(identity_index, DestinationType::kDirect, data);
+      break;
+    case 1 :
+      return SendAMsg(identity_index, DestinationType::kGroup, data);
+      break;
+    case 2 :
+      return SendAMsg(identity_index, DestinationType::kClosest, data);
+      break;
+    default :
+      return false;
+  }
+  return true;
+}
+
+int Commands::RoutingTableSize() {
+  return demo_node_->RoutingTable().size();
+}
+
+bool Commands::ExistInRoutingTable(int peer_index) {
+  NodeId peer_id(all_fobs_[peer_index].identity.string());
+  return demo_node_->RoutingTableHasNode(peer_id);
+}
+
+bool Commands::SendAMsg(const int& identity_index, const DestinationType& destination_type,
+                        std::string& data) {
   if ((identity_index >= 0) && (static_cast<uint32_t>(identity_index) >= all_fobs_.size())) {
     std::cout << "ERROR : destination index out of range" << std::endl;
-    return;
+    return false;
   }
   NodeId dest_id(RandomString(64));
   if (identity_index >= 0)
     dest_id = NodeId(all_fobs_[identity_index].identity);
-
+#ifndef ROUTING_PYTHON_API
   std::cout << "Sending a msg from : " << maidsafe::HexSubstr(demo_node_->fob().identity)
             << " to " << (destination_type != DestinationType::kGroup ? ": " : "group : ")
             << maidsafe::HexSubstr(dest_id.string())
             << " , expect receive response from :" << std::endl;
+#endif
   uint16_t expected_respodents(destination_type != DestinationType::kGroup ? 1 : 4);
   std::vector<NodeId> closests;
   NodeId farthest_closests(CalculateClosests(dest_id, closests, expected_respodents));
+#ifndef ROUTING_PYTHON_API
   for (auto &node_id : closests)
     std::cout << "\t" << maidsafe::HexSubstr(node_id.string()) << std::endl;
+#endif
 
   std::set<NodeId> responsed_nodes;
   std::string received_response_msg;
@@ -194,22 +288,26 @@ void Commands::SendAMsg(const int& identity_index, const DestinationType& destin
     std::lock_guard<std::mutex> lock(mutex);
     data = ">:<" + boost::lexical_cast<std::string>(++message_id) + "<:>" + data;
   }
-
+#ifndef ROUTING_PYTHON_API
   boost::posix_time::ptime now = boost::posix_time::microsec_clock::universal_time();
+#endif
   demo_node_->Send(dest_id, NodeId(), data, callable,
                    boost::posix_time::seconds(12), destination_type, false);
 
   std::unique_lock<std::mutex> lock(mutex);
   bool result = cond_var.wait_for(lock, std::chrono::seconds(20),
       [&]()->bool { return messages_count == expected_messages; });
-
+#ifndef ROUTING_PYTHON_API
   std::cout << "Response received in "
             << boost::posix_time::microsec_clock::universal_time() - now << std::endl;
-  EXPECT_TRUE(result) << "Failure in sending group message";
+  EXPECT_TRUE(result) << "Failure in sending message";
 
   std::cout << "Received response from following nodes :" << std::endl;
+#endif
   for(auto &responsed_node : responsed_nodes) {
+#ifndef ROUTING_PYTHON_API
     std::cout << "\t" << maidsafe::HexSubstr(responsed_node.string()) << std::endl;
+#endif
     if (destination_type == DestinationType::kGroup)
       EXPECT_TRUE(std::find(closests.begin(), closests.end(), responsed_node) != closests.end());
     else
@@ -220,12 +318,15 @@ void Commands::SendAMsg(const int& identity_index, const DestinationType& destin
     std::string response_node_list_msg(
         received_response_msg.substr(received_response_msg.find("---") + 3,
             received_response_msg.size() - (received_response_msg.find("---") + 3)));
-    std::vector<NodeId> node_list(
-        maidsafe::routing::DeserializeNodeIdList(response_node_list_msg));
+    peer_routing_table_.clear();
+    peer_routing_table_ = maidsafe::routing::DeserializeNodeIdList(response_node_list_msg);
+#ifndef ROUTING_PYTHON_API
     std::cout << "Received routing table from peer is :" << std::endl;
-    for (auto &node_id : node_list)
+    for (auto &node_id : peer_routing_table_)
       std::cout << "\t" << maidsafe::HexSubstr(node_id.string()) << std::endl;
+#endif
   }
+  return result;
 }
 
 void Commands::Join() {
@@ -253,8 +354,10 @@ void Commands::Join() {
             node->set_joined(true);
             cond_var.notify_one();
           } else {
+#ifndef ROUTING_PYTHON_API
             std::cout << "Network Status Changed" << std::endl;
             this->PrintRoutingTable();
+#endif
           }
         }
       };
@@ -269,8 +372,10 @@ void Commands::Join() {
     EXPECT_EQ(result, std::cv_status::no_timeout);
     Sleep(boost::posix_time::millisec(600));
   }
+#ifndef ROUTING_PYTHON_API
   std::cout << "Current Node joined, following is the routing table :" << std::endl;
   PrintRoutingTable();
+#endif
 }
 
 void Commands::PrintUsage() {
@@ -323,7 +428,7 @@ void Commands::ProcessCommand(const std::string &cmdline) {
     std::string data("request_routing_table");
     SendAMsg(boost::lexical_cast<int>(args[0]), DestinationType::kDirect, data);
   } else if (cmd == "peer") {
-    GetPeer(args[0]);
+    SetPeer(args[0]);
   } else if (cmd == "zerostatejoin") {
     ZeroStateJoin();
   } else if (cmd == "join") {
@@ -393,9 +498,10 @@ void Commands::ProcessCommand(const std::string &cmdline) {
 }
 
 void Commands::MarkResultArrived() {
-  boost::mutex::scoped_lock lock(wait_mutex_);
+  boost::mutex::scoped_lock lock(*wait_mutex_);
   result_arrived_ = true;
-  wait_cond_var_.notify_one();
+
+  wait_cond_var_->notify_one();
 }
 
 NodeId Commands::CalculateClosests(const NodeId& target_id,

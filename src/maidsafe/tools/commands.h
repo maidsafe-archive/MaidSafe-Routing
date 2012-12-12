@@ -40,26 +40,30 @@ typedef std::shared_ptr<GenericNode> DemoNodePtr;
 
 class Commands {
  public:
-  explicit Commands(DemoNodePtr demo_node,
-                    std::vector<maidsafe::Fob> all_fobs,
-                    int identity_index);
+  Commands(std::string fobs_path_str, bool client_only_node, int identity_index);
   void Run();
-  void GetPeer(const std::string &peer);
+  void SetPeer(std::string peer);
+  void Join();
+  void ZeroStateJoin();
+  bool Joined() { return demo_node_->joined(); }
+  std::string GetNodeInfo() { return node_info_; }
+
+  bool SendAMessage(int identity_index, int destination_type, int data_size);
+  bool ExistInRoutingTable(int peer_index);
+  int RoutingTableSize();
 
  private:
   typedef std::vector<std::string> Arguments;
 
+  void InitDemoNode(bool client_only_node, const Fob& this_fob);
   void PrintUsage();
   void ProcessCommand(const std::string &cmdline);
   void MarkResultArrived();
   bool ResultArrived() { return result_arrived_; }
-
-  void PrintRoutingTable();
-  void ZeroStateJoin();
-  void Join();
-  void Validate(const NodeId& node_id, GivePublicKeyFunctor give_public_key);
-  void SendAMsg(const int& identity_index, const DestinationType& destination_type,
+  bool SendAMsg(const int& identity_index, const DestinationType& destination_type,
                 std::string &data);
+  void PrintRoutingTable();
+  void Validate(const NodeId& node_id, GivePublicKeyFunctor give_public_key);
 
   NodeId CalculateClosests(const NodeId& target_id,
                            std::vector<NodeId>& closests,
@@ -69,11 +73,14 @@ class Commands {
   std::vector<maidsafe::Fob> all_fobs_;
   std::vector<NodeId> all_ids_;
   int identity_index_;
+  std::string node_info_;
   boost::asio::ip::udp::endpoint bootstrap_peer_ep_;
   size_t data_size_;
   bool result_arrived_, finish_;
-  boost::mutex wait_mutex_;
-  boost::condition_variable wait_cond_var_;
+  std::shared_ptr<std::future<int> > boot_strap_;
+  std::vector<NodeId> peer_routing_table_;
+  std::shared_ptr<boost::mutex> wait_mutex_;
+  std::shared_ptr<boost::condition_variable> wait_cond_var_;
   std::function<void()> mark_results_arrived_;
 };
 

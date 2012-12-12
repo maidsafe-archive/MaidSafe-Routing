@@ -76,6 +76,26 @@ file(GLOB ALL_FILES_ROUTING_API_TEST "${PROJECT_SOURCE_DIR}/src/maidsafe/routing
 ms_add_static_library(routing ${ALL_FILES_ROUTING_DIR})
 target_link_libraries(maidsafe_routing maidsafe_rudp maidsafe_utilities)
 
+add_library(routing_python_api SHARED ${PROJECT_SOURCE_DIR}/src/maidsafe/tools/routing_python_api.cc
+                                      ${PROJECT_SOURCE_DIR}/src/maidsafe/tools/commands.h
+                                      ${PROJECT_SOURCE_DIR}/src/maidsafe/tools/commands.cc)
+if(NO_JUST_THREADS AND CMAKE_COMPILER_IS_GNUCXX)
+  target_link_libraries(routing_python_api maidsafe_routing ${BoostPythonLibs} stdc++ )
+elseif(CMAKE_COMPILER_IS_GNUCXX)
+  target_link_libraries(routing_python_api maidsafe_routing ${BoostPythonLibs} stdc++ justthread)
+else()
+  target_link_libraries(routing_python_api maidsafe_routing ${BoostPythonLibs})
+endif()
+if(WIN32)
+  set_target_properties(routing_python_api PROPERTIES SUFFIX ".pyd")
+endif()
+set_target_properties(routing_python_api PROPERTIES PREFIX ""
+                                                      DEBUG_POSTFIX ""
+                                                      LABELS Routing
+                                                      FOLDER "MaidSafe/tools")
+set_target_properties(routing_python_api PROPERTIES COMPILE_DEFINITIONS "ROUTING_PYTHON_API")
+
+
 if(MAIDSAFE_TESTING)
   ms_add_executable(TESTrouting "Tests/Routing" ${ALL_FILES_ROUTING_TESTS_DIR})
   ms_add_executable(TESTrouting_api "Tests/Routing" ${ALL_FILES_ROUTING_API_TEST})
@@ -90,6 +110,8 @@ if(MAIDSAFE_TESTING)
   target_link_libraries(routing_key_helper maidsafe_routing)
   target_link_libraries(routing_node maidsafe_routing)
 endif()
+
+include_directories(${PYTHON_INCLUDE_DIRS})
 
 rename_outdated_built_exes()
 

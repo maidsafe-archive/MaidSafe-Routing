@@ -166,65 +166,28 @@ int main(int argc, char **argv) {
       return 0;
     }
 
-    // Load fob list and local fob
-    std::vector<maidsafe::Fob> all_fobs;
-    maidsafe::Fob this_fob;
-    boost::filesystem::path fobs_path(GetPathFromProgramOption(
-        "fobs_path", &variables_map, false, true));
-    if (fs::exists(fobs_path, error_code)) {
-      all_fobs = maidsafe::routing::ReadFobList(fobs_path);
-      std::cout << "Loaded " << all_fobs.size() << " fobs." << std::endl;
-      if (static_cast<uint32_t>(identity_index) >= all_fobs.size() || identity_index < 0) {
-        std::cout << "ERROR : index exceeds fob pool -- pool has "
-                  << all_fobs.size() << " fobs, while identity_index is "
-                  << identity_index << std::endl;
-        return 0;
-      } else {
-        this_fob = all_fobs[identity_index];
-        std::cout << "Using identity #" << identity_index << " from keys file"
-                  << " , value is : " << maidsafe::HexSubstr(this_fob.identity) << std::endl;
-      }
-    }
-
     ConflictingOptions(variables_map, "client", "bootstrap");
     OptionDependency(variables_map, "start", "identity_index");
     OptionDependency(variables_map, "peer", "identity_index");
 
-    // Ensure correct index range is being used
     bool client_only_node(variables_map["client"].as<bool>());
-    if (client_only_node) {
-      if (identity_index < static_cast<int>(all_fobs.size() / 2)) {
-        std::cout << "ERROR : Incorrect identity_index used for a client, must between "
-                  << all_fobs.size() / 2 << " and " << all_fobs.size() - 1 << std::endl;
-        return 0;
-      }
-    } else {
-      if (identity_index >= static_cast<int>(all_fobs.size() / 2)) {
-        std::cout << "ERROR : Incorrect identity_index used for a vault, must between 0 and "
-                  << all_fobs.size() / 2 - 1 << std::endl;
-        return 0;
-      }
-    }
-    // Initial demo_node
-    std::cout << "Creating node..." << std::endl;
-    maidsafe::routing::test::NodeInfoAndPrivateKey node_info(
-        maidsafe::routing::test::MakeNodeInfoAndKeysWithFob(this_fob));
-    maidsafe::routing::test::DemoNodePtr demo_node(
-        new maidsafe::routing::test::GenericNode(client_only_node, node_info));
 
     if (variables_map.count("bootstrap")) {
       if (identity_index >= 2) {
         std::cout << "ERROR : trying to use non-bootstrap identity" << std::endl;
         return 0;
       }
-      std::cout << "------ Current BootStrap node endpoint info : "
-                << demo_node->endpoint() << " ------ " << std::endl;
     }
 
-    maidsafe::routing::test::Commands commands(demo_node, all_fobs, identity_index);
+    boost::filesystem::path fobs_path(GetPathFromProgramOption(
+        "fobs_path", &variables_map, false, true));
+
+    // Initial demo_node
+    std::cout << "Creating node..." << std::endl;
+    maidsafe::routing::test::Commands commands(fobs_path.string(), client_only_node, identity_index);
     std::string peer(variables_map.at("peer").as<std::string>());
     if (!peer.empty()) {
-      commands.GetPeer(peer);
+      commands.SetPeer(peer);
     }
     commands.Run();
 
