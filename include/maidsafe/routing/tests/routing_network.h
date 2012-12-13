@@ -154,6 +154,7 @@ class GenericNetwork {
   void SetNodeValidationFunctor(NodePtr node);
   std::vector<NodeId> GroupIds(const NodeId& node_id);
   void PrintRoutingTables();
+  size_t RandomNodeIndex();
   size_t RandomClientIndex();
   size_t RandomVaultIndex();
   NodePtr RandomClientNode();

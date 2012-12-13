@@ -43,6 +43,8 @@ class FindNodeNetwork : public testing::Test  {
   }
 
   void TearDown() {
+    EXPECT_LE(kServerSize, env_->ClientIndex());
+    EXPECT_LE(kNetworkSize, env_->nodes_.size());
     EXPECT_TRUE(env_->RestoreComposition());
   }
 
@@ -78,7 +80,7 @@ TEST_F(FindNodeNetwork, FUNC_FindExistingNode) {
 }
 
 TEST_F(FindNodeNetwork, FUNC_FindNonExistingNode) {
-  uint32_t source(RandomUint32() % (kServerSize - 2) + 2);
+  uint32_t source(env_->RandomVaultIndex());
   NodeId node_id(GenerateUniqueRandomId(env_->nodes_[source]->node_id(), 6));
   EXPECT_TRUE(Find(env_->nodes_[source], node_id));
   Sleep(boost::posix_time::seconds(1));
@@ -86,7 +88,7 @@ TEST_F(FindNodeNetwork, FUNC_FindNonExistingNode) {
 }
 
 TEST_F(FindNodeNetwork, FUNC_FindNodeAfterDrop) {
-  uint32_t source(RandomUint32() % (kServerSize - 2) + 2);
+  uint32_t source(env_->RandomVaultIndex());
   NodeId node_id(GenerateUniqueRandomId(env_->nodes_[source]->node_id(), 6));
   EXPECT_FALSE(env_->nodes_[source]->RoutingTableHasNode(node_id));
   env_->AddNode(false, node_id);
@@ -99,10 +101,12 @@ TEST_F(FindNodeNetwork, FUNC_FindNodeAfterDrop) {
 }
 
 TEST_F(FindNodeNetwork, FUNC_VaultFindVaultNode) {
-  uint32_t source(RandomUint32() % (kServerSize - 2) + 2),
-           dest(static_cast<uint32_t>(env_->ClientIndex()));
+  uint32_t source(env_->RandomVaultIndex()),
+           dest(env_->ClientIndex());
 
   env_->AddNode(false, GenerateUniqueRandomId(env_->nodes_[source]->node_id(), 20));
+  EXPECT_FALSE(env_->nodes_.at(dest)->IsClient());
+
   EXPECT_TRUE(env_->nodes_[source]->RoutingTableHasNode(env_->nodes_[dest]->node_id()));
 
   EXPECT_TRUE(env_->nodes_[source]->DropNode(env_->nodes_[dest]->node_id()));
@@ -115,12 +119,12 @@ TEST_F(FindNodeNetwork, FUNC_VaultFindVaultNode) {
 }
 
 TEST_F(FindNodeNetwork, FUNC_VaultFindClientNode) {
-  // Create a bootstrap network
-  uint32_t source(RandomUint32() % (kServerSize - 2) + 2),
+  uint32_t source(env_->RandomVaultIndex()),
            dest(static_cast<uint32_t>(env_->nodes_.size()));
 
   // Add one client node
   env_->AddNode(true, GenerateUniqueRandomId(env_->nodes_[source]->node_id(), 20));
+  EXPECT_TRUE(env_->nodes_.at(dest)->IsClient());
 
   EXPECT_TRUE(env_->nodes_[dest]->RoutingTableHasNode(env_->nodes_[source]->node_id()));
   EXPECT_FALSE(env_->nodes_[source]->RoutingTableHasNode(env_->nodes_[dest]->node_id()));
@@ -135,8 +139,7 @@ TEST_F(FindNodeNetwork, FUNC_VaultFindClientNode) {
 }
 
 TEST_F(FindNodeNetwork, FUNC_ClientFindVaultNode) {
-  // Create a bootstrap network
-  uint32_t source(RandomUint32() % (kServerSize - 2) + 2);
+  uint32_t source(env_->RandomVaultIndex());
 
   // Add one client node
   env_->AddNode(true, GenerateUniqueRandomId(env_->nodes_[source]->node_id(), 8));
@@ -144,7 +147,9 @@ TEST_F(FindNodeNetwork, FUNC_ClientFindVaultNode) {
   env_->AddNode(false, GenerateUniqueRandomId(env_->nodes_[source]->node_id(), 24));
 
   size_t client(env_->nodes_.size() - 1);
-  uint32_t vault(env_->ClientIndex());
+  uint32_t vault(env_->ClientIndex() - 1);
+  EXPECT_TRUE(env_->nodes_.at(client)->IsClient());
+  EXPECT_FALSE(env_->nodes_.at(vault)->IsClient());
 
   Sleep(boost::posix_time::seconds(1));
 
@@ -164,8 +169,7 @@ TEST_F(FindNodeNetwork, FUNC_ClientFindVaultNode) {
 }
 
 TEST_F(FindNodeNetwork, FUNC_ClientFindClientNode) {
-  // Create a bootstrap network
-  uint32_t source(RandomUint32() % (kServerSize - 2) + 2),
+  uint32_t source(env_->RandomVaultIndex()),
            client1(static_cast<uint32_t>(env_->nodes_.size())),
            client2(client1 + 1);
 
@@ -173,6 +177,8 @@ TEST_F(FindNodeNetwork, FUNC_ClientFindClientNode) {
   env_->AddNode(true, GenerateUniqueRandomId(env_->nodes_[source]->node_id(), 8));
   env_->AddNode(true, GenerateUniqueRandomId(env_->nodes_[source]->node_id(), 12));
   Sleep(boost::posix_time::seconds(1));
+  EXPECT_TRUE(env_->nodes_.at(client1)->IsClient());
+  EXPECT_TRUE(env_->nodes_.at(client2)->IsClient());
 
   EXPECT_TRUE(env_->nodes_[client1]->RoutingTableHasNode(env_->nodes_[source]->node_id()));
   EXPECT_TRUE(env_->nodes_[client2]->RoutingTableHasNode(env_->nodes_[source]->node_id()));

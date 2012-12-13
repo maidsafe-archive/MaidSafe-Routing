@@ -548,6 +548,11 @@ bool GenericNetwork::ValidateRoutingTables() {
   return true;
 }
 
+size_t GenericNetwork::RandomNodeIndex() {
+  assert(nodes_.size() > 0);
+  return RandomUint32() % nodes_.size();
+}
+
 size_t GenericNetwork::RandomClientIndex() {
   assert(nodes_.size() > client_index_);
   size_t client_count(nodes_.size() - client_index_);
@@ -555,34 +560,33 @@ size_t GenericNetwork::RandomClientIndex() {
 }
 
 size_t GenericNetwork::RandomVaultIndex() {
+  assert(nodes_.size() > 2);
+  assert(client_index_ > 2);
   return RandomUint32() % client_index_;
 }
 
 GenericNetwork::NodePtr GenericNetwork::RandomClientNode() {
-  assert(nodes_.size() > client_index_);
   std::lock_guard<std::mutex> lock(mutex_);
-  size_t client_count(nodes_.size() - client_index_);
-  NodePtr random(nodes_.at((RandomUint32() % client_count) + client_index_));
+  NodePtr random(nodes_.at(RandomClientIndex()));
   return random;
 }
 
 GenericNetwork::NodePtr GenericNetwork::RandomVaultNode() {
   std::lock_guard<std::mutex> lock(mutex_);
-  NodePtr random(nodes_.at(RandomUint32() % client_index_));
+  NodePtr random(nodes_.at(RandomVaultIndex()));
   return random;
 }
 
 void GenericNetwork::RemoveRandomClient() {
   std::lock_guard<std::mutex> lock(mutex_);
-  size_t client_count(nodes_.size() - client_index_);
-  nodes_.erase(nodes_.begin() + ((RandomUint32() % client_count) + client_index_));
+  nodes_.erase(nodes_.begin() + RandomClientIndex());
 }
 
 void GenericNetwork::RemoveRandomVault() {
   std::lock_guard<std::mutex> lock(mutex_);
   assert(nodes_.size() > 2);
   assert(client_index_ > 2);
-  nodes_.erase(nodes_.begin() + 2 + (RandomUint32() % client_index_));  // +2 to avoid zero state
+  nodes_.erase(nodes_.begin() + 2 + (RandomUint32() % (client_index_ - 2)));  // keep zero state
   --client_index_;
 }
 

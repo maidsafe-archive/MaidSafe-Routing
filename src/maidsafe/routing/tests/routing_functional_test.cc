@@ -42,6 +42,8 @@ class RoutingNetworkTest : public testing::Test {
   }
 
   void TearDown() {
+    EXPECT_LE(kServerSize, env_->ClientIndex());
+    EXPECT_LE(kNetworkSize, env_->nodes_.size());
     EXPECT_TRUE(env_->RestoreComposition());
   }
 
@@ -283,7 +285,7 @@ TEST_F(RoutingNetworkTest, FUNC_SanityCheck) {
   }
   {
     //  GroupSend
-    uint16_t random_node(RandomUint32() % kServerSize);
+    uint16_t random_node(env_->RandomVaultIndex());
     NodeId target_id(env_->nodes_[random_node]->node_id());
     std::vector<NodeId> group_Ids(env_->GetGroupForId(target_id));
     EXPECT_TRUE(GroupSend(target_id, 1));
@@ -356,7 +358,7 @@ TEST_F(RoutingNetworkTest, FUNC_Send) {
 
 TEST_F(RoutingNetworkTest, FUNC_SendToNonExistingNode) {
   EXPECT_TRUE(Send(NodeId(NodeId::kRandomId)));
-  EXPECT_TRUE(Send(env_->nodes_[RandomUint32() % kNetworkSize]->node_id()));
+  EXPECT_TRUE(Send(env_->nodes_[env_->RandomNodeIndex()]->node_id()));
 }
 
 TEST_F(RoutingNetworkTest, FUNC_ClientSend) {
@@ -620,14 +622,14 @@ TEST_F(RoutingNetworkTest, FUNC_SendToClientWithSameId) {
 }
 
 TEST_F(RoutingNetworkTest, FUNC_NodeRemoved) {
-  size_t random_index(RandomUint32() % env_->nodes_.size());
+  size_t random_index(env_->RandomNodeIndex());
   NodeInfo removed_node_info(env_->nodes_[random_index]->GetRemovableNode());
   EXPECT_GE(removed_node_info.bucket, 510);
 }
 
 TEST_F(RoutingNetworkTest, FUNC_GetRandomExistingNode) {
   uint32_t collisions(0);
-  uint32_t kChoseIndex((RandomUint32() % kNetworkSize - 2) + 2);
+  uint32_t kChoseIndex(env_->RandomNodeIndex());
   EXPECT_TRUE(Send(1));
 //  EXPECT_LT(env_->nodes_[random_node]->RandomNodeVector().size(), 98);
 //  for (auto node : env_->nodes_[random_node]->RandomNodeVector())
