@@ -72,6 +72,14 @@ void MessageHandler::HandleRoutingMessage(protobuf::Message& message) {
       message.request() ? remove_furthest_node_.RemoveRequest(message) :
                           remove_furthest_node_.RemoveResponse(message);
       break;
+    case MessageType::kClosestNodesUpdate :
+      assert(message.request());
+      group_change_handler_.ClosestNodesUpdate(message);
+      break;
+    case MessageType::kClosestNodesUpdateSubscribe :
+      assert(message.request());
+      group_change_handler_.ClosestNodesUpdateSubscribe(message);
+      break;
     default:  // unknown (silent drop)
       return;
   }

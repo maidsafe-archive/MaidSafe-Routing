@@ -20,6 +20,7 @@
 #include "maidsafe/routing/network_utils.h"
 #include "maidsafe/routing/node_info.h"
 #include "maidsafe/routing/routing_table.h"
+#include "maidsafe/routing/routing_pb.h"
 
 
 namespace maidsafe {
@@ -31,26 +32,32 @@ namespace protobuf { class Message; }
 class GroupChangeHandler {
  public:
   GroupChangeHandler(RoutingTable& routing_table, NetworkUtils& network);
-  void SendCloseNodeChangeRpcs(std::vector<NodeInfo> new_close_nodes);
-  void UpdateGroupChange(const NodeId& node_id, std::vector<NodeId> close_nodes);
+  void SendClosestNodesUpdateRpcs(const std::vector<NodeInfo>& new_close_nodes);
+  void UpdateGroupChange(const NodeId& node_id, std::vector<NodeInfo> close_nodes);
   void UpdatePendingGroupChange(const NodeId& node_id);
+  void ClosestNodesUpdate(protobuf::Message& message);
+  void SendSubscribeRpc(const NodeInfo& node_info, const bool& subscribe = true);
+  void ClosestNodesUpdateSubscribe(protobuf::Message& message);
  private:
   struct PendingNotification {
-    PendingNotification(const NodeId& node_id_in, std::vector<NodeId> close_nodes_in);
+    PendingNotification(const NodeId& node_id_in, std::vector<NodeInfo> close_nodes_in);
     NodeId node_id;
-    std::vector<NodeId> close_nodes;
+    std::vector<NodeInfo> close_nodes;
   };
 
   GroupChangeHandler(const GroupChangeHandler&);
   GroupChangeHandler& operator=(const GroupChangeHandler&);
 
-  void AddPendingNotification(const NodeId& node_id, std::vector<NodeId> close_nodes);
-  std::vector<NodeId> GetAndRemovePendingNotification(const NodeId& node_from);
+  void AddPendingNotification(const NodeId& node_id, std::vector<NodeInfo> close_nodes);
+  std::vector<NodeInfo> GetAndRemovePendingNotification(const NodeId& node_from);
+  void Subscribe(const NodeId& node_id);
+  void Unsubscribe(const NodeId& node_id);
 
   RoutingTable& routing_table_;
   NetworkUtils& network_;
   std::mutex mutex_;
   std::vector<PendingNotification> pending_notifications_;
+  std::vector<NodeInfo> update_subscribers_;
 };
 
 }  // namespace routing

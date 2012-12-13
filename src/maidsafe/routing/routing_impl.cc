@@ -111,9 +111,15 @@ void Routing::Impl::ConnectFunctors(const Functors& functors) {
                                     [this] (const std::vector<NodeInfo> nodes) {
                                       std::lock_guard<std::mutex> lock(running_mutex_);
                                       if (running_)
-                                        group_change_handler_.SendCloseNodeChangeRpcs(nodes);
+                                        group_change_handler_.SendClosestNodesUpdateRpcs(nodes);
                                     },
-                                    functors.close_node_replaced);
+                                    functors.close_node_replaced,
+                                    [this] (const NodeInfo& node_info, const bool& subscribe) {
+                                      std::lock_guard<std::mutex> lock(running_mutex_);
+                                      if (running_)
+                                        group_change_handler_.SendSubscribeRpc(
+                                            node_info, subscribe);
+                                    });
   message_handler_->set_message_received_functor(functors.message_received);
   message_handler_->set_request_public_key_functor(functors.request_public_key);
   network_.set_new_bootstrap_endpoint_functor(functors.new_bootstrap_endpoint);

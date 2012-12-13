@@ -262,7 +262,7 @@ std::string MessageTypeString(const protobuf::Message& message) {
     case MessageType::kRemove :
       message_type = "kRemove";
       break;
-    case MessageType::kCloseNodeChange :
+    case MessageType::kClosestNodesUpdate :
       message_type = "kCloses_N_Ch";
       break;
     case MessageType::kNodeLevel :

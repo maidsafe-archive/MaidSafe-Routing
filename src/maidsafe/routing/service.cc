@@ -298,35 +298,6 @@ void Service::ConnectSuccess(protobuf::Message& message) {
   message.Clear();  // message is sent directly to the peer
 }
 
-void Service::CloseNodeChange(protobuf::Message& message) {
-  if (message.destination_id() != routing_table_.kFob().identity.string()) {
-    // Message not for this node and we should not pass it on.
-    LOG(kError) << "Message not for this node.";
-    message.Clear();
-    return;
-  }
-  protobuf::CloseNodeChange close_node_change;
-  if (!close_node_change.ParseFromString(message.data(0))) {
-    LOG(kError) << "No Data.";
-    return;
-  }
-
-  if (close_node_change.node().empty() || !CheckId(close_node_change.node())) {
-    LOG(kError) << "Invalid node id provided.";
-    return;
-  }
-
-  NodeId peer(NodeId(close_node_change.node()));
-  std::vector<NodeId> close_nodes;
-  for (const std::string& node : close_node_change.close_nodes()) {
-    if (CheckId(node))
-      close_nodes.push_back(NodeId(node));
-  }
-  if (!close_nodes.empty())
-    group_change_handler_.UpdateGroupChange(peer, close_nodes);
-  message.Clear();  // No response
-}
-
 void Service::ConnectSuccessFromRequester(NodeInfo& /*peer*/) {}
 
 void Service::ConnectSuccessFromResponder(NodeInfo& peer, const bool& client) {

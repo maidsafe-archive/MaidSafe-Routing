@@ -14,6 +14,7 @@
 
 #include "maidsafe/common/log.h"
 #include "maidsafe/common/node_id.h"
+#include "maidsafe/routing/node_info.h"
 #include "maidsafe/common/utils.h"
 
 #include "maidsafe/routing/message_handler.h"
@@ -224,31 +225,61 @@ protobuf::Message ConnectSuccessAcknowledgement(const NodeId& node_id,
   return message;
 }
 
-protobuf::Message CloseNodeChange(
+protobuf::Message ClosestNodesUpdateRequest(
     const NodeId& node_id,
     const NodeId& my_node_id,
-    const std::vector<NodeId>& close_nodes) {
+    const std::vector<NodeInfo>& closest_nodes) {
   assert(!node_id.IsZero() && "Invalid node_id");
   assert(!my_node_id.IsZero() && "Invalid my node_id");
   // assert(!close_nodes.empty() && "Empty close nodes");
   protobuf::Message message;
-  protobuf::CloseNodeChange close_node_change;
-  close_node_change.set_node(my_node_id.string());
-  for (auto i : close_nodes)
-    close_node_change.add_close_nodes(i.string());
+  protobuf::ClosestNodesUpdate closest_nodes_update;
+  closest_nodes_update.set_node(my_node_id.string());
+  for (auto i : closest_nodes) {
+    protobuf::BasicNodeInfo* basic_node_info;
+    basic_node_info = closest_nodes_update.add_nodes_info();
+    basic_node_info->set_node_id(i.node_id.string());
+    basic_node_info->set_rank(i.rank);
+  }
   message.set_destination_id(node_id.string());
   message.set_source_id(my_node_id.string());
   message.set_routing_message(true);
-  message.add_data(close_node_change.SerializeAsString());
+  message.add_data(closest_nodes_update.SerializeAsString());
   message.set_direct(true);
   message.set_replication(1);
-  message.set_type(static_cast<int32_t>(MessageType::kCloseNodeChange));
+  message.set_type(static_cast<int32_t>(MessageType::kClosestNodesUpdate));
   message.set_request(true);
   message.set_client_node(false);
   message.set_hops_to_live(Parameters::hops_to_live);
   assert(message.IsInitialized() && "Unintialised message");
   return message;
 }
+
+protobuf::Message ClosestNodesUpdateSubscrirbe(
+    const NodeId& node_id,
+    const NodeId& my_node_id,
+    const bool& unsubscribe) {
+  assert(!node_id.IsZero() && "Invalid node_id");
+  assert(!my_node_id.IsZero() && "Invalid my node_id");
+  protobuf::Message message;
+  protobuf::ClosestNodesUpdateSubscrirbe closest_nodes_update_subscribe;
+  closest_nodes_update_subscribe.set_peer(my_node_id.string());
+  closest_nodes_update_subscribe.set_unsubscribe(unsubscribe);
+  message.set_destination_id(node_id.string());
+  message.set_source_id(my_node_id.string());
+  message.set_routing_message(true);
+  message.add_data(closest_nodes_update_subscribe.SerializeAsString());
+  message.set_direct(true);
+  message.set_replication(1);
+  message.set_type(static_cast<int32_t>(MessageType::kClosestNodesUpdateSubscribe));
+  message.set_request(true);
+  message.set_client_node(false);
+  message.set_hops_to_live(Parameters::hops_to_live);
+  assert(message.IsInitialized() && "Unintialised message");
+  return message;
+
+}
+
 
 }  // namespace rpcs
 

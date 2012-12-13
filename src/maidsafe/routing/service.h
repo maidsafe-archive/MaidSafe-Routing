@@ -41,7 +41,6 @@ class Service {
   virtual void Connect(protobuf::Message& message);
   virtual void FindNodes(protobuf::Message& message);
   virtual void ConnectSuccess(protobuf::Message& message);
-  virtual void CloseNodeChange(protobuf::Message& message);
   void set_request_public_key_functor(RequestPublicKeyFunctor request_public_key);
   RequestPublicKeyFunctor request_public_key_functor() const;
 

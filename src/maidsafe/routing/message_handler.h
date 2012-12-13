@@ -54,7 +54,8 @@ enum class MessageType : int32_t {
   kConnectSuccess = 4,
   kConnectSuccessAcknowledgement = 5,
   kRemove = 6,
-  kCloseNodeChange = 7,
+  kClosestNodesUpdate = 7,
+  kClosestNodesUpdateSubscribe = 8,
   kMaxRouting = 100,
   kNodeLevel = 101
 };

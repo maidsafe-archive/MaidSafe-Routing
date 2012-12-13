@@ -51,6 +51,10 @@ struct NodeInfo;
 typedef std::function<void(const std::vector<NodeInfo> /*new_group*/)>
     ConnectedGroupChangeFunctor;
 
+typedef std::function<void(const NodeInfo& /*node_info*/, const bool& /*subscribe*/)>
+    SubscribeToGroupChangeUpdate;
+
+
 
 class RoutingTable {
  public:
@@ -59,7 +63,8 @@ class RoutingTable {
                           std::function<void(const NodeInfo&, bool)> remove_node_functor,
                           RemoveFurthestUnnecessaryNode remove_furthest_node,
                           ConnectedGroupChangeFunctor connected_group_change_functor,
-                          CloseNodeReplacedFunctor close_node_replaced_functor);
+                          CloseNodeReplacedFunctor close_node_replaced_functor,
+                          SubscribeToGroupChangeUpdate subscribe_to_group_change_update);
   bool AddNode(const NodeInfo& peer);
   bool CheckNode(const NodeInfo& peer);
   NodeInfo DropNode(const NodeId &node_to_drop, bool routing_only);
@@ -99,10 +104,9 @@ class RoutingTable {
                                         bool local_endpoint,
                                         NodeInfo& existing_node);
   void UpdateCloseNodeChange(std::unique_lock<std::mutex>& lock,
-                             bool& connected_close_changed,
                              std::vector<NodeInfo>& new_connected_close_nodes,
-                             NodeInfo& connected_not_close,
-                             bool& close_nodes_changed,
+                             NodeInfo& in_connected_closest_nodes,
+                             NodeInfo& out_of_connected_closest_nodes,
                              std::vector<NodeInfo>& new_close_nodes);
   bool MakeSpaceForNodeToBeAdded(const NodeInfo& node,
                                  bool remove,
@@ -146,6 +150,7 @@ class RoutingTable {
   NetworkStatusFunctor network_status_functor_;
   RemoveFurthestUnnecessaryNode remove_furthest_node_;
   ConnectedGroupChangeFunctor connected_group_change_functor_;
+  SubscribeToGroupChangeUpdate subscribe_to_group_change_update_;
   CloseNodeReplacedFunctor close_node_replaced_functor_;
   std::vector<NodeInfo> nodes_;
   GroupMatrix group_matrix_;

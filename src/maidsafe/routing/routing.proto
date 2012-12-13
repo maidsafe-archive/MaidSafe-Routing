@@ -161,7 +161,17 @@ message NodeIdList {
   repeated NodeId node_id_list = 1;
 }
 
-message CloseNodeChange {
+message BasicNodeInfo {
+  required bytes node_id = 1;
+  required int32 rank = 2;
+}
+
+message ClosestNodesUpdate {
   required bytes node = 1;
-  repeated bytes close_nodes = 2;
+  repeated BasicNodeInfo nodes_info = 2;
+}
+
+message ClosestNodesUpdateSubscrirbe {
+  required bytes peer = 1;
+  required bool unsubscribe = 2;
 }
