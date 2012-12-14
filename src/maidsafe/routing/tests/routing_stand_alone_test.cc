@@ -48,7 +48,8 @@ TEST_F(RoutingStandAloneTest, FUNC_SetupHybridNetwork) {
   this->SetUpNetwork(kServerSize, kClientSize);
 }
 
-TEST_F(RoutingStandAloneTest, FUNC_ExtendedSendMulti) {
+TEST_F(RoutingStandAloneTest, DISABLED_FUNC_ExtendedSendMulti) {
+  // N.B. This test takes approx. 1hr to run, hence it is disabled.
   this->SetUpNetwork(kServerSize);
   uint16_t loop(100);
   while (loop-- > 0) {
