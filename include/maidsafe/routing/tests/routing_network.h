@@ -167,8 +167,17 @@ class GenericNetwork {
   std::vector<NodeId> GetGroupForId(const NodeId& node_id);
   bool RestoreComposition();
   bool WaitForHealthToStabilise();
+  testing::AssertionResult Send(const size_t& messages);
+  testing::AssertionResult GroupSend(const NodeId& node_id,
+                                     const size_t& messages,
+                                     uint16_t source_index = 0);
+  testing::AssertionResult Send(const NodeId& node_id);
+  testing::AssertionResult Send(std::shared_ptr<GenericNode> source_node,
+                                const NodeId& node_id,
+                                bool no_response_expected = false);
 
   friend class NodesEnvironment;
+
 
  private:
   uint16_t NonClientNodesSize() const;

@@ -693,6 +693,230 @@ bool GenericNetwork::WaitForHealthToStabilise() {
   return healthy;
 }
 
+testing::AssertionResult GenericNetwork::Send(const size_t& messages) {
+  NodeId group_id;
+  size_t message_id(0), client_size(0), non_client_size(0);
+  std::set<size_t> received_ids;
+  for (auto node : this->nodes_)
+    (node->IsClient()) ? client_size++ : non_client_size++;
+
+  LOG(kVerbose) << "Network node size: " << client_size << " : " << non_client_size;
+
+  size_t messages_count(0),
+      expected_messages(non_client_size * (non_client_size - 1 + client_size) * messages);
+  std::mutex mutex;
+  std::condition_variable cond_var;
+  for (size_t index = 0; index < messages; ++index) {
+    for (auto source_node : this->nodes_) {
+      for (auto dest_node : this->nodes_) {
+        auto callable = [&](const std::vector<std::string> &message) {
+            if (message.empty())
+              return;
+            std::lock_guard<std::mutex> lock(mutex);
+            messages_count++;
+            std::string data_id(message.at(0).substr(message.at(0).find(">:<") + 3,
+                message.at(0).find("<:>") - 3 - message.at(0).find(">:<")));
+            received_ids.insert(boost::lexical_cast<size_t>(data_id));
+            LOG(kVerbose) << "ResponseHandler .... " << messages_count << " msg_id: "
+                          << data_id;
+            if (messages_count == expected_messages) {
+              cond_var.notify_one();
+              LOG(kVerbose) << "ResponseHandler .... DONE " << messages_count;
+            }
+          };
+        if (source_node->node_id() != dest_node->node_id()) {
+          std::string data(RandomAlphaNumericString(512 * 2^10));
+          {
+            std::lock_guard<std::mutex> lock(mutex);
+            data = boost::lexical_cast<std::string>(++message_id) + "<:>" + data;
+          }
+          assert(!data.empty() && "Send Data Empty !");
+          source_node->Send(NodeId(dest_node->node_id()), NodeId(), data, callable,
+              boost::posix_time::seconds(static_cast<long>(nodes_.size())), // NOLINT (Fraser)
+              DestinationType::kDirect, false);
+          Sleep(boost::posix_time::microseconds(21));
+        }
+      }
+    }
+  }
+
+  std::unique_lock<std::mutex> lock(mutex);
+  bool result = cond_var.wait_for(lock, std::chrono::seconds(20),
+      [&]()->bool {
+        LOG(kInfo) << " message count " << messages_count << " expected "
+                   << expected_messages << "\n";
+        return messages_count == expected_messages;
+      });
+  EXPECT_TRUE(result);
+  if (!result) {
+    for (size_t id(1); id <= expected_messages; ++id) {
+      auto iter = received_ids.find(id);
+      if (iter == received_ids.end())
+        LOG(kVerbose) << "missing id: " << id;
+    }
+    return testing::AssertionFailure() << "Send operarion timed out: "
+                                       << expected_messages - messages_count
+                                       << " failed to reply.";
+  }
+  return testing::AssertionSuccess();
+}
+
+testing::AssertionResult GenericNetwork::GroupSend(const NodeId& node_id,
+                                                   const size_t& messages,
+                                                   uint16_t source_index) {
+  assert(static_cast<long>(10 * messages) > 0); // NOLINT (Fraser)
+  size_t messages_count(0), expected_messages(messages);
+  std::string data(RandomAlphaNumericString((2 ^ 10) * 256));
+
+  std::mutex mutex;
+  std::condition_variable cond_var;
+  for (size_t index = 0; index < messages; ++index) {
+    auto callable = [&] (const std::vector<std::string> message) {
+                      if (message.empty())
+                        return;
+                      std::lock_guard<std::mutex> lock(mutex);
+                      messages_count++;
+                      LOG(kVerbose) << "ResponseHandler .... " << messages_count;
+                      if (messages_count == expected_messages) {
+                        cond_var.notify_one();
+                        LOG(kVerbose) << "ResponseHandler .... DONE " << messages_count;
+                      }
+                    };
+    this->nodes_[source_index]->Send(node_id,
+                                     NodeId(),
+                                     data,
+                                     callable,
+                                     boost::posix_time::seconds(static_cast<long>(10 * messages)), // NOLINT (Fraser)
+                                     DestinationType::kGroup,
+                                     false);
+  }
+
+  std::unique_lock<std::mutex> lock(mutex);
+  bool result = cond_var.wait_for(lock,
+                                  std::chrono::seconds(10 * messages + 5),
+                                  [&] ()->bool {
+                                    LOG(kInfo) << " message count " << messages_count
+                                               << " expected " << expected_messages << "\n";
+                                    return messages_count == expected_messages;
+                                  });
+  EXPECT_TRUE(result);
+  if (!result) {
+    return testing::AssertionFailure() << "Send operarion timed out: "
+                                       << expected_messages - messages_count
+                                       << " failed to reply.";
+  }
+  return testing::AssertionSuccess();
+}
+
+testing::AssertionResult GenericNetwork::Send(const NodeId& node_id) {
+  std::set<size_t> received_ids;
+  std::mutex mutex;
+  std::condition_variable cond_var;
+  size_t messages_count(0), message_id(0), expected_messages(0);
+  auto node(std::find_if(this->nodes_.begin(), this->nodes_.end(),
+                         [&](const std::shared_ptr<GenericNode> node) {
+                           return node->node_id() == node_id;
+                         }));
+  if ((node != this->nodes_.end()) && !((*node)->IsClient()))
+    expected_messages = this->nodes_.size() - 1;
+  for (auto source_node : this->nodes_) {
+    auto callable = [&](const std::vector<std::string> &message) {
+      if (message.empty())
+        return;
+      std::lock_guard<std::mutex> lock(mutex);
+      messages_count++;
+      std::string data_id(message.at(0).substr(message.at(0).find(">:<") + 3,
+          message.at(0).find("<:>") - 3 - message.at(0).find(">:<")));
+      received_ids.insert(boost::lexical_cast<size_t>(data_id));
+      LOG(kVerbose) << "ResponseHandler .... " << messages_count << " msg_id: "
+                    << data_id;
+      if (messages_count == expected_messages) {
+        cond_var.notify_one();
+        LOG(kVerbose) << "ResponseHandler .... DONE " << messages_count;
+      }
+    };
+    if (source_node->node_id() != node_id) {
+        std::string data(RandomAlphaNumericString((RandomUint32() % 255 + 1) * 2^10));
+        {
+          std::lock_guard<std::mutex> lock(mutex);
+          data = boost::lexical_cast<std::string>(++message_id) + "<:>" + data;
+        }
+        source_node->Send(node_id, NodeId(), data, callable,
+            boost::posix_time::seconds(12), DestinationType::kDirect, false);
+    }
+  }
+
+  std::unique_lock<std::mutex> lock(mutex);
+  bool result = cond_var.wait_for(lock, std::chrono::seconds(20),
+      [&]()->bool {
+        LOG(kInfo) << " message count " << messages_count << " expected "
+                   << expected_messages << "\n";
+        return messages_count == expected_messages;
+      });
+  EXPECT_TRUE(result);
+  if (!result) {
+    for (size_t id(1); id <= expected_messages; ++id) {
+      auto iter = received_ids.find(id);
+      if (iter == received_ids.end())
+        LOG(kVerbose) << "missing id: " << id;
+    }
+    return testing::AssertionFailure() << "Send operarion timed out: "
+                                       << expected_messages - messages_count
+                                       << " failed to reply.";
+  }
+  return testing::AssertionSuccess();
+}
+
+testing::AssertionResult GenericNetwork::Send(std::shared_ptr<GenericNode> source_node,
+                                              const NodeId& node_id,
+                                              bool no_response_expected) {
+  std::mutex mutex;
+  std::condition_variable cond_var;
+  size_t messages_count(0), expected_messages(0);
+  ResponseFunctor callable;
+  if (!no_response_expected) {
+    expected_messages = std::count_if(this->nodes_.begin(), this->nodes_.end(),
+        [=](const std::shared_ptr<GenericNode> node)->bool {
+          return node_id == node->node_id();
+        });
+
+    callable = [&](const std::vector<std::string> &message) {
+      if (message.empty())
+        return;
+      std::lock_guard<std::mutex> lock(mutex);
+      messages_count++;
+      LOG(kVerbose) << "ResponseHandler .... " << messages_count;
+      if (messages_count == expected_messages) {
+        cond_var.notify_one();
+        LOG(kVerbose) << "ResponseHandler .... DONE " << messages_count;
+      }
+    };
+  }
+  std::string data(RandomAlphaNumericString(512 * 2^10));
+  assert(!data.empty() && "Send Data Empty !");
+  source_node->Send(node_id, NodeId(), data, callable,
+                    boost::posix_time::seconds(12), DestinationType::kDirect, false);
+
+  if (!no_response_expected) {
+    std::unique_lock<std::mutex> lock(mutex);
+    bool result = cond_var.wait_for(lock, std::chrono::seconds(20),
+        [&]()->bool {
+          LOG(kInfo) << " message count " << messages_count << " expected "
+                    << expected_messages << "\n";
+          return messages_count == expected_messages;
+        });
+    EXPECT_TRUE(result);
+    if (!result) {
+      return testing::AssertionFailure() << "Send operarion timed out: "
+                                         << expected_messages - messages_count
+                                         << " failed to reply.";
+    }
+    return testing::AssertionSuccess();
+  } else {
+    return testing::AssertionSuccess();
+  }
+}
+
 uint16_t GenericNetwork::NonClientNodesSize() const {
   uint16_t non_client_size(0);
   for (auto node : nodes_) {
