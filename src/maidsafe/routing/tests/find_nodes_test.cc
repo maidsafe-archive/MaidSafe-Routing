@@ -80,7 +80,7 @@ TEST_F(FindNodeNetwork, FUNC_FindExistingNode) {
 }
 
 TEST_F(FindNodeNetwork, FUNC_FindNonExistingNode) {
-  uint32_t source(env_->RandomVaultIndex());
+  size_t source(env_->RandomVaultIndex());
   NodeId node_id(GenerateUniqueRandomId(env_->nodes_[source]->node_id(), 6));
   EXPECT_TRUE(Find(env_->nodes_[source], node_id));
   Sleep(boost::posix_time::seconds(1));
@@ -88,7 +88,7 @@ TEST_F(FindNodeNetwork, FUNC_FindNonExistingNode) {
 }
 
 TEST_F(FindNodeNetwork, FUNC_FindNodeAfterDrop) {
-  uint32_t source(env_->RandomVaultIndex());
+  size_t source(env_->RandomVaultIndex());
   NodeId node_id(GenerateUniqueRandomId(env_->nodes_[source]->node_id(), 6));
   EXPECT_FALSE(env_->nodes_[source]->RoutingTableHasNode(node_id));
   env_->AddNode(false, node_id);
@@ -101,8 +101,8 @@ TEST_F(FindNodeNetwork, FUNC_FindNodeAfterDrop) {
 }
 
 TEST_F(FindNodeNetwork, FUNC_VaultFindVaultNode) {
-  uint32_t source(env_->RandomVaultIndex()),
-           dest(env_->ClientIndex());
+  size_t source(env_->RandomVaultIndex()),
+         dest(env_->ClientIndex());
 
   env_->AddNode(false, GenerateUniqueRandomId(env_->nodes_[source]->node_id(), 20));
   EXPECT_FALSE(env_->nodes_.at(dest)->IsClient());
@@ -119,8 +119,8 @@ TEST_F(FindNodeNetwork, FUNC_VaultFindVaultNode) {
 }
 
 TEST_F(FindNodeNetwork, FUNC_VaultFindClientNode) {
-  uint32_t source(env_->RandomVaultIndex()),
-           dest(static_cast<uint32_t>(env_->nodes_.size()));
+  size_t source(env_->RandomVaultIndex()),
+         dest(env_->nodes_.size());
 
   // Add one client node
   env_->AddNode(true, GenerateUniqueRandomId(env_->nodes_[source]->node_id(), 20));
@@ -139,7 +139,7 @@ TEST_F(FindNodeNetwork, FUNC_VaultFindClientNode) {
 }
 
 TEST_F(FindNodeNetwork, FUNC_ClientFindVaultNode) {
-  uint32_t source(env_->RandomVaultIndex());
+  size_t source(env_->RandomVaultIndex());
 
   // Add one client node
   env_->AddNode(true, GenerateUniqueRandomId(env_->nodes_[source]->node_id(), 8));
@@ -147,7 +147,7 @@ TEST_F(FindNodeNetwork, FUNC_ClientFindVaultNode) {
   env_->AddNode(false, GenerateUniqueRandomId(env_->nodes_[source]->node_id(), 24));
 
   size_t client(env_->nodes_.size() - 1);
-  uint32_t vault(env_->ClientIndex() - 1);
+  size_t vault(env_->ClientIndex() - 1);
   EXPECT_TRUE(env_->nodes_.at(client)->IsClient());
   EXPECT_FALSE(env_->nodes_.at(vault)->IsClient());
 
@@ -169,9 +169,9 @@ TEST_F(FindNodeNetwork, FUNC_ClientFindVaultNode) {
 }
 
 TEST_F(FindNodeNetwork, FUNC_ClientFindClientNode) {
-  uint32_t source(env_->RandomVaultIndex()),
-           client1(static_cast<uint32_t>(env_->nodes_.size())),
-           client2(client1 + 1);
+  size_t source(env_->RandomVaultIndex()),
+         client1(env_->nodes_.size()),
+         client2(client1 + 1);
 
   // Add two client nodes
   env_->AddNode(true, GenerateUniqueRandomId(env_->nodes_[source]->node_id(), 8));
