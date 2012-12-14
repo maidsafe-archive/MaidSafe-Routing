@@ -35,6 +35,8 @@ namespace maidsafe {
 
 namespace routing {
 
+class GroupChangeHandler;
+
 namespace test {
   class GenericNode;
   class RoutingTableTest;
@@ -51,9 +53,8 @@ struct NodeInfo;
 typedef std::function<void(const std::vector<NodeInfo> /*new_group*/)>
     ConnectedGroupChangeFunctor;
 
-typedef std::function<void(const NodeInfo& /*node_info*/, const bool& /*subscribe*/)>
+typedef std::function<void(const bool& /*subscribe*/, NodeInfo /*node_info*/)>
     SubscribeToGroupChangeUpdate;
-
 
 
 class RoutingTable {
@@ -86,6 +87,7 @@ class RoutingTable {
   NodeInfo GetNthClosestNode(const NodeId& target_id, uint16_t node_number);
   std::vector<NodeId> GetClosestNodes(const NodeId& target_id, uint16_t number_to_get);
   NodeInfo GetRemovableNode(std::vector<std::string> attempted = std::vector<std::string>());
+  void GetNodesNeedingGroupUpdates(std::vector<NodeInfo>& nodes_needing_update);
   size_t size() const;
   uint16_t kThresholdSize() const { return kThresholdSize_; }
   Fob kFob() const { return kFob_; }
@@ -93,6 +95,7 @@ class RoutingTable {
   NodeId kConnectionId() const { return kConnectionId_; }
   bool client_mode() const { return kClientMode_; }
   friend class test::GenericNode;
+  friend class GroupChangeHandler;
 
  private:
   RoutingTable(const RoutingTable&);

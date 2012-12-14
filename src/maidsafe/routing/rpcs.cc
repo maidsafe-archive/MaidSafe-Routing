@@ -258,13 +258,13 @@ protobuf::Message ClosestNodesUpdateRequest(
 protobuf::Message ClosestNodesUpdateSubscrirbe(
     const NodeId& node_id,
     const NodeId& my_node_id,
-    const bool& unsubscribe) {
+    const bool& subscribe) {
   assert(!node_id.IsZero() && "Invalid node_id");
   assert(!my_node_id.IsZero() && "Invalid my node_id");
   protobuf::Message message;
   protobuf::ClosestNodesUpdateSubscrirbe closest_nodes_update_subscribe;
   closest_nodes_update_subscribe.set_peer(my_node_id.string());
-  closest_nodes_update_subscribe.set_unsubscribe(unsubscribe);
+  closest_nodes_update_subscribe.set_subscribe(subscribe);
   message.set_destination_id(node_id.string());
   message.set_source_id(my_node_id.string());
   message.set_routing_message(true);

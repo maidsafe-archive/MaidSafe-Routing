@@ -82,10 +82,9 @@ protobuf::Message ClosestNodesUpdateRequest(const NodeId& node_id,
     const NodeId& my_node_id,
     const std::vector<NodeInfo>& closest_nodes);
 
-protobuf::Message ClosestNodesUpdateSubscrirbe(
-    const NodeId& node_id,
+protobuf::Message ClosestNodesUpdateSubscrirbe(const NodeId& node_id,
     const NodeId& my_node_id,
-    const bool& unsubscribe = false);
+    const bool& subscribe);
 
 }  // namespace rpcs
 

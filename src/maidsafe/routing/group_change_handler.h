@@ -32,11 +32,12 @@ namespace protobuf { class Message; }
 class GroupChangeHandler {
  public:
   GroupChangeHandler(RoutingTable& routing_table, NetworkUtils& network);
+  ~GroupChangeHandler();
   void SendClosestNodesUpdateRpcs(const std::vector<NodeInfo>& new_close_nodes);
   void UpdateGroupChange(const NodeId& node_id, std::vector<NodeInfo> close_nodes);
   void UpdatePendingGroupChange(const NodeId& node_id);
   void ClosestNodesUpdate(protobuf::Message& message);
-  void SendSubscribeRpc(const NodeInfo& node_info, const bool& subscribe = true);
+  void SendSubscribeRpc(const bool& subscribe, const NodeInfo node_info);
   void ClosestNodesUpdateSubscribe(protobuf::Message& message);
  private:
   struct PendingNotification {
@@ -50,12 +51,12 @@ class GroupChangeHandler {
 
   void AddPendingNotification(const NodeId& node_id, std::vector<NodeInfo> close_nodes);
   std::vector<NodeInfo> GetAndRemovePendingNotification(const NodeId& node_from);
-  void Subscribe(const NodeId& node_id);
-  void Unsubscribe(const NodeId& node_id);
+  void Subscribe(NodeId node_id);
+  void Unsubscribe(NodeId node_id);
 
+  std::mutex mutex_;
   RoutingTable& routing_table_;
   NetworkUtils& network_;
-  std::mutex mutex_;
   std::vector<PendingNotification> pending_notifications_;
   std::vector<NodeInfo> update_subscribers_;
 };

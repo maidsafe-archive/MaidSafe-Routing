@@ -142,9 +142,9 @@ bool RoutingTable::AddOrCheckNode(NodeInfo peer, bool remove) {
         connected_group_change_functor_(new_connected_close_nodes);
       if (subscribe_to_group_change_update_) {
         if (in_connected_close_nodes.node_id != NodeId())
-          subscribe_to_group_change_update_(in_connected_close_nodes, true);
+          subscribe_to_group_change_update_(true, NodeInfo());
         if (out_of_connected_close_nodes.node_id != NodeId())
-          subscribe_to_group_change_update_(out_of_connected_close_nodes, false);
+          subscribe_to_group_change_update_(false, out_of_connected_close_nodes);
       }
     }
 
@@ -189,9 +189,9 @@ NodeInfo RoutingTable::DropNode(const NodeId& node_to_drop, bool routing_only) {
       connected_group_change_functor_(new_connected_close_nodes);
     if (subscribe_to_group_change_update_) {
       if (in_connected_close_nodes.node_id != NodeId())
-        subscribe_to_group_change_update_(in_connected_close_nodes, true);
+        subscribe_to_group_change_update_(true, NodeInfo());
       if (out_of_connected_close_nodes.node_id != NodeId())
-        subscribe_to_group_change_update_(out_of_connected_close_nodes, false);
+        subscribe_to_group_change_update_(false, out_of_connected_close_nodes);
     }
   }
 
@@ -565,6 +565,20 @@ NodeInfo RoutingTable::GetRemovableNode(std::vector<std::string> attempted) {
   LOG(kVerbose) << "[" << DebugId(kNodeId_) << "] Proposed removable ["
                 << DebugId(removable_node.node_id) << "]";
   return removable_node;
+}
+
+void RoutingTable::GetNodesNeedingGroupUpdates(std::vector<NodeInfo>& nodes_needing_update) {
+  std::unique_lock<std::mutex> lock(mutex_);
+  int sorted_count(PartialSortFromTarget(kNodeId_, Parameters::closest_nodes_size , lock));
+  if (sorted_count == 0)
+    return;
+  for (auto iter(nodes_.begin());
+       iter != (nodes_.begin() + std::min(Parameters::closest_nodes_size,
+                                          static_cast<uint16_t>(nodes_.size())));
+       ++iter) {
+    if (group_matrix_.IsRowEmpty(*iter))
+      nodes_needing_update.push_back(*iter);
+  }
 }
 
 NodeInfo RoutingTable::GetNthClosestNode(const NodeId& target_id, uint16_t node_number) {

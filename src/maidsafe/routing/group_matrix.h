@@ -54,6 +54,7 @@ class GroupMatrix {
   // Updates group matrix if peer is present in 1st column of matrix
   void UpdateFromConnectedPeer(const NodeId& peer, const std::vector<NodeInfo>& nodes);
 
+  bool IsRowEmpty(const NodeInfo& node_info);
   bool GetRow(const NodeId& row_id, std::vector<NodeInfo>& row_entries);
 
   std::vector<NodeInfo> GetUniqueNodes();

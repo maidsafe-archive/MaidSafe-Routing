@@ -173,5 +173,5 @@ message ClosestNodesUpdate {
 
 message ClosestNodesUpdateSubscrirbe {
   required bytes peer = 1;
-  required bool unsubscribe = 2;
+  required bool subscribe = 2;
 }

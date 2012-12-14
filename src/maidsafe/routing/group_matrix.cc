@@ -126,7 +126,7 @@ void GroupMatrix::UpdateFromConnectedPeer(const NodeId& peer,
     assert(false && "Invalid peer node id.");
     return;
   }
-  if (nodes.size() >= Parameters::closest_nodes_size) {
+  if (nodes.size() > Parameters::closest_nodes_size) {
     assert(false && "Vector of nodes should have length less than Parameters::closest_nodes_size");
     return;
   }
@@ -154,6 +154,18 @@ void GroupMatrix::UpdateFromConnectedPeer(const NodeId& peer,
 
   // Update unique node vector
   UpdateUniqueNodeList();
+}
+
+bool GroupMatrix::IsRowEmpty(const NodeInfo& node_info) {
+  std::lock_guard<std::mutex> lock(mutex_);
+  auto group_itr(matrix_.begin());
+  for (group_itr = matrix_.begin(); group_itr != matrix_.end(); ++group_itr) {
+    if ((*group_itr).at(0).node_id == node_info.node_id)
+      break;
+  }
+
+  assert(group_itr != matrix_.end());
+  return (group_itr->size() < 2);
 }
 
 bool GroupMatrix::GetRow(const NodeId& row_id, std::vector<NodeInfo>& row_entries) {
