@@ -152,7 +152,8 @@ void Commands::ZeroStateJoin() {
 }
 
 void Commands::SendAMsg(const int& identity_index, const DestinationType& destination_type,
-                        std::string &data) {
+                        const std::string& ori_data) {
+  std::string data(ori_data);
   if ((identity_index >= 0) && (static_cast<uint32_t>(identity_index) >= all_fobs_.size())) {
     std::cout << "ERROR : destination index out of range" << std::endl;
     return;
