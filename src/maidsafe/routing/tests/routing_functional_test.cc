@@ -558,10 +558,10 @@ TEST_F(RoutingNetworkTest, FUNC_SendToClientWithSameId) {
 
 TEST_F(RoutingNetworkTest, FUNC_CheckForGroupUpdateSubscription) {
   std::vector<NodeInfo> closest_nodes_info;
-  this->SetUpNetwork(12);
+  this->SetUpNetwork(kServerSize);
   Sleep(boost::posix_time::seconds(2));
   for (auto node : this->nodes_) {
-    closest_nodes_info = this->GetClosestNodes(node->node_id(), Parameters::closest_nodes_size);
+    closest_nodes_info = this->GetClosestNodes(node->node_id(), Parameters::closest_nodes_size - 1);
     LOG(kVerbose) << "size of closest_nodes: " << closest_nodes_info.size();
 
     for (auto node_info : closest_nodes_info) {
@@ -573,8 +573,8 @@ TEST_F(RoutingNetworkTest, FUNC_CheckForGroupUpdateSubscription) {
 }
 
 TEST_F(RoutingNetworkTest, FUNC_CheckUnsubscription) {
-  this->SetUpNetwork(12);
-  size_t size(12);
+  this->SetUpNetwork(kServerSize);
+  size_t size(kServerSize);
   size_t random_index(this->nodes_.size() % size);
   NodePtr node(nodes_[random_index]);
   NodeInfo furthest_closest(node->GetNthClosestNode(node->node_id(),

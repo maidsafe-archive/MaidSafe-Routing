@@ -108,7 +108,6 @@ class RoutingTable {
                                         NodeInfo& existing_node);
   void UpdateCloseNodeChange(std::unique_lock<std::mutex>& lock,
                              std::vector<NodeInfo>& new_connected_close_nodes,
-                             NodeInfo& in_connected_closest_nodes,
                              NodeInfo& out_of_connected_closest_nodes,
                              std::vector<NodeInfo>& new_close_nodes);
   bool MakeSpaceForNodeToBeAdded(const NodeInfo& node,

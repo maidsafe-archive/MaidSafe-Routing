@@ -151,10 +151,14 @@ void GroupChangeHandler::UpdateGroupChange(const NodeId& node_id,
                                            std::vector<NodeInfo> close_nodes) {
   std::lock_guard<std::mutex> lock(mutex_);
   if (routing_table_.IsConnected(node_id)) {
+    LOG(kVerbose) << DebugId(routing_table_.kNodeId()) << "UpdateGroupChange for "
+                  << DebugId(node_id) << " size of update: " << close_nodes.size();
     routing_table_.GroupUpdateFromConnectedPeer(node_id, close_nodes);
-  }/* else {
-    AddPendingNotification(node_id, close_nodes);
-  }*/
+  } else {
+    LOG(kVerbose) << DebugId(routing_table_.kNodeId()) << "UpdateGroupChange for failed"
+                  << DebugId(node_id) << " size of update: " << close_nodes.size();
+    //AddPendingNotification(node_id, close_nodes);
+  }
   SendSubscribeRpc(true, NodeInfo());
 }
 

@@ -95,7 +95,7 @@ bool RoutingTable::AddOrCheckNode(NodeInfo peer, bool remove) {
 
   bool return_value(false), remove_furthest_node(false);
   std::vector<NodeInfo> new_closest_nodes, new_connected_close_nodes;
-  NodeInfo out_of_connected_close_nodes, in_connected_close_nodes;
+  NodeInfo out_of_connected_close_nodes;
   NodeInfo removed_node;
   uint16_t routing_table_size(0);
 
@@ -116,7 +116,6 @@ bool RoutingTable::AddOrCheckNode(NodeInfo peer, bool remove) {
         nodes_.push_back(peer);
         UpdateCloseNodeChange(lock,
                               new_connected_close_nodes,
-                              in_connected_close_nodes,
                               out_of_connected_close_nodes,
                               new_closest_nodes);
         if (nodes_.size() > Parameters::greedy_fraction)
@@ -141,12 +140,13 @@ bool RoutingTable::AddOrCheckNode(NodeInfo peer, bool remove) {
       if (connected_group_change_functor_)
         connected_group_change_functor_(new_connected_close_nodes);
       if (subscribe_to_group_change_update_) {
-        if (in_connected_close_nodes.node_id != NodeId())
-          subscribe_to_group_change_update_(true, NodeInfo());
         if (out_of_connected_close_nodes.node_id != NodeId())
           subscribe_to_group_change_update_(false, out_of_connected_close_nodes);
       }
     }
+
+  if (subscribe_to_group_change_update_)
+      subscribe_to_group_change_update_(true, NodeInfo());
 
     if (!new_closest_nodes.empty()) {
       if (close_node_replaced_functor_)
@@ -169,7 +169,7 @@ bool RoutingTable::AddOrCheckNode(NodeInfo peer, bool remove) {
 
 NodeInfo RoutingTable::DropNode(const NodeId& node_to_drop, bool routing_only) {
   std::vector<NodeInfo> new_closest_nodes, new_connected_close_nodes;
-  NodeInfo dropped_node, out_of_connected_close_nodes, in_connected_close_nodes;
+  NodeInfo dropped_node, out_of_connected_close_nodes;
   {
     std::unique_lock<std::mutex> lock(mutex_);
     auto found(Find(node_to_drop, lock));
@@ -178,7 +178,6 @@ NodeInfo RoutingTable::DropNode(const NodeId& node_to_drop, bool routing_only) {
       nodes_.erase(found.second);
       UpdateCloseNodeChange(lock,
                             new_connected_close_nodes,
-                            in_connected_close_nodes,
                             out_of_connected_close_nodes,
                             new_closest_nodes);
     }
@@ -188,12 +187,13 @@ NodeInfo RoutingTable::DropNode(const NodeId& node_to_drop, bool routing_only) {
     if (connected_group_change_functor_)
       connected_group_change_functor_(new_connected_close_nodes);
     if (subscribe_to_group_change_update_) {
-      if (in_connected_close_nodes.node_id != NodeId())
-        subscribe_to_group_change_update_(true, NodeInfo());
       if (out_of_connected_close_nodes.node_id != NodeId())
         subscribe_to_group_change_update_(false, out_of_connected_close_nodes);
     }
   }
+
+  if (subscribe_to_group_change_update_)
+      subscribe_to_group_change_update_(true, NodeInfo());
 
   if (!new_closest_nodes.empty()) {
     if (close_node_replaced_functor_)
@@ -282,7 +282,6 @@ void RoutingTable::GroupUpdateFromConnectedPeer(const NodeId& peer,
 void RoutingTable::UpdateCloseNodeChange(
     std::unique_lock<std::mutex>& lock,
     std::vector<NodeInfo>& new_connected_close_nodes,
-    NodeInfo& in_connected_closest_nodes,
     NodeInfo& out_of_connected_closest_nodes,
     std::vector<NodeInfo>& new_close_nodes) {
   assert(lock.owns_lock());
@@ -343,7 +342,6 @@ void RoutingTable::UpdateCloseNodeChange(
     assert(false);
   } else if (difference_result.size() == 1) {  // Update matrix
     group_matrix_.AddConnectedPeer(difference_result.at(0));
-    in_connected_closest_nodes = difference_result.at(0);
   } else {
     new_connected_close_nodes.clear();
   }
