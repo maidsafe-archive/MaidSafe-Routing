@@ -96,7 +96,7 @@ class RoutingTable {
   bool client_mode() const { return kClientMode_; }
   friend class test::GenericNode;
   friend class GroupChangeHandler;
-
+  std::string PrintRoutingTable();
  private:
   RoutingTable(const RoutingTable&);
   RoutingTable& operator=(const RoutingTable&);
@@ -131,7 +131,7 @@ class RoutingTable {
       const NodeId& node_id,
       std::unique_lock<std::mutex>& lock) const;
   void UpdateNetworkStatus(uint16_t size) const;
-  std::string PrintRoutingTable();
+
   void PrintGroupMatrix();
 
   friend class test::RoutingTableTest;

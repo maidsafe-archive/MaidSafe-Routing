@@ -151,6 +151,28 @@ void SortNodeInfosFromTarget(const NodeId& target, std::vector<NodeInfo>& nodes)
               });
 }
 
+bool CompareListOfNodeInfos(const std::vector<NodeInfo>& lhs, const std::vector<NodeInfo>& rhs) {
+  if (lhs.size() != rhs.size())
+    return false;
+  for (auto& node_info : lhs) {
+    if (std::find_if(rhs.begin(),
+                     rhs.end(),
+                     [&](const NodeInfo& node) {
+                       return node.node_id == node_info.node_id;
+                     }) == rhs.end())
+      return false;
+  }
+
+    for (auto& node_info : rhs) {
+      if (std::find_if(lhs.begin(),
+                       lhs.end(),
+                       [&](const NodeInfo& node) {
+                         return node.node_id == node_info.node_id;
+                       }) == lhs.end())
+        return false;
+  }
+  return true;
+}
 
 }  // namespace test
 

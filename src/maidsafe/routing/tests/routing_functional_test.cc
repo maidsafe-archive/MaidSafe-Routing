@@ -556,6 +556,41 @@ TEST_F(RoutingNetworkTest, FUNC_SendToClientWithSameId) {
   EXPECT_EQ(2, size);
 }
 
+TEST_F(RoutingNetworkTest, FUNC_CheckForGroupUpdateSubscription) {
+  std::vector<NodeInfo> closest_nodes_info;
+  this->SetUpNetwork(12);
+  Sleep(boost::posix_time::seconds(2));
+  for (auto node : this->nodes_) {
+    closest_nodes_info = this->GetClosestNodes(node->node_id(), Parameters::closest_nodes_size);
+    LOG(kVerbose) << "size of closest_nodes: " << closest_nodes_info.size();
+
+    for (auto node_info : closest_nodes_info) {
+      int index(this->NodeIndex(node_info.node_id));
+      EXPECT_TRUE(this->nodes_[index]->NodeSubscriedForGroupUpdate(node->node_id()))
+          << DebugId(node_info.node_id) << " does not have " << DebugId(node->node_id());
+    }
+  }
+}
+
+TEST_F(RoutingNetworkTest, FUNC_CheckUnsubscription) {
+  this->SetUpNetwork(12);
+  size_t size(12);
+  size_t random_index(this->nodes_.size() % size);
+  NodePtr node(nodes_[random_index]);
+  NodeInfo furthest_closest(node->GetNthClosestNode(node->node_id(),
+                                                    Parameters::closest_nodes_size));
+  LOG(kVerbose) << "Furthest close node: " << DebugId(furthest_closest.node_id);
+  this->AddNode(false, GenerateUniqueRandomId(node->node_id(), 30));
+  int index(this->NodeIndex(furthest_closest.node_id));
+  EXPECT_FALSE(this->nodes_[index]->NodeSubscriedForGroupUpdate(
+      node->node_id())) << DebugId(furthest_closest.node_id) << " hase "
+                        << DebugId(node->node_id());
+  EXPECT_TRUE(this->nodes_[size]->NodeSubscriedForGroupUpdate(
+      node->node_id())) << DebugId(this->nodes_[size]->node_id())
+                        << " does not have " << DebugId(node->node_id());
+}
+
+
 TEST_F(RoutingNetworkTest, FUNC_NodeRemoved) {
   this->SetUpNetwork(kServerSize);
   size_t random_index(RandomUint32() % this->nodes_.size());

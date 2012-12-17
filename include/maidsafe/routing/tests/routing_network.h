@@ -104,6 +104,7 @@ class GenericNode {
   NodeId GetRandomExistingNode() const;
   void AddNodeToRandomNodeHelper(const NodeId& node_id);
   void RemoveNodeFromRandomNodeHelper(const NodeId& node_id);
+  bool NodeSubscriedForGroupUpdate(const NodeId& node_id);
 
   void PostTaskToAsioService(std::function<void()> functor);
   rudp::NatType nat_type();
@@ -158,6 +159,7 @@ class GenericNetwork : public testing::Test {
   void ClearMessages();
   int NodeIndex(const NodeId& node_id);
   std::vector<NodeId> GetGroupForId(const NodeId& node_id);
+  std::vector<NodeInfo> GetClosestNodes(const NodeId& target_id, const uint32_t& quantity);
 
  private:
   uint16_t NonClientNodesSize() const;

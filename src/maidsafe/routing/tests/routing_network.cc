@@ -198,6 +198,17 @@ void GenericNode::RemoveNodeFromRandomNodeHelper(const NodeId& node_id) {
   routing_->pimpl_->random_node_helper_.Remove(node_id);
 }
 
+bool GenericNode::NodeSubscriedForGroupUpdate(const NodeId& node_id) {
+  LOG(kVerbose) << DebugId(this->node_id()) << " has "
+               << routing_->pimpl_->group_change_handler_.update_subscribers_.size()
+               << " nodes subscribed for update";
+  return (std::find_if(routing_->pimpl_->group_change_handler_.update_subscribers_.begin(),
+                      routing_->pimpl_->group_change_handler_.update_subscribers_.end(),
+                      [&](const NodeInfo& node) {
+                        return node.node_id == node_id;
+                      }) != routing_->pimpl_->group_change_handler_.update_subscribers_.end());
+}
+
 void GenericNode::Send(const NodeId& destination_id,
                        const NodeId& group_claim,
                        const std::string& data,
@@ -590,6 +601,21 @@ std::vector<NodeId> GenericNetwork::GetGroupForId(const NodeId& node_id) {
                     });
   return std::vector<NodeId>(group_ids.begin(),
                              group_ids.begin() + Parameters::node_group_size - 1);
+}
+
+std::vector<NodeInfo> GenericNetwork::GetClosestNodes(const NodeId& target_id, const uint32_t& quantity) {
+  std::vector<NodeInfo> closet_nodes;
+  for (auto node : nodes_)
+    closet_nodes.push_back(node->node_info_plus_->node_info);
+  uint32_t size = std::min(quantity + 1, static_cast<uint32_t>(nodes_.size()));
+  std::lock_guard<std::mutex> lock(mutex_);
+  std::partial_sort(closet_nodes.begin(),
+                    closet_nodes.begin() + size,
+                    closet_nodes.end(),
+                    [&](const NodeInfo& lhs, const NodeInfo& rhs) {
+                      return NodeId::CloserToTarget(lhs.node_id, rhs.node_id, target_id);
+                    });
+  return std::vector<NodeInfo>(closet_nodes.begin() + 1, closet_nodes.begin() + size);
 }
 
 uint16_t GenericNetwork::NonClientNodesSize() const {

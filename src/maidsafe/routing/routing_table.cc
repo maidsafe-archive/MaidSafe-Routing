@@ -487,7 +487,7 @@ void RoutingTable::NthElementSortFromTarget(const NodeId& target,
   assert((nodes_.size() >= nth_element) &&
          "This should only be called when n is at max the size of RT");
   std::nth_element(nodes_.begin(),
-                   nodes_.begin() + nth_element,
+                   nodes_.begin() + nth_element - 1,
                    nodes_.end(),
                    [target](const NodeInfo& lhs, const NodeInfo& rhs) {
                      return NodeId::CloserToTarget(lhs.node_id, rhs.node_id, target);
@@ -591,6 +591,7 @@ NodeInfo RoutingTable::GetNthClosestNode(const NodeId& target_id, uint16_t node_
   }
   NthElementSortFromTarget(target_id, node_number, lock);
   return nodes_[node_number - 1];
+
 }
 
 std::vector<NodeId> RoutingTable::GetClosestNodes(const NodeId& target_id, uint16_t number_to_get) {

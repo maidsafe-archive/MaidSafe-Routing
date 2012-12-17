@@ -58,9 +58,11 @@ int NetworkStatus(const bool& client, const int& status);
 
 void SortFromTarget(const NodeId& target, std::vector<NodeInfo>& nodes);
 
-void SortIdsFromTarget(const NodeId& target, std::vector<NodeInfo>& nodes);
+void SortIdsFromTarget(const NodeId& target, std::vector<NodeId>& nodes);
 
 void SortNodeInfosFromTarget(const NodeId& target, std::vector<NodeInfo>& nodes);
+
+bool CompareListOfNodeInfos(const std::vector<NodeInfo>& lhs, const std::vector<NodeInfo>& rhs);
 
 }  // namespace test
 

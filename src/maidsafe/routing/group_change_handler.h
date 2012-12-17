@@ -27,6 +27,10 @@ namespace maidsafe {
 
 namespace routing {
 
+namespace test {
+  class GenericNode;
+}
+
 namespace protobuf { class Message; }
 
 class GroupChangeHandler {
@@ -37,8 +41,10 @@ class GroupChangeHandler {
   void UpdateGroupChange(const NodeId& node_id, std::vector<NodeInfo> close_nodes);
   void UpdatePendingGroupChange(const NodeId& node_id);
   void ClosestNodesUpdate(protobuf::Message& message);
-  void SendSubscribeRpc(const bool& subscribe, const NodeInfo node_info);
+  void SendSubscribeRpc(const bool& subscribe, const NodeInfo& node_info);
   void ClosestNodesUpdateSubscribe(protobuf::Message& message);
+
+  friend class test::GenericNode;
  private:
   struct PendingNotification {
     PendingNotification(const NodeId& node_id_in, std::vector<NodeInfo> close_nodes_in);

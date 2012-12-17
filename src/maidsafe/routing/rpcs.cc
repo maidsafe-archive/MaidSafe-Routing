@@ -251,6 +251,7 @@ protobuf::Message ClosestNodesUpdateRequest(
   message.set_request(true);
   message.set_client_node(false);
   message.set_hops_to_live(Parameters::hops_to_live);
+  message.set_id(RandomUint32() % 10000);
   assert(message.IsInitialized() && "Unintialised message");
   return message;
 }
