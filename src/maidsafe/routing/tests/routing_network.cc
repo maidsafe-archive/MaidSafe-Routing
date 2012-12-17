@@ -627,7 +627,7 @@ bool GenericNetwork::RestoreComposition() {
   while (ClientIndex() < kServerSize) {
     AddNode(false, NodeId());
   }
-  if (!ClientIndex() == kServerSize) {
+  if (ClientIndex() != kServerSize) {
     LOG(kError) << "Failed to restore number of servers. Actual: " << ClientIndex() <<
                    " Sought: " << kServerSize;
     return false;
@@ -639,12 +639,12 @@ bool GenericNetwork::RestoreComposition() {
   while (nodes_.size() < kNetworkSize) {
     AddNode(true, NodeId());
   }
-  if (!ClientIndex() == kServerSize) {
+  if (ClientIndex() != kServerSize) {
     LOG(kError) << "Failed to maintain number of servers. Actual: " << ClientIndex() <<
                    " Sought: " << kServerSize;
     return false;
   }
-  if (!nodes_.size() == kNetworkSize) {
+  if (nodes_.size() != kNetworkSize) {
     LOG(kError) << "Failed to restore number of clients. Actual: "
                 << nodes_.size() - ClientIndex()
                 << " Sought: " << kClientSize;
