@@ -34,9 +34,8 @@ GroupChangeHandler::GroupChangeHandler(RoutingTable& routing_table, NetworkUtils
     update_subscribers_() {}
 
 GroupChangeHandler::~GroupChangeHandler() {
-  LOG(kVerbose) << "GroupChangeHandler::~GroupChangeHandler() "
-                << DebugId(routing_table_.kNodeId());
   std::lock_guard<std::mutex> lock(mutex_);
+  update_subscribers_.clear();
 }
 
 GroupChangeHandler::PendingNotification::PendingNotification(const NodeId& node_id_in,
@@ -64,7 +63,7 @@ void GroupChangeHandler::ClosestNodesUpdate(protobuf::Message& message) {
 
   std::vector<NodeInfo> closest_nodes;
   NodeInfo node_info;
-  for (const protobuf::BasicNodeInfo& basic_info : closest_node_update.nodes_info()) {
+  for (auto& basic_info : closest_node_update.nodes_info()) {
     if (CheckId(basic_info.node_id())) {
       node_info.node_id = NodeId(basic_info.node_id());
       node_info.rank = basic_info.rank();
@@ -103,6 +102,7 @@ void GroupChangeHandler::ClosestNodesUpdateSubscribe(protobuf::Message& message)
 }
 
 void GroupChangeHandler::Unsubscribe(NodeId node_id) {
+  LOG(kVerbose) << "[" << DebugId(routing_table_.kNodeId()) << "] removing " << DebugId(node_id);
   std::lock_guard<std::mutex> lock(mutex_);
   update_subscribers_.erase(std::remove_if(update_subscribers_.begin(),
                                            update_subscribers_.end(),
@@ -112,23 +112,17 @@ void GroupChangeHandler::Unsubscribe(NodeId node_id) {
 }
 
 void GroupChangeHandler::Subscribe(NodeId node_id) {
+  LOG(kVerbose) << "[" << DebugId(routing_table_.kNodeId()) << "] adding " << DebugId(node_id);
   NodeInfo node_info;
   std::vector<NodeInfo> connected_closest_nodes;
   {
     std::lock_guard<std::mutex> lock(mutex_);
     connected_closest_nodes = routing_table_.GetClosestNodeInfo(routing_table_.kNodeId(),
                                                                 Parameters::closest_nodes_size);
-    for (auto node : update_subscribers_) {
-      LOG(kVerbose) << DebugId(node.node_id) << ", " << DebugId(routing_table_.kNodeId());
-    }
-    size_t size(update_subscribers_.size());
-    LOG(kVerbose) << "write size: " << size << ", " << DebugId(node_id);
     if (routing_table_.GetNodeInfo(node_id, node_info)) {
-      LOG(kVerbose) << "Subscribe 1: " << DebugId(node_info.node_id);
       if (std::find_if(update_subscribers_.begin(),
                        update_subscribers_.end(),
                        [=](const NodeInfo& node)->bool {
-                         LOG(kVerbose) << "Subscribe 2: " <<DebugId(node.node_id);
                          return node.node_id == node_id;
                        }) == update_subscribers_.end())
         update_subscribers_.push_back(node_info);

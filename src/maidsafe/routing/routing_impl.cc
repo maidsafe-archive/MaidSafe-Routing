@@ -443,6 +443,11 @@ void Routing::Impl::DoOnMessageReceived(const std::string& message) {
       if (!source_id.IsZero())
         random_node_helper_.Add(source_id);
     }
+    {
+      std::lock_guard<std::mutex> lock(running_mutex_);
+      if (!running_)
+        return;
+    }
     message_handler_->HandleMessage(pb_message);
   } else {
     LOG(kWarning) << "Message received, failed to parse";

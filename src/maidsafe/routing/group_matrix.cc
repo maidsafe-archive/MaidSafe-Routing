@@ -30,6 +30,15 @@ GroupMatrix::GroupMatrix(const NodeId& this_node_id)
       unique_nodes_(),
       matrix_() {}
 
+GroupMatrix::~GroupMatrix() {
+  std::lock_guard<std::mutex> lock(mutex_);
+  unique_nodes_.clear();
+  for (auto& row : matrix_)
+    row.clear();
+  matrix_.clear();
+}
+
+
 void GroupMatrix::AddConnectedPeer(const NodeInfo& node_info) {
   std::lock_guard<std::mutex> lock(mutex_);
   LOG(kInfo) << "AddConnectedPeer : " << DebugId(node_info.node_id);
@@ -195,7 +204,8 @@ bool GroupMatrix::GetRow(const NodeId& row_id, std::vector<NodeInfo>& row_entrie
 std::vector<NodeInfo> GroupMatrix::GetClosestNodes(const uint32_t& size) {
   std::lock_guard<std::mutex> lock(mutex_);
   return std::vector<NodeInfo>(unique_nodes_.begin(),
-                             unique_nodes_.begin() + std::min(size, unique_nodes_.size()));
+                               unique_nodes_.begin() + std::min(static_cast<size_t>(size),
+                                                                unique_nodes_.size()));
 }
 
 std::vector<NodeInfo> GroupMatrix::GetUniqueNodes() {

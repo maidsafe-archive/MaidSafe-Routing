@@ -32,6 +32,7 @@ struct NodeInfo;
 class GroupMatrix {
  public:
   explicit GroupMatrix(const NodeId& this_node_id);
+  ~GroupMatrix();
 
   void AddConnectedPeer(const NodeInfo& node_info);
 

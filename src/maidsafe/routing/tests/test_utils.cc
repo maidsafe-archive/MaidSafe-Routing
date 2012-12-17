@@ -140,9 +140,17 @@ void SortFromTarget(const NodeId& target, std::vector<NodeInfo>& nodes) {
 void SortIdsFromTarget(const NodeId& target, std::vector<NodeId>& nodes) {
   std::sort(nodes.begin(), nodes.end(),
             [target] (const NodeId& lhs, const NodeId& rhs) {
-                return (lhs ^ target) < (rhs ^ target);
+                return NodeId::CloserToTarget(lhs, rhs, target);
               });
 }
+
+void SortNodeInfosFromTarget(const NodeId& target, std::vector<NodeInfo>& nodes) {
+  std::sort(nodes.begin(), nodes.end(),
+            [target] (const NodeInfo& lhs, const NodeInfo& rhs) {
+                return NodeId::CloserToTarget(lhs.node_id, rhs.node_id, target);
+              });
+}
+
 
 }  // namespace test
 

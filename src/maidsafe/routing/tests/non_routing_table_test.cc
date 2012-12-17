@@ -314,15 +314,19 @@ TEST_F(NonRoutingTableTest, FUNC_IsConnected) {
 TEST_F(BasicNonRoutingTableTest, BEH_IsThisNodeInRange) {
   NonRoutingTable non_routing_table(fob_);
 
-  std::vector<NodeId> nodes;
+  std::vector<NodeInfo> nodes;
+  NodeInfo node_info;
   for (int i(0); i < 101; ++i)
-    nodes.push_back(NodeId(NodeId::kRandomId));
-  SortIdsFromTarget(non_routing_table.kNodeId(), nodes);
-  NodeId furthest_close_node_id(nodes.at(50));
+    node_info.node_id = NodeId(NodeId::kRandomId);
+    nodes.push_back(node_info);
+  SortNodeInfosFromTarget(non_routing_table.kNodeId(), nodes);
+  NodeInfo furthest_close_node_id(nodes.at(50));
   for (int i(0); i < 50; ++i)
-    EXPECT_TRUE(non_routing_table.IsThisNodeInRange(nodes.at(i), furthest_close_node_id));
+    EXPECT_TRUE(non_routing_table.IsThisNodeInRange(nodes.at(i).node_id,
+                                                    furthest_close_node_id.node_id));
   for (int i(51); i < 101; ++i)
-    EXPECT_FALSE(non_routing_table.IsThisNodeInRange(nodes.at(i), furthest_close_node_id));
+    EXPECT_FALSE(non_routing_table.IsThisNodeInRange(nodes.at(i).node_id,
+                                                     furthest_close_node_id.node_id));
 }
 
 }  // namespace test
