@@ -603,7 +603,8 @@ std::vector<NodeId> GenericNetwork::GetGroupForId(const NodeId& node_id) {
                              group_ids.begin() + Parameters::node_group_size - 1);
 }
 
-std::vector<NodeInfo> GenericNetwork::GetClosestNodes(const NodeId& target_id, const uint32_t& quantity) {
+std::vector<NodeInfo> GenericNetwork::GetClosestNodes(const NodeId& target_id,
+                                                      const uint32_t& quantity) {
   std::vector<NodeInfo> closet_nodes;
   for (auto node : nodes_)
     closet_nodes.push_back(node->node_info_plus_->node_info);

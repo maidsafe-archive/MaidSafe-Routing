@@ -97,7 +97,7 @@ NodeInfo GroupMatrix::GetConnectedPeerFor(const NodeId& target_node_id) {
 }
 
 NodeId GetConnectedPeerClosestTo(const NodeId& target_node_id) {
-  // TODO:(Prakash) : Implement
+  // TODO(Prakash): Implement
   return target_node_id;
 }
 

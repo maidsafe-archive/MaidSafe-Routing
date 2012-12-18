@@ -589,7 +589,6 @@ NodeInfo RoutingTable::GetNthClosestNode(const NodeId& target_id, uint16_t node_
   }
   NthElementSortFromTarget(target_id, node_number, lock);
   return nodes_[node_number - 1];
-
 }
 
 std::vector<NodeId> RoutingTable::GetClosestNodes(const NodeId& target_id, uint16_t number_to_get) {

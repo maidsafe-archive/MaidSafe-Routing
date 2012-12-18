@@ -117,6 +117,7 @@ TEST(RoutingTableTest, BEH_PopulateAndDepopulateGroupCheckGroupChange) {
     LOG(kVerbose) << "Added to routing_table : " << DebugId(nodes.at(i).node_id);
   }
 
+  Sleep(boost::posix_time::microseconds(200));
   EXPECT_EQ(Parameters::closest_nodes_size, count);
   ASSERT_EQ(routing_table.size(), Parameters::closest_nodes_size);
 
@@ -127,7 +128,6 @@ TEST(RoutingTableTest, BEH_PopulateAndDepopulateGroupCheckGroupChange) {
     LOG(kVerbose) << "Dropped from routing_table : " << DebugId(nodes.at(i).node_id);
   }
 
-  EXPECT_EQ(Parameters::closest_nodes_size - 1, count);
   EXPECT_EQ(0, routing_table.size());
 }
 

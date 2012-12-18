@@ -279,7 +279,6 @@ protobuf::Message ClosestNodesUpdateSubscrirbe(
   message.set_id(RandomUint32() % 10000);
   assert(message.IsInitialized() && "Unintialised message");
   return message;
-
 }
 
 

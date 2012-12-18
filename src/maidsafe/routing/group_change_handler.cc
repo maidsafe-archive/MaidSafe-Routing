@@ -12,6 +12,8 @@
 
 #include "maidsafe/routing/group_change_handler.h"
 
+#include <string>
+
 #include "maidsafe/common/log.h"
 #include "maidsafe/common/node_id.h"
 #include "maidsafe/common/utils.h"
@@ -134,7 +136,7 @@ void GroupChangeHandler::Subscribe(NodeId node_id) {
     }
   }
   if (node_info.node_id != NodeId()) {
-    assert (connected_closest_nodes.size() <= Parameters::closest_nodes_size);
+    assert(connected_closest_nodes.size() <= Parameters::closest_nodes_size);
     protobuf::Message closest_nodes_update_rpc(
         rpcs::ClosestNodesUpdateRequest(node_info.node_id,
                                         routing_table_.kNodeId(),
@@ -157,24 +159,14 @@ void GroupChangeHandler::UpdateGroupChange(const NodeId& node_id,
   } else {
     LOG(kVerbose) << DebugId(routing_table_.kNodeId()) << "UpdateGroupChange for failed"
                   << DebugId(node_id) << " size of update: " << close_nodes.size();
-    //AddPendingNotification(node_id, close_nodes);
   }
   SendSubscribeRpc(true, NodeInfo());
 }
 
-//void GroupChangeHandler::UpdatePendingGroupChange(const NodeId& node_id) {
-//  std::lock_guard<std::mutex> lock(mutex_);
-//  assert(routing_table_.IsConnected(node_id));
-//  std::vector<NodeInfo> close_nodes(GetAndRemovePendingNotification(node_id));
-//  if (!close_nodes.empty()) {
-//    routing_table_.GroupUpdateFromConnectedPeer(node_id, close_nodes);
-//  }
-//}
-
 void GroupChangeHandler::SendClosestNodesUpdateRpcs(const std::vector<NodeInfo>& closest_nodes) {
   if (closest_nodes.size() < Parameters::closest_nodes_size)
     return;
-  assert (closest_nodes.size() <= Parameters::closest_nodes_size);
+  assert(closest_nodes.size() <= Parameters::closest_nodes_size);
   std::lock_guard<std::mutex> lock(mutex_);
   for (auto itr(update_subscribers_.begin()); itr != update_subscribers_.end(); ++itr) {
     protobuf::Message closest_nodes_update_rpc(
@@ -182,35 +174,6 @@ void GroupChangeHandler::SendClosestNodesUpdateRpcs(const std::vector<NodeInfo>&
     network_.SendToDirect(closest_nodes_update_rpc, itr->node_id, itr->connection_id);
   }
 }
-
-//void GroupChangeHandler::AddPendingNotification(const NodeId& node_id,
-//                                                std::vector<NodeInfo> close_nodes) {
-//  auto itr(std::find_if(pending_notifications_.begin(),
-//                        pending_notifications_.end(),
-//                        [node_id](const PendingNotification& pending_notification) {
-//                          return (node_id == pending_notification.node_id);
-//                        }));
-//  if (itr != pending_notifications_.end()) {
-//    itr->close_nodes.swap(close_nodes);
-//  } else {
-//    pending_notifications_.push_back(PendingNotification(node_id, close_nodes));
-//  }
-//}
-
-//std::vector<NodeInfo> GroupChangeHandler::GetAndRemovePendingNotification(const NodeId& node_id) {
-//  auto itr(std::find_if(pending_notifications_.begin(),
-//                        pending_notifications_.end(),
-//                        [node_id](const PendingNotification& pending_notification) {
-//                          return (node_id == pending_notification.node_id);
-//                        }));
-//  if (itr != pending_notifications_.end()) {
-//    std::vector<NodeInfo> close_nodes(itr->close_nodes);
-//    pending_notifications_.erase(itr);
-//    return close_nodes;
-//  } else {
-//    return std::vector<NodeInfo>();
-//  }
-//}
 
 void GroupChangeHandler::SendSubscribeRpc(const bool& subscribe,
                                           const NodeInfo& node_info) {

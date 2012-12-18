@@ -236,7 +236,7 @@ void MessageHandler::HandleGroupMessageAsClosestNode(protobuf::Message& message)
   // the connected peer which has the closer node.
   bool is_group_leader(true);
 //  routing_table_.IsThisNodeInGroupForId(NodeId(message.destination_id()), is_group_leader);
-  if(!is_group_leader) {
+  if (!is_group_leader) {
     NodeInfo closest(
         routing_table_.GetConnectedPeerFromGroupMatrixClosestTo(NodeId(message.destination_id())));
     return network_.SendToDirect(message, closest.node_id, closest.connection_id);
