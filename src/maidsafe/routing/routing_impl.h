@@ -71,6 +71,8 @@ class Routing::Impl {
 
   NodeId GetRandomExistingNode() const { return random_node_helper_.Get(); }
 
+  bool IsNodeIdInGroupRange(const NodeId& node_id);
+
   void DisconnectFunctors();
 
   friend class test::GenericNode;

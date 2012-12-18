@@ -87,6 +87,9 @@ class Routing {
   // A queue with recently found nodes that can be extracted for upper layers to communicate with.
   NodeId GetRandomExistingNode() const;
 
+  // returns true if the node id provided is in group range of node.
+  bool IsNodeIdInGroupRange(const NodeId& node_id) const;
+
   // TODO(TEAM): This method shall be in private, however a temp solution in Lifestuff requires
   // calling this function to solve segmentation problem during tearing down of Credential Tests
   void DisconnectFunctors();

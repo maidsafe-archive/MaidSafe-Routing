@@ -49,10 +49,6 @@ RoutingTable::RoutingTable(const Fob& fob, bool client_mode)
       nodes_(),
       group_matrix_(kNodeId_) {}
 
-RoutingTable::~RoutingTable() {
-  std::unique_lock<std::mutex> lock(mutex_);
-  group_matrix_.Clear();
-}
 
 void RoutingTable::InitialiseFunctors(
     NetworkStatusFunctor network_status_functor,
@@ -256,6 +252,11 @@ bool RoutingTable::IsThisNodeInRange(const NodeId& target_id, const uint16_t ran
     return true;
   NthElementSortFromTarget(kNodeId_, range, lock);
   return NodeId::CloserToTarget(target_id, nodes_[range - 1].node_id, kNodeId_);
+}
+
+bool RoutingTable::IsNodeIdInGroupRange(const NodeId& node_id) {
+  bool is_group_leader;
+  return group_matrix_.IsThisNodeGroupMemberFor(node_id, is_group_leader);
 }
 
 bool RoutingTable::IsThisNodeClosestTo(const NodeId& target_id, bool ignore_exact_match) {

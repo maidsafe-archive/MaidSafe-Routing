@@ -32,7 +32,6 @@ struct NodeInfo;
 class GroupMatrix {
  public:
   explicit GroupMatrix(const NodeId& this_node_id);
-  ~GroupMatrix();
 
   void AddConnectedPeer(const NodeInfo& node_info);
 
@@ -75,7 +74,6 @@ class GroupMatrix {
   void PrintGroupMatrix();
 
   const NodeId kNodeId_;
-  mutable std::mutex mutex_;
   std::vector<NodeInfo> unique_nodes_;
   std::vector<std::vector<NodeInfo>> matrix_;
 };

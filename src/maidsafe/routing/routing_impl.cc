@@ -421,6 +421,10 @@ void Routing::Impl::Send(const NodeId& destination_id,
   }
 }
 
+bool Routing::Impl::IsNodeIdInGroupRange(const NodeId& node_id) {
+  return routing_table_.IsNodeIdInGroupRange(node_id);
+}
+
 void Routing::Impl::OnMessageReceived(const std::string& message) {
   std::lock_guard<std::mutex> lock(running_mutex_);
   if (running_)

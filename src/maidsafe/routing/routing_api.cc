@@ -53,6 +53,11 @@ NodeId Routing::GetRandomExistingNode() const {
   return pimpl_->GetRandomExistingNode();
 }
 
+bool Routing::IsNodeIdInGroupRange(const NodeId& node_id) const {
+  return pimpl_->IsNodeIdInGroupRange(node_id);
+}
+
+
 }  // namespace routing
 
 }  // namespace maidsafe

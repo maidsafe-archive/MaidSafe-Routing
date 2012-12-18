@@ -13,6 +13,8 @@
 #include "maidsafe/routing/group_change_handler.h"
 
 #include <string>
+#include <vector>
+#include <algorithm>
 
 #include "maidsafe/common/log.h"
 #include "maidsafe/common/node_id.h"
@@ -100,8 +102,7 @@ void GroupChangeHandler::ClosestNodesUpdateSubscribe(protobuf::Message& message)
 void GroupChangeHandler::Unsubscribe(NodeId node_id) {
   std::lock_guard<std::mutex> lock(mutex_);
   LOG(kVerbose) << "[" << DebugId(routing_table_.kNodeId())
-                << "] unsubscribing " << DebugId(node_id)
-                << " current size: "  << update_subscribers_.size();
+                << "] unsubscribing " << DebugId(node_id);
   update_subscribers_.erase(std::remove_if(update_subscribers_.begin(),
                                            update_subscribers_.end(),
                                            [&](const NodeInfo& node_info) {
