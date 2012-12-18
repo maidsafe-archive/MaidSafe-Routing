@@ -63,7 +63,6 @@ class GroupChangeHandler {
   std::mutex mutex_;
   RoutingTable& routing_table_;
   NetworkUtils& network_;
-  std::vector<PendingNotification> pending_notifications_;
   std::vector<NodeInfo> update_subscribers_;
 };
 

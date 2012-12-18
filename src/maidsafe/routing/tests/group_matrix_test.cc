@@ -28,8 +28,8 @@ namespace routing {
 namespace test {
 
 TEST(GroupMatrixTest, FUNC_EmptyMatrix) {
-  const NodeId node_id_0(NodeId::kRandomId);
-  GroupMatrix matrix(node_id_0);
+  const NodeId node_0(NodeId::kRandomId);
+  GroupMatrix matrix(node_0);
 
   EXPECT_EQ(0, matrix.GetConnectedPeers().size());
 
@@ -53,8 +53,8 @@ TEST(GroupMatrixTest, FUNC_EmptyMatrix) {
 }
 
 TEST(GroupMatrixTest, FUNC_AddSamePeerTwice) {
-  const NodeId node_id_0(NodeId::kRandomId);
-  GroupMatrix matrix(node_id_0);
+  const NodeId node_0(NodeId::kRandomId);
+  GroupMatrix matrix(node_0);
 
   EXPECT_EQ(0, matrix.GetConnectedPeers().size());
 
@@ -66,9 +66,9 @@ TEST(GroupMatrixTest, FUNC_AddSamePeerTwice) {
 }
 
 TEST(GroupMatrixTest, FUNC_OneRowOnly) {
-  NodeInfo node_id_0;
-  node_id_0.node_id = NodeId(NodeId::kRandomId);
-  GroupMatrix matrix(node_id_0.node_id);
+  NodeInfo node_0;
+  node_0.node_id = NodeId(NodeId::kRandomId);
+  GroupMatrix matrix(node_0.node_id);
 
   EXPECT_EQ(0, matrix.GetConnectedPeers().size());
 
@@ -125,18 +125,18 @@ TEST(GroupMatrixTest, FUNC_OneRowOnly) {
   NodeInfo target_id_2;
   target_id_2.node_id = NodeId(NodeId::kRandomId);
   std::vector<NodeInfo> node_ids(row_entries_1);
-  node_ids.push_back(node_id_0);
+  node_ids.push_back(node_0);
   node_ids.push_back(row_1);
   SortNodeInfosFromTarget(target_id_2.node_id, node_ids);
-  bool is_group_member((node_id_0.node_id ^ target_id_2.node_id) <=
+  bool is_group_member((node_0.node_id ^ target_id_2.node_id) <=
       (node_ids.at(Parameters::node_group_size - 1).node_id ^ target_id_2.node_id));
   EXPECT_EQ(is_group_member, matrix.IsThisNodeGroupMemberFor(target_id_2.node_id, is_group_leader));
 }
 
 TEST(GroupMatrixTest, FUNC_OneColumnOnly) {
-  NodeInfo node_id_0;
-  node_id_0.node_id = NodeId(NodeId::kRandomId);
-  GroupMatrix matrix(node_id_0.node_id);
+  NodeInfo node_0;
+  node_0.node_id = NodeId(NodeId::kRandomId);
+  GroupMatrix matrix(node_0.node_id);
 
   EXPECT_EQ(0, matrix.GetConnectedPeers().size());
 
@@ -160,8 +160,8 @@ TEST(GroupMatrixTest, FUNC_OneColumnOnly) {
   }
 
   // Check GetUniqueNodes
-  row_ids.push_back(node_id_0);
-  SortNodeInfosFromTarget(node_id_0.node_id, row_ids);
+  row_ids.push_back(node_0);
+  SortNodeInfosFromTarget(node_0.node_id, row_ids);
   EXPECT_TRUE(CompareListOfNodeInfos(row_ids, matrix.GetUniqueNodes()));
 
   // Check GetConnectedPeerFor
@@ -170,9 +170,9 @@ TEST(GroupMatrixTest, FUNC_OneColumnOnly) {
 }
 
 TEST(GroupMatrixTest, FUNC_RowsContainSameNodes) {
-  NodeInfo node_id_0;
-  node_id_0.node_id = NodeId(NodeId::kRandomId);
-  GroupMatrix matrix(node_id_0.node_id);
+  NodeInfo node_0;
+  node_0.node_id = NodeId(NodeId::kRandomId);
+  GroupMatrix matrix(node_0.node_id);
 
   // Populate matrix
   std::vector<NodeInfo> row_ids;
@@ -188,7 +188,7 @@ TEST(GroupMatrixTest, FUNC_RowsContainSameNodes) {
     row_entries.push_back(node_info);
   }
 
-  SortNodeInfosFromTarget(node_id_0.node_id, row_entries);
+  SortNodeInfosFromTarget(node_0.node_id, row_entries);
   std::vector<NodeInfo> row_result;
   for (auto row_id : row_ids) {
     matrix.AddConnectedPeer(row_id);
@@ -200,7 +200,7 @@ TEST(GroupMatrixTest, FUNC_RowsContainSameNodes) {
   }
 
   std::vector<NodeInfo> node_ids;
-  node_ids.push_back(node_id_0);
+  node_ids.push_back(node_0);
   for (auto row_id : row_ids)
     node_ids.push_back(row_id);
   for (auto row_entry : row_entries)
@@ -218,9 +218,9 @@ TEST(GroupMatrixTest, FUNC_RowsContainSameNodes) {
   for (uint32_t i(0); i < 20; ++i) {
     target_id = NodeId(NodeId::kRandomId);
     SortNodeInfosFromTarget(target_id, node_ids);
-    expect_is_group_member = ((node_id_0.node_id ^ target_id) <=
+    expect_is_group_member = ((node_0.node_id ^ target_id) <=
                               (node_ids.at(Parameters::node_group_size - 1).node_id ^ target_id));
-    expect_is_group_leader = (node_id_0.node_id == node_ids.at(0).node_id);
+    expect_is_group_leader = (node_0.node_id == node_ids.at(0).node_id);
     EXPECT_EQ(expect_is_group_member, matrix.IsThisNodeGroupMemberFor(target_id, is_group_leader));
     EXPECT_EQ(expect_is_group_leader, is_group_leader);
   }
@@ -231,9 +231,9 @@ TEST(GroupMatrixTest, FUNC_RowsContainSameNodes) {
 }
 
 TEST(GroupMatrixTest, FUNC_UpdateFromNonPeer) {
-  NodeInfo node_id_0;
-  node_id_0.node_id = NodeId(NodeId::kRandomId);
-  GroupMatrix matrix(node_id_0.node_id);
+  NodeInfo node_0;
+  node_0.node_id = NodeId(NodeId::kRandomId);
+  GroupMatrix matrix(node_0.node_id);
 
   EXPECT_EQ(0, matrix.GetConnectedPeers().size());
   NodeInfo node_id_1;
@@ -254,9 +254,9 @@ TEST(GroupMatrixTest, FUNC_UpdateFromNonPeer) {
 }
 
 TEST(GroupMatrixTest, FUNC_AddUpdateGetRemovePeers) {
-  NodeInfo node_id_0;
-  node_id_0.node_id = NodeId(NodeId::kRandomId);
-  GroupMatrix matrix(node_id_0.node_id);
+  NodeInfo node_0;
+  node_0.node_id = NodeId(NodeId::kRandomId);
+  GroupMatrix matrix(node_0.node_id);
 
   EXPECT_EQ(0, matrix.GetConnectedPeers().size());
 
@@ -270,11 +270,11 @@ TEST(GroupMatrixTest, FUNC_AddUpdateGetRemovePeers) {
     matrix.AddConnectedPeer(node_info);
     ++i;
     EXPECT_EQ(i, matrix.GetConnectedPeers().size());
-    SortNodeInfosFromTarget(node_id_0.node_id, row_ids);
+    SortNodeInfosFromTarget(node_0.node_id, row_ids);
     EXPECT_TRUE(CompareListOfNodeInfos(row_ids, matrix.GetConnectedPeers()));
   }
 
-  SortNodeInfosFromTarget(node_id_0.node_id, row_ids);
+  SortNodeInfosFromTarget(node_0.node_id, row_ids);
   EXPECT_TRUE(CompareListOfNodeInfos(row_ids, matrix.GetConnectedPeers()));
 
   // Update peers
@@ -293,11 +293,11 @@ TEST(GroupMatrixTest, FUNC_AddUpdateGetRemovePeers) {
     EXPECT_TRUE(CompareListOfNodeInfos(row_result, row_entries));
   }
 
-  SortNodeInfosFromTarget(node_id_0.node_id, row_ids);
+  SortNodeInfosFromTarget(node_0.node_id, row_ids);
   EXPECT_EQ(row_ids.size(), matrix.GetConnectedPeers().size());
 
   // Remove peers
-  SortNodeInfosFromTarget(node_id_0.node_id, row_ids);
+  SortNodeInfosFromTarget(node_0.node_id, row_ids);
   while (!row_ids.empty()) {
     uint32_t index(RandomUint32() % row_ids.size());
     matrix.RemoveConnectedPeer(row_ids.at(index));
@@ -309,9 +309,9 @@ TEST(GroupMatrixTest, FUNC_AddUpdateGetRemovePeers) {
 }
 
 TEST(GroupMatrixTest, FUNC_GetConnectedPeerFor) {
-  NodeInfo node_id_0;
-  node_id_0.node_id = NodeId(NodeId::kRandomId);
-  GroupMatrix matrix(node_id_0.node_id);
+  NodeInfo node_0;
+  node_0.node_id = NodeId(NodeId::kRandomId);
+  GroupMatrix matrix(node_0.node_id);
 
   EXPECT_EQ(0, matrix.GetConnectedPeers().size());
 
@@ -388,7 +388,7 @@ TEST(GroupMatrixTest, FUNC_GetConnectedPeerFor) {
   }
 
   // Verify matrix row ids
-  SortNodeInfosFromTarget(node_id_0.node_id, row_ids);
+  SortNodeInfosFromTarget(node_0.node_id, row_ids);
   EXPECT_TRUE(CompareListOfNodeInfos(row_ids, matrix.GetConnectedPeers()));
 
 
@@ -404,43 +404,36 @@ TEST(GroupMatrixTest, FUNC_GetConnectedPeerFor) {
 }
 
 TEST(GroupMatrixTest, FUNC_IsThisNodeGroupMemberFor) {
-  NodeInfo node_id_0;
-  node_id_0.node_id = NodeId(NodeId::kRandomId);
-  GroupMatrix matrix(node_id_0.node_id);
+  NodeInfo node_0;
+  node_0.node_id = NodeId(NodeId::kRandomId);
+  GroupMatrix matrix(node_0.node_id);
 
-  std::vector<NodeInfo> node_ids(1, node_id_0);
+  std::vector<NodeInfo> node_ids(1, node_0);
 
   // Populate matrix
-  NodeInfo row_id;
+  NodeInfo row_entry;
   std::vector<NodeInfo> row_entries;
   for (uint32_t j(0); j < Parameters::closest_nodes_size; ++j) {
     row_entries.clear();
-    row_id.node_id = NodeId(NodeId::kRandomId);
+    row_entry.node_id = NodeId(NodeId::kRandomId);
     uint32_t length(RandomUint32() % Parameters::closest_nodes_size);
     for (uint32_t i(0); i < length; ++i) {
       NodeInfo node;
       node.node_id = NodeId(NodeId::kRandomId);
       row_entries.push_back(node);
     }
-    matrix.AddConnectedPeer(row_id);
-    matrix.UpdateFromConnectedPeer(row_id.node_id, row_entries);
-    node_ids.push_back(row_id);
+    matrix.AddConnectedPeer(row_entry);
+    matrix.UpdateFromConnectedPeer(row_entry.node_id, row_entries);
+    node_ids.push_back(row_entry);
     for (auto node_id : row_entries)
       node_ids.push_back(node_id);
   }
 
   // Sort and deduplicate node_ids
-  SortNodeInfosFromTarget(node_id_0.node_id, node_ids);
-  auto itr = std::unique(node_ids.begin(),
-                         node_ids.end(),
-                         [&](const NodeInfo& lhs, const NodeInfo& rhs) {
-                           return lhs.node_id < rhs.node_id;
-                         });
-  node_ids.resize(itr - node_ids.begin());
-
+  SortNodeInfosFromTarget(node_0.node_id, node_ids);
   // Check if this node is group leader for different target NodeIds
   bool is_group_leader(false);
-  EXPECT_TRUE(matrix.IsThisNodeGroupMemberFor(node_id_0.node_id, is_group_leader));
+  EXPECT_TRUE(matrix.IsThisNodeGroupMemberFor(node_0.node_id, is_group_leader));
   EXPECT_TRUE(is_group_leader);
 
   NodeId target_id;
@@ -449,17 +442,19 @@ TEST(GroupMatrixTest, FUNC_IsThisNodeGroupMemberFor) {
   for (int i(0); i < 20; ++i) {
     target_id = NodeId(NodeId::kRandomId);
     SortNodeInfosFromTarget(target_id, node_ids);
-    expect_is_group_member = ((node_id_0.node_id ^ target_id) <=
-                              (node_ids.at(Parameters::node_group_size - 1).node_id ^ target_id));
-    expect_is_group_leader = (node_id_0.node_id == node_ids.at(0).node_id);
+    size_t size(node_ids.size());
+    size++;
+    expect_is_group_member = NodeId::CloserToTarget(node_0.node_id,
+                                 node_ids.at(Parameters::node_group_size).node_id, target_id);
+    expect_is_group_leader = (node_0.node_id == node_ids.at(0).node_id);
     EXPECT_EQ(expect_is_group_member, matrix.IsThisNodeGroupMemberFor(target_id, is_group_leader));
     EXPECT_EQ(expect_is_group_leader, is_group_leader);
   }
 }
 
 TEST(GroupMatrixTest, FUNC_UpdateFromConnectedPeer) {
-  const NodeId node_id_0(NodeId::kRandomId);
-  GroupMatrix matrix(node_id_0);
+  const NodeId node_0(NodeId::kRandomId);
+  GroupMatrix matrix(node_0);
 
   EXPECT_EQ(0, matrix.GetConnectedPeers().size());
 
@@ -503,7 +498,7 @@ TEST(GroupMatrixTest, FUNC_UpdateFromConnectedPeer) {
   }
 
   // Verify matrix row ids
-  SortNodeInfosFromTarget(node_id_0, row_ids);
+  SortNodeInfosFromTarget(node_0, row_ids);
   EXPECT_TRUE(CompareListOfNodeInfos(row_ids, matrix.GetConnectedPeers()));
 
   // Update matrix row

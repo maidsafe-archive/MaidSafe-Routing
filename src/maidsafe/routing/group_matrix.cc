@@ -31,16 +31,12 @@ GroupMatrix::GroupMatrix(const NodeId& this_node_id)
       matrix_() {}
 
 GroupMatrix::~GroupMatrix() {
-  std::lock_guard<std::mutex> lock(mutex_);
-  unique_nodes_.clear();
-  for (auto& row : matrix_)
-    row.clear();
-  matrix_.clear();
+//  std::lock_guard<std::mutex> lock(mutex_);
 }
 
 
 void GroupMatrix::AddConnectedPeer(const NodeInfo& node_info) {
-  std::lock_guard<std::mutex> lock(mutex_);
+//  std::lock_guard<std::mutex> lock(mutex_);
   LOG(kInfo) << "AddConnectedPeer : " << DebugId(node_info.node_id);
   for (auto nodes : matrix_) {
     if (nodes.at(0).node_id == node_info.node_id) {
@@ -58,7 +54,7 @@ void GroupMatrix::AddConnectedPeer(const NodeInfo& node_info) {
 }
 
 void GroupMatrix::RemoveConnectedPeer(const NodeInfo& node_info) {
-  std::lock_guard<std::mutex> lock(mutex_);
+//  std::lock_guard<std::mutex> lock(mutex_);
   matrix_.erase(std::remove_if(matrix_.begin(),
                                matrix_.end(),
                                [node_info](const std::vector<NodeInfo> nodes) {
@@ -68,7 +64,7 @@ void GroupMatrix::RemoveConnectedPeer(const NodeInfo& node_info) {
 }
 
 std::vector<NodeInfo> GroupMatrix::GetConnectedPeers() {
-  std::lock_guard<std::mutex> lock(mutex_);
+//  std::lock_guard<std::mutex> lock(mutex_);
   std::vector<NodeInfo> connected_peers;
   for (auto nodes : matrix_)
     connected_peers.push_back(nodes.at(0));
@@ -77,7 +73,7 @@ std::vector<NodeInfo> GroupMatrix::GetConnectedPeers() {
 }
 
 NodeInfo GroupMatrix::GetConnectedPeerFor(const NodeId& target_node_id) {
-  std::lock_guard<std::mutex> lock(mutex_);
+//  std::lock_guard<std::mutex> lock(mutex_);
 
   for (auto nodes : matrix_) {
     if (nodes.at(0).node_id == target_node_id) {
@@ -102,7 +98,7 @@ NodeId GetConnectedPeerClosestTo(const NodeId& target_node_id) {
 }
 
 bool GroupMatrix::IsThisNodeGroupMemberFor(const NodeId& target_id, bool& is_group_leader) {
-  std::lock_guard<std::mutex> lock(mutex_);
+//  std::lock_guard<std::mutex> lock(mutex_);
   is_group_leader = false;
   if (unique_nodes_.empty()) {
     is_group_leader = true;
@@ -130,7 +126,7 @@ bool GroupMatrix::IsThisNodeGroupMemberFor(const NodeId& target_id, bool& is_gro
 
 void GroupMatrix::UpdateFromConnectedPeer(const NodeId& peer,
                                           const std::vector<NodeInfo>& nodes) {
-  std::lock_guard<std::mutex> lock(mutex_);
+//  std::lock_guard<std::mutex> lock(mutex_);
   if (peer.IsZero()) {
     assert(false && "Invalid peer node id.");
     return;
@@ -166,7 +162,7 @@ void GroupMatrix::UpdateFromConnectedPeer(const NodeId& peer,
 }
 
 bool GroupMatrix::IsRowEmpty(const NodeInfo& node_info) {
-  std::lock_guard<std::mutex> lock(mutex_);
+//  std::lock_guard<std::mutex> lock(mutex_);
   auto group_itr(matrix_.begin());
   for (group_itr = matrix_.begin(); group_itr != matrix_.end(); ++group_itr) {
     if ((*group_itr).at(0).node_id == node_info.node_id)
@@ -178,7 +174,7 @@ bool GroupMatrix::IsRowEmpty(const NodeInfo& node_info) {
 }
 
 bool GroupMatrix::GetRow(const NodeId& row_id, std::vector<NodeInfo>& row_entries) {
-  std::lock_guard<std::mutex> lock(mutex_);
+//  std::lock_guard<std::mutex> lock(mutex_);
   if (row_id.IsZero()) {
     assert(false && "Invalid node id.");
     return false;
@@ -202,20 +198,22 @@ bool GroupMatrix::GetRow(const NodeId& row_id, std::vector<NodeInfo>& row_entrie
 }
 
 std::vector<NodeInfo> GroupMatrix::GetClosestNodes(const uint32_t& size) {
-  std::lock_guard<std::mutex> lock(mutex_);
+//  std::lock_guard<std::mutex> lock(mutex_);
   return std::vector<NodeInfo>(unique_nodes_.begin(),
                                unique_nodes_.begin() + std::min(static_cast<size_t>(size),
                                                                 unique_nodes_.size()));
 }
 
 std::vector<NodeInfo> GroupMatrix::GetUniqueNodes() {
-  std::lock_guard<std::mutex> lock(mutex_);
+//  std::lock_guard<std::mutex> lock(mutex_);
   return unique_nodes_;
 }
 
 void GroupMatrix::Clear() {
+  unique_nodes_.clear();
+  for (auto& row : matrix_)
+    row.clear();
   matrix_.clear();
-  UpdateUniqueNodeList();
 }
 
 void GroupMatrix::UpdateUniqueNodeList() {
@@ -228,10 +226,14 @@ void GroupMatrix::UpdateUniqueNodeList() {
     for (size_t i(0); i !=  itr->size(); ++i)
       unique_nodes_.push_back((*itr).at(i));
 
+  size_t size(unique_nodes_.size());
+  size--;
+  int index(0);
   // Removing duplicates
   std::sort(unique_nodes_.begin(),
             unique_nodes_.end(),
-            [=](const NodeInfo& lhs, const NodeInfo& rhs) {
+            [&](const NodeInfo& lhs, const NodeInfo& rhs)->bool {
+              ++index;
               return (lhs.node_id ^ kNodeId_) < (rhs.node_id ^ kNodeId_);
             });
 
@@ -256,7 +258,7 @@ void GroupMatrix::PartialSortFromTarget(const NodeId& target,
 }
 
 void GroupMatrix::PrintGroupMatrix() {
-  std::lock_guard<std::mutex> lock(mutex_);
+//  std::lock_guard<std::mutex> lock(mutex_);
   auto group_itr(matrix_.begin());
   std::string tab("\t");
   std::string output("Group matrix of node with NodeID: " + DebugId(kNodeId_));

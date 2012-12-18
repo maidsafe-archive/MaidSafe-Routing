@@ -32,18 +32,12 @@ GroupChangeHandler::GroupChangeHandler(RoutingTable& routing_table, NetworkUtils
   : mutex_(),
     routing_table_(routing_table),
     network_(network),
-    pending_notifications_(),
     update_subscribers_() {}
 
 GroupChangeHandler::~GroupChangeHandler() {
   std::lock_guard<std::mutex> lock(mutex_);
   update_subscribers_.clear();
 }
-
-GroupChangeHandler::PendingNotification::PendingNotification(const NodeId& node_id_in,
-                                                             std::vector<NodeInfo> close_nodes_in)
-    : node_id(node_id_in),
-      close_nodes(close_nodes_in) {}
 
 void GroupChangeHandler::ClosestNodesUpdate(protobuf::Message& message) {
   if (message.destination_id() != routing_table_.kFob().identity.string()) {
@@ -121,9 +115,9 @@ void GroupChangeHandler::Subscribe(NodeId node_id) {
   NodeInfo node_info;
   std::vector<NodeInfo> connected_closest_nodes;
   {
-    std::lock_guard<std::mutex> lock(mutex_);
     connected_closest_nodes = routing_table_.GetClosestNodeInfo(routing_table_.kNodeId(),
                                                                 Parameters::closest_nodes_size);
+   std::lock_guard<std::mutex> lock(mutex_);
     if (routing_table_.GetNodeInfo(node_id, node_info)) {
       if (std::find_if(update_subscribers_.begin(),
                        update_subscribers_.end(),
@@ -151,7 +145,6 @@ void GroupChangeHandler::Subscribe(NodeId node_id) {
 
 void GroupChangeHandler::UpdateGroupChange(const NodeId& node_id,
                                            std::vector<NodeInfo> close_nodes) {
-  std::lock_guard<std::mutex> lock(mutex_);
   if (routing_table_.IsConnected(node_id)) {
     LOG(kVerbose) << DebugId(routing_table_.kNodeId()) << "UpdateGroupChange for "
                   << DebugId(node_id) << " size of update: " << close_nodes.size();
@@ -166,9 +159,14 @@ void GroupChangeHandler::UpdateGroupChange(const NodeId& node_id,
 void GroupChangeHandler::SendClosestNodesUpdateRpcs(const std::vector<NodeInfo>& closest_nodes) {
   if (closest_nodes.size() < Parameters::closest_nodes_size)
     return;
+  std::vector<NodeInfo> update_subscribers;
   assert(closest_nodes.size() <= Parameters::closest_nodes_size);
-  std::lock_guard<std::mutex> lock(mutex_);
-  for (auto itr(update_subscribers_.begin()); itr != update_subscribers_.end(); ++itr) {
+  {
+    std::lock_guard<std::mutex> lock(mutex_);
+    update_subscribers.resize(update_subscribers_.size());
+    std::copy(update_subscribers_.begin(), update_subscribers_.end(), update_subscribers.begin());
+  }
+  for (auto itr(update_subscribers.begin()); itr != update_subscribers.end(); ++itr) {
     protobuf::Message closest_nodes_update_rpc(
         rpcs::ClosestNodesUpdateRequest(itr->node_id, routing_table_.kNodeId(), closest_nodes));
     network_.SendToDirect(closest_nodes_update_rpc, itr->node_id, itr->connection_id);

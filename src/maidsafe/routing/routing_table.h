@@ -60,6 +60,7 @@ typedef std::function<void(const bool& /*subscribe*/, NodeInfo /*node_info*/)>
 class RoutingTable {
  public:
   RoutingTable(const Fob& fob, bool client_mode);
+  ~RoutingTable();
   void InitialiseFunctors(NetworkStatusFunctor network_status_functor,
                           std::function<void(const NodeInfo&, bool)> remove_node_functor,
                           RemoveFurthestUnnecessaryNode remove_furthest_node,

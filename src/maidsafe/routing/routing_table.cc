@@ -49,6 +49,11 @@ RoutingTable::RoutingTable(const Fob& fob, bool client_mode)
       nodes_(),
       group_matrix_(kNodeId_) {}
 
+RoutingTable::~RoutingTable() {
+  std::unique_lock<std::mutex> lock(mutex_);
+  group_matrix_.Clear();
+}
+
 void RoutingTable::InitialiseFunctors(
     NetworkStatusFunctor network_status_functor,
     std::function<void(const NodeInfo&, bool)> remove_node_functor,
@@ -145,7 +150,7 @@ bool RoutingTable::AddOrCheckNode(NodeInfo peer, bool remove) {
       }
     }
 
-  if (subscribe_to_group_change_update_)
+    if (subscribe_to_group_change_update_)
       subscribe_to_group_change_update_(true, NodeInfo());
 
     if (!new_closest_nodes.empty()) {
@@ -275,7 +280,7 @@ bool RoutingTable::ConfirmGroupMembers(const NodeId& node1, const NodeId& node2)
 
 void RoutingTable::GroupUpdateFromConnectedPeer(const NodeId& peer,
                                                 const std::vector<NodeInfo>& nodes) {
-  std::lock_guard<std::mutex> lock(mutex_);
+  std::unique_lock<std::mutex> lock(mutex_);
   group_matrix_.UpdateFromConnectedPeer(peer, nodes);
 }
 
@@ -285,12 +290,12 @@ void RoutingTable::UpdateCloseNodeChange(
     NodeInfo& out_of_connected_closest_nodes,
     std::vector<NodeInfo>& new_close_nodes) {
   assert(lock.owns_lock());
-  if (nodes_.size() == 1) {
-    std::vector<NodeInfo> old_row_ids(group_matrix_.GetConnectedPeers());
-    group_matrix_.Clear();
-    group_matrix_.AddConnectedPeer(nodes_.at(0));
-    return;
-  }
+//  if (nodes_.size() == 1) {
+//    std::vector<NodeInfo> old_row_ids(group_matrix_.GetConnectedPeers());
+//    group_matrix_.Clear();
+//    group_matrix_.AddConnectedPeer(nodes_.at(0));
+//    return;
+//  }
 
   auto count(std::min(Parameters::closest_nodes_size, static_cast<uint16_t>(nodes_.size())));
   PartialSortFromTarget(kNodeId_, count, lock);
@@ -342,7 +347,7 @@ void RoutingTable::UpdateCloseNodeChange(
     assert(false);
   } else if (difference_result.size() == 1) {  // Update matrix
     group_matrix_.AddConnectedPeer(difference_result.at(0));
-  } else {
+  } else if (out_of_connected_closest_nodes.node_id == NodeId()) {
     new_connected_close_nodes.clear();
   }
 
