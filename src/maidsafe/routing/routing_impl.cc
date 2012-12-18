@@ -58,12 +58,12 @@ Routing::Impl::Impl(const Fob& fob, bool client_mode)
       random_node_helper_(),
       routing_table_(kFob_, client_mode),
       non_routing_table_(kFob_),  // TODO(Prakash) : don't create NRT for client nodes (wrap both)
+      remove_furthest_node_(routing_table_, network_),
+      group_change_handler_(routing_table_, network_),
       message_handler_(),
       asio_service_(2),
       network_(routing_table_, non_routing_table_),
       timer_(asio_service_),
-      remove_furthest_node_(routing_table_, network_),
-      group_change_handler_(routing_table_, network_),
       re_bootstrap_timer_(asio_service_.service()),
       recovery_timer_(asio_service_.service()),
       setup_timer_(asio_service_.service()) {
@@ -228,10 +228,10 @@ void Routing::Impl::FindClosestNode(const boost::system::error_code& error_code,
   rudp::MessageSentFunctor message_sent_functor(
       [=](int message_sent) {
         if (message_sent == kSuccess)
-            LOG(kInfo) << "   [" << DebugId(kNodeId_) << "] sent : "
-                      << MessageTypeString(find_node_rpc) << " to   "
-                      << DebugId(network_.bootstrap_connection_id())
-                      << "   (id: " << find_node_rpc.id() << ")";
+            LOG(kVerbose) << "   [" << DebugId(kNodeId_) << "] sent : "
+                          << MessageTypeString(find_node_rpc) << " to   "
+                          << DebugId(network_.bootstrap_connection_id())
+                          << "   (id: " << find_node_rpc.id() << ")";
         else
           LOG(kError) << "Failed to send FindNodes RPC to bootstrap connection id : "
                       << DebugId(network_.bootstrap_connection_id());
@@ -394,12 +394,12 @@ void Routing::Impl::Send(const NodeId& destination_id,
                   NotifyNetworkStatus(kPartialJoinSessionEnded);
                 }
               } else {
-                LOG(kInfo) << "   [" << DebugId(kNodeId_) << "] sent : "
-                           << MessageTypeString(proto_message) << " to   "
-                           << HexSubstr(bootstrap_connection_id.string())
-                           << "   (id: " << proto_message.id() << ")"
-                           << " dst : " << HexSubstr(proto_message.destination_id())
-                           << " --Anonymous/Partial-joined--";
+                LOG(kVerbose) << "   [" << DebugId(kNodeId_) << "] sent : "
+                              << MessageTypeString(proto_message) << " to   "
+                              << HexSubstr(bootstrap_connection_id.string())
+                              << "   (id: " << proto_message.id() << ")"
+                              << " dst : " << HexSubstr(proto_message.destination_id())
+                              << " --Anonymous/Partial-joined--";
               }
             });
           });
@@ -431,12 +431,12 @@ void Routing::Impl::DoOnMessageReceived(const std::string& message) {
   protobuf::Message pb_message;
   if (pb_message.ParseFromString(message)) {
     bool relay_message(!pb_message.has_source_id());
-    LOG(kInfo) << "   [" << DebugId(kNodeId_) << "] rcvd : "
-               << MessageTypeString(pb_message) << " from "
-               << (relay_message ? HexSubstr(pb_message.relay_id()) :
-                                   HexSubstr(pb_message.source_id()))
-               << "   (id: " << pb_message.id() << ")"
-               << (relay_message ? " --Relay--" : "");
+    LOG(kVerbose) << "   [" << DebugId(kNodeId_) << "] rcvd : "
+                  << MessageTypeString(pb_message) << " from "
+                  << (relay_message ? HexSubstr(pb_message.relay_id()) :
+                                      HexSubstr(pb_message.source_id()))
+                  << "   (id: " << pb_message.id() << ")"
+                  << (relay_message ? " --Relay--" : "");
     if (((kAnonymousNode_ || !pb_message.client_node()) && pb_message.has_source_id()) ||
         (!pb_message.direct() && !pb_message.request())) {
       NodeId source_id(pb_message.source_id());

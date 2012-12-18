@@ -172,7 +172,7 @@ void NetworkUtils::RudpSend(const NodeId& peer_id,
       return;
   }
   rudp_.Send(peer_id, message.SerializeAsString(), message_sent_functor);
-  LOG(kInfo) << "  [" << DebugId(routing_table_.kNodeId())
+  LOG(kVerbose) << "  [" << DebugId(routing_table_.kNodeId())
              << "] send : " << MessageTypeString(message)
              << " to   " << DebugId(peer_id) << "   (id: " << message.id() << ")"
              << " --To Rudp--";
@@ -244,8 +244,8 @@ void NetworkUtils::SendTo(const protobuf::Message& message,
   const std::string kThisId(routing_table_.kNodeId().string());
   rudp::MessageSentFunctor message_sent_functor = [=](int message_sent) {
       if (rudp::kSuccess == message_sent) {
-        LOG(kInfo) << "  [" << HexSubstr(kThisId) << "] sent : " << MessageTypeString(message)
-                   << " to   " << DebugId(peer_node_id) << "   (id: " << message.id() << ")";
+        LOG(kVerbose) << "  [" << HexSubstr(kThisId) << "] sent : " << MessageTypeString(message)
+                      << " to   " << DebugId(peer_node_id) << "   (id: " << message.id() << ")";
       } else {
         LOG(kError) << "Sending type " << MessageTypeString(message) << " message from "
                     << HexSubstr(kThisId) << " to " << DebugId(peer_node_id) << " failed with code "
@@ -317,11 +317,11 @@ void NetworkUtils::RecursiveSendOn(protobuf::Message message,
           return;
       }
       if (rudp::kSuccess == message_sent) {
-        LOG(kInfo) << "  [" << HexSubstr(kThisId) << "] sent : "
-                   << MessageTypeString(message) << " to   "
-                   << HexSubstr(closest_node.node_id.string())
-                   << "   (id: " << message.id() << ")"
-                   << " dst : " << HexSubstr(message.destination_id());
+        LOG(kVerbose) << "  [" << HexSubstr(kThisId) << "] sent : "
+                      << MessageTypeString(message) << " to   "
+                      << HexSubstr(closest_node.node_id.string())
+                      << "   (id: " << message.id() << ")"
+                      << " dst : " << HexSubstr(message.destination_id());
       } else if (rudp::kSendFailure == message_sent) {
         LOG(kError) << "Sending type " << MessageTypeString(message)
                     << " message from " << HexSubstr(routing_table_.kNodeId().string())

@@ -98,10 +98,10 @@ void GroupChangeHandler::ClosestNodesUpdateSubscribe(protobuf::Message& message)
 }
 
 void GroupChangeHandler::Unsubscribe(NodeId node_id) {
+  std::lock_guard<std::mutex> lock(mutex_);
   LOG(kVerbose) << "[" << DebugId(routing_table_.kNodeId())
                 << "] unsubscribing " << DebugId(node_id)
                 << " current size: "  << update_subscribers_.size();
-  std::lock_guard<std::mutex> lock(mutex_);
   update_subscribers_.erase(std::remove_if(update_subscribers_.begin(),
                                            update_subscribers_.end(),
                                            [&](const NodeInfo& node_info) {
@@ -110,14 +110,15 @@ void GroupChangeHandler::Unsubscribe(NodeId node_id) {
 }
 
 void GroupChangeHandler::Subscribe(NodeId node_id) {
-  LOG(kVerbose) << "[" << DebugId(routing_table_.kNodeId()) << "] subscribing " << DebugId(node_id)
-                << " current size: "  << update_subscribers_.size();
+  LOG(kVerbose) << "[" << DebugId(routing_table_.kNodeId()) << "] subscribing " << DebugId(node_id);
   NodeInfo node_info;
   std::vector<NodeInfo> connected_closest_nodes;
   {
     connected_closest_nodes = routing_table_.GetClosestNodeInfo(routing_table_.kNodeId(),
                                                                 Parameters::closest_nodes_size);
-   std::lock_guard<std::mutex> lock(mutex_);
+    if (connected_closest_nodes.size() < Parameters::closest_nodes_size)
+      return;
+    std::lock_guard<std::mutex> lock(mutex_);
     if (routing_table_.GetNodeInfo(node_id, node_info)) {
       if (std::find_if(update_subscribers_.begin(),
                        update_subscribers_.end(),

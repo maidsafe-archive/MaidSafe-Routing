@@ -105,12 +105,12 @@ class Routing::Impl {
   RandomNodeHelper random_node_helper_;
   RoutingTable routing_table_;
   NonRoutingTable non_routing_table_;
+  RemoveFurthestNode remove_furthest_node_;
+  GroupChangeHandler group_change_handler_;
   std::unique_ptr<MessageHandler> message_handler_;
   AsioService asio_service_;
   NetworkUtils network_;
   Timer timer_;
-  RemoveFurthestNode remove_furthest_node_;
-  GroupChangeHandler group_change_handler_;
   boost::asio::deadline_timer re_bootstrap_timer_, recovery_timer_, setup_timer_;
 };
 
