@@ -316,9 +316,10 @@ TEST_F(BasicNonRoutingTableTest, BEH_IsThisNodeInRange) {
 
   std::vector<NodeInfo> nodes;
   NodeInfo node_info;
-  for (int i(0); i < 101; ++i)
+  for (int i(0); i < 101; ++i) {
     node_info.node_id = NodeId(NodeId::kRandomId);
     nodes.push_back(node_info);
+  }
   SortNodeInfosFromTarget(non_routing_table.kNodeId(), nodes);
   NodeInfo furthest_close_node_id(nodes.at(50));
   for (int i(0); i < 50; ++i)

@@ -63,12 +63,13 @@ std::vector<NodeInfo> GroupMatrix::GetConnectedPeers() {
 }
 
 NodeInfo GroupMatrix::GetConnectedPeerFor(const NodeId& target_node_id) {
+/*
   for (auto nodes : matrix_) {
     if (nodes.at(0).node_id == target_node_id) {
       assert(false && "Shouldn't request connected peer for node in first column of group matrix.");
       return NodeInfo();
     }
-  }
+  }*/
   for (auto nodes : matrix_) {
     if (std::find_if(nodes.begin(), nodes.end(),
                      [target_node_id](const NodeInfo& node_info) {

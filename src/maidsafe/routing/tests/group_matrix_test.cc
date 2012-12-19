@@ -439,14 +439,20 @@ TEST(GroupMatrixTest, BEH_IsThisNodeGroupMemberFor) {
   NodeId target_id;
   bool expect_is_group_member;
   bool expect_is_group_leader;
-  for (int i(0); i < 20; ++i) {
+  for (int i(0); i < 100; ++i) {
     target_id = NodeId(NodeId::kRandomId);
-    SortNodeInfosFromTarget(target_id, node_ids);
-    size_t size(node_ids.size());
-    size++;
-    expect_is_group_member = NodeId::CloserToTarget(node_0.node_id,
-                                 node_ids.at(Parameters::node_group_size).node_id, target_id);
-    expect_is_group_leader = (node_0.node_id == node_ids.at(0).node_id);
+    SortNodeInfosFromTarget(node_0.node_id, node_ids);
+    expect_is_group_member = NodeId::CloserToTarget(target_id,
+                                 node_ids.at(Parameters::node_group_size - 1).node_id,
+                                 node_0.node_id);
+    expect_is_group_leader =
+        (std::find_if(node_ids.begin(), node_ids.end(),
+                      [target_id, node_0] (const NodeInfo& node)->bool {
+                        return ((node.node_id != target_id) &&
+                                (NodeId::CloserToTarget(node.node_id,
+                                                        node_0.node_id,
+                                                        target_id)));
+                      }) == node_ids.end());
     EXPECT_EQ(expect_is_group_member, matrix.IsThisNodeGroupMemberFor(target_id, is_group_leader));
     EXPECT_EQ(expect_is_group_leader, is_group_leader);
   }
