@@ -29,7 +29,6 @@ GroupMatrix::GroupMatrix(const NodeId& this_node_id)
       unique_nodes_(),
       matrix_() {}
 
-
 void GroupMatrix::AddConnectedPeer(const NodeInfo& node_info) {
   LOG(kVerbose) << "AddConnectedPeer : " << DebugId(node_info.node_id);
   for (auto nodes : matrix_) {
@@ -81,9 +80,18 @@ NodeInfo GroupMatrix::GetConnectedPeerFor(const NodeId& target_node_id) {
   return NodeInfo();
 }
 
-NodeId GetConnectedPeerClosestTo(const NodeId& target_node_id) {
-  // TODO(Prakash): Implement
-  return target_node_id;
+NodeInfo GroupMatrix::GetConnectedPeerClosestTo(const NodeId& target_node_id) {
+  NodeInfo peer;
+  NodeId closest(kNodeId_);
+  for (auto nodes : matrix_) {
+    for (auto node : nodes) {
+      if (NodeId::CloserToTarget(node.node_id, closest, target_node_id)) {
+          peer = nodes.at(0);
+          closest = node.node_id;
+      }
+    }
+  }
+  return peer;
 }
 
 bool GroupMatrix::IsThisNodeGroupMemberFor(const NodeId& target_id, bool& is_group_leader) {
@@ -146,18 +154,6 @@ void GroupMatrix::UpdateFromConnectedPeer(const NodeId& peer,
   UpdateUniqueNodeList();
 }
 
-bool GroupMatrix::IsRowEmpty(const NodeInfo& node_info) {
-//  std::lock_guard<std::mutex> lock(mutex_);
-  auto group_itr(matrix_.begin());
-  for (group_itr = matrix_.begin(); group_itr != matrix_.end(); ++group_itr) {
-    if ((*group_itr).at(0).node_id == node_info.node_id)
-      break;
-  }
-
-  assert(group_itr != matrix_.end());
-  return (group_itr->size() < 2);
-}
-
 bool GroupMatrix::GetRow(const NodeId& row_id, std::vector<NodeInfo>& row_entries) {
   if (row_id.IsZero()) {
     assert(false && "Invalid node id.");
@@ -181,21 +177,35 @@ bool GroupMatrix::GetRow(const NodeId& row_id, std::vector<NodeInfo>& row_entrie
   return true;
 }
 
+std::vector<NodeInfo> GroupMatrix::GetUniqueNodes() {
+  return unique_nodes_;
+}
+
+
+bool GroupMatrix::IsRowEmpty(const NodeInfo& node_info) {
+//  std::lock_guard<std::mutex> lock(mutex_);
+  auto group_itr(matrix_.begin());
+  for (group_itr = matrix_.begin(); group_itr != matrix_.end(); ++group_itr) {
+    if ((*group_itr).at(0).node_id == node_info.node_id)
+      break;
+  }
+
+  assert(group_itr != matrix_.end());
+  return (group_itr->size() < 2);
+}
+
+
 std::vector<NodeInfo> GroupMatrix::GetClosestNodes(const uint32_t& size) {
   return std::vector<NodeInfo>(unique_nodes_.begin(),
                                unique_nodes_.begin() + std::min(static_cast<size_t>(size),
                                                                 unique_nodes_.size()));
 }
 
-std::vector<NodeInfo> GroupMatrix::GetUniqueNodes() {
-  return unique_nodes_;
-}
-
 void GroupMatrix::Clear() {
-  unique_nodes_.clear();
   for (auto& row : matrix_)
     row.clear();
   matrix_.clear();
+  UpdateUniqueNodeList();
 }
 
 void GroupMatrix::UpdateUniqueNodeList() {
@@ -208,14 +218,10 @@ void GroupMatrix::UpdateUniqueNodeList() {
     for (size_t i(0); i !=  itr->size(); ++i)
       unique_nodes_.push_back((*itr).at(i));
 
-  size_t size(unique_nodes_.size());
-  size--;
-  int index(0);
   // Removing duplicates
   std::sort(unique_nodes_.begin(),
             unique_nodes_.end(),
             [&](const NodeInfo& lhs, const NodeInfo& rhs)->bool {
-              ++index;
               return (lhs.node_id ^ kNodeId_) < (rhs.node_id ^ kNodeId_);
             });
 
