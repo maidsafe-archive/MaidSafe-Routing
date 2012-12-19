@@ -42,7 +42,7 @@ namespace test {
   class RoutingTableTest;
   class RoutingTableTest_BEH_OrderedGroupChange_Test;
   class RoutingTableTest_BEH_ReverseOrderedGroupChange_Test;
-  class RoutingTableTest_FUNC_CheckMockSendGroupChangeRpcs_Test;
+  class RoutingTableTest_BEH_CheckMockSendGroupChangeRpcs_Test;
   class RoutingTableTest_BEH_GroupUpdateFromConnectedPeer_Test;
 }
 
@@ -60,6 +60,7 @@ typedef std::function<void(const bool& /*subscribe*/, NodeInfo /*node_info*/)>
 class RoutingTable {
  public:
   RoutingTable(const Fob& fob, bool client_mode);
+  virtual ~RoutingTable() {}
   void InitialiseFunctors(NetworkStatusFunctor network_status_functor,
                           std::function<void(const NodeInfo&, bool)> remove_node_functor,
                           RemoveFurthestUnnecessaryNode remove_furthest_node,
@@ -72,7 +73,7 @@ class RoutingTable {
   bool IsThisNodeInGroupForId(const NodeId& target_id, bool& is_group_leader);
   bool GetNodeInfo(const NodeId& node_id, NodeInfo& node_info) const;
   bool IsThisNodeInRange(const NodeId& target_id, uint16_t range);
-  bool IsNodeIdInGroupRange(const NodeId& node_id);
+  virtual bool IsNodeIdInGroupRange(const NodeId& node_id, bool& is_group_leader);
   bool IsThisNodeClosestTo(const NodeId& target_id, bool ignore_exact_match = false);
   bool IsConnected(const NodeId& node_id) const;
   bool ConfirmGroupMembers(const NodeId& node1, const NodeId& node2);
@@ -136,7 +137,7 @@ class RoutingTable {
   friend class test::RoutingTableTest;
   friend class test::RoutingTableTest_BEH_OrderedGroupChange_Test;
   friend class test::RoutingTableTest_BEH_ReverseOrderedGroupChange_Test;
-  friend class test::RoutingTableTest_FUNC_CheckMockSendGroupChangeRpcs_Test;
+  friend class test::RoutingTableTest_BEH_CheckMockSendGroupChangeRpcs_Test;
   friend class test::RoutingTableTest_BEH_GroupUpdateFromConnectedPeer_Test;
 
 

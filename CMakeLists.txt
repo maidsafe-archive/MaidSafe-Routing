@@ -105,6 +105,7 @@ endif()
 ms_disable_warnings(${SOURCE_PROTO_FILES_ROUTING_DIR})
 if(UNIX)
   set_source_files_properties(
+      "${PROJECT_SOURCE_DIR}/src/maidsafe/routing/tests/mock_routing_table.cc"
       "${PROJECT_SOURCE_DIR}/src/maidsafe/routing/tests/mock_network_utils.cc"
       "${PROJECT_SOURCE_DIR}/src/maidsafe/routing/tests/mock_service.cc"
       "${PROJECT_SOURCE_DIR}/src/maidsafe/routing/tests/mock_response_handler.cc"

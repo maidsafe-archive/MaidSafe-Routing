@@ -34,7 +34,7 @@ class RoutingTableTest : public testing::Test {
 };
 
 
-TEST(RoutingTableTest, FUNC_AddCloseNodes) {
+TEST(RoutingTableTest, BEH_AddCloseNodes) {
   Fob fob;
   fob.identity = Identity(RandomString(64));
   RoutingTable routing_table(fob, false);
@@ -61,7 +61,7 @@ TEST(RoutingTableTest, FUNC_AddCloseNodes) {
   EXPECT_EQ(Parameters::closest_nodes_size, routing_table.size());
 }
 
-TEST(RoutingTableTest, FUNC_AddTooManyNodes) {
+TEST(RoutingTableTest, BEH_AddTooManyNodes) {
   Fob fob;
   fob.identity = Identity(RandomString(64));
   RoutingTable routing_table(fob, false);
@@ -573,7 +573,7 @@ TEST(RoutingTableTest, BEH_FillEmptyRefillRoutingTable) {
   ASSERT_EQ(routing_table.size(), Parameters::max_routing_table_size);
 }
 
-TEST(RoutingTableTest, FUNC_CheckMockSendGroupChangeRpcs) {
+TEST(RoutingTableTest, BEH_CheckMockSendGroupChangeRpcs) {
   // Set up 1
   Fob fob_1;
   fob_1.identity = Identity(RandomString(64));
@@ -761,7 +761,7 @@ TEST(RoutingTableTest, BEH_GroupUpdateFromConnectedPeer) {
   }
 }
 
-TEST(RoutingTableTest, FUNC_GetNthClosest) {
+TEST(RoutingTableTest, BEH_GetNthClosest) {
   std::vector<NodeId> nodes_id;
   Fob fob;
   fob.identity = Identity(RandomString(64));
@@ -786,7 +786,7 @@ TEST(RoutingTableTest, FUNC_GetNthClosest) {
   }
 }
 
-TEST(RoutingTableTest, FUNC_GetClosestNodeWithExclusion) {
+TEST(RoutingTableTest, BEH_GetClosestNodeWithExclusion) {
   std::vector<NodeId> nodes_id;
   std::vector<std::string> exclude;
   Fob fob;

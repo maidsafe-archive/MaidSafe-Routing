@@ -422,7 +422,8 @@ void Routing::Impl::Send(const NodeId& destination_id,
 }
 
 bool Routing::Impl::IsNodeIdInGroupRange(const NodeId& node_id) {
-  return routing_table_.IsNodeIdInGroupRange(node_id);
+  bool is_group_leader;
+  return routing_table_.IsNodeIdInGroupRange(node_id, is_group_leader);
 }
 
 void Routing::Impl::OnMessageReceived(const std::string& message) {

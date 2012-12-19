@@ -101,22 +101,24 @@ bool GroupMatrix::IsThisNodeGroupMemberFor(const NodeId& target_id, bool& is_gro
     return true;
   }
 
-  PartialSortFromTarget(target_id, Parameters::node_group_size, unique_nodes_);
+  PartialSortFromTarget(kNodeId_, Parameters::node_group_size + 1, unique_nodes_);
 
-  if (unique_nodes_.size() < Parameters::node_group_size) {
-    if (unique_nodes_.at(0).node_id == kNodeId_) {
-      is_group_leader = true;
-    }
-    return true;
-  }
+  is_group_leader = (std::find_if(unique_nodes_.begin(), unique_nodes_.end(),
+                                 [target_id, kNodeId_] (const NodeInfo& node)->bool {
+                                   return ((node.node_id != target_id) &&
+                                           (NodeId::CloserToTarget(node.node_id,
+                                                                   kNodeId_,
+                                                                   target_id)));
+                                 }) == unique_nodes_.end());
 
-  NodeInfo furthest_group_node(unique_nodes_.at(Parameters::node_group_size - 1));
-  if ((furthest_group_node.node_id ^ target_id) >=
-      (kNodeId_ ^ target_id)) {
-    if (unique_nodes_.at(0).node_id == kNodeId_)
-      is_group_leader = true;
+  if (unique_nodes_.size() < Parameters::node_group_size)
     return true;
-  }
+
+  NodeInfo furthest_group_node(unique_nodes_.at(std::min(Parameters::node_group_size - 1,
+                                                static_cast<int>(unique_nodes_.size()))));
+  if (!NodeId::CloserToTarget(furthest_group_node.node_id, target_id, kNodeId_))
+    return true;
+
   return false;
 }
 

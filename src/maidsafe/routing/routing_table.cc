@@ -252,8 +252,8 @@ bool RoutingTable::IsThisNodeInRange(const NodeId& target_id, const uint16_t ran
   return NodeId::CloserToTarget(target_id, nodes_[range - 1].node_id, kNodeId_);
 }
 
-bool RoutingTable::IsNodeIdInGroupRange(const NodeId& node_id) {
-  bool is_group_leader;
+bool RoutingTable::IsNodeIdInGroupRange(const NodeId& node_id, bool& is_group_leader) {
+  std::unique_lock<std::mutex> lock(mutex_);
   return group_matrix_.IsThisNodeGroupMemberFor(node_id, is_group_leader);
 }
 

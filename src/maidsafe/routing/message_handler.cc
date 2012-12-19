@@ -227,7 +227,9 @@ void MessageHandler::HandleGroupMessageAsClosestNode(protobuf::Message& message)
 
   if (message.has_visited() &&
       !message.visited() &&
-      (routing_table_.size() > Parameters::closest_nodes_size)) {
+      (routing_table_.size() > Parameters::closest_nodes_size) &&
+      (!routing_table_.IsThisNodeInRange(NodeId(message.destination_id()),
+                                        Parameters::closest_nodes_size))) {
     message.set_visited(true);
     return network_.SendToClosestNode(message);
   }
@@ -235,7 +237,7 @@ void MessageHandler::HandleGroupMessageAsClosestNode(protobuf::Message& message)
   // Confirming from group matrix. If this node is closest to the target id or else passing on to
   // the connected peer which has the closer node.
   bool is_group_leader(true);
-//  routing_table_.IsThisNodeInGroupForId(NodeId(message.destination_id()), is_group_leader);
+  routing_table_.IsNodeIdInGroupRange(NodeId(message.destination_id()), is_group_leader);
   if (!is_group_leader) {
     NodeInfo closest(
         routing_table_.GetConnectedPeerFromGroupMatrixClosestTo(NodeId(message.destination_id())));

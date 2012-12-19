@@ -21,6 +21,7 @@
 #include "maidsafe/routing/tests/mock_service.h"
 #include "maidsafe/routing/tests/mock_response_handler.h"
 #include "maidsafe/routing/tests/mock_network_utils.h"
+#include "maidsafe/routing/tests/mock_routing_table.h"
 #include "maidsafe/routing/tests/test_utils.h"
 #include "maidsafe/routing/non_routing_table.h"
 #include "maidsafe/routing/parameters.h"
@@ -65,7 +66,7 @@ class MessageHandlerTest : public testing::Test {
     asio_service_.Start();
     fob_.identity = Identity(RandomString(64));
     ntable_.reset(new NonRoutingTable(fob_));
-    table_.reset(new RoutingTable(fob_, false));
+    table_.reset(new MockRoutingTable(fob_, false));
     utils_.reset(new MockNetworkUtils(*table_, *ntable_));
     group_change_handler_.reset(new GroupChangeHandler(*table_, *utils_));
     service_.reset(new MockService(*table_, *ntable_, *utils_, *group_change_handler_));
@@ -96,7 +97,7 @@ void ClearMessage(protobuf::Message& message) {
   int messages_received_;
   Fob fob_;
   std::shared_ptr<NonRoutingTable> ntable_;
-  std::shared_ptr<RoutingTable> table_;
+  std::shared_ptr<MockRoutingTable> table_;
   std::shared_ptr<MockNetworkUtils> utils_;
   std::shared_ptr<RemoveFurthestNode> remove_furthest_node_;
   std::shared_ptr<GroupChangeHandler> group_change_handler_;
@@ -222,7 +223,7 @@ TEST_F(MessageHandlerTest, BEH_HandleRelay) {
 TEST_F(MessageHandlerTest, BEH_HandleGroupMessage) {
   MessageHandler message_handler(*table_, *ntable_, *utils_, timer_, *remove_furthest_node_,
                                  *group_change_handler_);
-
+  bool result(true);
   message_handler.service_ = service_;
   message_handler.response_handler_ = response_handler_;
   /*{  // Handle group message to self
@@ -297,6 +298,7 @@ TEST_F(MessageHandlerTest, BEH_HandleGroupMessage) {
                              testing::_,
                              testing::_))
                          .Times(1).RetiresOnSaturation();
+    EXPECT_CALL(*table_, IsNodeIdInGroupRange(testing::_, testing::_)).Times(1);
     EXPECT_CALL(*service_, FindNodes(testing::_)).Times(0);
     EXPECT_CALL(*service_, Ping(testing::_)).Times(0);
     EXPECT_CALL(*service_, Connect(testing::_)).Times(0);
@@ -325,6 +327,7 @@ TEST_F(MessageHandlerTest, BEH_HandleGroupMessage) {
                                            testing::Property(&protobuf::Message::source_id,
                                                              source_id.string()))))
                 .Times(1).RetiresOnSaturation();
+    EXPECT_CALL(*table_, IsNodeIdInGroupRange(testing::_, testing::_)).Times(0);
     EXPECT_CALL(*utils_, SendToDirect(testing::_, testing::_, testing::_)).Times(0);
     EXPECT_CALL(*service_, FindNodes(testing::_)).Times(0);
     EXPECT_CALL(*service_, Ping(testing::_)).Times(0);
@@ -378,6 +381,7 @@ TEST_F(MessageHandlerTest, BEH_HandleGroupMessage) {
                                          boost::bind(&MessageHandlerTest::ClearMessage,
                                                      this, _1))))
         .RetiresOnSaturation();
+    EXPECT_CALL(*table_, IsNodeIdInGroupRange(testing::_, testing::_)).Times(1);
     EXPECT_CALL(*service_, Ping(testing::_)).Times(0);
     EXPECT_CALL(*service_, Connect(testing::_)).Times(0);
     EXPECT_CALL(*response_handler_, FindNodes(testing::_)).Times(0);
@@ -432,6 +436,7 @@ TEST_F(MessageHandlerTest, BEH_HandleGroupMessage) {
                              testing::_,
                              testing::_))
                          .Times(1).RetiresOnSaturation();
+    EXPECT_CALL(*table_, IsNodeIdInGroupRange(testing::_, testing::_)).Times(1);
     EXPECT_CALL(*service_, FindNodes(testing::_)).Times(0);
     EXPECT_CALL(*service_, Ping(testing::_)).Times(0);
     EXPECT_CALL(*service_, Connect(testing::_)).Times(0);
@@ -547,6 +552,8 @@ TEST_F(MessageHandlerTest, BEH_HandleGroupMessage) {
                              testing::_,
                              testing::_))
                          .Times(1).RetiresOnSaturation();
+    EXPECT_CALL(*table_, IsNodeIdInGroupRange(testing::_, result))
+      .WillRepeatedly(testing::Return(true));
     EXPECT_CALL(*service_, FindNodes(testing::_)).Times(0);
     EXPECT_CALL(*service_, Ping(testing::_)).Times(0);
     EXPECT_CALL(*service_, Connect(testing::_)).Times(0);
@@ -624,7 +631,7 @@ TEST_F(MessageHandlerTest, BEH_HandleNodeLevelMessage) {
 }
 
 TEST_F(MessageHandlerTest, BEH_ClientRoutingTable) {
-  table_.reset(new RoutingTable(fob_, true));
+  table_.reset(new MockRoutingTable(fob_, true));
   table_->AddNode(close_info_);
   MessageHandler message_handler(*table_, *ntable_, *utils_, timer_, *remove_furthest_node_,
                                  *group_change_handler_);

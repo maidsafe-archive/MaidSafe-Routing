@@ -27,7 +27,7 @@ namespace maidsafe {
 namespace routing {
 namespace test {
 
-TEST(GroupMatrixTest, FUNC_EmptyMatrix) {
+TEST(GroupMatrixTest, BEH_EmptyMatrix) {
   const NodeId node_0(NodeId::kRandomId);
   GroupMatrix matrix(node_0);
 
@@ -52,7 +52,7 @@ TEST(GroupMatrixTest, FUNC_EmptyMatrix) {
   EXPECT_EQ(1, matrix.GetUniqueNodes().size());
 }
 
-TEST(GroupMatrixTest, FUNC_AddSamePeerTwice) {
+TEST(GroupMatrixTest, BEH_AddSamePeerTwice) {
   const NodeId node_0(NodeId::kRandomId);
   GroupMatrix matrix(node_0);
 
@@ -65,7 +65,7 @@ TEST(GroupMatrixTest, FUNC_AddSamePeerTwice) {
   EXPECT_EQ(1, matrix.GetConnectedPeers().size());
 }
 
-TEST(GroupMatrixTest, FUNC_OneRowOnly) {
+TEST(GroupMatrixTest, BEH_OneRowOnly) {
   NodeInfo node_0;
   node_0.node_id = NodeId(NodeId::kRandomId);
   GroupMatrix matrix(node_0.node_id);
@@ -133,7 +133,7 @@ TEST(GroupMatrixTest, FUNC_OneRowOnly) {
   EXPECT_EQ(is_group_member, matrix.IsThisNodeGroupMemberFor(target_id_2.node_id, is_group_leader));
 }
 
-TEST(GroupMatrixTest, FUNC_OneColumnOnly) {
+TEST(GroupMatrixTest, BEH_OneColumnOnly) {
   NodeInfo node_0;
   node_0.node_id = NodeId(NodeId::kRandomId);
   GroupMatrix matrix(node_0.node_id);
@@ -169,7 +169,7 @@ TEST(GroupMatrixTest, FUNC_OneColumnOnly) {
   EXPECT_EQ(NodeId(), matrix.GetConnectedPeerFor(target_id).node_id);
 }
 
-TEST(GroupMatrixTest, FUNC_RowsContainSameNodes) {
+TEST(GroupMatrixTest, BEH_RowsContainSameNodes) {
   NodeInfo node_0;
   node_0.node_id = NodeId(NodeId::kRandomId);
   GroupMatrix matrix(node_0.node_id);
@@ -230,7 +230,7 @@ TEST(GroupMatrixTest, FUNC_RowsContainSameNodes) {
     EXPECT_EQ(row_ids.at(0).node_id, matrix.GetConnectedPeerFor(row_entry.node_id).node_id);
 }
 
-TEST(GroupMatrixTest, FUNC_UpdateFromNonPeer) {
+TEST(GroupMatrixTest, BEH_UpdateFromNonPeer) {
   NodeInfo node_0;
   node_0.node_id = NodeId(NodeId::kRandomId);
   GroupMatrix matrix(node_0.node_id);
@@ -253,7 +253,7 @@ TEST(GroupMatrixTest, FUNC_UpdateFromNonPeer) {
   EXPECT_EQ(0, matrix.GetConnectedPeers().size());
 }
 
-TEST(GroupMatrixTest, FUNC_AddUpdateGetRemovePeers) {
+TEST(GroupMatrixTest, BEH_AddUpdateGetRemovePeers) {
   NodeInfo node_0;
   node_0.node_id = NodeId(NodeId::kRandomId);
   GroupMatrix matrix(node_0.node_id);
@@ -308,7 +308,7 @@ TEST(GroupMatrixTest, FUNC_AddUpdateGetRemovePeers) {
   EXPECT_EQ(0, matrix.GetConnectedPeers().size());
 }
 
-TEST(GroupMatrixTest, FUNC_GetConnectedPeerFor) {
+TEST(GroupMatrixTest, BEH_GetConnectedPeerFor) {
   NodeInfo node_0;
   node_0.node_id = NodeId(NodeId::kRandomId);
   GroupMatrix matrix(node_0.node_id);
@@ -403,7 +403,7 @@ TEST(GroupMatrixTest, FUNC_GetConnectedPeerFor) {
   EXPECT_EQ(NodeId(), matrix.GetConnectedPeerFor(target_id).node_id);
 }
 
-TEST(GroupMatrixTest, FUNC_IsThisNodeGroupMemberFor) {
+TEST(GroupMatrixTest, BEH_IsThisNodeGroupMemberFor) {
   NodeInfo node_0;
   node_0.node_id = NodeId(NodeId::kRandomId);
   GroupMatrix matrix(node_0.node_id);
@@ -452,7 +452,7 @@ TEST(GroupMatrixTest, FUNC_IsThisNodeGroupMemberFor) {
   }
 }
 
-TEST(GroupMatrixTest, FUNC_UpdateFromConnectedPeer) {
+TEST(GroupMatrixTest, BEH_UpdateFromConnectedPeer) {
   const NodeId node_0(NodeId::kRandomId);
   GroupMatrix matrix(node_0);
 
@@ -521,7 +521,7 @@ TEST(GroupMatrixTest, FUNC_UpdateFromConnectedPeer) {
     EXPECT_EQ(row_1.node_id, matrix.GetConnectedPeerFor(new_node_id.node_id).node_id);
 }
 
-TEST(GroupMatrixTest, FUNC_CheckUniqueNodeList) {
+TEST(GroupMatrixTest, BEH_CheckUniqueNodeList) {
   NodeInfo node_0;
   node_0.node_id = NodeId(NodeId::kRandomId);
   GroupMatrix matrix(node_0.node_id);
