@@ -78,7 +78,7 @@ class GenericNode {
   bool joined() const;
   bool IsClient() const;
   bool anonymous() { return anonymous_; }
-  //void set_client_mode(const bool& client_mode);
+  // void set_client_mode(const bool& client_mode);
   int expected();
   void set_expected(const int& expected);
   int ZeroStateJoin(const boost::asio::ip::udp::endpoint& peer_endpoint,

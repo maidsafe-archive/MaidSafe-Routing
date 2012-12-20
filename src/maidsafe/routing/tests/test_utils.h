@@ -48,7 +48,7 @@ NodeInfoAndPrivateKey MakeNodeInfoAndKeysWithMaid(passport::Maid maid);
 passport::Maid MakeMaid();
 passport::Pmid MakePmid();
 
-//Fob GetFob(const NodeInfoAndPrivateKey& node);
+// Fob GetFob(const NodeInfoAndPrivateKey& node);
 
 NodeInfo MakeNode();
 

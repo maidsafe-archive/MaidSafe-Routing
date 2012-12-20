@@ -173,7 +173,8 @@ void GenericNode::InjectNodeInfoAndPrivateKey() {
       node_info_plus_->private_key;
   const_cast<asymm::Keys&>(routing_->pimpl_->routing_table_.kKeys_).public_key =
       node_info_plus_->node_info.public_key;
-  const_cast<NodeId&>(routing_->pimpl_->non_routing_table_.kNodeId_) = node_info_plus_->node_info.node_id;
+  const_cast<NodeId&>(routing_->pimpl_->non_routing_table_.kNodeId_) =
+      node_info_plus_->node_info.node_id;
 }
 
 GenericNode::~GenericNode() {}
@@ -220,9 +221,9 @@ bool GenericNode::IsClient() const {
   return client_mode_;
 }
 
-//void GenericNode::set_client_mode(const bool& client_mode) {
-//  client_mode_ = client_mode;
-//}
+/* void GenericNode::set_client_mode(const bool& client_mode) {
+  client_mode_ = client_mode;
+} */
 
 std::vector<NodeInfo> GenericNode::RoutingTable() const {
   return routing_->pimpl_->routing_table_.nodes_;
@@ -427,7 +428,7 @@ void GenericNetwork::SetUp() {
   client_index_ = 2;
   public_keys_.insert(std::make_pair(node1->node_id(), node1->public_key()));
   public_keys_.insert(std::make_pair(node2->node_id(), node2->public_key()));
-  //fobs_.push_back(node2->fob());
+  // fobs_.push_back(node2->fob());
   SetNodeValidationFunctor(node1);
   SetNodeValidationFunctor(node2);
   LOG(kVerbose) << "Setup started";

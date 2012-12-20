@@ -83,13 +83,13 @@ passport::Pmid MakePmid() {
   return passport::Pmid(MakeMaid());
 }
 
-//Fob GetFob(const NodeInfoAndPrivateKey& node) {
-//  Fob fob;
-//  fob.identity = Identity(node.node_info.node_id.string());
-//  fob.keys.public_key = node.node_info.public_key;
-//  fob.keys.private_key = node.private_key;
-//  return fob;
-//}
+/* Fob GetFob(const NodeInfoAndPrivateKey& node) {
+  Fob fob;
+  fob.identity = Identity(node.node_info.node_id.string());
+  fob.keys.public_key = node.node_info.public_key;
+  fob.keys.private_key = node.private_key;
+  return fob;
+} */
 
 NodeId GenerateUniqueRandomId(const NodeId& holder, const uint16_t& pos) {
   std::string holder_id = holder.ToStringEncoded(NodeId::kBinary);
