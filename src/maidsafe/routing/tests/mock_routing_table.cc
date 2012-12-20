@@ -18,8 +18,8 @@ namespace routing {
 
 namespace test {
 
-MockRoutingTable::MockRoutingTable(const Fob& fob, bool client_mode)
-    : RoutingTable(fob, client_mode) {}
+MockRoutingTable::MockRoutingTable(bool client_mode, const NodeId& node_id, const asymm::Keys& keys)
+    : RoutingTable(client_mode, node_id, keys) {}
 
 MockRoutingTable::~MockRoutingTable() {}
 

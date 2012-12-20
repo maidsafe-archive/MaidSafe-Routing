@@ -20,6 +20,11 @@ namespace routing {
 
 namespace { typedef boost::asio::ip::udp::endpoint Endpoint; }
 
+template<>
+Routing::Routing(std::nullptr_t) : pimpl_() {
+  InitialisePimpl(true, true, NodeId(NodeId::kRandomId), asymm::GenerateKeyPair());
+}
+
 void Routing::InitialisePimpl(bool client_mode,
                               bool anonymous,
                               const NodeId& node_id,

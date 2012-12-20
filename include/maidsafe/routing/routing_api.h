@@ -67,7 +67,7 @@ class Routing {
   // Users are expected to recreate routing object with right credentials and call Join method to
   // join the routing network.
   template<typename FobTypePtr>
-  Routing(FobTypePtr fob_ptr) : pimpl_() {
+  explicit Routing(FobTypePtr fob_ptr) : pimpl_() {
     static_assert(std::is_pointer<FobTypePtr>::value, "fob_ptr must be a pointer.");
     asymm::Keys keys;
     keys.private_key = fob_ptr->private_key();
@@ -76,9 +76,6 @@ class Routing {
                     NodeId(fob_ptr->name().data.string()), keys);
   }
 
-  Routing(std::nullptr_t) : pimpl_() {
-    InitialisePimpl(true, true, NodeId(NodeId::kRandomId), asymm::GenerateKeyPair());
-  }
   // Joins the network.  Valid functor for node validation must be passed to allow node validatation
   // or else no node will be added to routing and will fail to  join the network.  To force the node
   // to use a specific endpoint for bootstrapping, provide peer_endpoint (i.e. private network).
@@ -129,6 +126,9 @@ class Routing {
   class Impl;
   std::shared_ptr<Impl> pimpl_;
 };
+
+template<>
+Routing::Routing(std::nullptr_t);
 
 }  // namespace routing
 
