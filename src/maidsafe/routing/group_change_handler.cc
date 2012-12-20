@@ -42,7 +42,7 @@ GroupChangeHandler::~GroupChangeHandler() {
 }
 
 void GroupChangeHandler::ClosestNodesUpdate(protobuf::Message& message) {
-  if (message.destination_id() != routing_table_.kFob().identity.string()) {
+  if (message.destination_id() != routing_table_.kNodeId().string()) {
     // Message not for this node and we should not pass it on.
     LOG(kError) << "Message not for this node.";
     message.Clear();
@@ -74,7 +74,7 @@ void GroupChangeHandler::ClosestNodesUpdate(protobuf::Message& message) {
 }
 
 void GroupChangeHandler::ClosestNodesUpdateSubscribe(protobuf::Message& message) {
-  if (message.destination_id() != routing_table_.kFob().identity.string()) {
+  if (message.destination_id() != routing_table_.kNodeId().string()) {
     // Message not for this node and we should not pass it on.
     LOG(kError) << "Message not for this node.";
     message.Clear();

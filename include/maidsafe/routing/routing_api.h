@@ -35,7 +35,7 @@
 #include "maidsafe/common/node_id.h"
 #include "maidsafe/common/rsa.h"
 
-#include "maidsafe/private/utils/fob.h"
+#include "maidsafe/passport/types.h"
 
 #include "maidsafe/routing/api_config.h"
 
@@ -48,16 +48,37 @@ struct NodeInfo;
 
 namespace test { class GenericNode; }
 
+namespace detail {
+
+template<typename FobTypePtr>
+struct is_client : public std::true_type {};
+
+template<>
+struct is_client<passport::Pmid*> : public std::false_type {};
+
+}  // namespace detail
+
 
 class Routing {
  public:
-  // Providing empty key means that, on Join it will join the network anonymously.  This will allow
-  // Send/Receive messages to/from network.
+  // Providing nullptr key means that, on Join it will join the network anonymously.  This will
+  // allow Send/Receive messages to/from network.
   // WARNING: CONNECTION TO NETWORK WILL ONLY STAY FOR 60 SECONDS.
   // Users are expected to recreate routing object with right credentials and call Join method to
   // join the routing network.
-  Routing(const Fob& fob, bool client_mode);
+  template<typename FobTypePtr>
+  Routing(FobTypePtr fob_ptr) : pimpl_() {
+    static_assert(std::is_pointer<FobTypePtr>::value, "fob_ptr must be a pointer.");
+    asymm::Keys keys;
+    keys.private_key = fob_ptr->private_key();
+    keys.public_key = fob_ptr->public_key();
+    InitialisePimpl(detail::is_client<FobTypePtr>::value, false,
+                    NodeId(fob_ptr->name().data.string()), keys);
+  }
 
+  Routing(std::nullptr_t) : pimpl_() {
+    InitialisePimpl(true, true, NodeId(NodeId::kRandomId), asymm::GenerateKeyPair());
+  }
   // Joins the network.  Valid functor for node validation must be passed to allow node validatation
   // or else no node will be added to routing and will fail to  join the network.  To force the node
   // to use a specific endpoint for bootstrapping, provide peer_endpoint (i.e. private network).
@@ -100,6 +121,10 @@ class Routing {
   Routing(const Routing&);
   Routing(const Routing&&);
   Routing& operator=(const Routing&);
+  void InitialisePimpl(bool client_mode,
+                       bool anonymous,
+                       const NodeId& node_id,
+                       const asymm::Keys& keys);
 
   class Impl;
   std::shared_ptr<Impl> pimpl_;

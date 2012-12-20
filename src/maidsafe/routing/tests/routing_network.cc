@@ -64,7 +64,7 @@ size_t GenericNode::next_node_id_(1);
 GenericNode::GenericNode(bool client_mode)
     : functors_(),
       id_(0),
-      node_info_plus_(std::make_shared<NodeInfoAndPrivateKey>(MakeNodeInfoAndKeys())),
+      node_info_plus_(),
       mutex_(),
       client_mode_(client_mode),
       anonymous_(false),
@@ -73,11 +73,21 @@ GenericNode::GenericNode(bool client_mode)
       nat_type_(rudp::NatType::kUnknown),
       endpoint_(),
       messages_(),
-      routing_() {
-  endpoint_.address(maidsafe::GetLocalIp());
+      routing_(),
+      health_mutex_(),
+      health_(0) {
+  if (client_mode) {
+    auto maid(MakeMaid());
+    node_info_plus_.reset(new NodeInfoAndPrivateKey(MakeNodeInfoAndKeysWithMaid(maid)));
+    routing_.reset(new Routing(&maid));
+  } else {
+    auto pmid(MakePmid());
+    node_info_plus_.reset(new NodeInfoAndPrivateKey(MakeNodeInfoAndKeysWithPmid(pmid)));
+    routing_.reset(new Routing(&pmid));
+  }
+  endpoint_.address(GetLocalIp());
   endpoint_.port(maidsafe::test::GetRandomPort());
   InitialiseFunctors();
-  routing_.reset(new Routing(GetFob(*node_info_plus_), client_mode));
   LOG(kVerbose) << "Node constructor";
   std::lock_guard<std::mutex> lock(mutex_);
   id_ = next_node_id_++;
@@ -86,7 +96,7 @@ GenericNode::GenericNode(bool client_mode)
 GenericNode::GenericNode(bool client_mode, const rudp::NatType& nat_type)
     : functors_(),
       id_(0),
-      node_info_plus_(std::make_shared<NodeInfoAndPrivateKey>(MakeNodeInfoAndKeys())),
+      node_info_plus_(),
       mutex_(),
       client_mode_(client_mode),
       anonymous_(false),
@@ -95,11 +105,21 @@ GenericNode::GenericNode(bool client_mode, const rudp::NatType& nat_type)
       nat_type_(nat_type),
       endpoint_(),
       messages_(),
-      routing_() {
+      routing_(),
+      health_mutex_(),
+      health_(0) {
+  if (client_mode) {
+    auto maid(MakeMaid());
+    node_info_plus_.reset(new NodeInfoAndPrivateKey(MakeNodeInfoAndKeysWithMaid(maid)));
+    routing_.reset(new Routing(&maid));
+  } else {
+    auto pmid(MakePmid());
+    node_info_plus_.reset(new NodeInfoAndPrivateKey(MakeNodeInfoAndKeysWithPmid(pmid)));
+    routing_.reset(new Routing(&pmid));
+  }
   endpoint_.address(GetLocalIp());
   endpoint_.port(maidsafe::test::GetRandomPort());
   InitialiseFunctors();
-  routing_.reset(new Routing(GetFob(*node_info_plus_), client_mode));
   routing_->pimpl_->network_.nat_type_ = nat_type_;
   LOG(kVerbose) << "Node constructor";
   std::lock_guard<std::mutex> lock(mutex_);
@@ -118,21 +138,43 @@ GenericNode::GenericNode(bool client_mode, const NodeInfoAndPrivateKey& node_inf
       nat_type_(rudp::NatType::kUnknown),
       endpoint_(),
       messages_(),
-      routing_() {
+      routing_(),
+      health_mutex_(),
+      health_(0) {
   endpoint_.address(GetLocalIp());
   endpoint_.port(maidsafe::test::GetRandomPort());
   InitialiseFunctors();
-  Fob fob(GetFob(*node_info_plus_));
   if (node_info_plus_->node_info.node_id.IsZero()) {
     anonymous_ = true;
-    fob.identity = Identity();
+    routing_.reset(new Routing(nullptr));
+  } else if (client_mode) {
+    auto maid(MakeMaid());
+    routing_.reset(new Routing(&maid));
+    InjectNodeInfoAndPrivateKey();
+  } else {
+    auto pmid(MakePmid());
+    routing_.reset(new Routing(&pmid));
+    InjectNodeInfoAndPrivateKey();
   }
-  routing_.reset(new Routing(fob, client_mode));
   LOG(kVerbose) << "Node constructor";
   std::lock_guard<std::mutex> lock(mutex_);
   id_ = next_node_id_++;
 }
 
+void GenericNode::InjectNodeInfoAndPrivateKey() {
+  const_cast<NodeId&>(routing_->pimpl_->kNodeId_) = node_info_plus_->node_info.node_id;
+  const_cast<NodeId&>(routing_->pimpl_->routing_table_.kNodeId_) =
+      node_info_plus_->node_info.node_id;
+  if (!client_mode_) {
+    const_cast<NodeId&>(routing_->pimpl_->routing_table_.kConnectionId_) =
+        node_info_plus_->node_info.node_id;
+  }
+  const_cast<asymm::Keys&>(routing_->pimpl_->routing_table_.kKeys_).private_key =
+      node_info_plus_->private_key;
+  const_cast<asymm::Keys&>(routing_->pimpl_->routing_table_.kKeys_).public_key =
+      node_info_plus_->node_info.public_key;
+  const_cast<NodeId&>(routing_->pimpl_->non_routing_table_.kNodeId_) = node_info_plus_->node_info.node_id;
+}
 
 GenericNode::~GenericNode() {}
 
@@ -151,7 +193,7 @@ void GenericNode::InitialiseFunctors() {
                                  if (!IsClient())
                                    reply_functor("Response to >:<" + message);
                                };
-  functors_.network_status = [](const int&) {};  // NOLINT (Fraser)
+  functors_.network_status = [&](const int& health) { SetHealth(health); };  // NOLINT (Alison)
 }
 
 int GenericNode::GetStatus() const {
@@ -178,9 +220,9 @@ bool GenericNode::IsClient() const {
   return client_mode_;
 }
 
-void GenericNode::set_client_mode(const bool& client_mode) {
-  client_mode_ = client_mode;
-}
+//void GenericNode::set_client_mode(const bool& client_mode) {
+//  client_mode_ = client_mode;
+//}
 
 std::vector<NodeInfo> GenericNode::RoutingTable() const {
   return routing_->pimpl_->routing_table_.nodes_;
@@ -271,9 +313,8 @@ testing::AssertionResult GenericNode::DropNode(const NodeId& node_id) {
 //    routing_->pimpl_->network_.Remove(iter->connection_id);
     routing_->pimpl_->routing_table_.DropNode(iter->connection_id, false);
   } else {
-    testing::AssertionFailure() << HexSubstr(routing_->pimpl_->routing_table_.kFob_.identity)
-                                << " does not have " << HexSubstr(node_id.string())
-                                << " in routing table of ";
+    testing::AssertionFailure() << DebugId(routing_->pimpl_->routing_table_.kNodeId_)
+                                << " does not have " << DebugId(node_id) << " in routing table of ";
   }
   return testing::AssertionSuccess();
 }
@@ -345,9 +386,19 @@ void GenericNode::ClearMessages() {
   messages_.clear();
 }
 
-Fob GenericNode::fob() {
+asymm::PublicKey GenericNode::public_key() {
   std::lock_guard<std::mutex> lock(mutex_);
-  return GetFob(*node_info_plus_);
+  return node_info_plus_->node_info.public_key;
+}
+
+int GenericNode::Health() {
+  std::lock_guard<std::mutex> health_lock(health_mutex_);
+  return health_;
+}
+
+void GenericNode::SetHealth(const int &health) {
+  std::lock_guard<std::mutex> health_lock(health_mutex_);
+  health_ = health;
 }
 
 void GenericNode::PostTaskToAsioService(std::function<void()> functor) {
@@ -363,7 +414,7 @@ GenericNetwork::GenericNetwork()
       fobs_mutex_(),
       bootstrap_endpoints_(),
       bootstrap_path_("bootstrap"),
-      fobs_(),
+      public_keys_(),
       client_index_(0),
       nodes_() { LOG(kVerbose) << "RoutingNetwork Constructor"; }
 
@@ -374,8 +425,8 @@ void GenericNetwork::SetUp() {
   nodes_.push_back(node1);
   nodes_.push_back(node2);
   client_index_ = 2;
-  fobs_.push_back(node1->fob());
-  fobs_.push_back(node2->fob());
+  public_keys_.insert(std::make_pair(node1->node_id(), node1->public_key()));
+  //fobs_.push_back(node2->fob());
   SetNodeValidationFunctor(node1);
   SetNodeValidationFunctor(node2);
   LOG(kVerbose) << "Setup started";
@@ -456,24 +507,11 @@ void GenericNetwork::Validate(const NodeId& node_id, GivePublicKeyFunctor give_p
     return;
   std::lock_guard<std::mutex> lock(fobs_mutex_);
 
-  auto iter(fobs_.begin());
-  bool find(false);
-  while ((iter != fobs_.end()) && !find) {
-    if (iter->identity.string() == node_id.string())
-      find = true;
-    else
-      ++iter;
-  }
-//  auto iter = std::find_if(nodes_.begin(),
-//                           nodes_.end(),
-//                           [&node_id] (const NodePtr& node)->bool {
-//                             EXPECT_FALSE(GetKeys(*node->node_info_plus_).identity.empty());
-//                             return GetKeys(*node->node_info_plus_).identity == node_id.string();
-//                           });
-  if (!fobs_.empty())
-    EXPECT_NE(iter, fobs_.end());
-  if (iter != fobs_.end())
-    give_public_key((*iter).keys.public_key);
+  auto iter(public_keys_.find(node_id));
+  if (!public_keys_.empty())
+    EXPECT_NE(iter, public_keys_.end());
+  if (iter != public_keys_.end())
+    give_public_key((*iter).second);
 }
 
 void GenericNetwork::SetNodeValidationFunctor(NodePtr node) {
@@ -547,30 +585,45 @@ bool GenericNetwork::ValidateRoutingTables() {
   return true;
 }
 
+size_t GenericNetwork::RandomNodeIndex() {
+  assert(nodes_.size() > 0);
+  return RandomUint32() % nodes_.size();
+}
+
+size_t GenericNetwork::RandomClientIndex() {
+  assert(nodes_.size() > client_index_);
+  size_t client_count(nodes_.size() - client_index_);
+  return (RandomUint32() % client_count) + client_index_;
+}
+
+size_t GenericNetwork::RandomVaultIndex() {
+  assert(nodes_.size() > 2);
+  assert(client_index_ > 2);
+  return RandomUint32() % client_index_;
+}
+
 GenericNetwork::NodePtr GenericNetwork::RandomClientNode() {
   std::lock_guard<std::mutex> lock(mutex_);
-  size_t client_count(nodes_.size() - client_index_);
-  NodePtr random(nodes_.at((RandomUint32() % client_count) + client_index_));
+  NodePtr random(nodes_.at(RandomClientIndex()));
   return random;
 }
 
 GenericNetwork::NodePtr GenericNetwork::RandomVaultNode() {
   std::lock_guard<std::mutex> lock(mutex_);
-  NodePtr random(nodes_.at(RandomUint32() % client_index_));
+  NodePtr random(nodes_.at(RandomVaultIndex()));
   return random;
 }
 
 void GenericNetwork::RemoveRandomClient() {
   std::lock_guard<std::mutex> lock(mutex_);
-  size_t client_count(nodes_.size() - client_index_);
-  nodes_.erase(nodes_.begin() + ((RandomUint32() % client_count) + client_index_));
+  nodes_.erase(nodes_.begin() + RandomClientIndex());
 }
 
 void GenericNetwork::RemoveRandomVault() {
   std::lock_guard<std::mutex> lock(mutex_);
   assert(nodes_.size() > 2);
   assert(client_index_ > 2);
-  nodes_.erase(nodes_.begin() + 2 + (RandomUint32() % client_index_));  // +2 to avoid zero state
+  nodes_.erase(nodes_.begin() + 2 + (RandomUint32() % (client_index_ - 2)));  // keep zero state
   --client_index_;
 }
 
@@ -619,6 +672,304 @@ std::vector<NodeInfo> GenericNetwork::GetClosestNodes(const NodeId& target_id,
   return std::vector<NodeInfo>(closet_nodes.begin() + 1, closet_nodes.begin() + size);
 }
 
+bool GenericNetwork::RestoreComposition() {
+  // Intended for use in test SetUp/TearDown
+  while (ClientIndex() > kServerSize) {
+    RemoveNode(nodes_.at(ClientIndex() - 1)->node_id());
+  }
+  while (ClientIndex() < kServerSize) {
+    AddNode(false, NodeId());
+  }
+  if (ClientIndex() != kServerSize) {
+    LOG(kError) << "Failed to restore number of servers. Actual: " << ClientIndex() <<
+                   " Sought: " << kServerSize;
+    return false;
+  }
+
+  while (nodes_.size() > kNetworkSize) {
+    RemoveNode(nodes_.at(nodes_.size() - 1)->node_id());
+  }
+  while (nodes_.size() < kNetworkSize) {
+    AddNode(true, NodeId());
+  }
+  if (ClientIndex() != kServerSize) {
+    LOG(kError) << "Failed to maintain number of servers. Actual: " << ClientIndex() <<
+                   " Sought: " << kServerSize;
+    return false;
+  }
+  if (nodes_.size() != kNetworkSize) {
+    LOG(kError) << "Failed to restore number of clients. Actual: "
+                << nodes_.size() - ClientIndex()
+                << " Sought: " << kClientSize;
+    return false;
+  }
+  return true;
+}
+
+bool GenericNetwork::WaitForHealthToStabilise() {
+  // Intended for use in test SetUp/TearDown
+  int i(0);
+  bool healthy(false);
+  int vault_health(100);
+  int client_health(100);
+  if (kServerSize <= Parameters::max_routing_table_size)
+    vault_health = (kServerSize - 1) * 100 / Parameters::max_routing_table_size;
+  if (kServerSize <= Parameters::max_client_routing_table_size)
+    client_health = (kServerSize - 1) * 100 /Parameters::max_client_routing_table_size;
+
+  while (i < 10 && !healthy) {
+    ++i;
+    healthy = true;
+    for (auto node: nodes_) {
+      int node_health = node->Health();
+      if (node->IsClient()) {
+        if (node_health != client_health) {
+          LOG(kError) << "Bad client health. Expected: "
+                      << client_health << " Got: " << node_health;
+          healthy = false;
+          break;
+        }
+      } else {
+        if (node_health != vault_health) {
+          LOG(kError) << "Bad vault health. Expected: "
+                      << vault_health << " Got: " << node_health;
+          healthy = false;
+          break;
+        }
+      }
+    }
+    if (!healthy)
+      Sleep(boost::posix_time::seconds(1));
+  }
+  if (!healthy)
+    LOG(kError) << "Health failed to stabilise in 10 seconds.";
+  return healthy;
+}
+
+testing::AssertionResult GenericNetwork::Send(const size_t& messages) {
+  NodeId group_id;
+  size_t message_id(0), client_size(0), non_client_size(0);
+  std::set<size_t> received_ids;
+  for (auto node : this->nodes_)
+    (node->IsClient()) ? client_size++ : non_client_size++;
+
+  LOG(kVerbose) << "Network node size: " << client_size << " : " << non_client_size;
+
+  size_t messages_count(0),
+      expected_messages(non_client_size * (non_client_size - 1 + client_size) * messages);
+  std::mutex mutex;
+  std::condition_variable cond_var;
+  for (size_t index = 0; index < messages; ++index) {
+    for (auto source_node : this->nodes_) {
+      for (auto dest_node : this->nodes_) {
+        auto callable = [&](const std::vector<std::string> &message) {
+            if (message.empty())
+              return;
+            std::lock_guard<std::mutex> lock(mutex);
+            messages_count++;
+            std::string data_id(message.at(0).substr(message.at(0).find(">:<") + 3,
+                message.at(0).find("<:>") - 3 - message.at(0).find(">:<")));
+            received_ids.insert(boost::lexical_cast<size_t>(data_id));
+            LOG(kVerbose) << "ResponseHandler .... " << messages_count << " msg_id: "
+                          << data_id;
+            if (messages_count == expected_messages) {
+              cond_var.notify_one();
+              LOG(kVerbose) << "ResponseHandler .... DONE " << messages_count;
+            }
+          };
+        if (source_node->node_id() != dest_node->node_id()) {
+          std::string data(RandomAlphaNumericString(512 * 2^10));
+          {
+            std::lock_guard<std::mutex> lock(mutex);
+            data = boost::lexical_cast<std::string>(++message_id) + "<:>" + data;
+          }
+          assert(!data.empty() && "Send Data Empty !");
+          source_node->Send(NodeId(dest_node->node_id()), NodeId(), data, callable,
+              boost::posix_time::seconds(static_cast<long>(nodes_.size())), // NOLINT (Fraser)
+              DestinationType::kDirect, false);
+          Sleep(boost::posix_time::microseconds(21));
+        }
+      }
+    }
+  }
+
+  std::unique_lock<std::mutex> lock(mutex);
+  bool result = cond_var.wait_for(lock, std::chrono::seconds(20),
+      [&]()->bool {
+        LOG(kInfo) << " message count " << messages_count << " expected "
+                   << expected_messages << "\n";
+        return messages_count == expected_messages;
+      });
+  EXPECT_TRUE(result);
+  if (!result) {
+    for (size_t id(1); id <= expected_messages; ++id) {
+      auto iter = received_ids.find(id);
+      if (iter == received_ids.end())
+        LOG(kVerbose) << "missing id: " << id;
+    }
+    return testing::AssertionFailure() << "Send operarion timed out: "
+                                       << expected_messages - messages_count
+                                       << " failed to reply.";
+  }
+  return testing::AssertionSuccess();
+}
+
+testing::AssertionResult GenericNetwork::GroupSend(const NodeId& node_id,
+                                                   const size_t& messages,
+                                                   uint16_t source_index) {
+  assert(static_cast<long>(10 * messages) > 0); // NOLINT (Fraser)
+  size_t messages_count(0), expected_messages(messages);
+  std::string data(RandomAlphaNumericString((2 ^ 10) * 256));
+
+  std::mutex mutex;
+  std::condition_variable cond_var;
+  for (size_t index = 0; index < messages; ++index) {
+    auto callable = [&] (const std::vector<std::string> message) {
+                      if (message.empty())
+                        return;
+                      std::lock_guard<std::mutex> lock(mutex);
+                      messages_count++;
+                      LOG(kVerbose) << "ResponseHandler .... " << messages_count;
+                      if (messages_count == expected_messages) {
+                        cond_var.notify_one();
+                        LOG(kVerbose) << "ResponseHandler .... DONE " << messages_count;
+                      }
+                    };
+    this->nodes_[source_index]->Send(node_id,
+                                     NodeId(),
+                                     data,
+                                     callable,
+                                     boost::posix_time::seconds(static_cast<long>(10 * messages)), // NOLINT (Fraser)
+                                     DestinationType::kGroup,
+                                     false);
+  }
+
+  std::unique_lock<std::mutex> lock(mutex);
+  bool result = cond_var.wait_for(lock,
+                                  std::chrono::seconds(10 * messages + 5),
+                                  [&] ()->bool {
+                                    LOG(kInfo) << " message count " << messages_count
+                                               << " expected " << expected_messages << "\n";
+                                    return messages_count == expected_messages;
+                                  });
+  EXPECT_TRUE(result);
+  if (!result) {
+    return testing::AssertionFailure() << "Send operarion timed out: "
+                                       << expected_messages - messages_count
+                                       << " failed to reply.";
+  }
+  return testing::AssertionSuccess();
+}
+
+testing::AssertionResult GenericNetwork::Send(const NodeId& node_id) {
+  std::set<size_t> received_ids;
+  std::mutex mutex;
+  std::condition_variable cond_var;
+  size_t messages_count(0), message_id(0), expected_messages(0);
+  auto node(std::find_if(this->nodes_.begin(), this->nodes_.end(),
+                         [&](const std::shared_ptr<GenericNode> node) {
+                           return node->node_id() == node_id;
+                         }));
+  if ((node != this->nodes_.end()) && !((*node)->IsClient()))
+    expected_messages = this->nodes_.size() - 1;
+  for (auto source_node : this->nodes_) {
+    auto callable = [&](const std::vector<std::string> &message) {
+      if (message.empty())
+        return;
+      std::lock_guard<std::mutex> lock(mutex);
+      messages_count++;
+      std::string data_id(message.at(0).substr(message.at(0).find(">:<") + 3,
+          message.at(0).find("<:>") - 3 - message.at(0).find(">:<")));
+      received_ids.insert(boost::lexical_cast<size_t>(data_id));
+      LOG(kVerbose) << "ResponseHandler .... " << messages_count << " msg_id: "
+                    << data_id;
+      if (messages_count == expected_messages) {
+        cond_var.notify_one();
+        LOG(kVerbose) << "ResponseHandler .... DONE " << messages_count;
+      }
+    };
+    if (source_node->node_id() != node_id) {
+        std::string data(RandomAlphaNumericString((RandomUint32() % 255 + 1) * 2^10));
+        {
+          std::lock_guard<std::mutex> lock(mutex);
+          data = boost::lexical_cast<std::string>(++message_id) + "<:>" + data;
+        }
+        source_node->Send(node_id, NodeId(), data, callable,
+            boost::posix_time::seconds(12), DestinationType::kDirect, false);
+    }
+  }
+
+  std::unique_lock<std::mutex> lock(mutex);
+  bool result = cond_var.wait_for(lock, std::chrono::seconds(20),
+      [&]()->bool {
+        LOG(kInfo) << " message count " << messages_count << " expected "
+                   << expected_messages << "\n";
+        return messages_count == expected_messages;
+      });
+  EXPECT_TRUE(result);
+  if (!result) {
+    for (size_t id(1); id <= expected_messages; ++id) {
+      auto iter = received_ids.find(id);
+      if (iter == received_ids.end())
+        LOG(kVerbose) << "missing id: " << id;
+    }
+    return testing::AssertionFailure() << "Send operarion timed out: "
+                                       << expected_messages - messages_count
+                                       << " failed to reply.";
+  }
+  return testing::AssertionSuccess();
+}
+
+testing::AssertionResult GenericNetwork::Send(std::shared_ptr<GenericNode> source_node,
+                                              const NodeId& node_id,
+                                              bool no_response_expected) {
+  std::mutex mutex;
+  std::condition_variable cond_var;
+  size_t messages_count(0), expected_messages(0);
+  ResponseFunctor callable;
+  if (!no_response_expected) {
+    expected_messages = std::count_if(this->nodes_.begin(), this->nodes_.end(),
+        [=](const std::shared_ptr<GenericNode> node)->bool {
+          return node_id == node->node_id();
+        });
+
+    callable = [&](const std::vector<std::string> &message) {
+      if (message.empty())
+        return;
+      std::lock_guard<std::mutex> lock(mutex);
+      messages_count++;
+      LOG(kVerbose) << "ResponseHandler .... " << messages_count;
+      if (messages_count == expected_messages) {
+        cond_var.notify_one();
+        LOG(kVerbose) << "ResponseHandler .... DONE " << messages_count;
+      }
+    };
+  }
+  std::string data(RandomAlphaNumericString(512 * 2^10));
+  assert(!data.empty() && "Send Data Empty !");
+  source_node->Send(node_id, NodeId(), data, callable,
+                    boost::posix_time::seconds(12), DestinationType::kDirect, false);
+
+  if (!no_response_expected) {
+    std::unique_lock<std::mutex> lock(mutex);
+    bool result = cond_var.wait_for(lock, std::chrono::seconds(20),
+        [&]()->bool {
+          LOG(kInfo) << " message count " << messages_count << " expected "
+                    << expected_messages << "\n";
+          return messages_count == expected_messages;
+        });
+    EXPECT_TRUE(result);
+    if (!result) {
+      return testing::AssertionFailure() << "Send operarion timed out: "
+                                         << expected_messages - messages_count
+                                         << " failed to reply.";
+    }
+    return testing::AssertionSuccess();
+  } else {
+    return testing::AssertionSuccess();
+  }
+}
+
 uint16_t GenericNetwork::NonClientNodesSize() const {
   uint16_t non_client_size(0);
   for (auto node : nodes_) {
@@ -634,7 +985,7 @@ void GenericNetwork::AddNodeDetails(NodePtr node) {
   {
     {
       std::lock_guard<std::mutex> fobs_lock(fobs_mutex_);
-      fobs_.push_back(node->fob());
+      public_keys_[node->node_id()] = node->public_key();
     }
     std::lock_guard<std::mutex> lock(mutex_);
     SetNodeValidationFunctor(node);
@@ -653,8 +1004,12 @@ void GenericNetwork::AddNodeDetails(NodePtr node) {
       [cond_var_weak, weak_node] (const int& result) {
         std::shared_ptr<std::condition_variable> cond_var(cond_var_weak.lock());
         NodePtr node(weak_node.lock());
+        if (node) {
+          node->SetHealth(result);
+        }
         if (!cond_var || !node)
           return;
+
         if (!node->anonymous_) {
           ASSERT_GE(result, kSuccess);
         } else  {
@@ -680,6 +1035,9 @@ void GenericNetwork::AddNodeDetails(NodePtr node) {
   }
   PrintRoutingTables();
 }
+
+std::shared_ptr<GenericNetwork> NodesEnvironment::g_env_ =
+  std::shared_ptr<GenericNetwork>(new GenericNetwork());
 
 }  // namespace test
 

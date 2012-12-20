@@ -14,11 +14,11 @@
 #include <memory>
 #include <vector>
 
+#include "maidsafe/common/log.h"
 #include "maidsafe/common/node_id.h"
 #include "maidsafe/common/test.h"
-
-#include "maidsafe/common/log.h"
 #include "maidsafe/common/utils.h"
+
 #include "maidsafe/routing/routing_table.h"
 #include "maidsafe/routing/parameters.h"
 #include "maidsafe/rudp/managed_connections.h"
@@ -28,16 +28,9 @@ namespace maidsafe {
 namespace routing {
 namespace test {
 
-class RoutingTableTest : public testing::Test {
- public:
-  RoutingTableTest() {}
-};
-
 
 TEST(RoutingTableTest, BEH_AddCloseNodes) {
-  Fob fob;
-  fob.identity = Identity(RandomString(64));
-  RoutingTable routing_table(fob, false);
+  RoutingTable routing_table(false, NodeId(NodeId::kRandomId), asymm::GenerateKeyPair());
   NodeInfo node;
   // check the node is useful when false is set
   for (unsigned int i = 0; i < Parameters::closest_nodes_size ; ++i) {
@@ -62,9 +55,7 @@ TEST(RoutingTableTest, BEH_AddCloseNodes) {
 }
 
 TEST(RoutingTableTest, BEH_AddTooManyNodes) {
-  Fob fob;
-  fob.identity = Identity(RandomString(64));
-  RoutingTable routing_table(fob, false);
+  RoutingTable routing_table(false, NodeId(NodeId::kRandomId), asymm::GenerateKeyPair());
   for (uint16_t i = 0; routing_table.size() < Parameters::max_routing_table_size; ++i) {
     NodeInfo node(MakeNode());
     EXPECT_TRUE(routing_table.AddNode(node));
@@ -84,9 +75,7 @@ TEST(RoutingTableTest, BEH_AddTooManyNodes) {
 }
 
 TEST(RoutingTableTest, BEH_PopulateAndDepopulateGroupCheckGroupChange) {
-  Fob fob;
-  fob.identity = Identity(RandomString(64));
-  RoutingTable routing_table(fob, false);
+  RoutingTable routing_table(false, NodeId(NodeId::kRandomId), asymm::GenerateKeyPair());
   std::vector<NodeInfo> nodes;
   for (uint16_t i = 0; i < Parameters::closest_nodes_size; ++i)
     nodes.push_back(MakeNode());
@@ -132,9 +121,7 @@ TEST(RoutingTableTest, BEH_PopulateAndDepopulateGroupCheckGroupChange) {
 }
 
 TEST(RoutingTableTest, BEH_OrderedGroupChange) {
-  Fob fob;
-  fob.identity = Identity(RandomString(64));
-  RoutingTable routing_table(fob, false);
+  RoutingTable routing_table(false, NodeId(NodeId::kRandomId), asymm::GenerateKeyPair());
   std::vector<NodeInfo> nodes;
   for (uint16_t i = 0; i < Parameters::max_routing_table_size; ++i)
     nodes.push_back(MakeNode());
@@ -176,9 +163,7 @@ TEST(RoutingTableTest, BEH_OrderedGroupChange) {
 }
 
 TEST(RoutingTableTest, BEH_ReverseOrderedGroupChange) {
-  Fob fob;
-  fob.identity = Identity(RandomString(64));
-  RoutingTable routing_table(fob, false);
+  RoutingTable routing_table(false, NodeId(NodeId::kRandomId), asymm::GenerateKeyPair());
   std::vector<NodeInfo> nodes;
   for (uint16_t i = 0; i < Parameters::max_routing_table_size; ++i)
     nodes.push_back(MakeNode());
@@ -259,9 +244,7 @@ TEST(RoutingTableTest, BEH_ReverseOrderedGroupChange) {
 }
 
 TEST(RoutingTableTest, BEH_CheckGroupChangeRemoveNodesFromGroup) {
-  Fob fob;
-  fob.identity = Identity(RandomString(64));
-  RoutingTable routing_table(fob, false);
+  RoutingTable routing_table(false, NodeId(NodeId::kRandomId), asymm::GenerateKeyPair());
   std::vector<NodeInfo> nodes;
   for (uint16_t i = 0; i < Parameters::max_routing_table_size; ++i)
     nodes.push_back(MakeNode());
@@ -343,9 +326,7 @@ TEST(RoutingTableTest, BEH_CheckGroupChangeRemoveNodesFromGroup) {
 }
 
 TEST(RoutingTableTest, BEH_CheckGroupChangeAddGroupNodesToFullTable) {
-  Fob fob;
-  fob.identity = Identity(RandomString(64));
-  RoutingTable routing_table(fob, false);
+  RoutingTable routing_table(false, NodeId(NodeId::kRandomId), asymm::GenerateKeyPair());
   std::vector<NodeInfo> nodes;
   for (uint16_t i = 0; i < Parameters::max_routing_table_size; ++i)
     nodes.push_back(MakeNode());
@@ -454,9 +435,7 @@ TEST(RoutingTableTest, BEH_CheckGroupChangeAddGroupNodesToFullTable) {
 }
 
 TEST(RoutingTableTest, BEH_FillEmptyRefillRoutingTable) {
-  Fob fob;
-  fob.identity = Identity(RandomString(64));
-  RoutingTable routing_table(fob, false);
+  RoutingTable routing_table(false, NodeId(NodeId::kRandomId), asymm::GenerateKeyPair());
   NodeId own_node_id(routing_table.kNodeId());
   std::vector<NodeInfo> nodes;
   for (uint16_t i = 0; i < Parameters::max_routing_table_size; ++i)
@@ -575,9 +554,7 @@ TEST(RoutingTableTest, BEH_FillEmptyRefillRoutingTable) {
 
 TEST(RoutingTableTest, BEH_CheckMockSendGroupChangeRpcs) {
   // Set up 1
-  Fob fob_1;
-  fob_1.identity = Identity(RandomString(64));
-  RoutingTable routing_table_1(fob_1, false);
+  RoutingTable routing_table_1(false, NodeId(NodeId::kRandomId), asymm::GenerateKeyPair());
   NodeInfo node_info_1(MakeNode());
   node_info_1.node_id = routing_table_1.kNodeId();
   node_info_1.connection_id = node_info_1.node_id;
@@ -592,10 +569,9 @@ TEST(RoutingTableTest, BEH_CheckMockSendGroupChangeRpcs) {
   SortFromTarget(node_id_1, extra_nodes);
 
   // Set up 2 to be in 1's closest_nodes_size group
-  Fob fob_2;
   uint16_t index_2(RandomUint32() % Parameters::closest_nodes_size);
-  fob_2.identity = Identity(extra_nodes.at(index_2).node_id.string());
-  RoutingTable routing_table_2(fob_2, false);
+  RoutingTable routing_table_2(false, extra_nodes.at(index_2).node_id, asymm::GenerateKeyPair());
+
   NodeInfo node_info_2(extra_nodes.at(index_2));
   ASSERT_EQ(routing_table_2.kNodeId(), node_info_2.node_id);
   ASSERT_EQ(node_info_2.connection_id, node_info_2.node_id);
@@ -727,9 +703,7 @@ TEST(RoutingTableTest, BEH_CheckMockSendGroupChangeRpcs) {
 }
 
 TEST(RoutingTableTest, BEH_GroupUpdateFromConnectedPeer) {
-  Fob fob;
-  fob.identity = Identity(RandomString(64));
-  RoutingTable routing_table(fob, false);
+  RoutingTable routing_table(false, NodeId(NodeId::kRandomId), asymm::GenerateKeyPair());
 
   std::vector<NodeInfo> nodes;
   for (uint16_t i(0); i < Parameters::closest_nodes_size; ++i)
@@ -763,11 +737,8 @@ TEST(RoutingTableTest, BEH_GroupUpdateFromConnectedPeer) {
 
 TEST(RoutingTableTest, BEH_GetNthClosest) {
   std::vector<NodeId> nodes_id;
-  Fob fob;
-  fob.identity = Identity(RandomString(64));
-  RoutingTable routing_table(fob, false);
-  NodeInfo node_info;
-  NodeId my_node(fob.identity);
+  RoutingTable routing_table(false, NodeId(NodeId::kRandomId), asymm::GenerateKeyPair());
+  NodeId my_node(routing_table.kNodeId());
 
   for (uint16_t i(static_cast<uint16_t>(routing_table.size()));
        routing_table.size() < 10; ++i) {
@@ -779,7 +750,7 @@ TEST(RoutingTableTest, BEH_GetNthClosest) {
             [&](const NodeId& lhs, const NodeId& rhs) {
               return NodeId::CloserToTarget(lhs, rhs, my_node);
             });
-  for (int index = 0; index < 10; ++index) {
+  for (uint16_t index = 0; index < 10; ++index) {
     EXPECT_EQ(nodes_id[index], routing_table.GetNthClosestNode(my_node, index + 1).node_id)
         << DebugId(nodes_id[index]) << " not eq to "
         << DebugId(routing_table.GetNthClosestNode(my_node, index + 1).node_id);
@@ -789,11 +760,9 @@ TEST(RoutingTableTest, BEH_GetNthClosest) {
 TEST(RoutingTableTest, BEH_GetClosestNodeWithExclusion) {
   std::vector<NodeId> nodes_id;
   std::vector<std::string> exclude;
-  Fob fob;
-  fob.identity = Identity(RandomString(64));
-  RoutingTable routing_table(fob, false);
+  RoutingTable routing_table(false, NodeId(NodeId::kRandomId), asymm::GenerateKeyPair());
   NodeInfo node_info;
-  NodeId my_node(fob.identity);
+  NodeId my_node(routing_table.kNodeId());
 
   // Empty routing_table
   node_info = routing_table.GetClosestNode(my_node, exclude, false);

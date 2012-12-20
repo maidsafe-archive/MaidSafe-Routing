@@ -203,7 +203,7 @@ void ResponseHandler::SendConnectRequest(const NodeId peer_node_id) {
   NodeInfo peer;
   peer.node_id = peer_node_id;
 
-  if (peer.node_id == NodeId(routing_table_.kFob().identity)) {
+  if (peer.node_id == NodeId(routing_table_.kNodeId())) {
     LOG(kInfo) << "Can't send connect request to self !";
     return;
   }

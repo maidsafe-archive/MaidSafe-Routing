@@ -15,6 +15,7 @@
 
 #include <chrono>
 #include <future>
+#include <map>
 #include <string>
 #include <vector>
 #include <algorithm>
@@ -28,7 +29,8 @@
 
 #include "maidsafe/rudp/nat_type.h"
 
-#include "maidsafe/private/utils/fob.h"
+#include "maidsafe/passport/passport.h"
+#include "maidsafe/passport/types.h"
 
 #include "maidsafe/routing/api_config.h"
 #include "maidsafe/routing/node_info.h"
@@ -57,6 +59,7 @@ const uint32_t kServerSize(20);
 const uint32_t kNetworkSize = kClientSize + kServerSize;
 
 class GenericNetwork;
+class NodesEnvironment;
 
 class GenericNode {
  public:
@@ -75,7 +78,7 @@ class GenericNode {
   bool joined() const;
   bool IsClient() const;
   bool anonymous() { return anonymous_; }
-  void set_client_mode(const bool& client_mode);
+  //void set_client_mode(const bool& client_mode);
   int expected();
   void set_expected(const int& expected);
   int ZeroStateJoin(const boost::asio::ip::udp::endpoint& peer_endpoint,
@@ -113,7 +116,9 @@ class GenericNode {
   static size_t next_node_id_;
   size_t MessagesSize() const;
   void ClearMessages();
-  Fob fob();
+  asymm::PublicKey public_key();
+  int Health();
+  void SetHealth(const int& health);
   friend class GenericNetwork;
   Functors functors_;
 
@@ -131,35 +136,54 @@ class GenericNode {
   std::shared_ptr<Routing> routing_;
 
  private:
+  std::mutex health_mutex_;
+  int health_;
   void InitialiseFunctors();
+  void InjectNodeInfoAndPrivateKey();
 };
 
-class GenericNetwork : public testing::Test {
+class GenericNetwork {
  public:
   typedef std::shared_ptr<GenericNode> NodePtr;
   GenericNetwork();
-  ~GenericNetwork();
+  virtual ~GenericNetwork();
 
- protected:
+  bool ValidateRoutingTables();
+  void AddNode(const bool& client_mode, const NodeId& node_id, bool anonymous = false);
   virtual void SetUp();
   virtual void TearDown();
-  virtual void SetUpNetwork(const size_t& non_client_size, const size_t& client_size = 0);
-  void AddNode(const bool& client_mode, const NodeId& node_id, bool anonymous = false);
+  void SetUpNetwork(const size_t& non_client_size, const size_t& client_size = 0);
   void AddNode(const bool& client_mode, const rudp::NatType& nat_type);
   bool RemoveNode(const NodeId& node_id);
-  virtual void Validate(const NodeId& node_id, GivePublicKeyFunctor give_public_key);
-  virtual void SetNodeValidationFunctor(NodePtr node);
+  void Validate(const NodeId& node_id, GivePublicKeyFunctor give_public_key);
+  void SetNodeValidationFunctor(NodePtr node);
   std::vector<NodeId> GroupIds(const NodeId& node_id);
   void PrintRoutingTables();
-  bool ValidateRoutingTables();
+  size_t RandomNodeIndex();
+  size_t RandomClientIndex();
+  size_t RandomVaultIndex();
   NodePtr RandomClientNode();
   NodePtr RandomVaultNode();
   void RemoveRandomClient();
   void RemoveRandomVault();
   void ClearMessages();
   int NodeIndex(const NodeId& node_id);
+  size_t ClientIndex() { return client_index_; }
   std::vector<NodeId> GetGroupForId(const NodeId& node_id);
   std::vector<NodeInfo> GetClosestNodes(const NodeId& target_id, const uint32_t& quantity);
+  bool RestoreComposition();
+  bool WaitForHealthToStabilise();
+  testing::AssertionResult Send(const size_t& messages);
+  testing::AssertionResult GroupSend(const NodeId& node_id,
+                                     const size_t& messages,
+                                     uint16_t source_index = 0);
+  testing::AssertionResult Send(const NodeId& node_id);
+  testing::AssertionResult Send(std::shared_ptr<GenericNode> source_node,
+                                const NodeId& node_id,
+                                bool no_response_expected = false);
+
+  friend class NodesEnvironment;
+
 
  private:
   uint16_t NonClientNodesSize() const;
@@ -168,11 +192,34 @@ class GenericNetwork : public testing::Test {
   mutable std::mutex mutex_, fobs_mutex_;
   std::vector<boost::asio::ip::udp::endpoint> bootstrap_endpoints_;
   boost::filesystem::path bootstrap_path_;
-  std::vector<Fob> fobs_;
+  std::map<NodeId, asymm::PublicKey> public_keys_;
   size_t client_index_;
 
  public:
   std::vector<NodePtr> nodes_;
+};
+
+class NodesEnvironment : public testing::Environment {
+ public:
+  NodesEnvironment(size_t num_server_nodes, size_t num_client_nodes)
+    : num_server_nodes_(num_server_nodes),
+      num_client_nodes_(num_client_nodes) {}
+
+  void SetUp() {
+    g_env_->GenericNetwork::SetUp();
+    g_env_->SetUpNetwork(num_server_nodes_, num_client_nodes_);
+  }
+  void TearDown() {
+    g_env_->GenericNetwork::TearDown();
+  }
+
+  static std::shared_ptr<GenericNetwork> g_environment() {
+    return g_env_;
+  }
+ private:
+  size_t num_server_nodes_;
+  size_t num_client_nodes_;
+  static std::shared_ptr<GenericNetwork> g_env_;
 };
 
 }  // namespace test

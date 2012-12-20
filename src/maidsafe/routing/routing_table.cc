@@ -29,15 +29,15 @@ namespace maidsafe {
 
 namespace routing {
 
-RoutingTable::RoutingTable(const Fob& fob, bool client_mode)
-    : kMaxSize_(client_mode ? Parameters::max_client_routing_table_size :
-                              Parameters::max_routing_table_size),
-      kThresholdSize_(client_mode ? Parameters::max_client_routing_table_size :
-                                    Parameters::routing_table_size_threshold),
-      kClientMode_(client_mode),
-      kFob_(fob),
-      kNodeId_(NodeId(kFob_.identity)),
-      kConnectionId_((client_mode ? NodeId(NodeId::kRandomId) : kNodeId_)),
+RoutingTable::RoutingTable(bool client_mode, const NodeId& node_id, const asymm::Keys& keys)
+    : kClientMode_(client_mode),
+      kNodeId_(node_id),
+      kConnectionId_(kClientMode_ ? NodeId(NodeId::kRandomId) : kNodeId_),
+      kKeys_(keys),
+      kMaxSize_(kClientMode_ ? Parameters::max_client_routing_table_size :
+                                Parameters::max_routing_table_size),
+      kThresholdSize_(kClientMode_ ? Parameters::max_client_routing_table_size :
+                                      Parameters::routing_table_size_threshold),
       mutex_(),
       furthest_group_node_id_(),
       remove_node_functor_(),
@@ -48,6 +48,7 @@ RoutingTable::RoutingTable(const Fob& fob, bool client_mode)
       close_node_replaced_functor_(),
       nodes_(),
       group_matrix_(kNodeId_) {}
+
 
 void RoutingTable::InitialiseFunctors(
     NetworkStatusFunctor network_status_functor,
@@ -273,7 +274,7 @@ bool RoutingTable::IsConnected(const NodeId& node_id) const {
 }
 
 bool RoutingTable::ConfirmGroupMembers(const NodeId& node1, const NodeId& node2) {
-  NodeId difference = NodeId(kFob().identity) ^ FurthestCloseNode();
+  NodeId difference = kNodeId_ ^ FurthestCloseNode();
   return (node1 ^ node2) < difference;
 }
 
@@ -497,7 +498,7 @@ void RoutingTable::NthElementSortFromTarget(const NodeId& target,
 }
 
 NodeId RoutingTable::FurthestCloseNode() {
-  return GetNthClosestNode(NodeId(kFob().identity), Parameters::closest_nodes_size).node_id;
+  return GetNthClosestNode(kNodeId_, Parameters::closest_nodes_size).node_id;
 }
 
 NodeInfo RoutingTable::GetClosestNode(const NodeId& target_id, bool ignore_exact_match) {

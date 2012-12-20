@@ -21,7 +21,7 @@
 
 #include "maidsafe/common/rsa.h"
 
-#include "maidsafe/private/utils/fob.h"
+#include "maidsafe/passport/types.h"
 
 #include "maidsafe/routing/node_info.h"
 #include "maidsafe/routing/routing_table.h"
@@ -42,12 +42,13 @@ struct NodeInfoAndPrivateKey {
 };
 
 NodeInfoAndPrivateKey MakeNodeInfoAndKeys();
+NodeInfoAndPrivateKey MakeNodeInfoAndKeysWithPmid(passport::Pmid pmid);
+NodeInfoAndPrivateKey MakeNodeInfoAndKeysWithMaid(passport::Maid maid);
 
-NodeInfoAndPrivateKey MakeNodeInfoAndKeysWithFob(Fob fob);
+passport::Maid MakeMaid();
+passport::Pmid MakePmid();
 
-Fob MakeFob();
-
-Fob GetFob(const NodeInfoAndPrivateKey& node);
+//Fob GetFob(const NodeInfoAndPrivateKey& node);
 
 NodeInfo MakeNode();
 

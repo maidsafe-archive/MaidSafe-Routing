@@ -25,10 +25,11 @@
 #include "maidsafe/common/node_id.h"
 #include "maidsafe/common/rsa.h"
 
-#include "maidsafe/private/utils/fob.h"
+#include "maidsafe/passport/types.h"
 
 #include "maidsafe/routing/api_config.h"
 #include "maidsafe/routing/group_matrix.h"
+#include "maidsafe/routing/parameters.h"
 
 
 namespace maidsafe {
@@ -59,7 +60,7 @@ typedef std::function<void(const bool& /*subscribe*/, NodeInfo /*node_info*/)>
 
 class RoutingTable {
  public:
-  RoutingTable(const Fob& fob, bool client_mode);
+  RoutingTable(bool client_mode, const NodeId& node_id, const asymm::Keys& keys);
   virtual ~RoutingTable() {}
   void InitialiseFunctors(NetworkStatusFunctor network_status_functor,
                           std::function<void(const NodeInfo&, bool)> remove_node_functor,
@@ -91,12 +92,20 @@ class RoutingTable {
   void GetNodesNeedingGroupUpdates(std::vector<NodeInfo>& nodes_needing_update);
   size_t size() const;
   uint16_t kThresholdSize() const { return kThresholdSize_; }
-  Fob kFob() const { return kFob_; }
   NodeId kNodeId() const { return kNodeId_; }
+  asymm::PrivateKey kPrivateKey() const { return kKeys_.private_key; }
+  asymm::PublicKey kPublicKey() const { return kKeys_.public_key; }
   NodeId kConnectionId() const { return kConnectionId_; }
   bool client_mode() const { return kClientMode_; }
+
   friend class test::GenericNode;
   friend class GroupChangeHandler;
+  friend class test::RoutingTableTest;
+  friend class test::RoutingTableTest_BEH_OrderedGroupChange_Test;
+  friend class test::RoutingTableTest_BEH_ReverseOrderedGroupChange_Test;
+  friend class test::RoutingTableTest_BEH_CheckMockSendGroupChangeRpcs_Test;
+  friend class test::RoutingTableTest_BEH_GroupUpdateFromConnectedPeer_Test;
+
  private:
   RoutingTable(const RoutingTable&);
   RoutingTable& operator=(const RoutingTable&);
@@ -134,19 +143,12 @@ class RoutingTable {
   std::string PrintRoutingTable();
   void PrintGroupMatrix();
 
-  friend class test::RoutingTableTest;
-  friend class test::RoutingTableTest_BEH_OrderedGroupChange_Test;
-  friend class test::RoutingTableTest_BEH_ReverseOrderedGroupChange_Test;
-  friend class test::RoutingTableTest_BEH_CheckMockSendGroupChangeRpcs_Test;
-  friend class test::RoutingTableTest_BEH_GroupUpdateFromConnectedPeer_Test;
-
-
-  const uint16_t kMaxSize_;
-  const uint16_t kThresholdSize_;
   const bool kClientMode_;
-  const Fob kFob_;
   const NodeId kNodeId_;
   const NodeId kConnectionId_;
+  const asymm::Keys kKeys_;
+  const uint16_t kMaxSize_;
+  const uint16_t kThresholdSize_;
   mutable std::mutex mutex_;
   NodeId furthest_group_node_id_;
   std::function<void(const NodeInfo&, bool)> remove_node_functor_;

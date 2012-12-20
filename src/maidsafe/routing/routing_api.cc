@@ -20,8 +20,12 @@ namespace routing {
 
 namespace { typedef boost::asio::ip::udp::endpoint Endpoint; }
 
-
-Routing::Routing(const Fob& fob, bool client_mode) : pimpl_(new Impl(fob, client_mode)) {}
+void Routing::InitialisePimpl(bool client_mode,
+                              bool anonymous,
+                              const NodeId& node_id,
+                              const asymm::Keys& keys) {
+  pimpl_.reset(new Impl(client_mode, anonymous, node_id, keys));
+}
 
 void Routing::Join(Functors functors, std::vector<Endpoint> peer_endpoints) {
   pimpl_->Join(functors, peer_endpoints);

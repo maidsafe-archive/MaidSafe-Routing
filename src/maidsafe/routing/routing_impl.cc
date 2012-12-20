@@ -13,16 +13,18 @@
 #include "maidsafe/routing/routing_impl.h"
 
 #include <cstdint>
+#include <type_traits>
 
 #include "maidsafe/common/log.h"
 
 #include "maidsafe/rudp/managed_connections.h"
 #include "maidsafe/rudp/return_codes.h"
 
+#include "maidsafe/passport/types.h"
+
 #include "maidsafe/routing/bootstrap_file_handler.h"
 #include "maidsafe/routing/message_handler.h"
 #include "maidsafe/routing/node_info.h"
-#include "maidsafe/routing/parameters.h"
 #include "maidsafe/routing/return_codes.h"
 #include "maidsafe/routing/routing_pb.h"
 #include "maidsafe/routing/rpcs.h"
@@ -41,23 +43,19 @@ typedef boost::asio::ip::udp::endpoint Endpoint;
 
 }  // unnamed namespace
 
-Routing::Impl::Impl(const Fob& fob, bool client_mode)
-    : kFob_([&fob]()->Fob {
-          if (fob.identity.IsInitialised())
-            return fob;
-          Fob fob_temp;
-          fob_temp.keys = asymm::GenerateKeyPair();
-          fob_temp.identity = Identity(RandomString(64));
-          return fob_temp;
-      }()),
-      kNodeId_(NodeId(kFob_.identity)),
-      kAnonymousNode_(!fob.identity.IsInitialised()),
+Routing::Impl::Impl(bool client_mode,
+                    bool anonymous,
+                    const NodeId& node_id,
+                    const asymm::Keys& keys)
+    : routing_table_(client_mode, node_id, keys),
+      kNodeId_(routing_table_.kNodeId()),
+      kAnonymousNode_(anonymous),
       running_(true),
       running_mutex_(),
       functors_(),
       random_node_helper_(),
-      routing_table_(kFob_, client_mode),
-      non_routing_table_(kFob_),  // TODO(Prakash) : don't create NRT for client nodes (wrap both)
+      // TODO(Prakash) : don't create non_routing_table for client nodes (wrap both)
+      non_routing_table_(routing_table_.kNodeId()),
       remove_furthest_node_(routing_table_, network_),
       group_change_handler_(routing_table_, network_),
       message_handler_(),
@@ -75,7 +73,7 @@ Routing::Impl::Impl(const Fob& fob, bool client_mode)
                                             remove_furthest_node_,
                                             group_change_handler_));
 
-  assert((client_mode || fob.identity.IsInitialised()) &&
+  assert((client_mode || !node_id.IsZero()) &&
          "Server Nodes cannot be created without valid keys");
   if (kAnonymousNode_) {
     LOG(kInfo) << "Anonymous node id: " << DebugId(kNodeId_)
@@ -214,9 +212,7 @@ void Routing::Impl::FindClosestNode(const boost::system::error_code& error_code,
     }
 
     if (attempts >= Parameters::maximum_find_close_node_failures) {
-      LOG(kError) << "[" << HexSubstr(kFob_.identity)
-                  << "] failed to get closest node."
-                  << " ReBootstrapping ...";
+      LOG(kError) << "[" << DebugId(kNodeId_) << "] failed to get closest node. ReBootstrapping...";
       // TODO(Prakash) : Remove the bootstrap node from the list
       ReBootstrap();
     }
@@ -481,7 +477,7 @@ void Routing::Impl::DoOnConnectionLost(const NodeId& lost_connection_id) {
   // Checking routing table
   dropped_node = routing_table_.DropNode(lost_connection_id, true);
   if (!dropped_node.node_id.IsZero()) {
-    LOG(kWarning) << "[" << HexSubstr(kFob_.identity) << "]"
+    LOG(kWarning) << "[" << DebugId(kNodeId_) << "]"
                   << "Lost connection with routing node " << DebugId(dropped_node.node_id);
     random_node_helper_.Remove(dropped_node.node_id);
   }
@@ -491,12 +487,12 @@ void Routing::Impl::DoOnConnectionLost(const NodeId& lost_connection_id) {
     resend = false;
     dropped_node = non_routing_table_.DropConnection(lost_connection_id);
     if (!dropped_node.node_id.IsZero()) {
-      LOG(kWarning) << "[" << HexSubstr(kFob_.identity) << "]"
+      LOG(kWarning) << "[" << DebugId(kNodeId_) << "]"
                     << "Lost connection with non-routing node "
                     << HexSubstr(dropped_node.node_id.string());
     } else if (!network_.bootstrap_connection_id().IsZero() &&
                lost_connection_id == network_.bootstrap_connection_id()) {
-      LOG(kWarning) << "[" << HexSubstr(kFob_.identity) << "]"
+      LOG(kWarning) << "[" << DebugId(kNodeId_) << "]"
                     << "Lost temporary connection with bootstrap node. connection id :"
                     << DebugId(lost_connection_id);
       {
@@ -515,7 +511,7 @@ void Routing::Impl::DoOnConnectionLost(const NodeId& lost_connection_id) {
       if (routing_table_.size() == 0)
         resend = true;  // This will trigger rebootstrap
     } else {
-      LOG(kWarning) << "[" << HexSubstr(kFob_.identity) << "]"
+      LOG(kWarning) << "[" << DebugId(kNodeId_) << "]"
                     << "Lost connection with unknown/internal connection id "
                     << DebugId(lost_connection_id);
     }
@@ -576,7 +572,7 @@ void Routing::Impl::ReSendFindNodeRequest(const boost::system::error_code& error
     return;
 
   if (routing_table_.size() == 0) {
-    LOG(kError) << "[" << HexSubstr(kFob_.identity)
+    LOG(kError) << "[" << DebugId(kNodeId_)
                 << "]'s' Routing table is empty."
                 << " Scheduling Re-Bootstrap .... !!!";
     ReBootstrap();
@@ -631,7 +627,7 @@ void Routing::Impl::DoReBootstrap(const boost::system::error_code& error_code) {
     if (!running_)
       return;
   }
-  LOG(kError) << "[" << HexSubstr(kFob_.identity) << "]'s' Routing table is empty."
+  LOG(kError) << "[" << DebugId(kNodeId_) << "]'s' Routing table is empty."
               << " ReBootstrapping ....";
   DoJoin(std::vector<Endpoint>());
 }

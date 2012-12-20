@@ -39,26 +39,18 @@
 #include "maidsafe/common/rsa.h"
 #include "maidsafe/common/utils.h"
 
-#include "maidsafe/private/chunk_actions/chunk_action_authority.h"
-#include "maidsafe/private/chunk_actions/chunk_pb.h"
-#include "maidsafe/private/chunk_actions/chunk_type.h"
-#include "maidsafe/private/chunk_store/buffered_chunk_store.h"
-#include "maidsafe/private/chunk_store/remote_chunk_store.h"
-#include "maidsafe/private/lifestuff_manager/client_controller.h"
-#include "maidsafe/private/utils/utilities.h"
+#include "maidsafe/passport/types.h"
 
 #include "maidsafe/routing/node_info.h"
 #include "maidsafe/routing/routing_api.h"
 #include "maidsafe/routing/utils.h"
 
+
 namespace fs = boost::filesystem;
 namespace po = boost::program_options;
 namespace asymm = maidsafe::rsa;
-namespace pca = maidsafe::priv::chunk_actions;
-namespace pcs = maidsafe::priv::chunk_store;
-namespace utils = maidsafe::priv::utils;
 
-typedef std::vector<maidsafe::Fob> FobList;
+struct std::vector<maidsafe::Fob> FobList;
 
 const std::string kHelperVersion = "MaidSafe Routing KeysHelper " + maidsafe::kApplicationVersion;
 
@@ -82,7 +74,8 @@ void PrintFobs(const FobList &all_fobs) {
 }
 
 bool CreateFobs(const size_t &fobs_count, FobList &all_fobs) {
-  for (size_t i = 0; i < fobs_count; ++i) {
+  size_t i(0);
+  for (; i < fobs_count / 2; ++i) {
     try {
       all_fobs.push_back(utils::GenerateFob(nullptr));
     }
