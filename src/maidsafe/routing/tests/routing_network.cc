@@ -426,6 +426,7 @@ void GenericNetwork::SetUp() {
   nodes_.push_back(node2);
   client_index_ = 2;
   public_keys_.insert(std::make_pair(node1->node_id(), node1->public_key()));
+  public_keys_.insert(std::make_pair(node2->node_id(), node2->public_key()));
   //fobs_.push_back(node2->fob());
   SetNodeValidationFunctor(node1);
   SetNodeValidationFunctor(node2);
@@ -985,7 +986,7 @@ void GenericNetwork::AddNodeDetails(NodePtr node) {
   {
     {
       std::lock_guard<std::mutex> fobs_lock(fobs_mutex_);
-      public_keys_[node->node_id()] = node->public_key();
+      public_keys_.insert(std::make_pair(node->node_id(), node->public_key()));
     }
     std::lock_guard<std::mutex> lock(mutex_);
     SetNodeValidationFunctor(node);
@@ -1031,7 +1032,7 @@ void GenericNetwork::AddNodeDetails(NodePtr node) {
     std::unique_lock<std::mutex> lock(mutex);
     auto result = cond_var->wait_for(lock, std::chrono::seconds(20));
     EXPECT_EQ(result, std::cv_status::no_timeout);
-    Sleep(boost::posix_time::millisec(2600));
+    Sleep(boost::posix_time::millisec(1000));
   }
   PrintRoutingTables();
 }
