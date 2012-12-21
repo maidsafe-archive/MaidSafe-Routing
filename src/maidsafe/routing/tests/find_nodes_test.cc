@@ -90,7 +90,6 @@ TEST_F(FindNodeNetwork, FUNC_FindNodeAfterDrop) {
   NodeId node_id(GenerateUniqueRandomId(this->nodes_[source]->node_id(), 6));
   EXPECT_FALSE(this->nodes_[source]->RoutingTableHasNode(node_id));
   this->AddNode(false, node_id);
-  Sleep(boost::posix_time::seconds(1));
   EXPECT_TRUE(this->nodes_[source]->RoutingTableHasNode(node_id));
   EXPECT_TRUE(this->nodes_[source]->DropNode(node_id));
   Sleep(Parameters::recovery_time_lag + Parameters::find_node_interval +

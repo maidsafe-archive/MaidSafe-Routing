@@ -233,7 +233,7 @@ bool RoutingTable::IsThisNodeInGroupForId(const NodeId& target_id, bool& is_grou
 NodeInfo RoutingTable::GetConnectedPeerFromGroupMatrixClosestTo(const NodeId& target_node_id) {
   std::unique_lock<std::mutex> lock(mutex_);
   NodeInfo node_info;
-  node_info = group_matrix_.GetConnectedPeerFor(target_node_id);
+  node_info = group_matrix_.GetConnectedPeerClosestTo(target_node_id);
   return node_info;
 }
 

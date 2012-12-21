@@ -84,11 +84,23 @@ NodeInfo GroupMatrix::GetConnectedPeerFor(const NodeId& target_node_id) {
 NodeInfo GroupMatrix::GetConnectedPeerClosestTo(const NodeId& target_node_id) {
   NodeInfo peer;
   NodeId closest(kNodeId_);
+  std::vector<NodeInfo> connected_nodes;
+  for (auto nods : matrix_)
+    connected_nodes.push_back(nods.at(0));
   for (auto nodes : matrix_) {
     for (auto node : nodes) {
-      if (NodeId::CloserToTarget(node.node_id, closest, target_node_id)) {
+      if ((node.node_id != target_node_id) &&
+          NodeId::CloserToTarget(node.node_id, closest, target_node_id)) {
+        if (std::find_if(connected_nodes.begin(), connected_nodes.end(),
+                         [&](const NodeInfo& node_info) {
+                           return node_info.node_id == node.node_id;
+                         }) == connected_nodes.end()) {
           peer = nodes.at(0);
           closest = node.node_id;
+        } else {
+          peer = node;
+          closest = node.node_id;
+        }
       }
     }
   }
