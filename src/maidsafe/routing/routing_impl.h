@@ -74,6 +74,8 @@ class Routing::Impl {
 
   bool IsNodeIdInGroupRange(const NodeId& node_id);
 
+  NodeId kNodeId() const;
+
   void DisconnectFunctors();
 
   friend class test::GenericNode;

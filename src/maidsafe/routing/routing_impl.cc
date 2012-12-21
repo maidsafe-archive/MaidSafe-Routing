@@ -637,6 +637,10 @@ void Routing::Impl::NotifyNetworkStatus(int return_code) const {
     functors_.network_status(return_code);
 }
 
+NodeId Routing::Impl::kNodeId() const {
+  return kNodeId_;
+}
+
 
 }  // namespace routing
 

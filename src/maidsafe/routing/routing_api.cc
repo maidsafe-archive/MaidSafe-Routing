@@ -66,6 +66,9 @@ bool Routing::IsNodeIdInGroupRange(const NodeId& node_id) const {
   return pimpl_->IsNodeIdInGroupRange(node_id);
 }
 
+NodeId Routing::kNodeId() const {
+  return pimpl_->kNodeId();
+}
 
 }  // namespace routing
 

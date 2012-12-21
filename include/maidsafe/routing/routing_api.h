@@ -108,6 +108,9 @@ class Routing {
   // returns true if the node id provided is in group range of node.
   bool IsNodeIdInGroupRange(const NodeId& node_id) const;
 
+  // returns Node Id.
+  NodeId kNodeId() const;
+
   // TODO(TEAM): This method shall be in private, however a temp solution in Lifestuff requires
   // calling this function to solve segmentation problem during tearing down of Credential Tests
   void DisconnectFunctors();
