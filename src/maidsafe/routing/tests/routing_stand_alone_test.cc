@@ -104,6 +104,52 @@ TEST_F(RoutingStandAloneTest, FUNC_ExtendedSendToGroupRandomId) {
   }
 }
 
+TEST_F(RoutingStandAloneTest, FUNC_CheckUnsubscription) {
+  this->SetUpNetwork(kServerSize);
+  size_t size(kServerSize);
+  size_t random_index(this->nodes_.size() % size);
+  NodePtr node(nodes_[random_index]);
+  NodeInfo furthest_closest(node->GetNthClosestNode(node->node_id(),
+                                                    Parameters::closest_nodes_size));
+  LOG(kVerbose) << "Furthest close node: " << DebugId(furthest_closest.node_id);
+  this->AddNode(false, GenerateUniqueRandomId(node->node_id(), 30));
+  int index(this->NodeIndex(furthest_closest.node_id));
+  EXPECT_FALSE(this->nodes_[index]->NodeSubscriedForGroupUpdate(
+      node->node_id())) << DebugId(furthest_closest.node_id) << " hase "
+                        << DebugId(node->node_id());
+  EXPECT_TRUE(this->nodes_[size]->NodeSubscriedForGroupUpdate(
+      node->node_id())) << DebugId(this->nodes_[size]->node_id())
+                        << " does not have " << DebugId(node->node_id());
+}
+
+
+TEST_F(RoutingStandAloneTest, FUNC_NodeRemoved) {
+  this->SetUpNetwork(kServerSize);
+  size_t random_index(this->RandomNodeIndex());
+  NodeInfo removed_node_info(this->nodes_[random_index]->GetRemovableNode());
+  EXPECT_GE(removed_node_info.bucket, 510);
+}
+
+// This test produces the recursive call.
+TEST_F(RoutingStandAloneTest, FUNC_RecursiveCall) {
+  this->SetUpNetwork(kServerSize);
+  for (int index(0); index < 8; ++index)
+    this->AddNode(false, GenerateUniqueRandomId(20));
+  this->AddNode(true, GenerateUniqueRandomId(40));
+  this->AddNode(false, GenerateUniqueRandomId(35));
+  this->AddNode(false, GenerateUniqueRandomId(30));
+  this->AddNode(false, GenerateUniqueRandomId(25));
+  this->AddNode(false, GenerateUniqueRandomId(20));
+  this->AddNode(false, GenerateUniqueRandomId(10));
+  this->AddNode(true, GenerateUniqueRandomId(10));
+}
+
+TEST_F(RoutingStandAloneTest, FUNC_JoinAfterBootstrapLeaves) {
+  this->SetUpNetwork(kServerSize);
+  Sleep(boost::posix_time::seconds(10));
+  this->AddNode(false, NodeId());
+}
+
 }  // namespace test
 
 }  // namespace routing

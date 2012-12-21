@@ -36,46 +36,60 @@ namespace routing {
 
 namespace test {
 
+namespace {
+
+template<typename FobType>
+NodeInfoAndPrivateKey MakeNodeInfoAndKeysWithFob(FobType fob) {
+  NodeInfo node;
+  node.node_id = NodeId(fob.name().data.string());
+  node.public_key = fob.public_key();
+  node.connection_id = node.node_id;
+  NodeInfoAndPrivateKey node_info_and_private_key;
+  node_info_and_private_key.node_info = node;
+  node_info_and_private_key.private_key = fob.private_key();
+  return node_info_and_private_key;
+}
+
+}  // unnamed namespace
+
 NodeInfo MakeNode() {
   NodeInfo node;
   node.node_id = NodeId(RandomString(64));
-  Fob fob;
-  fob.keys = asymm::GenerateKeyPair();
-  node.public_key = fob.keys.public_key;
+  asymm::Keys keys(asymm::GenerateKeyPair());
+  node.public_key = keys.public_key;
   node.connection_id = node.node_id;
   return node;
 }
 
 NodeInfoAndPrivateKey MakeNodeInfoAndKeys() {
-  Fob fob;
-  fob.identity = Identity(NodeId(NodeId::kRandomId).string());
-  fob.keys = asymm::GenerateKeyPair();
-  return MakeNodeInfoAndKeysWithFob(fob);
+  passport::Pmid pmid(MakePmid());
+  return MakeNodeInfoAndKeysWithFob(pmid);
 }
 
-NodeInfoAndPrivateKey MakeNodeInfoAndKeysWithFob(Fob fob) {
-  NodeInfo node;
-  node.node_id = NodeId(fob.identity);
-  node.public_key = fob.keys.public_key;
-  node.connection_id = node.node_id;
-  NodeInfoAndPrivateKey node_info_and_private_key;
-  node_info_and_private_key.node_info = node;
-  node_info_and_private_key.private_key = fob.keys.private_key;
-  return node_info_and_private_key;
+NodeInfoAndPrivateKey MakeNodeInfoAndKeysWithPmid(passport::Pmid pmid) {
+  return MakeNodeInfoAndKeysWithFob(pmid);
 }
 
-Fob MakeFob() {
-  NodeInfoAndPrivateKey node(MakeNodeInfoAndKeys());
-  return GetFob(node);
+NodeInfoAndPrivateKey MakeNodeInfoAndKeysWithMaid(passport::Maid maid) {
+  return MakeNodeInfoAndKeysWithFob(maid);
 }
 
-Fob GetFob(const NodeInfoAndPrivateKey& node) {
+passport::Maid MakeMaid() {
+  passport::Anmaid anmaid;
+  return passport::Maid(anmaid);
+}
+
+passport::Pmid MakePmid() {
+  return passport::Pmid(MakeMaid());
+}
+
+/* Fob GetFob(const NodeInfoAndPrivateKey& node) {
   Fob fob;
   fob.identity = Identity(node.node_info.node_id.string());
   fob.keys.public_key = node.node_info.public_key;
   fob.keys.private_key = node.private_key;
   return fob;
-}
+} */
 
 NodeId GenerateUniqueRandomId(const NodeId& holder, const uint16_t& pos) {
   std::string holder_id = holder.ToStringEncoded(NodeId::kBinary);
@@ -140,8 +154,38 @@ void SortFromTarget(const NodeId& target, std::vector<NodeInfo>& nodes) {
 void SortIdsFromTarget(const NodeId& target, std::vector<NodeId>& nodes) {
   std::sort(nodes.begin(), nodes.end(),
             [target] (const NodeId& lhs, const NodeId& rhs) {
-                return (lhs ^ target) < (rhs ^ target);
+                return NodeId::CloserToTarget(lhs, rhs, target);
               });
+}
+
+void SortNodeInfosFromTarget(const NodeId& target, std::vector<NodeInfo>& nodes) {
+  std::sort(nodes.begin(), nodes.end(),
+            [target] (const NodeInfo& lhs, const NodeInfo& rhs) {
+                return NodeId::CloserToTarget(lhs.node_id, rhs.node_id, target);
+              });
+}
+
+bool CompareListOfNodeInfos(const std::vector<NodeInfo>& lhs, const std::vector<NodeInfo>& rhs) {
+  if (lhs.size() != rhs.size())
+    return false;
+  for (auto& node_info : lhs) {
+    if (std::find_if(rhs.begin(),
+                     rhs.end(),
+                     [&](const NodeInfo& node) {
+                       return node.node_id == node_info.node_id;
+                     }) == rhs.end())
+      return false;
+  }
+
+    for (auto& node_info : rhs) {
+      if (std::find_if(lhs.begin(),
+                       lhs.end(),
+                       [&](const NodeInfo& node) {
+                         return node.node_id == node_info.node_id;
+                       }) == lhs.end())
+        return false;
+  }
+  return true;
 }
 
 }  // namespace test

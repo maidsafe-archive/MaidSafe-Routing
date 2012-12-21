@@ -34,7 +34,7 @@ void RemoveFurthestNode::RemoveRequest(protobuf::Message& message) {
   LOG(kVerbose) << "[" << HexSubstr(routing_table_.kNodeId().string())
                 << "] Request to drop, id: "  << message.id();
   protobuf::RemoveResponse remove_response;
-  if (message.destination_id() != routing_table_.kFob().identity.string()) {
+  if (message.destination_id() != routing_table_.kNodeId().string()) {
     // Message not for this node and we should not pass it on.
     LOG(kError) << "Message not for this node.";
     message.Clear();
@@ -72,7 +72,7 @@ void RemoveFurthestNode::RejectRemoval(protobuf::Message& message) {
   message.clear_route_history();
   message.set_request(false);
   remove_response.set_success(false);
-  remove_response.set_peer_id(routing_table_.kFob().identity.string());
+  remove_response.set_peer_id(routing_table_.kNodeId().string());
   message.set_hops_to_live(Parameters::hops_to_live);
   message.set_destination_id(message.source_id());
   message.set_source_id(routing_table_.kNodeId().string());

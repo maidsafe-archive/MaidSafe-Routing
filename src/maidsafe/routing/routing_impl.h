@@ -25,7 +25,8 @@
 
 #include "maidsafe/common/asio_service.h"
 #include "maidsafe/common/node_id.h"
-#include "maidsafe/private/utils/fob.h"
+
+#include "maidsafe/common/rsa.h"
 
 #include "maidsafe/routing/api_config.h"
 #include "maidsafe/routing/network_utils.h"
@@ -35,6 +36,8 @@
 #include "maidsafe/routing/routing_table.h"
 #include "maidsafe/routing/timer.h"
 #include "maidsafe/routing/remove_furthest_node.h"
+#include "maidsafe/routing/group_change_handler.h"
+
 
 namespace maidsafe {
 
@@ -47,7 +50,7 @@ namespace test { class GenericNode; }
 
 class Routing::Impl {
  public:
-  Impl(const Fob& fob, bool client_mode);
+  Impl(bool client_mode, bool anonymous, const NodeId& node_id, const asymm::Keys& keys);
   ~Impl();
 
   void Join(const Functors& functors,
@@ -68,6 +71,8 @@ class Routing::Impl {
             const bool& cacheable);
 
   NodeId GetRandomExistingNode() const { return random_node_helper_.Get(); }
+
+  bool IsNodeIdInGroupRange(const NodeId& node_id);
 
   void DisconnectFunctors();
 
@@ -94,20 +99,23 @@ class Routing::Impl {
   bool ConfirmGroupMembers(const NodeId& node1, const NodeId& node2);
   void NotifyNetworkStatus(int return_code) const;
 
-  const Fob kFob_;
+  RoutingTable routing_table_;
   const NodeId kNodeId_;
   const bool kAnonymousNode_;
   bool running_;
   std::mutex running_mutex_;
   Functors functors_;
   RandomNodeHelper random_node_helper_;
-  RoutingTable routing_table_;
   NonRoutingTable non_routing_table_;
+  RemoveFurthestNode remove_furthest_node_;
+  GroupChangeHandler group_change_handler_;
+  // The following variables' declarations should remain the last ones in this class and should stay
+  // in the order: message_handler_, asio_service_, network_, all timers.  This is important for the
+  // proper destruction of the routing library, i.e. to avoid segmentation faults.
   std::unique_ptr<MessageHandler> message_handler_;
   AsioService asio_service_;
   NetworkUtils network_;
   Timer timer_;
-  RemoveFurthestNode remove_furthest_node_;
   boost::asio::deadline_timer re_bootstrap_timer_, recovery_timer_, setup_timer_;
 };
 

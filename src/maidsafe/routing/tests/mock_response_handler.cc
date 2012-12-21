@@ -20,8 +20,9 @@ namespace test {
 
 MockResponseHandler::MockResponseHandler(RoutingTable& routing_table,
                          NonRoutingTable& non_routing_table,
-                         NetworkUtils& utils)
-    : ResponseHandler(routing_table, non_routing_table, utils) {}
+                         NetworkUtils& utils,
+                         GroupChangeHandler &group_change_handler)
+    : ResponseHandler(routing_table, non_routing_table, utils, group_change_handler) {}
 
 MockResponseHandler::~MockResponseHandler() {}
 

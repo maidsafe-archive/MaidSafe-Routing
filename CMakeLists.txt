@@ -25,7 +25,7 @@ include(../../cmake_modules/maidsafe_standard_setup.cmake)
 
 include_directories(${common_SOURCE_DIR}/include)
 include_directories(${rudp_SOURCE_DIR}/include)
-include_directories(${private_SOURCE_DIR}/include)
+include_directories(${passport_SOURCE_DIR}/include)
 
 
 ###################################################################################################
@@ -73,10 +73,10 @@ list(REMOVE_ITEM ALL_FILES_ROUTING_TESTS_DIR "${PROJECT_SOURCE_DIR}/src/maidsafe
                                              "${PROJECT_SOURCE_DIR}/src/maidsafe/routing/tests/test_func_main.cc")
 file(GLOB ALL_FILES_ROUTING_API_TEST "${PROJECT_SOURCE_DIR}/src/maidsafe/routing/tests/routing_api_test.cc"
                                      "${PROJECT_SOURCE_DIR}/src/maidsafe/routing/tests/test_main.cc")
-file(GLOB ALL_FILES_ROUTING_FUNC_TESTS_DIR "${PROJECT_SOURCE_DIR}/src/maidsafe/routing/tests/find_nodes_test.cc"
-                                           "${PROJECT_SOURCE_DIR}/src/maidsafe/routing/tests/routing_functional_test.cc"
+file(GLOB ALL_FILES_ROUTING_FUNC_TESTS_DIR "${PROJECT_SOURCE_DIR}/src/maidsafe/routing/tests/routing_functional_test.cc"
                                            "${PROJECT_SOURCE_DIR}/src/maidsafe/routing/tests/test_func_main.cc")
 file(GLOB ALL_FILES_ROUTING_BIG_TESTS_DIR "${PROJECT_SOURCE_DIR}/src/maidsafe/routing/tests/routing_churn_test.cc"
+                                          "${PROJECT_SOURCE_DIR}/src/maidsafe/routing/tests/find_nodes_test.cc"
                                           "${PROJECT_SOURCE_DIR}/src/maidsafe/routing/tests/routing_stand_alone_test.cc"
                                           "${PROJECT_SOURCE_DIR}/src/maidsafe/routing/tests/test_main.cc")
 
@@ -85,7 +85,7 @@ file(GLOB ALL_FILES_ROUTING_BIG_TESTS_DIR "${PROJECT_SOURCE_DIR}/src/maidsafe/ro
 # Define MaidSafe libraries and executables                                                       #
 ###################################################################################################
 ms_add_static_library(routing ${ALL_FILES_ROUTING_DIR})
-target_link_libraries(maidsafe_routing maidsafe_rudp maidsafe_utilities)
+target_link_libraries(maidsafe_routing maidsafe_rudp maidsafe_passport)
 
 if(MAIDSAFE_TESTING)
   ms_add_executable(TESTrouting "Tests/Routing" ${ALL_FILES_ROUTING_TESTS_DIR})
@@ -95,17 +95,17 @@ if(MAIDSAFE_TESTING)
   # new executable TESTrouting_big is created to contain tests that each need their own network
   ms_add_executable(TESTrouting_big "Tests/Routing" ${ALL_FILES_ROUTING_BIG_TESTS_DIR})
   ms_add_executable(create_lifestuff_bootstrap "Tools" "${PROJECT_SOURCE_DIR}/src/maidsafe/tools/create_bootstrap.cc")
-  ms_add_executable(routing_key_helper "Tools" "${PROJECT_SOURCE_DIR}/src/maidsafe/tools/key_helper.cc")
-  ms_add_executable(routing_node "Tools" "${PROJECT_SOURCE_DIR}/src/maidsafe/tools/routing_node.cc"
-                                         "${PROJECT_SOURCE_DIR}/src/maidsafe/tools/commands.h"
-                                         "${PROJECT_SOURCE_DIR}/src/maidsafe/tools/commands.cc")
+  #  ms_add_executable(routing_key_helper "Tools" "${PROJECT_SOURCE_DIR}/src/maidsafe/tools/key_helper.cc")
+  #  ms_add_executable(routing_node "Tools" "${PROJECT_SOURCE_DIR}/src/maidsafe/tools/routing_node.cc"
+  #                                      "${PROJECT_SOURCE_DIR}/src/maidsafe/tools/commands.h"
+  #                                       "${PROJECT_SOURCE_DIR}/src/maidsafe/tools/commands.cc")
   target_link_libraries(TESTrouting maidsafe_routing)
   target_link_libraries(TESTrouting_api maidsafe_routing)
   target_link_libraries(TESTrouting_func maidsafe_routing)
   target_link_libraries(TESTrouting_big maidsafe_routing)
   target_link_libraries(create_lifestuff_bootstrap maidsafe_routing)
-  target_link_libraries(routing_key_helper maidsafe_routing)
-  target_link_libraries(routing_node maidsafe_routing)
+  #target_link_libraries(routing_key_helper maidsafe_routing)
+  #  target_link_libraries(routing_node maidsafe_routing)
 endif()
 
 rename_outdated_built_exes()
@@ -122,12 +122,16 @@ endif()
 ms_disable_warnings(${SOURCE_PROTO_FILES_ROUTING_DIR})
 if(UNIX)
   set_source_files_properties(
+      "${PROJECT_SOURCE_DIR}/src/maidsafe/routing/tests/mock_routing_table.cc"
       "${PROJECT_SOURCE_DIR}/src/maidsafe/routing/tests/mock_network_utils.cc"
       "${PROJECT_SOURCE_DIR}/src/maidsafe/routing/tests/mock_service.cc"
       "${PROJECT_SOURCE_DIR}/src/maidsafe/routing/tests/mock_response_handler.cc"
       PROPERTIES COMPILE_FLAGS "-Wno-effc++")
 endif()
 
+if(UNIX)
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-effc++")
+endif()
 
 ###################################################################################################
 # Tests                                                                                           #

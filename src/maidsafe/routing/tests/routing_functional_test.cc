@@ -247,28 +247,6 @@ TEST_F(RoutingNetworkTest, FUNC_AnonymousSendToGroupExistingId) {
                 << message_count * (Parameters::node_group_size);
 }
 
-TEST_F(RoutingNetworkTest, FUNC_JoinAfterBootstrapLeaves) {
-  LOG(kVerbose) << "Network Size " << env_->nodes_.size();
-  Sleep(boost::posix_time::seconds(10));
-  LOG(kVerbose) << "RIse ";
-  env_->AddNode(false, NodeId());
-//  env_->AddNode(true, NodeId());
-}
-
-// This test produces the recursive call.
-TEST_F(RoutingNetworkTest, FUNC_RecursiveCall) {
-  for (int index(0); index < 8; ++index)
-    env_->AddNode(false, GenerateUniqueRandomId(20));
-  env_->AddNode(true, GenerateUniqueRandomId(40));
-  env_->AddNode(false, GenerateUniqueRandomId(35));
-  env_->AddNode(false, GenerateUniqueRandomId(30));
-  env_->AddNode(false, GenerateUniqueRandomId(25));
-  env_->AddNode(false, GenerateUniqueRandomId(20));
-  env_->AddNode(false, GenerateUniqueRandomId(10));
-  env_->AddNode(true, GenerateUniqueRandomId(10));
-  env_->PrintRoutingTables();
-}
-
 TEST_F(RoutingNetworkTest, FUNC_JoinWithSameId) {
   NodeId node_id(NodeId::kRandomId);
   env_->AddNode(true, node_id);
@@ -321,10 +299,18 @@ TEST_F(RoutingNetworkTest, FUNC_SendToClientWithSameId) {
   EXPECT_EQ(2, size);
 }
 
-TEST_F(RoutingNetworkTest, FUNC_NodeRemoved) {
-  size_t random_index(env_->RandomNodeIndex());
-  NodeInfo removed_node_info(env_->nodes_[random_index]->GetRemovableNode());
-  EXPECT_GE(removed_node_info.bucket, 510);
+TEST_F(RoutingNetworkTest, FUNC_CheckForGroupUpdateSubscription) {
+  std::vector<NodeInfo> closest_nodes_info;
+  for (auto node : env_->nodes_) {
+    closest_nodes_info = env_->GetClosestNodes(node->node_id(), Parameters::closest_nodes_size - 1);
+    LOG(kVerbose) << "size of closest_nodes: " << closest_nodes_info.size();
+
+    for (auto node_info : closest_nodes_info) {
+      int index(env_->NodeIndex(node_info.node_id));
+      EXPECT_TRUE(env_->nodes_[index]->NodeSubscriedForGroupUpdate(node->node_id()))
+          << DebugId(node_info.node_id) << " does not have " << DebugId(node->node_id());
+    }
+  }
 }
 
 TEST_F(RoutingNetworkTest, FUNC_GetRandomExistingNode) {

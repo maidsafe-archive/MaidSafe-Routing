@@ -78,10 +78,13 @@ protobuf::Message ConnectSuccessAcknowledgement(
     const std::vector<NodeId>& close_ids,
     const bool& client_node);
 
-protobuf::Message CloseNodeChange(
-    const NodeId& node_id,
+protobuf::Message ClosestNodesUpdateRequest(const NodeId& node_id,
     const NodeId& my_node_id,
-    const std::vector<NodeId>& close_nodes);
+    const std::vector<NodeInfo>& closest_nodes);
+
+protobuf::Message ClosestNodesUpdateSubscrirbe(const NodeId& node_id,
+    const NodeId& my_node_id,
+    const bool& subscribe);
 
 }  // namespace rpcs
 

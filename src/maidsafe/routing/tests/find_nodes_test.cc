@@ -33,19 +33,16 @@ namespace routing {
 
 namespace test {
 
-class FindNodeNetwork : public testing::Test  {
+class FindNodeNetwork : public GenericNetwork, public testing::Test {
  public:
-  FindNodeNetwork(void) : env_(NodesEnvironment::g_environment()) {}
+  FindNodeNetwork(void) : GenericNetwork() {}
 
-  void SetUp() {
-    EXPECT_TRUE(env_->RestoreComposition());
-    EXPECT_TRUE(env_->WaitForHealthToStabilise());
+  virtual void SetUp() {
+    GenericNetwork::SetUp();
   }
 
-  void TearDown() {
-    EXPECT_LE(kServerSize, env_->ClientIndex());
-    EXPECT_LE(kNetworkSize, env_->nodes_.size());
-    EXPECT_TRUE(env_->RestoreComposition());
+  virtual void TearDown() {
+    Sleep(boost::posix_time::microseconds(100));
   }
 
  protected:
@@ -56,147 +53,151 @@ class FindNodeNetwork : public testing::Test  {
   }
 
   testing::AssertionResult DropNode(const NodeId& node_id) {
-    for (auto node : env_->nodes_)
+    for (auto node : this->nodes_)
       node->DropNode(node_id);
     return testing::AssertionSuccess();
   }
 
   void PrintAllRoutingTables() {
-    for (size_t index = 0; index < env_->nodes_.size(); ++index) {
+    for (size_t index = 0; index < this->nodes_.size(); ++index) {
       LOG(kInfo) << "Routing table of node # " << index;
-      env_->nodes_[index]->PrintRoutingTable();
+      this->nodes_[index]->PrintRoutingTable();
     }
   }
-
-  std::shared_ptr<GenericNetwork> env_;
 };
 
 TEST_F(FindNodeNetwork, FUNC_FindExistingNode) {
-  for (auto source : env_->nodes_) {
+  this->SetUpNetwork(kServerSize);
+  for (auto source : this->nodes_) {
     EXPECT_TRUE(Find(source, source->node_id()));
     Sleep(boost::posix_time::seconds(1));
   }
-  EXPECT_TRUE(env_->ValidateRoutingTables());
+  EXPECT_TRUE(this->ValidateRoutingTables());
 }
 
 TEST_F(FindNodeNetwork, FUNC_FindNonExistingNode) {
-  size_t source(env_->RandomVaultIndex());
-  NodeId node_id(GenerateUniqueRandomId(env_->nodes_[source]->node_id(), 6));
-  EXPECT_TRUE(Find(env_->nodes_[source], node_id));
+  this->SetUpNetwork(kServerSize);
+  size_t source(this->RandomVaultIndex());
+  NodeId node_id(GenerateUniqueRandomId(this->nodes_[source]->node_id(), 6));
+  EXPECT_TRUE(Find(this->nodes_[source], node_id));
   Sleep(boost::posix_time::seconds(1));
-  EXPECT_FALSE(env_->nodes_[source]->RoutingTableHasNode(node_id));
+  EXPECT_FALSE(this->nodes_[source]->RoutingTableHasNode(node_id));
 }
 
 TEST_F(FindNodeNetwork, FUNC_FindNodeAfterDrop) {
-  size_t source(env_->RandomVaultIndex());
-  NodeId node_id(GenerateUniqueRandomId(env_->nodes_[source]->node_id(), 6));
-  EXPECT_FALSE(env_->nodes_[source]->RoutingTableHasNode(node_id));
-  env_->AddNode(false, node_id);
-  Sleep(boost::posix_time::seconds(1));
-  EXPECT_TRUE(env_->nodes_[source]->RoutingTableHasNode(node_id));
-  EXPECT_TRUE(env_->nodes_[source]->DropNode(node_id));
+  this->SetUpNetwork(kServerSize);
+  size_t source(this->RandomVaultIndex());
+  NodeId node_id(GenerateUniqueRandomId(this->nodes_[source]->node_id(), 6));
+  EXPECT_FALSE(this->nodes_[source]->RoutingTableHasNode(node_id));
+  this->AddNode(false, node_id);
+  EXPECT_TRUE(this->nodes_[source]->RoutingTableHasNode(node_id));
+  EXPECT_TRUE(this->nodes_[source]->DropNode(node_id));
   Sleep(Parameters::recovery_time_lag + Parameters::find_node_interval +
           boost::posix_time::seconds(5));
-  EXPECT_TRUE(env_->nodes_[source]->RoutingTableHasNode(node_id));
+  EXPECT_TRUE(this->nodes_[source]->RoutingTableHasNode(node_id));
 }
 
 TEST_F(FindNodeNetwork, FUNC_VaultFindVaultNode) {
-  size_t source(env_->RandomVaultIndex()),
-         dest(env_->ClientIndex());
+  this->SetUpNetwork(kServerSize, kClientSize);
+  size_t source(this->RandomVaultIndex()),
+         dest(this->ClientIndex());
 
-  env_->AddNode(false, GenerateUniqueRandomId(env_->nodes_[source]->node_id(), 20));
-  EXPECT_FALSE(env_->nodes_.at(dest)->IsClient());
+  this->AddNode(false, GenerateUniqueRandomId(this->nodes_[source]->node_id(), 20));
+  EXPECT_FALSE(this->nodes_.at(dest)->IsClient());
 
-  EXPECT_TRUE(env_->nodes_[source]->RoutingTableHasNode(env_->nodes_[dest]->node_id()));
+  EXPECT_TRUE(this->nodes_[source]->RoutingTableHasNode(this->nodes_[dest]->node_id()));
 
-  EXPECT_TRUE(env_->nodes_[source]->DropNode(env_->nodes_[dest]->node_id()));
+  EXPECT_TRUE(this->nodes_[source]->DropNode(this->nodes_[dest]->node_id()));
 
   Sleep(Parameters::recovery_time_lag + Parameters::find_node_interval +
           boost::posix_time::seconds(5));
 
-  LOG(kVerbose) << "after find " << HexSubstr(env_->nodes_[dest]->node_id().string());
-  EXPECT_TRUE(env_->nodes_[source]->RoutingTableHasNode(env_->nodes_[dest]->node_id()));
+  LOG(kVerbose) << "after find " << HexSubstr(this->nodes_[dest]->node_id().string());
+  EXPECT_TRUE(this->nodes_[source]->RoutingTableHasNode(this->nodes_[dest]->node_id()));
 }
 
 TEST_F(FindNodeNetwork, FUNC_VaultFindClientNode) {
-  size_t source(env_->RandomVaultIndex()),
-         dest(env_->nodes_.size());
+  this->SetUpNetwork(kServerSize, kClientSize);
+  size_t source(this->RandomVaultIndex()),
+         dest(this->nodes_.size());
 
   // Add one client node
-  env_->AddNode(true, GenerateUniqueRandomId(env_->nodes_[source]->node_id(), 20));
-  EXPECT_TRUE(env_->nodes_.at(dest)->IsClient());
+  this->AddNode(true, GenerateUniqueRandomId(this->nodes_[source]->node_id(), 20));
+  EXPECT_TRUE(this->nodes_.at(dest)->IsClient());
 
-  EXPECT_TRUE(env_->nodes_[dest]->RoutingTableHasNode(env_->nodes_[source]->node_id()));
-  EXPECT_FALSE(env_->nodes_[source]->RoutingTableHasNode(env_->nodes_[dest]->node_id()));
-  EXPECT_TRUE(env_->nodes_[source]->NonRoutingTableHasNode(env_->nodes_[dest]->node_id()));
+  EXPECT_TRUE(this->nodes_[dest]->RoutingTableHasNode(this->nodes_[source]->node_id()));
+  EXPECT_FALSE(this->nodes_[source]->RoutingTableHasNode(this->nodes_[dest]->node_id()));
+  EXPECT_TRUE(this->nodes_[source]->NonRoutingTableHasNode(this->nodes_[dest]->node_id()));
 
   // clear up
-  EXPECT_TRUE(env_->nodes_[dest]->DropNode(env_->nodes_[source]->node_id()));
+  EXPECT_TRUE(this->nodes_[dest]->DropNode(this->nodes_[source]->node_id()));
   Sleep(Parameters::recovery_time_lag + Parameters::find_node_interval +
           boost::posix_time::seconds(5));
-  EXPECT_TRUE(env_->nodes_[dest]->RoutingTableHasNode(env_->nodes_[source]->node_id()));
-  EXPECT_TRUE(env_->nodes_[source]->NonRoutingTableHasNode(env_->nodes_[dest]->node_id()));
+  EXPECT_TRUE(this->nodes_[dest]->RoutingTableHasNode(this->nodes_[source]->node_id()));
+  EXPECT_TRUE(this->nodes_[source]->NonRoutingTableHasNode(this->nodes_[dest]->node_id()));
 }
 
 TEST_F(FindNodeNetwork, FUNC_ClientFindVaultNode) {
-  size_t source(env_->RandomVaultIndex());
+  this->SetUpNetwork(kServerSize, kClientSize);
+  size_t source(this->RandomVaultIndex());
 
   // Add one client node
-  env_->AddNode(true, GenerateUniqueRandomId(env_->nodes_[source]->node_id(), 8));
+  this->AddNode(true, GenerateUniqueRandomId(this->nodes_[source]->node_id(), 8));
   // Add one vault node
-  env_->AddNode(false, GenerateUniqueRandomId(env_->nodes_[source]->node_id(), 24));
+  this->AddNode(false, GenerateUniqueRandomId(this->nodes_[source]->node_id(), 24));
 
-  size_t client(env_->nodes_.size() - 1);
-  size_t vault(env_->ClientIndex() - 1);
-  EXPECT_TRUE(env_->nodes_.at(client)->IsClient());
-  EXPECT_FALSE(env_->nodes_.at(vault)->IsClient());
+  size_t client(this->nodes_.size() - 1);
+  size_t vault(this->ClientIndex() - 1);
+  EXPECT_TRUE(this->nodes_.at(client)->IsClient());
+  EXPECT_FALSE(this->nodes_.at(vault)->IsClient());
 
   Sleep(boost::posix_time::seconds(1));
 
-  EXPECT_TRUE(env_->nodes_[client]->RoutingTableHasNode(env_->nodes_[source]->node_id()));
-  EXPECT_FALSE(env_->nodes_[source]->RoutingTableHasNode(env_->nodes_[client]->node_id()));
-  EXPECT_TRUE(env_->nodes_[source]->NonRoutingTableHasNode(env_->nodes_[client]->node_id()));
+  EXPECT_TRUE(this->nodes_[client]->RoutingTableHasNode(this->nodes_[source]->node_id()));
+  EXPECT_FALSE(this->nodes_[source]->RoutingTableHasNode(this->nodes_[client]->node_id()));
+  EXPECT_TRUE(this->nodes_[source]->NonRoutingTableHasNode(this->nodes_[client]->node_id()));
 
-  EXPECT_FALSE(env_->nodes_[client]->RoutingTableHasNode(env_->nodes_[vault]->node_id()));
-  EXPECT_FALSE(env_->nodes_[vault]->RoutingTableHasNode(env_->nodes_[client]->node_id()));
-  EXPECT_FALSE(env_->nodes_[vault]->NonRoutingTableHasNode(env_->nodes_[client]->node_id()));
+  EXPECT_FALSE(this->nodes_[client]->RoutingTableHasNode(this->nodes_[vault]->node_id()));
+  EXPECT_FALSE(this->nodes_[vault]->RoutingTableHasNode(this->nodes_[client]->node_id()));
+  EXPECT_FALSE(this->nodes_[vault]->NonRoutingTableHasNode(this->nodes_[client]->node_id()));
 
   // trying to find
-  EXPECT_TRUE(Find(env_->nodes_[vault], env_->nodes_[vault]->node_id()));
+  EXPECT_TRUE(Find(this->nodes_[vault], this->nodes_[vault]->node_id()));
   Sleep(boost::posix_time::seconds(1));
-  EXPECT_FALSE(env_->nodes_[vault]->RoutingTableHasNode(env_->nodes_[client]->node_id()));
-  EXPECT_FALSE(env_->nodes_[vault]->NonRoutingTableHasNode(env_->nodes_[client]->node_id()));
+  EXPECT_FALSE(this->nodes_[vault]->RoutingTableHasNode(this->nodes_[client]->node_id()));
+  EXPECT_FALSE(this->nodes_[vault]->NonRoutingTableHasNode(this->nodes_[client]->node_id()));
 }
 
 TEST_F(FindNodeNetwork, FUNC_ClientFindClientNode) {
-  size_t source(env_->RandomVaultIndex()),
-         client1(env_->nodes_.size()),
+  this->SetUpNetwork(kServerSize, kClientSize);
+  size_t source(this->RandomVaultIndex()),
+         client1(this->nodes_.size()),
          client2(client1 + 1);
 
   // Add two client nodes
-  env_->AddNode(true, GenerateUniqueRandomId(env_->nodes_[source]->node_id(), 8));
-  env_->AddNode(true, GenerateUniqueRandomId(env_->nodes_[source]->node_id(), 12));
+  this->AddNode(true, GenerateUniqueRandomId(this->nodes_[source]->node_id(), 8));
+  this->AddNode(true, GenerateUniqueRandomId(this->nodes_[source]->node_id(), 12));
   Sleep(boost::posix_time::seconds(1));
-  EXPECT_TRUE(env_->nodes_.at(client1)->IsClient());
-  EXPECT_TRUE(env_->nodes_.at(client2)->IsClient());
+  EXPECT_TRUE(this->nodes_.at(client1)->IsClient());
+  EXPECT_TRUE(this->nodes_.at(client2)->IsClient());
 
-  EXPECT_TRUE(env_->nodes_[client1]->RoutingTableHasNode(env_->nodes_[source]->node_id()));
-  EXPECT_TRUE(env_->nodes_[client2]->RoutingTableHasNode(env_->nodes_[source]->node_id()));
-  EXPECT_FALSE(env_->nodes_[source]->RoutingTableHasNode(env_->nodes_[client1]->node_id()));
-  EXPECT_TRUE(env_->nodes_[source]->NonRoutingTableHasNode(env_->nodes_[client1]->node_id()));
-  EXPECT_FALSE(env_->nodes_[source]->RoutingTableHasNode(env_->nodes_[client2]->node_id()));
-  EXPECT_TRUE(env_->nodes_[source]->NonRoutingTableHasNode(env_->nodes_[client2]->node_id()));
+  EXPECT_TRUE(this->nodes_[client1]->RoutingTableHasNode(this->nodes_[source]->node_id()));
+  EXPECT_TRUE(this->nodes_[client2]->RoutingTableHasNode(this->nodes_[source]->node_id()));
+  EXPECT_FALSE(this->nodes_[source]->RoutingTableHasNode(this->nodes_[client1]->node_id()));
+  EXPECT_TRUE(this->nodes_[source]->NonRoutingTableHasNode(this->nodes_[client1]->node_id()));
+  EXPECT_FALSE(this->nodes_[source]->RoutingTableHasNode(this->nodes_[client2]->node_id()));
+  EXPECT_TRUE(this->nodes_[source]->NonRoutingTableHasNode(this->nodes_[client2]->node_id()));
 
-  EXPECT_FALSE(env_->nodes_[client1]->RoutingTableHasNode(env_->nodes_[client2]->node_id()));
-  EXPECT_FALSE(env_->nodes_[client1]->NonRoutingTableHasNode(env_->nodes_[client2]->node_id()));
-  EXPECT_FALSE(env_->nodes_[client2]->RoutingTableHasNode(env_->nodes_[client1]->node_id()));
-  EXPECT_FALSE(env_->nodes_[client2]->NonRoutingTableHasNode(env_->nodes_[client1]->node_id()));
+  EXPECT_FALSE(this->nodes_[client1]->RoutingTableHasNode(this->nodes_[client2]->node_id()));
+  EXPECT_FALSE(this->nodes_[client1]->NonRoutingTableHasNode(this->nodes_[client2]->node_id()));
+  EXPECT_FALSE(this->nodes_[client2]->RoutingTableHasNode(this->nodes_[client1]->node_id()));
+  EXPECT_FALSE(this->nodes_[client2]->NonRoutingTableHasNode(this->nodes_[client1]->node_id()));
 
   // trying to find
-  EXPECT_TRUE(Find(env_->nodes_[client1], env_->nodes_[client1]->node_id()));
+  EXPECT_TRUE(Find(this->nodes_[client1], this->nodes_[client1]->node_id()));
   Sleep(boost::posix_time::seconds(5));
-  EXPECT_FALSE(env_->nodes_[client1]->RoutingTableHasNode(env_->nodes_[client2]->node_id()));
-  EXPECT_FALSE(env_->nodes_[client1]->NonRoutingTableHasNode(env_->nodes_[client2]->node_id()));
+  EXPECT_FALSE(this->nodes_[client1]->RoutingTableHasNode(this->nodes_[client2]->node_id()));
+  EXPECT_FALSE(this->nodes_[client1]->NonRoutingTableHasNode(this->nodes_[client2]->node_id()));
 }
 
 }  // namespace test

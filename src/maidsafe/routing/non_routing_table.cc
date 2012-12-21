@@ -28,8 +28,8 @@ typedef boost::asio::ip::udp::endpoint Endpoint;
 
 }  // unnamed namespace
 
-NonRoutingTable::NonRoutingTable(const Fob& fob)
-    : kNodeId_(NodeId(fob.identity)),
+NonRoutingTable::NonRoutingTable(const NodeId& node_id)
+    : kNodeId_(node_id),
       nodes_(),
       mutex_() {}
 

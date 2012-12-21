@@ -20,8 +20,17 @@ namespace routing {
 
 namespace { typedef boost::asio::ip::udp::endpoint Endpoint; }
 
+template<>
+Routing::Routing(std::nullptr_t) : pimpl_() {
+  InitialisePimpl(true, true, NodeId(NodeId::kRandomId), asymm::GenerateKeyPair());
+}
 
-Routing::Routing(const Fob& fob, bool client_mode) : pimpl_(new Impl(fob, client_mode)) {}
+void Routing::InitialisePimpl(bool client_mode,
+                              bool anonymous,
+                              const NodeId& node_id,
+                              const asymm::Keys& keys) {
+  pimpl_.reset(new Impl(client_mode, anonymous, node_id, keys));
+}
 
 void Routing::Join(Functors functors, std::vector<Endpoint> peer_endpoints) {
   pimpl_->Join(functors, peer_endpoints);
@@ -52,6 +61,11 @@ void Routing::Send(const NodeId& destination_id,
 NodeId Routing::GetRandomExistingNode() const {
   return pimpl_->GetRandomExistingNode();
 }
+
+bool Routing::IsNodeIdInGroupRange(const NodeId& node_id) const {
+  return pimpl_->IsNodeIdInGroupRange(node_id);
+}
+
 
 }  // namespace routing
 

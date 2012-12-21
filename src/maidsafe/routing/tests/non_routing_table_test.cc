@@ -31,57 +31,50 @@ namespace test {
 
 class BasicNonRoutingTableTest : public testing::Test {
  public:
-  BasicNonRoutingTableTest()
-     : fob_() {}
+  BasicNonRoutingTableTest() : node_id_(NodeId::kRandomId) {}
 
  protected:
-void SetUp() {
-  fob_.identity = Identity(RandomString(64));
-}
-
-  Fob fob_;
+  NodeId node_id_;
 };
 
 class NonRoutingTableTest : public BasicNonRoutingTableTest {
  public:
-  NonRoutingTableTest()
-    : nodes_(),
-      furthest_close_node_() {}
+  NonRoutingTableTest() : nodes_(), furthest_close_node_() {}
 
-void PopulateNodes(uint16_t size) {
-  for (uint16_t i(0); i < size; ++i)
-    nodes_.push_back(MakeNode());
-}
-
-void PopulateNodesSetFurthestCloseNode(uint16_t size, const NodeId& target) {
-  for (uint16_t i(0); i <= size; ++i)
-    nodes_.push_back(MakeNode());
-  SortFromTarget(target, nodes_);
-  furthest_close_node_ = nodes_.at(size);
-  nodes_.pop_back();
-}
-
-NodeId BiasNodeIds(std::vector<NodeInfo>& biased_nodes) {
-  NodeId sought_id(nodes_.at(RandomUint32() % Parameters::max_non_routing_table_size).node_id);
-  for (uint16_t i(0); i < Parameters::max_non_routing_table_size; ++i) {
-    if (nodes_.at(i).node_id == sought_id) {
-      biased_nodes.push_back(nodes_.at(i));
-    } else if ((RandomUint32() % 3) == 0) {
-      nodes_.at(i).node_id = sought_id;
-      biased_nodes.push_back(nodes_.at(i));
-    }
+  void PopulateNodes(uint16_t size) {
+    for (uint16_t i(0); i < size; ++i)
+      nodes_.push_back(MakeNode());
   }
-  return sought_id;
-}
 
-void ScrambleNodesOrder() {
-  SortFromTarget(NodeId(NodeId::kRandomId), nodes_);
-}
+  void PopulateNodesSetFurthestCloseNode(uint16_t size, const NodeId& target) {
+    for (uint16_t i(0); i <= size; ++i)
+      nodes_.push_back(MakeNode());
+    SortFromTarget(target, nodes_);
+    furthest_close_node_ = nodes_.at(size);
+    nodes_.pop_back();
+  }
 
-void PopulateNonRoutingTable(NonRoutingTable& non_routing_table) {
-  for (auto node : nodes_)
-    EXPECT_TRUE(non_routing_table.AddNode(node, furthest_close_node_.node_id));
-}
+  NodeId BiasNodeIds(std::vector<NodeInfo>& biased_nodes) {
+    NodeId sought_id(nodes_.at(RandomUint32() % Parameters::max_non_routing_table_size).node_id);
+    for (uint16_t i(0); i < Parameters::max_non_routing_table_size; ++i) {
+      if (nodes_.at(i).node_id == sought_id) {
+        biased_nodes.push_back(nodes_.at(i));
+      } else if ((RandomUint32() % 3) == 0) {
+        nodes_.at(i).node_id = sought_id;
+        biased_nodes.push_back(nodes_.at(i));
+      }
+    }
+    return sought_id;
+  }
+
+  void ScrambleNodesOrder() {
+    SortFromTarget(NodeId(NodeId::kRandomId), nodes_);
+  }
+
+  void PopulateNonRoutingTable(NonRoutingTable& non_routing_table) {
+    for (auto node : nodes_)
+      EXPECT_TRUE(non_routing_table.AddNode(node, furthest_close_node_.node_id));
+  }
 
  protected:
   std::vector<NodeInfo> nodes_;
@@ -89,7 +82,7 @@ void PopulateNonRoutingTable(NonRoutingTable& non_routing_table) {
 };
 
 TEST_F(BasicNonRoutingTableTest, BEH_CheckAddOwnNodeInfo) {
-  NonRoutingTable non_routing_table(fob_);
+  NonRoutingTable non_routing_table(node_id_);
 
   NodeInfo node(MakeNode());
   node.node_id = non_routing_table.kNodeId();
@@ -99,7 +92,7 @@ TEST_F(BasicNonRoutingTableTest, BEH_CheckAddOwnNodeInfo) {
 }
 
 TEST_F(NonRoutingTableTest, BEH_CheckAddFarAwayNode) {
-  NonRoutingTable non_routing_table(fob_);
+  NonRoutingTable non_routing_table(node_id_);
 
   PopulateNodes(2);
 
@@ -110,7 +103,7 @@ TEST_F(NonRoutingTableTest, BEH_CheckAddFarAwayNode) {
 }
 
 TEST_F(NonRoutingTableTest, FUNC_CheckAddSurplusNodes) {
-  NonRoutingTable non_routing_table(fob_);
+  NonRoutingTable non_routing_table(node_id_);
 
   PopulateNodesSetFurthestCloseNode(2 * Parameters::max_non_routing_table_size,
                                     non_routing_table.kNodeId());
@@ -132,7 +125,7 @@ TEST_F(NonRoutingTableTest, FUNC_CheckAddSurplusNodes) {
 }
 
 TEST_F(NonRoutingTableTest, BEH_CheckAddSameNodeIdTwice) {
-  NonRoutingTable non_routing_table(fob_);
+  NonRoutingTable non_routing_table(node_id_);
 
   PopulateNodes(2);
   SortFromTarget(non_routing_table.kNodeId(), nodes_);
@@ -149,7 +142,7 @@ TEST_F(NonRoutingTableTest, BEH_CheckAddSameNodeIdTwice) {
 }
 
 TEST_F(NonRoutingTableTest, BEH_CheckAddSameConnectionIdTwice) {
-  NonRoutingTable non_routing_table(fob_);
+  NonRoutingTable non_routing_table(node_id_);
 
   PopulateNodes(3);
   SortFromTarget(non_routing_table.kNodeId(), nodes_);
@@ -165,7 +158,7 @@ TEST_F(NonRoutingTableTest, BEH_CheckAddSameConnectionIdTwice) {
 }
 
 TEST_F(NonRoutingTableTest, BEH_CheckAddSameKeysTwice) {
-  NonRoutingTable non_routing_table(fob_);
+  NonRoutingTable non_routing_table(node_id_);
 
   PopulateNodes(3);
   SortFromTarget(non_routing_table.kNodeId(), nodes_);
@@ -181,7 +174,7 @@ TEST_F(NonRoutingTableTest, BEH_CheckAddSameKeysTwice) {
 }
 
 TEST_F(NonRoutingTableTest, BEH_CheckAddSameConnectionAndKeysTwice) {
-  NonRoutingTable non_routing_table(fob_);
+  NonRoutingTable non_routing_table(node_id_);
 
   PopulateNodes(3);
   SortFromTarget(non_routing_table.kNodeId(), nodes_);
@@ -199,7 +192,7 @@ TEST_F(NonRoutingTableTest, BEH_CheckAddSameConnectionAndKeysTwice) {
 }
 
 TEST_F(NonRoutingTableTest, BEH_AddThenCheckNode) {
-  NonRoutingTable non_routing_table(fob_);
+  NonRoutingTable non_routing_table(node_id_);
 
   PopulateNodes(2);
 
@@ -212,7 +205,7 @@ TEST_F(NonRoutingTableTest, BEH_AddThenCheckNode) {
 }
 
 TEST_F(NonRoutingTableTest, FUNC_DropNodes) {
-  NonRoutingTable non_routing_table(fob_);
+  NonRoutingTable non_routing_table(node_id_);
 
   PopulateNodesSetFurthestCloseNode(Parameters::max_non_routing_table_size,
                                     non_routing_table.kNodeId());
@@ -242,7 +235,7 @@ TEST_F(NonRoutingTableTest, FUNC_DropNodes) {
 }
 
 TEST_F(NonRoutingTableTest, FUNC_DropConnection) {
-  NonRoutingTable non_routing_table(fob_);
+  NonRoutingTable non_routing_table(node_id_);
 
   PopulateNodesSetFurthestCloseNode(Parameters::max_non_routing_table_size,
                                     non_routing_table.kNodeId());
@@ -264,7 +257,7 @@ TEST_F(NonRoutingTableTest, FUNC_DropConnection) {
 }
 
 TEST_F(NonRoutingTableTest, FUNC_GetNodesInfo) {
-  NonRoutingTable non_routing_table(fob_);
+  NonRoutingTable non_routing_table(node_id_);
 
   PopulateNodesSetFurthestCloseNode(Parameters::max_non_routing_table_size,
                                     non_routing_table.kNodeId());
@@ -293,7 +286,7 @@ TEST_F(NonRoutingTableTest, FUNC_GetNodesInfo) {
 }
 
 TEST_F(NonRoutingTableTest, FUNC_IsConnected) {
-  NonRoutingTable non_routing_table(fob_);
+  NonRoutingTable non_routing_table(node_id_);
 
   PopulateNodesSetFurthestCloseNode(2 * Parameters::max_non_routing_table_size,
                                     non_routing_table.kNodeId());
@@ -312,17 +305,22 @@ TEST_F(NonRoutingTableTest, FUNC_IsConnected) {
 }
 
 TEST_F(BasicNonRoutingTableTest, BEH_IsThisNodeInRange) {
-  NonRoutingTable non_routing_table(fob_);
+  NonRoutingTable non_routing_table(node_id_);
 
-  std::vector<NodeId> nodes;
-  for (int i(0); i < 101; ++i)
-    nodes.push_back(NodeId(NodeId::kRandomId));
-  SortIdsFromTarget(non_routing_table.kNodeId(), nodes);
-  NodeId furthest_close_node_id(nodes.at(50));
+  std::vector<NodeInfo> nodes;
+  NodeInfo node_info;
+  for (int i(0); i < 101; ++i) {
+    node_info.node_id = NodeId(NodeId::kRandomId);
+    nodes.push_back(node_info);
+  }
+  SortNodeInfosFromTarget(non_routing_table.kNodeId(), nodes);
+  NodeInfo furthest_close_node_id(nodes.at(50));
   for (int i(0); i < 50; ++i)
-    EXPECT_TRUE(non_routing_table.IsThisNodeInRange(nodes.at(i), furthest_close_node_id));
+    EXPECT_TRUE(non_routing_table.IsThisNodeInRange(nodes.at(i).node_id,
+                                                    furthest_close_node_id.node_id));
   for (int i(51); i < 101; ++i)
-    EXPECT_FALSE(non_routing_table.IsThisNodeInRange(nodes.at(i), furthest_close_node_id));
+    EXPECT_FALSE(non_routing_table.IsThisNodeInRange(nodes.at(i).node_id,
+                                                     furthest_close_node_id.node_id));
 }
 
 }  // namespace test

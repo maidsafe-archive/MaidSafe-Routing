@@ -29,6 +29,8 @@
 #include "maidsafe/rudp/managed_connections.h"
 #include "maidsafe/rudp/parameters.h"
 
+#include "maidsafe/passport/types.h"
+
 #include "maidsafe/routing/bootstrap_file_handler.h"
 #include "maidsafe/routing/return_codes.h"
 #include "maidsafe/routing/routing_api.h"
@@ -56,25 +58,26 @@ const int kNetworkSize = kClientCount + kServerCount;
 }  // anonymous namespace
 
 TEST(APITest, BEH_API_ZeroState) {
-  NodeInfoAndPrivateKey node1(MakeNodeInfoAndKeys());
-  NodeInfoAndPrivateKey node2(MakeNodeInfoAndKeys());
-  NodeInfoAndPrivateKey node3(MakeNodeInfoAndKeys());
-  std::map<NodeId, Fob> fob_map;
-  fob_map.insert(std::make_pair(NodeId(node1.node_info.node_id), GetFob(node1)));
-  fob_map.insert(std::make_pair(NodeId(node2.node_info.node_id), GetFob(node2)));
-  fob_map.insert(std::make_pair(NodeId(node3.node_info.node_id), GetFob(node3)));
+  auto pmid1(MakePmid()), pmid2(MakePmid()), pmid3(MakePmid());
+  NodeInfoAndPrivateKey node1(MakeNodeInfoAndKeysWithPmid(pmid1));
+  NodeInfoAndPrivateKey node2(MakeNodeInfoAndKeysWithPmid(pmid2));
+  NodeInfoAndPrivateKey node3(MakeNodeInfoAndKeysWithPmid(pmid3));
+  std::map<NodeId, asymm::PublicKey> key_map;
+  key_map.insert(std::make_pair(node1.node_info.node_id, pmid1.public_key()));
+  key_map.insert(std::make_pair(node2.node_info.node_id, pmid2.public_key()));
+  key_map.insert(std::make_pair(node3.node_info.node_id, pmid3.public_key()));
 
   Functors functors1, functors2, functors3;
-  Routing R1(GetFob(node1), false);
-  Routing R2(GetFob(node2), false);
-  Routing R3(GetFob(node3), false);
+  Routing routing1(&pmid1);
+  Routing routing2(&pmid2);
+  Routing routing3(&pmid3);
 
   functors1.network_status = [](const int&) {};  // NOLINT (Fraser)
-  functors1.request_public_key = [&](const NodeId& node_id, GivePublicKeyFunctor give_key ) {
-      LOG(kWarning) << "node_validation called for " << HexSubstr(node_id.string());
-      auto itr(fob_map.find(NodeId(node_id)));
-      if (fob_map.end() != itr)
-        give_key((*itr).second.keys.public_key);
+  functors1.request_public_key = [&](const NodeId& node_id, GivePublicKeyFunctor give_key) {
+      LOG(kWarning) << "node_validation called for " << DebugId(node_id);
+      auto itr(key_map.find(node_id));
+      if (key_map.end() != itr)
+        give_key((*itr).second);
     };
 
   functors2.network_status = functors3.network_status = functors1.network_status;
@@ -82,10 +85,10 @@ TEST(APITest, BEH_API_ZeroState) {
   Endpoint endpoint1(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort()),
     endpoint2(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort());
   auto a1 = std::async(std::launch::async,
-      [&] { return R1.ZeroStateJoin(functors1, endpoint1, endpoint2, node2.node_info);
+      [&] { return routing1.ZeroStateJoin(functors1, endpoint1, endpoint2, node2.node_info);
       });
   auto a2 = std::async(std::launch::async,
-      [&] { return R2.ZeroStateJoin(functors2, endpoint2, endpoint1, node1.node_info);
+      [&] { return routing2.ZeroStateJoin(functors2, endpoint2, endpoint1, node1.node_info);
       });
   EXPECT_EQ(kSuccess, a2.get());  // wait for promise !
   EXPECT_EQ(kSuccess, a1.get());  // wait for promise !
@@ -98,31 +101,31 @@ TEST(APITest, BEH_API_ZeroState) {
         join_promise.set_value(true);
     };
 
-  R3.Join(functors3, std::vector<Endpoint>(1, endpoint2));
+  routing3.Join(functors3, std::vector<Endpoint>(1, endpoint2));
   EXPECT_TRUE(join_future.timed_wait(boost::posix_time::seconds(10)));
   LOG(kInfo) << "done!!!";
 }
 
 TEST(APITest, FUNC_API_AnonymousNode) {
   rudp::Parameters::bootstrap_connection_lifespan = boost::posix_time::seconds(10);
-  NodeInfoAndPrivateKey node1(MakeNodeInfoAndKeys());
-  NodeInfoAndPrivateKey node2(MakeNodeInfoAndKeys());
-  std::map<NodeId, Fob> fob_map;
-  fob_map.insert(std::make_pair(NodeId(node1.node_info.node_id), GetFob(node1)));
-  fob_map.insert(std::make_pair(NodeId(node2.node_info.node_id), GetFob(node2)));
+  auto pmid1(MakePmid()), pmid2(MakePmid());
+  NodeInfoAndPrivateKey node1(MakeNodeInfoAndKeysWithPmid(pmid1));
+  NodeInfoAndPrivateKey node2(MakeNodeInfoAndKeysWithPmid(pmid2));
+  std::map<NodeId, asymm::PublicKey> key_map;
+  key_map.insert(std::make_pair(node1.node_info.node_id, pmid1.public_key()));
+  key_map.insert(std::make_pair(node2.node_info.node_id, pmid2.public_key()));
 
   Functors functors1, functors2, functors3;
-
-  Routing R1(GetFob(node1), false);
-  Routing R2(GetFob(node2), false);
-  Routing R3(Fob(), true);  // Anonymous node
+  Routing routing1(&pmid1);
+  Routing routing2(&pmid2);
+  Routing routing3(nullptr);  // Anonymous node
 
   functors1.network_status = [](const int&) {};  // NOLINT (Fraser)
-  functors1.request_public_key = [=](const NodeId& node_id, GivePublicKeyFunctor give_key) {
-      LOG(kWarning) << "node_validation called for " << HexSubstr(node_id.string());
-      auto itr(fob_map.find(NodeId(node_id)));
-      if (fob_map.end() != itr)
-        give_key((*itr).second.keys.public_key);
+  functors1.request_public_key = [&](const NodeId& node_id, GivePublicKeyFunctor give_key) {
+      LOG(kWarning) << "node_validation called for " << DebugId(node_id);
+      auto itr(key_map.find(node_id));
+      if (key_map.end() != itr)
+        give_key((*itr).second);
     };
 
   functors1.message_received = [&] (const std::string& message, const NodeId&, const bool&,
@@ -136,10 +139,10 @@ TEST(APITest, FUNC_API_AnonymousNode) {
   Endpoint endpoint1(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort()),
            endpoint2(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort());
   auto a1 = std::async(std::launch::async,
-      [&] { return R1.ZeroStateJoin(functors1, endpoint1, endpoint2, node2.node_info);
+      [&] { return routing1.ZeroStateJoin(functors1, endpoint1, endpoint2, node2.node_info);
       });
   auto a2 = std::async(std::launch::async,
-      [&] { return R2.ZeroStateJoin(functors2, endpoint2, endpoint1, node1.node_info);
+      [&] { return routing2.ZeroStateJoin(functors2, endpoint2, endpoint1, node1.node_info);
       });
   EXPECT_EQ(kSuccess, a2.get());  // wait for promise !
   EXPECT_EQ(kSuccess, a1.get());  // wait for promise !
@@ -161,7 +164,7 @@ TEST(APITest, FUNC_API_AnonymousNode) {
       LOG(kVerbose) << "Recieved network status of : " << result;
     }
   };
-  R3.Join(functors3, std::vector<Endpoint>(1, endpoint2));
+  routing3.Join(functors3, std::vector<Endpoint>(1, endpoint2));
   ASSERT_TRUE(join_future.timed_wait(boost::posix_time::seconds(10)));
   ResponseFunctor response_functor = [=](const std::vector<std::string> &message) {
       ASSERT_EQ(1U, message.size());
@@ -169,40 +172,39 @@ TEST(APITest, FUNC_API_AnonymousNode) {
       LOG(kVerbose) << "Got response !!";
     };
   // Testing Send
-  R3.Send(NodeId(node1.node_info.node_id), NodeId(), "message_from_anonymous node",
+  routing3.Send(NodeId(node1.node_info.node_id), NodeId(), "message_from_anonymous node",
           response_functor, boost::posix_time::seconds(10), DestinationType::kDirect, false);
   Sleep(boost::posix_time::seconds(11));  // to allow disconnection
   ResponseFunctor failed_response = [=](const std::vector<std::string> &message) {
       ASSERT_TRUE(message.empty());
     };
-  R3.Send(NodeId(node1.node_info.node_id), NodeId(), "message_2_from_anonymous node",
+  routing3.Send(NodeId(node1.node_info.node_id), NodeId(), "message_2_from_anonymous node",
            failed_response, boost::posix_time::seconds(10), DestinationType::kDirect, false);
   Sleep(boost::posix_time::seconds(1));
   rudp::Parameters::bootstrap_connection_lifespan = boost::posix_time::minutes(10);
 }
 
 TEST(APITest, BEH_API_SendToSelf) {
-  NodeInfoAndPrivateKey node1(MakeNodeInfoAndKeys());
-  NodeInfoAndPrivateKey node2(MakeNodeInfoAndKeys());
-  NodeInfoAndPrivateKey node3(MakeNodeInfoAndKeys());
-
-  std::map<NodeId, Fob> fob_map;
-  fob_map.insert(std::make_pair(NodeId(node1.node_info.node_id), GetFob(node1)));
-  fob_map.insert(std::make_pair(NodeId(node2.node_info.node_id), GetFob(node2)));
-  fob_map.insert(std::make_pair(NodeId(node3.node_info.node_id), GetFob(node3)));
+  auto pmid1(MakePmid()), pmid2(MakePmid()), pmid3(MakePmid());
+  NodeInfoAndPrivateKey node1(MakeNodeInfoAndKeysWithPmid(pmid1));
+  NodeInfoAndPrivateKey node2(MakeNodeInfoAndKeysWithPmid(pmid2));
+  NodeInfoAndPrivateKey node3(MakeNodeInfoAndKeysWithPmid(pmid3));
+  std::map<NodeId, asymm::PublicKey> key_map;
+  key_map.insert(std::make_pair(node1.node_info.node_id, pmid1.public_key()));
+  key_map.insert(std::make_pair(node2.node_info.node_id, pmid2.public_key()));
+  key_map.insert(std::make_pair(node3.node_info.node_id, pmid3.public_key()));
 
   Functors functors1, functors2, functors3;
-
-  Routing R1(GetFob(node1), false);
-  Routing R2(GetFob(node2), false);
-  Routing R3(GetFob(node3), false);  // client mode
+  Routing routing1(&pmid1);
+  Routing routing2(&pmid2);
+  Routing routing3(&pmid3);
 
   functors1.network_status = [](const int&) {};  // NOLINT (Fraser)
-  functors1.request_public_key = [=](const NodeId& node_id, GivePublicKeyFunctor give_key ) {
-      LOG(kWarning) << "node_validation called for " << HexSubstr(node_id.string());
-      auto itr(fob_map.find(NodeId(node_id)));
-      if (fob_map.end() != itr)
-        give_key((*itr).second.keys.public_key);
+  functors1.request_public_key = [&](const NodeId& node_id, GivePublicKeyFunctor give_key) {
+      LOG(kWarning) << "node_validation called for " << DebugId(node_id);
+      auto itr(key_map.find(node_id));
+      if (key_map.end() != itr)
+        give_key((*itr).second);
     };
 
   functors1.message_received = [&] (const std::string& message, const NodeId&, const bool&,
@@ -218,10 +220,10 @@ TEST(APITest, BEH_API_SendToSelf) {
   Endpoint endpoint1(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort()),
            endpoint2(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort());
   auto a1 = std::async(std::launch::async,
-      [&] { return R1.ZeroStateJoin(functors1, endpoint1, endpoint2, node2.node_info);
+      [&] { return routing1.ZeroStateJoin(functors1, endpoint1, endpoint2, node2.node_info);
        });
   auto a2 = std::async(std::launch::async,
-      [&] { return R2.ZeroStateJoin(functors2, endpoint2, endpoint1, node1.node_info);
+      [&] { return routing2.ZeroStateJoin(functors2, endpoint2, endpoint1, node1.node_info);
       });
 
   EXPECT_EQ(kSuccess, a2.get());  // wait for promise !
@@ -237,7 +239,7 @@ TEST(APITest, BEH_API_SendToSelf) {
       }
     };
 
-  R3.Join(functors3, std::vector<Endpoint>(1, endpoint2));
+  routing3.Join(functors3, std::vector<Endpoint>(1, endpoint2));
   ASSERT_TRUE(join_future.timed_wait(boost::posix_time::seconds(10)));
 
   //  Testing Send
@@ -249,33 +251,33 @@ TEST(APITest, BEH_API_SendToSelf) {
       LOG(kVerbose) << "Got response !!";
       response_promise.set_value(true);
     };
-  R3.Send(NodeId(node3.node_info.node_id), NodeId(), "message from my node", response_functor,
+  routing3.Send(NodeId(node3.node_info.node_id), NodeId(), "message from my node", response_functor,
           boost::posix_time::seconds(10), DestinationType::kDirect, false);
   EXPECT_TRUE(response_future.timed_wait(boost::posix_time::seconds(10)));
 }
 
 TEST(APITest, BEH_API_ClientNode) {
-  NodeInfoAndPrivateKey node1(MakeNodeInfoAndKeys());
-  NodeInfoAndPrivateKey node2(MakeNodeInfoAndKeys());
-  NodeInfoAndPrivateKey node3(MakeNodeInfoAndKeys());
-
-  std::map<NodeId, Fob> fob_map;
-  fob_map.insert(std::make_pair(NodeId(node1.node_info.node_id), GetFob(node1)));
-  fob_map.insert(std::make_pair(NodeId(node2.node_info.node_id), GetFob(node2)));
-  fob_map.insert(std::make_pair(NodeId(node3.node_info.node_id), GetFob(node3)));
+  auto pmid1(MakePmid()), pmid2(MakePmid());
+  auto maid(MakeMaid());
+  NodeInfoAndPrivateKey node1(MakeNodeInfoAndKeysWithPmid(pmid1));
+  NodeInfoAndPrivateKey node2(MakeNodeInfoAndKeysWithPmid(pmid2));
+  NodeInfoAndPrivateKey node3(MakeNodeInfoAndKeysWithMaid(maid));
+  std::map<NodeId, asymm::PublicKey> key_map;
+  key_map.insert(std::make_pair(node1.node_info.node_id, pmid1.public_key()));
+  key_map.insert(std::make_pair(node2.node_info.node_id, pmid2.public_key()));
+  key_map.insert(std::make_pair(node3.node_info.node_id, maid.public_key()));
 
   Functors functors1, functors2, functors3;
-
-  Routing R1(GetFob(node1), false);
-  Routing R2(GetFob(node2), false);
-  Routing R3(GetFob(node3), true);  // client mode
+  Routing routing1(&pmid1);
+  Routing routing2(&pmid2);
+  Routing routing3(&maid);
 
   functors1.network_status = [](const int&) {};  // NOLINT (Fraser)
-  functors1.request_public_key = [=](const NodeId& node_id, GivePublicKeyFunctor give_key ) {
-      LOG(kWarning) << "node_validation called for " << HexSubstr(node_id.string());
-      auto itr(fob_map.find(NodeId(node_id)));
-      if (fob_map.end() != itr)
-        give_key((*itr).second.keys.public_key);
+  functors1.request_public_key = [&](const NodeId& node_id, GivePublicKeyFunctor give_key) {
+      LOG(kWarning) << "node_validation called for " << DebugId(node_id);
+      auto itr(key_map.find(node_id));
+      if (key_map.end() != itr)
+        give_key((*itr).second);
     };
 
   functors1.message_received = [&] (const std::string& message, const NodeId&, const bool&,
@@ -289,10 +291,10 @@ TEST(APITest, BEH_API_ClientNode) {
   Endpoint endpoint1(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort()),
            endpoint2(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort());
   auto a1 = std::async(std::launch::async,
-      [&] { return R1.ZeroStateJoin(functors1, endpoint1, endpoint2, node2.node_info);
+      [&] { return routing1.ZeroStateJoin(functors1, endpoint1, endpoint2, node2.node_info);
        });
   auto a2 = std::async(std::launch::async,
-      [&] { return R2.ZeroStateJoin(functors2, endpoint2, endpoint1, node1.node_info);
+      [&] { return routing2.ZeroStateJoin(functors2, endpoint2, endpoint1, node1.node_info);
       });
   EXPECT_EQ(kSuccess, a2.get());  // wait for promise !
   EXPECT_EQ(kSuccess, a1.get());  // wait for promise !
@@ -311,7 +313,7 @@ TEST(APITest, BEH_API_ClientNode) {
     }
   };
 
-  R3.Join(functors3, std::vector<Endpoint>(1, endpoint2));
+  routing3.Join(functors3, std::vector<Endpoint>(1, endpoint2));
   ASSERT_TRUE(join_future.timed_wait(boost::posix_time::seconds(10)));
 
   //  Testing Send
@@ -323,34 +325,34 @@ TEST(APITest, BEH_API_ClientNode) {
       LOG(kVerbose) << "Got response !!";
       response_promise.set_value(true);
     };
-  R3.Send(NodeId(node1.node_info.node_id), NodeId(), "message from client node",
+  routing3.Send(NodeId(node1.node_info.node_id), NodeId(), "message from client node",
           response_functor, boost::posix_time::seconds(10), DestinationType::kDirect, false);
   EXPECT_TRUE(response_future.timed_wait(boost::posix_time::seconds(10)));
 }
 
 TEST(APITest, BEH_API_ClientNodeSameId) {
-  NodeInfoAndPrivateKey node1(MakeNodeInfoAndKeys());
-  NodeInfoAndPrivateKey node2(MakeNodeInfoAndKeys());
-  NodeInfoAndPrivateKey node3(MakeNodeInfoAndKeys());
-
-  std::map<NodeId, Fob> fob_map;
-  fob_map.insert(std::make_pair(NodeId(node1.node_info.node_id), GetFob(node1)));
-  fob_map.insert(std::make_pair(NodeId(node2.node_info.node_id), GetFob(node2)));
-  fob_map.insert(std::make_pair(NodeId(node3.node_info.node_id), GetFob(node3)));
+  auto pmid1(MakePmid()), pmid2(MakePmid());
+  auto maid(MakeMaid());
+  NodeInfoAndPrivateKey node1(MakeNodeInfoAndKeysWithPmid(pmid1));
+  NodeInfoAndPrivateKey node2(MakeNodeInfoAndKeysWithPmid(pmid2));
+  NodeInfoAndPrivateKey node3(MakeNodeInfoAndKeysWithMaid(maid));
+  std::map<NodeId, asymm::PublicKey> key_map;
+  key_map.insert(std::make_pair(node1.node_info.node_id, pmid1.public_key()));
+  key_map.insert(std::make_pair(node2.node_info.node_id, pmid2.public_key()));
+  key_map.insert(std::make_pair(node3.node_info.node_id, maid.public_key()));
 
   Functors functors1, functors2, functors3, functors4;
-
-  Routing R1(GetFob(node1), false);
-  Routing R2(GetFob(node2), false);
-  Routing R3(GetFob(node3), true);  // client mode
-  Routing R4(GetFob(node3), true);  // client mode
+  Routing routing1(&pmid1);
+  Routing routing2(&pmid2);
+  Routing routing3(&maid);
+  Routing routing4(&maid);
 
   functors1.network_status = [](const int&) {};  // NOLINT (Fraser)
-  functors1.request_public_key = [=](const NodeId& node_id, GivePublicKeyFunctor give_key ) {
-      LOG(kWarning) << "node_validation called for " << HexSubstr(node_id.string());
-      auto itr(fob_map.find(NodeId(node_id)));
-      if (fob_map.end() != itr)
-        give_key((*itr).second.keys.public_key);
+  functors1.request_public_key = [&](const NodeId& node_id, GivePublicKeyFunctor give_key) {
+      LOG(kWarning) << "node_validation called for " << DebugId(node_id);
+      auto itr(key_map.find(node_id));
+      if (key_map.end() != itr)
+        give_key((*itr).second);
     };
 
   functors1.message_received = [&] (const std::string& message, const NodeId&, const bool&,
@@ -366,10 +368,10 @@ TEST(APITest, BEH_API_ClientNodeSameId) {
   Endpoint endpoint1(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort()),
            endpoint2(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort());
   auto a1 = std::async(std::launch::async,
-      [&] { return R1.ZeroStateJoin(functors1, endpoint1, endpoint2, node2.node_info);
+      [&] { return routing1.ZeroStateJoin(functors1, endpoint1, endpoint2, node2.node_info);
        });
   auto a2 = std::async(std::launch::async,
-      [&] { return R2.ZeroStateJoin(functors2, endpoint2, endpoint1, node1.node_info);
+      [&] { return routing2.ZeroStateJoin(functors2, endpoint2, endpoint1, node1.node_info);
       });
   EXPECT_EQ(kSuccess, a2.get());  // wait for promise !
   EXPECT_EQ(kSuccess, a1.get());  // wait for promise !
@@ -388,7 +390,7 @@ TEST(APITest, BEH_API_ClientNodeSameId) {
     }
   };
 
-  R3.Join(functors3, std::vector<Endpoint>(1, endpoint1));
+  routing3.Join(functors3, std::vector<Endpoint>(1, endpoint1));
   ASSERT_TRUE(join_future1.timed_wait(boost::posix_time::seconds(10)));
   boost::promise<bool> join_promise2;
   promised = true;
@@ -404,7 +406,7 @@ TEST(APITest, BEH_API_ClientNodeSameId) {
     }
   };
 
-  R4.Join(functors4, std::vector<Endpoint>(1, endpoint2));
+  routing4.Join(functors4, std::vector<Endpoint>(1, endpoint2));
   ASSERT_TRUE(join_future2.timed_wait(boost::posix_time::seconds(10)));
 
   //  Testing Send
@@ -416,7 +418,7 @@ TEST(APITest, BEH_API_ClientNodeSameId) {
       LOG(kVerbose) << "Got response !!";
       response_promise1.set_value(true);
     };
-  R3.Send(NodeId(node1.node_info.node_id), NodeId(), "message from client node",
+  routing3.Send(NodeId(node1.node_info.node_id), NodeId(), "message from client node",
           response_functor, boost::posix_time::seconds(10), DestinationType::kDirect, false);
   EXPECT_TRUE(response_future.timed_wait(boost::posix_time::seconds(10)));
 
@@ -428,7 +430,7 @@ TEST(APITest, BEH_API_ClientNodeSameId) {
       LOG(kVerbose) << "Got response !!";
       response_promise2.set_value(true);
     };
-  R4.Send(NodeId(node1.node_info.node_id), NodeId(), "message from client node",
+  routing4.Send(NodeId(node1.node_info.node_id), NodeId(), "message from client node",
           response_functor, boost::posix_time::seconds(10), DestinationType::kDirect, false);
   EXPECT_TRUE(response_future.timed_wait(boost::posix_time::seconds(10)));
 }
@@ -444,21 +446,22 @@ TEST(APITest, BEH_API_NodeNetwork) {
 
   std::vector<NodeInfoAndPrivateKey> nodes;
   std::vector<std::shared_ptr<Routing>> routing_node;
-  std::map<NodeId, Fob> fob_map;
+  std::map<NodeId, asymm::PublicKey> key_map;
   for (auto i(0); i != kNetworkSize; ++i) {
-    NodeInfoAndPrivateKey node(MakeNodeInfoAndKeys());
+    auto pmid(MakePmid());
+    NodeInfoAndPrivateKey node(MakeNodeInfoAndKeysWithPmid(pmid));
     nodes.push_back(node);
-    fob_map.insert(std::make_pair(NodeId(node.node_info.node_id), GetFob(node)));
-    routing_node.push_back(std::make_shared<Routing>(GetFob(node), false));
+    key_map.insert(std::make_pair(node.node_info.node_id, pmid.public_key()));
+    routing_node.push_back(std::make_shared<Routing>(&pmid));
   }
 
   functors.network_status = [](const int&) {};  // NOLINT (Fraser)
-  functors.request_public_key = [=](const NodeId& node_id, GivePublicKeyFunctor give_key ) {
-      LOG(kInfo) << "node_validation called for " << HexSubstr(node_id.string());
-      auto itr(fob_map.find(NodeId(node_id)));
-      if (fob_map.end() != itr)
-        give_key((*itr).second.keys.public_key);
-  };
+  functors.request_public_key = [&](const NodeId& node_id, GivePublicKeyFunctor give_key) {
+      LOG(kWarning) << "node_validation called for " << DebugId(node_id);
+      auto itr(key_map.find(node_id));
+      if (key_map.end() != itr)
+        give_key((*itr).second);
+    };
   Endpoint endpoint1(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort()),
            endpoint2(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort());
   auto a1 = std::async(std::launch::async, [&] {
@@ -509,22 +512,30 @@ TEST(APITest, BEH_API_NodeNetworkWithClient) {
 
   std::vector<NodeInfoAndPrivateKey> nodes;
   std::vector<std::shared_ptr<Routing>> routing_node;
-  std::map<NodeId, Fob> fob_map;
-  for (auto i(0); i != kNetworkSize; ++i) {
-    NodeInfoAndPrivateKey node(MakeNodeInfoAndKeys());
+  std::map<NodeId, asymm::PublicKey> key_map;
+  int i(0);
+  for (; i != kServerCount; ++i) {
+    auto pmid(MakePmid());
+    NodeInfoAndPrivateKey node(MakeNodeInfoAndKeysWithPmid(pmid));
     nodes.push_back(node);
-    fob_map.insert(std::make_pair(NodeId(node.node_info.node_id), GetFob(node)));
-    routing_node.push_back(
-        std::make_shared<Routing>(GetFob(node), ((i < kServerCount)? false: true)));
+    key_map.insert(std::make_pair(node.node_info.node_id, pmid.public_key()));
+    routing_node.push_back(std::make_shared<Routing>(&pmid));
+  }
+  for (; i != kNetworkSize; ++i) {
+    auto maid(MakeMaid());
+    NodeInfoAndPrivateKey node(MakeNodeInfoAndKeysWithMaid(maid));
+    nodes.push_back(node);
+    key_map.insert(std::make_pair(node.node_info.node_id, maid.public_key()));
+    routing_node.push_back(std::make_shared<Routing>(&maid));
   }
 
   functors.network_status = [](const int&) {};  // NOLINT (Fraser)
-  functors.request_public_key = [=](const NodeId& node_id, GivePublicKeyFunctor give_key ) {
-      LOG(kInfo) << "node_validation called for " << HexSubstr(node_id.string());
-      auto itr(fob_map.find(NodeId(node_id)));
-      if (fob_map.end() != itr)
-        give_key((*itr).second.keys.public_key);
-  };
+  functors.request_public_key = [&](const NodeId& node_id, GivePublicKeyFunctor give_key) {
+      LOG(kWarning) << "node_validation called for " << DebugId(node_id);
+      auto itr(key_map.find(node_id));
+      if (key_map.end() != itr)
+        give_key((*itr).second);
+    };
 
   functors.message_received = [&] (const std::string& message, const NodeId&, const bool&,
                                    ReplyFunctor reply_functor) {

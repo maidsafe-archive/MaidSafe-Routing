@@ -15,6 +15,7 @@
 
 #include <chrono>
 #include <future>
+#include <map>
 #include <string>
 #include <vector>
 #include <algorithm>
@@ -28,7 +29,7 @@
 
 #include "maidsafe/rudp/nat_type.h"
 
-#include "maidsafe/private/utils/fob.h"
+#include "maidsafe/passport/types.h"
 
 #include "maidsafe/routing/api_config.h"
 #include "maidsafe/routing/node_info.h"
@@ -76,7 +77,7 @@ class GenericNode {
   bool joined() const;
   bool IsClient() const;
   bool anonymous() { return anonymous_; }
-  void set_client_mode(const bool& client_mode);
+  // void set_client_mode(const bool& client_mode);
   int expected();
   void set_expected(const int& expected);
   int ZeroStateJoin(const boost::asio::ip::udp::endpoint& peer_endpoint,
@@ -95,6 +96,7 @@ class GenericNode {
                 const protobuf::Message& message,
                 rudp::MessageSentFunctor message_sent_functor);
   void PrintRoutingTable();
+  void PrintGroupMatrix();
   bool RoutingTableHasNode(const NodeId& node_id);
   bool NonRoutingTableHasNode(const NodeId& node_id);
   NodeInfo GetRemovableNode();
@@ -104,6 +106,7 @@ class GenericNode {
   NodeId GetRandomExistingNode() const;
   void AddNodeToRandomNodeHelper(const NodeId& node_id);
   void RemoveNodeFromRandomNodeHelper(const NodeId& node_id);
+  bool NodeSubscriedForGroupUpdate(const NodeId& node_id);
 
   void PostTaskToAsioService(std::function<void()> functor);
   rudp::NatType nat_type();
@@ -112,7 +115,7 @@ class GenericNode {
   static size_t next_node_id_;
   size_t MessagesSize() const;
   void ClearMessages();
-  Fob fob();
+  asymm::PublicKey public_key();
   int Health();
   void SetHealth(const int& health);
   friend class GenericNetwork;
@@ -135,6 +138,7 @@ class GenericNode {
   std::mutex health_mutex_;
   int health_;
   void InitialiseFunctors();
+  void InjectNodeInfoAndPrivateKey();
 };
 
 class GenericNetwork {
@@ -165,6 +169,7 @@ class GenericNetwork {
   int NodeIndex(const NodeId& node_id);
   size_t ClientIndex() { return client_index_; }
   std::vector<NodeId> GetGroupForId(const NodeId& node_id);
+  std::vector<NodeInfo> GetClosestNodes(const NodeId& target_id, const uint32_t& quantity);
   bool RestoreComposition();
   bool WaitForHealthToStabilise();
   testing::AssertionResult Send(const size_t& messages);
@@ -186,7 +191,7 @@ class GenericNetwork {
   mutable std::mutex mutex_, fobs_mutex_;
   std::vector<boost::asio::ip::udp::endpoint> bootstrap_endpoints_;
   boost::filesystem::path bootstrap_path_;
-  std::vector<Fob> fobs_;
+  std::map<NodeId, asymm::PublicKey> public_keys_;
   size_t client_index_;
 
  public:

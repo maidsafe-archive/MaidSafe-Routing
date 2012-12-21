@@ -66,7 +66,7 @@ bool ValidateAndAddToRoutingTable(NetworkUtils& network,
                                   const asymm::PublicKey& public_key,
                                   const bool& client) {
   if (network.MarkConnectionAsValid(connection_id) != kSuccess) {
-    LOG(kError) << "[" << HexSubstr(routing_table.kFob().identity) << "] "
+    LOG(kError) << "[" << DebugId(routing_table.kNodeId()) << "] "
                 << ". Rudp failed to validate connection with  Peer id : "
                 << DebugId(peer_id)
                 << " , Connection id : "
@@ -81,7 +81,7 @@ bool ValidateAndAddToRoutingTable(NetworkUtils& network,
   bool routing_accepted_node(false);
   if (client) {
     NodeId furthest_close_node_id =
-        routing_table.GetNthClosestNode(NodeId(routing_table.kFob().identity),
+        routing_table.GetNthClosestNode(NodeId(routing_table.kNodeId()),
                                         2 * Parameters::closest_nodes_size).node_id;
 
     if (non_routing_table.AddNode(peer, furthest_close_node_id))
@@ -262,8 +262,11 @@ std::string MessageTypeString(const protobuf::Message& message) {
     case MessageType::kRemove :
       message_type = "kRemove";
       break;
-    case MessageType::kCloseNodeChange :
-      message_type = "kCloses_N_Ch";
+    case MessageType::kClosestNodesUpdate :
+      message_type = "kCloses_Nodes_Update";
+      break;
+    case MessageType::kClosestNodesUpdateSubscribe :
+      message_type = "kCloses_Nodes_Update_Subscribe";
       break;
     case MessageType::kNodeLevel :
       message_type = "kNodeLevel";
@@ -345,7 +348,7 @@ std::string PrintMessage(const protobuf::Message& message) {
   return s;
 }
 
-std::vector<Fob> ReadFobList(const fs::path &file_path) {
+/* std::vector<Fob> ReadFobList(const fs::path &file_path) {
   std::vector<Fob> fob_list;
   protobuf::FobList fob_list_msg;
   fob_list_msg.ParseFromString(ReadFile(file_path).string());
@@ -362,7 +365,7 @@ bool WriteFobList(const fs::path &file_path, const std::vector<Fob> &fob_list) {
     entry->set_fob(priv::utils::SerialiseFob(fob).string());
   }
   return WriteFile(file_path, fob_list_msg.SerializeAsString());
-}
+} */
 
 std::vector<NodeId> DeserializeNodeIdList(const std::string &node_list_str) {
   std::vector<NodeId> node_list;

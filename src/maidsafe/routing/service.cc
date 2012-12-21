@@ -31,6 +31,7 @@
 #include "maidsafe/routing/routing_table.h"
 #include "maidsafe/routing/rpcs.h"
 #include "maidsafe/routing/utils.h"
+#include "maidsafe/routing/group_change_handler.h"
 
 
 namespace maidsafe {
@@ -45,16 +46,18 @@ typedef boost::asio::ip::udp::endpoint Endpoint;
 
 Service::Service(RoutingTable& routing_table,
                  NonRoutingTable& non_routing_table,
-                 NetworkUtils& network)
+                 NetworkUtils& network,
+                 GroupChangeHandler& group_change_handler)
   : routing_table_(routing_table),
     non_routing_table_(non_routing_table),
     network_(network),
+    group_change_handler_(group_change_handler),
     request_public_key_functor_() {}
 
 Service::~Service() {}
 
 void Service::Ping(protobuf::Message& message) {
-  if (message.destination_id() != routing_table_.kFob().identity.string()) {
+  if (message.destination_id() != routing_table_.kNodeId().string()) {
     // Message not for this node and we should not pass it on.
     LOG(kError) << "Message not for this node.";
     message.Clear();
@@ -76,13 +79,13 @@ void Service::Ping(protobuf::Message& message) {
   message.clear_data();
   message.add_data(ping_response.SerializeAsString());
   message.set_destination_id(message.source_id());
-  message.set_source_id(routing_table_.kFob().identity.string());
+  message.set_source_id(routing_table_.kNodeId().string());
   message.set_hops_to_live(Parameters::hops_to_live);
   assert(message.IsInitialized() && "unintialised message");
 }
 
 void Service::Connect(protobuf::Message& message) {
-  if (message.destination_id() != routing_table_.kFob().identity.string()) {
+  if (message.destination_id() != routing_table_.kNodeId().string()) {
     // Message not for this node and we should not pass it on.
     LOG(kError) << "Message not for this node.";
     message.Clear();
@@ -96,7 +99,7 @@ void Service::Connect(protobuf::Message& message) {
     return;
   }
 
-  if (connect_request.peer_id() != routing_table_.kFob().identity.string()) {
+  if (connect_request.peer_id() != routing_table_.kNodeId().string()) {
     LOG(kError) << "Message not for this node.";
     message.Clear();
     return;
@@ -137,7 +140,7 @@ void Service::Connect(protobuf::Message& message) {
     message.set_destination_id(message.source_id());
   else
     message.clear_destination_id();
-  message.set_source_id(routing_table_.kFob().identity.string());
+  message.set_source_id(routing_table_.kNodeId().string());
 
   // Check rudp & routing
   bool check_node_succeeded(false);
@@ -242,7 +245,7 @@ void Service::FindNodes(protobuf::Message& message) {
   protobuf::FindNodesResponse found_nodes;
   std::vector<NodeId> nodes(routing_table_.GetClosestNodes(NodeId(find_nodes.target_node()),
                               static_cast<uint16_t>(find_nodes.num_nodes_requested() - 1)));
-  found_nodes.add_nodes(routing_table_.kFob().identity.string());
+  found_nodes.add_nodes(routing_table_.kNodeId().string());
 
   for (auto node : nodes)
     found_nodes.add_nodes(node.string());
@@ -259,7 +262,7 @@ void Service::FindNodes(protobuf::Message& message) {
     message.clear_destination_id();
     LOG(kVerbose) << "Relay message, so not setting destination ID.";
   }
-  message.set_source_id(routing_table_.kFob().identity.string());
+  message.set_source_id(routing_table_.kNodeId().string());
   message.clear_route_history();
   message.clear_data();
   message.add_data(found_nodes.SerializeAsString());
