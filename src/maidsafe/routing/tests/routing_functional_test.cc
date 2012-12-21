@@ -247,28 +247,6 @@ TEST_F(RoutingNetworkTest, FUNC_AnonymousSendToGroupExistingId) {
                 << message_count * (Parameters::node_group_size);
 }
 
-TEST_F(RoutingNetworkTest, FUNC_JoinAfterBootstrapLeaves) {
-  LOG(kVerbose) << "Network Size " << env_->nodes_.size();
-  Sleep(boost::posix_time::seconds(10));
-  LOG(kVerbose) << "RIse ";
-  env_->AddNode(false, NodeId());
-//  env_->AddNode(true, NodeId());
-}
-
-// This test produces the recursive call.
-TEST_F(RoutingNetworkTest, FUNC_RecursiveCall) {
-  for (int index(0); index < 8; ++index)
-    env_->AddNode(false, GenerateUniqueRandomId(20));
-  env_->AddNode(true, GenerateUniqueRandomId(40));
-  env_->AddNode(false, GenerateUniqueRandomId(35));
-  env_->AddNode(false, GenerateUniqueRandomId(30));
-  env_->AddNode(false, GenerateUniqueRandomId(25));
-  env_->AddNode(false, GenerateUniqueRandomId(20));
-  env_->AddNode(false, GenerateUniqueRandomId(10));
-  env_->AddNode(true, GenerateUniqueRandomId(10));
-  env_->PrintRoutingTables();
-}
-
 TEST_F(RoutingNetworkTest, FUNC_JoinWithSameId) {
   NodeId node_id(NodeId::kRandomId);
   env_->AddNode(true, node_id);

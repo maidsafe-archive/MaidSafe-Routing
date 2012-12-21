@@ -130,6 +130,25 @@ TEST_F(RoutingStandAloneTest, FUNC_NodeRemoved) {
   EXPECT_GE(removed_node_info.bucket, 510);
 }
 
+// This test produces the recursive call.
+TEST_F(RoutingStandAloneTest, FUNC_RecursiveCall) {
+  this->SetUpNetwork(kServerSize);
+  for (int index(0); index < 8; ++index)
+    this->AddNode(false, GenerateUniqueRandomId(20));
+  this->AddNode(true, GenerateUniqueRandomId(40));
+  this->AddNode(false, GenerateUniqueRandomId(35));
+  this->AddNode(false, GenerateUniqueRandomId(30));
+  this->AddNode(false, GenerateUniqueRandomId(25));
+  this->AddNode(false, GenerateUniqueRandomId(20));
+  this->AddNode(false, GenerateUniqueRandomId(10));
+  this->AddNode(true, GenerateUniqueRandomId(10));
+}
+
+TEST_F(RoutingStandAloneTest, FUNC_JoinAfterBootstrapLeaves) {
+  this->SetUpNetwork(kServerSize);
+  Sleep(boost::posix_time::seconds(10));
+  this->AddNode(false, NodeId());
+}
 
 }  // namespace test
 
