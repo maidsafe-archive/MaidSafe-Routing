@@ -444,9 +444,17 @@ TEST(APITest, BEH_API_NodeNetwork) {
   boost::shared_mutex mutex;
   Functors functors;
 
+  std::map<NodeId, asymm::PublicKey> key_map;
+  functors.network_status = [](const int&) {};  // NOLINT (Fraser)
+  functors.request_public_key = [&](const NodeId& node_id, GivePublicKeyFunctor give_key) {
+      LOG(kWarning) << "node_validation called for " << DebugId(node_id);
+      auto itr(key_map.find(node_id));
+      if (key_map.end() != itr)
+        give_key((*itr).second);
+    };
+
   std::vector<NodeInfoAndPrivateKey> nodes;
   std::vector<std::shared_ptr<Routing>> routing_node;
-  std::map<NodeId, asymm::PublicKey> key_map;
   for (auto i(0); i != kNetworkSize; ++i) {
     auto pmid(MakePmid());
     NodeInfoAndPrivateKey node(MakeNodeInfoAndKeysWithPmid(pmid));
@@ -455,13 +463,6 @@ TEST(APITest, BEH_API_NodeNetwork) {
     routing_node.push_back(std::make_shared<Routing>(&pmid));
   }
 
-  functors.network_status = [](const int&) {};  // NOLINT (Fraser)
-  functors.request_public_key = [&](const NodeId& node_id, GivePublicKeyFunctor give_key) {
-      LOG(kWarning) << "node_validation called for " << DebugId(node_id);
-      auto itr(key_map.find(node_id));
-      if (key_map.end() != itr)
-        give_key((*itr).second);
-    };
   Endpoint endpoint1(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort()),
            endpoint2(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort());
   auto a1 = std::async(std::launch::async, [&] {
