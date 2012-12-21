@@ -108,7 +108,7 @@ NodeInfo GroupMatrix::GetConnectedPeerClosestTo(const NodeId& target_node_id) {
 }
 
 bool GroupMatrix::IsThisNodeGroupMemberFor(const NodeId& target_id, bool& is_group_leader) {
-  is_group_leader = false;
+  is_group_leader = true;
   if (unique_nodes_.empty()) {
     is_group_leader = true;
     return true;
@@ -116,13 +116,14 @@ bool GroupMatrix::IsThisNodeGroupMemberFor(const NodeId& target_id, bool& is_gro
 
   PartialSortFromTarget(kNodeId_, Parameters::node_group_size + 1, unique_nodes_);
 
-  is_group_leader = (std::find_if(unique_nodes_.begin(), unique_nodes_.end(),
-                                 [target_id, kNodeId_] (const NodeInfo& node)->bool {
-                                   return ((node.node_id != target_id) &&
-                                           (NodeId::CloserToTarget(node.node_id,
-                                                                   kNodeId_,
-                                                                   target_id)));
-                                 }) == unique_nodes_.end());
+  for (auto node : unique_nodes_) {
+    if (node.node_id == target_id)
+      continue;
+    if (NodeId::CloserToTarget(node.node_id, kNodeId_, target_id)) {
+      is_group_leader = false;
+      break;
+    }
+  }
 
   if (unique_nodes_.size() < Parameters::node_group_size)
     return true;
