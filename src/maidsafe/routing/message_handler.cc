@@ -236,12 +236,12 @@ void MessageHandler::HandleGroupMessageAsClosestNode(protobuf::Message& message)
 
   // Confirming from group matrix. If this node is closest to the target id or else passing on to
   // the connected peer which has the closer node.
-  NodeInfo group_leader_node;
+  NodeInfo closest_to_group_leader_node;
   if (!routing_table_.IsThisNodeGroupLeader(NodeId(message.destination_id()),
-                                            group_leader_node)) {
+                                            closest_to_group_leader_node)) {
     return network_.SendToDirect(message,
-                                 group_leader_node.node_id,
-                                 group_leader_node.connection_id);
+                                 closest_to_group_leader_node.node_id,
+                                 closest_to_group_leader_node.connection_id);
   }
 
   // This node is closest so will send to all replicant nodes
@@ -438,12 +438,12 @@ void MessageHandler::HandleGroupRelayRequestMessageAsClosestNode(protobuf::Messa
 
   // Confirming from group matrix. If this node is closest to the target id or else passing on to
   // the connected peer which has the closer node.
-  NodeInfo group_leader_node;
+  NodeInfo closest_to_group_leader_node;
   if (!routing_table_.IsThisNodeGroupLeader(NodeId(message.destination_id()),
-                                           group_leader_node)) {
+                                           closest_to_group_leader_node)) {
     return network_.SendToDirect(message,
-                                 group_leader_node.node_id,
-                                 group_leader_node.connection_id);
+                                 closest_to_group_leader_node.node_id,
+                                 closest_to_group_leader_node.connection_id);
   }
 
   // This node is closest so will send to all replicant nodes
