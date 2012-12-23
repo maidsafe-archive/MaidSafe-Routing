@@ -48,7 +48,7 @@ TEST_F(RoutingChurnTest, FUNC_BasicNetworkChurn) {
   size_t random(RandomUint32());
   const size_t vault_network_size(10 + random % 10);
   const size_t clients_in_network(2 + random % 3);
-  SetUpNetwork(vault_network_size, clients_in_network);
+  this->SetUpNetwork(vault_network_size, clients_in_network);
   // Existing vault node ids
   std::vector<NodeId> existing_client_node_ids, existing_vault_node_ids;
   for (size_t i(1); i < this->nodes_.size(); ++i) {

@@ -297,7 +297,7 @@ TEST_F(MessageHandlerTest, BEH_HandleGroupMessage) {
                              testing::_,
                              testing::_))
                          .Times(1).RetiresOnSaturation();
-    EXPECT_CALL(*table_, IsNodeIdInGroupRange(testing::_, testing::_)).Times(1);
+//    EXPECT_CALL(*table_, IsNodeIdInGroupRange(testing::_, testing::_)).Times(1);
     EXPECT_CALL(*service_, FindNodes(testing::_)).Times(0);
     EXPECT_CALL(*service_, Ping(testing::_)).Times(0);
     EXPECT_CALL(*service_, Connect(testing::_)).Times(0);
@@ -380,7 +380,7 @@ TEST_F(MessageHandlerTest, BEH_HandleGroupMessage) {
                                          boost::bind(&MessageHandlerTest::ClearMessage,
                                                      this, _1))))
         .RetiresOnSaturation();
-    EXPECT_CALL(*table_, IsNodeIdInGroupRange(testing::_, testing::_)).Times(1);
+//    EXPECT_CALL(*table_, IsNodeIdInGroupRange(testing::_, testing::_)).Times(1);
     EXPECT_CALL(*service_, Ping(testing::_)).Times(0);
     EXPECT_CALL(*service_, Connect(testing::_)).Times(0);
     EXPECT_CALL(*response_handler_, FindNodes(testing::_)).Times(0);
@@ -435,7 +435,7 @@ TEST_F(MessageHandlerTest, BEH_HandleGroupMessage) {
                              testing::_,
                              testing::_))
                          .Times(1).RetiresOnSaturation();
-    EXPECT_CALL(*table_, IsNodeIdInGroupRange(testing::_, testing::_)).Times(1);
+//    EXPECT_CALL(*table_, IsNodeIdInGroupRange(testing::_, testing::_)).Times(1);
     EXPECT_CALL(*service_, FindNodes(testing::_)).Times(0);
     EXPECT_CALL(*service_, Ping(testing::_)).Times(0);
     EXPECT_CALL(*service_, Connect(testing::_)).Times(0);

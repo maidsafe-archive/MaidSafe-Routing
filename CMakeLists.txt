@@ -138,6 +138,8 @@ endif()
 ###################################################################################################
 if(MAIDSAFE_TESTING)
   add_style_test(${STYLE_ROUTING})
+#  add_gtests(TESTrouting_func)
+  add_gtests(TESTrouting_big)
   add_gtests(TESTrouting)
   add_gtests(TESTrouting_api)
   label_as_critical_tests(APITest.BEH_API_ZeroState

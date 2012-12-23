@@ -39,15 +39,13 @@ TEST(GroupMatrixTest, BEH_EmptyMatrix) {
   std::vector<NodeInfo> row_result;
   EXPECT_FALSE(matrix.GetRow(target_id, row_result));
 
-  bool is_group_leader(false);
-  EXPECT_TRUE(matrix.IsThisNodeGroupMemberFor(target_id, is_group_leader));
-  EXPECT_TRUE(is_group_leader);
+  NodeId group_leader;
+  EXPECT_TRUE(matrix.IsThisNodeGroupLeader(target_id, group_leader));
 
   EXPECT_EQ(0, matrix.GetUniqueNodes().size());
 
   matrix.RemoveConnectedPeer(NodeInfo());
-  EXPECT_TRUE(matrix.IsThisNodeGroupMemberFor(target_id, is_group_leader));
-  EXPECT_TRUE(is_group_leader);
+  EXPECT_TRUE(matrix.IsThisNodeGroupLeader(target_id, group_leader));
 
   EXPECT_EQ(1, matrix.GetUniqueNodes().size());
 }
@@ -101,8 +99,7 @@ TEST(GroupMatrixTest, BEH_OneRowOnly) {
 
   // Check IsThisNodeGroupMemberFor
   const NodeId target_id_1(NodeId::kRandomId);
-  bool is_group_leader(false);
-  EXPECT_TRUE(matrix.IsThisNodeGroupMemberFor(target_id_1, is_group_leader));
+  EXPECT_TRUE(matrix.IsNodeInGroupRange(target_id_1));
 
   // Fully populate row
   while (row_entries_1.size() < size_t(Parameters::closest_nodes_size - 1)) {
@@ -127,10 +124,11 @@ TEST(GroupMatrixTest, BEH_OneRowOnly) {
   std::vector<NodeInfo> node_ids(row_entries_1);
   node_ids.push_back(node_0);
   node_ids.push_back(row_1);
-  SortNodeInfosFromTarget(target_id_2.node_id, node_ids);
-  bool is_group_member((node_0.node_id ^ target_id_2.node_id) <=
-      (node_ids.at(Parameters::node_group_size - 1).node_id ^ target_id_2.node_id));
-  EXPECT_EQ(is_group_member, matrix.IsThisNodeGroupMemberFor(target_id_2.node_id, is_group_leader));
+  SortNodeInfosFromTarget(node_0.node_id , node_ids);
+  bool is_group_member(!NodeId::CloserToTarget(node_ids.at(Parameters::node_group_size - 1).node_id,
+                                               target_id_2.node_id,
+                                               node_0.node_id));
+  EXPECT_EQ(is_group_member, matrix.IsNodeInGroupRange(target_id_2.node_id));
 }
 
 TEST(GroupMatrixTest, BEH_OneColumnOnly) {
@@ -212,17 +210,25 @@ TEST(GroupMatrixTest, BEH_RowsContainSameNodes) {
 
   // Check IsThisNodeGroupMemberFor to verify that entries of unique_nodes_ are deduplicated
   NodeId target_id;
-  bool is_group_leader;
   bool expect_is_group_member;
   bool expect_is_group_leader;
   for (uint32_t i(0); i < 20; ++i) {
     target_id = NodeId(NodeId::kRandomId);
-    SortNodeInfosFromTarget(target_id, node_ids);
-    expect_is_group_member = ((node_0.node_id ^ target_id) <=
-                              (node_ids.at(Parameters::node_group_size - 1).node_id ^ target_id));
-    expect_is_group_leader = (node_0.node_id == node_ids.at(0).node_id);
-    EXPECT_EQ(expect_is_group_member, matrix.IsThisNodeGroupMemberFor(target_id, is_group_leader));
-    EXPECT_EQ(expect_is_group_leader, is_group_leader);
+    SortNodeInfosFromTarget(node_0.node_id, node_ids);
+    expect_is_group_member = !NodeId::CloserToTarget(
+                                 node_ids[Parameters::node_group_size - 1].node_id,
+                                 target_id,
+                                 node_0.node_id);
+    expect_is_group_leader = (std::find_if(node_ids.begin(), node_ids.end(),
+                                          [&](const NodeInfo& node_info)->bool {
+                                            return ((node_info.node_id != target_id) &&
+                                                    (NodeId::CloserToTarget(node_info.node_id,
+                                                                            node_0.node_id,
+                                                                            target_id)));
+                                          }) == node_ids.end());
+    EXPECT_EQ(expect_is_group_member, matrix.IsNodeInGroupRange(target_id));
+    NodeId leader;
+    EXPECT_EQ(expect_is_group_leader, matrix.IsThisNodeGroupLeader(target_id, leader));
   }
 
   // Check GetConnectedPeerFor gives identifier of the first row added to the matrix
@@ -403,7 +409,7 @@ TEST(GroupMatrixTest, BEH_GetConnectedPeerFor) {
   EXPECT_EQ(NodeId(), matrix.GetConnectedPeerFor(target_id).node_id);
 }
 
-TEST(GroupMatrixTest, BEH_IsThisNodeGroupMemberFor) {
+TEST(GroupMatrixTest, BEH_IsNodeInGroupRange) {
   NodeInfo node_0;
   node_0.node_id = NodeId(NodeId::kRandomId);
   GroupMatrix matrix(node_0.node_id);
@@ -432,9 +438,8 @@ TEST(GroupMatrixTest, BEH_IsThisNodeGroupMemberFor) {
   // Sort and deduplicate node_ids
   SortNodeInfosFromTarget(node_0.node_id, node_ids);
   // Check if this node is group leader for different target NodeIds
-  bool is_group_leader(false);
-  EXPECT_TRUE(matrix.IsThisNodeGroupMemberFor(node_0.node_id, is_group_leader));
-  EXPECT_TRUE(is_group_leader);
+  NodeId group_leader_id;
+  EXPECT_TRUE(matrix.IsThisNodeGroupLeader(node_0.node_id, group_leader_id));
 
   NodeId target_id;
   bool expect_is_group_member;
@@ -453,8 +458,8 @@ TEST(GroupMatrixTest, BEH_IsThisNodeGroupMemberFor) {
                                                         node_0.node_id,
                                                         target_id)));
                       }) == node_ids.end());
-    EXPECT_EQ(expect_is_group_member, matrix.IsThisNodeGroupMemberFor(target_id, is_group_leader));
-    EXPECT_EQ(expect_is_group_leader, is_group_leader);
+    EXPECT_EQ(expect_is_group_member, matrix.IsNodeInGroupRange(target_id));
+    EXPECT_EQ(expect_is_group_leader, matrix.IsThisNodeGroupLeader(target_id, group_leader_id));
   }
 }
 

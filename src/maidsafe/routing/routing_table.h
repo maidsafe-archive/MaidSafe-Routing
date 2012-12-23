@@ -71,10 +71,10 @@ class RoutingTable {
   bool AddNode(const NodeInfo& peer);
   bool CheckNode(const NodeInfo& peer);
   NodeInfo DropNode(const NodeId &node_to_drop, bool routing_only);
-  bool IsThisNodeInGroupForId(const NodeId& target_id, bool& is_group_leader);
+  bool IsNodeIdInGroupRange(const NodeId& target_id);
+  bool IsThisNodeGroupLeader(const NodeId& target_id, NodeInfo& group_leader_node);
   bool GetNodeInfo(const NodeId& node_id, NodeInfo& node_info) const;
   bool IsThisNodeInRange(const NodeId& target_id, uint16_t range);
-  virtual bool IsNodeIdInGroupRange(const NodeId& node_id, bool& is_group_leader);
   bool IsThisNodeClosestTo(const NodeId& target_id, bool ignore_exact_match = false);
   bool IsConnected(const NodeId& node_id) const;
   bool ConfirmGroupMembers(const NodeId& node1, const NodeId& node2);
