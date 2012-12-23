@@ -418,8 +418,7 @@ void Routing::Impl::Send(const NodeId& destination_id,
 }
 
 bool Routing::Impl::IsNodeIdInGroupRange(const NodeId& node_id) {
-  bool is_group_leader;
-  return routing_table_.IsNodeIdInGroupRange(node_id, is_group_leader);
+  return routing_table_.IsNodeIdInGroupRange(node_id);
 }
 
 void Routing::Impl::OnMessageReceived(const std::string& message) {
@@ -436,6 +435,7 @@ void Routing::Impl::DoOnMessageReceived(const std::string& message) {
                   << MessageTypeString(pb_message) << " from "
                   << (relay_message ? HexSubstr(pb_message.relay_id()) :
                                       HexSubstr(pb_message.source_id()))
+                  << " to " << HexSubstr(pb_message.destination_id())
                   << "   (id: " << pb_message.id() << ")"
                   << (relay_message ? " --Relay--" : "");
     if (((kAnonymousNode_ || !pb_message.client_node()) && pb_message.has_source_id()) ||
@@ -553,7 +553,8 @@ void Routing::Impl::RemoveNode(const NodeInfo& node, bool internal_rudp_only) {
     if (!running_)
       return;
     // Close node removed by routing, get more nodes
-    LOG(kWarning) << "Removed close node, sending find node to get more nodes.";
+    LOG(kWarning) << "[" << DebugId(kNodeId_)
+                  << "] Removed close node, sending find node to get more nodes.";
     recovery_timer_.expires_from_now(Parameters::recovery_time_lag);
     recovery_timer_.async_wait([=](const boost::system::error_code& error_code) {
                                    if (error_code != boost::asio::error::operation_aborted)

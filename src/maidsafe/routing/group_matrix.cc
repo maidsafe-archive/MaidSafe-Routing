@@ -107,26 +107,41 @@ NodeInfo GroupMatrix::GetConnectedPeerClosestTo(const NodeId& target_node_id) {
   return peer;
 }
 
-bool GroupMatrix::IsThisNodeGroupMemberFor(const NodeId& target_id, bool& is_group_leader) {
-  is_group_leader = true;
+bool GroupMatrix::IsThisNodeGroupLeader(const NodeId& target_id, NodeId& group_leader_id) {
+  LOG(kVerbose) << " Destination " << DebugId(target_id) << " kNodeId " << DebugId(kNodeId_);
+  bool is_group_leader = true;
   if (unique_nodes_.empty()) {
     is_group_leader = true;
     return true;
   }
 
-  PartialSortFromTarget(kNodeId_, Parameters::node_group_size + 1, unique_nodes_);
+  std::string log("unique_nodes_ for " + DebugId(kNodeId_) + " are ");
+  for (auto node : unique_nodes_) {
+    log += DebugId(node.node_id) + ", ";
+  }
+  LOG(kVerbose) << log;
 
   for (auto node : unique_nodes_) {
     if (node.node_id == target_id)
       continue;
     if (NodeId::CloserToTarget(node.node_id, kNodeId_, target_id)) {
+      LOG(kVerbose) << DebugId(node.node_id) << "could be leader";
       is_group_leader = false;
       break;
     }
   }
+  if (is_group_leader) {
+    group_leader_id = GetConnectedPeerClosestTo(target_id).node_id;
+  }
+  return is_group_leader;
+}
 
-  if (unique_nodes_.size() < Parameters::node_group_size)
+bool GroupMatrix::IsNodeInGroupRange(const NodeId& target_id) {
+  if (unique_nodes_.size() <= Parameters::node_group_size) {
     return true;
+  }
+
+  PartialSortFromTarget(kNodeId_, Parameters::node_group_size, unique_nodes_);
 
   NodeInfo furthest_group_node(unique_nodes_.at(std::min(Parameters::node_group_size - 1,
                                                 static_cast<int>(unique_nodes_.size()))));

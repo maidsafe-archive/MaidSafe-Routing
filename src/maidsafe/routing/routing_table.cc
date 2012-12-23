@@ -216,18 +216,22 @@ NodeInfo RoutingTable::DropNode(const NodeId& node_to_drop, bool routing_only) {
   return dropped_node;
 }
 
-bool RoutingTable::IsThisNodeInGroupForId(const NodeId& target_id, bool& is_group_leader) {
+bool RoutingTable::IsThisNodeGroupLeader(const NodeId& target_id, NodeInfo& group_leader_node) {
+  NodeId group_leader_id;
   std::unique_lock<std::mutex> lock(mutex_);
-  if (!group_matrix_.IsThisNodeGroupMemberFor(target_id, is_group_leader))
-    return false;
+  if (!group_matrix_.IsThisNodeGroupLeader(target_id, group_leader_id)) {
+    auto found(Find(group_leader_id, lock));
+    if (found.first) {
+      group_leader_node = *found.second;
+      return false;
+    }
+  }
+  return true;
+}
 
-  bool routing_table_result;
-  PartialSortFromTarget(target_id, Parameters::node_group_size, lock);
-  routing_table_result = ((kNodeId_ ^ target_id) <
-                          (nodes_.at(Parameters::node_group_size - 1).node_id ^ target_id));
-  if (!routing_table_result)
-    is_group_leader = false;
-  return routing_table_result;
+bool RoutingTable::IsNodeIdInGroupRange(const NodeId& target_id) {
+  std::unique_lock<std::mutex> lock(mutex_);
+  return !group_matrix_.IsNodeInGroupRange(target_id);
 }
 
 NodeInfo RoutingTable::GetConnectedPeerFromGroupMatrixClosestTo(const NodeId& target_node_id) {
@@ -251,11 +255,6 @@ bool RoutingTable::IsThisNodeInRange(const NodeId& target_id, const uint16_t ran
     return true;
   NthElementSortFromTarget(kNodeId_, range, lock);
   return NodeId::CloserToTarget(target_id, nodes_[range - 1].node_id, kNodeId_);
-}
-
-bool RoutingTable::IsNodeIdInGroupRange(const NodeId& node_id, bool& is_group_leader) {
-  std::unique_lock<std::mutex> lock(mutex_);
-  return group_matrix_.IsThisNodeGroupMemberFor(node_id, is_group_leader);
 }
 
 bool RoutingTable::IsThisNodeClosestTo(const NodeId& target_id, bool ignore_exact_match) {

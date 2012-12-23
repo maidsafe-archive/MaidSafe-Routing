@@ -26,11 +26,16 @@ namespace maidsafe {
 namespace routing {
 
 namespace test { class GenericNode; }
+class RoutingTable;
+
 
 struct NodeInfo;
 
 class GroupMatrix {
- public:
+ private:
+  friend class test::GenericNode;
+  friend class RoutingTable;
+
   explicit GroupMatrix(const NodeId& this_node_id);
 
   void AddConnectedPeer(const NodeInfo& node_info);
@@ -46,10 +51,9 @@ class GroupMatrix {
   // Returns the peer which has node closest to target_id in its row (1st occurrence).
   NodeInfo GetConnectedPeerClosestTo(const NodeId& target_node_id);
 
-  // Checks if this node id is a group member for target id.
-  // Group size is determined by Parameters::node_group_size.
-  // is_group_leader is set to true, if this node is the closest to the target id.
-  bool IsThisNodeGroupMemberFor(const NodeId& target_id, bool& is_group_leader);
+  bool IsNodeInGroupRange(const NodeId& target_id);
+
+  bool IsThisNodeGroupLeader(const NodeId& target_id, NodeId& group_leader_id);
 
   // Updates group matrix if peer is present in 1st column of matrix
   void UpdateFromConnectedPeer(const NodeId& peer, const std::vector<NodeInfo>& nodes);
@@ -63,9 +67,6 @@ class GroupMatrix {
 
   void Clear();
 
-  friend class test::GenericNode;
-
- private:
   GroupMatrix(const GroupMatrix&);
   GroupMatrix& operator=(const GroupMatrix&);
   void UpdateUniqueNodeList();
@@ -73,7 +74,7 @@ class GroupMatrix {
                              std::vector<NodeInfo> &nodes);
   void PrintGroupMatrix();
 
-  const NodeId kNodeId_;
+  const NodeId& kNodeId_;
   std::vector<NodeInfo> unique_nodes_;
   std::vector<std::vector<NodeInfo>> matrix_;
 };
