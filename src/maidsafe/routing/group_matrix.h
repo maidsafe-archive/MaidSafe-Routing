@@ -32,10 +32,7 @@ class RoutingTable;
 struct NodeInfo;
 
 class GroupMatrix {
- private:
-  friend class test::GenericNode;
-  friend class RoutingTable;
-
+ public:
   explicit GroupMatrix(const NodeId& this_node_id);
 
   void AddConnectedPeer(const NodeInfo& node_info);
@@ -66,7 +63,9 @@ class GroupMatrix {
   std::vector<NodeInfo> GetClosestNodes(const uint32_t& size);
 
   void Clear();
+  friend class test::GenericNode;
 
+ private:
   GroupMatrix(const GroupMatrix&);
   GroupMatrix& operator=(const GroupMatrix&);
   void UpdateUniqueNodeList();

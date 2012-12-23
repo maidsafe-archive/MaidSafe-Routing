@@ -141,7 +141,7 @@ bool GroupMatrix::IsNodeInGroupRange(const NodeId& target_id) {
     return true;
   }
 
-  PartialSortFromTarget(kNodeId_, Parameters::node_group_size, unique_nodes_);
+  PartialSortFromTarget(kNodeId_, Parameters::node_group_size + 1, unique_nodes_);
 
   NodeInfo furthest_group_node(unique_nodes_.at(std::min(Parameters::node_group_size - 1,
                                                 static_cast<int>(unique_nodes_.size()))));
