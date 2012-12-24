@@ -147,13 +147,6 @@ enum ConnectResponseType {
   kConnectAttemptAlreadyRunning = 2;
 }
 
-message FobList {
-  message Fob {
-    required bytes fob = 1;
-  }
-  repeated Fob fobs = 1;
-}
-
 message NodeIdList {
   message NodeId {
     required bytes node_id = 1;
