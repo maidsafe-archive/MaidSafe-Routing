@@ -50,7 +50,7 @@ namespace fs = boost::filesystem;
 namespace po = boost::program_options;
 namespace asymm = maidsafe::rsa;
 
-struct std::vector<maidsafe::Fob> FobList;
+typedef std::vector<maidsafe::passport::Pmid> PmidVector;
 
 const std::string kHelperVersion = "MaidSafe Routing KeysHelper " + maidsafe::kApplicationVersion;
 
@@ -67,20 +67,23 @@ void ctrlc_handler(int /*signum*/) {
   cond_var_.notify_one();
 }
 
-void PrintFobs(const FobList &all_fobs) {
-  for (size_t i = 0; i < all_fobs.size(); ++i)
-    std::cout << '\t' << i << "\t fob : " << maidsafe::HexSubstr(all_fobs[i].identity)
+void PrintKeys(const PmidVector &all_pmids) {
+  for (size_t i = 0; i < all_pmids.size(); ++i)
+    std::cout << '\t' << i << "\t PMID " << maidsafe::HexSubstr(all_pmids[i].name().data.string())
               << (i < 2 ? " (bootstrap)" : "") << std::endl;
 }
 
-bool CreateFobs(const size_t &fobs_count, FobList &all_fobs) {
-  size_t i(0);
-  for (; i < fobs_count / 2; ++i) {
+bool CreateKeys(const size_t &pmids_count, PmidVector &all_pmids) {
+  all_pmids.clear();
+  for (size_t i = 0; i < pmids_count; ++i) {
     try {
-      all_fobs.push_back(utils::GenerateFob(nullptr));
+      maidsafe::passport::Anmaid anmaid;
+      maidsafe::passport::Maid maid(anmaid);
+      maidsafe::passport::Pmid pmid(maid);
+      all_pmids.push_back(pmid);
     }
     catch(const std::exception& /*ex*/) {
-      LOG(kError) << "CreateFobs - Could not create ID #" << i;
+      LOG(kError) << "CreatePmids - Could not create ID #" << i;
       return false;
     }
   }
@@ -152,28 +155,28 @@ int main(int argc, char* argv[]) {
   int result(0);
   boost::system::error_code error_code;
 
-  size_t fobs_count(12);
+  size_t pmids_count(12);
 
   try {
     // Options allowed only on command line
     po::options_description generic_options("Commands");
     generic_options.add_options()
         ("help,h", "Print this help message")
-        ("create,c", "Create fobs and write to file")
-        ("load,l", "Load fobs from file")
-        ("delete,d", "Delete fobs file")
-        ("print,p", "Print the list of fobs available");
+        ("create,c", "Create pmids and write to file")
+        ("load,l", "Load pmids from file")
+        ("delete,d", "Delete pmids file")
+        ("print,p", "Print the list of pmids available");
 
     // Options allowed both on command line and in config file
     po::options_description config_file_options("Configuration options");
     config_file_options.add_options()
-        ("fobs_count,n",
-            po::value<size_t>(&fobs_count)->default_value(fobs_count),
-            "Number of fobs to create")
-        ("fobs_path",
+        ("pmids_count,n",
+            po::value<size_t>(&pmids_count)->default_value(pmids_count),
+            "Number of pmids to create")
+        ("pmids_path",
             po::value<std::string>()->default_value(
-                fs::path(fs::temp_directory_path(error_code) / "fob_list.dat").string()),
-            "Path to fobs file");
+                fs::path(fs::temp_directory_path(error_code) / "pmid_list.dat").string()),
+            "Path to pmids file");
 
     po::options_description cmdline_options;
     cmdline_options.add(generic_options).add(config_file_options);
@@ -195,38 +198,38 @@ int main(int argc, char* argv[]) {
       return 0;
     }
 
-    FobList all_fobs;
-    fs::path fobs_path(GetPathFromProgramOption("fobs_path", &variables_map, false, true));
+    PmidVector all_pmids;
+    fs::path pmids_path(GetPathFromProgramOption("pmids_path", &variables_map, false, true));
 
     if (do_create) {
-      if (CreateFobs(fobs_count, all_fobs)) {
-        std::cout << "Created " << all_fobs.size() << " fobs." << std::endl;
-        if (maidsafe::routing::WriteFobList(fobs_path, all_fobs))
-          std::cout << "Wrote fobs to " << fobs_path << std::endl;
+      if (CreateKeys(pmids_count, all_pmids)) {
+        std::cout << "Created " << all_pmids.size() << " fobs." << std::endl;
+        if (maidsafe::passport::detail::WritePmidList(pmids_path, all_pmids))
+          std::cout << "Wrote pmids to " << pmids_path << std::endl;
         else
-          std::cout << "Could not write fobs to " << fobs_path << std::endl;
+          std::cout << "Could not write pmids to " << pmids_path << std::endl;
       } else {
-        std::cout << "Could not create fobs." << std::endl;
+        std::cout << "Could not create pmids." << std::endl;
       }
     } else if (do_load) {
       try {
-        all_fobs = maidsafe::routing::ReadFobList(fobs_path);
-        std::cout << "Loaded " << all_fobs.size() << " fobs from " << fobs_path << std::endl;
+        all_pmids = maidsafe::passport::detail::ReadPmidList(pmids_path);
+        std::cout << "Loaded " << all_pmids.size() << " pmids from " << pmids_path << std::endl;
       }
       catch(const std::exception& /*ex*/) {
-        all_fobs.clear();
-        std::cout << "Could not load fobs from " << fobs_path << std::endl;
+        all_pmids.clear();
+        std::cout << "Could not load fobs from " << pmids_path << std::endl;
       }
     }
 
     if (do_print)
-      PrintFobs(all_fobs);
+      PrintKeys(all_pmids);
 
     if (do_delete) {
-      if (fs::remove(fobs_path, error_code))
-        std::cout << "Deleted " << fobs_path << std::endl;
+      if (fs::remove(pmids_path, error_code))
+        std::cout << "Deleted " << pmids_path << std::endl;
       else
-        std::cout << "Could not delete " << fobs_path << std::endl;
+        std::cout << "Could not delete " << pmids_path << std::endl;
     }
   }
   catch(const std::exception& exception) {
