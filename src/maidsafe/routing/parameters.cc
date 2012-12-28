@@ -30,6 +30,7 @@ uint16_t Parameters::routing_table_size_threshold(max_routing_table_size / 2);
 uint16_t Parameters::max_client_routing_table_size(8);
 uint16_t Parameters::max_non_routing_table_size(max_routing_table_size);
 uint16_t Parameters::bucket_target_size(1);
+bptime::time_duration Parameters::default_send_timeout(bptime::seconds(10));
 bptime::time_duration Parameters::find_node_interval(bptime::seconds(10));
 bptime::time_duration Parameters::recovery_time_lag(bptime::seconds(5));
 bptime::time_duration Parameters::re_bootstrap_time_lag(bptime::seconds(10));

@@ -34,6 +34,7 @@ struct Parameters {
   static uint16_t max_non_routing_table_size;
   static uint16_t bucket_target_size;
   static uint32_t max_data_size;
+  static boost::posix_time::time_duration default_send_timeout;
   static boost::posix_time::time_duration find_node_interval;
   static boost::posix_time::time_duration recovery_time_lag;
   static boost::posix_time::time_duration re_bootstrap_time_lag;

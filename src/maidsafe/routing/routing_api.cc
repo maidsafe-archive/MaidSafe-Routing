@@ -58,6 +58,15 @@ void Routing::Send(const NodeId& destination_id,
                cacheable);
 }
 
+void Routing::Send(const NodeId& destination_id,
+                   const std::string& data,
+                   ResponseFunctor response_functor,
+                   const DestinationType &destination_type,
+                   const bool &cacheable) {
+  pimpl_->Send(destination_id, NodeId(), data, response_functor, Parameters::default_send_timeout,
+               destination_type, cacheable);
+}
+
 NodeId Routing::GetRandomExistingNode() const {
   return pimpl_->GetRandomExistingNode();
 }
