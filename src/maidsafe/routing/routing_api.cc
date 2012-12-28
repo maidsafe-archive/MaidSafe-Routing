@@ -79,6 +79,10 @@ NodeId Routing::kNodeId() const {
   return pimpl_->kNodeId();
 }
 
+int Routing::network_status() {
+  return pimpl_->network_status();
+}
+
 }  // namespace routing
 
 }  // namespace maidsafe

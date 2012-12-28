@@ -47,7 +47,9 @@ Routing::Impl::Impl(bool client_mode,
                     bool anonymous,
                     const NodeId& node_id,
                     const asymm::Keys& keys)
-    : routing_table_(client_mode, node_id, keys),
+    : network_status_mutex_(),
+      network_status_(kNotJoined),
+      routing_table_(client_mode, node_id, keys),
       kNodeId_(routing_table_.kNodeId()),
       kAnonymousNode_(anonymous),
       running_(true),
@@ -99,7 +101,13 @@ void Routing::Impl::Join(const Functors& functors, const std::vector<Endpoint>& 
 }
 
 void Routing::Impl::ConnectFunctors(const Functors& functors) {
-  routing_table_.InitialiseFunctors(functors.network_status,
+  routing_table_.InitialiseFunctors([this, functors] (int network_status_in) {
+                                      {
+                                        std::lock_guard<std::mutex> lock(network_status_mutex_);
+                                        network_status_ = network_status_in;
+                                      }
+                                      functors.network_status(network_status_in);
+                                    },
                                     [this](const NodeInfo& node, bool internal_rudp_only) {
                                              RemoveNode(node, internal_rudp_only);
                                            },
@@ -642,6 +650,10 @@ NodeId Routing::Impl::kNodeId() const {
   return kNodeId_;
 }
 
+int Routing::Impl::network_status() {
+  std::lock_guard<std::mutex> lock(network_status_mutex_);
+  return network_status_;
+}
 
 }  // namespace routing
 

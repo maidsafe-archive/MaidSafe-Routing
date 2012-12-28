@@ -116,6 +116,8 @@ class Routing {
   // returns Node Id.
   NodeId kNodeId() const;
 
+  int network_status();
+
   // TODO(TEAM): This method shall be in private, however a temp solution in Lifestuff requires
   // calling this function to solve segmentation problem during tearing down of Credential Tests
   void DisconnectFunctors();

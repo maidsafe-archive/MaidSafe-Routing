@@ -76,6 +76,8 @@ class Routing::Impl {
 
   NodeId kNodeId() const;
 
+  int network_status();
+
   void DisconnectFunctors();
 
   friend class test::GenericNode;
@@ -101,6 +103,8 @@ class Routing::Impl {
   bool ConfirmGroupMembers(const NodeId& node1, const NodeId& node2);
   void NotifyNetworkStatus(int return_code) const;
 
+  std::mutex network_status_mutex_;
+  int network_status_;
   RoutingTable routing_table_;
   const NodeId kNodeId_;
   const bool kAnonymousNode_;
