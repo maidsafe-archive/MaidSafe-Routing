@@ -56,6 +56,9 @@ struct is_client : public std::true_type {};
 template<>
 struct is_client<passport::Pmid*> : public std::false_type {};
 
+template<>
+struct is_client<const passport::Pmid*> : public std::false_type {};
+
 }  // namespace detail
 
 
