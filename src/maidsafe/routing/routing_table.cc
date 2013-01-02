@@ -650,8 +650,8 @@ std::pair<bool, std::vector<NodeInfo>::const_iterator> RoutingTable::Find(
 }
 
 void RoutingTable::UpdateNetworkStatus(uint16_t size) const {
-  if (network_status_functor_)
-    network_status_functor_(static_cast<int>(size) * 100 / kMaxSize_);
+  assert(network_status_functor_);
+  network_status_functor_(static_cast<int>(size) * 100 / kMaxSize_);
   LOG(kVerbose) << DebugId(kNodeId_) << "Updating network status !!! " << (size * 100) / kMaxSize_;
 }
 

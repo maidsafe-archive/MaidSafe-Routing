@@ -101,12 +101,13 @@ void Routing::Impl::Join(const Functors& functors, const std::vector<Endpoint>& 
 }
 
 void Routing::Impl::ConnectFunctors(const Functors& functors) {
-  routing_table_.InitialiseFunctors([this, functors] (int network_status_in) {
+  functors_ = functors;
+  routing_table_.InitialiseFunctors([this] (int network_status_in) {
                                       {
                                         std::lock_guard<std::mutex> lock(network_status_mutex_);
                                         network_status_ = network_status_in;
                                       }
-                                      functors.network_status(network_status_in);
+                                      NotifyNetworkStatus(network_status_in);
                                     },
                                     [this](const NodeInfo& node, bool internal_rudp_only) {
                                              RemoveNode(node, internal_rudp_only);
@@ -119,7 +120,7 @@ void Routing::Impl::ConnectFunctors(const Functors& functors) {
                                       if (running_)
                                         group_change_handler_.SendClosestNodesUpdateRpcs(nodes);
                                     },
-                                    functors.close_node_replaced,
+                                    functors_.close_node_replaced,
                                     [this] (const bool& subscribe, NodeInfo node_info) {
                                       std::lock_guard<std::mutex> lock(running_mutex_);
                                       if (running_)
@@ -129,7 +130,6 @@ void Routing::Impl::ConnectFunctors(const Functors& functors) {
   message_handler_->set_message_received_functor(functors.message_received);
   message_handler_->set_request_public_key_functor(functors.request_public_key);
   network_.set_new_bootstrap_endpoint_functor(functors.new_bootstrap_endpoint);
-  functors_ = functors;
 }
 
 void Routing::Impl::DisconnectFunctors() {

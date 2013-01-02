@@ -48,7 +48,9 @@
 
 namespace fs = boost::filesystem;
 namespace po = boost::program_options;
-namespace asymm = maidsafe::rsa;
+
+
+namespace {
 
 typedef std::vector<maidsafe::passport::Pmid> PmidVector;
 
@@ -146,6 +148,8 @@ fs::path GetPathFromProgramOption(const std::string &option_name,
   LOG(kInfo) << "GetPathFromProgramOption - " << option_name << " is " << option_path;
   return option_path;
 }
+
+}  // unnamed namespace
 
 int main(int argc, char* argv[]) {
   maidsafe::log::Logging::Instance().Initialise(argc, argv);
