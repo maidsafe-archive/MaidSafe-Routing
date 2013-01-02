@@ -87,6 +87,11 @@ int NetworkUtils::Bootstrap(const std::vector<Endpoint>& bootstrap_endpoints,
                                 maidsafe_local_endpoints.end());
   }
 
+  if (Parameters::append_local_live_port_endpoint && bootstrap_attempt_ == 0) {
+    bootstrap_endpoints_.push_back(Endpoint(GetLocalIp(), 5483));
+    LOG(kInfo) << "Appending local live port endpoints: " << bootstrap_endpoints_.back();
+  }
+
   if (bootstrap_endpoints_.empty())
     return kInvalidBootstrapContacts;
 
