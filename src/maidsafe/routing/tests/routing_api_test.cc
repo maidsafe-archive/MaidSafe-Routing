@@ -172,14 +172,14 @@ TEST(APITest, FUNC_API_AnonymousNode) {
       LOG(kVerbose) << "Got response !!";
     };
   // Testing Send
-  routing3.Send(NodeId(node1.node_info.node_id), NodeId(), "message_from_anonymous node",
-          response_functor, boost::posix_time::seconds(10), DestinationType::kDirect, false);
+  routing3.Send(NodeId(node1.node_info.node_id), "message_from_anonymous node",
+          response_functor, DestinationType::kDirect, false);
   Sleep(boost::posix_time::seconds(11));  // to allow disconnection
   ResponseFunctor failed_response = [=](const std::vector<std::string> &message) {
       ASSERT_TRUE(message.empty());
     };
-  routing3.Send(NodeId(node1.node_info.node_id), NodeId(), "message_2_from_anonymous node",
-           failed_response, boost::posix_time::seconds(10), DestinationType::kDirect, false);
+  routing3.Send(NodeId(node1.node_info.node_id), "message_2_from_anonymous node",
+           failed_response, DestinationType::kDirect, false);
   Sleep(boost::posix_time::seconds(1));
   rudp::Parameters::bootstrap_connection_lifespan = boost::posix_time::minutes(10);
 }
@@ -251,8 +251,8 @@ TEST(APITest, BEH_API_SendToSelf) {
       LOG(kVerbose) << "Got response !!";
       response_promise.set_value(true);
     };
-  routing3.Send(NodeId(node3.node_info.node_id), NodeId(), "message from my node", response_functor,
-          boost::posix_time::seconds(10), DestinationType::kDirect, false);
+  routing3.Send(NodeId(node3.node_info.node_id), "message from my node",
+                response_functor, DestinationType::kDirect, false);
   EXPECT_TRUE(response_future.timed_wait(boost::posix_time::seconds(10)));
 }
 
@@ -325,8 +325,8 @@ TEST(APITest, BEH_API_ClientNode) {
       LOG(kVerbose) << "Got response !!";
       response_promise.set_value(true);
     };
-  routing3.Send(NodeId(node1.node_info.node_id), NodeId(), "message from client node",
-          response_functor, boost::posix_time::seconds(10), DestinationType::kDirect, false);
+  routing3.Send(NodeId(node1.node_info.node_id), "message from client node",
+                response_functor, DestinationType::kDirect, false);
   EXPECT_TRUE(response_future.timed_wait(boost::posix_time::seconds(10)));
 }
 
@@ -418,8 +418,8 @@ TEST(APITest, BEH_API_ClientNodeSameId) {
       LOG(kVerbose) << "Got response !!";
       response_promise1.set_value(true);
     };
-  routing3.Send(NodeId(node1.node_info.node_id), NodeId(), "message from client node",
-          response_functor, boost::posix_time::seconds(10), DestinationType::kDirect, false);
+  routing3.Send(NodeId(node1.node_info.node_id), "message from client node",
+                response_functor, DestinationType::kDirect, false);
   EXPECT_TRUE(response_future.timed_wait(boost::posix_time::seconds(10)));
 
   boost::promise<bool> response_promise2;
@@ -430,8 +430,8 @@ TEST(APITest, BEH_API_ClientNodeSameId) {
       LOG(kVerbose) << "Got response !!";
       response_promise2.set_value(true);
     };
-  routing4.Send(NodeId(node1.node_info.node_id), NodeId(), "message from client node",
-          response_functor, boost::posix_time::seconds(10), DestinationType::kDirect, false);
+  routing4.Send(NodeId(node1.node_info.node_id), "message from client node",
+                response_functor, DestinationType::kDirect, false);
   EXPECT_TRUE(response_future.timed_wait(boost::posix_time::seconds(10)));
 }
 

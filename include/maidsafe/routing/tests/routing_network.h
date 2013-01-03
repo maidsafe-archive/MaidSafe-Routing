@@ -85,10 +85,8 @@ class GenericNode {
   void Join(const std::vector<boost::asio::ip::udp::endpoint>& peer_endpoints =
                 std::vector<boost::asio::ip::udp::endpoint>());
   void Send(const NodeId& destination_id,
-            const NodeId& group_claim,
             const std::string& data,
             const ResponseFunctor& response_functor,
-            const boost::posix_time::time_duration& timeout,
             const DestinationType& destination_type,
             const bool& cache);
   void SendToClosestNode(const protobuf::Message& message);

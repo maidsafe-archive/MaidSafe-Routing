@@ -98,14 +98,6 @@ class Routing {
   // clients with your address (except you).  Pass an empty response_functor to indicate you do not
   // care about a response.
   void Send(const NodeId& destination_id,      // ID of final destination
-            const NodeId& group_claim,         // ID claimed of sending group
-            const std::string& data,           // message content (serialised data)
-            ResponseFunctor response_functor,
-            const boost::posix_time::time_duration& timeout,
-            const DestinationType& destination_type,  // whether this is to a direct/close/group
-            const bool& cacheable);
-
-  void Send(const NodeId& destination_id,      // ID of final destination
             const std::string& data,           // message content (serialised data)
             ResponseFunctor response_functor,
             const DestinationType& destination_type,  // whether this is to a direct/close/group
@@ -120,6 +112,11 @@ class Routing {
   NodeId kNodeId() const;
 
   int network_status();
+
+  std::vector<NodeInfo> ClosestNodes();
+
+  bool IsDirectlyConnectedVault(const NodeId& node_id);
+  bool IsDirectlyConnectedClient(const NodeId& node_id);
 
   // TODO(TEAM): This method shall be in private, however a temp solution in Lifestuff requires
   // calling this function to solve segmentation problem during tearing down of Credential Tests

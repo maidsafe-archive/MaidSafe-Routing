@@ -118,23 +118,23 @@ TEST_F(RoutingChurnTest, FUNC_MessagingNetworkChurn) {
                                          GenericNetwork::NodePtr vault_node(
                                             this->RandomVaultNode());
                                          // Choose random client nodes for direct message
-                                         sender_client->Send(receiver_client->node_id(), NodeId(),
-                                                             message, nullptr,
-                                                             boost::posix_time::seconds(2),
+                                         sender_client->Send(receiver_client->node_id(),
+                                                             message,
+                                                             nullptr,
                                                              DestinationType::kDirect,
                                                              false);
                                          // Choose random client for group message to random env
-                                         sender_client->Send(NodeId(NodeId::kRandomId), NodeId(),
-                                                             message, nullptr,
-                                                             boost::posix_time::seconds(2),
+                                         sender_client->Send(NodeId(NodeId::kRandomId),
+                                                             message,
+                                                             nullptr,
                                                              DestinationType::kGroup,
                                                              false);
 
 
                                          // Choose random vault for group message to random env
-                                         vault_node->Send(NodeId(NodeId::kRandomId), NodeId(),
-                                                          message, nullptr,
-                                                          boost::posix_time::seconds(2),
+                                         vault_node->Send(NodeId(NodeId::kRandomId),
+                                                          message,
+                                                          nullptr,
                                                           DestinationType::kGroup,
                                                           false);
                                          // Wait before going again

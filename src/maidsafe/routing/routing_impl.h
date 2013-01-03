@@ -63,10 +63,8 @@ class Routing::Impl {
                     const NodeInfo& peer_info);
 
   void Send(const NodeId& destination_id,
-            const NodeId& group_claim,
             const std::string& data,
             const ResponseFunctor& response_functor,
-            const boost::posix_time::time_duration& timeout,
             const DestinationType& destination_type,
             const bool& cacheable);
 
@@ -77,6 +75,11 @@ class Routing::Impl {
   NodeId kNodeId() const;
 
   int network_status();
+
+  std::vector<NodeInfo> ClosestNodes();
+
+  bool IsDirectlyConnectedVault(const NodeId& node_id);
+  bool IsDirectlyConnectedClient(const NodeId& node_id);
 
   void DisconnectFunctors();
 

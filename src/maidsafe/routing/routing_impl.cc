@@ -334,10 +334,8 @@ int Routing::Impl::ZeroStateJoin(const Functors& functors,
 }
 
 void Routing::Impl::Send(const NodeId& destination_id,
-                         const NodeId& group_claim,
                          const std::string& data,
                          const ResponseFunctor& response_functor,
-                         const boost::posix_time::time_duration& timeout,
                          const DestinationType& destination_type,
                          const bool& cacheable) {
   if (destination_id.IsZero()) {
@@ -365,17 +363,19 @@ void Routing::Impl::Send(const NodeId& destination_id,
   proto_message.set_request(true);
   proto_message.set_hops_to_live(Parameters::hops_to_live);
   uint16_t replication(1);
-  if (!group_claim.IsZero())
-    proto_message.set_group_claim(group_claim.string());
+//  if (!group_claim.IsZero())
+//    proto_message.set_group_claim(group_claim.string());
 
   if (DestinationType::kGroup == destination_type) {
     proto_message.set_visited(false);
     replication = Parameters::node_group_size;
     if (response_functor)
-      proto_message.set_id(timer_.AddTask(timeout, response_functor, Parameters::node_group_size));
+      proto_message.set_id(timer_.AddTask(Parameters::default_send_timeout,
+                                          response_functor,
+                                          Parameters::node_group_size));
   } else {
     if (response_functor)
-      proto_message.set_id(timer_.AddTask(timeout, response_functor, 1));
+      proto_message.set_id(timer_.AddTask(Parameters::default_send_timeout, response_functor, 1));
   }
 
   proto_message.set_replication(replication);
@@ -653,6 +653,18 @@ NodeId Routing::Impl::kNodeId() const {
 int Routing::Impl::network_status() {
   std::lock_guard<std::mutex> lock(network_status_mutex_);
   return network_status_;
+}
+
+std::vector<NodeInfo> Routing::Impl::ClosestNodes() {
+  return routing_table_.GetMatrixNodes();
+}
+
+bool Routing::Impl::IsDirectlyConnectedVault(const NodeId& node_id) {
+  return routing_table_.IsConnected(node_id);
+}
+
+bool Routing::Impl::IsDirectlyConnectedClient(const NodeId& node_id) {
+  return non_routing_table_.IsConnected(node_id);
 }
 
 }  // namespace routing

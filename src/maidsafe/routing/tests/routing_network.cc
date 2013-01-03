@@ -253,14 +253,11 @@ bool GenericNode::NodeSubscriedForGroupUpdate(const NodeId& node_id) {
 }
 
 void GenericNode::Send(const NodeId& destination_id,
-                       const NodeId& group_claim,
                        const std::string& data,
                        const ResponseFunctor& response_functor,
-                       const boost::posix_time::time_duration& timeout,
                        const DestinationType& destination_type,
                        const bool& cache) {
-    routing_->Send(destination_id, group_claim, data, response_functor, timeout, destination_type,
-                   cache);
+    routing_->Send(destination_id, data, response_functor, destination_type, cache);
 }
 
 void GenericNode::RudpSend(const NodeId& peer_node_id,
@@ -786,9 +783,11 @@ testing::AssertionResult GenericNetwork::Send(const size_t& messages) {
             data = boost::lexical_cast<std::string>(++message_id) + "<:>" + data;
           }
           assert(!data.empty() && "Send Data Empty !");
-          source_node->Send(NodeId(dest_node->node_id()), NodeId(), data, callable,
-              boost::posix_time::seconds(static_cast<long>(nodes_.size())), // NOLINT (Fraser)
-              DestinationType::kDirect, false);
+          source_node->Send(NodeId(dest_node->node_id()),
+                            data,
+                            callable,
+                            DestinationType::kDirect,
+                            false);
           Sleep(boost::posix_time::microseconds(21));
         }
       }
@@ -837,13 +836,7 @@ testing::AssertionResult GenericNetwork::GroupSend(const NodeId& node_id,
                         LOG(kVerbose) << "ResponseHandler .... DONE " << messages_count;
                       }
                     };
-    this->nodes_[source_index]->Send(node_id,
-                                     NodeId(),
-                                     data,
-                                     callable,
-                                     boost::posix_time::seconds(static_cast<long>(10 * messages)), // NOLINT (Fraser)
-                                     DestinationType::kGroup,
-                                     false);
+    this->nodes_[source_index]->Send(node_id, data, callable, DestinationType::kGroup, false);
   }
 
   std::unique_lock<std::mutex> lock(mutex);
@@ -896,8 +889,7 @@ testing::AssertionResult GenericNetwork::Send(const NodeId& node_id) {
           std::lock_guard<std::mutex> lock(mutex);
           data = boost::lexical_cast<std::string>(++message_id) + "<:>" + data;
         }
-        source_node->Send(node_id, NodeId(), data, callable,
-            boost::posix_time::seconds(12), DestinationType::kDirect, false);
+        source_node->Send(node_id, data, callable, DestinationType::kDirect, false);
     }
   }
 
@@ -949,8 +941,7 @@ testing::AssertionResult GenericNetwork::Send(std::shared_ptr<GenericNode> sourc
   }
   std::string data(RandomAlphaNumericString(512 * 2^10));
   assert(!data.empty() && "Send Data Empty !");
-  source_node->Send(node_id, NodeId(), data, callable,
-                    boost::posix_time::seconds(12), DestinationType::kDirect, false);
+  source_node->Send(node_id, data, callable, DestinationType::kDirect, false);
 
   if (!no_response_expected) {
     std::unique_lock<std::mutex> lock(mutex);

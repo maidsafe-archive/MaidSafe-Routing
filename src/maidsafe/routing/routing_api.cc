@@ -48,23 +48,11 @@ int Routing::ZeroStateJoin(Functors functors,
 }
 
 void Routing::Send(const NodeId& destination_id,
-                   const NodeId& group_claim,
-                   const std::string& data,
-                   ResponseFunctor response_functor,
-                   const boost::posix_time::time_duration& timeout,
-                   const DestinationType &destination_type,
-                   const bool &cacheable) {
-  pimpl_->Send(destination_id, group_claim, data, response_functor, timeout, destination_type,
-               cacheable);
-}
-
-void Routing::Send(const NodeId& destination_id,
                    const std::string& data,
                    ResponseFunctor response_functor,
                    const DestinationType &destination_type,
                    const bool &cacheable) {
-  pimpl_->Send(destination_id, NodeId(), data, response_functor, Parameters::default_send_timeout,
-               destination_type, cacheable);
+  pimpl_->Send(destination_id, data, response_functor, destination_type, cacheable);
 }
 
 NodeId Routing::GetRandomExistingNode() const {
@@ -81,6 +69,18 @@ NodeId Routing::kNodeId() const {
 
 int Routing::network_status() {
   return pimpl_->network_status();
+}
+
+std::vector<NodeInfo> Routing::ClosestNodes() {
+  return pimpl_->ClosestNodes();
+}
+
+bool Routing::IsDirectlyConnectedVault(const NodeId& node_id) {
+  return pimpl_->IsDirectlyConnectedVault(node_id);
+}
+
+bool Routing::IsDirectlyConnectedClient(const NodeId& node_id) {
+  return pimpl_->IsDirectlyConnectedClient(node_id);
 }
 
 }  // namespace routing
