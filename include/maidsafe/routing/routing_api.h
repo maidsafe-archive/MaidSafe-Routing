@@ -115,12 +115,8 @@ class Routing {
 
   std::vector<NodeInfo> ClosestNodes();
 
-  bool IsConnectedToVault(const NodeId& node_id);
-  bool IsConnectedToClient(const NodeId& node_id);
-
-  // TODO(TEAM): This method shall be in private, however a temp solution in Lifestuff requires
-  // calling this function to solve segmentation problem during tearing down of Credential Tests
-  void DisconnectFunctors();
+//  bool IsConnectedToVault(const NodeId& node_id);
+//  bool IsConnectedToClient(const NodeId& node_id);
 
   friend class test::GenericNode;
 

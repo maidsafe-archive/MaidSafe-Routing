@@ -132,12 +132,6 @@ void Routing::Impl::ConnectFunctors(const Functors& functors) {
   network_.set_new_bootstrap_endpoint_functor(functors.new_bootstrap_endpoint);
 }
 
-void Routing::Impl::DisconnectFunctors() {
-  message_handler_->set_message_received_functor(nullptr);
-  message_handler_->set_request_public_key_functor(nullptr);
-  functors_ = Functors();
-}
-
 void Routing::Impl::BootstrapFromTheseEndpoints(const std::vector<Endpoint>& endpoints) {
   LOG(kInfo) << "Doing a BootstrapFromTheseEndpoints Join.  Entered first bootstrap endpoint: "
              << endpoints[0] << ", this node's ID: " << DebugId(kNodeId_)
@@ -659,13 +653,13 @@ std::vector<NodeInfo> Routing::Impl::ClosestNodes() {
   return routing_table_.GetMatrixNodes();
 }
 
-bool Routing::Impl::IsConnectedToVault(const NodeId& node_id) {
-  return routing_table_.IsConnected(node_id);
-}
+// bool Routing::Impl::IsConnectedToVault(const NodeId& node_id) {
+//  return routing_table_.IsConnected(node_id);
+// }
 
-bool Routing::Impl::IsConnectedToClient(const NodeId& node_id) {
-  return non_routing_table_.IsConnected(node_id);
-}
+// bool Routing::Impl::IsConnectedToClient(const NodeId& node_id) {
+//  return non_routing_table_.IsConnected(node_id);
+// }
 
 }  // namespace routing
 

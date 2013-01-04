@@ -237,13 +237,13 @@ std::vector<NodeInfo> GenericNode::ClosestNodes() {
   return routing_->ClosestNodes();
 }
 
-bool GenericNode::IsConnectedToVault(const NodeId& node_id) {
-  return routing_->IsConnectedToVault(node_id);
-}
+// bool GenericNode::IsConnectedToVault(const NodeId& node_id) {
+//  return routing_->IsConnectedToVault(node_id);
+// }
 
-bool GenericNode::IsConnectedToClient(const NodeId& node_id) {
-  return routing_->IsConnectedToClient(node_id);
-}
+// bool GenericNode::IsConnectedToClient(const NodeId& node_id) {
+//  return routing_->IsConnectedToClient(node_id);
+// }
 
 void GenericNode::AddNodeToRandomNodeHelper(const NodeId& node_id) {
   routing_->pimpl_->random_node_helper_.Add(node_id);

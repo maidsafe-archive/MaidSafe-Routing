@@ -36,10 +36,6 @@ void Routing::Join(Functors functors, std::vector<Endpoint> peer_endpoints) {
   pimpl_->Join(functors, peer_endpoints);
 }
 
-void Routing::DisconnectFunctors() {  // TODO(Prakash) : fix race condition when functors in use
-  pimpl_->DisconnectFunctors();
-}
-
 int Routing::ZeroStateJoin(Functors functors,
                            const Endpoint& local_endpoint,
                            const Endpoint& peer_endpoint,
@@ -75,13 +71,13 @@ std::vector<NodeInfo> Routing::ClosestNodes() {
   return pimpl_->ClosestNodes();
 }
 
-bool Routing::IsConnectedToVault(const NodeId& node_id) {
-  return pimpl_->IsConnectedToVault(node_id);
-}
+// bool Routing::IsConnectedToVault(const NodeId& node_id) {
+//  return pimpl_->IsConnectedToVault(node_id);
+// }
 
-bool Routing::IsConnectedToClient(const NodeId& node_id) {
-  return pimpl_->IsConnectedToClient(node_id);
-}
+// bool Routing::IsConnectedToClient(const NodeId& node_id) {
+//  return pimpl_->IsConnectedToClient(node_id);
+// }
 
 }  // namespace routing
 

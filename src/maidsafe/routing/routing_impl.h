@@ -78,10 +78,8 @@ class Routing::Impl {
 
   std::vector<NodeInfo> ClosestNodes();
 
-  bool IsConnectedToVault(const NodeId& node_id);
-  bool IsConnectedToClient(const NodeId& node_id);
-
-  void DisconnectFunctors();
+//  bool IsConnectedToVault(const NodeId& node_id);
+//  bool IsConnectedToClient(const NodeId& node_id);
 
   friend class test::GenericNode;
 

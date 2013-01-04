@@ -346,6 +346,7 @@ TEST_F(RoutingNetworkTest, FUNC_GetRandomExistingNode) {
   EXPECT_EQ(100, random_node_ids.size());
 }
 
+/*
 TEST_F(RoutingNetworkTest, FUNC_IsConnectedToVault) {
   ASSERT_LE(env_->ClientIndex(), Parameters::max_routing_table_size + 1);
 
@@ -419,6 +420,7 @@ TEST_F(RoutingNetworkTest, FUNC_NonexistentIsConnectedToVaultOrClient) {
       EXPECT_FALSE(node->IsConnectedToClient(non_existing_id));
   }
 }
+*/
 
 TEST_F(RoutingNetworkTest, FUNC_ClosestNodes) {
   for (auto node : env_->nodes_) {
