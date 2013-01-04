@@ -229,9 +229,10 @@ bool RoutingTable::IsThisNodeGroupLeader(const NodeId& target_id, NodeInfo& grou
   return true;
 }
 
-bool RoutingTable::IsNodeIdInGroupRange(const NodeId& target_id) {
+bool RoutingTable::IsIdInGroupRange(const NodeId& sender_id, const NodeId& info_id) {
   std::unique_lock<std::mutex> lock(mutex_);
-  return !group_matrix_.IsNodeInGroupRange(target_id);
+  return ((nodes_.size() > Parameters::routing_table_ready_to_response) &&
+          group_matrix_.IsIdInGroupRange(sender_id, info_id));
 }
 
 NodeInfo RoutingTable::GetConnectedPeerFromGroupMatrixClosestTo(const NodeId& target_node_id) {
@@ -650,7 +651,12 @@ std::pair<bool, std::vector<NodeInfo>::const_iterator> RoutingTable::Find(
 }
 
 void RoutingTable::UpdateNetworkStatus(uint16_t size) const {
+#ifndef TESTING
   assert(network_status_functor_);
+#else
+  if (!network_status_functor_)
+    return;
+#endif
   network_status_functor_(static_cast<int>(size) * 100 / kMaxSize_);
   LOG(kVerbose) << DebugId(kNodeId_) << "Updating network status !!! " << (size * 100) / kMaxSize_;
 }

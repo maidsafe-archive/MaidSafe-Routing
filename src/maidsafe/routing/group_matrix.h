@@ -25,7 +25,11 @@ namespace maidsafe {
 
 namespace routing {
 
-namespace test { class GenericNode; }
+namespace test {
+  class GenericNode;
+  class RoutingTableTest_BEH_IsIdInGroupRange_Test;
+}
+
 class RoutingTable;
 
 
@@ -50,6 +54,8 @@ class GroupMatrix {
 
   bool IsNodeInGroupRange(const NodeId& target_id);
 
+  bool IsIdInGroupRange(const NodeId& sender_id, const NodeId& info_id);
+
   bool IsThisNodeGroupLeader(const NodeId& target_id, NodeId& group_leader_id);
 
   // Updates group matrix if peer is present in 1st column of matrix
@@ -64,6 +70,7 @@ class GroupMatrix {
 
   void Clear();
   friend class test::GenericNode;
+  friend class test::RoutingTableTest_BEH_IsIdInGroupRange_Test;
 
  private:
   GroupMatrix(const GroupMatrix&);

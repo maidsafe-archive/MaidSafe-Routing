@@ -151,6 +151,14 @@ bool GroupMatrix::IsNodeInGroupRange(const NodeId& target_id) {
   return false;
 }
 
+bool GroupMatrix::IsIdInGroupRange(const NodeId& sender_id, const NodeId& info_id) {
+  PartialSortFromTarget(kNodeId_, Parameters::node_group_size + 1, unique_nodes_);
+  NodeInfo furthest_group_node(unique_nodes_.at(std::min(Parameters::node_group_size - 1,
+                                                static_cast<int>(unique_nodes_.size()))));
+  NodeId distance(furthest_group_node.node_id ^ kNodeId_);
+  return ((info_id ^ sender_id) <= distance);
+}
+
 void GroupMatrix::UpdateFromConnectedPeer(const NodeId& peer,
                                           const std::vector<NodeInfo>& nodes) {
   if (peer.IsZero()) {

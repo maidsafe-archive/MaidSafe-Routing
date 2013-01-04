@@ -72,7 +72,7 @@ class Routing::Impl {
 
   NodeId GetRandomExistingNode() const { return random_node_helper_.Get(); }
 
-  bool IsNodeIdInGroupRange(const NodeId& node_id);
+  bool IsIdInGroupRange(const NodeId& sender_id, const NodeId& info_id);
 
   NodeId kNodeId() const;
 
