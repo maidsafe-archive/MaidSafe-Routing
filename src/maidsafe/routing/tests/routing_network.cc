@@ -233,6 +233,18 @@ NodeId GenericNode::GetRandomExistingNode() const {
   return routing_->GetRandomExistingNode();
 }
 
+std::vector<NodeInfo> GenericNode::ClosestNodes() {
+  return routing_->ClosestNodes();
+}
+
+bool GenericNode::IsConnectedToVault(const NodeId& node_id) {
+  return routing_->IsConnectedToVault(node_id);
+}
+
+bool GenericNode::IsConnectedToClient(const NodeId& node_id) {
+  return routing_->IsConnectedToClient(node_id);
+}
+
 void GenericNode::AddNodeToRandomNodeHelper(const NodeId& node_id) {
   routing_->pimpl_->random_node_helper_.Add(node_id);
 }
@@ -669,6 +681,27 @@ std::vector<NodeInfo> GenericNetwork::GetClosestNodes(const NodeId& target_id,
                       return NodeId::CloserToTarget(lhs.node_id, rhs.node_id, target_id);
                     });
   return std::vector<NodeInfo>(closet_nodes.begin() + 1, closet_nodes.begin() + size);
+}
+
+std::vector<NodeInfo> GenericNetwork::GetClosestVaults(const NodeId& target_id,
+                                                       const uint32_t& quantity) {
+  std::vector<NodeInfo> closest_nodes;
+  for (auto node : nodes_) {
+    if (!node->IsClient())
+      closest_nodes.push_back(node->node_info());
+  }
+
+  uint32_t sort_size(std::min(quantity, static_cast<uint32_t>(closest_nodes.size())));
+
+    std::lock_guard<std::mutex> lock(mutex_);
+    std::partial_sort(closest_nodes.begin(),
+                      closest_nodes.begin() + sort_size,
+                      closest_nodes.end(),
+                      [&](const NodeInfo& lhs, const NodeInfo& rhs) {
+                        return NodeId::CloserToTarget(lhs.node_id, rhs.node_id, target_id);
+                      });
+
+  return std::vector<NodeInfo>(closest_nodes.begin(), closest_nodes.begin() + sort_size);
 }
 
 bool GenericNetwork::RestoreComposition() {

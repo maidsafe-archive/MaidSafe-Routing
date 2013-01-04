@@ -75,12 +75,12 @@ std::vector<NodeInfo> Routing::ClosestNodes() {
   return pimpl_->ClosestNodes();
 }
 
-bool Routing::IsDirectlyConnectedVault(const NodeId& node_id) {
-  return pimpl_->IsDirectlyConnectedVault(node_id);
+bool Routing::IsConnectedToVault(const NodeId& node_id) {
+  return pimpl_->IsConnectedToVault(node_id);
 }
 
-bool Routing::IsDirectlyConnectedClient(const NodeId& node_id) {
-  return pimpl_->IsDirectlyConnectedClient(node_id);
+bool Routing::IsConnectedToClient(const NodeId& node_id) {
+  return pimpl_->IsConnectedToClient(node_id);
 }
 
 }  // namespace routing

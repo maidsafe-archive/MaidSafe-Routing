@@ -346,6 +346,100 @@ TEST_F(RoutingNetworkTest, FUNC_GetRandomExistingNode) {
   EXPECT_EQ(100, random_node_ids.size());
 }
 
+TEST_F(RoutingNetworkTest, FUNC_IsConnectedToVault) {
+  ASSERT_LE(env_->ClientIndex(), Parameters::max_routing_table_size + 1);
+
+  // Vault checks vault id - expect true
+  for (uint16_t i(0); i < env_->ClientIndex(); ++i) {
+    for (uint16_t j(0); j < env_->ClientIndex(); ++j) {
+      if (i != j) {
+        EXPECT_TRUE(env_->nodes_.at(i)->IsConnectedToVault(env_->nodes_.at(j)->node_id()));
+      }
+    }
+  }
+
+  // Vault or Client checks client id - expect false
+  for (uint16_t i(0); i < env_->nodes_.size(); ++i) {
+    for (uint16_t j(env_->ClientIndex()); j < env_->nodes_.size(); ++j) {
+      EXPECT_FALSE(env_->nodes_.at(i)->IsConnectedToVault(env_->nodes_.at(j)->node_id()));
+    }
+  }
+
+  // Client checks close vault id - expect true
+  for (uint16_t i(env_->ClientIndex()); i < env_->nodes_.size(); ++i) {
+    NodeId client_id(env_->nodes_.at(i)->node_id());
+    std::vector<NodeInfo> closest_nodes(
+          env_->GetClosestVaults(client_id, Parameters::max_client_routing_table_size));
+    for (auto vault : closest_nodes) {
+      EXPECT_TRUE(env_->nodes_.at(i)->IsConnectedToVault(vault.node_id));
+    }
+  }
+}
+
+TEST_F(RoutingNetworkTest, FUNC_IsConnectedToClient) {
+  ASSERT_LE(env_->nodes_.size() - env_->ClientIndex(), Parameters::max_non_routing_table_size + 1);
+
+  // Vault checks close client id - expect true
+  for (uint16_t i(env_->ClientIndex()); i < env_->nodes_.size(); ++i) {
+    NodeId client_id(env_->nodes_.at(i)->node_id());
+    std::vector<NodeInfo> closest_nodes(
+          env_->GetClosestVaults(client_id, Parameters::max_client_routing_table_size));
+    for (auto node_info : closest_nodes) {
+      int node_index(env_->NodeIndex(node_info.node_id));
+      ASSERT_GE(node_index, 0);
+      EXPECT_TRUE(env_->nodes_.at(node_index)->IsConnectedToClient(client_id));
+    }
+  }
+
+  // Vault checks vault id - expect false
+  for (uint16_t i(0); i < env_->ClientIndex(); ++i) {
+    for (uint16_t j(0); j < env_->ClientIndex(); ++j) {
+      if (i != j) {
+        EXPECT_FALSE(env_->nodes_.at(i)->IsConnectedToClient(env_->nodes_.at(j)->node_id()));
+      }
+    }
+  }
+}
+
+TEST_F(RoutingNetworkTest, FUNC_NonexistentIsConnectedToVaultOrClient) {
+  NodeId non_existing_id;
+  bool exists(true);
+  while (exists) {
+    non_existing_id = NodeId(NodeId::kRandomId);
+    exists = false;
+    for (auto node : env_->nodes_) {
+      if (node->node_id() == non_existing_id)
+        exists = true;
+    }
+  }
+
+  for (auto node : env_->nodes_) {
+    EXPECT_FALSE(node->IsConnectedToVault(non_existing_id));
+    if (!node->IsClient())
+      EXPECT_FALSE(node->IsConnectedToClient(non_existing_id));
+  }
+}
+
+TEST_F(RoutingNetworkTest, FUNC_ClosestNodes) {
+  for (auto node : env_->nodes_) {
+    if (node->IsClient()) {
+      // TODO(Alison) - add test for clients when relationship with group matrix has
+      // been confirmed.
+      continue;
+    }
+
+    std::vector<NodeInfo> from_matrix(node->ClosestNodes());
+    std::vector<NodeInfo> from_network(
+          env_->GetClosestVaults(node->node_id(), static_cast<uint32_t>(from_matrix.size())));
+    EXPECT_EQ(from_matrix.size(), from_network.size());
+    int min_size(std::min(from_matrix.size(), from_network.size()));
+    EXPECT_LE(8, min_size);
+
+    for (uint16_t i(0); i < std::min(8, min_size); ++i)
+      EXPECT_EQ(from_matrix.at(i).node_id, from_network.at(i).node_id);
+  }
+}
+
 }  // namespace test
 
 }  // namespace routing

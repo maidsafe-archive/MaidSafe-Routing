@@ -102,6 +102,9 @@ class GenericNode {
   testing::AssertionResult DropNode(const NodeId& node_id);
   std::vector<NodeInfo> RoutingTable() const;
   NodeId GetRandomExistingNode() const;
+  std::vector<NodeInfo> ClosestNodes();
+  bool IsConnectedToVault(const NodeId& node_id);
+  bool IsConnectedToClient(const NodeId& node_id);
   void AddNodeToRandomNodeHelper(const NodeId& node_id);
   void RemoveNodeFromRandomNodeHelper(const NodeId& node_id);
   bool NodeSubscriedForGroupUpdate(const NodeId& node_id);
@@ -168,6 +171,8 @@ class GenericNetwork {
   size_t ClientIndex() { return client_index_; }
   std::vector<NodeId> GetGroupForId(const NodeId& node_id);
   std::vector<NodeInfo> GetClosestNodes(const NodeId& target_id, const uint32_t& quantity);
+  std::vector<NodeInfo> GetClosestVaults(const NodeId& target_id,
+                                         const uint32_t& quantity);
   bool RestoreComposition();
   bool WaitForHealthToStabilise();
   testing::AssertionResult Send(const size_t& messages);
