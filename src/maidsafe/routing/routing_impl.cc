@@ -425,8 +425,12 @@ void Routing::Impl::Send(const NodeId& destination_id,
   }
 }
 
-bool Routing::Impl::IsIdInGroupRange(const NodeId& sender_id, const NodeId& info_id) {
-  return routing_table_.IsIdInGroupRange(sender_id, info_id);
+bool Routing::Impl::IsNodeIdInGroupRange(const NodeId& node_id) {
+  return routing_table_.IsNodeIdInGroupRange(node_id);
+}
+
+bool Routing::Impl::IsIdInGroup(const NodeId& sender_id, const NodeId& info_id) {
+  return routing_table_.IsIdInGroup(sender_id, info_id);
 }
 
 void Routing::Impl::OnMessageReceived(const std::string& message) {

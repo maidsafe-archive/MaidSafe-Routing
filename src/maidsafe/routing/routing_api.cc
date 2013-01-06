@@ -71,8 +71,12 @@ NodeId Routing::GetRandomExistingNode() const {
   return pimpl_->GetRandomExistingNode();
 }
 
-bool Routing::IsIdInGroupRange(const NodeId& sender_id, const NodeId& info_id) const {
-  return pimpl_->IsIdInGroupRange(sender_id, info_id);
+bool Routing::IsNodeIdInGroupRange(const NodeId& node_id) const {
+  return pimpl_->IsNodeIdInGroupRange(node_id);
+}
+
+bool Routing::IsIdInGroup(const NodeId& sender_id, const NodeId& info_id) const {
+  return pimpl_->IsIdInGroup(sender_id, info_id);
 }
 
 NodeId Routing::kNodeId() const {

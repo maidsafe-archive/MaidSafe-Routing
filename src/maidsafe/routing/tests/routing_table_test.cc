@@ -769,8 +769,8 @@ TEST(RoutingTableTest, BEH_IsIdInGroupRange) {
     routing_table.group_matrix_.unique_nodes_.push_back(node);
     EXPECT_TRUE(routing_table.AddNode(node));
   }
-  EXPECT_FALSE(routing_table.IsIdInGroupRange(NodeId(NodeId::kRandomId),
-                                              NodeId(NodeId::kRandomId)));
+  EXPECT_FALSE(routing_table.IsIdInGroup(NodeId(NodeId::kRandomId),
+                                         NodeId(NodeId::kRandomId)));
   while (static_cast<uint16_t>(routing_table.size()) <
              Parameters::max_routing_table_size) {
     NodeInfo node(MakeNode());
@@ -789,9 +789,9 @@ TEST(RoutingTableTest, BEH_IsIdInGroupRange) {
   uint16_t index(0);
   while(index < Parameters::node_group_size) {
     if ((nodes_id.at(index) ^ info_id) <= (my_node ^ nodes_id[Parameters::node_group_size - 1]))
-      EXPECT_TRUE(routing_table.IsIdInGroupRange(nodes_id.at(index++), info_id));
+      EXPECT_TRUE(routing_table.IsIdInGroup(nodes_id.at(index++), info_id));
     else
-      EXPECT_FALSE(routing_table.IsIdInGroupRange(nodes_id.at(index++), info_id));
+      EXPECT_FALSE(routing_table.IsIdInGroup(nodes_id.at(index++), info_id));
   }
 }
 

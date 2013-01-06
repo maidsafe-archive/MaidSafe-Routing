@@ -28,6 +28,7 @@ namespace routing {
 namespace test {
   class GenericNode;
   class RoutingTableTest_BEH_IsIdInGroupRange_Test;
+  class GroupMatrixTest_BEH_AverageDistance_Test;
 }
 
 class RoutingTable;
@@ -54,7 +55,7 @@ class GroupMatrix {
 
   bool IsNodeInGroupRange(const NodeId& target_id);
 
-  bool IsIdInGroupRange(const NodeId& sender_id, const NodeId& info_id);
+  bool IsIdInGroup(const NodeId& sender_id, const NodeId& info_id);
 
   bool IsThisNodeGroupLeader(const NodeId& target_id, NodeId& group_leader_id);
 
@@ -69,8 +70,12 @@ class GroupMatrix {
   std::vector<NodeInfo> GetClosestNodes(const uint32_t& size);
 
   void Clear();
+  void Distance();
+  void AverageDistance(const NodeId& distance);
+
   friend class test::GenericNode;
   friend class test::RoutingTableTest_BEH_IsIdInGroupRange_Test;
+  friend class test::GroupMatrixTest_BEH_AverageDistance_Test;
 
  private:
   GroupMatrix(const GroupMatrix&);
@@ -82,7 +87,9 @@ class GroupMatrix {
 
   const NodeId& kNodeId_;
   std::vector<NodeInfo> unique_nodes_;
-  std::vector<std::vector<NodeInfo>> matrix_;
+  std::vector<std::vector<NodeInfo> > matrix_;
+  NodeId average_distance_;
+  NodeId distance_;
 };
 
 }  // namespace routing

@@ -229,10 +229,16 @@ bool RoutingTable::IsThisNodeGroupLeader(const NodeId& target_id, NodeInfo& grou
   return true;
 }
 
-bool RoutingTable::IsIdInGroupRange(const NodeId& sender_id, const NodeId& info_id) {
+bool RoutingTable::IsNodeIdInGroupRange(const NodeId& target_id) {
+  std::unique_lock<std::mutex> lock(mutex_);
+  return !group_matrix_.IsNodeInGroupRange(target_id);
+}
+
+
+bool RoutingTable::IsIdInGroup(const NodeId& sender_id, const NodeId& info_id) {
   std::unique_lock<std::mutex> lock(mutex_);
   return ((nodes_.size() > Parameters::routing_table_ready_to_response) &&
-          group_matrix_.IsIdInGroupRange(sender_id, info_id));
+          group_matrix_.IsIdInGroup(sender_id, info_id));
 }
 
 NodeInfo RoutingTable::GetConnectedPeerFromGroupMatrixClosestTo(const NodeId& target_node_id) {
