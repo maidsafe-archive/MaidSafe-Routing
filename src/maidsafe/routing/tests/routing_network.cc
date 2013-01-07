@@ -263,6 +263,10 @@ void GenericNode::Send(const NodeId& destination_id,
                    cache);
 }
 
+bool GenericNode::IsNodeIdInGroupRange(const NodeId& node_id) {
+  return routing_->IsNodeIdInGroupRange(node_id);
+}
+
 void GenericNode::RudpSend(const NodeId& peer_node_id,
                            const protobuf::Message& message,
                            rudp::MessageSentFunctor message_sent_functor) {
