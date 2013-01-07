@@ -64,13 +64,45 @@ TEST(GroupMatrixTest, BEH_AddSamePeerTwice) {
 }
 
 TEST(GroupMatrixTest, BEH_AverageDistance) {
-  NodeId node_id(GenerateUniqueRandomId(20));
+  NodeId node_id(NodeId::kRandomId);
+  LOG(kVerbose) << node_id.ToStringEncoded(NodeId::kBinary);
   NodeId average(node_id);
   GroupMatrix matrix(node_id);
   matrix.average_distance_ = average;
   matrix.AverageDistance(average);
-  EXPECT_EQ(matrix.average_distance_.ToStringEncoded(NodeId::kBinary),
-            average.ToStringEncoded(NodeId::kBinary));
+  EXPECT_EQ(matrix.average_distance_.ToStringEncoded(NodeId::kBinary).substr(0, 511),
+            average.ToStringEncoded(NodeId::kBinary).substr(0, 511));
+  node_id = NodeId();
+  matrix.average_distance_ = node_id;
+  average = node_id;
+  matrix.AverageDistance(node_id);
+  EXPECT_EQ(matrix.average_distance_.ToStringEncoded(NodeId::kBinary).substr(0, 511),
+            average.ToStringEncoded(NodeId::kBinary).substr(0, 511));
+  node_id = NodeId(NodeId::kMaxId);
+  matrix.average_distance_ = node_id;
+  average = node_id;
+  matrix.AverageDistance(node_id);
+  EXPECT_EQ(matrix.average_distance_.ToStringEncoded(NodeId::kBinary).substr(0, 511),
+            average.ToStringEncoded(NodeId::kBinary).substr(0, 511));
+  node_id = NodeId();
+  matrix.average_distance_ = NodeId(NodeId::kMaxId);
+  average = matrix.average_distance_;
+  for (auto index(0); index < 512; ++index) {
+    matrix.AverageDistance(node_id);
+    average = NodeId("0" + average.ToStringEncoded(NodeId::kBinary).substr(0, 511),
+                     NodeId::kBinary);
+    EXPECT_EQ(matrix.average_distance_.ToStringEncoded(NodeId::kBinary).substr(0, 511),
+              average.ToStringEncoded(NodeId::kBinary).substr(0, 511));
+  }
+  matrix.average_distance_ = NodeId(NodeId::kRandomId);
+  average = matrix.average_distance_;
+  for (auto index(0); index < 512; ++index) {
+    matrix.AverageDistance(node_id);
+    average = NodeId("0" + average.ToStringEncoded(NodeId::kBinary).substr(0, 511),
+                     NodeId::kBinary);
+    EXPECT_EQ(matrix.average_distance_.ToStringEncoded(NodeId::kBinary).substr(0, 511),
+              average.ToStringEncoded(NodeId::kBinary).substr(0, 511));
+  }
 }
 
 TEST(GroupMatrixTest, BEH_OneRowOnly) {
