@@ -27,7 +27,9 @@ namespace routing {
 GroupMatrix::GroupMatrix(const NodeId& this_node_id)
     : kNodeId_(this_node_id),
       unique_nodes_(),
-      matrix_() {}
+      matrix_(),
+      average_distance_(),
+      distance_() {}
 
 void GroupMatrix::AddConnectedPeer(const NodeInfo& node_info) {
   LOG(kVerbose) << "AddConnectedPeer : " << DebugId(node_info.node_id);
@@ -151,6 +153,10 @@ bool GroupMatrix::IsNodeInGroupRange(const NodeId& target_id) {
   return false;
 }
 
+bool GroupMatrix::IsIdInGroup(const NodeId& sender_id, const NodeId& info_id) {
+  return ((info_id ^ sender_id) <= distance_);
+}
+
 void GroupMatrix::UpdateFromConnectedPeer(const NodeId& peer,
                                           const std::vector<NodeInfo>& nodes) {
   if (peer.IsZero()) {
@@ -237,6 +243,45 @@ void GroupMatrix::Clear() {
     row.clear();
   matrix_.clear();
   UpdateUniqueNodeList();
+}
+
+void GroupMatrix::Distance() {
+  std::nth_element(unique_nodes_.begin(),
+                   unique_nodes_.begin() + Parameters::node_group_size,
+                   unique_nodes_.end(),
+                   [&](const NodeInfo& lhs, const NodeInfo& rhs) {
+                     return NodeId::CloserToTarget(lhs.node_id, rhs.node_id, kNodeId_);
+                   });
+  NodeInfo furthest_group_node(unique_nodes_.at(std::min(Parameters::node_group_size - 1,
+                                   static_cast<int>(unique_nodes_.size()))));
+  distance_ = furthest_group_node.node_id ^ kNodeId_;
+}
+
+void GroupMatrix::AverageDistance(const NodeId& distance) {
+  const uint16_t node_bit_size(512), ulong_size(64);
+  std::string binary_average_string("0" +
+      average_distance_.ToStringEncoded(NodeId::kBinary).substr(0, node_bit_size - 1));
+  std::string binary_distance_string("0" +
+      distance.ToStringEncoded(NodeId::kBinary).substr(0, node_bit_size - 1));
+  ulong average, distance_ulong, sum, carry(0);
+  std::bitset<ulong_size> average_bitset, distance_bitset, sum_bitset;
+  std::bitset<node_bit_size> new_average_distance;
+  for (auto index(7); index >= 0; --index) {
+    average_bitset = std::bitset<ulong_size>(binary_average_string.substr(index * ulong_size,
+                                                                          ulong_size));
+    distance_bitset = std::bitset<ulong_size>(binary_distance_string.substr(index * ulong_size,
+                                                                            ulong_size));
+    average = average_bitset.to_ulong();
+    distance_ulong = distance_bitset.to_ulong();
+    sum = carry + distance_ulong + average;
+    sum_bitset = std::bitset<ulong_size>(sum);
+    for (auto bit_index(0); bit_index < ulong_size; ++bit_index)
+       new_average_distance[index * ulong_size + bit_index] = sum_bitset[bit_index];
+    carry = 0;
+    if ((average_bitset[0] == true) && (distance_bitset[0] == true))
+      carry = 1;
+  }
+  average_distance_ = NodeId(new_average_distance.to_string(), NodeId::kBinary);
 }
 
 void GroupMatrix::UpdateUniqueNodeList() {

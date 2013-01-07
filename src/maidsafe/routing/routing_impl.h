@@ -72,6 +72,8 @@ class Routing::Impl {
 
   bool IsNodeIdInGroupRange(const NodeId& node_id);
 
+  bool IsIdInGroup(const NodeId& sender_id, const NodeId& info_id);
+
   NodeId kNodeId() const;
 
   int network_status();

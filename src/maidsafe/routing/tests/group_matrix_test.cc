@@ -63,6 +63,16 @@ TEST(GroupMatrixTest, BEH_AddSamePeerTwice) {
   EXPECT_EQ(1, matrix.GetConnectedPeers().size());
 }
 
+TEST(GroupMatrixTest, BEH_AverageDistance) {
+  NodeId node_id(GenerateUniqueRandomId(20));
+  NodeId average(node_id);
+  GroupMatrix matrix(node_id);
+  matrix.average_distance_ = average;
+  matrix.AverageDistance(average);
+  EXPECT_EQ(matrix.average_distance_.ToStringEncoded(NodeId::kBinary),
+            average.ToStringEncoded(NodeId::kBinary));
+}
+
 TEST(GroupMatrixTest, BEH_OneRowOnly) {
   NodeInfo node_0;
   node_0.node_id = NodeId(NodeId::kRandomId);
