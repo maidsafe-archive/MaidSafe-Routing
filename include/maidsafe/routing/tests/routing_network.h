@@ -91,6 +91,7 @@ class GenericNode {
             const boost::posix_time::time_duration& timeout,
             const DestinationType& destination_type,
             const bool& cache);
+  bool IsNodeIdInGroupRange(const NodeId& node_id);
   void SendToClosestNode(const protobuf::Message& message);
   void RudpSend(const NodeId& peer_endpoint,
                 const protobuf::Message& message,
