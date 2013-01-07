@@ -266,8 +266,9 @@ void GroupMatrix::AverageDistance(const NodeId& distance) {
   CryptoPP::Integer distance_integer((distance.ToStringEncoded(NodeId::kHex) + 'h').c_str());
   CryptoPP::Integer average_distance_integer(
       (average_distance_.ToStringEncoded(NodeId::kHex) + 'h').c_str());
-  auto result((distance_integer + average_distance_integer * average_distance_contributors_) /
-              (average_distance_contributors_ + 1));
+  auto result((distance_integer + average_distance_integer *
+                  static_cast<long>(average_distance_contributors_)) /
+                  (static_cast<long>(average_distance_contributors_) + 1));
   average_distance_contributors_++;
   std::string new_average;
   for (auto index(63); index >= 0; --index)
