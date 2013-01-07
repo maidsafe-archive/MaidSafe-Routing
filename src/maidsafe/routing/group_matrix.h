@@ -88,6 +88,7 @@ class GroupMatrix {
   const NodeId& kNodeId_;
   std::vector<NodeInfo> unique_nodes_;
   std::vector<std::vector<NodeInfo> > matrix_;
+  uint64_t average_distance_contributors_;
   NodeId average_distance_;
   NodeId distance_;
 };

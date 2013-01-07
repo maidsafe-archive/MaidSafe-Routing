@@ -16,6 +16,8 @@
 #include <bitset>
 #include <cstdint>
 
+#include "cryptopp/integer.h"
+
 #include "maidsafe/common/log.h"
 
 #include "maidsafe/routing/parameters.h"
@@ -30,6 +32,7 @@ GroupMatrix::GroupMatrix(const NodeId& this_node_id)
     : kNodeId_(this_node_id),
       unique_nodes_(),
       matrix_(),
+      average_distance_contributors_(1),
       average_distance_(),
       distance_() {}
 
@@ -260,33 +263,16 @@ void GroupMatrix::Distance() {
 }
 
 void GroupMatrix::AverageDistance(const NodeId& distance) {
-  const uint16_t node_bit_size(512), uchar_size(8);
-  std::string binary_average_string("0" +
-      average_distance_.ToStringEncoded(NodeId::kBinary).substr(0, node_bit_size - 1));
-  std::string binary_distance_string("0" +
-      distance.ToStringEncoded(NodeId::kBinary).substr(0, node_bit_size - 1));
-  uint16_t average, distance_ulong, sum, carry(0);
-  std::bitset<uchar_size> average_bitset, distance_bitset, sum_bitset;
-  std::bitset<node_bit_size> new_average_distance;
-  for (auto index(63); index >= 0; --index) {
-    LOG(kVerbose) << binary_average_string.substr(index * uchar_size, uchar_size).size();
-    LOG(kVerbose) << binary_average_string.substr(index * uchar_size, uchar_size);
-
-    average_bitset = std::bitset<uchar_size>(binary_average_string.substr(index * uchar_size,
-                                                                          uchar_size));
-    distance_bitset = std::bitset<uchar_size>(binary_distance_string.substr(index * uchar_size,
-                                                                            uchar_size));
-    average = average_bitset.to_ulong();
-    distance_ulong = distance_bitset.to_ulong();
-    sum = carry + distance_ulong + average;
-    sum_bitset = std::bitset<uchar_size>(sum);
-    for (auto bit_index(0); bit_index < uchar_size; ++bit_index)
-      new_average_distance[(63 - index) * uchar_size + bit_index] = sum_bitset[bit_index];
-    carry = 0;
-    if ((average_bitset[uchar_size - 1] == true) && (distance_bitset[uchar_size - 1] == true))
-      carry = 1;
-  }
-  average_distance_ = NodeId(new_average_distance.to_string(), NodeId::kBinary);
+  CryptoPP::Integer distance_integer((distance.ToStringEncoded(NodeId::kHex) + 'h').c_str());
+  CryptoPP::Integer average_distance_integer(
+      (average_distance_.ToStringEncoded(NodeId::kHex) + 'h').c_str());
+  auto result((distance_integer + average_distance_integer * average_distance_contributors_) /
+              (average_distance_contributors_ + 1));
+  average_distance_contributors_++;
+  std::string new_average;
+  for (auto index(63); index >= 0; --index)
+    new_average += result.GetByte(index);
+  average_distance_ = NodeId(new_average);
 }
 
 void GroupMatrix::UpdateUniqueNodeList() {

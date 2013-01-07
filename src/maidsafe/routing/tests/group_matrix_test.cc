@@ -65,7 +65,7 @@ TEST(GroupMatrixTest, BEH_AddSamePeerTwice) {
 
 TEST(GroupMatrixTest, BEH_AverageDistance) {
   NodeId node_id(NodeId::kRandomId);
-  LOG(kVerbose) << node_id.ToStringEncoded(NodeId::kBinary);
+//  LOG(kVerbose) << node_id.ToStringEncoded(NodeId::kBinary);
   NodeId average(node_id);
   GroupMatrix matrix(node_id);
   matrix.average_distance_ = average;
@@ -88,6 +88,7 @@ TEST(GroupMatrixTest, BEH_AverageDistance) {
   matrix.average_distance_ = NodeId(NodeId::kMaxId);
   average = matrix.average_distance_;
   for (auto index(0); index < 512; ++index) {
+    matrix.average_distance_contributors_ = 1;
     matrix.AverageDistance(node_id);
     average = NodeId("0" + average.ToStringEncoded(NodeId::kBinary).substr(0, 511),
                      NodeId::kBinary);
@@ -97,6 +98,7 @@ TEST(GroupMatrixTest, BEH_AverageDistance) {
   matrix.average_distance_ = NodeId(NodeId::kRandomId);
   average = matrix.average_distance_;
   for (auto index(0); index < 512; ++index) {
+    matrix.average_distance_contributors_ = 1;
     matrix.AverageDistance(node_id);
     average = NodeId("0" + average.ToStringEncoded(NodeId::kBinary).substr(0, 511),
                      NodeId::kBinary);
