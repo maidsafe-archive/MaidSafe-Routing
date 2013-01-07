@@ -13,6 +13,8 @@
 #include "maidsafe/routing/group_matrix.h"
 
 #include <algorithm>
+#include <bitset>
+#include <cstdint>
 
 #include "maidsafe/common/log.h"
 
@@ -263,7 +265,7 @@ void GroupMatrix::AverageDistance(const NodeId& distance) {
       average_distance_.ToStringEncoded(NodeId::kBinary).substr(0, node_bit_size - 1));
   std::string binary_distance_string("0" +
       distance.ToStringEncoded(NodeId::kBinary).substr(0, node_bit_size - 1));
-  ulong average, distance_ulong, sum, carry(0);
+  uint64_t average, distance_ulong, sum, carry(0);
   std::bitset<ulong_size> average_bitset, distance_bitset, sum_bitset;
   std::bitset<node_bit_size> new_average_distance;
   for (auto index(7); index >= 0; --index) {
