@@ -137,7 +137,7 @@ void Timer::ExecuteTask(TaskId task_id, const boost::system::error_code& error) 
     if (task->functor)
       task->functor(task->responses);
     if (!task->promises.empty())
-      Set_exceptions(task->promises);
+      SetExceptions(task->promises);
     std::lock_guard<std::mutex> lock(mutex_);
     auto itr(FindTask(task_id));
     if (itr != tasks_.end()) {
