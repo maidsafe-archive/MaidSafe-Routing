@@ -231,7 +231,7 @@ bool RoutingTable::IsThisNodeGroupLeader(const NodeId& target_id, NodeInfo& grou
 
 bool RoutingTable::IsNodeIdInGroupRange(const NodeId& target_id) {
   std::unique_lock<std::mutex> lock(mutex_);
-  return !group_matrix_.IsNodeInGroupRange(target_id);
+  return group_matrix_.IsNodeInGroupRange(target_id);
 }
 
 

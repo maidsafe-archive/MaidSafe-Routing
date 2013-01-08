@@ -18,6 +18,7 @@
 #include <vector>
 #include <string>
 
+#include "maidsafe/common/crypto.h"
 #include "maidsafe/common/node_id.h"
 #include "maidsafe/routing/node_info.h"
 
@@ -80,6 +81,11 @@ class GroupMatrix {
  private:
   GroupMatrix(const GroupMatrix&);
   GroupMatrix& operator=(const GroupMatrix&);
+  struct NetworkDistanceData {
+    NetworkDistanceData() : contributors_count(), total_distance(), average_distance() {}
+    crypto::BigInt contributors_count, total_distance;
+    NodeId average_distance;
+  };
   void UpdateUniqueNodeList();
   void PartialSortFromTarget(const NodeId& target, const uint16_t& number,
                              std::vector<NodeInfo> &nodes);
@@ -87,9 +93,9 @@ class GroupMatrix {
 
   const NodeId& kNodeId_;
   std::vector<NodeInfo> unique_nodes_;
-  std::vector<std::vector<NodeInfo> > matrix_;
-  NodeId average_distance_;
+  std::vector<std::vector<NodeInfo>> matrix_;
   NodeId distance_;
+  NetworkDistanceData network_distance_data_;
 };
 
 }  // namespace routing

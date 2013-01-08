@@ -13,6 +13,8 @@
 #include "maidsafe/routing/group_matrix.h"
 
 #include <algorithm>
+#include <bitset>
+#include <cstdint>
 
 #include "maidsafe/common/log.h"
 
@@ -28,8 +30,8 @@ GroupMatrix::GroupMatrix(const NodeId& this_node_id)
     : kNodeId_(this_node_id),
       unique_nodes_(),
       matrix_(),
-      average_distance_(),
-      distance_() {}
+      distance_(),
+      network_distance_data_() {}
 
 void GroupMatrix::AddConnectedPeer(const NodeInfo& node_info) {
   LOG(kVerbose) << "AddConnectedPeer : " << DebugId(node_info.node_id);
@@ -258,30 +260,13 @@ void GroupMatrix::Distance() {
 }
 
 void GroupMatrix::AverageDistance(const NodeId& distance) {
-  const uint16_t node_bit_size(512), ulong_size(64);
-  std::string binary_average_string("0" +
-      average_distance_.ToStringEncoded(NodeId::kBinary).substr(0, node_bit_size - 1));
-  std::string binary_distance_string("0" +
-      distance.ToStringEncoded(NodeId::kBinary).substr(0, node_bit_size - 1));
-  ulong average, distance_ulong, sum, carry(0);
-  std::bitset<ulong_size> average_bitset, distance_bitset, sum_bitset;
-  std::bitset<node_bit_size> new_average_distance;
-  for (auto index(7); index >= 0; --index) {
-    average_bitset = std::bitset<ulong_size>(binary_average_string.substr(index * ulong_size,
-                                                                          ulong_size));
-    distance_bitset = std::bitset<ulong_size>(binary_distance_string.substr(index * ulong_size,
-                                                                            ulong_size));
-    average = average_bitset.to_ulong();
-    distance_ulong = distance_bitset.to_ulong();
-    sum = carry + distance_ulong + average;
-    sum_bitset = std::bitset<ulong_size>(sum);
-    for (auto bit_index(0); bit_index < ulong_size; ++bit_index)
-       new_average_distance[index * ulong_size + bit_index] = sum_bitset[bit_index];
-    carry = 0;
-    if ((average_bitset[0] == true) && (distance_bitset[0] == true))
-      carry = 1;
-  }
-  average_distance_ = NodeId(new_average_distance.to_string(), NodeId::kBinary);
+  crypto::BigInt distance_integer((distance.ToStringEncoded(NodeId::kHex) + 'h').c_str());
+  network_distance_data_.total_distance += distance_integer;
+  auto average(network_distance_data_.total_distance / ++network_distance_data_.contributors_count);
+  std::string average_str(64, '\0');
+  for (auto index(NodeId::kSize - 1); index >= 0; --index)
+    average_str[NodeId::kSize - 1 - index] = average.GetByte(index);
+  network_distance_data_.average_distance = NodeId(average_str);
 }
 
 void GroupMatrix::UpdateUniqueNodeList() {

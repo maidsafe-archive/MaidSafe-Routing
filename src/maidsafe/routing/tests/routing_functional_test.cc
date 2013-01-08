@@ -346,6 +346,42 @@ TEST_F(RoutingNetworkTest, FUNC_GetRandomExistingNode) {
   EXPECT_EQ(100, random_node_ids.size());
 }
 
+TEST_F(RoutingNetworkTest, FUNC_IsNodeIdInGroupRange) {
+  std::vector<NodeId> vault_ids;
+  for (auto node : env_->nodes_)
+    if (!node->IsClient())
+      vault_ids.push_back(node->node_id());
+  EXPECT_GE(vault_ids.size(), Parameters::node_group_size);
+
+  for (auto node : env_->nodes_) {
+    if (!node->IsClient()) {
+      // Check vault IDs from network
+      std::partial_sort(vault_ids.begin(),
+                        vault_ids.begin() + Parameters::node_group_size,
+                        vault_ids.end(),
+                        [=] (const NodeId& lhs, const NodeId& rhs)->bool {
+                          return NodeId::CloserToTarget(lhs, rhs, node->node_id());
+                        });
+      for (uint16_t i(0); i < vault_ids.size(); ++i) {
+        if (i < Parameters::node_group_size)
+          EXPECT_TRUE(node->IsNodeIdInGroupRange(vault_ids.at(i)));
+        else
+          EXPECT_FALSE(node->IsNodeIdInGroupRange(vault_ids.at(i)));
+      }
+
+      // Check random IDs
+      NodeId expected_threshold_id(vault_ids.at(Parameters::node_group_size - 1));
+      for (uint16_t i(0); i < 50; ++i) {
+        NodeId random_id(NodeId::kRandomId);
+        if (NodeId::CloserToTarget(random_id, expected_threshold_id, node->node_id()))
+          EXPECT_TRUE(node->IsNodeIdInGroupRange(random_id));
+        else
+          EXPECT_FALSE(node->IsNodeIdInGroupRange(random_id));
+      }
+    }
+  }
+}
+
 /*
 TEST_F(RoutingNetworkTest, FUNC_IsConnectedToVault) {
   ASSERT_LE(env_->ClientIndex(), Parameters::max_routing_table_size + 1);
