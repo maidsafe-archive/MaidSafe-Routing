@@ -263,6 +263,10 @@ void GenericNode::Send(const NodeId& destination_id,
                    cache);
 }
 
+std::future<std::vector<NodeId>> GenericNode::GetGroup(const NodeId& info_id) {
+  return std::move(routing_->GetGroup(info_id));
+}
+
 bool GenericNode::IsNodeIdInGroupRange(const NodeId& node_id) {
   return routing_->IsNodeIdInGroupRange(node_id);
 }

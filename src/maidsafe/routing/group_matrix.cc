@@ -155,7 +155,7 @@ bool GroupMatrix::IsNodeInGroupRange(const NodeId& target_id) {
   return false;
 }
 
-bool GroupMatrix::IsIdInGroup(const NodeId& sender_id, const NodeId& info_id) {
+bool GroupMatrix::EstimateInGroup(const NodeId& sender_id, const NodeId& info_id) {
   return ((info_id ^ sender_id) <= distance_);
 }
 
@@ -234,7 +234,7 @@ bool GroupMatrix::IsRowEmpty(const NodeInfo& node_info) {
 }
 
 
-std::vector<NodeInfo> GroupMatrix::GetClosestNodes(const uint32_t& size) {
+std::vector<NodeInfo> GroupMatrix::GetClosestNodes(const uint16_t& size) {
   return std::vector<NodeInfo>(unique_nodes_.begin(),
                                unique_nodes_.begin() + std::min(static_cast<size_t>(size),
                                                                 unique_nodes_.size()));

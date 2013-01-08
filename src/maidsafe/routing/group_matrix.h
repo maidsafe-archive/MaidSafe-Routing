@@ -56,7 +56,7 @@ class GroupMatrix {
 
   bool IsNodeInGroupRange(const NodeId& target_id);
 
-  bool IsIdInGroup(const NodeId& sender_id, const NodeId& info_id);
+  bool EstimateInGroup(const NodeId& sender_id, const NodeId& info_id);
 
   bool IsThisNodeGroupLeader(const NodeId& target_id, NodeId& group_leader_id);
 
@@ -68,7 +68,7 @@ class GroupMatrix {
 
   std::vector<NodeInfo> GetUniqueNodes();
 
-  std::vector<NodeInfo> GetClosestNodes(const uint32_t& size);
+  std::vector<NodeInfo> GetClosestNodes(const uint16_t& size);
 
   void Clear();
   void Distance();

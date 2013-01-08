@@ -330,6 +330,30 @@ void Service::ConnectSuccessFromResponder(NodeInfo& peer, const bool& client) {
   network_.SendToDirect(connect_success_ack, peer.node_id, peer.connection_id);
 }
 
+void Service::GetGroup(protobuf::Message& message) {
+  LOG(kVerbose) << "GetGroup  msg id:  " <<  message.id();
+  // FIXME(Mahmoud): MUST RETRIVE FROM GROUPMATRIX
+  auto close_nodes_id(routing_table_.GetClosestNodes(NodeId(message.source_id()),
+                                                     Parameters::node_group_size - 1));
+  protobuf::GetGroupReply group_reply;
+  group_reply.set_node_id(routing_table_.kNodeId().string());
+  group_reply.add_group_nodes_id(routing_table_.kNodeId().string());
+  for (auto node_id : close_nodes_id)
+    group_reply.add_group_nodes_id(node_id.string());
+  message.clear_route_history();
+  message.set_destination_id(message.source_id());
+  message.set_source_id(routing_table_.kNodeId().string());
+  message.clear_route_history();
+  message.clear_data();
+  message.add_data(group_reply.SerializeAsString());
+  message.set_direct(true);
+  message.set_replication(1);
+  message.set_client_node(routing_table_.client_mode());
+  message.set_request(false);
+  message.set_hops_to_live(Parameters::hops_to_live);
+  assert(message.IsInitialized() && "unintialised message");
+}
+
 void Service::set_request_public_key_functor(RequestPublicKeyFunctor request_public_key) {
   request_public_key_functor_ = request_public_key;
 }

@@ -282,6 +282,24 @@ protobuf::Message ClosestNodesUpdateSubscrirbe(
   return message;
 }
 
+protobuf::Message GetGroup(const NodeId& node_id,
+                           const NodeId& my_node_id) {
+  assert(!node_id.IsZero() && "Invalid node_id");
+  assert(!my_node_id.IsZero() && "Invalid my node_id");
+  protobuf::Message message;
+  message.set_destination_id(node_id.string());
+  message.set_source_id(my_node_id.string());
+  message.set_routing_message(true);
+  message.set_direct(false);
+  message.set_replication(1);
+  message.set_type(static_cast<int32_t>(MessageType::kGetGroup));
+  message.set_request(true);
+  message.set_client_node(false);
+  message.set_hops_to_live(Parameters::hops_to_live);
+  message.set_id(RandomUint32() % 10000);
+  assert(message.IsInitialized() && "Unintialised message");
+  return message;
+}
 
 }  // namespace rpcs
 

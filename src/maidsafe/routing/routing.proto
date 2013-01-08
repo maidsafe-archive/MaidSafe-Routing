@@ -168,3 +168,8 @@ message ClosestNodesUpdateSubscrirbe {
   required bytes peer = 1;
   required bool subscribe = 2;
 }
+
+message GetGroupReply {
+  required bytes node_id = 1;
+  repeated bytes group_nodes_id = 2;
+}

@@ -429,8 +429,28 @@ bool Routing::Impl::IsNodeIdInGroupRange(const NodeId& node_id) {
   return routing_table_.IsNodeIdInGroupRange(node_id);
 }
 
-bool Routing::Impl::IsIdInGroup(const NodeId& sender_id, const NodeId& info_id) {
-  return routing_table_.IsIdInGroup(sender_id, info_id);
+bool Routing::Impl::EstimateInGroup(const NodeId& sender_id, const NodeId& info_id) {
+  return (routing_table_.EstimateInGroup(sender_id, info_id));
+}
+
+std::future<std::vector<NodeId>> Routing::Impl::GetGroup(const NodeId& info_id) {
+  std::shared_ptr<std::promise<std::vector<NodeId>>> promise(
+      new std::promise<std::vector<NodeId>>());
+  auto future(promise->get_future());
+  routing::ResponseFunctor callback =
+      [promise](const std::vector<std::string>& serialised_messages) {
+        std::vector<NodeId> nodes_id;
+        protobuf::GetGroupReply group_reply;
+        group_reply.ParseFromString(serialised_messages.at(0));
+        for (auto& id :  group_reply.group_nodes_id()) {
+          nodes_id.push_back(NodeId(id));
+        }
+        promise->set_value(nodes_id);
+      };
+  protobuf::Message get_group_message(rpcs::GetGroup(info_id, kNodeId_));
+  get_group_message.set_id(timer_.AddTask(Parameters::default_send_timeout, callback, 1));
+  network_.SendToClosestNode(get_group_message);
+  return std::move(future);
 }
 
 void Routing::Impl::OnMessageReceived(const std::string& message) {

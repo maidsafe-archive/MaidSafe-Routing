@@ -80,6 +80,9 @@ void MessageHandler::HandleRoutingMessage(protobuf::Message& message) {
       assert(message.request());
       group_change_handler_.ClosestNodesUpdateSubscribe(message);
       break;
+    case MessageType::kGetGroup :
+      message.request() ? service_->GetGroup(message) : timer_.AddResponse(message);
+      break;
     default:  // unknown (silent drop)
       return;
   }
@@ -279,10 +282,13 @@ void MessageHandler::HandleGroupMessageAsClosestNode(protobuf::Message& message)
 
   message.set_destination_id(routing_table_.kNodeId().string());
 
-  if (IsRoutingMessage(message))
+  if (IsRoutingMessage(message)) {
+    LOG(kVerbose) << "HandleGroupMessageAsClosestNode if, msg id: " << message.id();
     HandleRoutingMessage(message);
-  else
+  } else {
+    LOG(kVerbose) << "HandleGroupMessageAsClosestNode else, msg id: " << message.id();
     HandleNodeLevelMessageForThisNode(message);
+  }
 }
 
 void MessageHandler::HandleMessageAsFarNode(protobuf::Message& message) {

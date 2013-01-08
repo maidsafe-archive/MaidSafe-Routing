@@ -54,7 +54,7 @@ bool IsPortAvailable(boost::asio::ip::udp::endpoint endpoint);
 struct NodeInfoAndPrivateKey;
 
 const uint32_t kClientSize(5);
-const uint32_t kServerSize(20);
+const uint32_t kServerSize(10);
 const uint32_t kNetworkSize = kClientSize + kServerSize;
 
 class GenericNetwork;
@@ -91,6 +91,7 @@ class GenericNode {
             const boost::posix_time::time_duration& timeout,
             const DestinationType& destination_type,
             const bool& cache);
+  std::future<std::vector<NodeId>> GetGroup(const NodeId& info_id);
   bool IsNodeIdInGroupRange(const NodeId& node_id);
   void SendToClosestNode(const protobuf::Message& message);
   void RudpSend(const NodeId& peer_endpoint,

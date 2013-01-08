@@ -56,6 +56,7 @@ enum class MessageType : int32_t {
   kRemove = 6,
   kClosestNodesUpdate = 7,
   kClosestNodesUpdateSubscribe = 8,
+  kGetGroup = 9,
   kMaxRouting = 100,
   kNodeLevel = 101
 };

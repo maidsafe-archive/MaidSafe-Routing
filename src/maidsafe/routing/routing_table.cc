@@ -235,10 +235,10 @@ bool RoutingTable::IsNodeIdInGroupRange(const NodeId& target_id) {
 }
 
 
-bool RoutingTable::IsIdInGroup(const NodeId& sender_id, const NodeId& info_id) {
+bool RoutingTable::EstimateInGroup(const NodeId& sender_id, const NodeId& info_id) {
   std::unique_lock<std::mutex> lock(mutex_);
   return ((nodes_.size() > Parameters::routing_table_ready_to_response) &&
-          group_matrix_.IsIdInGroup(sender_id, info_id));
+          group_matrix_.EstimateInGroup(sender_id, info_id));
 }
 
 NodeInfo RoutingTable::GetConnectedPeerFromGroupMatrixClosestTo(const NodeId& target_node_id) {

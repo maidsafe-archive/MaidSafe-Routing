@@ -28,6 +28,7 @@
 #include <memory>
 #include <string>
 #include <vector>
+#include <future>
 
 #include "boost/asio/ip/udp.hpp"
 #include "boost/date_time/posix_time/posix_time_config.hpp"
@@ -116,7 +117,9 @@ class Routing {
   // returns true if the node id provided is in group range of node.
   bool IsNodeIdInGroupRange(const NodeId& node_id) const;
 
-  bool IsIdInGroup(const NodeId& sender_id, const NodeId& info_id) const;
+  bool EstimateInGroup(const NodeId& sender_id, const NodeId& info_id) const;
+
+  std::future<std::vector<NodeId>> GetGroup(const NodeId& info_id);
 
   // returns Node Id.
   NodeId kNodeId() const;
