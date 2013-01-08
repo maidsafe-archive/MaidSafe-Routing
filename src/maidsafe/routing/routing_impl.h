@@ -68,6 +68,10 @@ class Routing::Impl {
             const DestinationType& destination_type,
             const bool& cacheable);
 
+  std::future<std::string> Send(const NodeId& destination_id,
+                                const std::string& data,
+                                const bool& cacheable);
+
   NodeId GetRandomExistingNode() const { return random_node_helper_.Get(); }
 
   bool IsNodeIdInGroupRange(const NodeId& node_id);

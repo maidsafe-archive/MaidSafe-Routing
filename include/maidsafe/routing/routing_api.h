@@ -25,6 +25,7 @@
 #ifndef MAIDSAFE_ROUTING_ROUTING_API_H_
 #define MAIDSAFE_ROUTING_ROUTING_API_H_
 
+#include <future>
 #include <memory>
 #include <string>
 #include <vector>
@@ -102,6 +103,15 @@ class Routing {
             ResponseFunctor response_functor,
             const DestinationType& destination_type,  // whether this is to a direct/close/group
             const bool& cacheable);
+
+  std::future<std::string> Send(const NodeId& destination_id,
+                                const std::string& data,
+                                const bool& cacheable);
+
+  std::vector<std::future<std::string>> SendGroup(const NodeId& destination_id,
+                                                  const std::string& data,
+                                                  const bool& cacheable);
+
   // A queue with recently found nodes that can be extracted for upper layers to communicate with.
   NodeId GetRandomExistingNode() const;
 

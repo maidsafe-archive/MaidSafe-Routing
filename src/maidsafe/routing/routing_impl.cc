@@ -419,6 +419,96 @@ void Routing::Impl::Send(const NodeId& destination_id,
   }
 }
 
+std::future<std::string> Routing::Impl::Send(const NodeId& destination_id,
+                                             const std::string& /*data*/,
+                                             const bool& /*cacheable*/) {
+  auto promise(std::make_shared<std::promise<std::string>>());
+  std::future<std::string> future(promise->get_future());
+  if (destination_id.IsZero()) {
+    LOG(kError) << "Invalid destination ID, aborted send";
+    return future;
+  }
+  return future;
+//  if (data.empty() || (data.size() > Parameters::max_data_size)) {
+//    LOG(kError) << "Data size not allowed : " << data.size();
+//    if (response_functor)
+//      response_functor(std::vector<std::string>());
+//    return;
+//  }
+
+//  protobuf::Message proto_message;
+//  proto_message.set_destination_id(destination_id.string());
+//  proto_message.set_routing_message(false);
+//  proto_message.add_data(data);
+//  proto_message.set_type(static_cast<int32_t>(MessageType::kNodeLevel));
+//  proto_message.set_cacheable(cacheable);
+//  proto_message.set_direct((DestinationType::kDirect == destination_type));
+//  proto_message.set_client_node(routing_table_.client_mode());
+//  proto_message.set_request(true);
+//  proto_message.set_hops_to_live(Parameters::hops_to_live);
+//  uint16_t replication(1);
+////  if (!group_claim.IsZero())
+////    proto_message.set_group_claim(group_claim.string());
+
+//  if (DestinationType::kGroup == destination_type) {
+//    proto_message.set_visited(false);
+//    replication = Parameters::node_group_size;
+//    if (response_functor)
+//      proto_message.set_id(timer_.AddTask(Parameters::default_send_timeout,
+//                                          response_functor,
+//                                          Parameters::node_group_size));
+//  } else {
+//    if (response_functor)
+//      proto_message.set_id(timer_.AddTask(Parameters::default_send_timeout, response_functor, 1));
+//  }
+
+//  proto_message.set_replication(replication);
+//  // Anonymous node /Partial join state
+//  if (kAnonymousNode_ || (routing_table_.size() == 0)) {
+//    proto_message.set_relay_id(kNodeId_.string());
+//    proto_message.set_relay_connection_id(network_.this_node_relay_connection_id().string());
+//    NodeId bootstrap_connection_id(network_.bootstrap_connection_id());
+//    assert(proto_message.has_relay_connection_id() && "did not set this_node_relay_connection_id");
+//    rudp::MessageSentFunctor message_sent(
+//        [=](int result) {
+//          asio_service_.service().post([=]() {
+//              if (rudp::kSuccess != result) {
+//                timer_.CancelTask(proto_message.id());
+//                if (kAnonymousNode_) {
+//                  LOG(kError) << "Anonymous Session Ended, Send not allowed anymore";
+//                  NotifyNetworkStatus(kAnonymousSessionEnded);
+//                } else {
+//                  LOG(kError) << "Partial join Session Ended, Send not allowed anymore";
+//                  NotifyNetworkStatus(kPartialJoinSessionEnded);
+//                }
+//              } else {
+//                LOG(kVerbose) << "   [" << DebugId(kNodeId_) << "] sent : "
+//                              << MessageTypeString(proto_message) << " to   "
+//                              << HexSubstr(bootstrap_connection_id.string())
+//                              << "   (id: " << proto_message.id() << ")"
+//                              << " dst : " << HexSubstr(proto_message.destination_id())
+//                              << " --Anonymous/Partial-joined--";
+//              }
+//            });
+//          });
+//    network_.SendToDirect(proto_message, bootstrap_connection_id, message_sent);
+//    return;
+//  }
+
+//  // Non Anonymous, normal node
+//  proto_message.set_source_id(kNodeId_.string());
+
+//  if (kNodeId_ != destination_id) {
+//    network_.SendToClosestNode(proto_message);
+//  } else if (routing_table_.client_mode()) {
+//    LOG(kVerbose) << "Client sending request to self id";
+//    network_.SendToClosestNode(proto_message);
+//  } else {
+//    LOG(kInfo) << "Sending request to self";
+//    OnMessageReceived(proto_message.SerializeAsString());
+//  }
+}
+
 bool Routing::Impl::IsNodeIdInGroupRange(const NodeId& node_id) {
   return routing_table_.IsNodeIdInGroupRange(node_id);
 }

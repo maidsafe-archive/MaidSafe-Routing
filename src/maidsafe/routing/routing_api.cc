@@ -51,6 +51,12 @@ void Routing::Send(const NodeId& destination_id,
   pimpl_->Send(destination_id, data, response_functor, destination_type, cacheable);
 }
 
+std::future<std::string> Routing::Send(const NodeId& destination_id,
+                                       const std::string& data,
+                                       const bool& cacheable) {
+  return pimpl_->Send(destination_id, data, cacheable);
+}
+
 NodeId Routing::GetRandomExistingNode() const {
   return pimpl_->GetRandomExistingNode();
 }
