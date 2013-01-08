@@ -72,6 +72,10 @@ class Routing::Impl {
                                 const std::string& data,
                                 const bool& cacheable);
 
+  std::vector<std::future<std::string>> SendGroup(const NodeId& destination_id,
+                                                  const std::string& data,
+                                                  const bool& cacheable);
+
   NodeId GetRandomExistingNode() const { return random_node_helper_.Get(); }
 
   bool IsNodeIdInGroupRange(const NodeId& node_id);
@@ -109,6 +113,14 @@ class Routing::Impl {
   void RemoveNode(const NodeInfo& node, bool internal_rudp_only);
   bool ConfirmGroupMembers(const NodeId& node1, const NodeId& node2);
   void NotifyNetworkStatus(int return_code) const;
+  void SendMessage(const NodeId& destination_id, protobuf::Message& proto_message);
+  void AnonymousSend(protobuf::Message& proto_message);
+  protobuf::Message CreateNodeLevelPartialMessage(
+      const NodeId& destination_id,
+      const DestinationType& destination_type,
+      const std::string& data,
+      const bool& cacheable);
+  void CheckSendParameters(const NodeId& destination_id, const std::string& data);
 
   std::mutex network_status_mutex_;
   int network_status_;

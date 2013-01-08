@@ -34,7 +34,19 @@ Timer::Task::Task(const TaskId& id_in,
       timer(io_service, timeout),
       functor(functor_in),
       responses(),
+      promises(),
       expected_response_count(expected_response_count_in) {}
+
+Timer::Task::Task(const TaskId& id_in,
+                  std::vector<std::shared_ptr<std::promise<std::string>>> promises_in,
+                  boost::asio::io_service& io_service,
+                  const boost::posix_time::time_duration& timeout)
+    : id(id_in),
+      timer(io_service, timeout),
+      functor(),
+      responses(),
+      promises(promises_in),
+      expected_response_count(promises.size()) {}
 
 Timer::Timer(AsioService& asio_service)
     : asio_service_(asio_service),
@@ -61,6 +73,18 @@ TaskId Timer::AddTask(const boost::posix_time::time_duration& timeout,
   TaskId task_id = ++task_id_;
   tasks_.push_back(TaskPtr(new Task(task_id, asio_service_.service(), timeout, response_functor,
                                     expected_response_count)));
+  tasks_.back()->timer.async_wait([this, task_id](const boost::system::error_code& error) {
+    ExecuteTask(task_id, error);
+  });
+  LOG(kInfo) << "AddTask added a task, with id " << task_id;
+  return task_id;
+}
+
+TaskId Timer::AddTask(const boost::posix_time::time_duration& timeout,
+                      std::vector<std::shared_ptr<std::promise<std::string>>> promises) {
+  std::lock_guard<std::mutex> lock(mutex_);
+  TaskId task_id = ++task_id_;
+  tasks_.push_back(TaskPtr(new Task(task_id, promises, asio_service_.service(), timeout)));
   tasks_.back()->timer.async_wait([this, task_id](const boost::system::error_code& error) {
     ExecuteTask(task_id, error);
   });
@@ -112,6 +136,8 @@ void Timer::ExecuteTask(TaskId task_id, const boost::system::error_code& error) 
   asio_service_.service().dispatch([=] {
     if (task->functor)
       task->functor(task->responses);
+    if (!task->promises.empty())
+      Set_exceptions(task->promises);
     std::lock_guard<std::mutex> lock(mutex_);
     auto itr(FindTask(task_id));
     if (itr != tasks_.end()) {
@@ -119,6 +145,13 @@ void Timer::ExecuteTask(TaskId task_id, const boost::system::error_code& error) 
       cond_var_.notify_one();
     }
   });
+}
+
+void Timer::SetExceptions(std::vector<std::shared_ptr<std::promise<std::string>>> promises) {
+  for (auto promise: promises) {
+      std::exception e;
+      promise->set_exception(std::copy_exception(e)); //FIXME need timeout exception here
+  }
 }
 
 void Timer::CancelTask(TaskId task_id) {
@@ -144,15 +177,30 @@ void Timer::AddResponse(const protobuf::Message& response) {
     return;
   }
 
-  (*itr)->responses.emplace_back(response.data(0));
+  // callback version
+  if ((*itr)->functor) {
+    (*itr)->responses.emplace_back(response.data(0));
 
-  if ((*itr)->responses.size() == (*itr)->expected_response_count) {
-    LOG(kVerbose) << "Executing task " << response.id();
-    (*itr)->timer.cancel();
-  } else {
-    LOG(kInfo) << "Received " << (*itr)->responses.size() << " response(s). Waiting for "
-               << ((*itr)->expected_response_count - (*itr)->responses.size())
-               << " responses for task " << response.id();
+    if ((*itr)->responses.size() == (*itr)->expected_response_count) {
+      LOG(kVerbose) << "Executing task " << response.id();
+      (*itr)->timer.cancel();
+    } else {
+      LOG(kInfo) << "Received " << (*itr)->responses.size() << " response(s). Waiting for "
+                 << ((*itr)->expected_response_count - (*itr)->responses.size())
+                 << " responses for task " << response.id();
+    }
+  } else {  // promise version
+    (*itr)->promises.back()->set_value(response.data(0));
+    (*itr)->promises.pop_back();
+    if ((*itr)->promises.empty()) {
+        LOG(kVerbose) << "Executing task " << response.id();
+        (*itr)->timer.cancel();
+      } else {
+        LOG(kInfo) << "Received " << ((*itr)->expected_response_count - (*itr)->promises.size())
+                   << " response(s). Waiting for "
+                   << (*itr)->promises.size()
+                   << " responses for task " << response.id();
+      }
   }
 }
 
