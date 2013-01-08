@@ -166,21 +166,21 @@ TEST(APITest, FUNC_API_AnonymousNode) {
   };
   routing3.Join(functors3, std::vector<Endpoint>(1, endpoint2));
   ASSERT_TRUE(join_future.timed_wait(boost::posix_time::seconds(10)));
-  ResponseFunctor response_functor = [=](const std::vector<std::string> &message) {
-      ASSERT_EQ(1U, message.size());
-      ASSERT_EQ("response to message_from_anonymous node", message[0]);
-      LOG(kVerbose) << "Got response !!";
-    };
+
   // Testing Send
-  routing3.Send(NodeId(node1.node_info.node_id), "message_from_anonymous node",
-          response_functor, DestinationType::kDirect, false);
-  Sleep(boost::posix_time::seconds(11));  // to allow disconnection
-  ResponseFunctor failed_response = [=](const std::vector<std::string> &message) {
-      ASSERT_TRUE(message.empty());
-    };
-  routing3.Send(NodeId(node1.node_info.node_id), "message_2_from_anonymous node",
-           failed_response, DestinationType::kDirect, false);
-  Sleep(boost::posix_time::seconds(1));
+  std::future<std::string> future_1(routing3.Send(NodeId(node1.node_info.node_id),
+                                                  "message_from_anonymous node",
+                                                  false));
+  ASSERT_EQ(std::future_status::ready,
+            future_1.wait_for(std::chrono::seconds(11)));  // to allow disconnection
+  ASSERT_EQ("response to message_from_anonymous node", future_1.get());
+
+  std::future<std::string> future_2(routing3.Send(NodeId(node1.node_info.node_id),
+                                                  "message_2_from_anonymous node",
+                                                  false));
+  ASSERT_EQ(std::future_status::ready, future_2.wait_for(std::chrono::seconds(1)));
+  ASSERT_TRUE(future_2.get().empty());
+
   rudp::Parameters::bootstrap_connection_lifespan = boost::posix_time::minutes(10);
 }
 
@@ -243,17 +243,11 @@ TEST(APITest, BEH_API_SendToSelf) {
   ASSERT_TRUE(join_future.timed_wait(boost::posix_time::seconds(10)));
 
   //  Testing Send
-  boost::promise<bool> response_promise;
-  auto response_future = response_promise.get_future();
-  ResponseFunctor response_functor = [&](const std::vector<std::string> &message) {
-      ASSERT_EQ(1U, message.size());
-      ASSERT_EQ("response to message from my node", message[0]);
-      LOG(kVerbose) << "Got response !!";
-      response_promise.set_value(true);
-    };
-  routing3.Send(NodeId(node3.node_info.node_id), "message from my node",
-                response_functor, DestinationType::kDirect, false);
-  EXPECT_TRUE(response_future.timed_wait(boost::posix_time::seconds(10)));
+  std::future<std::string> future(routing3.Send(NodeId(node3.node_info.node_id),
+                                                "message from my node",
+                                                false));
+  ASSERT_EQ(std::future_status::ready, future.wait_for(std::chrono::seconds(10)));
+  ASSERT_EQ("response to message from my node", future.get());
 }
 
 TEST(APITest, BEH_API_ClientNode) {
@@ -317,17 +311,11 @@ TEST(APITest, BEH_API_ClientNode) {
   ASSERT_TRUE(join_future.timed_wait(boost::posix_time::seconds(10)));
 
   //  Testing Send
-  boost::promise<bool> response_promise;
-  auto response_future = response_promise.get_future();
-  ResponseFunctor response_functor = [&](const std::vector<std::string> &message) {
-      ASSERT_EQ(1U, message.size());
-      ASSERT_EQ("response to message from client node", message[0]);
-      LOG(kVerbose) << "Got response !!";
-      response_promise.set_value(true);
-    };
-  routing3.Send(NodeId(node1.node_info.node_id), "message from client node",
-                response_functor, DestinationType::kDirect, false);
-  EXPECT_TRUE(response_future.timed_wait(boost::posix_time::seconds(10)));
+  std::future<std::string> future(routing3.Send(NodeId(node1.node_info.node_id),
+                                                "message from client node",
+                                                false));
+  ASSERT_EQ(std::future_status::ready, future.wait_for(std::chrono::seconds(10)));
+  ASSERT_EQ("response to message from client node", future.get());
 }
 
 TEST(APITest, BEH_API_ClientNodeSameId) {
@@ -410,29 +398,17 @@ TEST(APITest, BEH_API_ClientNodeSameId) {
   ASSERT_TRUE(join_future2.timed_wait(boost::posix_time::seconds(10)));
 
   //  Testing Send
-  boost::promise<bool> response_promise1;
-  auto response_future = response_promise1.get_future();
-  ResponseFunctor response_functor = [&](const std::vector<std::string> &message) {
-      ASSERT_EQ(1U, message.size());
-      ASSERT_EQ("response to message from client node", message[0]);
-      LOG(kVerbose) << "Got response !!";
-      response_promise1.set_value(true);
-    };
-  routing3.Send(NodeId(node1.node_info.node_id), "message from client node",
-                response_functor, DestinationType::kDirect, false);
-  EXPECT_TRUE(response_future.timed_wait(boost::posix_time::seconds(10)));
+  std::future<std::string> future_1(routing3.Send(NodeId(node1.node_info.node_id),
+                                                  "message from client node",
+                                                  false));
+  ASSERT_EQ(std::future_status::ready, future_1.wait_for(std::chrono::seconds(10)));
+  ASSERT_EQ("response to message from client node", future_1.get());
 
-  boost::promise<bool> response_promise2;
-  response_future = response_promise2.get_future();
-  response_functor = [&](const std::vector<std::string> &message) {
-      ASSERT_EQ(1U, message.size());
-      ASSERT_EQ("response to message from client node", message[0]);
-      LOG(kVerbose) << "Got response !!";
-      response_promise2.set_value(true);
-    };
-  routing4.Send(NodeId(node1.node_info.node_id), "message from client node",
-                response_functor, DestinationType::kDirect, false);
-  EXPECT_TRUE(response_future.timed_wait(boost::posix_time::seconds(10)));
+  std::future<std::string> future_2(routing4.Send(NodeId(node1.node_info.node_id),
+                                                  "message from client node",
+                                                  false));
+  ASSERT_EQ(std::future_status::ready, future_2.wait_for(std::chrono::seconds(10)));
+  ASSERT_EQ("response to message from client node", future_2.get());
 }
 
 TEST(APITest, BEH_API_NodeNetwork) {
