@@ -16,8 +16,6 @@
 #include <bitset>
 #include <cstdint>
 
-#include "cryptopp/integer.h"
-
 #include "maidsafe/common/log.h"
 
 #include "maidsafe/routing/parameters.h"
@@ -32,9 +30,8 @@ GroupMatrix::GroupMatrix(const NodeId& this_node_id)
     : kNodeId_(this_node_id),
       unique_nodes_(),
       matrix_(),
-      average_distance_contributors_(1),
-      average_distance_(),
-      distance_() {}
+      distance_(),
+      network_distance_data_() {}
 
 void GroupMatrix::AddConnectedPeer(const NodeInfo& node_info) {
   LOG(kVerbose) << "AddConnectedPeer : " << DebugId(node_info.node_id);
@@ -263,17 +260,13 @@ void GroupMatrix::Distance() {
 }
 
 void GroupMatrix::AverageDistance(const NodeId& distance) {
-  CryptoPP::Integer distance_integer((distance.ToStringEncoded(NodeId::kHex) + 'h').c_str());
-  CryptoPP::Integer average_distance_integer(
-      (average_distance_.ToStringEncoded(NodeId::kHex) + 'h').c_str());
-  auto result((distance_integer + average_distance_integer *
-                  static_cast<long>(average_distance_contributors_)) /
-                  (static_cast<long>(average_distance_contributors_) + 1));
-  average_distance_contributors_++;
-  std::string new_average;
-  for (auto index(63); index >= 0; --index)
-    new_average += result.GetByte(index);
-  average_distance_ = NodeId(new_average);
+  crypto::BigInt distance_integer((distance.ToStringEncoded(NodeId::kHex) + 'h').c_str());
+  network_distance_data_.total_distance += distance_integer;
+  auto average(network_distance_data_.total_distance / ++network_distance_data_.contributors_count);
+  std::string average_str(64, '\0');
+  for (auto index(NodeId::kSize - 1); index >= 0; --index)
+    average_str[NodeId::kSize - 1 - index] = average.GetByte(index);
+  network_distance_data_.average_distance = NodeId(average_str);
 }
 
 void GroupMatrix::UpdateUniqueNodeList() {
