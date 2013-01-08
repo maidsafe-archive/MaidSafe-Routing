@@ -333,7 +333,7 @@ void Service::ConnectSuccessFromResponder(NodeInfo& peer, const bool& client) {
 void Service::GetGroup(protobuf::Message& message) {
   LOG(kVerbose) << "GetGroup  msg id:  " <<  message.id();
   // FIXME(Mahmoud): MUST RETRIVE FROM GROUPMATRIX
-  auto close_nodes_id(routing_table_.GetClosestNodes(NodeId(message.source_id()),
+  auto close_nodes_id(routing_table_.GetClosestNodes(NodeId(message.destination_id()),
                                                      Parameters::node_group_size - 1));
   protobuf::GetGroupReply group_reply;
   group_reply.set_node_id(routing_table_.kNodeId().string());

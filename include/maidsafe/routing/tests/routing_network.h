@@ -54,7 +54,7 @@ bool IsPortAvailable(boost::asio::ip::udp::endpoint endpoint);
 struct NodeInfoAndPrivateKey;
 
 const uint32_t kClientSize(5);
-const uint32_t kServerSize(10);
+const uint32_t kServerSize(20);
 const uint32_t kNetworkSize = kClientSize + kServerSize;
 
 class GenericNetwork;

@@ -53,7 +53,8 @@ bool Parameters::append_maidsafe_local_endpoints(false);
 #else
 bool Parameters::append_maidsafe_local_endpoints(false);
 #endif
-// TODO(Prakash) : To allow bootstrapping off nodes on same machine, revert once local network available
+// TODO(Prakash) : To allow bootstrapping off nodes on same machine, revert once local network
+// available
 bool Parameters::append_local_live_port_endpoint(false);
 bool Parameters::caching(false);
 }  // namespace routing

@@ -434,16 +434,18 @@ bool Routing::Impl::EstimateInGroup(const NodeId& sender_id, const NodeId& info_
 }
 
 std::future<std::vector<NodeId>> Routing::Impl::GetGroup(const NodeId& info_id) {
-  std::shared_ptr<std::promise<std::vector<NodeId>>> promise(
-      new std::promise<std::vector<NodeId>>());
+  std::shared_ptr<std::promise<std::vector<NodeId>>> promise(  // NOLINT Mahmoud
+      new std::promise<std::vector<NodeId>>());  // NOLINT
   auto future(promise->get_future());
   routing::ResponseFunctor callback =
-      [promise](const std::vector<std::string>& serialised_messages) {
+      [promise](const std::vector<std::string>& responses) {
         std::vector<NodeId> nodes_id;
-        protobuf::GetGroupReply group_reply;
-        group_reply.ParseFromString(serialised_messages.at(0));
-        for (auto& id :  group_reply.group_nodes_id()) {
-          nodes_id.push_back(NodeId(id));
+        if (!responses.empty()) {
+          protobuf::GetGroupReply group_reply;
+          group_reply.ParseFromString(responses.at(0));
+          for (auto& id :  group_reply.group_nodes_id()) {
+            nodes_id.push_back(NodeId(id));
+          }
         }
         promise->set_value(nodes_id);
       };
