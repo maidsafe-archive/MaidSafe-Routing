@@ -804,7 +804,7 @@ testing::AssertionResult GenericNetwork::Send(const size_t& messages) {
         if (source_node->node_id() != dest_node->node_id()) {
           std::string data(RandomAlphaNumericString(512 * 2^10));
           assert(!data.empty() && "Send Data Empty !");
-          futures.push_back(source_node->Send(NodeId(dest_node->node_id()), data, false));
+          futures.push_back(std::move(source_node->Send(NodeId(dest_node->node_id()), data, false)));
           Sleep(boost::posix_time::microseconds(21));
         }
       }

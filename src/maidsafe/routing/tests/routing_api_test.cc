@@ -488,9 +488,16 @@ TEST(APITest, BEH_API_NodeNetworkWithClient) {
   Functors functors;
 
   std::vector<NodeInfoAndPrivateKey> nodes;
-  std::vector<std::shared_ptr<Routing>> routing_node;
   std::map<NodeId, asymm::PublicKey> key_map;
+  std::vector<std::shared_ptr<Routing>> routing_node;
   int i(0);
+  functors.request_public_key = [&](const NodeId& node_id, GivePublicKeyFunctor give_key) {
+      LOG(kWarning) << "node_validation called for " << DebugId(node_id);
+      auto itr(key_map.find(node_id));
+      if (key_map.end() != itr)
+        give_key((*itr).second);
+    };
+
   for (; i != kServerCount; ++i) {
     auto pmid(MakePmid());
     NodeInfoAndPrivateKey node(MakeNodeInfoAndKeysWithPmid(pmid));
@@ -507,12 +514,7 @@ TEST(APITest, BEH_API_NodeNetworkWithClient) {
   }
 
   functors.network_status = [](const int&) {};  // NOLINT (Fraser)
-  functors.request_public_key = [&](const NodeId& node_id, GivePublicKeyFunctor give_key) {
-      LOG(kWarning) << "node_validation called for " << DebugId(node_id);
-      auto itr(key_map.find(node_id));
-      if (key_map.end() != itr)
-        give_key((*itr).second);
-    };
+
 
   functors.message_received = [&] (const std::string& message, const NodeId&, const bool&,
                                    ReplyFunctor reply_functor) {
