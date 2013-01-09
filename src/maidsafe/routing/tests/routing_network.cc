@@ -54,12 +54,6 @@ bool IsPortAvailable(ip::udp::endpoint endpoint) {
   return true;
 }
 
-template<typename Future>
-bool is_ready(std::future<Future>& f) {
-  return f.wait_for(std::chrono::seconds(0)) == std::future_status::ready;
-}
-
-
 namespace {
 
 typedef boost::asio::ip::udp::endpoint Endpoint;

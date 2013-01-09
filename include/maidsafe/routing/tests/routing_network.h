@@ -52,7 +52,9 @@ namespace test {
 bool IsPortAvailable(boost::asio::ip::udp::endpoint endpoint);
 
 template<typename Future>
-bool is_ready(std::future<Future>& f);
+bool is_ready(std::future<Future>& f) {
+  return f.wait_for(std::chrono::seconds(0)) == std::future_status::ready;
+}
 
 struct NodeInfoAndPrivateKey;
 
