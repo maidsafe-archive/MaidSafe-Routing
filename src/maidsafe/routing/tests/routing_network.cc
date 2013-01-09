@@ -15,6 +15,7 @@
 #include <future>
 #include <set>
 #include <string>
+#include <vector>
 
 #include "maidsafe/common/log.h"
 #include "maidsafe/common/node_id.h"
@@ -52,6 +53,12 @@ bool IsPortAvailable(ip::udp::endpoint endpoint) {
   }
   return true;
 }
+
+template<typename Future>
+bool is_ready(std::future<Future>& f) {
+  return f.wait_for(std::chrono::seconds(0)) == std::future_status::ready;
+}
+
 
 namespace {
 
@@ -270,6 +277,18 @@ void GenericNode::Send(const NodeId& destination_id,
                        const DestinationType& destination_type,
                        const bool& cache) {
     routing_->Send(destination_id, data, response_functor, destination_type, cache);
+}
+
+std::future<std::string> GenericNode::Send(const NodeId& destination_id,
+                                           const std::string& data,
+                                           const bool& cache) {
+  return routing_->Send(destination_id, data, cache);
+}
+
+std::vector<std::future<std::string>> GenericNode::SendGroup(const NodeId& destination_id,
+                                                             const std::string& data,
+                                                             const bool& cacheable) {
+  return routing_->SendGroup(destination_id, data, cacheable);
 }
 
 bool GenericNode::IsNodeIdInGroupRange(const NodeId& node_id) {
@@ -856,38 +875,36 @@ testing::AssertionResult GenericNetwork::GroupSend(const NodeId& node_id,
                                                    const size_t& messages,
                                                    uint16_t source_index) {
   assert(static_cast<long>(10 * messages) > 0); // NOLINT (Fraser)
-  size_t messages_count(0), expected_messages(messages);
   std::string data(RandomAlphaNumericString((2 ^ 10) * 256));
 
-  std::mutex mutex;
-  std::condition_variable cond_var;
+  std::vector<std::vector<std::future<std::string>> > results;
   for (size_t index = 0; index < messages; ++index) {
-    auto callable = [&] (const std::vector<std::string> message) {
-                      if (message.empty())
-                        return;
-                      std::lock_guard<std::mutex> lock(mutex);
-                      messages_count++;
-                      LOG(kVerbose) << "ResponseHandler .... " << messages_count;
-                      if (messages_count == expected_messages) {
-                        cond_var.notify_one();
-                        LOG(kVerbose) << "ResponseHandler .... DONE " << messages_count;
-                      }
-                    };
-    this->nodes_[source_index]->Send(node_id, data, callable, DestinationType::kGroup, false);
+    results.push_back(this->nodes_[source_index]->SendGroup(node_id, data, false));
   }
 
-  std::unique_lock<std::mutex> lock(mutex);
-  bool result = cond_var.wait_for(lock,
-                                  std::chrono::seconds(10 * messages + 5),
-                                  [&] ()->bool {
-                                    LOG(kInfo) << " message count " << messages_count
-                                               << " expected " << expected_messages << "\n";
-                                    return messages_count == expected_messages;
-                                  });
-  EXPECT_TRUE(result);
-  if (!result) {
+  bool overall_result(false);
+  size_t bad_messages_count(0);
+
+  std::chrono::system_clock::time_point start(std::chrono::system_clock::now());
+  uint16_t num(10 * messages + 5);
+
+  while (!overall_result && std::chrono::system_clock::now() < start + std::chrono::seconds(num)) {
+    overall_result = true;
+    for (uint16_t i(0); i < results.size(); ++i) {
+      for (uint16_t j(0); j < results.at(i).size(); ++j) {
+        if (!is_ready(results.at(i).at(j))) {
+          overall_result = false;
+          ++bad_messages_count;
+        }
+      }
+    }
+    Sleep(boost::posix_time::millisec(1000));
+  }
+
+  EXPECT_TRUE(overall_result);
+  if (!overall_result) {
     return testing::AssertionFailure() << "Send operarion timed out: "
-                                       << expected_messages - messages_count
+                                       << bad_messages_count
                                        << " failed to reply.";
   }
   return testing::AssertionSuccess();
@@ -952,51 +969,30 @@ testing::AssertionResult GenericNetwork::Send(const NodeId& node_id) {
 }
 
 testing::AssertionResult GenericNetwork::Send(std::shared_ptr<GenericNode> source_node,
-                                              const NodeId& node_id,
-                                              bool no_response_expected) {
-  std::mutex mutex;
-  std::condition_variable cond_var;
-  size_t messages_count(0), expected_messages(0);
-  ResponseFunctor callable;
-  if (!no_response_expected) {
-    expected_messages = std::count_if(this->nodes_.begin(), this->nodes_.end(),
-        [=](const std::shared_ptr<GenericNode> node)->bool {
-          return node_id == node->node_id();
-        });
+                                              const NodeId& node_id) {
+  size_t expected_messages(std::count_if(this->nodes_.begin(), this->nodes_.end(),
+                                         [=](const std::shared_ptr<GenericNode> node)->bool {
+                                           return (!node->IsClient() && node_id == node->node_id());
+                                         }));
 
-    callable = [&](const std::vector<std::string> &message) {
-      if (message.empty())
-        return;
-      std::lock_guard<std::mutex> lock(mutex);
-      messages_count++;
-      LOG(kVerbose) << "ResponseHandler .... " << messages_count;
-      if (messages_count == expected_messages) {
-        cond_var.notify_one();
-        LOG(kVerbose) << "ResponseHandler .... DONE " << messages_count;
-      }
-    };
-  }
   std::string data(RandomAlphaNumericString(512 * 2^10));
   assert(!data.empty() && "Send Data Empty !");
-  source_node->Send(node_id, data, callable, DestinationType::kDirect, false);
+  std::future<std::string> future(source_node->Send(node_id, data, false));
 
-  if (!no_response_expected) {
-    std::unique_lock<std::mutex> lock(mutex);
-    bool result = cond_var.wait_for(lock, std::chrono::seconds(20),
-        [&]()->bool {
-          LOG(kInfo) << " message count " << messages_count << " expected "
-                    << expected_messages << "\n";
-          return messages_count == expected_messages;
-        });
-    EXPECT_TRUE(result);
-    if (!result) {
-      return testing::AssertionFailure() << "Send operarion timed out: "
-                                         << expected_messages - messages_count
-                                         << " failed to reply.";
-    }
-    return testing::AssertionSuccess();
-  } else {
-    return testing::AssertionSuccess();
+  if (future.wait_for(std::chrono::seconds(20)) != std::future_status::ready)
+    return testing::AssertionFailure() << "Future not ready.";
+
+  try {
+    std::string result(future.get());
+    if (expected_messages > 0)
+      return testing::AssertionSuccess();
+    else
+      return testing::AssertionFailure() << "Didn't throw when expected.";
+  } catch(const std::exception& ex) {
+    if (expected_messages > 0)
+      return testing::AssertionFailure() << "Threw when not expected.";
+    else
+      return testing::AssertionSuccess();
   }
 }
 

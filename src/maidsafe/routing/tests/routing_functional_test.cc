@@ -84,9 +84,7 @@ TEST_F(RoutingNetworkTest, FUNC_SanityCheck) {
     env_->AddNode(true, env_->nodes_[env_->RandomClientIndex()]->node_id());
 
     // Send to client with same Id
-    EXPECT_TRUE(env_->Send(env_->nodes_[kNetworkSize],
-                           env_->nodes_[kNetworkSize]->node_id(),
-                           true));
+    EXPECT_TRUE(env_->Send(env_->nodes_[kNetworkSize], env_->nodes_[kNetworkSize]->node_id()));
     env_->ClearMessages();
   }
   {
@@ -262,9 +260,7 @@ TEST_F(RoutingNetworkTest, FUNC_SendToClientsWithSameId) {
     env_->AddNode(true, node_id);
 
   for (uint16_t index(0); index < kMessageCount; ++index)
-    EXPECT_TRUE(env_->Send(env_->nodes_[kNetworkSize],
-                           env_->nodes_[kNetworkSize]->node_id(),
-                           true));
+    EXPECT_TRUE(env_->Send(env_->nodes_[kNetworkSize], env_->nodes_[kNetworkSize]->node_id()));
   uint16_t num_of_tries(0);
   bool done(false);
   do {
@@ -289,9 +285,7 @@ TEST_F(RoutingNetworkTest, FUNC_SendToClientWithSameId) {
   size_t size(0);
 
   env_->ClearMessages();
-  EXPECT_TRUE(env_->Send(env_->nodes_[new_index],
-                         node_id,
-                         true));
+  EXPECT_TRUE(env_->Send(env_->nodes_[new_index], node_id));
   Sleep(boost::posix_time::seconds(1));
   for (auto node : env_->nodes_) {
     size += node->MessagesSize();

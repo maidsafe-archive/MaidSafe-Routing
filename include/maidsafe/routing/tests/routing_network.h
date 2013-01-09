@@ -51,6 +51,9 @@ namespace test {
 
 bool IsPortAvailable(boost::asio::ip::udp::endpoint endpoint);
 
+template<typename Future>
+bool is_ready(std::future<Future>& f);
+
 struct NodeInfoAndPrivateKey;
 
 const uint32_t kClientSize(5);
@@ -89,6 +92,12 @@ class GenericNode {
             const ResponseFunctor& response_functor,
             const DestinationType& destination_type,
             const bool& cache);
+  std::future<std::string> Send(const NodeId& destination_id,
+                                const std::string& data,
+                                const bool& cache);
+  std::vector<std::future<std::string>> SendGroup(const NodeId& destination_id,
+                                                  const std::string& data,
+                                                  const bool& cacheable);
   bool IsNodeIdInGroupRange(const NodeId& node_id);
   void SendToClosestNode(const protobuf::Message& message);
   void RudpSend(const NodeId& peer_endpoint,
@@ -182,8 +191,7 @@ class GenericNetwork {
                                      uint16_t source_index = 0);
   testing::AssertionResult Send(const NodeId& node_id);
   testing::AssertionResult Send(std::shared_ptr<GenericNode> source_node,
-                                const NodeId& node_id,
-                                bool no_response_expected = false);
+                                const NodeId& node_id);
 
   friend class NodesEnvironment;
 
