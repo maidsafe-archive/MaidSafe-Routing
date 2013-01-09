@@ -796,70 +796,40 @@ bool GenericNetwork::WaitForHealthToStabilise() {
 }
 
 testing::AssertionResult GenericNetwork::Send(const size_t& messages) {
-  NodeId group_id;
-  size_t message_id(0), client_size(0), non_client_size(0);
-  std::set<size_t> received_ids;
-  for (auto node : this->nodes_)
-    (node->IsClient()) ? client_size++ : non_client_size++;
+  std::vector<std::future<std::string>> futures;
 
-  LOG(kVerbose) << "Network node size: " << client_size << " : " << non_client_size;
-
-  size_t messages_count(0),
-      expected_messages(non_client_size * (non_client_size - 1 + client_size) * messages);
-  std::mutex mutex;
-  std::condition_variable cond_var;
   for (size_t index = 0; index < messages; ++index) {
     for (auto source_node : this->nodes_) {
       for (auto dest_node : this->nodes_) {
-        auto callable = [&](const std::vector<std::string> &message) {
-            if (message.empty())
-              return;
-            std::lock_guard<std::mutex> lock(mutex);
-            messages_count++;
-            std::string data_id(message.at(0).substr(message.at(0).find(">:<") + 3,
-                message.at(0).find("<:>") - 3 - message.at(0).find(">:<")));
-            received_ids.insert(boost::lexical_cast<size_t>(data_id));
-            LOG(kVerbose) << "ResponseHandler .... " << messages_count << " msg_id: "
-                          << data_id;
-            if (messages_count == expected_messages) {
-              cond_var.notify_one();
-              LOG(kVerbose) << "ResponseHandler .... DONE " << messages_count;
-            }
-          };
         if (source_node->node_id() != dest_node->node_id()) {
           std::string data(RandomAlphaNumericString(512 * 2^10));
-          {
-            std::lock_guard<std::mutex> lock(mutex);
-            data = boost::lexical_cast<std::string>(++message_id) + "<:>" + data;
-          }
           assert(!data.empty() && "Send Data Empty !");
-          source_node->Send(NodeId(dest_node->node_id()),
-                            data,
-                            callable,
-                            DestinationType::kDirect,
-                            false);
+          futures.push_back(source_node->Send(NodeId(dest_node->node_id()), data, false));
           Sleep(boost::posix_time::microseconds(21));
         }
       }
     }
   }
 
-  std::unique_lock<std::mutex> lock(mutex);
-  bool result = cond_var.wait_for(lock, std::chrono::seconds(20),
-      [&]()->bool {
-        LOG(kInfo) << " message count " << messages_count << " expected "
-                   << expected_messages << "\n";
-        return messages_count == expected_messages;
-      });
-  EXPECT_TRUE(result);
-  if (!result) {
-    for (size_t id(1); id <= expected_messages; ++id) {
-      auto iter = received_ids.find(id);
-      if (iter == received_ids.end())
-        LOG(kVerbose) << "missing id: " << id;
+  bool overall_result(false);
+  size_t bad_futures_count(0);
+  std::chrono::system_clock::time_point start(std::chrono::system_clock::now());
+
+  while (!overall_result && std::chrono::system_clock::now() < start + std::chrono::seconds(20)) {
+    overall_result = true;
+    bad_futures_count = 0;
+    for (uint16_t i(0); i < futures.size(); ++i) {
+      if (!is_ready(futures.at(i))) {
+        overall_result = false;
+        ++bad_futures_count;
+      }
     }
+    Sleep(boost::posix_time::millisec(100));
+  }
+
+  if (!overall_result) {
     return testing::AssertionFailure() << "Send operarion timed out: "
-                                       << expected_messages - messages_count
+                                       << bad_futures_count
                                        << " failed to reply.";
   }
   return testing::AssertionSuccess();
@@ -871,92 +841,72 @@ testing::AssertionResult GenericNetwork::GroupSend(const NodeId& node_id,
   assert(static_cast<long>(10 * messages) > 0); // NOLINT (Fraser)
   std::string data(RandomAlphaNumericString((2 ^ 10) * 256));
 
-  std::vector<std::vector<std::future<std::string>> > results;
+  std::vector<std::vector<std::future<std::string>> > futures;
   for (size_t index = 0; index < messages; ++index) {
-    results.push_back(this->nodes_[source_index]->SendGroup(node_id, data, false));
+    futures.push_back(this->nodes_[source_index]->SendGroup(node_id, data, false));
   }
 
   bool overall_result(false);
-  size_t bad_messages_count(0);
+  size_t bad_futures_count(0);
 
   std::chrono::system_clock::time_point start(std::chrono::system_clock::now());
   uint16_t num(10 * messages + 5);
 
   while (!overall_result && std::chrono::system_clock::now() < start + std::chrono::seconds(num)) {
     overall_result = true;
-    for (uint16_t i(0); i < results.size(); ++i) {
-      for (uint16_t j(0); j < results.at(i).size(); ++j) {
-        if (!is_ready(results.at(i).at(j))) {
+    bad_futures_count = 0;
+    for (uint16_t i(0); i < futures.size(); ++i) {
+      for (uint16_t j(0); j < futures.at(i).size(); ++j) {
+        if (!is_ready(futures.at(i).at(j))) {
           overall_result = false;
-          ++bad_messages_count;
+          ++bad_futures_count;
         }
       }
     }
-    Sleep(boost::posix_time::millisec(1000));
+    LOG(kVerbose) << "Still waiting for " << bad_futures_count << " replies.";
+    Sleep(boost::posix_time::millisec(100));
   }
 
   EXPECT_TRUE(overall_result);
   if (!overall_result) {
     return testing::AssertionFailure() << "Send operarion timed out: "
-                                       << bad_messages_count
+                                       << bad_futures_count
                                        << " failed to reply.";
   }
   return testing::AssertionSuccess();
 }
 
 testing::AssertionResult GenericNetwork::Send(const NodeId& node_id) {
-  std::set<size_t> received_ids;
-  std::mutex mutex;
-  std::condition_variable cond_var;
-  size_t messages_count(0), message_id(0), expected_messages(0);
-  auto node(std::find_if(this->nodes_.begin(), this->nodes_.end(),
-                         [&](const std::shared_ptr<GenericNode> node) {
-                           return node->node_id() == node_id;
-                         }));
-  if ((node != this->nodes_.end()) && !((*node)->IsClient()))
-    expected_messages = this->nodes_.size() - 1;
+  std::vector<std::future<std::string>> futures;
   for (auto source_node : this->nodes_) {
-    auto callable = [&](const std::vector<std::string> &message) {
-      if (message.empty())
-        return;
-      std::lock_guard<std::mutex> lock(mutex);
-      messages_count++;
-      std::string data_id(message.at(0).substr(message.at(0).find(">:<") + 3,
-          message.at(0).find("<:>") - 3 - message.at(0).find(">:<")));
-      received_ids.insert(boost::lexical_cast<size_t>(data_id));
-      LOG(kVerbose) << "ResponseHandler .... " << messages_count << " msg_id: "
-                    << data_id;
-      if (messages_count == expected_messages) {
-        cond_var.notify_one();
-        LOG(kVerbose) << "ResponseHandler .... DONE " << messages_count;
-      }
-    };
     if (source_node->node_id() != node_id) {
-        std::string data(RandomAlphaNumericString((RandomUint32() % 255 + 1) * 2^10));
-        {
-          std::lock_guard<std::mutex> lock(mutex);
-          data = boost::lexical_cast<std::string>(++message_id) + "<:>" + data;
-        }
-        source_node->Send(node_id, data, callable, DestinationType::kDirect, false);
+      std::string data(RandomAlphaNumericString((RandomUint32() % 255 + 1) * 2^10));
+      futures.push_back(source_node->Send(node_id, data, false));
     }
   }
 
-  std::unique_lock<std::mutex> lock(mutex);
-  bool result = cond_var.wait_for(lock, std::chrono::seconds(20),
-      [&]()->bool {
-        LOG(kInfo) << " message count " << messages_count << " expected "
-                   << expected_messages << "\n";
-        return messages_count == expected_messages;
-      });
-  EXPECT_TRUE(result);
-  if (!result) {
-    for (size_t id(1); id <= expected_messages; ++id) {
-      auto iter = received_ids.find(id);
-      if (iter == received_ids.end())
-        LOG(kVerbose) << "missing id: " << id;
+  bool overall_result(false);
+  size_t bad_futures_count(0);
+
+  std::chrono::system_clock::time_point start(std::chrono::system_clock::now());
+
+  while (!overall_result && std::chrono::system_clock::now() < start + std::chrono::seconds(20)) {
+    overall_result = true;
+    bad_futures_count = 0;
+    for (uint16_t i(0); i < futures.size(); ++i) {
+      if (!is_ready(futures.at(i))) {
+        overall_result = false;
+        ++bad_futures_count;
+      }
     }
+    LOG(kVerbose) << "Still waiting for " << bad_futures_count << " replies.";
+    Sleep(boost::posix_time::millisec(100));
+  }
+
+  EXPECT_TRUE(overall_result);
+  if (!overall_result) {
     return testing::AssertionFailure() << "Send operarion timed out: "
-                                       << expected_messages - messages_count
+                                       << bad_futures_count
                                        << " failed to reply.";
   }
   return testing::AssertionSuccess();
