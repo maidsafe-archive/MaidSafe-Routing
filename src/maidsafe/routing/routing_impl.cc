@@ -441,9 +441,9 @@ std::future<std::vector<NodeId>> Routing::Impl::GetGroup(const NodeId& info_id) 
       [promise](const std::vector<std::string>& responses) {
         std::vector<NodeId> nodes_id;
         if (!responses.empty()) {
-          protobuf::GetGroupReply group_reply;
-          group_reply.ParseFromString(responses.at(0));
-          for (auto& id :  group_reply.group_nodes_id()) {
+          protobuf::GetGroup get_group;
+          get_group.ParseFromString(responses.at(0));
+          for (auto& id :  get_group.group_nodes_id()) {
             nodes_id.push_back(NodeId(id));
           }
         }

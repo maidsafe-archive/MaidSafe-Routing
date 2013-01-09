@@ -233,7 +233,6 @@ bool GroupMatrix::IsRowEmpty(const NodeInfo& node_info) {
   return (group_itr->size() < 2);
 }
 
-
 std::vector<NodeInfo> GroupMatrix::GetClosestNodes(const uint16_t& size) {
   return std::vector<NodeInfo>(unique_nodes_.begin(),
                                unique_nodes_.begin() + std::min(static_cast<size_t>(size),

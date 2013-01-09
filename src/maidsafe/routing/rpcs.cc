@@ -287,6 +287,9 @@ protobuf::Message GetGroup(const NodeId& node_id,
   assert(!node_id.IsZero() && "Invalid node_id");
   assert(!my_node_id.IsZero() && "Invalid my node_id");
   protobuf::Message message;
+  protobuf::GetGroup get_group;
+  get_group.set_node_id(node_id.string());
+  message.add_data(get_group.SerializeAsString());
   message.set_destination_id(node_id.string());
   message.set_source_id(my_node_id.string());
   message.set_routing_message(true);

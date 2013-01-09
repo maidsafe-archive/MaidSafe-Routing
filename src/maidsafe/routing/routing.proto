@@ -169,7 +169,7 @@ message ClosestNodesUpdateSubscrirbe {
   required bool subscribe = 2;
 }
 
-message GetGroupReply {
+message GetGroup {
   required bytes node_id = 1;
   repeated bytes group_nodes_id = 2;
 }
