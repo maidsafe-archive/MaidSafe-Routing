@@ -235,10 +235,10 @@ bool RoutingTable::IsNodeIdInGroupRange(const NodeId& target_id) {
 }
 
 
-bool RoutingTable::IsIdInGroup(const NodeId& sender_id, const NodeId& info_id) {
+bool RoutingTable::EstimateInGroup(const NodeId& sender_id, const NodeId& info_id) {
   std::unique_lock<std::mutex> lock(mutex_);
   return ((nodes_.size() > Parameters::routing_table_ready_to_response) &&
-          group_matrix_.IsIdInGroup(sender_id, info_id));
+          group_matrix_.EstimateInGroup(sender_id, info_id));
 }
 
 NodeInfo RoutingTable::GetConnectedPeerFromGroupMatrixClosestTo(const NodeId& target_node_id) {
@@ -616,6 +616,24 @@ std::vector<NodeId> RoutingTable::GetClosestNodes(const NodeId& target_id, uint1
   for (int i = 0; i != sorted_count; ++i)
     close_nodes.push_back(nodes_[i].node_id);
   return close_nodes;
+}
+
+std::vector<NodeId> RoutingTable::GetGroup(const NodeId& target_id) {
+  std::vector<NodeInfo> nodes;
+  {
+    std::unique_lock<std::mutex> lock(mutex_);
+    nodes = group_matrix_.GetUniqueNodes();
+  }
+  std::vector<NodeId> group;
+  std::partial_sort(nodes.begin(),
+                    nodes.begin() + Parameters::node_group_size,
+                    nodes.end(),
+                    [&](const NodeInfo& lhs, const NodeInfo& rhs) {
+                      return NodeId::CloserToTarget(lhs.node_id, rhs.node_id, target_id);
+                    });
+  for (auto iter(nodes.begin()); iter != nodes.begin() + Parameters::node_group_size; ++iter)
+    group.push_back(iter->node_id);
+  return std::move(group);
 }
 
 std::vector<NodeInfo> RoutingTable::GetClosestNodeInfo(const NodeId& target_id,

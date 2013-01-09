@@ -155,8 +155,10 @@ bool GroupMatrix::IsNodeInGroupRange(const NodeId& target_id) {
   return false;
 }
 
-bool GroupMatrix::IsIdInGroup(const NodeId& sender_id, const NodeId& info_id) {
-  return ((info_id ^ sender_id) <= distance_);
+bool GroupMatrix::EstimateInGroup(const NodeId& sender_id, const NodeId& info_id) {
+  return crypto::BigInt(((info_id ^ sender_id).ToStringEncoded(NodeId::kHex) + 'h').c_str()) <=
+      crypto::BigInt((distance_.ToStringEncoded(NodeId::kHex) + 'h').c_str()) *
+      Parameters::accepted_distance_tolerance;
 }
 
 void GroupMatrix::UpdateFromConnectedPeer(const NodeId& peer,
@@ -220,7 +222,6 @@ std::vector<NodeInfo> GroupMatrix::GetUniqueNodes() {
   return unique_nodes_;
 }
 
-
 bool GroupMatrix::IsRowEmpty(const NodeInfo& node_info) {
 //  std::lock_guard<std::mutex> lock(mutex_);
   auto group_itr(matrix_.begin());
@@ -228,13 +229,11 @@ bool GroupMatrix::IsRowEmpty(const NodeInfo& node_info) {
     if ((*group_itr).at(0).node_id == node_info.node_id)
       break;
   }
-
   assert(group_itr != matrix_.end());
   return (group_itr->size() < 2);
 }
 
-
-std::vector<NodeInfo> GroupMatrix::GetClosestNodes(const uint32_t& size) {
+std::vector<NodeInfo> GroupMatrix::GetClosestNodes(const uint16_t& size) {
   return std::vector<NodeInfo>(unique_nodes_.begin(),
                                unique_nodes_.begin() + std::min(static_cast<size_t>(size),
                                                                 unique_nodes_.size()));

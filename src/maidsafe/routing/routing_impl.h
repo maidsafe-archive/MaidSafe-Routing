@@ -72,7 +72,9 @@ class Routing::Impl {
 
   bool IsNodeIdInGroupRange(const NodeId& node_id);
 
-  bool IsIdInGroup(const NodeId& sender_id, const NodeId& info_id);
+  bool EstimateInGroup(const NodeId& sender_id, const NodeId& info_id);
+
+  std::future<std::vector<NodeId>> GetGroup(const NodeId& info_id);
 
   NodeId kNodeId() const;
 

@@ -89,6 +89,7 @@ class GenericNode {
             const ResponseFunctor& response_functor,
             const DestinationType& destination_type,
             const bool& cache);
+  std::future<std::vector<NodeId>> GetGroup(const NodeId& info_id);
   bool IsNodeIdInGroupRange(const NodeId& node_id);
   void SendToClosestNode(const protobuf::Message& message);
   void RudpSend(const NodeId& peer_endpoint,

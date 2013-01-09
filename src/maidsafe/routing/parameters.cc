@@ -38,6 +38,7 @@ bptime::time_duration Parameters::find_close_node_interval(bptime::seconds(3));
 uint16_t Parameters::maximum_find_close_node_failures(10);
 uint16_t Parameters::max_route_history(5);
 uint16_t Parameters::hops_to_live(50);
+uint16_t Parameters::accepted_distance_tolerance(2);
 uint16_t Parameters::greedy_fraction(Parameters::max_routing_table_size * 3 / 4);
 uint16_t Parameters::split_avoidance(4);
 uint16_t Parameters::routing_table_ready_to_response(Parameters::greedy_fraction * 9 / 10);
@@ -53,7 +54,8 @@ bool Parameters::append_maidsafe_local_endpoints(false);
 #else
 bool Parameters::append_maidsafe_local_endpoints(false);
 #endif
-// TODO(Prakash) : To allow bootstrapping off nodes on same machine, revert once local network available
+// TODO(Prakash) : To allow bootstrapping off nodes on same machine, revert once local network
+// available
 bool Parameters::append_local_live_port_endpoint(false);
 bool Parameters::caching(false);
 }  // namespace routing

@@ -268,6 +268,9 @@ std::string MessageTypeString(const protobuf::Message& message) {
     case MessageType::kClosestNodesUpdateSubscribe :
       message_type = "kCloses_Nodes_Update_Subscribe";
       break;
+    case MessageType::kGetGroup :
+      message_type = "kGetGroup";
+      break;
     case MessageType::kNodeLevel :
       message_type = "kNodeLevel";
       break;
