@@ -156,7 +156,9 @@ bool GroupMatrix::IsNodeInGroupRange(const NodeId& target_id) {
 }
 
 bool GroupMatrix::EstimateInGroup(const NodeId& sender_id, const NodeId& info_id) {
-  return ((info_id ^ sender_id) <= distance_);
+  return crypto::BigInt(((info_id ^ sender_id).ToStringEncoded(NodeId::kHex) + 'h').c_str()) <=
+      crypto::BigInt((distance_.ToStringEncoded(NodeId::kHex) + 'h').c_str()) *
+      Parameters::accepted_distance_tolerance;
 }
 
 void GroupMatrix::UpdateFromConnectedPeer(const NodeId& peer,
