@@ -438,9 +438,10 @@ std::vector<std::future<std::string>> Routing::Impl::SendGroup(const NodeId& des
                                                   cacheable));
     proto_message.set_id(timer_.AddTask(Parameters::default_send_timeout, promises));
     SendMessage(destination_id, proto_message);
-  } catch (std::exception& e) {
+  }
+  catch (...) {
     for (auto promise: promises)
-      promise->set_exception(std::copy_exception(e));
+      promise->set_exception(std::current_exception());
   }
   return std::move(futures);
 }
@@ -459,10 +460,11 @@ std::future<std::string> Routing::Impl::Send(const NodeId& destination_id,
                                                   cacheable));
     proto_message.set_id(timer_.AddTask(Parameters::default_send_timeout, promises));
     SendMessage(destination_id, proto_message);
-  } catch (std::exception& e) {
-    promises.front()->set_exception(std::copy_exception(e));
   }
-  return future;
+  catch (...) {
+    promises.front()->set_exception(std::current_exception());
+  }
+  return std::move(future);
 }
 
 void Routing::Impl::SendMessage(const NodeId& destination_id, protobuf::Message& proto_message) {

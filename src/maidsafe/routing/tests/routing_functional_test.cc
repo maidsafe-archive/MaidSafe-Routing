@@ -470,10 +470,10 @@ TEST_F(RoutingNetworkTest, FUNC_ClosestNodes) {
     std::vector<NodeInfo> from_network(
           env_->GetClosestVaults(node->node_id(), static_cast<uint32_t>(from_matrix.size())));
     EXPECT_EQ(from_matrix.size(), from_network.size());
-    int min_size(std::min(from_matrix.size(), from_network.size()));
-    EXPECT_LE(8, min_size);
+    auto min_size(std::min(from_matrix.size(), from_network.size()));
+    EXPECT_LE(8U, min_size);
 
-    for (uint16_t i(0); i < std::min(8, min_size); ++i)
+    for (uint16_t i(0); i < std::min(size_t(8), min_size); ++i)
       EXPECT_EQ(from_matrix.at(i).node_id, from_network.at(i).node_id);
   }
 }

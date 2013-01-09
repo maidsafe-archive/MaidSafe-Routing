@@ -13,8 +13,10 @@
 #include "maidsafe/routing/timer.h"
 
 #include <algorithm>
+#include <exception>
 
 #include "maidsafe/common/asio_service.h"
+#include "maidsafe/common/error.h"
 #include "maidsafe/common/log.h"
 
 #include "maidsafe/routing/parameters.h"
@@ -46,7 +48,7 @@ Timer::Task::Task(const TaskId& id_in,
       functor(),
       responses(),
       promises(promises_in),
-      expected_response_count(promises.size()) {}
+      expected_response_count(static_cast<uint16_t>(promises.size())) {}
 
 Timer::Timer(AsioService& asio_service)
     : asio_service_(asio_service),
@@ -149,8 +151,8 @@ void Timer::ExecuteTask(TaskId task_id, const boost::system::error_code& error) 
 
 void Timer::SetExceptions(std::vector<std::shared_ptr<std::promise<std::string>>> promises) {
   for (auto promise: promises) {
-      std::exception e;
-      promise->set_exception(std::copy_exception(e)); //FIXME need timeout exception here
+    auto timed_out_error(MakeError(RoutingErrors::timed_out));
+    promise->set_exception(std::make_exception_ptr(timed_out_error));
   }
 }
 
