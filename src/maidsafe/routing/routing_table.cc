@@ -613,9 +613,10 @@ std::vector<NodeId> RoutingTable::GetClosestNodes(const NodeId& target_id, uint1
 }
 
 std::vector<NodeId> RoutingTable::GetGroup(const NodeId& target_id) {
+  std::vector<NodeInfo> nodes;
   {
     std::unique_lock<std::mutex> lock(mutex_);
-    auto nodes(group_matrix_.GetUniqueNodes());
+    nodes = group_matrix_.GetUniqueNodes();
   }
   std::vector<NodeId> group;
   std::partial_sort(nodes.begin(),
@@ -624,9 +625,8 @@ std::vector<NodeId> RoutingTable::GetGroup(const NodeId& target_id) {
                     [&](const NodeInfo& lhs, const NodeInfo& rhs) {
                       return NodeId::CloserToTarget(lhs.node_id, rhs.node_id, target_id);
                     });
-  for (auto iter(nodes.begin()); iter != nodes.begin() + Parameters::node_group_size; ++iter) {
+  for (auto iter(nodes.begin()); iter != nodes.begin() + Parameters::node_group_size; ++iter)
     group.push_back(iter->node_id);
-  }
   return std::move(group);
 }
 

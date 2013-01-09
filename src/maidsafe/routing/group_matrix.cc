@@ -220,7 +220,6 @@ std::vector<NodeInfo> GroupMatrix::GetUniqueNodes() {
   return unique_nodes_;
 }
 
-
 bool GroupMatrix::IsRowEmpty(const NodeInfo& node_info) {
 //  std::lock_guard<std::mutex> lock(mutex_);
   auto group_itr(matrix_.begin());
