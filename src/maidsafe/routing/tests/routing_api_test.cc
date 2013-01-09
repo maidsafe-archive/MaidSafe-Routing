@@ -171,16 +171,16 @@ TEST(APITest, FUNC_API_AnonymousNode) {
   std::future<std::string> future_1(routing3.Send(NodeId(node1.node_info.node_id),
                                                   "message_from_anonymous node",
                                                   false));
-  ASSERT_EQ(std::future_status::ready,
-            future_1.wait_for(std::chrono::seconds(11)));  // to allow disconnection
+  ASSERT_EQ(std::future_status::ready, future_1.wait_for(std::chrono::seconds(10)));
   ASSERT_EQ("response to message_from_anonymous node", future_1.get());
+
+  Sleep(boost::posix_time::seconds(11));  // to allow disconnection
 
   std::future<std::string> future_2(routing3.Send(NodeId(node1.node_info.node_id),
                                                   "message_2_from_anonymous node",
                                                   false));
   ASSERT_EQ(std::future_status::ready, future_2.wait_for(std::chrono::seconds(1)));
-  ASSERT_TRUE(future_2.get().empty());
-
+  EXPECT_THROW(future_2.get(), std::exception);
   rudp::Parameters::bootstrap_connection_lifespan = boost::posix_time::minutes(10);
 }
 
