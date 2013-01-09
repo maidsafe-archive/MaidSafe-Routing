@@ -229,7 +229,6 @@ bool GroupMatrix::IsRowEmpty(const NodeInfo& node_info) {
     if ((*group_itr).at(0).node_id == node_info.node_id)
       break;
   }
-
   assert(group_itr != matrix_.end());
   return (group_itr->size() < 2);
 }

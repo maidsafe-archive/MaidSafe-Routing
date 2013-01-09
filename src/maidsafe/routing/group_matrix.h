@@ -53,23 +53,16 @@ class GroupMatrix {
 
   // Returns the peer which has node closest to target_id in its row (1st occurrence).
   NodeInfo GetConnectedPeerClosestTo(const NodeId& target_node_id);
-
   bool IsNodeInGroupRange(const NodeId& target_id);
-
   bool EstimateInGroup(const NodeId& sender_id, const NodeId& info_id);
-
   bool IsThisNodeGroupLeader(const NodeId& target_id, NodeId& group_leader_id);
 
   // Updates group matrix if peer is present in 1st column of matrix
   void UpdateFromConnectedPeer(const NodeId& peer, const std::vector<NodeInfo>& nodes);
-
   bool IsRowEmpty(const NodeInfo& node_info);
   bool GetRow(const NodeId& row_id, std::vector<NodeInfo>& row_entries);
-
   std::vector<NodeInfo> GetUniqueNodes();
-
   std::vector<NodeInfo> GetClosestNodes(const uint16_t& size);
-
   void Clear();
   void Distance();
   void AverageDistance(const NodeId& distance);

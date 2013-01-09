@@ -81,7 +81,8 @@ void MessageHandler::HandleRoutingMessage(protobuf::Message& message) {
       group_change_handler_.ClosestNodesUpdateSubscribe(message);
       break;
     case MessageType::kGetGroup :
-      message.request() ? service_->GetGroup(message) : timer_.AddResponse(message);
+      message.request() ? service_->GetGroup(message) : response_handler_->GetGroup(timer_,
+                                                                                    message);
       break;
     default:  // unknown (silent drop)
       return;

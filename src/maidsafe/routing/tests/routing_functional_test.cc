@@ -42,16 +42,6 @@ class RoutingNetworkTest : public testing::Test {
   std::shared_ptr<GenericNetwork> env_;
 };
 
-TEST_F(RoutingNetworkTest, FUNC_GetGroup) {
-  NodeId node_id(NodeId::kRandomId);
-  std::future<std::vector<NodeId>> future(env_->nodes_[0]->GetGroup(node_id));
-  auto nodes_id(future.get());
-  auto group_ids(env_->GroupIds(node_id));
-  EXPECT_EQ(nodes_id.size(), group_ids.size());
-  for (auto id : group_ids)
-    EXPECT_NE(std::find(nodes_id.begin(), nodes_id.end(), id), nodes_id.end());
-}
-
 TEST_F(RoutingNetworkTest, FUNC_SanityCheck) {
   {
     EXPECT_TRUE(env_->Send(3));

@@ -117,8 +117,11 @@ class Routing {
   // returns true if the node id provided is in group range of node.
   bool IsNodeIdInGroupRange(const NodeId& node_id) const;
 
+  // Evaluates whether the sender_id is a legitimate source to send a request for performing
+  // an operation on info_id
   bool EstimateInGroup(const NodeId& sender_id, const NodeId& info_id) const;
 
+  // returns the closest nodes to info_id
   std::future<std::vector<NodeId>> GetGroup(const NodeId& info_id);
 
   // returns Node Id.

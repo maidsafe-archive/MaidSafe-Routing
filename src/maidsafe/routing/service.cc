@@ -331,12 +331,11 @@ void Service::ConnectSuccessFromResponder(NodeInfo& peer, const bool& client) {
 }
 
 void Service::GetGroup(protobuf::Message& message) {
-  LOG(kVerbose) << "GetGroup  msg id:  " <<  message.id();
+  LOG(kVerbose) << "Service::GetGroup,  msg id:  " <<  message.id();
   protobuf::GetGroup get_group;
   assert(get_group.ParseFromString(message.data(0)));
   auto close_nodes_id(routing_table_.GetGroup(NodeId(get_group.node_id())));
   get_group.set_node_id(routing_table_.kNodeId().string());
-//  group_reply.add_group_nodes_id(routing_table_.kNodeId().string());
   for (auto node_id : close_nodes_id)
     get_group.add_group_nodes_id(node_id.string());
   message.clear_route_history();
