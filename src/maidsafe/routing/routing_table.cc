@@ -150,6 +150,7 @@ bool RoutingTable::AddOrCheckNode(NodeInfo peer, bool remove) {
       subscribe_to_group_change_update_(true, NodeInfo());
 
     if (!new_closest_nodes.empty()) {
+      group_matrix_.AcceptedDistance();
       if (close_node_replaced_functor_)
         close_node_replaced_functor_(new_closest_nodes);
     }
@@ -197,6 +198,7 @@ NodeInfo RoutingTable::DropNode(const NodeId& node_to_drop, bool routing_only) {
       subscribe_to_group_change_update_(true, NodeInfo());
 
   if (!new_closest_nodes.empty()) {
+    group_matrix_.AcceptedDistance();
     if (close_node_replaced_functor_)
       close_node_replaced_functor_(new_closest_nodes);
   }

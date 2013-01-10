@@ -30,7 +30,7 @@ GroupMatrix::GroupMatrix(const NodeId& this_node_id)
     : kNodeId_(this_node_id),
       unique_nodes_(),
       matrix_(),
-      distance_(),
+      accepted_distance_(),
       network_distance_data_() {}
 
 void GroupMatrix::AddConnectedPeer(const NodeInfo& node_info) {
@@ -157,7 +157,7 @@ bool GroupMatrix::IsNodeInGroupRange(const NodeId& target_id) {
 
 bool GroupMatrix::EstimateInGroup(const NodeId& sender_id, const NodeId& info_id) {
   return crypto::BigInt(((info_id ^ sender_id).ToStringEncoded(NodeId::kHex) + 'h').c_str()) <=
-      crypto::BigInt((distance_.ToStringEncoded(NodeId::kHex) + 'h').c_str()) *
+      crypto::BigInt((accepted_distance_.ToStringEncoded(NodeId::kHex) + 'h').c_str()) *
       Parameters::accepted_distance_tolerance;
 }
 
@@ -246,7 +246,7 @@ void GroupMatrix::Clear() {
   UpdateUniqueNodeList();
 }
 
-void GroupMatrix::Distance() {
+void GroupMatrix::AcceptedDistance() {
   std::nth_element(unique_nodes_.begin(),
                    unique_nodes_.begin() + Parameters::node_group_size,
                    unique_nodes_.end(),
@@ -255,7 +255,7 @@ void GroupMatrix::Distance() {
                    });
   NodeInfo furthest_group_node(unique_nodes_.at(std::min(Parameters::node_group_size - 1,
                                    static_cast<int>(unique_nodes_.size()))));
-  distance_ = furthest_group_node.node_id ^ kNodeId_;
+  accepted_distance_ = furthest_group_node.node_id ^ kNodeId_;
 }
 
 void GroupMatrix::AverageDistance(const NodeId& distance) {
