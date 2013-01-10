@@ -65,7 +65,9 @@ class MessageHandlerTest : public testing::Test {
                                                  reply_functor("reply");
                                                };
     asio_service_.Start();
-    table_.reset(new MockRoutingTable(false, NodeId(NodeId::kRandomId), asymm::GenerateKeyPair()));
+    NetworkStatistics network_statistics;
+    table_.reset(new MockRoutingTable(false, NodeId(NodeId::kRandomId), asymm::GenerateKeyPair()),
+                 network_statistics);
     ntable_.reset(new NonRoutingTable(table_->kNodeId()));
     utils_.reset(new MockNetworkUtils(*table_, *ntable_));
     group_change_handler_.reset(new GroupChangeHandler(*table_, *utils_));
@@ -102,6 +104,7 @@ void ClearMessage(protobuf::Message& message) {
   std::shared_ptr<GroupChangeHandler> group_change_handler_;
   std::shared_ptr<MockService> service_;
   std::shared_ptr<MockResponseHandler> response_handler_;
+  NetworkStatistics network_statistics;
   NodeInfo close_info_;
 };
 

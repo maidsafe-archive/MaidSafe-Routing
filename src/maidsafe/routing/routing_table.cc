@@ -29,7 +29,10 @@ namespace maidsafe {
 
 namespace routing {
 
-RoutingTable::RoutingTable(bool client_mode, const NodeId& node_id, const asymm::Keys& keys)
+RoutingTable::RoutingTable(bool client_mode,
+                           const NodeId& node_id,
+                           const asymm::Keys& keys,
+                           NetworkStatistics& network_statistics)
     : kClientMode_(client_mode),
       kNodeId_(node_id),
       kConnectionId_(kClientMode_ ? NodeId(NodeId::kRandomId) : kNodeId_),
@@ -47,7 +50,8 @@ RoutingTable::RoutingTable(bool client_mode, const NodeId& node_id, const asymm:
       subscribe_to_group_change_update_(),
       close_node_replaced_functor_(),
       nodes_(),
-      group_matrix_(kNodeId_) {}
+      group_matrix_(kNodeId_),
+      network_statistics_(network_statistics) {}
 
 
 void RoutingTable::InitialiseFunctors(
@@ -150,7 +154,7 @@ bool RoutingTable::AddOrCheckNode(NodeInfo peer, bool remove) {
       subscribe_to_group_change_update_(true, NodeInfo());
 
     if (!new_closest_nodes.empty()) {
-      group_matrix_.AcceptedDistance();
+      network_statistics_.UpdateLocalAverageDistance(std::move(group_matrix_.GetUniqueNodes()));
       if (close_node_replaced_functor_)
         close_node_replaced_functor_(new_closest_nodes);
     }
@@ -198,7 +202,7 @@ NodeInfo RoutingTable::DropNode(const NodeId& node_to_drop, bool routing_only) {
       subscribe_to_group_change_update_(true, NodeInfo());
 
   if (!new_closest_nodes.empty()) {
-    group_matrix_.AcceptedDistance();
+    network_statistics_.UpdateLocalAverageDistance(std::move(group_matrix_.GetUniqueNodes()));
     if (close_node_replaced_functor_)
       close_node_replaced_functor_(new_closest_nodes);
   }
@@ -234,13 +238,6 @@ bool RoutingTable::IsThisNodeGroupLeader(const NodeId& target_id, NodeInfo& grou
 bool RoutingTable::IsNodeIdInGroupRange(const NodeId& target_id) {
   std::unique_lock<std::mutex> lock(mutex_);
   return group_matrix_.IsNodeInGroupRange(target_id);
-}
-
-
-bool RoutingTable::EstimateInGroup(const NodeId& sender_id, const NodeId& info_id) {
-  std::unique_lock<std::mutex> lock(mutex_);
-  return ((nodes_.size() > Parameters::routing_table_ready_to_response) &&
-          group_matrix_.EstimateInGroup(sender_id, info_id));
 }
 
 NodeInfo RoutingTable::GetConnectedPeerFromGroupMatrixClosestTo(const NodeId& target_node_id) {

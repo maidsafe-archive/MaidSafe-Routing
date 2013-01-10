@@ -29,6 +29,7 @@
 #include "maidsafe/routing/routing_pb.h"
 #include "maidsafe/routing/rpcs.h"
 #include "maidsafe/routing/utils.h"
+#include "maidsafe/routing/network_statistics.h"
 
 
 namespace fs = boost::filesystem;
@@ -49,7 +50,7 @@ Routing::Impl::Impl(bool client_mode,
                     const asymm::Keys& keys)
     : network_status_mutex_(),
       network_status_(kNotJoined),
-      routing_table_(client_mode, node_id, keys),
+      routing_table_(client_mode, node_id, keys, network_statistics_),
       kNodeId_(routing_table_.kNodeId()),
       kAnonymousNode_(anonymous),
       running_(true),
@@ -60,6 +61,7 @@ Routing::Impl::Impl(bool client_mode,
       non_routing_table_(routing_table_.kNodeId()),
       remove_furthest_node_(routing_table_, network_),
       group_change_handler_(routing_table_, network_),
+      network_statistics_(routing_table_.kNodeId()),
       message_handler_(),
       asio_service_(2),
       network_(routing_table_, non_routing_table_),
@@ -73,7 +75,8 @@ Routing::Impl::Impl(bool client_mode,
                                             network_,
                                             timer_,
                                             remove_furthest_node_,
-                                            group_change_handler_));
+                                            group_change_handler_,
+                                            network_statistics_));
 
   assert((client_mode || !node_id.IsZero()) &&
          "Server Nodes cannot be created without valid keys");
@@ -430,7 +433,8 @@ bool Routing::Impl::IsNodeIdInGroupRange(const NodeId& node_id) {
 }
 
 bool Routing::Impl::EstimateInGroup(const NodeId& sender_id, const NodeId& info_id) {
-  return routing_table_.EstimateInGroup(sender_id, info_id);
+  return ((routing_table_.size() > Parameters::routing_table_ready_to_response) &&
+             network_statistics_.EstimateInGroup(sender_id, info_id));
 }
 
 std::future<std::vector<NodeId>> Routing::Impl::GetGroup(const NodeId& info_id) {

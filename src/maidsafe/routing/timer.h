@@ -56,7 +56,7 @@ class Timer {
   void CancelTask(TaskId task_id);
   // Registers a response against the task indicated by response.id().  Once expected_response_count
   // responses have been added, the task is removed and its functor invoked with kSuccess.
-  void AddResponse(const protobuf::Message& response);
+  bool AddResponse(const protobuf::Message& response);
   // Cancels all tasks and blocks until all functors have been executed and all tasks removed.
   void CancelAllTask();
 

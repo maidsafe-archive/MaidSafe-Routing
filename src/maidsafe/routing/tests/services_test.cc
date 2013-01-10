@@ -27,7 +27,7 @@
 #include "maidsafe/routing/service.h"
 #include "maidsafe/routing/tests/test_utils.h"
 #include "maidsafe/routing/group_change_handler.h"
-
+#include "maidsafe/routing/network_statistics.h"
 
 namespace maidsafe {
 
@@ -42,7 +42,9 @@ typedef boost::asio::ip::udp::endpoint Endpoint;
 }  // unnamed namespace
 
 TEST(ServicesTest, BEH_Ping) {
-  RoutingTable routing_table(false, NodeId(NodeId::kRandomId), asymm::GenerateKeyPair());
+  NetworkStatistics network_statistics;
+  RoutingTable routing_table(false, NodeId(NodeId::kRandomId), asymm::GenerateKeyPair(),
+                             network_statistics);
   NonRoutingTable non_routing_table(routing_table.kNodeId());
   AsioService asio_service(1);
   NetworkUtils network(routing_table, non_routing_table);

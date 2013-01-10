@@ -29,6 +29,7 @@
 
 #include "maidsafe/routing/api_config.h"
 #include "maidsafe/routing/group_matrix.h"
+#include "maidsafe/routing/network_statistics.h"
 #include "maidsafe/routing/parameters.h"
 
 
@@ -61,7 +62,8 @@ typedef std::function<void(const bool& /*subscribe*/, NodeInfo /*node_info*/)>
 
 class RoutingTable {
  public:
-  RoutingTable(bool client_mode, const NodeId& node_id, const asymm::Keys& keys);
+  RoutingTable(bool client_mode, const NodeId& node_id, const asymm::Keys& keys,
+               NetworkStatistics& network_statistics);
   virtual ~RoutingTable() {}
   void InitialiseFunctors(NetworkStatusFunctor network_status_functor,
                           std::function<void(const NodeInfo&, bool)> remove_node_functor,
@@ -73,7 +75,6 @@ class RoutingTable {
   bool CheckNode(const NodeInfo& peer);
   NodeInfo DropNode(const NodeId &node_to_drop, bool routing_only);
   bool IsNodeIdInGroupRange(const NodeId& target_id);
-  bool EstimateInGroup(const NodeId& sender_id, const NodeId& info_id);
   bool IsThisNodeGroupLeader(const NodeId& target_id, NodeInfo& group_leader_node);
   bool GetNodeInfo(const NodeId& node_id, NodeInfo& node_info) const;
   bool IsThisNodeInRange(const NodeId& target_id, uint16_t range);
@@ -163,6 +164,7 @@ class RoutingTable {
   CloseNodeReplacedFunctor close_node_replaced_functor_;
   std::vector<NodeInfo> nodes_;
   GroupMatrix group_matrix_;
+  NetworkStatistics& network_statistics_;
 };
 
 }  // namespace routing
