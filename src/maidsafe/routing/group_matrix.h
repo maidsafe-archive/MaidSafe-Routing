@@ -64,7 +64,7 @@ class GroupMatrix {
   std::vector<NodeInfo> GetUniqueNodes();
   std::vector<NodeInfo> GetClosestNodes(const uint16_t& size);
   void Clear();
-  void Distance();
+  void AcceptedDistance();
   void AverageDistance(const NodeId& distance);
 
   friend class test::GenericNode;
@@ -87,7 +87,7 @@ class GroupMatrix {
   const NodeId& kNodeId_;
   std::vector<NodeInfo> unique_nodes_;
   std::vector<std::vector<NodeInfo>> matrix_;
-  NodeId distance_;
+  NodeId accepted_distance_;
   NetworkDistanceData network_distance_data_;
 };
 
