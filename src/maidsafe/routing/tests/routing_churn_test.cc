@@ -118,25 +118,20 @@ TEST_F(RoutingChurnTest, FUNC_MessagingNetworkChurn) {
                                          GenericNetwork::NodePtr vault_node(
                                             this->RandomVaultNode());
                                          // Choose random client nodes for direct message
+                                         // TODO(Alison) - use result?
                                          sender_client->Send(receiver_client->node_id(),
                                                              message,
-                                                             nullptr,
-                                                             DestinationType::kDirect,
                                                              false);
                                          // Choose random client for group message to random env
-                                         sender_client->Send(NodeId(NodeId::kRandomId),
-                                                             message,
-                                                             nullptr,
-                                                             DestinationType::kGroup,
-                                                             false);
-
-
+                                         // TODO(Alison) - use result?
+                                         sender_client->SendGroup(NodeId(NodeId::kRandomId),
+                                                                  message,
+                                                                  false);
                                          // Choose random vault for group message to random env
-                                         vault_node->Send(NodeId(NodeId::kRandomId),
-                                                          message,
-                                                          nullptr,
-                                                          DestinationType::kGroup,
-                                                          false);
+                                         // TODO(Alison) - use result?
+                                         vault_node->SendGroup(NodeId(NodeId::kRandomId),
+                                                               message,
+                                                               false);
                                          // Wait before going again
                                          Sleep(boost::posix_time::milliseconds(900 +
                                                                                RandomUint32() %

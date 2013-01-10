@@ -66,7 +66,7 @@ TEST_F(RoutingStandAloneTest, FUNC_ExtendedSendToGroup) {
 
   uint16_t loop(100);
   while (loop-- > 0) {
-    EXPECT_TRUE(GroupSend(dest_id, message_count));
+    EXPECT_TRUE(SendGroup(dest_id, message_count));
     for (size_t index = 0; index != (last_index); ++index)
       receivers_message_count += static_cast<uint16_t>(this->nodes_.at(index)->MessagesSize());
 
@@ -87,7 +87,7 @@ TEST_F(RoutingStandAloneTest, FUNC_ExtendedSendToGroupRandomId) {
     for (int index = 0; index < message_count; ++index) {
       NodeId random_id(NodeId::kRandomId);
       std::vector<NodeId> groupd_ids(this->GroupIds(random_id));
-      EXPECT_TRUE(GroupSend(random_id, 1));
+      EXPECT_TRUE(SendGroup(random_id, 1));
       for (auto node : this->nodes_) {
         if (std::find(groupd_ids.begin(), groupd_ids.end(), node->node_id()) !=
             groupd_ids.end()) {

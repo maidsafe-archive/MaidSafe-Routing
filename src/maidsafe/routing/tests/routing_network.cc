@@ -265,14 +265,6 @@ bool GenericNode::NodeSubscriedForGroupUpdate(const NodeId& node_id) {
                       }) != routing_->pimpl_->group_change_handler_.update_subscribers_.end());
 }
 
-void GenericNode::Send(const NodeId& destination_id,
-                       const std::string& data,
-                       const ResponseFunctor& response_functor,
-                       const DestinationType& destination_type,
-                       const bool& cache) {
-    routing_->Send(destination_id, data, response_functor, destination_type, cache);
-}
-
 std::future<std::string> GenericNode::Send(const NodeId& destination_id,
                                            const std::string& data,
                                            const bool& cache) {
@@ -804,7 +796,9 @@ testing::AssertionResult GenericNetwork::Send(const size_t& messages) {
         if (source_node->node_id() != dest_node->node_id()) {
           std::string data(RandomAlphaNumericString(512 * 2^10));
           assert(!data.empty() && "Send Data Empty !");
-          futures.push_back(std::move(source_node->Send(NodeId(dest_node->node_id()), data, false)));
+          futures.push_back(std::move(source_node->Send(NodeId(dest_node->node_id()),
+                                                        data,
+                                                        false)));
           Sleep(boost::posix_time::microseconds(21));
         }
       }
@@ -835,7 +829,7 @@ testing::AssertionResult GenericNetwork::Send(const size_t& messages) {
   return testing::AssertionSuccess();
 }
 
-testing::AssertionResult GenericNetwork::GroupSend(const NodeId& node_id,
+testing::AssertionResult GenericNetwork::SendGroup(const NodeId& node_id,
                                                    const size_t& messages,
                                                    uint16_t source_index) {
   assert(static_cast<long>(10 * messages) > 0); // NOLINT (Fraser)

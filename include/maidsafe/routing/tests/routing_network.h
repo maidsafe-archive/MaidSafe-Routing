@@ -89,11 +89,6 @@ class GenericNode {
                     const NodeInfo& peer_node_info);
   void Join(const std::vector<boost::asio::ip::udp::endpoint>& peer_endpoints =
                 std::vector<boost::asio::ip::udp::endpoint>());
-  void Send(const NodeId& destination_id,
-            const std::string& data,
-            const ResponseFunctor& response_functor,
-            const DestinationType& destination_type,
-            const bool& cache);
   std::future<std::string> Send(const NodeId& destination_id,
                                 const std::string& data,
                                 const bool& cache);
@@ -188,7 +183,7 @@ class GenericNetwork {
   bool RestoreComposition();
   bool WaitForHealthToStabilise();
   testing::AssertionResult Send(const size_t& messages);
-  testing::AssertionResult GroupSend(const NodeId& node_id,
+  testing::AssertionResult SendGroup(const NodeId& node_id,
                                      const size_t& messages,
                                      uint16_t source_index = 0);
   testing::AssertionResult Send(const NodeId& node_id);

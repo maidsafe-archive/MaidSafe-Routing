@@ -787,7 +787,7 @@ TEST(RoutingTableTest, BEH_IsIdInGroupRange) {
                      return NodeId::CloserToTarget(lhs, rhs, info_id);
                    });
   uint16_t index(0);
-  while(index < Parameters::node_group_size) {
+  while (index < Parameters::node_group_size) {
     if ((nodes_id.at(index) ^ info_id) <= (my_node ^ nodes_id[Parameters::node_group_size - 1]))
       EXPECT_TRUE(routing_table.IsIdInGroup(nodes_id.at(index++), info_id));
     else

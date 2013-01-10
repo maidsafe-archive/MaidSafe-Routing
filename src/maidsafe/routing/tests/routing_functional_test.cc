@@ -50,31 +50,31 @@ TEST_F(RoutingNetworkTest, FUNC_SanityCheck) {
     env_->ClearMessages();
   }
   {
-    //  GroupSend
+    //  SendGroup
     uint16_t random_node(static_cast<uint16_t>(env_->RandomVaultIndex()));
     NodeId target_id(env_->nodes_[random_node]->node_id());
     std::vector<NodeId> group_Ids(env_->GetGroupForId(target_id));
-    EXPECT_TRUE(env_->GroupSend(target_id, 1));
+    EXPECT_TRUE(env_->SendGroup(target_id, 1));
     for (auto& group_id : group_Ids)
       EXPECT_EQ(1, env_->nodes_.at(env_->NodeIndex(group_id))->MessagesSize());
     env_->ClearMessages();
 
-    // GroupSend SelfId
-    EXPECT_TRUE(env_->GroupSend(target_id, 1, random_node));
+    // SendGroup SelfId
+    EXPECT_TRUE(env_->SendGroup(target_id, 1, random_node));
     for (auto& group_id : group_Ids)
       EXPECT_EQ(1, env_->nodes_.at(env_->NodeIndex(group_id))->MessagesSize());
     env_->ClearMessages();
 
-    // Client groupsend
-    EXPECT_TRUE(env_->GroupSend(target_id, 1, kNetworkSize - 1));
+    // Client SendGroup
+    EXPECT_TRUE(env_->SendGroup(target_id, 1, kNetworkSize - 1));
     for (auto& group_id : group_Ids)
       EXPECT_EQ(1, env_->nodes_.at(env_->NodeIndex(group_id))->MessagesSize());
     env_->ClearMessages();
 
-    // GroupSend RandomId
+    // SendGroup RandomId
     target_id = NodeId(NodeId::kRandomId);
     group_Ids = env_->GetGroupForId(target_id);
-    EXPECT_TRUE(env_->GroupSend(target_id, 1));
+    EXPECT_TRUE(env_->SendGroup(target_id, 1));
     for (auto& group_id : group_Ids)
       EXPECT_EQ(1, env_->nodes_.at(env_->NodeIndex(group_id))->MessagesSize());
     env_->ClearMessages();
@@ -94,7 +94,7 @@ TEST_F(RoutingNetworkTest, FUNC_SanityCheck) {
     // Anonymous group send
     NodeId target_id(NodeId::kRandomId);
     std::vector<NodeId> group_Ids(env_->GetGroupForId(target_id));
-    EXPECT_TRUE(env_->GroupSend(target_id, 1, static_cast<uint16_t>(env_->nodes_.size() - 1)));
+    EXPECT_TRUE(env_->SendGroup(target_id, 1, static_cast<uint16_t>(env_->nodes_.size() - 1)));
     for (auto& group_id : group_Ids)
       EXPECT_EQ(1, env_->nodes_.at(env_->NodeIndex(group_id))->MessagesSize());
     env_->ClearMessages();
@@ -131,7 +131,7 @@ TEST_F(RoutingNetworkTest, FUNC_SendToGroup) {
   NodeId dest_id(env_->nodes_[last_index]->node_id());
 
   env_->ClearMessages();
-  EXPECT_TRUE(env_->GroupSend(dest_id, message_count));
+  EXPECT_TRUE(env_->SendGroup(dest_id, message_count));
   for (size_t index = 0; index != (last_index); ++index)
     receivers_message_count += static_cast<uint16_t>(env_->nodes_.at(index)->MessagesSize());
 
@@ -147,7 +147,7 @@ TEST_F(RoutingNetworkTest, FUNC_SendToGroupSelfId) {
   NodeId dest_id(env_->nodes_[0]->node_id());
 
   env_->ClearMessages();
-  EXPECT_TRUE(env_->GroupSend(dest_id, message_count));
+  EXPECT_TRUE(env_->SendGroup(dest_id, message_count));
   for (size_t index = 0; index != (last_index); ++index)
     receivers_message_count += static_cast<uint16_t>(env_->nodes_.at(index)->MessagesSize());
 
@@ -166,7 +166,7 @@ TEST_F(RoutingNetworkTest, FUNC_SendToGroupClientSelfId) {
   NodeId dest_id(env_->nodes_[client_index]->node_id());
 
   env_->ClearMessages();
-  EXPECT_TRUE(env_->GroupSend(dest_id, message_count,
+  EXPECT_TRUE(env_->SendGroup(dest_id, message_count,
                               static_cast<uint16_t>(client_index)));  // from client
   for (size_t index = 0; index != (last_index); ++index)
     receivers_message_count += static_cast<uint16_t>(env_->nodes_.at(index)->MessagesSize());
@@ -184,7 +184,7 @@ TEST_F(RoutingNetworkTest, FUNC_SendToGroupInHybridNetwork) {
   NodeId dest_id(env_->nodes_[last_index]->node_id());
 
   env_->ClearMessages();
-  EXPECT_TRUE(env_->GroupSend(dest_id, message_count));
+  EXPECT_TRUE(env_->SendGroup(dest_id, message_count));
   for (size_t index = 0; index != (last_index); ++index)
     receivers_message_count += static_cast<uint16_t>(env_->nodes_.at(index)->MessagesSize());
 
@@ -198,7 +198,7 @@ TEST_F(RoutingNetworkTest, FUNC_SendToGroupRandomId) {
   uint16_t message_count(200), receivers_message_count(0);
   env_->ClearMessages();
   for (int index = 0; index < message_count; ++index) {
-    EXPECT_TRUE(env_->GroupSend(NodeId(NodeId::kRandomId), 1));
+    EXPECT_TRUE(env_->SendGroup(NodeId(NodeId::kRandomId), 1));
     for (auto node : env_->nodes_) {
       receivers_message_count += static_cast<uint16_t>(node->MessagesSize());
       node->ClearMessages();
@@ -214,7 +214,7 @@ TEST_F(RoutingNetworkTest, FUNC_AnonymousSendToGroupRandomId) {
   env_->AddNode(true, NodeId(), true);
   assert(env_->nodes_.size() - 1 < std::numeric_limits<uint16_t>::max());
   for (int index = 0; index < message_count; ++index) {
-    EXPECT_TRUE(env_->GroupSend(NodeId(NodeId::kRandomId), 1,
+    EXPECT_TRUE(env_->SendGroup(NodeId(NodeId::kRandomId), 1,
                                 static_cast<uint16_t>(env_->nodes_.size() - 1)));
     for (auto node : env_->nodes_) {
       receivers_message_count += static_cast<uint16_t>(node->MessagesSize());
@@ -234,7 +234,7 @@ TEST_F(RoutingNetworkTest, FUNC_AnonymousSendToGroupExistingId) {
   for (int index = 0; index < message_count; ++index) {
     int group_id_index = index % initial_network_size;  // all other nodes
     NodeId group_id(env_->nodes_[group_id_index]->node_id());
-    EXPECT_TRUE(env_->GroupSend(group_id, 1, static_cast<uint16_t>(env_->nodes_.size() - 1)));
+    EXPECT_TRUE(env_->SendGroup(group_id, 1, static_cast<uint16_t>(env_->nodes_.size() - 1)));
     for (auto node : env_->nodes_) {
       receivers_message_count += static_cast<uint16_t>(node->MessagesSize());
       node->ClearMessages();
