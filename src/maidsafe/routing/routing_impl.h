@@ -62,12 +62,6 @@ class Routing::Impl {
                     const boost::asio::ip::udp::endpoint& peer_endpoint,
                     const NodeInfo& peer_info);
 
-  void Send(const NodeId& destination_id,
-            const std::string& data,
-            const ResponseFunctor& response_functor,
-            const DestinationType& destination_type,
-            const bool& cacheable);
-
   std::future<std::string> Send(const NodeId& destination_id,
                                 const std::string& data,
                                 const bool& cacheable);

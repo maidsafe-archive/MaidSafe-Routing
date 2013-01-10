@@ -818,7 +818,6 @@ testing::AssertionResult GenericNetwork::Send(const size_t& messages) {
         ++bad_futures_count;
       }
     }
-    Sleep(boost::posix_time::millisec(100));
   }
 
   if (!overall_result) {
@@ -835,7 +834,7 @@ testing::AssertionResult GenericNetwork::SendGroup(const NodeId& node_id,
   assert(static_cast<long>(10 * messages) > 0); // NOLINT (Fraser)
   std::string data(RandomAlphaNumericString((2 ^ 10) * 256));
 
-  std::vector<std::vector<std::future<std::string>> > futures;
+  std::vector<std::vector<std::future<std::string>>> futures;
   for (size_t index = 0; index < messages; ++index) {
     futures.push_back(this->nodes_[source_index]->SendGroup(node_id, data, false));
   }
@@ -858,7 +857,6 @@ testing::AssertionResult GenericNetwork::SendGroup(const NodeId& node_id,
       }
     }
     LOG(kVerbose) << "Still waiting for " << bad_futures_count << " replies.";
-    Sleep(boost::posix_time::millisec(100));
   }
 
   EXPECT_TRUE(overall_result);
@@ -894,7 +892,6 @@ testing::AssertionResult GenericNetwork::Send(const NodeId& node_id) {
       }
     }
     LOG(kVerbose) << "Still waiting for " << bad_futures_count << " replies.";
-    Sleep(boost::posix_time::millisec(100));
   }
 
   EXPECT_TRUE(overall_result);

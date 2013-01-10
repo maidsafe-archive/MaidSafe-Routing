@@ -43,14 +43,6 @@ int Routing::ZeroStateJoin(Functors functors,
   return pimpl_->ZeroStateJoin(functors, local_endpoint, peer_endpoint, peer_info);
 }
 
-void Routing::Send(const NodeId& destination_id,
-                   const std::string& data,
-                   ResponseFunctor response_functor,
-                   const DestinationType &destination_type,
-                   const bool &cacheable) {
-  pimpl_->Send(destination_id, data, response_functor, destination_type, cacheable);
-}
-
 std::future<std::string> Routing::Send(const NodeId& destination_id,
                                        const std::string& data,
                                        const bool& cacheable) {
