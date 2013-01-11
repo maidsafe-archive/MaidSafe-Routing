@@ -843,7 +843,7 @@ testing::AssertionResult GenericNetwork::SendGroup(const NodeId& node_id,
   size_t bad_futures_count(0);
 
   std::chrono::system_clock::time_point start(std::chrono::system_clock::now());
-  uint16_t num(10 * messages + 5);
+  size_t num(10 * messages + 5);
 
   while (!overall_result && std::chrono::system_clock::now() < start + std::chrono::seconds(num)) {
     overall_result = true;
@@ -923,7 +923,7 @@ testing::AssertionResult GenericNetwork::Send(std::shared_ptr<GenericNode> sourc
       return testing::AssertionSuccess();
     else
       return testing::AssertionFailure() << "Didn't throw when expected.";
-  } catch(const std::exception& ex) {
+  } catch(const std::exception& /*ex*/) {
     if (expected_messages > 0)
       return testing::AssertionFailure() << "Threw when not expected.";
     else

@@ -69,15 +69,19 @@ class TimerTest : public testing::Test {
   }
 
   void CheckResponse(std::vector<std::future<std::string>> &future_in,
-                      const uint32_t& response_size) {
+                      const uint32_t& response_size,
+                      const uint32_t& exceptions) {
     uint32_t count = 0;
-    for (; count < future_in.size(); ++count)
+    for (; count < response_size; ++count)
       future_in.at(count).get();
     ASSERT_EQ(count, response_size);
+    for (count = 0; count < exceptions; ++count) {
+      EXPECT_THROW(future_in.at(response_size + count).get(), std::exception);
+    }
   }
 
  protected:
-  AsioService asio_service_;
+  AsioService asio_service_; 
   Timer timer_;
   const uint16_t kGroupSize_;
   TaskResponseFunctor single_good_response_functor_,
@@ -103,7 +107,7 @@ TEST_F(TimerTest, BEH_Promise_SingleResponse) {
   }
   message_.set_id(timer_.AddTask(bptime::seconds(2), promises_in));
   timer_.AddResponse(message_);
-  CheckResponse(future_in, response_size);
+  CheckResponse(future_in, response_size, 0);
 }
 
 TEST_F(TimerTest, BEH_Promise_SingleResponseTimedOut) {
@@ -114,9 +118,8 @@ TEST_F(TimerTest, BEH_Promise_SingleResponseTimedOut) {
     promises_in.push_back(std::make_shared<std::promise<std::string>>());
   }
   timer_.AddTask(bptime::milliseconds(100), promises_in);
-  boost::this_thread::disable_interruption disable_interruption;
   Sleep(bptime::milliseconds(200));
-  CheckResponse(future_in, 0);
+  CheckResponse(future_in, 0, 1);
 }
 
 TEST_F(TimerTest, BEH_SingleResponseTimedOut) {
@@ -145,7 +148,7 @@ TEST_F(TimerTest, BEH_Promise_GroupResponse) {
   message_.set_id(timer_.AddTask(bptime::seconds(2), promises_in));
   for (uint32_t count = 0; count < response_size; ++count)
     timer_.AddResponse(message_);
-  CheckResponse(future_in, response_size);
+  CheckResponse(future_in, response_size, 0);
 }
 
 TEST_F(TimerTest, BEH_GroupResponsePartialResult) {
@@ -155,7 +158,6 @@ TEST_F(TimerTest, BEH_GroupResponsePartialResult) {
   for (uint16_t i(0); i != kGroupSize_ - 1; ++i)
     timer_.AddResponse(message_);
 
-  boost::this_thread::disable_interruption disable_interruption;
   Sleep(bptime::milliseconds(500));
 }
 
@@ -163,18 +165,17 @@ TEST_F(TimerTest, BEH_Promise_GroupResponsePartialResult) {
   uint32_t response_size = kGroupSize_;
   std::vector<std::shared_ptr<std::promise<std::string>>> promises_in;
   std::vector<std::future<std::string>> future_in;
-  for (uint32_t count = 0; count < response_size - 1; ++count) {
+  for (uint32_t count = 0; count < response_size -1; ++count) {
     promises_in.push_back(std::make_shared<std::promise<std::string>>());
     future_in.push_back(promises_in[count]->get_future());
   }
-  message_.set_id(timer_.AddTask(bptime::seconds(2), promises_in));
+  message_.set_id(timer_.AddTask(bptime::milliseconds(200), promises_in));
   for (uint32_t count = 0; count < response_size - 1; ++count)
     timer_.AddResponse(message_);
 
-  boost::this_thread::disable_interruption disable_interruption;
   Sleep(bptime::milliseconds(500));
 
-  CheckResponse(future_in, response_size - 1);
+  CheckResponse(future_in, response_size - 1, 1);
 }
 
 TEST_F(TimerTest, BEH_VariousResults) {
@@ -255,11 +256,10 @@ TEST_F(TimerTest, BEH_Promise_VariousResults) {
   for (const protobuf::Message& message : messages_to_be_added)
     timer_.AddResponse(message);
 
-  boost::this_thread::disable_interruption disable_interruption;
   Sleep(bptime::seconds(5));
-  CheckResponse(single_future_in, 1);
-  CheckResponse(group_future_in, response_size);
-  CheckResponse(partial_future_in, response_size - 1);
+  CheckResponse(single_future_in, 1, 0);
+  CheckResponse(group_future_in, response_size, 0);
+  CheckResponse(partial_future_in, response_size - 1, 1);
 }
 
 }  // namespace test
