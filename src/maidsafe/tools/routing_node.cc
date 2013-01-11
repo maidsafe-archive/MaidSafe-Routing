@@ -75,7 +75,7 @@ volatile bool ctrlc_pressed(false);
 //   ctrlc_pressed = true;
 // }
 
-} // unnamed namespace
+}  // unnamed namespace
 
 fs::path GetPathFromProgramOption(const std::string &option_name,
                                   po::variables_map *variables_map,

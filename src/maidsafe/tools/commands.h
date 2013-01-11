@@ -13,8 +13,8 @@
  * @date  2012-10-19
  */
 
-#ifndef MAIDSAFE_DHT_DEMO_COMMANDS_H_
-#define MAIDSAFE_DHT_DEMO_COMMANDS_H_
+#ifndef MAIDSAFE_TOOLS_COMMANDS_H_
+#define MAIDSAFE_TOOLS_COMMANDS_H_
 
 #include <memory>
 #include <string>
@@ -77,10 +77,10 @@ class Commands {
   std::function<void()> mark_results_arrived_;
 };
 
-} // namespace test
+}  //  namespace test
 
-} // namespace routing
+}  //  namespace routing
 
-} // namespace maidsafe
+}  //  namespace maidsafe
 
-#endif // MAIDSAFE_ROUTING_DEMO_COMMANDDS_H_
+#endif  // MAIDSAFE_TOOLS_COMMANDS_H_

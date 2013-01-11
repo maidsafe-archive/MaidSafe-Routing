@@ -68,34 +68,89 @@ class TimerTest : public testing::Test {
     message_.set_source_id("source_id");
   }
 
+  void CheckResponse(std::vector<std::future<std::string>> &future_in,
+                      const uint32_t& response_size) {
+    uint32_t count = 0;
+    for (; count < future_in.size(); ++count)
+      future_in.at(count).get();
+    ASSERT_EQ(count, response_size);
+  }
+
  protected:
   AsioService asio_service_;
   Timer timer_;
   const uint16_t kGroupSize_;
-  TaskResponseFunctor single_good_response_functor_, single_failed_response_functor_;
-  TaskResponseFunctor group_good_response_functor_, group_failed_response_functor_;
+  TaskResponseFunctor single_good_response_functor_,
+      single_failed_response_functor_;
+  TaskResponseFunctor group_good_response_functor_,
+      group_failed_response_functor_;
   protobuf::Message message_;
 };
 
 TEST_F(TimerTest, BEH_SingleResponse) {
-  message_.set_id(timer_.AddTask(bptime::seconds(2), single_good_response_functor_, 1));
+  message_.set_id(timer_.AddTask(bptime::seconds(2),
+                                 single_good_response_functor_, 1));
   timer_.AddResponse(message_);
 }
 
+TEST_F(TimerTest, BEH_Promise_SingleResponse) {
+  uint32_t response_size = 1;
+  std::vector<std::shared_ptr<std::promise<std::string>>> promises_in;
+  std::vector<std::future<std::string>> future_in;
+  for (uint32_t count = 0; count < response_size; ++count) {
+    promises_in.push_back(std::make_shared<std::promise<std::string>>());
+    future_in.push_back(promises_in[count]->get_future());
+  }
+  message_.set_id(timer_.AddTask(bptime::seconds(2), promises_in));
+  timer_.AddResponse(message_);
+  CheckResponse(future_in, response_size);
+}
+
+TEST_F(TimerTest, BEH_Promise_SingleResponseTimedOut) {
+  uint32_t response_size = 1;
+  std::vector<std::shared_ptr<std::promise<std::string>>> promises_in;
+  std::vector<std::future<std::string>> future_in;
+  for (uint32_t count = 0; count < response_size; ++count) {
+    promises_in.push_back(std::make_shared<std::promise<std::string>>());
+  }
+  timer_.AddTask(bptime::milliseconds(100), promises_in);
+  boost::this_thread::disable_interruption disable_interruption;
+  Sleep(bptime::milliseconds(200));
+  CheckResponse(future_in, 0);
+}
+
 TEST_F(TimerTest, BEH_SingleResponseTimedOut) {
-  timer_.AddTask(bptime::milliseconds(100), single_failed_response_functor_, 1);
+  timer_.AddTask(bptime::milliseconds(100), single_failed_response_functor_,
+                 1);
   boost::this_thread::disable_interruption disable_interruption;
   Sleep(bptime::milliseconds(200));
 }
 
 TEST_F(TimerTest, BEH_GroupResponse) {
-  message_.set_id(timer_.AddTask(bptime::seconds(2), group_good_response_functor_, kGroupSize_));
+  message_.set_id(timer_.AddTask(bptime::seconds(2),
+                                 group_good_response_functor_,
+                                 kGroupSize_));
   for (uint16_t i(0); i != kGroupSize_; ++i)
     timer_.AddResponse(message_);
 }
 
+TEST_F(TimerTest, BEH_Promise_GroupResponse) {
+  uint32_t response_size = kGroupSize_;
+  std::vector<std::shared_ptr<std::promise<std::string>>> promises_in;
+  std::vector<std::future<std::string>> future_in;
+  for (uint32_t count = 0; count < response_size; ++count) {
+    promises_in.push_back(std::make_shared<std::promise<std::string>>());
+    future_in.push_back(promises_in[count]->get_future());
+  }
+  message_.set_id(timer_.AddTask(bptime::seconds(2), promises_in));
+  for (uint32_t count = 0; count < response_size; ++count)
+    timer_.AddResponse(message_);
+  CheckResponse(future_in, response_size);
+}
+
 TEST_F(TimerTest, BEH_GroupResponsePartialResult) {
-  message_.set_id(timer_.AddTask(bptime::milliseconds(100), group_failed_response_functor_,
+  message_.set_id(timer_.AddTask(bptime::milliseconds(100),
+                                 group_failed_response_functor_,
                                  kGroupSize_));
   for (uint16_t i(0); i != kGroupSize_ - 1; ++i)
     timer_.AddResponse(message_);
@@ -104,25 +159,96 @@ TEST_F(TimerTest, BEH_GroupResponsePartialResult) {
   Sleep(bptime::milliseconds(500));
 }
 
+TEST_F(TimerTest, BEH_Promise_GroupResponsePartialResult) {
+  uint32_t response_size = kGroupSize_;
+  std::vector<std::shared_ptr<std::promise<std::string>>> promises_in;
+  std::vector<std::future<std::string>> future_in;
+  for (uint32_t count = 0; count < response_size - 1; ++count) {
+    promises_in.push_back(std::make_shared<std::promise<std::string>>());
+    future_in.push_back(promises_in[count]->get_future());
+  }
+  message_.set_id(timer_.AddTask(bptime::seconds(2), promises_in));
+  for (uint32_t count = 0; count < response_size - 1; ++count)
+    timer_.AddResponse(message_);
+
+  boost::this_thread::disable_interruption disable_interruption;
+  Sleep(bptime::milliseconds(500));
+
+  CheckResponse(future_in, response_size - 1);
+}
+
 TEST_F(TimerTest, BEH_VariousResults) {
   std::vector<protobuf::Message> messages_to_be_added;
   messages_to_be_added.reserve(100 * kGroupSize_ * 2);
   for (int i(0); i != 100; ++i) {
     // Single message with response
-    message_.set_id(timer_.AddTask(bptime::seconds(10), single_good_response_functor_, 1));
+    message_.set_id(timer_.AddTask(bptime::seconds(10),
+                                   single_good_response_functor_, 1));
     messages_to_be_added.push_back(message_);
     // Single message without response
     timer_.AddTask(bptime::seconds(5), single_failed_response_functor_, 1);
     // Group message with all responses
-    message_.set_id(timer_.AddTask(bptime::seconds(10), group_good_response_functor_, kGroupSize_));
+    message_.set_id(timer_.AddTask(bptime::seconds(10),
+                                   group_good_response_functor_,
+                                   kGroupSize_));
     for (uint16_t i(0); i != kGroupSize_; ++i)
       messages_to_be_added.push_back(message_);
     // Group message with all bar one responses
-    message_.set_id(timer_.AddTask(bptime::seconds(5), group_failed_response_functor_,
+    message_.set_id(timer_.AddTask(bptime::seconds(5),
+                                   group_failed_response_functor_,
                                    kGroupSize_));
     for (uint16_t i(0); i != kGroupSize_ - 1; ++i)
       messages_to_be_added.push_back(message_);
   }
+
+  std::random_shuffle(messages_to_be_added.begin(),
+                      messages_to_be_added.end());
+
+  for (const protobuf::Message& message : messages_to_be_added)
+    timer_.AddResponse(message);
+
+  boost::this_thread::disable_interruption disable_interruption;
+  Sleep(bptime::seconds(5));
+}
+
+TEST_F(TimerTest, BEH_Promise_VariousResults) {
+  uint32_t response_size = kGroupSize_;
+  std::vector<std::shared_ptr<std::promise<std::string>>> single_promises_in;
+  std::vector<std::shared_ptr<std::promise<std::string>>> group_promises_in;
+  std::vector<std::shared_ptr<std::promise<std::string>>> partial_promises_in;
+  std::vector<std::shared_ptr<std::promise<std::string>>> failed_promises_in;
+
+  std::vector<std::future<std::string>> single_future_in;
+  std::vector<std::future<std::string>> group_future_in;
+  std::vector<std::future<std::string>> partial_future_in;
+  std::vector<std::future<std::string>> failed_future_in;
+
+  single_promises_in.push_back(std::make_shared<std::promise<std::string>>());
+  single_future_in.push_back(single_promises_in[0]->get_future());
+
+  for (uint32_t count = 0; count < response_size; ++count) {
+    group_promises_in.push_back(std::make_shared<std::promise<std::string>>());
+    group_future_in.push_back(group_promises_in[count]->get_future());
+  }
+  for (uint32_t count = 0; count < response_size - 1; ++count) {
+    partial_promises_in.push_back(std::make_shared<std::promise<std::string>>());
+    partial_future_in.push_back(partial_promises_in[count]->get_future());
+  }
+  std::vector<protobuf::Message> messages_to_be_added;
+  messages_to_be_added.reserve(kGroupSize_ * 2);
+  // Single message with response
+  message_.set_id(timer_.AddTask(bptime::seconds(10), single_promises_in));
+  messages_to_be_added.push_back(message_);
+  // Single message without response
+  timer_.AddTask(bptime::seconds(5), failed_promises_in);
+  // Group message with all responses
+  message_.set_id(timer_.AddTask(bptime::seconds(10), group_promises_in));
+  for (uint16_t i(0); i != kGroupSize_; ++i)
+  messages_to_be_added.push_back(message_);
+  // Group message with all bar one responses
+  message_.set_id(timer_.AddTask(bptime::seconds(5), partial_promises_in));
+  for (uint16_t i(0); i != kGroupSize_ - 1; ++i)
+    messages_to_be_added.push_back(message_);
 
   std::random_shuffle(messages_to_be_added.begin(), messages_to_be_added.end());
 
@@ -131,6 +257,9 @@ TEST_F(TimerTest, BEH_VariousResults) {
 
   boost::this_thread::disable_interruption disable_interruption;
   Sleep(bptime::seconds(5));
+  CheckResponse(single_future_in, 1);
+  CheckResponse(group_future_in, response_size);
+  CheckResponse(partial_future_in, response_size - 1);
 }
 
 }  // namespace test

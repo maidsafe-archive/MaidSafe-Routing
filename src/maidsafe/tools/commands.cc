@@ -94,8 +94,8 @@ void Commands::Validate(const NodeId& node_id, GivePublicKeyFunctor give_public_
 void Commands::Run() {
   PrintUsage();
 
-  if ((!demo_node_->joined()) && (identity_index_ >= 2)/* &&
-      (bootstrap_peer_ep_ != boost::asio::ip::udp::endpoint())*/) {
+  if ((!demo_node_->joined()) && (identity_index_ >= 2)  // &&
+      // (bootstrap_peer_ep_ != boost::asio::ip::udp::endpoint())) {
     // All parameters have been setup via cmdline directly, join the node immediately
     std::cout << "Joining the node ......" << std::endl;
     Join();
@@ -208,7 +208,7 @@ void Commands::SendAMsg(const int& identity_index, const DestinationType& destin
   EXPECT_TRUE(result) << "Failure in sending group message";
 
   std::cout << "Received response from following nodes :" << std::endl;
-  for(auto &responsed_node : responsed_nodes) {
+  for (auto &responsed_node : responsed_nodes) {
     std::cout << "\t" << maidsafe::HexSubstr(responsed_node.string()) << std::endl;
     if (destination_type == DestinationType::kGroup)
       EXPECT_TRUE(std::find(closests.begin(), closests.end(), responsed_node) != closests.end());
@@ -279,9 +279,10 @@ void Commands::PrintUsage() {
   std::cout << "\tzerostatejoin ZeroStateJoin.\n";
   std::cout << "\tjoin Normal Join.\n";
   std::cout << "\tprt Print Local Routing Table.\n";
-  std::cout << "\trrt <dest_index> Request Routing Table from peer node with the specified identity-index.\n";
-  std::cout << "\tsenddirect <dest_index> <num_msg> Send a msg to a node with specified identity-index."
-            << " -1 for infinite (Default 1)\n";
+  std::cout << "\trrt <dest_index> Request Routing Table from peer node with the specified"
+            << " identity-index.\n";
+  std::cout << "\tsenddirect <dest_index> <num_msg> Send a msg to a node with specified"
+            << "  identity-index. -1 for infinite (Default 1)\n";
   std::cout << "\tsendgroup <dest_index> Send a msg to group (default is Random GroupId,"
             << " dest_index for using existing identity as a group_id)\n";
   std::cout << "\tsendmultiple <num_msg> Send num of msg to randomly picked-up destination."
@@ -352,7 +353,7 @@ void Commands::ProcessCommand(const std::string &cmdline) {
   } else if (cmd == "sendgroupmultiple") {
     if (args.size() == 1) {
       int index(0);
-      while(index++ != boost::lexical_cast<int>(args[0])) {
+      while (index++ != boost::lexical_cast<int>(args[0])) {
         std::cout << "sending " << index << "th group message" << std::endl;
         std::string data(RandomAlphaNumericString(data_size_));
         SendAMsg(-1, DestinationType::kGroup, data);
@@ -417,8 +418,8 @@ NodeId Commands::CalculateClosests(const NodeId& target_id,
 }
 
 
-} // namespace test
+}  //  namespace test
 
-} // namespace routing
+}  //  namespace routing
 
-} // namespace maidsafe
+}  //  namespace maidsafe
