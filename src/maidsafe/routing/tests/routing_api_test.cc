@@ -93,13 +93,16 @@ TEST(APITest, BEH_API_ZeroState) {
   EXPECT_EQ(kSuccess, a2.get());  // wait for promise !
   EXPECT_EQ(kSuccess, a1.get());  // wait for promise !
 
+  std::once_flag join_set_promise_flag;
   boost::promise<bool> join_promise;
   auto join_future = join_promise.get_future();
-  functors3.network_status = [&join_promise](int result) {
-      ASSERT_GE(result, kSuccess);
-      if (result == NetworkStatus(false, 2))
-        join_promise.set_value(true);
-    };
+  functors3.network_status = [&join_set_promise_flag, &join_promise](int result) {
+    std::call_once(join_set_promise_flag,
+                   [&join_promise, &result] {
+                     ASSERT_GE(result, kSuccess);
+                     join_promise.set_value(result == NetworkStatus(false, 2));
+                   });
+  };
 
   routing3.Join(functors3, std::vector<Endpoint>(1, endpoint2));
   EXPECT_TRUE(join_future.timed_wait(boost::posix_time::seconds(10)));
@@ -147,23 +150,20 @@ TEST(APITest, FUNC_API_AnonymousNode) {
   EXPECT_EQ(kSuccess, a2.get());  // wait for promise !
   EXPECT_EQ(kSuccess, a1.get());  // wait for promise !
 
+  std::once_flag join_set_promise_flag;
   boost::promise<bool> join_promise;
   auto join_future = join_promise.get_future();
-  bool promised(true);
-  functors3.network_status = [&join_promise, &promised](int result) {
+  functors3.network_status = [&join_promise, &join_set_promise_flag](int result) {
     LOG(kVerbose) << "Network status for anonymous node called: " << result;
-    if (result == NetworkStatus(true, 0)) {
-      if (promised) {
-        ASSERT_EQ(kSuccess, result);
-        promised = false;
-        join_promise.set_value(true);
-        LOG(kVerbose) << "Anonymous Node joined";
-      } else {
-        ASSERT_EQ(kAnonymousSessionEnded, result);
-      }
-      LOG(kVerbose) << "Recieved network status of : " << result;
-    }
+    std::call_once(join_set_promise_flag,
+                   [&join_promise, &result] {
+                     ASSERT_EQ(kSuccess, result);
+                     join_promise.set_value(result == NetworkStatus(true, 0));
+                     LOG(kVerbose) << "Anonymous Node joined";
+                   });
+    LOG(kVerbose) << "Recieved network status of : " << result;
   };
+
   routing3.Join(functors3, std::vector<Endpoint>(1, endpoint2));
   ASSERT_TRUE(join_future.timed_wait(boost::posix_time::seconds(10)));
 
@@ -229,15 +229,19 @@ TEST(APITest, BEH_API_SendToSelf) {
   EXPECT_EQ(kSuccess, a2.get());  // wait for promise !
   EXPECT_EQ(kSuccess, a1.get());  // wait for promise !
 
+  std::once_flag join_set_promise_flag;
   boost::promise<bool> join_promise;
   auto join_future = join_promise.get_future();
-  functors3.network_status = [&join_promise](int result) {
-      ASSERT_GE(result, kSuccess);
-      if (result == NetworkStatus(false, 2)) {
-        LOG(kVerbose) << "3rd node joined";
-        join_promise.set_value(true);
-      }
-    };
+  functors3.network_status = [&join_set_promise_flag, &join_promise](int result) {
+    ASSERT_GE(result, kSuccess);
+    if (result == NetworkStatus(false, 2)) {
+      std::call_once(join_set_promise_flag,
+                     [&join_promise, &result] {
+                       LOG(kVerbose) << "3rd node joined";
+                       join_promise.set_value(true);
+                     });
+    }
+  };
 
   routing3.Join(functors3, std::vector<Endpoint>(1, endpoint2));
   ASSERT_TRUE(join_future.timed_wait(boost::posix_time::seconds(10)));
@@ -293,17 +297,17 @@ TEST(APITest, BEH_API_ClientNode) {
   EXPECT_EQ(kSuccess, a2.get());  // wait for promise !
   EXPECT_EQ(kSuccess, a1.get());  // wait for promise !
 
+  std::once_flag join_set_promise_flag;
   boost::promise<bool> join_promise;
-  bool promised(true);
   auto join_future = join_promise.get_future();
-  functors3.network_status = [&join_promise, &promised](int result) {
+  functors3.network_status = [&join_set_promise_flag, &join_promise](int result) {
     ASSERT_GE(result, kSuccess);
     if (result == NetworkStatus(true, 2)) {
       LOG(kVerbose) << "3rd node joined";
-      if (promised) {
-        promised = false;
-        join_promise.set_value(true);
-      }
+      std::call_once(join_set_promise_flag,
+                     [&join_promise, &result] {
+                       join_promise.set_value(true);
+                     });
     }
   };
 
@@ -364,33 +368,33 @@ TEST(APITest, BEH_API_ClientNodeSameId) {
   EXPECT_EQ(kSuccess, a2.get());  // wait for promise !
   EXPECT_EQ(kSuccess, a1.get());  // wait for promise !
 
+  std::once_flag join_set_promise_flag1;
   boost::promise<bool> join_promise1;
-  bool promised(true);
   auto join_future1 = join_promise1.get_future();
-  functors3.network_status = [&join_promise1, &promised](int result) {
+  functors3.network_status = [&join_set_promise_flag1, &join_promise1](int result) {
     ASSERT_GE(result, kSuccess);
     if (result == NetworkStatus(true, 2)) {
       LOG(kVerbose) << "3rd node joined";
-      if (promised) {
-        promised = false;
-        join_promise1.set_value(true);
-      }
+      std::call_once(join_set_promise_flag1,
+                     [&join_promise1, &result] {
+                       join_promise1.set_value(true);
+                     });
     }
   };
 
   routing3.Join(functors3, std::vector<Endpoint>(1, endpoint1));
   ASSERT_TRUE(join_future1.timed_wait(boost::posix_time::seconds(10)));
+  std::once_flag join_set_promise_flag2;
   boost::promise<bool> join_promise2;
-  promised = true;
   auto join_future2 = join_promise2.get_future();
-  functors4.network_status = [&join_promise2, &promised](int result) {
+  functors4.network_status = [&join_set_promise_flag2, &join_promise2](int result) {
     ASSERT_GE(result, kSuccess);
     if (result == NetworkStatus(true, 2)) {
       LOG(kVerbose) << "4th node joined";
-      if (promised) {
-        promised = false;
-        join_promise2.set_value(true);
-      }
+      std::call_once(join_set_promise_flag2,
+                     [&join_promise2, &result] {
+                       join_promise2.set_value(true);
+                     });
     }
   };
 
