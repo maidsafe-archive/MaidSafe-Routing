@@ -247,6 +247,8 @@ void GroupMatrix::Clear() {
 }
 
 void GroupMatrix::AcceptedDistance() {
+  if (unique_nodes_.size() < Parameters::node_group_size)
+    return;
   std::nth_element(unique_nodes_.begin(),
                    unique_nodes_.begin() + Parameters::node_group_size,
                    unique_nodes_.end(),
