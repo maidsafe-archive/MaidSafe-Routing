@@ -65,7 +65,9 @@ TEST(NetworkUtilsTest, BEH_ProcessSendDirectInvalidEndpoint) {
   message.set_direct(true);
   message.set_type(10);
   rudp::ManagedConnections rudp;
-  RoutingTable routing_table(false, NodeId(NodeId::kRandomId), asymm::GenerateKeyPair());
+  NodeId node_id(NodeId::kRandomId);
+  NetworkStatistics network_statistics(node_id);
+  RoutingTable routing_table(false, node_id, asymm::GenerateKeyPair(), network_statistics);
   NonRoutingTable non_routing_table(routing_table.kNodeId());
   AsioService asio_service(1);
   NetworkUtils network(routing_table, non_routing_table);
@@ -81,7 +83,9 @@ TEST(NetworkUtilsTest, BEH_ProcessSendUnavailableDirectEndpoint) {
   message.set_direct(true);
   message.set_type(10);
   rudp::ManagedConnections rudp;
-  RoutingTable routing_table(false, NodeId(NodeId::kRandomId), asymm::GenerateKeyPair());
+  NodeId node_id(NodeId::kRandomId);
+  NetworkStatistics network_statistics(node_id);
+  RoutingTable routing_table(false, node_id, asymm::GenerateKeyPair(), network_statistics);
   NonRoutingTable non_routing_table(routing_table.kNodeId());
   Endpoint endpoint(GetLocalIp(),  maidsafe::test::GetRandomPort());
   AsioService asio_service(1);
@@ -206,7 +210,9 @@ TEST(NetworkUtilsTest, FUNC_ProcessSendDirectEndpoint) {
   rudp2.MarkConnectionAsValid(node_id1, endpoint);
   LOG(kVerbose) << " ------------------------   Zero state setup done  ----------------------- ";
 
-  RoutingTable routing_table(false, NodeId(NodeId::kRandomId), asymm::GenerateKeyPair());
+  NodeId node_id(NodeId::kRandomId);
+  NetworkStatistics network_statistics(node_id);
+  RoutingTable routing_table(false, node_id, asymm::GenerateKeyPair(), network_statistics);
   NodeId node_id3(routing_table.kNodeId());
   NonRoutingTable non_routing_table(routing_table.kNodeId());
   AsioService asio_service(1);
@@ -263,7 +269,9 @@ TEST(NetworkUtilsTest, FUNC_ProcessSendRecursiveSendOn) {
   sent_message.set_routing_message(true);
   sent_message.set_request(true);
   sent_message.set_client_node(false);
-  RoutingTable routing_table(false, NodeId(NodeId::kRandomId), asymm::GenerateKeyPair());
+  NodeId node_id(NodeId::kRandomId);
+  NetworkStatistics network_statistics(node_id);
+  RoutingTable routing_table(false, node_id, asymm::GenerateKeyPair(), network_statistics);
   NodeId node_id3(routing_table.kNodeId());
   NonRoutingTable non_routing_table(routing_table.kNodeId());
   AsioService asio_service(1);

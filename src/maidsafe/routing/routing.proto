@@ -67,6 +67,7 @@ message Message {
   optional bytes group_claim = 19;
   optional int32 hops_to_live = 20;
   optional bool visited = 21;
+  optional bytes average_distace = 22;
 }
 
 message SignedMessage {
@@ -167,4 +168,9 @@ message ClosestNodesUpdate {
 message ClosestNodesUpdateSubscrirbe {
   required bytes peer = 1;
   required bool subscribe = 2;
+}
+
+message GetGroup {
+  required bytes node_id = 1;
+  repeated bytes group_nodes_id = 2;
 }

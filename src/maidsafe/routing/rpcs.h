@@ -86,6 +86,9 @@ protobuf::Message ClosestNodesUpdateSubscrirbe(const NodeId& node_id,
     const NodeId& my_node_id,
     const bool& subscribe);
 
+protobuf::Message GetGroup(const NodeId& node_id,
+                           const NodeId& my_node_id);
+
 }  // namespace rpcs
 
 }  // namespace routing

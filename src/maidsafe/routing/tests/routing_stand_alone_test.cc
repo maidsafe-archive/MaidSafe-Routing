@@ -36,6 +36,22 @@ class RoutingStandAloneTest : public GenericNetwork, public testing::Test {
   }
 };
 
+// TODO(Mahmoud): This test should be moved to TESTrouting_func as it doesn't affect network.
+TEST_F(RoutingStandAloneTest, FUNC_GetGroup) {
+  this->SetUpNetwork(kServerSize);
+  int counter(100);
+  while (counter-- > 0) {
+    uint16_t random_node(static_cast<uint16_t>(RandomInt32() % kServerSize));
+    NodeId node_id(NodeId::kRandomId);
+    std::future<std::vector<NodeId>> future(this->nodes_[random_node]->GetGroup(node_id));
+    auto nodes_id(future.get());
+    auto group_ids(this->GroupIds(node_id));
+    EXPECT_EQ(nodes_id.size(), group_ids.size());
+    for (auto id : group_ids)
+      EXPECT_NE(std::find(nodes_id.begin(), nodes_id.end(), id), nodes_id.end());
+  }
+}
+
 TEST_F(RoutingStandAloneTest, FUNC_SetupNetwork) {
   this->SetUpNetwork(kServerSize);
 }

@@ -29,6 +29,7 @@
 #include "maidsafe/routing/routing_pb.h"
 #include "maidsafe/routing/rpcs.h"
 #include "maidsafe/routing/utils.h"
+#include "maidsafe/routing/network_statistics.h"
 
 
 namespace fs = boost::filesystem;
@@ -49,7 +50,7 @@ Routing::Impl::Impl(bool client_mode,
                     const asymm::Keys& keys)
     : network_status_mutex_(),
       network_status_(kNotJoined),
-      routing_table_(client_mode, node_id, keys),
+      routing_table_(client_mode, node_id, keys, network_statistics_),
       kNodeId_(routing_table_.kNodeId()),
       kAnonymousNode_(anonymous),
       running_(true),
@@ -60,6 +61,7 @@ Routing::Impl::Impl(bool client_mode,
       non_routing_table_(routing_table_.kNodeId()),
       remove_furthest_node_(routing_table_, network_),
       group_change_handler_(routing_table_, network_),
+      network_statistics_(routing_table_.kNodeId()),
       message_handler_(),
       asio_service_(2),
       network_(routing_table_, non_routing_table_),
@@ -73,7 +75,8 @@ Routing::Impl::Impl(bool client_mode,
                                             network_,
                                             timer_,
                                             remove_furthest_node_,
-                                            group_change_handler_));
+                                            group_change_handler_,
+                                            network_statistics_));
 
   assert((client_mode || !node_id.IsZero()) &&
          "Server Nodes cannot be created without valid keys");
@@ -467,8 +470,29 @@ bool Routing::Impl::IsNodeIdInGroupRange(const NodeId& node_id) {
   return routing_table_.IsNodeIdInGroupRange(node_id);
 }
 
-bool Routing::Impl::IsIdInGroup(const NodeId& sender_id, const NodeId& info_id) {
-  return routing_table_.IsIdInGroup(sender_id, info_id);
+bool Routing::Impl::EstimateInGroup(const NodeId& sender_id, const NodeId& info_id) {
+  return ((routing_table_.size() > Parameters::routing_table_ready_to_response) &&
+             network_statistics_.EstimateInGroup(sender_id, info_id));
+}
+
+std::future<std::vector<NodeId>> Routing::Impl::GetGroup(const NodeId& info_id) {
+  auto promise(std::make_shared<std::promise<std::vector<NodeId>>>());  // NOLINT Mahmoud
+  auto future(promise->get_future());
+  routing::ResponseFunctor callback =
+      [promise](const std::vector<std::string>& responses) {
+        std::vector<NodeId> nodes_id;
+        if (!responses.empty()) {
+          protobuf::GetGroup get_group;
+          get_group.ParseFromString(responses.at(0));
+          for (auto& id : get_group.group_nodes_id())
+            nodes_id.push_back(NodeId(id));
+        }
+        promise->set_value(nodes_id);
+      };
+  protobuf::Message get_group_message(rpcs::GetGroup(info_id, kNodeId_));
+  get_group_message.set_id(timer_.AddTask(Parameters::default_send_timeout, callback, 1));
+  network_.SendToClosestNode(get_group_message);
+  return std::move(future);
 }
 
 void Routing::Impl::OnMessageReceived(const std::string& message) {

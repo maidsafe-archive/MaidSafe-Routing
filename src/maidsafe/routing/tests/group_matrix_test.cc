@@ -64,54 +64,6 @@ TEST(GroupMatrixTest, BEH_AddSamePeerTwice) {
   EXPECT_EQ(1, matrix.GetConnectedPeers().size());
 }
 
-TEST(GroupMatrixTest, BEH_AverageDistance) {
-  NodeId node_id(NodeId::kRandomId);
-  NodeId average(node_id);
-  GroupMatrix matrix(node_id);
-  matrix.network_distance_data_.average_distance = average;
-  matrix.AverageDistance(average);
-  EXPECT_EQ(matrix.network_distance_data_.average_distance, average);
-
-  node_id = NodeId();
-  matrix.network_distance_data_.total_distance = crypto::BigInt::Zero();
-  average = node_id;
-  matrix.AverageDistance(node_id);
-  EXPECT_EQ(matrix.network_distance_data_.average_distance, average);
-
-  node_id = NodeId(NodeId::kMaxId);
-  matrix.network_distance_data_.total_distance =
-      crypto::BigInt((node_id.ToStringEncoded(NodeId::kHex) + 'h').c_str()) *
-      matrix.network_distance_data_.contributors_count;
-  average = node_id;
-  matrix.AverageDistance(node_id);
-  EXPECT_EQ(matrix.network_distance_data_.average_distance, average);
-
-  matrix.network_distance_data_.contributors_count = 0;
-  matrix.network_distance_data_.total_distance = crypto::BigInt::Zero();
-
-  std::vector<NodeId> distances_as_node_id;
-  std::vector<crypto::BigInt> distances_as_bigint;
-  uint32_t kCount(RandomUint32() % 1000 + 9000);
-  for (uint32_t i(0); i < kCount; ++i) {
-    NodeId node_id(NodeId::kRandomId);
-    distances_as_node_id.push_back(node_id);
-    distances_as_bigint.push_back(
-        crypto::BigInt((node_id.ToStringEncoded(NodeId::kHex) + 'h').c_str()));
-  }
-
-  crypto::BigInt total(std::accumulate(distances_as_bigint.begin(),
-                                       distances_as_bigint.end(),
-                                       crypto::BigInt::Zero()));
-
-  for (auto& node_id : distances_as_node_id)
-    matrix.AverageDistance(node_id);
-
-  crypto::BigInt matrix_average_as_bigint(
-      (matrix.network_distance_data_.average_distance.ToStringEncoded(NodeId::kHex) + 'h').c_str());
-
-  EXPECT_EQ(total / kCount, matrix_average_as_bigint);
-}
-
 TEST(GroupMatrixTest, BEH_OneRowOnly) {
   NodeInfo node_0;
   node_0.node_id = NodeId(NodeId::kRandomId);

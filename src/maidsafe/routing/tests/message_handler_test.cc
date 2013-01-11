@@ -56,6 +56,7 @@ class MessageHandlerTest : public testing::Test {
         group_change_handler_(),
         service_(),
         response_handler_(),
+        network_statistics_(),
         close_info_() {
     message_received_functor_ = [this] (const std::string& message,
                                                const NodeId& /*group claim*/,
@@ -65,7 +66,10 @@ class MessageHandlerTest : public testing::Test {
                                                  reply_functor("reply");
                                                };
     asio_service_.Start();
-    table_.reset(new MockRoutingTable(false, NodeId(NodeId::kRandomId), asymm::GenerateKeyPair()));
+    NodeId node_id(NodeId::kRandomId);
+    network_statistics_.reset(new NetworkStatistics(node_id));
+    table_.reset(new MockRoutingTable(false, node_id, asymm::GenerateKeyPair(),
+                                      *network_statistics_));
     ntable_.reset(new NonRoutingTable(table_->kNodeId()));
     utils_.reset(new MockNetworkUtils(*table_, *ntable_));
     group_change_handler_.reset(new GroupChangeHandler(*table_, *utils_));
@@ -102,12 +106,13 @@ void ClearMessage(protobuf::Message& message) {
   std::shared_ptr<GroupChangeHandler> group_change_handler_;
   std::shared_ptr<MockService> service_;
   std::shared_ptr<MockResponseHandler> response_handler_;
+  std::shared_ptr<NetworkStatistics> network_statistics_;
   NodeInfo close_info_;
 };
 
 TEST_F(MessageHandlerTest, BEH_HandleInvalidMessage) {
   MessageHandler message_handler(*table_, *ntable_, *utils_, timer_, *remove_furthest_node_,
-                                 *group_change_handler_);
+                                 *group_change_handler_, *network_statistics_);
   // Reset the service and response handler inside the message handler to be mocks
   message_handler.service_ = service_;
   message_handler.response_handler_ = response_handler_;
@@ -136,7 +141,7 @@ TEST_F(MessageHandlerTest, BEH_HandleInvalidMessage) {
 
 TEST_F(MessageHandlerTest, BEH_HandleRelay) {
   MessageHandler message_handler(*table_, *ntable_, *utils_, timer_, *remove_furthest_node_,
-                                 *group_change_handler_);
+                                 *group_change_handler_, *network_statistics_);
   message_handler.service_ = service_;
   message_handler.response_handler_ = response_handler_;
 
@@ -221,7 +226,7 @@ TEST_F(MessageHandlerTest, BEH_HandleRelay) {
 
 TEST_F(MessageHandlerTest, BEH_HandleGroupMessage) {
   MessageHandler message_handler(*table_, *ntable_, *utils_, timer_, *remove_furthest_node_,
-                                 *group_change_handler_);
+                                 *group_change_handler_, *network_statistics_);
   bool result(true);
   message_handler.service_ = service_;
   message_handler.response_handler_ = response_handler_;
@@ -579,7 +584,7 @@ TEST_F(MessageHandlerTest, BEH_HandleGroupMessage) {
 
 TEST_F(MessageHandlerTest, BEH_HandleNodeLevelMessage) {
   MessageHandler message_handler(*table_, *ntable_, *utils_, timer_, *remove_furthest_node_,
-                                 *group_change_handler_);
+                                 *group_change_handler_, *network_statistics_);
   message_handler.service_ = service_;
   message_handler.response_handler_ = response_handler_;
   protobuf::Message message;
@@ -634,10 +639,11 @@ TEST_F(MessageHandlerTest, BEH_ClientRoutingTable) {
   asymm::Keys keys;
   keys.private_key = maid.private_key();
   keys.public_key = maid.public_key();
-  table_.reset(new MockRoutingTable(true, NodeId(maid.name().data.string()), keys));
+  table_.reset(new MockRoutingTable(true, NodeId(maid.name().data.string()), keys,
+                                    *network_statistics_));
   table_->AddNode(close_info_);
   MessageHandler message_handler(*table_, *ntable_, *utils_, timer_, *remove_furthest_node_,
-                                 *group_change_handler_);
+                                 *group_change_handler_, *network_statistics_);
   message_handler.service_ = service_;
   message_handler.response_handler_ = response_handler_;
   protobuf::Message message;

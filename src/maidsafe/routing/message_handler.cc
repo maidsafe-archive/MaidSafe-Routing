@@ -35,9 +35,11 @@ MessageHandler::MessageHandler(RoutingTable& routing_table,
                                NetworkUtils& network,
                                Timer& timer,
                                RemoveFurthestNode& remove_furthest_node,
-                               GroupChangeHandler& group_change_handler)
+                               GroupChangeHandler& group_change_handler,
+                               NetworkStatistics& network_statistics)
     : routing_table_(routing_table),
       non_routing_table_(non_routing_table),
+      network_statistics_(network_statistics),
       network_(network),
       remove_furthest_node_(remove_furthest_node),
       group_change_handler_(group_change_handler),
@@ -79,6 +81,10 @@ void MessageHandler::HandleRoutingMessage(protobuf::Message& message) {
     case MessageType::kClosestNodesUpdateSubscribe :
       assert(message.request());
       group_change_handler_.ClosestNodesUpdateSubscribe(message);
+      break;
+    case MessageType::kGetGroup :
+      message.request() ? service_->GetGroup(message) : response_handler_->GetGroup(timer_,
+                                                                                    message);
       break;
     default:  // unknown (silent drop)
       return;
@@ -153,7 +159,8 @@ void MessageHandler::HandleNodeLevelMessageForThisNode(protobuf::Message& messag
                << MessageTypeString(message) << " from "
                << HexSubstr(message.source_id())
                << "   (id: " << message.id() << ")  --NodeLevel--";
-    timer_.AddResponse(message);
+    if (timer_.AddResponse(message) && message.has_average_distace())
+      network_statistics_.UpdateNetworkAverageDistance(NodeId(message.average_distace()));
   }
 }
 
@@ -279,10 +286,13 @@ void MessageHandler::HandleGroupMessageAsClosestNode(protobuf::Message& message)
 
   message.set_destination_id(routing_table_.kNodeId().string());
 
-  if (IsRoutingMessage(message))
+  if (IsRoutingMessage(message)) {
+    LOG(kVerbose) << "HandleGroupMessageAsClosestNode if, msg id: " << message.id();
     HandleRoutingMessage(message);
-  else
+  } else {
+    LOG(kVerbose) << "HandleGroupMessageAsClosestNode else, msg id: " << message.id();
     HandleNodeLevelMessageForThisNode(message);
+  }
 }
 
 void MessageHandler::HandleMessageAsFarNode(protobuf::Message& message) {

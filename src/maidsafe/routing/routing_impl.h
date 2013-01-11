@@ -74,7 +74,9 @@ class Routing::Impl {
 
   bool IsNodeIdInGroupRange(const NodeId& node_id);
 
-  bool IsIdInGroup(const NodeId& sender_id, const NodeId& info_id);
+  bool EstimateInGroup(const NodeId& sender_id, const NodeId& info_id);
+
+  std::future<std::vector<NodeId>> GetGroup(const NodeId& info_id);
 
   NodeId kNodeId() const;
 
@@ -128,6 +130,7 @@ class Routing::Impl {
   NonRoutingTable non_routing_table_;
   RemoveFurthestNode remove_furthest_node_;
   GroupChangeHandler group_change_handler_;
+  NetworkStatistics network_statistics_;
   // The following variables' declarations should remain the last ones in this class and should stay
   // in the order: message_handler_, asio_service_, network_, all timers.  This is important for the
   // proper destruction of the routing library, i.e. to avoid segmentation faults.

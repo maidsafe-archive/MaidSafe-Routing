@@ -45,7 +45,10 @@ namespace test {
 class ResponseHandlerTest : public testing::Test {
  public:
   ResponseHandlerTest()
-     : routing_table_(false, NodeId(NodeId::kRandomId), asymm::GenerateKeyPair()),
+    :  node_id_(NodeId::kRandomId),
+       network_statistics_(node_id_),
+       routing_table_(false, NodeId(NodeId::kRandomId), asymm::GenerateKeyPair(),
+                      network_statistics_),
        non_routing_table_(routing_table_.kNodeId()),
        network_(routing_table_, non_routing_table_),
        group_change_handler_(routing_table_, network_),
@@ -194,6 +197,8 @@ class ResponseHandlerTest : public testing::Test {
     return ComposeMsg(ComposePingResponse(ping_request.SerializeAsString()).SerializeAsString());
   }
 
+  NodeId node_id_;
+  NetworkStatistics network_statistics_;
   RoutingTable routing_table_;
   NonRoutingTable non_routing_table_;
   MockNetworkUtils network_;

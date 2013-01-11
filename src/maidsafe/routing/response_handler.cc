@@ -377,6 +377,11 @@ void ResponseHandler::CheckAndSendConnectRequest(const NodeId& node_id) {
                              routing_table_.kNodeId()))
     SendConnectRequest(node_id);
 }
+
+void ResponseHandler::GetGroup(Timer& timer, protobuf::Message& message) {
+  timer.AddResponse(message);
+}
+
 void ResponseHandler::set_request_public_key_functor(RequestPublicKeyFunctor request_public_key) {
   request_public_key_functor_ = request_public_key;
 }
