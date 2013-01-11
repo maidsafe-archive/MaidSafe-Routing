@@ -35,9 +35,11 @@ MessageHandler::MessageHandler(RoutingTable& routing_table,
                                NetworkUtils& network,
                                Timer& timer,
                                RemoveFurthestNode& remove_furthest_node,
-                               GroupChangeHandler& group_change_handler)
+                               GroupChangeHandler& group_change_handler,
+                               NetworkStatistics& network_statistics)
     : routing_table_(routing_table),
       non_routing_table_(non_routing_table),
+      network_statistics_(network_statistics),
       network_(network),
       remove_furthest_node_(remove_furthest_node),
       group_change_handler_(group_change_handler),
@@ -157,7 +159,8 @@ void MessageHandler::HandleNodeLevelMessageForThisNode(protobuf::Message& messag
                << MessageTypeString(message) << " from "
                << HexSubstr(message.source_id())
                << "   (id: " << message.id() << ")  --NodeLevel--";
-    timer_.AddResponse(message);
+    if (timer_.AddResponse(message) && message.has_average_distace())
+      network_statistics_.UpdateNetworkAverageDistance(NodeId(message.average_distace()));
   }
 }
 

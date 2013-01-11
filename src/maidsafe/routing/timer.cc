@@ -131,17 +131,17 @@ void Timer::CancelTask(TaskId task_id) {
   (*itr)->timer.cancel();
 }
 
-void Timer::AddResponse(const protobuf::Message& response) {
+bool Timer::AddResponse(const protobuf::Message& response) {
   if (!response.has_id()) {
     LOG(kError) << "Received response with no ID.  Abort message handling.";
-    return;
+    return false;
   }
 
   std::lock_guard<std::mutex> lock(mutex_);
   auto itr(FindTask(response.id()));
   if (itr == tasks_.end()) {
     LOG(kWarning) << "Attempted to AddResponse to expired or non-existent task " << response.id();
-    return;
+    return false;
   }
 
   (*itr)->responses.emplace_back(response.data(0));
@@ -154,6 +154,7 @@ void Timer::AddResponse(const protobuf::Message& response) {
                << ((*itr)->expected_response_count - (*itr)->responses.size())
                << " responses for task " << response.id();
   }
+  return true;
 }
 
 }  // namespace maidsafe

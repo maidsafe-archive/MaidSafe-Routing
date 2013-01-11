@@ -45,6 +45,7 @@ class RoutingTable;
 class Timer;
 class RemoveFurthestNode;
 class GroupChangeHandler;
+class NetworkStatistics;
 
 
 enum class MessageType : int32_t {
@@ -68,7 +69,8 @@ class MessageHandler {
                  NetworkUtils& network,
                  Timer& timer,
                  RemoveFurthestNode& remove_node,
-                 GroupChangeHandler& group_change_handler);
+                 GroupChangeHandler& group_change_handler,
+                 NetworkStatistics& network_statistics);
   void HandleMessage(protobuf::Message& message);
   void set_message_received_functor(MessageReceivedFunctor message_received_functor);
   void set_request_public_key_functor(RequestPublicKeyFunctor request_public_key_functor);
@@ -107,6 +109,7 @@ class MessageHandler {
 
   RoutingTable& routing_table_;
   NonRoutingTable& non_routing_table_;
+  NetworkStatistics& network_statistics_;
   NetworkUtils& network_;
   RemoveFurthestNode& remove_furthest_node_;
   GroupChangeHandler& group_change_handler_;

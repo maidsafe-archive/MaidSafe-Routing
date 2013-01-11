@@ -18,7 +18,6 @@
 #include <vector>
 #include <string>
 
-#include "maidsafe/common/crypto.h"
 #include "maidsafe/common/node_id.h"
 #include "maidsafe/routing/node_info.h"
 
@@ -28,8 +27,7 @@ namespace routing {
 
 namespace test {
   class GenericNode;
-  class RoutingTableTest_BEH_IsIdInGroupRange_Test;
-  class GroupMatrixTest_BEH_AverageDistance_Test;
+  class NetworkStatisticsTest_BEH_IsIdInGroupRange_Test;
 }
 
 class RoutingTable;
@@ -54,7 +52,6 @@ class GroupMatrix {
   // Returns the peer which has node closest to target_id in its row (1st occurrence).
   NodeInfo GetConnectedPeerClosestTo(const NodeId& target_node_id);
   bool IsNodeInGroupRange(const NodeId& target_id);
-  bool EstimateInGroup(const NodeId& sender_id, const NodeId& info_id);
   bool IsThisNodeGroupLeader(const NodeId& target_id, NodeId& group_leader_id);
 
   // Updates group matrix if peer is present in 1st column of matrix
@@ -64,21 +61,13 @@ class GroupMatrix {
   std::vector<NodeInfo> GetUniqueNodes();
   std::vector<NodeInfo> GetClosestNodes(const uint16_t& size);
   void Clear();
-  void AcceptedDistance();
-  void AverageDistance(const NodeId& distance);
 
   friend class test::GenericNode;
-  friend class test::RoutingTableTest_BEH_IsIdInGroupRange_Test;
-  friend class test::GroupMatrixTest_BEH_AverageDistance_Test;
+  friend class test::NetworkStatisticsTest_BEH_IsIdInGroupRange_Test;
 
  private:
   GroupMatrix(const GroupMatrix&);
   GroupMatrix& operator=(const GroupMatrix&);
-  struct NetworkDistanceData {
-    NetworkDistanceData() : contributors_count(), total_distance(), average_distance() {}
-    crypto::BigInt contributors_count, total_distance;
-    NodeId average_distance;
-  };
   void UpdateUniqueNodeList();
   void PartialSortFromTarget(const NodeId& target, const uint16_t& number,
                              std::vector<NodeInfo> &nodes);
@@ -87,8 +76,6 @@ class GroupMatrix {
   const NodeId& kNodeId_;
   std::vector<NodeInfo> unique_nodes_;
   std::vector<std::vector<NodeInfo>> matrix_;
-  NodeId accepted_distance_;
-  NetworkDistanceData network_distance_data_;
 };
 
 }  // namespace routing

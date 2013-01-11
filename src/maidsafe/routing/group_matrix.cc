@@ -29,9 +29,7 @@ namespace routing {
 GroupMatrix::GroupMatrix(const NodeId& this_node_id)
     : kNodeId_(this_node_id),
       unique_nodes_(),
-      matrix_(),
-      accepted_distance_(),
-      network_distance_data_() {}
+      matrix_() {}
 
 void GroupMatrix::AddConnectedPeer(const NodeInfo& node_info) {
   LOG(kVerbose) << "AddConnectedPeer : " << DebugId(node_info.node_id);
@@ -155,12 +153,6 @@ bool GroupMatrix::IsNodeInGroupRange(const NodeId& target_id) {
   return false;
 }
 
-bool GroupMatrix::EstimateInGroup(const NodeId& sender_id, const NodeId& info_id) {
-  return crypto::BigInt(((info_id ^ sender_id).ToStringEncoded(NodeId::kHex) + 'h').c_str()) <=
-      crypto::BigInt((accepted_distance_.ToStringEncoded(NodeId::kHex) + 'h').c_str()) *
-      Parameters::accepted_distance_tolerance;
-}
-
 void GroupMatrix::UpdateFromConnectedPeer(const NodeId& peer,
                                           const std::vector<NodeInfo>& nodes) {
   if (peer.IsZero()) {
@@ -244,30 +236,6 @@ void GroupMatrix::Clear() {
     row.clear();
   matrix_.clear();
   UpdateUniqueNodeList();
-}
-
-void GroupMatrix::AcceptedDistance() {
-  if (unique_nodes_.size() < Parameters::node_group_size)
-    return;
-  std::nth_element(unique_nodes_.begin(),
-                   unique_nodes_.begin() + Parameters::node_group_size,
-                   unique_nodes_.end(),
-                   [&](const NodeInfo& lhs, const NodeInfo& rhs) {
-                     return NodeId::CloserToTarget(lhs.node_id, rhs.node_id, kNodeId_);
-                   });
-  NodeInfo furthest_group_node(unique_nodes_.at(std::min(Parameters::node_group_size - 1,
-                                   static_cast<int>(unique_nodes_.size()))));
-  accepted_distance_ = furthest_group_node.node_id ^ kNodeId_;
-}
-
-void GroupMatrix::AverageDistance(const NodeId& distance) {
-  crypto::BigInt distance_integer((distance.ToStringEncoded(NodeId::kHex) + 'h').c_str());
-  network_distance_data_.total_distance += distance_integer;
-  auto average(network_distance_data_.total_distance / ++network_distance_data_.contributors_count);
-  std::string average_str(64, '\0');
-  for (auto index(NodeId::kSize - 1); index >= 0; --index)
-    average_str[NodeId::kSize - 1 - index] = average.GetByte(index);
-  network_distance_data_.average_distance = NodeId(average_str);
 }
 
 void GroupMatrix::UpdateUniqueNodeList() {
