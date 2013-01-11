@@ -19,7 +19,7 @@ namespace routing {
 namespace test {
 
 MockRoutingTable::MockRoutingTable(bool client_mode, const NodeId& node_id,
-                                   const asymm::Keys& keys, NetworkStatistics network_statistics)
+                                   const asymm::Keys& keys, NetworkStatistics& network_statistics)
     : RoutingTable(client_mode, node_id, keys, network_statistics) {}
 
 MockRoutingTable::~MockRoutingTable() {}

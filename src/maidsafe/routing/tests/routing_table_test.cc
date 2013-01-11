@@ -571,8 +571,9 @@ TEST(RoutingTableTest, BEH_FillEmptyRefillRoutingTable) {
 
 TEST(RoutingTableTest, BEH_CheckMockSendGroupChangeRpcs) {
   // Set up 1
-  NetworkStatistics network_statistics(NodeId(NodeId::kRandomId));
-  RoutingTable routing_table_1(false, NodeId(NodeId::kRandomId), asymm::GenerateKeyPair(),
+  NodeId node_id(NodeId::kRandomId);
+  NetworkStatistics network_statistics(node_id);
+  RoutingTable routing_table_1(false, node_id, asymm::GenerateKeyPair(),
                                network_statistics);
   NodeInfo node_info_1(MakeNode());
   node_info_1.node_id = routing_table_1.kNodeId();
@@ -589,7 +590,8 @@ TEST(RoutingTableTest, BEH_CheckMockSendGroupChangeRpcs) {
 
   // Set up 2 to be in 1's closest_nodes_size group
   uint16_t index_2(RandomUint32() % Parameters::closest_nodes_size);
-  RoutingTable routing_table_2(false, extra_nodes.at(index_2).node_id, asymm::GenerateKeyPair());
+  RoutingTable routing_table_2(false, extra_nodes.at(index_2).node_id, asymm::GenerateKeyPair(),
+                               network_statistics);
 
   NodeInfo node_info_2(extra_nodes.at(index_2));
   ASSERT_EQ(routing_table_2.kNodeId(), node_info_2.node_id);
@@ -776,46 +778,6 @@ TEST(RoutingTableTest, BEH_GetNthClosest) {
     EXPECT_EQ(nodes_id[index], routing_table.GetNthClosestNode(my_node, index + 1).node_id)
         << DebugId(nodes_id[index]) << " not eq to "
         << DebugId(routing_table.GetNthClosestNode(my_node, index + 1).node_id);
-  }
-}
-
-TEST(RoutingTableTest, BEH_IsIdInGroupRange) {
-  NetworkStatistics network_statistics(NodeId(NodeId::kRandomId));
-  RoutingTable routing_table(false, NodeId(NodeId::kRandomId), asymm::GenerateKeyPair(),
-                             network_statistics);
-  std::vector<NodeId> nodes_id;
-  NodeInfo node_info;
-  NodeId my_node(routing_table.kNodeId());
-  while (static_cast<uint16_t>(routing_table.size()) <
-             Parameters::routing_table_ready_to_response - 1) {
-    NodeInfo node(MakeNode());
-    nodes_id.push_back(node.node_id);
-    routing_table.group_matrix_.unique_nodes_.push_back(node);
-    EXPECT_TRUE(routing_table.AddNode(node));
-  }
-  EXPECT_FALSE(routing_table.EstimateInGroup(NodeId(NodeId::kRandomId),
-                                         NodeId(NodeId::kRandomId)));
-  while (static_cast<uint16_t>(routing_table.size()) <
-             Parameters::max_routing_table_size) {
-    NodeInfo node(MakeNode());
-    nodes_id.push_back(node.node_id);
-    routing_table.group_matrix_.unique_nodes_.push_back(node);
-    EXPECT_TRUE(routing_table.AddNode(node));
-  }
-
-  NodeId info_id(NodeId::kRandomId);
-  std::nth_element(nodes_id.begin(),
-                   nodes_id.begin() + Parameters::node_group_size,
-                   nodes_id.end(),
-                   [&](const NodeId& lhs, const NodeId& rhs) {
-                     return NodeId::CloserToTarget(lhs, rhs, info_id);
-                   });
-  uint16_t index(0);
-  while (index < Parameters::node_group_size) {
-    if ((nodes_id.at(index) ^ info_id) <= (my_node ^ nodes_id[Parameters::node_group_size - 1]))
-      EXPECT_TRUE(routing_table.EstimateInGroup(nodes_id.at(index++), info_id));
-    else
-      EXPECT_FALSE(routing_table.EstimateInGroup(nodes_id.at(index++), info_id));
   }
 }
 

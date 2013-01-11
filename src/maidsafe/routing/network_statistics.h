@@ -25,6 +25,11 @@ namespace maidsafe {
 
 namespace routing {
 
+namespace test {
+  class NetworkStatisticsTest_BEH_AverageDistance_Test;
+  class NetworkStatisticsTest_BEH_IsIdInGroupRange_Test;
+}
+
 class NetworkStatistics {
  public:
   explicit NetworkStatistics(const NodeId& node_id);
@@ -32,6 +37,9 @@ class NetworkStatistics {
   void UpdateNetworkAverageDistance(const NodeId& distance);
   bool EstimateInGroup(const NodeId& sender_id, const NodeId& info_id);
   NodeId GetDistance();
+
+  friend class test::NetworkStatisticsTest_BEH_AverageDistance_Test;
+  friend class test::NetworkStatisticsTest_BEH_IsIdInGroupRange_Test;
 
  private:
   NetworkStatistics(const NetworkStatistics&) = delete;

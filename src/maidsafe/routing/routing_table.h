@@ -46,7 +46,7 @@ namespace test {
   class RoutingTableTest_BEH_ReverseOrderedGroupChange_Test;
   class RoutingTableTest_BEH_CheckMockSendGroupChangeRpcs_Test;
   class RoutingTableTest_BEH_GroupUpdateFromConnectedPeer_Test;
-  class RoutingTableTest_BEH_IsIdInGroupRange_Test;
+  class NetworkStatisticsTest_BEH_IsIdInGroupRange_Test;
 }
 
 namespace protobuf { class Contact; }
@@ -109,7 +109,7 @@ class RoutingTable {
   friend class test::RoutingTableTest_BEH_ReverseOrderedGroupChange_Test;
   friend class test::RoutingTableTest_BEH_CheckMockSendGroupChangeRpcs_Test;
   friend class test::RoutingTableTest_BEH_GroupUpdateFromConnectedPeer_Test;
-  friend class test::RoutingTableTest_BEH_IsIdInGroupRange_Test;
+  friend class test::NetworkStatisticsTest_BEH_IsIdInGroupRange_Test;
 
  private:
   RoutingTable(const RoutingTable&);

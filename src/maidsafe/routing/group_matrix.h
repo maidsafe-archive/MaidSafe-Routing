@@ -27,8 +27,7 @@ namespace routing {
 
 namespace test {
   class GenericNode;
-  class RoutingTableTest_BEH_IsIdInGroupRange_Test;
-  class GroupMatrixTest_BEH_AverageDistance_Test;
+  class NetworkStatisticsTest_BEH_IsIdInGroupRange_Test;
 }
 
 class RoutingTable;
@@ -64,8 +63,7 @@ class GroupMatrix {
   void Clear();
 
   friend class test::GenericNode;
-  friend class test::RoutingTableTest_BEH_IsIdInGroupRange_Test;
-  friend class test::GroupMatrixTest_BEH_AverageDistance_Test;
+  friend class test::NetworkStatisticsTest_BEH_IsIdInGroupRange_Test;
 
  private:
   GroupMatrix(const GroupMatrix&);
