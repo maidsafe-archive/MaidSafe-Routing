@@ -299,20 +299,6 @@ TEST_F(RoutingNetworkTest, FUNC_SendToClientWithSameId) {
   EXPECT_EQ(2, size);
 }
 
-TEST_F(RoutingNetworkTest, FUNC_CheckForGroupUpdateSubscription) {
-  std::vector<NodeInfo> closest_nodes_info;
-  for (auto node : env_->nodes_) {
-    closest_nodes_info = env_->GetClosestNodes(node->node_id(), Parameters::closest_nodes_size - 1);
-    LOG(kVerbose) << "size of closest_nodes: " << closest_nodes_info.size();
-
-    for (auto node_info : closest_nodes_info) {
-      int index(env_->NodeIndex(node_info.node_id));
-      EXPECT_TRUE(env_->nodes_[index]->NodeSubscriedForGroupUpdate(node->node_id()))
-          << DebugId(node_info.node_id) << " does not have " << DebugId(node->node_id());
-    }
-  }
-}
-
 TEST_F(RoutingNetworkTest, FUNC_GetRandomExistingNode) {
   uint32_t collisions(0);
   size_t kChoseIndex(env_->RandomNodeIndex());
