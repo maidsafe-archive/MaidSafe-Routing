@@ -42,8 +42,8 @@ class NetworkStatistics {
   friend class test::NetworkStatisticsTest_BEH_IsIdInGroupRange_Test;
 
  private:
-  NetworkStatistics(const NetworkStatistics&) = delete;
-  NetworkStatistics& operator=(const NetworkStatistics&) = delete;
+  NetworkStatistics(const NetworkStatistics&);
+  NetworkStatistics& operator=(const NetworkStatistics&);
   struct NetworkDistanceData {
     NetworkDistanceData() : contributors_count(), total_distance(), average_distance() {}
     crypto::BigInt contributors_count, total_distance;
