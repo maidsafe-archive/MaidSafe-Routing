@@ -332,6 +332,21 @@ TEST_F(RoutingNetworkTest, FUNC_GetRandomExistingNode) {
   EXPECT_EQ(100, random_node_ids.size());
 }
 
+TEST_F(RoutingNetworkTest, FUNC_GroupUpdateSubscription) {
+  std::vector<NodeInfo> closest_nodes_info;
+//  this->SetUpNetwork(kServerSize);
+  for (auto node : env_->nodes_) {
+    closest_nodes_info = env_->GetClosestNodes(node->node_id(), Parameters::closest_nodes_size - 1);
+    LOG(kVerbose) << "size of closest_nodes: " << closest_nodes_info.size();
+
+    for (auto node_info : closest_nodes_info) {
+      int index(env_->NodeIndex(node_info.node_id));
+      EXPECT_TRUE(env_->nodes_[index]->NodeSubscriedForGroupUpdate(node->node_id()))
+          << DebugId(node_info.node_id) << " does not have " << DebugId(node->node_id());
+    }
+  }
+}
+
 TEST_F(RoutingNetworkTest, FUNC_IsNodeIdInGroupRange) {
   std::vector<NodeId> vault_ids;
   for (auto node : env_->nodes_)

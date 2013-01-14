@@ -215,7 +215,6 @@ std::vector<NodeInfo> GroupMatrix::GetUniqueNodes() {
 }
 
 bool GroupMatrix::IsRowEmpty(const NodeInfo& node_info) {
-//  std::lock_guard<std::mutex> lock(mutex_);
   auto group_itr(matrix_.begin());
   for (group_itr = matrix_.begin(); group_itr != matrix_.end(); ++group_itr) {
     if ((*group_itr).at(0).node_id == node_info.node_id)

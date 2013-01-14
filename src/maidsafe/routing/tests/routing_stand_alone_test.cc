@@ -56,17 +56,15 @@ TEST_F(RoutingStandAloneTest, FUNC_GetGroup) {
 TEST_F(RoutingStandAloneTest, FUNC_GroupUpdateSubscription) {
   std::vector<NodeInfo> closest_nodes_info;
   this->SetUpNetwork(kServerSize);
-//  for (auto node : this->nodes_) {
-    auto node(*this->nodes_.begin());
+  for (auto node : this->nodes_) {
     closest_nodes_info = this->GetClosestNodes(node->node_id(), Parameters::closest_nodes_size - 1);
     LOG(kVerbose) << "size of closest_nodes: " << closest_nodes_info.size();
-
     for (auto node_info : closest_nodes_info) {
       int index(this->NodeIndex(node_info.node_id));
       EXPECT_TRUE(this->nodes_[index]->NodeSubscriedForGroupUpdate(node->node_id()))
           << DebugId(node_info.node_id) << " does not have " << DebugId(node->node_id());
     }
-//  }
+  }
 }
 
 TEST_F(RoutingStandAloneTest, FUNC_SetupNetwork) {

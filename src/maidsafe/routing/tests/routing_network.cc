@@ -246,10 +246,10 @@ bool GenericNode::NodeSubscriedForGroupUpdate(const NodeId& node_id) {
                << routing_->pimpl_->group_change_handler_.update_subscribers_.size()
                << " nodes subscribed for update";
   return (std::find_if(routing_->pimpl_->group_change_handler_.update_subscribers_.begin(),
-                      routing_->pimpl_->group_change_handler_.update_subscribers_.end(),
-                      [&](const NodeInfo& node) {
-                        return node.node_id == node_id;
-                      }) != routing_->pimpl_->group_change_handler_.update_subscribers_.end());
+                       routing_->pimpl_->group_change_handler_.update_subscribers_.end(),
+                       [&](const NodeInfo& node) {
+                         return node.node_id == node_id;
+                       }) != routing_->pimpl_->group_change_handler_.update_subscribers_.end());
 }
 
 void GenericNode::Send(const NodeId& destination_id,
