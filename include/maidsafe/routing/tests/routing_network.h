@@ -171,7 +171,8 @@ class GenericNetwork {
   int NodeIndex(const NodeId& node_id);
   size_t ClientIndex() { return client_index_; }
   std::vector<NodeId> GetGroupForId(const NodeId& node_id);
-  std::vector<NodeInfo> GetClosestNodes(const NodeId& target_id, const uint32_t& quantity);
+  std::vector<NodeInfo> GetClosestNodes(const NodeId& target_id, const uint32_t& quantity,
+                                        const bool vault_only = false);
   bool RestoreComposition();
   bool WaitForHealthToStabilise();
   testing::AssertionResult Send(const size_t& messages);

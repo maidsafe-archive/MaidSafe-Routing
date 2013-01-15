@@ -259,23 +259,26 @@ protobuf::Message ClosestNodesUpdateRequest(
 
 protobuf::Message ClosestNodesUpdateSubscrirbe(
     const NodeId& node_id,
-    const NodeId& my_node_id,
+    const NodeId& this_node_id,
+    const NodeId& this_connection_id,
+    const bool& client_node,
     const bool& subscribe) {
   assert(!node_id.IsZero() && "Invalid node_id");
-  assert(!my_node_id.IsZero() && "Invalid my node_id");
+  assert(!this_node_id.IsZero() && "Invalid my node_id");
   protobuf::Message message;
   protobuf::ClosestNodesUpdateSubscrirbe closest_nodes_update_subscribe;
-  closest_nodes_update_subscribe.set_peer(my_node_id.string());
+  closest_nodes_update_subscribe.set_node_id(this_node_id.string());
+  closest_nodes_update_subscribe.set_connection_id(this_connection_id.string());
   closest_nodes_update_subscribe.set_subscribe(subscribe);
   message.set_destination_id(node_id.string());
-  message.set_source_id(my_node_id.string());
+  message.set_source_id(this_node_id.string());
   message.set_routing_message(true);
   message.add_data(closest_nodes_update_subscribe.SerializeAsString());
   message.set_direct(true);
   message.set_replication(1);
   message.set_type(static_cast<int32_t>(MessageType::kClosestNodesUpdateSubscribe));
   message.set_request(true);
-  message.set_client_node(false);
+  message.set_client_node(client_node);
   message.set_hops_to_live(Parameters::hops_to_live);
   message.set_id(RandomUint32() % 10000);
   assert(message.IsInitialized() && "Unintialised message");

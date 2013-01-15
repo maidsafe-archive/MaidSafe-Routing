@@ -86,16 +86,16 @@ void GroupChangeHandler::ClosestNodesUpdateSubscribe(protobuf::Message& message)
     return;
   }
 
-  if (closest_node_update_subscribe.peer().empty() ||
-      !CheckId(closest_node_update_subscribe.peer())) {
+  if (closest_node_update_subscribe.node_id().empty() ||
+      !CheckId(closest_node_update_subscribe.node_id())) {
     LOG(kError) << "Invalid node id provided.";
     return;
   }
 
   if (closest_node_update_subscribe.subscribe())
-    Subscribe(NodeId(closest_node_update_subscribe.peer()));
+    Subscribe(NodeId(closest_node_update_subscribe.node_id()));
   else
-    Unsubscribe(NodeId(closest_node_update_subscribe.peer()));
+    Unsubscribe(NodeId(closest_node_update_subscribe.node_id()));
   message.Clear();  // No response
 }
 
@@ -199,7 +199,11 @@ void GroupChangeHandler::SendSubscribeRpc(const bool& subscribe,
     LOG(kVerbose) << DebugId(routing_table_.kNodeId()) << " SendSubscribeRpc to "
                   << DebugId(node.node_id);
     protobuf::Message closest_nodes_update_rpc(
-        rpcs::ClosestNodesUpdateSubscrirbe(node.node_id, routing_table_.kNodeId(), subscribe));
+        rpcs::ClosestNodesUpdateSubscrirbe(node.node_id,
+                                           routing_table_.kNodeId(),
+                                           routing_table_.kConnectionId(),
+                                           routing_table_.client_mode(),
+                                           subscribe));
     network_.SendToDirect(closest_nodes_update_rpc, node.node_id, node.connection_id);
   }
 }

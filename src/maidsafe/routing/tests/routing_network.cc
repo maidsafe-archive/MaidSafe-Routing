@@ -667,10 +667,14 @@ std::vector<NodeId> GenericNetwork::GetGroupForId(const NodeId& node_id) {
 }
 
 std::vector<NodeInfo> GenericNetwork::GetClosestNodes(const NodeId& target_id,
-                                                      const uint32_t& quantity) {
+                                                      const uint32_t& quantity,
+                                                      const bool vault_only) {
   std::vector<NodeInfo> closet_nodes;
-  for (auto node : nodes_)
+  for (auto node : nodes_) {
+    if (vault_only && node->IsClient())
+      continue;
     closet_nodes.push_back(node->node_info_plus_->node_info);
+  }
   uint32_t size = std::min(quantity + 1, static_cast<uint32_t>(nodes_.size()));
   std::lock_guard<std::mutex> lock(mutex_);
   std::partial_sort(closet_nodes.begin(),

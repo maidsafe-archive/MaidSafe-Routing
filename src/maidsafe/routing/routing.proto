@@ -166,8 +166,9 @@ message ClosestNodesUpdate {
 }
 
 message ClosestNodesUpdateSubscrirbe {
-  required bytes peer = 1;
-  required bool subscribe = 2;
+  required bytes node_id = 1;
+  required bytes connection_id = 2;
+  required bool subscribe = 3;
 }
 
 message GetGroup {
