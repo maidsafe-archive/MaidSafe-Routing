@@ -70,7 +70,8 @@ class RoutingTable {
                           RemoveFurthestUnnecessaryNode remove_furthest_node,
                           ConnectedGroupChangeFunctor connected_group_change_functor,
                           CloseNodeReplacedFunctor close_node_replaced_functor,
-                          SubscribeToGroupChangeUpdate subscribe_to_group_change_update);
+                          SubscribeToGroupChangeUpdate subscribe_to_group_change_update,
+                          UnsubscribeGroupUpdate unsubscribe_group_update);
   bool AddNode(const NodeInfo& peer);
   bool CheckNode(const NodeInfo& peer);
   NodeInfo DropNode(const NodeId &node_to_drop, bool routing_only);
@@ -162,6 +163,7 @@ class RoutingTable {
   ConnectedGroupChangeFunctor connected_group_change_functor_;
   SubscribeToGroupChangeUpdate subscribe_to_group_change_update_;
   CloseNodeReplacedFunctor close_node_replaced_functor_;
+  UnsubscribeGroupUpdate unsubscribe_group_update_;
   std::vector<NodeInfo> nodes_;
   GroupMatrix group_matrix_;
   NetworkStatistics& network_statistics_;

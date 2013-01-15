@@ -99,16 +99,17 @@ void GroupChangeHandler::ClosestNodesUpdateSubscribe(protobuf::Message& message)
   message.Clear();  // No response
 }
 
-void GroupChangeHandler::Unsubscribe(NodeId node_id) {
+void GroupChangeHandler::Unsubscribe(const NodeId& node_id) {
   std::lock_guard<std::mutex> lock(mutex_);
-  LOG(kVerbose) << "[" << DebugId(routing_table_.kNodeId())
-                << "] unsubscribing " << DebugId(node_id);
-  if (!update_subscribers_.empty())
-    update_subscribers_.erase(std::remove_if(update_subscribers_.begin(),
-                                             update_subscribers_.end(),
-                                             [&](const NodeInfo& node_info) {
-                                               return node_info.node_id == node_id;
-                                             }));
+  if (!update_subscribers_.empty()) {
+    auto iter(std::find_if(update_subscribers_.begin(),
+                           update_subscribers_.end(),
+                           [&](const NodeInfo& node_info) {
+                             return node_info.node_id == node_id;
+                           }));
+    if (iter != update_subscribers_.end()  && (iter->node_id == node_id))
+      update_subscribers_.erase(iter);
+  }
 }
 
 void GroupChangeHandler::Subscribe(NodeId node_id) {
@@ -119,8 +120,8 @@ void GroupChangeHandler::Subscribe(NodeId node_id) {
   {
     connected_closest_nodes = routing_table_.GetClosestNodeInfo(routing_table_.kNodeId(),
                                                                 Parameters::closest_nodes_size);
-//    if (connected_closest_nodes.size() < Parameters::closest_nodes_size)
-//      return;
+    if (connected_closest_nodes.size() < Parameters::closest_nodes_size)
+      return;
     std::lock_guard<std::mutex> lock(mutex_);
     if (routing_table_.GetNodeInfo(node_id, node_info)) {
       if (std::find_if(update_subscribers_.begin(),
@@ -167,8 +168,8 @@ void GroupChangeHandler::UpdateGroupChange(const NodeId& node_id,
 void GroupChangeHandler::SendClosestNodesUpdateRpcs(const std::vector<NodeInfo>& closest_nodes) {
   LOG(kVerbose) << "["  << DebugId(routing_table_.kNodeId())
                 << "] SendClosestNodesUpdateRpcs: " << closest_nodes.size();
-  if (closest_nodes.size() < Parameters::closest_nodes_size)
-    return;
+//  if (closest_nodes.size() < Parameters::closest_nodes_size)
+//    return;
   std::vector<NodeInfo> update_subscribers;
   assert(closest_nodes.size() <= Parameters::closest_nodes_size);
   {
@@ -192,18 +193,6 @@ void GroupChangeHandler::SendSubscribeRpc(const bool& subscribe,
     routing_table_.GetNodesNeedingGroupUpdates(nodes_needing_update);
   } else {
     nodes_needing_update.push_back(node_info);
-    {
-      std::lock_guard<std::mutex> lock(mutex_);
-      if (!update_subscribers_.empty()) {
-        update_subscribers_.erase(std::remove_if(update_subscribers_.begin(),
-                                                 update_subscribers_.end(),
-                                                 [&](const NodeInfo& node) {
-                                                   return node.node_id == node_info.node_id;
-                                                 }));
-        LOG(kVerbose) << "[" << DebugId(routing_table_.kNodeId()) << "] tring to remove "
-                      << DebugId(node_info.node_id);
-      }
-    }
   }
   LOG(kVerbose) << "SendSubscribeRpc: nodes_needing_update: " << nodes_needing_update.size();
   for (auto& node : nodes_needing_update) {

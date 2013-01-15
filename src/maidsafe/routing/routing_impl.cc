@@ -125,10 +125,13 @@ void Routing::Impl::ConnectFunctors(const Functors& functors) {
                                     },
                                     functors_.close_node_replaced,
                                     [this] (const bool& subscribe, NodeInfo node_info) {
-                                      std::lock_guard<std::mutex> lock(running_mutex_);
                                       if (running_)
                                         group_change_handler_.SendSubscribeRpc(
                                             subscribe, node_info);
+                                    },
+                                    [this] (const NodeId& node_id) {
+                                      if (running_)
+                                        group_change_handler_.Unsubscribe(node_id);
                                     });
   message_handler_->set_message_received_functor(functors.message_received);
   message_handler_->set_request_public_key_functor(functors.request_public_key);

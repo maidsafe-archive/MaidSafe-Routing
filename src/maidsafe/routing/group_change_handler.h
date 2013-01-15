@@ -43,6 +43,7 @@ class GroupChangeHandler {
   void ClosestNodesUpdate(protobuf::Message& message);
   void SendSubscribeRpc(const bool& subscribe, const NodeInfo& node_info);
   void ClosestNodesUpdateSubscribe(protobuf::Message& message);
+  void Unsubscribe(const NodeId& node_id);
 
   friend class test::GenericNode;
  private:
@@ -58,7 +59,6 @@ class GroupChangeHandler {
   void AddPendingNotification(const NodeId& node_id, std::vector<NodeInfo> close_nodes);
   std::vector<NodeInfo> GetAndRemovePendingNotification(const NodeId& node_from);
   void Subscribe(NodeId node_id);
-  void Unsubscribe(NodeId node_id);
 
   std::mutex mutex_;
   RoutingTable& routing_table_;
