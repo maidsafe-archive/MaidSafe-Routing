@@ -454,12 +454,9 @@ TEST_F(RoutingNetworkTest, FUNC_NonexistentIsConnectedToVaultOrClient) {
 
 TEST_F(RoutingNetworkTest, FUNC_ClosestNodes) {
   for (auto node : env_->nodes_) {
-    if (node->IsClient()) {
-      // TODO(Alison) - add test for clients when relationship with group matrix has
-      // been confirmed.
-      continue;
-    }
-
+    // Note (15/01/13): Currently fails for clients. This is because GroupMatrix currently takes
+    // the vault/client's own node ID upon creation and includes it in its contents. Instead it
+    // should only take the ID for vaults.
     std::vector<NodeInfo> from_matrix(node->ClosestNodes());
     std::vector<NodeInfo> from_network(
           env_->GetClosestVaults(node->node_id(), static_cast<uint32_t>(from_matrix.size())));
@@ -467,8 +464,12 @@ TEST_F(RoutingNetworkTest, FUNC_ClosestNodes) {
     auto min_size(std::min(from_matrix.size(), from_network.size()));
     EXPECT_LE(8U, min_size);
 
+    std::string type("VAULT");
+    if (node->IsClient())
+      type = "CLIENT";
     for (uint16_t i(0); i < std::min(size_t(8), min_size); ++i)
-      EXPECT_EQ(from_matrix.at(i).node_id, from_network.at(i).node_id);
+      EXPECT_EQ(from_matrix.at(i).node_id, from_network.at(i).node_id) << "For node of type "
+                                                                       << type;
   }
 }
 
