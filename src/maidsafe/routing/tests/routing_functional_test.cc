@@ -42,6 +42,26 @@ class RoutingNetworkTest : public testing::Test {
   std::shared_ptr<GenericNetwork> env_;
 };
 
+TEST_F(RoutingNetworkTest, FUNC_GroupUpdateSubscription) {
+  std::vector<NodeInfo> closest_nodes_info;
+  for (auto node : env_->nodes_) {
+    if ((node->node_id() == env_->nodes_[kServerSize - 1]->node_id()) ||
+        (node->node_id() == env_->nodes_[kNetworkSize - 1]->node_id()))
+      continue;
+    closest_nodes_info = env_->GetClosestNodes(node->node_id(),
+                                               Parameters::closest_nodes_size - 1);
+    LOG(kVerbose) << "size of closest_nodes: " << closest_nodes_info.size();
+
+    for (auto node_info : closest_nodes_info) {
+      int index(env_->NodeIndex(node_info.node_id));
+      if ((index == kServerSize - 1) || env_->nodes_[index]->IsClient())
+        continue;
+      EXPECT_TRUE(env_->nodes_[index]->NodeSubscriedForGroupUpdate(node->node_id()))
+          << DebugId(node_info.node_id) << " does not have " << DebugId(node->node_id());
+    }
+  }
+}
+
 TEST_F(RoutingNetworkTest, FUNC_SanityCheck) {
   {
     EXPECT_TRUE(env_->Send(3));
@@ -330,26 +350,6 @@ TEST_F(RoutingNetworkTest, FUNC_GetRandomExistingNode) {
     random_node_ids.insert(retrieved_id);
   }
   EXPECT_EQ(100, random_node_ids.size());
-}
-
-TEST_F(RoutingNetworkTest, FUNC_GroupUpdateSubscription) {
-  std::vector<NodeInfo> closest_nodes_info;
-  for (auto node : env_->nodes_) {
-    if ((node->node_id() == env_->nodes_[kServerSize - 1]->node_id()) ||
-        (node->node_id() == env_->nodes_[kNetworkSize - 1]->node_id()))
-      continue;
-    closest_nodes_info = env_->GetClosestNodes(node->node_id(),
-                                               Parameters::closest_nodes_size - 1);
-    LOG(kVerbose) << "size of closest_nodes: " << closest_nodes_info.size();
-
-    for (auto node_info : closest_nodes_info) {
-      int index(env_->NodeIndex(node_info.node_id));
-      if ((index == kServerSize - 1) || env_->nodes_[index]->IsClient())
-        continue;
-      EXPECT_TRUE(env_->nodes_[index]->NodeSubscriedForGroupUpdate(node->node_id()))
-          << DebugId(node_info.node_id) << " does not have " << DebugId(node->node_id());
-    }
-  }
 }
 
 TEST_F(RoutingNetworkTest, FUNC_IsNodeIdInGroupRange) {
