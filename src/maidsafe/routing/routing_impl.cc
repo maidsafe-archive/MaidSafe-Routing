@@ -60,7 +60,7 @@ Routing::Impl::Impl(bool client_mode,
       // TODO(Prakash) : don't create non_routing_table for client nodes (wrap both)
       non_routing_table_(routing_table_.kNodeId()),
       remove_furthest_node_(routing_table_, network_),
-      group_change_handler_(routing_table_, network_),
+      group_change_handler_(routing_table_, non_routing_table_, network_),
       network_statistics_(routing_table_.kNodeId()),
       message_handler_(),
       asio_service_(2),
@@ -129,10 +129,14 @@ void Routing::Impl::ConnectFunctors(const Functors& functors) {
                                         group_change_handler_.SendSubscribeRpc(
                                             subscribe, node_info);
                                     },
-                                    [this] (const NodeId& node_id) {
+                                    [this] (const NodeId& connection_id) {
                                       if (running_)
-                                        group_change_handler_.Unsubscribe(node_id);
+                                        group_change_handler_.Unsubscribe(connection_id);
                                     });
+  non_routing_table_.InitialiseFunctors([this] (const NodeId& connection_id) {
+                                          if (running_)
+                                            group_change_handler_.Unsubscribe(connection_id);
+                                        });
   message_handler_->set_message_received_functor(functors.message_received);
   message_handler_->set_request_public_key_functor(functors.request_public_key);
   network_.set_new_bootstrap_endpoint_functor(functors.new_bootstrap_endpoint);

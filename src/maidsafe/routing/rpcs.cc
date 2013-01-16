@@ -226,7 +226,7 @@ protobuf::Message ConnectSuccessAcknowledgement(const NodeId& node_id,
   return message;
 }
 
-protobuf::Message ClosestNodesUpdateRequest(
+protobuf::Message ClosestNodesUpdate(
     const NodeId& node_id,
     const NodeId& my_node_id,
     const std::vector<NodeInfo>& closest_nodes) {
@@ -249,7 +249,7 @@ protobuf::Message ClosestNodesUpdateRequest(
   message.set_direct(true);
   message.set_replication(1);
   message.set_type(static_cast<int32_t>(MessageType::kClosestNodesUpdate));
-  message.set_request(true);
+  message.set_request(false);
   message.set_client_node(false);
   message.set_hops_to_live(Parameters::hops_to_live);
   message.set_id(RandomUint32() % 10000);

@@ -49,7 +49,7 @@ TEST(ServicesTest, BEH_Ping) {
   NonRoutingTable non_routing_table(routing_table.kNodeId());
   AsioService asio_service(1);
   NetworkUtils network(routing_table, non_routing_table);
-  GroupChangeHandler group_change_handler(routing_table, network);
+  GroupChangeHandler group_change_handler(routing_table, non_routing_table, network);
   Service service(routing_table, non_routing_table, network, group_change_handler);
   NodeInfo node;
   rudp::ManagedConnections rudp;
@@ -81,7 +81,7 @@ TEST(ServicesTest, BEH_FindNodes) {
   NonRoutingTable non_routing_table(routing_table.kNodeId());
   AsioService asio_service(1);
   NetworkUtils network(routing_table, non_routing_table);
-  GroupChangeHandler group_change_handler(routing_table, network);
+  GroupChangeHandler group_change_handler(routing_table, non_routing_table, network);
   Service service(routing_table, non_routing_table, network, group_change_handler);
   protobuf::Message message = rpcs::FindNodes(this_node_id, this_node_id, 8);
   service.FindNodes(message);

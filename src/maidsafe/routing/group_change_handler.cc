@@ -24,15 +24,20 @@
 #include "maidsafe/routing/routing_pb.h"
 #include "maidsafe/routing/rpcs.h"
 #include "maidsafe/routing/utils.h"
+#include "maidsafe/routing/routing_table.h"
+#include "maidsafe/routing/non_routing_table.h"
 
 
 namespace maidsafe {
 
 namespace routing {
 
-GroupChangeHandler::GroupChangeHandler(RoutingTable& routing_table, NetworkUtils& network)
+GroupChangeHandler::GroupChangeHandler(RoutingTable& routing_table,
+                                       NonRoutingTable& non_routing_table,
+                                       NetworkUtils& network)
   : mutex_(),
     routing_table_(routing_table),
+    non_routing_table_(non_routing_table),
     network_(network),
     update_subscribers_() {}
 
@@ -93,26 +98,29 @@ void GroupChangeHandler::ClosestNodesUpdateSubscribe(protobuf::Message& message)
   }
 
   if (closest_node_update_subscribe.subscribe())
-    Subscribe(NodeId(closest_node_update_subscribe.node_id()));
+    Subscribe(NodeId(closest_node_update_subscribe.node_id()),
+              NodeId(closest_node_update_subscribe.connection_id()));
   else
-    Unsubscribe(NodeId(closest_node_update_subscribe.node_id()));
+    Unsubscribe(NodeId(closest_node_update_subscribe.connection_id()));
   message.Clear();  // No response
 }
 
-void GroupChangeHandler::Unsubscribe(const NodeId& node_id) {
+void GroupChangeHandler::Unsubscribe(const NodeId& connection_id) {
   std::lock_guard<std::mutex> lock(mutex_);
   if (!update_subscribers_.empty()) {
     auto iter(std::find_if(update_subscribers_.begin(),
                            update_subscribers_.end(),
                            [&](const NodeInfo& node_info) {
-                             return node_info.node_id == node_id;
+                             return (node_info.connection_id == connection_id);
                            }));
-    if (iter != update_subscribers_.end()  && (iter->node_id == node_id))
+    if ((iter != update_subscribers_.end()) &&
+        (iter->connection_id == connection_id))
       update_subscribers_.erase(iter);
   }
 }
 
-void GroupChangeHandler::Subscribe(NodeId node_id) {
+void GroupChangeHandler::Subscribe(const NodeId& node_id,
+                                   const NodeId& connection_id) {
   LOG(kVerbose) << "[" << DebugId(routing_table_.kNodeId()) << "] subscribing " << DebugId(node_id);
   NodeInfo node_info;
   std::vector<NodeInfo> connected_closest_nodes;
@@ -120,10 +128,10 @@ void GroupChangeHandler::Subscribe(NodeId node_id) {
   {
     connected_closest_nodes = routing_table_.GetClosestNodeInfo(routing_table_.kNodeId(),
                                                                 Parameters::closest_nodes_size);
-    if (connected_closest_nodes.size() < Parameters::closest_nodes_size)
+    if (connected_closest_nodes.size() < Parameters::node_group_size)
       return;
     std::lock_guard<std::mutex> lock(mutex_);
-    if (routing_table_.GetNodeInfo(node_id, node_info)) {
+    if (GetNodeInfo(node_id, connection_id, node_info)) {
       if (std::find_if(update_subscribers_.begin(),
                        update_subscribers_.end(),
                        [=](const NodeInfo& node)->bool {
@@ -141,16 +149,15 @@ void GroupChangeHandler::Subscribe(NodeId node_id) {
   if (node_info.node_id != NodeId()) {
     assert(connected_closest_nodes.size() <= Parameters::closest_nodes_size);
     protobuf::Message closest_nodes_update_rpc(
-        rpcs::ClosestNodesUpdateRequest(node_info.node_id,
-                                        routing_table_.kNodeId(),
-                                        connected_closest_nodes));
+        rpcs::ClosestNodesUpdate(node_info.node_id,
+                                 routing_table_.kNodeId(),
+                                 connected_closest_nodes));
     network_.SendToDirect(closest_nodes_update_rpc, node_info.node_id, node_info.connection_id);
   } else {
     LOG(kVerbose) << "[" << DebugId(routing_table_.kNodeId()) << "] failed to subscribe "
                   << DebugId(node_id) << " current size: "  << update_subscribers_.size();
   }
 }
-
 
 void GroupChangeHandler::UpdateGroupChange(const NodeId& node_id,
                                            std::vector<NodeInfo> close_nodes) {
@@ -181,7 +188,7 @@ void GroupChangeHandler::SendClosestNodesUpdateRpcs(const std::vector<NodeInfo>&
     LOG(kVerbose) << "["  << DebugId(routing_table_.kNodeId())
                   << "] Sending update to: " << DebugId(itr->node_id);
     protobuf::Message closest_nodes_update_rpc(
-        rpcs::ClosestNodesUpdateRequest(itr->node_id, routing_table_.kNodeId(), closest_nodes));
+        rpcs::ClosestNodesUpdate(itr->node_id, routing_table_.kNodeId(), closest_nodes));
     network_.SendToDirect(closest_nodes_update_rpc, itr->node_id, itr->connection_id);
   }
 }
@@ -206,6 +213,20 @@ void GroupChangeHandler::SendSubscribeRpc(const bool& subscribe,
                                            subscribe));
     network_.SendToDirect(closest_nodes_update_rpc, node.node_id, node.connection_id);
   }
+}
+
+bool GroupChangeHandler::GetNodeInfo(const NodeId& node_id, const NodeId& connection_id,
+                                     NodeInfo& out_node_info) {
+  if (routing_table_.GetNodeInfo(node_id, out_node_info))
+    return true;
+  auto nodes_info(non_routing_table_.GetNodesInfo(node_id));
+  for (auto node_info : nodes_info) {
+    if (node_info.connection_id == connection_id) {
+      out_node_info = node_info;
+      return true;
+    }
+  }
+  return false;
 }
 
 }  // namespace routing

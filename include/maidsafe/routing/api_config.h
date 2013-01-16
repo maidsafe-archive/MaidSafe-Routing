@@ -77,7 +77,7 @@ typedef std::function<void(const std::vector<NodeInfo>& /*new_close_nodes*/)>
 typedef std::function<void()> RemoveFurthestUnnecessaryNode;
 
 // Fires to remove a dropped node from group_update_subscribers list
-typedef std::function<void(const NodeId& /*node_id*/)>
+typedef std::function<void(const NodeId& /*connection_id*/)>
     UnsubscribeGroupUpdate;
 
 

@@ -51,7 +51,7 @@ class ResponseHandlerTest : public testing::Test {
                       network_statistics_),
        non_routing_table_(routing_table_.kNodeId()),
        network_(routing_table_, non_routing_table_),
-       group_change_handler_(routing_table_, network_),
+       group_change_handler_(routing_table_, non_routing_table_, network_),
        response_handler_(routing_table_, non_routing_table_, network_, group_change_handler_) {}
 
   int GetAvailableEndpoint(rudp::EndpointPair& this_endpoint_pair,
