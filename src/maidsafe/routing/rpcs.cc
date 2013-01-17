@@ -249,7 +249,7 @@ protobuf::Message ClosestNodesUpdate(
   message.set_direct(true);
   message.set_replication(1);
   message.set_type(static_cast<int32_t>(MessageType::kClosestNodesUpdate));
-  message.set_request(false);
+  message.set_request(true);
   message.set_client_node(false);
   message.set_hops_to_live(Parameters::hops_to_live);
   message.set_id(RandomUint32() % 10000);
@@ -257,7 +257,7 @@ protobuf::Message ClosestNodesUpdate(
   return message;
 }
 
-protobuf::Message ClosestNodesUpdateSubscrirbe(
+protobuf::Message ClosestNodesUpdateSubscribe(
     const NodeId& node_id,
     const NodeId& this_node_id,
     const NodeId& this_connection_id,

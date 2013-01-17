@@ -82,7 +82,7 @@ protobuf::Message ClosestNodesUpdate(const NodeId& node_id,
     const NodeId& my_node_id,
     const std::vector<NodeInfo>& closest_nodes);
 
-protobuf::Message ClosestNodesUpdateSubscrirbe(
+protobuf::Message ClosestNodesUpdateSubscribe(
     const NodeId& node_id,
     const NodeId& this_node_id,
     const NodeId &this_connection_id,

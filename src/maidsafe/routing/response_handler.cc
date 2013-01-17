@@ -370,12 +370,44 @@ void ResponseHandler::HandleSuccessAcknowledgementAsRequestor(std::vector<NodeId
 }
 
 void ResponseHandler::CheckAndSendConnectRequest(const NodeId& node_id) {
-  if ((routing_table_.size() < Parameters::greedy_fraction) ||
+  uint16_t limit(routing_table_.client_mode() ? Parameters::max_client_routing_table_size :
+                                                Parameters::greedy_fraction);
+  if ((routing_table_.size() < limit) ||
       NodeId::CloserToTarget(node_id,
                              routing_table_.GetNthClosestNode(routing_table_.kNodeId(),
-                                                              Parameters::greedy_fraction).node_id,
+                                                              limit).node_id,
                              routing_table_.kNodeId()))
     SendConnectRequest(node_id);
+}
+
+void ResponseHandler::CloseNodeUpdateForClient(protobuf::Message& message) {
+  assert(routing_table_.client_mode());
+  if (message.destination_id() != routing_table_.kNodeId().string()) {
+    // Message not for this node and we should not pass it on.
+    LOG(kError) << "Message not for this node.";
+    message.Clear();
+    return;
+  }
+  protobuf::ClosestNodesUpdate closest_node_update;
+  if (!closest_node_update.ParseFromString(message.data(0))) {
+    LOG(kError) << "No Data.";
+    return;
+  }
+
+  if (closest_node_update.node().empty() || !CheckId(closest_node_update.node())) {
+    LOG(kError) << "Invalid node id provided.";
+    return;
+  }
+
+  std::vector<NodeId> closest_nodes;
+  for (auto& basic_info : closest_node_update.nodes_info()) {
+    if (CheckId(basic_info.node_id())) {
+      closest_nodes.push_back(NodeId(basic_info.node_id()));
+    }
+  }
+  assert(!closest_nodes.empty());
+  HandleSuccessAcknowledgementAsRequestor(closest_nodes);
+  message.Clear();
 }
 
 void ResponseHandler::GetGroup(Timer& timer, protobuf::Message& message) {

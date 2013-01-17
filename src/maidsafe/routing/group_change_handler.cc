@@ -75,7 +75,8 @@ void GroupChangeHandler::ClosestNodesUpdate(protobuf::Message& message) {
   }
   assert(!closest_nodes.empty());
   UpdateGroupChange(NodeId(closest_node_update.node()), closest_nodes);
-  message.Clear();  // No response
+  if (!routing_table_.client_mode())
+    message.Clear();  // No response
 }
 
 void GroupChangeHandler::ClosestNodesUpdateSubscribe(protobuf::Message& message) {
@@ -206,7 +207,7 @@ void GroupChangeHandler::SendSubscribeRpc(const bool& subscribe,
     LOG(kVerbose) << DebugId(routing_table_.kNodeId()) << " SendSubscribeRpc to "
                   << DebugId(node.node_id);
     protobuf::Message closest_nodes_update_rpc(
-        rpcs::ClosestNodesUpdateSubscrirbe(node.node_id,
+        rpcs::ClosestNodesUpdateSubscribe(node.node_id,
                                            routing_table_.kNodeId(),
                                            routing_table_.kConnectionId(),
                                            routing_table_.client_mode(),
