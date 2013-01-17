@@ -67,9 +67,11 @@ class NodesEnvironment;
 
 class GenericNode {
  public:
-  explicit GenericNode(bool client_mode = false);
+  GenericNode(bool client_mode = false, bool has_symmetric_nat = false);
   GenericNode(bool client_mode, const rudp::NatType& nat_type);
-  GenericNode(bool client_mode, const NodeInfoAndPrivateKey& node_info);
+  GenericNode(bool client_mode,
+              const NodeInfoAndPrivateKey& node_info,
+              bool has_symmetric_nat = false);
   virtual ~GenericNode();
   int GetStatus() const;
   NodeId node_id() const;
@@ -139,6 +141,7 @@ class GenericNode {
   bool joined_;
   int expected_;
   rudp::NatType nat_type_;
+  bool has_symmetric_nat_;
   boost::asio::ip::udp::endpoint endpoint_;
   std::vector<std::string> messages_;
   std::shared_ptr<Routing> routing_;
@@ -157,11 +160,16 @@ class GenericNetwork {
   virtual ~GenericNetwork();
 
   bool ValidateRoutingTables();
-  void AddNode(const bool& client_mode, const NodeId& node_id, bool anonymous = false);
   virtual void SetUp();
   virtual void TearDown();
-  void SetUpNetwork(const size_t& non_client_size, const size_t& client_size = 0);
+  void SetUpNetwork(const size_t& total_number_vaults,
+                    const size_t& total_number_clients = 0);
+  void AddNode(const bool& client_mode,
+               const NodeId& node_id,
+               bool anonymous = false,
+               const bool& has_symmetric_nat = false);
   void AddNode(const bool& client_mode, const rudp::NatType& nat_type);
+  void AddNode(const bool& client_mode, const bool& has_symmetric_nat);
   bool RemoveNode(const NodeId& node_id);
   void Validate(const NodeId& node_id, GivePublicKeyFunctor give_public_key);
   void SetNodeValidationFunctor(NodePtr node);
@@ -183,6 +191,7 @@ class GenericNetwork {
                                          const uint32_t& quantity);
   bool RestoreComposition();
   bool WaitForHealthToStabilise();
+  bool NodeHasSymmetricNat(const NodeId& node_id);
   testing::AssertionResult Send(const size_t& messages);
   testing::AssertionResult SendGroup(const NodeId& node_id,
                                      const size_t& messages,
@@ -196,6 +205,7 @@ class GenericNetwork {
 
  private:
   uint16_t NonClientNodesSize() const;
+  uint16_t NonClientNonSymmetricNatNodesSize() const;
   void AddNodeDetails(NodePtr node);
 
   mutable std::mutex mutex_, fobs_mutex_;
@@ -225,6 +235,7 @@ class NodesEnvironment : public testing::Environment {
   static std::shared_ptr<GenericNetwork> g_environment() {
     return g_env_;
   }
+
  private:
   size_t num_server_nodes_;
   size_t num_client_nodes_;

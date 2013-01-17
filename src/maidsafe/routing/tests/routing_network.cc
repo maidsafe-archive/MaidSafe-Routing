@@ -62,7 +62,7 @@ typedef boost::asio::ip::udp::endpoint Endpoint;
 
 size_t GenericNode::next_node_id_(1);
 
-GenericNode::GenericNode(bool client_mode)
+GenericNode::GenericNode(bool client_mode, bool has_symmetric_nat)
     : functors_(),
       id_(0),
       node_info_plus_(),
@@ -72,6 +72,7 @@ GenericNode::GenericNode(bool client_mode)
       joined_(false),
       expected_(0),
       nat_type_(rudp::NatType::kUnknown),
+      has_symmetric_nat_(has_symmetric_nat),
       endpoint_(),
       messages_(),
       routing_(),
@@ -104,6 +105,7 @@ GenericNode::GenericNode(bool client_mode, const rudp::NatType& nat_type)
       joined_(false),
       expected_(0),
       nat_type_(nat_type),
+      has_symmetric_nat_(nat_type == rudp::NatType::kSymmetric),
       endpoint_(),
       messages_(),
       routing_(),
@@ -127,7 +129,9 @@ GenericNode::GenericNode(bool client_mode, const rudp::NatType& nat_type)
   id_ = next_node_id_++;
 }
 
-GenericNode::GenericNode(bool client_mode, const NodeInfoAndPrivateKey& node_info)
+GenericNode::GenericNode(bool client_mode,
+                         const NodeInfoAndPrivateKey& node_info,
+                         bool has_symmetric_nat)
     : functors_(),
       id_(0),
       node_info_plus_(std::make_shared<NodeInfoAndPrivateKey>(node_info)),
@@ -137,6 +141,7 @@ GenericNode::GenericNode(bool client_mode, const NodeInfoAndPrivateKey& node_inf
       joined_(false),
       expected_(0),
       nat_type_(rudp::NatType::kUnknown),
+      has_symmetric_nat_(has_symmetric_nat),
       endpoint_(),
       messages_(),
       routing_(),
@@ -444,7 +449,7 @@ GenericNetwork::GenericNetwork()
 GenericNetwork::~GenericNetwork() {}
 
 void GenericNetwork::SetUp() {
-  NodePtr node1(new GenericNode(false)), node2(new GenericNode(false));
+  NodePtr node1(new GenericNode(false, false)), node2(new GenericNode(false, false));
   nodes_.push_back(node1);
   nodes_.push_back(node2);
   client_index_ = 2;
@@ -473,31 +478,37 @@ void GenericNetwork::TearDown() {
   GenericNode::next_node_id_ = 1;
 }
 
-void GenericNetwork::SetUpNetwork(const size_t& non_client_size, const size_t& client_size) {
-  for (size_t index = 2; index < non_client_size; ++index) {
-    NodePtr node(new GenericNode(false));
+void GenericNetwork::SetUpNetwork(const size_t& total_number_vaults,
+                                  const size_t& total_number_clients) {
+  for (size_t index = 2; index < total_number_vaults; ++index) {
+    NodePtr node(new GenericNode(false, false));
     AddNodeDetails(node);
     LOG(kVerbose) << "Node # " << nodes_.size() << " added to network";
 //      node->PrintRoutingTable();
   }
-  for (size_t index = 0; index < client_size; ++index) {
-    NodePtr node(new GenericNode(true));
+
+  for (size_t index = 0; index < total_number_clients; ++index) {
+    NodePtr node(new GenericNode(true, false));
     AddNodeDetails(node);
     LOG(kVerbose) << "Node # " << nodes_.size() << " added to network";
   }
+
   Sleep(boost::posix_time::seconds(1));
   PrintRoutingTables();
 //    EXPECT_TRUE(ValidateRoutingTables());
 }
 
-void GenericNetwork::AddNode(const bool& client_mode, const NodeId& node_id, bool anonymous) {
+void GenericNetwork::AddNode(const bool& client_mode,
+                             const NodeId& node_id,
+                             bool anonymous,
+                             const bool& has_symmetric_nat) {
   NodeInfoAndPrivateKey node_info;
   if (!anonymous) {
     node_info = MakeNodeInfoAndKeys();
     if (node_id != NodeId())
       node_info.node_info.node_id = node_id;
   }
-  NodePtr node(new GenericNode(client_mode, node_info));
+  NodePtr node(new GenericNode(client_mode, node_info, has_symmetric_nat));
   AddNodeDetails(node);
   LOG(kVerbose) << "Node # " << nodes_.size() << " added to network";
 //    node->PrintRoutingTable();
@@ -506,6 +517,13 @@ void GenericNetwork::AddNode(const bool& client_mode, const NodeId& node_id, boo
 void GenericNetwork::AddNode(const bool& client_mode, const rudp::NatType& nat_type) {
   NodeInfoAndPrivateKey node_info(MakeNodeInfoAndKeys());
   NodePtr node(new GenericNode(client_mode, nat_type));
+  AddNodeDetails(node);
+  LOG(kVerbose) << "Node # " << nodes_.size() << " added to network";
+//    node->PrintRoutingTable();
+}
+
+void GenericNetwork::AddNode(const bool& client_mode, const bool& has_symmetric_nat) {
+  NodePtr node(new GenericNode(client_mode, has_symmetric_nat));
   AddNodeDetails(node);
   LOG(kVerbose) << "Node # " << nodes_.size() << " added to network";
 //    node->PrintRoutingTable();
@@ -539,10 +557,23 @@ void GenericNetwork::Validate(const NodeId& node_id, GivePublicKeyFunctor give_p
 }
 
 void GenericNetwork::SetNodeValidationFunctor(NodePtr node) {
-  node->functors_.request_public_key = [this] (const NodeId& node_id,
-                                               GivePublicKeyFunctor give_public_key) {
-                                         this->Validate(node_id, give_public_key);
-                                       };
+  if (node->has_symmetric_nat_) {
+    node->functors_.request_public_key = [this] (const NodeId& node_id,
+                                                 GivePublicKeyFunctor give_public_key) {
+      if (NodeHasSymmetricNat(node_id)) {
+        LOG(kInfo) << "NOT CONNECTING NODES    (both symmetric)";
+      } else {
+        LOG(kInfo) << "CONNECTING TWO NODES... (one symmetric)";
+        this->Validate(node_id, give_public_key);
+      }
+    };
+  } else {
+    node->functors_.request_public_key = [this] (const NodeId& node_id,
+                                                 GivePublicKeyFunctor give_public_key) {
+      LOG(kInfo) << "CONNECTING TWO NODES... (one or neither symmetric)";
+      this->Validate(node_id, give_public_key);
+    };
+  }
 }
 
 std::vector<NodeId> GenericNetwork::GroupIds(const NodeId& node_id) {
@@ -752,35 +783,53 @@ bool GenericNetwork::RestoreComposition() {
 }
 
 bool GenericNetwork::WaitForHealthToStabilise() {
-  // Intended for use in test SetUp/TearDown
   int i(0);
   bool healthy(false);
   int vault_health(100);
   int client_health(100);
-  if (kServerSize <= Parameters::max_routing_table_size)
-    vault_health = (kServerSize - 1) * 100 / Parameters::max_routing_table_size;
-  if (kServerSize <= Parameters::max_client_routing_table_size)
-    client_health = (kServerSize - 1) * 100 /Parameters::max_client_routing_table_size;
+  int vault_symmetric_health(100);
+  int client_symmetric_health(100);
+  int server_size(client_index_);
+  if (server_size <= Parameters::max_routing_table_size)
+    vault_health = (server_size - 1) * 100 / Parameters::max_routing_table_size;
+  if (server_size <= Parameters::max_client_routing_table_size)
+    client_health = (server_size - 1) * 100 /Parameters::max_client_routing_table_size;
+  int number_nonsymmetric_vaults(NonClientNonSymmetricNatNodesSize());
+  if (number_nonsymmetric_vaults <= Parameters::max_routing_table_size)
+    vault_symmetric_health = number_nonsymmetric_vaults * 100 / Parameters::max_routing_table_size;
+  if (number_nonsymmetric_vaults <= Parameters::max_client_routing_table_size)
+    client_symmetric_health =
+        number_nonsymmetric_vaults * 100 /Parameters::max_client_routing_table_size;
 
   while (i < 10 && !healthy) {
     ++i;
     healthy = true;
+    int expected_health;
+    std::string error_message;
     for (auto node: nodes_) {
       int node_health = node->Health();
       if (node->IsClient()) {
-        if (node_health != client_health) {
-          LOG(kError) << "Bad client health. Expected: "
-                      << client_health << " Got: " << node_health;
-          healthy = false;
-          break;
+        if (node->has_symmetric_nat_) {
+          expected_health = client_symmetric_health;
+          error_message = "Client health (symmetric).";
+        } else {
+          expected_health = client_health;
+          error_message = "Client health (not symmetric).";
         }
       } else {
-        if (node_health != vault_health) {
-          LOG(kError) << "Bad vault health. Expected: "
-                      << vault_health << " Got: " << node_health;
-          healthy = false;
-          break;
+        if (node->has_symmetric_nat_) {
+          expected_health = vault_symmetric_health;
+          error_message = "Vault health (symmetric).";
+        } else {
+          expected_health = vault_health;
+          error_message = "Vault health (not symmetric).";
         }
+      }
+      if (node_health != expected_health) {
+        LOG(kError) << "Bad " << error_message << " Expected: "
+                    << expected_health << " Got: " << node_health;
+        healthy = false;
+        break;
       }
     }
     if (!healthy)
@@ -789,6 +838,16 @@ bool GenericNetwork::WaitForHealthToStabilise() {
   if (!healthy)
     LOG(kError) << "Health failed to stabilise in 10 seconds.";
   return healthy;
+}
+
+bool GenericNetwork::NodeHasSymmetricNat(const NodeId& node_id) {
+  for (auto node : nodes_) {
+    if (node->node_id() == node_id) {
+      return node->has_symmetric_nat_;
+    }
+  }
+  LOG(kError) << "Couldn't find node_id";
+  return false;
 }
 
 testing::AssertionResult GenericNetwork::Send(const size_t& messages) {
@@ -944,6 +1003,15 @@ uint16_t GenericNetwork::NonClientNodesSize() const {
   return non_client_size;
 }
 
+uint16_t GenericNetwork::NonClientNonSymmetricNatNodesSize() const {
+  uint16_t non_client_non_sym_size(0);
+  for (auto node : nodes_) {
+    if (!node->IsClient() && !node->has_symmetric_nat_)
+      non_client_non_sym_size++;
+  }
+  return non_client_non_sym_size;
+}
+
 void GenericNetwork::AddNodeDetails(NodePtr node) {
   std::shared_ptr<std::condition_variable> cond_var(new std::condition_variable);
   std::weak_ptr<std::condition_variable> cond_var_weak(cond_var);
@@ -954,9 +1022,16 @@ void GenericNetwork::AddNodeDetails(NodePtr node) {
     }
     std::lock_guard<std::mutex> lock(mutex_);
     SetNodeValidationFunctor(node);
-    uint16_t node_size(NonClientNodesSize());
-    node->set_expected(NetworkStatus(node->IsClient(),
-                                     std::min(node_size, Parameters::closest_nodes_size)));
+
+    if (node->has_symmetric_nat_) {
+      node->set_expected(NetworkStatus(node->IsClient(),
+                                       std::min(NonClientNonSymmetricNatNodesSize(),
+                                                Parameters::closest_nodes_size)));
+    } else {
+      node->set_expected(NetworkStatus(node->IsClient(),
+                                       std::min(NonClientNodesSize(),
+                                                Parameters::closest_nodes_size)));
+    }
     if (node->IsClient()) {
       nodes_.push_back(node);
     } else {

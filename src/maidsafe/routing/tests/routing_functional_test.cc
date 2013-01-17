@@ -473,6 +473,97 @@ TEST_F(RoutingNetworkTest, FUNC_ClosestNodes) {
   }
 }
 
+TEST_F(RoutingNetworkTest, FUNC_ClosestNodesClientBehindSymmetricNat) {
+  NodeId sym_client_id(NodeId::kRandomId);
+  env_->AddNode(true, sym_client_id, false, true);
+
+  std::vector<NodeInfo> close_vaults(
+        env_->GetClosestVaults(sym_client_id, Parameters::node_group_size));
+  NodeId edge_id(close_vaults.back().node_id);
+
+  std::vector<NodeId> closer_vaults;
+  while (closer_vaults.size() < 2) {
+    NodeId new_id(NodeId::kRandomId);
+    if (NodeId::CloserToTarget(new_id, edge_id, sym_client_id))
+      closer_vaults.push_back(new_id);
+  }
+  for (auto node_id : closer_vaults)
+    env_->AddNode(false, node_id, false, true);
+
+  EXPECT_TRUE(env_->WaitForHealthToStabilise());
+
+  int index(env_->NodeIndex(sym_client_id));
+  ASSERT_GE(index, 0);
+  std::vector<NodeInfo> from_matrix(env_->nodes_.at(index)->ClosestNodes());
+  std::vector<NodeInfo> from_network(
+        env_->GetClosestVaults(sym_client_id, 8));
+  EXPECT_LE(8U, from_matrix.size());
+
+  for (uint16_t i(0); i < std::min(size_t(8), from_matrix.size()); ++i)
+    EXPECT_EQ(from_matrix.at(i).node_id, from_network.at(i).node_id);
+}
+
+TEST_F(RoutingNetworkTest, FUNC_ClosestNodesVaultBehindSymmetricNat) {
+  NodeId sym_vault_id(NodeId::kRandomId);
+  env_->AddNode(false, sym_vault_id, false, true);
+
+  std::vector<NodeInfo> close_vaults(
+        env_->GetClosestVaults(sym_vault_id, Parameters::node_group_size + 1));  // exclude self
+  NodeId edge_id(close_vaults.back().node_id);
+
+  std::vector<NodeId> closer_vaults;
+  while (closer_vaults.size() < 2) {
+    NodeId new_id(NodeId::kRandomId);
+    if (NodeId::CloserToTarget(new_id, edge_id, sym_vault_id))
+      closer_vaults.push_back(new_id);
+  }
+  for (auto node_id : closer_vaults)
+    env_->AddNode(false, node_id, false, true);
+
+  EXPECT_TRUE(env_->WaitForHealthToStabilise());
+
+  int index(env_->NodeIndex(sym_vault_id));
+  ASSERT_GE(index, 0);
+  std::vector<NodeInfo> from_matrix(env_->nodes_.at(index)->ClosestNodes());
+  std::vector<NodeInfo> from_network(
+        env_->GetClosestVaults(sym_vault_id, 9));
+  EXPECT_LE(9U, from_matrix.size());
+
+  for (uint16_t i(0); i < std::min(size_t(9), from_matrix.size()); ++i) {
+    EXPECT_EQ(from_matrix.at(i).node_id, from_network.at(i).node_id);
+  }
+}
+
+TEST_F(RoutingNetworkTest, FUNC_ClosestNodesBehindSymmetricNat) {
+  uint16_t num_symmetric_vaults(kServerSize / 4);
+  for (auto i(0); i < num_symmetric_vaults; ++i)
+    env_->AddNode(false, true);
+  uint16_t num_symmetric_clients(1 + RandomUint32() % (kClientSize / 2));
+  for (auto i(0); i < num_symmetric_clients; ++i)
+    env_->AddNode(true, true);
+
+  for (auto node : env_->nodes_) {
+    // Note (17/01/13): Currently fails for clients. This is because GroupMatrix currently takes
+    // the vault/client's own node ID upon creation and includes it in its contents. Instead it
+    // should only take the ID for vaults.
+    if (node->IsClient())
+      continue;  // TODO(Alison) - remove this when FUNC_ClosestNodes (see above) is passing
+    std::vector<NodeInfo> from_matrix(node->ClosestNodes());
+    std::vector<NodeInfo> from_network(
+          env_->GetClosestVaults(node->node_id(), 8));
+    EXPECT_EQ(from_matrix.size(), from_network.size());
+    auto min_size(std::min(from_matrix.size(), from_network.size()));
+    EXPECT_LE(8U, min_size);
+
+    std::string type("VAULT");
+    if (node->IsClient())
+      type = "CLIENT";
+    for (uint16_t i(0); i < std::min(size_t(8), min_size); ++i)
+      EXPECT_EQ(from_matrix.at(i).node_id, from_network.at(i).node_id) << "For node of type "
+                                                                       << type;
+  }
+}
+
 }  // namespace test
 
 }  // namespace routing

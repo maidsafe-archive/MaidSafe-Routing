@@ -29,7 +29,6 @@
 #include <memory>
 #include <string>
 #include <vector>
-#include <future>
 
 #include "boost/asio/ip/udp.hpp"
 #include "boost/date_time/posix_time/posix_time_config.hpp"

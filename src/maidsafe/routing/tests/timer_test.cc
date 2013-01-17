@@ -81,7 +81,7 @@ class TimerTest : public testing::Test {
   }
 
  protected:
-  AsioService asio_service_; 
+  AsioService asio_service_;
   Timer timer_;
   const uint16_t kGroupSize_;
   TaskResponseFunctor single_good_response_functor_,
