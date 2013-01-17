@@ -542,6 +542,8 @@ TEST_F(RoutingNetworkTest, FUNC_ClosestNodesBehindSymmetricNat) {
   for (auto i(0); i < num_symmetric_clients; ++i)
     env_->AddNode(true, true);
 
+  EXPECT_TRUE(env_->WaitForHealthToStabilise());
+
   for (auto node : env_->nodes_) {
     // Note (17/01/13): Currently fails for clients. This is because GroupMatrix currently takes
     // the vault/client's own node ID upon creation and includes it in its contents. Instead it
@@ -550,15 +552,14 @@ TEST_F(RoutingNetworkTest, FUNC_ClosestNodesBehindSymmetricNat) {
       continue;  // TODO(Alison) - remove this when FUNC_ClosestNodes (see above) is passing
     std::vector<NodeInfo> from_matrix(node->ClosestNodes());
     std::vector<NodeInfo> from_network(
-          env_->GetClosestVaults(node->node_id(), 8));
-    EXPECT_EQ(from_matrix.size(), from_network.size());
+          env_->GetClosestVaults(node->node_id(), 9));
     auto min_size(std::min(from_matrix.size(), from_network.size()));
-    EXPECT_LE(8U, min_size);
+    EXPECT_LE(9U, min_size);
 
     std::string type("VAULT");
     if (node->IsClient())
       type = "CLIENT";
-    for (uint16_t i(0); i < std::min(size_t(8), min_size); ++i)
+    for (uint16_t i(0); i < std::min(size_t(9), min_size); ++i)
       EXPECT_EQ(from_matrix.at(i).node_id, from_network.at(i).node_id) << "For node of type "
                                                                        << type;
   }
