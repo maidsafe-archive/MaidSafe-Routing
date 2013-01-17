@@ -31,9 +31,9 @@ namespace test {
 
 
 TEST(RoutingTableTest, BEH_AddCloseNodes) {
-  NetworkStatistics network_statistics((NodeId(NodeId::kRandomId)));
-  RoutingTable routing_table(false, (NodeId(NodeId::kRandomId)), asymm::GenerateKeyPair(),
-                             network_statistics);
+  NodeId node_id(NodeId::kRandomId);
+  NetworkStatistics network_statistics(node_id);
+  RoutingTable routing_table(false, node_id, asymm::GenerateKeyPair(), network_statistics);
   NodeInfo node;
   // check the node is useful when false is set
   for (unsigned int i = 0; i < Parameters::closest_nodes_size ; ++i) {
@@ -58,9 +58,10 @@ TEST(RoutingTableTest, BEH_AddCloseNodes) {
 }
 
 TEST(RoutingTableTest, BEH_AddTooManyNodes) {
-  NetworkStatistics network_statistics((NodeId(NodeId::kRandomId)));
-  RoutingTable routing_table(false, (NodeId(NodeId::kRandomId)), asymm::GenerateKeyPair(),
-                             network_statistics);
+  NodeId node_id(NodeId::kRandomId);
+  NetworkStatistics network_statistics(node_id);
+  RoutingTable routing_table(false, node_id, asymm::GenerateKeyPair(), network_statistics);
+
   for (uint16_t i = 0; routing_table.size() < Parameters::max_routing_table_size; ++i) {
     NodeInfo node(MakeNode());
     EXPECT_TRUE(routing_table.AddNode(node));
@@ -80,10 +81,11 @@ TEST(RoutingTableTest, BEH_AddTooManyNodes) {
 }
 
 TEST(RoutingTableTest, BEH_PopulateAndDepopulateGroupCheckGroupChange) {
-  NetworkStatistics network_statistics((NodeId(NodeId::kRandomId)));
-  RoutingTable routing_table(false, (NodeId(NodeId::kRandomId)), asymm::GenerateKeyPair(),
-                             network_statistics);
+  NodeId node_id(NodeId::kRandomId);
+  NetworkStatistics network_statistics(node_id);
+  RoutingTable routing_table(false, node_id, asymm::GenerateKeyPair(), network_statistics);
   std::vector<NodeInfo> nodes;
+
   for (uint16_t i = 0; i < Parameters::closest_nodes_size; ++i)
     nodes.push_back(MakeNode());
 
@@ -129,10 +131,11 @@ TEST(RoutingTableTest, BEH_PopulateAndDepopulateGroupCheckGroupChange) {
 }
 
 TEST(RoutingTableTest, BEH_OrderedGroupChange) {
-  NetworkStatistics network_statistics((NodeId(NodeId::kRandomId)));
-  RoutingTable routing_table(false, (NodeId(NodeId::kRandomId)), asymm::GenerateKeyPair(),
-                             network_statistics);
+  NodeId node_id(NodeId::kRandomId);
+  NetworkStatistics network_statistics(node_id);
+  RoutingTable routing_table(false, node_id, asymm::GenerateKeyPair(), network_statistics);
   std::vector<NodeInfo> nodes;
+
   for (uint16_t i = 0; i < Parameters::max_routing_table_size; ++i)
     nodes.push_back(MakeNode());
 
@@ -174,10 +177,11 @@ TEST(RoutingTableTest, BEH_OrderedGroupChange) {
 }
 
 TEST(RoutingTableTest, BEH_ReverseOrderedGroupChange) {
-  NetworkStatistics network_statistics((NodeId(NodeId::kRandomId)));
-  RoutingTable routing_table(false, (NodeId(NodeId::kRandomId)), asymm::GenerateKeyPair(),
-                             network_statistics);
+  NodeId node_id(NodeId::kRandomId);
+  NetworkStatistics network_statistics(node_id);
+  RoutingTable routing_table(false, node_id, asymm::GenerateKeyPair(), network_statistics);
   std::vector<NodeInfo> nodes;
+
   for (uint16_t i = 0; i < Parameters::max_routing_table_size; ++i)
     nodes.push_back(MakeNode());
 
@@ -258,10 +262,11 @@ TEST(RoutingTableTest, BEH_ReverseOrderedGroupChange) {
 }
 
 TEST(RoutingTableTest, BEH_CheckGroupChangeRemoveNodesFromGroup) {
-  NetworkStatistics network_statistics((NodeId(NodeId::kRandomId)));
-  RoutingTable routing_table(false, (NodeId(NodeId::kRandomId)), asymm::GenerateKeyPair(),
-                             network_statistics);
+  NodeId node_id(NodeId::kRandomId);
+  NetworkStatistics network_statistics(node_id);
+  RoutingTable routing_table(false, node_id, asymm::GenerateKeyPair(), network_statistics);
   std::vector<NodeInfo> nodes;
+
   for (uint16_t i = 0; i < Parameters::max_routing_table_size; ++i)
     nodes.push_back(MakeNode());
 
@@ -343,10 +348,11 @@ TEST(RoutingTableTest, BEH_CheckGroupChangeRemoveNodesFromGroup) {
 }
 
 TEST(RoutingTableTest, BEH_CheckGroupChangeAddGroupNodesToFullTable) {
-  NetworkStatistics network_statistics((NodeId(NodeId::kRandomId)));
-  RoutingTable routing_table(false, (NodeId(NodeId::kRandomId)), asymm::GenerateKeyPair(),
-                             network_statistics);
+  NodeId node_id(NodeId::kRandomId);
+  NetworkStatistics network_statistics(node_id);
+  RoutingTable routing_table(false, node_id, asymm::GenerateKeyPair(), network_statistics);
   std::vector<NodeInfo> nodes;
+
   for (uint16_t i = 0; i < Parameters::max_routing_table_size; ++i)
     nodes.push_back(MakeNode());
 
@@ -455,9 +461,10 @@ TEST(RoutingTableTest, BEH_CheckGroupChangeAddGroupNodesToFullTable) {
 }
 
 TEST(RoutingTableTest, BEH_FillEmptyRefillRoutingTable) {
-  NetworkStatistics network_statistics((NodeId(NodeId::kRandomId)));
-  RoutingTable routing_table(false, (NodeId(NodeId::kRandomId)), asymm::GenerateKeyPair(),
-                             network_statistics);
+  NodeId node_id(NodeId::kRandomId);
+  NetworkStatistics network_statistics(node_id);
+  RoutingTable routing_table(false, node_id, asymm::GenerateKeyPair(), network_statistics);
+
   NodeId own_node_id(routing_table.kNodeId());
   std::vector<NodeInfo> nodes;
   for (uint16_t i = 0; i < Parameters::max_routing_table_size; ++i)
@@ -579,8 +586,7 @@ TEST(RoutingTableTest, BEH_CheckMockSendGroupChangeRpcs) {
   // Set up 1
   NodeId node_id(NodeId::kRandomId);
   NetworkStatistics network_statistics(node_id);
-  RoutingTable routing_table_1(false, node_id, asymm::GenerateKeyPair(),
-                               network_statistics);
+  RoutingTable routing_table_1(false, node_id, asymm::GenerateKeyPair(), network_statistics);
   NodeInfo node_info_1(MakeNode());
   node_info_1.node_id = routing_table_1.kNodeId();
   node_info_1.connection_id = node_info_1.node_id;
@@ -731,10 +737,11 @@ TEST(RoutingTableTest, BEH_CheckMockSendGroupChangeRpcs) {
 }
 
 TEST(RoutingTableTest, BEH_GroupUpdateFromConnectedPeer) {
-  NetworkStatistics network_statistics((NodeId(NodeId::kRandomId)));
-  RoutingTable routing_table(false, (NodeId(NodeId::kRandomId)), asymm::GenerateKeyPair(),
-                             network_statistics);
+  NodeId node_id(NodeId::kRandomId);
+  NetworkStatistics network_statistics(node_id);
+  RoutingTable routing_table(false, node_id, asymm::GenerateKeyPair(), network_statistics);
   std::vector<NodeInfo> nodes;
+
   for (uint16_t i(0); i < Parameters::closest_nodes_size; ++i)
     nodes.push_back(MakeNode());
 
@@ -766,9 +773,9 @@ TEST(RoutingTableTest, BEH_GroupUpdateFromConnectedPeer) {
 
 TEST(RoutingTableTest, BEH_GetNthClosest) {
   std::vector<NodeId> nodes_id;
-  NetworkStatistics network_statistics((NodeId(NodeId::kRandomId)));
-  RoutingTable routing_table(false, (NodeId(NodeId::kRandomId)), asymm::GenerateKeyPair(),
-                             network_statistics);
+  NodeId node_id(NodeId::kRandomId);
+  NetworkStatistics network_statistics(node_id);
+  RoutingTable routing_table(false, node_id, asymm::GenerateKeyPair(), network_statistics);
   NodeId my_node(routing_table.kNodeId());
 
   for (uint16_t i(static_cast<uint16_t>(routing_table.size()));
@@ -789,11 +796,11 @@ TEST(RoutingTableTest, BEH_GetNthClosest) {
 }
 
 TEST(RoutingTableTest, BEH_GetClosestNodeWithExclusion) {
-  NetworkStatistics network_statistics((NodeId(NodeId::kRandomId)));
+  NodeId node_id(NodeId::kRandomId);
+  NetworkStatistics network_statistics(node_id);
+  RoutingTable routing_table(false, node_id, asymm::GenerateKeyPair(), network_statistics);
   std::vector<NodeId> nodes_id;
   std::vector<std::string> exclude;
-  RoutingTable routing_table(false, (NodeId(NodeId::kRandomId)), asymm::GenerateKeyPair(),
-                             network_statistics);
   NodeInfo node_info;
   NodeId my_node(routing_table.kNodeId());
 
