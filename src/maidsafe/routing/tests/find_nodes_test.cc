@@ -157,15 +157,15 @@ TEST_F(FindNodeNetwork, FUNC_ClientFindVaultNode) {
   EXPECT_FALSE(this->nodes_[source]->RoutingTableHasNode(this->nodes_[client]->node_id()));
   EXPECT_TRUE(this->nodes_[source]->NonRoutingTableHasNode(this->nodes_[client]->node_id()));
 
-  EXPECT_FALSE(this->nodes_[client]->RoutingTableHasNode(this->nodes_[vault]->node_id()));
+  EXPECT_TRUE(this->nodes_[client]->RoutingTableHasNode(this->nodes_[vault]->node_id()));
   EXPECT_FALSE(this->nodes_[vault]->RoutingTableHasNode(this->nodes_[client]->node_id()));
-  EXPECT_FALSE(this->nodes_[vault]->NonRoutingTableHasNode(this->nodes_[client]->node_id()));
+  EXPECT_TRUE(this->nodes_[vault]->NonRoutingTableHasNode(this->nodes_[client]->node_id()));
 
   // trying to find
   EXPECT_TRUE(Find(this->nodes_[vault], this->nodes_[vault]->node_id()));
   Sleep(boost::posix_time::seconds(1));
   EXPECT_FALSE(this->nodes_[vault]->RoutingTableHasNode(this->nodes_[client]->node_id()));
-  EXPECT_FALSE(this->nodes_[vault]->NonRoutingTableHasNode(this->nodes_[client]->node_id()));
+  EXPECT_TRUE(this->nodes_[vault]->NonRoutingTableHasNode(this->nodes_[client]->node_id()));
 }
 
 TEST_F(FindNodeNetwork, FUNC_ClientFindClientNode) {

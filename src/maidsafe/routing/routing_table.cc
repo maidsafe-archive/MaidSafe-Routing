@@ -54,13 +54,13 @@ RoutingTable::RoutingTable(bool client_mode,
       network_statistics_(network_statistics) {}
 
 
-void RoutingTable::InitialiseFunctors(
-    NetworkStatusFunctor network_status_functor,
+void RoutingTable::InitialiseFunctors(NetworkStatusFunctor network_status_functor,
     std::function<void(const NodeInfo&, bool)> remove_node_functor,
     RemoveFurthestUnnecessaryNode remove_furthest_node,
     ConnectedGroupChangeFunctor connected_group_change_functor,
     CloseNodeReplacedFunctor close_node_replaced_functor,
-    SubscribeToGroupChangeUpdate subscribe_to_group_change_update) {
+    SubscribeToGroupChangeUpdate subscribe_to_group_change_update,
+    UnsubscribeGroupUpdate unsubscribe_group_update) {
   // TODO(Prakash#5#): 2012-10-25 - Consider asserting network_status_functor != nullptr here.
   if (!network_status_functor)
     LOG(kWarning) << "NULL network_status_functor passed.";
@@ -77,6 +77,7 @@ void RoutingTable::InitialiseFunctors(
     connected_group_change_functor_ = connected_group_change_functor;
     close_node_replaced_functor_ = close_node_replaced_functor;
     subscribe_to_group_change_update_ = subscribe_to_group_change_update;
+    unsubscribe_group_update_ = unsubscribe_group_update;
 //  }
 }
 
@@ -188,6 +189,9 @@ NodeInfo RoutingTable::DropNode(const NodeId& node_to_drop, bool routing_only) {
                             new_closest_nodes);
     }
   }
+
+  if (unsubscribe_group_update_)
+    unsubscribe_group_update_(node_to_drop);
 
   if (!new_connected_close_nodes.empty()) {
     if (connected_group_change_functor_)

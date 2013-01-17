@@ -33,6 +33,10 @@ NonRoutingTable::NonRoutingTable(const NodeId& node_id)
       nodes_(),
       mutex_() {}
 
+void NonRoutingTable::InitialiseFunctors(UnsubscribeGroupUpdate unsubscribe_group_update) {
+  unsubscribe_group_update_ = unsubscribe_group_update;
+}
+
 bool NonRoutingTable::AddNode(NodeInfo& node, const NodeId& furthest_close_node_id) {
   return AddOrCheckNode(node, furthest_close_node_id, true);
 }
@@ -73,13 +77,15 @@ std::vector<NodeInfo> NonRoutingTable::DropNodes(const NodeId &node_to_drop) {
   return nodes_info;
 }
 
-NodeInfo NonRoutingTable::DropConnection(const NodeId &connection_to_drop) {
+NodeInfo NonRoutingTable::DropConnection(const NodeId& connection_to_drop) {
   NodeInfo node_info;
   std::lock_guard<std::mutex> lock(mutex_);
   for (auto it = nodes_.begin(); it != nodes_.end(); ++it) {
     if ((*it).connection_id == connection_to_drop) {
       node_info = *it;
       nodes_.erase(it);
+      if (unsubscribe_group_update_)
+        unsubscribe_group_update_(connection_to_drop);
       break;
     }
   }

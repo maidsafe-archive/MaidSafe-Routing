@@ -186,7 +186,9 @@ class GenericNetwork {
   int NodeIndex(const NodeId& node_id);
   size_t ClientIndex() { return client_index_; }
   std::vector<NodeId> GetGroupForId(const NodeId& node_id);
-  std::vector<NodeInfo> GetClosestNodes(const NodeId& target_id, const uint32_t& quantity);
+  std::vector<NodeInfo> GetClosestNodes(const NodeId& target_id,
+                                        const uint32_t& quantity,
+                                        const bool vault_only = false);
   std::vector<NodeInfo> GetClosestVaults(const NodeId& target_id,
                                          const uint32_t& quantity);
   bool RestoreComposition();
@@ -229,6 +231,11 @@ class NodesEnvironment : public testing::Environment {
     g_env_->SetUpNetwork(num_server_nodes_, num_client_nodes_);
   }
   void TearDown() {
+    std::vector<NodeId> nodes_id;
+    for (auto node : g_env_->nodes_)
+      nodes_id.push_back(node->node_id());
+    for (auto node_id : nodes_id)
+      g_env_->RemoveNode(node_id);
     g_env_->GenericNetwork::TearDown();
   }
 

@@ -77,6 +77,8 @@ void MessageHandler::HandleRoutingMessage(protobuf::Message& message) {
     case MessageType::kClosestNodesUpdate :
       assert(message.request());
       group_change_handler_.ClosestNodesUpdate(message);
+      if (routing_table_.client_mode())
+        response_handler_->CloseNodeUpdateForClient(message);
       break;
     case MessageType::kClosestNodesUpdateSubscribe :
       assert(message.request());

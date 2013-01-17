@@ -19,7 +19,6 @@
 
 #include "maidsafe/routing/network_utils.h"
 #include "maidsafe/routing/node_info.h"
-#include "maidsafe/routing/routing_table.h"
 #include "maidsafe/routing/routing_pb.h"
 
 
@@ -31,11 +30,16 @@ namespace test {
   class GenericNode;
 }
 
+class RoutingTable;
+class NonRoutingTable;
+
 namespace protobuf { class Message; }
 
 class GroupChangeHandler {
  public:
-  GroupChangeHandler(RoutingTable& routing_table, NetworkUtils& network);
+  GroupChangeHandler(RoutingTable& routing_table,
+                     NonRoutingTable& non_routing_table,
+                     NetworkUtils& network);
   ~GroupChangeHandler();
   void SendClosestNodesUpdateRpcs(const std::vector<NodeInfo>& new_close_nodes);
   void UpdateGroupChange(const NodeId& node_id, std::vector<NodeInfo> close_nodes);
@@ -43,6 +47,7 @@ class GroupChangeHandler {
   void ClosestNodesUpdate(protobuf::Message& message);
   void SendSubscribeRpc(const bool& subscribe, const NodeInfo& node_info);
   void ClosestNodesUpdateSubscribe(protobuf::Message& message);
+  void Unsubscribe(const NodeId& connection_id);
 
   friend class test::GenericNode;
  private:
@@ -57,11 +62,12 @@ class GroupChangeHandler {
 
   void AddPendingNotification(const NodeId& node_id, std::vector<NodeInfo> close_nodes);
   std::vector<NodeInfo> GetAndRemovePendingNotification(const NodeId& node_from);
-  void Subscribe(NodeId node_id);
-  void Unsubscribe(NodeId node_id);
+  void Subscribe(const NodeId& node_id, const NodeId& connection_id);
+  bool GetNodeInfo(const NodeId& node_id, const NodeId& connection_id, NodeInfo& out_node_info);
 
   std::mutex mutex_;
   RoutingTable& routing_table_;
+  NonRoutingTable& non_routing_table_;
   NetworkUtils& network_;
   std::vector<NodeInfo> update_subscribers_;
 };
