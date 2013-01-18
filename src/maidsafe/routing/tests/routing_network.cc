@@ -480,15 +480,41 @@ void GenericNetwork::TearDown() {
 
 void GenericNetwork::SetUpNetwork(const size_t& total_number_vaults,
                                   const size_t& total_number_clients) {
-  for (size_t index = 2; index < total_number_vaults; ++index) {
+  SetUpNetwork(total_number_vaults, total_number_clients, 0, 0);
+}
+
+void GenericNetwork::SetUpNetwork(const size_t& total_number_vaults,
+                                  const size_t& total_number_clients,
+                                  const size_t& num_symmetric_nat_vaults,
+                                  const size_t& num_symmetric_nat_clients) {
+  assert(total_number_vaults >= num_symmetric_nat_vaults + 2);
+  assert(total_number_clients >= num_symmetric_nat_clients);
+
+  size_t num_nonsym_nat_vaults(total_number_vaults - num_symmetric_nat_vaults);
+  size_t num_nonsym_nat_clients(total_number_clients - num_symmetric_nat_clients);
+
+  for (size_t index(2); index < num_nonsym_nat_vaults; ++index) {
     NodePtr node(new GenericNode(false, false));
     AddNodeDetails(node);
     LOG(kVerbose) << "Node # " << nodes_.size() << " added to network";
 //      node->PrintRoutingTable();
   }
 
-  for (size_t index = 0; index < total_number_clients; ++index) {
+  for (size_t index(0); index < num_symmetric_nat_vaults; ++index) {
+    NodePtr node(new GenericNode(false, true));
+    AddNodeDetails(node);
+    LOG(kVerbose) << "Node # " << nodes_.size() << " added to network";
+//      node->PrintRoutingTable();
+  }
+
+  for (size_t index(0); index < num_nonsym_nat_clients; ++index) {
     NodePtr node(new GenericNode(true, false));
+    AddNodeDetails(node);
+    LOG(kVerbose) << "Node # " << nodes_.size() << " added to network";
+  }
+
+  for (size_t index(0); index < num_symmetric_nat_clients; ++index) {
+    NodePtr node(new GenericNode(true, true));
     AddNodeDetails(node);
     LOG(kVerbose) << "Node # " << nodes_.size() << " added to network";
   }

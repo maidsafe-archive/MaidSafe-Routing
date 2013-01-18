@@ -164,6 +164,12 @@ class GenericNetwork {
   virtual void TearDown();
   void SetUpNetwork(const size_t& total_number_vaults,
                     const size_t& total_number_clients = 0);
+  // Use to specify proportion of vaults/clients that should behave as though they are behind
+  // symmetric NAT. Two nodes behind symmetric NAT can't connect directly to each other.
+  void SetUpNetwork(const size_t& total_number_vaults,
+                    const size_t& total_number_clients,
+                    const size_t& num_symmetric_nat_vaults,
+                    const size_t& sum_symmetric_nat_clients);
   void AddNode(const bool& client_mode,
                const NodeId& node_id,
                bool anonymous = false,
@@ -222,13 +228,21 @@ class GenericNetwork {
 
 class NodesEnvironment : public testing::Environment {
  public:
-  NodesEnvironment(size_t num_server_nodes, size_t num_client_nodes)
-    : num_server_nodes_(num_server_nodes),
-      num_client_nodes_(num_client_nodes) {}
+  NodesEnvironment(size_t total_num_server_nodes,
+                   size_t total_num_client_nodes,
+                   size_t num_symmetric_nat_server_nodes,
+                   size_t num_symmetric_nat_client_nodes)
+    : total_num_server_nodes_(total_num_server_nodes),
+      total_num_client_nodes_(total_num_client_nodes),
+      num_symmetric_nat_server_nodes_(num_symmetric_nat_server_nodes),
+      num_symmetric_nat_client_nodes_(num_symmetric_nat_client_nodes) {}
 
   void SetUp() {
     g_env_->GenericNetwork::SetUp();
-    g_env_->SetUpNetwork(num_server_nodes_, num_client_nodes_);
+    g_env_->SetUpNetwork(total_num_server_nodes_,
+                         total_num_client_nodes_,
+                         num_symmetric_nat_server_nodes_,
+                         num_symmetric_nat_client_nodes_);
   }
   void TearDown() {
     std::vector<NodeId> nodes_id;
@@ -244,8 +258,10 @@ class NodesEnvironment : public testing::Environment {
   }
 
  private:
-  size_t num_server_nodes_;
-  size_t num_client_nodes_;
+  size_t total_num_server_nodes_;
+  size_t total_num_client_nodes_;
+  size_t num_symmetric_nat_server_nodes_;
+  size_t num_symmetric_nat_client_nodes_;
   static std::shared_ptr<GenericNetwork> g_env_;
 };
 
