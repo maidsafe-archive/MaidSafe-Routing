@@ -793,7 +793,7 @@ bool GenericNetwork::WaitForHealthToStabilise() {
   int client_health(100);
   int vault_symmetric_health(100);
   int client_symmetric_health(100);
-  int server_size(client_index_);
+  int server_size(static_cast<int>(client_index_));
   if (server_size <= Parameters::max_routing_table_size)
     vault_health = (server_size - 1) * 100 / Parameters::max_routing_table_size;
   if (server_size <= Parameters::max_client_routing_table_size)
