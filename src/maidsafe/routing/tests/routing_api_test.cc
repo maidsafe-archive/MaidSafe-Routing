@@ -581,6 +581,131 @@ TEST(APITest, BEH_API_NodeNetworkWithClient) {
   }
 }
 
+TEST(APITest, BEH_API_SendGroup) {
+  int min_join_status(std::min(kServerCount, 8));
+  std::vector<boost::promise<bool>> join_promises(kNetworkSize);
+  std::vector<boost::unique_future<bool>> join_futures;
+  std::deque<bool> promised;
+  std::vector<NetworkStatusFunctor> status_vector;
+  boost::shared_mutex mutex;
+  Functors functors;
+
+  std::vector<NodeInfoAndPrivateKey> nodes;
+  std::map<NodeId, asymm::PublicKey> key_map;
+  std::vector<std::shared_ptr<Routing>> routing_node;
+  int i(0);
+  functors.request_public_key = [&](const NodeId& node_id, GivePublicKeyFunctor give_key) {
+      LOG(kWarning) << "node_validation called for " << DebugId(node_id);
+      auto itr(key_map.find(node_id));
+      if (key_map.end() != itr)
+        give_key((*itr).second);
+    };
+
+  for (; i != kServerCount; ++i) {
+    auto pmid(MakePmid());
+    NodeInfoAndPrivateKey node(MakeNodeInfoAndKeysWithPmid(pmid));
+    nodes.push_back(node);
+    key_map.insert(std::make_pair(node.node_info.node_id, pmid.public_key()));
+    routing_node.push_back(std::make_shared<Routing>(&pmid));
+  }
+  for (; i != kNetworkSize; ++i) {
+    auto maid(MakeMaid());
+    NodeInfoAndPrivateKey node(MakeNodeInfoAndKeysWithMaid(maid));
+    nodes.push_back(node);
+    key_map.insert(std::make_pair(node.node_info.node_id, maid.public_key()));
+    routing_node.push_back(std::make_shared<Routing>(&maid));
+  }
+
+  functors.network_status = [](const int&) {};  // NOLINT (Alison)
+
+
+  functors.message_received = [&] (const std::string& message, const NodeId&, const bool&,
+                                   ReplyFunctor reply_functor) {
+      reply_functor("response to " + message);
+      LOG(kVerbose) << "Message received and replied to message !!";
+    };
+
+  Functors client_functors;
+  client_functors.network_status = [](const int&) {};  // NOLINT (Alison)
+  client_functors.request_public_key = functors.request_public_key;
+  client_functors.message_received = [&] (const std::string &, const NodeId&, const bool&,
+                                          ReplyFunctor /*reply_functor*/) {
+      ASSERT_TRUE(false);  //  Client should not receive incoming message
+    };
+  Endpoint endpoint1(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort()),
+           endpoint2(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort());
+  auto a1 = std::async(std::launch::async, [&] {
+      return routing_node[0]->ZeroStateJoin(functors, endpoint1, endpoint2,
+                                            nodes[1].node_info);
+    });
+  auto a2 = std::async(std::launch::async, [&] {
+      return routing_node[1]->ZeroStateJoin(functors, endpoint2, endpoint1,
+                                            nodes[0].node_info);
+    });
+
+  EXPECT_EQ(kSuccess, a2.get());  // wait for promise !
+  EXPECT_EQ(kSuccess, a1.get());  // wait for promise !
+
+  // Ignoring 2 zero state nodes
+  promised.push_back(false);
+  promised.push_back(false);
+  status_vector.emplace_back([](int /*x*/) {});
+  status_vector.emplace_back([](int /*x*/) {});
+  boost::promise<bool> promise1, promise2;
+  join_futures.emplace_back(promise1.get_future());
+  join_futures.emplace_back(promise2.get_future());
+
+  // Joining remaining server & client nodes
+  for (auto i(2); i != (kNetworkSize); ++i) {
+    join_futures.emplace_back(join_promises.at(i).get_future());
+    promised.push_back(true);
+    status_vector.emplace_back([=, &join_promises, &mutex, &promised](int result) {
+                                   ASSERT_GE(result, kSuccess);
+                                   if (result == NetworkStatus((i < kServerCount)? false: true,
+                                                               std::min(i, min_join_status))) {
+                                     boost::unique_lock< boost::shared_mutex> lock(mutex);
+                                     if (promised.at(i)) {
+                                       join_promises.at(i).set_value(true);
+                                       promised.at(i) = false;
+                                       LOG(kVerbose) << "node - " << i << "joined";
+                                     }
+                                   }
+                                 });
+  }
+
+  for (auto i(2); i != (kNetworkSize); ++i) {
+    functors.network_status = status_vector.at(i);
+    routing_node[i]->Join(functors, std::vector<Endpoint>(1, endpoint1));
+    ASSERT_TRUE(join_futures.at(i).timed_wait(boost::posix_time::seconds(10)));
+  }
+
+  // Call SendGroup repeatedly - measure duration to allow performance comparison
+  bptime::ptime start_time(bptime::microsec_clock::universal_time());
+  for (uint16_t i(0); i < kNetworkSize; ++i) {
+    NodeId dest_id(routing_node[i]->kNodeId());
+    uint16_t count(0);
+    while (count < 100) {
+      ++count;
+      std::vector<std::future<std::string>> futures(routing_node[i]->SendGroup(dest_id,
+                                                                               "message",
+                                                                               false));
+      bool sent(false);
+      while (!sent) {
+        sent = true;
+        for (uint16_t j(0); j < futures.size(); ++j) {
+          if (!IsReady(futures.at(j))) {
+            sent = false;
+            break;
+          }
+        }
+      }
+    }
+  }
+  bptime::ptime stop_time(bptime::microsec_clock::universal_time());
+  uint64_t duration = (stop_time - start_time).total_milliseconds();
+  std::cout << "Total time taken by SendGroup: " << duration << " milliseconds\n";
+}
+
 }  // namespace test
 
 }  // namespace routing
