@@ -10,24 +10,39 @@
  *  the explicit written permission of the board of directors of maidsafe.net. *
  ******************************************************************************/
 
-#include "maidsafe/routing/tests/mock_network_utils.h"
+#ifndef MAIDSAFE_ROUTING_PROCESSED_MESSAGES_H_
+#define MAIDSAFE_ROUTING_PROCESSED_MESSAGES_H_
+
+#include <time.h>
+#include <tuple>
+#include <vector>
+
+#include "maidsafe/routing/api_config.h"
 
 namespace maidsafe {
 
 namespace routing {
 
-namespace test {
 
-MockNetworkUtils::MockNetworkUtils(RoutingTable& routing_table,
-                                   NonRoutingTable& non_routing_table,
-                                   AckTimer& ack_timer)
-    : NetworkUtils(routing_table, non_routing_table, ack_timer) {}
+typedef std::tuple<uint32_t, uint32_t, std::time_t> ProcessedMessage;
 
-MockNetworkUtils::~MockNetworkUtils() {}
+class ProcessedMessages {
+ public:
+  ProcessedMessages();
+  bool Add(const uint32_t& source_id, const uint32_t& message_id);
 
-}  // namespace test
+ private:
+  ProcessedMessages &operator=(const ProcessedMessages&);
+  ProcessedMessages(const ProcessedMessages&);
+  ProcessedMessages(const ProcessedMessages&&);
+  void Remove(std::unique_lock<std::mutex>& lock);
+
+  std::mutex mutex_;
+  std::vector<ProcessedMessage> history_;
+};
 
 }  // namespace routing
 
 }  // namespace maidsafe
 
+#endif  // MAIDSAFE_ROUTING_PROCESSED_MESSAGES_H_

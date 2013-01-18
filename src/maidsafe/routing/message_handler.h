@@ -43,6 +43,7 @@ class NetworkUtils;
 class NonRoutingTable;
 class RoutingTable;
 class Timer;
+class AckTimer;
 class RemoveFurthestNode;
 class GroupChangeHandler;
 class NetworkStatistics;
@@ -58,6 +59,7 @@ enum class MessageType : int32_t {
   kClosestNodesUpdate = 7,
   kClosestNodesUpdateSubscribe = 8,
   kGetGroup = 9,
+  kAck = 10,
   kMaxRouting = 100,
   kNodeLevel = 101
 };
@@ -68,6 +70,7 @@ class MessageHandler {
                  NonRoutingTable& non_routing_table,
                  NetworkUtils& network,
                  Timer& timer,
+                 AckTimer& ack_timer,
                  RemoveFurthestNode& remove_node,
                  GroupChangeHandler& group_change_handler,
                  NetworkStatistics& network_statistics);
@@ -115,6 +118,7 @@ class MessageHandler {
   GroupChangeHandler& group_change_handler_;
   std::unique_ptr<CacheManager> cache_manager_;
   Timer& timer_;
+  AckTimer& ack_timer_;
   std::shared_ptr<ResponseHandler> response_handler_;
   std::shared_ptr<Service> service_;
   MessageReceivedFunctor message_received_functor_;

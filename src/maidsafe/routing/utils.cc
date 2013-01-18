@@ -162,6 +162,10 @@ bool CheckId(const std::string& id_to_test) {
   return id_to_test.size() == NodeId::kSize;
 }
 
+bool IsAck(const protobuf::Message& message) {
+  return message.type() == static_cast<int>(MessageType::kAck);
+}
+
 bool ValidateMessage(const protobuf::Message &message) {
   if (!message.IsInitialized()) {
     LOG(kWarning) << "Uninitialised message dropped.";

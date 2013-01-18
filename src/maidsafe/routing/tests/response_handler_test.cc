@@ -34,6 +34,7 @@
 #include "maidsafe/routing/utils.h"
 #include "maidsafe/routing/tests/mock_network_utils.h"
 #include "maidsafe/routing/tests/test_utils.h"
+#include "maidsafe/routing/ack_timer.h"
 
 
 namespace maidsafe {
@@ -46,11 +47,13 @@ class ResponseHandlerTest : public testing::Test {
  public:
   ResponseHandlerTest()
     :  node_id_(NodeId::kRandomId),
+       asio_service_(1),
+       ack_timer_(asio_service_),
        network_statistics_(node_id_),
        routing_table_(false, NodeId(NodeId::kRandomId), asymm::GenerateKeyPair(),
                       network_statistics_),
        non_routing_table_(routing_table_.kNodeId()),
-       network_(routing_table_, non_routing_table_),
+       network_(routing_table_, non_routing_table_, ack_timer_),
        group_change_handler_(routing_table_, non_routing_table_, network_),
        response_handler_(routing_table_, non_routing_table_, network_, group_change_handler_) {}
 
@@ -198,6 +201,8 @@ class ResponseHandlerTest : public testing::Test {
   }
 
   NodeId node_id_;
+  AsioService asio_service_;
+  AckTimer ack_timer_;
   NetworkStatistics network_statistics_;
   RoutingTable routing_table_;
   NonRoutingTable non_routing_table_;

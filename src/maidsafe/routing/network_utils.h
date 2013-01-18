@@ -35,6 +35,7 @@ namespace protobuf { class Message; }
 
 class NonRoutingTable;
 class RoutingTable;
+class AckTimer;
 
 namespace test {
   class GenericNode;
@@ -43,7 +44,9 @@ namespace test {
 
 class NetworkUtils {
  public:
-  NetworkUtils(RoutingTable& routing_table, NonRoutingTable& non_routing_table);
+  NetworkUtils(RoutingTable& routing_table,
+               NonRoutingTable& non_routing_table,
+               AckTimer& ack_timer);
   virtual ~NetworkUtils();
   int Bootstrap(const std::vector<boost::asio::ip::udp::endpoint>& bootstrap_endpoints,
                 const rudp::MessageReceivedFunctor& message_received_functor,
@@ -66,6 +69,9 @@ class NetworkUtils {
   virtual void SendToDirect(const protobuf::Message& message,
                             const NodeId& peer_node_id,
                             const NodeId& peer_connection_id);
+  void SendAck(const protobuf::Message& message,
+               const bool& ignore_size,
+               const bool& previous_only = false);
   // Handles relay response messages.  Also leave destination ID empty if needs to send as a relay
   // response message
   virtual void SendToClosestNode(const protobuf::Message& message);
@@ -89,11 +95,13 @@ class NetworkUtils {
                 const rudp::MessageSentFunctor& message_sent_functor);
   void SendTo(const protobuf::Message& message,
               const NodeId& peer_node_id,
-              const NodeId& peer_connection_id);
+              const NodeId& peer_connection_id,
+              const bool no_ack_timer = false);
   void RecursiveSendOn(protobuf::Message message,
                        NodeInfo last_node_attempted = NodeInfo(),
                        int attempt_count = 0);
   void AdjustRouteHistory(protobuf::Message& message);
+  void AdjustAckHistory(protobuf::Message& message);
 
   bool running_;
   std::mutex running_mutex_;
@@ -103,6 +111,7 @@ class NetworkUtils {
   NodeId this_node_relay_connection_id_;
   RoutingTable& routing_table_;
   NonRoutingTable& non_routing_table_;
+  AckTimer& ack_timer_;
   rudp::NatType nat_type_;
   NewBootstrapEndpointFunctor new_bootstrap_endpoint_;
   rudp::ManagedConnections rudp_;

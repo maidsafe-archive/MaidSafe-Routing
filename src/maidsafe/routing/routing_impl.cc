@@ -64,8 +64,9 @@ Routing::Impl::Impl(bool client_mode,
       network_statistics_(routing_table_.kNodeId()),
       message_handler_(),
       asio_service_(2),
-      network_(routing_table_, non_routing_table_),
+      network_(routing_table_, non_routing_table_, ack_timer_),
       timer_(asio_service_),
+      ack_timer_(asio_service_),
       re_bootstrap_timer_(asio_service_.service()),
       recovery_timer_(asio_service_.service()),
       setup_timer_(asio_service_.service()) {
@@ -74,6 +75,7 @@ Routing::Impl::Impl(bool client_mode,
                                             non_routing_table_,
                                             network_,
                                             timer_,
+                                            ack_timer_,
                                             remove_furthest_node_,
                                             group_change_handler_,
                                             network_statistics_));
@@ -374,6 +376,7 @@ void Routing::Impl::Send(const NodeId& destination_id,
   proto_message.set_client_node(routing_table_.client_mode());
   proto_message.set_request(true);
   proto_message.set_hops_to_live(Parameters::hops_to_live);
+  proto_message.set_ack_id(ack_timer_.GetId());
   uint16_t replication(1);
   if (!group_claim.IsZero())
     proto_message.set_group_claim(group_claim.string());
@@ -492,6 +495,9 @@ void Routing::Impl::DoOnMessageReceived(const std::string& message) {
       if (!running_)
         return;
     }
+    network_.SendAck(pb_message,
+                    ((pb_message.destination_id() == kNodeId_.string()) &&
+                     (pb_message.source_id() != kNodeId_.string())));
     message_handler_->HandleMessage(pb_message);
   } else {
     LOG(kWarning) << "Message received, failed to parse";

@@ -28,6 +28,8 @@
 #include "maidsafe/routing/tests/test_utils.h"
 #include "maidsafe/routing/group_change_handler.h"
 #include "maidsafe/routing/network_statistics.h"
+#include "maidsafe/routing/ack_timer.h"
+
 
 namespace maidsafe {
 
@@ -48,7 +50,8 @@ TEST(ServicesTest, BEH_Ping) {
                              network_statistics);
   NonRoutingTable non_routing_table(routing_table.kNodeId());
   AsioService asio_service(1);
-  NetworkUtils network(routing_table, non_routing_table);
+  AckTimer ack_timer(asio_service);
+  NetworkUtils network(routing_table, non_routing_table, ack_timer);
   GroupChangeHandler group_change_handler(routing_table, non_routing_table, network);
   Service service(routing_table, non_routing_table, network, group_change_handler);
   NodeInfo node;
@@ -80,7 +83,8 @@ TEST(ServicesTest, BEH_FindNodes) {
   NodeId this_node_id(routing_table.kNodeId());
   NonRoutingTable non_routing_table(routing_table.kNodeId());
   AsioService asio_service(1);
-  NetworkUtils network(routing_table, non_routing_table);
+  AckTimer ack_timer(asio_service);
+  NetworkUtils network(routing_table, non_routing_table, ack_timer);
   GroupChangeHandler group_change_handler(routing_table, non_routing_table, network);
   Service service(routing_table, non_routing_table, network, group_change_handler);
   protobuf::Message message = rpcs::FindNodes(this_node_id, this_node_id, 8);

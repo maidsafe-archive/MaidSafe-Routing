@@ -33,6 +33,7 @@
 #include "maidsafe/routing/routing_table.h"
 #include "maidsafe/routing/routing_pb.h"
 #include "maidsafe/routing/tests/test_utils.h"
+#include "maidsafe/routing/ack_timer.h"
 
 
 namespace maidsafe {
@@ -70,7 +71,8 @@ TEST(NetworkUtilsTest, BEH_ProcessSendDirectInvalidEndpoint) {
   RoutingTable routing_table(false, node_id, asymm::GenerateKeyPair(), network_statistics);
   NonRoutingTable non_routing_table(routing_table.kNodeId());
   AsioService asio_service(1);
-  NetworkUtils network(routing_table, non_routing_table);
+  AckTimer ack_timer(asio_service);
+  NetworkUtils network(routing_table, non_routing_table, ack_timer);
   network.SendToClosestNode(message);
 }
 
@@ -89,7 +91,8 @@ TEST(NetworkUtilsTest, BEH_ProcessSendUnavailableDirectEndpoint) {
   NonRoutingTable non_routing_table(routing_table.kNodeId());
   Endpoint endpoint(GetLocalIp(),  maidsafe::test::GetRandomPort());
   AsioService asio_service(1);
-  NetworkUtils network(routing_table, non_routing_table);
+  AckTimer ack_timer(asio_service);
+  NetworkUtils network(routing_table, non_routing_table, ack_timer);
   network.SendToDirect(message, NodeId(NodeId::kRandomId), NodeId(NodeId::kRandomId));
 }
 
@@ -216,7 +219,8 @@ TEST(NetworkUtilsTest, FUNC_ProcessSendDirectEndpoint) {
   NodeId node_id3(routing_table.kNodeId());
   NonRoutingTable non_routing_table(routing_table.kNodeId());
   AsioService asio_service(1);
-  NetworkUtils network(routing_table, non_routing_table);
+  AckTimer ack_timer(asio_service);
+  NetworkUtils network(routing_table, non_routing_table, ack_timer);
 
   std::vector<Endpoint> bootstrap_endpoint(1, endpoint2);
   EXPECT_EQ(kSuccess, network.Bootstrap(bootstrap_endpoint,
@@ -275,7 +279,8 @@ TEST(NetworkUtilsTest, FUNC_ProcessSendRecursiveSendOn) {
   NodeId node_id3(routing_table.kNodeId());
   NonRoutingTable non_routing_table(routing_table.kNodeId());
   AsioService asio_service(1);
-  NetworkUtils network(routing_table, non_routing_table);
+  AckTimer ack_timer(asio_service);
+  NetworkUtils network(routing_table, non_routing_table, ack_timer);
 
   rudp::MessageReceivedFunctor message_received_functor1 = [](const std::string& message) {
       LOG(kInfo) << " -- Received: " << message;

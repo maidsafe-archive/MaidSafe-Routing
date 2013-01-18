@@ -308,6 +308,26 @@ protobuf::Message GetGroup(const NodeId& node_id,
   return message;
 }
 
+protobuf::Message Ack(const NodeId& node_id,
+                      const NodeId& my_node_id,
+                      const int32_t& ack_id) {
+  assert(!node_id.IsZero() && "Invalid node_id");
+  assert(!my_node_id.IsZero() && "Invalid my node_id");
+  assert((ack_id > 0) && "Invalid ack id");
+  protobuf::Message message;
+  message.set_ack_id(ack_id);
+  message.set_type(static_cast<int>(MessageType::kAck));
+  message.set_source_id(my_node_id.string());
+  message.set_destination_id(node_id.string());
+  message.set_direct(true);
+  message.set_request(false);
+  message.set_client_node(true);
+  message.set_routing_message(true);
+  message.set_hops_to_live(Parameters::hops_to_live);
+  message.set_id(RandomUint32() % 10000);
+  return message;
+}
+
 }  // namespace rpcs
 
 }  // namespace routing
