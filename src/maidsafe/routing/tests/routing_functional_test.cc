@@ -11,6 +11,7 @@
  ******************************************************************************/
 
 #include <vector>
+#include <boost/progress.hpp>
 
 #include "maidsafe/rudp/nat_type.h"
 
@@ -122,7 +123,9 @@ TEST_F(RoutingNetworkTest, FUNC_SanityCheck) {
 }
 
 TEST_F(RoutingNetworkTest, FUNC_Send) {
+  boost::progress_timer t;
   EXPECT_TRUE(env_->Send(1));
+  std::cout << "Time taken for test : " << t.elapsed();
 }
 
 TEST_F(RoutingNetworkTest, FUNC_SendToNonExistingNode) {
@@ -136,7 +139,9 @@ TEST_F(RoutingNetworkTest, FUNC_ClientSend) {
 }
 
 TEST_F(RoutingNetworkTest, FUNC_SendMulti) {
+  boost::progress_timer t;
   EXPECT_TRUE(env_->Send(5));
+  std::cout << "Time taken for test : " << t.elapsed();
 }
 
 TEST_F(RoutingNetworkTest, FUNC_ClientSendMulti) {
@@ -151,7 +156,9 @@ TEST_F(RoutingNetworkTest, FUNC_SendToGroup) {
   NodeId dest_id(env_->nodes_[last_index]->node_id());
 
   env_->ClearMessages();
+  boost::progress_timer t;
   EXPECT_TRUE(env_->SendGroup(dest_id, message_count));
+  std::cout << "Time taken for test : " << t.elapsed();
   for (size_t index = 0; index != (last_index); ++index)
     receivers_message_count += static_cast<uint16_t>(env_->nodes_.at(index)->MessagesSize());
 

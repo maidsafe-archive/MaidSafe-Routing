@@ -892,30 +892,35 @@ testing::AssertionResult GenericNetwork::Send(const size_t& messages) {
           futures.push_back(std::move(source_node->Send(NodeId(dest_node->node_id()),
                                                         data,
                                                         false)));
-          Sleep(boost::posix_time::microseconds(21));
         }
       }
     }
   }
 
-  bool overall_result(false);
-  size_t bad_futures_count(0);
-  std::chrono::system_clock::time_point start(std::chrono::system_clock::now());
-
-  while (!overall_result && std::chrono::system_clock::now() < start + std::chrono::seconds(20)) {
-    overall_result = true;
-    bad_futures_count = 0;
-    for (uint16_t i(0); i < futures.size(); ++i) {
-      if (!is_ready(futures.at(i))) {
-        overall_result = false;
-        ++bad_futures_count;
+//  bool overall_result(false);
+  size_t expected_bad_futures_count((kClientSize * kServerSize) + kClientSize * (kClientSize - 1));
+  size_t actual_bad_futures_count(0);
+  while (!futures.empty()) {
+    auto itr(futures.begin());
+    while (itr != futures.end()) {
+      if (IsReady(*itr)) {
+        try {
+          (*itr).get(); //  Need to verify that the response is from the expected node. Previous code has received_ids to collect the node ids.
+          } catch (std::exception& ex) {
+            LOG(kError) << "Exception : " << ex.what();
+            ++actual_bad_futures_count;
+          }
+        itr = futures.erase(itr);
+      } else {
+        ++itr;
       }
     }
+    std::this_thread::yield();
   }
 
-  if (!overall_result) {
+  if (expected_bad_futures_count != actual_bad_futures_count) {
     return testing::AssertionFailure() << "Send operarion timed out: "
-                                       << bad_futures_count
+                                       << actual_bad_futures_count - expected_bad_futures_count
                                        << " failed to reply.";
   }
   return testing::AssertionSuccess();
