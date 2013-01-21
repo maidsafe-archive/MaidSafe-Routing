@@ -198,7 +198,9 @@ void GenericNode::InitialiseFunctors() {
                                  std::lock_guard<std::mutex> guard(mutex_);
                                  messages_.push_back(message);
                                  if (!IsClient())
-                                   reply_functor("Response to >:<" + message);
+                                   reply_functor(node_id().string() +
+                                                 ">::< response to >:<" +
+                                                 message);
                                };
   functors_.network_status = [&](const int& health) { SetHealth(health); };  // NOLINT (Alison)
 }
@@ -882,6 +884,9 @@ bool GenericNetwork::NodeHasSymmetricNat(const NodeId& node_id) {
 
 testing::AssertionResult GenericNetwork::Send(const size_t& messages) {
   std::vector<std::future<std::string>> futures;
+  size_t client_size(0), server_size(0);
+  for (auto node : this->nodes_)
+    (node->IsClient()) ? client_size++ : server_size++;
 
   for (size_t index = 0; index < messages; ++index) {
     for (auto source_node : this->nodes_) {
@@ -897,19 +902,18 @@ testing::AssertionResult GenericNetwork::Send(const size_t& messages) {
     }
   }
 
-//  bool overall_result(false);
-  size_t expected_bad_futures_count((kClientSize * kServerSize) + kClientSize * (kClientSize - 1));
-  size_t actual_bad_futures_count(0);
+  size_t expected_good_futures(server_size * (server_size - 1 + client_size) * messages);
+  size_t actual_good_futures(0);
   while (!futures.empty()) {
     auto itr(futures.begin());
     while (itr != futures.end()) {
       if (IsReady(*itr)) {
         try {
-          (*itr).get(); //  Need to verify that the response is from the expected node. Previous code has received_ids to collect the node ids.
-          } catch (std::exception& ex) {
-            LOG(kError) << "Exception : " << ex.what();
-            ++actual_bad_futures_count;
-          }
+          (*itr).get();
+          ++actual_good_futures;
+        } catch(const std::exception& ex) {
+          LOG(kError) << "Exception : " << ex.what();
+        }
         itr = futures.erase(itr);
       } else {
         ++itr;
@@ -918,9 +922,11 @@ testing::AssertionResult GenericNetwork::Send(const size_t& messages) {
     std::this_thread::yield();
   }
 
-  if (expected_bad_futures_count != actual_bad_futures_count) {
+  // TODO(Alison) - compare content of received messages with expected content
+
+  if (expected_good_futures != actual_good_futures) {
     return testing::AssertionFailure() << "Send operarion timed out: "
-                                       << actual_bad_futures_count - expected_bad_futures_count
+                                       << expected_good_futures - actual_good_futures
                                        << " failed to reply.";
   }
   return testing::AssertionSuccess();
@@ -937,28 +943,35 @@ testing::AssertionResult GenericNetwork::SendGroup(const NodeId& node_id,
     futures.push_back(this->nodes_[source_index]->SendGroup(node_id, data, false));
   }
 
-  bool overall_result(false);
   size_t bad_futures_count(0);
 
-  std::chrono::system_clock::time_point start(std::chrono::system_clock::now());
-  size_t num(10 * messages + 5);
-
-  while (!overall_result && std::chrono::system_clock::now() < start + std::chrono::seconds(num)) {
-    overall_result = true;
-    bad_futures_count = 0;
-    for (uint16_t i(0); i < futures.size(); ++i) {
-      for (uint16_t j(0); j < futures.at(i).size(); ++j) {
-        if (!is_ready(futures.at(i).at(j))) {
-          overall_result = false;
-          ++bad_futures_count;
+  while (!futures.empty()) {
+    auto v_itr(futures.begin());
+    while (v_itr != futures.end()) {
+      if ((*v_itr).empty()) {
+        v_itr = futures.erase(v_itr);
+      } else {
+        auto itr((*v_itr).begin());
+        while (itr != (*v_itr).end()) {
+          if (IsReady(*itr)) {
+            try {
+              (*itr).get();
+            } catch(const std::exception& ex) {
+              LOG(kError) << "Exception : " << ex.what();
+              ++bad_futures_count;
+            }
+            itr = (*v_itr).erase(itr);
+          } else {
+            ++itr;
+          }
         }
       }
     }
-    LOG(kVerbose) << "Still waiting for " << bad_futures_count << " replies.";
   }
 
-  EXPECT_TRUE(overall_result);
-  if (!overall_result) {
+  // TODO(Alison) - compare content of received messages with expected content
+
+  if (bad_futures_count != 0) {
     return testing::AssertionFailure() << "Send operarion timed out: "
                                        << bad_futures_count
                                        << " failed to reply.";
@@ -968,36 +981,52 @@ testing::AssertionResult GenericNetwork::SendGroup(const NodeId& node_id,
 
 testing::AssertionResult GenericNetwork::Send(const NodeId& node_id) {
   std::vector<std::future<std::string>> futures;
+  size_t message_index(0);
   for (auto source_node : this->nodes_) {
     if (source_node->node_id() != node_id) {
-      std::string data(RandomAlphaNumericString((RandomUint32() % 255 + 1) * 2^10));
+      std::string data(boost::lexical_cast<std::string>(message_index++) + "<:>" +
+                       RandomAlphaNumericString((RandomUint32() % 255 + 1) * 2^10));
       futures.push_back(source_node->Send(node_id, data, false));
     }
   }
 
-  bool overall_result(false);
   size_t bad_futures_count(0);
+  std::set<size_t> received_ids;
 
-  std::chrono::system_clock::time_point start(std::chrono::system_clock::now());
-
-  while (!overall_result && std::chrono::system_clock::now() < start + std::chrono::seconds(20)) {
-    overall_result = true;
-    bad_futures_count = 0;
-    for (uint16_t i(0); i < futures.size(); ++i) {
-      if (!is_ready(futures.at(i))) {
-        overall_result = false;
-        ++bad_futures_count;
+  while (!futures.empty()) {
+    auto itr(futures.begin());
+    while (itr != futures.end()) {
+      if (IsReady(*itr)) {
+        try {
+          std::string message((*itr).get());
+          std::string data_id(message.substr(message.find(">:<") + 3,
+          message.find("<:>") - 3 - message.find(">:<")));
+          received_ids.insert(boost::lexical_cast<size_t>(data_id));
+        } catch(const std::exception& ex) {
+          LOG(kError) << "Exception : " << ex.what();
+          ++bad_futures_count;
+        }
+        itr = futures.erase(itr);
+      } else {
+        ++itr;
       }
     }
-    LOG(kVerbose) << "Still waiting for " << bad_futures_count << " replies.";
   }
 
-  EXPECT_TRUE(overall_result);
-  if (!overall_result) {
+  // TODO(Alison) - compare content of received messages with expected content
+
+  if (bad_futures_count != 0) {
+    for (size_t id(0); id < message_index; ++id) {
+      auto iter = received_ids.find(id);
+      if (iter == received_ids.end())
+      LOG(kVerbose) << "missing id: " << id;
+    }
     return testing::AssertionFailure() << "Send operarion timed out: "
                                        << bad_futures_count
                                        << " failed to reply.";
   }
+
+
   return testing::AssertionSuccess();
 }
 
@@ -1016,7 +1045,14 @@ testing::AssertionResult GenericNetwork::Send(std::shared_ptr<GenericNode> sourc
     return testing::AssertionFailure() << "Future not ready.";
 
   try {
-    std::string result(future.get());
+    std::string reply(future.get());
+    std::string replier_node_id(reply.substr(0, reply.find(">::<")));
+    if (node_id.string() != replier_node_id)
+      return testing::AssertionFailure() << "\nReplier ID:\n\tExpected:\n\\tt"
+                                         << DebugId(node_id)
+                                         << "\n\tActual:\n\t\t"
+                                         << HexSubstr(replier_node_id) << "\n";
+    // TODO(Alison) - compare full received message with full expected message
     if (expected_messages > 0)
       return testing::AssertionSuccess();
     else

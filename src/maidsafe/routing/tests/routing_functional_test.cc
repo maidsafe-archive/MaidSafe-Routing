@@ -11,7 +11,8 @@
  ******************************************************************************/
 
 #include <vector>
-#include <boost/progress.hpp>
+
+#include "boost/progress.hpp"
 
 #include "maidsafe/rudp/nat_type.h"
 
@@ -122,6 +123,53 @@ TEST_F(RoutingNetworkTest, FUNC_SanityCheck) {
   }
 }
 
+TEST_F(RoutingNetworkTest, FUNC_SanityCheckSend) {
+  // Signature 1
+  EXPECT_TRUE(env_->Send(1 + RandomUint32() % 5));
+
+  // Signature 2
+  EXPECT_TRUE(env_->Send(env_->RandomVaultNode()->node_id()));
+
+  EXPECT_TRUE(env_->Send(env_->RandomClientNode()->node_id()));
+
+  EXPECT_TRUE(env_->Send(NodeId(NodeId::kRandomId)));
+
+  // Signature 3
+  EXPECT_TRUE(env_->Send(env_->RandomVaultNode(), env_->RandomVaultNode()->node_id()));
+
+  EXPECT_TRUE(env_->Send(env_->RandomVaultNode(), env_->RandomClientNode()->node_id()));
+
+  EXPECT_TRUE(env_->Send(env_->RandomClientNode(), env_->RandomVaultNode()->node_id()));
+
+  EXPECT_TRUE(env_->Send(env_->RandomClientNode(), env_->RandomClientNode()->node_id()));
+}
+
+TEST_F(RoutingNetworkTest, FUNC_SanityCheckSendGroup) {
+  EXPECT_TRUE(env_->SendGroup(NodeId(NodeId::kRandomId),
+                              1 + RandomUint32() % 5,
+                              env_->RandomVaultIndex()));
+
+  EXPECT_TRUE(env_->SendGroup(NodeId(NodeId::kRandomId),
+                              1 + RandomUint32() % 5,
+                              env_->RandomClientIndex()));
+
+  EXPECT_TRUE(env_->SendGroup(env_->RandomVaultNode()->node_id(),
+                              1 + RandomUint32() % 5,
+                              env_->RandomVaultIndex()));
+
+  EXPECT_TRUE(env_->SendGroup(env_->RandomVaultNode()->node_id(),
+                              1 + RandomUint32() % 5,
+                              env_->RandomClientIndex()));
+
+  EXPECT_TRUE(env_->SendGroup(env_->RandomClientNode()->node_id(),
+                              1 + RandomUint32() % 5,
+                              env_->RandomVaultIndex()));
+
+  EXPECT_TRUE(env_->SendGroup(env_->RandomClientNode()->node_id(),
+                              1 + RandomUint32() % 5,
+                              env_->RandomClientIndex()));
+}
+
 TEST_F(RoutingNetworkTest, FUNC_Send) {
   boost::progress_timer t;
   EXPECT_TRUE(env_->Send(1));
@@ -130,7 +178,7 @@ TEST_F(RoutingNetworkTest, FUNC_Send) {
 
 TEST_F(RoutingNetworkTest, FUNC_SendToNonExistingNode) {
   EXPECT_TRUE(env_->Send(NodeId(NodeId::kRandomId)));
-  EXPECT_TRUE(env_->Send(env_->nodes_[env_->RandomNodeIndex()]->node_id()));
+  EXPECT_TRUE(env_->Send(env_->nodes_[env_->RandomVaultIndex()]->node_id()));
 }
 
 TEST_F(RoutingNetworkTest, FUNC_ClientSend) {
