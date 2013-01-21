@@ -11,6 +11,7 @@
  ******************************************************************************/
 
 #include <boost/exception/all.hpp>
+#include <boost/progress.hpp>
 #include <chrono>
 #include <future>
 #include <algorithm>
@@ -319,15 +320,18 @@ TEST(APITest, BEH_API_ClientNode) {
   //  Testing Send
   boost::promise<bool> response_promise;
   auto response_future = response_promise.get_future();
+  std::string data(RandomAlphaNumericString(512 * 1024));
   ResponseFunctor response_functor = [&](const std::vector<std::string> &message) {
       ASSERT_EQ(1U, message.size());
-      ASSERT_EQ("response to message from client node", message[0]);
+      ASSERT_EQ(("response to " + data), message[0]);
       LOG(kVerbose) << "Got response !!";
       response_promise.set_value(true);
     };
-  routing3.Send(NodeId(node1.node_info.node_id), NodeId(), "message from client node",
+  boost::progress_timer t;
+  routing3.Send(NodeId(node1.node_info.node_id), NodeId(), data,
           response_functor, boost::posix_time::seconds(10), DestinationType::kDirect, false);
   EXPECT_TRUE(response_future.timed_wait(boost::posix_time::seconds(10)));
+  std::cout << "Time taken for test : " << t.elapsed();
 }
 
 TEST(APITest, BEH_API_ClientNodeSameId) {
@@ -597,6 +601,115 @@ TEST(APITest, BEH_API_NodeNetworkWithClient) {
     routing_node[i]->Join(functors, std::vector<Endpoint>(1, endpoint1));
     ASSERT_TRUE(join_futures.at(i).timed_wait(boost::posix_time::seconds(10)));
   }
+}
+
+TEST(APITest, BEH_API_SendGroup) {
+  const uint16_t kMessageCount(10);  // each vault will send n messages to other vaults
+  const size_t kDataSize(512 * 1024);
+  int min_join_status(std::min(kServerCount, 8));
+  std::vector<boost::promise<bool>> join_promises(kNetworkSize);
+  std::vector<boost::unique_future<bool>> join_futures;
+  std::deque<bool> promised;
+  std::vector<NetworkStatusFunctor> status_vector;
+  boost::shared_mutex mutex;
+  Functors functors;
+
+  std::vector<NodeInfoAndPrivateKey> nodes;
+  std::map<NodeId, asymm::PublicKey> key_map;
+  std::vector<std::shared_ptr<Routing>> routing_node;
+  int i(0);
+  functors.request_public_key =
+      [&](const NodeId& node_id, GivePublicKeyFunctor give_key) {
+        LOG(kWarning) << "node_validation called for " << DebugId(node_id);
+        auto itr(key_map.find(node_id));
+        if (key_map.end() != itr)
+          give_key((*itr).second);
+      };
+
+  for (; i != kServerCount; ++i) {
+    auto pmid(MakePmid());
+    NodeInfoAndPrivateKey node(MakeNodeInfoAndKeysWithPmid(pmid));
+    nodes.push_back(node);
+    key_map.insert(std::make_pair(node.node_info.node_id, pmid.public_key()));
+    routing_node.push_back(std::make_shared<Routing>(&pmid));
+  }
+
+  functors.network_status = [](const int&) {};  // NOLINT (Fraser)
+  functors.message_received =
+      [&] (const std::string& message, const NodeId&, const bool&, ReplyFunctor reply_functor) {
+        reply_functor("response to " + message);
+        LOG(kVerbose) << "Message received and replied to message !!";
+      };
+
+  Endpoint endpoint1(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort()),
+  endpoint2(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort());
+  auto a1 = std::async(std::launch::async, [&] {
+                       return routing_node[0]->ZeroStateJoin(functors, endpoint1, endpoint2,
+                                                              nodes[1].node_info);
+     });
+  auto a2 = std::async(std::launch::async, [&] {
+                       return routing_node[1]->ZeroStateJoin(functors, endpoint2, endpoint1,
+                                                             nodes[0].node_info);
+     });
+
+  EXPECT_EQ(kSuccess, a2.get());  // wait for promise !
+  EXPECT_EQ(kSuccess, a1.get());  // wait for promise !
+
+  // Ignoring 2 zero state nodes
+  promised.push_back(false);
+  promised.push_back(false);
+  status_vector.emplace_back([](int /*x*/) {});
+  status_vector.emplace_back([](int /*x*/) {});
+  boost::promise<bool> promise1, promise2;
+  join_futures.emplace_back(promise1.get_future());
+  join_futures.emplace_back(promise2.get_future());
+
+  // Joining remaining server nodes
+  for (auto i(2); i != (kServerCount); ++i) {
+    join_futures.emplace_back(join_promises.at(i).get_future());
+    promised.push_back(true);
+    status_vector.emplace_back([=, &join_promises, &mutex, &promised](int result) {
+                                 ASSERT_GE(result, kSuccess);
+                                 if (result == NetworkStatus(false,
+                                                             std::min(i, min_join_status))) {
+                                   boost::unique_lock< boost::shared_mutex> lock(mutex);
+                                   if (promised.at(i)) {
+                                     join_promises.at(i).set_value(true);
+                                     promised.at(i) = false;
+                                     LOG(kVerbose) << "node - " << i << "joined";
+                                   }
+                                 }
+                               });
+  }
+
+  for (auto i(2); i != (kServerCount); ++i) {
+    functors.network_status = status_vector.at(i);
+    routing_node[i]->Join(functors, std::vector<Endpoint>(1, endpoint1));
+    ASSERT_TRUE(join_futures.at(i).timed_wait(boost::posix_time::seconds(10)));
+  }
+
+  std::atomic<int> done_count(0);
+  std::string data(RandomAlphaNumericString(kDataSize));
+  boost::progress_timer t;
+  for (uint16_t i(0); i < kServerCount; ++i) {
+    NodeId dest_id(routing_node[i]->kNodeId());
+    uint16_t count(0);
+    while (count < kMessageCount) {
+      ++count;
+      ResponseFunctor response([&done_count](const std::vector<std::string>& msg) {
+                                 EXPECT_FALSE(msg.empty());
+                                 ++done_count;
+                               });
+      routing_node[i]->Send(dest_id, data, response, DestinationType::kGroup, false);
+    }
+  }
+
+  while (done_count != (kMessageCount * kServerCount));
+  auto time_taken(t.elapsed());
+  std::cout << "\n Time taken: " << time_taken
+            << "\n Total number of request messages :" << (kMessageCount * kServerCount)
+            << "\n Total number of response messages :" << (kMessageCount * kServerCount * 4)
+            << "\n Message size : " << (kDataSize / 1024) << "kB \n";
 }
 
 }  // namespace test
