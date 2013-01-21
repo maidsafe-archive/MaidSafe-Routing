@@ -166,6 +166,11 @@ bool IsAck(const protobuf::Message& message) {
   return message.type() == static_cast<int>(MessageType::kAck);
 }
 
+bool IsGroupUpdate(const protobuf::Message& message) {
+  return ((message.type() == static_cast<int>(MessageType::kClosestNodesUpdate)) ||
+          (message.type() == static_cast<int>(MessageType::kClosestNodesUpdateSubscribe)));
+}
+
 bool ValidateMessage(const protobuf::Message &message) {
   if (!message.IsInitialized()) {
     LOG(kWarning) << "Uninitialised message dropped.";
@@ -274,6 +279,9 @@ std::string MessageTypeString(const protobuf::Message& message) {
       break;
     case MessageType::kGetGroup :
       message_type = "kGetGroup";
+      break;
+    case MessageType::kAck :
+      message_type = "kAck";
       break;
     case MessageType::kNodeLevel :
       message_type = "kNodeLevel";

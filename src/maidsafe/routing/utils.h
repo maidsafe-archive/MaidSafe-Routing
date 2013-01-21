@@ -78,6 +78,7 @@ bool IsDirect(const protobuf::Message& message);
 bool IsCacheable(const protobuf::Message& message);
 bool CheckId(const std::string& id_to_test);
 bool IsAck(const protobuf::Message& message);
+bool IsGroupUpdate(const protobuf::Message& message);
 bool ValidateMessage(const protobuf::Message &message);
 void SetProtobufEndpoint(const boost::asio::ip::udp::endpoint& endpoint,
                          protobuf::Endpoint* pb_endpoint);

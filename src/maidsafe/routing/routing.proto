@@ -67,7 +67,9 @@ message Message {
   optional bytes group_claim = 19;
   optional int32 hops_to_live = 20;
   optional bool visited = 21;
-  optional bytes average_distace = 22;
+  optional int32 ack_id = 22;
+  repeated bytes ack_node_ids = 23;
+  optional bytes average_distace = 24;
 }
 
 message SignedMessage {

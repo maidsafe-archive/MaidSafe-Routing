@@ -69,7 +69,7 @@ class NetworkUtils {
   virtual void SendToDirect(const protobuf::Message& message,
                             const NodeId& peer_node_id,
                             const NodeId& peer_connection_id);
-  void SendAck(const protobuf::Message& message,
+  void SendAck(const protobuf::Message &message,
                const bool& ignore_size,
                const bool& previous_only = false);
   // Handles relay response messages.  Also leave destination ID empty if needs to send as a relay

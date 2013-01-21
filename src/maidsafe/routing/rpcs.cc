@@ -83,6 +83,7 @@ protobuf::Message Connect(const NodeId& node_id,
   message.set_request(true);
   message.set_client_node(client_node);
   message.set_hops_to_live(Parameters::hops_to_live);
+  message.set_ack_id(RandomUint32());
 
   if (!relay_message) {
     message.set_source_id(this_node_id.string());
@@ -158,6 +159,7 @@ protobuf::Message FindNodes(const NodeId& node_id,
     message.set_relay_connection_id(relay_connection_id.string());
   }
   message.set_hops_to_live(Parameters::hops_to_live);
+  message.set_ack_id(RandomUint32());
 //  message.set_id(RandomUint32() % 10000);
   assert(message.IsInitialized() && "Unintialised message");
   return message;

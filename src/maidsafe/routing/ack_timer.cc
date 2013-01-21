@@ -110,6 +110,9 @@ bool AckTimer::NeedsAck(const protobuf::Message& message, const NodeId& node_id)
   if (IsAck(message))
     return false;
 
+  if (IsGroupUpdate(message))
+    return false;
+
 //  A communication between two nodes, in which one side is a relay at neither end
 //  involves setting a timer.
   if (IsResponse(message) && (message.destination_id() == message.relay_id()))

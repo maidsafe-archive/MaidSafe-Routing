@@ -36,6 +36,11 @@ class RoutingStandAloneTest : public GenericNetwork, public testing::Test {
   }
 };
 
+TEST_F(RoutingStandAloneTest, FUNC_SendMulti) {
+  this->SetUpNetwork(5);
+//  EXPECT_TRUE(this->Send(2));
+}
+
 // TODO(Mahmoud): This test should be moved to TESTrouting_func as it doesn't affect network.
 TEST_F(RoutingStandAloneTest, FUNC_GetGroup) {
   this->SetUpNetwork(kServerSize);
