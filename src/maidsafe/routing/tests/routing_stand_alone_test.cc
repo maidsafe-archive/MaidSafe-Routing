@@ -180,6 +180,42 @@ TEST_F(RoutingStandAloneTest, FUNC_JoinAfterBootstrapLeaves) {
   this->AddNode(false, NodeId());
 }
 
+TEST_F(RoutingStandAloneTest, FUNC_ReBootstrap) {
+  // test currently fine for small network size (approx half max routing table size). Will need
+  // updated to deal with larger network.
+  int network_size(kServerSize);
+  this->SetUpNetwork(network_size);
+
+  NodeId removed_id(this->nodes_[network_size - 1]->node_id());
+
+  for (auto element : this->nodes_) {
+    if (element->node_id() != removed_id)
+      EXPECT_TRUE(element->RoutingTableHasNode(removed_id));
+  }
+
+  NodePtr removed_node(this->nodes_[network_size - 1]);
+  this->RemoveNode(this->nodes_[network_size - 1]->node_id());
+  EXPECT_EQ(network_size - 1, this->nodes_.size());
+
+  for (auto& node : this->nodes_) {
+    EXPECT_TRUE(node->DropNode(removed_id));
+    EXPECT_FALSE(node->RoutingTableHasNode(removed_id));
+  }
+
+  // wait for removed node's routing table to reach zero - re-bootstrap will be triggered
+  Sleep(boost::posix_time::seconds(1));
+  std::vector<NodeInfo> routing_table(removed_node->RoutingTable());
+  EXPECT_EQ(0, routing_table.size());
+
+  // wait for re_bootstrap_time_lag to expire & bootstrap process to complete
+  Sleep(boost::posix_time::seconds(20));
+  for (auto node : this->nodes_)
+    EXPECT_TRUE(node->RoutingTableHasNode(removed_id));
+
+  routing_table = removed_node->RoutingTable();
+  EXPECT_EQ(network_size - 1, routing_table.size());
+}
+
 }  // namespace test
 
 }  // namespace routing
