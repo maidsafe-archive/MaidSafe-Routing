@@ -13,8 +13,6 @@
 #include <thread>
 #include <vector>
 
-#include "boost/thread/future.hpp"
-
 #include "maidsafe/rudp/managed_connections.h"
 #include "maidsafe/rudp/return_codes.h"
 

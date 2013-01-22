@@ -783,7 +783,7 @@ testing::AssertionResult GenericNetwork::Send(const size_t& messages) {
             messages_count++;
             std::string data_id(message.at(0).substr(message.at(0).find(">:<") + 3,
                 message.at(0).find("<:>") - 3 - message.at(0).find(">:<")));
-            received_ids.insert(boost::lexical_cast<size_t>(data_id));
+            received_ids.insert(atoi(data_id.c_str()));
             LOG(kVerbose) << "ResponseHandler .... " << messages_count << " msg_id: "
                           << data_id;
             if (messages_count == expected_messages) {
@@ -795,7 +795,7 @@ testing::AssertionResult GenericNetwork::Send(const size_t& messages) {
           std::string data(RandomAlphaNumericString(512 * 2^10));
           {
             std::lock_guard<std::mutex> lock(mutex);
-            data = boost::lexical_cast<std::string>(++message_id) + "<:>" + data;
+            data = std::to_string(++message_id) + "<:>" + data;
           }
           assert(!data.empty() && "Send Data Empty !");
           source_node->Send(NodeId(dest_node->node_id()), NodeId(), data, callable,
@@ -894,7 +894,7 @@ testing::AssertionResult GenericNetwork::Send(const NodeId& node_id) {
       messages_count++;
       std::string data_id(message.at(0).substr(message.at(0).find(">:<") + 3,
           message.at(0).find("<:>") - 3 - message.at(0).find(">:<")));
-      received_ids.insert(boost::lexical_cast<size_t>(data_id));
+      received_ids.insert(atoi(data_id.c_str()));
       LOG(kVerbose) << "ResponseHandler .... " << messages_count << " msg_id: "
                     << data_id;
       if (messages_count == expected_messages) {
@@ -906,7 +906,7 @@ testing::AssertionResult GenericNetwork::Send(const NodeId& node_id) {
         std::string data(RandomAlphaNumericString((RandomUint32() % 255 + 1) * 2^10));
         {
           std::lock_guard<std::mutex> lock(mutex);
-          data = boost::lexical_cast<std::string>(++message_id) + "<:>" + data;
+          data = std::to_string(++message_id) + "<:>" + data;
         }
         source_node->Send(node_id, NodeId(), data, callable,
             boost::posix_time::seconds(12), DestinationType::kDirect, false);

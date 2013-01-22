@@ -21,7 +21,6 @@
 
 #include "boost/asio.hpp"
 #include "boost/filesystem/exception.hpp"
-#include "boost/thread/future.hpp"
 
 #include "maidsafe/common/node_id.h"
 #include "maidsafe/common/test.h"
@@ -94,7 +93,7 @@ TEST(APITest, BEH_API_ZeroState) {
   EXPECT_EQ(kSuccess, a2.get());  // wait for promise !
   EXPECT_EQ(kSuccess, a1.get());  // wait for promise !
 
-  boost::promise<bool> join_promise;
+  std::promise<bool> join_promise;
   auto join_future = join_promise.get_future();
   functors3.network_status = [&join_promise](int result) {
       ASSERT_GE(result, kSuccess);
@@ -103,7 +102,7 @@ TEST(APITest, BEH_API_ZeroState) {
     };
 
   routing3.Join(functors3, std::vector<Endpoint>(1, endpoint2));
-  EXPECT_TRUE(join_future.timed_wait(boost::posix_time::seconds(10)));
+  EXPECT_EQ(join_future.wait_for(std::chrono::seconds(10)), std::future_status::ready);
   LOG(kInfo) << "done!!!";
 }
 
@@ -148,7 +147,7 @@ TEST(APITest, FUNC_API_AnonymousNode) {
   EXPECT_EQ(kSuccess, a2.get());  // wait for promise !
   EXPECT_EQ(kSuccess, a1.get());  // wait for promise !
 
-  boost::promise<bool> join_promise;
+  std::promise<bool> join_promise;
   auto join_future = join_promise.get_future();
   bool promised(true);
   functors3.network_status = [&join_promise, &promised](int result) {
@@ -166,7 +165,7 @@ TEST(APITest, FUNC_API_AnonymousNode) {
     }
   };
   routing3.Join(functors3, std::vector<Endpoint>(1, endpoint2));
-  ASSERT_TRUE(join_future.timed_wait(boost::posix_time::seconds(10)));
+  ASSERT_EQ(join_future.wait_for(std::chrono::seconds(10)), std::future_status::ready);
   ResponseFunctor response_functor = [=](const std::vector<std::string> &message) {
       ASSERT_EQ(1U, message.size());
       ASSERT_EQ("response to message_from_anonymous node", message[0]);
@@ -230,7 +229,7 @@ TEST(APITest, BEH_API_SendToSelf) {
   EXPECT_EQ(kSuccess, a2.get());  // wait for promise !
   EXPECT_EQ(kSuccess, a1.get());  // wait for promise !
 
-  boost::promise<bool> join_promise;
+  std::promise<bool> join_promise;
   auto join_future = join_promise.get_future();
   functors3.network_status = [&join_promise](int result) {
       ASSERT_GE(result, kSuccess);
@@ -241,10 +240,10 @@ TEST(APITest, BEH_API_SendToSelf) {
     };
 
   routing3.Join(functors3, std::vector<Endpoint>(1, endpoint2));
-  ASSERT_TRUE(join_future.timed_wait(boost::posix_time::seconds(10)));
+  ASSERT_EQ(join_future.wait_for(std::chrono::seconds(10)), std::future_status::ready);
 
   //  Testing Send
-  boost::promise<bool> response_promise;
+  std::promise<bool> response_promise;
   auto response_future = response_promise.get_future();
   ResponseFunctor response_functor = [&](const std::vector<std::string> &message) {
       ASSERT_EQ(1U, message.size());
@@ -254,7 +253,7 @@ TEST(APITest, BEH_API_SendToSelf) {
     };
   routing3.Send(NodeId(node3.node_info.node_id), NodeId(), "message from my node", response_functor,
           boost::posix_time::seconds(10), DestinationType::kDirect, false);
-  EXPECT_TRUE(response_future.timed_wait(boost::posix_time::seconds(10)));
+  EXPECT_EQ(response_future.wait_for(std::chrono::seconds(10)), std::future_status::ready);
 }
 
 TEST(APITest, BEH_API_ClientNode) {
@@ -300,7 +299,7 @@ TEST(APITest, BEH_API_ClientNode) {
   EXPECT_EQ(kSuccess, a2.get());  // wait for promise !
   EXPECT_EQ(kSuccess, a1.get());  // wait for promise !
 
-  boost::promise<bool> join_promise;
+  std::promise<bool> join_promise;
   bool promised(true);
   auto join_future = join_promise.get_future();
   functors3.network_status = [&join_promise, &promised](int result) {
@@ -315,10 +314,10 @@ TEST(APITest, BEH_API_ClientNode) {
   };
 
   routing3.Join(functors3, std::vector<Endpoint>(1, endpoint2));
-  ASSERT_TRUE(join_future.timed_wait(boost::posix_time::seconds(10)));
+  ASSERT_EQ(join_future.wait_for(std::chrono::seconds(10)), std::future_status::ready);
 
   //  Testing Send
-  boost::promise<bool> response_promise;
+  std::promise<bool> response_promise;
   auto response_future = response_promise.get_future();
   std::string data(RandomAlphaNumericString(512 * 1024));
   ResponseFunctor response_functor = [&](const std::vector<std::string> &message) {
@@ -330,7 +329,7 @@ TEST(APITest, BEH_API_ClientNode) {
   boost::progress_timer t;
   routing3.Send(NodeId(node1.node_info.node_id), NodeId(), data,
           response_functor, boost::posix_time::seconds(10), DestinationType::kDirect, false);
-  EXPECT_TRUE(response_future.timed_wait(boost::posix_time::seconds(10)));
+  EXPECT_EQ(response_future.wait_for(std::chrono::seconds(10)), std::future_status::ready);
   std::cout << "Time taken for test : " << t.elapsed();
 }
 
@@ -380,7 +379,7 @@ TEST(APITest, BEH_API_ClientNodeSameId) {
   EXPECT_EQ(kSuccess, a2.get());  // wait for promise !
   EXPECT_EQ(kSuccess, a1.get());  // wait for promise !
 
-  boost::promise<bool> join_promise1;
+  std::promise<bool> join_promise1;
   bool promised(true);
   auto join_future1 = join_promise1.get_future();
   functors3.network_status = [&join_promise1, &promised](int result) {
@@ -395,8 +394,8 @@ TEST(APITest, BEH_API_ClientNodeSameId) {
   };
 
   routing3.Join(functors3, std::vector<Endpoint>(1, endpoint1));
-  ASSERT_TRUE(join_future1.timed_wait(boost::posix_time::seconds(10)));
-  boost::promise<bool> join_promise2;
+  ASSERT_EQ(join_future1.wait_for(std::chrono::seconds(10)), std::future_status::ready);
+  std::promise<bool> join_promise2;
   promised = true;
   auto join_future2 = join_promise2.get_future();
   functors4.network_status = [&join_promise2, &promised](int result) {
@@ -411,10 +410,10 @@ TEST(APITest, BEH_API_ClientNodeSameId) {
   };
 
   routing4.Join(functors4, std::vector<Endpoint>(1, endpoint2));
-  ASSERT_TRUE(join_future2.timed_wait(boost::posix_time::seconds(10)));
+  ASSERT_EQ(join_future2.wait_for(std::chrono::seconds(10)), std::future_status::ready);
 
   //  Testing Send
-  boost::promise<bool> response_promise1;
+  std::promise<bool> response_promise1;
   auto response_future = response_promise1.get_future();
   ResponseFunctor response_functor = [&](const std::vector<std::string> &message) {
       ASSERT_EQ(1U, message.size());
@@ -424,9 +423,9 @@ TEST(APITest, BEH_API_ClientNodeSameId) {
     };
   routing3.Send(NodeId(node1.node_info.node_id), NodeId(), "message from client node",
           response_functor, boost::posix_time::seconds(10), DestinationType::kDirect, false);
-  EXPECT_TRUE(response_future.timed_wait(boost::posix_time::seconds(10)));
+  EXPECT_EQ(response_future.wait_for(std::chrono::seconds(10)), std::future_status::ready);
 
-  boost::promise<bool> response_promise2;
+  std::promise<bool> response_promise2;
   response_future = response_promise2.get_future();
   response_functor = [&](const std::vector<std::string> &message) {
       ASSERT_EQ(1U, message.size());
@@ -436,13 +435,13 @@ TEST(APITest, BEH_API_ClientNodeSameId) {
     };
   routing4.Send(NodeId(node1.node_info.node_id), NodeId(), "message from client node",
           response_functor, boost::posix_time::seconds(10), DestinationType::kDirect, false);
-  EXPECT_TRUE(response_future.timed_wait(boost::posix_time::seconds(10)));
+  EXPECT_EQ(response_future.wait_for(std::chrono::seconds(10)), std::future_status::ready);
 }
 
 TEST(APITest, BEH_API_NodeNetwork) {
   int min_join_status(8);  // TODO(Prakash): To decide
-  std::vector<boost::promise<bool>> join_promises(kNetworkSize - 2);
-  std::vector<boost::unique_future<bool>> join_futures;
+  std::vector<std::promise<bool>> join_promises(kNetworkSize - 2);
+  std::vector<std::future<bool>> join_futures;
   std::deque<bool> promised;
   std::vector<NetworkStatusFunctor> status_vector;
   boost::shared_mutex mutex;
@@ -501,15 +500,15 @@ TEST(APITest, BEH_API_NodeNetwork) {
     functors.network_status = status_vector.at(i);
     Endpoint endpoint((i % 2) ? endpoint1 : endpoint2);
     routing_node[i + 2]->Join(functors, std::vector<Endpoint>(1, endpoint));
-    ASSERT_TRUE(join_futures.at(i).timed_wait(boost::posix_time::seconds(10)));
+    ASSERT_EQ(join_futures.at(i).wait_for(std::chrono::seconds(10)), std::future_status::ready);
     LOG(kVerbose) << "node ---------------------------- " << i + 2 << "joined";
   }
 }
 
 TEST(APITest, BEH_API_NodeNetworkWithClient) {
   int min_join_status(std::min(kServerCount, 8));
-  std::vector<boost::promise<bool>> join_promises(kNetworkSize);
-  std::vector<boost::unique_future<bool>> join_futures;
+  std::vector<std::promise<bool>> join_promises(kNetworkSize);
+  std::vector<std::future<bool>> join_futures;
   std::deque<bool> promised;
   std::vector<NetworkStatusFunctor> status_vector;
   boost::shared_mutex mutex;
@@ -574,7 +573,7 @@ TEST(APITest, BEH_API_NodeNetworkWithClient) {
   promised.push_back(false);
   status_vector.emplace_back([](int /*x*/) {});
   status_vector.emplace_back([](int /*x*/) {});
-  boost::promise<bool> promise1, promise2;
+  std::promise<bool> promise1, promise2;
   join_futures.emplace_back(promise1.get_future());
   join_futures.emplace_back(promise2.get_future());
 
@@ -599,7 +598,7 @@ TEST(APITest, BEH_API_NodeNetworkWithClient) {
   for (auto i(2); i != (kNetworkSize); ++i) {
     functors.network_status = status_vector.at(i);
     routing_node[i]->Join(functors, std::vector<Endpoint>(1, endpoint1));
-    ASSERT_TRUE(join_futures.at(i).timed_wait(boost::posix_time::seconds(10)));
+    ASSERT_EQ(join_futures.at(i).wait_for(std::chrono::seconds(10)), std::future_status::ready);
   }
 }
 
@@ -607,8 +606,8 @@ TEST(APITest, BEH_API_SendGroup) {
   const uint16_t kMessageCount(10);  // each vault will send n messages to other vaults
   const size_t kDataSize(512 * 1024);
   int min_join_status(std::min(kServerCount, 8));
-  std::vector<boost::promise<bool>> join_promises(kNetworkSize);
-  std::vector<boost::unique_future<bool>> join_futures;
+  std::vector<std::promise<bool>> join_promises(kNetworkSize);
+  std::vector<std::future<bool>> join_futures;
   std::deque<bool> promised;
   std::vector<NetworkStatusFunctor> status_vector;
   boost::shared_mutex mutex;
@@ -660,7 +659,7 @@ TEST(APITest, BEH_API_SendGroup) {
   promised.push_back(false);
   status_vector.emplace_back([](int /*x*/) {});
   status_vector.emplace_back([](int /*x*/) {});
-  boost::promise<bool> promise1, promise2;
+  std::promise<bool> promise1, promise2;
   join_futures.emplace_back(promise1.get_future());
   join_futures.emplace_back(promise2.get_future());
 
@@ -685,7 +684,7 @@ TEST(APITest, BEH_API_SendGroup) {
   for (auto i(2); i != (kServerCount); ++i) {
     functors.network_status = status_vector.at(i);
     routing_node[i]->Join(functors, std::vector<Endpoint>(1, endpoint1));
-    ASSERT_TRUE(join_futures.at(i).timed_wait(boost::posix_time::seconds(10)));
+    ASSERT_EQ(join_futures.at(i).wait_for(std::chrono::seconds(10)), std::future_status::ready);
   }
 
   std::atomic<int> done_count(0);

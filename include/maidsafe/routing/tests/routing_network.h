@@ -21,7 +21,6 @@
 #include <algorithm>
 
 #include "boost/asio/ip/udp.hpp"
-#include "boost/thread/future.hpp"
 
 #include "maidsafe/common/node_id.h"
 #include "maidsafe/common/test.h"
