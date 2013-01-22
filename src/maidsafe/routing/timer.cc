@@ -137,7 +137,7 @@ void Timer::ExecuteTask(TaskId task_id, const boost::system::error_code& error) 
 
   asio_service_.service().dispatch([=] {
     if (task->functor)
-      task->functor(task->responses);
+      task->functor(std::move(task->responses));
     if (!task->promises.empty())
       SetExceptions(task->promises);
     std::lock_guard<std::mutex> lock(mutex_);
