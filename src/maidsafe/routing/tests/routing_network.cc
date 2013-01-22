@@ -780,6 +780,31 @@ std::vector<NodeInfo> GenericNetwork::GetClosestVaults(const NodeId& target_id,
   return std::vector<NodeInfo>(closest_nodes.begin(), closest_nodes.begin() + sort_size);
 }
 
+void GenericNetwork::ValidateExpectedNodeType(const NodeId& node_id,
+                                              const ExpectedNodeType& expected_node_type) {
+  auto itr = std::find_if(this->nodes_.begin(),
+                          this->nodes_.end(),
+                          [&] (const NodePtr node) {
+                            return (node->node_id() == node_id);
+                          });
+  if (expected_node_type == kExpectVault) {
+    if (itr == this->nodes_.end())
+      assert(false && "Expected vault, but node_id is not found");
+    else if ((*itr)->IsClient())
+      assert(false && "Expected vault, but got client");
+  } else if (expected_node_type == kExpectClient) {
+    if (itr == this->nodes_.end())
+      assert(false && "Expected client, but node_id is not found");
+    else if (!(*itr)->IsClient())
+      assert(false && "Expected client, but got vault");
+  } else if (expected_node_type == kExpectDoesNotExist) {
+    if (itr != this->nodes_.end())
+      assert(false && "Found node, but it shouldn't exist");
+  } else {
+    assert(false && "Expected node type not recognised.");
+  }
+}
+
 bool GenericNetwork::RestoreComposition() {
   // Intended for use in test SetUp/TearDown
   while (ClientIndex() > kServerSize) {
@@ -971,6 +996,8 @@ testing::AssertionResult GenericNetwork::SendGroup(const NodeId& node_id,
 
   // TODO(Alison) - compare content of received messages with expected content
 
+  // TODO(Alison) - get IDs of expected recipients and compare replies against these
+
   if (bad_futures_count != 0) {
     return testing::AssertionFailure() << "Send operarion timed out: "
                                        << bad_futures_count
@@ -979,32 +1006,36 @@ testing::AssertionResult GenericNetwork::SendGroup(const NodeId& node_id,
   return testing::AssertionSuccess();
 }
 
-testing::AssertionResult GenericNetwork::Send(const NodeId& node_id) {
+testing::AssertionResult GenericNetwork::Send(const NodeId& node_id,
+                                              const ExpectedNodeType& destination_node_type) {
+  ValidateExpectedNodeType(node_id, destination_node_type);
+
   std::vector<std::future<std::string>> futures;
   size_t message_index(0);
   for (auto source_node : this->nodes_) {
     if (source_node->node_id() != node_id) {
-      std::string data(boost::lexical_cast<std::string>(message_index++) + "<:>" +
+      std::string data(boost::lexical_cast<std::string>(message_index) + "<:>" +
                        RandomAlphaNumericString((RandomUint32() % 255 + 1) * 2^10));
       futures.push_back(source_node->Send(node_id, data, false));
     }
+    ++message_index;
   }
 
-  size_t bad_futures_count(0);
-  std::set<size_t> received_ids;
-
+  size_t num_timeouts(0);
+  std::map<size_t, std::string> replies;
   while (!futures.empty()) {
     auto itr(futures.begin());
     while (itr != futures.end()) {
       if (IsReady(*itr)) {
         try {
           std::string message((*itr).get());
-          std::string data_id(message.substr(message.find(">:<") + 3,
-          message.find("<:>") - 3 - message.find(">:<")));
-          received_ids.insert(boost::lexical_cast<size_t>(data_id));
+          std::string data_index(message.substr(message.find(">:<") + 3,
+                                                message.find("<:>") - 3 - message.find(">:<")));
+          std::string replier_id(message.substr(0, message.find(">::<")));
+          replies.insert(std::make_pair(boost::lexical_cast<size_t>(data_index), replier_id));
         } catch(const std::exception& ex) {
           LOG(kError) << "Exception : " << ex.what();
-          ++bad_futures_count;
+          ++num_timeouts;
         }
         itr = futures.erase(itr);
       } else {
@@ -1013,25 +1044,45 @@ testing::AssertionResult GenericNetwork::Send(const NodeId& node_id) {
     }
   }
 
-  // TODO(Alison) - compare content of received messages with expected content
-
-  if (bad_futures_count != 0) {
-    for (size_t id(0); id < message_index; ++id) {
-      auto iter = received_ids.find(id);
-      if (iter == received_ids.end())
-      LOG(kVerbose) << "missing id: " << id;
+  if (destination_node_type == kExpectVault) {
+    // TODO(Alison) - compare content of received messages with expected content
+    if (num_timeouts > 0) {
+      for (size_t index(0); index < message_index; ++index) {
+        if (replies.find(index) == replies.end())
+          LOG(kVerbose) << "Did not get reply to message with index " << index;
+      }
+      return testing::AssertionFailure() << "Some replies timed out.";
     }
-    return testing::AssertionFailure() << "Send operarion timed out: "
-                                       << bad_futures_count
-                                       << " failed to reply.";
+
+    for (auto itr(replies.begin()); itr != replies.end(); ++itr) {
+      if ((*itr).second != node_id.string()) {
+        LOG(kVerbose) << "Received unexpected reply from node with id: "
+                      << HexSubstr((*itr).second);
+        return testing::AssertionFailure() << "Got reply from wrong node.";
+      }
+    }
+
+    return testing::AssertionSuccess();
   }
 
+  // to Client or nonexistent ID - expect no replies
+  if (replies.size() > 0) {
+    for (auto itr(replies.begin()); itr != replies.end(); ++itr) {
+      LOG(kVerbose) << "Received unexpected reply from node with id: "
+                    << HexSubstr((*itr).second)
+                    << " to message with index: "
+                    << (*itr).first;
+    }
+    return testing::AssertionFailure() << "Got unexpected replies.";
+  }
 
   return testing::AssertionSuccess();
 }
 
 testing::AssertionResult GenericNetwork::Send(std::shared_ptr<GenericNode> source_node,
-                                              const NodeId& node_id) {
+                                              const NodeId& node_id,
+                                              const ExpectedNodeType& destination_node_type) {
+  ValidateExpectedNodeType(node_id, destination_node_type);
   size_t expected_messages(std::count_if(this->nodes_.begin(), this->nodes_.end(),
                                          [=](const std::shared_ptr<GenericNode> node)->bool {
                                            return (!node->IsClient() && node_id == node->node_id());

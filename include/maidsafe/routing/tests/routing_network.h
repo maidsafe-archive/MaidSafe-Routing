@@ -58,6 +58,12 @@ bool is_ready(std::future<Future>& f) {
 
 struct NodeInfoAndPrivateKey;
 
+enum ExpectedNodeType {
+  kExpectVault,
+  kExpectClient,
+  kExpectDoesNotExist
+};
+
 const uint32_t kClientSize(5);
 const uint32_t kServerSize(20);
 const uint32_t kNetworkSize = kClientSize + kServerSize;
@@ -197,6 +203,8 @@ class GenericNetwork {
                                         const bool vault_only = false);
   std::vector<NodeInfo> GetClosestVaults(const NodeId& target_id,
                                          const uint32_t& quantity);
+  void ValidateExpectedNodeType(const NodeId& node_id,
+                                const ExpectedNodeType& expected_node_type);
   bool RestoreComposition();
   bool WaitForHealthToStabilise();
   bool NodeHasSymmetricNat(const NodeId& node_id);
@@ -204,9 +212,11 @@ class GenericNetwork {
   testing::AssertionResult SendGroup(const NodeId& node_id,
                                      const size_t& messages,
                                      uint16_t source_index = 0);
-  testing::AssertionResult Send(const NodeId& node_id);
+  testing::AssertionResult Send(const NodeId& node_id,
+                                const ExpectedNodeType& destination_node_type = kExpectVault);
   testing::AssertionResult Send(std::shared_ptr<GenericNode> source_node,
-                                const NodeId& node_id);
+                                const NodeId& node_id,
+                                const ExpectedNodeType& destination_node_type = kExpectVault);
 
   friend class NodesEnvironment;
 
