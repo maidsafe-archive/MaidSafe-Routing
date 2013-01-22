@@ -18,8 +18,6 @@
 #include <vector>
 
 #include "boost/filesystem/exception.hpp"
-#include "boost/thread/future.hpp"
-
 #include "maidsafe/common/node_id.h"
 #include "maidsafe/common/test.h"
 #include "maidsafe/common/utils.h"
@@ -99,13 +97,13 @@ TEST(NetworkUtilsTest, FUNC_ProcessSendDirectEndpoint) {
   Endpoint endpoint1(GetLocalIp(),  maidsafe::test::GetRandomPort());
   Endpoint endpoint2(GetLocalIp(),  maidsafe::test::GetRandomPort());
 
-  boost::promise<bool> test_completion_promise;
+  std::promise<bool> test_completion_promise;
   auto test_completion_future = test_completion_promise.get_future();
   bool promised(true);
   uint32_t expected_message_at_node(kMessageCount + 1);
   uint32_t message_count_at_node2(0);
 
-  boost::promise<bool> connection_completion_promise;
+  std::promise<bool> connection_completion_promise;
   auto connection_completion_future = connection_completion_promise.get_future();
 
   protobuf::Message sent_message;
@@ -231,7 +229,8 @@ TEST(NetworkUtilsTest, FUNC_ProcessSendDirectEndpoint) {
   EXPECT_EQ(rudp::kSuccess, network.Add(node_id2, endpoint_pair_2, "validation_3->2"));
 
   EXPECT_EQ(kSuccess, rudp2.Add(node_id3, endpoint_pair_3, "validation_2->3"));
-  if (!connection_completion_future.timed_wait(bptime::seconds(10))) {
+  if (connection_completion_future.wait_for(std::chrono::seconds(10)) !=
+      std::future_status::ready) {
     ASSERT_TRUE(false) << "Failed waiting for node-3 to receive validation data";
   }
 
@@ -239,7 +238,7 @@ TEST(NetworkUtilsTest, FUNC_ProcessSendDirectEndpoint) {
     network.SendToDirect(sent_message, node_id2, node_id2);
     Sleep(boost::posix_time::milliseconds(100));
   }
-  if (!test_completion_future.timed_wait(bptime::seconds(60))) {
+  if (test_completion_future.wait_for(std::chrono::seconds(60)) != std::future_status::ready) {
     ASSERT_TRUE(false) << "Failed waiting for node-2 to receive "
                        << expected_message_at_node << "messsages";
   }
@@ -252,13 +251,13 @@ TEST(NetworkUtilsTest, FUNC_ProcessSendRecursiveSendOn) {
   Endpoint endpoint1(GetLocalIp(),  maidsafe::test::GetRandomPort());
   Endpoint endpoint2(GetLocalIp(),  maidsafe::test::GetRandomPort());
 
-  boost::promise<bool> test_completion_promise;
+  std::promise<bool> test_completion_promise;
   auto test_completion_future = test_completion_promise.get_future();
   bool promised(true);
   uint32_t expected_message_at_node(kMessageCount + 1);
   uint32_t message_count_at_node2(0);
 
-  boost::promise<bool> connection_completion_promise;
+  std::promise<bool> connection_completion_promise;
   auto connection_completion_future = connection_completion_promise.get_future();
 
   protobuf::Message sent_message;
@@ -390,7 +389,8 @@ TEST(NetworkUtilsTest, FUNC_ProcessSendRecursiveSendOn) {
   EXPECT_EQ(kSuccess, network.Add(node_id2, endpoint_pair2, "validation_3->2"));
   EXPECT_EQ(kSuccess, rudp2.Add(node_id3, endpoint_pair3, "validation_2->3"));
 
-  if (!connection_completion_future.timed_wait(bptime::seconds(10))) {
+  if (connection_completion_future.wait_for(std::chrono::seconds(10)) !=
+      std::future_status::ready) {
     ASSERT_TRUE(false) << "Failed waiting for node-3 to receive validation data";
   }
 
@@ -413,7 +413,7 @@ TEST(NetworkUtilsTest, FUNC_ProcessSendRecursiveSendOn) {
   for (auto i(0); i != kMessageCount; ++i)
     network.SendToClosestNode(sent_message);
 
-  if (!test_completion_future.timed_wait(bptime::seconds(60))) {
+  if (test_completion_future.wait_for(std::chrono::seconds(60)) != std::future_status::ready) {
     ASSERT_TRUE(false) << "Failed waiting for node-2 to receive "
                        << expected_message_at_node << "messsages";
   }

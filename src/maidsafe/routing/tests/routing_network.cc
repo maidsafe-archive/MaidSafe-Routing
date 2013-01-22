@@ -1069,7 +1069,7 @@ testing::AssertionResult GenericNetwork::Send(const NodeId& node_id,
   size_t message_index(0);
   for (auto source_node : this->nodes_) {
     if (source_node->node_id() != node_id) {
-      std::string data(boost::lexical_cast<std::string>(message_index) + "<:>" +
+      std::string data(std::to_string(message_index) + "<:>" +
                        RandomAlphaNumericString((RandomUint32() % 255 + 1) * 2^10));
       futures.push_back(source_node->Send(node_id, data, false));
     }
@@ -1087,7 +1087,7 @@ testing::AssertionResult GenericNetwork::Send(const NodeId& node_id,
           std::string data_index(message.substr(message.find(">:<") + 3,
                                                 message.find("<:>") - 3 - message.find(">:<")));
           std::string replier_id(message.substr(0, message.find(">::<")));
-          replies.insert(std::make_pair(boost::lexical_cast<size_t>(data_index), replier_id));
+          replies.insert(std::make_pair(atoi(data_index.c_str()), replier_id));
         } catch(const std::exception& ex) {
           LOG(kError) << "Exception : " << ex.what();
           ++num_timeouts;

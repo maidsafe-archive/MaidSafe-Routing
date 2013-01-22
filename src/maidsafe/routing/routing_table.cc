@@ -712,12 +712,12 @@ std::string RoutingTable::PrintRoutingTable() {
   }
   std::string s = "\n\n[" + DebugId(kNodeId_) +
       "] This node's own routing table and peer connections:\n" +
-      "Routing table size: " + boost::lexical_cast<std::string>(nodes_.size()) + "\n";
+      "Routing table size: " + std::to_string(nodes_.size()) + "\n";
   for (auto node : rt) {
     s += std::string("\tPeer ") + "[" + DebugId(node.node_id) + "]" + "-->";
     s += DebugId(node.connection_id) + " && xored ";
     s += DebugId(kNodeId_ ^ node.node_id) + " bucket ";
-    s += boost::lexical_cast<std::string>(node.bucket) + "\n";
+    s += std::to_string(node.bucket) + "\n";
   }
   s += "\n\n";
   return s;
