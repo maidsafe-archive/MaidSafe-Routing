@@ -586,7 +586,7 @@ TEST(APITest, BEH_API_NodeNetworkWithClient) {
 
 TEST(APITest, BEH_API_SendGroup) {
   Parameters::default_send_timeout = boost::posix_time::seconds(200);
-  const uint16_t kMessageCount(10);  // each Vault will send kMessageCount message to other vaults
+  const uint16_t kMessageCount(10);  // each vault will send kMessageCount message to other vaults
   int min_join_status(std::min(kServerCount, 8));
   std::vector<std::promise<bool>> join_promises(kNetworkSize);
   std::vector<std::future<bool>> join_futures;
@@ -690,7 +690,7 @@ TEST(APITest, BEH_API_SendGroup) {
 
   while (!all_futures.empty()) {
     all_futures.erase(std::remove_if(all_futures.begin(), all_futures.end(),
-        [](std::future<std::string>& str) {
+        [](std::future<std::string>& str)->bool {
             if (IsReady(str)) {
               try {
                 str.get();
