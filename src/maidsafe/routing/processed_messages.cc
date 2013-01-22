@@ -23,7 +23,7 @@ ProcessedMessages::ProcessedMessages()
     : mutex_(),
       history_() {}
 
-bool ProcessedMessages::Add(const uint32_t& source_id, const uint32_t& message_id) {
+bool ProcessedMessages::Add(const NodeId &source_id, const uint32_t& message_id) {
   std::unique_lock<std::mutex> lock(mutex_);
   auto found(std::find_if(history_.begin(),
                           history_.end(),
@@ -53,7 +53,7 @@ void ProcessedMessages::Remove(std::unique_lock<std::mutex>& lock) {
                               }));
 
   if (old_entry != history_.begin())
-    history_.erase(history_.begin(), old_entry - 1);
+    history_.erase(history_.begin(), old_entry);
 }
 
 }  // namespace routing

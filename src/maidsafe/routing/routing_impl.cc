@@ -497,7 +497,7 @@ void Routing::Impl::DoOnMessageReceived(const std::string& message) {
     }
     if ((pb_message.destination_id() == kNodeId().string()) &&
         (pb_message.destination_id() != pb_message.relay_id())) {
-      network_.SendAck(pb_message, true, true);
+      network_.SendAck(pb_message);
       pb_message.clear_ack_node_ids();
     }
     message_handler_->HandleMessage(pb_message);

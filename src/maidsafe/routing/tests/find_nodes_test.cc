@@ -70,6 +70,7 @@ TEST_F(FindNodeNetwork, FUNC_FindExistingNode) {
   this->SetUpNetwork(kServerSize);
   for (auto source : this->nodes_) {
     EXPECT_TRUE(Find(source, source->node_id()));
+    LOG(kVerbose) <<  "NodeIndex: " << this->NodeIndex(source->node_id());
     Sleep(boost::posix_time::seconds(1));
   }
   EXPECT_TRUE(this->ValidateRoutingTables());

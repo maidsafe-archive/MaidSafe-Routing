@@ -39,7 +39,6 @@
 #include "maidsafe/routing/remove_furthest_node.h"
 #include "maidsafe/routing/group_change_handler.h"
 
-
 namespace maidsafe {
 
 namespace routing {

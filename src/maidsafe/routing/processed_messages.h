@@ -24,14 +24,20 @@ namespace maidsafe {
 namespace routing {
 
 
-typedef std::tuple<uint32_t, uint32_t, std::time_t> ProcessedMessage;
+namespace test {
+  class ProcessedMessagesTest_BEH_AddRemove_Test;
+}
+
+typedef std::tuple<NodeId, uint32_t, std::time_t> ProcessedMessage;
 
 class ProcessedMessages {
  public:
   ProcessedMessages();
-  bool Add(const uint32_t& source_id, const uint32_t& message_id);
+  bool Add(const NodeId& source_id, const uint32_t& message_id);
 
  private:
+  friend class test::ProcessedMessagesTest_BEH_AddRemove_Test;
+
   ProcessedMessages &operator=(const ProcessedMessages&);
   ProcessedMessages(const ProcessedMessages&);
   ProcessedMessages(const ProcessedMessages&&);

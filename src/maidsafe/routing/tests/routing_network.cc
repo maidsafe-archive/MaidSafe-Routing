@@ -1043,7 +1043,7 @@ void GenericNetwork::AddNodeDetails(NodePtr node) {
   std::mutex mutex;
   if (!node->joined()) {
     std::unique_lock<std::mutex> lock(mutex);
-    auto result = cond_var->wait_for(lock, std::chrono::seconds(20));
+    auto result = cond_var->wait_for(lock, std::chrono::seconds(25));
     EXPECT_EQ(result, std::cv_status::no_timeout);
     Sleep(boost::posix_time::millisec(1000));
   }

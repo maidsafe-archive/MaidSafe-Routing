@@ -25,6 +25,7 @@
 #include "maidsafe/routing/timer.h"
 #include "maidsafe/routing/ack_timer.h"
 #include "maidsafe/routing/utils.h"
+#include "maidsafe/routing/processed_messages.h"
 
 
 namespace maidsafe {
@@ -50,6 +51,7 @@ MessageHandler::MessageHandler(RoutingTable& routing_table,
                                                                       network_))),
       timer_(timer),
       ack_timer_(ack_timer),
+      processed_messages_(),
       response_handler_(new ResponseHandler(routing_table, non_routing_table, network_,
                                             group_change_handler)),
       service_(new Service(routing_table, non_routing_table, network_, group_change_handler)),
@@ -209,7 +211,7 @@ void MessageHandler::HandleDirectMessageAsClosestNode(protobuf::Message& message
       message.set_visited(true);
       return network_.SendToClosestNode(message);
     } else {
-      network_.SendAck(message, true, true);
+      network_.SendAck(message);
       LOG(kWarning) << "Dropping message. This node ["
                     << DebugId(routing_table_.kNodeId())
                     << "] is the closest but is not connected to destination node ["
@@ -244,7 +246,7 @@ void MessageHandler::HandleGroupMessageAsClosestNode(protobuf::Message& message)
   }
 
   if (message.source_id() != routing_table_.kNodeId().string())
-    network_.SendAck(message, true, true);
+    network_.SendAck(message);
 
   if (message.has_visited() &&
       !message.visited() &&
@@ -327,6 +329,9 @@ void MessageHandler::HandleMessageAsFarNode(protobuf::Message& message) {
 }
 
 void MessageHandler::HandleMessage(protobuf::Message& message) {
+  if (!message.source_id().empty() &&
+          !processed_messages_.Add(NodeId(message.source_id()), message.id()))
+     return;
   if (!ValidateMessage(message)) {
     LOG(kWarning) << "Validate message failed." << " id: " << message.id();
     assert((message.hops_to_live() > 0) &&
@@ -392,7 +397,7 @@ void MessageHandler::HandleMessageForNonRoutingNodes(protobuf::Message& message)
                   << DebugId(routing_table_.kNodeId())
                   << " Dropping message as non-client to client message not allowed."
                   << PrintMessage(message);
-    network_.SendAck(message, true, true);
+    network_.SendAck(message);
     return;
   }
   LOG(kInfo) << "This node has message destination in its non routing table. Dest id : "

@@ -254,7 +254,7 @@ void NetworkUtils::SendTo(const protobuf::Message& message,
   const std::string kThisId(routing_table_.kNodeId().string());
   rudp::MessageSentFunctor message_sent_functor = [=](int message_sent) {
       if (rudp::kSuccess == message_sent) {
-        SendAck(message, true, true);
+        SendAck(message);
         LOG(kVerbose) << " [" << HexSubstr(kThisId) << "] sent : " << MessageTypeString(message)
                       << " to   " << DebugId(peer_node_id) << "   (id: " << message.id() << ")";
       } else {
@@ -341,7 +341,7 @@ void NetworkUtils::RecursiveSendOn(protobuf::Message message,
                       << HexSubstr(closest_node.node_id.string())
                       << "   (id: " << message.id() << ")"
                       << " dst : " << HexSubstr(message.destination_id());
-          SendAck(message, true, true);
+          SendAck(message);
       } else if (rudp::kSendFailure == message_sent) {
         LOG(kError) << "Sending type " << MessageTypeString(message)
                     << " message from " << HexSubstr(routing_table_.kNodeId().string())
@@ -402,16 +402,21 @@ void NetworkUtils::AdjustRouteHistory(protobuf::Message& message) {
 
 void NetworkUtils::AdjustAckHistory(protobuf::Message& message) {
   LOG(kVerbose) << "size of acks "  << message.ack_node_ids_size();
-  assert((message.ack_node_ids_size() <= 1) && "size of ack list must be smaller than 2");
-  message.clear_ack_node_ids();
-  message.add_ack_node_ids(routing_table_.kNodeId().string());
+  assert((message.ack_node_ids_size() <= 2) && "size of ack list must be smaller than 3");
+  if ((message.ack_node_ids_size() == 0) ||
+      ((message.ack_node_ids_size() == 1) &&
+       (message.ack_node_ids(0) != routing_table_.kNodeId().string())))  {
+    message.add_ack_node_ids(routing_table_.kNodeId().string());
+  } else if (message.ack_node_ids_size() == 2) {
+    std::string last_node(message.ack_node_ids(1));
+    message.clear_ack_node_ids();
+    message.add_ack_node_ids(last_node);
+    message.add_ack_node_ids(routing_table_.kNodeId().string());
+  }
 }
 
-void NetworkUtils::SendAck(const protobuf::Message& message,
-                           const bool& ignore_size,
-                           const bool& previous_only) {
-  LOG(kVerbose) << "[" << DebugId(routing_table_.kNodeId())  << "] SendAck "
-                << message.ack_id() << " ignore size " << ignore_size;
+void NetworkUtils::SendAck(const protobuf::Message& message) {
+  LOG(kVerbose) << "[" << DebugId(routing_table_.kNodeId())  << "] SendAck " << message.ack_id();
   if (message.type() == static_cast<int>(MessageType::kAck))
     return;
   if ((message.relay_id() == routing_table_.kNodeId().string()) ||
@@ -422,19 +427,8 @@ void NetworkUtils::SendAck(const protobuf::Message& message,
                                         message.ack_node_ids().end());
   for (auto& hop : ack_node_ids)
     LOG(kVerbose) << " hop in history: " << HexSubstr(hop) << "ack id:" << message.ack_id();
-  if (ignore_size) {
-    if (message.ack_node_ids_size() == 0) {
-      return;
-    } else {
-      protobuf::Message ack_message(
-          rpcs::Ack(NodeId(message.ack_node_ids(message.ack_node_ids_size() - 1)),
-                    routing_table_.kNodeId(),
-                    message.ack_id()));
-      LOG(kVerbose) << "NetworkUtils::SendAck First ";
-      SendToClosestNode(ack_message);
-    }
-  }
-  if ((message.ack_node_ids_size() < 2) || previous_only)
+
+  if (message.ack_node_ids_size() == 0)
     return;
 
   if (std::find(ack_node_ids.begin(), ack_node_ids.end(),

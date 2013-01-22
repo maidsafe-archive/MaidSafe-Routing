@@ -21,6 +21,7 @@
 #include "maidsafe/routing/cache_manager.h"
 #include "maidsafe/routing/response_handler.h"
 #include "maidsafe/routing/service.h"
+#include "maidsafe/routing/processed_messages.h"
 
 
 namespace maidsafe {
@@ -119,6 +120,7 @@ class MessageHandler {
   std::unique_ptr<CacheManager> cache_manager_;
   Timer& timer_;
   AckTimer& ack_timer_;
+  ProcessedMessages processed_messages_;
   std::shared_ptr<ResponseHandler> response_handler_;
   std::shared_ptr<Service> service_;
   MessageReceivedFunctor message_received_functor_;
