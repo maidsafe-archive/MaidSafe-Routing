@@ -15,6 +15,7 @@
 #include <vector>
 
 #include "boost/date_time/posix_time/posix_time.hpp"
+#include "boost/progress.hpp"
 
 #include "maidsafe/common/asio_service.h"
 #include "maidsafe/common/log.h"
@@ -80,6 +81,17 @@ class TimerTest : public testing::Test {
     }
   }
 
+  protobuf::Message  CreateMessage(const int id) {
+    protobuf::Message message;
+    message.set_type(-200);
+    message.set_destination_id("destination_id");
+    message.set_direct(false);
+    message.add_data(RandomAlphaNumericString(1024 * 512)/*"response data"*/);
+    message.set_source_id("source_id");
+    message.set_id(id);
+    return message;
+  }
+
  protected:
   AsioService asio_service_;
   Timer timer_;
@@ -108,6 +120,100 @@ TEST_F(TimerTest, BEH_Promise_SingleResponse) {
   message_.set_id(timer_.AddTask(bptime::seconds(2), promises_in));
   timer_.AddResponse(message_);
   CheckResponse(future_in, response_size, 0);
+}
+
+TEST_F(TimerTest, BEH_MultipleResponse) {
+  boost::progress_timer t;
+  std::atomic<int> count(0);
+  TaskResponseFunctor response_functor = [&count](std::vector<std::string> response) {
+    ASSERT_EQ(1U, response.size());
+    ++count;
+  };
+
+  auto add_tasks = [&](const int& number)->std::vector<protobuf::Message> {
+      std::vector<protobuf::Message> messages;
+      for (int i(0); i != number; ++i)
+        messages.push_back(std::move(CreateMessage(timer_.AddTask(bptime::seconds(50),
+                                                   response_functor, 1))));
+      return messages;
+    };
+
+  auto add_response = [&](std::vector<protobuf::Message>&& messages) {
+      for (size_t i(0); i != messages.size(); ++i)
+        timer_.AddResponse(messages.at(i));
+    };
+
+  auto add_tasks1_future = std::async(std::launch::async, add_tasks, 200);
+  auto add_tasks2_future = std::async(std::launch::async, add_tasks, 200);
+  std::vector<protobuf::Message> messages1(std::move(add_tasks1_future.get()));
+  std::vector<protobuf::Message> messages2(std::move(add_tasks2_future.get()));
+
+  auto add_response1_future = std::async(std::launch::async, add_response, std::move(messages1));
+  auto add_response2_future = std::async(std::launch::async, add_response, std::move(messages2));
+  add_response1_future.get();
+  add_response2_future.get();
+
+  while (count != 400);
+}
+
+TEST_F(TimerTest, BEH_Promise_MultipleResponse) {
+  boost::progress_timer t;
+  std::atomic<int> count(0);
+  std::shared_ptr<std::vector<std::future<std::string>>>
+     futures1 = std::make_shared<std::vector<std::future<std::string>>>();
+  std::shared_ptr<std::vector<std::future<std::string>>>
+     futures2 = std::make_shared<std::vector<std::future<std::string>>>();
+
+  auto add_tasks = [&](const int& number,
+      std::shared_ptr<std::vector<std::future<std::string>>> futures)->std::vector<protobuf::Message> {
+        std::vector<protobuf::Message> messages;
+        std::vector<std::shared_ptr<std::promise<std::string>>> promises_in;
+        promises_in.push_back(std::make_shared<std::promise<std::string>>());
+        auto future(promises_in[0]->get_future());
+        futures->push_back(std::move(future));
+        for (int i(0); i != number; ++i)
+          messages.push_back(std::move(CreateMessage(timer_.AddTask(bptime::seconds(50),
+                                                     promises_in))));
+        return messages;
+      };
+
+  auto add_response = [&](std::vector<protobuf::Message>&& messages) {
+        for (size_t i(0); i != messages.size(); ++i)
+          timer_.AddResponse(messages.at(i));
+      };
+
+  auto add_tasks1_future = std::async(std::launch::async, add_tasks, 200, futures1);
+  auto add_tasks2_future = std::async(std::launch::async, add_tasks, 200, futures2);
+
+  std::vector<protobuf::Message> messages1(std::move(add_tasks1_future.get()));
+  std::vector<protobuf::Message> messages2(std::move(add_tasks2_future.get()));
+  std::cout << "\n Added tasks ; !!!!!!!!!!!!!!!!";
+  auto add_response1_future = std::async(std::launch::async, add_response, std::move(messages1));
+  auto add_response2_future = std::async(std::launch::async, add_response, std::move(messages2));
+  add_response1_future.get();
+  add_response2_future.get();
+  std::cout << "\n add_response2_future.get(); !!!!!!!!!!!!!!!!";
+  for (auto itr(futures2->begin()); itr != futures2->end(); ++itr)
+    futures1->push_back(std::move(*itr));
+
+  while (!futures1->empty()) {
+    futures1->erase(std::remove_if(futures1->begin(), futures1->end(),
+        [](std::future<std::string>& str)->bool {
+            if (IsReady(str)) {
+              try {
+                str.get();
+               } catch(std::exception& ex) {
+                 LOG(kError) << "Exception : " << ex.what();
+                 EXPECT_TRUE(false) << ex.what();
+               }
+               return true;
+             } else  {
+               return false;
+             };
+        }), futures1->end());
+    std::this_thread::yield();
+  }
+//    while (count != 400);
 }
 
 TEST_F(TimerTest, BEH_Promise_SingleResponseTimedOut) {
