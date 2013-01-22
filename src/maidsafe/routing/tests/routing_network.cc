@@ -730,13 +730,13 @@ std::vector<NodeId> GenericNetwork::GetGroupForId(const NodeId& node_id) {
       group_ids.push_back(node->node_id());
   }
   std::partial_sort(group_ids.begin(),
-                    group_ids.begin() + Parameters::node_group_size - 1,
+                    group_ids.begin() + Parameters::node_group_size,
                     group_ids.end(),
                     [&](const NodeId& lhs, const NodeId& rhs) {
                       return NodeId::CloserToTarget(lhs, rhs, node_id);
                     });
   return std::vector<NodeId>(group_ids.begin(),
-                             group_ids.begin() + Parameters::node_group_size - 1);
+                             group_ids.begin() + Parameters::node_group_size);
 }
 
 std::vector<NodeInfo> GenericNetwork::GetClosestNodes(const NodeId& target_id,
@@ -970,39 +970,63 @@ testing::AssertionResult GenericNetwork::SendGroup(const NodeId& node_id,
 
   size_t bad_futures_count(0);
 
-  while (!futures.empty()) {
-    auto v_itr(futures.begin());
-    while (v_itr != futures.end()) {
-      if ((*v_itr).empty()) {
-        v_itr = futures.erase(v_itr);
-      } else {
-        auto itr((*v_itr).begin());
-        while (itr != (*v_itr).end()) {
-          if (IsReady(*itr)) {
-            try {
-              (*itr).get();
-            } catch(const std::exception& ex) {
-              LOG(kError) << "Exception : " << ex.what();
-              ++bad_futures_count;
-            }
-            itr = (*v_itr).erase(itr);
-          } else {
-            ++itr;
-          }
-        }
-      }
+  std::vector<std::vector<std::string>> replies(messages);
+
+  for (size_t index(0); index < messages; ++index) {
+    while (!futures.at(index).empty()) {
+      futures.at(index).erase(std::remove_if(futures.at(index).begin(), futures.at(index).end(),
+          [&](std::future<std::string>& str)->bool {
+              if (IsReady(str)) {
+                try {
+                   replies.at(index).push_back(str.get());
+                 } catch(std::exception& ex) {
+                   LOG(kError) << "Exception : " << ex.what();
+                   ++bad_futures_count;
+                 }
+                 return true;
+               } else  {
+                 return false;
+               };
+          }), futures.at(index).end());
+      std::this_thread::yield();
     }
   }
 
   // TODO(Alison) - compare content of received messages with expected content
-
-  // TODO(Alison) - get IDs of expected recipients and compare replies against these
 
   if (bad_futures_count != 0) {
     return testing::AssertionFailure() << "Send operarion timed out: "
                                        << bad_futures_count
                                        << " failed to reply.";
   }
+
+  std::vector<NodeId> expected_group(this->GetGroupForId(node_id));
+  bool repliers_ok(true);
+  for (size_t index(0); index < messages; ++index) {
+    for (auto reply : replies.at(index)) {
+      try {
+        NodeId replier(reply.substr(0, reply.find(">::<")));
+        if (std::find_if(expected_group.begin(),
+                         expected_group.end(),
+                         [&](const NodeId& node_id) { return node_id == replier; })
+            == expected_group.end()) {
+          repliers_ok = false;
+          LOG(kError) << "Replier is not in close group: " << DebugId(replier);
+        }
+      } catch(const std::exception& ex) {
+        LOG(kError) << "Exception: " << ex.what();
+        return testing::AssertionFailure() << "Got message with invalid replier ID.";
+      }
+    }
+  }
+  if (!repliers_ok) {
+    LOG(kInfo) << "Expected group nodes for node with ID: " << DebugId(node_id);
+    for (auto node : expected_group)
+      LOG(kInfo) << "\t" << DebugId(node);
+    return testing::AssertionFailure() << "Some replies came from the wrong nodes."
+                                       << " Turn on Info logging for more detail.";
+  }
+
   return testing::AssertionSuccess();
 }
 
@@ -1083,10 +1107,9 @@ testing::AssertionResult GenericNetwork::Send(std::shared_ptr<GenericNode> sourc
                                               const NodeId& node_id,
                                               const ExpectedNodeType& destination_node_type) {
   ValidateExpectedNodeType(node_id, destination_node_type);
-  size_t expected_messages(std::count_if(this->nodes_.begin(), this->nodes_.end(),
-                                         [=](const std::shared_ptr<GenericNode> node)->bool {
-                                           return (!node->IsClient() && node_id == node->node_id());
-                                         }));
+  size_t expected_messages(0);
+  if (destination_node_type == kExpectVault)
+    expected_messages = 1;
 
   std::string data(RandomAlphaNumericString(512 * 2^10));
   assert(!data.empty() && "Send Data Empty !");
