@@ -908,43 +908,51 @@ bool GenericNetwork::NodeHasSymmetricNat(const NodeId& node_id) {
 }
 
 testing::AssertionResult GenericNetwork::Send(const size_t& messages) {
-  std::vector<std::future<std::string>> futures;
   size_t client_size(0), server_size(0);
   for (auto node : this->nodes_)
     (node->IsClient()) ? client_size++ : server_size++;
 
+  std::vector<NodeId> expected_replier_ids;
+  size_t total_num_nodes(this->nodes_.size());
+  std::vector<std::vector<std::future<std::string>>> futures(total_num_nodes);
   for (size_t index = 0; index < messages; ++index) {
-    for (auto source_node : this->nodes_) {
-      for (auto dest_node : this->nodes_) {
-        if (source_node->node_id() != dest_node->node_id()) {
+    for (size_t dest_index(0); dest_index < total_num_nodes; ++dest_index) {
+      NodeId dest_node_id(this->nodes_.at(dest_index)->node_id());
+      expected_replier_ids.push_back(dest_node_id);
+      for (auto source_node : this->nodes_) {
+        if (source_node->node_id() != dest_node_id) {
           std::string data(RandomAlphaNumericString(512 * 2^10));
           assert(!data.empty() && "Send Data Empty !");
-          futures.push_back(std::move(source_node->Send(NodeId(dest_node->node_id()),
-                                                        data,
-                                                        false)));
+          futures.at(dest_index).push_back(std::move(source_node->Send(NodeId(dest_node_id),
+                                                                       data,
+                                                                       false)));
         }
       }
     }
   }
 
+  std::vector<std::vector<std::string>> replies(total_num_nodes);
   size_t expected_good_futures(server_size * (server_size - 1 + client_size) * messages);
   size_t actual_good_futures(0);
-  while (!futures.empty()) {
-    auto itr(futures.begin());
-    while (itr != futures.end()) {
-      if (IsReady(*itr)) {
-        try {
-          (*itr).get();
-          ++actual_good_futures;
-        } catch(const std::exception& ex) {
-          LOG(kError) << "Exception : " << ex.what();
-        }
-        itr = futures.erase(itr);
-      } else {
-        ++itr;
-      }
+
+  for (size_t index(0); index < total_num_nodes; ++index) {
+    while (!futures.at(index).empty()) {
+      futures.at(index).erase(std::remove_if(futures.at(index).begin(), futures.at(index).end(),
+          [&](std::future<std::string>& str)->bool {
+              if (IsReady(str)) {
+                try {
+                   replies.at(index).push_back(str.get());
+                   ++actual_good_futures;
+                 } catch(std::exception& ex) {
+                   LOG(kError) << "Exception : " << ex.what();
+                 }
+                 return true;
+               } else  {
+                 return false;
+               };
+          }), futures.at(index).end());
+      std::this_thread::yield();
     }
-    std::this_thread::yield();
   }
 
   // TODO(Alison) - compare content of received messages with expected content
@@ -954,6 +962,29 @@ testing::AssertionResult GenericNetwork::Send(const size_t& messages) {
                                        << expected_good_futures - actual_good_futures
                                        << " failed to reply.";
   }
+
+  bool repliers_ok(true);
+  for (size_t index(0); index < total_num_nodes; ++index) {
+    for (auto reply : replies.at(index)) {
+      try {
+        NodeId replier(reply.substr(0, reply.find(">::<")));
+        if (replier != expected_replier_ids.at(index)) {
+          repliers_ok = false;
+          LOG(kError) << "Replier has incorrect ID."
+                      << "\n\tGot:      " << DebugId(replier)
+                      << "\n\tExpected: " << DebugId(expected_replier_ids.at(index));
+        }
+      } catch(const std::exception& ex) {
+        LOG(kError) << "Exception: " << ex.what();
+        return testing::AssertionFailure() << "Got message with invalid replier ID.";
+      }
+    }
+  }
+  if (!repliers_ok) {
+    return testing::AssertionFailure() << "Some replies came from the wrong nodes."
+                                       << " Turn on Info logging for more detail.";
+      }
+
   return testing::AssertionSuccess();
 }
 
