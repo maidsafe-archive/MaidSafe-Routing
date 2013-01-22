@@ -315,7 +315,7 @@ TEST(APITest, BEH_API_ClientNode) {
   EXPECT_EQ(join_future.wait_for(std::chrono::seconds(10)), std::future_status::ready);
 
   //  Testing Send
-  std::string data(RandomAlphaNumericString(512 * 2^10));
+  std::string data(RandomAlphaNumericString(512 * 1024));
   boost::progress_timer t;
   std::future<std::string> future(routing3.Send(NodeId(node1.node_info.node_id),
                                                 data,
@@ -587,6 +587,7 @@ TEST(APITest, BEH_API_NodeNetworkWithClient) {
 TEST(APITest, BEH_API_SendGroup) {
   Parameters::default_send_timeout = boost::posix_time::seconds(200);
   const uint16_t kMessageCount(10);  // each vault will send kMessageCount message to other vaults
+  const size_t kDataSize(512 * 1024);
   int min_join_status(std::min(kServerCount, 8));
   std::vector<std::promise<bool>> join_promises(kNetworkSize);
   std::vector<std::future<bool>> join_futures;
@@ -669,7 +670,7 @@ TEST(APITest, BEH_API_SendGroup) {
     routing_node[i]->Join(functors, std::vector<Endpoint>(1, endpoint1));
     EXPECT_EQ(join_futures.at(i).wait_for(std::chrono::seconds(10)), std::future_status::ready);
   }
-  std::string data(RandomAlphaNumericString(512 * 1024));
+  std::string data(RandomAlphaNumericString(kDataSize));
   // Call SendGroup repeatedly - measure duration to allow performance comparison
   boost::progress_timer t;
 
@@ -705,7 +706,12 @@ TEST(APITest, BEH_API_SendGroup) {
         }), all_futures.end());
     std::this_thread::yield();
   }
-  std::cout << "Total time taken by SendGroup: ";
+  auto time_taken(t.elapsed());
+  std::cout << "\n Time taken: " << time_taken
+            << "\n Total number of request messages :" << (kMessageCount * kServerCount)
+            << "\n Total number of response messages :" << (kMessageCount * kServerCount * 4)
+            << "\n Message size : " << (kDataSize / 1024) << "kB \n";
+  Parameters::default_send_timeout = boost::posix_time::seconds(10);
 }
 
 }  // namespace test
