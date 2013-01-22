@@ -192,17 +192,17 @@ bool Timer::AddResponse(const protobuf::Message& response) {
                  << " responses for task " << response.id();
     }
   } else {  // promise version
-    (*itr)->promises.back()->set_value(response.data(0));
+    (*itr)->promises.back()->set_value(std::move(response.data(0)));
     (*itr)->promises.pop_back();
     if ((*itr)->promises.empty()) {
-        LOG(kVerbose) << "Executing task " << response.id();
-        (*itr)->timer.cancel();
-      } else {
-        LOG(kInfo) << "Received " << ((*itr)->expected_response_count - (*itr)->promises.size())
-                   << " response(s). Waiting for "
-                   << (*itr)->promises.size()
-                   << " responses for task " << response.id();
-      }
+      LOG(kVerbose) << "Executing task " << response.id();
+      (*itr)->timer.cancel();
+    } else {
+      LOG(kInfo) << "Received " << ((*itr)->expected_response_count - (*itr)->promises.size())
+                 << " response(s). Waiting for "
+                 << (*itr)->promises.size()
+                 << " responses for task " << response.id();
+    }
   }
   return true;
 }
