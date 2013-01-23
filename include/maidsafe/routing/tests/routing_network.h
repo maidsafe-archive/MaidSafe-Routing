@@ -88,6 +88,7 @@ class GenericNode {
   void set_joined(const bool node_joined);
   bool joined() const;
   bool IsClient() const;
+  bool HasSymmetricNat() const;
   bool anonymous() { return anonymous_; }
   // void set_client_mode(const bool& client_mode);
   int expected();
@@ -164,7 +165,7 @@ class GenericNetwork {
   GenericNetwork();
   virtual ~GenericNetwork();
 
-  bool ValidateRoutingTables();
+  bool ValidateRoutingTables() const;
   virtual void SetUp();
   virtual void TearDown();
   void SetUpNetwork(const size_t& total_number_vaults,
@@ -182,31 +183,30 @@ class GenericNetwork {
   void AddNode(const bool& client_mode, const rudp::NatType& nat_type);
   void AddNode(const bool& client_mode, const bool& has_symmetric_nat);
   bool RemoveNode(const NodeId& node_id);
-  void Validate(const NodeId& node_id, GivePublicKeyFunctor give_public_key);
+  void Validate(const NodeId& node_id, GivePublicKeyFunctor give_public_key) const;
   void SetNodeValidationFunctor(NodePtr node);
-  std::vector<NodeId> GroupIds(const NodeId& node_id);
-  void PrintRoutingTables();
-  size_t RandomNodeIndex();
-  size_t RandomClientIndex();
-  size_t RandomVaultIndex();
-  NodePtr RandomClientNode();
-  NodePtr RandomVaultNode();
+  std::vector<NodeId> GroupIds(const NodeId& node_id) const;
+  void PrintRoutingTables() const;
+  uint16_t RandomNodeIndex() const;
+  uint16_t RandomClientIndex() const;
+  uint16_t RandomVaultIndex() const;
+  NodePtr RandomClientNode() const;
+  NodePtr RandomVaultNode() const;
   void RemoveRandomClient();
   void RemoveRandomVault();
   void ClearMessages();
-  int NodeIndex(const NodeId& node_id);
-  size_t ClientIndex() { return client_index_; }
-  std::vector<NodeId> GetGroupForId(const NodeId& node_id);
+  int NodeIndex(const NodeId& node_id) const;
+  size_t ClientIndex() const { return client_index_; }
+  std::vector<NodeId> GetGroupForId(const NodeId& node_id) const;
   std::vector<NodeInfo> GetClosestNodes(const NodeId& target_id,
                                         const uint32_t& quantity,
-                                        const bool vault_only = false);
-  std::vector<NodeInfo> GetClosestVaults(const NodeId& target_id,
-                                         const uint32_t& quantity);
+                                        const bool vault_only = false) const;
+  std::vector<NodeInfo> GetClosestVaults(const NodeId& target_id, const uint32_t& quantity) const;
   void ValidateExpectedNodeType(const NodeId& node_id,
-                                const ExpectedNodeType& expected_node_type);
+                                const ExpectedNodeType& expected_node_type) const;
   bool RestoreComposition();
-  bool WaitForHealthToStabilise();
-  bool NodeHasSymmetricNat(const NodeId& node_id);
+  bool WaitForHealthToStabilise() const;
+  bool NodeHasSymmetricNat(const NodeId& node_id) const;
   testing::AssertionResult Send(const size_t& messages);
   testing::AssertionResult SendGroup(const NodeId& node_id,
                                      const size_t& messages,
@@ -229,7 +229,7 @@ class GenericNetwork {
   std::vector<boost::asio::ip::udp::endpoint> bootstrap_endpoints_;
   boost::filesystem::path bootstrap_path_;
   std::map<NodeId, asymm::PublicKey> public_keys_;
-  size_t client_index_;
+  uint16_t client_index_;
 
  public:
   std::vector<NodePtr> nodes_;
