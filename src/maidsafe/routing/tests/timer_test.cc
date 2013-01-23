@@ -39,7 +39,7 @@ namespace test {
 class TimerTest : public testing::Test {
  public:
   TimerTest()
-      : asio_service_(1),
+      : asio_service_(2),
         timer_(asio_service_),
         kGroupSize_((RandomUint32() % 97) + 4),
         single_good_response_functor_(),
@@ -147,6 +147,7 @@ TEST_F(TimerTest, BEH_MultipleResponse) {
   auto add_tasks2_future = std::async(std::launch::async, add_tasks, 200);
   std::vector<protobuf::Message> messages1(std::move(add_tasks1_future.get()));
   std::vector<protobuf::Message> messages2(std::move(add_tasks2_future.get()));
+//  std::cout << "Task enqueued in " << t.elapsed();
 
   auto add_response1_future = std::async(std::launch::async, add_response, std::move(messages1));
   auto add_response2_future = std::async(std::launch::async, add_response, std::move(messages2));
@@ -165,15 +166,17 @@ TEST_F(TimerTest, BEH_Promise_MultipleResponse) {
      futures2 = std::make_shared<std::vector<std::future<std::string>>>();
 
   auto add_tasks = [&](const int& number,
-      std::shared_ptr<std::vector<std::future<std::string>>> futures)->std::vector<protobuf::Message> {
+      std::shared_ptr<std::vector<std::future<std::string>>>
+                       futures)->std::vector<protobuf::Message> {
         std::vector<protobuf::Message> messages;
-        std::vector<std::shared_ptr<std::promise<std::string>>> promises_in;
-        promises_in.push_back(std::make_shared<std::promise<std::string>>());
-        auto future(promises_in[0]->get_future());
-        futures->push_back(std::move(future));
-        for (int i(0); i != number; ++i)
+        for (int i(0); i != number; ++i) {
+          std::vector<std::shared_ptr<std::promise<std::string>>> promises_in;
+          promises_in.push_back(std::make_shared<std::promise<std::string>>());
+          auto future(promises_in[0]->get_future());
+          futures->push_back(std::move(future));
           messages.push_back(std::move(CreateMessage(timer_.AddTask(bptime::seconds(50),
                                                      promises_in))));
+        }
         return messages;
       };
 
@@ -187,33 +190,36 @@ TEST_F(TimerTest, BEH_Promise_MultipleResponse) {
 
   std::vector<protobuf::Message> messages1(std::move(add_tasks1_future.get()));
   std::vector<protobuf::Message> messages2(std::move(add_tasks2_future.get()));
-  std::cout << "\n Added tasks ; !!!!!!!!!!!!!!!!";
+
+//  std::cout << "Task enqueued in " << t.elapsed();
   auto add_response1_future = std::async(std::launch::async, add_response, std::move(messages1));
   auto add_response2_future = std::async(std::launch::async, add_response, std::move(messages2));
   add_response1_future.get();
   add_response2_future.get();
-  std::cout << "\n add_response2_future.get(); !!!!!!!!!!!!!!!!";
+
   for (auto itr(futures2->begin()); itr != futures2->end(); ++itr)
     futures1->push_back(std::move(*itr));
 
   while (!futures1->empty()) {
     futures1->erase(std::remove_if(futures1->begin(), futures1->end(),
-        [](std::future<std::string>& str)->bool {
+        [&count](std::future<std::string>& str)->bool {
             if (IsReady(str)) {
               try {
-                str.get();
-               } catch(std::exception& ex) {
-                 LOG(kError) << "Exception : " << ex.what();
-                 EXPECT_TRUE(false) << ex.what();
-               }
-               return true;
-             } else  {
-               return false;
-             };
+                auto response(str.get());
+                EXPECT_FALSE(response.empty());
+                ++count;
+              } catch(std::exception& ex) {
+                LOG(kError) << "Exception : " << ex.what();
+                EXPECT_TRUE(false) << ex.what();
+              }
+                return true;
+              } else  {
+                return false;
+              };
         }), futures1->end());
     std::this_thread::yield();
   }
-//    while (count != 400);
+  ASSERT_EQ(400, count);
 }
 
 TEST_F(TimerTest, BEH_Promise_SingleResponseTimedOut) {
