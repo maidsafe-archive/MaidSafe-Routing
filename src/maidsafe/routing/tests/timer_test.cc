@@ -123,6 +123,7 @@ TEST_F(TimerTest, BEH_Promise_SingleResponse) {
 }
 
 TEST_F(TimerTest, BEH_MultipleResponse) {
+  const int kMessageCount(400);
   boost::progress_timer t;
   std::atomic<int> count(0);
   TaskResponseFunctor response_functor = [&count](std::vector<std::string> response) {
@@ -143,8 +144,8 @@ TEST_F(TimerTest, BEH_MultipleResponse) {
         timer_.AddResponse(messages.at(i));
     };
 
-  auto add_tasks1_future = std::async(std::launch::async, add_tasks, 200);
-  auto add_tasks2_future = std::async(std::launch::async, add_tasks, 200);
+  auto add_tasks1_future = std::async(std::launch::async, add_tasks, kMessageCount/2);
+  auto add_tasks2_future = std::async(std::launch::async, add_tasks, kMessageCount/2);
   std::vector<protobuf::Message> messages1(std::move(add_tasks1_future.get()));
   std::vector<protobuf::Message> messages2(std::move(add_tasks2_future.get()));
 //  std::cout << "Task enqueued in " << t.elapsed();
@@ -154,10 +155,49 @@ TEST_F(TimerTest, BEH_MultipleResponse) {
   add_response1_future.get();
   add_response2_future.get();
 
-  while (count != 400);
+  while (count != kMessageCount);
+}
+
+TEST_F(TimerTest, BEH_MultipleGroupResponse) {
+  const int kMessageCount(400);
+  boost::progress_timer t;
+  std::atomic<int> count(0);
+  TaskResponseFunctor response_functor = [&count](std::vector<std::string> response) {
+    ASSERT_EQ(4U, response.size());
+    ++count;
+//    std::cout << "\n count" << count;
+  };
+
+  auto add_tasks = [&](const int& number)->std::vector<protobuf::Message> {
+      std::vector<protobuf::Message> messages;
+      for (int i(0); i != number; ++i)
+        messages.push_back(std::move(CreateMessage(timer_.AddTask(bptime::seconds(50),
+                                                   response_functor, 4))));
+      return messages;
+    };
+
+  auto add_response = [&](std::vector<protobuf::Message>&& messages) {
+      for (size_t i(0); i != messages.size(); ++i)
+        for (size_t j(0); j != 4; ++j)
+          timer_.AddResponse(messages.at(i));
+    };
+
+  auto add_tasks1_future = std::async(std::launch::async, add_tasks, kMessageCount/2);
+  auto add_tasks2_future = std::async(std::launch::async, add_tasks, kMessageCount/2);
+  std::vector<protobuf::Message> messages1(std::move(add_tasks1_future.get()));
+  std::vector<protobuf::Message> messages2(std::move(add_tasks2_future.get()));
+  //  std::cout << "Task enqueued in " << t.elapsed();
+
+  auto add_response1_future = std::async(std::launch::async, add_response, std::move(messages1));
+  auto add_response2_future = std::async(std::launch::async, add_response, std::move(messages2));
+  add_response1_future.get();
+  add_response2_future.get();
+
+  while (count != (kMessageCount));
 }
 
 TEST_F(TimerTest, BEH_Promise_MultipleResponse) {
+  const int kMessageCount(400);
   boost::progress_timer t;
   std::atomic<int> count(0);
   std::shared_ptr<std::vector<std::future<std::string>>>
@@ -185,8 +225,8 @@ TEST_F(TimerTest, BEH_Promise_MultipleResponse) {
           timer_.AddResponse(messages.at(i));
       };
 
-  auto add_tasks1_future = std::async(std::launch::async, add_tasks, 200, futures1);
-  auto add_tasks2_future = std::async(std::launch::async, add_tasks, 200, futures2);
+  auto add_tasks1_future = std::async(std::launch::async, add_tasks, kMessageCount / 2, futures1);
+  auto add_tasks2_future = std::async(std::launch::async, add_tasks, kMessageCount / 2, futures2);
 
   std::vector<protobuf::Message> messages1(std::move(add_tasks1_future.get()));
   std::vector<protobuf::Message> messages2(std::move(add_tasks2_future.get()));
@@ -219,7 +259,76 @@ TEST_F(TimerTest, BEH_Promise_MultipleResponse) {
         }), futures1->end());
     std::this_thread::yield();
   }
-  ASSERT_EQ(400, count);
+  ASSERT_EQ(kMessageCount, count);
+}
+
+
+TEST_F(TimerTest, BEH_Promise_MultipleGroupResponse) {
+  const int kMessageCount(400);
+  boost::progress_timer t;
+  std::atomic<int> count(0);
+  std::shared_ptr<std::vector<std::future<std::string>>>
+     futures1 = std::make_shared<std::vector<std::future<std::string>>>();
+  std::shared_ptr<std::vector<std::future<std::string>>>
+     futures2 = std::make_shared<std::vector<std::future<std::string>>>();
+  auto add_tasks = [&](const int& number,
+      std::shared_ptr<std::vector<std::future<std::string>>>
+                       futures)->std::vector<protobuf::Message> {
+      std::vector<protobuf::Message> messages;
+      for (int i(0); i != number; ++i) {
+        std::vector<std::shared_ptr<std::promise<std::string>>> promises_in;
+        for (size_t j(0); j != 4; ++j) {
+          promises_in.push_back(std::make_shared<std::promise<std::string>>());
+          auto future(promises_in[j]->get_future());
+          futures->push_back(std::move(future));
+        }
+        messages.push_back(std::move(CreateMessage(timer_.AddTask(bptime::seconds(50),
+                                                   promises_in))));
+      }
+      return messages;
+    };
+
+  auto add_response = [&](std::vector<protobuf::Message>&& messages) {
+      for (size_t i(0); i != messages.size(); ++i)
+        for (size_t j(0); j != 4; ++j)
+          timer_.AddResponse(messages.at(i));
+    };
+
+  auto add_tasks1_future = std::async(std::launch::async, add_tasks, kMessageCount / 2, futures1);
+  auto add_tasks2_future = std::async(std::launch::async, add_tasks, kMessageCount / 2, futures2);
+
+  std::vector<protobuf::Message> messages1(std::move(add_tasks1_future.get()));
+  std::vector<protobuf::Message> messages2(std::move(add_tasks2_future.get()));
+
+  //  std::cout << "Task enqueued in " << t.elapsed();
+  auto add_response1_future = std::async(std::launch::async, add_response, std::move(messages1));
+  auto add_response2_future = std::async(std::launch::async, add_response, std::move(messages2));
+  add_response1_future.get();
+  add_response2_future.get();
+
+  for (auto itr(futures2->begin()); itr != futures2->end(); ++itr)
+    futures1->push_back(std::move(*itr));
+
+  while (!futures1->empty()) {
+    futures1->erase(std::remove_if(futures1->begin(), futures1->end(),
+        [&count](std::future<std::string>& str)->bool {
+            if (IsReady(str)) {
+              try {
+                auto response(str.get());
+                EXPECT_FALSE(response.empty());
+                ++count;
+              } catch(std::exception& ex) {
+                LOG(kError) << "Exception : " << ex.what();
+                EXPECT_TRUE(false) << ex.what();
+              }
+                return true;
+              } else  {
+                return false;
+              };
+        }), futures1->end());
+    std::this_thread::yield();
+  }
+  ASSERT_EQ((kMessageCount * 4), count);
 }
 
 TEST_F(TimerTest, BEH_Promise_SingleResponseTimedOut) {
