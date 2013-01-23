@@ -229,6 +229,10 @@ bool GenericNode::IsClient() const {
   return client_mode_;
 }
 
+bool GenericNode::HasSymmetricNat() const {
+  return has_symmetric_nat_;
+}
+
 /* void GenericNode::set_client_mode(const bool& client_mode) {
   client_mode_ = client_mode;
 } */
@@ -589,16 +593,20 @@ void GenericNetwork::SetNodeValidationFunctor(NodePtr node) {
     node->functors_.request_public_key = [this] (const NodeId& node_id,
                                                  GivePublicKeyFunctor give_public_key) {
       if (NodeHasSymmetricNat(node_id)) {
-        LOG(kInfo) << "NOT CONNECTING NODES    (both symmetric)";
+        LOG(kInfo) << "NOT connecting nodes... (both symmetric)";
       } else {
-        LOG(kInfo) << "CONNECTING TWO NODES... (one symmetric)";
+        LOG(kInfo) << "Connecting two nodes... (one symmetric (case a))";
         this->Validate(node_id, give_public_key);
       }
     };
   } else {
     node->functors_.request_public_key = [this] (const NodeId& node_id,
                                                  GivePublicKeyFunctor give_public_key) {
-      LOG(kInfo) << "CONNECTING TWO NODES... (one or neither symmetric)";
+      if (NodeHasSymmetricNat(node_id)) {
+        LOG(kInfo) << "Connecting two nodes... (one symmetric (case b))";
+      } else {
+        LOG(kInfo) << "Connecting two nodes... (neither symmetric)";
+      }
       this->Validate(node_id, give_public_key);
     };
   }
@@ -1051,7 +1059,7 @@ testing::AssertionResult GenericNetwork::SendGroup(const NodeId& node_id,
     }
   }
   if (!repliers_ok) {
-    LOG(kInfo) << "Expected group nodes for node with ID: " << DebugId(node_id);
+    LOG(kInfo) << "Expected group nodes for ID " << DebugId(node_id) << ":";
     for (auto node : expected_group)
       LOG(kInfo) << "\t" << DebugId(node);
     return testing::AssertionFailure() << "Some replies came from the wrong nodes."

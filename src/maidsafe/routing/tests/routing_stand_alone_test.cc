@@ -233,6 +233,50 @@ TEST_F(RoutingStandAloneTest, FUNC_ReBootstrap) {
   EXPECT_EQ(network_size - 1, routing_table.size());
 }
 
+TEST_F(RoutingStandAloneTest, FUNC_GroupsAndSendWithSymmetricNat) {
+  // TODO(Alison) - move this into functional tests when can run on mixed NAT network
+  this->SetUpNetwork(kServerSize, 0, kServerSize / 4, 0);  // TODO(Alison) - adjust values?
+
+  WaitForHealthToStabilise();
+
+  // Check each node's group matrix has closest vaults in it
+  uint16_t check_length(Parameters::closest_nodes_size + 1);
+  for (auto node : this->nodes_) {
+    std::vector<NodeInfo> nodes_from_matrix(node->ClosestNodes());
+    ASSERT_GE(nodes_from_matrix.size(), check_length);
+    nodes_from_matrix.resize(check_length);
+    std::vector<NodeInfo> nodes_from_network(this->GetClosestVaults(node->node_id(),
+                                                                    check_length));
+    ASSERT_EQ(nodes_from_network.size(), check_length);
+    for (uint16_t i(0); i < check_length; ++i)
+      EXPECT_EQ(nodes_from_matrix.at(i).node_id, nodes_from_network.at(i).node_id)
+          << "Index " << i << " from matrix: " << DebugId(nodes_from_matrix.at(i).node_id)
+          << "\t\tIndex " << i << " from network: "  << DebugId(nodes_from_network.at(i).node_id);
+  }
+
+  // Check Send between each pair of vaults
+  for (auto source_node : this->nodes_) {
+    for (auto dest_node : this->nodes_) {
+      EXPECT_TRUE(this->Send(source_node, dest_node->node_id()));
+    }
+  }
+
+  // Check GroupSend from each vault to each vault ID
+  for (size_t source_index(0); source_index < this->nodes_.size(); ++source_index) {
+    for (auto node : this->nodes_) {
+      EXPECT_TRUE(this->SendGroup(node->node_id(), 1, source_index));
+    }
+  }
+
+  // Check GroupSend for random targets
+  for (size_t source_index(0); source_index < this->nodes_.size(); ++source_index) {
+    for (uint16_t count(0); count < 1; ++count) {  // TODO(Alison) - max. value of count?
+      NodeId node_id(NodeId::kRandomId);
+      EXPECT_TRUE(this->SendGroup(node_id, 1, source_index));
+    }
+  }
+}
+
 }  // namespace test
 
 }  // namespace routing

@@ -88,6 +88,7 @@ class GenericNode {
   void set_joined(const bool node_joined);
   bool joined() const;
   bool IsClient() const;
+  bool HasSymmetricNat() const;
   bool anonymous() { return anonymous_; }
   // void set_client_mode(const bool& client_mode);
   int expected();
