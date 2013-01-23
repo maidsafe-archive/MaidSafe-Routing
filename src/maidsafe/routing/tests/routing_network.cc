@@ -561,7 +561,7 @@ bool GenericNetwork::RemoveNode(const NodeId& node_id) {
   std::lock_guard<std::mutex> lock(mutex_);
   auto iter = std::find_if(nodes_.begin(),
                            nodes_.end(),
-                           [&node_id] (const NodePtr node) { return node_id == node->node_id(); });  // NOLINT (Dan)
+                           [&node_id] (const NodePtr node) { return node_id == node->node_id(); });
   if (iter == nodes_.end())
     return false;
 
@@ -572,7 +572,7 @@ bool GenericNetwork::RemoveNode(const NodeId& node_id) {
   return true;
 }
 
-void GenericNetwork::Validate(const NodeId& node_id, GivePublicKeyFunctor give_public_key) {
+void GenericNetwork::Validate(const NodeId& node_id, GivePublicKeyFunctor give_public_key) const {
   if (node_id == NodeId())
     return;
   std::lock_guard<std::mutex> lock(fobs_mutex_);
@@ -604,7 +604,7 @@ void GenericNetwork::SetNodeValidationFunctor(NodePtr node) {
   }
 }
 
-std::vector<NodeId> GenericNetwork::GroupIds(const NodeId& node_id) {
+std::vector<NodeId> GenericNetwork::GroupIds(const NodeId& node_id) const {
   std::vector<NodeId> all_ids;
   for (auto node : this->nodes_)
     all_ids.push_back(node->node_id());
@@ -619,13 +619,13 @@ std::vector<NodeId> GenericNetwork::GroupIds(const NodeId& node_id) {
                                  static_cast<uint16_t>(all_ids[0] == node_id));
 }
 
-void GenericNetwork::PrintRoutingTables() {
+void GenericNetwork::PrintRoutingTables() const {
   std::lock_guard<std::mutex> lock(mutex_);
   for (auto node : nodes_)
     node->PrintRoutingTable();
 }
 
-bool GenericNetwork::ValidateRoutingTables() {
+bool GenericNetwork::ValidateRoutingTables() const {
   std::vector<NodeId> node_ids;
   for (auto node : nodes_) {
     if (!node->IsClient())
@@ -668,30 +668,30 @@ bool GenericNetwork::ValidateRoutingTables() {
   return true;
 }
 
-size_t GenericNetwork::RandomNodeIndex() {
-  assert(nodes_.size() > 0);
-  return RandomUint32() % nodes_.size();
+uint16_t GenericNetwork::RandomNodeIndex() const {
+  assert(!nodes_.empty());
+  return static_cast<uint16_t>(RandomUint32() % nodes_.size());
 }
 
-size_t GenericNetwork::RandomClientIndex() {
+uint16_t GenericNetwork::RandomClientIndex() const {
   assert(nodes_.size() > client_index_);
-  size_t client_count(nodes_.size() - client_index_);
-  return (RandomUint32() % client_count) + client_index_;
+  uint16_t client_count(static_cast<uint16_t>(nodes_.size()) - client_index_);
+  return static_cast<uint16_t>(RandomUint32() % client_count) + client_index_;
 }
 
-size_t GenericNetwork::RandomVaultIndex() {
+uint16_t GenericNetwork::RandomVaultIndex() const {
   assert(nodes_.size() > 2);
   assert(client_index_ > 2);
-  return RandomUint32() % client_index_;
+  return static_cast<uint16_t>(RandomUint32() % client_index_);
 }
 
-GenericNetwork::NodePtr GenericNetwork::RandomClientNode() {
+GenericNetwork::NodePtr GenericNetwork::RandomClientNode() const {
   std::lock_guard<std::mutex> lock(mutex_);
   NodePtr random(nodes_.at(RandomClientIndex()));
   return random;
 }
 
-GenericNetwork::NodePtr GenericNetwork::RandomVaultNode() {
+GenericNetwork::NodePtr GenericNetwork::RandomVaultNode() const {
   std::lock_guard<std::mutex> lock(mutex_);
   NodePtr random(nodes_.at(RandomVaultIndex()));
   return random;
@@ -715,7 +715,7 @@ void GenericNetwork::ClearMessages() {
     node->ClearMessages();
 }
 
-int GenericNetwork::NodeIndex(const NodeId& node_id) {
+int GenericNetwork::NodeIndex(const NodeId& node_id) const {
   for (int index(0); index < static_cast<int>(nodes_.size()); ++index) {
     if (nodes_[index]->node_id() == node_id)
       return index;
@@ -723,7 +723,7 @@ int GenericNetwork::NodeIndex(const NodeId& node_id) {
   return -1;
 }
 
-std::vector<NodeId> GenericNetwork::GetGroupForId(const NodeId& node_id) {
+std::vector<NodeId> GenericNetwork::GetGroupForId(const NodeId& node_id) const {
   std::vector<NodeId> group_ids;
   for (auto& node : nodes_) {
     if (!node->IsClient() && (node->node_id() != node_id))
@@ -741,7 +741,7 @@ std::vector<NodeId> GenericNetwork::GetGroupForId(const NodeId& node_id) {
 
 std::vector<NodeInfo> GenericNetwork::GetClosestNodes(const NodeId& target_id,
                                                       const uint32_t& quantity,
-                                                      const bool vault_only) {
+                                                      const bool vault_only) const {
   std::vector<NodeInfo> closet_nodes;
   for (auto node : nodes_) {
     if (vault_only && node->IsClient())
@@ -760,7 +760,7 @@ std::vector<NodeInfo> GenericNetwork::GetClosestNodes(const NodeId& target_id,
 }
 
 std::vector<NodeInfo> GenericNetwork::GetClosestVaults(const NodeId& target_id,
-                                                       const uint32_t& quantity) {
+                                                       const uint32_t& quantity) const {
   std::vector<NodeInfo> closest_nodes;
   for (auto node : nodes_) {
     if (!node->IsClient())
@@ -781,7 +781,7 @@ std::vector<NodeInfo> GenericNetwork::GetClosestVaults(const NodeId& target_id,
 }
 
 void GenericNetwork::ValidateExpectedNodeType(const NodeId& node_id,
-                                              const ExpectedNodeType& expected_node_type) {
+                                              const ExpectedNodeType& expected_node_type) const {
   auto itr = std::find_if(this->nodes_.begin(),
                           this->nodes_.end(),
                           [&] (const NodePtr node) {
@@ -839,7 +839,7 @@ bool GenericNetwork::RestoreComposition() {
   return true;
 }
 
-bool GenericNetwork::WaitForHealthToStabilise() {
+bool GenericNetwork::WaitForHealthToStabilise() const {
   int i(0);
   bool healthy(false);
   int vault_health(100);
@@ -897,7 +897,7 @@ bool GenericNetwork::WaitForHealthToStabilise() {
   return healthy;
 }
 
-bool GenericNetwork::NodeHasSymmetricNat(const NodeId& node_id) {
+bool GenericNetwork::NodeHasSymmetricNat(const NodeId& node_id) const {
   for (auto node : nodes_) {
     if (node->node_id() == node_id) {
       return node->has_symmetric_nat_;
