@@ -947,6 +947,7 @@ testing::AssertionResult GenericNetwork::Send(std::shared_ptr<GenericNode> sourc
           return node_id == node->node_id();
         });
 
+    expected_messages = 1;
     callable = [&](const std::vector<std::string> &message) {
       if (message.empty())
         return;
@@ -966,7 +967,7 @@ testing::AssertionResult GenericNetwork::Send(std::shared_ptr<GenericNode> sourc
 
   if (!no_response_expected) {
     std::unique_lock<std::mutex> lock(mutex);
-    bool result = cond_var.wait_for(lock, std::chrono::seconds(20),
+    bool result = cond_var.wait_for(lock, std::chrono::seconds(2),
         [&]()->bool {
           LOG(kInfo) << " message count " << messages_count << " expected "
                     << expected_messages << "\n";

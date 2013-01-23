@@ -69,6 +69,7 @@ class NetworkUtils {
   virtual void SendToDirect(const protobuf::Message& message,
                             const NodeId& peer_node_id,
                             const NodeId& peer_connection_id);
+  void AdjustAckHistory(protobuf::Message& message);
   void SendAck(const protobuf::Message &message);
   // Handles relay response messages.  Also leave destination ID empty if needs to send as a relay
   // response message
@@ -99,7 +100,6 @@ class NetworkUtils {
                        NodeInfo last_node_attempted = NodeInfo(),
                        int attempt_count = 0);
   void AdjustRouteHistory(protobuf::Message& message);
-  void AdjustAckHistory(protobuf::Message& message);
 
   bool running_;
   std::mutex running_mutex_;

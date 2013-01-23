@@ -37,8 +37,9 @@ class RoutingStandAloneTest : public GenericNetwork, public testing::Test {
 };
 
 TEST_F(RoutingStandAloneTest, FUNC_SendMulti) {
-  this->SetUpNetwork(5);
-//  EXPECT_TRUE(this->Send(2));
+  this->SetUpNetwork(10);
+//  EXPECT_FALSE(this->Send(this->nodes_[5], NodeId(NodeId::kRandomId), false));
+//  Sleep(boost::posix_time::seconds(1));
 }
 
 // TODO(Mahmoud): This test should be moved to TESTrouting_func as it doesn't affect network.

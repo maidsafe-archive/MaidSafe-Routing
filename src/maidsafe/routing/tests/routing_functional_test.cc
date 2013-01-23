@@ -217,7 +217,7 @@ TEST_F(RoutingNetworkTest, FUNC_SendToGroupInHybridNetwork) {
 }
 
 TEST_F(RoutingNetworkTest, FUNC_SendToGroupRandomId) {
-  uint16_t message_count(200), receivers_message_count(0);
+  uint16_t message_count(1), receivers_message_count(0);
   env_->ClearMessages();
   for (int index = 0; index < message_count; ++index) {
     EXPECT_TRUE(env_->GroupSend(NodeId(NodeId::kRandomId), 1));

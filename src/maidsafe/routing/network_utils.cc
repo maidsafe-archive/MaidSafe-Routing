@@ -314,7 +314,7 @@ void NetworkUtils::RecursiveSendOn(protobuf::Message message,
       return;
     if (message.route_history().size() > 1)
       route_history = std::vector<std::string>(message.route_history().begin(),
-                                               message.route_history().end() - 1);
+                                               message.route_history().end());
     else if ((message.route_history().size() == 1) &&
              (message.route_history(0) != routing_table_.kNodeId().string()))
       route_history.push_back(message.route_history(0));
@@ -417,24 +417,29 @@ void NetworkUtils::AdjustAckHistory(protobuf::Message& message) {
 
 void NetworkUtils::SendAck(const protobuf::Message& message) {
   LOG(kVerbose) << "[" << DebugId(routing_table_.kNodeId())  << "] SendAck " << message.ack_id();
-  if (message.type() == static_cast<int>(MessageType::kAck))
-    return;
-  if ((message.relay_id() == routing_table_.kNodeId().string()) ||
-      message.source_id() == routing_table_.kNodeId().string())
+
+//  /* TODO(Mahmoud) REMOVE THE 2 LINES BELOW AFTER ACK IMPL */
+//  if (IsRoutingMessage(message))
+//    return;
+
+  if (IsAck(message) || IsGroupUpdate(message))
     return;
 
   std::vector<std::string> ack_node_ids(message.ack_node_ids().begin(),
                                         message.ack_node_ids().end());
+  if (message.ack_node_ids_size() == 0)
+    return;
+
   for (auto& hop : ack_node_ids)
     LOG(kVerbose) << " hop in history: " << HexSubstr(hop) << "ack id:" << message.ack_id();
 
-  if (message.ack_node_ids_size() == 0)
+  if ((message.relay_id() == routing_table_.kNodeId().string()) ||
+      message.source_id() == routing_table_.kNodeId().string())
     return;
 
   if (std::find(ack_node_ids.begin(), ack_node_ids.end(),
                 routing_table_.kNodeId().string()) != ack_node_ids.end()) {
     ack_timer_.Remove(message.ack_id());
-    return;
   }
 
   protobuf::Message ack_message(

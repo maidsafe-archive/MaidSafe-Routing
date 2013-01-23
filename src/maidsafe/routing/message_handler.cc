@@ -252,7 +252,7 @@ void MessageHandler::HandleGroupMessageAsClosestNode(protobuf::Message& message)
       !message.visited() &&
       (routing_table_.size() > Parameters::closest_nodes_size) &&
       (!routing_table_.IsThisNodeInRange(NodeId(message.destination_id()),
-                                        Parameters::closest_nodes_size))) {
+                                         Parameters::closest_nodes_size))) {
     message.set_visited(true);
     return network_.SendToClosestNode(message);
   }
@@ -330,7 +330,9 @@ void MessageHandler::HandleMessageAsFarNode(protobuf::Message& message) {
 
 void MessageHandler::HandleMessage(protobuf::Message& message) {
   if (!message.source_id().empty() &&
-          !processed_messages_.Add(NodeId(message.source_id()), message.id()))
+      !IsAck(message) &&
+      (message.destination_id() == routing_table_.kNodeId().string()) &&
+      !processed_messages_.Add(NodeId(message.source_id()), message.id()))
      return;
   if (!ValidateMessage(message)) {
     LOG(kWarning) << "Validate message failed." << " id: " << message.id();
@@ -378,7 +380,7 @@ void MessageHandler::HandleMessage(protobuf::Message& message) {
 
   // This node is in closest proximity to this message
   if (routing_table_.IsThisNodeInRange(NodeId(message.destination_id()),
-                                       Parameters::node_group_size) ||
+                                       Parameters::closest_nodes_size) ||
       (routing_table_.IsThisNodeClosestTo(NodeId(message.destination_id()), !message.direct()) &&
        message.visited())) {
     return HandleMessageAsClosestNode(message);
@@ -397,6 +399,7 @@ void MessageHandler::HandleMessageForNonRoutingNodes(protobuf::Message& message)
                   << DebugId(routing_table_.kNodeId())
                   << " Dropping message as non-client to client message not allowed."
                   << PrintMessage(message);
+    network_.AdjustAckHistory(message);
     network_.SendAck(message);
     return;
   }
