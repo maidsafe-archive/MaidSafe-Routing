@@ -483,19 +483,18 @@ bool Routing::Impl::EstimateInGroup(const NodeId& sender_id, const NodeId& info_
 }
 
 std::future<std::vector<NodeId>> Routing::Impl::GetGroup(const NodeId& info_id) {
-  auto promise(std::make_shared<std::promise<std::vector<NodeId>>>());  // NOLINT Mahmoud
+  auto promise(std::make_shared<std::promise<std::vector<NodeId>>>());
   auto future(promise->get_future());
-  routing::ResponseFunctor callback =
-      [promise](const std::vector<std::string>& responses) {
-        std::vector<NodeId> nodes_id;
-        if (!responses.empty()) {
-          protobuf::GetGroup get_group;
-          get_group.ParseFromString(responses.at(0));
-          for (auto& id : get_group.group_nodes_id())
-            nodes_id.push_back(NodeId(id));
-        }
-        promise->set_value(nodes_id);
-      };
+  auto callback = [promise](const std::vector<std::string>& responses) {
+                     std::vector<NodeId> nodes_id;
+                     if (!responses.empty()) {
+                       protobuf::GetGroup get_group;
+                       get_group.ParseFromString(responses.at(0));
+                       for (auto& id : get_group.group_nodes_id())
+                       nodes_id.push_back(NodeId(id));
+                     }
+                     promise->set_value(nodes_id);
+                   };
   protobuf::Message get_group_message(rpcs::GetGroup(info_id, kNodeId_));
   get_group_message.set_id(timer_.AddTask(Parameters::default_send_timeout, callback, 1));
   network_.SendToClosestNode(get_group_message);
