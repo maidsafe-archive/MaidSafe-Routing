@@ -224,18 +224,22 @@ TEST_F(RoutingNetworkTest, FUNC_SendToGroup) {
 
 TEST_F(RoutingNetworkTest, FUNC_SendToGroupSelfId) {
   uint16_t message_count(10), receivers_message_count(0);
-  size_t last_index(kServerSize - 1);
-  NodeId dest_id(env_->nodes_[0]->node_id());
 
-  env_->ClearMessages();
-  EXPECT_TRUE(env_->SendGroup(dest_id, message_count));
-  for (size_t index = 0; index != (last_index); ++index)
-    receivers_message_count += static_cast<uint16_t>(env_->nodes_.at(index)->MessagesSize());
+  for (size_t dest_index(0); dest_index < kServerSize; ++dest_index) {
+    NodeId dest_id(env_->nodes_.at(dest_index)->node_id());
+    env_->ClearMessages();
+    receivers_message_count = 0;
+    EXPECT_TRUE(env_->SendGroup(dest_id, message_count, dest_index));
+    for (size_t index = 0; index < kServerSize; ++index) {
+      if (index != dest_index)
+        receivers_message_count += static_cast<uint16_t>(env_->nodes_.at(index)->MessagesSize());
+    }
 
-  EXPECT_EQ(0, env_->nodes_[0]->MessagesSize())
-        << "Not expected message at Node : "
-        << HexSubstr(env_->nodes_[0]->node_id().string());
-  EXPECT_EQ(message_count * (Parameters::node_group_size), receivers_message_count);
+    EXPECT_EQ(0, env_->nodes_[dest_index]->MessagesSize())
+          << "Not expected message at Node : "
+          << HexSubstr(env_->nodes_[dest_index]->node_id().string());
+    EXPECT_EQ(message_count * (Parameters::node_group_size), receivers_message_count);
+  }
 }
 
 TEST_F(RoutingNetworkTest, FUNC_SendToGroupClientSelfId) {
