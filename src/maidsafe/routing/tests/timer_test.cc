@@ -148,7 +148,6 @@ TEST_F(TimerTest, BEH_MultipleResponse) {
   auto add_tasks2_future = std::async(std::launch::async, add_tasks, kMessageCount/2);
   std::vector<protobuf::Message> messages1(std::move(add_tasks1_future.get()));
   std::vector<protobuf::Message> messages2(std::move(add_tasks2_future.get()));
-//  std::cout << "Task enqueued in " << t.elapsed();
 
   auto add_response1_future = std::async(std::launch::async, add_response, std::move(messages1));
   auto add_response2_future = std::async(std::launch::async, add_response, std::move(messages2));
@@ -165,7 +164,6 @@ TEST_F(TimerTest, BEH_MultipleGroupResponse) {
   TaskResponseFunctor response_functor = [&count](std::vector<std::string> response) {
     ASSERT_EQ(4U, response.size());
     ++count;
-//    std::cout << "\n count" << count;
   };
 
   auto add_tasks = [&](const int& number)->std::vector<protobuf::Message> {
@@ -231,7 +229,6 @@ TEST_F(TimerTest, BEH_Promise_MultipleResponse) {
   std::vector<protobuf::Message> messages1(std::move(add_tasks1_future.get()));
   std::vector<protobuf::Message> messages2(std::move(add_tasks2_future.get()));
 
-//  std::cout << "Task enqueued in " << t.elapsed();
   auto add_response1_future = std::async(std::launch::async, add_response, std::move(messages1));
   auto add_response2_future = std::async(std::launch::async, add_response, std::move(messages2));
   add_response1_future.get();
@@ -261,7 +258,6 @@ TEST_F(TimerTest, BEH_Promise_MultipleResponse) {
   }
   ASSERT_EQ(kMessageCount, count);
 }
-
 
 TEST_F(TimerTest, BEH_Promise_MultipleGroupResponse) {
   const int kMessageCount(400);
@@ -300,7 +296,6 @@ TEST_F(TimerTest, BEH_Promise_MultipleGroupResponse) {
   std::vector<protobuf::Message> messages1(std::move(add_tasks1_future.get()));
   std::vector<protobuf::Message> messages2(std::move(add_tasks2_future.get()));
 
-  //  std::cout << "Task enqueued in " << t.elapsed();
   auto add_response1_future = std::async(std::launch::async, add_response, std::move(messages1));
   auto add_response2_future = std::async(std::launch::async, add_response, std::move(messages2));
   add_response1_future.get();
