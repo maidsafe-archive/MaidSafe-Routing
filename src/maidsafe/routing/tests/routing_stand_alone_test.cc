@@ -262,14 +262,14 @@ TEST_F(RoutingStandAloneTest, FUNC_GroupsAndSendWithSymmetricNat) {
   }
 
   // Check GroupSend from each vault to each vault ID
-  for (size_t source_index(0); source_index < this->nodes_.size(); ++source_index) {
+  for (uint16_t source_index(0); source_index < this->nodes_.size(); ++source_index) {
     for (auto node : this->nodes_) {
       EXPECT_TRUE(this->SendGroup(node->node_id(), 1, source_index));
     }
   }
 
   // Check GroupSend for random targets
-  for (size_t source_index(0); source_index < this->nodes_.size(); ++source_index) {
+  for (uint16_t source_index(0); source_index < this->nodes_.size(); ++source_index) {
     for (uint16_t count(0); count < 1; ++count) {  // TODO(Alison) - max. value of count?
       NodeId node_id(NodeId::kRandomId);
       EXPECT_TRUE(this->SendGroup(node_id, 1, source_index));
