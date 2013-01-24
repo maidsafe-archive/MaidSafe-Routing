@@ -127,11 +127,13 @@ void Routing::Impl::ConnectFunctors(const Functors& functors) {
                                     },
                                     functors_.close_node_replaced,
                                     [this] (const bool& subscribe, NodeInfo node_info) {
+                                      std::lock_guard<std::mutex> lock(running_mutex_);
                                       if (running_)
                                         group_change_handler_.SendSubscribeRpc(
                                             subscribe, node_info);
                                     },
                                     [this] (const NodeId& connection_id) {
+                                      std::lock_guard<std::mutex> lock(running_mutex_);
                                       if (running_)
                                         group_change_handler_.Unsubscribe(connection_id);
                                     });
@@ -462,6 +464,7 @@ std::future<std::vector<NodeId>> Routing::Impl::GetGroup(const NodeId& info_id) 
         promise->set_value(nodes_id);
       };
   protobuf::Message get_group_message(rpcs::GetGroup(info_id, kNodeId_));
+  get_group_message.set_ack_id(ack_timer_.GetId());
   get_group_message.set_id(timer_.AddTask(Parameters::default_send_timeout, callback, 1));
   network_.SendToClosestNode(get_group_message);
   return std::move(future);

@@ -48,7 +48,7 @@ class AckTimerTest : public testing::Test {
     call_functor_ = [=](const boost::system::error_code &error) {
                       if (error.value() == boost::system::errc::success) {
                         message_.set_id(message_.id() + 1);
-                        ack_timer_.Add(message_, call_functor_, 2);
+                        ack_timer_.Add(message_, call_functor_, Parameters::ack_timeout);
                       }
                     };
 
@@ -69,22 +69,22 @@ class AckTimerTest : public testing::Test {
 };
 
 TEST_F(AckTimerTest, BEH_CallOnce) {
-  ack_timer_.Add(message_, call_functor_, 2);
-  Sleep(boost::posix_time::seconds(3));
+  ack_timer_.Add(message_, call_functor_, Parameters::ack_timeout);
+  Sleep(boost::posix_time::seconds(Parameters::ack_timeout + 1));
   ack_timer_.Remove(message_.ack_id());
   EXPECT_EQ(1, message_.id());
 }
 
 TEST_F(AckTimerTest, BEH_CallTwice) {
-  ack_timer_.Add(message_, call_functor_, 2);
-  Sleep(boost::posix_time::seconds(5));
+  ack_timer_.Add(message_, call_functor_, Parameters::ack_timeout);
+  Sleep(boost::posix_time::seconds(Parameters::ack_timeout * 2 + 1));
   ack_timer_.Remove(message_.ack_id());
   EXPECT_EQ(2, message_.id());
 }
 
 TEST_F(AckTimerTest, BEH_CallRemove) {
-  ack_timer_.Add(message_, call_functor_, 2);
-  Sleep(boost::posix_time::seconds(7));
+  ack_timer_.Add(message_, call_functor_, Parameters::ack_timeout);
+  Sleep(boost::posix_time::seconds(Parameters::ack_timeout * 2 + 1));
   EXPECT_EQ(2, message_.id());
 }
 

@@ -331,6 +331,7 @@ void MessageHandler::HandleMessageAsFarNode(protobuf::Message& message) {
 void MessageHandler::HandleMessage(protobuf::Message& message) {
   if (!message.source_id().empty() &&
       !IsAck(message) &&
+      (message.destination_id() != message.source_id()) &&
       (message.destination_id() == routing_table_.kNodeId().string()) &&
       !processed_messages_.Add(NodeId(message.source_id()), message.id()))
      return;
@@ -338,6 +339,11 @@ void MessageHandler::HandleMessage(protobuf::Message& message) {
     LOG(kWarning) << "Validate message failed." << " id: " << message.id();
     assert((message.hops_to_live() > 0) &&
            "Message has traversed maximum number of hops allowed");
+    return;
+  }
+
+  if ((routing_table_.size() == 0) &&
+      message.destination_id() != routing_table_.kNodeId().string()) {
     return;
   }
 

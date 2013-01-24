@@ -176,8 +176,8 @@ void GroupChangeHandler::UpdateGroupChange(const NodeId& node_id,
 void GroupChangeHandler::SendClosestNodesUpdateRpcs(const std::vector<NodeInfo>& closest_nodes) {
   LOG(kVerbose) << "["  << DebugId(routing_table_.kNodeId())
                 << "] SendClosestNodesUpdateRpcs: " << closest_nodes.size();
-//  if (closest_nodes.size() < Parameters::closest_nodes_size)
-//    return;
+  if (closest_nodes.size() < Parameters::node_group_size)
+    return;
   std::vector<NodeInfo> update_subscribers;
   assert(closest_nodes.size() <= Parameters::closest_nodes_size);
   {

@@ -23,7 +23,9 @@ ProcessedMessages::ProcessedMessages()
     : mutex_(),
       history_() {}
 
-bool ProcessedMessages::Add(const NodeId &source_id, const uint32_t& message_id) {
+bool ProcessedMessages::Add(const NodeId& source_id, const uint32_t& message_id) {
+  if (source_id.IsZero())
+    return false;
   std::unique_lock<std::mutex> lock(mutex_);
   auto found(std::find_if(history_.begin(),
                           history_.end(),
@@ -36,7 +38,7 @@ bool ProcessedMessages::Add(const NodeId &source_id, const uint32_t& message_id)
     return false;
 
   history_.push_back(std::make_tuple(source_id, message_id, std::time(NULL)));
-  if (history_.size() % Parameters::message_history_cleanup_factor)
+  if ((history_.size() % Parameters::message_history_cleanup_factor) == 0)
     Remove(lock);
   return true;
 }
