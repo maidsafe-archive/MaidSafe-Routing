@@ -316,12 +316,10 @@ TEST(APITest, BEH_API_ClientNode) {
 
   //  Testing Send
   std::string data(RandomAlphaNumericString(512 * 1024));
-  boost::progress_timer t;
   std::future<std::string> future(routing3.Send(NodeId(node1.node_info.node_id),
                                                 data,
                                                 false));
   ASSERT_EQ(std::future_status::ready, future.wait_for(std::chrono::seconds(10)));
-  std::cout << "Time taken for test : " << t.elapsed();
   ASSERT_EQ(("response to " + data), future.get());
 }
 
