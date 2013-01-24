@@ -621,6 +621,22 @@ std::vector<NodeId> RoutingTable::GetClosestNodes(const NodeId& target_id, uint1
   return close_nodes;
 }
 
+std::vector<NodeInfo> RoutingTable::GetClosestMatrixNodes(const NodeId& target_id,
+                                                          uint16_t number_to_get) {
+  std::unique_lock<std::mutex> lock(mutex_);
+  std::vector<NodeInfo> closest_matrix_nodes(group_matrix_.GetUniqueNodes());
+  size_t sorting_size(std::min(static_cast<size_t>(number_to_get),
+                               closest_matrix_nodes.size()));
+  std::partial_sort(closest_matrix_nodes.begin(),
+                    closest_matrix_nodes.begin() + sorting_size,
+                    closest_matrix_nodes.end(),
+                    [&target_id](const NodeInfo& lhs, const NodeInfo& rhs) {
+                      return NodeId::CloserToTarget(lhs.node_id, rhs.node_id, target_id);
+                  });
+  closest_matrix_nodes.resize(sorting_size);
+  return closest_matrix_nodes;
+}
+
 std::vector<NodeId> RoutingTable::GetGroup(const NodeId& target_id) {
   std::vector<NodeInfo> nodes;
   {

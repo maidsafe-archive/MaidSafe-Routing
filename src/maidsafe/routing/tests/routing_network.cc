@@ -602,11 +602,11 @@ void GenericNetwork::SetNodeValidationFunctor(NodePtr node) {
   } else {
     node->functors_.request_public_key = [this] (const NodeId& node_id,
                                                  GivePublicKeyFunctor give_public_key) {
-      if (NodeHasSymmetricNat(node_id)) {
-        LOG(kInfo) << "Connecting two nodes... (one symmetric (case b))";
-      } else {
-        LOG(kInfo) << "Connecting two nodes... (neither symmetric)";
-      }
+//      if (NodeHasSymmetricNat(node_id)) {
+//        LOG(kInfo) << "Connecting two nodes... (one symmetric (case b))";
+//      } else {
+//        LOG(kInfo) << "Connecting two nodes... (neither symmetric)";
+//      }
       this->Validate(node_id, give_public_key);
     };
   }
@@ -908,7 +908,7 @@ bool GenericNetwork::WaitForHealthToStabilise() const {
 bool GenericNetwork::NodeHasSymmetricNat(const NodeId& node_id) const {
   for (auto node : nodes_) {
     if (node->node_id() == node_id) {
-      return node->has_symmetric_nat_;
+      return node->HasSymmetricNat();
     }
   }
   LOG(kError) << "Couldn't find node_id";

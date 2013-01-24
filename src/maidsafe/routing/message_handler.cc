@@ -260,29 +260,41 @@ void MessageHandler::HandleGroupMessageAsClosestNode(protobuf::Message& message)
     return;
   }
 
-  --replication;  // This node will be one of the group member.
+  --replication;  // Will send to self as well
   message.set_direct(true);
-  if (have_node_with_group_id)
-    ++replication;
-  auto close(routing_table_.GetClosestNodes(NodeId(message.destination_id()), replication));
+  NodeId destination_id(message.destination_id());
+  NodeId own_node_id(routing_table_.kNodeId());
+  auto close_from_matrix(routing_table_.GetClosestMatrixNodes(destination_id, replication + 2));
+  close_from_matrix.erase(std::remove_if(close_from_matrix.begin(),
+                                         close_from_matrix.end(),
+                                         [&destination_id](const NodeInfo& node_info) {
+                                           return node_info.node_id == destination_id;
+                                         }));
+  close_from_matrix.erase(std::remove_if(close_from_matrix.begin(),
+                                         close_from_matrix.end(),
+                                         [&own_node_id](const NodeInfo& node_info) {
+                                             return node_info.node_id == own_node_id;
+                                         }));
+  while (close_from_matrix.size() > replication)
+    close_from_matrix.pop_back();
 
-  if (have_node_with_group_id)
-    close.erase(close.begin());
   std::string group_id(message.destination_id());
   std::string group_members("[" + DebugId(routing_table_.kNodeId()) + "]");
 
-  for (auto i : close)
-    group_members+=std::string("[" + DebugId(i) +"]");
+  for (auto i : close_from_matrix)
+    group_members+=std::string("[" + DebugId(i.node_id) +"]");
   LOG(kInfo) << "Group nodes for group_id " << HexSubstr(group_id) << " : "
              << group_members;
 
-  for (auto i : close) {
-    LOG(kInfo) << "Replicating message to : " << HexSubstr(i.string())
+  for (auto i : close_from_matrix) {
+    LOG(kInfo) << "Replicating message to : " << HexSubstr(i.node_id.string())
                << " [ group_id : " << HexSubstr(group_id)  << "]" << " id: " << message.id();
-    message.set_destination_id(i.string());
+    message.set_destination_id(i.node_id.string());
     NodeInfo node;
-    if (routing_table_.GetNodeInfo(i, node)) {
+    if (routing_table_.GetNodeInfo(i.node_id, node)) {
       network_.SendToDirect(message, node.node_id, node.connection_id);
+    } else {
+      network_.SendToClosestNode(message);
     }
   }
 
