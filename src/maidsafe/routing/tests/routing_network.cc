@@ -450,16 +450,17 @@ GenericNetwork::GenericNetwork()
       bootstrap_path_("bootstrap"),
       public_keys_(),
       client_index_(0),
+      nat_info_available_(true),
       nodes_() { LOG(kVerbose) << "RoutingNetwork Constructor"; }
 
 GenericNetwork::~GenericNetwork() {
-  for (auto node : nodes_)
+  nat_info_available_ = false;
+  for (auto node: nodes_)
     node->functors_.request_public_key = [] (const NodeId& /*node_id*/,
                                              GivePublicKeyFunctor /*give_public_key*/) {};  // NOLINT (Alison)
 
-  while (nodes_.size() > 0) {
+  while (nodes_.size() > 0)
     RemoveNode(nodes_.at(nodes_.size() - 1)->node_id());
-  }
 }
 
 void GenericNetwork::SetUp() {
@@ -487,10 +488,10 @@ void GenericNetwork::SetUp() {
   bootstrap_endpoints_.push_back(node2->endpoint());
 }
 
-void GenericNetwork::TearDown() {
-  std::lock_guard<std::mutex> lock(mutex_);
-  GenericNode::next_node_id_ = 1;
-}
+// void GenericNetwork::TearDown() {
+//   std::lock_guard<std::mutex> lock(mutex_);
+//   GenericNode::next_node_id_ = 1;
+// }
 
 void GenericNetwork::SetUpNetwork(const size_t& total_number_vaults,
                                   const size_t& total_number_clients) {
@@ -914,6 +915,9 @@ bool GenericNetwork::WaitForHealthToStabilise() const {
 }
 
 bool GenericNetwork::NodeHasSymmetricNat(const NodeId& node_id) const {
+  if (!nat_info_available_)
+    return false;
+
   std::lock_guard<std::mutex> lock(mutex_);
   for (auto node : nodes_) {
     if (node->node_id() == node_id) {

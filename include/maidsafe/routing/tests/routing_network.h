@@ -167,7 +167,7 @@ class GenericNetwork {
 
   bool ValidateRoutingTables() const;
   virtual void SetUp();
-  virtual void TearDown();
+//  virtual void TearDown();
   void SetUpNetwork(const size_t& total_number_vaults,
                     const size_t& total_number_clients = 0);
   // Use to specify proportion of vaults/clients that should behave as though they are behind
@@ -230,6 +230,7 @@ class GenericNetwork {
   boost::filesystem::path bootstrap_path_;
   std::map<NodeId, asymm::PublicKey> public_keys_;
   uint16_t client_index_;
+  bool nat_info_available_;
 
  public:
   std::vector<NodePtr> nodes_;
@@ -254,12 +255,8 @@ class NodesEnvironment : public testing::Environment {
                          num_symmetric_nat_client_nodes_);
   }
   void TearDown() {
-    for (auto node : g_env_->nodes_)
-      node->functors_.request_public_key = [] (const NodeId& /*node_id*/,
-                                               GivePublicKeyFunctor /*give_public_key*/) {};  // NOLINT (Alison)
-
-    while (g_env_->nodes_.size() > 0) {
-      g_env_->RemoveNode(g_env_->nodes_.at(g_env_->nodes_.size() - 1)->node_id());
+    if (g_env_.unique()) {
+      g_env_.reset();
     }
   }
 
