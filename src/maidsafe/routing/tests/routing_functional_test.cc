@@ -225,7 +225,7 @@ TEST_F(RoutingNetworkTest, FUNC_SendToGroup) {
 TEST_F(RoutingNetworkTest, FUNC_SendToGroupSelfId) {
   uint16_t message_count(10), receivers_message_count(0);
 
-  for (size_t dest_index(0); dest_index < kServerSize; ++dest_index) {
+  for (uint16_t dest_index(0); dest_index < kServerSize; ++dest_index) {
     NodeId dest_id(env_->nodes_.at(dest_index)->node_id());
     env_->ClearMessages();
     receivers_message_count = 0;
