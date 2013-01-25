@@ -26,9 +26,10 @@ namespace maidsafe {
 
 namespace routing {
 
-GroupMatrix::GroupMatrix(const NodeId& this_node_id)
+GroupMatrix::GroupMatrix(const NodeId& this_node_id, bool client_mode)
     : kNodeId_(this_node_id),
       unique_nodes_(),
+      client_mode_(client_mode),
       matrix_() {}
 
 void GroupMatrix::AddConnectedPeer(const NodeInfo& node_info) {
@@ -240,9 +241,11 @@ void GroupMatrix::Clear() {
 void GroupMatrix::UpdateUniqueNodeList() {
   unique_nodes_.clear();
   // Update unique node vector
-  NodeInfo node_info;
-  node_info.node_id = kNodeId_;
-  unique_nodes_.push_back(node_info);
+  if (!client_mode_) {
+    NodeInfo node_info;
+    node_info.node_id = kNodeId_;
+    unique_nodes_.push_back(node_info);
+  }
   for (auto itr = matrix_.begin(); itr != matrix_.end(); ++itr)
     for (size_t i(0); i !=  itr->size(); ++i)
       unique_nodes_.push_back((*itr).at(i));

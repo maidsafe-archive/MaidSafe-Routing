@@ -351,7 +351,7 @@ TEST_F(RoutingNetworkTest, FUNC_SendToClientsWithSameId) {
   uint16_t num_of_tries(0);
   bool done(false);
   do {
-    Sleep(boost::posix_time::seconds(1));
+//    Sleep(boost::posix_time::seconds(1));
     size_t size(0);
     for (auto node : env_->nodes_) {
       size += node->MessagesSize();
@@ -563,7 +563,7 @@ TEST_F(RoutingNetworkTest, FUNC_ClosestNodesClientBehindSymmetricNat) {
   for (auto node_id : closer_vaults)
     env_->AddNode(false, node_id, false, true);
 
-  EXPECT_TRUE(env_->WaitForHealthToStabilise());
+  ASSERT_TRUE(env_->WaitForHealthToStabilise());
 
   int index(env_->NodeIndex(sym_client_id));
   ASSERT_GE(index, 0);
@@ -593,7 +593,7 @@ TEST_F(RoutingNetworkTest, FUNC_ClosestNodesVaultBehindSymmetricNat) {
   for (auto node_id : closer_vaults)
     env_->AddNode(false, node_id, false, true);
 
-  EXPECT_TRUE(env_->WaitForHealthToStabilise());
+  ASSERT_TRUE(env_->WaitForHealthToStabilise());
 
   int index(env_->NodeIndex(sym_vault_id));
   ASSERT_GE(index, 0);
@@ -615,14 +615,9 @@ TEST_F(RoutingNetworkTest, FUNC_ClosestNodesBehindSymmetricNat) {
   for (auto i(0); i < num_symmetric_clients; ++i)
     env_->AddNode(true, true);
 
-  EXPECT_TRUE(env_->WaitForHealthToStabilise());
+  ASSERT_TRUE(env_->WaitForHealthToStabilise());
 
   for (auto node : env_->nodes_) {
-    // Note (17/01/13): Currently fails for clients. This is because GroupMatrix currently takes
-    // the vault/client's own node ID upon creation and includes it in its contents. Instead it
-    // should only take the ID for vaults.
-    if (node->IsClient())
-      continue;  // TODO(Alison) - remove this when FUNC_ClosestNodes (see above) is passing
     std::vector<NodeInfo> from_matrix(node->ClosestNodes());
     std::vector<NodeInfo> from_network(
           env_->GetClosestVaults(node->node_id(), 9));

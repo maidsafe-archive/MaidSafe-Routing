@@ -12,6 +12,8 @@
 
 #include <vector>
 
+#include "boost/progress.hpp"
+
 #include "maidsafe/rudp/nat_type.h"
 
 #include "maidsafe/routing/tests/routing_network.h"
@@ -279,12 +281,10 @@ TEST_F(RoutingStandAloneTest, FUNC_GroupsAndSendWithSymmetricNat) {
 
 TEST_F(RoutingStandAloneTest, FUNC_GroupsAndSendWithClientsAndSymmetricNat) {
   // TODO(Alison) - move this into functional tests when can run on mixed NAT network
-  // TODO(Alison) - include sym. NAT nodes in SetUpNetwork once test passes in current form.
-//  this->SetUpNetwork(kServerSize,
-//                     kClientSize,
-//                     kServerSize / 4,
-//                     kClientSize / 2);  // TODO(Alison) - adjust values?
-  this->SetUpNetwork(kServerSize, kClientSize, 0, 0);
+  this->SetUpNetwork(kServerSize,
+                     kClientSize,
+                     kServerSize / 4,
+                     kClientSize / 2);  // TODO(Alison) - adjust values?
 
   WaitForHealthToStabilise();
 

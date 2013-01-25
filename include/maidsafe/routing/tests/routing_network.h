@@ -254,12 +254,13 @@ class NodesEnvironment : public testing::Environment {
                          num_symmetric_nat_client_nodes_);
   }
   void TearDown() {
-    std::vector<NodeId> nodes_id;
     for (auto node : g_env_->nodes_)
-      nodes_id.push_back(node->node_id());
-    for (auto node_id : nodes_id)
-      g_env_->RemoveNode(node_id);
-    g_env_->GenericNetwork::TearDown();
+      node->functors_.request_public_key = [] (const NodeId& /*node_id*/,
+                                               GivePublicKeyFunctor /*give_public_key*/) {};  // NOLINT (Alison)
+
+    while (g_env_->nodes_.size() > 0) {
+      g_env_->RemoveNode(g_env_->nodes_.at(g_env_->nodes_.size() - 1)->node_id());
+    }
   }
 
   static std::shared_ptr<GenericNetwork> g_environment() {

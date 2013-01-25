@@ -452,7 +452,15 @@ GenericNetwork::GenericNetwork()
       client_index_(0),
       nodes_() { LOG(kVerbose) << "RoutingNetwork Constructor"; }
 
-GenericNetwork::~GenericNetwork() {}
+GenericNetwork::~GenericNetwork() {
+  for (auto node : nodes_)
+    node->functors_.request_public_key = [] (const NodeId& /*node_id*/,
+                                             GivePublicKeyFunctor /*give_public_key*/) {};  // NOLINT (Alison)
+
+  while (nodes_.size() > 0) {
+    RemoveNode(nodes_.at(nodes_.size() - 1)->node_id());
+  }
+}
 
 void GenericNetwork::SetUp() {
   NodePtr node1(new GenericNode(false, false)), node2(new GenericNode(false, false));
@@ -602,11 +610,11 @@ void GenericNetwork::SetNodeValidationFunctor(NodePtr node) {
   } else {
     node->functors_.request_public_key = [this] (const NodeId& node_id,
                                                  GivePublicKeyFunctor give_public_key) {
-//      if (NodeHasSymmetricNat(node_id)) {
-//        LOG(kInfo) << "Connecting two nodes... (one symmetric (case b))";
-//      } else {
-//        LOG(kInfo) << "Connecting two nodes... (neither symmetric)";
-//      }
+      if (NodeHasSymmetricNat(node_id)) {
+        LOG(kInfo) << "Connecting two nodes... (one symmetric (case b))";
+      } else {
+        LOG(kInfo) << "Connecting two nodes... (neither symmetric)";
+      }
       this->Validate(node_id, give_public_key);
     };
   }
@@ -906,6 +914,7 @@ bool GenericNetwork::WaitForHealthToStabilise() const {
 }
 
 bool GenericNetwork::NodeHasSymmetricNat(const NodeId& node_id) const {
+  std::lock_guard<std::mutex> lock(mutex_);
   for (auto node : nodes_) {
     if (node->node_id() == node_id) {
       return node->HasSymmetricNat();

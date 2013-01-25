@@ -28,6 +28,8 @@ namespace maidsafe {
 namespace routing {
 namespace test {
 
+// TODO(Alison) - test client version of GroupMatrix
+
 TEST(GroupMatrixTest, BEH_EmptyMatrix) {
   const NodeId node_0(NodeId::kRandomId);
   GroupMatrix matrix(node_0);

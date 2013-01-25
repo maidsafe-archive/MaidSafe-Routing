@@ -37,7 +37,8 @@ struct NodeInfo;
 
 class GroupMatrix {
  public:
-  explicit GroupMatrix(const NodeId& this_node_id);
+  explicit GroupMatrix(const NodeId& this_node_id, bool client_mode = false);
+  // TODO(Alison) - remove default client setting
 
   void AddConnectedPeer(const NodeInfo& node_info);
 
@@ -75,6 +76,7 @@ class GroupMatrix {
 
   const NodeId& kNodeId_;
   std::vector<NodeInfo> unique_nodes_;
+  bool client_mode_;
   std::vector<std::vector<NodeInfo>> matrix_;
 };
 

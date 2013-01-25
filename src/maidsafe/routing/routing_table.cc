@@ -50,7 +50,7 @@ RoutingTable::RoutingTable(bool client_mode,
       subscribe_to_group_change_update_(),
       close_node_replaced_functor_(),
       nodes_(),
-      group_matrix_(kNodeId_),
+      group_matrix_(kNodeId_, client_mode),
       network_statistics_(network_statistics) {}
 
 
