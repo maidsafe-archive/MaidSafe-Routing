@@ -36,10 +36,6 @@ enum class DestinationType : int {
   kGroup
 };
 
-// If using boost::bind or std::bind, use **shared_from_this** pointers to preserve lifetimes of
-// functors. The ResponseFunctor WILL ensure functors are deleted when the system times out.
-typedef std::function<void(const std::vector<std::string>& /*message*/)> ResponseFunctor;
-
 // They are passed as a parameter by MessageReceivedFunctor and should be called for responding to
 // the received message. Passing an empty message will mean you don't want to reply.
 typedef std::function<void(const std::string& /*message*/)> ReplyFunctor;
