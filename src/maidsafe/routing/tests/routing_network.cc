@@ -455,9 +455,10 @@ GenericNetwork::GenericNetwork()
 
 GenericNetwork::~GenericNetwork() {
   nat_info_available_ = false;
-  for (auto node: nodes_)
+  for (auto node: nodes_) {
     node->functors_.request_public_key = [] (const NodeId& /*node_id*/,
                                              GivePublicKeyFunctor /*give_public_key*/) {};  // NOLINT (Alison)
+  }
 
   while (nodes_.size() > 0)
     RemoveNode(nodes_.at(nodes_.size() - 1)->node_id());
@@ -875,7 +876,7 @@ bool GenericNetwork::WaitForHealthToStabilise() const {
     client_symmetric_health =
         number_nonsymmetric_vaults * 100 /Parameters::max_client_routing_table_size;
 
-  while (i < 10 && !healthy) {
+  while (i != 10 && !healthy) {
     ++i;
     healthy = true;
     int expected_health;
