@@ -49,7 +49,7 @@ MessageHandler::MessageHandler(RoutingTable& routing_table,
       timer_(timer),
       response_handler_(new ResponseHandler(routing_table, non_routing_table, network_,
                                             group_change_handler)),
-      service_(new Service(routing_table, non_routing_table, network_, group_change_handler)),
+      service_(new Service(routing_table, non_routing_table, network_)),
       message_received_functor_() {}
 
 void MessageHandler::HandleRoutingMessage(protobuf::Message& message) {

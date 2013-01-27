@@ -73,7 +73,7 @@ class MessageHandlerTest : public testing::Test {
     ntable_.reset(new NonRoutingTable(table_->kNodeId()));
     utils_.reset(new MockNetworkUtils(*table_, *ntable_));
     group_change_handler_.reset(new GroupChangeHandler(*table_, *ntable_, *utils_));
-    service_.reset(new MockService(*table_, *ntable_, *utils_, *group_change_handler_));
+    service_.reset(new MockService(*table_, *ntable_, *utils_));
     response_handler_.reset(new MockResponseHandler(*table_, *ntable_, *utils_,
                                                     *group_change_handler_));
     close_info_ = MakeNodeInfoAndKeys().node_info;

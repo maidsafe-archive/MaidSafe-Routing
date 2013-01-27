@@ -46,12 +46,10 @@ typedef boost::asio::ip::udp::endpoint Endpoint;
 
 Service::Service(RoutingTable& routing_table,
                  NonRoutingTable& non_routing_table,
-                 NetworkUtils& network,
-                 GroupChangeHandler& group_change_handler)
+                 NetworkUtils& network)
   : routing_table_(routing_table),
     non_routing_table_(non_routing_table),
     network_(network),
-    group_change_handler_(group_change_handler),
     request_public_key_functor_() {}
 
 Service::~Service() {}
