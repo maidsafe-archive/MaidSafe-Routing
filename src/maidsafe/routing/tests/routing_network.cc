@@ -455,13 +455,13 @@ GenericNetwork::GenericNetwork()
 
 GenericNetwork::~GenericNetwork() {
   nat_info_available_ = false;
-  for (auto node: nodes_) {
+  for (auto node : nodes_) {
     node->functors_.request_public_key = [] (const NodeId& /*node_id*/,
                                              GivePublicKeyFunctor /*give_public_key*/) {};  // NOLINT (Alison)
   }
 
-  while (nodes_.size() > 0)
-    RemoveNode(nodes_.at(nodes_.size() - 1)->node_id());
+  while (!nodes_.empty())
+    RemoveNode(nodes_.at(0)->node_id());
 }
 
 void GenericNetwork::SetUp() {
@@ -599,24 +599,18 @@ void GenericNetwork::Validate(const NodeId& node_id, GivePublicKeyFunctor give_p
 }
 
 void GenericNetwork::SetNodeValidationFunctor(NodePtr node) {
-  if (node->has_symmetric_nat_) {
-    node->functors_.request_public_key = [this] (const NodeId& node_id,
+  NodeId own_node_id(node->node_id());
+  if (node->HasSymmetricNat()) {
+    node->functors_.request_public_key = [this, own_node_id] (const NodeId& node_id,
                                                  GivePublicKeyFunctor give_public_key) {
-      if (NodeHasSymmetricNat(node_id)) {
-        LOG(kInfo) << "NOT connecting nodes... (both symmetric)";
-      } else {
-        LOG(kInfo) << "Connecting two nodes... (one symmetric (case a))";
+      assert(node_id != own_node_id && "(1) Should not get public key request from own node id!");
+      if (!NodeHasSymmetricNat(node_id))
         this->Validate(node_id, give_public_key);
-      }
     };
   } else {
-    node->functors_.request_public_key = [this] (const NodeId& node_id,
+    node->functors_.request_public_key = [this, own_node_id] (const NodeId& node_id,
                                                  GivePublicKeyFunctor give_public_key) {
-      if (NodeHasSymmetricNat(node_id)) {
-        LOG(kInfo) << "Connecting two nodes... (one symmetric (case b))";
-      } else {
-        LOG(kInfo) << "Connecting two nodes... (neither symmetric)";
-      }
+      assert(node_id != own_node_id && "(2) Should not get public key request from own node id!");
       this->Validate(node_id, give_public_key);
     };
   }
@@ -1204,7 +1198,7 @@ uint16_t GenericNetwork::NonClientNodesSize() const {
 uint16_t GenericNetwork::NonClientNonSymmetricNatNodesSize() const {
   uint16_t non_client_non_sym_size(0);
   for (auto node : nodes_) {
-    if (!node->IsClient() && !node->has_symmetric_nat_)
+    if (!node->IsClient() && !node->HasSymmetricNat())
       non_client_non_sym_size++;
   }
   return non_client_non_sym_size;
