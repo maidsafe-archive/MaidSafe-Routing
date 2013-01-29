@@ -32,6 +32,7 @@ class RoutingStandAloneTest : public GenericNetwork, public testing::Test {
   }
 
   virtual void TearDown() {
+    GenericNetwork::TearDown();
     Sleep(boost::posix_time::microseconds(100));
   }
 };
