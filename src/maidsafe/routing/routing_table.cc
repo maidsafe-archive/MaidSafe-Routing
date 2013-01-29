@@ -226,13 +226,13 @@ NodeInfo RoutingTable::DropNode(const NodeId& node_to_drop, bool routing_only) {
   return dropped_node;
 }
 
-bool RoutingTable::IsThisNodeGroupLeader(const NodeId& target_id, NodeInfo& group_leader_node) {
-  NodeId group_leader_id;
+bool RoutingTable::IsThisNodeGroupLeader(const NodeId& target_id, NodeInfo& connected_peer) {
+  NodeId connected_peer_id;
   std::unique_lock<std::mutex> lock(mutex_);
-  if (!group_matrix_.IsThisNodeGroupLeader(target_id, group_leader_id)) {
-    auto found(Find(group_leader_id, lock));
+  if (!group_matrix_.IsThisNodeGroupLeader(target_id, connected_peer_id)) {
+    auto found(Find(connected_peer_id, lock));
     if (found.first) {
-      group_leader_node = *found.second;
+      connected_peer = *found.second;
       return false;
     }
   }

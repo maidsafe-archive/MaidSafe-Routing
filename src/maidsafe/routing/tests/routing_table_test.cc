@@ -16,6 +16,7 @@
 
 #include "maidsafe/common/log.h"
 #include "maidsafe/common/node_id.h"
+#include "maidsafe/common/rsa.h"
 #include "maidsafe/common/test.h"
 #include "maidsafe/common/utils.h"
 
@@ -887,6 +888,47 @@ TEST(RoutingTableTest, BEH_GetClosestNodeWithExclusion) {
   node_info2 = routing_table.GetClosestNode(nodes_id[random_index], exclude, true);
   EXPECT_EQ(node_info.node_id, node_info2.node_id);
   EXPECT_EQ(node_info.node_id, NodeInfo().node_id);
+}
+
+TEST(RoutingTableTest, BEH_IsThisNodeGroupLeader) {
+  // Tests routing table's handling of 2 basic cases. More detailed cases in group matrix tests.
+
+  // Setting up
+  std::vector<NodeInfo> nodes;
+  NodeInfo node_info;
+
+  size_t nodes_size(static_cast<size_t>(Parameters::closest_nodes_size + 1));
+  while (nodes.size() < nodes_size) {
+    node_info = MakeNode();
+    nodes.push_back(node_info);
+  }
+  NodeId target_id(NodeId::kRandomId);
+  NodeId inverse_target_id(target_id ^ NodeId(NodeId::kMaxId));
+  SortFromTarget(target_id, nodes);
+  NodeId own_node_id(nodes.back().node_id);
+  nodes.pop_back();
+
+  NetworkStatistics network_statistics(own_node_id);
+  RoutingTable routing_table(false, own_node_id, asymm::GenerateKeyPair(), network_statistics);
+
+  SortFromTarget(NodeId(NodeId::kRandomId), nodes);
+  for (auto node : nodes) {
+    EXPECT_TRUE(routing_table.AddNode(node));
+  }
+
+  SortFromTarget(target_id, nodes);
+  NodeInfo connected_peer;
+
+  // Test 'true' version
+  EXPECT_TRUE(routing_table.IsThisNodeGroupLeader(inverse_target_id, connected_peer));
+  EXPECT_TRUE(connected_peer.node_id.IsZero());
+  EXPECT_TRUE(connected_peer.connection_id.IsZero());
+
+  // Test 'false' version
+  EXPECT_FALSE(routing_table.IsThisNodeGroupLeader(target_id, connected_peer));
+  EXPECT_EQ(connected_peer.node_id, nodes.at(0).node_id);
+  EXPECT_EQ(connected_peer.connection_id, nodes.at(0).connection_id);
+  EXPECT_TRUE(maidsafe::rsa::MatchingKeys(connected_peer.public_key, nodes.at(0).public_key));
 }
 
 }  // namespace test

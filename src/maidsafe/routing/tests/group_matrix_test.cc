@@ -64,15 +64,15 @@ TEST_F(IsThisNodeGroupLeaderGroupMatrixTest, BEH_EmptyRows) {
     matrix.AddConnectedPeer(row_leader);
 
   // Test for target
-  NodeId connected_peer_closest_to_target;
-  EXPECT_FALSE(matrix.IsThisNodeGroupLeader(target_id_, connected_peer_closest_to_target));
-  EXPECT_EQ(nodes_.at(0).node_id, connected_peer_closest_to_target);
+  NodeId connected_peer;
+  EXPECT_FALSE(matrix.IsThisNodeGroupLeader(target_id_, connected_peer));
+  EXPECT_EQ(nodes_.at(0).node_id, connected_peer);
 
   // Test for inverse of target
   NodeId inverse_target_id(target_id_ ^ NodeId(NodeId::kMaxId));
-  connected_peer_closest_to_target = NodeId();
-  EXPECT_TRUE(matrix.IsThisNodeGroupLeader(inverse_target_id, connected_peer_closest_to_target));
-  EXPECT_TRUE(connected_peer_closest_to_target.IsZero());
+  connected_peer = NodeId();
+  EXPECT_TRUE(matrix.IsThisNodeGroupLeader(inverse_target_id, connected_peer));
+  EXPECT_TRUE(connected_peer.IsZero());
 }
 
 TEST_F(IsThisNodeGroupLeaderGroupMatrixTest, BEH_TwoSmallRowsCaseA) {
@@ -89,9 +89,9 @@ TEST_F(IsThisNodeGroupLeaderGroupMatrixTest, BEH_TwoSmallRowsCaseA) {
   row.push_back(nodes_.at(1));
   matrix.UpdateFromConnectedPeer(nodes_.at(3).node_id, row);
 
-  NodeId connected_peer_closest_to_target;
-  EXPECT_FALSE(matrix.IsThisNodeGroupLeader(target_id_, connected_peer_closest_to_target));
-  EXPECT_EQ(nodes_.at(2).node_id, connected_peer_closest_to_target);
+  NodeId connected_peer;
+  EXPECT_FALSE(matrix.IsThisNodeGroupLeader(target_id_, connected_peer));
+  EXPECT_EQ(nodes_.at(2).node_id, connected_peer);
 }
 
 TEST_F(IsThisNodeGroupLeaderGroupMatrixTest, BEH_TwoSmallRowsCaseB) {
@@ -108,9 +108,9 @@ TEST_F(IsThisNodeGroupLeaderGroupMatrixTest, BEH_TwoSmallRowsCaseB) {
   row.push_back(nodes_.at(0));
   matrix.UpdateFromConnectedPeer(nodes_.at(3).node_id, row);
 
-  NodeId connected_peer_closest_to_target;
-  EXPECT_FALSE(matrix.IsThisNodeGroupLeader(target_id_, connected_peer_closest_to_target));
-  EXPECT_EQ(nodes_.at(3).node_id, connected_peer_closest_to_target);
+  NodeId connected_peer;
+  EXPECT_FALSE(matrix.IsThisNodeGroupLeader(target_id_, connected_peer));
+  EXPECT_EQ(nodes_.at(3).node_id, connected_peer);
 }
 
 TEST_F(IsThisNodeGroupLeaderGroupMatrixTest, BEH_ThreeEqualRows) {
@@ -127,9 +127,9 @@ TEST_F(IsThisNodeGroupLeaderGroupMatrixTest, BEH_ThreeEqualRows) {
   matrix.UpdateFromConnectedPeer(nodes_.at(1).node_id, row);
   matrix.UpdateFromConnectedPeer(nodes_.at(3).node_id, row);
 
-  NodeId connected_peer_closest_to_target;
-  EXPECT_FALSE(matrix.IsThisNodeGroupLeader(target_id_, connected_peer_closest_to_target));
-  EXPECT_EQ(nodes_.at(2).node_id, connected_peer_closest_to_target);
+  NodeId connected_peer;
+  EXPECT_FALSE(matrix.IsThisNodeGroupLeader(target_id_, connected_peer));
+  EXPECT_EQ(nodes_.at(2).node_id, connected_peer);
 }
 
 TEST_F(IsThisNodeGroupLeaderGroupMatrixTest, BEH_TargetInMatrix) {
@@ -150,9 +150,9 @@ TEST_F(IsThisNodeGroupLeaderGroupMatrixTest, BEH_TargetInMatrix) {
   for (uint16_t i(1); i <= Parameters::closest_nodes_size; i += 2)
     matrix.UpdateFromConnectedPeer(nodes_.at(i).node_id, row);
 
-  NodeId connected_peer_closest_to_target;
-  EXPECT_FALSE(matrix.IsThisNodeGroupLeader(target_id_, connected_peer_closest_to_target));
-  EXPECT_EQ(nodes_.at(2).node_id, connected_peer_closest_to_target);
+  NodeId connected_peer;
+  EXPECT_FALSE(matrix.IsThisNodeGroupLeader(target_id_, connected_peer));
+  EXPECT_EQ(nodes_.at(2).node_id, connected_peer);
 }
 
 TEST_F(IsThisNodeGroupLeaderGroupMatrixTest, BEH_IsGroupLeader) {
@@ -168,9 +168,9 @@ TEST_F(IsThisNodeGroupLeaderGroupMatrixTest, BEH_IsGroupLeader) {
     matrix.UpdateFromConnectedPeer(nodes_.at(i).node_id, row);
   }
 
-  NodeId connected_peer_closest_to_target;
-  EXPECT_TRUE(matrix.IsThisNodeGroupLeader(target_id_, connected_peer_closest_to_target));
-  EXPECT_TRUE(connected_peer_closest_to_target.IsZero());
+  NodeId connected_peer;
+  EXPECT_TRUE(matrix.IsThisNodeGroupLeader(target_id_, connected_peer));
+  EXPECT_TRUE(connected_peer.IsZero());
 }
 
 class GroupMatrixTest : public testing::TestWithParam<bool> {
@@ -188,21 +188,21 @@ class GroupMatrixTest : public testing::TestWithParam<bool> {
   }
 
   void CheckIsThisNodeGroupLeader(const NodeId& target_id,
-                                  NodeId& group_leader,
+                                  NodeId& connected_peer,
                                   bool expect_is_group_leader) {
     if (client_mode_) {
 #ifndef NDEBUG
       return;
 #else
-      EXPECT_FALSE(matrix_.IsThisNodeGroupLeader(target_id, group_leader));
+      EXPECT_FALSE(matrix_.IsThisNodeGroupLeader(target_id, connected_peer));
       return;
 #endif
     }
 
     if (expect_is_group_leader) {
-      EXPECT_TRUE(matrix_.IsThisNodeGroupLeader(target_id, group_leader));
+      EXPECT_TRUE(matrix_.IsThisNodeGroupLeader(target_id, connected_peer));
     } else {
-      EXPECT_FALSE(matrix_.IsThisNodeGroupLeader(target_id, group_leader));
+      EXPECT_FALSE(matrix_.IsThisNodeGroupLeader(target_id, connected_peer));
     }
   }
 
@@ -219,13 +219,13 @@ TEST_P(GroupMatrixTest, BEH_EmptyMatrix) {
   std::vector<NodeInfo> row_result;
   EXPECT_FALSE(matrix_.GetRow(target_id, row_result));
 
-  NodeId group_leader;
-  CheckIsThisNodeGroupLeader(target_id, group_leader, true);
+  NodeId connected_peer;
+  CheckIsThisNodeGroupLeader(target_id, connected_peer, true);
 
   EXPECT_EQ(0, matrix_.GetUniqueNodes().size());
 
   matrix_.RemoveConnectedPeer(NodeInfo());
-  CheckIsThisNodeGroupLeader(target_id, group_leader, true);
+  CheckIsThisNodeGroupLeader(target_id, connected_peer, true);
 
   if (client_mode_)
     EXPECT_EQ(0, matrix_.GetUniqueNodes().size());
@@ -400,8 +400,8 @@ TEST_P(GroupMatrixTest, BEH_RowsContainSameNodes) {
                                                                             target_id)));
                                           }) == node_ids.end());
     EXPECT_EQ(expect_is_group_member, matrix_.IsNodeInGroupRange(target_id));
-    NodeId group_leader;
-    CheckIsThisNodeGroupLeader(target_id, group_leader, expect_is_group_leader);
+    NodeId connected_peer;
+    CheckIsThisNodeGroupLeader(target_id, connected_peer, expect_is_group_leader);
   }
 
   // Check GetConnectedPeerFor gives identifier of the first row added to the matrix
@@ -596,8 +596,8 @@ TEST_P(GroupMatrixTest, BEH_IsNodeInGroupRange) {
   // Sort and deduplicate node_ids
   SortNodeInfosFromTarget(own_node_id_, node_ids);
   // Check if this node is group leader for different target NodeIds
-  NodeId group_leader;
-  CheckIsThisNodeGroupLeader(own_node_id_, group_leader, true);
+  NodeId connected_peer;
+  CheckIsThisNodeGroupLeader(own_node_id_, connected_peer, true);
 
   NodeId target_id;
   bool expect_is_group_member;
@@ -617,7 +617,7 @@ TEST_P(GroupMatrixTest, BEH_IsNodeInGroupRange) {
                                                         target_id)));
                       }) == node_ids.end());
     EXPECT_EQ(expect_is_group_member, matrix_.IsNodeInGroupRange(target_id));
-    CheckIsThisNodeGroupLeader(target_id, group_leader, expect_is_group_leader);
+    CheckIsThisNodeGroupLeader(target_id, connected_peer, expect_is_group_leader);
   }
 }
 
