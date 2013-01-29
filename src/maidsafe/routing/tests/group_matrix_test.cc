@@ -610,10 +610,10 @@ TEST_P(GroupMatrixTest, BEH_IsNodeInGroupRange) {
                                  own_node_id_);
     expect_is_group_leader =
         (std::find_if(node_ids.begin(), node_ids.end(),
-                      [target_id, own_node_id_] (const NodeInfo& node)->bool {
+                      [target_id, this] (const NodeInfo& node)->bool {
                         return ((node.node_id != target_id) &&
                                 (NodeId::CloserToTarget(node.node_id,
-                                                        own_node_id_,
+                                                        this->own_node_id_,
                                                         target_id)));
                       }) == node_ids.end());
     EXPECT_EQ(expect_is_group_member, matrix_.IsNodeInGroupRange(target_id));
