@@ -147,10 +147,7 @@ bool GroupMatrix::IsNodeInGroupRange(const NodeId& target_id) {
 
   NodeInfo furthest_group_node(unique_nodes_.at(std::min(Parameters::node_group_size - 1,
                                                 static_cast<int>(unique_nodes_.size()))));
-  if (!NodeId::CloserToTarget(furthest_group_node.node_id, target_id, kNodeId_))
-    return true;
-
-  return false;
+  return !NodeId::CloserToTarget(furthest_group_node.node_id, target_id, kNodeId_);
 }
 
 void GroupMatrix::UpdateFromConnectedPeer(const NodeId& peer,

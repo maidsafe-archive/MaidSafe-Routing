@@ -455,7 +455,12 @@ void GenericNetwork::SetUp() {
 }
 
 void GenericNetwork::TearDown() {
-  std::lock_guard<std::mutex> lock(mutex_);
+//  std::lock_guard<std::mutex> lock(mutex_);
+  std::vector<NodeId> nodes_id;
+  for (auto node : this->nodes_)
+    nodes_id.insert(nodes_id.begin(), node->node_id());
+  for (auto& node_id : nodes_id)
+     this->RemoveNode(node_id);
   GenericNode::next_node_id_ = 1;
 }
 

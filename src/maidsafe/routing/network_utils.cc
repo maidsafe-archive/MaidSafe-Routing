@@ -258,6 +258,7 @@ void NetworkUtils::SendTo(const protobuf::Message& message,
         LOG(kVerbose) << " [" << HexSubstr(kThisId) << "] sent : " << MessageTypeString(message)
                       << " to   " << DebugId(peer_node_id) << "   (id: " << message.id() << ")";
       } else {
+        ack_timer_.Remove(message.ack_id());
         LOG(kError) << "Sending type " << MessageTypeString(message) << " message from "
                     << HexSubstr(kThisId) << " to " << DebugId(peer_node_id) << " failed with code "
                     << message_sent << " id: " << message.id();
@@ -267,6 +268,11 @@ void NetworkUtils::SendTo(const protobuf::Message& message,
   if (!no_ack_timer && ack_timer_.NeedsAck(message, peer_connection_id)) {
     ack_timer_.Add(message,
                    [=](const boost::system::error_code& error) {
+                     {
+                       std::lock_guard<std::mutex> lock(running_mutex_);
+                       if (!running_)
+                         return;
+                     }
                      if (error.value() == boost::system::errc::success)
                        SendTo(message, peer_node_id, peer_connection_id);
                    }, Parameters::ack_timeout);
@@ -350,6 +356,7 @@ void NetworkUtils::RecursiveSendOn(protobuf::Message message,
                     << " failed with code " << message_sent
                     << ".  Will retry to Send.  Attempt count = " << attempt_count + 1
                     << " id: " << message.id();
+        ack_timer_.Remove(message.ack_id());
         RecursiveSendOn(message, closest_node, attempt_count + 1);
       } else {
         LOG(kError) << "Sending type " << MessageTypeString(message) << " message from "
@@ -363,6 +370,7 @@ void NetworkUtils::RecursiveSendOn(protobuf::Message message,
             return;
           rudp_.Remove(last_node_attempted.connection_id);
         }
+        ack_timer_.Remove(message.ack_id());
         LOG(kWarning) << " Routing-> removing connection " << DebugId(closest_node.connection_id);
         routing_table_.DropNode(closest_node.node_id, false);
         non_routing_table_.DropConnection(closest_node.connection_id);
@@ -372,10 +380,15 @@ void NetworkUtils::RecursiveSendOn(protobuf::Message message,
 
   if (ack_timer_.NeedsAck(message, closest_node.node_id)) {
     ack_timer_.Add(message,
-                  [=](const boost::system::error_code& error) {
-                    if (error.value() == boost::system::errc::success)
-                      RecursiveSendOn(message);
-                  }, Parameters::ack_timeout);
+                   [=](const boost::system::error_code& error) {
+                     {
+                       std::lock_guard<std::mutex> lock(running_mutex_);
+                       if (!running_)
+                         return;
+                     }
+                     if (error.value() == boost::system::errc::success)
+                       RecursiveSendOn(message);
+                   }, Parameters::ack_timeout);
   }
   LOG(kVerbose) << "Rudp recursive send message to " << DebugId(closest_node.connection_id);
   RudpSend(closest_node.connection_id, message, message_sent_functor);

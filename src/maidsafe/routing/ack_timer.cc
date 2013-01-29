@@ -30,6 +30,10 @@ AckTimer::AckTimer(AsioService &io_service)
       queue_() {}
 
 AckTimer::~AckTimer() {
+  RemoveAll();
+}
+
+void AckTimer::RemoveAll() {
   std::vector<AckId> ack_ids;
   {
     std::lock_guard<std::mutex> lock(mutex_);

@@ -57,6 +57,7 @@ class AckTimer {
   void Remove(const AckId& ack_id);
   void HandleAckMessage(int32_t ack_id);
   bool NeedsAck(const protobuf::Message& message, const NodeId& node_id);
+  void RemoveAll();
 
   friend class RoutingPrivate;
 
