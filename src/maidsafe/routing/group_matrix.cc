@@ -110,7 +110,11 @@ NodeInfo GroupMatrix::GetConnectedPeerClosestTo(const NodeId& target_node_id) {
   return peer;
 }
 
-bool GroupMatrix::IsThisNodeGroupLeader(const NodeId& target_id, NodeId& group_leader_id) {
+bool GroupMatrix::IsThisNodeGroupLeader(const NodeId& target_id, NodeId& connected_peer) {
+  assert(!client_mode_ && "Client should not call IsThisNodeGroupLeader.");
+  if (client_mode_)
+    return false;
+
   LOG(kVerbose) << " Destination " << DebugId(target_id) << " kNodeId " << DebugId(kNodeId_);
   bool is_group_leader = true;
   if (unique_nodes_.empty()) {
@@ -133,8 +137,8 @@ bool GroupMatrix::IsThisNodeGroupLeader(const NodeId& target_id, NodeId& group_l
       break;
     }
   }
-  if (is_group_leader) {
-    group_leader_id = GetConnectedPeerClosestTo(target_id).node_id;
+  if (!is_group_leader) {
+    connected_peer = GetConnectedPeerClosestTo(target_id).node_id;
   }
   return is_group_leader;
 }
@@ -222,6 +226,9 @@ bool GroupMatrix::IsRowEmpty(const NodeInfo& node_info) {
       break;
   }
   assert(group_itr != matrix_.end());
+  if (group_itr == matrix_.end())
+    return false;
+
   return (group_itr->size() < 2);
 }
 

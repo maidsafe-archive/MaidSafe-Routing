@@ -37,7 +37,7 @@ struct NodeInfo;
 
 class GroupMatrix {
  public:
-  explicit GroupMatrix(const NodeId& this_node_id, bool client_mode = false);
+  explicit GroupMatrix(const NodeId& this_node_id, bool client_mode);
   // TODO(Alison) - remove default client setting
 
   void AddConnectedPeer(const NodeInfo& node_info);
@@ -53,7 +53,7 @@ class GroupMatrix {
   // Returns the peer which has node closest to target_id in its row (1st occurrence).
   NodeInfo GetConnectedPeerClosestTo(const NodeId& target_node_id);
   bool IsNodeInGroupRange(const NodeId& target_id);
-  bool IsThisNodeGroupLeader(const NodeId& target_id, NodeId& group_leader_id);
+  bool IsThisNodeGroupLeader(const NodeId& target_id, NodeId& connected_peer);
 
   // Updates group matrix if peer is present in 1st column of matrix
   void UpdateFromConnectedPeer(const NodeId& peer, const std::vector<NodeInfo>& nodes);
