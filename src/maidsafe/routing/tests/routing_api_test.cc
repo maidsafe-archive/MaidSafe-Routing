@@ -510,10 +510,10 @@ TEST(APITest, BEH_API_NodeNetworkWithClient) {
   std::vector<NetworkStatusFunctor> status_vector;
   boost::shared_mutex mutex;
   Functors functors;
-
+  std::map<NodeId, asymm::PublicKey> key_map;
   std::vector<NodeInfoAndPrivateKey> nodes;
   std::vector<std::shared_ptr<Routing>> routing_node;
-  std::map<NodeId, asymm::PublicKey> key_map;
+
   int i(0);
   for (; i != kServerCount; ++i) {
     auto pmid(MakePmid());
