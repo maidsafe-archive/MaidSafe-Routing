@@ -110,10 +110,6 @@ void AckTimer::HandleAckMessage(int32_t ack_id) {
 bool AckTimer::NeedsAck(const protobuf::Message& message, const NodeId& node_id) {
   LOG(kVerbose) << "node_id: " << HexSubstr(node_id.string());
 
-//  /* TODO(Mahmoud) REMOVE THE 2 LINES BELOW AFTER ACK IMPL */
-//  if (IsRoutingMessage(message))
-//    return false;
-
 // Ack messages do not need an ack
   if (IsAck(message))
     return false;
@@ -128,12 +124,6 @@ bool AckTimer::NeedsAck(const protobuf::Message& message, const NodeId& node_id)
 
   if (message.source_id().empty())
     return false;
-
-//  When source and destination are the same acktimer is not required. This happen
-//  in findnode rpc and since the closest node is connected to us the fault tolerance
-// mechanism implemented using other mechanisms
-//  if (message.destination_id() == message.source_id())
-//    return false;
 
   LOG(kVerbose) << PrintMessage(message);
   return true;

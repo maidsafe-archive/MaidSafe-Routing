@@ -32,10 +32,10 @@ TEST(ProcessedMessagesTest, BEH_AddRemove) {
 
   EXPECT_FALSE(processed_messages.Add(std::get<0>(element), std::get<1>(element)));
 
-  while (processed_messages.history_.size() < Parameters::message_history_cleanup_factor)
+  while (processed_messages.history_.size()  + 1 < Parameters::message_history_cleanup_factor)
     processed_messages.Add((NodeId(NodeId::kRandomId)), RandomUint32());
 
-  EXPECT_EQ(processed_messages.history_.size(), Parameters::message_history_cleanup_factor);
+  EXPECT_EQ(processed_messages.history_.size() + 1, Parameters::message_history_cleanup_factor);
 
   Sleep(boost::posix_time::seconds(Parameters::message_age_to_drop + 1));
 

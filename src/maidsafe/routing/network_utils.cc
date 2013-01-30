@@ -331,7 +331,6 @@ void NetworkUtils::RecursiveSendOn(protobuf::Message message,
       LOG(kError) << "This node's routing table is empty now.  Need to re-bootstrap.";
       return;
     }
-
     AdjustRouteHistory(message);
   }
 
@@ -431,10 +430,6 @@ void NetworkUtils::AdjustAckHistory(protobuf::Message& message) {
 void NetworkUtils::SendAck(const protobuf::Message& message) {
   LOG(kVerbose) << "[" << DebugId(routing_table_.kNodeId())  << "] SendAck " << message.ack_id();
 
-//  /* TODO(Mahmoud) REMOVE THE 2 LINES BELOW AFTER ACK IMPL */
-//  if (IsRoutingMessage(message))
-//    return;
-
   if (IsAck(message) || IsGroupUpdate(message))
     return;
 
@@ -459,7 +454,7 @@ void NetworkUtils::SendAck(const protobuf::Message& message) {
       rpcs::Ack(NodeId(message.ack_node_ids(0)),
                 routing_table_.kNodeId(),
                 message.ack_id()));
-  LOG(kVerbose) << "NetworkUtils::SendAck Second ";
+  LOG(kVerbose) << "NetworkUtils::SendAck";
   SendToClosestNode(ack_message);
 }
 

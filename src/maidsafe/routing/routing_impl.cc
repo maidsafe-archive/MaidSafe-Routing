@@ -478,19 +478,10 @@ void Routing::Impl::OnMessageReceived(const std::string& message) {
 }
 
 void Routing::Impl::DoOnMessageReceived(const std::string& message) {
-  NodeId node_id;
-  {
-    std::lock_guard<std::mutex> lock(running_mutex_);
-    if (running_)
-      node_id = kNodeId_;
-    else
-      return;
-  }
-
   protobuf::Message pb_message;
   if (pb_message.ParseFromString(message)) {
     bool relay_message(!pb_message.has_source_id());
-    LOG(kVerbose) << "   [" << DebugId(node_id)  << "] rcvd : "
+    LOG(kVerbose) << "   [" << DebugId(kNodeId_)  << "] rcvd : "
                   << MessageTypeString(pb_message) << " from "
                   << (relay_message ? HexSubstr(pb_message.relay_id()) :
                                       HexSubstr(pb_message.source_id()))
