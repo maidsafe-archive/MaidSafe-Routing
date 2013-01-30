@@ -35,6 +35,7 @@ bptime::time_duration Parameters::find_node_interval(bptime::seconds(10));
 bptime::time_duration Parameters::recovery_time_lag(bptime::seconds(5));
 bptime::time_duration Parameters::re_bootstrap_time_lag(bptime::seconds(10));
 bptime::time_duration Parameters::find_close_node_interval(bptime::seconds(3));
+uint16_t Parameters::find_node_repeats_per_num_requested(3);
 uint16_t Parameters::maximum_find_close_node_failures(10);
 uint16_t Parameters::max_route_history(5);
 uint16_t Parameters::hops_to_live(50);

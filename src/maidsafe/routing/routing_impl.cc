@@ -231,7 +231,11 @@ void Routing::Impl::FindClosestNode(const boost::system::error_code& error_code,
   }
 
   protobuf::Message find_node_rpc(
-      rpcs::FindNodes(kNodeId_, kNodeId_, 1, true, network_.this_node_relay_connection_id()));
+      rpcs::FindNodes(kNodeId_,
+                      kNodeId_,
+                      1 + attempts / Parameters::find_node_repeats_per_num_requested,
+                      true,
+                      network_.this_node_relay_connection_id()));
 
   rudp::MessageSentFunctor message_sent_functor(
       [=](int message_sent) {
