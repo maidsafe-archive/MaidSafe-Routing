@@ -213,7 +213,7 @@ void Routing::Impl::FindClosestNode(const boost::system::error_code& error_code,
       if (!running_)
         return;
       // Exit the loop & start recovery loop
-      LOG(kVerbose) << "Added a node in routing table."
+      LOG(kVerbose) << "[" << DebugId(kNodeId_) << "] Added a node in routing table."
                     << " Terminating setup loop & Scheduling recovery loop.";
       recovery_timer_.expires_from_now(Parameters::find_node_interval);
       recovery_timer_.async_wait([=](const boost::system::error_code& error_code) {
@@ -230,12 +230,15 @@ void Routing::Impl::FindClosestNode(const boost::system::error_code& error_code,
     }
   }
 
-  protobuf::Message find_node_rpc(
-      rpcs::FindNodes(kNodeId_,
-                      kNodeId_,
-                      1 + attempts / Parameters::find_node_repeats_per_num_requested,
-                      true,
-                      network_.this_node_relay_connection_id()));
+  int num_nodes_requested(1 + attempts / Parameters::find_node_repeats_per_num_requested);
+  protobuf::Message find_node_rpc(rpcs::FindNodes(kNodeId_,
+                                                  kNodeId_,
+                                                  num_nodes_requested,
+                                                  true,
+                                                  network_.this_node_relay_connection_id()));
+  LOG(kVerbose) << "   [" << DebugId(kNodeId_) << "] (attempt " << attempts << ")"
+                << " requesting " << num_nodes_requested << " nodes"
+                << "   (id: " << find_node_rpc.id() << ")";
 
   rudp::MessageSentFunctor message_sent_functor(
       [=](int message_sent) {
