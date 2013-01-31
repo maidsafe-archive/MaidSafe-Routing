@@ -119,7 +119,7 @@ class GenericNode {
   std::vector<NodeInfo> RoutingTable() const;
   NodeId GetRandomExistingNode() const;
   std::vector<NodeInfo> ClosestNodes();
-//  bool IsConnectedToVault(const NodeId& node_id);
+  bool IsConnectedVault(const NodeId& node_id);
 //  bool IsConnectedToClient(const NodeId& node_id);
   void AddNodeToRandomNodeHelper(const NodeId& node_id);
   void RemoveNodeFromRandomNodeHelper(const NodeId& node_id);

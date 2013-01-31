@@ -451,15 +451,14 @@ TEST_F(RoutingNetworkTest, FUNC_IsNodeIdInGroupRange) {
   }
 }
 
-/*
-TEST_F(RoutingNetworkTest, FUNC_IsConnectedToVault) {
+TEST_F(RoutingNetworkTest, FUNC_IsConnectedVault) {
   ASSERT_LE(env_->ClientIndex(), Parameters::max_routing_table_size + 1);
 
   // Vault checks vault id - expect true
   for (uint16_t i(0); i < env_->ClientIndex(); ++i) {
     for (uint16_t j(0); j < env_->ClientIndex(); ++j) {
       if (i != j) {
-        EXPECT_TRUE(env_->nodes_.at(i)->IsConnectedToVault(env_->nodes_.at(j)->node_id()));
+        EXPECT_TRUE(env_->nodes_.at(i)->IsConnectedVault(env_->nodes_.at(j)->node_id()));
       }
     }
   }
@@ -467,7 +466,7 @@ TEST_F(RoutingNetworkTest, FUNC_IsConnectedToVault) {
   // Vault or Client checks client id - expect false
   for (uint16_t i(0); i < env_->nodes_.size(); ++i) {
     for (uint16_t j(env_->ClientIndex()); j < env_->nodes_.size(); ++j) {
-      EXPECT_FALSE(env_->nodes_.at(i)->IsConnectedToVault(env_->nodes_.at(j)->node_id()));
+      EXPECT_FALSE(env_->nodes_.at(i)->IsConnectedVault(env_->nodes_.at(j)->node_id()));
     }
   }
 
@@ -477,11 +476,12 @@ TEST_F(RoutingNetworkTest, FUNC_IsConnectedToVault) {
     std::vector<NodeInfo> closest_nodes(
           env_->GetClosestVaults(client_id, Parameters::max_client_routing_table_size));
     for (auto vault : closest_nodes) {
-      EXPECT_TRUE(env_->nodes_.at(i)->IsConnectedToVault(vault.node_id));
+      EXPECT_TRUE(env_->nodes_.at(i)->IsConnectedVault(vault.node_id));
     }
   }
 }
 
+/*
 TEST_F(RoutingNetworkTest, FUNC_IsConnectedToClient) {
   ASSERT_LE(env_->nodes_.size() - env_->ClientIndex(), Parameters::max_non_routing_table_size + 1);
 

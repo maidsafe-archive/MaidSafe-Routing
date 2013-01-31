@@ -249,9 +249,9 @@ std::vector<NodeInfo> GenericNode::ClosestNodes() {
   return routing_->ClosestNodes();
 }
 
-// bool GenericNode::IsConnectedToVault(const NodeId& node_id) {
-//  return routing_->IsConnectedToVault(node_id);
-// }
+bool GenericNode::IsConnectedVault(const NodeId& node_id) {
+  return routing_->IsConnectedVault(node_id);
+}
 
 // bool GenericNode::IsConnectedToClient(const NodeId& node_id) {
 //  return routing_->IsConnectedToClient(node_id);
