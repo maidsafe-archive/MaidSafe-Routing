@@ -128,6 +128,8 @@ class Routing {
 
   int network_status();
 
+  uint64_t NetworkPopulation() const;
+
   std::vector<NodeInfo> ClosestNodes();
 
   bool IsConnectedVault(const NodeId& node_id);

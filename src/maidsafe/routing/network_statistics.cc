@@ -75,6 +75,14 @@ NodeId NetworkStatistics::GetDistance() {
   return distance_;
 }
 
+uint64_t NetworkStatistics::NetworkPopulation(const NodeId& node_id) const {
+  crypto::BigInt distance(((kNodeId_ ^ node_id).ToStringEncoded(NodeId::kHex) + 'h').c_str());
+  auto population_integer(crypto::BigInt::Power2(512) / distance);
+  if (population_integer > ULONG_MAX)
+    return 0;
+  return population_integer.GetBits(0, 63);
+}
+
 }  // namespace routing
 
 }  // namespace maidsafe

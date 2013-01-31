@@ -37,6 +37,7 @@ class NetworkStatistics {
   void UpdateNetworkAverageDistance(const NodeId& distance);
   bool EstimateInGroup(const NodeId& sender_id, const NodeId& info_id);
   NodeId GetDistance();
+  uint64_t NetworkPopulation(const NodeId& node_id) const;
 
   friend class test::NetworkStatisticsTest_BEH_AverageDistance_Test;
   friend class test::NetworkStatisticsTest_BEH_IsIdInGroupRange_Test;

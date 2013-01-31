@@ -87,6 +87,10 @@ bool Routing::IsConnectedVault(const NodeId& node_id) {
   return pimpl_->IsConnectedVault(node_id);
 }
 
+uint64_t Routing::NetworkPopulation() const {
+  return pimpl_->NetworkPopulation();
+}
+
 // bool Routing::IsConnectedToClient(const NodeId& node_id) {
 //  return pimpl_->IsConnectedToClient(node_id);
 // }

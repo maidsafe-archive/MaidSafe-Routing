@@ -82,6 +82,8 @@ class Routing::Impl {
 
   int network_status();
 
+  uint64_t NetworkPopulation();
+
   std::vector<NodeInfo> ClosestNodes();
 
   bool IsConnectedVault(const NodeId& node_id);

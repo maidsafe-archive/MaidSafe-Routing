@@ -734,6 +734,11 @@ int Routing::Impl::network_status() {
   return network_status_;
 }
 
+uint64_t Routing::Impl::NetworkPopulation() {
+  return network_statistics_.NetworkPopulation(
+      routing_table_.GetClosestNodes(kNodeId_, 1).at(0));
+}
+
 std::vector<NodeInfo> Routing::Impl::ClosestNodes() {
   return routing_table_.GetMatrixNodes();
 }
