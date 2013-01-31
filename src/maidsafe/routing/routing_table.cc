@@ -257,6 +257,13 @@ std::vector<NodeInfo> RoutingTable::GetMatrixNodes() {
   return group_matrix_.GetUniqueNodes();
 }
 
+bool RoutingTable::IsConnectedToVault(const NodeId& node_id) {
+  if (IsConnected(node_id))
+    return true;
+
+  return group_matrix_.Contains(node_id);
+}
+
 bool RoutingTable::GetNodeInfo(const NodeId& node_id, NodeInfo& peer) const {
   std::unique_lock<std::mutex> lock(mutex_);
   auto found(Find(node_id, lock));

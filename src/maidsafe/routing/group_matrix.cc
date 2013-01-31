@@ -238,6 +238,13 @@ std::vector<NodeInfo> GroupMatrix::GetClosestNodes(const uint16_t& size) {
                                                                 unique_nodes_.size()));
 }
 
+bool GroupMatrix::Contains(const NodeId& node_id) {
+  return std::find_if(unique_nodes_.begin(), unique_nodes_.end(),
+                      [&node_id] (const NodeInfo& node_info) {
+                        return node_info.node_id == node_id;
+                      }) != unique_nodes_.end();
+}
+
 void GroupMatrix::Clear() {
   for (auto& row : matrix_)
     row.clear();
