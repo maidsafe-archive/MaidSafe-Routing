@@ -931,6 +931,53 @@ TEST(RoutingTableTest, BEH_IsThisNodeGroupLeader) {
   EXPECT_TRUE(maidsafe::rsa::MatchingKeys(connected_peer.public_key, nodes.at(0).public_key));
 }
 
+TEST(RoutingTableTest, BEH_IsConnectedVault) {
+  NodeId own_node_id(NodeId::kRandomId);
+  NetworkStatistics network_statistics(own_node_id);
+  RoutingTable routing_table(false, own_node_id, asymm::GenerateKeyPair(), network_statistics);
+
+  std::vector<NodeInfo> nodes_in_table;
+  NodeInfo node_info;
+  // Populate routing table
+  for (uint16_t i(0); i < Parameters::max_routing_table_size; ++i) {
+    node_info = MakeNode();
+    nodes_in_table.push_back(node_info);
+    EXPECT_TRUE(routing_table.AddNode(node_info));
+  }
+
+  // Populate group matrix
+  SortFromTarget(own_node_id, nodes_in_table);
+  std::vector<NodeInfo> matrix_row_leaders(nodes_in_table.begin(),
+                                           nodes_in_table.begin() + Parameters::closest_nodes_size);
+  std::vector<std::vector<NodeInfo>> rows_in_matrix;
+  std::vector<NodeInfo> row;
+  uint32_t row_size;
+  for (auto row_leader : matrix_row_leaders) {
+    row.clear();
+    row_size = 1 + RandomUint32() % (Parameters::closest_nodes_size - 1);
+    while (row.size() < row_size)
+      row.push_back(MakeNode());
+
+    rows_in_matrix.push_back(row);
+    routing_table.GroupUpdateFromConnectedPeer(row_leader.node_id, row);
+  }
+
+  // IsConnectedVault - nodes in routing table
+  for (auto node : nodes_in_table)
+    EXPECT_TRUE(routing_table.IsConnectedVault(node.node_id));
+
+  // IsConnectedVault - nodes in rows of group matrix
+  for (auto row : rows_in_matrix) {
+    for (auto node : row) {
+      EXPECT_TRUE(routing_table.IsConnectedVault(node.node_id));
+    }
+  }
+
+  // IsConnectedVault - nodes not in routing table or group matrix
+  for (uint16_t i(0); i < 50; ++i)
+    EXPECT_FALSE(routing_table.IsConnectedVault(NodeId(NodeId::kRandomId)));
+}
+
 }  // namespace test
 }  // namespace routing
 }  // namespace maidsafe

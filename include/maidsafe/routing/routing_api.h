@@ -130,7 +130,7 @@ class Routing {
 
   std::vector<NodeInfo> ClosestNodes();
 
-  bool IsConnectedToVault(const NodeId& node_id);
+  bool IsConnectedVault(const NodeId& node_id);
 //  bool IsConnectedToClient(const NodeId& node_id);
 
   friend class test::GenericNode;

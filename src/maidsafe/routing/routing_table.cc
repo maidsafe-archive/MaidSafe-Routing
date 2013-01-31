@@ -257,7 +257,7 @@ std::vector<NodeInfo> RoutingTable::GetMatrixNodes() {
   return group_matrix_.GetUniqueNodes();
 }
 
-bool RoutingTable::IsConnectedToVault(const NodeId& node_id) {
+bool RoutingTable::IsConnectedVault(const NodeId& node_id) {
   if (IsConnected(node_id))
     return true;
 

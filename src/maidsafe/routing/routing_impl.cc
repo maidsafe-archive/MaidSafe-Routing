@@ -738,8 +738,8 @@ std::vector<NodeInfo> Routing::Impl::ClosestNodes() {
   return routing_table_.GetMatrixNodes();
 }
 
-bool Routing::Impl::IsConnectedToVault(const NodeId& node_id) {
-  return routing_table_.IsConnectedToVault(node_id);
+bool Routing::Impl::IsConnectedVault(const NodeId& node_id) {
+  return routing_table_.IsConnectedVault(node_id);
 }
 
 // bool Routing::Impl::IsConnectedToClient(const NodeId& node_id) {
