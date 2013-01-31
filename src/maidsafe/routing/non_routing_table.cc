@@ -102,7 +102,7 @@ std::vector<NodeInfo> NonRoutingTable::GetNodesInfo(const NodeId& node_id) const
   return nodes_info;
 }
 
-bool NonRoutingTable::IsConnected(const NodeId& node_id) const {
+bool NonRoutingTable::Contains(const NodeId& node_id) const {
   std::lock_guard<std::mutex> lock(mutex_);
   return std::find_if(nodes_.begin(),
                       nodes_.end(),

@@ -111,7 +111,7 @@ bool ValidateAndAddToRoutingTable(NetworkUtils& network,
 // FIXME
 void HandleSymmetricNodeAdd(RoutingTable& /*routing_table*/, const NodeId& /*peer_id*/,
                             const asymm::PublicKey& /*public_key*/) {
-//  if (routing_table.IsConnected(peer_id)) {
+//  if (routing_table.Contains(peer_id)) {
 //    LOG(kVerbose) << "[" << HexSubstr(routing_table.kKeys().identity) << "] "
 //                  << "already added node to routing table.  Node ID: "
 //                  << HexSubstr(peer_id.string())

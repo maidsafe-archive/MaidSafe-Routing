@@ -162,7 +162,7 @@ void GroupChangeHandler::Subscribe(const NodeId& node_id,
 
 void GroupChangeHandler::UpdateGroupChange(const NodeId& node_id,
                                            std::vector<NodeInfo> close_nodes) {
-  if (routing_table_.IsConnected(node_id)) {
+  if (routing_table_.Contains(node_id)) {
     LOG(kVerbose) << DebugId(routing_table_.kNodeId()) << "UpdateGroupChange for "
                   << DebugId(node_id) << " size of update: " << close_nodes.size();
     routing_table_.GroupUpdateFromConnectedPeer(node_id, close_nodes);

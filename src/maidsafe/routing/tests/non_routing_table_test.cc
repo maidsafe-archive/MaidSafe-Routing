@@ -296,12 +296,12 @@ TEST_F(NonRoutingTableTest, FUNC_IsConnected) {
     EXPECT_TRUE(non_routing_table.AddNode(nodes_.at(i), furthest_close_node_.node_id));
 
   for (int i(0); i < Parameters::max_non_routing_table_size; ++i)
-    EXPECT_TRUE(non_routing_table.IsConnected(nodes_.at(i).node_id));
+    EXPECT_TRUE(non_routing_table.Contains(nodes_.at(i).node_id));
 
   for (int i(Parameters::max_non_routing_table_size);
        i < 2 * Parameters::max_non_routing_table_size;
        ++i)
-    EXPECT_FALSE(non_routing_table.IsConnected(nodes_.at(i).node_id));
+    EXPECT_FALSE(non_routing_table.Contains(nodes_.at(i).node_id));
 }
 
 TEST_F(BasicNonRoutingTableTest, BEH_IsThisNodeInRange) {

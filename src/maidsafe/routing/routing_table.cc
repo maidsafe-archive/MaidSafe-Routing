@@ -257,8 +257,8 @@ std::vector<NodeInfo> RoutingTable::GetMatrixNodes() {
   return group_matrix_.GetUniqueNodes();
 }
 
-bool RoutingTable::IsConnectedVault(const NodeId& node_id) {
-  if (IsConnected(node_id))
+bool RoutingTable::IsConnected(const NodeId& node_id) {
+  if (Contains(node_id))
     return true;
 
   return group_matrix_.Contains(node_id);
@@ -290,7 +290,7 @@ bool RoutingTable::IsThisNodeClosestTo(const NodeId& target_id, bool ignore_exac
          NodeId::CloserToTarget(kNodeId_, closest_node.node_id, target_id);
 }
 
-bool RoutingTable::IsConnected(const NodeId& node_id) const {
+bool RoutingTable::Contains(const NodeId& node_id) const {
   std::unique_lock<std::mutex> lock(mutex_);
   return Find(node_id, lock).first;
 }

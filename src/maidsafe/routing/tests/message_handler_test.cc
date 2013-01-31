@@ -259,7 +259,7 @@ TEST_F(MessageHandlerTest, BEH_HandleGroupMessage) {
     NodeInfo node_info = MakeNodeInfoAndKeys().node_info;
     table_->AddNode(node_info);
   }
-  if (!table_->IsConnected(close_info_.node_id)) {
+  if (!table_->Contains(close_info_.node_id)) {
     LOG(kError) << "Re-adding close_info_";
     table_->AddNode(close_info_);
   }

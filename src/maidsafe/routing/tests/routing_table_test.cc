@@ -931,7 +931,7 @@ TEST(RoutingTableTest, BEH_IsThisNodeGroupLeader) {
   EXPECT_TRUE(maidsafe::rsa::MatchingKeys(connected_peer.public_key, nodes.at(0).public_key));
 }
 
-TEST(RoutingTableTest, BEH_IsConnectedVault) {
+TEST(RoutingTableTest, BEH_IsConnected) {
   NodeId own_node_id(NodeId::kRandomId);
   NetworkStatistics network_statistics(own_node_id);
   RoutingTable routing_table(false, own_node_id, asymm::GenerateKeyPair(), network_statistics);
@@ -962,20 +962,20 @@ TEST(RoutingTableTest, BEH_IsConnectedVault) {
     routing_table.GroupUpdateFromConnectedPeer(row_leader.node_id, row);
   }
 
-  // IsConnectedVault - nodes in routing table
+  // IsConnected - nodes in routing table
   for (auto node : nodes_in_table)
-    EXPECT_TRUE(routing_table.IsConnectedVault(node.node_id));
+    EXPECT_TRUE(routing_table.IsConnected(node.node_id));
 
-  // IsConnectedVault - nodes in rows of group matrix
+  // IsConnected - nodes in rows of group matrix
   for (auto row : rows_in_matrix) {
     for (auto node : row) {
-      EXPECT_TRUE(routing_table.IsConnectedVault(node.node_id));
+      EXPECT_TRUE(routing_table.IsConnected(node.node_id));
     }
   }
 
-  // IsConnectedVault - nodes not in routing table or group matrix
+  // IsConnected - nodes not in routing table or group matrix
   for (uint16_t i(0); i < 50; ++i)
-    EXPECT_FALSE(routing_table.IsConnectedVault(NodeId(NodeId::kRandomId)));
+    EXPECT_FALSE(routing_table.IsConnected(NodeId(NodeId::kRandomId)));
 }
 
 }  // namespace test

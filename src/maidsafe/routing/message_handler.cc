@@ -194,8 +194,8 @@ void MessageHandler::HandleDirectMessageAsClosestNode(protobuf::Message& message
   // or non_routing_table_.
   NodeId destination_node_id(message.destination_id());
   if (routing_table_.IsThisNodeClosestTo(destination_node_id)) {
-    if (routing_table_.IsConnected(destination_node_id) ||
-      non_routing_table_.IsConnected(destination_node_id)) {
+    if (routing_table_.Contains(destination_node_id) ||
+      non_routing_table_.Contains(destination_node_id)) {
       return network_.SendToClosestNode(message);
     } else if (!message.has_visited() || !message.visited()) {
       message.set_visited(true);
@@ -222,7 +222,7 @@ void MessageHandler::HandleDirectMessageAsClosestNode(protobuf::Message& message
 
 void MessageHandler::HandleGroupMessageAsClosestNode(protobuf::Message& message) {
   assert(!message.direct());
-  bool have_node_with_group_id(routing_table_.IsConnected(NodeId(message.destination_id())));
+  bool have_node_with_group_id(routing_table_.Contains(NodeId(message.destination_id())));
   // This node is not closest to the destination node for non-direct message.
   if (!routing_table_.IsThisNodeClosestTo(NodeId(message.destination_id()), !IsDirect(message)) &&
       !have_node_with_group_id) {
@@ -363,7 +363,7 @@ void MessageHandler::HandleMessage(protobuf::Message& message) {
   if (IsRelayResponseForThisNode(message))
     return HandleRoutingMessage(message);
 
-  if (non_routing_table_.IsConnected(NodeId(message.destination_id())) && IsDirect(message)) {
+  if (non_routing_table_.Contains(NodeId(message.destination_id())) && IsDirect(message)) {
     return HandleMessageForNonRoutingNodes(message);
   }
 
@@ -430,8 +430,8 @@ void MessageHandler::HandleDirectRelayRequestMessageAsClosestNode(protobuf::Mess
   // or non_routing_table_.
   NodeId destination_node_id(message.destination_id());
   if (routing_table_.IsThisNodeClosestTo(destination_node_id)) {
-    if (routing_table_.IsConnected(destination_node_id) ||
-      non_routing_table_.IsConnected(destination_node_id)) {
+    if (routing_table_.Contains(destination_node_id) ||
+      non_routing_table_.Contains(destination_node_id)) {
       message.set_source_id(routing_table_.kNodeId().string());
       return network_.SendToClosestNode(message);
     } else {
@@ -451,7 +451,7 @@ void MessageHandler::HandleDirectRelayRequestMessageAsClosestNode(protobuf::Mess
 
 void MessageHandler::HandleGroupRelayRequestMessageAsClosestNode(protobuf::Message& message) {
   assert(!message.direct());
-  bool have_node_with_group_id(routing_table_.IsConnected(NodeId(message.destination_id())));
+  bool have_node_with_group_id(routing_table_.Contains(NodeId(message.destination_id())));
   // This node is not closest to the destination node for non-direct message.
   if (!routing_table_.IsThisNodeClosestTo(NodeId(message.destination_id()), !IsDirect(message)) &&
       !have_node_with_group_id) {

@@ -739,7 +739,7 @@ std::vector<NodeInfo> Routing::Impl::ClosestNodes() {
 }
 
 bool Routing::Impl::IsConnectedVault(const NodeId& node_id) {
-  return routing_table_.IsConnectedVault(node_id);
+  return routing_table_.IsConnected(node_id);
 }
 
 // bool Routing::Impl::IsConnectedToClient(const NodeId& node_id) {

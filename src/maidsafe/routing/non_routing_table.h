@@ -48,7 +48,7 @@ class NonRoutingTable {
   std::vector<NodeInfo> DropNodes(const NodeId &node_to_drop);
   NodeInfo DropConnection(const NodeId &connection_to_drop);
   std::vector<NodeInfo> GetNodesInfo(const NodeId& node_id) const;
-  bool IsConnected(const NodeId& node_id) const;
+  bool Contains(const NodeId& node_id) const;
   size_t size() const;
   NodeId kNodeId() const { return kNodeId_; }
   void InitialiseFunctors(UnsubscribeGroupUpdate unsubscribe_group_update);
