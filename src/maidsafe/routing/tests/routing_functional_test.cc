@@ -465,13 +465,13 @@ TEST_F(RoutingNetworkTest, FUNC_IsConnectedVault) {
 
   // Vault or Client checks client id - expect false
   for (uint16_t i(0); i < env_->nodes_.size(); ++i) {
-    for (uint16_t j(env_->ClientIndex()); j < env_->nodes_.size(); ++j) {
+    for (size_t j(env_->ClientIndex()); j < env_->nodes_.size(); ++j) {
       EXPECT_FALSE(env_->nodes_.at(i)->IsConnectedVault(env_->nodes_.at(j)->node_id()));
     }
   }
 
   // Client checks close vault id - expect true
-  for (uint16_t i(env_->ClientIndex()); i < env_->nodes_.size(); ++i) {
+  for (size_t i(env_->ClientIndex()); i < env_->nodes_.size(); ++i) {
     NodeId client_id(env_->nodes_.at(i)->node_id());
     std::vector<NodeInfo> closest_nodes(
           env_->GetClosestVaults(client_id, Parameters::max_client_routing_table_size));
