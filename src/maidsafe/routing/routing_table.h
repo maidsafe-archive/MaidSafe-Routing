@@ -80,6 +80,7 @@ class RoutingTable {
   bool GetNodeInfo(const NodeId& node_id, NodeInfo& node_info) const;
   bool IsThisNodeInRange(const NodeId& target_id, uint16_t range);
   bool IsThisNodeClosestTo(const NodeId& target_id, bool ignore_exact_match = false);
+  bool IsThisNodeClosestToIncludingMatrix(const NodeId& target_id, bool ignore_exact_match = false);
   bool Contains(const NodeId& node_id) const;
   bool ConfirmGroupMembers(const NodeId& node1, const NodeId& node2);
   void GroupUpdateFromConnectedPeer(const NodeId& peer, const std::vector<NodeInfo>& nodes);
@@ -91,6 +92,10 @@ class RoutingTable {
   NodeInfo GetClosestNode(const NodeId& target_id,
                           const std::vector<std::string>& exclude,
                           bool ignore_exact_match = false);
+//  NodeInfo GetNodeForSendingMessage(const NodeId& target_id, bool ignore_exact_match = false);
+  NodeInfo GetNodeForSendingMessage(const NodeId& target_id,
+                                    const std::vector<std::string>& exclude,
+                                    bool ignore_exact_match = false);
   // Returns max NodeId if routing table size is less than requested node_number
   NodeInfo GetNthClosestNode(const NodeId& target_id, uint16_t node_number);
   std::vector<NodeId> GetClosestNodes(const NodeId& target_id, uint16_t number_to_get);

@@ -290,6 +290,25 @@ bool RoutingTable::IsThisNodeClosestTo(const NodeId& target_id, bool ignore_exac
          NodeId::CloserToTarget(kNodeId_, closest_node.node_id, target_id);
 }
 
+bool RoutingTable::IsThisNodeClosestToIncludingMatrix(const NodeId& target_id,
+                                                      bool ignore_exact_match) {
+  if (target_id.IsZero()) {
+    LOG(kError) << "Invalid target_id passed.";
+    return false;
+  }
+  NodeInfo closest_node(GetClosestNode(target_id, ignore_exact_match));
+  std::unique_lock<std::mutex> lock(mutex_);
+
+  if (closest_node.bucket == NodeInfo::kInvalidBucket)
+    return true;  // ?
+
+  if (!NodeId::CloserToTarget(kNodeId_, closest_node.node_id, target_id))
+    return false;
+
+  NodeId connected_peer;
+  return group_matrix_.IsThisNodeGroupLeader(target_id, connected_peer);  // use connected peer?
+}
+
 bool RoutingTable::Contains(const NodeId& node_id) const {
   std::unique_lock<std::mutex> lock(mutex_);
   return Find(node_id, lock).first;
@@ -543,6 +562,54 @@ NodeInfo RoutingTable::GetClosestNode(const NodeId& target_id,
       return node_info;
   }
   return NodeInfo();
+}
+
+/*
+NodeInfo RoutingTable::GetNodeForSendingMessage(const NodeId& target_id,
+                                                bool ignore_exact_match) {
+  NodeInfo node_info(GetClosestNode(target_id, ignore_exact_match));
+
+  if (node_info.node_id != target_id) {
+    std::vector<NodeInfo> connected_peers(group_matrix_.GetAllConnectedPeersFor(target_id));
+    if (connected_peers.empty())
+      return node_info;
+
+    return connected_peers.at(0);
+  }
+  return node_info;
+}
+*/
+
+NodeInfo RoutingTable::GetNodeForSendingMessage(const NodeId& target_id,
+                                                const std::vector<std::string>& exclude,
+                                                bool ignore_exact_match) {
+  NodeInfo node_info(GetClosestNode(target_id, exclude, ignore_exact_match));
+  std::unique_lock<std::mutex> lock(mutex_);
+
+  if (!ignore_exact_match && node_info.node_id != target_id) {
+    std::vector<NodeInfo> connected_peers(group_matrix_.GetAllConnectedPeersFor(target_id));
+    if (connected_peers.empty()) {
+      LOG(kVerbose) << "(Re: " << DebugId(target_id) << ") [" << DebugId(kNodeId_)
+                    << "] GM has no relevant nodes. Use: " << DebugId(node_info.node_id) << "\n";
+      return node_info;
+    }
+
+    for (auto connected_peer : connected_peers) {
+      if (std::find(exclude.begin(),
+                    exclude.end(),
+                    connected_peer.node_id.string()) == exclude.end()) {
+        LOG(kVerbose) << "(Re: " << DebugId(target_id) << ") [" << DebugId(kNodeId_)
+                      << "] Found alternative in GM: " << DebugId(connected_peer.node_id) << "\n";
+        return connected_peer;
+      }
+    }
+    LOG(kVerbose) << "(Re: " << DebugId(target_id) << ") [" << DebugId(kNodeId_)
+                  << "] GM has no relevant unvisited nodes. Use: "
+                  << DebugId(node_info.node_id) << "\n";
+  }
+  LOG(kVerbose) << "(Re: " << DebugId(target_id) << ") [" << DebugId(kNodeId_)
+                << "] Didn't consult GM. Use: " << DebugId(node_info.node_id) << "\n";
+  return node_info;
 }
 
 NodeInfo RoutingTable::GetRemovableNode(std::vector<std::string> attempted) {

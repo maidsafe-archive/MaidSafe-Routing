@@ -28,6 +28,8 @@ namespace maidsafe {
 namespace routing {
 namespace test {
 
+// TODO(Alison) - test GetAllConnectedPeersFor more thoroughly
+
 class IsThisNodeGroupLeaderGroupMatrixTest : public testing::Test {
  protected:
   IsThisNodeGroupLeaderGroupMatrixTest()
@@ -215,6 +217,7 @@ class GroupMatrixTest : public testing::TestWithParam<bool> {
 TEST_P(GroupMatrixTest, BEH_EmptyMatrix) {
   const NodeId target_id(NodeId::kRandomId);
   EXPECT_EQ(NodeId(), matrix_.GetConnectedPeerFor(target_id).node_id);
+  EXPECT_EQ(0, matrix_.GetAllConnectedPeersFor(target_id).size());
 
   std::vector<NodeInfo> row_result;
   EXPECT_FALSE(matrix_.GetRow(target_id, row_result));
@@ -294,6 +297,15 @@ TEST_P(GroupMatrixTest, BEH_OneRowOnly) {
     EXPECT_EQ(row_1.node_id, matrix_.GetConnectedPeerFor(target_id.node_id).node_id);
   }
 
+  // Check GetAllConnectedPeersFor
+  for (auto target_id : row_entries_1) {
+  std::vector<NodeInfo> connected_peers(matrix_.GetAllConnectedPeersFor(target_id.node_id));
+  EXPECT_EQ(1, connected_peers.size());
+  if (!connected_peers.empty())
+    EXPECT_EQ(row_1.node_id, connected_peers.at(0).node_id);
+  }
+  EXPECT_EQ(0, matrix_.GetAllConnectedPeersFor(NodeId(NodeId::kRandomId)).size());
+
   // Check IsThisNodeGroupMemberFor
   NodeInfo target_id_2;
   target_id_2.node_id = NodeId(NodeId::kRandomId);
@@ -338,6 +350,9 @@ TEST_P(GroupMatrixTest, BEH_OneColumnOnly) {
   // Check GetConnectedPeerFor
   const NodeId target_id(NodeId::kRandomId);
   EXPECT_EQ(NodeId(), matrix_.GetConnectedPeerFor(target_id).node_id);
+
+  // Check GetAllConnectedPeersFor
+  EXPECT_EQ(0, matrix_.GetAllConnectedPeersFor(target_id).size());
 }
 
 TEST_P(GroupMatrixTest, BEH_RowsContainSameNodes) {
@@ -407,6 +422,11 @@ TEST_P(GroupMatrixTest, BEH_RowsContainSameNodes) {
   // Check GetConnectedPeerFor gives identifier of the first row added to the matrix
   for (auto row_entry : row_entries)
     EXPECT_EQ(row_ids.at(0).node_id, matrix_.GetConnectedPeerFor(row_entry.node_id).node_id);
+
+  // Check GetAllConnectedPeersFor - TODO(Alison) - more detail
+  for (auto row_entry : row_entries) {
+    EXPECT_EQ(row_ids.size(), matrix_.GetAllConnectedPeersFor(row_entry.node_id).size());
+  }
 }
 
 TEST_P(GroupMatrixTest, BEH_UpdateFromNonPeer) {

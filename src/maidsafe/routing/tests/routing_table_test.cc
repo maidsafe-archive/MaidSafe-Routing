@@ -30,6 +30,9 @@ namespace maidsafe {
 namespace routing {
 namespace test {
 
+// TODO(Alison) - test the following:
+// - IsThisNodeClosestToIncludingMatrix
+// - GetNodeForSendingMessage
 
 TEST(RoutingTableTest, BEH_AddCloseNodes) {
   NodeId node_id(NodeId::kRandomId);

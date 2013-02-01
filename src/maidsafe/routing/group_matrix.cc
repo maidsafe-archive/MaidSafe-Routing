@@ -110,6 +110,20 @@ NodeInfo GroupMatrix::GetConnectedPeerClosestTo(const NodeId& target_node_id) {
   return peer;
 }
 
+std::vector<NodeInfo> GroupMatrix::GetAllConnectedPeersFor(const NodeId& target_id) {
+  std::vector<NodeInfo> connected_nodes;
+  for (auto row : matrix_) {
+    if (std::find_if(row.begin(),
+                     row.end(),
+                     [&target_id] (const NodeInfo& node_info) {
+                       return target_id == node_info.node_id;
+                     }) != row.end()) {
+      connected_nodes.push_back(row.at(0));
+    }
+  }
+  return connected_nodes;
+}
+
 bool GroupMatrix::IsThisNodeGroupLeader(const NodeId& target_id, NodeId& connected_peer) {
   assert(!client_mode_ && "Client should not call IsThisNodeGroupLeader.");
   if (client_mode_)

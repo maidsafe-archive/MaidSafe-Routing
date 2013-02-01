@@ -543,8 +543,9 @@ TEST_F(RoutingNetworkTest, FUNC_ClosestNodes) {
     if (node->IsClient())
       type = "CLIENT";
     for (uint16_t i(0); i < std::min(size_t(8), min_size); ++i)
-      EXPECT_EQ(from_matrix.at(i).node_id, from_network.at(i).node_id) << "For node of type "
-                                                                       << type;
+      EXPECT_EQ(from_matrix.at(i).node_id, from_network.at(i).node_id)
+          << "For node of type "  << type
+          << " (index " << i << ")";
   }
 }
 
@@ -630,8 +631,9 @@ TEST_F(RoutingNetworkTest, FUNC_ClosestNodesBehindSymmetricNat) {
     if (node->IsClient())
       type = "CLIENT";
     for (uint16_t i(0); i < std::min(size_t(9), min_size); ++i)
-      EXPECT_EQ(from_matrix.at(i).node_id, from_network.at(i).node_id) << "For node of type "
-                                                                       << type;
+      EXPECT_EQ(from_matrix.at(i).node_id, from_network.at(i).node_id)
+          << "For node of type " << type
+          << " (index " << i << ")";
   }
 }
 

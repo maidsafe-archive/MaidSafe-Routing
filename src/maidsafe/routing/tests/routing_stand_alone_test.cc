@@ -335,6 +335,17 @@ TEST_F(RoutingStandAloneTest, FUNC_GroupsAndSendWithClientsAndSymmetricNat) {
   }
 }
 
+TEST_F(RoutingStandAloneTest, FUNC_MessagePassingSymmetricNat) {
+  uint16_t old_rt_size(Parameters::max_routing_table_size);
+  Parameters::max_routing_table_size = 16;
+
+  this->SetUpNetwork(40, 0, 10, 0);
+
+  EXPECT_TRUE(this->Send(3));
+
+  Parameters::max_routing_table_size = old_rt_size;
+}
+
 }  // namespace test
 
 }  // namespace routing

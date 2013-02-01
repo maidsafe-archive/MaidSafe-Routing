@@ -193,9 +193,9 @@ void MessageHandler::HandleDirectMessageAsClosestNode(protobuf::Message& message
   // Dropping direct messages if this node is closest and destination node is not in routing_table_
   // or non_routing_table_.
   NodeId destination_node_id(message.destination_id());
-  if (routing_table_.IsThisNodeClosestTo(destination_node_id)) {
+  if (routing_table_.IsThisNodeClosestToIncludingMatrix(destination_node_id)) {
     if (routing_table_.Contains(destination_node_id) ||
-      non_routing_table_.Contains(destination_node_id)) {
+        non_routing_table_.Contains(destination_node_id)) {
       return network_.SendToClosestNode(message);
     } else if (!message.has_visited() || !message.visited()) {
       message.set_visited(true);

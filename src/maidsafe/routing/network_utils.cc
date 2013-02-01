@@ -291,6 +291,7 @@ void NetworkUtils::RecursiveSendOn(protobuf::Message message,
   const std::string kThisId(routing_table_.kNodeId().string());
   bool ignore_exact_match(!IsDirect(message));
   std::vector<std::string> route_history;
+  // TODO(Alison) - rename closest_node
   NodeInfo closest_node;
   {
     std::lock_guard<std::mutex> lock(running_mutex_);
@@ -303,8 +304,9 @@ void NetworkUtils::RecursiveSendOn(protobuf::Message message,
              (message.route_history(0) != routing_table_.kNodeId().string()))
       route_history.push_back(message.route_history(0));
 
-    closest_node = routing_table_.GetClosestNode(NodeId(message.destination_id()), route_history,
-                                                 ignore_exact_match);
+    closest_node = routing_table_.GetNodeForSendingMessage(NodeId(message.destination_id()),
+                                                           route_history,
+                                                           ignore_exact_match);
     if (closest_node.node_id == NodeId()) {
       LOG(kError) << "This node's routing table is empty now.  Need to re-bootstrap.";
       return;
