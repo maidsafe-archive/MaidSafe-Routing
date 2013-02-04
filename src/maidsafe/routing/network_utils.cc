@@ -291,8 +291,7 @@ void NetworkUtils::RecursiveSendOn(protobuf::Message message,
   const std::string kThisId(routing_table_.kNodeId().string());
   bool ignore_exact_match(!IsDirect(message));
   std::vector<std::string> route_history;
-  // TODO(Alison) - rename closest_node
-  NodeInfo closest_node;
+  NodeInfo peer;
   {
     std::lock_guard<std::mutex> lock(running_mutex_);
     if (!running_)
@@ -304,10 +303,10 @@ void NetworkUtils::RecursiveSendOn(protobuf::Message message,
              (message.route_history(0) != routing_table_.kNodeId().string()))
       route_history.push_back(message.route_history(0));
 
-    closest_node = routing_table_.GetNodeForSendingMessage(NodeId(message.destination_id()),
-                                                           route_history,
-                                                           ignore_exact_match);
-    if (closest_node.node_id == NodeId()) {
+    peer = routing_table_.GetNodeForSendingMessage(NodeId(message.destination_id()),
+                                                   route_history,
+                                                   ignore_exact_match);
+    if (peer.node_id == NodeId()) {
       LOG(kError) << "This node's routing table is empty now.  Need to re-bootstrap.";
       return;
     }
@@ -324,21 +323,21 @@ void NetworkUtils::RecursiveSendOn(protobuf::Message message,
       if (rudp::kSuccess == message_sent) {
         LOG(kVerbose) << "  [" << HexSubstr(kThisId) << "] sent : "
                       << MessageTypeString(message) << " to   "
-                      << HexSubstr(closest_node.node_id.string())
+                      << HexSubstr(peer.node_id.string())
                       << "   (id: " << message.id() << ")"
                       << " dst : " << HexSubstr(message.destination_id());
       } else if (rudp::kSendFailure == message_sent) {
         LOG(kError) << "Sending type " << MessageTypeString(message)
                     << " message from " << HexSubstr(routing_table_.kNodeId().string())
-                    << " to " << HexSubstr(closest_node.node_id.string())
+                    << " to " << HexSubstr(peer.node_id.string())
                     << " with destination ID " << HexSubstr(message.destination_id())
                     << " failed with code " << message_sent
                     << ".  Will retry to Send.  Attempt count = " << attempt_count + 1
                     << " id: " << message.id();
-        RecursiveSendOn(message, closest_node, attempt_count + 1);
+        RecursiveSendOn(message, peer, attempt_count + 1);
       } else {
         LOG(kError) << "Sending type " << MessageTypeString(message) << " message from "
-                    << HexSubstr(kThisId) << " to " << HexSubstr(closest_node.node_id.string())
+                    << HexSubstr(kThisId) << " to " << HexSubstr(peer.node_id.string())
                     << " with destination ID " << HexSubstr(message.destination_id())
                     << " failed with code " << message_sent << "  Will remove node."
                     << " message id: " << message.id();
@@ -348,14 +347,14 @@ void NetworkUtils::RecursiveSendOn(protobuf::Message message,
             return;
           rudp_.Remove(last_node_attempted.connection_id);
         }
-        LOG(kWarning) << " Routing-> removing connection " << DebugId(closest_node.connection_id);
-        routing_table_.DropNode(closest_node.node_id, false);
-        non_routing_table_.DropConnection(closest_node.connection_id);
+        LOG(kWarning) << " Routing-> removing connection " << DebugId(peer.connection_id);
+        routing_table_.DropNode(peer.node_id, false);
+        non_routing_table_.DropConnection(peer.connection_id);
         RecursiveSendOn(message);
       }
   };
-  LOG(kVerbose) << "Rudp recursive send message to " << DebugId(closest_node.connection_id);
-  RudpSend(closest_node.connection_id, message, message_sent_functor);
+  LOG(kVerbose) << "Rudp recursive send message to " << DebugId(peer.connection_id);
+  RudpSend(peer.connection_id, message, message_sent_functor);
 }
 
 void NetworkUtils::AdjustRouteHistory(protobuf::Message& message) {

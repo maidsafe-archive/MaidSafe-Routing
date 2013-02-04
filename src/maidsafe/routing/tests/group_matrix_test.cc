@@ -28,8 +28,6 @@ namespace maidsafe {
 namespace routing {
 namespace test {
 
-// TODO(Alison) - test GetAllConnectedPeersFor more thoroughly
-
 class IsThisNodeGroupLeaderGroupMatrixTest : public testing::Test {
  protected:
   IsThisNodeGroupLeaderGroupMatrixTest()
@@ -423,9 +421,10 @@ TEST_P(GroupMatrixTest, BEH_RowsContainSameNodes) {
   for (auto row_entry : row_entries)
     EXPECT_EQ(row_ids.at(0).node_id, matrix_.GetConnectedPeerFor(row_entry.node_id).node_id);
 
-  // Check GetAllConnectedPeersFor - TODO(Alison) - more detail
+  // Check GetAllConnectedPeersFor
   for (auto row_entry : row_entries) {
-    EXPECT_EQ(row_ids.size(), matrix_.GetAllConnectedPeersFor(row_entry.node_id).size());
+    EXPECT_TRUE(CompareListOfNodeInfos(row_ids,
+                                       matrix_.GetAllConnectedPeersFor(row_entry.node_id)));
   }
 }
 
@@ -741,6 +740,38 @@ TEST_P(GroupMatrixTest, BEH_CheckUniqueNodeList) {
     matrix_.UpdateFromConnectedPeer(row_id.node_id, row_entries);
     SortNodeInfosFromTarget(own_node_id_, node_ids);
     EXPECT_TRUE(CompareListOfNodeInfos(node_ids, matrix_.GetUniqueNodes()));
+  }
+}
+
+TEST_P(GroupMatrixTest, BEH_GetAllConnectedPeers) {
+  // Add rows to matrix and check GetUniqueNodes
+  std::vector<NodeInfo> row_ids;
+  for (uint32_t i(0); i < Parameters::closest_nodes_size; ++i)
+    row_ids.push_back(MakeNode());
+  EXPECT_EQ(0, matrix_.GetUniqueNodes().size());
+  std::vector<NodeInfo> node_ids;
+  if (!client_mode_)
+    node_ids.push_back(own_node_info_);
+  for (auto row_id : row_ids) {
+    node_ids.push_back(row_id);
+    SortNodeInfosFromTarget(own_node_id_, node_ids);
+    matrix_.AddConnectedPeer(row_id);
+    EXPECT_TRUE(CompareListOfNodeInfos(node_ids, matrix_.GetUniqueNodes()));
+  }
+
+  // Populate rows
+  std::vector<NodeInfo> row_content;
+  while (row_content.size() < Parameters::closest_nodes_size) {
+    row_content.push_back(MakeNode());
+    matrix_.UpdateFromConnectedPeer(row_ids.at(row_content.size() - 1).node_id, row_content);
+  }
+
+  // Verify GetAllConnectedPeers
+  std::vector<NodeInfo> all_connected_peers;
+  for (uint16_t i(0); i < Parameters::closest_nodes_size; ++i) {
+    all_connected_peers = matrix_.GetAllConnectedPeersFor(row_content.at(i).node_id);
+    EXPECT_TRUE(CompareListOfNodeInfos(all_connected_peers, row_ids));
+    row_ids.erase(row_ids.begin());
   }
 }
 

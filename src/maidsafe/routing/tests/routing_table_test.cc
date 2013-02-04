@@ -30,10 +30,6 @@ namespace maidsafe {
 namespace routing {
 namespace test {
 
-// TODO(Alison) - test the following:
-// - IsThisNodeClosestToIncludingMatrix
-// - GetNodeForSendingMessage
-
 TEST(RoutingTableTest, BEH_AddCloseNodes) {
   NodeId node_id(NodeId::kRandomId);
   NetworkStatistics network_statistics(node_id);
@@ -979,6 +975,131 @@ TEST(RoutingTableTest, BEH_IsConnected) {
   // IsConnected - nodes not in routing table or group matrix
   for (uint16_t i(0); i < 50; ++i)
     EXPECT_FALSE(routing_table.IsConnected(NodeId(NodeId::kRandomId)));
+}
+
+TEST(RoutingTableTest, BEH_IsThisNodeClosestToIncludingMatrix) {
+  NodeId own_node_id(NodeId::kRandomId);
+  NodeInfo own_node_info;
+  own_node_info.node_id = own_node_id;
+  NetworkStatistics network_statistics(own_node_id);
+  RoutingTable routing_table(false, own_node_id, asymm::GenerateKeyPair(), network_statistics);
+
+  // Test IsThisNodeClosestToIncludingMatrix for empty routing table
+  EXPECT_FALSE(routing_table.IsThisNodeClosestToIncludingMatrix(NodeId()));
+  EXPECT_TRUE(routing_table.IsThisNodeClosestToIncludingMatrix(NodeId(NodeId::kRandomId)));
+
+  std::vector<NodeInfo> nodes(1, own_node_info);
+  NodeInfo node_info;
+
+  // Add one node to routing table and test IsThisNodeClosestToIncludingMatrix
+  node_info = MakeNode();
+  nodes.push_back(node_info);
+  EXPECT_TRUE(routing_table.AddNode(node_info));
+  EXPECT_TRUE(routing_table.IsThisNodeClosestToIncludingMatrix(nodes.at(1).node_id, true));
+  EXPECT_FALSE(routing_table.IsThisNodeClosestToIncludingMatrix(nodes.at(1).node_id, false));
+
+  // Partially populate routing table
+  for (uint16_t i(0); i < Parameters::max_routing_table_size / 2; ++i) {
+    node_info = MakeNode();
+    nodes.push_back(node_info);
+    EXPECT_TRUE(routing_table.AddNode(node_info));
+  }
+
+  // Test IsThisNodeClosestToIncludingMatrix (empty matrix)
+  for (auto node : nodes) {
+    if (node.node_id == own_node_id)
+      EXPECT_TRUE(routing_table.IsThisNodeClosestToIncludingMatrix(node.node_id, true));
+    else
+      EXPECT_FALSE(routing_table.IsThisNodeClosestToIncludingMatrix(node.node_id, true));
+  }
+
+  // Populate group matrix
+  SortFromTarget(own_node_id, nodes);
+  std::vector<NodeInfo> row;
+  uint32_t row_size;
+  for (uint16_t i(1); i <= Parameters::closest_nodes_size; ++i) {
+    row.clear();
+    row_size = 1 + RandomUint32() % (Parameters::closest_nodes_size - 1);
+    while (row.size() < row_size) {
+      node_info = MakeNode();
+      row.push_back(node_info);
+      nodes.push_back(node_info);
+    }
+    routing_table.GroupUpdateFromConnectedPeer(nodes.at(i).node_id, row);
+  }
+
+  // Test IsThisNodeClosestToIncludingMatrix (populated matrix)
+  NodeId target;
+  for (uint16_t i(0); i < 100; ++i) {
+    target = NodeId(NodeId::kRandomId);
+    PartialSortFromTarget(target, nodes, 1);
+    if (nodes.at(0).node_id == own_node_id)
+      EXPECT_TRUE(routing_table.IsThisNodeClosestToIncludingMatrix(target));
+    else
+      EXPECT_FALSE(routing_table.IsThisNodeClosestToIncludingMatrix(target));
+  }
+}
+
+TEST(RoutingTableTest, BEH_GetNodeForSendingMessage) {
+  NodeId own_node_id(NodeId::kRandomId);
+  NetworkStatistics network_statistics(own_node_id);
+  RoutingTable routing_table(false, own_node_id, asymm::GenerateKeyPair(), network_statistics);
+
+  std::vector<NodeInfo> nodes_in_table;
+  NodeInfo node_info;
+  // Populate routing table
+  for (uint16_t i(0); i < Parameters::max_routing_table_size; ++i) {
+    node_info = MakeNode();
+    nodes_in_table.push_back(node_info);
+  }
+  SortFromTarget(own_node_id, nodes_in_table);
+  for (auto node : nodes_in_table)
+    EXPECT_TRUE(routing_table.AddNode(node));
+
+  // Populate group matrix
+  std::vector<NodeInfo> matrix_row_leaders(nodes_in_table.begin(),
+                                           nodes_in_table.begin() + Parameters::closest_nodes_size);
+  std::vector<std::vector<NodeInfo>> rows_in_matrix;
+  std::vector<NodeInfo> row;
+  uint32_t row_size;
+  for (auto row_leader : matrix_row_leaders) {
+    row.clear();
+    row_size = 1 + RandomUint32() % (Parameters::closest_nodes_size - 1);
+    while (row.size() < row_size)
+      row.push_back(MakeNode());
+
+    rows_in_matrix.push_back(row);
+    routing_table.GroupUpdateFromConnectedPeer(row_leader.node_id, row);
+  }
+
+  // Test GetNodeForSendingMessage for nodes in routing table
+  std::vector<std::string> exclude;
+  for (auto node : nodes_in_table) {
+    EXPECT_EQ(node.node_id, routing_table.GetNodeForSendingMessage(node.node_id, exclude).node_id);
+    EXPECT_NE(node.node_id,
+              routing_table.GetNodeForSendingMessage(node.node_id, exclude, true).node_id);
+  }
+
+  // Test GetNodeForSendingMessage for nodes in group matrix (without exclusions)
+  for (uint16_t i(0); i < matrix_row_leaders.size(); ++i) {
+    for (auto row_entry : rows_in_matrix.at(i)) {
+      EXPECT_EQ(matrix_row_leaders.at(i).node_id,
+                routing_table.GetNodeForSendingMessage(row_entry.node_id, exclude).node_id);
+    }
+  }
+
+  // Make all matrix rows the same
+  for (auto row_leader : matrix_row_leaders) {
+    routing_table.GroupUpdateFromConnectedPeer(row_leader.node_id, rows_in_matrix.at(0));
+  }
+
+  // Test GetNodeForSendingMessage for node in group matrix (with exclusions)
+  NodeId target(rows_in_matrix.at(0).at(RandomUint32() % rows_in_matrix.at(0).size()).node_id);
+  for (uint16_t i(0); i < matrix_row_leaders.size() - 1; ++i) {
+    exclude.push_back(matrix_row_leaders.at(i).node_id.string());
+    EXPECT_EQ(matrix_row_leaders.at(i + 1).node_id,
+              routing_table.GetNodeForSendingMessage(target, exclude).node_id);
+  }
 }
 
 }  // namespace test

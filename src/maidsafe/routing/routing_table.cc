@@ -253,7 +253,6 @@ NodeInfo RoutingTable::GetConnectedPeerFromGroupMatrixClosestTo(const NodeId& ta
 
 std::vector<NodeInfo> RoutingTable::GetMatrixNodes() {
   std::unique_lock<std::mutex> lock(mutex_);
-  // TODO(Alison) - prefer GetUniqueNodes() or GetClosestNodes(number)?
   return group_matrix_.GetUniqueNodes();
 }
 

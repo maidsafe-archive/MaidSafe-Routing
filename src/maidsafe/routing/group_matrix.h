@@ -38,7 +38,6 @@ struct NodeInfo;
 class GroupMatrix {
  public:
   explicit GroupMatrix(const NodeId& this_node_id, bool client_mode);
-  // TODO(Alison) - remove default client setting
 
   void AddConnectedPeer(const NodeInfo& node_info);
 
