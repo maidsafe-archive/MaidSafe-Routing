@@ -14,6 +14,7 @@
 #define MAIDSAFE_ROUTING_NODE_INFO_H_
 
 #include <cstdint>
+#include <vector>
 
 #include "boost/asio/ip/udp.hpp"
 
@@ -29,17 +30,26 @@ namespace routing {
 namespace protobuf { class Contact; }
 
 struct NodeInfo {
+  typedef TaggedValue<NonEmptyString, struct SerialisedMessageTag> serialised_type;
+
   NodeInfo();
+
+  NodeInfo(const NodeInfo& other);
+  NodeInfo& operator=(const NodeInfo& other);
+  NodeInfo(NodeInfo&& other);
+  NodeInfo& operator=(NodeInfo&& other);
+  explicit NodeInfo(const serialised_type& serialised_message);
+
+  serialised_type Serialise() const;
+
   NodeId node_id;
   NodeId connection_id;  // Id of a node as far as rudp is concerned
   asymm::PublicKey public_key;
   int32_t rank;
   int32_t bucket;
   rudp::NatType nat_type;
-  int32_t dimension_1;
-  int32_t dimension_2;
-  int32_t dimension_3;
-  int32_t dimension_4;
+  std::vector<int32_t> dimension_list;
+
   static const int32_t kInvalidBucket;
 };
 
