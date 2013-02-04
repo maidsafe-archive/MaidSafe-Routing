@@ -1007,10 +1007,10 @@ TEST(RoutingTableTest, BEH_IsThisNodeClosestToIncludingMatrix) {
 
   // Test IsThisNodeClosestToIncludingMatrix (empty matrix)
   for (auto node : nodes) {
-    if (node.node_id == own_node_id)
-      EXPECT_TRUE(routing_table.IsThisNodeClosestToIncludingMatrix(node.node_id, true));
-    else
-      EXPECT_FALSE(routing_table.IsThisNodeClosestToIncludingMatrix(node.node_id, true));
+    if (node.node_id != own_node_id) {
+      EXPECT_TRUE(routing_table.Contains(node.node_id));
+      EXPECT_FALSE(routing_table.IsThisNodeClosestToIncludingMatrix(node.node_id));
+    }
   }
 
   // Populate group matrix
