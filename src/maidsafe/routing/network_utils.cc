@@ -370,6 +370,8 @@ void NetworkUtils::AdjustRouteHistory(protobuf::Message& message) {
           message.add_route_history(route);
       }
     }
+  } else {
+    message.set_loop_in_path(true);
   }
   assert(message.route_history().size() <= Parameters::max_routing_table_size);
 }

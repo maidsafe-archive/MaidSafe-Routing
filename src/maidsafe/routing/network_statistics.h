@@ -38,6 +38,8 @@ class NetworkStatistics {
   bool EstimateInGroup(const NodeId& sender_id, const NodeId& info_id);
   NodeId GetDistance();
   uint64_t NetworkPopulation(const NodeId& node_id) const;
+  uint64_t NetworkPopulation() const;
+  void SetMaximumHopsTraversed(const uint16_t& hops_to_live);
 
   friend class test::NetworkStatisticsTest_BEH_AverageDistance_Test;
   friend class test::NetworkStatisticsTest_BEH_IsIdInGroupRange_Test;
@@ -54,6 +56,7 @@ class NetworkStatistics {
   const NodeId kNodeId_;
   NodeId distance_;
   NetworkDistanceData network_distance_data_;
+  uint16_t max_hops_traversed_;
 };
 
 }  // namespace routing

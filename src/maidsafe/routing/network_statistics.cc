@@ -25,7 +25,8 @@ NetworkStatistics::NetworkStatistics(const NodeId& node_id)
     :  mutex_(),
        kNodeId_(node_id),
        distance_(),
-       network_distance_data_() {}
+       network_distance_data_(),
+       max_hops_traversed_(1) {}
 
 void NetworkStatistics::UpdateLocalAverageDistance(std::vector<NodeInfo>&& unique_nodes) {
   if (unique_nodes.size() < Parameters::node_group_size)
@@ -81,6 +82,17 @@ uint64_t NetworkStatistics::NetworkPopulation(const NodeId& node_id) const {
   if (population_integer > ULONG_MAX)
     return 0;
   return population_integer.GetBits(0, 63);
+}
+
+uint64_t NetworkStatistics::NetworkPopulation() const {
+  return ((Parameters::max_routing_table_size +
+           Parameters::greedy_fraction) / 2) *
+           (max_hops_traversed_ - 0.5);
+}
+
+void NetworkStatistics::SetMaximumHopsTraversed(const uint16_t& hops_to_live) {
+  if (Parameters::hops_to_live - hops_to_live > max_hops_traversed_)
+    max_hops_traversed_ = Parameters::hops_to_live - hops_to_live;
 }
 
 }  // namespace routing

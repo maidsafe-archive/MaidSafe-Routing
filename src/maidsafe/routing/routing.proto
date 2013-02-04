@@ -68,6 +68,7 @@ message Message {
   optional int32 hops_to_live = 20;
   optional bool visited = 21;
   optional bytes average_distace = 22;
+  optional bool loop_in_path = 23;
 }
 
 message SignedMessage {

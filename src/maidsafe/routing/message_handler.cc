@@ -161,8 +161,11 @@ void MessageHandler::HandleNodeLevelMessageForThisNode(protobuf::Message& messag
                << MessageTypeString(message) << " from "
                << HexSubstr(message.source_id())
                << "   (id: " << message.id() << ")  --NodeLevel--";
-    if (timer_.AddResponse(message) && message.has_average_distace())
+    if (timer_.AddResponse(message) && message.has_average_distace()) {
       network_statistics_.UpdateNetworkAverageDistance(NodeId(message.average_distace()));
+      if (message.has_loop_in_path() && !message.loop_in_path())
+        network_statistics_.SetMaximumHopsTraversed(message.hops_to_live());
+    }
   }
 }
 
