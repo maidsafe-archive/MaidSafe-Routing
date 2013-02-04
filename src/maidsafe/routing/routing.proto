@@ -175,3 +175,9 @@ message GetGroup {
   required bytes node_id = 1;
   repeated bytes group_nodes_id = 2;
 }
+
+message NodeInfo {
+  required bytes node_id = 1;
+  required int32 rank = 2;
+  repeated int32 dimension_list = 3;
+}
