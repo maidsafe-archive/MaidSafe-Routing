@@ -93,29 +93,17 @@ class Routing {
                     const boost::asio::ip::udp::endpoint& peer_endpoint,
                     const NodeInfo& peer_info);
 
-  // Throws on invalid paramater
-  void Send(const NodeId& destination_id,               // ID of final destination or group centre
-            const std::string& data,                    // message content
-            const DestinationType& destination_type,    // destination type
-            const bool& cacheable,
-            ResponseFunctor response_functor);          // Called on each response
+  // Throws on invalid paramaters
+  void SendDirect(const NodeId& destination_id,           // ID of final destination or group centre
+                  const std::string& data,                // message content
+                  const bool& cacheable,
+                  ResponseFunctor response_functor);      // Called on each response
 
-//  // Returns a future for the response. Either:
-//  //  * reply to message has been received (doing future.get() gives the reply)
-//  //  * has timed out awaiting reply       (doing future.get() will throw)
-//  std::future<std::string> Send(const NodeId& destination_id,  // ID of final destination
-//                                const std::string& data,       // message content
-//                                const bool& cacheable);
-
-//  // Returns a vector of futures for the responses. For each future, either:
-//  //  * reply to corresponding message has been received (doing future.get() gives the reply)
-//  //  * has timed out awaiting corresponding reply       (doing future.get() will throw)
-//  // Sends messages to the group of the desination_id, excluding the desination_id itself.
-//  // Specifically, if a node does SendGroup to its own ID then it won't receive the message.
-//  std::vector<std::future<std::string>> SendGroup(
-//                                          const NodeId& destination_id,  // ID of group centre
-//                                          const std::string& data,       // message content
-//                                          const bool& cacheable);
+  // Throws on invalid paramaters
+  void SendGroup(const NodeId& destination_id,          // ID of final destination or group centre
+                 const std::string& data,               // message content
+                 const bool& cacheable,
+                 ResponseFunctor response_functor);     // Called on each response
 
   // A queue with recently found nodes that can be extracted for upper layers to communicate with.
   NodeId GetRandomExistingNode() const;
