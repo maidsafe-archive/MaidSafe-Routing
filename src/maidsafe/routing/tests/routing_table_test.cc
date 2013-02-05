@@ -1102,6 +1102,57 @@ TEST(RoutingTableTest, BEH_GetNodeForSendingMessage) {
   }
 }
 
+TEST(RoutingTableTest, BEH_GetNodeForSendingMessageIgnoreExactMatch) {
+  // populate routing table
+  NodeId own_node_id(NodeId::kRandomId);
+  NetworkStatistics network_statistics(own_node_id);
+  RoutingTable routing_table(false, own_node_id, asymm::GenerateKeyPair(), network_statistics);
+
+  std::vector<NodeInfo> nodes_in_table;
+  NodeInfo node_info;
+  // Populate routing table
+  for (uint16_t i(0); i < Parameters::max_routing_table_size; ++i) {
+    node_info = MakeNode();
+    nodes_in_table.push_back(node_info);
+  }
+  SortFromTarget(own_node_id, nodes_in_table);
+  for (auto node : nodes_in_table)
+    EXPECT_TRUE(routing_table.AddNode(node));
+
+  // test GetNodeForSendingMessage
+  std::vector<std::string> exclude;
+  std::vector<NodeInfo> nodes2(nodes_in_table);
+  for (auto node : nodes2) {
+    PartialSortFromTarget(node.node_id, nodes_in_table, 2);
+    EXPECT_EQ(nodes_in_table.at(1).node_id,
+              routing_table.GetNodeForSendingMessage(node.node_id, exclude, true).node_id);
+  }
+
+  // Generate target and plant close node in group matrix
+  NodeId target(NodeId::kRandomId);
+  PartialSortFromTarget(target, nodes_in_table, 1);
+  NodeInfo matrix_entry(MakeNode());
+  bool generated_closer(false);
+  while (!generated_closer) {
+    matrix_entry.node_id = NodeId(NodeId::kRandomId);
+    if (NodeId::CloserToTarget(matrix_entry.node_id, nodes_in_table.at(0).node_id, target))
+      generated_closer = true;
+  }
+  std::cout << "Matrix entry: " << DebugId(matrix_entry.node_id) << std::endl;
+  std::vector<NodeInfo> row(1, matrix_entry);
+  PartialSortFromTarget(own_node_id, nodes_in_table, Parameters::closest_nodes_size);
+  uint16_t row_index(RandomUint32() % Parameters::closest_nodes_size);
+  NodeInfo row_leader(nodes_in_table.at(row_index));
+  std::cout << "Row leader: " << DebugId(row_leader.node_id) << std::endl;
+  routing_table.GroupUpdateFromConnectedPeer(row_leader.node_id, row);
+  NodeInfo node_for_message(routing_table.GetNodeForSendingMessage(target, exclude, true));
+  EXPECT_EQ(row_leader.node_id, node_for_message.node_id)
+      << "For target: " << DebugId(target) << "\tExpected: " << DebugId(row_leader.node_id)
+      << "\tGot: " << DebugId(node_for_message.node_id);
+  PartialSortFromTarget(target, nodes_in_table, 1);
+  std::cout << "Closest table node: " << DebugId(nodes_in_table.at(0).node_id) << std::endl;
+}
+
 }  // namespace test
 }  // namespace routing
 }  // namespace maidsafe

@@ -248,6 +248,7 @@ void MessageHandler::HandleGroupMessageAsClosestNode(protobuf::Message& message)
   NodeInfo closest_to_group_leader_node;
   if (!routing_table_.IsThisNodeGroupLeader(NodeId(message.destination_id()),
                                             closest_to_group_leader_node)) {
+    assert(NodeId(message.destination_id()) != closest_to_group_leader_node.node_id);
     return network_.SendToDirect(message,
                                  closest_to_group_leader_node.node_id,
                                  closest_to_group_leader_node.connection_id);
@@ -465,6 +466,7 @@ void MessageHandler::HandleGroupRelayRequestMessageAsClosestNode(protobuf::Messa
   NodeInfo closest_to_group_leader_node;
   if (!routing_table_.IsThisNodeGroupLeader(NodeId(message.destination_id()),
                                            closest_to_group_leader_node)) {
+    assert(NodeId(message.destination_id()) != closest_to_group_leader_node.node_id);
     return network_.SendToDirect(message,
                                  closest_to_group_leader_node.node_id,
                                  closest_to_group_leader_node.connection_id);

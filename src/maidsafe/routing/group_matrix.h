@@ -50,7 +50,13 @@ class GroupMatrix {
   NodeInfo GetConnectedPeerFor(const NodeId& target_node_id);
 
   // Returns the peer which has node closest to target_id in its row (1st occurrence).
-  NodeInfo GetConnectedPeerClosestTo(const NodeId& target_node_id);
+  void GetBetterNodeForSendingMessage(const NodeId& target_node_id,
+                                      const std::vector<std::string>& exclude,
+                                      bool ignore_exact_match,
+                                      NodeInfo& current_closest_peer);
+  void GetBetterNodeForSendingMessage(const NodeId& target_node_id,
+                                      bool ignore_exact_match,
+                                      NodeId& current_closest_peer_id);
   std::vector<NodeInfo> GetAllConnectedPeersFor(const NodeId& target_id);
   bool IsNodeInGroupRange(const NodeId& target_id);
   bool IsThisNodeGroupLeader(const NodeId& target_id, NodeId& connected_peer);

@@ -244,13 +244,6 @@ bool RoutingTable::IsNodeIdInGroupRange(const NodeId& target_id) {
   return group_matrix_.IsNodeInGroupRange(target_id);
 }
 
-NodeInfo RoutingTable::GetConnectedPeerFromGroupMatrixClosestTo(const NodeId& target_node_id) {
-  std::unique_lock<std::mutex> lock(mutex_);
-  NodeInfo node_info;
-  node_info = group_matrix_.GetConnectedPeerClosestTo(target_node_id);
-  return node_info;
-}
-
 std::vector<NodeInfo> RoutingTable::GetMatrixNodes() {
   std::unique_lock<std::mutex> lock(mutex_);
   return group_matrix_.GetUniqueNodes();
@@ -582,33 +575,15 @@ NodeInfo RoutingTable::GetNodeForSendingMessage(const NodeId& target_id,
 NodeInfo RoutingTable::GetNodeForSendingMessage(const NodeId& target_id,
                                                 const std::vector<std::string>& exclude,
                                                 bool ignore_exact_match) {
-  NodeInfo node_info(GetClosestNode(target_id, exclude, ignore_exact_match));
+  NodeInfo current_peer(GetClosestNode(target_id, exclude, ignore_exact_match));
   std::unique_lock<std::mutex> lock(mutex_);
-
-  if (!ignore_exact_match && node_info.node_id != target_id) {
-    std::vector<NodeInfo> connected_peers(group_matrix_.GetAllConnectedPeersFor(target_id));
-    if (connected_peers.empty()) {
-      LOG(kVerbose) << "(Re: " << DebugId(target_id) << ") [" << DebugId(kNodeId_)
-                    << "] GM has no relevant nodes. Use: " << DebugId(node_info.node_id) << "\n";
-      return node_info;
-    }
-
-    for (auto connected_peer : connected_peers) {
-      if (std::find(exclude.begin(),
-                    exclude.end(),
-                    connected_peer.node_id.string()) == exclude.end()) {
-        LOG(kVerbose) << "(Re: " << DebugId(target_id) << ") [" << DebugId(kNodeId_)
-                      << "] Found alternative in GM: " << DebugId(connected_peer.node_id) << "\n";
-        return connected_peer;
-      }
-    }
-    LOG(kVerbose) << "(Re: " << DebugId(target_id) << ") [" << DebugId(kNodeId_)
-                  << "] GM has no relevant unvisited nodes. Use: "
-                  << DebugId(node_info.node_id) << "\n";
+  if (current_peer.node_id != target_id) {
+    group_matrix_.GetBetterNodeForSendingMessage(target_id,
+                                                 exclude,
+                                                 ignore_exact_match,
+                                                 current_peer);
   }
-  LOG(kVerbose) << "(Re: " << DebugId(target_id) << ") [" << DebugId(kNodeId_)
-                << "] Didn't consult GM. Use: " << DebugId(node_info.node_id) << "\n";
-  return node_info;
+  return current_peer;
 }
 
 NodeInfo RoutingTable::GetRemovableNode(std::vector<std::string> attempted) {
