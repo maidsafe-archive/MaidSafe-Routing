@@ -177,11 +177,24 @@ TEST_F(TimerTest, BEH_SingleResponseTimedOut) {
 }
 
 TEST_F(TimerTest, BEH_GroupResponse) {
+  std::mutex mutex_;
+  int actual_count(0);
+  std::promise<void> completed_promise;
+  std::future<void> completed_future(completed_promise.get_future());
+  TaskResponseFunctor functor =
+    [&mutex_, &actual_count, &completed_promise, this](std::string response) {
+        std::lock_guard<std::mutex> lock(mutex_);
+        ++actual_count;
+        ASSERT_FALSE(response.empty());
+        if (actual_count == this->kGroupSize_)
+          completed_promise.set_value();
+    };
   message_.set_id(timer_.AddTask(bptime::seconds(2),
-                                 group_good_response_functor_,
+                                 functor,
                                  kGroupSize_));
   for (uint16_t i(0); i != kGroupSize_; ++i)
     timer_.AddResponse(message_);
+  completed_future.get();
 }
 
 //TEST_F(TimerTest, BEH_GroupResponsePartialResult) {
