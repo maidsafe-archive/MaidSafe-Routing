@@ -13,7 +13,6 @@
 #include "maidsafe/routing/timer.h"
 
 #include <algorithm>
-#include <exception>
 
 #include "maidsafe/common/asio_service.h"
 #include "maidsafe/common/error.h"
@@ -35,20 +34,7 @@ Timer::Task::Task(const TaskId& id_in,
     : id(id_in),
       timer(io_service, timeout),
       functor(functor_in),
-      responses(),
-      promises(),
       expected_response_count(expected_response_count_in) {}
-
-Timer::Task::Task(const TaskId& id_in,
-                  std::vector<std::shared_ptr<std::promise<std::string>>> promises_in,
-                  boost::asio::io_service& io_service,
-                  const boost::posix_time::time_duration& timeout)
-    : id(id_in),
-      timer(io_service, timeout),
-      functor(),
-      responses(),
-      promises(promises_in),
-      expected_response_count(static_cast<uint16_t>(promises.size())) {}
 
 Timer::Timer(AsioService& asio_service)
     : asio_service_(asio_service),
@@ -82,18 +68,6 @@ TaskId Timer::AddTask(const boost::posix_time::time_duration& timeout,
   return task_id;
 }
 
-TaskId Timer::AddTask(const boost::posix_time::time_duration& timeout,
-                      std::vector<std::shared_ptr<std::promise<std::string>>> promises) {
-  std::lock_guard<std::mutex> lock(mutex_);
-  TaskId task_id = ++task_id_;
-  tasks_.push_back(TaskPtr(new Task(task_id, promises, asio_service_.service(), timeout)));
-  tasks_.back()->timer.async_wait([this, task_id](const boost::system::error_code& error) {
-    ExecuteTask(task_id, error);
-  });
-  LOG(kInfo) << "AddTask added a task, with id " << task_id;
-  return task_id;
-}
-
 std::vector<Timer::TaskPtr>::iterator Timer::FindTask(const TaskId& task_id) {
   return std::find_if(tasks_.begin(),
                       tasks_.end(),
@@ -102,6 +76,7 @@ std::vector<Timer::TaskPtr>::iterator Timer::FindTask(const TaskId& task_id) {
 
 void Timer::ExecuteTask(TaskId task_id, const boost::system::error_code& error) {
   TaskPtr task;
+  uint16_t timed_out_response_count(0);
   {
     std::lock_guard<std::mutex> lock(mutex_);
     auto itr(FindTask(task_id));
@@ -109,6 +84,7 @@ void Timer::ExecuteTask(TaskId task_id, const boost::system::error_code& error) 
       LOG(kWarning) << "Task " << task_id << " not held by Timer.";
       return;
     }
+    timed_out_response_count = (*itr)->expected_response_count;
     task = *itr;
   }
 
@@ -116,17 +92,14 @@ void Timer::ExecuteTask(TaskId task_id, const boost::system::error_code& error) 
   switch (error.value()) {
     case boost::system::errc::success:
       // Task's timer has expired
-//      return_code = kResponseTimeout;
       LOG(kError) << "Timed out waiting for task " << task->id;
       break;
     case boost::asio::error::operation_aborted:
-      assert(task->responses.size() <= task->expected_response_count);
-      if (task->responses.size() == task->expected_response_count) {
+//      assert(task->responses.size() <= task->expected_response_count);
+      if (0 == task->expected_response_count) {
         // Cancelled via AddResponse
-//        return_code = kSuccess;
       } else {
         // Cancelled via CancelTask
-//        return_code = kResponseCancelled;
         LOG(kInfo) << "Cancelled task " << task->id;
       }
       break;
@@ -136,10 +109,10 @@ void Timer::ExecuteTask(TaskId task_id, const boost::system::error_code& error) 
   }
 
   asio_service_.service().dispatch([=] {
-    if (task->functor)
-      task->functor(std::move(task->responses));
-    if (!task->promises.empty())
-      SetExceptions(task->promises);
+    for (uint16_t i(0); i != timed_out_response_count; ++i) {
+      if (task->functor)
+        task->functor(std::string());
+    }
     std::lock_guard<std::mutex> lock(mutex_);
     auto itr(FindTask(task_id));
     if (itr != tasks_.end()) {
@@ -147,13 +120,6 @@ void Timer::ExecuteTask(TaskId task_id, const boost::system::error_code& error) 
       cond_var_.notify_one();
     }
   });
-}
-
-void Timer::SetExceptions(std::vector<std::shared_ptr<std::promise<std::string>>> promises) {
-  for (auto promise: promises) {
-    auto timed_out_error(MakeError(RoutingErrors::timed_out));
-    promise->set_exception(std::make_exception_ptr(timed_out_error));
-  }
 }
 
 void Timer::CancelTask(TaskId task_id) {
@@ -171,39 +137,31 @@ bool Timer::AddResponse(const protobuf::Message& response) {
     LOG(kError) << "Received response with no ID.  Abort message handling.";
     return false;
   }
-
-  std::lock_guard<std::mutex> lock(mutex_);
-  auto itr(FindTask(response.id()));
-  if (itr == tasks_.end()) {
-    LOG(kWarning) << "Attempted to AddResponse to expired or non-existent task " << response.id();
-    return false;
-  }
-
-  // callback version
-  if ((*itr)->functor) {
-    (*itr)->responses.emplace_back(response.data(0));
-
-    if ((*itr)->responses.size() == (*itr)->expected_response_count) {
-      LOG(kVerbose) << "Executing task " << response.id();
+  std::shared_ptr<std::string> response_out(std::make_shared<std::string>(response.data(0)));
+  TaskPtr task;
+  {
+    std::lock_guard<std::mutex> lock(mutex_);
+    auto itr(FindTask(response.id()));
+    if (itr == tasks_.end() || ((*itr)->expected_response_count == 0)) {
+      LOG(kWarning) << "Attempted to AddResponse to expired or non-existent task " << response.id();
+      return false;
+    }
+    --((*itr)->expected_response_count);
+    if (0 == (*itr)->expected_response_count) {
+      LOG(kVerbose) << "Received response(s) for task " << response.id();
       (*itr)->timer.cancel();
     } else {
-      LOG(kInfo) << "Received " << (*itr)->responses.size() << " response(s). Waiting for "
-                 << ((*itr)->expected_response_count - (*itr)->responses.size())
+      LOG(kInfo) << "Received a response. Waiting for "
+                 << (*itr)->expected_response_count
                  << " responses for task " << response.id();
     }
-  } else {  // promise version
-    (*itr)->promises.back()->set_value(std::move(response.data(0)));
-    (*itr)->promises.pop_back();
-    if ((*itr)->promises.empty()) {
-      LOG(kVerbose) << "Executing task " << response.id();
-      (*itr)->timer.cancel();
-    } else {
-      LOG(kInfo) << "Received " << ((*itr)->expected_response_count - (*itr)->promises.size())
-                 << " response(s). Waiting for "
-                 << (*itr)->promises.size()
-                 << " responses for task " << response.id();
-    }
+    task = *itr;
   }
+
+  asio_service_.service().dispatch([=] {
+      if (task->functor)
+        task->functor(std::move(*response_out));
+  });
   return true;
 }
 

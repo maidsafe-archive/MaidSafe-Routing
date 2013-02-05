@@ -37,7 +37,7 @@ namespace routing {
 
 namespace protobuf { class Message; }
 
-typedef std::function<void(std::vector<std::string>)> TaskResponseFunctor;
+typedef std::function<void(std::string)> TaskResponseFunctor;
 typedef int32_t TaskId;
 
 class Timer {
@@ -52,8 +52,6 @@ class Timer {
   TaskId AddTask(const boost::posix_time::time_duration& timeout,
                  const TaskResponseFunctor& response_functor,
                  uint16_t expected_response_count);
-  TaskId AddTask(const boost::posix_time::time_duration& timeout,
-                 std::vector<std::shared_ptr<std::promise<std::string>>> promises);
   // Removes the task and invokes its functor with kResponseCancelled and whatever responses have
   // been added up to that point.
   void CancelTask(TaskId task_id);
@@ -71,16 +69,9 @@ class Timer {
          TaskResponseFunctor functor_in,
          uint16_t expected_response_count_in);
 
-    Task(const TaskId& id_in,
-         std::vector<std::shared_ptr<std::promise<std::string>>> promises_in,
-         boost::asio::io_service& io_service,
-         const boost::posix_time::time_duration& timeout);
-
     TaskId id;
     boost::asio::deadline_timer timer;
     TaskResponseFunctor functor;
-    std::vector<std::string> responses;
-    std::vector<std::shared_ptr<std::promise<std::string>>> promises;
     uint16_t expected_response_count;
   };
   typedef std::shared_ptr<Task> TaskPtr;

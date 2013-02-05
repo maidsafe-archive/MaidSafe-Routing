@@ -62,13 +62,19 @@ class Routing::Impl {
                     const boost::asio::ip::udp::endpoint& peer_endpoint,
                     const NodeInfo& peer_info);
 
-  std::future<std::string> Send(const NodeId& destination_id,
-                                const std::string& data,
-                                const bool& cacheable);
+  void Send(const NodeId& destination_id,
+            const std::string& data,
+            const DestinationType& destination_type,
+            const bool& cacheable,
+            ResponseFunctor response_functor);
 
-  std::vector<std::future<std::string>> SendGroup(const NodeId& destination_id,
-                                                  const std::string& data,
-                                                  const bool& cacheable);
+//  std::future<std::string> Send(const NodeId& destination_id,
+//                                const std::string& data,
+//                                const bool& cacheable);
+
+//  std::vector<std::future<std::string>> SendGroup(const NodeId& destination_id,
+//                                                  const std::string& data,
+//                                                  const bool& cacheable);
 
   NodeId GetRandomExistingNode() const { return random_node_helper_.Get(); }
 
