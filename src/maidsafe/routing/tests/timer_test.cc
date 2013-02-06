@@ -90,8 +90,8 @@ class TimerTest : public testing::Test {
   TaskResponseFunctor pass_response_functor_, failed_response_functor_;
   TaskResponseFunctor group_failed_response_functor_;
   protobuf::Message message_;
-  uint16_t pass_response_count_;
-  uint16_t failed_response_count_;
+  std::atomic<int> pass_response_count_;
+  std::atomic<int> failed_response_count_;
 };
 
 TEST_F(TimerTest, BEH_SingleResponse) {
@@ -102,7 +102,7 @@ TEST_F(TimerTest, BEH_SingleResponse) {
 }
 
 TEST_F(TimerTest, BEH_MultipleResponse) {
-  const int kMessageCount(300);
+  const int kMessageCount(400);
   boost::progress_timer t;
   std::atomic<int> count(0);
   TaskResponseFunctor response_functor = [&count](std::string response) {
@@ -113,7 +113,7 @@ TEST_F(TimerTest, BEH_MultipleResponse) {
   auto add_tasks = [&](const int& number)->std::vector<protobuf::Message> {
       std::vector<protobuf::Message> messages;
       for (int i(0); i != number; ++i)
-        messages.push_back(std::move(CreateMessage(timer_.AddTask(bptime::seconds(50),
+        messages.push_back(std::move(CreateMessage(timer_.AddTask(bptime::seconds(80),
                                                    response_functor, 1))));
       return messages;
     };
@@ -137,7 +137,7 @@ TEST_F(TimerTest, BEH_MultipleResponse) {
 }
 
 TEST_F(TimerTest, BEH_MultipleGroupResponse) {
-  const int kMessageCount(300);
+  const int kMessageCount(400);
   boost::progress_timer t;
   std::atomic<int> count(0);
   TaskResponseFunctor response_functor = [&count](std::string response) {
@@ -148,7 +148,7 @@ TEST_F(TimerTest, BEH_MultipleGroupResponse) {
   auto add_tasks = [&](const int& number)->std::vector<protobuf::Message> {
       std::vector<protobuf::Message> messages;
       for (int i(0); i != number; ++i)
-        messages.push_back(std::move(CreateMessage(timer_.AddTask(bptime::seconds(50),
+        messages.push_back(std::move(CreateMessage(timer_.AddTask(bptime::seconds(80),
                                                    response_functor, 4))));
       return messages;
     };
