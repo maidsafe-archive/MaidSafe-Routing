@@ -97,12 +97,14 @@ class GenericNode {
                     const NodeInfo& peer_node_info);
   void Join(const std::vector<boost::asio::ip::udp::endpoint>& peer_endpoints =
                 std::vector<boost::asio::ip::udp::endpoint>());
-  std::future<std::string> Send(const NodeId& destination_id,
-                                const std::string& data,
-                                const bool& cache);
-  std::vector<std::future<std::string>> SendGroup(const NodeId& destination_id,
-                                                  const std::string& data,
-                                                  const bool& cacheable);
+  void SendDirect(const NodeId& destination_id,
+                  const std::string& data,
+                  const bool& cacheable,
+                  ResponseFunctor response_functor);
+  void SendGroup(const NodeId& destination_id,
+                 const std::string& data,
+                 const bool& cacheable,
+                 ResponseFunctor response_functor);
   std::future<std::vector<NodeId>> GetGroup(const NodeId& info_id);
   bool IsNodeIdInGroupRange(const NodeId& node_id);
   void SendToClosestNode(const protobuf::Message& message);
@@ -207,15 +209,21 @@ class GenericNetwork {
   bool RestoreComposition();
   bool WaitForHealthToStabilise() const;
   bool NodeHasSymmetricNat(const NodeId& node_id) const;
-  testing::AssertionResult Send(const size_t& messages);
-  testing::AssertionResult SendGroup(const NodeId& node_id,
-                                     const size_t& messages,
+  // Do SendDirect between each pair of nodes and monitor results (do this 'repeats' times)
+  testing::AssertionResult SendDirect(const size_t& repeats);
+  // Do SendGroup from source_index node to target ID and monitor results (do this 'repeats' times)
+  testing::AssertionResult SendGroup(const NodeId& target_id,
+                                     const size_t& repeats,
                                      uint16_t source_index = 0);
-  testing::AssertionResult Send(const NodeId& node_id,
-                                const ExpectedNodeType& destination_node_type = kExpectVault);
-  testing::AssertionResult Send(std::shared_ptr<GenericNode> source_node,
-                                const NodeId& node_id,
-                                const ExpectedNodeType& destination_node_type = kExpectVault);
+  // Do SendDirect from each node (with ID != node_id) to node_id and monitor results. The
+  // ExpectedNodeType of node_id should be correctly specified when calling this function.
+  testing::AssertionResult SendDirect(const NodeId& node_id,
+                                      const ExpectedNodeType& destination_node_type = kExpectVault);
+  // Do SendDirect from source_node to node_id and monitor results. The ExpectedNodeType of node_id
+  // should be correctly specified when calling this function.
+  testing::AssertionResult SendDirect(std::shared_ptr<GenericNode> source_node,
+                                      const NodeId& node_id,
+                                      const ExpectedNodeType& destination_node_type = kExpectVault);
 
   friend class NodesEnvironment;
 
