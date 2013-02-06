@@ -624,7 +624,6 @@ TEST(APITest, BEH_API_NodeNetworkWithClient) {
   }
 }
 
-/*
 TEST(APITest, BEH_API_SendGroup) {
   Parameters::default_send_timeout = boost::posix_time::seconds(200);
   const uint16_t kMessageCount(10);  // each vault will send kMessageCount message to other vaults
@@ -682,8 +681,8 @@ TEST(APITest, BEH_API_SendGroup) {
   // Ignoring 2 zero state nodes
   promised.push_back(false);
   promised.push_back(false);
-  status_vector.emplace_back([](int *//*x*//*) {});
-  status_vector.emplace_back([](int *//*x*//*) {});
+  status_vector.emplace_back([](int /*x*/) {});
+  status_vector.emplace_back([](int /*x*/) {});
   std::promise<bool> promise1, promise2;
   join_futures.emplace_back(promise1.get_future());
   join_futures.emplace_back(promise2.get_future());
@@ -715,36 +714,48 @@ TEST(APITest, BEH_API_SendGroup) {
   // Call SendGroup repeatedly - measure duration to allow performance comparison
   boost::progress_timer t;
 
-  std::vector<std::future<std::string>> all_futures;
+  std::mutex send_mutex;
+  std::vector<std::promise<bool>> send_promises(kServerCount * kMessageCount);
+  std::vector<uint16_t> send_counts(kServerCount * kMessageCount, 0);
+  std::vector<std::future<bool>> send_futures;
+  for (uint16_t i(0); i < send_promises.size(); ++i)
+    send_futures.emplace_back(send_promises.at(i).get_future());
   for (uint16_t i(0); i < kServerCount; ++i) {
     NodeId dest_id(routing_node[i]->kNodeId());
     uint16_t count(0);
     while (count < kMessageCount) {
+      uint16_t message_index(i * kServerCount + count);
+      ResponseFunctor response_functor =
+          [&send_mutex, &send_promises, &send_counts, &data, message_index] (std::string string) {
+         std::unique_lock<std::mutex> lock(send_mutex);
+         EXPECT_EQ("response to " + data, string) << "for message_index " << message_index;
+         if (send_counts.at(message_index) >= Parameters::node_group_size)
+           return;
+         if (string != "response to " + data) {
+           send_counts.at(message_index) = Parameters::node_group_size;
+           send_promises.at(message_index).set_value(false);
+         } else {
+           send_counts.at(message_index) += 1;
+           if (send_counts.at(message_index) == Parameters::node_group_size)
+             send_promises.at(message_index).set_value(true);
+         }
+      };
+
+      routing_node[i]->SendGroup(dest_id, data, false, response_functor);
       ++count;
-      std::vector<std::future<std::string>> futures(routing_node[i]->SendGroup(dest_id,
-                                                                               data,
-                                                                               false));
-      for (auto j(0); j != 4; ++j) {
-        all_futures.push_back(std::move(futures[j]));
-      }
     }
   }
 
-  while (!all_futures.empty()) {
-    all_futures.erase(std::remove_if(all_futures.begin(), all_futures.end(),
-        [](std::future<std::string>& str)->bool {
-            if (IsReady(str)) {
-              try {
-                str.get();
-               } catch(std::exception& ex) {
-                 LOG(kError) << "Exception : " << ex.what();
-                 EXPECT_TRUE(false) << ex.what();
-               }
+  while (!send_futures.empty()) {
+    send_futures.erase(std::remove_if(send_futures.begin(), send_futures.end(),
+        [&data](std::future<bool>& future_bool)->bool {
+            if (IsReady(future_bool)) {
+                EXPECT_TRUE(future_bool.get());
                return true;
              } else  {
                return false;
              };
-        }), all_futures.end());
+        }), send_futures.end());
     std::this_thread::yield();
   }
   auto time_taken(t.elapsed());
@@ -754,7 +765,6 @@ TEST(APITest, BEH_API_SendGroup) {
             << "\n Message size : " << (kDataSize / 1024) << "kB \n";
   Parameters::default_send_timeout = boost::posix_time::seconds(10);
 }
-*/
 
 }  // namespace test
 
