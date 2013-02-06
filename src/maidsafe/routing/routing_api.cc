@@ -43,25 +43,19 @@ int Routing::ZeroStateJoin(Functors functors,
   return pimpl_->ZeroStateJoin(functors, local_endpoint, peer_endpoint, peer_info);
 }
 
-void Routing::Send(const NodeId& destination_id,
+void Routing::SendDirect(const NodeId& destination_id,
                    const std::string& data,
-                   const DestinationType& destination_type,
                    const bool& cacheable,
                    ResponseFunctor response_functor) {
-  return pimpl_->Send(destination_id, data, destination_type, cacheable, response_functor);
+  return pimpl_->SendDirect(destination_id, data, cacheable, response_functor);
 }
 
-//std::future<std::string> Routing::Send(const NodeId& destination_id,
-//                                       const std::string& data,
-//                                       const bool& cacheable) {
-//  return pimpl_->Send(destination_id, data, cacheable);
-//}
-
-//std::vector<std::future<std::string>> Routing::SendGroup(const NodeId& destination_id,
-//                                                         const std::string& data,
-//                                                         const bool& cacheable) {
-//  return pimpl_->SendGroup(destination_id, data, cacheable);
-//}
+void Routing::SendGroup(const NodeId& destination_id,
+                        const std::string& data,
+                        const bool& cacheable,
+                        ResponseFunctor response_functor) {
+  return pimpl_->SendGroup(destination_id, data, cacheable, response_functor);
+}
 
 NodeId Routing::GetRandomExistingNode() const {
   return pimpl_->GetRandomExistingNode();

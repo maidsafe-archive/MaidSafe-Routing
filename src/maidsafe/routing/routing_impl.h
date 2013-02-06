@@ -62,19 +62,15 @@ class Routing::Impl {
                     const boost::asio::ip::udp::endpoint& peer_endpoint,
                     const NodeInfo& peer_info);
 
-  void Send(const NodeId& destination_id,
-            const std::string& data,
-            const DestinationType& destination_type,
-            const bool& cacheable,
-            ResponseFunctor response_functor);
+  void SendDirect(const NodeId& destination_id,
+                  const std::string& data,
+                  const bool& cacheable,
+                  ResponseFunctor response_functor);
 
-//  std::future<std::string> Send(const NodeId& destination_id,
-//                                const std::string& data,
-//                                const bool& cacheable);
-
-//  std::vector<std::future<std::string>> SendGroup(const NodeId& destination_id,
-//                                                  const std::string& data,
-//                                                  const bool& cacheable);
+  void SendGroup(const NodeId& destination_id,
+                 const std::string& data,
+                 const bool& cacheable,
+                 ResponseFunctor response_functor);
 
   NodeId GetRandomExistingNode() const { return random_node_helper_.Get(); }
 
@@ -115,6 +111,9 @@ class Routing::Impl {
   void RemoveNode(const NodeInfo& node, bool internal_rudp_only);
   bool ConfirmGroupMembers(const NodeId& node1, const NodeId& node2);
   void NotifyNetworkStatus(int return_code) const;
+  void Send(const NodeId& destination_id, const std::string& data,
+            const DestinationType& destination_type, const bool& cacheable,
+            ResponseFunctor response_functor);
   void SendMessage(const NodeId& destination_id, protobuf::Message& proto_message);
   void AnonymousSend(protobuf::Message& proto_message);
   protobuf::Message CreateNodeLevelPartialMessage(
