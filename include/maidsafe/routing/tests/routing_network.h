@@ -215,14 +215,14 @@ class GenericNetwork {
   testing::AssertionResult SendGroup(const NodeId& target_id,
                                      const size_t& repeats,
                                      uint16_t source_index = 0);
-  // Do SendDirect from each node (with ID != node_id) to node_id and monitor results. The
-  // ExpectedNodeType of node_id should be correctly specified when calling this function.
-  testing::AssertionResult SendDirect(const NodeId& node_id,
+  // Do SendDirect from each node to destination_node_id and monitor results. The ExpectedNodeType
+  // of destination_node_id should be correctly specified when calling this function.
+  testing::AssertionResult SendDirect(const NodeId& destination_node_id,
                                       const ExpectedNodeType& destination_node_type = kExpectVault);
-  // Do SendDirect from source_node to node_id and monitor results. The ExpectedNodeType of node_id
-  // should be correctly specified when calling this function.
+  // Do SendDirect from source_node to destination_node_id and monitor results. The ExpectedNodeType
+  // of destination_node_id should be correctly specified when calling this function.
   testing::AssertionResult SendDirect(std::shared_ptr<GenericNode> source_node,
-                                      const NodeId& node_id,
+                                      const NodeId& destination_node_id,
                                       const ExpectedNodeType& destination_node_type = kExpectVault);
 
   friend class NodesEnvironment;
