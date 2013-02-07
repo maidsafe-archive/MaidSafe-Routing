@@ -13,6 +13,7 @@
 #include <algorithm>
 #include <memory>
 #include <vector>
+#include <set>
 
 #include "boost/date_time/posix_time/posix_time.hpp"
 #include "boost/progress.hpp"
@@ -101,6 +102,22 @@ TEST_F(TimerTest, BEH_SingleResponse) {
   while (pass_response_count_ != 1U);
 }
 
+TEST_F(TimerTest, BEH_SingleResponseWithMoreChecks) {
+  std::string in_response = RandomAlphaNumericString(1024 * 512);
+  std::atomic<int> count(0);
+  TaskResponseFunctor response_functor = [&count, in_response](std::string response) {
+    ++count;
+    EXPECT_FALSE(response.empty());
+    EXPECT_EQ(in_response, response);
+  };
+  message_.clear_data();
+  message_.add_data(in_response);
+  message_.set_id(timer_.AddTask(bptime::seconds(2),
+                                 response_functor, 1));
+  timer_.AddResponse(message_);
+  while (count != 1U);
+}
+
 TEST_F(TimerTest, BEH_MultipleResponse) {
   const int kMessageCount(400);
   boost::progress_timer t;
@@ -181,6 +198,34 @@ TEST_F(TimerTest, BEH_SingleResponseTimedOut) {
   EXPECT_EQ(failed_response_count_, 1U);
 }
 
+TEST_F(TimerTest, BEH_GroupResponseWithMoreChecks) {
+  std::atomic<int> count(0);
+  std::vector<std::string> in_responses;
+  std::set<std::string> out_responses;
+  for (uint16_t i(0); i != kGroupSize_; ++i) {
+    std::string response_str = RandomAlphaNumericString(1024 * 512);
+    in_responses.push_back(response_str);
+  }
+  TaskResponseFunctor response_functor = [&count, &in_responses, &out_responses]
+      (std::string response) {
+    ++count;
+    EXPECT_FALSE(response.empty());
+    auto itr = std::find(in_responses.begin(), in_responses.end(), response);
+    EXPECT_TRUE(itr != in_responses.end());
+    auto set_itr = out_responses.insert(response);
+    EXPECT_TRUE(set_itr.second);
+  };
+  message_.set_id(timer_.AddTask(bptime::seconds(3),
+                                 response_functor,
+                                 kGroupSize_));
+  for (uint16_t i(0); i != kGroupSize_; ++i) {
+    message_.clear_data();
+    message_.add_data(in_responses.at(i));
+    timer_.AddResponse(message_);
+  }
+  while (count != kGroupSize_);
+}
+
 TEST_F(TimerTest, BEH_GroupResponse) {
   message_.set_id(timer_.AddTask(bptime::seconds(2),
                                  pass_response_functor_,
@@ -236,7 +281,11 @@ TEST_F(TimerTest, BEH_VariousResults) {
 
   boost::this_thread::disable_interruption disable_interruption;
   Sleep(bptime::seconds(5));
+  //  Pass count comparison calculation [100(single response msgs),
+  //  100 *kGroupSize_(passed group response msgs),
+  //  100 * (kGroupSize_ - 1)(one group failed response msg and rest passed group response msgs)
   EXPECT_EQ(pass_response_count_, (100 + (100 * kGroupSize_) + (100 * (kGroupSize_ - 1))));
+  //  100(failed single response msgs), 100(failed group response msgs)
   EXPECT_EQ(failed_response_count_, 100 + 100);
 }
 
