@@ -43,7 +43,7 @@ class RoutingNetworkTest : public testing::Test {
  protected:
   std::shared_ptr<GenericNetwork> env_;
 };
-
+/*
 TEST_F(RoutingNetworkTest, FUNC_GroupUpdateSubscription) {
   std::vector<NodeInfo> closest_nodes_info;
   for (auto node : env_->nodes_) {
@@ -175,31 +175,32 @@ TEST_F(RoutingNetworkTest, FUNC_SanityCheckSendGroup) {
                               1 + RandomUint32() % 5,
                               env_->RandomClientIndex()));
 }
-
+*/
 TEST_F(RoutingNetworkTest, FUNC_Send) {
   boost::progress_timer t;
-  EXPECT_TRUE(env_->Send(1));
+  EXPECT_TRUE(env_->SendDirect(1));
   std::cout << "Time taken for test : " << t.elapsed();
 }
-
+/*
 TEST_F(RoutingNetworkTest, FUNC_SendToNonExistingNode) {
   EXPECT_TRUE(env_->Send(NodeId(NodeId::kRandomId), kExpectDoesNotExist));
   EXPECT_TRUE(env_->Send(env_->nodes_[env_->RandomVaultIndex()]->node_id()));
 }
-
+*/
 TEST_F(RoutingNetworkTest, FUNC_ClientSend) {
-  EXPECT_TRUE(env_->Send(1));
+  EXPECT_TRUE(env_->SendDirect(1));
   Sleep(boost::posix_time::seconds(21));  // This sleep is required for un-responded requests
 }
 
+/*
 TEST_F(RoutingNetworkTest, FUNC_SendMulti) {
   boost::progress_timer t;
-  EXPECT_TRUE(env_->Send(5));
+  EXPECT_TRUE(env_->SendDirect(5));
   std::cout << "Time taken for test : " << t.elapsed();
 }
 
 TEST_F(RoutingNetworkTest, FUNC_ClientSendMulti) {
-  EXPECT_TRUE(env_->Send(3));
+  EXPECT_TRUE(env_->SendDirect(3));
 // This sleep is required for un-responded requests
   Sleep(boost::posix_time::seconds(static_cast<long>(env_->nodes_.size() + 1)));  // NOLINT (Fraser)
 }
@@ -481,7 +482,6 @@ TEST_F(RoutingNetworkTest, FUNC_IsConnectedVault) {
   }
 }
 
-/*
 TEST_F(RoutingNetworkTest, FUNC_IsConnectedToClient) {
   ASSERT_LE(env_->nodes_.size() - env_->ClientIndex(), Parameters::max_non_routing_table_size + 1);
 
@@ -526,7 +526,7 @@ TEST_F(RoutingNetworkTest, FUNC_NonexistentIsConnectedToVaultOrClient) {
   }
 }
 */
-
+/*
 TEST_F(RoutingNetworkTest, FUNC_ClosestNodes) {
   for (auto node : env_->nodes_) {
     // Note (15/01/13): Currently fails for clients. This is because GroupMatrix currently takes
@@ -666,7 +666,7 @@ TEST_F(RoutingNetworkTest, FUNC_ClientJoinWhenClosestVaultAlsoBehindSymmetricNat
 
   env_->AddNode(true, sym_node_id_2, false, true);
 }
-
+*/
 }  // namespace test
 
 }  // namespace routing

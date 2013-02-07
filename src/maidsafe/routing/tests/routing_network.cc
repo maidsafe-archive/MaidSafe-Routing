@@ -932,18 +932,31 @@ testing::AssertionResult GenericNetwork::SendDirect(const size_t& repeats) {
 
   std::vector<NodeId> expected_replier_ids;
   size_t total_num_nodes(this->nodes_.size());
+
+  std::mutex send_mutex;
+  std::vector<std::vector<std::shared_ptr<std::promise<std::string>>>> promises(total_num_nodes);
   std::vector<std::vector<std::future<std::string>>> futures(total_num_nodes);
-  for (size_t index = 0; index < repeats; ++index) {
+  for (size_t repeat_index = 0; repeat_index < repeats; ++repeat_index) {
     for (size_t dest_index(0); dest_index < total_num_nodes; ++dest_index) {
       NodeId dest_node_id(this->nodes_.at(dest_index)->node_id());
       expected_replier_ids.push_back(dest_node_id);
+      uint16_t src_index(0);
       for (auto source_node : this->nodes_) {
         if (source_node->node_id() != dest_node_id) {
+          promises.at(dest_index).push_back(std::make_shared<std::promise<std::string>>());
+          futures.at(dest_index).emplace_back(promises.at(dest_index).back()->get_future());
           std::string data(RandomAlphaNumericString(512 * 2^10));
           assert(!data.empty() && "Send Data Empty !");
-          futures.at(dest_index).push_back(std::move(source_node->Send(NodeId(dest_node_id),
-                                                                       data,
-                                                                       false)));
+          ResponseFunctor response_functor =
+              [&send_mutex, &promises, dest_index, src_index](std::string string) {
+            std::unique_lock<std::mutex> lock(send_mutex);
+            promises.at(dest_index).at(src_index)->set_value(string);
+          };
+          source_node->SendDirect(dest_node_id,
+                                  data,
+                                  false,
+                                  response_functor);
+          ++src_index;
         }
       }
     }
@@ -957,17 +970,16 @@ testing::AssertionResult GenericNetwork::SendDirect(const size_t& repeats) {
     while (!futures.at(index).empty()) {
       futures.at(index).erase(std::remove_if(futures.at(index).begin(), futures.at(index).end(),
           [&](std::future<std::string>& str)->bool {
-              if (IsReady(str)) {
-                try {
-                   replies.at(index).push_back(str.get());
-                   ++actual_good_futures;
-                 } catch(std::exception& ex) {
-                   LOG(kError) << "Exception : " << ex.what();
-                 }
-                 return true;
-               } else  {
-                 return false;
-               };
+            if (IsReady(str)) {
+              std::string string(str.get());
+              if (!string.empty()) {
+                replies.at(index).push_back(string);
+                ++actual_good_futures;
+              }
+              return true;
+            } else  {
+              return false;
+            };
           }), futures.at(index).end());
       std::this_thread::yield();
     }
@@ -982,7 +994,7 @@ testing::AssertionResult GenericNetwork::SendDirect(const size_t& repeats) {
   }
 
   bool repliers_ok(true);
-  for (size_t index(0); index < total_num_nodes; ++index) {
+  for (size_t index(0); index < replies.size(); ++index) {
     for (auto reply : replies.at(index)) {
       try {
         NodeId replier(reply.substr(0, reply.find(">::<")));
@@ -993,19 +1005,19 @@ testing::AssertionResult GenericNetwork::SendDirect(const size_t& repeats) {
                       << "\n\tExpected: " << DebugId(expected_replier_ids.at(index));
         }
       } catch(const std::exception& ex) {
-        LOG(kError) << "Exception: " << ex.what();
-        return testing::AssertionFailure() << "Got message with invalid replier ID.";
+        return testing::AssertionFailure() << "Got message with invalid replier ID. Exception: "
+                                           << ex.what();
       }
     }
   }
   if (!repliers_ok) {
     return testing::AssertionFailure() << "Some replies came from the wrong nodes."
-                                       << " Turn on Info logging for more detail.";
+                                       << " Turn on error logging for more detail.";
   }
 
   return testing::AssertionSuccess();
 }
-
+/*
 testing::AssertionResult GenericNetwork::SendGroup(const NodeId& target_id,
                                                    const size_t& repeats,
                                                    uint16_t source_index) {
@@ -1180,14 +1192,14 @@ testing::AssertionResult GenericNetwork::SendDirect(std::shared_ptr<GenericNode>
       return testing::AssertionSuccess();
     else
       return testing::AssertionFailure() << "Didn't throw when expected.";
-  } catch(const std::exception& /*ex*/) {
+  } catch(const std::exception& *//*ex*//*) {
     if (expected_messages > 0)
       return testing::AssertionFailure() << "Threw when not expected.";
     else
       return testing::AssertionSuccess();
   }
 }
-
+*/
 uint16_t GenericNetwork::NonClientNodesSize() const {
   uint16_t non_client_size(0);
   for (auto node : nodes_) {
