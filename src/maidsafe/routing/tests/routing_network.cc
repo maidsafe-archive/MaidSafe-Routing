@@ -1029,7 +1029,7 @@ testing::AssertionResult GenericNetwork::SendGroup(const NodeId& target_id,
                                                    monitor->expected_ids.end(),
                                                    [&](const NodeId& node_id) {
                                                      return node_id == replier;
-                                                   }));
+                                                   }), monitor->expected_ids.end());
         if (!valid_replier)
           failed = true;
       } catch(const std::exception& /*ex*/) {
