@@ -149,10 +149,10 @@ int main(int argc, char **argv) {
         ("peer,p", po::value<std::string>()->default_value(""), "Endpoint of bootstrap peer")
         ("identity_index,i", po::value<int>(&identity_index)->default_value(-1),
             "Entry from keys file to use as ID (starts from 0)")
-        ("fobs_path",
+        ("pmids_path",
             po::value<std::string>()->default_value(
-                fs::path(fs::temp_directory_path(error_code) / "fob_list.dat").string()),
-            "Path to fobs file");
+                fs::path(fs::temp_directory_path(error_code) / "pmids_list.dat").string()),
+            "Path to pmid file");
 
     po::variables_map variables_map;
 //     po::store(po::parse_command_line(argc, argv, options_description),

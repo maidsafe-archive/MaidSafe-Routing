@@ -177,7 +177,7 @@ void Commands::SendMsgs(const int& id_index, const DestinationType& destination_
       return;
     bptime::ptime start = bptime::microsec_clock::universal_time();
     std::shared_ptr<SharedResponse> shared_response_ptr;
-    {
+    //{
       shared_response_ptr = std::make_shared<SharedResponse>(closest_nodes, expect_respondent);
       auto callable = [=](std::string response) {
         if (!response.empty()) {
@@ -197,7 +197,7 @@ void Commands::SendMsgs(const int& id_index, const DestinationType& destination_
         demo_node_->SendGroup(dest_id, data, false, callable);
       else
         demo_node_->SendDirect(dest_id, data, false, callable);
-    }
+    //}
     data = data_to_send;
 
     bptime::ptime now = bptime::microsec_clock::universal_time();
@@ -214,9 +214,10 @@ uint16_t Commands::MakeMessage(const int& id_index, const DestinationType& desti
                                std::vector<NodeId> &closest_nodes, NodeId &dest_id) {
   int identity_index;
   if (id_index >= 0)
-      identity_index = id_index;
-    else
-      identity_index = RandomUint32() % (all_pmids_.size() / 2);
+    identity_index = id_index;
+  else
+    identity_index = RandomUint32() % (all_pmids_.size() / 2);
+
   if ((identity_index >= 0) && (static_cast<uint32_t>(identity_index) >= all_pmids_.size())) {
     std::cout << "ERROR : destination index out of range" << std::endl;
     return 0;
@@ -229,7 +230,10 @@ uint16_t Commands::MakeMessage(const int& id_index, const DestinationType& desti
             << " , expect receive response from :" << std::endl;
   uint16_t expected_respodents(destination_type != DestinationType::kGroup ? 1 : 4);
   std::vector<NodeId> closests;
-  NodeId farthest_closests(CalculateClosests(dest_id, closests, expected_respodents));
+  if (destination_type == DestinationType::kGroup)
+    NodeId farthest_closests(CalculateClosests(dest_id, closests, expected_respodents));
+  else
+    closests.push_back(dest_id);
   for (auto &node_id : closests)
   std::cout << "\t" << maidsafe::HexSubstr(node_id.string()) << std::endl;
   closest_nodes = closests;
@@ -343,10 +347,13 @@ void Commands::ProcessCommand(const std::string &cmdline) {
     } else if (args.size() == 2) {
       int count(boost::lexical_cast<int>(args[1]));
       bool infinite(count < 0);
-      if (infinite)
+      if (infinite) {
         std::cout << " Running infinite messaging test. press Ctrl + C to terminate the program"
                   << std::endl;
-      SendMsgs(boost::lexical_cast<int>(args[0]), DestinationType::kDirect, false, -1);
+        SendMsgs(boost::lexical_cast<int>(args[0]), DestinationType::kDirect, false, -1);
+      } else {
+        SendMsgs(boost::lexical_cast<int>(args[0]), DestinationType::kDirect, false, count);
+      }
     }
   } else if (cmd == "sendgroup") {
     if (args.empty())
@@ -364,10 +371,11 @@ void Commands::ProcessCommand(const std::string &cmdline) {
     if (num_msg == -1) {
       std::cout << " Running infinite messaging test. press Ctrl + C to terminate the program"
                 << std::endl;
+      SendMsgs(-1, DestinationType::kDirect, false, -1);
+    } else {
+      SendMsgs(-1, DestinationType::kDirect, false, num_msg);
     }
     boost::posix_time::ptime now = boost::posix_time::microsec_clock::universal_time();
-    SendMsgs(-1, DestinationType::kDirect, false, -1);
-    SendMsgs(-1, DestinationType::kDirect, false, -1);
     std::cout << "Sent " << num_msg << " messages to randomly picked-up targets. Finished in :"
               << boost::posix_time::microsec_clock::universal_time() - now << std::endl;
   } else if (cmd == "datasize") {

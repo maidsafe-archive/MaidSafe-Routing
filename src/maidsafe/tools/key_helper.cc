@@ -179,7 +179,7 @@ int main(int argc, char* argv[]) {
             "Number of pmids to create")
         ("pmids_path",
             po::value<std::string>()->default_value(
-                fs::path(fs::temp_directory_path(error_code) / "pmid_list.dat").string()),
+                fs::path(fs::temp_directory_path(error_code) / "pmids_list.dat").string()),
             "Path to pmids file");
 
     po::options_description cmdline_options;

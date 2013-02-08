@@ -37,6 +37,8 @@ namespace routing {
 namespace test {
 
 void SharedResponse::CheckAndPrintResult() {
+  if (responded_nodes_.empty())
+    return;
   std::cout << "Response received in "
             << boost::posix_time::microsec_clock::universal_time() - msg_send_time_
             << std::endl;
@@ -71,9 +73,9 @@ void SharedResponse::CollectResponse(std::string response) {
   boost::posix_time::ptime now = boost::posix_time::microsec_clock::universal_time();
   std::string response_id(response.substr(response.find("+++") + 3, 64));
   responded_nodes_.insert(NodeId(response_id));
-  average_response_time_ += (msg_send_time_ - now);
+  average_response_time_ += (now - msg_send_time_);
   std::cout << "Response received in "
-            << msg_send_time_ - now << std::endl;
+            << now - msg_send_time_ << std::endl;
 }
 
 }  //  namespace test
