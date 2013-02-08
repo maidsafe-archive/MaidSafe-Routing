@@ -26,6 +26,8 @@
 #include "maidsafe/routing/tests/test_utils.h"
 #include "maidsafe/routing/network_statistics.h"
 
+// TODO(Alison) - test IsNodeIdInGroupRange
+
 namespace maidsafe {
 namespace routing {
 namespace test {
@@ -976,6 +978,57 @@ TEST(RoutingTableTest, BEH_IsConnected) {
   // IsConnected - nodes not in routing table or group matrix
   for (uint16_t i(0); i < 50; ++i)
     EXPECT_FALSE(routing_table.IsConnected(NodeId(NodeId::kRandomId)));
+}
+
+TEST(RoutingTableTest, BEH_IsNodeIdInGroupRange) {
+  NodeId own_node_id(NodeId::kRandomId);
+  NetworkStatistics network_statistics(own_node_id);
+  RoutingTable routing_table(false, own_node_id, asymm::GenerateKeyPair(), network_statistics);
+  std::vector<NodeInfo> nodes_in_table;
+  NodeInfo node_info;
+
+  // Empty RT
+  for (uint16_t i(0); i < 20; ++i) {
+    EXPECT_EQ(GroupRangeStatus::kInRange,
+              routing_table.IsNodeIdInGroupRange(NodeId(NodeId::kRandomId)));
+  }
+
+  // Partially populated RT, but not enough nodes to have 'furthest close' node
+  uint16_t partial_size(1 + RandomUint32() % (Parameters::closest_nodes_size - 1));
+  for (uint16_t i(0); i < partial_size; ++i) {
+    node_info = MakeNode();
+    nodes_in_table.push_back(node_info);
+    EXPECT_TRUE(routing_table.AddNode(node_info));
+  }
+  for (uint16_t i(0); i < 20; ++i) {
+    EXPECT_NE(GroupRangeStatus::kOutwithRange,
+              routing_table.IsNodeIdInGroupRange(NodeId(NodeId::kRandomId)));
+  }
+
+  // Populated RT
+  while (routing_table.size() < Parameters::max_routing_table_size) {
+    node_info = MakeNode();
+    nodes_in_table.push_back(node_info);
+    EXPECT_TRUE(routing_table.AddNode(node_info));
+  }
+  SortFromTarget(own_node_id, nodes_in_table);
+
+  NodeId radius_id(own_node_id ^ nodes_in_table.at(Parameters::closest_nodes_size - 1).node_id);
+  crypto::BigInt radius((radius_id.ToStringEncoded(NodeId::kHex) + 'h').c_str());
+  NodeId group_edge_id(nodes_in_table.at(Parameters::node_group_size - 2).node_id);
+  NodeId group_edge_radius(own_node_id ^ group_edge_id);
+  for (uint16_t i(0); i < 50; ++i) {
+    NodeId target_id(NodeId::kRandomId);
+    NodeId distance_id(own_node_id ^ target_id);
+    crypto::BigInt distance((distance_id.ToStringEncoded(NodeId::kHex) + 'h').c_str());
+
+    if (distance > Parameters::proximity_factor * radius)
+      EXPECT_EQ(GroupRangeStatus::kOutwithRange, routing_table.IsNodeIdInGroupRange(target_id));
+    else if ((target_id ^ own_node_id) < group_edge_radius)
+      EXPECT_EQ(GroupRangeStatus::kInRange, routing_table.IsNodeIdInGroupRange(target_id));
+    else
+      EXPECT_EQ(GroupRangeStatus::kInProximalRange, routing_table.IsNodeIdInGroupRange(target_id));
+  }
 }
 
 }  // namespace test

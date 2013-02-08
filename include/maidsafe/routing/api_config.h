@@ -36,6 +36,12 @@ enum class DestinationType : int {
   kGroup
 };
 
+enum class GroupRangeStatus {
+  kInRange,
+  kInProximalRange,
+  kOutwithRange
+};
+
 typedef std::function<void(std::string)> ResponseFunctor;
 
 // They are passed as a parameter by MessageReceivedFunctor and should be called for responding to

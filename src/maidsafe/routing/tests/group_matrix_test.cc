@@ -274,7 +274,7 @@ TEST_P(GroupMatrixTest, BEH_OneRowOnly) {
 
   // Check IsThisNodeGroupMemberFor
   const NodeId target_id_1(NodeId::kRandomId);
-  EXPECT_TRUE(matrix_.IsNodeInGroupRange(target_id_1));
+  EXPECT_TRUE(matrix_.IsNodeIdInGroupRange(target_id_1));
 
   // Fully populate row
   while (row_entries_1.size() < size_t(Parameters::closest_nodes_size - 1)) {
@@ -305,7 +305,7 @@ TEST_P(GroupMatrixTest, BEH_OneRowOnly) {
   bool is_group_member(!NodeId::CloserToTarget(node_ids.at(Parameters::node_group_size - 1).node_id,
                                                target_id_2.node_id,
                                                own_node_id_));
-  EXPECT_EQ(is_group_member, matrix_.IsNodeInGroupRange(target_id_2.node_id));
+  EXPECT_EQ(is_group_member, matrix_.IsNodeIdInGroupRange(target_id_2.node_id));
 }
 
 TEST_P(GroupMatrixTest, BEH_OneColumnOnly) {
@@ -399,7 +399,7 @@ TEST_P(GroupMatrixTest, BEH_RowsContainSameNodes) {
                                                                             own_node_id_,
                                                                             target_id)));
                                           }) == node_ids.end());
-    EXPECT_EQ(expect_is_group_member, matrix_.IsNodeInGroupRange(target_id));
+    EXPECT_EQ(expect_is_group_member, matrix_.IsNodeIdInGroupRange(target_id));
     NodeId connected_peer;
     CheckIsThisNodeGroupLeader(target_id, connected_peer, expect_is_group_leader);
   }
@@ -569,7 +569,7 @@ TEST_P(GroupMatrixTest, BEH_GetConnectedPeerFor) {
   EXPECT_EQ(NodeId(), matrix_.GetConnectedPeerFor(target_id).node_id);
 }
 
-TEST_P(GroupMatrixTest, BEH_IsNodeInGroupRange) {
+TEST_P(GroupMatrixTest, IsNodeIdInGroupRange) {
   std::vector<NodeInfo> node_ids;
   if (!client_mode_)
     node_ids.push_back(own_node_info_);
@@ -616,7 +616,7 @@ TEST_P(GroupMatrixTest, BEH_IsNodeInGroupRange) {
                                                         this->own_node_id_,
                                                         target_id)));
                       }) == node_ids.end());
-    EXPECT_EQ(expect_is_group_member, matrix_.IsNodeInGroupRange(target_id));
+    EXPECT_EQ(expect_is_group_member, matrix_.IsNodeIdInGroupRange(target_id));
     CheckIsThisNodeGroupLeader(target_id, connected_peer, expect_is_group_leader);
   }
 }
