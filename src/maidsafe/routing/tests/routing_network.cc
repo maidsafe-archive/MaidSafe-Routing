@@ -276,20 +276,22 @@ bool GenericNode::NodeSubscriedForGroupUpdate(const NodeId& node_id) {
                        }) != routing_->pimpl_->group_change_handler_.update_subscribers_.end());
 }
 
-std::future<std::string> GenericNode::Send(const NodeId& destination_id,
-                                           const std::string& data,
-                                           const bool& cache) {
-  return routing_->Send(destination_id, data, cache);
+void GenericNode::SendDirect(const NodeId& destination_id,
+                             const std::string& data,
+                             const bool& cacheable,
+                             ResponseFunctor response_functor) {
+  routing_->SendDirect(destination_id, data, cacheable, response_functor);
 }
 
-std::vector<std::future<std::string>> GenericNode::SendGroup(const NodeId& destination_id,
-                                                             const std::string& data,
-                                                             const bool& cacheable) {
-  return routing_->SendGroup(destination_id, data, cacheable);
+void GenericNode::SendGroup(const NodeId& destination_id,
+                            const std::string& data,
+                            const bool& cacheable,
+                            ResponseFunctor response_functor) {
+  routing_->SendGroup(destination_id, data, cacheable, response_functor);
 }
 
 std::future<std::vector<NodeId>> GenericNode::GetGroup(const NodeId& info_id) {
-  return std::move(routing_->GetGroup(info_id));
+  return routing_->GetGroup(info_id);
 }
 
 bool GenericNode::IsNodeIdInGroupRange(const NodeId& node_id) {
@@ -923,267 +925,235 @@ bool GenericNetwork::NodeHasSymmetricNat(const NodeId& node_id) const {
   return false;
 }
 
-testing::AssertionResult GenericNetwork::Send(const size_t& messages) {
-  size_t client_size(0), server_size(0);
-  for (auto node : this->nodes_)
-    (node->IsClient()) ? client_size++ : server_size++;
-
-  std::vector<NodeId> expected_replier_ids;
+testing::AssertionResult GenericNetwork::SendDirect(const size_t& repeats) {
+  assert(repeats > 0);
   size_t total_num_nodes(this->nodes_.size());
-  std::vector<std::vector<std::future<std::string>>> futures(total_num_nodes);
-  for (size_t index = 0; index < messages; ++index) {
-    for (size_t dest_index(0); dest_index < total_num_nodes; ++dest_index) {
-      NodeId dest_node_id(this->nodes_.at(dest_index)->node_id());
-      expected_replier_ids.push_back(dest_node_id);
-      for (auto source_node : this->nodes_) {
-        if (source_node->node_id() != dest_node_id) {
-          std::string data(RandomAlphaNumericString(512 * 2^10));
-          assert(!data.empty() && "Send Data Empty !");
-          futures.at(dest_index).push_back(std::move(source_node->Send(NodeId(dest_node_id),
-                                                                       data,
-                                                                       false)));
+
+  std::atomic<uint16_t> reply_count(0);
+  std::atomic<bool> failed(false);
+  for (size_t repeat = 0; repeat < repeats; ++repeat) {
+    for (auto dest : this->nodes_) {
+      for (auto src : this->nodes_) {
+        std::string data(RandomAlphaNumericString(512 * 2^10));
+        assert(!data.empty() && "Send Data Empty !");
+        ResponseFunctor response_functor;
+        if (dest->IsClient()) {
+          response_functor = [&reply_count, &failed](std::string reply) {
+            ++reply_count;
+            EXPECT_TRUE(reply.empty());
+            if (!reply.empty()) {
+              failed = true;
+              return;
+            }
+          };
+        } else {
+          NodeId expected_replier(dest->node_id());
+          response_functor =[&reply_count, &failed, expected_replier](std::string reply) {
+            ++reply_count;
+            EXPECT_FALSE(reply.empty());
+            if (reply.empty()) {
+              failed = true;
+              return;
+            }
+            try {
+              NodeId replier(reply.substr(0, reply.find(">::<")));
+              EXPECT_EQ(replier, expected_replier);
+              if (replier != expected_replier) {
+                failed = false;
+                return;
+              }
+              // TODO(Alison) - check data
+            } catch(const std::exception& ex) {
+              EXPECT_TRUE(false) << "Got message with invalid replier ID. Exception: " << ex.what();
+              failed = true;
+              return;
+            }
+          };
         }
+        src->SendDirect(dest->node_id(), data, false, response_functor);
       }
     }
   }
 
-  std::vector<std::vector<std::string>> replies(total_num_nodes);
-  size_t expected_good_futures(server_size * (server_size - 1 + client_size) * messages);
-  size_t actual_good_futures(0);
+  while (reply_count < repeats * total_num_nodes * total_num_nodes)
+    Sleep(boost::posix_time::millisec(500));
 
-  for (size_t index(0); index < total_num_nodes; ++index) {
-    while (!futures.at(index).empty()) {
-      futures.at(index).erase(std::remove_if(futures.at(index).begin(), futures.at(index).end(),
-          [&](std::future<std::string>& str)->bool {
-              if (IsReady(str)) {
-                try {
-                   replies.at(index).push_back(str.get());
-                   ++actual_good_futures;
-                 } catch(std::exception& ex) {
-                   LOG(kError) << "Exception : " << ex.what();
-                 }
-                 return true;
-               } else  {
-                 return false;
-               };
-          }), futures.at(index).end());
-      std::this_thread::yield();
-    }
-  }
-
-  // TODO(Alison) - compare content of received messages with expected content
-
-  if (expected_good_futures != actual_good_futures) {
-    return testing::AssertionFailure() << "Send operarion timed out: "
-                                       << expected_good_futures - actual_good_futures
-                                       << " failed to reply.";
-  }
-
-  bool repliers_ok(true);
-  for (size_t index(0); index < total_num_nodes; ++index) {
-    for (auto reply : replies.at(index)) {
-      try {
-        NodeId replier(reply.substr(0, reply.find(">::<")));
-        if (replier != expected_replier_ids.at(index)) {
-          repliers_ok = false;
-          LOG(kError) << "Replier has incorrect ID."
-                      << "\n\tGot:      " << DebugId(replier)
-                      << "\n\tExpected: " << DebugId(expected_replier_ids.at(index));
-        }
-      } catch(const std::exception& ex) {
-        LOG(kError) << "Exception: " << ex.what();
-        return testing::AssertionFailure() << "Got message with invalid replier ID.";
-      }
-    }
-  }
-  if (!repliers_ok) {
-    return testing::AssertionFailure() << "Some replies came from the wrong nodes."
-                                       << " Turn on Info logging for more detail.";
-      }
-
+  if (failed)
+    return testing::AssertionFailure();
   return testing::AssertionSuccess();
 }
 
-testing::AssertionResult GenericNetwork::SendGroup(const NodeId& node_id,
-                                                   const size_t& messages,
+struct SendGroupMonitor {
+  explicit SendGroupMonitor(const std::vector<NodeId>& expected_ids)
+    : mutex(), response_count(0), expected_ids(expected_ids) {}
+
+  mutable std::mutex mutex;
+  uint16_t response_count;
+  std::vector<NodeId> expected_ids;
+};
+
+testing::AssertionResult GenericNetwork::SendGroup(const NodeId& target_id,
+                                                   const size_t& repeats,
                                                    uint16_t source_index) {
-  assert(static_cast<long>(10 * messages) > 0); // NOLINT (Fraser)
+  assert(repeats > 0);
   std::string data(RandomAlphaNumericString((2 ^ 10) * 256));
+  std::atomic<uint16_t> reply_count(0);
+  std::atomic<bool> failed(false);
 
-  std::vector<std::vector<std::future<std::string>>> futures;
-  for (size_t index = 0; index < messages; ++index) {
-    futures.push_back(this->nodes_[source_index]->SendGroup(node_id, data, false));
-  }
-
-  size_t bad_futures_count(0);
-
-  std::vector<std::vector<std::string>> replies(messages);
-
-  for (size_t index(0); index < messages; ++index) {
-    while (!futures.at(index).empty()) {
-      futures.at(index).erase(std::remove_if(futures.at(index).begin(), futures.at(index).end(),
-          [&](std::future<std::string>& str)->bool {
-              if (IsReady(str)) {
-                try {
-                   replies.at(index).push_back(str.get());
-                 } catch(std::exception& ex) {
-                   LOG(kError) << "Exception : " << ex.what();
-                   ++bad_futures_count;
-                 }
-                 return true;
-               } else  {
-                 return false;
-               };
-          }), futures.at(index).end());
-      std::this_thread::yield();
-    }
-  }
-
-  // TODO(Alison) - compare content of received messages with expected content
-
-  if (bad_futures_count != 0) {
-    return testing::AssertionFailure() << "Send operarion timed out: "
-                                       << bad_futures_count
-                                       << " failed to reply.";
-  }
-
-  std::vector<NodeId> expected_group(this->GetGroupForId(node_id));
-  bool repliers_ok(true);
-  for (size_t index(0); index < messages; ++index) {
-    for (auto reply : replies.at(index)) {
+  std::vector<NodeId> target_group(this->GetGroupForId(target_id));
+  for (uint16_t repeat(0); repeat < repeats; ++repeat) {
+    std::shared_ptr<SendGroupMonitor> monitor(std::make_shared<SendGroupMonitor>(target_group));
+    monitor->response_count = 0;
+    ResponseFunctor response_functor =
+        [&failed, &reply_count, &target_id, monitor, repeat] (std::string reply) {
+      std::lock_guard<std::mutex> lock(monitor->mutex);
+      ++reply_count;
+      monitor->response_count += 1;
+      if (monitor->response_count > Parameters::node_group_size) {
+        EXPECT_TRUE(false) << "Received too many replies: " << monitor->response_count;
+        failed = true;
+        return;
+      }
+      EXPECT_FALSE(reply.empty());
+      if (reply.empty()) {
+        failed = true;
+        return;
+      }
+      // TODO(Alison) - check data in reply
       try {
         NodeId replier(reply.substr(0, reply.find(">::<")));
-        if (std::find_if(expected_group.begin(),
-                         expected_group.end(),
-                         [&](const NodeId& node_id) { return node_id == replier; })
-            == expected_group.end()) {
-          repliers_ok = false;
-          LOG(kError) << "Replier is not in close group: " << DebugId(replier);
-        }
-      } catch(const std::exception& ex) {
-        LOG(kError) << "Exception: " << ex.what();
-        return testing::AssertionFailure() << "Got message with invalid replier ID.";
+        bool valid_replier(std::find(monitor->expected_ids.begin(),
+                                     monitor->expected_ids.end(), replier) !=
+            monitor->expected_ids.end());
+        monitor->expected_ids.erase(std::remove_if(monitor->expected_ids.begin(),
+                                                   monitor->expected_ids.end(),
+                                                   [&](const NodeId& node_id) {
+                                                     return node_id == replier;
+                                                   }), monitor->expected_ids.end());
+        if (!valid_replier)
+          failed = true;
+      } catch(const std::exception& /*ex*/) {
+        EXPECT_TRUE(false) << "Reply contained invalid node ID.";
+        failed = true;
       }
-    }
-  }
-  if (!repliers_ok) {
-    LOG(kInfo) << "Expected group nodes for ID " << DebugId(node_id) << ":";
-    for (auto node : expected_group)
-      LOG(kInfo) << "\t" << DebugId(node);
-    return testing::AssertionFailure() << "Some replies came from the wrong nodes."
-                                       << " Turn on Info logging for more detail.";
+    };
+
+    this->nodes_.at(source_index)->SendGroup(target_id, data, false, response_functor);
   }
 
+  while (reply_count < Parameters::node_group_size * repeats)
+    Sleep(boost::posix_time::milliseconds(500));
+
+  if (failed)
+    return testing::AssertionFailure();
   return testing::AssertionSuccess();
 }
 
-testing::AssertionResult GenericNetwork::Send(const NodeId& node_id,
-                                              const ExpectedNodeType& destination_node_type) {
-  ValidateExpectedNodeType(node_id, destination_node_type);
+testing::AssertionResult GenericNetwork::SendDirect(const NodeId& destination_node_id,
+                                                    const ExpectedNodeType& destination_node_type) {
+  ValidateExpectedNodeType(destination_node_id, destination_node_type);
 
-  std::vector<std::future<std::string>> futures;
+  std::atomic<uint16_t> reply_count(0);
+  std::atomic<bool> failed(false);
+
   size_t message_index(0);
-  for (auto source_node : this->nodes_) {
-    if (source_node->node_id() != node_id) {
-      std::string data(std::to_string(message_index) + "<:>" +
-                       RandomAlphaNumericString((RandomUint32() % 255 + 1) * 2^10));
-      futures.push_back(source_node->Send(node_id, data, false));
+  for (auto src : this->nodes_) {
+    ResponseFunctor response_functor;
+    std::string data(std::to_string(message_index) + "<:>" +
+                     RandomAlphaNumericString((RandomUint32() % 255 + 1) * 2^10));
+    if (destination_node_type == ExpectedNodeType::kExpectVault) {
+      response_functor =
+          [&reply_count, &failed, message_index, destination_node_id](std::string reply) {
+        ++reply_count;
+        EXPECT_FALSE(reply.empty());
+        if (reply.empty()) {
+          failed = true;
+          return;
+        }
+        try {
+          std::string data_index(reply.substr(reply.find(">:<") + 3,
+                                              reply.find("<:>") - 3 - reply.find(">:<")));
+          NodeId replier(reply.substr(0, reply.find(">::<")));
+          EXPECT_EQ(replier, destination_node_id);
+          EXPECT_EQ(atoi(data_index.c_str()), message_index);
+          if (replier != destination_node_id) {
+            failed = false;
+            return;
+          }
+          // TODO(Alison) - check data
+        } catch(const std::exception& ex) {
+          EXPECT_TRUE(false) << "Got message with invalid replier ID. Exception: " << ex.what();
+          failed = true;
+          return;
+        }
+      };
+    } else {
+      response_functor = [&reply_count, &failed](std::string reply) {
+        ++reply_count;
+        EXPECT_TRUE(reply.empty());
+        if (!reply.empty()) {
+          failed = true;
+          return;
+        }
+      };
     }
+    src->SendDirect(destination_node_id, data, false, response_functor);
     ++message_index;
   }
 
-  size_t num_timeouts(0);
-  std::map<size_t, std::string> replies;
-  while (!futures.empty()) {
-    auto itr(futures.begin());
-    while (itr != futures.end()) {
-      if (IsReady(*itr)) {
-        try {
-          std::string message((*itr).get());
-          std::string data_index(message.substr(message.find(">:<") + 3,
-                                                message.find("<:>") - 3 - message.find(">:<")));
-          std::string replier_id(message.substr(0, message.find(">::<")));
-          replies.insert(std::make_pair(atoi(data_index.c_str()), replier_id));
-        } catch(const std::exception& ex) {
-          LOG(kError) << "Exception : " << ex.what();
-          ++num_timeouts;
-        }
-        itr = futures.erase(itr);
-      } else {
-        ++itr;
-      }
-    }
-  }
+  while (reply_count < this->nodes_.size())
+    Sleep(boost::posix_time::millisec(500));
 
-  if (destination_node_type == kExpectVault) {
-    // TODO(Alison) - compare content of received messages with expected content
-    if (num_timeouts > 0) {
-      for (size_t index(0); index < message_index; ++index) {
-        if (replies.find(index) == replies.end())
-          LOG(kVerbose) << "Did not get reply to message with index " << index;
-      }
-      return testing::AssertionFailure() << "Some replies timed out.";
-    }
-
-    for (auto itr(replies.begin()); itr != replies.end(); ++itr) {
-      if ((*itr).second != node_id.string()) {
-        LOG(kVerbose) << "Received unexpected reply from node with id: "
-                      << HexSubstr((*itr).second);
-        return testing::AssertionFailure() << "Got reply from wrong node.";
-      }
-    }
-
-    return testing::AssertionSuccess();
-  }
-
-  // to Client or nonexistent ID - expect no replies
-  if (replies.size() > 0) {
-    for (auto itr(replies.begin()); itr != replies.end(); ++itr) {
-      LOG(kVerbose) << "Received unexpected reply from node with id: "
-                    << HexSubstr((*itr).second)
-                    << " to message with index: "
-                    << (*itr).first;
-    }
-    return testing::AssertionFailure() << "Got unexpected replies.";
-  }
-
+  if (failed)
+    return testing::AssertionFailure();
   return testing::AssertionSuccess();
 }
 
-testing::AssertionResult GenericNetwork::Send(std::shared_ptr<GenericNode> source_node,
-                                              const NodeId& node_id,
-                                              const ExpectedNodeType& destination_node_type) {
-  ValidateExpectedNodeType(node_id, destination_node_type);
-  size_t expected_messages(0);
-  if (destination_node_type == kExpectVault)
-    expected_messages = 1;
+testing::AssertionResult GenericNetwork::SendDirect(std::shared_ptr<GenericNode> source_node,
+                                                    const NodeId& destination_node_id,
+                                                    const ExpectedNodeType& destination_node_type) {
+  ValidateExpectedNodeType(destination_node_id, destination_node_type);
+
+  std::atomic<bool> finished(false);
+  std::atomic<bool> failed(false);
 
   std::string data(RandomAlphaNumericString(512 * 2^10));
   assert(!data.empty() && "Send Data Empty !");
-  std::future<std::string> future(source_node->Send(node_id, data, false));
-
-  if (future.wait_for(std::chrono::seconds(20)) != std::future_status::ready)
-    return testing::AssertionFailure() << "Future not ready.";
-
-  try {
-    std::string reply(future.get());
-    std::string replier_node_id(reply.substr(0, reply.find(">::<")));
-    if (node_id.string() != replier_node_id)
-      return testing::AssertionFailure() << "\nReplier ID:\n\tExpected:\n\\tt"
-                                         << DebugId(node_id)
-                                         << "\n\tActual:\n\t\t"
-                                         << HexSubstr(replier_node_id) << "\n";
-    // TODO(Alison) - compare full received message with full expected message
-    if (expected_messages > 0)
-      return testing::AssertionSuccess();
-    else
-      return testing::AssertionFailure() << "Didn't throw when expected.";
-  } catch(const std::exception& /*ex*/) {
-    if (expected_messages > 0)
-      return testing::AssertionFailure() << "Threw when not expected.";
-    else
-      return testing::AssertionSuccess();
+  ResponseFunctor response_functor;
+  if (destination_node_type == kExpectVault) {
+    response_functor = [&finished, &failed, &destination_node_id] (std::string reply) {
+      EXPECT_FALSE(reply.empty());
+      // TODO(Alison) - compare reply to sent data
+      if (reply.empty())
+        failed = true;
+      try {
+        NodeId replier_id(reply.substr(0, reply.find(">::<")));
+        EXPECT_EQ(replier_id, destination_node_id);
+        if (replier_id != destination_node_id)
+          failed = true;
+      } catch(const std::exception* /*ex*/) {
+        EXPECT_TRUE(false) << "Reply contained invalid node ID!";
+        failed = true;
+      }
+      finished = true;
+    };
+  } else {
+    response_functor = [&finished, &failed] (std::string reply) {
+      EXPECT_TRUE(reply.empty());
+      if (!reply.empty())
+        failed = true;
+      finished = true;
+    };
   }
+
+  source_node->SendDirect(destination_node_id, data, false, response_functor);
+
+  while (!finished)
+    Sleep(boost::posix_time::milliseconds(500));
+
+  if (failed)
+    return testing::AssertionFailure();
+  return testing::AssertionSuccess();
 }
 
 uint16_t GenericNetwork::NonClientNodesSize() const {

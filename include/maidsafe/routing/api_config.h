@@ -36,6 +36,8 @@ enum class DestinationType : int {
   kGroup
 };
 
+typedef std::function<void(std::string)> ResponseFunctor;
+
 // They are passed as a parameter by MessageReceivedFunctor and should be called for responding to
 // the received message. Passing an empty message will mean you don't want to reply.
 typedef std::function<void(const std::string& /*message*/)> ReplyFunctor;

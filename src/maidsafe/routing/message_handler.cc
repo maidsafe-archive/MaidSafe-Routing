@@ -270,12 +270,12 @@ void MessageHandler::HandleGroupMessageAsClosestNode(protobuf::Message& message)
                                          close_from_matrix.end(),
                                          [&destination_id](const NodeInfo& node_info) {
                                            return node_info.node_id == destination_id;
-                                         }));
+                                         }), close_from_matrix.end());
   close_from_matrix.erase(std::remove_if(close_from_matrix.begin(),
                                          close_from_matrix.end(),
                                          [&own_node_id](const NodeInfo& node_info) {
                                              return node_info.node_id == own_node_id;
-                                         }));
+                                         }), close_from_matrix.end());
   while (close_from_matrix.size() > replication)
     close_from_matrix.pop_back();
 

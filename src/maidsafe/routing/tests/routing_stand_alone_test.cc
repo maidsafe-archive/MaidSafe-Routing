@@ -110,7 +110,7 @@ TEST_F(RoutingStandAloneTest, DISABLED_FUNC_ExtendedSendMulti) {
   this->SetUpNetwork(kServerSize);
   uint16_t loop(100);
   while (loop-- > 0) {
-    EXPECT_TRUE(Send(40));
+    EXPECT_TRUE(SendDirect(40));
     this->ClearMessages();
   }
 }
@@ -137,7 +137,7 @@ TEST_F(RoutingStandAloneTest, FUNC_ExtendedSendToGroup) {
 }
 
 TEST_F(RoutingStandAloneTest, FUNC_ExtendedSendToGroupRandomId) {
-  uint16_t message_count(200), receivers_message_count(0);
+  uint16_t message_count(50), receivers_message_count(0);
   this->SetUpNetwork(kServerSize);
   uint16_t loop(10);
   while (loop-- > 0) {
@@ -243,6 +243,7 @@ TEST_F(RoutingStandAloneTest, FUNC_ReBootstrap) {
   EXPECT_EQ(network_size - 1, routing_table.size());
 }
 
+
 TEST_F(RoutingStandAloneTest, FUNC_GroupsAndSendWithSymmetricNat) {
   // TODO(Alison) - move this into functional tests when can run on mixed NAT network
   this->SetUpNetwork(kServerSize, 0, kServerSize / 4, 0);  // TODO(Alison) - adjust values?
@@ -267,7 +268,7 @@ TEST_F(RoutingStandAloneTest, FUNC_GroupsAndSendWithSymmetricNat) {
   // Check Send between each pair of vaults
   for (auto source_node : this->nodes_) {
     for (auto dest_node : this->nodes_) {
-      EXPECT_TRUE(this->Send(source_node, dest_node->node_id()));
+      EXPECT_TRUE(this->SendDirect(source_node, dest_node->node_id()));
     }
   }
 
@@ -315,7 +316,7 @@ TEST_F(RoutingStandAloneTest, FUNC_GroupsAndSendWithClientsAndSymmetricNat) {
   for (auto source_node : this->nodes_) {
     for (auto dest_node : this->nodes_) {
       if (!dest_node->IsClient())
-      EXPECT_TRUE(this->Send(source_node, dest_node->node_id()));
+      EXPECT_TRUE(this->SendDirect(source_node, dest_node->node_id()));
     }
   }
 

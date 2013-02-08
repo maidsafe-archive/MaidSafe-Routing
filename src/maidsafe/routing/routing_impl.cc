@@ -344,52 +344,34 @@ int Routing::Impl::ZeroStateJoin(const Functors& functors,
   }
 }
 
-std::future<std::string> Routing::Impl::Send(const NodeId& destination_id,
-                                             const std::string& data,
-                                             const bool& cacheable) {
-  std::vector<std::shared_ptr<std::promise<std::string>>> promises;
-  promises.push_back(std::make_shared<std::promise<std::string>>());
-  std::future<std::string> future(promises.front()->get_future());
-  try {
-    CheckSendParameters(destination_id, data);
-
-    protobuf::Message proto_message = std::move(CreateNodeLevelPartialMessage(
-                                                  destination_id, DestinationType::kDirect, data,
-                                                  cacheable));
-    proto_message.set_id(timer_.AddTask(Parameters::default_send_timeout, promises));
-    SendMessage(destination_id, proto_message);
-  }
-  catch(...) {
-    promises.front()->set_exception(std::current_exception());
-  }
-  return std::move(future);
+void Routing::Impl::SendDirect(const NodeId& destination_id,
+                               const std::string& data,
+                               const bool& cacheable,
+                               ResponseFunctor response_functor) {
+  Send(destination_id, data, DestinationType::kDirect, cacheable, response_functor);
 }
 
-std::vector<std::future<std::string>> Routing::Impl::SendGroup(const NodeId& destination_id,
-                                                               const std::string& data,
-                                                               const bool& cacheable) {
-  std::vector<std::shared_ptr<std::promise<std::string>>> promises;
-  std::vector<std::future<std::string>> futures;
-  for (auto i(0); i< Parameters::node_group_size; ++i)
-    promises.push_back(std::make_shared<std::promise<std::string>>());
+void Routing::Impl::SendGroup(const NodeId& destination_id,
+                              const std::string& data,
+                              const bool& cacheable,
+                              ResponseFunctor response_functor) {
+  Send(destination_id, data, DestinationType::kGroup, cacheable, response_functor);
+}
 
-  for (auto promise: promises)
-    futures.push_back(std::move(promise->get_future()));
-
-  try {
-    CheckSendParameters(destination_id, data);
-
-    protobuf::Message proto_message = std::move(CreateNodeLevelPartialMessage(
-                                                  destination_id, DestinationType::kGroup, data,
-                                                  cacheable));
-    proto_message.set_id(timer_.AddTask(Parameters::default_send_timeout, promises));
-    SendMessage(destination_id, proto_message);
-  }
-  catch(...) {
-    for (auto promise: promises)
-      promise->set_exception(std::current_exception());
-  }
-  return std::move(futures);
+void Routing::Impl::Send(const NodeId& destination_id,
+                         const std::string& data,
+                         const DestinationType& destination_type,
+                         const bool& cacheable,
+                         ResponseFunctor response_functor) {
+  CheckSendParameters(destination_id, data);
+  protobuf::Message proto_message = CreateNodeLevelPartialMessage(destination_id, destination_type,
+                                                                  data, cacheable);
+  uint16_t expected_response_count(1);
+  if (DestinationType::kGroup == destination_type)
+    expected_response_count = 4;
+  proto_message.set_id(timer_.AddTask(Parameters::default_send_timeout, response_functor,
+                                        expected_response_count));
+  SendMessage(destination_id, proto_message);
 }
 
 void Routing::Impl::SendMessage(const NodeId& destination_id, protobuf::Message& proto_message) {
@@ -464,7 +446,7 @@ protobuf::Message Routing::Impl::CreateNodeLevelPartialMessage(
   }
   proto_message.set_replication(replication);
 
-  return std::move(proto_message);
+  return proto_message;
 }
 
 // throws
@@ -492,13 +474,18 @@ bool Routing::Impl::EstimateInGroup(const NodeId& sender_id, const NodeId& info_
 std::future<std::vector<NodeId>> Routing::Impl::GetGroup(const NodeId& info_id) {
   auto promise(std::make_shared<std::promise<std::vector<NodeId>>>());
   auto future(promise->get_future());
-  auto callback = [promise](const std::vector<std::string>& responses) {
+  auto callback = [promise](const std::string& response) {
                      std::vector<NodeId> nodes_id;
-                     if (!responses.empty()) {
+                     if (!response.empty()) {
                        protobuf::GetGroup get_group;
-                       get_group.ParseFromString(responses.at(0));
-                       for (auto& id : get_group.group_nodes_id())
-                       nodes_id.push_back(NodeId(id));
+                       if (get_group.ParseFromString(response)) {
+                         try {
+                           for (auto& id : get_group.group_nodes_id())
+                             nodes_id.push_back(NodeId(id));
+                         } catch(std::exception& ex) {
+                           LOG(kError) << "Failed to parse response of GetGroup : " << ex.what();
+                         }
+                       }
                      }
                      promise->set_value(nodes_id);
                    };
