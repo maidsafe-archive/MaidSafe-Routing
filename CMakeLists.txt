@@ -98,16 +98,18 @@ if(MAIDSAFE_TESTING)
   ms_add_executable(TESTrouting_big "Tests/Routing" ${ALL_FILES_ROUTING_BIG_TESTS_DIR})
   ms_add_executable(create_lifestuff_bootstrap "Tools" "${PROJECT_SOURCE_DIR}/src/maidsafe/tools/create_bootstrap.cc")
   ms_add_executable(routing_key_helper "Tools" "${PROJECT_SOURCE_DIR}/src/maidsafe/tools/key_helper.cc")
-  #  ms_add_executable(routing_node "Tools" "${PROJECT_SOURCE_DIR}/src/maidsafe/tools/routing_node.cc"
-  #                                      "${PROJECT_SOURCE_DIR}/src/maidsafe/tools/commands.h"
-  #                                       "${PROJECT_SOURCE_DIR}/src/maidsafe/tools/commands.cc")
+  ms_add_executable(routing_node "Tools" "${PROJECT_SOURCE_DIR}/src/maidsafe/tools/routing_node.cc"
+                                         "${PROJECT_SOURCE_DIR}/src/maidsafe/tools/commands.h"
+                                         "${PROJECT_SOURCE_DIR}/src/maidsafe/tools/commands.cc"
+					 "${PROJECT_SOURCE_DIR}/src/maidsafe/tools/shared_response.h"
+                                         "${PROJECT_SOURCE_DIR}/src/maidsafe/tools/shared_response.cc")
   target_link_libraries(TESTrouting maidsafe_routing)
   target_link_libraries(TESTrouting_api maidsafe_routing)
   target_link_libraries(TESTrouting_func maidsafe_routing)
   target_link_libraries(TESTrouting_big maidsafe_routing)
   target_link_libraries(create_lifestuff_bootstrap maidsafe_routing)
   target_link_libraries(routing_key_helper maidsafe_routing)
-  #  target_link_libraries(routing_node maidsafe_routing)
+  target_link_libraries(routing_node maidsafe_routing)
 endif()
 
 rename_outdated_built_exes()

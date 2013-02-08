@@ -74,7 +74,6 @@ void SharedResponse::CollectResponse(std::string response) {
   average_response_time += (msg_send_time - now);
   std::cout << "Response received in "
             << msg_send_time - now << std::endl;
-  
 }
 
 }  //  namespace test

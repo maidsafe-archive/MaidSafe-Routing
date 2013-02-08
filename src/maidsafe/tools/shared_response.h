@@ -17,9 +17,10 @@
 #define MAIDSAFE_TOOLS_SHARED_RESPONSE_H_
 
 #include <memory>
+#include <mutex>
+#include <set>
 #include <string>
 #include <vector>
-#include <mutex>
 
 #include "boost/date_time/posix_time/posix_time_types.hpp"
 #include "boost/thread/condition_variable.hpp"
@@ -35,19 +36,18 @@ namespace routing {
 
 namespace test {
 class SharedResponse {
-  public :
-      SharedResponse(std::vector<NodeId> closest_nodes,
-                    uint16_t expect_responses)
-      : closest_nodes(closest_nodes),
-        responded_nodes(),
-        expected_responses(expect_responses),
-        msg_send_time(boost::posix_time::microsec_clock::universal_time()),
-        average_response_time(boost::posix_time::milliseconds(0)),
-        mutex() {}
-  ~ SharedResponse() {
+ public:
+  SharedResponse(std::vector<NodeId> closest_nodes,
+                 uint16_t expect_responses)
+  : closest_nodes(closest_nodes),
+    responded_nodes(),
+    expected_responses(expect_responses),
+    msg_send_time(boost::posix_time::microsec_clock::universal_time()),
+    average_response_time(boost::posix_time::milliseconds(0)),
+    mutex() {}
+  ~SharedResponse() {
     CheckAndPrintResult();
   }
-  
   void CheckAndPrintResult();
   void CollectResponse(std::string response);
   void PrintRoutingTable(std::string response);
@@ -59,7 +59,7 @@ class SharedResponse {
   boost::posix_time::milliseconds average_response_time;
   std::mutex mutex;
 
-private:
+ private:
   SharedResponse(const SharedResponse&);
   SharedResponse& operator=(const SharedResponse&);
 };

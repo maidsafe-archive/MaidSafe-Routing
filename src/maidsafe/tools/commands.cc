@@ -95,7 +95,7 @@ void Commands::Validate(const NodeId& node_id, GivePublicKeyFunctor give_public_
 void Commands::Run() {
   PrintUsage();
 
-  if ((!demo_node_->joined()) && (identity_index_ >= 2)) {// &&
+  if ((!demo_node_->joined()) && (identity_index_ >= 2)) {  // &&
       // (bootstrap_peer_ep_ != boost::asio::ip::udp::endpoint())) {
     // All parameters have been setup via cmdline directly, join the node immediately
     std::cout << "Joining the node ......" << std::endl;
@@ -166,7 +166,7 @@ void Commands::SendMsgs(const int& id_index, const DestinationType& destination_
   bool infinite(false);
   if (num_msg == -1)
     infinite = true;
-
+  NodeId dest_id;
   //   Send messages
   for (int index = 0; index < num_msg || infinite; ++index) {
     std::vector<NodeId> closest_nodes;
@@ -185,8 +185,10 @@ void Commands::SendMsgs(const int& id_index, const DestinationType& destination_
       };
       //  Send the msg
       data = ">:<" + boost::lexical_cast<std::string>(++message_id) + "<:>" + data;
-      /*demo_node_->Send(dest_id, NodeId(), data, callable,
-                       boost::posix_time::seconds(12), destination_type, false);*/
+      if (destination_type == DestinationType::kGroup)
+        demo_node_->SendGroup(dest_id, data, false, callable);
+      else
+        demo_node_->SendDirect(dest_id, data, false, callable);
     }
     data = data_to_send;
   }

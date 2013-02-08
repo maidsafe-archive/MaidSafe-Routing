@@ -1032,7 +1032,7 @@ testing::AssertionResult GenericNetwork::SendGroup(const NodeId& target_id,
                                                    }));
         if (!valid_replier)
           failed = true;
-      } catch(const std::exception& ex) {
+      } catch(const std::exception& /*ex*/) {
         EXPECT_TRUE(false) << "Reply contained invalid node ID.";
         failed = true;
       }
@@ -1131,7 +1131,7 @@ testing::AssertionResult GenericNetwork::SendDirect(std::shared_ptr<GenericNode>
         EXPECT_EQ(replier_id, destination_node_id);
         if (replier_id != destination_node_id)
           failed = true;
-      } catch(const std::exception* ex) {
+      } catch(const std::exception* /*ex*/) {
         EXPECT_TRUE(false) << "Reply contained invalid node ID!";
         failed = true;
       }

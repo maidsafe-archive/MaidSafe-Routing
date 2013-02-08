@@ -42,8 +42,6 @@ namespace test {
 typedef std::shared_ptr<GenericNode> DemoNodePtr;
 
 class Commands {
- 
-
  public:
   explicit Commands(DemoNodePtr demo_node,
                     std::vector<maidsafe::passport::Pmid> all_pmids,
@@ -71,10 +69,6 @@ class Commands {
                            uint16_t num_of_closests);
   uint16_t MakeMessage(const int& id_index, const DestinationType& destination_type,
                        std::vector<NodeId> &closest_nodes);
-
- 
-
-  
 
   std::shared_ptr<GenericNode> demo_node_;
   std::vector<maidsafe::passport::Pmid> all_pmids_;
