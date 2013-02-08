@@ -70,7 +70,7 @@ bool Routing::EstimateInGroup(const NodeId& sender_id, const NodeId& info_id) co
 }
 
 std::future<std::vector<NodeId>> Routing::GetGroup(const NodeId& info_id) {
-  return std::move(pimpl_->GetGroup(info_id));
+  return pimpl_->GetGroup(info_id);
 }
 
 NodeId Routing::kNodeId() const {

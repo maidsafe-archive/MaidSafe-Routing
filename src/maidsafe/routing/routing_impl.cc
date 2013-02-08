@@ -446,7 +446,7 @@ protobuf::Message Routing::Impl::CreateNodeLevelPartialMessage(
   }
   proto_message.set_replication(replication);
 
-  return std::move(proto_message);
+  return proto_message;
 }
 
 // throws
