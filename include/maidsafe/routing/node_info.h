@@ -16,21 +16,19 @@
 #include <cstdint>
 #include <vector>
 
-#include "boost/asio/ip/udp.hpp"
-
 #include "maidsafe/common/node_id.h"
 #include "maidsafe/common/rsa.h"
+#include "maidsafe/common/tagged_value.h"
 
-#include "maidsafe/rudp/managed_connections.h"
+#include "maidsafe/rudp/nat_type.h"
+
 
 namespace maidsafe {
 
 namespace routing {
 
-namespace protobuf { class Contact; }
-
 struct NodeInfo {
-  typedef TaggedValue<NonEmptyString, struct SerialisedMessageTag> serialised_type;
+  typedef TaggedValue<NonEmptyString, struct SerialisedNodeInfoTag> serialised_type;
 
   NodeInfo();
 
