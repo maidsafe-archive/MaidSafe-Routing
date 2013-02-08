@@ -48,6 +48,7 @@ Commands::Commands(DemoNodePtr demo_node,
                                          identity_index_(identity_index),
                                          bootstrap_peer_ep_(),
                                          data_size_(256 * 1024),
+                                         data_rate_(1024 * 1024),
                                          result_arrived_(false),
                                          finish_(false),
                                          wait_mutex_(),
@@ -162,7 +163,8 @@ void Commands::SendMsgs(const int& id_index, const DestinationType& destination_
     data = "request_routing_table";
   else
     data_to_send = data = RandomAlphaNumericString(data_size_);
-
+  bptime::milliseconds msg_sent_time(bptime::milliseconds(0));
+  CalculateTimeToSleep(msg_sent_time);
   bool infinite(false);
   if (num_msg == -1)
     infinite = true;
@@ -170,18 +172,24 @@ void Commands::SendMsgs(const int& id_index, const DestinationType& destination_
   //   Send messages
   for (int index = 0; index < num_msg || infinite; ++index) {
     std::vector<NodeId> closest_nodes;
-    uint16_t expect_respondent = MakeMessage(id_index, destination_type, closest_nodes);
+    uint16_t expect_respondent = MakeMessage(id_index, destination_type, closest_nodes, dest_id);
     if (expect_respondent == 0)
       return;
-    std::shared_ptr<SharedResponse> resp_collector_ptr;
+    bptime::ptime start = bptime::microsec_clock::universal_time();
+    std::shared_ptr<SharedResponse> shared_response_ptr;
     {
-      resp_collector_ptr = std::make_shared<SharedResponse>(closest_nodes, expect_respondent);
+      shared_response_ptr = std::make_shared<SharedResponse>(closest_nodes, expect_respondent);
       auto callable = [=](std::string response) {
         if (!response.empty()) {
-          resp_collector_ptr->CollectResponse(response);
-          if (resp_collector_ptr->expected_responses == 1)
-            resp_collector_ptr->PrintRoutingTable(response);
-      }
+          shared_response_ptr->CollectResponse(response);
+          if (shared_response_ptr->expected_responses_ == 1)
+            shared_response_ptr->PrintRoutingTable(response);
+        } else {
+          std::cout << "Error Response received in "
+                    << boost::posix_time::microsec_clock::universal_time()
+                       - shared_response_ptr->msg_send_time_
+                    << std::endl;
+        }
       };
       //  Send the msg
       data = ">:<" + boost::lexical_cast<std::string>(++message_id) + "<:>" + data;
@@ -191,13 +199,19 @@ void Commands::SendMsgs(const int& id_index, const DestinationType& destination_
         demo_node_->SendDirect(dest_id, data, false, callable);
     }
     data = data_to_send;
+
+    bptime::ptime now = bptime::microsec_clock::universal_time();
+    Sleep(msg_sent_time - (now - start));
   }
 }
 
-
+void Commands::CalculateTimeToSleep(bptime::milliseconds &msg_sent_time) {
+  size_t num_msgs_per_second = data_rate_ / data_size_;
+  msg_sent_time = static_cast<bptime::milliseconds>(1000 / num_msgs_per_second);
+}
 
 uint16_t Commands::MakeMessage(const int& id_index, const DestinationType& destination_type,
-                               std::vector<NodeId> &closest_nodes) {
+                               std::vector<NodeId> &closest_nodes, NodeId &dest_id) {
   int identity_index;
   if (id_index >= 0)
       identity_index = id_index;
@@ -207,7 +221,6 @@ uint16_t Commands::MakeMessage(const int& id_index, const DestinationType& desti
     std::cout << "ERROR : destination index out of range" << std::endl;
     return 0;
   }
-  NodeId dest_id(RandomString(64));
   if (identity_index >= 0)
     dest_id = NodeId(all_pmids_[identity_index].name().data);
   std::cout << "Sending a msg from : " << maidsafe::HexSubstr(demo_node_->node_id().string())
@@ -360,7 +373,7 @@ void Commands::ProcessCommand(const std::string &cmdline) {
   } else if (cmd == "datasize") {
     data_size_ = boost::lexical_cast<int>(args[0]);
   } else if (cmd == "datarate") {
-    data_size_ = boost::lexical_cast<int>(args[0]);
+    data_rate_ = boost::lexical_cast<int>(args[0]);
   } else if (cmd == "nattype") {
     std::cout << "NatType for this node is : " << demo_node_->nat_type() << std::endl;
   } else if (cmd == "exit") {

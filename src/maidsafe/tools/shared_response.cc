@@ -38,18 +38,18 @@ namespace test {
 
 void SharedResponse::CheckAndPrintResult() {
   std::cout << "Response received in "
-            << boost::posix_time::microsec_clock::universal_time() - msg_send_time
+            << boost::posix_time::microsec_clock::universal_time() - msg_send_time_
             << std::endl;
 
   std::cout << "Received response from following nodes :" << std::endl;
-  for (auto &responsed_node : responded_nodes) {
+  for (auto &responsed_node : responded_nodes_) {
     std::cout << "\t" << maidsafe::HexSubstr(responsed_node.string()) << std::endl;
-    EXPECT_TRUE(std::find(closest_nodes.begin(),
-                             closest_nodes.end(),
-                             responsed_node) != closest_nodes.end());
+    EXPECT_TRUE(std::find(closest_nodes_.begin(),
+                             closest_nodes_.end(),
+                             responsed_node) != closest_nodes_.end());
   }
   std::cout<< "Average time taken for receiving msg:"
-           <<(average_response_time / responded_nodes.size())
+           <<(average_response_time_ / responded_nodes_.size())
            <<std::endl;
 }
 
@@ -67,13 +67,13 @@ void SharedResponse::PrintRoutingTable(std::string response) {
 }
 
 void SharedResponse::CollectResponse(std::string response) {
-  std::lock_guard<std::mutex> lock(mutex);
+  std::lock_guard<std::mutex> lock(mutex_);
   boost::posix_time::ptime now = boost::posix_time::microsec_clock::universal_time();
   std::string response_id(response.substr(response.find("+++") + 3, 64));
-  responded_nodes.insert(NodeId(response_id));
-  average_response_time += (msg_send_time - now);
+  responded_nodes_.insert(NodeId(response_id));
+  average_response_time_ += (msg_send_time_ - now);
   std::cout << "Response received in "
-            << msg_send_time - now << std::endl;
+            << msg_send_time_ - now << std::endl;
 }
 
 }  //  namespace test
