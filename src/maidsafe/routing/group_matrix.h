@@ -58,8 +58,8 @@ class GroupMatrix {
                                       bool ignore_exact_match,
                                       NodeId& current_closest_peer_id);
   std::vector<NodeInfo> GetAllConnectedPeersFor(const NodeId& target_id);
-  bool IsNodeInGroupRange(const NodeId& target_id);
   bool IsThisNodeGroupLeader(const NodeId& target_id, NodeId& connected_peer);
+  bool IsNodeIdInGroupRange(const NodeId& target_id);
 
   // Updates group matrix if peer is present in 1st column of matrix
   void UpdateFromConnectedPeer(const NodeId& peer, const std::vector<NodeInfo>& nodes);

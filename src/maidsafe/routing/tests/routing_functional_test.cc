@@ -19,6 +19,8 @@
 #include "maidsafe/routing/tests/routing_network.h"
 #include "maidsafe/routing/tests/test_utils.h"
 
+// TODO(Alison) - IsNodeIdInGroupRange - test kInProximalRange and kOutwithRange more thoroughly
+
 namespace maidsafe {
 
 namespace routing {
@@ -427,9 +429,9 @@ TEST_F(RoutingNetworkTest, FUNC_IsNodeIdInGroupRange) {
                         });
       for (uint16_t i(0); i < vault_ids.size(); ++i) {
         if (i < Parameters::node_group_size)
-          EXPECT_TRUE(node->IsNodeIdInGroupRange(vault_ids.at(i)));
+          EXPECT_EQ(GroupRangeStatus::kInRange, node->IsNodeIdInGroupRange(vault_ids.at(i)));
         else
-          EXPECT_FALSE(node->IsNodeIdInGroupRange(vault_ids.at(i)));
+          EXPECT_NE(GroupRangeStatus::kInRange, node->IsNodeIdInGroupRange(vault_ids.at(i)));
       }
 
       // Check random IDs
@@ -437,9 +439,9 @@ TEST_F(RoutingNetworkTest, FUNC_IsNodeIdInGroupRange) {
       for (uint16_t i(0); i < 50; ++i) {
         NodeId random_id(NodeId::kRandomId);
         if (NodeId::CloserToTarget(random_id, expected_threshold_id, node->node_id()))
-          EXPECT_TRUE(node->IsNodeIdInGroupRange(random_id));
+          EXPECT_EQ(GroupRangeStatus::kInRange, node->IsNodeIdInGroupRange(random_id));
         else
-          EXPECT_FALSE(node->IsNodeIdInGroupRange(random_id));
+          EXPECT_NE(GroupRangeStatus::kInRange, node->IsNodeIdInGroupRange(random_id));
       }
     }
   }

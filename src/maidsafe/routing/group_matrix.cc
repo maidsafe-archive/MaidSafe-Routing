@@ -184,7 +184,7 @@ bool GroupMatrix::IsThisNodeGroupLeader(const NodeId& target_id, NodeId& connect
   return is_group_leader;
 }
 
-bool GroupMatrix::IsNodeInGroupRange(const NodeId& target_id) {
+bool GroupMatrix::IsNodeIdInGroupRange(const NodeId& target_id) {
   if (unique_nodes_.size() <= Parameters::node_group_size) {
     return true;
   }

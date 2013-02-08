@@ -160,7 +160,7 @@ bool Timer::AddResponse(const protobuf::Message& response) {
 
   asio_service_.service().dispatch([=] {
       if (task->functor)
-        task->functor(*response_out);
+        task->functor(std::move(*response_out));
   });
   return true;
 }

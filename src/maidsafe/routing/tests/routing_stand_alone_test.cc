@@ -342,7 +342,7 @@ TEST_F(RoutingStandAloneTest, FUNC_MessagePassingSymmetricNat) {
 
   this->SetUpNetwork(40, 0, 10, 0);
 
-  EXPECT_TRUE(this->Send(3));
+  EXPECT_TRUE(this->SendDirect(3));
 
   Parameters::max_routing_table_size = old_rt_size;
 }
