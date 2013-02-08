@@ -27,7 +27,7 @@ NetworkStatistics::NetworkStatistics(const NodeId& node_id)
        distance_(),
        network_distance_data_() {}
 
-void NetworkStatistics::UpdateLocalAverageDistance(std::vector<NodeInfo>&& unique_nodes) {
+void NetworkStatistics::UpdateLocalAverageDistance(std::vector<NodeInfo> unique_nodes) {
   if (unique_nodes.size() < Parameters::node_group_size)
     return;
   std::nth_element(unique_nodes.begin(),

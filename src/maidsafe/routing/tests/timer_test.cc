@@ -130,8 +130,8 @@ TEST_F(TimerTest, BEH_MultipleResponse) {
   auto add_tasks = [&](const int& number)->std::vector<protobuf::Message> {
       std::vector<protobuf::Message> messages;
       for (int i(0); i != number; ++i)
-        messages.push_back(std::move(CreateMessage(timer_.AddTask(bptime::seconds(80),
-                                                   response_functor, 1))));
+        messages.push_back(CreateMessage(timer_.AddTask(bptime::seconds(80),
+                                                        response_functor, 1)));
       return messages;
     };
 
@@ -142,11 +142,9 @@ TEST_F(TimerTest, BEH_MultipleResponse) {
 
   auto add_tasks1_future = std::async(std::launch::async, add_tasks, kMessageCount/2);
   auto add_tasks2_future = std::async(std::launch::async, add_tasks, kMessageCount/2);
-  std::vector<protobuf::Message> messages1(std::move(add_tasks1_future.get()));
-  std::vector<protobuf::Message> messages2(std::move(add_tasks2_future.get()));
 
-  auto add_response1_future = std::async(std::launch::async, add_response, std::move(messages1));
-  auto add_response2_future = std::async(std::launch::async, add_response, std::move(messages2));
+  auto add_response1_future = std::async(std::launch::async, add_response, add_tasks1_future.get());
+  auto add_response2_future = std::async(std::launch::async, add_response, add_tasks2_future.get());
   add_response1_future.get();
   add_response2_future.get();
 
@@ -165,8 +163,8 @@ TEST_F(TimerTest, BEH_MultipleGroupResponse) {
   auto add_tasks = [&](const int& number)->std::vector<protobuf::Message> {
       std::vector<protobuf::Message> messages;
       for (int i(0); i != number; ++i)
-        messages.push_back(std::move(CreateMessage(timer_.AddTask(bptime::seconds(80),
-                                                   response_functor, 4))));
+        messages.push_back(CreateMessage(timer_.AddTask(bptime::seconds(80),
+                                                        response_functor, 4)));
       return messages;
     };
 
@@ -178,12 +176,10 @@ TEST_F(TimerTest, BEH_MultipleGroupResponse) {
 
   auto add_tasks1_future = std::async(std::launch::async, add_tasks, kMessageCount/2);
   auto add_tasks2_future = std::async(std::launch::async, add_tasks, kMessageCount/2);
-  std::vector<protobuf::Message> messages1(std::move(add_tasks1_future.get()));
-  std::vector<protobuf::Message> messages2(std::move(add_tasks2_future.get()));
   //  std::cout << "Task enqueued in " << t.elapsed();
 
-  auto add_response1_future = std::async(std::launch::async, add_response, std::move(messages1));
-  auto add_response2_future = std::async(std::launch::async, add_response, std::move(messages2));
+  auto add_response1_future = std::async(std::launch::async, add_response, add_tasks1_future.get());
+  auto add_response2_future = std::async(std::launch::async, add_response, add_tasks2_future.get());
   add_response1_future.get();
   add_response2_future.get();
 
