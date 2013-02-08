@@ -239,9 +239,24 @@ bool RoutingTable::IsThisNodeGroupLeader(const NodeId& target_id, NodeInfo& conn
   return true;
 }
 
-bool RoutingTable::IsNodeIdInGroupRange(const NodeId& target_id) {
-  std::unique_lock<std::mutex> lock(mutex_);
-  return group_matrix_.IsNodeInGroupRange(target_id);
+GroupRangeStatus RoutingTable::IsNodeIdInGroupRange(const NodeId& target_id) {
+  {
+    std::unique_lock<std::mutex> lock(mutex_);
+    if (group_matrix_.IsNodeIdInGroupRange(target_id))
+      return GroupRangeStatus::kInRange;
+  }
+  NodeId radius_id(kNodeId_ ^ FurthestCloseNode());
+  {
+    std::unique_lock<std::mutex> lock(mutex_);
+    NodeId distance_id(kNodeId_ ^ target_id);
+    crypto::BigInt radius((radius_id.ToStringEncoded(NodeId::kHex) + 'h').c_str());
+    crypto::BigInt distance((distance_id.ToStringEncoded(NodeId::kHex) + 'h').c_str());
+
+    if (distance > Parameters::proximity_factor * radius)
+      return GroupRangeStatus::kOutwithRange;
+
+    return GroupRangeStatus::kInProximalRange;
+  }
 }
 
 NodeInfo RoutingTable::GetConnectedPeerFromGroupMatrixClosestTo(const NodeId& target_node_id) {

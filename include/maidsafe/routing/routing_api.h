@@ -109,7 +109,7 @@ class Routing {
   NodeId GetRandomExistingNode() const;
 
   // returns true if the node id provided is in group range of node.
-  bool IsNodeIdInGroupRange(const NodeId& node_id) const;
+  GroupRangeStatus IsNodeIdInGroupRange(const NodeId& node_id) const;
 
   // Evaluates whether the sender_id is a legitimate source to send a request for performing
   // an operation on info_id
