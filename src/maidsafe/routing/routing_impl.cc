@@ -729,9 +729,9 @@ bool Routing::Impl::IsConnectedVault(const NodeId& node_id) {
   return routing_table_.IsConnected(node_id);
 }
 
-// bool Routing::Impl::IsConnectedToClient(const NodeId& node_id) {
-//  return non_routing_table_.IsConnected(node_id);
-// }
+bool Routing::Impl::IsConnectedClient(const NodeId& node_id) {
+  return non_routing_table_.IsConnected(node_id);
+}
 
 }  // namespace routing
 

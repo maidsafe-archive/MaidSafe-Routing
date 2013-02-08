@@ -89,9 +89,9 @@ bool Routing::IsConnectedVault(const NodeId& node_id) {
   return pimpl_->IsConnectedVault(node_id);
 }
 
-// bool Routing::IsConnectedToClient(const NodeId& node_id) {
-//  return pimpl_->IsConnectedToClient(node_id);
-// }
+bool Routing::IsConnectedClient(const NodeId& node_id) {
+  return pimpl_->IsConnectedClient(node_id);
+}
 
 }  // namespace routing
 

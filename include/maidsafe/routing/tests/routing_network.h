@@ -122,7 +122,7 @@ class GenericNode {
   NodeId GetRandomExistingNode() const;
   std::vector<NodeInfo> ClosestNodes();
   bool IsConnectedVault(const NodeId& node_id);
-//  bool IsConnectedToClient(const NodeId& node_id);
+  bool IsConnectedClient(const NodeId& node_id);
   void AddNodeToRandomNodeHelper(const NodeId& node_id);
   void RemoveNodeFromRandomNodeHelper(const NodeId& node_id);
   bool NodeSubscriedForGroupUpdate(const NodeId& node_id);

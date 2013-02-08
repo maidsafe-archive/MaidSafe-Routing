@@ -477,8 +477,8 @@ TEST_F(RoutingNetworkTest, FUNC_IsConnectedVault) {
   }
 }
 
-/*
-TEST_F(RoutingNetworkTest, FUNC_IsConnectedToClient) {
+
+TEST_F(RoutingNetworkTest, FUNC_IsConnectedClient) {
   ASSERT_LE(env_->nodes_.size() - env_->ClientIndex(), Parameters::max_non_routing_table_size + 1);
 
   // Vault checks close client id - expect true
@@ -489,7 +489,7 @@ TEST_F(RoutingNetworkTest, FUNC_IsConnectedToClient) {
     for (auto node_info : closest_nodes) {
       int node_index(env_->NodeIndex(node_info.node_id));
       ASSERT_GE(node_index, 0);
-      EXPECT_TRUE(env_->nodes_.at(node_index)->IsConnectedToClient(client_id));
+      EXPECT_TRUE(env_->nodes_.at(node_index)->IsConnectedClient(client_id));
     }
   }
 
@@ -497,13 +497,13 @@ TEST_F(RoutingNetworkTest, FUNC_IsConnectedToClient) {
   for (uint16_t i(0); i < env_->ClientIndex(); ++i) {
     for (uint16_t j(0); j < env_->ClientIndex(); ++j) {
       if (i != j) {
-        EXPECT_FALSE(env_->nodes_.at(i)->IsConnectedToClient(env_->nodes_.at(j)->node_id()));
+        EXPECT_FALSE(env_->nodes_.at(i)->IsConnectedClient(env_->nodes_.at(j)->node_id()));
       }
     }
   }
 }
 
-TEST_F(RoutingNetworkTest, FUNC_NonexistentIsConnectedToVaultOrClient) {
+TEST_F(RoutingNetworkTest, FUNC_NonexistentIsConnectedVaultOrClient) {
   NodeId non_existing_id;
   bool exists(true);
   while (exists) {
@@ -516,12 +516,11 @@ TEST_F(RoutingNetworkTest, FUNC_NonexistentIsConnectedToVaultOrClient) {
   }
 
   for (auto node : env_->nodes_) {
-    EXPECT_FALSE(node->IsConnectedToVault(non_existing_id));
+    EXPECT_FALSE(node->IsConnectedVault(non_existing_id));
     if (!node->IsClient())
-      EXPECT_FALSE(node->IsConnectedToClient(non_existing_id));
+      EXPECT_FALSE(node->IsConnectedClient(non_existing_id));
   }
 }
-*/
 
 TEST_F(RoutingNetworkTest, FUNC_ClosestNodes) {
   for (auto node : env_->nodes_) {
