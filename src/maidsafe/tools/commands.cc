@@ -348,9 +348,7 @@ void Commands::ProcessCommand(const std::string &cmdline) {
     int num_msg(10);
     if (!args.empty())
       num_msg = boost::lexical_cast<int>(args[0]);
-    bool infinite(false);
     if (num_msg == -1) {
-      infinite = true;
       std::cout << " Running infinite messaging test. press Ctrl + C to terminate the program"
                 << std::endl;
     }
