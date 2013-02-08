@@ -19,14 +19,17 @@
 #include <memory>
 #include <string>
 #include <vector>
+#include <mutex>
 
 #include "boost/date_time/posix_time/posix_time_types.hpp"
 #include "boost/thread/condition_variable.hpp"
 #include "boost/thread/mutex.hpp"
 
+#include "maidsafe/passport/types.h"
 #include "maidsafe/routing/tests/routing_network.h"
 #include "maidsafe/routing/tests/test_utils.h"
 #include "maidsafe/routing/utils.h"
+
 
 namespace bptime = boost::posix_time;
 
@@ -39,9 +42,11 @@ namespace test {
 typedef std::shared_ptr<GenericNode> DemoNodePtr;
 
 class Commands {
+ 
+
  public:
   explicit Commands(DemoNodePtr demo_node,
-                    std::vector<maidsafe::Fob> all_fobs,
+                    std::vector<maidsafe::passport::Pmid> all_pmids,
                     int identity_index);
   void Run();
   void GetPeer(const std::string &peer);
@@ -58,15 +63,21 @@ class Commands {
   void ZeroStateJoin();
   void Join();
   void Validate(const NodeId& node_id, GivePublicKeyFunctor give_public_key);
-  void SendAMsg(const int& identity_index, const DestinationType& destination_type,
-                std::string &data);
+  void SendMsgs(const int& identity_index, const DestinationType& destination_type,
+                bool is_routing_req, int num_msgs);
 
   NodeId CalculateClosests(const NodeId& target_id,
                            std::vector<NodeId>& closests,
                            uint16_t num_of_closests);
+  uint16_t MakeMessage(const int& id_index, const DestinationType& destination_type,
+                       std::vector<NodeId> &closest_nodes);
+
+ 
+
+  
 
   std::shared_ptr<GenericNode> demo_node_;
-  std::vector<maidsafe::Fob> all_fobs_;
+  std::vector<maidsafe::passport::Pmid> all_pmids_;
   std::vector<NodeId> all_ids_;
   int identity_index_;
   boost::asio::ip::udp::endpoint bootstrap_peer_ep_;
