@@ -155,7 +155,7 @@ bool RoutingTable::AddOrCheckNode(NodeInfo peer, bool remove) {
       subscribe_to_group_change_update_(true, NodeInfo());
 
     if (!new_closest_nodes.empty()) {
-      network_statistics_.UpdateLocalAverageDistance(std::move(group_matrix_.GetUniqueNodes()));
+      network_statistics_.UpdateLocalAverageDistance(group_matrix_.GetUniqueNodes());
       if (close_node_replaced_functor_)
         close_node_replaced_functor_(new_closest_nodes);
     }
@@ -206,7 +206,7 @@ NodeInfo RoutingTable::DropNode(const NodeId& node_to_drop, bool routing_only) {
       subscribe_to_group_change_update_(true, NodeInfo());
 
   if (!new_closest_nodes.empty()) {
-    network_statistics_.UpdateLocalAverageDistance(std::move(group_matrix_.GetUniqueNodes()));
+    network_statistics_.UpdateLocalAverageDistance(group_matrix_.GetUniqueNodes());
     if (close_node_replaced_functor_)
       close_node_replaced_functor_(new_closest_nodes);
   }
@@ -674,7 +674,7 @@ std::vector<NodeId> RoutingTable::GetGroup(const NodeId& target_id) {
                     });
   for (auto iter(nodes.begin()); iter != nodes.begin() + Parameters::node_group_size; ++iter)
     group.push_back(iter->node_id);
-  return std::move(group);
+  return group;
 }
 
 std::vector<NodeInfo> RoutingTable::GetClosestNodeInfo(const NodeId& target_id,

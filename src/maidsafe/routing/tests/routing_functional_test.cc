@@ -68,9 +68,7 @@ TEST_F(RoutingNetworkTest, FUNC_GroupUpdateSubscription) {
 
 TEST_F(RoutingNetworkTest, FUNC_SanityCheck) {
   {
-    EXPECT_TRUE(env_->Send(3));
-    // This sleep is required for un-responded requests
-    Sleep(boost::posix_time::seconds(static_cast<long>(env_->nodes_.size() + 1)));  // NOLINT (Fraser)
+    EXPECT_TRUE(env_->SendDirect(3));
     env_->ClearMessages();
   }
   {
@@ -108,9 +106,9 @@ TEST_F(RoutingNetworkTest, FUNC_SanityCheck) {
     env_->AddNode(true, env_->nodes_[env_->RandomClientIndex()]->node_id());
 
     // Send to client with same Id
-    EXPECT_TRUE(env_->Send(env_->nodes_[kNetworkSize],
-                           env_->nodes_[kNetworkSize]->node_id(),
-                           kExpectClient));
+    EXPECT_TRUE(env_->SendDirect(env_->nodes_[kNetworkSize],
+                                 env_->nodes_[kNetworkSize]->node_id(),
+                                 kExpectClient));
     env_->ClearMessages();
   }
   {
@@ -129,27 +127,27 @@ TEST_F(RoutingNetworkTest, FUNC_SanityCheck) {
 
 TEST_F(RoutingNetworkTest, FUNC_SanityCheckSend) {
   // Signature 1
-  EXPECT_TRUE(env_->Send(1 + RandomUint32() % 5));
+  EXPECT_TRUE(env_->SendDirect(1 + RandomUint32() % 5));
 
   // Signature 2
-  EXPECT_TRUE(env_->Send(env_->RandomVaultNode()->node_id()));
+  EXPECT_TRUE(env_->SendDirect(env_->RandomVaultNode()->node_id()));
 
-  EXPECT_TRUE(env_->Send(env_->RandomClientNode()->node_id(), kExpectClient));
+  EXPECT_TRUE(env_->SendDirect(env_->RandomClientNode()->node_id(), kExpectClient));
 
-  EXPECT_TRUE(env_->Send(NodeId(NodeId::kRandomId), kExpectDoesNotExist));
+  EXPECT_TRUE(env_->SendDirect(NodeId(NodeId::kRandomId), kExpectDoesNotExist));
 
   // Signature 3
-  EXPECT_TRUE(env_->Send(env_->RandomVaultNode(), env_->RandomVaultNode()->node_id()));
+  EXPECT_TRUE(env_->SendDirect(env_->RandomVaultNode(), env_->RandomVaultNode()->node_id()));
 
-  EXPECT_TRUE(env_->Send(env_->RandomVaultNode(),
-                         env_->RandomClientNode()->node_id(),
-                         kExpectClient));
+  EXPECT_TRUE(env_->SendDirect(env_->RandomVaultNode(),
+                               env_->RandomClientNode()->node_id(),
+                               kExpectClient));
 
-  EXPECT_TRUE(env_->Send(env_->RandomClientNode(), env_->RandomVaultNode()->node_id()));
+  EXPECT_TRUE(env_->SendDirect(env_->RandomClientNode(), env_->RandomVaultNode()->node_id()));
 
-  EXPECT_TRUE(env_->Send(env_->RandomClientNode(),
-                         env_->RandomClientNode()->node_id(),
-                         kExpectClient));
+  EXPECT_TRUE(env_->SendDirect(env_->RandomClientNode(),
+                               env_->RandomClientNode()->node_id(),
+                               kExpectClient));
 }
 
 TEST_F(RoutingNetworkTest, FUNC_SanityCheckSendGroup) {
@@ -180,30 +178,27 @@ TEST_F(RoutingNetworkTest, FUNC_SanityCheckSendGroup) {
 
 TEST_F(RoutingNetworkTest, FUNC_Send) {
   boost::progress_timer t;
-  EXPECT_TRUE(env_->Send(1));
+  EXPECT_TRUE(env_->SendDirect(1));
   std::cout << "Time taken for test : " << t.elapsed();
 }
 
 TEST_F(RoutingNetworkTest, FUNC_SendToNonExistingNode) {
-  EXPECT_TRUE(env_->Send(NodeId(NodeId::kRandomId), kExpectDoesNotExist));
-  EXPECT_TRUE(env_->Send(env_->nodes_[env_->RandomVaultIndex()]->node_id()));
+  EXPECT_TRUE(env_->SendDirect(NodeId(NodeId::kRandomId), kExpectDoesNotExist));
+  EXPECT_TRUE(env_->SendDirect(env_->nodes_[env_->RandomVaultIndex()]->node_id()));
 }
 
 TEST_F(RoutingNetworkTest, FUNC_ClientSend) {
-  EXPECT_TRUE(env_->Send(1));
-  Sleep(boost::posix_time::seconds(21));  // This sleep is required for un-responded requests
+  EXPECT_TRUE(env_->SendDirect(1));
 }
 
 TEST_F(RoutingNetworkTest, FUNC_SendMulti) {
   boost::progress_timer t;
-  EXPECT_TRUE(env_->Send(5));
+  EXPECT_TRUE(env_->SendDirect(5));
   std::cout << "Time taken for test : " << t.elapsed();
 }
 
 TEST_F(RoutingNetworkTest, FUNC_ClientSendMulti) {
-  EXPECT_TRUE(env_->Send(3));
-// This sleep is required for un-responded requests
-  Sleep(boost::posix_time::seconds(static_cast<long>(env_->nodes_.size() + 1)));  // NOLINT (Fraser)
+  EXPECT_TRUE(env_->SendDirect(3));
 }
 
 TEST_F(RoutingNetworkTest, FUNC_SendToGroup) {
@@ -349,9 +344,9 @@ TEST_F(RoutingNetworkTest, FUNC_SendToClientsWithSameId) {
     env_->AddNode(true, node_id);
 
   for (uint16_t index(0); index < kMessageCount; ++index)
-    EXPECT_TRUE(env_->Send(env_->nodes_[kNetworkSize],
-                           env_->nodes_[kNetworkSize]->node_id(),
-                           kExpectClient));
+    EXPECT_TRUE(env_->SendDirect(env_->nodes_[kNetworkSize],
+                                 env_->nodes_[kNetworkSize]->node_id(),
+                                 kExpectClient));
   uint16_t num_of_tries(0);
   bool done(false);
   do {
@@ -376,8 +371,7 @@ TEST_F(RoutingNetworkTest, FUNC_SendToClientWithSameId) {
   size_t size(0);
 
   env_->ClearMessages();
-  EXPECT_TRUE(env_->Send(env_->nodes_[new_index], node_id, kExpectClient));
-  Sleep(boost::posix_time::seconds(1));
+  EXPECT_TRUE(env_->SendDirect(env_->nodes_[new_index], node_id, kExpectClient));
   for (auto node : env_->nodes_) {
     size += node->MessagesSize();
   }
@@ -387,7 +381,7 @@ TEST_F(RoutingNetworkTest, FUNC_SendToClientWithSameId) {
 TEST_F(RoutingNetworkTest, FUNC_GetRandomExistingNode) {
   uint32_t collisions(0);
   size_t kChoseIndex(env_->RandomNodeIndex());
-  EXPECT_TRUE(env_->Send(1));
+  EXPECT_TRUE(env_->SendDirect(1));
 //  EXPECT_LT(env_->nodes_[random_node]->RandomNodeVector().size(), 98);
 //  for (auto node : env_->nodes_[random_node]->RandomNodeVector())
 //    LOG(kVerbose) << HexSubstr(node.string());

@@ -119,19 +119,22 @@ TEST_F(RoutingChurnTest, FUNC_MessagingNetworkChurn) {
                                             this->RandomVaultNode());
                                          // Choose random client nodes for direct message
                                          // TODO(Alison) - use result?
-                                         sender_client->Send(receiver_client->node_id(),
-                                                             message,
-                                                             false);
+                                         sender_client->SendDirect(receiver_client->node_id(),
+                                                                   message,
+                                                                   false,
+                                                                   [](std::string /*str*/) {});
                                          // Choose random client for group message to random env
                                          // TODO(Alison) - use result?
                                          sender_client->SendGroup(NodeId(NodeId::kRandomId),
                                                                   message,
-                                                                  false);
+                                                                  false,
+                                                                  [](std::string /*str*/) {});
                                          // Choose random vault for group message to random env
                                          // TODO(Alison) - use result?
                                          vault_node->SendGroup(NodeId(NodeId::kRandomId),
                                                                message,
-                                                               false);
+                                                               false,
+                                                               [](std::string /*str*/) {});
                                          // Wait before going again
                                          Sleep(boost::posix_time::milliseconds(900 +
                                                                                RandomUint32() %

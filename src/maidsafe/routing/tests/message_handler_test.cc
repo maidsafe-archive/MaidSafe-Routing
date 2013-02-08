@@ -276,7 +276,7 @@ TEST_F(MessageHandlerTest, BEH_HandleGroupMessage) {
                                        closest_nodes.end(),
                                        [&](const NodeId& node_id) {
                                          return node_id == close_info_.node_id;
-                                       }));
+                                       }), closest_nodes.end());
     EXPECT_CALL(*utils_, SendToClosestNode(testing::_)).Times(0);
     EXPECT_CALL(*utils_, SendToDirect(testing::AllOf(
                                           testing::Property(&protobuf::Message::destination_id,

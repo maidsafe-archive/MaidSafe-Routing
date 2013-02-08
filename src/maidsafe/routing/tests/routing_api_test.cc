@@ -167,20 +167,34 @@ TEST(APITest, FUNC_API_AnonymousNode) {
   routing3.Join(functors3, std::vector<Endpoint>(1, endpoint2));
   EXPECT_EQ(join_future.wait_for(std::chrono::seconds(10)), std::future_status::ready);
 
-  // Testing Send
-  std::future<std::string> future_1(routing3.Send(NodeId(node1.node_info.node_id),
-                                                  "message_from_anonymous node",
-                                                  false));
-  ASSERT_EQ(std::future_status::ready, future_1.wait_for(std::chrono::seconds(10)));
-  ASSERT_EQ("response to message_from_anonymous node", future_1.get());
+  // Test SendDirect (1)
+  std::string message_1("message_from_anonymous node");
+  std::mutex mutex_1;
+  std::condition_variable cond_var_1;
+  ResponseFunctor response_functor_1 = [&message_1, &mutex_1, &cond_var_1] (std::string string) {
+    std::unique_lock<std::mutex> lock(mutex_1);
+    ASSERT_EQ(("response to " + message_1), string);
+    cond_var_1.notify_one();
+  };
+  routing3.SendDirect(node1.node_info.node_id, message_1, false, response_functor_1);
+  std::unique_lock<std::mutex> lock_1(mutex_1);
+  EXPECT_EQ(std::cv_status::no_timeout, cond_var_1.wait_for(lock_1, std::chrono::seconds(10)));
 
   Sleep(boost::posix_time::seconds(11));  // to allow disconnection
 
-  std::future<std::string> future_2(routing3.Send(NodeId(node1.node_info.node_id),
-                                                  "message_2_from_anonymous node",
-                                                  false));
-  ASSERT_EQ(std::future_status::ready, future_2.wait_for(std::chrono::seconds(1)));
-  EXPECT_THROW(future_2.get(), std::exception);
+  // Test SendDirect (2)
+  std::string message_2("message_2_from_anonymous node");
+  std::mutex mutex_2;
+  std::condition_variable cond_var_2;
+  ResponseFunctor response_functor_2 = [&message_2, &mutex_2, &cond_var_2] (std::string string) {
+    std::unique_lock<std::mutex> lock(mutex_2);
+    ASSERT_EQ(0, string.size());
+    cond_var_2.notify_one();
+  };
+  routing3.SendDirect(node1.node_info.node_id, message_2, false, response_functor_2);
+  std::unique_lock<std::mutex> lock_2(mutex_2);
+  EXPECT_EQ(std::cv_status::timeout, cond_var_1.wait_for(lock_2, std::chrono::seconds(1)));
+
   rudp::Parameters::bootstrap_connection_lifespan = boost::posix_time::minutes(10);
 }
 
@@ -246,13 +260,20 @@ TEST(APITest, BEH_API_SendToSelf) {
   routing3.Join(functors3, std::vector<Endpoint>(1, endpoint2));
   EXPECT_EQ(join_future.wait_for(std::chrono::seconds(10)), std::future_status::ready);
 
-  //  Testing Send
-  std::future<std::string> future(routing3.Send(NodeId(node3.node_info.node_id),
-                                                "message from my node",
-                                                false));
-  ASSERT_EQ(std::future_status::ready, future.wait_for(std::chrono::seconds(10)));
-  ASSERT_EQ("response to message from my node", future.get());
+  // Test SendDirect
+  std::string data("message from my node");
+  std::mutex mutex;
+  std::condition_variable cond_var;
+  ResponseFunctor response_functor = [&data, &mutex, &cond_var] (std::string string) {
+    std::unique_lock<std::mutex> lock(mutex);
+    ASSERT_EQ("response to " + data, string);
+    cond_var.notify_one();
+  };
+  routing3.SendDirect(node3.node_info.node_id, data, false, response_functor);
+  std::unique_lock<std::mutex> lock(mutex);
+  EXPECT_EQ(std::cv_status::no_timeout, cond_var.wait_for(lock, std::chrono::seconds(10)));
 }
+
 
 TEST(APITest, BEH_API_ClientNode) {
   auto pmid1(MakePmid()), pmid2(MakePmid());
@@ -314,13 +335,21 @@ TEST(APITest, BEH_API_ClientNode) {
   routing3.Join(functors3, std::vector<Endpoint>(1, endpoint2));
   EXPECT_EQ(join_future.wait_for(std::chrono::seconds(10)), std::future_status::ready);
 
-  //  Testing Send
+  // Test SendDirect
+  std::mutex mutex;
+  std::condition_variable cond_var;
   std::string data(RandomAlphaNumericString(512 * 1024));
-  std::future<std::string> future(routing3.Send(NodeId(node1.node_info.node_id),
-                                                data,
-                                                false));
-  ASSERT_EQ(std::future_status::ready, future.wait_for(std::chrono::seconds(10)));
-  ASSERT_EQ(("response to " + data), future.get());
+  ResponseFunctor response_functor = [&cond_var, &mutex, &data] (std::string string) {
+      std::unique_lock<std::mutex> lock(mutex);
+      ASSERT_EQ(("response to " + data), string);
+      cond_var.notify_one();
+  };
+  routing3.SendDirect(node1.node_info.node_id,
+                      data,
+                      false,
+                      response_functor);
+  std::unique_lock<std::mutex> lock(mutex);
+  EXPECT_EQ(std::cv_status::no_timeout, cond_var.wait_for(lock, std::chrono::seconds(10)));
 }
 
 TEST(APITest, BEH_API_ClientNodeSameId) {
@@ -402,18 +431,31 @@ TEST(APITest, BEH_API_ClientNodeSameId) {
   routing4.Join(functors4, std::vector<Endpoint>(1, endpoint2));
   EXPECT_EQ(join_future2.wait_for(std::chrono::seconds(10)), std::future_status::ready);
 
-  //  Testing Send
-  std::future<std::string> future_1(routing3.Send(NodeId(node1.node_info.node_id),
-                                                  "message from client node",
-                                                  false));
-  ASSERT_EQ(std::future_status::ready, future_1.wait_for(std::chrono::seconds(10)));
-  ASSERT_EQ("response to message from client node", future_1.get());
+  // Test SendDirect (1)
+  std::string data_1("message 1 from client node");
+  std::mutex mutex_1;
+  std::condition_variable cond_var_1;
+  ResponseFunctor response_functor_1 = [&data_1, &mutex_1, &cond_var_1] (std::string string) {
+    std::unique_lock<std::mutex> lock_1;
+    ASSERT_EQ("response to " + data_1, string);
+    cond_var_1.notify_one();
+  };
+  routing3.SendDirect(node1.node_info.node_id, data_1, false, response_functor_1);
+  std::unique_lock<std::mutex> lock_1(mutex_1);
+  EXPECT_EQ(std::cv_status::no_timeout, cond_var_1.wait_for(lock_1, std::chrono::seconds(10)));
 
-  std::future<std::string> future_2(routing4.Send(NodeId(node1.node_info.node_id),
-                                                  "message from client node",
-                                                  false));
-  ASSERT_EQ(std::future_status::ready, future_2.wait_for(std::chrono::seconds(10)));
-  ASSERT_EQ("response to message from client node", future_2.get());
+  // Test SendDirect (2)
+  std::string data_2("message 2 from client node");
+  std::mutex mutex_2;
+  std::condition_variable cond_var_2;
+  ResponseFunctor response_functor_2 = [&data_2, &mutex_2, &cond_var_2] (std::string string) {
+    std::unique_lock<std::mutex> lock_2(mutex_2);
+    ASSERT_EQ("response to " + data_2, string);
+    cond_var_2.notify_one();
+  };
+  routing4.SendDirect(node1.node_info.node_id, data_2, false, response_functor_2);
+  std::unique_lock<std::mutex> lock_2(mutex_2);
+  EXPECT_EQ(std::cv_status::no_timeout, cond_var_2.wait_for(lock_2, std::chrono::seconds(10)));
 }
 
 TEST(APITest, BEH_API_NodeNetwork) {
@@ -672,36 +714,48 @@ TEST(APITest, BEH_API_SendGroup) {
   // Call SendGroup repeatedly - measure duration to allow performance comparison
   boost::progress_timer t;
 
-  std::vector<std::future<std::string>> all_futures;
+  std::mutex send_mutex;
+  std::vector<std::promise<bool>> send_promises(kServerCount * kMessageCount);
+  std::vector<uint16_t> send_counts(kServerCount * kMessageCount, 0);
+  std::vector<std::future<bool>> send_futures;
+  for (uint16_t i(0); i < send_promises.size(); ++i)
+    send_futures.emplace_back(send_promises.at(i).get_future());
   for (uint16_t i(0); i < kServerCount; ++i) {
     NodeId dest_id(routing_node[i]->kNodeId());
     uint16_t count(0);
     while (count < kMessageCount) {
+      uint16_t message_index(i * kServerCount + count);
+      ResponseFunctor response_functor =
+          [&send_mutex, &send_promises, &send_counts, &data, message_index] (std::string string) {
+         std::unique_lock<std::mutex> lock(send_mutex);
+         EXPECT_EQ("response to " + data, string) << "for message_index " << message_index;
+         if (send_counts.at(message_index) >= Parameters::node_group_size)
+           return;
+         if (string != "response to " + data) {
+           send_counts.at(message_index) = Parameters::node_group_size;
+           send_promises.at(message_index).set_value(false);
+         } else {
+           send_counts.at(message_index) += 1;
+           if (send_counts.at(message_index) == Parameters::node_group_size)
+             send_promises.at(message_index).set_value(true);
+         }
+      };
+
+      routing_node[i]->SendGroup(dest_id, data, false, response_functor);
       ++count;
-      std::vector<std::future<std::string>> futures(routing_node[i]->SendGroup(dest_id,
-                                                                               data,
-                                                                               false));
-      for (auto j(0); j != 4; ++j) {
-        all_futures.push_back(std::move(futures[j]));
-      }
     }
   }
 
-  while (!all_futures.empty()) {
-    all_futures.erase(std::remove_if(all_futures.begin(), all_futures.end(),
-        [](std::future<std::string>& str)->bool {
-            if (IsReady(str)) {
-              try {
-                str.get();
-               } catch(std::exception& ex) {
-                 LOG(kError) << "Exception : " << ex.what();
-                 EXPECT_TRUE(false) << ex.what();
-               }
+  while (!send_futures.empty()) {
+    send_futures.erase(std::remove_if(send_futures.begin(), send_futures.end(),
+        [&data](std::future<bool>& future_bool)->bool {
+            if (IsReady(future_bool)) {
+                EXPECT_TRUE(future_bool.get());
                return true;
              } else  {
                return false;
              };
-        }), all_futures.end());
+        }), send_futures.end());
     std::this_thread::yield();
   }
   auto time_taken(t.elapsed());
