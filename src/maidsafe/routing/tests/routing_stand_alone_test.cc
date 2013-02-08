@@ -137,7 +137,7 @@ TEST_F(RoutingStandAloneTest, FUNC_ExtendedSendToGroup) {
 }
 
 TEST_F(RoutingStandAloneTest, FUNC_ExtendedSendToGroupRandomId) {
-  uint16_t message_count(200), receivers_message_count(0);
+  uint16_t message_count(50), receivers_message_count(0);
   this->SetUpNetwork(kServerSize);
   uint16_t loop(10);
   while (loop-- > 0) {
