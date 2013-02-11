@@ -111,6 +111,10 @@ bool NonRoutingTable::Contains(const NodeId& node_id) const {
                       }) != nodes_.end();
 }
 
+bool NonRoutingTable::IsConnected(const NodeId& node_id) const {
+  return Contains(node_id);
+}
+
 size_t NonRoutingTable::size() const {
   std::lock_guard<std::mutex> lock(mutex_);
   return nodes_.size();

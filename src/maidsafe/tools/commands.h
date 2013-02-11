@@ -68,7 +68,9 @@ class Commands {
                            std::vector<NodeId>& closests,
                            uint16_t num_of_closests);
   uint16_t MakeMessage(const int& id_index, const DestinationType& destination_type,
-                       std::vector<NodeId> &closest_nodes);
+                       std::vector<NodeId> &closest_nodes, NodeId& dest_id);
+
+  void CalculateTimeToSleep(bptime::milliseconds &msg_sent_time);
 
   std::shared_ptr<GenericNode> demo_node_;
   std::vector<maidsafe::passport::Pmid> all_pmids_;
@@ -76,6 +78,7 @@ class Commands {
   int identity_index_;
   boost::asio::ip::udp::endpoint bootstrap_peer_ep_;
   size_t data_size_;
+  size_t data_rate_;
   bool result_arrived_, finish_;
   boost::mutex wait_mutex_;
   boost::condition_variable wait_cond_var_;

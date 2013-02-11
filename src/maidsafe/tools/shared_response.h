@@ -39,25 +39,25 @@ class SharedResponse {
  public:
   SharedResponse(std::vector<NodeId> closest_nodes,
                  uint16_t expect_responses)
-  : closest_nodes(closest_nodes),
-    responded_nodes(),
-    expected_responses(expect_responses),
-    msg_send_time(boost::posix_time::microsec_clock::universal_time()),
-    average_response_time(boost::posix_time::milliseconds(0)),
-    mutex() {}
+  : closest_nodes_(closest_nodes),
+    responded_nodes_(),
+    expected_responses_(expect_responses),
+    msg_send_time_(boost::posix_time::microsec_clock::universal_time()),
+    average_response_time_(boost::posix_time::milliseconds(0)),
+    mutex_() {}
   ~SharedResponse() {
-    CheckAndPrintResult();
+    // CheckAndPrintResult();
   }
   void CheckAndPrintResult();
   void CollectResponse(std::string response);
   void PrintRoutingTable(std::string response);
 
-  std::vector<NodeId> closest_nodes;
-  std::set<NodeId> responded_nodes;
-  uint32_t expected_responses;
-  boost::posix_time::ptime msg_send_time;
-  boost::posix_time::milliseconds average_response_time;
-  std::mutex mutex;
+  std::vector<NodeId> closest_nodes_;
+  std::set<NodeId> responded_nodes_;
+  uint32_t expected_responses_;
+  boost::posix_time::ptime msg_send_time_;
+  boost::posix_time::milliseconds average_response_time_;
+  std::mutex mutex_;
 
  private:
   SharedResponse(const SharedResponse&);

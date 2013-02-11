@@ -253,9 +253,9 @@ bool GenericNode::IsConnectedVault(const NodeId& node_id) {
   return routing_->IsConnectedVault(node_id);
 }
 
-// bool GenericNode::IsConnectedToClient(const NodeId& node_id) {
-//  return routing_->IsConnectedToClient(node_id);
-// }
+bool GenericNode::IsConnectedClient(const NodeId& node_id) {
+  return routing_->IsConnectedClient(node_id);
+}
 
 void GenericNode::AddNodeToRandomNodeHelper(const NodeId& node_id) {
   routing_->pimpl_->random_node_helper_.Add(node_id);
