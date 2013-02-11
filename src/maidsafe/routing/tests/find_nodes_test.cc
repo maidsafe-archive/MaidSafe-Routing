@@ -125,14 +125,14 @@ TEST_F(FindNodeNetwork, FUNC_VaultFindClientNode) {
 
   EXPECT_TRUE(this->nodes_[dest]->RoutingTableHasNode(this->nodes_[source]->node_id()));
   EXPECT_FALSE(this->nodes_[source]->RoutingTableHasNode(this->nodes_[dest]->node_id()));
-  EXPECT_TRUE(this->nodes_[source]->NonRoutingTableHasNode(this->nodes_[dest]->node_id()));
+  EXPECT_TRUE(this->nodes_[source]->ClientRoutingTableHasNode(this->nodes_[dest]->node_id()));
 
   // clear up
   EXPECT_TRUE(this->nodes_[dest]->DropNode(this->nodes_[source]->node_id()));
   Sleep(Parameters::recovery_time_lag + Parameters::find_node_interval +
           boost::posix_time::seconds(5));
   EXPECT_TRUE(this->nodes_[dest]->RoutingTableHasNode(this->nodes_[source]->node_id()));
-  EXPECT_TRUE(this->nodes_[source]->NonRoutingTableHasNode(this->nodes_[dest]->node_id()));
+  EXPECT_TRUE(this->nodes_[source]->ClientRoutingTableHasNode(this->nodes_[dest]->node_id()));
 }
 
 TEST_F(FindNodeNetwork, FUNC_ClientFindVaultNode) {
@@ -153,17 +153,17 @@ TEST_F(FindNodeNetwork, FUNC_ClientFindVaultNode) {
 
   EXPECT_TRUE(this->nodes_[client]->RoutingTableHasNode(this->nodes_[source]->node_id()));
   EXPECT_FALSE(this->nodes_[source]->RoutingTableHasNode(this->nodes_[client]->node_id()));
-  EXPECT_TRUE(this->nodes_[source]->NonRoutingTableHasNode(this->nodes_[client]->node_id()));
+  EXPECT_TRUE(this->nodes_[source]->ClientRoutingTableHasNode(this->nodes_[client]->node_id()));
 
   EXPECT_TRUE(this->nodes_[client]->RoutingTableHasNode(this->nodes_[vault]->node_id()));
   EXPECT_FALSE(this->nodes_[vault]->RoutingTableHasNode(this->nodes_[client]->node_id()));
-  EXPECT_TRUE(this->nodes_[vault]->NonRoutingTableHasNode(this->nodes_[client]->node_id()));
+  EXPECT_TRUE(this->nodes_[vault]->ClientRoutingTableHasNode(this->nodes_[client]->node_id()));
 
   // trying to find
   EXPECT_TRUE(Find(this->nodes_[vault], this->nodes_[vault]->node_id()));
   Sleep(boost::posix_time::seconds(1));
   EXPECT_FALSE(this->nodes_[vault]->RoutingTableHasNode(this->nodes_[client]->node_id()));
-  EXPECT_TRUE(this->nodes_[vault]->NonRoutingTableHasNode(this->nodes_[client]->node_id()));
+  EXPECT_TRUE(this->nodes_[vault]->ClientRoutingTableHasNode(this->nodes_[client]->node_id()));
 }
 
 TEST_F(FindNodeNetwork, FUNC_ClientFindClientNode) {
@@ -182,20 +182,20 @@ TEST_F(FindNodeNetwork, FUNC_ClientFindClientNode) {
   EXPECT_TRUE(this->nodes_[client1]->RoutingTableHasNode(this->nodes_[source]->node_id()));
   EXPECT_TRUE(this->nodes_[client2]->RoutingTableHasNode(this->nodes_[source]->node_id()));
   EXPECT_FALSE(this->nodes_[source]->RoutingTableHasNode(this->nodes_[client1]->node_id()));
-  EXPECT_TRUE(this->nodes_[source]->NonRoutingTableHasNode(this->nodes_[client1]->node_id()));
+  EXPECT_TRUE(this->nodes_[source]->ClientRoutingTableHasNode(this->nodes_[client1]->node_id()));
   EXPECT_FALSE(this->nodes_[source]->RoutingTableHasNode(this->nodes_[client2]->node_id()));
-  EXPECT_TRUE(this->nodes_[source]->NonRoutingTableHasNode(this->nodes_[client2]->node_id()));
+  EXPECT_TRUE(this->nodes_[source]->ClientRoutingTableHasNode(this->nodes_[client2]->node_id()));
 
   EXPECT_FALSE(this->nodes_[client1]->RoutingTableHasNode(this->nodes_[client2]->node_id()));
-  EXPECT_FALSE(this->nodes_[client1]->NonRoutingTableHasNode(this->nodes_[client2]->node_id()));
+  EXPECT_FALSE(this->nodes_[client1]->ClientRoutingTableHasNode(this->nodes_[client2]->node_id()));
   EXPECT_FALSE(this->nodes_[client2]->RoutingTableHasNode(this->nodes_[client1]->node_id()));
-  EXPECT_FALSE(this->nodes_[client2]->NonRoutingTableHasNode(this->nodes_[client1]->node_id()));
+  EXPECT_FALSE(this->nodes_[client2]->ClientRoutingTableHasNode(this->nodes_[client1]->node_id()));
 
   // trying to find
   EXPECT_TRUE(Find(this->nodes_[client1], this->nodes_[client1]->node_id()));
   Sleep(boost::posix_time::seconds(5));
   EXPECT_FALSE(this->nodes_[client1]->RoutingTableHasNode(this->nodes_[client2]->node_id()));
-  EXPECT_FALSE(this->nodes_[client1]->NonRoutingTableHasNode(this->nodes_[client2]->node_id()));
+  EXPECT_FALSE(this->nodes_[client1]->ClientRoutingTableHasNode(this->nodes_[client2]->node_id()));
 }
 
 }  // namespace test

@@ -66,7 +66,7 @@ TEST(NetworkUtilsTest, BEH_ProcessSendDirectInvalidEndpoint) {
   NodeId node_id(NodeId::kRandomId);
   NetworkStatistics network_statistics(node_id);
   RoutingTable routing_table(false, node_id, asymm::GenerateKeyPair(), network_statistics);
-  NonRoutingTable non_routing_table(routing_table.kNodeId());
+  ClientRoutingTable non_routing_table(routing_table.kNodeId());
   AsioService asio_service(1);
   NetworkUtils network(routing_table, non_routing_table);
   network.SendToClosestNode(message);
@@ -84,7 +84,7 @@ TEST(NetworkUtilsTest, BEH_ProcessSendUnavailableDirectEndpoint) {
   NodeId node_id(NodeId::kRandomId);
   NetworkStatistics network_statistics(node_id);
   RoutingTable routing_table(false, node_id, asymm::GenerateKeyPair(), network_statistics);
-  NonRoutingTable non_routing_table(routing_table.kNodeId());
+  ClientRoutingTable non_routing_table(routing_table.kNodeId());
   Endpoint endpoint(GetLocalIp(),  maidsafe::test::GetRandomPort());
   AsioService asio_service(1);
   NetworkUtils network(routing_table, non_routing_table);
@@ -212,7 +212,7 @@ TEST(NetworkUtilsTest, FUNC_ProcessSendDirectEndpoint) {
   NetworkStatistics network_statistics(node_id);
   RoutingTable routing_table(false, node_id, asymm::GenerateKeyPair(), network_statistics);
   NodeId node_id3(routing_table.kNodeId());
-  NonRoutingTable non_routing_table(routing_table.kNodeId());
+  ClientRoutingTable non_routing_table(routing_table.kNodeId());
   AsioService asio_service(1);
   NetworkUtils network(routing_table, non_routing_table);
 
@@ -272,7 +272,7 @@ TEST(NetworkUtilsTest, FUNC_ProcessSendRecursiveSendOn) {
   NetworkStatistics network_statistics(node_id);
   RoutingTable routing_table(false, node_id, asymm::GenerateKeyPair(), network_statistics);
   NodeId node_id3(routing_table.kNodeId());
-  NonRoutingTable non_routing_table(routing_table.kNodeId());
+  ClientRoutingTable non_routing_table(routing_table.kNodeId());
   AsioService asio_service(1);
   NetworkUtils network(routing_table, non_routing_table);
 

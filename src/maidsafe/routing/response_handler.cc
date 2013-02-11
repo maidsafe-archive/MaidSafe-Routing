@@ -45,7 +45,7 @@ typedef boost::asio::ip::udp::endpoint Endpoint;
 }  // unnamed namespace
 
 ResponseHandler::ResponseHandler(RoutingTable& routing_table,
-                                 NonRoutingTable& non_routing_table,
+                                 ClientRoutingTable& non_routing_table,
                                  NetworkUtils& network,
                                  GroupChangeHandler &group_change_handler)
     : mutex_(),

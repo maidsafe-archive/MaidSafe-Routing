@@ -34,15 +34,15 @@ struct NodeInfo;
 
 namespace test {
   class GenericNode;
-  class BasicNonRoutingTableTest;
-  class BasicNonRoutingTableTest_BEH_IsThisNodeInRange_Test;
+  class BasicClientRoutingTableTest;
+  class BasicClientRoutingTableTest_BEH_IsThisNodeInRange_Test;
 }
 
 namespace protobuf { class Contact; }
 
-class NonRoutingTable {
+class ClientRoutingTable {
  public:
-  explicit NonRoutingTable(const NodeId& node_id);
+  explicit ClientRoutingTable(const NodeId& node_id);
   bool AddNode(NodeInfo& node, const NodeId& furthest_close_node_id);
   bool CheckNode(NodeInfo& node, const NodeId& furthest_close_node_id);
   std::vector<NodeInfo> DropNodes(const NodeId &node_to_drop);
@@ -57,8 +57,8 @@ class NonRoutingTable {
   friend class test::GenericNode;
 
  private:
-  NonRoutingTable(const NonRoutingTable&);
-  NonRoutingTable& operator=(const NonRoutingTable&);
+  ClientRoutingTable(const ClientRoutingTable&);
+  ClientRoutingTable& operator=(const ClientRoutingTable&);
   bool AddOrCheckNode(NodeInfo& node, const NodeId& furthest_close_node_id, const bool& add);
   bool CheckValidParameters(const NodeInfo& node) const;
   bool CheckParametersAreUnique(const NodeInfo& node) const;
@@ -66,10 +66,10 @@ class NonRoutingTable {
                                   const NodeId& furthest_close_node_id,
                                   const bool& add) const;
   bool IsThisNodeInRange(const NodeId& node_id, const NodeId& furthest_close_node_id) const;
-  std::string PrintNonRoutingTable();
+  std::string PrintClientRoutingTable();
 
-  friend class test::BasicNonRoutingTableTest;
-  friend class test::BasicNonRoutingTableTest_BEH_IsThisNodeInRange_Test;
+  friend class test::BasicClientRoutingTableTest;
+  friend class test::BasicClientRoutingTableTest_BEH_IsThisNodeInRange_Test;
 
   const NodeId kNodeId_;
   UnsubscribeGroupUpdate unsubscribe_group_update_;

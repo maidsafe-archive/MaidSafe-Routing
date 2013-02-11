@@ -200,7 +200,7 @@ class ResponseHandlerTest : public testing::Test {
   NodeId node_id_;
   NetworkStatistics network_statistics_;
   RoutingTable routing_table_;
-  NonRoutingTable non_routing_table_;
+  ClientRoutingTable non_routing_table_;
   MockNetworkUtils network_;
   GroupChangeHandler group_change_handler_;
   ResponseHandler response_handler_;

@@ -45,7 +45,7 @@ typedef boost::asio::ip::udp::endpoint Endpoint;
 }  // unnamed namespace
 
 Service::Service(RoutingTable& routing_table,
-                 NonRoutingTable& non_routing_table,
+                 ClientRoutingTable& non_routing_table,
                  NetworkUtils& network)
   : routing_table_(routing_table),
     non_routing_table_(non_routing_table),

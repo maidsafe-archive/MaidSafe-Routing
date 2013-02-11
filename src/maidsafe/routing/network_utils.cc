@@ -40,7 +40,7 @@ typedef boost::unique_lock<boost::shared_mutex> UniqueLock;
 
 namespace routing {
 
-NetworkUtils::NetworkUtils(RoutingTable& routing_table, NonRoutingTable& non_routing_table)
+NetworkUtils::NetworkUtils(RoutingTable& routing_table, ClientRoutingTable& non_routing_table)
     : running_(true),
       running_mutex_(),
       bootstrap_attempt_(0),
