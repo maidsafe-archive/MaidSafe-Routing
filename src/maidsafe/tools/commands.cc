@@ -157,7 +157,7 @@ void Commands::SendMsgs(const int& id_index, const DestinationType& destination_
                         bool is_routing_req, int num_msg) {
   std::string data, data_to_send;
   uint32_t message_id(0);
-
+  std::atomic<uint16_t> successful_count(0), unsuccessful_count(0);
   //  Check message type
   if (is_routing_req)
     data = "request_routing_table";
@@ -177,32 +177,40 @@ void Commands::SendMsgs(const int& id_index, const DestinationType& destination_
       return;
     bptime::ptime start = bptime::microsec_clock::universal_time();
     std::shared_ptr<SharedResponse> shared_response_ptr;
-    //{
-      shared_response_ptr = std::make_shared<SharedResponse>(closest_nodes, expect_respondent);
-      auto callable = [=](std::string response) {
-        if (!response.empty()) {
-          shared_response_ptr->CollectResponse(response);
-          if (shared_response_ptr->expected_responses_ == 1)
-            shared_response_ptr->PrintRoutingTable(response);
+    shared_response_ptr = std::make_shared<SharedResponse>(closest_nodes, expect_respondent);
+    auto callable = [shared_response_ptr, &successful_count, &unsuccessful_count]
+       (std::string response) {
+      if (!response.empty()) {
+        shared_response_ptr->CollectResponse(response);
+        if (shared_response_ptr->expected_responses_ == 1)
+          shared_response_ptr->PrintRoutingTable(response);
+        if (shared_response_ptr->responded_nodes_.size()
+            == shared_response_ptr->closest_nodes_.size()) {
+          shared_response_ptr->CheckAndPrintResult();
+          ++successful_count;
+        }
         } else {
           std::cout << "Error Response received in "
                     << boost::posix_time::microsec_clock::universal_time()
                        - shared_response_ptr->msg_send_time_
                     << std::endl;
+          ++unsuccessful_count;
         }
-      };
-      //  Send the msg
-      data = ">:<" + boost::lexical_cast<std::string>(++message_id) + "<:>" + data;
-      if (destination_type == DestinationType::kGroup)
-        demo_node_->SendGroup(dest_id, data, false, callable);
-      else
-        demo_node_->SendDirect(dest_id, data, false, callable);
-    //}
+    };
+    //  Send the msg
+    data = ">:<" + boost::lexical_cast<std::string>(++message_id) + "<:>" + data;
+    if (destination_type == DestinationType::kGroup)
+      demo_node_->SendGroup(dest_id, data, false, callable);
+    else
+      demo_node_->SendDirect(dest_id, data, false, callable);
     data = data_to_send;
 
     bptime::ptime now = bptime::microsec_clock::universal_time();
     Sleep(msg_sent_time - (now - start));
   }
+  while ((successful_count + unsuccessful_count) != num_msg);
+  std::cout<< "Succcessfully received messages count::" <<successful_count<<std::endl;
+  std::cout<< "Unsucccessfully received messages count::" <<unsuccessful_count<<std::endl;
 }
 
 void Commands::CalculateTimeToSleep(bptime::milliseconds &msg_sent_time) {

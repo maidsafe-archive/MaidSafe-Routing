@@ -46,7 +46,7 @@ class SharedResponse {
     average_response_time_(boost::posix_time::milliseconds(0)),
     mutex_() {}
   ~SharedResponse() {
-    CheckAndPrintResult();
+    // CheckAndPrintResult();
   }
   void CheckAndPrintResult();
   void CollectResponse(std::string response);
