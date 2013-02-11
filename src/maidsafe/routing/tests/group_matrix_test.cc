@@ -569,7 +569,7 @@ TEST_P(GroupMatrixTest, BEH_GetConnectedPeerFor) {
   EXPECT_EQ(NodeId(), matrix_.GetConnectedPeerFor(target_id).node_id);
 }
 
-TEST_P(GroupMatrixTest, IsNodeIdInGroupRange) {
+TEST_P(GroupMatrixTest, BEH_IsNodeIdInGroupRange) {
   std::vector<NodeInfo> node_ids;
   if (!client_mode_)
     node_ids.push_back(own_node_info_);
