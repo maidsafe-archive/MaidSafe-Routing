@@ -317,7 +317,7 @@ bool GenericNode::RoutingTableHasNode(const NodeId& node_id) {
          routing_->pimpl_->routing_table_.nodes_.end();
 }
 
-bool GenericNode::NonRoutingTableHasNode(const NodeId& node_id) {
+bool GenericNode::ClientRoutingTableHasNode(const NodeId& node_id) {
   return std::find_if(routing_->pimpl_->non_routing_table_.nodes_.begin(),
                       routing_->pimpl_->non_routing_table_.nodes_.end(),
                       [&node_id](const NodeInfo& node_info) {

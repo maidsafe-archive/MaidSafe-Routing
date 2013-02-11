@@ -29,17 +29,17 @@ namespace maidsafe {
 namespace routing {
 namespace test {
 
-class BasicNonRoutingTableTest : public testing::Test {
+class BasicClientRoutingTableTest : public testing::Test {
  public:
-  BasicNonRoutingTableTest() : node_id_(NodeId::kRandomId) {}
+  BasicClientRoutingTableTest() : node_id_(NodeId::kRandomId) {}
 
  protected:
   NodeId node_id_;
 };
 
-class NonRoutingTableTest : public BasicNonRoutingTableTest {
+class ClientRoutingTableTest : public BasicClientRoutingTableTest {
  public:
-  NonRoutingTableTest() : nodes_(), furthest_close_node_() {}
+  ClientRoutingTableTest() : nodes_(), furthest_close_node_() {}
 
   void PopulateNodes(uint16_t size) {
     for (uint16_t i(0); i < size; ++i)
@@ -71,7 +71,7 @@ class NonRoutingTableTest : public BasicNonRoutingTableTest {
     SortFromTarget(NodeId(NodeId::kRandomId), nodes_);
   }
 
-  void PopulateNonRoutingTable(NonRoutingTable& non_routing_table) {
+  void PopulateClientRoutingTable(ClientRoutingTable& non_routing_table) {
     for (auto node : nodes_)
       EXPECT_TRUE(non_routing_table.AddNode(node, furthest_close_node_.node_id));
   }
@@ -81,8 +81,8 @@ class NonRoutingTableTest : public BasicNonRoutingTableTest {
   NodeInfo furthest_close_node_;
 };
 
-TEST_F(BasicNonRoutingTableTest, BEH_CheckAddOwnNodeInfo) {
-  NonRoutingTable non_routing_table(node_id_);
+TEST_F(BasicClientRoutingTableTest, BEH_CheckAddOwnNodeInfo) {
+  ClientRoutingTable non_routing_table(node_id_);
 
   NodeInfo node(MakeNode());
   node.node_id = non_routing_table.kNodeId();
@@ -91,8 +91,8 @@ TEST_F(BasicNonRoutingTableTest, BEH_CheckAddOwnNodeInfo) {
   EXPECT_FALSE(non_routing_table.AddNode(node, NodeId(NodeId::kRandomId)));
 }
 
-TEST_F(NonRoutingTableTest, BEH_CheckAddFarAwayNode) {
-  NonRoutingTable non_routing_table(node_id_);
+TEST_F(ClientRoutingTableTest, BEH_CheckAddFarAwayNode) {
+  ClientRoutingTable non_routing_table(node_id_);
 
   PopulateNodes(2);
 
@@ -102,8 +102,8 @@ TEST_F(NonRoutingTableTest, BEH_CheckAddFarAwayNode) {
   EXPECT_FALSE(non_routing_table.AddNode(nodes_.at(1), nodes_.at(0).node_id));
 }
 
-TEST_F(NonRoutingTableTest, FUNC_CheckAddSurplusNodes) {
-  NonRoutingTable non_routing_table(node_id_);
+TEST_F(ClientRoutingTableTest, FUNC_CheckAddSurplusNodes) {
+  ClientRoutingTable non_routing_table(node_id_);
 
   PopulateNodesSetFurthestCloseNode(2 * Parameters::max_non_routing_table_size,
                                     non_routing_table.kNodeId());
@@ -124,8 +124,8 @@ TEST_F(NonRoutingTableTest, FUNC_CheckAddSurplusNodes) {
   EXPECT_EQ(Parameters::max_non_routing_table_size, non_routing_table.size());
 }
 
-TEST_F(NonRoutingTableTest, BEH_CheckAddSameNodeIdTwice) {
-  NonRoutingTable non_routing_table(node_id_);
+TEST_F(ClientRoutingTableTest, BEH_CheckAddSameNodeIdTwice) {
+  ClientRoutingTable non_routing_table(node_id_);
 
   PopulateNodes(2);
   SortFromTarget(non_routing_table.kNodeId(), nodes_);
@@ -141,8 +141,8 @@ TEST_F(NonRoutingTableTest, BEH_CheckAddSameNodeIdTwice) {
   EXPECT_TRUE(non_routing_table.AddNode(node, nodes_.at(1).node_id));
 }
 
-TEST_F(NonRoutingTableTest, BEH_CheckAddSameConnectionIdTwice) {
-  NonRoutingTable non_routing_table(node_id_);
+TEST_F(ClientRoutingTableTest, BEH_CheckAddSameConnectionIdTwice) {
+  ClientRoutingTable non_routing_table(node_id_);
 
   PopulateNodes(3);
   SortFromTarget(non_routing_table.kNodeId(), nodes_);
@@ -157,8 +157,8 @@ TEST_F(NonRoutingTableTest, BEH_CheckAddSameConnectionIdTwice) {
   EXPECT_FALSE(non_routing_table.AddNode(nodes_.at(1), nodes_.at(2).node_id));
 }
 
-TEST_F(NonRoutingTableTest, BEH_CheckAddSameKeysTwice) {
-  NonRoutingTable non_routing_table(node_id_);
+TEST_F(ClientRoutingTableTest, BEH_CheckAddSameKeysTwice) {
+  ClientRoutingTable non_routing_table(node_id_);
 
   PopulateNodes(3);
   SortFromTarget(non_routing_table.kNodeId(), nodes_);
@@ -173,8 +173,8 @@ TEST_F(NonRoutingTableTest, BEH_CheckAddSameKeysTwice) {
   EXPECT_FALSE(non_routing_table.AddNode(nodes_.at(1), nodes_.at(2).node_id));
 }
 
-TEST_F(NonRoutingTableTest, BEH_CheckAddSameConnectionAndKeysTwice) {
-  NonRoutingTable non_routing_table(node_id_);
+TEST_F(ClientRoutingTableTest, BEH_CheckAddSameConnectionAndKeysTwice) {
+  ClientRoutingTable non_routing_table(node_id_);
 
   PopulateNodes(3);
   SortFromTarget(non_routing_table.kNodeId(), nodes_);
@@ -191,8 +191,8 @@ TEST_F(NonRoutingTableTest, BEH_CheckAddSameConnectionAndKeysTwice) {
   EXPECT_FALSE(non_routing_table.AddNode(nodes_.at(1), nodes_.at(2).node_id));
 }
 
-TEST_F(NonRoutingTableTest, BEH_AddThenCheckNode) {
-  NonRoutingTable non_routing_table(node_id_);
+TEST_F(ClientRoutingTableTest, BEH_AddThenCheckNode) {
+  ClientRoutingTable non_routing_table(node_id_);
 
   PopulateNodes(2);
 
@@ -204,8 +204,8 @@ TEST_F(NonRoutingTableTest, BEH_AddThenCheckNode) {
   EXPECT_FALSE(non_routing_table.AddNode(nodes_.at(0), nodes_.at(1).node_id));
 }
 
-TEST_F(NonRoutingTableTest, FUNC_DropNodes) {
-  NonRoutingTable non_routing_table(node_id_);
+TEST_F(ClientRoutingTableTest, FUNC_DropNodes) {
+  ClientRoutingTable non_routing_table(node_id_);
 
   PopulateNodesSetFurthestCloseNode(Parameters::max_non_routing_table_size,
                                     non_routing_table.kNodeId());
@@ -214,7 +214,7 @@ TEST_F(NonRoutingTableTest, FUNC_DropNodes) {
   std::vector<NodeInfo> expected_nodes;
   NodeId sought_id(BiasNodeIds(expected_nodes));
 
-  PopulateNonRoutingTable(non_routing_table);
+  PopulateClientRoutingTable(non_routing_table);
 
   std::vector<NodeInfo> dropped_nodes(non_routing_table.DropNodes(sought_id));
   EXPECT_EQ(nodes_.size() - dropped_nodes.size(), non_routing_table.size());
@@ -234,13 +234,13 @@ TEST_F(NonRoutingTableTest, FUNC_DropNodes) {
   }
 }
 
-TEST_F(NonRoutingTableTest, FUNC_DropConnection) {
-  NonRoutingTable non_routing_table(node_id_);
+TEST_F(ClientRoutingTableTest, FUNC_DropConnection) {
+  ClientRoutingTable non_routing_table(node_id_);
 
   PopulateNodesSetFurthestCloseNode(Parameters::max_non_routing_table_size,
                                     non_routing_table.kNodeId());
   ScrambleNodesOrder();
-  PopulateNonRoutingTable(non_routing_table);
+  PopulateClientRoutingTable(non_routing_table);
   ScrambleNodesOrder();
 
   while (!nodes_.empty()) {
@@ -256,8 +256,8 @@ TEST_F(NonRoutingTableTest, FUNC_DropConnection) {
   EXPECT_EQ(0, non_routing_table.size());
 }
 
-TEST_F(NonRoutingTableTest, FUNC_GetNodesInfo) {
-  NonRoutingTable non_routing_table(node_id_);
+TEST_F(ClientRoutingTableTest, FUNC_GetNodesInfo) {
+  ClientRoutingTable non_routing_table(node_id_);
 
   PopulateNodesSetFurthestCloseNode(Parameters::max_non_routing_table_size,
                                     non_routing_table.kNodeId());
@@ -266,7 +266,7 @@ TEST_F(NonRoutingTableTest, FUNC_GetNodesInfo) {
   std::vector<NodeInfo> expected_nodes;
   NodeId sought_id(BiasNodeIds(expected_nodes));
 
-  PopulateNonRoutingTable(non_routing_table);
+  PopulateClientRoutingTable(non_routing_table);
 
   std::vector<NodeInfo> got_nodes(non_routing_table.GetNodesInfo(sought_id));
 
@@ -285,8 +285,8 @@ TEST_F(NonRoutingTableTest, FUNC_GetNodesInfo) {
   }
 }
 
-TEST_F(NonRoutingTableTest, FUNC_IsConnected) {
-  NonRoutingTable non_routing_table(node_id_);
+TEST_F(ClientRoutingTableTest, FUNC_IsConnected) {
+  ClientRoutingTable non_routing_table(node_id_);
 
   PopulateNodesSetFurthestCloseNode(2 * Parameters::max_non_routing_table_size,
                                     non_routing_table.kNodeId());
@@ -304,8 +304,8 @@ TEST_F(NonRoutingTableTest, FUNC_IsConnected) {
     EXPECT_FALSE(non_routing_table.Contains(nodes_.at(i).node_id));
 }
 
-TEST_F(BasicNonRoutingTableTest, BEH_IsThisNodeInRange) {
-  NonRoutingTable non_routing_table(node_id_);
+TEST_F(BasicClientRoutingTableTest, BEH_IsThisNodeInRange) {
+  ClientRoutingTable non_routing_table(node_id_);
 
   std::vector<NodeInfo> nodes;
   NodeInfo node_info;

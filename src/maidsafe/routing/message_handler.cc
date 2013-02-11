@@ -31,7 +31,7 @@ namespace maidsafe {
 namespace routing {
 
 MessageHandler::MessageHandler(RoutingTable& routing_table,
-                               NonRoutingTable& non_routing_table,
+                               ClientRoutingTable& non_routing_table,
                                NetworkUtils& network,
                                Timer& timer,
                                RemoveFurthestNode& remove_furthest_node,
@@ -391,7 +391,7 @@ void MessageHandler::HandleMessageForNonRoutingNodes(protobuf::Message& message)
                   << PrintMessage(message);
     return;
   }
-  LOG(kInfo) << "This node has message destination in its non routing table. Dest id : "
+  LOG(kInfo) << "This node has message destination in its ClientRoutingTable. Dest id : "
              << HexSubstr(message.destination_id()) << " message id: " << message.id();
   return network_.SendToClosestNode(message);
 }

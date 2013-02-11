@@ -33,7 +33,7 @@ namespace maidsafe {
 namespace routing {
 
 GroupChangeHandler::GroupChangeHandler(RoutingTable& routing_table,
-                                       NonRoutingTable& non_routing_table,
+                                       ClientRoutingTable& non_routing_table,
                                        NetworkUtils& network)
   : mutex_(),
     routing_table_(routing_table),

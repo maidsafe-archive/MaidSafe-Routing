@@ -38,7 +38,7 @@ class ResponseHandlerTest_BEH_ConnectAttempts_Test;
 }  // namespace test
 
 class NetworkUtils;
-class NonRoutingTable;
+class ClientRoutingTable;
 class RoutingTable;
 class GroupChangeHandler;
 
@@ -53,7 +53,7 @@ class ResponseHandler : public std::enable_shared_from_this<ResponseHandler> {
 
  public:
   ResponseHandler(RoutingTable& routing_table,
-                  NonRoutingTable& non_routing_table,
+                  ClientRoutingTable& non_routing_table,
                   NetworkUtils& network,
                   GroupChangeHandler& group_change_handler);
   virtual ~ResponseHandler();
@@ -77,7 +77,7 @@ class ResponseHandler : public std::enable_shared_from_this<ResponseHandler> {
 
   mutable std::mutex mutex_;
   RoutingTable& routing_table_;
-  NonRoutingTable& non_routing_table_;
+  ClientRoutingTable& non_routing_table_;
   NetworkUtils& network_;
   GroupChangeHandler& group_change_handler_;
   RequestPublicKeyFunctor request_public_key_functor_;
