@@ -157,7 +157,8 @@ void Commands::SendMsgs(const int& id_index, const DestinationType& destination_
                         bool is_routing_req, int num_msg) {
   std::string data, data_to_send;
   uint32_t message_id(0);
-  std::atomic<uint16_t> successful_count(0), unsuccessful_count(0);
+  uint16_t expect_respondent(0);
+  std::atomic<uint16_t> successful_count(0), operation_count(0);
   //  Check message type
   if (is_routing_req)
     data = "request_routing_table";
@@ -172,13 +173,13 @@ void Commands::SendMsgs(const int& id_index, const DestinationType& destination_
   //   Send messages
   for (int index = 0; index < num_msg || infinite; ++index) {
     std::vector<NodeId> closest_nodes;
-    uint16_t expect_respondent = MakeMessage(id_index, destination_type, closest_nodes, dest_id);
+    expect_respondent = MakeMessage(id_index, destination_type, closest_nodes, dest_id);
     if (expect_respondent == 0)
       return;
     bptime::ptime start = bptime::microsec_clock::universal_time();
     std::shared_ptr<SharedResponse> shared_response_ptr;
     shared_response_ptr = std::make_shared<SharedResponse>(closest_nodes, expect_respondent);
-    auto callable = [shared_response_ptr, &successful_count, &unsuccessful_count]
+    auto callable = [shared_response_ptr, &successful_count, &operation_count]
        (std::string response) {
       if (!response.empty()) {
         shared_response_ptr->CollectResponse(response);
@@ -189,13 +190,13 @@ void Commands::SendMsgs(const int& id_index, const DestinationType& destination_
           shared_response_ptr->CheckAndPrintResult();
           ++successful_count;
         }
-        } else {
-          std::cout << "Error Response received in "
-                    << boost::posix_time::microsec_clock::universal_time()
-                       - shared_response_ptr->msg_send_time_
-                    << std::endl;
-          ++unsuccessful_count;
-        }
+      } else {
+        std::cout << "Error Response received in "
+                  << boost::posix_time::microsec_clock::universal_time()
+                     - shared_response_ptr->msg_send_time_
+                  << std::endl;
+      }
+      ++operation_count;
     };
     //  Send the msg
     data = ">:<" + boost::lexical_cast<std::string>(++message_id) + "<:>" + data;
@@ -208,9 +209,9 @@ void Commands::SendMsgs(const int& id_index, const DestinationType& destination_
     bptime::ptime now = bptime::microsec_clock::universal_time();
     Sleep(msg_sent_time - (now - start));
   }
-  while ((successful_count + unsuccessful_count) != num_msg);
+  while (operation_count != (num_msg * expect_respondent));
   std::cout<< "Succcessfully received messages count::" <<successful_count<<std::endl;
-  std::cout<< "Unsucccessfully received messages count::" <<unsuccessful_count<<std::endl;
+  std::cout<< "Unsucccessfully received messages count::" <<(num_msg - successful_count)<<std::endl;
 }
 
 void Commands::CalculateTimeToSleep(bptime::milliseconds &msg_sent_time) {
