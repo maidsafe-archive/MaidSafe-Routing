@@ -302,6 +302,7 @@ void Commands::PrintUsage() {
   std::cout << "\tsendgroupmultiple <num_msg> Send num of group msg to randomly "
             << " picked-up destination. -1 for infinite\n";
   std::cout << "\tdatasize <data_size> Set the data_size for the message.\n";
+  std::cout << "\tdatarate <data_rate> Set the data_rate for the message.\n";
   std::cout << "\nattype Print the NatType of this node.\n";
   std::cout << "\texit Exit application.\n";
 }
@@ -333,10 +334,13 @@ void Commands::ProcessCommand(const std::string &cmdline) {
   } else if (cmd == "prt") {
     PrintRoutingTable();
   } else if (cmd == "rrt") {
-    std::string data("request_routing_table");
-    SendMsgs(boost::lexical_cast<int>(args[0]), DestinationType::kDirect, true, 1);
+    if (args.size() == 1) {
+      std::string data("request_routing_table");
+      SendMsgs(boost::lexical_cast<int>(args[0]), DestinationType::kDirect, true, 1);
+    }
   } else if (cmd == "peer") {
-    GetPeer(args[0]);
+    if (args.size() == 1)
+      GetPeer(args[0]);
   } else if (cmd == "zerostatejoin") {
     ZeroStateJoin();
   } else if (cmd == "join") {
@@ -379,9 +383,11 @@ void Commands::ProcessCommand(const std::string &cmdline) {
     std::cout << "Sent " << num_msg << " messages to randomly picked-up targets. Finished in :"
               << boost::posix_time::microsec_clock::universal_time() - now << std::endl;
   } else if (cmd == "datasize") {
-    data_size_ = boost::lexical_cast<int>(args[0]);
+    if (args.size() == 1)
+      data_size_ = boost::lexical_cast<int>(args[0]);
   } else if (cmd == "datarate") {
-    data_rate_ = boost::lexical_cast<int>(args[0]);
+    if (args.size() == 1)
+      data_rate_ = boost::lexical_cast<int>(args[0]);
   } else if (cmd == "nattype") {
     std::cout << "NatType for this node is : " << demo_node_->nat_type() << std::endl;
   } else if (cmd == "exit") {
