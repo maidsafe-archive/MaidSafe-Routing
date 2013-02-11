@@ -227,10 +227,15 @@ NodeInfo RoutingTable::DropNode(const NodeId& node_to_drop, bool routing_only) {
 }
 
 bool RoutingTable::IsThisNodeGroupLeader(const NodeId& target_id, NodeInfo& connected_peer) {
-  NodeId connected_peer_id;
+  NodeId current_closest_id(kNodeId_);
+  NodeId closest_peer_id(GetClosestNode(target_id, true).node_id);
+  if (NodeId::CloserToTarget(closest_peer_id, current_closest_id, target_id))
+    current_closest_id = closest_peer_id;
+
   std::unique_lock<std::mutex> lock(mutex_);
-  if (!group_matrix_.IsThisNodeGroupLeader(target_id, connected_peer_id)) {
-    auto found(Find(connected_peer_id, lock));
+  group_matrix_.GetBetterNodeForSendingMessage(target_id, true, current_closest_id);
+  if (current_closest_id != kNodeId_) {
+    auto found(Find(current_closest_id, lock));
     if (found.first) {
       connected_peer = *found.second;
       return false;

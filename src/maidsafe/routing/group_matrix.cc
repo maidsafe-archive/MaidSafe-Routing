@@ -97,6 +97,8 @@ void GroupMatrix::GetBetterNodeForSendingMessage(const NodeId& target_node_id,
       continue;
 
     for (auto& node : row) {
+      if (node.node_id == kNodeId_)
+        continue;
       if (ignore_exact_match && node.node_id == target_node_id)
         continue;
       if (std::find(exclude.begin(), exclude.end(), node.node_id.string()) != exclude.end())
@@ -107,7 +109,8 @@ void GroupMatrix::GetBetterNodeForSendingMessage(const NodeId& target_node_id,
       }
     }
   }
-  LOG(kVerbose) << "For target: " << DebugId(target_node_id)
+  LOG(kVerbose) << "[" << DebugId(kNodeId_)
+                << "]\ttarget: " << DebugId(target_node_id)
                 << "\tfound node in matrix: " << DebugId(closest_id)
                 << "\treccommend sending to: " << DebugId(current_closest_peer.node_id);
 }
@@ -130,7 +133,8 @@ void GroupMatrix::GetBetterNodeForSendingMessage(const NodeId& target_node_id,
       }
     }
   }
-  LOG(kVerbose) << "For target: " << DebugId(target_node_id)
+  LOG(kVerbose) << "[" << DebugId(kNodeId_)
+                << "]\ttarget: " << DebugId(target_node_id)
                 << "\tfound node in matrix: " << DebugId(closest_id)
                 << "\treccommend sending to: " << DebugId(current_closest_peer_id);
 }
