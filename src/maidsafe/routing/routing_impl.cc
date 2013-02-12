@@ -399,7 +399,10 @@ void Routing::Impl::AnonymousSend(protobuf::Message& proto_message) {
     NodeId bootstrap_connection_id(network_.bootstrap_connection_id());
     assert(proto_message.has_relay_connection_id() && "did not set this_node_relay_connection_id");
     rudp::MessageSentFunctor message_sent(
-        [=](int result) {
+        [=, this](int result) {
+          std::lock_guard<std::mutex> lock(running_mutex_);
+          if (!running_)
+            return;
           asio_service_.service().post([=]() {
               if (rudp::kSuccess != result) {
                 timer_.CancelTask(proto_message.id());
