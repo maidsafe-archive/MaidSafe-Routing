@@ -19,7 +19,7 @@ namespace routing {
 namespace test {
 
 MockService::MockService(RoutingTable& routing_table,
-                         NonRoutingTable& non_routing_table,
+                         ClientRoutingTable& non_routing_table,
                          NetworkUtils& utils)
     : Service(routing_table, non_routing_table, utils) {}
 

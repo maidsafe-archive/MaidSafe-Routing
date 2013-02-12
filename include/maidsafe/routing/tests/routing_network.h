@@ -114,7 +114,7 @@ class GenericNode {
   void PrintRoutingTable();
   void PrintGroupMatrix();
   bool RoutingTableHasNode(const NodeId& node_id);
-  bool NonRoutingTableHasNode(const NodeId& node_id);
+  bool ClientRoutingTableHasNode(const NodeId& node_id);
   NodeInfo GetRemovableNode();
   NodeInfo GetNthClosestNode(const NodeId& target_id, uint16_t node_number);
   testing::AssertionResult DropNode(const NodeId& node_id);

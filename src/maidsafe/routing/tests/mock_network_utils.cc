@@ -18,7 +18,8 @@ namespace routing {
 
 namespace test {
 
-MockNetworkUtils::MockNetworkUtils(RoutingTable& routing_table, NonRoutingTable& non_routing_table)
+MockNetworkUtils::MockNetworkUtils(RoutingTable& routing_table,
+                                   ClientRoutingTable& non_routing_table)
     : NetworkUtils(routing_table, non_routing_table) {}
 
 MockNetworkUtils::~MockNetworkUtils() {}

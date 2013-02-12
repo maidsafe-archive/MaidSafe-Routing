@@ -132,7 +132,7 @@ class Routing::Impl {
   std::mutex running_mutex_;
   Functors functors_;
   RandomNodeHelper random_node_helper_;
-  NonRoutingTable non_routing_table_;
+  ClientRoutingTable non_routing_table_;
   RemoveFurthestNode remove_furthest_node_;
   GroupChangeHandler group_change_handler_;
   NetworkStatistics network_statistics_;

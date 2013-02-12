@@ -46,7 +46,7 @@ TEST(ServicesTest, BEH_Ping) {
   NetworkStatistics network_statistics(node_id);
   RoutingTable routing_table(false, node_id, asymm::GenerateKeyPair(),
                              network_statistics);
-  NonRoutingTable non_routing_table(routing_table.kNodeId());
+  ClientRoutingTable non_routing_table(routing_table.kNodeId());
   AsioService asio_service(1);
   NetworkUtils network(routing_table, non_routing_table);
   GroupChangeHandler group_change_handler(routing_table, non_routing_table, network);
@@ -78,7 +78,7 @@ TEST(ServicesTest, BEH_FindNodes) {
   NetworkStatistics network_statistics(node_id);
   RoutingTable routing_table(false, node_id, asymm::GenerateKeyPair(), network_statistics);
   NodeId this_node_id(routing_table.kNodeId());
-  NonRoutingTable non_routing_table(routing_table.kNodeId());
+  ClientRoutingTable non_routing_table(routing_table.kNodeId());
   AsioService asio_service(1);
   NetworkUtils network(routing_table, non_routing_table);
   GroupChangeHandler group_change_handler(routing_table, non_routing_table, network);
@@ -110,7 +110,7 @@ TEST(ServicesTest, BEH_FindNodes) {
 //   asymm::Keys keys;
 //   keys.identity = RandomString(64);
 //   RoutingTable routing_table(keys, false);
-//   NonRoutingTable non_routing_table(keys);
+//   ClientRoutingTable non_routing_table(keys);
 //   AsioService asio_service(0);
 //   Timer timer(asio_service);
 //   NodeInfo node;

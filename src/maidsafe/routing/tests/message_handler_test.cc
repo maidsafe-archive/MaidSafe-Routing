@@ -70,7 +70,7 @@ class MessageHandlerTest : public testing::Test {
     network_statistics_.reset(new NetworkStatistics(node_id));
     table_.reset(new MockRoutingTable(false, node_id, asymm::GenerateKeyPair(),
                                       *network_statistics_));
-    ntable_.reset(new NonRoutingTable(table_->kNodeId()));
+    ntable_.reset(new ClientRoutingTable(table_->kNodeId()));
     utils_.reset(new MockNetworkUtils(*table_, *ntable_));
     group_change_handler_.reset(new GroupChangeHandler(*table_, *ntable_, *utils_));
     service_.reset(new MockService(*table_, *ntable_, *utils_));
@@ -99,7 +99,7 @@ void ClearMessage(protobuf::Message& message) {
   std::mutex mutex_;
   std::condition_variable cond_var_;
   int messages_received_;
-  std::shared_ptr<NonRoutingTable> ntable_;
+  std::shared_ptr<ClientRoutingTable> ntable_;
   std::shared_ptr<MockRoutingTable> table_;
   std::shared_ptr<MockNetworkUtils> utils_;
   std::shared_ptr<RemoveFurthestNode> remove_furthest_node_;

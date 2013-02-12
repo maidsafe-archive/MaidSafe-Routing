@@ -48,7 +48,7 @@ class Message {
 };
 
 class NetworkUtils;
-class NonRoutingTable;
+class ClientRoutingTable;
 class RoutingTable;
 
 
@@ -63,7 +63,7 @@ int AddToRudp(NetworkUtils& network,
 
 bool ValidateAndAddToRoutingTable(NetworkUtils& network,
                                   RoutingTable& routing_table,
-                                  NonRoutingTable& non_routing_table,
+                                  ClientRoutingTable& non_routing_table,
                                   const NodeId& peer_id,
                                   const NodeId& connection_id,
                                   const asymm::PublicKey& public_key,
