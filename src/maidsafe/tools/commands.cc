@@ -197,7 +197,7 @@ void Commands::SendMsgs(const int& id_index, const DestinationType& destination_
                   << std::endl;
       }
       ++operation_count;
-    };
+    }; 
     //  Send the msg
     data = ">:<" + boost::lexical_cast<std::string>(++message_id) + "<:>" + data;
     if (destination_type == DestinationType::kGroup)
@@ -205,11 +205,13 @@ void Commands::SendMsgs(const int& id_index, const DestinationType& destination_
     else
       demo_node_->SendDirect(dest_id, data, false, callable);
     data = data_to_send;
-
     bptime::ptime now = bptime::microsec_clock::universal_time();
     Sleep(msg_sent_time - (now - start));
   }
-  while (operation_count != (num_msg * expect_respondent));
+  
+  while (operation_count != (num_msg * expect_respondent))
+    Sleep(Parameters::default_send_timeout);
+  
   std::cout<< "Succcessfully received messages count::" <<successful_count<<std::endl;
   std::cout<< "Unsucccessfully received messages count::" <<(num_msg - successful_count)<<std::endl;
 }
