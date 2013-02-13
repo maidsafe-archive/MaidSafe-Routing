@@ -158,7 +158,10 @@ void Commands::SendMsgs(const int& id_index, const DestinationType& destination_
   std::string data, data_to_send;
   uint32_t message_id(0);
   uint16_t expect_respondent(0);
-  std::atomic<uint16_t> successful_count(0), operation_count(0);
+  std::atomic<int> successful_count(0);
+  std::mutex mutex;
+  std::condition_variable cond_var;
+  int operation_count(0);
   //  Check message type
   if (is_routing_req)
     data = "request_routing_table";
@@ -177,9 +180,10 @@ void Commands::SendMsgs(const int& id_index, const DestinationType& destination_
     if (expect_respondent == 0)
       return;
     bptime::ptime start = bptime::microsec_clock::universal_time();
-    std::shared_ptr<SharedResponse> shared_response_ptr;
-    shared_response_ptr = std::make_shared<SharedResponse>(closest_nodes, expect_respondent);
-    auto callable = [shared_response_ptr, &successful_count, &operation_count]
+
+    auto shared_response_ptr = std::make_shared<SharedResponse>(closest_nodes, expect_respondent);
+    auto callable = [shared_response_ptr, &successful_count, &operation_count,
+                     &mutex, &num_msg, &expect_respondent, &cond_var]
        (std::string response) {
       if (!response.empty()) {
         shared_response_ptr->CollectResponse(response);
@@ -196,7 +200,12 @@ void Commands::SendMsgs(const int& id_index, const DestinationType& destination_
                      - shared_response_ptr->msg_send_time_
                   << std::endl;
       }
-      ++operation_count;
+      {
+        std::unique_lock<std::mutex> lock(mutex);
+        ++operation_count;
+        if (operation_count == (num_msg * expect_respondent)) 
+        cond_var.notify_one();
+      }
     }; 
     //  Send the msg
     data = ">:<" + boost::lexical_cast<std::string>(++message_id) + "<:>" + data;
@@ -208,10 +217,10 @@ void Commands::SendMsgs(const int& id_index, const DestinationType& destination_
     bptime::ptime now = bptime::microsec_clock::universal_time();
     Sleep(msg_sent_time - (now - start));
   }
-  
-  while (operation_count != (num_msg * expect_respondent))
-    Sleep(Parameters::default_send_timeout);
-  
+  {
+    std::unique_lock<std::mutex> lock(mutex);
+    cond_var.wait(lock);
+  }
   std::cout<< "Succcessfully received messages count::" <<successful_count<<std::endl;
   std::cout<< "Unsucccessfully received messages count::" <<(num_msg - successful_count)<<std::endl;
 }
