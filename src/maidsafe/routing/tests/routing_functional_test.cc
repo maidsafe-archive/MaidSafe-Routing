@@ -708,7 +708,9 @@ TEST_F(RoutingNetworkTest, FUNC_ClosestNodesBehindSymmetricNat) {
     for (uint16_t i(0); i < std::min(size_t(9), min_size); ++i)
       EXPECT_EQ(from_matrix.at(i).node_id, from_network.at(i).node_id)
           << "For node of type " << type
-          << " (index " << i << ")";
+          << " (index " << i << ")"
+          << "\tExpected: " << DebugId(from_network.at(i).node_id)
+          << "\tGot: " << DebugId(from_matrix.at(i).node_id);
   }
 }
 

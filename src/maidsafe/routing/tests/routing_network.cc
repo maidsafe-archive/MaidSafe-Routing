@@ -438,7 +438,9 @@ void GenericNode::SetHealth(const int &health) {
 }
 
 void GenericNode::PostTaskToAsioService(std::function<void()> functor) {
-  routing_->pimpl_->asio_service_.service().post(functor);
+  std::lock_guard<std::mutex> lock(routing_->pimpl_->running_mutex_);
+  if (routing_->pimpl_->running_)
+    routing_->pimpl_->asio_service_.service().post(functor);
 }
 
 rudp::NatType GenericNode::nat_type() {
@@ -998,8 +1000,16 @@ testing::AssertionResult GenericNetwork::SendDirect(const size_t& repeats) {
     }
   }
 
-  while (reply_count < repeats * total_num_nodes * total_num_nodes)
+  uint16_t count(0);
+  uint16_t max_count(20 * (nodes_.size()) * (nodes_.size() - 1));
+  while (reply_count < repeats * total_num_nodes * total_num_nodes) {
+    ++count;
+    if (count == max_count) {
+      EXPECT_TRUE(false) << "Didn't get reply within allowed time!";
+      return testing::AssertionFailure();
+    }
     Sleep(boost::posix_time::millisec(500));
+  }
 
   if (failed)
     return testing::AssertionFailure();
@@ -1064,8 +1074,16 @@ testing::AssertionResult GenericNetwork::SendGroup(const NodeId& target_id,
     this->nodes_.at(source_index)->SendGroup(target_id, data, false, response_functor);
   }
 
-  while (reply_count < Parameters::node_group_size * repeats)
-    Sleep(boost::posix_time::milliseconds(500));
+  uint16_t count(0);
+  uint16_t max_count(200 * repeats);
+  while (reply_count < Parameters::node_group_size * repeats) {
+    ++count;
+    if (count == max_count) {
+      EXPECT_TRUE(false) << "Didn't get replies within allowed time!";
+      return testing::AssertionFailure();
+    }
+    Sleep(boost::posix_time::milliseconds(50));
+  }
 
   if (failed)
     return testing::AssertionFailure();
@@ -1124,8 +1142,16 @@ testing::AssertionResult GenericNetwork::SendDirect(const NodeId& destination_no
     ++message_index;
   }
 
-  while (reply_count < this->nodes_.size())
+  uint16_t count(0);
+  uint16_t max_count(30);
+  while (reply_count < this->nodes_.size()) {
+    ++count;
+    if (count == max_count) {
+      EXPECT_TRUE(false) << "Didn't get replies within allowed time!";
+      return testing::AssertionFailure();
+    }
     Sleep(boost::posix_time::millisec(500));
+  }
 
   if (failed)
     return testing::AssertionFailure();
@@ -1171,8 +1197,16 @@ testing::AssertionResult GenericNetwork::SendDirect(std::shared_ptr<GenericNode>
 
   source_node->SendDirect(destination_node_id, data, false, response_functor);
 
-  while (!finished)
-    Sleep(boost::posix_time::milliseconds(500));
+  uint16_t count(0);
+  uint16_t max_count(300);
+  while (!finished) {
+    ++count;
+    if (count == max_count) {
+      EXPECT_TRUE(false) << "Didn't get reply within allowed time!";
+      return testing::AssertionFailure();
+    }
+    Sleep(boost::posix_time::milliseconds(50));
+  }
 
   if (failed)
     return testing::AssertionFailure();

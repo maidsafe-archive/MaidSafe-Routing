@@ -248,7 +248,8 @@ TEST_F(RoutingStandAloneTest, FUNC_GroupsAndSendWithSymmetricNat) {
   // TODO(Alison) - move this into functional tests when can run on mixed NAT network
   this->SetUpNetwork(kServerSize, 0, kServerSize / 4, 0);  // TODO(Alison) - adjust values?
 
-  WaitForHealthToStabilise();
+  ASSERT_TRUE(WaitForHealthToStabilise());
+  ASSERT_TRUE(WaitForNodesToJoin());
 
   // Check each node's group matrix has closest vaults in it
   uint16_t check_length(Parameters::closest_nodes_size + 1);
@@ -295,7 +296,8 @@ TEST_F(RoutingStandAloneTest, FUNC_GroupsAndSendWithClientsAndSymmetricNat) {
                      kServerSize / 4,
                      kClientSize / 2);  // TODO(Alison) - adjust values?
 
-  WaitForHealthToStabilise();
+  ASSERT_TRUE(WaitForHealthToStabilise());
+  ASSERT_TRUE(WaitForNodesToJoin());
 
   // Check each node's group matrix has closest vaults in it
   uint16_t check_length(Parameters::closest_nodes_size + 1);
@@ -341,6 +343,9 @@ TEST_F(RoutingStandAloneTest, FUNC_MessagePassingSymmetricNat) {
   Parameters::max_routing_table_size = 16;
 
   this->SetUpNetwork(40, 0, 10, 0);
+
+  ASSERT_TRUE(WaitForHealthToStabilise());
+  ASSERT_TRUE(WaitForNodesToJoin());
 
   EXPECT_TRUE(this->SendDirect(3));
 
