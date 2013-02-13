@@ -153,15 +153,9 @@ void Commands::ZeroStateJoin() {
   EXPECT_EQ(kSuccess, f1.get());
 }
 
-void Commands::SendMsgs(const int& id_index, const DestinationType& destination_type,
-                        bool is_routing_req, int num_msg) {
+void Commands::SendMessages(const int& id_index, const DestinationType& destination_type,
+                            bool is_routing_req, int messages_count) {
   std::string data, data_to_send;
-  uint32_t message_id(0);
-  uint16_t expect_respondent(0);
-  std::atomic<int> successful_count(0);
-  std::mutex mutex;
-  std::condition_variable cond_var;
-  int operation_count(0);
   //  Check message type
   if (is_routing_req)
     data = "request_routing_table";
@@ -169,66 +163,44 @@ void Commands::SendMsgs(const int& id_index, const DestinationType& destination_
     data_to_send = data = RandomAlphaNumericString(data_size_);
   bptime::milliseconds msg_sent_time(bptime::milliseconds(0));
   CalculateTimeToSleep(msg_sent_time);
+
   bool infinite(false);
-  if (num_msg == -1)
+  if (messages_count == -1)
     infinite = true;
-  NodeId dest_id;
+
+  uint32_t message_id(0);
+  uint16_t expect_respondent(0);
+  std::atomic<int> successful_count(0);
+  std::mutex mutex;
+  std::condition_variable cond_var;
+  int operation_count(0);
   //   Send messages
-  for (int index = 0; index < num_msg || infinite; ++index) {
+  for (int index = 0; index < messages_count || infinite; ++index) {
     std::vector<NodeId> closest_nodes;
+    NodeId dest_id;
     expect_respondent = MakeMessage(id_index, destination_type, closest_nodes, dest_id);
     if (expect_respondent == 0)
       return;
     bptime::ptime start = bptime::microsec_clock::universal_time();
+    data = ">:<" + std::to_string(++message_id) + "<:>" + data;
+    SendAMessage(successful_count, operation_count, mutex, cond_var, messages_count,
+                 expect_respondent, closest_nodes, dest_id, data);
 
-    auto shared_response_ptr = std::make_shared<SharedResponse>(closest_nodes, expect_respondent);
-    auto callable = [shared_response_ptr, &successful_count, &operation_count,
-                     &mutex, &num_msg, &expect_respondent, &cond_var]
-       (std::string response) {
-      if (!response.empty()) {
-        shared_response_ptr->CollectResponse(response);
-        if (shared_response_ptr->expected_responses_ == 1)
-          shared_response_ptr->PrintRoutingTable(response);
-        if (shared_response_ptr->responded_nodes_.size()
-            == shared_response_ptr->closest_nodes_.size()) {
-          shared_response_ptr->CheckAndPrintResult();
-          ++successful_count;
-        }
-      } else {
-        std::cout << "Error Response received in "
-                  << boost::posix_time::microsec_clock::universal_time()
-                     - shared_response_ptr->msg_send_time_
-                  << std::endl;
-      }
-      {
-        std::unique_lock<std::mutex> lock(mutex);
-        ++operation_count;
-        if (operation_count == (num_msg * expect_respondent)) 
-        cond_var.notify_one();
-      }
-    }; 
-    //  Send the msg
-    data = ">:<" + boost::lexical_cast<std::string>(++message_id) + "<:>" + data;
-    if (destination_type == DestinationType::kGroup)
-      demo_node_->SendGroup(dest_id, data, false, callable);
-    else
-      demo_node_->SendDirect(dest_id, data, false, callable);
     data = data_to_send;
     bptime::ptime now = bptime::microsec_clock::universal_time();
     Sleep(msg_sent_time - (now - start));
   }
   {
     std::unique_lock<std::mutex> lock(mutex);
-    cond_var.wait(lock);
+    if (operation_count != (messages_count * expect_respondent))
+      cond_var.wait(lock);
   }
   std::cout<< "Succcessfully received messages count::" <<successful_count<<std::endl;
-  std::cout<< "Unsucccessfully received messages count::" <<(num_msg - successful_count)<<std::endl;
+  std::cout<< "Unsucccessfully received messages count::" <<(messages_count - successful_count)
+           <<std::endl;
 }
 
-void Commands::CalculateTimeToSleep(bptime::milliseconds &msg_sent_time) {
-  size_t num_msgs_per_second = data_rate_ / data_size_;
-  msg_sent_time = static_cast<bptime::milliseconds>(1000 / num_msgs_per_second);
-}
+
 
 uint16_t Commands::MakeMessage(const int& id_index, const DestinationType& destination_type,
                                std::vector<NodeId> &closest_nodes, NodeId &dest_id) {
@@ -258,6 +230,49 @@ uint16_t Commands::MakeMessage(const int& id_index, const DestinationType& desti
   std::cout << "\t" << maidsafe::HexSubstr(node_id.string()) << std::endl;
   closest_nodes = closests;
   return expected_respodents;
+}
+
+void Commands::CalculateTimeToSleep(bptime::milliseconds &msg_sent_time) {
+  size_t num_msgs_per_second = data_rate_ / data_size_;
+  msg_sent_time = static_cast<bptime::milliseconds>(1000 / num_msgs_per_second);
+}
+
+void Commands::SendAMessage(std::atomic<int> &successful_count, int &operation_count,
+                            std::mutex &mutex, std::condition_variable &cond_var,
+                            int messages_count, uint16_t expect_respondent,
+                            std::vector<NodeId> closest_nodes, NodeId dest_id,
+                            std::string data) {
+  auto shared_response_ptr = std::make_shared<SharedResponse>(closest_nodes, expect_respondent);
+  auto callable = [shared_response_ptr, &successful_count, &operation_count,
+                   &mutex, messages_count, expect_respondent, &cond_var]
+                  (std::string response) {
+    if (!response.empty()) {
+      shared_response_ptr->CollectResponse(response);
+      if (shared_response_ptr->expected_responses_ == 1)
+        shared_response_ptr->PrintRoutingTable(response);
+      if (shared_response_ptr->responded_nodes_.size()
+          == shared_response_ptr->closest_nodes_.size()) {
+        shared_response_ptr->CheckAndPrintResult();
+        ++successful_count;
+      }
+    } else {
+      std::cout << "Error Response received in "
+                << boost::posix_time::microsec_clock::universal_time()
+                   - shared_response_ptr->msg_send_time_
+                << std::endl;
+    }
+    {
+      std::unique_lock<std::mutex> lock(mutex);
+      ++operation_count;
+      if (operation_count == (messages_count * expect_respondent))
+        cond_var.notify_one();
+    }
+  };
+  //  Send the msg
+  if (expect_respondent == 1)
+    demo_node_->SendDirect(dest_id, data, false, callable);
+  else
+    demo_node_->SendGroup(dest_id, data, false, callable);
 }
 
 void Commands::Join() {
@@ -355,8 +370,7 @@ void Commands::ProcessCommand(const std::string &cmdline) {
     PrintRoutingTable();
   } else if (cmd == "rrt") {
     if (args.size() == 1) {
-      std::string data("request_routing_table");
-      SendMsgs(boost::lexical_cast<int>(args[0]), DestinationType::kDirect, true, 1);
+      SendMessages(boost::lexical_cast<int>(args[0]), DestinationType::kDirect, true, 1);
     }
   } else if (cmd == "peer") {
     if (args.size() == 1)
@@ -367,26 +381,26 @@ void Commands::ProcessCommand(const std::string &cmdline) {
     Join();
   } else if (cmd == "senddirect") {
     if (args.size() == 1) {
-      SendMsgs(boost::lexical_cast<int>(args[0]), DestinationType::kDirect, false, 1);
+      SendMessages(boost::lexical_cast<int>(args[0]), DestinationType::kDirect, false, 1);
     } else if (args.size() == 2) {
       int count(boost::lexical_cast<int>(args[1]));
       bool infinite(count < 0);
       if (infinite) {
         std::cout << " Running infinite messaging test. press Ctrl + C to terminate the program"
                   << std::endl;
-        SendMsgs(boost::lexical_cast<int>(args[0]), DestinationType::kDirect, false, -1);
+        SendMessages(boost::lexical_cast<int>(args[0]), DestinationType::kDirect, false, -1);
       } else {
-        SendMsgs(boost::lexical_cast<int>(args[0]), DestinationType::kDirect, false, count);
+        SendMessages(boost::lexical_cast<int>(args[0]), DestinationType::kDirect, false, count);
       }
     }
   } else if (cmd == "sendgroup") {
     if (args.empty())
-      SendMsgs(-1, DestinationType::kGroup, false, 1);
+      SendMessages(-1, DestinationType::kGroup, false, 1);
     else
-      SendMsgs(boost::lexical_cast<int>(args[0]), DestinationType::kGroup, false, 1);
+      SendMessages(boost::lexical_cast<int>(args[0]), DestinationType::kGroup, false, 1);
   } else if (cmd == "sendgroupmultiple") {
     if (args.size() == 1) {
-      SendMsgs(-1, DestinationType::kGroup, false, boost::lexical_cast<int>(args[0]));
+      SendMessages(-1, DestinationType::kGroup, false, boost::lexical_cast<int>(args[0]));
     }
   } else if (cmd == "sendmultiple") {
     int num_msg(10);
@@ -395,9 +409,9 @@ void Commands::ProcessCommand(const std::string &cmdline) {
     if (num_msg == -1) {
       std::cout << " Running infinite messaging test. press Ctrl + C to terminate the program"
                 << std::endl;
-      SendMsgs(-1, DestinationType::kDirect, false, -1);
+      SendMessages(-1, DestinationType::kDirect, false, -1);
     } else {
-      SendMsgs(-1, DestinationType::kDirect, false, num_msg);
+      SendMessages(-1, DestinationType::kDirect, false, num_msg);
     }
     boost::posix_time::ptime now = boost::posix_time::microsec_clock::universal_time();
     std::cout << "Sent " << num_msg << " messages to randomly picked-up targets. Finished in :"

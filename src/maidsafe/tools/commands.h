@@ -61,8 +61,8 @@ class Commands {
   void ZeroStateJoin();
   void Join();
   void Validate(const NodeId& node_id, GivePublicKeyFunctor give_public_key);
-  void SendMsgs(const int& identity_index, const DestinationType& destination_type,
-                bool is_routing_req, int num_msgs);
+  void SendMessages(const int& identity_index, const DestinationType& destination_type,
+                    bool is_routing_req, int messages_count);
 
   NodeId CalculateClosests(const NodeId& target_id,
                            std::vector<NodeId>& closests,
@@ -71,6 +71,12 @@ class Commands {
                        std::vector<NodeId> &closest_nodes, NodeId& dest_id);
 
   void CalculateTimeToSleep(bptime::milliseconds &msg_sent_time);
+
+  void SendAMessage(std::atomic<int> &successful_count, int &operation_count,
+                    std::mutex &mutex, std::condition_variable &cond_var,
+                    int messages_count, uint16_t expect_respondent,
+                    std::vector<NodeId> closest_nodes, NodeId dest_id,
+                    std::string data);
 
   std::shared_ptr<GenericNode> demo_node_;
   std::vector<maidsafe::passport::Pmid> all_pmids_;
