@@ -588,6 +588,29 @@ bool GenericNetwork::RemoveNode(const NodeId& node_id) {
   return true;
 }
 
+bool GenericNetwork::WaitForNodesToJoin() {
+  // TODO(Alison) - tailor max. duration to match number of nodes joining?
+  bool all_joined = true;
+  uint16_t max(10);
+  uint16_t i(0);
+  while (i < max) {
+    all_joined = true;
+    for (uint16_t j(2); j < nodes_.size(); ++j) {
+      if (!nodes_.at(j)->joined()) {
+        all_joined = false;
+        break;
+      }
+    }
+    if (all_joined)
+      return true;
+    ++i;
+    if (i == max)
+      return false;
+    Sleep(boost::posix_time::seconds(5));
+  }
+  return false;
+}
+
 void GenericNetwork::Validate(const NodeId& node_id, GivePublicKeyFunctor give_public_key) const {
   if (node_id == NodeId())
     return;

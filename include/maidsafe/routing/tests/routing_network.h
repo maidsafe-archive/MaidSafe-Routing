@@ -185,6 +185,7 @@ class GenericNetwork {
   void AddNode(const bool& client_mode, const rudp::NatType& nat_type);
   void AddNode(const bool& client_mode, const bool& has_symmetric_nat);
   bool RemoveNode(const NodeId& node_id);
+  bool WaitForNodesToJoin();
   void Validate(const NodeId& node_id, GivePublicKeyFunctor give_public_key) const;
   void SetNodeValidationFunctor(NodePtr node);
   std::vector<NodeId> GroupIds(const NodeId& node_id) const;

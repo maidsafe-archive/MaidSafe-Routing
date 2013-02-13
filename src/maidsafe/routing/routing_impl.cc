@@ -125,15 +125,18 @@ void Routing::Impl::ConnectFunctors(const Functors& functors) {
                                     },
                                     functors_.close_node_replaced,
                                     [this] (const bool& subscribe, NodeInfo node_info) {
+                                      std::lock_guard<std::mutex> lock(running_mutex_);
                                       if (running_)
                                         group_change_handler_.SendSubscribeRpc(
                                             subscribe, node_info);
                                     },
                                     [this] (const NodeId& connection_id) {
+                                      std::lock_guard<std::mutex> lock(running_mutex_);
                                       if (running_)
                                         group_change_handler_.Unsubscribe(connection_id);
                                     });
   non_routing_table_.InitialiseFunctors([this] (const NodeId& connection_id) {
+                                        std::lock_guard<std::mutex> lock(running_mutex_);
                                           if (running_)
                                             group_change_handler_.Unsubscribe(connection_id);
                                         });

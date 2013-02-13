@@ -639,6 +639,7 @@ TEST_F(RoutingNetworkTest, FUNC_ClosestNodesClientBehindSymmetricNat) {
     env_->AddNode(false, node_id, false, true);
 
   ASSERT_TRUE(env_->WaitForHealthToStabilise());
+  ASSERT_TRUE(env_->WaitForNodesToJoin());
 
   int index(env_->NodeIndex(sym_client_id));
   ASSERT_GE(index, 0);
@@ -669,6 +670,7 @@ TEST_F(RoutingNetworkTest, FUNC_ClosestNodesVaultBehindSymmetricNat) {
     env_->AddNode(false, node_id, false, true);
 
   ASSERT_TRUE(env_->WaitForHealthToStabilise());
+  ASSERT_TRUE(env_->WaitForNodesToJoin());
 
   int index(env_->NodeIndex(sym_vault_id));
   ASSERT_GE(index, 0);
@@ -691,6 +693,7 @@ TEST_F(RoutingNetworkTest, FUNC_ClosestNodesBehindSymmetricNat) {
     env_->AddNode(true, true);
 
   ASSERT_TRUE(env_->WaitForHealthToStabilise());
+  ASSERT_TRUE(env_->WaitForNodesToJoin());
 
   for (auto node : env_->nodes_) {
     std::vector<NodeInfo> from_matrix(node->ClosestNodes());
@@ -714,6 +717,7 @@ TEST_F(RoutingNetworkTest, FUNC_VaultJoinWhenClosestVaultAlsoBehindSymmetricNat)
   env_->AddNode(false, sym_node_id_1, false, true);
 
   ASSERT_TRUE(env_->WaitForHealthToStabilise());
+  ASSERT_TRUE(env_->WaitForNodesToJoin());
 
   std::vector<NodeInfo> closest_vaults(env_->GetClosestVaults(sym_node_id_1, 2));
 
@@ -730,6 +734,7 @@ TEST_F(RoutingNetworkTest, FUNC_ClientJoinWhenClosestVaultAlsoBehindSymmetricNat
   env_->AddNode(false, sym_node_id_1, false, true);
 
   ASSERT_TRUE(env_->WaitForHealthToStabilise());
+  ASSERT_TRUE(env_->WaitForNodesToJoin());
 
   std::vector<NodeInfo> closest_vaults(env_->GetClosestVaults(sym_node_id_1, 2));
 
