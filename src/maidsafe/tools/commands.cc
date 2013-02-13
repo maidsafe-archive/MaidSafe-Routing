@@ -123,7 +123,7 @@ void Commands::PrintRoutingTable() {
 void Commands::GetPeer(const std::string &peer) {
   size_t delim = peer.rfind(':');
   try {
-    bootstrap_peer_ep_.port(boost::lexical_cast<uint16_t>(peer.substr(delim + 1)));
+    bootstrap_peer_ep_.port(static_cast<uint16_t>(atoi(peer.substr(delim + 1).c_str())));
     bootstrap_peer_ep_.address(boost::asio::ip::address::from_string(peer.substr(0, delim)));
     std::cout << "Going to bootstrap from endpoint " << bootstrap_peer_ep_ << std::endl;
   }
@@ -370,7 +370,7 @@ void Commands::ProcessCommand(const std::string &cmdline) {
     PrintRoutingTable();
   } else if (cmd == "rrt") {
     if (args.size() == 1) {
-      SendMessages(boost::lexical_cast<int>(args[0]), DestinationType::kDirect, true, 1);
+      SendMessages(atoi(args[0].c_str()), DestinationType::kDirect, true, 1);
     }
   } else if (cmd == "peer") {
     if (args.size() == 1)
@@ -381,31 +381,31 @@ void Commands::ProcessCommand(const std::string &cmdline) {
     Join();
   } else if (cmd == "senddirect") {
     if (args.size() == 1) {
-      SendMessages(boost::lexical_cast<int>(args[0]), DestinationType::kDirect, false, 1);
+      SendMessages(atoi(args[0].c_str()), DestinationType::kDirect, false, 1);
     } else if (args.size() == 2) {
-      int count(boost::lexical_cast<int>(args[1]));
+      int count(atoi(args[1].c_str()));
       bool infinite(count < 0);
       if (infinite) {
         std::cout << " Running infinite messaging test. press Ctrl + C to terminate the program"
                   << std::endl;
-        SendMessages(boost::lexical_cast<int>(args[0]), DestinationType::kDirect, false, -1);
+        SendMessages(atoi(args[0].c_str()), DestinationType::kDirect, false, -1);
       } else {
-        SendMessages(boost::lexical_cast<int>(args[0]), DestinationType::kDirect, false, count);
+        SendMessages(atoi(args[0].c_str()), DestinationType::kDirect, false, count);
       }
     }
   } else if (cmd == "sendgroup") {
     if (args.empty())
       SendMessages(-1, DestinationType::kGroup, false, 1);
     else
-      SendMessages(boost::lexical_cast<int>(args[0]), DestinationType::kGroup, false, 1);
+      SendMessages(atoi(args[0].c_str()), DestinationType::kGroup, false, 1);
   } else if (cmd == "sendgroupmultiple") {
     if (args.size() == 1) {
-      SendMessages(-1, DestinationType::kGroup, false, boost::lexical_cast<int>(args[0]));
+      SendMessages(-1, DestinationType::kGroup, false, atoi(args[0].c_str()));
     }
   } else if (cmd == "sendmultiple") {
     int num_msg(10);
     if (!args.empty())
-      num_msg = boost::lexical_cast<int>(args[0]);
+      num_msg = atoi(args[0].c_str());
     if (num_msg == -1) {
       std::cout << " Running infinite messaging test. press Ctrl + C to terminate the program"
                 << std::endl;
@@ -418,10 +418,10 @@ void Commands::ProcessCommand(const std::string &cmdline) {
               << boost::posix_time::microsec_clock::universal_time() - now << std::endl;
   } else if (cmd == "datasize") {
     if (args.size() == 1)
-      data_size_ = boost::lexical_cast<int>(args[0]);
+      data_size_ = atoi(args[0].c_str());
   } else if (cmd == "datarate") {
     if (args.size() == 1)
-      data_rate_ = boost::lexical_cast<int>(args[0]);
+      data_rate_ = atoi(args[0].c_str());
   } else if (cmd == "nattype") {
     std::cout << "NatType for this node is : " << demo_node_->nat_type() << std::endl;
   } else if (cmd == "exit") {
