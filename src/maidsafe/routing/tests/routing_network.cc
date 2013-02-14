@@ -1049,6 +1049,8 @@ struct SendGroupMonitor {
 testing::AssertionResult GenericNetwork::SendGroup(const NodeId& target_id,
                                                    const size_t& repeats,
                                                    uint16_t source_index) {
+  LOG(kVerbose) << "Doing SendGroup from " << DebugId(nodes_.at(source_index)->node_id())
+                << " to " << DebugId(target_id);
   assert(repeats > 0);
   std::string data(RandomAlphaNumericString((2 ^ 10) * 256));
   std::atomic<uint16_t> reply_count(0);
@@ -1070,12 +1072,15 @@ testing::AssertionResult GenericNetwork::SendGroup(const NodeId& target_id,
       }
       EXPECT_FALSE(reply.empty());
       if (reply.empty()) {
+        LOG(kError) << "Got empty reply for SendGroup to target: " << DebugId(target_id);
         failed = true;
         return;
       }
       // TODO(Alison) - check data in reply
       try {
         NodeId replier(reply.substr(0, reply.find(">::<")));
+        LOG(kError) << "Got reply from: " << DebugId(replier)
+                    << " for SendGroup to target: " << DebugId(target_id);
         bool valid_replier(std::find(monitor->expected_ids.begin(),
                                      monitor->expected_ids.end(), replier) !=
             monitor->expected_ids.end());
@@ -1084,6 +1089,12 @@ testing::AssertionResult GenericNetwork::SendGroup(const NodeId& target_id,
                                                    [&](const NodeId& node_id) {
                                                      return node_id == replier;
                                                    }), monitor->expected_ids.end());
+      std::string output("SendGroup to target " + DebugId(target_id) + " awaiting replies from: ");
+      for (auto node_id : monitor->expected_ids) {
+        output.append("\t");
+        output.append(DebugId(node_id));
+      }
+      LOG(kVerbose) << output;
         if (!valid_replier)
           failed = true;
       } catch(const std::exception& /*ex*/) {

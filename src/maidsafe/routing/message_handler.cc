@@ -274,6 +274,7 @@ void MessageHandler::HandleGroupMessageAsClosestNode(protobuf::Message& message)
 
   --replication;  // Will send to self as well
   message.set_direct(true);
+  message.clear_route_history();
   NodeId destination_id(message.destination_id());
   NodeId own_node_id(routing_table_.kNodeId());
   auto close_from_matrix(routing_table_.GetClosestMatrixNodes(destination_id, replication + 2));
@@ -299,7 +300,8 @@ void MessageHandler::HandleGroupMessageAsClosestNode(protobuf::Message& message)
              << group_members;
 
   for (auto i : close_from_matrix) {
-    LOG(kInfo) << "Replicating message to : " << HexSubstr(i.node_id.string())
+    LOG(kInfo) << "[" << DebugId(own_node_id) << "] - "
+               << "Replicating message to : " << HexSubstr(i.node_id.string())
                << " [ group_id : " << HexSubstr(group_id)  << "]" << " id: " << message.id();
     message.set_destination_id(i.node_id.string());
     NodeInfo node;

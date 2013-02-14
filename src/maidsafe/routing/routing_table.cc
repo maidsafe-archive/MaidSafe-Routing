@@ -624,6 +624,13 @@ NodeInfo RoutingTable::GetNodeForSendingMessage(const NodeId& target_id,
                                                  ignore_exact_match,
                                                  current_peer);
   }
+  std::string excluded_ids;
+  for (auto& excluded_id : exclude) {
+    excluded_ids.append("\t");
+    excluded_ids.append(HexSubstr(excluded_id));
+  }
+  LOG(kVerbose) << "[" << DebugId(kNodeId_) << "] - best node to send to is "
+                << DebugId(current_peer.node_id) << " (Excluded: " << excluded_ids << ")";
   return current_peer;
 }
 
