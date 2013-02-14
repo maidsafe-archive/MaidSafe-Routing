@@ -193,6 +193,13 @@ void NetworkUtils::SendToDirect(const protobuf::Message& message,
   SendTo(message, peer_node_id, peer_connection_id);
 }
 
+void NetworkUtils::SendToDirectAdjustedRoute(protobuf::Message& message,
+                                            const NodeId& peer_node_id,
+                                            const NodeId& peer_connection_id) {
+  AdjustRouteHistory(message);
+  SendTo(message, peer_node_id, peer_connection_id);
+}
+
 void NetworkUtils::SendToClosestNode(const protobuf::Message& message) {
   // Normal messages
   if (message.has_destination_id() && !message.destination_id().empty()) {

@@ -66,6 +66,9 @@ class NetworkUtils {
   virtual void SendToDirect(const protobuf::Message& message,
                             const NodeId& peer_node_id,
                             const NodeId& peer_connection_id);
+  void SendToDirectAdjustedRoute(protobuf::Message& message,
+                                 const NodeId& peer_node_id,
+                                 const NodeId& peer_connection_id);
   // Handles relay response messages.  Also leave destination ID empty if needs to send as a relay
   // response message
   virtual void SendToClosestNode(const protobuf::Message& message);

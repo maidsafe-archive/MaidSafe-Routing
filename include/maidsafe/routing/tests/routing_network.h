@@ -169,7 +169,7 @@ class GenericNetwork {
 
   bool ValidateRoutingTables() const;
   virtual void SetUp();
-//  virtual void TearDown();
+  virtual void TearDown();
   void SetUpNetwork(const size_t& total_number_vaults,
                     const size_t& total_number_clients = 0);
   // Use to specify proportion of vaults/clients that should behave as though they are behind

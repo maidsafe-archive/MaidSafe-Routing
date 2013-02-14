@@ -493,10 +493,31 @@ void GenericNetwork::SetUp() {
   bootstrap_endpoints_.push_back(node2->endpoint());
 }
 
-// void GenericNetwork::TearDown() {
-//   std::lock_guard<std::mutex> lock(mutex_);
-//   GenericNode::next_node_id_ = 1;
-// }
+void GenericNetwork::TearDown() {
+  std::vector<NodeId> nodes_id;
+  for (auto index(this->ClientIndex()); index < this->nodes_.size(); ++index)
+    nodes_id.push_back(this->nodes_.at(index)->node_id());
+  for (auto& node_id : nodes_id)
+    this->RemoveNode(node_id);
+  nodes_id.clear();
+  LOG(kVerbose) << "Clients are removed";
+
+  for (auto& node : this->nodes_)
+    if (node->HasSymmetricNat())
+      nodes_id.push_back(node->node_id());
+  for (auto& node_id : nodes_id)
+    this->RemoveNode(node_id);
+  nodes_id.clear();
+  LOG(kVerbose) << "Vaults behind symmetric NAT are removed";
+
+  for (auto& node : this->nodes_)
+    nodes_id.insert(nodes_id.begin(), node->node_id());  // reverse order - do bootstraps last
+  for (auto& node_id : nodes_id)
+    this->RemoveNode(node_id);
+
+  std::lock_guard<std::mutex> lock(mutex_);
+  GenericNode::next_node_id_ = 1;
+}
 
 void GenericNetwork::SetUpNetwork(const size_t& total_number_vaults,
                                   const size_t& total_number_clients) {
@@ -1001,7 +1022,7 @@ testing::AssertionResult GenericNetwork::SendDirect(const size_t& repeats) {
   }
 
   uint16_t count(0);
-  uint16_t max_count(20 * (nodes_.size()) * (nodes_.size() - 1));
+  uint16_t max_count(30 * (nodes_.size()) * (nodes_.size() - 1));
   while (reply_count < repeats * total_num_nodes * total_num_nodes) {
     ++count;
     if (count == max_count) {
@@ -1075,7 +1096,7 @@ testing::AssertionResult GenericNetwork::SendGroup(const NodeId& target_id,
   }
 
   uint16_t count(0);
-  uint16_t max_count(200 * repeats);
+  uint16_t max_count(300 * repeats);
   while (reply_count < Parameters::node_group_size * repeats) {
     ++count;
     if (count == max_count) {
