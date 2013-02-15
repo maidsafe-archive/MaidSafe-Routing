@@ -136,6 +136,10 @@ void Commands::GetPeer(const std::string &peer) {
 }
 
 void Commands::ZeroStateJoin() {
+  if (demo_node_->joined()) {
+    std::cout << "Current node already joined" << std::endl;
+    return;
+  }
   if (identity_index_ > 1) {
     std::cout << "can't exec ZeroStateJoin as a non-bootstrap node" << std::endl;
     return;
@@ -153,7 +157,10 @@ void Commands::ZeroStateJoin() {
   auto f1 = std::async(std::launch::async, [=] ()->int {
     return demo_node_->ZeroStateJoin(bootstrap_peer_ep_, peer_node_info);
   });
-  EXPECT_EQ(kSuccess, f1.get());
+  ReturnCode ret_code = static_cast<ReturnCode>(f1.get());
+  EXPECT_EQ(kSuccess, ret_code);
+  if (ret_code == kSuccess)
+    demo_node_->set_joined(true);
 }
 
 void Commands::SendMessages(const int& id_index, const DestinationType& destination_type,
