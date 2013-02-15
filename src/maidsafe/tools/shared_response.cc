@@ -59,7 +59,7 @@ void SharedResponse::PrintRoutingTable(std::string response) {
             response.size() - (response.find("---") + 3)));
     std::vector<NodeId> node_list(
         maidsafe::routing::DeserializeNodeIdList(response_node_list_msg));
-    std::cout << "~~~~~~~~~ RECEIVED ROUTING TABLE ~~~~~~~~~~ :" << std::endl;
+    std::cout << "RECEIVED ROUTING TABLE::::" << std::endl;
     for (auto &node_id : node_list)
       std::cout << "\t" << maidsafe::HexSubstr(node_id.string()) << std::endl;
   }

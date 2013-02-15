@@ -117,7 +117,10 @@ void Commands::Run() {
 }
 
 void Commands::PrintRoutingTable() {
-  demo_node_->PrintRoutingTable();
+  auto routing_nodes = demo_node_->ReturnRoutingTable();
+  std::cout<< "ROUTING TABLE::::" <<std::endl;
+  for (auto routing_node : routing_nodes)
+    std::cout << "\t" << maidsafe::HexSubstr(routing_node.string()) << std::endl;
 }
 
 void Commands::GetPeer(const std::string &peer) {
