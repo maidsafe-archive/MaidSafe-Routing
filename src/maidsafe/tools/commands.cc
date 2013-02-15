@@ -371,10 +371,14 @@ void Commands::ProcessCommand(const std::string &cmdline) {
   } else if (cmd == "rrt") {
     if (args.size() == 1) {
       SendMessages(atoi(args[0].c_str()), DestinationType::kDirect, true, 1);
+    } else {
+      std::cout<< "Error : Try correct option" <<std::endl;
     }
   } else if (cmd == "peer") {
     if (args.size() == 1)
       GetPeer(args[0]);
+    else
+      std::cout<< "Error : Try correct option" <<std::endl;
   } else if (cmd == "zerostatejoin") {
     ZeroStateJoin();
   } else if (cmd == "join") {
@@ -419,9 +423,13 @@ void Commands::ProcessCommand(const std::string &cmdline) {
   } else if (cmd == "datasize") {
     if (args.size() == 1)
       data_size_ = atoi(args[0].c_str());
+    else
+      std::cout<< "Error : Try correct option" <<std::endl;
   } else if (cmd == "datarate") {
     if (args.size() == 1)
       data_rate_ = atoi(args[0].c_str());
+    else
+      std::cout<< "Error : Try correct option" <<std::endl;
   } else if (cmd == "nattype") {
     std::cout << "NatType for this node is : " << demo_node_->nat_type() << std::endl;
   } else if (cmd == "exit") {
