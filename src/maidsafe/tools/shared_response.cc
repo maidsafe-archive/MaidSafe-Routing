@@ -39,9 +39,6 @@ namespace test {
 void SharedResponse::CheckAndPrintResult() {
   if (responded_nodes_.empty())
     return;
-  std::cout << "Response received in "
-            << boost::posix_time::microsec_clock::universal_time() - msg_send_time_
-            << std::endl;
 
   std::cout << "Received response from following nodes :" << std::endl;
   for (auto &responsed_node : responded_nodes_) {
@@ -62,7 +59,7 @@ void SharedResponse::PrintRoutingTable(std::string response) {
             response.size() - (response.find("---") + 3)));
     std::vector<NodeId> node_list(
         maidsafe::routing::DeserializeNodeIdList(response_node_list_msg));
-    std::cout << "Received routing table from peer is :" << std::endl;
+    std::cout << "RECEIVED ROUTING TABLE::::" << std::endl;
     for (auto &node_id : node_list)
       std::cout << "\t" << maidsafe::HexSubstr(node_id.string()) << std::endl;
   }

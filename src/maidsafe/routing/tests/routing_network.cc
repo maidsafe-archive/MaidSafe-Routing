@@ -404,6 +404,14 @@ void GenericNode::PrintRoutingTable() {
   }
 }
 
+std::vector<NodeId> GenericNode::ReturnRoutingTable() {
+  std::vector<NodeId> routing_nodes;
+  std::lock_guard<std::mutex> lock(routing_->pimpl_->routing_table_.mutex_);
+  for (auto node_info : routing_->pimpl_->routing_table_.nodes_)
+    routing_nodes.push_back(node_info.node_id);
+  return routing_nodes;
+}
+
 void GenericNode::PrintGroupMatrix() {
   routing_->pimpl_->routing_table_.PrintGroupMatrix();
 }

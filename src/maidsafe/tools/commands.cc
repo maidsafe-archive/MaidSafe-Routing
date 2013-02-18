@@ -117,7 +117,10 @@ void Commands::Run() {
 }
 
 void Commands::PrintRoutingTable() {
-  demo_node_->PrintRoutingTable();
+  auto routing_nodes = demo_node_->ReturnRoutingTable();
+  std::cout<< "ROUTING TABLE::::" <<std::endl;
+  for (auto routing_node : routing_nodes)
+    std::cout << "\t" << maidsafe::HexSubstr(routing_node.string()) << std::endl;
 }
 
 void Commands::GetPeer(const std::string &peer) {
@@ -133,6 +136,10 @@ void Commands::GetPeer(const std::string &peer) {
 }
 
 void Commands::ZeroStateJoin() {
+  if (demo_node_->joined()) {
+    std::cout << "Current node already joined" << std::endl;
+    return;
+  }
   if (identity_index_ > 1) {
     std::cout << "can't exec ZeroStateJoin as a non-bootstrap node" << std::endl;
     return;
@@ -150,7 +157,10 @@ void Commands::ZeroStateJoin() {
   auto f1 = std::async(std::launch::async, [=] ()->int {
     return demo_node_->ZeroStateJoin(bootstrap_peer_ep_, peer_node_info);
   });
-  EXPECT_EQ(kSuccess, f1.get());
+  ReturnCode ret_code = static_cast<ReturnCode>(f1.get());
+  EXPECT_EQ(kSuccess, ret_code);
+  if (ret_code == kSuccess)
+    demo_node_->set_joined(true);
 }
 
 void Commands::SendMessages(const int& id_index, const DestinationType& destination_type,
@@ -371,10 +381,14 @@ void Commands::ProcessCommand(const std::string &cmdline) {
   } else if (cmd == "rrt") {
     if (args.size() == 1) {
       SendMessages(atoi(args[0].c_str()), DestinationType::kDirect, true, 1);
+    } else {
+      std::cout<< "Error : Try correct option" <<std::endl;
     }
   } else if (cmd == "peer") {
     if (args.size() == 1)
       GetPeer(args[0]);
+    else
+      std::cout<< "Error : Try correct option" <<std::endl;
   } else if (cmd == "zerostatejoin") {
     ZeroStateJoin();
   } else if (cmd == "join") {
@@ -419,9 +433,13 @@ void Commands::ProcessCommand(const std::string &cmdline) {
   } else if (cmd == "datasize") {
     if (args.size() == 1)
       data_size_ = atoi(args[0].c_str());
+    else
+      std::cout<< "Error : Try correct option" <<std::endl;
   } else if (cmd == "datarate") {
     if (args.size() == 1)
       data_rate_ = atoi(args[0].c_str());
+    else
+      std::cout<< "Error : Try correct option" <<std::endl;
   } else if (cmd == "nattype") {
     std::cout << "NatType for this node is : " << demo_node_->nat_type() << std::endl;
   } else if (cmd == "exit") {

@@ -112,6 +112,7 @@ class GenericNode {
                 const protobuf::Message& message,
                 rudp::MessageSentFunctor message_sent_functor);
   void PrintRoutingTable();
+  std::vector<NodeId> ReturnRoutingTable();
   void PrintGroupMatrix();
   bool RoutingTableHasNode(const NodeId& node_id);
   bool ClientRoutingTableHasNode(const NodeId& node_id);
