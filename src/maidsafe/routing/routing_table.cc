@@ -262,6 +262,18 @@ bool RoutingTable::IsThisNodeGroupLeader(const NodeId& target_id,
       return false;
     }
   }
+  for (auto& excluded : exclude) {
+    try {
+      NodeId excluded_id(excluded);
+      if (excluded_id != target_id && NodeId::CloserToTarget(excluded_id, kNodeId_, target_id)) {
+        if (connected_peer.node_id.IsZero())
+          connected_peer = closest_peer;
+        return false;
+      }
+    } catch(const std::exception& ex) {
+      LOG(kError) << "Got invalid string for Node ID. Exception: " << ex.what();
+    }
+  }
   return true;
 }
 
@@ -835,7 +847,9 @@ std::string RoutingTable::PrintRoutingTable() {
   return s;
 }
 
-void RoutingTable::PrintGroupMatrix() {}
+void RoutingTable::PrintGroupMatrix() {
+//  group_matrix_.PrintGroupMatrix();
+}
 
 }  // namespace routing
 

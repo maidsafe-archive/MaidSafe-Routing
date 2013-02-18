@@ -869,6 +869,7 @@ bool GenericNetwork::RestoreComposition() {
   // Intended for use in test SetUp/TearDown
   while (ClientIndex() > kServerSize) {
     RemoveNode(nodes_.at(ClientIndex() - 1)->node_id());
+    Sleep(boost::posix_time::seconds(1));  // TODO(Alison) - remove once hanging is fixed
   }
   while (ClientIndex() < kServerSize) {
     AddNode(false, NodeId());
@@ -881,6 +882,7 @@ bool GenericNetwork::RestoreComposition() {
 
   while (nodes_.size() > kNetworkSize) {
     RemoveNode(nodes_.at(nodes_.size() - 1)->node_id());
+    Sleep(boost::posix_time::seconds(1));  // TODO(Alison) - remove once hanging is fixed
   }
   while (nodes_.size() < kNetworkSize) {
     AddNode(true, NodeId());
