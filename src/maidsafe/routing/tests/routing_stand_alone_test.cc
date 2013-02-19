@@ -35,6 +35,7 @@ class RoutingStandAloneTest : public GenericNetwork, public testing::Test {
 
   virtual void TearDown() {
     Sleep(boost::posix_time::microseconds(100));
+    GenericNetwork::TearDown();
   }
 };
 
@@ -338,18 +339,49 @@ TEST_F(RoutingStandAloneTest, FUNC_GroupsAndSendWithClientsAndSymmetricNat) {
   }
 }
 
-TEST_F(RoutingStandAloneTest, FUNC_MessagePassingSymmetricNat) {
-  uint16_t old_rt_size(Parameters::max_routing_table_size);
-  Parameters::max_routing_table_size = 16;
+class ProportionedRoutingStandAloneTest : public GenericNetwork, public testing::Test {
+ public:
+  ProportionedRoutingStandAloneTest(void)
+    : GenericNetwork(),
+      old_routing_table_size_(Parameters::max_routing_table_size) {
+    Parameters::max_routing_table_size = 16;
+  }
 
-  this->SetUpNetwork(40, 0, 10, 0);
+  virtual ~ProportionedRoutingStandAloneTest() {
+    Parameters::max_routing_table_size = old_routing_table_size_;
+  }
 
-  ASSERT_TRUE(WaitForHealthToStabilise());
-  ASSERT_TRUE(WaitForNodesToJoin());
+  virtual void SetUp() {
+    GenericNetwork::SetUp();
+  }
+
+  virtual void TearDown() {
+    Sleep(boost::posix_time::microseconds(100));
+    GenericNetwork::TearDown();
+  }
+
+ private:
+  uint16_t old_routing_table_size_;
+};
+
+TEST_F(ProportionedRoutingStandAloneTest, FUNC_MessagePassingSymmetricNat) {
+  this->SetUpNetwork(24, 0, 6, 0);
+
+  Sleep(boost::posix_time::seconds(10));
+  EXPECT_TRUE(WaitForNodesToJoin());
+  EXPECT_TRUE(WaitForHealthToStabilise());
 
   EXPECT_TRUE(this->SendDirect(3));
-
-  Parameters::max_routing_table_size = old_rt_size;
+  NodeId target;
+  for (size_t i(0); i < nodes_.size(); ++i) {
+    target = NodeId(NodeId::kRandomId);
+    EXPECT_TRUE(SendGroup(target, 1, i));
+  }
+  for (size_t i(0); i < nodes_.size(); ++i) {
+    for (auto& node : nodes_) {
+      EXPECT_TRUE(SendGroup(node->node_id(), 1, i));
+    }
+  }
 }
 
 }  // namespace test

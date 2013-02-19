@@ -929,27 +929,29 @@ bool GenericNetwork::WaitForHealthToStabilise() const {
         number_nonsymmetric_vaults * 100 /Parameters::max_client_routing_table_size;
 
   while (i != 10 && !healthy) {
+    LOG(kVerbose) << "Wait iteration number: " << i;
     ++i;
     healthy = true;
     int expected_health;
     std::string error_message;
     for (auto node: nodes_) {
+      error_message = "[" + DebugId(node->node_id()) + "]";
       int node_health = node->Health();
       if (node->IsClient()) {
         if (node->has_symmetric_nat_) {
           expected_health = client_symmetric_health;
-          error_message = "Client health (symmetric).";
+          error_message.append(" Client health (symmetric).");
         } else {
           expected_health = client_health;
-          error_message = "Client health (not symmetric).";
+          error_message.append(" Client health (not symmetric).");
         }
       } else {
         if (node->has_symmetric_nat_) {
           expected_health = vault_symmetric_health;
-          error_message = "Vault health (symmetric).";
+          error_message.append(" Vault health (symmetric).");
         } else {
           expected_health = vault_health;
-          error_message = "Vault health (not symmetric).";
+          error_message.append(" Vault health (not symmetric).");
         }
       }
       if (node_health != expected_health) {
@@ -1071,7 +1073,7 @@ testing::AssertionResult GenericNetwork::SendGroup(const NodeId& target_id,
     std::shared_ptr<SendGroupMonitor> monitor(std::make_shared<SendGroupMonitor>(target_group));
     monitor->response_count = 0;
     ResponseFunctor response_functor =
-        [&failed, &reply_count, &target_id, monitor, repeat] (std::string reply) {
+        [&failed, &reply_count, target_id, monitor, repeat] (std::string reply) {
       std::lock_guard<std::mutex> lock(monitor->mutex);
       ++reply_count;
       monitor->response_count += 1;
@@ -1274,6 +1276,15 @@ uint16_t GenericNetwork::NonClientNonSymmetricNatNodesSize() const {
 }
 
 void GenericNetwork::AddNodeDetails(NodePtr node) {
+  std::string descriptor;
+  if (node->has_symmetric_nat_)
+    descriptor.append("Symmetric ");
+  else
+    descriptor.append("Normal ");
+  if (node->IsClient())
+    descriptor.append("client");
+  else
+    descriptor.append(("vault"));
   std::shared_ptr<std::condition_variable> cond_var(new std::condition_variable);
   std::weak_ptr<std::condition_variable> cond_var_weak(cond_var);
   {
@@ -1330,8 +1341,12 @@ void GenericNetwork::AddNodeDetails(NodePtr node) {
   std::mutex mutex;
   if (!node->joined()) {
     std::unique_lock<std::mutex> lock(mutex);
-    auto result = cond_var->wait_for(lock, std::chrono::seconds(20));
-    EXPECT_EQ(result, std::cv_status::no_timeout);
+    uint16_t maximum_wait(20);
+    if (node->has_symmetric_nat_)
+      maximum_wait = 30;
+    auto result = cond_var->wait_for(lock, std::chrono::seconds(maximum_wait));
+    EXPECT_EQ(result, std::cv_status::no_timeout) << descriptor << " node failed to join: "
+                                                  << DebugId(node->node_id());
     Sleep(boost::posix_time::millisec(1000));
   }
   PrintRoutingTables();
