@@ -969,6 +969,66 @@ bool GenericNetwork::WaitForHealthToStabilise() const {
   return healthy;
 }
 
+bool GenericNetwork::WaitForHealthToStabiliseInLargeNetwork() const {
+  // TODO(Alison) - check values for clients
+  int server_size(static_cast<int>(client_index_));
+  assert(server_size > Parameters::max_routing_table_size);
+  int number_nonsymmetric_vaults(NonClientNonSymmetricNatNodesSize());
+  assert(number_nonsymmetric_vaults >= Parameters::greedy_fraction);
+
+  int i(0);
+  bool healthy(false);
+  int vault_health(Parameters::greedy_fraction);
+  int vault_symmetric_health(Parameters::greedy_fraction);
+  int client_health(100);
+  int client_symmetric_health(100);
+  if (server_size <= Parameters::max_client_routing_table_size)
+    client_health = (server_size - 1) * 100 /Parameters::max_client_routing_table_size;
+  if (number_nonsymmetric_vaults <= Parameters::max_client_routing_table_size)
+    client_symmetric_health =
+        number_nonsymmetric_vaults * 100 /Parameters::max_client_routing_table_size;
+
+  while (i != 10 && !healthy) {
+    LOG(kVerbose) << "Wait iteration number: " << i;
+    ++i;
+    healthy = true;
+    int expected_health;
+    std::string error_message;
+    for (auto node: nodes_) {
+      error_message = "[" + DebugId(node->node_id()) + "]";
+      int node_health = node->Health();
+      if (node->IsClient()) {
+        if (node->has_symmetric_nat_) {
+          expected_health = client_symmetric_health;
+          error_message.append(" Client health (symmetric).");
+        } else {
+          expected_health = client_health;
+          error_message.append(" Client health (not symmetric).");
+        }
+      } else {
+        if (node->has_symmetric_nat_) {
+          expected_health = vault_symmetric_health;
+          error_message.append(" Vault health (symmetric).");
+        } else {
+          expected_health = vault_health;
+          error_message.append(" Vault health (not symmetric).");
+        }
+      }
+      if (node_health < expected_health) {
+        LOG(kError) << "Bad " << error_message << " Expected at least: "
+                    << expected_health << " Got: " << node_health;
+        healthy = false;
+        break;
+      }
+    }
+    if (!healthy)
+      Sleep(boost::posix_time::seconds(1));
+  }
+  if (!healthy)
+    LOG(kError) << "Health failed to stabilise in 10 seconds.";
+  return healthy;
+}
+
 bool GenericNetwork::NodeHasSymmetricNat(const NodeId& node_id) const {
   if (!nat_info_available_)
     return false;
@@ -1091,8 +1151,8 @@ testing::AssertionResult GenericNetwork::SendGroup(const NodeId& target_id,
       // TODO(Alison) - check data in reply
       try {
         NodeId replier(reply.substr(0, reply.find(">::<")));
-        LOG(kError) << "Got reply from: " << DebugId(replier)
-                    << " for SendGroup to target: " << DebugId(target_id);
+        LOG(kInfo) << "Got reply from: " << DebugId(replier)
+                   << " for SendGroup to target: " << DebugId(target_id);
         bool valid_replier(std::find(monitor->expected_ids.begin(),
                                      monitor->expected_ids.end(), replier) !=
             monitor->expected_ids.end());
@@ -1107,8 +1167,10 @@ testing::AssertionResult GenericNetwork::SendGroup(const NodeId& target_id,
         output.append(DebugId(node_id));
       }
       LOG(kVerbose) << output;
-        if (!valid_replier)
+        if (!valid_replier) {
+          EXPECT_TRUE(false) << "Got unexpected reply from " << DebugId(replier);
           failed = true;
+        }
       } catch(const std::exception& /*ex*/) {
         EXPECT_TRUE(false) << "Reply contained invalid node ID.";
         failed = true;
@@ -1285,6 +1347,8 @@ void GenericNetwork::AddNodeDetails(NodePtr node) {
     descriptor.append("client");
   else
     descriptor.append(("vault"));
+  LOG(kVerbose) << "GenericNetwork::AddNodeDetails - starting to add " << descriptor
+                << " " << DebugId(node->node_id());
   std::shared_ptr<std::condition_variable> cond_var(new std::condition_variable);
   std::weak_ptr<std::condition_variable> cond_var_weak(cond_var);
   {

@@ -209,7 +209,10 @@ class GenericNetwork {
   void ValidateExpectedNodeType(const NodeId& node_id,
                                 const ExpectedNodeType& expected_node_type) const;
   bool RestoreComposition();
+  // For num. vaults <= max_routing_table_size
   bool WaitForHealthToStabilise() const;
+  // For num. vaults > max_routing_table_size
+  bool WaitForHealthToStabiliseInLargeNetwork() const;
   bool NodeHasSymmetricNat(const NodeId& node_id) const;
   // Do SendDirect between each pair of nodes and monitor results (do this 'repeats' times)
   testing::AssertionResult SendDirect(const size_t& repeats);

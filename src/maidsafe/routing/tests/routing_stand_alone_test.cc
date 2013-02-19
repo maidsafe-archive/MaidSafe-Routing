@@ -343,12 +343,28 @@ class ProportionedRoutingStandAloneTest : public GenericNetwork, public testing:
  public:
   ProportionedRoutingStandAloneTest(void)
     : GenericNetwork(),
-      old_routing_table_size_(Parameters::max_routing_table_size) {
+      old_max_routing_table_size_(Parameters::max_routing_table_size),
+      old_routing_table_size_threshold_(Parameters::routing_table_size_threshold),
+      old_closest_nodes_size_(Parameters::closest_nodes_size),
+      old_max_non_routing_table_size_(Parameters::max_non_routing_table_size),
+      old_max_route_history_(Parameters::max_route_history),
+      old_greedy_fraction_(Parameters::greedy_fraction) {
+    // NB. relative calculations should match those in parameters.cc
     Parameters::max_routing_table_size = 16;
+    Parameters::routing_table_size_threshold = Parameters::max_routing_table_size / 2;
+    Parameters::closest_nodes_size = 4;
+    Parameters::max_non_routing_table_size = Parameters::max_routing_table_size;
+    Parameters::max_route_history = 3;  // less than closest_nodes_size
+    Parameters::greedy_fraction = Parameters::max_routing_table_size * 3 / 4;
   }
 
   virtual ~ProportionedRoutingStandAloneTest() {
-    Parameters::max_routing_table_size = old_routing_table_size_;
+    Parameters::max_routing_table_size = old_max_routing_table_size_;
+    Parameters::routing_table_size_threshold = old_routing_table_size_threshold_;
+    Parameters::closest_nodes_size = old_closest_nodes_size_;
+    Parameters::max_non_routing_table_size = old_max_non_routing_table_size_;
+    Parameters::max_route_history = old_max_route_history_;
+    Parameters::greedy_fraction = old_greedy_fraction_;
   }
 
   virtual void SetUp() {
@@ -361,25 +377,50 @@ class ProportionedRoutingStandAloneTest : public GenericNetwork, public testing:
   }
 
  private:
-  uint16_t old_routing_table_size_;
+  uint16_t old_max_routing_table_size_;
+  uint16_t old_routing_table_size_threshold_;
+  uint16_t old_closest_nodes_size_;
+  uint16_t old_max_non_routing_table_size_;
+  uint16_t old_max_route_history_;
+  uint16_t old_greedy_fraction_;
 };
 
-TEST_F(ProportionedRoutingStandAloneTest, FUNC_MessagePassingSymmetricNat) {
-  this->SetUpNetwork(24, 0, 6, 0);
 
-  Sleep(boost::posix_time::seconds(10));
-  EXPECT_TRUE(WaitForNodesToJoin());
-  EXPECT_TRUE(WaitForHealthToStabilise());
+// TODO(Alison) - Add ProportionedRoutingStandAloneTests involving clients
+TEST_F(ProportionedRoutingStandAloneTest, FUNC_MessagePassing) {
+  this->SetUpNetwork(24, 0, 0, 0);
 
-  EXPECT_TRUE(this->SendDirect(3));
+  ASSERT_TRUE(WaitForNodesToJoin());
+  ASSERT_TRUE(WaitForHealthToStabiliseInLargeNetwork());
+
+  ASSERT_TRUE(this->SendDirect(3));
   NodeId target;
   for (size_t i(0); i < nodes_.size(); ++i) {
     target = NodeId(NodeId::kRandomId);
-    EXPECT_TRUE(SendGroup(target, 1, i));
+    ASSERT_TRUE(SendGroup(target, 1, i));
   }
   for (size_t i(0); i < nodes_.size(); ++i) {
     for (auto& node : nodes_) {
-      EXPECT_TRUE(SendGroup(node->node_id(), 1, i));
+      ASSERT_TRUE(SendGroup(node->node_id(), 1, i));
+    }
+  }
+}
+
+TEST_F(ProportionedRoutingStandAloneTest, FUNC_MessagePassingSymmetricNat) {
+    this->SetUpNetwork(24, 0, 6, 0);
+
+  ASSERT_TRUE(WaitForNodesToJoin());
+  ASSERT_TRUE(WaitForHealthToStabiliseInLargeNetwork());
+
+  ASSERT_TRUE(this->SendDirect(3));
+  NodeId target;
+  for (size_t i(0); i < nodes_.size(); ++i) {
+    target = NodeId(NodeId::kRandomId);
+    ASSERT_TRUE(SendGroup(target, 1, i));
+  }
+  for (size_t i(0); i < nodes_.size(); ++i) {
+    for (auto& node : nodes_) {
+      ASSERT_TRUE(SendGroup(node->node_id(), 1, i));
     }
   }
 }
