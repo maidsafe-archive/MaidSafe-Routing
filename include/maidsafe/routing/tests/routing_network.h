@@ -265,9 +265,10 @@ class NodesEnvironment : public testing::Environment {
                          num_symmetric_nat_client_nodes_);
   }
   void TearDown() {
-    if (g_env_.unique()) {
-      g_env_.reset();
-    }
+//    if (g_env_.unique()) {
+//      g_env_.reset();
+//    }
+    g_env_->TearDown();
   }
 
   static std::shared_ptr<GenericNetwork> g_environment() {

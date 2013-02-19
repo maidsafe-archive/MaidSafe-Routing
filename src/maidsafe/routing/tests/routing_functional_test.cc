@@ -695,6 +695,8 @@ TEST_F(RoutingNetworkTest, FUNC_ClosestNodesBehindSymmetricNat) {
   ASSERT_TRUE(env_->WaitForHealthToStabilise());
   ASSERT_TRUE(env_->WaitForNodesToJoin());
 
+  Sleep(boost::posix_time::seconds(1));
+
   for (auto node : env_->nodes_) {
     std::vector<NodeInfo> from_matrix(node->ClosestNodes());
     std::vector<NodeInfo> from_network(
