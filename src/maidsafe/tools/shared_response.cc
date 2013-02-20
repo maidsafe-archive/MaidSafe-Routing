@@ -47,9 +47,8 @@ void SharedResponse::CheckAndPrintResult() {
                              closest_nodes_.end(),
                              responsed_node) != closest_nodes_.end());
   }
-  std::cout<< "Average time taken for receiving msg:"
-           <<(average_response_time_ / responded_nodes_.size())
-           <<std::endl;
+  std::cout << "Average time taken for receiving msg:"
+            << (average_response_time_.total_milliseconds() / responded_nodes_.size()) << std::endl;
 }
 
 void SharedResponse::PrintRoutingTable(std::string response) {
