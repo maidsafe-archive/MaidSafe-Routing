@@ -324,7 +324,7 @@ TEST_F(RoutingNetworkTest, FUNC_SendToGroupRandomId) {
 }
 
 TEST_F(RoutingNetworkTest, FUNC_AnonymousSendToGroupRandomId) {
-  uint16_t message_count(200), receivers_message_count(0);
+  uint16_t message_count(100), receivers_message_count(0);
   env_->ClearMessages();
   std::vector<std::future<testing::AssertionResult>> futures;
 
@@ -363,7 +363,7 @@ TEST_F(RoutingNetworkTest, FUNC_AnonymousSendToGroupRandomId) {
 }
 
 TEST_F(RoutingNetworkTest, FUNC_AnonymousSendToGroupExistingId) {
-  uint16_t message_count(200), receivers_message_count(0);
+  uint16_t message_count(100), receivers_message_count(0);
   env_->ClearMessages();
   std::vector<std::future<testing::AssertionResult>> futures;
 
