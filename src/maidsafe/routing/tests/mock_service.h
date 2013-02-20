@@ -26,7 +26,7 @@ namespace test {
 
 class MockService : public Service {
  public:
-  MockService(RoutingTable& routing_table, ClientRoutingTable& non_routing_table,
+  MockService(RoutingTable& routing_table, ClientRoutingTable& client_routing_table,
                    NetworkUtils& network_utils);
   virtual ~MockService();
 

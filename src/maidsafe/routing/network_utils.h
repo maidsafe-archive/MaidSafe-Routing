@@ -43,7 +43,7 @@ namespace test {
 
 class NetworkUtils {
  public:
-  NetworkUtils(RoutingTable& routing_table, ClientRoutingTable& non_routing_table);
+  NetworkUtils(RoutingTable& routing_table, ClientRoutingTable& client_routing_table);
   virtual ~NetworkUtils();
   int Bootstrap(const std::vector<boost::asio::ip::udp::endpoint>& bootstrap_endpoints,
                 const rudp::MessageReceivedFunctor& message_received_functor,
@@ -102,7 +102,7 @@ class NetworkUtils {
   NodeId bootstrap_connection_id_;
   NodeId this_node_relay_connection_id_;
   RoutingTable& routing_table_;
-  ClientRoutingTable& non_routing_table_;
+  ClientRoutingTable& client_routing_table_;
   rudp::NatType nat_type_;
   NewBootstrapEndpointFunctor new_bootstrap_endpoint_;
   rudp::ManagedConnections rudp_;

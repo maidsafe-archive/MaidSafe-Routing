@@ -65,7 +65,7 @@ enum class MessageType : int32_t {
 class MessageHandler {
  public:
   MessageHandler(RoutingTable& routing_table,
-                 ClientRoutingTable& non_routing_table,
+                 ClientRoutingTable& client_routing_table,
                  NetworkUtils& network,
                  Timer& timer,
                  RemoveFurthestNode& remove_node,
@@ -108,7 +108,7 @@ class MessageHandler {
   friend class test::MessageHandlerTest_BEH_ClientRoutingTable_Test;
 
   RoutingTable& routing_table_;
-  ClientRoutingTable& non_routing_table_;
+  ClientRoutingTable& client_routing_table_;
   NetworkStatistics& network_statistics_;
   NetworkUtils& network_;
   RemoveFurthestNode& remove_furthest_node_;

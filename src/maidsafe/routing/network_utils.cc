@@ -19,7 +19,7 @@
 #include "maidsafe/rudp/return_codes.h"
 
 #include "maidsafe/routing/bootstrap_file_handler.h"
-#include "maidsafe/routing/non_routing_table.h"
+#include "maidsafe/routing/client_routing_table.h"
 #include "maidsafe/routing/parameters.h"
 #include "maidsafe/routing/return_codes.h"
 #include "maidsafe/routing/routing_pb.h"
@@ -40,7 +40,7 @@ typedef boost::unique_lock<boost::shared_mutex> UniqueLock;
 
 namespace routing {
 
-NetworkUtils::NetworkUtils(RoutingTable& routing_table, ClientRoutingTable& non_routing_table)
+NetworkUtils::NetworkUtils(RoutingTable& routing_table, ClientRoutingTable& client_routing_table)
     : running_(true),
       running_mutex_(),
       bootstrap_attempt_(0),
@@ -48,7 +48,7 @@ NetworkUtils::NetworkUtils(RoutingTable& routing_table, ClientRoutingTable& non_
       bootstrap_connection_id_(),
       this_node_relay_connection_id_(),
       routing_table_(routing_table),
-      non_routing_table_(non_routing_table),
+      client_routing_table_(client_routing_table),
       nat_type_(rudp::NatType::kUnknown),
       new_bootstrap_endpoint_(),
       rudp_() {}
@@ -196,7 +196,7 @@ void NetworkUtils::SendToDirect(const protobuf::Message& message,
 void NetworkUtils::SendToClosestNode(const protobuf::Message& message) {
   // Normal messages
   if (message.has_destination_id() && !message.destination_id().empty()) {
-    auto non_routing_nodes(non_routing_table_.GetNodesInfo(NodeId(message.destination_id())));
+    auto non_routing_nodes(client_routing_table_.GetNodesInfo(NodeId(message.destination_id())));
     // have the destination ID in non-routing table
     if (!non_routing_nodes.empty() && message.direct()) {
       if (IsRequest(message) &&
@@ -281,7 +281,7 @@ void NetworkUtils::RecursiveSendOn(protobuf::Message message,
       LOG(kWarning) << " Routing -> removing connection " << last_node_attempted.node_id.string();
       // FIXME Should we remove this node or let rudp handle that?
       routing_table_.DropNode(last_node_attempted.connection_id, false);
-      non_routing_table_.DropConnection(last_node_attempted.connection_id);
+      client_routing_table_.DropConnection(last_node_attempted.connection_id);
     }
   }
 
@@ -348,7 +348,7 @@ void NetworkUtils::RecursiveSendOn(protobuf::Message message,
         }
         LOG(kWarning) << " Routing-> removing connection " << DebugId(closest_node.connection_id);
         routing_table_.DropNode(closest_node.node_id, false);
-        non_routing_table_.DropConnection(closest_node.connection_id);
+        client_routing_table_.DropConnection(closest_node.connection_id);
         RecursiveSendOn(message);
       }
   };

@@ -37,10 +37,10 @@ RoutingTable::RoutingTable(bool client_mode,
       kNodeId_(node_id),
       kConnectionId_(kClientMode_ ? NodeId(NodeId::kRandomId) : kNodeId_),
       kKeys_(keys),
-      kMaxSize_(kClientMode_ ? Parameters::max_client_routing_table_size :
-                                Parameters::max_routing_table_size),
-      kThresholdSize_(kClientMode_ ? Parameters::max_client_routing_table_size :
-                                      Parameters::routing_table_size_threshold),
+      kMaxSize_(kClientMode_ ? Parameters::max_routing_table_size_for_client :
+                               Parameters::max_routing_table_size),
+      kThresholdSize_(kClientMode_ ? Parameters::max_routing_table_size_for_client :
+                                     Parameters::routing_table_size_threshold),
       mutex_(),
       furthest_group_node_id_(),
       remove_node_functor_(),

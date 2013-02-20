@@ -10,8 +10,8 @@
  *  the explicit written permission of the board of directors of maidsafe.net. *
  ******************************************************************************/
 
-#ifndef MAIDSAFE_ROUTING_NON_ROUTING_TABLE_H_
-#define MAIDSAFE_ROUTING_NON_ROUTING_TABLE_H_
+#ifndef MAIDSAFE_ROUTING_CLIENT_ROUTING_TABLE_H_
+#define MAIDSAFE_ROUTING_CLIENT_ROUTING_TABLE_H_
 
 #include <cstdint>
 #include <mutex>
@@ -81,4 +81,4 @@ class ClientRoutingTable {
 
 }  // namespace maidsafe
 
-#endif  // MAIDSAFE_ROUTING_NON_ROUTING_TABLE_H_
+#endif  // MAIDSAFE_ROUTING_CLIENT_ROUTING_TABLE_H_

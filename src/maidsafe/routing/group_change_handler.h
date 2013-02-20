@@ -38,7 +38,7 @@ namespace protobuf { class Message; }
 class GroupChangeHandler {
  public:
   GroupChangeHandler(RoutingTable& routing_table,
-                     ClientRoutingTable& non_routing_table,
+                     ClientRoutingTable& client_routing_table,
                      NetworkUtils& network);
   ~GroupChangeHandler();
   void SendClosestNodesUpdateRpcs(const std::vector<NodeInfo>& new_close_nodes);
@@ -67,7 +67,7 @@ class GroupChangeHandler {
 
   std::mutex mutex_;
   RoutingTable& routing_table_;
-  ClientRoutingTable& non_routing_table_;
+  ClientRoutingTable& client_routing_table_;
   NetworkUtils& network_;
   std::vector<NodeInfo> update_subscribers_;
 };

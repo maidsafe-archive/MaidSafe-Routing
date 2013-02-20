@@ -26,7 +26,7 @@
 #include "maidsafe/rudp/managed_connections.h"
 
 #include "maidsafe/routing/network_utils.h"
-#include "maidsafe/routing/non_routing_table.h"
+#include "maidsafe/routing/client_routing_table.h"
 #include "maidsafe/routing/return_codes.h"
 #include "maidsafe/routing/routing_table.h"
 #include "maidsafe/routing/routing_pb.h"
@@ -66,9 +66,9 @@ TEST(NetworkUtilsTest, BEH_ProcessSendDirectInvalidEndpoint) {
   NodeId node_id(NodeId::kRandomId);
   NetworkStatistics network_statistics(node_id);
   RoutingTable routing_table(false, node_id, asymm::GenerateKeyPair(), network_statistics);
-  ClientRoutingTable non_routing_table(routing_table.kNodeId());
+  ClientRoutingTable client_routing_table(routing_table.kNodeId());
   AsioService asio_service(1);
-  NetworkUtils network(routing_table, non_routing_table);
+  NetworkUtils network(routing_table, client_routing_table);
   network.SendToClosestNode(message);
 }
 
@@ -84,10 +84,10 @@ TEST(NetworkUtilsTest, BEH_ProcessSendUnavailableDirectEndpoint) {
   NodeId node_id(NodeId::kRandomId);
   NetworkStatistics network_statistics(node_id);
   RoutingTable routing_table(false, node_id, asymm::GenerateKeyPair(), network_statistics);
-  ClientRoutingTable non_routing_table(routing_table.kNodeId());
+  ClientRoutingTable client_routing_table(routing_table.kNodeId());
   Endpoint endpoint(GetLocalIp(),  maidsafe::test::GetRandomPort());
   AsioService asio_service(1);
-  NetworkUtils network(routing_table, non_routing_table);
+  NetworkUtils network(routing_table, client_routing_table);
   network.SendToDirect(message, NodeId(NodeId::kRandomId), NodeId(NodeId::kRandomId));
 }
 
@@ -212,9 +212,9 @@ TEST(NetworkUtilsTest, FUNC_ProcessSendDirectEndpoint) {
   NetworkStatistics network_statistics(node_id);
   RoutingTable routing_table(false, node_id, asymm::GenerateKeyPair(), network_statistics);
   NodeId node_id3(routing_table.kNodeId());
-  ClientRoutingTable non_routing_table(routing_table.kNodeId());
+  ClientRoutingTable client_routing_table(routing_table.kNodeId());
   AsioService asio_service(1);
-  NetworkUtils network(routing_table, non_routing_table);
+  NetworkUtils network(routing_table, client_routing_table);
 
   std::vector<Endpoint> bootstrap_endpoint(1, endpoint2);
   EXPECT_EQ(kSuccess, network.Bootstrap(bootstrap_endpoint,
@@ -272,9 +272,9 @@ TEST(NetworkUtilsTest, FUNC_ProcessSendRecursiveSendOn) {
   NetworkStatistics network_statistics(node_id);
   RoutingTable routing_table(false, node_id, asymm::GenerateKeyPair(), network_statistics);
   NodeId node_id3(routing_table.kNodeId());
-  ClientRoutingTable non_routing_table(routing_table.kNodeId());
+  ClientRoutingTable client_routing_table(routing_table.kNodeId());
   AsioService asio_service(1);
-  NetworkUtils network(routing_table, non_routing_table);
+  NetworkUtils network(routing_table, client_routing_table);
 
   rudp::MessageReceivedFunctor message_received_functor1 = [](const std::string& message) {
       LOG(kInfo) << " -- Received: " << message;

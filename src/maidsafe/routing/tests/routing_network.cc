@@ -179,7 +179,7 @@ void GenericNode::InjectNodeInfoAndPrivateKey() {
       node_info_plus_->private_key;
   const_cast<asymm::Keys&>(routing_->pimpl_->routing_table_.kKeys_).public_key =
       node_info_plus_->node_info.public_key;
-  const_cast<NodeId&>(routing_->pimpl_->non_routing_table_.kNodeId_) =
+  const_cast<NodeId&>(routing_->pimpl_->client_routing_table_.kNodeId_) =
       node_info_plus_->node_info.node_id;
 }
 
@@ -318,12 +318,12 @@ bool GenericNode::RoutingTableHasNode(const NodeId& node_id) {
 }
 
 bool GenericNode::ClientRoutingTableHasNode(const NodeId& node_id) {
-  return std::find_if(routing_->pimpl_->non_routing_table_.nodes_.begin(),
-                      routing_->pimpl_->non_routing_table_.nodes_.end(),
+  return std::find_if(routing_->pimpl_->client_routing_table_.nodes_.begin(),
+                      routing_->pimpl_->client_routing_table_.nodes_.end(),
                       [&node_id](const NodeInfo& node_info) {
                         return (node_id == node_info.node_id);
                       }) !=
-         routing_->pimpl_->non_routing_table_.nodes_.end();
+         routing_->pimpl_->client_routing_table_.nodes_.end();
 }
 
 NodeInfo GenericNode::GetRemovableNode() {
@@ -398,8 +398,8 @@ void GenericNode::PrintRoutingTable() {
   }
   LOG(kInfo) << "[" << HexSubstr(node_info_plus_->node_info.node_id.string())
             << "]'s Non-RoutingTable : ";
-  std::lock_guard<std::mutex> lock(routing_->pimpl_->non_routing_table_.mutex_);
-  for (auto node_info : routing_->pimpl_->non_routing_table_.nodes_) {
+  std::lock_guard<std::mutex> lock(routing_->pimpl_->client_routing_table_.mutex_);
+  for (auto node_info : routing_->pimpl_->client_routing_table_.nodes_) {
     LOG(kInfo) << "\tNodeId : " << HexSubstr(node_info.node_id.string());
   }
 }
@@ -871,14 +871,14 @@ bool GenericNetwork::WaitForHealthToStabilise() const {
   int server_size(static_cast<int>(client_index_));
   if (server_size <= Parameters::max_routing_table_size)
     vault_health = (server_size - 1) * 100 / Parameters::max_routing_table_size;
-  if (server_size <= Parameters::max_client_routing_table_size)
-    client_health = (server_size - 1) * 100 /Parameters::max_client_routing_table_size;
+  if (server_size <= Parameters::max_routing_table_size_for_client)
+    client_health = (server_size - 1) * 100 /Parameters::max_routing_table_size_for_client;
   int number_nonsymmetric_vaults(NonClientNonSymmetricNatNodesSize());
   if (number_nonsymmetric_vaults <= Parameters::max_routing_table_size)
     vault_symmetric_health = number_nonsymmetric_vaults * 100 / Parameters::max_routing_table_size;
-  if (number_nonsymmetric_vaults <= Parameters::max_client_routing_table_size)
+  if (number_nonsymmetric_vaults <= Parameters::max_routing_table_size_for_client)
     client_symmetric_health =
-        number_nonsymmetric_vaults * 100 /Parameters::max_client_routing_table_size;
+        number_nonsymmetric_vaults * 100 /Parameters::max_routing_table_size_for_client;
 
   while (i != 10 && !healthy) {
     ++i;
