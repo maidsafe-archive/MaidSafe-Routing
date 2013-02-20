@@ -59,7 +59,7 @@ TEST_F(RoutingStandAloneTest, FUNC_ClientRoutingTableUpdate) {
   this->SetUpNetwork(kServerSize);
   this->AddNode(true, GenerateUniqueRandomId(this->nodes_[kServerSize - 1]->node_id(), 50));
   EXPECT_TRUE(this->nodes_[this->nodes_.size() - 1]->IsClient());
-  while (this->nodes_.size() < kServerSize + Parameters::max_client_routing_table_size) {
+  while (this->nodes_.size() < kServerSize + Parameters::max_routing_table_size_for_client) {
     this->AddNode(false, GenerateUniqueRandomId(this->nodes_[kServerSize - 1]->node_id(), 50));
     Sleep(boost::posix_time::milliseconds(500));
     EXPECT_TRUE(this->nodes_[ClientIndex()]->RoutingTableHasNode(
@@ -345,15 +345,17 @@ class ProportionedRoutingStandAloneTest : public GenericNetwork, public testing:
     : GenericNetwork(),
       old_max_routing_table_size_(Parameters::max_routing_table_size),
       old_routing_table_size_threshold_(Parameters::routing_table_size_threshold),
+      old_max_routing_table_size_for_client_(Parameters::max_routing_table_size_for_client),
       old_closest_nodes_size_(Parameters::closest_nodes_size),
-      old_max_non_routing_table_size_(Parameters::max_non_routing_table_size),
+      old_max_client_routing_table_size_(Parameters::max_client_routing_table_size),
       old_max_route_history_(Parameters::max_route_history),
       old_greedy_fraction_(Parameters::greedy_fraction) {
     // NB. relative calculations should match those in parameters.cc
     Parameters::max_routing_table_size = 16;
     Parameters::routing_table_size_threshold = Parameters::max_routing_table_size / 2;
+    Parameters::max_routing_table_size_for_client = 8;
     Parameters::closest_nodes_size = 4;
-    Parameters::max_non_routing_table_size = Parameters::max_routing_table_size;
+    Parameters::max_client_routing_table_size = Parameters::max_routing_table_size;
     Parameters::max_route_history = 3;  // less than closest_nodes_size
     Parameters::greedy_fraction = Parameters::max_routing_table_size * 3 / 4;
   }
@@ -361,8 +363,9 @@ class ProportionedRoutingStandAloneTest : public GenericNetwork, public testing:
   virtual ~ProportionedRoutingStandAloneTest() {
     Parameters::max_routing_table_size = old_max_routing_table_size_;
     Parameters::routing_table_size_threshold = old_routing_table_size_threshold_;
+    Parameters::max_routing_table_size_for_client = old_max_routing_table_size_for_client_;
     Parameters::closest_nodes_size = old_closest_nodes_size_;
-    Parameters::max_non_routing_table_size = old_max_non_routing_table_size_;
+    Parameters::max_client_routing_table_size = old_max_client_routing_table_size_;
     Parameters::max_route_history = old_max_route_history_;
     Parameters::greedy_fraction = old_greedy_fraction_;
   }
@@ -379,8 +382,9 @@ class ProportionedRoutingStandAloneTest : public GenericNetwork, public testing:
  private:
   uint16_t old_max_routing_table_size_;
   uint16_t old_routing_table_size_threshold_;
+  uint16_t old_max_routing_table_size_for_client_;
   uint16_t old_closest_nodes_size_;
-  uint16_t old_max_non_routing_table_size_;
+  uint16_t old_max_client_routing_table_size_;
   uint16_t old_max_route_history_;
   uint16_t old_greedy_fraction_;
 };

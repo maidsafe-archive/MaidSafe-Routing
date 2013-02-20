@@ -22,14 +22,14 @@
 #include "maidsafe/common/utils.h"
 #include "maidsafe/rudp/return_codes.h"
 
+#include "maidsafe/routing/client_routing_table.h"
+#include "maidsafe/routing/group_change_handler.h"
 #include "maidsafe/routing/network_utils.h"
-#include "maidsafe/routing/non_routing_table.h"
 #include "maidsafe/routing/return_codes.h"
 #include "maidsafe/routing/routing_pb.h"
 #include "maidsafe/routing/routing_table.h"
 #include "maidsafe/routing/rpcs.h"
 #include "maidsafe/routing/utils.h"
-#include "maidsafe/routing/group_change_handler.h"
 
 
 namespace bptime = boost::posix_time;
@@ -45,12 +45,12 @@ typedef boost::asio::ip::udp::endpoint Endpoint;
 }  // unnamed namespace
 
 ResponseHandler::ResponseHandler(RoutingTable& routing_table,
-                                 ClientRoutingTable& non_routing_table,
+                                 ClientRoutingTable& client_routing_table,
                                  NetworkUtils& network,
                                  GroupChangeHandler &group_change_handler)
     : mutex_(),
       routing_table_(routing_table),
-      non_routing_table_(non_routing_table),
+      client_routing_table_(client_routing_table),
       network_(network),
       group_change_handler_(group_change_handler),
       request_public_key_functor_() {
@@ -305,7 +305,7 @@ void ResponseHandler::ConnectSuccessAcknowledgement(protobuf::Message& message) 
                              if (ValidateAndAddToRoutingTable(
                                  response_handler->network_,
                                  response_handler->routing_table_,
-                                 response_handler->non_routing_table_,
+                                 response_handler->client_routing_table_,
                                  peer.node_id,
                                  peer.connection_id,
                                  key,
@@ -332,7 +332,7 @@ void ResponseHandler::HandleSuccessAcknowledgementAsReponder(NodeInfo peer,
                                                              const bool &client,
                                                              std::vector<NodeId> /*close_ids*/) {
   auto count =
-      (client ? Parameters::max_client_routing_table_size: Parameters::max_routing_table_size);
+      (client ? Parameters::max_routing_table_size_for_client: Parameters::max_routing_table_size);
   std::vector<NodeId> close_ids_for_peer(
       routing_table_.GetClosestNodes(peer.node_id, count));
   auto itr(std::find_if(close_ids_for_peer.begin(), close_ids_for_peer.end(),
@@ -370,7 +370,7 @@ void ResponseHandler::HandleSuccessAcknowledgementAsRequestor(std::vector<NodeId
 }
 
 void ResponseHandler::CheckAndSendConnectRequest(const NodeId& node_id) {
-  uint16_t limit(routing_table_.client_mode() ? Parameters::max_client_routing_table_size :
+  uint16_t limit(routing_table_.client_mode() ? Parameters::max_routing_table_size_for_client :
                                                 Parameters::greedy_fraction);
   if ((routing_table_.size() < limit) ||
       NodeId::CloserToTarget(node_id,

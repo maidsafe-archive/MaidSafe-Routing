@@ -139,7 +139,7 @@ NodeId GenerateUniqueNonRandomId(const uint64_t& pos) {
 }
 
 int NetworkStatus(const bool& client, const int& status) {
-  uint16_t max_size(client ? Parameters::max_client_routing_table_size :
+  uint16_t max_size(client ? Parameters::max_routing_table_size_for_client :
                       Parameters::max_routing_table_size);
   return (status > 0) ? (status * 100 / max_size) : status;
 }

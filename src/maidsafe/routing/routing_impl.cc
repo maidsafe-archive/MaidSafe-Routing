@@ -57,21 +57,21 @@ Routing::Impl::Impl(bool client_mode,
       running_mutex_(),
       functors_(),
       random_node_helper_(),
-      // TODO(Prakash) : don't create non_routing_table for client nodes (wrap both)
-      non_routing_table_(routing_table_.kNodeId()),
+      // TODO(Prakash) : don't create client_routing_table for client nodes (wrap both)
+      client_routing_table_(routing_table_.kNodeId()),
       remove_furthest_node_(routing_table_, network_),
-      group_change_handler_(routing_table_, non_routing_table_, network_),
+      group_change_handler_(routing_table_, client_routing_table_, network_),
       network_statistics_(routing_table_.kNodeId()),
       message_handler_(),
       asio_service_(2),
-      network_(routing_table_, non_routing_table_),
+      network_(routing_table_, client_routing_table_),
       timer_(asio_service_),
       re_bootstrap_timer_(asio_service_.service()),
       recovery_timer_(asio_service_.service()),
       setup_timer_(asio_service_.service()) {
   asio_service_.Start();
   message_handler_.reset(new MessageHandler(routing_table_,
-                                            non_routing_table_,
+                                            client_routing_table_,
                                             network_,
                                             timer_,
                                             remove_furthest_node_,
@@ -135,11 +135,11 @@ void Routing::Impl::ConnectFunctors(const Functors& functors) {
                                       if (running_)
                                         group_change_handler_.Unsubscribe(connection_id);
                                     });
-  non_routing_table_.InitialiseFunctors([this] (const NodeId& connection_id) {
-                                        std::lock_guard<std::mutex> lock(running_mutex_);
-                                          if (running_)
-                                            group_change_handler_.Unsubscribe(connection_id);
-                                        });
+  client_routing_table_.InitialiseFunctors([this] (const NodeId& connection_id) {
+                                             std::lock_guard<std::mutex> lock(running_mutex_);
+                                             if (running_)
+                                               group_change_handler_.Unsubscribe(connection_id);
+                                           });
   message_handler_->set_message_received_functor(functors.message_received);
   message_handler_->set_request_public_key_functor(functors.request_public_key);
   network_.set_new_bootstrap_endpoint_functor(functors.new_bootstrap_endpoint);
@@ -315,7 +315,7 @@ int Routing::Impl::ZeroStateJoin(const Functors& functors,
 
   ValidateAndAddToRoutingTable(network_,
                                routing_table_,
-                               non_routing_table_,
+                               client_routing_table_,
                                peer_info.node_id,
                                peer_info.node_id,
                                peer_info.public_key,
@@ -565,7 +565,7 @@ void Routing::Impl::DoOnConnectionLost(const NodeId& lost_connection_id) {
   // Checking non-routing table
   if (dropped_node.node_id.IsZero()) {
     resend = false;
-    dropped_node = non_routing_table_.DropConnection(lost_connection_id);
+    dropped_node = client_routing_table_.DropConnection(lost_connection_id);
     if (!dropped_node.node_id.IsZero()) {
       LOG(kWarning) << "[" << DebugId(kNodeId_) << "]"
                     << "Lost connection with non-routing node "
@@ -736,7 +736,7 @@ bool Routing::Impl::IsConnectedVault(const NodeId& node_id) {
 }
 
 bool Routing::Impl::IsConnectedClient(const NodeId& node_id) {
-  return non_routing_table_.IsConnected(node_id);
+  return client_routing_table_.IsConnected(node_id);
 }
 
 }  // namespace routing

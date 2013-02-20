@@ -23,15 +23,15 @@
 #include "maidsafe/rudp/managed_connections.h"
 #include "maidsafe/rudp/return_codes.h"
 
+#include "maidsafe/routing/client_routing_table.h"
+#include "maidsafe/routing/group_change_handler.h"
 #include "maidsafe/routing/message_handler.h"
 #include "maidsafe/routing/network_utils.h"
-#include "maidsafe/routing/non_routing_table.h"
 #include "maidsafe/routing/parameters.h"
 #include "maidsafe/routing/routing_pb.h"
 #include "maidsafe/routing/routing_table.h"
 #include "maidsafe/routing/rpcs.h"
 #include "maidsafe/routing/utils.h"
-#include "maidsafe/routing/group_change_handler.h"
 
 
 namespace maidsafe {
@@ -45,10 +45,10 @@ typedef boost::asio::ip::udp::endpoint Endpoint;
 }  // unnamed namespace
 
 Service::Service(RoutingTable& routing_table,
-                 ClientRoutingTable& non_routing_table,
+                 ClientRoutingTable& client_routing_table,
                  NetworkUtils& network)
   : routing_table_(routing_table),
-    non_routing_table_(non_routing_table),
+    client_routing_table_(client_routing_table),
     network_(network),
     request_public_key_functor_() {}
 
@@ -147,7 +147,7 @@ void Service::Connect(protobuf::Message& message) {
     NodeId furthest_close_node_id =
         routing_table_.GetNthClosestNode(routing_table_.kNodeId(),
                                          2 * Parameters::closest_nodes_size).node_id;
-    check_node_succeeded = non_routing_table_.CheckNode(peer_node, furthest_close_node_id);
+    check_node_succeeded = client_routing_table_.CheckNode(peer_node, furthest_close_node_id);
   } else {
     LOG(kVerbose) << "Server connect request - will check routing table.";
     check_node_succeeded = routing_table_.CheckNode(peer_node);
@@ -307,7 +307,7 @@ void Service::ConnectSuccessFromResponder(NodeInfo& peer, const bool& client) {
     return;
   }
   auto count =
-      (client ? Parameters::max_client_routing_table_size: Parameters::greedy_fraction);
+      (client ? Parameters::max_routing_table_size_for_client: Parameters::greedy_fraction);
   std::vector<NodeId> close_ids_for_peer(
       routing_table_.GetClosestNodes(peer.node_id, count));
 

@@ -25,12 +25,12 @@
 #include "maidsafe/routing/tests/mock_network_utils.h"
 #include "maidsafe/routing/tests/mock_routing_table.h"
 #include "maidsafe/routing/tests/test_utils.h"
-#include "maidsafe/routing/non_routing_table.h"
+#include "maidsafe/routing/client_routing_table.h"
+#include "maidsafe/routing/group_change_handler.h"
 #include "maidsafe/routing/parameters.h"
 #include "maidsafe/routing/routing_pb.h"
 #include "maidsafe/routing/routing_table.h"
 #include "maidsafe/routing/timer.h"
-#include "maidsafe/routing/group_change_handler.h"
 
 
 namespace maidsafe {

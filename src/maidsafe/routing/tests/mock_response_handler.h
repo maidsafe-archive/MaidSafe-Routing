@@ -26,7 +26,7 @@ namespace test {
 
 class MockResponseHandler : public ResponseHandler {
  public:
-  MockResponseHandler(RoutingTable& routing_table, ClientRoutingTable& non_routing_table,
+  MockResponseHandler(RoutingTable& routing_table, ClientRoutingTable& client_routing_table,
                    NetworkUtils& network_utils, GroupChangeHandler &group_change_handler);
   virtual ~MockResponseHandler();
 

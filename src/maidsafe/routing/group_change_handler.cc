@@ -20,12 +20,12 @@
 #include "maidsafe/common/node_id.h"
 #include "maidsafe/common/utils.h"
 
+#include "maidsafe/routing/client_routing_table.h"
 #include "maidsafe/routing/message_handler.h"
 #include "maidsafe/routing/routing_pb.h"
+#include "maidsafe/routing/routing_table.h"
 #include "maidsafe/routing/rpcs.h"
 #include "maidsafe/routing/utils.h"
-#include "maidsafe/routing/routing_table.h"
-#include "maidsafe/routing/non_routing_table.h"
 
 
 namespace maidsafe {
@@ -33,11 +33,11 @@ namespace maidsafe {
 namespace routing {
 
 GroupChangeHandler::GroupChangeHandler(RoutingTable& routing_table,
-                                       ClientRoutingTable& non_routing_table,
+                                       ClientRoutingTable& client_routing_table,
                                        NetworkUtils& network)
   : mutex_(),
     routing_table_(routing_table),
-    non_routing_table_(non_routing_table),
+    client_routing_table_(client_routing_table),
     network_(network),
     update_subscribers_() {}
 
@@ -220,7 +220,7 @@ bool GroupChangeHandler::GetNodeInfo(const NodeId& node_id, const NodeId& connec
                                      NodeInfo& out_node_info) {
   if (routing_table_.GetNodeInfo(node_id, out_node_info))
     return true;
-  auto nodes_info(non_routing_table_.GetNodesInfo(node_id));
+  auto nodes_info(client_routing_table_.GetNodesInfo(node_id));
   for (auto node_info : nodes_info) {
     if (node_info.connection_id == connection_id) {
       out_node_info = node_info;
