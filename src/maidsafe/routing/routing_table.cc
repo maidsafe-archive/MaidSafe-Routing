@@ -338,7 +338,7 @@ NodeId RoutingTable::RandomConnectedNode() {
   if (nodes_.size() <= Parameters::closest_nodes_size)
     return NodeId();
 
-  PartialSortFromTarget(kNodeId_, nodes_.size(), lock);
+  PartialSortFromTarget(kNodeId_, static_cast<uint16_t>(nodes_.size()), lock);
   size_t index(Parameters::closest_nodes_size +
                RandomUint32() % (nodes_.size() - Parameters::closest_nodes_size));
   return nodes_.at(index).node_id;

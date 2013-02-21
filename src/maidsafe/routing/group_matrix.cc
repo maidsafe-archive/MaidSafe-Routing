@@ -297,7 +297,7 @@ bool GroupMatrix::IsRowEmpty(const NodeInfo& node_info) {
 }
 
 std::vector<NodeInfo> GroupMatrix::GetClosestNodes(const uint16_t& size) {
-  size_t size_to_sort(std::min(static_cast<size_t>(size), unique_nodes_.size()));
+  uint16_t size_to_sort(std::min(size, static_cast<uint16_t>(unique_nodes_.size())));
   PartialSortFromTarget(kNodeId_, size_to_sort, unique_nodes_);
   return std::vector<NodeInfo>(unique_nodes_.begin(), unique_nodes_.begin() + size_to_sort);
 }

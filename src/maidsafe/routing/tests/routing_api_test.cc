@@ -92,21 +92,88 @@ TEST(APITest, BEH_API_ZeroState) {
       });
   EXPECT_EQ(kSuccess, a2.get());  // wait for promise !
   EXPECT_EQ(kSuccess, a1.get());  // wait for promise !
-
-  std::once_flag join_set_promise_flag;
+  std::once_flag flag;
   std::promise<bool> join_promise;
   auto join_future = join_promise.get_future();
-  functors3.network_status = [&join_set_promise_flag, &join_promise](int result) {
-    std::call_once(join_set_promise_flag,
-                   [&join_promise, &result] {
-                     ASSERT_GE(result, kSuccess);
-                     join_promise.set_value(result == NetworkStatus(false, 2));
-                   });
+
+  functors3.network_status = [&flag, &join_promise] (int result) {
+    if (result == NetworkStatus(false, 2)) {
+        std::call_once(flag, [&join_promise]() { join_promise.set_value(true); }
+       );
+    }
   };
 
   routing3.Join(functors3, std::vector<Endpoint>(1, endpoint2));
-  EXPECT_EQ(join_future.wait_for(std::chrono::seconds(10)), std::future_status::ready);
+  EXPECT_EQ(join_future.wait_for(std::chrono::seconds(5)), std::future_status::ready);
+  if (join_future.is_ready())
+    EXPECT_TRUE(join_future.get());
   LOG(kInfo) << "done!!!";
+}
+
+TEST(APITest, BEH_API_ZeroStateWithDuplicateNode) {
+  rudp::Parameters::bootstrap_connection_lifespan = boost::posix_time::seconds(5);
+  auto pmid1(MakePmid()), pmid2(MakePmid()), pmid3(MakePmid());
+  NodeInfoAndPrivateKey node1(MakeNodeInfoAndKeysWithPmid(pmid1));
+  NodeInfoAndPrivateKey node2(MakeNodeInfoAndKeysWithPmid(pmid2));
+  NodeInfoAndPrivateKey node3(MakeNodeInfoAndKeysWithPmid(pmid3));
+  NodeInfoAndPrivateKey node4(MakeNodeInfoAndKeysWithPmid(pmid3));
+  std::map<NodeId, asymm::PublicKey> key_map;
+  key_map.insert(std::make_pair(node1.node_info.node_id, pmid1.public_key()));
+  key_map.insert(std::make_pair(node2.node_info.node_id, pmid2.public_key()));
+  key_map.insert(std::make_pair(node3.node_info.node_id, pmid3.public_key()));
+
+  Functors functors1, functors2, functors3, functors4;
+  Routing routing1(&pmid1);
+  Routing routing2(&pmid2);
+  Routing routing3(&pmid3);
+  Routing routing4(&pmid3);
+
+  functors1.network_status = [](const int&) {};  // NOLINT (Fraser)
+  functors1.request_public_key = [&](const NodeId& node_id, GivePublicKeyFunctor give_key) {
+      LOG(kWarning) << "node_validation called for " << DebugId(node_id);
+      auto itr(key_map.find(node_id));
+      if (key_map.end() != itr)
+        give_key((*itr).second);
+    };
+
+  functors2.network_status = functors3.network_status = functors4.network_status =
+      functors1.network_status;
+  functors2.request_public_key = functors3.request_public_key = functors1.request_public_key;
+  Endpoint endpoint1(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort()),
+    endpoint2(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort());
+  auto a1 = std::async(std::launch::async,
+      [&] { return routing1.ZeroStateJoin(functors1, endpoint1, endpoint2, node2.node_info);
+      });
+  auto a2 = std::async(std::launch::async,
+      [&] { return routing2.ZeroStateJoin(functors2, endpoint2, endpoint1, node1.node_info);
+      });
+  EXPECT_EQ(kSuccess, a2.get());  // wait for promise !
+  EXPECT_EQ(kSuccess, a1.get());  // wait for promise !
+
+  std::once_flag flag;
+  std::promise<bool> join_promise;
+  auto join_future = join_promise.get_future();
+  functors3.network_status = [&flag, &join_promise](int result) {
+    if (result == NetworkStatus(false, 2)) {
+        std::call_once(flag, [&join_promise]() { join_promise.set_value(true); }
+        );
+    }
+  };
+
+  routing3.Join(functors3, std::vector<Endpoint>(1, endpoint2));
+  EXPECT_EQ(join_future.wait_for(std::chrono::seconds(5)), std::future_status::ready);
+  if (join_future.is_ready())
+    EXPECT_TRUE(join_future.get());
+
+  std::atomic<int> final_result;
+  functors4.network_status = [&final_result](int result) {
+     final_result = result;
+  };
+  routing4.Join(functors4, std::vector<Endpoint>(1, endpoint2));
+  Sleep(boost::posix_time::seconds(5));
+  EXPECT_LT(final_result, 0);
+  LOG(kInfo) << "done!!!";
+  rudp::Parameters::bootstrap_connection_lifespan = boost::posix_time::minutes(10);
 }
 
 TEST(APITest, FUNC_API_AnonymousNode) {
