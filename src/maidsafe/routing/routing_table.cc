@@ -239,6 +239,40 @@ bool RoutingTable::IsThisNodeGroupLeader(const NodeId& target_id, NodeInfo& conn
   return true;
 }
 
+bool RoutingTable::ClosestToId(const NodeId& node_id) {
+  {
+    std::unique_lock<std::mutex> lock(mutex_);
+
+    if (node_id == kNodeId_)
+      return false;
+
+    if (nodes_.empty())
+      return true;
+
+    if (nodes_.size() == 1) {
+      if (nodes_.at(0).node_id == node_id)
+        return true;
+      else
+        return NodeId::CloserToTarget(kNodeId_, nodes_.at(0).node_id, node_id);
+    }
+
+    PartialSortFromTarget(node_id, 2, lock);
+    uint16_t index(0);
+    if (nodes_.at(0).node_id == node_id)
+      index = 1;
+    if (!NodeId::CloserToTarget(kNodeId_, nodes_.at(index).node_id, node_id))
+      return false;
+
+    if (!group_matrix_.ClosestToId(node_id))
+      return false;
+  }
+
+  if (IsNodeIdInGroupRange(node_id) != GroupRangeStatus::kInRange)
+    return false;
+
+  return true;
+}
+
 GroupRangeStatus RoutingTable::IsNodeIdInGroupRange(const NodeId& target_id) {
   {
     std::unique_lock<std::mutex> lock(mutex_);

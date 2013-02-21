@@ -75,6 +75,7 @@ class RoutingTable {
   bool AddNode(const NodeInfo& peer);
   bool CheckNode(const NodeInfo& peer);
   NodeInfo DropNode(const NodeId &node_to_drop, bool routing_only);
+  bool ClosestToId(const NodeId& node_id);
   GroupRangeStatus IsNodeIdInGroupRange(const NodeId& target_id);
   bool IsThisNodeGroupLeader(const NodeId& target_id, NodeInfo& connected_peer);
   bool GetNodeInfo(const NodeId& node_id, NodeInfo& node_info) const;

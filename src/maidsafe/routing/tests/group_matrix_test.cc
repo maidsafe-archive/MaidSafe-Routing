@@ -569,6 +569,43 @@ TEST_P(GroupMatrixTest, BEH_GetConnectedPeerFor) {
   EXPECT_EQ(NodeId(), matrix_.GetConnectedPeerFor(target_id).node_id);
 }
 
+TEST_P(GroupMatrixTest, BEH_ClosestToId) {
+  std::vector<NodeInfo> known_nodes;
+  if (!client_mode_)
+    known_nodes.push_back(own_node_info_);
+
+  // Populate matrix
+  NodeInfo row_entry;
+  std::vector<NodeInfo> row_entries;
+  for (uint32_t j(0); j < Parameters::closest_nodes_size; ++j) {
+    row_entries.clear();
+    row_entry.node_id = NodeId(NodeId::kRandomId);
+    uint32_t length(RandomUint32() % Parameters::closest_nodes_size);
+    for (uint32_t i(0); i < length; ++i) {
+      NodeInfo node;
+      node.node_id = NodeId(NodeId::kRandomId);
+      row_entries.push_back(node);
+    }
+    matrix_.AddConnectedPeer(row_entry);
+    matrix_.UpdateFromConnectedPeer(row_entry.node_id, row_entries);
+    known_nodes.push_back(row_entry);
+    for (auto node_id : row_entries)
+      known_nodes.push_back(node_id);
+  }
+
+  // Test random (unknown) targets
+  NodeId target;
+  for (uint16_t i(0); i < 200; ++i) {
+    target = NodeId(NodeId::kRandomId);
+    PartialSortFromTarget(target, 1, known_nodes);
+    if (known_nodes.at(0).node_id == own_node_id_ ||
+        NodeId::CloserToTarget(own_node_id_, known_nodes.at(0).node_id, target))
+      EXPECT_TRUE(matrix_.ClosestToId(target));
+    else
+      EXPECT_FALSE(matrix_.ClosestToId(target));
+  }
+}
+
 TEST_P(GroupMatrixTest, BEH_IsNodeIdInGroupRange) {
   std::vector<NodeInfo> node_ids;
   if (!client_mode_)

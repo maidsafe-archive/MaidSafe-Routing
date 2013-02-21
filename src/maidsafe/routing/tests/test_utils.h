@@ -59,6 +59,10 @@ int NetworkStatus(const bool& client, const int& status);
 
 void SortFromTarget(const NodeId& target, std::vector<NodeInfo>& nodes);
 
+void PartialSortFromTarget(const NodeId& target,
+                           const uint16_t& number,
+                           std::vector<NodeInfo>& nodes);
+
 void SortIdsFromTarget(const NodeId& target, std::vector<NodeId>& nodes);
 
 void SortNodeInfosFromTarget(const NodeId& target, std::vector<NodeInfo>& nodes);

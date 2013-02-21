@@ -1031,6 +1031,89 @@ TEST(RoutingTableTest, BEH_IsNodeIdInGroupRange) {
   }
 }
 
+
+TEST(RoutingTableTest, BEH_ClosestToId) {
+  NodeId own_node_id(NodeId::kRandomId);
+  NetworkStatistics network_statistics(own_node_id);
+  RoutingTable routing_table(false, own_node_id, asymm::GenerateKeyPair(), network_statistics);
+  std::vector<NodeInfo> known_nodes;
+
+  EXPECT_FALSE(routing_table.ClosestToId(own_node_id));
+
+  // Test unknown targets
+  NodeId target;
+  for (uint16_t i(0); i < 200; ++i) {
+    target = NodeId(NodeId::kRandomId);
+    EXPECT_TRUE(routing_table.ClosestToId(target));
+  }
+
+  // TODO(Alison) - test for partially populated table
+
+  // Populate routing table
+  NodeInfo node_info;
+  while (routing_table.size() < Parameters::max_routing_table_size) {
+    node_info = MakeNode();
+    known_nodes.push_back(node_info);
+    EXPECT_TRUE(routing_table.AddNode(node_info));
+  }
+
+  // Test known targets
+  PartialSortFromTarget(own_node_id, Parameters::node_group_size, known_nodes);
+  NodeId furthest_group_node(known_nodes.at(Parameters::node_group_size - 1).node_id);
+  EXPECT_FALSE(routing_table.ClosestToId(own_node_id));
+
+  std::vector<NodeInfo> known_targets(known_nodes);
+  for (auto& target : known_targets) {
+    PartialSortFromTarget(target.node_id, 2, known_nodes);
+    if (NodeId::CloserToTarget(own_node_id, known_nodes.at(1).node_id, target.node_id) &&
+        NodeId::CloserToTarget(target.node_id, furthest_group_node, own_node_id))
+      EXPECT_TRUE(routing_table.ClosestToId(target.node_id));
+    else
+      EXPECT_FALSE(routing_table.ClosestToId(target.node_id));
+  }
+
+  // Populate group matrix
+  PartialSortFromTarget(own_node_id, Parameters::closest_nodes_size, known_nodes);
+
+  std::vector<NodeInfo> new_row_entries;
+  for (size_t index(0); index < Parameters::closest_nodes_size; ++index) {
+    for (uint16_t i(0); i < RandomUint32() % (Parameters::closest_nodes_size - 1); ++i) {
+      NodeInfo node;
+      node.node_id = (NodeId(NodeId::kRandomId));
+      new_row_entries.push_back(node);
+      known_nodes.push_back(node);
+      known_targets.push_back(node);
+    }
+    routing_table.GroupUpdateFromConnectedPeer(known_nodes.at(index).node_id, new_row_entries);
+    new_row_entries.clear();
+  }
+
+  // Test known targets
+  PartialSortFromTarget(own_node_id, Parameters::node_group_size, known_nodes);
+  furthest_group_node = known_nodes.at(Parameters::node_group_size - 1).node_id;
+  EXPECT_FALSE(routing_table.ClosestToId(own_node_id));
+
+  for (auto& target : known_targets) {
+    PartialSortFromTarget(target.node_id, 2, known_nodes);
+    if (NodeId::CloserToTarget(own_node_id, known_nodes.at(1).node_id, target.node_id) &&
+        NodeId::CloserToTarget(target.node_id, furthest_group_node, own_node_id))
+      EXPECT_TRUE(routing_table.ClosestToId(target.node_id));
+    else
+      EXPECT_FALSE(routing_table.ClosestToId(target.node_id));
+  }
+
+  // Test random (unknown) targets
+  for (uint16_t i(0); i < 200; ++i) {
+    target = NodeId(NodeId::kRandomId);
+    PartialSortFromTarget(target, 1, known_nodes);
+    if (NodeId::CloserToTarget(own_node_id, known_nodes.at(0).node_id, target) &&
+        NodeId::CloserToTarget(target, furthest_group_node, own_node_id))
+      EXPECT_TRUE(routing_table.ClosestToId(target));
+    else
+      EXPECT_FALSE(routing_table.ClosestToId(target));
+  }
+}
+
 }  // namespace test
 }  // namespace routing
 }  // namespace maidsafe

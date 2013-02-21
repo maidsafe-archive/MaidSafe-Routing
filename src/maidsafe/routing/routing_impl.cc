@@ -462,6 +462,10 @@ void Routing::Impl::CheckSendParameters(const NodeId& destination_id, const std:
   }
 }
 
+bool Routing::Impl::ClosestToId(const NodeId& node_id) {
+  return routing_table_.ClosestToId(node_id);
+}
+
 GroupRangeStatus Routing::Impl::IsNodeIdInGroupRange(const NodeId& node_id) {
   return routing_table_.IsNodeIdInGroupRange(node_id);
 }
