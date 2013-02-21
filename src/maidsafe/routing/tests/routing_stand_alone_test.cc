@@ -58,7 +58,7 @@ TEST_F(RoutingStandAloneTest, FUNC_ClientRoutingTableUpdate) {
   this->SetUpNetwork(kServerSize);
   this->AddNode(true, GenerateUniqueRandomId(this->nodes_[kServerSize - 1]->node_id(), 50));
   EXPECT_TRUE(this->nodes_[this->nodes_.size() - 1]->IsClient());
-  while (this->nodes_.size() < kServerSize + Parameters::max_client_routing_table_size) {
+  while (this->nodes_.size() < kServerSize + Parameters::max_routing_table_size_for_client) {
     this->AddNode(false, GenerateUniqueRandomId(this->nodes_[kServerSize - 1]->node_id(), 50));
     Sleep(boost::posix_time::milliseconds(500));
     EXPECT_TRUE(this->nodes_[ClientIndex()]->RoutingTableHasNode(

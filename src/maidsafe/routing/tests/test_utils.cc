@@ -139,7 +139,7 @@ NodeId GenerateUniqueNonRandomId(const uint64_t& pos) {
 }
 
 int NetworkStatus(const bool& client, const int& status) {
-  uint16_t max_size(client ? Parameters::max_client_routing_table_size :
+  uint16_t max_size(client ? Parameters::max_routing_table_size_for_client :
                       Parameters::max_routing_table_size);
   return (status > 0) ? (status * 100 / max_size) : status;
 }
@@ -149,6 +149,18 @@ void SortFromTarget(const NodeId& target, std::vector<NodeInfo>& nodes) {
             [target](const NodeInfo& lhs, const NodeInfo& rhs) {
                 return NodeId::CloserToTarget(lhs.node_id, rhs.node_id, target);
               });
+}
+
+void PartialSortFromTarget(const NodeId& target,
+                           const uint16_t& number,
+                           std::vector<NodeInfo>& nodes) {
+  uint16_t count = std::min(number, static_cast<uint16_t>(nodes.size()));
+  std::partial_sort(nodes.begin(),
+                    nodes.begin() + count,
+                    nodes.end(),
+                    [target](const NodeInfo& lhs, const NodeInfo& rhs) {
+                      return NodeId::CloserToTarget(lhs.node_id, rhs.node_id, target);
+                    });
 }
 
 void SortIdsFromTarget(const NodeId& target, std::vector<NodeId>& nodes) {

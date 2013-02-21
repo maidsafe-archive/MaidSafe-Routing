@@ -19,15 +19,15 @@
 
 #include "maidsafe/rudp/managed_connections.h"
 
+#include "maidsafe/routing/client_routing_table.h"
+#include "maidsafe/routing/group_change_handler.h"
+#include "maidsafe/routing/network_statistics.h"
 #include "maidsafe/routing/network_utils.h"
-#include "maidsafe/routing/non_routing_table.h"
 #include "maidsafe/routing/parameters.h"
 #include "maidsafe/routing/routing_pb.h"
 #include "maidsafe/routing/rpcs.h"
 #include "maidsafe/routing/service.h"
 #include "maidsafe/routing/tests/test_utils.h"
-#include "maidsafe/routing/group_change_handler.h"
-#include "maidsafe/routing/network_statistics.h"
 
 namespace maidsafe {
 
@@ -46,11 +46,11 @@ TEST(ServicesTest, BEH_Ping) {
   NetworkStatistics network_statistics(node_id);
   RoutingTable routing_table(false, node_id, asymm::GenerateKeyPair(),
                              network_statistics);
-  ClientRoutingTable non_routing_table(routing_table.kNodeId());
+  ClientRoutingTable client_routing_table(routing_table.kNodeId());
   AsioService asio_service(1);
-  NetworkUtils network(routing_table, non_routing_table);
-  GroupChangeHandler group_change_handler(routing_table, non_routing_table, network);
-  Service service(routing_table, non_routing_table, network);
+  NetworkUtils network(routing_table, client_routing_table);
+  GroupChangeHandler group_change_handler(routing_table, client_routing_table, network);
+  Service service(routing_table, client_routing_table, network);
   NodeInfo node;
   rudp::ManagedConnections rudp;
   protobuf::PingRequest ping_request;
@@ -78,11 +78,11 @@ TEST(ServicesTest, BEH_FindNodes) {
   NetworkStatistics network_statistics(node_id);
   RoutingTable routing_table(false, node_id, asymm::GenerateKeyPair(), network_statistics);
   NodeId this_node_id(routing_table.kNodeId());
-  ClientRoutingTable non_routing_table(routing_table.kNodeId());
+  ClientRoutingTable client_routing_table(routing_table.kNodeId());
   AsioService asio_service(1);
-  NetworkUtils network(routing_table, non_routing_table);
-  GroupChangeHandler group_change_handler(routing_table, non_routing_table, network);
-  Service service(routing_table, non_routing_table, network);
+  NetworkUtils network(routing_table, client_routing_table);
+  GroupChangeHandler group_change_handler(routing_table, client_routing_table, network);
+  Service service(routing_table, client_routing_table, network);
   protobuf::Message message = rpcs::FindNodes(this_node_id, this_node_id, 8);
   service.FindNodes(message);
   protobuf::FindNodesResponse find_nodes_respose;
@@ -110,11 +110,11 @@ TEST(ServicesTest, BEH_FindNodes) {
 //   asymm::Keys keys;
 //   keys.identity = RandomString(64);
 //   RoutingTable routing_table(keys, false);
-//   ClientRoutingTable non_routing_table(keys);
+//   ClientRoutingTable client_routing_table(keys);
 //   AsioService asio_service(0);
 //   Timer timer(asio_service);
 //   NodeInfo node;
-//   NetworkUtils network(routing_table, non_routing_table, timer);
+//   NetworkUtils network(routing_table, client_routing_table, timer);
 //   protobuf::ProxyConnectRequest proxy_connect_request;
 //   // they send us an proxy connect rpc
 //   rudp::EndpointPair endpoint_pair;

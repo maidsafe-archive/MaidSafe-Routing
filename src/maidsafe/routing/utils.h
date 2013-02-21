@@ -63,7 +63,7 @@ int AddToRudp(NetworkUtils& network,
 
 bool ValidateAndAddToRoutingTable(NetworkUtils& network,
                                   RoutingTable& routing_table,
-                                  ClientRoutingTable& non_routing_table,
+                                  ClientRoutingTable& client_routing_table,
                                   const NodeId& peer_id,
                                   const NodeId& connection_id,
                                   const asymm::PublicKey& public_key,

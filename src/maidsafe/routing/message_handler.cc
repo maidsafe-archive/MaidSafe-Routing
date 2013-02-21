@@ -15,9 +15,9 @@
 #include "maidsafe/common/log.h"
 #include "maidsafe/common/node_id.h"
 
+#include "maidsafe/routing/client_routing_table.h"
 #include "maidsafe/routing/group_change_handler.h"
 #include "maidsafe/routing/network_utils.h"
-#include "maidsafe/routing/non_routing_table.h"
 #include "maidsafe/routing/routing_pb.h"
 #include "maidsafe/routing/routing_table.h"
 #include "maidsafe/routing/service.h"
@@ -31,14 +31,14 @@ namespace maidsafe {
 namespace routing {
 
 MessageHandler::MessageHandler(RoutingTable& routing_table,
-                               ClientRoutingTable& non_routing_table,
+                               ClientRoutingTable& client_routing_table,
                                NetworkUtils& network,
                                Timer& timer,
                                RemoveFurthestNode& remove_furthest_node,
                                GroupChangeHandler& group_change_handler,
                                NetworkStatistics& network_statistics)
     : routing_table_(routing_table),
-      non_routing_table_(non_routing_table),
+      client_routing_table_(client_routing_table),
       network_statistics_(network_statistics),
       network_(network),
       remove_furthest_node_(remove_furthest_node),
@@ -47,9 +47,9 @@ MessageHandler::MessageHandler(RoutingTable& routing_table,
                                                     (new CacheManager(routing_table_.kNodeId(),
                                                                       network_))),
       timer_(timer),
-      response_handler_(new ResponseHandler(routing_table, non_routing_table, network_,
+      response_handler_(new ResponseHandler(routing_table, client_routing_table, network_,
                                             group_change_handler)),
-      service_(new Service(routing_table, non_routing_table, network_)),
+      service_(new Service(routing_table, client_routing_table, network_)),
       message_received_functor_() {}
 
 void MessageHandler::HandleRoutingMessage(protobuf::Message& message) {
@@ -191,11 +191,11 @@ void MessageHandler::HandleMessageAsClosestNode(protobuf::Message& message) {
 void MessageHandler::HandleDirectMessageAsClosestNode(protobuf::Message& message) {
   assert(message.direct());
   // Dropping direct messages if this node is closest and destination node is not in routing_table_
-  // or non_routing_table_.
+  // or client_routing_table_.
   NodeId destination_node_id(message.destination_id());
   if (routing_table_.IsThisNodeClosestTo(destination_node_id)) {
     if (routing_table_.Contains(destination_node_id) ||
-      non_routing_table_.Contains(destination_node_id)) {
+      client_routing_table_.Contains(destination_node_id)) {
       return network_.SendToClosestNode(message);
     } else if (!message.has_visited() || !message.visited()) {
       message.set_visited(true);
@@ -363,7 +363,7 @@ void MessageHandler::HandleMessage(protobuf::Message& message) {
   if (IsRelayResponseForThisNode(message))
     return HandleRoutingMessage(message);
 
-  if (non_routing_table_.Contains(NodeId(message.destination_id())) && IsDirect(message)) {
+  if (client_routing_table_.Contains(NodeId(message.destination_id())) && IsDirect(message)) {
     return HandleMessageForNonRoutingNodes(message);
   }
 
@@ -379,7 +379,7 @@ void MessageHandler::HandleMessage(protobuf::Message& message) {
 }
 
 void MessageHandler::HandleMessageForNonRoutingNodes(protobuf::Message& message) {
-  auto non_routing_nodes(non_routing_table_.GetNodesInfo(NodeId(message.destination_id())));
+  auto non_routing_nodes(client_routing_table_.GetNodesInfo(NodeId(message.destination_id())));
   assert(!non_routing_nodes.empty() && message.direct());
   if (IsRequest(message) &&
       (!message.client_node() ||
@@ -427,11 +427,11 @@ void MessageHandler::HandleRelayRequest(protobuf::Message& message) {
 void MessageHandler::HandleDirectRelayRequestMessageAsClosestNode(protobuf::Message& message) {
   assert(message.direct());
   // Dropping direct messages if this node is closest and destination node is not in routing_table_
-  // or non_routing_table_.
+  // or client_routing_table_.
   NodeId destination_node_id(message.destination_id());
   if (routing_table_.IsThisNodeClosestTo(destination_node_id)) {
     if (routing_table_.Contains(destination_node_id) ||
-      non_routing_table_.Contains(destination_node_id)) {
+      client_routing_table_.Contains(destination_node_id)) {
       message.set_source_id(routing_table_.kNodeId().string());
       return network_.SendToClosestNode(message);
     } else {

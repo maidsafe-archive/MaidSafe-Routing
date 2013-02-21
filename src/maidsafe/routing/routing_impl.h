@@ -29,14 +29,14 @@
 #include "maidsafe/common/rsa.h"
 
 #include "maidsafe/routing/api_config.h"
+#include "maidsafe/routing/client_routing_table.h"
+#include "maidsafe/routing/group_change_handler.h"
 #include "maidsafe/routing/network_utils.h"
-#include "maidsafe/routing/non_routing_table.h"
 #include "maidsafe/routing/random_node_helper.h"
+#include "maidsafe/routing/remove_furthest_node.h"
 #include "maidsafe/routing/routing_api.h"
 #include "maidsafe/routing/routing_table.h"
 #include "maidsafe/routing/timer.h"
-#include "maidsafe/routing/remove_furthest_node.h"
-#include "maidsafe/routing/group_change_handler.h"
 
 
 namespace maidsafe {
@@ -74,7 +74,11 @@ class Routing::Impl {
 
   NodeId GetRandomExistingNode() const { return random_node_helper_.Get(); }
 
+  bool ClosestToId(const NodeId& node_id);
+
   GroupRangeStatus IsNodeIdInGroupRange(const NodeId& node_id);
+
+  NodeId RandomConnectedNode();
 
   bool EstimateInGroup(const NodeId& sender_id, const NodeId& info_id);
 
@@ -132,7 +136,7 @@ class Routing::Impl {
   std::mutex running_mutex_;
   Functors functors_;
   RandomNodeHelper random_node_helper_;
-  ClientRoutingTable non_routing_table_;
+  ClientRoutingTable client_routing_table_;
   RemoveFurthestNode remove_furthest_node_;
   GroupChangeHandler group_change_handler_;
   NetworkStatistics network_statistics_;

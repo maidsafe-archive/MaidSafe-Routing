@@ -75,6 +75,7 @@ class RoutingTable {
   bool AddNode(const NodeInfo& peer);
   bool CheckNode(const NodeInfo& peer);
   NodeInfo DropNode(const NodeId &node_to_drop, bool routing_only);
+  bool ClosestToId(const NodeId& node_id);
   GroupRangeStatus IsNodeIdInGroupRange(const NodeId& target_id);
   bool IsThisNodeGroupLeader(const NodeId& target_id, NodeInfo& connected_peer);
   bool GetNodeInfo(const NodeId& node_id, NodeInfo& node_info) const;
@@ -83,6 +84,7 @@ class RoutingTable {
   bool Contains(const NodeId& node_id) const;
   bool ConfirmGroupMembers(const NodeId& node1, const NodeId& node2);
   void GroupUpdateFromConnectedPeer(const NodeId& peer, const std::vector<NodeInfo>& nodes);
+  NodeId RandomConnectedNode();
   NodeInfo GetConnectedPeerFromGroupMatrixClosestTo(const NodeId& target_id);
   std::vector<NodeInfo> GetMatrixNodes();
   bool IsConnected(const NodeId& node_id);

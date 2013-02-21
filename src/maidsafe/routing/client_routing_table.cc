@@ -10,7 +10,7 @@
  *  the explicit written permission of the board of directors of maidsafe.net. *
  ******************************************************************************/
 
-#include "maidsafe/routing/non_routing_table.h"
+#include "maidsafe/routing/client_routing_table.h"
 
 #include "maidsafe/common/log.h"
 
@@ -161,7 +161,7 @@ bool ClientRoutingTable::CheckParametersAreUnique(const NodeInfo& node) const {
 bool ClientRoutingTable::CheckRangeForNodeToBeAdded(NodeInfo& node,
                                                  const NodeId& furthest_close_node_id,
                                                  const bool& add) const {
-  if (nodes_.size() >= Parameters::max_non_routing_table_size) {
+  if (nodes_.size() >= Parameters::max_client_routing_table_size) {
     LOG(kInfo) << "ClientRoutingTable full.";
     return false;
   }

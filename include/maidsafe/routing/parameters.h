@@ -29,10 +29,10 @@ struct Parameters {
   static uint16_t closest_nodes_size;
   static uint16_t node_group_size;
   static uint16_t proximity_factor;
-  static uint16_t max_routing_table_size;
+  static uint16_t max_routing_table_size;             // max size of RoutingTable owned by vault
   static uint16_t routing_table_size_threshold;
-  static uint16_t max_client_routing_table_size;
-  static uint16_t max_non_routing_table_size;
+  static uint16_t max_routing_table_size_for_client;  // max size of RoutingTable owned by client
+  static uint16_t max_client_routing_table_size;      // max size of ClientRoutingTable
   static uint16_t bucket_target_size;
   static uint32_t max_data_size;
   static boost::posix_time::time_duration default_send_timeout;

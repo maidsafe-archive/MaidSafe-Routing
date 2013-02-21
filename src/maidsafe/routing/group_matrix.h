@@ -52,6 +52,7 @@ class GroupMatrix {
 
   // Returns the peer which has node closest to target_id in its row (1st occurrence).
   NodeInfo GetConnectedPeerClosestTo(const NodeId& target_node_id);
+  bool ClosestToId(const NodeId& node_id);
   bool IsNodeIdInGroupRange(const NodeId& target_id);
   bool IsThisNodeGroupLeader(const NodeId& target_id, NodeId& connected_peer);
 

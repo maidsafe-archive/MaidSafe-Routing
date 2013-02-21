@@ -21,9 +21,9 @@
 #include "maidsafe/common/node_id.h"
 #include "maidsafe/rudp/return_codes.h"
 
+#include "maidsafe/routing/client_routing_table.h"
 #include "maidsafe/routing/message_handler.h"
 #include "maidsafe/routing/network_utils.h"
-#include "maidsafe/routing/non_routing_table.h"
 #include "maidsafe/routing/return_codes.h"
 #include "maidsafe/routing/routing_pb.h"
 #include "maidsafe/routing/routing_table.h"
@@ -60,7 +60,7 @@ int AddToRudp(NetworkUtils& network,
 
 bool ValidateAndAddToRoutingTable(NetworkUtils& network,
                                   RoutingTable& routing_table,
-                                  ClientRoutingTable& non_routing_table,
+                                  ClientRoutingTable& client_routing_table,
                                   const NodeId& peer_id,
                                   const NodeId& connection_id,
                                   const asymm::PublicKey& public_key,
@@ -84,7 +84,7 @@ bool ValidateAndAddToRoutingTable(NetworkUtils& network,
         routing_table.GetNthClosestNode(NodeId(routing_table.kNodeId()),
                                         2 * Parameters::closest_nodes_size).node_id;
 
-    if (non_routing_table.AddNode(peer, furthest_close_node_id))
+    if (client_routing_table.AddNode(peer, furthest_close_node_id))
       routing_accepted_node = true;
   } else {  // Vaults
     if (routing_table.AddNode(peer))
