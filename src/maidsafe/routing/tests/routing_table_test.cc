@@ -1037,42 +1037,79 @@ TEST(RoutingTableTest, BEH_ClosestToId) {
   NetworkStatistics network_statistics(own_node_id);
   RoutingTable routing_table(false, own_node_id, asymm::GenerateKeyPair(), network_statistics);
   std::vector<NodeInfo> known_nodes;
+  std::vector<NodeInfo> known_targets;
+  NodeId target;
+  NodeInfo node_info;
+  NodeId furthest_group_node;
 
+  auto test_known_ids = [&, this]() {
+    LOG(kInfo) << "\tTesting known ids...";
+    for (auto& target : known_targets) {
+      PartialSortFromTarget(target.node_id, 2, known_nodes);
+      if (NodeId::CloserToTarget(own_node_id, known_nodes.at(1).node_id, target.node_id) &&
+          NodeId::CloserToTarget(target.node_id, furthest_group_node, own_node_id))
+        EXPECT_TRUE(routing_table.ClosestToId(target.node_id));
+      else
+        EXPECT_FALSE(routing_table.ClosestToId(target.node_id));
+    }
+  };
+
+  auto test_unknown_ids = [&, this]() {
+    LOG(kInfo) << "\tTesting unknown ids...";
+    for (uint16_t i(0); i < 200; ++i) {
+      target = NodeId(NodeId::kRandomId);
+      PartialSortFromTarget(target, 1, known_nodes);
+      if (NodeId::CloserToTarget(own_node_id, known_nodes.at(0).node_id, target) &&
+          NodeId::CloserToTarget(target, furthest_group_node, own_node_id))
+        EXPECT_TRUE(routing_table.ClosestToId(target));
+      else
+        EXPECT_FALSE(routing_table.ClosestToId(target));
+    }
+  };
+
+  // ------- Empty routing table -------
+  LOG(kInfo) << "Testing empty routing table...";
   EXPECT_FALSE(routing_table.ClosestToId(own_node_id));
 
-  // Test unknown targets
-  NodeId target;
   for (uint16_t i(0); i < 200; ++i) {
     target = NodeId(NodeId::kRandomId);
     EXPECT_TRUE(routing_table.ClosestToId(target));
   }
 
-  // TODO(Alison) - test for partially populated table
+  // ------- Partially populated routing table -------
+  LOG(kInfo) << "Partially populating routing table...";
+  while (routing_table.size() < Parameters::max_routing_table_size / 4) {
+    node_info = MakeNode();
+    known_nodes.push_back(node_info);
+    known_targets.push_back(node_info);
+    EXPECT_TRUE(routing_table.AddNode(node_info));
+  }
+  PartialSortFromTarget(own_node_id, Parameters::node_group_size, known_nodes);
+  furthest_group_node = known_nodes.at(Parameters::node_group_size - 1).node_id;
 
-  // Populate routing table
-  NodeInfo node_info;
+  LOG(kInfo) << "Testing partially populated routing table...";
+  EXPECT_FALSE(routing_table.ClosestToId(own_node_id));
+  test_known_ids();
+  test_unknown_ids();
+
+  // ------- Fully populated routing table -------
+  LOG(kInfo) << "Fully populating routing table...";
   while (routing_table.size() < Parameters::max_routing_table_size) {
     node_info = MakeNode();
     known_nodes.push_back(node_info);
+    known_targets.push_back(node_info);
     EXPECT_TRUE(routing_table.AddNode(node_info));
   }
-
-  // Test known targets
   PartialSortFromTarget(own_node_id, Parameters::node_group_size, known_nodes);
-  NodeId furthest_group_node(known_nodes.at(Parameters::node_group_size - 1).node_id);
+  furthest_group_node = known_nodes.at(Parameters::node_group_size - 1).node_id;
+
+  LOG(kInfo) << "Testing fully populated routing table...";
   EXPECT_FALSE(routing_table.ClosestToId(own_node_id));
+  test_known_ids();
+  test_unknown_ids();
 
-  std::vector<NodeInfo> known_targets(known_nodes);
-  for (auto& target : known_targets) {
-    PartialSortFromTarget(target.node_id, 2, known_nodes);
-    if (NodeId::CloserToTarget(own_node_id, known_nodes.at(1).node_id, target.node_id) &&
-        NodeId::CloserToTarget(target.node_id, furthest_group_node, own_node_id))
-      EXPECT_TRUE(routing_table.ClosestToId(target.node_id));
-    else
-      EXPECT_FALSE(routing_table.ClosestToId(target.node_id));
-  }
-
-  // Populate group matrix
+  // ------- Fully populated routing table and populated group matrix -------
+  LOG(kInfo) << "Populating group matrix...";
   PartialSortFromTarget(own_node_id, Parameters::closest_nodes_size, known_nodes);
 
   std::vector<NodeInfo> new_row_entries;
@@ -1087,31 +1124,13 @@ TEST(RoutingTableTest, BEH_ClosestToId) {
     routing_table.GroupUpdateFromConnectedPeer(known_nodes.at(index).node_id, new_row_entries);
     new_row_entries.clear();
   }
-
-  // Test known targets
   PartialSortFromTarget(own_node_id, Parameters::node_group_size, known_nodes);
   furthest_group_node = known_nodes.at(Parameters::node_group_size - 1).node_id;
+
+  LOG(kInfo) << "Testing fully populated routing table with populated group matrix...";
   EXPECT_FALSE(routing_table.ClosestToId(own_node_id));
-
-  for (auto& target : known_targets) {
-    PartialSortFromTarget(target.node_id, 2, known_nodes);
-    if (NodeId::CloserToTarget(own_node_id, known_nodes.at(1).node_id, target.node_id) &&
-        NodeId::CloserToTarget(target.node_id, furthest_group_node, own_node_id))
-      EXPECT_TRUE(routing_table.ClosestToId(target.node_id));
-    else
-      EXPECT_FALSE(routing_table.ClosestToId(target.node_id));
-  }
-
-  // Test random (unknown) targets
-  for (uint16_t i(0); i < 200; ++i) {
-    target = NodeId(NodeId::kRandomId);
-    PartialSortFromTarget(target, 1, known_nodes);
-    if (NodeId::CloserToTarget(own_node_id, known_nodes.at(0).node_id, target) &&
-        NodeId::CloserToTarget(target, furthest_group_node, own_node_id))
-      EXPECT_TRUE(routing_table.ClosestToId(target));
-    else
-      EXPECT_FALSE(routing_table.ClosestToId(target));
-  }
+  test_known_ids();
+  test_unknown_ids();
 }
 
 }  // namespace test
