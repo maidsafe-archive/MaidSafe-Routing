@@ -108,8 +108,16 @@ class Routing {
   // A queue with recently found nodes that can be extracted for upper layers to communicate with.
   NodeId GetRandomExistingNode() const;
 
+  // Compares own closeness to target against other known nodes' closeness.
+  // Also considers GroupRangeStatus with respect to the given ID.
+  bool ClosestToId(const NodeId& node_id);
+
   // returns true if the node id provided is in group range of node.
   GroupRangeStatus IsNodeIdInGroupRange(const NodeId& node_id) const;
+
+  // Gets connected node from routing table (excludes closest Parameters::closest_nodes_size nodes).
+  // Shouldn't be called when routing table is likely to be smaller than closest_nodes_size.
+  NodeId RandomConnectedNode();
 
   // Evaluates whether the sender_id is a legitimate source to send a request for performing
   // an operation on info_id

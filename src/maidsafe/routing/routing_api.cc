@@ -61,8 +61,16 @@ NodeId Routing::GetRandomExistingNode() const {
   return pimpl_->GetRandomExistingNode();
 }
 
+bool Routing::ClosestToId(const NodeId& node_id) {
+  return pimpl_->ClosestToId(node_id);
+}
+
 GroupRangeStatus Routing::IsNodeIdInGroupRange(const NodeId& node_id) const {
   return pimpl_->IsNodeIdInGroupRange(node_id);
+}
+
+NodeId Routing::RandomConnectedNode() {
+  return pimpl_->RandomConnectedNode();
 }
 
 bool Routing::EstimateInGroup(const NodeId& sender_id, const NodeId& info_id) const {

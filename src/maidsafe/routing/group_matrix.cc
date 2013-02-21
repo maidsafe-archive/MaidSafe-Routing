@@ -138,6 +138,7 @@ void GroupMatrix::GetBetterNodeForSendingMessage(const NodeId& target_node_id,
                 << "\tfound node in matrix: " << DebugId(closest_id)
                 << "\treccommend sending to: " << DebugId(current_closest_peer_id);
 }
+
 std::vector<NodeInfo> GroupMatrix::GetAllConnectedPeersFor(const NodeId& target_id) {
   std::vector<NodeInfo> connected_nodes;
   for (auto row : matrix_) {
@@ -186,6 +187,24 @@ bool GroupMatrix::IsThisNodeGroupLeader(const NodeId& target_id, NodeId& connect
     assert(connected_peer != target_id);
   }
   return is_group_leader;
+}
+
+bool GroupMatrix::ClosestToId(const NodeId& node_id) {
+  if (unique_nodes_.size() == 0)
+    return true;
+
+  PartialSortFromTarget(node_id, 2, unique_nodes_);
+  if (unique_nodes_.at(0).node_id == kNodeId_)
+    return true;
+
+  if (unique_nodes_.at(0).node_id == node_id) {
+    if (unique_nodes_.at(1).node_id == kNodeId_)
+      return true;
+    else
+      return NodeId::CloserToTarget(kNodeId_, unique_nodes_.at(1).node_id, node_id);
+  }
+
+  return NodeId::CloserToTarget(kNodeId_, unique_nodes_.at(0).node_id, node_id);
 }
 
 bool GroupMatrix::IsNodeIdInGroupRange(const NodeId& target_id) {
@@ -278,9 +297,9 @@ bool GroupMatrix::IsRowEmpty(const NodeInfo& node_info) {
 }
 
 std::vector<NodeInfo> GroupMatrix::GetClosestNodes(const uint16_t& size) {
-  return std::vector<NodeInfo>(unique_nodes_.begin(),
-                               unique_nodes_.begin() + std::min(static_cast<size_t>(size),
-                                                                unique_nodes_.size()));
+  size_t size_to_sort(std::min(static_cast<size_t>(size), unique_nodes_.size()));
+  PartialSortFromTarget(kNodeId_, size_to_sort, unique_nodes_);
+  return std::vector<NodeInfo>(unique_nodes_.begin(), unique_nodes_.begin() + size_to_sort);
 }
 
 bool GroupMatrix::Contains(const NodeId& node_id) {

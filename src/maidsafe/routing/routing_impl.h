@@ -74,7 +74,11 @@ class Routing::Impl {
 
   NodeId GetRandomExistingNode() const { return random_node_helper_.Get(); }
 
+  bool ClosestToId(const NodeId& node_id);
+
   GroupRangeStatus IsNodeIdInGroupRange(const NodeId& node_id);
+
+  NodeId RandomConnectedNode();
 
   bool EstimateInGroup(const NodeId& sender_id, const NodeId& info_id);
 
