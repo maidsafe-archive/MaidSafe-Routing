@@ -1133,6 +1133,45 @@ TEST(RoutingTableTest, BEH_ClosestToId) {
   test_unknown_ids();
 }
 
+TEST(RoutingTableTest, BEH_GetRandomExistingNode) {
+  NodeId own_node_id(NodeId::kRandomId);
+  NetworkStatistics network_statistics(own_node_id);
+  RoutingTable routing_table(false, own_node_id, asymm::GenerateKeyPair(), network_statistics);
+  NodeInfo node_info;
+  std::vector<NodeInfo> known_nodes;
+
+  while (routing_table.size() < Parameters::closest_nodes_size) {
+    node_info = MakeNode();
+    known_nodes.push_back(node_info);
+    EXPECT_TRUE(routing_table.AddNode(node_info));
+#ifndef NDEBUG
+    EXPECT_DEATH(routing_table.RandomConnectedNode(), "");
+#else
+    EXPECT_TRUE(routing_table.RandomConnectedNode().IsZero());
+#endif
+  }
+
+  bool found(false);
+  NodeId placeholder_id(NodeId::kRandomId);
+  NodeId random_connected_node_id;
+  while (routing_table.size() < Parameters::max_routing_table_size) {
+    node_info = MakeNode();
+    known_nodes.push_back(node_info);
+    EXPECT_TRUE(routing_table.AddNode(node_info));
+
+    PartialSortFromTarget(own_node_id, Parameters::closest_nodes_size, known_nodes);
+    found = false;
+    random_connected_node_id = placeholder_id;
+    random_connected_node_id = routing_table.RandomConnectedNode();
+    LOG(kVerbose) << "Got random connected node: " << DebugId(random_connected_node_id);
+    for (size_t i(Parameters::closest_nodes_size); i < known_nodes.size(); ++i) {
+      if (known_nodes.at(i).node_id == random_connected_node_id)
+        found = true;
+    }
+    EXPECT_TRUE(found);
+  }
+}
+
 }  // namespace test
 }  // namespace routing
 }  // namespace maidsafe

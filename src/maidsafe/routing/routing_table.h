@@ -84,6 +84,7 @@ class RoutingTable {
   bool Contains(const NodeId& node_id) const;
   bool ConfirmGroupMembers(const NodeId& node1, const NodeId& node2);
   void GroupUpdateFromConnectedPeer(const NodeId& peer, const std::vector<NodeInfo>& nodes);
+  NodeId RandomConnectedNode();
   NodeInfo GetConnectedPeerFromGroupMatrixClosestTo(const NodeId& target_id);
   std::vector<NodeInfo> GetMatrixNodes();
   bool IsConnected(const NodeId& node_id);

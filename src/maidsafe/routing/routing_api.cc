@@ -69,6 +69,10 @@ GroupRangeStatus Routing::IsNodeIdInGroupRange(const NodeId& node_id) const {
   return pimpl_->IsNodeIdInGroupRange(node_id);
 }
 
+NodeId Routing::RandomConnectedNode() {
+  return pimpl_->RandomConnectedNode();
+}
+
 bool Routing::EstimateInGroup(const NodeId& sender_id, const NodeId& info_id) const {
   return pimpl_->EstimateInGroup(sender_id, info_id);
 }

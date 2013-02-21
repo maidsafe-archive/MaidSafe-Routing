@@ -293,6 +293,19 @@ GroupRangeStatus RoutingTable::IsNodeIdInGroupRange(const NodeId& target_id) {
   }
 }
 
+NodeId RoutingTable::RandomConnectedNode() {
+  std::unique_lock<std::mutex> lock(mutex_);
+  assert(nodes_.size() > Parameters::closest_nodes_size &&
+         "Shouldn't call RandomConnectedNode when routing table size is <= closest_nodes_size");
+  if (nodes_.size() <= Parameters::closest_nodes_size)
+    return NodeId();
+
+  PartialSortFromTarget(kNodeId_, nodes_.size(), lock);
+  size_t index(Parameters::closest_nodes_size +
+               RandomUint32() % (nodes_.size() - Parameters::closest_nodes_size));
+  return nodes_.at(index).node_id;
+}
+
 NodeInfo RoutingTable::GetConnectedPeerFromGroupMatrixClosestTo(const NodeId& target_node_id) {
   std::unique_lock<std::mutex> lock(mutex_);
   NodeInfo node_info;

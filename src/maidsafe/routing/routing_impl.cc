@@ -470,6 +470,10 @@ GroupRangeStatus Routing::Impl::IsNodeIdInGroupRange(const NodeId& node_id) {
   return routing_table_.IsNodeIdInGroupRange(node_id);
 }
 
+NodeId Routing::Impl::RandomConnectedNode() {
+  return routing_table_.RandomConnectedNode();
+}
+
 bool Routing::Impl::EstimateInGroup(const NodeId& sender_id, const NodeId& info_id) {
   return ((routing_table_.size() > Parameters::routing_table_ready_to_response) &&
              network_statistics_.EstimateInGroup(sender_id, info_id));

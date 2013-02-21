@@ -78,6 +78,8 @@ class Routing::Impl {
 
   GroupRangeStatus IsNodeIdInGroupRange(const NodeId& node_id);
 
+  NodeId RandomConnectedNode();
+
   bool EstimateInGroup(const NodeId& sender_id, const NodeId& info_id);
 
   std::future<std::vector<NodeId>> GetGroup(const NodeId& info_id);

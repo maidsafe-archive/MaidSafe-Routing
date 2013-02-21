@@ -115,6 +115,10 @@ class Routing {
   // returns true if the node id provided is in group range of node.
   GroupRangeStatus IsNodeIdInGroupRange(const NodeId& node_id) const;
 
+  // Gets connected node from routing table (excludes closest Parameters::closest_nodes_size nodes).
+  // Shouldn't be called when routing table is likely to be smaller than closest_nodes_size.
+  NodeId RandomConnectedNode();
+
   // Evaluates whether the sender_id is a legitimate source to send a request for performing
   // an operation on info_id
   bool EstimateInGroup(const NodeId& sender_id, const NodeId& info_id) const;
