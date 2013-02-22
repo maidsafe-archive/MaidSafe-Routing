@@ -197,21 +197,23 @@ TEST_F(TimerTest, BEH_SingleResponseTimedOut) {
 TEST_F(TimerTest, BEH_GroupResponseWithMoreChecks) {
   std::mutex mutex;
   int count(0);
+  std::condition_variable cond_var;
   std::vector<std::string> in_responses;
   std::set<std::string> out_responses;
   for (uint16_t i(0); i != kGroupSize_; ++i) {
     std::string response_str = RandomAlphaNumericString(1024 * 512);
     in_responses.push_back(response_str);
   }
-  TaskResponseFunctor response_functor = [&count, &in_responses, &out_responses, &mutex]
-      (std::string response) {
-    std::lock_guard<std::mutex> lock(mutex);
-    ++count;
+  TaskResponseFunctor response_functor = [&] (std::string response) {
+    std::unique_lock<std::mutex> lock(mutex);
     EXPECT_FALSE(response.empty());
     auto itr = std::find(in_responses.begin(), in_responses.end(), response);
     EXPECT_TRUE(itr != in_responses.end());
     auto set_itr = out_responses.insert(response);
     EXPECT_TRUE(set_itr.second);
+    ++count;
+    if (count == kGroupSize_)
+      cond_var.notify_one();
   };
   message_.set_id(timer_.AddTask(bptime::seconds(3),
                                  response_functor,
@@ -221,7 +223,8 @@ TEST_F(TimerTest, BEH_GroupResponseWithMoreChecks) {
     message_.add_data(in_responses.at(i));
     timer_.AddResponse(message_);
   }
-  while (count != kGroupSize_);
+  std::unique_lock<std::mutex> lock(mutex);
+  cond_var.wait(lock);
 }
 
 TEST_F(TimerTest, BEH_GroupResponse) {
