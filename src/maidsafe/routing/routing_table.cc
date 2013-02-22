@@ -227,13 +227,51 @@ NodeInfo RoutingTable::DropNode(const NodeId& node_to_drop, bool routing_only) {
 }
 
 bool RoutingTable::IsThisNodeGroupLeader(const NodeId& target_id, NodeInfo& connected_peer) {
-  NodeId connected_peer_id;
+  NodeId current_closest_id(kNodeId_);
+  NodeId closest_peer_id(GetClosestNode(target_id, true).node_id);
+  if (NodeId::CloserToTarget(closest_peer_id, current_closest_id, target_id))
+    current_closest_id = closest_peer_id;
+
   std::unique_lock<std::mutex> lock(mutex_);
-  if (!group_matrix_.IsThisNodeGroupLeader(target_id, connected_peer_id)) {
-    auto found(Find(connected_peer_id, lock));
+  group_matrix_.GetBetterNodeForSendingMessage(target_id, true, current_closest_id);
+  if (current_closest_id != kNodeId_) {
+    auto found(Find(current_closest_id, lock));
     if (found.first) {
       connected_peer = *found.second;
       return false;
+    }
+  }
+  return true;
+}
+
+bool RoutingTable::IsThisNodeGroupLeader(const NodeId& target_id,
+                                         NodeInfo& connected_peer,
+                                         const std::vector<std::string>& exclude) {
+  NodeInfo current_closest;
+  current_closest.node_id = kNodeId_;
+  NodeInfo closest_peer(GetClosestNode(target_id, exclude, true));
+  if (NodeId::CloserToTarget(closest_peer.node_id, current_closest.node_id, target_id))
+    current_closest = closest_peer;
+
+  std::unique_lock<std::mutex> lock(mutex_);
+  group_matrix_.GetBetterNodeForSendingMessage(target_id, exclude, true, current_closest);
+  if (current_closest.node_id != kNodeId_) {
+    auto found(Find(current_closest.node_id, lock));
+    if (found.first) {
+      connected_peer = *found.second;
+      return false;
+    }
+  }
+  for (auto& excluded : exclude) {
+    try {
+      NodeId excluded_id(excluded);
+      if (excluded_id != target_id && NodeId::CloserToTarget(excluded_id, kNodeId_, target_id)) {
+        if (connected_peer.node_id.IsZero())
+          connected_peer = closest_peer;
+        return false;
+      }
+    } catch(const std::exception& ex) {
+      LOG(kError) << "Got invalid string for Node ID. Exception: " << ex.what();
     }
   }
   return true;
@@ -306,16 +344,8 @@ NodeId RoutingTable::RandomConnectedNode() {
   return nodes_.at(index).node_id;
 }
 
-NodeInfo RoutingTable::GetConnectedPeerFromGroupMatrixClosestTo(const NodeId& target_node_id) {
-  std::unique_lock<std::mutex> lock(mutex_);
-  NodeInfo node_info;
-  node_info = group_matrix_.GetConnectedPeerClosestTo(target_node_id);
-  return node_info;
-}
-
 std::vector<NodeInfo> RoutingTable::GetMatrixNodes() {
   std::unique_lock<std::mutex> lock(mutex_);
-  // TODO(Alison) - prefer GetUniqueNodes() or GetClosestNodes(number)?
   return group_matrix_.GetUniqueNodes();
 }
 
@@ -350,6 +380,25 @@ bool RoutingTable::IsThisNodeClosestTo(const NodeId& target_id, bool ignore_exac
   NodeInfo closest_node(GetClosestNode(target_id, ignore_exact_match));
   return (closest_node.bucket == NodeInfo::kInvalidBucket) ? true :
          NodeId::CloserToTarget(kNodeId_, closest_node.node_id, target_id);
+}
+
+bool RoutingTable::IsThisNodeClosestToIncludingMatrix(const NodeId& target_id,
+                                                      bool ignore_exact_match) {
+  if (target_id.IsZero()) {
+    LOG(kError) << "Invalid target_id passed.";
+    return false;
+  }
+  NodeInfo closest_node(GetClosestNode(target_id, ignore_exact_match));
+  std::unique_lock<std::mutex> lock(mutex_);
+
+  if (closest_node.bucket == NodeInfo::kInvalidBucket)
+    return true;  // ?
+
+  if (!NodeId::CloserToTarget(kNodeId_, closest_node.node_id, target_id))
+    return false;
+
+  NodeId connected_peer;
+  return group_matrix_.IsThisNodeGroupLeader(target_id, connected_peer);  // use connected peer?
 }
 
 bool RoutingTable::Contains(const NodeId& node_id) const {
@@ -607,6 +656,43 @@ NodeInfo RoutingTable::GetClosestNode(const NodeId& target_id,
   return NodeInfo();
 }
 
+/*
+NodeInfo RoutingTable::GetNodeForSendingMessage(const NodeId& target_id,
+                                                bool ignore_exact_match) {
+  NodeInfo node_info(GetClosestNode(target_id, ignore_exact_match));
+
+  if (node_info.node_id != target_id) {
+    std::vector<NodeInfo> connected_peers(group_matrix_.GetAllConnectedPeersFor(target_id));
+    if (connected_peers.empty())
+      return node_info;
+
+    return connected_peers.at(0);
+  }
+  return node_info;
+}
+*/
+
+NodeInfo RoutingTable::GetNodeForSendingMessage(const NodeId& target_id,
+                                                const std::vector<std::string>& exclude,
+                                                bool ignore_exact_match) {
+  NodeInfo current_peer(GetClosestNode(target_id, exclude, ignore_exact_match));
+  std::unique_lock<std::mutex> lock(mutex_);
+  if (current_peer.node_id != target_id) {
+    group_matrix_.GetBetterNodeForSendingMessage(target_id,
+                                                 exclude,
+                                                 ignore_exact_match,
+                                                 current_peer);
+  }
+  std::string excluded_ids;
+  for (auto& excluded_id : exclude) {
+    excluded_ids.append("\t");
+    excluded_ids.append(HexSubstr(excluded_id));
+  }
+  LOG(kVerbose) << "[" << DebugId(kNodeId_) << "] - best node to send to is "
+                << DebugId(current_peer.node_id) << " (Excluded: " << excluded_ids << ")";
+  return current_peer;
+}
+
 NodeInfo RoutingTable::GetRemovableNode(std::vector<std::string> attempted) {
   std::map<uint32_t, uint16_t> bucket_rank_map;
   std::unique_lock<std::mutex> lock(mutex_);
@@ -776,7 +862,7 @@ void RoutingTable::UpdateNetworkStatus(uint16_t size) const {
     return;
 #endif
   network_status_functor_(static_cast<int>(size) * 100 / kMaxSize_);
-  LOG(kVerbose) << DebugId(kNodeId_) << "Updating network status !!! " << (size * 100) / kMaxSize_;
+  LOG(kVerbose) << DebugId(kNodeId_) << " Updating network status !!! " << (size * 100) / kMaxSize_;
 }
 
 size_t RoutingTable::size() const {
@@ -808,7 +894,9 @@ std::string RoutingTable::PrintRoutingTable() {
   return s;
 }
 
-void RoutingTable::PrintGroupMatrix() {}
+void RoutingTable::PrintGroupMatrix() {
+//  group_matrix_.PrintGroupMatrix();
+}
 
 }  // namespace routing
 

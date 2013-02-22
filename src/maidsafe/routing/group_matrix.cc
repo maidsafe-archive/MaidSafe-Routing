@@ -84,30 +84,73 @@ NodeInfo GroupMatrix::GetConnectedPeerFor(const NodeId& target_node_id) {
   return NodeInfo();
 }
 
-NodeInfo GroupMatrix::GetConnectedPeerClosestTo(const NodeId& target_node_id) {
-  NodeInfo peer;
-  NodeId closest(kNodeId_);
-  std::vector<NodeInfo> connected_nodes;
-  for (auto nods : matrix_)
-    connected_nodes.push_back(nods.at(0));
-  for (auto nodes : matrix_) {
-    for (auto node : nodes) {
-      if ((node.node_id != target_node_id) &&
-          NodeId::CloserToTarget(node.node_id, closest, target_node_id)) {
-        if (std::find_if(connected_nodes.begin(), connected_nodes.end(),
-                         [&](const NodeInfo& node_info) {
-                           return node_info.node_id == node.node_id;
-                         }) == connected_nodes.end()) {
-          peer = nodes.at(0);
-          closest = node.node_id;
-        } else {
-          peer = node;
-          closest = node.node_id;
-        }
+void GroupMatrix::GetBetterNodeForSendingMessage(const NodeId& target_node_id,
+                                                 const std::vector<std::string>& exclude,
+                                                 bool ignore_exact_match,
+                                                 NodeInfo& current_closest_peer) {
+  NodeId closest_id(current_closest_peer.node_id);
+
+  for (auto& row : matrix_) {
+    if (ignore_exact_match && row.at(0).node_id == target_node_id)
+      continue;
+    if (std::find(exclude.begin(), exclude.end(), row.at(0).node_id.string()) != exclude.end())
+      continue;
+
+    for (auto& node : row) {
+      if (node.node_id == kNodeId_)
+        continue;
+      if (ignore_exact_match && node.node_id == target_node_id)
+        continue;
+      if (std::find(exclude.begin(), exclude.end(), node.node_id.string()) != exclude.end())
+        continue;
+      if (NodeId::CloserToTarget(node.node_id, closest_id, target_node_id)) {
+        closest_id = node.node_id;
+        current_closest_peer = row.at(0);
       }
     }
   }
-  return peer;
+  LOG(kVerbose) << "[" << DebugId(kNodeId_)
+                << "]\ttarget: " << DebugId(target_node_id)
+                << "\tfound node in matrix: " << DebugId(closest_id)
+                << "\treccommend sending to: " << DebugId(current_closest_peer.node_id);
+}
+
+void GroupMatrix::GetBetterNodeForSendingMessage(const NodeId& target_node_id,
+                                                 bool ignore_exact_match,
+                                                 NodeId& current_closest_peer_id) {
+  NodeId closest_id(current_closest_peer_id);
+
+  for (auto& row : matrix_) {
+    if (ignore_exact_match && row.at(0).node_id == target_node_id)
+      continue;
+
+    for (auto& node : row) {
+      if (ignore_exact_match && node.node_id == target_node_id)
+        continue;
+      if (NodeId::CloserToTarget(node.node_id, closest_id, target_node_id)) {
+        closest_id = node.node_id;
+        current_closest_peer_id = row.at(0).node_id;
+      }
+    }
+  }
+  LOG(kVerbose) << "[" << DebugId(kNodeId_)
+                << "]\ttarget: " << DebugId(target_node_id)
+                << "\tfound node in matrix: " << DebugId(closest_id)
+                << "\treccommend sending to: " << DebugId(current_closest_peer_id);
+}
+
+std::vector<NodeInfo> GroupMatrix::GetAllConnectedPeersFor(const NodeId& target_id) {
+  std::vector<NodeInfo> connected_nodes;
+  for (auto row : matrix_) {
+    if (std::find_if(row.begin(),
+                     row.end(),
+                     [&target_id] (const NodeInfo& node_info) {
+                       return target_id == node_info.node_id;
+                     }) != row.end()) {
+      connected_nodes.push_back(row.at(0));
+    }
+  }
+  return connected_nodes;
 }
 
 bool GroupMatrix::IsThisNodeGroupLeader(const NodeId& target_id, NodeId& connected_peer) {
@@ -132,13 +175,16 @@ bool GroupMatrix::IsThisNodeGroupLeader(const NodeId& target_id, NodeId& connect
     if (node.node_id == target_id)
       continue;
     if (NodeId::CloserToTarget(node.node_id, kNodeId_, target_id)) {
-      LOG(kVerbose) << DebugId(node.node_id) << "could be leader";
+      LOG(kVerbose) << DebugId(node.node_id) << " could be leader";
       is_group_leader = false;
       break;
     }
   }
   if (!is_group_leader) {
-    connected_peer = GetConnectedPeerClosestTo(target_id).node_id;
+    NodeId better_id(kNodeId_);
+    GetBetterNodeForSendingMessage(target_id, true, better_id);
+    connected_peer = better_id;
+    assert(connected_peer != target_id);
   }
   return is_group_leader;
 }

@@ -446,7 +446,9 @@ void GenericNode::SetHealth(const int &health) {
 }
 
 void GenericNode::PostTaskToAsioService(std::function<void()> functor) {
-  routing_->pimpl_->asio_service_.service().post(functor);
+  std::lock_guard<std::mutex> lock(routing_->pimpl_->running_mutex_);
+  if (routing_->pimpl_->running_)
+    routing_->pimpl_->asio_service_.service().post(functor);
 }
 
 rudp::NatType GenericNode::nat_type() {
@@ -499,10 +501,31 @@ void GenericNetwork::SetUp() {
   bootstrap_endpoints_.push_back(node2->endpoint());
 }
 
-// void GenericNetwork::TearDown() {
-//   std::lock_guard<std::mutex> lock(mutex_);
-//   GenericNode::next_node_id_ = 1;
-// }
+void GenericNetwork::TearDown() {
+  std::vector<NodeId> nodes_id;
+  for (auto index(this->ClientIndex()); index < this->nodes_.size(); ++index)
+    nodes_id.push_back(this->nodes_.at(index)->node_id());
+  for (auto& node_id : nodes_id)
+    this->RemoveNode(node_id);
+  nodes_id.clear();
+  LOG(kVerbose) << "Clients are removed";
+
+  for (auto& node : this->nodes_)
+    if (node->HasSymmetricNat())
+      nodes_id.push_back(node->node_id());
+  for (auto& node_id : nodes_id)
+    this->RemoveNode(node_id);
+  nodes_id.clear();
+  LOG(kVerbose) << "Vaults behind symmetric NAT are removed";
+
+  for (auto& node : this->nodes_)
+    nodes_id.insert(nodes_id.begin(), node->node_id());  // reverse order - do bootstraps last
+  for (auto& node_id : nodes_id)
+    this->RemoveNode(node_id);
+
+  std::lock_guard<std::mutex> lock(mutex_);
+  GenericNode::next_node_id_ = 1;
+}
 
 void GenericNetwork::SetUpNetwork(const size_t& total_number_vaults,
                                   const size_t& total_number_clients) {
@@ -594,6 +617,29 @@ bool GenericNetwork::RemoveNode(const NodeId& node_id) {
   nodes_.erase(iter);
 
   return true;
+}
+
+bool GenericNetwork::WaitForNodesToJoin() {
+  // TODO(Alison) - tailor max. duration to match number of nodes joining?
+  bool all_joined = true;
+  uint16_t max(10);
+  uint16_t i(0);
+  while (i < max) {
+    all_joined = true;
+    for (uint16_t j(2); j < nodes_.size(); ++j) {
+      if (!nodes_.at(j)->joined()) {
+        all_joined = false;
+        break;
+      }
+    }
+    if (all_joined)
+      return true;
+    ++i;
+    if (i == max)
+      return false;
+    Sleep(boost::posix_time::seconds(5));
+  }
+  return false;
 }
 
 void GenericNetwork::Validate(const NodeId& node_id, GivePublicKeyFunctor give_public_key) const {
@@ -831,6 +877,7 @@ bool GenericNetwork::RestoreComposition() {
   // Intended for use in test SetUp/TearDown
   while (ClientIndex() > kServerSize) {
     RemoveNode(nodes_.at(ClientIndex() - 1)->node_id());
+    Sleep(boost::posix_time::seconds(1));  // TODO(Alison) - remove once hanging is fixed
   }
   while (ClientIndex() < kServerSize) {
     AddNode(false, NodeId());
@@ -843,6 +890,7 @@ bool GenericNetwork::RestoreComposition() {
 
   while (nodes_.size() > kNetworkSize) {
     RemoveNode(nodes_.at(nodes_.size() - 1)->node_id());
+    Sleep(boost::posix_time::seconds(1));  // TODO(Alison) - remove once hanging is fixed
   }
   while (nodes_.size() < kNetworkSize) {
     AddNode(true, NodeId());
@@ -881,31 +929,93 @@ bool GenericNetwork::WaitForHealthToStabilise() const {
         number_nonsymmetric_vaults * 100 /Parameters::max_routing_table_size_for_client;
 
   while (i != 10 && !healthy) {
+    LOG(kVerbose) << "Wait iteration number: " << i;
     ++i;
     healthy = true;
     int expected_health;
     std::string error_message;
     for (auto node: nodes_) {
+      error_message = "[" + DebugId(node->node_id()) + "]";
       int node_health = node->Health();
       if (node->IsClient()) {
         if (node->has_symmetric_nat_) {
           expected_health = client_symmetric_health;
-          error_message = "Client health (symmetric).";
+          error_message.append(" Client health (symmetric).");
         } else {
           expected_health = client_health;
-          error_message = "Client health (not symmetric).";
+          error_message.append(" Client health (not symmetric).");
         }
       } else {
         if (node->has_symmetric_nat_) {
           expected_health = vault_symmetric_health;
-          error_message = "Vault health (symmetric).";
+          error_message.append(" Vault health (symmetric).");
         } else {
           expected_health = vault_health;
-          error_message = "Vault health (not symmetric).";
+          error_message.append(" Vault health (not symmetric).");
         }
       }
       if (node_health != expected_health) {
         LOG(kError) << "Bad " << error_message << " Expected: "
+                    << expected_health << " Got: " << node_health;
+        healthy = false;
+        break;
+      }
+    }
+    if (!healthy)
+      Sleep(boost::posix_time::seconds(1));
+  }
+  if (!healthy)
+    LOG(kError) << "Health failed to stabilise in 10 seconds.";
+  return healthy;
+}
+
+bool GenericNetwork::WaitForHealthToStabiliseInLargeNetwork() const {
+  // TODO(Alison) - check values for clients
+  int server_size(static_cast<int>(client_index_));
+  assert(server_size > Parameters::max_routing_table_size);
+  int number_nonsymmetric_vaults(NonClientNonSymmetricNatNodesSize());
+  assert(number_nonsymmetric_vaults >= Parameters::greedy_fraction);
+
+  int i(0);
+  bool healthy(false);
+  int vault_health(Parameters::greedy_fraction);
+  int vault_symmetric_health(Parameters::greedy_fraction);
+  int client_health(100);
+  int client_symmetric_health(100);
+  if (server_size <= Parameters::max_client_routing_table_size)
+    client_health = (server_size - 1) * 100 /Parameters::max_client_routing_table_size;
+  if (number_nonsymmetric_vaults <= Parameters::max_client_routing_table_size)
+    client_symmetric_health =
+        number_nonsymmetric_vaults * 100 /Parameters::max_client_routing_table_size;
+
+  while (i != 10 && !healthy) {
+    LOG(kVerbose) << "Wait iteration number: " << i;
+    ++i;
+    healthy = true;
+    int expected_health;
+    std::string error_message;
+    for (auto node: nodes_) {
+      error_message = "[" + DebugId(node->node_id()) + "]";
+      int node_health = node->Health();
+      if (node->IsClient()) {
+        if (node->has_symmetric_nat_) {
+          expected_health = client_symmetric_health;
+          error_message.append(" Client health (symmetric).");
+        } else {
+          expected_health = client_health;
+          error_message.append(" Client health (not symmetric).");
+        }
+      } else {
+        if (node->has_symmetric_nat_) {
+          expected_health = vault_symmetric_health;
+          error_message.append(" Vault health (symmetric).");
+        } else {
+          expected_health = vault_health;
+          error_message.append(" Vault health (not symmetric).");
+        }
+      }
+      if (node_health < expected_health) {
+        LOG(kError) << "Bad " << error_message << " Expected at least: "
                     << expected_health << " Got: " << node_health;
         healthy = false;
         break;
@@ -931,6 +1041,31 @@ bool GenericNetwork::NodeHasSymmetricNat(const NodeId& node_id) const {
   }
   LOG(kError) << "Couldn't find node_id";
   return false;
+}
+
+testing::AssertionResult GenericNetwork::CheckGroupMatrixUniqueNodes(const uint16_t& check_length) {
+  bool success(true);
+  for (auto node : this->nodes_) {
+    std::vector<NodeInfo> nodes_from_matrix(node->ClosestNodes());
+    if (nodes_from_matrix.size() < check_length)
+      return testing::AssertionFailure();
+    nodes_from_matrix.resize(check_length);
+    std::vector<NodeInfo> nodes_from_network(this->GetClosestVaults(node->node_id(),
+                                                                    check_length));
+    if (nodes_from_network.size() != check_length)
+      return testing::AssertionFailure();
+    for (uint16_t i(0); i < check_length; ++i) {
+      EXPECT_EQ(nodes_from_matrix.at(i).node_id, nodes_from_network.at(i).node_id)
+          << "Index " << i << " from matrix: " << DebugId(nodes_from_matrix.at(i).node_id)
+          << "\t\tIndex " << i << " from network: "  << DebugId(nodes_from_network.at(i).node_id);
+      if (nodes_from_matrix.at(i).node_id != nodes_from_network.at(i).node_id)
+        success = false;
+    }
+  }
+  if (success)
+    return testing::AssertionSuccess();
+
+  return testing::AssertionFailure();
 }
 
 testing::AssertionResult GenericNetwork::SendDirect(const size_t& repeats) {
@@ -983,8 +1118,16 @@ testing::AssertionResult GenericNetwork::SendDirect(const size_t& repeats) {
     }
   }
 
-  while (reply_count < repeats * total_num_nodes * total_num_nodes)
+  uint16_t count(0);
+  uint16_t max_count(30 * (nodes_.size()) * (nodes_.size() - 1));
+  while (reply_count < repeats * total_num_nodes * total_num_nodes) {
+    ++count;
+    if (count == max_count) {
+      EXPECT_TRUE(false) << "Didn't get reply within allowed time!";
+      return testing::AssertionFailure();
+    }
     Sleep(boost::posix_time::millisec(500));
+  }
 
   if (failed)
     return testing::AssertionFailure();
@@ -1003,6 +1146,8 @@ struct SendGroupMonitor {
 testing::AssertionResult GenericNetwork::SendGroup(const NodeId& target_id,
                                                    const size_t& repeats,
                                                    uint16_t source_index) {
+  LOG(kVerbose) << "Doing SendGroup from " << DebugId(nodes_.at(source_index)->node_id())
+                << " to " << DebugId(target_id);
   assert(repeats > 0);
   std::string data(RandomAlphaNumericString((2 ^ 10) * 256));
   std::atomic<uint16_t> reply_count(0);
@@ -1013,7 +1158,7 @@ testing::AssertionResult GenericNetwork::SendGroup(const NodeId& target_id,
     std::shared_ptr<SendGroupMonitor> monitor(std::make_shared<SendGroupMonitor>(target_group));
     monitor->response_count = 0;
     ResponseFunctor response_functor =
-        [&failed, &reply_count, &target_id, monitor, repeat] (std::string reply) {
+        [&failed, &reply_count, target_id, monitor, repeat] (std::string reply) {
       std::lock_guard<std::mutex> lock(monitor->mutex);
       ++reply_count;
       monitor->response_count += 1;
@@ -1024,12 +1169,15 @@ testing::AssertionResult GenericNetwork::SendGroup(const NodeId& target_id,
       }
       EXPECT_FALSE(reply.empty());
       if (reply.empty()) {
+        LOG(kError) << "Got empty reply for SendGroup to target: " << DebugId(target_id);
         failed = true;
         return;
       }
       // TODO(Alison) - check data in reply
       try {
         NodeId replier(reply.substr(0, reply.find(">::<")));
+        LOG(kInfo) << "Got reply from: " << DebugId(replier)
+                   << " for SendGroup to target: " << DebugId(target_id);
         bool valid_replier(std::find(monitor->expected_ids.begin(),
                                      monitor->expected_ids.end(), replier) !=
             monitor->expected_ids.end());
@@ -1038,8 +1186,17 @@ testing::AssertionResult GenericNetwork::SendGroup(const NodeId& target_id,
                                                    [&](const NodeId& node_id) {
                                                      return node_id == replier;
                                                    }), monitor->expected_ids.end());
-        if (!valid_replier)
+      std::string output("SendGroup to target " + DebugId(target_id) + " awaiting replies from: ");
+      for (auto node_id : monitor->expected_ids) {
+        output.append("\t");
+        output.append(DebugId(node_id));
+      }
+      LOG(kVerbose) << output;
+        if (!valid_replier) {
+          EXPECT_TRUE(false) << "Got unexpected reply from " << DebugId(replier)
+                             << "\t (for target: " << DebugId(target_id) << ")";
           failed = true;
+        }
       } catch(const std::exception& /*ex*/) {
         EXPECT_TRUE(false) << "Reply contained invalid node ID.";
         failed = true;
@@ -1049,8 +1206,16 @@ testing::AssertionResult GenericNetwork::SendGroup(const NodeId& target_id,
     this->nodes_.at(source_index)->SendGroup(target_id, data, false, response_functor);
   }
 
-  while (reply_count < Parameters::node_group_size * repeats)
-    Sleep(boost::posix_time::milliseconds(500));
+  uint16_t count(0);
+  uint16_t max_count(300 * repeats);
+  while (reply_count < Parameters::node_group_size * repeats) {
+    ++count;
+    if (count == max_count) {
+      EXPECT_TRUE(false) << "Didn't get replies within allowed time!";
+      return testing::AssertionFailure();
+    }
+    Sleep(boost::posix_time::milliseconds(50));
+  }
 
   if (failed)
     return testing::AssertionFailure();
@@ -1109,8 +1274,16 @@ testing::AssertionResult GenericNetwork::SendDirect(const NodeId& destination_no
     ++message_index;
   }
 
-  while (reply_count < this->nodes_.size())
+  uint16_t count(0);
+  uint16_t max_count(30);
+  while (reply_count < this->nodes_.size()) {
+    ++count;
+    if (count == max_count) {
+      EXPECT_TRUE(false) << "Didn't get replies within allowed time!";
+      return testing::AssertionFailure();
+    }
     Sleep(boost::posix_time::millisec(500));
+  }
 
   if (failed)
     return testing::AssertionFailure();
@@ -1156,8 +1329,16 @@ testing::AssertionResult GenericNetwork::SendDirect(std::shared_ptr<GenericNode>
 
   source_node->SendDirect(destination_node_id, data, false, response_functor);
 
-  while (!finished)
-    Sleep(boost::posix_time::milliseconds(500));
+  uint16_t count(0);
+  uint16_t max_count(300);
+  while (!finished) {
+    ++count;
+    if (count == max_count) {
+      EXPECT_TRUE(false) << "Didn't get reply within allowed time!";
+      return testing::AssertionFailure();
+    }
+    Sleep(boost::posix_time::milliseconds(50));
+  }
 
   if (failed)
     return testing::AssertionFailure();
@@ -1183,6 +1364,17 @@ uint16_t GenericNetwork::NonClientNonSymmetricNatNodesSize() const {
 }
 
 void GenericNetwork::AddNodeDetails(NodePtr node) {
+  std::string descriptor;
+  if (node->has_symmetric_nat_)
+    descriptor.append("Symmetric ");
+  else
+    descriptor.append("Normal ");
+  if (node->IsClient())
+    descriptor.append("client");
+  else
+    descriptor.append(("vault"));
+  LOG(kVerbose) << "GenericNetwork::AddNodeDetails - starting to add " << descriptor
+                << " " << DebugId(node->node_id());
   std::shared_ptr<std::condition_variable> cond_var(new std::condition_variable);
   std::weak_ptr<std::condition_variable> cond_var_weak(cond_var);
   {
@@ -1239,8 +1431,12 @@ void GenericNetwork::AddNodeDetails(NodePtr node) {
   std::mutex mutex;
   if (!node->joined()) {
     std::unique_lock<std::mutex> lock(mutex);
-    auto result = cond_var->wait_for(lock, std::chrono::seconds(20));
-    EXPECT_EQ(result, std::cv_status::no_timeout);
+    uint16_t maximum_wait(20);
+    if (node->has_symmetric_nat_)
+      maximum_wait = 30;
+    auto result = cond_var->wait_for(lock, std::chrono::seconds(maximum_wait));
+    EXPECT_EQ(result, std::cv_status::no_timeout) << descriptor << " node failed to join: "
+                                                  << DebugId(node->node_id());
     Sleep(boost::posix_time::millisec(1000));
   }
   PrintRoutingTables();

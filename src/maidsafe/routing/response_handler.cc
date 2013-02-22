@@ -195,7 +195,7 @@ void ResponseHandler::FindNodes(const protobuf::Message& message) {
 
 void ResponseHandler::SendConnectRequest(const NodeId peer_node_id) {
   if (network_.bootstrap_connection_id().IsZero() && (routing_table_.size() == 0)) {
-      LOG(kWarning) << "Need to re bootstrap !";
+    LOG(kWarning) << "Need to re bootstrap !";
     return;
   }
   bool send_to_bootstrap_connection((routing_table_.size() < Parameters::closest_nodes_size) &&

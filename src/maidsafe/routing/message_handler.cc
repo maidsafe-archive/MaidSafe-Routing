@@ -12,6 +12,8 @@
 
 #include "maidsafe/routing/message_handler.h"
 
+#include <vector>
+
 #include "maidsafe/common/log.h"
 #include "maidsafe/common/node_id.h"
 
@@ -193,9 +195,9 @@ void MessageHandler::HandleDirectMessageAsClosestNode(protobuf::Message& message
   // Dropping direct messages if this node is closest and destination node is not in routing_table_
   // or client_routing_table_.
   NodeId destination_node_id(message.destination_id());
-  if (routing_table_.IsThisNodeClosestTo(destination_node_id)) {
+  if (routing_table_.IsThisNodeClosestToIncludingMatrix(destination_node_id)) {
     if (routing_table_.Contains(destination_node_id) ||
-      client_routing_table_.Contains(destination_node_id)) {
+        client_routing_table_.Contains(destination_node_id)) {
       return network_.SendToClosestNode(message);
     } else if (!message.has_visited() || !message.visited()) {
       message.set_visited(true);
@@ -238,19 +240,29 @@ void MessageHandler::HandleGroupMessageAsClosestNode(protobuf::Message& message)
       !message.visited() &&
       (routing_table_.size() > Parameters::closest_nodes_size) &&
       (!routing_table_.IsThisNodeInRange(NodeId(message.destination_id()),
-                                        Parameters::closest_nodes_size))) {
+                                         Parameters::closest_nodes_size))) {
     message.set_visited(true);
     return network_.SendToClosestNode(message);
   }
+
+  std::vector<std::string> route_history;
+  if (message.route_history().size() > 1)
+    route_history = std::vector<std::string>(message.route_history().begin(),
+                                             message.route_history().end() - 1);
+  else if ((message.route_history().size() == 1) &&
+           (message.route_history(0) != routing_table_.kNodeId().string()))
+    route_history.push_back(message.route_history(0));
 
   // Confirming from group matrix. If this node is closest to the target id or else passing on to
   // the connected peer which has the closer node.
   NodeInfo closest_to_group_leader_node;
   if (!routing_table_.IsThisNodeGroupLeader(NodeId(message.destination_id()),
-                                            closest_to_group_leader_node)) {
-    return network_.SendToDirect(message,
-                                 closest_to_group_leader_node.node_id,
-                                 closest_to_group_leader_node.connection_id);
+                                            closest_to_group_leader_node,
+                                            route_history)) {
+    assert(NodeId(message.destination_id()) != closest_to_group_leader_node.node_id);
+    return network_.SendToDirectAdjustedRoute(message,
+                                              closest_to_group_leader_node.node_id,
+                                              closest_to_group_leader_node.connection_id);
   }
 
   // This node is closest so will send to all replicant nodes
@@ -262,6 +274,7 @@ void MessageHandler::HandleGroupMessageAsClosestNode(protobuf::Message& message)
 
   --replication;  // Will send to self as well
   message.set_direct(true);
+  message.clear_route_history();
   NodeId destination_id(message.destination_id());
   NodeId own_node_id(routing_table_.kNodeId());
   auto close_from_matrix(routing_table_.GetClosestMatrixNodes(destination_id, replication + 2));
@@ -287,7 +300,8 @@ void MessageHandler::HandleGroupMessageAsClosestNode(protobuf::Message& message)
              << group_members;
 
   for (auto i : close_from_matrix) {
-    LOG(kInfo) << "Replicating message to : " << HexSubstr(i.node_id.string())
+    LOG(kInfo) << "[" << DebugId(own_node_id) << "] - "
+               << "Replicating message to : " << HexSubstr(i.node_id.string())
                << " [ group_id : " << HexSubstr(group_id)  << "]" << " id: " << message.id();
     message.set_destination_id(i.node_id.string());
     NodeInfo node;
@@ -465,6 +479,7 @@ void MessageHandler::HandleGroupRelayRequestMessageAsClosestNode(protobuf::Messa
   NodeInfo closest_to_group_leader_node;
   if (!routing_table_.IsThisNodeGroupLeader(NodeId(message.destination_id()),
                                            closest_to_group_leader_node)) {
+    assert(NodeId(message.destination_id()) != closest_to_group_leader_node.node_id);
     return network_.SendToDirect(message,
                                  closest_to_group_leader_node.node_id,
                                  closest_to_group_leader_node.connection_id);

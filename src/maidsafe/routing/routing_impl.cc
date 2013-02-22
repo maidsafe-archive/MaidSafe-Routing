@@ -125,15 +125,18 @@ void Routing::Impl::ConnectFunctors(const Functors& functors) {
                                     },
                                     functors_.close_node_replaced,
                                     [this] (const bool& subscribe, NodeInfo node_info) {
+                                      std::lock_guard<std::mutex> lock(running_mutex_);
                                       if (running_)
                                         group_change_handler_.SendSubscribeRpc(
                                             subscribe, node_info);
                                     },
                                     [this] (const NodeId& connection_id) {
+                                      std::lock_guard<std::mutex> lock(running_mutex_);
                                       if (running_)
                                         group_change_handler_.Unsubscribe(connection_id);
                                     });
   client_routing_table_.InitialiseFunctors([this] (const NodeId& connection_id) {
+                                             std::lock_guard<std::mutex> lock(running_mutex_);
                                              if (running_)
                                                group_change_handler_.Unsubscribe(connection_id);
                                            });
@@ -399,7 +402,10 @@ void Routing::Impl::AnonymousSend(protobuf::Message& proto_message) {
     NodeId bootstrap_connection_id(network_.bootstrap_connection_id());
     assert(proto_message.has_relay_connection_id() && "did not set this_node_relay_connection_id");
     rudp::MessageSentFunctor message_sent(
-        [=](int result) {
+        [=, this](int result) {
+          std::lock_guard<std::mutex> lock(running_mutex_);
+          if (!running_)
+            return;
           asio_service_.service().post([=]() {
               if (rudp::kSuccess != result) {
                 timer_.CancelTask(proto_message.id());

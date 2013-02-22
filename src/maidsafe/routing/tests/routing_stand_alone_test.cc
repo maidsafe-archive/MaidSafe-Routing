@@ -35,6 +35,7 @@ class RoutingStandAloneTest : public GenericNetwork, public testing::Test {
 
   virtual void TearDown() {
     Sleep(boost::posix_time::microseconds(100));
+    GenericNetwork::TearDown();
   }
 };
 
@@ -95,6 +96,16 @@ TEST_F(RoutingStandAloneTest, FUNC_SetupNetworkAddVaultsBehindSymmetricNat) {
     this->AddNode(false, true);
 }
 
+TEST_F(RoutingStandAloneTest, FUNC_SetupNetworkAddVaultsBehindSymmetricNatAndClients) {
+  this->SetUpNetwork(kServerSize, kClientSize);
+  uint16_t num_symmetric_vaults(kServerSize / 3);
+  for (auto i(0); i < num_symmetric_vaults; ++i)
+    this->AddNode(false, true);
+  uint16_t num_symmetric_clients(kClientSize);
+  for (auto i(0); i < num_symmetric_clients; ++i)
+    this->AddNode(true, false);  // Add more normal clients
+}
+
 TEST_F(RoutingStandAloneTest, FUNC_SetupNetworkAddNodesBehindSymmetricNat) {
   this->SetUpNetwork(kServerSize, kClientSize);
   uint16_t num_symmetric_vaults(kServerSize / 3);
@@ -102,7 +113,7 @@ TEST_F(RoutingStandAloneTest, FUNC_SetupNetworkAddNodesBehindSymmetricNat) {
     this->AddNode(false, true);
   uint16_t num_symmetric_clients(kClientSize);
   for (auto i(0); i < num_symmetric_clients; ++i)
-    this->AddNode(true, true);
+    this->AddNode(true, true);  // Add clients behind symmetric NAT
 }
 
 TEST_F(RoutingStandAloneTest, DISABLED_FUNC_ExtendedSendMulti) {
@@ -248,22 +259,11 @@ TEST_F(RoutingStandAloneTest, FUNC_GroupsAndSendWithSymmetricNat) {
   // TODO(Alison) - move this into functional tests when can run on mixed NAT network
   this->SetUpNetwork(kServerSize, 0, kServerSize / 4, 0);  // TODO(Alison) - adjust values?
 
-  WaitForHealthToStabilise();
+  ASSERT_TRUE(WaitForHealthToStabilise());
+  ASSERT_TRUE(WaitForNodesToJoin());
 
-  // Check each node's group matrix has closest vaults in it
-  uint16_t check_length(Parameters::closest_nodes_size + 1);
-  for (auto node : this->nodes_) {
-    std::vector<NodeInfo> nodes_from_matrix(node->ClosestNodes());
-    ASSERT_GE(nodes_from_matrix.size(), check_length);
-    nodes_from_matrix.resize(check_length);
-    std::vector<NodeInfo> nodes_from_network(this->GetClosestVaults(node->node_id(),
-                                                                    check_length));
-    ASSERT_EQ(nodes_from_network.size(), check_length);
-    for (uint16_t i(0); i < check_length; ++i)
-      EXPECT_EQ(nodes_from_matrix.at(i).node_id, nodes_from_network.at(i).node_id)
-          << "Index " << i << " from matrix: " << DebugId(nodes_from_matrix.at(i).node_id)
-          << "\t\tIndex " << i << " from network: "  << DebugId(nodes_from_network.at(i).node_id);
-  }
+  EXPECT_TRUE(CheckGroupMatrixUniqueNodes());
+  EXPECT_TRUE(CheckGroupMatrixUniqueNodes(3 / 2 * Parameters::closest_nodes_size + 1));
 
   // Check Send between each pair of vaults
   for (auto source_node : this->nodes_) {
@@ -295,22 +295,11 @@ TEST_F(RoutingStandAloneTest, FUNC_GroupsAndSendWithClientsAndSymmetricNat) {
                      kServerSize / 4,
                      kClientSize / 2);  // TODO(Alison) - adjust values?
 
-  WaitForHealthToStabilise();
+  ASSERT_TRUE(WaitForHealthToStabilise());
+  ASSERT_TRUE(WaitForNodesToJoin());
 
-  // Check each node's group matrix has closest vaults in it
-  uint16_t check_length(Parameters::closest_nodes_size + 1);
-  for (auto node : this->nodes_) {
-    std::vector<NodeInfo> nodes_from_matrix(node->ClosestNodes());
-    ASSERT_GE(nodes_from_matrix.size(), check_length);
-    nodes_from_matrix.resize(check_length);
-    std::vector<NodeInfo> nodes_from_network(this->GetClosestVaults(node->node_id(),
-                                                                    check_length));
-    ASSERT_EQ(nodes_from_network.size(), check_length);
-    for (uint16_t i(0); i < check_length; ++i)
-      EXPECT_EQ(nodes_from_matrix.at(i).node_id, nodes_from_network.at(i).node_id)
-          << "Index " << i << " from matrix: " << DebugId(nodes_from_matrix.at(i).node_id)
-          << "\t\tIndex " << i << " from network: "  << DebugId(nodes_from_network.at(i).node_id);
-  }
+  EXPECT_TRUE(CheckGroupMatrixUniqueNodes());
+  EXPECT_TRUE(CheckGroupMatrixUniqueNodes(3 / 2 * Parameters::closest_nodes_size + 1));
 
   // Check Send from each node to each vault
   for (auto source_node : this->nodes_) {
@@ -332,6 +321,102 @@ TEST_F(RoutingStandAloneTest, FUNC_GroupsAndSendWithClientsAndSymmetricNat) {
     for (uint16_t count(0); count < 1; ++count) {  // TODO(Alison) - max. value of count?
       NodeId node_id(NodeId::kRandomId);
       EXPECT_TRUE(this->SendGroup(node_id, 1, source_index));
+    }
+  }
+}
+
+class ProportionedRoutingStandAloneTest : public GenericNetwork, public testing::Test {
+ public:
+  ProportionedRoutingStandAloneTest(void)
+    : GenericNetwork(),
+      old_max_routing_table_size_(Parameters::max_routing_table_size),
+      old_routing_table_size_threshold_(Parameters::routing_table_size_threshold),
+      old_max_routing_table_size_for_client_(Parameters::max_routing_table_size_for_client),
+      old_closest_nodes_size_(Parameters::closest_nodes_size),
+      old_max_client_routing_table_size_(Parameters::max_client_routing_table_size),
+      old_max_route_history_(Parameters::max_route_history),
+      old_greedy_fraction_(Parameters::greedy_fraction) {
+    // NB. relative calculations should match those in parameters.cc
+    Parameters::max_routing_table_size = 16;
+    Parameters::routing_table_size_threshold = Parameters::max_routing_table_size / 2;
+    Parameters::max_routing_table_size_for_client = 8;
+    Parameters::closest_nodes_size = 4;
+    Parameters::max_client_routing_table_size = Parameters::max_routing_table_size;
+    Parameters::max_route_history = 3;  // less than closest_nodes_size
+    Parameters::greedy_fraction = Parameters::max_routing_table_size * 3 / 4;
+  }
+
+  virtual ~ProportionedRoutingStandAloneTest() {
+    Parameters::max_routing_table_size = old_max_routing_table_size_;
+    Parameters::routing_table_size_threshold = old_routing_table_size_threshold_;
+    Parameters::max_routing_table_size_for_client = old_max_routing_table_size_for_client_;
+    Parameters::closest_nodes_size = old_closest_nodes_size_;
+    Parameters::max_client_routing_table_size = old_max_client_routing_table_size_;
+    Parameters::max_route_history = old_max_route_history_;
+    Parameters::greedy_fraction = old_greedy_fraction_;
+  }
+
+  virtual void SetUp() {
+    GenericNetwork::SetUp();
+  }
+
+  virtual void TearDown() {
+    Sleep(boost::posix_time::microseconds(100));
+    GenericNetwork::TearDown();
+  }
+
+ private:
+  uint16_t old_max_routing_table_size_;
+  uint16_t old_routing_table_size_threshold_;
+  uint16_t old_max_routing_table_size_for_client_;
+  uint16_t old_closest_nodes_size_;
+  uint16_t old_max_client_routing_table_size_;
+  uint16_t old_max_route_history_;
+  uint16_t old_greedy_fraction_;
+};
+
+
+// TODO(Alison) - Add ProportionedRoutingStandAloneTests involving clients
+TEST_F(ProportionedRoutingStandAloneTest, FUNC_MessagePassing) {
+  this->SetUpNetwork(24, 0, 0, 0);
+
+  ASSERT_TRUE(WaitForNodesToJoin());
+  ASSERT_TRUE(WaitForHealthToStabiliseInLargeNetwork());
+
+  EXPECT_TRUE(CheckGroupMatrixUniqueNodes());
+  EXPECT_TRUE(CheckGroupMatrixUniqueNodes(3 / 2 * Parameters::closest_nodes_size + 1));
+
+  ASSERT_TRUE(this->SendDirect(3));
+  NodeId target;
+  for (size_t i(0); i < nodes_.size(); ++i) {
+    target = NodeId(NodeId::kRandomId);
+    ASSERT_TRUE(SendGroup(target, 1, i));
+  }
+  for (size_t i(0); i < nodes_.size(); ++i) {
+    for (auto& node : nodes_) {
+      ASSERT_TRUE(SendGroup(node->node_id(), 1, i));
+    }
+  }
+}
+
+TEST_F(ProportionedRoutingStandAloneTest, FUNC_MessagePassingSymmetricNat) {
+    this->SetUpNetwork(24, 0, 6, 0);
+
+  ASSERT_TRUE(WaitForNodesToJoin());
+  ASSERT_TRUE(WaitForHealthToStabiliseInLargeNetwork());
+
+  EXPECT_TRUE(CheckGroupMatrixUniqueNodes());
+  EXPECT_TRUE(CheckGroupMatrixUniqueNodes(3 / 2 * Parameters::closest_nodes_size + 1));
+
+  ASSERT_TRUE(this->SendDirect(3));
+  NodeId target;
+  for (size_t i(0); i < nodes_.size(); ++i) {
+    target = NodeId(NodeId::kRandomId);
+    ASSERT_TRUE(SendGroup(target, 1, i));
+  }
+  for (size_t i(0); i < nodes_.size(); ++i) {
+    for (auto& node : nodes_) {
+      ASSERT_TRUE(SendGroup(node->node_id(), 1, i));
     }
   }
 }

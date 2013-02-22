@@ -170,7 +170,7 @@ class GenericNetwork {
 
   bool ValidateRoutingTables() const;
   virtual void SetUp();
-//  virtual void TearDown();
+  virtual void TearDown();
   void SetUpNetwork(const size_t& total_number_vaults,
                     const size_t& total_number_clients = 0);
   // Use to specify proportion of vaults/clients that should behave as though they are behind
@@ -186,6 +186,7 @@ class GenericNetwork {
   void AddNode(const bool& client_mode, const rudp::NatType& nat_type);
   void AddNode(const bool& client_mode, const bool& has_symmetric_nat);
   bool RemoveNode(const NodeId& node_id);
+  bool WaitForNodesToJoin();
   void Validate(const NodeId& node_id, GivePublicKeyFunctor give_public_key) const;
   void SetNodeValidationFunctor(NodePtr node);
   std::vector<NodeId> GroupIds(const NodeId& node_id) const;
@@ -208,8 +209,14 @@ class GenericNetwork {
   void ValidateExpectedNodeType(const NodeId& node_id,
                                 const ExpectedNodeType& expected_node_type) const;
   bool RestoreComposition();
+  // For num. vaults <= max_routing_table_size
   bool WaitForHealthToStabilise() const;
+  // For num. vaults > max_routing_table_size
+  bool WaitForHealthToStabiliseInLargeNetwork() const;
   bool NodeHasSymmetricNat(const NodeId& node_id) const;
+  // Verifies that nodes' group matrices contain the Parameters::closest_nodes_size closest nodes
+  testing::AssertionResult CheckGroupMatrixUniqueNodes(const uint16_t& check_length
+                                                       = Parameters::closest_nodes_size + 1);
   // Do SendDirect between each pair of nodes and monitor results (do this 'repeats' times)
   testing::AssertionResult SendDirect(const size_t& repeats);
   // Do SendGroup from source_index node to target ID and monitor results (do this 'repeats' times)
@@ -264,9 +271,10 @@ class NodesEnvironment : public testing::Environment {
                          num_symmetric_nat_client_nodes_);
   }
   void TearDown() {
-    if (g_env_.unique()) {
-      g_env_.reset();
-    }
+//    if (g_env_.unique()) {
+//      g_env_.reset();
+//    }
+    g_env_->TearDown();
   }
 
   static std::shared_ptr<GenericNetwork> g_environment() {

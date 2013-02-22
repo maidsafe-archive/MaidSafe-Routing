@@ -221,22 +221,36 @@ TEST_F(RoutingNetworkTest, FUNC_SendToGroup) {
 
 TEST_F(RoutingNetworkTest, FUNC_SendToGroupSelfId) {
   uint16_t message_count(10), receivers_message_count(0);
+  env_->ClearMessages();
+  std::vector<std::future<testing::AssertionResult>> futures;
 
   for (uint16_t dest_index(0); dest_index < kServerSize; ++dest_index) {
     NodeId dest_id(env_->nodes_.at(dest_index)->node_id());
-    env_->ClearMessages();
-    receivers_message_count = 0;
-    EXPECT_TRUE(env_->SendGroup(dest_id, message_count, dest_index));
-    for (size_t index = 0; index < kServerSize; ++index) {
-      if (index != dest_index)
-        receivers_message_count += static_cast<uint16_t>(env_->nodes_.at(index)->MessagesSize());
-    }
-
-    EXPECT_EQ(0, env_->nodes_[dest_index]->MessagesSize())
-          << "Not expected message at Node : "
-          << HexSubstr(env_->nodes_[dest_index]->node_id().string());
-    EXPECT_EQ(message_count * (Parameters::node_group_size), receivers_message_count);
+    futures.emplace_back(std::async(std::launch::async,
+                                    [this, dest_id, &message_count, dest_index]() {
+        return env_->SendGroup(dest_id, message_count, dest_index);
+    }));
+    Sleep(boost::posix_time::milliseconds(10));
   }
+  while (!futures.empty()) {
+    futures.erase(std::remove_if(futures.begin(), futures.end(),
+        [](std::future<testing::AssertionResult>& future_bool)->bool {
+            if (IsReady(future_bool)) {
+              EXPECT_TRUE(future_bool.get());
+              return true;
+            } else  {
+              return false;
+            };
+        }), futures.end());
+    std::this_thread::yield();
+  }
+
+  for (auto node : env_->nodes_) {
+    receivers_message_count += static_cast<uint16_t>(node->MessagesSize());
+    node->ClearMessages();
+  }
+  EXPECT_EQ(message_count * (Parameters::node_group_size) * kServerSize, receivers_message_count);
+  LOG(kVerbose) << "Total message received count : " << receivers_message_count;
 }
 
 TEST_F(RoutingNetworkTest, FUNC_SendToGroupClientSelfId) {
@@ -279,12 +293,30 @@ TEST_F(RoutingNetworkTest, FUNC_SendToGroupInHybridNetwork) {
 TEST_F(RoutingNetworkTest, FUNC_SendToGroupRandomId) {
   uint16_t message_count(200), receivers_message_count(0);
   env_->ClearMessages();
+  std::vector<std::future<testing::AssertionResult>> futures;
+
   for (int index = 0; index < message_count; ++index) {
-    EXPECT_TRUE(env_->SendGroup(NodeId(NodeId::kRandomId), 1));
-    for (auto node : env_->nodes_) {
-      receivers_message_count += static_cast<uint16_t>(node->MessagesSize());
-      node->ClearMessages();
-    }
+    futures.emplace_back(std::async(
+                           std::launch::async,
+                           [this]() { return env_->SendGroup(NodeId(NodeId::kRandomId), 1); }));
+    Sleep(boost::posix_time::milliseconds(10));
+  }
+  while (!futures.empty()) {
+    futures.erase(std::remove_if(futures.begin(), futures.end(),
+        [](std::future<testing::AssertionResult>& future_bool)->bool {
+            if (IsReady(future_bool)) {
+              EXPECT_TRUE(future_bool.get());
+              return true;
+            } else  {
+              return false;
+            };
+        }), futures.end());
+    std::this_thread::yield();
+  }
+
+  for (auto node : env_->nodes_) {
+    receivers_message_count += static_cast<uint16_t>(node->MessagesSize());
+    node->ClearMessages();
   }
   EXPECT_EQ(message_count * (Parameters::node_group_size), receivers_message_count);
   LOG(kVerbose) << "Total message received count : "
@@ -292,36 +324,81 @@ TEST_F(RoutingNetworkTest, FUNC_SendToGroupRandomId) {
 }
 
 TEST_F(RoutingNetworkTest, FUNC_AnonymousSendToGroupRandomId) {
-  uint16_t message_count(200), receivers_message_count(0);
+  uint16_t message_count(100), receivers_message_count(0);
+  env_->ClearMessages();
+  std::vector<std::future<testing::AssertionResult>> futures;
+
   env_->AddNode(true, NodeId(), true);
   assert(env_->nodes_.size() - 1 < std::numeric_limits<uint16_t>::max());
+
   for (int index = 0; index < message_count; ++index) {
-    EXPECT_TRUE(env_->SendGroup(NodeId(NodeId::kRandomId), 1,
-                                static_cast<uint16_t>(env_->nodes_.size() - 1)));
-    for (auto node : env_->nodes_) {
-      receivers_message_count += static_cast<uint16_t>(node->MessagesSize());
-      node->ClearMessages();
-    }
+    futures.emplace_back(std::async(std::launch::async, [this]() {
+        return env_->SendGroup(NodeId(NodeId::kRandomId),
+                               1,
+                               static_cast<uint16_t>(env_->nodes_.size() - 1));
+    }));
+    Sleep(boost::posix_time::milliseconds(10));
   }
+  while (!futures.empty()) {
+    futures.erase(std::remove_if(futures.begin(), futures.end(),
+        [](std::future<testing::AssertionResult>& future_bool)->bool {
+            if (IsReady(future_bool)) {
+              EXPECT_TRUE(future_bool.get());
+              return true;
+            } else  {
+             return false;
+            };
+        }), futures.end());
+    std::this_thread::yield();
+  }
+
+  for (auto node : env_->nodes_) {
+    receivers_message_count += static_cast<uint16_t>(node->MessagesSize());
+    node->ClearMessages();
+  }
+
   EXPECT_EQ(message_count * (Parameters::node_group_size), receivers_message_count);
   LOG(kVerbose) << "Total message received count : "
                 << message_count * (Parameters::node_group_size);
 }
 
 TEST_F(RoutingNetworkTest, FUNC_AnonymousSendToGroupExistingId) {
-  uint16_t message_count(200), receivers_message_count(0);
+  uint16_t message_count(100), receivers_message_count(0);
+  env_->ClearMessages();
+  std::vector<std::future<testing::AssertionResult>> futures;
+
   size_t initial_network_size(env_->nodes_.size());
   env_->AddNode(true, NodeId(), true);
   assert(env_->nodes_.size() - 1 < std::numeric_limits<uint16_t>::max());
+
   for (int index = 0; index < message_count; ++index) {
     int group_id_index = index % initial_network_size;  // all other nodes
     NodeId group_id(env_->nodes_[group_id_index]->node_id());
-    EXPECT_TRUE(env_->SendGroup(group_id, 1, static_cast<uint16_t>(env_->nodes_.size() - 1)));
-    for (auto node : env_->nodes_) {
-      receivers_message_count += static_cast<uint16_t>(node->MessagesSize());
-      node->ClearMessages();
-    }
+    futures.emplace_back(std::async(std::launch::async, [this, group_id]() {
+        return env_->SendGroup(group_id,
+                               1,
+                               static_cast<uint16_t>(env_->nodes_.size() - 1));
+    }));
+    Sleep(boost::posix_time::milliseconds(10));
   }
+  while (!futures.empty()) {
+    futures.erase(std::remove_if(futures.begin(), futures.end(),
+        [](std::future<testing::AssertionResult>& future_bool)->bool {
+            if (IsReady(future_bool)) {
+              EXPECT_TRUE(future_bool.get());
+              return true;
+            } else  {
+              return false;
+            };
+        }), futures.end());
+    std::this_thread::yield();
+  }
+
+  for (auto node : env_->nodes_) {
+    receivers_message_count += static_cast<uint16_t>(node->MessagesSize());
+    node->ClearMessages();
+  }
+
   EXPECT_EQ(message_count * (Parameters::node_group_size), receivers_message_count);
   LOG(kVerbose) << "Total message received count : "
                 << message_count * (Parameters::node_group_size);
@@ -539,8 +616,9 @@ TEST_F(RoutingNetworkTest, FUNC_ClosestNodes) {
     if (node->IsClient())
       type = "CLIENT";
     for (uint16_t i(0); i < std::min(size_t(8), min_size); ++i)
-      EXPECT_EQ(from_matrix.at(i).node_id, from_network.at(i).node_id) << "For node of type "
-                                                                       << type;
+      EXPECT_EQ(from_matrix.at(i).node_id, from_network.at(i).node_id)
+          << "For node of type "  << type
+          << " (index " << i << ")";
   }
 }
 
@@ -562,6 +640,7 @@ TEST_F(RoutingNetworkTest, FUNC_ClosestNodesClientBehindSymmetricNat) {
     env_->AddNode(false, node_id, false, true);
 
   ASSERT_TRUE(env_->WaitForHealthToStabilise());
+  ASSERT_TRUE(env_->WaitForNodesToJoin());
 
   int index(env_->NodeIndex(sym_client_id));
   ASSERT_GE(index, 0);
@@ -592,6 +671,7 @@ TEST_F(RoutingNetworkTest, FUNC_ClosestNodesVaultBehindSymmetricNat) {
     env_->AddNode(false, node_id, false, true);
 
   ASSERT_TRUE(env_->WaitForHealthToStabilise());
+  ASSERT_TRUE(env_->WaitForNodesToJoin());
 
   int index(env_->NodeIndex(sym_vault_id));
   ASSERT_GE(index, 0);
@@ -614,6 +694,9 @@ TEST_F(RoutingNetworkTest, FUNC_ClosestNodesBehindSymmetricNat) {
     env_->AddNode(true, true);
 
   ASSERT_TRUE(env_->WaitForHealthToStabilise());
+  ASSERT_TRUE(env_->WaitForNodesToJoin());
+
+  Sleep(boost::posix_time::seconds(1));
 
   for (auto node : env_->nodes_) {
     std::vector<NodeInfo> from_matrix(node->ClosestNodes());
@@ -626,8 +709,11 @@ TEST_F(RoutingNetworkTest, FUNC_ClosestNodesBehindSymmetricNat) {
     if (node->IsClient())
       type = "CLIENT";
     for (uint16_t i(0); i < std::min(size_t(9), min_size); ++i)
-      EXPECT_EQ(from_matrix.at(i).node_id, from_network.at(i).node_id) << "For node of type "
-                                                                       << type;
+      EXPECT_EQ(from_matrix.at(i).node_id, from_network.at(i).node_id)
+          << "For node of type " << type
+          << " (index " << i << ")"
+          << "\tExpected: " << DebugId(from_network.at(i).node_id)
+          << "\tGot: " << DebugId(from_matrix.at(i).node_id);
   }
 }
 
@@ -636,6 +722,7 @@ TEST_F(RoutingNetworkTest, FUNC_VaultJoinWhenClosestVaultAlsoBehindSymmetricNat)
   env_->AddNode(false, sym_node_id_1, false, true);
 
   ASSERT_TRUE(env_->WaitForHealthToStabilise());
+  ASSERT_TRUE(env_->WaitForNodesToJoin());
 
   std::vector<NodeInfo> closest_vaults(env_->GetClosestVaults(sym_node_id_1, 2));
 
@@ -652,6 +739,7 @@ TEST_F(RoutingNetworkTest, FUNC_ClientJoinWhenClosestVaultAlsoBehindSymmetricNat
   env_->AddNode(false, sym_node_id_1, false, true);
 
   ASSERT_TRUE(env_->WaitForHealthToStabilise());
+  ASSERT_TRUE(env_->WaitForNodesToJoin());
 
   std::vector<NodeInfo> closest_vaults(env_->GetClosestVaults(sym_node_id_1, 2));
 

@@ -152,12 +152,10 @@ void SortFromTarget(const NodeId& target, std::vector<NodeInfo>& nodes) {
 }
 
 void PartialSortFromTarget(const NodeId& target,
-                           const uint16_t& number,
-                           std::vector<NodeInfo>& nodes) {
-  uint16_t count = std::min(number, static_cast<uint16_t>(nodes.size()));
-  std::partial_sort(nodes.begin(),
-                    nodes.begin() + count,
-                    nodes.end(),
+                           std::vector<NodeInfo>& nodes,
+                           size_t num_to_sort) {
+  assert(num_to_sort <= nodes.size());
+  std::partial_sort(nodes.begin(), nodes.begin() + num_to_sort, nodes.end(),
                     [target](const NodeInfo& lhs, const NodeInfo& rhs) {
                       return NodeId::CloserToTarget(lhs.node_id, rhs.node_id, target);
                     });
