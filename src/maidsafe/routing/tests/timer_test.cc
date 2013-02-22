@@ -195,15 +195,17 @@ TEST_F(TimerTest, BEH_SingleResponseTimedOut) {
 }
 
 TEST_F(TimerTest, BEH_GroupResponseWithMoreChecks) {
-  std::atomic<int> count(0);
+  std::mutex mutex;
+  int count(0);
   std::vector<std::string> in_responses;
   std::set<std::string> out_responses;
   for (uint16_t i(0); i != kGroupSize_; ++i) {
     std::string response_str = RandomAlphaNumericString(1024 * 512);
     in_responses.push_back(response_str);
   }
-  TaskResponseFunctor response_functor = [&count, &in_responses, &out_responses]
+  TaskResponseFunctor response_functor = [&count, &in_responses, &out_responses, &mutex]
       (std::string response) {
+    std::lock_guard<std::mutex> lock(mutex);
     ++count;
     EXPECT_FALSE(response.empty());
     auto itr = std::find(in_responses.begin(), in_responses.end(), response);

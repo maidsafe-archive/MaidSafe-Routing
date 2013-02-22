@@ -1078,7 +1078,7 @@ TEST(RoutingTableTest, BEH_ClosestToId) {
 
   // ------- Partially populated routing table -------
   LOG(kInfo) << "Partially populating routing table...";
-  while (routing_table.size() < Parameters::max_routing_table_size / 4) {
+  while (routing_table.size() < static_cast<size_t>(Parameters::max_routing_table_size / 4)) {
     node_info = MakeNode();
     known_nodes.push_back(node_info);
     known_targets.push_back(node_info);
