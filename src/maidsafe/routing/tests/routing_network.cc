@@ -1145,11 +1145,12 @@ struct SendGroupMonitor {
 
 testing::AssertionResult GenericNetwork::SendGroup(const NodeId& target_id,
                                                    const size_t& repeats,
-                                                   uint16_t source_index) {
+                                                   uint16_t source_index,
+                                                   size_t message_size) {
   LOG(kVerbose) << "Doing SendGroup from " << DebugId(nodes_.at(source_index)->node_id())
                 << " to " << DebugId(target_id);
   assert(repeats > 0);
-  std::string data(RandomAlphaNumericString((2 ^ 10) * 256));
+  std::string data(RandomAlphaNumericString(message_size));
   std::atomic<uint16_t> reply_count(0);
   std::atomic<bool> failed(false);
 

@@ -421,6 +421,114 @@ TEST_F(ProportionedRoutingStandAloneTest, FUNC_MessagePassingSymmetricNat) {
   }
 }
 
+class ExtendedProportionedRoutingStandAloneTest : public GenericNetwork, public testing::Test {
+ public:
+  ExtendedProportionedRoutingStandAloneTest(void)
+    : GenericNetwork(),
+      old_max_routing_table_size_(Parameters::max_routing_table_size),
+      old_routing_table_size_threshold_(Parameters::routing_table_size_threshold),
+      old_max_routing_table_size_for_client_(Parameters::max_routing_table_size_for_client),
+      old_closest_nodes_size_(Parameters::closest_nodes_size),
+      old_max_client_routing_table_size_(Parameters::max_client_routing_table_size),
+      old_max_route_history_(Parameters::max_route_history),
+      old_greedy_fraction_(Parameters::greedy_fraction) {
+    // NB. relative calculations should match those in parameters.cc
+    Parameters::max_routing_table_size = 32;
+    Parameters::routing_table_size_threshold = Parameters::max_routing_table_size / 2;
+    Parameters::max_routing_table_size_for_client = 8;
+    Parameters::closest_nodes_size = 4;
+    Parameters::max_client_routing_table_size = Parameters::max_routing_table_size;
+    Parameters::max_route_history = 3;  // less than closest_nodes_size
+    Parameters::greedy_fraction = Parameters::max_routing_table_size * 3 / 4;
+  }
+
+  virtual ~ExtendedProportionedRoutingStandAloneTest() {
+    Parameters::max_routing_table_size = old_max_routing_table_size_;
+    Parameters::routing_table_size_threshold = old_routing_table_size_threshold_;
+    Parameters::max_routing_table_size_for_client = old_max_routing_table_size_for_client_;
+    Parameters::closest_nodes_size = old_closest_nodes_size_;
+    Parameters::max_client_routing_table_size = old_max_client_routing_table_size_;
+    Parameters::max_route_history = old_max_route_history_;
+    Parameters::greedy_fraction = old_greedy_fraction_;
+  }
+
+  virtual void SetUp() {
+    GenericNetwork::SetUp();
+  }
+
+  virtual void TearDown() {
+    Sleep(boost::posix_time::microseconds(100));
+    GenericNetwork::TearDown();
+  }
+
+ private:
+  uint16_t old_max_routing_table_size_;
+  uint16_t old_routing_table_size_threshold_;
+  uint16_t old_max_routing_table_size_for_client_;
+  uint16_t old_closest_nodes_size_;
+  uint16_t old_max_client_routing_table_size_;
+  uint16_t old_max_route_history_;
+  uint16_t old_greedy_fraction_;
+};
+
+
+// TODO(Alison) - Add ExtendedProportionedRoutingStandAloneTest involving clients
+TEST_F(ExtendedProportionedRoutingStandAloneTest, DISABLED_FUNC_MessagePassing) {
+  this->SetUpNetwork(80, 0, 0, 0);
+
+  ASSERT_TRUE(WaitForNodesToJoin());
+  ASSERT_TRUE(WaitForHealthToStabiliseInLargeNetwork());
+
+  EXPECT_TRUE(CheckGroupMatrixUniqueNodes());
+  EXPECT_TRUE(CheckGroupMatrixUniqueNodes(3 / 2 * Parameters::closest_nodes_size + 1));
+
+  for (uint16_t repeat(0); repeat < 10; ++repeat) {
+    std::cout << "Repeat: " << repeat << std::endl;
+    std::cout << "SendDirect..." << std::endl;
+    ASSERT_TRUE(this->SendDirect(5));
+    NodeId target;
+    std::cout << "SendGroup (to random)..." << std::endl;
+    for (size_t i(0); i < nodes_.size(); ++i) {
+      target = NodeId(NodeId::kRandomId);
+      ASSERT_TRUE(SendGroup(target, 5, i));
+    }
+    std::cout << "SendGroup (to existing)..." << std::endl;
+    for (size_t i(0); i < nodes_.size(); ++i) {
+      for (auto& node : nodes_) {
+        ASSERT_TRUE(SendGroup(node->node_id(), 5, i));
+      }
+    }
+  }
+}
+
+TEST_F(ExtendedProportionedRoutingStandAloneTest, DISABLED_FUNC_MessagePassingSymmetricNat) {
+    this->SetUpNetwork(80, 0, 20, 0);
+
+  ASSERT_TRUE(WaitForNodesToJoin());
+  ASSERT_TRUE(WaitForHealthToStabiliseInLargeNetwork());
+
+  EXPECT_TRUE(CheckGroupMatrixUniqueNodes());
+  EXPECT_TRUE(CheckGroupMatrixUniqueNodes(3 / 2 * Parameters::closest_nodes_size + 1));
+
+  for (uint16_t repeat(0); repeat < 10; ++repeat) {
+    std::cout << "Repeat: " << repeat << std::endl;
+    std::cout << "SendDirect..." << std::endl;
+    ASSERT_TRUE(this->SendDirect(5));
+    NodeId target;
+    std::cout << "SendGroup (to random)..." << std::endl;
+    for (size_t i(0); i < nodes_.size(); ++i) {
+      target = NodeId(NodeId::kRandomId);
+      ASSERT_TRUE(SendGroup(target, 5, i));
+    }
+    std::cout << "SendGroup (to existing)..." << std::endl;
+    for (size_t i(0); i < nodes_.size(); ++i) {
+      for (auto& node : nodes_) {
+        ASSERT_TRUE(SendGroup(node->node_id(), 5, i));
+      }
+    }
+  }
+}
+
 }  // namespace test
 
 }  // namespace routing
