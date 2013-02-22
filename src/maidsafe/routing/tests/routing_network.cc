@@ -1043,6 +1043,31 @@ bool GenericNetwork::NodeHasSymmetricNat(const NodeId& node_id) const {
   return false;
 }
 
+testing::AssertionResult GenericNetwork::CheckGroupMatrixUniqueNodes(const uint16_t& check_length) {
+  bool success(true);
+  for (auto node : this->nodes_) {
+    std::vector<NodeInfo> nodes_from_matrix(node->ClosestNodes());
+    if (nodes_from_matrix.size() < check_length)
+      return testing::AssertionFailure();
+    nodes_from_matrix.resize(check_length);
+    std::vector<NodeInfo> nodes_from_network(this->GetClosestVaults(node->node_id(),
+                                                                    check_length));
+    if (nodes_from_network.size() != check_length)
+      return testing::AssertionFailure();
+    for (uint16_t i(0); i < check_length; ++i) {
+      EXPECT_EQ(nodes_from_matrix.at(i).node_id, nodes_from_network.at(i).node_id)
+          << "Index " << i << " from matrix: " << DebugId(nodes_from_matrix.at(i).node_id)
+          << "\t\tIndex " << i << " from network: "  << DebugId(nodes_from_network.at(i).node_id);
+      if (nodes_from_matrix.at(i).node_id != nodes_from_network.at(i).node_id)
+        success = false;
+    }
+  }
+  if (success)
+    return testing::AssertionSuccess();
+
+  return testing::AssertionFailure();
+}
+
 testing::AssertionResult GenericNetwork::SendDirect(const size_t& repeats) {
   assert(repeats > 0);
   size_t total_num_nodes(this->nodes_.size());
@@ -1168,7 +1193,8 @@ testing::AssertionResult GenericNetwork::SendGroup(const NodeId& target_id,
       }
       LOG(kVerbose) << output;
         if (!valid_replier) {
-          EXPECT_TRUE(false) << "Got unexpected reply from " << DebugId(replier);
+          EXPECT_TRUE(false) << "Got unexpected reply from " << DebugId(replier)
+                             << "\t (for target: " << DebugId(target_id) << ")";
           failed = true;
         }
       } catch(const std::exception& /*ex*/) {

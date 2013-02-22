@@ -862,7 +862,7 @@ void RoutingTable::UpdateNetworkStatus(uint16_t size) const {
     return;
 #endif
   network_status_functor_(static_cast<int>(size) * 100 / kMaxSize_);
-  LOG(kVerbose) << DebugId(kNodeId_) << "Updating network status !!! " << (size * 100) / kMaxSize_;
+  LOG(kVerbose) << DebugId(kNodeId_) << " Updating network status !!! " << (size * 100) / kMaxSize_;
 }
 
 size_t RoutingTable::size() const {

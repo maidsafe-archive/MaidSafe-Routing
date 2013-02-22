@@ -96,6 +96,16 @@ TEST_F(RoutingStandAloneTest, FUNC_SetupNetworkAddVaultsBehindSymmetricNat) {
     this->AddNode(false, true);
 }
 
+TEST_F(RoutingStandAloneTest, FUNC_SetupNetworkAddVaultsBehindSymmetricNatAndClients) {
+  this->SetUpNetwork(kServerSize, kClientSize);
+  uint16_t num_symmetric_vaults(kServerSize / 3);
+  for (auto i(0); i < num_symmetric_vaults; ++i)
+    this->AddNode(false, true);
+  uint16_t num_symmetric_clients(kClientSize);
+  for (auto i(0); i < num_symmetric_clients; ++i)
+    this->AddNode(true, false);  // Add more normal clients
+}
+
 TEST_F(RoutingStandAloneTest, FUNC_SetupNetworkAddNodesBehindSymmetricNat) {
   this->SetUpNetwork(kServerSize, kClientSize);
   uint16_t num_symmetric_vaults(kServerSize / 3);
@@ -103,7 +113,7 @@ TEST_F(RoutingStandAloneTest, FUNC_SetupNetworkAddNodesBehindSymmetricNat) {
     this->AddNode(false, true);
   uint16_t num_symmetric_clients(kClientSize);
   for (auto i(0); i < num_symmetric_clients; ++i)
-    this->AddNode(true, true);
+    this->AddNode(true, true);  // Add clients behind symmetric NAT
 }
 
 TEST_F(RoutingStandAloneTest, DISABLED_FUNC_ExtendedSendMulti) {
@@ -252,20 +262,8 @@ TEST_F(RoutingStandAloneTest, FUNC_GroupsAndSendWithSymmetricNat) {
   ASSERT_TRUE(WaitForHealthToStabilise());
   ASSERT_TRUE(WaitForNodesToJoin());
 
-  // Check each node's group matrix has closest vaults in it
-  uint16_t check_length(Parameters::closest_nodes_size + 1);
-  for (auto node : this->nodes_) {
-    std::vector<NodeInfo> nodes_from_matrix(node->ClosestNodes());
-    ASSERT_GE(nodes_from_matrix.size(), check_length);
-    nodes_from_matrix.resize(check_length);
-    std::vector<NodeInfo> nodes_from_network(this->GetClosestVaults(node->node_id(),
-                                                                    check_length));
-    ASSERT_EQ(nodes_from_network.size(), check_length);
-    for (uint16_t i(0); i < check_length; ++i)
-      EXPECT_EQ(nodes_from_matrix.at(i).node_id, nodes_from_network.at(i).node_id)
-          << "Index " << i << " from matrix: " << DebugId(nodes_from_matrix.at(i).node_id)
-          << "\t\tIndex " << i << " from network: "  << DebugId(nodes_from_network.at(i).node_id);
-  }
+  EXPECT_TRUE(CheckGroupMatrixUniqueNodes());
+  EXPECT_TRUE(CheckGroupMatrixUniqueNodes(3 / 2 * Parameters::closest_nodes_size + 1));
 
   // Check Send between each pair of vaults
   for (auto source_node : this->nodes_) {
@@ -300,20 +298,8 @@ TEST_F(RoutingStandAloneTest, FUNC_GroupsAndSendWithClientsAndSymmetricNat) {
   ASSERT_TRUE(WaitForHealthToStabilise());
   ASSERT_TRUE(WaitForNodesToJoin());
 
-  // Check each node's group matrix has closest vaults in it
-  uint16_t check_length(Parameters::closest_nodes_size + 1);
-  for (auto node : this->nodes_) {
-    std::vector<NodeInfo> nodes_from_matrix(node->ClosestNodes());
-    ASSERT_GE(nodes_from_matrix.size(), check_length);
-    nodes_from_matrix.resize(check_length);
-    std::vector<NodeInfo> nodes_from_network(this->GetClosestVaults(node->node_id(),
-                                                                    check_length));
-    ASSERT_EQ(nodes_from_network.size(), check_length);
-    for (uint16_t i(0); i < check_length; ++i)
-      EXPECT_EQ(nodes_from_matrix.at(i).node_id, nodes_from_network.at(i).node_id)
-          << "Index " << i << " from matrix: " << DebugId(nodes_from_matrix.at(i).node_id)
-          << "\t\tIndex " << i << " from network: "  << DebugId(nodes_from_network.at(i).node_id);
-  }
+  EXPECT_TRUE(CheckGroupMatrixUniqueNodes());
+  EXPECT_TRUE(CheckGroupMatrixUniqueNodes(3 / 2 * Parameters::closest_nodes_size + 1));
 
   // Check Send from each node to each vault
   for (auto source_node : this->nodes_) {
@@ -397,6 +383,9 @@ TEST_F(ProportionedRoutingStandAloneTest, FUNC_MessagePassing) {
   ASSERT_TRUE(WaitForNodesToJoin());
   ASSERT_TRUE(WaitForHealthToStabiliseInLargeNetwork());
 
+  EXPECT_TRUE(CheckGroupMatrixUniqueNodes());
+  EXPECT_TRUE(CheckGroupMatrixUniqueNodes(3 / 2 * Parameters::closest_nodes_size + 1));
+
   ASSERT_TRUE(this->SendDirect(3));
   NodeId target;
   for (size_t i(0); i < nodes_.size(); ++i) {
@@ -415,6 +404,9 @@ TEST_F(ProportionedRoutingStandAloneTest, FUNC_MessagePassingSymmetricNat) {
 
   ASSERT_TRUE(WaitForNodesToJoin());
   ASSERT_TRUE(WaitForHealthToStabiliseInLargeNetwork());
+
+  EXPECT_TRUE(CheckGroupMatrixUniqueNodes());
+  EXPECT_TRUE(CheckGroupMatrixUniqueNodes(3 / 2 * Parameters::closest_nodes_size + 1));
 
   ASSERT_TRUE(this->SendDirect(3));
   NodeId target;

@@ -214,6 +214,9 @@ class GenericNetwork {
   // For num. vaults > max_routing_table_size
   bool WaitForHealthToStabiliseInLargeNetwork() const;
   bool NodeHasSymmetricNat(const NodeId& node_id) const;
+  // Verifies that nodes' group matrices contain the Parameters::closest_nodes_size closest nodes
+  testing::AssertionResult CheckGroupMatrixUniqueNodes(const uint16_t& check_length
+                                                       = Parameters::closest_nodes_size + 1);
   // Do SendDirect between each pair of nodes and monitor results (do this 'repeats' times)
   testing::AssertionResult SendDirect(const size_t& repeats);
   // Do SendGroup from source_index node to target ID and monitor results (do this 'repeats' times)
