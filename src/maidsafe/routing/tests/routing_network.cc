@@ -1118,8 +1118,8 @@ testing::AssertionResult GenericNetwork::SendDirect(const size_t& repeats) {
     }
   }
 
-  uint16_t count(0);
-  uint16_t max_count(30 * (nodes_.size()) * (nodes_.size() - 1));
+  size_t count(0);
+  size_t max_count(30 * (nodes_.size()) * (nodes_.size() - 1));
   while (reply_count < repeats * total_num_nodes * total_num_nodes) {
     ++count;
     if (count == max_count) {
@@ -1207,8 +1207,8 @@ testing::AssertionResult GenericNetwork::SendGroup(const NodeId& target_id,
     this->nodes_.at(source_index)->SendGroup(target_id, data, false, response_functor);
   }
 
-  uint16_t count(0);
-  uint16_t max_count(300 * repeats);
+  size_t count(0);
+  size_t max_count(300 * repeats);
   while (reply_count < Parameters::node_group_size * repeats) {
     ++count;
     if (count == max_count) {

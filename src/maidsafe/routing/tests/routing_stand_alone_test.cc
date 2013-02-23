@@ -388,11 +388,11 @@ TEST_F(ProportionedRoutingStandAloneTest, FUNC_MessagePassing) {
 
   ASSERT_TRUE(this->SendDirect(3));
   NodeId target;
-  for (size_t i(0); i < nodes_.size(); ++i) {
+  for (uint16_t i(0); i < nodes_.size(); ++i) {
     target = NodeId(NodeId::kRandomId);
     ASSERT_TRUE(SendGroup(target, 1, i));
   }
-  for (size_t i(0); i < nodes_.size(); ++i) {
+  for (uint16_t i(0); i < nodes_.size(); ++i) {
     for (auto& node : nodes_) {
       ASSERT_TRUE(SendGroup(node->node_id(), 1, i));
     }
@@ -410,11 +410,11 @@ TEST_F(ProportionedRoutingStandAloneTest, FUNC_MessagePassingSymmetricNat) {
 
   ASSERT_TRUE(this->SendDirect(3));
   NodeId target;
-  for (size_t i(0); i < nodes_.size(); ++i) {
+  for (uint16_t i(0); i < nodes_.size(); ++i) {
     target = NodeId(NodeId::kRandomId);
     ASSERT_TRUE(SendGroup(target, 1, i));
   }
-  for (size_t i(0); i < nodes_.size(); ++i) {
+  for (uint16_t i(0); i < nodes_.size(); ++i) {
     for (auto& node : nodes_) {
       ASSERT_TRUE(SendGroup(node->node_id(), 1, i));
     }
@@ -488,12 +488,12 @@ TEST_F(ExtendedProportionedRoutingStandAloneTest, DISABLED_FUNC_MessagePassing) 
     ASSERT_TRUE(this->SendDirect(5));
     NodeId target;
     std::cout << "SendGroup (to random)..." << std::endl;
-    for (size_t i(0); i < nodes_.size(); ++i) {
+    for (uint16_t i(0); i < nodes_.size(); ++i) {
       target = NodeId(NodeId::kRandomId);
       ASSERT_TRUE(SendGroup(target, 5, i));
     }
     std::cout << "SendGroup (to existing)..." << std::endl;
-    for (size_t i(0); i < nodes_.size(); ++i) {
+    for (uint16_t i(0); i < nodes_.size(); ++i) {
       for (auto& node : nodes_) {
         ASSERT_TRUE(SendGroup(node->node_id(), 5, i));
       }
@@ -516,12 +516,12 @@ TEST_F(ExtendedProportionedRoutingStandAloneTest, DISABLED_FUNC_MessagePassingSy
     ASSERT_TRUE(this->SendDirect(5));
     NodeId target;
     std::cout << "SendGroup (to random)..." << std::endl;
-    for (size_t i(0); i < nodes_.size(); ++i) {
+    for (uint16_t i(0); i < nodes_.size(); ++i) {
       target = NodeId(NodeId::kRandomId);
       ASSERT_TRUE(SendGroup(target, 5, i));
     }
     std::cout << "SendGroup (to existing)..." << std::endl;
-    for (size_t i(0); i < nodes_.size(); ++i) {
+    for (uint16_t i(0); i < nodes_.size(); ++i) {
       for (auto& node : nodes_) {
         ASSERT_TRUE(SendGroup(node->node_id(), 5, i));
       }
