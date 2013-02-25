@@ -388,11 +388,11 @@ TEST_F(ProportionedRoutingStandAloneTest, FUNC_MessagePassing) {
 
   ASSERT_TRUE(this->SendDirect(3));
   NodeId target;
-  for (size_t i(0); i < nodes_.size(); ++i) {
+  for (uint16_t i(0); i < nodes_.size(); ++i) {
     target = NodeId(NodeId::kRandomId);
     ASSERT_TRUE(SendGroup(target, 1, i));
   }
-  for (size_t i(0); i < nodes_.size(); ++i) {
+  for (uint16_t i(0); i < nodes_.size(); ++i) {
     for (auto& node : nodes_) {
       ASSERT_TRUE(SendGroup(node->node_id(), 1, i));
     }
@@ -410,11 +410,11 @@ TEST_F(ProportionedRoutingStandAloneTest, FUNC_MessagePassingSymmetricNat) {
 
   ASSERT_TRUE(this->SendDirect(3));
   NodeId target;
-  for (size_t i(0); i < nodes_.size(); ++i) {
+  for (uint16_t i(0); i < nodes_.size(); ++i) {
     target = NodeId(NodeId::kRandomId);
     ASSERT_TRUE(SendGroup(target, 1, i));
   }
-  for (size_t i(0); i < nodes_.size(); ++i) {
+  for (uint16_t i(0); i < nodes_.size(); ++i) {
     for (auto& node : nodes_) {
       ASSERT_TRUE(SendGroup(node->node_id(), 1, i));
     }

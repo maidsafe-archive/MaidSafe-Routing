@@ -72,14 +72,16 @@ list(REMOVE_ITEM ALL_FILES_ROUTING_TESTS_DIR "${PROJECT_SOURCE_DIR}/src/maidsafe
                                              "${PROJECT_SOURCE_DIR}/src/maidsafe/routing/tests/routing_churn_test.cc"
                                              "${PROJECT_SOURCE_DIR}/src/maidsafe/routing/tests/routing_stand_alone_test.cc"
                                              "${PROJECT_SOURCE_DIR}/src/maidsafe/routing/tests/routing_functional_test.cc"
-                                             "${PROJECT_SOURCE_DIR}/src/maidsafe/routing/tests/test_func_main.cc")
+                                             "${PROJECT_SOURCE_DIR}/src/maidsafe/routing/tests/test_nat_func_main.cc"
+					      "${PROJECT_SOURCE_DIR}/src/maidsafe/routing/tests/test_func_main.cc")
 file(GLOB ALL_FILES_ROUTING_API_TEST "${PROJECT_SOURCE_DIR}/src/maidsafe/routing/tests/routing_api_test.cc"
                                      "${PROJECT_SOURCE_DIR}/src/maidsafe/routing/tests/test_main.cc")
 file(GLOB ALL_FILES_ROUTING_FUNC_TESTS_DIR "${PROJECT_SOURCE_DIR}/src/maidsafe/routing/tests/routing_functional_test.cc"
                                            "${PROJECT_SOURCE_DIR}/src/maidsafe/routing/tests/test_func_main.cc")
+file(GLOB ALL_FILES_ROUTING_NAT_FUNC_TESTS_DIR "${PROJECT_SOURCE_DIR}/src/maidsafe/routing/tests/routing_stand_alone_test.cc"
+                                           "${PROJECT_SOURCE_DIR}/src/maidsafe/routing/tests/test_nat_func_main.cc")
 file(GLOB ALL_FILES_ROUTING_BIG_TESTS_DIR "${PROJECT_SOURCE_DIR}/src/maidsafe/routing/tests/routing_churn_test.cc"
                                           "${PROJECT_SOURCE_DIR}/src/maidsafe/routing/tests/find_nodes_test.cc"
-                                          "${PROJECT_SOURCE_DIR}/src/maidsafe/routing/tests/routing_stand_alone_test.cc"
                                           "${PROJECT_SOURCE_DIR}/src/maidsafe/routing/tests/test_main.cc")
 
 
@@ -94,6 +96,7 @@ if(MAIDSAFE_TESTING)
   ms_add_executable(TESTrouting_api "Tests/Routing" ${ALL_FILES_ROUTING_API_TEST})
   # new executable TESTrouting_func is created to contain func tests excluded from TESTrouting, can be run seperately
   ms_add_executable(TESTrouting_func "Tests/Routing" ${ALL_FILES_ROUTING_FUNC_TESTS_DIR})
+  ms_add_executable(TESTrouting_nat_func "Tests/Routing" ${ALL_FILES_ROUTING_NAT_FUNC_TESTS_DIR})
   # new executable TESTrouting_big is created to contain tests that each need their own network
   ms_add_executable(TESTrouting_big "Tests/Routing" ${ALL_FILES_ROUTING_BIG_TESTS_DIR})
   ms_add_executable(create_lifestuff_bootstrap "Tools" "${PROJECT_SOURCE_DIR}/src/maidsafe/tools/create_bootstrap.cc")
@@ -106,6 +109,7 @@ if(MAIDSAFE_TESTING)
   target_link_libraries(TESTrouting maidsafe_routing)
   target_link_libraries(TESTrouting_api maidsafe_routing)
   target_link_libraries(TESTrouting_func maidsafe_routing)
+  target_link_libraries(TESTrouting_nat_func maidsafe_routing)
   target_link_libraries(TESTrouting_big maidsafe_routing)
   target_link_libraries(create_lifestuff_bootstrap maidsafe_routing)
   target_link_libraries(routing_key_helper maidsafe_routing)
