@@ -222,7 +222,8 @@ class GenericNetwork {
   // Do SendGroup from source_index node to target ID and monitor results (do this 'repeats' times)
   testing::AssertionResult SendGroup(const NodeId& target_id,
                                      const size_t& repeats,
-                                     uint16_t source_index = 0);
+                                     uint16_t source_index = 0,
+                                     size_t message_size = (2 ^ 10) * 256);
   // Do SendDirect from each node to destination_node_id and monitor results. The ExpectedNodeType
   // of destination_node_id should be correctly specified when calling this function.
   testing::AssertionResult SendDirect(const NodeId& destination_node_id,
