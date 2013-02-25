@@ -15,6 +15,7 @@
 #include <string>
 #include <vector>
 #include <algorithm>
+#include <map>
 
 #include "maidsafe/common/log.h"
 #include "maidsafe/common/node_id.h"
@@ -178,6 +179,7 @@ void GroupChangeHandler::SendClosestNodesUpdateRpcs(const std::vector<NodeInfo>&
                 << "] SendClosestNodesUpdateRpcs: " << closest_nodes.size();
 //  if (closest_nodes.size() < Parameters::closest_nodes_size)
 //    return;
+  std::map<NodeId, std::vector<NodeInfo>> closest_to_subscribers;
   std::vector<NodeInfo> update_subscribers;
   assert(closest_nodes.size() <= Parameters::closest_nodes_size);
   {
@@ -186,11 +188,21 @@ void GroupChangeHandler::SendClosestNodesUpdateRpcs(const std::vector<NodeInfo>&
     std::copy(update_subscribers_.begin(), update_subscribers_.end(), update_subscribers.begin());
   }
   for (auto itr(update_subscribers.begin()); itr != update_subscribers.end(); ++itr) {
+    closest_to_subscribers[itr->node_id] = routing_table_.GetClosestNodeInfo(
+                                               itr->node_id,
+                                               Parameters::closest_nodes_size,
+                                               true);
+  }
+  for (auto itr(update_subscribers.begin()); itr != update_subscribers.end(); ++itr) {
     LOG(kVerbose) << "["  << DebugId(routing_table_.kNodeId())
                   << "] Sending update to: " << DebugId(itr->node_id);
-    protobuf::Message closest_nodes_update_rpc(
-        rpcs::ClosestNodesUpdate(itr->node_id, routing_table_.kNodeId(), closest_nodes));
-    network_.SendToDirect(closest_nodes_update_rpc, itr->node_id, itr->connection_id);
+    if (closest_to_subscribers[itr->node_id].size() >= Parameters::node_group_size) {
+      protobuf::Message closest_nodes_update_rpc(
+          rpcs::ClosestNodesUpdate(itr->node_id,
+                                   routing_table_.kNodeId(),
+                                   closest_to_subscribers[itr->node_id]));
+      network_.SendToDirect(closest_nodes_update_rpc, itr->node_id, itr->connection_id);
+    }
   }
 }
 
