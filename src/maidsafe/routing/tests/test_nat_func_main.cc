@@ -16,7 +16,7 @@
 int main(int argc, char **argv) {
 //  testing::InitGoogleTest(&argc, argv);
   testing::AddGlobalTestEnvironment(new maidsafe::routing::test::NodesEnvironment(
-      maidsafe::routing::test::kServerSize, maidsafe::routing::test::kClientSize, 
+      maidsafe::routing::test::kServerSize, maidsafe::routing::test::kClientSize,
       static_cast<size_t>(maidsafe::routing::test::kServerSize * 0.25),
       static_cast<size_t>(maidsafe::routing::test::kClientSize / 2)));
 //  return RUN_ALL_TESTS();
