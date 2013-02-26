@@ -685,37 +685,6 @@ TEST_F(RoutingNetworkTest, FUNC_ClosestNodesVaultBehindSymmetricNat) {
   }
 }
 
-TEST_F(RoutingNetworkTest, FUNC_ClosestNodesBehindSymmetricNat) {
-  uint16_t num_symmetric_vaults(kServerSize / 4);
-  for (auto i(0); i < num_symmetric_vaults; ++i)
-    env_->AddNode(false, true);
-  uint16_t num_symmetric_clients(1 + RandomUint32() % (kClientSize / 2));
-  for (auto i(0); i < num_symmetric_clients; ++i)
-    env_->AddNode(true, true);
-
-  ASSERT_TRUE(env_->WaitForHealthToStabilise());
-  ASSERT_TRUE(env_->WaitForNodesToJoin());
-
-  Sleep(boost::posix_time::seconds(1));
-
-  for (auto node : env_->nodes_) {
-    std::vector<NodeInfo> from_matrix(node->ClosestNodes());
-    std::vector<NodeInfo> from_network(
-          env_->GetClosestVaults(node->node_id(), 9));
-    auto min_size(std::min(from_matrix.size(), from_network.size()));
-    EXPECT_LE(9U, min_size);
-
-    std::string type("VAULT");
-    if (node->IsClient())
-      type = "CLIENT";
-    for (uint16_t i(0); i < std::min(size_t(9), min_size); ++i)
-      EXPECT_EQ(from_matrix.at(i).node_id, from_network.at(i).node_id)
-          << "For node of type " << type
-          << " (index " << i << ")"
-          << "\tExpected: " << DebugId(from_network.at(i).node_id)
-          << "\tGot: " << DebugId(from_matrix.at(i).node_id);
-  }
-}
 
 TEST_F(RoutingNetworkTest, FUNC_VaultJoinWhenClosestVaultAlsoBehindSymmetricNat) {
   NodeId sym_node_id_1(NodeId::kRandomId);

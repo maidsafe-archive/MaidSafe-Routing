@@ -192,6 +192,14 @@ void GroupChangeHandler::SendClosestNodesUpdateRpcs(const std::vector<NodeInfo>&
                                                itr->node_id,
                                                Parameters::closest_nodes_size,
                                                true);
+    for (auto itr(closest_nodes.begin()); itr != closest_nodes.end(); ++itr) {
+      if (std::find_if(closest_to_subscribers[itr->node_id].begin(),
+                       closest_to_subscribers[itr->node_id].end(),
+                       [&] (const NodeInfo& node_info)->bool {
+                         return node_info.node_id == itr->node_id;
+                       }) != closest_to_subscribers[itr->node_id].end())
+        closest_to_subscribers[itr->node_id].push_back(*itr);
+    }
   }
   for (auto itr(update_subscribers.begin()); itr != update_subscribers.end(); ++itr) {
     LOG(kVerbose) << "["  << DebugId(routing_table_.kNodeId())

@@ -55,6 +55,40 @@ TEST_F(RoutingStandAloneTest, FUNC_GetGroup) {
   }
 }
 
+
+TEST_F(RoutingStandAloneTest, FUNC_ClosestNodesBehindSymmetricNat) {
+  this->SetUpNetwork(kServerSize, kClientSize);
+  uint16_t num_symmetric_vaults(kServerSize / 4);
+  for (auto i(0); i < num_symmetric_vaults; ++i)
+    this->AddNode(false, true);
+  uint16_t num_symmetric_clients(1 + RandomUint32() % (kClientSize / 2));
+  for (auto i(0); i < num_symmetric_clients; ++i)
+    this->AddNode(true, true);
+
+  ASSERT_TRUE(this->WaitForHealthToStabilise());
+  ASSERT_TRUE(this->WaitForNodesToJoin());
+
+  Sleep(boost::posix_time::seconds(1));
+
+  for (auto node : this->nodes_) {
+    std::vector<NodeInfo> from_matrix(node->ClosestNodes());
+    std::vector<NodeInfo> from_network(
+          this->GetClosestVaults(node->node_id(), 9));
+    auto min_size(std::min(from_matrix.size(), from_network.size()));
+    EXPECT_LE(9U, min_size) << " Size smaller than expected " << DebugId(node->node_id());
+
+    std::string type("VAULT");
+    if (node->IsClient())
+      type = "CLIENT";
+    for (uint16_t i(0); i < std::min(size_t(9), min_size); ++i)
+      EXPECT_EQ(from_matrix.at(i).node_id, from_network.at(i).node_id)
+          << "For node " << DebugId(node->node_id()) << "of type " << type
+          << " (index " << i << ")"
+          << "\tExpected: " << DebugId(from_network.at(i).node_id)
+          << "\tGot: " << DebugId(from_matrix.at(i).node_id);
+  }
+}
+
 TEST_F(RoutingStandAloneTest, FUNC_ClientRoutingTableUpdate) {
   this->SetUpNetwork(kServerSize);
   this->AddNode(true, GenerateUniqueRandomId(this->nodes_[kServerSize - 1]->node_id(), 50));
