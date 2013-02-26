@@ -197,7 +197,7 @@ void GroupChangeHandler::SendClosestNodesUpdateRpcs(const std::vector<NodeInfo>&
                        closest_to_subscribers[itr->node_id].end(),
                        [&] (const NodeInfo& node_info)->bool {
                          return node_info.node_id == itr->node_id;
-                       }) != closest_to_subscribers[itr->node_id].end())
+                       }) == closest_to_subscribers[itr->node_id].end())
         closest_to_subscribers[itr->node_id].push_back(*itr);
     }
   }

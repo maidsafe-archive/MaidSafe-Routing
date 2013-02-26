@@ -228,7 +228,7 @@ void GroupMatrix::UpdateFromConnectedPeer(const NodeId& peer,
     assert(false && "Invalid peer node id.");
     return;
   }
-  if (nodes.size() > Parameters::closest_nodes_size) {
+  if (nodes.size() > 2 * Parameters::closest_nodes_size) {
     assert(false && "Vector of nodes should have length less than Parameters::closest_nodes_size");
     return;
   }
