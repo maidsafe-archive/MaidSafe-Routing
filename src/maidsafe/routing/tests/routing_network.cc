@@ -1068,7 +1068,7 @@ testing::AssertionResult GenericNetwork::CheckGroupMatrixUniqueNodes(const uint1
   return testing::AssertionFailure();
 }
 
-testing::AssertionResult GenericNetwork::SendDirect(const size_t& repeats) {
+testing::AssertionResult GenericNetwork::SendDirect(const size_t& repeats, size_t message_size) {
   assert(repeats > 0);
   size_t total_num_nodes(this->nodes_.size());
 
@@ -1077,7 +1077,7 @@ testing::AssertionResult GenericNetwork::SendDirect(const size_t& repeats) {
   for (size_t repeat = 0; repeat < repeats; ++repeat) {
     for (auto dest : this->nodes_) {
       for (auto src : this->nodes_) {
-        std::string data(RandomAlphaNumericString(512 * 2^10));
+        std::string data(RandomAlphaNumericString(message_size));
         assert(!data.empty() && "Send Data Empty !");
         ResponseFunctor response_functor;
         if (dest->IsClient()) {

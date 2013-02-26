@@ -218,7 +218,8 @@ class GenericNetwork {
   testing::AssertionResult CheckGroupMatrixUniqueNodes(const uint16_t& check_length
                                                        = Parameters::closest_nodes_size + 1);
   // Do SendDirect between each pair of nodes and monitor results (do this 'repeats' times)
-  testing::AssertionResult SendDirect(const size_t& repeats);
+  testing::AssertionResult SendDirect(const size_t& repeats,
+                                      size_t message_size = (2 ^ 10) * 256);
   // Do SendGroup from source_index node to target ID and monitor results (do this 'repeats' times)
   testing::AssertionResult SendGroup(const NodeId& target_id,
                                      const size_t& repeats,

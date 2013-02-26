@@ -436,9 +436,9 @@ class ExtendedProportionedRoutingStandAloneTest : public GenericNetwork, public 
     Parameters::max_routing_table_size = 32;
     Parameters::routing_table_size_threshold = Parameters::max_routing_table_size / 2;
     Parameters::max_routing_table_size_for_client = 8;
-    Parameters::closest_nodes_size = 4;
+    Parameters::closest_nodes_size = 8;
     Parameters::max_client_routing_table_size = Parameters::max_routing_table_size;
-    Parameters::max_route_history = 3;  // less than closest_nodes_size
+//    Parameters::max_route_history = 3;  // less than closest_nodes_size
     Parameters::greedy_fraction = Parameters::max_routing_table_size * 3 / 4;
   }
 
@@ -474,6 +474,7 @@ class ExtendedProportionedRoutingStandAloneTest : public GenericNetwork, public 
 
 // TODO(Alison) - Add ExtendedProportionedRoutingStandAloneTest involving clients
 TEST_F(ExtendedProportionedRoutingStandAloneTest, DISABLED_FUNC_MessagePassing) {
+  // Approx duration of test on Linux: 90mins
   this->SetUpNetwork(80, 0, 0, 0);
 
   ASSERT_TRUE(WaitForNodesToJoin());
@@ -485,23 +486,24 @@ TEST_F(ExtendedProportionedRoutingStandAloneTest, DISABLED_FUNC_MessagePassing) 
   for (uint16_t repeat(0); repeat < 10; ++repeat) {
     std::cout << "Repeat: " << repeat << std::endl;
     std::cout << "SendDirect..." << std::endl;
-    ASSERT_TRUE(this->SendDirect(5));
+    ASSERT_TRUE(this->SendDirect(2, 10));
     NodeId target;
     std::cout << "SendGroup (to random)..." << std::endl;
     for (uint16_t i(0); i < nodes_.size(); ++i) {
       target = NodeId(NodeId::kRandomId);
-      ASSERT_TRUE(SendGroup(target, 5, i));
+      ASSERT_TRUE(SendGroup(target, 1, i, 10));
     }
     std::cout << "SendGroup (to existing)..." << std::endl;
     for (uint16_t i(0); i < nodes_.size(); ++i) {
       for (auto& node : nodes_) {
-        ASSERT_TRUE(SendGroup(node->node_id(), 5, i));
+        ASSERT_TRUE(SendGroup(node->node_id(), 1, i, 10));
       }
     }
   }
 }
 
 TEST_F(ExtendedProportionedRoutingStandAloneTest, DISABLED_FUNC_MessagePassingSymmetricNat) {
+  // Approx duration of test on Linux: 90mins
     this->SetUpNetwork(80, 0, 20, 0);
 
   ASSERT_TRUE(WaitForNodesToJoin());
@@ -513,17 +515,17 @@ TEST_F(ExtendedProportionedRoutingStandAloneTest, DISABLED_FUNC_MessagePassingSy
   for (uint16_t repeat(0); repeat < 10; ++repeat) {
     std::cout << "Repeat: " << repeat << std::endl;
     std::cout << "SendDirect..." << std::endl;
-    ASSERT_TRUE(this->SendDirect(5));
+    ASSERT_TRUE(this->SendDirect(1, 10));
     NodeId target;
     std::cout << "SendGroup (to random)..." << std::endl;
     for (uint16_t i(0); i < nodes_.size(); ++i) {
       target = NodeId(NodeId::kRandomId);
-      ASSERT_TRUE(SendGroup(target, 5, i));
+      ASSERT_TRUE(SendGroup(target, 1, i, 10));
     }
     std::cout << "SendGroup (to existing)..." << std::endl;
     for (uint16_t i(0); i < nodes_.size(); ++i) {
       for (auto& node : nodes_) {
-        ASSERT_TRUE(SendGroup(node->node_id(), 5, i));
+        ASSERT_TRUE(SendGroup(node->node_id(), 1, i, 10));
       }
     }
   }
