@@ -162,7 +162,7 @@ TEST(APITest, BEH_API_ZeroStateWithDuplicateNode) {
 
   routing3.Join(functors3, std::vector<Endpoint>(1, endpoint2));
   EXPECT_EQ(join_future.wait_for(std::chrono::seconds(5)), std::future_status::ready);
-  if (join_future.is_ready())
+  if (IsReady(join_future))
     EXPECT_TRUE(join_future.get());
 
   std::atomic<int> final_result;
