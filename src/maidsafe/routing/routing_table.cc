@@ -723,11 +723,11 @@ NodeInfo RoutingTable::GetRemovableNode(std::vector<std::string> attempted) {
   LOG(kVerbose) << "[" << DebugId(kNodeId_) << "] max_bucket " << max_bucket
                 << " count " << max_bucket_count;
   if (max_bucket_count == 1) {
-    return nodes_[nodes_.size() - 1];
+    return nodes_[Parameters::closest_nodes_size + Parameters::node_group_size];
   }
 
   NodeInfo removable_node;
-  for (auto it(nodes_.end() - 1) ; it != (from_iterator - 1); --it) {
+  for (auto it(from_iterator); it != nodes_.end(); ++it) {
     if (((*it).bucket == max_bucket) &&
         std::find(attempted.begin(), attempted.end(), (*it).node_id.string()) ==
             attempted.end()) {
