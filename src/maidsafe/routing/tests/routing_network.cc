@@ -188,7 +188,6 @@ GenericNode::~GenericNode() {}
 void GenericNode::InitialiseFunctors() {
   functors_.close_node_replaced = [](const std::vector<NodeInfo>&) {};  // NOLINT (Fraser)
   functors_.message_received = [this] (const std::string& message,
-                                       const NodeId&,
                                        const bool& cache_lookup,
                                        ReplyFunctor reply_functor) {
                                  assert(!cache_lookup && "CacheLookup should be disabled for test");

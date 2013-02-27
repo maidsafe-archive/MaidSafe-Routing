@@ -155,9 +155,8 @@ void MessageHandler::HandleNodeLevelMessageForThisNode(protobuf::Message& messag
           HandleMessage(message_out);
         }
     };
-    NodeId group_claim(message.has_group_claim() ? NodeId(message.group_claim()) : NodeId());
     if (message_received_functor_)
-      message_received_functor_(message.data(0), group_claim, false, response_functor);
+      message_received_functor_(message.data(0), false, response_functor);
   } else {  // response
     LOG(kInfo) << "[" << DebugId(routing_table_.kNodeId()) << "] rcvd : "
                << MessageTypeString(message) << " from "

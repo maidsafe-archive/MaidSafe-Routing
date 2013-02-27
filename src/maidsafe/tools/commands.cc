@@ -15,6 +15,7 @@
 
 #include "maidsafe/tools/commands.h"
 
+#include <algorithm>
 #include <iostream> // NOLINT
 
 #include "boost/format.hpp"
@@ -66,7 +67,6 @@ Commands::Commands(DemoNodePtr demo_node,
       this->Validate(node_id, give_public_key);
   };
   demo_node->functors_.message_received = [this] (const std::string &wrapped_message,
-                                                  const NodeId &/*group_claim*/,
                                                   bool /* cache */,
                                                   const ReplyFunctor &reply_functor) {
     std::string reply_msg(wrapped_message + "+++" + demo_node_->node_id().string());

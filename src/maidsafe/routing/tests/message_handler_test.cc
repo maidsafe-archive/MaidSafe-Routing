@@ -59,12 +59,11 @@ class MessageHandlerTest : public testing::Test {
         network_statistics_(),
         close_info_() {
     message_received_functor_ = [this] (const std::string& message,
-                                               const NodeId& /*group claim*/,
-                                               const bool& /*cache_lookup*/,
-                                               ReplyFunctor reply_functor) {
-                                                 MessageReceived(message);
-                                                 reply_functor("reply");
-                                               };
+                                        const bool& /*cache_lookup*/,
+                                        ReplyFunctor reply_functor) {
+                                          MessageReceived(message);
+                                          reply_functor("reply");
+                                        };
     asio_service_.Start();
     NodeId node_id(NodeId::kRandomId);
     network_statistics_.reset(new NetworkStatistics(node_id));

@@ -28,7 +28,7 @@ CacheManager::CacheManager(const NodeId& node_id, NetworkUtils &network)
       message_received_functor_(),
       store_cache_data_() {}
 
-void CacheManager::InitialiseFunctors(MessageReceivedFunctor  message_received_functor,
+void CacheManager::InitialiseFunctors(MessageReceivedFunctor message_received_functor,
                                       StoreCacheDataFunctor store_cache_data) {
   assert(message_received_functor);
   assert(store_cache_data);
@@ -88,9 +88,8 @@ void CacheManager::HandleGetFromCache(protobuf::Message& message) {
           network_.SendToClosestNode(message_out);
       };
 
-      NodeId group_claim(message.has_group_claim() ? NodeId(message.group_claim()) : NodeId());
       if (message_received_functor_)
-        message_received_functor_(message.data(0), group_claim, true, response_functor);
+        message_received_functor_(message.data(0), true, response_functor);
     }
   }
 }
