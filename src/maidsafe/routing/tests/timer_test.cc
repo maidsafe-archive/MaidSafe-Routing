@@ -224,7 +224,7 @@ TEST_F(TimerTest, BEH_GroupResponseWithMoreChecks) {
     timer_.AddResponse(message_);
   }
   std::unique_lock<std::mutex> lock(mutex);
-  cond_var.wait(lock);
+  EXPECT_EQ(cond_var.wait_for(lock, std::chrono::seconds(10)), std::cv_status::no_timeout);
 }
 
 TEST_F(TimerTest, BEH_GroupResponse) {
