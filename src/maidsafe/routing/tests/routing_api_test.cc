@@ -93,20 +93,18 @@ TEST(APITest, BEH_API_ZeroState) {
   EXPECT_EQ(kSuccess, a2.get());  // wait for promise !
   EXPECT_EQ(kSuccess, a1.get());  // wait for promise !
   std::once_flag flag;
-  std::promise<bool> join_promise;
+  std::promise<void> join_promise;
   auto join_future = join_promise.get_future();
 
   functors3.network_status = [&flag, &join_promise] (int result) {
     if (result == NetworkStatus(false, 2)) {
-        std::call_once(flag, [&join_promise]() { join_promise.set_value(true); }
+        std::call_once(flag, [&join_promise]() { join_promise.set_value(); }
        );
     }
   };
 
   routing3.Join(functors3, std::vector<Endpoint>(1, endpoint2));
-  EXPECT_EQ(join_future.wait_for(std::chrono::seconds(5)), std::future_status::ready);
-  if (join_future.is_ready())
-    EXPECT_TRUE(join_future.get());
+  ASSERT_EQ(join_future.wait_for(std::chrono::seconds(5)), std::future_status::ready);
   LOG(kInfo) << "done!!!";
 }
 
@@ -151,19 +149,17 @@ TEST(APITest, BEH_API_ZeroStateWithDuplicateNode) {
   EXPECT_EQ(kSuccess, a1.get());  // wait for promise !
 
   std::once_flag flag;
-  std::promise<bool> join_promise;
+  std::promise<void> join_promise;
   auto join_future = join_promise.get_future();
   functors3.network_status = [&flag, &join_promise](int result) {
     if (result == NetworkStatus(false, 2)) {
-        std::call_once(flag, [&join_promise]() { join_promise.set_value(true); }
+        std::call_once(flag, [&join_promise]() { join_promise.set_value(); }
         );
     }
   };
 
   routing3.Join(functors3, std::vector<Endpoint>(1, endpoint2));
-  EXPECT_EQ(join_future.wait_for(std::chrono::seconds(5)), std::future_status::ready);
-  if (join_future.is_ready())
-    EXPECT_TRUE(join_future.get());
+  ASSERT_EQ(join_future.wait_for(std::chrono::seconds(5)), std::future_status::ready);
 
   std::atomic<int> final_result;
   functors4.network_status = [&final_result](int result) {
