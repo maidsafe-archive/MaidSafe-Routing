@@ -208,18 +208,14 @@ bool GroupMatrix::ClosestToId(const NodeId& node_id) {
 }
 
 bool GroupMatrix::IsNodeIdInGroupRange(const NodeId& target_id) {
-  if (unique_nodes_.size() <= Parameters::node_group_size) {
+  if (unique_nodes_.size() < Parameters::node_group_size) {
     return true;
   }
 
-  PartialSortFromTarget(kNodeId_, Parameters::node_group_size + 1, unique_nodes_);
+  PartialSortFromTarget(kNodeId_, Parameters::node_group_size, unique_nodes_);
 
-  NodeInfo furthest_group_node(unique_nodes_.at(std::min(Parameters::node_group_size - 1,
-                                                static_cast<int>(unique_nodes_.size()))));
-  if (!NodeId::CloserToTarget(furthest_group_node.node_id, target_id, kNodeId_))
-    return true;
-
-  return false;
+  NodeInfo furthest_group_node(unique_nodes_.at(Parameters::node_group_size - 1));
+  return !NodeId::CloserToTarget(furthest_group_node.node_id, target_id, kNodeId_);
 }
 
 void GroupMatrix::UpdateFromConnectedPeer(const NodeId& peer,
