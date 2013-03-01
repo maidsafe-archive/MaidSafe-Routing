@@ -315,11 +315,15 @@ void NetworkUtils::RecursiveSendOn(protobuf::Message message,
     peer = routing_table_.GetNodeForSendingMessage(NodeId(message.destination_id()),
                                                    route_history,
                                                    ignore_exact_match);
+    if (peer.node_id == NodeId() && routing_table_.size() != 0) {
+      peer = routing_table_.GetNodeForSendingMessage(NodeId(message.destination_id()),
+                                                     std::vector<std::string>(),
+                                                     ignore_exact_match);
+    }
     if (peer.node_id == NodeId()) {
       LOG(kError) << "This node's routing table is empty now.  Need to re-bootstrap.";
       return;
     }
-
     AdjustRouteHistory(message);
   }
 
