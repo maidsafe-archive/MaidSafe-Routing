@@ -46,7 +46,7 @@ class RoutingNetworkTest : public testing::Test {
   std::shared_ptr<GenericNetwork> env_;
 };
 
-TEST_F(RoutingNetworkTest, FUNC_GroupUpdateSubscription) {
+/*TEST_F(RoutingNetworkTest, FUNC_GroupUpdateSubscription) {
   std::vector<NodeInfo> closest_nodes_info;
   for (auto node : env_->nodes_) {
     if ((node->node_id() == env_->nodes_[kServerSize - 1]->node_id()) ||
@@ -64,7 +64,7 @@ TEST_F(RoutingNetworkTest, FUNC_GroupUpdateSubscription) {
           << DebugId(node_info.node_id) << " does not have " << DebugId(node->node_id());
     }
   }
-}
+} */
 
 TEST_F(RoutingNetworkTest, FUNC_SanityCheck) {
   {
@@ -299,7 +299,7 @@ TEST_F(RoutingNetworkTest, FUNC_SendToGroupRandomId) {
     futures.emplace_back(std::async(
                            std::launch::async,
                            [this]() { return env_->SendGroup(NodeId(NodeId::kRandomId), 1); }));
-    Sleep(boost::posix_time::milliseconds(10));
+    Sleep(boost::posix_time::milliseconds(100));
   }
   while (!futures.empty()) {
     futures.erase(std::remove_if(futures.begin(), futures.end(),
@@ -311,9 +311,8 @@ TEST_F(RoutingNetworkTest, FUNC_SendToGroupRandomId) {
               return false;
             };
         }), futures.end());
-    std::this_thread::yield();
+     std::this_thread::yield();
   }
-
   for (auto node : env_->nodes_) {
     receivers_message_count += static_cast<uint16_t>(node->MessagesSize());
     node->ClearMessages();
