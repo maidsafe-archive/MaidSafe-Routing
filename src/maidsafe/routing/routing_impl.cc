@@ -45,14 +45,13 @@ typedef boost::asio::ip::udp::endpoint Endpoint;
 }  // unnamed namespace
 
 Routing::Impl::Impl(bool client_mode,
-                    bool anonymous,
                     const NodeId& node_id,
                     const asymm::Keys& keys)
     : network_status_mutex_(),
       network_status_(kNotJoined),
       routing_table_(client_mode, node_id, keys, network_statistics_),
       kNodeId_(routing_table_.kNodeId()),
-      kAnonymousNode_(anonymous),
+      kAnonymousNode_(false),  // delete me
       running_(true),
       running_mutex_(),
       functors_(),
@@ -77,13 +76,13 @@ Routing::Impl::Impl(bool client_mode,
                                             remove_furthest_node_,
                                             group_change_handler_,
                                             network_statistics_));
-
+  LOG(kError) << "Client Node < " << client_mode << " > : id " << DebugId(kNodeId_);
   assert((client_mode || !node_id.IsZero()) &&
          "Server Nodes cannot be created without valid keys");
-  if (kAnonymousNode_) {
-    LOG(kInfo) << "Anonymous node id: " << DebugId(kNodeId_)
-               << ", connection id" << DebugId(routing_table_.kConnectionId());
-  }
+//  if (kAnonymousNode_) {
+//    LOG(kInfo) << "Anonymous node id: " << DebugId(kNodeId_)
+//               << ", connection id" << DebugId(routing_table_.kConnectionId());
+//  }
 }
 
 Routing::Impl::~Impl() {
@@ -167,10 +166,10 @@ void Routing::Impl::DoJoin(const std::vector<Endpoint>& endpoints) {
 
   assert(!network_.bootstrap_connection_id().IsZero() &&
          "Bootstrap connection id must be populated by now.");
-  if (kAnonymousNode_)  // No need to do find node for anonymous node
-    return NotifyNetworkStatus(return_value);
+//  if (kAnonymousNode_)  // No need to do find node for anonymous node
+//    return NotifyNetworkStatus(return_value);
 
-  assert(!kAnonymousNode_ && "Not allowed for anonymous nodes");
+//  assert(!kAnonymousNode_ && "Not allowed for anonymous nodes");
   FindClosestNode(boost::system::error_code(), 0);
   NotifyNetworkStatus(return_value);
 }
@@ -205,7 +204,7 @@ void Routing::Impl::FindClosestNode(const boost::system::error_code& error_code,
   if (error_code == boost::asio::error::operation_aborted)
     return;
 
-  assert(!kAnonymousNode_ && "Not allowed for anonymous nodes");
+//  assert(!kAnonymousNode_ && "Not allowed for anonymous nodes");
   if (attempts == 0) {
     assert(!network_.bootstrap_connection_id().IsZero() && "Only after bootstrapping succeeds");
     assert(!network_.this_node_relay_connection_id().IsZero() &&
@@ -273,7 +272,7 @@ int Routing::Impl::ZeroStateJoin(const Functors& functors,
                                  const Endpoint& peer_endpoint,
                                  const NodeInfo& peer_info) {
   assert((!routing_table_.client_mode()) && "no client nodes allowed in zero state network");
-  assert((!kAnonymousNode_) && "not allowed on anonymous node");
+//  assert((!kAnonymousNode_) && "not allowed on anonymous node");
   ConnectFunctors(functors);
   int result(network_.Bootstrap(
       std::vector<Endpoint>(1, peer_endpoint),
@@ -378,7 +377,7 @@ void Routing::Impl::Send(const NodeId& destination_id,
 }
 
 void Routing::Impl::SendMessage(const NodeId& destination_id, protobuf::Message& proto_message) {
-  if (kAnonymousNode_ || (routing_table_.size() == 0)) {  // Anonymous node /Partial join state
+  if (/*kAnonymousNode_ ||*/ (routing_table_.size() == 0)) {  // Anonymous node /Partial join state
     AnonymousSend(proto_message);
   } else {  // Non Anonymous, normal node
     proto_message.set_source_id(kNodeId_.string());
@@ -396,7 +395,7 @@ void Routing::Impl::SendMessage(const NodeId& destination_id, protobuf::Message&
 
 // Anonymous node /Partial join state
 void Routing::Impl::AnonymousSend(protobuf::Message& proto_message) {
-  if (kAnonymousNode_ || (routing_table_.size() == 0)) {
+//  if (kAnonymousNode_ || (routing_table_.size() == 0)) {
     proto_message.set_relay_id(kNodeId_.string());
     proto_message.set_relay_connection_id(network_.this_node_relay_connection_id().string());
     NodeId bootstrap_connection_id(network_.bootstrap_connection_id());
@@ -409,13 +408,13 @@ void Routing::Impl::AnonymousSend(protobuf::Message& proto_message) {
           asio_service_.service().post([=]() {
               if (rudp::kSuccess != result) {
                 timer_.CancelTask(proto_message.id());
-                if (kAnonymousNode_) {
-                  LOG(kError) << "Anonymous Session Ended, Send not allowed anymore";
-                  NotifyNetworkStatus(kAnonymousSessionEnded);
-                } else {
+//                if (kAnonymousNode_) {
+//                  LOG(kError) << "Anonymous Session Ended, Send not allowed anymore";
+//                  NotifyNetworkStatus(kAnonymousSessionEnded);
+//                } else {
                   LOG(kError) << "Partial join Session Ended, Send not allowed anymore";
                   NotifyNetworkStatus(kPartialJoinSessionEnded);
-                }
+//                }
               } else {
                 LOG(kVerbose) << "   [" << DebugId(kNodeId_) << "] sent : "
                               << MessageTypeString(proto_message) << " to   "
@@ -427,7 +426,7 @@ void Routing::Impl::AnonymousSend(protobuf::Message& proto_message) {
             });
           });
     network_.SendToDirect(proto_message, bootstrap_connection_id, message_sent);
-  }
+//  }
 }
 
 protobuf::Message Routing::Impl::CreateNodeLevelPartialMessage(
@@ -526,7 +525,7 @@ void Routing::Impl::DoOnMessageReceived(const std::string& message) {
                   << " to " << HexSubstr(pb_message.destination_id())
                   << "   (id: " << pb_message.id() << ")"
                   << (relay_message ? " --Relay--" : "");
-    if (((kAnonymousNode_ || !pb_message.client_node()) && pb_message.has_source_id()) ||
+    if (((/*kAnonymousNode_ ||*/ !pb_message.client_node()) && pb_message.has_source_id()) ||
         (!pb_message.direct() && !pb_message.request())) {
       NodeId source_id(pb_message.source_id());
       if (!source_id.IsZero())
@@ -589,12 +588,12 @@ void Routing::Impl::DoOnConnectionLost(const NodeId& lost_connection_id) {
           return;
       }
       network_.clear_bootstrap_connection_info();
-      if (kAnonymousNode_) {
-        LOG(kError) << "Anonymous Session Ended, Send not allowed anymore";
-        NotifyNetworkStatus(kAnonymousSessionEnded);
-        // TODO(Prakash) cancel all pending tasks
-        return;
-      }
+//      if (kAnonymousNode_) {
+//        LOG(kError) << "Anonymous Session Ended, Send not allowed anymore";
+//        NotifyNetworkStatus(kAnonymousSessionEnded);
+//        // TODO(Prakash) cancel all pending tasks
+//        return;
+//      }
 
       if (routing_table_.size() == 0)
         resend = true;  // This will trigger rebootstrap

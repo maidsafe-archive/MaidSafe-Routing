@@ -122,10 +122,10 @@ size_t ClientRoutingTable::size() const {
 
 // TODO(Prakash): re-order checks to increase performance if needed
 bool ClientRoutingTable::CheckValidParameters(const NodeInfo& node) const {
-  if (!asymm::ValidateKey(node.public_key)) {
-    LOG(kInfo) << "Invalid public key.";
-    return false;
-  }
+//  if (!asymm::ValidateKey(node.public_key)) {
+//    LOG(kInfo) << "Invalid public key.";
+//    return false;
+//  }
   // bucket index is not used in ClientRoutingTable
   if (node.bucket != NodeInfo::kInvalidBucket) {
     LOG(kInfo) << "Invalid bucket index.";

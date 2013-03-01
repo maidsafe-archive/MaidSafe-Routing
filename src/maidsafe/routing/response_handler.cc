@@ -323,7 +323,12 @@ void ResponseHandler::ConnectSuccessAcknowledgement(protobuf::Message& message) 
                              }
                            }
                          });
+    if (!client_node) {
       request_public_key_functor_(peer.node_id, validate_node);
+    } else {
+      LOG(kInfo) << "Validation -- Not looking for client's public key";
+      validate_node(asymm::PublicKey());
+    }
   }
 }
 

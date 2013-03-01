@@ -50,7 +50,7 @@ namespace test { class GenericNode; }
 
 class Routing::Impl {
  public:
-  Impl(bool client_mode, bool anonymous, const NodeId& node_id, const asymm::Keys& keys);
+  Impl(bool client_mode, const NodeId& node_id, const asymm::Keys& keys);
   ~Impl();
 
   void Join(const Functors& functors,

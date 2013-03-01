@@ -21,15 +21,14 @@ namespace routing {
 namespace { typedef boost::asio::ip::udp::endpoint Endpoint; }
 
 template<>
-Routing::Routing(std::nullptr_t) : pimpl_() {
-  InitialisePimpl(true, true, NodeId(NodeId::kRandomId), asymm::GenerateKeyPair());
+Routing::Routing(const NodeId& node_id) : pimpl_() {
+  InitialisePimpl(true, node_id, asymm::GenerateKeyPair());
 }
 
 void Routing::InitialisePimpl(bool client_mode,
-                              bool anonymous,
                               const NodeId& node_id,
                               const asymm::Keys& keys) {
-  pimpl_.reset(new Impl(client_mode, anonymous, node_id, keys));
+  pimpl_.reset(new Impl(client_mode, node_id, keys));
 }
 
 void Routing::Join(Functors functors, std::vector<Endpoint> peer_endpoints) {

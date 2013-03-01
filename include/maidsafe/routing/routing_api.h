@@ -51,14 +51,14 @@ namespace test { class GenericNode; }
 
 namespace detail {
 
-template<typename FobTypePtr>
+template<typename FobType>
 struct is_client : public std::true_type {};
 
 template<>
-struct is_client<passport::Pmid*> : public std::false_type {};
+struct is_client<passport::Pmid> : public std::false_type {};
 
 template<>
-struct is_client<const passport::Pmid*> : public std::false_type {};
+struct is_client<const passport::Pmid> : public std::false_type {};
 
 }  // namespace detail
 
@@ -70,14 +70,12 @@ class Routing {
   // WARNING: CONNECTION TO NETWORK WILL ONLY STAY FOR 60 SECONDS.
   // Users are expected to recreate routing object with right credentials and call Join method to
   // join the routing network.
-  template<typename FobTypePtr>
-  explicit Routing(FobTypePtr fob_ptr) : pimpl_() {
-    static_assert(std::is_pointer<FobTypePtr>::value, "fob_ptr must be a pointer.");
+  template<typename FobType>
+  explicit Routing(FobType const& fob) : pimpl_() {
     asymm::Keys keys;
-    keys.private_key = fob_ptr->private_key();
-    keys.public_key = fob_ptr->public_key();
-    InitialisePimpl(detail::is_client<FobTypePtr>::value, false,
-                    NodeId(fob_ptr->name().data.string()), keys);
+    keys.private_key = fob.private_key();
+    keys.public_key = fob.public_key();
+    InitialisePimpl(detail::is_client<FobType>::value, NodeId(fob.name().data.string()), keys);
   }
 
   // Joins the network.  Valid functor for node validation must be passed to allow node validatation
@@ -143,7 +141,6 @@ class Routing {
   Routing(const Routing&&);
   Routing& operator=(const Routing&);
   void InitialisePimpl(bool client_mode,
-                       bool anonymous,
                        const NodeId& node_id,
                        const asymm::Keys& keys);
 
@@ -152,7 +149,7 @@ class Routing {
 };
 
 template<>
-Routing::Routing(std::nullptr_t);
+Routing::Routing(const NodeId& node_id);
 
 }  // namespace routing
 
