@@ -102,7 +102,7 @@ TEST_F(ClientRoutingTableTest, BEH_CheckAddFarAwayNode) {
   EXPECT_FALSE(client_routing_table.AddNode(nodes_.at(1), nodes_.at(0).node_id));
 }
 
-TEST_F(ClientRoutingTableTest, FUNC_CheckAddSurplusNodes) {
+TEST_F(ClientRoutingTableTest, BEH_CheckAddSurplusNodes) {
   ClientRoutingTable client_routing_table(node_id_);
 
   PopulateNodesSetFurthestCloseNode(2 * Parameters::max_client_routing_table_size,
@@ -204,7 +204,7 @@ TEST_F(ClientRoutingTableTest, BEH_AddThenCheckNode) {
   EXPECT_FALSE(client_routing_table.AddNode(nodes_.at(0), nodes_.at(1).node_id));
 }
 
-TEST_F(ClientRoutingTableTest, FUNC_DropNodes) {
+TEST_F(ClientRoutingTableTest, BEH_DropNodes) {
   ClientRoutingTable client_routing_table(node_id_);
 
   PopulateNodesSetFurthestCloseNode(Parameters::max_client_routing_table_size,
@@ -234,7 +234,7 @@ TEST_F(ClientRoutingTableTest, FUNC_DropNodes) {
   }
 }
 
-TEST_F(ClientRoutingTableTest, FUNC_DropConnection) {
+TEST_F(ClientRoutingTableTest, BEH_DropConnection) {
   ClientRoutingTable client_routing_table(node_id_);
 
   PopulateNodesSetFurthestCloseNode(Parameters::max_client_routing_table_size,
@@ -256,7 +256,7 @@ TEST_F(ClientRoutingTableTest, FUNC_DropConnection) {
   EXPECT_EQ(0, client_routing_table.size());
 }
 
-TEST_F(ClientRoutingTableTest, FUNC_GetNodesInfo) {
+TEST_F(ClientRoutingTableTest, BEH_GetNodesInfo) {
   ClientRoutingTable client_routing_table(node_id_);
 
   PopulateNodesSetFurthestCloseNode(Parameters::max_client_routing_table_size,
@@ -285,7 +285,7 @@ TEST_F(ClientRoutingTableTest, FUNC_GetNodesInfo) {
   }
 }
 
-TEST_F(ClientRoutingTableTest, FUNC_IsConnected) {
+TEST_F(ClientRoutingTableTest, BEH_IsConnected) {
   ClientRoutingTable client_routing_table(node_id_);
 
   PopulateNodesSetFurthestCloseNode(2 * Parameters::max_client_routing_table_size,
