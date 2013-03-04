@@ -172,7 +172,7 @@ TEST(APITest, BEH_API_ZeroStateWithDuplicateNode) {
   rudp::Parameters::bootstrap_connection_lifespan = boost::posix_time::minutes(10);
 }
 
-//TEST(APITest, FUNC_API_AnonymousNode) {
+TEST(APITest, FUNC_API_AnonymousNode) {
 //  rudp::Parameters::bootstrap_connection_lifespan = boost::posix_time::seconds(10);
 //  auto pmid1(MakePmid()), pmid2(MakePmid());
 //  NodeInfoAndPrivateKey node1(MakeNodeInfoAndKeysWithPmid(pmid1));
@@ -259,7 +259,7 @@ TEST(APITest, BEH_API_ZeroStateWithDuplicateNode) {
 //  EXPECT_EQ(std::cv_status::timeout, cond_var_1.wait_for(lock_2, std::chrono::seconds(1)));
 
 //  rudp::Parameters::bootstrap_connection_lifespan = boost::posix_time::minutes(10);
-//}
+}
 
 TEST(APITest, BEH_API_SendToSelf) {
   auto pmid1(MakePmid()), pmid2(MakePmid()), pmid3(MakePmid());
