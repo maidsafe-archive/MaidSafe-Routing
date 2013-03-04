@@ -78,8 +78,8 @@ list(REMOVE_ITEM ALL_FILES_ROUTING_TESTS_DIR "${PROJECT_SOURCE_DIR}/src/maidsafe
 					      "${PROJECT_SOURCE_DIR}/src/maidsafe/routing/tests/test_func_main.cc")
 file(GLOB ALL_FILES_ROUTING_API_TEST "${PROJECT_SOURCE_DIR}/src/maidsafe/routing/tests/routing_api_test.cc"
                                      "${PROJECT_SOURCE_DIR}/src/maidsafe/routing/tests/test_main.cc")
-file(GLOB ALL_FILES_ROUTING_FUNC_TESTS_DIR "${PROJECT_SOURCE_DIR}/src/maidsafe/routing/tests/routing_functional_test.cc"
-                                           "${PROJECT_SOURCE_DIR}/src/maidsafe/routing/tests/routing_functional_non_nat_test.cc"
+file(GLOB ALL_FILES_ROUTING_FUNC_TESTS_DIR "${PROJECT_SOURCE_DIR}/src/maidsafe/routing/tests/routing_functional_non_nat_test.cc"
+                                           "${PROJECT_SOURCE_DIR}/src/maidsafe/routing/tests/routing_functional_test.cc"
                                            "${PROJECT_SOURCE_DIR}/src/maidsafe/routing/tests/test_func_main.cc")
 file(GLOB ALL_FILES_ROUTING_FUNC_NAT_TESTS_DIR "${PROJECT_SOURCE_DIR}/src/maidsafe/routing/tests/routing_functional_test.cc"
                                                "${PROJECT_SOURCE_DIR}/src/maidsafe/routing/tests/routing_functional_nat_test.cc"

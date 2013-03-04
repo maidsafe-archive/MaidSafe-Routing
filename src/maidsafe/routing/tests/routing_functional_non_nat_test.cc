@@ -47,6 +47,8 @@ class RoutingNetworkNonNatTest : public testing::Test {
 };
 
 TEST_F(RoutingNetworkNonNatTest, FUNC_GroupUpdateSubscription) {
+  // TODO(Alison) - test currently only passes when run before all other functional tests. Needs
+  // update to pass when run after other functional tests.
   std::vector<NodeInfo> closest_nodes_info;
   for (auto node : env_->nodes_) {
     if ((node->node_id() == env_->nodes_[kServerSize - 1]->node_id()) ||
