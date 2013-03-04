@@ -294,48 +294,65 @@ void ResponseHandler::ConnectSuccessAcknowledgement(protobuf::Message& message) 
       close_ids.push_back(NodeId(*itr));
     }
   }
+  if (!client_node) {
+    LOG(kInfo) << "Validation -- Need non-client's public key";
+    ValidateAndCompleteConnectionToNonClient(peer, from_requestor, close_ids);
+  } else {
+    LOG(kInfo) << "Validation -- Not looking for client's public key";
+    ValidateAndCompleteConnectionToClient(peer, from_requestor, close_ids);
+  }
+}
 
-  std::weak_ptr<ResponseHandler> response_handler_weak_ptr = shared_from_this();
-  if (request_public_key_functor_) {
-    auto validate_node([=] (const asymm::PublicKey& key) {
-                           LOG(kInfo) << "Validation callback called with public key for "
-                                      << DebugId(peer.node_id);
-                           if (std::shared_ptr<ResponseHandler> response_handler =
-                               response_handler_weak_ptr.lock()) {
-                             if (ValidateAndAddToRoutingTable(
-                                 response_handler->network_,
-                                 response_handler->routing_table_,
-                                 response_handler->client_routing_table_,
-                                 peer.node_id,
-                                 peer.connection_id,
-                                 key,
-                                 client_node)) {
-                               if (from_requestor) {
-                                 response_handler->HandleSuccessAcknowledgementAsReponder(
-                                       peer, client_node, close_ids);
-                               } else {
-                                 response_handler->HandleSuccessAcknowledgementAsRequestor(
-                                       close_ids);
-                               }
-//                               if (!client_node)
-//                                 response_handler->group_change_handler_.UpdatePendingGroupChange(
-//                                     peer.node_id);
-                             }
-                           }
-                         });
-    if (!client_node) {
-      request_public_key_functor_(peer.node_id, validate_node);
+void  ResponseHandler::ValidateAndCompleteConnectionToClient(const NodeInfo& peer,
+                                                             bool from_requestor,
+                                                             const std::vector<NodeId>& close_ids) {
+  if (ValidateAndAddToRoutingTable(
+      network_,
+      routing_table_,
+      client_routing_table_,
+      peer.node_id,
+      peer.connection_id,
+      asymm::PublicKey(),
+      true)) {
+    if (from_requestor) {
+      HandleSuccessAcknowledgementAsReponder(peer, true);
     } else {
-      LOG(kInfo) << "Validation -- Not looking for client's public key";
-      validate_node(asymm::PublicKey());
+      HandleSuccessAcknowledgementAsRequestor(close_ids);
     }
   }
 }
 
-// FIXME life time issue with weak pointers
+void ResponseHandler::ValidateAndCompleteConnectionToNonClient(
+    const NodeInfo& peer,
+    bool from_requestor,
+    const std::vector<NodeId>& close_ids) {
+  std::weak_ptr<ResponseHandler> response_handler_weak_ptr = shared_from_this();
+  if (request_public_key_functor_) {
+    auto validate_node(
+        [=] (const asymm::PublicKey& key) {
+            LOG(kInfo) << "Validation callback called with public key for "
+                       << DebugId(peer.node_id);
+            if (std::shared_ptr<ResponseHandler> response_handler =
+                response_handler_weak_ptr.lock()) {
+              if (ValidateAndAddToRoutingTable(response_handler->network_,
+                                               response_handler->routing_table_,
+                                               response_handler->client_routing_table_,
+                                               peer.node_id, peer.connection_id,
+                                               key, false)) {
+                if (from_requestor) {
+                  response_handler->HandleSuccessAcknowledgementAsReponder(peer, false);
+                } else {
+                  response_handler->HandleSuccessAcknowledgementAsRequestor(close_ids);
+                }
+              }
+            }
+      });
+    request_public_key_functor_(peer.node_id, validate_node);
+  }
+}
+
 void ResponseHandler::HandleSuccessAcknowledgementAsReponder(NodeInfo peer,
-                                                             const bool &client,
-                                                             std::vector<NodeId> /*close_ids*/) {
+                                                             const bool &client) {
   auto count =
       (client ? Parameters::max_routing_table_size_for_client: Parameters::max_routing_table_size);
   std::vector<NodeId> close_ids_for_peer(
@@ -355,19 +372,11 @@ void ResponseHandler::HandleSuccessAcknowledgementAsReponder(NodeInfo peer,
                                           close_ids_for_peer,
                                           routing_table_.client_mode()));
   network_.SendToDirect(connect_success_ack, peer.node_id, peer.connection_id);
-
-// Connect to close ids provided by peer
-// TODO(Prakash) : uncomment below once GetavailableEndpoint returns alreadyConnected
-//  for (auto i : close_ids) {
-//    LOG(kVerbose) << "HandleSuccessAcknowledgementAsReponder: connecting " <<DebugId(i);
-//    if (!i.Empty()) {
-//      SendConnectRequest(i);
-//    }
-//  }
 }
 
-void ResponseHandler::HandleSuccessAcknowledgementAsRequestor(std::vector<NodeId> close_ids) {
-  for (auto i : close_ids) {
+void ResponseHandler::HandleSuccessAcknowledgementAsRequestor(
+    const std::vector<NodeId>& close_ids) {
+  for (auto& i : close_ids) {
     if (!i.IsZero()) {
       CheckAndSendConnectRequest(i);
     }

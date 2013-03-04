@@ -43,7 +43,6 @@ class GroupChangeHandler {
   ~GroupChangeHandler();
   void SendClosestNodesUpdateRpcs(const std::vector<NodeInfo>& new_close_nodes);
   void UpdateGroupChange(const NodeId& node_id, std::vector<NodeInfo> close_nodes);
-  void UpdatePendingGroupChange(const NodeId& node_id);
   void ClosestNodesUpdate(protobuf::Message& message);
   void SendSubscribeRpc(const bool& subscribe, const NodeInfo& node_info);
   void ClosestNodesUpdateSubscribe(protobuf::Message& message);

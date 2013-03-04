@@ -71,9 +71,13 @@ class ResponseHandler : public std::enable_shared_from_this<ResponseHandler> {
  private:
   void SendConnectRequest(const NodeId peer_node_id);
   void CheckAndSendConnectRequest(const NodeId& node_id);
-  void HandleSuccessAcknowledgementAsRequestor(std::vector<NodeId> close_ids);
-  void HandleSuccessAcknowledgementAsReponder(NodeInfo peer, const bool& client,
-                                              std::vector<NodeId> close_ids);
+  void HandleSuccessAcknowledgementAsRequestor(const std::vector<NodeId>& close_ids);
+  void HandleSuccessAcknowledgementAsReponder(NodeInfo peer, const bool& client);
+  void  ValidateAndCompleteConnectionToClient(const NodeInfo& peer, bool from_requestor,
+                                              const std::vector<NodeId>& close_ids);
+  void ValidateAndCompleteConnectionToNonClient(const NodeInfo& peer,
+                                                bool from_requestor,
+                                                const std::vector<NodeId>& close_ids);
 
   mutable std::mutex mutex_;
   RoutingTable& routing_table_;
