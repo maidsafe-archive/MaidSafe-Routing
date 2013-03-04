@@ -76,13 +76,8 @@ Routing::Impl::Impl(bool client_mode,
                                             remove_furthest_node_,
                                             group_change_handler_,
                                             network_statistics_));
-  LOG(kError) << "Client Node < " << client_mode << " > : id " << DebugId(kNodeId_);
-  assert((client_mode || !node_id.IsZero()) &&
-         "Server Nodes cannot be created without valid keys");
-//  if (kAnonymousNode_) {
-//    LOG(kInfo) << "Anonymous node id: " << DebugId(kNodeId_)
-//               << ", connection id" << DebugId(routing_table_.kConnectionId());
-//  }
+  LOG(kInfo) << (client_mode ? "client " : "non-client ") << "node. Id : " << DebugId(kNodeId_);
+  assert((client_mode || !node_id.IsZero()) && "Server Nodes cannot be created without valid keys");
 }
 
 Routing::Impl::~Impl() {

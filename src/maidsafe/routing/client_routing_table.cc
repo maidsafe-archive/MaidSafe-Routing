@@ -146,15 +146,15 @@ bool ClientRoutingTable::CheckParametersAreUnique(const NodeInfo& node) const {
   }
 
   // If we already have a duplicate public key under different node ID return false
-  if (std::find_if(nodes_.begin(),
-                   nodes_.end(),
-                   [node](const NodeInfo& node_info) {
-                     return (asymm::MatchingKeys(node_info.public_key, node.public_key) &&
-                             (node_info.node_id != node.node_id));
-                   }) != nodes_.end()) {
-    LOG(kInfo) << "Already have a different node ID with this public key.";
-    return false;
-  }
+//  if (std::find_if(nodes_.begin(),
+//                   nodes_.end(),
+//                   [node](const NodeInfo& node_info) {
+//                     return (asymm::MatchingKeys(node_info.public_key, node.public_key) &&
+//                             (node_info.node_id != node.node_id));
+//                   }) != nodes_.end()) {
+//    LOG(kInfo) << "Already have a different node ID with this public key.";
+//    return false;
+//  }
   return true;
 }
 
