@@ -236,16 +236,16 @@ TEST(APITest, BEH_API_SendToSelf) {
 
   // Test SendDirect
   std::string data("message from my node");
-  std::mutex mutex;
-  std::condition_variable cond_var;
-  ResponseFunctor response_functor = [&data, &mutex, &cond_var] (std::string string) {
-    std::unique_lock<std::mutex> lock(mutex);
-    ASSERT_EQ("response to " + data, string);
-    cond_var.notify_one();
+  std::once_flag flag;
+  std::promise<void> response_promise;
+  auto response_future = response_promise.get_future();
+  ResponseFunctor response_functor = [&data, &flag, &response_promise] (std::string string) {
+    EXPECT_EQ("response to " + data, string);
+    std::call_once(flag, [&response_promise]() { response_promise.set_value(); } );  // NOLINT (Alison)
+    LOG(kVerbose) << "ResponseFunctor - end";
   };
   routing3.SendDirect(node3.node_info.node_id, data, false, response_functor);
-  std::unique_lock<std::mutex> lock(mutex);
-  EXPECT_EQ(std::cv_status::no_timeout, cond_var.wait_for(lock, std::chrono::seconds(10)));
+  ASSERT_EQ(response_future.wait_for(std::chrono::seconds(10)), std::future_status::ready);
 }
 
 
@@ -258,7 +258,6 @@ TEST(APITest, BEH_API_ClientNode) {
   std::map<NodeId, asymm::PublicKey> key_map;
   key_map.insert(std::make_pair(node1.node_info.node_id, pmid1.public_key()));
   key_map.insert(std::make_pair(node2.node_info.node_id, pmid2.public_key()));
-//  key_map.insert(std::make_pair(node3.node_info.node_id, maid.public_key()));
 
   Functors functors1, functors2, functors3;
   Routing routing1(pmid1);
