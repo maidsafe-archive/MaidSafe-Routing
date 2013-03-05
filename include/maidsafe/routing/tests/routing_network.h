@@ -72,11 +72,14 @@ class NodesEnvironment;
 
 class GenericNode {
  public:
-  GenericNode(bool client_mode = false, bool has_symmetric_nat = false);
+  GenericNode(bool client_mode = false,
+              bool has_symmetric_nat = false,
+              bool non_mutating_client = false);
   GenericNode(bool client_mode, const rudp::NatType& nat_type);
   GenericNode(bool client_mode,
               const NodeInfoAndPrivateKey& node_info,
-              bool has_symmetric_nat = false);
+              bool has_symmetric_nat = false,
+              bool non_mutating_client = false);
   virtual ~GenericNode();
   int GetStatus() const;
   NodeId node_id() const;
@@ -176,10 +179,11 @@ class GenericNetwork {
   void SetUpNetwork(const size_t& total_number_vaults,
                     const size_t& total_number_clients,
                     const size_t& num_symmetric_nat_vaults,
-                    const size_t& sum_symmetric_nat_clients);
+                    const size_t& num_symmetric_nat_clients);
   void AddNode(const bool& client_mode,
                const NodeId& node_id,
-               const bool& has_symmetric_nat = false);
+               const bool& has_symmetric_nat = false,
+               const bool& non_mutating_client = false);
   void AddNode(const bool& client_mode, const rudp::NatType& nat_type);
   void AddNode(const bool& client_mode, const bool& has_symmetric_nat);
   bool RemoveNode(const NodeId& node_id);
