@@ -68,7 +68,6 @@ GenericNode::GenericNode(bool client_mode, bool has_symmetric_nat)
       node_info_plus_(),
       mutex_(),
       client_mode_(client_mode),
-      anonymous_(false),
       joined_(false),
       expected_(0),
       nat_type_(rudp::NatType::kUnknown),
@@ -101,7 +100,6 @@ GenericNode::GenericNode(bool client_mode, const rudp::NatType& nat_type)
       node_info_plus_(),
       mutex_(),
       client_mode_(client_mode),
-      anonymous_(false),
       joined_(false),
       expected_(0),
       nat_type_(nat_type),
@@ -137,7 +135,6 @@ GenericNode::GenericNode(bool client_mode,
       node_info_plus_(std::make_shared<NodeInfoAndPrivateKey>(node_info)),
       mutex_(),
       client_mode_(client_mode),
-      anonymous_(false),
       joined_(false),
       expected_(0),
       nat_type_(rudp::NatType::kUnknown),
@@ -150,10 +147,7 @@ GenericNode::GenericNode(bool client_mode,
   endpoint_.address(GetLocalIp());
   endpoint_.port(maidsafe::test::GetRandomPort());
   InitialiseFunctors();
-  if (node_info_plus_->node_info.node_id.IsZero()) {
-    anonymous_ = true;
-//    routing_.reset(new Routing(nullptr));
-  } else if (client_mode) {
+  if (client_mode) {
     auto maid(MakeMaid());
     routing_.reset(new Routing(maid));
     InjectNodeInfoAndPrivateKey();
@@ -574,14 +568,11 @@ void GenericNetwork::SetUpNetwork(const size_t& total_number_vaults,
 
 void GenericNetwork::AddNode(const bool& client_mode,
                              const NodeId& node_id,
-                             bool anonymous,
                              const bool& has_symmetric_nat) {
   NodeInfoAndPrivateKey node_info;
-  if (!anonymous) {
-    node_info = MakeNodeInfoAndKeys();
-    if (node_id != NodeId())
-      node_info.node_info.node_id = node_id;
-  }
+  node_info = MakeNodeInfoAndKeys();
+  if (node_id != NodeId())
+    node_info.node_info.node_id = node_id;
   NodePtr node(new GenericNode(client_mode, node_info, has_symmetric_nat));
   AddNodeDetails(node);
   LOG(kVerbose) << "Node # " << nodes_.size() << " added to network";
@@ -1411,17 +1402,8 @@ void GenericNetwork::AddNodeDetails(NodePtr node) {
         }
         if (!cond_var || !node)
           return;
-
-        if (!node->anonymous_) {
-          ASSERT_GE(result, kSuccess);
-        } else  {
-          if (!node->joined()) {
-            ASSERT_EQ(result, kSuccess);
-          } else if (node->joined()) {
-            ASSERT_EQ(result, kAnonymousSessionEnded);
-          }
-        }
-        if ((result == node->expected() && !node->joined()) || node->anonymous_) {
+        ASSERT_GE(result, kSuccess);
+        if (result == node->expected() && !node->joined()) {
           node->set_joined(true);
           cond_var->notify_one();
         }

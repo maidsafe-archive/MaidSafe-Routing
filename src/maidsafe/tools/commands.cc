@@ -297,16 +297,8 @@ void Commands::Join() {
   demo_node_->functors_.network_status =
       [this, &cond_var, weak_node] (const int& result) {
         if (std::shared_ptr<GenericNode> node = weak_node.lock()) {
-          if (!node->anonymous()) {
-            ASSERT_GE(result, kSuccess);
-          } else  {
-            if (!node->joined()) {
-              ASSERT_EQ(result, kSuccess);
-            } else if (node->joined()) {
-              ASSERT_EQ(result, kAnonymousSessionEnded);
-            }
-          }
-          if ((result == node->expected() && !node->joined()) || node->anonymous()) {
+          ASSERT_GE(result, kSuccess);
+          if (result == node->expected() && !node->joined()) {
             node->set_joined(true);
             cond_var.notify_one();
           } else {

@@ -89,7 +89,6 @@ class GenericNode {
   bool joined() const;
   bool IsClient() const;
   bool HasSymmetricNat() const;
-  bool anonymous() { return anonymous_; }
   // void set_client_mode(const bool& client_mode);
   int expected();
   void set_expected(const int& expected);
@@ -146,7 +145,6 @@ class GenericNode {
   std::shared_ptr<NodeInfoAndPrivateKey> node_info_plus_;
   std::mutex mutex_;
   bool client_mode_;
-  bool anonymous_;
   bool joined_;
   int expected_;
   rudp::NatType nat_type_;
@@ -181,7 +179,6 @@ class GenericNetwork {
                     const size_t& sum_symmetric_nat_clients);
   void AddNode(const bool& client_mode,
                const NodeId& node_id,
-               bool anonymous = false,
                const bool& has_symmetric_nat = false);
   void AddNode(const bool& client_mode, const rudp::NatType& nat_type);
   void AddNode(const bool& client_mode, const bool& has_symmetric_nat);

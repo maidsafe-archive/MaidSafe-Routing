@@ -158,9 +158,9 @@ if(MAIDSAFE_TESTING)
   add_gtests(TESTrouting)
   add_gtests(TESTrouting_api)
   label_as_critical_tests(APITest.BEH_API_ZeroState
-                          APITest.FUNC_API_AnonymousNode
                           APITest.BEH_API_SendToSelf
                           APITest.BEH_API_ClientNode
+                          APITest.BEH_API_NonMutatingClientNode
                           APITest.BEH_API_ClientNodeSameId
                           APITest.BEH_API_NodeNetwork
                           APITest.BEH_API_NodeNetworkWithClient

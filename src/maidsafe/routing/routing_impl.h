@@ -119,7 +119,7 @@ class Routing::Impl {
             const DestinationType& destination_type, const bool& cacheable,
             ResponseFunctor response_functor);
   void SendMessage(const NodeId& destination_id, protobuf::Message& proto_message);
-  void AnonymousSend(protobuf::Message& proto_message);
+  void PartiallyJoinedSend(protobuf::Message& proto_message);
   protobuf::Message CreateNodeLevelPartialMessage(
       const NodeId& destination_id,
       const DestinationType& destination_type,
@@ -131,7 +131,6 @@ class Routing::Impl {
   int network_status_;
   RoutingTable routing_table_;
   const NodeId kNodeId_;
-  const bool kAnonymousNode_;
   bool running_;
   std::mutex running_mutex_;
   Functors functors_;
