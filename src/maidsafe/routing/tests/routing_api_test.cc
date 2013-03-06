@@ -811,6 +811,89 @@ TEST(APITest, BEH_API_SendGroup) {
   Parameters::default_send_timeout = boost::posix_time::seconds(10);
 }
 
+TEST(APITest, BEH_API_PartiallyJoinedSend) {
+  // N.B. 5sec sleep in functors3.request_public_key causes delay in joining, giving opportunity for
+  // routing3's impl to use PartiallyJoinedSend when SendDirect is called
+  auto pmid1(MakePmid()), pmid2(MakePmid()), pmid3(MakePmid());
+  NodeInfoAndPrivateKey node1(MakeNodeInfoAndKeysWithPmid(pmid1));
+  NodeInfoAndPrivateKey node2(MakeNodeInfoAndKeysWithPmid(pmid2));
+  NodeInfoAndPrivateKey node3(MakeNodeInfoAndKeysWithPmid(pmid3));
+  std::map<NodeId, asymm::PublicKey> key_map;
+  key_map.insert(std::make_pair(node1.node_info.node_id, pmid1.public_key()));
+  key_map.insert(std::make_pair(node2.node_info.node_id, pmid2.public_key()));
+  key_map.insert(std::make_pair(node3.node_info.node_id, pmid3.public_key()));
+
+  Functors functors1, functors2, functors3;
+  Routing routing1(pmid1);
+  Routing routing2(pmid2);
+  Routing routing3(pmid3);
+
+  functors1.network_status = [](const int&) {};  // NOLINT (Fraser)
+  functors1.message_received = [&](const std::string& message, const bool&,
+                                   ReplyFunctor reply_functor) {
+      reply_functor("response to " + message);
+      LOG(kVerbose) << "Message received and replied to message !!";
+    };
+  functors1.request_public_key = [&](const NodeId& node_id, GivePublicKeyFunctor give_key) {
+      LOG(kWarning) << "node_validation called for " << DebugId(node_id);
+      auto itr(key_map.find(node_id));
+      if (key_map.end() != itr)
+        give_key((*itr).second);
+    };
+
+  functors2.network_status = functors3.network_status = functors1.network_status;
+  functors2.message_received = functors1.message_received;
+  functors2.request_public_key = functors1.request_public_key;
+  functors3.request_public_key = [&](const NodeId& node_id, GivePublicKeyFunctor give_key) {
+      Sleep(boost::posix_time::seconds(5));
+      LOG(kWarning) << "node_validation called for " << DebugId(node_id);
+      auto itr(key_map.find(node_id));
+      if (key_map.end() != itr)
+        give_key((*itr).second);
+    };
+  Endpoint endpoint1(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort()),
+           endpoint2(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort());
+  auto a1 = std::async(std::launch::async,
+      [&] { return routing1.ZeroStateJoin(functors1, endpoint1, endpoint2, node2.node_info);
+    });
+  auto a2 = std::async(std::launch::async,
+      [&] { return routing2.ZeroStateJoin(functors2, endpoint2, endpoint1, node1.node_info);
+    });
+  EXPECT_EQ(kSuccess, a2.get());  // wait for promise !
+  EXPECT_EQ(kSuccess, a1.get());  // wait for promise !
+  std::once_flag join_flag;
+  std::promise<void> join_promise;
+  auto join_future = join_promise.get_future();
+
+  functors3.network_status = [&join_flag, &join_promise] (int result) {
+      if (result == NetworkStatus(false, 2)) {
+        std::call_once(join_flag, [&join_promise]() { join_promise.set_value(); } );  // NOLINT (Alison)
+      }
+    };
+
+  routing3.Join(functors3, std::vector<Endpoint>(1, endpoint2));
+
+  // Test PartiallyJoinedSend
+  std::string data("message from my node");
+  std::once_flag flag;
+  std::promise<void> response_promise;
+  auto response_future = response_promise.get_future();
+  std::atomic<int> count(0);
+  ResponseFunctor response_functor = [&data, &flag, &response_promise, &count] (std::string str) {
+      EXPECT_EQ("response to " + data, str);
+      ++count;
+      if (count == 2)
+        std::call_once(flag, [&response_promise]() { response_promise.set_value(); } );  // NOLINT (Alison)
+      LOG(kVerbose) << "ResponseFunctor - end";
+    };
+  routing3.SendDirect(node1.node_info.node_id, data, false, response_functor);
+  routing3.SendDirect(node2.node_info.node_id, data, false, response_functor);
+  EXPECT_EQ(response_future.wait_for(std::chrono::seconds(10)), std::future_status::ready);
+
+  EXPECT_EQ(join_future.wait_for(std::chrono::seconds(20)), std::future_status::ready);
+  EXPECT_EQ(count, 2);
+}
+
 }  // namespace test
 
 }  // namespace routing
