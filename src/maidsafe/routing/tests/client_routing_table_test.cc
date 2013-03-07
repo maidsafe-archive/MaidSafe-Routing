@@ -157,6 +157,8 @@ TEST_F(ClientRoutingTableTest, BEH_CheckAddSameConnectionIdTwice) {
   EXPECT_FALSE(client_routing_table.AddNode(nodes_.at(1), nodes_.at(2).node_id));
 }
 
+// TODO(Alison) - uncomment this test if it becomes relevant again
+/*
 TEST_F(ClientRoutingTableTest, BEH_CheckAddSameKeysTwice) {
   ClientRoutingTable client_routing_table(node_id_);
 
@@ -172,6 +174,7 @@ TEST_F(ClientRoutingTableTest, BEH_CheckAddSameKeysTwice) {
   EXPECT_TRUE(client_routing_table.CheckNode(nodes_.at(1), nodes_.at(2).node_id));
   EXPECT_FALSE(client_routing_table.AddNode(nodes_.at(1), nodes_.at(2).node_id));
 }
+*/
 
 TEST_F(ClientRoutingTableTest, BEH_CheckAddSameConnectionAndKeysTwice) {
   ClientRoutingTable client_routing_table(node_id_);

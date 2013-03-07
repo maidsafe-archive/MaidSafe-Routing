@@ -203,9 +203,9 @@ void NetworkUtils::SendToDirectAdjustedRoute(protobuf::Message& message,
 void NetworkUtils::SendToClosestNode(const protobuf::Message& message) {
   // Normal messages
   if (message.has_destination_id() && !message.destination_id().empty()) {
-    auto non_routing_nodes(client_routing_table_.GetNodesInfo(NodeId(message.destination_id())));
+    auto client_routing_nodes(client_routing_table_.GetNodesInfo(NodeId(message.destination_id())));
     // have the destination ID in non-routing table
-    if (!non_routing_nodes.empty() && message.direct()) {
+    if (!client_routing_nodes.empty() && message.direct()) {
       if (IsRequest(message) &&
           (!message.client_node() ||
            (message.source_id() != message.destination_id()))) {
@@ -215,10 +215,11 @@ void NetworkUtils::SendToClosestNode(const protobuf::Message& message) {
         return;
       }
       LOG(kVerbose) << "This node [" << DebugId(routing_table_.kNodeId()) << "] has "
-                    << non_routing_nodes.size() << " destination node(s) in its non-routing table."
+                    << client_routing_nodes.size()
+                    << " destination node(s) in its non-routing table."
                     << " id: " << message.id();
 
-      for (auto i : non_routing_nodes) {
+      for (auto i : client_routing_nodes) {
         LOG(kVerbose) << "Sending message to NRT node with ID " << message.id();
         SendTo(message, i.node_id, i.connection_id);
       }
