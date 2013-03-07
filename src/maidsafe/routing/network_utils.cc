@@ -88,7 +88,7 @@ int NetworkUtils::Bootstrap(const std::vector<Endpoint>& bootstrap_endpoints,
   }
 
   if (Parameters::append_local_live_port_endpoint && bootstrap_attempt_ == 0) {
-    bootstrap_endpoints_.push_back(Endpoint(GetLocalIp(), 5483));
+    bootstrap_endpoints_.push_back(Endpoint(GetLocalIp(), kLivePort));
     LOG(kInfo) << "Appending local live port endpoints: " << bootstrap_endpoints_.back();
   }
 

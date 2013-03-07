@@ -166,7 +166,7 @@ std::vector<boost::asio::ip::udp::endpoint> MaidSafeEndpoints() {
 
   std::vector<boost::asio::ip::udp::endpoint> maidsafe_endpoints;
   for (auto i : endpoint_string)
-    maidsafe_endpoints.push_back(Endpoint(boost::asio::ip::address::from_string(i), 5483));
+    maidsafe_endpoints.push_back(Endpoint(boost::asio::ip::address::from_string(i), kLivePort));
   return maidsafe_endpoints;
 }
 
@@ -185,7 +185,7 @@ std::vector<boost::asio::ip::udp::endpoint> MaidSafeLocalEndpoints() {
 
   std::vector<boost::asio::ip::udp::endpoint> maidsafe_endpoints;
   for (auto i : endpoint_string)
-    maidsafe_endpoints.push_back(Endpoint(boost::asio::ip::address::from_string(i), 5483));
+    maidsafe_endpoints.push_back(Endpoint(boost::asio::ip::address::from_string(i), kLivePort));
   return maidsafe_endpoints;
 }
 
