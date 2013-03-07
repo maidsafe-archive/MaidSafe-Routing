@@ -1072,8 +1072,12 @@ testing::AssertionResult GenericNetwork::SendDirect(const size_t& repeats, size_
   assert(repeats > 0);
   size_t total_num_nodes(this->nodes_.size());
 
-  std::atomic<uint16_t> reply_count(0);
-  std::atomic<bool> failed(false);
+  std::shared_ptr<std::mutex> response_mutex(new std::mutex());
+  std::shared_ptr<std::condition_variable> cond_var(new std::condition_variable());
+  std::shared_ptr<uint16_t> reply_count(new uint16_t(0)),
+      expected_count(new uint16_t(repeats * total_num_nodes * total_num_nodes));
+  std::shared_ptr<bool> failed(new bool(false));
+
   for (size_t repeat = 0; repeat < repeats; ++repeat) {
     for (auto dest : this->nodes_) {
       for (auto src : this->nodes_) {
@@ -1081,36 +1085,52 @@ testing::AssertionResult GenericNetwork::SendDirect(const size_t& repeats, size_
         assert(!data.empty() && "Send Data Empty !");
         ResponseFunctor response_functor;
         if (dest->IsClient()) {
-          response_functor = [&reply_count, &failed](std::string reply) {
-            ++reply_count;
+          response_functor = [response_mutex, cond_var, reply_count, expected_count,
+               failed](std::string reply) {
+            std::lock_guard<std::mutex> lock(*response_mutex);
+            ++(*reply_count);
             EXPECT_TRUE(reply.empty());
             if (!reply.empty()) {
-              failed = true;
+              *failed = true;
+              if (*reply_count == *expected_count)
+                cond_var->notify_one();
               return;
             }
+            if (*reply_count == *expected_count)
+              cond_var->notify_one();
           };
         } else {
-          NodeId expected_replier(dest->node_id());
-          response_functor =[&reply_count, &failed, expected_replier](std::string reply) {
-            ++reply_count;
+          std::shared_ptr<NodeId> expected_replier(new NodeId(dest->node_id()));
+          response_functor = [response_mutex, cond_var, reply_count, expected_count, failed,
+              expected_replier](std::string reply) {
+            std::lock_guard<std::mutex> lock(*response_mutex);
+            ++(*reply_count);
             EXPECT_FALSE(reply.empty());
             if (reply.empty()) {
-              failed = true;
+              *failed = true;
+              if (*reply_count == *expected_count)
+                cond_var->notify_one();
               return;
             }
             try {
               NodeId replier(reply.substr(0, reply.find(">::<")));
-              EXPECT_EQ(replier, expected_replier);
-              if (replier != expected_replier) {
-                failed = false;
+              EXPECT_EQ(replier, *expected_replier);
+              if (replier != *expected_replier) {
+                *failed = false;
+                if (*reply_count == *expected_count)
+                  cond_var->notify_one();
                 return;
               }
               // TODO(Alison) - check data
             } catch(const std::exception& ex) {
               EXPECT_TRUE(false) << "Got message with invalid replier ID. Exception: " << ex.what();
-              failed = true;
+              *failed = true;
+              if (*reply_count == * expected_count)
+                cond_var->notify_one();
               return;
             }
+            if (*reply_count == * expected_count)
+              cond_var->notify_one();
           };
         }
         src->SendDirect(dest->node_id(), data, false, response_functor);
@@ -1118,18 +1138,14 @@ testing::AssertionResult GenericNetwork::SendDirect(const size_t& repeats, size_
     }
   }
 
-  uint16_t count(0);
-  uint16_t max_count(static_cast<uint16_t>(30 * (nodes_.size()) * (nodes_.size() - 1)));
-  while (reply_count < repeats * total_num_nodes * total_num_nodes) {
-    ++count;
-    if (count == max_count) {
-      EXPECT_TRUE(false) << "Didn't get reply within allowed time!";
-      return testing::AssertionFailure();
-    }
-    Sleep(boost::posix_time::millisec(500));
+  std::unique_lock<std::mutex> lock(*response_mutex);
+  if (cond_var->wait_for(lock, std::chrono::seconds(15 * (nodes_.size()) * (nodes_.size() - 1))) !=
+      std::cv_status::no_timeout) {
+    EXPECT_TRUE(false) << "Didn't get reply within allowed time!";
+    return testing::AssertionFailure();
   }
 
-  if (failed)
+  if (*failed)
     return testing::AssertionFailure();
   return testing::AssertionSuccess();
 }
