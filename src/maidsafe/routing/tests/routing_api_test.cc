@@ -336,7 +336,7 @@ TEST(APITest, BEH_API_NonMutatingClientNode) {
   Functors functors1, functors2, functors3;
   Routing routing1(pmid1);
   Routing routing2(pmid2);
-  Routing routing3(NodeId(NodeId::kRandomId));
+  Routing routing3((NodeId(NodeId::kRandomId)));
 
   functors1.network_status = [](const int&) {};  // NOLINT (Fraser)
   functors1.request_public_key = [&](const NodeId& node_id, GivePublicKeyFunctor give_key) {

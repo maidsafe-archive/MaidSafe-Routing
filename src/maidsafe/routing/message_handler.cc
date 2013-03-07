@@ -392,8 +392,8 @@ void MessageHandler::HandleMessage(protobuf::Message& message) {
 }
 
 void MessageHandler::HandleMessageForNonRoutingNodes(protobuf::Message& message) {
-  auto non_routing_nodes(client_routing_table_.GetNodesInfo(NodeId(message.destination_id())));
-  assert(!non_routing_nodes.empty() && message.direct());
+  auto client_routing_nodes(client_routing_table_.GetNodesInfo(NodeId(message.destination_id())));
+  assert(!client_routing_nodes.empty() && message.direct());
   if (IsRequest(message) &&
       (!message.client_node() ||
        (message.source_id() != message.destination_id()))) {

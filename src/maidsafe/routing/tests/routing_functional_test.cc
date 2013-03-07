@@ -311,7 +311,6 @@ TEST_F(RoutingNetworkTest, FUNC_SendToGroupRandomId) {
                 << message_count * (Parameters::node_group_size);
 }
 
-// TODO(Alison) - rename and rehabilitate test
 TEST_F(RoutingNetworkTest, FUNC_NonMutatingClientSendToGroupRandomId) {
   uint16_t message_count(100), receivers_message_count(0);
   env_->ClearMessages();
@@ -351,7 +350,6 @@ TEST_F(RoutingNetworkTest, FUNC_NonMutatingClientSendToGroupRandomId) {
                 << message_count * (Parameters::node_group_size);
 }
 
-// TODO(Alison) - rename and rehabilitate test
 TEST_F(RoutingNetworkTest, FUNC_NonMutatingClientSendToGroupExistingId) {
   uint16_t message_count(100), receivers_message_count(0);
   env_->ClearMessages();
