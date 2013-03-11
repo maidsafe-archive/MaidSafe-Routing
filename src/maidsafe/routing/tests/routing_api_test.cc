@@ -506,15 +506,10 @@ TEST(APITest, BEH_API_ClientNodeSameId) {
 
 TEST(APITest, BEH_API_NodeNetwork) {
   int min_join_status(8);  // TODO(Prakash): To decide
-  std::vector<std::promise<bool>> join_promises(kNetworkSize - 2);
-  std::vector<std::future<bool>> join_futures;
-  std::deque<bool> promised;
-  std::vector<NetworkStatusFunctor> status_vector;
-  std::mutex mutex;
   Functors functors;
 
   std::map<NodeId, asymm::PublicKey> key_map;
-  functors.network_status = [](const int&) {};  // NOLINT (Fraser)
+  functors.network_status = [](const int&) {}; // NOLINT (Fraser)
   functors.request_public_key = [&](const NodeId& node_id, GivePublicKeyFunctor give_key) {
       LOG(kWarning) << "node_validation called for " << DebugId(node_id);
       auto itr(key_map.find(node_id));
@@ -547,26 +542,21 @@ TEST(APITest, BEH_API_NodeNetwork) {
   EXPECT_EQ(kSuccess, a1.get());  // wait for promise !
 
   for (auto i(0); i != (kNetworkSize - 2); ++i) {
-    join_futures.emplace_back(join_promises.at(i).get_future());
-    promised.push_back(true);
-    status_vector.emplace_back([=, &join_promises, &mutex, &promised](int result) {
-        ASSERT_GE(result, kSuccess);
-        if (result == NetworkStatus(false, std::min(i + 2, min_join_status))) {
-          std::lock_guard<std::mutex> lock(mutex);
-          if (promised.at(i)) {
-            join_promises.at(i).set_value(true);
-            promised.at(i) = false;
-            LOG(kVerbose) << "node - " << i + 2 << "joined";
-          }
+    std::shared_ptr<std::promise<bool>> join_promise_ptr(std::make_shared<std::promise<bool>>());
+    std::shared_ptr<bool> promised(std::make_shared<bool>(false));
+    std::future<bool> join_future((*join_promise_ptr).get_future());
+    functors.network_status = [i, min_join_status, join_promise_ptr, promised](int result) {
+         if (result == NetworkStatus(false, std::min(i + 2, min_join_status))) {
+           if (!(*promised)) {
+             (*join_promise_ptr).set_value(true);
+             (*promised) = true;
+           }
+           LOG(kVerbose) << "node - "<< i + 2 << "joined";
         }
-      });
-  }
-
-  for (auto i(0); i != (kNetworkSize - 2); ++i) {
-    functors.network_status = status_vector.at(i);
+      };
     Endpoint endpoint((i % 2) ? endpoint1 : endpoint2);
     routing_node[i + 2]->Join(functors, std::vector<Endpoint>(1, endpoint));
-    ASSERT_EQ(join_futures.at(i).wait_for(std::chrono::seconds(10)), std::future_status::ready);
+    ASSERT_EQ(join_future.wait_for(std::chrono::seconds(10)), std::future_status::ready);
     LOG(kVerbose) << "node ---------------------------- " << i + 2 << "joined";
   }
 }

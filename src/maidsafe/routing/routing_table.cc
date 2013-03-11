@@ -107,7 +107,7 @@ bool RoutingTable::AddOrCheckNode(NodeInfo peer, bool remove) {
 
   if (remove)
     SetBucketIndex(peer);
-
+  std::vector<NodeInfo> unique_nodes;
   {
     std::unique_lock<std::mutex> lock(mutex_);
     auto found(Find(peer.node_id, lock));
@@ -130,6 +130,7 @@ bool RoutingTable::AddOrCheckNode(NodeInfo peer, bool remove) {
       return_value = true;
     }
     routing_table_size = static_cast<uint16_t>(nodes_.size());
+    unique_nodes = group_matrix_.GetUniqueNodes();
   }
 
   if (return_value && remove) {  // Firing functors on Add only
@@ -155,7 +156,7 @@ bool RoutingTable::AddOrCheckNode(NodeInfo peer, bool remove) {
       subscribe_to_group_change_update_(true, NodeInfo());
 
     if (!new_closest_nodes.empty()) {
-      network_statistics_.UpdateLocalAverageDistance(group_matrix_.GetUniqueNodes());
+      network_statistics_.UpdateLocalAverageDistance(unique_nodes);
       if (close_node_replaced_functor_)
         close_node_replaced_functor_(new_closest_nodes);
     }
@@ -177,6 +178,7 @@ bool RoutingTable::AddOrCheckNode(NodeInfo peer, bool remove) {
 NodeInfo RoutingTable::DropNode(const NodeId& node_to_drop, bool routing_only) {
   std::vector<NodeInfo> new_closest_nodes, new_connected_close_nodes;
   NodeInfo dropped_node, out_of_connected_close_nodes;
+  std::vector<NodeInfo> unique_nodes;
   {
     std::unique_lock<std::mutex> lock(mutex_);
     auto found(Find(node_to_drop, lock));
@@ -188,6 +190,7 @@ NodeInfo RoutingTable::DropNode(const NodeId& node_to_drop, bool routing_only) {
                             out_of_connected_close_nodes,
                             new_closest_nodes);
     }
+    unique_nodes = group_matrix_.GetUniqueNodes();
   }
 
   if (unsubscribe_group_update_)
@@ -206,7 +209,7 @@ NodeInfo RoutingTable::DropNode(const NodeId& node_to_drop, bool routing_only) {
       subscribe_to_group_change_update_(true, NodeInfo());
 
   if (!new_closest_nodes.empty()) {
-    network_statistics_.UpdateLocalAverageDistance(group_matrix_.GetUniqueNodes());
+    network_statistics_.UpdateLocalAverageDistance(unique_nodes);
     if (close_node_replaced_functor_)
       close_node_replaced_functor_(new_closest_nodes);
   }
@@ -352,7 +355,7 @@ std::vector<NodeInfo> RoutingTable::GetMatrixNodes() {
 bool RoutingTable::IsConnected(const NodeId& node_id) {
   if (Contains(node_id))
     return true;
-
+  std::unique_lock<std::mutex> lock(mutex_);
   return group_matrix_.Contains(node_id);
 }
 
