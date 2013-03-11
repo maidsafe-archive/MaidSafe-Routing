@@ -1075,7 +1075,8 @@ testing::AssertionResult GenericNetwork::SendDirect(const size_t& repeats, size_
   std::shared_ptr<std::mutex> response_mutex(new std::mutex());
   std::shared_ptr<std::condition_variable> cond_var(new std::condition_variable());
   std::shared_ptr<uint16_t> reply_count(new uint16_t(0)),
-      expected_count(new uint16_t(repeats * total_num_nodes * total_num_nodes));
+      expected_count(new uint16_t(static_cast<uint16_t>(
+      repeats * total_num_nodes * total_num_nodes)));
   std::shared_ptr<bool> failed(new bool(false));
 
   for (size_t repeat = 0; repeat < repeats; ++repeat) {
@@ -1169,7 +1170,7 @@ testing::AssertionResult GenericNetwork::SendGroup(const NodeId& target_id,
   std::shared_ptr<std::condition_variable> cond_var(new std::condition_variable());
   std::string data(RandomAlphaNumericString(message_size));
   std::shared_ptr<uint16_t> reply_count(new uint16_t(0)),
-      expected_count(new uint16_t(Parameters::node_group_size * repeats));
+      expected_count(new uint16_t(static_cast<uint16_t>(Parameters::node_group_size * repeats)));
   std::shared_ptr<bool> failed(new bool(false));
 
   std::vector<NodeId> target_group(this->GetGroupForId(target_id));
