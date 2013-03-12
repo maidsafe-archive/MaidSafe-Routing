@@ -1072,12 +1072,12 @@ testing::AssertionResult GenericNetwork::SendDirect(const size_t& repeats, size_
   assert(repeats > 0);
   size_t total_num_nodes(this->nodes_.size());
 
-  std::shared_ptr<std::mutex> response_mutex(new std::mutex());
-  std::shared_ptr<std::condition_variable> cond_var(new std::condition_variable());
-  std::shared_ptr<uint16_t> reply_count(new uint16_t(0)),
-      expected_count(new uint16_t(static_cast<uint16_t>(
+  std::shared_ptr<std::mutex> response_mutex(std::make_shared<std::mutex>());
+  std::shared_ptr<std::condition_variable> cond_var(std::make_shared<std::condition_variable>());
+  std::shared_ptr<uint16_t> reply_count(std::make_shared<uint16_t>(0)),
+      expected_count(std::make_shared<uint16_t>(static_cast<uint16_t>(
       repeats * total_num_nodes * total_num_nodes)));
-  std::shared_ptr<bool> failed(new bool(false));
+  std::shared_ptr<bool> failed(std::make_shared<bool>(false));
 
   for (size_t repeat = 0; repeat < repeats; ++repeat) {
     for (auto dest : this->nodes_) {
@@ -1101,7 +1101,7 @@ testing::AssertionResult GenericNetwork::SendDirect(const size_t& repeats, size_
               cond_var->notify_one();
           };
         } else {
-          std::shared_ptr<NodeId> expected_replier(new NodeId(dest->node_id()));
+          std::shared_ptr<NodeId> expected_replier(std::make_shared<NodeId>(dest->node_id()));
           response_functor = [response_mutex, cond_var, reply_count, expected_count, failed,
               expected_replier](std::string reply) {
             std::lock_guard<std::mutex> lock(*response_mutex);
@@ -1140,8 +1140,10 @@ testing::AssertionResult GenericNetwork::SendDirect(const size_t& repeats, size_
   }
 
   std::unique_lock<std::mutex> lock(*response_mutex);
-  if (cond_var->wait_for(lock, std::chrono::seconds(15 * (nodes_.size()) * (nodes_.size() - 1))) !=
-      std::cv_status::no_timeout) {
+  if (!cond_var->wait_for(lock, std::chrono::seconds(15 * (nodes_.size()) * (nodes_.size() - 1)),
+                          [reply_count, expected_count]() {
+                            return *reply_count == *expected_count;
+                          })) {
     EXPECT_TRUE(false) << "Didn't get reply within allowed time!";
     return testing::AssertionFailure();
   }
@@ -1166,12 +1168,13 @@ testing::AssertionResult GenericNetwork::SendGroup(const NodeId& target_id,
   LOG(kVerbose) << "Doing SendGroup from " << DebugId(nodes_.at(source_index)->node_id())
                 << " to " << DebugId(target_id);
   assert(repeats > 0);
-  std::shared_ptr<std::mutex> response_mutex(new std::mutex());
-  std::shared_ptr<std::condition_variable> cond_var(new std::condition_variable());
+  std::shared_ptr<std::mutex> response_mutex(std::make_shared<std::mutex>());
+  std::shared_ptr<std::condition_variable> cond_var(std::make_shared<std::condition_variable>());
   std::string data(RandomAlphaNumericString(message_size));
-  std::shared_ptr<uint16_t> reply_count(new uint16_t(0)),
-      expected_count(new uint16_t(static_cast<uint16_t>(Parameters::node_group_size * repeats)));
-  std::shared_ptr<bool> failed(new bool(false));
+  std::shared_ptr<uint16_t> reply_count(std::make_shared<uint16_t>(0)),
+      expected_count(std::make_shared<uint16_t>(static_cast<uint16_t>(Parameters::node_group_size *
+                                                                      repeats)));
+  std::shared_ptr<bool> failed(std::make_shared<bool>(false));
 
   std::vector<NodeId> target_group(this->GetGroupForId(target_id));
   for (uint16_t repeat(0); repeat < repeats; ++repeat) {
@@ -1233,7 +1236,10 @@ testing::AssertionResult GenericNetwork::SendGroup(const NodeId& target_id,
   }
 
   std::unique_lock<std::mutex> lock(*response_mutex);
-  if (cond_var->wait_for(lock, std::chrono::seconds(15 * repeats)) != std::cv_status::no_timeout) {
+  if (!cond_var->wait_for(lock, std::chrono::seconds(15 * repeats),
+                          [reply_count, expected_count]() {
+                            return *reply_count == *expected_count;
+                          })) {
     EXPECT_TRUE(false) << "Didn't get replies within allowed time!";
     return testing::AssertionFailure();
   }
@@ -1247,11 +1253,11 @@ testing::AssertionResult GenericNetwork::SendDirect(const NodeId& destination_no
                                                     const ExpectedNodeType& destination_node_type) {
   ValidateExpectedNodeType(destination_node_id, destination_node_type);
 
-  std::shared_ptr<std::mutex> response_mutex(new std::mutex());
-  std::shared_ptr<std::condition_variable> cond_var(new std::condition_variable());
-  std::shared_ptr<uint16_t> reply_count(new uint16_t(0)),
-      expected_count(new uint16_t(static_cast<uint16_t>(this->nodes_.size())));
-  std::shared_ptr<bool> failed(new bool(false));
+  std::shared_ptr<std::mutex> response_mutex(std::make_shared<std::mutex>());
+  std::shared_ptr<std::condition_variable> cond_var(std::make_shared<std::condition_variable>());
+  std::shared_ptr<uint16_t> reply_count(std::make_shared<uint16_t>(0)),
+      expected_count(std::make_shared<uint16_t>(static_cast<uint16_t>(this->nodes_.size())));
+  std::shared_ptr<bool> failed(std::make_shared<bool>(false));
 
   size_t message_index(0);
   for (auto src : this->nodes_) {
@@ -1314,7 +1320,10 @@ testing::AssertionResult GenericNetwork::SendDirect(const NodeId& destination_no
   }
 
   std::unique_lock<std::mutex> lock(*response_mutex);
-  if (cond_var->wait_for(lock, std::chrono::seconds(15)) != std::cv_status::no_timeout) {
+  if (!cond_var->wait_for(lock, std::chrono::seconds(15),
+                          [reply_count, expected_count]() {
+                            return *reply_count == *expected_count;
+                          })) {
     EXPECT_TRUE(false) << "Didn't get reply within allowed time!";
     return testing::AssertionFailure();
   }
@@ -1329,9 +1338,9 @@ testing::AssertionResult GenericNetwork::SendDirect(std::shared_ptr<GenericNode>
                                                     const ExpectedNodeType& destination_node_type) {
   ValidateExpectedNodeType(destination_node_id, destination_node_type);
 
-  std::shared_ptr<std::mutex> response_mutex(new std::mutex());
-  std::shared_ptr<std::condition_variable> cond_var(new std::condition_variable());
-  std::shared_ptr<bool> failed(new bool(false));
+  std::shared_ptr<std::mutex> response_mutex(std::make_shared<std::mutex>());
+  std::shared_ptr<std::condition_variable> cond_var(std::make_shared<std::condition_variable>());
+  std::shared_ptr<bool> failed(std::make_shared<bool>(false));
 
   std::string data(RandomAlphaNumericString(512 * 2^10));
   assert(!data.empty() && "Send Data Empty !");
