@@ -72,7 +72,7 @@ class ClientRoutingTableTest : public BasicClientRoutingTableTest {
   }
 
   void PopulateClientRoutingTable(ClientRoutingTable& client_routing_table) {
-    for (auto node : nodes_)
+    for (auto& node : nodes_)
       EXPECT_TRUE(client_routing_table.AddNode(node, furthest_close_node_.node_id));
   }
 
@@ -222,9 +222,9 @@ TEST_F(ClientRoutingTableTest, BEH_DropNodes) {
 
   EXPECT_EQ(expected_nodes.size(), dropped_nodes.size());
   bool found_counterpart(false);
-  for (auto expected_node : expected_nodes) {
+  for (const auto& expected_node : expected_nodes) {  // NOLINT (Alison)
     found_counterpart = false;
-    for (auto dropped_node : dropped_nodes) {
+    for (const auto& dropped_node : dropped_nodes) {  // NOLINT (Alison)
       if ((expected_node.connection_id == dropped_node.connection_id) &&
           asymm::MatchingKeys(expected_node.public_key, dropped_node.public_key)) {
         found_counterpart = true;
@@ -273,9 +273,9 @@ TEST_F(ClientRoutingTableTest, BEH_GetNodesInfo) {
 
   EXPECT_EQ(expected_nodes.size(), got_nodes.size());
   bool found_counterpart(false);
-  for (auto expected_node : expected_nodes) {
+  for (const auto& expected_node : expected_nodes) {  // NOLINT (Alison)
     found_counterpart = false;
-    for (auto got_node : got_nodes) {
+    for (const auto& got_node : got_nodes) {  // NOLINT (Alison)
       if ((expected_node.connection_id == got_node.connection_id) &&
           asymm::MatchingKeys(expected_node.public_key, got_node.public_key)) {
         found_counterpart = true;

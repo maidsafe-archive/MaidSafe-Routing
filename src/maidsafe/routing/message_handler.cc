@@ -293,12 +293,12 @@ void MessageHandler::HandleGroupMessageAsClosestNode(protobuf::Message& message)
   std::string group_id(message.destination_id());
   std::string group_members("[" + DebugId(routing_table_.kNodeId()) + "]");
 
-  for (auto i : close_from_matrix)
+  for (const auto& i : close_from_matrix)  // NOLINT (Alison)
     group_members+=std::string("[" + DebugId(i.node_id) +"]");
   LOG(kInfo) << "Group nodes for group_id " << HexSubstr(group_id) << " : "
              << group_members;
 
-  for (auto i : close_from_matrix) {
+  for (const auto& i : close_from_matrix) {  // NOLINT (Alison)
     LOG(kInfo) << "[" << DebugId(own_node_id) << "] - "
                << "Replicating message to : " << HexSubstr(i.node_id.string())
                << " [ group_id : " << HexSubstr(group_id)  << "]" << " id: " << message.id();
@@ -502,13 +502,13 @@ void MessageHandler::HandleGroupRelayRequestMessageAsClosestNode(protobuf::Messa
   std::string group_id(message.destination_id());
   std::string group_members("[" + DebugId(routing_table_.kNodeId()) + "]");
 
-  for (auto i : close)
+  for (const auto& i : close)  // NOLINT (Alison)
     group_members+=std::string("[" + DebugId(i) +"]");
   LOG(kInfo) << "Group members for group_id " << HexSubstr(group_id) << " are: "
              << group_members;
   // This node relays back the responses
   message.set_source_id(routing_table_.kNodeId().string());
-  for (auto i : close) {
+  for (const auto& i : close) {  // NOLINT (Alison)
     LOG(kInfo) << "Replicating message to : " << HexSubstr(i.string())
                << " [ group_id : " << HexSubstr(group_id)  << "]" << " id: " << message.id();
     message.set_destination_id(i.string());

@@ -245,7 +245,7 @@ void Service::FindNodes(protobuf::Message& message) {
                               static_cast<uint16_t>(find_nodes.num_nodes_requested() - 1)));
   found_nodes.add_nodes(routing_table_.kNodeId().string());
 
-  for (auto node : nodes)
+  for (const auto& node : nodes)  // NOLINT (Alison)
     found_nodes.add_nodes(node.string());
 
   LOG(kVerbose) << "Responding Find node with " << found_nodes.nodes_size()  << " contacts.";
@@ -334,7 +334,7 @@ void Service::GetGroup(protobuf::Message& message) {
   assert(get_group.ParseFromString(message.data(0)));
   auto close_nodes_id(routing_table_.GetGroup(NodeId(get_group.node_id())));
   get_group.set_node_id(routing_table_.kNodeId().string());
-  for (auto node_id : close_nodes_id)
+  for (const auto& node_id : close_nodes_id)  // NOLINT (Alison)
     get_group.add_group_nodes_id(node_id.string());
   message.clear_route_history();
   message.set_destination_id(message.source_id());

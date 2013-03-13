@@ -474,7 +474,7 @@ std::future<std::vector<NodeId>> Routing::Impl::GetGroup(const NodeId& info_id) 
                        protobuf::GetGroup get_group;
                        if (get_group.ParseFromString(response)) {
                          try {
-                           for (auto& id : get_group.group_nodes_id())
+                           for (const auto& id : get_group.group_nodes_id())  // NOLINT (Alison)
                              nodes_id.push_back(NodeId(id));
                          } catch(std::exception& ex) {
                            LOG(kError) << "Failed to parse response of GetGroup : " << ex.what();
