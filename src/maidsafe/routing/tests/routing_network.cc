@@ -267,7 +267,7 @@ void GenericNode::RemoveNodeFromRandomNodeHelper(const NodeId& node_id) {
   routing_->pimpl_->random_node_helper_.Remove(node_id);
 }
 
-bool GenericNode::NodeSubscriedForGroupUpdate(const NodeId& node_id) {
+bool GenericNode::NodeSubscribedForGroupUpdate(const NodeId& node_id) {
   LOG(kVerbose) << DebugId(this->node_id()) << " has "
                << routing_->pimpl_->group_change_handler_.update_subscribers_.size()
                << " nodes subscribed for update";

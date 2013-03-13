@@ -182,10 +182,10 @@ TEST_F(RoutingStandAloneTest, FUNC_CheckUnsubscription) {
   LOG(kVerbose) << "Furthest close node: " << DebugId(furthest_closest.node_id);
   this->AddNode(false, GenerateUniqueRandomId(node->node_id(), 30));
   int index(this->NodeIndex(furthest_closest.node_id));
-  EXPECT_FALSE(this->nodes_[index]->NodeSubscriedForGroupUpdate(
+  EXPECT_FALSE(this->nodes_[index]->NodeSubscribedForGroupUpdate(
       node->node_id())) << DebugId(furthest_closest.node_id) << " hase "
                         << DebugId(node->node_id());
-  EXPECT_TRUE(this->nodes_[size]->NodeSubscriedForGroupUpdate(
+  EXPECT_TRUE(this->nodes_[size]->NodeSubscribedForGroupUpdate(
       node->node_id())) << DebugId(this->nodes_[size]->node_id())
                         << " does not have " << DebugId(node->node_id());
 }

@@ -128,7 +128,7 @@ class GenericNode {
   bool IsConnectedClient(const NodeId& node_id);
   void AddNodeToRandomNodeHelper(const NodeId& node_id);
   void RemoveNodeFromRandomNodeHelper(const NodeId& node_id);
-  bool NodeSubscriedForGroupUpdate(const NodeId& node_id);
+  bool NodeSubscribedForGroupUpdate(const NodeId& node_id);
 
   void PostTaskToAsioService(std::function<void()> functor);
   rudp::NatType nat_type();

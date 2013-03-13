@@ -62,7 +62,7 @@ TEST_F(RoutingNetworkNonNatTest, FUNC_GroupUpdateSubscription) {
       int index(env_->NodeIndex(node_info.node_id));
       if ((index == kServerSize - 1) || env_->nodes_[index]->IsClient())
         continue;
-      EXPECT_TRUE(env_->nodes_[index]->NodeSubscriedForGroupUpdate(node->node_id()))
+      EXPECT_TRUE(env_->nodes_[index]->NodeSubscribedForGroupUpdate(node->node_id()))
           << DebugId(node_info.node_id) << " does not have " << DebugId(node->node_id());
     }
   }
