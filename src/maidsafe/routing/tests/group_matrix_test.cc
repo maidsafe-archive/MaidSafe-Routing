@@ -249,7 +249,11 @@ TEST_P(GroupMatrixTest, BEH_OneRowOnly) {
   NodeInfo row_1;
   row_1.node_id = NodeId(NodeId::kRandomId);
   std::vector<NodeInfo> row_entries_1;
-  uint32_t length(RandomUint32() % (Parameters::node_group_size - 2) + 1);
+  uint32_t length;
+  if (client_mode_)
+    length = RandomUint32() % (Parameters::node_group_size - 2) + 1;
+  else
+    length = RandomUint32() % (Parameters::node_group_size - 3) + 1;
   uint32_t i(0);
   NodeInfo node_info;
   while (i < length) {
