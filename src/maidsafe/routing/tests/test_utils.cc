@@ -178,7 +178,7 @@ void SortNodeInfosFromTarget(const NodeId& target, std::vector<NodeInfo>& nodes)
 bool CompareListOfNodeInfos(const std::vector<NodeInfo>& lhs, const std::vector<NodeInfo>& rhs) {
   if (lhs.size() != rhs.size())
     return false;
-  for (auto& node_info : lhs) {
+  for (const auto& node_info : lhs) {  // NOLINT (Alison)
     if (std::find_if(rhs.begin(),
                      rhs.end(),
                      [&](const NodeInfo& node) {
@@ -187,7 +187,7 @@ bool CompareListOfNodeInfos(const std::vector<NodeInfo>& lhs, const std::vector<
       return false;
   }
 
-    for (auto& node_info : rhs) {
+    for (const auto& node_info : rhs) {  // NOLINT (Alison)
       if (std::find_if(lhs.begin(),
                        lhs.end(),
                        [&](const NodeInfo& node) {

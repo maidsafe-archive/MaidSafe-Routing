@@ -106,7 +106,7 @@ protobuf::Message Remove(const NodeId& node_id,
   assert(!this_connection_id.IsZero() && "Invalid this_connection_id");
   static_cast<void>(this_connection_id);
   protobuf::RemoveRequest remove_request;
-  for (auto& node : attempted_nodes)
+  for (const auto& node : attempted_nodes)  // NOLINT (Alison)
     remove_request.add_attempted_nodes(node);
   remove_request.set_peer_id(this_node_id.string());
   protobuf::Message message;
@@ -206,7 +206,7 @@ protobuf::Message ConnectSuccessAcknowledgement(const NodeId& node_id,
   protobuf_connect_success_ack.set_node_id(this_node_id.string());
   protobuf_connect_success_ack.set_connection_id(this_connection_id.string());
   protobuf_connect_success_ack.set_requestor(requestor);
-  for (auto i : close_ids) {
+  for (const auto& i : close_ids) {  // NOLINT (Alison)
     protobuf_connect_success_ack.add_close_ids(i.string());
   }
   message.set_destination_id(node_id.string());
@@ -236,7 +236,7 @@ protobuf::Message ClosestNodesUpdate(
   protobuf::Message message;
   protobuf::ClosestNodesUpdate closest_nodes_update;
   closest_nodes_update.set_node(my_node_id.string());
-  for (auto i : closest_nodes) {
+  for (const auto& i : closest_nodes) {  // NOLINT (Alison)
     protobuf::BasicNodeInfo* basic_node_info;
     basic_node_info = closest_nodes_update.add_nodes_info();
     basic_node_info->set_node_id(i.node_id.string());

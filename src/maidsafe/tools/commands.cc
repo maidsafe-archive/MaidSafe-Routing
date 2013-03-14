@@ -119,7 +119,7 @@ void Commands::Run() {
 void Commands::PrintRoutingTable() {
   auto routing_nodes = demo_node_->ReturnRoutingTable();
   std::cout<< "ROUTING TABLE::::" <<std::endl;
-  for (auto routing_node : routing_nodes)
+  for (const auto& routing_node : routing_nodes)  // NOLINT (Alison)
     std::cout << "\t" << maidsafe::HexSubstr(routing_node.string()) << std::endl;
 }
 
@@ -236,8 +236,8 @@ uint16_t Commands::MakeMessage(const int& id_index, const DestinationType& desti
     NodeId farthest_closests(CalculateClosests(dest_id, closests, expected_respodents));
   else
     closests.push_back(dest_id);
-  for (auto &node_id : closests)
-  std::cout << "\t" << maidsafe::HexSubstr(node_id.string()) << std::endl;
+  for (const auto& node_id : closests)  // NOLINT (Alison)
+    std::cout << "\t" << maidsafe::HexSubstr(node_id.string()) << std::endl;
   closest_nodes = closests;
   return expected_respodents;
 }

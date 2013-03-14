@@ -755,25 +755,27 @@ TEST(APITest, BEH_API_SendGroup) {
   std::vector<std::future<bool>> send_futures;
   for (uint16_t i(0); i < send_promises.size(); ++i)
     send_futures.emplace_back(send_promises.at(i).get_future());
+  bool result(false);
   for (uint16_t i(0); i < kServerCount; ++i) {
     NodeId dest_id(routing_node[i]->kNodeId());
     uint16_t count(0);
     while (count < kMessageCount) {
       uint16_t message_index(i * kServerCount + count);
       ResponseFunctor response_functor =
-          [&send_mutex, &send_promises, &send_counts, &data, message_index] (std::string string) {
+          [&send_mutex, &send_promises, &send_counts, &data, message_index, &result]
+          (std::string string) {
          std::unique_lock<std::mutex> lock(send_mutex);
          EXPECT_EQ("response to " + data, string) << "for message_index " << message_index;
          if (send_counts.at(message_index) >= Parameters::node_group_size)
            return;
          if (string != "response to " + data) {
-           send_counts.at(message_index) = Parameters::node_group_size;
-           send_promises.at(message_index).set_value(false);
+           result = false;
          } else {
-           send_counts.at(message_index) += 1;
-           if (send_counts.at(message_index) == Parameters::node_group_size)
-             send_promises.at(message_index).set_value(true);
+           result = true;
          }
+         send_counts.at(message_index) += 1;
+         if (send_counts.at(message_index) == Parameters::node_group_size)
+           send_promises.at(message_index).set_value(result);
       };
 
       routing_node[i]->SendGroup(dest_id, data, false, response_functor);

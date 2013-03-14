@@ -66,7 +66,7 @@ void GroupChangeHandler::ClosestNodesUpdate(protobuf::Message& message) {
 
   std::vector<NodeInfo> closest_nodes;
   NodeInfo node_info;
-  for (auto& basic_info : closest_node_update.nodes_info()) {
+  for (const auto& basic_info : closest_node_update.nodes_info()) {  // NOLINT (Alison)
     if (CheckId(basic_info.node_id())) {
       node_info.node_id = NodeId(basic_info.node_id());
       node_info.rank = basic_info.rank();
@@ -141,7 +141,7 @@ void GroupChangeHandler::Subscribe(const NodeId& node_id,
         update_subscribers_.push_back(node_info);
         LOG(kVerbose) << "[" << DebugId(routing_table_.kNodeId()) << "] subscribed "
                       << DebugId(node_id) << " current size: "  << update_subscribers_.size();
-        for (auto subscriber : update_subscribers_) {
+        for (const auto& subscriber : update_subscribers_) {  // NOLINT (Alison)
           log += DebugId(subscriber.node_id) + ", ";
         }
     }
@@ -203,7 +203,7 @@ void GroupChangeHandler::SendSubscribeRpc(const bool& subscribe,
     nodes_needing_update.push_back(node_info);
   }
   LOG(kVerbose) << "SendSubscribeRpc: nodes_needing_update: " << nodes_needing_update.size();
-  for (auto& node : nodes_needing_update) {
+  for (const auto& node : nodes_needing_update) {  // NOLINT (Alison)
     LOG(kVerbose) << DebugId(routing_table_.kNodeId()) << " SendSubscribeRpc to "
                   << DebugId(node.node_id);
     protobuf::Message closest_nodes_update_rpc(
@@ -221,7 +221,7 @@ bool GroupChangeHandler::GetNodeInfo(const NodeId& node_id, const NodeId& connec
   if (routing_table_.GetNodeInfo(node_id, out_node_info))
     return true;
   auto nodes_info(client_routing_table_.GetNodesInfo(node_id));
-  for (auto node_info : nodes_info) {
+  for (const auto& node_info : nodes_info) {  // NOLINT (Alison)
     if (node_info.connection_id == connection_id) {
       out_node_info = node_info;
       return true;

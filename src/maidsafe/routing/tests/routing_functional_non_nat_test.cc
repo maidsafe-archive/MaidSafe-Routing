@@ -50,7 +50,7 @@ TEST_F(RoutingNetworkNonNatTest, FUNC_GroupUpdateSubscription) {
   // TODO(Alison) - test currently only passes when run before all other functional tests. Needs
   // update to pass when run after other functional tests.
   std::vector<NodeInfo> closest_nodes_info;
-  for (auto node : env_->nodes_) {
+  for (const auto& node : env_->nodes_) {  // NOLINT (Alison)
     if ((node->node_id() == env_->nodes_[kServerSize - 1]->node_id()) ||
         (node->node_id() == env_->nodes_[kNetworkSize - 1]->node_id()))
       continue;
@@ -58,11 +58,11 @@ TEST_F(RoutingNetworkNonNatTest, FUNC_GroupUpdateSubscription) {
                                                Parameters::closest_nodes_size - 1);
     LOG(kVerbose) << "size of closest_nodes: " << closest_nodes_info.size();
 
-    for (auto node_info : closest_nodes_info) {
+    for (const auto& node_info : closest_nodes_info) {  // NOLINT (Alison)
       int index(env_->NodeIndex(node_info.node_id));
       if ((index == kServerSize - 1) || env_->nodes_[index]->IsClient())
         continue;
-      EXPECT_TRUE(env_->nodes_[index]->NodeSubscriedForGroupUpdate(node->node_id()))
+      EXPECT_TRUE(env_->nodes_[index]->NodeSubscribedForGroupUpdate(node->node_id()))
           << DebugId(node_info.node_id) << " does not have " << DebugId(node->node_id());
     }
   }

@@ -86,6 +86,7 @@ void Timer::ExecuteTask(TaskId task_id, const boost::system::error_code& error) 
     }
     timed_out_response_count = (*itr)->expected_response_count;
     task = *itr;
+    (*itr)->expected_response_count = 0;
   }
 
 //  int return_code(kSuccess);

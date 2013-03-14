@@ -34,7 +34,7 @@ GroupMatrix::GroupMatrix(const NodeId& this_node_id, bool client_mode)
 
 void GroupMatrix::AddConnectedPeer(const NodeInfo& node_info) {
   LOG(kVerbose) << "AddConnectedPeer : " << DebugId(node_info.node_id);
-  for (auto nodes : matrix_) {
+  for (const auto& nodes : matrix_) {  // NOLINT (Alison)
     if (nodes.at(0).node_id == node_info.node_id) {
       LOG(kWarning) << "Already Added in matrix";
       return;
@@ -59,7 +59,7 @@ void GroupMatrix::RemoveConnectedPeer(const NodeInfo& node_info) {
 
 std::vector<NodeInfo> GroupMatrix::GetConnectedPeers() {
   std::vector<NodeInfo> connected_peers;
-  for (auto nodes : matrix_)
+  for (const auto& nodes : matrix_)  // NOLINT (Alison)
     connected_peers.push_back(nodes.at(0));
   PartialSortFromTarget(kNodeId_, Parameters::closest_nodes_size, connected_peers);
   return connected_peers;
@@ -67,13 +67,13 @@ std::vector<NodeInfo> GroupMatrix::GetConnectedPeers() {
 
 NodeInfo GroupMatrix::GetConnectedPeerFor(const NodeId& target_node_id) {
 /*
-  for (auto nodes : matrix_) {
+  for (const auto& nodes : matrix_) {
     if (nodes.at(0).node_id == target_node_id) {
       assert(false && "Shouldn't request connected peer for node in first column of group matrix.");
       return NodeInfo();
     }
   }*/
-  for (auto nodes : matrix_) {
+  for (const auto& nodes : matrix_) {  // NOLINT (Alison)
     if (std::find_if(nodes.begin(), nodes.end(),
                      [target_node_id](const NodeInfo& node_info) {
                        return (node_info.node_id == target_node_id);
@@ -90,13 +90,13 @@ void GroupMatrix::GetBetterNodeForSendingMessage(const NodeId& target_node_id,
                                                  NodeInfo& current_closest_peer) {
   NodeId closest_id(current_closest_peer.node_id);
 
-  for (auto& row : matrix_) {
+  for (const auto& row : matrix_) {  // NOLINT (Alison)
     if (ignore_exact_match && row.at(0).node_id == target_node_id)
       continue;
     if (std::find(exclude.begin(), exclude.end(), row.at(0).node_id.string()) != exclude.end())
       continue;
 
-    for (auto& node : row) {
+    for (const auto& node : row) {  // NOLINT (Alison)
       if (node.node_id == kNodeId_)
         continue;
       if (ignore_exact_match && node.node_id == target_node_id)
@@ -120,11 +120,11 @@ void GroupMatrix::GetBetterNodeForSendingMessage(const NodeId& target_node_id,
                                                  NodeId& current_closest_peer_id) {
   NodeId closest_id(current_closest_peer_id);
 
-  for (auto& row : matrix_) {
+  for (const auto& row : matrix_) {  // NOLINT (Alison)
     if (ignore_exact_match && row.at(0).node_id == target_node_id)
       continue;
 
-    for (auto& node : row) {
+    for (const auto& node : row) {  // NOLINT (Alison)
       if (ignore_exact_match && node.node_id == target_node_id)
         continue;
       if (NodeId::CloserToTarget(node.node_id, closest_id, target_node_id)) {
@@ -141,7 +141,7 @@ void GroupMatrix::GetBetterNodeForSendingMessage(const NodeId& target_node_id,
 
 std::vector<NodeInfo> GroupMatrix::GetAllConnectedPeersFor(const NodeId& target_id) {
   std::vector<NodeInfo> connected_nodes;
-  for (auto row : matrix_) {
+  for (const auto& row : matrix_) {  // NOLINT (Alison)
     if (std::find_if(row.begin(),
                      row.end(),
                      [&target_id] (const NodeInfo& node_info) {
@@ -166,12 +166,12 @@ bool GroupMatrix::IsThisNodeGroupLeader(const NodeId& target_id, NodeId& connect
   }
 
   std::string log("unique_nodes_ for " + DebugId(kNodeId_) + " are ");
-  for (auto node : unique_nodes_) {
+  for (const auto& node : unique_nodes_) {  // NOLINT (Alison)
     log += DebugId(node.node_id) + ", ";
   }
   LOG(kVerbose) << log;
 
-  for (auto node : unique_nodes_) {
+  for (const auto& node : unique_nodes_) {  // NOLINT (Alison)
     if (node.node_id == target_id)
       continue;
     if (NodeId::CloserToTarget(node.node_id, kNodeId_, target_id)) {
@@ -245,7 +245,7 @@ void GroupMatrix::UpdateFromConnectedPeer(const NodeId& peer,
   if (group_itr->size() > 1) {
     group_itr->erase(group_itr->begin() + 1, group_itr->end());
   }
-  for (auto i : nodes)
+  for (const auto& i : nodes)  // NOLINT (Alison)
     group_itr->push_back(i);
 
   // Update unique node vector

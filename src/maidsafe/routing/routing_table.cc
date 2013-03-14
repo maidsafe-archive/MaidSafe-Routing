@@ -265,7 +265,7 @@ bool RoutingTable::IsThisNodeGroupLeader(const NodeId& target_id,
       return false;
     }
   }
-  for (auto& excluded : exclude) {
+  for (const auto& excluded : exclude) {  // NOLINT (Alison)
     try {
       NodeId excluded_id(excluded);
       if (excluded_id != target_id && NodeId::CloserToTarget(excluded_id, kNodeId_, target_id)) {
@@ -652,7 +652,7 @@ NodeInfo RoutingTable::GetClosestNode(const NodeId& target_id,
                                       bool ignore_exact_match) {
   std::vector<NodeInfo> closest_nodes(
       GetClosestNodeInfo(target_id, Parameters::closest_nodes_size, ignore_exact_match));
-  for (auto node_info : closest_nodes) {
+  for (const auto& node_info : closest_nodes) {  // NOLINT (Alison)
     if (std::find(exclude.begin(), exclude.end(), node_info.node_id.string()) == exclude.end())
       return node_info;
   }
@@ -687,7 +687,7 @@ NodeInfo RoutingTable::GetNodeForSendingMessage(const NodeId& target_id,
                                                  current_peer);
   }
   std::string excluded_ids;
-  for (auto& excluded_id : exclude) {
+  for (const auto& excluded_id : exclude) {  // NOLINT (Alison)
     excluded_ids.append("\t");
     excluded_ids.append(HexSubstr(excluded_id));
   }
@@ -887,7 +887,7 @@ std::string RoutingTable::PrintRoutingTable() {
   std::string s = "\n\n[" + DebugId(kNodeId_) +
       "] This node's own routing table and peer connections:\n" +
       "Routing table size: " + std::to_string(nodes_.size()) + "\n";
-  for (auto node : rt) {
+  for (const auto& node : rt) {  // NOLINT (Alison)
     s += std::string("\tPeer ") + "[" + DebugId(node.node_id) + "]" + "-->";
     s += DebugId(node.connection_id) + " && xored ";
     s += DebugId(kNodeId_ ^ node.node_id) + " bucket ";

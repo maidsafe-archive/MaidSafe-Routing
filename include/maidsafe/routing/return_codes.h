@@ -49,15 +49,14 @@ enum ReturnCode {
   kNotJoined = -303004,
   kResponseTimeout = -303005,
   kResponseCancelled = -303006,
-  kAnonymousSessionEnded = -303007,
-  kInvalidDestinationId = -303008,
-  kEmptyData = -303009,
-  kTypeNotAllowed = -303010,
-  kFailedtoSendFindNode = -303011,
-  kDataSizeNotAllowed = -303012,
-  kFailedtoGetEndpoint = -303013,
-  kPartialJoinSessionEnded = -303014,
-  kNetworkShuttingDown = -303015
+  kInvalidDestinationId = -303007,
+  kEmptyData = -303008,
+  kTypeNotAllowed = -303009,
+  kFailedtoSendFindNode = -303010,
+  kDataSizeNotAllowed = -303011,
+  kFailedtoGetEndpoint = -303012,
+  kPartialJoinSessionEnded = -303013,
+  kNetworkShuttingDown = -303014
 };
 
 }  // namespace routing
