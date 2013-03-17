@@ -24,7 +24,7 @@
 #include "maidsafe/routing/network_statistics.h"
 #include "maidsafe/routing/network_utils.h"
 #include "maidsafe/routing/parameters.h"
-#include "maidsafe/routing/routing_pb.h"
+#include "maidsafe/routing/routing.pb.h"
 #include "maidsafe/routing/rpcs.h"
 #include "maidsafe/routing/service.h"
 #include "maidsafe/routing/tests/test_utils.h"

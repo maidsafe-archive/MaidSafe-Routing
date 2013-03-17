@@ -14,7 +14,7 @@
 
 #include "maidsafe/routing/network_utils.h"
 #include "maidsafe/routing/parameters.h"
-#include "maidsafe/routing/routing_pb.h"
+#include "maidsafe/routing/routing.pb.h"
 #include "maidsafe/routing/utils.h"
 
 

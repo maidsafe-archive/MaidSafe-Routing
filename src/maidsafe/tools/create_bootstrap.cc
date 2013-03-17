@@ -32,7 +32,7 @@
 #include "maidsafe/common/utils.h"
 #include "maidsafe/common/crypto.h"
 #include "maidsafe/common/rsa.h"
-#include "maidsafe/routing/routing_pb.h"
+#include "maidsafe/routing/routing.pb.h"
 
 
 namespace fs = boost::filesystem;

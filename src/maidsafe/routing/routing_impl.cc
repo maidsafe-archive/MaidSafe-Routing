@@ -26,7 +26,7 @@
 #include "maidsafe/routing/message_handler.h"
 #include "maidsafe/routing/node_info.h"
 #include "maidsafe/routing/return_codes.h"
-#include "maidsafe/routing/routing_pb.h"
+#include "maidsafe/routing/routing.pb.h"
 #include "maidsafe/routing/rpcs.h"
 #include "maidsafe/routing/utils.h"
 #include "maidsafe/routing/network_statistics.h"

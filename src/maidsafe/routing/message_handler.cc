@@ -20,7 +20,7 @@
 #include "maidsafe/routing/client_routing_table.h"
 #include "maidsafe/routing/group_change_handler.h"
 #include "maidsafe/routing/network_utils.h"
-#include "maidsafe/routing/routing_pb.h"
+#include "maidsafe/routing/routing.pb.h"
 #include "maidsafe/routing/routing_table.h"
 #include "maidsafe/routing/service.h"
 #include "maidsafe/routing/remove_furthest_node.h"
