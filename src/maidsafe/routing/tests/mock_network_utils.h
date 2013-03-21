@@ -18,7 +18,7 @@
 #include "gmock/gmock.h"
 
 #include "maidsafe/routing/network_utils.h"
-#include "maidsafe/routing/routing_pb.h"
+#include "maidsafe/routing/routing.pb.h"
 
 
 namespace maidsafe {

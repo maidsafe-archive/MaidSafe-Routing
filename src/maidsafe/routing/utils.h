@@ -26,7 +26,7 @@
 #include "maidsafe/passport/types.h"
 
 #include "maidsafe/routing/parameters.h"
-#include "maidsafe/routing/routing_pb.h"
+#include "maidsafe/routing/routing.pb.h"
 
 
 namespace maidsafe {

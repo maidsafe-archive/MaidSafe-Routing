@@ -19,7 +19,7 @@
 
 #include "maidsafe/routing/network_utils.h"
 #include "maidsafe/routing/node_info.h"
-#include "maidsafe/routing/routing_pb.h"
+#include "maidsafe/routing/routing.pb.h"
 
 
 namespace maidsafe {

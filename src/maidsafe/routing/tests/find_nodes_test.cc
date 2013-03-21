@@ -19,7 +19,7 @@
 #include "maidsafe/routing/routing_api.h"
 #include "maidsafe/routing/rpcs.h"
 #include "maidsafe/routing/network_utils.h"
-#include "maidsafe/routing/routing_pb.h"
+#include "maidsafe/routing/routing.pb.h"
 #include "maidsafe/routing/tests/routing_network.h"
 #include "maidsafe/routing/tests/test_utils.h"
 

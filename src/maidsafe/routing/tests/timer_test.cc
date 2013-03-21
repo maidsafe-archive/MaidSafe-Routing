@@ -25,7 +25,7 @@
 
 #include "maidsafe/routing/api_config.h"
 #include "maidsafe/routing/return_codes.h"
-#include "maidsafe/routing/routing_pb.h"
+#include "maidsafe/routing/routing.pb.h"
 #include "maidsafe/routing/timer.h"
 
 

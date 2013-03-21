@@ -20,7 +20,7 @@
 
 #include "maidsafe/routing/parameters.h"
 #include "maidsafe/routing/return_codes.h"
-#include "maidsafe/routing/routing_pb.h"
+#include "maidsafe/routing/routing.pb.h"
 
 namespace maidsafe {
 
