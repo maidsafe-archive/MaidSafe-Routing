@@ -58,23 +58,39 @@ class Network {
   void RemoveAccount(const RTNode& node, const NodeId& account);
   void PrintNetworkInfo();
   std::vector<NodeId> GetMatrix(const NodeId& node_id);
-
+  void TransferAndDeleteAccountFromInformedNodes(
+      const NodeId& informed_node_id,
+      const NodeId& new_node_id,
+      std::vector<NodeId>& informed_node_group_matrix);
   void IdealUpdateAccounts(RTNode& new_node);
   void IdealRemoveAccount(const NodeId& account);
+  void TransferAccount(const NodeId& new_node_id, const NodeId& account);
+  void DeleteAccount(const NodeId& node_id, const NodeId& account);
+  void UpdateAccountsOfNewAndInformedNodes(const RTNode& new_node);
+  std::vector<NodeId> GetGroupMatrix(const NodeId& node_id);
 
   std::fstream out_file;
   std::vector<RTNode> nodes_;
   std::vector<NodeId> accounts_;
 };
 
+//void Network::Add(const NodeId& node_id) {
+//  auto node = MakeNode(node_id);
+//  UpdateNetwork(node);
+//  UpdateAccounts(node);
+//  nodes_.push_back(node);
+//  PruneNetwork();
+//  PruneAccounts(node.node_id);
+//  LOG(kInfo) << "Added NodeId : " << DebugId(node_id);
+//}
+
 void Network::Add(const NodeId& node_id) {
   auto node = MakeNode(node_id);
   UpdateNetwork(node);
-  UpdateAccounts(node);
   nodes_.push_back(node);
   PruneNetwork();
-  PruneAccounts(node.node_id);
   LOG(kInfo) << "Added NodeId : " << DebugId(node_id);
+  UpdateAccountsOfNewAndInformedNodes(node); // add/remove accounts to new node from nodes who noticed new node
 }
 
 RTNode Network::MakeNode(const NodeId &node_id) {
@@ -96,67 +112,261 @@ void Network::UpdateNetwork(const RTNode& new_node) {
   }
 }
 
-void Network::UpdateAccounts(RTNode& new_node) {
-  std::vector<NodeId> node_ids;
-  std::vector<RTNode> rt_nodes;
-  size_t close_nodes_size;
-  PartialSortFromTarget(new_node.node_id, 8);
-  for (size_t i = 0; (i < 8) && i < nodes_.size(); ++i) {
-    if (std::find(node_ids.begin(), node_ids.end(), nodes_[i].node_id) == node_ids.end()) {
-      node_ids.push_back(nodes_[i].node_id);
-    }
-    close_nodes_size = std::min(size_t(8), nodes_[i].close_nodes.size());
-    for (auto itr(nodes_[i].close_nodes.begin()); itr != nodes_[i].close_nodes.begin() + close_nodes_size; ++itr) {
-      if (std::find(node_ids.begin(), node_ids.end(), *itr) == node_ids.end() &&
-          (*itr != new_node.node_id)) {
-        node_ids.push_back(*itr);
-      }
-    }
-  }
+void Network::UpdateAccountsOfNewAndInformedNodes(const RTNode& new_node) {
+  // find nodes who noticed new node
+  for (auto node : nodes_) {
+    auto informed_node_group_matrix(GetGroupMatrix(node.node_id));
 
-  for (auto& node_id : node_ids) {
-    auto itr(std::find_if(nodes_.begin(),
-                          nodes_.end(),
-                          [node_id] (const RTNode& rt_node) {
-                            return rt_node.node_id == node_id;
-                          }));
-    assert(itr != nodes_.end());
-    rt_nodes.push_back(*itr);
-  }
-
-  std::vector<NodeId> accounts;
-  for (auto& node : rt_nodes) {
-    accounts = node.accounts;
-    for (auto& account : accounts) {
-      if (IsResponsibleForAccountMatrix(new_node, account, node_ids)) {
-         if (std::find(new_node.accounts.begin(),
-                       new_node.accounts.end(),
-                       account) == new_node.accounts.end()) {
-           new_node.accounts.push_back(account);
-           LOG(kInfo) << DebugId(new_node.node_id) << " << added account >>" << DebugId(account);
-         }
-//         RemoveAccount(node, account);
-      }
+    if(std::find(informed_node_group_matrix.begin(),
+                 informed_node_group_matrix.end(),
+                 new_node.node_id) != informed_node_group_matrix.end()) {
+      // transfer account
+      if (node.node_id != new_node.node_id)
+        TransferAndDeleteAccountFromInformedNodes(node.node_id, new_node.node_id, informed_node_group_matrix);
     }
   }
 }
 
+void Network::TransferAndDeleteAccountFromInformedNodes(
+    const NodeId& informed_node_id,
+    const NodeId& new_node_id,
+    std::vector<NodeId>& informed_node_group_matrix) {
+// find informed node
+  auto informed_node = std::find_if(nodes_.begin(), nodes_.end(),
+                                  [informed_node_id](const RTNode& rt_node) {
+                                    return (rt_node.node_id == informed_node_id);
+                                  });
+  assert(informed_node != nodes_.end());
 
-bool Network::IsResponsibleForAccountMatrix(const RTNode& node, const NodeId& account,
-                                            std::vector<NodeId>& node_ids) {
-  if (node_ids.size() < 4)
-    return true;
-  std::sort(node_ids.begin(), node_ids.end(), [account](const NodeId& lhs, const NodeId& rhs) {
-                                                return NodeId::CloserToTarget(lhs, rhs, account);
-                                              });
-  return NodeId::CloserToTarget(node.node_id, node_ids[3], account);
+  std::vector<NodeId> accounts_to_delete;
+// Sort matrix per account
+  for (auto& account : informed_node->accounts) {
+    std::sort(informed_node_group_matrix.begin(), informed_node_group_matrix.end(),
+             [account](const NodeId& lhs, const NodeId& rhs) {
+               return NodeId::CloserToTarget(lhs, rhs, account);
+             });
+    bool delete_account(true);
+    std::vector<NodeId> closest_holders;
+    for (auto i(0U); (i < informed_node_group_matrix.size() && i < 4); ++i) {
+      // transfer account if needed
+      if (informed_node_group_matrix.at(i) == new_node_id) {
+        TransferAccount(new_node_id, account);
+      }
+      if (informed_node_group_matrix.at(i) == informed_node_id) {
+        delete_account = false;
+      }
+      closest_holders.push_back(informed_node_group_matrix.at(i));
+    }
+
+    // Delete account if not responsible any more
+    if (delete_account) {
+      std::string holders_string;
+      for (auto i : closest_holders)
+        holders_string = holders_string + "  " + DebugId(i) + "  ";
+      accounts_to_delete.push_back(account);
+      LOG(kInfo) << "DeleteAccount needed for " << DebugId(informed_node_id)
+                 << ",  account " << DebugId(account) << "Holders : \n" << holders_string;
+    }
+  }
+
+  for (auto account : accounts_to_delete) {
+    DeleteAccount(informed_node_id, account);
+  }
 }
 
-bool Network::IsResponsibleForAccount(const RTNode& node, const NodeId& account) {
+void Network::TransferAccount(const NodeId& new_node_id, const NodeId& account) {
+  LOG(kInfo) << "TransferAccount called for " << DebugId(new_node_id) << "for account : "
+             << DebugId(account);
+  auto new_node(std::find_if(nodes_.begin(), nodes_.end(), [new_node_id](const RTNode& rt_node) {
+                                               return (rt_node.node_id == new_node_id);
+                                            }));
+  assert(new_node != nodes_.end());
+  if (std::find(new_node->accounts.begin(), new_node->accounts.end(), account)
+      == new_node->accounts.end()) {
+    new_node->accounts.push_back(account);
+  }
+}
+
+void Network::DeleteAccount(const NodeId& node_id, const NodeId& account) {
+  auto node(std::find_if(nodes_.begin(), nodes_.end(), [node_id](const RTNode& rt_node) {
+                                               return (rt_node.node_id == node_id);
+                                            }));
+  assert(node != nodes_.end());
+  node->accounts.erase(std::remove(node->accounts.begin(), node->accounts.end(), account));
+}
+
+std::vector<NodeId> Network::GetGroupMatrix(const NodeId& node_id) {
+  std::vector<NodeId> return_nodes;
+  std::vector<RTNode> nodes_copy = nodes_;
+  auto itr(std::find_if(nodes_copy.begin(), nodes_copy.end(), [node_id](const RTNode& rt_node) {
+                                                         return (rt_node.node_id == node_id);
+                                                      }));
+  assert(itr != nodes_copy.end());
+  RTNode node = *itr;
+  std::sort(node.close_nodes.begin(), node.close_nodes.end(),
+            [node](const NodeId& lhs, const NodeId& rhs) {
+              return NodeId::CloserToTarget(lhs, rhs, node.node_id);
+            });
+  auto count = std::min(size_t(8), node.close_nodes.size());
+  for (auto i(0U); i != count; ++i) {
+    return_nodes.push_back(node.close_nodes.at(i));
+  }
+
+  auto return_vector_copy(return_nodes);
+  for (auto i: return_vector_copy) {
+    PartialSortFromTarget(i, 9, nodes_copy);
+    for (size_t i(1); (i < 9) && i < nodes_copy.size(); ++i) {
+      return_nodes.push_back(nodes_copy.at(i).node_id);
+    }
+  }
+
+  std::set<NodeId> return_set;
+  for (auto i : return_nodes)
+    return_set.insert(i);
+  return_set.insert(node_id);
+
+  return_nodes.clear();
+  for (auto i : return_set)
+    return_nodes.push_back(i);
+  std::string str;
+  for (auto i : return_nodes)
+    str += " " + DebugId(i) + ", ";
+  LOG(kInfo) << "Group matrix of " << DebugId(node_id) << " size " <<  return_nodes.size()
+             << " elements : \n " << str;
+  return return_nodes;
+}
+
+//void Network::UpdateAccounts(RTNode& new_node) {
+//  std::vector<NodeId> node_ids;
+//  std::vector<RTNode> rt_nodes;
+//  size_t close_nodes_size;
+//  PartialSortFromTarget(new_node.node_id, 8);
+//  for (size_t i = 0; (i < 8) && i < nodes_.size(); ++i) {
+//    if (std::find(node_ids.begin(), node_ids.end(), nodes_[i].node_id) == node_ids.end()) {
+//      node_ids.push_back(nodes_[i].node_id);
+//    }
+//    close_nodes_size = std::min(size_t(8), nodes_[i].close_nodes.size());
+//    for (auto itr(nodes_[i].close_nodes.begin()); itr != nodes_[i].close_nodes.begin() + close_nodes_size; ++itr) {
+//      if (std::find(node_ids.begin(), node_ids.end(), *itr) == node_ids.end() &&
+//          (*itr != new_node.node_id)) {
+//        node_ids.push_back(*itr);
+//      }
+//    }
+//  }
+
+//  for (auto& node_id : node_ids) {
+//    auto itr(std::find_if(nodes_.begin(),
+//                          nodes_.end(),
+//                          [node_id] (const RTNode& rt_node) {
+//                            return rt_node.node_id == node_id;
+//                          }));
+//    assert(itr != nodes_.end());
+//    rt_nodes.push_back(*itr);
+//  }
+
+//  std::vector<NodeId> accounts;
+//  for (auto& node : rt_nodes) {
+//    accounts = node.accounts;
+//    for (auto& account : accounts) {
+//      if (IsResponsibleForAccountMatrix(new_node, account, node_ids)) {
+//         if (std::find(new_node.accounts.begin(),
+//                       new_node.accounts.end(),
+//                       account) == new_node.accounts.end()) {
+//           new_node.accounts.push_back(account);
+//           LOG(kInfo) << DebugId(new_node.node_id) << " << added account >>" << DebugId(account);
+//         }
+////         RemoveAccount(node, account);
+//      }
+//    }
+//  }
+//}
+
+
+//bool Network::IsResponsibleForAccountMatrix(const RTNode& node, const NodeId& account,
+//                                            std::vector<NodeId>& node_ids) {
+//  if (node_ids.size() < 4)
+//    return true;
+//  std::sort(node_ids.begin(), node_ids.end(), [account](const NodeId& lhs, const NodeId& rhs) {
+//                                                return NodeId::CloserToTarget(lhs, rhs, account);
+//                                              });
+//  return NodeId::CloserToTarget(node.node_id, node_ids[3], account);
+//}
+
+//bool Network::IsResponsibleForAccount(const RTNode& node, const NodeId& account) {
+//  uint16_t count(PartialSortFromTarget(account, 4));
+//  if (count < 4)
+//    return true;
+//  return NodeId::CloserToTarget(node.node_id, nodes_[3].node_id, account);
+//}
+
+
+
+void Network::AddAccount(const NodeId& account) {
   uint16_t count(PartialSortFromTarget(account, 4));
-  if (count < 4)
-    return true;
-  return NodeId::CloserToTarget(node.node_id, nodes_[3].node_id, account);
+  for (uint16_t index(0); index != count; ++index) {
+    nodes_.at(index).accounts.push_back(account);
+    LOG(kInfo) << "Adding account < " << DebugId(account) << " > to Node : "
+               << DebugId(nodes_.at(index).node_id);
+  }
+  accounts_.push_back(account);
+}
+
+//void Network::PruneAccounts(const NodeId& node_id) {
+//  std::vector<NodeId> matrix, accounts, node_ids;
+//  std::vector<RTNode> nodes;
+//  std::string log;
+//  node_ids = GetMatrix(node_id);
+
+//  for (auto& node : nodes_) {
+//    if (std::find(node_ids.begin(), node_ids.end(), node.node_id) == node_ids.end())
+//      continue;
+//    matrix = GetMatrix(node.node_id);
+//    if (matrix.size() < 4) {
+//      return;
+//    }
+////    if (nodes_.size() > 50 && matrix.size() <= 10) {
+////      LOG(kInfo) <<   "Error nodes_.size() > 50 ";
+////      log = DebugId(node.node_id);
+////      log += ", " + std::to_string(matrix.size()) + "\n";
+////      out_file << log;
+////      continue;
+////    }
+//    accounts = node.accounts;
+//    for (auto itr(accounts.begin()); itr != accounts.end(); ++itr) {
+//      std::sort(matrix.begin(),
+//                matrix.end(),
+//                [itr] (const NodeId& lhs, const NodeId& rhs) {
+//                  return NodeId::CloserToTarget(lhs, rhs, *itr);
+//                });
+//      if (NodeId::CloserToTarget(matrix[3], node.node_id, *itr)) {
+//        auto remove(std::find(node.accounts.begin(),
+//                              node.accounts.end(), *itr));
+//        assert(remove != node.accounts.end());
+//        node.accounts.erase(remove);
+//      }
+//    }
+//  }
+//}
+
+void Network::PruneNetwork() {
+  for (auto& node : nodes_) {
+    if (node.close_nodes.size() <= 8)
+      continue;
+    std::sort(node.close_nodes.begin(),
+              node.close_nodes.end(),
+              [node](const NodeId& lhs, const NodeId& rhs) {
+                return NodeId::CloserToTarget(lhs, rhs, node.node_id);
+              });
+    for (size_t index(8); index < node.close_nodes.size(); ++index) {
+      if (RemovePeer(node.close_nodes[index], node.node_id)) {
+          node.close_nodes.erase(std::remove(node.close_nodes.begin(),
+                                             node.close_nodes.end(),
+                                             node.close_nodes[index]), node.close_nodes.end());
+          LOG(kInfo) << DebugId(node.close_nodes[index])
+                     << " and " << DebugId(node.node_id) << " removed each other ";
+      }
+    }
+  }
 }
 
 bool Network::RemovePeer(const NodeId& node_id, const NodeId& requester) {
@@ -181,123 +391,54 @@ bool Network::RemovePeer(const NodeId& node_id, const NodeId& requester) {
   return false;
 }
 
-void Network::AddAccount(const NodeId& account) {
-  uint16_t count(PartialSortFromTarget(account, 4));
-  for (uint16_t index(0); index != count; ++index) {
-    nodes_.at(index).accounts.push_back(account);
-  }
-  accounts_.push_back(account);
-}
-
-void Network::PruneAccounts(const NodeId& node_id) {
-  std::vector<NodeId> matrix, accounts, node_ids;
-  std::vector<RTNode> nodes;
-  std::string log;
-  node_ids = GetMatrix(node_id);
-
-  for (auto& node : nodes_) {
-    if (std::find(node_ids.begin(), node_ids.end(), node.node_id) == node_ids.end())
-      continue;
-    matrix = GetMatrix(node.node_id);
-    if (matrix.size() < 4) {
-      return;
-    }
-//    if (nodes_.size() > 50 && matrix.size() <= 10) {
-//      LOG(kInfo) <<   "Error nodes_.size() > 50 ";
-//      log = DebugId(node.node_id);
-//      log += ", " + std::to_string(matrix.size()) + "\n";
-//      out_file << log;
-//      continue;
+//void Network::IdealUpdateAccounts(RTNode& new_node) {
+//  std::vector<NodeId> accounts;
+//  std::vector<RTNode> nodes;
+//  for (size_t i = 0; (i < 8) && i < nodes_.size(); ++i) {
+//    nodes.push_back(nodes_[i]);
+//  }
+//  for (auto& node : nodes) {
+//    accounts = node.accounts;
+//    for (auto& account : accounts) {
+//      if (IsResponsibleForAccount(new_node, account)) {
+//         if (std::find(new_node.accounts.begin(),
+//                  new_node.accounts.end(),
+//                  account) == new_node.accounts.end())
+//            new_node.accounts.push_back(account);
+//          IdealRemoveAccount(account);
+//      }
 //    }
-    accounts = node.accounts;
-    for (auto itr(accounts.begin()); itr != accounts.end(); ++itr) {
-      std::sort(matrix.begin(),
-                matrix.end(),
-                [itr] (const NodeId& lhs, const NodeId& rhs) {
-                  return NodeId::CloserToTarget(lhs, rhs, *itr);
-                });
-      if (NodeId::CloserToTarget(matrix[3], node.node_id, *itr)) {
-        auto remove(std::find(node.accounts.begin(),
-                              node.accounts.end(), *itr));
-        assert(remove != node.accounts.end());
-        node.accounts.erase(remove);
-      }
-    }
-  }
-}
+//  }
+//}
 
-void Network::PruneNetwork() {
-  for (auto& node : nodes_) {
-    if (node.close_nodes.size() <= 8)
-      continue;
-    std::sort(node.close_nodes.begin(),
-              node.close_nodes.end(),
-              [node](const NodeId& lhs, const NodeId& rhs) {
-                return NodeId::CloserToTarget(lhs, rhs, node.node_id);
-              });
-    for (size_t index(8); index < node.close_nodes.size(); ++index) {
-      if (RemovePeer(node.close_nodes[index], node.node_id)) {
-          node.close_nodes.erase(std::remove(node.close_nodes.begin(),
-                                             node.close_nodes.end(),
-                                             node.close_nodes[index]), node.close_nodes.end());
-          LOG(kInfo) << DebugId(node.close_nodes[index])
-                     << " and " << DebugId(node.node_id) << " removed each other ";
-      }
-    }
-  }
-}
+//void Network::IdealRemoveAccount(const NodeId& account) {
+//  if (nodes_.size() > 3)
+//    nodes_[3].accounts.erase(std::remove_if(nodes_[3].accounts.begin(),
+//                                          nodes_[3].accounts.end(),
+//                                          [account] (const NodeId& node_id) {
+//                                            return (node_id == account);
+//                                          }), nodes_[3].accounts.end());
+//}
 
 
 
 
-void Network::IdealUpdateAccounts(RTNode& new_node) {
-  std::vector<NodeId> accounts;
-  std::vector<RTNode> nodes;
-  for (size_t i = 0; (i < 8) && i < nodes_.size(); ++i) {
-    nodes.push_back(nodes_[i]);
-  }
-  for (auto& node : nodes) {
-    accounts = node.accounts;
-    for (auto& account : accounts) {
-      if (IsResponsibleForAccount(new_node, account)) {
-         if (std::find(new_node.accounts.begin(),
-                  new_node.accounts.end(),
-                  account) == new_node.accounts.end())
-            new_node.accounts.push_back(account);
-          IdealRemoveAccount(account);
-      }
-    }
-  }
-}
-
-void Network::IdealRemoveAccount(const NodeId& account) {
-  if (nodes_.size() > 3)
-    nodes_[3].accounts.erase(std::remove_if(nodes_[3].accounts.begin(),
-                                          nodes_[3].accounts.end(),
-                                          [account] (const NodeId& node_id) {
-                                            return (node_id == account);
-                                          }), nodes_[3].accounts.end());
-}
-
-
-
-
-void Network::RemoveAccount(const RTNode& node, const NodeId& account) {
-  auto holder(std::find_if(nodes_.begin(),
-                           nodes_.end(),
-                           [node] (const RTNode& rt_node) {
-                             return (rt_node.node_id == node.node_id);
-                           }));
-  assert(holder != nodes_.end());
-  if (nodes_.size() > 3 && nodes_[3].node_id == holder->node_id) {
-    holder->accounts.erase(std::remove_if(holder->accounts.begin(),
-                                        holder->accounts.end(),
-                                        [account] (const NodeId& node_id) {
-                                          return (node_id == account);
-                                        }), holder->accounts.end());
-    LOG(kInfo) << DebugId(holder->node_id) << " removed account " << DebugId(account);
-  }
-}
+//void Network::RemoveAccount(const RTNode& node, const NodeId& account) {
+//  auto holder(std::find_if(nodes_.begin(),
+//                           nodes_.end(),
+//                           [node] (const RTNode& rt_node) {
+//                             return (rt_node.node_id == node.node_id);
+//                           }));
+//  assert(holder != nodes_.end());
+//  if (nodes_.size() > 3 && nodes_[3].node_id == holder->node_id) {
+//    holder->accounts.erase(std::remove_if(holder->accounts.begin(),
+//                                        holder->accounts.end(),
+//                                        [account] (const NodeId& node_id) {
+//                                          return (node_id == account);
+//                                        }), holder->accounts.end());
+//    LOG(kInfo) << DebugId(holder->node_id) << " removed account " << DebugId(account);
+//  }
+//}
 
 uint16_t Network::PartialSortFromTarget(const NodeId& target, uint16_t number) {
   uint16_t count = std::min(number, static_cast<uint16_t>(nodes_.size()));
@@ -322,40 +463,40 @@ uint16_t Network::PartialSortFromTarget(const NodeId& target, uint16_t number,
   return count;
 }
 
-std::vector<NodeId> Network::GetMatrix(const NodeId& node_id) {
-  auto nodes_copy = nodes_;
+//std::vector<NodeId> Network::GetMatrix(const NodeId& node_id) {
+//  auto nodes_copy = nodes_;
 
-  PartialSortFromTarget(node_id, 9, nodes_copy);
-  std::vector<NodeId> return_nodes;
-  NodeId local_id;
-  size_t size;
-  for (size_t i = 1; (i < 9) && i < nodes_copy.size(); ++i) {
-      if (std::find(return_nodes.begin(),
-                    return_nodes.end(),
-                    nodes_copy[i].node_id) == return_nodes.end()) {
-        return_nodes.push_back(nodes_copy[i].node_id);
-      }
-    local_id = (nodes_copy[i].node_id);
-    std::sort(nodes_copy[i].close_nodes.begin(),
-              nodes_copy[i].close_nodes.end(),
-              [local_id] (const NodeId& lhs, const NodeId& rhs) {
-                return NodeId::CloserToTarget(lhs, rhs, local_id);
-              });
-    size = std::min(size_t(8), nodes_copy[i].close_nodes.size());
-    for (auto itr(nodes_copy[i].close_nodes.begin());
-         itr != nodes_copy[i].close_nodes.begin() + size;
-         ++itr) {
-//      if (*itr == node_id)
-//        continue;
-      if (std::find(return_nodes.begin(), return_nodes.end(), *itr) == return_nodes.end()) {
-        return_nodes.push_back(*itr);
-      }
-    }
-  }
+//  PartialSortFromTarget(node_id, 9, nodes_copy);
+//  std::vector<NodeId> return_nodes;
+//  NodeId local_id;
+//  size_t size;
+//  for (size_t i = 1; (i < 9) && i < nodes_copy.size(); ++i) {
+//      if (std::find(return_nodes.begin(),
+//                    return_nodes.end(),
+//                    nodes_copy[i].node_id) == return_nodes.end()) {
+//        return_nodes.push_back(nodes_copy[i].node_id);
+//      }
+//    local_id = (nodes_copy[i].node_id);
+//    std::sort(nodes_copy[i].close_nodes.begin(),
+//              nodes_copy[i].close_nodes.end(),
+//              [local_id] (const NodeId& lhs, const NodeId& rhs) {
+//                return NodeId::CloserToTarget(lhs, rhs, local_id);
+//              });
+//    size = std::min(size_t(8), nodes_copy[i].close_nodes.size());
+//    for (auto itr(nodes_copy[i].close_nodes.begin());
+//         itr != nodes_copy[i].close_nodes.begin() + size;
+//         ++itr) {
+////      if (*itr == node_id)
+////        continue;
+//      if (std::find(return_nodes.begin(), return_nodes.end(), *itr) == return_nodes.end()) {
+//        return_nodes.push_back(*itr);
+//      }
+//    }
+//  }
 
-  return_nodes.erase(std::remove(return_nodes.begin(), return_nodes.end(), node_id), return_nodes.end());
-  return return_nodes;
-}
+//  return_nodes.erase(std::remove(return_nodes.begin(), return_nodes.end(), node_id), return_nodes.end());
+//  return return_nodes;
+//}
 
 
 bool Network::Validate() {
@@ -401,11 +542,11 @@ void Network::PrintNetworkInfo() {
 
 TEST(RoutingTableTest, BEH_RT) {
   Network network;
-  for (auto i(0); i != 500; ++i) {
+  for (auto i(0); i != 1000; ++i) {
+    LOG(kInfo) << "Iteration # " << i;
     network.Add(NodeId(NodeId::kRandomId));
     if (i % 5 == 0)
       network.AddAccount(NodeId(NodeId::kRandomId));
-    LOG(kInfo) << "Iteration # " << i;
   }
   network.PrintNetworkInfo();
   network.Validate();
