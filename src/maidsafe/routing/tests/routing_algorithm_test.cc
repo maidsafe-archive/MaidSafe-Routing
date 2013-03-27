@@ -33,9 +33,9 @@ namespace test {
 struct RTNode {
   explicit RTNode(const NodeId& node_id)
       : kNodeId(node_id),
-        close_nodes([node_id](const NodeId& id1, const NodeId& id2) {
+        close_nodes(new CloseNodes([node_id](const NodeId& id1, const NodeId& id2) {
                        return NodeId::CloserToTarget(id1, id2, node_id);
-                    }),
+                    })),
         accounts(),
         group_matrix() {}
   RTNode& operator=(RTNode&& other) {
@@ -46,10 +46,22 @@ struct RTNode {
     return *this;
   }
   const NodeId kNodeId;
-  std::set<NodeId, std::function<bool(const NodeId&, const NodeId&)>> close_nodes;
+  typedef std::set<NodeId, std::function<bool(const NodeId&, const NodeId&)> > CloseNodes;
+  std::shared_ptr<CloseNodes> close_nodes;
   std::vector<NodeId> accounts;
-  std::vector<NodeId> group_matrix;
+  std::map<NodeId, std::shared_ptr<CloseNodes> > group_matrix;
+  std::vector<NodeId> GetGroupMatrix() const;
 };
+
+std::vector<NodeId> RTNode::GetGroupMatrix() const {
+  std::set<NodeId> matrix_set;
+  for (auto itr(close_nodes->begin()); itr != close_nodes->end(); ++itr)
+    matrix_set.insert(group_matrix.at(*itr)->begin(), group_matrix.at(*itr)->end());
+  std::vector<NodeId> matrix_vector;
+  for (auto& element : matrix_set)
+    matrix_vector.push_back(element);
+  return matrix_vector;
+}
 
 class Network {
  public:
@@ -61,7 +73,7 @@ class Network {
   void AddAccount(const NodeId& account);
 
   void PruneNetwork();
-  void PruneAccounts(const NodeId& node_id);
+//  void PruneAccounts(const NodeId& node_id);
   bool RemovePeer(const NodeId& node_id, const NodeId& requester);
   RTNode MakeNode(const NodeId& node_id);
   void UpdateNetwork(RTNode& new_node);
@@ -85,7 +97,6 @@ class Network {
   void TransferAccount(const NodeId& new_node_id, const NodeId& account);
   void DeleteAccount(const NodeId& node_id, const NodeId& account);
   void UpdateAccountsOfNewAndInformedNodes(const RTNode& new_node);
-  std::vector<NodeId> GetGroupMatrix(const NodeId& node_id);
 
   std::fstream out_file;
   std::vector<RTNode> nodes_;
@@ -107,9 +118,11 @@ RTNode Network::MakeNode(const NodeId &node_id) {
   RTNode node(node_id);
   std::string message(DebugId(node.kNodeId) + " added");
   for (size_t i = 0; (i < 8) && i < nodes_.size(); ++i) {
-    node.close_nodes.insert(nodes_[i].kNodeId);
+    node.close_nodes->insert(nodes_[i].kNodeId);
+    node.group_matrix[nodes_[i].kNodeId] = nodes_[i].close_nodes;
     message += "   " + DebugId(nodes_[i].kNodeId);
-    nodes_[i].close_nodes.insert(node.kNodeId);
+    nodes_[i].close_nodes->insert(node.kNodeId);
+    nodes_[i].group_matrix[node.kNodeId] = node.close_nodes;
   }
   LOG(kInfo) << message;
   return node;
@@ -118,12 +131,14 @@ RTNode Network::MakeNode(const NodeId &node_id) {
 void Network::UpdateNetwork(RTNode& new_node) {
   for (size_t index(8); index < nodes_.size(); ++index) {
     const NodeId& node_id = nodes_[index].kNodeId;
-    auto eighth_closest(std::begin(nodes_[index].close_nodes));
+    auto eighth_closest(nodes_[index].close_nodes->begin());
     std::advance(eighth_closest, 7);
     if (NodeId::CloserToTarget(new_node.kNodeId, *eighth_closest, node_id)) {
       LOG(kVerbose) << DebugId(node_id) << " network added " << DebugId(new_node.kNodeId);
-      new_node.close_nodes.insert(node_id);
-      nodes_[index].close_nodes.insert(new_node.kNodeId);
+      new_node.close_nodes->insert(node_id);
+      new_node.group_matrix[nodes_[index].kNodeId] = nodes_[index].close_nodes;
+      nodes_[index].close_nodes->insert(new_node.kNodeId);
+      nodes_[index].group_matrix[new_node.kNodeId] = new_node.close_nodes;
     }
   }
 }
@@ -131,7 +146,7 @@ void Network::UpdateNetwork(RTNode& new_node) {
 void Network::UpdateAccountsOfNewAndInformedNodes(const RTNode& new_node) {
   // find nodes who noticed new node
   for (const auto& node : nodes_) {
-    auto informed_node_group_matrix(GetGroupMatrix(node.kNodeId));
+    auto informed_node_group_matrix(node.GetGroupMatrix());
 
     if (std::find(informed_node_group_matrix.begin(),
                   informed_node_group_matrix.end(),
@@ -212,33 +227,6 @@ void Network::DeleteAccount(const NodeId& node_id, const NodeId& account) {
   node->accounts.erase(std::remove(node->accounts.begin(), node->accounts.end(), account));
 }
 
-std::vector<NodeId> Network::GetGroupMatrix(const NodeId& node_id) {
-  std::set<NodeId> return_set;
-  auto node(std::find_if(nodes_.begin(),
-                         nodes_.end(),
-                         [&node_id] (const RTNode& rt_node) {
-                           return rt_node.kNodeId == node_id;
-                         }));
-  for (const auto& close_node : node->close_nodes)
-    return_set.insert(close_node);
-
-  std::set<NodeId> tmp_set;
-  for (const auto& close_node : return_set) {
-    auto tmp_node(std::find_if(nodes_.begin(),
-                               nodes_.end(),
-                               [&close_node] (const RTNode& rt_node) {
-                                 return rt_node.kNodeId == close_node;
-                               }));
-    tmp_set.insert(tmp_node->close_nodes.begin(), tmp_node->close_nodes.end());
-  }
-  return_set.insert(tmp_set.begin(), tmp_set.end());
-  return_set.insert(node_id);
-  std::vector<NodeId> return_nodes;
-  for (const auto& set_node : return_set)
-    return_nodes.push_back(set_node);
-  return return_nodes;
-}
-
 void Network::AddAccount(const NodeId& account) {
   uint16_t count(PartialSortFromTarget(account, 4));
   for (uint16_t index(0); index != count; ++index) {
@@ -251,14 +239,14 @@ void Network::AddAccount(const NodeId& account) {
 
 void Network::PruneNetwork() {
   for (auto& node : nodes_) {
-    if (node.close_nodes.size() <= 8)
+    if (node.close_nodes->size() <= 8)
       continue;
-    auto itr(std::begin(node.close_nodes));
+    auto itr(node.close_nodes->begin());
     std::advance(itr, 8);
-    while (itr != std::end(node.close_nodes))  {
+    while (itr != node.close_nodes->end())  {
       if (RemovePeer(*itr, node.kNodeId)) {
         LOG(kInfo) << DebugId(*itr) << " and " << DebugId(node.kNodeId) << " removed each other";
-        itr = node.close_nodes.erase(itr);
+        itr = node.close_nodes->erase(itr);
       } else {
         ++itr;
       }
@@ -272,10 +260,10 @@ bool Network::RemovePeer(const NodeId& node_id, const NodeId& requester) {
                          [&node_id] (const RTNode& rt_node) {
                            return (rt_node.kNodeId == node_id);
                          }));
-  auto peer_itr(node->close_nodes.find(requester));
-  if (std::distance(node->close_nodes.begin(), peer_itr) > 8) {
+  auto peer_itr(node->close_nodes->find(requester));
+  if (std::distance(node->close_nodes->begin(), peer_itr) > 8) {
     LOG(kVerbose) << DebugId(node->kNodeId) << " removes peer " << DebugId(*peer_itr);
-    node->close_nodes.erase(peer_itr);
+    node->close_nodes->erase(peer_itr);
     return true;
   }
   return false;
@@ -337,16 +325,16 @@ void Network::PrintNetworkInfo() {
   std::vector<RTNode> rt_nodes(nodes_);
 
   for (const auto& node : rt_nodes) {
-    matrix = GetGroupMatrix(node.kNodeId);
+    matrix = node.GetGroupMatrix();
     LOG(kInfo) << "Size of matrix for: " << DebugId(node.kNodeId) << " is " << matrix.size();
     min_matrix_size = std::min(min_matrix_size, matrix.size());
     max_matrix_size = std::max(max_matrix_size, matrix.size());
     avg_matrix_size += matrix.size();
     LOG(kInfo) <<  DebugId(node.kNodeId)
-                << ", closests: " << node.close_nodes.size()
+                << ", closests: " << node.close_nodes->size()
                 << ", accounts: " << node.accounts.size();
-    max_close_nodes_size = std::max(max_close_nodes_size, node.close_nodes.size());
-    min_close_nodes_size = std::min(min_close_nodes_size, node.close_nodes.size());
+    max_close_nodes_size = std::max(max_close_nodes_size, node.close_nodes->size());
+    min_close_nodes_size = std::min(min_close_nodes_size, node.close_nodes->size());
     max_accounts_size = std::max(max_accounts_size, node.accounts.size());
   }
   group_matrix_miss = CheckGroupMatrixReliablity();
@@ -369,7 +357,7 @@ std::vector<size_t> Network::CheckGroupMatrixReliablity() {
   for (const auto& account : accounts_) {
     PartialSortFromTarget(account, 5);
     for (size_t node_index(0); node_index < 4; ++node_index) {
-      matrix = GetGroupMatrix(nodes_[node_index].kNodeId);
+      matrix = nodes_[node_index].GetGroupMatrix();
       for (size_t index(0); index < 4; ++index) {
         if (index == node_index)
           continue;
@@ -389,10 +377,10 @@ std::vector<size_t> Network::CheckGroupMatrixReliablity() {
 
 TEST(RoutingTableTest, BEH_RT) {
   Network network;
-  for (auto i(0); i != 2500; ++i) {
+  for (auto i(0); i != 1000; ++i) {
     LOG(kSuccess) << "Iteration # " << i << "  ===================================================";
     network.Add(NodeId(NodeId::kRandomId));
-//    if (i % 5 == 0)
+    for (auto i(0); i != 5 ; ++i)
       network.AddAccount(NodeId(NodeId::kRandomId));
   }
   network.PrintNetworkInfo();
