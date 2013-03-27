@@ -55,8 +55,10 @@ struct RTNode {
 
 std::vector<NodeId> RTNode::GetGroupMatrix() const {
   std::set<NodeId> matrix_set;
-  for (auto itr(close_nodes->begin()); itr != close_nodes->end(); ++itr)
+  for (auto itr(close_nodes->begin()); itr != close_nodes->end(); ++itr) {
+    matrix_set.insert(*itr);
     matrix_set.insert(group_matrix.at(*itr)->begin(), group_matrix.at(*itr)->end());
+  }
   std::vector<NodeId> matrix_vector;
   for (auto& element : matrix_set)
     matrix_vector.push_back(element);
@@ -166,7 +168,7 @@ void Network::TransferAndDeleteAccountFromInformedNodes(
 // find informed node
   auto informed_node = std::find_if(nodes_.begin(), nodes_.end(),
                                     [&informed_node_id](const RTNode& rt_node) {
-                                        return (rt_node.kNodeId == informed_node_id);
+                                      return (rt_node.kNodeId == informed_node_id);
                                     });
   assert(informed_node != nodes_.end());
 
@@ -297,21 +299,36 @@ bool Network::Validate() {
                                                   node.accounts.end(),
                                                   account) != node.accounts.end();
                   }));
-    if (count > 4) {
-      LOG(kError) << "Account " << DebugId(account) << " # of holders: " << count
-                  << "  index: " << index;
-    }
+
     std::sort(nodes_.begin(),
               nodes_.end(),
               [&account](const RTNode& lhs, const RTNode& rhs) {
                 return NodeId::CloserToTarget(lhs.kNodeId, rhs.kNodeId, account);
               });
-    if (count == 5)
-    LOG(kError) << DebugId(nodes_.at(4).kNodeId) <<  " Wrong holder of : " << DebugId(account);
-    for (auto itr(nodes_.begin()); itr != nodes_.begin() + 4; ++itr) {
+    for (auto itr(nodes_.begin());
+        itr != nodes_.begin() + std::min(size_t(4), nodes_.size());
+        ++itr) {
       EXPECT_NE(std::find(itr->accounts.begin(), itr->accounts.end(), account),
                 itr->accounts.end()) << "Node: " << DebugId(itr->kNodeId)
                                      << " does not have " << DebugId(account);
+    }
+
+   if (count > 4) {
+     LOG(kError) << "Account " << DebugId(account) << " # of holders: " << count
+                 << "  index: " << index;
+      std::vector<NodeId> matrix;
+      std::string matrix_string;
+      for (size_t index(0); index < count; ++index) {
+        matrix_string.clear();
+        if (index > 3)
+          matrix_string = "Matrix for invalid holder " + DebugId(nodes_[index].kNodeId) + " are:\n";
+        else
+          matrix_string = "Matrix for valid holder " + DebugId(nodes_[index].kNodeId) + " are:\n";
+        matrix = nodes_[index].GetGroupMatrix();
+        for (auto& element : matrix)
+          matrix_string += DebugId(element) + ",";
+        LOG(kInfo) << matrix_string;
+      }
     }
   }
   return true;
@@ -358,7 +375,7 @@ std::vector<size_t> Network::CheckGroupMatrixReliablity() {
     PartialSortFromTarget(account, 5);
     for (size_t node_index(0); node_index < 4; ++node_index) {
       matrix = nodes_[node_index].GetGroupMatrix();
-      for (size_t index(0); index < 4; ++index) {
+      for (size_t index(0); index < std::min(size_t(4), matrix.size()); ++index) {
         if (index == node_index)
           continue;
         if (std::find(matrix.begin(),
@@ -377,10 +394,10 @@ std::vector<size_t> Network::CheckGroupMatrixReliablity() {
 
 TEST(RoutingTableTest, BEH_RT) {
   Network network;
-  for (auto i(0); i != 1000; ++i) {
+  for (auto i(0); i != 20000; ++i) {
     LOG(kSuccess) << "Iteration # " << i << "  ===================================================";
     network.Add(NodeId(NodeId::kRandomId));
-    for (auto i(0); i != 5 ; ++i)
+    for (auto i(0); i != 1 ; ++i)
       network.AddAccount(NodeId(NodeId::kRandomId));
   }
   network.PrintNetworkInfo();
