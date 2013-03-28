@@ -47,6 +47,7 @@ struct RTNode {
   }
   const NodeId kNodeId;
   typedef std::set<NodeId, std::function<bool(const NodeId&, const NodeId&)> > CloseNodes;
+  typedef std::set<RTNode, std::function<bool(const RTNode&, const RTNode&)> > CloseRTNodes;
   std::shared_ptr<CloseNodes> close_nodes;
   std::vector<NodeId> accounts;
   std::map<NodeId, std::shared_ptr<CloseNodes> > group_matrix;
@@ -75,7 +76,7 @@ class Network {
   void AddAccount(const NodeId& account);
 
   void PruneNetwork();
-//  void PruneAccounts(const NodeId& node_id);
+  void PruneAllAccounts();
   bool RemovePeer(const NodeId& node_id, const NodeId& requester);
   RTNode MakeNode(const NodeId& node_id);
   void UpdateNetwork(RTNode& new_node);
@@ -99,32 +100,75 @@ class Network {
   void TransferAccount(const NodeId& new_node_id, const NodeId& account);
   void DeleteAccount(const NodeId& node_id, const NodeId& account);
   void UpdateAccountsOfNewAndInformedNodes(const RTNode& new_node);
-  std::vector<RTNode> GetClosestNodes(std::vector<RTNode>& closest_nodes, const NodeId& node_id);
+  RTNode::CloseRTNodes GetClosestRTNodes(RTNode::CloseRTNodes& closest_nodes,
+                                         const NodeId& node_id);
+  std::vector<NodeId> GetClosestNodes(const NodeId& node_id);
 
   std::fstream out_file;
   std::vector<RTNode> nodes_;
   std::vector<NodeId> accounts_;
 };
 
+void Network::PruneAllAccounts() {
+  std::vector<NodeId> matrix;
+  for (auto& node : nodes_) {
+    matrix = node.GetGroupMatrix();
+    std::vector<NodeId> accounts_to_delete;
+    for (auto& account : node.accounts) {
+      std::partial_sort(matrix.begin(),
+                        matrix.begin() + 4,
+                        matrix.end(),
+                        [account] (const NodeId& lhs, const NodeId& rhs) {
+                          return NodeId::CloserToTarget(lhs, rhs, account);
+                        });
+      if (NodeId::CloserToTarget(matrix[3], node.kNodeId, account))
+        accounts_to_delete.push_back(account);
+    }
+    for (auto account : accounts_to_delete) {
+      LOG(kInfo) << DebugId(node.kNodeId) << " PruneAllAccounts " << DebugId(account);
+      node.accounts.erase(std::remove(node.accounts.begin(),
+                                      node.accounts.end(),
+                                      account), node.accounts.end());
+    }
+  }
+}
 
-std::vector<RTNode> Network::GetClosestNodes(std::vector<RTNode>& closest_nodes,
+
+std::vector<NodeId> Network::GetClosestNodes(const NodeId& node_id) {
+  RTNode::CloseRTNodes close_rt_nodes([node_id] (const RTNode& lhs, const RTNode& rhs) {
+                                        return NodeId::CloserToTarget(lhs.kNodeId,
+                                                                      rhs.kNodeId,
+                                                                      node_id);
+                                      });
+  auto return_closest_rts(GetClosestRTNodes(close_rt_nodes, node_id));
+  std::vector<NodeId> closest_node_ids;
+  auto eight_itr(return_closest_rts.begin());
+  std::advance(eight_itr, std::min(size_t(8), nodes_.size()));
+  for (auto itr(return_closest_rts.begin()); itr != eight_itr; ++itr)
+    closest_node_ids.push_back(itr->kNodeId);
+  return closest_node_ids;
+}
+
+RTNode::CloseRTNodes Network::GetClosestRTNodes(RTNode::CloseRTNodes& closest_nodes,
                                              const NodeId& node_id) {
+  if (nodes_.empty())
+    return RTNode::CloseRTNodes();
   if (closest_nodes.empty()) {
     PartialSortFromTarget(node_id, 1);
-    closest_nodes.push_back(nodes_[0]);
-    return GetClosestNodes(closest_nodes, node_id);
+    closest_nodes.insert(nodes_[0]);
+    return GetClosestRTNodes(closest_nodes, node_id);
   }
   if (closest_nodes.size() == 1) {
     std::vector<NodeId> node_ids;
-    node_ids = closest_nodes[0].GetGroupMatrix();
+    node_ids = closest_nodes.begin()->GetGroupMatrix();
     std::partial_sort(node_ids.begin(),
-                      node_ids.begin() + std::min(size_t(7), nodes_.size()),
+                      node_ids.begin() + std::min(size_t(8), nodes_.size()),
                       node_ids.end(),
                       [node_id] (const NodeId& lhs, const NodeId& rhs) {
                         return NodeId::CloserToTarget(lhs, rhs, node_id);
                       });
-    for (auto outer_iter(node_ids.begin());
-         outer_iter != node_ids.begin() + std::min(size_t(7), nodes_.size());
+    for (auto outer_iter(node_ids.begin() + 1);
+         outer_iter != node_ids.begin() + std::min(size_t(8), nodes_.size());
          ++outer_iter) {
       NodeId id(*outer_iter);
       auto node_itr(std::find_if(nodes_.begin(),
@@ -133,55 +177,41 @@ std::vector<RTNode> Network::GetClosestNodes(std::vector<RTNode>& closest_nodes,
                                   return node.kNodeId == id;
                                 }));
       assert(node_itr != nodes_.end());
-      closest_nodes.push_back(*node_itr);
+      closest_nodes.insert(*node_itr);
     }
-    if (closest_nodes.size() == 1)
+    if ((closest_nodes.size() == 1) || (nodes_.size() <= 8))
       return closest_nodes;
-    return GetClosestNodes(closest_nodes, node_id);
+    return GetClosestRTNodes(closest_nodes, node_id);
   }
   size_t initial_size(closest_nodes.size());
-  std::partial_sort(closest_nodes.begin(),
-                    closest_nodes.begin() + 1,
-                    closest_nodes.end(),
-                    [node_id] (const RTNode& lhs, const RTNode& rhs) {
-                      return NodeId::CloserToTarget(rhs.kNodeId, lhs.kNodeId, node_id);
-                    });
-  auto furthest_node(closest_nodes[0].kNodeId);
+  auto furthest_node(closest_nodes.rbegin());
   std::vector<NodeId> matrix;
   for (auto& close_node : closest_nodes) {
     matrix = close_node.GetGroupMatrix();
     for (auto& element : matrix) {
-      if (NodeId::CloserToTarget(element, furthest_node, node_id) &&
-              (std::find_if(closest_nodes.begin(),
-                            closest_nodes.end(),
-                            [element] (const RTNode& rt_node) {
-                              return rt_node.kNodeId == element;
-                            }) == closest_nodes.end())) {
+      if (NodeId::CloserToTarget(element, furthest_node->kNodeId, node_id)) {
           auto node_itr(std::find_if(nodes_.begin(),
                                     nodes_.end(),
                                     [element] (const RTNode& node) {
                                       return node.kNodeId == element;
                                     }));
           assert(node_itr != nodes_.end());
-          closest_nodes.push_back(*node_itr);
+          closest_nodes.insert(*node_itr);
       }
     }
   }
-  if (closest_nodes.size() == initial_size) {
-    std::partial_sort(closest_nodes.begin(),
-                      closest_nodes.begin() + std::min(size_t(8), nodes_.size()),
-                      closest_nodes.end(),
-                      [node_id] (const RTNode& lhs, const RTNode& rhs) {
-                        return NodeId::CloserToTarget(lhs.kNodeId, rhs.kNodeId, node_id);
-                      });
-    return std::vector<RTNode>(closest_nodes.begin(),
-                               closest_nodes.begin() + std::min(size_t(8), nodes_.size()));
-  }
-  return GetClosestNodes(closest_nodes, node_id);
+  if (closest_nodes.size() == initial_size)
+    return closest_nodes;
+  return GetClosestRTNodes(closest_nodes, node_id);
 }
 
 void Network::Add(const NodeId& node_id) {
+//  auto routing_closest_nodes(GetClosestNodes(node_id));
   auto node = MakeNode(node_id);
+//  for (auto routing_closest_node : routing_closest_nodes)
+//    EXPECT_NE(std::find(node.close_nodes->begin(),
+//                        node.close_nodes->end(),
+//                        routing_closest_node), node.close_nodes->end());
   UpdateNetwork(node);
   nodes_.push_back(node);
   PruneNetwork();
@@ -191,6 +221,7 @@ void Network::Add(const NodeId& node_id) {
 }
 
 RTNode Network::MakeNode(const NodeId &node_id) {
+//  auto eight_closest(GetClosestNodes());
   PartialSortFromTarget(node_id, 8);
   RTNode node(node_id);
   std::string message(DebugId(node.kNodeId) + " added");
@@ -392,17 +423,28 @@ bool Network::Validate() {
       LOG(kError) << "Account " << DebugId(account) << " # of holders: " << count
                   << "  index: " << index;
       std::vector<NodeId> matrix;
-      std::string matrix_string;
+      std::string matrix_string, close_nodes_string;
       for (size_t index(0); index < count; ++index) {
         matrix_string.clear();
-        if (index > 3)
+        close_nodes_string.clear();
+        if (index > 3) {
           matrix_string = "Matrix for invalid holder " + DebugId(nodes_[index].kNodeId) + " are:\n";
-        else
+          close_nodes_string = "Close nodes for invalid holder " + DebugId(nodes_[index].kNodeId)
+              + " are:\n";
+        } else {
           matrix_string = "Matrix for valid holder " + DebugId(nodes_[index].kNodeId) + " are:\n";
+          close_nodes_string = "Close nodes for valid holder " + DebugId(nodes_[index].kNodeId)
+              + " are:\n";
+        }
         matrix = nodes_[index].GetGroupMatrix();
         for (auto& element : matrix)
           matrix_string += DebugId(element) + ",";
+        for (auto itr(nodes_[index].close_nodes->begin());
+                      itr != nodes_[index].close_nodes->end();
+                      ++itr)
+          close_nodes_string += DebugId(*itr) + ", ";
         LOG(kInfo) << matrix_string;
+        LOG(kInfo) << close_nodes_string;
       }
     }
   }
@@ -467,15 +509,16 @@ std::vector<size_t> Network::CheckGroupMatrixReliablity() {
   return little_matrix;
 }
 
-TEST(RoutingTableTest, BEH_RT) {
+TEST(RoutingTableTest, FUNC_GroupMatrixReliability) {
   Network network;
-  for (auto i(0); i != 20000; ++i) {
+  for (auto i(0); i != 2500; ++i) {
     LOG(kSuccess) << "Iteration # " << i << "  ===================================================";
     network.Add(NodeId(NodeId::kRandomId));
     for (auto i(0); i != 1 ; ++i)
       network.AddAccount(NodeId(NodeId::kRandomId));
   }
   network.PrintNetworkInfo();
+  network.PruneAllAccounts();
   if (network.Validate())
     LOG(kSuccess) << "Validated.";
   else
