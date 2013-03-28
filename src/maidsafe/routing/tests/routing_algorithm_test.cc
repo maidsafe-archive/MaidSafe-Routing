@@ -99,11 +99,86 @@ class Network {
   void TransferAccount(const NodeId& new_node_id, const NodeId& account);
   void DeleteAccount(const NodeId& node_id, const NodeId& account);
   void UpdateAccountsOfNewAndInformedNodes(const RTNode& new_node);
+  std::vector<RTNode> GetClosestNodes(std::vector<RTNode>& closest_nodes, const NodeId& node_id);
 
   std::fstream out_file;
   std::vector<RTNode> nodes_;
   std::vector<NodeId> accounts_;
 };
+
+
+std::vector<RTNode> Network::GetClosestNodes(std::vector<RTNode>& closest_nodes,
+                                             const NodeId& node_id) {
+  if (closest_nodes.empty()) {
+    PartialSortFromTarget(node_id, 1);
+    closest_nodes.push_back(nodes_[0]);
+    return GetClosestNodes(closest_nodes, node_id);
+  }
+  if (closest_nodes.size() == 1) {
+    std::vector<NodeId> node_ids;
+    node_ids = closest_nodes[0].GetGroupMatrix();
+    std::partial_sort(node_ids.begin(),
+                      node_ids.begin() + std::min(size_t(7), nodes_.size()),
+                      node_ids.end(),
+                      [node_id] (const NodeId& lhs, const NodeId& rhs) {
+                        return NodeId::CloserToTarget(lhs, rhs, node_id);
+                      });
+    for (auto outer_iter(node_ids.begin());
+         outer_iter != node_ids.begin() + std::min(size_t(7), nodes_.size());
+         ++outer_iter) {
+      NodeId id(*outer_iter);
+      auto node_itr(std::find_if(nodes_.begin(),
+                                nodes_.end(),
+                                [id] (const RTNode& node) {
+                                  return node.kNodeId == id;
+                                }));
+      assert(node_itr != nodes_.end());
+      closest_nodes.push_back(*node_itr);
+    }
+    if (closest_nodes.size() == 1)
+      return closest_nodes;
+    return GetClosestNodes(closest_nodes, node_id);
+  }
+  size_t initial_size(closest_nodes.size());
+  std::partial_sort(closest_nodes.begin(),
+                    closest_nodes.begin() + 1,
+                    closest_nodes.end(),
+                    [node_id] (const RTNode& lhs, const RTNode& rhs) {
+                      return NodeId::CloserToTarget(rhs.kNodeId, lhs.kNodeId, node_id);
+                    });
+  auto furthest_node(closest_nodes[0].kNodeId);
+  std::vector<NodeId> matrix;
+  for (auto& close_node : closest_nodes) {
+    matrix = close_node.GetGroupMatrix();
+    for (auto& element : matrix) {
+      if (NodeId::CloserToTarget(element, furthest_node, node_id) &&
+              (std::find_if(closest_nodes.begin(),
+                            closest_nodes.end(),
+                            [element] (const RTNode& rt_node) {
+                              return rt_node.kNodeId == element;
+                            }) == closest_nodes.end())) {
+          auto node_itr(std::find_if(nodes_.begin(),
+                                    nodes_.end(),
+                                    [element] (const RTNode& node) {
+                                      return node.kNodeId == element;
+                                    }));
+          assert(node_itr != nodes_.end());
+          closest_nodes.push_back(*node_itr);
+      }
+    }
+  }
+  if (closest_nodes.size() == initial_size) {
+    std::partial_sort(closest_nodes.begin(),
+                      closest_nodes.begin() + std::min(size_t(8), nodes_.size()),
+                      closest_nodes.end(),
+                      [node_id] (const RTNode& lhs, const RTNode& rhs) {
+                        return NodeId::CloserToTarget(lhs.kNodeId, rhs.kNodeId, node_id);
+                      });
+    return std::vector<RTNode>(closest_nodes.begin(),
+                               closest_nodes.begin() + std::min(size_t(8), nodes_.size()));
+  }
+  return GetClosestNodes(closest_nodes, node_id);
+}
 
 void Network::Add(const NodeId& node_id) {
   auto node = MakeNode(node_id);
@@ -313,9 +388,9 @@ bool Network::Validate() {
                                      << " does not have " << DebugId(account);
     }
 
-   if (count > 4) {
-     LOG(kError) << "Account " << DebugId(account) << " # of holders: " << count
-                 << "  index: " << index;
+    if (count > 4) {
+      LOG(kError) << "Account " << DebugId(account) << " # of holders: " << count
+                  << "  index: " << index;
       std::vector<NodeId> matrix;
       std::string matrix_string;
       for (size_t index(0); index < count; ++index) {
