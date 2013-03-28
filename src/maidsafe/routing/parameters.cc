@@ -59,6 +59,7 @@ bool Parameters::append_maidsafe_local_endpoints(false);
 // TODO(Prakash) : To allow bootstrapping off nodes on same machine, revert once local network
 // available
 bool Parameters::append_local_live_port_endpoint(false);
+// TODO(Prakash): BEFORE_RELEASE enable caching after persona tests are passing
 bool Parameters::caching(false);
 }  // namespace routing
 

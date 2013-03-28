@@ -394,10 +394,10 @@ std::vector<size_t> Network::CheckGroupMatrixReliablity() {
 
 TEST(RoutingTableTest, BEH_RT) {
   Network network;
-  for (auto i(0); i != 20000; ++i) {
+  for (auto i(0); i != 2500; ++i) {
     LOG(kSuccess) << "Iteration # " << i << "  ===================================================";
     network.Add(NodeId(NodeId::kRandomId));
-    for (auto i(0); i != 1 ; ++i)
+    for (auto i(0); i != 100 ; ++i)
       network.AddAccount(NodeId(NodeId::kRandomId));
   }
   network.PrintNetworkInfo();
