@@ -50,25 +50,15 @@ class GroupChangeHandler {
 
   friend class test::GenericNode;
  private:
-  struct PendingNotification {
-    PendingNotification(const NodeId& node_id_in, std::vector<NodeInfo> close_nodes_in);
-    NodeId node_id;
-    std::vector<NodeInfo> close_nodes;
-  };
-
   GroupChangeHandler(const GroupChangeHandler&);
   GroupChangeHandler& operator=(const GroupChangeHandler&);
 
-  void AddPendingNotification(const NodeId& node_id, std::vector<NodeInfo> close_nodes);
-  std::vector<NodeInfo> GetAndRemovePendingNotification(const NodeId& node_from);
   void Subscribe(const NodeId& node_id, const NodeId& connection_id);
   bool GetNodeInfo(const NodeId& node_id, const NodeId& connection_id, NodeInfo& out_node_info);
 
-  std::mutex mutex_;
   RoutingTable& routing_table_;
   ClientRoutingTable& client_routing_table_;
   NetworkUtils& network_;
-  std::vector<NodeInfo> update_subscribers_;
 };
 
 }  // namespace routing

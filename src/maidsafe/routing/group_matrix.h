@@ -70,6 +70,7 @@ class GroupMatrix {
   std::vector<NodeInfo> GetClosestNodes(const uint16_t& size);
   bool Contains(const NodeId& node_id);
   void Clear();
+  bool Unsubscribe(const NodeId& node_id);
 
   friend class test::GenericNode;
   friend class test::NetworkStatisticsTest_BEH_IsIdInGroupRange_Test;

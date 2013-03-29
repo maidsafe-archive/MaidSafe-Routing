@@ -74,6 +74,7 @@ class Network {
 
   void Add(const NodeId& node_id);
   void AddAccount(const NodeId& account);
+  void RoutingAdd(const NodeId& node_id);
 
   void PruneNetwork();
   void PruneAllAccounts();
@@ -206,12 +207,7 @@ RTNode::CloseRTNodes Network::GetClosestRTNodes(RTNode::CloseRTNodes& closest_no
 }
 
 void Network::Add(const NodeId& node_id) {
-//  auto routing_closest_nodes(GetClosestNodes(node_id));
   auto node = MakeNode(node_id);
-//  for (auto routing_closest_node : routing_closest_nodes)
-//    EXPECT_NE(std::find(node.close_nodes->begin(),
-//                        node.close_nodes->end(),
-//                        routing_closest_node), node.close_nodes->end());
   UpdateNetwork(node);
   nodes_.push_back(node);
   PruneNetwork();
@@ -220,8 +216,19 @@ void Network::Add(const NodeId& node_id) {
   UpdateAccountsOfNewAndInformedNodes(node);
 }
 
+void Network::RoutingAdd(const NodeId& node_id) {
+  auto routing_closest_nodes(GetClosestNodes(node_id));
+  auto node = MakeNode(node_id);
+  for (auto routing_closest_node : routing_closest_nodes)
+    EXPECT_NE(std::find(node.close_nodes->begin(),
+                        node.close_nodes->end(),
+                        routing_closest_node), node.close_nodes->end());
+  UpdateNetwork(node);
+  nodes_.push_back(node);
+  PruneNetwork();
+}
+
 RTNode Network::MakeNode(const NodeId &node_id) {
-//  auto eight_closest(GetClosestNodes());
   PartialSortFromTarget(node_id, 8);
   RTNode node(node_id);
   std::string message(DebugId(node.kNodeId) + " added");
@@ -511,10 +518,10 @@ std::vector<size_t> Network::CheckGroupMatrixReliablity() {
 
 TEST(RoutingTableTest, FUNC_GroupMatrixReliability) {
   Network network;
-  for (auto i(0); i != 2500; ++i) {
+  for (auto i(0); i != 1000; ++i) {
     LOG(kSuccess) << "Iteration # " << i << "  ===================================================";
     network.Add(NodeId(NodeId::kRandomId));
-    for (auto i(0); i != 100 ; ++i)
+    for (auto i(0); i != 10; ++i)
       network.AddAccount(NodeId(NodeId::kRandomId));
   }
   network.PrintNetworkInfo();
@@ -523,6 +530,14 @@ TEST(RoutingTableTest, FUNC_GroupMatrixReliability) {
     LOG(kSuccess) << "Validated.";
   else
     LOG(kError) << "Failed";
+}
+
+TEST(RoutingTableTest, FUNC_FindCloseNodes) {
+  Network network;
+  for (auto i(0); i != 1000; ++i) {
+    LOG(kSuccess) << "Iteration # " << i << "  ===================================================";
+    network.RoutingAdd(NodeId(NodeId::kRandomId));
+  }
 }
 
 }  // namespace test

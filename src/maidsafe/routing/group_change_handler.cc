@@ -35,16 +35,11 @@ namespace routing {
 GroupChangeHandler::GroupChangeHandler(RoutingTable& routing_table,
                                        ClientRoutingTable& client_routing_table,
                                        NetworkUtils& network)
-  : mutex_(),
-    routing_table_(routing_table),
+  : routing_table_(routing_table),
     client_routing_table_(client_routing_table),
-    network_(network),
-    update_subscribers_() {}
+    network_(network) {}
 
-GroupChangeHandler::~GroupChangeHandler() {
-  std::lock_guard<std::mutex> lock(mutex_);
-  update_subscribers_.clear();
-}
+GroupChangeHandler::~GroupChangeHandler() {}
 
 void GroupChangeHandler::ClosestNodesUpdate(protobuf::Message& message) {
   if (message.destination_id() != routing_table_.kNodeId().string()) {
@@ -107,16 +102,8 @@ void GroupChangeHandler::ClosestNodesUpdateSubscribe(protobuf::Message& message)
 }
 
 void GroupChangeHandler::Unsubscribe(const NodeId& connection_id) {
-  std::lock_guard<std::mutex> lock(mutex_);
-  if (!update_subscribers_.empty()) {
-    auto iter(std::find_if(update_subscribers_.begin(),
-                           update_subscribers_.end(),
-                           [&](const NodeInfo& node_info) {
-                             return (node_info.connection_id == connection_id);
-                           }));
-    if ((iter != update_subscribers_.end()) &&
-        (iter->connection_id == connection_id))
-      update_subscribers_.erase(iter);
+  if (!routing_table_.UnsubscribeToReceivingGroupUpdate(connection_id)) {
+    // TBA Send Unsucessful Unsubscribe To Sender
   }
 }
 
@@ -131,19 +118,8 @@ void GroupChangeHandler::Subscribe(const NodeId& node_id,
                                                                 Parameters::closest_nodes_size);
     if (connected_closest_nodes.size() < Parameters::node_group_size)
       return;
-    std::lock_guard<std::mutex> lock(mutex_);
     if (GetNodeInfo(node_id, connection_id, node_info)) {
-      if (std::find_if(update_subscribers_.begin(),
-                       update_subscribers_.end(),
-                       [=](const NodeInfo& node)->bool {
-                         return node.node_id == node_id;
-                       }) == update_subscribers_.end())
-        update_subscribers_.push_back(node_info);
-        LOG(kVerbose) << "[" << DebugId(routing_table_.kNodeId()) << "] subscribed "
-                      << DebugId(node_id) << " current size: "  << update_subscribers_.size();
-        for (const auto& subscriber : update_subscribers_) {  // NOLINT (Alison)
-          log += DebugId(subscriber.node_id) + ", ";
-        }
+      // TBA routing_table_.Subscribe(node_info);
     }
   }
   LOG(kVerbose) << log;
@@ -156,7 +132,7 @@ void GroupChangeHandler::Subscribe(const NodeId& node_id,
     network_.SendToDirect(closest_nodes_update_rpc, node_info.node_id, node_info.connection_id);
   } else {
     LOG(kVerbose) << "[" << DebugId(routing_table_.kNodeId()) << "] failed to subscribe "
-                  << DebugId(node_id) << " current size: "  << update_subscribers_.size();
+                  << DebugId(node_id) << " current size: "  << "update_subscribers_.size()";
   }
 }
 
@@ -176,15 +152,9 @@ void GroupChangeHandler::UpdateGroupChange(const NodeId& node_id,
 void GroupChangeHandler::SendClosestNodesUpdateRpcs(const std::vector<NodeInfo>& closest_nodes) {
   LOG(kVerbose) << "["  << DebugId(routing_table_.kNodeId())
                 << "] SendClosestNodesUpdateRpcs: " << closest_nodes.size();
-//  if (closest_nodes.size() < Parameters::closest_nodes_size)
-//    return;
   std::vector<NodeInfo> update_subscribers;
+// TBA  std::vector<NodeInfo> update_subscribers(routing_table_.GetSubscribers());
   assert(closest_nodes.size() <= Parameters::closest_nodes_size);
-  {
-    std::lock_guard<std::mutex> lock(mutex_);
-    update_subscribers.resize(update_subscribers_.size());
-    std::copy(update_subscribers_.begin(), update_subscribers_.end(), update_subscribers.begin());
-  }
   for (auto itr(update_subscribers.begin()); itr != update_subscribers.end(); ++itr) {
     LOG(kVerbose) << "["  << DebugId(routing_table_.kNodeId())
                   << "] Sending update to: " << DebugId(itr->node_id);
@@ -203,7 +173,7 @@ void GroupChangeHandler::SendSubscribeRpc(const bool& subscribe,
     nodes_needing_update.push_back(node_info);
   }
   LOG(kVerbose) << "SendSubscribeRpc: nodes_needing_update: " << nodes_needing_update.size();
-  for (const auto& node : nodes_needing_update) {  // NOLINT (Alison)
+  for (const auto& node : nodes_needing_update) {
     LOG(kVerbose) << DebugId(routing_table_.kNodeId()) << " SendSubscribeRpc to "
                   << DebugId(node.node_id);
     protobuf::Message closest_nodes_update_rpc(

@@ -312,6 +312,18 @@ void GroupMatrix::Clear() {
   UpdateUniqueNodeList();
 }
 
+bool GroupMatrix::Unsubscribe(const NodeId& node_id) {
+  auto nodes_info(std::find_if(matrix_.begin(),
+                               matrix_.end(),
+                               [node_id] (const std::vector<NodeInfo>& nodes) {
+                                 return nodes[0].node_id == node_id;
+                               }));
+  if (nodes_info == matrix_.end())
+    return true;
+  matrix_.erase(nodes_info);
+  return true;
+}
+
 void GroupMatrix::UpdateUniqueNodeList() {
   unique_nodes_.clear();
   // Update unique node vector

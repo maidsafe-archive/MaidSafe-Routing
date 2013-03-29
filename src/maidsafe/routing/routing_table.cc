@@ -757,6 +757,21 @@ void RoutingTable::GetNodesNeedingGroupUpdates(std::vector<NodeInfo>& nodes_need
   }
 }
 
+bool RoutingTable::UnsubscribeToReceivingGroupUpdate(const NodeId& node_id) {
+  std::unique_lock<std::mutex> lock(mutex_);
+  auto found(Find(node_id, lock));
+  if (!found.first)
+    return true;
+  if (nodes_.size() < Parameters::closest_nodes_size)
+    return false;
+  PartialSortFromTarget(kNodeId_, Parameters::closest_nodes_size, lock);
+  if (NodeId::CloserToTarget(node_id,
+                             nodes_[Parameters::closest_nodes_size - 1].node_id,
+                             kNodeId_))
+    return false;
+  return group_matrix_.Unsubscribe(node_id);
+}
+
 NodeInfo RoutingTable::GetNthClosestNode(const NodeId& target_id, uint16_t node_number) {
   assert((node_number > 0) && "Node number starts with position 1");
   std::unique_lock<std::mutex> lock(mutex_);
