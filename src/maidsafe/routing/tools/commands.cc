@@ -7,13 +7,9 @@
  *                                                                                                 *
  *  You are not free to copy, amend or otherwise use this source code without the explicit written *
  *  permission of the board of directors of maidsafe.net.                                          *
- ***********************************************************************************************//**
- * @file  commands.cc
- * @brief Console commands to demo routing stand alone node.
- * @date  2012-10-19
- */
+ **************************************************************************************************/
 
-#include "maidsafe/tools/commands.h"
+#include "maidsafe/routing/tools/commands.h"
 
 #include <algorithm>
 #include <iostream> // NOLINT
@@ -31,7 +27,7 @@
 #include "boost/lexical_cast.hpp"
 #include "maidsafe/common/crypto.h"
 #include "maidsafe/common/utils.h"
-#include "maidsafe/tools/shared_response.h"
+#include "maidsafe/routing/tools/shared_response.h"
 
 namespace fs = boost::filesystem;
 

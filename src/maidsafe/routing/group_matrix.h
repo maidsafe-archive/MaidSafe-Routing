@@ -66,10 +66,9 @@ class GroupMatrix {
   void UpdateFromConnectedPeer(const NodeId& peer, const std::vector<NodeInfo>& nodes);
   bool IsRowEmpty(const NodeInfo& node_info);
   bool GetRow(const NodeId& row_id, std::vector<NodeInfo>& row_entries);
-  std::vector<NodeInfo> GetUniqueNodes();
+  std::vector<NodeInfo> GetUniqueNodes() const;
   std::vector<NodeInfo> GetClosestNodes(const uint16_t& size);
   bool Contains(const NodeId& node_id);
-  void Clear();
 
   friend class test::GenericNode;
   friend class test::NetworkStatisticsTest_BEH_IsIdInGroupRange_Test;

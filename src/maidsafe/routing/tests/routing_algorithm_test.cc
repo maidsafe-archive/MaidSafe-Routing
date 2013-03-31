@@ -511,7 +511,7 @@ std::vector<size_t> Network::CheckGroupMatrixReliablity() {
 
 TEST(RoutingTableTest, FUNC_GroupMatrixReliability) {
   Network network;
-  for (auto i(0); i != 2500; ++i) {
+  for (auto i(0); i != 1000; ++i) {
     LOG(kSuccess) << "Iteration # " << i << "  ===================================================";
     network.Add(NodeId(NodeId::kRandomId));
     for (auto i(0); i != 100 ; ++i)

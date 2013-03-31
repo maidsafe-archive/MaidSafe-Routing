@@ -1,20 +1,16 @@
 /***************************************************************************************************
- *  Copyright 2012 maidsafe.net limited                                                            *
+ *  Copyright 2012 MaidSafe.net limited                                                            *
  *                                                                                                 *
- *  The following source code is property of maidsafe.net limited and is not meant for external    *
- *  use. The use of this code is governed by the license file LICENSE.TXT found in the root of     *
+ *  The following source code is property of MaidSafe.net limited and is not meant for external    *
+ *  use.  The use of this code is governed by the licence file licence.txt found in the root of    *
  *  this directory and also on www.maidsafe.net.                                                   *
  *                                                                                                 *
- *  You are not free to copy, amend or otherwise use this source code without the explicit written *
- *  permission of the board of directors of maidsafe.net.                                          *
- ***********************************************************************************************//**
- * @file  commands.h
- * @brief Head File for commands.cc .
- * @date  2012-10-19
- */
+ *  You are not free to copy, amend or otherwise use this source code without the explicit         *
+ *  written permission of the board of directors of MaidSafe.net.                                  *
+ **************************************************************************************************/
 
-#ifndef MAIDSAFE_TOOLS_SHARED_RESPONSE_H_
-#define MAIDSAFE_TOOLS_SHARED_RESPONSE_H_
+#ifndef MAIDSAFE_ROUTING_TOOLS_SHARED_RESPONSE_H_
+#define MAIDSAFE_ROUTING_TOOLS_SHARED_RESPONSE_H_
 
 #include <memory>
 #include <mutex>
@@ -70,4 +66,4 @@ class SharedResponse {
 
 }  //  namespace maidsafe
 
-#endif  // MAIDSAFE_TOOLS_SHARED_RESPONSE_H_
+#endif  // MAIDSAFE_ROUTING_TOOLS_SHARED_RESPONSE_H_

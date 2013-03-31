@@ -14,6 +14,7 @@
 #define MAIDSAFE_ROUTING_ROUTING_TABLE_H_
 
 #include <cstdint>
+#include <memory>
 #include <mutex>
 #include <string>
 #include <utility>
@@ -21,6 +22,7 @@
 
 #include "boost/asio/ip/udp.hpp"
 #include "boost/filesystem/path.hpp"
+#include "boost/interprocess/ipc/message_queue.hpp"
 
 #include "maidsafe/common/node_id.h"
 #include "maidsafe/common/rsa.h"
@@ -64,7 +66,7 @@ class RoutingTable {
  public:
   RoutingTable(bool client_mode, const NodeId& node_id, const asymm::Keys& keys,
                NetworkStatistics& network_statistics);
-  virtual ~RoutingTable() {}
+  virtual ~RoutingTable();
   void InitialiseFunctors(NetworkStatusFunctor network_status_functor,
                           std::function<void(const NodeInfo&, bool)> remove_node_functor,
                           RemoveFurthestUnnecessaryNode remove_furthest_node,
@@ -158,6 +160,7 @@ class RoutingTable {
       std::unique_lock<std::mutex>& lock) const;
   void UpdateNetworkStatus(uint16_t size) const;
 
+  void IpcSendGroupMatrix() const;
   std::string PrintRoutingTable();
   void PrintGroupMatrix();
 
@@ -178,6 +181,7 @@ class RoutingTable {
   UnsubscribeGroupUpdate unsubscribe_group_update_;
   std::vector<NodeInfo> nodes_;
   GroupMatrix group_matrix_;
+  std::unique_ptr<boost::interprocess::message_queue> ipc_message_queue_;
   NetworkStatistics& network_statistics_;
 };
 

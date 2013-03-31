@@ -32,6 +32,7 @@ include_directories(${rudp_SOURCE_DIR}/include)
 set(RoutingSourcesDir ${PROJECT_SOURCE_DIR}/src/maidsafe/routing)
 glob_dir(Routing ${RoutingSourcesDir} Routing)
 glob_dir(RoutingTests ${RoutingSourcesDir}/tests Tests)
+glob_dir(RoutingTools ${RoutingSourcesDir}/tools Tools)
 set(RoutingTestsHelperFiles ${RoutingSourcesDir}/tests/routing_network.cc
                             ${PROJECT_SOURCE_DIR}/include/maidsafe/routing/tests/routing_network.h
                             ${RoutingSourcesDir}/tests/test_utils.cc
@@ -70,13 +71,14 @@ if(MaidsafeTesting)
   ms_add_executable(TESTrouting_func_nat "Tests/Routing" ${RoutingFuncNatTestFiles})
   # new executable TESTrouting_big is created to contain tests that each need their own network
   ms_add_executable(TESTrouting_big "Tests/Routing" ${RoutingBigTestFiles} ${RoutingSourcesDir}/tests/test_main.cc)
-  ms_add_executable(create_lifestuff_bootstrap "Tools" ${PROJECT_SOURCE_DIR}/src/maidsafe/tools/create_bootstrap.cc)
-  ms_add_executable(routing_key_helper "Tools" ${PROJECT_SOURCE_DIR}/src/maidsafe/tools/key_helper.cc)
-  ms_add_executable(routing_node "Tools" ${PROJECT_SOURCE_DIR}/src/maidsafe/tools/routing_node.cc
-                                         ${PROJECT_SOURCE_DIR}/src/maidsafe/tools/commands.h
-                                         ${PROJECT_SOURCE_DIR}/src/maidsafe/tools/commands.cc
-					                               ${PROJECT_SOURCE_DIR}/src/maidsafe/tools/shared_response.h
-                                         ${PROJECT_SOURCE_DIR}/src/maidsafe/tools/shared_response.cc)
+  ms_add_executable(create_lifestuff_bootstrap "Tools" ${RoutingSourcesDir}/tools/create_bootstrap.cc)
+  ms_add_executable(routing_key_helper "Tools" ${RoutingSourcesDir}/tools/key_helper.cc)
+  ms_add_executable(routing_node "Tools" ${RoutingSourcesDir}/tools/routing_node.cc
+                                         ${RoutingSourcesDir}/tools/commands.h
+                                         ${RoutingSourcesDir}/tools/commands.cc
+					                               ${RoutingSourcesDir}/tools/shared_response.h
+                                         ${RoutingSourcesDir}/tools/shared_response.cc)
+  ms_add_executable(routing_viewer "Tools" ${RoutingSourcesDir}/tools/viewer.cc ${RoutingProtos})
   target_link_libraries(TESTrouting maidsafe_routing)
   target_link_libraries(TESTrouting_api maidsafe_routing)
   target_link_libraries(TESTrouting_func maidsafe_routing)
@@ -85,6 +87,7 @@ if(MaidsafeTesting)
   target_link_libraries(create_lifestuff_bootstrap maidsafe_routing)
   target_link_libraries(routing_key_helper maidsafe_routing)
   target_link_libraries(routing_node maidsafe_routing)
+  target_link_libraries(routing_viewer maidsafe_common)
 endif()
 
 rename_outdated_built_exes()

@@ -23,6 +23,7 @@
 #include "maidsafe/routing/parameters.h"
 #include "maidsafe/routing/node_info.h"
 #include "maidsafe/routing/return_codes.h"
+#include "maidsafe/routing/routing.pb.h"
 
 
 namespace maidsafe {
@@ -51,8 +52,31 @@ RoutingTable::RoutingTable(bool client_mode,
       close_node_replaced_functor_(),
       nodes_(),
       group_matrix_(kNodeId_, client_mode),
-      network_statistics_(network_statistics) {}
+      ipc_message_queue_(),
+      network_statistics_(network_statistics) {
+#ifdef TESTING
+  try {
+    ipc_message_queue_.reset(new boost::interprocess::message_queue(boost::interprocess::open_only,
+                                                                    "matrix_messages"));
+    if (ipc_message_queue_->get_max_msg_size() <
+        (Parameters::closest_nodes_size + 1) * Parameters::closest_nodes_size * 2 * NodeId::kSize) {
+      ThrowError(CommonErrors::invalid_parameter);
+    }
+  }
+  catch(const std::exception&) {
+    ipc_message_queue_.reset();
+  }
+#endif
+}
 
+RoutingTable::~RoutingTable() {
+  if (ipc_message_queue_) {
+    protobuf::GetGroup proto_matrix;
+    proto_matrix.set_node_id(kNodeId_.string());
+    std::string serialised_matrix(proto_matrix.SerializeAsString());
+    ipc_message_queue_->try_send(serialised_matrix.c_str(), serialised_matrix.size(), 0);
+  }
+}
 
 void RoutingTable::InitialiseFunctors(NetworkStatusFunctor network_status_functor,
     std::function<void(const NodeInfo&, bool)> remove_node_functor,
@@ -159,6 +183,7 @@ bool RoutingTable::AddOrCheckNode(NodeInfo peer, bool remove) {
       network_statistics_.UpdateLocalAverageDistance(unique_nodes);
       if (close_node_replaced_functor_)
         close_node_replaced_functor_(new_closest_nodes);
+      IpcSendGroupMatrix();
     }
 
     if (peer.nat_type == rudp::NatType::kOther) {  // Usable as bootstrap endpoint
@@ -212,6 +237,7 @@ NodeInfo RoutingTable::DropNode(const NodeId& node_to_drop, bool routing_only) {
     network_statistics_.UpdateLocalAverageDistance(unique_nodes);
     if (close_node_replaced_functor_)
       close_node_replaced_functor_(new_closest_nodes);
+    IpcSendGroupMatrix();
   }
 
   if (!dropped_node.node_id.IsZero()) {
@@ -871,6 +897,26 @@ void RoutingTable::UpdateNetworkStatus(uint16_t size) const {
 size_t RoutingTable::size() const {
   std::lock_guard<std::mutex> lock(mutex_);
   return nodes_.size();
+}
+
+void RoutingTable::IpcSendGroupMatrix() const {
+  if (ipc_message_queue_) {
+    protobuf::GetGroup proto_matrix;
+    proto_matrix.set_node_id(kNodeId_.string());
+    std::vector<NodeInfo> matrix;
+    {
+      std::lock_guard<std::mutex> lock(mutex_);
+      matrix = group_matrix_.GetUniqueNodes();
+    }
+    std::string printout("\tMatrix sent by: " + DebugId(NodeId(proto_matrix.node_id())) + "\n");
+    for (const auto& node_info : matrix) {
+      proto_matrix.add_group_nodes_id(node_info.node_id.string());
+      printout += "\t\t" + DebugId(node_info.node_id) + "\n";
+    }
+    LOG(kInfo) << printout << '\n';
+    std::string serialised_matrix(proto_matrix.SerializeAsString());
+    ipc_message_queue_->try_send(serialised_matrix.c_str(), serialised_matrix.size(), 0);
+  }
 }
 
 std::string RoutingTable::PrintRoutingTable() {
