@@ -363,6 +363,44 @@ void GroupMatrix::PartialSortFromTarget(const NodeId& target,
                     });
 }
 
+void GroupMatrix::Prune() {
+  if (matrix_.size() <= Parameters::closest_nodes_size)
+    return;
+  NodeId node_id;
+  std::vector<NodeId> peers_to_remove;
+  std::partial_sort(matrix_.begin(),
+                    matrix_.begin() + Parameters::closest_nodes_size,
+                    matrix_.end(),
+                    [kNodeId_] (const std::vector<NodeInfo>& lhs,
+                                const std::vector<NodeInfo>& rhs) {
+                      return NodeId::CloserToTarget(lhs.begin()->node_id,
+                                                    rhs.begin()->node_id,
+                                                    kNodeId_);
+                    });
+  auto itr(matrix_.begin());
+  std::advance(itr, Parameters::closest_nodes_size);
+  while (itr != matrix_.end()) {
+    node_id = itr->begin()->node_id;
+    if (itr->size() < Parameters::closest_nodes_size)
+      continue;
+    std::partial_sort(itr->begin() + 1,
+                      itr->begin() + Parameters::closest_nodes_size + 1,
+                      itr->end(),
+                      [node_id] (const NodeInfo& lhs, const NodeInfo& rhs) {
+                        return NodeId::CloserToTarget(lhs.node_id, rhs.node_id, node_id);
+                      });
+    if (NodeId::CloserToTarget(itr->at(Parameters::closest_nodes_size).node_id, kNodeId_, node_id))
+      peers_to_remove.push_back(node_id);
+  }
+  for (auto& peer : peers_to_remove) {
+    matrix_.erase(std::remove_if(matrix_.begin(),
+                                 matrix_.end(),
+                                 [peer] (const std::vector<NodeInfo>& row) {
+                                   return row.begin()->node_id == peer;
+                                 }));
+  }
+}
+
 void GroupMatrix::PrintGroupMatrix() {
   auto group_itr(matrix_.begin());
   std::string tab("\t");

@@ -100,8 +100,7 @@ bool RoutingTable::AddOrCheckNode(NodeInfo peer, bool remove) {
   }
 
   bool return_value(false), remove_furthest_node(false);
-  std::vector<NodeInfo> new_closest_nodes, new_connected_close_nodes;
-  NodeInfo out_of_connected_close_nodes;
+  std::vector<NodeInfo> new_connected_close_nodes;
   NodeInfo removed_node;
   uint16_t routing_table_size(0);
 
@@ -120,10 +119,7 @@ bool RoutingTable::AddOrCheckNode(NodeInfo peer, bool remove) {
       if (remove) {
         assert(peer.bucket != NodeInfo::kInvalidBucket);
         nodes_.push_back(peer);
-        UpdateCloseNodeChange(lock,
-                              new_connected_close_nodes,
-                              out_of_connected_close_nodes,
-                              new_closest_nodes);
+        UpdateCloseNodeChange(lock, peer, new_connected_close_nodes);
         if (nodes_.size() > Parameters::greedy_fraction)
           remove_furthest_node = true;
       }
@@ -146,20 +142,13 @@ bool RoutingTable::AddOrCheckNode(NodeInfo peer, bool remove) {
     if (!new_connected_close_nodes.empty()) {
       if (connected_group_change_functor_)
         connected_group_change_functor_(new_connected_close_nodes);
-      if (subscribe_to_group_change_update_) {
-        if (out_of_connected_close_nodes.node_id != NodeId())
-          subscribe_to_group_change_update_(false, out_of_connected_close_nodes);
-      }
     }
 
-    if (subscribe_to_group_change_update_)
-      subscribe_to_group_change_update_(true, NodeInfo());
-
-    if (!new_closest_nodes.empty()) {
-      network_statistics_.UpdateLocalAverageDistance(unique_nodes);
-      if (close_node_replaced_functor_)
-        close_node_replaced_functor_(new_closest_nodes);
-    }
+//    if (!new_closest_nodes.empty()) {
+//      network_statistics_.UpdateLocalAverageDistance(unique_nodes);
+//      if (close_node_replaced_functor_)
+//        close_node_replaced_functor_(new_closest_nodes);
+//    }
 
     if (peer.nat_type == rudp::NatType::kOther) {  // Usable as bootstrap endpoint
 //      if (new_bootstrap_endpoint_)
@@ -177,7 +166,7 @@ bool RoutingTable::AddOrCheckNode(NodeInfo peer, bool remove) {
 
 NodeInfo RoutingTable::DropNode(const NodeId& node_to_drop, bool routing_only) {
   std::vector<NodeInfo> new_closest_nodes, new_connected_close_nodes;
-  NodeInfo dropped_node, out_of_connected_close_nodes;
+  NodeInfo dropped_node;
   std::vector<NodeInfo> unique_nodes;
   {
     std::unique_lock<std::mutex> lock(mutex_);
@@ -185,28 +174,24 @@ NodeInfo RoutingTable::DropNode(const NodeId& node_to_drop, bool routing_only) {
     if (found.first) {
       dropped_node = *found.second;
       nodes_.erase(found.second);
-      UpdateCloseNodeChange(lock,
-                            new_connected_close_nodes,
-                            out_of_connected_close_nodes,
-                            new_closest_nodes);
+      auto connected_peers(group_matrix_.GetConnectedPeers());
+      if (std::find_if(connected_peers.begin(),
+                       connected_peers.end(),
+                       [node_to_drop] (const NodeInfo& node_info) {
+                         return node_info.node_id == node_to_drop;
+                       }) !=  connected_peers.end()) {
+        group_matrix_.RemoveConnectedPeer(dropped_node);
+        group_matrix_.Prune();
+        new_connected_close_nodes = group_matrix_.GetConnectedPeers();
+      }
     }
     unique_nodes = group_matrix_.GetUniqueNodes();
   }
 
-  if (unsubscribe_group_update_)
-    unsubscribe_group_update_(node_to_drop);
-
   if (!new_connected_close_nodes.empty()) {
     if (connected_group_change_functor_)
       connected_group_change_functor_(new_connected_close_nodes);
-    if (subscribe_to_group_change_update_) {
-      if (out_of_connected_close_nodes.node_id != NodeId())
-        subscribe_to_group_change_update_(false, out_of_connected_close_nodes);
-    }
   }
-
-  if (subscribe_to_group_change_update_)
-      subscribe_to_group_change_update_(true, NodeInfo());
 
   if (!new_closest_nodes.empty()) {
     network_statistics_.UpdateLocalAverageDistance(unique_nodes);
@@ -420,85 +405,18 @@ void RoutingTable::GroupUpdateFromConnectedPeer(const NodeId& peer,
   group_matrix_.UpdateFromConnectedPeer(peer, nodes);
 }
 
-void RoutingTable::UpdateCloseNodeChange(
-    std::unique_lock<std::mutex>& lock,
-    std::vector<NodeInfo>& new_connected_close_nodes,
-    NodeInfo& out_of_connected_closest_nodes,
-    std::vector<NodeInfo>& new_close_nodes) {
+void RoutingTable::UpdateCloseNodeChange(std::unique_lock<std::mutex>& lock,
+                                         const NodeInfo& peer,
+                                         std::vector<NodeInfo>& new_connected_nodes) {
   assert(lock.owns_lock());
-//  if (nodes_.size() == 1) {
-//    std::vector<NodeInfo> old_row_ids(group_matrix_.GetConnectedPeers());
-//    group_matrix_.Clear();
-//    group_matrix_.AddConnectedPeer(nodes_.at(0));
-//    return;
-//  }
-
-  auto count(std::min(Parameters::closest_nodes_size, static_cast<uint16_t>(nodes_.size())));
-  PartialSortFromTarget(kNodeId_, count, lock);
-  for (auto i(0); i < count; ++i)
-    new_connected_close_nodes.push_back(nodes_.at(i));
-
-  std::vector<NodeInfo> old_connected_close_nodes(group_matrix_.GetConnectedPeers());
-
-  std::vector<NodeInfo> old_close_nodes(
-      group_matrix_.GetClosestNodes(Parameters::closest_nodes_size));
-
-  std::sort(old_connected_close_nodes.begin(), old_connected_close_nodes.end(),
-            [&](const NodeInfo& lhs, const NodeInfo& rhs) {
-              return NodeId::CloserToTarget(lhs.node_id, rhs.node_id, kNodeId_);
-            });
-  std::sort(new_connected_close_nodes.begin(), new_connected_close_nodes.end(),
-            [&](const NodeInfo& lhs, const NodeInfo& rhs) {
-              return NodeId::CloserToTarget(lhs.node_id, rhs.node_id, kNodeId_);
-            });
-
-  // Remove old row from matrix, if found
-  std::vector<NodeInfo> difference_result;
-  std::set_difference(old_connected_close_nodes.begin(),
-                      old_connected_close_nodes.end(),
-                      new_connected_close_nodes.begin(),
-                      new_connected_close_nodes.end(),
-                      std::back_inserter(difference_result),
-                      [&](const NodeInfo& lhs, const NodeInfo& rhs) {
-                        return NodeId::CloserToTarget(lhs.node_id, rhs.node_id, kNodeId_);
-                      });
-  if (difference_result.size() >= 2) {
-    assert(false);
-  } else if (difference_result.size() == 1) {  // Update matrix
-    group_matrix_.RemoveConnectedPeer(difference_result.at(0));
-    out_of_connected_closest_nodes = difference_result.at(0);
-  }
-
-  // Add new row to matrix, if needed
-  difference_result.clear();
-  std::set_difference(new_connected_close_nodes.begin(),
-                      new_connected_close_nodes.end(),
-                      old_connected_close_nodes.begin(),
-                      old_connected_close_nodes.end(),
-                      std::back_inserter(difference_result),
-                      [&](const NodeInfo& lhs, const NodeInfo& rhs) {
-                        return NodeId::CloserToTarget(lhs.node_id, rhs.node_id, kNodeId_);
-                      });
-  if (difference_result.size() >= 2) {
-    assert(false);
-  } else if (difference_result.size() == 1) {  // Update matrix
-    group_matrix_.AddConnectedPeer(difference_result.at(0));
-  } else if (out_of_connected_closest_nodes.node_id == NodeId()) {
-    new_connected_close_nodes.clear();
-  }
-
-  new_close_nodes = group_matrix_.GetClosestNodes(Parameters::closest_nodes_size);
-  difference_result.clear();
-  std::set_difference(new_close_nodes.begin(),
-                      new_close_nodes.end(),
-                      old_close_nodes.begin(),
-                      old_close_nodes.end(),
-                      std::back_inserter(difference_result),
-                      [&](const NodeInfo& lhs, const NodeInfo& rhs) {
-                        return NodeId::CloserToTarget(lhs.node_id, rhs.node_id, kNodeId_);
-                      });
-  if (difference_result.empty()) {  // Update matrix
-    new_close_nodes.clear();
+  if (nodes_.size() < Parameters::closest_nodes_size)
+    return;
+  PartialSortFromTarget(kNodeId_, Parameters::closest_nodes_size, lock);
+  if (!NodeId::CloserToTarget(nodes_[Parameters::closest_nodes_size].node_id, peer.node_id,
+                              kNodeId_)) {
+    group_matrix_.AddConnectedPeer(peer);
+    group_matrix_.Prune();
+    new_connected_nodes = group_matrix_.GetConnectedPeers();
   }
 }
 
