@@ -413,7 +413,7 @@ void RoutingTable::UpdateCloseNodeChange(std::unique_lock<std::mutex>& lock,
                                kNodeId_))) {
     group_matrix_.AddConnectedPeer(peer);
     group_matrix_.Prune();
-    if (nodes_.size() >= 10*Parameters::closest_nodes_size)
+    if (nodes_.size() >= Parameters::closest_nodes_size)
       new_connected_nodes = group_matrix_.GetConnectedPeers();
   }
 }

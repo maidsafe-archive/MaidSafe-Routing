@@ -47,7 +47,7 @@ void GroupMatrix::AddConnectedPeer(const NodeInfo& node_info) {
   }
 
   matrix_.push_back(std::vector<NodeInfo>(1, node_info));
-//  UpdateUniqueNodeList();
+  UpdateUniqueNodeList();
 }
 
 void GroupMatrix::RemoveConnectedPeer(const NodeInfo& node_info) {
@@ -381,6 +381,7 @@ void GroupMatrix::Prune() {
                       });
     if (NodeId::CloserToTarget(itr->at(Parameters::closest_nodes_size).node_id, kNodeId_, node_id))
       peers_to_remove.push_back(node_id);
+    std::advance(itr, 1);
   }
   for (auto& peer : peers_to_remove) {
     matrix_.erase(std::remove_if(matrix_.begin(),
