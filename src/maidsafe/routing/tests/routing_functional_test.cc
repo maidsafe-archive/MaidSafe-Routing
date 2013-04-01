@@ -57,20 +57,20 @@ TEST_F(RoutingNetworkTest, FUNC_SanityCheck) {
     NodeId target_id(env_->nodes_[random_node]->node_id());
     std::vector<NodeId> group_Ids(env_->GetGroupForId(target_id));
     EXPECT_TRUE(env_->SendGroup(target_id, 1));
-    for (const auto& group_id : group_Ids)  // NOLINT (Alison)
+    for (const auto& group_id : group_Ids)
       EXPECT_EQ(1, env_->nodes_.at(env_->NodeIndex(group_id))->MessagesSize());
     env_->ClearMessages();
 
     // SendGroup SelfId
     EXPECT_TRUE(env_->SendGroup(target_id, 1, random_node));
-    for (const auto& group_id : group_Ids)  // NOLINT (Alison)
+    for (const auto& group_id : group_Ids)
       EXPECT_EQ(1, env_->nodes_.at(env_->NodeIndex(group_id))->MessagesSize());
     env_->ClearMessages();
 
     // Client SendGroup
     uint16_t random_client(static_cast<uint16_t>(env_->RandomClientIndex()));
     EXPECT_TRUE(env_->SendGroup(target_id, 1, random_client));
-    for (const auto& group_id : group_Ids)  // NOLINT (Alison)
+    for (const auto& group_id : group_Ids)
       EXPECT_EQ(1, env_->nodes_.at(env_->NodeIndex(group_id))->MessagesSize());
     env_->ClearMessages();
 
@@ -78,7 +78,7 @@ TEST_F(RoutingNetworkTest, FUNC_SanityCheck) {
     target_id = NodeId(NodeId::kRandomId);
     group_Ids = env_->GetGroupForId(target_id);
     EXPECT_TRUE(env_->SendGroup(target_id, 1));
-    for (const auto& group_id : group_Ids)  // NOLINT (Alison)
+    for (const auto& group_id : group_Ids)
       EXPECT_EQ(1, env_->nodes_.at(env_->NodeIndex(group_id))->MessagesSize());
     env_->ClearMessages();
   }

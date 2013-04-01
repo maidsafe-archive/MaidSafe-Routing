@@ -47,7 +47,7 @@ RoutingTable::RoutingTable(bool client_mode,
       network_status_functor_(),
       remove_furthest_node_(),
       connected_group_change_functor_(),
-      subscribe_to_group_change_update_(),
+//      subscribe_to_group_change_update_(),
       close_node_replaced_functor_(),
       nodes_(),
       group_matrix_(kNodeId_, client_mode),
@@ -58,9 +58,7 @@ void RoutingTable::InitialiseFunctors(NetworkStatusFunctor network_status_functo
     std::function<void(const NodeInfo&, bool)> remove_node_functor,
     RemoveFurthestUnnecessaryNode remove_furthest_node,
     ConnectedGroupChangeFunctor connected_group_change_functor,
-    CloseNodeReplacedFunctor close_node_replaced_functor,
-    SubscribeToGroupChangeUpdate subscribe_to_group_change_update,
-    UnsubscribeGroupUpdate unsubscribe_group_update) {
+    CloseNodeReplacedFunctor close_node_replaced_functor) {
   // TODO(Prakash#5#): 2012-10-25 - Consider asserting network_status_functor != nullptr here.
   if (!network_status_functor)
     LOG(kWarning) << "NULL network_status_functor passed.";
@@ -76,8 +74,6 @@ void RoutingTable::InitialiseFunctors(NetworkStatusFunctor network_status_functo
     remove_furthest_node_ = remove_furthest_node;
     connected_group_change_functor_ = connected_group_change_functor;
     close_node_replaced_functor_ = close_node_replaced_functor;
-    subscribe_to_group_change_update_ = subscribe_to_group_change_update;
-    unsubscribe_group_update_ = unsubscribe_group_update;
 //  }
 }
 
@@ -140,8 +136,9 @@ bool RoutingTable::AddOrCheckNode(NodeInfo peer, bool remove) {
     }
 
     if (!new_connected_close_nodes.empty()) {
-      if (connected_group_change_functor_)
-        connected_group_change_functor_(new_connected_close_nodes);
+      if (connected_group_change_functor_) {
+//        connected_group_change_functor_(new_connected_close_nodes);
+      }
     }
 
 //    if (!new_closest_nodes.empty()) {
@@ -189,15 +186,16 @@ NodeInfo RoutingTable::DropNode(const NodeId& node_to_drop, bool routing_only) {
   }
 
   if (!new_connected_close_nodes.empty()) {
-    if (connected_group_change_functor_)
-      connected_group_change_functor_(new_connected_close_nodes);
+    if (connected_group_change_functor_) {
+     // connected_group_change_functor_(new_connected_close_nodes);
+    }
   }
 
-  if (!new_closest_nodes.empty()) {
-    network_statistics_.UpdateLocalAverageDistance(unique_nodes);
-    if (close_node_replaced_functor_)
-      close_node_replaced_functor_(new_closest_nodes);
-  }
+//  if (!new_closest_nodes.empty()) {
+//    network_statistics_.UpdateLocalAverageDistance(unique_nodes);
+//    if (close_node_replaced_functor_)
+//      close_node_replaced_functor_(new_closest_nodes);
+//  }
 
   if (!dropped_node.node_id.IsZero()) {
     assert(nodes_.size() <= std::numeric_limits<uint16_t>::max());
@@ -250,7 +248,7 @@ bool RoutingTable::IsThisNodeGroupLeader(const NodeId& target_id,
       return false;
     }
   }
-  for (const auto& excluded : exclude) {  // NOLINT (Alison)
+  for (const auto& excluded : exclude) {
     try {
       NodeId excluded_id(excluded);
       if (excluded_id != target_id && NodeId::CloserToTarget(excluded_id, kNodeId_, target_id)) {
@@ -409,14 +407,14 @@ void RoutingTable::UpdateCloseNodeChange(std::unique_lock<std::mutex>& lock,
                                          const NodeInfo& peer,
                                          std::vector<NodeInfo>& new_connected_nodes) {
   assert(lock.owns_lock());
-  if (nodes_.size() < Parameters::closest_nodes_size)
-    return;
   PartialSortFromTarget(kNodeId_, Parameters::closest_nodes_size, lock);
-  if (!NodeId::CloserToTarget(nodes_[Parameters::closest_nodes_size].node_id, peer.node_id,
-                              kNodeId_)) {
+  if ((nodes_.size() < Parameters::closest_nodes_size ||
+      !NodeId::CloserToTarget(peer.node_id, nodes_[Parameters::closest_nodes_size - 1].node_id,
+                               kNodeId_))) {
     group_matrix_.AddConnectedPeer(peer);
     group_matrix_.Prune();
-    new_connected_nodes = group_matrix_.GetConnectedPeers();
+    if (nodes_.size() >= 10*Parameters::closest_nodes_size)
+      new_connected_nodes = group_matrix_.GetConnectedPeers();
   }
 }
 
@@ -570,7 +568,7 @@ NodeInfo RoutingTable::GetClosestNode(const NodeId& target_id,
                                       bool ignore_exact_match) {
   std::vector<NodeInfo> closest_nodes(
       GetClosestNodeInfo(target_id, Parameters::closest_nodes_size, ignore_exact_match));
-  for (const auto& node_info : closest_nodes) {  // NOLINT (Alison)
+  for (const auto& node_info : closest_nodes) {
     if (std::find(exclude.begin(), exclude.end(), node_info.node_id.string()) == exclude.end())
       return node_info;
   }
@@ -605,7 +603,7 @@ NodeInfo RoutingTable::GetNodeForSendingMessage(const NodeId& target_id,
                                                  current_peer);
   }
   std::string excluded_ids;
-  for (const auto& excluded_id : exclude) {  // NOLINT (Alison)
+  for (const auto& excluded_id : exclude) {
     excluded_ids.append("\t");
     excluded_ids.append(HexSubstr(excluded_id));
   }
@@ -820,7 +818,7 @@ std::string RoutingTable::PrintRoutingTable() {
   std::string s = "\n\n[" + DebugId(kNodeId_) +
       "] This node's own routing table and peer connections:\n" +
       "Routing table size: " + std::to_string(nodes_.size()) + "\n";
-  for (const auto& node : rt) {  // NOLINT (Alison)
+  for (const auto& node : rt) {
     s += std::string("\tPeer ") + "[" + DebugId(node.node_id) + "]" + "-->";
     s += DebugId(node.connection_id) + " && xored ";
     s += DebugId(kNodeId_ ^ node.node_id) + " bucket ";

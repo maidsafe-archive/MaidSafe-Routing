@@ -267,18 +267,17 @@ void GenericNode::RemoveNodeFromRandomNodeHelper(const NodeId& node_id) {
   routing_->pimpl_->random_node_helper_.Remove(node_id);
 }
 
-/* Temporarily removed by Mahmoud due to changes in subscription
 bool GenericNode::NodeSubscribedForGroupUpdate(const NodeId& node_id) {
+  auto subscribers(routing_->pimpl_->routing_table_.group_matrix_.GetConnectedPeers());
   LOG(kVerbose) << DebugId(this->node_id()) << " has "
-               << routing_->pimpl_->group_change_handler_.update_subscribers_.size()
-               << " nodes subscribed for update";
-  return (std::find_if(routing_->pimpl_->group_change_handler_.update_subscribers_.begin(),
-                       routing_->pimpl_->group_change_handler_.update_subscribers_.end(),
+                << subscribers.size() << " nodes subscribed for update";
+  return (std::find_if(subscribers.begin(),
+                       subscribers.end(),
                        [&](const NodeInfo& node) {
                          return node.node_id == node_id;
-                       }) != routing_->pimpl_->group_change_handler_.update_subscribers_.end());
+                       }) != subscribers.end());
 }
-*/
+
 void GenericNode::SendDirect(const NodeId& destination_id,
                              const std::string& data,
                              const bool& cacheable,

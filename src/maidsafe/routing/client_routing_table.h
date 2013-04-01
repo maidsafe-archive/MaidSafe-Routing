@@ -52,7 +52,7 @@ class ClientRoutingTable {
   bool IsConnected(const NodeId& node_id) const;
   size_t size() const;
   NodeId kNodeId() const { return kNodeId_; }
-  void InitialiseFunctors(UnsubscribeGroupUpdate unsubscribe_group_update);
+//  void InitialiseFunctors(UnsubscribeGroupUpdate unsubscribe_group_update);
 
   friend class test::GenericNode;
 
@@ -72,7 +72,7 @@ class ClientRoutingTable {
   friend class test::BasicClientRoutingTableTest_BEH_IsThisNodeInRange_Test;
 
   const NodeId kNodeId_;
-  UnsubscribeGroupUpdate unsubscribe_group_update_;
+//  UnsubscribeGroupUpdate unsubscribe_group_update_;
   std::vector<NodeInfo> nodes_;
   mutable std::mutex mutex_;
 };

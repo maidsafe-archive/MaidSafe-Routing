@@ -56,9 +56,6 @@ struct NodeInfo;
 typedef std::function<void(const std::vector<NodeInfo> /*new_group*/)>
     ConnectedGroupChangeFunctor;
 
-typedef std::function<void(const bool& /*subscribe*/, NodeInfo /*node_info*/)>
-    SubscribeToGroupChangeUpdate;
-
 
 class RoutingTable {
  public:
@@ -69,9 +66,7 @@ class RoutingTable {
                           std::function<void(const NodeInfo&, bool)> remove_node_functor,
                           RemoveFurthestUnnecessaryNode remove_furthest_node,
                           ConnectedGroupChangeFunctor connected_group_change_functor,
-                          CloseNodeReplacedFunctor close_node_replaced_functor,
-                          SubscribeToGroupChangeUpdate subscribe_to_group_change_update,
-                          UnsubscribeGroupUpdate unsubscribe_group_update);
+                          CloseNodeReplacedFunctor close_node_replaced_functor);
   bool AddNode(const NodeInfo& peer);
   bool CheckNode(const NodeInfo& peer);
   NodeInfo DropNode(const NodeId &node_to_drop, bool routing_only);
@@ -172,9 +167,9 @@ class RoutingTable {
   NetworkStatusFunctor network_status_functor_;
   RemoveFurthestUnnecessaryNode remove_furthest_node_;
   ConnectedGroupChangeFunctor connected_group_change_functor_;
-  SubscribeToGroupChangeUpdate subscribe_to_group_change_update_;
+//  SubscribeToGroupChangeUpdate subscribe_to_group_change_update_;
   CloseNodeReplacedFunctor close_node_replaced_functor_;
-  UnsubscribeGroupUpdate unsubscribe_group_update_;
+//  UnsubscribeGroupUpdate unsubscribe_group_update_;
   std::vector<NodeInfo> nodes_;
   GroupMatrix group_matrix_;
   NetworkStatistics& network_statistics_;

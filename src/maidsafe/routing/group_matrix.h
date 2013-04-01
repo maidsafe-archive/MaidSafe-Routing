@@ -71,6 +71,7 @@ class GroupMatrix {
   bool Contains(const NodeId& node_id);
   void Clear();
   bool Unsubscribe(const NodeId& node_id);
+  void Prune();
 
   friend class test::GenericNode;
   friend class test::NetworkStatisticsTest_BEH_IsIdInGroupRange_Test;

@@ -110,9 +110,7 @@ TEST(RoutingTableTest, BEH_PopulateAndDepopulateGroupCheckGroupChange) {
                                    remove_node_functor,
                                    []() {},
                                    group_change_functor,
-                                   [](const std::vector<NodeInfo>& ) {},
-                                   [](const bool&, NodeInfo) {},
-                                   [](const NodeId&) {});
+                                   [](const std::vector<NodeInfo>& ) {});
   for (uint16_t i = 0; i < Parameters::closest_nodes_size; ++i) {
     ASSERT_TRUE(routing_table.AddNode(nodes.at(i)));
     LOG(kVerbose) << "Added to routing_table : " << DebugId(nodes.at(i).node_id);
@@ -158,9 +156,7 @@ TEST(RoutingTableTest, BEH_OrderedGroupChange) {
       [](const NodeInfo&, bool) {},
       []() {},
       group_change_functor,
-      [](const std::vector<NodeInfo>&) {},
-      [](const bool&, NodeInfo) {},
-      [](const NodeId&) {});
+      [](const std::vector<NodeInfo>&) {});
 
   for (uint16_t i = 0; i < Parameters::max_routing_table_size; ++i) {
     ASSERT_TRUE(routing_table.AddNode(nodes.at(i)));
@@ -221,9 +217,7 @@ TEST(RoutingTableTest, BEH_ReverseOrderedGroupChange) {
                                    remove_node_functor,
                                    []() {},
                                    group_change_functor,
-                                   [](const std::vector<NodeInfo>&) {},
-                                   [](const bool&, NodeInfo) {},
-                                   [](const NodeId&) {});
+                                   [](const std::vector<NodeInfo>&) {});
 
   // Add nodes to routing table
   for (auto ritr = nodes.rbegin(); ritr < nodes.rend(); ++ritr) {
@@ -315,9 +309,7 @@ TEST(RoutingTableTest, BEH_CheckGroupChangeRemoveNodesFromGroup) {
                                    remove_node_functor,
                                    []() {},
                                    group_change_functor,
-                                   [](const std::vector<NodeInfo>&) {},
-                                   [](const bool&, NodeInfo) {},
-                                   [](const NodeId&) {});
+                                   [](const std::vector<NodeInfo>&) {});
 
   // Populate routing table
   for (uint16_t i = 0; i < Parameters::max_routing_table_size; ++i) {
@@ -408,9 +400,7 @@ TEST(RoutingTableTest, BEH_CheckGroupChangeAddGroupNodesToFullTable) {
                                    remove_node_functor,
                                    []() {},
                                    group_change_functor,
-                                   [](const std::vector<NodeInfo>&) {},
-                                   [](const bool&, NodeInfo) {},
-                                   [](const NodeId&) {});
+                                   [](const std::vector<NodeInfo>&) {});
 
   // Populate routing table
   for (uint16_t i = 0; i < Parameters::max_routing_table_size; ++i) {
@@ -506,9 +496,7 @@ TEST(RoutingTableTest, BEH_FillEmptyRefillRoutingTable) {
                                    remove_node_functor,
                                    [] () {},
                                    group_change_functor,
-                                   [](const std::vector<NodeInfo>&) {},
-                                   [](const bool&, NodeInfo) {},
-                                   [](const NodeId&) {});
+                                   [](const std::vector<NodeInfo>&) {});
   // Fill routing table
   for (uint16_t i = 0; i < Parameters::max_routing_table_size; ++i) {
     if (expected_group.size() < Parameters::closest_nodes_size) {
@@ -660,9 +648,7 @@ TEST(RoutingTableTest, BEH_CheckMockSendGroupChangeRpcs) {
                                      remove_node_functor,
                                      []() {},
                                      group_change_functor,
-                                     [](const std::vector<NodeInfo>&) {},
-                                     [](const bool&, NodeInfo) {},
-                                     [](const NodeId&) {});
+                                     [](const std::vector<NodeInfo>&) {});
 
   // Check that 2's group matrix is updated correctly - Add nodes
   std::vector<NodeInfo> close_nodes;

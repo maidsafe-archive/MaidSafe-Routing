@@ -82,10 +82,6 @@ void MessageHandler::HandleRoutingMessage(protobuf::Message& message) {
       if (routing_table_.client_mode())
         response_handler_->CloseNodeUpdateForClient(message);
       break;
-    case MessageType::kClosestNodesUpdateSubscribe :
-      assert(message.request());
-      group_change_handler_.ClosestNodesUpdateSubscribe(message);
-      break;
     case MessageType::kGetGroup :
       message.request() ? service_->GetGroup(message) : response_handler_->GetGroup(timer_,
                                                                                     message);
