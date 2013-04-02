@@ -58,7 +58,7 @@ RoutingTable::RoutingTable(bool client_mode,
   try {
     ipc_message_queue_.reset(new boost::interprocess::message_queue(boost::interprocess::open_only,
                                                                     "matrix_messages"));
-    if (ipc_message_queue_->get_max_msg_size() <
+    if (static_cast<uint16_t>(ipc_message_queue_->get_max_msg_size()) <
         (Parameters::closest_nodes_size + 1) * Parameters::closest_nodes_size * 2 * NodeId::kSize) {
       ThrowError(CommonErrors::invalid_parameter);
     }

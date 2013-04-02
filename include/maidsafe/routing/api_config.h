@@ -42,6 +42,12 @@ enum class GroupRangeStatus {
   kOutwithRange
 };
 
+// This struct needs to be moved to common
+struct MatrixChange {
+  std::vector<NodeId> old_matrix, new_matrix;
+  static uint16_t close_count, proximal_count;
+};
+
 typedef std::function<void(std::string)> ResponseFunctor;
 
 // They are passed as a parameter by MessageReceivedFunctor and should be called for responding to
@@ -73,6 +79,9 @@ typedef std::function<void(const boost::asio::ip::udp::endpoint& /*new_endpoint*
 // to the new node. Keys further than the furthest node can safely be deleted (if any).
 typedef std::function<void(const std::vector<NodeInfo>& /*new_close_nodes*/)>
     CloseNodeReplacedFunctor;
+
+typedef std::function<void(const MatrixChange& /*matrix_change*/)>
+    MatrixChangedFunctor;
 
 // This functor fires when routing table size is over greedy limit. The furthest unnecessary
 // node in routing table is dropped. Unnecessary is defined as a node who does not have us in
