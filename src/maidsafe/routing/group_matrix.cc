@@ -15,7 +15,6 @@
 #include <algorithm>
 #include <bitset>
 #include <cstdint>
-#include <set>
 
 #include "maidsafe/common/log.h"
 
@@ -246,6 +245,7 @@ void GroupMatrix::UpdateFromConnectedPeer(const NodeId& peer,
     group_itr->push_back(i);
 
   // Update unique node vector
+  Prune();
   UpdateUniqueNodeList();
 }
 
@@ -324,10 +324,9 @@ bool GroupMatrix::Unsubscribe(const NodeId& node_id) {
 void GroupMatrix::UpdateUniqueNodeList() {
   unique_nodes_.clear();
   auto node_id(kNodeId_);
-  typedef std::set<NodeInfo, std::function<bool(const NodeInfo&, const NodeInfo&)> > UniqueNodes;
-  UniqueNodes unique_nodes_set([node_id] (const NodeInfo& lhs, const NodeInfo& rhs)->bool {
-                                 return NodeId::CloserToTarget(lhs.node_id, rhs.node_id, node_id);
-                               });
+  MatrixRow row([node_id] (const NodeInfo& lhs, const NodeInfo& rhs)->bool {
+                  return NodeId::CloserToTarget(lhs.node_id, rhs.node_id, node_id);
+                });
   // Update unique node vector
   if (!client_mode_) {
     NodeInfo node_info;
@@ -335,9 +334,9 @@ void GroupMatrix::UpdateUniqueNodeList() {
     unique_nodes_.push_back(node_info);
   }
   for (auto itr = matrix_.begin(); itr != matrix_.end(); ++itr)
-    unique_nodes_set.insert(itr->begin(), itr->end());
+    row.insert(itr->begin(), itr->end());
 
-  for (auto itr(unique_nodes_set.begin()); itr != unique_nodes_set.end(); ++itr)
+  for (auto itr(row.begin()); itr != row.end(); ++itr)
     unique_nodes_.push_back(*itr);
 }
 
@@ -369,7 +368,7 @@ void GroupMatrix::Prune() {
                     });
   auto itr(matrix_.begin());
   std::advance(itr, Parameters::closest_nodes_size);
-  while (itr != matrix_.end()) {
+  for (; itr != matrix_.end(); ++itr) {
     node_id = itr->begin()->node_id;
     if (itr->size() < Parameters::closest_nodes_size)
       continue;
@@ -381,7 +380,6 @@ void GroupMatrix::Prune() {
                       });
     if (NodeId::CloserToTarget(itr->at(Parameters::closest_nodes_size).node_id, kNodeId_, node_id))
       peers_to_remove.push_back(node_id);
-    std::advance(itr, 1);
   }
   for (auto& peer : peers_to_remove) {
     matrix_.erase(std::remove_if(matrix_.begin(),

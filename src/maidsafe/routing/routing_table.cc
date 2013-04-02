@@ -47,7 +47,6 @@ RoutingTable::RoutingTable(bool client_mode,
       network_status_functor_(),
       remove_furthest_node_(),
       connected_group_change_functor_(),
-//      subscribe_to_group_change_update_(),
       close_node_replaced_functor_(),
       nodes_(),
       group_matrix_(kNodeId_, client_mode),
@@ -137,7 +136,7 @@ bool RoutingTable::AddOrCheckNode(NodeInfo peer, bool remove) {
 
     if (!new_connected_close_nodes.empty()) {
       if (connected_group_change_functor_) {
-//        connected_group_change_functor_(new_connected_close_nodes);
+        connected_group_change_functor_(new_connected_close_nodes);
       }
     }
 
@@ -187,7 +186,7 @@ NodeInfo RoutingTable::DropNode(const NodeId& node_to_drop, bool routing_only) {
 
   if (!new_connected_close_nodes.empty()) {
     if (connected_group_change_functor_) {
-     // connected_group_change_functor_(new_connected_close_nodes);
+      connected_group_change_functor_(new_connected_close_nodes);
     }
   }
 
@@ -400,7 +399,17 @@ bool RoutingTable::ConfirmGroupMembers(const NodeId& node1, const NodeId& node2)
 void RoutingTable::GroupUpdateFromConnectedPeer(const NodeId& peer,
                                                 const std::vector<NodeInfo>& nodes) {
   std::unique_lock<std::mutex> lock(mutex_);
+  auto old_connected_peers(group_matrix_.GetConnectedPeers());
   group_matrix_.UpdateFromConnectedPeer(peer, nodes);
+  auto new_connected_peers(group_matrix_.GetConnectedPeers());
+  if ((old_connected_peers.size() != new_connected_peers.size()) ||
+      !std::equal(old_connected_peers.begin(),
+                 old_connected_peers.end(),
+                 new_connected_peers.begin(),
+                 [] (const NodeInfo& lhs, const NodeInfo& rhs) {
+                   return lhs.node_id == rhs.node_id;
+                 }))
+    connected_group_change_functor_(new_connected_peers);
 }
 
 void RoutingTable::UpdateCloseNodeChange(std::unique_lock<std::mutex>& lock,
@@ -409,13 +418,14 @@ void RoutingTable::UpdateCloseNodeChange(std::unique_lock<std::mutex>& lock,
   assert(lock.owns_lock());
   PartialSortFromTarget(kNodeId_, Parameters::closest_nodes_size, lock);
   if ((nodes_.size() < Parameters::closest_nodes_size ||
-      !NodeId::CloserToTarget(peer.node_id, nodes_[Parameters::closest_nodes_size - 1].node_id,
-                               kNodeId_))) {
+      !NodeId::CloserToTarget(nodes_[Parameters::closest_nodes_size - 1].node_id,
+                              peer.node_id,
+                              kNodeId_))) {
     group_matrix_.AddConnectedPeer(peer);
     group_matrix_.Prune();
-    if (nodes_.size() >= Parameters::closest_nodes_size)
-      new_connected_nodes = group_matrix_.GetConnectedPeers();
   }
+  if (nodes_.size() >= Parameters::closest_nodes_size)
+    new_connected_nodes = group_matrix_.GetConnectedPeers();
 }
 
 // bucket 0 is us, 511 is furthest bucket (should fill first)

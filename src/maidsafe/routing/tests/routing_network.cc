@@ -269,8 +269,15 @@ void GenericNode::RemoveNodeFromRandomNodeHelper(const NodeId& node_id) {
 
 bool GenericNode::NodeSubscribedForGroupUpdate(const NodeId& node_id) {
   auto subscribers(routing_->pimpl_->routing_table_.group_matrix_.GetConnectedPeers());
-  LOG(kVerbose) << DebugId(this->node_id()) << " has "
-                << subscribers.size() << " nodes subscribed for update";
+  std::string log;
+  log += DebugId(this->node_id()) + " has "
+      + std::to_string(subscribers.size()) + " nodes subscribed for update";
+  for (auto& subscriber : subscribers) {
+    log += DebugId(subscriber.node_id) + ", ";
+  }
+
+  LOG(kVerbose) << log;
+
   return (std::find_if(subscribers.begin(),
                        subscribers.end(),
                        [&](const NodeInfo& node) {

@@ -816,6 +816,49 @@ TEST_P(GroupMatrixTest, BEH_GetAllConnectedPeers) {
   }
 }
 
+TEST_P(GroupMatrixTest, BEH_Prune) {
+  const size_t kNodesSize(10);
+  std::vector<NodeInfo> all_nodes_info;
+  NodeId node_id(own_node_id_), far_id(own_node_id_ ^ NodeId(NodeId::kMaxId));
+  NodeInfo node_info;
+  for (size_t index(0); index < kNodesSize; ++index) {
+    NodeId close_node_id;
+    if (index != kNodesSize - 1)
+      close_node_id = GenerateUniqueRandomId(node_id, 50);
+    else
+      close_node_id = far_id;
+    node_info.node_id = close_node_id;
+    all_nodes_info.push_back(node_info);
+  }
+  for (size_t index(0); index < kNodesSize; ++index)
+    matrix_.AddConnectedPeer(all_nodes_info[index]);
+  std::sort(all_nodes_info.begin(),
+            all_nodes_info.end(),
+            [own_node_id_] (const NodeInfo& lhs, const NodeInfo& rhs) {
+              return NodeId::CloserToTarget(lhs.node_id, rhs.node_id, own_node_id_);
+            });
+  auto copy(all_nodes_info);
+  copy.push_back(own_node_info_);
+  for (size_t index(0); index < kNodesSize; ++index) {
+    auto current_id(all_nodes_info[index].node_id);
+    std::sort(copy.begin(),
+              copy.end(),
+              [current_id] (const NodeInfo& lhs, const NodeInfo& rhs) {
+                return NodeId::CloserToTarget(lhs.node_id, rhs.node_id, current_id);
+              });
+    matrix_.UpdateFromConnectedPeer(current_id,
+                                    std::vector<NodeInfo>(copy.begin() + 1,
+                                                          copy.end()));
+  }
+  auto connected_peers(matrix_.GetConnectedPeers());
+  auto far_node_itr(std::find_if(connected_peers.begin(),
+                                 connected_peers.end(),
+                                 [far_id](const NodeInfo& node) {
+                                   return node.node_id == far_id;
+                                 }));
+  EXPECT_EQ(far_node_itr, connected_peers.end());
+}
+
 TEST_P(GroupMatrixTest, BEH_CheckAssertions) {
   NodeId zero_id, random_id_1(NodeId::kRandomId), random_id_2(NodeId::kRandomId);
   ASSERT_TRUE(zero_id.IsZero());

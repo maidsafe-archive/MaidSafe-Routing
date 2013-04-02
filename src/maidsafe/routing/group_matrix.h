@@ -17,6 +17,7 @@
 #include <mutex>
 #include <vector>
 #include <string>
+#include <set>
 
 #include "maidsafe/common/node_id.h"
 #include "maidsafe/routing/node_info.h"
@@ -28,6 +29,7 @@ namespace routing {
 namespace test {
   class GenericNode;
   class NetworkStatisticsTest_BEH_IsIdInGroupRange_Test;
+  class GroupMatrixTest_BEH_Prune_Test;
 }
 
 class RoutingTable;
@@ -75,6 +77,7 @@ class GroupMatrix {
 
   friend class test::GenericNode;
   friend class test::NetworkStatisticsTest_BEH_IsIdInGroupRange_Test;
+  friend class test::GroupMatrixTest_BEH_Prune_Test;
 
  private:
   GroupMatrix(const GroupMatrix&);
@@ -87,7 +90,8 @@ class GroupMatrix {
   const NodeId& kNodeId_;
   std::vector<NodeInfo> unique_nodes_;
   bool client_mode_;
-  std::vector<std::vector<NodeInfo>> matrix_;
+  std::vector<std::vector<NodeInfo> > matrix_;
+  typedef std::set<NodeInfo, std::function<bool(const NodeInfo&, const NodeInfo&)> > MatrixRow;
 };
 
 }  // namespace routing

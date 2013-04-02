@@ -86,17 +86,24 @@ void GroupChangeHandler::UpdateGroupChange(const NodeId& node_id,
   }
 }
 
-void GroupChangeHandler::SendClosestNodesUpdateRpcs(const std::vector<NodeInfo>& closest_nodes) {
+void GroupChangeHandler::SendClosestNodesUpdateRpcs(std::vector<NodeInfo> closest_nodes) {
+  NodeId node_id(routing_table_.kNodeId());
+  closest_nodes.erase(std::remove_if(closest_nodes.begin(),
+                                     closest_nodes.end(),
+                                     [node_id] (const NodeInfo& node_info) {
+                                       return node_info.node_id == node_id;
+                                     }), closest_nodes.end());
+  if (closest_nodes.size() < Parameters::closest_nodes_size)
+    return;
   LOG(kVerbose) << "["  << DebugId(routing_table_.kNodeId())
                 << "] SendClosestNodesUpdateRpcs: " << closest_nodes.size();
   std::vector<NodeInfo> update_subscribers(closest_nodes);
-  assert(closest_nodes.size() <= Parameters::closest_nodes_size);
   for (auto itr(update_subscribers.begin()); itr != update_subscribers.end(); ++itr) {
     LOG(kVerbose) << "["  << DebugId(routing_table_.kNodeId())
                   << "] Sending update to: " << DebugId(itr->node_id);
-//    protobuf::Message closest_nodes_update_rpc(
-//        rpcs::ClosestNodesUpdate(itr->node_id, routing_table_.kNodeId(), closest_nodes));
-//    network_.SendToDirect(closest_nodes_update_rpc, itr->node_id, itr->connection_id);
+    protobuf::Message closest_nodes_update_rpc(
+        rpcs::ClosestNodesUpdate(itr->node_id, routing_table_.kNodeId(), closest_nodes));
+    network_.SendToDirect(closest_nodes_update_rpc, itr->node_id, itr->connection_id);
   }
 }
 
