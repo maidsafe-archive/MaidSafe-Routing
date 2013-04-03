@@ -172,25 +172,6 @@ TEST_F(RoutingStandAloneTest, FUNC_ExtendedSendToGroupRandomId) {
   }
 }
 
-TEST_F(RoutingStandAloneTest, FUNC_CheckUnsubscription) {
-  this->SetUpNetwork(kServerSize);
-  size_t size(kServerSize);
-  size_t random_index(this->nodes_.size() % size);
-  NodePtr node(nodes_[random_index]);
-  NodeInfo furthest_closest(node->GetNthClosestNode(node->node_id(),
-                                                    Parameters::closest_nodes_size));
-  LOG(kVerbose) << "Furthest close node: " << DebugId(furthest_closest.node_id);
-  this->AddNode(false, GenerateUniqueRandomId(node->node_id(), 30));
-  int index(this->NodeIndex(furthest_closest.node_id));
-  EXPECT_FALSE(this->nodes_[index]->NodeSubscribedForGroupUpdate(
-      node->node_id())) << DebugId(furthest_closest.node_id) << " hase "
-                        << DebugId(node->node_id());
-  EXPECT_TRUE(this->nodes_[size]->NodeSubscribedForGroupUpdate(
-      node->node_id())) << DebugId(this->nodes_[size]->node_id())
-                        << " does not have " << DebugId(node->node_id());
-}
-
-
 TEST_F(RoutingStandAloneTest, FUNC_NodeRemoved) {
   this->SetUpNetwork(kServerSize);
   size_t random_index(this->RandomNodeIndex());

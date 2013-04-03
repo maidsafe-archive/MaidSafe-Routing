@@ -78,11 +78,11 @@ RoutingTable::~RoutingTable() {
 }
 
 void RoutingTable::InitialiseFunctors(NetworkStatusFunctor network_status_functor,
-                        std::function<void(const NodeInfo&, bool)> remove_node_functor,
-                        RemoveFurthestUnnecessaryNode remove_furthest_node,
-                        ConnectedGroupChangeFunctor connected_group_change_functor,
-                        CloseNodeReplacedFunctor close_node_replaced_functor,
-                        MatrixChangedFunctor matrix_change_functor) {
+    std::function<void(const NodeInfo&, bool)> remove_node_functor,
+    RemoveFurthestUnnecessaryNode remove_furthest_node,
+    ConnectedGroupChangeFunctor connected_group_change_functor,
+    CloseNodeReplacedFunctor close_node_replaced_functor,
+    MatrixChangedFunctor matrix_change_functor) {
   // TODO(Prakash#5#): 2012-10-25 - Consider asserting network_status_functor != nullptr here.
   if (!network_status_functor)
     LOG(kWarning) << "NULL network_status_functor passed.";
@@ -431,21 +431,23 @@ bool RoutingTable::ConfirmGroupMembers(const NodeId& node1, const NodeId& node2)
 void RoutingTable::GroupUpdateFromConnectedPeer(const NodeId& peer,
                                                 const std::vector<NodeInfo>& nodes) {
   MatrixChange matrix_change;
-  std::unique_lock<std::mutex> lock(mutex_);
-  matrix_change.old_matrix = group_matrix_.GetUniqueNodeIds();
-  auto connected_peers(group_matrix_.GetConnectedPeers());
-  if (std::find_if(connected_peers.begin(),
-                   connected_peers.end(),
-                   [peer] (const NodeInfo& node_info) {
-                     return node_info.node_id == peer;
-                   }) == connected_peers.end()) {
-    auto found(Find(peer, lock));
-    if (!found.first)
-      return;
-    group_matrix_.AddConnectedPeer(*found.second);
+  {
+    std::unique_lock<std::mutex> lock(mutex_);
+    matrix_change.old_matrix = group_matrix_.GetUniqueNodeIds();
+    auto connected_peers(group_matrix_.GetConnectedPeers());
+    if (std::find_if(connected_peers.begin(),
+                     connected_peers.end(),
+                     [peer] (const NodeInfo& node_info) {
+                       return node_info.node_id == peer;
+                     }) == connected_peers.end()) {
+      auto found(Find(peer, lock));
+      if (!found.first)
+        return;
+      group_matrix_.AddConnectedPeer(*found.second);
+    }
+    group_matrix_.UpdateFromConnectedPeer(peer, nodes);
+    matrix_change.new_matrix = group_matrix_.GetUniqueNodeIds();
   }
-  group_matrix_.UpdateFromConnectedPeer(peer, nodes);
-  matrix_change.new_matrix = group_matrix_.GetUniqueNodeIds();
   if (!matrix_change.OldEqualsToNew() && matrix_change_functor_)
     matrix_change_functor_(matrix_change);
 }

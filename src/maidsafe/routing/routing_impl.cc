@@ -118,11 +118,6 @@ void Routing::Impl::ConnectFunctors(const Functors& functors) {
                                     },
                                     functors_.close_node_replaced,
                                     functors.matrix_changed);
-//  client_routing_table_.InitialiseFunctors([this] (const NodeId& connection_id) {
-//                                             std::lock_guard<std::mutex> lock(running_mutex_);
-//                                             if (running_)
-//                                               group_change_handler_.Unsubscribe(connection_id);
-//                                           });
   message_handler_->set_message_received_functor(functors.message_received);
   message_handler_->set_request_public_key_functor(functors.request_public_key);
   network_.set_new_bootstrap_endpoint_functor(functors.new_bootstrap_endpoint);
