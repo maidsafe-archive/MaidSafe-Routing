@@ -290,7 +290,7 @@ std::vector<boost::asio::ip::udp::endpoint> OrderBootstrapList(
     return peer_endpoints;
   auto copy_vector(peer_endpoints);
   for (auto& endpoint : copy_vector) {
-    endpoint.port(5483);
+    endpoint.port(kLivePort);
   }
   auto it = std::unique(copy_vector.begin(), copy_vector.end());
   copy_vector.resize(it - copy_vector.begin());
