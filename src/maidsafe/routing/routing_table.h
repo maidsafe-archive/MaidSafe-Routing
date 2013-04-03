@@ -68,7 +68,8 @@ class RoutingTable {
                           std::function<void(const NodeInfo&, bool)> remove_node_functor,
                           RemoveFurthestUnnecessaryNode remove_furthest_node,
                           ConnectedGroupChangeFunctor connected_group_change_functor,
-                          CloseNodeReplacedFunctor close_node_replaced_functor);
+                          CloseNodeReplacedFunctor close_node_replaced_functor,
+                          MatrixChangedFunctor matrix_change_functor);
   bool AddNode(const NodeInfo& peer);
   bool CheckNode(const NodeInfo& peer);
   NodeInfo DropNode(const NodeId &node_to_drop, bool routing_only);
@@ -132,7 +133,8 @@ class RoutingTable {
                                         bool local_endpoint,
                                         NodeInfo& existing_node);
   void UpdateCloseNodeChange(std::unique_lock<std::mutex>& lock, const NodeInfo& peer,
-                             std::vector<NodeInfo>& new_connected_nodes);
+                             std::vector<NodeInfo>& new_connected_nodes,
+                             MatrixChange& matrix_change);
   bool MakeSpaceForNodeToBeAdded(const NodeInfo& node,
                                  bool remove,
                                  NodeInfo& removed_node,
@@ -171,6 +173,7 @@ class RoutingTable {
   RemoveFurthestUnnecessaryNode remove_furthest_node_;
   ConnectedGroupChangeFunctor connected_group_change_functor_;
   CloseNodeReplacedFunctor close_node_replaced_functor_;
+  MatrixChangedFunctor matrix_change_functor_;
   std::vector<NodeInfo> nodes_;
   GroupMatrix group_matrix_;
   std::unique_ptr<boost::interprocess::message_queue> ipc_message_queue_;

@@ -27,20 +27,20 @@ NetworkStatistics::NetworkStatistics(const NodeId& node_id)
        distance_(),
        network_distance_data_() {}
 
-void NetworkStatistics::UpdateLocalAverageDistance(std::vector<NodeInfo> unique_nodes) {
+void NetworkStatistics::UpdateLocalAverageDistance(std::vector<NodeId>& unique_nodes) {
   if (unique_nodes.size() < Parameters::node_group_size)
     return;
   std::nth_element(unique_nodes.begin(),
                    unique_nodes.begin() + Parameters::node_group_size,
                    unique_nodes.end(),
-                   [&](const NodeInfo& lhs, const NodeInfo& rhs) {
-                     return NodeId::CloserToTarget(lhs.node_id, rhs.node_id, kNodeId_);
+                   [&](const NodeId& lhs, const NodeId& rhs) {
+                     return NodeId::CloserToTarget(lhs, rhs, kNodeId_);
                    });
-  NodeInfo furthest_group_node(unique_nodes.at(std::min(Parameters::node_group_size - 1,
+  NodeId furthest_group_node(unique_nodes.at(std::min(Parameters::node_group_size - 1,
                                    static_cast<int>(unique_nodes.size()))));
   {
      std::lock_guard<std::mutex> lock(mutex_);
-     distance_ = furthest_group_node.node_id ^ kNodeId_;
+     distance_ = furthest_group_node ^ kNodeId_;
   }
 }
 

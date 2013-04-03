@@ -49,19 +49,24 @@ void GroupMatrix::AddConnectedPeer(const NodeInfo& node_info) {
   UpdateUniqueNodeList();
 }
 
-void GroupMatrix::RemoveConnectedPeer(const NodeInfo& node_info) {
+void GroupMatrix::RemoveConnectedPeer(const NodeInfo& node_info, MatrixChange& matrix_change) {
+  matrix_change.old_matrix = GetUniqueNodeIds();
   matrix_.erase(std::remove_if(matrix_.begin(),
                                matrix_.end(),
                                [node_info](const std::vector<NodeInfo> nodes) {
-                                   return (node_info.node_id == nodes.at(0).node_id);
+                                 return (node_info.node_id == nodes.begin()->node_id);
                                }), matrix_.end());
+  Prune();
+  matrix_change.new_matrix = GetUniqueNodeIds();
   UpdateUniqueNodeList();
 }
 
 std::vector<NodeInfo> GroupMatrix::GetConnectedPeers() {
   std::vector<NodeInfo> connected_peers;
-  for (const auto& nodes : matrix_)
-    connected_peers.push_back(nodes.at(0));
+  for (const auto& nodes : matrix_) {
+    if (nodes.begin()->node_id != kNodeId_)
+      connected_peers.push_back(nodes.at(0));
+  }
   return connected_peers;
 }
 
@@ -276,6 +281,13 @@ std::vector<NodeInfo> GroupMatrix::GetUniqueNodes() const {
   return unique_nodes_;
 }
 
+std::vector<NodeId> GroupMatrix::GetUniqueNodeIds() const {
+  std::vector<NodeId> unique_node_ids;
+  for (auto& node_info : unique_nodes_)
+    unique_node_ids.push_back(node_info.node_id);
+  return unique_node_ids;
+}
+
 bool GroupMatrix::IsRowEmpty(const NodeInfo& node_info) {
   auto group_itr(matrix_.begin());
   for (group_itr = matrix_.begin(); group_itr != matrix_.end(); ++group_itr) {
@@ -374,6 +386,7 @@ void GroupMatrix::Prune() {
       peers_to_remove.push_back(node_id);
   }
   for (auto& peer : peers_to_remove) {
+    LOG(kInfo) << DebugId(kNodeId_) << " matrix conected removes " << DebugId(peer);
     matrix_.erase(std::remove_if(matrix_.begin(),
                                  matrix_.end(),
                                  [peer] (const std::vector<NodeInfo>& row) {

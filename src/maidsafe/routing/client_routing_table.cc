@@ -185,7 +185,7 @@ std::string ClientRoutingTable::PrintClientRoutingTable() {
   auto rt(nodes_);
   std::string s = "\n\n[" + DebugId(kNodeId_) +
       "] This node's own ClientRoutingTable and peer connections:\n";
-  for (const auto& node : rt) {  // NOLINT (Alison)
+  for (const auto& node : rt) {
     s += std::string("\tPeer ") + "[" + DebugId(node.node_id) + "]"+ "-->";
     s += DebugId(node.connection_id)+ "\n";
   }

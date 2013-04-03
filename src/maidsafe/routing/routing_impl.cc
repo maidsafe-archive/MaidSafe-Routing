@@ -116,7 +116,8 @@ void Routing::Impl::ConnectFunctors(const Functors& functors) {
                                       if (running_)
                                         group_change_handler_.SendClosestNodesUpdateRpcs(nodes);
                                     },
-                                    functors_.close_node_replaced);
+                                    functors_.close_node_replaced,
+                                    functors.matrix_changed);
 //  client_routing_table_.InitialiseFunctors([this] (const NodeId& connection_id) {
 //                                             std::lock_guard<std::mutex> lock(running_mutex_);
 //                                             if (running_)

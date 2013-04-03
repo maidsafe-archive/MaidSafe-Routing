@@ -46,10 +46,8 @@ class RoutingNetworkNonNatTest : public testing::Test {
   std::shared_ptr<GenericNetwork> env_;
 };
 
-/*
+
 TEST_F(RoutingNetworkNonNatTest, FUNC_GroupUpdateSubscription) {
-  // TODO(Alison) - test currently only passes when run before all other functional tests. Needs
-  // update to pass when run after other functional tests.
   std::vector<NodeInfo> closest_nodes_info;
   for (const auto& node : env_->nodes_) {
     if ((node->node_id() == env_->nodes_[kServerSize - 1]->node_id()) ||
@@ -64,14 +62,17 @@ TEST_F(RoutingNetworkNonNatTest, FUNC_GroupUpdateSubscription) {
       int index(env_->NodeIndex(node_info.node_id));
       if ((index == kServerSize - 1) || env_->nodes_[index]->IsClient())
         continue;
-      EXPECT_TRUE(env_->nodes_[index]->NodeSubscribedForGroupUpdate(node->node_id()))
-          << DebugId(node_info.node_id) << " does not have " << DebugId(node->node_id());
-      EXPECT_TRUE(env_->nodes_[my_index]->NodeSubscribedForGroupUpdate(node_info.node_id))
-          << DebugId(node->node_id()) << " does not have " << DebugId(node_info.node_id);
+      if (!node->IsClient()) {
+        EXPECT_TRUE(env_->nodes_[index]->NodeSubscribedForGroupUpdate(node->node_id()))
+            << DebugId(node_info.node_id) << " does not have " << DebugId(node->node_id());
+        EXPECT_TRUE(env_->nodes_[my_index]->NodeSubscribedForGroupUpdate(node_info.node_id))
+            << DebugId(node->node_id()) << " does not have " << DebugId(node_info.node_id);
+      } else {
+        EXPECT_GE(node->GetGroupMatrixConnectedPeers().size(), 8);
+      }
     }
   }
 }
-*/
 
 }  // namespace test
 

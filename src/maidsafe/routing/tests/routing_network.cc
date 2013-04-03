@@ -285,6 +285,10 @@ bool GenericNode::NodeSubscribedForGroupUpdate(const NodeId& node_id) {
                        }) != subscribers.end());
 }
 
+std::vector<NodeInfo> GenericNode::GetGroupMatrixConnectedPeers() {
+  return routing_->pimpl_->routing_table_.group_matrix_.GetConnectedPeers();
+}
+
 void GenericNode::SendDirect(const NodeId& destination_id,
                              const std::string& data,
                              const bool& cacheable,

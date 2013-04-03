@@ -225,7 +225,8 @@ TEST_P(GroupMatrixTest, BEH_EmptyMatrix) {
 
   EXPECT_EQ(0, matrix_.GetUniqueNodes().size());
 
-  matrix_.RemoveConnectedPeer(NodeInfo());
+  MatrixChange matrix_change;
+  matrix_.RemoveConnectedPeer(NodeInfo(), matrix_change);
   CheckIsThisNodeGroupLeader(target_id, connected_peer, true);
 
   if (client_mode_)
@@ -490,9 +491,10 @@ TEST_P(GroupMatrixTest, BEH_AddUpdateGetRemovePeers) {
 
   // Remove peers
   SortNodeInfosFromTarget(own_node_id_, row_ids);
+  MatrixChange matrix_change;
   while (!row_ids.empty()) {
     uint32_t index(RandomUint32() % row_ids.size());
-    matrix_.RemoveConnectedPeer(row_ids.at(index));
+    matrix_.RemoveConnectedPeer(row_ids.at(index), matrix_change);
     row_ids.erase(row_ids.begin() + index);
     EXPECT_TRUE(CompareListOfNodeInfos(row_ids, matrix_.GetConnectedPeers()));
   }

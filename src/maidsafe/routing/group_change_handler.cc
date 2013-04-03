@@ -77,7 +77,7 @@ void GroupChangeHandler::ClosestNodesUpdate(protobuf::Message& message) {
 void GroupChangeHandler::UpdateGroupChange(const NodeId& node_id,
                                            std::vector<NodeInfo> close_nodes) {
   if (routing_table_.Contains(node_id)) {
-    LOG(kVerbose) << DebugId(routing_table_.kNodeId()) << "UpdateGroupChange for "
+    LOG(kVerbose) << DebugId(routing_table_.kNodeId()) << " UpdateGroupChange for "
                   << DebugId(node_id) << " size of update: " << close_nodes.size();
     routing_table_.GroupUpdateFromConnectedPeer(node_id, close_nodes);
   } else {
@@ -98,6 +98,9 @@ void GroupChangeHandler::SendClosestNodesUpdateRpcs(std::vector<NodeInfo> closes
   LOG(kVerbose) << "["  << DebugId(routing_table_.kNodeId())
                 << "] SendClosestNodesUpdateRpcs: " << closest_nodes.size();
   std::vector<NodeInfo> update_subscribers(closest_nodes);
+  // clients are also notified of changes in connected close nodes
+  for (auto& client : client_routing_table_.nodes_)
+    update_subscribers.push_back(client);
   for (auto itr(update_subscribers.begin()); itr != update_subscribers.end(); ++itr) {
     LOG(kVerbose) << "["  << DebugId(routing_table_.kNodeId())
                   << "] Sending update to: " << DebugId(itr->node_id);

@@ -39,30 +39,6 @@ class RoutingStandAloneTest : public GenericNetwork, public testing::Test {
   }
 };
 
-TEST_F(RoutingStandAloneTest, FUNC_GroupUpdateSubscription) {
-  uint32_t ServerSize(kServerSize);
-  this->SetUpNetwork(ServerSize);
-  std::vector<NodeInfo> closest_nodes_info;
-  for (const auto& node : this->nodes_) {
-    if (node->node_id() == this->nodes_[ServerSize - 1]->node_id())
-      continue;
-    closest_nodes_info = this->GetClosestNodes(node->node_id(),
-                                               Parameters::closest_nodes_size - 1);
-    LOG(kVerbose) << "size of closest_nodes: " << closest_nodes_info.size();
-
-    int my_index(this->NodeIndex(node->node_id()));
-    for (const auto& node_info : closest_nodes_info) {
-      uint32_t index(this->NodeIndex(node_info.node_id));
-      if ((index == ServerSize - 1) || this->nodes_[index]->IsClient())
-        continue;
-      EXPECT_TRUE(this->nodes_[index]->NodeSubscribedForGroupUpdate(node->node_id()))
-          << DebugId(node_info.node_id) << " does not have " << DebugId(node->node_id());
-      EXPECT_TRUE(this->nodes_[my_index]->NodeSubscribedForGroupUpdate(node_info.node_id))
-          << DebugId(node->node_id()) << " does not have " << DebugId(node_info.node_id);
-    }
-  }
-}
-
 // TODO(Mahmoud): This test should be moved to TESTrouting_func as it doesn't affect network.
 TEST_F(RoutingStandAloneTest, FUNC_GetGroup) {
   this->SetUpNetwork(kServerSize);

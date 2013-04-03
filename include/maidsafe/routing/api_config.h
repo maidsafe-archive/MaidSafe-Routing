@@ -46,6 +46,13 @@ enum class GroupRangeStatus {
 struct MatrixChange {
   std::vector<NodeId> old_matrix, new_matrix;
   static uint16_t close_count, proximal_count;
+  bool OldEqualsToNew() const {
+    if (old_matrix.size() != new_matrix.size())
+      return false;
+    return std::equal(new_matrix.begin(),
+                      new_matrix.end(),
+                      old_matrix.begin());
+  }
 };
 
 typedef std::function<void(std::string)> ResponseFunctor;
@@ -102,6 +109,7 @@ struct Functors {
   MessageReceivedFunctor message_received;
   NetworkStatusFunctor network_status;
   CloseNodeReplacedFunctor close_node_replaced;
+  MatrixChangedFunctor matrix_changed;
   GivePublicKeyFunctor set_public_key;
   RequestPublicKeyFunctor request_public_key;
   HaveCacheDataFunctor have_cache_data;
