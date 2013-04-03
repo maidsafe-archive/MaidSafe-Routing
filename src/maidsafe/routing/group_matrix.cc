@@ -225,6 +225,7 @@ bool GroupMatrix::IsNodeIdInGroupRange(const NodeId& target_id) {
 
 void GroupMatrix::UpdateFromConnectedPeer(const NodeId& peer,
                                           const std::vector<NodeInfo>& nodes) {
+  assert(nodes.size() < Parameters::max_routing_table_size);
   if (peer.IsZero()) {
     assert(false && "Invalid peer node id.");
     return;

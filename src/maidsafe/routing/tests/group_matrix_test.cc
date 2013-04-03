@@ -901,7 +901,7 @@ TEST_P(GroupMatrixTest, BEH_CheckAssertions) {
 #endif
 
   // Update row using too big row size
-  while (row.size() < static_cast<size_t>(Parameters::closest_nodes_size + 1))
+  while (row.size() < static_cast<size_t>(Parameters::max_routing_table_size + 1))
     row.push_back(NodeInfo());
 #ifndef NDEBUG
   EXPECT_DEATH(matrix_.UpdateFromConnectedPeer(random_id_1, row), "");
