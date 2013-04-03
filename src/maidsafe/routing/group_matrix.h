@@ -17,7 +17,6 @@
 #include <mutex>
 #include <vector>
 #include <string>
-#include <set>
 
 #include "maidsafe/common/node_id.h"
 #include "maidsafe/routing/node_info.h"
@@ -68,10 +67,9 @@ class GroupMatrix {
   void UpdateFromConnectedPeer(const NodeId& peer, const std::vector<NodeInfo>& nodes);
   bool IsRowEmpty(const NodeInfo& node_info);
   bool GetRow(const NodeId& row_id, std::vector<NodeInfo>& row_entries);
-  std::vector<NodeInfo> GetUniqueNodes();
+  std::vector<NodeInfo> GetUniqueNodes() const;
   std::vector<NodeInfo> GetClosestNodes(const uint16_t& size);
   bool Contains(const NodeId& node_id);
-  void Clear();
   bool Unsubscribe(const NodeId& node_id);
   void Prune();
 
@@ -90,8 +88,7 @@ class GroupMatrix {
   const NodeId& kNodeId_;
   std::vector<NodeInfo> unique_nodes_;
   bool client_mode_;
-  std::vector<std::vector<NodeInfo> > matrix_;
-  typedef std::set<NodeInfo, std::function<bool(const NodeInfo&, const NodeInfo&)> > MatrixRow;
+  std::vector<std::vector<NodeInfo>> matrix_;
 };
 
 }  // namespace routing

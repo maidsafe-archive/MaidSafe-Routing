@@ -15,6 +15,7 @@
 #include <algorithm>
 #include <bitset>
 #include <cstdint>
+#include <set>
 
 #include "maidsafe/common/log.h"
 
@@ -44,7 +45,6 @@ void GroupMatrix::AddConnectedPeer(const NodeInfo& node_info) {
     LOG(kWarning) << "Already Added in matrix";
     return;
   }
-
   matrix_.push_back(std::vector<NodeInfo>(1, node_info));
   UpdateUniqueNodeList();
 }
@@ -272,7 +272,7 @@ bool GroupMatrix::GetRow(const NodeId& row_id, std::vector<NodeInfo>& row_entrie
   return true;
 }
 
-std::vector<NodeInfo> GroupMatrix::GetUniqueNodes() {
+std::vector<NodeInfo> GroupMatrix::GetUniqueNodes() const {
   return unique_nodes_;
 }
 
@@ -302,13 +302,6 @@ bool GroupMatrix::Contains(const NodeId& node_id) {
                       }) != unique_nodes_.end();
 }
 
-void GroupMatrix::Clear() {
-  for (auto& row : matrix_)
-    row.clear();
-  matrix_.clear();
-  UpdateUniqueNodeList();
-}
-
 bool GroupMatrix::Unsubscribe(const NodeId& node_id) {
   auto nodes_info(std::find_if(matrix_.begin(),
                                matrix_.end(),
@@ -322,22 +315,21 @@ bool GroupMatrix::Unsubscribe(const NodeId& node_id) {
 }
 
 void GroupMatrix::UpdateUniqueNodeList() {
-  unique_nodes_.clear();
-  auto node_id(kNodeId_);
-  MatrixRow row([node_id] (const NodeInfo& lhs, const NodeInfo& rhs)->bool {
-                  return NodeId::CloserToTarget(lhs.node_id, rhs.node_id, node_id);
-                });
-  // Update unique node vector
+  std::set<NodeInfo, std::function<bool(const NodeInfo&, const NodeInfo&)>> sorted_to_owner(
+      [&](const NodeInfo& lhs, const NodeInfo& rhs) {
+          return NodeId::CloserToTarget(lhs.node_id, rhs.node_id, kNodeId_);
+      });
   if (!client_mode_) {
     NodeInfo node_info;
     node_info.node_id = kNodeId_;
-    unique_nodes_.push_back(node_info);
+    sorted_to_owner.insert(node_info);
   }
-  for (auto itr = matrix_.begin(); itr != matrix_.end(); ++itr)
-    row.insert(itr->begin(), itr->end());
+  for (const auto& node_ids : matrix_) {
+    for (const auto& node_id : node_ids)
+      sorted_to_owner.insert(node_id);
+  }
 
-  for (auto itr(row.begin()); itr != row.end(); ++itr)
-    unique_nodes_.push_back(*itr);
+  unique_nodes_.assign(std::begin(sorted_to_owner), std::end(sorted_to_owner));
 }
 
 void GroupMatrix::PartialSortFromTarget(const NodeId& target,
