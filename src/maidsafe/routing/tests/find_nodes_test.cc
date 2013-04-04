@@ -51,7 +51,7 @@ class FindNodeNetwork : public GenericNetwork, public testing::Test {
   }
 
   testing::AssertionResult DropNode(const NodeId& node_id) {
-    for (const auto& node : this->nodes_)  // NOLINT (Alison)
+    for (const auto& node : this->nodes_)
       node->DropNode(node_id);
     return testing::AssertionSuccess();
   }
@@ -66,7 +66,7 @@ class FindNodeNetwork : public GenericNetwork, public testing::Test {
 
 TEST_F(FindNodeNetwork, FUNC_FindExistingNode) {
   this->SetUpNetwork(kServerSize);
-  for (const auto& source : this->nodes_) {  // NOLINT (Alison)
+  for (const auto& source : this->nodes_) {
     EXPECT_TRUE(Find(source, source->node_id()));
     Sleep(boost::posix_time::seconds(1));
   }

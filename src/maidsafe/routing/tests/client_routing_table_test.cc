@@ -222,9 +222,9 @@ TEST_F(ClientRoutingTableTest, BEH_DropNodes) {
 
   EXPECT_EQ(expected_nodes.size(), dropped_nodes.size());
   bool found_counterpart(false);
-  for (const auto& expected_node : expected_nodes) {  // NOLINT (Alison)
+  for (const auto& expected_node : expected_nodes) {
     found_counterpart = false;
-    for (const auto& dropped_node : dropped_nodes) {  // NOLINT (Alison)
+    for (const auto& dropped_node : dropped_nodes) {
       if ((expected_node.connection_id == dropped_node.connection_id) &&
           asymm::MatchingKeys(expected_node.public_key, dropped_node.public_key)) {
         found_counterpart = true;
@@ -273,9 +273,9 @@ TEST_F(ClientRoutingTableTest, BEH_GetNodesInfo) {
 
   EXPECT_EQ(expected_nodes.size(), got_nodes.size());
   bool found_counterpart(false);
-  for (const auto& expected_node : expected_nodes) {  // NOLINT (Alison)
+  for (const auto& expected_node : expected_nodes) {
     found_counterpart = false;
-    for (const auto& got_node : got_nodes) {  // NOLINT (Alison)
+    for (const auto& got_node : got_nodes) {
       if ((expected_node.connection_id == got_node.connection_id) &&
           asymm::MatchingKeys(expected_node.public_key, got_node.public_key)) {
         found_counterpart = true;

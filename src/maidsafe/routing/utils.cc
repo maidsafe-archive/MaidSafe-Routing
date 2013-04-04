@@ -171,7 +171,7 @@ bool ValidateMessage(const protobuf::Message &message) {
   // Message has traversed more hops than expected
   if (message.hops_to_live() <= 0) {
     std::string route_history;
-    for (const auto& route : message.route_history())  // NOLINT (Alison)
+    for (const auto& route : message.route_history())
       route_history += HexSubstr(route) + ", ";
     LOG(kError) << "Message has traversed more hops than expected. "
                 <<  Parameters::max_route_history << " last hops in route history are: "
@@ -293,7 +293,7 @@ std::vector<boost::asio::ip::udp::endpoint> OrderBootstrapList(
   copy_vector.resize(it - copy_vector.begin());
   std::reverse(peer_endpoints.begin(), peer_endpoints.end());
   peer_endpoints.resize(peer_endpoints.size() + copy_vector.size());
-  for (const auto& i : copy_vector)  // NOLINT (Alison)
+  for (const auto& i : copy_vector)
     peer_endpoints.push_back(i);
   std::reverse(peer_endpoints.begin(), peer_endpoints.end());
   return peer_endpoints;
@@ -359,7 +359,7 @@ std::vector<NodeId> DeserializeNodeIdList(const std::string &node_list_str) {
 
 std::string SerializeNodeIdList(const std::vector<NodeId> &node_list) {
   protobuf::NodeIdList node_list_msg;
-  for (const auto& node_id : node_list) {  // NOLINT (Alison)
+  for (const auto& node_id : node_list) {
     auto entry = node_list_msg.add_node_id_list();
     entry->set_node_id(node_id.string());
   }

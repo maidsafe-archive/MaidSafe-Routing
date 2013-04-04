@@ -376,7 +376,7 @@ void ResponseHandler::HandleSuccessAcknowledgementAsReponder(NodeInfo peer,
 
 void ResponseHandler::HandleSuccessAcknowledgementAsRequestor(
     const std::vector<NodeId>& close_ids) {
-  for (const auto& i : close_ids) {  // NOLINT (Alison)
+  for (const auto& i : close_ids) {
     if (!i.IsZero()) {
       CheckAndSendConnectRequest(i);
     }
@@ -414,7 +414,7 @@ void ResponseHandler::CloseNodeUpdateForClient(protobuf::Message& message) {
   }
 
   std::vector<NodeId> closest_nodes;
-  for (const auto& basic_info : closest_node_update.nodes_info()) {  // NOLINT (Alison)
+  for (const auto& basic_info : closest_node_update.nodes_info()) {
     if (CheckId(basic_info.node_id())) {
       closest_nodes.push_back(NodeId(basic_info.node_id()));
     }

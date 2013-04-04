@@ -92,7 +92,7 @@ NodeInfo::serialised_type NodeInfo::Serialise() const {
     protobuf::NodeInfo proto_node_info;
     proto_node_info.set_node_id(node_id.string());
     proto_node_info.set_rank(rank);
-    for (const auto& dimension : dimension_list)  // NOLINT (Alison)
+    for (const auto& dimension : dimension_list)
       proto_node_info.add_dimension_list(dimension);
 
     serialised_message = serialised_type(NonEmptyString(proto_node_info.SerializeAsString()));

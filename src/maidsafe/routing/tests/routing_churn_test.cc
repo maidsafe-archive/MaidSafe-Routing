@@ -89,7 +89,7 @@ TEST_F(RoutingChurnTest, FUNC_MessagingNetworkChurn) {
   LOG(kInfo) << "Finished setting up network\n\n\n\n";
 
   std::vector<NodeId> existing_node_ids;
-  for (const auto& node : this->nodes_)  // NOLINT (Alison)
+  for (const auto& node : this->nodes_)
     existing_node_ids.push_back(node->node_id());
   LOG(kInfo) << "After harvesting node ids\n\n\n\n";
 

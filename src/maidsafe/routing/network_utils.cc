@@ -380,7 +380,7 @@ void NetworkUtils::AdjustRouteHistory(protobuf::Message& message) {
       std::vector<std::string> route_history(message.route_history().begin() + 1,
                                              message.route_history().end());
       message.clear_route_history();
-      for (const auto& route : route_history) {  // NOLINT (Alison)
+      for (const auto& route : route_history) {
         if (!NodeId(route).IsZero())
           message.add_route_history(route);
       }

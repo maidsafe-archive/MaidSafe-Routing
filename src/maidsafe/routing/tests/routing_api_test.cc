@@ -241,7 +241,7 @@ TEST(APITest, BEH_API_SendToSelf) {
   auto response_future = response_promise.get_future();
   ResponseFunctor response_functor = [&data, &flag, &response_promise] (std::string string) {
     EXPECT_EQ("response to " + data, string);
-    std::call_once(flag, [&response_promise]() { response_promise.set_value(); } );  // NOLINT (Alison)
+    std::call_once(flag, [&response_promise]() { response_promise.set_value(); });
     LOG(kVerbose) << "ResponseFunctor - end";
   };
   routing3.SendDirect(node3.node_info.node_id, data, false, response_functor);
@@ -690,7 +690,7 @@ TEST(APITest, BEH_API_SendGroup) {
     routing_node.push_back(std::make_shared<Routing>(pmid));
   }
 
-  functors.network_status = [](const int&) {};  // NOLINT (Alison)
+  functors.network_status = [](const int&) {};
 
 
   functors.message_received = [&] (const std::string& message, const bool&,
@@ -859,7 +859,7 @@ TEST(APITest, BEH_API_PartiallyJoinedSend) {
 
   functors3.network_status = [&join_flag, &join_promise] (int result) {
       if (result == NetworkStatus(false, 2)) {
-        std::call_once(join_flag, [&join_promise]() { join_promise.set_value(); } );  // NOLINT (Alison)
+        std::call_once(join_flag, [&join_promise]() { join_promise.set_value(); });
       }
     };
 
@@ -875,7 +875,7 @@ TEST(APITest, BEH_API_PartiallyJoinedSend) {
       EXPECT_EQ("response to " + data, str);
       ++count;
       if (count == 2)
-        std::call_once(flag, [&response_promise]() { response_promise.set_value(); } );  // NOLINT (Alison)
+        std::call_once(flag, [&response_promise]() { response_promise.set_value(); });
       LOG(kVerbose) << "ResponseFunctor - end";
     };
   routing3.SendDirect(node1.node_info.node_id, data, false, response_functor);
