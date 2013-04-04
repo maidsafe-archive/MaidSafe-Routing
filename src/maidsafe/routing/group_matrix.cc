@@ -374,6 +374,10 @@ void GroupMatrix::Prune() {
   auto itr(matrix_.begin());
   std::advance(itr, Parameters::closest_nodes_size);
   for (; itr != matrix_.end(); ++itr) {
+    if (client_mode_) {
+      peers_to_remove.push_back(itr->begin()->node_id);
+      continue;
+    }
     node_id = itr->begin()->node_id;
     if (itr->size() < Parameters::closest_nodes_size)
       continue;

@@ -1091,8 +1091,8 @@ testing::AssertionResult GenericNetwork::SendDirect(const size_t& repeats, size_
   std::shared_ptr<bool> failed(std::make_shared<bool>(false));
 
   for (size_t repeat = 0; repeat < repeats; ++repeat) {
-    for (const auto& dest : this->nodes_) {  // NOLINT (Alison)
-      for (const auto& src : this->nodes_) {  // NOLINT (Alison)
+    for (const auto& dest : this->nodes_) {
+      for (const auto& src : this->nodes_) {
         std::string data(RandomAlphaNumericString(message_size));
         assert(!data.empty() && "Send Data Empty !");
         ResponseFunctor response_functor;
