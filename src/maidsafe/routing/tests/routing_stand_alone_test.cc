@@ -50,7 +50,7 @@ TEST_F(RoutingStandAloneTest, FUNC_GetGroup) {
     auto nodes_id(future.get());
     auto group_ids(this->GroupIds(node_id));
     EXPECT_EQ(nodes_id.size(), group_ids.size());
-    for (const auto& id : group_ids)  // NOLINT (Alison)
+    for (const auto& id : group_ids)
       EXPECT_NE(std::find(nodes_id.begin(), nodes_id.end(), id), nodes_id.end());
   }
 }
@@ -156,7 +156,7 @@ TEST_F(RoutingStandAloneTest, FUNC_ExtendedSendToGroupRandomId) {
       NodeId random_id(NodeId::kRandomId);
       std::vector<NodeId> groupd_ids(this->GroupIds(random_id));
       EXPECT_TRUE(SendGroup(random_id, 1));
-      for (const auto& node : this->nodes_) {  // NOLINT (Alison)
+      for (const auto& node : this->nodes_) {
         if (std::find(groupd_ids.begin(), groupd_ids.end(), node->node_id()) !=
             groupd_ids.end()) {
           receivers_message_count += static_cast<uint16_t>(node->MessagesSize());
@@ -171,25 +171,6 @@ TEST_F(RoutingStandAloneTest, FUNC_ExtendedSendToGroupRandomId) {
     this->ClearMessages();
   }
 }
-
-TEST_F(RoutingStandAloneTest, FUNC_CheckUnsubscription) {
-  this->SetUpNetwork(kServerSize);
-  size_t size(kServerSize);
-  size_t random_index(this->nodes_.size() % size);
-  NodePtr node(nodes_[random_index]);
-  NodeInfo furthest_closest(node->GetNthClosestNode(node->node_id(),
-                                                    Parameters::closest_nodes_size));
-  LOG(kVerbose) << "Furthest close node: " << DebugId(furthest_closest.node_id);
-  this->AddNode(false, GenerateUniqueRandomId(node->node_id(), 30));
-  int index(this->NodeIndex(furthest_closest.node_id));
-  EXPECT_FALSE(this->nodes_[index]->NodeSubscribedForGroupUpdate(
-      node->node_id())) << DebugId(furthest_closest.node_id) << " hase "
-                        << DebugId(node->node_id());
-  EXPECT_TRUE(this->nodes_[size]->NodeSubscribedForGroupUpdate(
-      node->node_id())) << DebugId(this->nodes_[size]->node_id())
-                        << " does not have " << DebugId(node->node_id());
-}
-
 
 TEST_F(RoutingStandAloneTest, FUNC_NodeRemoved) {
   this->SetUpNetwork(kServerSize);
@@ -226,7 +207,7 @@ TEST_F(RoutingStandAloneTest, FUNC_ReBootstrap) {
 
   NodeId removed_id(this->nodes_[network_size - 1]->node_id());
 
-  for (const auto& element : this->nodes_) {  // NOLINT (Alison)
+  for (const auto& element : this->nodes_) {
     if (element->node_id() != removed_id)
       EXPECT_TRUE(element->RoutingTableHasNode(removed_id));
   }
@@ -247,7 +228,7 @@ TEST_F(RoutingStandAloneTest, FUNC_ReBootstrap) {
 
   // wait for re_bootstrap_time_lag to expire & bootstrap process to complete
   Sleep(boost::posix_time::seconds(20));
-  for (const auto& node : this->nodes_)  // NOLINT (Alison)
+  for (const auto& node : this->nodes_)
     EXPECT_TRUE(node->RoutingTableHasNode(removed_id));
 
   routing_table = removed_node->RoutingTable();
@@ -267,21 +248,21 @@ TEST_F(RoutingStandAloneTest, FUNC_GroupsAndSendWithSymmetricNat) {
 
   // Check Send between each pair of vaults
   for (auto& source_node : this->nodes_) {
-    for (const auto& dest_node : this->nodes_) {  // NOLINT (Alison)
+    for (const auto& dest_node : this->nodes_) {
       EXPECT_TRUE(this->SendDirect(source_node, dest_node->node_id()));
     }
   }
 
   // Check GroupSend from each vault to each vault ID
   for (uint16_t source_index(0); source_index < this->nodes_.size(); ++source_index) {
-    for (const auto& node : this->nodes_) {  // NOLINT (Alison)
+    for (const auto& node : this->nodes_) {
       EXPECT_TRUE(this->SendGroup(node->node_id(), 1, source_index));
     }
   }
 
   // Check GroupSend for random targets
   for (uint16_t source_index(0); source_index < this->nodes_.size(); ++source_index) {
-    for (uint16_t count(0); count < 1; ++count) {  // TODO(Alison) - max. value of count?
+    for (uint16_t count(0); count < 1; ++count) {
       NodeId node_id(NodeId::kRandomId);
       EXPECT_TRUE(this->SendGroup(node_id, 1, source_index));
     }
@@ -303,7 +284,7 @@ TEST_F(RoutingStandAloneTest, FUNC_GroupsAndSendWithClientsAndSymmetricNat) {
 
   // Check Send from each node to each vault
   for (auto& source_node : this->nodes_) {
-    for (const auto& dest_node : this->nodes_) {  // NOLINT (Alison)
+    for (const auto& dest_node : this->nodes_) {
       if (!dest_node->IsClient())
       EXPECT_TRUE(this->SendDirect(source_node, dest_node->node_id()));
     }
@@ -311,7 +292,7 @@ TEST_F(RoutingStandAloneTest, FUNC_GroupsAndSendWithClientsAndSymmetricNat) {
 
   // Check GroupSend from each node to each node ID
   for (uint16_t source_index(0); source_index < this->nodes_.size(); ++source_index) {
-    for (const auto& node : this->nodes_) {  // NOLINT (Alison)
+    for (const auto& node : this->nodes_) {
       EXPECT_TRUE(this->SendGroup(node->node_id(), 1, source_index));
     }
   }
@@ -399,7 +380,7 @@ TEST_F(ProportionedRoutingStandAloneTest, DISABLED_FUNC_ExtendedMessagePassing) 
     }
     std::cout << "SendGroup (to existing)..." << std::endl;
     for (uint16_t i(0); i < nodes_.size(); ++i) {
-      for (const auto& node : nodes_) {  // NOLINT (Alison)
+      for (const auto& node : nodes_) {
         ASSERT_TRUE(SendGroup(node->node_id(), 1, i, 10));
       }
     }
@@ -428,7 +409,7 @@ TEST_F(ProportionedRoutingStandAloneTest, DISABLED_FUNC_ExtendedMessagePassingSy
     }
     std::cout << "SendGroup (to existing)..." << std::endl;
     for (uint16_t i(0); i < nodes_.size(); ++i) {
-      for (const auto& node : nodes_) {  // NOLINT (Alison)
+      for (const auto& node : nodes_) {
         ASSERT_TRUE(SendGroup(node->node_id(), 1, i, 10));
       }
     }

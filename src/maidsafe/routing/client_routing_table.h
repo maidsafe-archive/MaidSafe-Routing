@@ -38,6 +38,8 @@ namespace test {
   class BasicClientRoutingTableTest_BEH_IsThisNodeInRange_Test;
 }
 
+class GroupChangeHandler;
+
 namespace protobuf { class Contact; }
 
 class ClientRoutingTable {
@@ -52,9 +54,9 @@ class ClientRoutingTable {
   bool IsConnected(const NodeId& node_id) const;
   size_t size() const;
   NodeId kNodeId() const { return kNodeId_; }
-  void InitialiseFunctors(UnsubscribeGroupUpdate unsubscribe_group_update);
 
   friend class test::GenericNode;
+  friend class GroupChangeHandler;
 
  private:
   ClientRoutingTable(const ClientRoutingTable&);
@@ -72,7 +74,6 @@ class ClientRoutingTable {
   friend class test::BasicClientRoutingTableTest_BEH_IsThisNodeInRange_Test;
 
   const NodeId kNodeId_;
-  UnsubscribeGroupUpdate unsubscribe_group_update_;
   std::vector<NodeInfo> nodes_;
   mutable std::mutex mutex_;
 };

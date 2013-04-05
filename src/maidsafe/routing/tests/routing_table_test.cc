@@ -102,7 +102,7 @@ TEST(RoutingTableTest, BEH_PopulateAndDepopulateGroupCheckGroupChange) {
       ++count;
       LOG(kInfo) << "Group changed. count : " << count;
       EXPECT_GE(Parameters::closest_nodes_size, count);
-      for (const auto& i: nodes) {  // NOLINT (Alison)
+      for (const auto& i: nodes) {
         LOG(kVerbose) << "NodeId : " << DebugId(i.node_id);
       }
     };
@@ -111,8 +111,7 @@ TEST(RoutingTableTest, BEH_PopulateAndDepopulateGroupCheckGroupChange) {
                                    []() {},
                                    group_change_functor,
                                    [](const std::vector<NodeInfo>& ) {},
-                                   [](const bool&, NodeInfo) {},
-                                   [](const NodeId&) {});
+                                   [] (const MatrixChange& ) {});
   for (uint16_t i = 0; i < Parameters::closest_nodes_size; ++i) {
     ASSERT_TRUE(routing_table.AddNode(nodes.at(i)));
     LOG(kVerbose) << "Added to routing_table : " << DebugId(nodes.at(i).node_id);
@@ -148,7 +147,7 @@ TEST(RoutingTableTest, BEH_OrderedGroupChange) {
     ++count;
     LOG(kInfo) << "Group changed. count : " << count;
     EXPECT_GE(Parameters::closest_nodes_size, count);
-    for (const auto& i: nodes) {  // NOLINT (Alison)
+    for (const auto& i: nodes) {
       LOG(kVerbose) << "NodeId : " << DebugId(i.node_id);
     }
   });
@@ -159,8 +158,7 @@ TEST(RoutingTableTest, BEH_OrderedGroupChange) {
       []() {},
       group_change_functor,
       [](const std::vector<NodeInfo>&) {},
-      [](const bool&, NodeInfo) {},
-      [](const NodeId&) {});
+      [](const MatrixChange&) {});
 
   for (uint16_t i = 0; i < Parameters::max_routing_table_size; ++i) {
     ASSERT_TRUE(routing_table.AddNode(nodes.at(i)));
@@ -203,10 +201,10 @@ TEST(RoutingTableTest, BEH_ReverseOrderedGroupChange) {
     ++count;
     LOG(kInfo) << "Group changed. count : " << count;
     EXPECT_GE(2 * Parameters::max_routing_table_size, count);
-    for (const auto& i: nodes) {  // NOLINT (Alison)
+    for (const auto& i: nodes) {
       LOG(kVerbose) << "NodeId : " << DebugId(i.node_id);
     }
-    for (const auto& i: expected_close_nodes) {  // NOLINT (Alison)
+    for (const auto& i: expected_close_nodes) {
       LOG(kVerbose) << "Expected Id : " << DebugId(i.node_id);
     }
     EXPECT_EQ(nodes.size(), expected_close_nodes.size());
@@ -222,8 +220,7 @@ TEST(RoutingTableTest, BEH_ReverseOrderedGroupChange) {
                                    []() {},
                                    group_change_functor,
                                    [](const std::vector<NodeInfo>&) {},
-                                   [](const bool&, NodeInfo) {},
-                                   [](const NodeId&) {});
+                                   [](const MatrixChange&) {});
 
   // Add nodes to routing table
   for (auto ritr = nodes.rbegin(); ritr < nodes.rend(); ++ritr) {
@@ -290,15 +287,15 @@ TEST(RoutingTableTest, BEH_CheckGroupChangeRemoveNodesFromGroup) {
     LOG(kInfo) << "Group changed. count : " << count;
     if (setting_up) {
       EXPECT_GE(Parameters::closest_nodes_size, count);
-      for (const auto& i: nodes) {  // NOLINT (Alison)
+      for (const auto& i: nodes) {
         LOG(kVerbose) << "NodeId : " << DebugId(i.node_id);
       }
     } else {
       EXPECT_GE(Parameters::max_routing_table_size / 4, count);
-      for (const auto& i: nodes) {  // NOLINT (Alison)
+      for (const auto& i: nodes) {
         LOG(kVerbose) << "NodeId : " << DebugId(i.node_id);
       }
-      for (const auto& i: expected_close_nodes) {  // NOLINT (Alison)
+      for (const auto& i: expected_close_nodes) {
         LOG(kVerbose) << "Expected Id : " << DebugId(i.node_id);
       }
       EXPECT_EQ(nodes.size(), expected_close_nodes.size());
@@ -316,8 +313,7 @@ TEST(RoutingTableTest, BEH_CheckGroupChangeRemoveNodesFromGroup) {
                                    []() {},
                                    group_change_functor,
                                    [](const std::vector<NodeInfo>&) {},
-                                   [](const bool&, NodeInfo) {},
-                                   [](const NodeId&) {});
+                                   [](const MatrixChange&) {});
 
   // Populate routing table
   for (uint16_t i = 0; i < Parameters::max_routing_table_size; ++i) {
@@ -383,15 +379,15 @@ TEST(RoutingTableTest, BEH_CheckGroupChangeAddGroupNodesToFullTable) {
     LOG(kInfo) << "Group changed. count : " << count;
     if (setting_up) {
       EXPECT_GE(Parameters::closest_nodes_size, count);
-      for (const auto& i: nodes) {  // NOLINT (Alison)
+      for (const auto& i: nodes) {
         LOG(kVerbose) << "NodeId : " << DebugId(i.node_id);
       }
     } else {
       EXPECT_GE(3 * Parameters::closest_nodes_size / 2, count);
-      for (const auto& i: nodes) {  // NOLINT (Alison)
+      for (const auto& i: nodes) {
         LOG(kVerbose) << "NodeId : " << DebugId(i.node_id);
       }
-      for (const auto& i: expected_close_nodes) {  // NOLINT (Alison)
+      for (const auto& i: expected_close_nodes) {
         LOG(kVerbose) << "Expected Id : " << DebugId(i.node_id);
       }
       EXPECT_EQ(nodes.size(), expected_close_nodes.size());
@@ -409,8 +405,7 @@ TEST(RoutingTableTest, BEH_CheckGroupChangeAddGroupNodesToFullTable) {
                                    []() {},
                                    group_change_functor,
                                    [](const std::vector<NodeInfo>&) {},
-                                   [](const bool&, NodeInfo) {},
-                                   [](const NodeId&) {});
+                                   [](const MatrixChange&) {});
 
   // Populate routing table
   for (uint16_t i = 0; i < Parameters::max_routing_table_size; ++i) {
@@ -498,7 +493,7 @@ TEST(RoutingTableTest, BEH_FillEmptyRefillRoutingTable) {
       for (uint32_t i(0); i < std::min(nodes.size(), node_infos.size()); ++i)
         EXPECT_EQ(nodes.at(i).node_id, node_infos.at(i).node_id);
     }
-    for (const auto& node_info: node_infos) {  // NOLINT (Alison)
+    for (const auto& node_info: node_infos) {
       LOG(kVerbose) << "NodeId : " << DebugId(node_info.node_id);
     }
   };
@@ -507,8 +502,7 @@ TEST(RoutingTableTest, BEH_FillEmptyRefillRoutingTable) {
                                    [] () {},
                                    group_change_functor,
                                    [](const std::vector<NodeInfo>&) {},
-                                   [](const bool&, NodeInfo) {},
-                                   [](const NodeId&) {});
+                                   [](const MatrixChange&) {});
   // Fill routing table
   for (uint16_t i = 0; i < Parameters::max_routing_table_size; ++i) {
     if (expected_group.size() < Parameters::closest_nodes_size) {
@@ -638,7 +632,7 @@ TEST(RoutingTableTest, BEH_CheckMockSendGroupChangeRpcs) {
     EXPECT_TRUE(expecting_group_change);
     bool found_2(false);
     std::vector<NodeInfo> close_nodes;
-    for (const auto& node_info : nodes) {  // NOLINT (Alison)
+    for (const auto& node_info : nodes) {
       if (node_info.node_id == routing_table_2.kNodeId())
         found_2 = true;
       else
@@ -661,14 +655,13 @@ TEST(RoutingTableTest, BEH_CheckMockSendGroupChangeRpcs) {
                                      []() {},
                                      group_change_functor,
                                      [](const std::vector<NodeInfo>&) {},
-                                     [](const bool&, NodeInfo) {},
-                                     [](const NodeId&) {});
+                                     [](const MatrixChange&) {});
 
   // Check that 2's group matrix is updated correctly - Add nodes
   std::vector<NodeInfo> close_nodes;
   SortFromTarget((NodeId(NodeId::kRandomId)), extra_nodes);
   std::vector<NodeId> expected_close_nodes;
-  for (const auto& node_info : extra_nodes) {  // NOLINT (Alison)
+  for (const auto& node_info : extra_nodes) {
     if (expected_close_nodes.size() < size_t(Parameters::closest_nodes_size - 1)) {
       expected_close_nodes.push_back(node_info.node_id);
       SortIdsFromTarget(node_id_1, expected_close_nodes);
@@ -748,7 +741,7 @@ TEST(RoutingTableTest, BEH_GroupUpdateFromConnectedPeer) {
     nodes.push_back(MakeNode());
 
   std::vector<NodeInfo> row_contents;
-  for (const auto& node_info : nodes) {  // NOLINT (Alison)
+  for (const auto& node_info : nodes) {
     EXPECT_TRUE(routing_table.AddNode(node_info));
     NodeInfo node;
     node.node_id = (NodeId(NodeId::kRandomId));
@@ -758,7 +751,7 @@ TEST(RoutingTableTest, BEH_GroupUpdateFromConnectedPeer) {
   }
 
   std::vector<NodeInfo> new_row_entries;
-  for (const auto& node_info : nodes) {  // NOLINT (Alison)
+  for (const auto& node_info : nodes) {
     for (uint16_t i(0); i < RandomUint32() % (Parameters::closest_nodes_size - 1); ++i) {
       NodeInfo node;
       node.node_id = (NodeId(NodeId::kRandomId));
@@ -853,7 +846,7 @@ TEST(RoutingTableTest, BEH_GetClosestNodeWithExclusion) {
   node_info2 = routing_table.GetClosestNode(nodes_id[random_index], exclude, true);
   EXPECT_EQ(node_info.node_id, node_info2.node_id);
 
-  for (const auto& node_id : nodes_id)  // NOLINT (Alison)
+  for (const auto& node_id : nodes_id)
     exclude.push_back(node_id.string());
   node_info = routing_table.GetClosestNode(nodes_id[random_index], exclude, false);
   node_info2 = routing_table.GetClosestNode(nodes_id[random_index], exclude, true);
@@ -883,7 +876,7 @@ TEST(RoutingTableTest, BEH_GetClosestNodeWithExclusion) {
   node_info2 = routing_table.GetClosestNode(nodes_id[random_index], exclude, true);
   EXPECT_EQ(node_info.node_id, node_info2.node_id);
 
-  for (const auto& node_id : nodes_id)  // NOLINT (Alison)
+  for (const auto& node_id : nodes_id)
     exclude.push_back(node_id.string());
   node_info = routing_table.GetClosestNode(nodes_id[random_index], exclude, false);
   node_info2 = routing_table.GetClosestNode(nodes_id[random_index], exclude, true);
@@ -913,7 +906,7 @@ TEST(RoutingTableTest, BEH_IsThisNodeGroupLeader) {
   RoutingTable routing_table(false, own_node_id, asymm::GenerateKeyPair(), network_statistics);
 
   SortFromTarget(NodeId(NodeId::kRandomId), nodes);
-  for (const auto& node : nodes) {  // NOLINT (Alison)
+  for (const auto& node : nodes) {
     EXPECT_TRUE(routing_table.AddNode(node));
   }
 
@@ -953,7 +946,7 @@ TEST(RoutingTableTest, BEH_IsConnected) {
   std::vector<std::vector<NodeInfo>> rows_in_matrix;
   std::vector<NodeInfo> row;
   uint32_t row_size;
-  for (const auto& row_leader : matrix_row_leaders) {  // NOLINT (Alison)
+  for (const auto& row_leader : matrix_row_leaders) {
     row.clear();
     row_size = 1 + RandomUint32() % (Parameters::closest_nodes_size - 1);
     while (row.size() < row_size)
@@ -964,12 +957,12 @@ TEST(RoutingTableTest, BEH_IsConnected) {
   }
 
   // IsConnected - nodes in routing table
-  for (const auto& node : nodes_in_table)  // NOLINT (Alison)
+  for (const auto& node : nodes_in_table)
     EXPECT_TRUE(routing_table.IsConnected(node.node_id));
 
   // IsConnected - nodes in rows of group matrix
-  for (const auto& row : rows_in_matrix) {  // NOLINT (Alison)
-    for (const auto& node : row) {  // NOLINT (Alison)
+  for (const auto& row : rows_in_matrix) {
+    for (const auto& node : row) {
       EXPECT_TRUE(routing_table.IsConnected(node.node_id));
     }
   }
@@ -1008,7 +1001,7 @@ TEST(RoutingTableTest, BEH_IsThisNodeClosestToIncludingMatrix) {
   }
 
   // Test IsThisNodeClosestToIncludingMatrix (empty matrix)
-  for (const auto& node : nodes) {  // NOLINT (Alison)
+  for (const auto& node : nodes) {
     if (node.node_id != own_node_id) {
       EXPECT_TRUE(routing_table.Contains(node.node_id));
       EXPECT_FALSE(routing_table.IsThisNodeClosestToIncludingMatrix(node.node_id));
@@ -1055,7 +1048,7 @@ TEST(RoutingTableTest, BEH_GetNodeForSendingMessage) {
     nodes_in_table.push_back(node_info);
   }
   SortFromTarget(own_node_id, nodes_in_table);
-  for (const auto& node : nodes_in_table)  // NOLINT (Alison)
+  for (const auto& node : nodes_in_table)
     EXPECT_TRUE(routing_table.AddNode(node));
 
   // Populate group matrix
@@ -1064,7 +1057,7 @@ TEST(RoutingTableTest, BEH_GetNodeForSendingMessage) {
   std::vector<std::vector<NodeInfo>> rows_in_matrix;
   std::vector<NodeInfo> row;
   uint32_t row_size;
-  for (const auto& row_leader : matrix_row_leaders) {  // NOLINT (Alison)
+  for (const auto& row_leader : matrix_row_leaders) {
     row.clear();
     row_size = 1 + RandomUint32() % (Parameters::closest_nodes_size - 1);
     while (row.size() < row_size)
@@ -1076,7 +1069,7 @@ TEST(RoutingTableTest, BEH_GetNodeForSendingMessage) {
 
   // Test GetNodeForSendingMessage for nodes in routing table
   std::vector<std::string> exclude;
-  for (const auto& node : nodes_in_table) {  // NOLINT (Alison)
+  for (const auto& node : nodes_in_table) {
     EXPECT_EQ(node.node_id, routing_table.GetNodeForSendingMessage(node.node_id, exclude).node_id);
     EXPECT_NE(node.node_id,
               routing_table.GetNodeForSendingMessage(node.node_id, exclude, true).node_id);
@@ -1084,14 +1077,14 @@ TEST(RoutingTableTest, BEH_GetNodeForSendingMessage) {
 
   // Test GetNodeForSendingMessage for nodes in group matrix (without exclusions)
   for (uint16_t i(0); i < matrix_row_leaders.size(); ++i) {
-    for (const auto& row_entry : rows_in_matrix.at(i)) {  // NOLINT (Alison)
+    for (const auto& row_entry : rows_in_matrix.at(i)) {
       EXPECT_EQ(matrix_row_leaders.at(i).node_id,
                 routing_table.GetNodeForSendingMessage(row_entry.node_id, exclude).node_id);
     }
   }
 
   // Make all matrix rows the same
-  for (const auto& row_leader : matrix_row_leaders) {  // NOLINT (Alison)
+  for (const auto& row_leader : matrix_row_leaders) {
     routing_table.GroupUpdateFromConnectedPeer(row_leader.node_id, rows_in_matrix.at(0));
   }
 
@@ -1118,13 +1111,13 @@ TEST(RoutingTableTest, BEH_GetNodeForSendingMessageIgnoreExactMatch) {
     nodes_in_table.push_back(node_info);
   }
   SortFromTarget(own_node_id, nodes_in_table);
-  for (const auto& node : nodes_in_table)  // NOLINT (Alison)
+  for (const auto& node : nodes_in_table)
     EXPECT_TRUE(routing_table.AddNode(node));
 
   // test GetNodeForSendingMessage
   std::vector<std::string> exclude;
   std::vector<NodeInfo> nodes2(nodes_in_table);
-  for (const auto& node : nodes2) {  // NOLINT (Alison)
+  for (const auto& node : nodes2) {
     PartialSortFromTarget(node.node_id, nodes_in_table, 2);
     EXPECT_EQ(nodes_in_table.at(1).node_id,
               routing_table.GetNodeForSendingMessage(node.node_id, exclude, true).node_id);
@@ -1222,7 +1215,7 @@ TEST(RoutingTableTest, BEH_ClosestToId) {
     bool passed(true);
     bool result(false);
     bool expectation(false);
-    for (const auto& target : known_targets) {  // NOLINT (Alison)
+    for (const auto& target : known_targets) {
       PartialSortFromTarget(target.node_id, known_nodes, 2);
       result = routing_table.ClosestToId(target.node_id);
       expectation = false;

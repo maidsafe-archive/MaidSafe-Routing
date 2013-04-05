@@ -37,7 +37,7 @@ void SharedResponse::CheckAndPrintResult() {
     return;
 
   std::cout << "Received response from following nodes :" << std::endl;
-  for (const auto& responsed_node : responded_nodes_) {  // NOLINT (Alison)
+  for (const auto& responsed_node : responded_nodes_) {
     std::cout << "\t" << maidsafe::HexSubstr(responsed_node.string()) << std::endl;
     EXPECT_TRUE(std::find(closest_nodes_.begin(),
                              closest_nodes_.end(),
@@ -55,7 +55,7 @@ void SharedResponse::PrintRoutingTable(std::string response) {
     std::vector<NodeId> node_list(
         maidsafe::routing::DeserializeNodeIdList(response_node_list_msg));
     std::cout << "RECEIVED ROUTING TABLE::::" << std::endl;
-    for (const auto& node_id : node_list)  // NOLINT (Alison)
+    for (const auto& node_id : node_list)
       std::cout << "\t" << maidsafe::HexSubstr(node_id.string()) << std::endl;
   }
 }

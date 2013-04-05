@@ -129,6 +129,7 @@ class GenericNode {
   void AddNodeToRandomNodeHelper(const NodeId& node_id);
   void RemoveNodeFromRandomNodeHelper(const NodeId& node_id);
   bool NodeSubscribedForGroupUpdate(const NodeId& node_id);
+  std::vector<NodeInfo> GetGroupMatrixConnectedPeers();
 
   void PostTaskToAsioService(std::function<void()> functor);
   rudp::NatType nat_type();

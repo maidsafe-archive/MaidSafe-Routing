@@ -20,6 +20,7 @@
 
 #include "maidsafe/common/node_id.h"
 #include "maidsafe/routing/node_info.h"
+#include "maidsafe/routing/api_config.h"
 
 namespace maidsafe {
 
@@ -28,6 +29,7 @@ namespace routing {
 namespace test {
   class GenericNode;
   class NetworkStatisticsTest_BEH_IsIdInGroupRange_Test;
+  class GroupMatrixTest_BEH_Prune_Test;
 }
 
 class RoutingTable;
@@ -41,7 +43,7 @@ class GroupMatrix {
 
   void AddConnectedPeer(const NodeInfo& node_info);
 
-  void RemoveConnectedPeer(const NodeInfo& node_info);
+  void RemoveConnectedPeer(const NodeInfo& node_info, MatrixChange& matrix_change);
 
   // Returns the connected peers sorted to node ids from kNodeId_
   std::vector<NodeInfo> GetConnectedPeers();
@@ -67,11 +69,15 @@ class GroupMatrix {
   bool IsRowEmpty(const NodeInfo& node_info);
   bool GetRow(const NodeId& row_id, std::vector<NodeInfo>& row_entries);
   std::vector<NodeInfo> GetUniqueNodes() const;
+  std::vector<NodeId> GetUniqueNodeIds() const;
   std::vector<NodeInfo> GetClosestNodes(const uint16_t& size);
   bool Contains(const NodeId& node_id);
+  bool Unsubscribe(const NodeId& node_id);
+  void Prune();
 
   friend class test::GenericNode;
   friend class test::NetworkStatisticsTest_BEH_IsIdInGroupRange_Test;
+  friend class test::GroupMatrixTest_BEH_Prune_Test;
 
  private:
   GroupMatrix(const GroupMatrix&);

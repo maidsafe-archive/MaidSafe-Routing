@@ -106,7 +106,7 @@ protobuf::Message Remove(const NodeId& node_id,
   assert(!this_connection_id.IsZero() && "Invalid this_connection_id");
   static_cast<void>(this_connection_id);
   protobuf::RemoveRequest remove_request;
-  for (const auto& node : attempted_nodes)  // NOLINT (Alison)
+  for (const auto& node : attempted_nodes)
     remove_request.add_attempted_nodes(node);
   remove_request.set_peer_id(this_node_id.string());
   protobuf::Message message;
@@ -206,7 +206,7 @@ protobuf::Message ConnectSuccessAcknowledgement(const NodeId& node_id,
   protobuf_connect_success_ack.set_node_id(this_node_id.string());
   protobuf_connect_success_ack.set_connection_id(this_connection_id.string());
   protobuf_connect_success_ack.set_requestor(requestor);
-  for (const auto& i : close_ids) {  // NOLINT (Alison)
+  for (const auto& i : close_ids) {
     protobuf_connect_success_ack.add_close_ids(i.string());
   }
   message.set_destination_id(node_id.string());
@@ -236,7 +236,7 @@ protobuf::Message ClosestNodesUpdate(
   protobuf::Message message;
   protobuf::ClosestNodesUpdate closest_nodes_update;
   closest_nodes_update.set_node(my_node_id.string());
-  for (const auto& i : closest_nodes) {  // NOLINT (Alison)
+  for (const auto& i : closest_nodes) {
     protobuf::BasicNodeInfo* basic_node_info;
     basic_node_info = closest_nodes_update.add_nodes_info();
     basic_node_info->set_node_id(i.node_id.string());
@@ -251,34 +251,6 @@ protobuf::Message ClosestNodesUpdate(
   message.set_type(static_cast<int32_t>(MessageType::kClosestNodesUpdate));
   message.set_request(true);
   message.set_client_node(false);
-  message.set_hops_to_live(Parameters::hops_to_live);
-  message.set_id(RandomUint32() % 10000);
-  assert(message.IsInitialized() && "Unintialised message");
-  return message;
-}
-
-protobuf::Message ClosestNodesUpdateSubscribe(
-    const NodeId& node_id,
-    const NodeId& this_node_id,
-    const NodeId& this_connection_id,
-    const bool& client_node,
-    const bool& subscribe) {
-  assert(!node_id.IsZero() && "Invalid node_id");
-  assert(!this_node_id.IsZero() && "Invalid my node_id");
-  protobuf::Message message;
-  protobuf::ClosestNodesUpdateSubscrirbe closest_nodes_update_subscribe;
-  closest_nodes_update_subscribe.set_node_id(this_node_id.string());
-  closest_nodes_update_subscribe.set_connection_id(this_connection_id.string());
-  closest_nodes_update_subscribe.set_subscribe(subscribe);
-  message.set_destination_id(node_id.string());
-  message.set_source_id(this_node_id.string());
-  message.set_routing_message(true);
-  message.add_data(closest_nodes_update_subscribe.SerializeAsString());
-  message.set_direct(true);
-  message.set_replication(1);
-  message.set_type(static_cast<int32_t>(MessageType::kClosestNodesUpdateSubscribe));
-  message.set_request(true);
-  message.set_client_node(client_node);
   message.set_hops_to_live(Parameters::hops_to_live);
   message.set_id(RandomUint32() % 10000);
   assert(message.IsInitialized() && "Unintialised message");

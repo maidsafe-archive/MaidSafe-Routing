@@ -204,7 +204,7 @@ void GenericNode::InitialiseFunctors() {
                                                  ">::< response to >:<" +
                                                  message);
                                };
-  functors_.network_status = [&](const int& health) { SetHealth(health); };  // NOLINT (Alison)
+  functors_.network_status = [&](const int& health) { SetHealth(health); };
 }
 
 int GenericNode::GetStatus() const {
@@ -268,14 +268,25 @@ void GenericNode::RemoveNodeFromRandomNodeHelper(const NodeId& node_id) {
 }
 
 bool GenericNode::NodeSubscribedForGroupUpdate(const NodeId& node_id) {
-  LOG(kVerbose) << DebugId(this->node_id()) << " has "
-               << routing_->pimpl_->group_change_handler_.update_subscribers_.size()
-               << " nodes subscribed for update";
-  return (std::find_if(routing_->pimpl_->group_change_handler_.update_subscribers_.begin(),
-                       routing_->pimpl_->group_change_handler_.update_subscribers_.end(),
+  auto subscribers(routing_->pimpl_->routing_table_.group_matrix_.GetConnectedPeers());
+  std::string log;
+  log += DebugId(this->node_id()) + " has "
+      + std::to_string(subscribers.size()) + " nodes subscribed for update";
+  for (auto& subscriber : subscribers) {
+    log += DebugId(subscriber.node_id) + ", ";
+  }
+
+  LOG(kVerbose) << log;
+
+  return (std::find_if(subscribers.begin(),
+                       subscribers.end(),
                        [&](const NodeInfo& node) {
                          return node.node_id == node_id;
-                       }) != routing_->pimpl_->group_change_handler_.update_subscribers_.end());
+                       }) != subscribers.end());
+}
+
+std::vector<NodeInfo> GenericNode::GetGroupMatrixConnectedPeers() {
+  return routing_->pimpl_->routing_table_.group_matrix_.GetConnectedPeers();
 }
 
 void GenericNode::SendDirect(const NodeId& destination_id,
@@ -394,14 +405,14 @@ void GenericNode::PrintRoutingTable() {
             << "Routing table size: " << routing_->pimpl_->routing_table_.nodes_.size();
   {
     std::lock_guard<std::mutex> lock(routing_->pimpl_->routing_table_.mutex_);
-    for (const auto& node_info : routing_->pimpl_->routing_table_.nodes_) {  // NOLINT (Alison)
+    for (const auto& node_info : routing_->pimpl_->routing_table_.nodes_) {
       LOG(kInfo) << "\tNodeId : " << HexSubstr(node_info.node_id.string());
     }
   }
   LOG(kInfo) << "[" << HexSubstr(node_info_plus_->node_info.node_id.string())
             << "]'s Non-RoutingTable : ";
   std::lock_guard<std::mutex> lock(routing_->pimpl_->client_routing_table_.mutex_);
-  for (const auto& node_info : routing_->pimpl_->client_routing_table_.nodes_) {  // NOLINT (Alison)
+  for (const auto& node_info : routing_->pimpl_->client_routing_table_.nodes_) {
     LOG(kInfo) << "\tNodeId : " << HexSubstr(node_info.node_id.string());
   }
 }
@@ -409,7 +420,7 @@ void GenericNode::PrintRoutingTable() {
 std::vector<NodeId> GenericNode::ReturnRoutingTable() {
   std::vector<NodeId> routing_nodes;
   std::lock_guard<std::mutex> lock(routing_->pimpl_->routing_table_.mutex_);
-  for (const auto& node_info : routing_->pimpl_->routing_table_.nodes_)  // NOLINT (Alison)
+  for (const auto& node_info : routing_->pimpl_->routing_table_.nodes_)
     routing_nodes.push_back(node_info.node_id);
   return routing_nodes;
 }
@@ -420,7 +431,7 @@ void GenericNode::PrintGroupMatrix() {
 
 std::string GenericNode::SerializeRoutingTable() {
   std::vector<NodeId> node_list;
-  for (const auto& node_info : routing_->pimpl_->routing_table_.nodes_)  // NOLINT (Alison)
+  for (const auto& node_info : routing_->pimpl_->routing_table_.nodes_)
     node_list.push_back(node_info.node_id);
   return SerializeNodeIdList(node_list);
 }
@@ -470,8 +481,8 @@ GenericNetwork::GenericNetwork()
 GenericNetwork::~GenericNetwork() {
   nat_info_available_ = false;
   for (auto& node : nodes_) {
-    node->functors_.request_public_key = [] (const NodeId& /*node_id*/,
-                                             GivePublicKeyFunctor /*give_public_key*/) {};  // NOLINT (Alison)
+    node->functors_.request_public_key = [] (const NodeId&,
+                                             GivePublicKeyFunctor) {};  // NOLINT (Alison)
   }
 
   while (!nodes_.empty())
@@ -507,22 +518,22 @@ void GenericNetwork::TearDown() {
   std::vector<NodeId> nodes_id;
   for (auto index(this->ClientIndex()); index < this->nodes_.size(); ++index)
     nodes_id.push_back(this->nodes_.at(index)->node_id());
-  for (const auto& node_id : nodes_id)  // NOLINT (Alison)
+  for (const auto& node_id : nodes_id)
     this->RemoveNode(node_id);
   nodes_id.clear();
   LOG(kVerbose) << "Clients are removed";
 
-  for (const auto& node : this->nodes_)  // NOLINT (Alison)
+  for (const auto& node : this->nodes_)
     if (node->HasSymmetricNat())
       nodes_id.push_back(node->node_id());
-  for (const auto& node_id : nodes_id)  // NOLINT (Alison)
+  for (const auto& node_id : nodes_id)
     this->RemoveNode(node_id);
   nodes_id.clear();
   LOG(kVerbose) << "Vaults behind symmetric NAT are removed";
 
-  for (const auto& node : this->nodes_)  // NOLINT (Alison)
+  for (const auto& node : this->nodes_)
     nodes_id.insert(nodes_id.begin(), node->node_id());  // reverse order - do bootstraps last
-  for (const auto& node_id : nodes_id)  // NOLINT (Alison)
+  for (const auto& node_id : nodes_id)
     this->RemoveNode(node_id);
 
   std::lock_guard<std::mutex> lock(mutex_);
@@ -674,7 +685,7 @@ void GenericNetwork::SetNodeValidationFunctor(NodePtr node) {
 
 std::vector<NodeId> GenericNetwork::GroupIds(const NodeId& node_id) const {
   std::vector<NodeId> all_ids;
-  for (const auto& node : this->nodes_)  // NOLINT (Alison)
+  for (const auto& node : this->nodes_)
     all_ids.push_back(node->node_id());
   std::partial_sort(all_ids.begin(),
                     all_ids.begin() + Parameters::node_group_size + 1,
@@ -689,24 +700,24 @@ std::vector<NodeId> GenericNetwork::GroupIds(const NodeId& node_id) const {
 
 void GenericNetwork::PrintRoutingTables() const {
   std::lock_guard<std::mutex> lock(mutex_);
-  for (const auto& node : nodes_)  // NOLINT (Alison)
+  for (const auto& node : nodes_)
     node->PrintRoutingTable();
 }
 
 bool GenericNetwork::ValidateRoutingTables() const {
   std::vector<NodeId> node_ids;
-  for (const auto& node : nodes_) {  // NOLINT (Alison)
+  for (const auto& node : nodes_) {
     if (!node->IsClient())
       node_ids.push_back(node->node_id());
   }
-  for (const auto& node : nodes_) {  // NOLINT (Alison)
+  for (const auto& node : nodes_) {
     LOG(kVerbose) << "Reference node: " << HexSubstr(node->node_id().string());
     std::sort(node_ids.begin(),
               node_ids.end(),
               [=] (const NodeId& lhs, const NodeId& rhs)->bool {
                 return NodeId::CloserToTarget(lhs, rhs, node->node_id());
               });
-    for (const auto& node_id : node_ids)  // NOLINT (Alison)
+    for (const auto& node_id : node_ids)
       LOG(kVerbose) << HexSubstr(node_id.string());
 //      node->PrintRoutingTable();
     auto routing_table(node->RoutingTable());
@@ -719,7 +730,7 @@ bool GenericNetwork::ValidateRoutingTables() const {
     LOG(kVerbose) << "Print ordered RT";
     uint16_t size(std::min(static_cast<uint16_t>(routing_table.size()),
                            Parameters::closest_nodes_size));
-    for (const auto& node_info : routing_table)  // NOLINT (Alison)
+    for (const auto& node_info : routing_table)
       LOG(kVerbose) << HexSubstr(node_info.node_id.string());
     for (auto iter(routing_table.begin());
          iter < routing_table.begin() + size -1;
@@ -793,7 +804,7 @@ int GenericNetwork::NodeIndex(const NodeId& node_id) const {
 
 std::vector<NodeId> GenericNetwork::GetGroupForId(const NodeId& node_id) const {
   std::vector<NodeId> group_ids;
-  for (const auto& node : nodes_) {  // NOLINT (Alison)
+  for (const auto& node : nodes_) {
     if (!node->IsClient() && (node->node_id() != node_id))
       group_ids.push_back(node->node_id());
   }
@@ -811,7 +822,7 @@ std::vector<NodeInfo> GenericNetwork::GetClosestNodes(const NodeId& target_id,
                                                       const uint32_t& quantity,
                                                       const bool vault_only) const {
   std::vector<NodeInfo> closet_nodes;
-  for (const auto& node : nodes_) {  // NOLINT (Alison)
+  for (const auto& node : nodes_) {
     if (vault_only && node->IsClient())
       continue;
     closet_nodes.push_back(node->node_info_plus_->node_info);
@@ -830,7 +841,7 @@ std::vector<NodeInfo> GenericNetwork::GetClosestNodes(const NodeId& target_id,
 std::vector<NodeInfo> GenericNetwork::GetClosestVaults(const NodeId& target_id,
                                                        const uint32_t& quantity) const {
   std::vector<NodeInfo> closest_nodes;
-  for (const auto& node : nodes_) {  // NOLINT (Alison)
+  for (const auto& node : nodes_) {
     if (!node->IsClient())
       closest_nodes.push_back(node->node_info());
   }
@@ -934,7 +945,7 @@ bool GenericNetwork::WaitForHealthToStabilise() const {
     healthy = true;
     int expected_health;
     std::string error_message;
-    for (const auto& node: nodes_) {  // NOLINT (Alison)
+    for (const auto& node: nodes_) {
       error_message = "[" + DebugId(node->node_id()) + "]";
       int node_health = node->Health();
       if (node->IsClient()) {
@@ -994,7 +1005,7 @@ bool GenericNetwork::WaitForHealthToStabiliseInLargeNetwork() const {
     healthy = true;
     int expected_health;
     std::string error_message;
-    for (const auto& node: nodes_) {  // NOLINT (Alison)
+    for (const auto& node: nodes_) {
       error_message = "[" + DebugId(node->node_id()) + "]";
       int node_health = node->Health();
       if (node->IsClient()) {
@@ -1034,7 +1045,7 @@ bool GenericNetwork::NodeHasSymmetricNat(const NodeId& node_id) const {
     return false;
 
   std::lock_guard<std::mutex> lock(mutex_);
-  for (const auto& node : nodes_) {  // NOLINT (Alison)
+  for (const auto& node : nodes_) {
     if (node->node_id() == node_id) {
       return node->HasSymmetricNat();
     }
@@ -1045,7 +1056,7 @@ bool GenericNetwork::NodeHasSymmetricNat(const NodeId& node_id) const {
 
 testing::AssertionResult GenericNetwork::CheckGroupMatrixUniqueNodes(const uint16_t& check_length) {
   bool success(true);
-  for (const auto& node : this->nodes_) {  // NOLINT (Alison)
+  for (const auto& node : this->nodes_) {
     std::vector<NodeInfo> nodes_from_matrix(node->ClosestNodes());
     if (nodes_from_matrix.size() < check_length)
       return testing::AssertionFailure();
@@ -1080,8 +1091,8 @@ testing::AssertionResult GenericNetwork::SendDirect(const size_t& repeats, size_
   std::shared_ptr<bool> failed(std::make_shared<bool>(false));
 
   for (size_t repeat = 0; repeat < repeats; ++repeat) {
-    for (const auto& dest : this->nodes_) {  // NOLINT (Alison)
-      for (const auto& src : this->nodes_) {  // NOLINT (Alison)
+    for (const auto& dest : this->nodes_) {
+      for (const auto& src : this->nodes_) {
         std::string data(RandomAlphaNumericString(message_size));
         assert(!data.empty() && "Send Data Empty !");
         ResponseFunctor response_functor;
@@ -1214,7 +1225,7 @@ testing::AssertionResult GenericNetwork::SendGroup(const NodeId& target_id,
                                                      return node_id == replier;
                                                    }), monitor->expected_ids.end());
       std::string output("SendGroup to target " + DebugId(target_id) + " awaiting replies from: ");
-      for (const auto& node_id : monitor->expected_ids) {  // NOLINT (Alison)
+      for (const auto& node_id : monitor->expected_ids) {
         output.append("\t");
         output.append(DebugId(node_id));
       }
@@ -1260,7 +1271,7 @@ testing::AssertionResult GenericNetwork::SendDirect(const NodeId& destination_no
   std::shared_ptr<bool> failed(std::make_shared<bool>(false));
 
   size_t message_index(0);
-  for (const auto& src : this->nodes_) {  // NOLINT (Alison)
+  for (const auto& src : this->nodes_) {
     ResponseFunctor response_functor;
     std::string data(std::to_string(message_index) + "<:>" +
                      RandomAlphaNumericString((RandomUint32() % 255 + 1) * 2^10));
@@ -1388,7 +1399,7 @@ testing::AssertionResult GenericNetwork::SendDirect(std::shared_ptr<GenericNode>
 
 uint16_t GenericNetwork::NonClientNodesSize() const {
   uint16_t non_client_size(0);
-  for (const auto& node : nodes_) {  // NOLINT (Alison)
+  for (const auto& node : nodes_) {
     if (!node->IsClient())
       non_client_size++;
   }
@@ -1397,7 +1408,7 @@ uint16_t GenericNetwork::NonClientNodesSize() const {
 
 uint16_t GenericNetwork::NonClientNonSymmetricNatNodesSize() const {
   uint16_t non_client_non_sym_size(0);
-  for (const auto& node : nodes_) {  // NOLINT (Alison)
+  for (const auto& node : nodes_) {
     if (!node->IsClient() && !node->HasSymmetricNat())
       non_client_non_sym_size++;
   }

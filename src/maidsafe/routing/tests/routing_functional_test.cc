@@ -57,20 +57,20 @@ TEST_F(RoutingNetworkTest, FUNC_SanityCheck) {
     NodeId target_id(env_->nodes_[random_node]->node_id());
     std::vector<NodeId> group_Ids(env_->GetGroupForId(target_id));
     EXPECT_TRUE(env_->SendGroup(target_id, 1));
-    for (const auto& group_id : group_Ids)  // NOLINT (Alison)
+    for (const auto& group_id : group_Ids)
       EXPECT_EQ(1, env_->nodes_.at(env_->NodeIndex(group_id))->MessagesSize());
     env_->ClearMessages();
 
     // SendGroup SelfId
     EXPECT_TRUE(env_->SendGroup(target_id, 1, random_node));
-    for (const auto& group_id : group_Ids)  // NOLINT (Alison)
+    for (const auto& group_id : group_Ids)
       EXPECT_EQ(1, env_->nodes_.at(env_->NodeIndex(group_id))->MessagesSize());
     env_->ClearMessages();
 
     // Client SendGroup
     uint16_t random_client(static_cast<uint16_t>(env_->RandomClientIndex()));
     EXPECT_TRUE(env_->SendGroup(target_id, 1, random_client));
-    for (const auto& group_id : group_Ids)  // NOLINT (Alison)
+    for (const auto& group_id : group_Ids)
       EXPECT_EQ(1, env_->nodes_.at(env_->NodeIndex(group_id))->MessagesSize());
     env_->ClearMessages();
 
@@ -78,7 +78,7 @@ TEST_F(RoutingNetworkTest, FUNC_SanityCheck) {
     target_id = NodeId(NodeId::kRandomId);
     group_Ids = env_->GetGroupForId(target_id);
     EXPECT_TRUE(env_->SendGroup(target_id, 1));
-    for (const auto& group_id : group_Ids)  // NOLINT (Alison)
+    for (const auto& group_id : group_Ids)
       EXPECT_EQ(1, env_->nodes_.at(env_->NodeIndex(group_id))->MessagesSize());
     env_->ClearMessages();
   }
@@ -397,7 +397,7 @@ TEST_F(RoutingNetworkTest, FUNC_SendToClientsWithSameId) {
   do {
 //    Sleep(boost::posix_time::seconds(1));
     size_t size(0);
-    for (const auto& node : env_->nodes_) {  // NOLINT (Alison)
+    for (const auto& node : env_->nodes_) {
       size += node->MessagesSize();
     }
     if (4 * kMessageCount == size) {
@@ -417,7 +417,7 @@ TEST_F(RoutingNetworkTest, FUNC_SendToClientWithSameId) {
 
   env_->ClearMessages();
   EXPECT_TRUE(env_->SendDirect(env_->nodes_[new_index], node_id, kExpectClient));
-  for (const auto& node : env_->nodes_) {  // NOLINT (Alison)
+  for (const auto& node : env_->nodes_) {
     size += node->MessagesSize();
   }
   EXPECT_EQ(2, size);
@@ -458,12 +458,12 @@ TEST_F(RoutingNetworkTest, FUNC_GetRandomExistingNode) {
 
 TEST_F(RoutingNetworkTest, FUNC_IsNodeIdInGroupRange) {
   std::vector<NodeId> vault_ids;
-  for (const auto& node : env_->nodes_)  // NOLINT (Alison)
+  for (const auto& node : env_->nodes_)
     if (!node->IsClient())
       vault_ids.push_back(node->node_id());
   EXPECT_GE(vault_ids.size(), Parameters::node_group_size);
 
-  for (const auto& node : env_->nodes_) {  // NOLINT (Alison)
+  for (const auto& node : env_->nodes_) {
     if (!node->IsClient()) {
       // Check vault IDs from network
       std::partial_sort(vault_ids.begin(),
@@ -516,7 +516,7 @@ TEST_F(RoutingNetworkTest, FUNC_IsConnectedVault) {
     NodeId client_id(env_->nodes_.at(i)->node_id());
     std::vector<NodeInfo> closest_nodes(
           env_->GetClosestVaults(client_id, Parameters::max_routing_table_size_for_client));
-    for (const auto& vault : closest_nodes) {  // NOLINT (Alison)
+    for (const auto& vault : closest_nodes) {
       EXPECT_TRUE(env_->nodes_.at(i)->IsConnectedVault(vault.node_id));
     }
   }
@@ -532,7 +532,7 @@ TEST_F(RoutingNetworkTest, FUNC_IsConnectedClient) {
     NodeId client_id(env_->nodes_.at(i)->node_id());
     std::vector<NodeInfo> closest_nodes(
           env_->GetClosestVaults(client_id, Parameters::max_routing_table_size_for_client));
-    for (const auto& node_info : closest_nodes) {  // NOLINT (Alison)
+    for (const auto& node_info : closest_nodes) {
       int node_index(env_->NodeIndex(node_info.node_id));
       ASSERT_GE(node_index, 0);
       EXPECT_TRUE(env_->nodes_.at(node_index)->IsConnectedClient(client_id));
@@ -555,13 +555,13 @@ TEST_F(RoutingNetworkTest, FUNC_NonexistentIsConnectedVaultOrClient) {
   while (exists) {
     non_existing_id = NodeId(NodeId::kRandomId);
     exists = false;
-    for (const auto& node : env_->nodes_) {  // NOLINT (Alison)
+    for (const auto& node : env_->nodes_) {
       if (node->node_id() == non_existing_id)
         exists = true;
     }
   }
 
-  for (const auto& node : env_->nodes_) {  // NOLINT (Alison)
+  for (const auto& node : env_->nodes_) {
     EXPECT_FALSE(node->IsConnectedVault(non_existing_id));
     if (!node->IsClient())
       EXPECT_FALSE(node->IsConnectedClient(non_existing_id));
@@ -586,7 +586,7 @@ TEST_F(RoutingNetworkTest, FUNC_ClosestNodesClientBehindSymmetricNat) {
     if (NodeId::CloserToTarget(new_id, edge_id, sym_client_id))
       closer_vaults.push_back(new_id);
   }
-  for (const auto& node_id : closer_vaults)  // NOLINT (Alison)
+  for (const auto& node_id : closer_vaults)
     env_->AddNode(false, node_id, true);
 
   ASSERT_TRUE(env_->WaitForHealthToStabilise());
@@ -617,7 +617,7 @@ TEST_F(RoutingNetworkTest, FUNC_ClosestNodesVaultBehindSymmetricNat) {
     if (NodeId::CloserToTarget(new_id, edge_id, sym_vault_id))
       closer_vaults.push_back(new_id);
   }
-  for (const auto& node_id : closer_vaults)  // NOLINT (Alison)
+  for (const auto& node_id : closer_vaults)
     env_->AddNode(false, node_id, true);
 
   ASSERT_TRUE(env_->WaitForHealthToStabilise());

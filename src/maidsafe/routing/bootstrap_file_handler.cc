@@ -165,8 +165,8 @@ std::vector<boost::asio::ip::udp::endpoint> MaidSafeEndpoints() {
   endpoint_string.push_back("106.186.16.51");
 
   std::vector<boost::asio::ip::udp::endpoint> maidsafe_endpoints;
-  for (const auto& i : endpoint_string)  // NOLINT (Alison)
-    maidsafe_endpoints.push_back(Endpoint(boost::asio::ip::address::from_string(i), kLivePort));
+  for (const auto& i : endpoint_string)
+    maidsafe_endpoints.push_back(Endpoint(boost::asio::ip::address::from_string(i), 5483));
   return maidsafe_endpoints;
 }
 
@@ -184,8 +184,8 @@ std::vector<boost::asio::ip::udp::endpoint> MaidSafeLocalEndpoints() {
          "Either QA_BUILD or TESTING must be defined to use maidsafe local endpoint option");
 
   std::vector<boost::asio::ip::udp::endpoint> maidsafe_endpoints;
-  for (const auto& i : endpoint_string)  // NOLINT (Alison)
-    maidsafe_endpoints.push_back(Endpoint(boost::asio::ip::address::from_string(i), kLivePort));
+  for (const auto& i : endpoint_string)
+    maidsafe_endpoints.push_back(Endpoint(boost::asio::ip::address::from_string(i), 5483));
   return maidsafe_endpoints;
 }
 

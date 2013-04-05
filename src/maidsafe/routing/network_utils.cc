@@ -219,7 +219,7 @@ void NetworkUtils::SendToClosestNode(const protobuf::Message& message) {
                     << " destination node(s) in its non-routing table."
                     << " id: " << message.id();
 
-      for (const auto& i : client_routing_nodes) {  // NOLINT (Alison)
+      for (const auto& i : client_routing_nodes) {
         LOG(kVerbose) << "Sending message to NRT node with ID " << message.id();
         SendTo(message, i.node_id, i.connection_id);
       }
@@ -380,7 +380,7 @@ void NetworkUtils::AdjustRouteHistory(protobuf::Message& message) {
       std::vector<std::string> route_history(message.route_history().begin() + 1,
                                              message.route_history().end());
       message.clear_route_history();
-      for (const auto& route : route_history) {  // NOLINT (Alison)
+      for (const auto& route : route_history) {
         if (!NodeId(route).IsZero())
           message.add_route_history(route);
       }

@@ -33,9 +33,11 @@ ClientRoutingTable::ClientRoutingTable(const NodeId& node_id)
       nodes_(),
       mutex_() {}
 
+/*
 void ClientRoutingTable::InitialiseFunctors(UnsubscribeGroupUpdate unsubscribe_group_update) {
   unsubscribe_group_update_ = unsubscribe_group_update;
 }
+*/
 
 bool ClientRoutingTable::AddNode(NodeInfo& node, const NodeId& furthest_close_node_id) {
   return AddOrCheckNode(node, furthest_close_node_id, true);
@@ -84,8 +86,8 @@ NodeInfo ClientRoutingTable::DropConnection(const NodeId& connection_to_drop) {
     if ((*it).connection_id == connection_to_drop) {
       node_info = *it;
       nodes_.erase(it);
-      if (unsubscribe_group_update_)
-        unsubscribe_group_update_(connection_to_drop);
+//      if (unsubscribe_group_update_)
+//        unsubscribe_group_update_(connection_to_drop);
       break;
     }
   }
@@ -183,7 +185,7 @@ std::string ClientRoutingTable::PrintClientRoutingTable() {
   auto rt(nodes_);
   std::string s = "\n\n[" + DebugId(kNodeId_) +
       "] This node's own ClientRoutingTable and peer connections:\n";
-  for (const auto& node : rt) {  // NOLINT (Alison)
+  for (const auto& node : rt) {
     s += std::string("\tPeer ") + "[" + DebugId(node.node_id) + "]"+ "-->";
     s += DebugId(node.connection_id)+ "\n";
   }

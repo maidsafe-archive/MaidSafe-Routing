@@ -68,7 +68,7 @@ TEST(NetworkStatisticsTest, BEH_AverageDistance) {
                                        distances_as_bigint.end(),
                                        crypto::BigInt::Zero()));
 
-  for (const auto& node_id : distances_as_node_id)  // NOLINT (Alison)
+  for (const auto& node_id : distances_as_node_id)
     network_statistics.UpdateNetworkAverageDistance(node_id);
 
   crypto::BigInt matrix_average_as_bigint(

@@ -117,22 +117,7 @@ void Routing::Impl::ConnectFunctors(const Functors& functors) {
                                         group_change_handler_.SendClosestNodesUpdateRpcs(nodes);
                                     },
                                     functors_.close_node_replaced,
-                                    [this] (const bool& subscribe, NodeInfo node_info) {
-                                      std::lock_guard<std::mutex> lock(running_mutex_);
-                                      if (running_)
-                                        group_change_handler_.SendSubscribeRpc(
-                                            subscribe, node_info);
-                                    },
-                                    [this] (const NodeId& connection_id) {
-                                      std::lock_guard<std::mutex> lock(running_mutex_);
-                                      if (running_)
-                                        group_change_handler_.Unsubscribe(connection_id);
-                                    });
-  client_routing_table_.InitialiseFunctors([this] (const NodeId& connection_id) {
-                                             std::lock_guard<std::mutex> lock(running_mutex_);
-                                             if (running_)
-                                               group_change_handler_.Unsubscribe(connection_id);
-                                           });
+                                    functors.matrix_changed);
   message_handler_->set_message_received_functor(functors.message_received);
   message_handler_->set_request_public_key_functor(functors.request_public_key);
   network_.set_new_bootstrap_endpoint_functor(functors.new_bootstrap_endpoint);
@@ -474,7 +459,7 @@ std::future<std::vector<NodeId>> Routing::Impl::GetGroup(const NodeId& info_id) 
                        protobuf::GetGroup get_group;
                        if (get_group.ParseFromString(response)) {
                          try {
-                           for (const auto& id : get_group.group_nodes_id())  // NOLINT (Alison)
+                           for (const auto& id : get_group.group_nodes_id())
                              nodes_id.push_back(NodeId(id));
                          } catch(std::exception& ex) {
                            LOG(kError) << "Failed to parse response of GetGroup : " << ex.what();

@@ -60,7 +60,7 @@ TEST_F(IsThisNodeGroupLeaderGroupMatrixTest, BEH_EmptyRows) {
   PrepareNodes(Parameters::closest_nodes_size);
   GroupMatrix matrix(own_node_id_, false);
 
-  for (const auto& row_leader : nodes_)  // NOLINT (Alison)
+  for (const auto& row_leader : nodes_)
     matrix.AddConnectedPeer(row_leader);
 
   // Test for target
@@ -225,7 +225,8 @@ TEST_P(GroupMatrixTest, BEH_EmptyMatrix) {
 
   EXPECT_EQ(0, matrix_.GetUniqueNodes().size());
 
-  matrix_.RemoveConnectedPeer(NodeInfo());
+  MatrixChange matrix_change;
+  matrix_.RemoveConnectedPeer(NodeInfo(), matrix_change);
   CheckIsThisNodeGroupLeader(target_id, connected_peer, true);
 
   if (client_mode_)
@@ -273,7 +274,7 @@ TEST_P(GroupMatrixTest, BEH_OneRowOnly) {
   EXPECT_TRUE(CompareListOfNodeInfos(row_entries_1, row_result));
 
   // Check GetConnectedPeerFor
-  for (const auto& target_id : row_entries_1) {  // NOLINT (Alison)
+  for (const auto& target_id : row_entries_1) {
     EXPECT_EQ(row_1.node_id, matrix_.GetConnectedPeerFor(target_id.node_id).node_id);
   }
 
@@ -295,12 +296,12 @@ TEST_P(GroupMatrixTest, BEH_OneRowOnly) {
   EXPECT_TRUE(CompareListOfNodeInfos(row_entries_1, row_result));
 
   // Check GetConnectedPeerFor
-  for (const auto& target_id : row_entries_1) {  // NOLINT (Alison)
+  for (const auto& target_id : row_entries_1) {
     EXPECT_EQ(row_1.node_id, matrix_.GetConnectedPeerFor(target_id.node_id).node_id);
   }
 
   // Check GetAllConnectedPeersFor
-  for (const auto& target_id : row_entries_1) {  // NOLINT (Alison)
+  for (const auto& target_id : row_entries_1) {
     std::vector<NodeInfo> connected_peers(matrix_.GetAllConnectedPeersFor(target_id.node_id));
     EXPECT_EQ(1, connected_peers.size());
     if (!connected_peers.empty())
@@ -337,7 +338,7 @@ TEST_P(GroupMatrixTest, BEH_OneColumnOnly) {
 
   // Check rows
   std::vector<NodeInfo> row_result;
-  for (const auto& row_id : row_ids) {  // NOLINT (Alison)
+  for (const auto& row_id : row_ids) {
     EXPECT_TRUE(matrix_.IsRowEmpty(row_id));
     EXPECT_TRUE(matrix_.GetRow(row_id.node_id, row_result));
     EXPECT_EQ(0, row_result.size());
@@ -374,7 +375,7 @@ TEST_P(GroupMatrixTest, BEH_RowsContainSameNodes) {
 
   SortNodeInfosFromTarget(own_node_id_, row_entries);
   std::vector<NodeInfo> row_result;
-  for (const auto& row_id : row_ids) {  // NOLINT (Alison)
+  for (const auto& row_id : row_ids) {
     matrix_.AddConnectedPeer(row_id);
     matrix_.UpdateFromConnectedPeer(row_id.node_id, row_entries);
     EXPECT_FALSE(matrix_.IsRowEmpty(row_id));
@@ -387,9 +388,9 @@ TEST_P(GroupMatrixTest, BEH_RowsContainSameNodes) {
   std::vector<NodeInfo> node_ids;
   if (!client_mode_)
     node_ids.push_back(own_node_info_);
-  for (const auto& row_id : row_ids)  // NOLINT (Alison)
+  for (const auto& row_id : row_ids)
     node_ids.push_back(row_id);
-  for (const auto& row_entry : row_entries)  // NOLINT (Alison)
+  for (const auto& row_entry : row_entries)
     node_ids.push_back(row_entry);
 
   // Check size of unique_nodes_
@@ -422,11 +423,11 @@ TEST_P(GroupMatrixTest, BEH_RowsContainSameNodes) {
   }
 
   // Check GetConnectedPeerFor gives identifier of the first row added to the matrix
-  for (const auto& row_entry : row_entries)  // NOLINT (Alison)
+  for (const auto& row_entry : row_entries)
     EXPECT_EQ(row_ids.at(0).node_id, matrix_.GetConnectedPeerFor(row_entry.node_id).node_id);
 
   // Check GetAllConnectedPeersFor
-  for (const auto& row_entry : row_entries) {  // NOLINT (Alison)
+  for (const auto& row_entry : row_entries) {
     EXPECT_TRUE(CompareListOfNodeInfos(row_ids,
                                        matrix_.GetAllConnectedPeersFor(row_entry.node_id)));
   }
@@ -472,7 +473,7 @@ TEST_P(GroupMatrixTest, BEH_AddUpdateGetRemovePeers) {
   std::vector<NodeInfo> row_entries;
   std::vector<NodeInfo> row_result;
   SortNodeInfosFromTarget(NodeId(NodeId::kRandomId), row_ids);
-  for (const auto& row_id : row_ids) {  // NOLINT (Alison)
+  for (const auto& row_id : row_ids) {
     row_entries.clear();
     uint32_t length(RandomUint32() % (Parameters::closest_nodes_size - 2) + 1);
     for (uint32_t i(0); i < length; ++i) {
@@ -490,9 +491,10 @@ TEST_P(GroupMatrixTest, BEH_AddUpdateGetRemovePeers) {
 
   // Remove peers
   SortNodeInfosFromTarget(own_node_id_, row_ids);
+  MatrixChange matrix_change;
   while (!row_ids.empty()) {
     uint32_t index(RandomUint32() % row_ids.size());
-    matrix_.RemoveConnectedPeer(row_ids.at(index));
+    matrix_.RemoveConnectedPeer(row_ids.at(index), matrix_change);
     row_ids.erase(row_ids.begin() + index);
     EXPECT_TRUE(CompareListOfNodeInfos(row_ids, matrix_.GetConnectedPeers()));
   }
@@ -582,11 +584,11 @@ TEST_P(GroupMatrixTest, BEH_GetConnectedPeerFor) {
 
 
   // GetConnectedPeersFor
-  for (const auto& target_id : row_entries_1)  // NOLINT (Alison)
+  for (const auto& target_id : row_entries_1)
     EXPECT_EQ(row_1.node_id, (matrix_.GetConnectedPeerFor(target_id.node_id)).node_id);
-  for (const auto& target_id : row_entries_2)  // NOLINT (Alison)
+  for (const auto& target_id : row_entries_2)
     EXPECT_EQ(row_2.node_id, matrix_.GetConnectedPeerFor(target_id.node_id).node_id);
-  for (const auto& target_id : row_entries_3)  // NOLINT (Alison)
+  for (const auto& target_id : row_entries_3)
     EXPECT_EQ(row_3.node_id, matrix_.GetConnectedPeerFor(target_id.node_id).node_id);
   const NodeId target_id(NodeId::kRandomId);
   EXPECT_EQ(NodeId(), matrix_.GetConnectedPeerFor(target_id).node_id);
@@ -612,7 +614,7 @@ TEST_P(GroupMatrixTest, BEH_ClosestToId) {
     matrix_.AddConnectedPeer(row_entry);
     matrix_.UpdateFromConnectedPeer(row_entry.node_id, row_entries);
     known_nodes.push_back(row_entry);
-    for (const auto& node_id : row_entries)  // NOLINT (Alison)
+    for (const auto& node_id : row_entries)
       known_nodes.push_back(node_id);
   }
 
@@ -649,7 +651,7 @@ TEST_P(GroupMatrixTest, BEH_IsNodeIdInGroupRange) {
     matrix_.AddConnectedPeer(row_entry);
     matrix_.UpdateFromConnectedPeer(row_entry.node_id, row_entries);
     node_ids.push_back(row_entry);
-    for (const auto& node_id : row_entries)  // NOLINT (Alison)
+    for (const auto& node_id : row_entries)
       node_ids.push_back(node_id);
   }
 
@@ -744,9 +746,9 @@ TEST_P(GroupMatrixTest, BEH_UpdateFromConnectedPeer) {
   // Check matrix row contains all the new nodes and none of the old ones
   EXPECT_TRUE(matrix_.GetRow(row_1.node_id, row_result));
   EXPECT_TRUE(CompareListOfNodeInfos(row_result, row_entries_2));
-  for (const auto& old_node_id : row_entries_1)  // NOLINT (Alison)
+  for (const auto& old_node_id : row_entries_1)
     EXPECT_EQ(NodeId(), matrix_.GetConnectedPeerFor(old_node_id.node_id).node_id);
-  for (const auto& new_node_id : row_entries_2)  // NOLINT (Alison)
+  for (const auto& new_node_id : row_entries_2)
     EXPECT_EQ(row_1.node_id, matrix_.GetConnectedPeerFor(new_node_id.node_id).node_id);
 }
 
@@ -762,7 +764,7 @@ TEST_P(GroupMatrixTest, BEH_CheckUniqueNodeList) {
   std::vector<NodeInfo> node_ids;
   if (!client_mode_)
     node_ids.push_back(own_node_info_);
-  for (const auto& row_id : row_ids) {  // NOLINT (Alison)
+  for (const auto& row_id : row_ids) {
     node_ids.push_back(row_id);
     SortNodeInfosFromTarget(own_node_id_, node_ids);
     matrix_.AddConnectedPeer(row_id);
@@ -772,7 +774,7 @@ TEST_P(GroupMatrixTest, BEH_CheckUniqueNodeList) {
   // Update rows of matrix and check GetUniqueNodes
   std::vector<NodeInfo> row_entries;
   NodeInfo new_row_entry;
-  for (const auto& row_id : row_ids) {  // NOLINT (Alison)
+  for (const auto& row_id : row_ids) {
     if (row_entries.size() < size_t(Parameters::closest_nodes_size - 1)) {
       new_row_entry.node_id = NodeId(NodeId::kRandomId);
       row_entries.push_back(new_row_entry);
@@ -793,7 +795,7 @@ TEST_P(GroupMatrixTest, BEH_GetAllConnectedPeers) {
   std::vector<NodeInfo> node_ids;
   if (!client_mode_)
     node_ids.push_back(own_node_info_);
-  for (const auto& row_id : row_ids) {  // NOLINT (Alison)
+  for (const auto& row_id : row_ids) {
     node_ids.push_back(row_id);
     SortNodeInfosFromTarget(own_node_id_, node_ids);
     matrix_.AddConnectedPeer(row_id);
@@ -814,6 +816,49 @@ TEST_P(GroupMatrixTest, BEH_GetAllConnectedPeers) {
     EXPECT_TRUE(CompareListOfNodeInfos(all_connected_peers, row_ids));
     row_ids.erase(row_ids.begin());
   }
+}
+
+TEST_P(GroupMatrixTest, BEH_Prune) {
+  const size_t kNodesSize(10);
+  std::vector<NodeInfo> all_nodes_info;
+  NodeId node_id(own_node_id_), far_id(own_node_id_ ^ NodeId(NodeId::kMaxId));
+  NodeInfo node_info;
+  for (size_t index(0); index < kNodesSize; ++index) {
+    NodeId close_node_id;
+    if (index != kNodesSize - 1)
+      close_node_id = GenerateUniqueRandomId(node_id, 50);
+    else
+      close_node_id = far_id;
+    node_info.node_id = close_node_id;
+    all_nodes_info.push_back(node_info);
+  }
+  for (size_t index(0); index < kNodesSize; ++index)
+    matrix_.AddConnectedPeer(all_nodes_info[index]);
+  std::sort(all_nodes_info.begin(),
+            all_nodes_info.end(),
+            [own_node_id_] (const NodeInfo& lhs, const NodeInfo& rhs) {
+              return NodeId::CloserToTarget(lhs.node_id, rhs.node_id, own_node_id_);
+            });
+  auto copy(all_nodes_info);
+  copy.push_back(own_node_info_);
+  for (size_t index(0); index < kNodesSize; ++index) {
+    auto current_id(all_nodes_info[index].node_id);
+    std::sort(copy.begin(),
+              copy.end(),
+              [current_id] (const NodeInfo& lhs, const NodeInfo& rhs) {
+                return NodeId::CloserToTarget(lhs.node_id, rhs.node_id, current_id);
+              });
+    matrix_.UpdateFromConnectedPeer(current_id,
+                                    std::vector<NodeInfo>(copy.begin() + 1,
+                                                          copy.end()));
+  }
+  auto connected_peers(matrix_.GetConnectedPeers());
+  auto far_node_itr(std::find_if(connected_peers.begin(),
+                                 connected_peers.end(),
+                                 [far_id](const NodeInfo& node) {
+                                   return node.node_id == far_id;
+                                 }));
+  EXPECT_EQ(far_node_itr, connected_peers.end());
 }
 
 TEST_P(GroupMatrixTest, BEH_CheckAssertions) {
@@ -856,7 +901,7 @@ TEST_P(GroupMatrixTest, BEH_CheckAssertions) {
 #endif
 
   // Update row using too big row size
-  while (row.size() < static_cast<size_t>(Parameters::closest_nodes_size + 1))
+  while (row.size() < static_cast<size_t>(Parameters::max_routing_table_size + 1))
     row.push_back(NodeInfo());
 #ifndef NDEBUG
   EXPECT_DEATH(matrix_.UpdateFromConnectedPeer(random_id_1, row), "");

@@ -104,7 +104,7 @@ class ResponseHandlerTest : public testing::Test {
         nodes.push_back(NodeId(RandomString(64)));
 
     protobuf::FindNodesResponse found_nodes;
-    for (const auto& node : nodes)  // NOLINT (Alison)
+    for (const auto& node : nodes)
       found_nodes.add_nodes(node.string());
     found_nodes.set_original_request(ori_find_nodes_request);
     found_nodes.set_original_signature(routing_table_.kNodeId().string());
@@ -134,7 +134,7 @@ class ResponseHandlerTest : public testing::Test {
     protobuf::ConnectSuccessAcknowledgement connect_ack;
     connect_ack.set_node_id(node_id.string());
     connect_ack.set_connection_id(connection_id.string());
-    for (const auto& close_id : close_ids)  // NOLINT (Alison)
+    for (const auto& close_id : close_ids)
       connect_ack.add_close_ids(close_id);
     connect_ack.set_requestor(requestor);
     return connect_ack;
