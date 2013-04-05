@@ -379,8 +379,10 @@ void GroupMatrix::Prune() {
       continue;
     }
     node_id = itr->begin()->node_id;
-    if (itr->size() < Parameters::closest_nodes_size)
+    if (itr->size() < Parameters::closest_nodes_size) {
+      peers_to_remove.push_back(node_id);
       continue;
+    }
     std::partial_sort(itr->begin() + 1,
                       itr->begin() + Parameters::closest_nodes_size + 1,
                       itr->end(),

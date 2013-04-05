@@ -210,9 +210,12 @@ TEST(RoutingTableTest, BEH_ReverseOrderedGroupChange) {
     EXPECT_EQ(nodes.size(), expected_close_nodes.size());
     size_t max_index(std::min(expected_close_nodes.size(), nodes.size()));
     for (uint16_t i(0); i < max_index; ++i) {
-      EXPECT_EQ(nodes.at(i).node_id, expected_close_nodes.at(i).node_id) <<
-      "actual node: " << DebugId(nodes.at(i).node_id) <<
-      "\n expected node: " << DebugId(expected_close_nodes.at(i).node_id);
+      auto node_id(expected_close_nodes.at(i).node_id);
+      EXPECT_NE(std::find_if(nodes.begin(),
+                             nodes.end(),
+                             [node_id] (const NodeInfo& info) {
+                               return info.node_id == node_id;
+                             }), nodes.end());
     }
   };
   routing_table.InitialiseFunctors(network_status_functor,
@@ -256,7 +259,7 @@ TEST(RoutingTableTest, BEH_ReverseOrderedGroupChange) {
   }
 
   EXPECT_EQ(routing_table.size(), 0);
-  EXPECT_EQ(2 * Parameters::max_routing_table_size - 1, count);
+  EXPECT_EQ(2 * Parameters::max_routing_table_size, count);
   EXPECT_EQ(0, routing_table.group_matrix_.GetConnectedPeers().size());
 }
 
@@ -374,7 +377,7 @@ TEST(RoutingTableTest, BEH_CheckGroupChangeAddGroupNodesToFullTable) {
   bool setting_up(true);
   std::vector<NodeInfo> expected_close_nodes;
   ConnectedGroupChangeFunctor group_change_functor =
-      [&count, &nodes, &expected_close_nodes, &setting_up](const std::vector<NodeInfo> nodes) {
+      [&count, &nodes, &expected_close_nodes, &setting_up](const std::vector<NodeInfo> new_group) {
     ++count;
     LOG(kInfo) << "Group changed. count : " << count;
     if (setting_up) {
@@ -390,12 +393,12 @@ TEST(RoutingTableTest, BEH_CheckGroupChangeAddGroupNodesToFullTable) {
       for (const auto& i: expected_close_nodes) {
         LOG(kVerbose) << "Expected Id : " << DebugId(i.node_id);
       }
-      EXPECT_EQ(nodes.size(), expected_close_nodes.size());
+      EXPECT_EQ(new_group.size(), expected_close_nodes.size());
       uint16_t max_index(
-          static_cast<uint16_t>(std::min(expected_close_nodes.size(), nodes.size())));
+          static_cast<uint16_t>(std::min(expected_close_nodes.size(), new_group.size())));
       for (uint16_t i(0); i < max_index; ++i) {
-        EXPECT_EQ(nodes.at(i).node_id, expected_close_nodes.at(i).node_id) <<
-            "actual node: " << DebugId(nodes.at(i).node_id) <<
+        EXPECT_EQ(new_group.at(i).node_id, expected_close_nodes.at(i).node_id) <<
+            "actual node: " << DebugId(new_group.at(i).node_id) <<
             "\n expected node: " << DebugId(expected_close_nodes.at(i).node_id);
       }
     }
@@ -485,8 +488,14 @@ TEST(RoutingTableTest, BEH_FillEmptyRefillRoutingTable) {
     if (filling_table) {
       EXPECT_EQ(expected_count, count);
       EXPECT_EQ(expected_group.size(), node_infos.size());
-      for (uint32_t i(0); i < std::min(expected_group.size(), node_infos.size()); ++i)
-        EXPECT_EQ(expected_group.at(i).node_id, node_infos.at(i).node_id);
+      for (auto& node : expected_group) {
+        auto node_id(node.node_id);
+        EXPECT_NE(std::find_if(node_infos.begin(),
+                               node_infos.end(),
+                               [node_id](const NodeInfo& node_info) {
+                                 return node_id == node_info.node_id;
+                               }), node_infos.end());
+      }
     } else {
       EXPECT_EQ(expected_count, count);
       EXPECT_GE(nodes.size(), node_infos.size());
@@ -545,7 +554,7 @@ TEST(RoutingTableTest, BEH_FillEmptyRefillRoutingTable) {
     LOG(kVerbose) << "Removed from routing_table : " << DebugId(removal_id);
   }
 
-  EXPECT_EQ(expected_count - 1, count);
+  EXPECT_EQ(expected_count, count);
   ASSERT_EQ(0, routing_table.size());
 
   // Reset functors
@@ -681,7 +690,12 @@ TEST(RoutingTableTest, BEH_CheckMockSendGroupChangeRpcs) {
     EXPECT_TRUE(routing_table_2.group_matrix_.GetRow(node_id_1, close_nodes));
     EXPECT_EQ(expected_close_nodes.size(), close_nodes.size());
     for (uint16_t i(0); i <  std::min(expected_close_nodes.size(), close_nodes.size()); ++i) {
-      EXPECT_EQ(expected_close_nodes.at(i), close_nodes.at(i).node_id);
+      auto id(expected_close_nodes.at(i));
+      EXPECT_NE(std::find_if(close_nodes.begin(),
+                             close_nodes.end(),
+                             [id] (const NodeInfo& info) {
+                               return id == info.node_id;
+                             }), close_nodes.end());
     }
   }
 
@@ -721,7 +735,10 @@ TEST(RoutingTableTest, BEH_CheckMockSendGroupChangeRpcs) {
     EXPECT_TRUE(routing_table_2.group_matrix_.GetRow(node_id_1, close_nodes));
     EXPECT_EQ(expected_close_nodes.size(), close_nodes.size());
     for (uint16_t i(0); i <  std::min(expected_close_nodes.size(), close_nodes.size()); ++i) {
-      EXPECT_EQ(expected_close_nodes.at(i), close_nodes.at(i).node_id);
+      auto id(close_nodes.at(i).node_id);
+      EXPECT_NE(std::find(expected_close_nodes.begin(),
+                          expected_close_nodes.end(),
+                          id), expected_close_nodes.end());
     }
   }
 

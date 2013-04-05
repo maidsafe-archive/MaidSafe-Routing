@@ -202,6 +202,7 @@ NodeInfo RoutingTable::DropNode(const NodeId& node_to_drop, bool routing_only) {
   NodeInfo dropped_node;
   MatrixChange matrix_change;
   std::vector<NodeId> unique_nodes;
+  bool close_nodes_changed(false);
   {
     std::unique_lock<std::mutex> lock(mutex_);
     auto found(Find(node_to_drop, lock));
@@ -211,12 +212,19 @@ NodeInfo RoutingTable::DropNode(const NodeId& node_to_drop, bool routing_only) {
       old_connected_close_nodes = group_matrix_.GetConnectedPeers();
       group_matrix_.RemoveConnectedPeer(dropped_node, matrix_change);
       new_connected_close_nodes = group_matrix_.GetConnectedPeers();
+      if (new_connected_close_nodes.size() != old_connected_close_nodes.size()) {
+        close_nodes_changed = true;
+        if (nodes_.size() >= Parameters::closest_nodes_size) {
+          PartialSortFromTarget(kNodeId_, Parameters::closest_nodes_size, lock);
+          group_matrix_.AddConnectedPeer(nodes_[Parameters::closest_nodes_size - 1]);
+          new_connected_close_nodes = group_matrix_.GetConnectedPeers();
+        }
+      }
     }
     unique_nodes = group_matrix_.GetUniqueNodeIds();
   }
 
-  if (new_connected_close_nodes.size() != old_connected_close_nodes.size())
-    if (connected_group_change_functor_)
+  if (close_nodes_changed && connected_group_change_functor_)
       connected_group_change_functor_(new_connected_close_nodes);
 
   if (!matrix_change.OldEqualsToNew()) {
