@@ -836,7 +836,7 @@ TEST_P(GroupMatrixTest, BEH_Prune) {
     matrix_.AddConnectedPeer(all_nodes_info[index]);
   std::sort(all_nodes_info.begin(),
             all_nodes_info.end(),
-            [own_node_id_] (const NodeInfo& lhs, const NodeInfo& rhs) {
+            [this](const NodeInfo& lhs, const NodeInfo& rhs) {
               return NodeId::CloserToTarget(lhs.node_id, rhs.node_id, own_node_id_);
             });
   auto copy(all_nodes_info);

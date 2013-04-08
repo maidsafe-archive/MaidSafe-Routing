@@ -365,8 +365,7 @@ void GroupMatrix::Prune() {
   std::partial_sort(matrix_.begin(),
                     matrix_.begin() + Parameters::closest_nodes_size,
                     matrix_.end(),
-                    [kNodeId_] (const std::vector<NodeInfo>& lhs,
-                                const std::vector<NodeInfo>& rhs) {
+                    [this](const std::vector<NodeInfo>& lhs, const std::vector<NodeInfo>& rhs) {
                       return NodeId::CloserToTarget(lhs.begin()->node_id,
                                                     rhs.begin()->node_id,
                                                     kNodeId_);
