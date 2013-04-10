@@ -48,7 +48,7 @@ set(RoutingFuncNatTestFiles ${RoutingSourcesDir}/tests/routing_functional_test.c
                             ${RoutingSourcesDir}/tests/test_func_nat_main.cc)
 set(RoutingBigTestFiles ${RoutingSourcesDir}/tests/routing_churn_test.cc
                         ${RoutingSourcesDir}/tests/find_nodes_test.cc
-					              ${RoutingSourcesDir}/tests/routing_stand_alone_test.cc)
+                        ${RoutingSourcesDir}/tests/routing_stand_alone_test.cc)
 
 list(REMOVE_ITEM RoutingTestsAllFiles ${RoutingTestsHelperFiles}
                                       ${RoutingApiTestFiles}
@@ -64,6 +64,7 @@ ms_add_static_library(routing ${RoutingAllFiles})
 target_link_libraries(maidsafe_routing maidsafe_rudp maidsafe_passport)
 
 if(MaidsafeTesting)
+  target_link_libraries(maidsafe_routing maidsafe_network_viewer)
   ms_add_executable(TESTrouting "Tests/Routing" ${RoutingTestsAllFiles})
   ms_add_executable(TESTrouting_api "Tests/Routing" ${RoutingApiTestFiles} ${RoutingSourcesDir}/tests/test_main.cc)
   # new executable TESTrouting_func is created to contain func tests excluded from TESTrouting, can be run seperately
@@ -76,9 +77,8 @@ if(MaidsafeTesting)
   ms_add_executable(routing_node "Tools" ${RoutingSourcesDir}/tools/routing_node.cc
                                          ${RoutingSourcesDir}/tools/commands.h
                                          ${RoutingSourcesDir}/tools/commands.cc
-					                               ${RoutingSourcesDir}/tools/shared_response.h
+                                         ${RoutingSourcesDir}/tools/shared_response.h
                                          ${RoutingSourcesDir}/tools/shared_response.cc)
-  ms_add_executable(routing_viewer "Tools" ${RoutingSourcesDir}/tools/viewer.cc ${RoutingProtos})
   target_link_libraries(TESTrouting maidsafe_routing)
   target_link_libraries(TESTrouting_api maidsafe_routing)
   target_link_libraries(TESTrouting_func maidsafe_routing)
@@ -87,7 +87,6 @@ if(MaidsafeTesting)
   target_link_libraries(create_lifestuff_bootstrap maidsafe_routing)
   target_link_libraries(routing_key_helper maidsafe_routing)
   target_link_libraries(routing_node maidsafe_routing)
-  target_link_libraries(routing_viewer maidsafe_common)
 endif()
 
 rename_outdated_built_exes()

@@ -19,6 +19,7 @@
 
 #include "maidsafe/common/log.h"
 #include "maidsafe/common/utils.h"
+#include "maidsafe/common/tools/network_viewer.h"
 
 #include "maidsafe/routing/parameters.h"
 #include "maidsafe/routing/node_info.h"
@@ -55,8 +56,9 @@ RoutingTable::RoutingTable(bool client_mode,
       network_statistics_(network_statistics) {
 #ifdef TESTING
   try {
-    ipc_message_queue_.reset(new boost::interprocess::message_queue(boost::interprocess::open_only,
-                                                                    "matrix_messages"));
+    ipc_message_queue_.reset(
+        new boost::interprocess::message_queue(boost::interprocess::open_only,
+                                               network_viewer::kMessageQueueName.c_str()));
     if (static_cast<uint16_t>(ipc_message_queue_->get_max_msg_size()) <
         (Parameters::closest_nodes_size + 1) * Parameters::closest_nodes_size * 2 * NodeId::kSize) {
       ThrowError(CommonErrors::invalid_parameter);
@@ -70,9 +72,8 @@ RoutingTable::RoutingTable(bool client_mode,
 
 RoutingTable::~RoutingTable() {
   if (ipc_message_queue_) {
-    protobuf::GetGroup proto_matrix;
-    proto_matrix.set_node_id(kNodeId_.string());
-    std::string serialised_matrix(proto_matrix.SerializeAsString());
+    network_viewer::MatrixRecord matrix_record(kNodeId_);
+    std::string serialised_matrix(matrix_record.Serialise());
     ipc_message_queue_->try_send(serialised_matrix.c_str(), serialised_matrix.size(), 0);
   }
 }
@@ -851,20 +852,30 @@ size_t RoutingTable::size() const {
 
 void RoutingTable::IpcSendGroupMatrix() const {
   if (ipc_message_queue_) {
-    protobuf::GetGroup proto_matrix;
-    proto_matrix.set_node_id(kNodeId_.string());
-    std::vector<NodeInfo> matrix;
+    network_viewer::MatrixRecord matrix_record(kNodeId_);
+    std::vector<NodeInfo> matrix, close;
     {
       std::lock_guard<std::mutex> lock(mutex_);
       matrix = group_matrix_.GetUniqueNodes();
+      close = group_matrix_.GetConnectedPeers();
     }
-    std::string printout("\tMatrix sent by: " + DebugId(NodeId(proto_matrix.node_id())) + "\n");
-    for (const auto& node_info : matrix) {
-      proto_matrix.add_group_nodes_id(node_info.node_id.string());
-      printout += "\t\t" + DebugId(node_info.node_id) + "\n";
+    std::string printout("\tMatrix sent by: " + DebugId(NodeId(matrix_record.owner_id())) + "\n");
+    for (const auto& matrix_element : matrix) {
+      matrix_record.AddElement(matrix_element.node_id, network_viewer::ChildType::kMatrix);
+      printout += "\t\t" + DebugId(matrix_element.node_id) + " - kMatrix\n";
+    }
+    size_t index(0);
+    size_t limit(std::min(static_cast<size_t>(Parameters::node_group_size), close.size()));
+    for (; index < limit; ++index) {
+      matrix_record.AddElement(close[index].node_id, network_viewer::ChildType::kGroup);
+      printout += "\t\t" + DebugId(close[index].node_id) + " - kGroup\n";
+    }
+    for (; index < close.size(); ++index) {
+      matrix_record.AddElement(close[index].node_id, network_viewer::ChildType::kClosest);
+      printout += "\t\t" + DebugId(close[index].node_id) + " - kClosest\n";
     }
     LOG(kInfo) << printout << '\n';
-    std::string serialised_matrix(proto_matrix.SerializeAsString());
+    std::string serialised_matrix(matrix_record.Serialise());
     ipc_message_queue_->try_send(serialised_matrix.c_str(), serialised_matrix.size(), 0);
   }
 }

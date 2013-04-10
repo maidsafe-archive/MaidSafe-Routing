@@ -61,7 +61,7 @@ void GroupMatrix::RemoveConnectedPeer(const NodeInfo& node_info, MatrixChange& m
   UpdateUniqueNodeList();
 }
 
-std::vector<NodeInfo> GroupMatrix::GetConnectedPeers() {
+std::vector<NodeInfo> GroupMatrix::GetConnectedPeers() const {
   std::vector<NodeInfo> connected_peers;
   for (const auto& nodes : matrix_) {
     if (nodes.begin()->node_id != kNodeId_)

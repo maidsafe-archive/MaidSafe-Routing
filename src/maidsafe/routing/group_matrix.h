@@ -46,7 +46,7 @@ class GroupMatrix {
   void RemoveConnectedPeer(const NodeInfo& node_info, MatrixChange& matrix_change);
 
   // Returns the connected peers sorted to node ids from kNodeId_
-  std::vector<NodeInfo> GetConnectedPeers();
+  std::vector<NodeInfo> GetConnectedPeers() const;
 
   // Returns the peer which has target_info in its row (1st occurrence).
   NodeInfo GetConnectedPeerFor(const NodeId& target_node_id);
