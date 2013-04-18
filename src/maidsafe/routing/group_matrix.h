@@ -72,7 +72,6 @@ class GroupMatrix {
   std::vector<NodeId> GetUniqueNodeIds() const;
   std::vector<NodeInfo> GetClosestNodes(const uint16_t& size);
   bool Contains(const NodeId& node_id);
-  bool Unsubscribe(const NodeId& node_id);
   void Prune();
 
   friend class test::GenericNode;

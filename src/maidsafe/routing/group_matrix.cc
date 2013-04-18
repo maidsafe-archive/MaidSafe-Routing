@@ -315,18 +315,6 @@ bool GroupMatrix::Contains(const NodeId& node_id) {
                       }) != unique_nodes_.end();
 }
 
-bool GroupMatrix::Unsubscribe(const NodeId& node_id) {
-  auto nodes_info(std::find_if(matrix_.begin(),
-                               matrix_.end(),
-                               [node_id] (const std::vector<NodeInfo>& nodes) {
-                                 return nodes[0].node_id == node_id;
-                               }));
-  if (nodes_info == matrix_.end())
-    return true;
-  matrix_.erase(nodes_info);
-  return true;
-}
-
 void GroupMatrix::UpdateUniqueNodeList() {
   std::set<NodeInfo, std::function<bool(const NodeInfo&, const NodeInfo&)>> sorted_to_owner(
       [&](const NodeInfo& lhs, const NodeInfo& rhs) {

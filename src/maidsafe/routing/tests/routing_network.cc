@@ -285,6 +285,10 @@ bool GenericNode::NodeSubscribedForGroupUpdate(const NodeId& node_id) {
                        }) != subscribers.end());
 }
 
+void GenericNode::SetMatrixChangeFunctor(MatrixChangedFunctor group_matrix_functor) {
+  functors_.matrix_changed = group_matrix_functor;
+}
+
 std::vector<NodeInfo> GenericNode::GetGroupMatrixConnectedPeers() {
   return routing_->pimpl_->routing_table_.group_matrix_.GetConnectedPeers();
 }
@@ -584,6 +588,18 @@ void GenericNetwork::SetUpNetwork(const size_t& total_number_vaults,
   Sleep(boost::posix_time::seconds(1));
   PrintRoutingTables();
 //    EXPECT_TRUE(ValidateRoutingTables());
+}
+
+void GenericNetwork::AddNode(const bool& client_mode,
+                             const NodeId& node_id,
+                             MatrixChangedFunctor matrix_change_functor) {
+  NodeInfoAndPrivateKey node_info;
+  node_info = MakeNodeInfoAndKeys();
+  node_info.node_info.node_id = node_id;
+  NodePtr node(new GenericNode(client_mode, node_info, false, false));
+  node->SetMatrixChangeFunctor(matrix_change_functor);
+  AddNodeDetails(node);
+  LOG(kVerbose) << "Node # " << nodes_.size() << " added to network";
 }
 
 void GenericNetwork::AddNode(const bool& client_mode,

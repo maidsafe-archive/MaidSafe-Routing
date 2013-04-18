@@ -45,7 +45,6 @@ class GroupChangeHandler {
   void UpdateGroupChange(const NodeId& node_id, std::vector<NodeInfo> close_nodes);
   void ClosestNodesUpdate(protobuf::Message& message);
   void SendSubscribeRpc(const bool& subscribe, const NodeInfo& node_info);
-  void Unsubscribe(const NodeId& connection_id);
 
   friend class test::GenericNode;
  private:

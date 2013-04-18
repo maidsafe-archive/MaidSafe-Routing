@@ -226,7 +226,7 @@ NodeInfo RoutingTable::DropNode(const NodeId& node_to_drop, bool routing_only) {
   }
 
   if (close_nodes_changed && connected_group_change_functor_)
-      connected_group_change_functor_(new_connected_close_nodes);
+    connected_group_change_functor_(new_connected_close_nodes);
 
   if (!matrix_change.OldEqualsToNew()) {
     network_statistics_.UpdateLocalAverageDistance(unique_nodes);
