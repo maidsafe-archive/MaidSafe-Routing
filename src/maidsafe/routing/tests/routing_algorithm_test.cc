@@ -38,6 +38,13 @@ struct RTNode {
                     })),
         accounts(),
         group_matrix() {}
+
+  RTNode(const RTNode& other) :
+    kNodeId(other.kNodeId),
+    close_nodes(other.close_nodes),
+    accounts(other.accounts),
+    group_matrix(other.group_matrix) {}
+
   RTNode& operator=(RTNode&& other) {
     const_cast<NodeId&>(kNodeId) = std::move(other.kNodeId);
     close_nodes = std::move(other.close_nodes);
@@ -45,6 +52,8 @@ struct RTNode {
     group_matrix = std::move(other.group_matrix);
     return *this;
   }
+
+
   const NodeId kNodeId;
   typedef std::set<NodeId, std::function<bool(const NodeId&, const NodeId&)> > CloseNodes;
   typedef std::set<RTNode, std::function<bool(const RTNode&, const RTNode&)> > CloseRTNodes;
