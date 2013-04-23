@@ -64,8 +64,13 @@ bool Routing::ClosestToId(const NodeId& node_id) {
   return pimpl_->ClosestToId(node_id);
 }
 
-GroupRangeStatus Routing::IsNodeIdInGroupRange(const NodeId& node_id) const {
-  return pimpl_->IsNodeIdInGroupRange(node_id);
+GroupRangeStatus Routing::IsNodeIdInGroupRange(const NodeId& group_id) const {
+  return pimpl_->IsNodeIdInGroupRange(group_id);
+}
+
+GroupRangeStatus Routing::IsNodeIdInGroupRange(const NodeId& group_id,
+                                               const NodeId& /*node_id*/) const {
+  return pimpl_->IsNodeIdInGroupRange(group_id); // FIXME
 }
 
 NodeId Routing::RandomConnectedNode() {

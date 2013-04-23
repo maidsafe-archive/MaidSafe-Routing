@@ -105,7 +105,6 @@ class RoutingTable {
   std::vector<NodeId> GetGroup(const NodeId& target_id);
   NodeInfo GetRemovableNode(std::vector<std::string> attempted = std::vector<std::string>());
   void GetNodesNeedingGroupUpdates(std::vector<NodeInfo>& nodes_needing_update);
-  bool UnsubscribeToReceivingGroupUpdate(const NodeId& node_id);
   size_t size() const;
   uint16_t kThresholdSize() const { return kThresholdSize_; }
   NodeId kNodeId() const { return kNodeId_; }

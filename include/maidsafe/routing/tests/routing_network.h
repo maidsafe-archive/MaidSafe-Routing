@@ -130,6 +130,7 @@ class GenericNode {
   void RemoveNodeFromRandomNodeHelper(const NodeId& node_id);
   bool NodeSubscribedForGroupUpdate(const NodeId& node_id);
   std::vector<NodeInfo> GetGroupMatrixConnectedPeers();
+  void SetMatrixChangeFunctor(MatrixChangedFunctor group_matrix_functor);
 
   void PostTaskToAsioService(std::function<void()> functor);
   rudp::NatType nat_type();
@@ -181,6 +182,9 @@ class GenericNetwork {
                     const size_t& total_number_clients,
                     const size_t& num_symmetric_nat_vaults,
                     const size_t& num_symmetric_nat_clients);
+  void AddNode(const bool& client_mode,
+               const NodeId& node_id,
+               MatrixChangedFunctor matrix_change_functor);
   void AddNode(const bool& client_mode,
                const NodeId& node_id,
                const bool& has_symmetric_nat = false,

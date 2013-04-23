@@ -101,11 +101,13 @@ struct Functors {
       : message_received(),
         network_status(),
         close_node_replaced(),
+        matrix_changed(),
         set_public_key(),
         request_public_key(),
         have_cache_data(),
         store_cache_data(),
         new_bootstrap_endpoint() {}
+
   MessageReceivedFunctor message_received;
   NetworkStatusFunctor network_status;
   CloseNodeReplacedFunctor close_node_replaced;

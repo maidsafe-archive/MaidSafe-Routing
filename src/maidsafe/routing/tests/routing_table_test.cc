@@ -1216,6 +1216,44 @@ TEST(RoutingTableTest, BEH_IsNodeIdInGroupRange) {
   }
 }
 
+TEST(RoutingTableTest, BEH_MatrixChange) {
+  NodeId node_id(NodeId::kRandomId);
+  NetworkStatistics network_statistics(node_id);
+  RoutingTable routing_table(false, node_id, asymm::GenerateKeyPair(), network_statistics);
+  int count(0);
+  MatrixChangedFunctor matrix_change_functor = [&count](const MatrixChange& /*matrix_change*/) {
+                                                 count++;
+                                               };
+  routing_table.InitialiseFunctors([](const int&) {},
+                                   [](const NodeInfo&, bool) {},
+                                   []() {},
+                                   [](const std::vector<NodeInfo>) {},
+                                   [](const std::vector<NodeInfo>&) {},
+                                   matrix_change_functor);
+  std::vector<NodeId> node_ids;
+  for (size_t index(0); index < Parameters::closest_nodes_size; ++index) {
+    NodeInfo node_info(MakeNode());
+    node_info.node_id = NodeId(NodeId::kRandomId);
+    node_ids.push_back(node_info.node_id);
+    routing_table.AddNode(node_info);
+  }
+  EXPECT_EQ(count, Parameters::closest_nodes_size);
+  routing_table.DropNode(node_ids.at(Parameters::node_group_size), true);
+  EXPECT_EQ(count, Parameters::closest_nodes_size + 1);
+  routing_table.GroupUpdateFromConnectedPeer(NodeId(NodeId::kRandomId), std::vector<NodeInfo>());
+  EXPECT_EQ(count, Parameters::closest_nodes_size + 1);
+  std::vector<NodeInfo> node_infos;
+  for (size_t index(0); index < 10; ++index) {
+    NodeInfo node_info(MakeNode());
+    node_infos.push_back(node_info);
+  }
+  routing_table.GroupUpdateFromConnectedPeer(NodeId(NodeId::kRandomId), node_infos);
+  EXPECT_EQ(count, Parameters::closest_nodes_size + 1);
+  routing_table.GroupUpdateFromConnectedPeer(node_ids[RandomUint32() % node_ids.size()],
+                                             node_infos);
+  EXPECT_EQ(count, Parameters::closest_nodes_size + 2);
+}
+
 
 TEST(RoutingTableTest, BEH_ClosestToId) {
   NodeId own_node_id(NodeId::kRandomId);

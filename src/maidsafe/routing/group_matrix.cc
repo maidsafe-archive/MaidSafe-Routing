@@ -57,8 +57,8 @@ void GroupMatrix::RemoveConnectedPeer(const NodeInfo& node_info, MatrixChange& m
                                  return (node_info.node_id == nodes.begin()->node_id);
                                }), matrix_.end());
   Prune();
-  matrix_change.new_matrix = GetUniqueNodeIds();
   UpdateUniqueNodeList();
+  matrix_change.new_matrix = GetUniqueNodeIds();
 }
 
 std::vector<NodeInfo> GroupMatrix::GetConnectedPeers() const {
@@ -313,18 +313,6 @@ bool GroupMatrix::Contains(const NodeId& node_id) {
                       [&node_id] (const NodeInfo& node_info) {
                         return node_info.node_id == node_id;
                       }) != unique_nodes_.end();
-}
-
-bool GroupMatrix::Unsubscribe(const NodeId& node_id) {
-  auto nodes_info(std::find_if(matrix_.begin(),
-                               matrix_.end(),
-                               [node_id] (const std::vector<NodeInfo>& nodes) {
-                                 return nodes[0].node_id == node_id;
-                               }));
-  if (nodes_info == matrix_.end())
-    return true;
-  matrix_.erase(nodes_info);
-  return true;
 }
 
 void GroupMatrix::UpdateUniqueNodeList() {

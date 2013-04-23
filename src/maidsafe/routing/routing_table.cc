@@ -226,7 +226,7 @@ NodeInfo RoutingTable::DropNode(const NodeId& node_to_drop, bool routing_only) {
   }
 
   if (close_nodes_changed && connected_group_change_functor_)
-      connected_group_change_functor_(new_connected_close_nodes);
+    connected_group_change_functor_(new_connected_close_nodes);
 
   if (!matrix_change.OldEqualsToNew()) {
     network_statistics_.UpdateLocalAverageDistance(unique_nodes);
@@ -330,11 +330,10 @@ bool RoutingTable::ClosestToId(const NodeId& node_id) {
     if (!group_matrix_.ClosestToId(node_id))
       return false;
   }
-
   if (IsNodeIdInGroupRange(node_id) != GroupRangeStatus::kInRange)
     return false;
 
-  return true;
+  return true;  // FIXME:(Prakash) return false on default case
 }
 
 GroupRangeStatus RoutingTable::IsNodeIdInGroupRange(const NodeId& target_id) {
