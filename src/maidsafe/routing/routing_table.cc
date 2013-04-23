@@ -330,11 +330,10 @@ bool RoutingTable::ClosestToId(const NodeId& node_id) {
     if (!group_matrix_.ClosestToId(node_id))
       return false;
   }
-
   if (IsNodeIdInGroupRange(node_id) != GroupRangeStatus::kInRange)
     return false;
 
-  return true;
+  return true;  // FIXME:(Prakash) return false on default case
 }
 
 GroupRangeStatus RoutingTable::IsNodeIdInGroupRange(const NodeId& target_id) {
