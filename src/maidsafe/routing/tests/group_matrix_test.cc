@@ -316,10 +316,10 @@ TEST_P(GroupMatrixTest, BEH_OneRowOnly) {
   if (!client_mode_)
     node_ids.push_back(own_node_info_);
   node_ids.push_back(row_1);
-  SortNodeInfosFromTarget(own_node_id_ , node_ids);
+  SortNodeInfosFromTarget(target_id_2.node_id, node_ids);
   bool is_group_member(!NodeId::CloserToTarget(node_ids.at(Parameters::node_group_size - 1).node_id,
-                                               target_id_2.node_id,
-                                               own_node_id_));
+                                               own_node_id_,
+                                               target_id_2.node_id));
   EXPECT_EQ(is_group_member, matrix_.IsNodeIdInGroupRange(target_id_2.node_id));
 }
 
@@ -405,11 +405,11 @@ TEST_P(GroupMatrixTest, BEH_RowsContainSameNodes) {
   bool expect_is_group_leader;
   for (uint32_t i(0); i < 20; ++i) {
     target_id = NodeId(NodeId::kRandomId);
-    SortNodeInfosFromTarget(own_node_id_, node_ids);
+    SortNodeInfosFromTarget(target_id, node_ids);
     expect_is_group_member = !NodeId::CloserToTarget(
                                  node_ids[Parameters::node_group_size - 1].node_id,
-                                 target_id,
-                                 own_node_id_);
+                                 own_node_id_,
+                                 target_id);
     expect_is_group_leader = (std::find_if(node_ids.begin(), node_ids.end(),
                                           [&](const NodeInfo& node_info)->bool {
                                             return ((node_info.node_id != target_id) &&
@@ -666,10 +666,11 @@ TEST_P(GroupMatrixTest, BEH_IsNodeIdInGroupRange) {
   bool expect_is_group_leader;
   for (int i(0); i < 100; ++i) {
     target_id = NodeId(NodeId::kRandomId);
-    SortNodeInfosFromTarget(own_node_id_, node_ids);
-    expect_is_group_member = NodeId::CloserToTarget(target_id,
-                                 node_ids.at(Parameters::node_group_size - 1).node_id,
-                                 own_node_id_);
+    SortNodeInfosFromTarget(target_id, node_ids);
+    expect_is_group_member =
+        !NodeId::CloserToTarget(node_ids.at(Parameters::node_group_size - 1).node_id,
+                                own_node_id_,
+                                target_id);
     expect_is_group_leader =
         (std::find_if(node_ids.begin(), node_ids.end(),
                       [target_id, this] (const NodeInfo& node)->bool {

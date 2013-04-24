@@ -437,8 +437,13 @@ bool Routing::Impl::ClosestToId(const NodeId& node_id) {
   return routing_table_.ClosestToId(node_id);
 }
 
-GroupRangeStatus Routing::Impl::IsNodeIdInGroupRange(const NodeId& node_id) {
-  return routing_table_.IsNodeIdInGroupRange(node_id);
+GroupRangeStatus Routing::Impl::IsNodeIdInGroupRange(const NodeId& group_id) {
+  return routing_table_.IsNodeIdInGroupRange(group_id);
+}
+
+GroupRangeStatus Routing::Impl::IsNodeIdInGroupRange(const NodeId& group_id,
+                                                     const NodeId& node_id) {
+  return routing_table_.IsNodeIdInGroupRange(group_id, node_id);
 }
 
 NodeId Routing::Impl::RandomConnectedNode() {

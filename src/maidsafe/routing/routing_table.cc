@@ -44,7 +44,7 @@ RoutingTable::RoutingTable(bool client_mode,
       kThresholdSize_(kClientMode_ ? Parameters::max_routing_table_size_for_client :
                                      Parameters::routing_table_size_threshold),
       mutex_(),
-      furthest_group_node_id_(),
+      furthest_closest_node_id_(),
       remove_node_functor_(),
       network_status_functor_(),
       remove_furthest_node_(),
@@ -146,6 +146,10 @@ bool RoutingTable::AddOrCheckNode(NodeInfo peer, bool remove) {
         UpdateCloseNodeChange(lock, peer, new_connected_close_nodes, matrix_change);
         if (nodes_.size() > Parameters::greedy_fraction)
           remove_furthest_node = true;
+        if (nodes_.size() >= Parameters::closest_nodes_size) {
+          NthElementSortFromTarget(kNodeId_, Parameters::closest_nodes_size, lock);
+          furthest_closest_node_id_ = nodes_[Parameters::closest_nodes_size -1].node_id;
+        }
       }
       return_value = true;
     }
@@ -217,6 +221,7 @@ NodeInfo RoutingTable::DropNode(const NodeId& node_to_drop, bool routing_only) {
         close_nodes_changed = true;
         if (nodes_.size() >= Parameters::closest_nodes_size) {
           PartialSortFromTarget(kNodeId_, Parameters::closest_nodes_size, lock);
+          furthest_closest_node_id_ = nodes_[Parameters::closest_nodes_size -1].node_id;
           group_matrix_.AddConnectedPeer(nodes_[Parameters::closest_nodes_size - 1]);
           new_connected_close_nodes = group_matrix_.GetConnectedPeers();
         }
@@ -310,7 +315,7 @@ bool RoutingTable::ClosestToId(const NodeId& node_id) {
     if (node_id == kNodeId_)
       return false;
 
-    if (nodes_.empty())
+    if (nodes_.empty())  // should return false ?
       return true;
 
     if (nodes_.size() == 1) {
@@ -330,30 +335,35 @@ bool RoutingTable::ClosestToId(const NodeId& node_id) {
     if (!group_matrix_.ClosestToId(node_id))
       return false;
   }
-  if (IsNodeIdInGroupRange(node_id) != GroupRangeStatus::kInRange)
-    return false;
-
   return true;  // FIXME:(Prakash) return false on default case
 }
 
-GroupRangeStatus RoutingTable::IsNodeIdInGroupRange(const NodeId& target_id) {
-  {
-    std::unique_lock<std::mutex> lock(mutex_);
-    if (group_matrix_.IsNodeIdInGroupRange(target_id))
-      return GroupRangeStatus::kInRange;
-  }
-  NodeId radius_id(kNodeId_ ^ FurthestCloseNode());
-  {
-    std::unique_lock<std::mutex> lock(mutex_);
-    NodeId distance_id(kNodeId_ ^ target_id);
-    crypto::BigInt radius((radius_id.ToStringEncoded(NodeId::kHex) + 'h').c_str());
-    crypto::BigInt distance((distance_id.ToStringEncoded(NodeId::kHex) + 'h').c_str());
-
-    if (distance > Parameters::proximity_factor * radius)
-      return GroupRangeStatus::kOutwithRange;
-
+GroupRangeStatus RoutingTable::IsNodeIdInGroupRange(const NodeId& group_id) {
+  std::unique_lock<std::mutex> lock(mutex_);
+  if (group_matrix_.IsNodeIdInGroupRange(group_id))
+    return GroupRangeStatus::kInRange;
+  else if (IsInProximalRange(group_id, kNodeId_))
     return GroupRangeStatus::kInProximalRange;
-  }
+  else
+    return GroupRangeStatus::kOutwithRange;
+}
+
+GroupRangeStatus RoutingTable::IsNodeIdInGroupRange(const NodeId& group_id, const NodeId& node_id) {
+  std::unique_lock<std::mutex> lock(mutex_);
+  if (group_matrix_.IsNodeIdInGroupRange(group_id, node_id))
+    return GroupRangeStatus::kInRange;
+  else if (IsInProximalRange(group_id, node_id))
+    return GroupRangeStatus::kInProximalRange;
+  else
+    return GroupRangeStatus::kOutwithRange;
+}
+
+bool RoutingTable::IsInProximalRange(const NodeId& group_id, const NodeId& node_id) {
+  NodeId radius_id(kNodeId_ ^ furthest_closest_node_id_);
+  NodeId distance_id(node_id ^ group_id);
+  crypto::BigInt radius((radius_id.ToStringEncoded(NodeId::kHex) + 'h').c_str());
+  crypto::BigInt distance((distance_id.ToStringEncoded(NodeId::kHex) + 'h').c_str());
+  return  (distance < Parameters::proximity_factor * radius);
 }
 
 NodeId RoutingTable::RandomConnectedNode() {
