@@ -115,12 +115,14 @@ class Routing {
   // (node_id ^ group_id) < (kNodeId_ ^ FurthestCloseNode()),
   // kOutwithRange : (node_id ^ group_id) > (kNodeId_ ^ FurthestCloseNode()).
   // Throws if node_id provided is not this node id & this node is not part of the group (group_id)
+  // if kNodeId_ == group_id or node_id == group_id, it returns kOutwithRange
   GroupRangeStatus IsNodeIdInGroupRange(const NodeId& group_id, const NodeId& node_id) const;
 
   // Returns: kInRange : if this node_id is in group_id range (Group Range),
   // kInProximalRange : if this node_id is in proximity of the group. Node not in range but,
   // (kNodeId_ ^ group_id) < (kNodeId_ ^ FurthestCloseNode())
   // kOutwithRange : (kNodeId_ ^ group_id) > (kNodeId_ ^ FurthestCloseNode())
+  // if kNodeId_ == group_id, it returns kOutwithRange
   GroupRangeStatus IsNodeIdInGroupRange(const NodeId& group_id) const;
 
   // Gets connected node from routing table (excludes closest Parameters::closest_nodes_size nodes).

@@ -212,35 +212,23 @@ bool GroupMatrix::ClosestToId(const NodeId& node_id) {
   return NodeId::CloserToTarget(kNodeId_, unique_nodes_.at(0).node_id, node_id);
 }
 
-bool GroupMatrix::IsNodeIdInGroupRange(const NodeId& group_id) {
-  if (group_id == kNodeId_)
-    return false;
-
-  if (unique_nodes_.size() < Parameters::node_group_size)
-    return true;
-
-  PartialSortFromTarget(group_id, Parameters::node_group_size, unique_nodes_);
-
-  NodeInfo furthest_group_node(unique_nodes_.at(Parameters::node_group_size - 1));
-  return !NodeId::CloserToTarget(furthest_group_node.node_id, kNodeId_, group_id);
-}
-
 bool GroupMatrix::IsNodeIdInGroupRange(const NodeId& group_id, const NodeId& node_id) {
   if (group_id == node_id)
     return false;
-
-  if (!IsNodeIdInGroupRange(group_id))
-    ThrowError(RoutingErrors::not_in_group);
-
-  if ((unique_nodes_.size() < Parameters::node_group_size)) {
-    return (std::find_if(unique_nodes_.begin(), unique_nodes_.end(),
-                         [node_id](const NodeInfo node) {
-                           return (node.node_id == node_id);
-                         }) != unique_nodes_.end());
+  if (unique_nodes_.size() < Parameters::node_group_size) {
+    if (node_id == kNodeId_)
+      return true;
+    else
+      ThrowError(RoutingErrors::not_in_group);  // TODO(Prakash) throw not_connected here
   }
   PartialSortFromTarget(group_id, Parameters::node_group_size, unique_nodes_);
-  NodeInfo furthest_group_node(unique_nodes_.at(Parameters::node_group_size - 1));
-  return !NodeId::CloserToTarget(furthest_group_node.node_id, node_id, group_id);
+  NodeId furthest_group_node(unique_nodes_.at(Parameters::node_group_size - 1).node_id);
+  bool this_node_in_group(!NodeId::CloserToTarget(furthest_group_node, kNodeId_, group_id));
+  if (node_id == kNodeId_)
+    return this_node_in_group;
+  else if (!this_node_in_group)
+    ThrowError(RoutingErrors::not_in_group);
+  return !NodeId::CloserToTarget(furthest_group_node, node_id, group_id);
 }
 
 void GroupMatrix::UpdateFromConnectedPeer(const NodeId& peer,

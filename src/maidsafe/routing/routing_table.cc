@@ -44,7 +44,7 @@ RoutingTable::RoutingTable(bool client_mode,
       kThresholdSize_(kClientMode_ ? Parameters::max_routing_table_size_for_client :
                                      Parameters::routing_table_size_threshold),
       mutex_(),
-      furthest_closest_node_id_(),
+      furthest_closest_node_id_((NodeId(NodeId::kMaxId) ^ node_id)),
       remove_node_functor_(),
       network_status_functor_(),
       remove_furthest_node_(),
@@ -224,6 +224,8 @@ NodeInfo RoutingTable::DropNode(const NodeId& node_to_drop, bool routing_only) {
           furthest_closest_node_id_ = nodes_[Parameters::closest_nodes_size -1].node_id;
           group_matrix_.AddConnectedPeer(nodes_[Parameters::closest_nodes_size - 1]);
           new_connected_close_nodes = group_matrix_.GetConnectedPeers();
+        } else {
+          furthest_closest_node_id_ = (NodeId(NodeId::kMaxId) ^ kNodeId_);
         }
       }
     }
@@ -339,13 +341,7 @@ bool RoutingTable::ClosestToId(const NodeId& node_id) {
 }
 
 GroupRangeStatus RoutingTable::IsNodeIdInGroupRange(const NodeId& group_id) {
-  std::unique_lock<std::mutex> lock(mutex_);
-  if (group_matrix_.IsNodeIdInGroupRange(group_id))
-    return GroupRangeStatus::kInRange;
-  else if (IsInProximalRange(group_id, kNodeId_))
-    return GroupRangeStatus::kInProximalRange;
-  else
-    return GroupRangeStatus::kOutwithRange;
+  return IsNodeIdInGroupRange(group_id, kNodeId_);
 }
 
 GroupRangeStatus RoutingTable::IsNodeIdInGroupRange(const NodeId& group_id, const NodeId& node_id) {
@@ -359,6 +355,8 @@ GroupRangeStatus RoutingTable::IsNodeIdInGroupRange(const NodeId& group_id, cons
 }
 
 bool RoutingTable::IsInProximalRange(const NodeId& group_id, const NodeId& node_id) {
+  if ((group_id == node_id) || (group_id == kNodeId_))
+    return false;
   NodeId radius_id(kNodeId_ ^ furthest_closest_node_id_);
   NodeId distance_id(node_id ^ group_id);
   crypto::BigInt radius((radius_id.ToStringEncoded(NodeId::kHex) + 'h').c_str());
