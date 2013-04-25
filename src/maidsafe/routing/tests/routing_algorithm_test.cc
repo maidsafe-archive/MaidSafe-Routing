@@ -527,7 +527,7 @@ std::vector<size_t> Network::CheckGroupMatrixReliablity() {
 
 TEST(RoutingTableTest, FUNC_GroupMatrixReliability) {
   Network network;
-  for (auto i(0); i != 1000; ++i) {
+  for (auto i(0); i != 100; ++i) {
     LOG(kSuccess) << "Iteration # " << i << "  ===================================================";
     network.Add(NodeId(NodeId::kRandomId));
     for (auto i(0); i != 10; ++i)
@@ -543,7 +543,7 @@ TEST(RoutingTableTest, FUNC_GroupMatrixReliability) {
 
 TEST(RoutingTableTest, FUNC_FindCloseNodes) {
   Network network;
-  for (auto i(0); i != 1000; ++i) {
+  for (auto i(0); i != 100; ++i) {
     LOG(kSuccess) << "Iteration # " << i << "  ===================================================";
     network.RoutingAdd(NodeId(NodeId::kRandomId));
   }

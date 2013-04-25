@@ -326,12 +326,16 @@ void GenericNode::SendToClosestNode(const protobuf::Message& message) {
 }
 
 bool GenericNode::RoutingTableHasNode(const NodeId& node_id) {
-  return std::find_if(routing_->pimpl_->routing_table_.nodes_.begin(),
-                      routing_->pimpl_->routing_table_.nodes_.end(),
-                      [node_id](const NodeInfo& node_info) {
-                        return node_id == node_info.node_id;
-                      }) !=
-         routing_->pimpl_->routing_table_.nodes_.end();
+  for (auto info : routing_->pimpl_->routing_table_.nodes_)
+    LOG(kVerbose) << "RoutingTableHasNode " << DebugId(info.node_id);
+  auto node(std::find_if(routing_->pimpl_->routing_table_.nodes_.begin(),
+                         routing_->pimpl_->routing_table_.nodes_.end(),
+                         [node_id](const NodeInfo& node_info) {
+                           return node_id == node_info.node_id;
+                         }));
+   bool result(node != routing_->pimpl_->routing_table_.nodes_.end());
+   LOG(kVerbose) << DebugId(node_id) << ", result: " << result;
+   return result;
 }
 
 bool GenericNode::ClientRoutingTableHasNode(const NodeId& node_id) {
@@ -1393,8 +1397,8 @@ testing::AssertionResult GenericNetwork::SendDirect(std::shared_ptr<GenericNode>
   } else {
     response_functor = [response_mutex, cond_var, failed](std::string reply) {
       std::lock_guard<std::mutex> lock(*response_mutex);
-      EXPECT_TRUE(reply.empty());
-      if (!reply.empty())
+//      EXPECT_TRUE(reply.empty());
+      if (reply.empty())
         *failed = true;
       cond_var->notify_one();
     };

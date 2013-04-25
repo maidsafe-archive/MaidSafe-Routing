@@ -55,6 +55,23 @@ TEST_F(RoutingStandAloneTest, FUNC_GetGroup) {
   }
 }
 
+TEST_F(RoutingStandAloneTest, FUNC_ConnectedVaultCanSendToClient) {
+  this->SetUpNetwork(kServerSize, 1);
+  for (size_t index(0); index < this->ClientIndex(); ++index) {
+    if (this->nodes_[this->ClientIndex()]->RoutingTableHasNode(this->nodes_[index]->node_id())) {
+      EXPECT_TRUE(this->SendDirect(this->nodes_[index],
+                                   this->nodes_[this->ClientIndex()]->node_id(),
+                                   ExpectedNodeType::kExpectClient))
+              << DebugId(this->nodes_[index]->node_id());
+    } else {
+      EXPECT_FALSE(this->SendDirect(this->nodes_[index],
+                                    this->nodes_[this->ClientIndex()]->node_id(),
+                                    ExpectedNodeType::kExpectClient))
+              << DebugId(this->nodes_[index]->node_id());
+    }
+  }
+}
+
 TEST_F(RoutingStandAloneTest, FUNC_ClientRoutingTableUpdate) {
   this->SetUpNetwork(kServerSize);
   this->AddNode(true, GenerateUniqueRandomId(this->nodes_[kServerSize - 1]->node_id(), 50));
