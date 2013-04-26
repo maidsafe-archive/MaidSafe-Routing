@@ -22,7 +22,7 @@
 #include "maidsafe/common/rsa.h"
 #include "maidsafe/common/node_id.h"
 #include "maidsafe/rudp/managed_connections.h"
-
+#include "maidsafe/routing/matrix_change.h"
 
 namespace maidsafe {
 
@@ -34,12 +34,6 @@ enum class DestinationType : int {
   kDirect = 0,
   kClosest,
   kGroup
-};
-
-enum class GroupRangeStatus {
-  kInRange,
-  kInProximalRange,
-  kOutwithRange
 };
 
 // This struct needs to be moved to common
