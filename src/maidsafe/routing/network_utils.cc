@@ -206,7 +206,7 @@ void NetworkUtils::SendToClosestNode(const protobuf::Message& message) {
     auto client_routing_nodes(client_routing_table_.GetNodesInfo(NodeId(message.destination_id())));
     // have the destination ID in non-routing table
     if (!client_routing_nodes.empty() && message.direct()) {
-      if (IsRequest(message) &&
+      if ((IsRequest(message) && message.source_id() != routing_table_.kNodeId().string()) &&
           (!message.client_node() ||
            (message.source_id() != message.destination_id()))) {
         LOG(kWarning) << "This node [" << DebugId(routing_table_.kNodeId())

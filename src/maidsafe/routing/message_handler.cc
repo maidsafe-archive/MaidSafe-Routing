@@ -102,8 +102,8 @@ void MessageHandler::HandleRoutingMessage(protobuf::Message& message) {
 }
 
 void MessageHandler::HandleNodeLevelMessageForThisNode(protobuf::Message& message) {
-  if (IsRequest(message) &&
-          routing_table_.Contains(NodeId(message.source_id()))) {
+  if (IsRequest(message) && (!routing_table_.client_mode() ||
+      (routing_table_.client_mode() && routing_table_.Contains(NodeId(message.source_id()))))) {
     LOG(kInfo) << " [" << DebugId(routing_table_.kNodeId()) << "] rcvd : "
                << MessageTypeString(message) << " from "
                << HexSubstr(message.source_id())
