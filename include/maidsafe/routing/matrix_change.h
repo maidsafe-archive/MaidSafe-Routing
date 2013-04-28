@@ -51,8 +51,9 @@ class MatrixChange {
                const std::vector<NodeId> new_matrix);
 
   static const uint16_t close_count_, proximal_count_;
+  mutable std::mutex mutex_;
   const NodeId kNodeId_;
-  std::vector<NodeId> old_matrix_, new_matrix_;
+  std::vector<NodeId> old_matrix_, new_matrix_, lost_nodes_;
 };
 
 }  // namespace routing
