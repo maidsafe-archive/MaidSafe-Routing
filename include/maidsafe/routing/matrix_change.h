@@ -14,7 +14,7 @@
 #define MAIDSAFE_ROUTING_MATRIX_CHANGE_H_
 
 
-
+#include "maidsafe/common/crypto.h"
 #include "maidsafe/common/node_id.h"
 
 namespace maidsafe {
@@ -35,6 +35,8 @@ struct CheckHoldersResult {
   routing::GroupRangeStatus proximity_status;
 };
 
+namespace test1 {
+
 class MatrixChange {
  public:
   MatrixChange(const MatrixChange&);
@@ -43,18 +45,24 @@ class MatrixChange {
   MatrixChange& operator=(MatrixChange&& other);
 
   CheckHoldersResult CheckHolders(const NodeId& target);
+  CheckHoldersResult CheckHolders2(const NodeId& target) const;
   bool OldEqualsToNew() const;
   friend class GroupMatrix;
 
  private:
   MatrixChange(const NodeId& this_node_id, std::vector<NodeId> old_matrix,
                const std::vector<NodeId> new_matrix);
+  GroupRangeStatus GetProximalRange(const std::vector<NodeId>& new_holders,
+                                    const NodeId& target) const;
 
   static const uint16_t close_count_, proximal_count_;
-  mutable std::mutex mutex_;
   const NodeId kNodeId_;
+  crypto::BigInt radius_;
   std::vector<NodeId> old_matrix_, new_matrix_, lost_nodes_;
 };
+
+
+}  // namespace testing
 
 }  // namespace routing
 
