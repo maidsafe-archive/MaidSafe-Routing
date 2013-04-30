@@ -655,7 +655,7 @@ TEST_F(MessageHandlerTest, BEH_ClientRoutingTable) {
   message.add_data("DATA");
   message_handler.set_message_received_functor(message_received_functor_);
   {  // Handle node level request to this node
-    EXPECT_CALL(*utils_, SendToClosestNode(testing::_)).Times(1).RetiresOnSaturation();
+    EXPECT_CALL(*utils_, SendToClosestNode(testing::_)).Times(0).RetiresOnSaturation();
     EXPECT_CALL(*utils_, SendToDirect(testing::_, testing::_, testing::_)).Times(0);
     EXPECT_CALL(*service_, FindNodes(testing::_)).Times(0);
     EXPECT_CALL(*service_, Ping(testing::_)).Times(0);
@@ -667,10 +667,10 @@ TEST_F(MessageHandlerTest, BEH_ClientRoutingTable) {
     message.set_request(true);
     message_handler.HandleMessage(message);
     std::unique_lock<std::mutex> lock(mutex_);
-    EXPECT_TRUE(cond_var_.wait_for(lock,
-                                   std::chrono::seconds(1),
-                                   [this]()->bool { return messages_received_ != 0; } ));  // NOLINT
-    EXPECT_EQ(messages_received_, 1);
+    EXPECT_FALSE(cond_var_.wait_for(lock,
+                                    std::chrono::seconds(1),
+                                    [this]()->bool { return messages_received_ != 0; } ));  // NOLINT
+    EXPECT_EQ(messages_received_, 0);
     messages_received_ = 0;
   }
   {  // Handle routing FindNodes request to this node

@@ -220,7 +220,9 @@ void NetworkUtils::SendToClosestNode(const protobuf::Message& message) {
                     << " id: " << message.id();
 
       for (const auto& i : client_routing_nodes) {
-        LOG(kVerbose) << "Sending message to NRT node with ID " << message.id();
+        LOG(kVerbose) << "Sending message to NRT node with ID " << message.id()
+                      << " node_id " << DebugId(i.node_id)
+                      << " connection id " << DebugId(i.connection_id);
         SendTo(message, i.node_id, i.connection_id);
       }
     } else if (routing_table_.size() > 0) {  // getting closer nodes from routing table
