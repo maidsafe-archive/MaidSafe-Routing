@@ -57,6 +57,10 @@ MatrixChange::MatrixChange(const NodeId& this_node_id, std::vector<NodeId> old_m
     furthest_closest_distance = kNodeId_ ^ (NodeId(NodeId::kMaxId));  //FIXME
   radius_ = crypto::BigInt((furthest_closest_distance.ToStringEncoded(NodeId::kHex) + 'h').c_str())
               * Parameters::proximity_factor;
+//  LOG(kInfo) << " old_matrix_ exiting Constructor" << "this_node_id : " << DebugId(kNodeId_);
+//  for (auto i : old_matrix_)
+//    LOG(kInfo) << DebugId(i);
+
 }
 
 CheckHoldersResult MatrixChange::CheckHolders(const NodeId& target) {
@@ -120,13 +124,12 @@ CheckHoldersResult MatrixChange::CheckHolders(const NodeId& target) {
 
 CheckHoldersResult MatrixChange::CheckHolders2(const NodeId& target) const {
   // throw / handle cases of lower number of group matrix nodes
-  assert(old_matrix_.size() == Parameters::node_group_size + 1U);  // FIXME
-  assert(new_matrix_.size() == Parameters::node_group_size + 1U);  // FIXME
+  assert(old_matrix_.size() >= Parameters::node_group_size + 1U);  // FIXME
+  assert(new_matrix_.size() >= Parameters::node_group_size + 1U);  // FIXME
 
   std::vector<NodeId> old_holders(Parameters::node_group_size + 1),
                       new_holders(Parameters::node_group_size + 1),
                       lost_nodes(lost_nodes_);
-
   std::partial_sort_copy(old_matrix_.begin(),
                          old_matrix_.end(),
                          old_holders.begin(),
@@ -134,14 +137,18 @@ CheckHoldersResult MatrixChange::CheckHolders2(const NodeId& target) const {
                          [target](const NodeId& lhs, const NodeId& rhs) {
                            return NodeId::CloserToTarget(lhs, rhs, target);
                          });
+LOG(kInfo) << "after partial_sort_copy";
+  for (auto i : old_holders)
+    LOG(kInfo) << DebugId(i);
+
 
   std::partial_sort_copy(new_matrix_.begin(),
                          new_matrix_.end(),
                          new_holders.begin(),
                          new_holders.end(),
                         [target](const NodeId& lhs, const NodeId& rhs) {
-                      return NodeId::CloserToTarget(lhs, rhs, target);
-                    });
+                          return NodeId::CloserToTarget(lhs, rhs, target);
+                        });
   std::sort(lost_nodes.begin(),
             lost_nodes.end(),
             [target](const NodeId& lhs, const NodeId& rhs) {
@@ -156,7 +163,7 @@ CheckHoldersResult MatrixChange::CheckHolders2(const NodeId& target) const {
   std::remove(lost_nodes.begin(), lost_nodes.end(), target);
 
   CheckHoldersResult holders_result;
-  // old holders = Old 4 holder intersection lost nodes
+  // Old holders = Old 4 holder intersection lost nodes
   std::set_intersection(old_holders.begin(),
                         old_holders.end(),
                         lost_nodes.begin(),

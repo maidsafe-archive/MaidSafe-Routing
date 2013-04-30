@@ -23,6 +23,10 @@ namespace routing {
 
 class GroupMatrix;
 
+namespace test {
+  class MatrixChangeTest_BEH_Constructor_Test;
+}
+
 enum class GroupRangeStatus {
   kInRange,
   kInProximalRange,
@@ -47,7 +51,9 @@ class MatrixChange {
   CheckHoldersResult CheckHolders(const NodeId& target);
   CheckHoldersResult CheckHolders2(const NodeId& target) const;
   bool OldEqualsToNew() const;
+
   friend class GroupMatrix;
+  friend class test::MatrixChangeTest_BEH_Constructor_Test;
 
  private:
   MatrixChange(const NodeId& this_node_id, std::vector<NodeId> old_matrix,
