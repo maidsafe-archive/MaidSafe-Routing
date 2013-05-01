@@ -62,23 +62,24 @@ class MatrixChangeTest : public testing::Test {
 TEST_F(MatrixChangeTest, BEH_Constructor) {
   test1::MatrixChange matrix_change(kNodeId_, old_matrix_, new_matrix_);
 
-//  for (auto i(0); i != 100; ++i) {
-//    auto target_id(GenerateUniqueRandomId(kNodeId_, 100));
-//    auto result(matrix_change.CheckHolders2(target_id));
-//    EXPECT_EQ(result.proximity_status, GroupRangeStatus::kInRange);
-//  }
+  for (auto i(0); i != 100; ++i) {
+    auto target_id(GenerateUniqueRandomId(kNodeId_, 100));
+    auto result(matrix_change.CheckHolders(target_id));
+    EXPECT_EQ(result.proximity_status, GroupRangeStatus::kInRange);
+  }
 
-  for (auto i(0); i != 1; ++i) {
+  for (auto i(0); i != 100; ++i) {
     NodeId target_id;
     bool unique(false);
     while (unique) {
       target_id = NodeId(NodeId::kRandomId);
-      unique = (std::find(old_matrix_.begin(),old_matrix_.end(), target_id) == old_matrix_.end()) &&
-          (std::find(new_matrix_.begin(),new_matrix_.end(), target_id) == new_matrix_.end());
+      unique = (std::find(old_matrix_.begin(), old_matrix_.end(), target_id) == old_matrix_.end())
+                    && (std::find(new_matrix_.begin(), new_matrix_.end(), target_id)
+                        == new_matrix_.end());
     }
 
     LOG(kInfo) << "test target id : " << DebugId(target_id);
-    auto result(matrix_change.CheckHolders2(target_id));
+    auto result(matrix_change.CheckHolders(target_id));
     std::partial_sort(new_matrix_.begin(),
                       new_matrix_.begin() + Parameters::node_group_size,
                       new_matrix_.end(),
@@ -92,8 +93,10 @@ TEST_F(MatrixChangeTest, BEH_Constructor) {
                         return NodeId::CloserToTarget(lhs, rhs, target_id);
                       });
 
-    std::vector<NodeId> new_holders(new_matrix_.begin(), new_matrix_.begin() + Parameters::node_group_size);
-    std::vector<NodeId> old_holders(old_matrix_.begin(), old_matrix_.begin() + Parameters::node_group_size);
+    std::vector<NodeId> new_holders(new_matrix_.begin(), new_matrix_.begin() +
+                                        Parameters::node_group_size);
+    std::vector<NodeId> old_holders(old_matrix_.begin(), old_matrix_.begin() +
+                                        Parameters::node_group_size);
 
     LOG(kInfo) << "Old holders ";
     for (auto& i : old_holders)

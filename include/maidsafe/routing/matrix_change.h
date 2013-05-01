@@ -14,6 +14,8 @@
 #define MAIDSAFE_ROUTING_MATRIX_CHANGE_H_
 
 
+#include <vector>
+
 #include "maidsafe/common/crypto.h"
 #include "maidsafe/common/node_id.h"
 
@@ -48,23 +50,22 @@ class MatrixChange {
   MatrixChange(MatrixChange&& other);
   MatrixChange& operator=(MatrixChange&& other);
 
-  CheckHoldersResult CheckHolders(const NodeId& target);
-  CheckHoldersResult CheckHolders2(const NodeId& target) const;
+  CheckHoldersResult CheckHolders(const NodeId& target) const;
   bool OldEqualsToNew() const;
 
   friend class GroupMatrix;
   friend class test::MatrixChangeTest_BEH_Constructor_Test;
 
  private:
-  MatrixChange(const NodeId& this_node_id, std::vector<NodeId> old_matrix,
-               const std::vector<NodeId> new_matrix);
+  MatrixChange(const NodeId& this_node_id, const std::vector<NodeId>& old_matrix,
+               const std::vector<NodeId>& new_matrix);
   GroupRangeStatus GetProximalRange(const std::vector<NodeId>& new_holders,
                                     const NodeId& target) const;
 
   static const uint16_t close_count_, proximal_count_;
   const NodeId kNodeId_;
-  crypto::BigInt radius_;
-  std::vector<NodeId> old_matrix_, new_matrix_, lost_nodes_;
+  const std::vector<NodeId> kOldMatrix_, kNewMatrix_, kLostNodes_;
+  const crypto::BigInt kRadius_;
 };
 
 
