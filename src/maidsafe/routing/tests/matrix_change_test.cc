@@ -77,50 +77,48 @@ TEST_F(MatrixChangeTest, BEH_Constructor) {
           (std::find(new_matrix_.begin(),new_matrix_.end(), target_id) == new_matrix_.end());
     }
 
-
+    LOG(kInfo) << "test target id : " << DebugId(target_id);
     auto result(matrix_change.CheckHolders2(target_id));
     std::partial_sort(new_matrix_.begin(),
                       new_matrix_.begin() + Parameters::node_group_size,
                       new_matrix_.end(),
-              [this](const NodeId& lhs, const NodeId& rhs) {
-                return NodeId::CloserToTarget(lhs, rhs, kNodeId_);
-              });
-  std::partial_sort(old_matrix_.begin(),
-                    old_matrix_.begin() + Parameters::node_group_size,
-                    old_matrix_.end(),
-            [this](const NodeId& lhs, const NodeId& rhs) {
-              return NodeId::CloserToTarget(lhs, rhs, kNodeId_);
-            });
+                      [target_id](const NodeId& lhs, const NodeId& rhs) {
+                        return NodeId::CloserToTarget(lhs, rhs, target_id);
+                      });
+    std::partial_sort(old_matrix_.begin(),
+                      old_matrix_.begin() + Parameters::node_group_size,
+                      old_matrix_.end(),
+                      [target_id](const NodeId& lhs, const NodeId& rhs) {
+                        return NodeId::CloserToTarget(lhs, rhs, target_id);
+                      });
 
-  std::vector<NodeId> new_holders(new_matrix_.begin(), new_matrix_.begin() + Parameters::node_group_size);
-  std::vector<NodeId> old_holders(old_matrix_.begin(), old_matrix_.begin() + Parameters::node_group_size);
+    std::vector<NodeId> new_holders(new_matrix_.begin(), new_matrix_.begin() + Parameters::node_group_size);
+    std::vector<NodeId> old_holders(old_matrix_.begin(), old_matrix_.begin() + Parameters::node_group_size);
 
-  LOG(kInfo) << "Old holders ";
-  for (auto& i : old_holders)
-    LOG(kInfo) << DebugId(i);
+    LOG(kInfo) << "Old holders ";
+    for (auto& i : old_holders)
+      LOG(kInfo) << DebugId(i);
 
-  LOG(kInfo) << "New holders ";
-  for (auto& i : new_holders)
-    LOG(kInfo) << DebugId(i);
+    LOG(kInfo) << "New holders ";
+    for (auto& i : new_holders)
+      LOG(kInfo) << DebugId(i);
 
-  LOG(kInfo) << "lost nodes ";
-  for (auto& i : lost_nodes_)
-    LOG(kInfo) << DebugId(i);
+    LOG(kInfo) << "lost nodes ";
+    for (auto& i : lost_nodes_)
+      LOG(kInfo) << DebugId(i);
 
-  LOG(kInfo) << "Result new holders :  ";
-  for (auto& i : result.new_holders) {
-    LOG(kInfo) << DebugId(i);
-    EXPECT_NE(std::find(new_holders.begin(), new_holders.end(), i), new_holders.end());
+    LOG(kInfo) << "Result new holders :  ";
+    for (auto& i : result.new_holders) {
+      LOG(kInfo) << DebugId(i);
+      EXPECT_NE(std::find(new_holders.begin(), new_holders.end(), i), new_holders.end());
+    }
+
+    LOG(kInfo) << "Result old holders :  ";
+    for (auto& i : result.old_holders) {
+      LOG(kInfo) << DebugId(i);
+      EXPECT_NE(std::find(old_holders.begin(), old_holders.end(), i), old_holders.end());
+    }
   }
-
-  LOG(kInfo) << "Result old holders :  ";
-  for (auto& i : result.old_holders) {
-    LOG(kInfo) << DebugId(i);
-    EXPECT_NE(std::find(old_holders.begin(), old_holders.end(), i), old_holders.end());
-  }
-}
-
-
 }
 
 }  // namespace test

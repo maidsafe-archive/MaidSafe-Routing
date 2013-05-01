@@ -137,7 +137,7 @@ CheckHoldersResult MatrixChange::CheckHolders2(const NodeId& target) const {
                          [target](const NodeId& lhs, const NodeId& rhs) {
                            return NodeId::CloserToTarget(lhs, rhs, target);
                          });
-LOG(kInfo) << "after partial_sort_copy";
+LOG(kInfo) << "after partial_sort_copy" << "target id : " << DebugId(target);
   for (auto i : old_holders)
     LOG(kInfo) << DebugId(i);
 
