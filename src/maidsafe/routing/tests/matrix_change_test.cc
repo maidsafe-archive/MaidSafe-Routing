@@ -71,7 +71,7 @@ TEST_F(MatrixChangeTest, BEH_Constructor) {
   for (auto i(0); i != 100; ++i) {
     NodeId target_id;
     bool unique(false);
-    while (unique) {
+    while (!unique) {
       target_id = NodeId(NodeId::kRandomId);
       unique = (std::find(old_matrix_.begin(), old_matrix_.end(), target_id) == old_matrix_.end())
                     && (std::find(new_matrix_.begin(), new_matrix_.end(), target_id)
