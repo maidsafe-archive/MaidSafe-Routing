@@ -103,20 +103,25 @@ TEST_F(RoutingNetworkTest, FUNC_SanityCheckSend) {
 
   EXPECT_TRUE(env_->SendDirect(env_->RandomClientNode()->node_id(), kExpectClient));
 
-  EXPECT_TRUE(env_->SendDirect(NodeId(NodeId::kRandomId), kExpectDoesNotExist));
+  EXPECT_FALSE(env_->SendDirect(NodeId(NodeId::kRandomId), kExpectDoesNotExist));
 
   // Signature 3
   EXPECT_TRUE(env_->SendDirect(env_->RandomVaultNode(), env_->RandomVaultNode()->node_id()));
 
-  EXPECT_TRUE(env_->SendDirect(env_->RandomVaultNode(),
-                               env_->RandomClientNode()->node_id(),
-                               kExpectClient));
+  uint16_t random_vault(env_->RandomVaultIndex());
+  uint16_t random_client(env_->RandomClientIndex());
+  EXPECT_EQ(env_->nodes_[random_client]->RoutingTableHasNode(env_->nodes_[random_vault]->node_id()),
+      (env_->SendDirect(env_->nodes_[random_vault],
+                        env_->nodes_[random_client]->node_id(),
+                        kExpectClient)));
 
   EXPECT_TRUE(env_->SendDirect(env_->RandomClientNode(), env_->RandomVaultNode()->node_id()));
 
-  EXPECT_TRUE(env_->SendDirect(env_->RandomClientNode(),
-                               env_->RandomClientNode()->node_id(),
-                               kExpectClient));
+  uint16_t another_random_client(env_->RandomClientIndex());
+  EXPECT_EQ((random_client == another_random_client),
+             env_->SendDirect(env_->nodes_[random_client],
+                              env_->nodes_[another_random_client]->node_id(),
+                              kExpectClient));
 }
 
 TEST_F(RoutingNetworkTest, FUNC_SanityCheckSendGroup) {
@@ -152,7 +157,7 @@ TEST_F(RoutingNetworkTest, FUNC_Send) {
 }
 
 TEST_F(RoutingNetworkTest, FUNC_SendToNonExistingNode) {
-  EXPECT_TRUE(env_->SendDirect(NodeId(NodeId::kRandomId), kExpectDoesNotExist));
+  EXPECT_FALSE(env_->SendDirect(NodeId(NodeId::kRandomId), kExpectDoesNotExist));
   EXPECT_TRUE(env_->SendDirect(env_->nodes_[env_->RandomVaultIndex()]->node_id()));
 }
 

@@ -102,7 +102,10 @@ void MessageHandler::HandleRoutingMessage(protobuf::Message& message) {
 }
 
 void MessageHandler::HandleNodeLevelMessageForThisNode(protobuf::Message& message) {
-  if (IsRequest(message)) {
+  if (IsRequest(message) && (!routing_table_.client_mode() ||
+      (routing_table_.client_mode() &&
+      (routing_table_.Contains(NodeId(message.source_id())) ||
+       routing_table_.kNodeId().string() == message.source_id())))) {
     LOG(kInfo) << " [" << DebugId(routing_table_.kNodeId()) << "] rcvd : "
                << MessageTypeString(message) << " from "
                << HexSubstr(message.source_id())
@@ -153,13 +156,15 @@ void MessageHandler::HandleNodeLevelMessageForThisNode(protobuf::Message& messag
     };
     if (message_received_functor_)
       message_received_functor_(message.data(0), false, response_functor);
-  } else {  // response
+  } else if (IsResponse(message)) {  // response
     LOG(kInfo) << "[" << DebugId(routing_table_.kNodeId()) << "] rcvd : "
                << MessageTypeString(message) << " from "
                << HexSubstr(message.source_id())
                << "   (id: " << message.id() << ")  --NodeLevel--";
     if (timer_.AddResponse(message) && message.has_average_distace())
       network_statistics_.UpdateNetworkAverageDistance(NodeId(message.average_distace()));
+  } else {
+    message.Clear();
   }
 }
 

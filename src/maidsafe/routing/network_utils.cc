@@ -206,7 +206,7 @@ void NetworkUtils::SendToClosestNode(const protobuf::Message& message) {
     auto client_routing_nodes(client_routing_table_.GetNodesInfo(NodeId(message.destination_id())));
     // have the destination ID in non-routing table
     if (!client_routing_nodes.empty() && message.direct()) {
-      if (IsRequest(message) &&
+      if ((IsRequest(message) && message.source_id() != routing_table_.kNodeId().string()) &&
           (!message.client_node() ||
            (message.source_id() != message.destination_id()))) {
         LOG(kWarning) << "This node [" << DebugId(routing_table_.kNodeId())
@@ -220,7 +220,9 @@ void NetworkUtils::SendToClosestNode(const protobuf::Message& message) {
                     << " id: " << message.id();
 
       for (const auto& i : client_routing_nodes) {
-        LOG(kVerbose) << "Sending message to NRT node with ID " << message.id();
+        LOG(kVerbose) << "Sending message to NRT node with ID " << message.id()
+                      << " node_id " << DebugId(i.node_id)
+                      << " connection id " << DebugId(i.connection_id);
         SendTo(message, i.node_id, i.connection_id);
       }
     } else if (routing_table_.size() > 0) {  // getting closer nodes from routing table

@@ -1245,6 +1245,10 @@ TEST(RoutingTableTest, BEH_MatrixChange) {
   }
   EXPECT_EQ(count, Parameters::closest_nodes_size);
   routing_table.DropNode(node_ids.at(Parameters::node_group_size), true);
+  node_ids.erase(std::remove(std::begin(node_ids),
+                             std::end(node_ids),
+                             node_ids.at(Parameters::node_group_size)),
+                             std::end(node_ids));
   EXPECT_EQ(count, Parameters::closest_nodes_size + 1);
   routing_table.GroupUpdateFromConnectedPeer(NodeId(NodeId::kRandomId), std::vector<NodeInfo>());
   EXPECT_EQ(count, Parameters::closest_nodes_size + 1);
