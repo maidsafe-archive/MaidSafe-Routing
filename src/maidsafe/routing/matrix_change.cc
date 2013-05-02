@@ -66,12 +66,12 @@ MatrixChange::MatrixChange(const NodeId& this_node_id, const std::vector<NodeId>
                } ()) {}
 
 CheckHoldersResult MatrixChange::CheckHolders(const NodeId& target) const {
-  // throw / handle cases of lower number of group matrix nodes
-  assert(kOldMatrix_.size() >= Parameters::node_group_size + 1U);  // FIXME
-  assert(kNewMatrix_.size() >= Parameters::node_group_size + 1U);  // FIXME
+  // Handle cases of lower number of group matrix nodes
+  size_t node_group_size_adjust(Parameters::node_group_size + 1U);
+  size_t old_holders_size = std::min(kOldMatrix_.size(), node_group_size_adjust);
+  size_t new_holders_size = std::min(kNewMatrix_.size(), node_group_size_adjust);
 
-  std::vector<NodeId> old_holders(Parameters::node_group_size + 1),
-                      new_holders(Parameters::node_group_size + 1),
+  std::vector<NodeId> old_holders(old_holders_size), new_holders(new_holders_size),
                       lost_nodes(kLostNodes_);
   std::partial_sort_copy(kOldMatrix_.begin(),
                          kOldMatrix_.end(),
@@ -93,12 +93,18 @@ CheckHoldersResult MatrixChange::CheckHolders(const NodeId& target) const {
               return NodeId::CloserToTarget(lhs, rhs, target);
             });
 
-  // Remove taget == node ids
-  std::remove(old_holders.begin(), old_holders.end(), target);
-  old_holders.resize(Parameters::node_group_size);
-  std::remove(new_holders.begin(), new_holders.end(), target);
-  new_holders.resize(Parameters::node_group_size);
-  std::remove(lost_nodes.begin(), lost_nodes.end(), target);
+  // Remove taget == node ids and adjust holder size
+  old_holders.erase(std::remove(old_holders.begin(), old_holders.end(), target), old_holders.end());
+  if (old_holders.size() > Parameters::node_group_size) {
+    old_holders.resize(Parameters::node_group_size);
+    assert(old_holders.size() == Parameters::node_group_size);
+  }
+  new_holders.erase(std::remove(new_holders.begin(), new_holders.end(), target), new_holders.end());
+  if (new_holders.size() > Parameters::node_group_size) {
+    new_holders.resize(Parameters::node_group_size);
+    assert(new_holders.size() == Parameters::node_group_size);
+  }
+  lost_nodes.erase(std::remove(lost_nodes.begin(), lost_nodes.end(), target), lost_nodes.end());
 
   CheckHoldersResult holders_result;
   // Old holders = Old holder ∩ Lost nodes
@@ -121,6 +127,13 @@ CheckHoldersResult MatrixChange::CheckHolders(const NodeId& target) const {
                       });
   // handle range for this node
   holders_result.proximity_status =  GetProximalRange(new_holders, target);
+  if (GroupRangeStatus::kInRange != holders_result.proximity_status) {
+    holders_result.new_holders.clear();
+    holders_result.new_holders.shrink_to_fit();
+    holders_result.old_holders.clear();
+    holders_result.old_holders.shrink_to_fit();
+  }
+
   return holders_result;
 }
 
