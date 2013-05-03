@@ -354,7 +354,7 @@ GroupRangeStatus RoutingTable::IsNodeIdInGroupRange(const NodeId& group_id, cons
     return GroupRangeStatus::kOutwithRange;
 }
 
-bool RoutingTable::IsInProximalRange(const NodeId& group_id, const NodeId& node_id) {
+bool RoutingTable::IsInProximalRange(const NodeId& group_id, const NodeId& node_id) const {
   if ((group_id == node_id) || (group_id == kNodeId_))
     return false;
   NodeId radius_id(kNodeId_ ^ furthest_closest_node_id_);

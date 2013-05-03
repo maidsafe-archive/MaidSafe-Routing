@@ -231,6 +231,11 @@ bool GroupMatrix::IsNodeIdInGroupRange(const NodeId& group_id, const NodeId& nod
   return !NodeId::CloserToTarget(furthest_group_node, node_id, group_id);
 }
 
+GroupRangeStatus GroupMatrix::IsNodeIdInGroupRange(const NodeId& /*group_id*/,
+                                                   const NodeId& /*node_id*/) const {
+  return GroupRangeStatus::kOutwithRange;
+}
+
 void GroupMatrix::UpdateFromConnectedPeer(const NodeId& peer,
                                           const std::vector<NodeInfo>& nodes) {
   assert(nodes.size() < Parameters::max_routing_table_size);

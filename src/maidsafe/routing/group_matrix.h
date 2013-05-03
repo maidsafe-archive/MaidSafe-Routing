@@ -63,7 +63,7 @@ class GroupMatrix {
   bool IsThisNodeGroupLeader(const NodeId& target_id, NodeId& connected_peer);
   bool ClosestToId(const NodeId& node_id);
   bool IsNodeIdInGroupRange(const NodeId& group_id, const NodeId& node_id);
-
+  GroupRangeStatus IsNodeIdInGroupRange(const NodeId& group_id, const NodeId& node_id) const;
   // Updates group matrix if peer is present in 1st column of matrix
   void UpdateFromConnectedPeer(const NodeId& peer, const std::vector<NodeInfo>& nodes);
   bool IsRowEmpty(const NodeInfo& node_info);

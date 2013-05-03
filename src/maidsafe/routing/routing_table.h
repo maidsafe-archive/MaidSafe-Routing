@@ -150,7 +150,7 @@ class RoutingTable {
                                 uint16_t nth_element,
                                 std::unique_lock<std::mutex>& lock);
   NodeId FurthestCloseNode();
-  bool IsInProximalRange(const NodeId& group_id, const NodeId& node_id);
+  bool IsInProximalRange(const NodeId& group_id, const NodeId& node_id) const;
   std::vector<NodeInfo> GetClosestNodeInfo(const NodeId& target_id,
                                            uint16_t number_to_get,
                                            bool ignore_exact_match = false);
