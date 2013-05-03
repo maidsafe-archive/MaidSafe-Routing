@@ -159,7 +159,6 @@ GroupRangeStatus GetProximalRange(const NodeId& target_id,
 
 
   return GroupRangeStatus::kOutwithRange;
-
 }
 
 

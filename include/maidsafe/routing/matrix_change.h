@@ -27,6 +27,7 @@ class GroupMatrix;
 
 namespace test {
   class MatrixChangeTest_BEH_Constructor_Test;
+  class GroupMatrixTest_BEH_EmptyMatrix_Test;
 }
 
 enum class GroupRangeStatus {
@@ -41,20 +42,18 @@ struct CheckHoldersResult {
   routing::GroupRangeStatus proximity_status;
 };
 
-namespace test1 {
-
 class MatrixChange {
  public:
   MatrixChange(const MatrixChange&);
   MatrixChange& operator=(const MatrixChange&);
   MatrixChange(MatrixChange&& other);
-  MatrixChange& operator=(MatrixChange&& other);
 
   CheckHoldersResult CheckHolders(const NodeId& target) const;
   bool OldEqualsToNew() const;
 
   friend class GroupMatrix;
   friend class test::MatrixChangeTest_BEH_Constructor_Test;
+  friend class test::GroupMatrixTest_BEH_EmptyMatrix_Test;
 
  private:
   MatrixChange(const NodeId& this_node_id, const std::vector<NodeId>& old_matrix,
@@ -67,9 +66,6 @@ class MatrixChange {
   const std::vector<NodeId> kOldMatrix_, kNewMatrix_, kLostNodes_;
   const crypto::BigInt kRadius_;
 };
-
-
-}  // namespace testing
 
 }  // namespace routing
 

@@ -41,9 +41,9 @@ class GroupMatrix {
  public:
   explicit GroupMatrix(const NodeId& this_node_id, bool client_mode);
 
-  void AddConnectedPeer(const NodeInfo& node_info);
+  std::shared_ptr<MatrixChange> AddConnectedPeer(const NodeInfo& node_info);
 
-  void RemoveConnectedPeer(const NodeInfo& node_info, MatrixChange& matrix_change);
+  std::shared_ptr<MatrixChange> RemoveConnectedPeer(const NodeInfo& node_info);
 
   // Returns the connected peers sorted to node ids from kNodeId_
   std::vector<NodeInfo> GetConnectedPeers() const;
@@ -65,7 +65,9 @@ class GroupMatrix {
   bool IsNodeIdInGroupRange(const NodeId& group_id, const NodeId& node_id);
   GroupRangeStatus IsNodeIdInGroupRange(const NodeId& group_id, const NodeId& node_id) const;
   // Updates group matrix if peer is present in 1st column of matrix
-  void UpdateFromConnectedPeer(const NodeId& peer, const std::vector<NodeInfo>& nodes);
+  std::shared_ptr<MatrixChange> UpdateFromConnectedPeer(const NodeId& peer,
+                                       const std::vector<NodeInfo>& nodes,
+                                       const std::vector<NodeId>& old_unique_ids);
   bool IsRowEmpty(const NodeInfo& node_info);
   bool GetRow(const NodeId& row_id, std::vector<NodeInfo>& row_entries);
   std::vector<NodeInfo> GetUniqueNodes() const;

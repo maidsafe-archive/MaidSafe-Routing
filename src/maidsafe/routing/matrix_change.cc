@@ -22,8 +22,6 @@ namespace maidsafe {
 
 namespace routing {
 
-namespace test1 {
-
 MatrixChange::MatrixChange(const NodeId& this_node_id, const std::vector<NodeId>& old_matrix,
                            const std::vector<NodeId>& new_matrix)
     : kNodeId_(this_node_id),
@@ -158,7 +156,11 @@ bool MatrixChange::OldEqualsToNew() const {
   return std::equal(kNewMatrix_.begin(), kNewMatrix_.end(), kOldMatrix_.begin());
 }
 
-}  // namespace testing
+MatrixChange::MatrixChange(MatrixChange&& other)
+    :  kNodeId_(std::move(other.kNodeId_)),
+       kOldMatrix_(std::move(other.kOldMatrix_)),
+       kNewMatrix_(std::move(other.kNewMatrix_)),
+       kLostNodes_(std::move(other.kLostNodes_)) {}
 
 }  // namespace routing
 

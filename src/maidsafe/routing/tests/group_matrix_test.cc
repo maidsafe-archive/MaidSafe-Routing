@@ -82,12 +82,12 @@ TEST_F(IsThisNodeGroupLeaderGroupMatrixTest, BEH_TwoSmallRowsCaseA) {
   std::vector<NodeInfo> row;
   matrix.AddConnectedPeer(nodes_.at(2));
   row.push_back(nodes_.at(0));
-  matrix.UpdateFromConnectedPeer(nodes_.at(2).node_id, row);
+  matrix.UpdateFromConnectedPeer(nodes_.at(2).node_id, row, std::vector<NodeId>());
 
   matrix.AddConnectedPeer(nodes_.at(3));
   row.clear();
   row.push_back(nodes_.at(1));
-  matrix.UpdateFromConnectedPeer(nodes_.at(3).node_id, row);
+  matrix.UpdateFromConnectedPeer(nodes_.at(3).node_id, row, std::vector<NodeId>());
 
   NodeId connected_peer;
   EXPECT_FALSE(matrix.IsThisNodeGroupLeader(target_id_, connected_peer));
@@ -101,12 +101,12 @@ TEST_F(IsThisNodeGroupLeaderGroupMatrixTest, BEH_TwoSmallRowsCaseB) {
   std::vector<NodeInfo> row;
   matrix.AddConnectedPeer(nodes_.at(2));
   row.push_back(nodes_.at(1));
-  matrix.UpdateFromConnectedPeer(nodes_.at(2).node_id, row);
+  matrix.UpdateFromConnectedPeer(nodes_.at(2).node_id, row, std::vector<NodeId>());
 
   matrix.AddConnectedPeer(nodes_.at(3));
   row.clear();
   row.push_back(nodes_.at(0));
-  matrix.UpdateFromConnectedPeer(nodes_.at(3).node_id, row);
+  matrix.UpdateFromConnectedPeer(nodes_.at(3).node_id, row, std::vector<NodeId>());
 
   NodeId connected_peer;
   EXPECT_FALSE(matrix.IsThisNodeGroupLeader(target_id_, connected_peer));
@@ -123,9 +123,9 @@ TEST_F(IsThisNodeGroupLeaderGroupMatrixTest, BEH_ThreeEqualRows) {
   matrix.AddConnectedPeer(nodes_.at(2));
   matrix.AddConnectedPeer(nodes_.at(1));
   matrix.AddConnectedPeer(nodes_.at(3));
-  matrix.UpdateFromConnectedPeer(nodes_.at(2).node_id, row);
-  matrix.UpdateFromConnectedPeer(nodes_.at(1).node_id, row);
-  matrix.UpdateFromConnectedPeer(nodes_.at(3).node_id, row);
+  matrix.UpdateFromConnectedPeer(nodes_.at(2).node_id, row, std::vector<NodeId>());
+  matrix.UpdateFromConnectedPeer(nodes_.at(1).node_id, row, std::vector<NodeId>());
+  matrix.UpdateFromConnectedPeer(nodes_.at(3).node_id, row, std::vector<NodeId>());
 
   NodeId connected_peer;
   EXPECT_FALSE(matrix.IsThisNodeGroupLeader(target_id_, connected_peer));
@@ -142,13 +142,13 @@ TEST_F(IsThisNodeGroupLeaderGroupMatrixTest, BEH_TargetInMatrix) {
   std::vector<NodeInfo> row;
   row.push_back(nodes_.at(0));
   for (uint16_t i(2); i <= Parameters::closest_nodes_size; i += 2)
-    matrix.UpdateFromConnectedPeer(nodes_.at(i).node_id, row);
+    matrix.UpdateFromConnectedPeer(nodes_.at(i).node_id, row, std::vector<NodeId>());
   row.clear();
   NodeInfo target_node_info;
   target_node_info.node_id = target_id_;
   row.push_back(target_node_info);
   for (uint16_t i(1); i <= Parameters::closest_nodes_size; i += 2)
-    matrix.UpdateFromConnectedPeer(nodes_.at(i).node_id, row);
+    matrix.UpdateFromConnectedPeer(nodes_.at(i).node_id, row, std::vector<NodeId>());
 
   NodeId connected_peer;
   EXPECT_FALSE(matrix.IsThisNodeGroupLeader(target_id_, connected_peer));
@@ -165,7 +165,7 @@ TEST_F(IsThisNodeGroupLeaderGroupMatrixTest, BEH_IsGroupLeader) {
   row.push_back(nodes_.at(0));
   for (uint16_t i(1); i <= Parameters::closest_nodes_size; ++i) {
     matrix.AddConnectedPeer(nodes_.at(i));
-    matrix.UpdateFromConnectedPeer(nodes_.at(i).node_id, row);
+    matrix.UpdateFromConnectedPeer(nodes_.at(i).node_id, row, std::vector<NodeId>());
   }
 
   NodeId connected_peer;
@@ -225,8 +225,7 @@ TEST_P(GroupMatrixTest, BEH_EmptyMatrix) {
 
   EXPECT_EQ(0, matrix_.GetUniqueNodes().size());
 
-  MatrixChange matrix_change;
-  matrix_.RemoveConnectedPeer(NodeInfo(), matrix_change);
+  matrix_.RemoveConnectedPeer(NodeInfo());
   CheckIsThisNodeGroupLeader(target_id, connected_peer, true);
 
   if (client_mode_)
@@ -264,7 +263,7 @@ TEST_P(GroupMatrixTest, BEH_OneRowOnly) {
   }
   matrix_.AddConnectedPeer(row_1);
   EXPECT_EQ(1, matrix_.GetConnectedPeers().size());
-  matrix_.UpdateFromConnectedPeer(row_1.node_id, row_entries_1);
+  matrix_.UpdateFromConnectedPeer(row_1.node_id, row_entries_1, std::vector<NodeId>());
   EXPECT_EQ(1, matrix_.GetConnectedPeers().size());
 
   // Check row contents
@@ -287,7 +286,7 @@ TEST_P(GroupMatrixTest, BEH_OneRowOnly) {
     node_info.node_id = NodeId(NodeId::kRandomId);
     row_entries_1.push_back(node_info);
   }
-  matrix_.UpdateFromConnectedPeer(row_1.node_id, row_entries_1);
+  matrix_.UpdateFromConnectedPeer(row_1.node_id, row_entries_1, std::vector<NodeId>());
   EXPECT_EQ(1, matrix_.GetConnectedPeers().size());
 
   // Check row contents
@@ -377,7 +376,7 @@ TEST_P(GroupMatrixTest, BEH_RowsContainSameNodes) {
   std::vector<NodeInfo> row_result;
   for (const auto& row_id : row_ids) {
     matrix_.AddConnectedPeer(row_id);
-    matrix_.UpdateFromConnectedPeer(row_id.node_id, row_entries);
+    matrix_.UpdateFromConnectedPeer(row_id.node_id, row_entries, std::vector<NodeId>());
     EXPECT_FALSE(matrix_.IsRowEmpty(row_id));
     EXPECT_TRUE(matrix_.GetRow(row_id.node_id, row_result));
     EXPECT_EQ(row_result.size(), row_entries.size());
@@ -447,7 +446,7 @@ TEST_P(GroupMatrixTest, BEH_UpdateFromNonPeer) {
     ++i;
   }
 
-  matrix_.UpdateFromConnectedPeer(node_id_1.node_id, row_entries);
+  matrix_.UpdateFromConnectedPeer(node_id_1.node_id, row_entries, std::vector<NodeId>());
   EXPECT_EQ(0, matrix_.GetConnectedPeers().size());
 }
 
@@ -480,7 +479,7 @@ TEST_P(GroupMatrixTest, BEH_AddUpdateGetRemovePeers) {
       node_info.node_id = NodeId(NodeId::kRandomId);
       row_entries.push_back(node_info);
     }
-    matrix_.UpdateFromConnectedPeer(row_id.node_id, row_entries);
+    matrix_.UpdateFromConnectedPeer(row_id.node_id, row_entries, std::vector<NodeId>());
     EXPECT_FALSE(matrix_.IsRowEmpty(row_id));
     EXPECT_TRUE(matrix_.GetRow(row_id.node_id, row_result));
     EXPECT_TRUE(CompareListOfNodeInfos(row_result, row_entries));
@@ -491,10 +490,9 @@ TEST_P(GroupMatrixTest, BEH_AddUpdateGetRemovePeers) {
 
   // Remove peers
   SortNodeInfosFromTarget(own_node_id_, row_ids);
-  MatrixChange matrix_change;
   while (!row_ids.empty()) {
     uint32_t index(RandomUint32() % row_ids.size());
-    matrix_.RemoveConnectedPeer(row_ids.at(index), matrix_change);
+    matrix_.RemoveConnectedPeer(row_ids.at(index));
     row_ids.erase(row_ids.begin() + index);
     EXPECT_TRUE(CompareListOfNodeInfos(row_ids, matrix_.GetConnectedPeers()));
   }
@@ -545,9 +543,9 @@ TEST_P(GroupMatrixTest, BEH_GetConnectedPeerFor) {
     row_entries_3.push_back(node_info);
     ++i;
   }
-  matrix_.UpdateFromConnectedPeer(row_1.node_id, row_entries_1);
-  matrix_.UpdateFromConnectedPeer(row_2.node_id, row_entries_2);
-  matrix_.UpdateFromConnectedPeer(row_3.node_id, row_entries_3);
+  matrix_.UpdateFromConnectedPeer(row_1.node_id, row_entries_1, std::vector<NodeId>());
+  matrix_.UpdateFromConnectedPeer(row_2.node_id, row_entries_2, std::vector<NodeId>());
+  matrix_.UpdateFromConnectedPeer(row_3.node_id, row_entries_3, std::vector<NodeId>());
   std::vector<NodeInfo> row_result;
   EXPECT_FALSE(matrix_.IsRowEmpty(row_1));
   EXPECT_TRUE(matrix_.GetRow(row_1.node_id, row_result));
@@ -573,7 +571,7 @@ TEST_P(GroupMatrixTest, BEH_GetConnectedPeerFor) {
       row_entries.push_back(node);
     }
     matrix_.AddConnectedPeer(node_info);
-    matrix_.UpdateFromConnectedPeer(row_id, row_entries);
+    matrix_.UpdateFromConnectedPeer(row_id, row_entries, std::vector<NodeId>());
     EXPECT_TRUE(matrix_.GetRow(row_id, row_result));
     EXPECT_TRUE(CompareListOfNodeInfos(row_result, row_entries));
   }
@@ -612,7 +610,7 @@ TEST_P(GroupMatrixTest, BEH_ClosestToId) {
       row_entries.push_back(node);
     }
     matrix_.AddConnectedPeer(row_entry);
-    matrix_.UpdateFromConnectedPeer(row_entry.node_id, row_entries);
+    matrix_.UpdateFromConnectedPeer(row_entry.node_id, row_entries, std::vector<NodeId>());
     known_nodes.push_back(row_entry);
     for (const auto& node_id : row_entries)
       known_nodes.push_back(node_id);
@@ -649,7 +647,7 @@ TEST_P(GroupMatrixTest, BEH_IsNodeIdInGroupRange) {
       row_entries.push_back(node);
     }
     matrix_.AddConnectedPeer(row_entry);
-    matrix_.UpdateFromConnectedPeer(row_entry.node_id, row_entries);
+    matrix_.UpdateFromConnectedPeer(row_entry.node_id, row_entries, std::vector<NodeId>());
     node_ids.push_back(row_entry);
     for (const auto& node_id : row_entries)
       node_ids.push_back(node_id);
@@ -702,7 +700,7 @@ TEST_P(GroupMatrixTest, BEH_IsNodeIdInGroupRangeDifferentNode) {
       row_entries.push_back(node);
     }
     matrix_.AddConnectedPeer(row_entry);
-    matrix_.UpdateFromConnectedPeer(row_entry.node_id, row_entries);
+    matrix_.UpdateFromConnectedPeer(row_entry.node_id, row_entries, std::vector<NodeId>());
     node_ids.push_back(row_entry);
     for (const auto& node_id : row_entries)
       node_ids.push_back(node_id);
@@ -757,7 +755,7 @@ TEST_P(GroupMatrixTest, BEH_UpdateFromConnectedPeer) {
     row_entries_1.push_back(node_info);
     ++i;
   }
-  matrix_.UpdateFromConnectedPeer(row_1.node_id, row_entries_1);
+  matrix_.UpdateFromConnectedPeer(row_1.node_id, row_entries_1, std::vector<NodeId>());
   std::vector<NodeInfo> row_result;
   EXPECT_FALSE(matrix_.IsRowEmpty(row_1));
   EXPECT_TRUE(matrix_.GetRow(row_1.node_id, row_result));
@@ -776,7 +774,7 @@ TEST_P(GroupMatrixTest, BEH_UpdateFromConnectedPeer) {
       row_entries.push_back(node);
     }
     matrix_.AddConnectedPeer(row_id);
-    matrix_.UpdateFromConnectedPeer(row_id.node_id, row_entries);
+    matrix_.UpdateFromConnectedPeer(row_id.node_id, row_entries, std::vector<NodeId>());
     if (length == 0)
       EXPECT_TRUE(matrix_.IsRowEmpty(row_id));
     else
@@ -798,7 +796,7 @@ TEST_P(GroupMatrixTest, BEH_UpdateFromConnectedPeer) {
     row_entries_2.push_back(node);
     ++j;
   }
-  matrix_.UpdateFromConnectedPeer(row_1.node_id, row_entries_2);
+  matrix_.UpdateFromConnectedPeer(row_1.node_id, row_entries_2, std::vector<NodeId>());
 
   // Check matrix row contains all the new nodes and none of the old ones
   EXPECT_TRUE(matrix_.GetRow(row_1.node_id, row_result));
@@ -837,7 +835,7 @@ TEST_P(GroupMatrixTest, BEH_CheckUniqueNodeList) {
       row_entries.push_back(new_row_entry);
       node_ids.push_back(new_row_entry);
     }
-    matrix_.UpdateFromConnectedPeer(row_id.node_id, row_entries);
+    matrix_.UpdateFromConnectedPeer(row_id.node_id, row_entries, std::vector<NodeId>());
     SortNodeInfosFromTarget(own_node_id_, node_ids);
     EXPECT_TRUE(CompareListOfNodeInfos(node_ids, matrix_.GetUniqueNodes()));
   }
@@ -863,7 +861,9 @@ TEST_P(GroupMatrixTest, BEH_GetAllConnectedPeers) {
   std::vector<NodeInfo> row_content;
   while (row_content.size() < Parameters::closest_nodes_size) {
     row_content.push_back(MakeNode());
-    matrix_.UpdateFromConnectedPeer(row_ids.at(row_content.size() - 1).node_id, row_content);
+    matrix_.UpdateFromConnectedPeer(row_ids.at(row_content.size() - 1).node_id,
+                                    row_content,
+                                    std::vector<NodeId>());
   }
 
   // Verify GetAllConnectedPeers
@@ -907,7 +907,8 @@ TEST_P(GroupMatrixTest, BEH_Prune) {
               });
     matrix_.UpdateFromConnectedPeer(current_id,
                                     std::vector<NodeInfo>(copy.begin() + 1,
-                                                          copy.end()));
+                                                          copy.end()),
+                                    std::vector<NodeId>());
   }
   auto connected_peers(matrix_.GetConnectedPeers());
   auto far_node_itr(std::find_if(connected_peers.begin(),
@@ -952,18 +953,18 @@ TEST_P(GroupMatrixTest, BEH_CheckAssertions) {
 
   // Update row using zero ID
 #ifndef NDEBUG
-  EXPECT_DEATH(matrix_.UpdateFromConnectedPeer(zero_id, row), "");
+  EXPECT_DEATH(matrix_.UpdateFromConnectedPeer(zero_id, row, std::vector<NodeId>()), "");
 #else
-  EXPECT_NO_THROW(matrix_.UpdateFromConnectedPeer(zero_id, row));
+  EXPECT_NO_THROW(matrix_.UpdateFromConnectedPeer(zero_id, row, std::vector<NodeId>()));
 #endif
 
   // Update row using too big row size
   while (row.size() < static_cast<size_t>(Parameters::max_routing_table_size + 1))
     row.push_back(NodeInfo());
 #ifndef NDEBUG
-  EXPECT_DEATH(matrix_.UpdateFromConnectedPeer(random_id_1, row), "");
+  EXPECT_DEATH(matrix_.UpdateFromConnectedPeer(random_id_1, row, std::vector<NodeId>()), "");
 #else
-  EXPECT_NO_THROW(matrix_.UpdateFromConnectedPeer(random_id_1, row));
+  EXPECT_NO_THROW(matrix_.UpdateFromConnectedPeer(random_id_1, row, std::vector<NodeId>()));
 #endif
 
   // Add too many rows

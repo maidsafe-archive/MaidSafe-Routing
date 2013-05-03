@@ -60,7 +60,7 @@ class MatrixChangeTest : public testing::Test {
 };
 
 TEST_F(MatrixChangeTest, BEH_Constructor) {
-  test1::MatrixChange matrix_change(kNodeId_, old_matrix_, new_matrix_);
+  MatrixChange matrix_change(kNodeId_, old_matrix_, new_matrix_);
 
   for (auto i(0); i != 100; ++i) {
     auto target_id(GenerateUniqueRandomId(kNodeId_, 100));

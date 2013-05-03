@@ -136,9 +136,9 @@ class RoutingTable {
   NodeInfo ResolveConnectionDuplication(const NodeInfo& new_duplicate_node,
                                         bool local_endpoint,
                                         NodeInfo& existing_node);
-  void UpdateCloseNodeChange(std::unique_lock<std::mutex>& lock, const NodeInfo& peer,
-                             std::vector<NodeInfo>& new_connected_nodes,
-                             MatrixChange& matrix_change);
+  std::shared_ptr<MatrixChange> UpdateCloseNodeChange(std::unique_lock<std::mutex>& lock,
+                                                      const NodeInfo& peer,
+                                                      std::vector<NodeInfo>& new_connected_nodes);
   bool MakeSpaceForNodeToBeAdded(const NodeInfo& node,
                                  bool remove,
                                  NodeInfo& removed_node,

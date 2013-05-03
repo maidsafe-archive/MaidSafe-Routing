@@ -33,7 +33,8 @@ GroupMatrix::GroupMatrix(const NodeId& this_node_id, bool client_mode)
       client_mode_(client_mode),
       matrix_() {}
 
-void GroupMatrix::AddConnectedPeer(const NodeInfo& node_info) {
+std::shared_ptr<MatrixChange> GroupMatrix::AddConnectedPeer(const NodeInfo& node_info) {
+  std::vector<NodeId> old_unique_ids(GetUniqueNodeIds());
   LOG(kVerbose) << DebugId(kNodeId_) << " AddConnectedPeer : " << DebugId(node_info.node_id);
   auto node_id(node_info.node_id);
   auto found(std::find_if(matrix_.begin(),
@@ -43,14 +44,16 @@ void GroupMatrix::AddConnectedPeer(const NodeInfo& node_info) {
                           }));
   if (found != matrix_.end()) {
     LOG(kWarning) << "Already Added in matrix";
-    return;
+    return std::make_shared<MatrixChange>(MatrixChange(kNodeId_, old_unique_ids, old_unique_ids));
   }
   matrix_.push_back(std::vector<NodeInfo>(1, node_info));
+  Prune();
   UpdateUniqueNodeList();
+  return std::make_shared<MatrixChange>(MatrixChange(kNodeId_, old_unique_ids, GetUniqueNodeIds()));
 }
 
-void GroupMatrix::RemoveConnectedPeer(const NodeInfo& node_info, MatrixChange& matrix_change) {
-  matrix_change.old_matrix = GetUniqueNodeIds();
+std::shared_ptr<MatrixChange> GroupMatrix::RemoveConnectedPeer(const NodeInfo& node_info) {
+  std::vector<NodeId> old_unique_ids(GetUniqueNodeIds());
   matrix_.erase(std::remove_if(matrix_.begin(),
                                matrix_.end(),
                                [node_info](const std::vector<NodeInfo> nodes) {
@@ -58,7 +61,7 @@ void GroupMatrix::RemoveConnectedPeer(const NodeInfo& node_info, MatrixChange& m
                                }), matrix_.end());
   Prune();
   UpdateUniqueNodeList();
-  matrix_change.new_matrix = GetUniqueNodeIds();
+  return std::make_shared<MatrixChange>(MatrixChange(kNodeId_, old_unique_ids, GetUniqueNodeIds()));
 }
 
 std::vector<NodeInfo> GroupMatrix::GetConnectedPeers() const {
@@ -236,12 +239,14 @@ GroupRangeStatus GroupMatrix::IsNodeIdInGroupRange(const NodeId& /*group_id*/,
   return GroupRangeStatus::kOutwithRange;
 }
 
-void GroupMatrix::UpdateFromConnectedPeer(const NodeId& peer,
-                                          const std::vector<NodeInfo>& nodes) {
+std::shared_ptr<MatrixChange> GroupMatrix::UpdateFromConnectedPeer(
+    const NodeId& peer,
+    const std::vector<NodeInfo>& nodes,
+    const std::vector<NodeId>& old_unique_ids) {
   assert(nodes.size() < Parameters::max_routing_table_size);
   if (peer.IsZero()) {
     assert(false && "Invalid peer node id.");
-    return;
+    return std::make_shared<MatrixChange>(MatrixChange(kNodeId_, old_unique_ids, old_unique_ids));
   }
   // If peer is in my group
   auto group_itr(matrix_.begin());
@@ -253,7 +258,7 @@ void GroupMatrix::UpdateFromConnectedPeer(const NodeId& peer,
   if (group_itr == matrix_.end()) {
     LOG(kWarning) << "Peer Node : " << DebugId(peer)
                   << " is not in closest group of this node.";
-    return;
+    return std::make_shared<MatrixChange>(MatrixChange(kNodeId_, old_unique_ids, old_unique_ids));
   }
 
   // Update peer's row
@@ -266,6 +271,7 @@ void GroupMatrix::UpdateFromConnectedPeer(const NodeId& peer,
   // Update unique node vector
   Prune();
   UpdateUniqueNodeList();
+  return std::make_shared<MatrixChange>(MatrixChange(kNodeId_, old_unique_ids, GetUniqueNodeIds()));
 }
 
 bool GroupMatrix::GetRow(const NodeId& row_id, std::vector<NodeInfo>& row_entries) {

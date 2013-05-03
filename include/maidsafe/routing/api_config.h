@@ -36,19 +36,6 @@ enum class DestinationType : int {
   kGroup
 };
 
-// This struct needs to be moved to common
-struct MatrixChange {
-  std::vector<NodeId> old_matrix, new_matrix;
-  static uint16_t close_count, proximal_count;
-  bool OldEqualsToNew() const {
-    if (old_matrix.size() != new_matrix.size())
-      return false;
-    return std::equal(new_matrix.begin(),
-                      new_matrix.end(),
-                      old_matrix.begin());
-  }
-};
-
 typedef std::function<void(std::string)> ResponseFunctor;
 
 // They are passed as a parameter by MessageReceivedFunctor and should be called for responding to
@@ -81,7 +68,7 @@ typedef std::function<void(const boost::asio::ip::udp::endpoint& /*new_endpoint*
 typedef std::function<void(const std::vector<NodeInfo>& /*new_close_nodes*/)>
     CloseNodeReplacedFunctor;
 
-typedef std::function<void(const MatrixChange& /*matrix_change*/)>
+typedef std::function<void(std::shared_ptr<MatrixChange> /*matrix_change*/)>
     MatrixChangedFunctor;
 
 // This functor fires when routing table size is over greedy limit. The furthest unnecessary
