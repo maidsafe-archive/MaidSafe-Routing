@@ -16,6 +16,7 @@
 
 
 #include "maidsafe/routing/parameters.h"
+#include "maidsafe/routing/utils.h"
 
 
 namespace maidsafe {
@@ -124,7 +125,8 @@ CheckHoldersResult MatrixChange::CheckHolders(const NodeId& target) const {
                         return NodeId::CloserToTarget(lhs, rhs, target);
                       });
   // handle range for this node
-  holders_result.proximity_status =  GetProximalRange(new_holders, target);
+  holders_result.proximity_status =  GetProximalRange(target, kNodeId_, kNodeId_, kRadius_,
+                                                      new_holders);
   if (GroupRangeStatus::kInRange != holders_result.proximity_status) {
     holders_result.new_holders.clear();
     holders_result.new_holders.shrink_to_fit();
@@ -133,21 +135,6 @@ CheckHoldersResult MatrixChange::CheckHolders(const NodeId& target) const {
   }
 
   return holders_result;
-}
-
-GroupRangeStatus MatrixChange::GetProximalRange(const std::vector<NodeId>& new_holders,
-                                                const NodeId& target) const {
-  if ((target == kNodeId_))
-    return GroupRangeStatus::kOutwithRange;
-
-  if (std::find(new_holders.begin(), new_holders.end(), kNodeId_) != new_holders.end())
-    return GroupRangeStatus::kInRange;
-
-  NodeId distance_id(kNodeId_ ^ target);
-  crypto::BigInt distance((distance_id.ToStringEncoded(NodeId::kHex) + 'h').c_str());
-
-  return (distance < kRadius_) ? GroupRangeStatus::kInProximalRange
-                               : GroupRangeStatus::kOutwithRange;
 }
 
 bool MatrixChange::OldEqualsToNew() const {

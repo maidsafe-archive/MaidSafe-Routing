@@ -58,8 +58,6 @@ class MatrixChange {
  private:
   MatrixChange(const NodeId& this_node_id, const std::vector<NodeId>& old_matrix,
                const std::vector<NodeId>& new_matrix);
-  GroupRangeStatus GetProximalRange(const std::vector<NodeId>& new_holders,
-                                    const NodeId& target) const;
 
   static const uint16_t close_count_, proximal_count_;
   const NodeId kNodeId_;
