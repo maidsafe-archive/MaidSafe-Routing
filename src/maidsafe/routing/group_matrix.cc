@@ -22,6 +22,7 @@
 #include "maidsafe/routing/parameters.h"
 #include "maidsafe/routing/node_info.h"
 #include "maidsafe/routing/return_codes.h"
+#include "maidsafe/routing/utils.h"
 
 namespace maidsafe {
 
@@ -30,6 +31,7 @@ namespace routing {
 GroupMatrix::GroupMatrix(const NodeId& this_node_id, bool client_mode)
     : kNodeId_(this_node_id),
       unique_nodes_(),
+      radius_(crypto::BigInt::Zero()),
       client_mode_(client_mode),
       matrix_() {}
 
@@ -234,9 +236,37 @@ bool GroupMatrix::IsNodeIdInGroupRange(const NodeId& group_id, const NodeId& nod
   return !NodeId::CloserToTarget(furthest_group_node, node_id, group_id);
 }
 
-GroupRangeStatus GroupMatrix::IsNodeIdInGroupRange(const NodeId& /*group_id*/,
-                                                   const NodeId& /*node_id*/) const {
-  return GroupRangeStatus::kOutwithRange;
+GroupRangeStatus GroupMatrix::IsNodeIdInGroupRange(const NodeId& group_id,
+                                                   const NodeId& node_id) const {
+  size_t node_group_size_adjust(Parameters::node_group_size + 1U);
+  size_t new_holders_size = std::min(unique_nodes_.size(), node_group_size_adjust);
+  std::vector<NodeInfo> new_holders_info(new_holders_size);
+  std::partial_sort_copy(unique_nodes_.begin(),
+                         unique_nodes_.end(),
+                         new_holders_info.begin(),
+                         new_holders_info.end(),
+                         [group_id](const NodeInfo& lhs, const NodeInfo& rhs) {
+                           return NodeId::CloserToTarget(lhs.node_id, rhs.node_id, group_id);
+                         });
+
+  std::vector<NodeId> new_holders;
+  for (auto i : new_holders_info)
+    new_holders.push_back(i.node_id);
+
+  new_holders.erase(std::remove(new_holders.begin(), new_holders.end(), group_id),
+                    new_holders.end());
+  if (new_holders.size() > Parameters::node_group_size) {
+    new_holders.resize(Parameters::node_group_size);
+    assert(new_holders.size() == Parameters::node_group_size);
+  }
+
+  auto this_node_range(GetProximalRange(group_id, kNodeId_, kNodeId_, radius_, new_holders));
+  if (node_id == kNodeId_)
+    return this_node_range;
+  else if (this_node_range != GroupRangeStatus::kInRange)
+    ThrowError(RoutingErrors::not_in_group);
+
+  return GetProximalRange(group_id, node_id, kNodeId_, radius_, new_holders);
 }
 
 std::shared_ptr<MatrixChange> GroupMatrix::UpdateFromConnectedPeer(
@@ -350,6 +380,14 @@ void GroupMatrix::UpdateUniqueNodeList() {
   }
 
   unique_nodes_.assign(std::begin(sorted_to_owner), std::end(sorted_to_owner));
+  // Updating radius
+  NodeId fcn_distance;
+  if (unique_nodes_.size() >= Parameters::closest_nodes_size)
+    fcn_distance = kNodeId_ ^ unique_nodes_[Parameters::closest_nodes_size -1].node_id;
+  else
+    fcn_distance = kNodeId_ ^ (NodeId(NodeId::kMaxId));  // FIXME
+  radius_ = (crypto::BigInt((fcn_distance.ToStringEncoded(NodeId::kHex) + 'h').c_str())
+                                * Parameters::proximity_factor);
 }
 
 void GroupMatrix::PartialSortFromTarget(const NodeId& target,

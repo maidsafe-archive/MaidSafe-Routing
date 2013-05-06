@@ -18,6 +18,7 @@
 #include <vector>
 #include <string>
 
+#include "maidsafe/common/crypto.h"
 #include "maidsafe/common/node_id.h"
 #include "maidsafe/routing/node_info.h"
 #include "maidsafe/routing/api_config.h"
@@ -90,6 +91,7 @@ class GroupMatrix {
 
   const NodeId& kNodeId_;
   std::vector<NodeInfo> unique_nodes_;
+  crypto::BigInt radius_;
   bool client_mode_;
   std::vector<std::vector<NodeInfo>> matrix_;
 };

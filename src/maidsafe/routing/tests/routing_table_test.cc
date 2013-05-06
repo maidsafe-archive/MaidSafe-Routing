@@ -1227,9 +1227,10 @@ TEST(RoutingTableTest, BEH_MatrixChange) {
   NetworkStatistics network_statistics(node_id);
   RoutingTable routing_table(false, node_id, asymm::GenerateKeyPair(), network_statistics);
   int count(0);
-  MatrixChangedFunctor matrix_change_functor = [&count](std::shared_ptr<MatrixChange> /*matrix_change*/) {
-                                                 count++;
-                                               };
+  MatrixChangedFunctor matrix_change_functor =
+      [&count](std::shared_ptr<MatrixChange> /*matrix_change*/) {
+        count++;
+      };
   routing_table.InitialiseFunctors([](const int&) {},
                                    [](const NodeInfo&, bool) {},
                                    []() {},

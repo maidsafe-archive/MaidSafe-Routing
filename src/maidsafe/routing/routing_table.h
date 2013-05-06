@@ -76,8 +76,8 @@ class RoutingTable {
   NodeInfo DropNode(const NodeId &node_to_drop, bool routing_only);
   bool ClosestToId(const NodeId& node_id);
 
-  GroupRangeStatus IsNodeIdInGroupRange(const NodeId& group_id);
-  GroupRangeStatus IsNodeIdInGroupRange(const NodeId& group_id, const NodeId& node_id);
+  GroupRangeStatus IsNodeIdInGroupRange(const NodeId& group_id) const;
+  GroupRangeStatus IsNodeIdInGroupRange(const NodeId& group_id, const NodeId& node_id) const;
 
   bool IsThisNodeGroupLeader(const NodeId& target_id, NodeInfo& connected_peer);
   bool IsThisNodeGroupLeader(const NodeId& target_id,
@@ -150,7 +150,6 @@ class RoutingTable {
                                 uint16_t nth_element,
                                 std::unique_lock<std::mutex>& lock);
   NodeId FurthestCloseNode();
-  bool IsInProximalRange(const NodeId& group_id, const NodeId& node_id) const;
   std::vector<NodeInfo> GetClosestNodeInfo(const NodeId& target_id,
                                            uint16_t number_to_get,
                                            bool ignore_exact_match = false);
