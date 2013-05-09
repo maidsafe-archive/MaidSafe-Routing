@@ -858,11 +858,17 @@ void RoutingTable::IpcSendGroupMatrix() const {
       matrix = group_matrix_.GetUniqueNodes();
       close = group_matrix_.GetConnectedPeers();
     }
-    std::string printout("\tMatrix sent by: " + DebugId(NodeId(matrix_record.owner_id())) + "\n");
+    std::string printout("\tMatrix sent by: " + DebugId(kNodeId_) + "\n");
     for (const auto& matrix_element : matrix) {
       matrix_record.AddElement(matrix_element.node_id, network_viewer::ChildType::kMatrix);
       printout += "\t\t" + DebugId(matrix_element.node_id) + " - kMatrix\n";
     }
+
+    std::sort(std::begin(close), std::end(close),
+              [this](const NodeInfo& lhs, const NodeInfo& rhs) {
+                  return NodeId::CloserToTarget(lhs.node_id, rhs.node_id, kNodeId_);
+              });
+
     size_t index(0);
     size_t limit(std::min(static_cast<size_t>(Parameters::node_group_size), close.size()));
     for (; index < limit; ++index) {
