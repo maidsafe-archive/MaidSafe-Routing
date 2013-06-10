@@ -106,19 +106,19 @@ void MessageHandler::HandleNodeLevelMessageForThisNode(protobuf::Message& messag
       (routing_table_.client_mode() &&
       (routing_table_.Contains(NodeId(message.source_id())) ||
        routing_table_.kNodeId().string() == message.source_id())))) {
-    LOG(kInfo) << " [" << DebugId(routing_table_.kNodeId()) << "] rcvd : "
-               << MessageTypeString(message) << " from "
-               << HexSubstr(message.source_id())
-               << "   (id: " << message.id() << ")  --NodeLevel--";
+    LOG(kSuccess) << " [" << DebugId(routing_table_.kNodeId()) << "] rcvd : "
+                  << MessageTypeString(message) << " from "
+                  << HexSubstr(message.source_id())
+                  << "   (id: " << message.id() << ")  --NodeLevel--";
     ReplyFunctor response_functor = [=](const std::string& reply_message) {
         if (reply_message.empty()) {
           LOG(kInfo) << "Empty response for message id :" << message.id();
           return;
         }
-        LOG(kInfo) << " [" << DebugId(routing_table_.kNodeId()) << "] repl : "
-                   << MessageTypeString(message) << " from "
-                   << HexSubstr(message.source_id())
-                   << "   (id: " << message.id() << ")  --NodeLevel Replied--";
+        LOG(kSuccess) << " [" << DebugId(routing_table_.kNodeId()) << "] repl : "
+                      << MessageTypeString(message) << " from "
+                      << HexSubstr(message.source_id())
+                      << "   (id: " << message.id() << ")  --NodeLevel Replied--";
         protobuf::Message message_out;
         message_out.set_request(false);
         message_out.set_hops_to_live(Parameters::hops_to_live);
