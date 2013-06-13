@@ -48,7 +48,7 @@ TEST_F(RoutingChurnTest, FUNC_BasicNetworkChurn) {
   size_t random(RandomUint32());
   const size_t vault_network_size(10 + random % 10);
   const size_t clients_in_network(2 + random % 3);
-  SetUpNetwork(vault_network_size, clients_in_network);
+  this->SetUpNetwork(vault_network_size, clients_in_network);
   // Existing vault node ids
   std::vector<NodeId> existing_client_node_ids, existing_vault_node_ids;
   for (size_t i(1); i < this->nodes_.size(); ++i) {
@@ -89,7 +89,7 @@ TEST_F(RoutingChurnTest, FUNC_MessagingNetworkChurn) {
   LOG(kInfo) << "Finished setting up network\n\n\n\n";
 
   std::vector<NodeId> existing_node_ids;
-  for (auto& node : this->nodes_)
+  for (const auto& node : this->nodes_)
     existing_node_ids.push_back(node->node_id());
   LOG(kInfo) << "After harvesting node ids\n\n\n\n";
 
@@ -118,25 +118,23 @@ TEST_F(RoutingChurnTest, FUNC_MessagingNetworkChurn) {
                                          GenericNetwork::NodePtr vault_node(
                                             this->RandomVaultNode());
                                          // Choose random client nodes for direct message
-                                         sender_client->Send(receiver_client->node_id(), NodeId(),
-                                                             message, nullptr,
-                                                             boost::posix_time::seconds(2),
-                                                             DestinationType::kDirect,
-                                                             false);
+                                         // TODO(Alison) - use result?
+                                         sender_client->SendDirect(receiver_client->node_id(),
+                                                                   message,
+                                                                   false,
+                                                                   [](std::string /*str*/) {});
                                          // Choose random client for group message to random env
-                                         sender_client->Send(NodeId(NodeId::kRandomId), NodeId(),
-                                                             message, nullptr,
-                                                             boost::posix_time::seconds(2),
-                                                             DestinationType::kGroup,
-                                                             false);
-
-
+                                         // TODO(Alison) - use result?
+                                         sender_client->SendGroup(NodeId(NodeId::kRandomId),
+                                                                  message,
+                                                                  false,
+                                                                  [](std::string /*str*/) {});
                                          // Choose random vault for group message to random env
-                                         vault_node->Send(NodeId(NodeId::kRandomId), NodeId(),
-                                                          message, nullptr,
-                                                          boost::posix_time::seconds(2),
-                                                          DestinationType::kGroup,
-                                                          false);
+                                         // TODO(Alison) - use result?
+                                         vault_node->SendGroup(NodeId(NodeId::kRandomId),
+                                                               message,
+                                                               false,
+                                                               [](std::string /*str*/) {});
                                          // Wait before going again
                                          Sleep(boost::posix_time::milliseconds(900 +
                                                                                RandomUint32() %

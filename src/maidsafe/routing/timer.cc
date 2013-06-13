@@ -15,11 +15,12 @@
 #include <algorithm>
 
 #include "maidsafe/common/asio_service.h"
+#include "maidsafe/common/error.h"
 #include "maidsafe/common/log.h"
 
 #include "maidsafe/routing/parameters.h"
 #include "maidsafe/routing/return_codes.h"
-#include "maidsafe/routing/routing_pb.h"
+#include "maidsafe/routing/routing.pb.h"
 
 namespace maidsafe {
 
@@ -33,7 +34,6 @@ Timer::Task::Task(const TaskId& id_in,
     : id(id_in),
       timer(io_service, timeout),
       functor(functor_in),
-      responses(),
       expected_response_count(expected_response_count_in) {}
 
 Timer::Timer(AsioService& asio_service)
@@ -76,6 +76,7 @@ std::vector<Timer::TaskPtr>::iterator Timer::FindTask(const TaskId& task_id) {
 
 void Timer::ExecuteTask(TaskId task_id, const boost::system::error_code& error) {
   TaskPtr task;
+  uint16_t timed_out_response_count(0);
   {
     std::lock_guard<std::mutex> lock(mutex_);
     auto itr(FindTask(task_id));
@@ -83,24 +84,23 @@ void Timer::ExecuteTask(TaskId task_id, const boost::system::error_code& error) 
       LOG(kWarning) << "Task " << task_id << " not held by Timer.";
       return;
     }
+    timed_out_response_count = (*itr)->expected_response_count;
     task = *itr;
+    (*itr)->expected_response_count = 0;
   }
 
 //  int return_code(kSuccess);
   switch (error.value()) {
     case boost::system::errc::success:
       // Task's timer has expired
-//      return_code = kResponseTimeout;
       LOG(kError) << "Timed out waiting for task " << task->id;
       break;
     case boost::asio::error::operation_aborted:
-      assert(task->responses.size() <= task->expected_response_count);
-      if (task->responses.size() == task->expected_response_count) {
+//      assert(task->responses.size() <= task->expected_response_count);
+      if (0 == task->expected_response_count) {
         // Cancelled via AddResponse
-//        return_code = kSuccess;
       } else {
         // Cancelled via CancelTask
-//        return_code = kResponseCancelled;
         LOG(kInfo) << "Cancelled task " << task->id;
       }
       break;
@@ -110,8 +110,10 @@ void Timer::ExecuteTask(TaskId task_id, const boost::system::error_code& error) 
   }
 
   asio_service_.service().dispatch([=] {
-    if (task->functor)
-      task->functor(task->responses);
+    for (uint16_t i(0); i != timed_out_response_count; ++i) {
+      if (task->functor)
+        task->functor(std::string());
+    }
     std::lock_guard<std::mutex> lock(mutex_);
     auto itr(FindTask(task_id));
     if (itr != tasks_.end()) {
@@ -131,29 +133,37 @@ void Timer::CancelTask(TaskId task_id) {
   (*itr)->timer.cancel();
 }
 
-void Timer::AddResponse(const protobuf::Message& response) {
+bool Timer::AddResponse(const protobuf::Message& response) {
   if (!response.has_id()) {
     LOG(kError) << "Received response with no ID.  Abort message handling.";
-    return;
+    return false;
+  }
+  std::shared_ptr<std::string> response_out(std::make_shared<std::string>(response.data(0)));
+  TaskPtr task;
+  {
+    std::lock_guard<std::mutex> lock(mutex_);
+    auto itr(FindTask(response.id()));
+    if (itr == tasks_.end() || ((*itr)->expected_response_count == 0)) {
+      LOG(kWarning) << "Attempted to AddResponse to expired or non-existent task " << response.id();
+      return false;
+    }
+    --((*itr)->expected_response_count);
+    if (0 == (*itr)->expected_response_count) {
+      LOG(kVerbose) << "Received response(s) for task " << response.id();
+      (*itr)->timer.cancel();
+    } else {
+      LOG(kInfo) << "Received a response. Waiting for "
+                 << (*itr)->expected_response_count
+                 << " responses for task " << response.id();
+    }
+    task = *itr;
   }
 
-  std::lock_guard<std::mutex> lock(mutex_);
-  auto itr(FindTask(response.id()));
-  if (itr == tasks_.end()) {
-    LOG(kWarning) << "Attempted to AddResponse to expired or non-existent task " << response.id();
-    return;
-  }
-
-  (*itr)->responses.emplace_back(response.data(0));
-
-  if ((*itr)->responses.size() == (*itr)->expected_response_count) {
-    LOG(kVerbose) << "Executing task " << response.id();
-    (*itr)->timer.cancel();
-  } else {
-    LOG(kInfo) << "Received " << (*itr)->responses.size() << " response(s). Waiting for "
-               << ((*itr)->expected_response_count - (*itr)->responses.size())
-               << " responses for task " << response.id();
-  }
+  asio_service_.service().dispatch([=] {
+      if (task->functor)
+        task->functor(std::move(*response_out));
+  });
+  return true;
 }
 
 }  // namespace maidsafe

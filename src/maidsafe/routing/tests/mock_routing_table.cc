@@ -10,7 +10,7 @@
  *  the explicit written permission of the board of directors of maidsafe.net. *
  ******************************************************************************/
 
-#include "maidsafe/routing/tests/mock_response_handler.h"
+#include "maidsafe/routing/tests/mock_routing_table.h"
 
 namespace maidsafe {
 
@@ -18,17 +18,16 @@ namespace routing {
 
 namespace test {
 
-MockResponseHandler::MockResponseHandler(RoutingTable& routing_table,
-                         ClientRoutingTable& client_routing_table,
-                         NetworkUtils& utils,
-                         GroupChangeHandler &group_change_handler)
-    : ResponseHandler(routing_table, client_routing_table, utils, group_change_handler) {}
+MockRoutingTable::MockRoutingTable(bool client_mode, const NodeId& node_id,
+                                   const asymm::Keys& keys, NetworkStatistics& network_statistics)
+    : RoutingTable(client_mode, node_id, keys, network_statistics) {}
 
-MockResponseHandler::~MockResponseHandler() {}
+MockRoutingTable::~MockRoutingTable() {}
 
 }  // namespace test
 
 }  // namespace routing
 
 }  // namespace maidsafe
+
 

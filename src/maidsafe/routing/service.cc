@@ -23,11 +23,12 @@
 #include "maidsafe/rudp/managed_connections.h"
 #include "maidsafe/rudp/return_codes.h"
 
+#include "maidsafe/routing/client_routing_table.h"
+#include "maidsafe/routing/group_change_handler.h"
 #include "maidsafe/routing/message_handler.h"
 #include "maidsafe/routing/network_utils.h"
-#include "maidsafe/routing/non_routing_table.h"
 #include "maidsafe/routing/parameters.h"
-#include "maidsafe/routing/routing_pb.h"
+#include "maidsafe/routing/routing.pb.h"
 #include "maidsafe/routing/routing_table.h"
 #include "maidsafe/routing/rpcs.h"
 #include "maidsafe/routing/utils.h"
@@ -44,17 +45,17 @@ typedef boost::asio::ip::udp::endpoint Endpoint;
 }  // unnamed namespace
 
 Service::Service(RoutingTable& routing_table,
-                 NonRoutingTable& non_routing_table,
+                 ClientRoutingTable& client_routing_table,
                  NetworkUtils& network)
   : routing_table_(routing_table),
-    non_routing_table_(non_routing_table),
+    client_routing_table_(client_routing_table),
     network_(network),
     request_public_key_functor_() {}
 
 Service::~Service() {}
 
 void Service::Ping(protobuf::Message& message) {
-  if (message.destination_id() != routing_table_.kFob().identity.string()) {
+  if (message.destination_id() != routing_table_.kNodeId().string()) {
     // Message not for this node and we should not pass it on.
     LOG(kError) << "Message not for this node.";
     message.Clear();
@@ -76,13 +77,13 @@ void Service::Ping(protobuf::Message& message) {
   message.clear_data();
   message.add_data(ping_response.SerializeAsString());
   message.set_destination_id(message.source_id());
-  message.set_source_id(routing_table_.kFob().identity.string());
+  message.set_source_id(routing_table_.kNodeId().string());
   message.set_hops_to_live(Parameters::hops_to_live);
   assert(message.IsInitialized() && "unintialised message");
 }
 
 void Service::Connect(protobuf::Message& message) {
-  if (message.destination_id() != routing_table_.kFob().identity.string()) {
+  if (message.destination_id() != routing_table_.kNodeId().string()) {
     // Message not for this node and we should not pass it on.
     LOG(kError) << "Message not for this node.";
     message.Clear();
@@ -96,7 +97,7 @@ void Service::Connect(protobuf::Message& message) {
     return;
   }
 
-  if (connect_request.peer_id() != routing_table_.kFob().identity.string()) {
+  if (connect_request.peer_id() != routing_table_.kNodeId().string()) {
     LOG(kError) << "Message not for this node.";
     message.Clear();
     return;
@@ -137,7 +138,7 @@ void Service::Connect(protobuf::Message& message) {
     message.set_destination_id(message.source_id());
   else
     message.clear_destination_id();
-  message.set_source_id(routing_table_.kFob().identity.string());
+  message.set_source_id(routing_table_.kNodeId().string());
 
   // Check rudp & routing
   bool check_node_succeeded(false);
@@ -146,7 +147,7 @@ void Service::Connect(protobuf::Message& message) {
     NodeId furthest_close_node_id =
         routing_table_.GetNthClosestNode(routing_table_.kNodeId(),
                                          2 * Parameters::closest_nodes_size).node_id;
-    check_node_succeeded = non_routing_table_.CheckNode(peer_node, furthest_close_node_id);
+    check_node_succeeded = client_routing_table_.CheckNode(peer_node, furthest_close_node_id);
   } else {
     LOG(kVerbose) << "Server connect request - will check routing table.";
     check_node_succeeded = routing_table_.CheckNode(peer_node);
@@ -242,9 +243,9 @@ void Service::FindNodes(protobuf::Message& message) {
   protobuf::FindNodesResponse found_nodes;
   std::vector<NodeId> nodes(routing_table_.GetClosestNodes(NodeId(find_nodes.target_node()),
                               static_cast<uint16_t>(find_nodes.num_nodes_requested() - 1)));
-  found_nodes.add_nodes(routing_table_.kFob().identity.string());
+  found_nodes.add_nodes(routing_table_.kNodeId().string());
 
-  for (auto node : nodes)
+  for (const auto& node : nodes)
     found_nodes.add_nodes(node.string());
 
   LOG(kVerbose) << "Responding Find node with " << found_nodes.nodes_size()  << " contacts.";
@@ -259,7 +260,7 @@ void Service::FindNodes(protobuf::Message& message) {
     message.clear_destination_id();
     LOG(kVerbose) << "Relay message, so not setting destination ID.";
   }
-  message.set_source_id(routing_table_.kFob().identity.string());
+  message.set_source_id(routing_table_.kNodeId().string());
   message.clear_route_history();
   message.clear_data();
   message.add_data(found_nodes.SerializeAsString());
@@ -306,7 +307,7 @@ void Service::ConnectSuccessFromResponder(NodeInfo& peer, const bool& client) {
     return;
   }
   auto count =
-      (client ? Parameters::max_client_routing_table_size: Parameters::greedy_fraction);
+      (client ? Parameters::max_routing_table_size_for_client: Parameters::greedy_fraction);
   std::vector<NodeId> close_ids_for_peer(
       routing_table_.GetClosestNodes(peer.node_id, count));
 
@@ -325,6 +326,28 @@ void Service::ConnectSuccessFromResponder(NodeInfo& peer, const bool& client) {
                                           close_ids_for_peer,
                                           routing_table_.client_mode()));
   network_.SendToDirect(connect_success_ack, peer.node_id, peer.connection_id);
+}
+
+void Service::GetGroup(protobuf::Message& message) {
+  LOG(kVerbose) << "Service::GetGroup,  msg id:  " <<  message.id();
+  protobuf::GetGroup get_group;
+  assert(get_group.ParseFromString(message.data(0)));
+  auto close_nodes_id(routing_table_.GetGroup(NodeId(get_group.node_id())));
+  get_group.set_node_id(routing_table_.kNodeId().string());
+  for (const auto& node_id : close_nodes_id)
+    get_group.add_group_nodes_id(node_id.string());
+  message.clear_route_history();
+  message.set_destination_id(message.source_id());
+  message.set_source_id(routing_table_.kNodeId().string());
+  message.clear_route_history();
+  message.clear_data();
+  message.add_data(get_group.SerializeAsString());
+  message.set_direct(true);
+  message.set_replication(1);
+  message.set_client_node(routing_table_.client_mode());
+  message.set_request(false);
+  message.set_hops_to_live(Parameters::hops_to_live);
+  assert(message.IsInitialized() && "unintialised message");
 }
 
 void Service::set_request_public_key_functor(RequestPublicKeyFunctor request_public_key) {

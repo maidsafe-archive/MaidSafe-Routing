@@ -21,12 +21,13 @@
 #include "maidsafe/rudp/managed_connections.h"
 #include "maidsafe/rudp/return_codes.h"
 
+#include "maidsafe/routing/client_routing_table.h"
+#include "maidsafe/routing/group_change_handler.h"
 #include "maidsafe/routing/message_handler.h"
-#include "maidsafe/routing/non_routing_table.h"
 #include "maidsafe/routing/parameters.h"
 #include "maidsafe/routing/response_handler.h"
 #include "maidsafe/routing/return_codes.h"
-#include "maidsafe/routing/routing_pb.h"
+#include "maidsafe/routing/routing.pb.h"
 #include "maidsafe/routing/routing_table.h"
 #include "maidsafe/routing/rpcs.h"
 #include "maidsafe/routing/service.h"
@@ -44,11 +45,14 @@ namespace test {
 class ResponseHandlerTest : public testing::Test {
  public:
   ResponseHandlerTest()
-     : fob_(MakeFob()),
-       routing_table_(fob_, false),
-       non_routing_table_(fob_),
-       network_(routing_table_, non_routing_table_),
-       response_handler_(routing_table_, non_routing_table_, network_) {}
+    :  node_id_(NodeId::kRandomId),
+       network_statistics_(node_id_),
+       routing_table_(false, NodeId(NodeId::kRandomId), asymm::GenerateKeyPair(),
+                      network_statistics_),
+       client_routing_table_(routing_table_.kNodeId()),
+       network_(routing_table_, client_routing_table_),
+       group_change_handler_(routing_table_, client_routing_table_, network_),
+       response_handler_(routing_table_, client_routing_table_, network_, group_change_handler_) {}
 
   int GetAvailableEndpoint(rudp::EndpointPair& this_endpoint_pair,
                            rudp::NatType& this_nat_type,
@@ -64,7 +68,7 @@ class ResponseHandlerTest : public testing::Test {
   }
 
   void RequestPublicKey(NodeId /*node_id*/, GivePublicKeyFunctor give_public_key) {
-    give_public_key(MakeFob().keys.public_key);
+    give_public_key(MakePmid().public_key());
   }
 
  protected:
@@ -100,10 +104,10 @@ class ResponseHandlerTest : public testing::Test {
         nodes.push_back(NodeId(RandomString(64)));
 
     protobuf::FindNodesResponse found_nodes;
-    for (auto node : nodes)
+    for (const auto& node : nodes)
       found_nodes.add_nodes(node.string());
     found_nodes.set_original_request(ori_find_nodes_request);
-    found_nodes.set_original_signature(routing_table_.kFob().identity.string());
+    found_nodes.set_original_signature(routing_table_.kNodeId().string());
     found_nodes.set_timestamp(GetTimeStamp());
 
     return found_nodes;
@@ -119,7 +123,7 @@ class ResponseHandlerTest : public testing::Test {
                        respondent_contact_peer_endpoint);
     connect_response.set_answer(response_type);
     connect_response.set_original_request(ori_connect_request);
-    connect_response.set_original_signature(routing_table_.kFob().identity.string());
+    connect_response.set_original_signature(routing_table_.kNodeId().string());
     connect_response.set_timestamp(GetTimeStamp());
     return connect_response;
   }
@@ -130,7 +134,7 @@ class ResponseHandlerTest : public testing::Test {
     protobuf::ConnectSuccessAcknowledgement connect_ack;
     connect_ack.set_node_id(node_id.string());
     connect_ack.set_connection_id(connection_id.string());
-    for (auto &close_id : close_ids)
+    for (const auto& close_id : close_ids)
       connect_ack.add_close_ids(close_id);
     connect_ack.set_requestor(requestor);
     return connect_ack;
@@ -148,7 +152,7 @@ class ResponseHandlerTest : public testing::Test {
   protobuf::Message ComposeMsg(const std::string &data) {
     protobuf::Message message;
 //     message.set_destination_id(message.source_id());
-    message.set_source_id(routing_table_.kFob().identity.string());
+    message.set_source_id(routing_table_.kNodeId().string());
     message.clear_route_history();
     message.clear_data();
     message.add_data(data);
@@ -165,7 +169,7 @@ class ResponseHandlerTest : public testing::Test {
       std::vector<NodeId> nodes = std::vector<NodeId>()) {
     protobuf::FindNodesRequest find_nodes;
     find_nodes.set_num_nodes_requested(static_cast<int32_t>(num_of_requested));
-    find_nodes.set_target_node(routing_table_.kFob().identity.string());
+    find_nodes.set_target_node(routing_table_.kNodeId().string());
     find_nodes.set_timestamp(GetTimeStamp());
     return ComposeMsg(ComposeFindNodesResponse(find_nodes.SerializeAsString(),
                                                num_of_requested,
@@ -177,9 +181,9 @@ class ResponseHandlerTest : public testing::Test {
                         bool respondent_contact_peer_endpoint = true) {
     protobuf::ConnectRequest connect;
     SetProtobufContact(connect.mutable_contact(),
-                       NodeId(routing_table_.kFob().identity),
+                       routing_table_.kNodeId(),
                        respondent_contact_peer_endpoint);
-    connect.set_peer_id(routing_table_.kFob().identity.string());
+    connect.set_peer_id(routing_table_.kNodeId().string());
     connect.set_bootstrap(false);
     connect.set_timestamp(GetTimeStamp());
     return ComposeMsg(ComposeConnectResponse(response_type, connect.SerializeAsString(),
@@ -193,10 +197,12 @@ class ResponseHandlerTest : public testing::Test {
     return ComposeMsg(ComposePingResponse(ping_request.SerializeAsString()).SerializeAsString());
   }
 
-  Fob fob_;
+  NodeId node_id_;
+  NetworkStatistics network_statistics_;
   RoutingTable routing_table_;
-  NonRoutingTable non_routing_table_;
+  ClientRoutingTable client_routing_table_;
   MockNetworkUtils network_;
+  GroupChangeHandler group_change_handler_;
   ResponseHandler response_handler_;
 };
 
@@ -212,7 +218,7 @@ TEST_F(ResponseHandlerTest, BEH_FindNodes) {
 
   // In case of collision
   std::vector<NodeId> nodes;
-  nodes.push_back(NodeId(routing_table_.kFob().identity));
+  nodes.push_back(routing_table_.kNodeId());
   message = ComposeFindNodesResponseMsg(1, nodes);
   response_handler_.FindNodes(message);
 
@@ -296,7 +302,7 @@ TEST_F(ResponseHandlerTest, BEH_Connect) {
 
   // In case of node already added
   message = ComposeConnectResponseMsg(protobuf::ConnectResponseType::kAccepted,
-                                      NodeId(routing_table_.kFob().identity));
+                                      routing_table_.kNodeId());
   response_handler_.Connect(message);
 
   // Invalid contact node_id details
@@ -350,7 +356,8 @@ TEST_F(ResponseHandlerTest, BEH_ConnectSuccessAcknowledgement) {
   // shared_from_this function inside requires the response_handler holder to be shared_ptr
   // if holding as a normal object, shared_from_this will throw an exception
   std::shared_ptr<ResponseHandler> response_handler(
-      std::make_shared<ResponseHandler>(routing_table_, non_routing_table_, network_));
+      std::make_shared<ResponseHandler>(routing_table_, client_routing_table_, network_,
+                                        group_change_handler_));
 
   // request_public_key_functor_ doesn't setup
   message = ComposeMsg(ComposeConnectSuccessAcknowledgement(node_id,

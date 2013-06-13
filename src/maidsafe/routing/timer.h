@@ -17,6 +17,7 @@
 #include <mutex>
 #include <cstdint>
 #include <functional>
+#include <future>
 #include <memory>
 #include <string>
 #include <utility>
@@ -36,7 +37,7 @@ namespace routing {
 
 namespace protobuf { class Message; }
 
-typedef std::function<void(std::vector<std::string>)> TaskResponseFunctor;
+typedef std::function<void(std::string)> TaskResponseFunctor;
 typedef int32_t TaskId;
 
 class Timer {
@@ -56,7 +57,7 @@ class Timer {
   void CancelTask(TaskId task_id);
   // Registers a response against the task indicated by response.id().  Once expected_response_count
   // responses have been added, the task is removed and its functor invoked with kSuccess.
-  void AddResponse(const protobuf::Message& response);
+  bool AddResponse(const protobuf::Message& response);
   // Cancels all tasks and blocks until all functors have been executed and all tasks removed.
   void CancelAllTask();
 
@@ -67,10 +68,10 @@ class Timer {
          const boost::posix_time::time_duration& timeout,
          TaskResponseFunctor functor_in,
          uint16_t expected_response_count_in);
+
     TaskId id;
     boost::asio::deadline_timer timer;
     TaskResponseFunctor functor;
-    std::vector<std::string> responses;
     uint16_t expected_response_count;
   };
   typedef std::shared_ptr<Task> TaskPtr;
@@ -80,6 +81,7 @@ class Timer {
   Timer(const Timer&&);
   std::vector<TaskPtr>::iterator FindTask(const TaskId& task_id);
   void ExecuteTask(TaskId task_id, const boost::system::error_code& error);
+  void SetExceptions(std::vector<std::shared_ptr<std::promise<std::string>>> promises);
 
   AsioService& asio_service_;
   TaskId task_id_;

@@ -21,11 +21,11 @@
 #include "maidsafe/common/node_id.h"
 #include "maidsafe/rudp/return_codes.h"
 
+#include "maidsafe/routing/client_routing_table.h"
 #include "maidsafe/routing/message_handler.h"
 #include "maidsafe/routing/network_utils.h"
-#include "maidsafe/routing/non_routing_table.h"
 #include "maidsafe/routing/return_codes.h"
-#include "maidsafe/routing/routing_pb.h"
+#include "maidsafe/routing/routing.pb.h"
 #include "maidsafe/routing/routing_table.h"
 #include "maidsafe/routing/rpcs.h"
 
@@ -60,13 +60,13 @@ int AddToRudp(NetworkUtils& network,
 
 bool ValidateAndAddToRoutingTable(NetworkUtils& network,
                                   RoutingTable& routing_table,
-                                  NonRoutingTable& non_routing_table,
+                                  ClientRoutingTable& client_routing_table,
                                   const NodeId& peer_id,
                                   const NodeId& connection_id,
                                   const asymm::PublicKey& public_key,
                                   const bool& client) {
   if (network.MarkConnectionAsValid(connection_id) != kSuccess) {
-    LOG(kError) << "[" << HexSubstr(routing_table.kFob().identity) << "] "
+    LOG(kError) << "[" << DebugId(routing_table.kNodeId()) << "] "
                 << ". Rudp failed to validate connection with  Peer id : "
                 << DebugId(peer_id)
                 << " , Connection id : "
@@ -81,10 +81,10 @@ bool ValidateAndAddToRoutingTable(NetworkUtils& network,
   bool routing_accepted_node(false);
   if (client) {
     NodeId furthest_close_node_id =
-        routing_table.GetNthClosestNode(NodeId(routing_table.kFob().identity),
+        routing_table.GetNthClosestNode(NodeId(routing_table.kNodeId()),
                                         2 * Parameters::closest_nodes_size).node_id;
 
-    if (non_routing_table.AddNode(peer, furthest_close_node_id))
+    if (client_routing_table.AddNode(peer, furthest_close_node_id))
       routing_accepted_node = true;
   } else {  // Vaults
     if (routing_table.AddNode(peer))
@@ -111,7 +111,7 @@ bool ValidateAndAddToRoutingTable(NetworkUtils& network,
 // FIXME
 void HandleSymmetricNodeAdd(RoutingTable& /*routing_table*/, const NodeId& /*peer_id*/,
                             const asymm::PublicKey& /*public_key*/) {
-//  if (routing_table.IsConnected(peer_id)) {
+//  if (routing_table.Contains(peer_id)) {
 //    LOG(kVerbose) << "[" << HexSubstr(routing_table.kKeys().identity) << "] "
 //                  << "already added node to routing table.  Node ID: "
 //                  << HexSubstr(peer_id.string())
@@ -171,7 +171,7 @@ bool ValidateMessage(const protobuf::Message &message) {
   // Message has traversed more hops than expected
   if (message.hops_to_live() <= 0) {
     std::string route_history;
-    for (auto route : message.route_history())
+    for (const auto& route : message.route_history())
       route_history += HexSubstr(route) + ", ";
     LOG(kError) << "Message has traversed more hops than expected. "
                 <<  Parameters::max_route_history << " last hops in route history are: "
@@ -262,8 +262,11 @@ std::string MessageTypeString(const protobuf::Message& message) {
     case MessageType::kRemove :
       message_type = "kRemove";
       break;
-    case MessageType::kCloseNodeChange :
-      message_type = "kCloses_N_Ch";
+    case MessageType::kClosestNodesUpdate :
+      message_type = "kCloses_Nodes_Update";
+      break;
+    case MessageType::kGetGroup :
+      message_type = "kGetGroup";
       break;
     case MessageType::kNodeLevel :
       message_type = "kNodeLevel";
@@ -283,14 +286,14 @@ std::vector<boost::asio::ip::udp::endpoint> OrderBootstrapList(
   if (peer_endpoints.empty())
     return peer_endpoints;
   auto copy_vector(peer_endpoints);
-  for (auto &endpoint : copy_vector) {
-    endpoint.port(5483);
+  for (auto& endpoint : copy_vector) {
+    endpoint.port(kLivePort);
   }
   auto it = std::unique(copy_vector.begin(), copy_vector.end());
   copy_vector.resize(it - copy_vector.begin());
   std::reverse(peer_endpoints.begin(), peer_endpoints.end());
   peer_endpoints.resize(peer_endpoints.size() + copy_vector.size());
-  for (auto& i : copy_vector)
+  for (const auto& i : copy_vector)
     peer_endpoints.push_back(i);
   std::reverse(peer_endpoints.begin(), peer_endpoints.end());
   return peer_endpoints;
@@ -345,25 +348,6 @@ std::string PrintMessage(const protobuf::Message& message) {
   return s;
 }
 
-std::vector<Fob> ReadFobList(const fs::path &file_path) {
-  std::vector<Fob> fob_list;
-  protobuf::FobList fob_list_msg;
-  fob_list_msg.ParseFromString(ReadFile(file_path).string());
-  for (int i = 0; i < fob_list_msg.fobs_size(); ++i)
-    fob_list.push_back(std::move(
-        priv::utils::ParseFob(NonEmptyString(fob_list_msg.fobs(i).fob()))));
-  return fob_list;
-}
-
-bool WriteFobList(const fs::path &file_path, const std::vector<Fob> &fob_list) {
-  protobuf::FobList fob_list_msg;
-  for (auto &fob : fob_list) {
-    auto entry = fob_list_msg.add_fobs();
-    entry->set_fob(priv::utils::SerialiseFob(fob).string());
-  }
-  return WriteFile(file_path, fob_list_msg.SerializeAsString());
-}
-
 std::vector<NodeId> DeserializeNodeIdList(const std::string &node_list_str) {
   std::vector<NodeId> node_list;
   protobuf::NodeIdList node_list_msg;
@@ -375,7 +359,7 @@ std::vector<NodeId> DeserializeNodeIdList(const std::string &node_list_str) {
 
 std::string SerializeNodeIdList(const std::vector<NodeId> &node_list) {
   protobuf::NodeIdList node_list_msg;
-  for (auto &node_id : node_list) {
+  for (const auto& node_id : node_list) {
     auto entry = node_list_msg.add_node_id_list();
     entry->set_node_id(node_id.string());
   }

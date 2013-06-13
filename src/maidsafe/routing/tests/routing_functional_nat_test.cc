@@ -10,7 +10,16 @@
  *  the explicit written permission of the board of directors of maidsafe.net. *
  ******************************************************************************/
 
-#include "maidsafe/routing/tests/mock_response_handler.h"
+#include <vector>
+
+#include "boost/progress.hpp"
+
+#include "maidsafe/rudp/nat_type.h"
+
+#include "maidsafe/routing/tests/routing_network.h"
+#include "maidsafe/routing/tests/test_utils.h"
+
+// TODO(Alison) - IsNodeIdInGroupRange - test kInProximalRange and kOutwithRange more thoroughly
 
 namespace maidsafe {
 
@@ -18,17 +27,27 @@ namespace routing {
 
 namespace test {
 
-MockResponseHandler::MockResponseHandler(RoutingTable& routing_table,
-                         ClientRoutingTable& client_routing_table,
-                         NetworkUtils& utils,
-                         GroupChangeHandler &group_change_handler)
-    : ResponseHandler(routing_table, client_routing_table, utils, group_change_handler) {}
+class RoutingNetworkNatTest : public testing::Test {
+ public:
+  RoutingNetworkNatTest(void) : env_(NodesEnvironment::g_environment()) {}
 
-MockResponseHandler::~MockResponseHandler() {}
+  void SetUp() {
+    EXPECT_TRUE(env_->RestoreComposition());
+    EXPECT_TRUE(env_->WaitForHealthToStabilise());
+  }
+
+  void TearDown() {
+    EXPECT_LE(kServerSize, env_->ClientIndex());
+    EXPECT_LE(kNetworkSize, env_->nodes_.size());
+    EXPECT_TRUE(env_->RestoreComposition());
+  }
+
+ protected:
+  std::shared_ptr<GenericNetwork> env_;
+};
 
 }  // namespace test
 
 }  // namespace routing
 
 }  // namespace maidsafe
-

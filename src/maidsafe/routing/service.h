@@ -25,13 +25,13 @@ namespace routing {
 namespace protobuf { class Message; }
 
 class NetworkUtils;
-class NonRoutingTable;
+class ClientRoutingTable;
 class RoutingTable;
 
 class Service {
  public:
   Service(RoutingTable& routing_table,
-          NonRoutingTable& non_routing_table,
+          ClientRoutingTable& client_routing_table,
           NetworkUtils& network);
   virtual ~Service();
   // Handle all incoming requests and send back reply
@@ -39,6 +39,7 @@ class Service {
   virtual void Connect(protobuf::Message& message);
   virtual void FindNodes(protobuf::Message& message);
   virtual void ConnectSuccess(protobuf::Message& message);
+  virtual void GetGroup(protobuf::Message& message);
   void set_request_public_key_functor(RequestPublicKeyFunctor request_public_key);
   RequestPublicKeyFunctor request_public_key_functor() const;
 
@@ -48,7 +49,7 @@ class Service {
   bool CheckPriority(const NodeId& this_node, const NodeId& peer_node);
 
   RoutingTable& routing_table_;
-  NonRoutingTable& non_routing_table_;
+  ClientRoutingTable& client_routing_table_;
   NetworkUtils& network_;
   RequestPublicKeyFunctor request_public_key_functor_;
 };

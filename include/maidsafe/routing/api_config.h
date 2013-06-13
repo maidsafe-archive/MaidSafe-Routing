@@ -36,9 +36,26 @@ enum class DestinationType : int {
   kGroup
 };
 
-// If using boost::bind or std::bind, use **shared_from_this** pointers to preserve lifetimes of
-// functors. The ResponseFunctor WILL ensure functors are deleted when the system times out.
-typedef std::function<void(const std::vector<std::string>& /*message*/)> ResponseFunctor;
+enum class GroupRangeStatus {
+  kInRange,
+  kInProximalRange,
+  kOutwithRange
+};
+
+// This struct needs to be moved to common
+struct MatrixChange {
+  std::vector<NodeId> old_matrix, new_matrix;
+  static uint16_t close_count, proximal_count;
+  bool OldEqualsToNew() const {
+    if (old_matrix.size() != new_matrix.size())
+      return false;
+    return std::equal(new_matrix.begin(),
+                      new_matrix.end(),
+                      old_matrix.begin());
+  }
+};
+
+typedef std::function<void(std::string)> ResponseFunctor;
 
 // They are passed as a parameter by MessageReceivedFunctor and should be called for responding to
 // the received message. Passing an empty message will mean you don't want to reply.
@@ -46,7 +63,6 @@ typedef std::function<void(const std::string& /*message*/)> ReplyFunctor;
 
 // This is called on any message received that is NOT a reply to a request made by the Send method.
 typedef std::function<void(const std::string& /*message*/,
-                           const NodeId& /*group claim*/,
                            const bool& /*cache_lookup*/,
                            ReplyFunctor /*reply functor*/)> MessageReceivedFunctor;
 
@@ -71,24 +87,31 @@ typedef std::function<void(const boost::asio::ip::udp::endpoint& /*new_endpoint*
 typedef std::function<void(const std::vector<NodeInfo>& /*new_close_nodes*/)>
     CloseNodeReplacedFunctor;
 
+typedef std::function<void(const MatrixChange& /*matrix_change*/)>
+    MatrixChangedFunctor;
+
 // This functor fires when routing table size is over greedy limit. The furthest unnecessary
 // node in routing table is dropped. Unnecessary is defined as a node who does not have us in
 // it clsoest nodes.
 typedef std::function<void()> RemoveFurthestUnnecessaryNode;
+
 
 struct Functors {
   Functors()
       : message_received(),
         network_status(),
         close_node_replaced(),
+        matrix_changed(),
         set_public_key(),
         request_public_key(),
         have_cache_data(),
         store_cache_data(),
         new_bootstrap_endpoint() {}
+
   MessageReceivedFunctor message_received;
   NetworkStatusFunctor network_status;
   CloseNodeReplacedFunctor close_node_replaced;
+  MatrixChangedFunctor matrix_changed;
   GivePublicKeyFunctor set_public_key;
   RequestPublicKeyFunctor request_public_key;
   HaveCacheDataFunctor have_cache_data;

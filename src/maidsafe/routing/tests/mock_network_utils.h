@@ -18,7 +18,7 @@
 #include "gmock/gmock.h"
 
 #include "maidsafe/routing/network_utils.h"
-#include "maidsafe/routing/routing_pb.h"
+#include "maidsafe/routing/routing.pb.h"
 
 
 namespace maidsafe {
@@ -29,7 +29,7 @@ namespace test {
 
 class MockNetworkUtils : public NetworkUtils {
  public:
-  MockNetworkUtils(RoutingTable& routing_table, NonRoutingTable& non_routing_table);
+  MockNetworkUtils(RoutingTable& routing_table, ClientRoutingTable& client_routing_table);
   virtual ~MockNetworkUtils();
 
   MOCK_METHOD1(SendToClosestNode, void(const protobuf::Message& message));

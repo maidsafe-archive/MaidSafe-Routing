@@ -25,16 +25,19 @@
 
 #include "maidsafe/common/asio_service.h"
 #include "maidsafe/common/node_id.h"
-#include "maidsafe/private/utils/fob.h"
+
+#include "maidsafe/common/rsa.h"
 
 #include "maidsafe/routing/api_config.h"
+#include "maidsafe/routing/client_routing_table.h"
+#include "maidsafe/routing/group_change_handler.h"
 #include "maidsafe/routing/network_utils.h"
-#include "maidsafe/routing/non_routing_table.h"
 #include "maidsafe/routing/random_node_helper.h"
+#include "maidsafe/routing/remove_furthest_node.h"
 #include "maidsafe/routing/routing_api.h"
 #include "maidsafe/routing/routing_table.h"
 #include "maidsafe/routing/timer.h"
-#include "maidsafe/routing/remove_furthest_node.h"
+
 
 namespace maidsafe {
 
@@ -47,7 +50,7 @@ namespace test { class GenericNode; }
 
 class Routing::Impl {
  public:
-  Impl(const Fob& fob, bool client_mode);
+  Impl(bool client_mode, const NodeId& node_id, const asymm::Keys& keys);
   ~Impl();
 
   void Join(const Functors& functors,
@@ -59,17 +62,36 @@ class Routing::Impl {
                     const boost::asio::ip::udp::endpoint& peer_endpoint,
                     const NodeInfo& peer_info);
 
-  void Send(const NodeId& destination_id,
-            const NodeId& group_claim,
-            const std::string& data,
-            const ResponseFunctor& response_functor,
-            const boost::posix_time::time_duration& timeout,
-            const DestinationType& destination_type,
-            const bool& cacheable);
+  void SendDirect(const NodeId& destination_id,
+                  const std::string& data,
+                  const bool& cacheable,
+                  ResponseFunctor response_functor);
+
+  void SendGroup(const NodeId& destination_id,
+                 const std::string& data,
+                 const bool& cacheable,
+                 ResponseFunctor response_functor);
 
   NodeId GetRandomExistingNode() const { return random_node_helper_.Get(); }
 
-  void DisconnectFunctors();
+  bool ClosestToId(const NodeId& node_id);
+
+  GroupRangeStatus IsNodeIdInGroupRange(const NodeId& node_id);
+
+  NodeId RandomConnectedNode();
+
+  bool EstimateInGroup(const NodeId& sender_id, const NodeId& info_id);
+
+  std::future<std::vector<NodeId>> GetGroup(const NodeId& info_id);
+
+  NodeId kNodeId() const;
+
+  int network_status();
+
+  std::vector<NodeInfo> ClosestNodes();
+
+  bool IsConnectedVault(const NodeId& node_id);
+  bool IsConnectedClient(const NodeId& node_id);
 
   friend class test::GenericNode;
 
@@ -93,21 +115,37 @@ class Routing::Impl {
   void RemoveNode(const NodeInfo& node, bool internal_rudp_only);
   bool ConfirmGroupMembers(const NodeId& node1, const NodeId& node2);
   void NotifyNetworkStatus(int return_code) const;
+  void Send(const NodeId& destination_id, const std::string& data,
+            const DestinationType& destination_type, const bool& cacheable,
+            ResponseFunctor response_functor);
+  void SendMessage(const NodeId& destination_id, protobuf::Message& proto_message);
+  void PartiallyJoinedSend(protobuf::Message& proto_message);
+  protobuf::Message CreateNodeLevelPartialMessage(
+      const NodeId& destination_id,
+      const DestinationType& destination_type,
+      const std::string& data,
+      const bool& cacheable);
+  void CheckSendParameters(const NodeId& destination_id, const std::string& data);
 
-  const Fob kFob_;
+  std::mutex network_status_mutex_;
+  int network_status_;
+  RoutingTable routing_table_;
   const NodeId kNodeId_;
-  const bool kAnonymousNode_;
   bool running_;
   std::mutex running_mutex_;
   Functors functors_;
   RandomNodeHelper random_node_helper_;
-  RoutingTable routing_table_;
-  NonRoutingTable non_routing_table_;
+  ClientRoutingTable client_routing_table_;
+  RemoveFurthestNode remove_furthest_node_;
+  GroupChangeHandler group_change_handler_;
+  NetworkStatistics network_statistics_;
+  // The following variables' declarations should remain the last ones in this class and should stay
+  // in the order: message_handler_, asio_service_, network_, all timers.  This is important for the
+  // proper destruction of the routing library, i.e. to avoid segmentation faults.
   std::unique_ptr<MessageHandler> message_handler_;
   AsioService asio_service_;
   NetworkUtils network_;
   Timer timer_;
-  RemoveFurthestNode remove_furthest_node_;
   boost::asio::deadline_timer re_bootstrap_timer_, recovery_timer_, setup_timer_;
 };
 

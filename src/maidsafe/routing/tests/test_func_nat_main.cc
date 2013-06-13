@@ -10,16 +10,15 @@
  *  the explicit written permission of the board of directors of maidsafe.net. *
  ******************************************************************************/
 
-#ifndef MAIDSAFE_ROUTING_ROUTING_PB_H_
-#define MAIDSAFE_ROUTING_ROUTING_PB_H_
+#include "maidsafe/common/test.h"
+#include "maidsafe/routing/tests/routing_network.h"
 
-#ifdef __MSVC__
-#  pragma warning(push)
-#  pragma warning(disable: 4127 4244 4267)
-#endif
-#include "maidsafe/routing/routing.pb.h"
-#ifdef __MSVC__
-#  pragma warning(pop)
-#endif
-
-#endif  // MAIDSAFE_ROUTING_ROUTING_PB_H_
+int main(int argc, char **argv) {
+//  testing::InitGoogleTest(&argc, argv);
+  testing::AddGlobalTestEnvironment(new maidsafe::routing::test::NodesEnvironment(
+      maidsafe::routing::test::kServerSize, maidsafe::routing::test::kClientSize,
+      static_cast<size_t>(maidsafe::routing::test::kServerSize * 0.25),
+      static_cast<size_t>(maidsafe::routing::test::kClientSize / 2)));
+//  return RUN_ALL_TESTS();
+  return maidsafe::test::ExecuteMain(argc, argv);
+}

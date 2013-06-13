@@ -24,7 +24,7 @@
 #include "maidsafe/routing/message_handler.h"
 #include "maidsafe/routing/parameters.h"
 #include "maidsafe/routing/rpcs.h"
-#include "maidsafe/routing/routing_pb.h"
+#include "maidsafe/routing/routing.pb.h"
 #include "maidsafe/routing/routing_table.h"
 #include "maidsafe/routing/tests/test_utils.h"
 
@@ -48,11 +48,8 @@ TEST(RpcsTest, BEH_PingMessageInitialised) {
 }
 
 TEST(RpcsTest, BEH_PingMessageNode) {
-  Fob fob;
-  fob.identity = Identity(RandomString(64));
-  NodeInfo node;
-  std::string destination = RandomString(64);
-  protobuf::Message message = rpcs::Ping(NodeId(destination), fob.identity.string());
+  std::string source(RandomString(64)), destination(RandomString(64));
+  protobuf::Message message = rpcs::Ping(NodeId(destination), source);
   protobuf::PingRequest ping_request;
   EXPECT_TRUE(ping_request.ParseFromString(message.data(0)));  // us
   EXPECT_TRUE(ping_request.ping());
@@ -60,7 +57,7 @@ TEST(RpcsTest, BEH_PingMessageNode) {
   EXPECT_TRUE(ping_request.timestamp() > static_cast<int32_t>(GetTimeStamp() - 2));
   EXPECT_TRUE(ping_request.timestamp() < static_cast<int32_t>(GetTimeStamp() + 1));
   EXPECT_EQ(destination, message.destination_id());
-  EXPECT_EQ(fob.identity.string(), message.source_id());
+  EXPECT_EQ(source, message.source_id());
   EXPECT_NE(0, message.data_size());
   EXPECT_EQ(1, message.replication());
   EXPECT_EQ(static_cast<int32_t>(MessageType::kPing), message.type());

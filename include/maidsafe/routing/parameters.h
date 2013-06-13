@@ -28,24 +28,30 @@ struct Parameters {
   static uint16_t num_chunks_to_cache;
   static uint16_t closest_nodes_size;
   static uint16_t node_group_size;
-  static uint16_t max_routing_table_size;
+  static uint16_t proximity_factor;
+  static uint16_t max_routing_table_size;             // max size of RoutingTable owned by vault
   static uint16_t routing_table_size_threshold;
-  static uint16_t max_client_routing_table_size;
-  static uint16_t max_non_routing_table_size;
+  static uint16_t max_routing_table_size_for_client;  // max size of RoutingTable owned by client
+  static uint16_t max_client_routing_table_size;      // max size of ClientRoutingTable
   static uint16_t bucket_target_size;
   static uint32_t max_data_size;
+  static boost::posix_time::time_duration default_send_timeout;
   static boost::posix_time::time_duration find_node_interval;
   static boost::posix_time::time_duration recovery_time_lag;
   static boost::posix_time::time_duration re_bootstrap_time_lag;
   static boost::posix_time::time_duration find_close_node_interval;
+  static uint16_t find_node_repeats_per_num_requested;
   static uint16_t maximum_find_close_node_failures;
   static uint16_t max_route_history;
   static uint16_t hops_to_live;
   static uint16_t greedy_fraction;
   static uint16_t split_avoidance;
+  static uint16_t routing_table_ready_to_response;
+  static uint16_t accepted_distance_tolerance;
   static boost::posix_time::time_duration connect_rpc_prune_timeout;
   static bool append_maidsafe_endpoints;
   static bool append_maidsafe_local_endpoints;
+  static bool append_local_live_port_endpoint;
   static bool caching;
 
  private:

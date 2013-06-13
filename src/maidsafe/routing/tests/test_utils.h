@@ -21,7 +21,7 @@
 
 #include "maidsafe/common/rsa.h"
 
-#include "maidsafe/private/utils/fob.h"
+#include "maidsafe/passport/types.h"
 
 #include "maidsafe/routing/node_info.h"
 #include "maidsafe/routing/routing_table.h"
@@ -42,12 +42,13 @@ struct NodeInfoAndPrivateKey {
 };
 
 NodeInfoAndPrivateKey MakeNodeInfoAndKeys();
+NodeInfoAndPrivateKey MakeNodeInfoAndKeysWithPmid(passport::Pmid pmid);
+NodeInfoAndPrivateKey MakeNodeInfoAndKeysWithMaid(passport::Maid maid);
 
-NodeInfoAndPrivateKey MakeNodeInfoAndKeysWithFob(Fob fob);
+passport::Maid MakeMaid();
+passport::Pmid MakePmid();
 
-Fob MakeFob();
-
-Fob GetFob(const NodeInfoAndPrivateKey& node);
+// Fob GetFob(const NodeInfoAndPrivateKey& node);
 
 NodeInfo MakeNode();
 
@@ -58,7 +59,15 @@ int NetworkStatus(const bool& client, const int& status);
 
 void SortFromTarget(const NodeId& target, std::vector<NodeInfo>& nodes);
 
+void PartialSortFromTarget(const NodeId& target,
+                           std::vector<NodeInfo>& nodes,
+                           size_t num_to_sort);
+
 void SortIdsFromTarget(const NodeId& target, std::vector<NodeId>& nodes);
+
+void SortNodeInfosFromTarget(const NodeId& target, std::vector<NodeInfo>& nodes);
+
+bool CompareListOfNodeInfos(const std::vector<NodeInfo>& lhs, const std::vector<NodeInfo>& rhs);
 
 }  // namespace test
 

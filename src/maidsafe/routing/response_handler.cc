@@ -22,10 +22,11 @@
 #include "maidsafe/common/utils.h"
 #include "maidsafe/rudp/return_codes.h"
 
+#include "maidsafe/routing/client_routing_table.h"
+#include "maidsafe/routing/group_change_handler.h"
 #include "maidsafe/routing/network_utils.h"
-#include "maidsafe/routing/non_routing_table.h"
 #include "maidsafe/routing/return_codes.h"
-#include "maidsafe/routing/routing_pb.h"
+#include "maidsafe/routing/routing.pb.h"
 #include "maidsafe/routing/routing_table.h"
 #include "maidsafe/routing/rpcs.h"
 #include "maidsafe/routing/utils.h"
@@ -44,12 +45,14 @@ typedef boost::asio::ip::udp::endpoint Endpoint;
 }  // unnamed namespace
 
 ResponseHandler::ResponseHandler(RoutingTable& routing_table,
-                                 NonRoutingTable& non_routing_table,
-                                 NetworkUtils& network)
+                                 ClientRoutingTable& client_routing_table,
+                                 NetworkUtils& network,
+                                 GroupChangeHandler &group_change_handler)
     : mutex_(),
       routing_table_(routing_table),
-      non_routing_table_(non_routing_table),
+      client_routing_table_(client_routing_table),
       network_(network),
+      group_change_handler_(group_change_handler),
       request_public_key_functor_() {
 }
 
@@ -192,7 +195,7 @@ void ResponseHandler::FindNodes(const protobuf::Message& message) {
 
 void ResponseHandler::SendConnectRequest(const NodeId peer_node_id) {
   if (network_.bootstrap_connection_id().IsZero() && (routing_table_.size() == 0)) {
-      LOG(kWarning) << "Need to re bootstrap !";
+    LOG(kWarning) << "Need to re bootstrap !";
     return;
   }
   bool send_to_bootstrap_connection((routing_table_.size() < Parameters::closest_nodes_size) &&
@@ -200,8 +203,8 @@ void ResponseHandler::SendConnectRequest(const NodeId peer_node_id) {
   NodeInfo peer;
   peer.node_id = peer_node_id;
 
-  if (peer.node_id == NodeId(routing_table_.kFob().identity)) {
-    LOG(kWarning) << "Can't send connect request to self !";
+  if (peer.node_id == NodeId(routing_table_.kNodeId())) {
+//    LOG(kInfo) << "Can't send connect request to self !";
     return;
   }
 
@@ -291,42 +294,67 @@ void ResponseHandler::ConnectSuccessAcknowledgement(protobuf::Message& message) 
       close_ids.push_back(NodeId(*itr));
     }
   }
-
-  std::weak_ptr<ResponseHandler> response_handler_weak_ptr = shared_from_this();
-  if (request_public_key_functor_) {
-    auto validate_node([=] (const asymm::PublicKey& key) {
-                           LOG(kInfo) << "Validation callback called with public key for "
-                                      << DebugId(peer.node_id);
-                           if (std::shared_ptr<ResponseHandler> response_handler =
-                               response_handler_weak_ptr.lock()) {
-                             if (ValidateAndAddToRoutingTable(
-                                 response_handler->network_,
-                                 response_handler->routing_table_,
-                                 response_handler->non_routing_table_,
-                                 peer.node_id,
-                                 peer.connection_id,
-                                 key,
-                                 client_node)) {
-                               if (from_requestor) {
-                                 response_handler->HandleSuccessAcknowledgementAsReponder(
-                                       peer, client_node, close_ids);
-                               } else {
-                                 response_handler->HandleSuccessAcknowledgementAsRequestor(
-                                       close_ids);
-                               }
-                             }
-                           }
-                         });
-      request_public_key_functor_(peer.node_id, validate_node);
+  if (!client_node) {
+    LOG(kInfo) << "Validation -- Need non-client's public key";
+    ValidateAndCompleteConnectionToNonClient(peer, from_requestor, close_ids);
+  } else {
+    LOG(kInfo) << "Validation -- Not looking for client's public key";
+    ValidateAndCompleteConnectionToClient(peer, from_requestor, close_ids);
   }
 }
 
-// FIXME life time issue with weak pointers
+void  ResponseHandler::ValidateAndCompleteConnectionToClient(const NodeInfo& peer,
+                                                             bool from_requestor,
+                                                             const std::vector<NodeId>& close_ids) {
+  if (ValidateAndAddToRoutingTable(
+      network_,
+      routing_table_,
+      client_routing_table_,
+      peer.node_id,
+      peer.connection_id,
+      asymm::PublicKey(),
+      true)) {
+    if (from_requestor) {
+      HandleSuccessAcknowledgementAsReponder(peer, true);
+    } else {
+      HandleSuccessAcknowledgementAsRequestor(close_ids);
+    }
+  }
+}
+
+void ResponseHandler::ValidateAndCompleteConnectionToNonClient(
+    const NodeInfo& peer,
+    bool from_requestor,
+    const std::vector<NodeId>& close_ids) {
+  std::weak_ptr<ResponseHandler> response_handler_weak_ptr = shared_from_this();
+  if (request_public_key_functor_) {
+    auto validate_node(
+        [=] (const asymm::PublicKey& key) {
+            LOG(kInfo) << "Validation callback called with public key for "
+                       << DebugId(peer.node_id);
+            if (std::shared_ptr<ResponseHandler> response_handler =
+                response_handler_weak_ptr.lock()) {
+              if (ValidateAndAddToRoutingTable(response_handler->network_,
+                                               response_handler->routing_table_,
+                                               response_handler->client_routing_table_,
+                                               peer.node_id, peer.connection_id,
+                                               key, false)) {
+                if (from_requestor) {
+                  response_handler->HandleSuccessAcknowledgementAsReponder(peer, false);
+                } else {
+                  response_handler->HandleSuccessAcknowledgementAsRequestor(close_ids);
+                }
+              }
+            }
+      });
+    request_public_key_functor_(peer.node_id, validate_node);
+  }
+}
+
 void ResponseHandler::HandleSuccessAcknowledgementAsReponder(NodeInfo peer,
-                                                             const bool &client,
-                                                             std::vector<NodeId> /*close_ids*/) {
+                                                             const bool &client) {
   auto count =
-      (client ? Parameters::max_client_routing_table_size: Parameters::max_routing_table_size);
+      (client ? Parameters::max_routing_table_size_for_client: Parameters::max_routing_table_size);
   std::vector<NodeId> close_ids_for_peer(
       routing_table_.GetClosestNodes(peer.node_id, count));
   auto itr(std::find_if(close_ids_for_peer.begin(), close_ids_for_peer.end(),
@@ -344,19 +372,11 @@ void ResponseHandler::HandleSuccessAcknowledgementAsReponder(NodeInfo peer,
                                           close_ids_for_peer,
                                           routing_table_.client_mode()));
   network_.SendToDirect(connect_success_ack, peer.node_id, peer.connection_id);
-
-// Connect to close ids provided by peer
-// TODO(Prakash) : uncomment below once GetavailableEndpoint returns alreadyConnected
-//  for (auto i : close_ids) {
-//    LOG(kVerbose) << "HandleSuccessAcknowledgementAsReponder: connecting " <<DebugId(i);
-//    if (!i.Empty()) {
-//      SendConnectRequest(i);
-//    }
-//  }
 }
 
-void ResponseHandler::HandleSuccessAcknowledgementAsRequestor(std::vector<NodeId> close_ids) {
-  for (auto i : close_ids) {
+void ResponseHandler::HandleSuccessAcknowledgementAsRequestor(
+    const std::vector<NodeId>& close_ids) {
+  for (const auto& i : close_ids) {
     if (!i.IsZero()) {
       CheckAndSendConnectRequest(i);
     }
@@ -364,13 +384,50 @@ void ResponseHandler::HandleSuccessAcknowledgementAsRequestor(std::vector<NodeId
 }
 
 void ResponseHandler::CheckAndSendConnectRequest(const NodeId& node_id) {
-  if ((routing_table_.size() < Parameters::greedy_fraction) ||
+  uint16_t limit(routing_table_.client_mode() ? Parameters::max_routing_table_size_for_client :
+                                                Parameters::greedy_fraction);
+  if ((routing_table_.size() < limit) ||
       NodeId::CloserToTarget(node_id,
                              routing_table_.GetNthClosestNode(routing_table_.kNodeId(),
-                                                              Parameters::greedy_fraction).node_id,
+                                                              limit).node_id,
                              routing_table_.kNodeId()))
     SendConnectRequest(node_id);
 }
+
+void ResponseHandler::CloseNodeUpdateForClient(protobuf::Message& message) {
+  assert(routing_table_.client_mode());
+  if (message.destination_id() != routing_table_.kNodeId().string()) {
+    // Message not for this node and we should not pass it on.
+    LOG(kError) << "Message not for this node.";
+    message.Clear();
+    return;
+  }
+  protobuf::ClosestNodesUpdate closest_node_update;
+  if (!closest_node_update.ParseFromString(message.data(0))) {
+    LOG(kError) << "No Data.";
+    return;
+  }
+
+  if (closest_node_update.node().empty() || !CheckId(closest_node_update.node())) {
+    LOG(kError) << "Invalid node id provided.";
+    return;
+  }
+
+  std::vector<NodeId> closest_nodes;
+  for (const auto& basic_info : closest_node_update.nodes_info()) {
+    if (CheckId(basic_info.node_id())) {
+      closest_nodes.push_back(NodeId(basic_info.node_id()));
+    }
+  }
+  assert(!closest_nodes.empty());
+  HandleSuccessAcknowledgementAsRequestor(closest_nodes);
+  message.Clear();
+}
+
+void ResponseHandler::GetGroup(Timer& timer, protobuf::Message& message) {
+  timer.AddResponse(message);
+}
+
 void ResponseHandler::set_request_public_key_functor(RequestPublicKeyFunctor request_public_key) {
   request_public_key_functor_ = request_public_key;
 }

@@ -24,6 +24,7 @@
 #include "maidsafe/rudp/managed_connections.h"
 
 #include "maidsafe/routing/api_config.h"
+#include "maidsafe/routing/timer.h"
 
 
 namespace maidsafe {
@@ -37,7 +38,7 @@ class ResponseHandlerTest_BEH_ConnectAttempts_Test;
 }  // namespace test
 
 class NetworkUtils;
-class NonRoutingTable;
+class ClientRoutingTable;
 class RoutingTable;
 class GroupChangeHandler;
 
@@ -52,8 +53,9 @@ class ResponseHandler : public std::enable_shared_from_this<ResponseHandler> {
 
  public:
   ResponseHandler(RoutingTable& routing_table,
-                  NonRoutingTable& non_routing_table,
-                  NetworkUtils& network);
+                  ClientRoutingTable& client_routing_table,
+                  NetworkUtils& network,
+                  GroupChangeHandler& group_change_handler);
   virtual ~ResponseHandler();
   virtual void Ping(protobuf::Message& message);
   virtual void Connect(protobuf::Message& message);
@@ -61,20 +63,27 @@ class ResponseHandler : public std::enable_shared_from_this<ResponseHandler> {
   virtual void ConnectSuccessAcknowledgement(protobuf::Message& message);
   void set_request_public_key_functor(RequestPublicKeyFunctor request_public_key);
   RequestPublicKeyFunctor request_public_key_functor() const;
+  void GetGroup(Timer& timer, protobuf::Message& message);
+  void CloseNodeUpdateForClient(protobuf::Message& message);
 
   friend class test::ResponseHandlerTest_BEH_ConnectAttempts_Test;
 
  private:
   void SendConnectRequest(const NodeId peer_node_id);
   void CheckAndSendConnectRequest(const NodeId& node_id);
-  void HandleSuccessAcknowledgementAsRequestor(std::vector<NodeId> close_ids);
-  void HandleSuccessAcknowledgementAsReponder(NodeInfo peer, const bool& client,
-                                              std::vector<NodeId> close_ids);
+  void HandleSuccessAcknowledgementAsRequestor(const std::vector<NodeId>& close_ids);
+  void HandleSuccessAcknowledgementAsReponder(NodeInfo peer, const bool& client);
+  void  ValidateAndCompleteConnectionToClient(const NodeInfo& peer, bool from_requestor,
+                                              const std::vector<NodeId>& close_ids);
+  void ValidateAndCompleteConnectionToNonClient(const NodeInfo& peer,
+                                                bool from_requestor,
+                                                const std::vector<NodeId>& close_ids);
 
   mutable std::mutex mutex_;
   RoutingTable& routing_table_;
-  NonRoutingTable& non_routing_table_;
+  ClientRoutingTable& client_routing_table_;
   NetworkUtils& network_;
+  GroupChangeHandler& group_change_handler_;
   RequestPublicKeyFunctor request_public_key_functor_;
 };
 

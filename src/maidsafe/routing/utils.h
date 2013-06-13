@@ -20,11 +20,13 @@
 #include "boost/asio/ip/udp.hpp"
 
 #include "maidsafe/common/rsa.h"
+
 #include "maidsafe/rudp/managed_connections.h"
-#include "maidsafe/private/utils/fob.h"
+
+#include "maidsafe/passport/types.h"
 
 #include "maidsafe/routing/parameters.h"
-#include "maidsafe/routing/routing_pb.h"
+#include "maidsafe/routing/routing.pb.h"
 
 
 namespace maidsafe {
@@ -46,8 +48,9 @@ class Message {
 };
 
 class NetworkUtils;
-class NonRoutingTable;
+class ClientRoutingTable;
 class RoutingTable;
+
 
 int AddToRudp(NetworkUtils& network,
               const NodeId& this_node_id,
@@ -60,7 +63,7 @@ int AddToRudp(NetworkUtils& network,
 
 bool ValidateAndAddToRoutingTable(NetworkUtils& network,
                                   RoutingTable& routing_table,
-                                  NonRoutingTable& non_routing_table,
+                                  ClientRoutingTable& client_routing_table,
                                   const NodeId& peer_id,
                                   const NodeId& connection_id,
                                   const asymm::PublicKey& public_key,
@@ -84,8 +87,6 @@ std::vector<boost::asio::ip::udp::endpoint> OrderBootstrapList(
 protobuf::NatType NatTypeProtobuf(const rudp::NatType& nat_type);
 rudp::NatType NatTypeFromProtobuf(const protobuf::NatType& nat_type_proto);
 std::string PrintMessage(const protobuf::Message& message);
-std::vector<Fob> ReadFobList(const fs::path &file_path);
-bool WriteFobList(const fs::path &file_path, const std::vector<Fob> &fob_list);
 std::vector<NodeId> DeserializeNodeIdList(const std::string &node_list_str);
 std::string SerializeNodeIdList(const std::vector<NodeId> &node_list);
 }  // namespace routing

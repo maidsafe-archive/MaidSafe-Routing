@@ -14,10 +14,11 @@
 
 #include "maidsafe/common/log.h"
 #include "maidsafe/common/node_id.h"
+#include "maidsafe/routing/node_info.h"
 #include "maidsafe/common/utils.h"
 
 #include "maidsafe/routing/message_handler.h"
-#include "maidsafe/routing/routing_pb.h"
+#include "maidsafe/routing/routing.pb.h"
 #include "maidsafe/routing/utils.h"
 
 
@@ -105,7 +106,7 @@ protobuf::Message Remove(const NodeId& node_id,
   assert(!this_connection_id.IsZero() && "Invalid this_connection_id");
   static_cast<void>(this_connection_id);
   protobuf::RemoveRequest remove_request;
-  for (auto& node : attempted_nodes)
+  for (const auto& node : attempted_nodes)
     remove_request.add_attempted_nodes(node);
   remove_request.set_peer_id(this_node_id.string());
   protobuf::Message message;
@@ -147,6 +148,7 @@ protobuf::Message FindNodes(const NodeId& node_id,
   message.add_route_history(this_node_id.string());
   message.set_client_node(false);
   message.set_visited(false);
+  message.set_id(RandomUint32() % 10000);
   if (!relay_message) {
     message.set_source_id(this_node_id.string());
   } else {
@@ -204,7 +206,7 @@ protobuf::Message ConnectSuccessAcknowledgement(const NodeId& node_id,
   protobuf_connect_success_ack.set_node_id(this_node_id.string());
   protobuf_connect_success_ack.set_connection_id(this_connection_id.string());
   protobuf_connect_success_ack.set_requestor(requestor);
-  for (auto i : close_ids) {
+  for (const auto& i : close_ids) {
     protobuf_connect_success_ack.add_close_ids(i.string());
   }
   message.set_destination_id(node_id.string());
@@ -224,28 +226,56 @@ protobuf::Message ConnectSuccessAcknowledgement(const NodeId& node_id,
   return message;
 }
 
-protobuf::Message CloseNodeChange(
+protobuf::Message ClosestNodesUpdate(
     const NodeId& node_id,
     const NodeId& my_node_id,
-    const std::vector<NodeId>& close_nodes) {
+    const std::vector<NodeInfo>& closest_nodes) {
   assert(!node_id.IsZero() && "Invalid node_id");
   assert(!my_node_id.IsZero() && "Invalid my node_id");
   // assert(!close_nodes.empty() && "Empty close nodes");
   protobuf::Message message;
-  protobuf::CloseNodeChange close_node_change;
-  close_node_change.set_node(my_node_id.string());
-  for (auto i : close_nodes)
-    close_node_change.add_close_nodes(i.string());
+  protobuf::ClosestNodesUpdate closest_nodes_update;
+  closest_nodes_update.set_node(my_node_id.string());
+  for (const auto& i : closest_nodes) {
+    protobuf::BasicNodeInfo* basic_node_info;
+    basic_node_info = closest_nodes_update.add_nodes_info();
+    basic_node_info->set_node_id(i.node_id.string());
+    basic_node_info->set_rank(i.rank);
+  }
   message.set_destination_id(node_id.string());
   message.set_source_id(my_node_id.string());
   message.set_routing_message(true);
-  message.add_data(close_node_change.SerializeAsString());
+  message.add_data(closest_nodes_update.SerializeAsString());
   message.set_direct(true);
   message.set_replication(1);
-  message.set_type(static_cast<int32_t>(MessageType::kCloseNodeChange));
+  message.set_type(static_cast<int32_t>(MessageType::kClosestNodesUpdate));
   message.set_request(true);
   message.set_client_node(false);
   message.set_hops_to_live(Parameters::hops_to_live);
+  message.set_id(RandomUint32() % 10000);
+  assert(message.IsInitialized() && "Unintialised message");
+  return message;
+}
+
+protobuf::Message GetGroup(const NodeId& node_id,
+                           const NodeId& my_node_id) {
+  assert(!node_id.IsZero() && "Invalid node_id");
+  assert(!my_node_id.IsZero() && "Invalid my node_id");
+  protobuf::Message message;
+  protobuf::GetGroup get_group;
+  get_group.set_node_id(node_id.string());
+  message.add_data(get_group.SerializeAsString());
+  message.set_destination_id(node_id.string());
+  message.set_source_id(my_node_id.string());
+  message.set_routing_message(true);
+  message.set_direct(false);
+  message.set_replication(1);
+  message.set_type(static_cast<int32_t>(MessageType::kGetGroup));
+  message.set_request(true);
+  message.set_client_node(false);
+  message.set_hops_to_live(Parameters::hops_to_live);
+  message.set_visited(false);
+  message.set_id(RandomUint32() % 10000);
   assert(message.IsInitialized() && "Unintialised message");
   return message;
 }

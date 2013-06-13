@@ -20,15 +20,19 @@ namespace routing {
 
 namespace { typedef boost::asio::ip::udp::endpoint Endpoint; }
 
+template<>
+Routing::Routing(const NodeId& node_id) : pimpl_() {
+  InitialisePimpl(true, node_id, asymm::GenerateKeyPair());
+}
 
-Routing::Routing(const Fob& fob, bool client_mode) : pimpl_(new Impl(fob, client_mode)) {}
+void Routing::InitialisePimpl(bool client_mode,
+                              const NodeId& node_id,
+                              const asymm::Keys& keys) {
+  pimpl_.reset(new Impl(client_mode, node_id, keys));
+}
 
 void Routing::Join(Functors functors, std::vector<Endpoint> peer_endpoints) {
   pimpl_->Join(functors, peer_endpoints);
-}
-
-void Routing::DisconnectFunctors() {  // TODO(Prakash) : fix race condition when functors in use
-  pimpl_->DisconnectFunctors();
 }
 
 int Routing::ZeroStateJoin(Functors functors,
@@ -38,19 +42,67 @@ int Routing::ZeroStateJoin(Functors functors,
   return pimpl_->ZeroStateJoin(functors, local_endpoint, peer_endpoint, peer_info);
 }
 
-void Routing::Send(const NodeId& destination_id,
-                   const NodeId& group_claim,
+void Routing::SendDirect(const NodeId& destination_id,
                    const std::string& data,
-                   ResponseFunctor response_functor,
-                   const boost::posix_time::time_duration& timeout,
-                   const DestinationType &destination_type,
-                   const bool &cacheable) {
-  pimpl_->Send(destination_id, group_claim, data, response_functor, timeout, destination_type,
-               cacheable);
+                   const bool& cacheable,
+                   ResponseFunctor response_functor) {
+  return pimpl_->SendDirect(destination_id, data, cacheable, response_functor);
+}
+
+void Routing::SendGroup(const NodeId& destination_id,
+                        const std::string& data,
+                        const bool& cacheable,
+                        ResponseFunctor response_functor) {
+  return pimpl_->SendGroup(destination_id, data, cacheable, response_functor);
 }
 
 NodeId Routing::GetRandomExistingNode() const {
   return pimpl_->GetRandomExistingNode();
+}
+
+bool Routing::ClosestToId(const NodeId& node_id) {
+  return pimpl_->ClosestToId(node_id);
+}
+
+GroupRangeStatus Routing::IsNodeIdInGroupRange(const NodeId& group_id) const {
+  return pimpl_->IsNodeIdInGroupRange(group_id);
+}
+
+GroupRangeStatus Routing::IsNodeIdInGroupRange(const NodeId& group_id,
+                                               const NodeId& /*node_id*/) const {
+  return pimpl_->IsNodeIdInGroupRange(group_id);  // FIXME
+}
+
+NodeId Routing::RandomConnectedNode() {
+  return pimpl_->RandomConnectedNode();
+}
+
+bool Routing::EstimateInGroup(const NodeId& sender_id, const NodeId& info_id) const {
+  return pimpl_->EstimateInGroup(sender_id, info_id);
+}
+
+std::future<std::vector<NodeId>> Routing::GetGroup(const NodeId& info_id) {
+  return pimpl_->GetGroup(info_id);
+}
+
+NodeId Routing::kNodeId() const {
+  return pimpl_->kNodeId();
+}
+
+int Routing::network_status() {
+  return pimpl_->network_status();
+}
+
+std::vector<NodeInfo> Routing::ClosestNodes() {
+  return pimpl_->ClosestNodes();
+}
+
+bool Routing::IsConnectedVault(const NodeId& node_id) {
+  return pimpl_->IsConnectedVault(node_id);
+}
+
+bool Routing::IsConnectedClient(const NodeId& node_id) {
+  return pimpl_->IsConnectedClient(node_id);
 }
 
 }  // namespace routing

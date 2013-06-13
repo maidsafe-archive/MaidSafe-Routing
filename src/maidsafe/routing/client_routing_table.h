@@ -10,8 +10,8 @@
  *  the explicit written permission of the board of directors of maidsafe.net. *
  ******************************************************************************/
 
-#ifndef MAIDSAFE_ROUTING_NON_ROUTING_TABLE_H_
-#define MAIDSAFE_ROUTING_NON_ROUTING_TABLE_H_
+#ifndef MAIDSAFE_ROUTING_CLIENT_ROUTING_TABLE_H_
+#define MAIDSAFE_ROUTING_CLIENT_ROUTING_TABLE_H_
 
 #include <cstdint>
 #include <mutex>
@@ -22,8 +22,6 @@
 
 #include "maidsafe/common/node_id.h"
 #include "maidsafe/common/rsa.h"
-
-#include "maidsafe/private/utils/fob.h"
 
 #include "maidsafe/routing/api_config.h"
 
@@ -36,29 +34,33 @@ struct NodeInfo;
 
 namespace test {
   class GenericNode;
-  class BasicNonRoutingTableTest;
-  class BasicNonRoutingTableTest_BEH_IsThisNodeInRange_Test;
+  class BasicClientRoutingTableTest;
+  class BasicClientRoutingTableTest_BEH_IsThisNodeInRange_Test;
 }
+
+class GroupChangeHandler;
 
 namespace protobuf { class Contact; }
 
-class NonRoutingTable {
+class ClientRoutingTable {
  public:
-  explicit NonRoutingTable(const Fob& fob);
+  explicit ClientRoutingTable(const NodeId& node_id);
   bool AddNode(NodeInfo& node, const NodeId& furthest_close_node_id);
   bool CheckNode(NodeInfo& node, const NodeId& furthest_close_node_id);
   std::vector<NodeInfo> DropNodes(const NodeId &node_to_drop);
   NodeInfo DropConnection(const NodeId &connection_to_drop);
   std::vector<NodeInfo> GetNodesInfo(const NodeId& node_id) const;
+  bool Contains(const NodeId& node_id) const;
   bool IsConnected(const NodeId& node_id) const;
   size_t size() const;
   NodeId kNodeId() const { return kNodeId_; }
 
   friend class test::GenericNode;
+  friend class GroupChangeHandler;
 
  private:
-  NonRoutingTable(const NonRoutingTable&);
-  NonRoutingTable& operator=(const NonRoutingTable&);
+  ClientRoutingTable(const ClientRoutingTable&);
+  ClientRoutingTable& operator=(const ClientRoutingTable&);
   bool AddOrCheckNode(NodeInfo& node, const NodeId& furthest_close_node_id, const bool& add);
   bool CheckValidParameters(const NodeInfo& node) const;
   bool CheckParametersAreUnique(const NodeInfo& node) const;
@@ -66,10 +68,10 @@ class NonRoutingTable {
                                   const NodeId& furthest_close_node_id,
                                   const bool& add) const;
   bool IsThisNodeInRange(const NodeId& node_id, const NodeId& furthest_close_node_id) const;
-  std::string PrintNonRoutingTable();
+  std::string PrintClientRoutingTable();
 
-  friend class test::BasicNonRoutingTableTest;
-  friend class test::BasicNonRoutingTableTest_BEH_IsThisNodeInRange_Test;
+  friend class test::BasicClientRoutingTableTest;
+  friend class test::BasicClientRoutingTableTest_BEH_IsThisNodeInRange_Test;
 
   const NodeId kNodeId_;
   std::vector<NodeInfo> nodes_;
@@ -80,4 +82,4 @@ class NonRoutingTable {
 
 }  // namespace maidsafe
 
-#endif  // MAIDSAFE_ROUTING_NON_ROUTING_TABLE_H_
+#endif  // MAIDSAFE_ROUTING_CLIENT_ROUTING_TABLE_H_
