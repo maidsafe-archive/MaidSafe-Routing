@@ -403,7 +403,7 @@ bool RoutingTable::IsThisNodeClosestTo(const NodeId& target_id, bool ignore_exac
     return false;
   }
   NodeInfo closest_node(GetClosestNode(target_id, ignore_exact_match));
-  return (closest_node.bucket == NodeInfo::kInvalidBucket) ? true :
+  return (closest_node.bucket == NodeInfo::kInvalidBucket) ||
          NodeId::CloserToTarget(kNodeId_, closest_node.node_id, target_id);
 }
 
