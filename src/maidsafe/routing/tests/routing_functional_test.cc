@@ -196,21 +196,22 @@ TEST_F(RoutingNetworkTest, FUNC_SendToGroup) {
 TEST_F(RoutingNetworkTest, FUNC_SendToGroupSelfId) {
   uint16_t message_count(10), receivers_message_count(0);
   env_->ClearMessages();
-  std::vector<std::future<testing::AssertionResult>> futures;
+  std::vector<std::future<std::unique_ptr<testing::AssertionResult>>> futures;
 
   for (uint16_t dest_index(0); dest_index < kServerSize; ++dest_index) {
     NodeId dest_id(env_->nodes_.at(dest_index)->node_id());
     futures.emplace_back(std::async(std::launch::async,
                                     [this, dest_id, &message_count, dest_index]() {
-        return env_->SendGroup(dest_id, message_count, dest_index);
+        return std::move(std::unique_ptr<testing::AssertionResult>(
+            new testing::AssertionResult(env_->SendGroup(dest_id, message_count, dest_index))));
     }));
     Sleep(boost::posix_time::milliseconds(10));
   }
   while (!futures.empty()) {
     futures.erase(std::remove_if(futures.begin(), futures.end(),
-        [](std::future<testing::AssertionResult>& future_bool)->bool {
+        [](std::future<std::unique_ptr<testing::AssertionResult>>& future_bool)->bool {
             if (IsReady(future_bool)) {
-              EXPECT_TRUE(future_bool.get());
+              EXPECT_TRUE(*future_bool.get());
               return true;
             } else  {
               return false;
@@ -267,19 +268,21 @@ TEST_F(RoutingNetworkTest, FUNC_SendToGroupInHybridNetwork) {
 TEST_F(RoutingNetworkTest, FUNC_SendToGroupRandomId) {
   uint16_t message_count(200), receivers_message_count(0);
   env_->ClearMessages();
-  std::vector<std::future<testing::AssertionResult>> futures;
+  std::vector<std::future<std::unique_ptr<testing::AssertionResult>>> futures;
 
   for (int index = 0; index < message_count; ++index) {
-    futures.emplace_back(std::async(
-                           std::launch::async,
-                           [this]() { return env_->SendGroup(NodeId(NodeId::kRandomId), 1); }));
+    futures.emplace_back(std::async(std::launch::async,
+        [this]() {
+            return std::move(std::unique_ptr<testing::AssertionResult>(
+                new testing::AssertionResult(env_->SendGroup(NodeId(NodeId::kRandomId), 1))));
+        }));
     Sleep(boost::posix_time::milliseconds(100));
   }
   while (!futures.empty()) {
     futures.erase(std::remove_if(futures.begin(), futures.end(),
-        [](std::future<testing::AssertionResult>& future_bool)->bool {
+        [](std::future<std::unique_ptr<testing::AssertionResult>>& future_bool)->bool {
             if (IsReady(future_bool)) {
-              EXPECT_TRUE(future_bool.get());
+              EXPECT_TRUE(*future_bool.get());
               return true;
             } else  {
               return false;
@@ -299,24 +302,26 @@ TEST_F(RoutingNetworkTest, FUNC_SendToGroupRandomId) {
 TEST_F(RoutingNetworkTest, FUNC_NonMutatingClientSendToGroupRandomId) {
   uint16_t message_count(100), receivers_message_count(0);
   env_->ClearMessages();
-  std::vector<std::future<testing::AssertionResult>> futures;
+  std::vector<std::future<std::unique_ptr<testing::AssertionResult>>> futures;
 
   env_->AddNode(true, NodeId(NodeId::kRandomId), false, true);
   assert(env_->nodes_.size() - 1 < std::numeric_limits<uint16_t>::max());
 
   for (int index = 0; index < message_count; ++index) {
     futures.emplace_back(std::async(std::launch::async, [this]() {
-        return env_->SendGroup(NodeId(NodeId::kRandomId),
-                               1,
-                               static_cast<uint16_t>(env_->nodes_.size() - 1));
+        return std::move(std::unique_ptr<testing::AssertionResult>(
+            new testing::AssertionResult(
+                env_->SendGroup(NodeId(NodeId::kRandomId),
+                                1,
+                                static_cast<uint16_t>(env_->nodes_.size() - 1)))));
     }));
     Sleep(boost::posix_time::milliseconds(10));
   }
   while (!futures.empty()) {
     futures.erase(std::remove_if(futures.begin(), futures.end(),
-        [](std::future<testing::AssertionResult>& future_bool)->bool {
+        [](std::future<std::unique_ptr<testing::AssertionResult>>& future_bool)->bool {
             if (IsReady(future_bool)) {
-              EXPECT_TRUE(future_bool.get());
+              EXPECT_TRUE(*future_bool.get());
               return true;
             } else  {
              return false;
@@ -338,7 +343,7 @@ TEST_F(RoutingNetworkTest, FUNC_NonMutatingClientSendToGroupRandomId) {
 TEST_F(RoutingNetworkTest, FUNC_NonMutatingClientSendToGroupExistingId) {
   uint16_t message_count(100), receivers_message_count(0);
   env_->ClearMessages();
-  std::vector<std::future<testing::AssertionResult>> futures;
+  std::vector<std::future<std::unique_ptr<testing::AssertionResult>>> futures;
 
   size_t initial_network_size(env_->nodes_.size());
   env_->AddNode(true, NodeId(NodeId::kRandomId), false, true);
@@ -348,17 +353,19 @@ TEST_F(RoutingNetworkTest, FUNC_NonMutatingClientSendToGroupExistingId) {
     int group_id_index = index % initial_network_size;  // all other nodes
     NodeId group_id(env_->nodes_[group_id_index]->node_id());
     futures.emplace_back(std::async(std::launch::async, [this, group_id]() {
-        return env_->SendGroup(group_id,
-                               1,
-                               static_cast<uint16_t>(env_->nodes_.size() - 1));
+        return std::move(std::unique_ptr<testing::AssertionResult>(
+            new testing::AssertionResult(
+                env_->SendGroup(group_id,
+                                1,
+                                static_cast<uint16_t>(env_->nodes_.size() - 1)))));
     }));
     Sleep(boost::posix_time::milliseconds(10));
   }
   while (!futures.empty()) {
     futures.erase(std::remove_if(futures.begin(), futures.end(),
-        [](std::future<testing::AssertionResult>& future_bool)->bool {
+        [](std::future<std::unique_ptr<testing::AssertionResult>>& future_bool)->bool {
             if (IsReady(future_bool)) {
-              EXPECT_TRUE(future_bool.get());
+              EXPECT_TRUE(*future_bool.get());
               return true;
             } else  {
               return false;

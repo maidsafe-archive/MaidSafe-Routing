@@ -11,6 +11,7 @@
  ******************************************************************************/
 
 #include <algorithm>
+#include <atomic>
 #include <memory>
 #include <vector>
 #include <set>
@@ -135,7 +136,7 @@ TEST_F(TimerTest, BEH_MultipleResponse) {
       return messages;
     };
 
-  auto add_response = [&](std::vector<protobuf::Message>&& messages) {
+  auto add_response = [&](std::vector<protobuf::Message> messages) {
       for (size_t i(0); i != messages.size(); ++i)
         timer_.AddResponse(messages.at(i));
     };
@@ -168,7 +169,7 @@ TEST_F(TimerTest, BEH_MultipleGroupResponse) {
       return messages;
     };
 
-  auto add_response = [&](std::vector<protobuf::Message>&& messages) {
+  auto add_response = [&](std::vector<protobuf::Message> messages) {
       for (size_t i(0); i != messages.size(); ++i)
         for (size_t j(0); j != 4; ++j)
           timer_.AddResponse(messages.at(i));

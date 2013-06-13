@@ -11,6 +11,7 @@
  ******************************************************************************/
 
 #include <algorithm>
+#include <atomic>
 #include <chrono>
 #include <future>
 #include <memory>

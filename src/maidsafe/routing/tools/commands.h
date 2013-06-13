@@ -12,6 +12,7 @@
 #ifndef MAIDSAFE_ROUTING_TOOLS_COMMANDS_H_
 #define MAIDSAFE_ROUTING_TOOLS_COMMANDS_H_
 
+#include <atomic>
 #include <memory>
 #include <string>
 #include <vector>
