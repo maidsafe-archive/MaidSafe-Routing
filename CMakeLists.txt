@@ -61,7 +61,7 @@ list(REMOVE_ITEM RoutingTestsAllFiles ${RoutingTestsHelperFiles}
 # Define MaidSafe libraries and executables                                                        #
 #==================================================================================================#
 ms_add_static_library(routing ${RoutingAllFiles})
-target_link_libraries(maidsafe_routing maidsafe_rudp maidsafe_passport)
+target_link_libraries(maidsafe_routing maidsafe_rudp maidsafe_passport maidsafe_network_viewer)
 
 if(MaidsafeTesting)
   target_link_libraries(maidsafe_routing maidsafe_network_viewer)
