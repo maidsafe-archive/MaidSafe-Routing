@@ -344,8 +344,8 @@ void Routing::Impl::Send(const NodeId& destination_id,
   uint16_t expected_response_count(1);
   if (DestinationType::kGroup == destination_type)
     expected_response_count = 4;
-  proto_message.set_id(timer_.AddTask(Parameters::default_send_timeout, response_functor,
-                                        expected_response_count));
+  proto_message.set_id(timer_.AddTask(Parameters::default_response_timeout, response_functor,
+                                      expected_response_count));
   SendMessage(destination_id, proto_message);
 }
 
@@ -433,8 +433,8 @@ void Routing::Impl::CheckSendParameters(const NodeId& destination_id, const std:
   }
 }
 
-bool Routing::Impl::ClosestToId(const NodeId& node_id) {
-  return routing_table_.ClosestToId(node_id);
+bool Routing::Impl::ClosestToId(const NodeId& target_id) {
+  return routing_table_.ClosestToId(target_id);
 }
 
 GroupRangeStatus Routing::Impl::IsNodeIdInGroupRange(const NodeId& node_id) {
@@ -450,7 +450,7 @@ bool Routing::Impl::EstimateInGroup(const NodeId& sender_id, const NodeId& info_
              network_statistics_.EstimateInGroup(sender_id, info_id));
 }
 
-std::future<std::vector<NodeId>> Routing::Impl::GetGroup(const NodeId& info_id) {
+std::future<std::vector<NodeId>> Routing::Impl::GetGroup(const NodeId& group_id) {
   auto promise(std::make_shared<std::promise<std::vector<NodeId>>>());
   auto future(promise->get_future());
   auto callback = [promise](const std::string& response) {
@@ -468,8 +468,8 @@ std::future<std::vector<NodeId>> Routing::Impl::GetGroup(const NodeId& info_id) 
                      }
                      promise->set_value(nodes_id);
                    };
-  protobuf::Message get_group_message(rpcs::GetGroup(info_id, kNodeId_));
-  get_group_message.set_id(timer_.AddTask(Parameters::default_send_timeout, callback, 1));
+  protobuf::Message get_group_message(rpcs::GetGroup(group_id, kNodeId_));
+  get_group_message.set_id(timer_.AddTask(Parameters::default_response_timeout, callback, 1));
   network_.SendToClosestNode(get_group_message);
   return std::move(future);
 }

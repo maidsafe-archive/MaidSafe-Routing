@@ -194,22 +194,22 @@ bool GroupMatrix::IsThisNodeGroupLeader(const NodeId& target_id, NodeId& connect
   return is_group_leader;
 }
 
-bool GroupMatrix::ClosestToId(const NodeId& node_id) {
+bool GroupMatrix::ClosestToId(const NodeId& target_id) {
   if (unique_nodes_.size() == 0)
     return true;
 
-  PartialSortFromTarget(node_id, 2, unique_nodes_);
+  PartialSortFromTarget(target_id, 2, unique_nodes_);
   if (unique_nodes_.at(0).node_id == kNodeId_)
     return true;
 
-  if (unique_nodes_.at(0).node_id == node_id) {
+  if (unique_nodes_.at(0).node_id == target_id) {
     if (unique_nodes_.at(1).node_id == kNodeId_)
       return true;
     else
-      return NodeId::CloserToTarget(kNodeId_, unique_nodes_.at(1).node_id, node_id);
+      return NodeId::CloserToTarget(kNodeId_, unique_nodes_.at(1).node_id, target_id);
   }
 
-  return NodeId::CloserToTarget(kNodeId_, unique_nodes_.at(0).node_id, node_id);
+  return NodeId::CloserToTarget(kNodeId_, unique_nodes_.at(0).node_id, target_id);
 }
 
 bool GroupMatrix::IsNodeIdInGroupRange(const NodeId& target_id) {

@@ -43,25 +43,21 @@ int Routing::ZeroStateJoin(Functors functors,
 }
 
 void Routing::SendDirect(const NodeId& destination_id,
-                   const std::string& data,
+                   const std::string& message,
                    const bool& cacheable,
                    ResponseFunctor response_functor) {
-  return pimpl_->SendDirect(destination_id, data, cacheable, response_functor);
+  return pimpl_->SendDirect(destination_id, message, cacheable, response_functor);
 }
 
 void Routing::SendGroup(const NodeId& destination_id,
-                        const std::string& data,
+                        const std::string& message,
                         const bool& cacheable,
                         ResponseFunctor response_functor) {
-  return pimpl_->SendGroup(destination_id, data, cacheable, response_functor);
+  return pimpl_->SendGroup(destination_id, message, cacheable, response_functor);
 }
 
-NodeId Routing::GetRandomExistingNode() const {
-  return pimpl_->GetRandomExistingNode();
-}
-
-bool Routing::ClosestToId(const NodeId& node_id) {
-  return pimpl_->ClosestToId(node_id);
+bool Routing::ClosestToId(const NodeId& target_id) {
+  return pimpl_->ClosestToId(target_id);
 }
 
 GroupRangeStatus Routing::IsNodeIdInGroupRange(const NodeId& group_id) const {
@@ -81,8 +77,8 @@ bool Routing::EstimateInGroup(const NodeId& sender_id, const NodeId& info_id) co
   return pimpl_->EstimateInGroup(sender_id, info_id);
 }
 
-std::future<std::vector<NodeId>> Routing::GetGroup(const NodeId& info_id) {
-  return pimpl_->GetGroup(info_id);
+std::future<std::vector<NodeId>> Routing::GetGroup(const NodeId& group_id) {
+  return pimpl_->GetGroup(group_id);
 }
 
 NodeId Routing::kNodeId() const {

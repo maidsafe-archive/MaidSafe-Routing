@@ -243,10 +243,6 @@ std::vector<NodeInfo> GenericNode::RoutingTable() const {
   return routing_->pimpl_->routing_table_.nodes_;
 }
 
-NodeId GenericNode::GetRandomExistingNode() const {
-  return routing_->GetRandomExistingNode();
-}
-
 std::vector<NodeInfo> GenericNode::ClosestNodes() {
   return routing_->ClosestNodes();
 }

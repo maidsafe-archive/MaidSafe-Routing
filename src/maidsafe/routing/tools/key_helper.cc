@@ -52,20 +52,6 @@ typedef std::vector<maidsafe::passport::Pmid> PmidVector;
 
 const std::string kHelperVersion = "MaidSafe Routing KeysHelper " + maidsafe::kApplicationVersion;
 
-boost::mutex mutex_;
-boost::condition_variable cond_var_;
-//bool ctrlc_pressed(false);
-
-// TODO(dirvine) unused
-//void ctrlc_handler(int /*signum*/) {
-////   LOG(kInfo) << " Signal received: " << signum;
-//  {
-//    boost::mutex::scoped_lock lock(mutex_);
-//    ctrlc_pressed = true;
-//  }
-//  cond_var_.notify_one();
-//}
-
 void PrintKeys(const PmidVector &all_pmids) {
   for (size_t i = 0; i < all_pmids.size(); ++i)
     std::cout << '\t' << i << "\t PMID " << maidsafe::HexSubstr(all_pmids[i].name().data.string())

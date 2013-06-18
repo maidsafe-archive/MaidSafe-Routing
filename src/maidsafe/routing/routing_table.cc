@@ -303,34 +303,35 @@ bool RoutingTable::IsThisNodeGroupLeader(const NodeId& target_id,
   return true;
 }
 
-bool RoutingTable::ClosestToId(const NodeId& node_id) {
+// FIXME (Prakash)
+bool RoutingTable::ClosestToId(const NodeId& target_id) {
   {
     std::unique_lock<std::mutex> lock(mutex_);
 
-    if (node_id == kNodeId_)
+    if (target_id == kNodeId_)
       return false;
 
     if (nodes_.empty())
       return true;
 
     if (nodes_.size() == 1) {
-      if (nodes_.at(0).node_id == node_id)
+      if (nodes_.at(0).node_id == target_id)
         return true;
       else
-        return NodeId::CloserToTarget(kNodeId_, nodes_.at(0).node_id, node_id);
+        return NodeId::CloserToTarget(kNodeId_, nodes_.at(0).node_id, target_id);
     }
 
-    PartialSortFromTarget(node_id, 2, lock);
+    PartialSortFromTarget(target_id, 2, lock);
     uint16_t index(0);
-    if (nodes_.at(0).node_id == node_id)
+    if (nodes_.at(0).node_id == target_id)
       index = 1;
-    if (!NodeId::CloserToTarget(kNodeId_, nodes_.at(index).node_id, node_id))
+    if (!NodeId::CloserToTarget(kNodeId_, nodes_.at(index).node_id, target_id))
       return false;
 
-    if (!group_matrix_.ClosestToId(node_id))
+    if (!group_matrix_.ClosestToId(target_id))
       return false;
   }
-  if (IsNodeIdInGroupRange(node_id) != GroupRangeStatus::kInRange)
+  if (IsNodeIdInGroupRange(target_id) != GroupRangeStatus::kInRange)
     return false;
 
   return true;  // FIXME:(Prakash) return false on default case
