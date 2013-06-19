@@ -82,7 +82,7 @@ class Routing::Impl {
 
   bool EstimateInGroup(const NodeId& sender_id, const NodeId& info_id);
 
-  std::future<std::vector<NodeId>> GetGroup(const NodeId& info_id);
+  std::future<std::vector<NodeId>> GetGroup(const NodeId& group_id);
 
   NodeId kNodeId() const;
 

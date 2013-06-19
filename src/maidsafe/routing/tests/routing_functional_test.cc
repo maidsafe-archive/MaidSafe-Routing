@@ -435,39 +435,6 @@ TEST_F(RoutingNetworkTest, FUNC_SendToClientWithSameId) {
   EXPECT_EQ(2, size);
 }
 
-TEST_F(RoutingNetworkTest, FUNC_GetRandomExistingNode) {
-  uint32_t collisions(0);
-  size_t kChoseIndex(env_->RandomNodeIndex());
-  EXPECT_TRUE(env_->SendDirect(1));
-//  EXPECT_LT(env_->nodes_[random_node]->RandomNodeVector().size(), 98);
-//  for (const auto& node : env_->nodes_[random_node]->RandomNodeVector())
-//    LOG(kVerbose) << HexSubstr(node.string());
-  NodeId last_node(NodeId::kRandomId), last_random(NodeId::kRandomId);
-  for (auto index(0); index < 100; ++index) {
-    last_node = env_->nodes_[kChoseIndex]->GetRandomExistingNode();
-    if (last_node == last_random) {
-      LOG(kVerbose) << HexSubstr(last_random.string()) << ", " << HexSubstr(last_node.string());
-      collisions++;
-//      for (const auto& node : env_->nodes_[random_node]->RandomNodeVector())
-//        LOG(kVerbose) << HexSubstr(node.string());
-    }
-    last_random = last_node;
-  }
-  ASSERT_LT(collisions, 50);
-  for (int i(0); i < 120; ++i)
-    env_->nodes_[kChoseIndex]->AddNodeToRandomNodeHelper(NodeId(NodeId::kRandomId));
-
-  // Check there are 100 unique IDs in the RandomNodeHelper
-  std::set<NodeId> random_node_ids;
-  int attempts(0);
-  while (attempts < 10000 && random_node_ids.size() < 100) {
-    NodeId retrieved_id(env_->nodes_[kChoseIndex]->GetRandomExistingNode());
-    env_->nodes_[kChoseIndex]->RemoveNodeFromRandomNodeHelper(retrieved_id);
-    random_node_ids.insert(retrieved_id);
-  }
-  EXPECT_EQ(100, random_node_ids.size());
-}
-
 TEST_F(RoutingNetworkTest, FUNC_IsNodeIdInGroupRange) {
   std::vector<NodeId> vault_ids;
   for (const auto& node : env_->nodes_)

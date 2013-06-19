@@ -464,7 +464,6 @@ NodeId Commands::CalculateClosests(const NodeId& target_id,
   return closests[closests.size() - 1];
 }
 
-
 }  //  namespace test
 
 }  //  namespace routing

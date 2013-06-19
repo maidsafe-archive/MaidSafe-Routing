@@ -65,11 +65,11 @@ void OptionDependency(const po::variables_map &variables_map,
   }
 }
 
-//volatile bool ctrlc_pressed(false);
-// reported unused (dirvine)
-// void CtrlCHandler(int /*a*/) {
-//   ctrlc_pressed = true;
-// }
+// volatile bool ctrlc_pressed(false);
+//  reported unused (dirvine)
+//  void CtrlCHandler(int /*a*/) {
+//    ctrlc_pressed = true;
+//  }
 
 }  // unnamed namespace
 
