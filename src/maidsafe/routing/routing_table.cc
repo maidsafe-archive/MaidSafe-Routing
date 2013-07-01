@@ -346,7 +346,8 @@ GroupRangeStatus RoutingTable::IsNodeIdInGroupRange(const NodeId& group_id) cons
 
 GroupRangeStatus RoutingTable::IsNodeIdInGroupRange(const NodeId& group_id,
                                                     const NodeId& node_id) const {
-  return IsNodeIdInGroupRange(group_id, node_id);
+  std::unique_lock<std::mutex> lock(mutex_);
+  return group_matrix_.IsNodeIdInGroupRange(group_id, node_id);
 }
 
 NodeId RoutingTable::RandomConnectedNode() {

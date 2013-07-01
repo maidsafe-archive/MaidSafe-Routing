@@ -279,7 +279,7 @@ TEST_P(GroupMatrixTest, BEH_OneRowOnly) {
 
   // Check IsThisNodeGroupMemberFor
   const NodeId target_id_1(NodeId::kRandomId);
-  EXPECT_TRUE(matrix_.IsNodeIdInGroupRange(target_id_1, own_node_id_));
+  EXPECT_EQ(GroupRangeStatus::kInRange, matrix_.IsNodeIdInGroupRange(target_id_1, own_node_id_));
 
   // Fully populate row
   while (row_entries_1.size() < size_t(Parameters::closest_nodes_size - 1)) {
@@ -319,7 +319,12 @@ TEST_P(GroupMatrixTest, BEH_OneRowOnly) {
   bool is_group_member(!NodeId::CloserToTarget(node_ids.at(Parameters::node_group_size - 1).node_id,
                                                own_node_id_,
                                                target_id_2.node_id));
-  EXPECT_EQ(is_group_member, matrix_.IsNodeIdInGroupRange(target_id_2.node_id, own_node_id_));
+  if (is_group_member)
+    EXPECT_EQ(GroupRangeStatus::kInRange,
+              matrix_.IsNodeIdInGroupRange(target_id_2.node_id, own_node_id_));
+  else
+    EXPECT_NE(GroupRangeStatus::kInRange,
+              matrix_.IsNodeIdInGroupRange(target_id_2.node_id, own_node_id_));
 }
 
 TEST_P(GroupMatrixTest, BEH_OneColumnOnly) {
@@ -416,7 +421,10 @@ TEST_P(GroupMatrixTest, BEH_RowsContainSameNodes) {
                                                                             own_node_id_,
                                                                             target_id)));
                                           }) == node_ids.end());
-    EXPECT_EQ(expect_is_group_member, matrix_.IsNodeIdInGroupRange(target_id, own_node_id_));
+    if (expect_is_group_member)
+      EXPECT_EQ(GroupRangeStatus::kInRange, matrix_.IsNodeIdInGroupRange(target_id, own_node_id_));
+    else
+      EXPECT_NE(GroupRangeStatus::kInRange, matrix_.IsNodeIdInGroupRange(target_id, own_node_id_));
     NodeId connected_peer;
     CheckIsThisNodeGroupLeader(target_id, connected_peer, expect_is_group_leader);
   }
@@ -677,7 +685,11 @@ TEST_P(GroupMatrixTest, BEH_IsNodeIdInGroupRange) {
                                                         this->own_node_id_,
                                                         target_id)));
                       }) == node_ids.end());
-    EXPECT_EQ(expect_is_group_member, matrix_.IsNodeIdInGroupRange(target_id, own_node_id_));
+    if (expect_is_group_member)
+      EXPECT_EQ(GroupRangeStatus::kInRange, matrix_.IsNodeIdInGroupRange(target_id, own_node_id_));
+    else
+      EXPECT_NE(GroupRangeStatus::kInRange, matrix_.IsNodeIdInGroupRange(target_id, own_node_id_));
+
     CheckIsThisNodeGroupLeader(target_id, connected_peer, expect_is_group_leader);
   }
 }
@@ -714,19 +726,23 @@ TEST_P(GroupMatrixTest, BEH_IsNodeIdInGroupRangeDifferentNode) {
     target_id = GenerateUniqueRandomId(own_node_id_, 100);
     SortNodeInfosFromTarget(target_id, node_ids);
     for (auto j(0U); j != Parameters::node_group_size; ++j)
-      EXPECT_TRUE(matrix_.IsNodeIdInGroupRange(target_id, node_ids.at(j).node_id));
+      EXPECT_EQ(GroupRangeStatus::kInRange,
+                matrix_.IsNodeIdInGroupRange(target_id, node_ids.at(j).node_id));
     for (auto j(Parameters::node_group_size); j != node_ids.size(); ++j)
-      EXPECT_FALSE(matrix_.IsNodeIdInGroupRange(target_id, node_ids.at(j).node_id));
+      EXPECT_NE(GroupRangeStatus::kInRange,
+                matrix_.IsNodeIdInGroupRange(target_id, node_ids.at(j).node_id));
   }
 
   for (int i(0); i < 100; ++i) {
     target_id = NodeId(NodeId::kRandomId);
     SortNodeInfosFromTarget(target_id, node_ids);
-    if (matrix_.IsNodeIdInGroupRange(target_id, own_node_id_)) {
+    if (matrix_.IsNodeIdInGroupRange(target_id, own_node_id_) == GroupRangeStatus::kInRange) {
       for (auto j(0U); j != Parameters::node_group_size; ++j)
-        EXPECT_TRUE(matrix_.IsNodeIdInGroupRange(target_id, node_ids.at(j).node_id));
+        EXPECT_EQ(GroupRangeStatus::kInRange,
+                  matrix_.IsNodeIdInGroupRange(target_id, node_ids.at(j).node_id));
       for (auto j(Parameters::node_group_size); j != node_ids.size(); ++j)
-        EXPECT_FALSE(matrix_.IsNodeIdInGroupRange(target_id, node_ids.at(j).node_id));
+        EXPECT_NE(GroupRangeStatus::kInRange,
+                  matrix_.IsNodeIdInGroupRange(target_id, node_ids.at(j).node_id));
     } else {
       for (auto j(0U); j != node_ids.size(); ++j) {
         if (node_ids.at(j).node_id != own_node_id_)

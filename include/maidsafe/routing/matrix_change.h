@@ -23,6 +23,7 @@ namespace maidsafe {
 
 namespace routing {
 
+class RoutingTable;
 class GroupMatrix;
 
 namespace test {
@@ -49,15 +50,16 @@ class MatrixChange {
   MatrixChange(MatrixChange&& other);
 
   CheckHoldersResult CheckHolders(const NodeId& target) const;
-  bool OldEqualsToNew() const;
 
   friend class GroupMatrix;
+  friend class RoutingTable;
   friend class test::MatrixChangeTest_BEH_Constructor_Test;
   friend class test::GroupMatrixTest_BEH_EmptyMatrix_Test;
 
  private:
   MatrixChange(const NodeId& this_node_id, const std::vector<NodeId>& old_matrix,
                const std::vector<NodeId>& new_matrix);
+  bool OldEqualsToNew() const;
 
   static const uint16_t close_count_, proximal_count_;
   const NodeId kNodeId_;
