@@ -217,7 +217,7 @@ bool GroupMatrix::ClosestToId(const NodeId& node_id) {
   return NodeId::CloserToTarget(kNodeId_, unique_nodes_.at(0).node_id, node_id);
 }
 
-//bool GroupMatrix::IsNodeIdInGroupRange(const NodeId& group_id, const NodeId& node_id) {
+// bool GroupMatrix::IsNodeIdInGroupRange(const NodeId& group_id, const NodeId& node_id) {
 //  if (group_id == node_id)
 //    return false;
 //  if (unique_nodes_.size() < Parameters::node_group_size) {
@@ -234,7 +234,7 @@ bool GroupMatrix::ClosestToId(const NodeId& node_id) {
 //  else if (!this_node_in_group)
 //    ThrowError(RoutingErrors::not_in_group);
 //  return !NodeId::CloserToTarget(furthest_group_node, node_id, group_id);
-//}
+// }
 
 GroupRangeStatus GroupMatrix::IsNodeIdInGroupRange(const NodeId& group_id,
                                                    const NodeId& node_id) const {
@@ -260,12 +260,16 @@ GroupRangeStatus GroupMatrix::IsNodeIdInGroupRange(const NodeId& group_id,
     assert(new_holders.size() == Parameters::node_group_size);
   }
 
-  auto this_node_range(GetProximalRange(group_id, kNodeId_, kNodeId_, radius_, new_holders));
-  if (node_id == kNodeId_)
-    return this_node_range;
-  else if (this_node_range != GroupRangeStatus::kInRange)
-    ThrowError(RoutingErrors::not_in_group);
-
+  if (!client_mode_) {
+    auto this_node_range(GetProximalRange(group_id, kNodeId_, kNodeId_, radius_, new_holders));
+    if (node_id == kNodeId_)
+      return this_node_range;
+    else if (this_node_range != GroupRangeStatus::kInRange)
+      ThrowError(RoutingErrors::not_in_group);
+  } else {
+    if (node_id == kNodeId_)
+      return GroupRangeStatus::kInProximalRange;
+  }
   return GetProximalRange(group_id, node_id, kNodeId_, radius_, new_holders);
 }
 
@@ -382,12 +386,14 @@ void GroupMatrix::UpdateUniqueNodeList() {
   unique_nodes_.assign(std::begin(sorted_to_owner), std::end(sorted_to_owner));
   // Updating radius
   NodeId fcn_distance;
-  if (unique_nodes_.size() >= Parameters::closest_nodes_size)
+  if (unique_nodes_.size() >= Parameters::closest_nodes_size) {
     fcn_distance = kNodeId_ ^ unique_nodes_[Parameters::closest_nodes_size -1].node_id;
-  else
-    fcn_distance = kNodeId_ ^ (NodeId(NodeId::kMaxId));  // FIXME
-  radius_ = (crypto::BigInt((fcn_distance.ToStringEncoded(NodeId::kHex) + 'h').c_str())
-                                * Parameters::proximity_factor);
+    radius_ = (crypto::BigInt((fcn_distance.ToStringEncoded(NodeId::kHex) + 'h').c_str())
+                                  * Parameters::proximity_factor);
+  } else {
+    fcn_distance = kNodeId_ ^ (NodeId(NodeId::kMaxId));  // FIXME Prakash
+    radius_ = (crypto::BigInt((fcn_distance.ToStringEncoded(NodeId::kHex) + 'h').c_str()));
+  }
 }
 
 void GroupMatrix::PartialSortFromTarget(const NodeId& target,

@@ -249,7 +249,7 @@ TEST_P(GroupMatrixTest, BEH_OneRowOnly) {
   NodeInfo row_1;
   row_1.node_id = NodeId(NodeId::kRandomId);
   std::vector<NodeInfo> row_entries_1;
-  uint32_t length;
+  uint32_t length(0);
   if (client_mode_)
     length = RandomUint32() % (Parameters::node_group_size - 2) + 1;
   else
@@ -270,6 +270,7 @@ TEST_P(GroupMatrixTest, BEH_OneRowOnly) {
   std::vector<NodeInfo> row_result;
   EXPECT_FALSE(matrix_.IsRowEmpty(row_1));
   EXPECT_TRUE(matrix_.GetRow(row_1.node_id, row_result));
+
   EXPECT_TRUE(CompareListOfNodeInfos(row_entries_1, row_result));
 
   // Check GetConnectedPeerFor
@@ -279,10 +280,15 @@ TEST_P(GroupMatrixTest, BEH_OneRowOnly) {
 
   // Check IsThisNodeGroupMemberFor
   const NodeId target_id_1(NodeId::kRandomId);
-  EXPECT_EQ(GroupRangeStatus::kInRange, matrix_.IsNodeIdInGroupRange(target_id_1, own_node_id_));
-
+  if (!client_mode_) {
+    EXPECT_EQ(GroupRangeStatus::kInRange, matrix_.IsNodeIdInGroupRange(target_id_1, own_node_id_));
+  } else {
+    EXPECT_EQ(GroupRangeStatus::kInProximalRange,
+              matrix_.IsNodeIdInGroupRange(target_id_1, own_node_id_));
+    EXPECT_EQ(GroupRangeStatus::kInRange, matrix_.IsNodeIdInGroupRange(target_id_1, row_1.node_id));
+  }
   // Fully populate row
-  while (row_entries_1.size() < size_t(Parameters::closest_nodes_size - 1)) {
+  while (row_entries_1.size() < (Parameters::closest_nodes_size - 1U)) {
     node_info.node_id = NodeId(NodeId::kRandomId);
     row_entries_1.push_back(node_info);
   }
@@ -319,11 +325,11 @@ TEST_P(GroupMatrixTest, BEH_OneRowOnly) {
   bool is_group_member(!NodeId::CloserToTarget(node_ids.at(Parameters::node_group_size - 1).node_id,
                                                own_node_id_,
                                                target_id_2.node_id));
-  if (is_group_member)
+  if (is_group_member && !client_mode_)
     EXPECT_EQ(GroupRangeStatus::kInRange,
               matrix_.IsNodeIdInGroupRange(target_id_2.node_id, own_node_id_));
-  else
-    EXPECT_NE(GroupRangeStatus::kInRange,
+  if (client_mode_)
+    EXPECT_EQ(GroupRangeStatus::kInProximalRange,
               matrix_.IsNodeIdInGroupRange(target_id_2.node_id, own_node_id_));
 }
 
@@ -733,21 +739,23 @@ TEST_P(GroupMatrixTest, BEH_IsNodeIdInGroupRangeDifferentNode) {
                 matrix_.IsNodeIdInGroupRange(target_id, node_ids.at(j).node_id));
   }
 
-  for (int i(0); i < 100; ++i) {
-    target_id = NodeId(NodeId::kRandomId);
-    SortNodeInfosFromTarget(target_id, node_ids);
-    if (matrix_.IsNodeIdInGroupRange(target_id, own_node_id_) == GroupRangeStatus::kInRange) {
-      for (auto j(0U); j != Parameters::node_group_size; ++j)
-        EXPECT_EQ(GroupRangeStatus::kInRange,
-                  matrix_.IsNodeIdInGroupRange(target_id, node_ids.at(j).node_id));
-      for (auto j(Parameters::node_group_size); j != node_ids.size(); ++j)
-        EXPECT_NE(GroupRangeStatus::kInRange,
-                  matrix_.IsNodeIdInGroupRange(target_id, node_ids.at(j).node_id));
-    } else {
-      for (auto j(0U); j != node_ids.size(); ++j) {
-        if (node_ids.at(j).node_id != own_node_id_)
-          EXPECT_THROW(matrix_.IsNodeIdInGroupRange(target_id, node_ids.at(j).node_id),
-                       routing_error);
+  if (!client_mode_) {
+    for (int i(0); i < 100; ++i) {
+      target_id = NodeId(NodeId::kRandomId);
+      SortNodeInfosFromTarget(target_id, node_ids);
+      if (matrix_.IsNodeIdInGroupRange(target_id, own_node_id_) == GroupRangeStatus::kInRange) {
+        for (auto j(0U); j != Parameters::node_group_size; ++j)
+          EXPECT_EQ(GroupRangeStatus::kInRange,
+                    matrix_.IsNodeIdInGroupRange(target_id, node_ids.at(j).node_id));
+        for (auto j(Parameters::node_group_size); j != node_ids.size(); ++j)
+          EXPECT_NE(GroupRangeStatus::kInRange,
+                    matrix_.IsNodeIdInGroupRange(target_id, node_ids.at(j).node_id));
+      } else {
+        for (auto j(0U); j != node_ids.size(); ++j) {
+          if (node_ids.at(j).node_id != own_node_id_)
+            EXPECT_THROW(matrix_.IsNodeIdInGroupRange(target_id, node_ids.at(j).node_id),
+                         routing_error);
+        }
       }
     }
   }

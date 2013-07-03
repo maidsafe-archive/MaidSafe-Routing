@@ -159,7 +159,7 @@ GroupRangeStatus GetProximalRange(const NodeId& target_id,
   NodeId distance_id(node_id ^ target_id);
   crypto::BigInt distance((distance_id.ToStringEncoded(NodeId::kHex) + 'h').c_str());
   return (distance < proximity_radius) ? GroupRangeStatus::kInProximalRange
-                                         : GroupRangeStatus::kOutwithRange;
+                                       : GroupRangeStatus::kOutwithRange;
 }
 
 
