@@ -430,7 +430,7 @@ TEST_P(GroupMatrixTest, BEH_RowsContainSameNodes) {
                                                                             own_node_id_,
                                                                             target_id)));
                                           }) == node_ids.end());
-    if (expect_is_group_member)
+    if (expect_is_group_member & !client_mode_)
       EXPECT_EQ(GroupRangeStatus::kInRange, matrix_.IsNodeIdInGroupRange(target_id, own_node_id_));
     else
       EXPECT_NE(GroupRangeStatus::kInRange, matrix_.IsNodeIdInGroupRange(target_id, own_node_id_));
@@ -694,7 +694,7 @@ TEST_P(GroupMatrixTest, BEH_IsNodeIdInGroupRange) {
                                                         this->own_node_id_,
                                                         target_id)));
                       }) == node_ids.end());
-    if (expect_is_group_member)
+    if (expect_is_group_member & !client_mode_)
       EXPECT_EQ(GroupRangeStatus::kInRange, matrix_.IsNodeIdInGroupRange(target_id, own_node_id_));
     else
       EXPECT_NE(GroupRangeStatus::kInRange, matrix_.IsNodeIdInGroupRange(target_id, own_node_id_));
