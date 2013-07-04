@@ -1,13 +1,19 @@
 #==================================================================================================#
 #                                                                                                  #
-#  Copyright (c) 2012 MaidSafe.net limited                                                         #
+#  Copyright 2012 MaidSafe.net limited                                                             #
 #                                                                                                  #
-#  The following source code is property of MaidSafe.net limited and is not meant for external     #
-#  use.  The use of this code is governed by the license file licence.txt found in the root        #
-#  directory of this project and also on www.maidsafe.net.                                         #
+#  This MaidSafe Software is licensed under the MaidSafe.net Commercial License, version 1.0 or    #
+#  later, and The General Public License (GPL), version 3. By contributing code to this project    #
+#  You agree to the terms laid out in the MaidSafe Contributor Agreement, version 1.0, found in    #
+#  the root directory of this project at LICENSE, COPYING and CONTRIBUTOR respectively and also    #
+#  available at:                                                                                   #
 #                                                                                                  #
-#  You are not free to copy, amend or otherwise use this source code without the explicit written  #
-#  permission of the board of directors of MaidSafe.net.                                           #
+#    http://www.novinet.com/license                                                                #
+#                                                                                                  #
+#  Unless required by applicable law or agreed to in writing, software distributed under the       #
+#  License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,       #
+#  either express or implied. See the License for the specific language governing permissions      #
+#  and limitations under the License.                                                              #
 #                                                                                                  #
 #==================================================================================================#
 
@@ -61,7 +67,7 @@ list(REMOVE_ITEM RoutingTestsAllFiles ${RoutingTestsHelperFiles}
 # Define MaidSafe libraries and executables                                                        #
 #==================================================================================================#
 ms_add_static_library(routing ${RoutingAllFiles})
-target_link_libraries(maidsafe_routing maidsafe_rudp maidsafe_passport)
+target_link_libraries(maidsafe_routing maidsafe_rudp maidsafe_passport maidsafe_network_viewer)
 
 if(MaidsafeTesting)
   target_link_libraries(maidsafe_routing maidsafe_network_viewer)
@@ -99,10 +105,6 @@ include(standard_flags)
 
 if(QA_BUILD)
   add_definitions(-DQA_BUILD)
-endif()
-
-if(UNIX)
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-effc++")
 endif()
 
 

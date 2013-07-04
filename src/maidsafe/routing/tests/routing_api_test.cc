@@ -1,16 +1,20 @@
-/*******************************************************************************
- *  Copyright 2012 maidsafe.net limited                                        *
- *                                                                             *
- *  The following source code is property of maidsafe.net limited and is not   *
- *  meant for external use.  The use of this code is governed by the licence   *
- *  file licence.txt found in the root of this directory and also on           *
- *  www.maidsafe.net.                                                          *
- *                                                                             *
- *  You are not free to copy, amend or otherwise use this source code without  *
- *  the explicit written permission of the board of directors of maidsafe.net. *
- ******************************************************************************/
+/* Copyright 2012 MaidSafe.net limited
+
+This MaidSafe Software is licensed under the MaidSafe.net Commercial License, version 1.0 or later,
+and The General Public License (GPL), version 3. By contributing code to this project You agree to
+the terms laid out in the MaidSafe Contributor Agreement, version 1.0, found in the root directory
+of this project at LICENSE, COPYING and CONTRIBUTOR respectively and also available at:
+
+http://www.novinet.com/license
+
+Unless required by applicable law or agreed to in writing, software distributed under the License is
+distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+implied. See the License for the specific language governing permissions and limitations under the
+License.
+*/
 
 #include <algorithm>
+#include <atomic>
 #include <chrono>
 #include <future>
 #include <memory>
@@ -640,7 +644,7 @@ TEST(APITest, BEH_API_NodeNetworkWithClient) {
     promised.push_back(true);
     status_vector.emplace_back([=, &join_promises, &mutex, &promised](int result) {
                                    ASSERT_GE(result, kSuccess);
-                                   if (result == NetworkStatus((i < kServerCount)? false: true,
+                                   if (result == NetworkStatus((i >= kServerCount),
                                                                std::min(i, min_join_status))) {
                                      std::lock_guard<std::mutex> lock(mutex);
                                      if (promised.at(i)) {
@@ -660,7 +664,7 @@ TEST(APITest, BEH_API_NodeNetworkWithClient) {
 }
 
 TEST(APITest, BEH_API_SendGroup) {
-  Parameters::default_send_timeout = boost::posix_time::seconds(200);
+  Parameters::default_response_timeout = boost::posix_time::seconds(200);
   const uint16_t kMessageCount(10);  // each vault will send kMessageCount message to other vaults
   const size_t kDataSize(512 * 1024);
   int min_join_status(std::min(kServerCount, 8));
@@ -800,7 +804,7 @@ TEST(APITest, BEH_API_SendGroup) {
             << "\n Total number of request messages :" << (kMessageCount * kServerCount)
             << "\n Total number of response messages :" << (kMessageCount * kServerCount * 4)
             << "\n Message size : " << (kDataSize / 1024) << "kB \n";
-  Parameters::default_send_timeout = boost::posix_time::seconds(10);
+  Parameters::default_response_timeout = boost::posix_time::seconds(10);
 }
 
 TEST(APITest, BEH_API_PartiallyJoinedSend) {

@@ -1,14 +1,17 @@
-/*******************************************************************************
- *  Copyright 2012 maidsafe.net limited                                        *
- *                                                                             *
- *  The following source code is property of maidsafe.net limited and is not   *
- *  meant for external use.  The use of this code is governed by the licence   *
- *  file licence.txt found in the root of this directory and also on           *
- *  www.maidsafe.net.                                                          *
- *                                                                             *
- *  You are not free to copy, amend or otherwise use this source code without  *
- *  the explicit written permission of the board of directors of maidsafe.net. *
- ******************************************************************************/
+/* Copyright 2012 MaidSafe.net limited
+
+This MaidSafe Software is licensed under the MaidSafe.net Commercial License, version 1.0 or later,
+and The General Public License (GPL), version 3. By contributing code to this project You agree to
+the terms laid out in the MaidSafe Contributor Agreement, version 1.0, found in the root directory
+of this project at LICENSE, COPYING and CONTRIBUTOR respectively and also available at:
+
+http://www.novinet.com/license
+
+Unless required by applicable law or agreed to in writing, software distributed under the License is
+distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+implied. See the License for the specific language governing permissions and limitations under the
+License.
+*/
 
 #include "maidsafe/routing/routing_api.h"
 #include "maidsafe/routing/routing_impl.h"
@@ -43,25 +46,21 @@ int Routing::ZeroStateJoin(Functors functors,
 }
 
 void Routing::SendDirect(const NodeId& destination_id,
-                   const std::string& data,
+                   const std::string& message,
                    const bool& cacheable,
                    ResponseFunctor response_functor) {
-  return pimpl_->SendDirect(destination_id, data, cacheable, response_functor);
+  return pimpl_->SendDirect(destination_id, message, cacheable, response_functor);
 }
 
 void Routing::SendGroup(const NodeId& destination_id,
-                        const std::string& data,
+                        const std::string& message,
                         const bool& cacheable,
                         ResponseFunctor response_functor) {
-  return pimpl_->SendGroup(destination_id, data, cacheable, response_functor);
+  return pimpl_->SendGroup(destination_id, message, cacheable, response_functor);
 }
 
-NodeId Routing::GetRandomExistingNode() const {
-  return pimpl_->GetRandomExistingNode();
-}
-
-bool Routing::ClosestToId(const NodeId& node_id) {
-  return pimpl_->ClosestToId(node_id);
+bool Routing::ClosestToId(const NodeId& target_id) {
+  return pimpl_->ClosestToId(target_id);
 }
 
 GroupRangeStatus Routing::IsNodeIdInGroupRange(const NodeId& group_id) const {
@@ -81,8 +80,8 @@ bool Routing::EstimateInGroup(const NodeId& sender_id, const NodeId& info_id) co
   return pimpl_->EstimateInGroup(sender_id, info_id);
 }
 
-std::future<std::vector<NodeId>> Routing::GetGroup(const NodeId& info_id) {
-  return pimpl_->GetGroup(info_id);
+std::future<std::vector<NodeId>> Routing::GetGroup(const NodeId& group_id) {
+  return pimpl_->GetGroup(group_id);
 }
 
 NodeId Routing::kNodeId() const {

@@ -1,14 +1,17 @@
-/*******************************************************************************
- *  Copyright 2012 maidsafe.net limited                                        *
- *                                                                             *
- *  The following source code is property of maidsafe.net limited and is not   *
- *  meant for external use.  The use of this code is governed by the licence   *
- *  file licence.txt found in the root of this directory and also on           *
- *  www.maidsafe.net.                                                          *
- *                                                                             *
- *  You are not free to copy, amend or otherwise use this source code without  *
- *  the explicit written permission of the board of directors of maidsafe.net. *
- ******************************************************************************/
+/* Copyright 2012 MaidSafe.net limited
+
+This MaidSafe Software is licensed under the MaidSafe.net Commercial License, version 1.0 or later,
+and The General Public License (GPL), version 3. By contributing code to this project You agree to
+the terms laid out in the MaidSafe Contributor Agreement, version 1.0, found in the root directory
+of this project at LICENSE, COPYING and CONTRIBUTOR respectively and also available at:
+
+http://www.novinet.com/license
+
+Unless required by applicable law or agreed to in writing, software distributed under the License is
+distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+implied. See the License for the specific language governing permissions and limitations under the
+License.
+*/
 
 #include "maidsafe/routing/routing_impl.h"
 
@@ -345,7 +348,7 @@ void Routing::Impl::Send(const NodeId& destination_id,
   if (response_functor) {
     if (DestinationType::kGroup == destination_type)
       expected_response_count = 4;
-    proto_message.set_id(timer_.AddTask(Parameters::default_send_timeout, response_functor,
+    proto_message.set_id(timer_.AddTask(Parameters::default_response_timeout, response_functor,
                                         expected_response_count));
   } else {
     proto_message.set_id(0);
@@ -437,8 +440,8 @@ void Routing::Impl::CheckSendParameters(const NodeId& destination_id, const std:
   }
 }
 
-bool Routing::Impl::ClosestToId(const NodeId& node_id) {
-  return routing_table_.ClosestToId(node_id);
+bool Routing::Impl::ClosestToId(const NodeId& target_id) {
+  return routing_table_.ClosestToId(target_id);
 }
 
 GroupRangeStatus Routing::Impl::IsNodeIdInGroupRange(const NodeId& group_id) {
@@ -459,7 +462,7 @@ bool Routing::Impl::EstimateInGroup(const NodeId& sender_id, const NodeId& info_
              network_statistics_.EstimateInGroup(sender_id, info_id));
 }
 
-std::future<std::vector<NodeId>> Routing::Impl::GetGroup(const NodeId& info_id) {
+std::future<std::vector<NodeId>> Routing::Impl::GetGroup(const NodeId& group_id) {
   auto promise(std::make_shared<std::promise<std::vector<NodeId>>>());
   auto future(promise->get_future());
   auto callback = [promise](const std::string& response) {
@@ -477,8 +480,8 @@ std::future<std::vector<NodeId>> Routing::Impl::GetGroup(const NodeId& info_id) 
                      }
                      promise->set_value(nodes_id);
                    };
-  protobuf::Message get_group_message(rpcs::GetGroup(info_id, kNodeId_));
-  get_group_message.set_id(timer_.AddTask(Parameters::default_send_timeout, callback, 1));
+  protobuf::Message get_group_message(rpcs::GetGroup(group_id, kNodeId_));
+  get_group_message.set_id(timer_.AddTask(Parameters::default_response_timeout, callback, 1));
   network_.SendToClosestNode(get_group_message);
   return std::move(future);
 }

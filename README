@@ -1,18 +1,1 @@
-Abbreviated instructions can be found in build/<DirAppropriateToYourOS>/README
-
-Directory structure
-===================
-- build (all build files)
-    - Linux
-        - Debug
-        - Release
-        - RelWithDebInfo
-        - MinSizeRel
-    - OSX
-        - Debug
-        - Release
-        - RelWithDebInfo
-        - MinSizeRel
-    - Win_MSVC
-- src
-    - maidsafe
+For full details, see http://www.novinet.com/library-routing.php

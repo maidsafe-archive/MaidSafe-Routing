@@ -1,14 +1,17 @@
-/*******************************************************************************
- *  Copyright 2012 maidsafe.net limited                                        *
- *                                                                             *
- *  The following source code is property of maidsafe.net limited and is not   *
- *  meant for external use.  The use of this code is governed by the licence   *
- *  file licence.txt found in the root of this directory and also on           *
- *  www.maidsafe.net.                                                          *
- *                                                                             *
- *  You are not free to copy, amend or otherwise use this source code without  *
- *  the explicit written permission of the board of directors of maidsafe.net. *
- ******************************************************************************/
+/* Copyright 2012 MaidSafe.net limited
+
+This MaidSafe Software is licensed under the MaidSafe.net Commercial License, version 1.0 or later,
+and The General Public License (GPL), version 3. By contributing code to this project You agree to
+the terms laid out in the MaidSafe Contributor Agreement, version 1.0, found in the root directory
+of this project at LICENSE, COPYING and CONTRIBUTOR respectively and also available at:
+
+http://www.novinet.com/license
+
+Unless required by applicable law or agreed to in writing, software distributed under the License is
+distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+implied. See the License for the specific language governing permissions and limitations under the
+License.
+*/
 
 #include "maidsafe/routing/routing_table.h"
 
@@ -310,34 +313,31 @@ bool RoutingTable::IsThisNodeGroupLeader(const NodeId& target_id,
   return true;
 }
 
-bool RoutingTable::ClosestToId(const NodeId& node_id) {
+bool RoutingTable::ClosestToId(const NodeId& target_id) {
   {
     std::unique_lock<std::mutex> lock(mutex_);
 
-    if (node_id == kNodeId_)
+    if (target_id == kNodeId_)
       return false;
 
     if (nodes_.empty())  // should return false ?
       return true;
 
     if (nodes_.size() == 1) {
-      if (nodes_.at(0).node_id == node_id)
+      if (nodes_.at(0).node_id == target_id)
         return true;
       else
-        return NodeId::CloserToTarget(kNodeId_, nodes_.at(0).node_id, node_id);
+        return NodeId::CloserToTarget(kNodeId_, nodes_.at(0).node_id, target_id);
     }
 
-    PartialSortFromTarget(node_id, 2, lock);
+    PartialSortFromTarget(target_id, 2, lock);
     uint16_t index(0);
-    if (nodes_.at(0).node_id == node_id)
+    if (nodes_.at(0).node_id == target_id)
       index = 1;
-    if (!NodeId::CloserToTarget(kNodeId_, nodes_.at(index).node_id, node_id))
-      return false;
-
-    if (!group_matrix_.ClosestToId(node_id))
+    if (!NodeId::CloserToTarget(kNodeId_, nodes_.at(index).node_id, target_id))
       return false;
   }
-  return true;  // FIXME:(Prakash) return false on default case
+  return group_matrix_.ClosestToId(target_id);
 }
 
 GroupRangeStatus RoutingTable::IsNodeIdInGroupRange(const NodeId& group_id) const {
@@ -397,7 +397,7 @@ bool RoutingTable::IsThisNodeClosestTo(const NodeId& target_id, bool ignore_exac
     return false;
   }
   NodeInfo closest_node(GetClosestNode(target_id, ignore_exact_match));
-  return (closest_node.bucket == NodeInfo::kInvalidBucket) ? true :
+  return (closest_node.bucket == NodeInfo::kInvalidBucket) ||
          NodeId::CloserToTarget(kNodeId_, closest_node.node_id, target_id);
 }
 
@@ -850,11 +850,17 @@ void RoutingTable::IpcSendGroupMatrix() const {
       matrix = group_matrix_.GetUniqueNodes();
       close = group_matrix_.GetConnectedPeers();
     }
-    std::string printout("\tMatrix sent by: " + DebugId(NodeId(matrix_record.owner_id())) + "\n");
+    std::string printout("\tMatrix sent by: " + DebugId(kNodeId_) + "\n");
     for (const auto& matrix_element : matrix) {
       matrix_record.AddElement(matrix_element.node_id, network_viewer::ChildType::kMatrix);
       printout += "\t\t" + DebugId(matrix_element.node_id) + " - kMatrix\n";
     }
+
+    std::sort(std::begin(close), std::end(close),
+              [this](const NodeInfo& lhs, const NodeInfo& rhs) {
+                  return NodeId::CloserToTarget(lhs.node_id, rhs.node_id, kNodeId_);
+              });
+
     size_t index(0);
     size_t limit(std::min(static_cast<size_t>(Parameters::node_group_size), close.size()));
     for (; index < limit; ++index) {

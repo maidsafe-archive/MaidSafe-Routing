@@ -1,14 +1,17 @@
-/*******************************************************************************
- *  Copyright 2012 maidsafe.net limited                                        *
- *                                                                             *
- *  The following source code is property of maidsafe.net limited and is not   *
- *  meant for external use.  The use of this code is governed by the licence   *
- *  file licence.txt found in the root of this directory and also on           *
- *  www.maidsafe.net.                                                          *
- *                                                                             *
- *  You are not free to copy, amend or otherwise use this source code without  *
- *  the explicit written permission of the board of directors of maidsafe.net. *
- ******************************************************************************/
+/* Copyright 2012 MaidSafe.net limited
+
+This MaidSafe Software is licensed under the MaidSafe.net Commercial License, version 1.0 or later,
+and The General Public License (GPL), version 3. By contributing code to this project You agree to
+the terms laid out in the MaidSafe Contributor Agreement, version 1.0, found in the root directory
+of this project at LICENSE, COPYING and CONTRIBUTOR respectively and also available at:
+
+http://www.novinet.com/license
+
+Unless required by applicable law or agreed to in writing, software distributed under the License is
+distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+implied. See the License for the specific language governing permissions and limitations under the
+License.
+*/
 
 #include "maidsafe/routing/group_matrix.h"
 
@@ -199,22 +202,22 @@ bool GroupMatrix::IsThisNodeGroupLeader(const NodeId& target_id, NodeId& connect
   return is_group_leader;
 }
 
-bool GroupMatrix::ClosestToId(const NodeId& node_id) {
+bool GroupMatrix::ClosestToId(const NodeId& target_id) {
   if (unique_nodes_.size() == 0)
     return true;
 
-  PartialSortFromTarget(node_id, 2, unique_nodes_);
+  PartialSortFromTarget(target_id, 2, unique_nodes_);
   if (unique_nodes_.at(0).node_id == kNodeId_)
     return true;
 
-  if (unique_nodes_.at(0).node_id == node_id) {
+  if (unique_nodes_.at(0).node_id == target_id) {
     if (unique_nodes_.at(1).node_id == kNodeId_)
       return true;
     else
-      return NodeId::CloserToTarget(kNodeId_, unique_nodes_.at(1).node_id, node_id);
+      return NodeId::CloserToTarget(kNodeId_, unique_nodes_.at(1).node_id, target_id);
   }
 
-  return NodeId::CloserToTarget(kNodeId_, unique_nodes_.at(0).node_id, node_id);
+  return NodeId::CloserToTarget(kNodeId_, unique_nodes_.at(0).node_id, target_id);
 }
 
 // bool GroupMatrix::IsNodeIdInGroupRange(const NodeId& group_id, const NodeId& node_id) {
@@ -265,7 +268,7 @@ GroupRangeStatus GroupMatrix::IsNodeIdInGroupRange(const NodeId& group_id,
     if (node_id == kNodeId_)
       return this_node_range;
     else if (this_node_range != GroupRangeStatus::kInRange)
-      ThrowError(RoutingErrors::not_in_group);
+      ThrowError(RoutingErrors::not_in_range);  // not_in_group
   } else {
     if (node_id == kNodeId_)
       return GroupRangeStatus::kInProximalRange;

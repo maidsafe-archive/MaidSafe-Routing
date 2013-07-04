@@ -1,16 +1,20 @@
-/*******************************************************************************
- *  Copyright 2012 maidsafe.net limited                                        *
- *                                                                             *
- *  The following source code is property of maidsafe.net limited and is not   *
- *  meant for external use.  The use of this code is governed by the licence   *
- *  file licence.txt found in the root of this directory and also on           *
- *  www.maidsafe.net.                                                          *
- *                                                                             *
- *  You are not free to copy, amend or otherwise use this source code without  *
- *  the explicit written permission of the board of directors of maidsafe.net. *
- ******************************************************************************/
+/* Copyright 2012 MaidSafe.net limited
+
+This MaidSafe Software is licensed under the MaidSafe.net Commercial License, version 1.0 or later,
+and The General Public License (GPL), version 3. By contributing code to this project You agree to
+the terms laid out in the MaidSafe Contributor Agreement, version 1.0, found in the root directory
+of this project at LICENSE, COPYING and CONTRIBUTOR respectively and also available at:
+
+http://www.novinet.com/license
+
+Unless required by applicable law or agreed to in writing, software distributed under the License is
+distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+implied. See the License for the specific language governing permissions and limitations under the
+License.
+*/
 
 #include <algorithm>
+#include <atomic>
 #include <memory>
 #include <vector>
 #include <set>
@@ -135,7 +139,7 @@ TEST_F(TimerTest, BEH_MultipleResponse) {
       return messages;
     };
 
-  auto add_response = [&](std::vector<protobuf::Message>&& messages) {
+  auto add_response = [&](std::vector<protobuf::Message> messages) {
       for (size_t i(0); i != messages.size(); ++i)
         timer_.AddResponse(messages.at(i));
     };
@@ -168,7 +172,7 @@ TEST_F(TimerTest, BEH_MultipleGroupResponse) {
       return messages;
     };
 
-  auto add_response = [&](std::vector<protobuf::Message>&& messages) {
+  auto add_response = [&](std::vector<protobuf::Message> messages) {
       for (size_t i(0); i != messages.size(); ++i)
         for (size_t j(0); j != 4; ++j)
           timer_.AddResponse(messages.at(i));
