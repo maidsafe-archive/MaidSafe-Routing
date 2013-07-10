@@ -65,7 +65,18 @@ MatrixChange::MatrixChange(const NodeId& this_node_id, const std::vector<NodeId>
                    fcn_distance = kNodeId_ ^ (NodeId(NodeId::kMaxId));  // FIXME
                  return (crypto::BigInt((fcn_distance.ToStringEncoded(NodeId::kHex) + 'h').c_str())
                              * Parameters::proximity_factor);
-               } ()) {}
+               } ()) {
+    LOG(kInfo) << "Old matrix ";
+    for (const auto& i : kOldMatrix_)
+        LOG(kInfo) << DebugId(i);
+    LOG(kInfo) << "New matrix ";
+    for (const auto& i : kNewMatrix_)
+        LOG(kInfo) << DebugId(i);
+    LOG(kInfo) << "Lost nodes ";
+    for (const auto& i : kLostNodes_)
+        LOG(kInfo) << DebugId(i);
+
+}
 
 CheckHoldersResult MatrixChange::CheckHolders(const NodeId& target) const {
   // Handle cases of lower number of group matrix nodes
@@ -138,6 +149,21 @@ CheckHoldersResult MatrixChange::CheckHolders(const NodeId& target) const {
   }
 
   return holders_result;
+}
+
+PmidNodeStatus MatrixChange::CheckPmidNodeStatus(const std::vector<NodeId>& pmid_nodes) const {
+  PmidNodeStatus pmid_node_status;
+  for (const auto& pmid_node: pmid_nodes) {
+    bool found_in_new_matrix(std::find(kNewMatrix_.begin(), kNewMatrix_.end(), pmid_node)
+                               != kNewMatrix_.end());
+    bool found_in_old_matrix(std::find(kOldMatrix_.begin(), kOldMatrix_.end(), pmid_node)
+                               != kOldMatrix_.end());
+    if (found_in_new_matrix && !found_in_old_matrix)
+      pmid_node_status.nodes_up.push_back(pmid_node);
+    if (found_in_old_matrix && !found_in_new_matrix)
+      pmid_node_status.nodes_down.push_back(pmid_node);
+  }
+  return pmid_node_status;
 }
 
 bool MatrixChange::OldEqualsToNew() const {

@@ -30,7 +30,7 @@ class RoutingTable;
 class GroupMatrix;
 
 namespace test {
-  class MatrixChangeTest_BEH_Constructor_Test;
+  class MatrixChangeTest_BEH_CheckHolders_Test;
   class GroupMatrixTest_BEH_EmptyMatrix_Test;
 }
 
@@ -46,6 +46,10 @@ struct CheckHoldersResult {
   routing::GroupRangeStatus proximity_status;
 };
 
+struct PmidNodeStatus {
+  std::vector<NodeId> nodes_up, nodes_down;
+};
+
 class MatrixChange {
  public:
   MatrixChange(const MatrixChange&);
@@ -53,10 +57,11 @@ class MatrixChange {
   MatrixChange(MatrixChange&& other);
 
   CheckHoldersResult CheckHolders(const NodeId& target) const;
+  PmidNodeStatus CheckPmidNodeStatus(const std::vector<NodeId>& pmid_nodes) const;
 
   friend class GroupMatrix;
   friend class RoutingTable;
-  friend class test::MatrixChangeTest_BEH_Constructor_Test;
+  friend class test::MatrixChangeTest_BEH_CheckHolders_Test;
   friend class test::GroupMatrixTest_BEH_EmptyMatrix_Test;
 
  private:
