@@ -32,8 +32,11 @@ cmake_minimum_required(VERSION 2.8.10 FATAL_ERROR)
 project(network_viewer)
 
 include(../../../../../../../cmake_modules/standard_setup.cmake)
-# Enable auto-linking qtmain for Windows
-cmake_policy(SET CMP0020 NEW)
+# Disable auto-linking qtmain for Windows.  This policy can be set to NEW (and the corresponding
+# explicit linking of qtmain can be removed) when the minimum CMake version becomes 2.8.11.
+if(POLICY CMP0020)
+  cmake_policy(SET CMP0020 OLD)
+endif()
 
 include_directories(${common_SOURCE_DIR}/include)
 include_directories(${passport_SOURCE_DIR}/include)
@@ -125,6 +128,7 @@ ms_add_executable(network_viewer "Tools"
 set(AllExesForCurrentProject ${AllExesForCurrentProject} PARENT_SCOPE)
 add_dependencies(network_viewer boost)
 if(WIN32)
+  target_link_libraries(network_viewer Qt5::WinMain)
   set_target_properties(network_viewer PROPERTIES WIN32_EXECUTABLE TRUE)
 endif()
 qt5_use_modules(network_viewer Core Gui Widgets Network WebKit WebKitWidgets)
