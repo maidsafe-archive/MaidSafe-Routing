@@ -21,7 +21,7 @@
 set(Qt5Required OFF)
 include(../../../../../../../cmake_modules/maidsafe_find_qt5.cmake)
 if(NOT Qt5Core_FOUND)
-  message(STATUS "Didn't find Qt5. Not building NetworkViewer tool")
+  message(STATUS "Didn't find Qt5. Not building Network Viewer tool")
   return()
 endif()
 
@@ -31,9 +31,9 @@ set(CMAKE_DISABLE_IN_SOURCE_BUILD ON)
 cmake_minimum_required(VERSION 2.8.10 FATAL_ERROR)
 project(network_viewer)
 
-message("INSIDE \${AllExesForCurrentProject} - ${AllExesForCurrentProject}")
-
 include(../../../../../../../cmake_modules/standard_setup.cmake)
+# Enable auto-linking qtmain for Windows
+cmake_policy(SET CMP0020 NEW)
 
 include_directories(${common_SOURCE_DIR}/include)
 include_directories(${passport_SOURCE_DIR}/include)
@@ -122,12 +122,9 @@ ms_add_executable(network_viewer "Tools"
                       ${ALL_NETWORK_VIEWER_HEADER_FILES}
                       ${RESOURCE_FILES_NETWORK_VIEWER_RESOURCES_DIR}
                       ${ALL_NETWORK_VIEWER_RESOURCE_SOURCE_FILES})
-message("INSIDE \${AllExesForCurrentProject} - ${AllExesForCurrentProject}")
-set(AllExesForCurrentProject ${AllExesForCurrentProject} network_viewer PARENT_SCOPE)
-message("INSIDE \${AllExesForCurrentProject} - ${AllExesForCurrentProject}")
+set(AllExesForCurrentProject ${AllExesForCurrentProject} PARENT_SCOPE)
 add_dependencies(network_viewer boost)
 if(WIN32)
-  target_link_libraries(network_viewer Qt5::WinMain)
   set_target_properties(network_viewer PROPERTIES WIN32_EXECUTABLE TRUE)
 endif()
 qt5_use_modules(network_viewer Core Gui Widgets Network WebKit WebKitWidgets)
@@ -161,3 +158,5 @@ endif()
 if(MaidsafeTesting)
   add_style_test()
 endif()
+
+message(STATUS "Found Qt5. Network Viewer tool enabled.")

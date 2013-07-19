@@ -25,6 +25,8 @@ cmake_minimum_required(VERSION 2.8.10 FATAL_ERROR)
 project(routing)
 
 include(../../cmake_modules/standard_setup.cmake)
+# Enable auto-linking qtmain for Windows
+cmake_policy(SET CMP0020 NEW)
 
 include_directories(${common_SOURCE_DIR}/include)
 include_directories(${passport_SOURCE_DIR}/include)
@@ -129,7 +131,6 @@ if(MaidsafeTesting)
                           APITest.BEH_API_NodeNetwork
                           APITest.BEH_API_NodeNetworkWithClient
                           )
-                          message("\${AllExesForCurrentProject} - ${AllExesForCurrentProject}")
   add_project_experimental()
   test_summary_output()
 endif()
