@@ -51,6 +51,91 @@ class MatrixChangeTest : public testing::Test {
     new_nodes_.push_back(new_matrix_.back());
   }
 
+ public:
+  CheckHoldersResult CheckHolders(const NodeId& target) {
+    CheckHoldersResult holders_result;
+    // Radius
+    std::sort(new_matrix_.begin(), new_matrix_.end(),
+        [this](const NodeId& lhs, const NodeId& rhs) {
+          return NodeId::CloserToTarget(lhs, rhs, this->kNodeId_);
+        });
+    NodeId fcn_distance;
+    if (new_matrix_.size() >= Parameters::closest_nodes_size)
+      fcn_distance = kNodeId_ ^ new_matrix_[Parameters::closest_nodes_size -1];
+    else
+      fcn_distance = kNodeId_ ^ (NodeId(NodeId::kMaxId));
+    crypto::BigInt radius(crypto::BigInt((fcn_distance.ToStringEncoded(NodeId::kHex) + 'h').c_str())
+                           * Parameters::proximity_factor);
+
+    // sort by target
+    std::sort(old_matrix_.begin(), old_matrix_.end(),
+        [target](const NodeId& lhs, const NodeId& rhs) {
+          return NodeId::CloserToTarget(lhs, rhs, target);
+        });
+
+    std::sort(new_matrix_.begin(), new_matrix_.end(),
+        [target](const NodeId& lhs, const NodeId& rhs) {
+          return NodeId::CloserToTarget(lhs, rhs, target);
+        });
+
+    // Remove taget == node ids and adjust holder size
+    size_t node_group_size_adjust(Parameters::node_group_size + 1U);
+    size_t old_holders_size = std::min(old_matrix_.size(), node_group_size_adjust);
+    size_t new_holders_size = std::min(new_matrix_.size(), node_group_size_adjust);
+
+    std::vector<NodeId> all_old_holders(old_matrix_.begin(), old_matrix_.begin() +
+                                          old_holders_size);
+    std::vector<NodeId> all_new_holders(new_matrix_.begin(), new_matrix_.begin() +
+                                          new_holders_size);
+    std::vector<NodeId> all_lost_nodes(lost_nodes_);
+
+    all_old_holders.erase(std::remove(all_old_holders.begin(), all_old_holders.end(), target),
+                          all_old_holders.end());
+    if (all_old_holders.size() > Parameters::node_group_size) {
+      all_old_holders.pop_back();
+      assert(all_old_holders.size() == Parameters::node_group_size);
+    }
+    all_new_holders.erase(std::remove(all_new_holders.begin(), all_new_holders.end(), target),
+                          all_new_holders.end());
+    if (all_new_holders.size() > Parameters::node_group_size) {
+      all_new_holders.pop_back();
+      assert(all_new_holders.size() == Parameters::node_group_size);
+    }
+    all_lost_nodes.erase(std::remove(all_lost_nodes.begin(), all_lost_nodes.end(), target),
+                         all_lost_nodes.end());
+    // Range
+    if (target == kNodeId_)
+      holders_result.proximity_status = GroupRangeStatus::kOutwithRange;
+    if (std::find(all_new_holders.begin(), all_new_holders.end(), kNodeId_) !=
+            all_new_holders.end()) {
+      holders_result.proximity_status = GroupRangeStatus::kInRange;
+    } else {
+      NodeId distance_id(kNodeId_ ^ target);
+      crypto::BigInt distance((distance_id.ToStringEncoded(NodeId::kHex) + 'h').c_str());
+      holders_result.proximity_status =  (distance < radius) ? GroupRangeStatus::kInProximalRange
+                                                             : GroupRangeStatus::kOutwithRange;
+    }
+    // Old holders = All Old holder ∩ Lost nodes
+    for (const auto& i : all_lost_nodes)
+      if (std::find(all_old_holders.begin(), all_old_holders.end(), i) != all_old_holders.end())
+        holders_result.old_holders.push_back(i);
+
+
+    // New holders = All New holders - Old holders
+    for (const auto& i : all_old_holders) {
+      all_new_holders.erase(std::remove(all_new_holders.begin(), all_new_holders.end(), i),
+                            all_new_holders.end());
+    }
+
+    holders_result.new_holders = all_new_holders;
+
+    if (GroupRangeStatus::kInRange != holders_result.proximity_status) {
+      holders_result.new_holders.clear();
+      holders_result.old_holders.clear();
+    }
+    return holders_result;
+  }
+
  protected:
   std::vector<NodeId> old_matrix_, new_matrix_, lost_nodes_, new_nodes_;
   const NodeId kNodeId_;
@@ -59,67 +144,13 @@ class MatrixChangeTest : public testing::Test {
 TEST_F(MatrixChangeTest, BEH_CheckHolders) {
   MatrixChange matrix_change(kNodeId_, old_matrix_, new_matrix_);
 
-  for (auto i(0); i != 100; ++i) {
-    auto target_id(GenerateUniqueRandomId(kNodeId_, 100));
+  for (auto i(0); i != 1000; ++i) {
+    NodeId target_id(NodeId::kRandomId);
     auto result(matrix_change.CheckHolders(target_id));
-    EXPECT_EQ(result.proximity_status, GroupRangeStatus::kInRange);
-  }
-
-  for (auto i(0); i != 1; ++i) {
-    NodeId target_id;
-    bool unique(false);
-    while (!unique) {
-      target_id = NodeId(NodeId::kRandomId);
-      unique = (std::find(old_matrix_.begin(), old_matrix_.end(), target_id) == old_matrix_.end())
-                    && (std::find(new_matrix_.begin(), new_matrix_.end(), target_id)
-                        == new_matrix_.end());
-    }
-
-    LOG(kInfo) << "test target id : " << DebugId(target_id);
-    auto result(matrix_change.CheckHolders(target_id));
-//    ASSERT_EQ(result.new_holders.size(), Parameters::node_group_size);
-    ASSERT_EQ(result.old_holders.size(), Parameters::node_group_size);
-    std::partial_sort(new_matrix_.begin(),
-                      new_matrix_.begin() + Parameters::node_group_size,
-                      new_matrix_.end(),
-                      [target_id](const NodeId& lhs, const NodeId& rhs) {
-                        return NodeId::CloserToTarget(lhs, rhs, target_id);
-                      });
-    std::partial_sort(old_matrix_.begin(),
-                      old_matrix_.begin() + Parameters::node_group_size,
-                      old_matrix_.end(),
-                      [target_id](const NodeId& lhs, const NodeId& rhs) {
-                        return NodeId::CloserToTarget(lhs, rhs, target_id);
-                      });
-
-    std::vector<NodeId> new_holders(new_matrix_.begin(), new_matrix_.begin() +
-                                        Parameters::node_group_size);
-    std::vector<NodeId> old_holders(old_matrix_.begin(), old_matrix_.begin() +
-                                        Parameters::node_group_size);
-
-    LOG(kInfo) << "Old holders ";
-    for (auto& i : old_holders)
-      LOG(kInfo) << DebugId(i);
-
-    LOG(kInfo) << "New holders ";
-    for (auto& i : new_holders)
-      LOG(kInfo) << DebugId(i);
-
-    LOG(kInfo) << "lost nodes ";
-    for (auto& i : lost_nodes_)
-      LOG(kInfo) << DebugId(i);
-
-    LOG(kInfo) << "Result new holders :  ";
-    for (auto& i : result.new_holders) {
-      LOG(kInfo) << DebugId(i);
-      EXPECT_NE(std::find(new_holders.begin(), new_holders.end(), i), new_holders.end());
-    }
-
-    LOG(kInfo) << "Result old holders :  ";
-    for (auto& i : result.old_holders) {
-      LOG(kInfo) << DebugId(i);
-      EXPECT_NE(std::find(old_holders.begin(), old_holders.end(), i), old_holders.end());
-    }
+    auto test_result(CheckHolders(target_id));
+    ASSERT_EQ(result.proximity_status, test_result.proximity_status);
+    ASSERT_EQ(result.new_holders, test_result.new_holders);
+    ASSERT_EQ(result.old_holders, test_result.old_holders);
   }
 }
 

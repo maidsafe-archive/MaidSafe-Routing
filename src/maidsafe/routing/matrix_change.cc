@@ -65,18 +65,7 @@ MatrixChange::MatrixChange(const NodeId& this_node_id, const std::vector<NodeId>
                    fcn_distance = kNodeId_ ^ (NodeId(NodeId::kMaxId));  // FIXME
                  return (crypto::BigInt((fcn_distance.ToStringEncoded(NodeId::kHex) + 'h').c_str())
                              * Parameters::proximity_factor);
-               } ()) {
-    LOG(kInfo) << "Old matrix ";
-    for (const auto& i : kOldMatrix_)
-        LOG(kInfo) << DebugId(i);
-    LOG(kInfo) << "New matrix ";
-    for (const auto& i : kNewMatrix_)
-        LOG(kInfo) << DebugId(i);
-    LOG(kInfo) << "Lost nodes ";
-    for (const auto& i : kLostNodes_)
-        LOG(kInfo) << DebugId(i);
-
-}
+               } ()) {}
 
 CheckHoldersResult MatrixChange::CheckHolders(const NodeId& target) const {
   // Handle cases of lower number of group matrix nodes
@@ -120,6 +109,12 @@ CheckHoldersResult MatrixChange::CheckHolders(const NodeId& target) const {
   lost_nodes.erase(std::remove(lost_nodes.begin(), lost_nodes.end(), target), lost_nodes.end());
 
   CheckHoldersResult holders_result;
+  holders_result.proximity_status =  GetProximalRange(target, kNodeId_, kNodeId_, kRadius_,
+                                                      new_holders);
+  // Only return holders if this node is part of target group
+  if (GroupRangeStatus::kInRange != holders_result.proximity_status)
+    return holders_result;
+
   // Old holders = Old holder ∩ Lost nodes
   std::set_intersection(old_holders.begin(),
                         old_holders.end(),
@@ -129,7 +124,8 @@ CheckHoldersResult MatrixChange::CheckHolders(const NodeId& target) const {
                         [target](const NodeId& lhs, const NodeId& rhs) {
                           return NodeId::CloserToTarget(lhs, rhs, target);
                         });
-  // New holders = New holders - Old holders
+
+  // New holders = All new holders - Old holders
   std::set_difference(new_holders.begin(),
                       new_holders.end(),
                       old_holders.begin(),
@@ -138,16 +134,6 @@ CheckHoldersResult MatrixChange::CheckHolders(const NodeId& target) const {
                       [target](const NodeId& lhs, const NodeId& rhs) {
                         return NodeId::CloserToTarget(lhs, rhs, target);
                       });
-  // handle range for this node
-  holders_result.proximity_status =  GetProximalRange(target, kNodeId_, kNodeId_, kRadius_,
-                                                      new_holders);
-  if (GroupRangeStatus::kInRange != holders_result.proximity_status) {
-    holders_result.new_holders.clear();
-    holders_result.new_holders.shrink_to_fit();
-    holders_result.old_holders.clear();
-    holders_result.old_holders.shrink_to_fit();
-  }
-
   return holders_result;
 }
 
