@@ -28,6 +28,7 @@ License.
 
 #include "maidsafe/passport/types.h"
 
+#include "maidsafe/routing/api_config.h"
 #include "maidsafe/routing/parameters.h"
 #include "maidsafe/routing/routing.pb.h"
 
@@ -73,6 +74,12 @@ bool ValidateAndAddToRoutingTable(NetworkUtils& network,
                                   const bool& client);
 void HandleSymmetricNodeAdd(RoutingTable& routing_table, const NodeId& peer_id,
                             const asymm::PublicKey& public_key);
+GroupRangeStatus GetProximalRange(const NodeId& target_id,
+                                  const NodeId& node_id,
+                                  const NodeId& this_node_id,
+                                  const crypto::BigInt& proximity_radius,
+                                  const std::vector<NodeId>& holders);
+
 bool IsRoutingMessage(const protobuf::Message& message);
 bool IsNodeLevelMessage(const protobuf::Message& message);
 bool IsRequest(const protobuf::Message& message);

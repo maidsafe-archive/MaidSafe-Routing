@@ -63,6 +63,7 @@ void NetworkStatistics::UpdateNetworkAverageDistance(const NodeId& distance) {
   }
 }
 
+// FIXME(Prakash) handle the case of sender_id == info_id
 bool NetworkStatistics::EstimateInGroup(const NodeId& sender_id, const NodeId& info_id) {
   NodeId local_distance;
   {

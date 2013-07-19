@@ -345,10 +345,14 @@ void Routing::Impl::Send(const NodeId& destination_id,
   protobuf::Message proto_message = CreateNodeLevelPartialMessage(destination_id, destination_type,
                                                                   data, cacheable);
   uint16_t expected_response_count(1);
-  if (DestinationType::kGroup == destination_type)
-    expected_response_count = 4;
-  proto_message.set_id(timer_.AddTask(Parameters::default_response_timeout, response_functor,
-                                      expected_response_count));
+  if (response_functor) {
+    if (DestinationType::kGroup == destination_type)
+      expected_response_count = 4;
+    proto_message.set_id(timer_.AddTask(Parameters::default_response_timeout, response_functor,
+                                        expected_response_count));
+  } else {
+    proto_message.set_id(0);
+  }
   SendMessage(destination_id, proto_message);
 }
 
@@ -440,8 +444,13 @@ bool Routing::Impl::ClosestToId(const NodeId& target_id) {
   return routing_table_.ClosestToId(target_id);
 }
 
-GroupRangeStatus Routing::Impl::IsNodeIdInGroupRange(const NodeId& node_id) {
-  return routing_table_.IsNodeIdInGroupRange(node_id);
+GroupRangeStatus Routing::Impl::IsNodeIdInGroupRange(const NodeId& group_id) {
+  return routing_table_.IsNodeIdInGroupRange(group_id);
+}
+
+GroupRangeStatus Routing::Impl::IsNodeIdInGroupRange(const NodeId& group_id,
+                                                     const NodeId& node_id) {
+  return routing_table_.IsNodeIdInGroupRange(group_id, node_id);
 }
 
 NodeId Routing::Impl::RandomConnectedNode() {

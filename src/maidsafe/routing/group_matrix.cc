@@ -25,6 +25,7 @@ License.
 #include "maidsafe/routing/parameters.h"
 #include "maidsafe/routing/node_info.h"
 #include "maidsafe/routing/return_codes.h"
+#include "maidsafe/routing/utils.h"
 
 namespace maidsafe {
 
@@ -33,10 +34,12 @@ namespace routing {
 GroupMatrix::GroupMatrix(const NodeId& this_node_id, bool client_mode)
     : kNodeId_(this_node_id),
       unique_nodes_(),
+      radius_(crypto::BigInt::Zero()),
       client_mode_(client_mode),
       matrix_() {}
 
-void GroupMatrix::AddConnectedPeer(const NodeInfo& node_info) {
+std::shared_ptr<MatrixChange> GroupMatrix::AddConnectedPeer(const NodeInfo& node_info) {
+  std::vector<NodeId> old_unique_ids(GetUniqueNodeIds());
   LOG(kVerbose) << DebugId(kNodeId_) << " AddConnectedPeer : " << DebugId(node_info.node_id);
   auto node_id(node_info.node_id);
   auto found(std::find_if(matrix_.begin(),
@@ -46,14 +49,16 @@ void GroupMatrix::AddConnectedPeer(const NodeInfo& node_info) {
                           }));
   if (found != matrix_.end()) {
     LOG(kWarning) << "Already Added in matrix";
-    return;
+    return std::make_shared<MatrixChange>(MatrixChange(kNodeId_, old_unique_ids, old_unique_ids));
   }
   matrix_.push_back(std::vector<NodeInfo>(1, node_info));
+  Prune();
   UpdateUniqueNodeList();
+  return std::make_shared<MatrixChange>(MatrixChange(kNodeId_, old_unique_ids, GetUniqueNodeIds()));
 }
 
-void GroupMatrix::RemoveConnectedPeer(const NodeInfo& node_info, MatrixChange& matrix_change) {
-  matrix_change.old_matrix = GetUniqueNodeIds();
+std::shared_ptr<MatrixChange> GroupMatrix::RemoveConnectedPeer(const NodeInfo& node_info) {
+  std::vector<NodeId> old_unique_ids(GetUniqueNodeIds());
   matrix_.erase(std::remove_if(matrix_.begin(),
                                matrix_.end(),
                                [node_info](const std::vector<NodeInfo> nodes) {
@@ -61,7 +66,7 @@ void GroupMatrix::RemoveConnectedPeer(const NodeInfo& node_info, MatrixChange& m
                                }), matrix_.end());
   Prune();
   UpdateUniqueNodeList();
-  matrix_change.new_matrix = GetUniqueNodeIds();
+  return std::make_shared<MatrixChange>(MatrixChange(kNodeId_, old_unique_ids, GetUniqueNodeIds()));
 }
 
 std::vector<NodeInfo> GroupMatrix::GetConnectedPeers() const {
@@ -215,23 +220,70 @@ bool GroupMatrix::ClosestToId(const NodeId& target_id) {
   return NodeId::CloserToTarget(kNodeId_, unique_nodes_.at(0).node_id, target_id);
 }
 
-bool GroupMatrix::IsNodeIdInGroupRange(const NodeId& target_id) {
-  if (unique_nodes_.size() < Parameters::node_group_size) {
-    return true;
+// bool GroupMatrix::IsNodeIdInGroupRange(const NodeId& group_id, const NodeId& node_id) {
+//  if (group_id == node_id)
+//    return false;
+//  if (unique_nodes_.size() < Parameters::node_group_size) {
+//    if (node_id == kNodeId_)
+//      return true;
+//    else
+//      ThrowError(RoutingErrors::not_in_group);  // TODO(Prakash) throw not_connected here
+//  }
+//  PartialSortFromTarget(group_id, Parameters::node_group_size, unique_nodes_);
+//  NodeId furthest_group_node(unique_nodes_.at(Parameters::node_group_size - 1).node_id);
+//  bool this_node_in_group(!NodeId::CloserToTarget(furthest_group_node, kNodeId_, group_id));
+//  if (node_id == kNodeId_)
+//    return this_node_in_group;
+//  else if (!this_node_in_group)
+//    ThrowError(RoutingErrors::not_in_group);
+//  return !NodeId::CloserToTarget(furthest_group_node, node_id, group_id);
+// }
+
+GroupRangeStatus GroupMatrix::IsNodeIdInGroupRange(const NodeId& group_id,
+                                                   const NodeId& node_id) const {
+  size_t node_group_size_adjust(Parameters::node_group_size + 1U);
+  size_t new_holders_size = std::min(unique_nodes_.size(), node_group_size_adjust);
+  std::vector<NodeInfo> new_holders_info(new_holders_size);
+  std::partial_sort_copy(unique_nodes_.begin(),
+                         unique_nodes_.end(),
+                         new_holders_info.begin(),
+                         new_holders_info.end(),
+                         [group_id](const NodeInfo& lhs, const NodeInfo& rhs) {
+                           return NodeId::CloserToTarget(lhs.node_id, rhs.node_id, group_id);
+                         });
+
+  std::vector<NodeId> new_holders;
+  for (auto i : new_holders_info)
+    new_holders.push_back(i.node_id);
+
+  new_holders.erase(std::remove(new_holders.begin(), new_holders.end(), group_id),
+                    new_holders.end());
+  if (new_holders.size() > Parameters::node_group_size) {
+    new_holders.resize(Parameters::node_group_size);
+    assert(new_holders.size() == Parameters::node_group_size);
   }
 
-  PartialSortFromTarget(kNodeId_, Parameters::node_group_size, unique_nodes_);
-
-  NodeInfo furthest_group_node(unique_nodes_.at(Parameters::node_group_size - 1));
-  return !NodeId::CloserToTarget(furthest_group_node.node_id, target_id, kNodeId_);
+  if (!client_mode_) {
+    auto this_node_range(GetProximalRange(group_id, kNodeId_, kNodeId_, radius_, new_holders));
+    if (node_id == kNodeId_)
+      return this_node_range;
+    else if (this_node_range != GroupRangeStatus::kInRange)
+      ThrowError(RoutingErrors::not_in_range);  // not_in_group
+  } else {
+    if (node_id == kNodeId_)
+      return GroupRangeStatus::kInProximalRange;
+  }
+  return GetProximalRange(group_id, node_id, kNodeId_, radius_, new_holders);
 }
 
-void GroupMatrix::UpdateFromConnectedPeer(const NodeId& peer,
-                                          const std::vector<NodeInfo>& nodes) {
+std::shared_ptr<MatrixChange> GroupMatrix::UpdateFromConnectedPeer(
+    const NodeId& peer,
+    const std::vector<NodeInfo>& nodes,
+    const std::vector<NodeId>& old_unique_ids) {
   assert(nodes.size() < Parameters::max_routing_table_size);
   if (peer.IsZero()) {
     assert(false && "Invalid peer node id.");
-    return;
+    return std::make_shared<MatrixChange>(MatrixChange(kNodeId_, old_unique_ids, old_unique_ids));
   }
   // If peer is in my group
   auto group_itr(matrix_.begin());
@@ -243,7 +295,7 @@ void GroupMatrix::UpdateFromConnectedPeer(const NodeId& peer,
   if (group_itr == matrix_.end()) {
     LOG(kWarning) << "Peer Node : " << DebugId(peer)
                   << " is not in closest group of this node.";
-    return;
+    return std::make_shared<MatrixChange>(MatrixChange(kNodeId_, old_unique_ids, old_unique_ids));
   }
 
   // Update peer's row
@@ -256,6 +308,7 @@ void GroupMatrix::UpdateFromConnectedPeer(const NodeId& peer,
   // Update unique node vector
   Prune();
   UpdateUniqueNodeList();
+  return std::make_shared<MatrixChange>(MatrixChange(kNodeId_, old_unique_ids, GetUniqueNodeIds()));
 }
 
 bool GroupMatrix::GetRow(const NodeId& row_id, std::vector<NodeInfo>& row_entries) {
@@ -334,6 +387,16 @@ void GroupMatrix::UpdateUniqueNodeList() {
   }
 
   unique_nodes_.assign(std::begin(sorted_to_owner), std::end(sorted_to_owner));
+  // Updating radius
+  NodeId fcn_distance;
+  if (unique_nodes_.size() >= Parameters::closest_nodes_size) {
+    fcn_distance = kNodeId_ ^ unique_nodes_[Parameters::closest_nodes_size -1].node_id;
+    radius_ = (crypto::BigInt((fcn_distance.ToStringEncoded(NodeId::kHex) + 'h').c_str())
+                                  * Parameters::proximity_factor);
+  } else {
+    fcn_distance = kNodeId_ ^ (NodeId(NodeId::kMaxId));  // FIXME Prakash
+    radius_ = (crypto::BigInt((fcn_distance.ToStringEncoded(NodeId::kHex) + 'h').c_str()));
+  }
 }
 
 void GroupMatrix::PartialSortFromTarget(const NodeId& target,

@@ -68,8 +68,8 @@ GroupRangeStatus Routing::IsNodeIdInGroupRange(const NodeId& group_id) const {
 }
 
 GroupRangeStatus Routing::IsNodeIdInGroupRange(const NodeId& group_id,
-                                               const NodeId& /*node_id*/) const {
-  return pimpl_->IsNodeIdInGroupRange(group_id);  // FIXME
+                                               const NodeId& node_id) const {
+  return pimpl_->IsNodeIdInGroupRange(group_id, node_id);
 }
 
 NodeId Routing::RandomConnectedNode() {

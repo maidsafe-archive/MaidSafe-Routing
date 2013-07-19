@@ -21,6 +21,7 @@ License.
 #include <vector>
 #include <string>
 
+#include "maidsafe/common/crypto.h"
 #include "maidsafe/common/node_id.h"
 #include "maidsafe/routing/node_info.h"
 #include "maidsafe/routing/api_config.h"
@@ -44,9 +45,9 @@ class GroupMatrix {
  public:
   explicit GroupMatrix(const NodeId& this_node_id, bool client_mode);
 
-  void AddConnectedPeer(const NodeInfo& node_info);
+  std::shared_ptr<MatrixChange> AddConnectedPeer(const NodeInfo& node_info);
 
-  void RemoveConnectedPeer(const NodeInfo& node_info, MatrixChange& matrix_change);
+  std::shared_ptr<MatrixChange> RemoveConnectedPeer(const NodeInfo& node_info);
 
   // Returns the connected peers sorted to node ids from kNodeId_
   std::vector<NodeInfo> GetConnectedPeers() const;
@@ -64,11 +65,14 @@ class GroupMatrix {
                                       NodeId& current_closest_peer_id);
   std::vector<NodeInfo> GetAllConnectedPeersFor(const NodeId& target_id);
   bool IsThisNodeGroupLeader(const NodeId& target_id, NodeId& connected_peer);
-  bool ClosestToId(const NodeId& target_id);
-  bool IsNodeIdInGroupRange(const NodeId& target_id);
 
+  bool ClosestToId(const NodeId& target_id);
+//  bool IsNodeIdInGroupRange(const NodeId& group_id, const NodeId& node_id);
+  GroupRangeStatus IsNodeIdInGroupRange(const NodeId& group_id, const NodeId& node_id) const;
   // Updates group matrix if peer is present in 1st column of matrix
-  void UpdateFromConnectedPeer(const NodeId& peer, const std::vector<NodeInfo>& nodes);
+  std::shared_ptr<MatrixChange> UpdateFromConnectedPeer(const NodeId& peer,
+                                       const std::vector<NodeInfo>& nodes,
+                                       const std::vector<NodeId>& old_unique_ids);
   bool IsRowEmpty(const NodeInfo& node_info);
   bool GetRow(const NodeId& row_id, std::vector<NodeInfo>& row_entries);
   std::vector<NodeInfo> GetUniqueNodes() const;
@@ -91,6 +95,7 @@ class GroupMatrix {
 
   const NodeId& kNodeId_;
   std::vector<NodeInfo> unique_nodes_;
+  crypto::BigInt radius_;
   bool client_mode_;
   std::vector<std::vector<NodeInfo>> matrix_;
 };

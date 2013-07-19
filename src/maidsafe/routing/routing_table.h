@@ -52,6 +52,7 @@ namespace test {
   class RoutingTableTest_BEH_CheckMockSendGroupChangeRpcs_Test;
   class RoutingTableTest_BEH_GroupUpdateFromConnectedPeer_Test;
   class NetworkStatisticsTest_BEH_IsIdInGroupRange_Test;
+  class RoutingTableTest_BEH_IsNodeIdInGroupRange_Test;
 }
 
 namespace protobuf { class Contact; }
@@ -76,8 +77,11 @@ class RoutingTable {
   bool AddNode(const NodeInfo& peer);
   bool CheckNode(const NodeInfo& peer);
   NodeInfo DropNode(const NodeId &node_to_drop, bool routing_only);
-  bool ClosestToId(const NodeId& node_id);
-  GroupRangeStatus IsNodeIdInGroupRange(const NodeId& target_id);
+  bool ClosestToId(const NodeId& target_id);
+
+  GroupRangeStatus IsNodeIdInGroupRange(const NodeId& group_id) const;
+  GroupRangeStatus IsNodeIdInGroupRange(const NodeId& group_id, const NodeId& node_id) const;
+
   bool IsThisNodeGroupLeader(const NodeId& target_id, NodeInfo& connected_peer);
   bool IsThisNodeGroupLeader(const NodeId& target_id,
                              NodeInfo& connected_peer,
@@ -124,6 +128,7 @@ class RoutingTable {
   friend class test::RoutingTableTest_BEH_CheckMockSendGroupChangeRpcs_Test;
   friend class test::RoutingTableTest_BEH_GroupUpdateFromConnectedPeer_Test;
   friend class test::NetworkStatisticsTest_BEH_IsIdInGroupRange_Test;
+  friend class test::RoutingTableTest_BEH_IsNodeIdInGroupRange_Test;
 
  private:
   RoutingTable(const RoutingTable&);
@@ -134,9 +139,9 @@ class RoutingTable {
   NodeInfo ResolveConnectionDuplication(const NodeInfo& new_duplicate_node,
                                         bool local_endpoint,
                                         NodeInfo& existing_node);
-  void UpdateCloseNodeChange(std::unique_lock<std::mutex>& lock, const NodeInfo& peer,
-                             std::vector<NodeInfo>& new_connected_nodes,
-                             MatrixChange& matrix_change);
+  std::shared_ptr<MatrixChange> UpdateCloseNodeChange(std::unique_lock<std::mutex>& lock,
+                                                      const NodeInfo& peer,
+                                                      std::vector<NodeInfo>& new_connected_nodes);
   bool MakeSpaceForNodeToBeAdded(const NodeInfo& node,
                                  bool remove,
                                  NodeInfo& removed_node,
@@ -169,7 +174,7 @@ class RoutingTable {
   const uint16_t kMaxSize_;
   const uint16_t kThresholdSize_;
   mutable std::mutex mutex_;
-  NodeId furthest_group_node_id_;
+  NodeId furthest_closest_node_id_;
   std::function<void(const NodeInfo&, bool)> remove_node_functor_;
   NetworkStatusFunctor network_status_functor_;
   RemoveFurthestUnnecessaryNode remove_furthest_node_;

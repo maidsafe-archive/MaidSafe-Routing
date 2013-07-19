@@ -114,7 +114,7 @@ TEST(RoutingTableTest, BEH_PopulateAndDepopulateGroupCheckGroupChange) {
                                    []() {},
                                    group_change_functor,
                                    [](const std::vector<NodeInfo>& ) {},
-                                   [] (const MatrixChange& ) {});
+                                   [] (std::shared_ptr<MatrixChange>) {});
   for (uint16_t i = 0; i < Parameters::closest_nodes_size; ++i) {
     ASSERT_TRUE(routing_table.AddNode(nodes.at(i)));
     LOG(kVerbose) << "Added to routing_table : " << DebugId(nodes.at(i).node_id);
@@ -161,7 +161,7 @@ TEST(RoutingTableTest, BEH_OrderedGroupChange) {
       []() {},
       group_change_functor,
       [](const std::vector<NodeInfo>&) {},
-      [](const MatrixChange&) {});
+      [](std::shared_ptr<MatrixChange>) {});
 
   for (uint16_t i = 0; i < Parameters::max_routing_table_size; ++i) {
     ASSERT_TRUE(routing_table.AddNode(nodes.at(i)));
@@ -226,7 +226,7 @@ TEST(RoutingTableTest, BEH_ReverseOrderedGroupChange) {
                                    []() {},
                                    group_change_functor,
                                    [](const std::vector<NodeInfo>&) {},
-                                   [](const MatrixChange&) {});
+                                   [](std::shared_ptr<MatrixChange>) {});
 
   // Add nodes to routing table
   for (auto ritr = nodes.rbegin(); ritr < nodes.rend(); ++ritr) {
@@ -319,7 +319,7 @@ TEST(RoutingTableTest, BEH_CheckGroupChangeRemoveNodesFromGroup) {
                                    []() {},
                                    group_change_functor,
                                    [](const std::vector<NodeInfo>&) {},
-                                   [](const MatrixChange&) {});
+                                   [](std::shared_ptr<MatrixChange>) {});
 
   // Populate routing table
   for (uint16_t i = 0; i < Parameters::max_routing_table_size; ++i) {
@@ -411,7 +411,7 @@ TEST(RoutingTableTest, BEH_CheckGroupChangeAddGroupNodesToFullTable) {
                                    []() {},
                                    group_change_functor,
                                    [](const std::vector<NodeInfo>&) {},
-                                   [](const MatrixChange&) {});
+                                   [](std::shared_ptr<MatrixChange>) {});
 
   // Populate routing table
   for (uint16_t i = 0; i < Parameters::max_routing_table_size; ++i) {
@@ -514,7 +514,7 @@ TEST(RoutingTableTest, BEH_FillEmptyRefillRoutingTable) {
                                    [] () {},
                                    group_change_functor,
                                    [](const std::vector<NodeInfo>&) {},
-                                   [](const MatrixChange&) {});
+                                   [](std::shared_ptr<MatrixChange>) {});
   // Fill routing table
   for (uint16_t i = 0; i < Parameters::max_routing_table_size; ++i) {
     if (expected_group.size() < Parameters::closest_nodes_size) {
@@ -667,7 +667,7 @@ TEST(RoutingTableTest, BEH_CheckMockSendGroupChangeRpcs) {
                                      []() {},
                                      group_change_functor,
                                      [](const std::vector<NodeInfo>&) {},
-                                     [](const MatrixChange&) {});
+                                     [](std::shared_ptr<MatrixChange>) {});
 
   // Check that 2's group matrix is updated correctly - Add nodes
   std::vector<NodeInfo> close_nodes;
@@ -1201,21 +1201,27 @@ TEST(RoutingTableTest, BEH_IsNodeIdInGroupRange) {
   }
   SortFromTarget(own_node_id, nodes_in_table);
 
-  NodeId radius_id(own_node_id ^ nodes_in_table.at(Parameters::closest_nodes_size - 1).node_id);
+  NodeId fcn_node = nodes_in_table.at(Parameters::closest_nodes_size - 1).node_id;
+  NodeId radius_id(own_node_id ^ fcn_node);
   crypto::BigInt radius((radius_id.ToStringEncoded(NodeId::kHex) + 'h').c_str());
-  NodeId group_edge_id(nodes_in_table.at(Parameters::node_group_size - 2).node_id);
-  NodeId group_edge_radius(own_node_id ^ group_edge_id);
-  for (uint16_t i(0); i < 50; ++i) {
-    NodeId target_id(NodeId::kRandomId);
-    NodeId distance_id(own_node_id ^ target_id);
-    crypto::BigInt distance((distance_id.ToStringEncoded(NodeId::kHex) + 'h').c_str());
 
-    if (distance > Parameters::proximity_factor * radius)
-      EXPECT_EQ(GroupRangeStatus::kOutwithRange, routing_table.IsNodeIdInGroupRange(target_id));
-    else if ((target_id ^ own_node_id) < group_edge_radius)
+  nodes_in_table = routing_table.group_matrix_.GetUniqueNodes();  // FIXME(Mahmoud)
+
+  for (uint16_t i(0); i < 100; ++i) {
+    NodeId target_id(NodeId::kRandomId);
+    SortFromTarget(target_id, nodes_in_table);
+    if (!NodeId::CloserToTarget(nodes_in_table.at(Parameters::node_group_size - 1).node_id,
+                                own_node_id,
+                                target_id)) {
       EXPECT_EQ(GroupRangeStatus::kInRange, routing_table.IsNodeIdInGroupRange(target_id));
-    else
-      EXPECT_EQ(GroupRangeStatus::kInProximalRange, routing_table.IsNodeIdInGroupRange(target_id));
+    } else {
+      NodeId my_distance_id(own_node_id ^ target_id);
+      crypto::BigInt my_distance((my_distance_id.ToStringEncoded(NodeId::kHex) + 'h').c_str());
+
+      if (my_distance < (Parameters::proximity_factor * radius))
+        EXPECT_EQ(GroupRangeStatus::kInProximalRange,
+                  routing_table.IsNodeIdInGroupRange(target_id));
+    }
   }
 }
 
@@ -1224,9 +1230,10 @@ TEST(RoutingTableTest, BEH_MatrixChange) {
   NetworkStatistics network_statistics(node_id);
   RoutingTable routing_table(false, node_id, asymm::GenerateKeyPair(), network_statistics);
   int count(0);
-  MatrixChangedFunctor matrix_change_functor = [&count](const MatrixChange& /*matrix_change*/) {
-                                                 count++;
-                                               };
+  MatrixChangedFunctor matrix_change_functor =
+      [&count](std::shared_ptr<MatrixChange> /*matrix_change*/) {
+        count++;
+      };
   routing_table.InitialiseFunctors([](const int&) {},
                                    [](const NodeInfo&, bool) {},
                                    []() {},

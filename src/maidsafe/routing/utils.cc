@@ -137,6 +137,34 @@ void HandleSymmetricNodeAdd(RoutingTable& /*routing_table*/, const NodeId& /*pee
 //  }
 }
 
+GroupRangeStatus GetProximalRange(const NodeId& target_id,
+                                  const NodeId& node_id,
+                                  const NodeId& this_node_id,
+                                  const crypto::BigInt& proximity_radius,
+                                  const std::vector<NodeId>& holders)  {
+  assert((std::find(holders.begin(), holders.end(), target_id) == holders.end()) &&
+         "Ensure to remove target id entry from holders, if present");
+  assert(std::is_sorted(holders.begin(),
+                        holders.end(),
+                        [target_id](const NodeId& lhs, const NodeId& rhs) {
+                          return NodeId::CloserToTarget(lhs, rhs, target_id);
+                        }) && "Ensure to sort holders in order of distance to targer_id");
+  assert(holders.size() <= Parameters::node_group_size);
+
+  if ((target_id == node_id) || (target_id == this_node_id))
+    return GroupRangeStatus::kOutwithRange;
+
+  if (std::find(holders.begin(), holders.end(), node_id) != holders.end()) {
+    return GroupRangeStatus::kInRange;
+  }
+
+  NodeId distance_id(node_id ^ target_id);
+  crypto::BigInt distance((distance_id.ToStringEncoded(NodeId::kHex) + 'h').c_str());
+  return (distance < proximity_radius) ? GroupRangeStatus::kInProximalRange
+                                       : GroupRangeStatus::kOutwithRange;
+}
+
+
 bool IsRoutingMessage(const protobuf::Message& message) {
   return message.routing_message();
 }
