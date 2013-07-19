@@ -97,6 +97,8 @@ endif()
 
 rename_outdated_built_exes()
 
+add_subdirectory(${RoutingSourcesDir}/tools/network_viewer)
+
 
 #==================================================================================================#
 # Set compiler and linker flags                                                                    #
@@ -127,6 +129,7 @@ if(MaidsafeTesting)
                           APITest.BEH_API_NodeNetwork
                           APITest.BEH_API_NodeNetworkWithClient
                           )
+                          message("\${AllExesForCurrentProject} - ${AllExesForCurrentProject}")
   add_project_experimental()
   test_summary_output()
 endif()
