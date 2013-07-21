@@ -15,6 +15,9 @@ License.
 
 #include "maidsafe/routing/tools/network_viewer/helpers/graph_page.h"
 
+#include <limits>
+#include <vector>
+
 #include "maidsafe/common/tools/network_viewer.h"
 
 namespace maidsafe {

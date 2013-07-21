@@ -15,6 +15,8 @@ License.
 
 #include "maidsafe/routing/tools/network_viewer/controllers/main_view.h"
 
+#include <vector>
+
 #include "QMessageBox"
 
 #include "maidsafe/routing/tools/network_viewer/helpers/qt_push_headers.h"
