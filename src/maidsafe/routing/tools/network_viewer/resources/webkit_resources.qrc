@@ -1,0 +1,29 @@
+<RCC>
+  <qresource>
+    <file>index.html</file>
+  </qresource>
+  <qresource>
+    <file>css/styles.css</file>    
+  </qresource>
+  <qresource>
+    <file>js/main.js</file>
+    <file>js/parser.js</file>
+    <file>js/renderer.js</file>
+  </qresource>
+  <qresource>
+    <file>scripts/arbor.js</file>
+    <file>scripts/graphics.js</file>
+    <file>scripts/jquery.address-1.4.min.js</file>
+    <file>scripts/jquery-1.9.1.min.js</file>
+  </qresource>
+  <qresource>
+    <file>icons/app_icon.png</file>
+    <file>icons/close_node.png</file>
+    <file>icons/data_chunk.png</file>
+    <file>icons/kClosest.png</file>
+    <file>icons/kGroup.png</file>
+    <file>icons/kMatrix.png</file>
+    <file>icons/main_node.png</file>
+    <file>icons/other_node.png</file>
+  </qresource>
+</RCC>

@@ -25,6 +25,11 @@ cmake_minimum_required(VERSION 2.8.10 FATAL_ERROR)
 project(routing)
 
 include(../../cmake_modules/standard_setup.cmake)
+# Disable auto-linking qtmain for Windows.  This policy can be set to NEW (and the corresponding
+# explicit linking of qtmain can be removed) when the minimum CMake version becomes 2.8.11.
+if(POLICY CMP0020)
+  cmake_policy(SET CMP0020 OLD)
+endif()
 
 include_directories(${common_SOURCE_DIR}/include)
 include_directories(${passport_SOURCE_DIR}/include)
@@ -96,6 +101,8 @@ if(MaidsafeTesting)
 endif()
 
 rename_outdated_built_exes()
+
+add_subdirectory(${RoutingSourcesDir}/tools/network_viewer)
 
 
 #==================================================================================================#
