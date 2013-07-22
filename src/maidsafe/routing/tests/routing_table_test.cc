@@ -1189,8 +1189,8 @@ TEST(RoutingTableTest, BEH_IsNodeIdInGroupRange) {
     EXPECT_TRUE(routing_table.AddNode(node_info));
   }
   for (uint16_t i(0); i < 20; ++i) {
-    EXPECT_NE(GroupRangeStatus::kOutwithRange,
-              routing_table.IsNodeIdInGroupRange(NodeId(NodeId::kRandomId)));
+    NodeId target(NodeId::kRandomId);
+    EXPECT_NE(GroupRangeStatus::kOutwithRange, routing_table.IsNodeIdInGroupRange(target));
   }
 
   // Populated RT
@@ -1204,6 +1204,7 @@ TEST(RoutingTableTest, BEH_IsNodeIdInGroupRange) {
   NodeId fcn_node = nodes_in_table.at(Parameters::closest_nodes_size - 1).node_id;
   NodeId radius_id(own_node_id ^ fcn_node);
   crypto::BigInt radius((radius_id.ToStringEncoded(NodeId::kHex) + 'h').c_str());
+  radius = Parameters::proximity_factor * radius;
 
   nodes_in_table = routing_table.group_matrix_.GetUniqueNodes();  // FIXME(Mahmoud)
 
@@ -1217,8 +1218,7 @@ TEST(RoutingTableTest, BEH_IsNodeIdInGroupRange) {
     } else {
       NodeId my_distance_id(own_node_id ^ target_id);
       crypto::BigInt my_distance((my_distance_id.ToStringEncoded(NodeId::kHex) + 'h').c_str());
-
-      if (my_distance < (Parameters::proximity_factor * radius))
+      if (my_distance < radius)
         EXPECT_EQ(GroupRangeStatus::kInProximalRange,
                   routing_table.IsNodeIdInGroupRange(target_id));
     }

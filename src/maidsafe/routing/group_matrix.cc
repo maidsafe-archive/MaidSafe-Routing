@@ -36,7 +36,9 @@ GroupMatrix::GroupMatrix(const NodeId& this_node_id, bool client_mode)
       unique_nodes_(),
       radius_(crypto::BigInt::Zero()),
       client_mode_(client_mode),
-      matrix_() {}
+      matrix_() {
+  UpdateUniqueNodeList();
+}
 
 std::shared_ptr<MatrixChange> GroupMatrix::AddConnectedPeer(const NodeInfo& node_info) {
   std::vector<NodeId> old_unique_ids(GetUniqueNodeIds());
@@ -262,7 +264,6 @@ GroupRangeStatus GroupMatrix::IsNodeIdInGroupRange(const NodeId& group_id,
     new_holders.resize(Parameters::node_group_size);
     assert(new_holders.size() == Parameters::node_group_size);
   }
-
   if (!client_mode_) {
     auto this_node_range(GetProximalRange(group_id, kNodeId_, kNodeId_, radius_, new_holders));
     if (node_id == kNodeId_)
@@ -376,25 +377,28 @@ void GroupMatrix::UpdateUniqueNodeList() {
       [&](const NodeInfo& lhs, const NodeInfo& rhs) {
           return NodeId::CloserToTarget(lhs.node_id, rhs.node_id, kNodeId_);
       });
+  auto closest_nodes_size_adjust = Parameters::closest_nodes_size;
   if (!client_mode_) {
     NodeInfo node_info;
     node_info.node_id = kNodeId_;
     sorted_to_owner.insert(node_info);
+    ++closest_nodes_size_adjust;
   }
   for (const auto& node_ids : matrix_) {
     for (const auto& node_id : node_ids)
       sorted_to_owner.insert(node_id);
   }
-
   unique_nodes_.assign(std::begin(sorted_to_owner), std::end(sorted_to_owner));
+
   // Updating radius
   NodeId fcn_distance;
-  if (unique_nodes_.size() >= Parameters::closest_nodes_size) {
-    fcn_distance = kNodeId_ ^ unique_nodes_[Parameters::closest_nodes_size -1].node_id;
+  if (unique_nodes_.size() >= closest_nodes_size_adjust) {
+    fcn_distance = kNodeId_ ^ unique_nodes_[closest_nodes_size_adjust -1].node_id;
+
     radius_ = (crypto::BigInt((fcn_distance.ToStringEncoded(NodeId::kHex) + 'h').c_str())
                                   * Parameters::proximity_factor);
   } else {
-    fcn_distance = kNodeId_ ^ (NodeId(NodeId::kMaxId));  // FIXME Prakash
+    fcn_distance = NodeId(NodeId::kMaxId);  // FIXME Prakash
     radius_ = (crypto::BigInt((fcn_distance.ToStringEncoded(NodeId::kHex) + 'h').c_str()));
   }
 }
