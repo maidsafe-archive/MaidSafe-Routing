@@ -21,10 +21,10 @@
 set(Qt5Required OFF)
 include(../../../../../../../cmake_modules/maidsafe_find_qt5.cmake)
 if(NOT Qt5Core_FOUND)
-  message(STATUS "Didn't find Qt5. Not building Network Viewer tool")
+  message(STATUS "Didn't find Qt5. Not building Network Viewer tool.")
   return()
-ELSE(${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang")
-  message(STATUS "Will not build with clang for now")
+elseif(${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang")
+  message(STATUS "Will not build Network Viewer tool with Clang for now.")
   return()
 endif()
 
@@ -146,7 +146,7 @@ rename_outdated_built_exes()
 #==================================================================================================#
 include(standard_flags)
 
-set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -DQT_NO_DEBUG_OUTPUT -DQT_NO_WARNING_OUTPUT -DQT_NO_DEBUG_STREAM")
+set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -DQT_NO_DEBUG_OUTPUT -DQT_NO_WARNING_OUTPUT")
 
 if(WIN32)
   string(REGEX REPLACE "/Zm[0-9]+ " "/Zm500 " CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
