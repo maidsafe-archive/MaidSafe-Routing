@@ -95,6 +95,10 @@ class Routing {
                     const boost::asio::ip::udp::endpoint& peer_endpoint,
                     const NodeInfo& peer_info);
 
+
+  template <typename Sender, typename Receiver>
+  void Send(const Message<Sender, Receiver>& message);
+
   // Sends message to a known destnation.
   // If a valid response functor is provided, it will be called when:
   // a) the response is receieved or,
@@ -178,6 +182,15 @@ class Routing {
 
 template<>
 Routing::Routing(const NodeId& node_id);
+
+template <>
+void Routing::Send(const Message<SingleId, SingleId>& message);
+template <>
+void Routing::Send(const Message<SingleId, GroupId>& message);
+template <>
+void Routing::Send(const Message<GroupId, SingleId>& message);
+template <>
+void Routing::Send(const Message<GroupId, GroupId>& message);
 
 }  // namespace routing
 

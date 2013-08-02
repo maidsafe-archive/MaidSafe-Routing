@@ -26,6 +26,7 @@ License.
 #include "maidsafe/common/node_id.h"
 #include "maidsafe/rudp/managed_connections.h"
 #include "maidsafe/routing/matrix_change.h"
+#include "maidsafe/routing/message.h"
 
 namespace maidsafe {
 
@@ -49,6 +50,7 @@ typedef std::function<void(const std::string& /*message*/)> ReplyFunctor;
 typedef std::function<void(const std::string& /*message*/,
                            const bool& /*cache_lookup*/,
                            ReplyFunctor /*reply functor*/)> MessageReceivedFunctor;
+
 
 // This is fired to validate a new peer node. User is supposed to validate the node and call
 // ValidateThisNode() method with valid public key.
@@ -79,10 +81,20 @@ typedef std::function<void(std::shared_ptr<MatrixChange> /*matrix_change*/)>
 // it clsoest nodes.
 typedef std::function<void()> RemoveFurthestUnnecessaryNode;
 
+template <typename T>
+struct MessageAndCachingFunctors {
+  std::function<void(const T& /*message*/)> message_received;
+  std::function<bool(T& /*message*/)> have_cache_data;
+  std::function<void(const T& /*message*/)> store_cache_data;
+};
 
 struct Functors {
   Functors()
       : message_received(),
+        single_to_single(),
+        single_to_group(),
+        group_to_single(),
+        group_to_group(),
         network_status(),
         close_node_replaced(),
         matrix_changed(),
@@ -93,6 +105,10 @@ struct Functors {
         new_bootstrap_endpoint() {}
 
   MessageReceivedFunctor message_received;
+  MessageAndCachingFunctors<Message<SingleId, SingleId>> single_to_single;
+  MessageAndCachingFunctors<Message<SingleId, GroupId>> single_to_group;
+  MessageAndCachingFunctors<Message<GroupId, SingleId>> group_to_single;
+  MessageAndCachingFunctors<Message<GroupId, GroupId>> group_to_group;
   NetworkStatusFunctor network_status;
   CloseNodeReplacedFunctor close_node_replaced;
   MatrixChangedFunctor matrix_changed;

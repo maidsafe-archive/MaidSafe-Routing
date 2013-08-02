@@ -47,10 +47,6 @@ class Endpoint;
 
 }  // namespace protobuf
 
-class Message {
-  explicit Message(protobuf::Message message);
-};
-
 class NetworkUtils;
 class ClientRoutingTable;
 class RoutingTable;
