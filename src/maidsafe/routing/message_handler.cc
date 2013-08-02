@@ -27,7 +27,6 @@ License.
 #include "maidsafe/routing/routing_table.h"
 #include "maidsafe/routing/service.h"
 #include "maidsafe/routing/remove_furthest_node.h"
-#include "maidsafe/routing/timer.h"
 #include "maidsafe/routing/utils.h"
 
 
@@ -38,7 +37,7 @@ namespace routing {
 MessageHandler::MessageHandler(RoutingTable& routing_table,
                                ClientRoutingTable& client_routing_table,
                                NetworkUtils& network,
-                               Timer& timer,
+                               Timer<std::string>& timer,
                                RemoveFurthestNode& remove_furthest_node,
                                GroupChangeHandler& group_change_handler,
                                NetworkStatistics& network_statistics)
@@ -164,7 +163,15 @@ void MessageHandler::HandleNodeLevelMessageForThisNode(protobuf::Message& messag
                << MessageTypeString(message) << " from "
                << HexSubstr(message.source_id())
                << "   (id: " << message.id() << ")  --NodeLevel--";
-    if (timer_.AddResponse(message) && message.has_average_distace())
+    try {
+      if (!message.has_id() || message.data_size() == 1)
+        ThrowError(CommonErrors::parsing_error);
+      timer_.AddResponse(message.id(), message.data(0));
+    } catch(const maidsafe_error& e) {
+      LOG(kError) << e.what();
+      return;
+    }
+    if (message.has_average_distace())
       network_statistics_.UpdateNetworkAverageDistance(NodeId(message.average_distace()));
   } else {
     message.Clear();

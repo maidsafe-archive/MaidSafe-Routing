@@ -24,6 +24,7 @@ License.
 #include "maidsafe/routing/cache_manager.h"
 #include "maidsafe/routing/response_handler.h"
 #include "maidsafe/routing/service.h"
+#include "maidsafe/routing/timer.h"
 
 
 namespace maidsafe {
@@ -45,7 +46,6 @@ namespace test {
 class NetworkUtils;
 class ClientRoutingTable;
 class RoutingTable;
-class Timer;
 class RemoveFurthestNode;
 class GroupChangeHandler;
 class NetworkStatistics;
@@ -69,7 +69,7 @@ class MessageHandler {
   MessageHandler(RoutingTable& routing_table,
                  ClientRoutingTable& client_routing_table,
                  NetworkUtils& network,
-                 Timer& timer,
+                 Timer<std::string>& timer,
                  RemoveFurthestNode& remove_node,
                  GroupChangeHandler& group_change_handler,
                  NetworkStatistics& network_statistics);
@@ -116,7 +116,7 @@ class MessageHandler {
   RemoveFurthestNode& remove_furthest_node_;
   GroupChangeHandler& group_change_handler_;
   std::unique_ptr<CacheManager> cache_manager_;
-  Timer& timer_;
+  Timer<std::string>& timer_;
   std::shared_ptr<ResponseHandler> response_handler_;
   std::shared_ptr<Service> service_;
   MessageReceivedFunctor message_received_functor_;

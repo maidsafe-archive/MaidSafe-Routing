@@ -16,6 +16,7 @@ License.
 #ifndef MAIDSAFE_ROUTING_PARAMETERS_H_
 #define MAIDSAFE_ROUTING_PARAMETERS_H_
 
+#include <chrono>
 #include <cstdint>
 #include "boost/date_time/posix_time/posix_time_duration.hpp"
 
@@ -38,7 +39,7 @@ struct Parameters {
   static uint16_t max_client_routing_table_size;      // max size of ClientRoutingTable
   static uint16_t bucket_target_size;
   static uint32_t max_data_size;
-  static boost::posix_time::time_duration default_response_timeout;
+  static std::chrono::steady_clock::duration default_response_timeout;
   static boost::posix_time::time_duration find_node_interval;
   static boost::posix_time::time_duration recovery_time_lag;
   static boost::posix_time::time_duration re_bootstrap_time_lag;

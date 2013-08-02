@@ -150,7 +150,7 @@ class Routing::Impl {
   std::unique_ptr<MessageHandler> message_handler_;
   AsioService asio_service_;
   NetworkUtils network_;
-  Timer timer_;
+  Timer<std::string> timer_;
   boost::asio::deadline_timer re_bootstrap_timer_, recovery_timer_, setup_timer_;
 };
 
