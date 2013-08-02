@@ -105,10 +105,10 @@ struct Functors {
         new_bootstrap_endpoint() {}
 
   MessageReceivedFunctor message_received;
-  MessageAndCachingFunctors<Message<SingleId, SingleId>> single_to_single;
-  MessageAndCachingFunctors<Message<SingleId, GroupId>> single_to_group;
-  MessageAndCachingFunctors<Message<GroupId, SingleId>> group_to_single;
-  MessageAndCachingFunctors<Message<GroupId, GroupId>> group_to_group;
+  MessageAndCachingFunctors<SingleToSingleMessage> single_to_single;
+  MessageAndCachingFunctors<SingleToGroupMessage> single_to_group;
+  MessageAndCachingFunctors<GroupToSingleMessage> group_to_single;
+  MessageAndCachingFunctors<GroupToGroupMessage> group_to_group;
   NetworkStatusFunctor network_status;
   CloseNodeReplacedFunctor close_node_replaced;
   MatrixChangedFunctor matrix_changed;

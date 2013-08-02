@@ -28,6 +28,7 @@ namespace routing {
 
 typedef TaggedValue <NodeId, struct GroupTag> GroupId;
 typedef TaggedValue <NodeId, struct SingleTag> SingleId;
+typedef TaggedValue <NodeId, struct SingleSourceTag> SingleSource;
 
 enum class Cacheable : int {
   kNone = 0,
@@ -116,6 +117,11 @@ void swap(Message<Sender, Receiver>& lhs, Message<Sender, Receiver>& rhs) {
   swap(lhs.receiver, rhs.receiver);
   swap(lhs.cacheable, rhs.cacheable);
 }
+
+typedef Message<SingleSource, SingleId> SingleToSingleMessage;
+typedef Message<SingleSource, GroupId> SingleToGroupMessage;
+typedef Message<GroupSource, SingleId> GroupToSingleMessage;
+typedef Message<GroupSource, GroupId> GroupToGroupMessage;
 
 }  // namespace routing
 

@@ -184,13 +184,13 @@ template<>
 Routing::Routing(const NodeId& node_id);
 
 template <>
-void Routing::Send(const Message<SingleId, SingleId>& message);
+void Routing::Send(const SingleToSingleMessage& message);
 template <>
-void Routing::Send(const Message<SingleId, GroupId>& message);
+void Routing::Send(const SingleToGroupMessage& message);
 template <>
-void Routing::Send(const Message<GroupId, SingleId>& message);
+void Routing::Send(const GroupToSingleMessage& message);
 template <>
-void Routing::Send(const Message<GroupId, GroupId>& message);
+void Routing::Send(const GroupToGroupMessage& message);
 
 }  // namespace routing
 
