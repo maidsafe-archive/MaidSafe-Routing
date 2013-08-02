@@ -192,6 +192,12 @@ void Routing::Send(const GroupToSingleMessage& message);
 template <>
 void Routing::Send(const GroupToGroupMessage& message);
 
+template <typename Sender, typename Receiver>
+void Routing::Send(const Message<Sender, Receiver>& message) {
+  static_assert(false,
+    "The Message type must be one of the specialisations defined as typedefs in message.h");
+}
+
 }  // namespace routing
 
 }  // namespace maidsafe
