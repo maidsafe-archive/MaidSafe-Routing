@@ -664,7 +664,7 @@ TEST(APITest, BEH_API_NodeNetworkWithClient) {
 }
 
 TEST(APITest, BEH_API_SendGroup) {
-  Parameters::default_response_timeout = boost::posix_time::seconds(200);
+  Parameters::default_response_timeout = std::chrono::seconds(200);
   const uint16_t kMessageCount(10);  // each vault will send kMessageCount message to other vaults
   const size_t kDataSize(512 * 1024);
   int min_join_status(std::min(kServerCount, 8));
@@ -804,7 +804,7 @@ TEST(APITest, BEH_API_SendGroup) {
             << "\n Total number of request messages :" << (kMessageCount * kServerCount)
             << "\n Total number of response messages :" << (kMessageCount * kServerCount * 4)
             << "\n Message size : " << (kDataSize / 1024) << "kB \n";
-  Parameters::default_response_timeout = boost::posix_time::seconds(10);
+  Parameters::default_response_timeout = std::chrono::seconds(10);
 }
 
 TEST(APITest, BEH_API_PartiallyJoinedSend) {

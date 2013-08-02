@@ -95,7 +95,7 @@ void ClearMessage(protobuf::Message& message) {
 
  protected:
   AsioService asio_service_;
-  Timer timer_;
+  Timer<std::string> timer_;
   MessageReceivedFunctor message_received_functor_;
   protobuf::Message message_;
   std::mutex mutex_;
