@@ -45,41 +45,11 @@ namespace {
 
 typedef boost::asio::ip::udp::endpoint Endpoint;
 
-// Group Source
-template<typename Messsage>
-struct is_group_source;
-
-template<typename Messsage>
-struct is_group_source : public std::true_type {};
-
-template<>
-struct is_group_source<SingleToSingleMessage> : public std::false_type {};
-template<>
-struct is_group_source<SingleToGroupMessage> : public std::false_type {};
-template<>
-struct is_group_source<GroupToSingleMessage> : public std::true_type {};
-template<>
-struct is_group_source<GroupToGroupMessage> : public std::true_type {};
-
-
-// Group Destination
-template<typename Messsage>
-struct is_group_destination;
-
-template<typename Messsage>
-struct is_group_destination : public std::true_type {};
-
-template<>
-struct is_group_destination<SingleToSingleMessage> : public std::false_type {};
-template<>
-struct is_group_destination<SingleToGroupMessage> : public std::true_type {};
-template<>
-struct is_group_destination<GroupToSingleMessage> : public std::false_type {};
-template<>
-struct is_group_destination<GroupToGroupMessage> : public std::true_type {};
-
 }  // unnamed namespace
 
+namespace detail {
+
+}  // namespace detail
 
 
 Routing::Impl::Impl(bool client_mode,
@@ -754,45 +724,15 @@ bool Routing::Impl::IsConnectedClient(const NodeId& node_id) {
 }
 
 // New API
-
-template<typename T>
-protobuf::Message Routing::Impl::CreateNodeLevelMessage(const T& message) {
-  protobuf::Message proto_message;
-  proto_message.set_destination_id(message.receiver.string());
-  proto_message.set_routing_message(false);
-  proto_message.add_data(message.contents);
-  proto_message.set_type(static_cast<int32_t>(MessageType::kNodeLevel));
-
-  proto_message.set_cacheable(false); // FIXME(Prakash)
-  proto_message.set_client_node(routing_table_.client_mode());
-
-  proto_message.set_request(true);
-  proto_message.set_hops_to_live(Parameters::hops_to_live);
-
-  AddGroupSourceRelatedFields(proto_message, is_group_source<T>());
-  AddDestinationTypeRelatedFields(proto_message, is_group_destination<T>());
-  return proto_message;
-}
-
-
-template<typename T>
-void AddGroupSourceRelatedFields(const T& message, protobuf::Message& proto_message,
-                                 std::true_type) {
-  proto_message.set_group_claim(message.sender.group_id.string());
-}
-
-template<typename T>
-void AddGroupSourceRelatedFields(const T&, protobuf::Message&, std::false_type) {}
-
-template<typename T>
-void AddDestinationTypeRelatedFields(protobuf::Message& proto_message, std::true_type) {
+void Routing::Impl::AddDestinationTypeRelatedFields(protobuf::Message& proto_message,
+                                                    std::true_type) {
   proto_message.set_direct(false);
   proto_message.set_replication(Parameters::node_group_size);
   proto_message.set_visited(false);
 }
 
-template<typename T>
-void AddDestinationTypeRelatedFields(protobuf::Message& proto_message, std::false_type) {
+void Routing::Impl::AddDestinationTypeRelatedFields(protobuf::Message& proto_message,
+                                                    std::false_type) {
   proto_message.set_direct(true);
   proto_message.set_replication(1);
 }

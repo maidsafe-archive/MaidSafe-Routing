@@ -34,10 +34,12 @@ License.
 #include "maidsafe/routing/api_config.h"
 #include "maidsafe/routing/client_routing_table.h"
 #include "maidsafe/routing/group_change_handler.h"
+#include "maidsafe/routing/message_handler.h"
 #include "maidsafe/routing/network_utils.h"
 #include "maidsafe/routing/random_node_helper.h"
 #include "maidsafe/routing/remove_furthest_node.h"
 #include "maidsafe/routing/routing_api.h"
+#include "maidsafe/routing/routing.pb.h"
 #include "maidsafe/routing/routing_table.h"
 #include "maidsafe/routing/timer.h"
 
@@ -46,7 +48,44 @@ namespace maidsafe {
 
 namespace routing {
 
-class MessageHandler;
+namespace detail {
+
+// Group Source
+template<typename Messsage>
+struct is_group_source;
+
+template<typename Messsage>
+struct is_group_source : public std::true_type {};
+
+template<>
+struct is_group_source<SingleToSingleMessage> : public std::false_type {};
+template<>
+struct is_group_source<SingleToGroupMessage> : public std::false_type {};
+template<>
+struct is_group_source<GroupToSingleMessage> : public std::true_type {};
+template<>
+struct is_group_source<GroupToGroupMessage> : public std::true_type {};
+
+
+// Group Destination
+template<typename Messsage>
+struct is_group_destination;
+
+template<typename Messsage>
+struct is_group_destination : public std::true_type {};
+
+template<>
+struct is_group_destination<SingleToSingleMessage> : public std::false_type {};
+template<>
+struct is_group_destination<SingleToGroupMessage> : public std::true_type {};
+template<>
+struct is_group_destination<GroupToSingleMessage> : public std::false_type {};
+template<>
+struct is_group_destination<GroupToGroupMessage> : public std::true_type {};
+
+}  // namespace detail
+
+//class MessageHandler;
 struct NodeInfo;
 
 namespace test { class GenericNode; }
@@ -138,13 +177,13 @@ class Routing::Impl {
   template <typename T>
   protobuf::Message CreateNodeLevelMessage(const T& message);
   template<typename T>
-  void AddGroupSourceRelatedFields(protobuf::Message& proto_message, std::true_type);
+  void AddGroupSourceRelatedFields(const T& message, protobuf::Message& proto_message,
+                                   std::true_type);
   template<typename T>
-  void AddGroupSourceRelatedFields(protobuf::Message& proto_message, std::false_type);
+  void AddGroupSourceRelatedFields(const T& message, protobuf::Message& proto_message,
+                                   std::false_type);
 
-  template<typename Message>
   void AddDestinationTypeRelatedFields(protobuf::Message& proto_message, std::true_type);
-  template<typename Message>
   void AddDestinationTypeRelatedFields(protobuf::Message& proto_message, std::false_type);
 
   std::mutex network_status_mutex_;
@@ -174,6 +213,34 @@ template <typename T>
 void Routing::Impl::Send(const T& message) {  // FIXME(Fix caching)
   protobuf::Message proto_message = CreateNodeLevelMessage(message);
   SendMessage(message.receiver, proto_message);
+}
+
+template<typename T>
+void Routing::Impl::AddGroupSourceRelatedFields(const T& message, protobuf::Message& proto_message,
+                                 std::true_type) {
+  proto_message.set_group_claim(message.sender.group_id->string());
+}
+
+template<typename T>
+void Routing::Impl::AddGroupSourceRelatedFields(const T&, protobuf::Message&, std::false_type) {}
+
+template<typename T>
+protobuf::Message Routing::Impl::CreateNodeLevelMessage(const T& message) {
+  protobuf::Message proto_message;
+  proto_message.set_destination_id(message.receiver->string());
+  proto_message.set_routing_message(false);
+  proto_message.add_data(message.contents);
+  proto_message.set_type(static_cast<int32_t>(MessageType::kNodeLevel));
+
+  proto_message.set_cacheable(false); // FIXME(Prakash)
+  proto_message.set_client_node(routing_table_.client_mode());
+
+  proto_message.set_request(true);
+  proto_message.set_hops_to_live(Parameters::hops_to_live);
+
+  AddGroupSourceRelatedFields(message, proto_message, detail::is_group_source<T>());
+  AddDestinationTypeRelatedFields(proto_message, detail::is_group_destination<T>());
+  return proto_message;
 }
 
 }  // namespace routing
