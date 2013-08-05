@@ -173,7 +173,7 @@ class Routing::Impl {
 template <typename T>
 void Routing::Impl::Send(const T& message) {  // FIXME(Fix caching)
   protobuf::Message proto_message = CreateNodeLevelMessage(message);
-  SendMessage(message.receiver.string(), proto_message);
+  SendMessage(message.receiver, proto_message);
 }
 
 }  // namespace routing
