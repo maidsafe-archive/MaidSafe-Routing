@@ -652,6 +652,7 @@ void MessageHandler::InvokeMessageReceivedFunctor(const protobuf::Message& proto
   else if (!proto_message.direct() && proto_message.has_group_claim())
     message_received_functor_types_.group_to_group.message_received(
         CreateGroupToGroupMessage(proto_message));
+  assert(false);
 }
 
 void MessageHandler::set_message_received_functor(MessageReceivedFunctor message_received_functor) {

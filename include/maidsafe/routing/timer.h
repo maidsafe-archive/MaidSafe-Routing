@@ -80,9 +80,9 @@ class Timer {
     int outstanding_response_count;
 
    private:
-    Task();
-    Task(const Task&);
-    Task& operator=(const Task&);
+    Task() MAIDSAFE_DELETE;
+    Task(const Task&) MAIDSAFE_DELETE;
+    Task& operator=(const Task&) MAIDSAFE_DELETE;
   };
 
   Timer(const Timer&);
@@ -148,8 +148,8 @@ TaskId Timer<Response>::AddTask(const std::chrono::steady_clock::duration& timeo
     ThrowError(CommonErrors::invalid_parameter);
   std::lock_guard<std::mutex> lock(mutex_);
   TaskId task_id(++new_task_id_);
-  auto result(tasks_.insert(std::make_pair(task_id,
-      Task(asio_service_.service(), timeout, response_functor, expected_response_count))));
+  auto result(tasks_.insert(std::move(std::make_pair(task_id,
+      std::move(Task(asio_service_.service(), timeout, response_functor, expected_response_count))))));
   assert(result.second);
   result.first->second.timer->async_wait([this, task_id](const boost::system::error_code& error) {
     this->FinishTask(task_id, error);

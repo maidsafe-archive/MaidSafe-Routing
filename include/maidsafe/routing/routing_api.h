@@ -96,8 +96,8 @@ class Routing {
                     const NodeInfo& peer_info);
 
 
-  template <typename Sender, typename Receiver>
-  void Send(const Message<Sender, Receiver>& message);
+  template <typename T>
+  void Send(const T& message);
 
   // Sends message to a known destnation.
   // If a valid response functor is provided, it will be called when:
@@ -192,10 +192,10 @@ void Routing::Send(const GroupToSingleMessage& message);
 template <>
 void Routing::Send(const GroupToGroupMessage& message);
 
-template <typename Sender, typename Receiver>
-void Routing::Send(const Message<Sender, Receiver>& message) {
-  static_assert(false,
-    "The Message type must be one of the specialisations defined as typedefs in message.h");
+
+template <typename T>
+void Routing::Send(const T&) {
+  T::message_type_must_be_one_of_the_specialisations_defined_as_typedefs_in_message_dot_h_file;
 }
 
 }  // namespace routing
