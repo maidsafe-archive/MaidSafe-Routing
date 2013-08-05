@@ -22,6 +22,7 @@ License.
 
 #include "maidsafe/routing/client_routing_table.h"
 #include "maidsafe/routing/group_change_handler.h"
+#include "maidsafe/routing/message.h"
 #include "maidsafe/routing/network_utils.h"
 #include "maidsafe/routing/routing.pb.h"
 #include "maidsafe/routing/routing_table.h"
@@ -33,6 +34,40 @@ License.
 namespace maidsafe {
 
 namespace routing {
+
+namespace {
+
+SingleToSingleMessage CreateSingleToSingleMessage(const protobuf::Message& proto_message) {
+  return SingleToSingleMessage(proto_message.data(0),
+                               SingleSource(NodeId(proto_message.source_id())),
+                               SingleId(NodeId(proto_message.destination_id())),
+                               Cacheable::kNone);
+}
+
+SingleToGroupMessage CreateSingleToGroupMessage(const protobuf::Message& proto_message) {
+  return SingleToGroupMessage(proto_message.data(0),
+                              SingleSource(NodeId(proto_message.source_id())),
+                              GroupId(NodeId(proto_message.destination_id())),
+                              Cacheable::kNone);
+}
+
+GroupToSingleMessage CreateGroupToSingleMessage(const protobuf::Message& proto_message) {
+  return GroupToSingleMessage(proto_message.data(0),
+                              GroupSource(GroupId(NodeId(proto_message.group_claim())),
+                                          SingleId(NodeId(proto_message.source_id()))),
+                              SingleId(NodeId(proto_message.destination_id())),
+                              Cacheable::kNone);
+}
+
+GroupToGroupMessage CreateGroupToGroupMessage(const protobuf::Message& proto_message) {
+  return GroupToGroupMessage(proto_message.data(0),
+                             GroupSource(GroupId(NodeId(proto_message.group_claim())),
+                                         SingleId(NodeId(proto_message.source_id()))),
+                             GroupId(NodeId(proto_message.destination_id())),
+                             Cacheable::kNone);
+}
+
+}  //  unnamed namespace
 
 MessageHandler::MessageHandler(RoutingTable& routing_table,
                                ClientRoutingTable& client_routing_table,
@@ -54,7 +89,8 @@ MessageHandler::MessageHandler(RoutingTable& routing_table,
       response_handler_(new ResponseHandler(routing_table, client_routing_table, network_,
                                             group_change_handler)),
       service_(new Service(routing_table, client_routing_table, network_)),
-      message_received_functor_() {}
+      message_received_functor_(),
+      message_received_functor_types_() {}
 
 void MessageHandler::HandleRoutingMessage(protobuf::Message& message) {
   bool request(message.request());
@@ -601,8 +637,35 @@ void MessageHandler::HandleGroupMessageToSelfId(protobuf::Message& message) {
   network_.SendToClosestNode(message);
 }
 
+
+void MessageHandler::InvokeMessageReceivedFunctor(const protobuf::Message& proto_message) {
+
+  if (proto_message.direct() && !proto_message.has_group_claim())  // Single to Single
+    message_received_functor_types_.single_to_single.message_received(
+        CreateSingleToSingleMessage(proto_message));
+  else if (!proto_message.direct() && !proto_message.has_group_claim())
+    message_received_functor_types_.single_to_group.message_received(
+        CreateSingleToGroupMessage(proto_message));
+  else if (proto_message.direct() && proto_message.has_group_claim())
+    message_received_functor_types_.group_to_single.message_received(
+        CreateGroupToSingleMessage(proto_message));
+  else if (!proto_message.direct() && proto_message.has_group_claim())
+    message_received_functor_types_.group_to_group.message_received(
+        CreateGroupToGroupMessage(proto_message));
+}
+
 void MessageHandler::set_message_received_functor(MessageReceivedFunctor message_received_functor) {
   message_received_functor_ = message_received_functor;
+}
+
+void MessageHandler::set_message_received_functor_types(MessageAndCachingFunctorTypes
+                                                          message_received_functor_types) {
+  assert(message_received_functor_types_.single_to_single.message_received);
+  assert(message_received_functor_types_.single_to_group.message_received);
+  assert(message_received_functor_types_.group_to_group.message_received);
+  assert(message_received_functor_types_.group_to_group.message_received);
+
+  message_received_functor_types_ = message_received_functor_types;
 }
 
 void MessageHandler::set_request_public_key_functor(

@@ -88,13 +88,17 @@ struct MessageAndCachingFunctors {
   std::function<void(const T& /*message*/)> store_cache_data;
 };
 
+struct MessageAndCachingFunctorTypes {
+  MessageAndCachingFunctors<SingleToSingleMessage> single_to_single;
+  MessageAndCachingFunctors<SingleToGroupMessage> single_to_group;
+  MessageAndCachingFunctors<GroupToSingleMessage> group_to_single;
+  MessageAndCachingFunctors<GroupToGroupMessage> group_to_group;
+};
+
 struct Functors {
   Functors()
       : message_received(),
-        single_to_single(),
-        single_to_group(),
-        group_to_single(),
-        group_to_group(),
+        message_received_types(),
         network_status(),
         close_node_replaced(),
         matrix_changed(),
@@ -105,10 +109,7 @@ struct Functors {
         new_bootstrap_endpoint() {}
 
   MessageReceivedFunctor message_received;
-  MessageAndCachingFunctors<SingleToSingleMessage> single_to_single;
-  MessageAndCachingFunctors<SingleToGroupMessage> single_to_group;
-  MessageAndCachingFunctors<GroupToSingleMessage> group_to_single;
-  MessageAndCachingFunctors<GroupToGroupMessage> group_to_group;
+  MessageAndCachingFunctorTypes message_received_types;
   NetworkStatusFunctor network_status;
   CloseNodeReplacedFunctor close_node_replaced;
   MatrixChangedFunctor matrix_changed;

@@ -65,6 +65,9 @@ class Routing::Impl {
                     const boost::asio::ip::udp::endpoint& peer_endpoint,
                     const NodeInfo& peer_info);
 
+  template <typename T>
+  void Send(const T& message);  // New API
+
   void SendDirect(const NodeId& destination_id,
                   const std::string& data,
                   const bool& cacheable,
@@ -132,6 +135,18 @@ class Routing::Impl {
       const bool& cacheable);
   void CheckSendParameters(const NodeId& destination_id, const std::string& data);
 
+  template <typename T>
+  protobuf::Message CreateNodeLevelMessage(const T& message);
+  template<typename T>
+  void AddGroupSourceRelatedFields(protobuf::Message& proto_message, std::true_type);
+  template<typename T>
+  void AddGroupSourceRelatedFields(protobuf::Message& proto_message, std::false_type);
+
+  template<typename Message>
+  void AddDestinationTypeRelatedFields(protobuf::Message& proto_message, std::true_type);
+  template<typename Message>
+  void AddDestinationTypeRelatedFields(protobuf::Message& proto_message, std::false_type);
+
   std::mutex network_status_mutex_;
   int network_status_;
   RoutingTable routing_table_;
@@ -153,6 +168,13 @@ class Routing::Impl {
   Timer<std::string> timer_;
   boost::asio::deadline_timer re_bootstrap_timer_, recovery_timer_, setup_timer_;
 };
+
+// Implementations
+template <typename T>
+void Routing::Impl::Send(const T& message) {  // FIXME(Fix caching)
+  protobuf::Message proto_message = CreateNodeLevelMessage(message);
+  SendMessage(message.receiver.string(), proto_message);
+}
 
 }  // namespace routing
 
