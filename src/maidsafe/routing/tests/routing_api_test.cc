@@ -199,15 +199,17 @@ TEST(APITest, BEH_API_SendToSelf) {
         give_key((*itr).second);
     };
 
-  functors1.message_received = [&] (const std::string& message, const bool&,
-                                     ReplyFunctor reply_functor) {
+  functors1.message_and_caching.message_received = [&] (const std::string& message, const bool&,
+      ReplyFunctor reply_functor) {
       reply_functor("response to " + message);
       LOG(kVerbose) << "Message received and replied to message !!";
     };
 
   functors2.network_status = functors3.network_status = functors1.network_status;
   functors2.request_public_key = functors3.request_public_key = functors1.request_public_key;
-  functors2.message_received = functors3.message_received = functors1.message_received;
+  functors2.message_and_caching.message_received =
+      functors3.message_and_caching.message_received =
+          functors1.message_and_caching.message_received;
 
   Endpoint endpoint1(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort()),
            endpoint2(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort());
@@ -276,8 +278,8 @@ TEST(APITest, BEH_API_ClientNode) {
         give_key((*itr).second);
     };
 
-  functors1.message_received = [&] (const std::string& message, const bool&,
-                                    ReplyFunctor reply_functor) {
+  functors1.message_and_caching.message_received = [&] (const std::string& message, const bool&,
+      ReplyFunctor reply_functor) {
       reply_functor("response to " + message);
         LOG(kVerbose) << "Message received and replied to message !!";
     };
@@ -350,8 +352,8 @@ TEST(APITest, BEH_API_NonMutatingClientNode) {
         give_key((*itr).second);
     };
 
-  functors1.message_received = [&] (const std::string& message, const bool&,
-                                    ReplyFunctor reply_functor) {
+  functors1.message_and_caching.message_received = [&] (const std::string& message, const bool&,
+      ReplyFunctor reply_functor) {
       reply_functor("response to " + message);
         LOG(kVerbose) << "Message received and replied to message !!";
     };
@@ -427,8 +429,8 @@ TEST(APITest, BEH_API_ClientNodeSameId) {
         give_key((*itr).second);
     };
 
-  functors1.message_received = [&] (const std::string& message, const bool&,
-                                    ReplyFunctor reply_functor) {
+  functors1.message_and_caching.message_received = [&] (const std::string& message, const bool&,
+      ReplyFunctor reply_functor) {
       reply_functor("response to " + message);
         LOG(kVerbose) << "Message received and replied to message !!";
     };
@@ -602,8 +604,8 @@ TEST(APITest, BEH_API_NodeNetworkWithClient) {
   functors.network_status = [](const int&) {};  // NOLINT (Fraser)
 
 
-  functors.message_received = [&] (const std::string& message, const bool&,
-                                   ReplyFunctor reply_functor) {
+  functors.message_and_caching.message_received = [&] (const std::string& message, const bool&,
+     ReplyFunctor reply_functor) {
      reply_functor("response to " + message);
       LOG(kVerbose) << "Message received and replied to message !!";
     };
@@ -611,8 +613,8 @@ TEST(APITest, BEH_API_NodeNetworkWithClient) {
   Functors client_functors;
   client_functors.network_status = [](const int&) {};  // NOLINT (Fraser)
   client_functors.request_public_key = functors.request_public_key;
-  client_functors.message_received = [&] (const std::string &, const bool&,
-                                          ReplyFunctor /*reply_functor*/) {
+  client_functors.message_and_caching.message_received = [&] (const std::string &, const bool&,
+      ReplyFunctor /*reply_functor*/) {
       ASSERT_TRUE(false);  //  Client should not receive incoming message
     };
   Endpoint endpoint1(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort()),
@@ -697,8 +699,8 @@ TEST(APITest, BEH_API_SendGroup) {
   functors.network_status = [](const int&) {};
 
 
-  functors.message_received = [&] (const std::string& message, const bool&,
-                                   ReplyFunctor reply_functor) {
+  functors.message_and_caching.message_received = [&] (const std::string& message, const bool&,
+      ReplyFunctor reply_functor) {
       reply_functor("response to " + message);
       LOG(kVerbose) << "Message received and replied to message !!";
     };
@@ -825,8 +827,8 @@ TEST(APITest, BEH_API_PartiallyJoinedSend) {
   Routing routing3(pmid3);
 
   functors1.network_status = [](const int&) {};  // NOLINT (Fraser)
-  functors1.message_received = [&](const std::string& message, const bool&,
-                                   ReplyFunctor reply_functor) {
+  functors1.message_and_caching.message_received = [&](const std::string& message, const bool&,
+      ReplyFunctor reply_functor) {
       reply_functor("response to " + message);
       LOG(kVerbose) << "Message received and replied to message !!";
     };
@@ -838,7 +840,7 @@ TEST(APITest, BEH_API_PartiallyJoinedSend) {
     };
 
   functors2.network_status = functors3.network_status = functors1.network_status;
-  functors2.message_received = functors1.message_received;
+  functors2.message_and_caching.message_received = functors1.message_and_caching.message_received;
   functors2.request_public_key = functors1.request_public_key;
   functors3.request_public_key = [&](const NodeId& node_id, GivePublicKeyFunctor give_key) {
       Sleep(boost::posix_time::seconds(5));

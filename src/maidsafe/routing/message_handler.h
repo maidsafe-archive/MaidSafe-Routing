@@ -50,7 +50,7 @@ struct TypedMessageRecievedFunctors {
   std::function<void(const GroupToGroupMessage& /*message*/)> group_to_group;
 };
 
-} // unnamed namespace
+}  // unnamed namespace
 
 class NetworkUtils;
 class ClientRoutingTable;

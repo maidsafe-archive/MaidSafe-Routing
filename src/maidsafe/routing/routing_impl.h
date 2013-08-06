@@ -85,7 +85,7 @@ struct is_group_destination<GroupToGroupMessage> : public std::true_type {};
 
 }  // namespace detail
 
-//class MessageHandler;
+//  class MessageHandler;
 struct NodeInfo;
 
 namespace test { class GenericNode; }
@@ -232,7 +232,7 @@ protobuf::Message Routing::Impl::CreateNodeLevelMessage(const T& message) {
   proto_message.add_data(message.contents);
   proto_message.set_type(static_cast<int32_t>(MessageType::kNodeLevel));
 
-  proto_message.set_cacheable(false); // FIXME(Prakash)
+  proto_message.set_cacheable(false);  // FIXME(Prakash)
   proto_message.set_client_node(routing_table_.client_mode());
 
   proto_message.set_request(true);

@@ -66,14 +66,14 @@ Commands::Commands(DemoNodePtr demo_node,
                                                     GivePublicKeyFunctor give_public_key) {
       this->Validate(node_id, give_public_key);
   };
-  demo_node->functors_.message_received = [this] (const std::string &wrapped_message,
-                                                  bool /* cache */,
-                                                  const ReplyFunctor &reply_functor) {
-    std::string reply_msg(wrapped_message + "+++" + demo_node_->node_id().string());
-    if (std::string::npos != wrapped_message.find("request_routing_table"))
-      reply_msg = reply_msg + "---" + demo_node_->SerializeRoutingTable();
-    reply_functor(reply_msg);
-  };
+  demo_node->functors_.message_and_caching.message_received =
+      [this] (const std::string &wrapped_message, bool /* cache */,
+              const ReplyFunctor &reply_functor) {
+         std::string reply_msg(wrapped_message + "+++" + demo_node_->node_id().string());
+         if (std::string::npos != wrapped_message.find("request_routing_table"))
+           reply_msg = reply_msg + "---" + demo_node_->SerializeRoutingTable();
+         reply_functor(reply_msg);
+      };
   mark_results_arrived_ = std::bind(&Commands::MarkResultArrived, this);
 }
 

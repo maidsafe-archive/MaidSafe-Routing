@@ -47,7 +47,7 @@ class MessageHandlerTest : public testing::Test {
   MessageHandlerTest()
       : asio_service_(5),
         timer_(asio_service_),
-        message_received_functor_(),
+        message_and_caching_functor_(),
         message_(),
         mutex_(),
         cond_var_(),
@@ -61,12 +61,12 @@ class MessageHandlerTest : public testing::Test {
         response_handler_(),
         network_statistics_(),
         close_info_() {
-    message_received_functor_ = [this] (const std::string& message,
-                                        const bool& /*cache_lookup*/,
-                                        ReplyFunctor reply_functor) {
-                                          MessageReceived(message);
-                                          reply_functor("reply");
-                                        };
+    message_and_caching_functor_.message_received = [this] (const std::string& message,
+        const bool& /*cache_lookup*/,
+        ReplyFunctor reply_functor) {
+          MessageReceived(message);
+          reply_functor("reply");
+        };
     asio_service_.Start();
     NodeId node_id(NodeId::kRandomId);
     network_statistics_.reset(new NetworkStatistics(node_id));
@@ -96,7 +96,7 @@ void ClearMessage(protobuf::Message& message) {
  protected:
   AsioService asio_service_;
   Timer<std::string> timer_;
-  MessageReceivedFunctor message_received_functor_;
+  MessageAndCachingFunctors message_and_caching_functor_;
   protobuf::Message message_;
   std::mutex mutex_;
   std::condition_variable cond_var_;
@@ -455,7 +455,7 @@ TEST_F(MessageHandlerTest, BEH_HandleGroupMessage) {
     message.add_data("DATA");
     NodeId destination_id(GenerateUniqueRandomId(table_->kNodeId(), 4));
     message.set_destination_id(destination_id.string());
-    message_handler.set_message_received_functor(message_received_functor_);
+    message_handler.set_message_and_caching_functor(message_and_caching_functor_);
     message_handler.HandleMessage(message);
     std::unique_lock<std::mutex> lock(mutex_);
     EXPECT_TRUE(cond_var_.wait_for(lock,
@@ -573,7 +573,7 @@ TEST_F(MessageHandlerTest, BEH_HandleGroupMessage) {
     message.set_replication(4);
     message.add_data("DATA");
     message.set_destination_id(destination_id.string());
-    message_handler.set_message_received_functor(message_received_functor_);
+    message_handler.set_message_and_caching_functor(message_and_caching_functor_);
     message_handler.HandleMessage(message);
     std::unique_lock<std::mutex> lock(mutex_);
     EXPECT_TRUE(cond_var_.wait_for(lock,
@@ -611,7 +611,7 @@ TEST_F(MessageHandlerTest, BEH_HandleNodeLevelMessage) {
     EXPECT_CALL(*response_handler_, ConnectSuccess(testing::_)).Times(0);
     message.set_destination_id(table_->kNodeId().string());
     message.add_data("DATA");
-    message_handler.set_message_received_functor(message_received_functor_);
+    message_handler.set_message_and_caching_functor(message_and_caching_functor_);
     message_handler.HandleMessage(message);
     std::unique_lock<std::mutex> lock(mutex_);
     EXPECT_TRUE(cond_var_.wait_for(lock,
@@ -656,7 +656,7 @@ TEST_F(MessageHandlerTest, BEH_ClientRoutingTable) {
   message.set_source_id(RandomString(64));
   message.set_destination_id(maid.name().data.string());
   message.add_data("DATA");
-  message_handler.set_message_received_functor(message_received_functor_);
+  message_handler.set_message_and_caching_functor(message_and_caching_functor_);
   {  // Handle node level request to this node
     EXPECT_CALL(*utils_, SendToClosestNode(testing::_)).Times(0).RetiresOnSaturation();
     EXPECT_CALL(*utils_, SendToDirect(testing::_, testing::_, testing::_)).Times(0);

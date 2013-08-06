@@ -149,7 +149,10 @@ TaskId Timer<Response>::AddTask(const std::chrono::steady_clock::duration& timeo
   std::lock_guard<std::mutex> lock(mutex_);
   TaskId task_id(++new_task_id_);
   auto result(tasks_.insert(std::move(std::make_pair(task_id,
-      std::move(Task(asio_service_.service(), timeout, response_functor, expected_response_count))))));
+      std::move(Task(asio_service_.service(),
+                     timeout,
+                     response_functor,
+                     expected_response_count))))));
   assert(result.second);
   result.first->second.timer->async_wait([this, task_id](const boost::system::error_code& error) {
     this->FinishTask(task_id, error);
