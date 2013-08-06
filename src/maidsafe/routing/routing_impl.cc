@@ -345,6 +345,8 @@ void Routing::Impl::SendDirect(const NodeId& destination_id,
                                const std::string& data,
                                const bool& cacheable,
                                ResponseFunctor response_functor) {
+  assert(!functors_.typed_message_and_caching.single_to_single.message_received &&
+         "Not allowed with typed Message API");
   Send(destination_id, data, DestinationType::kDirect, cacheable, response_functor);
 }
 
@@ -352,6 +354,8 @@ void Routing::Impl::SendGroup(const NodeId& destination_id,
                               const std::string& data,
                               const bool& cacheable,
                               ResponseFunctor response_functor) {
+  assert(!functors_.typed_message_and_caching.single_to_single.message_received &&
+           "Not allowed with typed Message API");
   Send(destination_id, data, DestinationType::kGroup, cacheable, response_functor);
 }
 

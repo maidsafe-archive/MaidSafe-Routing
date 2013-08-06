@@ -211,6 +211,8 @@ class Routing::Impl {
 // Implementations
 template <typename T>
 void Routing::Impl::Send(const T& message) {  // FIXME(Fix caching)
+  assert(!functors_.message_and_caching.message_received &&
+           "Not allowed with string type message API");
   protobuf::Message proto_message = CreateNodeLevelMessage(message);
   SendMessage(message.receiver, proto_message);
 }
@@ -232,7 +234,7 @@ protobuf::Message Routing::Impl::CreateNodeLevelMessage(const T& message) {
   proto_message.add_data(message.contents);
   proto_message.set_type(static_cast<int32_t>(MessageType::kNodeLevel));
 
-  proto_message.set_cacheable(false);  // FIXME(Prakash)
+  proto_message.set_cacheable(static_cast<int32_t>(message.cacheable));
   proto_message.set_client_node(routing_table_.client_mode());
 
   proto_message.set_request(true);

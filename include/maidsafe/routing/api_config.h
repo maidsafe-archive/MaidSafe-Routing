@@ -101,6 +101,10 @@ struct MessageAndCachingFunctors {
   StoreCacheDataFunctor store_cache_data;
 };
 
+// Note : Provide TypedMessageAndCachingFunctor for typed message API and MessageAndCachingFunctor
+// for string type message API. Providing both (TypedMessageAndCachingFunctor &
+// MessageAndCachingFunctor) is not allowed.
+
 struct Functors {
   Functors()
       : message_and_caching(),

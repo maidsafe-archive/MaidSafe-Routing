@@ -95,7 +95,8 @@ class Routing {
                     const boost::asio::ip::udp::endpoint& peer_endpoint,
                     const NodeInfo& peer_info);
 
-
+  // Sends message to a known destnation. (Typed Message API)
+  // Throws on invalid paramaters
   template <typename T>
   void Send(const T& message);
 
