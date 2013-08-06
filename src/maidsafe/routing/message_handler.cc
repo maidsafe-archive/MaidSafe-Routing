@@ -90,7 +90,7 @@ MessageHandler::MessageHandler(RoutingTable& routing_table,
                                             group_change_handler)),
       service_(new Service(routing_table, client_routing_table, network_)),
       message_received_functor_(),
-      message_received_functor_types_() {}
+      typed_message_received_functors_() {}
 
 void MessageHandler::HandleRoutingMessage(protobuf::Message& message) {
   bool request(message.request());
@@ -194,6 +194,8 @@ void MessageHandler::HandleNodeLevelMessageForThisNode(protobuf::Message& messag
     };
     if (message_received_functor_)
       message_received_functor_(message.data(0), false, response_functor);
+    else
+      InvokeTypedMessageReceivedFunctor(message);  // typed message received
   } else if (IsResponse(message)) {  // response
     LOG(kInfo) << "[" << DebugId(routing_table_.kNodeId()) << "] rcvd : "
                << MessageTypeString(message) << " from "
@@ -638,35 +640,33 @@ void MessageHandler::HandleGroupMessageToSelfId(protobuf::Message& message) {
 }
 
 
-void MessageHandler::InvokeMessageReceivedFunctor(const protobuf::Message& proto_message) {
-
-  if (proto_message.direct() && !proto_message.has_group_claim())  // Single to Single
-    message_received_functor_types_.single_to_single.message_received(
-        CreateSingleToSingleMessage(proto_message));
-  else if (!proto_message.direct() && !proto_message.has_group_claim())
-    message_received_functor_types_.single_to_group.message_received(
-        CreateSingleToGroupMessage(proto_message));
-  else if (proto_message.direct() && proto_message.has_group_claim())
-    message_received_functor_types_.group_to_single.message_received(
-        CreateGroupToSingleMessage(proto_message));
-  else if (!proto_message.direct() && proto_message.has_group_claim())
-    message_received_functor_types_.group_to_group.message_received(
-        CreateGroupToGroupMessage(proto_message));
+void MessageHandler::InvokeTypedMessageReceivedFunctor(const protobuf::Message& proto_message) {
+  if ((proto_message.direct() && !proto_message.has_group_claim()) &&
+         typed_message_received_functors_.single_to_single)   // Single to Single
+    typed_message_received_functors_.single_to_single(CreateSingleToSingleMessage(proto_message));
+  else if ((!proto_message.direct() && !proto_message.has_group_claim()) &&
+             typed_message_received_functors_.single_to_group)  // Single to Group
+    typed_message_received_functors_.single_to_group(CreateSingleToGroupMessage(proto_message));
+  else if ((proto_message.direct() && proto_message.has_group_claim()) &&
+              typed_message_received_functors_.group_to_single)  // Group to Single
+    typed_message_received_functors_.group_to_single(CreateGroupToSingleMessage(proto_message));
+  else if ((!proto_message.direct() && proto_message.has_group_claim()) &&
+             typed_message_received_functors_.group_to_group)  // Group to Group
+    typed_message_received_functors_.group_to_group(CreateGroupToGroupMessage(proto_message));
   assert(false);
 }
 
-void MessageHandler::set_message_received_functor(MessageReceivedFunctor message_received_functor) {
-  message_received_functor_ = message_received_functor;
+void MessageHandler::set_message_and_caching_functor(MessageAndCachingFunctors functors) {
+  message_received_functor_ = functors.message_received;
+  // Initialise caching functors here
 }
 
-void MessageHandler::set_message_received_functor_types(MessageAndCachingFunctorTypes
-                                                          message_received_functor_types) {
-  assert(message_received_functor_types_.single_to_single.message_received);
-  assert(message_received_functor_types_.single_to_group.message_received);
-  assert(message_received_functor_types_.group_to_group.message_received);
-  assert(message_received_functor_types_.group_to_group.message_received);
-
-  message_received_functor_types_ = message_received_functor_types;
+void MessageHandler::set_typed_message_and_caching_functor(TypedMessageAndCachingFunctor functors) {
+  typed_message_received_functors_.single_to_single = functors.single_to_single.message_received;
+  typed_message_received_functors_.single_to_group = functors.single_to_group.message_received;
+  typed_message_received_functors_.group_to_single = functors.group_to_single.message_received;
+  typed_message_received_functors_.group_to_group = functors.group_to_group.message_received;
+  // Initialise caching functors here
 }
 
 void MessageHandler::set_request_public_key_functor(

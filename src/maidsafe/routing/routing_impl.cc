@@ -126,7 +126,21 @@ void Routing::Impl::ConnectFunctors(const Functors& functors) {
                                     },
                                     functors_.close_node_replaced,
                                     functors.matrix_changed);
-  message_handler_->set_message_received_functor(functors.message_received);
+  // only one of MessageAndCachingFunctors or TypedMessageAndCachingFunctor should be provided
+  assert(!functors.message_and_caching.message_received !=
+         !functors.typed_message_and_caching.single_to_single.message_received);
+  assert(!functors.message_and_caching.message_received !=
+         !functors.typed_message_and_caching.single_to_group.message_received);
+  assert(!functors.message_and_caching.message_received !=
+         !functors.typed_message_and_caching.group_to_single.message_received);
+  assert(!functors.message_and_caching.message_received !=
+         !functors.typed_message_and_caching.group_to_group.message_received);
+
+  if (functors.message_and_caching.message_received)
+    message_handler_->set_message_and_caching_functor(functors.message_and_caching);
+  else
+    message_handler_->set_typed_message_and_caching_functor(functors.typed_message_and_caching);
+
   message_handler_->set_request_public_key_functor(functors.request_public_key);
   network_.set_new_bootstrap_endpoint_functor(functors.new_bootstrap_endpoint);
 }

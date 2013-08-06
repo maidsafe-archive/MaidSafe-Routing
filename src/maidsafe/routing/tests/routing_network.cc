@@ -193,20 +193,16 @@ GenericNode::~GenericNode() {}
 
 void GenericNode::InitialiseFunctors() {
   functors_.close_node_replaced = [](const std::vector<NodeInfo>&) {};  // NOLINT (Fraser)
-  functors_.message_received = [this] (const std::string& message,
-                                       const bool& cache_lookup,
-                                       ReplyFunctor reply_functor) {
-                                 assert(!cache_lookup && "CacheLookup should be disabled for test");
-                                 static_cast<void>(cache_lookup);
-                                 LOG(kInfo) << id_ << " -- Received: message : "
-                                            << message.substr(0, 10);
-                                 std::lock_guard<std::mutex> guard(mutex_);
-                                 messages_.push_back(message);
+  functors_.message_and_caching.message_received =
+      [this] (const std::string& message, const bool& cache_lookup, ReplyFunctor reply_functor) {
+          assert(!cache_lookup && "CacheLookup should be disabled for test");
+          static_cast<void>(cache_lookup);
+          LOG(kInfo) << id_ << " -- Received: message : " << message.substr(0, 10);
+          std::lock_guard<std::mutex> guard(mutex_);
+          messages_.push_back(message);
 //                                 if (IsClient())
-                                 reply_functor(node_id().string() +
-                                               ">::< response to >:<" +
-                                               message);
-                               };
+          reply_functor(node_id().string() + ">::< response to >:<" + message);
+      };
   functors_.network_status = [&](const int& health) { SetHealth(health); };
 }
 

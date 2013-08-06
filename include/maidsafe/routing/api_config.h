@@ -82,41 +82,43 @@ typedef std::function<void(std::shared_ptr<MatrixChange> /*matrix_change*/)>
 typedef std::function<void()> RemoveFurthestUnnecessaryNode;
 
 template <typename T>
-struct MessageAndCachingFunctors {
+struct MessageAndCachingFunctorsType {
   std::function<void(const T& /*message*/)> message_received;
   std::function<bool(T& /*message*/)> have_cache_data;
   std::function<void(const T& /*message*/)> store_cache_data;
 };
 
-struct MessageAndCachingFunctorTypes {
-  MessageAndCachingFunctors<SingleToSingleMessage> single_to_single;
-  MessageAndCachingFunctors<SingleToGroupMessage> single_to_group;
-  MessageAndCachingFunctors<GroupToSingleMessage> group_to_single;
-  MessageAndCachingFunctors<GroupToGroupMessage> group_to_group;
+struct TypedMessageAndCachingFunctor {  // New API
+  MessageAndCachingFunctorsType<SingleToSingleMessage> single_to_single;
+  MessageAndCachingFunctorsType<SingleToGroupMessage> single_to_group;
+  MessageAndCachingFunctorsType<GroupToSingleMessage> group_to_single;
+  MessageAndCachingFunctorsType<GroupToGroupMessage> group_to_group;
+};
+
+struct MessageAndCachingFunctors {
+  MessageReceivedFunctor message_received;
+  HaveCacheDataFunctor have_cache_data;
+  StoreCacheDataFunctor store_cache_data;
 };
 
 struct Functors {
   Functors()
-      : message_received(),
-        message_received_types(),
+      : message_and_caching(),
+        typed_message_and_caching(),
         network_status(),
         close_node_replaced(),
         matrix_changed(),
         set_public_key(),
         request_public_key(),
-        have_cache_data(),
-        store_cache_data(),
         new_bootstrap_endpoint() {}
 
-  MessageReceivedFunctor message_received;
-  MessageAndCachingFunctorTypes message_received_types;
+  MessageAndCachingFunctors message_and_caching;
+  TypedMessageAndCachingFunctor typed_message_and_caching;
   NetworkStatusFunctor network_status;
   CloseNodeReplacedFunctor close_node_replaced;
   MatrixChangedFunctor matrix_changed;
   GivePublicKeyFunctor set_public_key;
   RequestPublicKeyFunctor request_public_key;
-  HaveCacheDataFunctor have_cache_data;
-  StoreCacheDataFunctor store_cache_data;
   NewBootstrapEndpointFunctor new_bootstrap_endpoint;
 };
 

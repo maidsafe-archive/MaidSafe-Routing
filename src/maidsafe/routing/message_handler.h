@@ -42,6 +42,15 @@ namespace test {
   class MessageHandlerTest_BEH_ClientRoutingTable_Test;
 }
 
+namespace detail {
+struct TypedMessageRecievedFunctors {
+  std::function<void(const SingleToSingleMessage& /*message*/)> single_to_single;
+  std::function<void(const SingleToGroupMessage& /*message*/)> single_to_group;
+  std::function<void(const GroupToSingleMessage& /*message*/)> group_to_single;
+  std::function<void(const GroupToGroupMessage& /*message*/)> group_to_group;
+};
+
+} // unnamed namespace
 
 class NetworkUtils;
 class ClientRoutingTable;
@@ -74,9 +83,8 @@ class MessageHandler {
                  GroupChangeHandler& group_change_handler,
                  NetworkStatistics& network_statistics);
   void HandleMessage(protobuf::Message& message);
-  void set_message_received_functor_types(MessageAndCachingFunctorTypes
-                                            message_received_functor_types);
-  void set_message_received_functor(MessageReceivedFunctor message_received_functor);
+  void set_typed_message_and_caching_functor(TypedMessageAndCachingFunctor functors);
+  void set_message_and_caching_functor(MessageAndCachingFunctors functors);
   void set_request_public_key_functor(RequestPublicKeyFunctor request_public_key_functor);
 
  private:
@@ -104,7 +112,7 @@ class MessageHandler {
   void StoreCacheCopy(const protobuf::Message& message);
   bool IsCacheableRequest(const protobuf::Message& message);
   bool IsCacheableResponse(const protobuf::Message& message);
-  void InvokeMessageReceivedFunctor(const protobuf::Message& proto_message);
+  void InvokeTypedMessageReceivedFunctor(const protobuf::Message& proto_message);
   friend class test::MessageHandlerTest;
   friend class test::MessageHandlerTest_BEH_HandleInvalidMessage_Test;
   friend class test::MessageHandlerTest_BEH_HandleRelay_Test;
@@ -123,7 +131,7 @@ class MessageHandler {
   std::shared_ptr<ResponseHandler> response_handler_;
   std::shared_ptr<Service> service_;
   MessageReceivedFunctor message_received_functor_;
-  MessageAndCachingFunctorTypes message_received_functor_types_;
+  detail::TypedMessageRecievedFunctors typed_message_received_functors_;
 };
 
 }  // namespace routing
