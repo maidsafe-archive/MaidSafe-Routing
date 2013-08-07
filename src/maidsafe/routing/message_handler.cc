@@ -54,7 +54,7 @@ SingleToGroupMessage CreateSingleToGroupMessage(const protobuf::Message& proto_m
 
 GroupToSingleMessage CreateGroupToSingleMessage(const protobuf::Message& proto_message) {
   return GroupToSingleMessage(proto_message.data(0),
-                              GroupSource(GroupId(NodeId(proto_message.group_claim())),
+                              GroupSource(GroupId(NodeId(proto_message.group_source())),
                                           SingleId(NodeId(proto_message.source_id()))),
                               SingleId(NodeId(proto_message.destination_id())),
                               static_cast<Cacheable>(proto_message.cacheable()));
@@ -62,7 +62,7 @@ GroupToSingleMessage CreateGroupToSingleMessage(const protobuf::Message& proto_m
 
 GroupToGroupMessage CreateGroupToGroupMessage(const protobuf::Message& proto_message) {
   return GroupToGroupMessage(proto_message.data(0),
-                             GroupSource(GroupId(NodeId(proto_message.group_claim())),
+                             GroupSource(GroupId(NodeId(proto_message.group_source())),
                                          SingleId(NodeId(proto_message.source_id()))),
                              GroupId(NodeId(proto_message.destination_id())),
                              static_cast<Cacheable>(proto_message.cacheable()));
@@ -324,6 +324,7 @@ void MessageHandler::HandleGroupMessageAsClosestNode(protobuf::Message& message)
   --replication;  // Will send to self as well
   message.set_direct(true);
   message.clear_route_history();
+  message.set_group_destination(message.destination_id());
   NodeId destination_id(message.destination_id());
   NodeId own_node_id(routing_table_.kNodeId());
   auto close_from_matrix(routing_table_.GetClosestMatrixNodes(destination_id, replication + 2));
@@ -543,6 +544,7 @@ void MessageHandler::HandleGroupRelayRequestMessageAsClosestNode(protobuf::Messa
   }
 
   --replication;  // This node will be one of the group member.
+  message.set_group_destination(message.destination_id());
   message.set_direct(true);
   if (have_node_with_group_id)
     ++replication;
@@ -643,19 +645,21 @@ void MessageHandler::HandleGroupMessageToSelfId(protobuf::Message& message) {
 
 
 void MessageHandler::InvokeTypedMessageReceivedFunctor(const protobuf::Message& proto_message) {
-  if ((proto_message.direct() && !proto_message.has_group_claim()) &&
-         typed_message_received_functors_.single_to_single)   // Single to Single
+  if ((!proto_message.has_group_source() && !proto_message.has_group_destination()) &&
+          typed_message_received_functors_.single_to_single) {   // Single to Single
     typed_message_received_functors_.single_to_single(CreateSingleToSingleMessage(proto_message));
-  else if ((!proto_message.direct() && !proto_message.has_group_claim()) &&
-             typed_message_received_functors_.single_to_group)  // Single to Group
+  } else if ((!proto_message.has_group_source() && proto_message.has_group_destination()) &&
+                typed_message_received_functors_.single_to_group) {  // Single to Group
     typed_message_received_functors_.single_to_group(CreateSingleToGroupMessage(proto_message));
-  else if ((proto_message.direct() && proto_message.has_group_claim()) &&
-              typed_message_received_functors_.group_to_single)  // Group to Single
+  } else if ((proto_message.has_group_source() && !proto_message.has_group_destination()) &&
+                typed_message_received_functors_.group_to_single) {  // Group to Single
     typed_message_received_functors_.group_to_single(CreateGroupToSingleMessage(proto_message));
-  else if ((!proto_message.direct() && proto_message.has_group_claim()) &&
-             typed_message_received_functors_.group_to_group)  // Group to Group
+  } else if ((proto_message.has_group_source() && proto_message.has_group_destination()) &&
+                typed_message_received_functors_.group_to_group) { // Group to Group
     typed_message_received_functors_.group_to_group(CreateGroupToGroupMessage(proto_message));
-  assert(false);
+  } else {
+    assert(false);
+  }
 }
 
 void MessageHandler::set_message_and_caching_functor(MessageAndCachingFunctors functors) {
