@@ -937,9 +937,8 @@ TEST(APITest, BEH_API_TypedMessageSend) {
       [&] (const SingleToGroupMessage& /*s2g*/) {
         LOG(kVerbose) << "single to group message received!!";
         std::lock_guard<std::mutex> lock(mutex);
-        std::cout << "<<<<<<<<>>>>>>>>>>" << responses;
         if (++responses == 3)
-           group_to_group_promise.set_value(true);
+          single_to_group_promise.set_value(true);
       };
 
   functors1.typed_message_and_caching.single_to_single.message_received =
@@ -947,7 +946,6 @@ TEST(APITest, BEH_API_TypedMessageSend) {
         LOG(kVerbose) << "single to single message received!!";
         single_to_single_promise.set_value(true);
       };
-
 
   functors2.network_status = functors3.network_status = functors1.network_status;
   functors2.request_public_key = functors3.request_public_key = functors1.request_public_key;
