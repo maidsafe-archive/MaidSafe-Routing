@@ -26,6 +26,7 @@ License.
 #include "maidsafe/passport/types.h"
 
 #include "maidsafe/routing/bootstrap_file_handler.h"
+#include "maidsafe/routing/message.h"
 #include "maidsafe/routing/message_handler.h"
 #include "maidsafe/routing/node_info.h"
 #include "maidsafe/routing/return_codes.h"
@@ -435,7 +436,8 @@ protobuf::Message Routing::Impl::CreateNodeLevelPartialMessage(
   proto_message.set_routing_message(false);
   proto_message.add_data(data);
   proto_message.set_type(static_cast<int32_t>(MessageType::kNodeLevel));
-  proto_message.set_cacheable(cacheable);
+  if (cacheable)
+    proto_message.set_cacheable(static_cast<int32_t>(Cacheable::kGet));
   proto_message.set_direct((DestinationType::kDirect == destination_type));
   proto_message.set_client_node(routing_table_.client_mode());
   proto_message.set_request(true);

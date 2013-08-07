@@ -84,8 +84,8 @@ typedef std::function<void()> RemoveFurthestUnnecessaryNode;
 template <typename T>
 struct MessageAndCachingFunctorsType {
   std::function<void(const T& /*message*/)> message_received;
-  std::function<bool(T& /*message*/)> have_cache_data;
-  std::function<void(const T& /*message*/)> store_cache_data;
+  std::function<bool(const T& /*message*/)> get_cache_data;
+  std::function<void(const T& /*message*/)> put_cache_data;
 };
 
 struct TypedMessageAndCachingFunctor {  // New API

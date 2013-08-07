@@ -41,14 +41,15 @@ SingleToSingleMessage CreateSingleToSingleMessage(const protobuf::Message& proto
   return SingleToSingleMessage(proto_message.data(0),
                                SingleSource(NodeId(proto_message.source_id())),
                                SingleId(NodeId(proto_message.destination_id())),
-                               Cacheable::kNone);
+                               static_cast<Cacheable>(proto_message.cacheable()));
+
 }
 
 SingleToGroupMessage CreateSingleToGroupMessage(const protobuf::Message& proto_message) {
   return SingleToGroupMessage(proto_message.data(0),
                               SingleSource(NodeId(proto_message.source_id())),
                               GroupId(NodeId(proto_message.destination_id())),
-                              Cacheable::kNone);
+                              static_cast<Cacheable>(proto_message.cacheable()));
 }
 
 GroupToSingleMessage CreateGroupToSingleMessage(const protobuf::Message& proto_message) {
@@ -56,7 +57,7 @@ GroupToSingleMessage CreateGroupToSingleMessage(const protobuf::Message& proto_m
                               GroupSource(GroupId(NodeId(proto_message.group_claim())),
                                           SingleId(NodeId(proto_message.source_id()))),
                               SingleId(NodeId(proto_message.destination_id())),
-                              Cacheable::kNone);
+                              static_cast<Cacheable>(proto_message.cacheable()));
 }
 
 GroupToGroupMessage CreateGroupToGroupMessage(const protobuf::Message& proto_message) {
@@ -64,7 +65,7 @@ GroupToGroupMessage CreateGroupToGroupMessage(const protobuf::Message& proto_mes
                              GroupSource(GroupId(NodeId(proto_message.group_claim())),
                                          SingleId(NodeId(proto_message.source_id()))),
                              GroupId(NodeId(proto_message.destination_id())),
-                             Cacheable::kNone);
+                             static_cast<Cacheable>(proto_message.cacheable()));
 }
 
 }  //  unnamed namespace
@@ -395,10 +396,11 @@ void MessageHandler::HandleMessage(protobuf::Message& message) {
   // Decrement hops_to_live
   message.set_hops_to_live(message.hops_to_live() - 1);
 
-  if (!routing_table_.client_mode() && IsCacheableRequest(message))
+  if (IsValidCacheableGet(message))
     return HandleCacheLookup(message);  // forwarding message is done by cache manager
-  if (!routing_table_.client_mode() && IsCacheableResponse(message))
+  if (IsValidCacheablePut(message))
     StoreCacheCopy(message);  //  Upper layer should take this on seperate thread
+
   // If group message request to self id
   if (IsGroupMessageRequestToSelfId(message))
     return HandleGroupMessageToSelfId(message);
@@ -677,24 +679,26 @@ void MessageHandler::set_request_public_key_functor(
 
 void MessageHandler::HandleCacheLookup(protobuf::Message& message) {
   assert(!routing_table_.client_mode());
-  assert(IsCacheable(message) && IsRequest(message));
+  assert(IsCacheableGet(message));
   cache_manager_->HandleGetFromCache(message);
 }
 
 void MessageHandler::StoreCacheCopy(const protobuf::Message& message) {
   assert(!routing_table_.client_mode());
-  assert(IsCacheable(message) && !IsRequest(message));
+  assert(IsCacheablePut(message));
   cache_manager_->AddToCache(message);
 }
 
-bool MessageHandler::IsCacheableRequest(const protobuf::Message& message) {
-  return (IsNodeLevelMessage(message) && Parameters::caching && !routing_table_.client_mode() &&
-          IsCacheable(message) && IsRequest(message));
+bool MessageHandler::IsValidCacheableGet(const protobuf::Message& message) {
+  // TODO(Prakash): need to differentiate between typed and un typed api
+  return (IsCacheableGet(message) && IsNodeLevelMessage(message) && Parameters::caching &&
+          !routing_table_.client_mode());
 }
 
-bool MessageHandler::IsCacheableResponse(const protobuf::Message& message) {
-  return (IsNodeLevelMessage(message) && Parameters::caching && !routing_table_.client_mode()
-          && IsCacheable(message) && !IsRequest(message));
+bool MessageHandler::IsValidCacheablePut(const protobuf::Message& message) {
+  // TODO(Prakash): need to differentiate between typed and un typed api
+  return (IsNodeLevelMessage(message) && Parameters::caching && !routing_table_.client_mode() &&
+          IsCacheablePut(message) && !IsRequest(message));
 }
 
 }  // namespace routing

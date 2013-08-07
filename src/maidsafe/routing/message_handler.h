@@ -110,8 +110,8 @@ class MessageHandler {
   void HandleGroupRelayRequestMessageAsClosestNode(protobuf::Message& message);
   void HandleCacheLookup(protobuf::Message& message);
   void StoreCacheCopy(const protobuf::Message& message);
-  bool IsCacheableRequest(const protobuf::Message& message);
-  bool IsCacheableResponse(const protobuf::Message& message);
+  bool IsValidCacheableGet(const protobuf::Message& message);
+  bool IsValidCacheablePut(const protobuf::Message& message);
   void InvokeTypedMessageReceivedFunctor(const protobuf::Message& proto_message);
   friend class test::MessageHandlerTest;
   friend class test::MessageHandlerTest_BEH_HandleInvalidMessage_Test;

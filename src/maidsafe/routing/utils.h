@@ -81,7 +81,8 @@ bool IsNodeLevelMessage(const protobuf::Message& message);
 bool IsRequest(const protobuf::Message& message);
 bool IsResponse(const protobuf::Message& message);
 bool IsDirect(const protobuf::Message& message);
-bool IsCacheable(const protobuf::Message& message);
+bool IsCacheableGet(const protobuf::Message& message);
+bool IsCacheablePut(const protobuf::Message& message);
 bool CheckId(const std::string& id_to_test);
 bool ValidateMessage(const protobuf::Message &message);
 void SetProtobufEndpoint(const boost::asio::ip::udp::endpoint& endpoint,
