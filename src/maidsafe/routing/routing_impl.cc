@@ -128,14 +128,14 @@ void Routing::Impl::ConnectFunctors(const Functors& functors) {
                                     functors_.close_node_replaced,
                                     functors.matrix_changed);
   // only one of MessageAndCachingFunctors or TypedMessageAndCachingFunctor should be provided
-//  assert(!functors.message_and_caching.message_received !=
-//         !functors.typed_message_and_caching.single_to_single.message_received);
-//  assert(!functors.message_and_caching.message_received !=
-//         !functors.typed_message_and_caching.single_to_group.message_received);
-//  assert(!functors.message_and_caching.message_received !=
-//         !functors.typed_message_and_caching.group_to_single.message_received);
-//  assert(!functors.message_and_caching.message_received !=
-//         !functors.typed_message_and_caching.group_to_group.message_received);
+  assert(!functors.message_and_caching.message_received !=
+         !functors.typed_message_and_caching.single_to_single.message_received);
+  assert(!functors.message_and_caching.message_received !=
+         !functors.typed_message_and_caching.single_to_group.message_received);
+  assert(!functors.message_and_caching.message_received !=
+         !functors.typed_message_and_caching.group_to_single.message_received);
+  assert(!functors.message_and_caching.message_received !=
+         !functors.typed_message_and_caching.group_to_group.message_received);
 
   if (functors.message_and_caching.message_received)
     message_handler_->set_message_and_caching_functor(functors.message_and_caching);
@@ -749,6 +749,7 @@ void Routing::Impl::AddDestinationTypeRelatedFields(protobuf::Message& proto_mes
   proto_message.set_direct(false);
   proto_message.set_replication(Parameters::node_group_size);
   proto_message.set_visited(false);
+  proto_message.set_group_destination(proto_message.destination_id());
 }
 
 void Routing::Impl::AddDestinationTypeRelatedFields(protobuf::Message& proto_message,

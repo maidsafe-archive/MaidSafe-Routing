@@ -324,7 +324,6 @@ void MessageHandler::HandleGroupMessageAsClosestNode(protobuf::Message& message)
   --replication;  // Will send to self as well
   message.set_direct(true);
   message.clear_route_history();
-  message.set_group_destination(message.destination_id());
   NodeId destination_id(message.destination_id());
   NodeId own_node_id(routing_table_.kNodeId());
   auto close_from_matrix(routing_table_.GetClosestMatrixNodes(destination_id, replication + 2));
@@ -544,7 +543,6 @@ void MessageHandler::HandleGroupRelayRequestMessageAsClosestNode(protobuf::Messa
   }
 
   --replication;  // This node will be one of the group member.
-  message.set_group_destination(message.destination_id());
   message.set_direct(true);
   if (have_node_with_group_id)
     ++replication;
