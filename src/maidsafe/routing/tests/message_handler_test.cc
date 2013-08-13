@@ -641,7 +641,7 @@ TEST_F(MessageHandlerTest, BEH_ClientRoutingTable) {
   asymm::Keys keys;
   keys.private_key = maid.private_key();
   keys.public_key = maid.public_key();
-  table_.reset(new MockRoutingTable(true, NodeId(maid.name().data.string()), keys,
+  table_.reset(new MockRoutingTable(true, NodeId(maid.name()->string()), keys,
                                     *network_statistics_));
   table_->AddNode(close_info_);
   MessageHandler message_handler(*table_, *ntable_, *utils_, timer_, *remove_furthest_node_,
@@ -654,7 +654,7 @@ TEST_F(MessageHandlerTest, BEH_ClientRoutingTable) {
   message.set_direct(true);
   message.set_client_node(true);
   message.set_source_id(RandomString(64));
-  message.set_destination_id(maid.name().data.string());
+  message.set_destination_id(maid.name()->string());
   message.add_data("DATA");
   message_handler.set_message_and_caching_functor(message_and_caching_functor_);
   {  // Handle node level request to this node
@@ -696,7 +696,7 @@ TEST_F(MessageHandlerTest, BEH_ClientRoutingTable) {
     message.set_client_node(true);
     message.add_data("DATA");
     message.set_source_id(RandomString(64));
-    message.set_destination_id(maid.name().data.string());
+    message.set_destination_id(maid.name()->string());
     message.set_hops_to_live(1);
     message.set_type(static_cast<uint32_t>(MessageType::kFindNodes));
     message_handler.HandleMessage(message);
@@ -723,7 +723,7 @@ TEST_F(MessageHandlerTest, BEH_ClientRoutingTable) {
     connect_message.set_client_node(true);
     connect_message.add_data("DATA");
     connect_message.set_source_id(RandomString(64));
-    connect_message.set_destination_id(maid.name().data.string());
+    connect_message.set_destination_id(maid.name()->string());
     connect_message.set_hops_to_live(1);
     connect_message.set_type(static_cast<uint32_t>(MessageType::kConnect));
     message_handler.HandleMessage(connect_message);
@@ -749,7 +749,7 @@ TEST_F(MessageHandlerTest, BEH_ClientRoutingTable) {
     message.set_client_node(true);
     message.add_data("DATA");
     message.set_source_id(RandomString(64));
-    message.set_destination_id(maid.name().data.string());
+    message.set_destination_id(maid.name()->string());
     message.set_type(static_cast<uint32_t>(MessageType::kPing));
     message_handler.HandleMessage(message);
   }

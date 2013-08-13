@@ -78,7 +78,7 @@ class Routing {
     asymm::Keys keys;
     keys.private_key = fob.private_key();
     keys.public_key = fob.public_key();
-    InitialisePimpl(detail::is_client<FobType>::value, NodeId(fob.name().data.string()), keys);
+    InitialisePimpl(detail::is_client<FobType>::value, NodeId(fob.name()->string()), keys);
   }
 
   // Joins the network. Valid method for requesting public key must be provided by the functor,
