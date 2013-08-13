@@ -55,7 +55,7 @@ struct Message {
   Message(const std::string& contents_in,
           const Sender& sender_in,
           const Receiver& receiver_in,
-          Cacheable cacheable_in);
+          Cacheable cacheable_in = Cacheable::kNone);
   Message(const Message& other);
   Message(Message&& other);
   Message& operator=(Message other);
