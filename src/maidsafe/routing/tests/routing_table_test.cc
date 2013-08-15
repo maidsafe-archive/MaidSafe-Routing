@@ -62,7 +62,7 @@ TEST(RoutingTableTest, BEH_AddCloseNodes) {
   EXPECT_EQ(Parameters::closest_nodes_size, routing_table.size());
 }
 
-TEST(RoutingTableTest, BEH_AddTooManyNodes) {
+TEST(RoutingTableTest, FUNC_AddTooManyNodes) {
   NodeId node_id(NodeId::kRandomId);
   NetworkStatistics network_statistics(node_id);
   RoutingTable routing_table(false, node_id, asymm::GenerateKeyPair(), network_statistics);
@@ -134,7 +134,7 @@ TEST(RoutingTableTest, BEH_PopulateAndDepopulateGroupCheckGroupChange) {
   EXPECT_EQ(0, routing_table.size());
 }
 
-TEST(RoutingTableTest, BEH_OrderedGroupChange) {
+TEST(RoutingTableTest, FUNC_OrderedGroupChange) {
   NodeId node_id(NodeId::kRandomId);
   NetworkStatistics network_statistics(node_id);
   RoutingTable routing_table(false, node_id, asymm::GenerateKeyPair(), network_statistics);
@@ -179,7 +179,7 @@ TEST(RoutingTableTest, BEH_OrderedGroupChange) {
     EXPECT_EQ(expected_close_nodes.at(i), close_nodes.at(i).node_id);
 }
 
-TEST(RoutingTableTest, BEH_ReverseOrderedGroupChange) {
+TEST(RoutingTableTest, FUNC_ReverseOrderedGroupChange) {
   NodeId node_id(NodeId::kRandomId);
   NetworkStatistics network_statistics(node_id);
   RoutingTable routing_table(false, node_id, asymm::GenerateKeyPair(), network_statistics);
@@ -266,7 +266,7 @@ TEST(RoutingTableTest, BEH_ReverseOrderedGroupChange) {
   EXPECT_EQ(0, routing_table.group_matrix_.GetConnectedPeers().size());
 }
 
-TEST(RoutingTableTest, BEH_CheckGroupChangeRemoveNodesFromGroup) {
+TEST(RoutingTableTest, FUNC_CheckGroupChangeRemoveNodesFromGroup) {
   NodeId node_id(NodeId::kRandomId);
   NetworkStatistics network_statistics(node_id);
   RoutingTable routing_table(false, node_id, asymm::GenerateKeyPair(), network_statistics);
@@ -351,7 +351,7 @@ TEST(RoutingTableTest, BEH_CheckGroupChangeRemoveNodesFromGroup) {
   EXPECT_EQ(Parameters::max_routing_table_size / 4, count);
 }
 
-TEST(RoutingTableTest, BEH_CheckGroupChangeAddGroupNodesToFullTable) {
+TEST(RoutingTableTest, FUNC_CheckGroupChangeAddGroupNodesToFullTable) {
   NodeId node_id(NodeId::kRandomId);
   NetworkStatistics network_statistics(node_id);
   RoutingTable routing_table(false, node_id, asymm::GenerateKeyPair(), network_statistics);
@@ -463,7 +463,7 @@ TEST(RoutingTableTest, BEH_CheckGroupChangeAddGroupNodesToFullTable) {
   ASSERT_EQ(routing_table.size(), Parameters::max_routing_table_size);
 }
 
-TEST(RoutingTableTest, BEH_FillEmptyRefillRoutingTable) {
+TEST(RoutingTableTest, FUNC_FillEmptyRefillRoutingTable) {
   NodeId node_id(NodeId::kRandomId);
   NetworkStatistics network_statistics(node_id);
   RoutingTable routing_table(false, node_id, asymm::GenerateKeyPair(), network_statistics);
@@ -810,7 +810,7 @@ TEST(RoutingTableTest, BEH_GetNthClosest) {
   }
 }
 
-TEST(RoutingTableTest, BEH_GetClosestNodeWithExclusion) {
+TEST(RoutingTableTest, FUNC_GetClosestNodeWithExclusion) {
   NodeId node_id(NodeId::kRandomId);
   NetworkStatistics network_statistics(node_id);
   RoutingTable routing_table(false, node_id, asymm::GenerateKeyPair(), network_statistics);
@@ -945,7 +945,7 @@ TEST(RoutingTableTest, BEH_IsThisNodeGroupLeader) {
   EXPECT_TRUE(maidsafe::rsa::MatchingKeys(connected_peer.public_key, nodes.at(0).public_key));
 }
 
-TEST(RoutingTableTest, BEH_IsConnected) {
+TEST(RoutingTableTest, FUNC_IsConnected) {
   NodeId own_node_id(NodeId::kRandomId);
   NetworkStatistics network_statistics(own_node_id);
   RoutingTable routing_table(false, own_node_id, asymm::GenerateKeyPair(), network_statistics);
@@ -992,7 +992,7 @@ TEST(RoutingTableTest, BEH_IsConnected) {
     EXPECT_FALSE(routing_table.IsConnected(NodeId(NodeId::kRandomId)));
 }
 
-TEST(RoutingTableTest, BEH_IsThisNodeClosestToIncludingMatrix) {
+TEST(RoutingTableTest, FUNC_IsThisNodeClosestToIncludingMatrix) {
   NodeId own_node_id(NodeId::kRandomId);
   NodeInfo own_node_info;
   own_node_info.node_id = own_node_id;
@@ -1055,7 +1055,7 @@ TEST(RoutingTableTest, BEH_IsThisNodeClosestToIncludingMatrix) {
   }
 }
 
-TEST(RoutingTableTest, BEH_GetNodeForSendingMessage) {
+TEST(RoutingTableTest, FUNC_GetNodeForSendingMessage) {
   NodeId own_node_id(NodeId::kRandomId);
   NetworkStatistics network_statistics(own_node_id);
   RoutingTable routing_table(false, own_node_id, asymm::GenerateKeyPair(), network_statistics);
@@ -1117,7 +1117,7 @@ TEST(RoutingTableTest, BEH_GetNodeForSendingMessage) {
   }
 }
 
-TEST(RoutingTableTest, BEH_GetNodeForSendingMessageIgnoreExactMatch) {
+TEST(RoutingTableTest, FUNC_GetNodeForSendingMessageIgnoreExactMatch) {
   // populate routing table
   NodeId own_node_id(NodeId::kRandomId);
   NetworkStatistics network_statistics(own_node_id);
@@ -1168,7 +1168,7 @@ TEST(RoutingTableTest, BEH_GetNodeForSendingMessageIgnoreExactMatch) {
   LOG(kInfo) << "Closest table node: " << DebugId(nodes_in_table.at(0).node_id);
 }
 
-TEST(RoutingTableTest, BEH_IsNodeIdInGroupRange) {
+TEST(RoutingTableTest, FUNC_IsNodeIdInGroupRange) {
   NodeId own_node_id(NodeId::kRandomId);
   NetworkStatistics network_statistics(own_node_id);
   RoutingTable routing_table(false, own_node_id, asymm::GenerateKeyPair(), network_statistics);
@@ -1268,8 +1268,7 @@ TEST(RoutingTableTest, BEH_MatrixChange) {
   EXPECT_EQ(count, Parameters::closest_nodes_size + 2);
 }
 
-
-TEST(RoutingTableTest, BEH_ClosestToId) {
+TEST(RoutingTableTest, FUNC_ClosestToId) {
   NodeId own_node_id(NodeId::kRandomId);
   NetworkStatistics network_statistics(own_node_id);
   RoutingTable routing_table(false, own_node_id, asymm::GenerateKeyPair(), network_statistics);
@@ -1384,7 +1383,7 @@ TEST(RoutingTableTest, BEH_ClosestToId) {
   EXPECT_TRUE(test_unknown_ids());
 }
 
-TEST(RoutingTableTest, BEH_GetRandomExistingNode) {
+TEST(RoutingTableTest, FUNC_GetRandomExistingNode) {
   NodeId own_node_id(NodeId::kRandomId);
   NetworkStatistics network_statistics(own_node_id);
   RoutingTable routing_table(false, own_node_id, asymm::GenerateKeyPair(), network_statistics);

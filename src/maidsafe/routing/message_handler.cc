@@ -42,7 +42,6 @@ SingleToSingleMessage CreateSingleToSingleMessage(const protobuf::Message& proto
                                SingleSource(NodeId(proto_message.source_id())),
                                SingleId(NodeId(proto_message.destination_id())),
                                static_cast<Cacheable>(proto_message.cacheable()));
-
 }
 
 SingleToGroupMessage CreateSingleToGroupMessage(const protobuf::Message& proto_message) {
@@ -653,7 +652,7 @@ void MessageHandler::InvokeTypedMessageReceivedFunctor(const protobuf::Message& 
                 typed_message_received_functors_.group_to_single) {  // Group to Single
     typed_message_received_functors_.group_to_single(CreateGroupToSingleMessage(proto_message));
   } else if ((proto_message.has_group_source() && proto_message.has_group_destination()) &&
-                typed_message_received_functors_.group_to_group) { // Group to Group
+                typed_message_received_functors_.group_to_group) {  // Group to Group
     typed_message_received_functors_.group_to_group(CreateGroupToGroupMessage(proto_message));
   } else {
     assert(false);

@@ -1015,7 +1015,8 @@ TEST(APITest, BEH_API_TypedMessageSend) {
     single_to_single_message.contents = "Dummy content for test puepose";
     routing3.Send(single_to_single_message);
     auto single_to_single_future(single_to_single_promise.get_future());
-    ASSERT_EQ(single_to_single_future.wait_for(std::chrono::seconds(10)), std::future_status::ready);
+    ASSERT_EQ(single_to_single_future.wait_for(std::chrono::seconds(10)),
+              std::future_status::ready);
   }
 
   {  // Test Group To Single
