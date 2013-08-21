@@ -47,12 +47,12 @@ class GroupChangeHandler;
 namespace test {
   class GenericNode;
   class RoutingTableTest;
-  class RoutingTableTest_BEH_OrderedGroupChange_Test;
-  class RoutingTableTest_BEH_ReverseOrderedGroupChange_Test;
+  class RoutingTableTest_FUNC_OrderedGroupChange_Test;
+  class RoutingTableTest_FUNC_ReverseOrderedGroupChange_Test;
   class RoutingTableTest_BEH_CheckMockSendGroupChangeRpcs_Test;
   class RoutingTableTest_BEH_GroupUpdateFromConnectedPeer_Test;
   class NetworkStatisticsTest_BEH_IsIdInGroupRange_Test;
-  class RoutingTableTest_BEH_IsNodeIdInGroupRange_Test;
+  class RoutingTableTest_FUNC_IsNodeIdInGroupRange_Test;
 }
 
 namespace protobuf { class Contact; }
@@ -123,12 +123,12 @@ class RoutingTable {
   friend class test::GenericNode;
   friend class GroupChangeHandler;
   friend class test::RoutingTableTest;
-  friend class test::RoutingTableTest_BEH_OrderedGroupChange_Test;
-  friend class test::RoutingTableTest_BEH_ReverseOrderedGroupChange_Test;
+  friend class test::RoutingTableTest_FUNC_OrderedGroupChange_Test;
+  friend class test::RoutingTableTest_FUNC_ReverseOrderedGroupChange_Test;
   friend class test::RoutingTableTest_BEH_CheckMockSendGroupChangeRpcs_Test;
   friend class test::RoutingTableTest_BEH_GroupUpdateFromConnectedPeer_Test;
   friend class test::NetworkStatisticsTest_BEH_IsIdInGroupRange_Test;
-  friend class test::RoutingTableTest_BEH_IsNodeIdInGroupRange_Test;
+  friend class test::RoutingTableTest_FUNC_IsNodeIdInGroupRange_Test;
 
  private:
   RoutingTable(const RoutingTable&);

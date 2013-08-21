@@ -45,6 +45,28 @@ int Routing::ZeroStateJoin(Functors functors,
   return pimpl_->ZeroStateJoin(functors, local_endpoint, peer_endpoint, peer_info);
 }
 
+
+// Send methods
+template <>
+void Routing::Send(const SingleToSingleMessage& message) {
+  pimpl_->Send(message);
+}
+
+template <>
+void Routing::Send(const SingleToGroupMessage& message) {
+  pimpl_->Send(message);
+}
+
+template <>
+void Routing::Send(const GroupToSingleMessage& message) {
+  pimpl_->Send(message);
+}
+
+template <>
+void Routing::Send(const GroupToGroupMessage& message) {
+  pimpl_->Send(message);
+}
+
 void Routing::SendDirect(const NodeId& destination_id,
                    const std::string& message,
                    const bool& cacheable,

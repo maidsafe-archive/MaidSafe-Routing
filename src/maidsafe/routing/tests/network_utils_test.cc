@@ -150,7 +150,7 @@ TEST(NetworkUtilsTest, FUNC_ProcessSendDirectEndpoint) {
     };
 
   auto pmid1(MakePmid());
-  NodeId node_id1(pmid1.name().data.string());
+  NodeId node_id1(pmid1.name()->string());
   auto private_key1(std::make_shared<asymm::PrivateKey>(pmid1.private_key()));
   auto public_key1(std::make_shared<asymm::PublicKey>(pmid1.public_key()));
   rudp::NatType nat_type;
@@ -172,7 +172,7 @@ TEST(NetworkUtilsTest, FUNC_ProcessSendDirectEndpoint) {
   });
 
   auto pmid2(MakePmid());
-  NodeId node_id2(pmid2.name().data.string());
+  NodeId node_id2(pmid2.name()->string());
   auto private_key2(std::make_shared<asymm::PrivateKey>(pmid2.private_key()));
   auto public_key2(std::make_shared<asymm::PublicKey>(pmid2.public_key()));
   auto a2 = std::async(std::launch::async, [=, &rudp2, &nat_type]()->NodeId {
@@ -316,7 +316,7 @@ TEST(NetworkUtilsTest, FUNC_ProcessSendRecursiveSendOn) {
     };
 
   auto pmid1(MakePmid());
-  NodeId node_id1(pmid1.name().data.string());
+  NodeId node_id1(pmid1.name()->string());
   auto private_key1(std::make_shared<asymm::PrivateKey>(pmid1.private_key()));
   auto public_key1(std::make_shared<asymm::PublicKey>(pmid1.public_key()));
   rudp::NatType nat_type;
@@ -338,7 +338,7 @@ TEST(NetworkUtilsTest, FUNC_ProcessSendRecursiveSendOn) {
   });
   NodeInfoAndPrivateKey node2 = MakeNodeInfoAndKeys();
   auto pmid2(MakePmid());
-  NodeId node_id2(pmid2.name().data.string());
+  NodeId node_id2(pmid2.name()->string());
   auto private_key2(std::make_shared<asymm::PrivateKey>(pmid2.private_key()));
   auto public_key2(std::make_shared<asymm::PublicKey>(pmid2.public_key()));
   auto a2 = std::async(std::launch::async, [=, &rudp2, &nat_type]()->NodeId {

@@ -57,9 +57,8 @@ message Bootstrap {
   repeated Endpoint bootstrap_contacts = 1;
 }
 
-// Message wrappers
 
-
+// Message wrapper
 message Message {
   optional bytes source_id = 1;
   optional bytes destination_id = 2;
@@ -71,7 +70,8 @@ message Message {
   required bool direct = 8;
   optional int32 replication = 9;
   optional sint32 type = 10; // type of data - used in signal to upper layers
-  optional bool cacheable = 11;
+//  optional bool cacheable = 11;
+  optional int32 cacheable = 11;
   optional int32 id = 12;
   required bool client_node = 13;
   optional bytes relay_connection_id = 14;
@@ -79,10 +79,11 @@ message Message {
   optional bool close_to_this_node = 16;
   repeated bytes route_history = 17;
   required bool request = 18;
-  optional bytes group_claim = 19;
-  optional int32 hops_to_live = 20;
-  optional bool visited = 21;
-  optional bytes average_distace = 22;
+  optional int32 hops_to_live = 19;
+  optional bool visited = 20;
+  optional bytes average_distace = 21;
+  optional bytes group_source = 22;
+  optional bytes group_destination = 23;
 }
 
 message SignedMessage {

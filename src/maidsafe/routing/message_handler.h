@@ -24,6 +24,7 @@ License.
 #include "maidsafe/routing/cache_manager.h"
 #include "maidsafe/routing/response_handler.h"
 #include "maidsafe/routing/service.h"
+#include "maidsafe/routing/timer.h"
 
 
 namespace maidsafe {
@@ -41,11 +42,19 @@ namespace test {
   class MessageHandlerTest_BEH_ClientRoutingTable_Test;
 }
 
+namespace detail {
+struct TypedMessageRecievedFunctors {
+  std::function<void(const SingleToSingleMessage& /*message*/)> single_to_single;
+  std::function<void(const SingleToGroupMessage& /*message*/)> single_to_group;
+  std::function<void(const GroupToSingleMessage& /*message*/)> group_to_single;
+  std::function<void(const GroupToGroupMessage& /*message*/)> group_to_group;
+};
+
+}  // unnamed namespace
 
 class NetworkUtils;
 class ClientRoutingTable;
 class RoutingTable;
-class Timer;
 class RemoveFurthestNode;
 class GroupChangeHandler;
 class NetworkStatistics;
@@ -69,12 +78,13 @@ class MessageHandler {
   MessageHandler(RoutingTable& routing_table,
                  ClientRoutingTable& client_routing_table,
                  NetworkUtils& network,
-                 Timer& timer,
+                 Timer<std::string>& timer,
                  RemoveFurthestNode& remove_node,
                  GroupChangeHandler& group_change_handler,
                  NetworkStatistics& network_statistics);
   void HandleMessage(protobuf::Message& message);
-  void set_message_received_functor(MessageReceivedFunctor message_received_functor);
+  void set_typed_message_and_caching_functor(TypedMessageAndCachingFunctor functors);
+  void set_message_and_caching_functor(MessageAndCachingFunctors functors);
   void set_request_public_key_functor(RequestPublicKeyFunctor request_public_key_functor);
 
  private:
@@ -100,8 +110,9 @@ class MessageHandler {
   void HandleGroupRelayRequestMessageAsClosestNode(protobuf::Message& message);
   void HandleCacheLookup(protobuf::Message& message);
   void StoreCacheCopy(const protobuf::Message& message);
-  bool IsCacheableRequest(const protobuf::Message& message);
-  bool IsCacheableResponse(const protobuf::Message& message);
+  bool IsValidCacheableGet(const protobuf::Message& message);
+  bool IsValidCacheablePut(const protobuf::Message& message);
+  void InvokeTypedMessageReceivedFunctor(const protobuf::Message& proto_message);
   friend class test::MessageHandlerTest;
   friend class test::MessageHandlerTest_BEH_HandleInvalidMessage_Test;
   friend class test::MessageHandlerTest_BEH_HandleRelay_Test;
@@ -116,10 +127,11 @@ class MessageHandler {
   RemoveFurthestNode& remove_furthest_node_;
   GroupChangeHandler& group_change_handler_;
   std::unique_ptr<CacheManager> cache_manager_;
-  Timer& timer_;
+  Timer<std::string>& timer_;
   std::shared_ptr<ResponseHandler> response_handler_;
   std::shared_ptr<Service> service_;
   MessageReceivedFunctor message_received_functor_;
+  detail::TypedMessageRecievedFunctors typed_message_received_functors_;
 };
 
 }  // namespace routing

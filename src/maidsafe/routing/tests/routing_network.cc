@@ -193,20 +193,15 @@ GenericNode::~GenericNode() {}
 
 void GenericNode::InitialiseFunctors() {
   functors_.close_node_replaced = [](const std::vector<NodeInfo>&) {};  // NOLINT (Fraser)
-  functors_.message_received = [this] (const std::string& message,
-                                       const bool& cache_lookup,
-                                       ReplyFunctor reply_functor) {
-                                 assert(!cache_lookup && "CacheLookup should be disabled for test");
-                                 static_cast<void>(cache_lookup);
-                                 LOG(kInfo) << id_ << " -- Received: message : "
-                                            << message.substr(0, 10);
-                                 std::lock_guard<std::mutex> guard(mutex_);
-                                 messages_.push_back(message);
-//                                 if (IsClient())
-                                 reply_functor(node_id().string() +
-                                               ">::< response to >:<" +
-                                               message);
-                               };
+  functors_.message_and_caching.message_received =
+      [this] (const std::string& message, const bool& cache_lookup, ReplyFunctor reply_functor) {
+          assert(!cache_lookup && "CacheLookup should be disabled for test");
+          static_cast<void>(cache_lookup);
+          LOG(kInfo) << id_ << " -- Received: message : " << message.substr(0, 10);
+          std::lock_guard<std::mutex> guard(mutex_);
+          messages_.push_back(message);
+          reply_functor(node_id().string() + ">::< response to >:<" + message);
+      };
   functors_.network_status = [&](const int& health) { SetHealth(health); };
 }
 
@@ -688,14 +683,14 @@ void GenericNetwork::SetNodeValidationFunctor(NodePtr node) {
   NodeId own_node_id(node->node_id());
   if (node->HasSymmetricNat()) {
     node->functors_.request_public_key = [this, own_node_id] (const NodeId& node_id,
-                                                 GivePublicKeyFunctor give_public_key) {
+                                             GivePublicKeyFunctor give_public_key) {
       assert(node_id != own_node_id && "(1) Should not get public key request from own node id!");
       if (!NodeHasSymmetricNat(node_id))
         this->Validate(node_id, give_public_key);
     };
   } else {
     node->functors_.request_public_key = [this, own_node_id] (const NodeId& node_id,
-                                                 GivePublicKeyFunctor give_public_key) {
+                                             GivePublicKeyFunctor give_public_key) {
       assert(node_id != own_node_id && "(2) Should not get public key request from own node id!");
       this->Validate(node_id, give_public_key);
     };

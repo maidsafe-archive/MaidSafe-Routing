@@ -427,8 +427,15 @@ void ResponseHandler::CloseNodeUpdateForClient(protobuf::Message& message) {
   message.Clear();
 }
 
-void ResponseHandler::GetGroup(Timer& timer, protobuf::Message& message) {
-  timer.AddResponse(message);
+void ResponseHandler::GetGroup(Timer<std::string>& timer, protobuf::Message& message) {
+  try {
+    if (!message.has_id() || message.data_size() == 1)
+      ThrowError(CommonErrors::parsing_error);
+    timer.AddResponse(message.id(), message.data(0));
+  } catch(const maidsafe_error& e) {
+    LOG(kError) << e.what();
+    return;
+  }
 }
 
 void ResponseHandler::set_request_public_key_functor(RequestPublicKeyFunctor request_public_key) {

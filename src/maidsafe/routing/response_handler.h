@@ -66,7 +66,7 @@ class ResponseHandler : public std::enable_shared_from_this<ResponseHandler> {
   virtual void ConnectSuccessAcknowledgement(protobuf::Message& message);
   void set_request_public_key_functor(RequestPublicKeyFunctor request_public_key);
   RequestPublicKeyFunctor request_public_key_functor() const;
-  void GetGroup(Timer& timer, protobuf::Message& message);
+  void GetGroup(Timer<std::string>& timer, protobuf::Message& message);
   void CloseNodeUpdateForClient(protobuf::Message& message);
 
   friend class test::ResponseHandlerTest_BEH_ConnectAttempts_Test;

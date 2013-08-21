@@ -78,7 +78,7 @@ class Routing {
     asymm::Keys keys;
     keys.private_key = fob.private_key();
     keys.public_key = fob.public_key();
-    InitialisePimpl(detail::is_client<FobType>::value, NodeId(fob.name().data.string()), keys);
+    InitialisePimpl(detail::is_client<FobType>::value, NodeId(fob.name()->string()), keys);
   }
 
   // Joins the network. Valid method for requesting public key must be provided by the functor,
@@ -94,6 +94,11 @@ class Routing {
                     const boost::asio::ip::udp::endpoint& local_endpoint,
                     const boost::asio::ip::udp::endpoint& peer_endpoint,
                     const NodeInfo& peer_info);
+
+  // Sends message to a known destnation. (Typed Message API)
+  // Throws on invalid paramaters
+  template <typename T>
+  void Send(const T& message);
 
   // Sends message to a known destnation.
   // If a valid response functor is provided, it will be called when:
@@ -178,6 +183,21 @@ class Routing {
 
 template<>
 Routing::Routing(const NodeId& node_id);
+
+template <>
+void Routing::Send(const SingleToSingleMessage& message);
+template <>
+void Routing::Send(const SingleToGroupMessage& message);
+template <>
+void Routing::Send(const GroupToSingleMessage& message);
+template <>
+void Routing::Send(const GroupToGroupMessage& message);
+
+
+template <typename T>
+void Routing::Send(const T&) {
+  T::message_type_must_be_one_of_the_specialisations_defined_as_typedefs_in_message_dot_h_file;
+}
 
 }  // namespace routing
 

@@ -60,20 +60,20 @@ Commands::Commands(DemoNodePtr demo_node,
   // and the latter half part will be used as client, which shall not respond msg
   // i.e. shall not be put into all_ids_
   for (size_t i(0); i < (all_pmids_.size() / 2); ++i)
-    all_ids_.push_back(NodeId(all_pmids_[i].name().data));
+    all_ids_.push_back(NodeId(all_pmids_[i].name().value));
 
   demo_node->functors_.request_public_key = [this] (const NodeId& node_id,
                                                     GivePublicKeyFunctor give_public_key) {
       this->Validate(node_id, give_public_key);
   };
-  demo_node->functors_.message_received = [this] (const std::string &wrapped_message,
-                                                  bool /* cache */,
-                                                  const ReplyFunctor &reply_functor) {
-    std::string reply_msg(wrapped_message + "+++" + demo_node_->node_id().string());
-    if (std::string::npos != wrapped_message.find("request_routing_table"))
-      reply_msg = reply_msg + "---" + demo_node_->SerializeRoutingTable();
-    reply_functor(reply_msg);
-  };
+  demo_node->functors_.message_and_caching.message_received =
+      [this] (const std::string &wrapped_message, bool /* cache */,
+              const ReplyFunctor &reply_functor) {
+         std::string reply_msg(wrapped_message + "+++" + demo_node_->node_id().string());
+         if (std::string::npos != wrapped_message.find("request_routing_table"))
+           reply_msg = reply_msg + "---" + demo_node_->SerializeRoutingTable();
+         reply_functor(reply_msg);
+      };
   mark_results_arrived_ = std::bind(&Commands::MarkResultArrived, this);
 }
 
@@ -84,7 +84,7 @@ void Commands::Validate(const NodeId& node_id, GivePublicKeyFunctor give_public_
   auto iter(all_pmids_.begin());
   bool find(false);
   while ((iter != all_pmids_.end()) && !find) {
-    if (iter->name().data.string() == node_id.string())
+    if (iter->name()->string() == node_id.string())
       find = true;
     else
       ++iter;
@@ -146,10 +146,10 @@ void Commands::ZeroStateJoin() {
   }
   NodeInfo peer_node_info;
   if (identity_index_ == 0) {
-    peer_node_info.node_id = NodeId(all_pmids_[1].name().data);
+    peer_node_info.node_id = NodeId(all_pmids_[1].name().value);
     peer_node_info.public_key = all_pmids_[1].public_key();
   } else {
-    peer_node_info.node_id = NodeId(all_pmids_[0].name().data);
+    peer_node_info.node_id = NodeId(all_pmids_[0].name().value);
     peer_node_info.public_key = all_pmids_[0].public_key();
   }
   peer_node_info.connection_id = peer_node_info.node_id;
@@ -225,7 +225,7 @@ uint16_t Commands::MakeMessage(const int& id_index, const DestinationType& desti
     return 0;
   }
   if (identity_index >= 0)
-    dest_id = NodeId(all_pmids_[identity_index].name().data);
+    dest_id = NodeId(all_pmids_[identity_index].name().value);
   std::cout << "Sending a msg from : " << maidsafe::HexSubstr(demo_node_->node_id().string())
             << " to " << (destination_type != DestinationType::kGroup ? ": " : "group : ")
             << maidsafe::HexSubstr(dest_id.string())

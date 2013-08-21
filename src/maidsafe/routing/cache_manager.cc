@@ -44,10 +44,10 @@ void CacheManager::AddToCache(const protobuf::Message& message) {
   if (store_cache_data_)
     store_cache_data_(message.data(0));
 }
-
+// FIXME(Prakash)
 void CacheManager::HandleGetFromCache(protobuf::Message& message) {
   assert(IsRequest(message));
-  assert(IsCacheable(message));
+  assert(IsCacheableGet(message));
   assert(kNodeId_.string() != message.source_id());
   assert(kNodeId_.string() != message.destination_id());
   if (message_received_functor_) {

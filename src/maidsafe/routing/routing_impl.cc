@@ -26,6 +26,7 @@ License.
 #include "maidsafe/passport/types.h"
 
 #include "maidsafe/routing/bootstrap_file_handler.h"
+#include "maidsafe/routing/message.h"
 #include "maidsafe/routing/message_handler.h"
 #include "maidsafe/routing/node_info.h"
 #include "maidsafe/routing/return_codes.h"
@@ -46,6 +47,11 @@ namespace {
 typedef boost::asio::ip::udp::endpoint Endpoint;
 
 }  // unnamed namespace
+
+namespace detail {
+
+}  // namespace detail
+
 
 Routing::Impl::Impl(bool client_mode,
                     const NodeId& node_id,
@@ -121,7 +127,21 @@ void Routing::Impl::ConnectFunctors(const Functors& functors) {
                                     },
                                     functors_.close_node_replaced,
                                     functors.matrix_changed);
-  message_handler_->set_message_received_functor(functors.message_received);
+  // only one of MessageAndCachingFunctors or TypedMessageAndCachingFunctor should be provided
+  assert(!functors.message_and_caching.message_received !=
+         !functors.typed_message_and_caching.single_to_single.message_received);
+  assert(!functors.message_and_caching.message_received !=
+         !functors.typed_message_and_caching.single_to_group.message_received);
+  assert(!functors.message_and_caching.message_received !=
+         !functors.typed_message_and_caching.group_to_single.message_received);
+  assert(!functors.message_and_caching.message_received !=
+         !functors.typed_message_and_caching.group_to_group.message_received);
+
+  if (functors.message_and_caching.message_received)
+    message_handler_->set_message_and_caching_functor(functors.message_and_caching);
+  else
+    message_handler_->set_typed_message_and_caching_functor(functors.typed_message_and_caching);
+
   message_handler_->set_request_public_key_functor(functors.request_public_key);
   network_.set_new_bootstrap_endpoint_functor(functors.new_bootstrap_endpoint);
 }
@@ -326,6 +346,8 @@ void Routing::Impl::SendDirect(const NodeId& destination_id,
                                const std::string& data,
                                const bool& cacheable,
                                ResponseFunctor response_functor) {
+  assert(!functors_.typed_message_and_caching.single_to_single.message_received &&
+         "Not allowed with typed Message API");
   Send(destination_id, data, DestinationType::kDirect, cacheable, response_functor);
 }
 
@@ -333,6 +355,8 @@ void Routing::Impl::SendGroup(const NodeId& destination_id,
                               const std::string& data,
                               const bool& cacheable,
                               ResponseFunctor response_functor) {
+  assert(!functors_.typed_message_and_caching.single_to_single.message_received &&
+           "Not allowed with typed Message API");
   Send(destination_id, data, DestinationType::kGroup, cacheable, response_functor);
 }
 
@@ -412,7 +436,8 @@ protobuf::Message Routing::Impl::CreateNodeLevelPartialMessage(
   proto_message.set_routing_message(false);
   proto_message.add_data(data);
   proto_message.set_type(static_cast<int32_t>(MessageType::kNodeLevel));
-  proto_message.set_cacheable(cacheable);
+  if (cacheable)
+    proto_message.set_cacheable(static_cast<int32_t>(Cacheable::kGet));
   proto_message.set_direct((DestinationType::kDirect == destination_type));
   proto_message.set_client_node(routing_table_.client_mode());
   proto_message.set_request(true);
@@ -716,6 +741,21 @@ bool Routing::Impl::IsConnectedVault(const NodeId& node_id) {
 
 bool Routing::Impl::IsConnectedClient(const NodeId& node_id) {
   return client_routing_table_.IsConnected(node_id);
+}
+
+// New API
+void Routing::Impl::AddDestinationTypeRelatedFields(protobuf::Message& proto_message,
+                                                    std::true_type) {
+  proto_message.set_direct(false);
+  proto_message.set_replication(Parameters::node_group_size);
+  proto_message.set_visited(false);
+  proto_message.set_group_destination(proto_message.destination_id());
+}
+
+void Routing::Impl::AddDestinationTypeRelatedFields(protobuf::Message& proto_message,
+                                                    std::false_type) {
+  proto_message.set_direct(true);
+  proto_message.set_replication(1);
 }
 
 }  // namespace routing

@@ -184,7 +184,7 @@ int main(int argc, char **argv) {
       } else {
         local_pmid = all_pmids[identity_index];
         std::cout << "Using identity #" << identity_index << " from keys file"
-                  << " , value is : " << maidsafe::HexSubstr(local_pmid.name().data) << std::endl;
+                  << " , value is : " << maidsafe::HexSubstr(local_pmid.name().value) << std::endl;
       }
     }
 

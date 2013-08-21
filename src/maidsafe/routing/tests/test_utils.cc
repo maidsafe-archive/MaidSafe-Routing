@@ -44,7 +44,7 @@ namespace {
 template<typename FobType>
 NodeInfoAndPrivateKey MakeNodeInfoAndKeysWithFob(FobType fob) {
   NodeInfo node;
-  node.node_id = NodeId(fob.name().data.string());
+  node.node_id = NodeId(fob.name()->string());
   node.public_key = fob.public_key();
   node.connection_id = node.node_id;
   NodeInfoAndPrivateKey node_info_and_private_key;

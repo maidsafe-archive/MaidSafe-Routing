@@ -185,8 +185,14 @@ bool IsDirect(const protobuf::Message& message) {
   return message.direct();
 }
 
-bool IsCacheable(const protobuf::Message& message) {
-  return (message.has_cacheable() && message.cacheable());
+bool IsCacheableGet(const protobuf::Message& message) {
+  return (message.has_cacheable() &&
+           (static_cast<Cacheable>(message.cacheable()) == Cacheable::kGet));
+}
+
+bool IsCacheablePut(const protobuf::Message& message) {
+  return (message.has_cacheable() &&
+           (static_cast<Cacheable>(message.cacheable()) == Cacheable::kPut));
 }
 
 bool CheckId(const std::string& id_to_test) {

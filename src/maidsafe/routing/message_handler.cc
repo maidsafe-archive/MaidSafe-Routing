@@ -22,12 +22,12 @@ License.
 
 #include "maidsafe/routing/client_routing_table.h"
 #include "maidsafe/routing/group_change_handler.h"
+#include "maidsafe/routing/message.h"
 #include "maidsafe/routing/network_utils.h"
 #include "maidsafe/routing/routing.pb.h"
 #include "maidsafe/routing/routing_table.h"
 #include "maidsafe/routing/service.h"
 #include "maidsafe/routing/remove_furthest_node.h"
-#include "maidsafe/routing/timer.h"
 #include "maidsafe/routing/utils.h"
 
 
@@ -35,10 +35,44 @@ namespace maidsafe {
 
 namespace routing {
 
+namespace {
+
+SingleToSingleMessage CreateSingleToSingleMessage(const protobuf::Message& proto_message) {
+  return SingleToSingleMessage(proto_message.data(0),
+                               SingleSource(NodeId(proto_message.source_id())),
+                               SingleId(NodeId(proto_message.destination_id())),
+                               static_cast<Cacheable>(proto_message.cacheable()));
+}
+
+SingleToGroupMessage CreateSingleToGroupMessage(const protobuf::Message& proto_message) {
+  return SingleToGroupMessage(proto_message.data(0),
+                              SingleSource(NodeId(proto_message.source_id())),
+                              GroupId(NodeId(proto_message.destination_id())),
+                              static_cast<Cacheable>(proto_message.cacheable()));
+}
+
+GroupToSingleMessage CreateGroupToSingleMessage(const protobuf::Message& proto_message) {
+  return GroupToSingleMessage(proto_message.data(0),
+                              GroupSource(GroupId(NodeId(proto_message.group_source())),
+                                          SingleId(NodeId(proto_message.source_id()))),
+                              SingleId(NodeId(proto_message.destination_id())),
+                              static_cast<Cacheable>(proto_message.cacheable()));
+}
+
+GroupToGroupMessage CreateGroupToGroupMessage(const protobuf::Message& proto_message) {
+  return GroupToGroupMessage(proto_message.data(0),
+                             GroupSource(GroupId(NodeId(proto_message.group_source())),
+                                         SingleId(NodeId(proto_message.source_id()))),
+                             GroupId(NodeId(proto_message.destination_id())),
+                             static_cast<Cacheable>(proto_message.cacheable()));
+}
+
+}  //  unnamed namespace
+
 MessageHandler::MessageHandler(RoutingTable& routing_table,
                                ClientRoutingTable& client_routing_table,
                                NetworkUtils& network,
-                               Timer& timer,
+                               Timer<std::string>& timer,
                                RemoveFurthestNode& remove_furthest_node,
                                GroupChangeHandler& group_change_handler,
                                NetworkStatistics& network_statistics)
@@ -55,7 +89,8 @@ MessageHandler::MessageHandler(RoutingTable& routing_table,
       response_handler_(new ResponseHandler(routing_table, client_routing_table, network_,
                                             group_change_handler)),
       service_(new Service(routing_table, client_routing_table, network_)),
-      message_received_functor_() {}
+      message_received_functor_(),
+      typed_message_received_functors_() {}
 
 void MessageHandler::HandleRoutingMessage(protobuf::Message& message) {
   bool request(message.request());
@@ -159,12 +194,22 @@ void MessageHandler::HandleNodeLevelMessageForThisNode(protobuf::Message& messag
     };
     if (message_received_functor_)
       message_received_functor_(message.data(0), false, response_functor);
+    else
+      InvokeTypedMessageReceivedFunctor(message);  // typed message received
   } else if (IsResponse(message)) {  // response
     LOG(kInfo) << "[" << DebugId(routing_table_.kNodeId()) << "] rcvd : "
                << MessageTypeString(message) << " from "
                << HexSubstr(message.source_id())
                << "   (id: " << message.id() << ")  --NodeLevel--";
-    if (timer_.AddResponse(message) && message.has_average_distace())
+    try {
+      if (!message.has_id() || message.data_size() == 1)
+        ThrowError(CommonErrors::parsing_error);
+      timer_.AddResponse(message.id(), message.data(0));
+    } catch(const maidsafe_error& e) {
+      LOG(kError) << e.what();
+      return;
+    }
+    if (message.has_average_distace())
       network_statistics_.UpdateNetworkAverageDistance(NodeId(message.average_distace()));
   } else {
     message.Clear();
@@ -350,10 +395,11 @@ void MessageHandler::HandleMessage(protobuf::Message& message) {
   // Decrement hops_to_live
   message.set_hops_to_live(message.hops_to_live() - 1);
 
-  if (!routing_table_.client_mode() && IsCacheableRequest(message))
+  if (IsValidCacheableGet(message))
     return HandleCacheLookup(message);  // forwarding message is done by cache manager
-  if (!routing_table_.client_mode() && IsCacheableResponse(message))
+  if (IsValidCacheablePut(message))
     StoreCacheCopy(message);  //  Upper layer should take this on seperate thread
+
   // If group message request to self id
   if (IsGroupMessageRequestToSelfId(message))
     return HandleGroupMessageToSelfId(message);
@@ -594,8 +640,36 @@ void MessageHandler::HandleGroupMessageToSelfId(protobuf::Message& message) {
   network_.SendToClosestNode(message);
 }
 
-void MessageHandler::set_message_received_functor(MessageReceivedFunctor message_received_functor) {
-  message_received_functor_ = message_received_functor;
+
+void MessageHandler::InvokeTypedMessageReceivedFunctor(const protobuf::Message& proto_message) {
+  if ((!proto_message.has_group_source() && !proto_message.has_group_destination()) &&
+          typed_message_received_functors_.single_to_single) {   // Single to Single
+    typed_message_received_functors_.single_to_single(CreateSingleToSingleMessage(proto_message));
+  } else if ((!proto_message.has_group_source() && proto_message.has_group_destination()) &&
+                typed_message_received_functors_.single_to_group) {  // Single to Group
+    typed_message_received_functors_.single_to_group(CreateSingleToGroupMessage(proto_message));
+  } else if ((proto_message.has_group_source() && !proto_message.has_group_destination()) &&
+                typed_message_received_functors_.group_to_single) {  // Group to Single
+    typed_message_received_functors_.group_to_single(CreateGroupToSingleMessage(proto_message));
+  } else if ((proto_message.has_group_source() && proto_message.has_group_destination()) &&
+                typed_message_received_functors_.group_to_group) {  // Group to Group
+    typed_message_received_functors_.group_to_group(CreateGroupToGroupMessage(proto_message));
+  } else {
+    assert(false);
+  }
+}
+
+void MessageHandler::set_message_and_caching_functor(MessageAndCachingFunctors functors) {
+  message_received_functor_ = functors.message_received;
+  // Initialise caching functors here
+}
+
+void MessageHandler::set_typed_message_and_caching_functor(TypedMessageAndCachingFunctor functors) {
+  typed_message_received_functors_.single_to_single = functors.single_to_single.message_received;
+  typed_message_received_functors_.single_to_group = functors.single_to_group.message_received;
+  typed_message_received_functors_.group_to_single = functors.group_to_single.message_received;
+  typed_message_received_functors_.group_to_group = functors.group_to_group.message_received;
+  // Initialise caching functors here
 }
 
 void MessageHandler::set_request_public_key_functor(
@@ -606,24 +680,26 @@ void MessageHandler::set_request_public_key_functor(
 
 void MessageHandler::HandleCacheLookup(protobuf::Message& message) {
   assert(!routing_table_.client_mode());
-  assert(IsCacheable(message) && IsRequest(message));
+  assert(IsCacheableGet(message));
   cache_manager_->HandleGetFromCache(message);
 }
 
 void MessageHandler::StoreCacheCopy(const protobuf::Message& message) {
   assert(!routing_table_.client_mode());
-  assert(IsCacheable(message) && !IsRequest(message));
+  assert(IsCacheablePut(message));
   cache_manager_->AddToCache(message);
 }
 
-bool MessageHandler::IsCacheableRequest(const protobuf::Message& message) {
-  return (IsNodeLevelMessage(message) && Parameters::caching && !routing_table_.client_mode() &&
-          IsCacheable(message) && IsRequest(message));
+bool MessageHandler::IsValidCacheableGet(const protobuf::Message& message) {
+  // TODO(Prakash): need to differentiate between typed and un typed api
+  return (IsCacheableGet(message) && IsNodeLevelMessage(message) && Parameters::caching &&
+          !routing_table_.client_mode());
 }
 
-bool MessageHandler::IsCacheableResponse(const protobuf::Message& message) {
-  return (IsNodeLevelMessage(message) && Parameters::caching && !routing_table_.client_mode()
-          && IsCacheable(message) && !IsRequest(message));
+bool MessageHandler::IsValidCacheablePut(const protobuf::Message& message) {
+  // TODO(Prakash): need to differentiate between typed and un typed api
+  return (IsNodeLevelMessage(message) && Parameters::caching && !routing_table_.client_mode() &&
+          IsCacheablePut(message) && !IsRequest(message));
 }
 
 }  // namespace routing

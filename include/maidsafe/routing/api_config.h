@@ -26,6 +26,7 @@ License.
 #include "maidsafe/common/node_id.h"
 #include "maidsafe/rudp/managed_connections.h"
 #include "maidsafe/routing/matrix_change.h"
+#include "maidsafe/routing/message.h"
 
 namespace maidsafe {
 
@@ -49,6 +50,7 @@ typedef std::function<void(const std::string& /*message*/)> ReplyFunctor;
 typedef std::function<void(const std::string& /*message*/,
                            const bool& /*cache_lookup*/,
                            ReplyFunctor /*reply functor*/)> MessageReceivedFunctor;
+
 
 // This is fired to validate a new peer node. User is supposed to validate the node and call
 // ValidateThisNode() method with valid public key.
@@ -79,27 +81,48 @@ typedef std::function<void(std::shared_ptr<MatrixChange> /*matrix_change*/)>
 // it clsoest nodes.
 typedef std::function<void()> RemoveFurthestUnnecessaryNode;
 
+template <typename T>
+struct MessageAndCachingFunctorsType {
+  std::function<void(const T& /*message*/)> message_received;
+  std::function<bool(const T& /*message*/)> get_cache_data;
+  std::function<void(const T& /*message*/)> put_cache_data;
+};
+
+struct TypedMessageAndCachingFunctor {  // New API
+  MessageAndCachingFunctorsType<SingleToSingleMessage> single_to_single;
+  MessageAndCachingFunctorsType<SingleToGroupMessage> single_to_group;
+  MessageAndCachingFunctorsType<GroupToSingleMessage> group_to_single;
+  MessageAndCachingFunctorsType<GroupToGroupMessage> group_to_group;
+};
+
+struct MessageAndCachingFunctors {
+  MessageReceivedFunctor message_received;
+  HaveCacheDataFunctor have_cache_data;
+  StoreCacheDataFunctor store_cache_data;
+};
+
+// Note : Provide TypedMessageAndCachingFunctor for typed message API and MessageAndCachingFunctor
+// for string type message API. Providing both (TypedMessageAndCachingFunctor &
+// MessageAndCachingFunctor) is not allowed.
 
 struct Functors {
   Functors()
-      : message_received(),
+      : message_and_caching(),
+        typed_message_and_caching(),
         network_status(),
         close_node_replaced(),
         matrix_changed(),
         set_public_key(),
         request_public_key(),
-        have_cache_data(),
-        store_cache_data(),
         new_bootstrap_endpoint() {}
 
-  MessageReceivedFunctor message_received;
+  MessageAndCachingFunctors message_and_caching;
+  TypedMessageAndCachingFunctor typed_message_and_caching;
   NetworkStatusFunctor network_status;
   CloseNodeReplacedFunctor close_node_replaced;
   MatrixChangedFunctor matrix_changed;
   GivePublicKeyFunctor set_public_key;
   RequestPublicKeyFunctor request_public_key;
-  HaveCacheDataFunctor have_cache_data;
-  StoreCacheDataFunctor store_cache_data;
   NewBootstrapEndpointFunctor new_bootstrap_endpoint;
 };
 

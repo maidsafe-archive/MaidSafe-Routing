@@ -34,10 +34,12 @@ License.
 #include "maidsafe/routing/api_config.h"
 #include "maidsafe/routing/client_routing_table.h"
 #include "maidsafe/routing/group_change_handler.h"
+#include "maidsafe/routing/message_handler.h"
 #include "maidsafe/routing/network_utils.h"
 #include "maidsafe/routing/random_node_helper.h"
 #include "maidsafe/routing/remove_furthest_node.h"
 #include "maidsafe/routing/routing_api.h"
+#include "maidsafe/routing/routing.pb.h"
 #include "maidsafe/routing/routing_table.h"
 #include "maidsafe/routing/timer.h"
 
@@ -46,7 +48,44 @@ namespace maidsafe {
 
 namespace routing {
 
-class MessageHandler;
+namespace detail {
+
+// Group Source
+template<typename Messsage>
+struct is_group_source;
+
+template<typename Messsage>
+struct is_group_source : public std::true_type {};
+
+template<>
+struct is_group_source<SingleToSingleMessage> : public std::false_type {};
+template<>
+struct is_group_source<SingleToGroupMessage> : public std::false_type {};
+template<>
+struct is_group_source<GroupToSingleMessage> : public std::true_type {};
+template<>
+struct is_group_source<GroupToGroupMessage> : public std::true_type {};
+
+
+// Group Destination
+template<typename Messsage>
+struct is_group_destination;
+
+template<typename Messsage>
+struct is_group_destination : public std::true_type {};
+
+template<>
+struct is_group_destination<SingleToSingleMessage> : public std::false_type {};
+template<>
+struct is_group_destination<SingleToGroupMessage> : public std::true_type {};
+template<>
+struct is_group_destination<GroupToSingleMessage> : public std::false_type {};
+template<>
+struct is_group_destination<GroupToGroupMessage> : public std::true_type {};
+
+}  // namespace detail
+
+//  class MessageHandler;
 struct NodeInfo;
 
 namespace test { class GenericNode; }
@@ -64,6 +103,9 @@ class Routing::Impl {
                     const boost::asio::ip::udp::endpoint& local_endpoint,
                     const boost::asio::ip::udp::endpoint& peer_endpoint,
                     const NodeInfo& peer_info);
+
+  template <typename T>
+  void Send(const T& message);  // New API
 
   void SendDirect(const NodeId& destination_id,
                   const std::string& data,
@@ -132,6 +174,18 @@ class Routing::Impl {
       const bool& cacheable);
   void CheckSendParameters(const NodeId& destination_id, const std::string& data);
 
+  template <typename T>
+  protobuf::Message CreateNodeLevelMessage(const T& message);
+  template<typename T>
+  void AddGroupSourceRelatedFields(const T& message, protobuf::Message& proto_message,
+                                   std::true_type);
+  template<typename T>
+  void AddGroupSourceRelatedFields(const T& message, protobuf::Message& proto_message,
+                                   std::false_type);
+
+  void AddDestinationTypeRelatedFields(protobuf::Message& proto_message, std::true_type);
+  void AddDestinationTypeRelatedFields(protobuf::Message& proto_message, std::false_type);
+
   std::mutex network_status_mutex_;
   int network_status_;
   RoutingTable routing_table_;
@@ -150,9 +204,47 @@ class Routing::Impl {
   std::unique_ptr<MessageHandler> message_handler_;
   AsioService asio_service_;
   NetworkUtils network_;
-  Timer timer_;
+  Timer<std::string> timer_;
   boost::asio::deadline_timer re_bootstrap_timer_, recovery_timer_, setup_timer_;
 };
+
+// Implementations
+template <typename T>
+void Routing::Impl::Send(const T& message) {  // FIXME(Fix caching)
+  assert(!functors_.message_and_caching.message_received &&
+           "Not allowed with string type message API");
+  protobuf::Message proto_message = CreateNodeLevelMessage(message);
+  SendMessage(message.receiver, proto_message);
+}
+
+template<typename T>
+void Routing::Impl::AddGroupSourceRelatedFields(const T& message, protobuf::Message& proto_message,
+                                 std::true_type) {
+  proto_message.set_group_source(message.sender.group_id->string());
+  proto_message.set_direct(false);
+}
+
+template<typename T>
+void Routing::Impl::AddGroupSourceRelatedFields(const T&, protobuf::Message&, std::false_type) {}
+
+template<typename T>
+protobuf::Message Routing::Impl::CreateNodeLevelMessage(const T& message) {
+  protobuf::Message proto_message;
+  proto_message.set_destination_id(message.receiver->string());
+  proto_message.set_routing_message(false);
+  proto_message.add_data(message.contents);
+  proto_message.set_type(static_cast<int32_t>(MessageType::kNodeLevel));
+
+  proto_message.set_cacheable(static_cast<int32_t>(message.cacheable));
+  proto_message.set_client_node(routing_table_.client_mode());
+
+  proto_message.set_request(true);
+  proto_message.set_hops_to_live(Parameters::hops_to_live);
+
+  AddGroupSourceRelatedFields(message, proto_message, detail::is_group_source<T>());
+  AddDestinationTypeRelatedFields(proto_message, detail::is_group_destination<T>());
+  return proto_message;
+}
 
 }  // namespace routing
 

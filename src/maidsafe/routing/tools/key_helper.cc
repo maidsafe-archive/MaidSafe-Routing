@@ -58,7 +58,7 @@ const std::string kHelperVersion = "MaidSafe Routing KeysHelper " + maidsafe::kA
 
 void PrintKeys(const PmidVector &all_pmids) {
   for (size_t i = 0; i < all_pmids.size(); ++i)
-    std::cout << '\t' << i << "\t PMID " << maidsafe::HexSubstr(all_pmids[i].name().data.string())
+    std::cout << '\t' << i << "\t PMID " << maidsafe::HexSubstr(all_pmids[i].name()->string())
               << (i < 2 ? " (bootstrap)" : "") << std::endl;
 }
 

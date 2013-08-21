@@ -199,15 +199,17 @@ TEST(APITest, BEH_API_SendToSelf) {
         give_key((*itr).second);
     };
 
-  functors1.message_received = [&] (const std::string& message, const bool&,
-                                     ReplyFunctor reply_functor) {
+  functors1.message_and_caching.message_received = [&] (const std::string& message, const bool&,
+      ReplyFunctor reply_functor) {
       reply_functor("response to " + message);
       LOG(kVerbose) << "Message received and replied to message !!";
     };
 
   functors2.network_status = functors3.network_status = functors1.network_status;
   functors2.request_public_key = functors3.request_public_key = functors1.request_public_key;
-  functors2.message_received = functors3.message_received = functors1.message_received;
+  functors2.message_and_caching.message_received =
+      functors3.message_and_caching.message_received =
+          functors1.message_and_caching.message_received;
 
   Endpoint endpoint1(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort()),
            endpoint2(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort());
@@ -276,8 +278,8 @@ TEST(APITest, BEH_API_ClientNode) {
         give_key((*itr).second);
     };
 
-  functors1.message_received = [&] (const std::string& message, const bool&,
-                                    ReplyFunctor reply_functor) {
+  functors1.message_and_caching.message_received = [&] (const std::string& message, const bool&,
+      ReplyFunctor reply_functor) {
       reply_functor("response to " + message);
         LOG(kVerbose) << "Message received and replied to message !!";
     };
@@ -350,8 +352,8 @@ TEST(APITest, BEH_API_NonMutatingClientNode) {
         give_key((*itr).second);
     };
 
-  functors1.message_received = [&] (const std::string& message, const bool&,
-                                    ReplyFunctor reply_functor) {
+  functors1.message_and_caching.message_received = [&] (const std::string& message, const bool&,
+      ReplyFunctor reply_functor) {
       reply_functor("response to " + message);
         LOG(kVerbose) << "Message received and replied to message !!";
     };
@@ -427,8 +429,8 @@ TEST(APITest, BEH_API_ClientNodeSameId) {
         give_key((*itr).second);
     };
 
-  functors1.message_received = [&] (const std::string& message, const bool&,
-                                    ReplyFunctor reply_functor) {
+  functors1.message_and_caching.message_received = [&] (const std::string& message, const bool&,
+      ReplyFunctor reply_functor) {
       reply_functor("response to " + message);
         LOG(kVerbose) << "Message received and replied to message !!";
     };
@@ -602,8 +604,8 @@ TEST(APITest, BEH_API_NodeNetworkWithClient) {
   functors.network_status = [](const int&) {};  // NOLINT (Fraser)
 
 
-  functors.message_received = [&] (const std::string& message, const bool&,
-                                   ReplyFunctor reply_functor) {
+  functors.message_and_caching.message_received = [&] (const std::string& message, const bool&,
+     ReplyFunctor reply_functor) {
      reply_functor("response to " + message);
       LOG(kVerbose) << "Message received and replied to message !!";
     };
@@ -611,8 +613,8 @@ TEST(APITest, BEH_API_NodeNetworkWithClient) {
   Functors client_functors;
   client_functors.network_status = [](const int&) {};  // NOLINT (Fraser)
   client_functors.request_public_key = functors.request_public_key;
-  client_functors.message_received = [&] (const std::string &, const bool&,
-                                          ReplyFunctor /*reply_functor*/) {
+  client_functors.message_and_caching.message_received = [&] (const std::string &, const bool&,
+      ReplyFunctor /*reply_functor*/) {
       ASSERT_TRUE(false);  //  Client should not receive incoming message
     };
   Endpoint endpoint1(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort()),
@@ -664,7 +666,7 @@ TEST(APITest, BEH_API_NodeNetworkWithClient) {
 }
 
 TEST(APITest, BEH_API_SendGroup) {
-  Parameters::default_response_timeout = boost::posix_time::seconds(200);
+  Parameters::default_response_timeout = std::chrono::seconds(200);
   const uint16_t kMessageCount(10);  // each vault will send kMessageCount message to other vaults
   const size_t kDataSize(512 * 1024);
   int min_join_status(std::min(kServerCount, 8));
@@ -697,8 +699,8 @@ TEST(APITest, BEH_API_SendGroup) {
   functors.network_status = [](const int&) {};
 
 
-  functors.message_received = [&] (const std::string& message, const bool&,
-                                   ReplyFunctor reply_functor) {
+  functors.message_and_caching.message_received = [&] (const std::string& message, const bool&,
+      ReplyFunctor reply_functor) {
       reply_functor("response to " + message);
       LOG(kVerbose) << "Message received and replied to message !!";
     };
@@ -804,7 +806,7 @@ TEST(APITest, BEH_API_SendGroup) {
             << "\n Total number of request messages :" << (kMessageCount * kServerCount)
             << "\n Total number of response messages :" << (kMessageCount * kServerCount * 4)
             << "\n Message size : " << (kDataSize / 1024) << "kB \n";
-  Parameters::default_response_timeout = boost::posix_time::seconds(10);
+  Parameters::default_response_timeout = std::chrono::seconds(10);
 }
 
 TEST(APITest, BEH_API_PartiallyJoinedSend) {
@@ -825,8 +827,8 @@ TEST(APITest, BEH_API_PartiallyJoinedSend) {
   Routing routing3(pmid3);
 
   functors1.network_status = [](const int&) {};  // NOLINT (Fraser)
-  functors1.message_received = [&](const std::string& message, const bool&,
-                                   ReplyFunctor reply_functor) {
+  functors1.message_and_caching.message_received = [&](const std::string& message, const bool&,
+      ReplyFunctor reply_functor) {
       reply_functor("response to " + message);
       LOG(kVerbose) << "Message received and replied to message !!";
     };
@@ -838,7 +840,7 @@ TEST(APITest, BEH_API_PartiallyJoinedSend) {
     };
 
   functors2.network_status = functors3.network_status = functors1.network_status;
-  functors2.message_received = functors1.message_received;
+  functors2.message_and_caching.message_received = functors1.message_and_caching.message_received;
   functors2.request_public_key = functors1.request_public_key;
   functors3.request_public_key = [&](const NodeId& node_id, GivePublicKeyFunctor give_key) {
       Sleep(boost::posix_time::seconds(5));
@@ -888,6 +890,157 @@ TEST(APITest, BEH_API_PartiallyJoinedSend) {
 
   EXPECT_EQ(join_future.wait_for(std::chrono::seconds(20)), std::future_status::ready);
   EXPECT_EQ(count, 2);
+}
+
+TEST(APITest, BEH_API_TypedMessageSend) {
+  auto pmid1(MakePmid()), pmid2(MakePmid()), pmid3(MakePmid());
+  NodeInfoAndPrivateKey node1(MakeNodeInfoAndKeysWithPmid(pmid1));
+  NodeInfoAndPrivateKey node2(MakeNodeInfoAndKeysWithPmid(pmid2));
+  NodeInfoAndPrivateKey node3(MakeNodeInfoAndKeysWithPmid(pmid3));
+  std::map<NodeId, asymm::PublicKey> key_map;
+  key_map.insert(std::make_pair(node1.node_info.node_id, pmid1.public_key()));
+  key_map.insert(std::make_pair(node2.node_info.node_id, pmid2.public_key()));
+  key_map.insert(std::make_pair(node3.node_info.node_id, pmid3.public_key()));
+
+  Functors functors1, functors2, functors3;
+  std::promise<bool> single_to_single_promise, single_to_group_promise, group_to_single_promise,
+                     group_to_group_promise;
+  size_t responses(0);
+  std::mutex mutex;
+  Routing routing1(pmid1);
+  Routing routing2(pmid2);
+  Routing routing3(pmid3);
+
+  functors1.network_status = [](const int&) {};  // NOLINT (Fraser)
+  functors1.request_public_key = [&](const NodeId& node_id, GivePublicKeyFunctor give_key) {
+      LOG(kWarning) << "node_validation called for " << DebugId(node_id);
+      auto itr(key_map.find(node_id));
+      if (key_map.end() != itr)
+        give_key((*itr).second);
+    };
+
+  functors1.typed_message_and_caching.group_to_group.message_received =
+      [&] (const GroupToGroupMessage& /*g2g*/) {
+        LOG(kVerbose) << "group to group message received!!";
+        std::lock_guard<std::mutex> lock(mutex);
+        if (++responses == 3)
+           group_to_group_promise.set_value(true);
+      };
+
+  functors1.typed_message_and_caching.group_to_single.message_received =
+      [&] (const GroupToSingleMessage& /*g2s*/) {
+        LOG(kVerbose) << "group to single message received!!";
+        group_to_single_promise.set_value(true);
+      };
+
+  functors1.typed_message_and_caching.single_to_group.message_received =
+      [&] (const SingleToGroupMessage& /*s2g*/) {
+        LOG(kVerbose) << "single to group message received!!";
+        std::lock_guard<std::mutex> lock(mutex);
+        if (++responses == 3)
+          single_to_group_promise.set_value(true);
+      };
+
+  functors1.typed_message_and_caching.single_to_single.message_received =
+      [&] (const SingleToSingleMessage& /*s2s*/) {
+        LOG(kVerbose) << "single to single message received!!";
+        single_to_single_promise.set_value(true);
+      };
+
+  functors2.network_status = functors3.network_status = functors1.network_status;
+  functors2.request_public_key = functors3.request_public_key = functors1.request_public_key;
+  functors2.typed_message_and_caching.group_to_group.message_received =
+      functors3.typed_message_and_caching.group_to_group.message_received =
+          functors1.typed_message_and_caching.group_to_group.message_received;
+
+  functors2.typed_message_and_caching.group_to_single.message_received =
+      functors3.typed_message_and_caching.group_to_single.message_received =
+          functors1.typed_message_and_caching.group_to_single.message_received;
+
+  functors2.typed_message_and_caching.single_to_group.message_received =
+      functors3.typed_message_and_caching.single_to_group.message_received =
+          functors1.typed_message_and_caching.single_to_group.message_received;
+
+  functors2.typed_message_and_caching.single_to_single.message_received =
+      functors3.typed_message_and_caching.single_to_single.message_received =
+          functors1.typed_message_and_caching.single_to_single.message_received;
+
+  Endpoint endpoint1(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort()),
+           endpoint2(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort());
+  auto a1 = std::async(std::launch::async,
+      [&] { return routing1.ZeroStateJoin(functors1, endpoint1, endpoint2, node2.node_info);
+       });
+  auto a2 = std::async(std::launch::async,
+      [&] { return routing2.ZeroStateJoin(functors2, endpoint2, endpoint1, node1.node_info);
+      });
+
+  EXPECT_EQ(kSuccess, a2.get());  // wait for promise !
+  EXPECT_EQ(kSuccess, a1.get());  // wait for promise !
+
+  std::once_flag join_set_promise_flag;
+  std::promise<bool> join_promise;
+  auto join_future = join_promise.get_future();
+  functors3.network_status = [&join_set_promise_flag, &join_promise](int result) {
+    ASSERT_GE(result, kSuccess);
+    if (result == NetworkStatus(false, 2)) {
+      std::call_once(join_set_promise_flag,
+                     [&join_promise, &result] {
+                       LOG(kVerbose) << "3rd node joined";
+                       join_promise.set_value(true);
+                     });
+    }
+  };
+
+  routing3.Join(functors3, std::vector<Endpoint>(1, endpoint2));
+  EXPECT_EQ(join_future.wait_for(std::chrono::seconds(10)), std::future_status::ready);
+
+
+  {  // Test Group To Group
+    GroupToGroupMessage group_to_group_message;
+    GroupSource group_source;
+    group_source.sender_id = SingleId(routing3.kNodeId());
+    group_source.group_id = GroupId(GenerateUniqueRandomId(routing3.kNodeId(), 30));
+    group_to_group_message.contents = "Dummy content for test puepose";
+    group_to_group_message.receiver  = GroupId(GenerateUniqueRandomId(routing1.kNodeId(), 30));
+    group_to_group_message.sender = group_source;
+    routing3.Send(group_to_group_message);
+    auto group_to_group_future(group_to_group_promise.get_future());
+    ASSERT_EQ(group_to_group_future.wait_for(std::chrono::seconds(10)), std::future_status::ready);
+  }
+
+  {  // Test Single To Single
+    SingleToSingleMessage single_to_single_message;
+    single_to_single_message.receiver = SingleId(routing1.kNodeId());
+    single_to_single_message.sender = SingleSource(SingleId(routing3.kNodeId()));
+    single_to_single_message.contents = "Dummy content for test puepose";
+    routing3.Send(single_to_single_message);
+    auto single_to_single_future(single_to_single_promise.get_future());
+    ASSERT_EQ(single_to_single_future.wait_for(std::chrono::seconds(10)),
+              std::future_status::ready);
+  }
+
+  {  // Test Group To Single
+    GroupToSingleMessage group_to_single_message;
+    GroupSource group_source;
+    group_source.sender_id = SingleId(routing3.kNodeId());
+    group_source.group_id = GroupId(GenerateUniqueRandomId(routing3.kNodeId(), 30));
+    group_to_single_message.sender = group_source;
+    group_to_single_message.receiver = SingleId(routing1.kNodeId());
+    group_to_single_message.contents = "Dummy content for test puepose";
+    routing3.Send(group_to_single_message);
+    auto group_to_single_future(group_to_single_promise.get_future());
+    ASSERT_EQ(group_to_single_future.wait_for(std::chrono::seconds(10)), std::future_status::ready);
+  }
+
+  {  //  Test Single To Group
+    responses = 0;
+    SingleToGroupMessage single_to_group_message;
+    single_to_group_message.sender = SingleSource(SingleId(routing3.kNodeId()));
+    single_to_group_message.receiver = GroupId(GenerateUniqueRandomId(routing1.kNodeId(), 30));
+    routing3.Send(single_to_group_message);
+    auto single_to_group_future(single_to_group_promise.get_future());
+    ASSERT_EQ(single_to_group_future.wait_for(std::chrono::seconds(10)), std::future_status::ready);
+  }
 }
 
 }  // namespace test
