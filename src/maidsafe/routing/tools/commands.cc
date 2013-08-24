@@ -108,7 +108,7 @@ void Commands::Run() {
     std::string cmdline;
     std::getline(std::cin, cmdline);
     {
-      boost::mutex::scoped_lock lock(wait_mutex_);
+      std::unique_lock<std::mutex> lock(wait_mutex_);
       ProcessCommand(cmdline);
       wait_cond_var_.wait(lock, boost::bind(&Commands::ResultArrived, this));
       result_arrived_ = false;
@@ -171,7 +171,7 @@ void Commands::SendMessages(const int& id_index, const DestinationType& destinat
     data = "request_routing_table";
   else
     data_to_send = data = RandomAlphaNumericString(data_size_);
-  bptime::milliseconds msg_sent_time(bptime::milliseconds(0));
+  std::chrono::milliseconds msg_sent_time(0);
   CalculateTimeToSleep(msg_sent_time);
 
   bool infinite(false);
@@ -191,13 +191,13 @@ void Commands::SendMessages(const int& id_index, const DestinationType& destinat
     expect_respondent = MakeMessage(id_index, destination_type, closest_nodes, dest_id);
     if (expect_respondent == 0)
       return;
-    bptime::ptime start = bptime::microsec_clock::universal_time();
+    auto start = std::chrono::steady_clock::now();
     data = ">:<" + std::to_string(++message_id) + "<:>" + data;
     SendAMessage(successful_count, operation_count, mutex, cond_var, messages_count,
                  expect_respondent, closest_nodes, dest_id, data);
 
     data = data_to_send;
-    bptime::ptime now = bptime::microsec_clock::universal_time();
+    auto now = std::chrono::steady_clock::now();
     Sleep(msg_sent_time - (now - start));
   }
   {
@@ -242,9 +242,9 @@ uint16_t Commands::MakeMessage(const int& id_index, const DestinationType& desti
   return expected_respodents;
 }
 
-void Commands::CalculateTimeToSleep(bptime::milliseconds &msg_sent_time) {
+void Commands::CalculateTimeToSleep(std::chrono::milliseconds &msg_sent_time) {
   size_t num_msgs_per_second = data_rate_ / data_size_;
-  msg_sent_time = static_cast<bptime::milliseconds>(1000 / num_msgs_per_second);
+  msg_sent_time = std::chrono::milliseconds(1000 / num_msgs_per_second);
 }
 
 void Commands::SendAMessage(std::atomic<int> &successful_count, int &operation_count,
@@ -316,7 +316,7 @@ void Commands::Join() {
     std::unique_lock<std::mutex> lock(mutex);
     auto result = cond_var.wait_for(lock, std::chrono::seconds(20));
     EXPECT_EQ(result, std::cv_status::no_timeout);
-    Sleep(boost::posix_time::millisec(600));
+    Sleep(std::chrono::milliseconds(600));
   }
   std::cout << "Current Node joined, following is the routing table :" << std::endl;
   PrintRoutingTable();
@@ -445,8 +445,10 @@ void Commands::ProcessCommand(const std::string &cmdline) {
 }
 
 void Commands::MarkResultArrived() {
-  boost::mutex::scoped_lock lock(wait_mutex_);
-  result_arrived_ = true;
+  {
+    std::lock_guard<std::mutex> lock(wait_mutex_);
+    result_arrived_ = true;
+  }
   wait_cond_var_.notify_one();
 }
 

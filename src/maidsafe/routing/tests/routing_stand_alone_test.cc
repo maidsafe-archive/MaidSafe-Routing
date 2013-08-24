@@ -37,7 +37,7 @@ class RoutingStandAloneTest : public GenericNetwork, public testing::Test {
   }
 
   virtual void TearDown() {
-    Sleep(boost::posix_time::microseconds(100));
+    Sleep(std::chrono::microseconds(100));
     GenericNetwork::TearDown();
   }
 };
@@ -81,7 +81,7 @@ TEST_F(RoutingStandAloneTest, FUNC_ClientRoutingTableUpdate) {
   EXPECT_TRUE(this->nodes_[this->nodes_.size() - 1]->IsClient());
   while (this->nodes_.size() < kServerSize + Parameters::max_routing_table_size_for_client) {
     this->AddNode(false, GenerateUniqueRandomId(this->nodes_[kServerSize - 1]->node_id(), 50));
-    Sleep(boost::posix_time::milliseconds(500));
+    Sleep(std::chrono::milliseconds(500));
     EXPECT_TRUE(this->nodes_[ClientIndex()]->RoutingTableHasNode(
                     this->nodes_[ClientIndex() - 1]->node_id())) <<
                 DebugId(this->nodes_[ClientIndex()]->node_id()) << " does not have " <<
@@ -215,7 +215,7 @@ TEST_F(RoutingStandAloneTest, FUNC_RecursiveCall) {
 
 TEST_F(RoutingStandAloneTest, FUNC_JoinAfterBootstrapLeaves) {
   this->SetUpNetwork(kServerSize);
-  Sleep(boost::posix_time::seconds(10));
+  Sleep(std::chrono::seconds(10));
   this->AddNode(false, NodeId());
 }
 
@@ -242,12 +242,12 @@ TEST_F(RoutingStandAloneTest, FUNC_ReBootstrap) {
   }
 
   // wait for removed node's routing table to reach zero - re-bootstrap will be triggered
-  Sleep(boost::posix_time::seconds(1));
+  Sleep(std::chrono::seconds(1));
   std::vector<NodeInfo> routing_table(removed_node->RoutingTable());
   EXPECT_EQ(0, routing_table.size());
 
   // wait for re_bootstrap_time_lag to expire & bootstrap process to complete
-  Sleep(boost::posix_time::seconds(20));
+  Sleep(std::chrono::seconds(20));
   for (const auto& node : this->nodes_)
     EXPECT_TRUE(node->RoutingTableHasNode(removed_id));
 
@@ -362,7 +362,7 @@ class ProportionedRoutingStandAloneTest : public GenericNetwork, public testing:
   }
 
   virtual void TearDown() {
-    Sleep(boost::posix_time::microseconds(100));
+    Sleep(std::chrono::microseconds(100));
     GenericNetwork::TearDown();
   }
 

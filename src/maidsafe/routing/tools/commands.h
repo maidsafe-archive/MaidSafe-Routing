@@ -17,14 +17,13 @@ License.
 #define MAIDSAFE_ROUTING_TOOLS_COMMANDS_H_
 
 #include <atomic>
+#include <condition_variable>
 #include <memory>
 #include <string>
 #include <vector>
 #include <mutex>
 
 #include "boost/date_time/posix_time/posix_time_types.hpp"
-#include "boost/thread/condition_variable.hpp"
-#include "boost/thread/mutex.hpp"
 
 #include "maidsafe/passport/types.h"
 #include "maidsafe/routing/tests/routing_network.h"
@@ -71,7 +70,7 @@ class Commands {
   uint16_t MakeMessage(const int& id_index, const DestinationType& destination_type,
                        std::vector<NodeId> &closest_nodes, NodeId& dest_id);
 
-  void CalculateTimeToSleep(bptime::milliseconds &msg_sent_time);
+  void CalculateTimeToSleep(std::chrono::milliseconds &msg_sent_time);
 
   void SendAMessage(std::atomic<int> &successful_count, int &operation_count,
                     std::mutex &mutex, std::condition_variable &cond_var,
@@ -87,8 +86,8 @@ class Commands {
   size_t data_size_;
   size_t data_rate_;
   bool result_arrived_, finish_;
-  boost::mutex wait_mutex_;
-  boost::condition_variable wait_cond_var_;
+  std::mutex wait_mutex_;
+  std::condition_variable wait_cond_var_;
   std::function<void()> mark_results_arrived_;
 };
 

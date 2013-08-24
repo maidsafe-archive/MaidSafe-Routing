@@ -208,7 +208,7 @@ TEST_F(RoutingNetworkTest, FUNC_SendToGroupSelfId) {
         return std::move(std::unique_ptr<testing::AssertionResult>(
             new testing::AssertionResult(env_->SendGroup(dest_id, message_count, dest_index))));
     }));
-    Sleep(boost::posix_time::milliseconds(10));
+    Sleep(std::chrono::milliseconds(10));
   }
   while (!futures.empty()) {
     futures.erase(std::remove_if(futures.begin(), futures.end(),
@@ -279,7 +279,7 @@ TEST_F(RoutingNetworkTest, FUNC_SendToGroupRandomId) {
             return std::move(std::unique_ptr<testing::AssertionResult>(
                 new testing::AssertionResult(env_->SendGroup(NodeId(NodeId::kRandomId), 1))));
         }));
-    Sleep(boost::posix_time::milliseconds(100));
+    Sleep(std::chrono::milliseconds(100));
   }
   while (!futures.empty()) {
     futures.erase(std::remove_if(futures.begin(), futures.end(),
@@ -318,7 +318,7 @@ TEST_F(RoutingNetworkTest, FUNC_NonMutatingClientSendToGroupRandomId) {
                                 1,
                                 static_cast<uint16_t>(env_->nodes_.size() - 1)))));
     }));
-    Sleep(boost::posix_time::milliseconds(10));
+    Sleep(std::chrono::milliseconds(10));
   }
   while (!futures.empty()) {
     futures.erase(std::remove_if(futures.begin(), futures.end(),
@@ -362,7 +362,7 @@ TEST_F(RoutingNetworkTest, FUNC_NonMutatingClientSendToGroupExistingId) {
                                 1,
                                 static_cast<uint16_t>(env_->nodes_.size() - 1)))));
     }));
-    Sleep(boost::posix_time::milliseconds(10));
+    Sleep(std::chrono::milliseconds(10));
   }
   while (!futures.empty()) {
     futures.erase(std::remove_if(futures.begin(), futures.end(),
@@ -410,7 +410,7 @@ TEST_F(RoutingNetworkTest, FUNC_SendToClientsWithSameId) {
   uint16_t num_of_tries(0);
   bool done(false);
   do {
-//    Sleep(boost::posix_time::seconds(1));
+//    Sleep(std::chrono::seconds(1));
     size_t size(0);
     for (const auto& node : env_->nodes_) {
       size += node->MessagesSize();
