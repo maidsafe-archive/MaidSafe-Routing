@@ -214,7 +214,8 @@ void Routing::Impl::FindClosestNode(const boost::system::error_code& error_code,
       // Exit the loop & start recovery loop
       LOG(kVerbose) << "[" << DebugId(kNodeId_) << "] Added a node in routing table."
                     << " Terminating setup loop & Scheduling recovery loop.";
-      recovery_timer_.expires_from_now(Parameters::find_node_interval);
+      recovery_timer_.expires_from_now(
+          boost::posix_time::seconds(static_cast<long>(Parameters::find_node_interval.count())));  // NOLINT
       recovery_timer_.async_wait([=](const boost::system::error_code& error_code) {
                                       if (error_code != boost::asio::error::operation_aborted)
                                         ReSendFindNodeRequest(error_code, false);
@@ -294,7 +295,7 @@ int Routing::Impl::ZeroStateJoin(const Functors& functors,
   rudp::EndpointPair this_endpoint_pair;
   peer_endpoint_pair.external = peer_endpoint_pair.local = peer_endpoint;
   this_endpoint_pair.external = this_endpoint_pair.local = local_endpoint;
-  Sleep(boost::posix_time::milliseconds(100));  // FIXME avoiding assert in rudp
+  Sleep(std::chrono::milliseconds(100));  // FIXME avoiding assert in rudp
   result = network_.GetAvailableEndpoint(peer_info.node_id, peer_endpoint_pair,
                                          this_endpoint_pair, nat_type);
   if (result != rudp::kBootstrapConnectionAlreadyExists) {
@@ -318,7 +319,7 @@ int Routing::Impl::ZeroStateJoin(const Functors& functors,
   // Now poll for routing table size to have other zero state peer.
   uint8_t poll_count(0);
   do {
-    Sleep(boost::posix_time::milliseconds(100));
+    Sleep(std::chrono::milliseconds(100));
   } while ((routing_table_.size() == 0) && (++poll_count < 50));
   if (routing_table_.size() != 0) {
     LOG(kInfo) << "Node Successfully joined zero state network, with "
@@ -329,7 +330,8 @@ int Routing::Impl::ZeroStateJoin(const Functors& functors,
     std::lock_guard<std::mutex> lock(running_mutex_);
     if (!running_)
       return kNetworkShuttingDown;
-    recovery_timer_.expires_from_now(Parameters::find_node_interval);
+    recovery_timer_.expires_from_now(
+        boost::posix_time::seconds(static_cast<long>(Parameters::find_node_interval.count())));  // NOLINT
     recovery_timer_.async_wait([=](const boost::system::error_code& error_code) {
                                    if (error_code != boost::asio::error::operation_aborted)
                                      ReSendFindNodeRequest(error_code, false);
@@ -607,7 +609,8 @@ void Routing::Impl::DoOnConnectionLost(const NodeId& lost_connection_id) {
       return;
     // Close node lost, get more nodes
     LOG(kWarning) << "Lost close node, getting more.";
-    recovery_timer_.expires_from_now(Parameters::recovery_time_lag);
+    recovery_timer_.expires_from_now(
+        boost::posix_time::seconds(static_cast<long>(Parameters::recovery_time_lag.count())));  // NOLINT
     recovery_timer_.async_wait([=](const boost::system::error_code& error_code) {
                                    if (error_code != boost::asio::error::operation_aborted)
                                      ReSendFindNodeRequest(error_code, true);
@@ -639,7 +642,8 @@ void Routing::Impl::RemoveNode(const NodeInfo& node, bool internal_rudp_only) {
     // Close node removed by routing, get more nodes
     LOG(kWarning) << "[" << DebugId(kNodeId_)
                   << "] Removed close node, sending find node to get more nodes.";
-    recovery_timer_.expires_from_now(Parameters::recovery_time_lag);
+    recovery_timer_.expires_from_now(
+        boost::posix_time::seconds(static_cast<long>(Parameters::recovery_time_lag.count())));  // NOLINT
     recovery_timer_.async_wait([=](const boost::system::error_code& error_code) {
                                    if (error_code != boost::asio::error::operation_aborted)
                                      ReSendFindNodeRequest(error_code, true);
@@ -685,7 +689,8 @@ void Routing::Impl::ReSendFindNodeRequest(const boost::system::error_code& error
     std::lock_guard<std::mutex> lock(running_mutex_);
     if (!running_)
       return;
-    recovery_timer_.expires_from_now(Parameters::find_node_interval);
+    recovery_timer_.expires_from_now(
+        boost::posix_time::seconds(static_cast<long>(Parameters::find_node_interval.count())));  // NOLINT
     recovery_timer_.async_wait([=](boost::system::error_code error_code_local) {
                                     if (error_code != boost::asio::error::operation_aborted)
                                       ReSendFindNodeRequest(error_code_local, false);

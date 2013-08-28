@@ -583,7 +583,7 @@ void GenericNetwork::SetUpNetwork(const size_t& total_number_vaults,
     LOG(kVerbose) << "Node # " << nodes_.size() << " added to network";
   }
 
-  Sleep(boost::posix_time::seconds(1));
+  Sleep(std::chrono::seconds(1));
   PrintRoutingTables();
 //    EXPECT_TRUE(ValidateRoutingTables());
 }
@@ -662,7 +662,7 @@ bool GenericNetwork::WaitForNodesToJoin() {
     ++i;
     if (i == max)
       return false;
-    Sleep(boost::posix_time::seconds(5));
+    Sleep(std::chrono::seconds(5));
   }
   return false;
 }
@@ -902,7 +902,7 @@ bool GenericNetwork::RestoreComposition() {
   // Intended for use in test SetUp/TearDown
   while (ClientIndex() > kServerSize) {
     RemoveNode(nodes_.at(ClientIndex() - 1)->node_id());
-    Sleep(boost::posix_time::seconds(1));  // TODO(Alison) - remove once hanging is fixed
+    Sleep(std::chrono::seconds(1));  // TODO(Alison) - remove once hanging is fixed
   }
   while (ClientIndex() < kServerSize) {
     AddNode(false, NodeId());
@@ -915,7 +915,7 @@ bool GenericNetwork::RestoreComposition() {
 
   while (nodes_.size() > kNetworkSize) {
     RemoveNode(nodes_.at(nodes_.size() - 1)->node_id());
-    Sleep(boost::posix_time::seconds(1));  // TODO(Alison) - remove once hanging is fixed
+    Sleep(std::chrono::seconds(1));  // TODO(Alison) - remove once hanging is fixed
   }
   while (nodes_.size() < kNetworkSize) {
     AddNode(true, NodeId());
@@ -987,7 +987,7 @@ bool GenericNetwork::WaitForHealthToStabilise() const {
       }
     }
     if (!healthy)
-      Sleep(boost::posix_time::seconds(1));
+      Sleep(std::chrono::seconds(1));
   }
   if (!healthy)
     LOG(kError) << "Health failed to stabilise in 10 seconds.";
@@ -1047,7 +1047,7 @@ bool GenericNetwork::WaitForHealthToStabiliseInLargeNetwork() const {
       }
     }
     if (!healthy)
-      Sleep(boost::posix_time::seconds(1));
+      Sleep(std::chrono::seconds(1));
   }
   if (!healthy)
     LOG(kError) << "Health failed to stabilise in 10 seconds.";
@@ -1535,7 +1535,7 @@ void GenericNetwork::AddNodeDetails(NodePtr node) {
     auto result = cond_var->wait_for(lock, std::chrono::seconds(maximum_wait));
     EXPECT_EQ(result, std::cv_status::no_timeout) << descriptor << " node failed to join: "
                                                   << DebugId(node->node_id());
-    Sleep(boost::posix_time::millisec(1000));
+    Sleep(std::chrono::milliseconds(1000));
   }
   PrintRoutingTables();
 }

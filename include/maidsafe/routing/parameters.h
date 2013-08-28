@@ -40,8 +40,8 @@ struct Parameters {
   static uint16_t bucket_target_size;
   static uint32_t max_data_size;
   static std::chrono::steady_clock::duration default_response_timeout;
-  static boost::posix_time::time_duration find_node_interval;
-  static boost::posix_time::time_duration recovery_time_lag;
+  static std::chrono::seconds find_node_interval;
+  static std::chrono::seconds recovery_time_lag;
   static boost::posix_time::time_duration re_bootstrap_time_lag;
   static boost::posix_time::time_duration find_close_node_interval;
   static uint16_t find_node_repeats_per_num_requested;

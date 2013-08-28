@@ -170,7 +170,7 @@ TEST(APITest, BEH_API_ZeroStateWithDuplicateNode) {
      final_result = result;
   };
   routing4.Join(functors4, std::vector<Endpoint>(1, endpoint2));
-  Sleep(boost::posix_time::seconds(5));
+  Sleep(std::chrono::seconds(5));
   EXPECT_LT(final_result, 0);
   LOG(kInfo) << "done!!!";
   rudp::Parameters::bootstrap_connection_lifespan = boost::posix_time::minutes(10);
@@ -843,7 +843,7 @@ TEST(APITest, BEH_API_PartiallyJoinedSend) {
   functors2.message_and_caching.message_received = functors1.message_and_caching.message_received;
   functors2.request_public_key = functors1.request_public_key;
   functors3.request_public_key = [&](const NodeId& node_id, GivePublicKeyFunctor give_key) {
-      Sleep(boost::posix_time::seconds(5));
+      Sleep(std::chrono::seconds(5));
       LOG(kWarning) << "node_validation called for " << DebugId(node_id);
       auto itr(key_map.find(node_id));
       if (key_map.end() != itr)

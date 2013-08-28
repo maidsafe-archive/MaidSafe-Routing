@@ -42,7 +42,7 @@ class RoutingChurnTest : public GenericNetwork, public testing::Test {
   }
 
   virtual void TearDown() {
-    Sleep(boost::posix_time::microseconds(100));
+    Sleep(std::chrono::microseconds(100));
   }
 };
 
@@ -72,14 +72,14 @@ TEST_F(RoutingChurnTest, FUNC_BasicNetworkChurn) {
       }
       this->AddNode(false, new_node);
       existing_vault_node_ids.push_back(new_node);
-      Sleep(boost::posix_time::milliseconds(500 + RandomUint32() % 200));
+      Sleep(std::chrono::milliseconds(500 + RandomUint32() % 200));
     }
 
     if (n % 3 == 0) {
       std::random_shuffle(existing_vault_node_ids.begin(), existing_vault_node_ids.end());
       this->RemoveNode(existing_vault_node_ids.back());
       existing_vault_node_ids.pop_back();
-      Sleep(boost::posix_time::milliseconds(500 + RandomUint32() % 200));
+      Sleep(std::chrono::milliseconds(500 + RandomUint32() % 200));
     }
   }
 }
@@ -139,7 +139,7 @@ TEST_F(RoutingChurnTest, FUNC_MessagingNetworkChurn) {
                                                                false,
                                                                [](std::string /*str*/) {});
                                          // Wait before going again
-                                         Sleep(boost::posix_time::milliseconds(900 +
+                                         Sleep(std::chrono::milliseconds(900 +
                                                                                RandomUint32() %
                                                                                200));
                                          LOG(kInfo) << "Ran messaging iteration";
@@ -157,7 +157,7 @@ TEST_F(RoutingChurnTest, FUNC_MessagingNetworkChurn) {
 //                                    else
                                       this->RemoveRandomVault();
                                       ++downed;
-                                    Sleep(boost::posix_time::seconds(10));
+                                    Sleep(std::chrono::seconds(10));
                                   }
                                 });
 
@@ -172,7 +172,7 @@ TEST_F(RoutingChurnTest, FUNC_MessagingNetworkChurn) {
 //                                  else
                                     this->AddNode(false, new_node_ids.back());
                                   new_node_ids.pop_back();
-                                  Sleep(boost::posix_time::seconds(3));
+                                  Sleep(std::chrono::seconds(3));
                                 }
                               });
 

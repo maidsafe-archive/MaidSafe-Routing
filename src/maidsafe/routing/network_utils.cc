@@ -299,7 +299,7 @@ void NetworkUtils::RecursiveSendOn(protobuf::Message message,
   }
 
   if (attempt_count > 0)
-    Sleep(bptime::milliseconds(50));
+    Sleep(std::chrono::milliseconds(50));
 
   const std::string kThisId(routing_table_.kNodeId().string());
   bool ignore_exact_match(!IsDirect(message));

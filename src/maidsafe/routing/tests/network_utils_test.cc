@@ -198,7 +198,7 @@ TEST(NetworkUtilsTest, FUNC_ProcessSendDirectEndpoint) {
   endpoint_pair_1.local = endpoint1;
   endpoint_pair_2.local = endpoint2;
 
-  Sleep(boost::posix_time::milliseconds(250));
+  Sleep(std::chrono::milliseconds(250));
   EXPECT_EQ(rudp::kBootstrapConnectionAlreadyExists,
             rudp1.GetAvailableEndpoint(node_id2, endpoint_pair_2, endpoint_pair_1, nat_type));
   EXPECT_EQ(rudp::kBootstrapConnectionAlreadyExists,
@@ -239,7 +239,7 @@ TEST(NetworkUtilsTest, FUNC_ProcessSendDirectEndpoint) {
 
   for (auto i(0); i != kMessageCount; ++i) {
     network.SendToDirect(sent_message, node_id2, node_id2);
-    Sleep(boost::posix_time::milliseconds(100));
+    Sleep(std::chrono::milliseconds(100));
   }
   if (test_completion_future.wait_for(std::chrono::seconds(60)) != std::future_status::ready) {
     ASSERT_TRUE(false) << "Failed waiting for node-2 to receive "
@@ -364,7 +364,7 @@ TEST(NetworkUtilsTest, FUNC_ProcessSendRecursiveSendOn) {
   endpoint_pair_1.local = endpoint1;
   endpoint_pair_2.local = endpoint2;
 
-  Sleep(boost::posix_time::milliseconds(250));
+  Sleep(std::chrono::milliseconds(250));
   EXPECT_EQ(rudp::kBootstrapConnectionAlreadyExists,
             rudp1.GetAvailableEndpoint(node_id2, endpoint_pair_2, endpoint_pair_1, nat_type));
   EXPECT_EQ(rudp::kBootstrapConnectionAlreadyExists,

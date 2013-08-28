@@ -43,7 +43,7 @@ class FindNodeNetwork : public GenericNetwork, public testing::Test {
   }
 
   virtual void TearDown() {
-    Sleep(boost::posix_time::microseconds(100));
+    Sleep(std::chrono::microseconds(100));
   }
 
  protected:
@@ -71,7 +71,7 @@ TEST_F(FindNodeNetwork, FUNC_FindExistingNode) {
   this->SetUpNetwork(kServerSize);
   for (const auto& source : this->nodes_) {
     EXPECT_TRUE(Find(source, source->node_id()));
-    Sleep(boost::posix_time::seconds(1));
+    Sleep(std::chrono::seconds(1));
   }
   EXPECT_TRUE(this->ValidateRoutingTables());
 }
@@ -81,7 +81,7 @@ TEST_F(FindNodeNetwork, FUNC_FindNonExistingNode) {
   size_t source(this->RandomVaultIndex());
   NodeId node_id(GenerateUniqueRandomId(this->nodes_[source]->node_id(), 6));
   EXPECT_TRUE(Find(this->nodes_[source], node_id));
-  Sleep(boost::posix_time::seconds(1));
+  Sleep(std::chrono::seconds(1));
   EXPECT_FALSE(this->nodes_[source]->RoutingTableHasNode(node_id));
 }
 
@@ -93,8 +93,7 @@ TEST_F(FindNodeNetwork, FUNC_FindNodeAfterDrop) {
   this->AddNode(false, node_id);
   EXPECT_TRUE(this->nodes_[source]->RoutingTableHasNode(node_id));
   EXPECT_TRUE(this->nodes_[source]->DropNode(node_id));
-  Sleep(Parameters::recovery_time_lag + Parameters::find_node_interval +
-          boost::posix_time::seconds(5));
+  Sleep(Parameters::recovery_time_lag + Parameters::find_node_interval + std::chrono::seconds(5));
   EXPECT_TRUE(this->nodes_[source]->RoutingTableHasNode(node_id));
 }
 
@@ -110,8 +109,7 @@ TEST_F(FindNodeNetwork, FUNC_VaultFindVaultNode) {
 
   EXPECT_TRUE(this->nodes_[source]->DropNode(this->nodes_[dest]->node_id()));
 
-  Sleep(Parameters::recovery_time_lag + Parameters::find_node_interval +
-          boost::posix_time::seconds(5));
+  Sleep(Parameters::recovery_time_lag + Parameters::find_node_interval + std::chrono::seconds(5));
 
   LOG(kVerbose) << "after find " << HexSubstr(this->nodes_[dest]->node_id().string());
   EXPECT_TRUE(this->nodes_[source]->RoutingTableHasNode(this->nodes_[dest]->node_id()));
@@ -132,8 +130,7 @@ TEST_F(FindNodeNetwork, FUNC_VaultFindClientNode) {
 
   // clear up
   EXPECT_TRUE(this->nodes_[dest]->DropNode(this->nodes_[source]->node_id()));
-  Sleep(Parameters::recovery_time_lag + Parameters::find_node_interval +
-          boost::posix_time::seconds(5));
+  Sleep(Parameters::recovery_time_lag + Parameters::find_node_interval + std::chrono::seconds(5));
   EXPECT_TRUE(this->nodes_[dest]->RoutingTableHasNode(this->nodes_[source]->node_id()));
   EXPECT_TRUE(this->nodes_[source]->ClientRoutingTableHasNode(this->nodes_[dest]->node_id()));
 }
@@ -152,7 +149,7 @@ TEST_F(FindNodeNetwork, FUNC_ClientFindVaultNode) {
   EXPECT_TRUE(this->nodes_.at(client)->IsClient());
   EXPECT_FALSE(this->nodes_.at(vault)->IsClient());
 
-  Sleep(boost::posix_time::seconds(1));
+  Sleep(std::chrono::seconds(1));
 
   EXPECT_TRUE(this->nodes_[client]->RoutingTableHasNode(this->nodes_[source]->node_id()));
   EXPECT_FALSE(this->nodes_[source]->RoutingTableHasNode(this->nodes_[client]->node_id()));
@@ -164,7 +161,7 @@ TEST_F(FindNodeNetwork, FUNC_ClientFindVaultNode) {
 
   // trying to find
   EXPECT_TRUE(Find(this->nodes_[vault], this->nodes_[vault]->node_id()));
-  Sleep(boost::posix_time::seconds(1));
+  Sleep(std::chrono::seconds(1));
   EXPECT_FALSE(this->nodes_[vault]->RoutingTableHasNode(this->nodes_[client]->node_id()));
   EXPECT_TRUE(this->nodes_[vault]->ClientRoutingTableHasNode(this->nodes_[client]->node_id()));
 }
@@ -178,7 +175,7 @@ TEST_F(FindNodeNetwork, FUNC_ClientFindClientNode) {
   // Add two client nodes
   this->AddNode(true, GenerateUniqueRandomId(this->nodes_[source]->node_id(), 8));
   this->AddNode(true, GenerateUniqueRandomId(this->nodes_[source]->node_id(), 12));
-  Sleep(boost::posix_time::seconds(1));
+  Sleep(std::chrono::seconds(1));
   EXPECT_TRUE(this->nodes_.at(client1)->IsClient());
   EXPECT_TRUE(this->nodes_.at(client2)->IsClient());
 
@@ -196,7 +193,7 @@ TEST_F(FindNodeNetwork, FUNC_ClientFindClientNode) {
 
   // trying to find
   EXPECT_TRUE(Find(this->nodes_[client1], this->nodes_[client1]->node_id()));
-  Sleep(boost::posix_time::seconds(5));
+  Sleep(std::chrono::seconds(5));
   EXPECT_FALSE(this->nodes_[client1]->RoutingTableHasNode(this->nodes_[client2]->node_id()));
   EXPECT_FALSE(this->nodes_[client1]->ClientRoutingTableHasNode(this->nodes_[client2]->node_id()));
 }
