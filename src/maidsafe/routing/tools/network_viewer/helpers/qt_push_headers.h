@@ -42,7 +42,6 @@ License.
 
 #ifdef MAIDSAFE_LINUX
 #  pragma GCC diagnostic push
-#  pragma GCC diagnostic ignored "-Weffc++"
 #ifndef __clang__
 #  pragma GCC diagnostic ignored "-pedantic"
 #endif

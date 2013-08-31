@@ -45,15 +45,7 @@ class ClientRoutingTable;
 class RoutingTable;
 class GroupChangeHandler;
 
-#ifdef __GNUC__
-#  pragma GCC diagnostic push
-#  pragma GCC diagnostic ignored "-Weffc++"
-#endif
 class ResponseHandler : public std::enable_shared_from_this<ResponseHandler> {
-#ifdef __GNUC__
-#  pragma GCC diagnostic pop
-#endif
-
  public:
   ResponseHandler(RoutingTable& routing_table,
                   ClientRoutingTable& client_routing_table,
