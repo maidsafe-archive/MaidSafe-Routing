@@ -54,7 +54,7 @@ namespace {
 
 typedef std::vector<maidsafe::passport::Pmid> PmidVector;
 
-const std::string kHelperVersion = "MaidSafe Routing KeysHelper " + maidsafe::kApplicationVersion;
+const std::string kHelperVersion = "MaidSafe Routing KeysHelper " + maidsafe::kApplicationVersion();
 
 void PrintKeys(const PmidVector &all_pmids) {
   for (size_t i = 0; i < all_pmids.size(); ++i)
