@@ -82,63 +82,6 @@ bool CreateKeys(const size_t &pmids_count, PmidVector &all_pmids) {
   return true;
 }
 
-fs::path GetPathFromProgramOption(const std::string &option_name,
-                                  po::variables_map *variables_map,
-                                  bool is_dir,
-                                  bool create_new_if_absent) {
-  fs::path option_path;
-  if (variables_map->count(option_name))
-    option_path = variables_map->at(option_name).as<std::string>();
-  if (option_path.empty())
-    return fs::path();
-
-  boost::system::error_code ec;
-  if (!fs::exists(option_path, ec) || ec) {
-    if (!create_new_if_absent) {
-      LOG(kError) << "GetPathFromProgramOption - Invalid " << option_name << ", " << option_path
-                  << " doesn't exist or can't be accessed (" << ec.message() << ")";
-      return fs::path();
-    }
-
-    if (is_dir) {  // Create new dir
-      fs::create_directories(option_path, ec);
-      if (ec) {
-        LOG(kError) << "GetPathFromProgramOption - Unable to create new dir " << option_path << " ("
-                    << ec.message() << ")";
-        return fs::path();
-      }
-    } else {  // Create new file
-      if (option_path.has_filename()) {
-        try {
-          std::ofstream ofs(option_path.c_str());
-        }
-        catch(const std::exception &e) {
-          LOG(kError) << "GetPathFromProgramOption - Exception while creating new file: "
-                      << e.what();
-          return fs::path();
-        }
-      }
-    }
-  }
-
-  if (is_dir) {
-    if (!fs::is_directory(option_path, ec) || ec) {
-      LOG(kError) << "GetPathFromProgramOption - Invalid " << option_name << ", " << option_path
-                  << " is not a directory (" << ec.message() << ")";
-      return fs::path();
-    }
-  } else {
-    if (!fs::is_regular_file(option_path, ec) || ec) {
-      LOG(kError) << "GetPathFromProgramOption - Invalid " << option_name << ", " << option_path
-                  << " is not a regular file (" << ec.message() << ")";
-      return fs::path();
-    }
-  }
-
-  LOG(kInfo) << "GetPathFromProgramOption - " << option_name << " is " << option_path;
-  return option_path;
-}
-
 }  // unnamed namespace
 
 int main(int argc, char* argv[]) {
@@ -193,7 +136,7 @@ int main(int argc, char* argv[]) {
     }
 
     PmidVector all_pmids;
-    fs::path pmids_path(GetPathFromProgramOption("pmids_path", &variables_map, false, true));
+    auto pmids_path(maidsafe::GetPathFromProgramOptions("pmids_path", variables_map, false, true));
 
     if (do_create) {
       if (CreateKeys(pmids_count, all_pmids)) {
