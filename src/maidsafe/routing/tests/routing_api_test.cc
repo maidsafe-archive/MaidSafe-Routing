@@ -61,7 +61,8 @@ typedef boost::asio::ip::udp::endpoint Endpoint;
 const int kClientCount(4);
 const int kServerCount(10);
 const int kNetworkSize = kClientCount + kServerCount;
-
+MessageReceivedFunctor no_ops_message_received_functor =  [] (const std::string& , const bool&,
+                                                              ReplyFunctor) {};  // NOLINT
 }  // anonymous namespace
 
 TEST(APITest, BEH_API_ZeroState) {
@@ -80,6 +81,9 @@ TEST(APITest, BEH_API_ZeroState) {
   Routing routing3(pmid3);
 
   functors1.network_status = [](const int&) {};  // NOLINT (Fraser)
+  functors1.message_and_caching.message_received = no_ops_message_received_functor;
+  functors3 = functors2 = functors1;
+
   functors1.request_public_key = [&](const NodeId& node_id, GivePublicKeyFunctor give_key) {
       LOG(kWarning) << "node_validation called for " << DebugId(node_id);
       auto itr(key_map.find(node_id));
@@ -132,7 +136,8 @@ TEST(APITest, BEH_API_ZeroStateWithDuplicateNode) {
   Routing routing2(pmid2);
   Routing routing3(pmid3);
   Routing routing4(pmid3);
-
+  functors1.message_and_caching.message_received = no_ops_message_received_functor;
+  functors4 = functors3 = functors2 = functors1;
   functors1.network_status = [](const int&) {};  // NOLINT (Fraser)
   functors1.request_public_key = [&](const NodeId& node_id, GivePublicKeyFunctor give_key) {
       LOG(kWarning) << "node_validation called for " << DebugId(node_id);
@@ -272,7 +277,8 @@ TEST(APITest, BEH_API_ClientNode) {
   Routing routing1(pmid1);
   Routing routing2(pmid2);
   Routing routing3(maid);
-
+  functors1.message_and_caching.message_received = no_ops_message_received_functor;
+  functors3 = functors2 = functors1;
   functors1.network_status = [](const int&) {};  // NOLINT (Fraser)
   functors1.request_public_key = [&](const NodeId& node_id, GivePublicKeyFunctor give_key) {
       LOG(kWarning) << "node_validation called for " << DebugId(node_id);
@@ -346,6 +352,8 @@ TEST(APITest, BEH_API_NonMutatingClientNode) {
   Routing routing1(pmid1);
   Routing routing2(pmid2);
   Routing routing3((NodeId(NodeId::kRandomId)));
+  functors1.message_and_caching.message_received = no_ops_message_received_functor;
+  functors3 = functors2 = functors1;
 
   functors1.network_status = [](const int&) {};  // NOLINT (Fraser)
   functors1.request_public_key = [&](const NodeId& node_id, GivePublicKeyFunctor give_key) {
@@ -423,7 +431,8 @@ TEST(APITest, BEH_API_ClientNodeSameId) {
   Routing routing2(pmid2);
   Routing routing3(maid);
   Routing routing4(maid);
-
+  functors1.message_and_caching.message_received = no_ops_message_received_functor;
+  functors4 = functors3 = functors2 = functors1;
   functors1.network_status = [](const int&) {};  // NOLINT (Fraser)
   functors1.request_public_key = [&](const NodeId& node_id, GivePublicKeyFunctor give_key) {
       LOG(kWarning) << "node_validation called for " << DebugId(node_id);
@@ -516,7 +525,7 @@ TEST(APITest, BEH_API_ClientNodeSameId) {
 TEST(APITest, BEH_API_NodeNetwork) {
   int min_join_status(8);  // TODO(Prakash): To decide
   Functors functors;
-
+  functors.message_and_caching.message_received = no_ops_message_received_functor;
   std::map<NodeId, asymm::PublicKey> key_map;
   functors.network_status = [](const int&) {}; // NOLINT (Fraser)
   functors.request_public_key = [&](const NodeId& node_id, GivePublicKeyFunctor give_key) {
@@ -828,6 +837,8 @@ TEST(APITest, BEH_API_PartiallyJoinedSend) {
   Routing routing1(pmid1);
   Routing routing2(pmid2);
   Routing routing3(pmid3);
+  functors1.message_and_caching.message_received = no_ops_message_received_functor;
+  functors3 = functors2 = functors1;
 
   functors1.network_status = [](const int&) {};  // NOLINT (Fraser)
   functors1.message_and_caching.message_received = [&](const std::string& message, const bool&,

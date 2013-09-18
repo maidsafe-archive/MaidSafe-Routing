@@ -205,7 +205,7 @@ void MessageHandler::HandleNodeLevelMessageForThisNode(protobuf::Message& messag
                << HexSubstr(message.source_id())
                << "   (id: " << message.id() << ")  --NodeLevel--";
     try {
-      if (!message.has_id() || message.data_size() == 1)
+      if (!message.has_id() || message.data_size() != 1)
         ThrowError(CommonErrors::parsing_error);
       timer_.AddResponse(message.id(), message.data(0));
     } catch(const maidsafe_error& e) {
