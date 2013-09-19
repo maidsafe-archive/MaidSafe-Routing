@@ -29,46 +29,49 @@ namespace maidsafe {
 
 namespace routing {
 
-MatrixChange::MatrixChange(const NodeId& this_node_id, const std::vector<NodeId>& old_matrix,
+MatrixChange::MatrixChange(NodeId this_node_id,
+                           const std::vector<NodeId>& old_matrix,
                            const std::vector<NodeId>& new_matrix)
-    : kNodeId_(this_node_id),
-      kOldMatrix_([this](std::vector<NodeId> old_matrix_in)->std::vector<NodeId> {
-                    std::sort(old_matrix_in.begin(),
-                              old_matrix_in.end(),
-                              [this](const NodeId& lhs, const NodeId& rhs) {
-                                return NodeId::CloserToTarget(lhs, rhs, kNodeId_);
-                              });
-                    return old_matrix_in;
-                  } (old_matrix)),
-      kNewMatrix_([this](std::vector<NodeId> new_matrix_in)->std::vector<NodeId> {
-                    std::sort(new_matrix_in.begin(),
-                              new_matrix_in.end(),
-                              [this](const NodeId& lhs, const NodeId& rhs) {
-                                return NodeId::CloserToTarget(lhs, rhs, kNodeId_);
-                              });
-                    return new_matrix_in;
-                  } (new_matrix)),
+    : kNodeId_(std::move(this_node_id)),
+      kOldMatrix_([this](std::vector<NodeId> old_matrix_in)
+                      ->std::vector<NodeId> {
+                          std::sort(old_matrix_in.begin(), old_matrix_in.end(),
+                                    [this](const NodeId & lhs,
+                                           const NodeId & rhs) {
+                            return NodeId::CloserToTarget(lhs, rhs, kNodeId_);
+                          });
+                          return old_matrix_in;
+                        }(old_matrix)),
+      kNewMatrix_([this](std::vector<NodeId> new_matrix_in)
+                      ->std::vector<NodeId> {
+                          std::sort(new_matrix_in.begin(), new_matrix_in.end(),
+                                    [this](const NodeId & lhs,
+                                           const NodeId & rhs) {
+                            return NodeId::CloserToTarget(lhs, rhs, kNodeId_);
+                          });
+                          return new_matrix_in;
+                        }(new_matrix)),
       kLostNodes_([this]()->std::vector<NodeId> {
-                    std::vector<NodeId> lost_nodes;
-                    std::set_difference(kOldMatrix_.begin(),
-                                        kOldMatrix_.end(),
-                                        kNewMatrix_.begin(),
-                                        kNewMatrix_.end(),
-                                        std::back_inserter(lost_nodes),
-                                        [this](const NodeId& lhs, const NodeId& rhs) {
-                                          return NodeId::CloserToTarget(lhs, rhs, kNodeId_);
-                                        });
-                    return lost_nodes;
-                  } ()),
+        std::vector<NodeId> lost_nodes;
+        std::set_difference(kOldMatrix_.begin(), kOldMatrix_.end(),
+                            kNewMatrix_.begin(), kNewMatrix_.end(),
+                            std::back_inserter(lost_nodes),
+                            [this](const NodeId & lhs, const NodeId & rhs) {
+          return NodeId::CloserToTarget(lhs, rhs, kNodeId_);
+        });
+        return lost_nodes;
+      }()),
       kRadius_([this]()->crypto::BigInt {
-                 NodeId fcn_distance;
-                 if (kNewMatrix_.size() >= Parameters::closest_nodes_size)
-                   fcn_distance = kNodeId_ ^ kNewMatrix_[Parameters::closest_nodes_size -1];
-                 else
-                   fcn_distance = kNodeId_ ^ (NodeId(NodeId::kMaxId));  // FIXME
-                 return (crypto::BigInt((fcn_distance.ToStringEncoded(NodeId::kHex) + 'h').c_str())
-                             * Parameters::proximity_factor);
-               } ()) {}
+        NodeId fcn_distance;
+        if (kNewMatrix_.size() >= Parameters::closest_nodes_size)
+          fcn_distance =
+              kNodeId_ ^ kNewMatrix_[Parameters::closest_nodes_size - 1];
+        else
+          fcn_distance = kNodeId_ ^ (NodeId(NodeId::kMaxId));  // FIXME
+        return (crypto::BigInt((fcn_distance.ToStringEncoded(NodeId::kHex) +
+                                'h').c_str()) *
+                Parameters::proximity_factor);
+      }()) {}
 
 CheckHoldersResult MatrixChange::CheckHolders(const NodeId& target) const {
   // Handle cases of lower number of group matrix nodes

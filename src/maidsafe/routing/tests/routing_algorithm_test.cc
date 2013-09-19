@@ -468,10 +468,8 @@ bool Network::Validate() {
         matrix = nodes_[index].GetGroupMatrix();
         for (auto& element : matrix)
           matrix_string += DebugId(element) + ",";
-        for (auto itr(nodes_[index].close_nodes->begin());
-                      itr != nodes_[index].close_nodes->end();
-                      ++itr)
-          close_nodes_string += DebugId(*itr) + ", ";
+        for (const auto& elem : *nodes_[index].close_nodes)
+          close_nodes_string += DebugId(elem) + ", ";
         LOG(kInfo) << matrix_string;
         LOG(kInfo) << close_nodes_string;
       }

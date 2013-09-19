@@ -687,10 +687,10 @@ NodeInfo RoutingTable::GetRemovableNode(std::vector<std::string> attempted) {
   }
 
   int32_t max_bucket(0), max_bucket_count(1);
-  for (auto it(bucket_rank_map.begin()); it != bucket_rank_map.end(); ++it) {
-    if ((*it).second >= max_bucket_count) {
-      max_bucket = (*it).first;
-      max_bucket_count = (*it).second;
+  for (auto& elem : bucket_rank_map) {
+    if ((elem).second >= max_bucket_count) {
+      max_bucket = (elem).first;
+      max_bucket_count = (elem).second;
     }
   }
 

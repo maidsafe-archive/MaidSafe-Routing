@@ -107,12 +107,14 @@ void GroupChangeHandler::SendClosestNodesUpdateRpcs(std::vector<NodeInfo> closes
   // clients are also notified of changes in connected close nodes
   for (auto& client : client_routing_table_.nodes_)
     update_subscribers.push_back(client);
-  for (auto itr(update_subscribers.begin()); itr != update_subscribers.end(); ++itr) {
-    LOG(kVerbose) << "["  << DebugId(routing_table_.kNodeId())
-                  << "] Sending update to: " << DebugId(itr->node_id);
-    protobuf::Message closest_nodes_update_rpc(
-        rpcs::ClosestNodesUpdate(itr->node_id, routing_table_.kNodeId(), closest_nodes));
-    network_.SendToDirect(closest_nodes_update_rpc, itr->node_id, itr->connection_id);
+  for (auto& update_subscriber : update_subscribers) {
+    LOG(kVerbose) << "[" << DebugId(routing_table_.kNodeId())
+                  << "] Sending update to: "
+                  << DebugId(update_subscriber.node_id);
+    protobuf::Message closest_nodes_update_rpc(rpcs::ClosestNodesUpdate(
+        update_subscriber.node_id, routing_table_.kNodeId(), closest_nodes));
+    network_.SendToDirect(closest_nodes_update_rpc, update_subscriber.node_id,
+                          update_subscriber.connection_id);
   }
 }
 

@@ -28,8 +28,8 @@ namespace maidsafe {
 
 namespace routing {
 
-CacheManager::CacheManager(const NodeId& node_id, NetworkUtils &network)
-    : kNodeId_(node_id),
+CacheManager::CacheManager(NodeId node_id, NetworkUtils& network)
+    : kNodeId_(std::move(node_id)),
       network_(network),
       message_received_functor_(),
       store_cache_data_() {}

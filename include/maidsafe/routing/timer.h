@@ -104,13 +104,13 @@ class Timer {
 
 
 // ==================== Implementation =============================================================
-template<typename Response>
+template <typename Response>
 Timer<Response>::Task::Task(boost::asio::io_service& io_service,
                             const std::chrono::steady_clock::duration& timeout,
                             ResponseFunctor functor_in,
                             int expected_response_count)
     : timer(new boost::asio::steady_timer(io_service, timeout)),
-      functor(functor_in),
+      functor(std::move(functor_in)),
       outstanding_response_count(expected_response_count) {}
 
 template<typename Response>

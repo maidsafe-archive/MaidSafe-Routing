@@ -27,11 +27,11 @@ namespace maidsafe {
 
 namespace routing {
 
-NetworkStatistics::NetworkStatistics(const NodeId& node_id)
-    :  mutex_(),
-       kNodeId_(node_id),
-       distance_(),
-       network_distance_data_() {}
+NetworkStatistics::NetworkStatistics(NodeId node_id)
+    : mutex_(),
+      kNodeId_(std::move(node_id)),
+      distance_(),
+      network_distance_data_() {}
 
 void NetworkStatistics::UpdateLocalAverageDistance(std::vector<NodeId>& unique_nodes) {
   if (unique_nodes.size() < Parameters::node_group_size)

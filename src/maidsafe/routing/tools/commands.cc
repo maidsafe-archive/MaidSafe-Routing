@@ -46,18 +46,19 @@ namespace test {
 
 Commands::Commands(DemoNodePtr demo_node,
                    std::vector<maidsafe::passport::Pmid> all_pmids,
-                   int identity_index) : demo_node_(demo_node),
-                                         all_pmids_(all_pmids),
-                                         all_ids_(),
-                                         identity_index_(identity_index),
-                                         bootstrap_peer_ep_(),
-                                         data_size_(256 * 1024),
-                                         data_rate_(1024 * 1024),
-                                         result_arrived_(false),
-                                         finish_(false),
-                                         wait_mutex_(),
-                                         wait_cond_var_(),
-                                         mark_results_arrived_() {
+                   int identity_index)
+    : demo_node_(demo_node),
+      all_pmids_(std::move(all_pmids)),
+      all_ids_(),
+      identity_index_(identity_index),
+      bootstrap_peer_ep_(),
+      data_size_(256 * 1024),
+      data_rate_(1024 * 1024),
+      result_arrived_(false),
+      finish_(false),
+      wait_mutex_(),
+      wait_cond_var_(),
+      mark_results_arrived_() {
   // CalculateClosests will only use all_ids_ to calculate expected respondents
   // here it is assumed that the first half of fobs will be used as vault
   // and the latter half part will be used as client, which shall not respond msg

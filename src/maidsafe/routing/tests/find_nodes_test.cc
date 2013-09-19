@@ -41,13 +41,9 @@ class FindNodeNetwork : public GenericNetwork, public testing::Test {
  public:
   FindNodeNetwork(void) : GenericNetwork() {}
 
-  virtual void SetUp() {
-    GenericNetwork::SetUp();
-  }
+  virtual void SetUp() override { GenericNetwork::SetUp(); }
 
-  virtual void TearDown() {
-    Sleep(std::chrono::microseconds(100));
-  }
+  virtual void TearDown() override { Sleep(std::chrono::microseconds(100)); }
 
  protected:
   testing::AssertionResult Find(std::shared_ptr<GenericNode> source, const NodeId& node_id) {

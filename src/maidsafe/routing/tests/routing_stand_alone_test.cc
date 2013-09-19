@@ -35,11 +35,9 @@ class RoutingStandAloneTest : public GenericNetwork, public testing::Test {
  public:
   RoutingStandAloneTest(void) : GenericNetwork() {}
 
-  virtual void SetUp() {
-    GenericNetwork::SetUp();
-  }
+  virtual void SetUp() override { GenericNetwork::SetUp(); }
 
-  virtual void TearDown() {
+  virtual void TearDown() override {
     Sleep(std::chrono::microseconds(100));
     GenericNetwork::TearDown();
   }
@@ -360,11 +358,9 @@ class ProportionedRoutingStandAloneTest : public GenericNetwork, public testing:
     Parameters::greedy_fraction = old_greedy_fraction_;
   }
 
-  virtual void SetUp() {
-    GenericNetwork::SetUp();
-  }
+  virtual void SetUp() override { GenericNetwork::SetUp(); }
 
-  virtual void TearDown() {
+  virtual void TearDown() override {
     Sleep(std::chrono::microseconds(100));
     GenericNetwork::TearDown();
   }

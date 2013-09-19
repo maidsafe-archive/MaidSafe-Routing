@@ -25,8 +25,7 @@ namespace routing {
 GroupSource::GroupSource() : group_id(), sender_id() {}
 
 GroupSource::GroupSource(GroupId group_id_in, SingleId sender_id_in)
-    : group_id(group_id_in),
-      sender_id(sender_id_in) {}
+    : group_id(std::move(group_id_in)), sender_id(std::move(sender_id_in)) {}
 
 GroupSource::GroupSource(const GroupSource& other)
     : group_id(other.group_id),

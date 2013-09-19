@@ -55,9 +55,9 @@ void swap(GroupSource& lhs, GroupSource& rhs);
 template <typename Sender, typename Receiver>
 struct Message {
   Message();
-  Message(const std::string& contents_in,
-          const Sender& sender_in,
-          const Receiver& receiver_in,
+  Message(std::string contents_in,
+          Sender sender_in,
+          Receiver receiver_in,
           Cacheable cacheable_in = Cacheable::kNone);
   Message(const Message& other);
   Message(Message&& other);
@@ -83,13 +83,11 @@ Message<Sender, Receiver>::Message()
       cacheable(Cacheable::kNone) {}
 
 template <typename Sender, typename Receiver>
-Message<Sender, Receiver>::Message(const std::string& contents_in,
-                                   const Sender& sender_in,
-                                   const Receiver& receiver_in,
-                                   Cacheable cacheable_in)
-    : contents(contents_in),
-      sender(sender_in),
-      receiver(receiver_in),
+Message<Sender, Receiver>::Message(std::string contents_in, Sender sender_in,
+                                   Receiver receiver_in, Cacheable cacheable_in)
+    : contents(std::move(contents_in)),
+      sender(std::move(sender_in)),
+      receiver(std::move(receiver_in)),
       cacheable(cacheable_in) {}
 
 template <typename Sender, typename Receiver>

@@ -126,10 +126,10 @@ void WriteFile() {
   fs::path file(filename);
   maidsafe::routing::protobuf::Bootstrap protobuf_bootstrap;
 
-  for (size_t i = 0; i < endpoints.size(); ++i) {
+  for (auto& endpoints_i : endpoints) {
     maidsafe::routing::protobuf::Endpoint* endpoint = protobuf_bootstrap.add_bootstrap_contacts();
-    endpoint->set_ip(endpoints[i].second);
-    endpoint->set_port(endpoints[i].first);
+    endpoint->set_ip(endpoints_i.second);
+    endpoint->set_port(endpoints_i.first);
   }
 
   std::string serialised_bootstrap_nodes;

@@ -75,9 +75,7 @@ class TimerTest : public testing::Test {
     asio_service_.Start();
   }
 
-  void TearDown() {
-    EXPECT_TRUE(timer_.tasks_.empty());
-  }
+  void TearDown() override { EXPECT_TRUE(timer_.tasks_.empty()); }
 
  protected:
   typedef Timer<std::string>::ResponseFunctor TaskResponseFunctor;

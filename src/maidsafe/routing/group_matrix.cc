@@ -468,9 +468,9 @@ void GroupMatrix::PrintGroupMatrix() {
   std::string output("Group matrix of node with NodeID: " + DebugId(kNodeId_));
   for (group_itr = matrix_.begin(); group_itr != matrix_.end(); ++group_itr) {
     output.append("\nGroup matrix row:");
-    for (uint32_t i(0); i < (*group_itr).size(); ++i) {
+    for (auto& elem : (*group_itr)) {
       output.append(tab);
-      output.append(DebugId((*group_itr).at(i).node_id));
+      output.append(DebugId(elem.node_id));
     }
   }
   LOG(kVerbose) << output;

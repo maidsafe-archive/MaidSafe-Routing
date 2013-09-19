@@ -189,9 +189,7 @@ class GroupMatrixTest : public testing::TestWithParam<bool> {
     own_node_info_.node_id = own_node_id_;
   }
 
-  void SetUp() {
-    EXPECT_EQ(0, matrix_.GetConnectedPeers().size());
-  }
+  void SetUp() override { EXPECT_EQ(0, matrix_.GetConnectedPeers().size()); }
 
   void CheckIsThisNodeGroupLeader(const NodeId& target_id,
                                   NodeId& connected_peer,

@@ -294,10 +294,9 @@ void ResponseHandler::ConnectSuccessAcknowledgement(protobuf::Message& message) 
   bool from_requestor(connect_success_ack.requestor());
   bool client_node(message.client_node());
   std::vector<NodeId> close_ids;
-  for (auto itr = connect_success_ack.close_ids().begin();
-           itr != connect_success_ack.close_ids().end(); ++itr) {
-    if (!(*itr).empty()) {
-      close_ids.push_back(NodeId(*itr));
+  for (const auto& elem : connect_success_ack.close_ids()) {
+    if (!(elem).empty()) {
+      close_ids.push_back(NodeId(elem));
     }
   }
   if (!client_node) {

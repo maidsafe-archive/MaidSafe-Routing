@@ -68,7 +68,7 @@ class MatrixChange {
   friend class test::GroupMatrixTest_BEH_EmptyMatrix_Test;
 
  private:
-  MatrixChange(const NodeId& this_node_id, const std::vector<NodeId>& old_matrix,
+  MatrixChange(NodeId this_node_id, const std::vector<NodeId>& old_matrix,
                const std::vector<NodeId>& new_matrix);
   bool OldEqualsToNew() const;
 

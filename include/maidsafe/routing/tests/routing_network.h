@@ -277,14 +277,14 @@ class NodesEnvironment : public testing::Environment {
       num_symmetric_nat_server_nodes_(num_symmetric_nat_server_nodes),
       num_symmetric_nat_client_nodes_(num_symmetric_nat_client_nodes) {}
 
-  void SetUp() {
+  void SetUp() override {
     g_env_->GenericNetwork::SetUp();
     g_env_->SetUpNetwork(total_num_server_nodes_,
                          total_num_client_nodes_,
                          num_symmetric_nat_server_nodes_,
                          num_symmetric_nat_client_nodes_);
   }
-  void TearDown() {
+  void TearDown() override {
 //    if (g_env_.unique()) {
 //      g_env_.reset();
 //    }

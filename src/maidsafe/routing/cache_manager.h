@@ -33,7 +33,7 @@ class NetworkUtils;
 
 class CacheManager {
  public:
-  CacheManager(const NodeId& node_id, NetworkUtils &network);
+  CacheManager(NodeId node_id, NetworkUtils& network);
 
   void InitialiseFunctors(MessageReceivedFunctor message_received_functor,
                           StoreCacheDataFunctor store_cache_data);

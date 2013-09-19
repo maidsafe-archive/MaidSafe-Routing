@@ -78,9 +78,9 @@ class ResponseHandlerTest : public testing::Test {
   }
 
  protected:
-  void SetUp() {}
+  void SetUp() override {}
 
-  void TearDown() {}
+  void TearDown() override {}
 
   void SetProtobufContact(protobuf::Contact* contact,
                           const NodeId &respondent_contact_node_id,

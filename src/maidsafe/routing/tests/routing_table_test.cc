@@ -251,8 +251,8 @@ TEST(RoutingTableTest, FUNC_ReverseOrderedGroupChange) {
     EXPECT_EQ(expected_close_nodes2.at(i), close_nodes2.at(i).node_id);
 
   // Remove nodes from routing table
-  std::vector<NodeInfo>::iterator itr_near = nodes.begin();
-  std::vector<NodeInfo>::iterator itr_far = nodes.begin() + Parameters::closest_nodes_size;
+  auto itr_near = nodes.begin();
+  auto itr_far = nodes.begin() + Parameters::closest_nodes_size;
   while (itr_near != nodes.end()) {
     if (itr_far != nodes.end()) {
       expected_close_nodes.push_back(*itr_far);

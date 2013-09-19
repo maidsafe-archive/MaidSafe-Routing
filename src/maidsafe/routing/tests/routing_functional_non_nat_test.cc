@@ -37,12 +37,12 @@ class RoutingNetworkNonNatTest : public testing::Test {
  public:
   RoutingNetworkNonNatTest(void) : env_(NodesEnvironment::g_environment()) {}
 
-  void SetUp() {
+  void SetUp() override {
     EXPECT_TRUE(env_->RestoreComposition());
     EXPECT_TRUE(env_->WaitForHealthToStabilise());
   }
 
-  void TearDown() {
+  void TearDown() override {
     EXPECT_LE(kServerSize, env_->ClientIndex());
     EXPECT_LE(kNetworkSize, env_->nodes_.size());
     EXPECT_TRUE(env_->RestoreComposition());

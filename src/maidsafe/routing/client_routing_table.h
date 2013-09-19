@@ -50,7 +50,7 @@ namespace protobuf { class Contact; }
 
 class ClientRoutingTable {
  public:
-  explicit ClientRoutingTable(const NodeId& node_id);
+  explicit ClientRoutingTable(NodeId node_id);
   bool AddNode(NodeInfo& node, const NodeId& furthest_close_node_id);
   bool CheckNode(NodeInfo& node, const NodeId& furthest_close_node_id);
   std::vector<NodeInfo> DropNodes(const NodeId &node_to_drop);

@@ -1198,8 +1198,8 @@ testing::AssertionResult GenericNetwork::SendDirect(const size_t& repeats, size_
 }
 
 struct SendGroupMonitor {
-  explicit SendGroupMonitor(const std::vector<NodeId>& expected_ids)
-    : response_count(0), expected_ids(expected_ids) {}
+  explicit SendGroupMonitor(std::vector<NodeId> expected_ids)
+      : response_count(0), expected_ids(std::move(expected_ids)) {}
 
   uint16_t response_count;
   std::vector<NodeId> expected_ids;
@@ -1345,9 +1345,9 @@ testing::AssertionResult GenericNetwork::SendDirect(const NodeId& destination_no
       };
     } else {
       NodePtr dest;
-      for (size_t index(0); index < nodes_.size(); ++index) {
-        if (nodes_[index]->node_id() == destination_node_id) {
-          dest = nodes_[index];
+      for (auto& elem : nodes_) {
+        if (elem->node_id() == destination_node_id) {
+          dest = elem;
           break;
         }
       }

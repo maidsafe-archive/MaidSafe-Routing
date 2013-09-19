@@ -40,14 +40,13 @@ namespace routing {
 namespace test {
 class SharedResponse {
  public:
-  SharedResponse(std::vector<NodeId> closest_nodes,
-                 uint16_t expect_responses)
-  : closest_nodes_(closest_nodes),
-    responded_nodes_(),
-    expected_responses_(expect_responses),
-    msg_send_time_(boost::posix_time::microsec_clock::universal_time()),
-    average_response_time_(boost::posix_time::milliseconds(0)),
-    mutex_() {}
+  SharedResponse(std::vector<NodeId> closest_nodes, uint16_t expect_responses)
+      : closest_nodes_(std::move(closest_nodes)),
+        responded_nodes_(),
+        expected_responses_(expect_responses),
+        msg_send_time_(boost::posix_time::microsec_clock::universal_time()),
+        average_response_time_(boost::posix_time::milliseconds(0)),
+        mutex_() {}
   ~SharedResponse() {
     // CheckAndPrintResult();
   }

@@ -40,13 +40,9 @@ class RoutingChurnTest : public GenericNetwork, public testing::Test {
  public:
   RoutingChurnTest(void) : GenericNetwork() {}
 
-  virtual void SetUp() {
-    GenericNetwork::SetUp();
-  }
+  virtual void SetUp() override { GenericNetwork::SetUp(); }
 
-  virtual void TearDown() {
-    Sleep(std::chrono::microseconds(100));
-  }
+  virtual void TearDown() override { Sleep(std::chrono::microseconds(100)); }
 };
 
 

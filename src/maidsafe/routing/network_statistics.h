@@ -38,7 +38,7 @@ namespace test {
 
 class NetworkStatistics {
  public:
-  explicit NetworkStatistics(const NodeId& node_id);
+  explicit NetworkStatistics(NodeId node_id);
   void UpdateLocalAverageDistance(std::vector<NodeId>& unique_nodes);
   void UpdateNetworkAverageDistance(const NodeId& distance);
   bool EstimateInGroup(const NodeId& sender_id, const NodeId& info_id);

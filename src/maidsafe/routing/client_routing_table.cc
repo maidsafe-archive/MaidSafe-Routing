@@ -34,10 +34,8 @@ typedef boost::asio::ip::udp::endpoint Endpoint;
 
 }  // unnamed namespace
 
-ClientRoutingTable::ClientRoutingTable(const NodeId& node_id)
-    : kNodeId_(node_id),
-      nodes_(),
-      mutex_() {}
+ClientRoutingTable::ClientRoutingTable(NodeId node_id)
+    : kNodeId_(std::move(node_id)), nodes_(), mutex_() {}
 
 bool ClientRoutingTable::AddNode(NodeInfo& node, const NodeId& furthest_close_node_id) {
   return AddOrCheckNode(node, furthest_close_node_id, true);
@@ -95,9 +93,8 @@ NodeInfo ClientRoutingTable::DropConnection(const NodeId& connection_to_drop) {
 std::vector<NodeInfo> ClientRoutingTable::GetNodesInfo(const NodeId& node_id) const {
   std::vector<NodeInfo> nodes_info;
   std::lock_guard<std::mutex> lock(mutex_);
-  for (auto it = nodes_.begin(); it != nodes_.end(); ++it) {
-    if ((*it).node_id == node_id)
-      nodes_info.push_back(*it);
+  for (const auto& elem : nodes_) {
+    if ((elem).node_id == node_id) nodes_info.push_back(elem);
   }
   return nodes_info;
 }

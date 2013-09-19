@@ -771,8 +771,8 @@ TEST(APITest, BEH_API_SendGroup) {
   std::vector<std::promise<bool>> send_promises(kServerCount * kMessageCount);
   std::vector<uint16_t> send_counts(kServerCount * kMessageCount, 0);
   std::vector<std::future<bool>> send_futures;
-  for (uint16_t i(0); i < send_promises.size(); ++i)
-    send_futures.emplace_back(send_promises.at(i).get_future());
+  for (auto& send_promise : send_promises)
+    send_futures.emplace_back(send_promise.get_future());
   bool result(false);
   for (uint16_t i(0); i < kServerCount; ++i) {
     NodeId dest_id(routing_node[i]->kNodeId());
