@@ -53,7 +53,7 @@ void NetworkStatistics::UpdateLocalAverageDistance(std::vector<NodeId>& unique_n
 void NetworkStatistics::UpdateNetworkAverageDistance(const NodeId& distance) {
   if (distance == NodeId())
     return;
-  crypto::BigInt distance_integer((distance.ToStringEncoded(NodeId::kHex) + 'h').c_str());
+  crypto::BigInt distance_integer((distance.ToStringEncoded(NodeId::EncodingType::kHex) + 'h').c_str());
   {
     std::lock_guard<std::mutex> lock(mutex_);
     network_distance_data_.total_distance += distance_integer;
@@ -73,8 +73,8 @@ bool NetworkStatistics::EstimateInGroup(const NodeId& sender_id, const NodeId& i
     std::lock_guard<std::mutex> lock(mutex_);
     local_distance = distance_;
   }
-  return crypto::BigInt(((info_id ^ sender_id).ToStringEncoded(NodeId::kHex) + 'h').c_str()) <=
-      crypto::BigInt((local_distance.ToStringEncoded(NodeId::kHex) + 'h').c_str()) *
+  return crypto::BigInt(((info_id ^ sender_id).ToStringEncoded(NodeId::EncodingType::kHex) + 'h').c_str()) <=
+      crypto::BigInt((local_distance.ToStringEncoded(NodeId::EncodingType::kHex) + 'h').c_str()) *
       Parameters::accepted_distance_tolerance;
 }
 

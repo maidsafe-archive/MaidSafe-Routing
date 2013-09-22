@@ -51,7 +51,7 @@ TEST(NetworkStatisticsTest, BEH_AverageDistance) {
 
   node_id = NodeId(NodeId::kMaxId);
   network_statistics.network_distance_data_.total_distance =
-      crypto::BigInt((node_id.ToStringEncoded(NodeId::kHex) + 'h').c_str()) *
+      crypto::BigInt((node_id.ToStringEncoded(NodeId::EncodingType::kHex) + 'h').c_str()) *
       network_statistics.network_distance_data_.contributors_count;
   average = node_id;
   network_statistics.UpdateNetworkAverageDistance(node_id);
@@ -67,7 +67,7 @@ TEST(NetworkStatisticsTest, BEH_AverageDistance) {
     NodeId node_id(NodeId::kRandomId);
     distances_as_node_id.push_back(node_id);
     distances_as_bigint.push_back(
-        crypto::BigInt((node_id.ToStringEncoded(NodeId::kHex) + 'h').c_str()));
+        crypto::BigInt((node_id.ToStringEncoded(NodeId::EncodingType::kHex) + 'h').c_str()));
   }
 
   crypto::BigInt total(std::accumulate(distances_as_bigint.begin(),
@@ -79,7 +79,7 @@ TEST(NetworkStatisticsTest, BEH_AverageDistance) {
 
   crypto::BigInt matrix_average_as_bigint(
       (network_statistics.network_distance_data_.average_distance.ToStringEncoded(
-          NodeId::kHex) + 'h').c_str());
+          NodeId::EncodingType::kHex) + 'h').c_str());
 
   EXPECT_EQ(total / kCount, matrix_average_as_bigint);
 }

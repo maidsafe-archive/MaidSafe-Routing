@@ -398,11 +398,11 @@ void GroupMatrix::UpdateUniqueNodeList() {
   if (unique_nodes_.size() >= closest_nodes_size_adjust) {
     fcn_distance = kNodeId_ ^ unique_nodes_[closest_nodes_size_adjust -1].node_id;
 
-    radius_ = (crypto::BigInt((fcn_distance.ToStringEncoded(NodeId::kHex) + 'h').c_str())
+    radius_ = (crypto::BigInt((fcn_distance.ToStringEncoded(NodeId::EncodingType::kHex) + 'h').c_str())
                                   * Parameters::proximity_factor);
   } else {
     fcn_distance = NodeId(NodeId::kMaxId);  // FIXME Prakash
-    radius_ = (crypto::BigInt((fcn_distance.ToStringEncoded(NodeId::kHex) + 'h').c_str()));
+    radius_ = (crypto::BigInt((fcn_distance.ToStringEncoded(NodeId::EncodingType::kHex) + 'h').c_str()));
   }
 }
 

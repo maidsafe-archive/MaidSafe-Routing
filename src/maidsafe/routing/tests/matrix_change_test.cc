@@ -64,7 +64,7 @@ class MatrixChangeTest : public testing::Test {
       fcn_distance = kNodeId_ ^ new_matrix_[Parameters::closest_nodes_size -1];
     else
       fcn_distance = kNodeId_ ^ (NodeId(NodeId::kMaxId));
-    crypto::BigInt radius(crypto::BigInt((fcn_distance.ToStringEncoded(NodeId::kHex) + 'h').c_str())
+    crypto::BigInt radius(crypto::BigInt((fcn_distance.ToStringEncoded(NodeId::EncodingType::kHex) + 'h').c_str())
                            * Parameters::proximity_factor);
 
     // sort by target
@@ -111,7 +111,7 @@ class MatrixChangeTest : public testing::Test {
       holders_result.proximity_status = GroupRangeStatus::kInRange;
     } else {
       NodeId distance_id(kNodeId_ ^ target);
-      crypto::BigInt distance((distance_id.ToStringEncoded(NodeId::kHex) + 'h').c_str());
+      crypto::BigInt distance((distance_id.ToStringEncoded(NodeId::EncodingType::kHex) + 'h').c_str());
       holders_result.proximity_status =  (distance < radius) ? GroupRangeStatus::kInProximalRange
                                                              : GroupRangeStatus::kOutwithRange;
     }
