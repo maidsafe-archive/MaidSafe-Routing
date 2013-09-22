@@ -158,13 +158,11 @@ void Commands::ZeroStateJoin() {
   }
   peer_node_info.connection_id = peer_node_info.node_id;
 
-  auto f1 = std::async(std::launch::async, [=] ()->int {
-    return demo_node_->ZeroStateJoin(bootstrap_peer_ep_, peer_node_info);
-  });
-  ReturnCode ret_code = static_cast<ReturnCode>(f1.get());
+  ReturnCode ret_code(static_cast<ReturnCode>(demo_node_->ZeroStateJoin(bootstrap_peer_ep_,
+                                                                        peer_node_info)));
   EXPECT_EQ(kSuccess, ret_code);
   if (ret_code == kSuccess)
-    demo_node_->set_joined(true);
+    demo_node_->set_joined(ret_code == kSuccess);
 }
 
 void Commands::SendMessages(const int& id_index, const DestinationType& destination_type,
