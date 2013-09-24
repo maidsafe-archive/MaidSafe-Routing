@@ -34,7 +34,6 @@ endif()
 set(CMAKE_DISABLE_SOURCE_CHANGES ON)
 set(CMAKE_DISABLE_IN_SOURCE_BUILD ON)
 
-cmake_minimum_required(VERSION 2.8.10 FATAL_ERROR)
 project(network_viewer)
 
 include(../../../../../../../cmake_modules/standard_setup.cmake)
