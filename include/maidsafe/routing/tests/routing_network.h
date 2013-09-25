@@ -42,7 +42,6 @@
 #include "maidsafe/routing/return_codes.h"
 #include "maidsafe/routing/routing_api.h"
 
-
 namespace args = std::placeholders;
 
 namespace maidsafe {
@@ -50,13 +49,15 @@ namespace maidsafe {
 namespace routing {
 
 class Routing;
-namespace protobuf { class Message; }
+namespace protobuf {
+class Message;
+}
 
 namespace test {
 
 bool IsPortAvailable(boost::asio::ip::udp::endpoint endpoint);
 
-template<typename Future>
+template <typename Future>
 bool is_ready(std::future<Future>& f) {
   return f.wait_for(std::chrono::seconds(0)) == std::future_status::ready;
 }
@@ -78,14 +79,11 @@ class NodesEnvironment;
 
 class GenericNode {
  public:
-  GenericNode(bool client_mode = false,
-              bool has_symmetric_nat = false,
+  GenericNode(bool client_mode = false, bool has_symmetric_nat = false,
               bool non_mutating_client = false);
   GenericNode(bool client_mode, const rudp::NatType& nat_type);
-  GenericNode(bool client_mode,
-              const NodeInfoAndPrivateKey& node_info,
-              bool has_symmetric_nat = false,
-              bool non_mutating_client = false);
+  GenericNode(bool client_mode, const NodeInfoAndPrivateKey& node_info,
+              bool has_symmetric_nat = false, bool non_mutating_client = false);
   virtual ~GenericNode();
   int GetStatus() const;
   NodeId node_id() const;
@@ -105,19 +103,14 @@ class GenericNode {
                     const NodeInfo& peer_node_info);
   void Join(const std::vector<boost::asio::ip::udp::endpoint>& peer_endpoints =
                 std::vector<boost::asio::ip::udp::endpoint>());
-  void SendDirect(const NodeId& destination_id,
-                  const std::string& data,
-                  const bool& cacheable,
+  void SendDirect(const NodeId& destination_id, const std::string& data, const bool& cacheable,
                   ResponseFunctor response_functor);
-  void SendGroup(const NodeId& destination_id,
-                 const std::string& data,
-                 const bool& cacheable,
+  void SendGroup(const NodeId& destination_id, const std::string& data, const bool& cacheable,
                  ResponseFunctor response_functor);
   std::future<std::vector<NodeId>> GetGroup(const NodeId& info_id);
   GroupRangeStatus IsNodeIdInGroupRange(const NodeId& node_id);
   void SendToClosestNode(const protobuf::Message& message);
-  void RudpSend(const NodeId& peer_endpoint,
-                const protobuf::Message& message,
+  void RudpSend(const NodeId& peer_endpoint, const protobuf::Message& message,
                 rudp::MessageSentFunctor message_sent_functor);
   void PrintRoutingTable();
   std::vector<NodeId> ReturnRoutingTable();
@@ -180,21 +173,16 @@ class GenericNetwork {
   bool ValidateRoutingTables() const;
   virtual void SetUp();
   virtual void TearDown();
-  void SetUpNetwork(const size_t& total_number_vaults,
-                    const size_t& total_number_clients = 0);
+  void SetUpNetwork(const size_t& total_number_vaults, const size_t& total_number_clients = 0);
   // Use to specify proportion of vaults/clients that should behave as though they are behind
   // symmetric NAT. Two nodes behind symmetric NAT can't connect directly to each other.
-  void SetUpNetwork(const size_t& total_number_vaults,
-                    const size_t& total_number_clients,
+  void SetUpNetwork(const size_t& total_number_vaults, const size_t& total_number_clients,
                     const size_t& num_symmetric_nat_vaults,
                     const size_t& num_symmetric_nat_clients);
-  void AddNode(const bool& client_mode,
-               const NodeId& node_id,
+  void AddNode(const bool& client_mode, const NodeId& node_id,
                MatrixChangedFunctor matrix_change_functor);
-  void AddNode(const bool& client_mode,
-               const NodeId& node_id,
-               const bool& has_symmetric_nat = false,
-               const bool& non_mutating_client = false);
+  void AddNode(const bool& client_mode, const NodeId& node_id,
+               const bool& has_symmetric_nat = false, const bool& non_mutating_client = false);
   void AddNode(const bool& client_mode, const rudp::NatType& nat_type);
   void AddNode(const bool& client_mode, const bool& has_symmetric_nat);
   bool RemoveNode(const NodeId& node_id);
@@ -214,8 +202,7 @@ class GenericNetwork {
   int NodeIndex(const NodeId& node_id) const;
   size_t ClientIndex() const { return client_index_; }
   std::vector<NodeId> GetGroupForId(const NodeId& node_id) const;
-  std::vector<NodeInfo> GetClosestNodes(const NodeId& target_id,
-                                        const uint32_t& quantity,
+  std::vector<NodeInfo> GetClosestNodes(const NodeId& target_id, const uint32_t& quantity,
                                         const bool vault_only = false) const;
   std::vector<NodeInfo> GetClosestVaults(const NodeId& target_id, const uint32_t& quantity) const;
   void ValidateExpectedNodeType(const NodeId& node_id,
@@ -227,14 +214,12 @@ class GenericNetwork {
   bool WaitForHealthToStabiliseInLargeNetwork() const;
   bool NodeHasSymmetricNat(const NodeId& node_id) const;
   // Verifies that nodes' group matrices contain the Parameters::closest_nodes_size closest nodes
-  testing::AssertionResult CheckGroupMatrixUniqueNodes(const uint16_t& check_length
-                                                       = Parameters::closest_nodes_size + 1);
+  testing::AssertionResult CheckGroupMatrixUniqueNodes(const uint16_t& check_length =
+                                                           Parameters::closest_nodes_size + 1);
   // Do SendDirect between each pair of nodes and monitor results (do this 'repeats' times)
-  testing::AssertionResult SendDirect(const size_t& repeats,
-                                      size_t message_size = (2 ^ 10) * 256);
+  testing::AssertionResult SendDirect(const size_t& repeats, size_t message_size = (2 ^ 10) * 256);
   // Do SendGroup from source_index node to target ID and monitor results (do this 'repeats' times)
-  testing::AssertionResult SendGroup(const NodeId& target_id,
-                                     const size_t& repeats,
+  testing::AssertionResult SendGroup(const NodeId& target_id, const size_t& repeats,
                                      uint16_t source_index = 0,
                                      size_t message_size = (2 ^ 10) * 256);
   // Do SendDirect from each node to destination_node_id and monitor results. The ExpectedNodeType
@@ -248,7 +233,6 @@ class GenericNetwork {
                                       const ExpectedNodeType& destination_node_type = kExpectVault);
 
   friend class NodesEnvironment;
-
 
  private:
   uint16_t NonClientNodesSize() const;
@@ -268,32 +252,26 @@ class GenericNetwork {
 
 class NodesEnvironment : public testing::Environment {
  public:
-  NodesEnvironment(size_t total_num_server_nodes,
-                   size_t total_num_client_nodes,
-                   size_t num_symmetric_nat_server_nodes,
-                   size_t num_symmetric_nat_client_nodes)
-    : total_num_server_nodes_(total_num_server_nodes),
-      total_num_client_nodes_(total_num_client_nodes),
-      num_symmetric_nat_server_nodes_(num_symmetric_nat_server_nodes),
-      num_symmetric_nat_client_nodes_(num_symmetric_nat_client_nodes) {}
+  NodesEnvironment(size_t total_num_server_nodes, size_t total_num_client_nodes,
+                   size_t num_symmetric_nat_server_nodes, size_t num_symmetric_nat_client_nodes)
+      : total_num_server_nodes_(total_num_server_nodes),
+        total_num_client_nodes_(total_num_client_nodes),
+        num_symmetric_nat_server_nodes_(num_symmetric_nat_server_nodes),
+        num_symmetric_nat_client_nodes_(num_symmetric_nat_client_nodes) {}
 
   void SetUp() override {
     g_env_->GenericNetwork::SetUp();
-    g_env_->SetUpNetwork(total_num_server_nodes_,
-                         total_num_client_nodes_,
-                         num_symmetric_nat_server_nodes_,
-                         num_symmetric_nat_client_nodes_);
+    g_env_->SetUpNetwork(total_num_server_nodes_, total_num_client_nodes_,
+                         num_symmetric_nat_server_nodes_, num_symmetric_nat_client_nodes_);
   }
   void TearDown() override {
-//    if (g_env_.unique()) {
-//      g_env_.reset();
-//    }
+    //    if (g_env_.unique()) {
+    //      g_env_.reset();
+    //    }
     g_env_->TearDown();
   }
 
-  static std::shared_ptr<GenericNetwork> g_environment() {
-    return g_env_;
-  }
+  static std::shared_ptr<GenericNetwork> g_environment() { return g_env_; }
 
  private:
   size_t total_num_server_nodes_;

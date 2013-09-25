@@ -33,7 +33,6 @@
 #include "maidsafe/routing/remove_furthest_node.h"
 #include "maidsafe/routing/utils.h"
 
-
 namespace maidsafe {
 
 namespace routing {
@@ -73,10 +72,8 @@ GroupToGroupMessage CreateGroupToGroupMessage(const protobuf::Message& proto_mes
 }  //  unnamed namespace
 
 MessageHandler::MessageHandler(RoutingTable& routing_table,
-                               ClientRoutingTable& client_routing_table,
-                               NetworkUtils& network,
-                               Timer<std::string>& timer,
-                               RemoveFurthestNode& remove_furthest_node,
+                               ClientRoutingTable& client_routing_table, NetworkUtils& network,
+                               Timer<std::string>& timer, RemoveFurthestNode& remove_furthest_node,
                                GroupChangeHandler& group_change_handler,
                                NetworkStatistics& network_statistics)
     : routing_table_(routing_table),
@@ -85,9 +82,9 @@ MessageHandler::MessageHandler(RoutingTable& routing_table,
       network_(network),
       remove_furthest_node_(remove_furthest_node),
       group_change_handler_(group_change_handler),
-      cache_manager_(routing_table_.client_mode() ? nullptr :
-                                                    (new CacheManager(routing_table_.kNodeId(),
-                                                                      network_))),
+      cache_manager_(routing_table_.client_mode()
+                         ? nullptr
+                         : (new CacheManager(routing_table_.kNodeId(), network_))),
       timer_(timer),
       response_handler_(new ResponseHandler(routing_table, client_routing_table, network_,
                                             group_change_handler)),
@@ -98,34 +95,34 @@ MessageHandler::MessageHandler(RoutingTable& routing_table,
 void MessageHandler::HandleRoutingMessage(protobuf::Message& message) {
   bool request(message.request());
   switch (static_cast<MessageType>(message.type())) {
-    case MessageType::kPing :
+    case MessageType::kPing:
       message.request() ? service_->Ping(message) : response_handler_->Ping(message);
       break;
-    case MessageType::kConnect :
+    case MessageType::kConnect:
       message.request() ? service_->Connect(message) : response_handler_->Connect(message);
       break;
-    case MessageType::kFindNodes :
+    case MessageType::kFindNodes:
       message.request() ? service_->FindNodes(message) : response_handler_->FindNodes(message);
       break;
-    case MessageType::kConnectSuccess :
+    case MessageType::kConnectSuccess:
       service_->ConnectSuccess(message);
       break;
-    case MessageType::kConnectSuccessAcknowledgement :
+    case MessageType::kConnectSuccessAcknowledgement:
       response_handler_->ConnectSuccessAcknowledgement(message);
       break;
-    case MessageType::kRemove :
-      message.request() ? remove_furthest_node_.RemoveRequest(message) :
-                          remove_furthest_node_.RemoveResponse(message);
+    case MessageType::kRemove:
+      message.request() ? remove_furthest_node_.RemoveRequest(message)
+                        : remove_furthest_node_.RemoveResponse(message);
       break;
-    case MessageType::kClosestNodesUpdate :
+    case MessageType::kClosestNodesUpdate:
       assert(message.request());
       group_change_handler_.ClosestNodesUpdate(message);
       if (routing_table_.client_mode())
         response_handler_->CloseNodeUpdateForClient(message);
       break;
-    case MessageType::kGetGroup :
-      message.request() ? service_->GetGroup(message) : response_handler_->GetGroup(timer_,
-                                                                                    message);
+    case MessageType::kGetGroup:
+      message.request() ? service_->GetGroup(message)
+                        : response_handler_->GetGroup(timer_, message);
       break;
     default:  // unknown (silent drop)
       return;
@@ -135,8 +132,7 @@ void MessageHandler::HandleRoutingMessage(protobuf::Message& message) {
     return;
 
   if (routing_table_.size() == 0)  // This node can only send to bootstrap_endpoint
-    network_.SendToDirect(message,
-                          network_.bootstrap_connection_id(),
+    network_.SendToDirect(message, network_.bootstrap_connection_id(),
                           network_.bootstrap_connection_id());
   else
     network_.SendToClosestNode(message);
@@ -144,71 +140,73 @@ void MessageHandler::HandleRoutingMessage(protobuf::Message& message) {
 
 void MessageHandler::HandleNodeLevelMessageForThisNode(protobuf::Message& message) {
   if (IsRequest(message) && (!routing_table_.client_mode() ||
-      (routing_table_.client_mode() &&
-      (routing_table_.Contains(NodeId(message.source_id())) ||
-       routing_table_.kNodeId().string() == message.source_id())))) {
-    LOG(kSuccess) << " [" << DebugId(routing_table_.kNodeId()) << "] rcvd : "
-                  << MessageTypeString(message) << " from "
-                  << HexSubstr(message.source_id())
-                  << "   (id: " << message.id() << ")  --NodeLevel--";
-    ReplyFunctor response_functor = [=](const std::string& reply_message) {
-        if (reply_message.empty()) {
-          LOG(kInfo) << "Empty response for message id :" << message.id();
-          return;
-        }
-        LOG(kSuccess) << " [" << DebugId(routing_table_.kNodeId()) << "] repl : "
-                      << MessageTypeString(message) << " from "
-                      << HexSubstr(message.source_id())
-                      << "   (id: " << message.id() << ")  --NodeLevel Replied--";
-        protobuf::Message message_out;
-        message_out.set_request(false);
-        message_out.set_hops_to_live(Parameters::hops_to_live);
-        message_out.set_destination_id(message.source_id());
-        message_out.set_type(message.type());
-        message_out.set_direct(true);
-        message_out.clear_data();
-        message_out.set_client_node(message.client_node());
-        message_out.set_routing_message(message.routing_message());
-        message_out.add_data(reply_message);
-        message_out.set_last_id(routing_table_.kNodeId().string());
-        message_out.set_source_id(routing_table_.kNodeId().string());
-        if (message.has_id())
-          message_out.set_id(message.id());
-        else
-          LOG(kInfo) << "Message to be sent back had no ID.";
+                             (routing_table_.client_mode() &&
+                              (routing_table_.Contains(NodeId(message.source_id())) ||
+                               routing_table_.kNodeId().string() == message.source_id())))) {
+    LOG(kSuccess) << " [" << DebugId(routing_table_.kNodeId())
+                  << "] rcvd : " << MessageTypeString(message) << " from "
+                  << HexSubstr(message.source_id()) << "   (id: " << message.id()
+                  << ")  --NodeLevel--";
+    ReplyFunctor response_functor = [=](const std::string & reply_message) {
+      if (reply_message.empty()) {
+        LOG(kInfo) << "Empty response for message id :" << message.id();
+        return;
+      }
+      LOG(kSuccess) << " [" << DebugId(routing_table_.kNodeId())
+                    << "] repl : " << MessageTypeString(message) << " from "
+                    << HexSubstr(message.source_id()) << "   (id: " << message.id()
+                    << ")  --NodeLevel Replied--";
+      protobuf::Message message_out;
+      message_out.set_request(false);
+      message_out.set_hops_to_live(Parameters::hops_to_live);
+      message_out.set_destination_id(message.source_id());
+      message_out.set_type(message.type());
+      message_out.set_direct(true);
+      message_out.clear_data();
+      message_out.set_client_node(message.client_node());
+      message_out.set_routing_message(message.routing_message());
+      message_out.add_data(reply_message);
+      message_out.set_last_id(routing_table_.kNodeId().string());
+      message_out.set_source_id(routing_table_.kNodeId().string());
+      if (message.has_id())
+        message_out.set_id(message.id());
+      else
+        LOG(kInfo) << "Message to be sent back had no ID.";
 
-        if (message.has_relay_id())
-          message_out.set_relay_id(message.relay_id());
+      if (message.has_relay_id())
+        message_out.set_relay_id(message.relay_id());
 
-        if (message.has_relay_connection_id()) {
-          message_out.set_relay_connection_id(message.relay_connection_id());
-        }
-        if (routing_table_.client_mode() &&
-            routing_table_.kNodeId().string() == message_out.destination_id()) {
-          network_.SendToClosestNode(message_out);
-          return;
-        }
-        if (routing_table_.kNodeId().string() != message_out.destination_id()) {
-          network_.SendToClosestNode(message_out);
-        } else {
-          LOG(kInfo) << "Sending response to self." << " id: " << message.id();
-          HandleMessage(message_out);
-        }
+      if (message.has_relay_connection_id()) {
+        message_out.set_relay_connection_id(message.relay_connection_id());
+      }
+      if (routing_table_.client_mode() &&
+          routing_table_.kNodeId().string() == message_out.destination_id()) {
+        network_.SendToClosestNode(message_out);
+        return;
+      }
+      if (routing_table_.kNodeId().string() != message_out.destination_id()) {
+        network_.SendToClosestNode(message_out);
+      } else {
+        LOG(kInfo) << "Sending response to self."
+                   << " id: " << message.id();
+        HandleMessage(message_out);
+      }
     };
     if (message_received_functor_)
       message_received_functor_(message.data(0), false, response_functor);
     else
       InvokeTypedMessageReceivedFunctor(message);  // typed message received
-  } else if (IsResponse(message)) {  // response
-    LOG(kInfo) << "[" << DebugId(routing_table_.kNodeId()) << "] rcvd : "
-               << MessageTypeString(message) << " from "
-               << HexSubstr(message.source_id())
-               << "   (id: " << message.id() << ")  --NodeLevel--";
+  } else if (IsResponse(message)) {                // response
+    LOG(kInfo) << "[" << DebugId(routing_table_.kNodeId())
+               << "] rcvd : " << MessageTypeString(message) << " from "
+               << HexSubstr(message.source_id()) << "   (id: " << message.id()
+               << ")  --NodeLevel--";
     try {
       if (!message.has_id() || message.data_size() != 1)
         ThrowError(CommonErrors::parsing_error);
       timer_.AddResponse(message.id(), message.data(0));
-    } catch(const maidsafe_error& e) {
+    }
+    catch (const maidsafe_error& e) {
       LOG(kError) << e.what();
       return;
     }
@@ -223,7 +221,8 @@ void MessageHandler::HandleMessageForThisNode(protobuf::Message& message) {
   if (RelayDirectMessageIfNeeded(message))
     return;
 
-  LOG(kVerbose) << "Message for this node." << " id: " << message.id();
+  LOG(kVerbose) << "Message for this node."
+                << " id: " << message.id();
   if (IsRoutingMessage(message))
     HandleRoutingMessage(message);
   else
@@ -232,8 +231,8 @@ void MessageHandler::HandleMessageForThisNode(protobuf::Message& message) {
 
 void MessageHandler::HandleMessageAsClosestNode(protobuf::Message& message) {
   LOG(kVerbose) << "This node is in closest proximity to this message destination ID [ "
-                <<  HexSubstr(message.destination_id())
-                << " ]." << " id: " << message.id();
+                << HexSubstr(message.destination_id()) << " ]."
+                << " id: " << message.id();
   if (IsDirect(message)) {
     return HandleDirectMessageAsClosestNode(message);
   } else {
@@ -254,11 +253,10 @@ void MessageHandler::HandleDirectMessageAsClosestNode(protobuf::Message& message
       message.set_visited(true);
       return network_.SendToClosestNode(message);
     } else {
-      LOG(kWarning) << "Dropping message. This node ["
-                    << DebugId(routing_table_.kNodeId())
+      LOG(kWarning) << "Dropping message. This node [" << DebugId(routing_table_.kNodeId())
                     << "] is the closest but is not connected to destination node ["
-                    << HexSubstr(message.destination_id()) << "], Src ID: "
-                    << HexSubstr(message.source_id())
+                    << HexSubstr(message.destination_id())
+                    << "], Src ID: " << HexSubstr(message.source_id())
                     << ", Relay ID: " << HexSubstr(message.relay_id()) << " id: " << message.id()
                     << PrintMessage(message);
       return;
@@ -279,7 +277,8 @@ void MessageHandler::HandleGroupMessageAsClosestNode(protobuf::Message& message)
   // This node is not closest to the destination node for non-direct message.
   if (!routing_table_.IsThisNodeClosestTo(NodeId(message.destination_id()), !IsDirect(message)) &&
       !have_node_with_group_id) {
-    LOG(kInfo) << "This node is not closest, passing it on." << " id: " << message.id();
+    LOG(kInfo) << "This node is not closest, passing it on."
+               << " id: " << message.id();
     // if (IsCacheableRequest(message))
     //   return HandleCacheLookup(message);  // forwarding message is done by cache manager
     // else if (IsCacheableResponse(message))
@@ -287,8 +286,7 @@ void MessageHandler::HandleGroupMessageAsClosestNode(protobuf::Message& message)
     return network_.SendToClosestNode(message);
   }
 
-  if (message.has_visited() &&
-      !message.visited() &&
+  if (message.has_visited() && !message.visited() &&
       (routing_table_.size() > Parameters::closest_nodes_size) &&
       (!routing_table_.IsThisNodeInRange(NodeId(message.destination_id()),
                                          Parameters::closest_nodes_size))) {
@@ -308,18 +306,17 @@ void MessageHandler::HandleGroupMessageAsClosestNode(protobuf::Message& message)
   // the connected peer which has the closer node.
   NodeInfo closest_to_group_leader_node;
   if (!routing_table_.IsThisNodeGroupLeader(NodeId(message.destination_id()),
-                                            closest_to_group_leader_node,
-                                            route_history)) {
+                                            closest_to_group_leader_node, route_history)) {
     assert(NodeId(message.destination_id()) != closest_to_group_leader_node.node_id);
-    return network_.SendToDirectAdjustedRoute(message,
-                                              closest_to_group_leader_node.node_id,
+    return network_.SendToDirectAdjustedRoute(message, closest_to_group_leader_node.node_id,
                                               closest_to_group_leader_node.connection_id);
   }
 
   // This node is closest so will send to all replicant nodes
   uint16_t replication(static_cast<uint16_t>(message.replication()));
   if ((replication < 1) || (replication > Parameters::node_group_size)) {
-    LOG(kError) << "Dropping invalid non-direct message." << " id: " << message.id();
+    LOG(kError) << "Dropping invalid non-direct message."
+                << " id: " << message.id();
     return;
   }
 
@@ -329,16 +326,16 @@ void MessageHandler::HandleGroupMessageAsClosestNode(protobuf::Message& message)
   NodeId destination_id(message.destination_id());
   NodeId own_node_id(routing_table_.kNodeId());
   auto close_from_matrix(routing_table_.GetClosestMatrixNodes(destination_id, replication + 2));
-  close_from_matrix.erase(std::remove_if(close_from_matrix.begin(),
-                                         close_from_matrix.end(),
-                                         [&destination_id](const NodeInfo& node_info) {
-                                           return node_info.node_id == destination_id;
-                                         }), close_from_matrix.end());
-  close_from_matrix.erase(std::remove_if(close_from_matrix.begin(),
-                                         close_from_matrix.end(),
-                                         [&own_node_id](const NodeInfo& node_info) {
-                                             return node_info.node_id == own_node_id;
-                                         }), close_from_matrix.end());
+  close_from_matrix.erase(std::remove_if(close_from_matrix.begin(), close_from_matrix.end(),
+                                         [&destination_id](const NodeInfo & node_info) {
+                            return node_info.node_id == destination_id;
+                          }),
+                          close_from_matrix.end());
+  close_from_matrix.erase(std::remove_if(close_from_matrix.begin(), close_from_matrix.end(),
+                                         [&own_node_id](const NodeInfo & node_info) {
+                            return node_info.node_id == own_node_id;
+                          }),
+                          close_from_matrix.end());
   while (close_from_matrix.size() > replication)
     close_from_matrix.pop_back();
 
@@ -346,14 +343,14 @@ void MessageHandler::HandleGroupMessageAsClosestNode(protobuf::Message& message)
   std::string group_members("[" + DebugId(routing_table_.kNodeId()) + "]");
 
   for (const auto& i : close_from_matrix)
-    group_members+=std::string("[" + DebugId(i.node_id) +"]");
-  LOG(kInfo) << "Group nodes for group_id " << HexSubstr(group_id) << " : "
-             << group_members;
+    group_members += std::string("[" + DebugId(i.node_id) + "]");
+  LOG(kInfo) << "Group nodes for group_id " << HexSubstr(group_id) << " : " << group_members;
 
   for (const auto& i : close_from_matrix) {
     LOG(kInfo) << "[" << DebugId(own_node_id) << "] - "
                << "Replicating message to : " << HexSubstr(i.node_id.string())
-               << " [ group_id : " << HexSubstr(group_id)  << "]" << " id: " << message.id();
+               << " [ group_id : " << HexSubstr(group_id) << "]"
+               << " id: " << message.id();
     message.set_destination_id(i.node_id.string());
     NodeInfo node;
     if (routing_table_.GetNodeInfo(i.node_id, node)) {
@@ -377,21 +374,20 @@ void MessageHandler::HandleGroupMessageAsClosestNode(protobuf::Message& message)
 void MessageHandler::HandleMessageAsFarNode(protobuf::Message& message) {
   if (message.has_visited() &&
       routing_table_.IsThisNodeClosestTo(NodeId(message.destination_id()), !message.direct()) &&
-      !message.direct() &&
-      !message.visited())
+      !message.direct() && !message.visited())
     message.set_visited(true);
   LOG(kVerbose) << "[" << DebugId(routing_table_.kNodeId())
                 << "] is not in closest proximity to this message destination ID [ "
-                <<  HexSubstr(message.destination_id())
-                <<" ]; sending on." << " id: " << message.id();
+                << HexSubstr(message.destination_id()) << " ]; sending on."
+                << " id: " << message.id();
   network_.SendToClosestNode(message);
 }
 
 void MessageHandler::HandleMessage(protobuf::Message& message) {
   if (!ValidateMessage(message)) {
-    LOG(kWarning) << "Validate message failed." << " id: " << message.id();
-    assert((message.hops_to_live() > 0) &&
-           "Message has traversed maximum number of hops allowed");
+    LOG(kWarning) << "Validate message failed."
+                  << " id: " << message.id();
+    assert((message.hops_to_live() > 0) && "Message has traversed maximum number of hops allowed");
     return;
   }
 
@@ -448,10 +444,8 @@ void MessageHandler::HandleMessageForNonRoutingNodes(protobuf::Message& message)
   auto client_routing_nodes(client_routing_table_.GetNodesInfo(NodeId(message.destination_id())));
   assert(!client_routing_nodes.empty() && message.direct());
   if (IsRequest(message) &&
-      (!message.client_node() ||
-       (message.source_id() != message.destination_id()))) {
-    LOG(kWarning) << "This node ["
-                  << DebugId(routing_table_.kNodeId())
+      (!message.client_node() || (message.source_id() != message.destination_id()))) {
+    LOG(kWarning) << "This node [" << DebugId(routing_table_.kNodeId())
                   << " Dropping message as non-client to client message not allowed."
                   << PrintMessage(message);
     return;
@@ -467,8 +461,8 @@ void MessageHandler::HandleRelayRequest(protobuf::Message& message) {
     LOG(kVerbose) << "Relay request with this node's ID as destination ID"
                   << " id: " << message.id();
     // If group message request to this node's id sent by relay requester node
-    if ((message.destination_id() == routing_table_.kNodeId().string()) &&
-        message.request() && !message.direct()) {
+    if ((message.destination_id() == routing_table_.kNodeId().string()) && message.request() &&
+        !message.direct()) {
       message.set_source_id(routing_table_.kNodeId().string());
       return HandleGroupMessageToSelfId(message);
     } else {
@@ -497,15 +491,14 @@ void MessageHandler::HandleDirectRelayRequestMessageAsClosestNode(protobuf::Mess
   NodeId destination_node_id(message.destination_id());
   if (routing_table_.IsThisNodeClosestTo(destination_node_id)) {
     if (routing_table_.Contains(destination_node_id) ||
-      client_routing_table_.Contains(destination_node_id)) {
+        client_routing_table_.Contains(destination_node_id)) {
       message.set_source_id(routing_table_.kNodeId().string());
       return network_.SendToClosestNode(message);
     } else {
-      LOG(kWarning) << "Dropping message. This node ["
-                    << DebugId(routing_table_.kNodeId())
+      LOG(kWarning) << "Dropping message. This node [" << DebugId(routing_table_.kNodeId())
                     << "] is the closest but is not connected to destination node ["
-                    << HexSubstr(message.destination_id()) << "], Src ID: "
-                    << HexSubstr(message.source_id())
+                    << HexSubstr(message.destination_id())
+                    << "], Src ID: " << HexSubstr(message.source_id())
                     << ", Relay ID: " << HexSubstr(message.relay_id()) << " id: " << message.id()
                     << PrintMessage(message);
       return;
@@ -521,7 +514,8 @@ void MessageHandler::HandleGroupRelayRequestMessageAsClosestNode(protobuf::Messa
   // This node is not closest to the destination node for non-direct message.
   if (!routing_table_.IsThisNodeClosestTo(NodeId(message.destination_id()), !IsDirect(message)) &&
       !have_node_with_group_id) {
-    LOG(kInfo) << "This node is not closest, passing it on." << " id: " << message.id();
+    LOG(kInfo) << "This node is not closest, passing it on."
+               << " id: " << message.id();
     message.set_source_id(routing_table_.kNodeId().string());
     return network_.SendToClosestNode(message);
   }
@@ -530,17 +524,17 @@ void MessageHandler::HandleGroupRelayRequestMessageAsClosestNode(protobuf::Messa
   // the connected peer which has the closer node.
   NodeInfo closest_to_group_leader_node;
   if (!routing_table_.IsThisNodeGroupLeader(NodeId(message.destination_id()),
-                                           closest_to_group_leader_node)) {
+                                            closest_to_group_leader_node)) {
     assert(NodeId(message.destination_id()) != closest_to_group_leader_node.node_id);
-    return network_.SendToDirect(message,
-                                 closest_to_group_leader_node.node_id,
+    return network_.SendToDirect(message, closest_to_group_leader_node.node_id,
                                  closest_to_group_leader_node.connection_id);
   }
 
   // This node is closest so will send to all replicant nodes
   uint16_t replication(static_cast<uint16_t>(message.replication()));
   if ((replication < 1) || (replication > Parameters::node_group_size)) {
-    LOG(kError) << "Dropping invalid non-direct message." << " id: " << message.id();
+    LOG(kError) << "Dropping invalid non-direct message."
+                << " id: " << message.id();
     return;
   }
 
@@ -556,14 +550,14 @@ void MessageHandler::HandleGroupRelayRequestMessageAsClosestNode(protobuf::Messa
   std::string group_members("[" + DebugId(routing_table_.kNodeId()) + "]");
 
   for (const auto& i : close)
-    group_members+=std::string("[" + DebugId(i) +"]");
-  LOG(kInfo) << "Group members for group_id " << HexSubstr(group_id) << " are: "
-             << group_members;
+    group_members += std::string("[" + DebugId(i) + "]");
+  LOG(kInfo) << "Group members for group_id " << HexSubstr(group_id) << " are: " << group_members;
   // This node relays back the responses
   message.set_source_id(routing_table_.kNodeId().string());
   for (const auto& i : close) {
     LOG(kInfo) << "Replicating message to : " << HexSubstr(i.string())
-               << " [ group_id : " << HexSubstr(group_id)  << "]" << " id: " << message.id();
+               << " [ group_id : " << HexSubstr(group_id) << "]"
+               << " id: " << message.id();
     message.set_destination_id(i.string());
     NodeInfo node;
     if (routing_table_.GetNodeInfo(i, node)) {
@@ -593,7 +587,7 @@ bool MessageHandler::IsRelayResponseForThisNode(protobuf::Message& message) {
 bool MessageHandler::RelayDirectMessageIfNeeded(protobuf::Message& message) {
   assert(message.destination_id() == routing_table_.kNodeId().string());
   if (!message.has_relay_id()) {
-//    LOG(kVerbose) << "Message don't have relay ID.";
+    //    LOG(kVerbose) << "Message don't have relay ID.";
     return false;
   }
 
@@ -605,7 +599,7 @@ bool MessageHandler::RelayDirectMessageIfNeeded(protobuf::Message& message) {
     network_.SendToClosestNode(message);
     return true;
   } else {  // not a relay message response, its for this node
-//    LOG(kVerbose) << "Not a relay message response, it's for this node";
+            //    LOG(kVerbose) << "Not a relay message response, it's for this node";
     return false;
   }
 }
@@ -618,8 +612,8 @@ void MessageHandler::HandleClientMessage(protobuf::Message& message) {
     return;
   }
   if (IsRoutingMessage(message)) {
-    LOG(kVerbose) << "Client Routing Response for " << DebugId(routing_table_.kNodeId())
-                  << " from " << HexSubstr(message.source_id()) << " id: " << message.id();
+    LOG(kVerbose) << "Client Routing Response for " << DebugId(routing_table_.kNodeId()) << " from "
+                  << HexSubstr(message.source_id()) << " id: " << message.id();
     HandleRoutingMessage(message);
   } else if ((message.destination_id() == routing_table_.kNodeId().string())) {
     HandleNodeLevelMessageForThisNode(message);
@@ -629,8 +623,7 @@ void MessageHandler::HandleClientMessage(protobuf::Message& message) {
 // Special case : If group message request to self id
 bool MessageHandler::IsGroupMessageRequestToSelfId(protobuf::Message& message) {
   return ((message.source_id() == routing_table_.kNodeId().string()) &&
-          (message.destination_id() == routing_table_.kNodeId().string()) &&
-          message.request() &&
+          (message.destination_id() == routing_table_.kNodeId().string()) && message.request() &&
           !message.direct());
 }
 
@@ -643,19 +636,18 @@ void MessageHandler::HandleGroupMessageToSelfId(protobuf::Message& message) {
   network_.SendToClosestNode(message);
 }
 
-
 void MessageHandler::InvokeTypedMessageReceivedFunctor(const protobuf::Message& proto_message) {
   if ((!proto_message.has_group_source() && !proto_message.has_group_destination()) &&
-          typed_message_received_functors_.single_to_single) {   // Single to Single
+      typed_message_received_functors_.single_to_single) {  // Single to Single
     typed_message_received_functors_.single_to_single(CreateSingleToSingleMessage(proto_message));
   } else if ((!proto_message.has_group_source() && proto_message.has_group_destination()) &&
-                typed_message_received_functors_.single_to_group) {  // Single to Group
+             typed_message_received_functors_.single_to_group) {  // Single to Group
     typed_message_received_functors_.single_to_group(CreateSingleToGroupMessage(proto_message));
   } else if ((proto_message.has_group_source() && !proto_message.has_group_destination()) &&
-                typed_message_received_functors_.group_to_single) {  // Group to Single
+             typed_message_received_functors_.group_to_single) {  // Group to Single
     typed_message_received_functors_.group_to_single(CreateGroupToSingleMessage(proto_message));
   } else if ((proto_message.has_group_source() && proto_message.has_group_destination()) &&
-                typed_message_received_functors_.group_to_group) {  // Group to Group
+             typed_message_received_functors_.group_to_group) {  // Group to Group
     typed_message_received_functors_.group_to_group(CreateGroupToGroupMessage(proto_message));
   } else {
     assert(false);

@@ -32,7 +32,6 @@
 #include "maidsafe/routing/node_info.h"
 #include "maidsafe/routing/routing_table.h"
 
-
 namespace maidsafe {
 
 namespace routing {
@@ -40,9 +39,7 @@ namespace routing {
 namespace test {
 
 struct NodeInfoAndPrivateKey {
-  NodeInfoAndPrivateKey()
-      : node_info(),
-        private_key() {}
+  NodeInfoAndPrivateKey() : node_info(), private_key() {}
   NodeInfo node_info;
   asymm::PrivateKey private_key;
 };
@@ -65,9 +62,7 @@ int NetworkStatus(const bool& client, const int& status);
 
 void SortFromTarget(const NodeId& target, std::vector<NodeInfo>& nodes);
 
-void PartialSortFromTarget(const NodeId& target,
-                           std::vector<NodeInfo>& nodes,
-                           size_t num_to_sort);
+void PartialSortFromTarget(const NodeId& target, std::vector<NodeInfo>& nodes, size_t num_to_sort);
 
 void SortIdsFromTarget(const NodeId& target, std::vector<NodeId>& nodes);
 

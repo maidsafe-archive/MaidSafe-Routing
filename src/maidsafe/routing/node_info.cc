@@ -77,11 +77,8 @@ NodeInfo& NodeInfo::operator=(NodeInfo&& other) {
   return *this;
 }
 
-NodeInfo::NodeInfo(const serialised_type &serialised_message)
-    : connection_id(),
-      public_key(),
-      bucket(kInvalidBucket),
-      nat_type(rudp::NatType::kUnknown) {
+NodeInfo::NodeInfo(const serialised_type& serialised_message)
+    : connection_id(), public_key(), bucket(kInvalidBucket), nat_type(rudp::NatType::kUnknown) {
   protobuf::NodeInfo proto_node_info;
   if (!proto_node_info.ParseFromString(serialised_message->string()))
     ThrowError(CommonErrors::parsing_error);
@@ -103,7 +100,7 @@ NodeInfo::serialised_type NodeInfo::Serialise() const {
 
     serialised_message = serialised_type(NonEmptyString(proto_node_info.SerializeAsString()));
   }
-  catch(const std::exception&) {
+  catch (const std::exception&) {
     ThrowError(CommonErrors::invalid_parameter);
   }
 

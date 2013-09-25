@@ -30,73 +30,54 @@
 
 #include "maidsafe/routing/api_config.h"
 
-
 namespace maidsafe {
 
 namespace routing {
 
-namespace protobuf { class Message; }
+namespace protobuf {
+class Message;
+}
 
 namespace rpcs {
 
 protobuf::Message Ping(const NodeId& node_id, const std::string& identity);
 
-protobuf::Message Connect(const NodeId& node_id,
-    const rudp::EndpointPair& our_endpoint,
-    const NodeId& this_node_id,
-    const NodeId& this_connection_id,
-    bool client_node = false,
-    rudp::NatType nat_type = rudp::NatType::kUnknown,
-    bool relay_message = false,
-    NodeId relay_connection_id = NodeId());
+protobuf::Message Connect(const NodeId& node_id, const rudp::EndpointPair& our_endpoint,
+                          const NodeId& this_node_id, const NodeId& this_connection_id,
+                          bool client_node = false,
+                          rudp::NatType nat_type = rudp::NatType::kUnknown,
+                          bool relay_message = false, NodeId relay_connection_id = NodeId());
 
-protobuf::Message Remove(const NodeId& node_id,
-                         const NodeId& this_node_id,
+protobuf::Message Remove(const NodeId& node_id, const NodeId& this_node_id,
                          const NodeId& this_connection_id,
                          const std::vector<std::string>& attempted_nodes);
 
-protobuf::Message FindNodes(
-    const NodeId& node_id,
-    const NodeId& this_node_id,
-    const int& num_nodes_requested,
-    bool relay_message = false,
-    NodeId relay_connection_id = NodeId());
+protobuf::Message FindNodes(const NodeId& node_id, const NodeId& this_node_id,
+                            const int& num_nodes_requested, bool relay_message = false,
+                            NodeId relay_connection_id = NodeId());
 
-protobuf::Message ProxyConnect(
-    const NodeId& node_id,
-    const NodeId& this_node_id,
-    const rudp::EndpointPair& endpoint_pair,
-    bool relay_message = false,
-    NodeId relay_connection_id = NodeId());
+protobuf::Message ProxyConnect(const NodeId& node_id, const NodeId& this_node_id,
+                               const rudp::EndpointPair& endpoint_pair, bool relay_message = false,
+                               NodeId relay_connection_id = NodeId());
 
-protobuf::Message ConnectSuccess(
-    const NodeId& node_id,
-    const NodeId& this_node_id,
-    const NodeId& this_connection_id,
-    const bool& requestor,
-    const bool& client_node);
+protobuf::Message ConnectSuccess(const NodeId& node_id, const NodeId& this_node_id,
+                                 const NodeId& this_connection_id, const bool& requestor,
+                                 const bool& client_node);
 
-protobuf::Message ConnectSuccessAcknowledgement(
-    const NodeId& node_id,
-    const NodeId& this_node_id,
-    const NodeId& this_connection_id,
-    const bool& requestor,
-    const std::vector<NodeId>& close_ids,
-    const bool& client_node);
+protobuf::Message ConnectSuccessAcknowledgement(const NodeId& node_id, const NodeId& this_node_id,
+                                                const NodeId& this_connection_id,
+                                                const bool& requestor,
+                                                const std::vector<NodeId>& close_ids,
+                                                const bool& client_node);
 
-protobuf::Message ClosestNodesUpdate(const NodeId& node_id,
-    const NodeId& my_node_id,
-    const std::vector<NodeInfo>& closest_nodes);
+protobuf::Message ClosestNodesUpdate(const NodeId& node_id, const NodeId& my_node_id,
+                                     const std::vector<NodeInfo>& closest_nodes);
 
-protobuf::Message ClosestNodesUpdateSubscribe(
-    const NodeId& node_id,
-    const NodeId& this_node_id,
-    const NodeId &this_connection_id,
-    const bool &client_node,
-    const bool& subscribe);
+protobuf::Message ClosestNodesUpdateSubscribe(const NodeId& node_id, const NodeId& this_node_id,
+                                              const NodeId& this_connection_id,
+                                              const bool& client_node, const bool& subscribe);
 
-protobuf::Message GetGroup(const NodeId& node_id,
-                           const NodeId& my_node_id);
+protobuf::Message GetGroup(const NodeId& node_id, const NodeId& my_node_id);
 
 }  // namespace rpcs
 
@@ -105,7 +86,3 @@ protobuf::Message GetGroup(const NodeId& node_id,
 }  // namespace maidsafe
 
 #endif  // MAIDSAFE_ROUTING_RPCS_H_
-
-
-
-

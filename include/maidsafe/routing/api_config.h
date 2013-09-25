@@ -50,10 +50,8 @@ typedef std::function<void(std::string)> ResponseFunctor;
 typedef std::function<void(const std::string& /*message*/)> ReplyFunctor;
 
 // This is called on any message received that is NOT a reply to a request made by the Send method.
-typedef std::function<void(const std::string& /*message*/,
-                           const bool& /*cache_lookup*/,
+typedef std::function<void(const std::string& /*message*/, const bool& /*cache_lookup*/,
                            ReplyFunctor /*reply functor*/)> MessageReceivedFunctor;
-
 
 // This is fired to validate a new peer node. User is supposed to validate the node and call
 // ValidateThisNode() method with valid public key.
@@ -76,8 +74,7 @@ typedef std::function<void(const boost::asio::ip::udp::endpoint& /*new_endpoint*
 typedef std::function<void(const std::vector<NodeInfo>& /*new_close_nodes*/)>
     CloseNodeReplacedFunctor;
 
-typedef std::function<void(std::shared_ptr<MatrixChange> /*matrix_change*/)>
-    MatrixChangedFunctor;
+typedef std::function<void(std::shared_ptr<MatrixChange> /*matrix_change*/)> MatrixChangedFunctor;
 
 // This functor fires when routing table size is over greedy limit. The furthest unnecessary
 // node in routing table is dropped. Unnecessary is defined as a node who does not have us in

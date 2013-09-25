@@ -19,7 +19,6 @@
 #ifndef MAIDSAFE_ROUTING_UTILS_H_
 #define MAIDSAFE_ROUTING_UTILS_H_
 
-
 #include <string>
 #include <vector>
 
@@ -34,7 +33,6 @@
 #include "maidsafe/routing/api_config.h"
 #include "maidsafe/routing/parameters.h"
 #include "maidsafe/routing/routing.pb.h"
-
 
 namespace maidsafe {
 
@@ -54,27 +52,17 @@ class NetworkUtils;
 class ClientRoutingTable;
 class RoutingTable;
 
+int AddToRudp(NetworkUtils& network, const NodeId& this_node_id, const NodeId& this_connection_id,
+              const NodeId& peer_id, const NodeId& peer_connection_id,
+              rudp::EndpointPair peer_endpoint_pair, const bool& requestor, const bool& client);
 
-int AddToRudp(NetworkUtils& network,
-              const NodeId& this_node_id,
-              const NodeId& this_connection_id,
-              const NodeId& peer_id,
-              const NodeId& peer_connection_id,
-              rudp::EndpointPair peer_endpoint_pair,
-              const bool &requestor,
-              const bool& client);
-
-bool ValidateAndAddToRoutingTable(NetworkUtils& network,
-                                  RoutingTable& routing_table,
-                                  ClientRoutingTable& client_routing_table,
-                                  const NodeId& peer_id,
-                                  const NodeId& connection_id,
-                                  const asymm::PublicKey& public_key,
+bool ValidateAndAddToRoutingTable(NetworkUtils& network, RoutingTable& routing_table,
+                                  ClientRoutingTable& client_routing_table, const NodeId& peer_id,
+                                  const NodeId& connection_id, const asymm::PublicKey& public_key,
                                   const bool& client);
 void HandleSymmetricNodeAdd(RoutingTable& routing_table, const NodeId& peer_id,
                             const asymm::PublicKey& public_key);
-GroupRangeStatus GetProximalRange(const NodeId& target_id,
-                                  const NodeId& node_id,
+GroupRangeStatus GetProximalRange(const NodeId& target_id, const NodeId& node_id,
                                   const NodeId& this_node_id,
                                   const crypto::BigInt& proximity_radius,
                                   const std::vector<NodeId>& holders);
@@ -87,18 +75,18 @@ bool IsDirect(const protobuf::Message& message);
 bool IsCacheableGet(const protobuf::Message& message);
 bool IsCacheablePut(const protobuf::Message& message);
 bool CheckId(const std::string& id_to_test);
-bool ValidateMessage(const protobuf::Message &message);
+bool ValidateMessage(const protobuf::Message& message);
 void SetProtobufEndpoint(const boost::asio::ip::udp::endpoint& endpoint,
                          protobuf::Endpoint* pb_endpoint);
 boost::asio::ip::udp::endpoint GetEndpointFromProtobuf(const protobuf::Endpoint& pb_endpoint);
 std::string MessageTypeString(const protobuf::Message& message);
 std::vector<boost::asio::ip::udp::endpoint> OrderBootstrapList(
-                                  std::vector<boost::asio::ip::udp::endpoint> peer_endpoints);
+    std::vector<boost::asio::ip::udp::endpoint> peer_endpoints);
 protobuf::NatType NatTypeProtobuf(const rudp::NatType& nat_type);
 rudp::NatType NatTypeFromProtobuf(const protobuf::NatType& nat_type_proto);
 std::string PrintMessage(const protobuf::Message& message);
-std::vector<NodeId> DeserializeNodeIdList(const std::string &node_list_str);
-std::string SerializeNodeIdList(const std::vector<NodeId> &node_list);
+std::vector<NodeId> DeserializeNodeIdList(const std::string& node_list_str);
+std::string SerializeNodeIdList(const std::vector<NodeId>& node_list);
 }  // namespace routing
 
 }  // namespace maidsafe

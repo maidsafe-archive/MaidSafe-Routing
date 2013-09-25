@@ -39,44 +39,33 @@ namespace maidsafe {
 
 namespace routing {
 
-int AddToRudp(NetworkUtils& network,
-              const NodeId& this_node_id,
-              const NodeId& this_connection_id,
-              const NodeId& peer_id,
-              const NodeId& peer_connection_id,
-              rudp::EndpointPair peer_endpoint_pair,
-              const bool& requestor,
-              const bool& client) {
+int AddToRudp(NetworkUtils& network, const NodeId& this_node_id, const NodeId& this_connection_id,
+              const NodeId& peer_id, const NodeId& peer_connection_id,
+              rudp::EndpointPair peer_endpoint_pair, const bool& requestor, const bool& client) {
   LOG(kVerbose) << "AddToRudp. peer_id : " << DebugId(peer_id)
                 << " , connection id : " << DebugId(peer_connection_id);
   protobuf::Message connect_success(
       rpcs::ConnectSuccess(peer_id, this_node_id, this_connection_id, requestor, client));
-  int result = network.Add(peer_connection_id, peer_endpoint_pair,
-                           connect_success.SerializeAsString());
+  int result =
+      network.Add(peer_connection_id, peer_endpoint_pair, connect_success.SerializeAsString());
   if (result != rudp::kSuccess) {
-    LOG(kError) << "rudp add failed for peer node [" << DebugId(peer_id) << "]. Connection id : "
-                << DebugId(peer_connection_id) << ". result : " << result;
+    LOG(kError) << "rudp add failed for peer node [" << DebugId(peer_id)
+                << "]. Connection id : " << DebugId(peer_connection_id) << ". result : " << result;
   } else {
-    LOG(kVerbose) << "rudp.Add succeeded for peer node ["
-                  << DebugId(peer_id) << "]. Connection id : "
-                  << DebugId(peer_connection_id);
+    LOG(kVerbose) << "rudp.Add succeeded for peer node [" << DebugId(peer_id)
+                  << "]. Connection id : " << DebugId(peer_connection_id);
   }
   return result;
 }
 
-bool ValidateAndAddToRoutingTable(NetworkUtils& network,
-                                  RoutingTable& routing_table,
-                                  ClientRoutingTable& client_routing_table,
-                                  const NodeId& peer_id,
-                                  const NodeId& connection_id,
-                                  const asymm::PublicKey& public_key,
+bool ValidateAndAddToRoutingTable(NetworkUtils& network, RoutingTable& routing_table,
+                                  ClientRoutingTable& client_routing_table, const NodeId& peer_id,
+                                  const NodeId& connection_id, const asymm::PublicKey& public_key,
                                   const bool& client) {
   if (network.MarkConnectionAsValid(connection_id) != kSuccess) {
     LOG(kError) << "[" << DebugId(routing_table.kNodeId()) << "] "
-                << ". Rudp failed to validate connection with  Peer id : "
-                << DebugId(peer_id)
-                << " , Connection id : "
-                << DebugId(connection_id);
+                << ". Rudp failed to validate connection with  Peer id : " << DebugId(peer_id)
+                << " , Connection id : " << DebugId(connection_id);
     return false;
   }
 
@@ -99,16 +88,14 @@ bool ValidateAndAddToRoutingTable(NetworkUtils& network,
 
   if (routing_accepted_node) {
     LOG(kVerbose) << "[" << DebugId(routing_table.kNodeId()) << "] "
-                  << "added " << (client ? "client-" : "") << "node to "
-                  << (client ? "non-" : "") << "routing table.  Node ID: "
-                  << HexSubstr(peer_id.string());
+                  << "added " << (client ? "client-" : "") << "node to " << (client ? "non-" : "")
+                  << "routing table.  Node ID: " << HexSubstr(peer_id.string());
     return true;
   }
 
   LOG(kInfo) << "[" << DebugId(routing_table.kNodeId()) << "] "
              << "failed to add " << (client ? "client-" : "") << "node to "
-             << (client ? "non-" : "") << "routing table.  Node ID: "
-             << HexSubstr(peer_id.string())
+             << (client ? "non-" : "") << "routing table.  Node ID: " << HexSubstr(peer_id.string())
              << ". Added rudp connection will be removed.";
   network.Remove(connection_id);
   return false;
@@ -117,41 +104,40 @@ bool ValidateAndAddToRoutingTable(NetworkUtils& network,
 // FIXME
 void HandleSymmetricNodeAdd(RoutingTable& /*routing_table*/, const NodeId& /*peer_id*/,
                             const asymm::PublicKey& /*public_key*/) {
-//  if (routing_table.Contains(peer_id)) {
-//    LOG(kVerbose) << "[" << HexSubstr(routing_table.kKeys().identity) << "] "
-//                  << "already added node to routing table.  Node ID: "
-//                  << HexSubstr(peer_id.string())
-//                  << "Node is behind symmetric router but connected on local endpoint";
-//    return;
-//  }
-//  NodeInfo peer;
-//  peer.node_id = peer_id;
-//  peer.public_key = public_key;
-////  peer.endpoint = rudp::kNonRoutable;
-//  peer.nat_type = rudp::NatType::kSymmetric;
+  //  if (routing_table.Contains(peer_id)) {
+  //    LOG(kVerbose) << "[" << HexSubstr(routing_table.kKeys().identity) << "] "
+  //                  << "already added node to routing table.  Node ID: "
+  //                  << HexSubstr(peer_id.string())
+  //                  << "Node is behind symmetric router but connected on local endpoint";
+  //    return;
+  //  }
+  //  NodeInfo peer;
+  //  peer.node_id = peer_id;
+  //  peer.public_key = public_key;
+  ////  peer.endpoint = rudp::kNonRoutable;
+  //  peer.nat_type = rudp::NatType::kSymmetric;
 
-//  if (routing_table.AddNode(peer)) {
-//    LOG(kVerbose) << "[" << HexSubstr(routing_table.kKeys().identity) << "] "
-//                  << "added node to routing table.  Node ID: " << HexSubstr(peer_id.string())
-//                  << "Node is behind symmetric router !";
-//  } else {
-//    LOG(kVerbose) << "Failed to add node to routing table.  Node id : "
-//                  << HexSubstr(peer_id.string());
-//  }
+  //  if (routing_table.AddNode(peer)) {
+  //    LOG(kVerbose) << "[" << HexSubstr(routing_table.kKeys().identity) << "] "
+  //                  << "added node to routing table.  Node ID: " << HexSubstr(peer_id.string())
+  //                  << "Node is behind symmetric router !";
+  //  } else {
+  //    LOG(kVerbose) << "Failed to add node to routing table.  Node id : "
+  //                  << HexSubstr(peer_id.string());
+  //  }
 }
 
-GroupRangeStatus GetProximalRange(const NodeId& target_id,
-                                  const NodeId& node_id,
+GroupRangeStatus GetProximalRange(const NodeId& target_id, const NodeId& node_id,
                                   const NodeId& this_node_id,
                                   const crypto::BigInt& proximity_radius,
-                                  const std::vector<NodeId>& holders)  {
+                                  const std::vector<NodeId>& holders) {
   assert((std::find(holders.begin(), holders.end(), target_id) == holders.end()) &&
          "Ensure to remove target id entry from holders, if present");
-  assert(std::is_sorted(holders.begin(),
-                        holders.end(),
-                        [target_id](const NodeId& lhs, const NodeId& rhs) {
-                          return NodeId::CloserToTarget(lhs, rhs, target_id);
-                        }) && "Ensure to sort holders in order of distance to targer_id");
+  assert(std::is_sorted(holders.begin(), holders.end(),
+                        [target_id](const NodeId & lhs, const NodeId & rhs) {
+           return NodeId::CloserToTarget(lhs, rhs, target_id);
+         }) &&
+         "Ensure to sort holders in order of distance to targer_id");
   assert(holders.size() <= Parameters::node_group_size);
 
   if ((target_id == node_id) || (target_id == this_node_id))
@@ -167,42 +153,29 @@ GroupRangeStatus GetProximalRange(const NodeId& target_id,
                                        : GroupRangeStatus::kOutwithRange;
 }
 
+bool IsRoutingMessage(const protobuf::Message& message) { return message.routing_message(); }
 
-bool IsRoutingMessage(const protobuf::Message& message) {
-  return message.routing_message();
-}
+bool IsNodeLevelMessage(const protobuf::Message& message) { return !IsRoutingMessage(message); }
 
-bool IsNodeLevelMessage(const protobuf::Message& message) {
-  return !IsRoutingMessage(message);
-}
+bool IsRequest(const protobuf::Message& message) { return (message.request()); }
 
-bool IsRequest(const protobuf::Message& message) {
-  return (message.request());
-}
+bool IsResponse(const protobuf::Message& message) { return !IsRequest(message); }
 
-bool IsResponse(const protobuf::Message& message) {
-  return !IsRequest(message);
-}
-
-bool IsDirect(const protobuf::Message& message) {
-  return message.direct();
-}
+bool IsDirect(const protobuf::Message& message) { return message.direct(); }
 
 bool IsCacheableGet(const protobuf::Message& message) {
   return (message.has_cacheable() &&
-           (static_cast<Cacheable>(message.cacheable()) == Cacheable::kGet));
+          (static_cast<Cacheable>(message.cacheable()) == Cacheable::kGet));
 }
 
 bool IsCacheablePut(const protobuf::Message& message) {
   return (message.has_cacheable() &&
-           (static_cast<Cacheable>(message.cacheable()) == Cacheable::kPut));
+          (static_cast<Cacheable>(message.cacheable()) == Cacheable::kPut));
 }
 
-bool CheckId(const std::string& id_to_test) {
-  return id_to_test.size() == NodeId::kSize;
-}
+bool CheckId(const std::string& id_to_test) { return id_to_test.size() == NodeId::kSize; }
 
-bool ValidateMessage(const protobuf::Message &message) {
+bool ValidateMessage(const protobuf::Message& message) {
   if (!message.IsInitialized()) {
     LOG(kWarning) << "Uninitialised message dropped.";
     return false;
@@ -214,12 +187,11 @@ bool ValidateMessage(const protobuf::Message &message) {
     for (const auto& route : message.route_history())
       route_history += HexSubstr(route) + ", ";
     LOG(kError) << "Message has traversed more hops than expected. "
-                <<  Parameters::max_route_history << " last hops in route history are: "
-                 << route_history
-                 << " \nMessage source: " << HexSubstr(message.source_id())
-                 << ", \nMessage destination: " << HexSubstr(message.destination_id())
-                 << ", \nMessage type: " << message.type()
-                 << ", \nMessage id: " << message.id();
+                << Parameters::max_route_history
+                << " last hops in route history are: " << route_history
+                << " \nMessage source: " << HexSubstr(message.source_id())
+                << ", \nMessage destination: " << HexSubstr(message.destination_id())
+                << ", \nMessage type: " << message.type() << ", \nMessage id: " << message.id();
     return false;
   }
   // Invalid destination id, unknown message
@@ -229,17 +201,15 @@ bool ValidateMessage(const protobuf::Message &message) {
     return false;
   }
 
-
-  if (!(message.has_source_id() || (message.has_relay_id() &&
-                                    message.has_relay_connection_id()))) {
+  if (!(message.has_source_id() || (message.has_relay_id() && message.has_relay_connection_id()))) {
     LOG(kWarning) << "Message should have either src id or relay information.";
     assert(false && "Message should have either src id or relay information.");
     return false;
   }
 
   if (message.has_source_id() && !CheckId(message.source_id())) {
-      LOG(kWarning) << "Invalid source id field.";
-      return false;
+    LOG(kWarning) << "Invalid source id field.";
+    return false;
   }
 
   if (message.has_relay_id() && NodeId(message.relay_id()).IsZero()) {
@@ -284,31 +254,31 @@ boost::asio::ip::udp::endpoint GetEndpointFromProtobuf(const protobuf::Endpoint&
 std::string MessageTypeString(const protobuf::Message& message) {
   std::string message_type;
   switch (static_cast<MessageType>(message.type())) {
-    case MessageType::kPing :
+    case MessageType::kPing:
       message_type = "kPing     ";
       break;
-    case MessageType::kConnect :
+    case MessageType::kConnect:
       message_type = "kConnect  ";
       break;
-    case MessageType::kFindNodes :
+    case MessageType::kFindNodes:
       message_type = "kFindNodes";
       break;
-    case MessageType::kConnectSuccess :
+    case MessageType::kConnectSuccess:
       message_type = "kC-Success";
       break;
-    case MessageType::kConnectSuccessAcknowledgement :
+    case MessageType::kConnectSuccessAcknowledgement:
       message_type = "kC-Suc-Ack";
       break;
-    case MessageType::kRemove :
+    case MessageType::kRemove:
       message_type = "kRemove";
       break;
-    case MessageType::kClosestNodesUpdate :
+    case MessageType::kClosestNodesUpdate:
       message_type = "kCloses_Nodes_Update";
       break;
-    case MessageType::kGetGroup :
+    case MessageType::kGetGroup:
       message_type = "kGetGroup";
       break;
-    case MessageType::kNodeLevel :
+    case MessageType::kNodeLevel:
       message_type = "kNodeLevel";
       break;
     default:
@@ -322,7 +292,7 @@ std::string MessageTypeString(const protobuf::Message& message) {
 }
 
 std::vector<boost::asio::ip::udp::endpoint> OrderBootstrapList(
-                    std::vector<boost::asio::ip::udp::endpoint> peer_endpoints) {
+    std::vector<boost::asio::ip::udp::endpoint> peer_endpoints) {
   if (peer_endpoints.empty())
     return peer_endpoints;
   auto copy_vector(peer_endpoints);
@@ -341,13 +311,13 @@ std::vector<boost::asio::ip::udp::endpoint> OrderBootstrapList(
 
 protobuf::NatType NatTypeProtobuf(const rudp::NatType& nat_type) {
   switch (nat_type) {
-    case rudp::NatType::kSymmetric :
+    case rudp::NatType::kSymmetric:
       return protobuf::NatType::kSymmetric;
       break;
-    case rudp::NatType::kOther :
+    case rudp::NatType::kOther:
       return protobuf::NatType::kOther;
       break;
-    default :
+    default:
       return protobuf::NatType::kUnknown;
       break;
   }
@@ -355,13 +325,13 @@ protobuf::NatType NatTypeProtobuf(const rudp::NatType& nat_type) {
 
 rudp::NatType NatTypeFromProtobuf(const protobuf::NatType& nat_type_proto) {
   switch (nat_type_proto) {
-    case protobuf::NatType::kSymmetric :
+    case protobuf::NatType::kSymmetric:
       return rudp::NatType::kSymmetric;
       break;
-    case protobuf::NatType::kOther :
+    case protobuf::NatType::kOther:
       return rudp::NatType::kOther;
       break;
-    default :
+    default:
       return rudp::NatType::kUnknown;
       break;
   }
@@ -373,7 +343,7 @@ std::string PrintMessage(const protobuf::Message& message) {
   std::string direct((message.direct() ? "direct" : "group"));
   s += std::string("\n direct : " + direct);
   if (message.has_source_id())
-      s += std::string("\n source_id : " + HexSubstr(message.source_id()));
+    s += std::string("\n source_id : " + HexSubstr(message.source_id()));
   if (message.has_destination_id())
     s += std::string("\n destination_id : " + HexSubstr(message.destination_id()));
   if (message.has_relay_id())
@@ -383,12 +353,12 @@ std::string PrintMessage(const protobuf::Message& message) {
   std::stringstream id;
   id << message.id();
   if (message.has_id())
-    s += std::string("\n id : "+ id.str());
+    s += std::string("\n id : " + id.str());
   s += "\n\n";
   return s;
 }
 
-std::vector<NodeId> DeserializeNodeIdList(const std::string &node_list_str) {
+std::vector<NodeId> DeserializeNodeIdList(const std::string& node_list_str) {
   std::vector<NodeId> node_list;
   protobuf::NodeIdList node_list_msg;
   node_list_msg.ParseFromString(node_list_str);
@@ -397,7 +367,7 @@ std::vector<NodeId> DeserializeNodeIdList(const std::string &node_list_str) {
   return node_list;
 }
 
-std::string SerializeNodeIdList(const std::vector<NodeId> &node_list) {
+std::string SerializeNodeIdList(const std::vector<NodeId>& node_list) {
   protobuf::NodeIdList node_list_msg;
   for (const auto& node_id : node_list) {
     auto entry = node_list_msg.add_node_id_list();

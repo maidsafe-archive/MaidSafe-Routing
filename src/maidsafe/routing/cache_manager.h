@@ -27,7 +27,9 @@ namespace maidsafe {
 
 namespace routing {
 
-namespace protobuf { class Message; }
+namespace protobuf {
+class Message;
+}
 
 class NetworkUtils;
 

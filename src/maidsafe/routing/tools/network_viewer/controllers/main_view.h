@@ -43,7 +43,8 @@ class MainViewController : public QWidget {
  protected:
   bool eventFilter(QObject* object, QEvent* event);
 
- private slots:  // NOLINT - Viv
+ private
+slots:  // NOLINT - Viv
   void EventLoopStarted();
   void RefreshRequested(int state_id);
   void SelectionChanged();

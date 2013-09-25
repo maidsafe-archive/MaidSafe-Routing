@@ -27,7 +27,6 @@
 #include "maidsafe/routing/routing.pb.h"
 #include "maidsafe/routing/utils.h"
 
-
 namespace maidsafe {
 
 namespace routing {
@@ -56,19 +55,16 @@ protobuf::Message Ping(const NodeId& node_id, const std::string& identity) {
   return message;
 }
 
-protobuf::Message Connect(const NodeId& node_id,
-                          const rudp::EndpointPair& our_endpoint,
-                          const NodeId& this_node_id,
-                          const NodeId& this_connection_id,
-                          bool client_node,
-                          rudp::NatType nat_type,
-                          bool relay_message,
+protobuf::Message Connect(const NodeId& node_id, const rudp::EndpointPair& our_endpoint,
+                          const NodeId& this_node_id, const NodeId& this_connection_id,
+                          bool client_node, rudp::NatType nat_type, bool relay_message,
                           NodeId relay_connection_id) {
   assert(!node_id.IsZero() && "Invalid node_id");
   assert(!this_node_id.IsZero() && "Invalid my node_id");
   assert(!this_connection_id.IsZero() && "Invalid this_connection_id");
   assert((!our_endpoint.external.address().is_unspecified() ||
-          !our_endpoint.local.address().is_unspecified()) && "Unspecified endpoint");
+          !our_endpoint.local.address().is_unspecified()) &&
+         "Unspecified endpoint");
   protobuf::Message message;
   protobuf::ConnectRequest protobuf_connect_request;
   protobuf_connect_request.set_peer_id(node_id.string());
@@ -103,8 +99,7 @@ protobuf::Message Connect(const NodeId& node_id,
   return message;
 }
 
-protobuf::Message Remove(const NodeId& node_id,
-                         const NodeId& this_node_id,
+protobuf::Message Remove(const NodeId& node_id, const NodeId& this_node_id,
                          const NodeId& this_connection_id,
                          const std::vector<std::string>& attempted_nodes) {
   assert(!node_id.IsZero() && "Invalid node_id");
@@ -131,10 +126,8 @@ protobuf::Message Remove(const NodeId& node_id,
   return message;
 }
 
-protobuf::Message FindNodes(const NodeId& node_id,
-                            const NodeId& this_node_id,
-                            const int& num_nodes_requested,
-                            bool relay_message,
+protobuf::Message FindNodes(const NodeId& node_id, const NodeId& this_node_id,
+                            const int& num_nodes_requested, bool relay_message,
                             NodeId relay_connection_id) {
   assert(!node_id.IsZero() && "Invalid node_id");
   assert(!this_node_id.IsZero() && "Invalid my node_id");
@@ -164,15 +157,13 @@ protobuf::Message FindNodes(const NodeId& node_id,
     message.set_relay_connection_id(relay_connection_id.string());
   }
   message.set_hops_to_live(Parameters::hops_to_live);
-//  message.set_id(RandomUint32() % 10000);
+  //  message.set_id(RandomUint32() % 10000);
   assert(message.IsInitialized() && "Unintialised message");
   return message;
 }
 
-protobuf::Message ConnectSuccess(const NodeId& node_id,
-                                 const NodeId& this_node_id,
-                                 const NodeId& this_connection_id,
-                                 const bool& requestor,
+protobuf::Message ConnectSuccess(const NodeId& node_id, const NodeId& this_node_id,
+                                 const NodeId& this_connection_id, const bool& requestor,
                                  const bool& client_node) {
   assert(!node_id.IsZero() && "Invalid node_id");
   assert(!this_node_id.IsZero() && "Invalid my node_id");
@@ -198,8 +189,7 @@ protobuf::Message ConnectSuccess(const NodeId& node_id,
   return message;
 }
 
-protobuf::Message ConnectSuccessAcknowledgement(const NodeId& node_id,
-                                                const NodeId& this_node_id,
+protobuf::Message ConnectSuccessAcknowledgement(const NodeId& node_id, const NodeId& this_node_id,
                                                 const NodeId& this_connection_id,
                                                 const bool& requestor,
                                                 const std::vector<NodeId>& close_ids,
@@ -220,8 +210,7 @@ protobuf::Message ConnectSuccessAcknowledgement(const NodeId& node_id,
   message.add_data(protobuf_connect_success_ack.SerializeAsString());
   message.set_direct(true);
   message.set_replication(1);
-  message.set_type(
-      static_cast<int32_t>(MessageType::kConnectSuccessAcknowledgement));
+  message.set_type(static_cast<int32_t>(MessageType::kConnectSuccessAcknowledgement));
   message.set_id(0);
   message.set_client_node(client_node);
   message.set_hops_to_live(Parameters::hops_to_live);
@@ -232,10 +221,8 @@ protobuf::Message ConnectSuccessAcknowledgement(const NodeId& node_id,
   return message;
 }
 
-protobuf::Message ClosestNodesUpdate(
-    const NodeId& node_id,
-    const NodeId& my_node_id,
-    const std::vector<NodeInfo>& closest_nodes) {
+protobuf::Message ClosestNodesUpdate(const NodeId& node_id, const NodeId& my_node_id,
+                                     const std::vector<NodeInfo>& closest_nodes) {
   assert(!node_id.IsZero() && "Invalid node_id");
   assert(!my_node_id.IsZero() && "Invalid my node_id");
   // assert(!close_nodes.empty() && "Empty close nodes");
@@ -263,8 +250,7 @@ protobuf::Message ClosestNodesUpdate(
   return message;
 }
 
-protobuf::Message GetGroup(const NodeId& node_id,
-                           const NodeId& my_node_id) {
+protobuf::Message GetGroup(const NodeId& node_id, const NodeId& my_node_id) {
   assert(!node_id.IsZero() && "Invalid node_id");
   assert(!my_node_id.IsZero() && "Invalid my node_id");
   protobuf::Message message;

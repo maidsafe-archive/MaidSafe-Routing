@@ -21,15 +21,15 @@
 
 #include <algorithm>
 
-
 namespace maidsafe {
-
 
 class NodeId;
 
 namespace routing {
 
-namespace protobuf { class Message; }
+namespace protobuf {
+class Message;
+}
 
 class RoutingTable;
 class NetworkUtils;
@@ -37,8 +37,7 @@ struct NodeInfo;
 
 class RemoveFurthestNode {
  public:
-  RemoveFurthestNode(RoutingTable& routing_table,
-             NetworkUtils& network);
+  RemoveFurthestNode(RoutingTable& routing_table, NetworkUtils& network);
   void RemoveRequest(protobuf::Message& message);
   void RejectRemoval(protobuf::Message& message);
   void RemoveResponse(protobuf::Message& message);

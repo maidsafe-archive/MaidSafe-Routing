@@ -69,30 +69,26 @@ void GraphPage::javaScriptAlert(QWebFrame* /*frame*/, const QString& msg) {
 
 void GraphPage::RefreshGraph(int state_id) {
   RenderNode(state_id, current_parent_id_, true, is_data_node_);
-  foreach(std::string node_id, expanded_children_) {
-    RenderNode(state_id, node_id, false, false);
-  }
+  foreach(std::string node_id, expanded_children_) { RenderNode(state_id, node_id, false, false); }
 }
 
 void GraphPage::RenderNode(int state_id, std::string node_id, bool is_parent, bool is_data_node) {
   QString graph_contents;
   std::vector<Node> children(api_helper_->GetCloseNodes(state_id, node_id));
   if (is_parent) {
-    graph_contents = QString("%1 {routingNodeType:%2}\\n")
-                          .arg(QString::fromStdString(node_id))
-                          .arg(is_data_node ? "dataNode" : "mainNode");
+    graph_contents = QString("%1 {routingNodeType:%2}\\n").arg(QString::fromStdString(node_id)).arg(
+        is_data_node ? "dataNode" : "mainNode");
   } else if (expanded_children_.contains(node_id) &&
              current_graph_data_.contains(
-                QString("%1 {routingDistance:").arg(QString::fromStdString(node_id)))) {
-    graph_contents =
-        current_graph_data_.replace(
-            QString("%1 {routingDistance:").arg(QString::fromStdString(node_id)),
-            QString("%1 {isExpanded:1, routingDistance:").arg(QString::fromStdString(node_id)));
+                 QString("%1 {routingDistance:").arg(QString::fromStdString(node_id)))) {
+    graph_contents = current_graph_data_.replace(
+        QString("%1 {routingDistance:").arg(QString::fromStdString(node_id)),
+        QString("%1 {isExpanded:1, routingDistance:").arg(QString::fromStdString(node_id)));
   } else if (expanded_children_.contains(node_id) &&
              !current_graph_data_.contains(
-                QString("%1 {isExpanded:").arg(QString::fromStdString(node_id)))) {
-    graph_contents = current_graph_data_ +
-      QString("%1 {isExpanded:1}\\n").arg(QString::fromStdString(node_id));
+                  QString("%1 {isExpanded:").arg(QString::fromStdString(node_id)))) {
+    graph_contents =
+        current_graph_data_ + QString("%1 {isExpanded:1}\\n").arg(QString::fromStdString(node_id));
   } else {
     graph_contents = current_graph_data_;
   }
@@ -107,8 +103,7 @@ void GraphPage::RenderNode(int state_id, std::string node_id, bool is_parent, bo
   SetGraphContents(graph_contents);
 }
 
-QString GraphPage::CreateEdge(std::string parent_id,
-                              const Node& child_node,
+QString GraphPage::CreateEdge(std::string parent_id, const Node& child_node,
                               QString* current_content) {
   QString q_parent_id(QString::fromStdString(parent_id));
   QString q_child_id(QString::fromStdString(child_node.id));
@@ -117,23 +112,21 @@ QString GraphPage::CreateEdge(std::string parent_id,
   if (current_content->contains(possibleFirstEdge)) {
     current_content->replace(possibleFirstEdge, possibleFirstEdge + "onlyShowArrow:true, ");
     return QString("%1 -> %2 {nodeStatus:%3, doubleArrow:true}\\n")
-            .arg(q_parent_id)
-            .arg(q_child_id)
-            .arg(q_child_status);
+        .arg(q_parent_id)
+        .arg(q_child_id)
+        .arg(q_child_status);
   }
-  return QString("%1 -> %2 {nodeStatus:%3}\\n")
-              .arg(q_parent_id)
-              .arg(q_child_id)
-              .arg(q_child_status);
+  return QString("%1 -> %2 {nodeStatus:%3}\\n").arg(q_parent_id).arg(q_child_id).arg(
+      q_child_status);
 }
 
 QString GraphPage::CreateProximityNode(const Node& child_node, int proximity) {
   QString q_child_id(QString::fromStdString(child_node.id));
   QString q_child_distance(QString::fromStdString(child_node.distance));
   return QString("%1 {routingDistance:%2, proximityId:%3}\\n")
-            .arg(q_child_id)
-            .arg(q_child_distance)
-            .arg(QString::number(proximity));
+      .arg(q_child_id)
+      .arg(q_child_distance)
+      .arg(QString::number(proximity));
 }
 
 void GraphPage::SetGraphContents(const QString& entire_content) {
@@ -145,8 +138,8 @@ void GraphPage::SetGraphContents(const QString& entire_content) {
 }
 
 void GraphPage::InitSignals() {
-  connect(api_helper_.get(),  SIGNAL(RequestGraphRefresh(int)),         // NOLINT - Viv
-          this,               SLOT(RefreshGraph(int)),                  // NOLINT - Viv
+  connect(api_helper_.get(), SIGNAL(RequestGraphRefresh(int)),  // NOLINT - Viv
+          this, SLOT(RefreshGraph(int)),                        // NOLINT - Viv
           Qt::QueuedConnection);
 }
 

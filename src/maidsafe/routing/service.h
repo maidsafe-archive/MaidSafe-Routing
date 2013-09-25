@@ -23,12 +23,13 @@
 
 #include "maidsafe/routing/api_config.h"
 
-
 namespace maidsafe {
 
 namespace routing {
 
-namespace protobuf { class Message; }
+namespace protobuf {
+class Message;
+}
 
 class NetworkUtils;
 class ClientRoutingTable;
@@ -36,8 +37,7 @@ class RoutingTable;
 
 class Service {
  public:
-  Service(RoutingTable& routing_table,
-          ClientRoutingTable& client_routing_table,
+  Service(RoutingTable& routing_table, ClientRoutingTable& client_routing_table,
           NetworkUtils& network);
   virtual ~Service();
   // Handle all incoming requests and send back reply
@@ -51,7 +51,7 @@ class Service {
 
  private:
   void ConnectSuccessFromRequester(NodeInfo& peer);
-  void ConnectSuccessFromResponder(NodeInfo& peer, const bool &client);
+  void ConnectSuccessFromResponder(NodeInfo& peer, const bool& client);
   bool CheckPriority(const NodeId& this_node, const NodeId& peer_node);
 
   RoutingTable& routing_table_;
@@ -63,6 +63,5 @@ class Service {
 }  // namespace routing
 
 }  // namespace maidsafe
-
 
 #endif  // MAIDSAFE_ROUTING_SERVICE_H_

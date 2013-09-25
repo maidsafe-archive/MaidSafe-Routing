@@ -32,7 +32,6 @@
 #include "maidsafe/routing/routing_table.h"
 #include "maidsafe/routing/parameters.h"
 
-
 namespace asio = boost::asio;
 namespace ip = asio::ip;
 
@@ -44,7 +43,7 @@ namespace test {
 
 namespace {
 
-template<typename FobType>
+template <typename FobType>
 NodeInfoAndPrivateKey MakeNodeInfoAndKeysWithFob(FobType fob) {
   NodeInfo node;
   node.node_id = NodeId(fob.name()->string());
@@ -85,9 +84,7 @@ passport::Maid MakeMaid() {
   return passport::Maid(anmaid);
 }
 
-passport::Pmid MakePmid() {
-  return passport::Pmid(MakeMaid());
-}
+passport::Pmid MakePmid() { return passport::Pmid(MakeMaid()); }
 
 /* Fob GetFob(const NodeInfoAndPrivateKey& node) {
   Fob fob;
@@ -99,14 +96,14 @@ passport::Pmid MakePmid() {
 
 NodeId GenerateUniqueRandomId(const NodeId& holder, const uint16_t& pos) {
   std::string holder_id = holder.ToStringEncoded(NodeId::EncodingType::kBinary);
-  std::bitset<64*8> holder_id_binary_bitset(holder_id);
+  std::bitset<64 * 8> holder_id_binary_bitset(holder_id);
   NodeId new_node;
   std::string new_node_string;
   // generate a random ID and make sure it has not been generated previously
   while (new_node_string == "" || new_node_string == holder_id) {
     new_node = NodeId(NodeId::kRandomId);
     std::string new_id = new_node.ToStringEncoded(NodeId::EncodingType::kBinary);
-    std::bitset<64*8> binary_bitset(new_id);
+    std::bitset<64 * 8> binary_bitset(new_id);
     for (uint16_t i(0); i < pos; ++i)
       holder_id_binary_bitset[i] = binary_bitset[i];
     new_node_string = holder_id_binary_bitset.to_string();
@@ -119,10 +116,10 @@ NodeId GenerateUniqueRandomId(const NodeId& holder, const uint16_t& pos) {
 
 NodeId GenerateUniqueNonRandomId(const NodeId& holder, const uint64_t& id) {
   std::string holder_id = holder.ToStringEncoded(NodeId::EncodingType::kBinary);
-  std::bitset<64*8> holder_id_binary_bitset(holder_id);
+  std::bitset<64 * 8> holder_id_binary_bitset(holder_id);
   NodeId new_node;
   std::string new_node_string;
-    // generate a random ID and make sure it has not been generated previously
+  // generate a random ID and make sure it has not been generated previously
   new_node = NodeId(NodeId::kRandomId);
   std::string new_id = new_node.ToStringEncoded(NodeId::EncodingType::kBinary);
   std::bitset<64> binary_bitset(id);
@@ -132,7 +129,6 @@ NodeId GenerateUniqueNonRandomId(const NodeId& holder, const uint64_t& id) {
   new_node = NodeId(new_node_string, NodeId::EncodingType::kBinary);
   return new_node;
 }
-
 
 NodeId GenerateUniqueRandomId(const uint16_t& pos) {
   NodeId holder(NodeId(NodeId::kMaxId) ^ NodeId(NodeId::kMaxId));
@@ -145,61 +141,52 @@ NodeId GenerateUniqueNonRandomId(const uint64_t& pos) {
 }
 
 int NetworkStatus(const bool& client, const int& status) {
-  uint16_t max_size(client ? Parameters::max_routing_table_size_for_client :
-                      Parameters::max_routing_table_size);
+  uint16_t max_size(client ? Parameters::max_routing_table_size_for_client
+                           : Parameters::max_routing_table_size);
   return (status > 0) ? (status * 100 / max_size) : status;
 }
 
 void SortFromTarget(const NodeId& target, std::vector<NodeInfo>& nodes) {
-  std::sort(nodes.begin(), nodes.end(),
-            [target](const NodeInfo& lhs, const NodeInfo& rhs) {
-                return NodeId::CloserToTarget(lhs.node_id, rhs.node_id, target);
-              });
+  std::sort(nodes.begin(), nodes.end(), [target](const NodeInfo & lhs, const NodeInfo & rhs) {
+    return NodeId::CloserToTarget(lhs.node_id, rhs.node_id, target);
+  });
 }
 
-void PartialSortFromTarget(const NodeId& target,
-                           std::vector<NodeInfo>& nodes,
-                           size_t num_to_sort) {
+void PartialSortFromTarget(const NodeId& target, std::vector<NodeInfo>& nodes, size_t num_to_sort) {
   assert(num_to_sort <= nodes.size());
   std::partial_sort(nodes.begin(), nodes.begin() + num_to_sort, nodes.end(),
-                    [target](const NodeInfo& lhs, const NodeInfo& rhs) {
-                      return NodeId::CloserToTarget(lhs.node_id, rhs.node_id, target);
-                    });
+                    [target](const NodeInfo & lhs, const NodeInfo & rhs) {
+    return NodeId::CloserToTarget(lhs.node_id, rhs.node_id, target);
+  });
 }
 
 void SortIdsFromTarget(const NodeId& target, std::vector<NodeId>& nodes) {
-  std::sort(nodes.begin(), nodes.end(),
-            [target] (const NodeId& lhs, const NodeId& rhs) {
-                return NodeId::CloserToTarget(lhs, rhs, target);
-              });
+  std::sort(nodes.begin(), nodes.end(), [target](const NodeId & lhs, const NodeId & rhs) {
+    return NodeId::CloserToTarget(lhs, rhs, target);
+  });
 }
 
 void SortNodeInfosFromTarget(const NodeId& target, std::vector<NodeInfo>& nodes) {
-  std::sort(nodes.begin(), nodes.end(),
-            [target] (const NodeInfo& lhs, const NodeInfo& rhs) {
-                return NodeId::CloserToTarget(lhs.node_id, rhs.node_id, target);
-              });
+  std::sort(nodes.begin(), nodes.end(), [target](const NodeInfo & lhs, const NodeInfo & rhs) {
+    return NodeId::CloserToTarget(lhs.node_id, rhs.node_id, target);
+  });
 }
 
 bool CompareListOfNodeInfos(const std::vector<NodeInfo>& lhs, const std::vector<NodeInfo>& rhs) {
   if (lhs.size() != rhs.size())
     return false;
   for (const auto& node_info : lhs) {
-    if (std::find_if(rhs.begin(),
-                     rhs.end(),
-                     [&](const NodeInfo& node) {
-                       return node.node_id == node_info.node_id;
-                     }) == rhs.end())
+    if (std::find_if(rhs.begin(), rhs.end(), [&](const NodeInfo & node) {
+          return node.node_id == node_info.node_id;
+        }) == rhs.end())
       return false;
   }
 
-    for (const auto& node_info : rhs) {
-      if (std::find_if(lhs.begin(),
-                       lhs.end(),
-                       [&](const NodeInfo& node) {
-                         return node.node_id == node_info.node_id;
-                       }) == lhs.end())
-        return false;
+  for (const auto& node_info : rhs) {
+    if (std::find_if(lhs.begin(), lhs.end(), [&](const NodeInfo & node) {
+          return node.node_id == node_info.node_id;
+        }) == lhs.end())
+      return false;
   }
   return true;
 }

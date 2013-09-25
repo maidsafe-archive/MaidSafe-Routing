@@ -19,17 +19,17 @@
 #include "maidsafe/routing/tools/commands.h"
 
 #include <algorithm>
-#include <iostream> // NOLINT
+#include <iostream>  // NOLINT
 
 #include "boost/format.hpp"
 #include "boost/filesystem.hpp"
 #ifdef __MSVC__
-# pragma warning(push)
-# pragma warning(disable: 4127)
+#pragma warning(push)
+#pragma warning(disable : 4127)
 #endif
 #include "boost/tokenizer.hpp"
 #ifdef __MSVC__
-# pragma warning(pop)
+#pragma warning(pop)
 #endif
 #include "boost/lexical_cast.hpp"
 #include "maidsafe/common/crypto.h"
@@ -44,8 +44,7 @@ namespace routing {
 
 namespace test {
 
-Commands::Commands(DemoNodePtr demo_node,
-                   std::vector<maidsafe::passport::Pmid> all_pmids,
+Commands::Commands(DemoNodePtr demo_node, std::vector<maidsafe::passport::Pmid> all_pmids,
                    int identity_index)
     : demo_node_(demo_node),
       all_pmids_(std::move(all_pmids)),
@@ -66,18 +65,16 @@ Commands::Commands(DemoNodePtr demo_node,
   for (size_t i(0); i < (all_pmids_.size() / 2); ++i)
     all_ids_.push_back(NodeId(all_pmids_[i].name().value));
 
-  demo_node->functors_.request_public_key = [this] (const NodeId& node_id,
-                                                    GivePublicKeyFunctor give_public_key) {
-      this->Validate(node_id, give_public_key);
+  demo_node->functors_.request_public_key = [this](
+      const NodeId & node_id,
+      GivePublicKeyFunctor give_public_key) { this->Validate(node_id, give_public_key); };
+  demo_node->functors_.message_and_caching.message_received = [this](
+      const std::string & wrapped_message, bool /* cache */, const ReplyFunctor & reply_functor) {
+    std::string reply_msg(wrapped_message + "+++" + demo_node_->node_id().string());
+    if (std::string::npos != wrapped_message.find("request_routing_table"))
+      reply_msg = reply_msg + "---" + demo_node_->SerializeRoutingTable();
+    reply_functor(reply_msg);
   };
-  demo_node->functors_.message_and_caching.message_received =
-      [this] (const std::string &wrapped_message, bool /* cache */,
-              const ReplyFunctor &reply_functor) {
-         std::string reply_msg(wrapped_message + "+++" + demo_node_->node_id().string());
-         if (std::string::npos != wrapped_message.find("request_routing_table"))
-           reply_msg = reply_msg + "---" + demo_node_->SerializeRoutingTable();
-         reply_functor(reply_msg);
-      };
   mark_results_arrived_ = std::bind(&Commands::MarkResultArrived, this);
 }
 
@@ -101,7 +98,7 @@ void Commands::Run() {
   PrintUsage();
 
   if ((!demo_node_->joined()) && (identity_index_ >= 2)) {  // &&
-      // (bootstrap_peer_ep_ != boost::asio::ip::udp::endpoint())) {
+    // (bootstrap_peer_ep_ != boost::asio::ip::udp::endpoint())) {
     // All parameters have been setup via cmdline directly, join the node immediately
     std::cout << "Joining the node ......" << std::endl;
     Join();
@@ -122,19 +119,19 @@ void Commands::Run() {
 
 void Commands::PrintRoutingTable() {
   auto routing_nodes = demo_node_->ReturnRoutingTable();
-  std::cout<< "ROUTING TABLE::::" <<std::endl;
+  std::cout << "ROUTING TABLE::::" << std::endl;
   for (const auto& routing_node : routing_nodes)
     std::cout << "\t" << maidsafe::HexSubstr(routing_node.string()) << std::endl;
 }
 
-void Commands::GetPeer(const std::string &peer) {
+void Commands::GetPeer(const std::string& peer) {
   size_t delim = peer.rfind(':');
   try {
     bootstrap_peer_ep_.port(static_cast<uint16_t>(atoi(peer.substr(delim + 1).c_str())));
     bootstrap_peer_ep_.address(boost::asio::ip::address::from_string(peer.substr(0, delim)));
     std::cout << "Going to bootstrap from endpoint " << bootstrap_peer_ep_ << std::endl;
   }
-  catch(...) {
+  catch (...) {
     std::cout << "Could not parse IPv4 peer endpoint from " << peer << std::endl;
   }
 }
@@ -158,8 +155,8 @@ void Commands::ZeroStateJoin() {
   }
   peer_node_info.connection_id = peer_node_info.node_id;
 
-  ReturnCode ret_code(static_cast<ReturnCode>(demo_node_->ZeroStateJoin(bootstrap_peer_ep_,
-                                                                        peer_node_info)));
+  ReturnCode ret_code(
+      static_cast<ReturnCode>(demo_node_->ZeroStateJoin(bootstrap_peer_ep_, peer_node_info)));
   EXPECT_EQ(kSuccess, ret_code);
   if (ret_code == kSuccess)
     demo_node_->set_joined(ret_code == kSuccess);
@@ -207,15 +204,13 @@ void Commands::SendMessages(const int& id_index, const DestinationType& destinat
     if (operation_count != (messages_count * expect_respondent))
       cond_var.wait(lock);
   }
-  std::cout<< "Succcessfully received messages count::" <<successful_count<<std::endl;
-  std::cout<< "Unsucccessfully received messages count::" <<(messages_count - successful_count)
-           <<std::endl;
+  std::cout << "Succcessfully received messages count::" << successful_count << std::endl;
+  std::cout << "Unsucccessfully received messages count::" << (messages_count - successful_count)
+            << std::endl;
 }
 
-
-
 uint16_t Commands::MakeMessage(const int& id_index, const DestinationType& destination_type,
-                               std::vector<NodeId> &closest_nodes, NodeId &dest_id) {
+                               std::vector<NodeId>& closest_nodes, NodeId& dest_id) {
   int identity_index;
   if (id_index >= 0)
     identity_index = id_index;
@@ -244,34 +239,31 @@ uint16_t Commands::MakeMessage(const int& id_index, const DestinationType& desti
   return expected_respodents;
 }
 
-void Commands::CalculateTimeToSleep(std::chrono::milliseconds &msg_sent_time) {
+void Commands::CalculateTimeToSleep(std::chrono::milliseconds& msg_sent_time) {
   size_t num_msgs_per_second = data_rate_ / data_size_;
   msg_sent_time = std::chrono::milliseconds(1000 / num_msgs_per_second);
 }
 
-void Commands::SendAMessage(std::atomic<int> &successful_count, int &operation_count,
-                            std::mutex &mutex, std::condition_variable &cond_var,
+void Commands::SendAMessage(std::atomic<int>& successful_count, int& operation_count,
+                            std::mutex& mutex, std::condition_variable& cond_var,
                             int messages_count, uint16_t expect_respondent,
-                            std::vector<NodeId> closest_nodes, NodeId dest_id,
-                            std::string data) {
+                            std::vector<NodeId> closest_nodes, NodeId dest_id, std::string data) {
   auto shared_response_ptr = std::make_shared<SharedResponse>(closest_nodes, expect_respondent);
-  auto callable = [shared_response_ptr, &successful_count, &operation_count,
-                   &mutex, messages_count, expect_respondent, &cond_var]
-                  (std::string response) {
+  auto callable = [shared_response_ptr, &successful_count, &operation_count, &mutex, messages_count,
+                   expect_respondent, &cond_var](std::string response) {
     if (!response.empty()) {
       shared_response_ptr->CollectResponse(response);
       if (shared_response_ptr->expected_responses_ == 1)
         shared_response_ptr->PrintRoutingTable(response);
-      if (shared_response_ptr->responded_nodes_.size()
-          == shared_response_ptr->closest_nodes_.size()) {
+      if (shared_response_ptr->responded_nodes_.size() ==
+          shared_response_ptr->closest_nodes_.size()) {
         shared_response_ptr->CheckAndPrintResult();
         ++successful_count;
       }
     } else {
       std::cout << "Error Response received in "
-                << boost::posix_time::microsec_clock::universal_time()
-                   - shared_response_ptr->msg_send_time_
-                << std::endl;
+                << boost::posix_time::microsec_clock::universal_time() -
+                       shared_response_ptr->msg_send_time_ << std::endl;
     }
     {
       std::unique_lock<std::mutex> lock(mutex);
@@ -296,19 +288,18 @@ void Commands::Join() {
   std::mutex mutex;
 
   std::weak_ptr<GenericNode> weak_node(demo_node_);
-  demo_node_->functors_.network_status =
-      [this, &cond_var, weak_node] (const int& result) {
-        if (std::shared_ptr<GenericNode> node = weak_node.lock()) {
-          ASSERT_GE(result, kSuccess);
-          if (result == node->expected() && !node->joined()) {
-            node->set_joined(true);
-            cond_var.notify_one();
-          } else {
-            std::cout << "Network Status Changed" << std::endl;
-            this->PrintRoutingTable();
-          }
-        }
-      };
+  demo_node_->functors_.network_status = [this, &cond_var, weak_node](const int & result) {
+    if (std::shared_ptr<GenericNode> node = weak_node.lock()) {
+      ASSERT_GE(result, kSuccess);
+      if (result == node->expected() && !node->joined()) {
+        node->set_joined(true);
+        cond_var.notify_one();
+      } else {
+        std::cout << "Network Status Changed" << std::endl;
+        this->PrintRoutingTable();
+      }
+    }
+  };
   std::vector<boost::asio::ip::udp::endpoint> bootstrap_endpoints;
   if (bootstrap_peer_ep_ != boost::asio::ip::udp::endpoint())
     bootstrap_endpoints.push_back(bootstrap_peer_ep_);
@@ -346,7 +337,7 @@ void Commands::PrintUsage() {
   std::cout << "\texit Exit application.\n";
 }
 
-void Commands::ProcessCommand(const std::string &cmdline) {
+void Commands::ProcessCommand(const std::string& cmdline) {
   if (cmdline.empty()) {
     demo_node_->PostTaskToAsioService(mark_results_arrived_);
     return;
@@ -364,7 +355,7 @@ void Commands::ProcessCommand(const std::string &cmdline) {
         args.push_back(*it);
     }
   }
-  catch(const std::exception &e) {
+  catch (const std::exception& e) {
     LOG(kError) << "Error processing command: " << e.what();
   }
 
@@ -376,13 +367,13 @@ void Commands::ProcessCommand(const std::string &cmdline) {
     if (args.size() == 1) {
       SendMessages(atoi(args[0].c_str()), DestinationType::kDirect, true, 1);
     } else {
-      std::cout<< "Error : Try correct option" <<std::endl;
+      std::cout << "Error : Try correct option" << std::endl;
     }
   } else if (cmd == "peer") {
     if (args.size() == 1)
       GetPeer(args[0]);
     else
-      std::cout<< "Error : Try correct option" <<std::endl;
+      std::cout << "Error : Try correct option" << std::endl;
   } else if (cmd == "zerostatejoin") {
     ZeroStateJoin();
   } else if (cmd == "join") {
@@ -428,12 +419,12 @@ void Commands::ProcessCommand(const std::string &cmdline) {
     if (args.size() == 1)
       data_size_ = atoi(args[0].c_str());
     else
-      std::cout<< "Error : Try correct option" <<std::endl;
+      std::cout << "Error : Try correct option" << std::endl;
   } else if (cmd == "datarate") {
     if (args.size() == 1)
       data_rate_ = atoi(args[0].c_str());
     else
-      std::cout<< "Error : Try correct option" <<std::endl;
+      std::cout << "Error : Try correct option" << std::endl;
   } else if (cmd == "nattype") {
     std::cout << "NatType for this node is : " << demo_node_->nat_type() << std::endl;
   } else if (cmd == "exit") {
@@ -454,21 +445,18 @@ void Commands::MarkResultArrived() {
   wait_cond_var_.notify_one();
 }
 
-NodeId Commands::CalculateClosests(const NodeId& target_id,
-                                   std::vector<NodeId>& closests,
+NodeId Commands::CalculateClosests(const NodeId& target_id, std::vector<NodeId>& closests,
                                    uint16_t num_of_closests) {
   if (all_ids_.size() <= num_of_closests) {
     closests = all_ids_;
     return closests[closests.size() - 1];
   }
-  std::sort(all_ids_.begin(), all_ids_.end(),
-            [&](const NodeId& lhs, const NodeId& rhs) {
-              return NodeId::CloserToTarget(lhs, rhs, target_id);
-            });
-  closests = std::vector<NodeId>(all_ids_.begin() +
-                                     boost::lexical_cast<bool>(all_ids_[0] == target_id),
-                                 all_ids_.begin() + num_of_closests +
-                                     boost::lexical_cast<bool>(all_ids_[0] == target_id));
+  std::sort(all_ids_.begin(), all_ids_.end(), [&](const NodeId & lhs, const NodeId & rhs) {
+    return NodeId::CloserToTarget(lhs, rhs, target_id);
+  });
+  closests = std::vector<NodeId>(
+      all_ids_.begin() + boost::lexical_cast<bool>(all_ids_[0] == target_id),
+      all_ids_.begin() + num_of_closests + boost::lexical_cast<bool>(all_ids_[0] == target_id));
   return closests[closests.size() - 1];
 }
 

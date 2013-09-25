@@ -52,15 +52,13 @@ class RoutingNetworkNonNatTest : public testing::Test {
   std::shared_ptr<GenericNetwork> env_;
 };
 
-
 TEST_F(RoutingNetworkNonNatTest, FUNC_GroupUpdateSubscription) {
   std::vector<NodeInfo> closest_nodes_info;
   for (const auto& node : env_->nodes_) {
     if ((node->node_id() == env_->nodes_[kServerSize - 1]->node_id()) ||
         (node->node_id() == env_->nodes_[kNetworkSize - 1]->node_id()))
       continue;
-    closest_nodes_info = env_->GetClosestNodes(node->node_id(),
-                                               Parameters::closest_nodes_size - 1);
+    closest_nodes_info = env_->GetClosestNodes(node->node_id(), Parameters::closest_nodes_size - 1);
     LOG(kVerbose) << "size of closest_nodes: " << closest_nodes_info.size();
 
     int my_index(env_->NodeIndex(node->node_id()));

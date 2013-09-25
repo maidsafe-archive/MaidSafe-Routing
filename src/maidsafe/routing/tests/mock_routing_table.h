@@ -25,7 +25,6 @@
 
 #include "maidsafe/routing/routing_table.h"
 
-
 namespace maidsafe {
 
 namespace routing {
@@ -41,7 +40,7 @@ class MockRoutingTable : public RoutingTable {
   MOCK_METHOD2(IsNodeIdInGroupRange, bool(const NodeId& node_id, bool& is_group_leader));
 
  private:
-  MockRoutingTable &operator=(const MockRoutingTable&);
+  MockRoutingTable& operator=(const MockRoutingTable&);
   MockRoutingTable(const MockRoutingTable&);
 };
 
@@ -52,4 +51,3 @@ class MockRoutingTable : public RoutingTable {
 }  // namespace maidsafe
 
 #endif  // MAIDSAFE_ROUTING_TESTS_MOCK_ROUTING_TABLE_H_
-

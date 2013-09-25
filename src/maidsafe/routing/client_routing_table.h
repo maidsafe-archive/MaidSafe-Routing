@@ -31,7 +31,6 @@
 
 #include "maidsafe/routing/api_config.h"
 
-
 namespace maidsafe {
 
 namespace routing {
@@ -39,22 +38,24 @@ namespace routing {
 struct NodeInfo;
 
 namespace test {
-  class GenericNode;
-  class BasicClientRoutingTableTest;
-  class BasicClientRoutingTableTest_BEH_IsThisNodeInRange_Test;
+class GenericNode;
+class BasicClientRoutingTableTest;
+class BasicClientRoutingTableTest_BEH_IsThisNodeInRange_Test;
 }
 
 class GroupChangeHandler;
 
-namespace protobuf { class Contact; }
+namespace protobuf {
+class Contact;
+}
 
 class ClientRoutingTable {
  public:
   explicit ClientRoutingTable(NodeId node_id);
   bool AddNode(NodeInfo& node, const NodeId& furthest_close_node_id);
   bool CheckNode(NodeInfo& node, const NodeId& furthest_close_node_id);
-  std::vector<NodeInfo> DropNodes(const NodeId &node_to_drop);
-  NodeInfo DropConnection(const NodeId &connection_to_drop);
+  std::vector<NodeInfo> DropNodes(const NodeId& node_to_drop);
+  NodeInfo DropConnection(const NodeId& connection_to_drop);
   std::vector<NodeInfo> GetNodesInfo(const NodeId& node_id) const;
   bool Contains(const NodeId& node_id) const;
   bool IsConnected(const NodeId& node_id) const;
@@ -70,8 +71,7 @@ class ClientRoutingTable {
   bool AddOrCheckNode(NodeInfo& node, const NodeId& furthest_close_node_id, const bool& add);
   bool CheckValidParameters(const NodeInfo& node) const;
   bool CheckParametersAreUnique(const NodeInfo& node) const;
-  bool CheckRangeForNodeToBeAdded(NodeInfo& node,
-                                  const NodeId& furthest_close_node_id,
+  bool CheckRangeForNodeToBeAdded(NodeInfo& node, const NodeId& furthest_close_node_id,
                                   const bool& add) const;
   bool IsThisNodeInRange(const NodeId& node_id, const NodeId& furthest_close_node_id) const;
   std::string PrintClientRoutingTable();

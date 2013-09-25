@@ -66,12 +66,12 @@ TEST_F(RoutingStandAloneTest, FUNC_ConnectedVaultCanSendToClient) {
       EXPECT_TRUE(this->SendDirect(this->nodes_[index],
                                    this->nodes_[this->ClientIndex()]->node_id(),
                                    ExpectedNodeType::kExpectClient))
-              << DebugId(this->nodes_[index]->node_id());
+          << DebugId(this->nodes_[index]->node_id());
     } else {
       EXPECT_FALSE(this->SendDirect(this->nodes_[index],
                                     this->nodes_[this->ClientIndex()]->node_id(),
                                     ExpectedNodeType::kExpectClient))
-              << DebugId(this->nodes_[index]->node_id());
+          << DebugId(this->nodes_[index]->node_id());
     }
   }
 }
@@ -83,16 +83,14 @@ TEST_F(RoutingStandAloneTest, FUNC_ClientRoutingTableUpdate) {
   while (this->nodes_.size() < kServerSize + Parameters::max_routing_table_size_for_client) {
     this->AddNode(false, GenerateUniqueRandomId(this->nodes_[kServerSize - 1]->node_id(), 50));
     Sleep(std::chrono::milliseconds(500));
-    EXPECT_TRUE(this->nodes_[ClientIndex()]->RoutingTableHasNode(
-                    this->nodes_[ClientIndex() - 1]->node_id())) <<
-                DebugId(this->nodes_[ClientIndex()]->node_id()) << " does not have " <<
-                DebugId(this->nodes_[ClientIndex() - 1]->node_id());
+    EXPECT_TRUE(this->nodes_[ClientIndex()]
+                    ->RoutingTableHasNode(this->nodes_[ClientIndex() - 1]->node_id()))
+        << DebugId(this->nodes_[ClientIndex()]->node_id()) << " does not have "
+        << DebugId(this->nodes_[ClientIndex() - 1]->node_id());
   }
 }
 
-TEST_F(RoutingStandAloneTest, FUNC_SetupNetwork) {
-  this->SetUpNetwork(kServerSize);
-}
+TEST_F(RoutingStandAloneTest, FUNC_SetupNetwork) { this->SetUpNetwork(kServerSize); }
 
 TEST_F(RoutingStandAloneTest, FUNC_SetupSingleClientHybridNetwork) {
   this->SetUpNetwork(kServerSize, 1);
@@ -103,11 +101,11 @@ TEST_F(RoutingStandAloneTest, FUNC_SetupHybridNetwork) {
 }
 
 TEST_F(RoutingStandAloneTest, FUNC_SetupNetworkWithVaultsBehindSymmetricNat) {
-  this->SetUpNetwork(kServerSize, kClientSize, kServerSize/4, 0);
+  this->SetUpNetwork(kServerSize, kClientSize, kServerSize / 4, 0);
 }
 
 TEST_F(RoutingStandAloneTest, FUNC_SetupNetworkWithNodesBehindSymmetricNat) {
-  this->SetUpNetwork(kServerSize, kClientSize, kServerSize/4, kClientSize);
+  this->SetUpNetwork(kServerSize, kClientSize, kServerSize / 4, kClientSize);
 }
 
 TEST_F(RoutingStandAloneTest, FUNC_SetupNetworkAddVaultsBehindSymmetricNat) {
@@ -160,8 +158,8 @@ TEST_F(RoutingStandAloneTest, FUNC_ExtendedSendToGroup) {
       receivers_message_count += static_cast<uint16_t>(this->nodes_.at(index)->MessagesSize());
 
     EXPECT_EQ(0, this->nodes_[last_index]->MessagesSize())
-          << "Not expected message at Node : "
-          << HexSubstr(this->nodes_[last_index]->node_id().string());
+        << "Not expected message at Node : "
+        << HexSubstr(this->nodes_[last_index]->node_id().string());
     EXPECT_EQ(message_count * (Parameters::node_group_size), receivers_message_count);
     receivers_message_count = 0;
     this->ClearMessages();
@@ -178,16 +176,15 @@ TEST_F(RoutingStandAloneTest, FUNC_ExtendedSendToGroupRandomId) {
       std::vector<NodeId> groupd_ids(this->GroupIds(random_id));
       EXPECT_TRUE(SendGroup(random_id, 1));
       for (const auto& node : this->nodes_) {
-        if (std::find(groupd_ids.begin(), groupd_ids.end(), node->node_id()) !=
-            groupd_ids.end()) {
+        if (std::find(groupd_ids.begin(), groupd_ids.end(), node->node_id()) != groupd_ids.end()) {
           receivers_message_count += static_cast<uint16_t>(node->MessagesSize());
           node->ClearMessages();
         }
       }
     }
     EXPECT_EQ(message_count * (Parameters::node_group_size), receivers_message_count);
-    LOG(kVerbose) << "Total message received count : "
-                  << message_count * (Parameters::node_group_size);
+    LOG(kVerbose) << "Total message received count : " << message_count *
+                                                              (Parameters::node_group_size);
     receivers_message_count = 0;
     this->ClearMessages();
   }
@@ -256,7 +253,6 @@ TEST_F(RoutingStandAloneTest, FUNC_ReBootstrap) {
   EXPECT_EQ(network_size - 1, routing_table.size());
 }
 
-
 TEST_F(RoutingStandAloneTest, FUNC_GroupsAndSendWithSymmetricNat) {
   // TODO(Alison) - move this into functional tests when can run on mixed NAT network
   this->SetUpNetwork(kServerSize, 0, kServerSize / 4, 0);  // TODO(Alison) - adjust values?
@@ -292,9 +288,7 @@ TEST_F(RoutingStandAloneTest, FUNC_GroupsAndSendWithSymmetricNat) {
 
 TEST_F(RoutingStandAloneTest, FUNC_GroupsAndSendWithClientsAndSymmetricNat) {
   // TODO(Alison) - move this into functional tests when can run on mixed NAT network
-  this->SetUpNetwork(kServerSize,
-                     kClientSize,
-                     kServerSize / 4,
+  this->SetUpNetwork(kServerSize, kClientSize, kServerSize / 4,
                      kClientSize / 2);  // TODO(Alison) - adjust values?
 
   ASSERT_TRUE(WaitForHealthToStabilise());
@@ -307,7 +301,7 @@ TEST_F(RoutingStandAloneTest, FUNC_GroupsAndSendWithClientsAndSymmetricNat) {
   for (auto& source_node : this->nodes_) {
     for (const auto& dest_node : this->nodes_) {
       if (!dest_node->IsClient())
-      EXPECT_TRUE(this->SendDirect(source_node, dest_node->node_id()));
+        EXPECT_TRUE(this->SendDirect(source_node, dest_node->node_id()));
     }
   }
 
@@ -330,21 +324,21 @@ TEST_F(RoutingStandAloneTest, FUNC_GroupsAndSendWithClientsAndSymmetricNat) {
 class ProportionedRoutingStandAloneTest : public GenericNetwork, public testing::Test {
  public:
   ProportionedRoutingStandAloneTest(void)
-    : GenericNetwork(),
-      old_max_routing_table_size_(Parameters::max_routing_table_size),
-      old_routing_table_size_threshold_(Parameters::routing_table_size_threshold),
-      old_max_routing_table_size_for_client_(Parameters::max_routing_table_size_for_client),
-      old_closest_nodes_size_(Parameters::closest_nodes_size),
-      old_max_client_routing_table_size_(Parameters::max_client_routing_table_size),
-      old_max_route_history_(Parameters::max_route_history),
-      old_greedy_fraction_(Parameters::greedy_fraction) {
+      : GenericNetwork(),
+        old_max_routing_table_size_(Parameters::max_routing_table_size),
+        old_routing_table_size_threshold_(Parameters::routing_table_size_threshold),
+        old_max_routing_table_size_for_client_(Parameters::max_routing_table_size_for_client),
+        old_closest_nodes_size_(Parameters::closest_nodes_size),
+        old_max_client_routing_table_size_(Parameters::max_client_routing_table_size),
+        old_max_route_history_(Parameters::max_route_history),
+        old_greedy_fraction_(Parameters::greedy_fraction) {
     // NB. relative calculations should match those in parameters.cc
     Parameters::max_routing_table_size = 32;
     Parameters::routing_table_size_threshold = Parameters::max_routing_table_size / 2;
     Parameters::max_routing_table_size_for_client = 8;
     Parameters::closest_nodes_size = 8;
     Parameters::max_client_routing_table_size = Parameters::max_routing_table_size;
-//    Parameters::max_route_history = 3;  // less than closest_nodes_size
+    //    Parameters::max_route_history = 3;  // less than closest_nodes_size
     Parameters::greedy_fraction = Parameters::max_routing_table_size * 3 / 4;
   }
 
@@ -374,7 +368,6 @@ class ProportionedRoutingStandAloneTest : public GenericNetwork, public testing:
   uint16_t old_max_route_history_;
   uint16_t old_greedy_fraction_;
 };
-
 
 // TODO(Alison) - Add ProportionedRoutingStandAloneTest involving clients
 TEST_F(ProportionedRoutingStandAloneTest, DISABLED_FUNC_ExtendedMessagePassing) {
@@ -408,7 +401,7 @@ TEST_F(ProportionedRoutingStandAloneTest, DISABLED_FUNC_ExtendedMessagePassing) 
 
 TEST_F(ProportionedRoutingStandAloneTest, DISABLED_FUNC_ExtendedMessagePassingSymmetricNat) {
   // Approx duration of test on Linux: 90mins
-    this->SetUpNetwork(80, 0, 20, 0);
+  this->SetUpNetwork(80, 0, 20, 0);
 
   ASSERT_TRUE(WaitForNodesToJoin());
   ASSERT_TRUE(WaitForHealthToStabiliseInLargeNetwork());

@@ -32,12 +32,13 @@
 #include "maidsafe/routing/api_config.h"
 #include "maidsafe/routing/timer.h"
 
-
 namespace maidsafe {
 
 namespace routing {
 
-namespace protobuf { class Message; }
+namespace protobuf {
+class Message;
+}
 
 namespace test {
 class ResponseHandlerTest_BEH_ConnectAttempts_Test;
@@ -50,10 +51,8 @@ class GroupChangeHandler;
 
 class ResponseHandler : public std::enable_shared_from_this<ResponseHandler> {
  public:
-  ResponseHandler(RoutingTable& routing_table,
-                  ClientRoutingTable& client_routing_table,
-                  NetworkUtils& network,
-                  GroupChangeHandler& group_change_handler);
+  ResponseHandler(RoutingTable& routing_table, ClientRoutingTable& client_routing_table,
+                  NetworkUtils& network, GroupChangeHandler& group_change_handler);
   virtual ~ResponseHandler();
   virtual void Ping(protobuf::Message& message);
   virtual void Connect(protobuf::Message& message);
@@ -71,10 +70,9 @@ class ResponseHandler : public std::enable_shared_from_this<ResponseHandler> {
   void CheckAndSendConnectRequest(const NodeId& node_id);
   void HandleSuccessAcknowledgementAsRequestor(const std::vector<NodeId>& close_ids);
   void HandleSuccessAcknowledgementAsReponder(NodeInfo peer, const bool& client);
-  void  ValidateAndCompleteConnectionToClient(const NodeInfo& peer, bool from_requestor,
-                                              const std::vector<NodeId>& close_ids);
-  void ValidateAndCompleteConnectionToNonClient(const NodeInfo& peer,
-                                                bool from_requestor,
+  void ValidateAndCompleteConnectionToClient(const NodeInfo& peer, bool from_requestor,
+                                             const std::vector<NodeId>& close_ids);
+  void ValidateAndCompleteConnectionToNonClient(const NodeInfo& peer, bool from_requestor,
                                                 const std::vector<NodeId>& close_ids);
 
   mutable std::mutex mutex_;

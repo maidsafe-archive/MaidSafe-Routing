@@ -28,12 +28,10 @@ GroupSource::GroupSource(GroupId group_id_in, SingleId sender_id_in)
     : group_id(std::move(group_id_in)), sender_id(std::move(sender_id_in)) {}
 
 GroupSource::GroupSource(const GroupSource& other)
-    : group_id(other.group_id),
-      sender_id(other.sender_id) {}
+    : group_id(other.group_id), sender_id(other.sender_id) {}
 
 GroupSource::GroupSource(GroupSource&& other)
-    : group_id(std::move(other.group_id)),
-      sender_id(std::move(other.sender_id)) {}
+    : group_id(std::move(other.group_id)), sender_id(std::move(other.sender_id)) {}
 
 GroupSource& GroupSource::operator=(GroupSource other) {
   swap(*this, other);

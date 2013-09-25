@@ -46,7 +46,6 @@
 #include "maidsafe/routing/routing_table.h"
 #include "maidsafe/routing/timer.h"
 
-
 namespace maidsafe {
 
 namespace routing {
@@ -54,36 +53,35 @@ namespace routing {
 namespace detail {
 
 // Group Source
-template<typename Messsage>
+template <typename Messsage>
 struct is_group_source;
 
-template<typename Messsage>
+template <typename Messsage>
 struct is_group_source : public std::true_type {};
 
-template<>
+template <>
 struct is_group_source<SingleToSingleMessage> : public std::false_type {};
-template<>
+template <>
 struct is_group_source<SingleToGroupMessage> : public std::false_type {};
-template<>
+template <>
 struct is_group_source<GroupToSingleMessage> : public std::true_type {};
-template<>
+template <>
 struct is_group_source<GroupToGroupMessage> : public std::true_type {};
 
-
 // Group Destination
-template<typename Messsage>
+template <typename Messsage>
 struct is_group_destination;
 
-template<typename Messsage>
+template <typename Messsage>
 struct is_group_destination : public std::true_type {};
 
-template<>
+template <>
 struct is_group_destination<SingleToSingleMessage> : public std::false_type {};
-template<>
+template <>
 struct is_group_destination<SingleToGroupMessage> : public std::true_type {};
-template<>
+template <>
 struct is_group_destination<GroupToSingleMessage> : public std::false_type {};
-template<>
+template <>
 struct is_group_destination<GroupToGroupMessage> : public std::true_type {};
 
 }  // namespace detail
@@ -91,7 +89,9 @@ struct is_group_destination<GroupToGroupMessage> : public std::true_type {};
 //  class MessageHandler;
 struct NodeInfo;
 
-namespace test { class GenericNode; }
+namespace test {
+class GenericNode;
+}
 
 class Routing::Impl {
  public:
@@ -102,22 +102,16 @@ class Routing::Impl {
             const std::vector<boost::asio::ip::udp::endpoint>& peer_endpoints =
                 std::vector<boost::asio::ip::udp::endpoint>());
 
-  int ZeroStateJoin(const Functors& functors,
-                    const boost::asio::ip::udp::endpoint& local_endpoint,
-                    const boost::asio::ip::udp::endpoint& peer_endpoint,
-                    const NodeInfo& peer_info);
+  int ZeroStateJoin(const Functors& functors, const boost::asio::ip::udp::endpoint& local_endpoint,
+                    const boost::asio::ip::udp::endpoint& peer_endpoint, const NodeInfo& peer_info);
 
   template <typename T>
   void Send(const T& message);  // New API
 
-  void SendDirect(const NodeId& destination_id,
-                  const std::string& data,
-                  const bool& cacheable,
+  void SendDirect(const NodeId& destination_id, const std::string& data, const bool& cacheable,
                   ResponseFunctor response_functor);
 
-  void SendGroup(const NodeId& destination_id,
-                 const std::string& data,
-                 const bool& cacheable,
+  void SendGroup(const NodeId& destination_id, const std::string& data, const bool& cacheable,
                  ResponseFunctor response_functor);
 
   NodeId GetRandomExistingNode() const { return random_node_helper_.Get(); }
@@ -155,7 +149,7 @@ class Routing::Impl {
   void DoJoin(const std::vector<boost::asio::ip::udp::endpoint>& endpoints);
   int DoBootstrap(const std::vector<boost::asio::ip::udp::endpoint>& endpoints);
   void ReBootstrap();
-  void DoReBootstrap(const boost::system::error_code &error_code);
+  void DoReBootstrap(const boost::system::error_code& error_code);
   void FindClosestNode(const boost::system::error_code& error_code, int attempts);
   void ReSendFindNodeRequest(const boost::system::error_code& error_code, bool ignore_size);
   void OnMessageReceived(const std::string& message);
@@ -170,19 +164,17 @@ class Routing::Impl {
             ResponseFunctor response_functor);
   void SendMessage(const NodeId& destination_id, protobuf::Message& proto_message);
   void PartiallyJoinedSend(protobuf::Message& proto_message);
-  protobuf::Message CreateNodeLevelPartialMessage(
-      const NodeId& destination_id,
-      const DestinationType& destination_type,
-      const std::string& data,
-      const bool& cacheable);
+  protobuf::Message CreateNodeLevelPartialMessage(const NodeId& destination_id,
+                                                  const DestinationType& destination_type,
+                                                  const std::string& data, const bool& cacheable);
   void CheckSendParameters(const NodeId& destination_id, const std::string& data);
 
   template <typename T>
   protobuf::Message CreateNodeLevelMessage(const T& message);
-  template<typename T>
+  template <typename T>
   void AddGroupSourceRelatedFields(const T& message, protobuf::Message& proto_message,
                                    std::true_type);
-  template<typename T>
+  template <typename T>
   void AddGroupSourceRelatedFields(const T& message, protobuf::Message& proto_message,
                                    std::false_type);
 
@@ -215,22 +207,22 @@ class Routing::Impl {
 template <typename T>
 void Routing::Impl::Send(const T& message) {  // FIXME(Fix caching)
   assert(!functors_.message_and_caching.message_received &&
-           "Not allowed with string type message API");
+         "Not allowed with string type message API");
   protobuf::Message proto_message = CreateNodeLevelMessage(message);
   SendMessage(message.receiver, proto_message);
 }
 
-template<typename T>
+template <typename T>
 void Routing::Impl::AddGroupSourceRelatedFields(const T& message, protobuf::Message& proto_message,
-                                 std::true_type) {
+                                                std::true_type) {
   proto_message.set_group_source(message.sender.group_id->string());
   proto_message.set_direct(false);
 }
 
-template<typename T>
+template <typename T>
 void Routing::Impl::AddGroupSourceRelatedFields(const T&, protobuf::Message&, std::false_type) {}
 
-template<typename T>
+template <typename T>
 protobuf::Message Routing::Impl::CreateNodeLevelMessage(const T& message) {
   protobuf::Message proto_message;
   proto_message.set_destination_id(message.receiver->string());

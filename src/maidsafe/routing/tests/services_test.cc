@@ -50,8 +50,7 @@ typedef boost::asio::ip::udp::endpoint Endpoint;
 TEST(ServicesTest, BEH_Ping) {
   NodeId node_id(NodeId::kRandomId);
   NetworkStatistics network_statistics(node_id);
-  RoutingTable routing_table(false, node_id, asymm::GenerateKeyPair(),
-                             network_statistics);
+  RoutingTable routing_table(false, node_id, asymm::GenerateKeyPair(), network_statistics);
   ClientRoutingTable client_routing_table(routing_table.kNodeId());
   AsioService asio_service(1);
   NetworkUtils network(routing_table, client_routing_table);
@@ -93,8 +92,8 @@ TEST(ServicesTest, BEH_FindNodes) {
   service.FindNodes(message);
   protobuf::FindNodesResponse find_nodes_respose;
   EXPECT_TRUE(find_nodes_respose.ParseFromString(message.data(0)));
-//  EXPECT_TRUE(find_nodes_respose.nodes().size() > 0);  // will only have us
-//  EXPECT_EQ(find_nodes_respose.nodes().Get(1), us.node_id.string());
+  //  EXPECT_TRUE(find_nodes_respose.nodes().size() > 0);  // will only have us
+  //  EXPECT_EQ(find_nodes_respose.nodes().Get(1), us.node_id.string());
   EXPECT_TRUE(find_nodes_respose.has_timestamp());
   EXPECT_TRUE(find_nodes_respose.timestamp() > static_cast<int32_t>(GetTimeStamp() - 2));
   EXPECT_TRUE(find_nodes_respose.timestamp() < static_cast<int32_t>(GetTimeStamp() + 1));
@@ -105,7 +104,7 @@ TEST(ServicesTest, BEH_FindNodes) {
   EXPECT_EQ(message.replication(), 1);
   EXPECT_EQ(message.type(), 3);
   EXPECT_EQ(message.request(), false);
-//  EXPECT_EQ(message.id(), 0);
+  //  EXPECT_EQ(message.id(), 0);
   EXPECT_FALSE(message.client_node());
   // EXPECT_FALSE(message.has_relay());
 }

@@ -26,14 +26,13 @@
 #include "maidsafe/common/node_id.h"
 #include "maidsafe/routing/node_info.h"
 
-
 namespace maidsafe {
 
 namespace routing {
 
 namespace test {
-  class NetworkStatisticsTest_BEH_AverageDistance_Test;
-  class NetworkStatisticsTest_BEH_IsIdInGroupRange_Test;
+class NetworkStatisticsTest_BEH_AverageDistance_Test;
+class NetworkStatisticsTest_BEH_IsIdInGroupRange_Test;
 }
 
 class NetworkStatistics {
@@ -66,4 +65,3 @@ class NetworkStatistics {
 }  // namespace maidsafe
 
 #endif  // MAIDSAFE_ROUTING_NETWORK_STATISTICS_H_
-

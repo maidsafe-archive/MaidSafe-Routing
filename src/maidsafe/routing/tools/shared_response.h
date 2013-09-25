@@ -32,7 +32,6 @@
 #include "maidsafe/routing/tests/test_utils.h"
 #include "maidsafe/routing/utils.h"
 
-
 namespace maidsafe {
 
 namespace routing {

@@ -23,7 +23,6 @@
 #include "maidsafe/routing/node_info.h"
 #include "maidsafe/routing/parameters.h"
 
-
 namespace maidsafe {
 
 namespace routing {
@@ -45,9 +44,8 @@ bool ClientRoutingTable::CheckNode(NodeInfo& node, const NodeId& furthest_close_
   return AddOrCheckNode(node, furthest_close_node_id, false);
 }
 
-bool ClientRoutingTable::AddOrCheckNode(NodeInfo& node,
-                                     const NodeId& furthest_close_node_id,
-                                     const bool& add) {
+bool ClientRoutingTable::AddOrCheckNode(NodeInfo& node, const NodeId& furthest_close_node_id,
+                                        const bool& add) {
   if (node.node_id == kNodeId_)
     return false;
   std::lock_guard<std::mutex> lock(mutex_);
@@ -62,7 +60,7 @@ bool ClientRoutingTable::AddOrCheckNode(NodeInfo& node,
   return false;
 }
 
-std::vector<NodeInfo> ClientRoutingTable::DropNodes(const NodeId &node_to_drop) {
+std::vector<NodeInfo> ClientRoutingTable::DropNodes(const NodeId& node_to_drop) {
   std::vector<NodeInfo> nodes_info;
   std::lock_guard<std::mutex> lock(mutex_);
   uint16_t i(0);
@@ -94,23 +92,20 @@ std::vector<NodeInfo> ClientRoutingTable::GetNodesInfo(const NodeId& node_id) co
   std::vector<NodeInfo> nodes_info;
   std::lock_guard<std::mutex> lock(mutex_);
   for (const auto& elem : nodes_) {
-    if ((elem).node_id == node_id) nodes_info.push_back(elem);
+    if ((elem).node_id == node_id)
+      nodes_info.push_back(elem);
   }
   return nodes_info;
 }
 
 bool ClientRoutingTable::Contains(const NodeId& node_id) const {
   std::lock_guard<std::mutex> lock(mutex_);
-  return std::find_if(nodes_.begin(),
-                      nodes_.end(),
-                      [node_id](const NodeInfo& node_info) {
-                        return node_info.node_id == node_id;
-                      }) != nodes_.end();
+  return std::find_if(nodes_.begin(), nodes_.end(), [node_id](const NodeInfo & node_info) {
+           return node_info.node_id == node_id;
+         }) != nodes_.end();
 }
 
-bool ClientRoutingTable::IsConnected(const NodeId& node_id) const {
-  return Contains(node_id);
-}
+bool ClientRoutingTable::IsConnected(const NodeId& node_id) const { return Contains(node_id); }
 
 size_t ClientRoutingTable::size() const {
   std::lock_guard<std::mutex> lock(mutex_);
@@ -129,31 +124,29 @@ bool ClientRoutingTable::CheckValidParameters(const NodeInfo& node) const {
 
 bool ClientRoutingTable::CheckParametersAreUnique(const NodeInfo& node) const {
   // If we already have a duplicate endpoint return false
-  if (std::find_if(nodes_.begin(),
-                   nodes_.end(),
-                   [node](const NodeInfo& node_info) {
-                     return (node_info.connection_id == node.connection_id);
-                   }) != nodes_.end()) {
+  if (std::find_if(nodes_.begin(), nodes_.end(), [node](const NodeInfo & node_info) {
+        return (node_info.connection_id == node.connection_id);
+      }) != nodes_.end()) {
     LOG(kInfo) << "Already have node with this connection_id.";
     return false;
   }
 
   // If we already have a duplicate public key under different node ID return false
-//  if (std::find_if(nodes_.begin(),
-//                   nodes_.end(),
-//                   [node](const NodeInfo& node_info) {
-//                     return (asymm::MatchingKeys(node_info.public_key, node.public_key) &&
-//                             (node_info.node_id != node.node_id));
-//                   }) != nodes_.end()) {
-//    LOG(kInfo) << "Already have a different node ID with this public key.";
-//    return false;
-//  }
+  //  if (std::find_if(nodes_.begin(),
+  //                   nodes_.end(),
+  //                   [node](const NodeInfo& node_info) {
+  //                     return (asymm::MatchingKeys(node_info.public_key, node.public_key) &&
+  //                             (node_info.node_id != node.node_id));
+  //                   }) != nodes_.end()) {
+  //    LOG(kInfo) << "Already have a different node ID with this public key.";
+  //    return false;
+  //  }
   return true;
 }
 
 bool ClientRoutingTable::CheckRangeForNodeToBeAdded(NodeInfo& node,
-                                                 const NodeId& furthest_close_node_id,
-                                                 const bool& add) const {
+                                                    const NodeId& furthest_close_node_id,
+                                                    const bool& add) const {
   if (nodes_.size() >= Parameters::max_client_routing_table_size) {
     LOG(kInfo) << "ClientRoutingTable full.";
     return false;
@@ -168,7 +161,7 @@ bool ClientRoutingTable::CheckRangeForNodeToBeAdded(NodeInfo& node,
 }
 
 bool ClientRoutingTable::IsThisNodeInRange(const NodeId& node_id,
-                                        const NodeId& furthest_close_node_id) const {
+                                           const NodeId& furthest_close_node_id) const {
   if (furthest_close_node_id == node_id) {
     assert(false && "node_id (client) and furthest_close_node_id (vault) should not be equal.");
     return false;
@@ -178,11 +171,11 @@ bool ClientRoutingTable::IsThisNodeInRange(const NodeId& node_id,
 
 std::string ClientRoutingTable::PrintClientRoutingTable() {
   auto rt(nodes_);
-  std::string s = "\n\n[" + DebugId(kNodeId_) +
-      "] This node's own ClientRoutingTable and peer connections:\n";
+  std::string s =
+      "\n\n[" + DebugId(kNodeId_) + "] This node's own ClientRoutingTable and peer connections:\n";
   for (const auto& node : rt) {
-    s += std::string("\tPeer ") + "[" + DebugId(node.node_id) + "]"+ "-->";
-    s += DebugId(node.connection_id)+ "\n";
+    s += std::string("\tPeer ") + "[" + DebugId(node.node_id) + "]" + "-->";
+    s += DebugId(node.connection_id) + "\n";
   }
   s += "\n\n";
   return s;

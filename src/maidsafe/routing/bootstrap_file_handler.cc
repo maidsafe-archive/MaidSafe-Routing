@@ -25,7 +25,6 @@
 
 #include "maidsafe/routing/routing.pb.h"
 
-
 namespace fs = boost::filesystem;
 
 namespace maidsafe {

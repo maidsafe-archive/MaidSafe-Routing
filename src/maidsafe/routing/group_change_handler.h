@@ -27,24 +27,24 @@
 #include "maidsafe/routing/node_info.h"
 #include "maidsafe/routing/routing.pb.h"
 
-
 namespace maidsafe {
 
 namespace routing {
 
 namespace test {
-  class GenericNode;
+class GenericNode;
 }
 
 class RoutingTable;
 class ClientRoutingTable;
 
-namespace protobuf { class Message; }
+namespace protobuf {
+class Message;
+}
 
 class GroupChangeHandler {
  public:
-  GroupChangeHandler(RoutingTable& routing_table,
-                     ClientRoutingTable& client_routing_table,
+  GroupChangeHandler(RoutingTable& routing_table, ClientRoutingTable& client_routing_table,
                      NetworkUtils& network);
   ~GroupChangeHandler();
   void SendClosestNodesUpdateRpcs(std::vector<NodeInfo> new_close_nodes);
@@ -53,6 +53,7 @@ class GroupChangeHandler {
   void SendSubscribeRpc(const bool& subscribe, const NodeInfo& node_info);
 
   friend class test::GenericNode;
+
  private:
   GroupChangeHandler(const GroupChangeHandler&);
   GroupChangeHandler& operator=(const GroupChangeHandler&);

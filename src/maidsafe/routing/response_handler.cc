@@ -18,9 +18,9 @@
 
 #include "maidsafe/routing/response_handler.h"
 
-#include<memory>
-#include<vector>
-#include<string>
+#include <memory>
+#include <vector>
+#include <string>
 #include <algorithm>
 
 #include "maidsafe/common/log.h"
@@ -37,7 +37,6 @@
 #include "maidsafe/routing/rpcs.h"
 #include "maidsafe/routing/utils.h"
 
-
 namespace bptime = boost::posix_time;
 
 namespace maidsafe {
@@ -51,16 +50,14 @@ typedef boost::asio::ip::udp::endpoint Endpoint;
 }  // unnamed namespace
 
 ResponseHandler::ResponseHandler(RoutingTable& routing_table,
-                                 ClientRoutingTable& client_routing_table,
-                                 NetworkUtils& network,
-                                 GroupChangeHandler &group_change_handler)
+                                 ClientRoutingTable& client_routing_table, NetworkUtils& network,
+                                 GroupChangeHandler& group_change_handler)
     : mutex_(),
       routing_table_(routing_table),
       client_routing_table_(client_routing_table),
       network_(network),
       group_change_handler_(group_change_handler),
-      request_public_key_functor_() {
-}
+      request_public_key_functor_() {}
 
 ResponseHandler::~ResponseHandler() {}
 
@@ -83,17 +80,18 @@ void ResponseHandler::Connect(protobuf::Message& message) {
   }
 
   if (!connect_request.ParseFromString(connect_response.original_request())) {
-    LOG(kError) << "Could not parse original connect request" << " id: " << message.id();
+    LOG(kError) << "Could not parse original connect request"
+                << " id: " << message.id();
     return;
   }
 
   if (connect_response.answer() == protobuf::ConnectResponseType::kRejected) {
-    LOG(kInfo) << "Peer rejected this node's connection request." << " id: " << message.id();
+    LOG(kInfo) << "Peer rejected this node's connection request."
+               << " id: " << message.id();
     return;
   }
 
-  if (connect_response.answer() ==
-        protobuf::ConnectResponseType::kConnectAttemptAlreadyRunning) {
+  if (connect_response.answer() == protobuf::ConnectResponseType::kConnectAttemptAlreadyRunning) {
     LOG(kInfo) << "Already ongoing connection attempt with : "
                << HexSubstr(connect_response.contact().node_id());
     return;
@@ -124,29 +122,21 @@ void ResponseHandler::Connect(protobuf::Message& message) {
     NodeId peer_connection_id(connect_response.contact().connection_id());
 
     LOG(kVerbose) << "This node [" << DebugId(routing_table_.kNodeId())
-                  << "] received connect response from "
-                  << DebugId(peer_node_id)
+                  << "] received connect response from " << DebugId(peer_node_id)
                   << " id: " << message.id();
 
-    int result = AddToRudp(network_, routing_table_.kNodeId(),
-                           routing_table_.kConnectionId(),
-                           peer_node_id,
-                           peer_connection_id,
-                           peer_endpoint_pair,
-                           true,  // requestor
+    int result = AddToRudp(network_, routing_table_.kNodeId(), routing_table_.kConnectionId(),
+                           peer_node_id, peer_connection_id, peer_endpoint_pair, true,  // requestor
                            routing_table_.client_mode());
     if (result == kSuccess) {
       // Special case with bootstrapping peer in which kSuccess comes before connect response
       if (peer_node_id == network_.bootstrap_connection_id()) {
-        LOG(kInfo) << "Special case with bootstrapping peer : "  << DebugId(peer_node_id);
+        LOG(kInfo) << "Special case with bootstrapping peer : " << DebugId(peer_node_id);
         const std::vector<NodeId> close_ids;  // add closer ids if needed
-        protobuf::Message connect_success_ack(
-            rpcs::ConnectSuccessAcknowledgement(peer_node_id,
-            routing_table_.kNodeId(),
-            routing_table_.kConnectionId(),
+        protobuf::Message connect_success_ack(rpcs::ConnectSuccessAcknowledgement(
+            peer_node_id, routing_table_.kNodeId(), routing_table_.kConnectionId(),
             true,  // this node is requestor
-            close_ids,
-            routing_table_.client_mode()));
+            close_ids, routing_table_.client_mode()));
         network_.SendToDirect(connect_success_ack, peer_node_id, peer_connection_id);
       }
     }
@@ -169,24 +159,23 @@ void ResponseHandler::FindNodes(const protobuf::Message& message) {
 
   if (find_nodes_request.num_nodes_requested() == 1) {  // detect collision
     if ((find_nodes_response.nodes_size() == 1) &&
-      find_nodes_response.nodes(0) == routing_table_.kNodeId().string()) {
+        find_nodes_response.nodes(0) == routing_table_.kNodeId().string()) {
       LOG(kWarning) << "Collision detected";
       // TODO(Prakash): FIXME handle collision and return kIdCollision on join()
       return;
     }
   }
-//  if (asymm::CheckSignature(find_nodes.original_request(),
-//                            find_nodes.original_signature(),
-//                            routing_table.kKeys().public_key) != kSuccess) {
-//    LOG(kError) << " find node request was not signed by us";
-//    return;  // we never requested this
-//  }
+  //  if (asymm::CheckSignature(find_nodes.original_request(),
+  //                            find_nodes.original_signature(),
+  //                            routing_table.kKeys().public_key) != kSuccess) {
+  //    LOG(kError) << " find node request was not signed by us";
+  //    return;  // we never requested this
+  //  }
 
-  LOG(kVerbose) << "[" << DebugId(routing_table_.kNodeId())
-                << "] received FindNodes response from " << HexSubstr(message.source_id())
-                << " id: " << message.id();
-  std::string find_node_result = "FindNodes from " + HexSubstr(message.source_id()) +
-          " returned :\n";
+  LOG(kVerbose) << "[" << DebugId(routing_table_.kNodeId()) << "] received FindNodes response from "
+                << HexSubstr(message.source_id()) << " id: " << message.id();
+  std::string find_node_result =
+      "FindNodes from " + HexSubstr(message.source_id()) + " returned :\n";
   for (int i = 0; i < find_nodes_response.nodes_size(); ++i) {
     find_node_result += "[" + HexSubstr(find_nodes_response.nodes(i)) + "]\t";
   }
@@ -210,7 +199,7 @@ void ResponseHandler::SendConnectRequest(const NodeId peer_node_id) {
   peer.node_id = peer_node_id;
 
   if (peer.node_id == NodeId(routing_table_.kNodeId())) {
-//    LOG(kInfo) << "Can't send connect request to self !";
+    //    LOG(kInfo) << "Can't send connect request to self !";
     return;
   }
 
@@ -218,22 +207,17 @@ void ResponseHandler::SendConnectRequest(const NodeId peer_node_id) {
     LOG(kVerbose) << "CheckNode succeeded for node " << DebugId(peer.node_id);
     rudp::EndpointPair this_endpoint_pair, peer_endpoint_pair;
     rudp::NatType this_nat_type(rudp::NatType::kUnknown);
-    int ret_val = network_.GetAvailableEndpoint(peer.node_id,
-                                                peer_endpoint_pair,
-                                                this_endpoint_pair,
-                                                this_nat_type);
+    int ret_val = network_.GetAvailableEndpoint(peer.node_id, peer_endpoint_pair,
+                                                this_endpoint_pair, this_nat_type);
     if (rudp::kSuccess != ret_val && rudp::kBootstrapConnectionAlreadyExists != ret_val) {
       if (rudp::kUnvalidatedConnectionAlreadyExists != ret_val &&
-            rudp::kConnectAttemptAlreadyRunning != ret_val) {
+          rudp::kConnectAttemptAlreadyRunning != ret_val) {
         LOG(kError) << "[" << DebugId(routing_table_.kNodeId()) << "] Response Handler"
                     << "Failed to get available endpoint for new connection to : "
                     << DebugId(peer.node_id)
-                    << "peer_endpoint_pair.external = "
-                    << peer_endpoint_pair.external
-                    << ", peer_endpoint_pair.local = "
-                    << peer_endpoint_pair.local
-                    << ". Rudp returned :"
-                    << ret_val;
+                    << "peer_endpoint_pair.external = " << peer_endpoint_pair.external
+                    << ", peer_endpoint_pair.local = " << peer_endpoint_pair.local
+                    << ". Rudp returned :" << ret_val;
       } else {
         LOG(kVerbose) << "Already ongoing attempt to : " << DebugId(peer.node_id);
       }
@@ -249,15 +233,9 @@ void ResponseHandler::SendConnectRequest(const NodeId peer_node_id) {
       relay_connection_id = network_.this_node_relay_connection_id();
       relay_message = true;
     }
-    protobuf::Message connect_rpc(
-        rpcs::Connect(peer.node_id,
-        this_endpoint_pair,
-        routing_table_.kNodeId(),
-        routing_table_.kConnectionId(),
-        routing_table_.client_mode(),
-        this_nat_type,
-        relay_message,
-        relay_connection_id));
+    protobuf::Message connect_rpc(rpcs::Connect(
+        peer.node_id, this_endpoint_pair, routing_table_.kNodeId(), routing_table_.kConnectionId(),
+        routing_table_.client_mode(), this_nat_type, relay_message, relay_connection_id));
     LOG(kVerbose) << "Sending Connect RPC to " << DebugId(peer.node_id)
                   << " message id : " << connect_rpc.id();
     if (send_to_bootstrap_connection)
@@ -308,17 +286,11 @@ void ResponseHandler::ConnectSuccessAcknowledgement(protobuf::Message& message) 
   }
 }
 
-void  ResponseHandler::ValidateAndCompleteConnectionToClient(const NodeInfo& peer,
-                                                             bool from_requestor,
-                                                             const std::vector<NodeId>& close_ids) {
-  if (ValidateAndAddToRoutingTable(
-      network_,
-      routing_table_,
-      client_routing_table_,
-      peer.node_id,
-      peer.connection_id,
-      asymm::PublicKey(),
-      true)) {
+void ResponseHandler::ValidateAndCompleteConnectionToClient(const NodeInfo& peer,
+                                                            bool from_requestor,
+                                                            const std::vector<NodeId>& close_ids) {
+  if (ValidateAndAddToRoutingTable(network_, routing_table_, client_routing_table_, peer.node_id,
+                                   peer.connection_id, asymm::PublicKey(), true)) {
     if (from_requestor) {
       HandleSuccessAcknowledgementAsReponder(peer, true);
     } else {
@@ -328,54 +300,43 @@ void  ResponseHandler::ValidateAndCompleteConnectionToClient(const NodeInfo& pee
 }
 
 void ResponseHandler::ValidateAndCompleteConnectionToNonClient(
-    const NodeInfo& peer,
-    bool from_requestor,
-    const std::vector<NodeId>& close_ids) {
+    const NodeInfo& peer, bool from_requestor, const std::vector<NodeId>& close_ids) {
   std::weak_ptr<ResponseHandler> response_handler_weak_ptr = shared_from_this();
   if (request_public_key_functor_) {
-    auto validate_node(
-        [=] (const asymm::PublicKey& key) {
-            LOG(kInfo) << "Validation callback called with public key for "
-                       << DebugId(peer.node_id);
-            if (std::shared_ptr<ResponseHandler> response_handler =
-                response_handler_weak_ptr.lock()) {
-              if (ValidateAndAddToRoutingTable(response_handler->network_,
-                                               response_handler->routing_table_,
-                                               response_handler->client_routing_table_,
-                                               peer.node_id, peer.connection_id,
-                                               key, false)) {
-                if (from_requestor) {
-                  response_handler->HandleSuccessAcknowledgementAsReponder(peer, false);
-                } else {
-                  response_handler->HandleSuccessAcknowledgementAsRequestor(close_ids);
-                }
-              }
-            }
-      });
+    auto validate_node([=](const asymm::PublicKey & key) {
+      LOG(kInfo) << "Validation callback called with public key for " << DebugId(peer.node_id);
+      if (std::shared_ptr<ResponseHandler> response_handler = response_handler_weak_ptr.lock()) {
+        if (ValidateAndAddToRoutingTable(response_handler->network_,
+                                         response_handler->routing_table_,
+                                         response_handler->client_routing_table_, peer.node_id,
+                                         peer.connection_id, key, false)) {
+          if (from_requestor) {
+            response_handler->HandleSuccessAcknowledgementAsReponder(peer, false);
+          } else {
+            response_handler->HandleSuccessAcknowledgementAsRequestor(close_ids);
+          }
+        }
+      }
+    });
     request_public_key_functor_(peer.node_id, validate_node);
   }
 }
 
-void ResponseHandler::HandleSuccessAcknowledgementAsReponder(NodeInfo peer,
-                                                             const bool &client) {
+void ResponseHandler::HandleSuccessAcknowledgementAsReponder(NodeInfo peer, const bool& client) {
   auto count =
-      (client ? Parameters::max_routing_table_size_for_client: Parameters::max_routing_table_size);
-  std::vector<NodeId> close_ids_for_peer(
-      routing_table_.GetClosestNodes(peer.node_id, count));
+      (client ? Parameters::max_routing_table_size_for_client : Parameters::max_routing_table_size);
+  std::vector<NodeId> close_ids_for_peer(routing_table_.GetClosestNodes(peer.node_id, count));
   auto itr(std::find_if(close_ids_for_peer.begin(), close_ids_for_peer.end(),
-                        [=](const NodeId& node_id)->bool {
-                            return (peer.node_id == node_id);
-                          }));
+                                                        [=](const NodeId & node_id)->bool {
+    return (peer.node_id == node_id);
+  }));
   if (itr != close_ids_for_peer.end())
     close_ids_for_peer.erase(itr);
 
-  protobuf::Message connect_success_ack(
-      rpcs::ConnectSuccessAcknowledgement(peer.node_id,
-                                          routing_table_.kNodeId(),
-                                          routing_table_.kConnectionId(),
-                                          false,  // this node is responder
-                                          close_ids_for_peer,
-                                          routing_table_.client_mode()));
+  protobuf::Message connect_success_ack(rpcs::ConnectSuccessAcknowledgement(
+      peer.node_id, routing_table_.kNodeId(), routing_table_.kConnectionId(),
+      false,  // this node is responder
+      close_ids_for_peer, routing_table_.client_mode()));
   network_.SendToDirect(connect_success_ack, peer.node_id, peer.connection_id);
 }
 
@@ -389,13 +350,12 @@ void ResponseHandler::HandleSuccessAcknowledgementAsRequestor(
 }
 
 void ResponseHandler::CheckAndSendConnectRequest(const NodeId& node_id) {
-  uint16_t limit(routing_table_.client_mode() ? Parameters::max_routing_table_size_for_client :
-                                                Parameters::greedy_fraction);
+  uint16_t limit(routing_table_.client_mode() ? Parameters::max_routing_table_size_for_client
+                                              : Parameters::greedy_fraction);
   if ((routing_table_.size() < limit) ||
-      NodeId::CloserToTarget(node_id,
-                             routing_table_.GetNthClosestNode(routing_table_.kNodeId(),
-                                                              limit).node_id,
-                             routing_table_.kNodeId()))
+      NodeId::CloserToTarget(
+          node_id, routing_table_.GetNthClosestNode(routing_table_.kNodeId(), limit).node_id,
+          routing_table_.kNodeId()))
     SendConnectRequest(node_id);
 }
 
@@ -434,7 +394,8 @@ void ResponseHandler::GetGroup(Timer<std::string>& timer, protobuf::Message& mes
     if (!message.has_id() || message.data_size() != 1)
       ThrowError(CommonErrors::parsing_error);
     timer.AddResponse(message.id(), message.data(0));
-  } catch(const maidsafe_error& e) {
+  }
+  catch (const maidsafe_error& e) {
     LOG(kError) << e.what();
     return;
   }

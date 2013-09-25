@@ -33,7 +33,6 @@
 #include "maidsafe/routing/rpcs.h"
 #include "maidsafe/routing/utils.h"
 
-
 namespace maidsafe {
 
 namespace routing {
@@ -41,9 +40,9 @@ namespace routing {
 GroupChangeHandler::GroupChangeHandler(RoutingTable& routing_table,
                                        ClientRoutingTable& client_routing_table,
                                        NetworkUtils& network)
-  : routing_table_(routing_table),
-    client_routing_table_(client_routing_table),
-    network_(network) {}
+    : routing_table_(routing_table),
+      client_routing_table_(client_routing_table),
+      network_(network) {}
 
 GroupChangeHandler::~GroupChangeHandler() {}
 
@@ -94,14 +93,13 @@ void GroupChangeHandler::UpdateGroupChange(const NodeId& node_id,
 
 void GroupChangeHandler::SendClosestNodesUpdateRpcs(std::vector<NodeInfo> closest_nodes) {
   NodeId node_id(routing_table_.kNodeId());
-  closest_nodes.erase(std::remove_if(closest_nodes.begin(),
-                                     closest_nodes.end(),
-                                     [node_id] (const NodeInfo& node_info) {
-                                       return node_info.node_id == node_id;
-                                     }), closest_nodes.end());
+  closest_nodes.erase(std::remove_if(closest_nodes.begin(), closest_nodes.end(),
+                                     [node_id](const NodeInfo &
+                                               node_info) { return node_info.node_id == node_id; }),
+                      closest_nodes.end());
   if (closest_nodes.size() < Parameters::closest_nodes_size)
     return;
-  LOG(kVerbose) << "["  << DebugId(routing_table_.kNodeId())
+  LOG(kVerbose) << "[" << DebugId(routing_table_.kNodeId())
                 << "] SendClosestNodesUpdateRpcs: " << closest_nodes.size();
   std::vector<NodeInfo> update_subscribers(closest_nodes);
   // clients are also notified of changes in connected close nodes
@@ -109,8 +107,7 @@ void GroupChangeHandler::SendClosestNodesUpdateRpcs(std::vector<NodeInfo> closes
     update_subscribers.push_back(client);
   for (auto& update_subscriber : update_subscribers) {
     LOG(kVerbose) << "[" << DebugId(routing_table_.kNodeId())
-                  << "] Sending update to: "
-                  << DebugId(update_subscriber.node_id);
+                  << "] Sending update to: " << DebugId(update_subscriber.node_id);
     protobuf::Message closest_nodes_update_rpc(rpcs::ClosestNodesUpdate(
         update_subscriber.node_id, routing_table_.kNodeId(), closest_nodes));
     network_.SendToDirect(closest_nodes_update_rpc, update_subscriber.node_id,

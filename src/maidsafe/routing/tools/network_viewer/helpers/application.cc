@@ -23,28 +23,24 @@
 namespace maidsafe {
 
 ExceptionEvent::ExceptionEvent(const QString& exception_message, Type type)
-    : QEvent(type),
-      exception_message_(exception_message) {}
+    : QEvent(type), exception_message_(exception_message) {}
 
-QString ExceptionEvent::ExceptionMessage() {
-  return exception_message_;
-}
+QString ExceptionEvent::ExceptionMessage() { return exception_message_; }
 
-Application::Application(int& argc, char** argv)
-    : QApplication(argc, argv),
-      handler_object_() {}
+Application::Application(int& argc, char** argv) : QApplication(argc, argv), handler_object_() {}
 
 bool Application::notify(QObject* receiver, QEvent* event) {
   try {
     return QApplication::notify(receiver, event);
-  } catch(std::exception& ex) {
+  }
+  catch (std::exception& ex) {
     if (auto handler = handler_object_.lock()) {
-      QApplication::instance()->postEvent(handler.get(),
-                                          new ExceptionEvent(ex.what()));
+      QApplication::instance()->postEvent(handler.get(), new ExceptionEvent(ex.what()));
     } else {
       QApplication::quit();
     }
-  } catch(...) {
+  }
+  catch (...) {
     if (auto handler = handler_object_.lock()) {
       QApplication::instance()->postEvent(handler.get(),
                                           new ExceptionEvent(tr("Unknown Exception")));

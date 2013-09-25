@@ -24,7 +24,6 @@
 
 #include "maidsafe/common/node_id.h"
 
-
 namespace maidsafe {
 
 namespace routing {

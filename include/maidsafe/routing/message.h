@@ -29,9 +29,9 @@ namespace maidsafe {
 
 namespace routing {
 
-typedef TaggedValue <NodeId, struct GroupTag> GroupId;
-typedef TaggedValue <NodeId, struct SingleTag> SingleId;
-typedef TaggedValue <NodeId, struct SingleSourceTag> SingleSource;
+typedef TaggedValue<NodeId, struct GroupTag> GroupId;
+typedef TaggedValue<NodeId, struct SingleTag> SingleId;
+typedef TaggedValue<NodeId, struct SingleSourceTag> SingleSource;
 
 enum class Cacheable : int {
   kNone = 0,
@@ -55,9 +55,7 @@ void swap(GroupSource& lhs, GroupSource& rhs);
 template <typename Sender, typename Receiver>
 struct Message {
   Message();
-  Message(std::string contents_in,
-          Sender sender_in,
-          Receiver receiver_in,
+  Message(std::string contents_in, Sender sender_in, Receiver receiver_in,
           Cacheable cacheable_in = Cacheable::kNone);
   Message(const Message& other);
   Message(Message&& other);
@@ -72,19 +70,14 @@ struct Message {
 template <typename Sender, typename Receiver>
 void swap(Message<Sender, Receiver>& lhs, Message<Sender, Receiver>& rhs);
 
-
-
 // ==================== Implementation =============================================================
 template <typename Sender, typename Receiver>
 Message<Sender, Receiver>::Message()
-    : contents(),
-      sender(),
-      receiver(),
-      cacheable(Cacheable::kNone) {}
+    : contents(), sender(), receiver(), cacheable(Cacheable::kNone) {}
 
 template <typename Sender, typename Receiver>
-Message<Sender, Receiver>::Message(std::string contents_in, Sender sender_in,
-                                   Receiver receiver_in, Cacheable cacheable_in)
+Message<Sender, Receiver>::Message(std::string contents_in, Sender sender_in, Receiver receiver_in,
+                                   Cacheable cacheable_in)
     : contents(std::move(contents_in)),
       sender(std::move(sender_in)),
       receiver(std::move(receiver_in)),

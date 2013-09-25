@@ -31,7 +31,6 @@
 
 #include "maidsafe/routing/timer.h"
 
-
 namespace maidsafe {
 
 namespace routing {
@@ -47,27 +46,27 @@ class TimerTest : public testing::Test {
         mutex_(),
         kGroupSize_((RandomUint32() % 97) + 4),
         pass_response_functor_([=](std::string response) {
-                                 {
-                                   std::lock_guard<std::mutex> lock(mutex_);
-                                   ++pass_response_count_;
-                                 }
-                                 ASSERT_FALSE(response.empty());
-                                 cond_var_.notify_one();
-                               }),
+          {
+            std::lock_guard<std::mutex> lock(mutex_);
+            ++pass_response_count_;
+          }
+          ASSERT_FALSE(response.empty());
+          cond_var_.notify_one();
+        }),
         failed_response_functor_([=](std::string response) {
-                                   {
-                                     std::lock_guard<std::mutex> lock(mutex_);
-                                     ++failed_response_count_;
-                                   }
-                                   ASSERT_TRUE(response.empty());
-                                   cond_var_.notify_one();
-                                 }),
+          {
+            std::lock_guard<std::mutex> lock(mutex_);
+            ++failed_response_count_;
+          }
+          ASSERT_TRUE(response.empty());
+          cond_var_.notify_one();
+        }),
         variable_response_functor_([=](std::string response) {
-            {
-              std::lock_guard<std::mutex> lock(mutex_);
-              response.empty() ? ++failed_response_count_ : ++pass_response_count_;
-            }
-            cond_var_.notify_one();
+          {
+            std::lock_guard<std::mutex> lock(mutex_);
+            response.empty() ? ++failed_response_count_ : ++pass_response_count_;
+          }
+          cond_var_.notify_one();
         }),
         message_(RandomAlphaNumericString(30)),
         pass_response_count_(0),
@@ -118,13 +117,13 @@ TEST_F(TimerTest, BEH_SingleResponseTimedOut) {
 
 TEST_F(TimerTest, BEH_SingleResponseWithMoreChecks) {
   pass_response_functor_ = [=](std::string response) {
-                              {
-                                std::lock_guard<std::mutex> lock(mutex_);
-                                ++pass_response_count_;
-                              }
-                              ASSERT_EQ(response, message_);
-                              cond_var_.notify_one();
-                            };
+    {
+      std::lock_guard<std::mutex> lock(mutex_);
+      ++pass_response_count_;
+    }
+    ASSERT_EQ(response, message_);
+    cond_var_.notify_one();
+  };
   auto task_id(timer_.AddTask(std::chrono::seconds(2), pass_response_functor_, 1));
   timer_.AddResponse(task_id, message_);
   std::unique_lock<std::mutex> lock(mutex_);
@@ -142,14 +141,14 @@ TEST_F(TimerTest, BEH_GroupResponse) {
 }
 
 TEST_F(TimerTest, BEH_GroupResponsePartialResult) {
-  auto task_id(timer_.AddTask(std::chrono::milliseconds(100), variable_response_functor_,
-                              kGroupSize_));
+  auto task_id(
+      timer_.AddTask(std::chrono::milliseconds(100), variable_response_functor_, kGroupSize_));
   for (uint32_t i(0); i != kGroupSize_ - 1; ++i)
     timer_.AddResponse(task_id, message_);
   std::unique_lock<std::mutex> lock(mutex_);
-  EXPECT_TRUE(cond_var_.wait_for(
-      lock, std::chrono::milliseconds(200),
-      [&] { return pass_response_count_ + failed_response_count_ == kGroupSize_; }));
+  EXPECT_TRUE(cond_var_.wait_for(lock, std::chrono::milliseconds(200), [&] {
+    return pass_response_count_ + failed_response_count_ == kGroupSize_;
+  }));
   EXPECT_EQ(pass_response_count_, kGroupSize_ - 1);
   EXPECT_EQ(failed_response_count_, 1);
 }
@@ -158,23 +157,24 @@ TEST_F(TimerTest, BEH_MultipleResponse) {
   const uint32_t kMessageCount((RandomUint32() % 1000) + 500);
 
   auto add_tasks = [&](int number)->std::map<TaskId, std::string> {
-      std::map<TaskId, std::string> messages;
-      for (int i(0); i != number; ++i) {
-        messages.insert(std::make_pair(
-            timer_.AddTask(std::chrono::seconds(10), pass_response_functor_, 1),
-            RandomAlphaNumericString(30)));
-      }
-      return messages;
-    };
+    std::map<TaskId, std::string> messages;
+    for (int i(0); i != number; ++i) {
+      messages.insert(
+          std::make_pair(timer_.AddTask(std::chrono::seconds(10), pass_response_functor_, 1),
+                         RandomAlphaNumericString(30)));
+    }
+    return messages;
+  }
+  ;
 
   auto add_response = [&](std::map<TaskId, std::string> messages) {
-      for (const auto& message : messages)
-        timer_.AddResponse(message.first, message.second);
-    };
+    for (const auto& message : messages)
+      timer_.AddResponse(message.first, message.second);
+  };
 
   auto add_tasks1_future = std::async(std::launch::async, add_tasks, kMessageCount / 2);
-  auto add_tasks2_future = std::async(std::launch::async, add_tasks,
-                                      kMessageCount / 2 + kMessageCount % 2);
+  auto add_tasks2_future =
+      std::async(std::launch::async, add_tasks, kMessageCount / 2 + kMessageCount % 2);
 
   auto add_response1_future = std::async(std::launch::async, add_response, add_tasks1_future.get());
   auto add_response2_future = std::async(std::launch::async, add_response, add_tasks2_future.get());
@@ -190,25 +190,26 @@ TEST_F(TimerTest, BEH_MultipleGroupResponse) {
   const uint32_t kMessageCount((RandomUint32() % 100) + 500);
 
   auto add_tasks = [&](int number)->std::map<TaskId, std::string> {
-      std::map<TaskId, std::string> messages;
-      for (int i(0); i != number; ++i) {
-        messages.insert(std::make_pair(
-            timer_.AddTask(std::chrono::seconds(10), pass_response_functor_, kGroupSize_),
-            RandomAlphaNumericString(30)));
-      }
-      return messages;
-    };
+    std::map<TaskId, std::string> messages;
+    for (int i(0); i != number; ++i) {
+      messages.insert(std::make_pair(
+          timer_.AddTask(std::chrono::seconds(10), pass_response_functor_, kGroupSize_),
+          RandomAlphaNumericString(30)));
+    }
+    return messages;
+  }
+  ;
 
   auto add_response = [&](std::map<TaskId, std::string> messages) {
-      for (const auto& message : messages) {
-        for (uint32_t i(0); i != kGroupSize_; ++i)
-          timer_.AddResponse(message.first, message.second);
-      }
-    };
+    for (const auto& message : messages) {
+      for (uint32_t i(0); i != kGroupSize_; ++i)
+        timer_.AddResponse(message.first, message.second);
+    }
+  };
 
   auto add_tasks1_future = std::async(std::launch::async, add_tasks, kMessageCount / 2);
-  auto add_tasks2_future = std::async(std::launch::async, add_tasks,
-                                      kMessageCount / 2 + kMessageCount % 2);
+  auto add_tasks2_future =
+      std::async(std::launch::async, add_tasks, kMessageCount / 2 + kMessageCount % 2);
 
   auto add_response1_future = std::async(std::launch::async, add_response, add_tasks1_future.get());
   auto add_response2_future = std::async(std::launch::async, add_response, add_tasks2_future.get());
@@ -216,20 +217,19 @@ TEST_F(TimerTest, BEH_MultipleGroupResponse) {
   add_response2_future.get();
 
   std::unique_lock<std::mutex> lock(mutex_);
-  EXPECT_TRUE(cond_var_.wait_for(
-      lock, std::chrono::seconds(10),
-      [&] { return pass_response_count_ == kMessageCount * kGroupSize_; }));
+  EXPECT_TRUE(cond_var_.wait_for(lock, std::chrono::seconds(10), [&] {
+    return pass_response_count_ == kMessageCount * kGroupSize_;
+  }));
 }
 
 TEST_F(TimerTest, BEH_CancelTask) {
-  auto task_id(timer_.AddTask(std::chrono::seconds(10), variable_response_functor_,
-                              kGroupSize_));
+  auto task_id(timer_.AddTask(std::chrono::seconds(10), variable_response_functor_, kGroupSize_));
   timer_.AddResponse(task_id, message_);
   timer_.CancelTask(task_id);
   std::unique_lock<std::mutex> lock(mutex_);
-  EXPECT_TRUE(cond_var_.wait_for(
-      lock, std::chrono::milliseconds(200),
-      [&] { return pass_response_count_ + failed_response_count_ == kGroupSize_; }));
+  EXPECT_TRUE(cond_var_.wait_for(lock, std::chrono::milliseconds(200), [&] {
+    return pass_response_count_ + failed_response_count_ == kGroupSize_;
+  }));
   EXPECT_EQ(pass_response_count_, 1);
   EXPECT_EQ(failed_response_count_, kGroupSize_ - 1);
 }
@@ -262,19 +262,19 @@ TEST_F(TimerTest, BEH_VariousResults) {
     uint32_t expected_count(details.expected_success_count + details.expected_failure_count);
     total_expected_functor_calls += expected_count;
     TaskResponseFunctor functor([&messages_details, &functor_calls, i, this](std::string response) {
-        {
-          std::lock_guard<std::mutex> lock(mutex_);
-          auto itr(messages_details.find(i));
-          ASSERT_NE(itr, std::end(messages_details));
-          if (response.empty()) {
-            ++itr->second.failure_count;
-          } else {
-            ASSERT_EQ(itr->second.message, response);
-            ++itr->second.success_count;
-          }
+      {
+        std::lock_guard<std::mutex> lock(mutex_);
+        auto itr(messages_details.find(i));
+        ASSERT_NE(itr, std::end(messages_details));
+        if (response.empty()) {
+          ++itr->second.failure_count;
+        } else {
+          ASSERT_EQ(itr->second.message, response);
+          ++itr->second.success_count;
         }
-        ++functor_calls;
-        cond_var_.notify_one();
+      }
+      ++functor_calls;
+      cond_var_.notify_one();
     });
     details.task_id = timer_.AddTask(details.timeout, functor, expected_count);
     messages_details.insert(std::make_pair(i, details));
@@ -285,7 +285,7 @@ TEST_F(TimerTest, BEH_VariousResults) {
       auto task_id(details.second.task_id);
       auto message(details.second.message);
       asio_service_.service().post([this, task_id, message]() {
-          timer_.AddResponse(task_id, message);
+        timer_.AddResponse(task_id, message);
       });
     }
   }

@@ -17,4 +17,3 @@
     use of the MaidSafe Software.                                                                 */
 
 #include "maidsafe/routing/tools/network_viewer/helpers/qt_push_headers.h"
-

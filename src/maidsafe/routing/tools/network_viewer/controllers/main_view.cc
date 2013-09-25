@@ -33,11 +33,7 @@
 namespace maidsafe {
 
 MainViewController::MainViewController(std::shared_ptr<APIHelper> api_helper, QWidget* parent)
-    : QWidget(parent),
-      view_(),
-      api_helper_(api_helper),
-      main_page_(),
-      last_network_state_id_(-1) {
+    : QWidget(parent), view_(), api_helper_(api_helper), main_page_(), last_network_state_id_(-1) {
   view_.setupUi(this);
   main_page_ = new GraphPage(api_helper_, this);
   view_.dock_->setPage(main_page_);
@@ -81,8 +77,8 @@ void MainViewController::SelectionChanged() {
 }
 
 void MainViewController::FilterChanged(const QString& new_filter) {
-  foreach(QListWidgetItem* item, view_.nodes_->findItems(QString("*"), Qt::MatchWildcard))
-    item->setHidden(!item->data(Qt::UserRole).toString().contains(new_filter));
+  foreach(QListWidgetItem * item, view_.nodes_->findItems(QString("*"), Qt::MatchWildcard))
+  item->setHidden(!item->data(Qt::UserRole).toString().contains(new_filter));
 }
 
 void MainViewController::NewGraphViewRequested(const QString& new_parent_id) {
@@ -99,12 +95,11 @@ void MainViewController::OpenDataViewer() {
 
 void MainViewController::PopulateNodes() {
   std::vector<std::string> node_ids(api_helper_->GetNodesInNetwork(last_network_state_id_));
-//  view_.nodes_->clear();
+  //  view_.nodes_->clear();
   std::vector<int> indices_for_removal;
   for (int i = 0; i < view_.nodes_->count(); ++i) {
-    auto found_itr(std::find(std::begin(node_ids),
-                   std::end(node_ids),
-                   view_.nodes_->item(i)->data(Qt::UserRole).toString().toStdString()));
+    auto found_itr(std::find(std::begin(node_ids), std::end(node_ids),
+                             view_.nodes_->item(i)->data(Qt::UserRole).toString().toStdString()));
     if (found_itr == std::end(node_ids))
       indices_for_removal.push_back(i);
     else
@@ -129,17 +124,15 @@ void MainViewController::CreateGraphController(const QString& new_parent_id, boo
 }
 
 void MainViewController::InitSignals() {
-  connect(api_helper_.get(),        SIGNAL(RequestGraphRefresh(int)),               // NOLINT - Viv
-          this,                     SLOT(RefreshRequested(int)),                    // NOLINT - Viv
+  connect(api_helper_.get(), SIGNAL(RequestGraphRefresh(int)),  // NOLINT - Viv
+          this, SLOT(RefreshRequested(int)),                    // NOLINT - Viv
           Qt::QueuedConnection);
-  connect(view_.nodes_,             SIGNAL(itemSelectionChanged()),
-          this,                     SLOT(SelectionChanged()));
-  connect(view_.filter_,            SIGNAL(textChanged(const QString&)),            // NOLINT - Viv
-          this,                     SLOT(FilterChanged(const QString&)));           // NOLINT - Viv
-  connect(main_page_,               SIGNAL(RequestNewGraphView(const QString&)),    // NOLINT - Viv
-          this,                     SLOT(NewGraphViewRequested(const QString&)));   // NOLINT - Viv
-  connect(view_.open_data_viewer_,  SIGNAL(clicked()),
-          this,                     SLOT(OpenDataViewer()));
+  connect(view_.nodes_, SIGNAL(itemSelectionChanged()), this, SLOT(SelectionChanged()));
+  connect(view_.filter_, SIGNAL(textChanged(const QString&)),       // NOLINT - Viv
+          this, SLOT(FilterChanged(const QString&)));               // NOLINT - Viv
+  connect(main_page_, SIGNAL(RequestNewGraphView(const QString&)),  // NOLINT - Viv
+          this, SLOT(NewGraphViewRequested(const QString&)));       // NOLINT - Viv
+  connect(view_.open_data_viewer_, SIGNAL(clicked()), this, SLOT(OpenDataViewer()));
 }
 
 }  // namespace maidsafe

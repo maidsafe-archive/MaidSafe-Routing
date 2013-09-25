@@ -27,10 +27,7 @@
 namespace maidsafe {
 
 GraphViewController::GraphViewController(std::shared_ptr<APIHelper> api_helper, QWidget* parent)
-    : QWidget(parent),
-      view_(),
-      api_helper_(api_helper),
-      graph_page_() {
+    : QWidget(parent), view_(), api_helper_(api_helper), graph_page_() {
   view_.setupUi(this);
   graph_page_ = new GraphPage(api_helper_, this);
   view_.graph_->setPage(graph_page_);
@@ -41,13 +38,11 @@ void GraphViewController::RenderNode(std::string parent_id, bool is_data_node) {
   graph_page_->RenderGraph(-1, parent_id, is_data_node);
 }
 
-void GraphViewController::closeEvent(QCloseEvent* /*event*/) {
-  deleteLater();
-}
+void GraphViewController::closeEvent(QCloseEvent* /*event*/) { deleteLater(); }
 
 void GraphViewController::InitSignals() {
-  connect(graph_page_,        SIGNAL(RequestNewGraphView(const QString&)),    // NOLINT - Viv
-          this,               SIGNAL(RequestNewGraphView(const QString&)));   // NOLINT - Viv
+  connect(graph_page_, SIGNAL(RequestNewGraphView(const QString&)),  // NOLINT - Viv
+          this, SIGNAL(RequestNewGraphView(const QString&)));        // NOLINT - Viv
 }
 
 }  // namespace maidsafe

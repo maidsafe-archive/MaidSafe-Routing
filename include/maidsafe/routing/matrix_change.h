@@ -19,7 +19,6 @@
 #ifndef MAIDSAFE_ROUTING_MATRIX_CHANGE_H_
 #define MAIDSAFE_ROUTING_MATRIX_CHANGE_H_
 
-
 #include <vector>
 
 #include "maidsafe/common/crypto.h"
@@ -33,8 +32,8 @@ class RoutingTable;
 class GroupMatrix;
 
 namespace test {
-  class MatrixChangeTest_BEH_CheckHolders_Test;
-  class GroupMatrixTest_BEH_EmptyMatrix_Test;
+class MatrixChangeTest_BEH_CheckHolders_Test;
+class GroupMatrixTest_BEH_EmptyMatrix_Test;
 }
 
 enum class GroupRangeStatus {

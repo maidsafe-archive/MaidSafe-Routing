@@ -29,20 +29,21 @@
 #include "maidsafe/routing/service.h"
 #include "maidsafe/routing/timer.h"
 
-
 namespace maidsafe {
 
 namespace routing {
 
-namespace protobuf { class Message; }
+namespace protobuf {
+class Message;
+}
 
 namespace test {
-  class MessageHandlerTest;
-  class MessageHandlerTest_BEH_HandleInvalidMessage_Test;
-  class MessageHandlerTest_BEH_HandleRelay_Test;
-  class MessageHandlerTest_BEH_HandleGroupMessage_Test;
-  class MessageHandlerTest_BEH_HandleNodeLevelMessage_Test;
-  class MessageHandlerTest_BEH_ClientRoutingTable_Test;
+class MessageHandlerTest;
+class MessageHandlerTest_BEH_HandleInvalidMessage_Test;
+class MessageHandlerTest_BEH_HandleRelay_Test;
+class MessageHandlerTest_BEH_HandleGroupMessage_Test;
+class MessageHandlerTest_BEH_HandleNodeLevelMessage_Test;
+class MessageHandlerTest_BEH_ClientRoutingTable_Test;
 }
 
 namespace detail {
@@ -62,7 +63,6 @@ class RemoveFurthestNode;
 class GroupChangeHandler;
 class NetworkStatistics;
 
-
 enum class MessageType : int32_t {
   kPing = 1,
   kConnect = 2,
@@ -78,13 +78,9 @@ enum class MessageType : int32_t {
 
 class MessageHandler {
  public:
-  MessageHandler(RoutingTable& routing_table,
-                 ClientRoutingTable& client_routing_table,
-                 NetworkUtils& network,
-                 Timer<std::string>& timer,
-                 RemoveFurthestNode& remove_node,
-                 GroupChangeHandler& group_change_handler,
-                 NetworkStatistics& network_statistics);
+  MessageHandler(RoutingTable& routing_table, ClientRoutingTable& client_routing_table,
+                 NetworkUtils& network, Timer<std::string>& timer, RemoveFurthestNode& remove_node,
+                 GroupChangeHandler& group_change_handler, NetworkStatistics& network_statistics);
   void HandleMessage(protobuf::Message& message);
   void set_typed_message_and_caching_functor(TypedMessageAndCachingFunctor functors);
   void set_message_and_caching_functor(MessageAndCachingFunctors functors);

@@ -35,4 +35,3 @@ MockNetworkUtils::~MockNetworkUtils() {}
 }  // namespace routing
 
 }  // namespace maidsafe
-

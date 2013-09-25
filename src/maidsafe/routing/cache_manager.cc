@@ -23,7 +23,6 @@
 #include "maidsafe/routing/routing.pb.h"
 #include "maidsafe/routing/utils.h"
 
-
 namespace maidsafe {
 
 namespace routing {
@@ -55,43 +54,42 @@ void CacheManager::HandleGetFromCache(protobuf::Message& message) {
   assert(kNodeId_.string() != message.destination_id());
   if (message_received_functor_) {
     if (IsRequest(message)) {
-      LOG(kVerbose) << " [" << DebugId(kNodeId_) << "] rcvd : "
-                    << MessageTypeString(message) << " from "
-                    << HexSubstr(message.source_id())
-                    << "   (id: " << message.id() << ")  --NodeLevel-- caching";
-      ReplyFunctor response_functor = [=](const std::string& reply_message) {
-          if (reply_message.empty()) {
-            LOG(kVerbose) << "No cache available, passing on the original request";
-            return network_.SendToClosestNode(message);
-          }
+      LOG(kVerbose) << " [" << DebugId(kNodeId_) << "] rcvd : " << MessageTypeString(message)
+                    << " from " << HexSubstr(message.source_id()) << "   (id: " << message.id()
+                    << ")  --NodeLevel-- caching";
+      ReplyFunctor response_functor = [=](const std::string & reply_message) {
+        if (reply_message.empty()) {
+          LOG(kVerbose) << "No cache available, passing on the original request";
+          return network_.SendToClosestNode(message);
+        }
 
-          //  Responding with cached response
-          protobuf::Message message_out;
-          message_out.set_request(false);
-          message_out.set_hops_to_live(Parameters::hops_to_live);
-          message_out.set_destination_id(message.source_id());
-          message_out.set_type(message.type());
-          message_out.set_direct(true);
-          message_out.clear_data();
-          message_out.set_client_node(message.client_node());
-          message_out.set_routing_message(message.routing_message());
-          message_out.add_data(reply_message);
-          message_out.set_last_id(kNodeId_.string());
-          message_out.set_source_id(kNodeId_.string());
-          if (message.has_cacheable())
-            message_out.set_cacheable(message.cacheable());
-          if (message.has_id())
-            message_out.set_id(message.id());
-          else
-            LOG(kInfo) << "Message to be sent back had no ID.";
+        //  Responding with cached response
+        protobuf::Message message_out;
+        message_out.set_request(false);
+        message_out.set_hops_to_live(Parameters::hops_to_live);
+        message_out.set_destination_id(message.source_id());
+        message_out.set_type(message.type());
+        message_out.set_direct(true);
+        message_out.clear_data();
+        message_out.set_client_node(message.client_node());
+        message_out.set_routing_message(message.routing_message());
+        message_out.add_data(reply_message);
+        message_out.set_last_id(kNodeId_.string());
+        message_out.set_source_id(kNodeId_.string());
+        if (message.has_cacheable())
+          message_out.set_cacheable(message.cacheable());
+        if (message.has_id())
+          message_out.set_id(message.id());
+        else
+          LOG(kInfo) << "Message to be sent back had no ID.";
 
-          if (message.has_relay_id())
-            message_out.set_relay_id(message.relay_id());
+        if (message.has_relay_id())
+          message_out.set_relay_id(message.relay_id());
 
-          if (message.has_relay_connection_id()) {
-            message_out.set_relay_connection_id(message.relay_connection_id());
-          }
-          network_.SendToClosestNode(message_out);
+        if (message.has_relay_connection_id()) {
+          message_out.set_relay_connection_id(message.relay_connection_id());
+        }
+        network_.SendToClosestNode(message_out);
       };
 
       if (message_received_functor_)

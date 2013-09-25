@@ -43,7 +43,7 @@ class GraphViewController : public QWidget {
  protected:
   virtual void closeEvent(QCloseEvent* event);
 
- signals:
+signals:
   void RequestNewGraphView(const QString& new_parent_id);
 
  private:

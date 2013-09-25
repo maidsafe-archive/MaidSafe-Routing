@@ -33,7 +33,7 @@ namespace test {
 class MockService : public Service {
  public:
   MockService(RoutingTable& routing_table, ClientRoutingTable& client_routing_table,
-                   NetworkUtils& network_utils);
+              NetworkUtils& network_utils);
   virtual ~MockService();
 
   MOCK_METHOD1(Ping, void(protobuf::Message& message));
@@ -41,7 +41,7 @@ class MockService : public Service {
   MOCK_METHOD1(FindNodes, void(protobuf::Message& message));
 
  private:
-  MockService &operator=(const MockService&);
+  MockService& operator=(const MockService&);
   MockService(const MockService&);
 };
 

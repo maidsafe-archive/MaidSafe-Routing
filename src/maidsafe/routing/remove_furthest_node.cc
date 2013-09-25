@@ -33,12 +33,11 @@ namespace maidsafe {
 namespace routing {
 
 RemoveFurthestNode::RemoveFurthestNode(RoutingTable& routing_table, NetworkUtils& network)
-  : routing_table_(routing_table),
-    network_(network) {}
+    : routing_table_(routing_table), network_(network) {}
 
 void RemoveFurthestNode::RemoveRequest(protobuf::Message& message) {
   LOG(kVerbose) << "[" << HexSubstr(routing_table_.kNodeId().string())
-                << "] Request to drop, id: "  << message.id();
+                << "] Request to drop, id: " << message.id();
   protobuf::RemoveResponse remove_response;
   if (message.destination_id() != routing_table_.kNodeId().string()) {
     // Message not for this node and we should not pass it on.
@@ -59,8 +58,8 @@ void RemoveFurthestNode::RemoveRequest(protobuf::Message& message) {
 }
 
 void RemoveFurthestNode::HandleRemoveRequest(const NodeId& node_id) {
-  LOG(kVerbose) << "[" << HexSubstr(routing_table_.kNodeId().string())
-                << "] drops " << HexSubstr(node_id.string());
+  LOG(kVerbose) << "[" << HexSubstr(routing_table_.kNodeId().string()) << "] drops "
+                << HexSubstr(node_id.string());
   routing_table_.DropNode(node_id, false);
 }
 
@@ -107,8 +106,7 @@ void RemoveFurthestNode::RemoveResponse(protobuf::Message& message) {
     next_node = routing_table_.GetRemovableNode(attempted_nodes);
     if (next_node.node_id != NodeInfo().node_id) {
       attempted_nodes.push_back(remove_response.peer_id());
-      protobuf::Message remove_request(rpcs::Remove(next_node.node_id,
-                                                    routing_table_.kNodeId(),
+      protobuf::Message remove_request(rpcs::Remove(next_node.node_id, routing_table_.kNodeId(),
                                                     routing_table_.kConnectionId(),
                                                     attempted_nodes));
       LOG(kInfo) << "Request to remove " << HexSubstr(remove_request.destination_id())
@@ -125,13 +123,11 @@ void RemoveFurthestNode::RemoveNodeRequest() {
   NodeInfo furthest_node(routing_table_.GetRemovableNode(std::vector<std::string>()));
   if (furthest_node.node_id == NodeInfo().node_id)
     return;
-  protobuf::Message message(rpcs::Remove(furthest_node.node_id,
-                                         routing_table_.kNodeId(),
+  protobuf::Message message(rpcs::Remove(furthest_node.node_id, routing_table_.kNodeId(),
                                          routing_table_.kConnectionId(),
                                          std::vector<std::string>()));
-  LOG(kInfo) << "[" << DebugId(routing_table_.kNodeId())
-             << "] Request to remove " << HexSubstr(message.destination_id())
-             << " is prepared, message id: " << message.id();
+  LOG(kInfo) << "[" << DebugId(routing_table_.kNodeId()) << "] Request to remove "
+             << HexSubstr(message.destination_id()) << " is prepared, message id: " << message.id();
   network_.SendToDirect(message, furthest_node.node_id, furthest_node.connection_id);
 }
 

@@ -33,7 +33,7 @@ namespace test {
 class MockResponseHandler : public ResponseHandler {
  public:
   MockResponseHandler(RoutingTable& routing_table, ClientRoutingTable& client_routing_table,
-                   NetworkUtils& network_utils, GroupChangeHandler &group_change_handler);
+                      NetworkUtils& network_utils, GroupChangeHandler& group_change_handler);
   virtual ~MockResponseHandler();
 
   MOCK_METHOD1(Ping, void(protobuf::Message& message));
@@ -42,7 +42,7 @@ class MockResponseHandler : public ResponseHandler {
   MOCK_METHOD1(ConnectSuccess, void(protobuf::Message& message));
 
  private:
-  MockResponseHandler &operator=(const MockResponseHandler&);
+  MockResponseHandler& operator=(const MockResponseHandler&);
   MockResponseHandler(const MockResponseHandler&);
 };
 

@@ -70,8 +70,7 @@ TEST(NetworkStatisticsTest, BEH_AverageDistance) {
         crypto::BigInt((node_id.ToStringEncoded(NodeId::EncodingType::kHex) + 'h').c_str()));
   }
 
-  crypto::BigInt total(std::accumulate(distances_as_bigint.begin(),
-                                       distances_as_bigint.end(),
+  crypto::BigInt total(std::accumulate(distances_as_bigint.begin(), distances_as_bigint.end(),
                                        crypto::BigInt::Zero()));
 
   for (const auto& node_id : distances_as_node_id)
@@ -79,7 +78,8 @@ TEST(NetworkStatisticsTest, BEH_AverageDistance) {
 
   crypto::BigInt matrix_average_as_bigint(
       (network_statistics.network_distance_data_.average_distance.ToStringEncoded(
-          NodeId::EncodingType::kHex) + 'h').c_str());
+           NodeId::EncodingType::kHex) +
+       'h').c_str());
 
   EXPECT_EQ(total / kCount, matrix_average_as_bigint);
 }
@@ -91,8 +91,7 @@ TEST(NetworkStatisticsTest, BEH_IsIdInGroupRange) {
   std::vector<NodeId> nodes_id;
   NodeInfo node_info;
   NodeId my_node(routing_table.kNodeId());
-  while (static_cast<uint16_t>(routing_table.size()) <
-             Parameters::max_routing_table_size) {
+  while (static_cast<uint16_t>(routing_table.size()) < Parameters::max_routing_table_size) {
     NodeInfo node(MakeNode());
     nodes_id.push_back(node.node_id);
     routing_table.group_matrix_.unique_nodes_.push_back(node);
@@ -100,12 +99,10 @@ TEST(NetworkStatisticsTest, BEH_IsIdInGroupRange) {
   }
 
   NodeId info_id(NodeId::kRandomId);
-  std::partial_sort(nodes_id.begin(),
-                   nodes_id.begin() + Parameters::node_group_size + 1,
-                   nodes_id.end(),
-                   [&](const NodeId& lhs, const NodeId& rhs) {
-                     return NodeId::CloserToTarget(lhs, rhs, info_id);
-                   });
+  std::partial_sort(nodes_id.begin(), nodes_id.begin() + Parameters::node_group_size + 1,
+                    nodes_id.end(), [&](const NodeId & lhs, const NodeId & rhs) {
+    return NodeId::CloserToTarget(lhs, rhs, info_id);
+  });
   uint16_t index(0);
   while (index < Parameters::max_routing_table_size) {
     if ((nodes_id.at(index) ^ info_id) <= (network_statistics.distance_))
@@ -115,9 +112,6 @@ TEST(NetworkStatisticsTest, BEH_IsIdInGroupRange) {
   }
 }
 
-
 }  // namespace test
 }  // namespace routing
 }  // namespace maidsafe
-
-

@@ -19,7 +19,6 @@
 #ifndef MAIDSAFE_ROUTING_RETURN_CODES_H_
 #define MAIDSAFE_ROUTING_RETURN_CODES_H_
 
-
 namespace maidsafe {
 
 namespace routing {

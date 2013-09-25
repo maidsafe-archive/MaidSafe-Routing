@@ -34,13 +34,12 @@ namespace maidsafe {
 namespace routing {
 
 namespace test {
-  class GenericNode;
-  class NetworkStatisticsTest_BEH_IsIdInGroupRange_Test;
-  class GroupMatrixTest_BEH_Prune_Test;
+class GenericNode;
+class NetworkStatisticsTest_BEH_IsIdInGroupRange_Test;
+class GroupMatrixTest_BEH_Prune_Test;
 }
 
 class RoutingTable;
-
 
 struct NodeInfo;
 
@@ -61,21 +60,19 @@ class GroupMatrix {
   // Returns the peer which has node closest to target_id in its row (1st occurrence).
   void GetBetterNodeForSendingMessage(const NodeId& target_node_id,
                                       const std::vector<std::string>& exclude,
-                                      bool ignore_exact_match,
-                                      NodeInfo& current_closest_peer);
-  void GetBetterNodeForSendingMessage(const NodeId& target_node_id,
-                                      bool ignore_exact_match,
+                                      bool ignore_exact_match, NodeInfo& current_closest_peer);
+  void GetBetterNodeForSendingMessage(const NodeId& target_node_id, bool ignore_exact_match,
                                       NodeId& current_closest_peer_id);
   std::vector<NodeInfo> GetAllConnectedPeersFor(const NodeId& target_id);
   bool IsThisNodeGroupLeader(const NodeId& target_id, NodeId& connected_peer);
 
   bool ClosestToId(const NodeId& target_id);
-//  bool IsNodeIdInGroupRange(const NodeId& group_id, const NodeId& node_id);
+  //  bool IsNodeIdInGroupRange(const NodeId& group_id, const NodeId& node_id);
   GroupRangeStatus IsNodeIdInGroupRange(const NodeId& group_id, const NodeId& node_id) const;
   // Updates group matrix if peer is present in 1st column of matrix
   std::shared_ptr<MatrixChange> UpdateFromConnectedPeer(const NodeId& peer,
-                                       const std::vector<NodeInfo>& nodes,
-                                       const std::vector<NodeId>& old_unique_ids);
+                                                        const std::vector<NodeInfo>& nodes,
+                                                        const std::vector<NodeId>& old_unique_ids);
   bool IsRowEmpty(const NodeInfo& node_info);
   bool GetRow(const NodeId& row_id, std::vector<NodeInfo>& row_entries);
   std::vector<NodeInfo> GetUniqueNodes() const;
@@ -93,7 +90,7 @@ class GroupMatrix {
   GroupMatrix& operator=(const GroupMatrix&);
   void UpdateUniqueNodeList();
   void PartialSortFromTarget(const NodeId& target, const uint16_t& number,
-                             std::vector<NodeInfo> &nodes);
+                             std::vector<NodeInfo>& nodes);
   void PrintGroupMatrix();
 
   const NodeId& kNodeId_;

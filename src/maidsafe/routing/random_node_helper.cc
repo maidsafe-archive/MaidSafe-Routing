@@ -20,7 +20,6 @@
 
 #include "maidsafe/common/utils.h"
 
-
 namespace maidsafe {
 
 namespace routing {

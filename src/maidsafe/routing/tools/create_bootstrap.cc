@@ -17,14 +17,14 @@
     use of the MaidSafe Software.                                                                 */
 
 #if defined MAIDSAFE_WIN32
-#  include <windows.h>
+#include <windows.h>
 #else
-#  include <unistd.h>
-#  if defined MAIDSAFE_LINUX
-#    include <termio.h>
-#  elif defined MAIDSAFE_APPLE
-#    include <termios.h>
-#  endif
+#include <unistd.h>
+#if defined MAIDSAFE_LINUX
+#include <termio.h>
+#elif defined MAIDSAFE_APPLE
+#include <termios.h>
+#endif
 #endif
 
 #include <cstdint>
@@ -41,7 +41,6 @@
 #include "maidsafe/common/rsa.h"
 #include "maidsafe/routing/routing.pb.h"
 
-
 namespace fs = boost::filesystem;
 
 typedef std::pair<int, std::string> Endpoint;
@@ -51,7 +50,6 @@ static std::vector<Endpoint> endpoints;
 
 template <class T>
 T Get(std::string display_message, bool echo_input = true);
-
 
 void Echo(bool enable = true) {
 #ifdef WIN32
@@ -73,7 +71,7 @@ void Echo(bool enable = true) {
   else
     tty.c_lflag |= ECHO;
 
-  (void) tcsetattr(STDIN_FILENO, TCSANOW, &tty);
+  (void)tcsetattr(STDIN_FILENO, TCSANOW, &tty);
 #endif
 }
 
@@ -85,8 +83,8 @@ void AddEndPoint() {
 void ListEndPoints() {
   int count = 1;
   for (auto i = endpoints.begin(); endpoints.end() != i; ++i, ++count) {
-    std::cout << " ID: " <<  count << " IP Address : " << (*i).second << " Port : "
-      << (*i).first << "\n";
+    std::cout << " ID: " << count << " IP Address : " << (*i).second << " Port : " << (*i).first
+              << "\n";
   }
 }
 
@@ -115,9 +113,9 @@ void ReadFile() {
   endpoints.clear();
   endpoints.reserve(protobuf_bootstrap.bootstrap_contacts().size());
   for (int i = 0; i < protobuf_bootstrap.bootstrap_contacts().size(); ++i) {
-    endpoints.push_back(std::make_pair(static_cast<int>(
-          protobuf_bootstrap.bootstrap_contacts(i).port()),
-        protobuf_bootstrap.bootstrap_contacts(i).ip()));
+    endpoints.push_back(
+        std::make_pair(static_cast<int>(protobuf_bootstrap.bootstrap_contacts(i).port()),
+                       protobuf_bootstrap.bootstrap_contacts(i).ip()));
   }
 }
 
@@ -145,11 +143,10 @@ void WriteFile() {
   return;
 }
 
-void exit() {
-  exit(0);
-}
+void exit() { exit(0); }
 
-void Help() { std::cout << "\t\tmaidsafe bootstrap create tool \n"
+void Help() {
+  std::cout << "\t\tmaidsafe bootstrap create tool \n"
             << "_________________________________________________________________\n"
             << "1:  add_endpoint   \t \t Add an endpoint                 \n"
             << "2:  list endpoints \t\t list endpoints                  \n"
@@ -162,34 +159,34 @@ void Help() { std::cout << "\t\tmaidsafe bootstrap create tool \n"
 
 void Process(int command) {
   switch (command) {
-  case 0:
-    exit();
-    break;
-  case 1:
-    AddEndPoint();
-    break;
-  case 2:
-    ListEndPoints();
-    break;
-  case 3:
-    DeleteEndPoint();
-    break;
-  case 4:
-    WriteFile();
-    break;
-  case 5:
-    ReadFile();
-    break;
-  default :
-    std::cout << "unknown option \n";
-    std::cout << prompt << std::flush;
-    Help();
+    case 0:
+      exit();
+      break;
+    case 1:
+      AddEndPoint();
+      break;
+    case 2:
+      ListEndPoints();
+      break;
+    case 3:
+      DeleteEndPoint();
+      break;
+    case 4:
+      WriteFile();
+      break;
+    case 5:
+      ReadFile();
+      break;
+    default:
+      std::cout << "unknown option \n";
+      std::cout << prompt << std::flush;
+      Help();
   }
 }
 
 #if defined MAIDSAFE_WIN32
-#  pragma warning(push)
-#  pragma warning(disable: 4701)
+#pragma warning(push)
+#pragma warning(disable : 4701)
 #endif
 template <class T>
 T Get(std::string display_message, bool echo_input) {
@@ -212,15 +209,15 @@ T Get(std::string display_message, bool echo_input) {
   return command;
 }
 #if defined MAIDSAFE_WIN32
-#  pragma warning(pop)
+#pragma warning(pop)
 #endif
 
 int main() {
   for (;;) {
-  Echo(true);
+    Echo(true);
     std::cout << "_________________________________________________________________\n";
     Help();
     Process(Get<int>("", true));
-    std::cout <<"_________________________________________________________________\n";
+    std::cout << "_________________________________________________________________\n";
   }
 }

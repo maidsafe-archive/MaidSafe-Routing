@@ -34,13 +34,10 @@ APIHelper::APIHelper(QObject* parent) : QObject(parent) {
   network_viewer::Run(std::chrono::milliseconds(1000));
 }
 
-APIHelper::~APIHelper() {
-  network_viewer::Stop();
-}
+APIHelper::~APIHelper() { network_viewer::Stop(); }
 
 std::vector<std::string> APIHelper::GetNodesInNetwork(int state_id) const {
-  qDebug() << QString("APIHelper::GetNodesInNetwork for State: %1")
-                  .arg(QString::number(state_id));
+  qDebug() << QString("APIHelper::GetNodesInNetwork for State: %1").arg(QString::number(state_id));
   return network_viewer::GetNodesInNetwork(state_id);
 }
 

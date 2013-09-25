@@ -25,8 +25,7 @@
 #include "maidsafe/routing/tools/network_viewer/helpers/application.h"
 #include "maidsafe/routing/tools/network_viewer/models/api_helper.h"
 
-
-int main(int argc, char *argv[]) {
+int main(int argc, char* argv[]) {
   maidsafe::log::Logging::Instance().Initialise(argc, argv);
 
   maidsafe::Application application(argc, argv);
@@ -45,10 +44,12 @@ int main(int argc, char *argv[]) {
     int result = application.exec();
     LOG(kInfo) << "App exiting with result " << result;
     return result;
-  } catch(const std::exception &ex) {
+  }
+  catch (const std::exception& ex) {
     LOG(kError) << "STD Exception Caught: " << ex.what();
     return -1;
-  } catch(...) {
+  }
+  catch (...) {
     LOG(kError) << "Default Exception Caught";
     return -1;
   }

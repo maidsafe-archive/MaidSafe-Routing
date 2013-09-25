@@ -19,12 +19,12 @@
 #include "maidsafe/common/test.h"
 #include "maidsafe/routing/tests/routing_network.h"
 
-int main(int argc, char **argv) {
-//  testing::InitGoogleTest(&argc, argv);
+int main(int argc, char** argv) {
+  //  testing::InitGoogleTest(&argc, argv);
   testing::AddGlobalTestEnvironment(new maidsafe::routing::test::NodesEnvironment(
       maidsafe::routing::test::kServerSize, maidsafe::routing::test::kClientSize,
       static_cast<size_t>(maidsafe::routing::test::kServerSize * 0.25),
       static_cast<size_t>(maidsafe::routing::test::kClientSize / 2)));
-//  return RUN_ALL_TESTS();
+  //  return RUN_ALL_TESTS();
   return maidsafe::test::ExecuteMain(argc, argv);
 }

@@ -31,9 +31,7 @@ namespace test {
 
 template <typename T>
 typename std::vector<T>::const_iterator Find(const T& t, const std::vector<T>& v) {
-  return std::find_if(v.begin(), v.end(), [&t] (const T& element) {
-                                              return element == t;
-                                            });
+  return std::find_if(v.begin(), v.end(), [&t](const T & element) { return element == t; });
 }
 
 class RoutingChurnTest : public GenericNetwork, public testing::Test {
@@ -44,7 +42,6 @@ class RoutingChurnTest : public GenericNetwork, public testing::Test {
 
   virtual void TearDown() override { Sleep(std::chrono::microseconds(100)); }
 };
-
 
 TEST_F(RoutingChurnTest, FUNC_BasicNetworkChurn) {
   size_t random(RandomUint32());
@@ -63,9 +60,8 @@ TEST_F(RoutingChurnTest, FUNC_BasicNetworkChurn) {
   for (int n(1); n < 51; ++n) {
     if (n % 2 == 0) {
       NodeId new_node(NodeId::kRandomId);
-      while (std::find_if(existing_vault_node_ids.begin(),
-                          existing_vault_node_ids.end(),
-                          [&new_node] (const NodeId& element) { return element == new_node; }) !=
+      while (std::find_if(existing_vault_node_ids.begin(), existing_vault_node_ids.end(),
+                          [&new_node](const NodeId & element) { return element == new_node; }) !=
              existing_vault_node_ids.end()) {
         new_node = NodeId(NodeId::kRandomId);
       }
@@ -109,71 +105,56 @@ TEST_F(RoutingChurnTest, FUNC_MessagingNetworkChurn) {
   // Start thread for messaging between clients and clients to groups
   std::string message(RandomString(4096));
   volatile bool run(true);
-  auto messaging_handle = std::async(std::launch::async,
-                                     [=, &run] {
-                                       LOG(kInfo) << "Before messaging loop";
-                                       while (run) {
-                                         GenericNetwork::NodePtr sender_client(
-                                            this->RandomClientNode());
-                                         GenericNetwork::NodePtr receiver_client(
-                                            this->RandomClientNode());
-                                         GenericNetwork::NodePtr vault_node(
-                                            this->RandomVaultNode());
-                                         // Choose random client nodes for direct message
-                                         // TODO(Alison) - use result?
-                                         sender_client->SendDirect(receiver_client->node_id(),
-                                                                   message,
-                                                                   false,
-                                                                   [](std::string /*str*/) {});
-                                         // Choose random client for group message to random env
-                                         // TODO(Alison) - use result?
-                                         sender_client->SendGroup(NodeId(NodeId::kRandomId),
-                                                                  message,
-                                                                  false,
-                                                                  [](std::string /*str*/) {});
-                                         // Choose random vault for group message to random env
-                                         // TODO(Alison) - use result?
-                                         vault_node->SendGroup(NodeId(NodeId::kRandomId),
-                                                               message,
-                                                               false,
-                                                               [](std::string /*str*/) {});
-                                         // Wait before going again
-                                         Sleep(std::chrono::milliseconds(900 +
-                                                                               RandomUint32() %
-                                                                               200));
-                                         LOG(kInfo) << "Ran messaging iteration";
-                                       }
-                                       LOG(kInfo) << "After messaging loop";
-                                     });
+  auto messaging_handle = std::async(std::launch::async, [=, &run] {
+    LOG(kInfo) << "Before messaging loop";
+    while (run) {
+      GenericNetwork::NodePtr sender_client(this->RandomClientNode());
+      GenericNetwork::NodePtr receiver_client(this->RandomClientNode());
+      GenericNetwork::NodePtr vault_node(this->RandomVaultNode());
+      // Choose random client nodes for direct message
+      // TODO(Alison) - use result?
+      sender_client->SendDirect(receiver_client->node_id(), message, false,
+                                [](std::string /*str*/) {});
+      // Choose random client for group message to random env
+      // TODO(Alison) - use result?
+      sender_client->SendGroup(NodeId(NodeId::kRandomId), message, false,
+                               [](std::string /*str*/) {});
+      // Choose random vault for group message to random env
+      // TODO(Alison) - use result?
+      vault_node->SendGroup(NodeId(NodeId::kRandomId), message, false, [](std::string /*str*/) {});
+      // Wait before going again
+      Sleep(std::chrono::milliseconds(900 + RandomUint32() % 200));
+      LOG(kInfo) << "Ran messaging iteration";
+    }
+    LOG(kInfo) << "After messaging loop";
+  });
   LOG(kInfo) << "Started messaging thread\n\n\n\n";
 
   // Start thread to bring down nodes
-  auto down_handle = std::async(std::launch::async,
-                                [=, &run, &down_count, &downed] {
-                                  while (run && downed < down_count) {
-//                                    if (RandomUint32() % 5 == 0)
-//                                      this->RemoveRandomClient();
-//                                    else
-                                      this->RemoveRandomVault();
-                                      ++downed;
-                                    Sleep(std::chrono::seconds(10));
-                                  }
-                                });
+  auto down_handle = std::async(std::launch::async, [=, &run, &down_count, &downed] {
+    while (run && downed < down_count) {
+      //                                    if (RandomUint32() % 5 == 0)
+      //                                      this->RemoveRandomClient();
+      //                                    else
+      this->RemoveRandomVault();
+      ++downed;
+      Sleep(std::chrono::seconds(10));
+    }
+  });
 
   // Start thread to bring up nodes
-  auto up_handle = std::async(std::launch::async,
-                              [=, &run, &new_node_ids] {
-                                while (run) {
-                                  if (new_node_ids.empty())
-                                    return;
-//                                  if (RandomUint32() % 5 == 0)
-//                                    this->AddNode(true, new_node_ids.back());
-//                                  else
-                                    this->AddNode(false, new_node_ids.back());
-                                  new_node_ids.pop_back();
-                                  Sleep(std::chrono::seconds(3));
-                                }
-                              });
+  auto up_handle = std::async(std::launch::async, [=, &run, &new_node_ids] {
+    while (run) {
+      if (new_node_ids.empty())
+        return;
+      //                                  if (RandomUint32() % 5 == 0)
+      //                                    this->AddNode(true, new_node_ids.back());
+      //                                  else
+      this->AddNode(false, new_node_ids.back());
+      new_node_ids.pop_back();
+      Sleep(std::chrono::seconds(3));
+    }
+  });
 
   // Let stuff run for a while
   down_handle.get();

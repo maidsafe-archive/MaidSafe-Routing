@@ -28,7 +28,6 @@
 
 #include "maidsafe/rudp/nat_type.h"
 
-
 namespace maidsafe {
 
 namespace routing {

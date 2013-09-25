@@ -73,9 +73,7 @@ class ClientRoutingTableTest : public BasicClientRoutingTableTest {
     return sought_id;
   }
 
-  void ScrambleNodesOrder() {
-    SortFromTarget(NodeId(NodeId::kRandomId), nodes_);
-  }
+  void ScrambleNodesOrder() { SortFromTarget(NodeId(NodeId::kRandomId), nodes_); }
 
   void PopulateClientRoutingTable(ClientRoutingTable& client_routing_table) {
     for (auto& node : nodes_)
@@ -121,8 +119,7 @@ TEST_F(ClientRoutingTableTest, FUNC_CheckAddSurplusNodes) {
   }
 
   for (int i(Parameters::max_client_routing_table_size);
-       i < 2 * Parameters::max_client_routing_table_size;
-       ++i) {
+       i < 2 * Parameters::max_client_routing_table_size; ++i) {
     EXPECT_FALSE(client_routing_table.CheckNode(nodes_.at(i), furthest_close_node_.node_id));
     EXPECT_FALSE(client_routing_table.AddNode(nodes_.at(i), furthest_close_node_.node_id));
   }
@@ -251,8 +248,8 @@ TEST_F(ClientRoutingTableTest, FUNC_DropConnection) {
   ScrambleNodesOrder();
 
   while (!nodes_.empty()) {
-    NodeInfo dropped_node(client_routing_table.DropConnection(nodes_.at(nodes_.size() - 1).
-                                                           connection_id));
+    NodeInfo dropped_node(
+        client_routing_table.DropConnection(nodes_.at(nodes_.size() - 1).connection_id));
     EXPECT_EQ(nodes_.at(nodes_.size() - 1).node_id, dropped_node.node_id);
     EXPECT_EQ(nodes_.at(nodes_.size() - 1).connection_id, dropped_node.connection_id);
 
@@ -306,8 +303,7 @@ TEST_F(ClientRoutingTableTest, FUNC_IsConnected) {
     EXPECT_TRUE(client_routing_table.Contains(nodes_.at(i).node_id));
 
   for (int i(Parameters::max_client_routing_table_size);
-       i < 2 * Parameters::max_client_routing_table_size;
-       ++i)
+       i < 2 * Parameters::max_client_routing_table_size; ++i)
     EXPECT_FALSE(client_routing_table.Contains(nodes_.at(i).node_id));
 }
 
@@ -324,10 +320,10 @@ TEST_F(BasicClientRoutingTableTest, BEH_IsThisNodeInRange) {
   NodeInfo furthest_close_node_id(nodes.at(50));
   for (int i(0); i < 50; ++i)
     EXPECT_TRUE(client_routing_table.IsThisNodeInRange(nodes.at(i).node_id,
-                                                    furthest_close_node_id.node_id));
+                                                       furthest_close_node_id.node_id));
   for (int i(51); i < 101; ++i)
     EXPECT_FALSE(client_routing_table.IsThisNodeInRange(nodes.at(i).node_id,
-                                                     furthest_close_node_id.node_id));
+                                                        furthest_close_node_id.node_id));
 }
 
 }  // namespace test

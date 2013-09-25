@@ -33,7 +33,6 @@
 #include "maidsafe/routing/tests/test_utils.h"
 #include "maidsafe/routing/utils.h"
 
-
 namespace bptime = boost::posix_time;
 
 namespace maidsafe {
@@ -46,17 +45,16 @@ typedef std::shared_ptr<GenericNode> DemoNodePtr;
 
 class Commands {
  public:
-  explicit Commands(DemoNodePtr demo_node,
-                    std::vector<maidsafe::passport::Pmid> all_pmids,
+  explicit Commands(DemoNodePtr demo_node, std::vector<maidsafe::passport::Pmid> all_pmids,
                     int identity_index);
   void Run();
-  void GetPeer(const std::string &peer);
+  void GetPeer(const std::string& peer);
 
  private:
   typedef std::vector<std::string> Arguments;
 
   void PrintUsage();
-  void ProcessCommand(const std::string &cmdline);
+  void ProcessCommand(const std::string& cmdline);
   void MarkResultArrived();
   bool ResultArrived() { return result_arrived_; }
 
@@ -67,18 +65,16 @@ class Commands {
   void SendMessages(const int& identity_index, const DestinationType& destination_type,
                     bool is_routing_req, int messages_count);
 
-  NodeId CalculateClosests(const NodeId& target_id,
-                           std::vector<NodeId>& closests,
+  NodeId CalculateClosests(const NodeId& target_id, std::vector<NodeId>& closests,
                            uint16_t num_of_closests);
   uint16_t MakeMessage(const int& id_index, const DestinationType& destination_type,
-                       std::vector<NodeId> &closest_nodes, NodeId& dest_id);
+                       std::vector<NodeId>& closest_nodes, NodeId& dest_id);
 
-  void CalculateTimeToSleep(std::chrono::milliseconds &msg_sent_time);
+  void CalculateTimeToSleep(std::chrono::milliseconds& msg_sent_time);
 
-  void SendAMessage(std::atomic<int> &successful_count, int &operation_count,
-                    std::mutex &mutex, std::condition_variable &cond_var,
-                    int messages_count, uint16_t expect_respondent,
-                    std::vector<NodeId> closest_nodes, NodeId dest_id,
+  void SendAMessage(std::atomic<int>& successful_count, int& operation_count, std::mutex& mutex,
+                    std::condition_variable& cond_var, int messages_count,
+                    uint16_t expect_respondent, std::vector<NodeId> closest_nodes, NodeId dest_id,
                     std::string data);
 
   std::shared_ptr<GenericNode> demo_node_;

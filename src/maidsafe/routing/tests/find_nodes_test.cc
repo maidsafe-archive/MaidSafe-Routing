@@ -98,8 +98,7 @@ TEST_F(FindNodeNetwork, FUNC_FindNodeAfterDrop) {
 
 TEST_F(FindNodeNetwork, FUNC_VaultFindVaultNode) {
   this->SetUpNetwork(kServerSize, kClientSize);
-  size_t source(this->RandomVaultIndex()),
-         dest(this->ClientIndex());
+  size_t source(this->RandomVaultIndex()), dest(this->ClientIndex());
 
   this->AddNode(false, GenerateUniqueRandomId(this->nodes_[source]->node_id(), 20));
   EXPECT_FALSE(this->nodes_.at(dest)->IsClient());
@@ -116,8 +115,7 @@ TEST_F(FindNodeNetwork, FUNC_VaultFindVaultNode) {
 
 TEST_F(FindNodeNetwork, FUNC_VaultFindClientNode) {
   this->SetUpNetwork(kServerSize, kClientSize);
-  size_t source(this->RandomVaultIndex()),
-         dest(this->nodes_.size());
+  size_t source(this->RandomVaultIndex()), dest(this->nodes_.size());
 
   // Add one client node
   this->AddNode(true, GenerateUniqueRandomId(this->nodes_[source]->node_id(), 20));
@@ -167,9 +165,7 @@ TEST_F(FindNodeNetwork, FUNC_ClientFindVaultNode) {
 
 TEST_F(FindNodeNetwork, FUNC_ClientFindClientNode) {
   this->SetUpNetwork(kServerSize, kClientSize);
-  size_t source(this->RandomVaultIndex()),
-         client1(this->nodes_.size()),
-         client2(client1 + 1);
+  size_t source(this->RandomVaultIndex()), client1(this->nodes_.size()), client2(client1 + 1);
 
   // Add two client nodes
   this->AddNode(true, GenerateUniqueRandomId(this->nodes_[source]->node_id(), 8));

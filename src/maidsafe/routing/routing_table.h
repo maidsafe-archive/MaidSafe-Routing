@@ -40,7 +40,6 @@
 #include "maidsafe/routing/network_statistics.h"
 #include "maidsafe/routing/parameters.h"
 
-
 namespace maidsafe {
 
 namespace routing {
@@ -48,23 +47,23 @@ namespace routing {
 class GroupChangeHandler;
 
 namespace test {
-  class GenericNode;
-  class RoutingTableTest;
-  class RoutingTableTest_FUNC_OrderedGroupChange_Test;
-  class RoutingTableTest_FUNC_ReverseOrderedGroupChange_Test;
-  class RoutingTableTest_BEH_CheckMockSendGroupChangeRpcs_Test;
-  class RoutingTableTest_BEH_GroupUpdateFromConnectedPeer_Test;
-  class NetworkStatisticsTest_BEH_IsIdInGroupRange_Test;
-  class RoutingTableTest_FUNC_IsNodeIdInGroupRange_Test;
+class GenericNode;
+class RoutingTableTest;
+class RoutingTableTest_FUNC_OrderedGroupChange_Test;
+class RoutingTableTest_FUNC_ReverseOrderedGroupChange_Test;
+class RoutingTableTest_BEH_CheckMockSendGroupChangeRpcs_Test;
+class RoutingTableTest_BEH_GroupUpdateFromConnectedPeer_Test;
+class NetworkStatisticsTest_BEH_IsIdInGroupRange_Test;
+class RoutingTableTest_FUNC_IsNodeIdInGroupRange_Test;
 }
 
-namespace protobuf { class Contact; }
+namespace protobuf {
+class Contact;
+}
 
 struct NodeInfo;
 
-typedef std::function<void(std::vector<NodeInfo> /*new_group*/)>
-    ConnectedGroupChangeFunctor;
-
+typedef std::function<void(std::vector<NodeInfo> /*new_group*/)> ConnectedGroupChangeFunctor;
 
 class RoutingTable {
  public:
@@ -79,15 +78,14 @@ class RoutingTable {
                           MatrixChangedFunctor matrix_change_functor);
   bool AddNode(const NodeInfo& peer);
   bool CheckNode(const NodeInfo& peer);
-  NodeInfo DropNode(const NodeId &node_to_drop, bool routing_only);
+  NodeInfo DropNode(const NodeId& node_to_drop, bool routing_only);
   bool ClosestToId(const NodeId& target_id);
 
   GroupRangeStatus IsNodeIdInGroupRange(const NodeId& group_id) const;
   GroupRangeStatus IsNodeIdInGroupRange(const NodeId& group_id, const NodeId& node_id) const;
 
   bool IsThisNodeGroupLeader(const NodeId& target_id, NodeInfo& connected_peer);
-  bool IsThisNodeGroupLeader(const NodeId& target_id,
-                             NodeInfo& connected_peer,
+  bool IsThisNodeGroupLeader(const NodeId& target_id, NodeInfo& connected_peer,
                              const std::vector<std::string>& exclude);
   bool GetNodeInfo(const NodeId& node_id, NodeInfo& node_info) const;
   bool IsThisNodeInRange(const NodeId& target_id, uint16_t range);
@@ -101,10 +99,9 @@ class RoutingTable {
   bool IsConnected(const NodeId& node_id);
   // Returns default-constructed NodeId if routing table size is zero
   NodeInfo GetClosestNode(const NodeId& target_id, bool ignore_exact_match = false);
-  NodeInfo GetClosestNode(const NodeId& target_id,
-                          const std::vector<std::string>& exclude,
+  NodeInfo GetClosestNode(const NodeId& target_id, const std::vector<std::string>& exclude,
                           bool ignore_exact_match = false);
-//  NodeInfo GetNodeForSendingMessage(const NodeId& target_id, bool ignore_exact_match = false);
+  //  NodeInfo GetNodeForSendingMessage(const NodeId& target_id, bool ignore_exact_match = false);
   NodeInfo GetNodeForSendingMessage(const NodeId& target_id,
                                     const std::vector<std::string>& exclude,
                                     bool ignore_exact_match = false);
@@ -139,31 +136,24 @@ class RoutingTable {
   bool AddOrCheckNode(NodeInfo node, bool remove);
   void SetBucketIndex(NodeInfo& node_info) const;
   bool CheckPublicKeyIsUnique(const NodeInfo& node, std::unique_lock<std::mutex>& lock) const;
-  NodeInfo ResolveConnectionDuplication(const NodeInfo& new_duplicate_node,
-                                        bool local_endpoint,
+  NodeInfo ResolveConnectionDuplication(const NodeInfo& new_duplicate_node, bool local_endpoint,
                                         NodeInfo& existing_node);
   std::shared_ptr<MatrixChange> UpdateCloseNodeChange(std::unique_lock<std::mutex>& lock,
                                                       const NodeInfo& peer,
                                                       std::vector<NodeInfo>& new_connected_nodes);
-  bool MakeSpaceForNodeToBeAdded(const NodeInfo& node,
-                                 bool remove,
-                                 NodeInfo& removed_node,
+  bool MakeSpaceForNodeToBeAdded(const NodeInfo& node, bool remove, NodeInfo& removed_node,
                                  std::unique_lock<std::mutex>& lock);
-  uint16_t PartialSortFromTarget(const NodeId& target,
-                                 uint16_t number,
+  uint16_t PartialSortFromTarget(const NodeId& target, uint16_t number,
                                  std::unique_lock<std::mutex>& lock);
-  void NthElementSortFromTarget(const NodeId& target,
-                                uint16_t nth_element,
+  void NthElementSortFromTarget(const NodeId& target, uint16_t nth_element,
                                 std::unique_lock<std::mutex>& lock);
   NodeId FurthestCloseNode();
-  std::vector<NodeInfo> GetClosestNodeInfo(const NodeId& target_id,
-                                           uint16_t number_to_get,
+  std::vector<NodeInfo> GetClosestNodeInfo(const NodeId& target_id, uint16_t number_to_get,
                                            bool ignore_exact_match = false);
   std::pair<bool, std::vector<NodeInfo>::iterator> Find(const NodeId& node_id,
                                                         std::unique_lock<std::mutex>& lock);
   std::pair<bool, std::vector<NodeInfo>::const_iterator> Find(
-      const NodeId& node_id,
-      std::unique_lock<std::mutex>& lock) const;
+      const NodeId& node_id, std::unique_lock<std::mutex>& lock) const;
   void UpdateNetworkStatus(uint16_t size) const;
 
   void IpcSendGroupMatrix() const;

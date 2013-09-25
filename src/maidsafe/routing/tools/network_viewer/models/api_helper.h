@@ -30,7 +30,9 @@
 
 namespace maidsafe {
 
-namespace network_viewer { struct ViewableNode; }
+namespace network_viewer {
+struct ViewableNode;
+}
 
 class APIHelper : public QObject {
   Q_OBJECT
@@ -44,7 +46,7 @@ class APIHelper : public QObject {
   void NetworkUpdated(int state_id);
   QString GetShortNodeId(std::string node_id) const;
 
- signals:
+signals:
   void RequestGraphRefresh(int state_id);
 
  private:

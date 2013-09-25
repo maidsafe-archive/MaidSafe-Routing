@@ -44,21 +44,21 @@ TEST(RoutingTableTest, BEH_AddCloseNodes) {
   RoutingTable routing_table(false, node_id, asymm::GenerateKeyPair(), network_statistics);
   NodeInfo node;
   // check the node is useful when false is set
-  for (unsigned int i = 0; i < Parameters::closest_nodes_size ; ++i) {
-     node.node_id = NodeId(RandomString(64));
-     EXPECT_TRUE(routing_table.CheckNode(node));
+  for (unsigned int i = 0; i < Parameters::closest_nodes_size; ++i) {
+    node.node_id = NodeId(RandomString(64));
+    EXPECT_TRUE(routing_table.CheckNode(node));
   }
   EXPECT_EQ(routing_table.size(), 0);
   asymm::PublicKey dummy_key;
   // check we cannot input nodes with invalid public_keys
-  for (uint16_t i = 0; i < Parameters::closest_nodes_size ; ++i) {
-     NodeInfo node(MakeNode());
-     node.public_key = dummy_key;
-     EXPECT_FALSE(routing_table.AddNode(node));
+  for (uint16_t i = 0; i < Parameters::closest_nodes_size; ++i) {
+    NodeInfo node(MakeNode());
+    node.public_key = dummy_key;
+    EXPECT_FALSE(routing_table.AddNode(node));
   }
   EXPECT_EQ(0, routing_table.size());
   // everything should be set to go now
-  for (uint16_t i = 0; i < Parameters::closest_nodes_size ; ++i) {
+  for (uint16_t i = 0; i < Parameters::closest_nodes_size; ++i) {
     node = MakeNode();
     EXPECT_TRUE(routing_table.AddNode(node));
   }
@@ -98,26 +98,22 @@ TEST(RoutingTableTest, BEH_PopulateAndDepopulateGroupCheckGroupChange) {
     nodes.push_back(MakeNode());
 
   int count(0);
-  NetworkStatusFunctor network_status_functor = [](const int& status) {
-      LOG(kVerbose) << "Status : " << status;
-    };
-  std::function<void(const NodeInfo&, bool)> remove_node_functor = [] (const NodeInfo&, bool) {
-      LOG(kVerbose) << "RemoveNodeFunctor!";
+  NetworkStatusFunctor network_status_functor = [](const int & status) {
+    LOG(kVerbose) << "Status : " << status;
   };
+  std::function<void(const NodeInfo&, bool)> remove_node_functor = [](
+      const NodeInfo&, bool) { LOG(kVerbose) << "RemoveNodeFunctor!"; };
   ConnectedGroupChangeFunctor group_change_functor = [&count](const std::vector<NodeInfo> nodes) {
-      ++count;
-      LOG(kInfo) << "Group changed. count : " << count;
-      EXPECT_GE(Parameters::closest_nodes_size, count);
-      for (const auto& i: nodes) {
-        LOG(kVerbose) << "NodeId : " << DebugId(i.node_id);
-      }
-    };
-  routing_table.InitialiseFunctors(network_status_functor,
-                                   remove_node_functor,
-                                   []() {},
-                                   group_change_functor,
-                                   [](const std::vector<NodeInfo>& ) {},
-                                   [] (std::shared_ptr<MatrixChange>) {});
+    ++count;
+    LOG(kInfo) << "Group changed. count : " << count;
+    EXPECT_GE(Parameters::closest_nodes_size, count);
+    for (const auto& i : nodes) {
+      LOG(kVerbose) << "NodeId : " << DebugId(i.node_id);
+    }
+  };
+  routing_table.InitialiseFunctors(network_status_functor, remove_node_functor, []() {},
+                                   group_change_functor, [](const std::vector<NodeInfo>&) {},
+                                   [](std::shared_ptr<MatrixChange>) {});
   for (uint16_t i = 0; i < Parameters::closest_nodes_size; ++i) {
     ASSERT_TRUE(routing_table.AddNode(nodes.at(i)));
     LOG(kVerbose) << "Added to routing_table : " << DebugId(nodes.at(i).node_id);
@@ -153,18 +149,16 @@ TEST(RoutingTableTest, FUNC_OrderedGroupChange) {
     ++count;
     LOG(kInfo) << "Group changed. count : " << count;
     EXPECT_GE(Parameters::closest_nodes_size, count);
-    for (const auto& i: nodes) {
+    for (const auto& i : nodes) {
       LOG(kVerbose) << "NodeId : " << DebugId(i.node_id);
     }
   });
 
-  routing_table.InitialiseFunctors(
-      [](const int& status) { LOG(kVerbose) << "Status : " << status; },
-      [](const NodeInfo&, bool) {},
-      []() {},
-      group_change_functor,
-      [](const std::vector<NodeInfo>&) {},
-      [](std::shared_ptr<MatrixChange>) {});
+  routing_table.InitialiseFunctors([](const int &
+                                      status) { LOG(kVerbose) << "Status : " << status; },
+                                   [](const NodeInfo&, bool) {}, []() {}, group_change_functor,
+                                   [](const std::vector<NodeInfo>&) {},
+                                   [](std::shared_ptr<MatrixChange>) {});
 
   for (uint16_t i = 0; i < Parameters::max_routing_table_size; ++i) {
     ASSERT_TRUE(routing_table.AddNode(nodes.at(i)));
@@ -196,39 +190,33 @@ TEST(RoutingTableTest, FUNC_ReverseOrderedGroupChange) {
   // Set functors
   int count(0);
   std::vector<NodeInfo> expected_close_nodes;
-  NetworkStatusFunctor network_status_functor = [](const int& status) {
-      LOG(kVerbose) << "Status : " << status;
-    };
-  std::function<void(const NodeInfo&, bool)> remove_node_functor = [] (const NodeInfo&, bool) {
-      LOG(kVerbose) << "RemoveNodeFunctor!";
-    };
-  ConnectedGroupChangeFunctor group_change_functor =
-      [&count, &expected_close_nodes](const std::vector<NodeInfo> nodes) {
+  NetworkStatusFunctor network_status_functor = [](const int & status) {
+    LOG(kVerbose) << "Status : " << status;
+  };
+  std::function<void(const NodeInfo&, bool)> remove_node_functor = [](
+      const NodeInfo&, bool) { LOG(kVerbose) << "RemoveNodeFunctor!"; };
+  ConnectedGroupChangeFunctor group_change_functor = [&count, &expected_close_nodes](
+      const std::vector<NodeInfo> nodes) {
     ++count;
     LOG(kInfo) << "Group changed. count : " << count;
     EXPECT_GE(2 * Parameters::max_routing_table_size, count);
-    for (const auto& i: nodes) {
+    for (const auto& i : nodes) {
       LOG(kVerbose) << "NodeId : " << DebugId(i.node_id);
     }
-    for (const auto& i: expected_close_nodes) {
+    for (const auto& i : expected_close_nodes) {
       LOG(kVerbose) << "Expected Id : " << DebugId(i.node_id);
     }
     EXPECT_EQ(nodes.size(), expected_close_nodes.size());
     size_t max_index(std::min(expected_close_nodes.size(), nodes.size()));
     for (uint16_t i(0); i < max_index; ++i) {
       auto node_id(expected_close_nodes.at(i).node_id);
-      EXPECT_NE(std::find_if(nodes.begin(),
-                             nodes.end(),
-                             [node_id] (const NodeInfo& info) {
-                               return info.node_id == node_id;
-                             }), nodes.end());
+      EXPECT_NE(std::find_if(nodes.begin(), nodes.end(),
+                             [node_id](const NodeInfo & info) { return info.node_id == node_id; }),
+                nodes.end());
     }
   };
-  routing_table.InitialiseFunctors(network_status_functor,
-                                   remove_node_functor,
-                                   []() {},
-                                   group_change_functor,
-                                   [](const std::vector<NodeInfo>&) {},
+  routing_table.InitialiseFunctors(network_status_functor, remove_node_functor, []() {},
+                                   group_change_functor, [](const std::vector<NodeInfo>&) {},
                                    [](std::shared_ptr<MatrixChange>) {});
 
   // Add nodes to routing table
@@ -282,46 +270,42 @@ TEST(RoutingTableTest, FUNC_CheckGroupChangeRemoveNodesFromGroup) {
 
   // Set functors
   int count(0);
-  NetworkStatusFunctor network_status_functor = [](const int& status) {
-      LOG(kVerbose) << "Status : " << status;
-    };
-  std::function<void(const NodeInfo&, bool)> remove_node_functor = [] (const NodeInfo&, bool) {
-      LOG(kVerbose) << "RemoveNodeFunctor!";
+  NetworkStatusFunctor network_status_functor = [](const int & status) {
+    LOG(kVerbose) << "Status : " << status;
   };
+  std::function<void(const NodeInfo&, bool)> remove_node_functor = [](
+      const NodeInfo&, bool) { LOG(kVerbose) << "RemoveNodeFunctor!"; };
   bool setting_up(true);
   std::vector<NodeInfo> expected_close_nodes;
-  ConnectedGroupChangeFunctor group_change_functor =
-      [&count, &setting_up, &expected_close_nodes](const std::vector<NodeInfo> nodes) {
+  ConnectedGroupChangeFunctor group_change_functor = [&count, &setting_up, &expected_close_nodes](
+      const std::vector<NodeInfo> nodes) {
     ++count;
     LOG(kInfo) << "Group changed. count : " << count;
     if (setting_up) {
       EXPECT_GE(Parameters::closest_nodes_size, count);
-      for (const auto& i: nodes) {
+      for (const auto& i : nodes) {
         LOG(kVerbose) << "NodeId : " << DebugId(i.node_id);
       }
     } else {
       EXPECT_GE(Parameters::max_routing_table_size / 4, count);
-      for (const auto& i: nodes) {
+      for (const auto& i : nodes) {
         LOG(kVerbose) << "NodeId : " << DebugId(i.node_id);
       }
-      for (const auto& i: expected_close_nodes) {
+      for (const auto& i : expected_close_nodes) {
         LOG(kVerbose) << "Expected Id : " << DebugId(i.node_id);
       }
       EXPECT_EQ(nodes.size(), expected_close_nodes.size());
       uint16_t max_index(
           static_cast<uint16_t>(std::min(expected_close_nodes.size(), nodes.size())));
       for (uint16_t i(0); i < max_index; ++i) {
-        EXPECT_EQ(nodes.at(i).node_id, expected_close_nodes.at(i).node_id) <<
-            "actual node: " << DebugId(nodes.at(i).node_id) <<
-            "\n expected node: " << DebugId(expected_close_nodes.at(i).node_id);
+        EXPECT_EQ(nodes.at(i).node_id, expected_close_nodes.at(i).node_id)
+            << "actual node: " << DebugId(nodes.at(i).node_id)
+            << "\n expected node: " << DebugId(expected_close_nodes.at(i).node_id);
       }
     }
   };
-  routing_table.InitialiseFunctors(network_status_functor,
-                                   remove_node_functor,
-                                   []() {},
-                                   group_change_functor,
-                                   [](const std::vector<NodeInfo>&) {},
+  routing_table.InitialiseFunctors(network_status_functor, remove_node_functor, []() {},
+                                   group_change_functor, [](const std::vector<NodeInfo>&) {},
                                    [](std::shared_ptr<MatrixChange>) {});
 
   // Populate routing table
@@ -374,12 +358,11 @@ TEST(RoutingTableTest, FUNC_CheckGroupChangeAddGroupNodesToFullTable) {
 
   // Set functors
   int count(0);
-  NetworkStatusFunctor network_status_functor = [](const int& status) {
-      LOG(kVerbose) << "Status : " << status;
-    };
-  std::function<void(const NodeInfo&, bool)> remove_node_functor = [] (const NodeInfo&, bool) {
-      LOG(kVerbose) << "RemoveNodeFunctor!";
+  NetworkStatusFunctor network_status_functor = [](const int & status) {
+    LOG(kVerbose) << "Status : " << status;
   };
+  std::function<void(const NodeInfo&, bool)> remove_node_functor = [](
+      const NodeInfo&, bool) { LOG(kVerbose) << "RemoveNodeFunctor!"; };
   bool setting_up(true);
   std::vector<NodeInfo> expected_close_nodes;
   ConnectedGroupChangeFunctor group_change_functor =
@@ -388,32 +371,29 @@ TEST(RoutingTableTest, FUNC_CheckGroupChangeAddGroupNodesToFullTable) {
     LOG(kInfo) << "Group changed. count : " << count;
     if (setting_up) {
       EXPECT_GE(Parameters::closest_nodes_size, count);
-      for (const auto& i: nodes) {
+      for (const auto& i : nodes) {
         LOG(kVerbose) << "NodeId : " << DebugId(i.node_id);
       }
     } else {
       EXPECT_GE(3 * Parameters::closest_nodes_size / 2, count);
-      for (const auto& i: nodes) {
+      for (const auto& i : nodes) {
         LOG(kVerbose) << "NodeId : " << DebugId(i.node_id);
       }
-      for (const auto& i: expected_close_nodes) {
+      for (const auto& i : expected_close_nodes) {
         LOG(kVerbose) << "Expected Id : " << DebugId(i.node_id);
       }
       EXPECT_EQ(new_group.size(), expected_close_nodes.size());
       uint16_t max_index(
           static_cast<uint16_t>(std::min(expected_close_nodes.size(), new_group.size())));
       for (uint16_t i(0); i < max_index; ++i) {
-        EXPECT_EQ(new_group.at(i).node_id, expected_close_nodes.at(i).node_id) <<
-            "actual node: " << DebugId(new_group.at(i).node_id) <<
-            "\n expected node: " << DebugId(expected_close_nodes.at(i).node_id);
+        EXPECT_EQ(new_group.at(i).node_id, expected_close_nodes.at(i).node_id)
+            << "actual node: " << DebugId(new_group.at(i).node_id)
+            << "\n expected node: " << DebugId(expected_close_nodes.at(i).node_id);
       }
     }
   };
-  routing_table.InitialiseFunctors(network_status_functor,
-                                   remove_node_functor,
-                                   []() {},
-                                   group_change_functor,
-                                   [](const std::vector<NodeInfo>&) {},
+  routing_table.InitialiseFunctors(network_status_functor, remove_node_functor, []() {},
+                                   group_change_functor, [](const std::vector<NodeInfo>&) {},
                                    [](std::shared_ptr<MatrixChange>) {});
 
   // Populate routing table
@@ -477,30 +457,27 @@ TEST(RoutingTableTest, FUNC_FillEmptyRefillRoutingTable) {
     nodes.push_back(MakeNode());
 
   // Set functors
-  NetworkStatusFunctor network_status_functor = [](const int& status) {
-      LOG(kVerbose) << "Status : " << status;
-    };
-  std::function<void(const NodeInfo&, bool)> remove_node_functor = [] (const NodeInfo&, bool) {
-      LOG(kVerbose) << "RemoveNodeFunctor!";
+  NetworkStatusFunctor network_status_functor = [](const int & status) {
+    LOG(kVerbose) << "Status : " << status;
   };
+  std::function<void(const NodeInfo&, bool)> remove_node_functor = [](
+      const NodeInfo&, bool) { LOG(kVerbose) << "RemoveNodeFunctor!"; };
   int expected_count(0);
   std::vector<NodeInfo> expected_group;
   int count(0);
   bool filling_table(true);
-  ConnectedGroupChangeFunctor group_change_functor =
-      [&](const std::vector<NodeInfo> node_infos) {
-      ++count;
-      LOG(kInfo) << "Group changed. count : " << count;
+  ConnectedGroupChangeFunctor group_change_functor = [&](const std::vector<NodeInfo> node_infos) {
+    ++count;
+    LOG(kInfo) << "Group changed. count : " << count;
     if (filling_table) {
       EXPECT_EQ(expected_count, count);
       EXPECT_EQ(expected_group.size(), node_infos.size());
       for (auto& node : expected_group) {
         auto node_id(node.node_id);
-        EXPECT_NE(std::find_if(node_infos.begin(),
-                               node_infos.end(),
-                               [node_id](const NodeInfo& node_info) {
-                                 return node_id == node_info.node_id;
-                               }), node_infos.end());
+        EXPECT_NE(std::find_if(node_infos.begin(), node_infos.end(),
+                               [node_id](const NodeInfo &
+                                         node_info) { return node_id == node_info.node_id; }),
+                  node_infos.end());
       }
     } else {
       EXPECT_EQ(expected_count, count);
@@ -508,15 +485,12 @@ TEST(RoutingTableTest, FUNC_FillEmptyRefillRoutingTable) {
       for (uint32_t i(0); i < std::min(nodes.size(), node_infos.size()); ++i)
         EXPECT_EQ(nodes.at(i).node_id, node_infos.at(i).node_id);
     }
-    for (const auto& node_info: node_infos) {
+    for (const auto& node_info : node_infos) {
       LOG(kVerbose) << "NodeId : " << DebugId(node_info.node_id);
     }
   };
-  routing_table.InitialiseFunctors(network_status_functor,
-                                   remove_node_functor,
-                                   [] () {},
-                                   group_change_functor,
-                                   [](const std::vector<NodeInfo>&) {},
+  routing_table.InitialiseFunctors(network_status_functor, remove_node_functor, []() {},
+                                   group_change_functor, [](const std::vector<NodeInfo>&) {},
                                    [](std::shared_ptr<MatrixChange>) {});
   // Fill routing table
   for (uint16_t i = 0; i < Parameters::max_routing_table_size; ++i) {
@@ -553,7 +527,7 @@ TEST(RoutingTableTest, FUNC_FillEmptyRefillRoutingTable) {
     if (nodes.size() < Parameters::closest_nodes_size) {
       ++expected_count;
     } else if ((own_node_id ^ removal_id) <=
-      (own_node_id ^ nodes.at(Parameters::closest_nodes_size - 1).node_id)) {
+               (own_node_id ^ nodes.at(Parameters::closest_nodes_size - 1).node_id)) {
       ++expected_count;
     }
     routing_table.DropNode(removal_id, true);
@@ -633,15 +607,14 @@ TEST(RoutingTableTest, BEH_CheckMockSendGroupChangeRpcs) {
   bool expecting_group_change(true);
   int count(0);
   int expected_count(0);
-  NetworkStatusFunctor network_status_functor = [](const int& status) {
-      LOG(kVerbose) << "Status : " << status;
-    };
-  std::function<void(const NodeInfo&, bool)> remove_node_functor = [] (const NodeInfo&, bool) {
-      LOG(kVerbose) << "RemoveNodeFunctor!";
+  NetworkStatusFunctor network_status_functor = [](const int & status) {
+    LOG(kVerbose) << "Status : " << status;
   };
+  std::function<void(const NodeInfo&, bool)> remove_node_functor = [](
+      const NodeInfo&, bool) { LOG(kVerbose) << "RemoveNodeFunctor!"; };
   ConnectedGroupChangeFunctor group_change_functor =
-      [&node_id_1, &routing_table_2, &expecting_group_change, &count, &expected_count]
-  (const std::vector<NodeInfo> nodes) {
+      [&node_id_1, &routing_table_2, &expecting_group_change, &count, &expected_count](
+          const std::vector<NodeInfo> nodes) {
     ++count;
     EXPECT_EQ(count, expected_count);
     EXPECT_TRUE(expecting_group_change);
@@ -661,15 +634,12 @@ TEST(RoutingTableTest, BEH_CheckMockSendGroupChangeRpcs) {
       routing_table_2.GroupUpdateFromConnectedPeer(node_id_1, close_nodes);
     }
     LOG(kVerbose) << "NodeIds for routing_table_1 (group change):";
-    for (auto& j: nodes) {
+    for (auto& j : nodes) {
       LOG(kVerbose) << "NodeId : " << DebugId(j.node_id);
     }
   };
-  routing_table_1.InitialiseFunctors(network_status_functor,
-                                     remove_node_functor,
-                                     []() {},
-                                     group_change_functor,
-                                     [](const std::vector<NodeInfo>&) {},
+  routing_table_1.InitialiseFunctors(network_status_functor, remove_node_functor, []() {},
+                                     group_change_functor, [](const std::vector<NodeInfo>&) {},
                                      [](std::shared_ptr<MatrixChange>) {});
 
   // Check that 2's group matrix is updated correctly - Add nodes
@@ -695,13 +665,11 @@ TEST(RoutingTableTest, BEH_CheckMockSendGroupChangeRpcs) {
     ASSERT_TRUE(routing_table_1.AddNode(node_info));
     EXPECT_TRUE(routing_table_2.group_matrix_.GetRow(node_id_1, close_nodes));
     EXPECT_EQ(expected_close_nodes.size(), close_nodes.size());
-    for (uint16_t i(0); i <  std::min(expected_close_nodes.size(), close_nodes.size()); ++i) {
+    for (uint16_t i(0); i < std::min(expected_close_nodes.size(), close_nodes.size()); ++i) {
       auto id(expected_close_nodes.at(i));
-      EXPECT_NE(std::find_if(close_nodes.begin(),
-                             close_nodes.end(),
-                             [id] (const NodeInfo& info) {
-                               return id == info.node_id;
-                             }), close_nodes.end());
+      EXPECT_NE(std::find_if(close_nodes.begin(), close_nodes.end(),
+                             [id](const NodeInfo & info) { return id == info.node_id; }),
+                close_nodes.end());
     }
   }
 
@@ -727,9 +695,7 @@ TEST(RoutingTableTest, BEH_CheckMockSendGroupChangeRpcs) {
     if (removal_index < (Parameters::closest_nodes_size - 1)) {
       expected_close_nodes.clear();
       int extra_nodes_size = static_cast<int>(extra_nodes.size());
-      for (int i(0);
-           i < std::min(extra_nodes_size, Parameters::closest_nodes_size - 1);
-           ++i) {
+      for (int i(0); i < std::min(extra_nodes_size, Parameters::closest_nodes_size - 1); ++i) {
         expected_close_nodes.push_back(extra_nodes.at(i).node_id);
       }
       ++expected_count;
@@ -740,11 +706,10 @@ TEST(RoutingTableTest, BEH_CheckMockSendGroupChangeRpcs) {
     routing_table_1.DropNode(removal_node.node_id, true);
     EXPECT_TRUE(routing_table_2.group_matrix_.GetRow(node_id_1, close_nodes));
     EXPECT_EQ(expected_close_nodes.size(), close_nodes.size());
-    for (uint16_t i(0); i <  std::min(expected_close_nodes.size(), close_nodes.size()); ++i) {
+    for (uint16_t i(0); i < std::min(expected_close_nodes.size(), close_nodes.size()); ++i) {
       auto id(close_nodes.at(i).node_id);
-      EXPECT_NE(std::find(expected_close_nodes.begin(),
-                          expected_close_nodes.end(),
-                          id), expected_close_nodes.end());
+      EXPECT_NE(std::find(expected_close_nodes.begin(), expected_close_nodes.end(), id),
+                expected_close_nodes.end());
     }
   }
 
@@ -796,16 +761,14 @@ TEST(RoutingTableTest, BEH_GetNthClosest) {
   RoutingTable routing_table(false, node_id, asymm::GenerateKeyPair(), network_statistics);
   NodeId my_node(routing_table.kNodeId());
 
-  for (uint16_t i(static_cast<uint16_t>(routing_table.size()));
-       routing_table.size() < 10; ++i) {
+  for (uint16_t i(static_cast<uint16_t>(routing_table.size())); routing_table.size() < 10; ++i) {
     NodeInfo node(MakeNode());
     nodes_id.push_back(node.node_id);
     EXPECT_TRUE(routing_table.AddNode(node));
   }
-  std::sort(nodes_id.begin(), nodes_id.end(),
-            [&](const NodeId& lhs, const NodeId& rhs) {
-              return NodeId::CloserToTarget(lhs, rhs, my_node);
-            });
+  std::sort(nodes_id.begin(), nodes_id.end(), [&](const NodeId & lhs, const NodeId & rhs) {
+    return NodeId::CloserToTarget(lhs, rhs, my_node);
+  });
   for (uint16_t index = 0; index < 10; ++index) {
     EXPECT_EQ(nodes_id[index], routing_table.GetNthClosestNode(my_node, index + 1).node_id)
         << DebugId(nodes_id[index]) << " not eq to "
@@ -1215,12 +1178,12 @@ TEST(RoutingTableTest, FUNC_IsNodeIdInGroupRange) {
     NodeId target_id(NodeId::kRandomId);
     SortFromTarget(target_id, nodes_in_table);
     if (!NodeId::CloserToTarget(nodes_in_table.at(Parameters::node_group_size - 1).node_id,
-                                own_node_id,
-                                target_id)) {
+                                own_node_id, target_id)) {
       EXPECT_EQ(GroupRangeStatus::kInRange, routing_table.IsNodeIdInGroupRange(target_id));
     } else {
       NodeId my_distance_id(own_node_id ^ target_id);
-      crypto::BigInt my_distance((my_distance_id.ToStringEncoded(NodeId::EncodingType::kHex) + 'h').c_str());
+      crypto::BigInt my_distance(
+          (my_distance_id.ToStringEncoded(NodeId::EncodingType::kHex) + 'h').c_str());
       if (my_distance < radius)
         EXPECT_EQ(GroupRangeStatus::kInProximalRange,
                   routing_table.IsNodeIdInGroupRange(target_id));
@@ -1233,16 +1196,11 @@ TEST(RoutingTableTest, BEH_MatrixChange) {
   NetworkStatistics network_statistics(node_id);
   RoutingTable routing_table(false, node_id, asymm::GenerateKeyPair(), network_statistics);
   int count(0);
-  MatrixChangedFunctor matrix_change_functor =
-      [&count](std::shared_ptr<MatrixChange> /*matrix_change*/) {
-        count++;
-      };
-  routing_table.InitialiseFunctors([](const int&) {},
-                                   [](const NodeInfo&, bool) {},
-                                   []() {},
+  MatrixChangedFunctor matrix_change_functor = [&count](
+      std::shared_ptr<MatrixChange> /*matrix_change*/) { count++; };
+  routing_table.InitialiseFunctors([](const int&) {}, [](const NodeInfo&, bool) {}, []() {},
                                    [](const std::vector<NodeInfo>) {},
-                                   [](const std::vector<NodeInfo>&) {},
-                                   matrix_change_functor);
+                                   [](const std::vector<NodeInfo>&) {}, matrix_change_functor);
   std::vector<NodeId> node_ids;
   for (size_t index(0); index < Parameters::closest_nodes_size; ++index) {
     NodeInfo node_info(MakeNode());
@@ -1252,10 +1210,9 @@ TEST(RoutingTableTest, BEH_MatrixChange) {
   }
   EXPECT_EQ(count, Parameters::closest_nodes_size);
   routing_table.DropNode(node_ids.at(Parameters::node_group_size), true);
-  node_ids.erase(std::remove(std::begin(node_ids),
-                             std::end(node_ids),
+  node_ids.erase(std::remove(std::begin(node_ids), std::end(node_ids),
                              node_ids.at(Parameters::node_group_size)),
-                             std::end(node_ids));
+                 std::end(node_ids));
   EXPECT_EQ(count, Parameters::closest_nodes_size + 1);
   routing_table.GroupUpdateFromConnectedPeer(NodeId(NodeId::kRandomId), std::vector<NodeInfo>());
   EXPECT_EQ(count, Parameters::closest_nodes_size + 1);
@@ -1298,7 +1255,8 @@ TEST(RoutingTableTest, FUNC_ClosestToId) {
         passed = false;
     }
     return passed;
-  };
+  }
+  ;
 
   auto test_unknown_ids = [&, this]()->bool {
     LOG(kInfo) << "\tTesting unknown ids...";
@@ -1318,7 +1276,8 @@ TEST(RoutingTableTest, FUNC_ClosestToId) {
         passed = false;
     }
     return passed;
-  };
+  }
+  ;
 
   // ------- Empty routing table -------
   LOG(kInfo) << "Testing empty routing table...";
