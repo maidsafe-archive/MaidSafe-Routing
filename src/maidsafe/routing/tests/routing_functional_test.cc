@@ -212,7 +212,6 @@ TEST_F(RoutingNetworkTest, FUNC_SendToGroupSelfId) {
               } else {
                 return false;
               }
-              ;
             }),
         futures.end());
     std::this_thread::yield();
@@ -287,9 +286,8 @@ TEST_F(RoutingNetworkTest, FUNC_SendToGroupRandomId) {
               } else {
                 return false;
               }
-              ;
             }),
-        futures.end());
+        futures.end()); // NOLINT
     std::this_thread::yield();
   }
   for (auto& node : env_->nodes_) {
@@ -329,9 +327,8 @@ TEST_F(RoutingNetworkTest, FUNC_NonMutatingClientSendToGroupRandomId) {
               } else {
                 return false;
               }
-              ;
             }),
-        futures.end());
+        futures.end());  // NOLINT
     std::this_thread::yield();
   }
 
@@ -375,7 +372,6 @@ TEST_F(RoutingNetworkTest, FUNC_NonMutatingClientSendToGroupExistingId) {
               } else {
                 return false;
               }
-              ;
             }),
         futures.end());
     std::this_thread::yield();

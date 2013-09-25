@@ -19,6 +19,7 @@
 #ifndef MAIDSAFE_ROUTING_MESSAGE_H_
 #define MAIDSAFE_ROUTING_MESSAGE_H_
 
+#include <algorithm>
 #include <string>
 #include <utility>
 

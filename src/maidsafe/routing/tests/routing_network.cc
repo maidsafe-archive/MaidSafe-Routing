@@ -203,7 +203,7 @@ void GenericNode::InitialiseFunctors() {
     messages_.push_back(message);
     reply_functor(node_id().string() + ">::< response to >:<" + message);
   };
-  functors_.network_status = [&](const int & health) { SetHealth(health); };
+  functors_.network_status = [&](const int & health) { SetHealth(health); };  // NOLINT
 }
 
 int GenericNode::GetStatus() const { return /*routing_->GetStatus()*/ 0; }

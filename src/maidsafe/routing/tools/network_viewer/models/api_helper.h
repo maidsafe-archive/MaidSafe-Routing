@@ -46,7 +46,7 @@ class APIHelper : public QObject {
   void NetworkUpdated(int state_id);
   QString GetShortNodeId(std::string node_id) const;
 
-signals:
+ signals:
   void RequestGraphRefresh(int state_id);
 
  private:

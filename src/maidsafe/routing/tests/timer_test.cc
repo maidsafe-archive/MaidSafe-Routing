@@ -164,8 +164,7 @@ TEST_F(TimerTest, BEH_MultipleResponse) {
                          RandomAlphaNumericString(30)));
     }
     return messages;
-  }
-  ;
+  };
 
   auto add_response = [&](std::map<TaskId, std::string> messages) {
     for (const auto& message : messages)
@@ -197,8 +196,7 @@ TEST_F(TimerTest, BEH_MultipleGroupResponse) {
           RandomAlphaNumericString(30)));
     }
     return messages;
-  }
-  ;
+  };
 
   auto add_response = [&](std::map<TaskId, std::string> messages) {
     for (const auto& message : messages) {

@@ -172,7 +172,7 @@ TEST(APITest, BEH_API_ZeroStateWithDuplicateNode) {
   ASSERT_EQ(join_future.wait_for(std::chrono::seconds(5)), std::future_status::ready);
 
   std::atomic<int> final_result;
-  functors4.network_status = [&final_result](int result) { final_result = result; };
+  functors4.network_status = [&final_result](int result) { final_result = result; };  // NOLINT
   routing4.Join(functors4, std::vector<Endpoint>(1, endpoint2));
   Sleep(std::chrono::seconds(5));
   EXPECT_LT(final_result, 0);
@@ -681,7 +681,7 @@ TEST(APITest, BEH_API_SendGroup) {
     routing_node.push_back(std::make_shared<Routing>(pmid));
   }
 
-  functors.network_status = [](const int&) {};
+  functors.network_status = [](const int&) {};  // NOLINT
 
   functors.message_and_caching.message_received = [&](const std::string & message, const bool&,
                                                       ReplyFunctor reply_functor) {
@@ -779,7 +779,6 @@ TEST(APITest, BEH_API_SendGroup) {
           } else {
             return false;
           }
-          ;
         }),
         send_futures.end());
     std::this_thread::yield();

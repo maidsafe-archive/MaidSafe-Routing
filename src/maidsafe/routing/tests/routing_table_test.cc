@@ -102,7 +102,7 @@ TEST(RoutingTableTest, BEH_PopulateAndDepopulateGroupCheckGroupChange) {
     LOG(kVerbose) << "Status : " << status;
   };
   std::function<void(const NodeInfo&, bool)> remove_node_functor = [](
-      const NodeInfo&, bool) { LOG(kVerbose) << "RemoveNodeFunctor!"; };
+      const NodeInfo&, bool) { LOG(kVerbose) << "RemoveNodeFunctor!"; };  // NOLINT
   ConnectedGroupChangeFunctor group_change_functor = [&count](const std::vector<NodeInfo> nodes) {
     ++count;
     LOG(kInfo) << "Group changed. count : " << count;
@@ -194,7 +194,7 @@ TEST(RoutingTableTest, FUNC_ReverseOrderedGroupChange) {
     LOG(kVerbose) << "Status : " << status;
   };
   std::function<void(const NodeInfo&, bool)> remove_node_functor = [](
-      const NodeInfo&, bool) { LOG(kVerbose) << "RemoveNodeFunctor!"; };
+      const NodeInfo&, bool) { LOG(kVerbose) << "RemoveNodeFunctor!"; };  // NOLINT
   ConnectedGroupChangeFunctor group_change_functor = [&count, &expected_close_nodes](
       const std::vector<NodeInfo> nodes) {
     ++count;
@@ -274,7 +274,7 @@ TEST(RoutingTableTest, FUNC_CheckGroupChangeRemoveNodesFromGroup) {
     LOG(kVerbose) << "Status : " << status;
   };
   std::function<void(const NodeInfo&, bool)> remove_node_functor = [](
-      const NodeInfo&, bool) { LOG(kVerbose) << "RemoveNodeFunctor!"; };
+      const NodeInfo&, bool) { LOG(kVerbose) << "RemoveNodeFunctor!"; };  // NOLINT
   bool setting_up(true);
   std::vector<NodeInfo> expected_close_nodes;
   ConnectedGroupChangeFunctor group_change_functor = [&count, &setting_up, &expected_close_nodes](
@@ -362,7 +362,7 @@ TEST(RoutingTableTest, FUNC_CheckGroupChangeAddGroupNodesToFullTable) {
     LOG(kVerbose) << "Status : " << status;
   };
   std::function<void(const NodeInfo&, bool)> remove_node_functor = [](
-      const NodeInfo&, bool) { LOG(kVerbose) << "RemoveNodeFunctor!"; };
+      const NodeInfo&, bool) { LOG(kVerbose) << "RemoveNodeFunctor!"; };  // NOLINT
   bool setting_up(true);
   std::vector<NodeInfo> expected_close_nodes;
   ConnectedGroupChangeFunctor group_change_functor =
@@ -461,7 +461,7 @@ TEST(RoutingTableTest, FUNC_FillEmptyRefillRoutingTable) {
     LOG(kVerbose) << "Status : " << status;
   };
   std::function<void(const NodeInfo&, bool)> remove_node_functor = [](
-      const NodeInfo&, bool) { LOG(kVerbose) << "RemoveNodeFunctor!"; };
+      const NodeInfo&, bool) { LOG(kVerbose) << "RemoveNodeFunctor!"; };  // NOLINT
   int expected_count(0);
   std::vector<NodeInfo> expected_group;
   int count(0);
@@ -611,7 +611,7 @@ TEST(RoutingTableTest, BEH_CheckMockSendGroupChangeRpcs) {
     LOG(kVerbose) << "Status : " << status;
   };
   std::function<void(const NodeInfo&, bool)> remove_node_functor = [](
-      const NodeInfo&, bool) { LOG(kVerbose) << "RemoveNodeFunctor!"; };
+      const NodeInfo&, bool) { LOG(kVerbose) << "RemoveNodeFunctor!"; }; // NOLINT
   ConnectedGroupChangeFunctor group_change_functor =
       [&node_id_1, &routing_table_2, &expecting_group_change, &count, &expected_count](
           const std::vector<NodeInfo> nodes) {
@@ -1197,7 +1197,7 @@ TEST(RoutingTableTest, BEH_MatrixChange) {
   RoutingTable routing_table(false, node_id, asymm::GenerateKeyPair(), network_statistics);
   int count(0);
   MatrixChangedFunctor matrix_change_functor = [&count](
-      std::shared_ptr<MatrixChange> /*matrix_change*/) { count++; };
+      std::shared_ptr<MatrixChange> /*matrix_change*/) { count++; };  // NOLINT
   routing_table.InitialiseFunctors([](const int&) {}, [](const NodeInfo&, bool) {}, []() {},
                                    [](const std::vector<NodeInfo>) {},
                                    [](const std::vector<NodeInfo>&) {}, matrix_change_functor);
@@ -1255,8 +1255,7 @@ TEST(RoutingTableTest, FUNC_ClosestToId) {
         passed = false;
     }
     return passed;
-  }
-  ;
+  };  // NOLINT
 
   auto test_unknown_ids = [&, this]()->bool {
     LOG(kInfo) << "\tTesting unknown ids...";
@@ -1276,8 +1275,7 @@ TEST(RoutingTableTest, FUNC_ClosestToId) {
         passed = false;
     }
     return passed;
-  }
-  ;
+  };  // NOLINT
 
   // ------- Empty routing table -------
   LOG(kInfo) << "Testing empty routing table...";
