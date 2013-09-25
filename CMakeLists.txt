@@ -130,4 +130,5 @@ if(MaidsafeTesting)
 # This test target can be run seperatly. Removed from Experimental target to reduce the ctest time.
 # add_gtests(TESTrouting_big)
   add_project_experimental()
-  test_summary_output()endif()
+  test_summary_output()
+endif()
