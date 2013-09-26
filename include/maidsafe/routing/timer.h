@@ -60,6 +60,9 @@ class Timer {
   // 'response_functor' is null or if 'expected_response_count' < 1.
   TaskId AddTask(const std::chrono::steady_clock::duration& timeout,
                  const ResponseFunctor& response_functor, int expected_response_count);
+  TaskId AddTask(const std::chrono::steady_clock::duration& timeout,
+                 const ResponseFunctor& response_functor, int expected_response_count,
+                 TaskId task_id); // IMPLEMENTATION NEEEDS DISCUSSION
   // Removes the task and invokes its functor once per "missing" expected Response, with a
   // default-constructed Response each time.  Throws if the indicated task doesn't exist.
   void CancelTask(TaskId task_id);
