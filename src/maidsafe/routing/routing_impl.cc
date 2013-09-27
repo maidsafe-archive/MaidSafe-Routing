@@ -344,8 +344,9 @@ void Routing::Impl::Send(const NodeId& destination_id, const std::string& data,
   if (response_functor) {
     if (DestinationType::kGroup == destination_type)
       expected_response_count = 4;
-    proto_message.set_id(timer_.AddTask(Parameters::default_response_timeout, response_functor,
-                                        expected_response_count));
+    proto_message.set_id(timer_.NewTaskId());
+    timer_.AddTask(Parameters::default_response_timeout, response_functor, expected_response_count,
+                   proto_message.id());
   } else {
     proto_message.set_id(0);
   }
@@ -474,7 +475,8 @@ std::future<std::vector<NodeId>> Routing::Impl::GetGroup(const NodeId& group_id)
     promise->set_value(nodes_id);
   };
   protobuf::Message get_group_message(rpcs::GetGroup(group_id, kNodeId_));
-  get_group_message.set_id(timer_.AddTask(Parameters::default_response_timeout, callback, 1));
+  get_group_message.set_id(timer_.NewTaskId());
+  timer_.AddTask(Parameters::default_response_timeout, callback, 1, get_group_message.id());
   network_.SendToClosestNode(get_group_message);
   return std::move(future);
 }

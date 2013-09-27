@@ -58,17 +58,17 @@ class Timer {
   // times.  At the point of timeout, any shortfall in response count will cause 'response_functor'
   // to be invoked the appropriate number of times with a default-constructed Response.  Throws if
   // 'response_functor' is null or if 'expected_response_count' < 1.
-  TaskId AddTask(const std::chrono::steady_clock::duration& timeout,
-                 const ResponseFunctor& response_functor, int expected_response_count);
-  TaskId AddTask(const std::chrono::steady_clock::duration& timeout,
+  void AddTask(const std::chrono::steady_clock::duration& timeout,
                  const ResponseFunctor& response_functor, int expected_response_count,
-                 TaskId task_id); // IMPLEMENTATION NEEEDS DISCUSSION
+                 TaskId task_id);
   // Removes the task and invokes its functor once per "missing" expected Response, with a
   // default-constructed Response each time.  Throws if the indicated task doesn't exist.
   void CancelTask(TaskId task_id);
   // Invokes the response functor for the indicated task.  Throws if the indicated task doesn't
   // exist.
   void AddResponse(TaskId task_id, const Response& response);
+
+  TaskId NewTaskId();
 
   friend class test::TimerTest;
 
@@ -138,13 +138,12 @@ Timer<Response>::~Timer() {
 }
 
 template <typename Response>
-TaskId Timer<Response>::AddTask(const std::chrono::steady_clock::duration& timeout,
+void Timer<Response>::AddTask(const std::chrono::steady_clock::duration& timeout,
                                 const ResponseFunctor& response_functor,
-                                int expected_response_count) {
+                                int expected_response_count, TaskId task_id) {
   if (!response_functor || expected_response_count < 1)
     ThrowError(CommonErrors::invalid_parameter);
   std::lock_guard<std::mutex> lock(mutex_);
-  TaskId task_id(++new_task_id_);
   auto result(tasks_.insert(std::move(
       std::make_pair(task_id, std::move(Task(asio_service_.service(), timeout, response_functor,
                                              expected_response_count))))));
@@ -152,7 +151,6 @@ TaskId Timer<Response>::AddTask(const std::chrono::steady_clock::duration& timeo
   result.first->second.timer->async_wait([this, task_id](const boost::system::error_code & error) {
     this->FinishTask(task_id, error);
   });
-  return task_id;
 }
 
 template <typename Response>
@@ -222,6 +220,13 @@ void Timer<Response>::AddResponse(TaskId task_id, const Response& response) {
   }
   asio_service_.service().dispatch([=] { functor(response); });
 }
+
+template <typename Response>
+TaskId Timer<Response>::NewTaskId() {
+  std::lock_guard<std::mutex> lock(mutex_);
+  return new_task_id_++;
+}
+
 
 }  // namespace routing
 
