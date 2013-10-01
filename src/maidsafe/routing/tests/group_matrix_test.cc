@@ -868,7 +868,11 @@ TEST_P(GroupMatrixTest, BEH_GetAllConnectedPeers) {
   std::vector<NodeInfo> row_ids;
   for (uint32_t i(0); i < Parameters::closest_nodes_size; ++i)
     row_ids.push_back(MakeNode());
-  EXPECT_EQ(0, matrix_.GetUniqueNodes().size());
+  if (client_mode_)
+    EXPECT_EQ(0, matrix_.GetUniqueNodes().size());
+  else
+    EXPECT_EQ(1, matrix_.GetUniqueNodes().size());
+
   std::vector<NodeInfo> node_ids;
   if (!client_mode_)
     node_ids.push_back(own_node_info_);
