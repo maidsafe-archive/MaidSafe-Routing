@@ -223,7 +223,10 @@ TEST_P(GroupMatrixTest, BEH_EmptyMatrix) {
   NodeId connected_peer;
   CheckIsThisNodeGroupLeader(target_id, connected_peer, true);
 
-  EXPECT_EQ(0, matrix_.GetUniqueNodes().size());
+  if (client_mode_)
+    EXPECT_EQ(0, matrix_.GetUniqueNodes().size());
+  else
+    EXPECT_EQ(1, matrix_.GetUniqueNodes().size());
 
   matrix_.RemoveConnectedPeer(NodeInfo());
   CheckIsThisNodeGroupLeader(target_id, connected_peer, true);
