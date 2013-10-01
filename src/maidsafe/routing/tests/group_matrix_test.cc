@@ -834,7 +834,10 @@ TEST_P(GroupMatrixTest, BEH_CheckUniqueNodeList) {
     node.node_id = NodeId(NodeId::kRandomId);
     row_ids.push_back(node);
   }
-  EXPECT_EQ(0, matrix_.GetUniqueNodes().size());
+  if (client_mode_)
+    EXPECT_EQ(0, matrix_.GetUniqueNodes().size());
+  else
+    EXPECT_EQ(1, matrix_.GetUniqueNodes().size());
   std::vector<NodeInfo> node_ids;
   if (!client_mode_)
     node_ids.push_back(own_node_info_);
