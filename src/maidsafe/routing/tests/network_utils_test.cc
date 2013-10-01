@@ -156,14 +156,12 @@ TEST(NetworkUtilsTest, FUNC_ProcessSendDirectEndpoint) {
   auto private_key1(std::make_shared<asymm::PrivateKey>(pmid1.private_key()));
   auto public_key1(std::make_shared<asymm::PublicKey>(pmid1.public_key()));
   rudp::NatType nat_type;
-  auto a1 = std::async(std::launch::async, [=, &rudp1, &nat_type]()->NodeId {
+  auto a1 = std::async(std::launch::async, [&, this]()->NodeId {
     std::vector<Endpoint> bootstrap_endpoint(1, endpoint2);
     NodeId chosen_bootstrap_peer;
-    if (rudp1.Bootstrap(bootstrap_endpoint, message_received_functor1, connection_lost_functor,
+    EXPECT_EQ(rudp1.Bootstrap(bootstrap_endpoint, message_received_functor1, connection_lost_functor,
                         node_id1, private_key1, public_key1, chosen_bootstrap_peer, nat_type,
-                        endpoint1) != kSuccess) {
-      chosen_bootstrap_peer = NodeId();
-    }
+                        endpoint1), kSuccess);
     return chosen_bootstrap_peer;
   });
 
@@ -171,14 +169,12 @@ TEST(NetworkUtilsTest, FUNC_ProcessSendDirectEndpoint) {
   NodeId node_id2(pmid2.name()->string());
   auto private_key2(std::make_shared<asymm::PrivateKey>(pmid2.private_key()));
   auto public_key2(std::make_shared<asymm::PublicKey>(pmid2.public_key()));
-  auto a2 = std::async(std::launch::async, [=, &rudp2, &nat_type]()->NodeId {
+  auto a2 = std::async(std::launch::async, [&, this]()->NodeId {
     std::vector<Endpoint> bootstrap_endpoint(1, endpoint1);
     NodeId chosen_bootstrap_peer;
-    if (rudp2.Bootstrap(bootstrap_endpoint, message_received_functor2, connection_lost_functor,
+     EXPECT_EQ(rudp2.Bootstrap(bootstrap_endpoint, message_received_functor2, connection_lost_functor,
                         node_id2, private_key2, public_key2, chosen_bootstrap_peer, nat_type,
-                        endpoint2) != kSuccess) {
-      chosen_bootstrap_peer = NodeId();
-    }
+                        endpoint2), kSuccess);
     return chosen_bootstrap_peer;
   });
 
