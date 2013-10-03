@@ -299,8 +299,8 @@ TEST_F(TimerTest, BEH_VariousResults) {
   }
 
   std::unique_lock<std::mutex> lock(mutex_);
-  EXPECT_TRUE(cond_var_.wait_for(lock, std::chrono::seconds(10),
-                                 [&] { return total_expected_functor_calls == functor_calls; }));
+  cond_var_.wait_for(lock, std::chrono::seconds(5),
+                     [&] { return total_expected_functor_calls == functor_calls; });
 
   for (const auto& details : messages_details) {
     EXPECT_EQ(details.second.expected_success_count, details.second.success_count);
