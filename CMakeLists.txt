@@ -115,7 +115,7 @@ include(standard_flags)
 if(QA_BUILD)
   add_definitions(-DQA_BUILD)
 endif()
-set_target_properties(TESTrouting_func TESTrouting_func_nat TESTrouting_big routing_node PROPERTIES
+set_target_properties(maidsafe_routing TESTrouting_func TESTrouting_func_nat TESTrouting_big routing_node PROPERTIES
                       COMPILE_DEFINITIONS "USE_GTEST")
 
 
