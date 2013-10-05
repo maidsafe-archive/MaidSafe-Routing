@@ -115,6 +115,8 @@ include(standard_flags)
 if(QA_BUILD)
   add_definitions(-DQA_BUILD)
 endif()
+set_target_properties(TESTrouting_func TESTrouting_func_nat TESTrouting_big routing_node PROPERTIES
+                      COMPILE_DEFINITIONS "USE_GTEST")
 
 
 #==================================================================================================#
@@ -127,7 +129,7 @@ if(MaidsafeTesting)
   set_property(TEST Multiple_Functional_Tests PROPERTY TIMEOUT 600)
   add_gtests(TESTrouting)
   add_gtests(TESTrouting_api)
-# This test target can be run seperatly. Removed from Experimental target to reduce the ctest time.
+# This test target can be run separately. Removed from Experimental target to reduce the ctest time.
 # add_gtests(TESTrouting_big)
   add_project_experimental()
   test_summary_output()
