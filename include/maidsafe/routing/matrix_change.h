@@ -56,8 +56,7 @@ struct PmidNodeStatus {
 
 class MatrixChange {
  public:
-  MatrixChange(const MatrixChange&);
-  MatrixChange& operator=(const MatrixChange&);
+  MatrixChange(const MatrixChange& other);
   MatrixChange(MatrixChange&& other);
 
   CheckHoldersResult CheckHolders(const NodeId& target) const;
@@ -72,6 +71,7 @@ class MatrixChange {
   friend class test::GroupMatrixTest_BEH_EmptyMatrix_Test;
 
  private:
+  MatrixChange& operator=(MatrixChange);
   MatrixChange(NodeId this_node_id, const std::vector<NodeId>& old_matrix,
                const std::vector<NodeId>& new_matrix);
   bool OldEqualsToNew() const;
