@@ -135,6 +135,30 @@ PmidNodeStatus MatrixChange::CheckPmidNodeStatus(const std::vector<NodeId>& pmid
   return pmid_node_status;
 }
 
+NodeId MatrixChange::ChoosePmidNode(std::set<NodeId>& online_pmids, const NodeId& target) const {
+  if (online_pmids.empty())
+    ThrowError(CommonErrors::invalid_parameter);
+
+  std::vector<NodeId> temp(Parameters::node_group_size);
+  std::partial_sort_copy(std::begin(kNewMatrix_), std::end(kNewMatrix_), std::begin(temp),
+                         std::end(temp), [&target](const NodeId& lhs, const NodeId& rhs) {
+    return NodeId::CloserToTarget(lhs, rhs, target);
+  });
+
+  auto temp_itr(std::begin(temp));
+  auto pmids_itr(std::begin(online_pmids));
+  while (*temp_itr != kNodeId_) {
+    ++temp_itr;
+    assert(temp_itr != std::end(temp));
+    if (++pmids_itr == std::end(online_pmids))
+      pmids_itr = std::begin(online_pmids);
+  }
+
+  auto chosen_node_id(*pmids_itr);
+  online_pmids.erase(pmids_itr);
+  return chosen_node_id;
+}
+
 bool MatrixChange::OldEqualsToNew() const {
   if (kOldMatrix_.size() != kNewMatrix_.size())
     return false;

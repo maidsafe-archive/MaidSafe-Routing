@@ -19,6 +19,7 @@
 #ifndef MAIDSAFE_ROUTING_MATRIX_CHANGE_H_
 #define MAIDSAFE_ROUTING_MATRIX_CHANGE_H_
 
+#include <set>
 #include <vector>
 
 #include "maidsafe/common/crypto.h"
@@ -33,6 +34,7 @@ class GroupMatrix;
 
 namespace test {
 class MatrixChangeTest_BEH_CheckHolders_Test;
+class SingleMatrixChangeTest_BEH_ChoosePmidNode_Test;
 class GroupMatrixTest_BEH_EmptyMatrix_Test;
 }
 
@@ -60,10 +62,13 @@ class MatrixChange {
 
   CheckHoldersResult CheckHolders(const NodeId& target) const;
   PmidNodeStatus CheckPmidNodeStatus(const std::vector<NodeId>& pmid_nodes) const;
+  // Removes a NodeId from the set and returns it.
+  NodeId ChoosePmidNode(std::set<NodeId>& online_pmids, const NodeId& target) const;
 
   friend class GroupMatrix;
   friend class RoutingTable;
   friend class test::MatrixChangeTest_BEH_CheckHolders_Test;
+  friend class test::SingleMatrixChangeTest_BEH_ChoosePmidNode_Test;
   friend class test::GroupMatrixTest_BEH_EmptyMatrix_Test;
 
  private:

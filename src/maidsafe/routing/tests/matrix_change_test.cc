@@ -11,8 +11,11 @@
  ******************************************************************************/
 
 #include <bitset>
+#include <map>
 #include <memory>
 #include <numeric>
+#include <random>
+#include <set>
 #include <vector>
 
 #include "maidsafe/common/node_id.h"
@@ -147,6 +150,91 @@ TEST_F(MatrixChangeTest, BEH_CheckHolders) {
     ASSERT_EQ(result.new_holders, test_result.new_holders);
     ASSERT_EQ(result.old_holders, test_result.old_holders);
   }
+}
+
+void Choose(const std::set<NodeId>& online_pmids,
+            const NodeId& kTarget,
+            const std::vector<MatrixChange>& owners,
+            int owner_count,
+            int online_pmid_count) {
+  // This test is only valid where 'owner_count' <= 'Parameters::node_group_size'.
+  ASSERT_LE(owner_count, Parameters::node_group_size);
+
+  // Create a map of chosen nodes with a count of how many times each was selected by the various
+  // owning nodes.
+  std::map<NodeId, int> chosens;
+  for (int i(0); i != owner_count; ++i) {
+    std::set<NodeId> copied_online_pmids;
+    auto last_itr(std::begin(online_pmids));
+    std::advance(last_itr, online_pmid_count);
+    copied_online_pmids.insert(std::begin(online_pmids), last_itr);
+    auto chosen(owners[i].ChoosePmidNode(copied_online_pmids, kTarget));
+    ++chosens[chosen];
+    EXPECT_EQ(copied_online_pmids.size() + 1, online_pmid_count);
+  }
+
+  // Calculate the maximum and minimum values in 'chosen'
+  int max_value(0), min_value(std::begin(chosens)->second);
+  for (const auto& chosen : chosens) {
+    if (chosen.second < min_value)
+      min_value = chosen.second;
+    if (chosen.second > max_value)
+      max_value = chosen.second;
+  }
+
+  // If 'owner_count' > 'online_pmid_count' there should be 'online_pmid_count' entries in 'chosens'
+  // and the maximum value should be within 1 of the minimum value.  If 'owner_count' <=
+  // 'online_pmid_count' there should be 'owner_count' entries in 'chosens', each with a value of 1.
+  if (owner_count > online_pmid_count) {
+    EXPECT_EQ(chosens.size(), static_cast<size_t>(online_pmid_count));
+    ASSERT_LE(min_value, max_value);
+    EXPECT_LE(max_value - min_value, 1);
+  } else {
+    EXPECT_EQ(chosens.size(), static_cast<size_t>(owner_count));
+    EXPECT_EQ(min_value, 1);
+    EXPECT_EQ(max_value, 1);
+  }
+}
+
+TEST(SingleMatrixChangeTest, BEH_ChoosePmidNode) {
+  std::vector<NodeId> old_matrix, new_matrix;
+  const auto kGroupSize(Parameters::node_group_size);
+  for (int i(0); i != kGroupSize * 5; ++i)
+    new_matrix.emplace_back(NodeId::kRandomId);
+  const NodeId kTarget(NodeId::kRandomId);
+
+  // Get the 5 closest to 'kTarget' as the owners.
+  std::sort(std::begin(new_matrix), std::end(new_matrix),
+            [&kTarget](const NodeId& lhs, const NodeId& rhs) {
+    return NodeId::CloserToTarget(lhs, rhs, kTarget);
+  });
+  std::vector<MatrixChange> owners;
+  for (int i(0); i != kGroupSize + 1; ++i)
+    owners.push_back(MatrixChange(new_matrix[i], old_matrix, new_matrix));
+
+  // Shuffle 'new_matrix'.
+  std::random_device random_device;
+  std::mt19937 random_functor(random_device());
+  std::shuffle(std::begin(new_matrix), std::end(new_matrix), random_functor);
+
+  // 0 online_pmids should throw.
+  std::set<NodeId> online_pmids;
+  EXPECT_THROW(owners[0].ChoosePmidNode(online_pmids, kTarget), common_error);
+
+  for (int i(0); i != kGroupSize + 2; ++i)
+    online_pmids.insert(NodeId(NodeId::kRandomId));
+
+  // Run tests.
+  Choose(online_pmids, kTarget, owners, kGroupSize - 1, kGroupSize - 2);
+  Choose(online_pmids, kTarget, owners, kGroupSize - 1, kGroupSize - 1);
+  Choose(online_pmids, kTarget, owners, kGroupSize - 1, kGroupSize);
+  Choose(online_pmids, kTarget, owners, kGroupSize - 1, kGroupSize + 1);
+  Choose(online_pmids, kTarget, owners, kGroupSize - 1, kGroupSize + 2);
+  Choose(online_pmids, kTarget, owners, kGroupSize, kGroupSize - 2);
+  Choose(online_pmids, kTarget, owners, kGroupSize, kGroupSize - 1);
+  Choose(online_pmids, kTarget, owners, kGroupSize, kGroupSize);
+  Choose(online_pmids, kTarget, owners, kGroupSize, kGroupSize + 1);
+  Choose(online_pmids, kTarget, owners, kGroupSize, kGroupSize + 2);
 }
 
 }  // namespace test
