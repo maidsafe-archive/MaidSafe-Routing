@@ -22,6 +22,7 @@
 #include <set>
 #include <vector>
 
+#include "maidsafe/common/config.h"
 #include "maidsafe/common/crypto.h"
 #include "maidsafe/common/node_id.h"
 
@@ -56,14 +57,16 @@ struct PmidNodeStatus {
 
 class MatrixChange {
  public:
+  MatrixChange();
   MatrixChange(const MatrixChange& other);
   MatrixChange(MatrixChange&& other);
+  MatrixChange& operator=(MatrixChange other);
 
   CheckHoldersResult CheckHolders(const NodeId& target) const;
   PmidNodeStatus CheckPmidNodeStatus(const std::vector<NodeId>& pmid_nodes) const;
-  // Removes a NodeId from the set and returns it.
-  NodeId ChoosePmidNode(std::set<NodeId>& online_pmids, const NodeId& target) const;
+  NodeId ChoosePmidNode(const std::set<NodeId>& online_pmids, const NodeId& target) const;
 
+  friend void swap(MatrixChange& lhs, MatrixChange& rhs) MAIDSAFE_NOEXCEPT;
   friend class GroupMatrix;
   friend class RoutingTable;
   friend class test::MatrixChangeTest_BEH_CheckHolders_Test;
@@ -71,15 +74,13 @@ class MatrixChange {
   friend class test::GroupMatrixTest_BEH_EmptyMatrix_Test;
 
  private:
-  MatrixChange& operator=(MatrixChange);
   MatrixChange(NodeId this_node_id, const std::vector<NodeId>& old_matrix,
                const std::vector<NodeId>& new_matrix);
   bool OldEqualsToNew() const;
 
-  static const uint16_t close_count_, proximal_count_;
-  const NodeId kNodeId_;
-  const std::vector<NodeId> kOldMatrix_, kNewMatrix_, kLostNodes_;
-  const crypto::BigInt kRadius_;
+  NodeId node_id_;
+  std::vector<NodeId> old_matrix_, new_matrix_, lost_nodes_;
+  crypto::BigInt radius_;
 };
 
 }  // namespace routing

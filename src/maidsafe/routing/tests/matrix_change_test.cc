@@ -170,7 +170,6 @@ void Choose(const std::set<NodeId>& online_pmids,
     copied_online_pmids.insert(std::begin(online_pmids), last_itr);
     auto chosen(owners[i].ChoosePmidNode(copied_online_pmids, kTarget));
     ++chosens[chosen];
-    EXPECT_EQ(copied_online_pmids.size() + 1, online_pmid_count);
   }
 
   // Calculate the maximum and minimum values in 'chosen'
