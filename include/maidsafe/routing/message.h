@@ -51,6 +51,7 @@ struct GroupSource {
   SingleId sender_id;
 };
 
+bool operator==(const GroupSource& lhs, const GroupSource& rhs);
 void swap(GroupSource& lhs, GroupSource& rhs);
 
 template <typename Sender, typename Receiver>

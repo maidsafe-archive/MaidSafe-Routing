@@ -44,6 +44,11 @@ void swap(GroupSource& lhs, GroupSource& rhs) {
   swap(lhs.sender_id, rhs.sender_id);
 }
 
+bool operator==(const GroupSource& lhs, const GroupSource& rhs) {
+  return lhs.group_id == rhs.group_id &&
+         lhs.sender_id == rhs.sender_id;
+}
+
 }  // namespace routing
 
 }  // namespace maidsafe
