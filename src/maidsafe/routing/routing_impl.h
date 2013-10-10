@@ -108,10 +108,10 @@ class Routing::Impl {
   template <typename T>
   void Send(const T& message);  // New API
 
-  void SendDirect(const NodeId& destination_id, const std::string& data, const bool& cacheable,
+  void SendDirect(const NodeId& destination_id, const std::string& data, bool cacheable,
                   ResponseFunctor response_functor);
 
-  void SendGroup(const NodeId& destination_id, const std::string& data, const bool& cacheable,
+  void SendGroup(const NodeId& destination_id, const std::string& data, bool cacheable,
                  ResponseFunctor response_functor);
 
   NodeId GetRandomExistingNode() const { return random_node_helper_.Get(); }
@@ -160,13 +160,13 @@ class Routing::Impl {
   bool ConfirmGroupMembers(const NodeId& node1, const NodeId& node2);
   void NotifyNetworkStatus(int return_code) const;
   void Send(const NodeId& destination_id, const std::string& data,
-            const DestinationType& destination_type, const bool& cacheable,
+            const DestinationType& destination_type, bool cacheable,
             ResponseFunctor response_functor);
   void SendMessage(const NodeId& destination_id, protobuf::Message& proto_message);
   void PartiallyJoinedSend(protobuf::Message& proto_message);
   protobuf::Message CreateNodeLevelPartialMessage(const NodeId& destination_id,
                                                   const DestinationType& destination_type,
-                                                  const std::string& data, const bool& cacheable);
+                                                  const std::string& data, bool cacheable);
   void CheckSendParameters(const NodeId& destination_id, const std::string& data);
 
   template <typename T>

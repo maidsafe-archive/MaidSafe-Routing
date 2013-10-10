@@ -68,11 +68,11 @@ class ClientRoutingTable {
  private:
   ClientRoutingTable(const ClientRoutingTable&);
   ClientRoutingTable& operator=(const ClientRoutingTable&);
-  bool AddOrCheckNode(NodeInfo& node, const NodeId& furthest_close_node_id, const bool& add);
+  bool AddOrCheckNode(NodeInfo& node, const NodeId& furthest_close_node_id, bool add);
   bool CheckValidParameters(const NodeInfo& node) const;
   bool CheckParametersAreUnique(const NodeInfo& node) const;
   bool CheckRangeForNodeToBeAdded(NodeInfo& node, const NodeId& furthest_close_node_id,
-                                  const bool& add) const;
+                                  bool add) const;
   bool IsThisNodeInRange(const NodeId& node_id, const NodeId& furthest_close_node_id) const;
   std::string PrintClientRoutingTable();
 

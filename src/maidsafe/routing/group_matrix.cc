@@ -350,7 +350,7 @@ bool GroupMatrix::IsRowEmpty(const NodeInfo& node_info) {
   return (group_itr->size() < 2);
 }
 
-std::vector<NodeInfo> GroupMatrix::GetClosestNodes(const uint16_t& size) {
+std::vector<NodeInfo> GroupMatrix::GetClosestNodes(uint16_t size) {
   uint16_t size_to_sort(std::min(size, static_cast<uint16_t>(unique_nodes_.size())));
   PartialSortFromTarget(kNodeId_, size_to_sort, unique_nodes_);
   return std::vector<NodeInfo>(unique_nodes_.begin(), unique_nodes_.begin() + size_to_sort);
@@ -395,7 +395,7 @@ void GroupMatrix::UpdateUniqueNodeList() {
   }
 }
 
-void GroupMatrix::PartialSortFromTarget(const NodeId& target, const uint16_t& number,
+void GroupMatrix::PartialSortFromTarget(const NodeId& target, uint16_t number,
                                         std::vector<NodeInfo>& nodes) {
   uint16_t count = std::min(number, static_cast<uint16_t>(nodes.size()));
   std::partial_sort(nodes.begin(), nodes.begin() + count, nodes.end(),

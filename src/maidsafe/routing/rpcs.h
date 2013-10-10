@@ -53,7 +53,7 @@ protobuf::Message Remove(const NodeId& node_id, const NodeId& this_node_id,
                          const std::vector<std::string>& attempted_nodes);
 
 protobuf::Message FindNodes(const NodeId& node_id, const NodeId& this_node_id,
-                            const int& num_nodes_requested, bool relay_message = false,
+                            int num_nodes_requested, bool relay_message = false,
                             NodeId relay_connection_id = NodeId());
 
 protobuf::Message ProxyConnect(const NodeId& node_id, const NodeId& this_node_id,
@@ -61,21 +61,21 @@ protobuf::Message ProxyConnect(const NodeId& node_id, const NodeId& this_node_id
                                NodeId relay_connection_id = NodeId());
 
 protobuf::Message ConnectSuccess(const NodeId& node_id, const NodeId& this_node_id,
-                                 const NodeId& this_connection_id, const bool& requestor,
-                                 const bool& client_node);
+                                 const NodeId& this_connection_id, bool requestor,
+                                 bool client_node);
 
 protobuf::Message ConnectSuccessAcknowledgement(const NodeId& node_id, const NodeId& this_node_id,
                                                 const NodeId& this_connection_id,
-                                                const bool& requestor,
+                                                bool requestor,
                                                 const std::vector<NodeId>& close_ids,
-                                                const bool& client_node);
+                                                bool client_node);
 
 protobuf::Message ClosestNodesUpdate(const NodeId& node_id, const NodeId& my_node_id,
                                      const std::vector<NodeInfo>& closest_nodes);
 
 protobuf::Message ClosestNodesUpdateSubscribe(const NodeId& node_id, const NodeId& this_node_id,
                                               const NodeId& this_connection_id,
-                                              const bool& client_node, const bool& subscribe);
+                                              bool client_node, bool subscribe);
 
 protobuf::Message GetGroup(const NodeId& node_id, const NodeId& my_node_id);
 

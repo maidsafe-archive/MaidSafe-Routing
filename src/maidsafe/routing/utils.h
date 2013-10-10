@@ -54,12 +54,12 @@ class RoutingTable;
 
 int AddToRudp(NetworkUtils& network, const NodeId& this_node_id, const NodeId& this_connection_id,
               const NodeId& peer_id, const NodeId& peer_connection_id,
-              rudp::EndpointPair peer_endpoint_pair, const bool& requestor, const bool& client);
+              rudp::EndpointPair peer_endpoint_pair, bool requestor, bool client);
 
 bool ValidateAndAddToRoutingTable(NetworkUtils& network, RoutingTable& routing_table,
                                   ClientRoutingTable& client_routing_table, const NodeId& peer_id,
                                   const NodeId& connection_id, const asymm::PublicKey& public_key,
-                                  const bool& client);
+                                  bool client);
 void HandleSymmetricNodeAdd(RoutingTable& routing_table, const NodeId& peer_id,
                             const asymm::PublicKey& public_key);
 GroupRangeStatus GetProximalRange(const NodeId& target_id, const NodeId& node_id,

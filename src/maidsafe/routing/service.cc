@@ -293,7 +293,7 @@ void Service::ConnectSuccess(protobuf::Message& message) {
 
 void Service::ConnectSuccessFromRequester(NodeInfo& /*peer*/) {}
 
-void Service::ConnectSuccessFromResponder(NodeInfo& peer, const bool& client) {
+void Service::ConnectSuccessFromResponder(NodeInfo& peer, bool client) {
   // Reply with ConnectSuccessAcknowledgement immediately
   LOG(kVerbose) << "ConnectSuccessFromResponder peer id : " << DebugId(peer.node_id);
   if (peer.connection_id == network_.bootstrap_connection_id()) {

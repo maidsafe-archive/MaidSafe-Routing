@@ -220,7 +220,7 @@ bool GenericNode::IsClient() const { return client_mode_; }
 
 bool GenericNode::HasSymmetricNat() const { return has_symmetric_nat_; }
 
-/* void GenericNode::set_client_mode(const bool& client_mode) {
+/* void GenericNode::set_client_mode(bool client_mode) {
   client_mode_ = client_mode;
 } */
 
@@ -271,12 +271,12 @@ std::vector<NodeInfo> GenericNode::GetGroupMatrixConnectedPeers() {
 }
 
 void GenericNode::SendDirect(const NodeId& destination_id, const std::string& data,
-                             const bool& cacheable, ResponseFunctor response_functor) {
+                             bool cacheable, ResponseFunctor response_functor) {
   routing_->SendDirect(destination_id, data, cacheable, response_functor);
 }
 
 void GenericNode::SendGroup(const NodeId& destination_id, const std::string& data,
-                            const bool& cacheable, ResponseFunctor response_functor) {
+                            bool cacheable, ResponseFunctor response_functor) {
   routing_->SendGroup(destination_id, data, cacheable, response_functor);
 }
 
@@ -360,7 +360,7 @@ bool GenericNode::joined() const { return joined_; }
 
 int GenericNode::expected() { return expected_; }
 
-void GenericNode::set_expected(const int& expected) { expected_ = expected; }
+void GenericNode::set_expected(int expected) { expected_ = expected; }
 
 void GenericNode::PrintRoutingTable() {
   LOG(kInfo) << "[" << HexSubstr(node_info_plus_->node_info.node_id.string()) << "]'s RoutingTable "
@@ -414,7 +414,7 @@ int GenericNode::Health() {
   return health_;
 }
 
-void GenericNode::SetHealth(const int& health) {
+void GenericNode::SetHealth(int health) {
   std::lock_guard<std::mutex> health_lock(health_mutex_);
   health_ = health;
 }
@@ -501,15 +501,15 @@ void GenericNetwork::TearDown() {
   GenericNode::next_node_id_ = 1;
 }
 
-void GenericNetwork::SetUpNetwork(const size_t& total_number_vaults,
-                                  const size_t& total_number_clients) {
+void GenericNetwork::SetUpNetwork(size_t total_number_vaults,
+                                  size_t total_number_clients) {
   SetUpNetwork(total_number_vaults, total_number_clients, 0, 0);
 }
 
-void GenericNetwork::SetUpNetwork(const size_t& total_number_vaults,
-                                  const size_t& total_number_clients,
-                                  const size_t& num_symmetric_nat_vaults,
-                                  const size_t& num_symmetric_nat_clients) {
+void GenericNetwork::SetUpNetwork(size_t total_number_vaults,
+                                  size_t total_number_clients,
+                                  size_t num_symmetric_nat_vaults,
+                                  size_t num_symmetric_nat_clients) {
   assert(total_number_vaults >= num_symmetric_nat_vaults + 2);
   assert(total_number_clients >= num_symmetric_nat_clients);
 
@@ -547,7 +547,7 @@ void GenericNetwork::SetUpNetwork(const size_t& total_number_vaults,
   //    EXPECT_TRUE(ValidateRoutingTables());
 }
 
-void GenericNetwork::AddNode(const bool& client_mode, const NodeId& node_id,
+void GenericNetwork::AddNode(bool client_mode, const NodeId& node_id,
                              MatrixChangedFunctor matrix_change_functor) {
   NodeInfoAndPrivateKey node_info;
   node_info = MakeNodeInfoAndKeys();
@@ -558,8 +558,8 @@ void GenericNetwork::AddNode(const bool& client_mode, const NodeId& node_id,
   LOG(kVerbose) << "Node # " << nodes_.size() << " added to network";
 }
 
-void GenericNetwork::AddNode(const bool& client_mode, const NodeId& node_id,
-                             const bool& has_symmetric_nat, const bool& non_mutating_client) {
+void GenericNetwork::AddNode(bool client_mode, const NodeId& node_id,
+                             bool has_symmetric_nat, bool non_mutating_client) {
   assert(!(!client_mode && non_mutating_client) && "Only clients may be non mutating!");
   NodeInfoAndPrivateKey node_info;
   node_info = MakeNodeInfoAndKeys();
@@ -570,7 +570,7 @@ void GenericNetwork::AddNode(const bool& client_mode, const NodeId& node_id,
   //    node->PrintRoutingTable();
 }
 
-void GenericNetwork::AddNode(const bool& client_mode, const rudp::NatType& nat_type) {
+void GenericNetwork::AddNode(bool client_mode, const rudp::NatType& nat_type) {
   NodeInfoAndPrivateKey node_info(MakeNodeInfoAndKeys());
   NodePtr node(new GenericNode(client_mode, nat_type));
   AddNodeDetails(node);
@@ -578,7 +578,7 @@ void GenericNetwork::AddNode(const bool& client_mode, const rudp::NatType& nat_t
   //    node->PrintRoutingTable();
 }
 
-void GenericNetwork::AddNode(const bool& client_mode, const bool& has_symmetric_nat) {
+void GenericNetwork::AddNode(bool client_mode, bool has_symmetric_nat) {
   NodePtr node(new GenericNode(client_mode, has_symmetric_nat));
   AddNodeDetails(node);
   LOG(kVerbose) << "Node # " << nodes_.size() << " added to network";
@@ -776,8 +776,8 @@ std::vector<NodeId> GenericNetwork::GetGroupForId(const NodeId& node_id) const {
 }
 
 std::vector<NodeInfo> GenericNetwork::GetClosestNodes(const NodeId& target_id,
-                                                      const uint32_t& quantity,
-                                                      const bool vault_only) const {
+                                                      uint32_t quantity,
+                                                      bool vault_only) const {
   std::vector<NodeInfo> closet_nodes;
   for (const auto& node : nodes_) {
     if (vault_only && node->IsClient())
@@ -794,7 +794,7 @@ std::vector<NodeInfo> GenericNetwork::GetClosestNodes(const NodeId& target_id,
 }
 
 std::vector<NodeInfo> GenericNetwork::GetClosestVaults(const NodeId& target_id,
-                                                       const uint32_t& quantity) const {
+                                                       uint32_t quantity) const {
   std::vector<NodeInfo> closest_nodes;
   for (const auto& node : nodes_) {
     if (!node->IsClient())
@@ -1003,7 +1003,7 @@ bool GenericNetwork::NodeHasSymmetricNat(const NodeId& node_id) const {
   return false;
 }
 
-testing::AssertionResult GenericNetwork::CheckGroupMatrixUniqueNodes(const uint16_t& check_length) {
+testing::AssertionResult GenericNetwork::CheckGroupMatrixUniqueNodes(uint16_t check_length) {
   bool success(true);
   for (const auto& node : this->nodes_) {
     std::vector<NodeInfo> nodes_from_matrix(node->ClosestNodes());
@@ -1027,7 +1027,7 @@ testing::AssertionResult GenericNetwork::CheckGroupMatrixUniqueNodes(const uint1
   return testing::AssertionFailure();
 }
 
-testing::AssertionResult GenericNetwork::SendDirect(const size_t& repeats, size_t message_size) {
+testing::AssertionResult GenericNetwork::SendDirect(size_t repeats, size_t message_size) {
   assert(repeats > 0);
   size_t total_num_nodes(this->nodes_.size());
 
@@ -1136,7 +1136,7 @@ struct SendGroupMonitor {
   std::vector<NodeId> expected_ids;
 };
 
-testing::AssertionResult GenericNetwork::SendGroup(const NodeId& target_id, const size_t& repeats,
+testing::AssertionResult GenericNetwork::SendGroup(const NodeId& target_id, size_t repeats,
                                                    uint16_t source_index, size_t message_size) {
   LOG(kVerbose) << "Doing SendGroup from " << DebugId(nodes_.at(source_index)->node_id()) << " to "
                 << DebugId(target_id);

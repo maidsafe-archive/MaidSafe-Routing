@@ -62,12 +62,12 @@ class Commands {
   void ZeroStateJoin();
   void Join();
   void Validate(const NodeId& node_id, GivePublicKeyFunctor give_public_key);
-  void SendMessages(const int& identity_index, const DestinationType& destination_type,
+  void SendMessages(int identity_index, const DestinationType& destination_type,
                     bool is_routing_req, int messages_count);
 
   NodeId CalculateClosests(const NodeId& target_id, std::vector<NodeId>& closests,
                            uint16_t num_of_closests);
-  uint16_t MakeMessage(const int& id_index, const DestinationType& destination_type,
+  uint16_t MakeMessage(int id_index, const DestinationType& destination_type,
                        std::vector<NodeId>& closest_nodes, NodeId& dest_id);
 
   void CalculateTimeToSleep(std::chrono::milliseconds& msg_sent_time);

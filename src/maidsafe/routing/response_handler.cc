@@ -322,7 +322,7 @@ void ResponseHandler::ValidateAndCompleteConnectionToNonClient(
   }
 }
 
-void ResponseHandler::HandleSuccessAcknowledgementAsReponder(NodeInfo peer, const bool& client) {
+void ResponseHandler::HandleSuccessAcknowledgementAsReponder(NodeInfo peer, bool client) {
   auto count =
       (client ? Parameters::max_routing_table_size_for_client : Parameters::max_routing_table_size);
   std::vector<NodeId> close_ids_for_peer(routing_table_.GetClosestNodes(peer.node_id, count));

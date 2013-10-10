@@ -68,12 +68,12 @@ void Routing::Send(const GroupToGroupMessage& message) {
 }
 
 void Routing::SendDirect(const NodeId& destination_id, const std::string& message,
-                         const bool& cacheable, ResponseFunctor response_functor) {
+                         bool cacheable, ResponseFunctor response_functor) {
   return pimpl_->SendDirect(destination_id, message, cacheable, response_functor);
 }
 
 void Routing::SendGroup(const NodeId& destination_id, const std::string& message,
-                        const bool& cacheable, ResponseFunctor response_functor) {
+                        bool cacheable, ResponseFunctor response_functor) {
   return pimpl_->SendGroup(destination_id, message, cacheable, response_functor);
 }
 

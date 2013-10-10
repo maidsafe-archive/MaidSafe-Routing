@@ -63,7 +63,7 @@ void PrintKeys(const PmidVector& all_pmids) {
               << (i < 2 ? " (bootstrap)" : "") << std::endl;
 }
 
-bool CreateKeys(const size_t& pmids_count, PmidVector& all_pmids) {
+bool CreateKeys(size_t pmids_count, PmidVector& all_pmids) {
   all_pmids.clear();
   for (size_t i = 0; i < pmids_count; ++i) {
     try {

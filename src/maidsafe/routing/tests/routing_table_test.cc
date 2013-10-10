@@ -1198,7 +1198,7 @@ TEST(RoutingTableTest, BEH_MatrixChange) {
   int count(0);
   MatrixChangedFunctor matrix_change_functor = [&count](
       std::shared_ptr<MatrixChange> /*matrix_change*/) { count++; };  // NOLINT
-  routing_table.InitialiseFunctors([](const int&) {}, [](const NodeInfo&, bool) {}, []() {},
+  routing_table.InitialiseFunctors([](int) {}, [](const NodeInfo&, bool) {}, []() {},  // NOLINT
                                    [](const std::vector<NodeInfo>) {},
                                    [](const std::vector<NodeInfo>&) {}, matrix_change_functor);
   std::vector<NodeId> node_ids;

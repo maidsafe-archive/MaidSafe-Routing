@@ -55,10 +55,10 @@ passport::Pmid MakePmid();
 
 NodeInfo MakeNode();
 
-NodeId GenerateUniqueRandomId(const NodeId& holder, const uint16_t& pos);
-NodeId GenerateUniqueRandomId(const uint16_t& pos);
+NodeId GenerateUniqueRandomId(const NodeId& holder, uint16_t pos);
+NodeId GenerateUniqueRandomId(uint16_t pos);
 
-int NetworkStatus(const bool& client, const int& status);
+int NetworkStatus(bool client, int status);
 
 void SortFromTarget(const NodeId& target, std::vector<NodeInfo>& nodes);
 

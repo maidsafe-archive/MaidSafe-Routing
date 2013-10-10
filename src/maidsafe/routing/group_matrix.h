@@ -77,7 +77,7 @@ class GroupMatrix {
   bool GetRow(const NodeId& row_id, std::vector<NodeInfo>& row_entries);
   std::vector<NodeInfo> GetUniqueNodes() const;
   std::vector<NodeId> GetUniqueNodeIds() const;
-  std::vector<NodeInfo> GetClosestNodes(const uint16_t& size);
+  std::vector<NodeInfo> GetClosestNodes(uint16_t size);
   bool Contains(const NodeId& node_id);
   void Prune();
 
@@ -89,7 +89,7 @@ class GroupMatrix {
   GroupMatrix(const GroupMatrix&);
   GroupMatrix& operator=(const GroupMatrix&);
   void UpdateUniqueNodeList();
-  void PartialSortFromTarget(const NodeId& target, const uint16_t& number,
+  void PartialSortFromTarget(const NodeId& target, uint16_t number,
                              std::vector<NodeInfo>& nodes);
   void PrintGroupMatrix();
 

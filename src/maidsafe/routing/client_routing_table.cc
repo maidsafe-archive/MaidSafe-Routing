@@ -45,7 +45,7 @@ bool ClientRoutingTable::CheckNode(NodeInfo& node, const NodeId& furthest_close_
 }
 
 bool ClientRoutingTable::AddOrCheckNode(NodeInfo& node, const NodeId& furthest_close_node_id,
-                                        const bool& add) {
+                                        bool add) {
   if (node.node_id == kNodeId_)
     return false;
   std::lock_guard<std::mutex> lock(mutex_);
@@ -146,7 +146,7 @@ bool ClientRoutingTable::CheckParametersAreUnique(const NodeInfo& node) const {
 
 bool ClientRoutingTable::CheckRangeForNodeToBeAdded(NodeInfo& node,
                                                     const NodeId& furthest_close_node_id,
-                                                    const bool& add) const {
+                                                    bool add) const {
   if (nodes_.size() >= Parameters::max_client_routing_table_size) {
     LOG(kInfo) << "ClientRoutingTable full.";
     return false;

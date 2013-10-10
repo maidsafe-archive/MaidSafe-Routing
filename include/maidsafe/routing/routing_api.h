@@ -107,7 +107,7 @@ class Routing {
   // b) waiting time (Parameters::default_response_timeout) for receiving the response expires
   // Throws on invalid paramaters
   void SendDirect(const NodeId& destination_id,                       // ID of final destination
-                  const std::string& message, const bool& cacheable,  // to cache message content
+                  const std::string& message, bool cacheable,  // to cache message content
                   ResponseFunctor response_functor);                  // Called on response
 
   // Sends message to Parameters::node_group_size most closest nodes to destination_id. The node
@@ -118,7 +118,7 @@ class Routing {
   // b) waiting time (Parameters::default_response_timeout) for receiving the response expires
   // Throws on invalid paramaters
   void SendGroup(const NodeId& destination_id,  // ID of final destination or group centre
-                 const std::string& message, const bool& cacheable,  // to cache message content
+                 const std::string& message, bool cacheable,  // to cache message content
                  ResponseFunctor response_functor);                  // Called on each response
 
   // Compares own closeness to target against other known nodes' closeness to the target

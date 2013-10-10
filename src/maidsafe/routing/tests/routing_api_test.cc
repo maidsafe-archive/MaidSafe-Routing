@@ -61,7 +61,7 @@ typedef boost::asio::ip::udp::endpoint Endpoint;
 const int kClientCount(4);
 const int kServerCount(10);
 const int kNetworkSize = kClientCount + kServerCount;
-MessageReceivedFunctor no_ops_message_received_functor = [](const std::string&, const bool&,
+MessageReceivedFunctor no_ops_message_received_functor = [](const std::string&, bool,
                                                             ReplyFunctor) {};  // NOLINT
 }  // anonymous namespace
 
@@ -80,7 +80,7 @@ TEST(APITest, BEH_API_ZeroState) {
   Routing routing2(pmid2);
   Routing routing3(pmid3);
 
-  functors1.network_status = [](const int&) {};  // NOLINT (Fraser)
+  functors1.network_status = [](int) {};  // NOLINT (Fraser)
   functors1.message_and_caching.message_received = no_ops_message_received_functor;
   functors3 = functors2 = functors1;
 
@@ -137,7 +137,7 @@ TEST(APITest, BEH_API_ZeroStateWithDuplicateNode) {
   Routing routing4(pmid3);
   functors1.message_and_caching.message_received = no_ops_message_received_functor;
   functors4 = functors3 = functors2 = functors1;
-  functors1.network_status = [](const int&) {};  // NOLINT (Fraser)
+  functors1.network_status = [](int) {};  // NOLINT (Fraser)
   functors1.request_public_key = [&](const NodeId & node_id, GivePublicKeyFunctor give_key) {
     LOG(kWarning) << "node_validation called for " << DebugId(node_id);
     auto itr(key_map.find(node_id));
@@ -195,7 +195,7 @@ TEST(APITest, BEH_API_SendToSelf) {
   Routing routing2(pmid2);
   Routing routing3(pmid3);
 
-  functors1.network_status = [](const int&) {};  // NOLINT (Fraser)
+  functors1.network_status = [](int) {};  // NOLINT (Fraser)
   functors1.request_public_key = [&](const NodeId & node_id, GivePublicKeyFunctor give_key) {
     LOG(kWarning) << "node_validation called for " << DebugId(node_id);
     auto itr(key_map.find(node_id));
@@ -203,7 +203,7 @@ TEST(APITest, BEH_API_SendToSelf) {
       give_key((*itr).second);
   };
 
-  functors1.message_and_caching.message_received = [&](const std::string & message, const bool&,
+  functors1.message_and_caching.message_received = [&](const std::string & message, bool,
                                                        ReplyFunctor reply_functor) {
     reply_functor("response to " + message);
     LOG(kVerbose) << "Message received and replied to message !!";
@@ -272,7 +272,7 @@ TEST(APITest, BEH_API_ClientNode) {
   Routing routing3(maid);
   functors1.message_and_caching.message_received = no_ops_message_received_functor;
   functors3 = functors2 = functors1;
-  functors1.network_status = [](const int&) {};  // NOLINT (Fraser)
+  functors1.network_status = [](int) {};  // NOLINT (Fraser)
   functors1.request_public_key = [&](const NodeId & node_id, GivePublicKeyFunctor give_key) {
     LOG(kWarning) << "node_validation called for " << DebugId(node_id);
     auto itr(key_map.find(node_id));
@@ -280,7 +280,7 @@ TEST(APITest, BEH_API_ClientNode) {
       give_key((*itr).second);
   };
 
-  functors1.message_and_caching.message_received = [&](const std::string & message, const bool&,
+  functors1.message_and_caching.message_received = [&](const std::string & message, bool,
                                                        ReplyFunctor reply_functor) {
     reply_functor("response to " + message);
     LOG(kVerbose) << "Message received and replied to message !!";
@@ -343,7 +343,7 @@ TEST(APITest, BEH_API_NonMutatingClientNode) {
   functors1.message_and_caching.message_received = no_ops_message_received_functor;
   functors3 = functors2 = functors1;
 
-  functors1.network_status = [](const int&) {};  // NOLINT (Fraser)
+  functors1.network_status = [](int) {};  // NOLINT (Fraser)
   functors1.request_public_key = [&](const NodeId & node_id, GivePublicKeyFunctor give_key) {
     LOG(kWarning) << "node_validation called for " << DebugId(node_id);
     auto itr(key_map.find(node_id));
@@ -351,7 +351,7 @@ TEST(APITest, BEH_API_NonMutatingClientNode) {
       give_key((*itr).second);
   };
 
-  functors1.message_and_caching.message_received = [&](const std::string & message, const bool&,
+  functors1.message_and_caching.message_received = [&](const std::string & message, bool,
                                                        ReplyFunctor reply_functor) {
     reply_functor("response to " + message);
     LOG(kVerbose) << "Message received and replied to message !!";
@@ -416,7 +416,7 @@ TEST(APITest, BEH_API_ClientNodeSameId) {
   Routing routing4(maid);
   functors1.message_and_caching.message_received = no_ops_message_received_functor;
   functors4 = functors3 = functors2 = functors1;
-  functors1.network_status = [](const int&) {};  // NOLINT (Fraser)
+  functors1.network_status = [](int) {};  // NOLINT (Fraser)
   functors1.request_public_key = [&](const NodeId & node_id, GivePublicKeyFunctor give_key) {
     LOG(kWarning) << "node_validation called for " << DebugId(node_id);
     auto itr(key_map.find(node_id));
@@ -424,7 +424,7 @@ TEST(APITest, BEH_API_ClientNodeSameId) {
       give_key((*itr).second);
   };
 
-  functors1.message_and_caching.message_received = [&](const std::string & message, const bool&,
+  functors1.message_and_caching.message_received = [&](const std::string & message, bool,
                                                        ReplyFunctor reply_functor) {
     reply_functor("response to " + message);
     LOG(kVerbose) << "Message received and replied to message !!";
@@ -506,7 +506,7 @@ TEST(APITest, BEH_API_NodeNetwork) {
   Functors functors;
   functors.message_and_caching.message_received = no_ops_message_received_functor;
   std::map<NodeId, asymm::PublicKey> key_map;
-  functors.network_status = [](const int&) {};  // NOLINT (Fraser)
+  functors.network_status = [](int) {};  // NOLINT (Fraser)
   functors.request_public_key = [&](const NodeId & node_id, GivePublicKeyFunctor give_key) {
     LOG(kWarning) << "node_validation called for " << DebugId(node_id);
     auto itr(key_map.find(node_id));
@@ -590,18 +590,18 @@ TEST(APITest, BEH_API_NodeNetworkWithClient) {
     routing_node.push_back(std::make_shared<Routing>(maid));
   }
 
-  functors.network_status = [](const int&) {};  // NOLINT (Fraser)
+  functors.network_status = [](int) {};  // NOLINT (Fraser)
 
-  functors.message_and_caching.message_received = [&](const std::string & message, const bool&,
+  functors.message_and_caching.message_received = [&](const std::string & message, bool,
                                                       ReplyFunctor reply_functor) {
     reply_functor("response to " + message);
     LOG(kVerbose) << "Message received and replied to message !!";
   };
 
   Functors client_functors;
-  client_functors.network_status = [](const int&) {};  // NOLINT (Fraser)
+  client_functors.network_status = [](int) {};  // NOLINT (Fraser)
   client_functors.request_public_key = functors.request_public_key;
-  client_functors.message_and_caching.message_received = [&](const std::string&, const bool&,
+  client_functors.message_and_caching.message_received = [&](const std::string&, bool,
                                                              ReplyFunctor /*reply_functor*/) {
     ASSERT_TRUE(false);  //  Client should not receive incoming message
   };
@@ -681,9 +681,9 @@ TEST(APITest, BEH_API_SendGroup) {
     routing_node.push_back(std::make_shared<Routing>(pmid));
   }
 
-  functors.network_status = [](const int&) {};  // NOLINT
+  functors.network_status = [](int) {};  // NOLINT
 
-  functors.message_and_caching.message_received = [&](const std::string & message, const bool&,
+  functors.message_and_caching.message_received = [&](const std::string & message, bool,
                                                       ReplyFunctor reply_functor) {
     reply_functor("response to " + message);
     LOG(kVerbose) << "Message received and replied to message !!";
@@ -810,8 +810,8 @@ TEST(APITest, BEH_API_PartiallyJoinedSend) {
   functors1.message_and_caching.message_received = no_ops_message_received_functor;
   functors3 = functors2 = functors1;
 
-  functors1.network_status = [](const int&) {};  // NOLINT (Fraser)
-  functors1.message_and_caching.message_received = [&](const std::string & message, const bool&,
+  functors1.network_status = [](int) {};  // NOLINT (Fraser)
+  functors1.message_and_caching.message_received = [&](const std::string & message, bool,
                                                        ReplyFunctor reply_functor) {
     reply_functor("response to " + message);
     LOG(kVerbose) << "Message received and replied to message !!";
@@ -895,7 +895,7 @@ TEST(APITest, BEH_API_TypedMessageSend) {
   Routing routing2(pmid2);
   Routing routing3(pmid3);
 
-  functors1.network_status = [](const int&) {};  // NOLINT (Fraser)
+  functors1.network_status = [](int) {};  // NOLINT (Fraser)
   functors1.request_public_key = [&](const NodeId & node_id, GivePublicKeyFunctor give_key) {
     LOG(kWarning) << "node_validation called for " << DebugId(node_id);
     auto itr(key_map.find(node_id));

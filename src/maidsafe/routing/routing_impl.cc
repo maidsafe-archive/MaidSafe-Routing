@@ -321,21 +321,21 @@ int Routing::Impl::ZeroStateJoin(const Functors& functors, const Endpoint& local
 }
 
 void Routing::Impl::SendDirect(const NodeId& destination_id, const std::string& data,
-                               const bool& cacheable, ResponseFunctor response_functor) {
+                               bool cacheable, ResponseFunctor response_functor) {
   assert(!functors_.typed_message_and_caching.single_to_single.message_received &&
          "Not allowed with typed Message API");
   Send(destination_id, data, DestinationType::kDirect, cacheable, response_functor);
 }
 
 void Routing::Impl::SendGroup(const NodeId& destination_id, const std::string& data,
-                              const bool& cacheable, ResponseFunctor response_functor) {
+                              bool cacheable, ResponseFunctor response_functor) {
   assert(!functors_.typed_message_and_caching.single_to_single.message_received &&
          "Not allowed with typed Message API");
   Send(destination_id, data, DestinationType::kGroup, cacheable, response_functor);
 }
 
 void Routing::Impl::Send(const NodeId& destination_id, const std::string& data,
-                         const DestinationType& destination_type, const bool& cacheable,
+                         const DestinationType& destination_type, bool cacheable,
                          ResponseFunctor response_functor) {
   CheckSendParameters(destination_id, data);
   protobuf::Message proto_message =
@@ -400,7 +400,7 @@ void Routing::Impl::PartiallyJoinedSend(protobuf::Message& proto_message) {
 
 protobuf::Message Routing::Impl::CreateNodeLevelPartialMessage(
     const NodeId& destination_id, const DestinationType& destination_type, const std::string& data,
-    const bool& cacheable) {
+    bool cacheable) {
   protobuf::Message proto_message;
   proto_message.set_destination_id(destination_id.string());
   proto_message.set_routing_message(false);

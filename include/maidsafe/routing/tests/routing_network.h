@@ -96,16 +96,16 @@ class GenericNode {
   bool joined() const;
   bool IsClient() const;
   bool HasSymmetricNat() const;
-  // void set_client_mode(const bool& client_mode);
+  // void set_client_mode(bool client_mode);
   int expected();
-  void set_expected(const int& expected);
+  void set_expected(int expected);
   int ZeroStateJoin(const boost::asio::ip::udp::endpoint& peer_endpoint,
                     const NodeInfo& peer_node_info);
   void Join(const std::vector<boost::asio::ip::udp::endpoint>& peer_endpoints =
                 std::vector<boost::asio::ip::udp::endpoint>());
-  void SendDirect(const NodeId& destination_id, const std::string& data, const bool& cacheable,
+  void SendDirect(const NodeId& destination_id, const std::string& data, bool cacheable,
                   ResponseFunctor response_functor);
-  void SendGroup(const NodeId& destination_id, const std::string& data, const bool& cacheable,
+  void SendGroup(const NodeId& destination_id, const std::string& data, bool cacheable,
                  ResponseFunctor response_functor);
   std::future<std::vector<NodeId>> GetGroup(const NodeId& info_id);
   GroupRangeStatus IsNodeIdInGroupRange(const NodeId& node_id);
@@ -140,7 +140,7 @@ class GenericNode {
   void ClearMessages();
   asymm::PublicKey public_key();
   int Health();
-  void SetHealth(const int& health);
+  void SetHealth(int health);
   friend class GenericNetwork;
   Functors functors_;
 
@@ -173,18 +173,18 @@ class GenericNetwork {
   bool ValidateRoutingTables() const;
   virtual void SetUp();
   virtual void TearDown();
-  void SetUpNetwork(const size_t& total_number_vaults, const size_t& total_number_clients = 0);
+  void SetUpNetwork(size_t total_number_vaults, size_t total_number_clients = 0);
   // Use to specify proportion of vaults/clients that should behave as though they are behind
   // symmetric NAT. Two nodes behind symmetric NAT can't connect directly to each other.
-  void SetUpNetwork(const size_t& total_number_vaults, const size_t& total_number_clients,
-                    const size_t& num_symmetric_nat_vaults,
-                    const size_t& num_symmetric_nat_clients);
-  void AddNode(const bool& client_mode, const NodeId& node_id,
+  void SetUpNetwork(size_t total_number_vaults, size_t total_number_clients,
+                    size_t num_symmetric_nat_vaults,
+                    size_t num_symmetric_nat_clients);
+  void AddNode(bool client_mode, const NodeId& node_id,
                MatrixChangedFunctor matrix_change_functor);
-  void AddNode(const bool& client_mode, const NodeId& node_id,
-               const bool& has_symmetric_nat = false, const bool& non_mutating_client = false);
-  void AddNode(const bool& client_mode, const rudp::NatType& nat_type);
-  void AddNode(const bool& client_mode, const bool& has_symmetric_nat);
+  void AddNode(bool client_mode, const NodeId& node_id,
+               bool has_symmetric_nat = false, bool non_mutating_client = false);
+  void AddNode(bool client_mode, const rudp::NatType& nat_type);
+  void AddNode(bool client_mode, bool has_symmetric_nat);
   bool RemoveNode(const NodeId& node_id);
   bool WaitForNodesToJoin();
   void Validate(const NodeId& node_id, GivePublicKeyFunctor give_public_key) const;
@@ -202,9 +202,9 @@ class GenericNetwork {
   int NodeIndex(const NodeId& node_id) const;
   size_t ClientIndex() const { return client_index_; }
   std::vector<NodeId> GetGroupForId(const NodeId& node_id) const;
-  std::vector<NodeInfo> GetClosestNodes(const NodeId& target_id, const uint32_t& quantity,
-                                        const bool vault_only = false) const;
-  std::vector<NodeInfo> GetClosestVaults(const NodeId& target_id, const uint32_t& quantity) const;
+  std::vector<NodeInfo> GetClosestNodes(const NodeId& target_id, uint32_t quantity,
+                                        bool vault_only = false) const;
+  std::vector<NodeInfo> GetClosestVaults(const NodeId& target_id, uint32_t quantity) const;
   void ValidateExpectedNodeType(const NodeId& node_id,
                                 const ExpectedNodeType& expected_node_type) const;
   bool RestoreComposition();
@@ -214,12 +214,12 @@ class GenericNetwork {
   bool WaitForHealthToStabiliseInLargeNetwork() const;
   bool NodeHasSymmetricNat(const NodeId& node_id) const;
   // Verifies that nodes' group matrices contain the Parameters::closest_nodes_size closest nodes
-  testing::AssertionResult CheckGroupMatrixUniqueNodes(const uint16_t& check_length =
+  testing::AssertionResult CheckGroupMatrixUniqueNodes(uint16_t check_length =
                                                            Parameters::closest_nodes_size + 1);
   // Do SendDirect between each pair of nodes and monitor results (do this 'repeats' times)
-  testing::AssertionResult SendDirect(const size_t& repeats, size_t message_size = (2 ^ 10) * 256);
+  testing::AssertionResult SendDirect(size_t repeats, size_t message_size = (2 ^ 10) * 256);
   // Do SendGroup from source_index node to target ID and monitor results (do this 'repeats' times)
-  testing::AssertionResult SendGroup(const NodeId& target_id, const size_t& repeats,
+  testing::AssertionResult SendGroup(const NodeId& target_id, size_t repeats,
                                      uint16_t source_index = 0,
                                      size_t message_size = (2 ^ 10) * 256);
   // Do SendDirect from each node to destination_node_id and monitor results. The ExpectedNodeType

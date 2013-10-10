@@ -41,7 +41,7 @@ namespace routing {
 
 int AddToRudp(NetworkUtils& network, const NodeId& this_node_id, const NodeId& this_connection_id,
               const NodeId& peer_id, const NodeId& peer_connection_id,
-              rudp::EndpointPair peer_endpoint_pair, const bool& requestor, const bool& client) {
+              rudp::EndpointPair peer_endpoint_pair, bool requestor, bool client) {
   LOG(kVerbose) << "AddToRudp. peer_id : " << DebugId(peer_id)
                 << " , connection id : " << DebugId(peer_connection_id);
   protobuf::Message connect_success(
@@ -61,7 +61,7 @@ int AddToRudp(NetworkUtils& network, const NodeId& this_node_id, const NodeId& t
 bool ValidateAndAddToRoutingTable(NetworkUtils& network, RoutingTable& routing_table,
                                   ClientRoutingTable& client_routing_table, const NodeId& peer_id,
                                   const NodeId& connection_id, const asymm::PublicKey& public_key,
-                                  const bool& client) {
+                                  bool client) {
   if (network.MarkConnectionAsValid(connection_id) != kSuccess) {
     LOG(kError) << "[" << DebugId(routing_table.kNodeId()) << "] "
                 << ". Rudp failed to validate connection with  Peer id : " << DebugId(peer_id)

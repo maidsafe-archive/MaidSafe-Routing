@@ -162,7 +162,7 @@ void Commands::ZeroStateJoin() {
     demo_node_->set_joined(ret_code == kSuccess);
 }
 
-void Commands::SendMessages(const int& id_index, const DestinationType& destination_type,
+void Commands::SendMessages(int id_index, const DestinationType& destination_type,
                             bool is_routing_req, int messages_count) {
   std::string data, data_to_send;
   //  Check message type
@@ -209,7 +209,7 @@ void Commands::SendMessages(const int& id_index, const DestinationType& destinat
             << std::endl;
 }
 
-uint16_t Commands::MakeMessage(const int& id_index, const DestinationType& destination_type,
+uint16_t Commands::MakeMessage(int id_index, const DestinationType& destination_type,
                                std::vector<NodeId>& closest_nodes, NodeId& dest_id) {
   int identity_index;
   if (id_index >= 0)

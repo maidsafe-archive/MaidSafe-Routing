@@ -50,7 +50,7 @@ typedef std::function<void(std::string)> ResponseFunctor;
 typedef std::function<void(const std::string& /*message*/)> ReplyFunctor;
 
 // This is called on any message received that is NOT a reply to a request made by the Send method.
-typedef std::function<void(const std::string& /*message*/, const bool& /*cache_lookup*/,
+typedef std::function<void(const std::string& /*message*/, bool /*cache_lookup*/,
                            ReplyFunctor /*reply functor*/)> MessageReceivedFunctor;
 
 // This is fired to validate a new peer node. User is supposed to validate the node and call
@@ -62,7 +62,7 @@ typedef std::function<bool(std::string& /*data*/)> HaveCacheDataFunctor;
 typedef std::function<void(const std::string& /*data*/)> StoreCacheDataFunctor;
 
 // This functor fires a number from 0 to 100 and represents % network health.
-typedef std::function<void(const int& /*network_health*/)> NetworkStatusFunctor;
+typedef std::function<void(int /*network_health*/)> NetworkStatusFunctor;
 
 // This functor fires a validated endpoint which is usable for bootstrapping
 typedef std::function<void(const boost::asio::ip::udp::endpoint& /*new_endpoint*/)>

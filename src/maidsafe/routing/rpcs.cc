@@ -127,7 +127,7 @@ protobuf::Message Remove(const NodeId& node_id, const NodeId& this_node_id,
 }
 
 protobuf::Message FindNodes(const NodeId& node_id, const NodeId& this_node_id,
-                            const int& num_nodes_requested, bool relay_message,
+                            int num_nodes_requested, bool relay_message,
                             NodeId relay_connection_id) {
   assert(!node_id.IsZero() && "Invalid node_id");
   assert(!this_node_id.IsZero() && "Invalid my node_id");
@@ -163,8 +163,8 @@ protobuf::Message FindNodes(const NodeId& node_id, const NodeId& this_node_id,
 }
 
 protobuf::Message ConnectSuccess(const NodeId& node_id, const NodeId& this_node_id,
-                                 const NodeId& this_connection_id, const bool& requestor,
-                                 const bool& client_node) {
+                                 const NodeId& this_connection_id, bool requestor,
+                                 bool client_node) {
   assert(!node_id.IsZero() && "Invalid node_id");
   assert(!this_node_id.IsZero() && "Invalid my node_id");
   assert(!this_connection_id.IsZero() && "Invalid this_connection_id");
@@ -191,9 +191,9 @@ protobuf::Message ConnectSuccess(const NodeId& node_id, const NodeId& this_node_
 
 protobuf::Message ConnectSuccessAcknowledgement(const NodeId& node_id, const NodeId& this_node_id,
                                                 const NodeId& this_connection_id,
-                                                const bool& requestor,
+                                                bool requestor,
                                                 const std::vector<NodeId>& close_ids,
-                                                const bool& client_node) {
+                                                bool client_node) {
   assert(!node_id.IsZero() && "Invalid node_id");
   assert(!this_node_id.IsZero() && "Invalid my node_id");
   assert(!this_connection_id.IsZero() && "Invalid this_connection_id");

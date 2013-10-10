@@ -94,7 +94,7 @@ passport::Pmid MakePmid() { return passport::Pmid(MakeMaid()); }
   return fob;
 } */
 
-NodeId GenerateUniqueRandomId(const NodeId& holder, const uint16_t& pos) {
+NodeId GenerateUniqueRandomId(const NodeId& holder, uint16_t pos) {
   std::string holder_id = holder.ToStringEncoded(NodeId::EncodingType::kBinary);
   std::bitset<64 * 8> holder_id_binary_bitset(holder_id);
   NodeId new_node;
@@ -114,7 +114,7 @@ NodeId GenerateUniqueRandomId(const NodeId& holder, const uint16_t& pos) {
   return new_node;
 }
 
-NodeId GenerateUniqueNonRandomId(const NodeId& holder, const uint64_t& id) {
+NodeId GenerateUniqueNonRandomId(const NodeId& holder, uint64_t id) {
   std::string holder_id = holder.ToStringEncoded(NodeId::EncodingType::kBinary);
   std::bitset<64 * 8> holder_id_binary_bitset(holder_id);
   NodeId new_node;
@@ -130,17 +130,17 @@ NodeId GenerateUniqueNonRandomId(const NodeId& holder, const uint64_t& id) {
   return new_node;
 }
 
-NodeId GenerateUniqueRandomId(const uint16_t& pos) {
+NodeId GenerateUniqueRandomId(uint16_t pos) {
   NodeId holder(NodeId(NodeId::kMaxId) ^ NodeId(NodeId::kMaxId));
   return GenerateUniqueRandomId(holder, pos);
 }
 
-NodeId GenerateUniqueNonRandomId(const uint64_t& pos) {
+NodeId GenerateUniqueNonRandomId(uint64_t pos) {
   NodeId holder(NodeId(NodeId::kMaxId) ^ NodeId(NodeId::kMaxId));
   return GenerateUniqueNonRandomId(holder, pos);
 }
 
-int NetworkStatus(const bool& client, const int& status) {
+int NetworkStatus(bool client, int status) {
   uint16_t max_size(client ? Parameters::max_routing_table_size_for_client
                            : Parameters::max_routing_table_size);
   return (status > 0) ? (status * 100 / max_size) : status;

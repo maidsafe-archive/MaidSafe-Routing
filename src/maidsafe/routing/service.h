@@ -51,7 +51,7 @@ class Service {
 
  private:
   void ConnectSuccessFromRequester(NodeInfo& peer);
-  void ConnectSuccessFromResponder(NodeInfo& peer, const bool& client);
+  void ConnectSuccessFromResponder(NodeInfo& peer, bool client);
   bool CheckPriority(const NodeId& this_node, const NodeId& peer_node);
 
   RoutingTable& routing_table_;
