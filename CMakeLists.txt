@@ -104,9 +104,8 @@ endif()
 
 rename_outdated_built_exes()
 
-if (NETWORK_VIEWER)
-  add_subdirectory(${RoutingSourcesDir}/tools/network_viewer)
-endif()
+add_subdirectory(${RoutingSourcesDir}/tools/network_viewer)
+
 
 #==================================================================================================#
 # Set compiler and linker flags                                                                    #
