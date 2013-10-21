@@ -1,3 +1,3 @@
-For full details, see https://github.com/maidsafe/MaidSafe-Routing/wiki
+For full details, see http://www.maidsafe.net/routing.html
 
-[![githalytics.com alpha](https://cruel-carlota.pagodabox.com/e9ec4d5cb5fe421511b2199d84858fc5 "githalytics.com")](http://githalytics.com/maidsafe/MaidSafe-Routing)
+[![githalytics.com alpha](https://cruel-carlota.pagodabox.com/c238536a501d2b1fb8fc8af33c31349b "githalytics.com")](http://githalytics.com/maidsafe/MaidSafe-Routing)
