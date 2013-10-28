@@ -136,11 +136,8 @@ void WriteFile() {
     return;
   }
 
-  if (!maidsafe::WriteFile(file, serialised_bootstrap_nodes)) {
+  if (!maidsafe::WriteFile(file, serialised_bootstrap_nodes))
     std::cout << "Could not write bootstrap file.";
-    return;
-  }
-  return;
 }
 
 void exit() { exit(0); }
