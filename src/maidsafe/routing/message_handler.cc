@@ -49,7 +49,7 @@ SingleToSingleMessage CreateSingleToSingleMessage(const protobuf::Message& proto
 SingleToGroupMessage CreateSingleToGroupMessage(const protobuf::Message& proto_message) {
   return SingleToGroupMessage(proto_message.data(0),
                               SingleSource(NodeId(proto_message.source_id())),
-                              GroupId(NodeId(proto_message.destination_id())),
+                              GroupId(NodeId(proto_message.group_destination())),
                               static_cast<Cacheable>(proto_message.cacheable()));
 }
 
@@ -65,7 +65,7 @@ GroupToGroupMessage CreateGroupToGroupMessage(const protobuf::Message& proto_mes
   return GroupToGroupMessage(proto_message.data(0),
                              GroupSource(GroupId(NodeId(proto_message.group_source())),
                                          SingleId(NodeId(proto_message.source_id()))),
-                             GroupId(NodeId(proto_message.destination_id())),
+                             GroupId(NodeId(proto_message.group_destination())),
                              static_cast<Cacheable>(proto_message.cacheable()));
 }
 
