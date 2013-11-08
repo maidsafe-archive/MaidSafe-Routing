@@ -25,6 +25,7 @@
 #include "maidsafe/common/config.h"
 #include "maidsafe/common/crypto.h"
 #include "maidsafe/common/node_id.h"
+#include "maidsafe/common/utils.h"
 
 namespace maidsafe {
 
@@ -65,6 +66,20 @@ class MatrixChange {
   CheckHoldersResult CheckHolders(const NodeId& target) const;
   PmidNodeStatus CheckPmidNodeStatus(const std::vector<NodeId>& pmid_nodes) const;
   NodeId ChoosePmidNode(const std::set<NodeId>& online_pmids, const NodeId& target) const;
+  void Print() {
+    LOG(kInfo) << "Matrix of Node " << HexSubstr(node_id_.string())
+               << " having following entries in old_matrix_ :";
+    for (auto entry : old_matrix_)
+      LOG(kInfo) << "    entry in old_matrix_    ------     " << HexSubstr(entry.string());
+    LOG(kInfo) << "Matrix of Node " << HexSubstr(node_id_.string())
+               << " having following entries in new_matrix_ :";
+    for (auto entry : new_matrix_)
+      LOG(kInfo) << "    entry in new_matrix_    ------     " << HexSubstr(entry.string());
+    LOG(kInfo) << "Matrix of Node " << HexSubstr(node_id_.string())
+               << " having following entries in lost_nodes_ :";
+    for (auto entry : lost_nodes_)
+      LOG(kInfo) << "    entry in lost_nodes_    ------     " << HexSubstr(entry.string());
+  }
 
   friend void swap(MatrixChange& lhs, MatrixChange& rhs) MAIDSAFE_NOEXCEPT;
   friend class GroupMatrix;

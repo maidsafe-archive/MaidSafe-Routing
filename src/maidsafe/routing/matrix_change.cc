@@ -171,11 +171,24 @@ NodeId MatrixChange::ChoosePmidNode(const std::set<NodeId>& online_pmids,
   if (online_pmids.empty())
     ThrowError(CommonErrors::invalid_parameter);
 
+  LOG(kInfo) << "MatrixChange::ChoosePmidNode having following new_matrix_ : ";
+  for (auto id : new_matrix_)
+    LOG(kInfo) << "       new_matrix_ ids     ---  " << HexSubstr(id.string());
+  LOG(kInfo) << "MatrixChange::ChoosePmidNode having target : "
+                << HexSubstr(target.string()) << " and following online_pmids : ";
+  for (auto pmid : online_pmids)
+    LOG(kInfo) << "       online_pmids        ---  " << HexSubstr(pmid.string());
+
   std::vector<NodeId> temp(Parameters::node_group_size);
   std::partial_sort_copy(std::begin(new_matrix_), std::end(new_matrix_), std::begin(temp),
                          std::end(temp), [&target](const NodeId& lhs, const NodeId& rhs) {
     return NodeId::CloserToTarget(lhs, rhs, target);
   });
+
+  LOG(kInfo) << "MatrixChange::ChoosePmidNode own id : "
+                << HexSubstr(node_id_.string()) << " and matrix sorted as following : ";
+  for (auto node : temp)
+    LOG(kInfo) << "       sorted_neighbours   ---  " << HexSubstr(node.string());
 
   auto temp_itr(std::begin(temp));
   auto pmids_itr(std::begin(online_pmids));
