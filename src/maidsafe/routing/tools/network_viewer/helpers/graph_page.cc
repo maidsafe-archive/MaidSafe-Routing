@@ -16,7 +16,7 @@
     See the Licences for the specific language governing permissions and limitations relating to
     use of the MaidSafe Software.                                                                 */
 
-#include "maidsafe/routing/tools/network_viewer/helpers/graph_page.h"
+#include "helpers/graph_page.h"
 
 #include <limits>
 #include <vector>

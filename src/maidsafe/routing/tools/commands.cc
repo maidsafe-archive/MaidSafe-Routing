@@ -23,14 +23,7 @@
 
 #include "boost/format.hpp"
 #include "boost/filesystem.hpp"
-#ifdef __MSVC__
-#pragma warning(push)
-#pragma warning(disable : 4127)
-#endif
 #include "boost/tokenizer.hpp"
-#ifdef __MSVC__
-#pragma warning(pop)
-#endif
 #include "boost/lexical_cast.hpp"
 #include "maidsafe/common/crypto.h"
 #include "maidsafe/common/utils.h"

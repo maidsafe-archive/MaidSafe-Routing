@@ -23,10 +23,10 @@
 #include <memory>
 #include <string>
 
-#include "maidsafe/routing/tools/network_viewer/helpers/qt_push_headers.h"
-#include "maidsafe/routing/tools/network_viewer/helpers/qt_pop_headers.h"
+#include "helpers/qt_push_headers.h"
+#include "helpers/qt_pop_headers.h"
 
-#include "maidsafe/routing/tools/network_viewer/models/api_helper.h"
+#include "models/api_helper.h"
 
 namespace maidsafe {
 

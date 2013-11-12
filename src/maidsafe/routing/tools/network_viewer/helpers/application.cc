@@ -16,9 +16,9 @@
     See the Licences for the specific language governing permissions and limitations relating to
     use of the MaidSafe Software.                                                                 */
 
-#include "maidsafe/routing/tools/network_viewer/helpers/application.h"
+#include "helpers/application.h"
 
-#include "maidsafe/routing/tools/network_viewer/controllers/main_view.h"
+#include "controllers/main_view.h"
 
 namespace maidsafe {
 

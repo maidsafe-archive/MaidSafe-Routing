@@ -27,16 +27,9 @@ set(CMAKE_DISABLE_IN_SOURCE_BUILD ON)
 project(routing)
 
 include(../../cmake_modules/standard_setup.cmake)
-# Disable auto-linking qtmain for Windows.  This policy can be set to NEW (and the corresponding
-# explicit linking of qtmain can be removed) when the minimum CMake version becomes 2.8.11.
-if(POLICY CMP0020)
-  cmake_policy(SET CMP0020 OLD)
-endif()
 
-include_directories(${common_SOURCE_DIR}/include)
-include_directories(${passport_SOURCE_DIR}/include)
-include_directories(${private_SOURCE_DIR}/include)
-include_directories(${rudp_SOURCE_DIR}/include)
+# Enable auto-linking qtmain for Windows.
+cmake_policy(SET CMP0020 NEW)
 
 
 #==================================================================================================#
@@ -74,7 +67,8 @@ list(REMOVE_ITEM RoutingTestsAllFiles ${RoutingTestsHelperFiles}
 # Define MaidSafe libraries and executables                                                        #
 #==================================================================================================#
 ms_add_static_library(routing ${RoutingAllFiles})
-target_link_libraries(maidsafe_routing maidsafe_rudp maidsafe_passport maidsafe_network_viewer)
+target_include_directories(maidsafe_routing PUBLIC ${PROJECT_SOURCE_DIR}/include PRIVATE ${PROJECT_SOURCE_DIR}/src)
+target_link_libraries(maidsafe_routing maidsafe_rudp maidsafe_passport maidsafe_network_viewer gmock gtest)
 
 if(MaidsafeTesting)
   target_link_libraries(maidsafe_routing maidsafe_network_viewer)
@@ -85,13 +79,22 @@ if(MaidsafeTesting)
   ms_add_executable(TESTrouting_func_nat "Tests/Routing" ${RoutingFuncNatTestFiles})
   # new executable TESTrouting_big is created to contain tests that each need their own network
   ms_add_executable(TESTrouting_big "Tests/Routing" ${RoutingBigTestFiles} ${RoutingSourcesDir}/tests/test_main.cc)
-  ms_add_executable(create_lifestuff_bootstrap "Tools" ${RoutingSourcesDir}/tools/create_bootstrap.cc)
-  ms_add_executable(routing_key_helper "Tools" ${RoutingSourcesDir}/tools/key_helper.cc)
-  ms_add_executable(routing_node "Tools" ${RoutingSourcesDir}/tools/routing_node.cc
-                                         ${RoutingSourcesDir}/tools/commands.h
-                                         ${RoutingSourcesDir}/tools/commands.cc
-                                         ${RoutingSourcesDir}/tools/shared_response.h
-                                         ${RoutingSourcesDir}/tools/shared_response.cc)
+  ms_add_executable(create_lifestuff_bootstrap "Tools/Routing" ${RoutingSourcesDir}/tools/create_bootstrap.cc)
+  ms_add_executable(routing_key_helper "Tools/Routing" ${RoutingSourcesDir}/tools/key_helper.cc)
+  ms_add_executable(routing_node "Tools/Routing" ${RoutingSourcesDir}/tools/routing_node.cc
+                                                 ${RoutingSourcesDir}/tools/commands.h
+                                                 ${RoutingSourcesDir}/tools/commands.cc
+                                                 ${RoutingSourcesDir}/tools/shared_response.h
+                                                 ${RoutingSourcesDir}/tools/shared_response.cc)
+
+  target_include_directories(TESTrouting PRIVATE ${PROJECT_SOURCE_DIR}/src)
+  target_include_directories(TESTrouting_api PRIVATE ${PROJECT_SOURCE_DIR}/src)
+  target_include_directories(TESTrouting_func PRIVATE ${PROJECT_SOURCE_DIR}/src)
+  target_include_directories(TESTrouting_func_nat PRIVATE ${PROJECT_SOURCE_DIR}/src)
+  target_include_directories(TESTrouting_big PRIVATE ${PROJECT_SOURCE_DIR}/src)
+  target_include_directories(routing_key_helper PRIVATE ${PROJECT_SOURCE_DIR}/src)
+  target_include_directories(routing_node PRIVATE ${PROJECT_SOURCE_DIR}/src)
+
   target_link_libraries(TESTrouting maidsafe_routing)
   target_link_libraries(TESTrouting_api maidsafe_routing)
   target_link_libraries(TESTrouting_func maidsafe_routing)
@@ -112,11 +115,11 @@ add_subdirectory(${RoutingSourcesDir}/tools/network_viewer)
 #==================================================================================================#
 include(standard_flags)
 
-if(QA_BUILD)
-  add_definitions(-DQA_BUILD)
-endif()
-set_target_properties(maidsafe_routing TESTrouting_func TESTrouting_func_nat TESTrouting_big routing_node PROPERTIES
-                      COMPILE_DEFINITIONS "USE_GTEST")
+target_compile_definitions(maidsafe_routing PRIVATE $<$<BOOL:${QA_BUILD}>:QA_BUILD>)
+
+foreach(Target maidsafe_routing TESTrouting_func TESTrouting_func_nat TESTrouting_big routing_node)
+  target_compile_definitions(${Target} PRIVATE USE_GTEST)
+endforeach()
 
 
 #==================================================================================================#
