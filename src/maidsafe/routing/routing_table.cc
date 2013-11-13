@@ -576,10 +576,19 @@ void RoutingTable::NthElementSortFromTarget(const NodeId& target, uint16_t nth_e
   static_cast<void>(lock);
   assert((nodes_.size() >= nth_element) &&
          "This should only be called when n is at max the size of RT");
+#ifndef __GNUC__
   std::nth_element(nodes_.begin(), nodes_.begin() + nth_element - 1, nodes_.end(),
                    [target](const NodeInfo & lhs, const NodeInfo & rhs) {
-    return NodeId::CloserToTarget(lhs.node_id, rhs.node_id, target);
-  });
+                       return NodeId::CloserToTarget(lhs.node_id, rhs.node_id, target);
+                   });
+#else
+// BEFORE_RELEASE use std::nth_element() for all platform when min required Gcc version is 4.8.3
+// http://gcc.gnu.org/bugzilla/show_bug.cgi?id=58800 Bug fixed in gcc 4.8.3
+  std::partial_sort(nodes_.begin(), nodes_.begin() + nth_element - 1, nodes_.end(),
+                    [target](const NodeInfo & lhs, const NodeInfo & rhs) {
+                        return NodeId::CloserToTarget(lhs.node_id, rhs.node_id, target);
+                    });
+#endif
 }
 
 NodeId RoutingTable::FurthestCloseNode() {

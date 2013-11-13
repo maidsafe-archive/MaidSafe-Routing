@@ -44,18 +44,6 @@ NodeInfo::NodeInfo(const NodeInfo& other)
       nat_type(other.nat_type),
       dimension_list(other.dimension_list) {}
 
-NodeInfo& NodeInfo::operator=(const NodeInfo& other) {
-  node_id = other.node_id;
-  connection_id = other.connection_id;
-  public_key = other.public_key;
-  rank = other.rank;
-  bucket = other.bucket;
-  nat_type = other.nat_type;
-  dimension_list = other.dimension_list;
-
-  return *this;
-}
-
 NodeInfo::NodeInfo(NodeInfo&& other)
     : node_id(std::move(other.node_id)),
       connection_id(std::move(other.connection_id)),
@@ -65,15 +53,8 @@ NodeInfo::NodeInfo(NodeInfo&& other)
       nat_type(std::move(other.nat_type)),
       dimension_list(std::move(other.dimension_list)) {}
 
-NodeInfo& NodeInfo::operator=(NodeInfo&& other) {
-  node_id = std::move(other.node_id);
-  connection_id = std::move(other.connection_id);
-  public_key = std::move(other.public_key);
-  rank = std::move(other.rank);
-  bucket = std::move(other.bucket);
-  nat_type = std::move(other.nat_type);
-  dimension_list = std::move(other.dimension_list);
-
+NodeInfo& NodeInfo::operator=(NodeInfo other) {
+  swap(*this, other);
   return *this;
 }
 
@@ -108,6 +89,17 @@ NodeInfo::serialised_type NodeInfo::Serialise() const {
 }
 
 const int32_t NodeInfo::kInvalidBucket(std::numeric_limits<int32_t>::max());
+
+void swap(NodeInfo& lhs, NodeInfo& rhs) MAIDSAFE_NOEXCEPT {
+  using std::swap;
+  swap(lhs.node_id, rhs.node_id);
+  swap(lhs.connection_id, rhs.connection_id);
+  swap(lhs.public_key, rhs.public_key);
+  swap(lhs.rank, rhs.rank);
+  swap(lhs.bucket, rhs.bucket);
+  swap(lhs.nat_type, rhs.nat_type);
+  swap(lhs.dimension_list, rhs.dimension_list);
+}
 
 }  // namespace routing
 

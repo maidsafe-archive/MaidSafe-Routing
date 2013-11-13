@@ -72,6 +72,13 @@ class Timer {
 
   friend class test::TimerTest;
 
+  void PrintTaskIds() {
+    LOG(kError) << "This timer containing following tasks : ";
+    for (auto& task : tasks_) {
+      LOG(kError) << "      task id   ---   " << task.first;
+    }
+  }
+
  private:
   struct Task {
     Task(boost::asio::io_service& io_service, const std::chrono::steady_clock::duration& timeout,
