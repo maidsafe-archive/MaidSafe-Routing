@@ -124,7 +124,6 @@ ms_add_executable(network_viewer "Tools/Routing"
                       ${ALL_NETWORK_VIEWER_RESOURCE_SOURCE_FILES})
 target_include_directories(network_viewer PRIVATE ${PROJECT_SOURCE_DIR})
 set(AllExesForCurrentProject ${AllExesForCurrentProject} PARENT_SCOPE)
-add_dependencies(network_viewer boost)
 if(WIN32)
   set_target_properties(network_viewer PROPERTIES WIN32_EXECUTABLE TRUE)
 endif()
