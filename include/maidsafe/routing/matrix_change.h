@@ -20,6 +20,7 @@
 #define MAIDSAFE_ROUTING_MATRIX_CHANGE_H_
 
 #include <set>
+#include <string>
 #include <vector>
 
 #include "maidsafe/common/config.h"

@@ -38,9 +38,8 @@ struct NodeInfo {
   NodeInfo();
 
   NodeInfo(const NodeInfo& other);
-  NodeInfo& operator=(const NodeInfo& other);
+  NodeInfo& operator=(NodeInfo other);
   NodeInfo(NodeInfo&& other);
-  NodeInfo& operator=(NodeInfo&& other);
   explicit NodeInfo(const serialised_type& serialised_message);
 
   serialised_type Serialise() const;
@@ -55,6 +54,8 @@ struct NodeInfo {
 
   static const int32_t kInvalidBucket;
 };
+
+void swap(NodeInfo& lhs, NodeInfo& rhs) MAIDSAFE_NOEXCEPT;
 
 }  // namespace routing
 
