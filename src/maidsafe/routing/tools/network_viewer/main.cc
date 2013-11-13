@@ -16,14 +16,14 @@
     See the Licences for the specific language governing permissions and limitations relating to
     use of the MaidSafe Software.                                                                 */
 
-#include "maidsafe/routing/tools/network_viewer/helpers/qt_push_headers.h"
-#include "maidsafe/routing/tools/network_viewer/helpers/qt_pop_headers.h"
+#include "helpers/qt_push_headers.h"
+#include "helpers/qt_pop_headers.h"
 
 #include "maidsafe/common/log.h"
 
-#include "maidsafe/routing/tools/network_viewer/controllers/main_view.h"
-#include "maidsafe/routing/tools/network_viewer/helpers/application.h"
-#include "maidsafe/routing/tools/network_viewer/models/api_helper.h"
+#include "controllers/main_view.h"
+#include "helpers/application.h"
+#include "models/api_helper.h"
 
 int main(int argc, char* argv[]) {
   maidsafe::log::Logging::Instance().Initialise(argc, argv);

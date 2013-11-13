@@ -16,13 +16,13 @@
     See the Licences for the specific language governing permissions and limitations relating to
     use of the MaidSafe Software.                                                                 */
 
-#include "maidsafe/routing/tools/network_viewer/controllers/graph_view.h"
+#include "controllers/graph_view.h"
 
-#include "maidsafe/routing/tools/network_viewer/helpers/qt_push_headers.h"
-#include "maidsafe/routing/tools/network_viewer/helpers/qt_pop_headers.h"
+#include "helpers/qt_push_headers.h"
+#include "helpers/qt_pop_headers.h"
 
-#include "maidsafe/routing/tools/network_viewer/helpers/graph_page.h"
-#include "maidsafe/routing/tools/network_viewer/models/api_helper.h"
+#include "helpers/graph_page.h"
+#include "models/api_helper.h"
 
 namespace maidsafe {
 

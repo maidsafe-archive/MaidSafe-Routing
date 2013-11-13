@@ -37,17 +37,9 @@ set(CMAKE_DISABLE_IN_SOURCE_BUILD ON)
 project(network_viewer)
 
 include(../../../../../../../cmake_modules/standard_setup.cmake)
-# Disable auto-linking qtmain for Windows.  This policy can be set to NEW (and the corresponding
-# explicit linking of qtmain can be removed) when the minimum CMake version becomes 2.8.11.
-if(POLICY CMP0020)
-  cmake_policy(SET CMP0020 OLD)
-endif()
 
-include_directories(${common_SOURCE_DIR}/include)
-include_directories(${passport_SOURCE_DIR}/include)
-include_directories(${private_SOURCE_DIR}/include)
-include_directories(${rudp_SOURCE_DIR}/include)
-include_directories(${routing_SOURCE_DIR}/include)
+# Enable auto-linking qtmain for Windows.
+cmake_policy(SET CMP0020 NEW)
 
 
 #==================================================================================================#
@@ -124,16 +116,16 @@ set(ALL_NETWORK_VIEWER_RESOURCE_SOURCE_FILES
 #==================================================================================================#
 # Define MaidSafe libraries and executables                                                        #
 #==================================================================================================#
-ms_add_executable(network_viewer "Tools"
+ms_add_executable(network_viewer "Tools/Routing"
                       ${NETWORK_VIEWER_MAIN}
                       ${ALL_NETWORK_VIEWER_SOURCE_FILES}
                       ${ALL_NETWORK_VIEWER_HEADER_FILES}
                       ${RESOURCE_FILES_NETWORK_VIEWER_RESOURCES_DIR}
                       ${ALL_NETWORK_VIEWER_RESOURCE_SOURCE_FILES})
+target_include_directories(network_viewer PRIVATE ${PROJECT_SOURCE_DIR})
 set(AllExesForCurrentProject ${AllExesForCurrentProject} PARENT_SCOPE)
 add_dependencies(network_viewer boost)
 if(WIN32)
-  target_link_libraries(network_viewer Qt5::WinMain)
   set_target_properties(network_viewer PROPERTIES WIN32_EXECUTABLE TRUE)
 endif()
 qt5_use_modules(network_viewer Core Gui Widgets Network WebKit WebKitWidgets)
@@ -148,7 +140,7 @@ rename_outdated_built_exes()
 #==================================================================================================#
 include(standard_flags)
 
-set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -DQT_NO_DEBUG_OUTPUT -DQT_NO_WARNING_OUTPUT")
+target_compile_definitions(network_viewer PRIVATE $<$<CONFIG:Release>:QT_NO_DEBUG_OUTPUT QT_NO_WARNING_OUTPUT QT_NO_DEBUG_STREAM>)
 
 if(WIN32)
   string(REGEX REPLACE "/Zm[0-9]+ " "/Zm500 " CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
@@ -156,8 +148,6 @@ if(WIN32)
                               COMPILE_FLAGS "/Yu\"${NETWORK_VIEWER_PCH_HEADER}\" /FI\"${NETWORK_VIEWER_PCH_HEADER}\"")
   set_source_files_properties("${PROJECT_SOURCE_DIR}/helpers/qt_push_headers.cc" PROPERTIES
                               COMPILE_FLAGS "/Yc\"${NETWORK_VIEWER_PCH_HEADER}\" /FI\"${NETWORK_VIEWER_PCH_HEADER}\"")
-else(UNIX)
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-stack-protector -Wno-effc++")
 endif()
 
 

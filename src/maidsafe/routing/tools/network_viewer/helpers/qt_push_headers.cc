@@ -16,4 +16,4 @@
     See the Licences for the specific language governing permissions and limitations relating to
     use of the MaidSafe Software.                                                                 */
 
-#include "maidsafe/routing/tools/network_viewer/helpers/qt_push_headers.h"
+#include "helpers/qt_push_headers.h"
