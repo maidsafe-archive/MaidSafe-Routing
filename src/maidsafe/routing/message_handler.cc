@@ -139,10 +139,8 @@ void MessageHandler::HandleRoutingMessage(protobuf::Message& message) {
 }
 
 void MessageHandler::HandleNodeLevelMessageForThisNode(protobuf::Message& message) {
-  if (IsRequest(message) && (!routing_table_.client_mode() ||
-                             (routing_table_.client_mode() &&
-                              (routing_table_.Contains(NodeId(message.source_id())) ||
-                               routing_table_.kNodeId().string() == message.source_id())))) {
+  if (IsRequest(message) &&
+      !IsClientToClientMessageWithDifferentNodeIds(message, routing_table_.client_mode())) {
     LOG(kSuccess) << " [" << DebugId(routing_table_.kNodeId())
                   << "] rcvd : " << MessageTypeString(message) << " from "
                   << HexSubstr(message.source_id()) << "   (id: " << message.id()
@@ -213,6 +211,9 @@ void MessageHandler::HandleNodeLevelMessageForThisNode(protobuf::Message& messag
     if (message.has_average_distace())
       network_statistics_.UpdateNetworkAverageDistance(NodeId(message.average_distace()));
   } else {
+    LOG(kWarning) << "This node [" << DebugId(routing_table_.kNodeId())
+                  << " Dropping message as client to client message not allowed."
+                  << PrintMessage(message);
     message.Clear();
   }
 }
@@ -443,10 +444,12 @@ void MessageHandler::HandleMessage(protobuf::Message& message) {
 void MessageHandler::HandleMessageForNonRoutingNodes(protobuf::Message& message) {
   auto client_routing_nodes(client_routing_table_.GetNodesInfo(NodeId(message.destination_id())));
   assert(!client_routing_nodes.empty() && message.direct());
-  if (IsRequest(message) &&
-      (!message.client_node() || (message.source_id() != message.destination_id()))) {
+// Below bit is not needed currently as SendToClosestNode will do this check anyway
+// TODO(Team) consider removing the check from SendToClosestNode() after
+// adding more client tests
+  if (IsClientToClientMessageWithDifferentNodeIds(message, true)) {
     LOG(kWarning) << "This node [" << DebugId(routing_table_.kNodeId())
-                  << " Dropping message as non-client to client message not allowed."
+                  << " Dropping message as client to client message not allowed."
                   << PrintMessage(message);
     return;
   }

@@ -201,10 +201,9 @@ void NetworkUtils::SendToClosestNode(const protobuf::Message& message) {
     auto client_routing_nodes(client_routing_table_.GetNodesInfo(NodeId(message.destination_id())));
     // have the destination ID in non-routing table
     if (!client_routing_nodes.empty() && message.direct()) {
-      if ((IsRequest(message) && message.source_id() != routing_table_.kNodeId().string()) &&
-          (!message.client_node() || (message.source_id() != message.destination_id()))) {
+      if (IsClientToClientMessageWithDifferentNodeIds(message, true)) {
         LOG(kWarning) << "This node [" << DebugId(routing_table_.kNodeId())
-                      << " Dropping message as non-client to client message not allowed."
+                      << " Dropping message as client to client message not allowed."
                       << PrintMessage(message);
         return;
       }

@@ -1044,8 +1044,8 @@ testing::AssertionResult GenericNetwork::SendDirect(size_t repeats, size_t messa
         std::string data(RandomAlphaNumericString(message_size));
         assert(!data.empty() && "Send Data Empty !");
         ResponseFunctor response_functor;
-        if (dest->IsClient() &&
-            (dest->RoutingTableHasNode(src->node_id()) || dest->node_id() == src->node_id())) {
+        if (dest->IsClient() && (!src->IsClient() || (src->IsClient() &&
+                                                      (dest->node_id() == src->node_id())))) {
           response_functor = [response_mutex, cond_var, reply_count, expected_count, failed](
               std::string reply) {
             std::lock_guard<std::mutex> lock(*response_mutex);
@@ -1060,7 +1060,7 @@ testing::AssertionResult GenericNetwork::SendDirect(size_t repeats, size_t messa
             if (*reply_count == *expected_count)
               cond_var->notify_one();
           };
-        } else if (dest->IsClient() && !dest->RoutingTableHasNode(src->node_id())) {
+        } else if (dest->IsClient() && src->IsClient() && (dest->node_id() != src->node_id())) {
           response_functor = [response_mutex, cond_var, reply_count, expected_count, failed](
               std::string reply) {
             std::lock_guard<std::mutex> lock(*response_mutex);
@@ -1282,7 +1282,8 @@ testing::AssertionResult GenericNetwork::SendDirect(const NodeId& destination_no
         }
       }
       if ((dest != nullptr) &&
-          (dest->RoutingTableHasNode(src->node_id()) || dest->node_id() == src->node_id())) {
+            (dest->IsClient() && (!src->IsClient() || (src->IsClient() &&
+                                                       (dest->node_id() == src->node_id()))))) {
         response_functor = [response_mutex, cond_var, reply_count, expected_count, failed](
             std::string reply) {
           std::lock_guard<std::mutex> lock(*response_mutex);

@@ -173,6 +173,12 @@ bool IsCacheablePut(const protobuf::Message& message) {
           (static_cast<Cacheable>(message.cacheable()) == Cacheable::kPut));
 }
 
+bool IsClientToClientMessageWithDifferentNodeIds(const protobuf::Message& message,
+                                                 const bool is_destination_client) {
+  return (is_destination_client && message.request() && message.client_node() &&
+            (message.destination_id() != message.source_id()));
+}
+
 bool CheckId(const std::string& id_to_test) { return id_to_test.size() == NodeId::kSize; }
 
 bool ValidateMessage(const protobuf::Message& message) {

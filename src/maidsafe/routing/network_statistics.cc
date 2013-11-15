@@ -33,10 +33,19 @@ NetworkStatistics::NetworkStatistics(NodeId node_id)
 void NetworkStatistics::UpdateLocalAverageDistance(std::vector<NodeId>& unique_nodes) {
   if (unique_nodes.size() < Parameters::node_group_size)
     return;
+#ifndef __GNUC__
   std::nth_element(unique_nodes.begin(), unique_nodes.begin() + Parameters::node_group_size,
                    unique_nodes.end(), [&](const NodeId & lhs, const NodeId & rhs) {
     return NodeId::CloserToTarget(lhs, rhs, kNodeId_);
   });
+#else
+  // BEFORE_RELEASE use std::nth_element() for all platform when min required Gcc version is 4.8.3
+  // http://gcc.gnu.org/bugzilla/show_bug.cgi?id=58800 Bug fixed in gcc 4.8.3
+  std::partial_sort(unique_nodes.begin(), unique_nodes.begin() + Parameters::node_group_size,
+                    unique_nodes.end(), [&](const NodeId & lhs, const NodeId & rhs) {
+    return NodeId::CloserToTarget(lhs, rhs, kNodeId_);
+  });
+#endif
   NodeId furthest_group_node(unique_nodes.at(
       std::min(Parameters::node_group_size - 1, static_cast<int>(unique_nodes.size()))));
   {

@@ -118,7 +118,7 @@ TEST(APITest, BEH_API_ZeroState) {
   LOG(kInfo) << "done!!!";
 }
 
-TEST(APITest, BEH_API_ZeroStateWithDuplicateNode) {
+TEST(APITest, DISABLED_BEH_API_ZeroStateWithDuplicateNode) {
   rudp::Parameters::bootstrap_connection_lifespan = boost::posix_time::seconds(5);
   auto pmid1(MakePmid()), pmid2(MakePmid()), pmid3(MakePmid());
   NodeInfoAndPrivateKey node1(MakeNodeInfoAndKeysWithPmid(pmid1));
