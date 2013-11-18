@@ -1013,6 +1013,21 @@ testing::AssertionResult GenericNetwork::CheckGroupMatrixUniqueNodes(uint16_t ch
     std::vector<NodeInfo> nodes_from_network(this->GetClosestVaults(node->node_id(), check_length));
     if (nodes_from_network.size() != check_length)
       return testing::AssertionFailure();
+
+// sort nodes_from_matrix
+    auto target = node->node_id();
+    std::sort(nodes_from_matrix.begin(), nodes_from_matrix.end(),
+              [target](const NodeInfo & lhs, const NodeInfo & rhs) {
+                  return NodeId::CloserToTarget(lhs.node_id, rhs.node_id, target);
+              });
+
+    std::stringstream id;
+    for (uint16_t i(0); i < check_length; ++i) {
+      id << " nodes_from_matrix.at(i) " << DebugId(nodes_from_matrix.at(i).node_id)
+         << "  nodes_from_network.at(i)" << DebugId(nodes_from_network.at(i).node_id) << std::endl;
+    }
+
+    LOG(kVerbose) << id.str();
     for (uint16_t i(0); i < check_length; ++i) {
       EXPECT_EQ(nodes_from_matrix.at(i).node_id, nodes_from_network.at(i).node_id)
           << "Index " << i << " from matrix: " << DebugId(nodes_from_matrix.at(i).node_id)

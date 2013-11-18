@@ -59,20 +59,11 @@ TEST_F(RoutingStandAloneTest, FUNC_GetGroup) {
   }
 }
 
-TEST_F(RoutingStandAloneTest, FUNC_ConnectedVaultCanSendToClient) {
+TEST_F(RoutingStandAloneTest, FUNC_VaultSendToClient) {
   this->SetUpNetwork(kServerSize, 1);
   for (size_t index(0); index < this->ClientIndex(); ++index) {
-    if (this->nodes_[this->ClientIndex()]->RoutingTableHasNode(this->nodes_[index]->node_id())) {
-      EXPECT_TRUE(this->SendDirect(this->nodes_[index],
-                                   this->nodes_[this->ClientIndex()]->node_id(),
-                                   ExpectedNodeType::kExpectClient))
-          << DebugId(this->nodes_[index]->node_id());
-    } else {
-      EXPECT_FALSE(this->SendDirect(this->nodes_[index],
-                                    this->nodes_[this->ClientIndex()]->node_id(),
-                                    ExpectedNodeType::kExpectClient))
-          << DebugId(this->nodes_[index]->node_id());
-    }
+    EXPECT_TRUE(this->SendDirect(this->nodes_[index], this->nodes_[this->ClientIndex()]->node_id(),
+                ExpectedNodeType::kExpectClient)) << DebugId(this->nodes_[index]->node_id());
   }
 }
 
@@ -214,7 +205,7 @@ TEST_F(RoutingStandAloneTest, FUNC_RecursiveCall) {
 TEST_F(RoutingStandAloneTest, FUNC_JoinAfterBootstrapLeaves) {
   this->SetUpNetwork(kServerSize);
   Sleep(std::chrono::seconds(10));
-  this->AddNode(false, NodeId());
+  this->AddNode(false, NodeId(NodeId::kRandomId));
 }
 
 TEST_F(RoutingStandAloneTest, FUNC_ReBootstrap) {

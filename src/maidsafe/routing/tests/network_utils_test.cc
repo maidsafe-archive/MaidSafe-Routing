@@ -96,7 +96,7 @@ TEST(NetworkUtilsTest, BEH_ProcessSendUnavailableDirectEndpoint) {
   network.SendToDirect(message, NodeId(NodeId::kRandomId), NodeId(NodeId::kRandomId));
 }
 
-TEST(NetworkUtilsTest, FUNC_ProcessSendDirectEndpoint) {
+TEST(NetworkUtilsTest, DISABLED_FUNC_ProcessSendDirectEndpoint) {
   const int kMessageCount(10);
   rudp::ManagedConnections rudp1, rudp2;
   Endpoint endpoint1(GetLocalIp(), maidsafe::test::GetRandomPort());
