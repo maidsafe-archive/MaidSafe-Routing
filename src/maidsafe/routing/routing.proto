@@ -82,7 +82,7 @@ message Message {
   optional bool close_to_this_node = 16;
   repeated bytes route_history = 17;
   required bool request = 18;
-  optional int32 hops_to_live = 19;
+  required int32 hops_to_live = 19;
   optional bool visited = 20;
   optional bytes average_distace = 21;
   optional bytes group_source = 22;
