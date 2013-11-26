@@ -74,9 +74,9 @@ class Timer {
 
   void PrintTaskIds() {
     std::lock_guard<std::mutex> lock(mutex_);
-    LOG(kError) << "This timer containing following tasks : ";
+    LOG(kVerbose) << "This timer containing following tasks : ";
     for (auto& task : tasks_) {
-      LOG(kError) << "      task id   ---   " << task.first;
+      LOG(kVerbose) << "      task id   ---   " << task.first;
     }
   }
 
@@ -225,8 +225,13 @@ void Timer<Response>::AddResponse(TaskId task_id, const Response& response) {
     std::lock_guard<std::mutex> lock(mutex_);
     auto itr(tasks_.find(task_id));
     if (itr == std::end(tasks_)) {
+      // There is scenario that during the procedure of Get, the request side will get timed out
+      // earlier than the response side (when they use same time out parameter).
+      // So the task will be cleaned out before the time-out response from responder
+      // arrived. The policy shall change to keep timer muted instead of throwing.
       LOG(kError) << "Task " << task_id << " not held by Timer.";
-      ThrowError(CommonErrors::invalid_parameter);
+//       ThrowError(CommonErrors::invalid_parameter);
+      return;
     }
     assert(itr->second.outstanding_response_count > 0);
     --(itr->second.outstanding_response_count);
