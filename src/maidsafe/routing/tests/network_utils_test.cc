@@ -67,6 +67,7 @@ TEST(NetworkUtilsTest, BEH_ProcessSendDirectInvalidEndpoint) {
   message.set_request(true);
   message.set_direct(true);
   message.set_type(10);
+  message.set_hops_to_live(Parameters::hops_to_live);
   rudp::ManagedConnections rudp;
   NodeId node_id(NodeId::kRandomId);
   NetworkStatistics network_statistics(node_id);
@@ -85,6 +86,7 @@ TEST(NetworkUtilsTest, BEH_ProcessSendUnavailableDirectEndpoint) {
   message.add_data("data");
   message.set_direct(true);
   message.set_type(10);
+  message.set_hops_to_live(Parameters::hops_to_live);
   rudp::ManagedConnections rudp;
   NodeId node_id(NodeId::kRandomId);
   NetworkStatistics network_statistics(node_id);
@@ -119,6 +121,7 @@ TEST(NetworkUtilsTest, FUNC_ProcessSendDirectEndpoint) {
   sent_message.set_direct(true);
   sent_message.set_type(10);
   sent_message.set_client_node(false);
+  sent_message.set_hops_to_live(Parameters::hops_to_live);
 
   rudp::MessageReceivedFunctor message_received_functor1 = [](const std::string & message) {
     LOG(kInfo) << " -- Received: " << message;
@@ -260,6 +263,7 @@ TEST(NetworkUtilsTest, FUNC_ProcessSendRecursiveSendOn) {
   sent_message.set_routing_message(true);
   sent_message.set_request(true);
   sent_message.set_client_node(false);
+  sent_message.set_hops_to_live(Parameters::hops_to_live);
   NodeId node_id(NodeId::kRandomId);
   NetworkStatistics network_statistics(node_id);
   RoutingTable routing_table(false, node_id, asymm::GenerateKeyPair(), network_statistics);
@@ -309,6 +313,12 @@ TEST(NetworkUtilsTest, FUNC_ProcessSendRecursiveSendOn) {
   auto private_key1(std::make_shared<asymm::PrivateKey>(pmid1.private_key()));
   auto public_key1(std::make_shared<asymm::PublicKey>(pmid1.public_key()));
   rudp::NatType nat_type;
+  NodeInfoAndPrivateKey node2 = MakeNodeInfoAndKeys();
+  auto pmid2(MakePmid());
+  NodeId node_id2(pmid2.name()->string());
+  auto private_key2(std::make_shared<asymm::PrivateKey>(pmid2.private_key()));
+  auto public_key2(std::make_shared<asymm::PublicKey>(pmid2.public_key()));
+
   auto a1 = std::async(std::launch::async, [=, &rudp1, &nat_type]()->NodeId {
     std::vector<Endpoint> bootstrap_endpoint(1, endpoint2);
     NodeId chosen_bootstrap_peer;
@@ -319,11 +329,6 @@ TEST(NetworkUtilsTest, FUNC_ProcessSendRecursiveSendOn) {
     }
     return chosen_bootstrap_peer;
   });
-  NodeInfoAndPrivateKey node2 = MakeNodeInfoAndKeys();
-  auto pmid2(MakePmid());
-  NodeId node_id2(pmid2.name()->string());
-  auto private_key2(std::make_shared<asymm::PrivateKey>(pmid2.private_key()));
-  auto public_key2(std::make_shared<asymm::PublicKey>(pmid2.public_key()));
   auto a2 = std::async(std::launch::async, [=, &rudp2, &nat_type]()->NodeId {
     std::vector<Endpoint> bootstrap_endpoint(1, endpoint1);
     NodeId chosen_bootstrap_peer;
