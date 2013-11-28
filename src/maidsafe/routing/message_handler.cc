@@ -385,9 +385,10 @@ void MessageHandler::HandleMessageAsFarNode(protobuf::Message& message) {
 }
 
 void MessageHandler::HandleMessage(protobuf::Message& message) {
+  LOG(kVerbose) << "[" << DebugId(routing_table_.kNodeId()) << "]"
+                << " MessageHandler::HandleMessage handle message with id: " << message.id();
   if (!ValidateMessage(message)) {
-    LOG(kWarning) << "Validate message failed."
-                  << " id: " << message.id();
+    LOG(kWarning) << "Validate message failed， id: " << message.id();
     assert((message.hops_to_live() > 0) && "Message has traversed maximum number of hops allowed");
     return;
   }
@@ -395,22 +396,32 @@ void MessageHandler::HandleMessage(protobuf::Message& message) {
   // Decrement hops_to_live
   message.set_hops_to_live(message.hops_to_live() - 1);
 
-  if (IsValidCacheableGet(message))
+  if (IsValidCacheableGet(message)) {
+    LOG(kInfo) << "MessageHandler::HandleMessage " << message.id() << " with cache manager";
     return HandleCacheLookup(message);  // forwarding message is done by cache manager
-  if (IsValidCacheablePut(message))
-    StoreCacheCopy(message);  //  Upper layer should take this on seperate thread
+  }
+  if (IsValidCacheablePut(message)) {
+    LOG(kInfo) << "MessageHandler::HandleMessage " << message.id() << " StoreCacheCopy";
+    StoreCacheCopy(message);  //  Upper layer should take this on separate thread
+  }
 
   // If group message request to self id
-  if (IsGroupMessageRequestToSelfId(message))
+  if (IsGroupMessageRequestToSelfId(message)) {
+    LOG(kInfo) << "MessageHandler::HandleMessage " << message.id() << " HandleGroupMessageToSelfId";
     return HandleGroupMessageToSelfId(message);
+  }
 
   // If this node is a client
-  if (routing_table_.client_mode())
+  if (routing_table_.client_mode()) {
+    LOG(kInfo) << "MessageHandler::HandleMessage " << message.id() << " HandleClientMessage";
     return HandleClientMessage(message);
+  }
 
   // Relay mode message
-  if (message.source_id().empty())
+  if (message.source_id().empty()) {
+    LOG(kInfo) << "MessageHandler::HandleMessage " << message.id() << " HandleRelayRequest";
     return HandleRelayRequest(message);
+  }
 
   // Invalid source id, unknown message
   if (NodeId(message.source_id()).IsZero()) {
@@ -420,13 +431,19 @@ void MessageHandler::HandleMessage(protobuf::Message& message) {
   }
 
   // Direct message
-  if (message.destination_id() == routing_table_.kNodeId().string())
+  if (message.destination_id() == routing_table_.kNodeId().string()) {
+    LOG(kInfo) << "MessageHandler::HandleMessage " << message.id() << " HandleMessageForThisNode";
     return HandleMessageForThisNode(message);
+  }
 
-  if (IsRelayResponseForThisNode(message))
+  if (IsRelayResponseForThisNode(message)) {
+    LOG(kInfo) << "MessageHandler::HandleMessage " << message.id() << " HandleRoutingMessage";
     return HandleRoutingMessage(message);
+  }
 
   if (client_routing_table_.Contains(NodeId(message.destination_id())) && IsDirect(message)) {
+    LOG(kInfo) << "MessageHandler::HandleMessage " << message.id()
+               << " HandleMessageForNonRoutingNodes";
     return HandleMessageForNonRoutingNodes(message);
   }
 
@@ -435,8 +452,10 @@ void MessageHandler::HandleMessage(protobuf::Message& message) {
                                        Parameters::node_group_size) ||
       (routing_table_.IsThisNodeClosestTo(NodeId(message.destination_id()), !message.direct()) &&
        message.visited())) {
+    LOG(kInfo) << "MessageHandler::HandleMessage " << message.id() << " HandleMessageAsClosestNode";
     return HandleMessageAsClosestNode(message);
   } else {
+    LOG(kInfo) << "MessageHandler::HandleMessage " << message.id() << " HandleMessageAsFarNode";
     return HandleMessageAsFarNode(message);
   }
 }
@@ -615,11 +634,16 @@ void MessageHandler::HandleClientMessage(protobuf::Message& message) {
     return;
   }
   if (IsRoutingMessage(message)) {
-    LOG(kVerbose) << "Client Routing Response for " << DebugId(routing_table_.kNodeId()) << " from "
-                  << HexSubstr(message.source_id()) << " id: " << message.id();
+    LOG(kVerbose) << "Client Routing Response for " << DebugId(routing_table_.kNodeId())
+                  << " from " << HexSubstr(message.source_id()) << " id: " << message.id();
     HandleRoutingMessage(message);
   } else if ((message.destination_id() == routing_table_.kNodeId().string())) {
+    LOG(kVerbose) << "Client NodeLevel Response for " << DebugId(routing_table_.kNodeId())
+                  << " from " << HexSubstr(message.source_id()) << " id: " << message.id();
     HandleNodeLevelMessageForThisNode(message);
+  } else {
+    LOG(kWarning) << DebugId(routing_table_.kNodeId()) << " silently drop message "
+                  << " from " << HexSubstr(message.source_id()) << " id: " << message.id();
   }
 }
 
