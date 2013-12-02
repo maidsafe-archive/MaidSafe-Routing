@@ -18,10 +18,10 @@ namespace maidsafe {
 
 namespace routing {
 
+const int Firewall::kQueueSize_ = 1000;
 
 Firewall::Firewall()
-    : mutex_(),
-      history_() {}
+    : mutex_(), history_() {}
 
 bool Firewall::Add(const NodeId& source_id, const uint32_t& message_id) {
   if (source_id.IsZero())
@@ -34,12 +34,12 @@ bool Firewall::Add(const NodeId& source_id, const uint32_t& message_id) {
                                     (std::get<1>(processed_message) == message_id));
                           }));
 
-  if (found != history_.end())
+  if (found != std::end(history_))
     return false;
 
   history_.push_back(std::make_tuple(source_id, message_id, std::time(NULL)));
-//  if ((history_.size() % Parameters::message_history_cleanup_factor) == 0)
-    Remove(lock);
+  if (history_.size() > kQueueSize_)
+    history_.pop_front();
   return true;
 }
 

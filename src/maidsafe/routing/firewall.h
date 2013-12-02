@@ -15,7 +15,7 @@
 
 #include <time.h>
 #include <tuple>
-#include <vector>
+#include <deque>
 
 #include "maidsafe/routing/api_config.h"
 
@@ -44,7 +44,8 @@ class Firewall {
   void Remove(std::unique_lock<std::mutex>& lock);
 
   std::mutex mutex_;
-  std::vector<ProcessedMessage> history_;
+  std::deque<ProcessedMessage> history_;
+  static const int kQueueSize_;
 };
 
 }  // namespace routing
