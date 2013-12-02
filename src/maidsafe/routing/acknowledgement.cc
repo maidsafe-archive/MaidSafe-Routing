@@ -24,12 +24,13 @@ namespace maidsafe {
 namespace routing {
 
 Acknowledgement::Acknowledgement(AsioService &io_service)
-    : io_service_(io_service),
-      ack_id_(RandomUint32()),
-      mutex_(),
-      queue_() {}
+    : io_service_(io_service), ack_id_(RandomUint32()), mutex_(), queue_() {}
 
 Acknowledgement::~Acknowledgement() {
+  RemoveAll();
+}
+
+void Acknowledgement::RemoveAll() {
   std::vector<AckId> ack_ids;
   {
     std::lock_guard<std::mutex> lock(mutex_);
@@ -38,8 +39,9 @@ Acknowledgement::~Acknowledgement() {
     }
   }
   LOG(kVerbose) << "Size of list: " << ack_ids.size();
-  for (const auto& ack_id : ack_ids)
+  for (auto ack_id : ack_ids) {
     Remove(ack_id);
+  }
 }
 
 AckId Acknowledgement::GetId() {
@@ -53,7 +55,7 @@ void Acknowledgement::Add(const protobuf::Message& message, Handler handler, int
   assert((message.ack_id() != 0) && "invalid ack id");
 
   AckId ack_id = message.ack_id();
-  auto const it = std::find_if(queue_.begin(), queue_.end(),
+  auto const it = std::find_if(std::begin(queue_), std::end(queue_),
                                [ack_id] (const Timers &i)->bool {
                                  return ack_id == std::get<0>(i);
                                });
@@ -73,14 +75,14 @@ void Acknowledgement::Add(const protobuf::Message& message, Handler handler, int
                                      Remove(ack_id);
                                    });
      } else {
-       std::get<2>(*it)->async_wait(handler);
+        std::get<2>(*it)->async_wait(handler);
      }
   }
 }
 
 void Acknowledgement::Remove(const AckId& ack_id) {
   std::lock_guard<std::mutex> lock(mutex_);
-  auto const it = std::find_if(queue_.begin(), queue_.end(),
+  auto const it = std::find_if(std::begin(queue_), std::end(queue_),
                                [ack_id] (const Timers &i)->bool {
                                  return ack_id == std::get<0>(i);
                                });
@@ -104,10 +106,13 @@ void Acknowledgement::HandleMessage(int32_t ack_id) {
 
 bool Acknowledgement::NeedsAck(const protobuf::Message& message, const NodeId& node_id) {
   LOG(kVerbose) << "node_id: " << HexSubstr(node_id.string());
-  LOG(kVerbose) << PrintMessage(message);
+
 // Ack messages do not need an ack
-//  if (IsAck(message)) FIX_IMMEDIATELY
-//    return false;
+  if (IsAck(message))
+    return false;
+
+  if (IsGroupUpdate(message))
+    return false;
 
 //  A communication between two nodes, in which one side is a relay at neither end
 //  involves setting a timer.
@@ -117,20 +122,10 @@ bool Acknowledgement::NeedsAck(const protobuf::Message& message, const NodeId& n
   if (message.source_id().empty())
     return false;
 
-//  There is no need to create an Acknowledgement if the next hop is destionation
-//  if (message.destination_id() == node_id.String())
-//    return false;
-
-//  When source and destination are the same Acknowledgement is not required. This happen
-//  in findnode rpc and since the closest node is connected to us the fault tolerance
-// mechanism implemented using other mechanisms
-//  if (message.destination_id() == message.source_id())
-//    return false;
-
+  LOG(kVerbose) << PrintMessage(message);
   return true;
 }
 
 }  // namespace maidsafe
 
 }  // namespace routing
-

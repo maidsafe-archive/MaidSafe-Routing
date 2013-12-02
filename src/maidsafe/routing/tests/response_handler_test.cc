@@ -51,11 +51,13 @@ class ResponseHandlerTest : public testing::Test {
  public:
   ResponseHandlerTest()
       : node_id_(NodeId::kRandomId),
+        asio_service_(1),
+        acknowledgement_(asio_service_),
         network_statistics_(node_id_),
         routing_table_(false, NodeId(NodeId::kRandomId), asymm::GenerateKeyPair(),
                        network_statistics_),
         client_routing_table_(routing_table_.kNodeId()),
-        network_(routing_table_, client_routing_table_),
+        network_(routing_table_, client_routing_table_, acknowledgement_),
         group_change_handler_(routing_table_, client_routing_table_, network_),
         response_handler_(routing_table_, client_routing_table_, network_, group_change_handler_) {}
 
@@ -197,6 +199,8 @@ class ResponseHandlerTest : public testing::Test {
   }
 
   NodeId node_id_;
+  AsioService asio_service_;
+  Acknowledgement acknowledgement_;
   NetworkStatistics network_statistics_;
   RoutingTable routing_table_;
   ClientRoutingTable client_routing_table_;

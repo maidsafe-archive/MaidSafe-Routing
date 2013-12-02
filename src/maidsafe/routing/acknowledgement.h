@@ -64,6 +64,8 @@ class Acknowledgement {
   Acknowledgement &operator=(const Acknowledgement&);
   Acknowledgement(const Acknowledgement&);
   Acknowledgement(const Acknowledgement&&);
+  void RemoveAll();
+
   AsioService& io_service_;
   AckId ack_id_;
   std::mutex mutex_;

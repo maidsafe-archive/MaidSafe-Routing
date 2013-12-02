@@ -173,6 +173,14 @@ bool IsCacheablePut(const protobuf::Message& message) {
           (static_cast<Cacheable>(message.cacheable()) == Cacheable::kPut));
 }
 
+bool IsAck(const protobuf::Message& message) {
+  return message.type() == static_cast<int>(MessageType::kAcknowledgement);
+}
+
+bool IsGroupUpdate(const protobuf::Message& message) {
+  return (message.type() == static_cast<int>(MessageType::kClosestNodesUpdate));
+}
+
 bool IsClientToClientMessageWithDifferentNodeIds(const protobuf::Message& message,
                                                  const bool is_destination_client) {
   return (is_destination_client && message.request() && message.client_node() &&

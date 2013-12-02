@@ -509,8 +509,7 @@ void Routing::Impl::DoOnMessageReceived(const std::string& message) {
       if (!running_)
         return;
     }
-    network_.SendAck(pb_message, ((pb_message.destination_id() == kNodeId_.string()) &&
-                                  (pb_message.source_id() != kNodeId_.string())));
+    network_.SendAck(pb_message);
     message_handler_->HandleMessage(pb_message);
   } else {
     LOG(kWarning) << "Message received, failed to parse";

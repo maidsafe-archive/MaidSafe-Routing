@@ -70,7 +70,7 @@ class NetworkUtils {
   // direct endpoint.
   void SendToDirect(const protobuf::Message& message, const NodeId& peer_connection_id,
                     const rudp::MessageSentFunctor& message_sent_functor);
-  void SendAck(const protobuf::Message& message, bool ignore_size, bool previous_only = false);
+  void SendAck(const protobuf::Message& message);
   virtual void SendToDirect(const protobuf::Message& message, const NodeId& peer_node_id,
                             const NodeId& peer_connection_id);
   void SendToDirectAdjustedRoute(protobuf::Message& message, const NodeId& peer_node_id,

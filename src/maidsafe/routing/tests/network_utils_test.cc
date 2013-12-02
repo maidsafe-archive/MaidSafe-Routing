@@ -33,6 +33,7 @@
 
 #include "maidsafe/routing/network_utils.h"
 #include "maidsafe/routing/client_routing_table.h"
+#include "maidsafe/routing/acknowledgement.h"
 #include "maidsafe/routing/return_codes.h"
 #include "maidsafe/routing/routing_table.h"
 #include "maidsafe/routing/routing.pb.h"
@@ -74,7 +75,8 @@ TEST(NetworkUtilsTest, BEH_ProcessSendDirectInvalidEndpoint) {
   RoutingTable routing_table(false, node_id, asymm::GenerateKeyPair(), network_statistics);
   ClientRoutingTable client_routing_table(routing_table.kNodeId());
   AsioService asio_service(1);
-  NetworkUtils network(routing_table, client_routing_table);
+  Acknowledgement acknowledgement(asio_service);
+  NetworkUtils network(routing_table, client_routing_table, acknowledgement);
   network.SendToClosestNode(message);
 }
 
@@ -94,7 +96,8 @@ TEST(NetworkUtilsTest, BEH_ProcessSendUnavailableDirectEndpoint) {
   ClientRoutingTable client_routing_table(routing_table.kNodeId());
   Endpoint endpoint(GetLocalIp(), maidsafe::test::GetRandomPort());
   AsioService asio_service(1);
-  NetworkUtils network(routing_table, client_routing_table);
+  Acknowledgement acknowledgement(asio_service);
+  NetworkUtils network(routing_table, client_routing_table, acknowledgement);
   network.SendToDirect(message, NodeId(NodeId::kRandomId), NodeId(NodeId::kRandomId));
 }
 
@@ -210,7 +213,8 @@ TEST(NetworkUtilsTest, FUNC_ProcessSendDirectEndpoint) {
   NodeId node_id3(routing_table.kNodeId());
   ClientRoutingTable client_routing_table(routing_table.kNodeId());
   AsioService asio_service(1);
-  NetworkUtils network(routing_table, client_routing_table);
+  Acknowledgement acknowledgement(asio_service);
+  NetworkUtils network(routing_table, client_routing_table, acknowledgement);
 
   std::vector<Endpoint> bootstrap_endpoint(1, endpoint2);
   EXPECT_EQ(kSuccess, network.Bootstrap(bootstrap_endpoint, message_received_functor3,
@@ -270,7 +274,8 @@ TEST(NetworkUtilsTest, FUNC_ProcessSendRecursiveSendOn) {
   NodeId node_id3(routing_table.kNodeId());
   ClientRoutingTable client_routing_table(routing_table.kNodeId());
   AsioService asio_service(1);
-  NetworkUtils network(routing_table, client_routing_table);
+  Acknowledgement acknowledgement(asio_service);
+  NetworkUtils network(routing_table, client_routing_table, acknowledgement);
 
   rudp::MessageReceivedFunctor message_received_functor1 = [](const std::string & message) {
     LOG(kInfo) << " -- Received: " << message;

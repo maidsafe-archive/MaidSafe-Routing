@@ -29,6 +29,7 @@
 #include "maidsafe/routing/service.h"
 #include "maidsafe/routing/timer.h"
 #include "maidsafe/routing/acknowledgement.h"
+#include "maidsafe/routing/firewall.h"
 
 namespace maidsafe {
 
@@ -131,6 +132,7 @@ class MessageHandler {
   std::unique_ptr<CacheManager> cache_manager_;
   Timer<std::string>& timer_;
   Acknowledgement& acknowledgement_;
+  Firewall firewall_;
   std::shared_ptr<ResponseHandler> response_handler_;
   std::shared_ptr<Service> service_;
   MessageReceivedFunctor message_received_functor_;

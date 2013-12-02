@@ -34,7 +34,8 @@ namespace test {
 
 class MockNetworkUtils : public NetworkUtils {
  public:
-  MockNetworkUtils(RoutingTable& routing_table, ClientRoutingTable& client_routing_table);
+  MockNetworkUtils(RoutingTable& routing_table, ClientRoutingTable& client_routing_table,
+                   Acknowledgement& acknowledgement);
   virtual ~MockNetworkUtils();
 
   MOCK_METHOD1(SendToClosestNode, void(const protobuf::Message& message));

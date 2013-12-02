@@ -74,6 +74,8 @@ bool IsResponse(const protobuf::Message& message);
 bool IsDirect(const protobuf::Message& message);
 bool IsCacheableGet(const protobuf::Message& message);
 bool IsCacheablePut(const protobuf::Message& message);
+bool IsAck(const protobuf::Message& message);
+bool IsGroupUpdate(const protobuf::Message& message);
 bool IsClientToClientMessageWithDifferentNodeIds(const protobuf::Message& message,
                                                  const bool is_destination_client);
 bool CheckId(const std::string& id_to_test);
