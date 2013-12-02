@@ -49,6 +49,8 @@ uint16_t Parameters::hops_to_live(50);
 uint16_t Parameters::accepted_distance_tolerance(1);
 uint16_t Parameters::greedy_fraction(Parameters::max_routing_table_size * 3 / 4);
 uint16_t Parameters::split_avoidance(4);
+uint16_t Parameters::ack_timeout(2);
+uint16_t Parameters::max_ack_attempts(3);
 uint16_t Parameters::routing_table_ready_to_response(Parameters::greedy_fraction * 9 / 10);
 bptime::time_duration Parameters::connect_rpc_prune_timeout(
     rudp::Parameters::rendezvous_connect_timeout * 2);

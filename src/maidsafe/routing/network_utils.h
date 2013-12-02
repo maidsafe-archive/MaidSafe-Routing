@@ -42,6 +42,7 @@ class Message;
 
 class ClientRoutingTable;
 class RoutingTable;
+class Acknowledgement;
 
 namespace test {
 class GenericNode;
@@ -50,7 +51,8 @@ class MockNetworkUtils;
 
 class NetworkUtils {
  public:
-  NetworkUtils(RoutingTable& routing_table, ClientRoutingTable& client_routing_table);
+  NetworkUtils(RoutingTable& routing_table, ClientRoutingTable& client_routing_table,
+               Acknowledgement& acknowledgement);
   virtual ~NetworkUtils();
   int Bootstrap(const std::vector<boost::asio::ip::udp::endpoint>& bootstrap_endpoints,
                 const rudp::MessageReceivedFunctor& message_received_functor,
@@ -68,6 +70,7 @@ class NetworkUtils {
   // direct endpoint.
   void SendToDirect(const protobuf::Message& message, const NodeId& peer_connection_id,
                     const rudp::MessageSentFunctor& message_sent_functor);
+  void SendAck(const protobuf::Message& message, bool ignore_size, bool previous_only = false);
   virtual void SendToDirect(const protobuf::Message& message, const NodeId& peer_node_id,
                             const NodeId& peer_connection_id);
   void SendToDirectAdjustedRoute(protobuf::Message& message, const NodeId& peer_node_id,
@@ -93,10 +96,11 @@ class NetworkUtils {
   void RudpSend(const NodeId& peer_id, const protobuf::Message& message,
                 const rudp::MessageSentFunctor& message_sent_functor);
   void SendTo(const protobuf::Message& message, const NodeId& peer_node_id,
-              const NodeId& peer_connection_id);
+              const NodeId& peer_connection_id, bool no_ack_timer = false);
   void RecursiveSendOn(protobuf::Message message, NodeInfo last_node_attempted = NodeInfo(),
                        int attempt_count = 0);
   void AdjustRouteHistory(protobuf::Message& message);
+  void AdjustAckHistory(protobuf::Message& message);
 
   bool running_;
   std::mutex running_mutex_;
@@ -106,6 +110,7 @@ class NetworkUtils {
   NodeId this_node_relay_connection_id_;
   RoutingTable& routing_table_;
   ClientRoutingTable& client_routing_table_;
+  Acknowledgement& acknowledgement_;
   rudp::NatType nat_type_;
   NewBootstrapEndpointFunctor new_bootstrap_endpoint_;
   rudp::ManagedConnections rudp_;

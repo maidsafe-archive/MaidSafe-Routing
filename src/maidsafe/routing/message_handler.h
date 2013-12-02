@@ -28,6 +28,7 @@
 #include "maidsafe/routing/response_handler.h"
 #include "maidsafe/routing/service.h"
 #include "maidsafe/routing/timer.h"
+#include "maidsafe/routing/acknowledgement.h"
 
 namespace maidsafe {
 
@@ -72,6 +73,7 @@ enum class MessageType : int32_t {
   kRemove = 6,
   kClosestNodesUpdate = 7,
   kGetGroup = 8,
+  kAcknowledgement = 9,
   kMaxRouting = 100,
   kNodeLevel = 101
 };
@@ -79,7 +81,8 @@ enum class MessageType : int32_t {
 class MessageHandler {
  public:
   MessageHandler(RoutingTable& routing_table, ClientRoutingTable& client_routing_table,
-                 NetworkUtils& network, Timer<std::string>& timer, RemoveFurthestNode& remove_node,
+                 NetworkUtils& network, Timer<std::string>& timer,
+                 Acknowledgement& acknowledgement, RemoveFurthestNode& remove_node,
                  GroupChangeHandler& group_change_handler, NetworkStatistics& network_statistics);
   void HandleMessage(protobuf::Message& message);
   void set_typed_message_and_caching_functor(TypedMessageAndCachingFunctor functors);
@@ -127,6 +130,7 @@ class MessageHandler {
   GroupChangeHandler& group_change_handler_;
   std::unique_ptr<CacheManager> cache_manager_;
   Timer<std::string>& timer_;
+  Acknowledgement& acknowledgement_;
   std::shared_ptr<ResponseHandler> response_handler_;
   std::shared_ptr<Service> service_;
   MessageReceivedFunctor message_received_functor_;

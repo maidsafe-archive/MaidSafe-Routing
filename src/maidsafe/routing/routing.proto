@@ -87,6 +87,8 @@ message Message {
   optional bytes average_distace = 21;
   optional bytes group_source = 22;
   optional bytes group_destination = 23;
+  optional int32 ack_id = 24;
+  repeated bytes ack_node_ids = 25;
 }
 
 message SignedMessage {

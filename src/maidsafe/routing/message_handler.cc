@@ -73,7 +73,8 @@ GroupToGroupMessage CreateGroupToGroupMessage(const protobuf::Message& proto_mes
 
 MessageHandler::MessageHandler(RoutingTable& routing_table,
                                ClientRoutingTable& client_routing_table, NetworkUtils& network,
-                               Timer<std::string>& timer, RemoveFurthestNode& remove_furthest_node,
+                               Timer<std::string>& timer, Acknowledgement& acknowledgement,
+                               RemoveFurthestNode& remove_furthest_node,
                                GroupChangeHandler& group_change_handler,
                                NetworkStatistics& network_statistics)
     : routing_table_(routing_table),
@@ -86,6 +87,7 @@ MessageHandler::MessageHandler(RoutingTable& routing_table,
                          ? nullptr
                          : (new CacheManager(routing_table_.kNodeId(), network_))),
       timer_(timer),
+      acknowledgement_(acknowledgement),
       response_handler_(new ResponseHandler(routing_table, client_routing_table, network_,
                                             group_change_handler)),
       service_(new Service(routing_table, client_routing_table, network_)),
@@ -124,12 +126,16 @@ void MessageHandler::HandleRoutingMessage(protobuf::Message& message) {
       message.request() ? service_->GetGroup(message)
                         : response_handler_->GetGroup(timer_, message);
       break;
+    case MessageType::kAcknowledgement:
+      return acknowledgement_.HandleMessage(message.ack_id());
     default:  // unknown (silent drop)
       return;
   }
 
   if (!request || !message.IsInitialized())
     return;
+
+  message.set_ack_id(acknowledgement_.GetId());
 
   if (routing_table_.size() == 0)  // This node can only send to bootstrap_endpoint
     network_.SendToDirect(message, network_.bootstrap_connection_id(),
@@ -166,6 +172,7 @@ void MessageHandler::HandleNodeLevelMessageForThisNode(protobuf::Message& messag
       message_out.add_data(reply_message);
       message_out.set_last_id(routing_table_.kNodeId().string());
       message_out.set_source_id(routing_table_.kNodeId().string());
+      message_out.set_ack_id(acknowledgement_.GetId());
       if (message.has_id())
         message_out.set_id(message.id());
       else
@@ -254,6 +261,7 @@ void MessageHandler::HandleDirectMessageAsClosestNode(protobuf::Message& message
       message.set_visited(true);
       return network_.SendToClosestNode(message);
     } else {
+      network_.SendAck(message, true, true);
       LOG(kWarning) << "Dropping message. This node [" << DebugId(routing_table_.kNodeId())
                     << "] is the closest but is not connected to destination node ["
                     << HexSubstr(message.destination_id())
@@ -286,6 +294,9 @@ void MessageHandler::HandleGroupMessageAsClosestNode(protobuf::Message& message)
     //   StoreCacheCopy(message);  // Upper layer should take this on seperate thread
     return network_.SendToClosestNode(message);
   }
+
+  if (message.source_id() != routing_table_.kNodeId().string())
+    network_.SendAck(message, true, true);
 
   if (message.has_visited() && !message.visited() &&
       (routing_table_.size() > Parameters::closest_nodes_size) &&
@@ -353,6 +364,8 @@ void MessageHandler::HandleGroupMessageAsClosestNode(protobuf::Message& message)
                << " [ group_id : " << HexSubstr(group_id) << "]"
                << " id: " << message.id();
     message.set_destination_id(i.node_id.string());
+    message.clear_ack_node_ids();
+    message.set_ack_id(acknowledgement_.GetId());
     NodeInfo node;
     if (routing_table_.GetNodeInfo(i.node_id, node)) {
       network_.SendToDirect(message, node.node_id, node.connection_id);
@@ -361,6 +374,8 @@ void MessageHandler::HandleGroupMessageAsClosestNode(protobuf::Message& message)
     }
   }
 
+  message.clear_ack_node_ids();
+   message.set_ack_id(acknowledgement_.GetId());
   message.set_destination_id(routing_table_.kNodeId().string());
 
   if (IsRoutingMessage(message)) {
@@ -470,6 +485,7 @@ void MessageHandler::HandleMessageForNonRoutingNodes(protobuf::Message& message)
     LOG(kWarning) << "This node [" << DebugId(routing_table_.kNodeId())
                   << " Dropping message as client to client message not allowed."
                   << PrintMessage(message);
+    network_.SendAck(message, true, true);
     return;
   }
   LOG(kInfo) << "This node has message destination in its ClientRoutingTable. Dest id : "

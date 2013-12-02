@@ -68,15 +68,16 @@ Routing::Impl::Impl(bool client_mode, const NodeId& node_id, const asymm::Keys& 
       network_statistics_(routing_table_.kNodeId()),
       message_handler_(),
       asio_service_(2),
-      network_(routing_table_, client_routing_table_),
+      network_(routing_table_, client_routing_table_, acknowledgement_),
       timer_(asio_service_),
+      acknowledgement_(asio_service_),
       re_bootstrap_timer_(asio_service_.service()),
       recovery_timer_(asio_service_.service()),
       setup_timer_(asio_service_.service()) {
   asio_service_.Start();
   message_handler_.reset(new MessageHandler(routing_table_, client_routing_table_, network_, timer_,
-                                            remove_furthest_node_, group_change_handler_,
-                                            network_statistics_));
+                                            acknowledgement_, remove_furthest_node_,
+                                            group_change_handler_, network_statistics_));
   LOG(kInfo) << (client_mode ? "client " : "non-client ") << "node. Id : " << DebugId(kNodeId_);
   assert((client_mode || !node_id.IsZero()) && "Server Nodes cannot be created without valid keys");
 }
@@ -412,6 +413,7 @@ protobuf::Message Routing::Impl::CreateNodeLevelPartialMessage(
   proto_message.set_client_node(routing_table_.client_mode());
   proto_message.set_request(true);
   proto_message.set_hops_to_live(Parameters::hops_to_live);
+  proto_message.set_ack_id(acknowledgement_.GetId());
   uint16_t replication(1);
   if (DestinationType::kGroup == destination_type) {
     proto_message.set_visited(false);
@@ -507,6 +509,8 @@ void Routing::Impl::DoOnMessageReceived(const std::string& message) {
       if (!running_)
         return;
     }
+    network_.SendAck(pb_message, ((pb_message.destination_id() == kNodeId_.string()) &&
+                                  (pb_message.source_id() != kNodeId_.string())));
     message_handler_->HandleMessage(pb_message);
   } else {
     LOG(kWarning) << "Message received, failed to parse";

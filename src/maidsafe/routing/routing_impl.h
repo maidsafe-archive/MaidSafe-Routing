@@ -45,6 +45,7 @@
 #include "maidsafe/routing/routing.pb.h"
 #include "maidsafe/routing/routing_table.h"
 #include "maidsafe/routing/timer.h"
+#include "maidsafe/routing/acknowledgement.h"
 
 namespace maidsafe {
 
@@ -200,6 +201,7 @@ class Routing::Impl {
   AsioService asio_service_;
   NetworkUtils network_;
   Timer<std::string> timer_;
+  Acknowledgement acknowledgement_;
   boost::asio::deadline_timer re_bootstrap_timer_, recovery_timer_, setup_timer_;
 };
 
