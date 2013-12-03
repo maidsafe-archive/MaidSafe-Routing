@@ -402,12 +402,11 @@ void MessageHandler::HandleMessageAsFarNode(protobuf::Message& message) {
 void MessageHandler::HandleMessage(protobuf::Message& message) {
   LOG(kVerbose) << "[" << DebugId(routing_table_.kNodeId()) << "]"
                 << " MessageHandler::HandleMessage handle message with id: " << message.id();
- if (!message.source_id().empty() &&
-      !IsAck(message) &&
+  if (!message.source_id().empty() && !IsAck(message) &&
       (message.destination_id() != message.source_id()) &&
       (message.destination_id() == routing_table_.kNodeId().string()) &&
       !firewall_.Add(NodeId(message.source_id()), message.id()))
-     return;
+    return;
   if (!ValidateMessage(message)) {
     LOG(kWarning) << "Validate message failed， id: " << message.id();
     assert((message.hops_to_live() > 0) && "Message has traversed maximum number of hops allowed");
@@ -491,6 +490,7 @@ void MessageHandler::HandleMessageForNonRoutingNodes(protobuf::Message& message)
     LOG(kWarning) << "This node [" << DebugId(routing_table_.kNodeId())
                   << " Dropping message as client to client message not allowed."
                   << PrintMessage(message);
+    network_.AdjustAckHistory(message);
     network_.SendAck(message);
     return;
   }

@@ -39,9 +39,8 @@ void Acknowledgement::RemoveAll() {
     }
   }
   LOG(kVerbose) << "Size of list: " << ack_ids.size();
-  for (auto ack_id : ack_ids) {
+  for (const auto& ack_id : ack_ids)
     Remove(ack_id);
-  }
 }
 
 AckId Acknowledgement::GetId() {
@@ -87,7 +86,7 @@ void Acknowledgement::Remove(const AckId& ack_id) {
                                  return ack_id == std::get<0>(i);
                                });
   // assert((it != queue_.end()) && "attempt to cancel handler for non existant timer");
-  if (it != queue_.end()) {
+  if (it != std::end(queue_)) {
     // ack timed out or ack killed
     std::get<2>(*it)->cancel();
     queue_.erase(it);

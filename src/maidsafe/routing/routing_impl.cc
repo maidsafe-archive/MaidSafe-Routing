@@ -477,6 +477,7 @@ std::future<std::vector<NodeId>> Routing::Impl::GetGroup(const NodeId& group_id)
     promise->set_value(nodes_id);
   };
   protobuf::Message get_group_message(rpcs::GetGroup(group_id, kNodeId_));
+  get_group_message.set_ack_id(acknowledgement_.GetId());
   get_group_message.set_id(timer_.NewTaskId());
   timer_.AddTask(Parameters::default_response_timeout, callback, 1, get_group_message.id());
   network_.SendToClosestNode(get_group_message);
@@ -509,7 +510,11 @@ void Routing::Impl::DoOnMessageReceived(const std::string& message) {
       if (!running_)
         return;
     }
-    network_.SendAck(pb_message);
+    if ((pb_message.destination_id() == kNodeId().string()) &&
+         (pb_message.destination_id() != pb_message.relay_id())) {
+        network_.SendAck(pb_message);
+        pb_message.clear_ack_node_ids();
+    }
     message_handler_->HandleMessage(pb_message);
   } else {
     LOG(kWarning) << "Message received, failed to parse";

@@ -71,7 +71,8 @@ class NetworkUtils {
   void SendToDirect(const protobuf::Message& message, const NodeId& peer_connection_id,
                     const rudp::MessageSentFunctor& message_sent_functor);
   void SendAck(const protobuf::Message& message);
-  virtual void SendToDirect(const protobuf::Message& message, const NodeId& peer_node_id,
+  void AdjustAckHistory(protobuf::Message& message);
+  virtual void SendToDirect(protobuf::Message& message, const NodeId& peer_node_id,
                             const NodeId& peer_connection_id);
   void SendToDirectAdjustedRoute(protobuf::Message& message, const NodeId& peer_node_id,
                                  const NodeId& peer_connection_id);
@@ -100,7 +101,6 @@ class NetworkUtils {
   void RecursiveSendOn(protobuf::Message message, NodeInfo last_node_attempted = NodeInfo(),
                        int attempt_count = 0);
   void AdjustRouteHistory(protobuf::Message& message);
-  void AdjustAckHistory(protobuf::Message& message);
 
   bool running_;
   std::mutex running_mutex_;

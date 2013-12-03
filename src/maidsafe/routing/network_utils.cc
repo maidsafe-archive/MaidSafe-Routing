@@ -189,8 +189,9 @@ void NetworkUtils::SendToDirect(const protobuf::Message& message, const NodeId& 
   RudpSend(peer_connection_id, message, message_sent_functor ? message_sent_functor : nullptr);
 }
 
-void NetworkUtils::SendToDirect(const protobuf::Message& message, const NodeId& peer_node_id,
+void NetworkUtils::SendToDirect(protobuf::Message& message, const NodeId& peer_node_id,
                                 const NodeId& peer_connection_id) {
+  AdjustRouteHistory(message);
   SendTo(message, peer_node_id, peer_connection_id);
 }
 
@@ -252,6 +253,7 @@ void NetworkUtils::SendTo(const protobuf::Message& message, const NodeId& peer_n
   const std::string kThisId(routing_table_.kNodeId().string());
   rudp::MessageSentFunctor message_sent_functor = [=](int message_sent) {
     if (rudp::kSuccess == message_sent) {
+      SendAck(message);
       LOG(kVerbose) << "  [" << HexSubstr(kThisId) << "] sent : " << MessageTypeString(message)
                     << " to   " << DebugId(peer_node_id) << "   (id: " << message.id() << ")";
     } else {
@@ -264,6 +266,11 @@ void NetworkUtils::SendTo(const protobuf::Message& message, const NodeId& peer_n
   if (!no_ack_timer && acknowledgement_.NeedsAck(message, peer_connection_id)) {
     acknowledgement_.Add(message,
                          [=](const boost::system::error_code& error) {
+                           {
+                             std::lock_guard<std::mutex> lock(running_mutex_);
+                             if (!running_)
+                               return;
+                           }
                            if (error.value() == boost::system::errc::success)
                              SendTo(message, peer_node_id, peer_connection_id);
                          }, Parameters::ack_timeout);
@@ -427,7 +434,7 @@ void NetworkUtils::SendAck(const protobuf::Message& message) {
   if (message.ack_node_ids_size() == 0)
     return;
 
-  for (auto& hop : ack_node_ids)
+  for (const auto& hop : ack_node_ids)
     LOG(kVerbose) << " hop in history: " << HexSubstr(hop) << "ack id:" << message.ack_id();
 
   if ((message.relay_id() == routing_table_.kNodeId().string()) ||

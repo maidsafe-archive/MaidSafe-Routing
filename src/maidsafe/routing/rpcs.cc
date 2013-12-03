@@ -85,6 +85,7 @@ protobuf::Message Connect(const NodeId& node_id, const rudp::EndpointPair& our_e
   message.set_request(true);
   message.set_client_node(client_node);
   message.set_hops_to_live(Parameters::hops_to_live);
+  message.set_ack_id(RandomUint32());
 
   if (!relay_message) {
     message.set_source_id(this_node_id.string());
@@ -157,6 +158,7 @@ protobuf::Message FindNodes(const NodeId& node_id, const NodeId& this_node_id,
     message.set_relay_connection_id(relay_connection_id.string());
   }
   message.set_hops_to_live(Parameters::hops_to_live);
+  message.set_ack_id(RandomUint32());
   //  message.set_id(RandomUint32() % 10000);
   assert(message.IsInitialized() && "Unintialised message");
   return message;
@@ -182,6 +184,7 @@ protobuf::Message ConnectSuccess(const NodeId& node_id, const NodeId& this_node_
   message.set_id(0);
   message.set_client_node(client_node);
   message.set_hops_to_live(Parameters::hops_to_live);
+  message.set_ack_id(RandomUint32());
   message.set_source_id(this_node_id.string());
   message.set_request(true);
   message.set_id(RandomUint32() % 10000);
@@ -214,6 +217,8 @@ protobuf::Message ConnectSuccessAcknowledgement(const NodeId& node_id, const Nod
   message.set_id(0);
   message.set_client_node(client_node);
   message.set_hops_to_live(Parameters::hops_to_live);
+  message.set_ack_id(RandomUint32());
+//  message.add_ack_node_ids(this_node_id.string());
   message.set_source_id(this_node_id.string());
   message.set_request(false);
   message.set_id(RandomUint32() % 10000);
@@ -245,6 +250,7 @@ protobuf::Message ClosestNodesUpdate(const NodeId& node_id, const NodeId& my_nod
   message.set_request(true);
   message.set_client_node(false);
   message.set_hops_to_live(Parameters::hops_to_live);
+  message.set_ack_id(RandomUint32());
   message.set_id(RandomUint32() % 10000);
   assert(message.IsInitialized() && "Unintialised message");
   return message;

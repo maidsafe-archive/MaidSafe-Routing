@@ -237,6 +237,7 @@ protobuf::Message Routing::Impl::CreateNodeLevelMessage(const T& message) {
 
   proto_message.set_request(true);
   proto_message.set_hops_to_live(Parameters::hops_to_live);
+  proto_message.set_ack_id(RandomUint32());
 
   AddGroupSourceRelatedFields(message, proto_message, detail::is_group_source<T>());
   AddDestinationTypeRelatedFields(proto_message, detail::is_group_destination<T>());
