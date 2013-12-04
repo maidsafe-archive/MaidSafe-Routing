@@ -295,6 +295,9 @@ std::string MessageTypeString(const protobuf::Message& message) {
     case MessageType::kNodeLevel:
       message_type = "kNodeLevel";
       break;
+    case MessageType::kAcknowledgement:
+      message_type = "kAcknowledgement";
+      break;
     default:
       message_type = "Unknown  ";
   }

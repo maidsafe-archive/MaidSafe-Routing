@@ -410,6 +410,8 @@ void NetworkUtils::AdjustRouteHistory(protobuf::Message& message) {
 
 void NetworkUtils::AdjustAckHistory(protobuf::Message& message) {
   LOG(kVerbose) << "size of acks "  << message.ack_node_ids_size();
+  if (message.relay_id() == routing_table_.kNodeId().string())
+    return;
   assert((message.ack_node_ids_size() <= 2) && "size of ack list must be smaller than 3");
   if ((message.ack_node_ids_size() == 0) ||
       ((message.ack_node_ids_size() == 1) &&
