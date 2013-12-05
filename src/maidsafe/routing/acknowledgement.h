@@ -57,6 +57,7 @@ class Acknowledgement {
   void Remove(const AckId& ack_id);
   void HandleMessage(int32_t ack_id);
   bool NeedsAck(const protobuf::Message& message, const NodeId& node_id);
+  bool IsSendingAckRequired(const protobuf::Message& message, const NodeId& this_node_id);
 
   friend class RoutingPrivate;
 
@@ -66,6 +67,7 @@ class Acknowledgement {
   Acknowledgement(const Acknowledgement&&);
   void RemoveAll();
 
+  bool running_;
   AsioService& io_service_;
   AckId ack_id_;
   std::mutex mutex_;

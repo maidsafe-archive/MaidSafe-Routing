@@ -24,9 +24,10 @@ namespace maidsafe {
 namespace routing {
 
 Acknowledgement::Acknowledgement(AsioService &io_service)
-    : io_service_(io_service), ack_id_(RandomUint32()), mutex_(), queue_() {}
+    : running_(true), io_service_(io_service), ack_id_(RandomUint32()), mutex_(), queue_() {}
 
 Acknowledgement::~Acknowledgement() {
+  running_ = false;
   RemoveAll();
 }
 
@@ -39,8 +40,10 @@ void Acknowledgement::RemoveAll() {
     }
   }
   LOG(kVerbose) << "Size of list: " << ack_ids.size();
-  for (const auto& ack_id : ack_ids)
-    Remove(ack_id);
+  for (const auto& ack_id : ack_ids) {
+    LOG(kVerbose) << "still in list: " << ack_id;
+//    Remove(ack_id);
+  }
 }
 
 AckId Acknowledgement::GetId() {
@@ -49,6 +52,8 @@ AckId Acknowledgement::GetId() {
 }
 
 void Acknowledgement::Add(const protobuf::Message& message, Handler handler, int timeout) {
+  if (!running_)
+    return;
   std::lock_guard<std::mutex> lock(mutex_);
   assert(message.has_ack_id() && "non-existing ack id");
   assert((message.ack_id() != 0) && "invalid ack id");
@@ -80,11 +85,13 @@ void Acknowledgement::Add(const protobuf::Message& message, Handler handler, int
 }
 
 void Acknowledgement::Remove(const AckId& ack_id) {
+  if (!running_)
+    return;
   std::lock_guard<std::mutex> lock(mutex_);
-  auto const it = std::find_if(std::begin(queue_), std::end(queue_),
-                               [ack_id] (const Timers &i)->bool {
-                                 return ack_id == std::get<0>(i);
-                               });
+  auto const it(std::find_if(std::begin(queue_), std::end(queue_),
+                             [ack_id] (const Timers &i)->bool {
+                               return ack_id == std::get<0>(i);
+                             }));
   // assert((it != queue_.end()) && "attempt to cancel handler for non existant timer");
   if (it != std::end(queue_)) {
     // ack timed out or ack killed
@@ -103,11 +110,21 @@ void Acknowledgement::HandleMessage(int32_t ack_id) {
   Remove(ack_id);
 }
 
+bool Acknowledgement::IsSendingAckRequired(const protobuf::Message& message,
+                                           const NodeId& this_node_id) {
+  return (message.destination_id() == this_node_id.string()) &&
+         (message.destination_id() != message.relay_id()) &&
+         (message.direct() && (message.destination_id() != message.source_id()));
+}
+
 bool Acknowledgement::NeedsAck(const protobuf::Message& message, const NodeId& node_id) {
   LOG(kVerbose) << "node_id: " << HexSubstr(node_id.string());
 
 // Ack messages do not need an ack
   if (IsAck(message))
+    return false;
+
+  if (message.source_id() == message.destination_id())
     return false;
 
   if (IsGroupUpdate(message))
