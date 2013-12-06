@@ -181,6 +181,10 @@ bool IsGroupUpdate(const protobuf::Message& message) {
   return (message.type() == static_cast<int>(MessageType::kClosestNodesUpdate));
 }
 
+bool IsConnectSuccessAcknowledgement(const protobuf::Message& message) {
+  return (message.type() == static_cast<int>(MessageType::kConnectSuccessAcknowledgement));
+}
+
 bool IsClientToClientMessageWithDifferentNodeIds(const protobuf::Message& message,
                                                  const bool is_destination_client) {
   return (is_destination_client && message.request() && message.client_node() &&

@@ -68,10 +68,10 @@ class Acknowledgement {
   void RemoveAll();
 
   bool running_;
-  AsioService& io_service_;
   AckId ack_id_;
   std::mutex mutex_;
   std::vector<Timers> queue_;
+  AsioService& io_service_;
 };
 
 }  // namespace routing

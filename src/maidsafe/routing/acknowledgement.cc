@@ -24,7 +24,7 @@ namespace maidsafe {
 namespace routing {
 
 Acknowledgement::Acknowledgement(AsioService &io_service)
-    : running_(true), io_service_(io_service), ack_id_(RandomUint32()), mutex_(), queue_() {}
+    : running_(true), ack_id_(RandomUint32()), mutex_(), queue_(), io_service_(io_service)  {}
 
 Acknowledgement::~Acknowledgement() {
   running_ = false;
@@ -113,8 +113,7 @@ void Acknowledgement::HandleMessage(int32_t ack_id) {
 bool Acknowledgement::IsSendingAckRequired(const protobuf::Message& message,
                                            const NodeId& this_node_id) {
   return (message.destination_id() == this_node_id.string()) &&
-         (message.destination_id() != message.relay_id()) &&
-         (message.direct() && (message.destination_id() != message.source_id()));
+         (message.destination_id() != message.relay_id());
 }
 
 bool Acknowledgement::NeedsAck(const protobuf::Message& message, const NodeId& node_id) {
@@ -128,6 +127,9 @@ bool Acknowledgement::NeedsAck(const protobuf::Message& message, const NodeId& n
     return false;
 
   if (IsGroupUpdate(message))
+    return false;
+
+  if (IsConnectSuccessAcknowledgement(message))
     return false;
 
 //  A communication between two nodes, in which one side is a relay at neither end

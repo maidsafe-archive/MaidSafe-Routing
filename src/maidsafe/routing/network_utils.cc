@@ -428,7 +428,10 @@ void NetworkUtils::AdjustAckHistory(protobuf::Message& message) {
 void NetworkUtils::SendAck(const protobuf::Message& message) {
  LOG(kVerbose) << "[" << DebugId(routing_table_.kNodeId()) << "] SendAck " << message.ack_id();
 
-  if (IsAck(message) || IsGroupUpdate(message))
+  if (IsAck(message) || IsGroupUpdate(message) || IsConnectSuccessAcknowledgement(message))
+    return;
+
+  if (message.direct() && (message.destination_id() == message.source_id()))
     return;
 
   std::vector<std::string> ack_node_ids(message.ack_node_ids().begin(),
@@ -448,11 +451,9 @@ void NetworkUtils::SendAck(const protobuf::Message& message) {
     acknowledgement_.Remove(message.ack_id());
   }
 
-  protobuf::Message ack_message(
-      rpcs::Ack(NodeId(message.ack_node_ids(0)),
-                routing_table_.kNodeId(),
-                message.ack_id()));
-  LOG(kVerbose) << "NetworkUtils::SendAck";
+  protobuf::Message ack_message(rpcs::Ack(NodeId(message.ack_node_ids(0)), routing_table_.kNodeId(),
+                                          message.ack_id()));
+  LOG(kVerbose) << "NetworkUtils::SendAck";  
   SendToClosestNode(ack_message);
 }
 
