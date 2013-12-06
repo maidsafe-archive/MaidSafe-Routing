@@ -79,7 +79,7 @@ if(MaidsafeTesting)
   ms_add_executable(TESTrouting_func_nat "Tests/Routing" ${RoutingFuncNatTestFiles})
   # new executable TESTrouting_big is created to contain tests that each need their own network
   ms_add_executable(TESTrouting_big "Tests/Routing" ${RoutingBigTestFiles} ${RoutingSourcesDir}/tests/test_main.cc)
-  ms_add_executable(create_lifestuff_bootstrap "Tools/Routing" ${RoutingSourcesDir}/tools/create_bootstrap.cc)
+  ms_add_executable(create_client_bootstrap "Tools/Routing" ${RoutingSourcesDir}/tools/create_bootstrap.cc)
   ms_add_executable(routing_key_helper "Tools/Routing" ${RoutingSourcesDir}/tools/key_helper.cc)
   ms_add_executable(routing_node "Tools/Routing" ${RoutingSourcesDir}/tools/routing_node.cc
                                                  ${RoutingSourcesDir}/tools/commands.h
@@ -100,7 +100,7 @@ if(MaidsafeTesting)
   target_link_libraries(TESTrouting_func maidsafe_routing)
   target_link_libraries(TESTrouting_func_nat maidsafe_routing)
   target_link_libraries(TESTrouting_big maidsafe_routing)
-  target_link_libraries(create_lifestuff_bootstrap maidsafe_routing)
+  target_link_libraries(create_client_bootstrap maidsafe_routing)
   target_link_libraries(routing_key_helper maidsafe_routing)
   target_link_libraries(routing_node maidsafe_routing)
 endif()
