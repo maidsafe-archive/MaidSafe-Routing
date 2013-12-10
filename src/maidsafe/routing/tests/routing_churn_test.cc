@@ -67,14 +67,14 @@ TEST_F(RoutingChurnTest, FUNC_BasicNetworkChurn) {
       }
       this->AddNode(false, new_node);
       existing_vault_node_ids.push_back(new_node);
-      Sleep(std::chrono::milliseconds(500 + RandomUint32() % 200));
+      Sleep(std::chrono::seconds(5));
     }
 
     if (n % 3 == 0) {
       std::random_shuffle(existing_vault_node_ids.begin(), existing_vault_node_ids.end());
       this->RemoveNode(existing_vault_node_ids.back());
       existing_vault_node_ids.pop_back();
-      Sleep(std::chrono::milliseconds(500 + RandomUint32() % 200));
+      Sleep(std::chrono::seconds(3));
     }
   }
 }

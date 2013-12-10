@@ -528,7 +528,7 @@ void Routing::Impl::OnConnectionLost(const NodeId& lost_connection_id) {
 }
 
 void Routing::Impl::DoOnConnectionLost(const NodeId& lost_connection_id) {
-  LOG(kVerbose) << "Routing::ConnectionLost with ----------------------------"
+  LOG(kVerbose) << DebugId(kNodeId()) <<  " ConnectionLost with ----------------------------"
                 << DebugId(lost_connection_id);
   {
     std::lock_guard<std::mutex> lock(running_mutex_);

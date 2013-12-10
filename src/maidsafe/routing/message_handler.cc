@@ -304,6 +304,7 @@ void MessageHandler::HandleGroupMessageAsClosestNode(protobuf::Message& message)
       (!routing_table_.IsThisNodeInRange(NodeId(message.destination_id()),
                                          Parameters::closest_nodes_size))) {
     message.set_visited(true);
+    LOG(kVerbose) << "message visited id: " << message.id();
     return network_.SendToClosestNode(message);
   }
 
@@ -321,6 +322,7 @@ void MessageHandler::HandleGroupMessageAsClosestNode(protobuf::Message& message)
   if (!routing_table_.IsThisNodeGroupLeader(NodeId(message.destination_id()),
                                             closest_to_group_leader_node, route_history)) {
     assert(NodeId(message.destination_id()) != closest_to_group_leader_node.node_id);
+    LOG(kVerbose) << "network_.SendToDirectAdjustedRoute: " << message.id();
     return network_.SendToDirectAdjustedRoute(message, closest_to_group_leader_node.node_id,
                                               closest_to_group_leader_node.connection_id);
   }
