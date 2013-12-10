@@ -22,6 +22,23 @@
 
 
 set(Qt5Required OFF)
+set(Qt5RequiredLibs
+      Qt5Concurrent
+      Qt5Core
+      Qt5Gui
+      Qt5Multimedia
+      Qt5MultimediaWidgets
+      Qt5Network
+      Qt5OpenGL
+      Qt5Positioning
+      Qt5PrintSupport
+      Qt5Qml
+      Qt5Quick
+      Qt5Sensors
+      Qt5Sql
+      Qt5WebKit
+      Qt5WebKitWidgets
+      Qt5Widgets)
 include(../../../../../../../cmake_modules/maidsafe_find_qt5.cmake)
 if(NOT AllQt5_FOUND)
   message(STATUS "Didn't find all required modules of Qt5. Not building Network Viewer tool.")
@@ -127,9 +144,8 @@ set(AllExesForCurrentProject ${AllExesForCurrentProject} PARENT_SCOPE)
 if(WIN32)
   set_target_properties(network_viewer PROPERTIES WIN32_EXECUTABLE TRUE)
 endif()
-qt5_use_modules(network_viewer Core Gui Widgets Network WebKit WebKitWidgets)
 
-target_link_libraries(network_viewer maidsafe_common maidsafe_network_viewer)
+target_link_libraries(network_viewer maidsafe_common maidsafe_network_viewer ${Qt5TargetLibs})
 
 rename_outdated_built_exes()
 
