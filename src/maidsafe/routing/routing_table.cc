@@ -121,7 +121,7 @@ bool RoutingTable::AddOrCheckNode(NodeInfo peer, bool remove) {
   }
 
   bool return_value(false), remove_furthest_node(false);
-  std::vector<NodeInfo> new_connected_close_nodes, old_connected_close_nodes, new_closest_nodes;
+  std::vector<NodeInfo> new_connected_close_nodes, old_connected_close_nodes/*, new_closest_nodes*/;
   NodeInfo removed_node;
   uint16_t routing_table_size(0);
   std::shared_ptr<MatrixChange> matrix_change;
@@ -179,7 +179,7 @@ bool RoutingTable::AddOrCheckNode(NodeInfo peer, bool remove) {
     if ((matrix_change != nullptr) && !matrix_change->OldEqualsToNew()) {
       network_statistics_.UpdateLocalAverageDistance(unique_nodes);
       if (close_node_replaced_functor_)
-        close_node_replaced_functor_(new_closest_nodes);
+        close_node_replaced_functor_(new_connected_close_nodes);
       if (matrix_change_functor_)
         matrix_change_functor_(matrix_change);
       IpcSendGroupMatrix();
@@ -200,7 +200,7 @@ bool RoutingTable::AddOrCheckNode(NodeInfo peer, bool remove) {
 }
 
 NodeInfo RoutingTable::DropNode(const NodeId& node_to_drop, bool routing_only) {
-  std::vector<NodeInfo> new_closest_nodes, new_connected_close_nodes, old_connected_close_nodes;
+  std::vector<NodeInfo> /*new_closest_nodes,*/ new_connected_close_nodes, old_connected_close_nodes;
   NodeInfo dropped_node;
   std::shared_ptr<MatrixChange> matrix_change;
   std::vector<NodeId> unique_nodes;
@@ -235,7 +235,7 @@ NodeInfo RoutingTable::DropNode(const NodeId& node_to_drop, bool routing_only) {
   if ((matrix_change != nullptr) && !matrix_change->OldEqualsToNew()) {
     network_statistics_.UpdateLocalAverageDistance(unique_nodes);
     if (close_node_replaced_functor_)
-      close_node_replaced_functor_(new_closest_nodes);
+      close_node_replaced_functor_(new_connected_close_nodes);
     if (matrix_change_functor_)
       matrix_change_functor_(matrix_change);
     IpcSendGroupMatrix();

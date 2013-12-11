@@ -127,10 +127,6 @@ void GroupMatrix::GetBetterNodeForSendingMessage(const NodeId& target_node_id,
         current_closest_peer = row.at(0);
         LOG(kVerbose) << DebugId(closest_id) << ", peer to send: "
                       << DebugId(current_closest_peer.node_id);
-        PrintGroupMatrix();
-        Prune();
-        std::cout << "After prune" << std::endl;
-        PrintGroupMatrix();
       }
     }
   }

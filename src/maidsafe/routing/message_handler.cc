@@ -411,6 +411,12 @@ void MessageHandler::HandleMessage(protobuf::Message& message) {
     return;
   if (!ValidateMessage(message)) {
     LOG(kWarning) << "Validate message failed， id: " << message.id();
+    if (IsAck(message))
+      return;
+    if (message.hops_to_live() == 0) {
+      std::cout << "Message has traversed maximum number of hops allowed: " << message.id() << "\n";
+      Sleep(std::chrono::seconds(5));
+    }
     assert((message.hops_to_live() > 0) && "Message has traversed maximum number of hops allowed");
     return;
   }
