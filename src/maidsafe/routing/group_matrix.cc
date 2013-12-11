@@ -47,9 +47,10 @@ std::shared_ptr<MatrixChange> GroupMatrix::AddConnectedPeer(const NodeInfo& node
   std::vector<NodeId> old_unique_ids(GetUniqueNodeIds());
   LOG(kVerbose) << DebugId(kNodeId_) << " AddConnectedPeer : " << DebugId(node_info.node_id);
   auto node_id(node_info.node_id);
-  auto found(std::find_if(
-      matrix_.begin(), matrix_.end(),
-      [node_id](const std::vector<NodeInfo> & info) { return info.begin()->node_id == node_id; }));
+  auto found(std::find_if(matrix_.begin(), matrix_.end(),
+                          [node_id](const std::vector<NodeInfo>& info) {
+                            return info.begin()->node_id == node_id;
+                          }));
   if (found != matrix_.end()) {
     LOG(kWarning) << "Already Added in matrix";
     return std::make_shared<MatrixChange>(MatrixChange(kNodeId_, old_unique_ids, old_unique_ids));
@@ -64,8 +65,8 @@ std::shared_ptr<MatrixChange> GroupMatrix::RemoveConnectedPeer(const NodeInfo& n
   std::vector<NodeId> old_unique_ids(GetUniqueNodeIds());
   matrix_.erase(std::remove_if(matrix_.begin(), matrix_.end(),
                                [node_info](const std::vector<NodeInfo>& nodes) {
-                  return (node_info.node_id == nodes.begin()->node_id);
-                }),
+                                 return (node_info.node_id == nodes.begin()->node_id);
+                               }),
                 matrix_.end());
   Prune();
   UpdateUniqueNodeList();
@@ -126,6 +127,9 @@ void GroupMatrix::GetBetterNodeForSendingMessage(const NodeId& target_node_id,
         current_closest_peer = row.at(0);
         LOG(kVerbose) << DebugId(closest_id) << ", peer to send: "
                       << DebugId(current_closest_peer.node_id);
+        PrintGroupMatrix();
+        Prune();
+        std::cout << "After prune" << std::endl;
         PrintGroupMatrix();
       }
     }
@@ -433,11 +437,12 @@ void GroupMatrix::Prune() {
       peers_to_remove.push_back(node_id);
       continue;
     }
-    std::partial_sort(itr->begin() + 1, itr->begin() + Parameters::closest_nodes_size + 1,
+    std::partial_sort(itr->begin() + 1, itr->begin() + Parameters::closest_nodes_size,
                       itr->end(), [node_id](const NodeInfo& lhs, const NodeInfo& rhs) {
-      return NodeId::CloserToTarget(lhs.node_id, rhs.node_id, node_id);
-    });
-    if (NodeId::CloserToTarget(itr->at(Parameters::closest_nodes_size).node_id, kNodeId_, node_id))
+                                    return NodeId::CloserToTarget(lhs.node_id, rhs.node_id,
+                                                                  node_id);
+                                  });
+    if (!NodeId::CloserToTarget(kNodeId_, itr->at(Parameters::closest_nodes_size).node_id, node_id))
       peers_to_remove.push_back(node_id);
   }
   for (const auto& peer : peers_to_remove) {
