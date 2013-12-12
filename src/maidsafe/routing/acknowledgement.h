@@ -11,8 +11,8 @@
  ******************************************************************************/
 
 
-#ifndef MAIDSAFE_ROUTING_ACK_TIMER_H_
-#define MAIDSAFE_ROUTING_ACK_TIMER_H_
+#ifndef MAIDSAFE_ROUTING_ACKNOWLEDGEMENT_H_
+#define MAIDSAFE_ROUTING_ACKNOWLEDGEMENT_H_
 
 #include<mutex>
 #include <map>
@@ -79,5 +79,5 @@ class Acknowledgement {
 }  // namespace maidsafe
 
 
-#endif  // MAIDSAFE_ROUTING_ACK_TIMER_H_
+#endif  // MAIDSAFE_ROUTING_ACKNOWLEDGEMENT_H_
 

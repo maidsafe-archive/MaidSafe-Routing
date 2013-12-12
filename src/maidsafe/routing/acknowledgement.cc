@@ -144,6 +144,6 @@ bool Acknowledgement::NeedsAck(const protobuf::Message& message, const NodeId& n
   return true;
 }
 
-}  // namespace maidsafe
-
 }  // namespace routing
+
+}  // namespace maidsafe

@@ -105,7 +105,7 @@ void GroupMatrix::GetBetterNodeForSendingMessage(const NodeId& target_node_id,
                                                  const std::vector<std::string>& exclude,
                                                  bool ignore_exact_match,
                                                  NodeInfo& current_closest_peer) {
-  NodeId closest_id(current_closest_peer.node_id);  
+  NodeId closest_id(current_closest_peer.node_id);
 
   for (const auto& row : matrix_) {
     if (ignore_exact_match && row.at(0).node_id == target_node_id)
@@ -122,7 +122,8 @@ void GroupMatrix::GetBetterNodeForSendingMessage(const NodeId& target_node_id,
         continue;
       if (NodeId::CloserToTarget(node.node_id, closest_id, target_node_id)) {
         LOG(kVerbose) << DebugId(closest_id) << ", peer to send: "
-                      << DebugId(current_closest_peer.node_id) << ", " << DebugId(row.at(0).node_id);
+                      << DebugId(current_closest_peer.node_id) << ", "
+                      << DebugId(row.at(0).node_id);
         closest_id = node.node_id;
         current_closest_peer = row.at(0);
         LOG(kVerbose) << DebugId(closest_id) << ", peer to send: "
@@ -430,7 +431,7 @@ void GroupMatrix::Prune() {
     }
     node_id = itr->begin()->node_id;
     if (itr->size() <= Parameters::closest_nodes_size) {
-      if (itr->size() > 1) // avoiding removing the recently added node
+      if (itr->size() > 1)  // avoids removing the recently added node
         peers_to_remove.push_back(node_id);
       continue;
     }

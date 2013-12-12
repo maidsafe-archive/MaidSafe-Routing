@@ -377,7 +377,7 @@ void MessageHandler::HandleGroupMessageAsClosestNode(protobuf::Message& message)
   }
 
   message.clear_ack_node_ids();
-   message.set_ack_id(acknowledgement_.GetId());
+  message.set_ack_id(acknowledgement_.GetId());
   message.set_destination_id(routing_table_.kNodeId().string());
 
   if (IsRoutingMessage(message)) {

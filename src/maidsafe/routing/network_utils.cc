@@ -378,7 +378,7 @@ void NetworkUtils::RecursiveSendOn(protobuf::Message message, NodeInfo last_node
     }
   };
 
- if (acknowledgement_.NeedsAck(message, peer.node_id)) {
+  if (acknowledgement_.NeedsAck(message, peer.node_id)) {
     acknowledgement_.Add(message,
                         [=](const boost::system::error_code& error) {
                           if (error.value() == boost::system::errc::success)
@@ -426,7 +426,7 @@ void NetworkUtils::AdjustAckHistory(protobuf::Message& message) {
 }
 
 void NetworkUtils::SendAck(const protobuf::Message& message) {
- LOG(kVerbose) << "[" << DebugId(routing_table_.kNodeId()) << "] SendAck " << message.ack_id();
+  LOG(kVerbose) << "[" << DebugId(routing_table_.kNodeId()) << "] SendAck " << message.ack_id();
 
   if (IsAck(message) || IsGroupUpdate(message) || IsConnectSuccessAcknowledgement(message))
     return;
@@ -453,7 +453,7 @@ void NetworkUtils::SendAck(const protobuf::Message& message) {
 
   protobuf::Message ack_message(rpcs::Ack(NodeId(message.ack_node_ids(0)), routing_table_.kNodeId(),
                                           message.ack_id()));
-  LOG(kVerbose) << "NetworkUtils::SendAck";  
+  LOG(kVerbose) << "NetworkUtils::SendAck";
   SendToClosestNode(ack_message);
 }
 
