@@ -429,16 +429,16 @@ void GroupMatrix::Prune() {
       continue;
     }
     node_id = itr->begin()->node_id;
-    if (itr->size() < Parameters::closest_nodes_size) {
-      peers_to_remove.push_back(node_id);
+    if (itr->size() <= Parameters::closest_nodes_size) {
+      if (itr->size() > 1) // avoiding removing the recently added node
+        peers_to_remove.push_back(node_id);
       continue;
     }
-    std::partial_sort(itr->begin() + 1, itr->begin() + Parameters::closest_nodes_size,
-                      itr->end(), [node_id](const NodeInfo& lhs, const NodeInfo& rhs) {
-                                    return NodeId::CloserToTarget(lhs.node_id, rhs.node_id,
-                                                                  node_id);
-                                  });
-    if (!NodeId::CloserToTarget(kNodeId_, itr->at(Parameters::closest_nodes_size).node_id, node_id))
+    std::sort(itr->begin() + 1, itr->end(), [node_id](const NodeInfo& lhs, const NodeInfo& rhs) {
+                                              return NodeId::CloserToTarget(lhs.node_id,
+                                                                            rhs.node_id, node_id);
+                                            });
+    if (NodeId::CloserToTarget(itr->at(Parameters::closest_nodes_size).node_id, kNodeId_, node_id))
       peers_to_remove.push_back(node_id);
   }
   for (const auto& peer : peers_to_remove) {

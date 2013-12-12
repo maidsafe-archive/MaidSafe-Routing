@@ -251,15 +251,16 @@ bool GenericNode::NodeSubscribedForGroupUpdate(const NodeId& node_id) {
   std::string log;
   log += DebugId(this->node_id()) + " has " + std::to_string(subscribers.size()) +
          " nodes subscribed for update";
-  for (auto& subscriber : subscribers) {
+  for (const auto& subscriber : subscribers) {
     log += DebugId(subscriber.node_id) + ", ";
   }
 
   LOG(kVerbose) << log;
 
-  return (std::find_if(subscribers.begin(), subscribers.end(), [&](const NodeInfo & node) {
+  return (std::find_if(std::begin(subscribers), std::end(subscribers),
+          [&](const NodeInfo& node) {
             return node.node_id == node_id;
-          }) != subscribers.end());
+          }) != std::end(subscribers));
 }
 
 void GenericNode::SetMatrixChangeFunctor(MatrixChangedFunctor group_matrix_functor) {
@@ -787,7 +788,7 @@ std::vector<NodeInfo> GenericNetwork::GetClosestNodes(const NodeId& target_id,
   uint32_t size = std::min(quantity + 1, static_cast<uint32_t>(nodes_.size()));
   std::lock_guard<std::mutex> lock(mutex_);
   std::partial_sort(closet_nodes.begin(), closet_nodes.begin() + size, closet_nodes.end(),
-                    [&](const NodeInfo & lhs, const NodeInfo & rhs) {
+                    [&](const NodeInfo& lhs, const NodeInfo& rhs) {
     return NodeId::CloserToTarget(lhs.node_id, rhs.node_id, target_id);
   });
   return std::vector<NodeInfo>(closet_nodes.begin() + 1, closet_nodes.begin() + size);

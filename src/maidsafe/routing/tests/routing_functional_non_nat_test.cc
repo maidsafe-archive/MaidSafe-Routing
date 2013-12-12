@@ -58,9 +58,8 @@ TEST_F(RoutingNetworkNonNatTest, FUNC_GroupUpdateSubscription) {
     if ((node->node_id() == env_->nodes_[kServerSize - 1]->node_id()) ||
         (node->node_id() == env_->nodes_[kNetworkSize - 1]->node_id()))
       continue;
-    closest_nodes_info = env_->GetClosestNodes(node->node_id(), Parameters::closest_nodes_size - 1);
-    LOG(kVerbose) << "size of closest_nodes: " << closest_nodes_info.size();
-
+    closest_nodes_info = env_->GetClosestNodes(node->node_id(), Parameters::closest_nodes_size,
+                                               true);
     int my_index(env_->NodeIndex(node->node_id()));
     for (const auto& node_info : closest_nodes_info) {
       int index(env_->NodeIndex(node_info.node_id));
