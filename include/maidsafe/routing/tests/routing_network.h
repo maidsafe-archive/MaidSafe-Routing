@@ -71,7 +71,7 @@ enum ExpectedNodeType {
 };
 
 const uint32_t kClientSize(2);
-const uint32_t kServerSize(15);
+const uint32_t kServerSize(12);
 const uint32_t kNetworkSize = kClientSize + kServerSize;
 
 class GenericNetwork;

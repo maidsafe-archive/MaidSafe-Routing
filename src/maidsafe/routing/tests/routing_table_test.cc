@@ -190,7 +190,7 @@ TEST(RoutingTableTest, FUNC_ReverseOrderedGroupChange) {
   // Set functors
   int count(0);
   std::vector<NodeInfo> expected_close_nodes;
-  NetworkStatusFunctor network_status_functor = [](const int & status) {
+  NetworkStatusFunctor network_status_functor = [](const int& status) {
     LOG(kVerbose) << "Status : " << status;
   };
   std::function<void(const NodeInfo&, bool)> remove_node_functor = [](

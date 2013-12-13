@@ -991,6 +991,7 @@ TEST(APITest, BEH_API_TypedMessageSend) {
   }
 
   {  // Test Single To Single
+    LOG(kVerbose) << "Single To Single message";
     SingleToSingleMessage single_to_single_message;
     single_to_single_message.receiver = SingleId(routing1.kNodeId());
     single_to_single_message.sender = SingleSource(SingleId(routing3.kNodeId()));
@@ -1002,11 +1003,11 @@ TEST(APITest, BEH_API_TypedMessageSend) {
   }
 
   {  // Test Group To Single
+    LOG(kVerbose) << "Group To Single message";
     GroupToSingleMessage group_to_single_message;
-    GroupSource group_source;
-    group_source.sender_id = SingleId(routing3.kNodeId());
-    group_source.group_id = GroupId(GenerateUniqueRandomId(routing3.kNodeId(), 30));
-    group_to_single_message.sender = group_source;
+    group_to_single_message.sender = GroupSource(
+                                         GroupId(GenerateUniqueRandomId(routing3.kNodeId(), 30)),
+                                         SingleId(routing3.kNodeId()));
     group_to_single_message.receiver = SingleId(routing1.kNodeId());
     group_to_single_message.contents = "Dummy content for test puepose";
     routing3.Send(group_to_single_message);
@@ -1015,6 +1016,7 @@ TEST(APITest, BEH_API_TypedMessageSend) {
   }
 
   {  //  Test Single To Group
+    LOG(kVerbose) << "Single To Group message";
     responses = 0;
     SingleToGroupMessage single_to_group_message;
     single_to_group_message.sender = SingleSource(SingleId(routing3.kNodeId()));

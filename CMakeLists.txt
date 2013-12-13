@@ -131,6 +131,7 @@ if(MaidsafeTesting)
   set_property(TEST Multiple_Functional_Tests PROPERTY LABELS Routing Functional)
   set_property(TEST Multiple_Functional_Tests PROPERTY TIMEOUT 600)
   add_gtests(TESTrouting)
+  set_property(TEST ResponseHandlerTest.BEH_FindNodes PROPERTY TIMEOUT 100)
   add_gtests(TESTrouting_api)
 # This test target can be run separately. Removed from Experimental target to reduce the ctest time.
   add_gtests(TESTrouting_big)
