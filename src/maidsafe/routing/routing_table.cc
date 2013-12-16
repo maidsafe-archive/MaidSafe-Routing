@@ -164,12 +164,12 @@ bool RoutingTable::AddOrCheckNode(NodeInfo peer, bool remove) {
         remove_node_functor_(removed_node, false);
     }
 
-    if ((new_connected_close_nodes.size() != old_connected_close_nodes.size() ||
+    if ((new_connected_close_nodes.size() != old_connected_close_nodes.size()) ||
          !std::equal(new_connected_close_nodes.begin(), new_connected_close_nodes.end(),
                      old_connected_close_nodes.begin(),
                      [](const NodeInfo& lhs, const NodeInfo& rhs) {
                         return lhs.node_id == rhs.node_id;
-                     }))) {
+                     })) {
       if (connected_group_change_functor_) {
         connected_group_change_functor_(new_connected_close_nodes);
       }
