@@ -74,7 +74,6 @@ class RoutingTable {
                           std::function<void(const NodeInfo&, bool)> remove_node_functor,
                           RemoveFurthestUnnecessaryNode remove_furthest_node,
                           ConnectedGroupChangeFunctor connected_group_change_functor,
-                          CloseNodeReplacedFunctor close_node_replaced_functor,
                           MatrixChangedFunctor matrix_change_functor);
   bool AddNode(const NodeInfo& peer);
   bool CheckNode(const NodeInfo& peer);

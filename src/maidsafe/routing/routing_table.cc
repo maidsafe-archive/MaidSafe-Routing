@@ -85,7 +85,6 @@ void RoutingTable::InitialiseFunctors(
     std::function<void(const NodeInfo&, bool)> remove_node_functor,
     RemoveFurthestUnnecessaryNode remove_furthest_node,
     ConnectedGroupChangeFunctor connected_group_change_functor,
-    CloseNodeReplacedFunctor close_node_replaced_functor,
     MatrixChangedFunctor matrix_change_functor) {
   // TODO(Prakash#5#): 2012-10-25 - Consider asserting network_status_functor != nullptr here.
   if (!network_status_functor)
@@ -101,7 +100,6 @@ void RoutingTable::InitialiseFunctors(
   remove_node_functor_ = remove_node_functor;
   remove_furthest_node_ = remove_furthest_node;
   connected_group_change_functor_ = connected_group_change_functor;
-  close_node_replaced_functor_ = close_node_replaced_functor;
   matrix_change_functor_ = matrix_change_functor;
   //  }
 }
@@ -169,8 +167,9 @@ bool RoutingTable::AddOrCheckNode(NodeInfo peer, bool remove) {
     if ((new_connected_close_nodes.size() != old_connected_close_nodes.size() ||
          !std::equal(new_connected_close_nodes.begin(), new_connected_close_nodes.end(),
                      old_connected_close_nodes.begin(),
-                     [](const NodeInfo & lhs,
-                        const NodeInfo & rhs) { return lhs.node_id == rhs.node_id; }))) {
+                     [](const NodeInfo& lhs, const NodeInfo& rhs) {
+                        return lhs.node_id == rhs.node_id;
+                     }))) {
       if (connected_group_change_functor_) {
         connected_group_change_functor_(new_connected_close_nodes);
       }
@@ -178,8 +177,6 @@ bool RoutingTable::AddOrCheckNode(NodeInfo peer, bool remove) {
 
     if ((matrix_change != nullptr) && !matrix_change->OldEqualsToNew()) {
       network_statistics_.UpdateLocalAverageDistance(unique_nodes);
-      if (close_node_replaced_functor_)
-        close_node_replaced_functor_(new_connected_close_nodes);
       if (matrix_change_functor_)
         matrix_change_functor_(matrix_change);
       IpcSendGroupMatrix();
@@ -234,8 +231,6 @@ NodeInfo RoutingTable::DropNode(const NodeId& node_to_drop, bool routing_only) {
 
   if ((matrix_change != nullptr) && !matrix_change->OldEqualsToNew()) {
     network_statistics_.UpdateLocalAverageDistance(unique_nodes);
-    if (close_node_replaced_functor_)
-      close_node_replaced_functor_(new_connected_close_nodes);
     if (matrix_change_functor_)
       matrix_change_functor_(matrix_change);
     IpcSendGroupMatrix();
@@ -659,7 +654,7 @@ NodeInfo RoutingTable::GetRemovableNode(std::vector<std::string> attempted) {
 
   auto const from_iterator(nodes_.begin() + Parameters::closest_nodes_size);
 
-  for (auto it = from_iterator; it != nodes_.end(); ++it) {
+  for (auto it(from_iterator); it != std::end(nodes_); ++it) {
     if (std::find(attempted.begin(), attempted.end(), ((*it).node_id.string())) ==
         attempted.end()) {
       auto bucket_iter = bucket_rank_map.find((*it).bucket);
@@ -672,7 +667,7 @@ NodeInfo RoutingTable::GetRemovableNode(std::vector<std::string> attempted) {
   }
 
   int32_t max_bucket(0), max_bucket_count(1);
-  for (auto& elem : bucket_rank_map) {
+  for (const auto& elem : bucket_rank_map) {
     if ((elem).second >= max_bucket_count) {
       max_bucket = (elem).first;
       max_bucket_count = (elem).second;
@@ -686,7 +681,7 @@ NodeInfo RoutingTable::GetRemovableNode(std::vector<std::string> attempted) {
   }
 
   NodeInfo removable_node;
-  for (auto it(from_iterator); it != nodes_.end(); ++it) {
+  for (auto it(from_iterator); it != std::end(nodes_); ++it) {
     if (((*it).bucket == max_bucket) &&
         std::find(attempted.begin(), attempted.end(), (*it).node_id.string()) == attempted.end()) {
       removable_node = (*it);

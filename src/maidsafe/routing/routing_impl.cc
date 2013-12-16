@@ -116,8 +116,7 @@ void Routing::Impl::ConnectFunctors(const Functors& functors) {
                                       std::lock_guard<std::mutex> lock(running_mutex_);
                                       if (running_)
                                         group_change_handler_.SendClosestNodesUpdateRpcs(nodes);
-                                    },
-                                    functors_.close_node_replaced, functors.matrix_changed);
+                                    }, functors.matrix_changed);
   // only one of MessageAndCachingFunctors or TypedMessageAndCachingFunctor should be provided
   assert(!functors.message_and_caching.message_received !=
          !functors.typed_message_and_caching.single_to_single.message_received);
