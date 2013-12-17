@@ -155,7 +155,7 @@ rename_outdated_built_exes()
 #==================================================================================================#
 include(standard_flags)
 
-target_compile_definitions(network_viewer PRIVATE $<$<CONFIG:Release>:QT_NO_DEBUG_OUTPUT QT_NO_WARNING_OUTPUT QT_NO_DEBUG_STREAM>)
+target_compile_definitions(network_viewer PRIVATE $<$<CONFIG:Release>:QT_NO_DEBUG_OUTPUT QT_NO_WARNING_OUTPUT>)
 
 if(WIN32)
   string(REGEX REPLACE "/Zm[0-9]+ " "/Zm500 " CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
