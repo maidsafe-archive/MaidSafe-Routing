@@ -79,7 +79,7 @@ class GroupMatrix {
   std::vector<NodeId> GetUniqueNodeIds() const;
   std::vector<NodeInfo> GetClosestNodes(uint16_t size);
   bool Contains(const NodeId& node_id);
-  void Prune();
+  void Prune(const NodeId& added_node_id = NodeId());
 
   friend class test::GenericNode;
   friend class test::NetworkStatisticsTest_BEH_IsIdInGroupRange_Test;

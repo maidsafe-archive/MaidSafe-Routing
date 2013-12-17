@@ -63,7 +63,8 @@ class Contact;
 
 struct NodeInfo;
 
-typedef std::function<void(std::vector<NodeInfo> /*new_group*/)> ConnectedGroupChangeFunctor;
+typedef std::function<void(std::vector<NodeInfo> /*new*/, std::vector<NodeInfo> /*old*/)>
+                           ConnectedGroupChangeFunctor;
 
 class RoutingTable {
  public:

@@ -47,27 +47,27 @@ std::shared_ptr<MatrixChange> GroupMatrix::AddConnectedPeer(const NodeInfo& node
   std::vector<NodeId> old_unique_ids(GetUniqueNodeIds());
   LOG(kVerbose) << DebugId(kNodeId_) << " AddConnectedPeer : " << DebugId(node_info.node_id);
   auto node_id(node_info.node_id);
-  auto found(std::find_if(matrix_.begin(), matrix_.end(),
+  auto found(std::find_if(std::begin(matrix_), std::end(matrix_),
                           [node_id](const std::vector<NodeInfo>& info) {
                             return info.begin()->node_id == node_id;
                           }));
-  if (found != matrix_.end()) {
+  if (found != std::end(matrix_)) {
     LOG(kWarning) << "Already Added in matrix";
     return std::make_shared<MatrixChange>(MatrixChange(kNodeId_, old_unique_ids, old_unique_ids));
   }
   matrix_.push_back(std::vector<NodeInfo>(1, node_info));
-  Prune();
+  Prune(node_info.node_id);
   UpdateUniqueNodeList();
   return std::make_shared<MatrixChange>(MatrixChange(kNodeId_, old_unique_ids, GetUniqueNodeIds()));
 }
 
 std::shared_ptr<MatrixChange> GroupMatrix::RemoveConnectedPeer(const NodeInfo& node_info) {
   std::vector<NodeId> old_unique_ids(GetUniqueNodeIds());
-  matrix_.erase(std::remove_if(matrix_.begin(), matrix_.end(),
+  matrix_.erase(std::remove_if(std::begin(matrix_), std::end(matrix_),
                                [node_info](const std::vector<NodeInfo>& nodes) {
                                  return (node_info.node_id == nodes.begin()->node_id);
                                }),
-                matrix_.end());
+                std::end(matrix_));
   Prune();
   UpdateUniqueNodeList();
   return std::make_shared<MatrixChange>(MatrixChange(kNodeId_, old_unique_ids, GetUniqueNodeIds()));
@@ -121,6 +121,7 @@ void GroupMatrix::GetBetterNodeForSendingMessage(const NodeId& target_node_id,
       if (std::find(exclude.begin(), exclude.end(), node.node_id.string()) != exclude.end())
         continue;
       if (NodeId::CloserToTarget(node.node_id, closest_id, target_node_id)) {
+        PrintGroupMatrix();
         LOG(kVerbose) << DebugId(closest_id) << ", peer to send: "
                       << DebugId(current_closest_peer.node_id) << ", "
                       << DebugId(row.at(0).node_id);
@@ -345,12 +346,12 @@ std::vector<NodeId> GroupMatrix::GetUniqueNodeIds() const {
 
 bool GroupMatrix::IsRowEmpty(const NodeInfo& node_info) {
   auto group_itr(matrix_.begin());
-  for (group_itr = matrix_.begin(); group_itr != matrix_.end(); ++group_itr) {
+  for (; group_itr != std::end(matrix_); ++group_itr) {
     if ((*group_itr).at(0).node_id == node_info.node_id)
       break;
   }
-  assert(group_itr != matrix_.end());
-  if (group_itr == matrix_.end())
+  assert(group_itr != std::end(matrix_));
+  if (group_itr == std::end(matrix_))
     return false;
 
   return (group_itr->size() < 2);
@@ -410,7 +411,7 @@ void GroupMatrix::PartialSortFromTarget(const NodeId& target, uint16_t number,
   });
 }
 
-void GroupMatrix::Prune() {
+void GroupMatrix::Prune(const NodeId& added_node_id) {
   if (matrix_.size() <= Parameters::closest_nodes_size)
     return;
   NodeId node_id;
@@ -439,8 +440,14 @@ void GroupMatrix::Prune() {
                                               return NodeId::CloserToTarget(lhs.node_id,
                                                                             rhs.node_id, node_id);
                                             });
-    if (NodeId::CloserToTarget(itr->at(Parameters::closest_nodes_size).node_id, kNodeId_, node_id))
+    if (NodeId::CloserToTarget(itr->at(Parameters::closest_nodes_size).node_id, kNodeId_,
+                               node_id)) {
       peers_to_remove.push_back(node_id);
+    } else if ((added_node_id != NodeId()) &&
+               (itr->at(Parameters::closest_nodes_size - 1).node_id == kNodeId_) &&
+               NodeId::CloserToTarget(added_node_id, kNodeId_, node_id)) {
+      peers_to_remove.push_back(node_id);
+    }
   }
   for (const auto& peer : peers_to_remove) {
     LOG(kInfo) << DebugId(kNodeId_) << " matrix conected removes " << DebugId(peer);

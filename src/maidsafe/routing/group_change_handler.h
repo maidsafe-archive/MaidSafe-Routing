@@ -47,7 +47,8 @@ class GroupChangeHandler {
   GroupChangeHandler(RoutingTable& routing_table, ClientRoutingTable& client_routing_table,
                      NetworkUtils& network);
   ~GroupChangeHandler();
-  void SendClosestNodesUpdateRpcs(std::vector<NodeInfo> new_close_nodes);
+  void SendClosestNodesUpdateRpcs(std::vector<NodeInfo> closest_nodes,
+                                  std::vector<NodeInfo> old_closest_nodes);
   void UpdateGroupChange(const NodeId& node_id, std::vector<NodeInfo> close_nodes);
   void ClosestNodesUpdate(protobuf::Message& message);
   void SendSubscribeRpc(bool subscribe, const NodeInfo& node_info);
