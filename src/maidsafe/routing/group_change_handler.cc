@@ -93,15 +93,7 @@ void GroupChangeHandler::UpdateGroupChange(const NodeId& node_id,
 
 void GroupChangeHandler::SendClosestNodesUpdateRpcs(
     std::vector<NodeInfo> closest_nodes, std::vector<NodeInfo> old_closest_nodes) {
-  NodeId node_id(routing_table_.kNodeId());
-  closest_nodes.erase(std::remove_if(std::begin(closest_nodes), std::end(closest_nodes),
-                                     [node_id](const NodeInfo&node_info) {
-                                      return node_info.node_id == node_id;
-                                     }),
-                      std::end(closest_nodes));
-  if (closest_nodes.size() < Parameters::closest_nodes_size)
-    return;
-
+  NodeId kNodeId(routing_table_.kNodeId());
   old_closest_nodes.erase(
       std::remove_if(std::begin(old_closest_nodes), std::end(old_closest_nodes),
                      [&](const NodeInfo& node_info) {
@@ -112,6 +104,14 @@ void GroupChangeHandler::SendClosestNodesUpdateRpcs(
                                            }) != std::end(closest_nodes);
                      }),
       std::end(old_closest_nodes));
+
+  closest_nodes.erase(std::remove_if(std::begin(closest_nodes), std::end(closest_nodes),
+                                     [kNodeId](const NodeInfo& node_info) {
+                                      return node_info.node_id == kNodeId;
+                                     }),
+                      std::end(closest_nodes));
+  if (closest_nodes.size() < Parameters::closest_nodes_size)
+    return;
 
   LOG(kVerbose) << "[" << DebugId(routing_table_.kNodeId())
                 << "] SendClosestNodesUpdateRpcs: " << closest_nodes.size();
