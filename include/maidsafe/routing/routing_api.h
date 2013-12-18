@@ -110,11 +110,11 @@ class Routing {
                   const std::string& message, bool cacheable,  // to cache message content
                   ResponseFunctor response_functor);                  // Called on response
 
-  // Sends message to Parameters::node_group_size most closest nodes to destination_id. The node
+  // Sends message to Parameters::group_size most closest nodes to destination_id. The node
   // having id equal to destination id is not considered as part of group and will not receive
   // group message
   // If a valid response functor is provided, it will be called when:
-  // a) for each response receieved (Parameters::node_group_size responses expected) or,
+  // a) for each response receieved (Parameters::group_size responses expected) or,
   // b) waiting time (Parameters::default_response_timeout) for receiving the response expires
   // Throws on invalid paramaters
   void SendGroup(const NodeId& destination_id,  // ID of final destination or group centre

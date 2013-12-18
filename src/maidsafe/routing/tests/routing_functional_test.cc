@@ -182,7 +182,7 @@ TEST_F(RoutingNetworkTest, FUNC_SendToGroup) {
   EXPECT_EQ(0, env_->nodes_[last_index]->MessagesSize())
       << "Not expected message at Node : "
       << HexSubstr(env_->nodes_[last_index]->node_id().string());
-  EXPECT_EQ(message_count * (Parameters::node_group_size), receivers_message_count);
+  EXPECT_EQ(message_count * (Parameters::group_size), receivers_message_count);
 }
 
 TEST_F(RoutingNetworkTest, FUNC_SendToGroupSelfId) {
@@ -220,7 +220,7 @@ TEST_F(RoutingNetworkTest, FUNC_SendToGroupSelfId) {
     receivers_message_count += static_cast<uint16_t>(node->MessagesSize());
     node->ClearMessages();
   }
-  EXPECT_EQ(message_count * (Parameters::node_group_size) * kServerSize, receivers_message_count);
+  EXPECT_EQ(message_count * (Parameters::group_size) * kServerSize, receivers_message_count);
   LOG(kVerbose) << "Total message received count : " << receivers_message_count;
 }
 
@@ -241,7 +241,7 @@ TEST_F(RoutingNetworkTest, FUNC_SendToGroupClientSelfId) {
   EXPECT_EQ(0, env_->nodes_[client_index]->MessagesSize())
       << "Not expected message at Node : "
       << HexSubstr(env_->nodes_[client_index]->node_id().string());
-  EXPECT_EQ(message_count * (Parameters::node_group_size), receivers_message_count);
+  EXPECT_EQ(message_count * (Parameters::group_size), receivers_message_count);
 }
 
 TEST_F(RoutingNetworkTest, FUNC_SendToGroupInHybridNetwork) {
@@ -258,7 +258,7 @@ TEST_F(RoutingNetworkTest, FUNC_SendToGroupInHybridNetwork) {
   EXPECT_EQ(0, env_->nodes_[last_index]->MessagesSize())
       << "Not expected message at Node : "
       << HexSubstr(env_->nodes_[last_index]->node_id().string());
-  EXPECT_EQ(message_count * (Parameters::node_group_size), receivers_message_count);
+  EXPECT_EQ(message_count * (Parameters::group_size), receivers_message_count);
 }
 
 TEST_F(RoutingNetworkTest, FUNC_SendToGroupRandomId) {
@@ -293,9 +293,9 @@ TEST_F(RoutingNetworkTest, FUNC_SendToGroupRandomId) {
     receivers_message_count += static_cast<uint16_t>(node->MessagesSize());
     node->ClearMessages();
   }
-  EXPECT_EQ(message_count * (Parameters::node_group_size), receivers_message_count);
+  EXPECT_EQ(message_count * (Parameters::group_size), receivers_message_count);
   LOG(kVerbose) << "Total message received count : " << message_count *
-                                                            (Parameters::node_group_size);
+                                                            (Parameters::group_size);
 }
 
 TEST_F(RoutingNetworkTest, FUNC_NonMutatingClientSendToGroupRandomId) {
@@ -336,9 +336,9 @@ TEST_F(RoutingNetworkTest, FUNC_NonMutatingClientSendToGroupRandomId) {
     node->ClearMessages();
   }
 
-  EXPECT_EQ(message_count * (Parameters::node_group_size), receivers_message_count);
+  EXPECT_EQ(message_count * (Parameters::group_size), receivers_message_count);
   LOG(kVerbose) << "Total message received count : " << message_count *
-                                                            (Parameters::node_group_size);
+                                                            (Parameters::group_size);
 }
 
 TEST_F(RoutingNetworkTest, FUNC_NonMutatingClientSendToGroupExistingId) {
@@ -381,9 +381,9 @@ TEST_F(RoutingNetworkTest, FUNC_NonMutatingClientSendToGroupExistingId) {
     node->ClearMessages();
   }
 
-  EXPECT_EQ(message_count * (Parameters::node_group_size), receivers_message_count);
+  EXPECT_EQ(message_count * (Parameters::group_size), receivers_message_count);
   LOG(kVerbose) << "Total message received count : " << message_count *
-                                                            (Parameters::node_group_size);
+                                                            (Parameters::group_size);
 }
 
 TEST_F(RoutingNetworkTest, FUNC_JoinWithSameId) {
@@ -441,24 +441,24 @@ TEST_F(RoutingNetworkTest, FUNC_IsNodeIdInGroupRange) {
   for (const auto& node : env_->nodes_)
     if (!node->IsClient())
       vault_ids.push_back(node->node_id());
-  EXPECT_GE(vault_ids.size(), Parameters::node_group_size);
+  EXPECT_GE(vault_ids.size(), Parameters::group_size);
 
   for (const auto& node : env_->nodes_) {
     if (!node->IsClient()) {
       // Check vault IDs from network
-      std::partial_sort(vault_ids.begin(), vault_ids.begin() + Parameters::node_group_size,
+      std::partial_sort(vault_ids.begin(), vault_ids.begin() + Parameters::group_size,
                         vault_ids.end(), [=](const NodeId & lhs, const NodeId & rhs)->bool {
         return NodeId::CloserToTarget(lhs, rhs, node->node_id());
       });
       for (uint16_t i(0); i < vault_ids.size(); ++i) {
-        if (i < Parameters::node_group_size)
+        if (i < Parameters::group_size)
           EXPECT_EQ(GroupRangeStatus::kInRange, node->IsNodeIdInGroupRange(vault_ids.at(i)));
         else
           EXPECT_NE(GroupRangeStatus::kInRange, node->IsNodeIdInGroupRange(vault_ids.at(i)));
       }
 
       // Check random IDs
-      NodeId expected_threshold_id(vault_ids.at(Parameters::node_group_size - 1));
+      NodeId expected_threshold_id(vault_ids.at(Parameters::group_size - 1));
       for (uint16_t i(0); i < 50; ++i) {
         NodeId random_id(NodeId::kRandomId);
         if (NodeId::CloserToTarget(random_id, expected_threshold_id, node->node_id()))
@@ -554,7 +554,7 @@ TEST_F(RoutingNetworkTest, FUNC_ClosestNodesClientBehindSymmetricNat) {
   env_->AddNode(true, sym_client_id, true);
 
   std::vector<NodeInfo> close_vaults(
-      env_->GetClosestVaults(sym_client_id, Parameters::node_group_size));
+      env_->GetClosestVaults(sym_client_id, Parameters::group_size));
   NodeId edge_id(close_vaults.back().node_id);
 
   std::vector<NodeId> closer_vaults;
@@ -584,7 +584,7 @@ TEST_F(RoutingNetworkTest, FUNC_ClosestNodesVaultBehindSymmetricNat) {
   env_->AddNode(false, sym_vault_id, true);
 
   std::vector<NodeInfo> close_vaults(
-      env_->GetClosestVaults(sym_vault_id, Parameters::node_group_size + 1));  // exclude self
+      env_->GetClosestVaults(sym_vault_id, Parameters::group_size + 1));  // exclude self
   NodeId edge_id(close_vaults.back().node_id);
 
   std::vector<NodeId> closer_vaults;

@@ -92,9 +92,10 @@ NodeInfo GroupMatrix::GetConnectedPeerFor(const NodeId& target_node_id) {
       }
     }*/
   for (const auto& nodes : matrix_) {
-    if (std::find_if(nodes.begin(), nodes.end(), [target_node_id](const NodeInfo & node_info) {
+    if (std::find_if(std::begin(nodes), std::end(nodes),
+                     [target_node_id](const NodeInfo& node_info) {
           return (node_info.node_id == target_node_id);
-        }) != nodes.end()) {
+        }) != std::end(nodes)) {
       return nodes.at(0);
     }
   }
@@ -229,14 +230,14 @@ bool GroupMatrix::ClosestToId(const NodeId& target_id) {
 // bool GroupMatrix::IsNodeIdInGroupRange(const NodeId& group_id, const NodeId& node_id) {
 //  if (group_id == node_id)
 //    return false;
-//  if (unique_nodes_.size() < Parameters::node_group_size) {
+//  if (unique_nodes_.size() < Parameters::group_size) {
 //    if (node_id == kNodeId_)
 //      return true;
 //    else
 //      ThrowError(RoutingErrors::not_in_group);  // TODO(Prakash) throw not_connected here
 //  }
-//  PartialSortFromTarget(group_id, Parameters::node_group_size, unique_nodes_);
-//  NodeId furthest_group_node(unique_nodes_.at(Parameters::node_group_size - 1).node_id);
+//  PartialSortFromTarget(group_id, Parameters::group_size, unique_nodes_);
+//  NodeId furthest_group_node(unique_nodes_.at(Parameters::group_size - 1).node_id);
 //  bool this_node_in_group(!NodeId::CloserToTarget(furthest_group_node, kNodeId_, group_id));
 //  if (node_id == kNodeId_)
 //    return this_node_in_group;
@@ -247,8 +248,8 @@ bool GroupMatrix::ClosestToId(const NodeId& target_id) {
 
 GroupRangeStatus GroupMatrix::IsNodeIdInGroupRange(const NodeId& group_id,
                                                    const NodeId& node_id) const {
-  size_t node_group_size_adjust(Parameters::node_group_size + 1U);
-  size_t new_holders_size = std::min(unique_nodes_.size(), node_group_size_adjust);
+  size_t group_size_adjust(Parameters::group_size + 1U);
+  size_t new_holders_size = std::min(unique_nodes_.size(), group_size_adjust);
   std::vector<NodeInfo> new_holders_info(new_holders_size);
   std::partial_sort_copy(unique_nodes_.begin(), unique_nodes_.end(), new_holders_info.begin(),
                          new_holders_info.end(),
@@ -262,9 +263,9 @@ GroupRangeStatus GroupMatrix::IsNodeIdInGroupRange(const NodeId& group_id,
 
   new_holders.erase(std::remove(new_holders.begin(), new_holders.end(), group_id),
                     new_holders.end());
-  if (new_holders.size() > Parameters::node_group_size) {
-    new_holders.resize(Parameters::node_group_size);
-    assert(new_holders.size() == Parameters::node_group_size);
+  if (new_holders.size() > Parameters::group_size) {
+    new_holders.resize(Parameters::group_size);
+    assert(new_holders.size() == Parameters::group_size);
   }
   if (!client_mode_) {
     auto this_node_range(GetProximalRange(group_id, kNodeId_, kNodeId_, radius_, new_holders));
@@ -424,7 +425,7 @@ void GroupMatrix::Prune() {
                                        });
   auto itr(std::begin(matrix_));
   std::advance(itr, Parameters::closest_nodes_size);
-  for (; itr != std::end(matrix_);) {
+  while (itr != std::end(matrix_)) {
     if (client_mode_) {
       LOG(kInfo) << DebugId(kNodeId_) << " matrix conected removes "
                  << DebugId(itr->begin()->node_id);

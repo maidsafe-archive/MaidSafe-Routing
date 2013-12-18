@@ -418,7 +418,7 @@ protobuf::Message Routing::Impl::CreateNodeLevelPartialMessage(
   uint16_t replication(1);
   if (DestinationType::kGroup == destination_type) {
     proto_message.set_visited(false);
-    replication = Parameters::node_group_size;
+    replication = Parameters::group_size;
   }
   proto_message.set_replication(replication);
 
@@ -723,7 +723,7 @@ bool Routing::Impl::IsConnectedClient(const NodeId& node_id) {
 void Routing::Impl::AddDestinationTypeRelatedFields(protobuf::Message& proto_message,
                                                     std::true_type) {
   proto_message.set_direct(false);
-  proto_message.set_replication(Parameters::node_group_size);
+  proto_message.set_replication(Parameters::group_size);
   proto_message.set_visited(false);
   proto_message.set_group_destination(proto_message.destination_id());
 }

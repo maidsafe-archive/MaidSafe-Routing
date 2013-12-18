@@ -77,9 +77,9 @@ class MatrixChangeTest : public testing::Test {
                        const NodeId & rhs) { return NodeId::CloserToTarget(lhs, rhs, target); });
 
     // Remove taget == node ids and adjust holder size
-    size_t node_group_size_adjust(Parameters::node_group_size + 1U);
-    size_t old_holders_size = std::min(old_matrix_.size(), node_group_size_adjust);
-    size_t new_holders_size = std::min(new_matrix_.size(), node_group_size_adjust);
+    size_t group_size_adjust(Parameters::group_size + 1U);
+    size_t old_holders_size = std::min(old_matrix_.size(), group_size_adjust);
+    size_t new_holders_size = std::min(new_matrix_.size(), group_size_adjust);
 
     std::vector<NodeId> all_old_holders(old_matrix_.begin(),
                                         old_matrix_.begin() + old_holders_size);
@@ -89,15 +89,15 @@ class MatrixChangeTest : public testing::Test {
 
     all_old_holders.erase(std::remove(all_old_holders.begin(), all_old_holders.end(), target),
                           all_old_holders.end());
-    if (all_old_holders.size() > Parameters::node_group_size) {
+    if (all_old_holders.size() > Parameters::group_size) {
       all_old_holders.pop_back();
-      assert(all_old_holders.size() == Parameters::node_group_size);
+      assert(all_old_holders.size() == Parameters::group_size);
     }
     all_new_holders.erase(std::remove(all_new_holders.begin(), all_new_holders.end(), target),
                           all_new_holders.end());
-    if (all_new_holders.size() > Parameters::node_group_size) {
+    if (all_new_holders.size() > Parameters::group_size) {
       all_new_holders.pop_back();
-      assert(all_new_holders.size() == Parameters::node_group_size);
+      assert(all_new_holders.size() == Parameters::group_size);
     }
     all_lost_nodes.erase(std::remove(all_lost_nodes.begin(), all_lost_nodes.end(), target),
                          all_lost_nodes.end());
@@ -157,8 +157,8 @@ void Choose(const std::set<NodeId>& online_pmids,
             const std::vector<MatrixChange>& owners,
             int owner_count,
             int online_pmid_count) {
-  // This test is only valid where 'owner_count' <= 'Parameters::node_group_size'.
-  ASSERT_LE(owner_count, Parameters::node_group_size);
+  // This test is only valid where 'owner_count' <= 'Parameters::group_size'.
+  ASSERT_LE(owner_count, Parameters::group_size);
 
   // Create a map of chosen nodes with a count of how many times each was selected by the various
   // owning nodes.
@@ -197,7 +197,7 @@ void Choose(const std::set<NodeId>& online_pmids,
 
 TEST(SingleMatrixChangeTest, BEH_ChoosePmidNode) {
   std::vector<NodeId> old_matrix, new_matrix;
-  const auto kGroupSize(Parameters::node_group_size);
+  const auto kGroupSize(Parameters::group_size);
   for (int i(0); i != kGroupSize * 5; ++i)
     new_matrix.emplace_back(NodeId::kRandomId);
   const NodeId kTarget(NodeId::kRandomId);

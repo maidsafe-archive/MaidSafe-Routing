@@ -808,10 +808,10 @@
 //  EXPECT_EQ(node_info.node_id, node_info2.node_id);
 //  EXPECT_EQ(node_info.node_id, NodeInfo().node_id);
 
-//  // routing_table with Parameters::node_group_size elements
+//  // routing_table with Parameters::group_size elements
 //  exclude.clear();
 //  for (uint16_t i(static_cast<uint16_t>(routing_table.size()));
-//       routing_table.size() < Parameters::node_group_size; ++i) {
+//       routing_table.size() < Parameters::group_size; ++i) {
 //    NodeInfo node(MakeNode());
 //    nodes_id.push_back(node.node_id);
 //    EXPECT_TRUE(routing_table.AddNode(node));
@@ -821,7 +821,7 @@
 //  node_info2 = routing_table.GetClosestNode(my_node, exclude, true);
 //  EXPECT_EQ(node_info.node_id, node_info2.node_id);
 
-//  uint16_t random_index = RandomUint32() % Parameters::node_group_size;
+//  uint16_t random_index = RandomUint32() % Parameters::group_size;
 //  node_info = routing_table.GetClosestNode(nodes_id[random_index], exclude, false);
 //  node_info2 = routing_table.GetClosestNode(nodes_id[random_index], exclude, true);
 //  EXPECT_NE(node_info.node_id, node_info2.node_id);
@@ -1176,7 +1176,7 @@
 //  for (uint16_t i(0); i < 100; ++i) {
 //    NodeId target_id(NodeId::kRandomId);
 //    SortFromTarget(target_id, nodes_in_table);
-//    if (!NodeId::CloserToTarget(nodes_in_table.at(Parameters::node_group_size - 1).node_id,
+//    if (!NodeId::CloserToTarget(nodes_in_table.at(Parameters::group_size - 1).node_id,
 //                                own_node_id, target_id)) {
 //      EXPECT_EQ(GroupRangeStatus::kInRange, routing_table.IsNodeIdInGroupRange(target_id));
 //    } else {
@@ -1207,9 +1207,9 @@
 //    routing_table.AddNode(node_info);
 //  }
 //  EXPECT_EQ(count, Parameters::closest_nodes_size);
-//  routing_table.DropNode(node_ids.at(Parameters::node_group_size), true);
+//  routing_table.DropNode(node_ids.at(Parameters::group_size), true);
 //  node_ids.erase(std::remove(std::begin(node_ids), std::end(node_ids),
-//                             node_ids.at(Parameters::node_group_size)),
+//                             node_ids.at(Parameters::group_size)),
 //                 std::end(node_ids));
 //  EXPECT_EQ(count, Parameters::closest_nodes_size + 1);
 //  routing_table.GroupUpdateFromConnectedPeer(NodeId(NodeId::kRandomId), std::vector<NodeInfo>());
@@ -1292,8 +1292,8 @@
 //    known_targets.push_back(node_info);
 //    EXPECT_TRUE(routing_table.AddNode(node_info));
 //  }
-//  PartialSortFromTarget(own_node_id, known_nodes, Parameters::node_group_size);
-//  furthest_group_node = known_nodes.at(Parameters::node_group_size - 2).node_id;
+//  PartialSortFromTarget(own_node_id, known_nodes, Parameters::group_size);
+//  furthest_group_node = known_nodes.at(Parameters::group_size - 2).node_id;
 
 //  LOG(kInfo) << "Testing partially populated routing table...";
 //  EXPECT_FALSE(routing_table.ClosestToId(own_node_id));
@@ -1308,8 +1308,8 @@
 //    known_targets.push_back(node_info);
 //    EXPECT_TRUE(routing_table.AddNode(node_info));
 //  }
-//  PartialSortFromTarget(own_node_id, known_nodes, Parameters::node_group_size);
-//  furthest_group_node = known_nodes.at(Parameters::node_group_size - 2).node_id;
+//  PartialSortFromTarget(own_node_id, known_nodes, Parameters::group_size);
+//  furthest_group_node = known_nodes.at(Parameters::group_size - 2).node_id;
 
 //  LOG(kInfo) << "Testing fully populated routing table...";
 //  EXPECT_FALSE(routing_table.ClosestToId(own_node_id));
@@ -1332,8 +1332,8 @@
 //    routing_table.GroupUpdateFromConnectedPeer(known_nodes.at(index).node_id, new_row_entries);
 //    new_row_entries.clear();
 //  }
-//  PartialSortFromTarget(own_node_id, known_nodes, Parameters::node_group_size);
-//  furthest_group_node = known_nodes.at(Parameters::node_group_size - 2).node_id;
+//  PartialSortFromTarget(own_node_id, known_nodes, Parameters::group_size);
+//  furthest_group_node = known_nodes.at(Parameters::group_size - 2).node_id;
 
 //  LOG(kInfo) << "Testing fully populated routing table with populated group matrix...";
 //  EXPECT_FALSE(routing_table.ClosestToId(own_node_id));

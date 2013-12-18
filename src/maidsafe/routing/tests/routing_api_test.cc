@@ -752,7 +752,7 @@ TEST(APITest, BEH_API_SendGroup) {
                                           message_index, &result](std::string string) {
         std::unique_lock<std::mutex> lock(send_mutex);
         EXPECT_EQ("response to " + data, string) << "for message_index " << message_index;
-        if (send_counts.at(message_index) >= Parameters::node_group_size)
+        if (send_counts.at(message_index) >= Parameters::group_size)
           return;
         if (string != "response to " + data) {
           result = false;
@@ -760,7 +760,7 @@ TEST(APITest, BEH_API_SendGroup) {
           result = true;
         }
         send_counts.at(message_index) += 1;
-        if (send_counts.at(message_index) == Parameters::node_group_size)
+        if (send_counts.at(message_index) == Parameters::group_size)
           send_promises.at(message_index).set_value(result);
       };
 

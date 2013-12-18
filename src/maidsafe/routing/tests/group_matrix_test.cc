@@ -254,9 +254,9 @@ TEST_P(GroupMatrixTest, BEH_OneRowOnly) {
   std::vector<NodeInfo> row_entries_1;
   uint32_t length(0);
   if (client_mode_)
-    length = RandomUint32() % (Parameters::node_group_size - 2) + 1;
+    length = RandomUint32() % (Parameters::group_size - 2) + 1;
   else
-    length = RandomUint32() % (Parameters::node_group_size - 3) + 1;
+    length = RandomUint32() % (Parameters::group_size - 3) + 1;
   uint32_t i(0);
   NodeInfo node_info;
   while (i < length) {
@@ -325,7 +325,7 @@ TEST_P(GroupMatrixTest, BEH_OneRowOnly) {
     node_ids.push_back(own_node_info_);
   node_ids.push_back(row_1);
   SortNodeInfosFromTarget(target_id_2.node_id, node_ids);
-  bool is_group_member(!NodeId::CloserToTarget(node_ids.at(Parameters::node_group_size - 1).node_id,
+  bool is_group_member(!NodeId::CloserToTarget(node_ids.at(Parameters::group_size - 1).node_id,
                                                own_node_id_, target_id_2.node_id));
   if (is_group_member && !client_mode_)
     EXPECT_EQ(GroupRangeStatus::kInRange,
@@ -419,7 +419,7 @@ TEST_P(GroupMatrixTest, BEH_RowsContainSameNodes) {
     target_id = NodeId(NodeId::kRandomId);
     SortNodeInfosFromTarget(target_id, node_ids);
     expect_is_group_member =
-        !NodeId::CloserToTarget(node_ids[Parameters::node_group_size - 1].node_id, own_node_id_,
+        !NodeId::CloserToTarget(node_ids[Parameters::group_size - 1].node_id, own_node_id_,
                                 target_id);
     expect_is_group_leader =
         (std::find_if(node_ids.begin(), node_ids.end(), [&](const NodeInfo & node_info)->bool {
@@ -678,7 +678,7 @@ TEST_P(GroupMatrixTest, BEH_IsNodeIdInGroupRange) {
     target_id = NodeId(NodeId::kRandomId);
     SortNodeInfosFromTarget(target_id, node_ids);
     expect_is_group_member =
-        !NodeId::CloserToTarget(node_ids.at(Parameters::node_group_size - 1).node_id, own_node_id_,
+        !NodeId::CloserToTarget(node_ids.at(Parameters::group_size - 1).node_id, own_node_id_,
                                 target_id);
     expect_is_group_leader =
         (std::find_if(node_ids.begin(), node_ids.end(),
@@ -726,10 +726,10 @@ TEST_P(GroupMatrixTest, BEH_IsNodeIdInGroupRangeDifferentNode) {
   for (int i(0); i < 100; ++i) {
     target_id = GenerateUniqueRandomId(own_node_id_, 100);
     SortNodeInfosFromTarget(target_id, node_ids);
-    for (auto j(0U); j != Parameters::node_group_size; ++j)
+    for (auto j(0U); j != Parameters::group_size; ++j)
       EXPECT_EQ(GroupRangeStatus::kInRange,
                 matrix_.IsNodeIdInGroupRange(target_id, node_ids.at(j).node_id));
-    for (auto j(Parameters::node_group_size); j != node_ids.size(); ++j)
+    for (auto j(Parameters::group_size); j != node_ids.size(); ++j)
       EXPECT_NE(GroupRangeStatus::kInRange,
                 matrix_.IsNodeIdInGroupRange(target_id, node_ids.at(j).node_id));
   }
@@ -739,10 +739,10 @@ TEST_P(GroupMatrixTest, BEH_IsNodeIdInGroupRangeDifferentNode) {
       target_id = NodeId(NodeId::kRandomId);
       SortNodeInfosFromTarget(target_id, node_ids);
       if (matrix_.IsNodeIdInGroupRange(target_id, own_node_id_) == GroupRangeStatus::kInRange) {
-        for (auto j(0U); j != Parameters::node_group_size; ++j)
+        for (auto j(0U); j != Parameters::group_size; ++j)
           EXPECT_EQ(GroupRangeStatus::kInRange,
                     matrix_.IsNodeIdInGroupRange(target_id, node_ids.at(j).node_id));
-        for (auto j(Parameters::node_group_size); j != node_ids.size(); ++j)
+        for (auto j(Parameters::group_size); j != node_ids.size(); ++j)
           EXPECT_NE(GroupRangeStatus::kInRange,
                     matrix_.IsNodeIdInGroupRange(target_id, node_ids.at(j).node_id));
       } else {

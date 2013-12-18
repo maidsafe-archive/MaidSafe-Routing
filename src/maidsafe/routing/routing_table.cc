@@ -197,7 +197,7 @@ bool RoutingTable::AddOrCheckNode(NodeInfo peer, bool remove) {
 }
 
 NodeInfo RoutingTable::DropNode(const NodeId& node_to_drop, bool routing_only) {
-  std::vector<NodeInfo> /*new_closest_nodes,*/ new_connected_close_nodes, old_connected_close_nodes;
+  std::vector<NodeInfo> new_connected_close_nodes, old_connected_close_nodes;
   NodeInfo dropped_node;
   std::shared_ptr<MatrixChange> matrix_change;
   std::vector<NodeId> unique_nodes;
@@ -242,8 +242,9 @@ NodeInfo RoutingTable::DropNode(const NodeId& node_to_drop, bool routing_only) {
   }
 
   if (!dropped_node.node_id.IsZero()) {
-    LOG(kVerbose) << "Routing table dropped node id : " << DebugId(dropped_node.node_id)
-                  << ", connection id : " << DebugId(dropped_node.connection_id);
+    LOG(kVerbose) << DebugId(kNodeId()) << "Routing table dropped node id : "
+                  << DebugId(dropped_node.node_id) << ", connection id : "
+                  << DebugId(dropped_node.connection_id);
     if (remove_node_functor_ && !routing_only)
       remove_node_functor_(dropped_node, false);
   }
@@ -677,7 +678,7 @@ NodeInfo RoutingTable::GetRemovableNode(std::vector<std::string> attempted) {
   LOG(kVerbose) << "[" << DebugId(kNodeId_) << "] max_bucket " << max_bucket << " count "
                 << max_bucket_count;
   if (max_bucket_count == 1) {
-    return nodes_[Parameters::closest_nodes_size + Parameters::node_group_size];
+    return nodes_[Parameters::closest_nodes_size + Parameters::group_size];
   }
 
   NodeInfo removable_node;
@@ -750,11 +751,11 @@ std::vector<NodeId> RoutingTable::GetGroup(const NodeId& target_id) {
     nodes = group_matrix_.GetUniqueNodes();
   }
   std::vector<NodeId> group;
-  std::partial_sort(nodes.begin(), nodes.begin() + Parameters::node_group_size, nodes.end(),
+  std::partial_sort(nodes.begin(), nodes.begin() + Parameters::group_size, nodes.end(),
                     [&](const NodeInfo & lhs, const NodeInfo & rhs) {
     return NodeId::CloserToTarget(lhs.node_id, rhs.node_id, target_id);
   });
-  for (auto iter(nodes.begin()); iter != nodes.begin() + Parameters::node_group_size; ++iter)
+  for (auto iter(nodes.begin()); iter != nodes.begin() + Parameters::group_size; ++iter)
     group.push_back(iter->node_id);
   return group;
 }
@@ -835,7 +836,7 @@ void RoutingTable::IpcSendGroupMatrix() const {
     });
 
     size_t index(0);
-    size_t limit(std::min(static_cast<size_t>(Parameters::node_group_size), close.size()));
+    size_t limit(std::min(static_cast<size_t>(Parameters::group_size), close.size()));
     for (; index < limit; ++index) {
       matrix_record.AddElement(close[index].node_id, network_viewer::ChildType::kGroup);
       printout += "\t\t" + DebugId(close[index].node_id) + " - kGroup\n";

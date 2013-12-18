@@ -33,7 +33,7 @@ struct Parameters {
   static uint16_t thread_count;
   static uint16_t num_chunks_to_cache;
   static uint16_t closest_nodes_size;
-  static uint16_t node_group_size;
+  static uint16_t group_size;
   static uint16_t proximity_factor;
   static uint16_t max_routing_table_size;  // max size of RoutingTable owned by vault
   static uint16_t routing_table_size_threshold;
