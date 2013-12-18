@@ -410,12 +410,12 @@ void MessageHandler::HandleMessage(protobuf::Message& message) {
       !firewall_.Add(NodeId(message.source_id()), message.id()))
     return;
   if (!ValidateMessage(message)) {
-    std::cout << "Validate message failed， id: " << message.id() << std::endl; // NO LOG() PLEASE
+    std::cout << "Validate message failed， id: " << message.id() << std::endl;  // NO LOG() PLEASE
     if (IsAck(message))
       return;
     if (message.hops_to_live() == 0) {
       std::cout << "Message has traversed maximum number of hops allowed: " << message.id() << "\n";
-      Sleep(std::chrono::seconds(5));
+      Sleep(std::chrono::seconds(5));  // BEFORE_RELEASE to let pending logs be printed.
     }
     assert((message.hops_to_live() > 0) && "Message has traversed maximum number of hops allowed");
     return;

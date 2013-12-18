@@ -427,9 +427,9 @@ void RoutingTable::GroupUpdateFromConnectedPeer(const NodeId& peer,
   {
     std::unique_lock<std::mutex> lock(mutex_);
     auto connected_peers(group_matrix_.GetConnectedPeers());
-    if (std::find_if(connected_peers.begin(), connected_peers.end(),
+    if (std::find_if(std::begin(connected_peers), std::end(connected_peers),
                      [peer](const NodeInfo & node_info) { return node_info.node_id == peer; }) ==
-        connected_peers.end()) {
+        std::end(connected_peers)) {
       auto found(Find(peer, lock));
       if (!found.first)
         return;
