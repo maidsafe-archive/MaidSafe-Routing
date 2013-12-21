@@ -23,7 +23,16 @@ namespace maidsafe {
 
 namespace routing {
 
-Acknowledgement::Acknowledgement(AsioService &io_service)
+namespace {
+  enum TupleElement {
+    kAckId = 0,
+    kMessage = 1,
+    kTimer = 2,
+    kQuantity  = 3
+  };
+}  // no-name namespace
+
+Acknowledgement::Acknowledgement(AsioService& io_service)
     : running_(true), ack_id_(RandomUint32()), mutex_(), queue_(), io_service_(io_service)  {}
 
 Acknowledgement::~Acknowledgement() {
@@ -36,7 +45,7 @@ void Acknowledgement::RemoveAll() {
   {
     std::lock_guard<std::mutex> lock(mutex_);
     for (Timers& timer : queue_) {
-      ack_ids.push_back(std::get<0>(timer));
+      ack_ids.push_back(std::get<TupleElement::kAckId>(timer));
     }
   }
   LOG(kVerbose) << "Size of list: " << ack_ids.size();
@@ -59,27 +68,26 @@ void Acknowledgement::Add(const protobuf::Message& message, Handler handler, int
   assert((message.ack_id() != 0) && "invalid ack id");
 
   AckId ack_id = message.ack_id();
-  auto const it = std::find_if(std::begin(queue_), std::end(queue_),
-                               [ack_id] (const Timers &i)->bool {
-                                 return ack_id == std::get<0>(i);
-                               });
+  auto const it(std::find_if(std::begin(queue_), std::end(queue_),
+                             [ack_id] (const Timers& timers) {
+                               return ack_id == std::get<TupleElement::kAckId>(timers);
+                             }));
   if (it == std::end(queue_)) {
     TimerPointer timer(new asio::deadline_timer(io_service_.service(),
                                                 boost::posix_time::seconds(timeout)));
     timer->async_wait(handler);
     queue_.emplace_back(std::make_tuple(ack_id, message, timer, 0));
     LOG(kVerbose) << "AddAck added an ack, with id: " << ack_id;
-
   } else {
     LOG(kVerbose) << "Acknowledgement re-sends " << message.id();
-    std::get<3>(*it)++;
-    std::get<2>(*it)->expires_from_now(boost::posix_time::seconds(timeout));
-    if (std::get<3>(*it) == Parameters::max_ack_attempts) {
-      std::get<2>(*it)->async_wait([=] (const boost::system::error_code &/*error*/) {
-                                     Remove(ack_id);
-                                   });
+    std::get<TupleElement::kQuantity>(*it)++;
+    std::get<TupleElement::kTimer>(*it)->expires_from_now(boost::posix_time::seconds(timeout));
+    if (std::get<TupleElement::kQuantity>(*it) == Parameters::max_ack_attempts) {
+      std::get<TupleElement::kTimer>(*it)->async_wait([=](const boost::system::error_code&) {
+                                                        Remove(ack_id);
+                                                      });
      } else {
-        std::get<2>(*it)->async_wait(handler);
+       std::get<TupleElement::kTimer>(*it)->async_wait(handler);
      }
   }
 }
@@ -89,13 +97,13 @@ void Acknowledgement::Remove(const AckId& ack_id) {
     return;
   std::lock_guard<std::mutex> lock(mutex_);
   auto const it(std::find_if(std::begin(queue_), std::end(queue_),
-                             [ack_id] (const Timers &i)->bool {
-                               return ack_id == std::get<0>(i);
+                             [ack_id] (const Timers& i)->bool {
+                               return ack_id == std::get<TupleElement::kAckId>(i);
                              }));
   // assert((it != queue_.end()) && "attempt to cancel handler for non existant timer");
   if (it != std::end(queue_)) {
     // ack timed out or ack killed
-    std::get<2>(*it)->cancel();
+    std::get<TupleElement::kTimer>(*it)->cancel();
     queue_.erase(it);
     LOG(kVerbose) << "Clean up after ack with id: " << ack_id << " queue size: " << queue_.size();
   } else {

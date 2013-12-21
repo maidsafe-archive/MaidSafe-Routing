@@ -44,13 +44,13 @@ namespace protobuf { class Message;}  // namespace protobuf
 
 typedef std::shared_ptr<asio::deadline_timer> TimerPointer;
 typedef std::tuple<AckId, protobuf::Message, TimerPointer, uint16_t> Timers;
-typedef std::function<void(const boost::system::error_code &error)> Handler;
+typedef std::function<void(const boost::system::error_code& error)> Handler;
 
 class RoutingPrivate;
 
 class Acknowledgement {
  public:
-  explicit Acknowledgement(AsioService &io_service);
+  explicit Acknowledgement(AsioService& io_service);
   ~Acknowledgement();
   AckId GetId();
   void Add(const protobuf::Message& message, Handler handler, int timeout);
@@ -62,7 +62,7 @@ class Acknowledgement {
   friend class RoutingPrivate;
 
  private:
-  Acknowledgement &operator=(const Acknowledgement&);
+  Acknowledgement& operator=(const Acknowledgement&);
   Acknowledgement(const Acknowledgement&);
   Acknowledgement(const Acknowledgement&&);
   void RemoveAll();

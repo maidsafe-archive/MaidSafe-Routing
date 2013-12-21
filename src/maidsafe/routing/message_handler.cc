@@ -296,17 +296,19 @@ void MessageHandler::HandleGroupMessageAsClosestNode(protobuf::Message& message)
     return network_.SendToClosestNode(message);
   }
 
-  if (message.source_id() != routing_table_.kNodeId().string())
-    network_.SendAck(message);
-
   if (message.has_visited() && !message.visited() &&
       (routing_table_.size() > Parameters::closest_nodes_size) &&
       (!routing_table_.IsThisNodeInRange(NodeId(message.destination_id()),
                                          Parameters::closest_nodes_size))) {
+    if (message.source_id() != routing_table_.kNodeId().string())
+      network_.SendAck(message);
+
     message.set_visited(true);
     LOG(kVerbose) << "message visited id: " << message.id();
     return network_.SendToClosestNode(message);
   }
+
+  // Handle group ack
 
   std::vector<std::string> route_history;
   if (message.route_history().size() > 1)
@@ -341,16 +343,13 @@ void MessageHandler::HandleGroupMessageAsClosestNode(protobuf::Message& message)
   NodeId destination_id(message.destination_id());
   NodeId own_node_id(routing_table_.kNodeId());
   auto close_from_matrix(routing_table_.GetClosestMatrixNodes(destination_id, replication + 2));
-  close_from_matrix.erase(std::remove_if(close_from_matrix.begin(), close_from_matrix.end(),
-                                         [&destination_id](const NodeInfo & node_info) {
-                            return node_info.node_id == destination_id;
-                          }),
-                          close_from_matrix.end());
-  close_from_matrix.erase(std::remove_if(close_from_matrix.begin(), close_from_matrix.end(),
-                                         [&own_node_id](const NodeInfo & node_info) {
-                            return node_info.node_id == own_node_id;
-                          }),
-                          close_from_matrix.end());
+  close_from_matrix.erase(
+      std::remove_if(std::begin(close_from_matrix), std::end(close_from_matrix),
+                     [&own_node_id, &destination_id](const NodeInfo& node_info) {
+                       return node_info.node_id == destination_id ||
+                              node_info.node_id == own_node_id;
+                     }),
+                     std::end(close_from_matrix));
   while (close_from_matrix.size() > replication)
     close_from_matrix.pop_back();
 

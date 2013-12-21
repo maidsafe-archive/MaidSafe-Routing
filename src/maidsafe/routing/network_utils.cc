@@ -271,7 +271,7 @@ void NetworkUtils::SendTo(const protobuf::Message& message, const NodeId& peer_n
                              if (!running_)
                                return;
                            }
-                           if (error.value() == boost::system::errc::success)
+                           if (!error)
                              SendTo(message, peer_node_id, peer_connection_id);
                          }, Parameters::ack_timeout);
   }

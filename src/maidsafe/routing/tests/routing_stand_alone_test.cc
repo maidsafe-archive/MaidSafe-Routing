@@ -59,6 +59,15 @@ TEST_F(RoutingStandAloneTest, FUNC_GetGroup) {
   }
 }
 
+TEST_F(RoutingStandAloneTest, FUNC_SimpleGroup) {
+  this->SetUpNetwork(kServerSize);
+  NodeId target(NodeId::kRandomId);
+  Sleep(std::chrono::seconds(5));
+  LOG(kVerbose) << "before group";
+  EXPECT_TRUE(this->SendGroup(target, 1, 4));
+  LOG(kVerbose) << "after group";
+}
+
 TEST_F(RoutingStandAloneTest, FUNC_VaultSendToClient) {
   this->SetUpNetwork(kServerSize, 1);
   for (size_t index(0); index < this->ClientIndex(); ++index) {
