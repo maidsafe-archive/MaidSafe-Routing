@@ -41,9 +41,13 @@ namespace routing {
 typedef uint32_t AckId;
 
 namespace protobuf { class Message;}  // namespace protobuf
+namespace test {
+  class GenericNode;
+}
 
 typedef std::shared_ptr<asio::deadline_timer> TimerPointer;
 typedef std::tuple<AckId, protobuf::Message, TimerPointer, uint16_t> Timers;
+typedef std::tuple<AckId, protobuf::Message, TimerPointer, std::map<NodeId, int>> GroupTimers;
 typedef std::function<void(const boost::system::error_code& error)> Handler;
 
 class RoutingPrivate;
@@ -54,12 +58,15 @@ class Acknowledgement {
   ~Acknowledgement();
   AckId GetId();
   void Add(const protobuf::Message& message, Handler handler, int timeout);
+  void AddGroup(const protobuf::Message& message, int timeout);
   void Remove(const AckId& ack_id);
   void HandleMessage(int32_t ack_id);
+  bool HandleGroupMessage(const protobuf::Message& message);
   bool NeedsAck(const protobuf::Message& message, const NodeId& node_id);
   bool IsSendingAckRequired(const protobuf::Message& message, const NodeId& this_node_id);
 
   friend class RoutingPrivate;
+  friend class test::GenericNode;
 
  private:
   Acknowledgement& operator=(const Acknowledgement&);
@@ -71,6 +78,7 @@ class Acknowledgement {
   AckId ack_id_;
   std::mutex mutex_;
   std::vector<Timers> queue_;
+  std::vector<GroupTimers> group_queue_;
   AsioService& io_service_;
 };
 

@@ -257,7 +257,6 @@ void NetworkUtils::SendTo(const protobuf::Message& message, const NodeId& peer_n
       LOG(kVerbose) << "  [" << HexSubstr(kThisId) << "] sent : " << MessageTypeString(message)
                     << " to   " << DebugId(peer_node_id) << "   (id: " << message.id() << ")";
     } else {
-      acknowledgement_.Remove(message.ack_id());
       LOG(kError) << "Sending type " << MessageTypeString(message) << " message from "
                   << HexSubstr(kThisId) << " to " << DebugId(peer_node_id) << " failed with code "
                   << message_sent << " id: " << message.id();
@@ -356,7 +355,6 @@ void NetworkUtils::RecursiveSendOn(protobuf::Message message, NodeInfo last_node
                   << HexSubstr(message.destination_id()) << " failed with code " << message_sent
                   << ".  Will retry to Send.  Attempt count = " << attempt_count + 1
                   << " id: " << message.id();
-      acknowledgement_.Remove(message.ack_id());
       RecursiveSendOn(message, peer, attempt_count + 1);
     } else {
       LOG(kError) << "Sending type " << MessageTypeString(message) << " message from "
@@ -370,7 +368,6 @@ void NetworkUtils::RecursiveSendOn(protobuf::Message message, NodeInfo last_node
           return;
         rudp_.Remove(last_node_attempted.connection_id);
       }
-      acknowledgement_.Remove(message.ack_id());
       LOG(kWarning) << " Routing-> removing connection " << DebugId(peer.connection_id);
       routing_table_.DropNode(peer.node_id, false);
       client_routing_table_.DropConnection(peer.connection_id);
@@ -427,6 +424,9 @@ void NetworkUtils::AdjustAckHistory(protobuf::Message& message) {
 
 void NetworkUtils::SendAck(const protobuf::Message& message) {
   LOG(kVerbose) << "[" << DebugId(routing_table_.kNodeId()) << "] SendAck " << message.ack_id();
+
+  if (acknowledgement_.HandleGroupMessage(message))
+    return;
 
   if (IsAck(message) || IsGroupUpdate(message) || IsConnectSuccessAcknowledgement(message))
     return;

@@ -308,7 +308,7 @@ void MessageHandler::HandleGroupMessageAsClosestNode(protobuf::Message& message)
     return network_.SendToClosestNode(message);
   }
 
-  // Handle group ack
+  acknowledgement_.AddGroup(message, 5);
 
   std::vector<std::string> route_history;
   if (message.route_history().size() > 1)
