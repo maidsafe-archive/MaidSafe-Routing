@@ -730,18 +730,30 @@ std::vector<NodeId> RoutingTable::GetClosestNodes(const NodeId& target_id, uint1
   return close_nodes;
 }
 
-std::vector<NodeInfo> RoutingTable::GetClosestMatrixNodes(const NodeId& target_id,
-                                                          uint16_t number_to_get) {
+std::vector<NodeInfo> RoutingTable::GetMatrixClosestNodes(
+    const NodeId& target_id, uint16_t number_to_get, const std::vector<NodeId>& exclude) {
   std::unique_lock<std::mutex> lock(mutex_);
-  std::vector<NodeInfo> closest_matrix_nodes(group_matrix_.GetUniqueNodes());
-  size_t sorting_size(std::min(static_cast<size_t>(number_to_get), closest_matrix_nodes.size()));
-  std::partial_sort(closest_matrix_nodes.begin(), closest_matrix_nodes.begin() + sorting_size,
-                    closest_matrix_nodes.end(),
-                    [&target_id](const NodeInfo & lhs, const NodeInfo & rhs) {
-    return NodeId::CloserToTarget(lhs.node_id, rhs.node_id, target_id);
-  });
-  closest_matrix_nodes.resize(sorting_size);
-  return closest_matrix_nodes;
+  std::vector<NodeInfo> matrix_nodes(group_matrix_.GetUniqueNodes());
+  size_t size(std::min(static_cast<size_t>(number_to_get) + exclude.size(), matrix_nodes.size()));
+  std::partial_sort(std::begin(matrix_nodes), std::begin(matrix_nodes) + size,
+                    std::end(matrix_nodes),
+                    [&target_id](const NodeInfo& lhs, const NodeInfo& rhs) {
+                      return NodeId::CloserToTarget(lhs.node_id, rhs.node_id, target_id);
+                    });
+  matrix_nodes.resize(size);
+  if (!exclude.empty()) {
+    for (auto itr(std::begin(matrix_nodes)); itr != std::end(matrix_nodes);) {
+      if (std::find_if(std::begin(exclude), std::end(exclude),
+          [&](const NodeId& node_id) {
+            return itr->node_id == node_id;
+          }) != std::end(exclude)) {
+        matrix_nodes.erase(itr);
+      } else {
+        itr++;
+      }
+    }
+  }
+  return matrix_nodes;
 }
 
 std::vector<NodeId> RoutingTable::GetGroup(const NodeId& target_id) {

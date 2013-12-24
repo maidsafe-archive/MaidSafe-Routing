@@ -346,7 +346,7 @@ void MessageHandler::HandleGroupMessageAsClosestNode(protobuf::Message& message)
   message.clear_route_history();
   NodeId destination_id(message.destination_id());
   NodeId own_node_id(routing_table_.kNodeId());
-  auto close_from_matrix(routing_table_.GetClosestMatrixNodes(destination_id, replication + 2));
+  auto close_from_matrix(routing_table_.GetMatrixClosestNodes(destination_id, replication + 2));
   close_from_matrix.erase(
       std::remove_if(std::begin(close_from_matrix), std::end(close_from_matrix),
                      [&own_node_id, &destination_id](const NodeInfo& node_info) {
@@ -370,7 +370,7 @@ void MessageHandler::HandleGroupMessageAsClosestNode(protobuf::Message& message)
                << " [ group_id : " << HexSubstr(group_id) << "]" << " id: " << message.id();
     message.set_destination_id(i.node_id.string());
     message.clear_ack_node_ids();
-    message.set_ack_id(acknowledgement_.GetId());
+//    message.set_ack_id(acknowledgement_.GetId());
     NodeInfo node;
     if (routing_table_.GetNodeInfo(i.node_id, node)) {
       network_.SendToDirect(message, node.node_id, node.connection_id);
@@ -380,7 +380,7 @@ void MessageHandler::HandleGroupMessageAsClosestNode(protobuf::Message& message)
   }
 
   message.clear_ack_node_ids();
-  message.set_ack_id(acknowledgement_.GetId());
+//  message.set_ack_id(acknowledgement_.GetId());
   message.set_destination_id(routing_table_.kNodeId().string());
 
   if (IsRoutingMessage(message)) {

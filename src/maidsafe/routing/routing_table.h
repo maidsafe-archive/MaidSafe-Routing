@@ -108,7 +108,9 @@ class RoutingTable {
   // Returns max NodeId if routing table size is less than requested node_number
   NodeInfo GetNthClosestNode(const NodeId& target_id, uint16_t node_number);
   std::vector<NodeId> GetClosestNodes(const NodeId& target_id, uint16_t number_to_get);
-  std::vector<NodeInfo> GetClosestMatrixNodes(const NodeId& target_id, uint16_t number_to_get);
+  std::vector<NodeInfo> GetMatrixClosestNodes(
+      const NodeId& target_id, uint16_t number_to_get,
+      const std::vector<NodeId>& exclude = std::vector<NodeId>());
   std::vector<NodeId> GetGroup(const NodeId& target_id);
   NodeInfo GetRemovableNode(std::vector<std::string> attempted = std::vector<std::string>());
   void GetNodesNeedingGroupUpdates(std::vector<NodeInfo>& nodes_needing_update);

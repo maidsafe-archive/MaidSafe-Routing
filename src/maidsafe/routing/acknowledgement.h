@@ -46,6 +46,7 @@ namespace test {
 }
 
 typedef std::shared_ptr<asio::deadline_timer> TimerPointer;
+typedef std::function<void(const boost::system::error_code& error)> Handler;
 
 struct AckTimer {
   AckTimer(AckId ack_id_in, const protobuf::Message& message_in, TimerPointer timer_in,
@@ -67,8 +68,6 @@ struct GroupAckTimer {
   TimerPointer timer;
   std::map<NodeId, int> requested_peers;
 };
-
-typedef std::function<void(const boost::system::error_code& error)> Handler;
 
 class RoutingPrivate;
 

@@ -457,6 +457,15 @@ void NetworkUtils::SendAck(const protobuf::Message& message) {
   SendToClosestNode(ack_message);
 }
 
+void NetworkUtils::SendToClosestNode(protobuf::Message& message,
+                                     const std::vector<NodeId>& exclude) {
+  auto closest_nodes(routing_table_.GetMatrixClosestNodes(NodeId(message.destination_id()), 1,
+                                                          exclude));
+  message.clear_ack_node_ids();
+  message.set_destination_id(closest_nodes[0].node_id.string());
+  SendToClosestNode(message);
+}
+
 void NetworkUtils::set_new_bootstrap_endpoint_functor(
     NewBootstrapEndpointFunctor new_bootstrap_endpoint) {
   new_bootstrap_endpoint_ = new_bootstrap_endpoint;
