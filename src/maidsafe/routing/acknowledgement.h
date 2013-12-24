@@ -46,8 +46,28 @@ namespace test {
 }
 
 typedef std::shared_ptr<asio::deadline_timer> TimerPointer;
-typedef std::tuple<AckId, protobuf::Message, TimerPointer, uint16_t> Timers;
-typedef std::tuple<AckId, protobuf::Message, TimerPointer, std::map<NodeId, int>> GroupTimers;
+
+struct AckTimer {
+  AckTimer(AckId ack_id_in, const protobuf::Message& message_in, TimerPointer timer_in,
+           uint16_t quantity_in) : ack_id(ack_id_in), message(message_in), timer(timer_in),
+                                   quantity(quantity_in) {}
+  AckId ack_id;
+  protobuf::Message message;
+  TimerPointer timer;
+  uint16_t quantity;
+};
+
+struct GroupAckTimer {
+  GroupAckTimer(AckId ack_id_in, const protobuf::Message& message_in, TimerPointer timer_in,
+                const std::map<NodeId, int> requested_peers_in)
+      : ack_id(ack_id_in), message(message_in), timer(timer_in),
+        requested_peers(requested_peers_in) {}
+  AckId ack_id;
+  protobuf::Message message;
+  TimerPointer timer;
+  std::map<NodeId, int> requested_peers;
+};
+
 typedef std::function<void(const boost::system::error_code& error)> Handler;
 
 class RoutingPrivate;
@@ -58,7 +78,7 @@ class Acknowledgement {
   ~Acknowledgement();
   AckId GetId();
   void Add(const protobuf::Message& message, Handler handler, int timeout);
-  void AddGroup(const protobuf::Message& message, int timeout);
+  void AddGroup(const protobuf::Message& message, Handler handler, int timeout);
   void Remove(const AckId& ack_id);
   void HandleMessage(int32_t ack_id);
   bool HandleGroupMessage(const protobuf::Message& message);
@@ -77,8 +97,8 @@ class Acknowledgement {
   bool running_;
   AckId ack_id_;
   std::mutex mutex_;
-  std::vector<Timers> queue_;
-  std::vector<GroupTimers> group_queue_;
+  std::vector<AckTimer> queue_;
+  std::vector<GroupAckTimer> group_queue_;
   AsioService& io_service_;
 };
 

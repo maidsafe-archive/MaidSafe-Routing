@@ -31,22 +31,6 @@ enum class GroupMessageAckStatus {
   kFailure = 2
 };
 
-enum class TimerTupleElement {
-  kAckId = 0,
-  kMessage = 1,
-  kTimer = 2,
-  kQuantity = 3
-};
-
-enum class GroupTimerTupleElement {
-  kAckId = 0,
-  kMessage = 1,
-  kTimer = 2,
-  kRequestedNodes = 3,
-  kFailedNodes = 4
-};
-
-
 }  // no-name namespace
 
 Acknowledgement::Acknowledgement(AsioService& io_service)
@@ -62,8 +46,8 @@ void Acknowledgement::RemoveAll() {
   std::vector<AckId> ack_ids;
   {
     std::lock_guard<std::mutex> lock(mutex_);
-    for (Timers& timer : queue_) {
-      ack_ids.push_back(std::get<static_cast<int>(TimerTupleElement::kAckId)>(timer));
+    for (const auto& timer : queue_) {
+      ack_ids.push_back(timer.ack_id);
     }
   }
   LOG(kVerbose) << "Size of list: " << ack_ids.size();
@@ -87,46 +71,41 @@ void Acknowledgement::Add(const protobuf::Message& message, Handler handler, int
 
   AckId ack_id(message.ack_id());
   const auto group_itr(std::find_if(std::begin(group_queue_), std::end(group_queue_),
-                       [ack_id](const GroupTimers& timers) {
-                         return ack_id == std::get<static_cast<int>(
-                                              GroupTimerTupleElement::kAckId)>(timers);
+                       [ack_id](const GroupAckTimer& timer) {
+                         return ack_id == timer.ack_id;
                        }));
   if (group_itr != std::end(group_queue_)) {
-    std::get<static_cast<int>(GroupTimerTupleElement::kRequestedNodes)>(*group_itr).insert(
+    group_itr->requested_peers.insert(
         std::make_pair(NodeId(message.destination_id()),
-        static_cast<int>(GroupMessageAckStatus::kPending)));
+                       static_cast<int>(GroupMessageAckStatus::kPending)));
     return;
   }
 
   const auto it(std::find_if(std::begin(queue_), std::end(queue_),
-                             [ack_id](const Timers& timers) {
-                               return ack_id == std::get<static_cast<int>(
-                                                    TimerTupleElement::kAckId)>(timers);
+                             [ack_id](const AckTimer& timer) {
+                               return ack_id == timer.ack_id;
                              }));
   if (it == std::end(queue_)) {
     TimerPointer timer(new asio::deadline_timer(io_service_.service(),
                                                 boost::posix_time::seconds(timeout)));
     timer->async_wait(handler);
-    queue_.emplace_back(std::make_tuple(ack_id, message, timer, 0));
+    queue_.emplace_back(AckTimer(ack_id, message, timer, 0));
     LOG(kVerbose) << "AddAck added an ack, with id: " << ack_id;
   } else {
     LOG(kVerbose) << "Acknowledgement re-sends " << message.id();
-    std::get<static_cast<int>(TimerTupleElement::kQuantity)>(*it)++;
-    std::get<static_cast<int>(TimerTupleElement::kTimer)>(*it)->expires_from_now(
-        boost::posix_time::seconds(timeout));
-    if (std::get<static_cast<int>(TimerTupleElement::kQuantity)>(*it) ==
-        Parameters::max_ack_attempts) {
-      std::get<static_cast<int>(
-          TimerTupleElement::kTimer)>(*it)->async_wait([=](const boost::system::error_code&) {
-                                                    Remove(ack_id);
-                                                  });
+    it->quantity++;
+    it->timer->expires_from_now(boost::posix_time::seconds(timeout));
+    if (it->quantity == Parameters::max_ack_attempts) {
+      it->timer->async_wait([=](const boost::system::error_code&) {
+                              Remove(ack_id);
+                            });
      } else {
-       std::get<static_cast<int>(TimerTupleElement::kTimer)>(*it)->async_wait(handler);
+       it->timer->async_wait(handler);
      }
   }
 }
 
-void Acknowledgement::AddGroup(const protobuf::Message& message, int timeout) {
+void Acknowledgement::AddGroup(const protobuf::Message& message, Handler handler, int timeout) {
   if (!running_)
     return;
   std::lock_guard<std::mutex> lock(mutex_);
@@ -135,15 +114,14 @@ void Acknowledgement::AddGroup(const protobuf::Message& message, int timeout) {
 
   AckId ack_id(message.ack_id());
   auto const it(std::find_if(std::begin(group_queue_), std::end(group_queue_),
-                             [ack_id](const GroupTimers& timers) {
-                               return ack_id == std::get<static_cast<int>(
-                                                    GroupTimerTupleElement::kAckId)>(timers);
+                             [ack_id](const GroupAckTimer& timer) {
+                               return ack_id == timer.ack_id;
                              }));
   if (it == std::end(group_queue_)) {
     TimerPointer timer(new asio::deadline_timer(io_service_.service(),
                                                 boost::posix_time::seconds(timeout)));
-//    timer->async_wait(handler); VERY IMPORTANT
-    group_queue_.emplace_back(std::make_tuple(ack_id, message, timer, std::map<NodeId, int>()));
+    timer->async_wait(handler);
+    group_queue_.emplace_back(GroupAckTimer(ack_id, message, timer, std::map<NodeId, int>()));
     LOG(kVerbose) << "AddAck added a group ack, with id: " << ack_id;
   }
 }
@@ -153,14 +131,13 @@ void Acknowledgement::Remove(const AckId& ack_id) {
     return;
   std::lock_guard<std::mutex> lock(mutex_);
   auto const it(std::find_if(std::begin(queue_), std::end(queue_),
-                             [ack_id] (const Timers& i)->bool {
-                               return ack_id == std::get<static_cast<int>(
-                                                    TimerTupleElement::kAckId)>(i);
+                             [ack_id] (const AckTimer& timer)->bool {
+                               return ack_id == timer.ack_id;
                              }));
   // assert((it != queue_.end()) && "attempt to cancel handler for non existant timer");
   if (it != std::end(queue_)) {
     // ack timed out or ack killed
-    std::get<static_cast<int>(TimerTupleElement::kTimer)>(*it)->cancel();
+    it->timer->cancel();
     queue_.erase(it);
     LOG(kVerbose) << "Clean up after ack with id: " << ack_id << " queue size: " << queue_.size();
   } else {
@@ -183,28 +160,24 @@ bool Acknowledgement::HandleGroupMessage(const protobuf::Message& message) {
 
   std::lock_guard<std::mutex> lock(mutex_);
   auto const it(std::find_if(std::begin(group_queue_), std::end(group_queue_),
-                             [ack_id](const GroupTimers& timers) {
-                               return ack_id == std::get<static_cast<int>(
-                                                    GroupTimerTupleElement::kAckId)>(timers);
+                             [ack_id](const GroupAckTimer& timer) {
+                               return ack_id == timer.ack_id;
                              }));
   if (it == std::end(group_queue_))
     return false;
 
-  if (std::count_if(
-          std::get<static_cast<int>(GroupTimerTupleElement::kRequestedNodes)>(*it).begin(),
-          std::get<static_cast<int>(GroupTimerTupleElement::kRequestedNodes)>(*it).end(),
-          [](const std::pair<NodeId, int>& group_member) {
-            return group_member.second == static_cast<int>(GroupMessageAckStatus::kSuccess);
-          }) == Parameters::group_size / 2) {
-    std::get<static_cast<int>(GroupTimerTupleElement::kTimer)>(*it)->cancel();
+  if (std::count_if(it->requested_peers.begin(), it->requested_peers.end(),
+                    [](const std::pair<NodeId, int>& member) {
+                      return member.second == static_cast<int>(GroupMessageAckStatus::kSuccess);
+                    }) == Parameters::group_size / 2) {
+    it->timer->cancel();
     group_queue_.erase(it);
     return true;
   }
 
-  auto group_itr(std::get<static_cast<int>(
-                     GroupTimerTupleElement::kRequestedNodes)>(*it).find(destination_id));
+  auto group_itr(it->requested_peers.find(destination_id));
 
-  if (group_itr != std::get<static_cast<int>(GroupTimerTupleElement::kRequestedNodes)>(*it).end())
+  if (group_itr != it->requested_peers.end())
     group_itr->second = static_cast<int>(GroupMessageAckStatus::kSuccess);
   return true;
 }
