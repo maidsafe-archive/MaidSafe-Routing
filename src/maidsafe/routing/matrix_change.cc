@@ -179,14 +179,16 @@ NodeId MatrixChange::ChoosePmidNode(const std::set<NodeId>& online_pmids,
   for (auto pmid : online_pmids)
     LOG(kInfo) << "       online_pmids        ---  " << HexSubstr(pmid.string());
 
-  std::vector<NodeId> temp(Parameters::node_group_size);
+  // In case storing to PublicPmid, the data shall not be stored on the Vault itself
+  // However, the vault will appear in DM's routing table and affect result
+  std::vector<NodeId> temp(Parameters::node_group_size + 1);
   std::partial_sort_copy(std::begin(new_matrix_), std::end(new_matrix_), std::begin(temp),
                          std::end(temp), [&target](const NodeId& lhs, const NodeId& rhs) {
     return NodeId::CloserToTarget(lhs, rhs, target);
   });
 
   LOG(kInfo) << "MatrixChange::ChoosePmidNode own id : "
-                << HexSubstr(node_id_.string()) << " and matrix sorted as following : ";
+                << HexSubstr(node_id_.string()) << " and closest+1 to the target are : ";
   for (auto node : temp)
     LOG(kInfo) << "       sorted_neighbours   ---  " << HexSubstr(node.string());
 
