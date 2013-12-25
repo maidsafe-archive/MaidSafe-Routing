@@ -147,7 +147,7 @@ endif()
 
 target_link_libraries(network_viewer maidsafe_common maidsafe_network_viewer ${Qt5TargetLibs})
 
-rename_outdated_built_exes()
+ms_rename_outdated_built_exes()
 
 
 #==================================================================================================#
@@ -170,7 +170,7 @@ endif()
 # Tests                                                                                            #
 #==================================================================================================#
 if(MaidsafeTesting)
-  add_style_test()
+  ms_add_style_test()
 endif()
 
 message(STATUS "Found Qt5. Network Viewer tool enabled.")

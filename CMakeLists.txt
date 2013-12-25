@@ -36,9 +36,9 @@ cmake_policy(SET CMP0020 NEW)
 # Set up all files as GLOBs                                                                        #
 #==================================================================================================#
 set(RoutingSourcesDir ${PROJECT_SOURCE_DIR}/src/maidsafe/routing)
-glob_dir(Routing ${RoutingSourcesDir} Routing)
-glob_dir(RoutingTests ${RoutingSourcesDir}/tests Tests)
-glob_dir(RoutingTools ${RoutingSourcesDir}/tools Tools)
+ms_glob_dir(Routing ${RoutingSourcesDir} Routing)
+ms_glob_dir(RoutingTests ${RoutingSourcesDir}/tests Tests)
+ms_glob_dir(RoutingTools ${RoutingSourcesDir}/tools Tools)
 set(RoutingTestsHelperFiles ${RoutingSourcesDir}/tests/routing_network.cc
                             ${PROJECT_SOURCE_DIR}/include/maidsafe/routing/tests/routing_network.h
                             ${RoutingSourcesDir}/tests/test_utils.cc
@@ -66,7 +66,7 @@ list(REMOVE_ITEM RoutingTestsAllFiles ${RoutingTestsHelperFiles}
 #==================================================================================================#
 # Define MaidSafe libraries and executables                                                        #
 #==================================================================================================#
-ms_add_static_library(routing ${RoutingAllFiles})
+ms_add_static_library(maidsafe_routing ${RoutingAllFiles})
 target_include_directories(maidsafe_routing PUBLIC ${PROJECT_SOURCE_DIR}/include PRIVATE ${PROJECT_SOURCE_DIR}/src)
 target_link_libraries(maidsafe_routing maidsafe_rudp maidsafe_passport maidsafe_network_viewer gmock gtest)
 
@@ -105,7 +105,7 @@ if(MaidsafeTesting)
   target_link_libraries(routing_node maidsafe_routing)
 endif()
 
-rename_outdated_built_exes()
+ms_rename_outdated_built_exes()
 
 add_subdirectory(${RoutingSourcesDir}/tools/network_viewer)
 
@@ -126,14 +126,14 @@ endforeach()
 # Tests                                                                                            #
 #==================================================================================================#
 if(MaidsafeTesting)
-  add_style_test()
+  ms_add_style_test()
   add_test(NAME Multiple_Functional_Tests COMMAND TESTrouting_func)
   set_property(TEST Multiple_Functional_Tests PROPERTY LABELS Routing Functional)
   set_property(TEST Multiple_Functional_Tests PROPERTY TIMEOUT 600)
-  add_gtests(TESTrouting)
-  add_gtests(TESTrouting_api)
+  ms_add_gtests(TESTrouting)
+  ms_add_gtests(TESTrouting_api)
 # This test target can be run separately. Removed from Experimental target to reduce the ctest time.
-# add_gtests(TESTrouting_big)
-  add_project_experimental()
-  test_summary_output()
+# ms_add_gtests(TESTrouting_big)
+  ms_add_project_experimental()
+  ms_test_summary_output()
 endif()
