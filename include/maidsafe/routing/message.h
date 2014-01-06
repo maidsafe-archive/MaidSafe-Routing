@@ -54,6 +54,27 @@ struct GroupSource {
 bool operator==(const GroupSource& lhs, const GroupSource& rhs);
 void swap(GroupSource& lhs, GroupSource& rhs);
 
+
+template <typename T>
+struct Relay {
+  Relay();
+  Relay(T relay_node_in, NodeId connection_id_in);
+  Relay(const Relay& other);
+  Relay(Relay&& other);
+  Relay& operator=(Relay other);
+
+  T relay_node;
+  NodeId connection_id;
+};
+
+template <typename T>
+bool operator==(const Relay<T>& lhs, const Relay<T>& rhs);
+template <typename T>
+void swap(Relay<T>& lhs, Relay<T>& rhs);
+
+typedef Relay<SingleSource> SingleSourceRelay;
+typedef Relay<SingleId> SingleIdRelay;
+
 template <typename Sender, typename Receiver>
 struct Message {
   Message();
@@ -73,6 +94,44 @@ template <typename Sender, typename Receiver>
 void swap(Message<Sender, Receiver>& lhs, Message<Sender, Receiver>& rhs);
 
 // ==================== Implementation =============================================================
+template <typename T>
+Relay<T>::Relay() : relay_node(), connection_id() {}
+
+template <typename T>
+Relay<T>::Relay(T relay_node_in, NodeId connection_id_in)
+    : relay_node(std::move(relay_node_in)),
+      connection_id(std::move(connection_id_in)) {}
+
+template <typename T>
+Relay<T>::Relay(const Relay& other)
+    : relay_node(other.relay_node),
+      connection_id(other.connection_id) {}
+
+template <typename T>
+Relay<T>::Relay(Relay&& other)
+    : relay_node(std::move(other.relay_node)),
+      connection_id(std::move(other.connection_id)) {}
+
+template <typename T>
+Relay<T>& Relay<T>::operator=(Relay<T> other) {
+  swap(*this, other);
+  return *this;
+}
+
+template <typename T>
+void swap(Relay<T>& lhs, Relay<T>& rhs) {
+  using std::swap;
+  swap(lhs.relay_node, rhs.relay_node);
+  swap(lhs.connection_id, rhs.connection_id);
+}
+
+template <typename T>
+bool operator==(const Relay<T>& lhs, const Relay<T>& rhs) {
+  return lhs.relay_node == rhs.relay_node &&
+         lhs.connection_id == rhs.connection_id;
+}
+
+
 template <typename Sender, typename Receiver>
 Message<Sender, Receiver>::Message()
     : contents(), sender(), receiver(), cacheable(Cacheable::kNone) {}
@@ -118,6 +177,9 @@ typedef Message<SingleSource, SingleId> SingleToSingleMessage;
 typedef Message<SingleSource, GroupId> SingleToGroupMessage;
 typedef Message<GroupSource, SingleId> GroupToSingleMessage;
 typedef Message<GroupSource, GroupId> GroupToGroupMessage;
+
+typedef Message<SingleSourceRelay, GroupId> SingleToGroupRelayMessage;
+typedef Message<GroupSource, SingleIdRelay> GroupToSingleRelayMessage;
 
 }  // namespace routing
 

@@ -67,6 +67,12 @@ void Routing::Send(const GroupToGroupMessage& message) {
   pimpl_->Send(message);
 }
 
+template <>
+void Routing::Send(const GroupToSingleRelayMessage& message) {
+  pimpl_->Send(message);
+}
+
+
 void Routing::SendDirect(const NodeId& destination_id, const std::string& message,
                          bool cacheable, ResponseFunctor response_functor) {
   return pimpl_->SendDirect(destination_id, message, cacheable, response_functor);
