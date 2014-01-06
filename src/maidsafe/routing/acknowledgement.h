@@ -83,6 +83,8 @@ class Acknowledgement {
   bool HandleGroupMessage(const protobuf::Message& message);
   bool NeedsAck(const protobuf::Message& message, const NodeId& node_id);
   bool IsSendingAckRequired(const protobuf::Message& message, const NodeId& this_node_id);
+  NodeId AppendGroup(AckId ack_id, std::vector<std::string>& exclusion);
+  void SetAsFailedPeer(AckId ack_id, const NodeId& node_id);
 
   friend class RoutingPrivate;
   friend class test::GenericNode;

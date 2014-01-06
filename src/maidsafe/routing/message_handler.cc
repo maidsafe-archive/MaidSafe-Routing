@@ -308,11 +308,17 @@ void MessageHandler::HandleGroupMessageAsClosestNode(protobuf::Message& message)
     return network_.SendToClosestNode(message);
   }
 
-  acknowledgement_.AddGroup(message, [message, this](const boost::system::error_code& error) {
-                                       if (error &&  (message.source_id() !=
-                                                          routing_table_.kNodeId().string()))
-                                         network_.SendAck(message);
-                                       }, Parameters::ack_timeout * Parameters::max_ack_attempts);
+  uint16_t replication(static_cast<uint16_t>(message.replication()));
+
+  if (replication > 1) {
+    acknowledgement_.AddGroup(message, [message, this](const boost::system::error_code& error) {
+                                         if (error &&  (message.source_id() !=
+                                                            routing_table_.kNodeId().string()))
+                                           network_.SendAck(message);
+                                         }, Parameters::ack_timeout * Parameters::max_ack_attempts);
+  } else if (message.source_id() != routing_table_.kNodeId().string()) {
+    network_.SendAck(message);
+  }
 
   std::vector<std::string> route_history;
   if (message.route_history().size() > 1)
@@ -334,7 +340,6 @@ void MessageHandler::HandleGroupMessageAsClosestNode(protobuf::Message& message)
   }
 
   // This node is closest so will send to all replicant nodes
-  uint16_t replication(static_cast<uint16_t>(message.replication()));
   if ((replication < 1) || (replication > Parameters::group_size)) {
     LOG(kError) << "Dropping invalid non-direct message."
                 << " id: " << message.id();

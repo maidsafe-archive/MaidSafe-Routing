@@ -12,6 +12,8 @@
 
 #include "maidsafe/routing/acknowledgement.h"
 
+#include <algorithm>
+
 #include "maidsafe/common/asio_service.h"
 #include "boost/date_time.hpp"
 #include "maidsafe/common/log.h"
@@ -156,7 +158,7 @@ bool Acknowledgement::HandleGroupMessage(const protobuf::Message& message) {
   AckId ack_id(message.ack_id());
   NodeId destination_id(message.destination_id());
   assert((ack_id != 0) && "Invalid acknowledgement id");
-  LOG(kVerbose) << "MessageHandler::HandleAckMessage " << ack_id;
+  LOG(kVerbose) << "MessageHandler::HandleGroupMessage " << ack_id;
 
   std::lock_guard<std::mutex> lock(mutex_);
   auto const it(std::find_if(std::begin(group_queue_), std::end(group_queue_),
@@ -166,20 +168,60 @@ bool Acknowledgement::HandleGroupMessage(const protobuf::Message& message) {
   if (it == std::end(group_queue_))
     return false;
 
+  auto expected(std::min(static_cast<int>(it->requested_peers.size()), Parameters::group_size / 2));
   if (std::count_if(it->requested_peers.begin(), it->requested_peers.end(),
                     [](const std::pair<NodeId, int>& member) {
                       return member.second == static_cast<int>(GroupMessageAckStatus::kSuccess);
-                    }) == Parameters::group_size / 2) {
-    it->timer->cancel();
+                    }) == expected - 1) {
     group_queue_.erase(it);
+    it->timer->cancel();
     return true;
   }
 
   auto group_itr(it->requested_peers.find(destination_id));
 
-  if (group_itr != it->requested_peers.end())
+  if (group_itr != it->requested_peers.end()) {
     group_itr->second = static_cast<int>(GroupMessageAckStatus::kSuccess);
+    LOG(kVerbose) << "Ack group member succeeds " << DebugId(group_itr->first) << " id: " << ack_id;
+  }
   return true;
+}
+
+NodeId Acknowledgement::AppendGroup(AckId ack_id, std::vector<std::string>& exclusion) {
+  assert((ack_id != 0) && "Invalid acknowledgement id");
+  LOG(kVerbose) << "MessageHandler::AppendGroup " << ack_id;
+
+  std::lock_guard<std::mutex> lock(mutex_);
+  auto const it(std::find_if(std::begin(group_queue_), std::end(group_queue_),
+                             [ack_id](const GroupAckTimer& timer) {
+                               return ack_id == timer.ack_id;
+                             }));
+  if (it == std::end(group_queue_)) {
+    LOG(kVerbose) << "Not in group queue " << ack_id;
+    return NodeId();
+  }
+  for (const auto&  peer : it->requested_peers) {
+    if (std::find(std::begin(exclusion), std::end(exclusion),
+                  peer.first.string()) == std::end(exclusion))
+    exclusion.push_back(peer.first.string());
+  }
+  return NodeId(it->message.destination_id());
+}
+
+void Acknowledgement::SetAsFailedPeer(AckId ack_id, const NodeId& node_id) {
+  assert((ack_id != 0) && "Invalid acknowledgement id");
+  LOG(kVerbose) << "MessageHandler::SetAsFailedPeer " << ack_id;
+
+  std::lock_guard<std::mutex> lock(mutex_);
+  auto const it(std::find_if(std::begin(group_queue_), std::end(group_queue_),
+                             [ack_id](const GroupAckTimer& timer) {
+                               return ack_id == timer.ack_id;
+                             }));
+  if (it == std::end(group_queue_))
+    return;
+  auto member(it->requested_peers.find(node_id));
+  if (member != it->requested_peers.end())
+    member->second = static_cast<int>(GroupMessageAckStatus::kFailure);
 }
 
 bool Acknowledgement::IsSendingAckRequired(const protobuf::Message& message,

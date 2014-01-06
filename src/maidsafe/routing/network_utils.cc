@@ -300,6 +300,7 @@ void NetworkUtils::RecursiveSendOn(protobuf::Message message, NodeInfo last_node
       // FIXME Should we remove this node or let rudp handle that?
       routing_table_.DropNode(last_node_attempted.connection_id, false);
       client_routing_table_.DropConnection(last_node_attempted.connection_id);
+      acknowledgement_.SetAsFailedPeer(message.ack_id(), last_node_attempted.node_id);
     }
   }
 
@@ -322,6 +323,10 @@ void NetworkUtils::RecursiveSendOn(protobuf::Message message, NodeInfo last_node
     else if ((message.route_history().size() == 1) &&
              (message.route_history(0) != routing_table_.kNodeId().string()))
       route_history.push_back(message.route_history(0));
+
+    auto group_target(acknowledgement_.AppendGroup(message.ack_id(), route_history));
+    if (group_target != NodeId())
+      ignore_exact_match = true;
 
     peer = routing_table_.GetNodeForSendingMessage(NodeId(message.destination_id()), route_history,
                                                    ignore_exact_match);
