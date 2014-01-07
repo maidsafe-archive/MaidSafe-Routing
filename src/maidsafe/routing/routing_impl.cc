@@ -52,6 +52,40 @@ typedef boost::asio::ip::udp::endpoint Endpoint;
 
 namespace detail {}  // namespace detail
 
+template <>
+void Routing::Impl::Send(const GroupToSingleRelayMessage& message) {
+  assert(!functors_.message_and_caching.message_received &&
+         "Not allowed with string type message API");
+  protobuf::Message proto_message = CreateNodeLevelMessage(message);
+  // append relay information
+  SendMessage(message.receiver.relay_node, proto_message);
+}
+
+template <>
+protobuf::Message Routing::Impl::CreateNodeLevelMessage(const GroupToSingleRelayMessage& message) {
+  protobuf::Message proto_message;
+  proto_message.set_destination_id(message.receiver.relay_node->string());
+  proto_message.set_routing_message(false);
+  proto_message.add_data(message.contents);
+  proto_message.set_type(static_cast<int32_t>(MessageType::kNodeLevel));
+
+  proto_message.set_cacheable(static_cast<int32_t>(message.cacheable));
+  proto_message.set_client_node(routing_table_.client_mode());
+
+  proto_message.set_request(true);
+  proto_message.set_hops_to_live(Parameters::hops_to_live);
+
+  AddGroupSourceRelatedFields(message, proto_message,
+                              detail::is_group_source<GroupToSingleRelayMessage>());
+  AddDestinationTypeRelatedFields(proto_message,
+                                  detail::is_group_destination<GroupToSingleRelayMessage>());
+
+  // add relay information
+  proto_message.set_relay_id(message.receiver.node_id->string());
+  proto_message.set_relay_connection_id(message.receiver.connection_id.string());
+  return proto_message;
+}
+
 Routing::Impl::Impl(bool client_mode, const NodeId& node_id, const asymm::Keys& keys)
     : network_status_mutex_(),
       network_status_(kNotJoined),

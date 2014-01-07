@@ -58,13 +58,14 @@ void swap(GroupSource& lhs, GroupSource& rhs);
 template <typename T>
 struct Relay {
   Relay();
-  Relay(T relay_node_in, NodeId connection_id_in);
+  Relay(T node_id_in, NodeId connection_id_in, T relay_node_in);
   Relay(const Relay& other);
   Relay(Relay&& other);
   Relay& operator=(Relay other);
 
-  T relay_node;
-  NodeId connection_id;
+  T node_id;  // original source/receiver
+  NodeId connection_id;  //  source/receiver's connection id
+  T relay_node;  // node relaying messages to/fro on behalf of original sender/receiver
 };
 
 template <typename T>
@@ -95,22 +96,25 @@ void swap(Message<Sender, Receiver>& lhs, Message<Sender, Receiver>& rhs);
 
 // ==================== Implementation =============================================================
 template <typename T>
-Relay<T>::Relay() : relay_node(), connection_id() {}
+Relay<T>::Relay() : relay_node(), node_id(), connection_id() {}
 
 template <typename T>
-Relay<T>::Relay(T relay_node_in, NodeId connection_id_in)
-    : relay_node(std::move(relay_node_in)),
-      connection_id(std::move(connection_id_in)) {}
+Relay<T>::Relay(T node_id_in, NodeId connection_id_in, T relay_node_in)
+    : node_id(std::move(node_id_in)),
+      connection_id(std::move(connection_id_in)),
+      relay_node(std::move(relay_node_in)) {}
 
 template <typename T>
 Relay<T>::Relay(const Relay& other)
-    : relay_node(other.relay_node),
-      connection_id(other.connection_id) {}
+    : node_id(other.node_id),
+      connection_id(other.connection_id),
+      relay_node(other.relay_node) {}
 
 template <typename T>
 Relay<T>::Relay(Relay&& other)
-    : relay_node(std::move(other.relay_node)),
-      connection_id(std::move(other.connection_id)) {}
+    : node_id(std::move(other.node_id)),
+      connection_id(std::move(other.connection_id)),
+      relay_node(std::move(other.relay_node)) {}
 
 template <typename T>
 Relay<T>& Relay<T>::operator=(Relay<T> other) {
@@ -121,14 +125,16 @@ Relay<T>& Relay<T>::operator=(Relay<T> other) {
 template <typename T>
 void swap(Relay<T>& lhs, Relay<T>& rhs) {
   using std::swap;
-  swap(lhs.relay_node, rhs.relay_node);
+  swap(lhs.node_id, rhs.node_id);
   swap(lhs.connection_id, rhs.connection_id);
+  swap(lhs.relay_node, rhs.relay_node);
 }
 
 template <typename T>
 bool operator==(const Relay<T>& lhs, const Relay<T>& rhs) {
-  return lhs.relay_node == rhs.relay_node &&
-         lhs.connection_id == rhs.connection_id;
+  return lhs.node_id == rhs.node_id &&
+         lhs.connection_id == rhs.connection_id &&
+         lhs.relay_node == rhs.relay_node;
 }
 
 

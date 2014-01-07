@@ -203,6 +203,12 @@ class Routing::Impl {
   boost::asio::deadline_timer re_bootstrap_timer_, recovery_timer_, setup_timer_;
 };
 
+template <>
+void Routing::Impl::Send(const GroupToSingleRelayMessage& message);
+
+template <>
+protobuf::Message Routing::Impl::CreateNodeLevelMessage(const GroupToSingleRelayMessage& message);
+
 // Implementations
 template <typename T>
 void Routing::Impl::Send(const T& message) {  // FIXME(Fix caching)
