@@ -451,8 +451,8 @@ void NetworkUtils::SendAck(const protobuf::Message& message) {
       message.source_id() == routing_table_.kNodeId().string())
     return;
 
-  if (std::find(ack_node_ids.begin(), ack_node_ids.end(),
-                routing_table_.kNodeId().string()) != ack_node_ids.end()) {
+  if (std::find(std::begin(ack_node_ids), std::end(ack_node_ids),
+                routing_table_.kNodeId().string()) != std::end(ack_node_ids)) {
     acknowledgement_.Remove(message.ack_id());
   }
 

@@ -79,6 +79,7 @@ class Acknowledgement {
   void Add(const protobuf::Message& message, Handler handler, int timeout);
   void AddGroup(const protobuf::Message& message, Handler handler, int timeout);
   void Remove(const AckId& ack_id);
+  void GroupQueueRemove(const AckId& ack_id);
   void HandleMessage(int32_t ack_id);
   bool HandleGroupMessage(const protobuf::Message& message);
   bool NeedsAck(const protobuf::Message& message, const NodeId& node_id);

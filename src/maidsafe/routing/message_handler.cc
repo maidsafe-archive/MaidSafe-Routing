@@ -312,9 +312,12 @@ void MessageHandler::HandleGroupMessageAsClosestNode(protobuf::Message& message)
 
   if (replication > 1) {
     acknowledgement_.AddGroup(message, [message, this](const boost::system::error_code& error) {
+                                         LOG(kVerbose) << "Ack AddGroup Handler Fires";
                                          if (error &&  (message.source_id() !=
                                                             routing_table_.kNodeId().string()))
                                            network_.SendAck(message);
+                                          else
+                                            acknowledgement_.GroupQueueRemove(message.ack_id());
                                          }, Parameters::ack_timeout * Parameters::max_ack_attempts);
   } else if (message.source_id() != routing_table_.kNodeId().string()) {
     network_.SendAck(message);

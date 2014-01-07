@@ -148,6 +148,17 @@ void Acknowledgement::Remove(const AckId& ack_id) {
   }
 }
 
+void Acknowledgement::GroupQueueRemove(const AckId& ack_id) {
+  if (!running_)
+    return;
+  std::lock_guard<std::mutex> lock(mutex_);
+  group_queue_.erase(std::remove_if(std::begin(group_queue_), std::end(group_queue_),
+                                    [ack_id](const GroupAckTimer& group_ack) {
+                                      return group_ack.ack_id == ack_id;
+                                    }), std::end(group_queue_));
+}
+
+
 void Acknowledgement::HandleMessage(int32_t ack_id) {
   assert((ack_id != 0) && "Invalid acknowledgement id");
   LOG(kVerbose) << "MessageHandler::HandleAckMessage " << ack_id;
@@ -168,22 +179,27 @@ bool Acknowledgement::HandleGroupMessage(const protobuf::Message& message) {
   if (it == std::end(group_queue_))
     return false;
 
+  auto group_itr(it->requested_peers.find(destination_id));
+  if (group_itr != it->requested_peers.end()) {
+    group_itr->second = static_cast<int>(GroupMessageAckStatus::kSuccess);
+    LOG(kVerbose) << "Ack group member succeeds " << DebugId(group_itr->first) << " id: " << ack_id;
+  } else {
+    LOG(kWarning) << "Handling ack for a non-existing peer: " << DebugId(destination_id)
+                  << " ack id: " << ack_id;
+    return true;
+  }
+
   auto expected(std::min(static_cast<int>(it->requested_peers.size()), Parameters::group_size / 2));
   if (std::count_if(it->requested_peers.begin(), it->requested_peers.end(),
                     [](const std::pair<NodeId, int>& member) {
                       return member.second == static_cast<int>(GroupMessageAckStatus::kSuccess);
-                    }) == expected - 1) {
-    group_queue_.erase(it);
+                    }) == expected) {
+    LOG(kVerbose) << "HandleGroupMessage: expected meets: " << ack_id;
     it->timer->cancel();
+    group_queue_.erase(it);
     return true;
   }
 
-  auto group_itr(it->requested_peers.find(destination_id));
-
-  if (group_itr != it->requested_peers.end()) {
-    group_itr->second = static_cast<int>(GroupMessageAckStatus::kSuccess);
-    LOG(kVerbose) << "Ack group member succeeds " << DebugId(group_itr->first) << " id: " << ack_id;
-  }
   return true;
 }
 
@@ -231,7 +247,7 @@ bool Acknowledgement::IsSendingAckRequired(const protobuf::Message& message,
 }
 
 bool Acknowledgement::NeedsAck(const protobuf::Message& message, const NodeId& node_id) {
-  LOG(kVerbose) << "node_id: " << HexSubstr(node_id.string()); 
+  LOG(kVerbose) << "node_id: " << HexSubstr(node_id.string());
 
 // Ack messages do not need an ack
   if (IsAck(message))
