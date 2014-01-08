@@ -87,6 +87,8 @@ message Message {
   optional bytes average_distace = 21;
   optional bytes group_source = 22;
   optional bytes group_destination = 23;
+  optional bool actual_destination_is_relay_id = 24;  // to support new API's request message to
+                                                      // be sent to relaying node and passed on
 }
 
 message SignedMessage {

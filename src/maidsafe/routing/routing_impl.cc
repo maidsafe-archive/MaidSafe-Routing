@@ -83,6 +83,7 @@ protobuf::Message Routing::Impl::CreateNodeLevelMessage(const GroupToSingleRelay
   // add relay information
   proto_message.set_relay_id(message.receiver.node_id->string());
   proto_message.set_relay_connection_id(message.receiver.connection_id.string());
+  proto_message.set_actual_destination_is_relay_id(true);
   return proto_message;
 }
 
@@ -160,6 +161,8 @@ void Routing::Impl::ConnectFunctors(const Functors& functors) {
          !functors.typed_message_and_caching.group_to_single.message_received);
   assert(!functors.message_and_caching.message_received !=
          !functors.typed_message_and_caching.group_to_group.message_received);
+  assert(!functors.message_and_caching.message_received !=
+         !functors.typed_message_and_caching.single_to_group_relay.message_received);
 
   if (functors.message_and_caching.message_received)
     message_handler_->set_message_and_caching_functor(functors.message_and_caching);

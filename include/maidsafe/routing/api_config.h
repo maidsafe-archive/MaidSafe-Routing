@@ -99,7 +99,6 @@ struct TypedMessageAndCachingFunctor {  // New API
   MessageAndCachingFunctorsType<GroupToSingleMessage> group_to_single;
   MessageAndCachingFunctorsType<GroupToGroupMessage> group_to_group;
   RelayMessageFunctorType<SingleToGroupRelayMessage> single_to_group_relay;
-  RelayMessageFunctorType<GroupToSingleRelayMessage> group_to_single_relay;
 };
 
 struct MessageAndCachingFunctors {
