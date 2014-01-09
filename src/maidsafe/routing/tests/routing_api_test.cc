@@ -59,7 +59,7 @@ namespace {
 typedef boost::asio::ip::udp::endpoint Endpoint;
 
 const int kClientCount(4);
-const int kServerCount(10);
+const int kServerCount(9);
 const int kNetworkSize = kClientCount + kServerCount;
 MessageReceivedFunctor no_ops_message_received_functor = [](const std::string&, bool,
                                                             ReplyFunctor) {};  // NOLINT
@@ -1023,6 +1023,132 @@ TEST(APITest, BEH_API_TypedMessageSend) {
     auto single_to_group_future(single_to_group_promise.get_future());
     ASSERT_EQ(single_to_group_future.wait_for(std::chrono::seconds(10)), std::future_status::ready);
   }
+}
+
+
+TEST(APITest, BEH_API_TypedMessagePartiallyJoinedSendReceive) {
+  int min_join_status(std::min(kServerCount, 8));
+  std::vector<std::promise<bool>> join_promises(kNetworkSize);
+  std::vector<std::future<bool>> join_futures;
+  std::deque<bool> promised;
+  std::vector<NetworkStatusFunctor> status_vector;
+  std::mutex mutex;
+  Functors functors;
+
+  std::vector<NodeInfoAndPrivateKey> nodes;
+  std::map<NodeId, asymm::PublicKey> key_map;
+  std::vector<std::shared_ptr<Routing>> routing_nodes;
+  std::vector<RelayMessageFunctorType<SingleToGroupRelayMessage>> single_to_group_relay_functors;
+  int i(0);
+  functors.request_public_key = [&](const NodeId & node_id, GivePublicKeyFunctor give_key) {
+    LOG(kWarning) << "node_validation called for " << DebugId(node_id);
+    auto itr(key_map.find(node_id));
+    if (key_map.end() != itr)
+      give_key((*itr).second);
+  };
+
+  for (; i != kServerCount; ++i) {
+    auto pmid(MakePmid());
+    NodeInfoAndPrivateKey node(MakeNodeInfoAndKeysWithPmid(pmid));
+    nodes.push_back(node);
+    key_map.insert(std::make_pair(node.node_info.node_id, pmid.public_key()));
+    routing_nodes.push_back(std::make_shared<Routing>(pmid));
+  }
+  for (; i != kNetworkSize; ++i) {
+    auto maid(MakeMaid());
+    NodeInfoAndPrivateKey node(MakeNodeInfoAndKeysWithMaid(maid));
+    nodes.push_back(node);
+    routing_nodes.push_back(std::make_shared<Routing>(maid));
+  }
+
+  functors.network_status = [](int) {};  // NOLINT (Fraser)
+
+  functors.typed_message_and_caching.group_to_group.message_received = [&](
+      const GroupToGroupMessage & /*g2g*/) {
+    LOG(kVerbose) << "group to group message received!!";
+  };
+
+  functors.typed_message_and_caching.group_to_single.message_received = [&](
+      const GroupToSingleMessage & /*g2s*/) {
+    LOG(kVerbose) << "group to single message received!!";
+  };
+
+  functors.typed_message_and_caching.single_to_group.message_received = [&](
+      const SingleToGroupMessage & /*s2g*/) {
+    LOG(kVerbose) << "single to group message received!!";
+  };
+
+  functors.typed_message_and_caching.single_to_single.message_received = [&](
+      const SingleToSingleMessage & /*s2s*/) {
+    LOG(kVerbose) << "single to single message received!!";
+  };
+
+  // response to single to group relay messages
+  for (int i(0); i != kNetworkSize; ++i) {
+    RelayMessageFunctorType<SingleToGroupRelayMessage> relay_message_functor_struct;
+    relay_message_functor_struct.message_received = [routing_nodes, i](const SingleToGroupRelayMessage& message) {
+      LOG(kVerbose) << "single to group relay message received!!";
+      std::string response = "response to " + message.contents;
+      GroupSource group_source(GroupId(message.receiver), SingleId(routing_nodes.at(i)->kNodeId()));
+      SingleIdRelay single_id_relay(SingleId(NodeId(message.sender.node_id->string())),
+                                    message.sender.connection_id, SingleId(NodeId(message.sender.relay_node->string())));
+      GroupToSingleRelayMessage response_message(response, group_source, single_id_relay);
+      routing_nodes.at(i)->Send(response_message);
+    };
+    single_to_group_relay_functors.push_back(relay_message_functor_struct);
+    //functors.typed_message_and_caching.single_to_group_relay = relay_message_functor_struct;
+  }
+
+  functors.typed_message_and_caching.single_to_group_relay = single_to_group_relay_functors.at(0);
+  Endpoint endpoint1(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort()),
+      endpoint2(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort());
+  auto a1 = std::async(std::launch::async, [&] {
+    return routing_nodes[0]->ZeroStateJoin(functors, endpoint1, endpoint2, nodes[1].node_info);
+  });
+  functors.typed_message_and_caching.single_to_group_relay = single_to_group_relay_functors.at(1);
+  auto a2 = std::async(std::launch::async, [&] {
+    return routing_nodes[1]->ZeroStateJoin(functors, endpoint2, endpoint1, nodes[0].node_info);
+  });
+
+  EXPECT_EQ(kSuccess, a2.get());  // wait for promise !
+  EXPECT_EQ(kSuccess, a1.get());  // wait for promise !
+
+  // Ignoring 2 zero state nodes
+//  promised.push_back(false);
+//  promised.push_back(false);
+//  status_vector.emplace_back([](int /*x*/) {});
+//  status_vector.emplace_back([](int /*x*/) {});
+//  std::promise<bool> promise1, promise2;
+//  join_futures.emplace_back(promise1.get_future());
+//  join_futures.emplace_back(promise2.get_future());
+
+//  // Joining remaining server & client nodes
+//  for (auto i(2); i != (kNetworkSize); ++i) {
+//    join_futures.emplace_back(join_promises.at(i).get_future());
+//    promised.push_back(true);
+//    status_vector.emplace_back([=, &join_promises, &mutex, &promised](int result) {
+//      ASSERT_GE(result, kSuccess);
+//      if (result == NetworkStatus((i >= kServerCount), std::min(i, min_join_status))) {
+//        std::lock_guard<std::mutex> lock(mutex);
+//        if (promised.at(i)) {
+//          join_promises.at(i).set_value(true);
+//          promised.at(i) = false;
+//          LOG(kVerbose) << "node - " << i << "joined";
+//        }
+//      }
+//    });
+//  }
+
+//  for (auto i(2); i != (kNetworkSize); ++i) {
+//    functors.network_status = status_vector.at(i);
+//    functors.typed_message_and_caching.single_to_group_relay = single_to_group_relay_functors.at(i);
+//    routing_nodes[i]->Join(functors, std::vector<Endpoint>(1, endpoint1));
+//    ASSERT_EQ(join_futures.at(i).wait_for(std::chrono::seconds(10)), std::future_status::ready);
+//  }
+
+  // Join client and send messages
+
+
 }
 
 }  // namespace test
