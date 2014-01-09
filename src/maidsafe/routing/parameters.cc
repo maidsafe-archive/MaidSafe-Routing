@@ -41,7 +41,7 @@ std::chrono::steady_clock::duration Parameters::default_response_timeout(std::ch
 std::chrono::seconds Parameters::find_node_interval(10);
 std::chrono::seconds Parameters::recovery_time_lag(5);
 bptime::time_duration Parameters::re_bootstrap_time_lag(bptime::seconds(10));
-bptime::time_duration Parameters::find_close_node_interval(bptime::seconds(3));
+bptime::time_duration Parameters::find_close_node_interval(bptime::seconds(30));
 uint16_t Parameters::find_node_repeats_per_num_requested(3);
 uint16_t Parameters::maximum_find_close_node_failures(10);
 uint16_t Parameters::max_route_history(5);
@@ -49,8 +49,8 @@ uint16_t Parameters::hops_to_live(50);
 uint16_t Parameters::accepted_distance_tolerance(1);
 uint16_t Parameters::greedy_fraction(Parameters::max_routing_table_size * 3 / 4);
 uint16_t Parameters::split_avoidance(4);
-uint16_t Parameters::ack_timeout(2);
-uint16_t Parameters::max_ack_attempts(3);
+uint16_t Parameters::ack_timeout(4);
+uint16_t Parameters::max_ack_attempts(2);
 uint16_t Parameters::routing_table_ready_to_response(Parameters::greedy_fraction * 9 / 10);
 bptime::time_duration Parameters::connect_rpc_prune_timeout(
     rudp::Parameters::rendezvous_connect_timeout * 2);

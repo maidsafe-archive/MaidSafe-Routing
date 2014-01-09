@@ -134,7 +134,7 @@ if(MaidsafeTesting)
   set_property(TEST ResponseHandlerTest.BEH_FindNodes PROPERTY TIMEOUT 100)
   ms_add_gtests(TESTrouting_api)
 # This test target can be run separately. Removed from Experimental target to reduce the ctest time.
-# ms_add_gtests(TESTrouting_big)
+  ms_add_gtests(TESTrouting_big)
   ms_add_project_experimental()
   ms_test_summary_output()
 endif()
