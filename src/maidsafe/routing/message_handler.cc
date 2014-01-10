@@ -70,12 +70,24 @@ GroupToGroupMessage CreateGroupToGroupMessage(const protobuf::Message& proto_mes
 }
 
 SingleToGroupRelayMessage CreateSingleToGroupRelayMessage(const protobuf::Message& proto_message) {
+  SingleSource single_src(NodeId(proto_message.relay_id()));
+  NodeId connection_id(proto_message.relay_connection_id());
+  SingleSource single_src_relay_node(NodeId(proto_message.source_id()));
+  SingleSourceRelay single_src_relay(single_src, // original sender
+                                     connection_id,
+                                     single_src_relay_node);
+
   return SingleToGroupRelayMessage(proto_message.data(0),
-      SingleSourceRelay(SingleSource(NodeId(proto_message.relay_id())), // original sender
-                        NodeId(proto_message.relay_connection_id()),
-                        SingleSource(NodeId(proto_message.source_id()))),  // relay node
+      single_src_relay,  // relay node
           GroupId(NodeId(proto_message.group_destination())),
               static_cast<Cacheable>(proto_message.cacheable()));
+
+//  return SingleToGroupRelayMessage(proto_message.data(0),
+//      SingleSourceRelay(SingleSource(NodeId(proto_message.relay_id())), // original sender
+//                        NodeId(proto_message.relay_connection_id()),
+//                        SingleSource(NodeId(proto_message.source_id()))),  // relay node
+//          GroupId(NodeId(proto_message.group_destination())),
+//              static_cast<Cacheable>(proto_message.cacheable()));
 }
 
 }  //  unnamed namespace

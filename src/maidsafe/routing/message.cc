@@ -49,6 +49,15 @@ bool operator==(const GroupSource& lhs, const GroupSource& rhs) {
          lhs.sender_id == rhs.sender_id;
 }
 
+namespace detail {
+
+SingleIdRelay GetRelayIdToReply(const SingleSourceRelay& single_src_relay) {
+  return SingleIdRelay(SingleId(NodeId(single_src_relay.node_id->string())),
+      single_src_relay.connection_id, SingleId(NodeId(single_src_relay.relay_node->string())));
+}
+
+}  // namespace detail
+
 }  // namespace routing
 
 }  // namespace maidsafe
