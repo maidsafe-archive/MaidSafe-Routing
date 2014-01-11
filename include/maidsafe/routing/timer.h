@@ -187,20 +187,21 @@ void Timer<Response>::FinishTask(TaskId task_id, const boost::system::error_code
     }
 
     tasks_.erase(itr);
-  }
 
-  switch (error.value()) {
-    case boost::system::errc::success:  // Task's timer has expired
-      LOG(kWarning) << "Timed out waiting for task " << task_id;
-      break;
-    case boost::asio::error::operation_aborted:  // Cancelled via CancelTask
-      LOG(kInfo) << "Cancelled task " << task_id;
-      break;
-    default:
-      LOG(kError) << "Error waiting for task " << task_id << " - " << error.message();
+    switch (error.value()) {
+      case boost::system::errc::success:  // Task's timer has expired
+        LOG(kWarning) << "Timed out waiting for task " << task_id;
+        break;
+      case boost::asio::error::operation_aborted:  // Cancelled via CancelTask
+        LOG(kInfo) << "Cancelled task " << task_id;
+        break;
+      default:
+        LOG(kError) << "Error waiting for task " << task_id << " - " << error.message();
+    }
+
+    for (int i(0); i != outstanding_response_count; ++i)
+      asio_service_.service().dispatch([=] { functor(Response()); });
   }
-  for (int i(0); i != outstanding_response_count; ++i)
-    asio_service_.service().dispatch([=] { functor(Response()); });
 
   cond_var_.notify_one();
 }
