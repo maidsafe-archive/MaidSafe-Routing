@@ -74,7 +74,10 @@ class TimerTest : public testing::Test {
     asio_service_.Start();
   }
 
-  void TearDown() override { EXPECT_TRUE(timer_.tasks_.empty()); }
+  void TearDown() override {
+    asio_service_.Stop();
+    EXPECT_TRUE(timer_.tasks_.empty());
+  }
 
  protected:
   typedef Timer<std::string>::ResponseFunctor TaskResponseFunctor;
@@ -87,6 +90,7 @@ class TimerTest : public testing::Test {
   std::string message_;
   uint32_t pass_response_count_, failed_response_count_;
 };
+
 
 TEST_F(TimerTest, BEH_InvalidParameters) {
   EXPECT_THROW(timer_.AddTask(std::chrono::seconds(1), nullptr, 1, timer_.NewTaskId()),
