@@ -63,7 +63,9 @@ class Contact;
 
 struct NodeInfo;
 
-typedef std::function<void(std::vector<NodeInfo> /*new_group*/)> ConnectedGroupChangeFunctor;
+
+typedef std::function<void(std::vector<NodeInfo> /*new*/, std::vector<NodeInfo> /*old*/)>
+                           ConnectedGroupChangeFunctor;
 
 class RoutingTable {
  public:
@@ -74,7 +76,6 @@ class RoutingTable {
                           std::function<void(const NodeInfo&, bool)> remove_node_functor,
                           RemoveFurthestUnnecessaryNode remove_furthest_node,
                           ConnectedGroupChangeFunctor connected_group_change_functor,
-                          CloseNodeReplacedFunctor close_node_replaced_functor,
                           MatrixChangedFunctor matrix_change_functor);
   bool AddNode(const NodeInfo& peer);
   bool CheckNode(const NodeInfo& peer);
@@ -172,7 +173,6 @@ class RoutingTable {
   NetworkStatusFunctor network_status_functor_;
   RemoveFurthestUnnecessaryNode remove_furthest_node_;
   ConnectedGroupChangeFunctor connected_group_change_functor_;
-  CloseNodeReplacedFunctor close_node_replaced_functor_;
   MatrixChangedFunctor matrix_change_functor_;
   std::vector<NodeInfo> nodes_;
   GroupMatrix group_matrix_;

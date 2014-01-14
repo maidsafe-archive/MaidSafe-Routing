@@ -47,10 +47,11 @@ std::shared_ptr<MatrixChange> GroupMatrix::AddConnectedPeer(const NodeInfo& node
   std::vector<NodeId> old_unique_ids(GetUniqueNodeIds());
   LOG(kVerbose) << DebugId(kNodeId_) << " AddConnectedPeer : " << DebugId(node_info.node_id);
   auto node_id(node_info.node_id);
-  auto found(std::find_if(
-      matrix_.begin(), matrix_.end(),
-      [node_id](const std::vector<NodeInfo> & info) { return info.begin()->node_id == node_id; }));
-  if (found != matrix_.end()) {
+  auto found(std::find_if(std::begin(matrix_), std::end(matrix_),
+                          [node_id](const std::vector<NodeInfo>& info) {
+                            return info.begin()->node_id == node_id;
+                          }));
+  if (found != std::end(matrix_)) {
     LOG(kWarning) << "Already Added in matrix";
     return std::make_shared<MatrixChange>(MatrixChange(kNodeId_, old_unique_ids, old_unique_ids));
   }
@@ -62,11 +63,11 @@ std::shared_ptr<MatrixChange> GroupMatrix::AddConnectedPeer(const NodeInfo& node
 
 std::shared_ptr<MatrixChange> GroupMatrix::RemoveConnectedPeer(const NodeInfo& node_info) {
   std::vector<NodeId> old_unique_ids(GetUniqueNodeIds());
-  matrix_.erase(std::remove_if(matrix_.begin(), matrix_.end(),
-                               [node_info](const std::vector<NodeInfo> nodes) {
-                  return (node_info.node_id == nodes.begin()->node_id);
-                }),
-                matrix_.end());
+  matrix_.erase(std::remove_if(std::begin(matrix_), std::end(matrix_),
+                               [node_info](const std::vector<NodeInfo>& nodes) {
+                                 return (node_info.node_id == nodes.begin()->node_id);
+                               }),
+                std::end(matrix_));
   Prune();
   UpdateUniqueNodeList();
   return std::make_shared<MatrixChange>(MatrixChange(kNodeId_, old_unique_ids, GetUniqueNodeIds()));
@@ -91,9 +92,10 @@ NodeInfo GroupMatrix::GetConnectedPeerFor(const NodeId& target_node_id) {
       }
     }*/
   for (const auto& nodes : matrix_) {
-    if (std::find_if(nodes.begin(), nodes.end(), [target_node_id](const NodeInfo & node_info) {
+    if (std::find_if(std::begin(nodes), std::end(nodes),
+                     [target_node_id](const NodeInfo& node_info) {
           return (node_info.node_id == target_node_id);
-        }) != nodes.end()) {
+        }) != std::end(nodes)) {
       return nodes.at(0);
     }
   }
@@ -120,8 +122,14 @@ void GroupMatrix::GetBetterNodeForSendingMessage(const NodeId& target_node_id,
       if (std::find(exclude.begin(), exclude.end(), node.node_id.string()) != exclude.end())
         continue;
       if (NodeId::CloserToTarget(node.node_id, closest_id, target_node_id)) {
+        PrintGroupMatrix();
+        LOG(kVerbose) << DebugId(closest_id) << ", peer to send: "
+                      << DebugId(current_closest_peer.node_id) << ", "
+                      << DebugId(row.at(0).node_id);
         closest_id = node.node_id;
         current_closest_peer = row.at(0);
+        LOG(kVerbose) << DebugId(closest_id) << ", peer to send: "
+                      << DebugId(current_closest_peer.node_id);
       }
     }
   }
@@ -240,8 +248,8 @@ bool GroupMatrix::ClosestToId(const NodeId& target_id) {
 
 GroupRangeStatus GroupMatrix::IsNodeIdInGroupRange(const NodeId& group_id,
                                                    const NodeId& node_id) const {
-  size_t node_group_size_adjust(Parameters::node_group_size + 1U);
-  size_t new_holders_size = std::min(unique_nodes_.size(), node_group_size_adjust);
+  size_t group_size_adjust(Parameters::node_group_size + 1U);
+  size_t new_holders_size = std::min(unique_nodes_.size(), group_size_adjust);
   std::vector<NodeInfo> new_holders_info(new_holders_size);
   std::partial_sort_copy(unique_nodes_.begin(), unique_nodes_.end(), new_holders_info.begin(),
                          new_holders_info.end(),
@@ -281,13 +289,13 @@ std::shared_ptr<MatrixChange> GroupMatrix::UpdateFromConnectedPeer(
     return std::make_shared<MatrixChange>(MatrixChange(kNodeId_, old_unique_ids, old_unique_ids));
   }
   // If peer is in my group
-  auto group_itr(matrix_.begin());
-  for (; group_itr != matrix_.end(); ++group_itr) {
+  auto group_itr(std::begin(matrix_));
+  for (; group_itr != std::end(matrix_); ++group_itr) {
     if (group_itr->begin()->node_id == peer)
       break;
   }
 
-  if (group_itr == matrix_.end()) {
+  if (group_itr == std::end(matrix_)) {
     LOG(kWarning) << "Peer Node : " << DebugId(peer) << " is not in closest group of this node.";
     return std::make_shared<MatrixChange>(MatrixChange(kNodeId_, old_unique_ids, old_unique_ids));
   }
@@ -310,13 +318,13 @@ bool GroupMatrix::GetRow(const NodeId& row_id, std::vector<NodeInfo>& row_entrie
     assert(false && "Invalid node id.");
     return false;
   }
-  auto group_itr(matrix_.begin());
-  for (group_itr = matrix_.begin(); group_itr != matrix_.end(); ++group_itr) {
+  auto group_itr(std::begin(matrix_));
+  for (group_itr = std::begin(matrix_); group_itr != std::end(matrix_); ++group_itr) {
     if ((*group_itr).at(0).node_id == row_id)
       break;
   }
 
-  if (group_itr == matrix_.end())
+  if (group_itr == std::end(matrix_))
     return false;
 
   row_entries.clear();
@@ -338,13 +346,13 @@ std::vector<NodeId> GroupMatrix::GetUniqueNodeIds() const {
 }
 
 bool GroupMatrix::IsRowEmpty(const NodeInfo& node_info) {
-  auto group_itr(matrix_.begin());
-  for (group_itr = matrix_.begin(); group_itr != matrix_.end(); ++group_itr) {
+  auto group_itr(std::begin(matrix_));
+  for (; group_itr != std::end(matrix_); ++group_itr) {
     if ((*group_itr).at(0).node_id == node_info.node_id)
       break;
   }
-  assert(group_itr != matrix_.end());
-  if (group_itr == matrix_.end())
+  assert(group_itr != std::end(matrix_));
+  if (group_itr == std::end(matrix_))
     return false;
 
   return (group_itr->size() < 2);
@@ -408,46 +416,57 @@ void GroupMatrix::Prune() {
   if (matrix_.size() <= Parameters::closest_nodes_size)
     return;
   NodeId node_id;
-  std::vector<NodeId> peers_to_remove;
-  std::partial_sort(matrix_.begin(), matrix_.begin() + Parameters::closest_nodes_size,
-                    matrix_.end(),
-                    [this](const std::vector<NodeInfo> & lhs, const std::vector<NodeInfo> & rhs) {
-    return NodeId::CloserToTarget(lhs.begin()->node_id, rhs.begin()->node_id, kNodeId_);
-  });
-  auto itr(matrix_.begin());
+  std::partial_sort(std::begin(matrix_), std::begin(matrix_) + Parameters::closest_nodes_size,
+                    std::end(matrix_), [this](const std::vector<NodeInfo>& lhs,
+                                              const std::vector<NodeInfo>& rhs) {
+                                         return NodeId::CloserToTarget(lhs.begin()->node_id,
+                                                                       rhs.begin()->node_id,
+                                                                       kNodeId_);
+                                       });
+  auto itr(std::begin(matrix_));
   std::advance(itr, Parameters::closest_nodes_size);
-  for (; itr != matrix_.end(); ++itr) {
+  while (itr != std::end(matrix_)) {
     if (client_mode_) {
-      peers_to_remove.push_back(itr->begin()->node_id);
+      LOG(kInfo) << DebugId(kNodeId_) << " matrix conected removes "
+                 << DebugId(itr->begin()->node_id);
+      matrix_.erase(itr);
       continue;
     }
     node_id = itr->begin()->node_id;
-    if (itr->size() < Parameters::closest_nodes_size) {
-      peers_to_remove.push_back(node_id);
+    if (itr->size() <= Parameters::closest_nodes_size) {
+      if (itr->size() > 1) {  // avoids removing the recently added node
+        LOG(kInfo) << DebugId(kNodeId_) << " matrix conected removes " << DebugId(node_id);
+        matrix_.erase(itr);
+      } else {
+        itr++;
+      }
       continue;
     }
-    std::partial_sort(itr->begin() + 1, itr->begin() + Parameters::closest_nodes_size + 1,
-                      itr->end(), [node_id](const NodeInfo & lhs, const NodeInfo & rhs) {
-      return NodeId::CloserToTarget(lhs.node_id, rhs.node_id, node_id);
-    });
-    if (NodeId::CloserToTarget(itr->at(Parameters::closest_nodes_size).node_id, kNodeId_, node_id))
-      peers_to_remove.push_back(node_id);
-  }
-  for (auto& peer : peers_to_remove) {
-    LOG(kInfo) << DebugId(kNodeId_) << " matrix conected removes " << DebugId(peer);
-    matrix_.erase(std::remove_if(
-        matrix_.begin(), matrix_.end(),
-        [peer](const std::vector<NodeInfo> & row) { return row.begin()->node_id == peer; }));
+    std::sort(itr->begin() + 1, itr->end(), [node_id](const NodeInfo& lhs, const NodeInfo& rhs) {
+                                              return NodeId::CloserToTarget(lhs.node_id,
+                                                                            rhs.node_id, node_id);
+                                            });
+    if (NodeId::CloserToTarget(itr->at(Parameters::closest_nodes_size).node_id, kNodeId_,
+                               node_id) ||
+        (std::find_if(std::begin(*itr), std::end(*itr), [&](const NodeInfo& node_info) {
+                                                          return node_info.node_id == kNodeId_;
+                                                        }) == std::end(*itr))) {
+      LOG(kInfo) << DebugId(kNodeId_) << " matrix conected removes "
+                 << DebugId(itr->begin()->node_id);
+      matrix_.erase(itr);
+    } else {
+      itr++;
+    }
   }
 }
 
 void GroupMatrix::PrintGroupMatrix() {
-  auto group_itr(matrix_.begin());
+  auto group_itr(std::begin(matrix_));
   std::string tab("\t");
   std::string output("Group matrix of node with NodeID: " + DebugId(kNodeId_));
-  for (group_itr = matrix_.begin(); group_itr != matrix_.end(); ++group_itr) {
+  for (group_itr = std::begin(matrix_); group_itr != std::end(matrix_); ++group_itr) {
     output.append("\nGroup matrix row:");
-    for (auto& elem : (*group_itr)) {
+    for (const auto& elem : (*group_itr)) {
       output.append(tab);
       output.append(DebugId(elem.node_id));
     }

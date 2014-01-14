@@ -111,12 +111,13 @@ void Routing::Impl::ConnectFunctors(const Functors& functors) {
                                       RemoveNode(node, internal_rudp_only);
                                     },
                                     [this]() { remove_furthest_node_.RemoveNodeRequest(); },
-                                    [this](const std::vector<NodeInfo> nodes) {
+                                    [this](const std::vector<NodeInfo> new_nodes,
+                                           const std::vector<NodeInfo> old_nodes) {
                                       std::lock_guard<std::mutex> lock(running_mutex_);
                                       if (running_)
-                                        group_change_handler_.SendClosestNodesUpdateRpcs(nodes);
-                                    },
-                                    functors_.close_node_replaced, functors.matrix_changed);
+                                        group_change_handler_.SendClosestNodesUpdateRpcs(new_nodes,
+                                                                                         old_nodes);
+                                    }, functors.matrix_changed);
   // only one of MessageAndCachingFunctors or TypedMessageAndCachingFunctor should be provided
   assert(!functors.message_and_caching.message_received !=
          !functors.typed_message_and_caching.single_to_single.message_received);
