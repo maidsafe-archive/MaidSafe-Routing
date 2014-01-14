@@ -399,7 +399,7 @@ TEST(APITest, BEH_API_NonMutatingClientNode) {
   EXPECT_EQ(std::cv_status::no_timeout, cond_var.wait_for(lock, std::chrono::seconds(10)));
 }
 
-TEST(APITest, BEH_API_ClientNodeSameId) {
+TEST(APITest, DISABLED_BEH_API_ClientNodeSameId) {
   auto pmid1(MakePmid()), pmid2(MakePmid());
   auto maid(MakeMaid());
   NodeInfoAndPrivateKey node1(MakeNodeInfoAndKeysWithPmid(pmid1));
@@ -931,6 +931,12 @@ TEST(APITest, BEH_API_TypedMessageSend) {
     single_to_single_promise.set_value(true);
   };
 
+  functors1.typed_message_and_caching.single_to_group_relay.message_received = [&](
+      const SingleToGroupRelayMessage & /*s2g_relay*/) {
+    LOG(kVerbose) << "single to group relay message received!!";
+    //single_to_single_promise.set_value(true);
+  };
+
   functors2.network_status = functors3.network_status = functors1.network_status;
   functors2.request_public_key = functors3.request_public_key = functors1.request_public_key;
   functors2.typed_message_and_caching.group_to_group.message_received =
@@ -948,6 +954,10 @@ TEST(APITest, BEH_API_TypedMessageSend) {
   functors2.typed_message_and_caching.single_to_single.message_received =
       functors3.typed_message_and_caching.single_to_single.message_received =
           functors1.typed_message_and_caching.single_to_single.message_received;
+
+  functors2.typed_message_and_caching.single_to_group_relay.message_received =
+      functors3.typed_message_and_caching.single_to_group_relay.message_received =
+          functors1.typed_message_and_caching.single_to_group_relay.message_received;
 
   Endpoint endpoint1(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort()),
       endpoint2(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort());
@@ -1038,8 +1048,9 @@ TEST(APITest, BEH_API_TypedMessagePartiallyJoinedSendReceive) {
   std::vector<NodeInfoAndPrivateKey> nodes;
   std::map<NodeId, asymm::PublicKey> key_map;
   std::mutex relay_messages_mutex;
-  std::map<int, SingleToGroupRelayMessage> received_relay_messages;
+  std::vector<SingleToGroupRelayMessage> received_relay_messages;
   std::vector<std::shared_ptr<Routing>> routing_nodes;
+  std::condition_variable relay_cv;
   std::vector<RelayMessageFunctorType<SingleToGroupRelayMessage>> single_to_group_relay_functors;
   int i(0);
   functors.request_public_key = [&](const NodeId & node_id, GivePublicKeyFunctor give_key) {
@@ -1088,9 +1099,11 @@ TEST(APITest, BEH_API_TypedMessagePartiallyJoinedSendReceive) {
 
   // response to single to group relay messages
   for (i = 0; i != kNetworkSize; ++i) {
+    auto this_node_id = routing_nodes.at(i)->kNodeId();
     RelayMessageFunctorType<SingleToGroupRelayMessage> relay_message_functor_struct;
     relay_message_functor_struct.message_received =
-        [i, &relay_messages_mutex, &received_relay_messages](const SingleToGroupRelayMessage& message) {
+        [this_node_id, &relay_cv, &relay_messages_mutex, &received_relay_messages]
+            (const SingleToGroupRelayMessage& message) {
           LOG(kVerbose) << "single to group relay message received!!";
 //      std::string response = "response to " + message.contents;
 //      GroupSource group_source(GroupId(message.receiver), SingleId(routing_nodes.at(i)->kNodeId()));
@@ -1099,8 +1112,13 @@ TEST(APITest, BEH_API_TypedMessagePartiallyJoinedSendReceive) {
 //      GroupToSingleRelayMessage response_message(response, group_source, single_id_relay);
 //      std::cout << "Sending from node now!!";
       //routing_nodes.at(i)->Send(response_message);
-          std::lock_guard<std::mutex> lock(relay_messages_mutex);
-          received_relay_messages.insert(std::pair<int, SingleToGroupRelayMessage>(i, message));
+          ASSERT_TRUE(NodeId(message.receiver->string()) == this_node_id);
+          {
+            std::lock_guard<std::mutex> lock(relay_messages_mutex);
+            received_relay_messages.push_back(message);
+          }
+          relay_cv.notify_one();
+
         };
     single_to_group_relay_functors.push_back(relay_message_functor_struct);
     //functors.typed_message_and_caching.single_to_group_relay = relay_message_functor_struct;
@@ -1189,6 +1207,7 @@ TEST(APITest, BEH_API_TypedMessagePartiallyJoinedSendReceive) {
   Sleep(std::chrono::seconds(5));
 
   {  //  Test Single To Group
+
     SingleToGroupMessage single_to_group_message;
     single_to_group_message.sender = SingleSource(SingleId(test_node.kNodeId()));
     single_to_group_message.receiver = GroupId(test_node.kNodeId());
