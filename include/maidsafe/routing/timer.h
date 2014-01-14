@@ -231,7 +231,7 @@ void Timer<Response>::AddResponse(TaskId task_id, const Response& response) {
       // So the task will be cleaned out before the time-out response from responder
       // arrived. The policy shall change to keep timer muted instead of throwing.
       LOG(kError) << "Task " << task_id << " not held by Timer.";
-//       ThrowError(CommonErrors::invalid_parameter);
+      ThrowError(CommonErrors::invalid_parameter);
       return;
     }
     assert(itr->second.outstanding_response_count > 0);
