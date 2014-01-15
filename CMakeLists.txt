@@ -103,6 +103,10 @@ if(MaidsafeTesting)
   target_link_libraries(create_client_bootstrap maidsafe_routing)
   target_link_libraries(routing_key_helper maidsafe_routing)
   target_link_libraries(routing_node maidsafe_routing)
+
+  foreach(Target maidsafe_routing TESTrouting_func TESTrouting_func_nat TESTrouting_big routing_node)
+    target_compile_definitions(${Target} PRIVATE USE_GTEST)
+  endforeach()
 endif()
 
 ms_rename_outdated_built_exes()
@@ -116,10 +120,6 @@ add_subdirectory(${RoutingSourcesDir}/tools/network_viewer)
 include(standard_flags)
 
 target_compile_definitions(maidsafe_routing PRIVATE $<$<BOOL:${QA_BUILD}>:QA_BUILD>)
-
-foreach(Target maidsafe_routing TESTrouting_func TESTrouting_func_nat TESTrouting_big routing_node)
-  target_compile_definitions(${Target} PRIVATE USE_GTEST)
-endforeach()
 
 
 #==================================================================================================#

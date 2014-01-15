@@ -24,9 +24,8 @@
 #include <string>
 #include <vector>
 
-#include "boost/asio/deadline_timer.hpp"
+#include "boost/asio/steady_timer.hpp"
 #include "boost/asio/ip/udp.hpp"
-#include "boost/date_time/posix_time/posix_time_config.hpp"
 #include "boost/system/error_code.hpp"
 
 #include "maidsafe/common/asio_service.h"
@@ -183,6 +182,7 @@ class Routing::Impl {
 
   std::mutex network_status_mutex_;
   int network_status_;
+  NetworkStatistics network_statistics_;
   RoutingTable routing_table_;
   const NodeId kNodeId_;
   bool running_;
@@ -192,7 +192,6 @@ class Routing::Impl {
   ClientRoutingTable client_routing_table_;
   RemoveFurthestNode remove_furthest_node_;
   GroupChangeHandler group_change_handler_;
-  NetworkStatistics network_statistics_;
   // The following variables' declarations should remain the last ones in this class and should stay
   // in the order: message_handler_, asio_service_, network_, all timers.  This is important for the
   // proper destruction of the routing library, i.e. to avoid segmentation faults.
@@ -200,7 +199,7 @@ class Routing::Impl {
   AsioService asio_service_;
   NetworkUtils network_;
   Timer<std::string> timer_;
-  boost::asio::deadline_timer re_bootstrap_timer_, recovery_timer_, setup_timer_;
+  boost::asio::steady_timer re_bootstrap_timer_, recovery_timer_, setup_timer_;
 };
 
 template <>

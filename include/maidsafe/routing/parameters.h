@@ -44,8 +44,8 @@ struct Parameters {
   static std::chrono::steady_clock::duration default_response_timeout;
   static std::chrono::seconds find_node_interval;
   static std::chrono::seconds recovery_time_lag;
-  static boost::posix_time::time_duration re_bootstrap_time_lag;
-  static boost::posix_time::time_duration find_close_node_interval;
+  static std::chrono::seconds re_bootstrap_time_lag;
+  static std::chrono::seconds find_close_node_interval;
   static uint16_t find_node_repeats_per_num_requested;
   static uint16_t maximum_find_close_node_failures;
   static uint16_t max_route_history;

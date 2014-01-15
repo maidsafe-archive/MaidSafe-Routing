@@ -187,20 +187,21 @@ void Timer<Response>::FinishTask(TaskId task_id, const boost::system::error_code
     }
 
     tasks_.erase(itr);
-  }
 
-  switch (error.value()) {
-    case boost::system::errc::success:  // Task's timer has expired
-      LOG(kWarning) << "Timed out waiting for task " << task_id;
-      break;
-    case boost::asio::error::operation_aborted:  // Cancelled via CancelTask
-      LOG(kInfo) << "Cancelled task " << task_id;
-      break;
-    default:
-      LOG(kError) << "Error waiting for task " << task_id << " - " << error.message();
+    switch (error.value()) {
+      case boost::system::errc::success:  // Task's timer has expired
+        LOG(kWarning) << "Timed out waiting for task " << task_id;
+        break;
+      case boost::asio::error::operation_aborted:  // Cancelled via CancelTask
+        LOG(kInfo) << "Cancelled task " << task_id;
+        break;
+      default:
+        LOG(kError) << "Error waiting for task " << task_id << " - " << error.message();
+    }
+
+    for (int i(0); i != outstanding_response_count; ++i)
+      asio_service_.service().dispatch([=] { functor(Response()); });
   }
-  for (int i(0); i != outstanding_response_count; ++i)
-    asio_service_.service().dispatch([=] { functor(Response()); });
 
   cond_var_.notify_one();
 }
@@ -225,13 +226,8 @@ void Timer<Response>::AddResponse(TaskId task_id, const Response& response) {
     std::lock_guard<std::mutex> lock(mutex_);
     auto itr(tasks_.find(task_id));
     if (itr == std::end(tasks_)) {
-      // There is scenario that during the procedure of Get, the request side will get timed out
-      // earlier than the response side (when they use same time out parameter).
-      // So the task will be cleaned out before the time-out response from responder
-      // arrived. The policy shall change to keep timer muted instead of throwing.
       LOG(kError) << "Task " << task_id << " not held by Timer.";
-//       ThrowError(CommonErrors::invalid_parameter);
-      return;
+      ThrowError(CommonErrors::invalid_parameter);
     }
     assert(itr->second.outstanding_response_count > 0);
     --(itr->second.outstanding_response_count);

@@ -91,21 +91,35 @@ void GroupChangeHandler::UpdateGroupChange(const NodeId& node_id,
   }
 }
 
-void GroupChangeHandler::SendClosestNodesUpdateRpcs(std::vector<NodeInfo> closest_nodes) {
-  NodeId node_id(routing_table_.kNodeId());
-  closest_nodes.erase(std::remove_if(closest_nodes.begin(), closest_nodes.end(),
-                                     [node_id](const NodeInfo &
-                                               node_info) { return node_info.node_id == node_id; }),
-                      closest_nodes.end());
+void GroupChangeHandler::SendClosestNodesUpdateRpcs(
+    std::vector<NodeInfo> closest_nodes, std::vector<NodeInfo> old_closest_nodes) {
+  NodeId kNodeId(routing_table_.kNodeId());
+  old_closest_nodes.erase(
+      std::remove_if(std::begin(old_closest_nodes), std::end(old_closest_nodes),
+                     [&](const NodeInfo& node_info) {
+                       NodeId node_id(node_info.node_id);
+                       return std::find_if(std::begin(closest_nodes), std::end(closest_nodes),
+                                           [node_id](const NodeInfo& node_info)->bool {
+                                             return node_id == node_info.node_id;
+                                           }) != std::end(closest_nodes);
+                     }),
+      std::end(old_closest_nodes));
+
+  closest_nodes.erase(std::remove_if(std::begin(closest_nodes), std::end(closest_nodes),
+                                     [kNodeId](const NodeInfo& node_info) {
+                                      return node_info.node_id == kNodeId;
+                                     }),
+                      std::end(closest_nodes));
   if (closest_nodes.size() < Parameters::closest_nodes_size)
     return;
+
   LOG(kVerbose) << "[" << DebugId(routing_table_.kNodeId())
                 << "] SendClosestNodesUpdateRpcs: " << closest_nodes.size();
   std::vector<NodeInfo> update_subscribers(closest_nodes);
   // clients are also notified of changes in connected close nodes
-  for (auto& client : client_routing_table_.nodes_)
+  for (const auto& client : client_routing_table_.nodes_)
     update_subscribers.push_back(client);
-  for (auto& update_subscriber : update_subscribers) {
+  for (const auto& update_subscriber : update_subscribers) {
     LOG(kVerbose) << "[" << DebugId(routing_table_.kNodeId())
                   << "] Sending update to: " << DebugId(update_subscriber.node_id);
     protobuf::Message closest_nodes_update_rpc(rpcs::ClosestNodesUpdate(
@@ -113,8 +127,15 @@ void GroupChangeHandler::SendClosestNodesUpdateRpcs(std::vector<NodeInfo> closes
     network_.SendToDirect(closest_nodes_update_rpc, update_subscriber.node_id,
                           update_subscriber.connection_id);
   }
+  for (const auto& old_closest_node : old_closest_nodes) {
+    LOG(kVerbose) << "[" << DebugId(routing_table_.kNodeId())
+                  << "] Sending update to: " << DebugId(old_closest_node.node_id);
+    protobuf::Message closest_nodes_update_rpc(rpcs::ClosestNodesUpdate(
+        old_closest_node.node_id, routing_table_.kNodeId(), closest_nodes));
+    network_.SendToDirect(closest_nodes_update_rpc, old_closest_node.node_id,
+                          old_closest_node.connection_id);
+  }
 }
-
 bool GroupChangeHandler::GetNodeInfo(const NodeId& node_id, const NodeId& connection_id,
                                      NodeInfo& out_node_info) {
   if (routing_table_.GetNodeInfo(node_id, out_node_info))
