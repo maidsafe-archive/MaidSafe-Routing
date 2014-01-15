@@ -643,7 +643,7 @@ TEST(RoutingTableTest, BEH_CheckMockSendGroupChangeRpcs) {
   // Check that 2's group matrix is updated correctly - Add nodes
   std::vector<NodeInfo> close_nodes;
   SortFromTarget((NodeId(NodeId::kRandomId)), extra_nodes);
-  std::vector<NodeId> expected_close_nodes({ node_info_2.node_id });
+  std::vector<NodeId> expected_close_nodes(1, node_info_2.node_id);
   for (const auto& node_info : extra_nodes) {
     SortIdsFromTarget(node_id_1, expected_close_nodes);
     EXPECT_EQ(expected_count, count);
