@@ -441,7 +441,7 @@ TEST_F(RoutingNetworkTest, FUNC_IsNodeIdInGroupRange) {
   for (const auto& node : env_->nodes_)
     if (!node->IsClient())
       vault_ids.push_back(node->node_id());
-  EXPECT_GE(vault_ids.size(), Parameters::node_group_size);
+  EXPECT_GE(vault_ids.size(), static_cast<size_t>(Parameters::node_group_size));
 
   for (const auto& node : env_->nodes_) {
     if (!node->IsClient()) {
@@ -471,7 +471,7 @@ TEST_F(RoutingNetworkTest, FUNC_IsNodeIdInGroupRange) {
 }
 
 TEST_F(RoutingNetworkTest, FUNC_IsConnectedVault) {
-  ASSERT_LE(env_->ClientIndex(), Parameters::max_routing_table_size + 1);
+  ASSERT_LE(env_->ClientIndex(), static_cast<size_t>(Parameters::max_routing_table_size + 1));
 
   // Vault checks vault id - expect true
   for (uint16_t i(0); i < env_->ClientIndex(); ++i) {
@@ -502,7 +502,7 @@ TEST_F(RoutingNetworkTest, FUNC_IsConnectedVault) {
 
 TEST_F(RoutingNetworkTest, FUNC_IsConnectedClient) {
   ASSERT_LE(env_->nodes_.size() - env_->ClientIndex(),
-            Parameters::max_client_routing_table_size + 1);
+            static_cast<size_t>(Parameters::max_client_routing_table_size + 1));
 
   // Vault checks close client id - expect true
   for (size_t i(env_->ClientIndex()); i < env_->nodes_.size(); ++i) {
