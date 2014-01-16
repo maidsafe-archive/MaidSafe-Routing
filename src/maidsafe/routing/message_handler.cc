@@ -73,7 +73,7 @@ SingleToGroupRelayMessage CreateSingleToGroupRelayMessage(const protobuf::Messag
   SingleSource single_src(NodeId(proto_message.relay_id()));
   NodeId connection_id(proto_message.relay_connection_id());
   SingleSource single_src_relay_node(NodeId(proto_message.source_id()));
-  SingleSourceRelay single_src_relay(single_src, // original sender
+  SingleSourceRelay single_src_relay(single_src,  // original sender
                                      connection_id,
                                      single_src_relay_node);
 
@@ -552,7 +552,6 @@ void MessageHandler::HandleDirectRelayRequestMessageAsClosestNode(protobuf::Mess
 }
 
 void MessageHandler::HandleGroupRelayRequestMessageAsClosestNode(protobuf::Message& message) {
-  //message.set_source_id(routing_table_.kNodeId().string());
   assert(!message.direct());
   bool have_node_with_group_id(routing_table_.Contains(NodeId(message.destination_id())));
   // This node is not closest to the destination node for non-direct message.
@@ -705,7 +704,8 @@ void MessageHandler::InvokeTypedMessageReceivedFunctor(const protobuf::Message& 
              typed_message_received_functors_.single_to_group) {
     // Single to Group
     if (proto_message.has_relay_id() && proto_message.has_relay_connection_id()) {
-      typed_message_received_functors_.single_to_group_relay(CreateSingleToGroupRelayMessage(proto_message));
+      typed_message_received_functors_.single_to_group_relay(
+          CreateSingleToGroupRelayMessage(proto_message));
     } else {
       typed_message_received_functors_.single_to_group(CreateSingleToGroupMessage(proto_message));
     }
@@ -730,7 +730,8 @@ void MessageHandler::set_typed_message_and_caching_functor(TypedMessageAndCachin
   typed_message_received_functors_.single_to_group = functors.single_to_group.message_received;
   typed_message_received_functors_.group_to_single = functors.group_to_single.message_received;
   typed_message_received_functors_.group_to_group = functors.group_to_group.message_received;
-  typed_message_received_functors_.single_to_group_relay = functors.single_to_group_relay.message_received;
+  typed_message_received_functors_.single_to_group_relay =
+      functors.single_to_group_relay.message_received;
   // Initialise caching functors here
 }
 

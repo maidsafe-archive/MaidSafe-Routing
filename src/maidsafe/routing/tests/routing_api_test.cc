@@ -58,8 +58,8 @@ namespace {
 
 typedef boost::asio::ip::udp::endpoint Endpoint;
 
-const int kClientCount(0);
-const int kServerCount(4);
+const int kClientCount(4);
+const int kServerCount(10);
 const int kNetworkSize = kClientCount + kServerCount;
 MessageReceivedFunctor no_ops_message_received_functor = [](const std::string&, bool,
                                                             ReplyFunctor) {};  // NOLINT
@@ -934,7 +934,6 @@ TEST(APITest, BEH_API_TypedMessageSend) {
   functors1.typed_message_and_caching.single_to_group_relay.message_received = [&](
       const SingleToGroupRelayMessage & /*s2g_relay*/) {
     LOG(kVerbose) << "single to group relay message received!!";
-    //single_to_single_promise.set_value(true);
   };
 
   functors2.network_status = functors3.network_status = functors1.network_status;
@@ -1037,6 +1036,7 @@ TEST(APITest, BEH_API_TypedMessageSend) {
 
 
 TEST(APITest, BEH_API_TypedMessagePartiallyJoinedSendReceive) {
+  const int kMessageCount = 100;
   int min_join_status(std::min(kServerCount, 8));
   std::vector<std::promise<bool>> join_promises(kNetworkSize);
   std::vector<std::future<bool>> join_futures;
@@ -1108,10 +1108,10 @@ TEST(APITest, BEH_API_TypedMessagePartiallyJoinedSendReceive) {
                            <<  " , node id : " << DebugId(node_id);
           {
             std::lock_guard<std::mutex> lock(mutex);
-            received_relay_messages.push_back(std::pair<int, SingleToGroupRelayMessage>(j, message));
+            received_relay_messages.push_back(
+                std::pair<int, SingleToGroupRelayMessage>(j, message));
           }
           cv.notify_one();
-
         };
     single_to_group_relay_functors.push_back(relay_message_functor_struct);
   }
@@ -1167,7 +1167,7 @@ TEST(APITest, BEH_API_TypedMessagePartiallyJoinedSendReceive) {
     ASSERT_EQ(join_futures.at(i).wait_for(std::chrono::seconds(10)), std::future_status::ready);
   }
 
-  // Join vault and send messages
+  //  -----  Join new vault and send messages ----------
   auto pmid(MakePmid());
   Routing test_node(pmid);
   bool test_node_joined(false);
@@ -1184,50 +1184,79 @@ TEST(APITest, BEH_API_TypedMessagePartiallyJoinedSendReceive) {
   };
 
   test_functors.typed_message_and_caching.group_to_group.message_received = [](
-          const GroupToGroupMessage & /*g2g*/) {};
-  test_functors.typed_message_and_caching.group_to_single.message_received = [](
-      const GroupToSingleMessage & /*g2s*/) {};
+          const GroupToGroupMessage & /*g2g*/) {};  // NOLINT
+  int response_count(0);
+  test_functors.typed_message_and_caching.group_to_single.message_received =
+      [&mutex, &response_count, &cv](
+        const GroupToSingleMessage & /*g2s*/) {
+        LOG(kVerbose) << "group to single message received at test node";
+        {
+          std::lock_guard<std::mutex> lock(mutex);
+          ++response_count;
+        }
+        cv.notify_one();
+    };
   test_functors.typed_message_and_caching.single_to_group.message_received = [](
-      const SingleToGroupMessage & /*s2g*/) {};
+      const SingleToGroupMessage & /*s2g*/) {}; // NOLINT
   test_functors.typed_message_and_caching.single_to_single.message_received = [](
-      const SingleToSingleMessage & /*s2s*/) {};
+      const SingleToSingleMessage & /*s2s*/) {}; // NOLINT
   test_functors.typed_message_and_caching.single_to_group_relay.message_received = [&](
-      const SingleToGroupRelayMessage & /*s2s*/) {};
+      const SingleToGroupRelayMessage & /*s2s*/) {}; // NOLINT
 
   test_node.Join(test_functors, std::vector<Endpoint>(1, endpoint1));
   {
-   std::unique_lock<std::mutex> lock(mutex);
+    std::unique_lock<std::mutex> lock(mutex);
     cv.wait(lock, [&test_node_joined] {
       return test_node_joined;
     });
   }
 
-  {  //  Test Single To Group
+  auto send_message = [&test_node](const NodeId& target_id) {
+      SingleToGroupMessage single_to_group_message;
+      single_to_group_message.sender = SingleSource(SingleId(test_node.kNodeId()));
+      single_to_group_message.receiver = GroupId(target_id);
+      test_node.Send(single_to_group_message);
+  };
 
-    SingleToGroupMessage single_to_group_message;
-    single_to_group_message.sender = SingleSource(SingleId(test_node.kNodeId()));
-    single_to_group_message.receiver = GroupId(test_node.kNodeId());
-    std::cout << "\n\n^^^^^^^^^^^^^^^^^^^^ \n\n ";
-    test_node.Send(single_to_group_message);
+  //  Test Single To Group own id
+  send_message(test_node.kNodeId());
+  {
     std::unique_lock<std::mutex> lock(mutex);
     cv.wait(lock, [&received_relay_messages] {
-        return received_relay_messages.size() == 4;
+        return received_relay_messages.size() == Parameters::node_group_size;
     });
-    ASSERT_TRUE(received_relay_messages.size() == 4);
-  }
+    ASSERT_TRUE(received_relay_messages.size() == Parameters::node_group_size);
+  };
+
+  //  Test Single To Group random id
+  for (auto message_count(0); message_count < kMessageCount; ++message_count)
+    send_message(test_node.kNodeId());
+  {
+    std::unique_lock<std::mutex> lock(mutex);
+    cv.wait(lock, [&received_relay_messages] {
+        return (received_relay_messages.size() ==
+                (Parameters::node_group_size * (kMessageCount + 1)));
+    });
+    ASSERT_TRUE(received_relay_messages.size() ==
+                (Parameters::node_group_size * (kMessageCount + 1)));
+  };
 
   // Send response
-  {
-    for (const auto& recipiant: received_relay_messages) {
-      auto& node = routing_nodes.at(recipiant.first);
-      SingleIdRelay single_id_relay(detail::GetRelayIdToReply(recipiant.second.sender));
-      GroupSource group_source(GroupId(recipiant.second.receiver), SingleId(node->kNodeId()));
-      GroupToSingleRelayMessage response_message("response", group_source, single_id_relay);
-      LOG(kWarning) << "Sending response from index " << recipiant.first;
-      node->Send(response_message);
-    }
-    Sleep(std::chrono::seconds(5));
+  for (const auto& recipiant : received_relay_messages) {
+    auto& node = routing_nodes.at(recipiant.first);
+    SingleIdRelay single_id_relay(detail::GetRelayIdToReply(recipiant.second.sender));
+    GroupSource group_source(GroupId(recipiant.second.receiver), SingleId(node->kNodeId()));
+    GroupToSingleRelayMessage response_message("response", group_source, single_id_relay);
+    LOG(kWarning) << "Sending response from index " << recipiant.first;
+    node->Send(response_message);
   }
+  {
+    std::unique_lock<std::mutex> lock(mutex);
+    cv.wait_for(lock, std::chrono::seconds(5), [&response_count] {
+        return (response_count == Parameters::node_group_size * (kMessageCount + 1));
+    });
+  }
+  ASSERT_TRUE(response_count == Parameters::node_group_size * (kMessageCount + 1));
 }
 
 }  // namespace test
