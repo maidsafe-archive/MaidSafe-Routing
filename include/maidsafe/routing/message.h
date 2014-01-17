@@ -73,7 +73,7 @@ bool operator==(const Relay<T>& lhs, const Relay<T>& rhs);
 template <typename T>
 void swap(Relay<T>& lhs, Relay<T>& rhs);
 
-typedef Relay<SingleSource> SingleSourceRelay;
+typedef Relay<SingleSource> SingleRelaySource;
 typedef Relay<SingleId> SingleIdRelay;
 
 template <typename Sender, typename Receiver>
@@ -184,11 +184,11 @@ typedef Message<SingleSource, GroupId> SingleToGroupMessage;
 typedef Message<GroupSource, SingleId> GroupToSingleMessage;
 typedef Message<GroupSource, GroupId> GroupToGroupMessage;
 
-typedef Message<SingleSourceRelay, GroupId> SingleToGroupRelayMessage;
+typedef Message<SingleRelaySource, GroupId> SingleToGroupRelayMessage;
 typedef Message<GroupSource, SingleIdRelay> GroupToSingleRelayMessage;
 
 namespace detail {
-SingleIdRelay GetRelayIdToReply(const SingleSourceRelay& single_src_relay);
+SingleIdRelay GetRelayIdToReply(const SingleRelaySource& single_src_relay);
 }  // namespace detail
 
 }  // namespace routing

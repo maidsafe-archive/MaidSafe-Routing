@@ -73,12 +73,12 @@ SingleToGroupRelayMessage CreateSingleToGroupRelayMessage(const protobuf::Messag
   SingleSource single_src(NodeId(proto_message.relay_id()));
   NodeId connection_id(proto_message.relay_connection_id());
   SingleSource single_src_relay_node(NodeId(proto_message.source_id()));
-  SingleSourceRelay single_src_relay(single_src,  // original sender
+  SingleRelaySource single_relay_src(single_src,  // original sender
                                      connection_id,
                                      single_src_relay_node);
 
   return SingleToGroupRelayMessage(proto_message.data(0),
-      single_src_relay,  // relay node
+      single_relay_src,  // relay node
           GroupId(NodeId(proto_message.group_destination())),
               static_cast<Cacheable>(proto_message.cacheable()));
 

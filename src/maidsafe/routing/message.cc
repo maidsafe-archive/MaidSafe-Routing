@@ -51,9 +51,9 @@ bool operator==(const GroupSource& lhs, const GroupSource& rhs) {
 
 namespace detail {
 
-SingleIdRelay GetRelayIdToReply(const SingleSourceRelay& single_src_relay) {
-  return SingleIdRelay(SingleId(NodeId(single_src_relay.node_id->string())),
-      single_src_relay.connection_id, SingleId(NodeId(single_src_relay.relay_node->string())));
+SingleIdRelay GetRelayIdToReply(const SingleRelaySource &single_relay_src) {
+  return SingleIdRelay(SingleId(NodeId(single_relay_src.node_id->string())),
+      single_relay_src.connection_id, SingleId(NodeId(single_relay_src.relay_node->string())));
 }
 
 }  // namespace detail
