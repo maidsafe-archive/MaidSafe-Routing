@@ -70,9 +70,7 @@ class TimerTest : public testing::Test {
         }),
         message_(RandomAlphaNumericString(30)),
         pass_response_count_(0),
-        failed_response_count_(0) {
-    asio_service_.Start();
-  }
+        failed_response_count_(0) {}
 
   void TearDown() override {
     asio_service_.Stop();

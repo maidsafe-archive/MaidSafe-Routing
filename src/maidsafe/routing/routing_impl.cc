@@ -110,7 +110,6 @@ Routing::Impl::Impl(bool client_mode, const NodeId& node_id, const asymm::Keys& 
       re_bootstrap_timer_(asio_service_.service()),
       recovery_timer_(asio_service_.service()),
       setup_timer_(asio_service_.service()) {
-  asio_service_.Start();
   message_handler_.reset(new MessageHandler(routing_table_, client_routing_table_, network_, timer_,
                                             remove_furthest_node_, group_change_handler_,
                                             network_statistics_));

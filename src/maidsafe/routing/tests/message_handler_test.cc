@@ -68,7 +68,6 @@ class MessageHandlerTest : public testing::Test {
       MessageReceived(message);
       reply_functor("reply");
     };
-    asio_service_.Start();
     NodeId node_id(NodeId::kRandomId);
     network_statistics_.reset(new NetworkStatistics(node_id));
     table_.reset(
