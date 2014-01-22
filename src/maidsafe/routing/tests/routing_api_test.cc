@@ -399,7 +399,7 @@ TEST(APITest, BEH_API_NonMutatingClientNode) {
   EXPECT_EQ(std::cv_status::no_timeout, cond_var.wait_for(lock, std::chrono::seconds(10)));
 }
 
-TEST(APITest, DISABLED_BEH_API_ClientNodeSameId) {
+TEST(APITest, BEH_API_ClientNodeSameId) {
   auto pmid1(MakePmid()), pmid2(MakePmid());
   auto maid(MakeMaid());
   NodeInfoAndPrivateKey node1(MakeNodeInfoAndKeysWithPmid(pmid1));
@@ -1235,10 +1235,10 @@ TEST(APITest, BEH_API_TypedMessagePartiallyJoinedSendReceive) {
     std::unique_lock<std::mutex> lock(mutex);
     cv.wait(lock, [kMessageCount, &received_relay_messages] {
         return (received_relay_messages.size() ==
-                (Parameters::node_group_size * (kMessageCount + 1)));
+                (Parameters::node_group_size * (kMessageCount + 1U)));
     });
     ASSERT_TRUE(received_relay_messages.size() ==
-                (Parameters::node_group_size * (kMessageCount + 1)));
+                (Parameters::node_group_size * (kMessageCount + 1U)));
   };
 
   // Send response
