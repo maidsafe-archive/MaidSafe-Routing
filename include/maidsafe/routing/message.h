@@ -188,7 +188,7 @@ typedef Message<SingleRelaySource, GroupId> SingleToGroupRelayMessage;
 typedef Message<GroupSource, SingleIdRelay> GroupToSingleRelayMessage;
 
 namespace detail {
-SingleIdRelay GetRelayIdToReply(const SingleRelaySource& single_src_relay);
+SingleIdRelay GetRelayIdToReply(const SingleRelaySource &single_relay_src);
 }  // namespace detail
 
 }  // namespace routing
