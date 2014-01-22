@@ -1233,7 +1233,7 @@ TEST(APITest, BEH_API_TypedMessagePartiallyJoinedSendReceive) {
     send_message(test_node.kNodeId());
   {
     std::unique_lock<std::mutex> lock(mutex);
-    cv.wait(lock, [&received_relay_messages] {
+    cv.wait(lock, [kMessageCount, &received_relay_messages] {
         return (received_relay_messages.size() ==
                 (Parameters::node_group_size * (kMessageCount + 1)));
     });
@@ -1252,7 +1252,7 @@ TEST(APITest, BEH_API_TypedMessagePartiallyJoinedSendReceive) {
   }
   {
     std::unique_lock<std::mutex> lock(mutex);
-    cv.wait_for(lock, std::chrono::seconds(5), [&response_count] {
+    cv.wait_for(lock, std::chrono::seconds(5), [&response_count, kMessageCount] {
         return (response_count == Parameters::node_group_size * (kMessageCount + 1));
     });
   }

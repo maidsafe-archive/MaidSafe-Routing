@@ -429,14 +429,14 @@ void GroupMatrix::Prune() {
     if (client_mode_) {
       LOG(kInfo) << DebugId(kNodeId_) << " matrix conected removes "
                  << DebugId(itr->begin()->node_id);
-      matrix_.erase(itr);
+      itr = matrix_.erase(itr);
       continue;
     }
     node_id = itr->begin()->node_id;
     if (itr->size() <= Parameters::closest_nodes_size) {
       if (itr->size() > 1) {  // avoids removing the recently added node
         LOG(kInfo) << DebugId(kNodeId_) << " matrix conected removes " << DebugId(node_id);
-        matrix_.erase(itr);
+        itr = matrix_.erase(itr);
       } else {
         itr++;
       }
@@ -453,7 +453,7 @@ void GroupMatrix::Prune() {
                                                         }) == std::end(*itr))) {
       LOG(kInfo) << DebugId(kNodeId_) << " matrix conected removes "
                  << DebugId(itr->begin()->node_id);
-      matrix_.erase(itr);
+      itr = matrix_.erase(itr);
     } else {
       itr++;
     }
