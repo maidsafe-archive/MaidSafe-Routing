@@ -55,9 +55,6 @@ project(network_viewer)
 
 include(../../../../../../../cmake_modules/standard_setup.cmake)
 
-# Enable auto-linking qtmain for Windows.
-cmake_policy(SET CMP0020 NEW)
-
 
 #==================================================================================================#
 # Set up all Common Network-Viewer files as GLOBs                                                  #
