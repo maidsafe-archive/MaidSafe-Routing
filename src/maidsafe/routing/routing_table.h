@@ -156,6 +156,8 @@ class RoutingTable {
   std::pair<bool, std::vector<NodeInfo>::const_iterator> Find(
       const NodeId& node_id, std::unique_lock<std::mutex>& lock) const;
   void UpdateNetworkStatus(uint16_t size) const;
+  void UpdateConnectedPeersMatrix(const std::vector<NodeInfo>& new_connected_peers,
+                                  const std::vector<NodeInfo>& old_connected_peers);
 
   void IpcSendGroupMatrix() const;
   std::string PrintRoutingTable();
