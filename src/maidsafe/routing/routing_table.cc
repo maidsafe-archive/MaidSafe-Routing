@@ -163,16 +163,7 @@ bool RoutingTable::AddOrCheckNode(NodeInfo peer, bool remove) {
         remove_node_functor_(removed_node, false);
     }
 
-    if ((new_connected_close_nodes.size() != old_connected_close_nodes.size()) ||
-         !std::equal(new_connected_close_nodes.begin(), new_connected_close_nodes.end(),
-                     old_connected_close_nodes.begin(),
-                     [](const NodeInfo& lhs, const NodeInfo& rhs) {
-                        return lhs.node_id == rhs.node_id;
-                     })) {
-      if (connected_group_change_functor_) {
-        connected_group_change_functor_(new_connected_close_nodes, old_connected_close_nodes);
-      }
-    }
+    UpdateConnectedPeersMatrix(new_connected_close_nodes, old_connected_close_nodes);
 
     if ((matrix_change != nullptr) && !matrix_change->OldEqualsToNew()) {
       network_statistics_.UpdateLocalAverageDistance(unique_nodes);
@@ -200,7 +191,6 @@ NodeInfo RoutingTable::DropNode(const NodeId& node_to_drop, bool routing_only) {
   NodeInfo dropped_node;
   std::shared_ptr<MatrixChange> matrix_change;
   std::vector<NodeId> unique_nodes;
-  bool close_nodes_changed(false);
   {
     std::unique_lock<std::mutex> lock(mutex_);
     auto found(Find(node_to_drop, lock));
@@ -211,7 +201,6 @@ NodeInfo RoutingTable::DropNode(const NodeId& node_to_drop, bool routing_only) {
       matrix_change = group_matrix_.RemoveConnectedPeer(dropped_node);
       new_connected_close_nodes = group_matrix_.GetConnectedPeers();
       if (new_connected_close_nodes.size() != old_connected_close_nodes.size()) {
-        close_nodes_changed = true;
         if (nodes_.size() >= Parameters::closest_nodes_size) {
           PartialSortFromTarget(kNodeId_, Parameters::closest_nodes_size, lock);
           furthest_closest_node_id_ = nodes_[Parameters::closest_nodes_size - 1].node_id;
@@ -225,8 +214,7 @@ NodeInfo RoutingTable::DropNode(const NodeId& node_to_drop, bool routing_only) {
     unique_nodes = group_matrix_.GetUniqueNodeIds();
   }
 
-  if (close_nodes_changed && connected_group_change_functor_)
-    connected_group_change_functor_(new_connected_close_nodes, old_connected_close_nodes);
+  UpdateConnectedPeersMatrix(new_connected_close_nodes, old_connected_close_nodes);
 
   if ((matrix_change != nullptr) && !matrix_change->OldEqualsToNew()) {
     network_statistics_.UpdateLocalAverageDistance(unique_nodes);
@@ -421,22 +409,37 @@ bool RoutingTable::ConfirmGroupMembers(const NodeId& node1, const NodeId& node2)
 void RoutingTable::GroupUpdateFromConnectedPeer(const NodeId& peer,
                                                 const std::vector<NodeInfo>& nodes) {
   std::shared_ptr<MatrixChange> matrix_change;
+  std::vector<NodeInfo> new_connected_peers, old_connected_peers;
   {
     std::unique_lock<std::mutex> lock(mutex_);
     std::vector<NodeId> old_unique_ids(group_matrix_.GetUniqueNodeIds());
-    auto connected_peers(group_matrix_.GetConnectedPeers());
-    if (std::find_if(connected_peers.begin(), connected_peers.end(),
+    old_connected_peers = group_matrix_.GetConnectedPeers();
+    if (std::find_if(old_connected_peers.begin(), old_connected_peers.end(),
                      [peer](const NodeInfo & node_info) { return node_info.node_id == peer; }) ==
-        connected_peers.end()) {
+        old_connected_peers.end()) {
       auto found(Find(peer, lock));
       if (!found.first)
         return;
       group_matrix_.AddConnectedPeer(*found.second);
     }
     matrix_change = group_matrix_.UpdateFromConnectedPeer(peer, nodes, old_unique_ids);
+    new_connected_peers = group_matrix_.GetConnectedPeers();
   }
   if (!matrix_change->OldEqualsToNew() && matrix_change_functor_)
     matrix_change_functor_(matrix_change);
+  UpdateConnectedPeersMatrix(new_connected_peers, old_connected_peers);
+}
+
+void RoutingTable::UpdateConnectedPeersMatrix(const std::vector<NodeInfo>& new_connected_peers,
+                                              const std::vector<NodeInfo>& old_connected_peers) {
+  if (new_connected_peers.size() != old_connected_peers.size() ||
+      !std::equal(std::begin(new_connected_peers), std::end(new_connected_peers),
+                  std::begin(old_connected_peers),
+                  [](const NodeInfo& lhs, const NodeInfo& rhs) {
+                    return lhs.node_id == rhs.node_id;
+                  }))
+    if (connected_group_change_functor_)
+      connected_group_change_functor_(new_connected_peers, old_connected_peers);
 }
 
 std::shared_ptr<MatrixChange> RoutingTable::UpdateCloseNodeChange(
