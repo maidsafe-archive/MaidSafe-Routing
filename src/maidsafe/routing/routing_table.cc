@@ -62,7 +62,7 @@ RoutingTable::RoutingTable(bool client_mode, const NodeId& node_id, const asymm:
         boost::interprocess::open_only, network_viewer::kMessageQueueName.c_str()));
     if (static_cast<uint16_t>(ipc_message_queue_->get_max_msg_size()) <
         (Parameters::closest_nodes_size + 1) * Parameters::closest_nodes_size * 2 * NodeId::kSize) {
-      ThrowError(CommonErrors::invalid_parameter);
+      BOOST_THROW_EXCEPTION(MakeError(CommonErrors::invalid_parameter));
     }
   }
   catch (const std::exception&) {

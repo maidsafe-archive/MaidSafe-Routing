@@ -62,7 +62,7 @@ NodeInfo::NodeInfo(const serialised_type& serialised_message)
     : connection_id(), public_key(), bucket(kInvalidBucket), nat_type(rudp::NatType::kUnknown) {
   protobuf::NodeInfo proto_node_info;
   if (!proto_node_info.ParseFromString(serialised_message->string()))
-    ThrowError(CommonErrors::parsing_error);
+    BOOST_THROW_EXCEPTION(MakeError(CommonErrors::parsing_error));
 
   node_id = NodeId(proto_node_info.node_id());
   rank = proto_node_info.rank();
@@ -82,7 +82,7 @@ NodeInfo::serialised_type NodeInfo::Serialise() const {
     serialised_message = serialised_type(NonEmptyString(proto_node_info.SerializeAsString()));
   }
   catch (const std::exception&) {
-    ThrowError(CommonErrors::invalid_parameter);
+    BOOST_THROW_EXCEPTION(MakeError(CommonErrors::invalid_parameter));
   }
 
   return serialised_message;

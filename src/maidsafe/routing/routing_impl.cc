@@ -464,12 +464,13 @@ protobuf::Message Routing::Impl::CreateNodeLevelPartialMessage(
 void Routing::Impl::CheckSendParameters(const NodeId& destination_id, const std::string& data) {
   if (destination_id.IsZero()) {
     LOG(kError) << "Invalid destination ID, aborted send";
-    ThrowError(CommonErrors::invalid_node_id);
+    BOOST_THROW_EXCEPTION(MakeError(CommonErrors::invalid_node_id));
   }
 
   if (data.empty() || (data.size() > Parameters::max_data_size)) {
     LOG(kError) << "Data size not allowed : " << data.size();
-    ThrowError(CommonErrors::invalid_parameter);  // FIXME (need error type here)
+    // FIXME (need error type here)
+    BOOST_THROW_EXCEPTION(MakeError(CommonErrors::invalid_parameter));
   }
 }
 

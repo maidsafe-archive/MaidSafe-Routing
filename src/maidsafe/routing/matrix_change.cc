@@ -169,7 +169,7 @@ PmidNodeStatus MatrixChange::CheckPmidNodeStatus(const std::vector<NodeId>& pmid
 NodeId MatrixChange::ChoosePmidNode(const std::set<NodeId>& online_pmids,
                                     const NodeId& target) const {
   if (online_pmids.empty())
-    ThrowError(CommonErrors::invalid_parameter);
+    BOOST_THROW_EXCEPTION(MakeError(CommonErrors::invalid_parameter));
 
   LOG(kInfo) << "MatrixChange::ChoosePmidNode having following new_matrix_ : ";
   for (auto id : new_matrix_)

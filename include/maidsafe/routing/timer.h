@@ -154,7 +154,7 @@ void Timer<Response>::AddTask(const std::chrono::steady_clock::duration& timeout
   if (!response_functor || expected_response_count < 1) {
     LOG(kError) << "Timer<Response>::AddTask response_functor not initialised or "
                 << " incorrect expected_response_count";
-    ThrowError(CommonErrors::invalid_parameter);
+    BOOST_THROW_EXCEPTION(MakeError(CommonErrors::invalid_parameter));
   }
   std::lock_guard<std::mutex> lock(mutex_);
   auto result(tasks_.insert(std::move(
@@ -176,7 +176,7 @@ void Timer<Response>::FinishTask(TaskId task_id, const boost::system::error_code
     auto itr(tasks_.find(task_id));
     if (itr == std::end(tasks_)) {
       LOG(kError) << "Timer<Response>::FinishTask Task " << task_id << " not held by Timer.";
-      ThrowError(CommonErrors::invalid_parameter);
+      BOOST_THROW_EXCEPTION(MakeError(CommonErrors::invalid_parameter));
     }
     assert(itr->second.outstanding_response_count >= 0);
     LOG(kVerbose) << "Timer<Response>::FinishTask outstanding_response_count for Task "
@@ -213,7 +213,7 @@ void Timer<Response>::CancelTask(TaskId task_id) {
   auto itr(tasks_.find(task_id));
   if (itr == std::end(tasks_)) {
     LOG(kError) << "Task " << task_id << " not held by Timer.";
-    ThrowError(CommonErrors::invalid_parameter);
+    BOOST_THROW_EXCEPTION(MakeError(CommonErrors::invalid_parameter));
   }
   itr->second.timer->cancel();
 }
@@ -227,7 +227,7 @@ void Timer<Response>::AddResponse(TaskId task_id, const Response& response) {
     auto itr(tasks_.find(task_id));
     if (itr == std::end(tasks_)) {
       LOG(kError) << "Task " << task_id << " not held by Timer.";
-      ThrowError(CommonErrors::invalid_parameter);
+      BOOST_THROW_EXCEPTION(MakeError(CommonErrors::invalid_parameter));
     }
     assert(itr->second.outstanding_response_count > 0);
     --(itr->second.outstanding_response_count);

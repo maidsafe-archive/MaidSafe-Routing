@@ -392,7 +392,7 @@ void ResponseHandler::CloseNodeUpdateForClient(protobuf::Message& message) {
 void ResponseHandler::GetGroup(Timer<std::string>& timer, protobuf::Message& message) {
   try {
     if (!message.has_id() || message.data_size() != 1)
-      ThrowError(CommonErrors::parsing_error);
+      BOOST_THROW_EXCEPTION(MakeError(CommonErrors::parsing_error));
     timer.AddResponse(message.id(), message.data(0));
   }
   catch (const maidsafe_error& e) {
