@@ -53,10 +53,6 @@ struct CheckHoldersResult {
   routing::GroupRangeStatus proximity_status;
 };
 
-struct PmidNodeStatus {
-  std::vector<NodeId> nodes_up, nodes_down;
-};
-
 class MatrixChange {
  public:
   MatrixChange();
@@ -65,8 +61,9 @@ class MatrixChange {
   MatrixChange& operator=(MatrixChange other);
 
   CheckHoldersResult CheckHolders(const NodeId& target) const;
-  PmidNodeStatus CheckPmidNodeStatus(const std::vector<NodeId>& pmid_nodes) const;
   NodeId ChoosePmidNode(const std::set<NodeId>& online_pmids, const NodeId& target) const;
+  std::vector<NodeId> lost_nodes() { return lost_nodes_; }
+  std::vector<NodeId> new_nodes() { return new_nodes_; }
   void Print() {
     LOG(kInfo) << "Matrix of Node " << HexSubstr(node_id_.string())
                << " having following entries in old_matrix_ :";
@@ -80,6 +77,10 @@ class MatrixChange {
                << " having following entries in lost_nodes_ :";
     for (auto entry : lost_nodes_)
       LOG(kInfo) << "    entry in lost_nodes_    ------     " << HexSubstr(entry.string());
+    LOG(kInfo) << "Matrix of Node " << HexSubstr(node_id_.string())
+               << " having following entries in new_nodes_ :";
+    for (auto entry : new_nodes_)
+      LOG(kInfo) << "    entry in new_nodes_    ------     " << HexSubstr(entry.string());
   }
 
   friend void swap(MatrixChange& lhs, MatrixChange& rhs) MAIDSAFE_NOEXCEPT;
@@ -95,7 +96,7 @@ class MatrixChange {
   bool OldEqualsToNew() const;
 
   NodeId node_id_;
-  std::vector<NodeId> old_matrix_, new_matrix_, lost_nodes_;
+  std::vector<NodeId> old_matrix_, new_matrix_, lost_nodes_, new_nodes_;
   crypto::BigInt radius_;
 };
 

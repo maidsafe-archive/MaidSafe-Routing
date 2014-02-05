@@ -33,6 +33,7 @@ MatrixChange::MatrixChange()
       old_matrix_(),
       new_matrix_(),
       lost_nodes_(),
+      new_nodes_(),
       radius_() {}
 
 MatrixChange::MatrixChange(const MatrixChange& other)
@@ -40,6 +41,7 @@ MatrixChange::MatrixChange(const MatrixChange& other)
       old_matrix_(other.old_matrix_),
       new_matrix_(other.new_matrix_),
       lost_nodes_(other.lost_nodes_),
+      new_nodes_(other.new_nodes_),
       radius_(other.radius_) {}
 
 MatrixChange::MatrixChange(MatrixChange&& other)
@@ -47,6 +49,7 @@ MatrixChange::MatrixChange(MatrixChange&& other)
       old_matrix_(std::move(other.old_matrix_)),
       new_matrix_(std::move(other.new_matrix_)),
       lost_nodes_(std::move(other.lost_nodes_)),
+      new_nodes_(std::move(other.new_nodes_)),
       radius_(std::move(other.radius_)) {}
 
 MatrixChange& MatrixChange::operator=(MatrixChange other) {
@@ -80,6 +83,15 @@ MatrixChange::MatrixChange(NodeId this_node_id, const std::vector<NodeId>& old_m
         });
         return lost_nodes;
       }()),
+      new_nodes_([this]()->std::vector<NodeId> {
+        std::vector<NodeId> new_nodes;
+        std::set_difference(std::begin(new_matrix_), std::end(new_matrix_), std::begin(old_matrix_),
+                            std::end(old_matrix_), std::back_inserter(new_nodes),
+                            [this](const NodeId & lhs, const NodeId & rhs) {
+          return NodeId::CloserToTarget(lhs, rhs, node_id_);
+        });
+        return new_nodes;
+      }()),
       radius_([this]()->crypto::BigInt {
         NodeId fcn_distance;
         if (new_matrix_.size() >= Parameters::closest_nodes_size)
@@ -112,7 +124,7 @@ CheckHoldersResult MatrixChange::CheckHolders(const NodeId& target) const {
     return NodeId::CloserToTarget(lhs, rhs, target);
   });
 
-  // Remove taget == node ids and adjust holder size
+  // Remove target == node ids and adjust holder size
   old_holders.erase(std::remove(std::begin(old_holders), std::end(old_holders), target),
                     std::end(old_holders));
   if (old_holders.size() > Parameters::node_group_size) {
@@ -149,21 +161,6 @@ CheckHoldersResult MatrixChange::CheckHolders(const NodeId& target) const {
     return NodeId::CloserToTarget(lhs, rhs, target);
   });
   return holders_result;
-}
-
-PmidNodeStatus MatrixChange::CheckPmidNodeStatus(const std::vector<NodeId>& pmid_nodes) const {
-  PmidNodeStatus pmid_node_status;
-  for (const auto& pmid_node : pmid_nodes) {
-    bool found_in_new_matrix(std::find(std::begin(new_matrix_), std::end(new_matrix_), pmid_node) !=
-                             std::end(new_matrix_));
-    bool found_in_old_matrix(std::find(std::begin(old_matrix_), std::end(old_matrix_), pmid_node) !=
-                             std::end(old_matrix_));
-    if (found_in_new_matrix && !found_in_old_matrix)
-      pmid_node_status.nodes_up.push_back(pmid_node);
-    if (found_in_old_matrix && !found_in_new_matrix)
-      pmid_node_status.nodes_down.push_back(pmid_node);
-  }
-  return pmid_node_status;
 }
 
 NodeId MatrixChange::ChoosePmidNode(const std::set<NodeId>& online_pmids,
