@@ -62,26 +62,9 @@ class MatrixChange {
 
   CheckHoldersResult CheckHolders(const NodeId& target) const;
   NodeId ChoosePmidNode(const std::set<NodeId>& online_pmids, const NodeId& target) const;
-  std::vector<NodeId> lost_nodes() { return lost_nodes_; }
-  std::vector<NodeId> new_nodes() { return new_nodes_; }
-  void Print() {
-    LOG(kInfo) << "Matrix of Node " << HexSubstr(node_id_.string())
-               << " having following entries in old_matrix_ :";
-    for (auto entry : old_matrix_)
-      LOG(kInfo) << "    entry in old_matrix_    ------     " << HexSubstr(entry.string());
-    LOG(kInfo) << "Matrix of Node " << HexSubstr(node_id_.string())
-               << " having following entries in new_matrix_ :";
-    for (auto entry : new_matrix_)
-      LOG(kInfo) << "    entry in new_matrix_    ------     " << HexSubstr(entry.string());
-    LOG(kInfo) << "Matrix of Node " << HexSubstr(node_id_.string())
-               << " having following entries in lost_nodes_ :";
-    for (auto entry : lost_nodes_)
-      LOG(kInfo) << "    entry in lost_nodes_    ------     " << HexSubstr(entry.string());
-    LOG(kInfo) << "Matrix of Node " << HexSubstr(node_id_.string())
-               << " having following entries in new_nodes_ :";
-    for (auto entry : new_nodes_)
-      LOG(kInfo) << "    entry in new_nodes_    ------     " << HexSubstr(entry.string());
-  }
+  std::vector<NodeId> lost_nodes() const { return lost_nodes_; }
+  std::vector<NodeId> new_nodes() const { return new_nodes_; }
+  void Print();
 
   friend void swap(MatrixChange& lhs, MatrixChange& rhs) MAIDSAFE_NOEXCEPT;
   friend class GroupMatrix;

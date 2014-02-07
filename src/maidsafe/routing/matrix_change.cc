@@ -214,6 +214,25 @@ void swap(MatrixChange& lhs, MatrixChange& rhs) MAIDSAFE_NOEXCEPT {
   swap(lhs.radius_, rhs.radius_);
 }
 
+void MatrixChange::Print() {
+  LOG(kInfo) << "Matrix of Node " << HexSubstr(node_id_.string())
+             << " having following entries in old_matrix_ :";
+  for (auto entry : old_matrix_)
+    LOG(kInfo) << "    entry in old_matrix_    ------     " << HexSubstr(entry.string());
+  LOG(kInfo) << "Matrix of Node " << HexSubstr(node_id_.string())
+             << " having following entries in new_matrix_ :";
+  for (auto entry : new_matrix_)
+    LOG(kInfo) << "    entry in new_matrix_    ------     " << HexSubstr(entry.string());
+  LOG(kInfo) << "Matrix of Node " << HexSubstr(node_id_.string())
+             << " having following entries in lost_nodes_ :";
+  for (auto entry : lost_nodes_)
+    LOG(kInfo) << "    entry in lost_nodes_    ------     " << HexSubstr(entry.string());
+  LOG(kInfo) << "Matrix of Node " << HexSubstr(node_id_.string())
+             << " having following entries in new_nodes_ :";
+  for (auto entry : new_nodes_)
+    LOG(kInfo) << "    entry in new_nodes_    ------     " << HexSubstr(entry.string());
+}
+
 }  // namespace routing
 
 }  // namespace maidsafe
