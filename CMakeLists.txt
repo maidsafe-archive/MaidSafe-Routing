@@ -40,8 +40,6 @@ set(RoutingTestsHelperFiles ${RoutingSourcesDir}/tests/routing_network.cc
                             ${PROJECT_SOURCE_DIR}/include/maidsafe/routing/tests/routing_network.h
                             ${RoutingSourcesDir}/tests/test_utils.cc
                             ${RoutingSourcesDir}/tests/test_utils.h)
-# TODO - RoutingTestsHelperFiles should probably be made into a new library.
-set(RoutingAllFiles ${RoutingAllFiles} ${RoutingTestsHelperFiles})
 set(RoutingApiTestFiles ${RoutingSourcesDir}/tests/routing_api_test.cc)
 set(RoutingFuncTestFiles ${RoutingSourcesDir}/tests/routing_functional_test.cc
                          ${RoutingSourcesDir}/tests/routing_functional_non_nat_test.cc
@@ -68,6 +66,8 @@ target_include_directories(maidsafe_routing PUBLIC ${PROJECT_SOURCE_DIR}/include
 target_link_libraries(maidsafe_routing maidsafe_rudp maidsafe_passport maidsafe_network_viewer gmock gtest)
 
 if(MaidsafeTesting)
+  ms_add_static_library(maidsafe_routing_test_helper ${RoutingTestsHelperFiles})
+  target_link_libraries(maidsafe_routing_test_helper maidsafe_routing)
   target_link_libraries(maidsafe_routing maidsafe_network_viewer)
   ms_add_executable(TESTrouting "Tests/Routing" ${RoutingTestsAllFiles})
   ms_add_executable(TESTrouting_api "Tests/Routing" ${RoutingApiTestFiles} ${RoutingSourcesDir}/tests/test_main.cc)
@@ -84,6 +84,7 @@ if(MaidsafeTesting)
                                                  ${RoutingSourcesDir}/tools/shared_response.h
                                                  ${RoutingSourcesDir}/tools/shared_response.cc)
 
+  target_include_directories(maidsafe_routing_test_helper PRIVATE ${PROJECT_SOURCE_DIR}/src)
   target_include_directories(TESTrouting PRIVATE ${PROJECT_SOURCE_DIR}/src)
   target_include_directories(TESTrouting_api PRIVATE ${PROJECT_SOURCE_DIR}/src)
   target_include_directories(TESTrouting_func PRIVATE ${PROJECT_SOURCE_DIR}/src)
@@ -92,16 +93,16 @@ if(MaidsafeTesting)
   target_include_directories(routing_key_helper PRIVATE ${PROJECT_SOURCE_DIR}/src)
   target_include_directories(routing_node PRIVATE ${PROJECT_SOURCE_DIR}/src)
 
-  target_link_libraries(TESTrouting maidsafe_routing)
-  target_link_libraries(TESTrouting_api maidsafe_routing)
-  target_link_libraries(TESTrouting_func maidsafe_routing)
-  target_link_libraries(TESTrouting_func_nat maidsafe_routing)
-  target_link_libraries(TESTrouting_big maidsafe_routing)
-  target_link_libraries(create_client_bootstrap maidsafe_routing)
-  target_link_libraries(routing_key_helper maidsafe_routing)
-  target_link_libraries(routing_node maidsafe_routing)
+  target_link_libraries(TESTrouting maidsafe_routing_test_helper)
+  target_link_libraries(TESTrouting_api maidsafe_routing_test_helper)
+  target_link_libraries(TESTrouting_func maidsafe_routing_test_helper)
+  target_link_libraries(TESTrouting_func_nat maidsafe_routing_test_helper)
+  target_link_libraries(TESTrouting_big maidsafe_routing_test_helper)
+  target_link_libraries(create_client_bootstrap maidsafe_routing_test_helper)
+  target_link_libraries(routing_key_helper maidsafe_routing_test_helper)
+  target_link_libraries(routing_node maidsafe_routing_test_helper)
 
-  foreach(Target maidsafe_routing TESTrouting_func TESTrouting_func_nat TESTrouting_big routing_node)
+  foreach(Target maidsafe_routing TESTrouting_func TESTrouting_func_nat TESTrouting_big routing_node maidsafe_routing_test_helper)
     target_compile_definitions(${Target} PRIVATE USE_GTEST)
   endforeach()
 endif()
