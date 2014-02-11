@@ -84,8 +84,10 @@ class MessageHandlerTest : public testing::Test {
   }
 
   void MessageReceived(const std::string& /*message*/) {
-    std::lock_guard<std::mutex> lock(mutex_);
-    ++messages_received_;
+    {
+      std::lock_guard<std::mutex> lock(mutex_);
+      ++messages_received_;
+    }
     cond_var_.notify_all();
   }
 

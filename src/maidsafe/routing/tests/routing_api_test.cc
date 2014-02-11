@@ -319,8 +319,10 @@ TEST(APITest, BEH_API_ClientNode) {
   std::condition_variable cond_var;
   std::string data(RandomAlphaNumericString(512 * 1024));
   ResponseFunctor response_functor = [&cond_var, &mutex, &data](std::string string) {
-    std::unique_lock<std::mutex> lock(mutex);
-    ASSERT_EQ(("response to " + data), string);
+    {
+      std::lock_guard<std::mutex> lock(mutex);
+      ASSERT_EQ(("response to " + data), string);
+    }
     cond_var.notify_one();
   };
   routing3.SendDirect(node1.node_info.node_id, data, false, response_functor);
@@ -390,8 +392,10 @@ TEST(APITest, BEH_API_NonMutatingClientNode) {
   std::condition_variable cond_var;
   std::string data(RandomAlphaNumericString(512 * 1024));
   ResponseFunctor response_functor = [&cond_var, &mutex, &data](std::string string) {
-    std::unique_lock<std::mutex> lock(mutex);
-    ASSERT_EQ(("response to " + data), string);
+    {
+      std::lock_guard<std::mutex> lock(mutex);
+      ASSERT_EQ(("response to " + data), string);
+    }
     cond_var.notify_one();
   };
   routing3.SendDirect(node1.node_info.node_id, data, false, response_functor);
@@ -479,8 +483,10 @@ TEST(APITest, BEH_API_ClientNodeSameId) {
   std::mutex mutex_1;
   std::condition_variable cond_var_1;
   ResponseFunctor response_functor_1 = [&data_1, &mutex_1, &cond_var_1](std::string string) {
-    std::unique_lock<std::mutex> lock_1;
-    ASSERT_EQ("response to " + data_1, string);
+    {
+      std::lock_guard<std::mutex> lock_1(mutex_1);
+      ASSERT_EQ("response to " + data_1, string);
+    }
     cond_var_1.notify_one();
   };
   routing3.SendDirect(node1.node_info.node_id, data_1, false, response_functor_1);
@@ -492,8 +498,10 @@ TEST(APITest, BEH_API_ClientNodeSameId) {
   std::mutex mutex_2;
   std::condition_variable cond_var_2;
   ResponseFunctor response_functor_2 = [&data_2, &mutex_2, &cond_var_2](std::string string) {
-    std::unique_lock<std::mutex> lock_2(mutex_2);
-    ASSERT_EQ("response to " + data_2, string);
+    {
+      std::lock_guard<std::mutex> lock_2(mutex_2);
+      ASSERT_EQ("response to " + data_2, string);
+    }
     cond_var_2.notify_one();
   };
   routing4.SendDirect(node1.node_info.node_id, data_2, false, response_functor_2);
