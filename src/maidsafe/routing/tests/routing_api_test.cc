@@ -760,7 +760,7 @@ TEST(APITest, BEH_API_SendGroup) {
                                           message_index, &result](std::string string) {
         std::unique_lock<std::mutex> lock(send_mutex);
         EXPECT_EQ("response to " + data, string) << "for message_index " << message_index;
-        if (send_counts.at(message_index) >= Parameters::node_group_size)
+        if (send_counts.at(message_index) >= Parameters::group_size)
           return;
         if (string != "response to " + data) {
           result = false;
@@ -768,7 +768,7 @@ TEST(APITest, BEH_API_SendGroup) {
           result = true;
         }
         send_counts.at(message_index) += 1;
-        if (send_counts.at(message_index) == Parameters::node_group_size)
+        if (send_counts.at(message_index) == Parameters::group_size)
           send_promises.at(message_index).set_value(result);
       };
 
@@ -1231,9 +1231,9 @@ TEST(APITest, BEH_API_TypedMessagePartiallyJoinedSendReceive) {
   {
     std::unique_lock<std::mutex> lock(mutex);
     cv.wait(lock, [&received_relay_messages] {
-        return received_relay_messages.size() == Parameters::node_group_size;
+        return received_relay_messages.size() == Parameters::group_size;
     });
-    ASSERT_TRUE(received_relay_messages.size() == Parameters::node_group_size);
+    ASSERT_TRUE(received_relay_messages.size() == Parameters::group_size);
   };
 
   //  Test Single To Group random id
@@ -1243,10 +1243,10 @@ TEST(APITest, BEH_API_TypedMessagePartiallyJoinedSendReceive) {
     std::unique_lock<std::mutex> lock(mutex);
     cv.wait(lock, [kMessageCount, &received_relay_messages] {
         return (received_relay_messages.size() ==
-                (Parameters::node_group_size * (kMessageCount + 1U)));
+                (Parameters::group_size * (kMessageCount + 1U)));
     });
     ASSERT_TRUE(received_relay_messages.size() ==
-                (Parameters::node_group_size * (kMessageCount + 1U)));
+                (Parameters::group_size * (kMessageCount + 1U)));
   };
 
   // Send response
@@ -1261,10 +1261,10 @@ TEST(APITest, BEH_API_TypedMessagePartiallyJoinedSendReceive) {
   {
     std::unique_lock<std::mutex> lock(mutex);
     cv.wait_for(lock, std::chrono::seconds(5), [&response_count, kMessageCount] {
-        return (response_count == Parameters::node_group_size * (kMessageCount + 1));
+        return (response_count == Parameters::group_size * (kMessageCount + 1));
     });
   }
-  ASSERT_TRUE(response_count == Parameters::node_group_size * (kMessageCount + 1));
+  ASSERT_TRUE(response_count == Parameters::group_size * (kMessageCount + 1));
 }
 
 }  // namespace test

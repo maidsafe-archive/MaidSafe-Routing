@@ -138,7 +138,7 @@ GroupRangeStatus GetProximalRange(const NodeId& target_id, const NodeId& node_id
            return NodeId::CloserToTarget(lhs, rhs, target_id);
          }) &&
          "Ensure to sort holders in order of distance to targer_id");
-  assert(holders.size() <= Parameters::node_group_size);
+  assert(holders.size() <= Parameters::group_size);
 
   if ((target_id == node_id) || (target_id == this_node_id))
     return GroupRangeStatus::kOutwithRange;

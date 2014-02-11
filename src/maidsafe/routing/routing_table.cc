@@ -679,7 +679,7 @@ NodeInfo RoutingTable::GetRemovableNode(std::vector<std::string> attempted) {
   LOG(kVerbose) << "[" << DebugId(kNodeId_) << "] max_bucket " << max_bucket << " count "
                 << max_bucket_count;
   if (max_bucket_count == 1) {
-    return nodes_[Parameters::closest_nodes_size + Parameters::node_group_size];
+    return nodes_[Parameters::closest_nodes_size + Parameters::group_size];
   }
 
   NodeInfo removable_node;
@@ -747,11 +747,11 @@ std::vector<NodeInfo> RoutingTable::GetClosestMatrixNodes(const NodeId& target_i
 std::vector<NodeId> RoutingTable::GetGroup(const NodeId& target_id) {
   std::vector<NodeInfo> nodes(GetMatrixNodes());
   std::vector<NodeId> group;
-  std::partial_sort(nodes.begin(), nodes.begin() + Parameters::node_group_size, nodes.end(),
+  std::partial_sort(nodes.begin(), nodes.begin() + Parameters::group_size, nodes.end(),
                     [&](const NodeInfo & lhs, const NodeInfo & rhs) {
     return NodeId::CloserToTarget(lhs.node_id, rhs.node_id, target_id);
   });
-  for (auto iter(nodes.begin()); iter != nodes.begin() + Parameters::node_group_size; ++iter)
+  for (auto iter(nodes.begin()); iter != nodes.begin() + Parameters::group_size; ++iter)
     group.push_back(iter->node_id);
   return group;
 }
@@ -832,7 +832,7 @@ void RoutingTable::IpcSendGroupMatrix() const {
     });
 
     size_t index(0);
-    size_t limit(std::min(static_cast<size_t>(Parameters::node_group_size), close.size()));
+    size_t limit(std::min(static_cast<size_t>(Parameters::group_size), close.size()));
     for (; index < limit; ++index) {
       matrix_record.AddElement(close[index].node_id, network_viewer::ChildType::kGroup);
       printout += "\t\t" + DebugId(close[index].node_id) + " - kGroup\n";

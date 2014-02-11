@@ -99,7 +99,7 @@ TEST(NetworkStatisticsTest, BEH_IsIdInGroupRange) {
   }
 
   NodeId info_id(NodeId::kRandomId);
-  std::partial_sort(nodes_id.begin(), nodes_id.begin() + Parameters::node_group_size + 1,
+  std::partial_sort(nodes_id.begin(), nodes_id.begin() + Parameters::group_size + 1,
                     nodes_id.end(), [&](const NodeId & lhs, const NodeId & rhs) {
     return NodeId::CloserToTarget(lhs, rhs, info_id);
   });
