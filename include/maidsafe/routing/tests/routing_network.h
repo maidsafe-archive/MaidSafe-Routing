@@ -187,6 +187,7 @@ class GenericNetwork {
   void AddNode(bool client_mode, bool has_symmetric_nat);
   bool RemoveNode(const NodeId& node_id);
   bool WaitForNodesToJoin();
+  bool WaitForNodesToJoin(size_t num_total_nodes);
   void Validate(const NodeId& node_id, GivePublicKeyFunctor give_public_key) const;
   void SetNodeValidationFunctor(NodePtr node);
   std::vector<NodeId> GroupIds(const NodeId& node_id) const;
@@ -201,6 +202,7 @@ class GenericNetwork {
   void ClearMessages();
   int NodeIndex(const NodeId& node_id) const;
   size_t ClientIndex() const { return client_index_; }
+  std::vector<NodeId> GetAllNodeIds() const;
   std::vector<NodeId> GetGroupForId(const NodeId& node_id) const;
   std::vector<NodeInfo> GetClosestNodes(const NodeId& target_id, uint32_t quantity,
                                         bool vault_only = false) const;

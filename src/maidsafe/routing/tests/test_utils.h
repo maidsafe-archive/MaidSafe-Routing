@@ -57,6 +57,7 @@ NodeInfo MakeNode();
 
 NodeId GenerateUniqueRandomId(const NodeId& holder, uint16_t pos);
 NodeId GenerateUniqueRandomId(uint16_t pos);
+NodeId GenerateUniqueRandomNodeId(const std::vector<NodeId>& esisting_ids);
 
 int NetworkStatus(bool client, int status);
 

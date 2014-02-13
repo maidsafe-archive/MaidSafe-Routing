@@ -193,7 +193,10 @@ void GenericNode::InjectNodeInfoAndPrivateKey() {
 GenericNode::~GenericNode() {}
 
 void GenericNode::InitialiseFunctors() {
-  functors_.close_node_replaced = [](const std::vector<NodeInfo>&) {};  // NOLINT (Fraser)
+  functors_.close_node_replaced = [&](const std::vector<NodeInfo>&) {
+    std::cout << "Node " << HexSubstr(node_info_plus_->node_info.node_id.string())
+              << " got close node replaced " << std::endl;
+  };  // NOLINT (Fraser)
   functors_.message_and_caching.message_received = [this](
       const std::string & message, const bool & cache_lookup, ReplyFunctor reply_functor) {
     assert(!cache_lookup && "CacheLookup should be disabled for test");
@@ -204,9 +207,12 @@ void GenericNode::InitialiseFunctors() {
     reply_functor(node_id().string() + ">::< response to >:<" + message);
   };
   functors_.network_status = [&](const int & health) { SetHealth(health); };  // NOLINT
+  functors_.matrix_changed = [&](std::shared_ptr<routing::MatrixChange> /*matrix_change*/) {
+//     matrix_change_functor(node_info_plus_->node_info.node_id, matrix_change);
+  };
 }
 
-int GenericNode::GetStatus() const { return /*routing_->GetStatus()*/ 0; }
+int GenericNode::GetStatus() const { return routing_->network_status(); }
 
 Endpoint GenericNode::endpoint() const { return endpoint_; }
 
@@ -622,6 +628,35 @@ bool GenericNetwork::WaitForNodesToJoin() {
   return false;
 }
 
+
+bool GenericNetwork::WaitForNodesToJoin(size_t num_total_nodes) {
+  // TODO(Alison) - tailor max. duration to match number of nodes joining?
+  bool all_joined = true;
+  int expected_health(num_total_nodes < Parameters::max_client_routing_table_size ?
+      (num_total_nodes * 100) / Parameters::max_client_routing_table_size : 100);
+  uint16_t max(10), i(0);
+  while (i < max) {
+    all_joined = true;
+    for (uint16_t j(2); j < nodes_.size(); ++j) {
+      if (!nodes_.at(j)->joined()) {
+        all_joined = false;
+        break;
+      }
+      if (nodes_.at(j)->Health() < expected_health) {
+        all_joined = false;
+        break;
+      }
+    }
+    if (all_joined)
+      return true;
+    ++i;
+    if (i == max)
+      return false;
+    Sleep(std::chrono::seconds(5));
+  }
+  return false;
+}
+
 void GenericNetwork::Validate(const NodeId& node_id, GivePublicKeyFunctor give_public_key) const {
   if (node_id == NodeId())
     return;
@@ -760,6 +795,13 @@ int GenericNetwork::NodeIndex(const NodeId& node_id) const {
       return index;
   }
   return -1;
+}
+
+std::vector<NodeId> GenericNetwork::GetAllNodeIds() const {
+  std::vector<NodeId> node_ids;
+  for (const auto& node : nodes_)
+      node_ids.push_back(node->node_id());
+  return node_ids;
 }
 
 std::vector<NodeId> GenericNetwork::GetGroupForId(const NodeId& node_id) const {

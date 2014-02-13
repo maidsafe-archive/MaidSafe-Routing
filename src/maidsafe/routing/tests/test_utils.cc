@@ -130,6 +130,16 @@ NodeId GenerateUniqueNonRandomId(const NodeId& holder, uint64_t id) {
   return new_node;
 }
 
+NodeId GenerateUniqueRandomNodeId(const std::vector<NodeId>& esisting_ids) {
+  NodeId new_node(NodeId::kRandomId);
+  while (std::find_if(esisting_ids.begin(), esisting_ids.end(),
+                      [&new_node](const NodeId & element) { return element == new_node; }) !=
+                          esisting_ids.end()) {
+    new_node = NodeId(NodeId::kRandomId);
+  }
+  return new_node;
+}
+
 NodeId GenerateUniqueRandomId(uint16_t pos) {
   NodeId holder(NodeId(NodeId::kMaxId) ^ NodeId(NodeId::kMaxId));
   return GenerateUniqueRandomId(holder, pos);

@@ -36,11 +36,142 @@ typename std::vector<T>::const_iterator Find(const T& t, const std::vector<T>& v
 
 class RoutingChurnTest : public GenericNetwork, public testing::Test {
  public:
-  RoutingChurnTest(void) : GenericNetwork() {}
+  RoutingChurnTest(void) : GenericNetwork(), old_matrix_(), new_matrix_(), expect_affected_(),
+      matrix_change_check_(false), dropping_node_(false), adding_node_(false),
+      node_on_operation_(NodeId::kRandomId), affected_nodes_(), checking_mutex_() {}
 
   virtual void SetUp() override { GenericNetwork::SetUp(); }
 
   virtual void TearDown() override { Sleep(std::chrono::microseconds(100)); }
+
+  void CheckMatrixChange(std::shared_ptr<routing::MatrixChange> matrix_change,
+                         const NodeId affected_node) {
+    if (!matrix_change_check_)
+      return;
+    LOG(kInfo) << "Node " << HexSubstr(affected_node.string())
+                << " having matrix change : ";
+    matrix_change->Print();
+    if (dropping_node_)
+      DoDroppingCheck(matrix_change, affected_node);
+    else if (adding_node_)
+      DoAddingCheck(matrix_change, affected_node);
+  }
+
+ protected:
+  void PopulateGlobals(const std::vector<NodeId>& existing_vault_node_ids,
+                       const std::vector<NodeId>& bootstrap_node_ids,
+                       const NodeId& node_to_operate) {
+    old_matrix_.clear();
+    new_matrix_.clear();
+    expect_affected_.clear();
+    affected_nodes_.clear();
+    std::copy(existing_vault_node_ids.begin(), existing_vault_node_ids.end(),
+              std::back_inserter(old_matrix_));
+    std::copy(existing_vault_node_ids.begin(), existing_vault_node_ids.end(),
+              std::back_inserter(new_matrix_));
+    if (dropping_node_) {
+      new_matrix_.erase(std::find(new_matrix_.begin(), new_matrix_.end(), node_to_operate));
+    }
+
+    SortIdsFromTarget(node_to_operate, new_matrix_);
+    // Though reporting within Parameters::closest_nodes_size + Parameters::proximity_factor,
+    // only radius of Parameters::closest_nodes_size is guaranteed
+    std::copy(new_matrix_.begin(), new_matrix_.begin() + Parameters::closest_nodes_size,
+              std::back_inserter(expect_affected_));
+    for (auto& node : bootstrap_node_ids) {
+      auto find(std::find(expect_affected_.begin(), expect_affected_.end(), node));
+      if (find != expect_affected_.end())
+        expect_affected_.erase(find);
+    }
+    std::cout << expect_affected_.size() << " nodes will be affected" << std::endl;
+    if (adding_node_) {
+      new_matrix_.push_back(node_to_operate);
+    }
+    node_on_operation_ = node_to_operate;
+  }
+
+  void IsAllExpectedResponded() {
+    std::lock_guard<std::mutex> lock(checking_mutex_);
+    std::cout << "Following nodes expect to be affected : " << std::endl;
+    for(auto& node : expect_affected_)
+      std::cout << "     expect to be affected : " << HexSubstr(node.string()) << std::endl;
+    std::cout << "Following nodes are affected : " << std::endl;
+    for(auto& node : affected_nodes_)
+      std::cout << "                  affected : " << HexSubstr(node.string()) << std::endl;
+//     for(auto& node : affected_nodes_)
+//       if (std::find(expect_affected_.begin(), expect_affected_.end(), node) ==
+//           expect_affected_.end()) {
+//         EXPECT_TRUE(false) << "node " << HexSubstr(node.string()) << " shall not be affected";
+//         return;
+//       }
+    for(auto& node : expect_affected_)
+      if (std::find(affected_nodes_.begin(), affected_nodes_.end(), node) ==
+          affected_nodes_.end()) {
+        EXPECT_TRUE(false) << "node " << HexSubstr(node.string()) << " shall be affected but not";
+        return;
+      }
+  }
+
+  std::vector<NodeId> old_matrix_, new_matrix_, expect_affected_;
+  std::atomic<bool> matrix_change_check_, dropping_node_, adding_node_;
+  NodeId node_on_operation_;
+  std::set<NodeId> affected_nodes_;
+  std::mutex checking_mutex_;
+
+ private:
+  void DoDroppingCheck(std::shared_ptr<routing::MatrixChange> matrix_change,
+                       const NodeId& affected_node) {
+    auto lost_nodes(matrix_change->lost_nodes());
+    if (lost_nodes.empty())
+      return;
+    std::cout << std::endl;
+    std::cout << "matrix_change of affected node " << HexSubstr(affected_node.string())
+              << " containing following lost nodes :" << std::endl;
+//     bool not_found(true);
+    for (auto& node_id : lost_nodes) {
+      std::cout << "    lost node : " << HexSubstr(node_id.string()) << std::endl;
+//       if (node_id == node_on_operation_)
+//         not_found = false;
+    }
+    auto find(std::find(lost_nodes.begin(), lost_nodes.end(), node_on_operation_));
+    if (find == lost_nodes.end()) {
+//     if (not_found) {
+      std::cout << "dropping node " << HexSubstr(node_on_operation_.string())
+                << " not find in the matrix_change of lost_node " << std::endl;
+      return;
+    }
+    std::lock_guard<std::mutex> lock(checking_mutex_);
+    std::cout << "Affected node " << HexSubstr(affected_node.string())
+              << " inserted into affected_nodes_" << std::endl;
+    affected_nodes_.insert(affected_node);
+  }
+
+  void DoAddingCheck(std::shared_ptr<routing::MatrixChange> matrix_change,
+                     const NodeId& affected_node) {
+    auto new_nodes(matrix_change->new_nodes());
+    if (new_nodes.empty())
+      return;
+    std::cout << std::endl;
+    std::cout << "matrix_change of affected node " << HexSubstr(affected_node.string())
+              << " containing following new nodes :" << std::endl;
+//     bool not_found(true);
+    for (auto& node_id : new_nodes) {
+      std::cout << "    new node : " << HexSubstr(node_id.string()) << std::endl;
+//       if (node_id == node_on_operation_)
+//         not_found = false;
+    }
+    auto find(std::find(new_nodes.begin(), new_nodes.end(), node_on_operation_));
+    if (find == new_nodes.end()) {
+//     if (not_found) {
+      std::cout << "new node " << HexSubstr(node_on_operation_.string())
+                << " not find in the matrix_change of new_node " << std::endl;
+      return;
+    }
+    std::lock_guard<std::mutex> lock(checking_mutex_);
+    std::cout << "Affected node " << HexSubstr(affected_node.string())
+              << " inserted into affected_nodes_" << std::endl;
+    affected_nodes_.insert(affected_node);
+  }
 };
 
 TEST_F(RoutingChurnTest, FUNC_BasicNetworkChurn) {
@@ -59,12 +190,7 @@ TEST_F(RoutingChurnTest, FUNC_BasicNetworkChurn) {
 
   for (int n(1); n < 51; ++n) {
     if (n % 2 == 0) {
-      NodeId new_node(NodeId::kRandomId);
-      while (std::find_if(existing_vault_node_ids.begin(), existing_vault_node_ids.end(),
-                          [&new_node](const NodeId & element) { return element == new_node; }) !=
-             existing_vault_node_ids.end()) {
-        new_node = NodeId(NodeId::kRandomId);
-      }
+      NodeId new_node(GenerateUniqueRandomNodeId(existing_vault_node_ids));
       this->AddNode(false, new_node);
       existing_vault_node_ids.push_back(new_node);
       Sleep(std::chrono::milliseconds(500 + RandomUint32() % 200));
@@ -77,6 +203,78 @@ TEST_F(RoutingChurnTest, FUNC_BasicNetworkChurn) {
       Sleep(std::chrono::milliseconds(500 + RandomUint32() % 200));
     }
   }
+}
+
+TEST_F(RoutingChurnTest, FUNC_MatrixChangeWhenChurn) {
+  const size_t vault_network_size(32);
+  std::vector<NodeId> boot_strap_nodes(this->GetAllNodeIds());
+  std::vector<NodeId> existing_vault_node_ids;
+  std::copy(boot_strap_nodes.begin(), boot_strap_nodes.end(),
+            std::back_inserter(existing_vault_node_ids));
+  for (size_t n(0); n < vault_network_size; ++n) {
+    NodeId new_node(GenerateUniqueRandomNodeId(existing_vault_node_ids));
+    this->AddNode(false, new_node,
+                  boost::bind(&RoutingChurnTest::CheckMatrixChange, this, _1, new_node));
+    existing_vault_node_ids.push_back(new_node);
+    Sleep(std::chrono::milliseconds(500 + RandomUint32() % 200));
+  }
+  ASSERT_TRUE(this->WaitForNodesToJoin(vault_network_size));
+  Sleep(std::chrono::milliseconds(1000));
+  std::cout << "Bootstrap nodes : " << std::endl;
+  for(auto& node : boot_strap_nodes)
+    std::cout << "     bootstrap node : " << HexSubstr(node.string()) << std::endl;
+  std::cout << "existing_vault_node_ids : " << std::endl;
+  for(auto& node : existing_vault_node_ids)
+    std::cout << "     existing_vault_node_id : " << HexSubstr(node.string()) << std::endl;
+  this->matrix_change_check_ = true;
+
+  for (int n(1); n < 51; ++n) {
+    this->dropping_node_ = true;
+    // bootstrap nodes shall not be removed
+    do {
+      std::random_shuffle(existing_vault_node_ids.begin(), existing_vault_node_ids.end());
+    } while (std::find(boot_strap_nodes.begin(), boot_strap_nodes.end(),
+                       existing_vault_node_ids.back()) != boot_strap_nodes.end());
+    NodeId dropped_node(existing_vault_node_ids.back());
+    std::cout << "Dropping node " << HexSubstr(dropped_node.string()) << std::endl;
+    this->PopulateGlobals(existing_vault_node_ids, boot_strap_nodes, dropped_node);
+    Sleep(std::chrono::milliseconds(200));
+    this->RemoveNode(dropped_node);
+    Sleep(std::chrono::milliseconds(2000));
+    this->IsAllExpectedResponded();
+    for (auto node : this->nodes_) {
+      std::cout << "Node " << HexSubstr(node->node_id().string())
+                << "having status of " << node->GetStatus() << std::endl;
+      EXPECT_FALSE(node->RoutingTableHasNode(dropped_node))
+          << "Node " << HexSubstr(node->node_id().string())
+          << " shall not keep the dropped node in routing table";
+    }
+    existing_vault_node_ids.pop_back();
+    this->dropping_node_ = false;
+
+    this->adding_node_ = true;
+    NodeId new_node(GenerateUniqueRandomNodeId(existing_vault_node_ids));
+    std::cout << "Adding node " << HexSubstr(new_node.string()) << std::endl;
+    this->PopulateGlobals(existing_vault_node_ids, boot_strap_nodes, new_node);
+    Sleep(std::chrono::milliseconds(200));
+    this->AddNode(false, new_node,
+                  boost::bind(&RoutingChurnTest::CheckMatrixChange, this, _1, new_node));
+    Sleep(std::chrono::milliseconds(2000));
+    this->IsAllExpectedResponded();
+    for (auto node : this->nodes_) {
+      std::cout << "Node " << HexSubstr(node->node_id().string())
+                << "having status of " << node->GetStatus() << std::endl;
+      if (node->node_id() != new_node)
+        EXPECT_TRUE(node->RoutingTableHasNode(new_node))
+            << "Node " << HexSubstr(node->node_id().string())
+            << " shall have the new node in routing table";
+    }
+    existing_vault_node_ids.push_back(new_node);
+    this->adding_node_ = false;
+  }
+
+  this->matrix_change_check_ = false;
+  Sleep(std::chrono::milliseconds(1000));
 }
 
 TEST_F(RoutingChurnTest, FUNC_MessagingNetworkChurn) {
