@@ -218,8 +218,8 @@ int Routing::Impl::DoBootstrap(const std::vector<Endpoint>& endpoints) {
   }
 
   return network_.Bootstrap(
-      endpoints, [=](const std::string & message) { OnMessageReceived(message); },
-      [=](const NodeId & lost_connection_id) { OnConnectionLost(lost_connection_id); });  // NOLINT
+      endpoints, [=](const std::string& message) { OnMessageReceived(message); },
+      [=](const NodeId& lost_connection_id) { OnConnectionLost(lost_connection_id); });  // NOLINT
 }
 
 void Routing::Impl::FindClosestNode(const boost::system::error_code& error_code, int attempts) {
