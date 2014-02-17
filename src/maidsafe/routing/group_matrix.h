@@ -73,6 +73,8 @@ class GroupMatrix {
   std::shared_ptr<MatrixChange> UpdateFromConnectedPeer(const NodeId& peer,
                                                         const std::vector<NodeInfo>& nodes,
                                                         const std::vector<NodeId>& old_unique_ids);
+  void UpdateFromUnvalidatedPeer(const NodeId& peer, const std::vector<NodeInfo>& nodes);
+
   bool IsRowEmpty(const NodeInfo& node_info);
   bool GetRow(const NodeId& row_id, std::vector<NodeInfo>& row_entries);
   std::vector<NodeInfo> GetUniqueNodes() const;
@@ -81,6 +83,7 @@ class GroupMatrix {
   bool Contains(const NodeId& node_id);
   void Prune();
 
+  friend class RoutingTable;
   friend class test::GenericNode;
   friend class test::NetworkStatisticsTest_BEH_IsIdInGroupRange_Test;
   friend class test::GroupMatrixTest_BEH_Prune_Test;
@@ -98,6 +101,7 @@ class GroupMatrix {
   crypto::BigInt radius_;
   bool client_mode_;
   std::vector<std::vector<NodeInfo>> matrix_;
+  std::map<NodeId, std::vector<NodeInfo>> unvalidated_node_update;
 };
 
 }  // namespace routing

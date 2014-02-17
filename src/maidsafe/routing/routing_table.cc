@@ -430,6 +430,13 @@ void RoutingTable::GroupUpdateFromConnectedPeer(const NodeId& peer,
   UpdateConnectedPeersMatrix(new_connected_peers, old_connected_peers);
 }
 
+void RoutingTable::GroupUpdateFromUnvalidatedPeer(const NodeId& peer,
+                                                  const std::vector<NodeInfo>& nodes) {
+  std::unique_lock<std::mutex> lock(mutex_);
+  group_matrix_.UpdateFromUnvalidatedPeer(peer, nodes);
+}
+
+
 void RoutingTable::UpdateConnectedPeersMatrix(const std::vector<NodeInfo>& new_connected_peers,
                                               const std::vector<NodeInfo>& old_connected_peers) {
   if (new_connected_peers.size() != old_connected_peers.size() ||
@@ -870,7 +877,7 @@ std::string RoutingTable::PrintRoutingTable() {
 }
 
 void RoutingTable::PrintGroupMatrix() {
-  //  group_matrix_.PrintGroupMatrix();
+  group_matrix_.PrintGroupMatrix();
 }
 
 }  // namespace routing

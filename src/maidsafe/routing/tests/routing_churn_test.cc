@@ -90,7 +90,7 @@ class RoutingChurnTest : public GenericNetwork, public testing::Test {
     node_on_operation_ = node_to_operate;
   }
 
-  void IsAllExpectedResponded() {
+  bool IsAllExpectedResponded() {
     std::lock_guard<std::mutex> lock(checking_mutex_);
     std::cout << "Following nodes expect to be affected : " << std::endl;
     for(auto& node : expect_affected_)
@@ -107,9 +107,11 @@ class RoutingChurnTest : public GenericNetwork, public testing::Test {
     for(auto& node : expect_affected_)
       if (std::find(affected_nodes_.begin(), affected_nodes_.end(), node) ==
           affected_nodes_.end()) {
+        nodes_[NodeIndex((node))]->PrintGroupMatrix();
         EXPECT_TRUE(false) << "node " << HexSubstr(node.string()) << " shall be affected but not";
-        return;
+        return false;
       }
+    return true;
   }
 
   std::vector<NodeId> old_matrix_, new_matrix_, expect_affected_;
@@ -206,7 +208,7 @@ TEST_F(RoutingChurnTest, FUNC_BasicNetworkChurn) {
 }
 
 TEST_F(RoutingChurnTest, FUNC_MatrixChangeWhenChurn) {
-  const size_t vault_network_size(32);
+  const size_t vault_network_size(35);
   std::vector<NodeId> boot_strap_nodes(this->GetAllNodeIds());
   std::vector<NodeId> existing_vault_node_ids;
   std::copy(boot_strap_nodes.begin(), boot_strap_nodes.end(),
@@ -229,6 +231,7 @@ TEST_F(RoutingChurnTest, FUNC_MatrixChangeWhenChurn) {
   this->matrix_change_check_ = true;
 
   for (int n(1); n < 51; ++n) {
+    LOG(kVerbose) << "Iteration:" << n;
     this->dropping_node_ = true;
     // bootstrap nodes shall not be removed
     do {
@@ -241,7 +244,8 @@ TEST_F(RoutingChurnTest, FUNC_MatrixChangeWhenChurn) {
     Sleep(std::chrono::milliseconds(200));
     this->RemoveNode(dropped_node);
     Sleep(std::chrono::milliseconds(2000));
-    this->IsAllExpectedResponded();
+    if (!this->IsAllExpectedResponded())
+      n = 52;
     for (auto node : this->nodes_) {
       std::cout << "Node " << HexSubstr(node->node_id().string())
                 << "having status of " << node->GetStatus() << std::endl;
@@ -260,7 +264,8 @@ TEST_F(RoutingChurnTest, FUNC_MatrixChangeWhenChurn) {
     this->AddNode(false, new_node,
                   boost::bind(&RoutingChurnTest::CheckMatrixChange, this, _1, new_node));
     Sleep(std::chrono::milliseconds(2000));
-    this->IsAllExpectedResponded();
+    if (!this->IsAllExpectedResponded())
+      n = 52;
     for (auto node : this->nodes_) {
       std::cout << "Node " << HexSubstr(node->node_id().string())
                 << "having status of " << node->GetStatus() << std::endl;
