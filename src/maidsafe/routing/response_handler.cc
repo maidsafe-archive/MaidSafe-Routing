@@ -301,7 +301,7 @@ void ResponseHandler::ValidateAndCompleteConnectionToNonClient(
     const NodeInfo& peer, bool from_requestor, const std::vector<NodeId>& close_ids) {
   std::weak_ptr<ResponseHandler> response_handler_weak_ptr = shared_from_this();
   if (request_public_key_functor_) {
-    auto validate_node([=](const asymm::PublicKey & key) {
+    auto validate_node([=](const asymm::PublicKey& key) {
       LOG(kInfo) << "Validation callback called with public key for " << DebugId(peer.node_id);
       if (std::shared_ptr<ResponseHandler> response_handler = response_handler_weak_ptr.lock()) {
         std::vector<NodeInfo> matrix_update;
@@ -338,9 +338,9 @@ void ResponseHandler::HandleSuccessAcknowledgementAsReponder(NodeInfo peer, bool
       (client ? Parameters::max_routing_table_size_for_client : Parameters::max_routing_table_size);
   std::vector<NodeId> close_ids_for_peer(routing_table_.GetClosestNodes(peer.node_id, count));
   auto itr(std::find_if(close_ids_for_peer.begin(), close_ids_for_peer.end(),
-                                                        [=](const NodeId & node_id)->bool {
-    return (peer.node_id == node_id);
-  }));
+                        [=](const NodeId & node_id)->bool {
+                          return (peer.node_id == node_id);
+                        }));
   if (itr != close_ids_for_peer.end())
     close_ids_for_peer.erase(itr);
 

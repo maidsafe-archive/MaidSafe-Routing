@@ -341,7 +341,7 @@ void MessageHandler::HandleGroupMessageAsClosestNode(protobuf::Message& message)
 
   // This node is closest so will send to all replicant nodes
   uint16_t replication(static_cast<uint16_t>(message.replication()));
-  if ((replication < 1) || (replication > Parameters::node_group_size)) {
+  if ((replication < 1) || (replication > Parameters::group_size)) {
     LOG(kError) << "Dropping invalid non-direct message."
                 << " id: " << message.id();
     return;
@@ -475,7 +475,7 @@ void MessageHandler::HandleMessage(protobuf::Message& message) {
 
   // This node is in closest proximity to this message
   if (routing_table_.IsThisNodeInRange(NodeId(message.destination_id()),
-                                       Parameters::node_group_size) ||
+                                       Parameters::group_size) ||
       (routing_table_.IsThisNodeClosestTo(NodeId(message.destination_id()), !message.direct()) &&
        message.visited())) {
     LOG(kInfo) << "MessageHandler::HandleMessage " << message.id() << " HandleMessageAsClosestNode";
@@ -581,7 +581,7 @@ void MessageHandler::HandleGroupRelayRequestMessageAsClosestNode(protobuf::Messa
 
   // This node is closest so will send to all replicant nodes
   uint16_t replication(static_cast<uint16_t>(message.replication()));
-  if ((replication < 1) || (replication > Parameters::node_group_size)) {
+  if ((replication < 1) || (replication > Parameters::group_size)) {
     LOG(kError) << "Dropping invalid non-direct message."
                 << " id: " << message.id();
     return;
