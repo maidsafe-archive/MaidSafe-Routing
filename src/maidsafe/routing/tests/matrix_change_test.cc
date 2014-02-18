@@ -82,7 +82,7 @@ class MatrixChangeTest : public testing::Test {
                                         old_matrix_.begin() + old_holders_size);
     std::vector<NodeId> all_new_holders(new_matrix_.begin(),
                                         new_matrix_.begin() + new_holders_size);
-    std::vector<NodeId> all_lost_nodes(lost_nodes_);
+    std::vector<NodeId> all_lost_nodes;
 
     for (auto& drop_node : all_old_holders)
       if (std::find(all_new_holders.begin(), all_new_holders.end(), drop_node) ==
