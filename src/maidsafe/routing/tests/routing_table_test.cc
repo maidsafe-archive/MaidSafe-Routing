@@ -626,7 +626,6 @@ TEST(RoutingTableTest, BEH_CheckMockSendGroupChangeRpcs) {
       else
         close_nodes.push_back(node_info);
     }
-    EXPECT_GE(Parameters::closest_nodes_size - 1, close_nodes.size());
     EXPECT_TRUE(found_2);
     if (!found_2) {
       LOG(kError) << "Haven't found NodeId for routing_table_2 in group change!";
@@ -644,18 +643,18 @@ TEST(RoutingTableTest, BEH_CheckMockSendGroupChangeRpcs) {
   // Check that 2's group matrix is updated correctly - Add nodes
   std::vector<NodeInfo> close_nodes;
   SortFromTarget((NodeId(NodeId::kRandomId)), extra_nodes);
-  std::vector<NodeId> expected_close_nodes;
+  std::vector<NodeId> expected_close_nodes(1, node_info_2.node_id);
   for (const auto& node_info : extra_nodes) {
-    if (expected_close_nodes.size() < size_t(Parameters::closest_nodes_size - 1)) {
+    SortIdsFromTarget(node_id_1, expected_close_nodes);
+    EXPECT_EQ(expected_count, count);
+    if (expected_close_nodes.size() < size_t(Parameters::closest_nodes_size)) {
       expected_close_nodes.push_back(node_info.node_id);
-      SortIdsFromTarget(node_id_1, expected_close_nodes);
       ++expected_count;
       expecting_group_change = true;
-    } else if ((node_info.node_id ^ node_id_1) <
-               (expected_close_nodes.at(Parameters::closest_nodes_size - 2) ^ node_id_1)) {
+    } else if (!NodeId::CloserToTarget(expected_close_nodes.at(Parameters::closest_nodes_size - 1),
+                                       node_info.node_id, node_id_1)) {
       expected_close_nodes.pop_back();
       expected_close_nodes.push_back(node_info.node_id);
-      SortIdsFromTarget(node_id_1, expected_close_nodes);
       ++expected_count;
       expecting_group_change = true;
     } else {
@@ -663,18 +662,16 @@ TEST(RoutingTableTest, BEH_CheckMockSendGroupChangeRpcs) {
     }
     ASSERT_TRUE(routing_table_1.AddNode(node_info));
     EXPECT_TRUE(routing_table_2.group_matrix_.GetRow(node_id_1, close_nodes));
-    EXPECT_EQ(expected_close_nodes.size(), close_nodes.size());
     for (uint16_t i(0); i < std::min(expected_close_nodes.size(), close_nodes.size()); ++i) {
       auto id(expected_close_nodes.at(i));
-      EXPECT_NE(std::find_if(close_nodes.begin(), close_nodes.end(),
-                             [id](const NodeInfo & info) { return id == info.node_id; }),
-                close_nodes.end());
+      if (id != node_info_2.node_id)
+        EXPECT_NE(std::find_if(close_nodes.begin(), close_nodes.end(),
+                               [id](const NodeInfo& info) { return id == info.node_id; }),
+                  close_nodes.end()) << " missing expected node " << DebugId(id);
     }
   }
 
   EXPECT_EQ(2 * Parameters::closest_nodes_size + 1, routing_table_1.size());
-  EXPECT_EQ(Parameters::closest_nodes_size + 1,
-            routing_table_2.group_matrix_.GetUniqueNodes().size());
   EXPECT_EQ(expected_count, count);
   EXPECT_LE(Parameters::closest_nodes_size - 1, count);
 
@@ -682,16 +679,17 @@ TEST(RoutingTableTest, BEH_CheckMockSendGroupChangeRpcs) {
   SortFromTarget(node_id_1, extra_nodes);
   count = 0;
   expected_count = 0;
-  expected_close_nodes.clear();
-  for (uint16_t i(0); i < Parameters::closest_nodes_size - 1; ++i)
-    expected_close_nodes.push_back(extra_nodes.at(i).node_id);
   NodeInfo removal_node;
   uint16_t removal_index;
   while (extra_nodes.size() > 0) {
     removal_index = static_cast<uint16_t>(RandomUint32() % extra_nodes.size());
     removal_node = extra_nodes.at(removal_index);
     extra_nodes.erase(extra_nodes.begin() + removal_index);
-    if (removal_index < (Parameters::closest_nodes_size - 1)) {
+    auto connected_nodes(routing_table_1.group_matrix_.GetConnectedPeers());
+    if (std::find_if(std::begin(connected_nodes), std::end(connected_nodes),
+                     [&](const NodeInfo& connected_node) {
+                       return connected_node.node_id == removal_node.node_id;
+                     }) != std::end(connected_nodes)) {
       expected_close_nodes.clear();
       int extra_nodes_size = static_cast<int>(extra_nodes.size());
       for (int i(0); i < std::min(extra_nodes_size, Parameters::closest_nodes_size - 1); ++i) {
@@ -704,7 +702,6 @@ TEST(RoutingTableTest, BEH_CheckMockSendGroupChangeRpcs) {
     }
     routing_table_1.DropNode(removal_node.node_id, true);
     EXPECT_TRUE(routing_table_2.group_matrix_.GetRow(node_id_1, close_nodes));
-    EXPECT_EQ(expected_close_nodes.size(), close_nodes.size());
     for (uint16_t i(0); i < std::min(expected_close_nodes.size(), close_nodes.size()); ++i) {
       auto id(close_nodes.at(i).node_id);
       EXPECT_NE(std::find(expected_close_nodes.begin(), expected_close_nodes.end(), id),

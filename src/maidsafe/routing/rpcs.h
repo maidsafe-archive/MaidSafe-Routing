@@ -73,10 +73,6 @@ protobuf::Message ConnectSuccessAcknowledgement(const NodeId& node_id, const Nod
 protobuf::Message ClosestNodesUpdate(const NodeId& node_id, const NodeId& my_node_id,
                                      const std::vector<NodeInfo>& closest_nodes);
 
-protobuf::Message ClosestNodesUpdateSubscribe(const NodeId& node_id, const NodeId& this_node_id,
-                                              const NodeId& this_connection_id,
-                                              bool client_node, bool subscribe);
-
 protobuf::Message GetGroup(const NodeId& node_id, const NodeId& my_node_id);
 
 protobuf::Message Ack(const NodeId& node_id, const NodeId& my_node_id, int32_t ack_id);

@@ -52,7 +52,6 @@ RoutingTable::RoutingTable(bool client_mode, const NodeId& node_id, const asymm:
       network_status_functor_(),
       remove_furthest_node_(),
       connected_group_change_functor_(),
-      close_node_replaced_functor_(),
       nodes_(),
       group_matrix_(kNodeId_, client_mode),
       ipc_message_queue_(),
@@ -63,7 +62,7 @@ RoutingTable::RoutingTable(bool client_mode, const NodeId& node_id, const asymm:
         boost::interprocess::open_only, network_viewer::kMessageQueueName.c_str()));
     if (static_cast<uint16_t>(ipc_message_queue_->get_max_msg_size()) <
         (Parameters::closest_nodes_size + 1) * Parameters::closest_nodes_size * 2 * NodeId::kSize) {
-      ThrowError(CommonErrors::invalid_parameter);
+      BOOST_THROW_EXCEPTION(MakeError(CommonErrors::invalid_parameter));
     }
   }
   catch (const std::exception&) {
@@ -119,7 +118,7 @@ bool RoutingTable::AddOrCheckNode(NodeInfo peer, bool remove) {
   }
 
   bool return_value(false), remove_furthest_node(false);
-  std::vector<NodeInfo> new_connected_close_nodes, old_connected_close_nodes/*, new_closest_nodes*/;
+  std::vector<NodeInfo> new_connected_close_nodes, old_connected_close_nodes;
   NodeInfo removed_node;
   uint16_t routing_table_size(0);
   std::shared_ptr<MatrixChange> matrix_change;
@@ -164,16 +163,7 @@ bool RoutingTable::AddOrCheckNode(NodeInfo peer, bool remove) {
         remove_node_functor_(removed_node, false);
     }
 
-    if ((new_connected_close_nodes.size() != old_connected_close_nodes.size()) ||
-         !std::equal(new_connected_close_nodes.begin(), new_connected_close_nodes.end(),
-                     old_connected_close_nodes.begin(),
-                     [](const NodeInfo& lhs, const NodeInfo& rhs) {
-                        return lhs.node_id == rhs.node_id;
-                     })) {
-      if (connected_group_change_functor_) {
-        connected_group_change_functor_(new_connected_close_nodes, old_connected_close_nodes);
-      }
-    }
+    UpdateConnectedPeersMatrix(new_connected_close_nodes, old_connected_close_nodes);
 
     if ((matrix_change != nullptr) && !matrix_change->OldEqualsToNew()) {
       network_statistics_.UpdateLocalAverageDistance(unique_nodes);
@@ -183,8 +173,8 @@ bool RoutingTable::AddOrCheckNode(NodeInfo peer, bool remove) {
     }
 
     if (peer.nat_type == rudp::NatType::kOther) {  // Usable as bootstrap endpoint
-                                                   //      if (new_bootstrap_endpoint_)
-                                                   //        new_bootstrap_endpoint_(peer.endpoint);
+                                                   // if (new_bootstrap_endpoint_)
+                                                   // new_bootstrap_endpoint_(peer.endpoint);
     }
     if (remove_furthest_node) {
       LOG(kVerbose) << "[" << DebugId(kNodeId_) << "] Removing furthest node....";
@@ -201,7 +191,6 @@ NodeInfo RoutingTable::DropNode(const NodeId& node_to_drop, bool routing_only) {
   NodeInfo dropped_node;
   std::shared_ptr<MatrixChange> matrix_change;
   std::vector<NodeId> unique_nodes;
-  bool close_nodes_changed(false);
   {
     std::unique_lock<std::mutex> lock(mutex_);
     auto found(Find(node_to_drop, lock));
@@ -212,7 +201,6 @@ NodeInfo RoutingTable::DropNode(const NodeId& node_to_drop, bool routing_only) {
       matrix_change = group_matrix_.RemoveConnectedPeer(dropped_node);
       new_connected_close_nodes = group_matrix_.GetConnectedPeers();
       if (new_connected_close_nodes.size() != old_connected_close_nodes.size()) {
-        close_nodes_changed = true;
         if (nodes_.size() >= Parameters::closest_nodes_size) {
           PartialSortFromTarget(kNodeId_, Parameters::closest_nodes_size, lock);
           furthest_closest_node_id_ = nodes_[Parameters::closest_nodes_size - 1].node_id;
@@ -226,8 +214,7 @@ NodeInfo RoutingTable::DropNode(const NodeId& node_to_drop, bool routing_only) {
     unique_nodes = group_matrix_.GetUniqueNodeIds();
   }
 
-  if (close_nodes_changed && connected_group_change_functor_)
-    connected_group_change_functor_(new_connected_close_nodes, old_connected_close_nodes);
+  UpdateConnectedPeersMatrix(new_connected_close_nodes, old_connected_close_nodes);
 
   if ((matrix_change != nullptr) && !matrix_change->OldEqualsToNew()) {
     network_statistics_.UpdateLocalAverageDistance(unique_nodes);
@@ -277,14 +264,15 @@ bool RoutingTable::IsThisNodeGroupLeader(const NodeId& target_id, NodeInfo& conn
   NodeInfo closest_peer(GetClosestNode(target_id, exclude, true));
   if (NodeId::CloserToTarget(closest_peer.node_id, current_closest.node_id, target_id))
     current_closest = closest_peer;
-
-  std::unique_lock<std::mutex> lock(mutex_);
-  group_matrix_.GetBetterNodeForSendingMessage(target_id, exclude, true, current_closest);
-  if (current_closest.node_id != kNodeId_) {
-    auto found(Find(current_closest.node_id, lock));
-    if (found.first) {
-      connected_peer = *found.second;
-      return false;
+  {
+    std::unique_lock<std::mutex> lock(mutex_);
+    group_matrix_.GetBetterNodeForSendingMessage(target_id, exclude, true, current_closest);
+    if (current_closest.node_id != kNodeId_) {
+      auto found(Find(current_closest.node_id, lock));
+      if (found.first) {
+        connected_peer = *found.second;
+        return false;
+      }
     }
   }
   for (const auto& excluded : exclude) {
@@ -304,29 +292,27 @@ bool RoutingTable::IsThisNodeGroupLeader(const NodeId& target_id, NodeInfo& conn
 }
 
 bool RoutingTable::ClosestToId(const NodeId& target_id) {
-  {
-    std::unique_lock<std::mutex> lock(mutex_);
+  if (target_id == kNodeId_)
+    return false;
 
-    if (target_id == kNodeId_)
-      return false;
+  std::unique_lock<std::mutex> lock(mutex_);
+  if (nodes_.empty())  // should return false ?
+    return true;
 
-    if (nodes_.empty())  // should return false ?
-      return true;
-
-    if (nodes_.size() == 1) {
-      if (nodes_.at(0).node_id == target_id)
-        return true;
-      else
-        return NodeId::CloserToTarget(kNodeId_, nodes_.at(0).node_id, target_id);
-    }
-
-    PartialSortFromTarget(target_id, 2, lock);
-    uint16_t index(0);
+  if (nodes_.size() == 1) {
     if (nodes_.at(0).node_id == target_id)
-      index = 1;
-    if (!NodeId::CloserToTarget(kNodeId_, nodes_.at(index).node_id, target_id))
-      return false;
+      return true;
+    else
+      return NodeId::CloserToTarget(kNodeId_, nodes_.at(0).node_id, target_id);
   }
+
+  PartialSortFromTarget(target_id, 2, lock);
+  uint16_t index(0);
+  if (nodes_.at(0).node_id == target_id)
+    index = 1;
+  if (!NodeId::CloserToTarget(kNodeId_, nodes_.at(index).node_id, target_id))
+    return false;
+
   return group_matrix_.ClosestToId(target_id);
 }
 
@@ -336,7 +322,7 @@ GroupRangeStatus RoutingTable::IsNodeIdInGroupRange(const NodeId& group_id) cons
 
 GroupRangeStatus RoutingTable::IsNodeIdInGroupRange(const NodeId& group_id,
                                                     const NodeId& node_id) const {
-  std::unique_lock<std::mutex> lock(mutex_);
+  std::lock_guard<std::mutex> lock(mutex_);
   return group_matrix_.IsNodeIdInGroupRange(group_id, node_id);
 }
 
@@ -354,14 +340,14 @@ NodeId RoutingTable::RandomConnectedNode() {
 }
 
 std::vector<NodeInfo> RoutingTable::GetMatrixNodes() {
-  std::unique_lock<std::mutex> lock(mutex_);
+  std::lock_guard<std::mutex> lock(mutex_);
   return group_matrix_.GetUniqueNodes();
 }
 
 bool RoutingTable::IsConnected(const NodeId& node_id) {
   if (Contains(node_id))
     return true;
-  std::unique_lock<std::mutex> lock(mutex_);
+  std::lock_guard<std::mutex> lock(mutex_);
   return group_matrix_.Contains(node_id);
 }
 
@@ -398,7 +384,6 @@ bool RoutingTable::IsThisNodeClosestToIncludingMatrix(const NodeId& target_id,
     return false;
   }
   NodeInfo closest_node(GetClosestNode(target_id, ignore_exact_match));
-  std::unique_lock<std::mutex> lock(mutex_);
 
   if (closest_node.bucket == NodeInfo::kInvalidBucket)
     return true;  // ?
@@ -407,6 +392,7 @@ bool RoutingTable::IsThisNodeClosestToIncludingMatrix(const NodeId& target_id,
     return false;
 
   NodeId connected_peer;
+  std::lock_guard<std::mutex> lock(mutex_);
   return group_matrix_.IsThisNodeGroupLeader(target_id, connected_peer);  // use connected peer?
 }
 
@@ -423,22 +409,37 @@ bool RoutingTable::ConfirmGroupMembers(const NodeId& node1, const NodeId& node2)
 void RoutingTable::GroupUpdateFromConnectedPeer(const NodeId& peer,
                                                 const std::vector<NodeInfo>& nodes) {
   std::shared_ptr<MatrixChange> matrix_change;
-  std::vector<NodeId> old_unique_ids(group_matrix_.GetUniqueNodeIds());
+  std::vector<NodeInfo> new_connected_peers, old_connected_peers;
   {
     std::unique_lock<std::mutex> lock(mutex_);
-    auto connected_peers(group_matrix_.GetConnectedPeers());
-    if (std::find_if(std::begin(connected_peers), std::end(connected_peers),
+    std::vector<NodeId> old_unique_ids(group_matrix_.GetUniqueNodeIds());
+    old_connected_peers = group_matrix_.GetConnectedPeers();
+    if (std::find_if(old_connected_peers.begin(), old_connected_peers.end(),
                      [peer](const NodeInfo & node_info) { return node_info.node_id == peer; }) ==
-        std::end(connected_peers)) {
+        old_connected_peers.end()) {
       auto found(Find(peer, lock));
       if (!found.first)
         return;
       group_matrix_.AddConnectedPeer(*found.second);
     }
     matrix_change = group_matrix_.UpdateFromConnectedPeer(peer, nodes, old_unique_ids);
+    new_connected_peers = group_matrix_.GetConnectedPeers();
   }
   if (!matrix_change->OldEqualsToNew() && matrix_change_functor_)
     matrix_change_functor_(matrix_change);
+  UpdateConnectedPeersMatrix(new_connected_peers, old_connected_peers);
+}
+
+void RoutingTable::UpdateConnectedPeersMatrix(const std::vector<NodeInfo>& new_connected_peers,
+                                              const std::vector<NodeInfo>& old_connected_peers) {
+  if (new_connected_peers.size() != old_connected_peers.size() ||
+      !std::equal(std::begin(new_connected_peers), std::end(new_connected_peers),
+                  std::begin(old_connected_peers),
+                  [](const NodeInfo& lhs, const NodeInfo& rhs) {
+                    return lhs.node_id == rhs.node_id;
+                  }))
+    if (connected_group_change_functor_)
+      connected_group_change_functor_(new_connected_peers, old_connected_peers);
 }
 
 std::shared_ptr<MatrixChange> RoutingTable::UpdateCloseNodeChange(
@@ -633,8 +634,8 @@ NodeInfo RoutingTable::GetNodeForSendingMessage(const NodeId& target_id,
                                                 const std::vector<std::string>& exclude,
                                                 bool ignore_exact_match) {
   NodeInfo current_peer(GetClosestNode(target_id, exclude, ignore_exact_match));
-  std::unique_lock<std::mutex> lock(mutex_);
   if (current_peer.node_id != target_id) {
+    std::lock_guard<std::mutex> lock(mutex_);
     group_matrix_.GetBetterNodeForSendingMessage(target_id, exclude, ignore_exact_match,
                                                  current_peer);
   }
@@ -757,11 +758,7 @@ std::vector<NodeInfo> RoutingTable::GetMatrixClosestNodes(
 }
 
 std::vector<NodeId> RoutingTable::GetGroup(const NodeId& target_id) {
-  std::vector<NodeInfo> nodes;
-  {
-    std::unique_lock<std::mutex> lock(mutex_);
-    nodes = group_matrix_.GetUniqueNodes();
-  }
+  std::vector<NodeInfo> nodes(GetMatrixNodes());
   std::vector<NodeId> group;
   std::partial_sort(nodes.begin(), nodes.begin() + Parameters::group_size, nodes.end(),
                     [&](const NodeInfo & lhs, const NodeInfo & rhs) {

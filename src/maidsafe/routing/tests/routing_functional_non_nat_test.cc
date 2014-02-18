@@ -71,7 +71,7 @@ TEST_F(RoutingNetworkNonNatTest, FUNC_GroupUpdateSubscription) {
         EXPECT_TRUE(env_->nodes_[my_index]->NodeSubscribedForGroupUpdate(node_info.node_id))
             << DebugId(node->node_id()) << " does not have " << DebugId(node_info.node_id);
       } else {
-        EXPECT_GE(node->GetGroupMatrixConnectedPeers().size(), 8);
+        EXPECT_GE(node->GetGroupMatrixConnectedPeers().size(), 8U);
       }
     }
   }

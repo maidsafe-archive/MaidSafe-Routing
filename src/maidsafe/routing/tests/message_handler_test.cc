@@ -69,7 +69,6 @@ class MessageHandlerTest : public testing::Test {
       MessageReceived(message);
       reply_functor("reply");
     };
-    asio_service_.Start();
     NodeId node_id(NodeId::kRandomId);
     network_statistics_.reset(new NetworkStatistics(node_id));
     table_.reset(
@@ -86,8 +85,10 @@ class MessageHandlerTest : public testing::Test {
   }
 
   void MessageReceived(const std::string& /*message*/) {
-    std::lock_guard<std::mutex> lock(mutex_);
-    ++messages_received_;
+    {
+      std::lock_guard<std::mutex> lock(mutex_);
+      ++messages_received_;
+    }
     cond_var_.notify_all();
   }
 
@@ -278,6 +279,7 @@ TEST_F(MessageHandlerTest, BEH_HandleGroupMessage) {
     message.set_request(true);
     message.set_client_node(true);
     message.set_visited(true);
+    message.set_ack_id(RandomUint32());
     std::vector<NodeId> closest_nodes(table_->GetClosestNodes(close_info_.node_id, 4));
     closest_nodes.erase(
         std::remove_if(closest_nodes.begin(), closest_nodes.end(),
@@ -402,6 +404,7 @@ TEST_F(MessageHandlerTest, BEH_HandleGroupMessage) {
     message.set_replication(4);
     message.set_type(static_cast<uint32_t>(MessageType::kFindNodes));
     message.set_destination_id(destination_id.string());
+    message.set_ack_id(RandomUint32());
     message_handler.HandleMessage(message);
   }
   {  // Handle Node level non-relay group message to destination closest to us
@@ -455,6 +458,7 @@ TEST_F(MessageHandlerTest, BEH_HandleGroupMessage) {
     message.set_source_id(source_id.string());
     message.set_replication(4);
     message.add_data("DATA");
+    message.set_ack_id(RandomUint32());
     NodeId destination_id(GenerateUniqueRandomId(table_->kNodeId(), 4));
     message.set_destination_id(destination_id.string());
     message_handler.set_message_and_caching_functor(message_and_caching_functor_);

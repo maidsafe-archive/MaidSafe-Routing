@@ -69,6 +69,27 @@ GroupToGroupMessage CreateGroupToGroupMessage(const protobuf::Message& proto_mes
                              static_cast<Cacheable>(proto_message.cacheable()));
 }
 
+SingleToGroupRelayMessage CreateSingleToGroupRelayMessage(const protobuf::Message& proto_message) {
+  SingleSource single_src(NodeId(proto_message.relay_id()));
+  NodeId connection_id(proto_message.relay_connection_id());
+  SingleSource single_src_relay_node(NodeId(proto_message.source_id()));
+  SingleRelaySource single_relay_src(single_src,  // original sender
+                                     connection_id,
+                                     single_src_relay_node);
+
+  return SingleToGroupRelayMessage(proto_message.data(0),
+      single_relay_src,  // relay node
+          GroupId(NodeId(proto_message.group_destination())),
+              static_cast<Cacheable>(proto_message.cacheable()));
+
+//  return SingleToGroupRelayMessage(proto_message.data(0),
+//      SingleSourceRelay(SingleSource(NodeId(proto_message.relay_id())), // original sender
+//                        NodeId(proto_message.relay_connection_id()),
+//                        SingleSource(NodeId(proto_message.source_id()))),  // relay node
+//          GroupId(NodeId(proto_message.group_destination())),
+//              static_cast<Cacheable>(proto_message.cacheable()));
+}
+
 }  //  unnamed namespace
 
 MessageHandler::MessageHandler(RoutingTable& routing_table,
@@ -209,7 +230,7 @@ void MessageHandler::HandleNodeLevelMessageForThisNode(protobuf::Message& messag
                << ")  --NodeLevel--";
     try {
       if (!message.has_id() || message.data_size() != 1)
-        ThrowError(CommonErrors::parsing_error);
+        BOOST_THROW_EXCEPTION(MakeError(CommonErrors::parsing_error));
       timer_.AddResponse(message.id(), message.data(0));
     }
     catch (const maidsafe_error& e) {
@@ -355,13 +376,16 @@ void MessageHandler::HandleGroupMessageAsClosestNode(protobuf::Message& message)
   NodeId destination_id(message.destination_id());
   NodeId own_node_id(routing_table_.kNodeId());
   auto close_from_matrix(routing_table_.GetMatrixClosestNodes(destination_id, replication + 2));
-  close_from_matrix.erase(
-      std::remove_if(std::begin(close_from_matrix), std::end(close_from_matrix),
-                     [&own_node_id, &destination_id](const NodeInfo& node_info) {
-                       return node_info.node_id == destination_id ||
-                              node_info.node_id == own_node_id;
-                     }),
-                     std::end(close_from_matrix));
+  close_from_matrix.erase(std::remove_if(close_from_matrix.begin(), close_from_matrix.end(),
+                                         [&destination_id](const NodeInfo & node_info) {
+                            return node_info.node_id == destination_id;
+                          }),
+                          close_from_matrix.end());
+  close_from_matrix.erase(std::remove_if(close_from_matrix.begin(), close_from_matrix.end(),
+                                         [&own_node_id](const NodeInfo & node_info) {
+                            return node_info.node_id == own_node_id;
+                          }),
+                          close_from_matrix.end());
   while (close_from_matrix.size() > replication)
     close_from_matrix.pop_back();
 
@@ -375,7 +399,8 @@ void MessageHandler::HandleGroupMessageAsClosestNode(protobuf::Message& message)
   for (const auto& i : close_from_matrix) {
     LOG(kInfo) << "[" << DebugId(own_node_id) << "] - "
                << "Replicating message to : " << HexSubstr(i.node_id.string())
-               << " [ group_id : " << HexSubstr(group_id) << "]" << " id: " << message.id();
+               << " [ group_id : " << HexSubstr(group_id) << "]"
+               << " id: " << message.id();
     message.set_destination_id(i.node_id.string());
     message.clear_ack_node_ids();
 //    message.set_ack_id(acknowledgement_.GetId());
@@ -589,6 +614,7 @@ void MessageHandler::HandleGroupRelayRequestMessageAsClosestNode(protobuf::Messa
   if (!routing_table_.IsThisNodeGroupLeader(NodeId(message.destination_id()),
                                             closest_to_group_leader_node)) {
     assert(NodeId(message.destination_id()) != closest_to_group_leader_node.node_id);
+    message.set_source_id(routing_table_.kNodeId().string());
     return network_.SendToDirect(message, closest_to_group_leader_node.node_id,
                                  closest_to_group_leader_node.connection_id);
   }
@@ -629,7 +655,7 @@ void MessageHandler::HandleGroupRelayRequestMessageAsClosestNode(protobuf::Messa
   }
 
   message.set_destination_id(routing_table_.kNodeId().string());
-  message.clear_source_id();
+//  message.clear_source_id();
   if (IsRoutingMessage(message))
     HandleRoutingMessage(message);
   else
@@ -654,17 +680,28 @@ bool MessageHandler::RelayDirectMessageIfNeeded(protobuf::Message& message) {
     return false;
   }
 
+  if (IsRequest(message) && message.has_actual_destination_is_relay_id() &&
+          (message.destination_id() != message.relay_id())) {
+    message.clear_destination_id();
+    message.clear_actual_destination_is_relay_id();  // so that it is picked currectly at recepient
+    LOG(kVerbose) << "Relaying request to " << HexSubstr(message.relay_id())
+                  << " id: " << message.id();
+    network_.SendToClosestNode(message);
+    return true;
+  }
+
   // Only direct responses need to be relayed
-  if ((message.destination_id() != message.relay_id()) && IsResponse(message)) {
+  if (IsResponse(message) && (message.destination_id() != message.relay_id())) {
     message.clear_destination_id();  // to allow network util to identify it as relay message
     LOG(kVerbose) << "Relaying response to " << HexSubstr(message.relay_id())
                   << " id: " << message.id();
     network_.SendToClosestNode(message);
     return true;
-  } else {  // not a relay message response, its for this node
-            //    LOG(kVerbose) << "Not a relay message response, it's for this node";
-    return false;
   }
+
+  // not a relay message response, its for this node
+  //    LOG(kVerbose) << "Not a relay message response, it's for this node";
+  return false;
 }
 
 void MessageHandler::HandleClientMessage(protobuf::Message& message) {
@@ -709,10 +746,16 @@ void MessageHandler::InvokeTypedMessageReceivedFunctor(const protobuf::Message& 
       typed_message_received_functors_.single_to_single) {  // Single to Single
     typed_message_received_functors_.single_to_single(CreateSingleToSingleMessage(proto_message));
   } else if ((!proto_message.has_group_source() && proto_message.has_group_destination()) &&
-             typed_message_received_functors_.single_to_group) {  // Single to Group
-    typed_message_received_functors_.single_to_group(CreateSingleToGroupMessage(proto_message));
+             typed_message_received_functors_.single_to_group) {
+    // Single to Group
+    if (proto_message.has_relay_id() && proto_message.has_relay_connection_id()) {
+      typed_message_received_functors_.single_to_group_relay(
+          CreateSingleToGroupRelayMessage(proto_message));
+    } else {
+      typed_message_received_functors_.single_to_group(CreateSingleToGroupMessage(proto_message));
+    }
   } else if ((proto_message.has_group_source() && !proto_message.has_group_destination()) &&
-             typed_message_received_functors_.group_to_single) {  // Group to Single
+             typed_message_received_functors_.group_to_single) {
     typed_message_received_functors_.group_to_single(CreateGroupToSingleMessage(proto_message));
   } else if ((proto_message.has_group_source() && proto_message.has_group_destination()) &&
              typed_message_received_functors_.group_to_group) {  // Group to Group
@@ -732,6 +775,8 @@ void MessageHandler::set_typed_message_and_caching_functor(TypedMessageAndCachin
   typed_message_received_functors_.single_to_group = functors.single_to_group.message_received;
   typed_message_received_functors_.group_to_single = functors.group_to_single.message_received;
   typed_message_received_functors_.group_to_group = functors.group_to_group.message_received;
+  typed_message_received_functors_.single_to_group_relay =
+      functors.single_to_group_relay.message_received;
   // Initialise caching functors here
 }
 

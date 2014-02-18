@@ -154,7 +154,7 @@ void Timer<Response>::AddTask(const std::chrono::steady_clock::duration& timeout
   if (!response_functor || expected_response_count < 1) {
     LOG(kError) << "Timer<Response>::AddTask response_functor not initialised or "
                 << " incorrect expected_response_count";
-    ThrowError(CommonErrors::invalid_parameter);
+    BOOST_THROW_EXCEPTION(MakeError(CommonErrors::invalid_parameter));
   }
   std::lock_guard<std::mutex> lock(mutex_);
   auto result(tasks_.insert(std::move(
@@ -176,7 +176,7 @@ void Timer<Response>::FinishTask(TaskId task_id, const boost::system::error_code
     auto itr(tasks_.find(task_id));
     if (itr == std::end(tasks_)) {
       LOG(kError) << "Timer<Response>::FinishTask Task " << task_id << " not held by Timer.";
-      ThrowError(CommonErrors::invalid_parameter);
+      BOOST_THROW_EXCEPTION(MakeError(CommonErrors::invalid_parameter));
     }
     assert(itr->second.outstanding_response_count >= 0);
     LOG(kVerbose) << "Timer<Response>::FinishTask outstanding_response_count for Task "
@@ -187,20 +187,21 @@ void Timer<Response>::FinishTask(TaskId task_id, const boost::system::error_code
     }
 
     tasks_.erase(itr);
-  }
 
-  switch (error.value()) {
-    case boost::system::errc::success:  // Task's timer has expired
-      LOG(kWarning) << "Timed out waiting for task " << task_id;
-      break;
-    case boost::asio::error::operation_aborted:  // Cancelled via CancelTask
-      LOG(kInfo) << "Cancelled task " << task_id;
-      break;
-    default:
-      LOG(kError) << "Error waiting for task " << task_id << " - " << error.message();
+    switch (error.value()) {
+      case boost::system::errc::success:  // Task's timer has expired
+        LOG(kWarning) << "Timed out waiting for task " << task_id;
+        break;
+      case boost::asio::error::operation_aborted:  // Cancelled via CancelTask
+        LOG(kInfo) << "Cancelled task " << task_id;
+        break;
+      default:
+        LOG(kError) << "Error waiting for task " << task_id << " - " << error.message();
+    }
+
+    for (int i(0); i != outstanding_response_count; ++i)
+      asio_service_.service().dispatch([=] { functor(Response()); });
   }
-  for (int i(0); i != outstanding_response_count; ++i)
-    asio_service_.service().dispatch([=] { functor(Response()); });
 
   cond_var_.notify_one();
 }
@@ -212,7 +213,7 @@ void Timer<Response>::CancelTask(TaskId task_id) {
   auto itr(tasks_.find(task_id));
   if (itr == std::end(tasks_)) {
     LOG(kError) << "Task " << task_id << " not held by Timer.";
-    ThrowError(CommonErrors::invalid_parameter);
+    BOOST_THROW_EXCEPTION(MakeError(CommonErrors::invalid_parameter));
   }
   itr->second.timer->cancel();
 }
@@ -225,13 +226,8 @@ void Timer<Response>::AddResponse(TaskId task_id, const Response& response) {
     std::lock_guard<std::mutex> lock(mutex_);
     auto itr(tasks_.find(task_id));
     if (itr == std::end(tasks_)) {
-      // There is scenario that during the procedure of Get, the request side will get timed out
-      // earlier than the response side (when they use same time out parameter).
-      // So the task will be cleaned out before the time-out response from responder
-      // arrived. The policy shall change to keep timer muted instead of throwing.
       LOG(kError) << "Task " << task_id << " not held by Timer.";
-//       ThrowError(CommonErrors::invalid_parameter);
-      return;
+      BOOST_THROW_EXCEPTION(MakeError(CommonErrors::invalid_parameter));
     }
     assert(itr->second.outstanding_response_count > 0);
     --(itr->second.outstanding_response_count);

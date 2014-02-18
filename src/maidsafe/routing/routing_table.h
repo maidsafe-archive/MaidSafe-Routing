@@ -157,6 +157,8 @@ class RoutingTable {
   std::pair<bool, std::vector<NodeInfo>::const_iterator> Find(
       const NodeId& node_id, std::unique_lock<std::mutex>& lock) const;
   void UpdateNetworkStatus(uint16_t size) const;
+  void UpdateConnectedPeersMatrix(const std::vector<NodeInfo>& new_connected_peers,
+                                  const std::vector<NodeInfo>& old_connected_peers);
 
   void IpcSendGroupMatrix() const;
   std::string PrintRoutingTable();
@@ -174,7 +176,6 @@ class RoutingTable {
   NetworkStatusFunctor network_status_functor_;
   RemoveFurthestUnnecessaryNode remove_furthest_node_;
   ConnectedGroupChangeFunctor connected_group_change_functor_;
-  CloseNodeReplacedFunctor close_node_replaced_functor_;
   MatrixChangedFunctor matrix_change_functor_;
   std::vector<NodeInfo> nodes_;
   GroupMatrix group_matrix_;

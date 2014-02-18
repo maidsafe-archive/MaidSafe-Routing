@@ -24,7 +24,7 @@
 #include <string>
 #include <vector>
 
-#include "boost/asio/deadline_timer.hpp"
+#include "boost/asio/steady_timer.hpp"
 #include "boost/asio/ip/udp.hpp"
 #include "boost/date_time/posix_time/posix_time_config.hpp"
 #include "boost/system/error_code.hpp"
@@ -68,6 +68,8 @@ template <>
 struct is_group_source<GroupToSingleMessage> : public std::true_type {};
 template <>
 struct is_group_source<GroupToGroupMessage> : public std::true_type {};
+template <>
+struct is_group_source<GroupToSingleRelayMessage> : public std::true_type {};
 
 // Group Destination
 template <typename Messsage>
@@ -84,6 +86,8 @@ template <>
 struct is_group_destination<GroupToSingleMessage> : public std::false_type {};
 template <>
 struct is_group_destination<GroupToGroupMessage> : public std::true_type {};
+template <>
+struct is_group_destination<GroupToSingleRelayMessage> : public std::false_type {};
 
 }  // namespace detail
 
@@ -184,6 +188,7 @@ class Routing::Impl {
 
   std::mutex network_status_mutex_;
   int network_status_;
+  NetworkStatistics network_statistics_;
   RoutingTable routing_table_;
   const NodeId kNodeId_;
   bool running_;
@@ -193,7 +198,6 @@ class Routing::Impl {
   ClientRoutingTable client_routing_table_;
   RemoveFurthestNode remove_furthest_node_;
   GroupChangeHandler group_change_handler_;
-  NetworkStatistics network_statistics_;
   // The following variables' declarations should remain the last ones in this class and should stay
   // in the order: message_handler_, asio_service_, network_, all timers.  This is important for the
   // proper destruction of the routing library, i.e. to avoid segmentation faults.
@@ -202,8 +206,14 @@ class Routing::Impl {
   NetworkUtils network_;
   Timer<std::string> timer_;
   Acknowledgement acknowledgement_;
-  boost::asio::deadline_timer re_bootstrap_timer_, recovery_timer_, setup_timer_;
+  boost::asio::steady_timer re_bootstrap_timer_, recovery_timer_, setup_timer_;
 };
+
+template <>
+void Routing::Impl::Send(const GroupToSingleRelayMessage& message);
+
+template <>
+protobuf::Message Routing::Impl::CreateNodeLevelMessage(const GroupToSingleRelayMessage& message);
 
 // Implementations
 template <typename T>
@@ -242,6 +252,7 @@ protobuf::Message Routing::Impl::CreateNodeLevelMessage(const T& message) {
 
   AddGroupSourceRelatedFields(message, proto_message, detail::is_group_source<T>());
   AddDestinationTypeRelatedFields(proto_message, detail::is_group_destination<T>());
+//  proto_message.set_id(RandomUint32() % 10000);  // Enable for tracing node level messages
   return proto_message;
 }
 

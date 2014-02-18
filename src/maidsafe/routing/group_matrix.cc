@@ -233,8 +233,8 @@ bool GroupMatrix::ClosestToId(const NodeId& target_id) {
 //  if (unique_nodes_.size() < Parameters::group_size) {
 //    if (node_id == kNodeId_)
 //      return true;
-//    else
-//      ThrowError(RoutingErrors::not_in_group);  // TODO(Prakash) throw not_connected here
+//    else  // TODO(Prakash) throw not_connected here
+//      BOOST_THROW_EXCEPTION(MakeError(RoutingErrors::not_in_group));
 //  }
 //  PartialSortFromTarget(group_id, Parameters::group_size, unique_nodes_);
 //  NodeId furthest_group_node(unique_nodes_.at(Parameters::group_size - 1).node_id);
@@ -242,7 +242,7 @@ bool GroupMatrix::ClosestToId(const NodeId& target_id) {
 //  if (node_id == kNodeId_)
 //    return this_node_in_group;
 //  else if (!this_node_in_group)
-//    ThrowError(RoutingErrors::not_in_group);
+//    BOOST_THROW_EXCEPTION(MakeError(RoutingErrors::not_in_group));
 //  return !NodeId::CloserToTarget(furthest_group_node, node_id, group_id);
 // }
 
@@ -272,7 +272,7 @@ GroupRangeStatus GroupMatrix::IsNodeIdInGroupRange(const NodeId& group_id,
     if (node_id == kNodeId_)
       return this_node_range;
     else if (this_node_range != GroupRangeStatus::kInRange)
-      ThrowError(RoutingErrors::not_in_range);  // not_in_group
+      BOOST_THROW_EXCEPTION(MakeError(RoutingErrors::not_in_range));  // not_in_group
   } else {
     if (node_id == kNodeId_)
       return GroupRangeStatus::kInProximalRange;
@@ -429,14 +429,14 @@ void GroupMatrix::Prune() {
     if (client_mode_) {
       LOG(kInfo) << DebugId(kNodeId_) << " matrix conected removes "
                  << DebugId(itr->begin()->node_id);
-      matrix_.erase(itr);
+      itr = matrix_.erase(itr);
       continue;
     }
     node_id = itr->begin()->node_id;
     if (itr->size() <= Parameters::closest_nodes_size) {
       if (itr->size() > 1) {  // avoids removing the recently added node
         LOG(kInfo) << DebugId(kNodeId_) << " matrix conected removes " << DebugId(node_id);
-        matrix_.erase(itr);
+        itr = matrix_.erase(itr);
       } else {
         itr++;
       }
@@ -453,7 +453,7 @@ void GroupMatrix::Prune() {
                                                         }) == std::end(*itr))) {
       LOG(kInfo) << DebugId(kNodeId_) << " matrix conected removes "
                  << DebugId(itr->begin()->node_id);
-      matrix_.erase(itr);
+      itr = matrix_.erase(itr);
     } else {
       itr++;
     }

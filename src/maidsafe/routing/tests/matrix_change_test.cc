@@ -218,7 +218,7 @@ TEST(SingleMatrixChangeTest, BEH_ChoosePmidNode) {
 
   // 0 online_pmids should throw.
   std::set<NodeId> online_pmids;
-  EXPECT_THROW(owners[0].ChoosePmidNode(online_pmids, kTarget), common_error);
+  EXPECT_THROW(owners[0].ChoosePmidNode(online_pmids, kTarget), maidsafe_error);
 
   for (int i(0); i != kGroupSize + 2; ++i)
     online_pmids.insert(NodeId(NodeId::kRandomId));

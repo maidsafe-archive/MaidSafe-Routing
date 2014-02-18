@@ -42,10 +42,7 @@ class AcknowledgementTest : public testing::Test {
         acknowledgement_(asio_service_),
         call_functor_(),
         message_() {
-    asio_service_.Start();
-
-
-    call_functor_ = [=](const boost::system::error_code &error) {
+    call_functor_ = [=](const boost::system::error_code& error) {
                       if (error.value() == boost::system::errc::success) {
                         message_.set_id(message_.id() + 1);
                         acknowledgement_.Add(message_, call_functor_, Parameters::ack_timeout);

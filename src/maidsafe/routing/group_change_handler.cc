@@ -136,7 +136,6 @@ void GroupChangeHandler::SendClosestNodesUpdateRpcs(
                           old_closest_node.connection_id);
   }
 }
-
 bool GroupChangeHandler::GetNodeInfo(const NodeId& node_id, const NodeId& connection_id,
                                      NodeInfo& out_node_info) {
   if (routing_table_.GetNodeInfo(node_id, out_node_info))

@@ -33,6 +33,7 @@ MatrixChange::MatrixChange()
       old_matrix_(),
       new_matrix_(),
       lost_nodes_(),
+      new_nodes_(),
       radius_() {}
 
 MatrixChange::MatrixChange(const MatrixChange& other)
@@ -40,6 +41,7 @@ MatrixChange::MatrixChange(const MatrixChange& other)
       old_matrix_(other.old_matrix_),
       new_matrix_(other.new_matrix_),
       lost_nodes_(other.lost_nodes_),
+      new_nodes_(other.new_nodes_),
       radius_(other.radius_) {}
 
 MatrixChange::MatrixChange(MatrixChange&& other)
@@ -47,6 +49,7 @@ MatrixChange::MatrixChange(MatrixChange&& other)
       old_matrix_(std::move(other.old_matrix_)),
       new_matrix_(std::move(other.new_matrix_)),
       lost_nodes_(std::move(other.lost_nodes_)),
+      new_nodes_(std::move(other.new_nodes_)),
       radius_(std::move(other.radius_)) {}
 
 MatrixChange& MatrixChange::operator=(MatrixChange other) {
@@ -80,6 +83,15 @@ MatrixChange::MatrixChange(NodeId this_node_id, const std::vector<NodeId>& old_m
         });
         return lost_nodes;
       }()),
+      new_nodes_([this]()->std::vector<NodeId> {
+        std::vector<NodeId> new_nodes;
+        std::set_difference(std::begin(new_matrix_), std::end(new_matrix_), std::begin(old_matrix_),
+                            std::end(old_matrix_), std::back_inserter(new_nodes),
+                            [this](const NodeId & lhs, const NodeId & rhs) {
+          return NodeId::CloserToTarget(lhs, rhs, node_id_);
+        });
+        return new_nodes;
+      }()),
       radius_([this]()->crypto::BigInt {
         NodeId fcn_distance;
         if (new_matrix_.size() >= Parameters::closest_nodes_size)
@@ -112,7 +124,7 @@ CheckHoldersResult MatrixChange::CheckHolders(const NodeId& target) const {
     return NodeId::CloserToTarget(lhs, rhs, target);
   });
 
-  // Remove taget == node ids and adjust holder size
+  // Remove target == node ids and adjust holder size
   old_holders.erase(std::remove(std::begin(old_holders), std::end(old_holders), target),
                     std::end(old_holders));
   if (old_holders.size() > Parameters::group_size) {
@@ -151,25 +163,10 @@ CheckHoldersResult MatrixChange::CheckHolders(const NodeId& target) const {
   return holders_result;
 }
 
-PmidNodeStatus MatrixChange::CheckPmidNodeStatus(const std::vector<NodeId>& pmid_nodes) const {
-  PmidNodeStatus pmid_node_status;
-  for (const auto& pmid_node : pmid_nodes) {
-    bool found_in_new_matrix(std::find(std::begin(new_matrix_), std::end(new_matrix_), pmid_node) !=
-                             std::end(new_matrix_));
-    bool found_in_old_matrix(std::find(std::begin(old_matrix_), std::end(old_matrix_), pmid_node) !=
-                             std::end(old_matrix_));
-    if (found_in_new_matrix && !found_in_old_matrix)
-      pmid_node_status.nodes_up.push_back(pmid_node);
-    if (found_in_old_matrix && !found_in_new_matrix)
-      pmid_node_status.nodes_down.push_back(pmid_node);
-  }
-  return pmid_node_status;
-}
-
 NodeId MatrixChange::ChoosePmidNode(const std::set<NodeId>& online_pmids,
                                     const NodeId& target) const {
   if (online_pmids.empty())
-    ThrowError(CommonErrors::invalid_parameter);
+    BOOST_THROW_EXCEPTION(MakeError(CommonErrors::invalid_parameter));
 
   LOG(kInfo) << "MatrixChange::ChoosePmidNode having following new_matrix_ : ";
   for (auto id : new_matrix_)
@@ -215,6 +212,25 @@ void swap(MatrixChange& lhs, MatrixChange& rhs) MAIDSAFE_NOEXCEPT {
   swap(lhs.new_matrix_, rhs.new_matrix_);
   swap(lhs.lost_nodes_, rhs.lost_nodes_);
   swap(lhs.radius_, rhs.radius_);
+}
+
+void MatrixChange::Print() {
+  LOG(kInfo) << "Matrix of Node " << HexSubstr(node_id_.string())
+             << " having following entries in old_matrix_ :";
+  for (auto entry : old_matrix_)
+    LOG(kInfo) << "    entry in old_matrix_    ------     " << HexSubstr(entry.string());
+  LOG(kInfo) << "Matrix of Node " << HexSubstr(node_id_.string())
+             << " having following entries in new_matrix_ :";
+  for (auto entry : new_matrix_)
+    LOG(kInfo) << "    entry in new_matrix_    ------     " << HexSubstr(entry.string());
+  LOG(kInfo) << "Matrix of Node " << HexSubstr(node_id_.string())
+             << " having following entries in lost_nodes_ :";
+  for (auto entry : lost_nodes_)
+    LOG(kInfo) << "    entry in lost_nodes_    ------     " << HexSubstr(entry.string());
+  LOG(kInfo) << "Matrix of Node " << HexSubstr(node_id_.string())
+             << " having following entries in new_nodes_ :";
+  for (auto entry : new_nodes_)
+    LOG(kInfo) << "    entry in new_nodes_    ------     " << HexSubstr(entry.string());
 }
 
 }  // namespace routing

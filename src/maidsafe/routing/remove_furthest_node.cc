@@ -64,10 +64,8 @@ void RemoveFurthestNode::HandleRemoveRequest(const NodeId& node_id) {
 }
 
 bool RemoveFurthestNode::IsRemovable(const NodeId& node_id) {
-  if ((routing_table_.size() <= Parameters::closest_nodes_size) ||
-      (routing_table_.IsThisNodeInRange(node_id, Parameters::closest_nodes_size)))
-    return false;
-  return true;
+  return (routing_table_.size() > Parameters::closest_nodes_size) &&
+      !routing_table_.IsThisNodeInRange(node_id, Parameters::closest_nodes_size);
 }
 
 void RemoveFurthestNode::RejectRemoval(protobuf::Message& message) {

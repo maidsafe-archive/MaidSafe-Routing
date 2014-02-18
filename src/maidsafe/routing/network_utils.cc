@@ -234,7 +234,7 @@ void NetworkUtils::SendToClosestNode(const protobuf::Message& message) {
   }
 
   // Relay message responses only
-  if (message.has_relay_id() && (IsResponse(message))) {
+  if (message.has_relay_id() /*&& (IsResponse(message))*/) {
     protobuf::Message relay_message(message);
     relay_message.set_destination_id(message.relay_id());  // so that peer identifies it as direct
     SendTo(relay_message, NodeId(relay_message.relay_id()),

@@ -189,6 +189,8 @@ template <>
 void Routing::Send(const GroupToSingleMessage& message);
 template <>
 void Routing::Send(const GroupToGroupMessage& message);
+template <>
+void Routing::Send(const GroupToSingleRelayMessage& message);
 
 template <typename T>
 void Routing::Send(const T&) {

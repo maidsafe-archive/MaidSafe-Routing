@@ -54,6 +54,7 @@ struct TypedMessageRecievedFunctors {
   std::function<void(const SingleToGroupMessage& /*message*/)> single_to_group;
   std::function<void(const GroupToSingleMessage& /*message*/)> group_to_single;
   std::function<void(const GroupToGroupMessage& /*message*/)> group_to_group;
+  std::function<void(const SingleToGroupRelayMessage& /*message*/)> single_to_group_relay;
 };
 
 }  // unnamed detail
