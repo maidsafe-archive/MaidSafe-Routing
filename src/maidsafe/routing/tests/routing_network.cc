@@ -656,13 +656,13 @@ std::vector<NodeId> GenericNetwork::GroupIds(const NodeId& node_id) const {
   std::vector<NodeId> all_ids;
   for (const auto& node : this->nodes_)
     all_ids.push_back(node->node_id());
-  std::partial_sort(all_ids.begin(), all_ids.begin() + Parameters::node_group_size + 1,
+  std::partial_sort(all_ids.begin(), all_ids.begin() + Parameters::group_size + 1,
                     all_ids.end(), [&](const NodeId & lhs, const NodeId & rhs) {
     return NodeId::CloserToTarget(lhs, rhs, node_id);
   });
   return std::vector<NodeId>(
       all_ids.begin() + static_cast<uint16_t>(all_ids[0] == node_id),
-      all_ids.begin() + Parameters::node_group_size + static_cast<uint16_t>(all_ids[0] == node_id));
+      all_ids.begin() + Parameters::group_size + static_cast<uint16_t>(all_ids[0] == node_id));
 }
 
 void GenericNetwork::PrintRoutingTables() const {
@@ -768,11 +768,11 @@ std::vector<NodeId> GenericNetwork::GetGroupForId(const NodeId& node_id) const {
     if (!node->IsClient() && (node->node_id() != node_id))
       group_ids.push_back(node->node_id());
   }
-  std::partial_sort(group_ids.begin(), group_ids.begin() + Parameters::node_group_size,
+  std::partial_sort(group_ids.begin(), group_ids.begin() + Parameters::group_size,
                     group_ids.end(), [&](const NodeId & lhs, const NodeId & rhs) {
     return NodeId::CloserToTarget(lhs, rhs, node_id);
   });
-  return std::vector<NodeId>(group_ids.begin(), group_ids.begin() + Parameters::node_group_size);
+  return std::vector<NodeId>(group_ids.begin(), group_ids.begin() + Parameters::group_size);
 }
 
 std::vector<NodeInfo> GenericNetwork::GetClosestNodes(const NodeId& target_id,
@@ -1161,7 +1161,7 @@ testing::AssertionResult GenericNetwork::SendGroup(const NodeId& target_id, size
   std::string data(RandomAlphaNumericString(message_size));
   std::shared_ptr<uint16_t> reply_count(std::make_shared<uint16_t>(0)),
       expected_count(
-          std::make_shared<uint16_t>(static_cast<uint16_t>(Parameters::node_group_size * repeats)));
+          std::make_shared<uint16_t>(static_cast<uint16_t>(Parameters::group_size * repeats)));
   std::shared_ptr<bool> failed(std::make_shared<bool>(false));
 
   std::vector<NodeId> target_group(this->GetGroupForId(target_id));
@@ -1174,7 +1174,7 @@ testing::AssertionResult GenericNetwork::SendGroup(const NodeId& target_id, size
       std::lock_guard<std::mutex> lock(*response_mutex);
       ++(*reply_count);
       monitor->response_count += 1;
-      if (monitor->response_count > Parameters::node_group_size) {
+      if (monitor->response_count > Parameters::group_size) {
         EXPECT_TRUE(false) << "Received too many replies: " << monitor->response_count;
         *failed = true;
         if (*reply_count == *expected_count)

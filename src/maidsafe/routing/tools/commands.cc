@@ -259,7 +259,7 @@ void Commands::SendAMessage(std::atomic<int>& successful_count, int& operation_c
                        shared_response_ptr->msg_send_time_ << std::endl;
     }
     {
-      std::unique_lock<std::mutex> lock(mutex);
+      std::lock_guard<std::mutex> lock(mutex);
       ++operation_count;
       if (operation_count == (messages_count * expect_respondent))
         cond_var.notify_one();
@@ -281,7 +281,7 @@ void Commands::Join() {
   std::mutex mutex;
 
   std::weak_ptr<GenericNode> weak_node(demo_node_);
-  demo_node_->functors_.network_status = [this, &cond_var, weak_node](const int & result) {
+  demo_node_->functors_.network_status = [this, &cond_var, weak_node](const int& result) {
     if (std::shared_ptr<GenericNode> node = weak_node.lock()) {
       ASSERT_GE(result, kSuccess);
       if (result == node->expected() && !node->joined()) {

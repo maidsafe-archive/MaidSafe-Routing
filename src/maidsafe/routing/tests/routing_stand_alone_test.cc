@@ -151,7 +151,7 @@ TEST_F(RoutingStandAloneTest, FUNC_ExtendedSendToGroup) {
     EXPECT_EQ(0, this->nodes_[last_index]->MessagesSize())
         << "Not expected message at Node : "
         << HexSubstr(this->nodes_[last_index]->node_id().string());
-    EXPECT_EQ(message_count * (Parameters::node_group_size), receivers_message_count);
+    EXPECT_EQ(message_count * (Parameters::group_size), receivers_message_count);
     receivers_message_count = 0;
     this->ClearMessages();
   }
@@ -173,9 +173,9 @@ TEST_F(RoutingStandAloneTest, FUNC_ExtendedSendToGroupRandomId) {
         }
       }
     }
-    EXPECT_EQ(message_count * (Parameters::node_group_size), receivers_message_count);
+    EXPECT_EQ(message_count * (Parameters::group_size), receivers_message_count);
     LOG(kVerbose) << "Total message received count : " << message_count *
-                                                              (Parameters::node_group_size);
+                                                              (Parameters::group_size);
     receivers_message_count = 0;
     this->ClearMessages();
   }
