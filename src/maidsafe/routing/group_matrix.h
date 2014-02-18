@@ -47,7 +47,9 @@ class GroupMatrix {
  public:
   explicit GroupMatrix(const NodeId& this_node_id, bool client_mode);
 
-  std::shared_ptr<MatrixChange> AddConnectedPeer(const NodeInfo& node_info);
+  std::shared_ptr<MatrixChange> AddConnectedPeer(
+      const NodeInfo& node_info,
+      const std::vector<NodeInfo>& matrix_update = std::vector<NodeInfo>());
 
   std::shared_ptr<MatrixChange> RemoveConnectedPeer(const NodeInfo& node_info);
 
@@ -101,7 +103,6 @@ class GroupMatrix {
   crypto::BigInt radius_;
   bool client_mode_;
   std::vector<std::vector<NodeInfo>> matrix_;
-  std::map<NodeId, std::vector<NodeInfo>> unvalidated_node_update;
 };
 
 }  // namespace routing

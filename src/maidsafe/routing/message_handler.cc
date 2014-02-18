@@ -136,8 +136,13 @@ void MessageHandler::HandleRoutingMessage(protobuf::Message& message) {
                         : remove_furthest_node_.RemoveResponse(message);
       break;
     case MessageType::kClosestNodesUpdate:
-      assert(message.request());
-      group_change_handler_.ClosestNodesUpdate(message);
+      {
+        assert(message.request());
+        auto matrix_update(group_change_handler_.ClosestNodesUpdate(message));
+        if (matrix_update.first != NodeId())
+          response_handler_->AddMatrixUpdateFromUnvalidatedPeer(matrix_update.first,
+                                                                matrix_update.second);
+      }
       if (routing_table_.client_mode())
         response_handler_->CloseNodeUpdateForClient(message);
       break;

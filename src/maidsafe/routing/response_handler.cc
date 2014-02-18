@@ -46,18 +46,16 @@ namespace routing {
 namespace {
 
 typedef boost::asio::ip::udp::endpoint Endpoint;
+const int kMaxUnvalidatedUpdates(20);
 
 }  // unnamed namespace
 
 ResponseHandler::ResponseHandler(RoutingTable& routing_table,
                                  ClientRoutingTable& client_routing_table, NetworkUtils& network,
                                  GroupChangeHandler& group_change_handler)
-    : mutex_(),
-      routing_table_(routing_table),
-      client_routing_table_(client_routing_table),
-      network_(network),
-      group_change_handler_(group_change_handler),
-      request_public_key_functor_() {}
+    : mutex_(), routing_table_(routing_table), client_routing_table_(client_routing_table),
+      network_(network), group_change_handler_(group_change_handler), request_public_key_functor_(),
+      unvalidated_node_updates() {}
 
 ResponseHandler::~ResponseHandler() {}
 
@@ -306,10 +304,23 @@ void ResponseHandler::ValidateAndCompleteConnectionToNonClient(
     auto validate_node([=](const asymm::PublicKey & key) {
       LOG(kInfo) << "Validation callback called with public key for " << DebugId(peer.node_id);
       if (std::shared_ptr<ResponseHandler> response_handler = response_handler_weak_ptr.lock()) {
+        std::vector<NodeInfo> matrix_update;
+        {
+          std::lock_guard<std::mutex> lock(mutex_);
+          auto matrix_update_itr(std::find_if(
+              std::begin(unvalidated_node_updates), std::end(unvalidated_node_updates),
+              [&](const std::pair<NodeId, std::vector<NodeInfo>>& pair) {
+                return pair.first == peer.node_id;
+              }));
+          if (matrix_update_itr != std::end(unvalidated_node_updates)) {
+            matrix_update = matrix_update_itr->second;
+            unvalidated_node_updates.erase(matrix_update_itr);
+          }
+        }
         if (ValidateAndAddToRoutingTable(response_handler->network_,
                                          response_handler->routing_table_,
                                          response_handler->client_routing_table_, peer.node_id,
-                                         peer.connection_id, key, false)) {
+                                         peer.connection_id, key, false, matrix_update)) {
           if (from_requestor) {
             response_handler->HandleSuccessAcknowledgementAsReponder(peer, false);
           } else {
@@ -387,6 +398,24 @@ void ResponseHandler::CloseNodeUpdateForClient(protobuf::Message& message) {
   assert(!closest_nodes.empty());
   HandleSuccessAcknowledgementAsRequestor(closest_nodes);
   message.Clear();
+}
+
+void ResponseHandler::AddMatrixUpdateFromUnvalidatedPeer(
+    const NodeId& node_id, const std::vector<NodeInfo>& matrix_update) {
+  std::lock_guard<std::mutex> lock(mutex_);
+  auto matrix_update_itr(std::find_if(
+      std::begin(unvalidated_node_updates), std::end(unvalidated_node_updates),
+      [&](const std::pair<NodeId, std::vector<NodeInfo>>& pair) {
+        return pair.first == node_id;
+      }));
+  if (matrix_update_itr == std::end(unvalidated_node_updates))
+    unvalidated_node_updates.push_back(std::pair<NodeId, std::vector<NodeInfo>>(node_id,
+                                                                                matrix_update));
+  else
+    matrix_update_itr->second = matrix_update;
+  LOG(kVerbose) << "unvalidated_node_updates.size() " << unvalidated_node_updates.size();
+  if (unvalidated_node_updates.size() > kMaxUnvalidatedUpdates)
+    unvalidated_node_updates.pop_front();
 }
 
 void ResponseHandler::GetGroup(Timer<std::string>& timer, protobuf::Message& message) {

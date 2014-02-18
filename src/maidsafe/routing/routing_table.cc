@@ -103,11 +103,15 @@ void RoutingTable::InitialiseFunctors(
   //  }
 }
 
-bool RoutingTable::AddNode(const NodeInfo& peer) { return AddOrCheckNode(peer, true); }
+bool RoutingTable::AddNode(const NodeInfo& peer,
+                           const std::vector<NodeInfo>& matrix_update) {
+  return AddOrCheckNode(peer, true, matrix_update);
+}
 
 bool RoutingTable::CheckNode(const NodeInfo& peer) { return AddOrCheckNode(peer, false); }
 
-bool RoutingTable::AddOrCheckNode(NodeInfo peer, bool remove) {
+bool RoutingTable::AddOrCheckNode(NodeInfo peer, bool remove,
+                                  const std::vector<NodeInfo>& matrix_update) {
   if (peer.node_id.IsZero() || peer.node_id == kNodeId_) {
     LOG(kError) << "Attempt to add an invalid node " << DebugId(peer.node_id);
     return false;
@@ -139,7 +143,7 @@ bool RoutingTable::AddOrCheckNode(NodeInfo peer, bool remove) {
         assert(peer.bucket != NodeInfo::kInvalidBucket);
         nodes_.push_back(peer);
         old_connected_close_nodes = group_matrix_.GetConnectedPeers();
-        matrix_change = UpdateCloseNodeChange(lock, peer, new_connected_close_nodes);
+        matrix_change = UpdateCloseNodeChange(lock, peer, new_connected_close_nodes, matrix_update);
         if (nodes_.size() > Parameters::greedy_fraction)
           remove_furthest_node = true;
         if (nodes_.size() >= Parameters::closest_nodes_size) {
@@ -430,13 +434,6 @@ void RoutingTable::GroupUpdateFromConnectedPeer(const NodeId& peer,
   UpdateConnectedPeersMatrix(new_connected_peers, old_connected_peers);
 }
 
-void RoutingTable::GroupUpdateFromUnvalidatedPeer(const NodeId& peer,
-                                                  const std::vector<NodeInfo>& nodes) {
-  std::unique_lock<std::mutex> lock(mutex_);
-  group_matrix_.UpdateFromUnvalidatedPeer(peer, nodes);
-}
-
-
 void RoutingTable::UpdateConnectedPeersMatrix(const std::vector<NodeInfo>& new_connected_peers,
                                               const std::vector<NodeInfo>& old_connected_peers) {
   if (new_connected_peers.size() != old_connected_peers.size() ||
@@ -451,14 +448,14 @@ void RoutingTable::UpdateConnectedPeersMatrix(const std::vector<NodeInfo>& new_c
 
 std::shared_ptr<MatrixChange> RoutingTable::UpdateCloseNodeChange(
     std::unique_lock<std::mutex>& lock, const NodeInfo& peer,
-    std::vector<NodeInfo>& new_connected_nodes) {
+    std::vector<NodeInfo>& new_connected_nodes, const std::vector<NodeInfo>& matrix_update) {
   assert(lock.owns_lock());
   std::shared_ptr<MatrixChange> matrix_change;
   PartialSortFromTarget(kNodeId_, Parameters::closest_nodes_size, lock);
   if ((nodes_.size() < Parameters::closest_nodes_size ||
        !NodeId::CloserToTarget(nodes_[Parameters::closest_nodes_size - 1].node_id, peer.node_id,
                                kNodeId_))) {
-    matrix_change = group_matrix_.AddConnectedPeer(peer);
+    matrix_change = group_matrix_.AddConnectedPeer(peer, matrix_update);
   }
   new_connected_nodes = group_matrix_.GetConnectedPeers();
   return matrix_change;

@@ -46,22 +46,24 @@ GroupChangeHandler::GroupChangeHandler(RoutingTable& routing_table,
 
 GroupChangeHandler::~GroupChangeHandler() {}
 
-void GroupChangeHandler::ClosestNodesUpdate(protobuf::Message& message) {
+std::pair<NodeId, std::vector<NodeInfo>> GroupChangeHandler::ClosestNodesUpdate(
+    protobuf::Message& message) {
+  std::pair<NodeId, std::vector<NodeInfo>> matrix_update_pair;
   if (message.destination_id() != routing_table_.kNodeId().string()) {
     // Message not for this node and we should not pass it on.
     LOG(kError) << "Message not for this node.";
     message.Clear();
-    return;
+    return matrix_update_pair;
   }
   protobuf::ClosestNodesUpdate closest_node_update;
   if (!closest_node_update.ParseFromString(message.data(0))) {
     LOG(kError) << "No Data.";
-    return;
+    return matrix_update_pair;
   }
 
   if (closest_node_update.node().empty() || !CheckId(closest_node_update.node())) {
     LOG(kError) << "Invalid node id provided.";
-    return;
+    return matrix_update_pair;
   }
 
   std::vector<NodeInfo> closest_nodes;
@@ -74,22 +76,28 @@ void GroupChangeHandler::ClosestNodesUpdate(protobuf::Message& message) {
     }
   }
   assert(!closest_nodes.empty());
-  UpdateGroupChange(NodeId(closest_node_update.node()), closest_nodes);
   if (!routing_table_.client_mode())
     message.Clear();
+  if (!UpdateGroupChange(NodeId(closest_node_update.node()), closest_nodes))
+    return matrix_update_pair;
+  return std::pair<NodeId, std::vector<NodeInfo>>(NodeId(closest_node_update.node()),
+                                                  closest_nodes);
 }
 
-void GroupChangeHandler::UpdateGroupChange(const NodeId& node_id,
+bool GroupChangeHandler::UpdateGroupChange(const NodeId& node_id,
                                            std::vector<NodeInfo> close_nodes) {
   if (routing_table_.Contains(node_id)) {
     LOG(kVerbose) << DebugId(routing_table_.kNodeId()) << " UpdateGroupChange for "
                   << DebugId(node_id) << " size of update: " << close_nodes.size();
     routing_table_.GroupUpdateFromConnectedPeer(node_id, close_nodes);
+    return true;
   } else if (network_.HasConnection(node_id)) {
-    routing_table_.GroupUpdateFromUnvalidatedPeer(node_id, close_nodes);
+    // routing_table_.GroupUpdateFromUnvalidatedPeer(node_id, close_nodes);
+    return false;
   } else {
     LOG(kVerbose) << DebugId(routing_table_.kNodeId()) << "UpdateGroupChange for failed"
                   << DebugId(node_id) << " size of update: " << close_nodes.size();
+    return true;
   }
 }
 

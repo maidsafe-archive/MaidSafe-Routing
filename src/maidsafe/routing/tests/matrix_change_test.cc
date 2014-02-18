@@ -144,27 +144,27 @@ class MatrixChangeTest : public testing::Test {
 //     if ((result.proximity_status != test_result.proximity_status) ||
 //         (result.new_holders != test_result.new_holders) ||
 //         (result.old_holders != test_result.old_holders)) {
-// //         std::cout << result.proximity_status << " , " << test_result.proximity_status << std::endl;
-//       std::cout << "target : " << HexSubstr(target_id.string()) << std::endl;
-// //       std::cout << "dropping : " << HexSubstr(drop_node.string()) << std::endl;
-//       std::cout << "result.new_holders : " << std::endl;
+// //         LOG(kVerbose) << result.proximity_status << " , " << test_result.proximity_status;
+//       LOG(kVerbose) << "target : " << HexSubstr(target_id.string());
+// //       LOG(kVerbose) << "dropping : " << HexSubstr(drop_node.string());
+//       LOG(kVerbose) << "result.new_holders : ";
 //       for (auto& holder : result.new_holders)
-//         std::cout << "    ----    " << HexSubstr(holder.string()) << std::endl;
-//       std::cout << "test_result.new_holders : " << std::endl;
+//         LOG(kVerbose) << "    ----    " << HexSubstr(holder.string());
+//       LOG(kVerbose) << "test_result.new_holders : ";
 //       for (auto& holder : test_result.new_holders)
-//         std::cout << "    ----    " << HexSubstr(holder.string()) << std::endl;
-//       std::cout << "result.old_holders : " << std::endl;
+//         LOG(kVerbose) << "    ----    " << HexSubstr(holder.string());
+//       LOG(kVerbose) << "result.old_holders : ";
 //       for (auto& holder : result.old_holders)
-//         std::cout << "    ----    " << HexSubstr(holder.string()) << std::endl;
-//       std::cout << "test_result.old_holders : " << std::endl;
+//         LOG(kVerbose) << "    ----    " << HexSubstr(holder.string());
+//       LOG(kVerbose) << "test_result.old_holders : ";
 //       for (auto& holder : test_result.old_holders)
-//         std::cout << "    ----    " << HexSubstr(holder.string()) << std::endl;
-//       std::cout << "new_matrix containing : " << std::endl;
+//         LOG(kVerbose) << "    ----    " << HexSubstr(holder.string());
+//       LOG(kVerbose) << "new_matrix containing : ";
 //       for (auto& holder : new_matrix_)
-//         std::cout << "    ----    " << HexSubstr(holder.string()) << std::endl;
-//       std::cout << "old_matrix containing : " << std::endl;
+//         LOG(kVerbose) << "    ----    " << HexSubstr(holder.string());
+//       LOG(kVerbose) << "old_matrix containing : ";
 //       for (auto& holder : old_matrix_)
-//         std::cout << "    ----    " << HexSubstr(holder.string()) << std::endl;
+//         LOG(kVerbose) << "    ----    " << HexSubstr(holder.string());
 //       ASSERT_EQ(0, 1);
 //     }
   }

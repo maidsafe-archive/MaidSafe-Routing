@@ -39,12 +39,12 @@ GroupMatrix::GroupMatrix(const NodeId& this_node_id, bool client_mode)
       unique_nodes_(),
       radius_(crypto::BigInt::Zero()),
       client_mode_(client_mode),
-      matrix_(),
-      unvalidated_node_update() {
+      matrix_() {
   UpdateUniqueNodeList();
 }
 
-std::shared_ptr<MatrixChange> GroupMatrix::AddConnectedPeer(const NodeInfo& node_info) {
+std::shared_ptr<MatrixChange> GroupMatrix::AddConnectedPeer(
+    const NodeInfo& node_info, const std::vector<NodeInfo>& matrix_update) {
   std::vector<NodeId> old_unique_ids(GetUniqueNodeIds());
   LOG(kVerbose) << DebugId(kNodeId_) << " AddConnectedPeer : " << DebugId(node_info.node_id);
   auto node_id(node_info.node_id);
@@ -57,20 +57,9 @@ std::shared_ptr<MatrixChange> GroupMatrix::AddConnectedPeer(const NodeInfo& node
     return std::make_shared<MatrixChange>(MatrixChange(kNodeId_, old_unique_ids, old_unique_ids));
   }
 
-  assert(unvalidated_node_update.size() < 2);
-
-  if (!unvalidated_node_update.empty()) {
-    std::vector<NodeInfo> nodes_info(std::vector<NodeInfo>(1, node_info));
-    if (unvalidated_node_update.begin()->first == node_info.node_id) {
-      std::copy(unvalidated_node_update.begin()->second.begin(),
-                unvalidated_node_update.begin()->second.end(), std::back_inserter(nodes_info));
-      LOG(kVerbose) << "size: " << nodes_info.size();
-    }
-    matrix_.push_back(nodes_info);
-    unvalidated_node_update.clear();
-  } else {
-    matrix_.push_back(std::vector<NodeInfo>(1, node_info));
-  }
+  std::vector<NodeInfo> nodes_info(std::vector<NodeInfo>(1, node_info));
+  std::copy(matrix_update.begin(), matrix_update.end(), std::back_inserter(nodes_info));
+  matrix_.push_back(nodes_info);
   Prune();
   UpdateUniqueNodeList();
   return std::make_shared<MatrixChange>(MatrixChange(kNodeId_, old_unique_ids, GetUniqueNodeIds()));
@@ -349,13 +338,6 @@ bool GroupMatrix::GetRow(const NodeId& row_id, std::vector<NodeInfo>& row_entrie
     }
   }
   return true;
-}
-
-void GroupMatrix::UpdateFromUnvalidatedPeer(const NodeId& peer,
-                                            const std::vector<NodeInfo>& nodes) {
-  LOG(kVerbose) << "adding unvalidated " << DebugId(peer);
-  unvalidated_node_update.clear();
-  unvalidated_node_update.insert(std::pair<NodeId, std::vector<NodeInfo>>(peer, nodes));
 }
 
 std::vector<NodeInfo> GroupMatrix::GetUniqueNodes() const { return unique_nodes_; }

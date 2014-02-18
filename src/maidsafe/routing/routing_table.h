@@ -77,7 +77,8 @@ class RoutingTable {
                           RemoveFurthestUnnecessaryNode remove_furthest_node,
                           ConnectedGroupChangeFunctor connected_group_change_functor,
                           MatrixChangedFunctor matrix_change_functor);
-  bool AddNode(const NodeInfo& peer);
+  bool AddNode(const NodeInfo& peer,
+               const std::vector<NodeInfo>& matrix_update = std::vector<NodeInfo>());
   bool CheckNode(const NodeInfo& peer);
   NodeInfo DropNode(const NodeId& node_to_drop, bool routing_only);
   bool ClosestToId(const NodeId& target_id);
@@ -135,14 +136,16 @@ class RoutingTable {
  private:
   RoutingTable(const RoutingTable&);
   RoutingTable& operator=(const RoutingTable&);
-  bool AddOrCheckNode(NodeInfo node, bool remove);
+  bool AddOrCheckNode(NodeInfo node, bool remove,
+                      const std::vector<NodeInfo>& matrix_update = std::vector<NodeInfo>());
   void SetBucketIndex(NodeInfo& node_info) const;
   bool CheckPublicKeyIsUnique(const NodeInfo& node, std::unique_lock<std::mutex>& lock) const;
   NodeInfo ResolveConnectionDuplication(const NodeInfo& new_duplicate_node, bool local_endpoint,
                                         NodeInfo& existing_node);
-  std::shared_ptr<MatrixChange> UpdateCloseNodeChange(std::unique_lock<std::mutex>& lock,
-                                                      const NodeInfo& peer,
-                                                      std::vector<NodeInfo>& new_connected_nodes);
+  std::shared_ptr<MatrixChange> UpdateCloseNodeChange(
+      std::unique_lock<std::mutex>& lock, const NodeInfo& peer,
+      std::vector<NodeInfo>& new_connected_nodes,
+      const std::vector<NodeInfo>& matrix_update = std::vector<NodeInfo>());
   bool MakeSpaceForNodeToBeAdded(const NodeInfo& node, bool remove, NodeInfo& removed_node,
                                  std::unique_lock<std::mutex>& lock);
   uint16_t PartialSortFromTarget(const NodeId& target, uint16_t number,

@@ -20,6 +20,7 @@
 #define MAIDSAFE_ROUTING_GROUP_CHANGE_HANDLER_H_
 
 #include <vector>
+#include <utility>
 
 #include "maidsafe/common/node_id.h"
 
@@ -49,8 +50,8 @@ class GroupChangeHandler {
   ~GroupChangeHandler();
   void SendClosestNodesUpdateRpcs(std::vector<NodeInfo> closest_nodes,
                                   std::vector<NodeInfo> old_closest_nodes);
-  void UpdateGroupChange(const NodeId& node_id, std::vector<NodeInfo> close_nodes);
-  void ClosestNodesUpdate(protobuf::Message& message);
+  bool UpdateGroupChange(const NodeId& node_id, std::vector<NodeInfo> close_nodes);
+  std::pair<NodeId, std::vector<NodeInfo>> ClosestNodesUpdate(protobuf::Message& message);
   void SendSubscribeRpc(bool subscribe, const NodeInfo& node_info);
 
   friend class test::GenericNode;

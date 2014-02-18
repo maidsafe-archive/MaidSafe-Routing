@@ -59,9 +59,10 @@ int AddToRudp(NetworkUtils& network, const NodeId& this_node_id, const NodeId& t
 }
 
 bool ValidateAndAddToRoutingTable(NetworkUtils& network, RoutingTable& routing_table,
-                                  ClientRoutingTable& client_routing_table, const NodeId& peer_id,
-                                  const NodeId& connection_id, const asymm::PublicKey& public_key,
-                                  bool client) {
+                                  ClientRoutingTable& client_routing_table,
+                                  const NodeId& peer_id, const NodeId& connection_id,
+                                  const asymm::PublicKey& public_key, bool client,
+                                  const std::vector<NodeInfo>& matrix_update) {
   if (network.MarkConnectionAsValid(connection_id) != kSuccess) {
     LOG(kError) << "[" << DebugId(routing_table.kNodeId()) << "] "
                 << ". Rudp failed to validate connection with  Peer id : " << DebugId(peer_id)
@@ -82,7 +83,7 @@ bool ValidateAndAddToRoutingTable(NetworkUtils& network, RoutingTable& routing_t
     if (client_routing_table.AddNode(peer, furthest_close_node_id))
       routing_accepted_node = true;
   } else {  // Vaults
-    if (routing_table.AddNode(peer))
+    if (routing_table.AddNode(peer, matrix_update))
       routing_accepted_node = true;
   }
 
