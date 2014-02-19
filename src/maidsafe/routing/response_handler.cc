@@ -46,7 +46,7 @@ namespace routing {
 namespace {
 
 typedef boost::asio::ip::udp::endpoint Endpoint;
-const int kMaxUnvalidatedUpdates(20);
+const int kMaxUnvalidatedUpdates(64);
 
 }  // unnamed namespace
 
@@ -55,7 +55,7 @@ ResponseHandler::ResponseHandler(RoutingTable& routing_table,
                                  GroupChangeHandler& group_change_handler)
     : mutex_(), routing_table_(routing_table), client_routing_table_(client_routing_table),
       network_(network), group_change_handler_(group_change_handler), request_public_key_functor_(),
-      unvalidated_node_updates() {}
+      unvalidated_matrix_updates() {}
 
 ResponseHandler::~ResponseHandler() {}
 
@@ -308,13 +308,13 @@ void ResponseHandler::ValidateAndCompleteConnectionToNonClient(
         {
           std::lock_guard<std::mutex> lock(mutex_);
           auto matrix_update_itr(std::find_if(
-              std::begin(unvalidated_node_updates), std::end(unvalidated_node_updates),
+              std::begin(unvalidated_matrix_updates), std::end(unvalidated_matrix_updates),
               [&](const std::pair<NodeId, std::vector<NodeInfo>>& pair) {
                 return pair.first == peer.node_id;
               }));
-          if (matrix_update_itr != std::end(unvalidated_node_updates)) {
+          if (matrix_update_itr != std::end(unvalidated_matrix_updates)) {
             matrix_update = matrix_update_itr->second;
-            unvalidated_node_updates.erase(matrix_update_itr);
+            unvalidated_matrix_updates.erase(matrix_update_itr);
           }
         }
         if (ValidateAndAddToRoutingTable(response_handler->network_,
@@ -404,18 +404,17 @@ void ResponseHandler::AddMatrixUpdateFromUnvalidatedPeer(
     const NodeId& node_id, const std::vector<NodeInfo>& matrix_update) {
   std::lock_guard<std::mutex> lock(mutex_);
   auto matrix_update_itr(std::find_if(
-      std::begin(unvalidated_node_updates), std::end(unvalidated_node_updates),
+      std::begin(unvalidated_matrix_updates), std::end(unvalidated_matrix_updates),
       [&](const std::pair<NodeId, std::vector<NodeInfo>>& pair) {
         return pair.first == node_id;
       }));
-  if (matrix_update_itr == std::end(unvalidated_node_updates))
-    unvalidated_node_updates.push_back(std::pair<NodeId, std::vector<NodeInfo>>(node_id,
+  if (matrix_update_itr == std::end(unvalidated_matrix_updates))
+    unvalidated_matrix_updates.push_back(std::pair<NodeId, std::vector<NodeInfo>>(node_id,
                                                                                 matrix_update));
   else
     matrix_update_itr->second = matrix_update;
-  LOG(kVerbose) << "unvalidated_node_updates.size() " << unvalidated_node_updates.size();
-  if (unvalidated_node_updates.size() > kMaxUnvalidatedUpdates)
-    unvalidated_node_updates.pop_front();
+  LOG(kVerbose) << "unvalidated_matrix_updates.size() " << unvalidated_matrix_updates.size();
+  assert(unvalidated_matrix_updates.size() < kMaxUnvalidatedUpdates);
 }
 
 void ResponseHandler::GetGroup(Timer<std::string>& timer, protobuf::Message& message) {

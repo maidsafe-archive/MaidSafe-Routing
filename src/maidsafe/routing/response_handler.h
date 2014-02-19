@@ -85,7 +85,7 @@ class ResponseHandler : public std::enable_shared_from_this<ResponseHandler> {
   NetworkUtils& network_;
   GroupChangeHandler& group_change_handler_;
   RequestPublicKeyFunctor request_public_key_functor_;
-  std::deque<std::pair<NodeId, std::vector<NodeInfo>>> unvalidated_node_updates;
+  std::deque<std::pair<NodeId, std::vector<NodeInfo>>> unvalidated_matrix_updates;
 };
 
 }  // namespace routing

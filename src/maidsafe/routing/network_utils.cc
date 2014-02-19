@@ -376,15 +376,6 @@ void NetworkUtils::AdjustRouteHistory(protobuf::Message& message) {
   assert(message.route_history().size() <= Parameters::max_routing_table_size);
 }
 
-bool NetworkUtils::HasConnection(const NodeId& node_id) {
-  {
-    std::lock_guard<std::mutex> lock(running_mutex_);
-    if (!running_)
-      return false;
-  }
-  return rudp_.ConnectionExist(node_id);
-}
-
 void NetworkUtils::set_new_bootstrap_endpoint_functor(
     NewBootstrapEndpointFunctor new_bootstrap_endpoint) {
   new_bootstrap_endpoint_ = new_bootstrap_endpoint;

@@ -91,13 +91,11 @@ bool GroupChangeHandler::UpdateGroupChange(const NodeId& node_id,
                   << DebugId(node_id) << " size of update: " << close_nodes.size();
     routing_table_.GroupUpdateFromConnectedPeer(node_id, close_nodes);
     return true;
-  } else if (network_.HasConnection(node_id)) {
-    // routing_table_.GroupUpdateFromUnvalidatedPeer(node_id, close_nodes);
-    return false;
   } else {
     LOG(kVerbose) << DebugId(routing_table_.kNodeId()) << "UpdateGroupChange for failed"
-                  << DebugId(node_id) << " size of update: " << close_nodes.size();
-    return true;
+                  << DebugId(node_id) << " size of update: " << close_nodes.size()
+                  << " entry will be added to unvalidated matrix updates";
+    return false;
   }
 }
 

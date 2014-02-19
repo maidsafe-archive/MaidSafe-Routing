@@ -58,7 +58,7 @@ std::shared_ptr<MatrixChange> GroupMatrix::AddConnectedPeer(
   }
 
   std::vector<NodeInfo> nodes_info(std::vector<NodeInfo>(1, node_info));
-  std::copy(matrix_update.begin(), matrix_update.end(), std::back_inserter(nodes_info));
+  std::copy(std::begin(matrix_update), std::end(matrix_update), std::back_inserter(nodes_info));
   matrix_.push_back(nodes_info);
   Prune();
   UpdateUniqueNodeList();
