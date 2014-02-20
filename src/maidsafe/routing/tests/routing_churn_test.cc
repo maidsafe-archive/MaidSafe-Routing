@@ -17,6 +17,7 @@
     use of the MaidSafe Software.                                                                 */
 
 #include <vector>
+#include <atomic>
 
 #include "maidsafe/rudp/nat_type.h"
 
