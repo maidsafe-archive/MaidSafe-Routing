@@ -633,7 +633,8 @@ bool GenericNetwork::WaitForNodesToJoin(size_t num_total_nodes) {
   // TODO(Alison) - tailor max. duration to match number of nodes joining?
   bool all_joined = true;
   int expected_health(num_total_nodes < Parameters::max_client_routing_table_size ?
-      ((num_total_nodes) * 100) / (static_cast<size_t>(Parameters::max_client_routing_table_size) : 100);
+      (num_total_nodes * 100) / static_cast<size_t>(Parameters::max_client_routing_table_size)
+      : 100);
   uint16_t max(10), i(0);
   while (i < max) {
     all_joined = true;

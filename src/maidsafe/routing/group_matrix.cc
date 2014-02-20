@@ -98,8 +98,8 @@ NodeInfo GroupMatrix::GetConnectedPeerFor(const NodeId& target_node_id) {
   for (const auto& nodes : matrix_) {
     if (std::find_if(std::begin(nodes), std::end(nodes),
                      [target_node_id](const NodeInfo& node_info) {
-          return (node_info.node_id == target_node_id);
-        }) != std::end(nodes)) {
+                       return (node_info.node_id == target_node_id);
+                     }) != std::end(nodes)) {
       return nodes.at(0);
     }
   }
