@@ -31,6 +31,7 @@
 #include "maidsafe/passport/types.h"
 
 #include "maidsafe/routing/api_config.h"
+#include "maidsafe/routing/node_info.h"
 #include "maidsafe/routing/parameters.h"
 #include "maidsafe/routing/routing.pb.h"
 
