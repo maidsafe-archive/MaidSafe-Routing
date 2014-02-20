@@ -632,7 +632,7 @@ bool GenericNetwork::WaitForNodesToJoin() {
 bool GenericNetwork::WaitForNodesToJoin(size_t num_total_nodes) {
   // TODO(Alison) - tailor max. duration to match number of nodes joining?
   bool all_joined = true;
-  int expected_health(num_total_nodes < Parameters::max_client_routing_table_size ?
+  size_t expected_health(num_total_nodes < Parameters::max_client_routing_table_size ?
       (num_total_nodes * 100) / static_cast<size_t>(Parameters::max_client_routing_table_size)
       : 100);
   uint16_t max(10), i(0);
@@ -643,7 +643,7 @@ bool GenericNetwork::WaitForNodesToJoin(size_t num_total_nodes) {
         all_joined = false;
         break;
       }
-      if (nodes_.at(j)->Health() < expected_health) {
+      if (static_cast<size_t>(nodes_.at(j)->Health()) < expected_health) {
         all_joined = false;
         break;
       }
