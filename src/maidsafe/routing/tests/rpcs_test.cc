@@ -59,8 +59,8 @@ TEST(RpcsTest, BEH_PingMessageNode) {
   EXPECT_TRUE(ping_request.ParseFromString(message.data(0)));  // us
   EXPECT_TRUE(ping_request.ping());
   EXPECT_TRUE(ping_request.has_timestamp());
-  EXPECT_TRUE(ping_request.timestamp() > static_cast<int32_t>(GetTimeStamp() - 2));
-  EXPECT_TRUE(ping_request.timestamp() < static_cast<int32_t>(GetTimeStamp() + 1));
+  EXPECT_TRUE(ping_request.timestamp() > GetTimeStamp() - 2000);
+  EXPECT_TRUE(ping_request.timestamp() < GetTimeStamp() + 1000);
   EXPECT_EQ(destination, message.destination_id());
   EXPECT_EQ(source, message.source_id());
   EXPECT_NE(0, message.data_size());
@@ -96,8 +96,8 @@ TEST(RpcsTest, BEH_ConnectMessageNode) {
   EXPECT_TRUE(connect_request.ParseFromString(message.data(0)));  // us
   EXPECT_FALSE(connect_request.bootstrap());
   EXPECT_TRUE(connect_request.has_timestamp());
-  EXPECT_TRUE(connect_request.timestamp() > static_cast<int32_t>(GetTimeStamp() - 2));
-  EXPECT_TRUE(connect_request.timestamp() < static_cast<int32_t>(GetTimeStamp() + 1));
+  EXPECT_TRUE(connect_request.timestamp() > GetTimeStamp() - 2000);
+  EXPECT_TRUE(connect_request.timestamp() < GetTimeStamp() + 1000);
   EXPECT_EQ(us.node_id.string(), connect_request.contact().node_id());
   EXPECT_EQ(us.connection_id.string(), connect_request.contact().connection_id());
   EXPECT_EQ(destination, message.destination_id());
@@ -126,8 +126,8 @@ TEST(RpcsTest, BEH_ConnectMessageNodeRelayMode) {
   EXPECT_TRUE(connect_request.ParseFromString(message.data(0)));  // us
   EXPECT_FALSE(connect_request.bootstrap());
   EXPECT_TRUE(connect_request.has_timestamp());
-  EXPECT_TRUE(connect_request.timestamp() > static_cast<int32_t>(GetTimeStamp() - 2));
-  EXPECT_TRUE(connect_request.timestamp() < static_cast<int32_t>(GetTimeStamp() + 1));
+  EXPECT_TRUE(connect_request.timestamp() > GetTimeStamp() - 2000);
+  EXPECT_TRUE(connect_request.timestamp() < GetTimeStamp() + 1000);
   EXPECT_EQ(us.node_id.string(), connect_request.contact().node_id());
   EXPECT_EQ(us.connection_id.string(), connect_request.contact().connection_id());
   EXPECT_EQ(destination, message.destination_id());
@@ -155,8 +155,8 @@ TEST(RpcsTest, BEH_FindNodesMessageNode) {
   EXPECT_TRUE(find_nodes_request.num_nodes_requested() == Parameters::closest_nodes_size);
   EXPECT_EQ(us.node_id.string(), find_nodes_request.target_node());
   EXPECT_TRUE(find_nodes_request.has_timestamp());
-  EXPECT_TRUE(find_nodes_request.timestamp() > static_cast<int32_t>(GetTimeStamp() - 2));
-  EXPECT_TRUE(find_nodes_request.timestamp() < static_cast<int32_t>(GetTimeStamp() + 1));
+  EXPECT_TRUE(find_nodes_request.timestamp() > GetTimeStamp() - 2000);
+  EXPECT_TRUE(find_nodes_request.timestamp() < GetTimeStamp() + 1000);
   EXPECT_EQ(us.node_id.string(), message.destination_id());
   EXPECT_EQ(us.node_id.string(), message.source_id());
   EXPECT_NE(0, message.data_size());
@@ -177,8 +177,8 @@ TEST(RpcsTest, BEH_FindNodesMessageNodeRelayMode) {
   EXPECT_TRUE(find_nodes_request.num_nodes_requested() == Parameters::closest_nodes_size);
   EXPECT_EQ(us.node_id.string(), find_nodes_request.target_node());
   EXPECT_TRUE(find_nodes_request.has_timestamp());
-  EXPECT_TRUE(find_nodes_request.timestamp() > static_cast<int32_t>(GetTimeStamp() - 2));
-  EXPECT_TRUE(find_nodes_request.timestamp() < static_cast<int32_t>(GetTimeStamp() + 1));
+  EXPECT_TRUE(find_nodes_request.timestamp() > GetTimeStamp() - 2000);
+  EXPECT_TRUE(find_nodes_request.timestamp() < GetTimeStamp() + 1000);
   EXPECT_EQ(us.node_id.string(), message.destination_id());
   EXPECT_FALSE(message.has_source_id());
   EXPECT_NE(0, message.data_size());

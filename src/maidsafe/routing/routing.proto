@@ -101,7 +101,7 @@ message ConnectRequest {
   required Contact contact = 1;
   required bytes peer_id = 2;
   optional bool bootstrap = 3;
-  required int32 timestamp = 4;
+  optional uint64 timestamp = 4;
 }
 
 message ConnectResponse {
@@ -109,7 +109,7 @@ message ConnectResponse {
   optional Contact contact = 2;
   optional bytes connection_id = 3;
   optional Endpoint seen_endpoint = 4;
-  required int32 timestamp = 5;
+  optional uint64 timestamp = 5;
   required bytes original_request = 6;
   required bytes original_signature = 7;
 }
@@ -130,24 +130,24 @@ message ConnectSuccessAcknowledgement {
 message FindNodesRequest {
   required int32 num_nodes_requested = 1;
   required bytes target_node = 2;
-  required int32 timestamp = 3;
+  optional uint64 timestamp = 3;
 }
 
 message FindNodesResponse {
   repeated bytes nodes = 1;
-  required int32 timestamp = 2;
+  optional uint64 timestamp = 2;
   required bytes original_request = 3;
   required bytes original_signature = 4;
 }
 
 message PingRequest {
   required bool ping = 1;
-  required int32 timestamp = 2;
+  optional uint64 timestamp = 2;
 }
 
 message PingResponse {
   required bool pong = 1;
-  required int32 timestamp = 2;
+  optional uint64 timestamp = 2;
   required bytes original_request = 3;
   required bytes original_signature = 4;
 }

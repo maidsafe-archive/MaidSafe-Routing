@@ -95,8 +95,8 @@ TEST(ServicesTest, BEH_FindNodes) {
   //  EXPECT_TRUE(find_nodes_respose.nodes().size() > 0);  // will only have us
   //  EXPECT_EQ(find_nodes_respose.nodes().Get(1), us.node_id.string());
   EXPECT_TRUE(find_nodes_respose.has_timestamp());
-  EXPECT_TRUE(find_nodes_respose.timestamp() > static_cast<int32_t>(GetTimeStamp() - 2));
-  EXPECT_TRUE(find_nodes_respose.timestamp() < static_cast<int32_t>(GetTimeStamp() + 1));
+  EXPECT_TRUE(find_nodes_respose.timestamp() > GetTimeStamp() - 2000);
+  EXPECT_TRUE(find_nodes_respose.timestamp() < GetTimeStamp() + 1000);
   EXPECT_EQ(message.destination_id(), this_node_id.string());
   EXPECT_EQ(message.source_id(), this_node_id.string());
   EXPECT_NE(message.data_size(), 0);

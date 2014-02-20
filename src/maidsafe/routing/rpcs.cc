@@ -40,7 +40,9 @@ protobuf::Message Ping(const NodeId& node_id, const std::string& identity) {
   protobuf::Message message;
   protobuf::PingRequest ping_request;
   ping_request.set_ping(true);
+#ifdef TESTING
   ping_request.set_timestamp(GetTimeStamp());
+#endif
   message.set_destination_id(node_id.string());
   message.set_source_id(identity);
   message.set_routing_message(true);
@@ -74,7 +76,9 @@ protobuf::Message Connect(const NodeId& node_id, const rudp::EndpointPair& our_e
   contact->set_node_id(this_node_id.string());
   contact->set_connection_id(this_connection_id.string());
   contact->set_nat_type(NatTypeProtobuf(nat_type));
+#ifdef TESTING
   protobuf_connect_request.set_timestamp(GetTimeStamp());
+#endif
   message.set_id(RandomUint32() % 10000);
   message.set_destination_id(node_id.string());
   message.set_routing_message(true);
@@ -135,7 +139,9 @@ protobuf::Message FindNodes(const NodeId& node_id, const NodeId& this_node_id,
   protobuf::FindNodesRequest find_nodes;
   find_nodes.set_num_nodes_requested(num_nodes_requested);
   find_nodes.set_target_node(node_id.string());
+#ifdef TESTING
   find_nodes.set_timestamp(GetTimeStamp());
+#endif
   message.set_last_id(this_node_id.string());
   message.set_destination_id(node_id.string());
   message.set_routing_message(true);

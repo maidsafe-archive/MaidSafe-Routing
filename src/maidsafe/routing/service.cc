@@ -75,7 +75,9 @@ void Service::Ping(protobuf::Message& message) {
   ping_response.set_pong(true);
   ping_response.set_original_request(message.data(0));
   ping_response.set_original_signature(message.signature());
+#ifdef TESTING
   ping_response.set_timestamp(GetTimeStamp());
+#endif
   message.set_request(false);
   message.clear_route_history();
   message.clear_data();
@@ -126,7 +128,9 @@ void Service::Connect(protobuf::Message& message) {
 
   // Prepare response
   connect_response.set_answer(protobuf::ConnectResponseType::kRejected);
+#ifdef TESTING
   connect_response.set_timestamp(GetTimeStamp());
+#endif
   connect_response.set_original_request(message.data(0));
   connect_response.set_original_signature(message.signature());
 
@@ -247,7 +251,9 @@ void Service::FindNodes(protobuf::Message& message) {
 
   found_nodes.set_original_request(message.data(0));
   found_nodes.set_original_signature(message.signature());
+#ifdef TESTING
   found_nodes.set_timestamp(GetTimeStamp());
+#endif
   assert(found_nodes.IsInitialized() && "unintialised found_nodes response");
   if (message.has_source_id()) {
     message.set_destination_id(message.source_id());
