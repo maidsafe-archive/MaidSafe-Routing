@@ -153,7 +153,6 @@ class RoutingChurnTest : public GenericNetwork, public testing::Test {
     auto new_nodes(matrix_change->new_nodes());
     if (new_nodes.empty())
       return;
-    LOG(kVerbose);
     LOG(kVerbose) << "matrix_change of affected node " << HexSubstr(affected_node.string())
               << " containing following new nodes :";
 //     bool not_found(true);
