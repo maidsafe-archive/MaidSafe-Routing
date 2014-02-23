@@ -46,7 +46,10 @@ namespace routing {
 namespace {
 
 typedef boost::asio::ip::udp::endpoint Endpoint;
-// const int kMaxUnvalidatedUpdates(64);
+
+#ifndef NDEBUG
+  const int kMaxUnvalidatedUpdates(64);
+#endif
 
 }  // unnamed namespace
 
