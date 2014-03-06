@@ -420,7 +420,8 @@ void Routing::Impl::PartiallyJoinedSend(protobuf::Message& proto_message) {
       return;
     asio_service_.service().post([=]() {
       if (rudp::kSuccess != result) {
-        timer_.CancelTask(proto_message.id());
+        if (proto_message.id() != 0)
+          timer_.CancelTask(proto_message.id());
         LOG(kError) << "Partial join Session Ended, Send not allowed anymore";
         NotifyNetworkStatus(kPartialJoinSessionEnded);
       } else {

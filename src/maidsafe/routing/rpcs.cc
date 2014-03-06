@@ -185,7 +185,6 @@ protobuf::Message ConnectSuccess(const NodeId& node_id, const NodeId& this_node_
   message.set_direct(true);
   message.set_replication(1);
   message.set_type(static_cast<int32_t>(MessageType::kConnectSuccess));
-  message.set_id(0);
   message.set_client_node(client_node);
   message.set_hops_to_live(Parameters::hops_to_live);
   message.set_source_id(this_node_id.string());
@@ -217,7 +216,6 @@ protobuf::Message ConnectSuccessAcknowledgement(const NodeId& node_id, const Nod
   message.set_direct(true);
   message.set_replication(1);
   message.set_type(static_cast<int32_t>(MessageType::kConnectSuccessAcknowledgement));
-  message.set_id(0);
   message.set_client_node(client_node);
   message.set_hops_to_live(Parameters::hops_to_live);
   message.set_source_id(this_node_id.string());
