@@ -108,6 +108,8 @@ class Network {
   void RemoveAccount(const RTNode& node, const NodeId& account);
   void PrintNetworkInfo();
   std::vector<size_t> CheckGroupMatrixReliablity();
+  void CheckReliability(const NodeId& target, std::vector<size_t>& close_nodes_results,
+                        std::vector<size_t>& matrix_results);
   void TransferAndDeleteAccountFromInformedNodes(const NodeId& informed_node_id,
                                                  const NodeId& new_node_id,
                                                  std::vector<NodeId>& informed_node_group_matrix);
@@ -498,6 +500,33 @@ std::vector<size_t> Network::CheckGroupMatrixReliablity() {
   return little_matrix;
 }
 
+void Network::CheckReliability(const NodeId& target,
+                               std::vector<size_t>& close_nodes_results,
+                               std::vector<size_t>& matrix_results) {
+  PartialSortFromTarget(target, 5);
+  for (size_t node_index(0); node_index < 4; ++node_index) {
+    auto close_nodes(*nodes_[node_index].close_nodes);
+    auto matrix(nodes_[node_index].GetGroupMatrix());
+    for (size_t index(0); index < std::min(size_t(4), close_nodes.size()); ++index) {
+      if (index == node_index)
+        continue;
+      if (std::find(std::begin(close_nodes), std::end(close_nodes),
+                    nodes_[index].node_id()) == std::end(close_nodes)) {
+        LOG(kInfo) << "Close nodes of " << DebugId(nodes_[node_index].node_id())
+                   << " do not have " << DebugId(nodes_[index].node_id())
+                   << " as a holder of account " << DebugId(target);
+        ++close_nodes_results[index];
+      }
+      if (std::find(matrix.begin(), matrix.end(), nodes_[index].node_id()) == matrix.end()) {
+        LOG(kInfo) << "Matrix of " << DebugId(nodes_[node_index].node_id()) << " does not have "
+                   << DebugId(nodes_[index].node_id()) << " as a holder of account "
+                   << DebugId(target);
+        ++matrix_results[index];
+      }
+    }
+  }
+}
+
 TEST(RoutingTableTest, FUNC_GroupMatrixReliability) {
   Network network;
   for (auto i(0); i != 100; ++i) {
@@ -519,6 +548,25 @@ TEST(RoutingTableTest, FUNC_FindCloseNodes) {
   for (auto i(0); i != 100; ++i) {
     LOG(kSuccess) << "Iteration # " << i << "  ===================================================";
     network.RoutingAdd(NodeId(NodeId::kRandomId));
+  }
+}
+
+TEST(RoutingTableTest, FUNC_RoutingTableVersusGroupMatrixReliability) {
+  std::vector<size_t> matrix_results(4, 0), close_nodes_results(4, 0);
+  Network network;
+  for (auto i(0); i != 500; ++i) {
+    LOG(kSuccess) << "Iteration # " << i << "  ===================================================";
+    network.Add(NodeId(NodeId::kRandomId));
+  }
+  for (auto i(0); i != 1000; ++i)
+    network.CheckReliability(NodeId(NodeId::kRandomId), close_nodes_results, matrix_results);
+
+  for (auto index(0); index < 4; ++index) {
+    LOG(kSuccess) << "Number of times matrix missing required holders for existing accounts on "
+               << index << "th closest node: " << matrix_results.at(index);
+    LOG(kSuccess) << "Number of times close nodes missing required holders "
+                 << "for existing accounts on " << index << "th closest node: "
+                 << close_nodes_results.at(index);
   }
 }
 

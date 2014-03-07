@@ -85,7 +85,7 @@ protobuf::Message Routing::Impl::CreateNodeLevelMessage(const GroupToSingleRelay
   proto_message.set_relay_connection_id(message.receiver.connection_id.string());
   proto_message.set_actual_destination_is_relay_id(true);
 
-//  proto_message.set_id(RandomUint32() % 10000);  // Enable for tracing node level messages
+  proto_message.set_id(RandomUint32() % 10000);  // Enable for tracing node level messages
   return proto_message;
 }
 
@@ -420,8 +420,15 @@ void Routing::Impl::PartiallyJoinedSend(protobuf::Message& proto_message) {
       return;
     asio_service_.service().post([=]() {
       if (rudp::kSuccess != result) {
-        if (proto_message.id() != 0)
-          timer_.CancelTask(proto_message.id());
+        if (proto_message.id() != 0) {
+          try {
+            timer_.CancelTask(proto_message.id());
+          }
+          catch (const maidsafe_error& error) {
+            if (error.code() != make_error_code(CommonErrors::invalid_parameter))
+              throw;
+          }
+        }
         LOG(kError) << "Partial join Session Ended, Send not allowed anymore";
         NotifyNetworkStatus(kPartialJoinSessionEnded);
       } else {

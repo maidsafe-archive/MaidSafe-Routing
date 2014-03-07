@@ -126,7 +126,7 @@ void GroupMatrix::GetBetterNodeForSendingMessage(const NodeId& target_node_id,
       if (std::find(exclude.begin(), exclude.end(), node.node_id.string()) != exclude.end())
         continue;
       if (NodeId::CloserToTarget(node.node_id, closest_id, target_node_id)) {
-        PrintGroupMatrix();
+//        PrintGroupMatrix();
         LOG(kVerbose) << DebugId(closest_id) << ", peer to send: "
                       << DebugId(current_closest_peer.node_id) << ", "
                       << DebugId(row.at(0).node_id);
@@ -462,7 +462,7 @@ void GroupMatrix::Prune() {
       itr++;
     }
   }
-  PrintGroupMatrix();
+//  PrintGroupMatrix();
 }
 
 void GroupMatrix::PrintGroupMatrix() {
