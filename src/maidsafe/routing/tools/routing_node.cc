@@ -108,9 +108,8 @@ int main(int argc, char** argv) {
 
     // Load fob list and local fob
     std::vector<maidsafe::passport::Pmid> all_pmids;
-    maidsafe::passport::Anmaid anmaid;
-    maidsafe::passport::Maid maid(anmaid);
-    maidsafe::passport::Pmid local_pmid(maid);
+    maidsafe::passport::Anpmid anpmid;
+    maidsafe::passport::Pmid local_pmid(anpmid);
     auto pmids_path(maidsafe::GetPathFromProgramOptions("pmids_path", variables_map, false, true));
     if (fs::exists(pmids_path, error_code)) {
       all_pmids = maidsafe::passport::detail::ReadPmidList(pmids_path);

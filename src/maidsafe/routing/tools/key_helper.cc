@@ -67,10 +67,7 @@ bool CreateKeys(size_t pmids_count, PmidVector& all_pmids) {
   all_pmids.clear();
   for (size_t i = 0; i < pmids_count; ++i) {
     try {
-      maidsafe::passport::Anmaid anmaid;
-      maidsafe::passport::Maid maid(anmaid);
-      maidsafe::passport::Pmid pmid(maid);
-      all_pmids.push_back(pmid);
+      all_pmids.emplace_back(maidsafe::passport::Anpmid());
     }
     catch (const std::exception& /*ex*/) {
       LOG(kError) << "CreatePmids - Could not create ID #" << i;

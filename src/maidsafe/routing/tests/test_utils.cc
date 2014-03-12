@@ -84,7 +84,10 @@ passport::Maid MakeMaid() {
   return passport::Maid(anmaid);
 }
 
-passport::Pmid MakePmid() { return passport::Pmid(MakeMaid()); }
+passport::Pmid MakePmid() {
+  passport::Anpmid anpmid;
+  return passport::Pmid(anpmid);
+}
 
 /* Fob GetFob(const NodeInfoAndPrivateKey& node) {
   Fob fob;
