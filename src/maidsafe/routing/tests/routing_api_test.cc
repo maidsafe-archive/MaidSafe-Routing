@@ -28,7 +28,14 @@
 #include "boost/exception/all.hpp"
 #include "boost/filesystem/exception.hpp"
 #include "boost/progress.hpp"
+#ifdef _MSC_VER
+#pragma warning(push)
+#pragma warning(disable : 4702)
+#endif
 #include "boost/thread/future.hpp"
+#ifdef _MSC_VER
+#pragma warning(pop)
+#endif
 
 #include "maidsafe/common/node_id.h"
 #include "maidsafe/common/test.h"
