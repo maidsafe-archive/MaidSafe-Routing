@@ -553,7 +553,8 @@ TEST(APITest, BEH_API_NodeNetwork) {
   EXPECT_EQ(kSuccess, a1.get());  // wait for promise !
 
   for (auto i(0); i != (kNetworkSize - 2); ++i) {
-    std::shared_ptr<boost::promise<bool>> join_promise_ptr(std::make_shared<boost::promise<bool>>());
+    std::shared_ptr<boost::promise<bool>> join_promise_ptr(
+                                              std::make_shared<boost::promise<bool>>());
     std::shared_ptr<bool> promised(std::make_shared<bool>(false));
     boost::future<bool> join_future((*join_promise_ptr).get_future());
     functors.network_status = [i, min_join_status, join_promise_ptr, promised](int result) {
@@ -1012,7 +1013,8 @@ TEST(APITest, BEH_API_TypedMessageSend) {
     group_to_group_message.sender = group_source;
     routing3.Send(group_to_group_message);
     auto group_to_group_future(group_to_group_promise.get_future());
-    ASSERT_EQ(group_to_group_future.wait_for(boost::chrono::seconds(10)), boost::future_status::ready);
+    ASSERT_EQ(group_to_group_future.wait_for(boost::chrono::seconds(10)),
+              boost::future_status::ready);
   }
 
   {  // Test Single To Single
@@ -1036,7 +1038,8 @@ TEST(APITest, BEH_API_TypedMessageSend) {
     group_to_single_message.contents = "Dummy content for test puepose";
     routing3.Send(group_to_single_message);
     auto group_to_single_future(group_to_single_promise.get_future());
-    ASSERT_EQ(group_to_single_future.wait_for(boost::chrono::seconds(10)), boost::future_status::ready);
+    ASSERT_EQ(group_to_single_future.wait_for(boost::chrono::seconds(10)),
+              boost::future_status::ready);
   }
 
   {  //  Test Single To Group
@@ -1046,7 +1049,8 @@ TEST(APITest, BEH_API_TypedMessageSend) {
     single_to_group_message.receiver = GroupId(GenerateUniqueRandomId(routing1.kNodeId(), 30));
     routing3.Send(single_to_group_message);
     auto single_to_group_future(single_to_group_promise.get_future());
-    ASSERT_EQ(single_to_group_future.wait_for(boost::chrono::seconds(10)), boost::future_status::ready);
+    ASSERT_EQ(single_to_group_future.wait_for(boost::chrono::seconds(10)),
+              boost::future_status::ready);
   }
 }
 
