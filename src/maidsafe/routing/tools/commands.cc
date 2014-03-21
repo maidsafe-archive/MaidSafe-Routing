@@ -44,7 +44,7 @@ Commands::Commands(DemoNodePtr demo_node, std::vector<maidsafe::passport::Pmid> 
       all_ids_(),
       identity_index_(identity_index),
       bootstrap_peer_ep_(),
-      data_size_(256 * 1024),
+      data_size_(1024 * 1024),
       data_rate_(1024 * 1024),
       result_arrived_(false),
       finish_(false),
