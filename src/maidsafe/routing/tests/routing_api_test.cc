@@ -74,7 +74,9 @@ MessageReceivedFunctor no_ops_message_received_functor = [](const std::string&, 
 }  // anonymous namespace
 
 TEST(APITest, BEH_API_ZeroState) {
-  auto pmid1(MakePmid()), pmid2(MakePmid()), pmid3(MakePmid());
+  auto pmid1(MakePmid());
+  auto pmid2(MakePmid());
+  auto pmid3(MakePmid());
   NodeInfoAndPrivateKey node1(MakeNodeInfoAndKeysWithPmid(pmid1));
   NodeInfoAndPrivateKey node2(MakeNodeInfoAndKeysWithPmid(pmid2));
   NodeInfoAndPrivateKey node3(MakeNodeInfoAndKeysWithPmid(pmid3));
@@ -349,7 +351,7 @@ TEST(APITest, BEH_API_NonMutatingClientNode) {
   Functors functors1, functors2, functors3;
   Routing routing1(pmid1);
   Routing routing2(pmid2);
-  Routing routing3((NodeId(NodeId::kRandomId)));
+  Routing routing3;
   functors1.message_and_caching.message_received = no_ops_message_received_functor;
   functors3 = functors2 = functors1;
 

@@ -41,22 +41,6 @@ namespace routing {
 
 namespace test {
 
-namespace {
-
-template <typename FobType>
-NodeInfoAndPrivateKey MakeNodeInfoAndKeysWithFob(FobType fob) {
-  NodeInfo node;
-  node.node_id = NodeId(fob.name()->string());
-  node.public_key = fob.public_key();
-  node.connection_id = node.node_id;
-  NodeInfoAndPrivateKey node_info_and_private_key;
-  node_info_and_private_key.node_info = node;
-  node_info_and_private_key.private_key = fob.private_key();
-  return node_info_and_private_key;
-}
-
-}  // unnamed namespace
-
 NodeInfo MakeNode() {
   NodeInfo node;
   node.node_id = NodeId(RandomString(64));

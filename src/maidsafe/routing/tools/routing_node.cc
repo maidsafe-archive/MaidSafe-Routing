@@ -148,24 +148,24 @@ int main(int argc, char** argv) {
     std::cout << "Creating node..." << std::endl;
     maidsafe::routing::test::NodeInfoAndPrivateKey node_info(
         maidsafe::routing::test::MakeNodeInfoAndKeysWithPmid(local_pmid));
-    maidsafe::routing::test::DemoNodePtr demo_node(
-        new maidsafe::routing::test::GenericNode(client_only_node, node_info));
+//    maidsafe::routing::test::DemoNodePtr demo_node(
+//        new maidsafe::routing::test::GenericNode(client_only_node, node_info));
 
     if (variables_map.count("bootstrap")) {
       if (identity_index >= 2) {
         std::cout << "ERROR : trying to use non-bootstrap identity" << std::endl;
         return 0;
       }
-      std::cout << "------ Current BootStrap node endpoint info : " << demo_node->endpoint()
-                << " ------ " << std::endl;
+//      std::cout << "------ Current BootStrap node endpoint info : " << demo_node->endpoint()
+//                << " ------ " << std::endl;
     }
 
-    maidsafe::routing::test::Commands commands(demo_node, all_pmids, identity_index);
+//    maidsafe::routing::test::Commands commands(demo_node, all_pmids, identity_index);
     std::string peer(variables_map.at("peer").as<std::string>());
-    if (!peer.empty()) {
-      commands.GetPeer(peer);
-    }
-    commands.Run();
+//    if (!peer.empty()) {
+//      commands.GetPeer(peer);
+//    }
+//    commands.Run();
 
     std::cout << "Node stopped successfully." << std::endl;
   }

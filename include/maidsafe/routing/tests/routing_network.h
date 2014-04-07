@@ -79,11 +79,10 @@ class NodesEnvironment;
 
 class GenericNode {
  public:
-  GenericNode(bool client_mode = false, bool has_symmetric_nat = false,
-              bool non_mutating_client = false);
   GenericNode(bool client_mode, const rudp::NatType& nat_type);
-  GenericNode(bool client_mode, const NodeInfoAndPrivateKey& node_info,
-              bool has_symmetric_nat = false, bool non_mutating_client = false);
+  GenericNode(bool has_symmetric_nat = false);
+  GenericNode(const passport::Pmid& pmid, bool has_symmetric_nat = false);
+  GenericNode(const passport::Maid& maid, bool has_symmetric_nat = false);
   virtual ~GenericNode();
   int GetStatus() const;
   NodeId node_id() const;
