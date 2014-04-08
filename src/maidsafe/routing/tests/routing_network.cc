@@ -155,6 +155,7 @@ GenericNode::GenericNode(const passport::Pmid& pmid, bool has_symmetric_nat)
     : functors_(),
       id_(0),
       node_info_plus_(std::make_shared<NodeInfoAndPrivateKey>(MakeNodeInfoAndKeysWithFob(pmid))),
+      maid_(),
       mutex_(),
       client_mode_(false),
       joined_(false),
@@ -170,7 +171,6 @@ GenericNode::GenericNode(const passport::Pmid& pmid, bool has_symmetric_nat)
   endpoint_.port(maidsafe::test::GetRandomPort());
   InitialiseFunctors();
   routing_.reset(new Routing(pmid));
-//  InjectNodeInfoAndPrivateKey();
   LOG(kVerbose) << "Node constructor";
   std::lock_guard<std::mutex> lock(mutex_);
   id_ = next_node_id_++;
@@ -180,6 +180,7 @@ GenericNode::GenericNode(const passport::Maid& maid, bool has_symmetric_nat)
     : functors_(),
       id_(0),
       node_info_plus_(std::make_shared<NodeInfoAndPrivateKey>(MakeNodeInfoAndKeysWithFob(maid))),
+      maid_(std::make_shared<passport::Maid>(maid)),
       mutex_(),
       client_mode_(true),
       joined_(false),
@@ -436,6 +437,11 @@ void GenericNode::ClearMessages() {
   messages_.clear();
 }
 
+passport::Maid GenericNode::GetMaid() {
+  assert(maid_);
+  return *maid_;
+}
+
 asymm::PublicKey GenericNode::public_key() {
   std::lock_guard<std::mutex> lock(mutex_);
   return node_info_plus_->node_info.public_key;
@@ -563,21 +569,13 @@ void GenericNetwork::SetUpNetwork(size_t total_number_vaults,
   }
 
   for (size_t index(0); index < num_nonsym_nat_clients; ++index) {
-    NodePtr node;
-    if (RandomUint32() % 2 == 0)
-      node.reset(new GenericNode(MakeMaid()));
-     else
-       node.reset(new GenericNode());
+    NodePtr node(new GenericNode(MakeMaid()));
     AddNodeDetails(node);
     LOG(kVerbose) << "Node # " << nodes_.size() << " added to network";
   }
 
   for (size_t index(0); index < num_symmetric_nat_clients; ++index) {
-    NodePtr node;
-    if (RandomUint32() % 2 == 0)
-      node.reset(new GenericNode(MakeMaid()));
-     else
-       node.reset(new GenericNode());
+    NodePtr node(new GenericNode(MakeMaid(), true));
     AddNodeDetails(node);
     LOG(kVerbose) << "Node # " << nodes_.size() << " added to network";
   }
@@ -587,11 +585,7 @@ void GenericNetwork::SetUpNetwork(size_t total_number_vaults,
   //    EXPECT_TRUE(ValidateRoutingTables());
 }
 
-void GenericNetwork::AddNode(bool client_mode, const NodeId& node_id,
-                             MatrixChangedFunctor matrix_change_functor) {
-  NodeInfoAndPrivateKey node_info;
-  node_info = MakeNodeInfoAndKeys();
-  node_info.node_info.node_id = node_id;
+void GenericNetwork::AddNode(bool client_mode, MatrixChangedFunctor matrix_change_functor) {
   NodePtr node;
   if (client_mode) {
     auto maid(MakeMaid());
@@ -605,16 +599,56 @@ void GenericNetwork::AddNode(bool client_mode, const NodeId& node_id,
   LOG(kVerbose) << "Node # " << nodes_.size() << " added to network";
 }
 
-void GenericNetwork::AddNode(bool client_mode, const NodeId& node_id,
-                             bool /*has_symmetric_nat*/, bool non_mutating_client) {
-  assert(!(!client_mode && non_mutating_client) && "Only clients may be non mutating!");
-  NodeInfoAndPrivateKey node_info;
-  node_info = MakeNodeInfoAndKeys();
-  node_info.node_info.node_id = node_id;
-//  NodePtr node(new GenericNode(client_mode, node_info, has_symmetric_nat, non_mutating_client));
-//  AddNodeDetails(node);
+void GenericNetwork::AddNode(const passport::Maid& maid, bool has_symmetric_nat) {
+  NodePtr node;
+  node.reset(new GenericNode(maid, has_symmetric_nat));
+  AddNodeDetails(node);
   LOG(kVerbose) << "Node # " << nodes_.size() << " added to network";
-  //    node->PrintRoutingTable();
+}
+void GenericNetwork::AddNode(const passport::Pmid& pmid, bool has_symmetric_nat) {
+  NodePtr node;
+  node.reset(new GenericNode(pmid, has_symmetric_nat));
+  AddNodeDetails(node);
+  LOG(kVerbose) << "Node # " << nodes_.size() << " added to network";
+}
+
+void GenericNetwork::AddMutatingClient(bool has_symmetric_nat) {
+  NodePtr node;
+  node.reset(new GenericNode(has_symmetric_nat));
+  AddNodeDetails(node);
+  LOG(kVerbose) << "Node # " << nodes_.size() << " added to network";
+}
+
+void GenericNetwork::AddClient(bool has_symmetric_nat) {
+  AddNode(MakeMaid(), has_symmetric_nat);
+}
+
+void GenericNetwork::AddVault(bool has_symmetric_nat) {
+  AddNode(MakePmid(), has_symmetric_nat);
+}
+
+void GenericNetwork::AddNode(const passport::Maid& maid,
+                             MatrixChangedFunctor matrix_change_functor) {
+  NodePtr node;
+  node.reset(new GenericNode(maid));
+  node->SetMatrixChangeFunctor(matrix_change_functor);
+  AddNodeDetails(node);
+  LOG(kVerbose) << "Node # " << nodes_.size() << " added to network";
+}
+
+void GenericNetwork::AddNode(const passport::Pmid& pmid,
+                             MatrixChangedFunctor matrix_change_functor) {
+  NodePtr node;
+  node.reset(new GenericNode(pmid, false));
+  node->SetMatrixChangeFunctor(matrix_change_functor);
+  AddNodeDetails(node);
+  LOG(kVerbose) << "Node # " << nodes_.size() << " added to network";
+}
+
+void GenericNetwork::AddNode(bool has_symmetric_nat) {
+  NodePtr node(new GenericNode(has_symmetric_nat));
+  AddNodeDetails(node);
+  LOG(kVerbose) << "Node # " << nodes_.size() << " added to network";
 }
 
 void GenericNetwork::AddNode(bool client_mode, const rudp::NatType& nat_type) {
@@ -929,7 +963,7 @@ bool GenericNetwork::RestoreComposition() {
     Sleep(std::chrono::seconds(1));  // TODO(Alison) - remove once hanging is fixed
   }
   while (ClientIndex() < kServerSize) {
-    AddNode(false, NodeId());
+    AddVault();
   }
   if (ClientIndex() != kServerSize) {
     LOG(kError) << "Failed to restore number of servers. Actual: " << ClientIndex()
@@ -942,7 +976,7 @@ bool GenericNetwork::RestoreComposition() {
     Sleep(std::chrono::seconds(1));  // TODO(Alison) - remove once hanging is fixed
   }
   while (nodes_.size() < kNetworkSize) {
-    AddNode(true, NodeId());
+    AddClient();
   }
   if (ClientIndex() != kServerSize) {
     LOG(kError) << "Failed to maintain number of servers. Actual: " << ClientIndex()

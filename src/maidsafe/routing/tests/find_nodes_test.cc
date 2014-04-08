@@ -84,113 +84,113 @@ TEST_F(FindNodeNetwork, FUNC_FindNonExistingNode) {
   EXPECT_FALSE(this->nodes_[source]->RoutingTableHasNode(node_id));
 }
 
-TEST_F(FindNodeNetwork, FUNC_FindNodeAfterDrop) {
-  this->SetUpNetwork(kServerSize);
-  size_t source(this->RandomVaultIndex());
-  NodeId node_id(GenerateUniqueRandomId(this->nodes_[source]->node_id(), 6));
-  EXPECT_FALSE(this->nodes_[source]->RoutingTableHasNode(node_id));
-  this->AddNode(false, node_id);
-  EXPECT_TRUE(this->nodes_[source]->RoutingTableHasNode(node_id));
-  EXPECT_TRUE(this->nodes_[source]->DropNode(node_id));
-  Sleep(Parameters::recovery_time_lag + Parameters::find_node_interval + std::chrono::seconds(5));
-  EXPECT_TRUE(this->nodes_[source]->RoutingTableHasNode(node_id));
+TEST_F(FindNodeNetwork, DISABLED_FUNC_FindNodeAfterDrop) {
+//  this->SetUpNetwork(kServerSize);
+//  size_t source(this->RandomVaultIndex());
+//  NodeId node_id(GenerateUniqueRandomId(this->nodes_[source]->node_id(), 6));
+//  EXPECT_FALSE(this->nodes_[source]->RoutingTableHasNode(node_id));
+//  this->AddNode(false, node_id);
+//  EXPECT_TRUE(this->nodes_[source]->RoutingTableHasNode(node_id));
+//  EXPECT_TRUE(this->nodes_[source]->DropNode(node_id));
+//  Sleep(Parameters::recovery_time_lag + Parameters::find_node_interval + std::chrono::seconds(5));
+//  EXPECT_TRUE(this->nodes_[source]->RoutingTableHasNode(node_id));
 }
 
-TEST_F(FindNodeNetwork, FUNC_VaultFindVaultNode) {
-  this->SetUpNetwork(kServerSize, kClientSize);
-  size_t source(this->RandomVaultIndex()), dest(this->ClientIndex());
+TEST_F(FindNodeNetwork, DISABLED_FUNC_VaultFindVaultNode) {
+//  this->SetUpNetwork(kServerSize, kClientSize);
+//  size_t source(this->RandomVaultIndex()), dest(this->ClientIndex());
 
-  this->AddNode(false, GenerateUniqueRandomId(this->nodes_[source]->node_id(), 20));
-  EXPECT_FALSE(this->nodes_.at(dest)->IsClient());
+//  this->AddNode(false, GenerateUniqueRandomId(this->nodes_[source]->node_id(), 20));
+//  EXPECT_FALSE(this->nodes_.at(dest)->IsClient());
 
-  EXPECT_TRUE(this->nodes_[source]->RoutingTableHasNode(this->nodes_[dest]->node_id()));
+//  EXPECT_TRUE(this->nodes_[source]->RoutingTableHasNode(this->nodes_[dest]->node_id()));
 
-  EXPECT_TRUE(this->nodes_[source]->DropNode(this->nodes_[dest]->node_id()));
+//  EXPECT_TRUE(this->nodes_[source]->DropNode(this->nodes_[dest]->node_id()));
 
-  Sleep(Parameters::recovery_time_lag + Parameters::find_node_interval + std::chrono::seconds(5));
+//  Sleep(Parameters::recovery_time_lag + Parameters::find_node_interval + std::chrono::seconds(5));
 
-  LOG(kVerbose) << "after find " << HexSubstr(this->nodes_[dest]->node_id().string());
-  EXPECT_TRUE(this->nodes_[source]->RoutingTableHasNode(this->nodes_[dest]->node_id()));
+//  LOG(kVerbose) << "after find " << HexSubstr(this->nodes_[dest]->node_id().string());
+//  EXPECT_TRUE(this->nodes_[source]->RoutingTableHasNode(this->nodes_[dest]->node_id()));
 }
 
-TEST_F(FindNodeNetwork, FUNC_VaultFindClientNode) {
-  this->SetUpNetwork(kServerSize, kClientSize);
-  size_t source(this->RandomVaultIndex()), dest(this->nodes_.size());
+TEST_F(FindNodeNetwork, DISABLED_FUNC_VaultFindClientNode) {
+//  this->SetUpNetwork(kServerSize, kClientSize);
+//  size_t source(this->RandomVaultIndex()), dest(this->nodes_.size());
 
-  // Add one client node
-  this->AddNode(true, GenerateUniqueRandomId(this->nodes_[source]->node_id(), 20));
-  EXPECT_TRUE(this->nodes_.at(dest)->IsClient());
+//  // Add one client node
+//  this->AddNode(true, GenerateUniqueRandomId(this->nodes_[source]->node_id(), 20));
+//  EXPECT_TRUE(this->nodes_.at(dest)->IsClient());
 
-  EXPECT_TRUE(this->nodes_[dest]->RoutingTableHasNode(this->nodes_[source]->node_id()));
-  EXPECT_FALSE(this->nodes_[source]->RoutingTableHasNode(this->nodes_[dest]->node_id()));
-  EXPECT_TRUE(this->nodes_[source]->ClientRoutingTableHasNode(this->nodes_[dest]->node_id()));
+//  EXPECT_TRUE(this->nodes_[dest]->RoutingTableHasNode(this->nodes_[source]->node_id()));
+//  EXPECT_FALSE(this->nodes_[source]->RoutingTableHasNode(this->nodes_[dest]->node_id()));
+//  EXPECT_TRUE(this->nodes_[source]->ClientRoutingTableHasNode(this->nodes_[dest]->node_id()));
 
-  // clear up
-  EXPECT_TRUE(this->nodes_[dest]->DropNode(this->nodes_[source]->node_id()));
-  Sleep(Parameters::recovery_time_lag + Parameters::find_node_interval + std::chrono::seconds(5));
-  EXPECT_TRUE(this->nodes_[dest]->RoutingTableHasNode(this->nodes_[source]->node_id()));
-  EXPECT_TRUE(this->nodes_[source]->ClientRoutingTableHasNode(this->nodes_[dest]->node_id()));
+//  // clear up
+//  EXPECT_TRUE(this->nodes_[dest]->DropNode(this->nodes_[source]->node_id()));
+//  Sleep(Parameters::recovery_time_lag + Parameters::find_node_interval + std::chrono::seconds(5));
+//  EXPECT_TRUE(this->nodes_[dest]->RoutingTableHasNode(this->nodes_[source]->node_id()));
+//  EXPECT_TRUE(this->nodes_[source]->ClientRoutingTableHasNode(this->nodes_[dest]->node_id()));
 }
 
-TEST_F(FindNodeNetwork, FUNC_ClientFindVaultNode) {
-  this->SetUpNetwork(kServerSize, kClientSize);
-  size_t source(this->RandomVaultIndex());
+TEST_F(FindNodeNetwork, DISABLED_FUNC_ClientFindVaultNode) {
+//  this->SetUpNetwork(kServerSize, kClientSize);
+//  size_t source(this->RandomVaultIndex());
 
-  // Add one client node
-  this->AddNode(true, GenerateUniqueRandomId(this->nodes_[source]->node_id(), 8));
-  // Add one vault node
-  this->AddNode(false, GenerateUniqueRandomId(this->nodes_[source]->node_id(), 24));
+//  // Add one client node
+//  this->AddNode(true, GenerateUniqueRandomId(this->nodes_[source]->node_id(), 8));
+//  // Add one vault node
+//  this->AddNode(false, GenerateUniqueRandomId(this->nodes_[source]->node_id(), 24));
 
-  size_t client(this->nodes_.size() - 1);
-  size_t vault(this->ClientIndex() - 1);
-  EXPECT_TRUE(this->nodes_.at(client)->IsClient());
-  EXPECT_FALSE(this->nodes_.at(vault)->IsClient());
+//  size_t client(this->nodes_.size() - 1);
+//  size_t vault(this->ClientIndex() - 1);
+//  EXPECT_TRUE(this->nodes_.at(client)->IsClient());
+//  EXPECT_FALSE(this->nodes_.at(vault)->IsClient());
 
-  Sleep(std::chrono::seconds(1));
+//  Sleep(std::chrono::seconds(1));
 
-  EXPECT_TRUE(this->nodes_[client]->RoutingTableHasNode(this->nodes_[source]->node_id()));
-  EXPECT_FALSE(this->nodes_[source]->RoutingTableHasNode(this->nodes_[client]->node_id()));
-  EXPECT_TRUE(this->nodes_[source]->ClientRoutingTableHasNode(this->nodes_[client]->node_id()));
+//  EXPECT_TRUE(this->nodes_[client]->RoutingTableHasNode(this->nodes_[source]->node_id()));
+//  EXPECT_FALSE(this->nodes_[source]->RoutingTableHasNode(this->nodes_[client]->node_id()));
+//  EXPECT_TRUE(this->nodes_[source]->ClientRoutingTableHasNode(this->nodes_[client]->node_id()));
 
-  EXPECT_TRUE(this->nodes_[client]->RoutingTableHasNode(this->nodes_[vault]->node_id()));
-  EXPECT_FALSE(this->nodes_[vault]->RoutingTableHasNode(this->nodes_[client]->node_id()));
-  EXPECT_TRUE(this->nodes_[vault]->ClientRoutingTableHasNode(this->nodes_[client]->node_id()));
+//  EXPECT_TRUE(this->nodes_[client]->RoutingTableHasNode(this->nodes_[vault]->node_id()));
+//  EXPECT_FALSE(this->nodes_[vault]->RoutingTableHasNode(this->nodes_[client]->node_id()));
+//  EXPECT_TRUE(this->nodes_[vault]->ClientRoutingTableHasNode(this->nodes_[client]->node_id()));
 
-  // trying to find
-  EXPECT_TRUE(Find(this->nodes_[vault], this->nodes_[vault]->node_id()));
-  Sleep(std::chrono::seconds(1));
-  EXPECT_FALSE(this->nodes_[vault]->RoutingTableHasNode(this->nodes_[client]->node_id()));
-  EXPECT_TRUE(this->nodes_[vault]->ClientRoutingTableHasNode(this->nodes_[client]->node_id()));
+//  // trying to find
+//  EXPECT_TRUE(Find(this->nodes_[vault], this->nodes_[vault]->node_id()));
+//  Sleep(std::chrono::seconds(1));
+//  EXPECT_FALSE(this->nodes_[vault]->RoutingTableHasNode(this->nodes_[client]->node_id()));
+//  EXPECT_TRUE(this->nodes_[vault]->ClientRoutingTableHasNode(this->nodes_[client]->node_id()));
 }
 
-TEST_F(FindNodeNetwork, FUNC_ClientFindClientNode) {
-  this->SetUpNetwork(kServerSize, kClientSize);
-  size_t source(this->RandomVaultIndex()), client1(this->nodes_.size()), client2(client1 + 1);
+TEST_F(FindNodeNetwork, DISABLED_FUNC_ClientFindClientNode) {
+//  this->SetUpNetwork(kServerSize, kClientSize);
+//  size_t source(this->RandomVaultIndex()), client1(this->nodes_.size()), client2(client1 + 1);
 
-  // Add two client nodes
-  this->AddNode(true, GenerateUniqueRandomId(this->nodes_[source]->node_id(), 8));
-  this->AddNode(true, GenerateUniqueRandomId(this->nodes_[source]->node_id(), 12));
-  Sleep(std::chrono::seconds(1));
-  EXPECT_TRUE(this->nodes_.at(client1)->IsClient());
-  EXPECT_TRUE(this->nodes_.at(client2)->IsClient());
+//  // Add two client nodes
+//  this->AddNode(true, GenerateUniqueRandomId(this->nodes_[source]->node_id(), 8));
+//  this->AddNode(true, GenerateUniqueRandomId(this->nodes_[source]->node_id(), 12));
+//  Sleep(std::chrono::seconds(1));
+//  EXPECT_TRUE(this->nodes_.at(client1)->IsClient());
+//  EXPECT_TRUE(this->nodes_.at(client2)->IsClient());
 
-  EXPECT_TRUE(this->nodes_[client1]->RoutingTableHasNode(this->nodes_[source]->node_id()));
-  EXPECT_TRUE(this->nodes_[client2]->RoutingTableHasNode(this->nodes_[source]->node_id()));
-  EXPECT_FALSE(this->nodes_[source]->RoutingTableHasNode(this->nodes_[client1]->node_id()));
-  EXPECT_TRUE(this->nodes_[source]->ClientRoutingTableHasNode(this->nodes_[client1]->node_id()));
-  EXPECT_FALSE(this->nodes_[source]->RoutingTableHasNode(this->nodes_[client2]->node_id()));
-  EXPECT_TRUE(this->nodes_[source]->ClientRoutingTableHasNode(this->nodes_[client2]->node_id()));
+//  EXPECT_TRUE(this->nodes_[client1]->RoutingTableHasNode(this->nodes_[source]->node_id()));
+//  EXPECT_TRUE(this->nodes_[client2]->RoutingTableHasNode(this->nodes_[source]->node_id()));
+//  EXPECT_FALSE(this->nodes_[source]->RoutingTableHasNode(this->nodes_[client1]->node_id()));
+//  EXPECT_TRUE(this->nodes_[source]->ClientRoutingTableHasNode(this->nodes_[client1]->node_id()));
+//  EXPECT_FALSE(this->nodes_[source]->RoutingTableHasNode(this->nodes_[client2]->node_id()));
+//  EXPECT_TRUE(this->nodes_[source]->ClientRoutingTableHasNode(this->nodes_[client2]->node_id()));
 
-  EXPECT_FALSE(this->nodes_[client1]->RoutingTableHasNode(this->nodes_[client2]->node_id()));
-  EXPECT_FALSE(this->nodes_[client1]->ClientRoutingTableHasNode(this->nodes_[client2]->node_id()));
-  EXPECT_FALSE(this->nodes_[client2]->RoutingTableHasNode(this->nodes_[client1]->node_id()));
-  EXPECT_FALSE(this->nodes_[client2]->ClientRoutingTableHasNode(this->nodes_[client1]->node_id()));
+//  EXPECT_FALSE(this->nodes_[client1]->RoutingTableHasNode(this->nodes_[client2]->node_id()));
+//  EXPECT_FALSE(this->nodes_[client1]->ClientRoutingTableHasNode(this->nodes_[client2]->node_id()));
+//  EXPECT_FALSE(this->nodes_[client2]->RoutingTableHasNode(this->nodes_[client1]->node_id()));
+//  EXPECT_FALSE(this->nodes_[client2]->ClientRoutingTableHasNode(this->nodes_[client1]->node_id()));
 
-  // trying to find
-  EXPECT_TRUE(Find(this->nodes_[client1], this->nodes_[client1]->node_id()));
-  Sleep(std::chrono::seconds(5));
-  EXPECT_FALSE(this->nodes_[client1]->RoutingTableHasNode(this->nodes_[client2]->node_id()));
-  EXPECT_FALSE(this->nodes_[client1]->ClientRoutingTableHasNode(this->nodes_[client2]->node_id()));
+//  // trying to find
+//  EXPECT_TRUE(Find(this->nodes_[client1], this->nodes_[client1]->node_id()));
+//  Sleep(std::chrono::seconds(5));
+//  EXPECT_FALSE(this->nodes_[client1]->RoutingTableHasNode(this->nodes_[client2]->node_id()));
+//  EXPECT_FALSE(this->nodes_[client1]->ClientRoutingTableHasNode(this->nodes_[client2]->node_id()));
 }
 
 }  // namespace test
