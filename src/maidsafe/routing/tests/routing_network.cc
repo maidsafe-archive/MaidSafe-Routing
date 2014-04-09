@@ -127,30 +127,6 @@ GenericNode::GenericNode(bool client_mode, const rudp::NatType& nat_type)
   id_ = next_node_id_++;
 }
 
-//GenericNode::GenericNode(bool has_symmetric_nat)
-//    : functors_(),
-//      id_(0),
-//      node_info_plus_(/*std::make_shared<NodeInfoAndPrivateKey>(node_info)*/),
-//      mutex_(),
-//      client_mode_(true),
-//      joined_(false),
-//      expected_(0),
-//      nat_type_(rudp::NatType::kUnknown),
-//      has_symmetric_nat_(has_symmetric_nat),
-//      endpoint_(),
-//      messages_(),
-//      routing_(),
-//      health_mutex_(),
-//      health_(0) {
-//  endpoint_.address(GetLocalIp());
-//  endpoint_.port(maidsafe::test::GetRandomPort());
-//  InitialiseFunctors();
-//  routing_.reset(new Routing());
-//  LOG(kVerbose) << "Node constructor";
-//  std::lock_guard<std::mutex> lock(mutex_);
-//  id_ = next_node_id_++;
-//}
-
 GenericNode::GenericNode(const passport::Pmid& pmid, bool has_symmetric_nat)
     : functors_(),
       id_(0),

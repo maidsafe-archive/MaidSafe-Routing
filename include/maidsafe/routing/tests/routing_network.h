@@ -80,7 +80,7 @@ class NodesEnvironment;
 class GenericNode {
  public:
   GenericNode(bool client_mode, const rudp::NatType& nat_type);
-  GenericNode(bool has_symmetric_nat = false);
+  explicit GenericNode(bool has_symmetric_nat = false);
   GenericNode(const passport::Pmid& pmid, bool has_symmetric_nat = false);
   GenericNode(const passport::Maid& maid, bool has_symmetric_nat = false);
   virtual ~GenericNode();

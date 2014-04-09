@@ -64,6 +64,14 @@ class FindNodeNetwork : public GenericNetwork, public testing::Test {
       this->nodes_[index]->PrintRoutingTable();
     }
   }
+
+  size_t FindClosestIndex(const NodeId& node_id) {
+    size_t source(0);
+    for (size_t index(1); index < ClientIndex(); ++index)
+      if (NodeId::CloserToTarget(nodes_[index]->node_id(), nodes_[source]->node_id(), node_id))
+        source = index;
+    return source;
+  }
 };
 
 TEST_F(FindNodeNetwork, FUNC_FindExistingNode) {
@@ -84,52 +92,51 @@ TEST_F(FindNodeNetwork, FUNC_FindNonExistingNode) {
   EXPECT_FALSE(this->nodes_[source]->RoutingTableHasNode(node_id));
 }
 
-TEST_F(FindNodeNetwork, DISABLED_FUNC_FindNodeAfterDrop) {
-//  this->SetUpNetwork(kServerSize);
-//  size_t source(this->RandomVaultIndex());
-//  NodeId node_id(GenerateUniqueRandomId(this->nodes_[source]->node_id(), 6));
-//  EXPECT_FALSE(this->nodes_[source]->RoutingTableHasNode(node_id));
-//  this->AddNode(false, node_id);
-//  EXPECT_TRUE(this->nodes_[source]->RoutingTableHasNode(node_id));
-//  EXPECT_TRUE(this->nodes_[source]->DropNode(node_id));
-//  Sleep(Parameters::recovery_time_lag + Parameters::find_node_interval + std::chrono::seconds(5));
-//  EXPECT_TRUE(this->nodes_[source]->RoutingTableHasNode(node_id));
+TEST_F(FindNodeNetwork, FUNC_FindNodeAfterDrop) {
+  this->SetUpNetwork(kServerSize);
+  auto pmid(MakePmid());
+  NodeId node_id(pmid.name());
+  size_t source(FindClosestIndex(node_id));
+  EXPECT_FALSE(this->nodes_[source]->RoutingTableHasNode(node_id));
+  this->AddNode(pmid);
+  EXPECT_TRUE(this->nodes_[source]->RoutingTableHasNode(node_id));
+  EXPECT_TRUE(this->nodes_[source]->DropNode(node_id));
+  Sleep(Parameters::recovery_time_lag + Parameters::find_node_interval + std::chrono::seconds(5));
+  EXPECT_TRUE(this->nodes_[source]->RoutingTableHasNode(node_id));
 }
 
-TEST_F(FindNodeNetwork, DISABLED_FUNC_VaultFindVaultNode) {
-//  this->SetUpNetwork(kServerSize, kClientSize);
-//  size_t source(this->RandomVaultIndex()), dest(this->ClientIndex());
-
-//  this->AddNode(false, GenerateUniqueRandomId(this->nodes_[source]->node_id(), 20));
-//  EXPECT_FALSE(this->nodes_.at(dest)->IsClient());
-
-//  EXPECT_TRUE(this->nodes_[source]->RoutingTableHasNode(this->nodes_[dest]->node_id()));
-
-//  EXPECT_TRUE(this->nodes_[source]->DropNode(this->nodes_[dest]->node_id()));
-
-//  Sleep(Parameters::recovery_time_lag + Parameters::find_node_interval + std::chrono::seconds(5));
-
-//  LOG(kVerbose) << "after find " << HexSubstr(this->nodes_[dest]->node_id().string());
-//  EXPECT_TRUE(this->nodes_[source]->RoutingTableHasNode(this->nodes_[dest]->node_id()));
+TEST_F(FindNodeNetwork, FUNC_VaultFindVaultNode) {
+  this->SetUpNetwork(kServerSize, kClientSize);
+  size_t source(0), dest(this->ClientIndex());
+  auto pmid(MakePmid());
+  NodeId node_id(pmid.name());
+  source = FindClosestIndex(node_id);
+  this->AddNode(pmid);
+  EXPECT_FALSE(this->nodes_.at(dest)->IsClient());
+  EXPECT_TRUE(this->nodes_[source]->RoutingTableHasNode(this->nodes_[dest]->node_id()));
+  EXPECT_TRUE(this->nodes_[source]->DropNode(this->nodes_[dest]->node_id()));
+  Sleep(Parameters::recovery_time_lag + Parameters::find_node_interval + std::chrono::seconds(5));
+  LOG(kVerbose) << "after find " << HexSubstr(this->nodes_[dest]->node_id().string());
+  EXPECT_TRUE(this->nodes_[source]->RoutingTableHasNode(this->nodes_[dest]->node_id()));
 }
 
-TEST_F(FindNodeNetwork, DISABLED_FUNC_VaultFindClientNode) {
-//  this->SetUpNetwork(kServerSize, kClientSize);
-//  size_t source(this->RandomVaultIndex()), dest(this->nodes_.size());
-
-//  // Add one client node
-//  this->AddNode(true, GenerateUniqueRandomId(this->nodes_[source]->node_id(), 20));
-//  EXPECT_TRUE(this->nodes_.at(dest)->IsClient());
-
-//  EXPECT_TRUE(this->nodes_[dest]->RoutingTableHasNode(this->nodes_[source]->node_id()));
-//  EXPECT_FALSE(this->nodes_[source]->RoutingTableHasNode(this->nodes_[dest]->node_id()));
-//  EXPECT_TRUE(this->nodes_[source]->ClientRoutingTableHasNode(this->nodes_[dest]->node_id()));
-
-//  // clear up
-//  EXPECT_TRUE(this->nodes_[dest]->DropNode(this->nodes_[source]->node_id()));
-//  Sleep(Parameters::recovery_time_lag + Parameters::find_node_interval + std::chrono::seconds(5));
-//  EXPECT_TRUE(this->nodes_[dest]->RoutingTableHasNode(this->nodes_[source]->node_id()));
-//  EXPECT_TRUE(this->nodes_[source]->ClientRoutingTableHasNode(this->nodes_[dest]->node_id()));
+TEST_F(FindNodeNetwork, FUNC_VaultFindClientNode) {
+  this->SetUpNetwork(kServerSize, kClientSize);
+  size_t source(0), dest(this->nodes_.size());
+  auto maid(MakeMaid());
+  NodeId node_id(maid.name());
+  source = FindClosestIndex(node_id);
+  this->AddNode(maid);
+  // Add one client node
+  EXPECT_TRUE(this->nodes_.at(dest)->IsClient());
+  EXPECT_TRUE(this->nodes_[dest]->RoutingTableHasNode(this->nodes_[source]->node_id()));
+  EXPECT_FALSE(this->nodes_[source]->RoutingTableHasNode(this->nodes_[dest]->node_id()));
+  EXPECT_TRUE(this->nodes_[source]->ClientRoutingTableHasNode(this->nodes_[dest]->node_id()));
+  // clear up
+  EXPECT_TRUE(this->nodes_[dest]->DropNode(this->nodes_[source]->node_id()));
+  Sleep(Parameters::recovery_time_lag + Parameters::find_node_interval + std::chrono::seconds(5));
+  EXPECT_TRUE(this->nodes_[dest]->RoutingTableHasNode(this->nodes_[source]->node_id()));
+  EXPECT_TRUE(this->nodes_[source]->ClientRoutingTableHasNode(this->nodes_[dest]->node_id()));
 }
 
 TEST_F(FindNodeNetwork, DISABLED_FUNC_ClientFindVaultNode) {

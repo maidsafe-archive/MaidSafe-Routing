@@ -281,99 +281,95 @@ TEST_F(RoutingChurnTest, FUNC_MatrixChangeWhenChurn) {
   Sleep(std::chrono::milliseconds(1000));
 }
 
-//TEST_F(RoutingChurnTest, FUNC_MessagingNetworkChurn) {
-//  size_t random(RandomUint32());
-//  const size_t vault_network_size(20 + random % 10);
-//  const size_t clients_in_network(5 + random % 3);
-//  this->SetUpNetwork(vault_network_size, clients_in_network);
-//  LOG(kInfo) << "Finished setting up network\n\n\n\n";
+TEST_F(RoutingChurnTest, DISABLED_FUNC_MessagingNetworkChurn) {
+  size_t random(RandomUint32());
+  const size_t vault_network_size(20 + random % 10);
+  const size_t clients_in_network(5 + random % 3);
+  this->SetUpNetwork(vault_network_size, clients_in_network);
+  LOG(kInfo) << "Finished setting up network\n\n\n\n";
 
-//  std::vector<NodeId> existing_node_ids;
-//  for (const auto& node : this->nodes_)
-//    existing_node_ids.push_back(node->node_id());
-//  LOG(kInfo) << "After harvesting node ids\n\n\n\n";
+  std::vector<NodeId> existing_node_ids;
+  for (const auto& node : this->nodes_)
+    existing_node_ids.push_back(node->node_id());
+  LOG(kInfo) << "After harvesting node ids\n\n\n\n";
 
-//  std::vector<NodeId> new_node_ids;
-//  const size_t up_count(vault_network_size / 3), down_count(vault_network_size / 5);
-//  size_t downed(0);
-//  while (new_node_ids.size() < up_count) {
-//    NodeId new_id(NodeId::kRandomId);
-//    auto itr(Find(new_id, existing_node_ids));
-//    if (itr == existing_node_ids.end())
-//      new_node_ids.push_back(new_id);
-//  }
-//  LOG(kInfo) << "After generating new ids\n\n\n\n";
+  std::vector<passport::Pmid> new_nodes;
+  const size_t up_count(vault_network_size / 3), down_count(vault_network_size / 5);
+  size_t downed(0);
+  while (new_nodes.size() < up_count)
+    new_nodes.emplace_back(MakePmid());
+  LOG(kInfo) << "After generating new ids\n\n\n\n";
 
-//  // Start thread for messaging between clients and clients to groups
-//  std::string message(RandomString(4096));
-//  volatile bool run(true);
-//  auto messaging_handle = std::async(std::launch::async, [=, &run] {
-//    LOG(kInfo) << "Before messaging loop";
-//    while (run) {
-//      GenericNetwork::NodePtr sender_client(this->RandomClientNode());
-//      GenericNetwork::NodePtr receiver_client(this->RandomClientNode());
-//      GenericNetwork::NodePtr vault_node(this->RandomVaultNode());
-//      // Choose random client nodes for direct message
-//      // TODO(Alison) - use result?
-//      sender_client->SendDirect(receiver_client->node_id(), message, false,
-//                                [](std::string /*str*/) {});
-//      // Choose random client for group message to random env
-//      // TODO(Alison) - use result?
-//      sender_client->SendGroup(NodeId(NodeId::kRandomId), message, false,
-//                               [](std::string /*str*/) {});
-//      // Choose random vault for group message to random env
-//      // TODO(Alison) - use result?
-//      vault_node->SendGroup(NodeId(NodeId::kRandomId), message, false, [](std::string /*str*/) {});
-//      // Wait before going again
-//      Sleep(std::chrono::milliseconds(900 + RandomUint32() % 200));
-//      LOG(kInfo) << "Ran messaging iteration";
-//    }
-//    LOG(kInfo) << "After messaging loop";
-//  });
-//  LOG(kInfo) << "Started messaging thread\n\n\n\n";
+  // Start thread for messaging between clients and clients to groups
+  std::string message(RandomString(4096));
+  volatile bool run(true);
+  auto messaging_handle = std::async(std::launch::async, [=, &run] {
+    LOG(kInfo) << "Before messaging loop";
+    while (run) {
+      GenericNetwork::NodePtr sender_client(this->RandomClientNode());
+      GenericNetwork::NodePtr receiver_client(this->RandomClientNode());
+      GenericNetwork::NodePtr vault_node(this->RandomVaultNode());
+      // Choose random client nodes for direct message
+      // TODO(Alison) - use result?
+      sender_client->SendDirect(receiver_client->node_id(), message, false,
+                                [](std::string) {});
+      // Choose random client for group message to random env
+      // TODO(Alison) - use result?
+      sender_client->SendGroup(NodeId(NodeId::kRandomId), message, false,
+                               [](std::string) {});
+      // Choose random vault for group message to random env
+      // TODO(Alison) - use result?
+      vault_node->SendGroup(NodeId(NodeId::kRandomId), message, false, [](std::string) {});
+      // Wait before going again
+      Sleep(std::chrono::milliseconds(900 + RandomUint32() % 200));
+      LOG(kInfo) << "Ran messaging iteration";
+    }
+    LOG(kInfo) << "After messaging loop";
+  });
+  LOG(kInfo) << "Started messaging thread\n\n\n\n";
 
-//  // Start thread to bring down nodes
-//  auto down_handle = std::async(std::launch::async, [=, &run, &down_count, &downed] {
-//    while (run && downed < down_count) {
-//      //                                    if (RandomUint32() % 5 == 0)
-//      //                                      this->RemoveRandomClient();
-//      //                                    else
-//      this->RemoveRandomVault();
-//      ++downed;
-//      Sleep(std::chrono::seconds(10));
-//    }
-//  });
+  // Start thread to bring down nodes
+  auto down_handle = std::async(std::launch::async, [=, &run, &down_count, &downed] {
+    while (run && downed < down_count) {
+      //                                    if (RandomUint32() % 5 == 0)
+      //                                      this->RemoveRandomClient();
+      //                                    else
+      this->RemoveRandomVault();
+      ++downed;
+      Sleep(std::chrono::seconds(10));
+    }
+  });
 
-//  // Start thread to bring up nodes
-//  auto up_handle = std::async(std::launch::async, [=, &run, &new_node_ids] {
-//    while (run) {
-//      if (new_node_ids.empty())
-//        return;
-//      //                                  if (RandomUint32() % 5 == 0)
-//      //                                    this->AddNode(true, new_node_ids.back());
-//      //                                  else
-//      this->AddNode(false, new_node_ids.back());
-//      new_node_ids.pop_back();
-//      Sleep(std::chrono::seconds(3));
-//    }
-//  });
+  // Start thread to bring up nodes
+  auto up_handle = std::async(std::launch::async, [=, &run, &new_nodes] {
+    while (run) {
+      if (new_nodes.empty())
+        return;
+      //                                  if (RandomUint32() % 5 == 0)
+      //                                    this->AddNode(true, new_node_ids.back());
+      //                                  else
+      this->AddNode(new_nodes.back());
+      new_nodes.pop_back();
+      Sleep(std::chrono::seconds(3));
+    }
+  });
 
-//  // Let stuff run for a while
-//  down_handle.get();
-//  up_handle.get();
+  // Let stuff run for a while
+  down_handle.get();
+  up_handle.get();
 
-//  // Stop all threads
-//  run = false;
-//  messaging_handle.get();
+  // Stop all threads
+  run = false;
+  messaging_handle.get();
 
-//  LOG(kInfo) << "\n\t Initial count of Vault nodes : " << vault_network_size
-//             << "\n\t Initial count of client nodes : " << clients_in_network
-//             << "\n\t Current count of nodes : " << this->nodes_.size()
-//             << "\n\t Up count of nodes : " << up_count
-//             << "\n\t down_count count of nodes : " << down_count;
-//  auto expected_current_size = vault_network_size + clients_in_network + up_count - down_count;
-//  EXPECT_EQ(expected_current_size, this->nodes_.size());
-//}
+  LOG(kInfo) << "\n\t Initial count of Vault nodes : " << vault_network_size
+             << "\n\t Initial count of client nodes : " << clients_in_network
+             << "\n\t Current count of nodes : " << this->nodes_.size()
+             << "\n\t Up count of nodes : " << up_count
+             << "\n\t down_count count of nodes : " << down_count;
+  auto expected_current_size = vault_network_size + clients_in_network + up_count - down_count;
+  EXPECT_EQ(expected_current_size, this->nodes_.size());
+}
 
 }  // namespace test
 

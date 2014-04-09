@@ -47,11 +47,10 @@ class RoutingStandAloneTest : public GenericNetwork, public testing::Test {
     for (size_t index(0); index < ClientIndex(); ++index) {
       pmid_ids.push_back(nodes_[index]->node_id());
     }
-    std::partial_sort(std::begin(pmid_ids), std::end(pmid_ids),
-                      std::begin(pmid_ids) + Parameters::closest_nodes_size,
-                      [&](const NodeId& lhs, const NodeId& rhs) {
-                        return NodeId::CloserToTarget(lhs, rhs, maid_id);
-                      });
+    std::partial_sort(std::begin(pmid_ids), std::begin(pmid_ids) + Parameters::closest_nodes_size,
+                      std::end(pmid_ids), [&](const NodeId& lhs, const NodeId& rhs) {
+                                            return NodeId::CloserToTarget(lhs, rhs, maid_id);
+                                          });
     return !NodeId::CloserToTarget(pmid_ids.at(Parameters::closest_nodes_size - 1),
                                    pmid_id, maid_id);
   }
@@ -88,7 +87,7 @@ TEST_F(RoutingStandAloneTest, FUNC_ClientRoutingTableUpdate) {
   while (this->nodes_.size() < kServerSize + Parameters::max_routing_table_size_for_client) {
     auto pmid(MakePmid());
     pmid_id = NodeId(pmid.name());
-    this->AddNode(MakePmid());
+    this->AddNode(pmid);
     Sleep(std::chrono::milliseconds(500));
     if (PmidIsCloseToMaid(pmid_id, maid_id)) {
       EXPECT_TRUE(this->nodes_[ClientIndex()]->RoutingTableHasNode(pmid_id))
@@ -203,20 +202,6 @@ TEST_F(RoutingStandAloneTest, FUNC_NodeRemoved) {
   size_t random_index(this->RandomNodeIndex());
   NodeInfo removed_node_info(this->nodes_[random_index]->GetRemovableNode());
   EXPECT_GE(removed_node_info.bucket, 510);
-}
-
-// This test produces the recursive call.
-TEST_F(RoutingStandAloneTest, DISABLED_FUNC_RecursiveCall) {
-//  this->SetUpNetwork(kServerSize);
-//  for (int index(0); index < 8; ++index)
-//    this->AddNode(false, GenerateUniqueRandomId(20));
-//  this->AddNode(true, GenerateUniqueRandomId(40));
-//  this->AddNode(false, GenerateUniqueRandomId(35));
-//  this->AddNode(false, GenerateUniqueRandomId(30));
-//  this->AddNode(false, GenerateUniqueRandomId(25));
-//  this->AddNode(false, GenerateUniqueRandomId(20));
-//  this->AddNode(false, GenerateUniqueRandomId(10));
-//  this->AddNode(true, GenerateUniqueRandomId(10));
 }
 
 TEST_F(RoutingStandAloneTest, FUNC_JoinAfterBootstrapLeaves) {

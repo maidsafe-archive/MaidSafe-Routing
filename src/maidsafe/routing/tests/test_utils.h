@@ -21,6 +21,7 @@
 
 #include <cstdint>
 #include <vector>
+#include <string>
 
 #include "boost/asio/ip/address.hpp"
 #include "boost/asio/ip/udp.hpp"
