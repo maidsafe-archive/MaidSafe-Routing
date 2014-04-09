@@ -45,7 +45,8 @@ typedef std::shared_ptr<GenericNode> DemoNodePtr;
 
 class Commands {
  public:
-  explicit Commands(DemoNodePtr demo_node, std::vector<maidsafe::passport::Pmid> all_pmids,
+  explicit Commands(DemoNodePtr demo_node,
+                    std::vector<maidsafe::passport::detail::AnmaidToPmid> all_keys,
                     int identity_index);
   void Run();
   void GetPeer(const std::string& peer);
@@ -78,7 +79,7 @@ class Commands {
                     std::string data);
 
   std::shared_ptr<GenericNode> demo_node_;
-  std::vector<maidsafe::passport::Pmid> all_pmids_;
+  std::vector<maidsafe::passport::detail::AnmaidToPmid> all_keys_;
   std::vector<NodeId> all_ids_;
   int identity_index_;
   boost::asio::ip::udp::endpoint bootstrap_peer_ep_;

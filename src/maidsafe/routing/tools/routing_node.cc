@@ -107,21 +107,21 @@ int main(int argc, char** argv) {
     }
 
     // Load fob list and local fob
-    std::vector<maidsafe::passport::Pmid> all_pmids;
-    maidsafe::passport::Anpmid anpmid;
-    maidsafe::passport::Pmid local_pmid(anpmid);
+    std::vector<maidsafe::passport::detail::AnmaidToPmid> all_keys;
+    maidsafe::passport::detail::AnmaidToPmid local_key;
     auto pmids_path(maidsafe::GetPathFromProgramOptions("pmids_path", variables_map, false, true));
     if (fs::exists(pmids_path, error_code)) {
-      all_pmids = maidsafe::passport::detail::ReadPmidList(pmids_path);
-      std::cout << "Loaded " << all_pmids.size() << " fobs." << std::endl;
-      if (static_cast<uint32_t>(identity_index) >= all_pmids.size() || identity_index < 0) {
-        std::cout << "ERROR : index exceeds fob pool -- pool has " << all_pmids.size()
+      all_keys = maidsafe::passport::detail::ReadKeyChainList(pmids_path);
+      std::cout << "Loaded " << all_keys.size() << " fobs." << std::endl;
+      if (static_cast<uint32_t>(identity_index) >= all_keys.size() || identity_index < 0) {
+        std::cout << "ERROR : index exceeds fob pool -- pool has " << all_keys.size()
                   << " fobs, while identity_index is " << identity_index << std::endl;
         return 0;
       } else {
-        local_pmid = all_pmids[identity_index];
+        local_key = all_keys[identity_index];
         std::cout << "Using identity #" << identity_index << " from keys file"
-                  << " , value is : " << maidsafe::HexSubstr(local_pmid.name().value) << std::endl;
+                  << " , value is : "
+                  << maidsafe::HexSubstr(local_key.pmid.name().value) << std::endl;
       }
     }
 
@@ -132,40 +132,40 @@ int main(int argc, char** argv) {
     // Ensure correct index range is being used
     bool client_only_node(variables_map["client"].as<bool>());
     if (client_only_node) {
-      if (identity_index < static_cast<int>(all_pmids.size() / 2)) {
+      if (identity_index < static_cast<int>(all_keys.size() / 2)) {
         std::cout << "ERROR : Incorrect identity_index used for a client, must between "
-                  << all_pmids.size() / 2 << " and " << all_pmids.size() - 1 << std::endl;
+                  << all_keys.size() / 2 << " and " << all_keys.size() - 1 << std::endl;
         return 0;
       }
     } else {
-      if (identity_index >= static_cast<int>(all_pmids.size() / 2)) {
+      if (identity_index >= static_cast<int>(all_keys.size() / 2)) {
         std::cout << "ERROR : Incorrect identity_index used for a vault, must between 0 and "
-                  << all_pmids.size() / 2 - 1 << std::endl;
+                  << all_keys.size() / 2 - 1 << std::endl;
         return 0;
       }
     }
     // Initial demo_node
     std::cout << "Creating node..." << std::endl;
-    maidsafe::routing::test::NodeInfoAndPrivateKey node_info(
-        maidsafe::routing::test::MakeNodeInfoAndKeysWithPmid(local_pmid));
-//    maidsafe::routing::test::DemoNodePtr demo_node(
-//        new maidsafe::routing::test::GenericNode(client_only_node, node_info));
-
+    maidsafe::routing::test::DemoNodePtr demo_node;
+    if (!client_only_node)
+      demo_node.reset(new maidsafe::routing::test::GenericNode(local_key.pmid));
+    else
+      demo_node.reset(new maidsafe::routing::test::GenericNode(local_key.maid));
     if (variables_map.count("bootstrap")) {
       if (identity_index >= 2) {
         std::cout << "ERROR : trying to use non-bootstrap identity" << std::endl;
         return 0;
       }
-//      std::cout << "------ Current BootStrap node endpoint info : " << demo_node->endpoint()
-//                << " ------ " << std::endl;
+      std::cout << "------ Current BootStrap node endpoint info : " << demo_node->endpoint()
+                << " ------ " << std::endl;
     }
 
-//    maidsafe::routing::test::Commands commands(demo_node, all_pmids, identity_index);
+    maidsafe::routing::test::Commands commands(demo_node, all_keys, identity_index);
     std::string peer(variables_map.at("peer").as<std::string>());
-//    if (!peer.empty()) {
-//      commands.GetPeer(peer);
-//    }
-//    commands.Run();
+    if (!peer.empty()) {
+      commands.GetPeer(peer);
+    }
+    commands.Run();
 
     std::cout << "Node stopped successfully." << std::endl;
   }
