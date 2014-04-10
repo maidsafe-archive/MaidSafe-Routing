@@ -110,10 +110,22 @@ int main(int argc, char** argv) {
     std::vector<maidsafe::passport::Pmid> all_pmids;
     maidsafe::passport::Anpmid anpmid;
     maidsafe::passport::Pmid local_pmid(anpmid);
-    auto pmids_path(maidsafe::GetPathFromProgramOptions("pmids_path", variables_map, false, true));
+    auto pmids_path(maidsafe::GetPathFromProgramOptions("pmids_path", variables_map, false, false));
     if (fs::exists(pmids_path, error_code)) {
-      all_pmids = maidsafe::passport::detail::ReadPmidList(pmids_path);
+      try {
+        all_pmids = maidsafe::passport::detail::ReadPmidList(pmids_path);
+      } catch (const std::exception& e) {
+        std::cout << "Error: Failed to read pmid list at path : "
+                  << pmids_path.string() << ". error : "
+                  << e.what() << std::endl;
+        return 0;
+      }
+      if (all_pmids.empty()) {
+        std::cout << "Error: loaded " << all_pmids.size() << " fobs." << std::endl;
+        return 0;
+      }
       std::cout << "Loaded " << all_pmids.size() << " fobs." << std::endl;
+
       if (static_cast<uint32_t>(identity_index) >= all_pmids.size() || identity_index < 0) {
         std::cout << "ERROR : index exceeds fob pool -- pool has " << all_pmids.size()
                   << " fobs, while identity_index is " << identity_index << std::endl;
@@ -123,6 +135,11 @@ int main(int argc, char** argv) {
         std::cout << "Using identity #" << identity_index << " from keys file"
                   << " , value is : " << maidsafe::HexSubstr(local_pmid.name().value) << std::endl;
       }
+    } else {
+      std::cout << "ERROR : pmid list file not found at : "
+                << variables_map.at("pmids_path").as<std::string>()
+                << std::endl;
+      return 0;
     }
 
     ConflictingOptions(variables_map, "client", "bootstrap");
