@@ -162,7 +162,6 @@ class GenericNode {
   std::mutex health_mutex_;
   int health_;
   void InitialiseFunctors();
-  void InjectNodeInfoAndPrivateKey();
 };
 
 class GenericNetwork {

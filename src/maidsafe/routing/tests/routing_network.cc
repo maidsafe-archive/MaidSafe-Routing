@@ -177,22 +177,6 @@ GenericNode::GenericNode(const passport::Maid& maid, bool has_symmetric_nat)
   id_ = next_node_id_++;
 }
 
-void GenericNode::InjectNodeInfoAndPrivateKey() {
-  const_cast<NodeId&>(routing_->pimpl_->kNodeId_) = node_info_plus_->node_info.node_id;
-  const_cast<NodeId&>(routing_->pimpl_->routing_table_.kNodeId_) =
-      node_info_plus_->node_info.node_id;
-  if (!client_mode_) {
-    const_cast<NodeId&>(routing_->pimpl_->routing_table_.kConnectionId_) =
-        node_info_plus_->node_info.node_id;
-  }
-  const_cast<asymm::Keys&>(routing_->pimpl_->routing_table_.kKeys_).private_key =
-      node_info_plus_->private_key;
-  const_cast<asymm::Keys&>(routing_->pimpl_->routing_table_.kKeys_).public_key =
-      node_info_plus_->node_info.public_key;
-  const_cast<NodeId&>(routing_->pimpl_->client_routing_table_.kNodeId_) =
-      node_info_plus_->node_info.node_id;
-}
-
 GenericNode::~GenericNode() {}
 
 void GenericNode::InitialiseFunctors() {
