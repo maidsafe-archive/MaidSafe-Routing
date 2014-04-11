@@ -41,6 +41,19 @@ class RoutingStandAloneTest : public GenericNetwork, public testing::Test {
     Sleep(std::chrono::microseconds(100));
     GenericNetwork::TearDown();
   }
+
+  bool PmidIsCloseToMaid(const NodeId& pmid_id, const NodeId& maid_id) {
+    std::vector<NodeId> pmid_ids;
+    for (size_t index(0); index < ClientIndex(); ++index) {
+      pmid_ids.push_back(nodes_[index]->node_id());
+    }
+    std::partial_sort(std::begin(pmid_ids), std::begin(pmid_ids) + Parameters::closest_nodes_size,
+                      std::end(pmid_ids), [&](const NodeId& lhs, const NodeId& rhs) {
+                                            return NodeId::CloserToTarget(lhs, rhs, maid_id);
+                                          });
+    return !NodeId::CloserToTarget(pmid_ids.at(Parameters::closest_nodes_size - 1),
+                                   pmid_id, maid_id);
+  }
 };
 
 // TODO(Mahmoud): This test should be moved to TESTrouting_func as it doesn't affect network.
@@ -69,15 +82,18 @@ TEST_F(RoutingStandAloneTest, FUNC_VaultSendToClient) {
 
 TEST_F(RoutingStandAloneTest, FUNC_ClientRoutingTableUpdate) {
   this->SetUpNetwork(kServerSize);
-  this->AddNode(true, GenerateUniqueRandomId(this->nodes_[kServerSize - 1]->node_id(), 50));
-  EXPECT_TRUE(this->nodes_[this->nodes_.size() - 1]->IsClient());
+  this->AddNode(MakeMaid());
+  NodeId maid_id(nodes_[kServerSize]->GetMaid().name()), pmid_id;
   while (this->nodes_.size() < kServerSize + Parameters::max_routing_table_size_for_client) {
-    this->AddNode(false, GenerateUniqueRandomId(this->nodes_[kServerSize - 1]->node_id(), 50));
+    auto pmid(MakePmid());
+    pmid_id = NodeId(pmid.name());
+    this->AddNode(pmid);
     Sleep(std::chrono::milliseconds(500));
-    EXPECT_TRUE(this->nodes_[ClientIndex()]
-                    ->RoutingTableHasNode(this->nodes_[ClientIndex() - 1]->node_id()))
-        << DebugId(this->nodes_[ClientIndex()]->node_id()) << " does not have "
-        << DebugId(this->nodes_[ClientIndex() - 1]->node_id());
+    if (PmidIsCloseToMaid(pmid_id, maid_id)) {
+      EXPECT_TRUE(this->nodes_[ClientIndex()]->RoutingTableHasNode(pmid_id))
+          << DebugId(this->nodes_[ClientIndex()]->node_id()) << " does not have "
+          << DebugId(pmid_id);
+    }
   }
 }
 
@@ -188,24 +204,10 @@ TEST_F(RoutingStandAloneTest, FUNC_NodeRemoved) {
   EXPECT_GE(removed_node_info.bucket, 510);
 }
 
-// This test produces the recursive call.
-TEST_F(RoutingStandAloneTest, FUNC_RecursiveCall) {
-  this->SetUpNetwork(kServerSize);
-  for (int index(0); index < 8; ++index)
-    this->AddNode(false, GenerateUniqueRandomId(20));
-  this->AddNode(true, GenerateUniqueRandomId(40));
-  this->AddNode(false, GenerateUniqueRandomId(35));
-  this->AddNode(false, GenerateUniqueRandomId(30));
-  this->AddNode(false, GenerateUniqueRandomId(25));
-  this->AddNode(false, GenerateUniqueRandomId(20));
-  this->AddNode(false, GenerateUniqueRandomId(10));
-  this->AddNode(true, GenerateUniqueRandomId(10));
-}
-
 TEST_F(RoutingStandAloneTest, FUNC_JoinAfterBootstrapLeaves) {
   this->SetUpNetwork(kServerSize);
   Sleep(std::chrono::seconds(10));
-  this->AddNode(false, NodeId(NodeId::kRandomId));
+  this->AddNode(MakePmid());
 }
 
 TEST_F(RoutingStandAloneTest, FUNC_ReBootstrap) {

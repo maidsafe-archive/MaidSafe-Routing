@@ -90,7 +90,7 @@ TEST_F(RoutingNetworkTest, FUNC_SanityCheck) {
   }
   {
     // Join client with same Id
-    env_->AddNode(true, env_->nodes_[env_->RandomClientIndex()]->node_id());
+    env_->AddNode(env_->nodes_[env_->RandomClientIndex()]->GetMaid());
 
     // Send to client with same Id
     EXPECT_TRUE(env_->SendDirect(env_->nodes_[kNetworkSize], env_->nodes_[kNetworkSize]->node_id(),
@@ -303,7 +303,7 @@ TEST_F(RoutingNetworkTest, FUNC_NonMutatingClientSendToGroupRandomId) {
   env_->ClearMessages();
   std::vector<std::future<std::unique_ptr<testing::AssertionResult>>> futures;
 
-  env_->AddNode(true, NodeId(NodeId::kRandomId), false, true);
+  env_->AddMutatingClient(false);
   assert(env_->nodes_.size() - 1 < std::numeric_limits<uint16_t>::max());
 
   for (int index = 0; index < message_count; ++index) {
@@ -347,7 +347,7 @@ TEST_F(RoutingNetworkTest, FUNC_NonMutatingClientSendToGroupExistingId) {
   std::vector<std::future<std::unique_ptr<testing::AssertionResult>>> futures;
 
   size_t initial_network_size(env_->nodes_.size());
-  env_->AddNode(true, NodeId(NodeId::kRandomId), false, true);
+  env_->AddMutatingClient(false);
   assert(env_->nodes_.size() - 1 < std::numeric_limits<uint16_t>::max());
 
   for (int index = 0; index < message_count; ++index) {
@@ -387,20 +387,20 @@ TEST_F(RoutingNetworkTest, FUNC_NonMutatingClientSendToGroupExistingId) {
 }
 
 TEST_F(RoutingNetworkTest, FUNC_JoinWithSameId) {
-  NodeId node_id(NodeId::kRandomId);
-  env_->AddNode(true, node_id);
-  env_->AddNode(true, node_id);
-  env_->AddNode(true, node_id);
-  env_->AddNode(true, node_id);
+  auto maid(MakeMaid());
+  env_->AddNode(maid);
+  env_->AddNode(maid);
+  env_->AddNode(maid);
+  env_->AddNode(maid);
 }
 
 TEST_F(RoutingNetworkTest, FUNC_SendToClientsWithSameId) {
   // TODO(Prakash) - send messages in parallel so test duration is reduced.
   // TODO(Prakash) - revert kMessageCount to 50 when test duration fixed.
   const uint16_t kMessageCount(5);
-  NodeId node_id(NodeId::kRandomId);
+  auto maid(MakeMaid());
   for (uint16_t index(0); index < 4; ++index)
-    env_->AddNode(true, node_id);
+    env_->AddNode(maid);
 
   for (uint16_t index(0); index < kMessageCount; ++index)
     EXPECT_TRUE(env_->SendDirect(env_->nodes_[kNetworkSize], env_->nodes_[kNetworkSize]->node_id(),
@@ -423,12 +423,13 @@ TEST_F(RoutingNetworkTest, FUNC_SendToClientsWithSameId) {
 }
 
 TEST_F(RoutingNetworkTest, FUNC_SendToClientWithSameId) {
-  NodeId node_id(env_->nodes_.at(env_->RandomClientIndex())->node_id());
+  auto maid(env_->nodes_.at(env_->RandomClientIndex())->GetMaid());
   size_t new_index(env_->nodes_.size());
-  env_->AddNode(true, node_id);
+  env_->AddNode(maid);
   size_t size(0);
 
   env_->ClearMessages();
+  NodeId node_id(maid.name());
   EXPECT_TRUE(env_->SendDirect(env_->nodes_[new_index], node_id, kExpectClient));
   for (const auto& node : env_->nodes_) {
     size += node->MessagesSize();
@@ -550,21 +551,23 @@ TEST_F(RoutingNetworkTest, FUNC_CheckGroupMatrixUniqueNodes) {
 }
 
 TEST_F(RoutingNetworkTest, FUNC_ClosestNodesClientBehindSymmetricNat) {
-  NodeId sym_client_id(NodeId::kRandomId);
-  env_->AddNode(true, sym_client_id, true);
+  auto sym_client(MakeMaid());
+  NodeId sym_client_id(sym_client.name());
+  env_->AddNode(sym_client, true);
 
   std::vector<NodeInfo> close_vaults(
       env_->GetClosestVaults(sym_client_id, Parameters::group_size));
   NodeId edge_id(close_vaults.back().node_id);
 
-  std::vector<NodeId> closer_vaults;
+  std::vector<passport::Pmid> closer_vaults;
   while (closer_vaults.size() < 2) {
-    NodeId new_id(NodeId::kRandomId);
+    auto pmid(MakePmid());
+    NodeId new_id(pmid.name());
     if (NodeId::CloserToTarget(new_id, edge_id, sym_client_id))
-      closer_vaults.push_back(new_id);
+      closer_vaults.push_back(pmid);
   }
-  for (const auto& node_id : closer_vaults)
-    env_->AddNode(false, node_id, true);
+  for (const auto& node : closer_vaults)
+    env_->AddNode(node, true);
 
   ASSERT_TRUE(env_->WaitForHealthToStabilise());
   ASSERT_TRUE(env_->WaitForNodesToJoin());
@@ -580,21 +583,23 @@ TEST_F(RoutingNetworkTest, FUNC_ClosestNodesClientBehindSymmetricNat) {
 }
 
 TEST_F(RoutingNetworkTest, FUNC_ClosestNodesVaultBehindSymmetricNat) {
-  NodeId sym_vault_id(NodeId::kRandomId);
-  env_->AddNode(false, sym_vault_id, true);
+  auto pmid(MakePmid());
+  NodeId sym_vault_id(pmid.name());
+  env_->AddNode(pmid, true);
 
   std::vector<NodeInfo> close_vaults(
       env_->GetClosestVaults(sym_vault_id, Parameters::group_size + 1));  // exclude self
   NodeId edge_id(close_vaults.back().node_id);
 
-  std::vector<NodeId> closer_vaults;
+  std::vector<passport::Pmid> closer_vaults;
   while (closer_vaults.size() < 2) {
-    NodeId new_id(NodeId::kRandomId);
+    auto new_pmid(MakePmid());
+    NodeId new_id(new_pmid.name());
     if (NodeId::CloserToTarget(new_id, edge_id, sym_vault_id))
-      closer_vaults.push_back(new_id);
+      closer_vaults.push_back(new_pmid);
   }
-  for (const auto& node_id : closer_vaults)
-    env_->AddNode(false, node_id, true);
+  for (const auto& pmid : closer_vaults)
+    env_->AddNode(pmid, true);
 
   ASSERT_TRUE(env_->WaitForHealthToStabilise());
   ASSERT_TRUE(env_->WaitForNodesToJoin());
@@ -611,37 +616,45 @@ TEST_F(RoutingNetworkTest, FUNC_ClosestNodesVaultBehindSymmetricNat) {
 }
 
 TEST_F(RoutingNetworkTest, FUNC_VaultJoinWhenClosestVaultAlsoBehindSymmetricNat) {
-  NodeId sym_node_id_1(NodeId::kRandomId);
-  env_->AddNode(false, sym_node_id_1, true);
+  auto sym_node1(MakePmid());
+  NodeId sym_node_id_1(sym_node1.name());
+  env_->AddNode(sym_node1, true);
 
   ASSERT_TRUE(env_->WaitForHealthToStabilise());
   ASSERT_TRUE(env_->WaitForNodesToJoin());
 
   std::vector<NodeInfo> closest_vaults(env_->GetClosestVaults(sym_node_id_1, 2));
 
-  NodeId sym_node_id_2(NodeId::kRandomId);
+  auto sym_node2(MakePmid());
+  NodeId sym_node_id_2(sym_node2.name());
 
-  while (NodeId::CloserToTarget(closest_vaults.at(1).node_id, sym_node_id_2, sym_node_id_1))
-    sym_node_id_2 = NodeId(NodeId::kRandomId);
+  while (NodeId::CloserToTarget(closest_vaults.at(1).node_id, sym_node_id_2, sym_node_id_1)) {
+    sym_node2 = MakePmid();
+    sym_node_id_2 = NodeId(sym_node2.name());
+  }
 
-  env_->AddNode(false, sym_node_id_2, true);
+  env_->AddNode(sym_node2, true);
 }
 
 TEST_F(RoutingNetworkTest, FUNC_ClientJoinWhenClosestVaultAlsoBehindSymmetricNat) {
-  NodeId sym_node_id_1(NodeId::kRandomId);
-  env_->AddNode(false, sym_node_id_1, true);
+  auto sym_node1(MakePmid());
+  NodeId sym_node_id_1(sym_node1.name());
+  env_->AddNode(sym_node1, true);
 
   ASSERT_TRUE(env_->WaitForHealthToStabilise());
   ASSERT_TRUE(env_->WaitForNodesToJoin());
 
   std::vector<NodeInfo> closest_vaults(env_->GetClosestVaults(sym_node_id_1, 2));
 
-  NodeId sym_node_id_2(NodeId::kRandomId);
+  auto sym_node2(MakePmid());
+  NodeId sym_node_id_2(sym_node2.name());
 
-  while (NodeId::CloserToTarget(closest_vaults.at(1).node_id, sym_node_id_2, sym_node_id_1))
-    sym_node_id_2 = NodeId(NodeId::kRandomId);
+  while (NodeId::CloserToTarget(closest_vaults.at(1).node_id, sym_node_id_2, sym_node_id_1)) {
+    sym_node2 = MakePmid();
+    sym_node_id_2 = NodeId(sym_node2.name());
+  }
 
-  env_->AddNode(true, sym_node_id_2, true);
+  env_->AddNode(sym_node2, true);
 }
 
 }  // namespace test

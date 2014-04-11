@@ -79,11 +79,10 @@ class NodesEnvironment;
 
 class GenericNode {
  public:
-  GenericNode(bool client_mode = false, bool has_symmetric_nat = false,
-              bool non_mutating_client = false);
   GenericNode(bool client_mode, const rudp::NatType& nat_type);
-  GenericNode(bool client_mode, const NodeInfoAndPrivateKey& node_info,
-              bool has_symmetric_nat = false, bool non_mutating_client = false);
+  explicit GenericNode(bool has_symmetric_nat = false);
+  GenericNode(const passport::Pmid& pmid, bool has_symmetric_nat = false);
+  GenericNode(const passport::Maid& maid, bool has_symmetric_nat = false);
   virtual ~GenericNode();
   int GetStatus() const;
   NodeId node_id() const;
@@ -134,6 +133,7 @@ class GenericNode {
   void PostTaskToAsioService(std::function<void()> functor);
   rudp::NatType nat_type();
   std::string SerializeRoutingTable();
+  passport::Maid GetMaid();
 
   static size_t next_node_id_;
   size_t MessagesSize() const;
@@ -147,6 +147,7 @@ class GenericNode {
  protected:
   size_t id_;
   std::shared_ptr<NodeInfoAndPrivateKey> node_info_plus_;
+  std::shared_ptr<passport::Maid> maid_;
   std::mutex mutex_;
   bool client_mode_;
   bool joined_;
@@ -179,12 +180,17 @@ class GenericNetwork {
   void SetUpNetwork(size_t total_number_vaults, size_t total_number_clients,
                     size_t num_symmetric_nat_vaults,
                     size_t num_symmetric_nat_clients);
-  void AddNode(bool client_mode, const NodeId& node_id,
-               MatrixChangedFunctor matrix_change_functor);
-  void AddNode(bool client_mode, const NodeId& node_id,
-               bool has_symmetric_nat = false, bool non_mutating_client = false);
+  void AddNode(bool client_mode, MatrixChangedFunctor matrix_change_functor);
+  void AddNode(const passport::Maid& maid, MatrixChangedFunctor matrix_change_functor);
+  void AddNode(const passport::Pmid& pmid, MatrixChangedFunctor matrix_change_functor);
+  void AddNode(bool has_symmetric_nat = false);
   void AddNode(bool client_mode, const rudp::NatType& nat_type);
   void AddNode(bool client_mode, bool has_symmetric_nat);
+  void AddNode(const passport::Maid& maid, bool has_symmetric_nat = false);
+  void AddNode(const passport::Pmid& pmid, bool has_symmetric_nat = false);
+  void AddClient(bool has_symmetric_nat = false);
+  void AddMutatingClient(bool has_symmetric_nat = false);
+  void AddVault(bool has_symmetric_nat = false);
   bool RemoveNode(const NodeId& node_id);
   bool WaitForNodesToJoin();
   bool WaitForNodesToJoin(size_t num_total_nodes);

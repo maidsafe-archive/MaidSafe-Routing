@@ -359,6 +359,9 @@ void NetworkUtils::RecursiveSendOn(protobuf::Message message, NodeInfo last_node
 }
 
 void NetworkUtils::AdjustRouteHistory(protobuf::Message& message) {
+  if (Parameters::hops_to_live == message.hops_to_live() &&
+      NodeId(message.source_id()) == routing_table_.kNodeId())
+    return;
   assert(message.route_history().size() <= Parameters::max_routing_table_size);
   if (std::find(message.route_history().begin(), message.route_history().end(),
                 routing_table_.kNodeId().string()) == message.route_history().end()) {

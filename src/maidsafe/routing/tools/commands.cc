@@ -37,10 +37,11 @@ namespace routing {
 
 namespace test {
 
-Commands::Commands(DemoNodePtr demo_node, std::vector<maidsafe::passport::Pmid> all_pmids,
+Commands::Commands(DemoNodePtr demo_node,
+                   std::vector<maidsafe::passport::detail::AnmaidToPmid> all_keys,
                    int identity_index)
     : demo_node_(demo_node),
-      all_pmids_(std::move(all_pmids)),
+      all_keys_(std::move(all_keys)),
       all_ids_(),
       identity_index_(identity_index),
       bootstrap_peer_ep_(),
@@ -55,8 +56,8 @@ Commands::Commands(DemoNodePtr demo_node, std::vector<maidsafe::passport::Pmid> 
   // here it is assumed that the first half of fobs will be used as vault
   // and the latter half part will be used as client, which shall not respond msg
   // i.e. shall not be put into all_ids_
-  for (size_t i(0); i < (all_pmids_.size() / 2); ++i)
-    all_ids_.push_back(NodeId(all_pmids_[i].name().value));
+  for (size_t i(0); i < (all_keys_.size() / 2); ++i)
+    all_ids_.push_back(NodeId(all_keys_[i].pmid.name().value));
 
   demo_node->functors_.request_public_key = [this](
       const NodeId & node_id,
@@ -75,16 +76,16 @@ void Commands::Validate(const NodeId& node_id, GivePublicKeyFunctor give_public_
   if (node_id == NodeId())
     return;
 
-  auto iter(all_pmids_.begin());
+  auto iter(all_keys_.begin());
   bool find(false);
-  while ((iter != all_pmids_.end()) && !find) {
-    if (iter->name()->string() == node_id.string())
+  while ((iter != all_keys_.end()) && !find) {
+    if (iter->pmid.name()->string() == node_id.string())
       find = true;
     else
       ++iter;
   }
-  if (iter != all_pmids_.end())
-    give_public_key((*iter).public_key());
+  if (iter != all_keys_.end())
+    give_public_key((*iter).pmid.public_key());
 }
 
 void Commands::Run() {
@@ -140,11 +141,11 @@ void Commands::ZeroStateJoin() {
   }
   NodeInfo peer_node_info;
   if (identity_index_ == 0) {
-    peer_node_info.node_id = NodeId(all_pmids_[1].name().value);
-    peer_node_info.public_key = all_pmids_[1].public_key();
+    peer_node_info.node_id = NodeId(all_keys_[1].pmid.name().value);
+    peer_node_info.public_key = all_keys_[1].pmid.public_key();
   } else {
-    peer_node_info.node_id = NodeId(all_pmids_[0].name().value);
-    peer_node_info.public_key = all_pmids_[0].public_key();
+    peer_node_info.node_id = NodeId(all_keys_[0].pmid.name().value);
+    peer_node_info.public_key = all_keys_[0].pmid.public_key();
   }
   peer_node_info.connection_id = peer_node_info.node_id;
 
@@ -208,14 +209,14 @@ uint16_t Commands::MakeMessage(int id_index, const DestinationType& destination_
   if (id_index >= 0)
     identity_index = id_index;
   else
-    identity_index = RandomUint32() % (all_pmids_.size() / 2);
+    identity_index = RandomUint32() % (all_keys_.size() / 2);
 
-  if ((identity_index >= 0) && (static_cast<uint32_t>(identity_index) >= all_pmids_.size())) {
+  if ((identity_index >= 0) && (static_cast<uint32_t>(identity_index) >= all_keys_.size())) {
     std::cout << "ERROR : destination index out of range" << std::endl;
     return 0;
   }
   if (identity_index >= 0)
-    dest_id = NodeId(all_pmids_[identity_index].name().value);
+    dest_id = NodeId(all_keys_[identity_index].pmid.name().value);
   std::cout << "Sending a msg from : " << maidsafe::HexSubstr(demo_node_->node_id().string())
             << " to " << (destination_type != DestinationType::kGroup ? ": " : "group : ")
             << maidsafe::HexSubstr(dest_id.string())

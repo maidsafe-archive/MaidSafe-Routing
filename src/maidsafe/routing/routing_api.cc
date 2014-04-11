@@ -27,10 +27,9 @@ namespace {
 typedef boost::asio::ip::udp::endpoint Endpoint;
 }
 
-template <>
-Routing::Routing(const NodeId& node_id)
+Routing::Routing()
     : pimpl_() {
-  InitialisePimpl(true, node_id, asymm::GenerateKeyPair());
+  InitialisePimpl(true, NodeId(NodeId::kRandomId), asymm::GenerateKeyPair());
 }
 
 void Routing::InitialisePimpl(bool client_mode, const NodeId& node_id, const asymm::Keys& keys) {

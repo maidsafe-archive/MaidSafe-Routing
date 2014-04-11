@@ -43,6 +43,7 @@
 #include "maidsafe/common/utils.h"
 
 #include "maidsafe/passport/types.h"
+#include "maidsafe/passport/detail/fob.h"
 
 #include "maidsafe/routing/node_info.h"
 #include "maidsafe/routing/routing_api.h"
@@ -53,21 +54,26 @@ namespace po = boost::program_options;
 
 namespace {
 
-typedef std::vector<maidsafe::passport::Pmid> PmidVector;
+#ifndef TESTING
+#define TESTING
+#endif
+
+typedef std::vector<maidsafe::passport::detail::AnmaidToPmid> KeysVector;
 
 const std::string kHelperVersion = "MaidSafe Routing KeysHelper " + maidsafe::kApplicationVersion();
 
-void PrintKeys(const PmidVector& all_pmids) {
-  for (size_t i = 0; i < all_pmids.size(); ++i)
-    std::cout << '\t' << i << "\t PMID " << maidsafe::HexSubstr(all_pmids[i].name()->string())
+void PrintKeys(const KeysVector& all_keys) {
+  for (size_t i = 0; i < all_keys.size(); ++i)
+    std::cout << '\t' << i << "\t PMID " << maidsafe::HexSubstr(all_keys[i].pmid.name()->string())
+              << '\t' << i << "\t MAID " << maidsafe::HexSubstr(all_keys[i].maid.name()->string())
               << (i < 2 ? " (bootstrap)" : "") << std::endl;
 }
 
-bool CreateKeys(size_t pmids_count, PmidVector& all_pmids) {
-  all_pmids.clear();
-  for (size_t i = 0; i < pmids_count; ++i) {
+bool CreateKeys(size_t keys_count, KeysVector& all_keys) {
+  all_keys.clear();
+  for (size_t i(0); i < keys_count; ++i) {
     try {
-      all_pmids.emplace_back(maidsafe::passport::Anpmid());
+      all_keys.emplace_back(maidsafe::passport::detail::AnmaidToPmid());
     }
     catch (const std::exception& /*ex*/) {
       LOG(kError) << "CreatePmids - Could not create ID #" << i;
@@ -125,13 +131,13 @@ int main(int argc, char* argv[]) {
       return 0;
     }
 
-    PmidVector all_pmids;
+    KeysVector all_keys;
     auto pmids_path(maidsafe::GetPathFromProgramOptions("pmids_path", variables_map, false, true));
 
     if (do_create) {
-      if (CreateKeys(pmids_count, all_pmids)) {
-        std::cout << "Created " << all_pmids.size() << " fobs." << std::endl;
-        if (maidsafe::passport::detail::WritePmidList(pmids_path, all_pmids))
+      if (CreateKeys(pmids_count, all_keys)) {
+        std::cout << "Created " << all_keys.size() << " fobs." << std::endl;
+        if (maidsafe::passport::detail::WriteKeyChainList(pmids_path, all_keys))
           std::cout << "Wrote pmids to " << pmids_path << std::endl;
         else
           std::cout << "Could not write pmids to " << pmids_path << std::endl;
@@ -140,17 +146,17 @@ int main(int argc, char* argv[]) {
       }
     } else if (do_load) {
       try {
-        all_pmids = maidsafe::passport::detail::ReadPmidList(pmids_path);
-        std::cout << "Loaded " << all_pmids.size() << " pmids from " << pmids_path << std::endl;
+        all_keys = maidsafe::passport::detail::ReadKeyChainList(pmids_path);
+        std::cout << "Loaded " << all_keys.size() << " pmids from " << pmids_path << std::endl;
       }
       catch (const std::exception& /*ex*/) {
-        all_pmids.clear();
+        all_keys.clear();
         std::cout << "Could not load fobs from " << pmids_path << std::endl;
       }
     }
 
     if (do_print)
-      PrintKeys(all_pmids);
+      PrintKeys(all_keys);
 
     if (do_delete) {
       if (fs::remove(pmids_path, error_code))

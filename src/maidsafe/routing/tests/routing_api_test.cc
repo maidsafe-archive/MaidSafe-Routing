@@ -349,7 +349,7 @@ TEST(APITest, BEH_API_NonMutatingClientNode) {
   Functors functors1, functors2, functors3;
   Routing routing1(pmid1);
   Routing routing2(pmid2);
-  Routing routing3((NodeId(NodeId::kRandomId)));
+  Routing routing3;
   functors1.message_and_caching.message_received = no_ops_message_received_functor;
   functors3 = functors2 = functors1;
 

@@ -68,12 +68,12 @@ typedef boost::asio::ip::udp::endpoint Endpoint;
 
 size_t GenericNode::next_node_id_(1);
 
-GenericNode::GenericNode(bool client_mode, bool has_symmetric_nat, bool non_mutating_client)
+GenericNode::GenericNode(bool has_symmetric_nat)
     : functors_(),
       id_(0),
       node_info_plus_(),
       mutex_(),
-      client_mode_(client_mode),
+      client_mode_(true),
       joined_(false),
       expected_(0),
       nat_type_(rudp::NatType::kUnknown),
@@ -83,19 +83,9 @@ GenericNode::GenericNode(bool client_mode, bool has_symmetric_nat, bool non_muta
       routing_(),
       health_mutex_(),
       health_(0) {
-  assert(!(!client_mode && non_mutating_client) && "Only clients may be non mutating!");
-  if (non_mutating_client) {
-    node_info_plus_.reset(new NodeInfoAndPrivateKey(MakeNodeInfoAndKeys()));
-    routing_.reset(new Routing(node_info_plus_->node_info.node_id));
-  } else if (client_mode) {
-    auto maid(MakeMaid());
-    node_info_plus_.reset(new NodeInfoAndPrivateKey(MakeNodeInfoAndKeysWithMaid(maid)));
-    routing_.reset(new Routing(maid));
-  } else {
-    auto pmid(MakePmid());
-    node_info_plus_.reset(new NodeInfoAndPrivateKey(MakeNodeInfoAndKeysWithPmid(pmid)));
-    routing_.reset(new Routing(pmid));
-  }
+  node_info_plus_.reset(new NodeInfoAndPrivateKey(MakeNodeInfoAndKeys()));
+  routing_.reset(new Routing());
+  node_info_plus_->node_info.node_id = routing_->kNodeId();
   endpoint_.address(GetLocalIp());
   endpoint_.port(maidsafe::test::GetRandomPort());
   InitialiseFunctors();
@@ -137,13 +127,13 @@ GenericNode::GenericNode(bool client_mode, const rudp::NatType& nat_type)
   id_ = next_node_id_++;
 }
 
-GenericNode::GenericNode(bool client_mode, const NodeInfoAndPrivateKey& node_info,
-                         bool has_symmetric_nat, bool non_mutating_client)
+GenericNode::GenericNode(const passport::Pmid& pmid, bool has_symmetric_nat)
     : functors_(),
       id_(0),
-      node_info_plus_(std::make_shared<NodeInfoAndPrivateKey>(node_info)),
+      node_info_plus_(std::make_shared<NodeInfoAndPrivateKey>(MakeNodeInfoAndKeysWithFob(pmid))),
+      maid_(),
       mutex_(),
-      client_mode_(client_mode),
+      client_mode_(false),
       joined_(false),
       expected_(0),
       nat_type_(rudp::NatType::kUnknown),
@@ -153,22 +143,35 @@ GenericNode::GenericNode(bool client_mode, const NodeInfoAndPrivateKey& node_inf
       routing_(),
       health_mutex_(),
       health_(0) {
-  assert(!(!client_mode && non_mutating_client) && "Only clients may be non mutating!");
   endpoint_.address(GetLocalIp());
   endpoint_.port(maidsafe::test::GetRandomPort());
   InitialiseFunctors();
-  if (non_mutating_client) {
-    routing_.reset(new Routing(node_info_plus_->node_info.node_id));
-    InjectNodeInfoAndPrivateKey();
-  } else if (client_mode) {
-    auto maid(MakeMaid());
-    routing_.reset(new Routing(maid));
-    InjectNodeInfoAndPrivateKey();
-  } else {
-    auto pmid(MakePmid());
-    routing_.reset(new Routing(pmid));
-    InjectNodeInfoAndPrivateKey();
-  }
+  routing_.reset(new Routing(pmid));
+  LOG(kVerbose) << "Node constructor";
+  std::lock_guard<std::mutex> lock(mutex_);
+  id_ = next_node_id_++;
+}
+
+GenericNode::GenericNode(const passport::Maid& maid, bool has_symmetric_nat)
+    : functors_(),
+      id_(0),
+      node_info_plus_(std::make_shared<NodeInfoAndPrivateKey>(MakeNodeInfoAndKeysWithFob(maid))),
+      maid_(std::make_shared<passport::Maid>(maid)),
+      mutex_(),
+      client_mode_(true),
+      joined_(false),
+      expected_(0),
+      nat_type_(rudp::NatType::kUnknown),
+      has_symmetric_nat_(has_symmetric_nat),
+      endpoint_(),
+      messages_(),
+      routing_(),
+      health_mutex_(),
+      health_(0) {
+  endpoint_.address(GetLocalIp());
+  endpoint_.port(maidsafe::test::GetRandomPort());
+  InitialiseFunctors();
+  routing_.reset(new Routing(maid));
   LOG(kVerbose) << "Node constructor";
   std::lock_guard<std::mutex> lock(mutex_);
   id_ = next_node_id_++;
@@ -410,6 +413,11 @@ void GenericNode::ClearMessages() {
   messages_.clear();
 }
 
+passport::Maid GenericNode::GetMaid() {
+  assert(maid_);
+  return *maid_;
+}
+
 asymm::PublicKey GenericNode::public_key() {
   std::lock_guard<std::mutex> lock(mutex_);
   return node_info_plus_->node_info.public_key;
@@ -457,7 +465,7 @@ GenericNetwork::~GenericNetwork() {
 }
 
 void GenericNetwork::SetUp() {
-  NodePtr node1(new GenericNode(false, false)), node2(new GenericNode(false, false));
+  NodePtr node1(new GenericNode(MakePmid())), node2(new GenericNode(MakePmid()));
   nodes_.push_back(node1);
   nodes_.push_back(node2);
   client_index_ = 2;
@@ -523,27 +531,27 @@ void GenericNetwork::SetUpNetwork(size_t total_number_vaults,
   size_t num_nonsym_nat_clients(total_number_clients - num_symmetric_nat_clients);
 
   for (size_t index(2); index < num_nonsym_nat_vaults; ++index) {
-    NodePtr node(new GenericNode(false, false));
+    NodePtr node(new GenericNode(MakePmid()));
     AddNodeDetails(node);
     LOG(kVerbose) << "Node # " << nodes_.size() << " added to network";
     //      node->PrintRoutingTable();
   }
 
   for (size_t index(0); index < num_symmetric_nat_vaults; ++index) {
-    NodePtr node(new GenericNode(false, true));
+    NodePtr node(new GenericNode(MakePmid(), true));
     AddNodeDetails(node);
     LOG(kVerbose) << "Node # " << nodes_.size() << " added to network";
     //      node->PrintRoutingTable();
   }
 
   for (size_t index(0); index < num_nonsym_nat_clients; ++index) {
-    NodePtr node(new GenericNode(true, false, RandomUint32() % 2 == 0));
+    NodePtr node(new GenericNode(MakeMaid()));
     AddNodeDetails(node);
     LOG(kVerbose) << "Node # " << nodes_.size() << " added to network";
   }
 
   for (size_t index(0); index < num_symmetric_nat_clients; ++index) {
-    NodePtr node(new GenericNode(true, true, RandomUint32() % 2 == 0));
+    NodePtr node(new GenericNode(MakeMaid(), true));
     AddNodeDetails(node);
     LOG(kVerbose) << "Node # " << nodes_.size() << " added to network";
   }
@@ -553,27 +561,70 @@ void GenericNetwork::SetUpNetwork(size_t total_number_vaults,
   //    EXPECT_TRUE(ValidateRoutingTables());
 }
 
-void GenericNetwork::AddNode(bool client_mode, const NodeId& node_id,
-                             MatrixChangedFunctor matrix_change_functor) {
-  NodeInfoAndPrivateKey node_info;
-  node_info = MakeNodeInfoAndKeys();
-  node_info.node_info.node_id = node_id;
-  NodePtr node(new GenericNode(client_mode, node_info, false, false));
+void GenericNetwork::AddNode(bool client_mode, MatrixChangedFunctor matrix_change_functor) {
+  NodePtr node;
+  if (client_mode) {
+    auto maid(MakeMaid());
+    node.reset(new GenericNode(maid));
+  } else {
+    auto pmid(MakePmid());
+    node.reset(new GenericNode(pmid, false));
+  }
   node->SetMatrixChangeFunctor(matrix_change_functor);
   AddNodeDetails(node);
   LOG(kVerbose) << "Node # " << nodes_.size() << " added to network";
 }
 
-void GenericNetwork::AddNode(bool client_mode, const NodeId& node_id,
-                             bool has_symmetric_nat, bool non_mutating_client) {
-  assert(!(!client_mode && non_mutating_client) && "Only clients may be non mutating!");
-  NodeInfoAndPrivateKey node_info;
-  node_info = MakeNodeInfoAndKeys();
-  node_info.node_info.node_id = node_id;
-  NodePtr node(new GenericNode(client_mode, node_info, has_symmetric_nat, non_mutating_client));
+void GenericNetwork::AddNode(const passport::Maid& maid, bool has_symmetric_nat) {
+  NodePtr node;
+  node.reset(new GenericNode(maid, has_symmetric_nat));
   AddNodeDetails(node);
   LOG(kVerbose) << "Node # " << nodes_.size() << " added to network";
-  //    node->PrintRoutingTable();
+}
+void GenericNetwork::AddNode(const passport::Pmid& pmid, bool has_symmetric_nat) {
+  NodePtr node;
+  node.reset(new GenericNode(pmid, has_symmetric_nat));
+  AddNodeDetails(node);
+  LOG(kVerbose) << "Node # " << nodes_.size() << " added to network";
+}
+
+void GenericNetwork::AddMutatingClient(bool has_symmetric_nat) {
+  NodePtr node;
+  node.reset(new GenericNode(has_symmetric_nat));
+  AddNodeDetails(node);
+  LOG(kVerbose) << "Node # " << nodes_.size() << " added to network";
+}
+
+void GenericNetwork::AddClient(bool has_symmetric_nat) {
+  AddNode(MakeMaid(), has_symmetric_nat);
+}
+
+void GenericNetwork::AddVault(bool has_symmetric_nat) {
+  AddNode(MakePmid(), has_symmetric_nat);
+}
+
+void GenericNetwork::AddNode(const passport::Maid& maid,
+                             MatrixChangedFunctor matrix_change_functor) {
+  NodePtr node;
+  node.reset(new GenericNode(maid));
+  node->SetMatrixChangeFunctor(matrix_change_functor);
+  AddNodeDetails(node);
+  LOG(kVerbose) << "Node # " << nodes_.size() << " added to network";
+}
+
+void GenericNetwork::AddNode(const passport::Pmid& pmid,
+                             MatrixChangedFunctor matrix_change_functor) {
+  NodePtr node;
+  node.reset(new GenericNode(pmid, false));
+  node->SetMatrixChangeFunctor(matrix_change_functor);
+  AddNodeDetails(node);
+  LOG(kVerbose) << "Node # " << nodes_.size() << " added to network";
+}
+
+void GenericNetwork::AddNode(bool has_symmetric_nat) {
+  NodePtr node(new GenericNode(has_symmetric_nat));
+  AddNodeDetails(node);
+  LOG(kVerbose) << "Node # " << nodes_.size() << " added to network";
 }
 
 void GenericNetwork::AddNode(bool client_mode, const rudp::NatType& nat_type) {
@@ -585,7 +636,11 @@ void GenericNetwork::AddNode(bool client_mode, const rudp::NatType& nat_type) {
 }
 
 void GenericNetwork::AddNode(bool client_mode, bool has_symmetric_nat) {
-  NodePtr node(new GenericNode(client_mode, has_symmetric_nat));
+  NodePtr node;
+  if (client_mode)
+    node.reset(new GenericNode(MakeMaid(), has_symmetric_nat));
+  else
+    node.reset(new GenericNode(MakePmid(), has_symmetric_nat));
   AddNodeDetails(node);
   LOG(kVerbose) << "Node # " << nodes_.size() << " added to network";
   //    node->PrintRoutingTable();
@@ -884,7 +939,7 @@ bool GenericNetwork::RestoreComposition() {
     Sleep(std::chrono::seconds(1));  // TODO(Alison) - remove once hanging is fixed
   }
   while (ClientIndex() < kServerSize) {
-    AddNode(false, NodeId());
+    AddVault();
   }
   if (ClientIndex() != kServerSize) {
     LOG(kError) << "Failed to restore number of servers. Actual: " << ClientIndex()
@@ -897,7 +952,7 @@ bool GenericNetwork::RestoreComposition() {
     Sleep(std::chrono::seconds(1));  // TODO(Alison) - remove once hanging is fixed
   }
   while (nodes_.size() < kNetworkSize) {
-    AddNode(true, NodeId());
+    AddClient();
   }
   if (ClientIndex() != kServerSize) {
     LOG(kError) << "Failed to maintain number of servers. Actual: " << ClientIndex()
