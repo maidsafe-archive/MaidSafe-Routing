@@ -139,6 +139,7 @@ TEST_F(FindNodeNetwork, FUNC_VaultFindClientNode) {
   EXPECT_TRUE(this->nodes_[source]->ClientRoutingTableHasNode(this->nodes_[dest]->node_id()));
 }
 
+// The test is commented/disabled due to difficulties in creating close Pmid and Maid nodes.
 TEST_F(FindNodeNetwork, DISABLED_FUNC_ClientFindVaultNode) {
 //  this->SetUpNetwork(kServerSize, kClientSize);
 //  size_t source(this->RandomVaultIndex());
@@ -170,6 +171,7 @@ TEST_F(FindNodeNetwork, DISABLED_FUNC_ClientFindVaultNode) {
 //  EXPECT_TRUE(this->nodes_[vault]->ClientRoutingTableHasNode(this->nodes_[client]->node_id()));
 }
 
+// The test is commented/disabled due to difficulties in creating two close Maid nodes.
 TEST_F(FindNodeNetwork, DISABLED_FUNC_ClientFindClientNode) {
 /*  this->SetUpNetwork(kServerSize, kClientSize);
   size_t source(this->RandomVaultIndex()), client1(this->nodes_.size()), client2(client1 + 1);
