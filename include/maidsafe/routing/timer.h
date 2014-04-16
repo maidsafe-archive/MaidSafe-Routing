@@ -92,9 +92,9 @@ class Timer {
     int outstanding_response_count;
 
    private:
-    Task() MAIDSAFE_DELETE;
-    Task(const Task&) MAIDSAFE_DELETE;
-    Task& operator=(const Task&) MAIDSAFE_DELETE;
+    Task() = delete;
+    Task(const Task&) = delete;
+    Task& operator=(const Task&) = delete;
   };
 
   Timer(const Timer&);
