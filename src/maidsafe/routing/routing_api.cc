@@ -115,6 +115,28 @@ bool Routing::IsConnectedClient(const NodeId& node_id) {
   return pimpl_->IsConnectedClient(node_id);
 }
 
+void UpdateNetworkHealth(int updated_health, int& current_health, std::mutex& mutex,
+                         std::condition_variable& cond_var, const NodeId& this_node_id) {
+  {
+    std::lock_guard<std::mutex> lock{ mutex };
+#ifdef USE_LOGGING
+    if (updated_health >= 0) {
+      std::string message{ DebugId(this_node_id) + " - Network health is " +
+          std::to_string(updated_health) + "% (was " + std::to_string(current_health) + "%)" };
+      if (updated_health >= current_health)
+        LOG(kVerbose) << message;
+      else
+        LOG(kWarning) << message;
+    } else {
+      LOG(kWarning) << DebugId(this_node_id) << " - Network is down (" << updated_health << "%)";
+    }
+#endif
+    current_health = updated_health;
+  }
+  cond_var.notify_one();
+  static_cast<void>(this_node_id);
+}
+
 }  // namespace routing
 
 }  // namespace maidsafe

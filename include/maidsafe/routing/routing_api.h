@@ -31,8 +31,10 @@
 #ifndef MAIDSAFE_ROUTING_ROUTING_API_H_
 #define MAIDSAFE_ROUTING_ROUTING_API_H_
 
+#include <condition_variable>
 #include <future>
 #include <memory>
+#include <mutex>
 #include <string>
 #include <vector>
 
@@ -52,9 +54,7 @@ namespace routing {
 
 struct NodeInfo;
 
-namespace test {
-class GenericNode;
-}
+namespace test { class GenericNode; }
 
 namespace detail {
 
@@ -179,6 +179,10 @@ class Routing {
   class Impl;
   std::shared_ptr<Impl> pimpl_;
 };
+
+// Locks 'mutex', sets 'current_health' to 'updated_health' then calls notify_one() on 'cond_var'.
+void UpdateNetworkHealth(int updated_health, int& current_health, std::mutex& mutex,
+                         std::condition_variable& cond_var, const NodeId& this_node_id);
 
 template <>
 Routing::Routing(const NodeId& node_id);

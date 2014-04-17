@@ -904,7 +904,7 @@ TEST(RoutingTableTest, BEH_IsThisNodeGroupLeader) {
   EXPECT_FALSE(routing_table.IsThisNodeGroupLeader(target_id, connected_peer));
   EXPECT_EQ(connected_peer.node_id, nodes.at(0).node_id);
   EXPECT_EQ(connected_peer.connection_id, nodes.at(0).connection_id);
-  EXPECT_TRUE(maidsafe::rsa::MatchingKeys(connected_peer.public_key, nodes.at(0).public_key));
+  EXPECT_TRUE(maidsafe::asymm::MatchingKeys(connected_peer.public_key, nodes.at(0).public_key));
 }
 
 TEST(RoutingTableTest, FUNC_IsConnected) {
