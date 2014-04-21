@@ -33,7 +33,7 @@ uint16_t Parameters::closest_nodes_size(8);
 uint16_t Parameters::group_size(4);
 uint16_t Parameters::proximity_factor(2);
 uint16_t Parameters::max_routing_table_size(64);
-uint16_t Parameters::routing_table_size_threshold(max_routing_table_size / 2);
+uint16_t Parameters::routing_table_size_threshold(max_routing_table_size / 4);
 uint16_t Parameters::max_routing_table_size_for_client(8);
 uint16_t Parameters::max_client_routing_table_size(max_routing_table_size);
 uint16_t Parameters::bucket_target_size(1);
@@ -48,7 +48,7 @@ uint16_t Parameters::max_route_history(5);
 uint16_t Parameters::hops_to_live(50);
 uint16_t Parameters::accepted_distance_tolerance(1);
 uint16_t Parameters::greedy_fraction(Parameters::max_routing_table_size * 3 / 4);
-uint16_t Parameters::split_avoidance(4);
+std::chrono::steady_clock::duration Parameters::local_retreival_timeout(std::chrono::seconds(2));
 uint16_t Parameters::routing_table_ready_to_response(Parameters::greedy_fraction * 9 / 10);
 bptime::time_duration Parameters::connect_rpc_prune_timeout(
     rudp::Parameters::rendezvous_connect_timeout * 2);
@@ -66,7 +66,7 @@ bool Parameters::append_maidsafe_local_endpoints(false);
 // available
 bool Parameters::append_local_live_port_endpoint(false);
 // TODO(Prakash): BEFORE_RELEASE enable caching after persona tests are passing
-bool Parameters::caching(false);
+bool Parameters::caching(true);
 }  // namespace routing
 
 }  // namespace maidsafe

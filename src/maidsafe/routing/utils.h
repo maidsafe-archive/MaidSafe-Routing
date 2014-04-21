@@ -91,6 +91,11 @@ rudp::NatType NatTypeFromProtobuf(const protobuf::NatType& nat_type_proto);
 std::string PrintMessage(const protobuf::Message& message);
 std::vector<NodeId> DeserializeNodeIdList(const std::string& node_list_str);
 std::string SerializeNodeIdList(const std::vector<NodeId>& node_list);
+SingleToSingleMessage CreateSingleToSingleMessage(const protobuf::Message& proto_message);
+SingleToGroupMessage CreateSingleToGroupMessage(const protobuf::Message& proto_message);
+GroupToSingleMessage CreateGroupToSingleMessage(const protobuf::Message& proto_message);
+GroupToGroupMessage CreateGroupToGroupMessage(const protobuf::Message& proto_message);
+SingleToGroupRelayMessage CreateSingleToGroupRelayMessage(const protobuf::Message& proto_message);
 }  // namespace routing
 
 }  // namespace maidsafe

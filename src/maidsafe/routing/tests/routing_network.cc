@@ -185,9 +185,7 @@ void GenericNode::InitialiseFunctors() {
               << " got close node replaced " << std::endl;
   };  // NOLINT (Fraser)
   functors_.message_and_caching.message_received = [this](
-      const std::string & message, const bool & cache_lookup, ReplyFunctor reply_functor) {
-    assert(!cache_lookup && "CacheLookup should be disabled for test");
-    static_cast<void>(cache_lookup);
+      const std::string & message, ReplyFunctor reply_functor) {
     LOG(kInfo) << id_ << " -- Received: message : " << message.substr(0, 10);
     std::lock_guard<std::mutex> guard(mutex_);
     messages_.push_back(message);
@@ -197,6 +195,18 @@ void GenericNode::InitialiseFunctors() {
   functors_.matrix_changed = [&](std::shared_ptr<routing::MatrixChange> /*matrix_change*/) {
 //     matrix_change_functor(node_info_plus_->node_info.node_id, matrix_change);
   };
+}
+
+void GenericNode::SetStoreInCacheFunctor(StoreCacheDataFunctor cache_store_functor) {
+  functors_.message_and_caching.store_cache_data = cache_store_functor;
+  routing_->pimpl_->message_handler_->cache_manager_->InitialiseFunctors(
+      functors_.message_and_caching);
+}
+
+void GenericNode::SetGetFromCacheFunctor(HaveCacheDataFunctor get_from_functor) {
+  functors_.message_and_caching.have_cache_data = get_from_functor;
+  routing_->pimpl_->message_handler_->cache_manager_->InitialiseFunctors(
+      functors_.message_and_caching);
 }
 
 int GenericNode::GetStatus() const { return routing_->network_status(); }
@@ -271,6 +281,16 @@ void GenericNode::SendDirect(const NodeId& destination_id, const std::string& da
 void GenericNode::SendGroup(const NodeId& destination_id, const std::string& data,
                             bool cacheable, ResponseFunctor response_functor) {
   routing_->SendGroup(destination_id, data, cacheable, response_functor);
+}
+
+void GenericNode::SendMessage(const NodeId& destination_id, protobuf::Message& proto_message) {
+  routing_->pimpl_->SendMessage(destination_id, proto_message);
+}
+
+void GenericNode::AddTask(const ResponseFunctor& response_functor, int expected_response_count,
+                          TaskId task_id) {
+  routing_->pimpl_->timer_.AddTask(Parameters::default_response_timeout, response_functor,
+                                   expected_response_count, task_id);
 }
 
 std::future<std::vector<NodeId>> GenericNode::GetGroup(const NodeId& info_id) {

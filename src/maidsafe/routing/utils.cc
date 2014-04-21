@@ -383,6 +383,58 @@ std::string SerializeNodeIdList(const std::vector<NodeId>& node_list) {
   return node_list_msg.SerializeAsString();
 }
 
+SingleToSingleMessage CreateSingleToSingleMessage(const protobuf::Message& proto_message) {
+  return SingleToSingleMessage(proto_message.data(0),
+                               SingleSource(NodeId(proto_message.source_id())),
+                               SingleId(NodeId(proto_message.destination_id())),
+                               static_cast<Cacheable>(proto_message.cacheable()));
+}
+
+SingleToGroupMessage CreateSingleToGroupMessage(const protobuf::Message& proto_message) {
+  return SingleToGroupMessage(proto_message.data(0),
+                              SingleSource(NodeId(proto_message.source_id())),
+                              GroupId(NodeId(proto_message.group_destination())),
+                              static_cast<Cacheable>(proto_message.cacheable()));
+}
+
+GroupToSingleMessage CreateGroupToSingleMessage(const protobuf::Message& proto_message) {
+  return GroupToSingleMessage(proto_message.data(0),
+                              GroupSource(GroupId(NodeId(proto_message.group_source())),
+                                          SingleId(NodeId(proto_message.source_id()))),
+                              SingleId(NodeId(proto_message.destination_id())),
+                              static_cast<Cacheable>(proto_message.cacheable()));
+}
+
+GroupToGroupMessage CreateGroupToGroupMessage(const protobuf::Message& proto_message) {
+  return GroupToGroupMessage(proto_message.data(0),
+                             GroupSource(GroupId(NodeId(proto_message.group_source())),
+                                         SingleId(NodeId(proto_message.source_id()))),
+                             GroupId(NodeId(proto_message.group_destination())),
+                             static_cast<Cacheable>(proto_message.cacheable()));
+}
+
+SingleToGroupRelayMessage CreateSingleToGroupRelayMessage(const protobuf::Message& proto_message) {
+  SingleSource single_src(NodeId(proto_message.relay_id()));
+  NodeId connection_id(proto_message.relay_connection_id());
+  SingleSource single_src_relay_node(NodeId(proto_message.source_id()));
+  SingleRelaySource single_relay_src(single_src,  // original sender
+                                     connection_id,
+                                     single_src_relay_node);
+
+  return SingleToGroupRelayMessage(proto_message.data(0),
+      single_relay_src,  // relay node
+          GroupId(NodeId(proto_message.group_destination())),
+              static_cast<Cacheable>(proto_message.cacheable()));
+
+//  return SingleToGroupRelayMessage(proto_message.data(0),
+//      SingleSourceRelay(SingleSource(NodeId(proto_message.relay_id())), // original sender
+//                        NodeId(proto_message.relay_connection_id()),
+//                        SingleSource(NodeId(proto_message.source_id()))),  // relay node
+//          GroupId(NodeId(proto_message.group_destination())),
+//              static_cast<Cacheable>(proto_message.cacheable()));
+}
+
+
 }  // namespace routing
 
 }  // namespace maidsafe

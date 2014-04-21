@@ -16,6 +16,8 @@
     See the Licences for the specific language governing permissions and limitations relating to
     use of the MaidSafe Software.                                                                 */
 
+#include <future>
+
 #include "maidsafe/routing/cache_manager.h"
 
 #include "maidsafe/routing/network_utils.h"
@@ -23,79 +25,147 @@
 #include "maidsafe/routing/routing.pb.h"
 #include "maidsafe/routing/utils.h"
 
+
 namespace maidsafe {
 
 namespace routing {
 
-CacheManager::CacheManager(NodeId node_id, NetworkUtils& network)
-    : kNodeId_(std::move(node_id)),
+CacheManager::CacheManager(const NodeId& node_id, NetworkUtils &network)
+    : kNodeId_(node_id),
       network_(network),
-      message_received_functor_(),
-      store_cache_data_() {}
+      message_and_caching_functors_(),
+      typed_message_and_caching_functors_() {}
 
-void CacheManager::InitialiseFunctors(MessageReceivedFunctor message_received_functor,
-                                      StoreCacheDataFunctor store_cache_data) {
-  assert(message_received_functor);
-  assert(store_cache_data);
-  message_received_functor_ = message_received_functor;
-  store_cache_data_ = store_cache_data;
+void CacheManager::InitialiseFunctors(const MessageAndCachingFunctors&
+                                      message_and_caching_functors) {
+#ifndef TESTING
+  assert(message_and_caching_functors.message_received);
+  assert(message_and_caching_functors.have_cache_data);
+  assert(message_and_caching_functors.store_cache_data);
+#endif
+  message_and_caching_functors_ = message_and_caching_functors;
+}
+
+void CacheManager::InitialiseFunctors(const TypedMessageAndCachingFunctor&
+    typed_message_and_caching_functors) {
+  assert(!message_and_caching_functors_.message_received);
+  assert(!message_and_caching_functors_.have_cache_data);
+  assert(!message_and_caching_functors_.store_cache_data);
+  typed_message_and_caching_functors_ = typed_message_and_caching_functors;
 }
 
 void CacheManager::AddToCache(const protobuf::Message& message) {
-  assert(!message.request());
-  if (store_cache_data_)
-    store_cache_data_(message.data(0));
+//  assert(!message.request());
+  if (message_and_caching_functors_.store_cache_data) {
+    message_and_caching_functors_.store_cache_data(message.data(0));
+  } else {
+    LOG(kVerbose) << "CacheManager::AddToCache";
+    TypedMessageAddtoCache(message);
+  }
 }
+
+void CacheManager::TypedMessageAddtoCache(const protobuf::Message& message) {
+  if ((!message.has_group_source() && !message.has_group_destination()) &&
+          typed_message_and_caching_functors_.single_to_single.put_cache_data) {
+    typed_message_and_caching_functors_.single_to_single.put_cache_data(
+        CreateSingleToSingleMessage(message));
+  } else if ((!message.has_group_source() && message.has_group_destination()) &&
+                typed_message_and_caching_functors_.single_to_group.put_cache_data) {
+    typed_message_and_caching_functors_.single_to_group.put_cache_data(
+        CreateSingleToGroupMessage(message));
+  } else if ((message.has_group_source() && !message.has_group_destination()) &&
+                typed_message_and_caching_functors_.group_to_single.put_cache_data) {
+    typed_message_and_caching_functors_.group_to_single.put_cache_data(
+        CreateGroupToSingleMessage(message));
+  } else if ((message.has_group_source() && message.has_group_destination()) &&
+                typed_message_and_caching_functors_.group_to_group.put_cache_data) {
+    typed_message_and_caching_functors_.group_to_group.put_cache_data(
+        CreateGroupToGroupMessage(message));
+  }
+}
+
 // FIXME(Prakash)
-void CacheManager::HandleGetFromCache(protobuf::Message& message) {
+bool CacheManager::HandleGetFromCache(protobuf::Message& message) {
   assert(IsRequest(message));
   assert(IsCacheableGet(message));
-  assert(kNodeId_.string() != message.source_id());
-  assert(kNodeId_.string() != message.destination_id());
-  if (message_received_functor_) {
+  auto cache_hit(std::make_shared<std::promise<bool>>());
+  auto future(cache_hit->get_future());
+//  assert(kNodeId_.string() != message.source_id());
+  if (message_and_caching_functors_.have_cache_data) {
     if (IsRequest(message)) {
-      LOG(kVerbose) << " [" << DebugId(kNodeId_) << "] rcvd : " << MessageTypeString(message)
-                    << " from " << HexSubstr(message.source_id()) << "   (id: " << message.id()
-                    << ")  --NodeLevel-- caching";
-      ReplyFunctor response_functor = [=](const std::string & reply_message) {
-        if (reply_message.empty()) {
-          LOG(kVerbose) << "No cache available, passing on the original request";
-          return network_.SendToClosestNode(message);
-        }
+      LOG(kVerbose) << " [" << DebugId(kNodeId_) << "] rcvd : "
+                    << MessageTypeString(message) << " from "
+                    << HexSubstr(message.source_id())
+                    << "   (id: " << message.id() << ")  --NodeLevel-- caching";
+      ReplyFunctor response_functor = [=](const std::string& reply_message) {
+          if (reply_message.empty()) {
+            LOG(kVerbose) << "No cache available, passing on the original request";
+            cache_hit->set_value(false);
+            return;
+          }
 
-        //  Responding with cached response
-        protobuf::Message message_out;
-        message_out.set_request(false);
-        message_out.set_hops_to_live(Parameters::hops_to_live);
-        message_out.set_destination_id(message.source_id());
-        message_out.set_type(message.type());
-        message_out.set_direct(true);
-        message_out.clear_data();
-        message_out.set_client_node(message.client_node());
-        message_out.set_routing_message(message.routing_message());
-        message_out.add_data(reply_message);
-        message_out.set_last_id(kNodeId_.string());
-        message_out.set_source_id(kNodeId_.string());
-        if (message.has_cacheable())
-          message_out.set_cacheable(message.cacheable());
-        if (message.has_id())
-          message_out.set_id(message.id());
-        else
-          LOG(kInfo) << "Message to be sent back had no ID.";
+          LOG(kVerbose) << "Cache contents: " << reply_message;
 
-        if (message.has_relay_id())
-          message_out.set_relay_id(message.relay_id());
+          //  Responding with cached response
+          protobuf::Message message_out;
+          message_out.set_request(false);
+          message_out.set_hops_to_live(Parameters::hops_to_live);
+          message_out.set_destination_id(message.source_id());
+          message_out.set_type(message.type());
+          message_out.set_direct(true);
+          message_out.clear_data();
+          message_out.set_client_node(message.client_node());
+          message_out.set_routing_message(message.routing_message());
+          message_out.add_data(reply_message);
+          message_out.set_last_id(kNodeId_.string());
+          message_out.set_source_id(kNodeId_.string());
+          if (message.has_cacheable())
+            message_out.set_cacheable(static_cast<int32_t>(Cacheable::kPut));
+          if (message.has_id())
+            message_out.set_id(message.id());
+          else
+            LOG(kInfo) << "Message to be sent back had no ID.";
 
-        if (message.has_relay_connection_id()) {
-          message_out.set_relay_connection_id(message.relay_connection_id());
-        }
-        network_.SendToClosestNode(message_out);
+          if (message.has_relay_id())
+            message_out.set_relay_id(message.relay_id());
+
+          if (message.has_relay_connection_id()) {
+            message_out.set_relay_connection_id(message.relay_connection_id());
+          }
+          network_.SendToClosestNode(message_out);
+          cache_hit->set_value(true);
       };
 
-      if (message_received_functor_)
-        message_received_functor_(message.data(0), true, response_functor);
+      if (message_and_caching_functors_.have_cache_data)
+        message_and_caching_functors_.have_cache_data(message.data(0), response_functor);
     }
+  } else {
+    return TypedMessageHandleGetFromCache(message);
   }
+  if (future.wait_for(Parameters::local_retreival_timeout) != std::future_status::ready)
+    return false;
+  return future.get();
+}
+
+bool CacheManager::TypedMessageHandleGetFromCache(protobuf::Message& message) {
+  if ((!message.has_group_source() && !message.has_group_destination()) &&
+      typed_message_and_caching_functors_.single_to_single.get_cache_data) {
+     return typed_message_and_caching_functors_.single_to_single.get_cache_data(
+                CreateSingleToSingleMessage(message));
+  } else if ((!message.has_group_source() && message.has_group_destination()) &&
+              typed_message_and_caching_functors_.single_to_group.get_cache_data) {
+      return typed_message_and_caching_functors_.single_to_group.get_cache_data(
+                 CreateSingleToGroupMessage(message));
+  } else if ((message.has_group_source() && !message.has_group_destination()) &&
+                typed_message_and_caching_functors_.group_to_single.get_cache_data) {
+      return typed_message_and_caching_functors_.group_to_single.get_cache_data(
+                 CreateGroupToSingleMessage(message));
+  } else if ((message.has_group_source() && message.has_group_destination()) &&
+                typed_message_and_caching_functors_.group_to_group.get_cache_data) {
+      return typed_message_and_caching_functors_.group_to_group.get_cache_data(
+                 CreateGroupToGroupMessage(message));
+  }
+  return false;
 }
 
 }  // namespace routing

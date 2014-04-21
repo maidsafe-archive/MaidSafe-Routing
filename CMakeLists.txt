@@ -54,7 +54,8 @@ set(RoutingFuncTestFiles ${RoutingSourcesDir}/tests/routing_functional_test.cc
 set(RoutingFuncNatTestFiles ${RoutingSourcesDir}/tests/routing_functional_test.cc
                             ${RoutingSourcesDir}/tests/routing_functional_nat_test.cc
                             ${RoutingSourcesDir}/tests/test_func_nat_main.cc)
-set(RoutingBigTestFiles ${RoutingSourcesDir}/tests/routing_churn_test.cc
+set(RoutingBigTestFiles ${RoutingSourcesDir}/tests/cache_test.cc
+                        ${RoutingSourcesDir}/tests/routing_churn_test.cc
                         ${RoutingSourcesDir}/tests/find_nodes_test.cc
                         ${RoutingSourcesDir}/tests/routing_stand_alone_test.cc)
 

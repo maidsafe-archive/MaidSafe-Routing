@@ -38,6 +38,7 @@ class Message;
 }
 
 namespace test {
+class GenericNode;
 class MessageHandlerTest;
 class MessageHandlerTest_BEH_HandleInvalidMessage_Test;
 class MessageHandlerTest_BEH_HandleRelay_Test;
@@ -108,7 +109,7 @@ class MessageHandler {
   void HandleMessageForNonRoutingNodes(protobuf::Message& message);
   void HandleDirectRelayRequestMessageAsClosestNode(protobuf::Message& message);
   void HandleGroupRelayRequestMessageAsClosestNode(protobuf::Message& message);
-  void HandleCacheLookup(protobuf::Message& message);
+  bool HandleCacheLookup(protobuf::Message& message);
   void StoreCacheCopy(const protobuf::Message& message);
   bool IsValidCacheableGet(const protobuf::Message& message);
   bool IsValidCacheablePut(const protobuf::Message& message);
@@ -119,6 +120,8 @@ class MessageHandler {
   friend class test::MessageHandlerTest_BEH_HandleGroupMessage_Test;
   friend class test::MessageHandlerTest_BEH_HandleNodeLevelMessage_Test;
   friend class test::MessageHandlerTest_BEH_ClientRoutingTable_Test;
+  friend class test::GenericNode;
+
 
   RoutingTable& routing_table_;
   ClientRoutingTable& client_routing_table_;

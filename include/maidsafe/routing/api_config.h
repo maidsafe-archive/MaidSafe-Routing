@@ -50,7 +50,7 @@ typedef std::function<void(std::string)> ResponseFunctor;
 typedef std::function<void(const std::string& /*message*/)> ReplyFunctor;
 
 // This is called on any message received that is NOT a reply to a request made by the Send method.
-typedef std::function<void(const std::string& /*message*/, bool /*cache_lookup*/,
+typedef std::function<void(const std::string& /*message*/,
                            ReplyFunctor /*reply functor*/)> MessageReceivedFunctor;
 
 // This is fired to validate a new peer node. User is supposed to validate the node and call
@@ -58,7 +58,8 @@ typedef std::function<void(const std::string& /*message*/, bool /*cache_lookup*/
 typedef std::function<void(asymm::PublicKey /*public_key*/)> GivePublicKeyFunctor;
 typedef std::function<void(NodeId /*node Id*/, GivePublicKeyFunctor)> RequestPublicKeyFunctor;
 
-typedef std::function<bool(std::string& /*data*/)> HaveCacheDataFunctor;
+typedef std::function<void(const std::string& /*data*/,
+                           ReplyFunctor /*reply functor*/)> HaveCacheDataFunctor;
 typedef std::function<void(const std::string& /*data*/)> StoreCacheDataFunctor;
 
 // This functor fires a number from 0 to 100 and represents % network health.
