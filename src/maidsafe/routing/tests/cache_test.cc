@@ -133,8 +133,8 @@ TEST_F(NetworkCache, FUNC_StoreGet) {
   Sleep(std::chrono::seconds(5));
 }
 
-} // namespace test
+}  // namespace test
 
-} // namespace routing
+}  // namespace routing
 
-} // namespace maidsafe
+}  // namespace maidsafe

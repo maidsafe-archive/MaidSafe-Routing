@@ -69,7 +69,7 @@ typedef boost::asio::ip::udp::endpoint Endpoint;
 const int kClientCount(4);
 const int kServerCount(10);
 const int kNetworkSize = kClientCount + kServerCount;
-MessageReceivedFunctor no_ops_message_received_functor = [](const std::string&, bool,
+MessageReceivedFunctor no_ops_message_received_functor = [](const std::string&,
                                                             ReplyFunctor) {};  // NOLINT
 }  // anonymous namespace
 
@@ -211,7 +211,7 @@ TEST(APITest, BEH_API_SendToSelf) {
       give_key((*itr).second);
   };
 
-  functors1.message_and_caching.message_received = [&](const std::string & message, bool,
+  functors1.message_and_caching.message_received = [&](const std::string & message,
                                                        ReplyFunctor reply_functor) {
     reply_functor("response to " + message);
     LOG(kVerbose) << "Message received and replied to message !!";
@@ -288,7 +288,7 @@ TEST(APITest, BEH_API_ClientNode) {
       give_key((*itr).second);
   };
 
-  functors1.message_and_caching.message_received = [&](const std::string & message, bool,
+  functors1.message_and_caching.message_received = [&](const std::string & message,
                                                        ReplyFunctor reply_functor) {
     reply_functor("response to " + message);
     LOG(kVerbose) << "Message received and replied to message !!";
@@ -361,7 +361,7 @@ TEST(APITest, BEH_API_NonMutatingClientNode) {
       give_key((*itr).second);
   };
 
-  functors1.message_and_caching.message_received = [&](const std::string & message, bool,
+  functors1.message_and_caching.message_received = [&](const std::string & message,
                                                        ReplyFunctor reply_functor) {
     reply_functor("response to " + message);
     LOG(kVerbose) << "Message received and replied to message !!";
@@ -436,7 +436,7 @@ TEST(APITest, BEH_API_ClientNodeSameId) {
       give_key((*itr).second);
   };
 
-  functors1.message_and_caching.message_received = [&](const std::string & message, bool,
+  functors1.message_and_caching.message_received = [&](const std::string & message,
                                                        ReplyFunctor reply_functor) {
     reply_functor("response to " + message);
     LOG(kVerbose) << "Message received and replied to message !!";
@@ -609,7 +609,7 @@ TEST(APITest, BEH_API_NodeNetworkWithClient) {
 
   functors.network_status = [](int) {};  // NOLINT (Fraser)
 
-  functors.message_and_caching.message_received = [&](const std::string & message, bool,
+  functors.message_and_caching.message_received = [&](const std::string& message,
                                                       ReplyFunctor reply_functor) {
     reply_functor("response to " + message);
     LOG(kVerbose) << "Message received and replied to message !!";
@@ -618,7 +618,7 @@ TEST(APITest, BEH_API_NodeNetworkWithClient) {
   Functors client_functors;
   client_functors.network_status = [](int) {};  // NOLINT (Fraser)
   client_functors.request_public_key = functors.request_public_key;
-  client_functors.message_and_caching.message_received = [&](const std::string&, bool,
+  client_functors.message_and_caching.message_received = [&](const std::string&,
                                                              ReplyFunctor /*reply_functor*/) {
     ASSERT_TRUE(false);  //  Client should not receive incoming message
   };
@@ -683,7 +683,7 @@ TEST(APITest, BEH_API_SendGroup) {
   std::map<NodeId, asymm::PublicKey> key_map;
   std::vector<std::shared_ptr<Routing>> routing_node;
   int i(0);
-  functors.request_public_key = [&](const NodeId & node_id, GivePublicKeyFunctor give_key) {
+  functors.request_public_key = [&](const NodeId& node_id, GivePublicKeyFunctor give_key) {
     LOG(kWarning) << "node_validation called for " << DebugId(node_id);
     auto itr(key_map.find(node_id));
     if (key_map.end() != itr)
@@ -700,7 +700,7 @@ TEST(APITest, BEH_API_SendGroup) {
 
   functors.network_status = [](int) {};  // NOLINT
 
-  functors.message_and_caching.message_received = [&](const std::string & message, bool,
+  functors.message_and_caching.message_received = [&](const std::string& message,
                                                       ReplyFunctor reply_functor) {
     reply_functor("response to " + message);
     LOG(kVerbose) << "Message received and replied to message !!";
@@ -789,7 +789,7 @@ TEST(APITest, BEH_API_SendGroup) {
   while (!send_futures.empty()) {
     send_futures.erase(
         std::remove_if(send_futures.begin(), send_futures.end(),
-                                                 [&data](boost::future<bool> & future_bool)->bool {
+                                                 [&data](boost::future<bool>& future_bool)->bool {
           if (future_bool.wait_for(boost::chrono::seconds::zero()) == boost::future_status::ready) {
             EXPECT_TRUE(future_bool.get());
             return true;
@@ -828,7 +828,7 @@ TEST(APITest, BEH_API_PartiallyJoinedSend) {
   functors3 = functors2 = functors1;
 
   functors1.network_status = [](int) {};  // NOLINT (Fraser)
-  functors1.message_and_caching.message_received = [&](const std::string & message, bool,
+  functors1.message_and_caching.message_received = [&](const std::string& message,
                                                        ReplyFunctor reply_functor) {
     reply_functor("response to " + message);
     LOG(kVerbose) << "Message received and replied to message !!";

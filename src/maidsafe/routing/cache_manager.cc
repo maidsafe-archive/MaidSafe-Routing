@@ -84,13 +84,20 @@ void CacheManager::TypedMessageAddtoCache(const protobuf::Message& message) {
   }
 }
 
-// FIXME(Prakash)
+// TODO(Mahmoud): In the current implementation, typed and untyped messages are handled slighlty
+// differently, which needs to become the same after discussions.
+// 1) Typed message cache handling is blocking
+// 2) Untyped message cache handling is blocking, however, there is a deadline of
+//    Parameter::local_retreival_timeout seconds for a reply. If the reply is not received at this
+//    deadline the function returns "false".
+// The advantages of the second approach (the one for untyped messages) are:
+//     a) not allowing a slow node to slows down the flow
+//     b) to customise the timeout in such a way to avoid the potential conflicts with acks.
 bool CacheManager::HandleGetFromCache(protobuf::Message& message) {
   assert(IsRequest(message));
   assert(IsCacheableGet(message));
   auto cache_hit(std::make_shared<std::promise<bool>>());
   auto future(cache_hit->get_future());
-//  assert(kNodeId_.string() != message.source_id());
   if (message_and_caching_functors_.have_cache_data) {
     if (IsRequest(message)) {
       LOG(kVerbose) << " [" << DebugId(kNodeId_) << "] rcvd : "

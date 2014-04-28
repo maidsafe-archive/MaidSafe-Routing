@@ -63,7 +63,7 @@ Commands::Commands(DemoNodePtr demo_node,
       const NodeId & node_id,
       GivePublicKeyFunctor give_public_key) { this->Validate(node_id, give_public_key); };  // NOLINT
   demo_node->functors_.message_and_caching.message_received = [this](
-      const std::string & wrapped_message, bool /* cache */, const ReplyFunctor & reply_functor) {
+      const std::string& wrapped_message, const ReplyFunctor& reply_functor) {
     std::string reply_msg(wrapped_message + "+++" + demo_node_->node_id().string());
     if (std::string::npos != wrapped_message.find("request_routing_table"))
       reply_msg = reply_msg + "---" + demo_node_->SerializeRoutingTable();

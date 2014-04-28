@@ -64,7 +64,7 @@ class MessageHandlerTest : public testing::Test {
         network_statistics_(),
         close_info_() {
     message_and_caching_functor_.message_received = [this](
-        const std::string & message, const bool & /*cache_lookup*/, ReplyFunctor reply_functor) {
+        const std::string & message, ReplyFunctor reply_functor) {
       MessageReceived(message);
       reply_functor("reply");
     };
