@@ -85,7 +85,7 @@ TEST_F(NetworkCache, FUNC_StoreGet) {
     SetGetFromCacheFunctor(nodes_[index], node_get_cache);
   }
 
-  std::string content("Dummy content for test puepose");
+  std::string content("Dummy content for test purpose");
   SingleToSingleMessage single_to_single_message;
   single_to_single_message.receiver = SingleId(NodeId(NodeId::kRandomId));
   single_to_single_message.sender = SingleSource(SingleId(nodes_[0]->node_id()));
