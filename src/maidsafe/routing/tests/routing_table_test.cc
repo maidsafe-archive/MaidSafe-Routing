@@ -1347,36 +1347,29 @@ TEST(RoutingTableTest, FUNC_GetRandomExistingNode) {
   NodeInfo node_info;
   std::vector<NodeInfo> known_nodes;
 
-  while (routing_table.size() < Parameters::closest_nodes_size) {
-    node_info = MakeNode();
-    known_nodes.push_back(node_info);
-    EXPECT_TRUE(routing_table.AddNode(node_info));
 #ifndef NDEBUG
     EXPECT_DEATH(routing_table.RandomConnectedNode(), "");
 #else
     EXPECT_TRUE(routing_table.RandomConnectedNode().IsZero());
 #endif
-  }
+  auto run_random_connected_node_test = [&] () {
+    NodeId random_connected_node_id = routing_table.RandomConnectedNode();
+    LOG(kVerbose) << "Got random connected node: " << DebugId(random_connected_node_id);
+    auto found(std::find_if(std::begin(known_nodes), std::end(known_nodes),
+                            [=] (const NodeInfo& node) {
+                              return (node.node_id ==  random_connected_node_id);
+                            }));
+    ASSERT_FALSE(found == std::end(known_nodes));
+  };
 
-  bool found(false);
-  NodeId placeholder_id(NodeId::kRandomId);
-  NodeId random_connected_node_id;
   while (routing_table.size() < Parameters::max_routing_table_size) {
     node_info = MakeNode();
     known_nodes.push_back(node_info);
     EXPECT_TRUE(routing_table.AddNode(node_info));
-
-    PartialSortFromTarget(own_node_id, known_nodes, Parameters::closest_nodes_size);
-    found = false;
-    random_connected_node_id = placeholder_id;
-    random_connected_node_id = routing_table.RandomConnectedNode();
-    LOG(kVerbose) << "Got random connected node: " << DebugId(random_connected_node_id);
-    for (size_t i(Parameters::closest_nodes_size); i < known_nodes.size(); ++i) {
-      if (known_nodes.at(i).node_id == random_connected_node_id)
-        found = true;
-    }
-    EXPECT_TRUE(found);
+    run_random_connected_node_test();
   }
+  for (auto i(0); i < 100; ++i)
+    run_random_connected_node_test();
 }
 
 }  // namespace test

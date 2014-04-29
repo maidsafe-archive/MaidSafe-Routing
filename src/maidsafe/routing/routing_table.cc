@@ -332,14 +332,16 @@ GroupRangeStatus RoutingTable::IsNodeIdInGroupRange(const NodeId& group_id,
 
 NodeId RoutingTable::RandomConnectedNode() {
   std::unique_lock<std::mutex> lock(mutex_);
-  assert(nodes_.size() > Parameters::closest_nodes_size &&
-         "Shouldn't call RandomConnectedNode when routing table size is <= closest_nodes_size");
-  if (nodes_.size() <= Parameters::closest_nodes_size)
+// Commenting out assert as peer starts treating this node as joined as soon as it adds
+// it into its routing table.
+//  assert(nodes_.size() > Parameters::closest_nodes_size &&
+//         "Shouldn't call RandomConnectedNode when routing table size is <= closest_nodes_size");
+  assert(!nodes_.empty());
+  if (nodes_.empty())
     return NodeId();
 
   PartialSortFromTarget(kNodeId_, static_cast<uint16_t>(nodes_.size()), lock);
-  size_t index(Parameters::closest_nodes_size +
-               RandomUint32() % (nodes_.size() - Parameters::closest_nodes_size));
+  size_t index(RandomUint32() % (nodes_.size()));
   return nodes_.at(index).node_id;
 }
 
