@@ -165,12 +165,14 @@ bool IsResponse(const protobuf::Message& message) { return !IsRequest(message); 
 bool IsDirect(const protobuf::Message& message) { return message.direct(); }
 
 bool IsCacheableGet(const protobuf::Message& message) {
-  return (message.has_cacheable() &&
+  return (!(message.has_relay_id() || message.has_relay_connection_id()) &&
+          message.has_cacheable() &&
           (static_cast<Cacheable>(message.cacheable()) == Cacheable::kGet));
 }
 
 bool IsCacheablePut(const protobuf::Message& message) {
-  return (message.has_cacheable() &&
+  return (!(message.has_relay_id() || message.has_relay_connection_id()) &&
+          message.has_cacheable() &&
           (static_cast<Cacheable>(message.cacheable()) == Cacheable::kPut));
 }
 

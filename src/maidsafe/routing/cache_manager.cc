@@ -65,6 +65,7 @@ void CacheManager::AddToCache(const protobuf::Message& message) {
 }
 
 void CacheManager::TypedMessageAddtoCache(const protobuf::Message& message) {
+  assert(!(message.has_relay_id() || message.has_relay_connection_id()));
   if ((!message.has_group_source() && !message.has_group_destination()) &&
           typed_message_and_caching_functors_.single_to_single.put_cache_data) {
     typed_message_and_caching_functors_.single_to_single.put_cache_data(
@@ -155,22 +156,23 @@ bool CacheManager::HandleGetFromCache(protobuf::Message& message) {
 }
 
 bool CacheManager::TypedMessageHandleGetFromCache(protobuf::Message& message) {
+  assert(!(message.has_relay_id() || message.has_relay_connection_id()));
   if ((!message.has_group_source() && !message.has_group_destination()) &&
       typed_message_and_caching_functors_.single_to_single.get_cache_data) {
-     return typed_message_and_caching_functors_.single_to_single.get_cache_data(
-                CreateSingleToSingleMessage(message));
+    return typed_message_and_caching_functors_.single_to_single.get_cache_data(
+        CreateSingleToSingleMessage(message));
   } else if ((!message.has_group_source() && message.has_group_destination()) &&
-              typed_message_and_caching_functors_.single_to_group.get_cache_data) {
-      return typed_message_and_caching_functors_.single_to_group.get_cache_data(
-                 CreateSingleToGroupMessage(message));
+             typed_message_and_caching_functors_.single_to_group.get_cache_data) {
+    return typed_message_and_caching_functors_.single_to_group.get_cache_data(
+        CreateSingleToGroupMessage(message));
   } else if ((message.has_group_source() && !message.has_group_destination()) &&
-                typed_message_and_caching_functors_.group_to_single.get_cache_data) {
-      return typed_message_and_caching_functors_.group_to_single.get_cache_data(
-                 CreateGroupToSingleMessage(message));
+             typed_message_and_caching_functors_.group_to_single.get_cache_data) {
+    return typed_message_and_caching_functors_.group_to_single.get_cache_data(
+        CreateGroupToSingleMessage(message));
   } else if ((message.has_group_source() && message.has_group_destination()) &&
-                typed_message_and_caching_functors_.group_to_group.get_cache_data) {
-      return typed_message_and_caching_functors_.group_to_group.get_cache_data(
-                 CreateGroupToGroupMessage(message));
+             typed_message_and_caching_functors_.group_to_group.get_cache_data) {
+    return typed_message_and_caching_functors_.group_to_group.get_cache_data(
+        CreateGroupToGroupMessage(message));
   }
   return false;
 }
