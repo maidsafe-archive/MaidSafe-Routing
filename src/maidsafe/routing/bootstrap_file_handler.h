@@ -24,17 +24,22 @@
 #include "boost/asio/ip/udp.hpp"
 #include "boost/filesystem/path.hpp"
 
+#include "maidsafe/routing/api_config.h"
+
 namespace maidsafe {
 
 namespace routing {
 
-std::vector<boost::asio::ip::udp::endpoint> ReadBootstrapFile();
+BootstrapContacts ReadBootstrapFile(const boost::filesystem::path& bootstrap_file_path);
 
-bool WriteBootstrapFile(const std::vector<boost::asio::ip::udp::endpoint>& endpoints,
+void WriteBootstrapFile(const BootstrapContacts& bootstrap_contacts,
                         const boost::filesystem::path& bootstrap_file_path);
 
-void UpdateBootstrapFile(const boost::asio::ip::udp::endpoint& endpoint, bool remove);
+void UpdateBootstrapFile(const BootstrapContact& bootstrap_contact,
+                         const boost::filesystem::path& bootstrap_file_path,
+                         bool remove);
 
+// FIXME(Prakash) use BootstrapList here
 std::vector<boost::asio::ip::udp::endpoint> MaidSafeEndpoints();
 
 // TODO(Prakash) : BEFORE_RELEASE remove using local endpoints

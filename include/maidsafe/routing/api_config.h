@@ -43,6 +43,11 @@ enum class DestinationType : int {
   kGroup
 };
 
+// FIXME(Team) BEFORE_RELEASE add public key and timestamp to BootstrapContact
+typedef boost::asio::ip::udp::endpoint BootstrapContact;
+
+typedef std::vector<BootstrapContact> BootstrapContacts;
+
 typedef std::function<void(std::string)> ResponseFunctor;
 
 // They are passed as a parameter by MessageReceivedFunctor and should be called for responding to
