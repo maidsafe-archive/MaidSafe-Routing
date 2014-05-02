@@ -16,11 +16,9 @@
     See the Licences for the specific language governing permissions and limitations relating to
     use of the MaidSafe Software.                                                                 */
 
-#include "maidsafe/routing/bootstrap_file_handler.h"
+#include "maidsafe/routing/bootstrap_file_operations.h"
 
 #include <string>
-
-#include "boost/filesystem/path.hpp"
 
 #include "maidsafe/common/log.h"
 #include "maidsafe/common/utils.h"
@@ -120,50 +118,6 @@ void UpdateBootstrapFile(const BootstrapContact& bootstrap_contact,
       LOG(kVerbose) << "Endpoint already in the list : " << bootstrap_contact;
     }
   }
-}
-
-BootstrapContacts MaidSafeBootstrapContacts() {
-  std::vector<std::string> endpoint_string;
-  endpoint_string.reserve(15);
-  endpoint_string.push_back("176.58.120.133");
-  endpoint_string.push_back("178.79.163.139");
-  endpoint_string.push_back("176.58.102.53");
-  endpoint_string.push_back("176.58.113.214");
-  endpoint_string.push_back("106.187.49.208");
-  endpoint_string.push_back("198.74.60.81");
-  endpoint_string.push_back("198.74.60.83");
-  endpoint_string.push_back("198.74.60.84");
-  endpoint_string.push_back("198.74.60.85");
-  endpoint_string.push_back("198.74.60.86");
-  endpoint_string.push_back("176.58.103.83");
-  endpoint_string.push_back("106.187.102.233");
-  endpoint_string.push_back("106.187.47.248");
-  endpoint_string.push_back("106.187.93.100");
-  endpoint_string.push_back("106.186.16.51");
-
-  BootstrapContacts maidsafe_endpoints;
-  for (const auto& i : endpoint_string)
-    maidsafe_endpoints.push_back(Endpoint(boost::asio::ip::address::from_string(i), 5483));
-  return maidsafe_endpoints;
-}
-
-BootstrapContacts MaidSafeLocalBootstrapContacts() {
-  std::vector<std::string> endpoint_string;
-  endpoint_string.reserve(2);
-#if defined QA_BUILD
-  LOG(kVerbose) << "Appending 192.168.0.130:5483 to bootstrap endpoints";
-  endpoint_string.push_back("192.168.0.130");
-#elif defined TESTING
-  LOG(kVerbose) << "Appending 192.168.0.109:5483 to bootstrap endpoints";
-  endpoint_string.push_back("192.168.0.109");
-#endif
-  assert(endpoint_string.size() &&
-         "Either QA_BUILD or TESTING must be defined to use maidsafe local endpoint option");
-
-  BootstrapContacts maidsafe_endpoints;
-  for (const auto& i : endpoint_string)
-    maidsafe_endpoints.push_back(Endpoint(boost::asio::ip::address::from_string(i), 5483));
-  return maidsafe_endpoints;
 }
 
 }  // namespace routing

@@ -16,28 +16,16 @@
     See the Licences for the specific language governing permissions and limitations relating to
     use of the MaidSafe Software.                                                                 */
 
-#ifndef MAIDSAFE_ROUTING_BOOTSTRAP_FILE_HANDLER_H_
-#define MAIDSAFE_ROUTING_BOOTSTRAP_FILE_HANDLER_H_
+#ifndef MAIDSAFE_ROUTING_BOOTSTRAP_UTILS_H_
+#define MAIDSAFE_ROUTING_BOOTSTRAP_UTILS_H_
 
 #include <vector>
-
-#include "boost/asio/ip/udp.hpp"
-#include "boost/filesystem/path.hpp"
 
 #include "maidsafe/routing/api_config.h"
 
 namespace maidsafe {
 
 namespace routing {
-
-BootstrapContacts ReadBootstrapFile(const boost::filesystem::path& bootstrap_file_path);
-
-void WriteBootstrapFile(const BootstrapContacts& bootstrap_contacts,
-                        const boost::filesystem::path& bootstrap_file_path);
-
-void UpdateBootstrapFile(const BootstrapContact& bootstrap_contact,
-                         const boost::filesystem::path& bootstrap_file_path,
-                         bool remove);
 
 BootstrapContacts MaidSafeBootstrapContacts();
 
@@ -48,4 +36,4 @@ BootstrapContacts MaidSafeLocalBootstrapContacts();
 
 }  // namespace maidsafe
 
-#endif  // MAIDSAFE_ROUTING_BOOTSTRAP_FILE_HANDLER_H_
+#endif  // MAIDSAFE_ROUTING_BOOTSTRAP_UTILS_H_

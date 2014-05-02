@@ -46,7 +46,7 @@
 
 #include "maidsafe/passport/types.h"
 
-#include "maidsafe/routing/bootstrap_file_handler.h"
+#include "maidsafe/routing/bootstrap_file_operations.h"
 #include "maidsafe/routing/return_codes.h"
 #include "maidsafe/routing/routing_api.h"
 #include "maidsafe/routing/routing_impl.h"

@@ -24,7 +24,8 @@
 #include "maidsafe/common/utils.h"
 #include "maidsafe/rudp/return_codes.h"
 
-#include "maidsafe/routing/bootstrap_file_handler.h"
+#include "maidsafe/routing/bootstrap_file_operations.h"
+#include "maidsafe/routing/bootstrap_utils.h"
 #include "maidsafe/routing/client_routing_table.h"
 #include "maidsafe/routing/parameters.h"
 #include "maidsafe/routing/return_codes.h"

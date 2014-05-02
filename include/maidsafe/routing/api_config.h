@@ -28,6 +28,8 @@
 #include "maidsafe/common/rsa.h"
 #include "maidsafe/common/node_id.h"
 #include "maidsafe/rudp/managed_connections.h"
+
+#include "maidsafe/routing/bootstrap_file_operations.h"
 #include "maidsafe/routing/matrix_change.h"
 #include "maidsafe/routing/message.h"
 
@@ -42,11 +44,6 @@ enum class DestinationType : int {
   kClosest,
   kGroup
 };
-
-// FIXME(Team) BEFORE_RELEASE add public key and timestamp to BootstrapContact
-typedef boost::asio::ip::udp::endpoint BootstrapContact;
-
-typedef std::vector<BootstrapContact> BootstrapContacts;
 
 typedef std::function<void(std::string)> ResponseFunctor;
 

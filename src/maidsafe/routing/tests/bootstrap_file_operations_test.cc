@@ -18,12 +18,13 @@
 
 #include <vector>
 
-#include "maidsafe/common/log.h"
-#include "maidsafe/common/test.h"
-
 #include "boost/filesystem/operations.hpp"
 
-#include "maidsafe/routing/bootstrap_file_handler.h"
+#include "maidsafe/common/log.h"
+#include "maidsafe/common/test.h"
+#include "maidsafe/common/utils.h"
+
+#include "maidsafe/routing/bootstrap_file_operations.h"
 
 namespace fs = boost::filesystem;
 
@@ -31,7 +32,7 @@ namespace maidsafe {
 namespace routing {
 namespace test {
 
-TEST(BootstrapFilehandlerTest, BEH_ReadWriteUpdate) {
+TEST(BootstrapFileOperationsTest, BEH_ReadWriteUpdate) {
   maidsafe::test::TestPath test_path(maidsafe::test::CreateTestPath("MaidSafe_TestUtils"));
   fs::path bootstrap_file_path(*test_path / "bootstrap");
   ASSERT_FALSE(fs::exists(bootstrap_file_path));
@@ -57,7 +58,7 @@ TEST(BootstrapFilehandlerTest, BEH_ReadWriteUpdate) {
     BootstrapContact bootstrap_contact(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort());
     bootstrap_contacts.push_back(bootstrap_contact);
     expected_bootstrap_contacts.insert(std::begin(expected_bootstrap_contacts), bootstrap_contact);
-    EXPECT_NO_THROW(UpdateBootstrapFile(bootstrap_contact, bootstrap_file_path,false));
+    EXPECT_NO_THROW(UpdateBootstrapFile(bootstrap_contact, bootstrap_file_path, false));
     auto actual_bootstrap_contacts = ReadBootstrapFile(bootstrap_file_path);
     EXPECT_TRUE(std::equal(actual_bootstrap_contacts.begin(),
                            actual_bootstrap_contacts.end(),

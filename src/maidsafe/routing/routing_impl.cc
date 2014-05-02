@@ -28,7 +28,7 @@
 
 #include "maidsafe/passport/types.h"
 
-#include "maidsafe/routing/bootstrap_file_handler.h"
+#include "maidsafe/routing/bootstrap_file_operations.h"
 #include "maidsafe/routing/message.h"
 #include "maidsafe/routing/message_handler.h"
 #include "maidsafe/routing/node_info.h"
