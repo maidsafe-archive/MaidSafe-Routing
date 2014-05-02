@@ -36,8 +36,8 @@ void Routing::InitialisePimpl(bool client_mode, const NodeId& node_id, const asy
   pimpl_.reset(new Impl(client_mode, node_id, keys));
 }
 
-void Routing::Join(Functors functors, std::vector<Endpoint> peer_endpoints) {
-  pimpl_->Join(functors, peer_endpoints);
+void Routing::Join(Functors functors, BootstrapContacts bootstrap_contacts) {
+  pimpl_->Join(functors, bootstrap_contacts);
 }
 
 int Routing::ZeroStateJoin(Functors functors, const Endpoint& local_endpoint,

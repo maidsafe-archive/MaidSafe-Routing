@@ -57,7 +57,7 @@ NetworkUtils::NetworkUtils(RoutingTable& routing_table, ClientRoutingTable& clie
       routing_table_(routing_table),
       client_routing_table_(client_routing_table),
       nat_type_(rudp::NatType::kUnknown),
-      new_bootstrap_endpoint_(),
+      new_bootstrap_contact_(),
       rudp_() {}
 
 NetworkUtils::~NetworkUtils() {
@@ -152,8 +152,8 @@ int NetworkUtils::MarkConnectionAsValid(const NodeId& peer_id) {
   if ((ret_val == kSuccess) && !new_bootstrap_endpoint.address().is_unspecified()) {
     LOG(kVerbose) << "Found usable endpoint for bootstrapping : " << new_bootstrap_endpoint;
     // TODO(Prakash): Is separate thread needed here ?
-    if (new_bootstrap_endpoint_)
-      new_bootstrap_endpoint_(new_bootstrap_endpoint);
+    if (new_bootstrap_contact_)
+      new_bootstrap_contact_(new_bootstrap_endpoint);
   }
   return ret_val;
 }
@@ -381,9 +381,9 @@ void NetworkUtils::AdjustRouteHistory(protobuf::Message& message) {
   assert(message.route_history().size() <= Parameters::max_routing_table_size);
 }
 
-void NetworkUtils::set_new_bootstrap_endpoint_functor(
-    NewBootstrapEndpointFunctor new_bootstrap_endpoint) {
-  new_bootstrap_endpoint_ = new_bootstrap_endpoint;
+void NetworkUtils::set_new_bootstrap_contact_functor(
+    NewBootstrapContactFunctor new_bootstrap_contact) {
+  new_bootstrap_contact_ = new_bootstrap_contact;
 }
 
 void NetworkUtils::clear_bootstrap_connection_info() {

@@ -102,8 +102,7 @@ class Routing::Impl {
   ~Impl();
 
   void Join(const Functors& functors,
-            const std::vector<boost::asio::ip::udp::endpoint>& peer_endpoints =
-                std::vector<boost::asio::ip::udp::endpoint>());
+            const BootstrapContacts& bootstrap_contacts = BootstrapContacts());
 
   int ZeroStateJoin(const Functors& functors, const boost::asio::ip::udp::endpoint& local_endpoint,
                     const boost::asio::ip::udp::endpoint& peer_endpoint, const NodeInfo& peer_info);
@@ -148,9 +147,9 @@ class Routing::Impl {
   Impl& operator=(const Impl&);
 
   void ConnectFunctors(const Functors& functors);
-  void BootstrapFromTheseEndpoints(const std::vector<boost::asio::ip::udp::endpoint>& endpoints);
-  void DoJoin(const std::vector<boost::asio::ip::udp::endpoint>& endpoints);
-  int DoBootstrap(const std::vector<boost::asio::ip::udp::endpoint>& endpoints);
+  void BootstrapFromTheseEndpoints(const BootstrapContacts& bootstrap_contacts);
+  void DoJoin(const BootstrapContacts& bootstrap_contacts);
+  int DoBootstrap(const BootstrapContacts& bootstrap_contacts);
   void ReBootstrap();
   void DoReBootstrap(const boost::system::error_code& error_code);
   void FindClosestNode(const boost::system::error_code& error_code, int attempts);

@@ -77,7 +77,7 @@ class NetworkUtils {
   virtual void SendToClosestNode(const protobuf::Message& message);
   void AddToBootstrapFile(const boost::asio::ip::udp::endpoint& endpoint);
   void clear_bootstrap_connection_info();
-  void set_new_bootstrap_endpoint_functor(NewBootstrapEndpointFunctor new_bootstrap_endpoint);
+  void set_new_bootstrap_contact_functor(NewBootstrapContactFunctor new_bootstrap_contact);
   NodeId bootstrap_connection_id() const;
   NodeId this_node_relay_connection_id() const;
   rudp::NatType nat_type() const;
@@ -107,7 +107,7 @@ class NetworkUtils {
   RoutingTable& routing_table_;
   ClientRoutingTable& client_routing_table_;
   rudp::NatType nat_type_;
-  NewBootstrapEndpointFunctor new_bootstrap_endpoint_;
+  NewBootstrapContactFunctor new_bootstrap_contact_;
   rudp::ManagedConnections rudp_;
 };
 

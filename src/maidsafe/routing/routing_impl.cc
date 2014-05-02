@@ -124,13 +124,13 @@ Routing::Impl::~Impl() {
   running_ = false;
 }
 
-void Routing::Impl::Join(const Functors& functors, const std::vector<Endpoint>& peer_endpoints) {
+void Routing::Impl::Join(const Functors& functors, const BootstrapContacts& bootstrap_contacts) {
   ConnectFunctors(functors);
-  if (!peer_endpoints.empty()) {
-    BootstrapFromTheseEndpoints(peer_endpoints);
+  if (!bootstrap_contacts.empty()) {
+    BootstrapFromTheseEndpoints(bootstrap_contacts);
   } else {
     LOG(kInfo) << "Doing a default join";
-    DoJoin(peer_endpoints);
+    DoJoin(bootstrap_contacts);
   }
 }
 
@@ -173,12 +173,12 @@ void Routing::Impl::ConnectFunctors(const Functors& functors) {
     message_handler_->set_typed_message_and_caching_functor(functors.typed_message_and_caching);
 
   message_handler_->set_request_public_key_functor(functors.request_public_key);
-  network_.set_new_bootstrap_endpoint_functor(functors.new_bootstrap_endpoint);
+  network_.set_new_bootstrap_contact_functor(functors.new_bootstrap_contact);
 }
 
-void Routing::Impl::BootstrapFromTheseEndpoints(const std::vector<Endpoint>& endpoints) {
-  LOG(kInfo) << "Doing a BootstrapFromTheseEndpoints Join.  Entered first bootstrap endpoint: "
-             << endpoints[0] << ", this node's ID: " << DebugId(kNodeId_)
+void Routing::Impl::BootstrapFromTheseEndpoints(const BootstrapContacts& bootstrap_contacts) {
+  LOG(kInfo) << "Doing a BootstrapFromTheseEndpoints Join.  Entered first bootstrap contact: "
+             << bootstrap_contacts[0] << ", this node's ID: " << DebugId(kNodeId_)
              << (routing_table_.client_mode() ? " Client" : "");
   if (routing_table_.size() > 0) {
     for (uint16_t i = 0; i < routing_table_.size(); ++i) {
@@ -188,11 +188,11 @@ void Routing::Impl::BootstrapFromTheseEndpoints(const std::vector<Endpoint>& end
     }
     NotifyNetworkStatus(static_cast<int>(routing_table_.size()));
   }
-  DoJoin(endpoints);
+  DoJoin(bootstrap_contacts);
 }
 
-void Routing::Impl::DoJoin(const std::vector<Endpoint>& endpoints) {
-  int return_value(DoBootstrap(endpoints));
+void Routing::Impl::DoJoin(const BootstrapContacts& bootstrap_contacts) {
+  int return_value(DoBootstrap(bootstrap_contacts));
   if (kSuccess != return_value)
     return NotifyNetworkStatus(return_value);
 
@@ -202,7 +202,7 @@ void Routing::Impl::DoJoin(const std::vector<Endpoint>& endpoints) {
   NotifyNetworkStatus(return_value);
 }
 
-int Routing::Impl::DoBootstrap(const std::vector<Endpoint>& endpoints) {
+int Routing::Impl::DoBootstrap(const BootstrapContacts& bootstrap_contacts) {
   // FIXME race condition if a new connection appears at rudp -- rudp should handle this
   assert(routing_table_.size() == 0);
   recovery_timer_.cancel();
@@ -218,7 +218,7 @@ int Routing::Impl::DoBootstrap(const std::vector<Endpoint>& endpoints) {
   }
 
   return network_.Bootstrap(
-      endpoints, [=](const std::string& message) { OnMessageReceived(message); },
+      bootstrap_contacts, [=](const std::string& message) { OnMessageReceived(message); },
       [=](const NodeId& lost_connection_id) { OnConnectionLost(lost_connection_id); });  // NOLINT
 }
 
@@ -733,7 +733,7 @@ void Routing::Impl::DoReBootstrap(const boost::system::error_code& error_code) {
   }
   LOG(kError) << "[" << DebugId(kNodeId_) << "]'s' Routing table is empty."
               << " ReBootstrapping ....";
-  DoJoin(std::vector<Endpoint>());
+  DoJoin(BootstrapContacts());
 }
 
 void Routing::Impl::NotifyNetworkStatus(int return_code) const {
