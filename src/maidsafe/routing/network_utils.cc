@@ -50,7 +50,7 @@ NetworkUtils::NetworkUtils(RoutingTable& routing_table, ClientRoutingTable& clie
     : running_(true),
       running_mutex_(),
       bootstrap_attempt_(0),
-      bootstrap_endpoints_(),
+      bootstrap_contacts_(),
       bootstrap_connection_id_(),
       this_node_relay_connection_id_(),
       routing_table_(routing_table),
@@ -64,7 +64,7 @@ NetworkUtils::~NetworkUtils() {
   running_ = false;
 }
 
-int NetworkUtils::Bootstrap(const std::vector<Endpoint>& bootstrap_endpoints,
+int NetworkUtils::Bootstrap(const BootstrapContacts& bootstrap_contacts,
                             const rudp::MessageReceivedFunctor& message_received_functor,
                             const rudp::ConnectionLostFunctor& connection_lost_functor,
                             Endpoint local_endpoint) {
@@ -79,29 +79,30 @@ int NetworkUtils::Bootstrap(const std::vector<Endpoint>& bootstrap_endpoints,
   auto private_key(std::make_shared<asymm::PrivateKey>(routing_table_.kPrivateKey()));
   auto public_key(std::make_shared<asymm::PublicKey>(routing_table_.kPublicKey()));
 
-  if (!bootstrap_endpoints.empty())
-    bootstrap_endpoints_ = bootstrap_endpoints;
+  if (!bootstrap_contacts.empty())
+    bootstrap_contacts_ = bootstrap_contacts;
 
   if (Parameters::append_maidsafe_endpoints && bootstrap_attempt_ == 0) {
     LOG(kInfo) << "Appending Maidsafe Endpoints";
-    std::vector<Endpoint> maidsafe_endpoints(MaidSafeEndpoints());
-    bootstrap_endpoints_.insert(bootstrap_endpoints_.end(), maidsafe_endpoints.begin(),
-                                maidsafe_endpoints.end());
+    auto maidsafe_bootstrap_contacts(MaidSafeBootstrapContacts());
+    bootstrap_contacts_.insert(bootstrap_contacts_.end(), maidsafe_bootstrap_contacts.begin(),
+                                maidsafe_bootstrap_contacts.end());
   } else if (Parameters::append_maidsafe_local_endpoints && bootstrap_attempt_ == 0) {
-    std::vector<Endpoint> maidsafe_local_endpoints(MaidSafeLocalEndpoints());
-    bootstrap_endpoints_.insert(bootstrap_endpoints_.end(), maidsafe_local_endpoints.begin(),
-                                maidsafe_local_endpoints.end());
+    auto maidsafe_local_bootstrap_contacts(MaidSafeLocalBootstrapContacts());
+    bootstrap_contacts_.insert(bootstrap_contacts_.end(),
+                                maidsafe_local_bootstrap_contacts.begin(),
+                                maidsafe_local_bootstrap_contacts.end());
   }
 
   if (Parameters::append_local_live_port_endpoint && bootstrap_attempt_ == 0) {
-    bootstrap_endpoints_.push_back(Endpoint(GetLocalIp(), kLivePort));
-    LOG(kInfo) << "Appending local live port endpoints: " << bootstrap_endpoints_.back();
+    bootstrap_contacts_.push_back(Endpoint(GetLocalIp(), kLivePort));
+    LOG(kInfo) << "Appending local live port endpoints: " << bootstrap_contacts_.back();
   }
 
-  if (bootstrap_endpoints_.empty())
+  if (bootstrap_contacts_.empty())
     return kInvalidBootstrapContacts;
 
-  int result(rudp_.Bootstrap(/* sorted_ */ bootstrap_endpoints_, message_received_functor,
+  int result(rudp_.Bootstrap(/* sorted_ */ bootstrap_contacts_, message_received_functor,
                              connection_lost_functor, routing_table_.kConnectionId(), private_key,
                              public_key, bootstrap_connection_id_, nat_type_, local_endpoint));
   ++bootstrap_attempt_;

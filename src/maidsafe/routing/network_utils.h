@@ -52,7 +52,7 @@ class NetworkUtils {
  public:
   NetworkUtils(RoutingTable& routing_table, ClientRoutingTable& client_routing_table);
   virtual ~NetworkUtils();
-  int Bootstrap(const std::vector<boost::asio::ip::udp::endpoint>& bootstrap_endpoints,
+  int Bootstrap(const BootstrapContacts& bootstrap_contacts,
                 const rudp::MessageReceivedFunctor& message_received_functor,
                 const rudp::ConnectionLostFunctor& connection_lost_functor,
                 boost::asio::ip::udp::endpoint local_endpoint = boost::asio::ip::udp::endpoint());
@@ -101,7 +101,7 @@ class NetworkUtils {
   bool running_;
   std::mutex running_mutex_;
   uint16_t bootstrap_attempt_;
-  std::vector<boost::asio::ip::udp::endpoint> bootstrap_endpoints_;
+  BootstrapContacts bootstrap_contacts_;
   NodeId bootstrap_connection_id_;
   NodeId this_node_relay_connection_id_;
   RoutingTable& routing_table_;

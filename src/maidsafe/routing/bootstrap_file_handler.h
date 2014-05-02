@@ -39,11 +39,10 @@ void UpdateBootstrapFile(const BootstrapContact& bootstrap_contact,
                          const boost::filesystem::path& bootstrap_file_path,
                          bool remove);
 
-// FIXME(Prakash) use BootstrapList here
-std::vector<boost::asio::ip::udp::endpoint> MaidSafeEndpoints();
+BootstrapContacts MaidSafeBootstrapContacts();
 
 // TODO(Prakash) : BEFORE_RELEASE remove using local endpoints
-std::vector<boost::asio::ip::udp::endpoint> MaidSafeLocalEndpoints();
+BootstrapContacts MaidSafeLocalBootstrapContacts();
 
 }  // namespace routing
 

@@ -34,41 +34,10 @@ namespace maidsafe {
 namespace routing {
 
 namespace {
-//
-  typedef boost::asio::ip::udp::endpoint Endpoint;
 
-// fs::path BootstrapFilePath() {
-//   static fs::path bootstrap_file_path;
-//   if (bootstrap_file_path.empty()) {
-//     boost::system::error_code exists_error_code, is_regular_file_error_code;
-//     bootstrap_file_path = fs::current_path() / "bootstrap";
+typedef boost::asio::ip::udp::endpoint Endpoint;
 
-//     if (!fs::exists(bootstrap_file_path, exists_error_code) ||
-//         !fs::is_regular_file(bootstrap_file_path, is_regular_file_error_code) ||
-//         exists_error_code || is_regular_file_error_code) {
-//       if (exists_error_code) {
-//         LOG(kWarning) << "Failed to find bootstrap file at " << bootstrap_file_path << ".  "
-//                       << exists_error_code.message();
-//       }
-//       if (is_regular_file_error_code) {
-//         LOG(kWarning) << "bootstrap file is not a regular file " << bootstrap_file_path << ".  "
-//                       << is_regular_file_error_code.message();
-//       }
-//       LOG(kInfo) << "No bootstrap file";
-//       bootstrap_file_path.clear();
-//     } else {
-//       LOG(kVerbose) << "Found bootstrap file at " << bootstrap_file_path;
-//     }
-//   }
-//   return bootstrap_file_path;
-// }
-
-}  // unnamed namespace
-
-
-// TODO(Team) : Consider timestamp in forming the list. If offline for more than a week, then
-// list new nodes first
-BootstrapContacts ReadBootstrapFile(const fs::path& bootstrap_file_path) {
+BootstrapContacts ReadBootstrapFileInternal(const fs::path& bootstrap_file_path) {
   try {
     auto serialised_bootstrap_contacts(ReadFile(bootstrap_file_path));
     protobuf::Bootstrap protobuf_bootstrap;
@@ -85,13 +54,23 @@ BootstrapContacts ReadBootstrapFile(const fs::path& bootstrap_file_path) {
       BootstrapContact bootstrap_contact = endpoint;
       bootstrap_contacts.push_back(bootstrap_contact);
     }
-    std::reverse(std::begin(bootstrap_contacts), std::end(bootstrap_contacts));
     return bootstrap_contacts;
   } catch (const std::exception& e) {
     LOG(kError) << "Failed to read bootstrap file at : " << bootstrap_file_path.string()
                 << ". Error : " << boost::diagnostic_information(e);
     throw;
   }
+}
+
+}  // unnamed namespace
+
+
+// TODO(Team) : Consider timestamp in forming the list. If offline for more than a week, then
+// list new nodes first
+BootstrapContacts ReadBootstrapFile(const fs::path& bootstrap_file_path) {
+  auto bootstrap_contacts(ReadBootstrapFileInternal(bootstrap_file_path));
+  std::reverse(std::begin(bootstrap_contacts), std::end(bootstrap_contacts));
+  return bootstrap_contacts;
 }
 
 void WriteBootstrapFile(const BootstrapContacts& bootstrap_contacts,
@@ -123,7 +102,7 @@ void UpdateBootstrapFile(const BootstrapContact& bootstrap_contact,
     LOG(kWarning) << "Invalid Endpoint" << bootstrap_contact;
     BOOST_THROW_EXCEPTION(MakeError(CommonErrors::invalid_parameter));
   }
-  BootstrapContacts bootstrap_contacts(ReadBootstrapFile(bootstrap_file_path));
+  BootstrapContacts bootstrap_contacts(ReadBootstrapFileInternal(bootstrap_file_path));
   auto itr(std::find(std::begin(bootstrap_contacts), std::end(bootstrap_contacts),
                      bootstrap_contact));
   if (remove) {
@@ -143,7 +122,7 @@ void UpdateBootstrapFile(const BootstrapContact& bootstrap_contact,
   }
 }
 
-std::vector<boost::asio::ip::udp::endpoint> MaidSafeEndpoints() {
+BootstrapContacts MaidSafeBootstrapContacts() {
   std::vector<std::string> endpoint_string;
   endpoint_string.reserve(15);
   endpoint_string.push_back("176.58.120.133");
@@ -162,13 +141,13 @@ std::vector<boost::asio::ip::udp::endpoint> MaidSafeEndpoints() {
   endpoint_string.push_back("106.187.93.100");
   endpoint_string.push_back("106.186.16.51");
 
-  std::vector<boost::asio::ip::udp::endpoint> maidsafe_endpoints;
+  BootstrapContacts maidsafe_endpoints;
   for (const auto& i : endpoint_string)
     maidsafe_endpoints.push_back(Endpoint(boost::asio::ip::address::from_string(i), 5483));
   return maidsafe_endpoints;
 }
 
-std::vector<boost::asio::ip::udp::endpoint> MaidSafeLocalEndpoints() {
+BootstrapContacts MaidSafeLocalBootstrapContacts() {
   std::vector<std::string> endpoint_string;
   endpoint_string.reserve(2);
 #if defined QA_BUILD
@@ -181,7 +160,7 @@ std::vector<boost::asio::ip::udp::endpoint> MaidSafeLocalEndpoints() {
   assert(endpoint_string.size() &&
          "Either QA_BUILD or TESTING must be defined to use maidsafe local endpoint option");
 
-  std::vector<boost::asio::ip::udp::endpoint> maidsafe_endpoints;
+  BootstrapContacts maidsafe_endpoints;
   for (const auto& i : endpoint_string)
     maidsafe_endpoints.push_back(Endpoint(boost::asio::ip::address::from_string(i), 5483));
   return maidsafe_endpoints;
