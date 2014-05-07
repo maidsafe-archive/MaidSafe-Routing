@@ -193,7 +193,11 @@ NodeId MatrixChange::ChoosePmidNode(const std::set<NodeId>& online_pmids,
   auto pmids_itr(std::begin(online_pmids));
   while (*temp_itr != node_id_) {
     ++temp_itr;
-    assert(temp_itr != std::end(temp));
+//     assert(temp_itr != std::end(temp));
+    if (temp_itr == std::end(temp)) {
+      LOG(kError) << "node_id_ not listed in group range having " << temp.size() << " nodes";
+      break;
+    }
     if (++pmids_itr == std::end(online_pmids))
       pmids_itr = std::begin(online_pmids);
   }
