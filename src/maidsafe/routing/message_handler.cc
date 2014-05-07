@@ -211,15 +211,17 @@ void MessageHandler::HandleNodeLevelMessageForThisNode(protobuf::Message& messag
       if (routing_table_.kNodeId().string() != message_out.destination_id()) {
         network_.SendToClosestNode(message_out);
       } else {
-        LOG(kInfo) << "Sending response to self."
-                   << " id: " << message.id();
+        LOG(kInfo) << "Sending response to self." << " id: " << message.id();
         HandleMessage(message_out);
       }
     };
-    if (message_received_functor_)
+    if (message_received_functor_) {
+      LOG(kVerbose) << "calling message_received_functor_ " << " id: " << message.id();
       message_received_functor_(message.data(0), false, response_functor);
-    else
+    } else {
+      LOG(kVerbose) << "calling InvokeTypedMessageReceivedFunctor " << " id: " << message.id();
       InvokeTypedMessageReceivedFunctor(message);  // typed message received
+    }
   } else if (IsResponse(message)) {                // response
     LOG(kInfo) << "[" << DebugId(routing_table_.kNodeId())
                << "] rcvd : " << MessageTypeString(message) << " from "
