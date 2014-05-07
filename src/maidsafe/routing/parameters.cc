@@ -44,7 +44,7 @@ std::chrono::seconds Parameters::re_bootstrap_time_lag(10);
 std::chrono::seconds Parameters::find_close_node_interval(3);
 uint16_t Parameters::find_node_repeats_per_num_requested(3);
 uint16_t Parameters::maximum_find_close_node_failures(10);
-uint16_t Parameters::max_route_history(5);
+uint16_t Parameters::max_route_history(3);
 uint16_t Parameters::hops_to_live(50);
 uint16_t Parameters::accepted_distance_tolerance(1);
 uint16_t Parameters::greedy_fraction(Parameters::max_routing_table_size * 3 / 4);
