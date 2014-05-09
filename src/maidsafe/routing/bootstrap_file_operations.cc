@@ -24,6 +24,7 @@
 #include "maidsafe/common/utils.h"
 
 #include "maidsafe/routing/routing.pb.h"
+#include "maidsafe/routing/utils.h"
 
 namespace fs = boost::filesystem;
 
@@ -32,62 +33,54 @@ namespace maidsafe {
 namespace routing {
 
 namespace {
+  typedef boost::asio::ip::udp::endpoint Endpoint;
+}  // unnamed namespace
 
-typedef boost::asio::ip::udp::endpoint Endpoint;
 
-BootstrapContacts ReadBootstrapFileInternal(const fs::path& bootstrap_file_path) {
-  try {
-    auto serialised_bootstrap_contacts(ReadFile(bootstrap_file_path));
-    protobuf::Bootstrap protobuf_bootstrap;
-    if (!protobuf_bootstrap.ParseFromString(serialised_bootstrap_contacts.string())) {
-      LOG(kError) << "Could not parse bootstrap file.";
-      BOOST_THROW_EXCEPTION(MakeError(CommonErrors::parsing_error));
-    }
-    BootstrapContacts bootstrap_contacts;
-    bootstrap_contacts.reserve(protobuf_bootstrap.bootstrap_contacts().size());
-    for (int i = 0; i < protobuf_bootstrap.bootstrap_contacts().size(); ++i) {
-      boost::asio::ip::udp::endpoint endpoint(boost::asio::ip::address::from_string(
-          protobuf_bootstrap.bootstrap_contacts(i).ip()),
-          static_cast<uint16_t>(protobuf_bootstrap.bootstrap_contacts(i).port()));
-      BootstrapContact bootstrap_contact = endpoint;
-      bootstrap_contacts.push_back(bootstrap_contact);
-    }
-    return bootstrap_contacts;
-  } catch (const std::exception& e) {
-    LOG(kError) << "Failed to read bootstrap file at : " << bootstrap_file_path.string()
-                << ". Error : " << boost::diagnostic_information(e);
-    throw;
+std::string SerialiseBootstrapContacts(const BootstrapContacts& bootstrap_contacts) {
+  protobuf::BootstrapContacts protobuf_bootstrap_contacts;
+  for (const auto& bootstrap_contact : bootstrap_contacts) {
+    auto proto_bootstrap_contact = protobuf_bootstrap_contacts.add_bootstrap_contacts();
+    SetProtobufEndpoint(bootstrap_contact, proto_bootstrap_contact->mutable_endpoint());
   }
+  std::string serialised_bootstrap_contacts;
+  if (!protobuf_bootstrap_contacts.SerializeToString(&serialised_bootstrap_contacts)) {
+    LOG(kError) << "Failed to serialise bootstrap contacts.";
+    BOOST_THROW_EXCEPTION(MakeError(CommonErrors::serialisation_error));
+  }
+  return serialised_bootstrap_contacts;
 }
 
-}  // unnamed namespace
+
+BootstrapContacts ParseBootstrapContacts(const std::string& serialised_bootstrap_contacts) {
+  protobuf::BootstrapContacts protobuf_bootstrap_contacts;
+  if (!protobuf_bootstrap_contacts.ParseFromString(serialised_bootstrap_contacts)) {
+    LOG(kError) << "Could not parse bootstrap file.";
+    BOOST_THROW_EXCEPTION(MakeError(CommonErrors::parsing_error));
+  }
+  BootstrapContacts bootstrap_contacts;
+  bootstrap_contacts.reserve(protobuf_bootstrap_contacts.bootstrap_contacts().size());
+  for (const auto& proto_bootstrap_contact : protobuf_bootstrap_contacts.bootstrap_contacts()) {
+    BootstrapContact bootstrap_contact(GetEndpointFromProtobuf(proto_bootstrap_contact.endpoint()));
+    bootstrap_contacts.push_back(bootstrap_contact);
+  }
+  return bootstrap_contacts;
+}
 
 
 // TODO(Team) : Consider timestamp in forming the list. If offline for more than a week, then
 // list new nodes first
 BootstrapContacts ReadBootstrapFile(const fs::path& bootstrap_file_path) {
-  auto bootstrap_contacts(ReadBootstrapFileInternal(bootstrap_file_path));
+  auto bootstrap_contacts(ParseBootstrapContacts(ReadFile(bootstrap_file_path).string()));
+
   std::reverse(std::begin(bootstrap_contacts), std::end(bootstrap_contacts));
   return bootstrap_contacts;
 }
 
 void WriteBootstrapFile(const BootstrapContacts& bootstrap_contacts,
                         const fs::path& bootstrap_file_path) {
-  protobuf::Bootstrap protobuf_bootstrap;
-
-  for (const auto& bootstrap_contact : bootstrap_contacts) {
-    protobuf::Endpoint* endpoint = protobuf_bootstrap.add_bootstrap_contacts();
-    endpoint->set_ip(bootstrap_contact.address().to_string());
-    endpoint->set_port(bootstrap_contact.port());
-  }
-
-  std::string serialised_bootstrap_nodes;
-  if (!protobuf_bootstrap.SerializeToString(&serialised_bootstrap_nodes)) {
-    LOG(kError) << "Could not serialise bootstrap contacts.";
-    BOOST_THROW_EXCEPTION(MakeError(CommonErrors::serialisation_error));
-  }
   // TODO(Prakash) consider overloading WriteFile() to take NonEmptyString as parameter
-  if (!WriteFile(bootstrap_file_path, serialised_bootstrap_nodes)) {
+  if (!WriteFile(bootstrap_file_path, SerialiseBootstrapContacts(bootstrap_contacts))) {
     LOG(kError) << "Could not write bootstrap file at : " << bootstrap_file_path;
     BOOST_THROW_EXCEPTION(MakeError(CommonErrors::filesystem_io_error));
   }
@@ -100,7 +93,7 @@ void UpdateBootstrapFile(const BootstrapContact& bootstrap_contact,
     LOG(kWarning) << "Invalid Endpoint" << bootstrap_contact;
     BOOST_THROW_EXCEPTION(MakeError(CommonErrors::invalid_parameter));
   }
-  BootstrapContacts bootstrap_contacts(ReadBootstrapFileInternal(bootstrap_file_path));
+  auto bootstrap_contacts(ParseBootstrapContacts(ReadFile(bootstrap_file_path).string()));
   auto itr(std::find(std::begin(bootstrap_contacts), std::end(bootstrap_contacts),
                      bootstrap_contact));
   if (remove) {

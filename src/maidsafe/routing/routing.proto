@@ -48,16 +48,13 @@ message ConfigFile {
   optional bytes private_key = 2;
 }
 
-message BootstrapContacts {
-  required bytes node_id = 1;
-  required bytes public_key = 2;
-  required Endpoint public_endpoint = 3;
-  required Endpoint private_endpoint = 4;
+message BootstrapContact {
+  required Endpoint endpoint = 1;
 }
 
-// contacts file
-message Bootstrap {
-  repeated Endpoint bootstrap_contacts = 1;
+// bootstrap contacts file
+message BootstrapContacts {
+  repeated BootstrapContact bootstrap_contacts = 1;
 }
 
 

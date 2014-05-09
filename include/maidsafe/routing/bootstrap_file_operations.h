@@ -19,6 +19,7 @@
 #ifndef MAIDSAFE_ROUTING_BOOTSTRAP_FILE_OPERATIONS_H_
 #define MAIDSAFE_ROUTING_BOOTSTRAP_FILE_OPERATIONS_H_
 
+#include <string>
 #include <vector>
 
 #include "boost/asio/ip/udp.hpp"
@@ -32,6 +33,9 @@ namespace routing {
 typedef boost::asio::ip::udp::endpoint BootstrapContact;
 
 typedef std::vector<BootstrapContact> BootstrapContacts;
+
+std::string SerialiseBootstrapContacts(const BootstrapContacts& bootstrap_contacts);
+BootstrapContacts ParseBootstrapContacts(const std::string& serialised_bootstrap_contacts);
 
 BootstrapContacts ReadBootstrapFile(const boost::filesystem::path& bootstrap_file_path);
 
