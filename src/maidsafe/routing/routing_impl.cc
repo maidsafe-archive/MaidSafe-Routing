@@ -375,6 +375,8 @@ void Routing::Impl::SendGroup(const NodeId& destination_id, const std::string& d
 void Routing::Impl::Send(const NodeId& destination_id, const std::string& data,
                          const DestinationType& destination_type, bool cacheable,
                          ResponseFunctor response_functor) {
+  LOG(kVerbose) << "Routing::Impl::Send from " << DebugId(kNodeId_)
+                << " to " << DebugId(destination_id);
   CheckSendParameters(destination_id, data);
   protobuf::Message proto_message =
       CreateNodeLevelPartialMessage(destination_id, destination_type, data, cacheable);
@@ -729,6 +731,8 @@ void Routing::Impl::DoReBootstrap(const boost::system::error_code& error_code) {
   {
     std::lock_guard<std::mutex> lock(running_mutex_);
     if (!running_)
+      return;
+    if (routing_table_.size() != 0)
       return;
   }
   LOG(kError) << "[" << DebugId(kNodeId_) << "]'s' Routing table is empty."
