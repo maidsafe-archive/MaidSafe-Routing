@@ -30,6 +30,7 @@ namespace maidsafe {
 namespace routing {
 
 // FIXME(Team) BEFORE_RELEASE add public key and timestamp to BootstrapContact
+// Note : asymm::PublicKey should be used here (not PublicPmid)
 typedef boost::asio::ip::udp::endpoint BootstrapContact;
 
 typedef std::vector<BootstrapContact> BootstrapContacts;
