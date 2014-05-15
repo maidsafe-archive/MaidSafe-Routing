@@ -35,6 +35,9 @@ typedef boost::asio::ip::udp::endpoint BootstrapContact;
 
 typedef std::vector<BootstrapContact> BootstrapContacts;
 
+std::string SerialiseBootstrapContact(const BootstrapContact& bootstrap_contact);
+BootstrapContact ParseBootstrapContact(const std::string& serialised_bootstrap_contact);
+
 std::string SerialiseBootstrapContacts(const BootstrapContacts& bootstrap_contacts);
 BootstrapContacts ParseBootstrapContacts(const std::string& serialised_bootstrap_contacts);
 

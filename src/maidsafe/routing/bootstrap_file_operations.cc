@@ -36,12 +36,22 @@ namespace {
   typedef boost::asio::ip::udp::endpoint Endpoint;
 }  // unnamed namespace
 
+std::string SerialiseBootstrapContact(const BootstrapContact& bootstrap_contact) {
+  protobuf::BootstrapContact protobuf_bootstrap_contact;
+  SetProtobufEndpoint(bootstrap_contact, protobuf_bootstrap_contact.mutable_endpoint());
+  std::string serialised_bootstrap_contact;
+  if (!protobuf_bootstrap_contact.SerializeToString(&serialised_bootstrap_contact)) {
+    LOG(kError) << "Failed to serialise bootstrap contact.";
+    BOOST_THROW_EXCEPTION(MakeError(CommonErrors::serialisation_error));
+  }
+  return serialised_bootstrap_contact;
+}
 
 std::string SerialiseBootstrapContacts(const BootstrapContacts& bootstrap_contacts) {
   protobuf::BootstrapContacts protobuf_bootstrap_contacts;
   for (const auto& bootstrap_contact : bootstrap_contacts) {
-    auto proto_bootstrap_contact = protobuf_bootstrap_contacts.add_bootstrap_contacts();
-    SetProtobufEndpoint(bootstrap_contact, proto_bootstrap_contact->mutable_endpoint());
+    protobuf_bootstrap_contacts.add_serialised_bootstrap_contacts(
+        SerialiseBootstrapContact(bootstrap_contact));
   }
   std::string serialised_bootstrap_contacts;
   if (!protobuf_bootstrap_contacts.SerializeToString(&serialised_bootstrap_contacts)) {
@@ -51,6 +61,14 @@ std::string SerialiseBootstrapContacts(const BootstrapContacts& bootstrap_contac
   return serialised_bootstrap_contacts;
 }
 
+BootstrapContact ParseBootstrapContact(const std::string& serialised_bootstrap_contact) {
+  protobuf::BootstrapContact protobuf_bootstrap_contact;
+  if (!protobuf_bootstrap_contact.ParseFromString(serialised_bootstrap_contact)) {
+    LOG(kError) << "Could not parse bootstrap contact.";
+    BOOST_THROW_EXCEPTION(MakeError(CommonErrors::parsing_error));
+  }
+  return GetEndpointFromProtobuf(protobuf_bootstrap_contact.endpoint());
+}
 
 BootstrapContacts ParseBootstrapContacts(const std::string& serialised_bootstrap_contacts) {
   protobuf::BootstrapContacts protobuf_bootstrap_contacts;
@@ -59,10 +77,10 @@ BootstrapContacts ParseBootstrapContacts(const std::string& serialised_bootstrap
     BOOST_THROW_EXCEPTION(MakeError(CommonErrors::parsing_error));
   }
   BootstrapContacts bootstrap_contacts;
-  bootstrap_contacts.reserve(protobuf_bootstrap_contacts.bootstrap_contacts().size());
-  for (const auto& proto_bootstrap_contact : protobuf_bootstrap_contacts.bootstrap_contacts()) {
-    BootstrapContact bootstrap_contact(GetEndpointFromProtobuf(proto_bootstrap_contact.endpoint()));
-    bootstrap_contacts.push_back(bootstrap_contact);
+  bootstrap_contacts.reserve(protobuf_bootstrap_contacts.serialised_bootstrap_contacts().size());
+  for (const auto& serialised_bootstrap_contact :
+           protobuf_bootstrap_contacts.serialised_bootstrap_contacts()) {
+    bootstrap_contacts.push_back(ParseBootstrapContact(serialised_bootstrap_contact));
   }
   return bootstrap_contacts;
 }

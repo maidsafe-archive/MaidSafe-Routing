@@ -54,7 +54,7 @@ message BootstrapContact {
 
 // bootstrap contacts file
 message BootstrapContacts {
-  repeated BootstrapContact bootstrap_contacts = 1;
+  repeated bytes serialised_bootstrap_contacts = 1;
 }
 
 
