@@ -175,6 +175,7 @@ void Timer<Response>::FinishTask(TaskId task_id, const boost::system::error_code
   int outstanding_response_count(0);
   ResponseFunctor functor;
   LOG(kVerbose) << "Timer<Response>::FinishTask finish task " << task_id;
+  bool canceled(false);
   {
     std::lock_guard<std::mutex> lock(mutex_);
     LOG(kVerbose) << "Timer<Response>::FinishTask process finishing task " << task_id;
@@ -199,18 +200,21 @@ void Timer<Response>::FinishTask(TaskId task_id, const boost::system::error_code
         break;
       case boost::asio::error::operation_aborted:  // Cancelled via CancelTask
         LOG(kInfo) << "Cancelled task " << task_id;
+        canceled = true;
         break;
       default:
         LOG(kError) << "Error waiting for task " << task_id << " - " << error.message();
     }
   }
-  for (int i(0); i != outstanding_response_count; ++i) {
-    try {
-      if ((asio_service_.ThreadCount() == 0) || (asio_service_.ThreadCount() > 64))
+  if (!canceled) {
+    for (int i(0); i != outstanding_response_count; ++i) {
+      try {
+        if ((asio_service_.ThreadCount() == 0) || (asio_service_.ThreadCount() > 64))
+          break;
+        asio_service_.service().dispatch([=] { functor(Response()); });
+      } catch (...) {
         break;
-      asio_service_.service().dispatch([=] { functor(Response()); });
-    } catch (...) {
-      break;
+      }
     }
   }
   LOG(kVerbose) << "Timer<Response> notifying condition_variable";
