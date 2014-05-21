@@ -204,8 +204,15 @@ void Timer<Response>::FinishTask(TaskId task_id, const boost::system::error_code
         LOG(kError) << "Error waiting for task " << task_id << " - " << error.message();
     }
   }
-  for (int i(0); i != outstanding_response_count; ++i)
-    asio_service_.service().dispatch([=] { functor(Response()); });
+  for (int i(0); i != outstanding_response_count; ++i) {
+    try {
+      if ((asio_service_.ThreadCount() == 0) || (asio_service_.ThreadCount() > 64))
+        break;
+      asio_service_.service().dispatch([=] { functor(Response()); });
+    } catch (...) {
+      break;
+    }
+  }
   LOG(kVerbose) << "Timer<Response> notifying condition_variable";
   cond_var_.notify_one();
   LOG(kVerbose) << "Timer<Response>::FinishTask completed";
