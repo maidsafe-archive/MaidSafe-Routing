@@ -167,7 +167,11 @@ void MessageHandler::HandleNodeLevelMessageForThisNode(protobuf::Message& messag
       message_received_functor_(message.data(0), response_functor);
     } else {
       LOG(kVerbose) << "calling InvokeTypedMessageReceivedFunctor " << " id: " << message.id();
-      InvokeTypedMessageReceivedFunctor(message);  // typed message received
+      try {
+        InvokeTypedMessageReceivedFunctor(message);  // typed message received
+      } catch (...) {
+        LOG(kError) << "InvokeTypedMessageReceivedFunctor error";
+      }
     }
   } else if (IsResponse(message)) {                // response
     LOG(kInfo) << "[" << DebugId(routing_table_.kNodeId())
@@ -364,7 +368,7 @@ void MessageHandler::HandleMessage(protobuf::Message& message) {
                 << " MessageHandler::HandleMessage handle message with id: " << message.id();
   if (!ValidateMessage(message)) {
     LOG(kWarning) << "Validate message failed， id: " << message.id();
-    assert((message.hops_to_live() > 0) && "Message has traversed maximum number of hops allowed");
+//    assert((message.hops_to_live() > 0) && "Message has traversed maximum number of hops allowed");
     return;
   }
 
