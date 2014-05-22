@@ -368,7 +368,8 @@ void MessageHandler::HandleMessage(protobuf::Message& message) {
                 << " MessageHandler::HandleMessage handle message with id: " << message.id();
   if (!ValidateMessage(message)) {
     LOG(kWarning) << "Validate message failed， id: " << message.id();
-//  assert((message.hops_to_live() > 0) && "Message has traversed maximum number of hops allowed");
+    BOOST_ASSERT_MSG((message.hops_to_live() > 0),
+                     "Message has traversed maximum number of hops allowed");
     return;
   }
 
