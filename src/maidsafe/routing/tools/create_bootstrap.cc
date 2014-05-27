@@ -20,11 +20,11 @@
 #include <windows.h>
 #else
 #include <unistd.h>
-#if defined MAIDSAFE_LINUX
-#include <termios.h>
-#elif defined MAIDSAFE_APPLE
 
-#endif
+#include <termios.h>
+
+
+
 #endif
 
 #include <cstdint>
