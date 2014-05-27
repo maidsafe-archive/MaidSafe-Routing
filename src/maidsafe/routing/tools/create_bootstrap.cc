@@ -23,7 +23,7 @@
 #if defined MAIDSAFE_LINUX
 #include <termios.h>
 #elif defined MAIDSAFE_APPLE
-#include <termios.h>
+
 #endif
 #endif
 
