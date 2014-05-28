@@ -411,14 +411,12 @@ void ResponseHandler::AddMatrixUpdateFromUnvalidatedPeer(
       [&](const std::pair<NodeId, std::vector<NodeInfo>>& pair) {
         return pair.first == node_id;
       }));
-  if (matrix_update_itr == std::end(unvalidated_matrix_updates_)) {
-    LOG(kVerbose) << DebugId(node_id) << " AddMatrixUpdateFromUnvalidatedPeer:if" << matrix_update.size();
+  if (matrix_update_itr == std::end(unvalidated_matrix_updates_))
     unvalidated_matrix_updates_.push_back(std::pair<NodeId, std::vector<NodeInfo>>(node_id,
                                                                                    matrix_update));
-  } else {
-    LOG(kVerbose) << DebugId(node_id) << "AddMatrixUpdateFromUnvalidatedPeer:else" << matrix_update.size();
+  else
     matrix_update_itr->second = matrix_update;
-  }
+
   LOG(kVerbose) << "unvalidated_matrix_updates.size() " << unvalidated_matrix_updates_.size();
   assert(unvalidated_matrix_updates_.size() < kMaxUnvalidatedUpdates);
 }
