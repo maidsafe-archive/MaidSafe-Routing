@@ -60,6 +60,8 @@ std::shared_ptr<MatrixChange> GroupMatrix::AddConnectedPeer(
   std::vector<NodeInfo> nodes_info(std::vector<NodeInfo>(1, node_info));
   std::copy(std::begin(matrix_update), std::end(matrix_update), std::back_inserter(nodes_info));
   matrix_.push_back(nodes_info);
+  for (const auto& node_info : nodes_info)
+    LOG(kVerbose) << " this id: " << DebugId(node_info.node_id);
   Prune();
   UpdateUniqueNodeList();
   return std::make_shared<MatrixChange>(MatrixChange(kNodeId_, old_unique_ids, GetUniqueNodeIds()));
@@ -252,18 +254,36 @@ bool GroupMatrix::ClosestToId(const NodeId& target_id) {
 
 GroupRangeStatus GroupMatrix::IsNodeIdInGroupRange(const NodeId& group_id,
                                                    const NodeId& node_id) const {
+  PrintGroupMatrix();
+  auto connected_peers(GetConnectedPeers());
+  std::sort(std::begin(connected_peers), std::end(connected_peers),
+                    [node_id](const NodeInfo& lhs, const NodeInfo& rhs) {
+                      return NodeId::CloserToTarget(rhs.node_id, lhs.node_id, node_id);
+                    });
+  LOG(kVerbose) << "connected peers";
+  for (const auto& peer : connected_peers)
+    LOG(kVerbose) << DebugId(peer.node_id);
+
+  LOG(kVerbose) << "Unique ids:";
+  for (const auto& unique_node : unique_nodes_)
+    LOG(kVerbose) << DebugId(unique_node.node_id);
+
+  if (NodeId::CloserToTarget(connected_peers.front().node_id, group_id, kNodeId_)) {
+    LOG(kVerbose) << "was here";
+    return GroupRangeStatus::kOutwithRange;
+  }
   size_t group_size_adjust(Parameters::group_size + 1U);
   size_t new_holders_size = std::min(unique_nodes_.size(), group_size_adjust);
   std::vector<NodeInfo> new_holders_info(new_holders_size);
   std::partial_sort_copy(unique_nodes_.begin(), unique_nodes_.end(), new_holders_info.begin(),
                          new_holders_info.end(),
-                         [group_id](const NodeInfo & lhs, const NodeInfo & rhs) {
+                         [group_id](const NodeInfo& lhs, const NodeInfo& rhs) {
     return NodeId::CloserToTarget(lhs.node_id, rhs.node_id, group_id);
   });
 
   std::vector<NodeId> new_holders;
-  for (auto i : new_holders_info)
-    new_holders.push_back(i.node_id);
+  for (const auto& new_holder_info : new_holders_info)
+    new_holders.push_back(new_holder_info.node_id);
 
   new_holders.erase(std::remove(new_holders.begin(), new_holders.end(), group_id),
                     new_holders.end());
@@ -271,6 +291,9 @@ GroupRangeStatus GroupMatrix::IsNodeIdInGroupRange(const NodeId& group_id,
     new_holders.resize(Parameters::group_size);
     assert(new_holders.size() == Parameters::group_size);
   }
+  LOG(kVerbose) << "new holders";
+  for (const auto& new_holder : new_holders)
+    LOG(kVerbose) << DebugId(new_holder);
   if (!client_mode_) {
     auto this_node_range(GetProximalRange(group_id, kNodeId_, kNodeId_, radius_, new_holders));
     if (node_id == kNodeId_)
@@ -462,10 +485,10 @@ void GroupMatrix::Prune() {
       itr++;
     }
   }
-//  PrintGroupMatrix();
+  PrintGroupMatrix();
 }
 
-void GroupMatrix::PrintGroupMatrix() {
+void GroupMatrix::PrintGroupMatrix() const {
   auto group_itr(std::begin(matrix_));
   std::string tab("\t");
   std::string output("Group matrix of node with NodeID: " + DebugId(kNodeId_));

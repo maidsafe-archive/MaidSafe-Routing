@@ -96,7 +96,7 @@ class GroupMatrix {
   void UpdateUniqueNodeList();
   void PartialSortFromTarget(const NodeId& target, uint16_t number,
                              std::vector<NodeInfo>& nodes);
-  void PrintGroupMatrix();
+  void PrintGroupMatrix() const;
 
   const NodeId& kNodeId_;
   std::vector<NodeInfo> unique_nodes_;

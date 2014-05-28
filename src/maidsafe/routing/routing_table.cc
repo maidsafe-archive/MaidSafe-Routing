@@ -320,13 +320,27 @@ bool RoutingTable::ClosestToId(const NodeId& target_id) {
   return group_matrix_.ClosestToId(target_id);
 }
 
-GroupRangeStatus RoutingTable::IsNodeIdInGroupRange(const NodeId& group_id) const {
+GroupRangeStatus RoutingTable::IsNodeIdInGroupRange(const NodeId& group_id) {
   return IsNodeIdInGroupRange(group_id, kNodeId_);
 }
 
 GroupRangeStatus RoutingTable::IsNodeIdInGroupRange(const NodeId& group_id,
-                                                    const NodeId& node_id) const {
-  std::lock_guard<std::mutex> lock(mutex_);
+                                                    const NodeId& node_id) {
+  std::vector<NodeId> node_ids;
+  for (size_t index(0); index < nodes_.size(); ++index)
+    node_ids.push_back(nodes_.at(index).node_id);
+  std::sort(std::begin(node_ids), std::end(node_ids),
+                       [&](const NodeId& lhs, const NodeId& rhs) {
+                         return NodeId::CloserToTarget(lhs, rhs, group_id);
+                       });
+  LOG(kVerbose) << "sorted";
+  for (const auto& node_id : node_ids)
+    LOG(kVerbose) << DebugId(node_id);
+
+  if (group_id == node_id)
+    return GroupRangeStatus::kInRange;
+
+  std::lock_guard<std::mutex> lock(mutex_);  
   return group_matrix_.IsNodeIdInGroupRange(group_id, node_id);
 }
 
@@ -426,7 +440,7 @@ void RoutingTable::GroupUpdateFromConnectedPeer(const NodeId& peer,
       auto found(Find(peer, lock));
       if (!found.first)
         return;
-      group_matrix_.AddConnectedPeer(*found.second);
+      group_matrix_.AddConnectedPeer(*found.second, nodes);
     }
     matrix_change = group_matrix_.UpdateFromConnectedPeer(peer, nodes, old_unique_ids);
     new_connected_peers = group_matrix_.GetConnectedPeers();

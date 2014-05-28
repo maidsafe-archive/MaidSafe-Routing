@@ -444,29 +444,41 @@ TEST_F(RoutingNetworkTest, FUNC_IsNodeIdInGroupRange) {
       vault_ids.push_back(node->node_id());
   EXPECT_GE(vault_ids.size(), static_cast<size_t>(Parameters::group_size));
 
+  LOG(kVerbose) << "vault ids:";
+  for (const auto& id : vault_ids)
+    LOG(kVerbose) << DebugId(id);
+
   for (const auto& node : env_->nodes_) {
     if (!node->IsClient()) {
       // Check vault IDs from network
-      std::partial_sort(vault_ids.begin(), vault_ids.begin() + Parameters::group_size,
-                        vault_ids.end(), [=](const NodeId & lhs, const NodeId & rhs)->bool {
-        return NodeId::CloserToTarget(lhs, rhs, node->node_id());
-      });
+      LOG(kVerbose) << "current:" << DebugId(node->node_id());
       for (uint16_t i(0); i < vault_ids.size(); ++i) {
-        if (i < Parameters::group_size)
+        LOG(kVerbose) << "current vault id:" << DebugId(vault_ids.at(i));
+        std::vector<NodeId> sorted_ids(routing::Parameters::group_size + 1);
+        std::partial_sort_copy(std::begin(vault_ids), std::end(vault_ids), std::begin(sorted_ids),
+                               std::end(sorted_ids),
+                               [&](const NodeId& lhs, const NodeId& rhs)->bool {
+                                 return NodeId::CloserToTarget(lhs, rhs, vault_ids.at(i));
+                               });
+        for (const auto& id : sorted_ids)
+          LOG(kVerbose) << DebugId(id);
+        if (!NodeId::CloserToTarget(sorted_ids.at(routing::Parameters::group_size),
+                                    node->node_id(), vault_ids.at(i)))
           EXPECT_EQ(GroupRangeStatus::kInRange, node->IsNodeIdInGroupRange(vault_ids.at(i)));
         else
           EXPECT_NE(GroupRangeStatus::kInRange, node->IsNodeIdInGroupRange(vault_ids.at(i)));
       }
 
-      // Check random IDs
-      NodeId expected_threshold_id(vault_ids.at(Parameters::group_size - 1));
-      for (uint16_t i(0); i < 50; ++i) {
-        NodeId random_id(NodeId::kRandomId);
-        if (NodeId::CloserToTarget(random_id, expected_threshold_id, node->node_id()))
-          EXPECT_EQ(GroupRangeStatus::kInRange, node->IsNodeIdInGroupRange(random_id));
-        else
-          EXPECT_NE(GroupRangeStatus::kInRange, node->IsNodeIdInGroupRange(random_id));
-      }
+//      std::partial_sort(std::begin(), )
+//      // Check random IDs
+//      NodeId expected_threshold_id(vault_ids.at(Parameters::group_size - 1));
+//      for (uint16_t i(0); i < 50; ++i) {
+//        NodeId random_id(NodeId::kRandomId);
+//        if (NodeId::CloserToTarget(random_id, expected_threshold_id, node->node_id()))
+//          EXPECT_EQ(GroupRangeStatus::kInRange, node->IsNodeIdInGroupRange(random_id));
+//        else
+//          EXPECT_NE(GroupRangeStatus::kInRange, node->IsNodeIdInGroupRange(random_id));
+//      }
     }
   }
 }

@@ -145,6 +145,7 @@ GroupRangeStatus GetProximalRange(const NodeId& target_id, const NodeId& node_id
     return GroupRangeStatus::kOutwithRange;
 
   if (std::find(holders.begin(), holders.end(), node_id) != holders.end()) {
+    LOG(kVerbose) << "been here";
     return GroupRangeStatus::kInRange;
   }
 

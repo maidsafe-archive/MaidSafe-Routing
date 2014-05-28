@@ -83,8 +83,8 @@ class RoutingTable {
   NodeInfo DropNode(const NodeId& node_to_drop, bool routing_only);
   bool ClosestToId(const NodeId& target_id);
 
-  GroupRangeStatus IsNodeIdInGroupRange(const NodeId& group_id) const;
-  GroupRangeStatus IsNodeIdInGroupRange(const NodeId& group_id, const NodeId& node_id) const;
+  GroupRangeStatus IsNodeIdInGroupRange(const NodeId& group_id);
+  GroupRangeStatus IsNodeIdInGroupRange(const NodeId& group_id, const NodeId& node_id);
 
   bool IsThisNodeGroupLeader(const NodeId& target_id, NodeInfo& connected_peer);
   bool IsThisNodeGroupLeader(const NodeId& target_id, NodeInfo& connected_peer,
