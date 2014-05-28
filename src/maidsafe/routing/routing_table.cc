@@ -468,9 +468,10 @@ std::shared_ptr<MatrixChange> RoutingTable::UpdateCloseNodeChange(
   assert(lock.owns_lock());
   std::shared_ptr<MatrixChange> matrix_change;
   PartialSortFromTarget(kNodeId_, Parameters::closest_nodes_size, lock);
-  if ((nodes_.size() < Parameters::closest_nodes_size ||
-       !NodeId::CloserToTarget(nodes_[Parameters::closest_nodes_size - 1].node_id, peer.node_id,
-                               kNodeId_))) {
+  if (nodes_.size() < Parameters::closest_nodes_size ||
+      !NodeId::CloserToTarget(nodes_[Parameters::closest_nodes_size - 1].node_id, peer.node_id,
+                              kNodeId_) ||
+      !matrix_update.empty()) {
     matrix_change = group_matrix_.AddConnectedPeer(peer, matrix_update);
   }
   new_connected_nodes = group_matrix_.GetConnectedPeers();

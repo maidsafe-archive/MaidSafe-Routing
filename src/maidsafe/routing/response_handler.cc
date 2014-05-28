@@ -58,7 +58,7 @@ ResponseHandler::ResponseHandler(RoutingTable& routing_table,
                                  GroupChangeHandler& group_change_handler)
     : mutex_(), routing_table_(routing_table), client_routing_table_(client_routing_table),
       network_(network), group_change_handler_(group_change_handler), request_public_key_functor_(),
-      unvalidated_matrix_updates() {}
+      unvalidated_matrix_updates_() {}
 
 ResponseHandler::~ResponseHandler() {}
 
@@ -311,13 +311,13 @@ void ResponseHandler::ValidateAndCompleteConnectionToNonClient(
         {
           std::lock_guard<std::mutex> lock(mutex_);
           auto matrix_update_itr(std::find_if(
-              std::begin(unvalidated_matrix_updates), std::end(unvalidated_matrix_updates),
+              std::begin(unvalidated_matrix_updates_), std::end(unvalidated_matrix_updates_),
               [&](const std::pair<NodeId, std::vector<NodeInfo>>& pair) {
                 return pair.first == peer.node_id;
               }));
-          if (matrix_update_itr != std::end(unvalidated_matrix_updates)) {
+          if (matrix_update_itr != std::end(unvalidated_matrix_updates_)) {
             matrix_update = matrix_update_itr->second;
-            unvalidated_matrix_updates.erase(matrix_update_itr);
+            unvalidated_matrix_updates_.erase(matrix_update_itr);
           }
         }
         if (ValidateAndAddToRoutingTable(response_handler->network_,
@@ -407,17 +407,20 @@ void ResponseHandler::AddMatrixUpdateFromUnvalidatedPeer(
     const NodeId& node_id, const std::vector<NodeInfo>& matrix_update) {
   std::lock_guard<std::mutex> lock(mutex_);
   auto matrix_update_itr(std::find_if(
-      std::begin(unvalidated_matrix_updates), std::end(unvalidated_matrix_updates),
+      std::begin(unvalidated_matrix_updates_), std::end(unvalidated_matrix_updates_),
       [&](const std::pair<NodeId, std::vector<NodeInfo>>& pair) {
         return pair.first == node_id;
       }));
-  if (matrix_update_itr == std::end(unvalidated_matrix_updates))
-    unvalidated_matrix_updates.push_back(std::pair<NodeId, std::vector<NodeInfo>>(node_id,
-                                                                                matrix_update));
-  else
+  if (matrix_update_itr == std::end(unvalidated_matrix_updates_)) {
+    LOG(kVerbose) << DebugId(node_id) << " AddMatrixUpdateFromUnvalidatedPeer:if" << matrix_update.size();
+    unvalidated_matrix_updates_.push_back(std::pair<NodeId, std::vector<NodeInfo>>(node_id,
+                                                                                   matrix_update));
+  } else {
+    LOG(kVerbose) << DebugId(node_id) << "AddMatrixUpdateFromUnvalidatedPeer:else" << matrix_update.size();
     matrix_update_itr->second = matrix_update;
-  LOG(kVerbose) << "unvalidated_matrix_updates.size() " << unvalidated_matrix_updates.size();
-  assert(unvalidated_matrix_updates.size() < kMaxUnvalidatedUpdates);
+  }
+  LOG(kVerbose) << "unvalidated_matrix_updates.size() " << unvalidated_matrix_updates_.size();
+  assert(unvalidated_matrix_updates_.size() < kMaxUnvalidatedUpdates);
 }
 
 void ResponseHandler::GetGroup(Timer<std::string>& timer, protobuf::Message& message) {

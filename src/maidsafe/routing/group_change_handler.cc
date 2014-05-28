@@ -78,8 +78,9 @@ std::pair<NodeId, std::vector<NodeInfo>> GroupChangeHandler::ClosestNodesUpdate(
   assert(!closest_nodes.empty());
   if (!routing_table_.client_mode())
     message.Clear();
-  if (!UpdateGroupChange(NodeId(closest_node_update.node()), closest_nodes))
+  if (UpdateGroupChange(NodeId(closest_node_update.node()), closest_nodes))
     return matrix_update_pair;
+
   return std::pair<NodeId, std::vector<NodeInfo>>(NodeId(closest_node_update.node()),
                                                   closest_nodes);
 }
