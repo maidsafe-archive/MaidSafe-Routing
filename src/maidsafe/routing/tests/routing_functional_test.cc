@@ -444,10 +444,6 @@ TEST_F(RoutingNetworkTest, FUNC_IsNodeIdInGroupRange) {
       vault_ids.push_back(node->node_id());
   EXPECT_GE(vault_ids.size(), static_cast<size_t>(Parameters::group_size));
 
-  LOG(kVerbose) << "vault ids:";
-  for (const auto& id : vault_ids)
-    LOG(kVerbose) << DebugId(id);
-
   for (const auto& node : env_->nodes_) {
     if (!node->IsClient()) {
       // Check vault IDs from network

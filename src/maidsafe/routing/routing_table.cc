@@ -320,12 +320,12 @@ bool RoutingTable::ClosestToId(const NodeId& target_id) {
   return group_matrix_.ClosestToId(target_id);
 }
 
-GroupRangeStatus RoutingTable::IsNodeIdInGroupRange(const NodeId& group_id) {
+GroupRangeStatus RoutingTable::IsNodeIdInGroupRange(const NodeId& group_id) const {
   return IsNodeIdInGroupRange(group_id, kNodeId_);
 }
 
 GroupRangeStatus RoutingTable::IsNodeIdInGroupRange(const NodeId& group_id,
-                                                    const NodeId& node_id) {
+                                                    const NodeId& node_id) const {
   if (group_id == node_id)
     return GroupRangeStatus::kInRange;
 

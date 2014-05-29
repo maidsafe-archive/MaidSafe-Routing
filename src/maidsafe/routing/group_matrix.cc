@@ -282,9 +282,6 @@ GroupRangeStatus GroupMatrix::IsNodeIdInGroupRange(const NodeId& group_id,
     new_holders.resize(Parameters::group_size);
     assert(new_holders.size() == Parameters::group_size);
   }
-  LOG(kVerbose) << "new holders";
-  for (const auto& new_holder : new_holders)
-    LOG(kVerbose) << DebugId(new_holder);
   if (!client_mode_) {
     auto this_node_range(GetProximalRange(group_id, kNodeId_, kNodeId_, radius_, new_holders));
     if (node_id == kNodeId_)
