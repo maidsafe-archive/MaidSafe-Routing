@@ -60,8 +60,6 @@ std::shared_ptr<MatrixChange> GroupMatrix::AddConnectedPeer(
   std::vector<NodeInfo> nodes_info(std::vector<NodeInfo>(1, node_info));
   std::copy(std::begin(matrix_update), std::end(matrix_update), std::back_inserter(nodes_info));
   matrix_.push_back(nodes_info);
-  for (const auto& node_info : nodes_info)
-    LOG(kVerbose) << " this id: " << DebugId(node_info.node_id);
   Prune();
   UpdateUniqueNodeList();
   return std::make_shared<MatrixChange>(MatrixChange(kNodeId_, old_unique_ids, GetUniqueNodeIds()));
@@ -254,24 +252,17 @@ bool GroupMatrix::ClosestToId(const NodeId& target_id) {
 
 GroupRangeStatus GroupMatrix::IsNodeIdInGroupRange(const NodeId& group_id,
                                                    const NodeId& node_id) const {
-  PrintGroupMatrix();
   auto connected_peers(GetConnectedPeers());
-  std::sort(std::begin(connected_peers), std::end(connected_peers),
+  std::partial_sort(std::begin(connected_peers), std::begin(connected_peers) + 1,
+                    std::end(connected_peers),
                     [node_id](const NodeInfo& lhs, const NodeInfo& rhs) {
                       return NodeId::CloserToTarget(rhs.node_id, lhs.node_id, node_id);
                     });
-  LOG(kVerbose) << "connected peers";
-  for (const auto& peer : connected_peers)
-    LOG(kVerbose) << DebugId(peer.node_id);
 
-  LOG(kVerbose) << "Unique ids:";
-  for (const auto& unique_node : unique_nodes_)
-    LOG(kVerbose) << DebugId(unique_node.node_id);
-
-  if (NodeId::CloserToTarget(connected_peers.front().node_id, group_id, kNodeId_)) {
-    LOG(kVerbose) << "was here";
+  if (!connected_peers.empty() && (connected_peers.size() > Parameters::closest_nodes_size) &&
+      NodeId::CloserToTarget(connected_peers.front().node_id, group_id, kNodeId_))
     return GroupRangeStatus::kOutwithRange;
-  }
+
   size_t group_size_adjust(Parameters::group_size + 1U);
   size_t new_holders_size = std::min(unique_nodes_.size(), group_size_adjust);
   std::vector<NodeInfo> new_holders_info(new_holders_size);
@@ -485,7 +476,7 @@ void GroupMatrix::Prune() {
       itr++;
     }
   }
-  PrintGroupMatrix();
+//  PrintGroupMatrix();
 }
 
 void GroupMatrix::PrintGroupMatrix() const {

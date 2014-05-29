@@ -326,21 +326,10 @@ GroupRangeStatus RoutingTable::IsNodeIdInGroupRange(const NodeId& group_id) {
 
 GroupRangeStatus RoutingTable::IsNodeIdInGroupRange(const NodeId& group_id,
                                                     const NodeId& node_id) {
-  std::vector<NodeId> node_ids;
-  for (size_t index(0); index < nodes_.size(); ++index)
-    node_ids.push_back(nodes_.at(index).node_id);
-  std::sort(std::begin(node_ids), std::end(node_ids),
-                       [&](const NodeId& lhs, const NodeId& rhs) {
-                         return NodeId::CloserToTarget(lhs, rhs, group_id);
-                       });
-  LOG(kVerbose) << "sorted";
-  for (const auto& node_id : node_ids)
-    LOG(kVerbose) << DebugId(node_id);
-
   if (group_id == node_id)
     return GroupRangeStatus::kInRange;
 
-  std::lock_guard<std::mutex> lock(mutex_);  
+  std::lock_guard<std::mutex> lock(mutex_);
   return group_matrix_.IsNodeIdInGroupRange(group_id, node_id);
 }
 
