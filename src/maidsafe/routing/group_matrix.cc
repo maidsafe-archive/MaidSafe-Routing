@@ -259,7 +259,7 @@ GroupRangeStatus GroupMatrix::IsNodeIdInGroupRange(const NodeId& group_id,
                       return NodeId::CloserToTarget(rhs.node_id, lhs.node_id, node_id);
                     });
 
-  if (!connected_peers.empty() && (connected_peers.size() > Parameters::closest_nodes_size) &&
+  if (!connected_peers.empty() && (connected_peers.size() >= Parameters::closest_nodes_size) &&
       NodeId::CloserToTarget(connected_peers.front().node_id, group_id, kNodeId_))
     return GroupRangeStatus::kOutwithRange;
 
