@@ -119,7 +119,7 @@ void UpdateNetworkHealth(int updated_health, int& current_health, std::mutex& mu
                          std::condition_variable& cond_var, const NodeId& this_node_id) {
   {
     std::lock_guard<std::mutex> lock{ mutex };
-#ifdef USE_LOGGING
+#if USE_LOGGING
     if (updated_health >= 0) {
       std::string message{ DebugId(this_node_id) + " - Network health is " +
           std::to_string(updated_health) + "% (was " + std::to_string(current_health) + "%)" };
