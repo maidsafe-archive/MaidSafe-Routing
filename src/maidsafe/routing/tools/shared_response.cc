@@ -43,7 +43,8 @@ void SharedResponse::CheckAndPrintResult() {
                 closest_nodes_.end());
   }
   std::cout << "Average time taken for receiving msg:"
-            << (average_response_time_.total_milliseconds() / responded_nodes_.size()) << std::endl;
+            << (average_response_time_.total_milliseconds() / responded_nodes_.size())
+            << " milliseconds" << std::endl;
 }
 
 void SharedResponse::PrintRoutingTable(std::string response) {
@@ -63,7 +64,11 @@ void SharedResponse::CollectResponse(std::string response) {
   std::string response_id(response.substr(response.find("+++") + 3, 64));
   responded_nodes_.insert(NodeId(response_id));
   average_response_time_ += (now - msg_send_time_);
-  std::cout << "Response received in " << now - msg_send_time_ << std::endl;
+//   std::cout << "Response with size of " << response.size()
+//             << " bytes received in " << now - msg_send_time_ << " seconds" << std::endl;
+  double rate((response.size() * 2) / (now - msg_send_time_).total_milliseconds());
+  std::cout << "data rate to " << DebugId(NodeId(response_id)) << " is " << rate
+            << " kBytes/s when data_size is " << response.size() << std::endl;
 }
 
 }  //  namespace test
