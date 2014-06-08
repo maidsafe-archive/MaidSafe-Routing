@@ -155,7 +155,6 @@ endif()
 # Package                                                                                          #
 #==================================================================================================#
 set(EXPORT_NAME maidsafe_routing)
-install(TARGETS maidsafe_routing EXPORT ${EXPORT_NAME} ARCHIVE DESTINATION bin/lib)
+install(TARGETS maidsafe_routing EXPORT ${EXPORT_NAME} ARCHIVE DESTINATION lib)
 
 install(FILES ${RoutingApi} DESTINATION include/maidsafe/routing)
-install(FILES ${RoutingHeaders} DESTINATION src/maidsafe/routing)
