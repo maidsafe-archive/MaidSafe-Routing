@@ -77,7 +77,8 @@ class Commands {
                     std::condition_variable& cond_var, int messages_count,
                     uint16_t expect_respondent, std::vector<NodeId> closest_nodes, NodeId dest_id,
                     std::string data);
-  void RunPerformanceTest();
+  void PerformanceTest();
+  void RunPerformanceTest(bool is_send_group);
 
   std::shared_ptr<GenericNode> demo_node_;
   std::vector<maidsafe::passport::detail::AnmaidToPmid> all_keys_;

@@ -242,11 +242,15 @@ void Commands::SendAMessage(std::atomic<int>& successful_count, int& operation_c
                             std::mutex& mutex, std::condition_variable& cond_var,
                             int messages_count, uint16_t expect_respondent,
                             std::vector<NodeId> closest_nodes, NodeId dest_id, std::string data) {
+  bool group_performance(false);
+  if ((expect_respondent > 1) && (closest_nodes.empty()))
+    group_performance = true;
+  auto data_size(data.size());
   auto shared_response_ptr = std::make_shared<SharedResponse>(closest_nodes, expect_respondent);
   auto callable = [shared_response_ptr, &successful_count, &operation_count, &mutex, messages_count,
-                   expect_respondent, &cond_var](std::string response) {
+                   expect_respondent, &cond_var, group_performance, data_size](std::string response) {
     if (!response.empty()) {
-      shared_response_ptr->CollectResponse(response);
+      shared_response_ptr->CollectResponse(response, !group_performance);
       if (shared_response_ptr->expected_responses_ == 1)
         shared_response_ptr->PrintRoutingTable(response);
       if (shared_response_ptr->responded_nodes_.size() ==
@@ -262,15 +266,21 @@ void Commands::SendAMessage(std::atomic<int>& successful_count, int& operation_c
     {
       std::lock_guard<std::mutex> lock(mutex);
       ++operation_count;
-      if (operation_count == (messages_count * expect_respondent))
+      if (operation_count == (messages_count * expect_respondent)) {
+        if (group_performance)
+          shared_response_ptr->PrintGroupPerformance(data_size);
         cond_var.notify_one();
+      }
     }
   };
   //  Send the msg
-  if (expect_respondent == 1)
+  if (expect_respondent == 1) {
     demo_node_->SendDirect(dest_id, data, false, callable);
-  else
+  } else {
+    if (group_performance)
+      std::cout << "Group message sent to " << DebugId(dest_id);
     demo_node_->SendGroup(dest_id, data, false, callable);
+  }
 }
 
 void Commands::Join() {
@@ -423,7 +433,7 @@ void Commands::ProcessCommand(const std::string& cmdline) {
   } else if (cmd == "nattype") {
     std::cout << "NatType for this node is : " << demo_node_->nat_type() << std::endl;
   } else if (cmd == "performance") {
-    RunPerformanceTest();
+    PerformanceTest();
   } else if (cmd == "exit") {
     std::cout << "Exiting application...\n";
     finish_ = true;
@@ -457,23 +467,29 @@ NodeId Commands::CalculateClosests(const NodeId& target_id, std::vector<NodeId>&
   return closests[closests.size() - 1];
 }
 
-void Commands::RunPerformanceTest() {
+void Commands::PerformanceTest() {
+  std::cout << "*************  Performance Test Sending Direct Message *************" << std::endl;
+  RunPerformanceTest(false);
+  std::cout << "*************  Performance Test Sending Group Message *************" << std::endl;
+  RunPerformanceTest(true);
+}
+
+void Commands::RunPerformanceTest(bool is_send_group) {
   data_size_ = 1;
   int iteration(1);
   uint32_t message_id(0);
+  uint16_t expect_respondent(is_send_group ? 4 : 1);
+  std::vector<NodeId> closest_nodes;
   while (data_size_ < ((1024 * 1024) + 1024)) {
     std::string data, data_to_send;
     data_to_send = data = RandomAlphaNumericString(data_size_);
 
     auto routing_nodes = demo_node_->ReturnRoutingTable();
     for (const auto& routing_node : routing_nodes) {
-      uint16_t expect_respondent(1);
       std::atomic<int> successful_count(0);
       std::mutex mutex;
       std::condition_variable cond_var;
       int operation_count(0);
-
-      std::vector<NodeId> closest_nodes;
       data = ">:<" + std::to_string(++message_id) + "<:>" + data;
       SendAMessage(successful_count, operation_count, mutex, cond_var, 1,
                    expect_respondent, closest_nodes, routing_node, data);

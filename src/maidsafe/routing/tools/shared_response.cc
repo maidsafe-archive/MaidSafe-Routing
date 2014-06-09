@@ -58,17 +58,32 @@ void SharedResponse::PrintRoutingTable(std::string response) {
   }
 }
 
-void SharedResponse::CollectResponse(std::string response) {
+void SharedResponse::CollectResponse(std::string response, bool print_performance) {
   std::lock_guard<std::mutex> lock(mutex_);
   boost::posix_time::ptime now = boost::posix_time::microsec_clock::universal_time();
   std::string response_id(response.substr(response.find("+++") + 3, 64));
-  responded_nodes_.insert(NodeId(response_id));
-  average_response_time_ += (now - msg_send_time_);
 //   std::cout << "Response with size of " << response.size()
 //             << " bytes received in " << now - msg_send_time_ << " seconds" << std::endl;
-  double rate((response.size() * 2) / (now - msg_send_time_).total_milliseconds());
-  std::cout << "data rate to " << DebugId(NodeId(response_id)) << " is " << rate
-            << " kBytes/s when data_size is " << response.size() << std::endl;
+  auto duration((now - msg_send_time_).total_milliseconds());
+  if (duration < 10000) {
+    responded_nodes_.insert(NodeId(response_id));
+    average_response_time_ += (now - msg_send_time_);
+    if (print_performance) {
+      double rate((response.size() * 2) / duration);
+      std::cout << "data rate to " << DebugId(NodeId(response_id)) << " is " << rate
+                << " kBytes/s when data_size is " << response.size() << std::endl;
+    }
+  } else {
+    std::cout << "timed out ( " << duration / 1000 << " s) to " << DebugId(NodeId(response_id))
+              << " when data_size is " << response.size() << std::endl;
+  }
+}
+
+void SharedResponse::PrintGroupPerformance(int data_size) {
+  auto duration(average_response_time_.total_milliseconds() / responded_nodes_.size());
+  double rate((data_size * 2) / duration);
+  std::cout << " has data rate " << rate
+            << " kBytes/s when data_size is " << data_size << std::endl;
 }
 
 }  //  namespace test
