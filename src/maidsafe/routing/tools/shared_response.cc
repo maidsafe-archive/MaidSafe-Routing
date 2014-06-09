@@ -80,6 +80,10 @@ void SharedResponse::CollectResponse(std::string response, bool print_performanc
 }
 
 void SharedResponse::PrintGroupPerformance(int data_size) {
+  if (average_response_time_.total_milliseconds() == 0 || responded_nodes_.size() == 0) {
+    std::cout << " timed out when data_size is " << data_size << std::endl;
+    return;
+  }
   auto duration(average_response_time_.total_milliseconds() / responded_nodes_.size());
   double rate((data_size * 2) / duration);
   std::cout << " has data rate " << rate
