@@ -478,7 +478,7 @@ void Commands::RunPerformanceTest(bool is_send_group) {
   data_size_ = 1;
   int iteration(1);
   uint32_t message_id(0);
-  uint16_t expect_respondent(is_send_group ? 4 : 1);
+  uint16_t expect_respondent(is_send_group ? routing::Parameters::group_size : 1);
   std::vector<NodeId> closest_nodes;
   while (data_size_ < ((1024 * 1024) + 1024)) {
     std::string data, data_to_send;

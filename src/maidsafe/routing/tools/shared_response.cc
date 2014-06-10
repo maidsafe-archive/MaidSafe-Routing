@@ -70,8 +70,9 @@ void SharedResponse::CollectResponse(std::string response, bool print_performanc
     average_response_time_ += (now - msg_send_time_);
     if (print_performance) {
       double rate((response.size() * 2) / duration);
-      std::cout << "data rate to " << DebugId(NodeId(response_id)) << " is " << rate
-                << " kBytes/s when data_size is " << response.size() << std::endl;
+      std::cout << "Direct message sent to " << DebugId(NodeId(response_id))
+                << " completed in " << duration << " milliseconds, has throughput rate " << rate
+                << " kBytes/s when data_size is " << response.size() << " Bytes" << std::endl;
     }
   } else {
     std::cout << "timed out ( " << duration / 1000 << " s) to " << DebugId(NodeId(response_id))
@@ -80,14 +81,15 @@ void SharedResponse::CollectResponse(std::string response, bool print_performanc
 }
 
 void SharedResponse::PrintGroupPerformance(int data_size) {
-  if (average_response_time_.total_milliseconds() == 0 || responded_nodes_.size() == 0) {
-    std::cout << " timed out when data_size is " << data_size << std::endl;
+  if (responded_nodes_.size() < routing::Parameters::group_size) {
+    std::cout << "Only received " << responded_nodes_.size() << " responses for a group msg of "
+              << data_size << " Bytes" << std::endl;
     return;
   }
   auto duration(average_response_time_.total_milliseconds() / responded_nodes_.size());
   double rate((data_size * 2) / duration);
-  std::cout << " has data rate " << rate
-            << " kBytes/s when data_size is " << data_size << std::endl;
+  std::cout << " completed in " << duration << " milliseconds, has throughput rate " << rate
+            << " kBytes/s when data_size is " << data_size << " Bytes"<< std::endl;
 }
 
 }  //  namespace test
