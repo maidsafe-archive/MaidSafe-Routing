@@ -253,16 +253,19 @@ bool GroupMatrix::ClosestToId(const NodeId& target_id) {
 GroupRangeStatus GroupMatrix::IsNodeIdInGroupRange(const NodeId& group_id,
                                                    const NodeId& node_id) const {
   auto connected_peers(GetConnectedPeers());
+  if (connected_peers.empty())
+    return GroupRangeStatus::kInRange;
+
   std::partial_sort(std::begin(connected_peers), std::begin(connected_peers) + 1,
                     std::end(connected_peers),
                     [node_id](const NodeInfo& lhs, const NodeInfo& rhs) {
                       return NodeId::CloserToTarget(rhs.node_id, lhs.node_id, node_id);
                     });
 
-  if (!connected_peers.empty() && (connected_peers.size() >= Parameters::closest_nodes_size) &&
-      (node_id == kNodeId_) &&
-      NodeId::CloserToTarget(connected_peers.front().node_id, group_id, kNodeId_))
+  if (connected_peers.size() >= Parameters::closest_nodes_size && node_id == kNodeId_ &&
+      NodeId::CloserToTarget(connected_peers.front().node_id, group_id, kNodeId_)) {
     return GroupRangeStatus::kOutwithRange;
+  }
 
   size_t group_size_adjust(Parameters::group_size + 1U);
   size_t new_holders_size = std::min(unique_nodes_.size(), group_size_adjust);
