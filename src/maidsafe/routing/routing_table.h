@@ -99,7 +99,6 @@ class RoutingTable {
   void GroupUpdateFromUnvalidatedPeer(const NodeId& peer, const std::vector<NodeInfo>& nodes);
   NodeId RandomConnectedNode();
   std::vector<NodeInfo> GetMatrixNodes();
-  bool IsConnected(const NodeId& node_id);
   // Returns default-constructed NodeId if routing table size is zero
   NodeInfo GetClosestNode(const NodeId& target_id, bool ignore_exact_match = false);
   NodeInfo GetClosestNode(const NodeId& target_id, const std::vector<std::string>& exclude,
@@ -114,7 +113,6 @@ class RoutingTable {
   std::vector<NodeInfo> GetClosestMatrixNodes(const NodeId& target_id, uint16_t number_to_get);
   std::vector<NodeId> GetGroup(const NodeId& target_id);
   NodeInfo GetRemovableNode(std::vector<std::string> attempted = std::vector<std::string>());
-  void GetNodesNeedingGroupUpdates(std::vector<NodeInfo>& nodes_needing_update);
   size_t size() const;
   uint16_t kThresholdSize() const { return kThresholdSize_; }
   NodeId kNodeId() const { return kNodeId_; }

@@ -68,6 +68,7 @@ passport::Pmid MakePmid();
 
 // Fob GetFob(const NodeInfoAndPrivateKey& node);
 
+NodeInfo MakeNode(std::string id);
 NodeInfo MakeNode();
 
 NodeId GenerateUniqueRandomId(const NodeId& holder, uint16_t pos);

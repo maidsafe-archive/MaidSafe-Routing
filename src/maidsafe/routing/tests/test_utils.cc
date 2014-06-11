@@ -41,6 +41,15 @@ namespace routing {
 
 namespace test {
 
+NodeInfo MakeNode(std::string id) {
+  NodeInfo node;
+  node.node_id = NodeId(id, NodeId::EncodingType::kHex);
+  asymm::Keys keys(asymm::GenerateKeyPair());
+  node.public_key = keys.public_key;
+  node.connection_id = node.node_id;
+  return node;
+}
+
 NodeInfo MakeNode() {
   NodeInfo node;
   node.node_id = NodeId(RandomString(64));
@@ -144,7 +153,7 @@ int NetworkStatus(bool client, int status) {
 }
 
 void SortFromTarget(const NodeId& target, std::vector<NodeInfo>& nodes) {
-  std::sort(nodes.begin(), nodes.end(), [target](const NodeInfo & lhs, const NodeInfo & rhs) {
+  std::sort(nodes.begin(), nodes.end(), [target](const NodeInfo& lhs, const NodeInfo& rhs) {
     return NodeId::CloserToTarget(lhs.node_id, rhs.node_id, target);
   });
 }

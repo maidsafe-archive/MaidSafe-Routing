@@ -319,12 +319,14 @@ void MessageHandler::HandleGroupMessageAsClosestNode(protobuf::Message& message)
   while (close_from_matrix.size() > replication)
     close_from_matrix.pop_back();
 
+#if USE_LOGGING
   std::string group_id(message.destination_id());
   std::string group_members("[" + DebugId(routing_table_.kNodeId()) + "]");
 
   for (const auto& i : close_from_matrix)
     group_members += std::string("[" + DebugId(i.node_id) + "]");
   LOG(kInfo) << "Group nodes for group_id " << HexSubstr(group_id) << " : " << group_members;
+#endif
 
   for (const auto& i : close_from_matrix) {
     LOG(kInfo) << "[" << DebugId(own_node_id) << "] - "

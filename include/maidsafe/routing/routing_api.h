@@ -161,12 +161,6 @@ class Routing {
   // Returns the group matrix
   std::vector<NodeInfo> ClosestNodes();
 
-  // Checks if routing table or group matrix contains given node id
-  bool IsConnectedVault(const NodeId& node_id);
-
-  // Checks if client routing table contains given node id
-  bool IsConnectedClient(const NodeId& node_id);
-
   friend class test::GenericNode;
 
  private:

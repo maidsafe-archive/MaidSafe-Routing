@@ -569,7 +569,9 @@ TEST(RoutingTableTest, FUNC_FillEmptyRefillRoutingTable) {
 
 TEST(RoutingTableTest, BEH_CheckMockSendGroupChangeRpcs) {
   // Set up 1
-  NodeId node_id(NodeId::kRandomId);
+//  NodeId node_id(NodeId::kRandomId);
+  NodeId node_id("fa759d086f45592fb78538c1bc1990bc5d9797ef13d3eddfb427bc578de71a76cad53d5cd2cee871332342558afbba4b8ddf8bc05cad7fe01a7e002af51f7fcb", NodeId::EncodingType::kHex);
+  LOG(kAlways) << "  NodeId node_id(\"" << node_id.ToStringEncoded(NodeId::EncodingType::kHex) << "\", NodeId::EncodingType::kHex);";
   NetworkStatistics network_statistics(node_id);
   RoutingTable routing_table_1(false, node_id, asymm::GenerateKeyPair(), network_statistics);
   NodeInfo node_info_1(MakeNode());
@@ -580,13 +582,34 @@ TEST(RoutingTableTest, BEH_CheckMockSendGroupChangeRpcs) {
 
   // Generate other NodeInfo
   std::vector<NodeInfo> extra_nodes;
-  uint16_t limit(2 * Parameters::closest_nodes_size + 1);
-  for (uint16_t i = 0; i < limit; ++i)
-    extra_nodes.push_back(MakeNode());
+  //uint16_t limit(2 * Parameters::closest_nodes_size + 1);
+  //for (uint16_t i = 0; i < limit; ++i)
+  //  extra_nodes.push_back(MakeNode());
+  extra_nodes.push_back(MakeNode("daab2c7b04e68d663d207f61a9132aab68ab9e11287d98711ac82bbcb477a9ec4d742bc3636f30a541c162809a001b521986e08d892301e0731661651ad5db87"));
+  extra_nodes.push_back(MakeNode("b432bf3c64ed97dc98d903c7ac803d77162c3e690e50fa2a19cd4a9d5a50f66fb39470bacde5632f79e63ed4d82121981c6f094bd926429bf019d2c15c399dde"));
+  extra_nodes.push_back(MakeNode("d80f46456fdcaa79c7e7b369e5628bcc0090175aae8dfb694dbd3634134b8df2777b582c26473d24dbdc22c24db88f195c9581b930d39b753bd588bca31197f2"));
+  extra_nodes.push_back(MakeNode("095fd67f69740e090aa8ca7cf2eb0a249d19276e268d9119cb0cb3115cef5ca3d45dd7cb7d809a5ea1a9aa001cce295825c2fdf0d0b276c7ea97f84a3741badc"));
+  extra_nodes.push_back(MakeNode("1946fa071cdac47c767fdc0b3335c9d78473485dea59c1012d3628fa171f7366a9ca9c24d1e57ff009be6ef036b440dcceba0f116a87604e67221a1d0446d2ed"));
+  extra_nodes.push_back(MakeNode("b052a4c702133d5beb96e143c5c56e5d6aa167743599084b49234b49f5084d7586a744458d9db88a8ed197cc69115f8bad7f821638cb3e4e40e9263fc4c7bec3"));
+  extra_nodes.push_back(MakeNode("e30bb869a955472f0e5efe3750141d578091cbe46f4a27b5266b3fb00ece111a2e2bb380ed0e59ddb14818036c7f4a55c40b25b031ee822bdf2d6ad2ca250fc8"));
+  extra_nodes.push_back(MakeNode("e03d439281918fb51ba2d6c1f44712197d9b96467a436f0bf5b413be4f654449311ab27c9c928dc9f71adfc5da0ddf455dabd99072ba74d7a9b405340cdc36e2"));
+  extra_nodes.push_back(MakeNode("fff30913a28beba805291d63dacb9dc114919d307cf0dc033845ac979ca6c6a61f59215f632b3a3803d7e2e1556617a8b04b49fff900e6d7dac744f5e6ac3c57"));
+  extra_nodes.push_back(MakeNode("57041c9a1cf1594ee1a0c2204df536c48107514bdd938710668613192a747f30a46e1dfc076e20dc45ff17ff3e33ca15e433cdc30aa84ff1fa6d7510408bf72a"));
+  extra_nodes.push_back(MakeNode("fd9aed15a8e0d375f8a826569693cd02d6797d316eec3ec450736c45767f46bb80af762bf0de1fa2bf01bf92194ac84c3bc9f3bf3b95ffdbc4df1001f9ca642d"));
+  extra_nodes.push_back(MakeNode("2b980716871ac3cdb4601947bacd2c8260216c13479d14c12512589cebafa48763768f4b02b745e15d2defd4329e5759ca403f72c7018ab9528e1b587cba90c1"));
+  extra_nodes.push_back(MakeNode("ba5cc1fb671be6145c96de36220bb4f22b37c5ea23922d8b5bf11d62889357c5a3db685912da6578e295ee9b94e7c5a3266ecba3d3840f4ecff9b015e1579811"));
+  extra_nodes.push_back(MakeNode("8699a45121c05aeeb95a432b8d3fd456c0a0c2c582f0f4af99654838a8e7ac73f91bc1fbf1c0b4c40fe410601d05fd7007b605774288ba7d3aad32447938d331"));
+  extra_nodes.push_back(MakeNode("06172d31148ae24ddbad1229fc3ac19d4d2875255184d8a166ee6180f64d3a66e940919f8f94c1e98dd521257a1381fb0b55a56f067a725fe838b909e7dfdd65"));
+  extra_nodes.push_back(MakeNode("7c6a934c33ae7ee8af9118c690c461d58d8cc7a3728f9e1f0b3f2584c538a922d3504153082d78e8c674893660cc462356a323064b3f6b0a8f501bfacf322c8f"));
+  extra_nodes.push_back(MakeNode("92808a42df91e40621c8b6be68bf0838cde23b14f4bf0bec35829db5f4b72f5302c263ad15ce3c2994affe835b0fbbb50c90a0d9e2448701472915d9ea1b89d0"));
+  for (auto& node : extra_nodes)
+    LOG(kAlways) << "  extra_nodes.push_back(MakeNode(\"" << node.node_id.ToStringEncoded(NodeId::EncodingType::kHex) << "\"));";
   SortFromTarget(node_id_1, extra_nodes);
 
   // Set up 2 to be in 1's closest_nodes_size group
-  uint16_t index_2(RandomUint32() % Parameters::closest_nodes_size);
+//  uint16_t index_2(RandomUint32() % Parameters::closest_nodes_size);
+  uint16_t index_2 = 0;
+  LOG(kAlways) << "  uint16_t index_2 = " << index_2 << ";";
   RoutingTable routing_table_2(false, extra_nodes.at(index_2).node_id, asymm::GenerateKeyPair(),
                                network_statistics);
 
@@ -642,7 +665,10 @@ TEST(RoutingTableTest, BEH_CheckMockSendGroupChangeRpcs) {
 
   // Check that 2's group matrix is updated correctly - Add nodes
   std::vector<NodeInfo> close_nodes;
-  SortFromTarget((NodeId(NodeId::kRandomId)), extra_nodes);
+//  NodeId rand_node_id(NodeId::kRandomId);
+  NodeId rand_node_id("4555129c606912ea695237da60422f4e7d129defd586370d0bdc6aeabab4f06081fdd71afa54bb098ae286325435ee590fb42045a98f3063ffac117a863bb6af", NodeId::EncodingType::kHex);
+  LOG(kAlways) << "  NodeId rand_node_id(\"" << rand_node_id.ToStringEncoded(NodeId::EncodingType::kHex) << "\", NodeId::EncodingType::kHex);";
+  SortFromTarget(rand_node_id, extra_nodes);
   std::vector<NodeId> expected_close_nodes(1, node_info_2.node_id);
   for (const auto& node_info : extra_nodes) {
     SortIdsFromTarget(node_id_1, expected_close_nodes);
@@ -681,9 +707,12 @@ TEST(RoutingTableTest, BEH_CheckMockSendGroupChangeRpcs) {
   expected_count = 0;
   NodeInfo removal_node;
   uint16_t removal_index;
+  std::reverse(std::begin(extra_nodes), std::end(extra_nodes));
   while (extra_nodes.size() > 0) {
-    removal_index = static_cast<uint16_t>(RandomUint32() % extra_nodes.size());
+//    removal_index = static_cast<uint16_t>(RandomUint32() % extra_nodes.size());
+    removal_index = 0;
     removal_node = extra_nodes.at(removal_index);
+    LOG(kWarning) << "Removing " << DebugId(removal_node.node_id);
     extra_nodes.erase(extra_nodes.begin() + removal_index);
     auto connected_nodes(routing_table_1.group_matrix_.GetConnectedPeers());
     if (std::find_if(std::begin(connected_nodes), std::end(connected_nodes),

@@ -220,7 +220,7 @@ NodeInfo RoutingTable::DropNode(const NodeId& node_to_drop, bool routing_only) {
 
   UpdateConnectedPeersMatrix(new_connected_close_nodes, old_connected_close_nodes);
 
-  if ((matrix_change != nullptr) && !matrix_change->OldEqualsToNew()) {
+  if (matrix_change && !matrix_change->OldEqualsToNew()) {
     network_statistics_.UpdateLocalAverageDistance(unique_nodes);
     if (matrix_change_functor_)
       matrix_change_functor_(matrix_change);
@@ -317,7 +317,7 @@ bool RoutingTable::ClosestToId(const NodeId& target_id) {
   if (!NodeId::CloserToTarget(kNodeId_, nodes_.at(index).node_id, target_id))
     return false;
 
-  return group_matrix_.ClosestToId(target_id);
+  return group_matrix_.IsThisNodeClosestToId(target_id);
 }
 
 GroupRangeStatus RoutingTable::IsNodeIdInGroupRange(const NodeId& group_id) const {
@@ -351,13 +351,6 @@ NodeId RoutingTable::RandomConnectedNode() {
 std::vector<NodeInfo> RoutingTable::GetMatrixNodes() {
   std::lock_guard<std::mutex> lock(mutex_);
   return group_matrix_.GetUniqueNodes();
-}
-
-bool RoutingTable::IsConnected(const NodeId& node_id) {
-  if (Contains(node_id))
-    return true;
-  std::lock_guard<std::mutex> lock(mutex_);
-  return group_matrix_.Contains(node_id);
 }
 
 bool RoutingTable::GetNodeInfo(const NodeId& node_id, NodeInfo& peer) const {
@@ -431,7 +424,7 @@ void RoutingTable::GroupUpdateFromConnectedPeer(const NodeId& peer,
         return;
       group_matrix_.AddConnectedPeer(*found.second, nodes);
     }
-    matrix_change = group_matrix_.UpdateFromConnectedPeer(peer, nodes, old_unique_ids);
+    matrix_change = group_matrix_.UpdateConnectedPeer(peer, nodes, old_unique_ids);
     new_connected_peers = group_matrix_.GetConnectedPeers();
   }
   if (!matrix_change->OldEqualsToNew() && matrix_change_functor_)
@@ -703,20 +696,6 @@ NodeInfo RoutingTable::GetRemovableNode(std::vector<std::string> attempted) {
   LOG(kVerbose) << "[" << DebugId(kNodeId_) << "] Proposed removable ["
                 << DebugId(removable_node.node_id) << "]";
   return removable_node;
-}
-
-void RoutingTable::GetNodesNeedingGroupUpdates(std::vector<NodeInfo>& nodes_needing_update) {
-  std::unique_lock<std::mutex> lock(mutex_);
-  int sorted_count(PartialSortFromTarget(kNodeId_, Parameters::closest_nodes_size, lock));
-  if (sorted_count == 0)
-    return;
-  for (auto iter(nodes_.begin());
-       iter != (nodes_.begin() +
-                std::min(Parameters::closest_nodes_size, static_cast<uint16_t>(nodes_.size())));
-       ++iter) {
-    if (group_matrix_.IsRowEmpty(*iter))
-      nodes_needing_update.push_back(*iter);
-  }
 }
 
 NodeInfo RoutingTable::GetNthClosestNode(const NodeId& target_id, uint16_t node_number) {
