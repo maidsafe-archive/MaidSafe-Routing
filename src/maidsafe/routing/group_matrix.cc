@@ -250,19 +250,23 @@ bool GroupMatrix::ClosestToId(const NodeId& target_id) {
 //  return !NodeId::CloserToTarget(furthest_group_node, node_id, group_id);
 // }
 
-GroupRangeStatus GroupMatrix::IsNodeIdInGroupRange(const NodeId& group_id,
-                                                   const NodeId& node_id) const {
-  auto connected_peers(GetConnectedPeers());
-  std::partial_sort(std::begin(connected_peers), std::begin(connected_peers) + 1,
-                    std::end(connected_peers),
-                    [node_id](const NodeInfo& lhs, const NodeInfo& rhs) {
-                      return NodeId::CloserToTarget(rhs.node_id, lhs.node_id, node_id);
-                    });
+GroupRangeStatus GroupMatrix::IsNodeIdInGroupRange(
+    const NodeId& group_id, const NodeId& node_id, std::vector<NodeInfo> routing_table) const {
+  auto node_ids(GetUniqueNodeIds());
+  if (node_ids.size() <= 1)
+    return GroupRangeStatus::kInRange;
 
-  if (!connected_peers.empty() && (connected_peers.size() >= Parameters::closest_nodes_size) &&
-      (node_id == kNodeId_) &&
-      NodeId::CloserToTarget(connected_peers.front().node_id, group_id, kNodeId_))
-    return GroupRangeStatus::kOutwithRange;
+  for (const auto& unique_node : node_ids)
+    routing_table.erase(
+        std::remove_if(std::begin(routing_table), std::end(routing_table),
+                       [unique_node](const NodeInfo& node_info) {
+                         return node_info.node_id == unique_node;
+                       }), std::end(routing_table));
+
+  PrintGroupMatrix();
+
+  for (const auto& node_info : routing_table)
+    LOG(kVerbose) << "RT " << DebugId(node_info.node_id);
 
   size_t group_size_adjust(Parameters::group_size + 1U);
   size_t new_holders_size = std::min(unique_nodes_.size(), group_size_adjust);
@@ -279,12 +283,29 @@ GroupRangeStatus GroupMatrix::IsNodeIdInGroupRange(const NodeId& group_id,
 
   new_holders.erase(std::remove(new_holders.begin(), new_holders.end(), group_id),
                     new_holders.end());
+
+  bool not_in_range(false);
+
+  for (const auto& holder : new_holders) {
+    if (std::any_of(std::begin(routing_table), std::end(routing_table),
+                   [holder, group_id](const NodeInfo& node_info) {
+                     return NodeId::CloserToTarget(node_info.node_id, holder, group_id);
+                  })) {
+      not_in_range = true;
+      break;
+    }
+  }
+
+  for (const auto& holder : new_holders)
+    LOG(kVerbose) << "holder: " << DebugId(holder);
+
   if (new_holders.size() > Parameters::group_size) {
     new_holders.resize(Parameters::group_size);
     assert(new_holders.size() == Parameters::group_size);
   }
   if (!client_mode_) {
-    auto this_node_range(GetProximalRange(group_id, kNodeId_, kNodeId_, radius_, new_holders));
+    auto this_node_range(GetProximalRange(group_id, kNodeId_, kNodeId_, radius_, new_holders,
+                                          not_in_range));
     if (node_id == kNodeId_)
       return this_node_range;
     else if (this_node_range != GroupRangeStatus::kInRange)
@@ -293,7 +314,7 @@ GroupRangeStatus GroupMatrix::IsNodeIdInGroupRange(const NodeId& group_id,
     if (node_id == kNodeId_)
       return GroupRangeStatus::kInProximalRange;
   }
-  return GetProximalRange(group_id, node_id, kNodeId_, radius_, new_holders);
+  return GetProximalRange(group_id, node_id, kNodeId_, radius_, new_holders, not_in_range);
 }
 
 std::shared_ptr<MatrixChange> GroupMatrix::UpdateFromConnectedPeer(

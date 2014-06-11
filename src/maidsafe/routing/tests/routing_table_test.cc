@@ -1168,11 +1168,33 @@ TEST(RoutingTableTest, FUNC_IsNodeIdInGroupRange) {
   crypto::BigInt radius((radius_id.ToStringEncoded(NodeId::EncodingType::kHex) + 'h').c_str());
   radius = Parameters::proximity_factor * radius;
 
-  nodes_in_table = routing_table.group_matrix_.GetUniqueNodes();  // FIXME(Mahmoud)
+  node_info = MakeNode();
+  node_info.node_id = own_node_id;
+  nodes_in_table.push_back(node_info);
+
+  auto connected_nodes(routing_table.group_matrix_.GetConnectedPeers());
+  auto connected_nodes_copy(connected_nodes);
+  for (const auto& connected_node : connected_nodes) {
+    std::partial_sort(std::begin(connected_nodes_copy),
+                      std::begin(connected_nodes_copy) + (Parameters::closest_nodes_size + 1),
+                      std::end(connected_nodes_copy),
+                      [connected_node](const NodeInfo& lhs, const NodeInfo& rhs) {
+                        return NodeId::CloserToTarget(lhs.node_id, rhs.node_id,
+                                                      connected_node.node_id);
+                      });
+    std::vector<NodeInfo> close_nodes;
+    std::copy(std::begin(connected_nodes_copy) + 1,
+              std::begin(connected_nodes_copy) + (Parameters::closest_nodes_size + 1),
+              std::back_inserter(close_nodes));
+    routing_table.GroupUpdateFromConnectedPeer(connected_node.node_id, close_nodes);
+  }
 
   for (uint16_t i(0); i < 100; ++i) {
     NodeId target_id(NodeId::kRandomId);
+    LOG(kVerbose) << "random id: " << DebugId(target_id);
     SortFromTarget(target_id, nodes_in_table);
+    for (const auto& node_in_table : nodes_in_table)
+      LOG(kVerbose) << "Node In Table " << DebugId(node_in_table.node_id);
     if (!NodeId::CloserToTarget(nodes_in_table.at(Parameters::group_size - 1).node_id,
                                 own_node_id, target_id)) {
       EXPECT_EQ(GroupRangeStatus::kInRange, routing_table.IsNodeIdInGroupRange(target_id));

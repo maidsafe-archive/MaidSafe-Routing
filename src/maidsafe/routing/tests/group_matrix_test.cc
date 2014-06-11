@@ -284,11 +284,13 @@ TEST_P(GroupMatrixTest, BEH_OneRowOnly) {
   // Check IsThisNodeGroupMemberFor
   const NodeId target_id_1(NodeId::kRandomId);
   if (!client_mode_) {
-    EXPECT_EQ(GroupRangeStatus::kInRange, matrix_.IsNodeIdInGroupRange(target_id_1, own_node_id_));
+    EXPECT_EQ(GroupRangeStatus::kInRange,
+              matrix_.IsNodeIdInGroupRange(target_id_1, own_node_id_, std::vector<NodeInfo>()));
   } else {
     EXPECT_EQ(GroupRangeStatus::kInProximalRange,
-              matrix_.IsNodeIdInGroupRange(target_id_1, own_node_id_));
-    EXPECT_EQ(GroupRangeStatus::kInRange, matrix_.IsNodeIdInGroupRange(target_id_1, row_1.node_id));
+              matrix_.IsNodeIdInGroupRange(target_id_1, own_node_id_, std::vector<NodeInfo>()));
+    EXPECT_EQ(GroupRangeStatus::kInRange,
+              matrix_.IsNodeIdInGroupRange(target_id_1, row_1.node_id, std::vector<NodeInfo>()));
   }
   // Fully populate row
   while (row_entries_1.size() < (Parameters::closest_nodes_size - 1U)) {
@@ -329,10 +331,12 @@ TEST_P(GroupMatrixTest, BEH_OneRowOnly) {
                                                own_node_id_, target_id_2.node_id));
   if (is_group_member && !client_mode_)
     EXPECT_EQ(GroupRangeStatus::kInRange,
-              matrix_.IsNodeIdInGroupRange(target_id_2.node_id, own_node_id_));
+              matrix_.IsNodeIdInGroupRange(target_id_2.node_id, own_node_id_,
+                                           std::vector<NodeInfo>()));
   if (client_mode_)
     EXPECT_EQ(GroupRangeStatus::kInProximalRange,
-              matrix_.IsNodeIdInGroupRange(target_id_2.node_id, own_node_id_));
+              matrix_.IsNodeIdInGroupRange(target_id_2.node_id, own_node_id_,
+                                           std::vector<NodeInfo>()));
 }
 
 TEST_P(GroupMatrixTest, BEH_OneColumnOnly) {
@@ -427,9 +431,11 @@ TEST_P(GroupMatrixTest, BEH_RowsContainSameNodes) {
                    (NodeId::CloserToTarget(node_info.node_id, own_node_id_, target_id)));
          }) == node_ids.end());
     if (expect_is_group_member & !client_mode_)
-      EXPECT_EQ(GroupRangeStatus::kInRange, matrix_.IsNodeIdInGroupRange(target_id, own_node_id_));
+      EXPECT_EQ(GroupRangeStatus::kInRange,
+                matrix_.IsNodeIdInGroupRange(target_id, own_node_id_, std::vector<NodeInfo>()));
     else
-      EXPECT_NE(GroupRangeStatus::kInRange, matrix_.IsNodeIdInGroupRange(target_id, own_node_id_));
+      EXPECT_NE(GroupRangeStatus::kInRange,
+                matrix_.IsNodeIdInGroupRange(target_id, own_node_id_, std::vector<NodeInfo>()));
     NodeId connected_peer;
     CheckIsThisNodeGroupLeader(target_id, connected_peer, expect_is_group_leader);
   }
@@ -687,9 +693,11 @@ TEST_P(GroupMatrixTest, BEH_IsNodeIdInGroupRange) {
                    (NodeId::CloserToTarget(node.node_id, this->own_node_id_, target_id)));
          }) == node_ids.end());
     if (expect_is_group_member & !client_mode_)
-      EXPECT_EQ(GroupRangeStatus::kInRange, matrix_.IsNodeIdInGroupRange(target_id, own_node_id_));
+      EXPECT_EQ(GroupRangeStatus::kInRange,
+                matrix_.IsNodeIdInGroupRange(target_id, own_node_id_, std::vector<NodeInfo>()));
     else
-      EXPECT_NE(GroupRangeStatus::kInRange, matrix_.IsNodeIdInGroupRange(target_id, own_node_id_));
+      EXPECT_NE(GroupRangeStatus::kInRange,
+                matrix_.IsNodeIdInGroupRange(target_id, own_node_id_, std::vector<NodeInfo>()));
 
     CheckIsThisNodeGroupLeader(target_id, connected_peer, expect_is_group_leader);
   }
@@ -728,27 +736,33 @@ TEST_P(GroupMatrixTest, BEH_IsNodeIdInGroupRangeDifferentNode) {
     SortNodeInfosFromTarget(target_id, node_ids);
     for (auto j(0U); j != Parameters::group_size; ++j)
       EXPECT_EQ(GroupRangeStatus::kInRange,
-                matrix_.IsNodeIdInGroupRange(target_id, node_ids.at(j).node_id));
+                matrix_.IsNodeIdInGroupRange(target_id, node_ids.at(j).node_id,
+                                             std::vector<NodeInfo>()));
     for (auto j(Parameters::group_size); j != node_ids.size(); ++j)
       EXPECT_NE(GroupRangeStatus::kInRange,
-                matrix_.IsNodeIdInGroupRange(target_id, node_ids.at(j).node_id));
+                matrix_.IsNodeIdInGroupRange(target_id, node_ids.at(j).node_id,
+                                             std::vector<NodeInfo>()));
   }
 
   if (!client_mode_) {
     for (int i(0); i < 100; ++i) {
       target_id = NodeId(NodeId::kRandomId);
       SortNodeInfosFromTarget(target_id, node_ids);
-      if (matrix_.IsNodeIdInGroupRange(target_id, own_node_id_) == GroupRangeStatus::kInRange) {
+      if (matrix_.IsNodeIdInGroupRange(target_id, own_node_id_, std::vector<NodeInfo>())
+              == GroupRangeStatus::kInRange) {
         for (auto j(0U); j != Parameters::group_size; ++j)
           EXPECT_EQ(GroupRangeStatus::kInRange,
-                    matrix_.IsNodeIdInGroupRange(target_id, node_ids.at(j).node_id));
+                    matrix_.IsNodeIdInGroupRange(target_id, node_ids.at(j).node_id,
+                                                 std::vector<NodeInfo>()));
         for (auto j(Parameters::group_size); j != node_ids.size(); ++j)
           EXPECT_NE(GroupRangeStatus::kInRange,
-                    matrix_.IsNodeIdInGroupRange(target_id, node_ids.at(j).node_id));
+                    matrix_.IsNodeIdInGroupRange(target_id, node_ids.at(j).node_id,
+                                                 std::vector<NodeInfo>()));
       } else {
         for (auto j(0U); j != node_ids.size(); ++j) {
           if (node_ids.at(j).node_id != own_node_id_)
-            EXPECT_THROW(matrix_.IsNodeIdInGroupRange(target_id, node_ids.at(j).node_id),
+            EXPECT_THROW(matrix_.IsNodeIdInGroupRange(target_id, node_ids.at(j).node_id,
+                                                      std::vector<NodeInfo>()),
                          routing_error);
         }
       }

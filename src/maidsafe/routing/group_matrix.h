@@ -70,7 +70,8 @@ class GroupMatrix {
 
   bool ClosestToId(const NodeId& target_id);
   //  bool IsNodeIdInGroupRange(const NodeId& group_id, const NodeId& node_id);
-  GroupRangeStatus IsNodeIdInGroupRange(const NodeId& group_id, const NodeId& node_id) const;
+  GroupRangeStatus IsNodeIdInGroupRange(const NodeId& group_id, const NodeId& node_id,
+                                        std::vector<NodeInfo> routing_table) const;
   // Updates group matrix if peer is present in 1st column of matrix
   std::shared_ptr<MatrixChange> UpdateFromConnectedPeer(const NodeId& peer,
                                                         const std::vector<NodeInfo>& nodes,

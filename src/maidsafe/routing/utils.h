@@ -67,7 +67,8 @@ void HandleSymmetricNodeAdd(RoutingTable& routing_table, const NodeId& peer_id,
 GroupRangeStatus GetProximalRange(const NodeId& target_id, const NodeId& node_id,
                                   const NodeId& this_node_id,
                                   const crypto::BigInt& proximity_radius,
-                                  const std::vector<NodeId>& holders);
+                                  const std::vector<NodeId>& holders,
+                                  bool not_in_range = false);
 
 bool IsRoutingMessage(const protobuf::Message& message);
 bool IsNodeLevelMessage(const protobuf::Message& message);

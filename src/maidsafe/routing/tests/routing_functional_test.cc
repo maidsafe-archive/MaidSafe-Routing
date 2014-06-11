@@ -468,6 +468,7 @@ TEST_F(RoutingNetworkTest, FUNC_IsNodeIdInGroupRange) {
 //      // Check random IDs
       for (uint16_t i(0); i < 50; ++i) {
         NodeId random_id(NodeId::kRandomId);
+        LOG(kVerbose) << "Random Id: " << DebugId(random_id);
         std::partial_sort(std::begin(vault_ids), std::begin(vault_ids) + Parameters::group_size,
                           std::end(vault_ids),
                           [random_id](const NodeId& lhs, const NodeId& rhs) {
