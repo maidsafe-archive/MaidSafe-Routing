@@ -75,16 +75,18 @@ class GroupMatrix {
   // "client mode".  Returns collection sorted by XOR distance from kNodeId_.
   std::vector<NodeId> GetUniqueNodeIds() const;
 
+  // Tries to find a peer which is closer to 'target_id' than 'current_closest_peer'.  If found, and
+  // this node is connected to the closest peer, the function returns the peer's info.  If this node
+  // is *not* connected to the closest peer, the function returns a peer which is connected to both
+  // this node and the closest.  If no closer peer is found, the function returns a
+  // default-constructed unique_ptr.  This node is not considered, only peers.
+  std::unique_ptr<NodeInfo> GetBetterNodeForSendingMessage(const NodeId& target_id,
+      bool ignore_exact_match, const NodeInfo& current_closest_peer,
+      std::vector<NodeId> exclusions = std::vector<NodeId>()) const;
 
 
 
 
-  // Returns the peer which has node closest to target_id in its row (1st occurrence).
-  void GetBetterNodeForSendingMessage(const NodeId& target_node_id,
-                                      const std::vector<std::string>& exclude,
-                                      bool ignore_exact_match, NodeInfo& current_closest_peer);         //These could be 1 function with a default-empty exclude?  Either way, avoid implementation duplication.
-  void GetBetterNodeForSendingMessage(const NodeId& target_node_id, bool ignore_exact_match,
-                                      NodeId& current_closest_peer_id);
   bool IsThisNodeClosestToId(const NodeId& target_id) const;
   GroupRangeStatus IsNodeIdInGroupRange(const NodeId& group_id, const NodeId& node_id) const;
 
@@ -99,6 +101,8 @@ class GroupMatrix {
   //friend class test::GroupMatrixTest_BEH_Prune_Test;
 
  private:
+  typedef std::map<NodeInfo, SortedGroup,
+                   std::function<bool(const NodeInfo&, const NodeInfo&)>> Matrix;
   GroupMatrix(const GroupMatrix&) = delete;
   GroupMatrix(GroupMatrix&&) = delete;
   GroupMatrix& operator=(const GroupMatrix&) = delete;
@@ -113,7 +117,7 @@ class GroupMatrix {
   SortedGroup unique_nodes_;
   crypto::BigInt radius_;
   const bool kClientMode_;
-  std::map<NodeInfo, SortedGroup, std::function<bool(const NodeInfo&, const NodeInfo&)>> matrix_;
+  Matrix matrix_;
 };
 
 }  // namespace routing

@@ -88,7 +88,7 @@ class RoutingTable {
 
   bool IsThisNodeGroupLeader(const NodeId& target_id, NodeInfo& connected_peer);
   bool IsThisNodeGroupLeader(const NodeId& target_id, NodeInfo& connected_peer,
-                             const std::vector<std::string>& exclude);
+                             const std::vector<NodeId>& exclude);
   bool GetNodeInfo(const NodeId& node_id, NodeInfo& node_info) const;
   bool IsThisNodeInRange(const NodeId& target_id, uint16_t range);
   bool IsThisNodeClosestTo(const NodeId& target_id, bool ignore_exact_match = false);
@@ -101,18 +101,18 @@ class RoutingTable {
   std::vector<NodeInfo> GetMatrixNodes();
   // Returns default-constructed NodeId if routing table size is zero
   NodeInfo GetClosestNode(const NodeId& target_id, bool ignore_exact_match = false);
-  NodeInfo GetClosestNode(const NodeId& target_id, const std::vector<std::string>& exclude,
+  NodeInfo GetClosestNode(const NodeId& target_id, const std::vector<NodeId>& exclude,
                           bool ignore_exact_match = false);
   //  NodeInfo GetNodeForSendingMessage(const NodeId& target_id, bool ignore_exact_match = false);
   NodeInfo GetNodeForSendingMessage(const NodeId& target_id,
-                                    const std::vector<std::string>& exclude,
+                                    const std::vector<NodeId>& exclude,
                                     bool ignore_exact_match = false);
   // Returns max NodeId if routing table size is less than requested node_number
   NodeInfo GetNthClosestNode(const NodeId& target_id, uint16_t node_number);
   std::vector<NodeId> GetClosestNodes(const NodeId& target_id, uint16_t number_to_get);
   std::vector<NodeInfo> GetClosestMatrixNodes(const NodeId& target_id, uint16_t number_to_get);
   std::vector<NodeId> GetGroup(const NodeId& target_id);
-  NodeInfo GetRemovableNode(std::vector<std::string> attempted = std::vector<std::string>());
+  NodeInfo GetRemovableNode(std::vector<NodeId> attempted = std::vector<NodeId>());
   size_t size() const;
   uint16_t kThresholdSize() const { return kThresholdSize_; }
   NodeId kNodeId() const { return kNodeId_; }

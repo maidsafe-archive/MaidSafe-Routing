@@ -289,22 +289,22 @@ void NetworkUtils::RecursiveSendOn(protobuf::Message message, NodeInfo last_node
   if (attempt_count > 0)
     Sleep(std::chrono::milliseconds(50));
 
-  const std::string kThisId(routing_table_.kNodeId().string());
   bool ignore_exact_match(!IsDirect(message));
-  std::vector<std::string> route_history;
+  std::vector<NodeId> route_history;
   NodeInfo peer;
   {
     std::lock_guard<std::mutex> lock(running_mutex_);
     if (!running_)
       return;
-    if (message.route_history().size() > 1)
-      route_history = std::vector<std::string>(
-          message.route_history().begin(),
-          message.route_history().end() -
-              static_cast<size_t>(!(message.has_visited() && message.visited())));
-    else if ((message.route_history().size() == 1) &&
-             (message.route_history(0) != routing_table_.kNodeId().string()))
-      route_history.push_back(message.route_history(0));
+    if (message.route_history().size() > 1) {
+      int end_index{ message.route_history().size() -
+                     static_cast<int>(!(message.has_visited() && message.visited())) };
+      for (int i(0); i < end_index; ++i)
+        route_history.emplace_back(message.route_history(i));
+    } else if ((message.route_history().size() == 1) &&
+               (message.route_history(0) != routing_table_.kNodeId().string())) {
+      route_history.emplace_back(message.route_history(0));
+    }
 
     peer = routing_table_.GetNodeForSendingMessage(NodeId(message.destination_id()), route_history,
                                                    ignore_exact_match);
@@ -326,24 +326,21 @@ void NetworkUtils::RecursiveSendOn(protobuf::Message message, NodeInfo last_node
         return;
     }
     if (rudp::kSuccess == message_sent) {
-      LOG(kVerbose) << "  [" << HexSubstr(kThisId) << "] sent : " << MessageTypeString(message)
-                    << " to   " << HexSubstr(peer.node_id.string()) << "   (id: " << message.id()
-                    << ")"
-                    << " dst : " << HexSubstr(message.destination_id());
+      LOG(kVerbose) << "  [" << routing_table_.kNodeId() << "] sent : "
+                    << MessageTypeString(message) << " to   " << peer.node_id << "   (id: "
+                    << message.id() << ")" << " dst : " << HexSubstr(message.destination_id());
     } else if (rudp::kSendFailure == message_sent) {
       LOG(kError) << "Sending type " << MessageTypeString(message) << " message from "
-                  << HexSubstr(routing_table_.kNodeId().string()) << " to "
-                  << HexSubstr(peer.node_id.string()) << " with destination ID "
+                  << routing_table_.kNodeId() << " to " << peer.node_id << " with destination ID "
                   << HexSubstr(message.destination_id()) << " failed with code " << message_sent
                   << ".  Will retry to Send.  Attempt count = " << attempt_count + 1
                   << " id: " << message.id();
       RecursiveSendOn(message, peer, attempt_count + 1);
     } else {
       LOG(kError) << "Sending type " << MessageTypeString(message) << " message from "
-                  << HexSubstr(kThisId) << " to " << HexSubstr(peer.node_id.string())
-                  << " with destination ID " << HexSubstr(message.destination_id())
-                  << " failed with code " << message_sent << "  Will remove node."
-                  << " message id: " << message.id();
+                  << routing_table_.kNodeId() << " to " << peer.node_id << " with destination ID "
+                  << HexSubstr(message.destination_id()) << " failed with code " << message_sent
+                  << "  Will remove node." << " message id: " << message.id();
       {
         std::lock_guard<std::mutex> lock(running_mutex_);
         if (!running_)

@@ -262,7 +262,7 @@ bool RoutingTable::IsThisNodeGroupLeader(const NodeId& target_id, NodeInfo& conn
 }
 
 bool RoutingTable::IsThisNodeGroupLeader(const NodeId& target_id, NodeInfo& connected_peer,
-                                         const std::vector<std::string>& exclude) {
+                                         const std::vector<NodeId>& exclude) {
   NodeInfo current_closest;
   current_closest.node_id = kNodeId_;
   NodeInfo closest_peer(GetClosestNode(target_id, exclude, true));
@@ -606,7 +606,7 @@ NodeInfo RoutingTable::GetClosestNode(const NodeId& target_id, bool ignore_exact
 }
 
 NodeInfo RoutingTable::GetClosestNode(const NodeId& target_id,
-                                      const std::vector<std::string>& exclude,
+                                      const std::vector<NodeId>& exclude,
                                       bool ignore_exact_match) {
   std::vector<NodeInfo> closest_nodes(
       GetClosestNodeInfo(target_id, Parameters::closest_nodes_size, ignore_exact_match));
@@ -634,7 +634,7 @@ NodeInfo RoutingTable::GetNodeForSendingMessage(const NodeId& target_id,
 */
 
 NodeInfo RoutingTable::GetNodeForSendingMessage(const NodeId& target_id,
-                                                const std::vector<std::string>& exclude,
+                                                const std::vector<NodeId>& exclude,
                                                 bool ignore_exact_match) {
   NodeInfo current_peer(GetClosestNode(target_id, exclude, ignore_exact_match));
   if (current_peer.node_id != target_id) {
@@ -652,7 +652,7 @@ NodeInfo RoutingTable::GetNodeForSendingMessage(const NodeId& target_id,
   return current_peer;
 }
 
-NodeInfo RoutingTable::GetRemovableNode(std::vector<std::string> attempted) {
+NodeInfo RoutingTable::GetRemovableNode(std::vector<NodeId> attempted) {
   std::map<uint32_t, uint16_t> bucket_rank_map;
   std::unique_lock<std::mutex> lock(mutex_);
   PartialSortFromTarget(kNodeId_, static_cast<uint16_t>(nodes_.size()), lock);

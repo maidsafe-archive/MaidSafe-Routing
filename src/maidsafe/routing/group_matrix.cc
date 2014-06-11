@@ -22,6 +22,7 @@
 #include <utility>
 
 #include "maidsafe/common/log.h"
+#include "maidsafe/common/make_unique.h"
 
 #include "maidsafe/routing/parameters.h"
 #include "maidsafe/routing/return_codes.h"
@@ -132,63 +133,47 @@ std::vector<NodeId> GroupMatrix::GetUniqueNodeIds() const {
   return unique_node_ids;
 }
 
-void GroupMatrix::GetBetterNodeForSendingMessage(const NodeId& target_node_id,
-                                                 const std::vector<std::string>& exclude,
-                                                 bool ignore_exact_match,
-                                                 NodeInfo& current_closest_peer) {
-  NodeId closest_id(current_closest_peer.node_id);
+std::unique_ptr<NodeInfo> GroupMatrix::GetBetterNodeForSendingMessage(const NodeId& target_id,
+    bool ignore_exact_match, const NodeInfo& current_closest_peer,
+    std::vector<NodeId> exclusions) const {
+  // Exclude target_id if required, and exclude this node's own ID.
+  if (ignore_exact_match)
+    exclusions.push_back(target_id);
+  exclusions.push_back(kNodeId_);
 
-  for (const auto& row : matrix_) {
-    if (ignore_exact_match && row.at(0).node_id == target_node_id)
-      continue;
-    if (std::find(exclude.begin(), exclude.end(), row.at(0).node_id.string()) != exclude.end())
-      continue;
-
-    for (const auto& node : row) {
-      if (node.node_id == kNodeId_)
-        continue;
-      if (ignore_exact_match && node.node_id == target_node_id)
-        continue;
-      if (std::find(exclude.begin(), exclude.end(), node.node_id.string()) != exclude.end())
-        continue;
-      if (NodeId::CloserToTarget(node.node_id, closest_id, target_node_id)) {
-//        PrintGroupMatrix();
-        LOG(kVerbose) << DebugId(closest_id) << ", peer to send: "
-                      << DebugId(current_closest_peer.node_id) << ", "
-                      << DebugId(row.at(0).node_id);
-        closest_id = node.node_id;
-        current_closest_peer = row.at(0);
-        LOG(kVerbose) << DebugId(closest_id) << ", peer to send: "
-                      << DebugId(current_closest_peer.node_id);
-      }
+  // Find closest peer, whether connected or not.
+  SortedGroup unique_nodes_copy{ CreateSortedGroup(target_id, std::begin(unique_nodes_),
+                                                   std::end(unique_nodes_)) };
+  SortedGroup::iterator unique_itr{ std::begin(unique_nodes_copy) };
+  while (unique_itr != std::end(unique_nodes_copy)) {
+    if (!NodeId::CloserToTarget(unique_itr->node_id, current_closest_peer.node_id, target_id)) {
+      unique_itr = std::end(unique_nodes_copy);
+      break;
+    }
+    if (std::none_of(std::begin(exclusions), std::end(exclusions),
+                     [&](const NodeId& node_id) { return unique_itr->node_id == node_id; })) {
+      break;  // Found closest peer.
     }
   }
-  LOG(kVerbose) << "[" << DebugId(kNodeId_) << "]\ttarget: " << DebugId(target_node_id)
-                << "\tfound node in matrix: " << DebugId(closest_id)
-                << "\trecommend sending to: " << DebugId(current_closest_peer.node_id);
-}
 
-void GroupMatrix::GetBetterNodeForSendingMessage(const NodeId& target_node_id,
-                                                 bool ignore_exact_match,
-                                                 NodeId& current_closest_peer_id) {
-  NodeId closest_id(current_closest_peer_id);
+  // Return failure if we don't have a closer peer
+  if (unique_itr == std::end(unique_nodes_copy))
+    return std::unique_ptr<NodeInfo>();
 
-  for (const auto& row : matrix_) {
-    if (ignore_exact_match && row.at(0).node_id == target_node_id)
-      continue;
-
-    for (const auto& node : row) {
-      if (ignore_exact_match && node.node_id == target_node_id)
-        continue;
-      if (NodeId::CloserToTarget(node.node_id, closest_id, target_node_id)) {
-        closest_id = node.node_id;
-        current_closest_peer_id = row.at(0).node_id;
-      }
-    }
+  // Try to find the peer in the connected group
+  auto itr(matrix_.find(*unique_itr));
+  if (itr == std::end(matrix_)) {
+    // This node isn't connected to the closest peer; return a peer which *is* connected.
+    itr = std::find_if(std::begin(matrix_), std::end(matrix_),
+                       [unique_itr](const Matrix::value_type& row) {
+                         return row.second.find(*unique_itr) != std::end(row.second);
+                       });
+    assert(itr != std::end(matrix_));
   }
-  LOG(kVerbose) << "[" << DebugId(kNodeId_) << "]\ttarget: " << DebugId(target_node_id)
-                << "\tfound node in matrix: " << DebugId(closest_id)
-                << "\trecommend sending to: " << DebugId(current_closest_peer_id);
+
+  LOG(kVerbose) << "[" << kNodeId_ << "]  target: " << target_id << "  found " << itr->first.node_id
+                << " in matrix which is better to send to than " << current_closest_peer.node_id;
+  return maidsafe::make_unique<NodeInfo>(itr->first);
 }
 
 bool GroupMatrix::IsThisNodeGroupLeader(const NodeId& target_id, NodeId& connected_peer) const {
