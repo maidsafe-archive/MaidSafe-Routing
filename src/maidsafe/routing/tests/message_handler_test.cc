@@ -74,6 +74,7 @@ class MessageHandlerTest : public testing::Test {
         new MockRoutingTable(false, node_id, asymm::GenerateKeyPair(), *network_statistics_));
     ntable_.reset(new ClientRoutingTable(table_->kNodeId()));
     utils_.reset(new MockNetworkUtils(*table_, *ntable_));
+    remove_furthest_node_.reset(new RemoveFurthestNode(*table_, *utils_));
     group_change_handler_.reset(new GroupChangeHandler(*table_, *ntable_, *utils_));
     service_.reset(new MockService(*table_, *ntable_, *utils_));
     response_handler_.reset(
