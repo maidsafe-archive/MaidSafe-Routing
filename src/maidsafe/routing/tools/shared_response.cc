@@ -69,7 +69,7 @@ void SharedResponse::CollectResponse(std::string response, bool print_performanc
     responded_nodes_.insert(NodeId(response_id));
     average_response_time_ += (now - msg_send_time_);
     if (print_performance) {
-      double rate((response.size() * 2) / duration);
+      double rate(static_cast<double>(response.size() * 2) / duration);
       std::cout << "Direct message sent to " << DebugId(NodeId(response_id))
                 << " completed in " << duration << " milliseconds, has throughput rate " << rate
                 << " kBytes/s when data_size is " << response.size() << " Bytes" << std::endl;
@@ -87,7 +87,7 @@ void SharedResponse::PrintGroupPerformance(int data_size) {
     return;
   }
   auto duration(average_response_time_.total_milliseconds() / responded_nodes_.size());
-  double rate((data_size * 2) / duration);
+  double rate((static_cast<double>(data_size * 2) / duration));
   std::cout << " completed in " << duration << " milliseconds, has throughput rate " << rate
             << " kBytes/s when data_size is " << data_size << " Bytes"<< std::endl;
 }

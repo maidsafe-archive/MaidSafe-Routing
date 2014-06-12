@@ -269,7 +269,7 @@ void Commands::SendAMessage(std::atomic<int>& successful_count, int& operation_c
       ++operation_count;
       if (operation_count == (messages_count * expect_respondent)) {
         if (group_performance)
-          shared_response_ptr->PrintGroupPerformance(data_size);
+          shared_response_ptr->PrintGroupPerformance(static_cast<int>(data_size));
         cond_var.notify_one();
       }
     }
