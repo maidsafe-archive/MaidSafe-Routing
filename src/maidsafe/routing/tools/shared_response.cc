@@ -43,7 +43,8 @@ void SharedResponse::CheckAndPrintResult() {
                 closest_nodes_.end());
   }
   std::cout << "Average time taken for receiving msg:"
-            << (average_response_time_.total_milliseconds() / responded_nodes_.size()) << std::endl;
+            << (average_response_time_.total_milliseconds() / responded_nodes_.size())
+            << " milliseconds" << std::endl;
 }
 
 void SharedResponse::PrintRoutingTable(std::string response) {
@@ -57,13 +58,38 @@ void SharedResponse::PrintRoutingTable(std::string response) {
   }
 }
 
-void SharedResponse::CollectResponse(std::string response) {
+void SharedResponse::CollectResponse(std::string response, bool print_performance) {
   std::lock_guard<std::mutex> lock(mutex_);
   boost::posix_time::ptime now = boost::posix_time::microsec_clock::universal_time();
   std::string response_id(response.substr(response.find("+++") + 3, 64));
-  responded_nodes_.insert(NodeId(response_id));
-  average_response_time_ += (now - msg_send_time_);
-  std::cout << "Response received in " << now - msg_send_time_ << std::endl;
+//   std::cout << "Response with size of " << response.size()
+//             << " bytes received in " << now - msg_send_time_ << " seconds" << std::endl;
+  auto duration((now - msg_send_time_).total_milliseconds());
+  if (duration < 10000) {
+    responded_nodes_.insert(NodeId(response_id));
+    average_response_time_ += (now - msg_send_time_);
+    if (print_performance) {
+      double rate((response.size() * 2) / duration);
+      std::cout << "Direct message sent to " << DebugId(NodeId(response_id))
+                << " completed in " << duration << " milliseconds, has throughput rate " << rate
+                << " kBytes/s when data_size is " << response.size() << " Bytes" << std::endl;
+    }
+  } else {
+    std::cout << "timed out ( " << duration / 1000 << " s) to " << DebugId(NodeId(response_id))
+              << " when data_size is " << response.size() << std::endl;
+  }
+}
+
+void SharedResponse::PrintGroupPerformance(int data_size) {
+  if (responded_nodes_.size() < routing::Parameters::group_size) {
+    std::cout << "Only received " << responded_nodes_.size() << " responses for a group msg of "
+              << data_size << " Bytes" << std::endl;
+    return;
+  }
+  auto duration(average_response_time_.total_milliseconds() / responded_nodes_.size());
+  double rate((data_size * 2) / duration);
+  std::cout << " completed in " << duration << " milliseconds, has throughput rate " << rate
+            << " kBytes/s when data_size is " << data_size << " Bytes"<< std::endl;
 }
 
 }  //  namespace test
