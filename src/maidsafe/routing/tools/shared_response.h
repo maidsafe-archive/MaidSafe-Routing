@@ -50,8 +50,9 @@ class SharedResponse {
     // CheckAndPrintResult();
   }
   void CheckAndPrintResult();
-  void CollectResponse(std::string response);
+  void CollectResponse(std::string response, bool print_performance);
   void PrintRoutingTable(std::string response);
+  void PrintGroupPerformance(int data_size);
 
   std::vector<NodeId> closest_nodes_;
   std::set<NodeId> responded_nodes_;
