@@ -401,7 +401,8 @@ bool Network::Validate() {
   size_t index(0);
   for (const auto& account : accounts_) {
     ++index;
-    size_t count(std::count_if(nodes_.begin(), nodes_.end(), [&account](const RTNode & node) {
+    volatile size_t count(std::count_if(nodes_.begin(), nodes_.end(),
+                                        [&account](const RTNode & node) {
       return std::find(node.accounts.begin(), node.accounts.end(), account) != node.accounts.end();
     }));
 
