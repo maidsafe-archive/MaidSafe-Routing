@@ -171,3 +171,10 @@ if(MaidsafeTesting)
 endif()
 
 message(STATUS "Found Qt5. Network Viewer tool enabled.")
+
+
+#==================================================================================================#
+# Package                                                                                          #
+#==================================================================================================#
+install(TARGETS network_viewer COMPONENT Tools CONFIGURATIONS Debug RUNTIME DESTINATION bin/debug)
+install(TARGETS network_viewer COMPONENT Tools CONFIGURATIONS Release RUNTIME DESTINATION bin)

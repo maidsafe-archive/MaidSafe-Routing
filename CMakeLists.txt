@@ -71,11 +71,11 @@ list(REMOVE_ITEM RoutingTestsAllFiles ${RoutingTestsHelperFiles}
 #==================================================================================================#
 ms_add_static_library(maidsafe_routing ${RoutingAllFiles})
 target_include_directories(maidsafe_routing PUBLIC ${PROJECT_SOURCE_DIR}/include PRIVATE ${PROJECT_SOURCE_DIR}/src)
-target_link_libraries(maidsafe_routing maidsafe_rudp maidsafe_passport maidsafe_network_viewer gmock gtest)
+target_link_libraries(maidsafe_routing maidsafe_rudp maidsafe_passport maidsafe_network_viewer)
 
 if(MaidsafeTesting)
   ms_add_static_library(maidsafe_routing_test_helper ${RoutingTestsHelperFiles})
-  target_link_libraries(maidsafe_routing_test_helper maidsafe_routing)
+  target_link_libraries(maidsafe_routing_test_helper maidsafe_routing maidsafe_test)
   target_link_libraries(maidsafe_routing maidsafe_network_viewer)
   ms_add_executable(TESTrouting "Tests/Routing" ${RoutingTestsAllFiles})
   ms_add_executable(TESTrouting_api "Tests/Routing" ${RoutingApiTestFiles} ${RoutingSourcesDir}/tests/test_main.cc)
@@ -156,7 +156,14 @@ endif()
 #==================================================================================================#
 # Package                                                                                          #
 #==================================================================================================#
-set(EXPORT_NAME maidsafe_routing)
-install(TARGETS maidsafe_routing EXPORT ${EXPORT_NAME} ARCHIVE DESTINATION lib)
+install(TARGETS maidsafe_routing COMPONENT Development CONFIGURATIONS Debug Release ARCHIVE DESTINATION lib)
+install(DIRECTORY ${PROJECT_SOURCE_DIR}/include/ COMPONENT Development DESTINATION include)
 
-install(FILES ${RoutingApi} DESTINATION include/maidsafe/routing)
+if(MaidsafeTesting)
+  install(TARGETS maidsafe_routing_test_helper TESTrouting TESTrouting_api TESTrouting_func
+                  TESTrouting_func_nat TESTrouting_big create_client_bootstrap routing_key_helper routing_node
+                  COMPONENT Tests CONFIGURATIONS Debug RUNTIME DESTINATION bin/debug ARCHIVE DESTINATION lib)
+  install(TARGETS maidsafe_routing_test_helper TESTrouting TESTrouting_api TESTrouting_func
+                  TESTrouting_func_nat TESTrouting_big create_client_bootstrap routing_key_helper routing_node
+                  COMPONENT Tests CONFIGURATIONS Release RUNTIME DESTINATION bin ARCHIVE DESTINATION lib)
+endif()
