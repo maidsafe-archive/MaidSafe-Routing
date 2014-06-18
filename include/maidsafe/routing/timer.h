@@ -70,6 +70,8 @@ class Timer {
 
   TaskId NewTaskId();
 
+  void CancelAll();
+
   friend class test::TimerTest;
 
   void PrintTaskIds() {
@@ -140,13 +142,21 @@ Timer<Response>::Timer(AsioService& asio_service)
 template <typename Response>
 Timer<Response>::~Timer() {
   LOG(kVerbose) << "Timer<Response>::Destructor";
+  CancelAll();
+  LOG(kVerbose) << "Timer<Response>::Destructor completed";
+}
+
+template <typename Response>
+void Timer<Response>::CancelAll() {
+  LOG(kVerbose) << "Timer<Response>::CancelAll";
   std::unique_lock<std::mutex> lock(mutex_);
-  LOG(kVerbose) << "Timer<Response>::Destructor process destruction " << tasks_.size();
+  LOG(kVerbose) << "Timer<Response>::CancelAll process destruction " << tasks_.size();
   for (const auto& task : tasks_)
     task.second.timer->cancel();
   cond_var_.wait(lock, [&] { return tasks_.empty(); });
-  LOG(kVerbose) << "Timer<Response>::Destructor completed";
+  LOG(kVerbose) << "Timer<Response>::CancelAll completed";
 }
+
 
 template <typename Response>
 void Timer<Response>::AddTask(const std::chrono::steady_clock::duration& timeout,
