@@ -67,10 +67,9 @@ class Timer {
   // Invokes the response functor for the indicated task.  Throws if the indicated task doesn't
   // exist.
   void AddResponse(TaskId task_id, const Response& response);
+  void CancelAll();
 
   TaskId NewTaskId();
-
-  void CancelAll();
 
   friend class test::TimerTest;
 
@@ -150,7 +149,7 @@ template <typename Response>
 void Timer<Response>::CancelAll() {
   LOG(kVerbose) << "Timer<Response>::CancelAll";
   std::unique_lock<std::mutex> lock(mutex_);
-  LOG(kVerbose) << "Timer<Response>::CancelAll process destruction " << tasks_.size();
+  LOG(kVerbose) << "Timer<Response>::CancelAll task count " << tasks_.size();
   for (const auto& task : tasks_)
     task.second.timer->cancel();
   cond_var_.wait(lock, [&] { return tasks_.empty(); });
