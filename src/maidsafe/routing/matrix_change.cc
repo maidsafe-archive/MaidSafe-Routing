@@ -97,7 +97,7 @@ MatrixChange::MatrixChange(NodeId this_node_id, const std::vector<NodeId>& old_m
         if (new_matrix_.size() >= Parameters::closest_nodes_size)
           fcn_distance = node_id_ ^ new_matrix_[Parameters::closest_nodes_size - 1];
         else
-          fcn_distance = node_id_ ^ (NodeId(NodeId::kMaxId));  // FIXME
+          fcn_distance = node_id_ ^ (NodeId(NodeId::IdType::kMaxId));  // FIXME
         return (crypto::BigInt(
                     (fcn_distance.ToStringEncoded(NodeId::EncodingType::kHex) + 'h').c_str()) *
                 Parameters::proximity_factor);

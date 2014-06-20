@@ -34,13 +34,13 @@ namespace test {
 
 class MatrixChangeTest : public testing::Test {
  protected:
-  MatrixChangeTest() : old_matrix_(), new_matrix_(), kNodeId_(NodeId::kRandomId) {
+  MatrixChangeTest() : old_matrix_(), new_matrix_(), kNodeId_(NodeId::IdType::kRandomId) {
     int old_matrix_size(20);
 
     old_matrix_.push_back(kNodeId_);
     new_matrix_.push_back(kNodeId_);
     for (auto i(0); i != old_matrix_size - 1; ++i) {
-      old_matrix_.push_back(NodeId(NodeId::kRandomId));
+      old_matrix_.push_back(NodeId(NodeId::IdType::kRandomId));
       new_matrix_.push_back(old_matrix_.back());
     }
   }
@@ -58,7 +58,7 @@ class MatrixChangeTest : public testing::Test {
     if (new_matrix.size() >= Parameters::closest_nodes_size)
       fcn_distance = kNodeId_ ^ new_matrix[Parameters::closest_nodes_size - 1];
     else
-      fcn_distance = kNodeId_ ^ (NodeId(NodeId::kMaxId));
+      fcn_distance = kNodeId_ ^ (NodeId(NodeId::IdType::kMaxId));
     crypto::BigInt radius(
         crypto::BigInt((fcn_distance.ToStringEncoded(NodeId::EncodingType::kHex) + 'h').c_str()) *
         Parameters::proximity_factor);
@@ -137,7 +137,7 @@ class MatrixChangeTest : public testing::Test {
   }
 
   void DoCheckHoldersTest(const MatrixChange& matrix_change) {
-    NodeId target_id(NodeId::kRandomId);
+    NodeId target_id(NodeId::IdType::kRandomId);
     auto result(matrix_change.CheckHolders(target_id));
     auto test_result(CheckHolders(target_id, old_matrix_, new_matrix_));
     ASSERT_EQ(result.proximity_status, test_result.proximity_status);
@@ -193,7 +193,7 @@ TEST_F(MatrixChangeTest, BEH_GroupMatrixUpdating) {
   for (auto i(0); i != 1000; ++i) {
     {
       // Adding a node
-      NodeId node(NodeId::kRandomId);
+      NodeId node(NodeId::IdType::kRandomId);
       NodeInfo node_info;
       node_info.node_id = node;
       MatrixChange matrix_change(*group_matrix.AddConnectedPeer(node_info));
@@ -270,8 +270,8 @@ TEST(SingleMatrixChangeTest, BEH_ChoosePmidNode) {
   std::vector<NodeId> old_matrix, new_matrix;
   const auto kGroupSize(Parameters::group_size);
   for (int i(0); i != kGroupSize * 5; ++i)
-    new_matrix.emplace_back(NodeId::kRandomId);
-  const NodeId kTarget(NodeId::kRandomId);
+    new_matrix.emplace_back(NodeId::IdType::kRandomId);
+  const NodeId kTarget(NodeId::IdType::kRandomId);
 
   // Get the 5 closest to 'kTarget' as the owners.
   std::sort(std::begin(new_matrix), std::end(new_matrix),
@@ -292,7 +292,7 @@ TEST(SingleMatrixChangeTest, BEH_ChoosePmidNode) {
   EXPECT_THROW(owners[0].ChoosePmidNode(online_pmids, kTarget), maidsafe_error);
 
   for (int i(0); i != kGroupSize + 2; ++i)
-    online_pmids.insert(NodeId(NodeId::kRandomId));
+    online_pmids.insert(NodeId(NodeId::IdType::kRandomId));
 
   // Run tests.
   Choose(online_pmids, kTarget, owners, kGroupSize - 1, kGroupSize - 2);

@@ -81,7 +81,7 @@ TEST_F(RoutingNetworkTest, FUNC_SanityCheck) {
     env_->ClearMessages();
 
     // SendGroup RandomId
-    target_id = NodeId(NodeId::kRandomId);
+    target_id = NodeId(NodeId::IdType::kRandomId);
     group_Ids = env_->GetGroupForId(target_id);
     EXPECT_TRUE(env_->SendGroup(target_id, 1));
     for (const auto& group_id : group_Ids)
@@ -108,7 +108,7 @@ TEST_F(RoutingNetworkTest, FUNC_SanityCheckSend) {
 
   EXPECT_TRUE(env_->SendDirect(env_->RandomClientNode()->node_id(), kExpectClient));
 
-  EXPECT_FALSE(env_->SendDirect(NodeId(NodeId::kRandomId), kExpectDoesNotExist));
+  EXPECT_FALSE(env_->SendDirect(NodeId(NodeId::IdType::kRandomId), kExpectDoesNotExist));
 
   // Signature 3
   EXPECT_TRUE(env_->SendDirect(env_->RandomVaultNode(), env_->RandomVaultNode()->node_id()));
@@ -128,9 +128,9 @@ TEST_F(RoutingNetworkTest, FUNC_SanityCheckSend) {
 
 TEST_F(RoutingNetworkTest, FUNC_SanityCheckSendGroup) {
   EXPECT_TRUE(
-      env_->SendGroup(NodeId(NodeId::kRandomId), 1 + RandomUint32() % 5, env_->RandomVaultIndex()));
+      env_->SendGroup(NodeId(NodeId::IdType::kRandomId), 1 + RandomUint32() % 5, env_->RandomVaultIndex()));
 
-  EXPECT_TRUE(env_->SendGroup(NodeId(NodeId::kRandomId), 1 + RandomUint32() % 5,
+  EXPECT_TRUE(env_->SendGroup(NodeId(NodeId::IdType::kRandomId), 1 + RandomUint32() % 5,
                               env_->RandomClientIndex()));
 
   EXPECT_TRUE(env_->SendGroup(env_->RandomVaultNode()->node_id(), 1 + RandomUint32() % 5,
@@ -153,7 +153,7 @@ TEST_F(RoutingNetworkTest, FUNC_Send) {
 }
 
 TEST_F(RoutingNetworkTest, FUNC_SendToNonExistingNode) {
-  EXPECT_FALSE(env_->SendDirect(NodeId(NodeId::kRandomId), kExpectDoesNotExist));
+  EXPECT_FALSE(env_->SendDirect(NodeId(NodeId::IdType::kRandomId), kExpectDoesNotExist));
   EXPECT_TRUE(env_->SendDirect(env_->nodes_[env_->RandomVaultIndex()]->node_id()));
 }
 
@@ -269,7 +269,7 @@ TEST_F(RoutingNetworkTest, FUNC_SendToGroupRandomId) {
   for (int index = 0; index < message_count; ++index) {
     futures.emplace_back(std::async(std::launch::async, [this]() {
       return std::move(std::unique_ptr<testing::AssertionResult>(
-          new testing::AssertionResult(env_->SendGroup(NodeId(NodeId::kRandomId), 1))));
+          new testing::AssertionResult(env_->SendGroup(NodeId(NodeId::IdType::kRandomId), 1))));
     }));
     Sleep(std::chrono::milliseconds(100));
   }
@@ -310,7 +310,7 @@ TEST_F(RoutingNetworkTest, FUNC_NonMutatingClientSendToGroupRandomId) {
     futures.emplace_back(std::async(std::launch::async, [this]() {
       return std::move(
           std::unique_ptr<testing::AssertionResult>(new testing::AssertionResult(env_->SendGroup(
-              NodeId(NodeId::kRandomId), 1, static_cast<uint16_t>(env_->nodes_.size() - 1)))));
+              NodeId(NodeId::IdType::kRandomId), 1, static_cast<uint16_t>(env_->nodes_.size() - 1)))));
     }));
     Sleep(std::chrono::milliseconds(10));
   }
@@ -467,7 +467,7 @@ TEST_F(RoutingNetworkTest, FUNC_IsNodeIdInGroupRange) {
 
 //      // Check random IDs
       for (uint16_t i(0); i < 50; ++i) {
-        NodeId random_id(NodeId::kRandomId);
+        NodeId random_id(NodeId::IdType::kRandomId);
         std::partial_sort(std::begin(vault_ids), std::begin(vault_ids) + Parameters::group_size,
                           std::end(vault_ids),
                           [random_id](const NodeId& lhs, const NodeId& rhs) {
@@ -543,7 +543,7 @@ TEST_F(RoutingNetworkTest, FUNC_NonexistentIsConnectedVaultOrClient) {
   NodeId non_existing_id;
   bool exists(true);
   while (exists) {
-    non_existing_id = NodeId(NodeId::kRandomId);
+    non_existing_id = NodeId(NodeId::IdType::kRandomId);
     exists = false;
     for (const auto& node : env_->nodes_) {
       if (node->node_id() == non_existing_id)

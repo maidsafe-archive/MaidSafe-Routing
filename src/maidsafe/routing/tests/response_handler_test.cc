@@ -50,9 +50,9 @@ namespace test {
 class ResponseHandlerTest : public testing::Test {
  public:
   ResponseHandlerTest()
-      : node_id_(NodeId::kRandomId),
+      : node_id_(NodeId::IdType::kRandomId),
         network_statistics_(node_id_),
-        routing_table_(false, NodeId(NodeId::kRandomId), asymm::GenerateKeyPair(),
+        routing_table_(false, NodeId(NodeId::IdType::kRandomId), asymm::GenerateKeyPair(),
                        network_statistics_),
         client_routing_table_(routing_table_.kNodeId()),
         network_(routing_table_, client_routing_table_),

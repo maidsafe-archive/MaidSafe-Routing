@@ -69,7 +69,7 @@ class MessageHandlerTest : public testing::Test {
       MessageReceived(message);
       reply_functor("reply");
     };
-    NodeId node_id(NodeId::kRandomId);
+    NodeId node_id(NodeId::IdType::kRandomId);
     network_statistics_.reset(new NetworkStatistics(node_id));
     table_.reset(
         new MockRoutingTable(false, node_id, asymm::GenerateKeyPair(), *network_statistics_));
@@ -327,7 +327,7 @@ TEST_F(MessageHandlerTest, BEH_HandleGroupMessage) {
     message.set_direct(false);
     message.set_request(true);
     message.set_client_node(true);
-    NodeId source_id(NodeId::kRandomId);
+    NodeId source_id(NodeId::IdType::kRandomId);
     NodeId destination_id(GenerateUniqueRandomId(close_info_.node_id, 4));
     EXPECT_CALL(*utils_,
                 SendToClosestNode(testing::AllOf(
@@ -356,7 +356,7 @@ TEST_F(MessageHandlerTest, BEH_HandleGroupMessage) {
     message.set_direct(false);
     message.set_request(true);
     message.set_client_node(true);
-    NodeId source_id(NodeId::kRandomId);
+    NodeId source_id(NodeId::IdType::kRandomId);
     NodeId destination_id(GenerateUniqueRandomId(table_->kNodeId(), 4));
     std::vector<NodeId> closest_nodes(table_->GetClosestNodes(table_->kNodeId(), 4));
     EXPECT_CALL(*utils_, SendToClosestNode(testing::_)).Times(0);
@@ -409,7 +409,7 @@ TEST_F(MessageHandlerTest, BEH_HandleGroupMessage) {
     message.set_direct(false);
     message.set_request(true);
     message.set_client_node(false);
-    NodeId source_id(NodeId::kRandomId);
+    NodeId source_id(NodeId::IdType::kRandomId);
     std::vector<NodeId> closest_nodes(table_->GetClosestNodes(table_->kNodeId(), 4));
     EXPECT_CALL(*utils_,
                 SendToClosestNode(testing::AllOf(
@@ -593,7 +593,7 @@ TEST_F(MessageHandlerTest, BEH_HandleNodeLevelMessage) {
   message.set_direct(true);
   message.set_request(true);
   message.set_client_node(false);
-  NodeId source_id(NodeId::kRandomId);
+  NodeId source_id(NodeId::IdType::kRandomId);
   message.set_source_id(source_id.string());
   message.set_id(5483);
 
@@ -699,7 +699,7 @@ TEST_F(MessageHandlerTest, BEH_ClientRoutingTable) {
     message_handler.HandleMessage(message);
   }
   {  // Handle routing Connect request to this node
-    NodeId peer_id(NodeId::kRandomId), connection_id(NodeId::kRandomId);
+    NodeId peer_id(NodeId::IdType::kRandomId), connection_id(NodeId::IdType::kRandomId);
     EXPECT_CALL(*utils_, SendToClosestNode(testing::_)).Times(0);
     EXPECT_CALL(*utils_, SendToDirect(testing::_, testing::_, testing::_)).Times(0);
     EXPECT_CALL(*service_, FindNodes(testing::_)).Times(0);

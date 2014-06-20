@@ -69,7 +69,7 @@ TEST(NetworkUtilsTest, BEH_ProcessSendDirectInvalidEndpoint) {
   message.set_type(10);
   message.set_hops_to_live(Parameters::hops_to_live);
   rudp::ManagedConnections rudp;
-  NodeId node_id(NodeId::kRandomId);
+  NodeId node_id(NodeId::IdType::kRandomId);
   NetworkStatistics network_statistics(node_id);
   RoutingTable routing_table(false, node_id, asymm::GenerateKeyPair(), network_statistics);
   ClientRoutingTable client_routing_table(routing_table.kNodeId());
@@ -88,14 +88,14 @@ TEST(NetworkUtilsTest, BEH_ProcessSendUnavailableDirectEndpoint) {
   message.set_type(10);
   message.set_hops_to_live(Parameters::hops_to_live);
   rudp::ManagedConnections rudp;
-  NodeId node_id(NodeId::kRandomId);
+  NodeId node_id(NodeId::IdType::kRandomId);
   NetworkStatistics network_statistics(node_id);
   RoutingTable routing_table(false, node_id, asymm::GenerateKeyPair(), network_statistics);
   ClientRoutingTable client_routing_table(routing_table.kNodeId());
   Endpoint endpoint(GetLocalIp(), maidsafe::test::GetRandomPort());
   AsioService asio_service(1);
   NetworkUtils network(routing_table, client_routing_table);
-  network.SendToDirect(message, NodeId(NodeId::kRandomId), NodeId(NodeId::kRandomId));
+  network.SendToDirect(message, NodeId(NodeId::IdType::kRandomId), NodeId(NodeId::IdType::kRandomId));
 }
 
 TEST(NetworkUtilsTest, FUNC_ProcessSendDirectEndpoint) {
@@ -204,7 +204,7 @@ TEST(NetworkUtilsTest, FUNC_ProcessSendDirectEndpoint) {
   rudp2.MarkConnectionAsValid(node_id1, endpoint);
   LOG(kVerbose) << " ------------------------   Zero state setup done  ----------------------- ";
 
-  NodeId node_id(NodeId::kRandomId);
+  NodeId node_id(NodeId::IdType::kRandomId);
   NetworkStatistics network_statistics(node_id);
   RoutingTable routing_table(false, node_id, asymm::GenerateKeyPair(), network_statistics);
   NodeId node_id3(routing_table.kNodeId());
@@ -264,7 +264,7 @@ TEST(NetworkUtilsTest, FUNC_ProcessSendRecursiveSendOn) {
   sent_message.set_request(true);
   sent_message.set_client_node(false);
   sent_message.set_hops_to_live(Parameters::hops_to_live);
-  NodeId node_id(NodeId::kRandomId);
+  NodeId node_id(NodeId::IdType::kRandomId);
   NetworkStatistics network_statistics(node_id);
   RoutingTable routing_table(false, node_id, asymm::GenerateKeyPair(), network_statistics);
   NodeId node_id3(routing_table.kNodeId());
