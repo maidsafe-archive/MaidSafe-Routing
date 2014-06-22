@@ -39,7 +39,7 @@ class RoutingChurnTest : public GenericNetwork, public testing::Test {
  public:
   RoutingChurnTest(void) : GenericNetwork(), old_matrix_(), new_matrix_(), expect_affected_(),
       matrix_change_check_(false), dropping_node_(false), adding_node_(false),
-      node_on_operation_(NodeId::kRandomId), affected_nodes_(), checking_mutex_() {}
+      node_on_operation_(NodeId::IdType::kRandomId), affected_nodes_(), checking_mutex_() {}
 
   virtual void SetUp() override { GenericNetwork::SetUp(); }
 
@@ -315,11 +315,11 @@ TEST_F(RoutingChurnTest, DISABLED_FUNC_MessagingNetworkChurn) {
                                 [](std::string) {});
       // Choose random client for group message to random env
       // TODO(Alison) - use result?
-      sender_client->SendGroup(NodeId(NodeId::kRandomId), message, false,
+      sender_client->SendGroup(NodeId(NodeId::IdType::kRandomId), message, false,
                                [](std::string) {});
       // Choose random vault for group message to random env
       // TODO(Alison) - use result?
-      vault_node->SendGroup(NodeId(NodeId::kRandomId), message, false, [](std::string) {});
+      vault_node->SendGroup(NodeId(NodeId::IdType::kRandomId), message, false, [](std::string) {});
       // Wait before going again
       Sleep(std::chrono::milliseconds(900 + RandomUint32() % 200));
       LOG(kInfo) << "Ran messaging iteration";

@@ -171,7 +171,7 @@ TEST(RpcsTest, BEH_FindNodesMessageNode) {
 TEST(RpcsTest, BEH_FindNodesMessageNodeRelayMode) {
   NodeInfo us(MakeNode());
   protobuf::Message message =
-      rpcs::FindNodes(us.node_id, us.node_id, 8, true, NodeId(NodeId::kRandomId));
+      rpcs::FindNodes(us.node_id, us.node_id, 8, true, NodeId(NodeId::IdType::kRandomId));
   protobuf::FindNodesRequest find_nodes_request;
   EXPECT_TRUE(find_nodes_request.ParseFromString(message.data(0)));  // us
   EXPECT_TRUE(find_nodes_request.num_nodes_requested() == Parameters::closest_nodes_size);

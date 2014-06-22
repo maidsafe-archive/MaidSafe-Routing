@@ -416,7 +416,7 @@ void GroupMatrix::UpdateUniqueNodeList() {
         (crypto::BigInt((fcn_distance.ToStringEncoded(NodeId::EncodingType::kHex) + 'h').c_str()) *
          Parameters::proximity_factor);
   } else {
-    fcn_distance = NodeId(NodeId::kMaxId);  // FIXME Prakash
+    fcn_distance = NodeId(NodeId::IdType::kMaxId);  // FIXME Prakash
     radius_ =
         (crypto::BigInt((fcn_distance.ToStringEncoded(NodeId::EncodingType::kHex) + 'h').c_str()));
   }

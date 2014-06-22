@@ -88,7 +88,7 @@ NodeId GenerateUniqueRandomId(const NodeId& holder, uint16_t pos) {
   std::string new_node_string;
   // generate a random ID and make sure it has not been generated previously
   while (new_node_string == "" || new_node_string == holder_id) {
-    new_node = NodeId(NodeId::kRandomId);
+    new_node = NodeId(NodeId::IdType::kRandomId);
     std::string new_id = new_node.ToStringEncoded(NodeId::EncodingType::kBinary);
     std::bitset<64 * 8> binary_bitset(new_id);
     for (uint16_t i(0); i < pos; ++i)
@@ -107,7 +107,7 @@ NodeId GenerateUniqueNonRandomId(const NodeId& holder, uint64_t id) {
   NodeId new_node;
   std::string new_node_string;
   // generate a random ID and make sure it has not been generated previously
-  new_node = NodeId(NodeId::kRandomId);
+  new_node = NodeId(NodeId::IdType::kRandomId);
   std::string new_id = new_node.ToStringEncoded(NodeId::EncodingType::kBinary);
   std::bitset<64> binary_bitset(id);
   for (uint16_t i(0); i < 64; ++i)
@@ -118,22 +118,22 @@ NodeId GenerateUniqueNonRandomId(const NodeId& holder, uint64_t id) {
 }
 
 NodeId GenerateUniqueRandomNodeId(const std::vector<NodeId>& esisting_ids) {
-  NodeId new_node(NodeId::kRandomId);
+  NodeId new_node(NodeId::IdType::kRandomId);
   while (std::find_if(esisting_ids.begin(), esisting_ids.end(),
                       [&new_node](const NodeId & element) { return element == new_node; }) !=
                           esisting_ids.end()) {
-    new_node = NodeId(NodeId::kRandomId);
+    new_node = NodeId(NodeId::IdType::kRandomId);
   }
   return new_node;
 }
 
 NodeId GenerateUniqueRandomId(uint16_t pos) {
-  NodeId holder(NodeId(NodeId::kMaxId) ^ NodeId(NodeId::kMaxId));
+  NodeId holder(NodeId(NodeId::IdType::kMaxId) ^ NodeId(NodeId::IdType::kMaxId));
   return GenerateUniqueRandomId(holder, pos);
 }
 
 NodeId GenerateUniqueNonRandomId(uint64_t pos) {
-  NodeId holder(NodeId(NodeId::kMaxId) ^ NodeId(NodeId::kMaxId));
+  NodeId holder(NodeId(NodeId::IdType::kMaxId) ^ NodeId(NodeId::IdType::kMaxId));
   return GenerateUniqueNonRandomId(holder, pos);
 }
 

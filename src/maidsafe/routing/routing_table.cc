@@ -40,14 +40,14 @@ RoutingTable::RoutingTable(bool client_mode, const NodeId& node_id, const asymm:
                            NetworkStatistics& network_statistics)
     : kClientMode_(client_mode),
       kNodeId_(node_id),
-      kConnectionId_(kClientMode_ ? NodeId(NodeId::kRandomId) : kNodeId_),
+      kConnectionId_(kClientMode_ ? NodeId(NodeId::IdType::kRandomId) : kNodeId_),
       kKeys_(keys),
       kMaxSize_(kClientMode_ ? Parameters::max_routing_table_size_for_client
                              : Parameters::max_routing_table_size),
       kThresholdSize_(kClientMode_ ? Parameters::max_routing_table_size_for_client
                                    : Parameters::routing_table_size_threshold),
       mutex_(),
-      furthest_closest_node_id_((NodeId(NodeId::kMaxId) ^ node_id)),
+      furthest_closest_node_id_((NodeId(NodeId::IdType::kMaxId) ^ node_id)),
       remove_node_functor_(),
       network_status_functor_(),
       remove_furthest_node_(),
@@ -211,7 +211,7 @@ NodeInfo RoutingTable::DropNode(const NodeId& node_to_drop, bool routing_only) {
           group_matrix_.AddConnectedPeer(nodes_[Parameters::closest_nodes_size - 1]);
           new_connected_close_nodes = group_matrix_.GetConnectedPeers();
         } else {
-          furthest_closest_node_id_ = (NodeId(NodeId::kMaxId) ^ kNodeId_);
+          furthest_closest_node_id_ = (NodeId(NodeId::IdType::kMaxId) ^ kNodeId_);
         }
       }
     }
@@ -724,7 +724,7 @@ NodeInfo RoutingTable::GetNthClosestNode(const NodeId& target_id, uint16_t node_
   std::unique_lock<std::mutex> lock(mutex_);
   if (nodes_.size() < node_number) {
     NodeInfo node_info;
-    node_info.node_id = (NodeId(NodeId::kMaxId) ^ kNodeId_);
+    node_info.node_id = (NodeId(NodeId::IdType::kMaxId) ^ kNodeId_);
     return node_info;
   }
   NthElementSortFromTarget(target_id, node_number, lock);
