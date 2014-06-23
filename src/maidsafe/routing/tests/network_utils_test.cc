@@ -68,12 +68,10 @@ TEST(NetworkUtilsTest, BEH_ProcessSendDirectInvalidEndpoint) {
   message.set_direct(true);
   message.set_type(10);
   message.set_hops_to_live(Parameters::hops_to_live);
-  rudp::ManagedConnections rudp;
   NodeId node_id(NodeId::IdType::kRandomId);
   NetworkStatistics network_statistics(node_id);
   RoutingTable routing_table(false, node_id, asymm::GenerateKeyPair(), network_statistics);
   ClientRoutingTable client_routing_table(routing_table.kNodeId());
-  AsioService asio_service(1);
   NetworkUtils network(routing_table, client_routing_table);
   network.SendToClosestNode(message);
 }
@@ -87,13 +85,11 @@ TEST(NetworkUtilsTest, BEH_ProcessSendUnavailableDirectEndpoint) {
   message.set_direct(true);
   message.set_type(10);
   message.set_hops_to_live(Parameters::hops_to_live);
-  rudp::ManagedConnections rudp;
   NodeId node_id(NodeId::IdType::kRandomId);
   NetworkStatistics network_statistics(node_id);
   RoutingTable routing_table(false, node_id, asymm::GenerateKeyPair(), network_statistics);
   ClientRoutingTable client_routing_table(routing_table.kNodeId());
   Endpoint endpoint(GetLocalIp(), maidsafe::test::GetRandomPort());
-  AsioService asio_service(1);
   NetworkUtils network(routing_table, client_routing_table);
   network.SendToDirect(message, NodeId(NodeId::IdType::kRandomId), NodeId(NodeId::IdType::kRandomId));
 }
@@ -209,7 +205,6 @@ TEST(NetworkUtilsTest, FUNC_ProcessSendDirectEndpoint) {
   RoutingTable routing_table(false, node_id, asymm::GenerateKeyPair(), network_statistics);
   NodeId node_id3(routing_table.kNodeId());
   ClientRoutingTable client_routing_table(routing_table.kNodeId());
-  AsioService asio_service(1);
   NetworkUtils network(routing_table, client_routing_table);
 
   std::vector<Endpoint> bootstrap_endpoint(1, endpoint2);
@@ -269,7 +264,6 @@ TEST(NetworkUtilsTest, FUNC_ProcessSendRecursiveSendOn) {
   RoutingTable routing_table(false, node_id, asymm::GenerateKeyPair(), network_statistics);
   NodeId node_id3(routing_table.kNodeId());
   ClientRoutingTable client_routing_table(routing_table.kNodeId());
-  AsioService asio_service(1);
   NetworkUtils network(routing_table, client_routing_table);
 
   rudp::MessageReceivedFunctor message_received_functor1 = [](const std::string & message) {
