@@ -1211,7 +1211,8 @@ TEST(RoutingTableTest, BEH_MatrixChange) {
                              node_ids.at(Parameters::group_size)),
                  std::end(node_ids));
   EXPECT_EQ(count, Parameters::closest_nodes_size + 1);
-  routing_table.GroupUpdateFromConnectedPeer(NodeId(NodeId::IdType::kRandomId), std::vector<NodeInfo>());
+  routing_table.GroupUpdateFromConnectedPeer(NodeId(NodeId::IdType::kRandomId),
+                                             std::vector<NodeInfo>());
   EXPECT_EQ(count, Parameters::closest_nodes_size + 1);
   std::vector<NodeInfo> node_infos;
   for (size_t index(0); index < 10; ++index) {

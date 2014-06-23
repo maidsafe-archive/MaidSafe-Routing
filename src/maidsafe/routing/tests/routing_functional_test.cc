@@ -128,7 +128,8 @@ TEST_F(RoutingNetworkTest, FUNC_SanityCheckSend) {
 
 TEST_F(RoutingNetworkTest, FUNC_SanityCheckSendGroup) {
   EXPECT_TRUE(
-      env_->SendGroup(NodeId(NodeId::IdType::kRandomId), 1 + RandomUint32() % 5, env_->RandomVaultIndex()));
+      env_->SendGroup(NodeId(NodeId::IdType::kRandomId), 1 + RandomUint32() % 5,
+                      env_->RandomVaultIndex()));
 
   EXPECT_TRUE(env_->SendGroup(NodeId(NodeId::IdType::kRandomId), 1 + RandomUint32() % 5,
                               env_->RandomClientIndex()));
@@ -310,7 +311,8 @@ TEST_F(RoutingNetworkTest, FUNC_NonMutatingClientSendToGroupRandomId) {
     futures.emplace_back(std::async(std::launch::async, [this]() {
       return std::move(
           std::unique_ptr<testing::AssertionResult>(new testing::AssertionResult(env_->SendGroup(
-              NodeId(NodeId::IdType::kRandomId), 1, static_cast<uint16_t>(env_->nodes_.size() - 1)))));
+              NodeId(NodeId::IdType::kRandomId), 1,
+              static_cast<uint16_t>(env_->nodes_.size() - 1)))));
     }));
     Sleep(std::chrono::milliseconds(10));
   }

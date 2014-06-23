@@ -95,7 +95,8 @@ TEST(NetworkUtilsTest, BEH_ProcessSendUnavailableDirectEndpoint) {
   Endpoint endpoint(GetLocalIp(), maidsafe::test::GetRandomPort());
   AsioService asio_service(1);
   NetworkUtils network(routing_table, client_routing_table);
-  network.SendToDirect(message, NodeId(NodeId::IdType::kRandomId), NodeId(NodeId::IdType::kRandomId));
+  network.SendToDirect(message, NodeId(NodeId::IdType::kRandomId),
+                       NodeId(NodeId::IdType::kRandomId));
 }
 
 TEST(NetworkUtilsTest, FUNC_ProcessSendDirectEndpoint) {

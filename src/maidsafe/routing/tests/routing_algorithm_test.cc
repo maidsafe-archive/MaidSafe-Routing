@@ -560,7 +560,8 @@ TEST(RoutingTableTest, FUNC_RoutingTableVersusGroupMatrixReliability) {
     network.Add(NodeId(NodeId::IdType::kRandomId));
   }
   for (auto i(0); i != 1000; ++i)
-    network.CheckReliability(NodeId(NodeId::IdType::kRandomId), close_nodes_results, matrix_results);
+    network.CheckReliability(NodeId(NodeId::IdType::kRandomId), close_nodes_results,
+                             matrix_results);
 
   for (auto index(0); index < 4; ++index) {
     LOG(kSuccess) << "Number of times matrix missing required holders for existing accounts on "

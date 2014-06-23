@@ -174,7 +174,6 @@ class RoutingTable {
   const uint16_t kMaxSize_;
   const uint16_t kThresholdSize_;
   mutable std::mutex mutex_;
-  NodeId furthest_closest_node_id_;
   std::function<void(const NodeInfo&, bool)> remove_node_functor_;
   NetworkStatusFunctor network_status_functor_;
   RemoveFurthestUnnecessaryNode remove_furthest_node_;
