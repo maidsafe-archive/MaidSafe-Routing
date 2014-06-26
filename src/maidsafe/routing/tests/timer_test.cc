@@ -271,16 +271,14 @@ TEST_F(TimerTest, BEH_VariousResults) {
     uint32_t expected_count(details.expected_success_count + details.expected_failure_count);
     total_expected_functor_calls += expected_count;
     TaskResponseFunctor functor([&messages_details, &functor_calls, i, this](std::string response) {
-      {
-        std::lock_guard<std::mutex> lock(mutex_);
-        auto itr(messages_details.find(i));
-        ASSERT_NE(itr, std::end(messages_details));
-        if (response.empty()) {
-          ++itr->second.failure_count;
-        } else {
-          ASSERT_EQ(itr->second.message, response);
-          ++itr->second.success_count;
-        }
+      std::lock_guard<std::mutex> lock(mutex_);
+      auto itr(messages_details.find(i));
+      ASSERT_NE(itr, std::end(messages_details));
+      if (response.empty()) {
+        ++itr->second.failure_count;
+      } else {
+        ASSERT_EQ(itr->second.message, response);
+        ++itr->second.success_count;
       }
       ++functor_calls;
       cond_var_.notify_one();
