@@ -35,11 +35,9 @@
 
 #include "maidsafe/routing/api_config.h"
 #include "maidsafe/routing/client_routing_table.h"
-#include "maidsafe/routing/group_change_handler.h"
 #include "maidsafe/routing/message_handler.h"
 #include "maidsafe/routing/network_utils.h"
 #include "maidsafe/routing/random_node_helper.h"
-#include "maidsafe/routing/remove_furthest_node.h"
 #include "maidsafe/routing/routing_api.h"
 #include "maidsafe/routing/routing.pb.h"
 #include "maidsafe/routing/routing_table.h"
@@ -193,8 +191,6 @@ class Routing::Impl {
   Functors functors_;
   RandomNodeHelper random_node_helper_;
   ClientRoutingTable client_routing_table_;
-  RemoveFurthestNode remove_furthest_node_;
-  GroupChangeHandler group_change_handler_;
   // The following variables' declarations should remain the last ones in this class and should stay
   // in the order: message_handler_, asio_service_, network_, all timers.  This is important for the
   // proper destruction of the routing library, i.e. to avoid segmentation faults.

@@ -101,8 +101,6 @@ Routing::Impl::Impl(bool client_mode, const NodeId& node_id, const asymm::Keys& 
       random_node_helper_(),
       // TODO(Prakash) : don't create client_routing_table for client nodes (wrap both)
       client_routing_table_(node_id),
-      remove_furthest_node_(routing_table_, network_),
-      group_change_handler_(routing_table_, client_routing_table_, network_),
       message_handler_(),
       asio_service_(2),
       network_(routing_table_, client_routing_table_),
@@ -111,7 +109,6 @@ Routing::Impl::Impl(bool client_mode, const NodeId& node_id, const asymm::Keys& 
       recovery_timer_(asio_service_.service()),
       setup_timer_(asio_service_.service()) {
   message_handler_.reset(new MessageHandler(routing_table_, client_routing_table_, network_, timer_,
-                                            remove_furthest_node_, group_change_handler_,
                                             network_statistics_));
   LOG(kInfo) << (client_mode ? "client " : "non-client ") << "node. Id : " << DebugId(kNodeId_);
   assert((client_mode || !node_id.IsZero()) && "Server Nodes cannot be created without valid keys");
@@ -145,14 +142,6 @@ void Routing::Impl::ConnectFunctors(const Functors& functors) {
                                     },
                                     [this](const NodeInfo & node, bool internal_rudp_only) {
                                       RemoveNode(node, internal_rudp_only);
-                                    },
-                                    [this]() { remove_furthest_node_.RemoveNodeRequest(); },
-                                    [this](const std::vector<NodeInfo> new_nodes,
-                                           const std::vector<NodeInfo> old_nodes) {
-                                      std::lock_guard<std::mutex> lock(running_mutex_);
-                                      if (running_)
-                                        group_change_handler_.SendClosestNodesUpdateRpcs(new_nodes,
-                                                                                         old_nodes);
                                     }, functors.matrix_changed);
   // only one of MessageAndCachingFunctors or TypedMessageAndCachingFunctor should be provided
   assert(!functors.message_and_caching.message_received !=
@@ -752,10 +741,12 @@ int Routing::Impl::network_status() {
   return network_status_;
 }
 
-std::vector<NodeInfo> Routing::Impl::ClosestNodes() { return routing_table_.GetMatrixNodes(); }
+std::vector<NodeInfo> Routing::Impl::ClosestNodes() {
+ return routing_table_.GetClosestNodeInfo(kNodeId(), Parameters::closest_nodes_size);
+}
 
 bool Routing::Impl::IsConnectedVault(const NodeId& node_id) {
-  return routing_table_.IsConnected(node_id);
+  return routing_table_.Contains(node_id);
 }
 
 bool Routing::Impl::IsConnectedClient(const NodeId& node_id) {

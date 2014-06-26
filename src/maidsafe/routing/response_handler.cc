@@ -29,7 +29,6 @@
 #include "maidsafe/rudp/return_codes.h"
 
 #include "maidsafe/routing/client_routing_table.h"
-#include "maidsafe/routing/group_change_handler.h"
 #include "maidsafe/routing/network_utils.h"
 #include "maidsafe/routing/return_codes.h"
 #include "maidsafe/routing/routing.pb.h"
@@ -54,11 +53,9 @@ typedef boost::asio::ip::udp::endpoint Endpoint;
 }  // unnamed namespace
 
 ResponseHandler::ResponseHandler(RoutingTable& routing_table,
-                                 ClientRoutingTable& client_routing_table, NetworkUtils& network,
-                                 GroupChangeHandler& group_change_handler)
+                                 ClientRoutingTable& client_routing_table, NetworkUtils& network)
     : mutex_(), routing_table_(routing_table), client_routing_table_(client_routing_table),
-      network_(network), group_change_handler_(group_change_handler), request_public_key_functor_(),
-      unvalidated_matrix_updates_() {}
+      network_(network), request_public_key_functor_(), unvalidated_matrix_updates_() {}
 
 ResponseHandler::~ResponseHandler() {}
 
@@ -323,7 +320,7 @@ void ResponseHandler::ValidateAndCompleteConnectionToNonClient(
         if (ValidateAndAddToRoutingTable(response_handler->network_,
                                          response_handler->routing_table_,
                                          response_handler->client_routing_table_, peer.node_id,
-                                         peer.connection_id, key, false, matrix_update)) {
+                                         peer.connection_id, key, false)) {
           if (from_requestor) {
             response_handler->HandleSuccessAcknowledgementAsReponder(peer, false);
           } else {

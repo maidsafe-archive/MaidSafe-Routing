@@ -61,8 +61,7 @@ int AddToRudp(NetworkUtils& network, const NodeId& this_node_id, const NodeId& t
 bool ValidateAndAddToRoutingTable(NetworkUtils& network, RoutingTable& routing_table,
                                   ClientRoutingTable& client_routing_table,
                                   const NodeId& peer_id, const NodeId& connection_id,
-                                  const asymm::PublicKey& public_key, bool client,
-                                  const std::vector<NodeInfo>& matrix_update) {
+                                  const asymm::PublicKey& public_key, bool client) {
   if (network.MarkConnectionAsValid(connection_id) != kSuccess) {
     LOG(kError) << "[" << DebugId(routing_table.kNodeId()) << "] "
                 << ". Rudp failed to validate connection with  Peer id : " << DebugId(peer_id)
@@ -83,7 +82,7 @@ bool ValidateAndAddToRoutingTable(NetworkUtils& network, RoutingTable& routing_t
     if (client_routing_table.AddNode(peer, furthest_close_node_id))
       routing_accepted_node = true;
   } else {  // Vaults
-    if (routing_table.AddNode(peer, matrix_update))
+    if (routing_table.AddNode(peer))
       routing_accepted_node = true;
   }
 
@@ -277,12 +276,6 @@ std::string MessageTypeString(const protobuf::Message& message) {
       break;
     case MessageType::kConnectSuccessAcknowledgement:
       message_type = "kC-Suc-Ack";
-      break;
-    case MessageType::kRemove:
-      message_type = "kRemove";
-      break;
-    case MessageType::kClosestNodesUpdate:
-      message_type = "kCloses_Nodes_Update";
       break;
     case MessageType::kGetGroup:
       message_type = "kGetGroup";

@@ -197,13 +197,6 @@ TEST_F(RoutingStandAloneTest, FUNC_ExtendedSendToGroupRandomId) {
   }
 }
 
-TEST_F(RoutingStandAloneTest, FUNC_NodeRemoved) {
-  this->SetUpNetwork(kServerSize);
-  size_t random_index(this->RandomNodeIndex());
-  NodeInfo removed_node_info(this->nodes_[random_index]->GetRemovableNode());
-  EXPECT_GE(removed_node_info.bucket, 510);
-}
-
 TEST_F(RoutingStandAloneTest, FUNC_JoinAfterBootstrapLeaves) {
   this->SetUpNetwork(kServerSize);
   Sleep(std::chrono::seconds(10));

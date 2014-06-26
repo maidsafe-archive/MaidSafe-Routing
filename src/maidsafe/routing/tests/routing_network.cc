@@ -249,28 +249,8 @@ void GenericNode::RemoveNodeFromRandomNodeHelper(const NodeId& node_id) {
   routing_->pimpl_->random_node_helper_.Remove(node_id);
 }
 
-bool GenericNode::NodeSubscribedForGroupUpdate(const NodeId& node_id) {
-  auto subscribers(routing_->pimpl_->routing_table_.group_matrix_.GetConnectedPeers());
-  std::string log;
-  log += DebugId(this->node_id()) + " has " + std::to_string(subscribers.size()) +
-         " nodes subscribed for update";
-  for (auto& subscriber : subscribers) {
-    log += DebugId(subscriber.node_id) + ", ";
-  }
-
-  LOG(kVerbose) << log;
-
-  return (std::find_if(subscribers.begin(), subscribers.end(), [&](const NodeInfo & node) {
-            return node.node_id == node_id;
-          }) != subscribers.end());
-}
-
 void GenericNode::SetMatrixChangeFunctor(MatrixChangedFunctor group_matrix_functor) {
   functors_.matrix_changed = group_matrix_functor;
-}
-
-std::vector<NodeInfo> GenericNode::GetGroupMatrixConnectedPeers() {
-  return routing_->pimpl_->routing_table_.group_matrix_.GetConnectedPeers();
 }
 
 void GenericNode::SendDirect(const NodeId& destination_id, const std::string& data,
@@ -328,10 +308,6 @@ bool GenericNode::ClientRoutingTableHasNode(const NodeId& node_id) {
                       [&node_id](const NodeInfo & node_info) {
            return (node_id == node_info.node_id);
          }) != routing_->pimpl_->client_routing_table_.nodes_.end();
-}
-
-NodeInfo GenericNode::GetRemovableNode() {
-  return routing_->pimpl_->routing_table_.GetRemovableNode();
 }
 
 NodeInfo GenericNode::GetNthClosestNode(const NodeId& target_id, uint16_t node_number) {
@@ -400,8 +376,6 @@ std::vector<NodeId> GenericNode::ReturnRoutingTable() {
     routing_nodes.push_back(node_info.node_id);
   return routing_nodes;
 }
-
-void GenericNode::PrintGroupMatrix() { routing_->pimpl_->routing_table_.PrintGroupMatrix(); }
 
 std::string GenericNode::SerializeRoutingTable() {
   std::vector<NodeId> node_list;

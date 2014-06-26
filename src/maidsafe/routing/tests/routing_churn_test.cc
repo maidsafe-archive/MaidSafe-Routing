@@ -108,7 +108,7 @@ class RoutingChurnTest : public GenericNetwork, public testing::Test {
     for (const auto& node : expect_affected_)
       if (std::find(affected_nodes_.begin(), affected_nodes_.end(), node) ==
           affected_nodes_.end()) {
-        nodes_[NodeIndex((node))]->PrintGroupMatrix();
+//        nodes_[NodeIndex((node))]->PrintGroupMatrix();
         EXPECT_TRUE(false) << "node " << HexSubstr(node.string()) << " shall be affected but not";
         return false;
       }

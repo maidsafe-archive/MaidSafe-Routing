@@ -26,7 +26,6 @@
 #include "maidsafe/rudp/managed_connections.h"
 
 #include "maidsafe/routing/client_routing_table.h"
-#include "maidsafe/routing/group_change_handler.h"
 #include "maidsafe/routing/network_statistics.h"
 #include "maidsafe/routing/network_utils.h"
 #include "maidsafe/routing/parameters.h"
@@ -54,7 +53,6 @@ TEST(ServicesTest, BEH_Ping) {
   ClientRoutingTable client_routing_table(routing_table.kNodeId());
   AsioService asio_service(1);
   NetworkUtils network(routing_table, client_routing_table);
-  GroupChangeHandler group_change_handler(routing_table, client_routing_table, network);
   Service service(routing_table, client_routing_table, network);
   NodeInfo node;
   rudp::ManagedConnections rudp;
@@ -86,7 +84,6 @@ TEST(ServicesTest, BEH_FindNodes) {
   ClientRoutingTable client_routing_table(routing_table.kNodeId());
   AsioService asio_service(1);
   NetworkUtils network(routing_table, client_routing_table);
-  GroupChangeHandler group_change_handler(routing_table, client_routing_table, network);
   Service service(routing_table, client_routing_table, network);
   protobuf::Message message = rpcs::FindNodes(this_node_id, this_node_id, 8);
   service.FindNodes(message);

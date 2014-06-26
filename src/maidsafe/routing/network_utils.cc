@@ -306,11 +306,10 @@ void NetworkUtils::RecursiveSendOn(protobuf::Message message, NodeInfo last_node
              (message.route_history(0) != routing_table_.kNodeId().string()))
       route_history.push_back(message.route_history(0));
 
-    peer = routing_table_.GetNodeForSendingMessage(NodeId(message.destination_id()), route_history,
-                                                   ignore_exact_match);
+    peer = routing_table_.GetClosestNode(NodeId(message.destination_id()), ignore_exact_match,
+                                         route_history);
     if (peer.node_id == NodeId() && routing_table_.size() != 0) {
-      peer = routing_table_.GetNodeForSendingMessage(
-          NodeId(message.destination_id()), std::vector<std::string>(), ignore_exact_match);
+      peer = routing_table_.GetClosestNode(NodeId(message.destination_id()), ignore_exact_match);
     }
     if (peer.node_id == NodeId()) {
       LOG(kError) << "This node's routing table is empty now.  Need to re-bootstrap.";
