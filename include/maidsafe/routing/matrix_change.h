@@ -59,6 +59,9 @@ class MatrixChange {
   MatrixChange(const MatrixChange& other);
   MatrixChange(MatrixChange&& other);
   MatrixChange& operator=(MatrixChange other);
+  MatrixChange(NodeId this_node_id, const std::vector<NodeId>& old_matrix,
+               const std::vector<NodeId>& new_matrix);
+  bool OldEqualsToNew() const;
 
   CheckHoldersResult CheckHolders(const NodeId& target) const;
   NodeId ChoosePmidNode(const std::set<NodeId>& online_pmids, const NodeId& target) const;
@@ -74,9 +77,6 @@ class MatrixChange {
   friend class test::GroupMatrixTest_BEH_EmptyMatrix_Test;
 
  private:
-  MatrixChange(NodeId this_node_id, const std::vector<NodeId>& old_matrix,
-               const std::vector<NodeId>& new_matrix);
-  bool OldEqualsToNew() const;
 
   NodeId node_id_;
   std::vector<NodeId> old_matrix_, new_matrix_, lost_nodes_, new_nodes_;

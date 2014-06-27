@@ -31,6 +31,7 @@
 #include "maidsafe/routing/node_info.h"
 #include "maidsafe/routing/return_codes.h"
 #include "maidsafe/routing/routing.pb.h"
+#include "maidsafe/routing/matrix_change.h"
 
 namespace maidsafe {
 
@@ -118,7 +119,7 @@ bool RoutingTable::AddOrCheckNode(NodeInfo peer, bool remove) {
 
   if (remove)
     SetBucketIndex(peer);
-  std::vector<NodeId> unique_nodes;
+  std::vector<NodeId> new_close_nodes, old_close_nodes;
   {
     std::unique_lock<std::mutex> lock(mutex_);
     auto found(Find(peer.node_id, lock));
@@ -127,25 +128,30 @@ bool RoutingTable::AddOrCheckNode(NodeInfo peer, bool remove) {
       return false;
     }
 
+    auto close_nodes_size(PartialSortFromTarget(kNodeId_, Parameters::closest_nodes_size, lock));
+    std::for_each (std::begin(nodes_), std::begin(nodes_) + close_nodes_size,
+                   [&old_close_nodes, &new_close_nodes](const NodeInfo& node_info) {
+                     old_close_nodes.push_back(node_info.node_id);
+                     new_close_nodes.push_back(node_info.node_id);
+                   });
+
     if (MakeSpaceForNodeToBeAdded(peer, remove, removed_node, lock)) {
       if (remove) {
         assert(peer.bucket != NodeInfo::kInvalidBucket);
-        close_node_added = NodeId::CloserToTarget(
-            peer.node_id, nodes_.at(Parameters::closest_nodes_size - 1).node_id, kNodeId());
-        if (close_node_added)
-          nodes_.insert(std::begin(nodes_), peer);
-        else
-          nodes_.push_back(peer);
+        close_node_added = (nodes_.size() >= Parameters::closest_nodes_size) ?
+            NodeId::CloserToTarget(peer.node_id,
+                                   nodes_.at(Parameters::closest_nodes_size - 1).node_id,
+                                   kNodeId()) : true;
+        nodes_.push_back(peer);
+        if (close_node_added) {
+          if (nodes_.size() > Parameters::closest_nodes_size)
+            new_close_nodes.pop_back();
+          new_close_nodes.push_back(peer.node_id);
+        }
       }
       return_value = true;
     }
     routing_table_size = static_cast<uint16_t>(nodes_.size());
-    if (close_node_added)
-      for (auto iter(std::begin(nodes_));
-           iter != std::begin(nodes_) +
-               std::min(routing_table_size, Parameters::closest_nodes_size);
-           ++iter)
-         unique_nodes.push_back(iter->node_id);
   }
 
   if (return_value && remove) {  // Firing functors on Add only
@@ -159,9 +165,10 @@ bool RoutingTable::AddOrCheckNode(NodeInfo peer, bool remove) {
     }
 
     if (close_node_added) {
-      network_statistics_.UpdateLocalAverageDistance(unique_nodes);
-//      if (matrix_change_functor_)
-//        matrix_change_functor_(unique_nodes);
+      network_statistics_.UpdateLocalAverageDistance(new_close_nodes);
+      if (matrix_change_functor_)
+        matrix_change_functor_(std::make_shared<MatrixChange>(kNodeId(), old_close_nodes,
+                                                              new_close_nodes));
 //      IpcSendGroupMatrix();
     }
 
@@ -176,35 +183,45 @@ bool RoutingTable::AddOrCheckNode(NodeInfo peer, bool remove) {
 
 NodeInfo RoutingTable::DropNode(const NodeId& node_to_drop, bool routing_only) {
   NodeInfo dropped_node;
-  std::shared_ptr<MatrixChange> matrix_change;
-  std::vector<NodeId> unique_nodes;
+  NodeId potential_close_id;
+  std::vector<NodeId> new_close_nodes, old_close_nodes;
   bool close_node_removal(false);
   {
     std::unique_lock<std::mutex> lock(mutex_);
+    auto close_nodes_size(PartialSortFromTarget(kNodeId_, Parameters::closest_nodes_size + 1,
+                                                lock));
+    if (close_nodes_size == Parameters::closest_nodes_size + 1)
+      potential_close_id = nodes_.at(Parameters::closest_nodes_size).node_id;
+    std::for_each (std::begin(nodes_),
+                   std::begin(nodes_) + std::min(close_nodes_size, Parameters::closest_nodes_size),
+                   [&old_close_nodes, &new_close_nodes](const NodeInfo& node_info) {
+                     old_close_nodes.push_back(node_info.node_id);
+                     new_close_nodes.push_back(node_info.node_id);
+                   });
     auto found(Find(node_to_drop, lock));
     if (found.first) {
       dropped_node = *found.second;
       nodes_.erase(found.second);
-      if (nodes_.size() <= Parameters::closest_nodes_size) {
-        close_node_removal = true;
-      } else {
-        PartialSortFromTarget(kNodeId_, Parameters::closest_nodes_size, lock);
-        close_node_removal = NodeId::CloserToTarget(
-            dropped_node.node_id, nodes_.at(Parameters::closest_nodes_size - 1).node_id, kNodeId());
       }
     }
-    if (close_node_removal)
-      for (auto iter(std::begin(nodes_));
-           iter != std::begin(nodes_) + std::min(static_cast<uint16_t>(nodes_.size()),
-                                                  Parameters::closest_nodes_size);
-           ++iter)
-        unique_nodes.push_back(iter->node_id);
-  }
+
+    close_node_removal = std::any_of(std::begin(old_close_nodes), std::end(old_close_nodes),
+                                     [dropped_node](const NodeId node_id) {
+                                       return node_id == dropped_node.node_id;
+                                     });
 
   if (close_node_removal) {
-    network_statistics_.UpdateLocalAverageDistance(unique_nodes);
-//    if (matrix_change_functor_)
-//      matrix_change_functor_(matrix_change);
+    if (nodes_.size() >= Parameters::closest_nodes_size) {
+      new_close_nodes.erase(std::remove(std::begin(new_close_nodes), std::end(new_close_nodes),
+                                        dropped_node.node_id),
+                            std::end(new_close_nodes));
+      new_close_nodes.push_back(potential_close_id);
+    }
+    network_statistics_.UpdateLocalAverageDistance(new_close_nodes);
+    if (matrix_change_functor_) {
+      matrix_change_functor_(std::make_shared<MatrixChange>(kNodeId(), old_close_nodes,
+                                                            new_close_nodes));
+    }
 //    IpcSendGroupMatrix();
   }
 
@@ -224,8 +241,7 @@ NodeInfo RoutingTable::DropNode(const NodeId& node_to_drop, bool routing_only) {
   return dropped_node;
 }
 
-bool RoutingTable::ClosestToId(const NodeId& /*target_id*/) {
-/* remove group matrix
+bool RoutingTable::ClosestToId(const NodeId& target_id) {
   if (target_id == kNodeId_)
     return false;
 
@@ -233,23 +249,13 @@ bool RoutingTable::ClosestToId(const NodeId& /*target_id*/) {
   if (nodes_.empty())  // should return false ?
     return true;
 
-  if (nodes_.size() == 1) {
-    if (nodes_.at(0).node_id == target_id)
-      return true;
-    else
-      return NodeId::CloserToTarget(kNodeId_, nodes_.at(0).node_id, target_id);
-  }
+  if (nodes_.size() == 1)
+    return (nodes_.at(0).node_id == target_id) ? true :
+                NodeId::CloserToTarget(kNodeId_, nodes_.at(0).node_id, target_id);
 
   PartialSortFromTarget(target_id, 2, lock);
-  uint16_t index(0);
-  if (nodes_.at(0).node_id == target_id)
-    index = 1;
-  if (!NodeId::CloserToTarget(kNodeId_, nodes_.at(index).node_id, target_id))
-    return false;
-
-  return group_matrix_.ClosestToId(target_id);
-*/
- return false;
+  uint16_t index(((nodes_.at(0).node_id == target_id) ? 1 : 0));
+  return NodeId::CloserToTarget(kNodeId_, nodes_.at(index).node_id, target_id);
 }
 
 GroupRangeStatus RoutingTable::IsNodeIdInGroupRange(const NodeId& group_id) const {
@@ -416,7 +422,16 @@ bool RoutingTable::MakeSpaceForNodeToBeAdded(const NodeInfo& node, bool remove,
   if (nodes_.size() < kMaxSize_)
     return true;
 
-  PartialSortFromTarget(kNodeId_, static_cast<uint16_t>(nodes_.size()), lock);
+  if (client_mode()) {
+    assert(nodes_.size() == kMaxSize_);
+    if (NodeId::CloserToTarget(node.node_id, nodes_.at(kMaxSize_ - 1).node_id, kNodeId())) {
+      removed_node = *nodes_.rbegin();
+      nodes_.pop_back();
+      return true;
+    } else {
+      return false;
+    }
+  }
 
   int32_t max_bucket(0), max_bucket_count(1);
   std::for_each(std::begin(nodes_) + Parameters::closest_nodes_size * 2, std::end(nodes_),

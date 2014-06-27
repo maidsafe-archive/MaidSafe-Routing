@@ -1520,10 +1520,12 @@ void GenericNetwork::AddNodeDetails(NodePtr node) {
     if (node->has_symmetric_nat_) {
       node->set_expected(NetworkStatus(
           node->IsClient(),
-          std::min(NonClientNonSymmetricNatNodesSize(), Parameters::closest_nodes_size)));
+          std::min(NonClientNonSymmetricNatNodesSize(),
+                   Parameters::max_routing_table_size_for_client)));
     } else {
       node->set_expected(NetworkStatus(
-          node->IsClient(), std::min(NonClientNodesSize(), Parameters::closest_nodes_size)));
+          node->IsClient(), std::min(NonClientNodesSize(),
+                            Parameters::max_routing_table_size_for_client)));
     }
     if (node->IsClient()) {
       nodes_.push_back(node);
@@ -1542,6 +1544,7 @@ void GenericNetwork::AddNodeDetails(NodePtr node) {
     if (!cond_var || !node)
       return;
     ASSERT_GE(result, kSuccess);
+    LOG(kVerbose) << node->node_id() << ", " << node->expected() << ", " << result;
     if (result == node->expected() && !node->joined()) {
       node->set_joined(true);
       cond_var->notify_one();
