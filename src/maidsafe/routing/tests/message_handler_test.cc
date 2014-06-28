@@ -23,7 +23,7 @@
 #include "maidsafe/common/test.h"
 #include "maidsafe/common/node_id.h"
 
-#include "maidsafe/passport/types.h"
+#include "maidsafe/passport/passport.h"
 
 #include "maidsafe/routing/message_handler.h"
 #include "maidsafe/routing/tests/mock_service.h"
@@ -635,7 +635,7 @@ TEST_F(MessageHandlerTest, BEH_HandleNodeLevelMessage) {
 }
 
 TEST_F(MessageHandlerTest, BEH_ClientRoutingTable) {
-  auto maid(MakeMaid());
+  auto maid(passport::CreateMaidAndSigner().first);
   asymm::Keys keys;
   keys.private_key = maid.private_key();
   keys.public_key = maid.public_key();

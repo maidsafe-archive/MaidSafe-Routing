@@ -18,8 +18,7 @@
 
 #include <vector>
 
-#include "boost/progress.hpp"
-
+#include "maidsafe/passport/passport.h"
 #include "maidsafe/rudp/nat_type.h"
 
 #include "maidsafe/routing/tests/routing_network.h"
@@ -82,10 +81,10 @@ TEST_F(RoutingStandAloneTest, FUNC_VaultSendToClient) {
 
 TEST_F(RoutingStandAloneTest, FUNC_ClientRoutingTableUpdate) {
   this->SetUpNetwork(kServerSize);
-  this->AddNode(MakeMaid());
+  this->AddNode(passport::CreateMaidAndSigner().first);
   NodeId maid_id(nodes_[kServerSize]->GetMaid().name()), pmid_id;
   while (this->nodes_.size() < kServerSize + Parameters::max_routing_table_size_for_client) {
-    auto pmid(MakePmid());
+    auto pmid(passport::CreatePmidAndSigner().first);
     pmid_id = NodeId(pmid.name());
     this->AddNode(pmid);
     Sleep(std::chrono::milliseconds(500));
@@ -207,7 +206,7 @@ TEST_F(RoutingStandAloneTest, FUNC_NodeRemoved) {
 TEST_F(RoutingStandAloneTest, FUNC_JoinAfterBootstrapLeaves) {
   this->SetUpNetwork(kServerSize);
   Sleep(std::chrono::seconds(10));
-  this->AddNode(MakePmid());
+  this->AddNode(passport::CreatePmidAndSigner().first);
 }
 
 TEST_F(RoutingStandAloneTest, FUNC_ReBootstrap) {

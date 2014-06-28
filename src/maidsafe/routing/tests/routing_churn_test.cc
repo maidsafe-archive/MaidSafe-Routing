@@ -19,6 +19,7 @@
 #include <vector>
 #include <atomic>
 
+#include "maidsafe/passport/passport.h"
 #include "maidsafe/rudp/nat_type.h"
 
 #include "maidsafe/routing/tests/routing_network.h"
@@ -191,7 +192,7 @@ TEST_F(RoutingChurnTest, FUNC_BasicNetworkChurn) {
 
   for (int n(1); n < 51; ++n) {
     if (n % 2 == 0) {
-      auto pmid(MakePmid());
+      auto pmid(passport::CreatePmidAndSigner().first);
       this->AddNode(pmid);
       existing_vault_node_ids.push_back(NodeId(pmid.name()));
       Sleep(std::chrono::milliseconds(500 + RandomUint32() % 200));
@@ -213,7 +214,7 @@ TEST_F(RoutingChurnTest, FUNC_MatrixChangeWhenChurn) {
   std::copy(boot_strap_nodes.begin(), boot_strap_nodes.end(),
             std::back_inserter(existing_vault_node_ids));
   for (size_t n(0); n < vault_network_size; ++n) {
-    auto pmid(MakePmid());
+    auto pmid(passport::CreatePmidAndSigner().first);
     NodeId new_node(pmid.name());
     this->AddNode(pmid, boost::bind(&RoutingChurnTest::CheckMatrixChange, this, _1, new_node));
     existing_vault_node_ids.push_back(new_node);
@@ -256,7 +257,7 @@ TEST_F(RoutingChurnTest, FUNC_MatrixChangeWhenChurn) {
     this->dropping_node_ = false;
 
     this->adding_node_ = true;
-    auto pmid(MakePmid());
+    auto pmid(passport::CreatePmidAndSigner().first);
     NodeId new_node(pmid.name());
     LOG(kVerbose) << "Adding node " << HexSubstr(new_node.string());
     this->PopulateGlobals(existing_vault_node_ids, boot_strap_nodes, new_node);
@@ -297,7 +298,7 @@ TEST_F(RoutingChurnTest, DISABLED_FUNC_MessagingNetworkChurn) {
   const size_t up_count(vault_network_size / 3), down_count(vault_network_size / 5);
   size_t downed(0);
   while (new_nodes.size() < up_count)
-    new_nodes.emplace_back(MakePmid());
+    new_nodes.emplace_back(passport::CreatePmidAndSigner().first);
   LOG(kInfo) << "After generating new ids\n\n\n\n";
 
   // Start thread for messaging between clients and clients to groups

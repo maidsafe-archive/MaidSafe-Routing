@@ -16,18 +16,17 @@
     See the Licences for the specific language governing permissions and limitations relating to
     use of the MaidSafe Software.                                                                 */
 
-#include <boost/exception/all.hpp>
 #include <chrono>
 #include <future>
-
 #include <memory>
 #include <vector>
 
 #include "boost/filesystem/exception.hpp"
+
 #include "maidsafe/common/node_id.h"
 #include "maidsafe/common/test.h"
 #include "maidsafe/common/utils.h"
-
+#include "maidsafe/passport/passport.h"
 #include "maidsafe/rudp/return_codes.h"
 #include "maidsafe/rudp/managed_connections.h"
 
@@ -151,7 +150,7 @@ TEST(NetworkUtilsTest, FUNC_ProcessSendDirectEndpoint) {
     LOG(kInfo) << " -- Lost Connection with : " << HexSubstr(node_id.string());
   };
 
-  auto pmid1(MakePmid());
+  auto pmid1(passport::CreatePmidAndSigner().first);
   NodeId node_id1(pmid1.name()->string());
   auto private_key1(std::make_shared<asymm::PrivateKey>(pmid1.private_key()));
   auto public_key1(std::make_shared<asymm::PublicKey>(pmid1.public_key()));
@@ -167,7 +166,7 @@ TEST(NetworkUtilsTest, FUNC_ProcessSendDirectEndpoint) {
     return chosen_bootstrap_peer;
   });
 
-  auto pmid2(MakePmid());
+  auto pmid2(passport::CreatePmidAndSigner().first);
   NodeId node_id2(pmid2.name()->string());
   auto private_key2(std::make_shared<asymm::PrivateKey>(pmid2.private_key()));
   auto public_key2(std::make_shared<asymm::PublicKey>(pmid2.public_key()));
@@ -303,13 +302,13 @@ TEST(NetworkUtilsTest, FUNC_ProcessSendRecursiveSendOn) {
     LOG(kInfo) << " -- Lost Connection with : " << HexSubstr(node_id.string());
   };
 
-  auto pmid1(MakePmid());
+  auto pmid1(passport::CreatePmidAndSigner().first);
   NodeId node_id1(pmid1.name()->string());
   auto private_key1(std::make_shared<asymm::PrivateKey>(pmid1.private_key()));
   auto public_key1(std::make_shared<asymm::PublicKey>(pmid1.public_key()));
   rudp::NatType nat_type;
   NodeInfoAndPrivateKey node2 = MakeNodeInfoAndKeys();
-  auto pmid2(MakePmid());
+  auto pmid2(passport::CreatePmidAndSigner().first);
   NodeId node_id2(pmid2.name()->string());
   auto private_key2(std::make_shared<asymm::PrivateKey>(pmid2.private_key()));
   auto public_key2(std::make_shared<asymm::PublicKey>(pmid2.public_key()));

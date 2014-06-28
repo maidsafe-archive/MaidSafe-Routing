@@ -26,6 +26,7 @@
 #include "maidsafe/common/log.h"
 #include "maidsafe/common/node_id.h"
 #include "maidsafe/common/utils.h"
+#include "maidsafe/passport/passport.h"
 
 #include "maidsafe/routing/routing_impl.h"
 #include "maidsafe/routing/return_codes.h"
@@ -110,11 +111,11 @@ GenericNode::GenericNode(bool client_mode, const rudp::NatType& nat_type)
       health_mutex_(),
       health_(0) {
   if (client_mode) {
-    auto maid(MakeMaid());
+    auto maid(passport::CreateMaidAndSigner().first);
     node_info_plus_.reset(new NodeInfoAndPrivateKey(MakeNodeInfoAndKeysWithMaid(maid)));
     routing_.reset(new Routing(maid));
   } else {
-    auto pmid(MakePmid());
+    auto pmid(passport::CreatePmidAndSigner().first);
     node_info_plus_.reset(new NodeInfoAndPrivateKey(MakeNodeInfoAndKeysWithPmid(pmid)));
     routing_.reset(new Routing(pmid));
   }
@@ -469,7 +470,8 @@ GenericNetwork::~GenericNetwork() {
 }
 
 void GenericNetwork::SetUp() {
-  NodePtr node1(new GenericNode(MakePmid())), node2(new GenericNode(MakePmid()));
+  NodePtr node1(new GenericNode(passport::CreatePmidAndSigner().first)),
+          node2(new GenericNode(passport::CreatePmidAndSigner().first));
   nodes_.push_back(node1);
   nodes_.push_back(node2);
   client_index_ = 2;
@@ -535,27 +537,27 @@ void GenericNetwork::SetUpNetwork(size_t total_number_vaults,
   size_t num_nonsym_nat_clients(total_number_clients - num_symmetric_nat_clients);
 
   for (size_t index(2); index < num_nonsym_nat_vaults; ++index) {
-    NodePtr node(new GenericNode(MakePmid()));
+    NodePtr node(new GenericNode(passport::CreatePmidAndSigner().first));
     AddNodeDetails(node);
     LOG(kVerbose) << "Node # " << nodes_.size() << " added to network";
     //      node->PrintRoutingTable();
   }
 
   for (size_t index(0); index < num_symmetric_nat_vaults; ++index) {
-    NodePtr node(new GenericNode(MakePmid(), true));
+    NodePtr node(new GenericNode(passport::CreatePmidAndSigner().first, true));
     AddNodeDetails(node);
     LOG(kVerbose) << "Node # " << nodes_.size() << " added to network";
     //      node->PrintRoutingTable();
   }
 
   for (size_t index(0); index < num_nonsym_nat_clients; ++index) {
-    NodePtr node(new GenericNode(MakeMaid()));
+    NodePtr node(new GenericNode(passport::CreateMaidAndSigner().first));
     AddNodeDetails(node);
     LOG(kVerbose) << "Node # " << nodes_.size() << " added to network";
   }
 
   for (size_t index(0); index < num_symmetric_nat_clients; ++index) {
-    NodePtr node(new GenericNode(MakeMaid(), true));
+    NodePtr node(new GenericNode(passport::CreateMaidAndSigner().first, true));
     AddNodeDetails(node);
     LOG(kVerbose) << "Node # " << nodes_.size() << " added to network";
   }
@@ -568,10 +570,10 @@ void GenericNetwork::SetUpNetwork(size_t total_number_vaults,
 void GenericNetwork::AddNode(bool client_mode, MatrixChangedFunctor matrix_change_functor) {
   NodePtr node;
   if (client_mode) {
-    auto maid(MakeMaid());
+    auto maid(passport::CreateMaidAndSigner().first);
     node.reset(new GenericNode(maid));
   } else {
-    auto pmid(MakePmid());
+    auto pmid(passport::CreatePmidAndSigner().first);
     node.reset(new GenericNode(pmid, false));
   }
   node->SetMatrixChangeFunctor(matrix_change_functor);
@@ -600,11 +602,11 @@ void GenericNetwork::AddMutatingClient(bool has_symmetric_nat) {
 }
 
 void GenericNetwork::AddClient(bool has_symmetric_nat) {
-  AddNode(MakeMaid(), has_symmetric_nat);
+  AddNode(passport::CreateMaidAndSigner().first, has_symmetric_nat);
 }
 
 void GenericNetwork::AddVault(bool has_symmetric_nat) {
-  AddNode(MakePmid(), has_symmetric_nat);
+  AddNode(passport::CreatePmidAndSigner().first, has_symmetric_nat);
 }
 
 void GenericNetwork::AddNode(const passport::Maid& maid,
@@ -642,9 +644,9 @@ void GenericNetwork::AddNode(bool client_mode, const rudp::NatType& nat_type) {
 void GenericNetwork::AddNode(bool client_mode, bool has_symmetric_nat) {
   NodePtr node;
   if (client_mode)
-    node.reset(new GenericNode(MakeMaid(), has_symmetric_nat));
+    node.reset(new GenericNode(passport::CreateMaidAndSigner().first, has_symmetric_nat));
   else
-    node.reset(new GenericNode(MakePmid(), has_symmetric_nat));
+    node.reset(new GenericNode(passport::CreatePmidAndSigner().first, has_symmetric_nat));
   AddNodeDetails(node);
   LOG(kVerbose) << "Node # " << nodes_.size() << " added to network";
   //    node->PrintRoutingTable();

@@ -19,6 +19,7 @@
 #include <thread>
 #include <vector>
 
+#include "maidsafe/passport/passport.h"
 #include "maidsafe/rudp/managed_connections.h"
 #include "maidsafe/rudp/return_codes.h"
 
@@ -94,7 +95,7 @@ TEST_F(FindNodeNetwork, FUNC_FindNonExistingNode) {
 
 TEST_F(FindNodeNetwork, FUNC_FindNodeAfterDrop) {
   this->SetUpNetwork(kServerSize);
-  auto pmid(MakePmid());
+  auto pmid(passport::CreatePmidAndSigner().first);
   NodeId node_id(pmid.name());
   size_t source(FindClosestIndex(node_id));
   EXPECT_FALSE(this->nodes_[source]->RoutingTableHasNode(node_id));
@@ -108,7 +109,7 @@ TEST_F(FindNodeNetwork, FUNC_FindNodeAfterDrop) {
 TEST_F(FindNodeNetwork, FUNC_VaultFindVaultNode) {
   this->SetUpNetwork(kServerSize, kClientSize);
   size_t source(0), dest(this->ClientIndex());
-  auto pmid(MakePmid());
+  auto pmid(passport::CreatePmidAndSigner().first);
   NodeId node_id(pmid.name());
   source = FindClosestIndex(node_id);
   this->AddNode(pmid);
@@ -123,7 +124,7 @@ TEST_F(FindNodeNetwork, FUNC_VaultFindVaultNode) {
 TEST_F(FindNodeNetwork, FUNC_VaultFindClientNode) {
   this->SetUpNetwork(kServerSize, kClientSize);
   size_t source(0), dest(this->nodes_.size());
-  auto maid(MakeMaid());
+  auto maid(passport::CreateMaidAndSigner().first);
   NodeId node_id(maid.name());
   source = FindClosestIndex(node_id);
   this->AddNode(maid);
