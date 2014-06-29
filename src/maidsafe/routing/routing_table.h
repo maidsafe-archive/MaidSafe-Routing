@@ -132,7 +132,6 @@ class RoutingTable {
                                  std::unique_lock<std::mutex>& lock);
   void NthElementSortFromTarget(const NodeId& target, uint16_t nth_element,
                                 std::unique_lock<std::mutex>& lock);
-  NodeId FurthestCloseNode();
   std::pair<bool, std::vector<NodeInfo>::iterator> Find(const NodeId& node_id,
                                                         std::unique_lock<std::mutex>& lock);
   std::pair<bool, std::vector<NodeInfo>::const_iterator> Find(

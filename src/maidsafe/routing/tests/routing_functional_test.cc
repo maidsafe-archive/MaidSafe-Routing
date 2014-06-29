@@ -439,7 +439,7 @@ TEST_F(RoutingNetworkTest, FUNC_SendToClientWithSameId) {
   EXPECT_EQ(2, size);
 }
 
-TEST_F(RoutingNetworkTest, FUNC_IsNodeIdInGroupRange) {
+TEST_F(RoutingNetworkTest, DISABLED_FUNC_IsNodeIdInGroupRange) {
   std::vector<NodeId> vault_ids;
   for (const auto& node : env_->nodes_)
     if (!node->IsClient())
@@ -560,11 +560,11 @@ TEST_F(RoutingNetworkTest, FUNC_NonexistentIsConnectedVaultOrClient) {
   }
 }
 
-TEST_F(RoutingNetworkTest, FUNC_CheckGroupMatrixUniqueNodes) {
+TEST_F(RoutingNetworkTest, DISABLED_FUNC_CheckGroupMatrixUniqueNodes) {
   env_->CheckGroupMatrixUniqueNodes();
 }
 
-TEST_F(RoutingNetworkTest, FUNC_ClosestNodesClientBehindSymmetricNat) {
+TEST_F(RoutingNetworkTest, DISABLED_FUNC_ClosestNodesClientBehindSymmetricNat) {
   auto sym_client(MakeMaid());
   NodeId sym_client_id(sym_client.name());
   env_->AddNode(sym_client, true);
@@ -590,13 +590,13 @@ TEST_F(RoutingNetworkTest, FUNC_ClosestNodesClientBehindSymmetricNat) {
   ASSERT_GE(index, 0);
   std::vector<NodeInfo> from_matrix(env_->nodes_.at(index)->ClosestNodes());
   std::vector<NodeInfo> from_network(env_->GetClosestVaults(sym_client_id, 8));
-  EXPECT_LE(8U, from_matrix.size());
+  EXPECT_EQ(Parameters::closest_nodes_size, from_matrix.size());
 
-  for (uint16_t i(0); i < std::min(size_t(8), from_matrix.size()); ++i)
+  for (uint16_t i(0); i < std::min(size_t(Parameters::closest_nodes_size), from_matrix.size()); ++i)
     EXPECT_EQ(from_matrix.at(i).node_id, from_network.at(i).node_id);
 }
 
-TEST_F(RoutingNetworkTest, FUNC_ClosestNodesVaultBehindSymmetricNat) {
+TEST_F(RoutingNetworkTest, DISABLED_FUNC_ClosestNodesVaultBehindSymmetricNat) {
   auto pmid(MakePmid());
   NodeId sym_vault_id(pmid.name());
   env_->AddNode(pmid, true);

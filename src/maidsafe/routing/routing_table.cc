@@ -354,7 +354,9 @@ bool RoutingTable::Contains(const NodeId& node_id) const {
 }
 
 bool RoutingTable::ConfirmGroupMembers(const NodeId& node1, const NodeId& node2) {
-  NodeId difference = kNodeId_ ^ FurthestCloseNode();
+  NodeId difference =
+      kNodeId_ ^ GetNthClosestNode(kNodeId(), std::min(static_cast<uint16_t>(nodes_.size()),
+                                                       Parameters::closest_nodes_size)).node_id;
   return (node1 ^ node2) < difference;
 }
 
@@ -500,10 +502,6 @@ void RoutingTable::NthElementSortFromTarget(const NodeId& target, uint16_t nth_e
 #endif
 }
 
-NodeId RoutingTable::FurthestCloseNode() {
-  return GetNthClosestNode(kNodeId_, Parameters::closest_nodes_size).node_id;
-}
-
 NodeInfo RoutingTable::GetClosestNode(const NodeId& target_id, bool ignore_exact_match,
                                       const std::vector<std::string>& exclude) {
   std::vector<NodeInfo> closest_nodes(
@@ -514,22 +512,6 @@ NodeInfo RoutingTable::GetClosestNode(const NodeId& target_id, bool ignore_exact
   }
   return NodeInfo();
 }
-
-/*
-NodeInfo RoutingTable::GetNodeForSendingMessage(const NodeId& target_id,
-                                                bool ignore_exact_match) {
-  NodeInfo node_info(GetClosestNode(target_id, ignore_exact_match));
-
-  if (node_info.node_id != target_id) {
-    std::vector<NodeInfo> connected_peers(group_matrix_.GetAllConnectedPeersFor(target_id));
-    if (connected_peers.empty())
-      return node_info;
-
-    return connected_peers.at(0);
-  }
-  return node_info;
-}
-*/
 
 NodeInfo RoutingTable::GetNthClosestNode(const NodeId& target_id, uint16_t node_number) {
   assert((node_number > 0) && "Node number starts with position 1");
@@ -550,6 +532,7 @@ std::vector<NodeId> RoutingTable::GetClosestNodes(const NodeId& target_id, uint1
 
   for (int i = 0; i != sorted_count; ++i)
     close_nodes.push_back(nodes_[i].node_id);
+
   return close_nodes;
 }
 
@@ -570,15 +553,17 @@ std::vector<NodeInfo> RoutingTable::GetClosestNodeInfo(const NodeId& target_id,
   if (sorted_count == 0)
     return std::vector<NodeInfo>();
 
-  auto itr(nodes_.begin());
-  if (ignore_exact_match && ((*itr).node_id == target_id)) {
-    return (sorted_count == 1)
-               ? std::vector<NodeInfo>()
-               : std::vector<NodeInfo>(nodes_.begin() + 1, nodes_.begin() + sorted_count);
+  if (sorted_count == 1) {
+    if (ignore_exact_match)
+      return (nodes_.begin()->node_id == target_id)
+                  ? std::vector<NodeInfo>()
+                  : std::vector<NodeInfo>(std::begin(nodes_), std::end(nodes_));
+    else
+      return std::vector<NodeInfo>(std::begin(nodes_), std::end(nodes_));
   }
 
-  return std::vector<NodeInfo>(
-      nodes_.begin(), nodes_.begin() + std::min(sorted_count, static_cast<int>(number_to_get)));
+  uint16_t index(ignore_exact_match && nodes_.begin()->node_id == target_id);
+  return std::vector<NodeInfo>(std::begin(nodes_) + index, std::begin(nodes_) + sorted_count);
 }
 
 std::pair<bool, std::vector<NodeInfo>::iterator> RoutingTable::Find(
