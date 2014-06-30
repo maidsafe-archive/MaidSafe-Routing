@@ -210,7 +210,7 @@ void GenericNode::SetGetFromCacheFunctor(HaveCacheDataFunctor get_from_functor) 
       functors_.message_and_caching);
 }
 
-int GenericNode::GetStatus() const { return routing_->network_status(); }
+// int GenericNode::GetStatus() const { return routing_->network_status(); }
 
 Endpoint GenericNode::endpoint() const { return endpoint_; }
 
@@ -232,14 +232,14 @@ std::vector<NodeInfo> GenericNode::RoutingTable() const {
   return routing_->pimpl_->routing_table_.nodes_;
 }
 
-std::vector<NodeInfo> GenericNode::ClosestNodes() { return routing_->ClosestNodes(); }
-
-bool GenericNode::IsConnectedVault(const NodeId& node_id) {
-  return routing_->IsConnectedVault(node_id);
+bool GenericNode::IsConnectedVault(const NodeId& /*node_id*/) {
+//  return routing_->IsConnectedVault(node_id);
+  return false;
 }
 
-bool GenericNode::IsConnectedClient(const NodeId& node_id) {
-  return routing_->IsConnectedClient(node_id);
+bool GenericNode::IsConnectedClient(const NodeId& /*node_id*/) {
+//  return routing_->IsConnectedClient(node_id);
+ return false;
 }
 
 void GenericNode::AddNodeToRandomNodeHelper(const NodeId& node_id) {
@@ -272,14 +272,6 @@ void GenericNode::AddTask(const ResponseFunctor& response_functor, int expected_
                           TaskId task_id) {
   routing_->pimpl_->timer_.AddTask(Parameters::default_response_timeout, response_functor,
                                    expected_response_count, task_id);
-}
-
-std::future<std::vector<NodeId>> GenericNode::GetGroup(const NodeId& info_id) {
-  return routing_->GetGroup(info_id);
-}
-
-GroupRangeStatus GenericNode::IsNodeIdInGroupRange(const NodeId& node_id) {
-  return routing_->IsNodeIdInGroupRange(node_id);
 }
 
 void GenericNode::RudpSend(const NodeId& peer_node_id, const protobuf::Message& message,
@@ -1079,45 +1071,6 @@ bool GenericNetwork::NodeHasSymmetricNat(const NodeId& node_id) const {
   }
   LOG(kError) << "Couldn't find node_id";
   return false;
-}
-
-testing::AssertionResult GenericNetwork::CheckGroupMatrixUniqueNodes(uint16_t check_length) {
-  bool success(true);
-  for (const auto& node : this->nodes_) {
-    std::vector<NodeInfo> nodes_from_matrix(node->ClosestNodes());
-    if (nodes_from_matrix.size() < check_length)
-      return testing::AssertionFailure();
-    nodes_from_matrix.resize(check_length);
-    std::vector<NodeInfo> nodes_from_network(this->GetClosestVaults(node->node_id(), check_length));
-    if (nodes_from_network.size() != check_length)
-      return testing::AssertionFailure();
-
-// sort nodes_from_matrix
-    auto target = node->node_id();
-    std::sort(nodes_from_matrix.begin(), nodes_from_matrix.end(),
-              [target](const NodeInfo & lhs, const NodeInfo & rhs) {
-                  return NodeId::CloserToTarget(lhs.node_id, rhs.node_id, target);
-              });
-
-    std::stringstream id;
-    for (uint16_t i(0); i < check_length; ++i) {
-      id << " nodes_from_matrix.at(i) " << DebugId(nodes_from_matrix.at(i).node_id)
-         << "  nodes_from_network.at(i)" << DebugId(nodes_from_network.at(i).node_id) << std::endl;
-    }
-
-    LOG(kVerbose) << id.str();
-    for (uint16_t i(0); i < check_length; ++i) {
-      EXPECT_EQ(nodes_from_matrix.at(i).node_id, nodes_from_network.at(i).node_id)
-          << "Index " << i << " from matrix: " << DebugId(nodes_from_matrix.at(i).node_id)
-          << "\t\tIndex " << i << " from network: " << DebugId(nodes_from_network.at(i).node_id);
-      if (nodes_from_matrix.at(i).node_id != nodes_from_network.at(i).node_id)
-        success = false;
-    }
-  }
-  if (success)
-    return testing::AssertionSuccess();
-
-  return testing::AssertionFailure();
 }
 
 testing::AssertionResult GenericNetwork::SendDirect(size_t repeats, size_t message_size) {

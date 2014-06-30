@@ -244,35 +244,38 @@ TEST_F(ResponseHandlerTest, BEH_FindNodes) {
   response_handler_.FindNodes(message);
 
   // In case routing_table_ is full
-  while (routing_table_.size() < Parameters::greedy_fraction) {
+  while (routing_table_.size() < size_t(Parameters::max_routing_table_size)) {
     NodeInfo node_info = MakeNodeInfoAndKeys().node_info;
     routing_table_.AddNode(node_info);
   }
-  size_t num_of_found_nodes(4), num_of_closer(0);
+  size_t num_of_found_nodes(2);
   nodes.clear();
   for (size_t i(0); i < num_of_found_nodes; ++i) {
     NodeId node_id(RandomString(64));
-    if (num_of_closer < 2) {
-      if (NodeId::CloserToTarget(
-              node_id, routing_table_.GetNthClosestNode(routing_table_.kNodeId(),
-                                                        Parameters::greedy_fraction).node_id,
-              routing_table_.kNodeId()))
-        ++num_of_closer;
-    } else {
-      while (NodeId::CloserToTarget(
-          node_id, routing_table_.GetNthClosestNode(routing_table_.kNodeId(),
-                                                    Parameters::greedy_fraction).node_id,
-          routing_table_.kNodeId()))
+    while (NodeId::CloserToTarget(
+              routing_table_.GetNthClosestNode(routing_table_.kNodeId(),
+                                               Parameters::closest_nodes_size).node_id,
+              node_id, routing_table_.kNodeId()))
         node_id = NodeId(RandomString(64));
-    }
     nodes.push_back(node_id);
   }
+  for (size_t i(0); i < num_of_found_nodes; ++i) {
+    NodeId node_id(RandomString(64));
+    while (NodeId::CloserToTarget(
+               node_id,
+               routing_table_.GetNthClosestNode(routing_table_.kNodeId(),
+                                                Parameters::closest_nodes_size).node_id,
+               routing_table_.kNodeId()))
+        node_id = NodeId(RandomString(64));
+    nodes.push_back(node_id);
+  }
+  ASSERT_EQ(nodes.size(), num_of_found_nodes * 2);
   message = ComposeFindNodesResponseMsg(num_of_found_nodes, nodes);
   EXPECT_CALL(network_, GetAvailableEndpoint(testing::_, testing::_, testing::_, testing::_))
-      .Times(static_cast<int>(num_of_closer))
+      .Times(static_cast<int>(num_of_found_nodes))
       .WillRepeatedly(testing::WithArgs<2, 3>(testing::Invoke(
            boost::bind(&ResponseHandlerTest::GetAvailableEndpoint, this, _1, _2, kSuccess))));
-  EXPECT_CALL(network_, SendToClosestNode(testing::_)).Times(static_cast<int>(num_of_closer));
+  EXPECT_CALL(network_, SendToClosestNode(testing::_)).Times(static_cast<int>(num_of_found_nodes));
   response_handler_.FindNodes(message);
 }
 

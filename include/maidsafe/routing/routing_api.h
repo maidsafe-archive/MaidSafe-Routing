@@ -125,21 +125,6 @@ class Routing {
   // Compares own closeness to target against other known nodes' closeness to the target
   bool ClosestToId(const NodeId& target_id);
 
-  // Returns: kInRange : if node_id is in group_id range (Group Range),
-  // kInProximalRange : if node_id is in proximity of the group. Node not in range but,
-  // (node_id ^ group_id) < (kNodeId_ ^ FurthestCloseNode()),
-  // kOutwithRange : (node_id ^ group_id) > (kNodeId_ ^ FurthestCloseNode()).
-  // Throws if node_id provided is not this node id & this node is not part of the group (group_id)
-  // if kNodeId_ == group_id or node_id == group_id, it returns kOutwithRange
-  GroupRangeStatus IsNodeIdInGroupRange(const NodeId& group_id, const NodeId& node_id) const;
-
-  // Returns: kInRange : if this node_id is in group_id range (Group Range),
-  // kInProximalRange : if this node_id is in proximity of the group. Node not in range but,
-  // (kNodeId_ ^ group_id) < (kNodeId_ ^ FurthestCloseNode())
-  // kOutwithRange : (kNodeId_ ^ group_id) > (kNodeId_ ^ FurthestCloseNode())
-  // if kNodeId_ == group_id, it returns kOutwithRange
-  GroupRangeStatus IsNodeIdInGroupRange(const NodeId& group_id) const;
-
   // Gets a random connected node from routing table (excluding closest
   // Parameters::closest_nodes_size nodes).
   // Shouldn't be called when routing table is likely to be smaller than closest_nodes_size.
@@ -147,25 +132,20 @@ class Routing {
 
   // Evaluates whether the sender_id is a legitimate source to send a request for performing
   // an operation on info_id
-  bool EstimateInGroup(const NodeId& sender_id, const NodeId& info_id) const;
-
-  // Returns the closest nodes to info_id
-  std::future<std::vector<NodeId>> GetGroup(const NodeId& group_id);
+//?  bool EstimateInGroup(const NodeId& sender_id, const NodeId& info_id) const;
 
   // Returns this node's id.
   NodeId kNodeId() const;
 
   // Returns a number between 0 to 100 representing % network health w.r.t. number of connections
-  int network_status();
+  //? int network_status();
 
-  // Returns the group matrix
-  std::vector<NodeInfo> ClosestNodes();
 
   // Checks if routing table or group matrix contains given node id
-  bool IsConnectedVault(const NodeId& node_id);
+  // bool IsConnectedVault(const NodeId& node_id);
 
   // Checks if client routing table contains given node id
-  bool IsConnectedClient(const NodeId& node_id);
+  // bool IsConnectedClient(const NodeId& node_id);
 
   friend class test::GenericNode;
 
