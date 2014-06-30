@@ -63,11 +63,6 @@ NodeInfoAndPrivateKey MakeNodeInfoAndKeys();
 NodeInfoAndPrivateKey MakeNodeInfoAndKeysWithPmid(passport::Pmid pmid);
 NodeInfoAndPrivateKey MakeNodeInfoAndKeysWithMaid(passport::Maid maid);
 
-passport::Maid MakeMaid();
-passport::Pmid MakePmid();
-
-// Fob GetFob(const NodeInfoAndPrivateKey& node);
-
 NodeInfo MakeNode();
 
 NodeId GenerateUniqueRandomId(const NodeId& holder, uint16_t pos);

@@ -26,7 +26,7 @@
 #include "maidsafe/common/log.h"
 #include "maidsafe/common/node_id.h"
 #include "maidsafe/common/utils.h"
-
+#include "maidsafe/passport/passport.h"
 #include "maidsafe/rudp/managed_connections.h"
 
 #include "maidsafe/routing/routing_table.h"
@@ -51,7 +51,7 @@ NodeInfo MakeNode() {
 }
 
 NodeInfoAndPrivateKey MakeNodeInfoAndKeys() {
-  passport::Pmid pmid(MakePmid());
+  passport::Pmid pmid(passport::CreatePmidAndSigner().first);
   return MakeNodeInfoAndKeysWithFob(pmid);
 }
 
@@ -62,24 +62,6 @@ NodeInfoAndPrivateKey MakeNodeInfoAndKeysWithPmid(passport::Pmid pmid) {
 NodeInfoAndPrivateKey MakeNodeInfoAndKeysWithMaid(passport::Maid maid) {
   return MakeNodeInfoAndKeysWithFob(maid);
 }
-
-passport::Maid MakeMaid() {
-  passport::Anmaid anmaid;
-  return passport::Maid(anmaid);
-}
-
-passport::Pmid MakePmid() {
-  passport::Anpmid anpmid;
-  return passport::Pmid(anpmid);
-}
-
-/* Fob GetFob(const NodeInfoAndPrivateKey& node) {
-  Fob fob;
-  fob.identity = Identity(node.node_info.node_id.string());
-  fob.keys.public_key = node.node_info.public_key;
-  fob.keys.private_key = node.private_key;
-  return fob;
-} */
 
 NodeId GenerateUniqueRandomId(const NodeId& holder, uint16_t pos) {
   std::string holder_id = holder.ToStringEncoded(NodeId::EncodingType::kBinary);

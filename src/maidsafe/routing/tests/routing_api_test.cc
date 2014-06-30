@@ -44,7 +44,7 @@
 #include "maidsafe/rudp/managed_connections.h"
 #include "maidsafe/rudp/parameters.h"
 
-#include "maidsafe/passport/types.h"
+#include "maidsafe/passport/passport.h"
 
 #include "maidsafe/routing/bootstrap_file_operations.h"
 #include "maidsafe/routing/return_codes.h"
@@ -74,7 +74,8 @@ MessageReceivedFunctor no_ops_message_received_functor = [](const std::string&,
 }  // anonymous namespace
 
 TEST(APITest, BEH_API_ZeroState) {
-  auto pmid1(MakePmid()), pmid2(MakePmid()), pmid3(MakePmid());
+  auto pmid1(passport::CreatePmidAndSigner().first), pmid2(passport::CreatePmidAndSigner().first),
+       pmid3(passport::CreatePmidAndSigner().first);
   NodeInfoAndPrivateKey node1(MakeNodeInfoAndKeysWithPmid(pmid1));
   NodeInfoAndPrivateKey node2(MakeNodeInfoAndKeysWithPmid(pmid2));
   NodeInfoAndPrivateKey node3(MakeNodeInfoAndKeysWithPmid(pmid3));
@@ -128,7 +129,8 @@ TEST(APITest, BEH_API_ZeroState) {
 
 TEST(APITest, DISABLED_BEH_API_ZeroStateWithDuplicateNode) {
   rudp::Parameters::bootstrap_connection_lifespan = boost::posix_time::seconds(5);
-  auto pmid1(MakePmid()), pmid2(MakePmid()), pmid3(MakePmid());
+  auto pmid1(passport::CreatePmidAndSigner().first), pmid2(passport::CreatePmidAndSigner().first),
+       pmid3(passport::CreatePmidAndSigner().first);
   NodeInfoAndPrivateKey node1(MakeNodeInfoAndKeysWithPmid(pmid1));
   NodeInfoAndPrivateKey node2(MakeNodeInfoAndKeysWithPmid(pmid2));
   NodeInfoAndPrivateKey node3(MakeNodeInfoAndKeysWithPmid(pmid3));
@@ -189,7 +191,8 @@ TEST(APITest, DISABLED_BEH_API_ZeroStateWithDuplicateNode) {
 }
 
 TEST(APITest, BEH_API_SendToSelf) {
-  auto pmid1(MakePmid()), pmid2(MakePmid()), pmid3(MakePmid());
+  auto pmid1(passport::CreatePmidAndSigner().first), pmid2(passport::CreatePmidAndSigner().first),
+       pmid3(passport::CreatePmidAndSigner().first);
   NodeInfoAndPrivateKey node1(MakeNodeInfoAndKeysWithPmid(pmid1));
   NodeInfoAndPrivateKey node2(MakeNodeInfoAndKeysWithPmid(pmid2));
   NodeInfoAndPrivateKey node3(MakeNodeInfoAndKeysWithPmid(pmid3));
@@ -265,8 +268,8 @@ TEST(APITest, BEH_API_SendToSelf) {
 }
 
 TEST(APITest, BEH_API_ClientNode) {
-  auto pmid1(MakePmid()), pmid2(MakePmid());
-  auto maid(MakeMaid());
+  auto pmid1(passport::CreatePmidAndSigner().first), pmid2(passport::CreatePmidAndSigner().first);
+  auto maid(passport::CreateMaidAndSigner().first);
   NodeInfoAndPrivateKey node1(MakeNodeInfoAndKeysWithPmid(pmid1));
   NodeInfoAndPrivateKey node2(MakeNodeInfoAndKeysWithPmid(pmid2));
   NodeInfoAndPrivateKey node3(MakeNodeInfoAndKeysWithMaid(maid));
@@ -339,7 +342,7 @@ TEST(APITest, BEH_API_ClientNode) {
 }
 
 TEST(APITest, BEH_API_NonMutatingClientNode) {
-  auto pmid1(MakePmid()), pmid2(MakePmid());
+  auto pmid1(passport::CreatePmidAndSigner().first), pmid2(passport::CreatePmidAndSigner().first);
   NodeInfoAndPrivateKey node1(MakeNodeInfoAndKeysWithPmid(pmid1));
   NodeInfoAndPrivateKey node2(MakeNodeInfoAndKeysWithPmid(pmid2));
   std::map<NodeId, asymm::PublicKey> key_map;
@@ -412,8 +415,8 @@ TEST(APITest, BEH_API_NonMutatingClientNode) {
 }
 
 TEST(APITest, BEH_API_ClientNodeSameId) {
-  auto pmid1(MakePmid()), pmid2(MakePmid());
-  auto maid(MakeMaid());
+  auto pmid1(passport::CreatePmidAndSigner().first), pmid2(passport::CreatePmidAndSigner().first);
+  auto maid(passport::CreateMaidAndSigner().first);
   NodeInfoAndPrivateKey node1(MakeNodeInfoAndKeysWithPmid(pmid1));
   NodeInfoAndPrivateKey node2(MakeNodeInfoAndKeysWithPmid(pmid2));
   NodeInfoAndPrivateKey node3(MakeNodeInfoAndKeysWithMaid(maid));
@@ -533,7 +536,7 @@ TEST(APITest, BEH_API_NodeNetwork) {
   std::vector<NodeInfoAndPrivateKey> nodes;
   std::vector<std::shared_ptr<Routing>> routing_node;
   for (auto i(0); i != kNetworkSize; ++i) {
-    auto pmid(MakePmid());
+    auto pmid(passport::CreatePmidAndSigner().first);
     NodeInfoAndPrivateKey node(MakeNodeInfoAndKeysWithPmid(pmid));
     nodes.push_back(node);
     key_map.insert(std::make_pair(node.node_info.node_id, pmid.public_key()));
@@ -594,14 +597,14 @@ TEST(APITest, BEH_API_NodeNetworkWithClient) {
   };
 
   for (; i != kServerCount; ++i) {
-    auto pmid(MakePmid());
+    auto pmid(passport::CreatePmidAndSigner().first);
     NodeInfoAndPrivateKey node(MakeNodeInfoAndKeysWithPmid(pmid));
     nodes.push_back(node);
     key_map.insert(std::make_pair(node.node_info.node_id, pmid.public_key()));
     routing_node.push_back(std::make_shared<Routing>(pmid));
   }
   for (; i != kNetworkSize; ++i) {
-    auto maid(MakeMaid());
+    auto maid(passport::CreateMaidAndSigner().first);
     NodeInfoAndPrivateKey node(MakeNodeInfoAndKeysWithMaid(maid));
     nodes.push_back(node);
     routing_node.push_back(std::make_shared<Routing>(maid));
@@ -691,7 +694,7 @@ TEST(APITest, BEH_API_SendGroup) {
   };
 
   for (; i != kServerCount; ++i) {
-    auto pmid(MakePmid());
+    auto pmid(passport::CreatePmidAndSigner().first);
     NodeInfoAndPrivateKey node(MakeNodeInfoAndKeysWithPmid(pmid));
     nodes.push_back(node);
     key_map.insert(std::make_pair(node.node_info.node_id, pmid.public_key()));
@@ -811,7 +814,8 @@ TEST(APITest, BEH_API_SendGroup) {
 TEST(APITest, BEH_API_PartiallyJoinedSend) {
   // N.B. 5sec sleep in functors3.request_public_key causes delay in joining, giving opportunity for
   // routing3's impl to use PartiallyJoinedSend when SendDirect is called
-  auto pmid1(MakePmid()), pmid2(MakePmid()), pmid3(MakePmid());
+  auto pmid1(passport::CreatePmidAndSigner().first), pmid2(passport::CreatePmidAndSigner().first),
+       pmid3(passport::CreatePmidAndSigner().first);
   NodeInfoAndPrivateKey node1(MakeNodeInfoAndKeysWithPmid(pmid1));
   NodeInfoAndPrivateKey node2(MakeNodeInfoAndKeysWithPmid(pmid2));
   NodeInfoAndPrivateKey node3(MakeNodeInfoAndKeysWithPmid(pmid3));
@@ -894,7 +898,8 @@ TEST(APITest, BEH_API_PartiallyJoinedSend) {
 }
 
 TEST(APITest, BEH_API_TypedMessageSend) {
-  auto pmid1(MakePmid()), pmid2(MakePmid()), pmid3(MakePmid());
+  auto pmid1(passport::CreatePmidAndSigner().first), pmid2(passport::CreatePmidAndSigner().first),
+       pmid3(passport::CreatePmidAndSigner().first);
   NodeInfoAndPrivateKey node1(MakeNodeInfoAndKeysWithPmid(pmid1));
   NodeInfoAndPrivateKey node2(MakeNodeInfoAndKeysWithPmid(pmid2));
   NodeInfoAndPrivateKey node3(MakeNodeInfoAndKeysWithPmid(pmid3));
@@ -1080,14 +1085,14 @@ TEST(APITest, BEH_API_TypedMessagePartiallyJoinedSendReceive) {
   };
 
   for (; i != kServerCount; ++i) {
-    auto pmid(MakePmid());
+    auto pmid(passport::CreatePmidAndSigner().first);
     NodeInfoAndPrivateKey node(MakeNodeInfoAndKeysWithPmid(pmid));
     nodes.push_back(node);
     key_map.insert(std::make_pair(node.node_info.node_id, pmid.public_key()));
     routing_nodes.push_back(std::make_shared<Routing>(pmid));
   }
   for (; i != kNetworkSize; ++i) {  // clients
-    auto maid(MakeMaid());
+    auto maid(passport::CreateMaidAndSigner().first);
     NodeInfoAndPrivateKey node(MakeNodeInfoAndKeysWithMaid(maid));
     nodes.push_back(node);
     routing_nodes.push_back(std::make_shared<Routing>(maid));
@@ -1188,7 +1193,7 @@ TEST(APITest, BEH_API_TypedMessagePartiallyJoinedSendReceive) {
   }
 
   //  -----  Join new vault and send messages ----------
-  auto pmid(MakePmid());
+  auto pmid(passport::CreatePmidAndSigner().first);
   Routing test_node(pmid);
   bool test_node_joined(false);
   Functors test_functors;

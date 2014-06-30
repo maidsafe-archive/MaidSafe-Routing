@@ -244,7 +244,7 @@ void Timer<Response>::AddResponse(TaskId task_id, const Response& response) {
     auto itr(tasks_.find(task_id));
     if (itr == std::end(tasks_)) {
       LOG(kError) << "Task " << task_id << " not held by Timer.";
-      BOOST_THROW_EXCEPTION(MakeError(CommonErrors::invalid_parameter));
+      BOOST_THROW_EXCEPTION(MakeError(CommonErrors::no_such_element));
     }
     if (itr->second.outstanding_response_count == 0) {
       LOG(kError) << "outstanding_response_count already reached zero";

@@ -20,6 +20,7 @@
 
 #include "boost/progress.hpp"
 
+#include "maidsafe/passport/passport.h"
 #include "maidsafe/rudp/nat_type.h"
 
 #include "maidsafe/routing/tests/routing_network.h"
@@ -389,7 +390,7 @@ TEST_F(RoutingNetworkTest, FUNC_NonMutatingClientSendToGroupExistingId) {
 }
 
 TEST_F(RoutingNetworkTest, FUNC_JoinWithSameId) {
-  auto maid(MakeMaid());
+  auto maid(passport::CreateMaidAndSigner().first);
   env_->AddNode(maid);
   env_->AddNode(maid);
   env_->AddNode(maid);
@@ -400,7 +401,7 @@ TEST_F(RoutingNetworkTest, FUNC_SendToClientsWithSameId) {
   // TODO(Prakash) - send messages in parallel so test duration is reduced.
   // TODO(Prakash) - revert kMessageCount to 50 when test duration fixed.
   const uint16_t kMessageCount(5);
-  auto maid(MakeMaid());
+  auto maid(passport::CreateMaidAndSigner().first);
   for (uint16_t index(0); index < 4; ++index)
     env_->AddNode(maid);
 
@@ -439,7 +440,7 @@ TEST_F(RoutingNetworkTest, FUNC_SendToClientWithSameId) {
   EXPECT_EQ(2, size);
 }
 
-TEST_F(RoutingNetworkTest, DISABLED_FUNC_IsNodeIdInGroupRange) {
+TEST_F(RoutingNetworkTest, FUNC_IsNodeIdInGroupRange) {
   std::vector<NodeId> vault_ids;
   for (const auto& node : env_->nodes_)
     if (!node->IsClient())
@@ -565,7 +566,7 @@ TEST_F(RoutingNetworkTest, DISABLED_FUNC_CheckGroupMatrixUniqueNodes) {
 }
 
 TEST_F(RoutingNetworkTest, DISABLED_FUNC_ClosestNodesClientBehindSymmetricNat) {
-  auto sym_client(MakeMaid());
+  auto sym_client(passport::CreateMaidAndSigner().first);
   NodeId sym_client_id(sym_client.name());
   env_->AddNode(sym_client, true);
 
@@ -575,7 +576,7 @@ TEST_F(RoutingNetworkTest, DISABLED_FUNC_ClosestNodesClientBehindSymmetricNat) {
 
   std::vector<passport::Pmid> closer_vaults;
   while (closer_vaults.size() < 2) {
-    auto pmid(MakePmid());
+    auto pmid(passport::CreatePmidAndSigner().first);
     NodeId new_id(pmid.name());
     if (NodeId::CloserToTarget(new_id, edge_id, sym_client_id))
       closer_vaults.push_back(pmid);
@@ -597,7 +598,7 @@ TEST_F(RoutingNetworkTest, DISABLED_FUNC_ClosestNodesClientBehindSymmetricNat) {
 }
 
 TEST_F(RoutingNetworkTest, DISABLED_FUNC_ClosestNodesVaultBehindSymmetricNat) {
-  auto pmid(MakePmid());
+  auto pmid(passport::CreatePmidAndSigner().first);
   NodeId sym_vault_id(pmid.name());
   env_->AddNode(pmid, true);
 
@@ -607,7 +608,7 @@ TEST_F(RoutingNetworkTest, DISABLED_FUNC_ClosestNodesVaultBehindSymmetricNat) {
 
   std::vector<passport::Pmid> closer_vaults;
   while (closer_vaults.size() < 2) {
-    auto new_pmid(MakePmid());
+    auto new_pmid(passport::CreatePmidAndSigner().first);
     NodeId new_id(new_pmid.name());
     if (NodeId::CloserToTarget(new_id, edge_id, sym_vault_id))
       closer_vaults.push_back(new_pmid);
@@ -630,7 +631,7 @@ TEST_F(RoutingNetworkTest, DISABLED_FUNC_ClosestNodesVaultBehindSymmetricNat) {
 }
 
 TEST_F(RoutingNetworkTest, FUNC_VaultJoinWhenClosestVaultAlsoBehindSymmetricNat) {
-  auto sym_node1(MakePmid());
+  auto sym_node1(passport::CreatePmidAndSigner().first);
   NodeId sym_node_id_1(sym_node1.name());
   env_->AddNode(sym_node1, true);
 
@@ -639,11 +640,11 @@ TEST_F(RoutingNetworkTest, FUNC_VaultJoinWhenClosestVaultAlsoBehindSymmetricNat)
 
   std::vector<NodeInfo> closest_vaults(env_->GetClosestVaults(sym_node_id_1, 2));
 
-  auto sym_node2(MakePmid());
+  auto sym_node2(passport::CreatePmidAndSigner().first);
   NodeId sym_node_id_2(sym_node2.name());
 
   while (NodeId::CloserToTarget(closest_vaults.at(1).node_id, sym_node_id_2, sym_node_id_1)) {
-    sym_node2 = MakePmid();
+    sym_node2 = passport::CreatePmidAndSigner().first;
     sym_node_id_2 = NodeId(sym_node2.name());
   }
 
@@ -651,7 +652,7 @@ TEST_F(RoutingNetworkTest, FUNC_VaultJoinWhenClosestVaultAlsoBehindSymmetricNat)
 }
 
 TEST_F(RoutingNetworkTest, FUNC_ClientJoinWhenClosestVaultAlsoBehindSymmetricNat) {
-  auto sym_node1(MakePmid());
+  auto sym_node1(passport::CreatePmidAndSigner().first);
   NodeId sym_node_id_1(sym_node1.name());
   env_->AddNode(sym_node1, true);
 
@@ -660,11 +661,11 @@ TEST_F(RoutingNetworkTest, FUNC_ClientJoinWhenClosestVaultAlsoBehindSymmetricNat
 
   std::vector<NodeInfo> closest_vaults(env_->GetClosestVaults(sym_node_id_1, 2));
 
-  auto sym_node2(MakePmid());
+  auto sym_node2(passport::CreatePmidAndSigner().first);
   NodeId sym_node_id_2(sym_node2.name());
 
   while (NodeId::CloserToTarget(closest_vaults.at(1).node_id, sym_node_id_2, sym_node_id_1)) {
-    sym_node2 = MakePmid();
+    sym_node2 = passport::CreatePmidAndSigner().first;
     sym_node_id_2 = NodeId(sym_node2.name());
   }
 

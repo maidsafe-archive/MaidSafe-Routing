@@ -23,7 +23,7 @@
 #include "maidsafe/common/log.h"
 #include "maidsafe/common/test.h"
 #include "maidsafe/common/utils.h"
-
+#include "maidsafe/passport/passport.h"
 #include "maidsafe/rudp/managed_connections.h"
 #include "maidsafe/rudp/return_codes.h"
 
@@ -68,7 +68,7 @@ class ResponseHandlerTest : public testing::Test {
   }
 
   void RequestPublicKey(NodeId /*node_id*/, GivePublicKeyFunctor give_public_key) {
-    give_public_key(MakePmid().public_key());
+    give_public_key(passport::CreatePmidAndSigner().first.public_key());
   }
 
  protected:
