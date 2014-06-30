@@ -43,8 +43,6 @@ namespace maidsafe {
 
 namespace routing {
 
-class GroupChangeHandler;
-
 namespace test {
 class GenericNode;
 class RoutingTableTest;
@@ -85,12 +83,12 @@ class RoutingTable {
                           const std::vector<std::string>& exclude = std::vector<std::string>());
   std::vector<NodeInfo> GetClosestNodes(const NodeId& target_id, uint16_t number_to_get,
                                         bool ignore_exact_match = false);
-  NodeInfo GetNthClosestNode(const NodeId& target_id, uint16_t node_number);
-  std::vector<NodeId> GetGroup(const NodeId& target_id);
-
+  NodeInfo GetNthClosestNode(const NodeId& target_id, uint16_t index);
   NodeId RandomConnectedNode();
+
   size_t size() const;
   uint16_t kThresholdSize() const { return kThresholdSize_; }
+  uint16_t kMaxSize() const { return kMaxSize_; }
   NodeId kNodeId() const { return kNodeId_; }
   asymm::PrivateKey kPrivateKey() const { return kKeys_.private_key; }
   asymm::PublicKey kPublicKey() const { return kKeys_.public_key; }
@@ -98,7 +96,6 @@ class RoutingTable {
   bool client_mode() const { return kClientMode_; }
 
   friend class test::GenericNode;
-  friend class GroupChangeHandler;
   friend class test::RoutingTableTest;
   friend class test::RoutingTableTest_BEH_CheckMockSendGroupChangeRpcs_Test;
   friend class test::NetworkStatisticsTest_BEH_IsIdInGroupRange_Test;

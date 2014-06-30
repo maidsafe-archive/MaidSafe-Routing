@@ -494,27 +494,6 @@ NodeInfo RoutingTable::GetClosestNode(const NodeId& target_id, bool ignore_exact
   return NodeInfo();
 }
 
-NodeInfo RoutingTable::GetNthClosestNode(const NodeId& target_id, uint16_t node_number) {
-  assert((node_number > 0) && "Node number starts with position 1");
-  std::unique_lock<std::mutex> lock(mutex_);
-  if (nodes_.size() < node_number) {
-    NodeInfo node_info;
-    node_info.node_id = (NodeId(NodeId::IdType::kMaxId) ^ kNodeId_);
-    return node_info;
-  }
-  NthElementSortFromTarget(target_id, node_number, lock);
-  return nodes_[node_number - 1];
-}
-
-std::vector<NodeId> RoutingTable::GetGroup(const NodeId& target_id) {
-  std::vector<NodeId> group;
-  std::unique_lock<std::mutex> lock(mutex_);
-  auto count(PartialSortFromTarget(target_id, Parameters::group_size, lock));
-  for (auto iter(nodes_.begin()); iter != nodes_.begin() + count; ++iter)
-    group.push_back(iter->node_id);
-  return group;
-}
-
 std::vector<NodeInfo> RoutingTable::GetClosestNodes(const NodeId& target_id, uint16_t number_to_get,
                                                     bool ignore_exact_match) {
   std::unique_lock<std::mutex> lock(mutex_);
@@ -533,6 +512,15 @@ std::vector<NodeInfo> RoutingTable::GetClosestNodes(const NodeId& target_id, uin
 
   uint16_t index(ignore_exact_match && nodes_.begin()->node_id == target_id);
   return std::vector<NodeInfo>(std::begin(nodes_) + index, std::begin(nodes_) + sorted_count);
+}
+
+NodeInfo RoutingTable::GetNthClosestNode(const NodeId& target_id, uint16_t index) {
+  std::unique_lock<std::mutex> lock(mutex_);
+  if (nodes_.size() < index)
+    BOOST_THROW_EXCEPTION(MakeError(CommonErrors::invalid_parameter));
+
+  NthElementSortFromTarget(target_id, index, lock);
+  return nodes_.at(index - 1);
 }
 
 std::pair<bool, std::vector<NodeInfo>::iterator> RoutingTable::Find(

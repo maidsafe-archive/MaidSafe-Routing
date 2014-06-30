@@ -328,10 +328,10 @@ void Service::GetGroup(protobuf::Message& message) {
   LOG(kVerbose) << "Service::GetGroup,  msg id:  " << message.id();
   protobuf::GetGroup get_group;
   assert(get_group.ParseFromString(message.data(0)));
-  auto close_nodes_id(routing_table_.GetGroup(NodeId(get_group.node_id())));
+  auto close_nodes(routing_table_.GetClosestNodes(NodeId(get_group.node_id()), 1, true));
   get_group.set_node_id(routing_table_.kNodeId().string());
-  for (const auto& node_id : close_nodes_id)
-    get_group.add_group_nodes_id(node_id.string());
+  for (const auto& node : close_nodes)
+    get_group.add_group_nodes_id(node.node_id.string());
   message.clear_route_history();
   message.set_destination_id(message.source_id());
   message.set_source_id(routing_table_.kNodeId().string());
