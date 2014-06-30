@@ -474,7 +474,7 @@ void Routing::Impl::CheckSendParameters(const NodeId& destination_id, const std:
 }
 
 bool Routing::Impl::ClosestToId(const NodeId& target_id) {
-  return routing_table_.ClosestToId(target_id);
+  return routing_table_.IsThisNodeClosestTo(target_id, true);
 }
 
 GroupRangeStatus Routing::Impl::IsNodeIdInGroupRange(const NodeId& group_id) {
@@ -742,7 +742,7 @@ int Routing::Impl::network_status() {
 }
 
 std::vector<NodeInfo> Routing::Impl::ClosestNodes() {
- return routing_table_.GetClosestNodeInfo(kNodeId(), Parameters::closest_nodes_size);
+ return routing_table_.GetClosestNodes(kNodeId(), Parameters::closest_nodes_size);
 }
 
 bool Routing::Impl::IsConnectedVault(const NodeId& node_id) {

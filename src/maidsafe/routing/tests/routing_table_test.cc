@@ -35,7 +35,9 @@
 // TODO(Alison) - test IsNodeIdInGroupRange
 
 namespace maidsafe {
+
 namespace routing {
+
 namespace test {
 
 TEST(RoutingTableTest, BEH_AddCloseNodes) {
@@ -530,10 +532,9 @@ TEST(RoutingTableTest, FUNC_ClosestToId) {
     bool expectation(false);
     for (const auto& target : known_targets) {
       PartialSortFromTarget(target.node_id, known_nodes, 2);
-      result = routing_table.ClosestToId(target.node_id);
+      result = routing_table.IsThisNodeClosestTo(target.node_id, true);
       expectation = false;
-      if (NodeId::CloserToTarget(own_node_id, known_nodes.at(1).node_id, target.node_id) &&
-          !NodeId::CloserToTarget(furthest_group_node, target.node_id, own_node_id))
+      if (NodeId::CloserToTarget(own_node_id, known_nodes.at(1).node_id, target.node_id))
         expectation = true;
       EXPECT_EQ(expectation, result);
       if (expectation != result)
@@ -550,7 +551,7 @@ TEST(RoutingTableTest, FUNC_ClosestToId) {
     for (uint16_t i(0); i < 200; ++i) {
       target = NodeId(NodeId::IdType::kRandomId);
       PartialSortFromTarget(target, known_nodes, 1);
-      result = routing_table.ClosestToId(target);
+      result = routing_table.IsThisNodeClosestTo(target, true);
       expectation = false;
       if (NodeId::CloserToTarget(own_node_id, known_nodes.at(0).node_id, target) &&
           !NodeId::CloserToTarget(furthest_group_node, target, own_node_id))
@@ -564,11 +565,11 @@ TEST(RoutingTableTest, FUNC_ClosestToId) {
 
   // ------- Empty routing table -------
   LOG(kInfo) << "Testing empty routing table...";
-  EXPECT_FALSE(routing_table.ClosestToId(own_node_id));
+  EXPECT_FALSE(routing_table.IsThisNodeClosestTo(own_node_id, true));
 
   for (uint16_t i(0); i < 200; ++i) {
     target = NodeId(NodeId::IdType::kRandomId);
-    EXPECT_TRUE(routing_table.ClosestToId(target));
+    routing_table.IsThisNodeClosestTo(target, true);
   }
 
   // ------- Partially populated routing table -------
@@ -583,7 +584,7 @@ TEST(RoutingTableTest, FUNC_ClosestToId) {
   furthest_group_node = known_nodes.at(Parameters::group_size - 2).node_id;
 
   LOG(kInfo) << "Testing partially populated routing table...";
-  EXPECT_FALSE(routing_table.ClosestToId(own_node_id));
+  EXPECT_FALSE(routing_table.IsThisNodeClosestTo(own_node_id, true));
   EXPECT_TRUE(test_known_ids());
   EXPECT_TRUE(test_unknown_ids());
 
@@ -599,7 +600,7 @@ TEST(RoutingTableTest, FUNC_ClosestToId) {
   furthest_group_node = known_nodes.at(Parameters::group_size - 2).node_id;
 
   LOG(kInfo) << "Testing fully populated routing table...";
-  EXPECT_FALSE(routing_table.ClosestToId(own_node_id));
+  EXPECT_FALSE(routing_table.IsThisNodeClosestTo(own_node_id, true));
   EXPECT_TRUE(test_known_ids());
   EXPECT_TRUE(test_unknown_ids());
 }
@@ -637,5 +638,7 @@ TEST(RoutingTableTest, FUNC_GetRandomExistingNode) {
 }
 
 }  // namespace test
+
 }  // namespace routing
+
 }  // namespace maidsafe

@@ -170,7 +170,7 @@ protobuf::Message ConnectSuccess(const NodeId& node_id, const NodeId& this_node_
 protobuf::Message ConnectSuccessAcknowledgement(const NodeId& node_id, const NodeId& this_node_id,
                                                 const NodeId& this_connection_id,
                                                 bool requestor,
-                                                const std::vector<NodeId>& close_ids,
+                                                const std::vector<NodeInfo>& close_nodes,
                                                 bool client_node) {
   assert(!node_id.IsZero() && "Invalid node_id");
   assert(!this_node_id.IsZero() && "Invalid my node_id");
@@ -180,8 +180,8 @@ protobuf::Message ConnectSuccessAcknowledgement(const NodeId& node_id, const Nod
   protobuf_connect_success_ack.set_node_id(this_node_id.string());
   protobuf_connect_success_ack.set_connection_id(this_connection_id.string());
   protobuf_connect_success_ack.set_requestor(requestor);
-  for (const auto& i : close_ids) {
-    protobuf_connect_success_ack.add_close_ids(i.string());
+  for (const auto& i : close_nodes) {
+    protobuf_connect_success_ack.add_close_ids(i.node_id.string());
   }
   message.set_destination_id(node_id.string());
   message.set_routing_message(true);

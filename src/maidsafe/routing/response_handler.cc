@@ -130,11 +130,11 @@ void ResponseHandler::Connect(protobuf::Message& message) {
       // Special case with bootstrapping peer in which kSuccess comes before connect response
       if (peer_node_id == network_.bootstrap_connection_id()) {
         LOG(kInfo) << "Special case with bootstrapping peer : " << DebugId(peer_node_id);
-        const std::vector<NodeId> close_ids;  // add closer ids if needed
+        const std::vector<NodeInfo> close_nodes;  // add closer ids if needed
         protobuf::Message connect_success_ack(rpcs::ConnectSuccessAcknowledgement(
             peer_node_id, routing_table_.kNodeId(), routing_table_.kConnectionId(),
             true,  // this node is requestor
-            close_ids, routing_table_.client_mode()));
+            close_nodes, routing_table_.client_mode()));
         network_.SendToDirect(connect_success_ack, peer_node_id, peer_connection_id);
       }
     }
@@ -336,18 +336,18 @@ void ResponseHandler::ValidateAndCompleteConnectionToNonClient(
 void ResponseHandler::HandleSuccessAcknowledgementAsReponder(NodeInfo peer, bool client) {
   auto count =
       (client ? Parameters::max_routing_table_size_for_client : Parameters::max_routing_table_size);
-  std::vector<NodeId> close_ids_for_peer(routing_table_.GetClosestNodes(peer.node_id, count));
-  auto itr(std::find_if(close_ids_for_peer.begin(), close_ids_for_peer.end(),
-                        [=](const NodeId & node_id)->bool {
-                          return (peer.node_id == node_id);
+  auto close_nodes_for_peer(routing_table_.GetClosestNodes(peer.node_id, count));
+  auto itr(std::find_if(std::begin(close_nodes_for_peer), std::end(close_nodes_for_peer),
+                        [=](const NodeInfo&  info)->bool {
+                          return (peer.node_id == info.node_id);
                         }));
-  if (itr != close_ids_for_peer.end())
-    close_ids_for_peer.erase(itr);
+  if (itr != std::end(close_nodes_for_peer))
+    close_nodes_for_peer.erase(itr);
 
   protobuf::Message connect_success_ack(rpcs::ConnectSuccessAcknowledgement(
       peer.node_id, routing_table_.kNodeId(), routing_table_.kConnectionId(),
       false,  // this node is responder
-      close_ids_for_peer, routing_table_.client_mode()));
+      close_nodes_for_peer, routing_table_.client_mode()));
   network_.SendToDirect(connect_success_ack, peer.node_id, peer.connection_id);
 }
 

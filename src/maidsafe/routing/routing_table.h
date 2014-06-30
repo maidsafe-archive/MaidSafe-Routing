@@ -48,10 +48,7 @@ class GroupChangeHandler;
 namespace test {
 class GenericNode;
 class RoutingTableTest;
-class RoutingTableTest_FUNC_OrderedGroupChange_Test;
-class RoutingTableTest_FUNC_ReverseOrderedGroupChange_Test;
 class RoutingTableTest_BEH_CheckMockSendGroupChangeRpcs_Test;
-class RoutingTableTest_BEH_GroupUpdateFromConnectedPeer_Test;
 class NetworkStatisticsTest_BEH_IsIdInGroupRange_Test;
 class RoutingTableTest_FUNC_IsNodeIdInGroupRange_Test;
 }
@@ -61,10 +58,6 @@ class Contact;
 }
 
 struct NodeInfo;
-
-
-typedef std::function<void(std::vector<NodeInfo> /*new*/, std::vector<NodeInfo> /*old*/)>
-                           ConnectedGroupChangeFunctor;
 
 class RoutingTable {
  public:
@@ -77,31 +70,25 @@ class RoutingTable {
   bool AddNode(const NodeInfo& peer);
   bool CheckNode(const NodeInfo& peer);
   NodeInfo DropNode(const NodeId& node_to_drop, bool routing_only);
-  bool ClosestToId(const NodeId& target_id);
 
   GroupRangeStatus IsNodeIdInGroupRange(const NodeId& group_id) const;
   GroupRangeStatus IsNodeIdInGroupRange(const NodeId& group_id, const NodeId& node_id) const;
-
-  bool GetNodeInfo(const NodeId& node_id, NodeInfo& node_info) const;
   bool IsThisNodeInRange(const NodeId& target_id, uint16_t range);
   bool IsThisNodeClosestTo(const NodeId& target_id, bool ignore_exact_match = false);
   bool Contains(const NodeId& node_id) const;
   bool ConfirmGroupMembers(const NodeId& node1, const NodeId& node2);
-  NodeId RandomConnectedNode();
+
+  bool GetNodeInfo(const NodeId& node_id, NodeInfo& node_info) const;
   // Returns default-constructed NodeId if routing table size is zero
   NodeInfo GetClosestNode(const NodeId& target_id,
                           bool ignore_exact_match = false,
                           const std::vector<std::string>& exclude = std::vector<std::string>());
-  std::vector<NodeInfo> GetClosestNodeInfo(const NodeId& target_id, uint16_t number_to_get,
-                                           bool ignore_exact_match = false);
-  //  NodeInfo GetNodeForSendingMessage(const NodeId& target_id, bool ignore_exact_match = false);
-  NodeInfo GetNodeForSendingMessage(const NodeId& target_id,
-                                    const std::vector<std::string>& exclude,
-                                    bool ignore_exact_match = false);
-  // Returns max NodeId if routing table size is less than requested node_number
+  std::vector<NodeInfo> GetClosestNodes(const NodeId& target_id, uint16_t number_to_get,
+                                        bool ignore_exact_match = false);
   NodeInfo GetNthClosestNode(const NodeId& target_id, uint16_t node_number);
-  std::vector<NodeId> GetClosestNodes(const NodeId& target_id, uint16_t number_to_get);
   std::vector<NodeId> GetGroup(const NodeId& target_id);
+
+  NodeId RandomConnectedNode();
   size_t size() const;
   uint16_t kThresholdSize() const { return kThresholdSize_; }
   NodeId kNodeId() const { return kNodeId_; }
@@ -113,10 +100,7 @@ class RoutingTable {
   friend class test::GenericNode;
   friend class GroupChangeHandler;
   friend class test::RoutingTableTest;
-  friend class test::RoutingTableTest_FUNC_OrderedGroupChange_Test;
-  friend class test::RoutingTableTest_FUNC_ReverseOrderedGroupChange_Test;
   friend class test::RoutingTableTest_BEH_CheckMockSendGroupChangeRpcs_Test;
-  friend class test::RoutingTableTest_BEH_GroupUpdateFromConnectedPeer_Test;
   friend class test::NetworkStatisticsTest_BEH_IsIdInGroupRange_Test;
   friend class test::RoutingTableTest_FUNC_IsNodeIdInGroupRange_Test;
 
@@ -128,6 +112,7 @@ class RoutingTable {
   bool CheckPublicKeyIsUnique(const NodeInfo& node, std::unique_lock<std::mutex>& lock) const;
   bool MakeSpaceForNodeToBeAdded(const NodeInfo& node, bool remove, NodeInfo& removed_node,
                                  std::unique_lock<std::mutex>& lock);
+
   uint16_t PartialSortFromTarget(const NodeId& target, uint16_t number,
                                  std::unique_lock<std::mutex>& lock);
   void NthElementSortFromTarget(const NodeId& target, uint16_t nth_element,
@@ -136,6 +121,7 @@ class RoutingTable {
                                                         std::unique_lock<std::mutex>& lock);
   std::pair<bool, std::vector<NodeInfo>::const_iterator> Find(
       const NodeId& node_id, std::unique_lock<std::mutex>& lock) const;
+
   void UpdateNetworkStatus(uint16_t size) const;
 
 /* remove group matrix
@@ -152,8 +138,6 @@ class RoutingTable {
   mutable std::mutex mutex_;
   std::function<void(const NodeInfo&, bool)> remove_node_functor_;
   NetworkStatusFunctor network_status_functor_;
-  RemoveFurthestUnnecessaryNode remove_furthest_node_;
-  ConnectedGroupChangeFunctor connected_group_change_functor_;
   MatrixChangedFunctor matrix_change_functor_;
   std::vector<NodeInfo> nodes_;
   std::unique_ptr<boost::interprocess::message_queue> ipc_message_queue_;

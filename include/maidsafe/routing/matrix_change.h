@@ -33,12 +33,10 @@ namespace maidsafe {
 namespace routing {
 
 class RoutingTable;
-class GroupMatrix;
 
 namespace test {
 class MatrixChangeTest_BEH_CheckHolders_Test;
 class SingleMatrixChangeTest_BEH_ChoosePmidNode_Test;
-class GroupMatrixTest_BEH_EmptyMatrix_Test;
 }
 
 enum class GroupRangeStatus {
@@ -70,11 +68,9 @@ class MatrixChange {
   void Print();
 
   friend void swap(MatrixChange& lhs, MatrixChange& rhs) MAIDSAFE_NOEXCEPT;
-  friend class GroupMatrix;
   friend class RoutingTable;
   friend class test::MatrixChangeTest_BEH_CheckHolders_Test;
   friend class test::SingleMatrixChangeTest_BEH_ChoosePmidNode_Test;
-  friend class test::GroupMatrixTest_BEH_EmptyMatrix_Test;
 
  private:
 
