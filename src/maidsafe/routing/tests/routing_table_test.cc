@@ -106,7 +106,7 @@ TEST(RoutingTableTest, FUNC_OrderedGroupChange) {
 
   routing_table.InitialiseFunctors([](const int& status) { LOG(kVerbose) << "Status: " << status; },
                                    [](const NodeInfo&, bool) {},
-                                   [](std::shared_ptr<MatrixChange>) {});
+                                   [](std::shared_ptr<CloseNodesChange>) {});
 
   for (uint16_t i = 0; i < Parameters::max_routing_table_size; ++i) {
     ASSERT_TRUE(routing_table.AddNode(nodes.at(i)));
@@ -165,7 +165,7 @@ TEST(RoutingTableTest, FUNC_ReverseOrderedGroupChange) {
     }
   };
   routing_table.InitialiseFunctors(network_status_functor, remove_node_functor, []() {},
-                                   group_change_functor, [](std::shared_ptr<MatrixChange>) {});
+                                   group_change_functor, [](std::shared_ptr<CloseNodesChange>) {});
 
   // Add nodes to routing table
   for (auto ritr = nodes.rbegin(); ritr < nodes.rend(); ++ritr) {
@@ -257,7 +257,7 @@ TEST(RoutingTableTest, FUNC_CheckGroupChangeRemoveNodesFromGroup) {
     }
   };
   routing_table.InitialiseFunctors(network_status_functor, remove_node_functor, []() {},
-                                   group_change_functor, [](std::shared_ptr<MatrixChange>) {});
+                                   group_change_functor, [](std::shared_ptr<CloseNodesChange>) {});
 
   // Populate routing table
   for (uint16_t i = 0; i < Parameters::max_routing_table_size; ++i) {
@@ -346,7 +346,7 @@ TEST(RoutingTableTest, FUNC_CheckGroupChangeAddGroupNodesToFullTable) {
     }
   };
   routing_table.InitialiseFunctors(network_status_functor, remove_node_functor, []() {},
-                                   group_change_functor, [](std::shared_ptr<MatrixChange>) {});
+                                   group_change_functor, [](std::shared_ptr<CloseNodesChange>) {});
 
   // Populate routing table
   for (uint16_t i = 0; i < Parameters::max_routing_table_size; ++i) {

@@ -24,7 +24,7 @@
 #include "maidsafe/common/log.h"
 #include "maidsafe/common/utils.h"
 
-#include "maidsafe/routing/matrix_change.h"
+#include "maidsafe/routing/close_nodes_change.h"
 #include "maidsafe/routing/parameters.h"
 #include "maidsafe/routing/tests/test_utils.h"
 
@@ -32,31 +32,32 @@ namespace maidsafe {
 namespace routing {
 namespace test {
 
-class MatrixChangeTest : public testing::Test {
+class CloseNodesChangeTest : public testing::Test {
  protected:
-  MatrixChangeTest() : old_matrix_(), new_matrix_(), kNodeId_(NodeId::IdType::kRandomId) {
-    int old_matrix_size(20);
+  CloseNodesChangeTest() : old_close_nodes_(), new_close_nodes_(),
+      kNodeId_(NodeId::IdType::kRandomId) {
+    int old_close_nodes_size(20);
 
-    old_matrix_.push_back(kNodeId_);
-    new_matrix_.push_back(kNodeId_);
-    for (auto i(0); i != old_matrix_size - 1; ++i) {
-      old_matrix_.push_back(NodeId(NodeId::IdType::kRandomId));
-      new_matrix_.push_back(old_matrix_.back());
+    old_close_nodes_.push_back(kNodeId_);
+    new_close_nodes_.push_back(kNodeId_);
+    for (auto i(0); i != old_close_nodes_size - 1; ++i) {
+      old_close_nodes_.push_back(NodeId(NodeId::IdType::kRandomId));
+      new_close_nodes_.push_back(old_close_nodes_.back());
     }
   }
 
  public:
   CheckHoldersResult CheckHolders(const NodeId& target,
-      std::vector<NodeId>& old_matrix, std::vector<NodeId>& new_matrix) {
+      std::vector<NodeId>& old_close_nodes, std::vector<NodeId>& new_close_nodes) {
     CheckHoldersResult holders_result;
     // Radius
-    std::sort(new_matrix.begin(), new_matrix.end(),
+    std::sort(new_close_nodes.begin(), new_close_nodes.end(),
               [this](const NodeId & lhs, const NodeId & rhs) {
       return NodeId::CloserToTarget(lhs, rhs, this->kNodeId_);
     });
     NodeId fcn_distance;
-    if (new_matrix.size() >= Parameters::closest_nodes_size)
-      fcn_distance = kNodeId_ ^ new_matrix[Parameters::closest_nodes_size - 1];
+    if (new_close_nodes.size() >= Parameters::closest_nodes_size)
+      fcn_distance = kNodeId_ ^ new_close_nodes[Parameters::closest_nodes_size - 1];
     else
       fcn_distance = kNodeId_ ^ (NodeId(NodeId::IdType::kMaxId));
     crypto::BigInt radius(
@@ -64,24 +65,24 @@ class MatrixChangeTest : public testing::Test {
         Parameters::proximity_factor);
 
     // sort by target
-    std::sort(old_matrix.begin(), old_matrix.end(),
+    std::sort(old_close_nodes.begin(), old_close_nodes.end(),
               [target](const NodeId & lhs,
                        const NodeId & rhs) { return NodeId::CloserToTarget(lhs, rhs, target); });
 
-    std::sort(new_matrix.begin(), new_matrix.end(),
+    std::sort(new_close_nodes.begin(), new_close_nodes.end(),
               [target](const NodeId & lhs,
                        const NodeId & rhs) { return NodeId::CloserToTarget(lhs, rhs, target); });
 
     // Remove taget == node ids and adjust holder size
 
     size_t group_size_adjust(Parameters::group_size + 1U);
-    size_t old_holders_size = std::min(old_matrix_.size(), group_size_adjust);
-    size_t new_holders_size = std::min(new_matrix_.size(), group_size_adjust);
+    size_t old_holders_size = std::min(old_close_nodes_.size(), group_size_adjust);
+    size_t new_holders_size = std::min(new_close_nodes_.size(), group_size_adjust);
 
-    std::vector<NodeId> all_old_holders(old_matrix_.begin(),
-                                        old_matrix_.begin() + old_holders_size);
-    std::vector<NodeId> all_new_holders(new_matrix_.begin(),
-                                        new_matrix_.begin() + new_holders_size);
+    std::vector<NodeId> all_old_holders(old_close_nodes_.begin(),
+                                        old_close_nodes_.begin() + old_holders_size);
+    std::vector<NodeId> all_new_holders(new_close_nodes_.begin(),
+                                        new_close_nodes_.begin() + new_holders_size);
     std::vector<NodeId> all_lost_nodes;
 
     for (auto& drop_node : all_old_holders)
@@ -136,10 +137,10 @@ class MatrixChangeTest : public testing::Test {
     return holders_result;
   }
 
-  void DoCheckHoldersTest(const MatrixChange& matrix_change) {
+  void DoCheckHoldersTest(const CloseNodesChange& close_nodes_change) {
     NodeId target_id(NodeId::IdType::kRandomId);
-    auto result(matrix_change.CheckHolders(target_id));
-    auto test_result(CheckHolders(target_id, old_matrix_, new_matrix_));
+    auto result(close_nodes_change.CheckHolders(target_id));
+    auto test_result(CheckHolders(target_id, old_close_nodes_, new_close_nodes_));
     ASSERT_EQ(result.proximity_status, test_result.proximity_status);
     ASSERT_EQ(result.new_holders, test_result.new_holders);
     ASSERT_EQ(result.old_holders, test_result.old_holders);
@@ -161,73 +162,30 @@ class MatrixChangeTest : public testing::Test {
 //       LOG(kVerbose) << "test_result.old_holders : ";
 //       for (auto& holder : test_result.old_holders)
 //         LOG(kVerbose) << "    ----    " << HexSubstr(holder.string());
-//       LOG(kVerbose) << "new_matrix containing : ";
-//       for (auto& holder : new_matrix_)
+//       LOG(kVerbose) << "new_close_nodes containing : ";
+//       for (auto& holder : new_close_nodes_)
 //         LOG(kVerbose) << "    ----    " << HexSubstr(holder.string());
-//       LOG(kVerbose) << "old_matrix containing : ";
-//       for (auto& holder : old_matrix_)
+//       LOG(kVerbose) << "old_close_nodes containing : ";
+//       for (auto& holder : old_close_nodes_)
 //         LOG(kVerbose) << "    ----    " << HexSubstr(holder.string());
 //       ASSERT_EQ(0, 1);
 //     }
   }
 
  protected:
-  std::vector<NodeId> old_matrix_, new_matrix_;
+  std::vector<NodeId> old_close_nodes_, new_close_nodes_;
   const NodeId kNodeId_;
 };
 
-TEST_F(MatrixChangeTest, BEH_CheckHolders) {
-  MatrixChange matrix_change(kNodeId_, old_matrix_, new_matrix_);
+TEST_F(CloseNodesChangeTest, BEH_CheckHolders) {
+  CloseNodesChange close_nodes_change(kNodeId_, old_close_nodes_, new_close_nodes_);
   for (auto i(0); i != 1000; ++i)
-    DoCheckHoldersTest(matrix_change);
+    DoCheckHoldersTest(close_nodes_change);
 }
-
-/* group matrix removed
-TEST_F(MatrixChangeTest, BEH_GroupMatrixUpdating) {
-  GroupMatrix group_matrix(kNodeId_, false);
-  for (auto& node : old_matrix_) {
-    NodeInfo node_info;
-    node_info.node_id = node;
-    group_matrix.AddConnectedPeer(node_info);
-  }
-
-  for (auto i(0); i != 1000; ++i) {
-    {
-      // Adding a node
-      NodeId node(NodeId::IdType::kRandomId);
-      NodeInfo node_info;
-      node_info.node_id = node;
-      MatrixChange matrix_change(*group_matrix.AddConnectedPeer(node_info));
-      EXPECT_EQ(0, matrix_change.lost_nodes().size());
-      EXPECT_EQ(1, matrix_change.new_nodes().size());
-      EXPECT_EQ(node, matrix_change.new_nodes().front());
-
-      new_matrix_.push_back(node);
-      DoCheckHoldersTest(matrix_change);
-      old_matrix_.push_back(node);
-    }
-
-    if (i > 16) {
-      // Dropping a node
-      auto connected_peers(group_matrix.GetConnectedPeers());
-      NodeInfo drop_node_info(connected_peers.at(RandomUint32() % connected_peers.size()));
-      NodeId drop_node(drop_node_info.node_id);
-      MatrixChange matrix_change(*group_matrix.RemoveConnectedPeer(drop_node_info));
-      EXPECT_EQ(1, matrix_change.lost_nodes().size());
-      EXPECT_EQ(0, matrix_change.new_nodes().size());
-      EXPECT_EQ(drop_node, matrix_change.lost_nodes().front());
-
-      new_matrix_.erase(std::find(new_matrix_.begin(), new_matrix_.end(), drop_node));
-      DoCheckHoldersTest(matrix_change);
-      old_matrix_.erase(std::find(old_matrix_.begin(), old_matrix_.end(), drop_node));
-    }
-  }
-}
-*/
 
 void Choose(const std::set<NodeId>& online_pmids,
             const NodeId& kTarget,
-            const std::vector<MatrixChange>& owners,
+            const std::vector<CloseNodesChange>& owners,
             int owner_count,
             int online_pmid_count) {
   // This test is only valid where 'owner_count' <= 'Parameters::group_size'.
@@ -268,26 +226,26 @@ void Choose(const std::set<NodeId>& online_pmids,
   }
 }
 
-TEST(SingleMatrixChangeTest, BEH_ChoosePmidNode) {
-  std::vector<NodeId> old_matrix, new_matrix;
+TEST(SingleCloseNodesChangeTest, BEH_ChoosePmidNode) {
+  std::vector<NodeId> old_close_nodes, new_close_nodes;
   const auto kGroupSize(Parameters::group_size);
   for (int i(0); i != kGroupSize * 5; ++i)
-    new_matrix.emplace_back(NodeId::IdType::kRandomId);
+    new_close_nodes.emplace_back(NodeId::IdType::kRandomId);
   const NodeId kTarget(NodeId::IdType::kRandomId);
 
   // Get the 5 closest to 'kTarget' as the owners.
-  std::sort(std::begin(new_matrix), std::end(new_matrix),
+  std::sort(std::begin(new_close_nodes), std::end(new_close_nodes),
             [&kTarget](const NodeId& lhs, const NodeId& rhs) {
     return NodeId::CloserToTarget(lhs, rhs, kTarget);
   });
-  std::vector<MatrixChange> owners;
+  std::vector<CloseNodesChange> owners;
   for (int i(0); i != kGroupSize + 1; ++i)
-    owners.push_back(MatrixChange(new_matrix[i], old_matrix, new_matrix));
+    owners.push_back(CloseNodesChange(new_close_nodes[i], old_close_nodes, new_close_nodes));
 
-  // Shuffle 'new_matrix'.
+  // Shuffle 'new_close_nodes'.
   std::random_device random_device;
   std::mt19937 random_functor(random_device());
-  std::shuffle(std::begin(new_matrix), std::end(new_matrix), random_functor);
+  std::shuffle(std::begin(new_close_nodes), std::end(new_close_nodes), random_functor);
 
   // 0 online_pmids should throw.
   std::set<NodeId> online_pmids;

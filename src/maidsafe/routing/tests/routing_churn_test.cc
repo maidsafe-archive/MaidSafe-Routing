@@ -46,7 +46,7 @@ class RoutingChurnTest : public GenericNetwork, public testing::Test {
 
   virtual void TearDown() override { Sleep(std::chrono::microseconds(100)); }
 
-  void CheckMatrixChange(std::shared_ptr<routing::MatrixChange> matrix_change,
+  void CheckCloseNodesChange(std::shared_ptr<routing::CloseNodesChange> matrix_change,
                          const NodeId affected_node) {
     if (!matrix_change_check_)
       return;
@@ -109,7 +109,6 @@ class RoutingChurnTest : public GenericNetwork, public testing::Test {
     for (const auto& node : expect_affected_)
       if (std::find(affected_nodes_.begin(), affected_nodes_.end(), node) ==
           affected_nodes_.end()) {
-//        nodes_[NodeIndex((node))]->PrintGroupMatrix();
         EXPECT_TRUE(false) << "node " << HexSubstr(node.string()) << " shall be affected but not";
         return false;
       }
@@ -123,7 +122,7 @@ class RoutingChurnTest : public GenericNetwork, public testing::Test {
   std::mutex checking_mutex_;
 
  private:
-  void DoDroppingCheck(std::shared_ptr<routing::MatrixChange> matrix_change,
+  void DoDroppingCheck(std::shared_ptr<routing::CloseNodesChange> matrix_change,
                        const NodeId& affected_node) {
     auto lost_nodes(matrix_change->lost_nodes());
     if (lost_nodes.empty())
@@ -149,7 +148,7 @@ class RoutingChurnTest : public GenericNetwork, public testing::Test {
     affected_nodes_.insert(affected_node);
   }
 
-  void DoAddingCheck(std::shared_ptr<routing::MatrixChange> matrix_change,
+  void DoAddingCheck(std::shared_ptr<routing::CloseNodesChange> matrix_change,
                      const NodeId& affected_node) {
     auto new_nodes(matrix_change->new_nodes());
     if (new_nodes.empty())

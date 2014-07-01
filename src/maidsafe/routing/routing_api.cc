@@ -71,7 +71,6 @@ void Routing::Send(const GroupToSingleRelayMessage& message) {
   pimpl_->Send(message);
 }
 
-
 void Routing::SendDirect(const NodeId& destination_id, const std::string& message,
                          bool cacheable, ResponseFunctor response_functor) {
   return pimpl_->SendDirect(destination_id, message, cacheable, response_functor);
@@ -86,20 +85,20 @@ bool Routing::ClosestToId(const NodeId& target_id) { return pimpl_->ClosestToId(
 
 NodeId Routing::RandomConnectedNode() { return pimpl_->RandomConnectedNode(); }
 
-//bool Routing::EstimateInGroup(const NodeId& sender_id, const NodeId& info_id) const {
-//  return pimpl_->EstimateInGroup(sender_id, info_id);
-//}
+bool Routing::EstimateInGroup(const NodeId& sender_id, const NodeId& info_id) const {
+  return pimpl_->EstimateInGroup(sender_id, info_id);
+}
 
 NodeId Routing::kNodeId() const { return pimpl_->kNodeId(); }
 
-//int Routing::network_status() { return pimpl_->network_status(); }
+int Routing::network_status() { return pimpl_->network_status(); }
 
 
-// bool Routing::IsConnectedVault(const NodeId& node_id) { return pimpl_->IsConnectedVault(node_id); }
+bool Routing::IsConnectedVault(const NodeId& node_id) { return pimpl_->IsConnectedVault(node_id); }
 
-//bool Routing::IsConnectedClient(const NodeId& node_id) {
-//  return pimpl_->IsConnectedClient(node_id);
-//}
+bool Routing::IsConnectedClient(const NodeId& node_id) {
+  return pimpl_->IsConnectedClient(node_id);
+}
 
 void UpdateNetworkHealth(int updated_health, int& current_health, std::mutex& mutex,
                          std::condition_variable& cond_var, const NodeId& this_node_id) {

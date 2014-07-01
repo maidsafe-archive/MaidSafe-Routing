@@ -16,7 +16,7 @@
     See the Licences for the specific language governing permissions and limitations relating to
     use of the MaidSafe Software.                                                                 */
 
-#include "maidsafe/routing/matrix_change.h"
+#include "maidsafe/routing/close_nodes_change.h"
 
 #include <limits>
 #include <utility>
@@ -28,74 +28,76 @@ namespace maidsafe {
 
 namespace routing {
 
-MatrixChange::MatrixChange()
+CloseNodesChange::CloseNodesChange()
     : node_id_(),
-      old_matrix_(),
-      new_matrix_(),
+      old_close_nodes_(),
+      new_close_nodes_(),
       lost_nodes_(),
       new_nodes_(),
       radius_() {}
 
-MatrixChange::MatrixChange(const MatrixChange& other)
+CloseNodesChange::CloseNodesChange(const CloseNodesChange& other)
     : node_id_(other.node_id_),
-      old_matrix_(other.old_matrix_),
-      new_matrix_(other.new_matrix_),
+      old_close_nodes_(other.old_close_nodes_),
+      new_close_nodes_(other.new_close_nodes_),
       lost_nodes_(other.lost_nodes_),
       new_nodes_(other.new_nodes_),
       radius_(other.radius_) {}
 
-MatrixChange::MatrixChange(MatrixChange&& other)
+CloseNodesChange::CloseNodesChange(CloseNodesChange&& other)
     : node_id_(std::move(other.node_id_)),
-      old_matrix_(std::move(other.old_matrix_)),
-      new_matrix_(std::move(other.new_matrix_)),
+      old_close_nodes_(std::move(other.old_close_nodes_)),
+      new_close_nodes_(std::move(other.new_close_nodes_)),
       lost_nodes_(std::move(other.lost_nodes_)),
       new_nodes_(std::move(other.new_nodes_)),
       radius_(std::move(other.radius_)) {}
 
-MatrixChange& MatrixChange::operator=(MatrixChange other) {
+CloseNodesChange& CloseNodesChange::operator=(CloseNodesChange other) {
   swap(*this, other);
   return *this;
 }
 
-MatrixChange::MatrixChange(NodeId this_node_id, const std::vector<NodeId>& old_matrix,
-                           const std::vector<NodeId>& new_matrix)
+CloseNodesChange::CloseNodesChange(NodeId this_node_id, const std::vector<NodeId>& old_close_nodes,
+                           const std::vector<NodeId>& new_close_nodes)
     : node_id_(std::move(this_node_id)),
-      old_matrix_([this](std::vector<NodeId> old_matrix_in)->std::vector<NodeId> {
-        std::sort(std::begin(old_matrix_in), std::end(old_matrix_in),
+      old_close_nodes_([this](std::vector<NodeId> old_close_nodes_in)->std::vector<NodeId> {
+        std::sort(std::begin(old_close_nodes_in), std::end(old_close_nodes_in),
                   [this](const NodeId & lhs, const NodeId & rhs) {
           return NodeId::CloserToTarget(lhs, rhs, node_id_);
         });
-        return old_matrix_in;
-      }(old_matrix)),
-      new_matrix_([this](std::vector<NodeId> new_matrix_in)->std::vector<NodeId> {
-        std::sort(std::begin(new_matrix_in), std::end(new_matrix_in),
+        return old_close_nodes_in;
+      }(old_close_nodes)),
+      new_close_nodes_([this](std::vector<NodeId> new_close_nodes_in)->std::vector<NodeId> {
+        std::sort(std::begin(new_close_nodes_in), std::end(new_close_nodes_in),
                   [this](const NodeId & lhs, const NodeId & rhs) {
           return NodeId::CloserToTarget(lhs, rhs, node_id_);
         });
-        return new_matrix_in;
-      }(new_matrix)),
+        return new_close_nodes_in;
+      }(new_close_nodes)),
       lost_nodes_([this]()->std::vector<NodeId> {
         std::vector<NodeId> lost_nodes;
-        std::set_difference(std::begin(old_matrix_), std::end(old_matrix_), std::begin(new_matrix_),
-                            std::end(new_matrix_), std::back_inserter(lost_nodes),
-                            [this](const NodeId & lhs, const NodeId & rhs) {
-          return NodeId::CloserToTarget(lhs, rhs, node_id_);
-        });
+        std::set_difference(std::begin(old_close_nodes_), std::end(old_close_nodes_),
+                            std::begin(new_close_nodes_), std::end(new_close_nodes_),
+                            std::back_inserter(lost_nodes),
+                            [this](const NodeId& lhs, const NodeId& rhs) {
+                              return NodeId::CloserToTarget(lhs, rhs, node_id_);
+                            });
         return lost_nodes;
       }()),
       new_nodes_([this]()->std::vector<NodeId> {
         std::vector<NodeId> new_nodes;
-        std::set_difference(std::begin(new_matrix_), std::end(new_matrix_), std::begin(old_matrix_),
-                            std::end(old_matrix_), std::back_inserter(new_nodes),
+        std::set_difference(std::begin(new_close_nodes_), std::end(new_close_nodes_),
+                            std::begin(old_close_nodes_), std::end(old_close_nodes_),
+                            std::back_inserter(new_nodes),
                             [this](const NodeId & lhs, const NodeId & rhs) {
-          return NodeId::CloserToTarget(lhs, rhs, node_id_);
-        });
+                              return NodeId::CloserToTarget(lhs, rhs, node_id_);
+                            });
         return new_nodes;
       }()),
       radius_([this]()->crypto::BigInt {
         NodeId fcn_distance;
-        if (new_matrix_.size() >= Parameters::closest_nodes_size)
-          fcn_distance = node_id_ ^ new_matrix_[Parameters::closest_nodes_size - 1];
+        if (new_close_nodes_.size() >= Parameters::closest_nodes_size)
+          fcn_distance = node_id_ ^ new_close_nodes_[Parameters::closest_nodes_size - 1];
         else
           fcn_distance = node_id_ ^ (NodeId(NodeId::IdType::kMaxId));  // FIXME
         return (crypto::BigInt(
@@ -103,22 +105,24 @@ MatrixChange::MatrixChange(NodeId this_node_id, const std::vector<NodeId>& old_m
                 Parameters::proximity_factor);
       }()) {}
 
-CheckHoldersResult MatrixChange::CheckHolders(const NodeId& target) const {
-  // Handle cases of lower number of group matrix nodes
+CheckHoldersResult CloseNodesChange::CheckHolders(const NodeId& target) const {
+  // Handle cases of lower number of group close_nodes nodes
   size_t group_size_adjust(Parameters::group_size + 1U);
-  size_t old_holders_size = std::min(old_matrix_.size(), group_size_adjust);
-  size_t new_holders_size = std::min(new_matrix_.size(), group_size_adjust);
+  size_t old_holders_size = std::min(old_close_nodes_.size(), group_size_adjust);
+  size_t new_holders_size = std::min(new_close_nodes_.size(), group_size_adjust);
 
   std::vector<NodeId> old_holders(old_holders_size), new_holders(new_holders_size),
       lost_nodes(lost_nodes_);
-  std::partial_sort_copy(std::begin(old_matrix_), std::end(old_matrix_), std::begin(old_holders),
-                         std::end(old_holders), [target](const NodeId & lhs, const NodeId & rhs) {
-    return NodeId::CloserToTarget(lhs, rhs, target);
-  });
-  std::partial_sort_copy(std::begin(new_matrix_), std::end(new_matrix_), std::begin(new_holders),
-                         std::end(new_holders), [target](const NodeId & lhs, const NodeId & rhs) {
-    return NodeId::CloserToTarget(lhs, rhs, target);
-  });
+  std::partial_sort_copy(std::begin(old_close_nodes_), std::end(old_close_nodes_),
+                         std::begin(old_holders), std::end(old_holders),
+                         [target](const NodeId & lhs, const NodeId & rhs) {
+                           return NodeId::CloserToTarget(lhs, rhs, target);
+                         });
+  std::partial_sort_copy(std::begin(new_close_nodes_), std::end(new_close_nodes_),
+                         std::begin(new_holders), std::end(new_holders),
+                         [target](const NodeId & lhs, const NodeId & rhs) {
+                           return NodeId::CloserToTarget(lhs, rhs, target);
+                         });
   std::sort(std::begin(lost_nodes), std::end(lost_nodes),
             [target](const NodeId & lhs, const NodeId & rhs) {
     return NodeId::CloserToTarget(lhs, rhs, target);
@@ -163,15 +167,15 @@ CheckHoldersResult MatrixChange::CheckHolders(const NodeId& target) const {
   return holders_result;
 }
 
-NodeId MatrixChange::ChoosePmidNode(const std::set<NodeId>& online_pmids,
+NodeId CloseNodesChange::ChoosePmidNode(const std::set<NodeId>& online_pmids,
                                     const NodeId& target) const {
   if (online_pmids.empty())
     BOOST_THROW_EXCEPTION(MakeError(CommonErrors::invalid_parameter));
 
-  LOG(kInfo) << "MatrixChange::ChoosePmidNode having following new_matrix_ : ";
-  for (auto id : new_matrix_)
-    LOG(kInfo) << "       new_matrix_ ids     ---  " << HexSubstr(id.string());
-  LOG(kInfo) << "MatrixChange::ChoosePmidNode having target : "
+  LOG(kInfo) << "CloseNodesChange::ChoosePmidNode having following new_close_nodes_ : ";
+  for (auto id : new_close_nodes_)
+    LOG(kInfo) << "       new_close_nodes_ ids     ---  " << HexSubstr(id.string());
+  LOG(kInfo) << "CloseNodesChange::ChoosePmidNode having target : "
                 << HexSubstr(target.string()) << " and following online_pmids : ";
   for (auto pmid : online_pmids)
     LOG(kInfo) << "       online_pmids        ---  " << HexSubstr(pmid.string());
@@ -179,12 +183,12 @@ NodeId MatrixChange::ChoosePmidNode(const std::set<NodeId>& online_pmids,
   // In case storing to PublicPmid, the data shall not be stored on the Vault itself
   // However, the vault will appear in DM's routing table and affect result
   std::vector<NodeId> temp(Parameters::group_size + 1);
-  std::partial_sort_copy(std::begin(new_matrix_), std::end(new_matrix_), std::begin(temp),
+  std::partial_sort_copy(std::begin(new_close_nodes_), std::end(new_close_nodes_), std::begin(temp),
                          std::end(temp), [&target](const NodeId& lhs, const NodeId& rhs) {
     return NodeId::CloserToTarget(lhs, rhs, target);
   });
 
-  LOG(kInfo) << "MatrixChange::ChoosePmidNode own id : "
+  LOG(kInfo) << "CloseNodesChange::ChoosePmidNode own id : "
                 << HexSubstr(node_id_.string()) << " and closest+1 to the target are : ";
   for (auto node : temp)
     LOG(kInfo) << "       sorted_neighbours   ---  " << HexSubstr(node.string());
@@ -205,36 +209,38 @@ NodeId MatrixChange::ChoosePmidNode(const std::set<NodeId>& online_pmids,
   return *pmids_itr;
 }
 
-bool MatrixChange::OldEqualsToNew() const {
-  return old_matrix_ == new_matrix_;
+bool CloseNodesChange::OldEqualsToNew() const {
+  return old_close_nodes_ == new_close_nodes_;
 }
 
-void swap(MatrixChange& lhs, MatrixChange& rhs) MAIDSAFE_NOEXCEPT {
+void swap(CloseNodesChange& lhs, CloseNodesChange& rhs) MAIDSAFE_NOEXCEPT {
   using std::swap;
   swap(lhs.node_id_, rhs.node_id_);
-  swap(lhs.old_matrix_, rhs.old_matrix_);
-  swap(lhs.new_matrix_, rhs.new_matrix_);
+  swap(lhs.old_close_nodes_, rhs.old_close_nodes_);
+  swap(lhs.new_close_nodes_, rhs.new_close_nodes_);
   swap(lhs.lost_nodes_, rhs.lost_nodes_);
   swap(lhs.radius_, rhs.radius_);
 }
 
-void MatrixChange::Print() {
-  std::string tab("\t"), output("\nMatrix of Node " + DebugId(node_id_) +
-                                " having following entries in old_matrix_ :");
-  for (auto entry : old_matrix_)
-    output.append("\n" + tab + tab+ "entry in old_matrix" + tab + "------" + tab + DebugId(entry));
-  output.append("\nMatrix of Node " + DebugId(node_id_) +
-                " having following entries in new_matrix_ :");
-  for (auto entry : new_matrix_)
-    output.append("\n" + tab + tab+ "entry in new_matrix" + tab + "------" + tab + DebugId(entry));
-  output.append("\nMatrix of Node " + DebugId(node_id_) +
+void CloseNodesChange::Print() {
+  std::string tab("\t"), output("\nclose_nodes of Node " + DebugId(node_id_) +
+                                " having following entries in old_close_nodes_ :");
+  for (auto entry : old_close_nodes_)
+    output.append("\n" + tab + tab + "entry in old_close_nodes" + tab + "------" + tab
+                  + DebugId(entry));
+  output.append("\nClose nodes of Node " + DebugId(node_id_) +
+                " having following entries in new_close_nodes_ :");
+  for (auto entry : new_close_nodes_)
+    output.append("\n" + tab + tab + "entry in new_close_nodes" + tab + "------" + tab
+                  + DebugId(entry));
+  output.append("\nClose nodes of Node " + DebugId(node_id_) +
                 " having following entries in lost_nodes_ :");
   for (auto entry : lost_nodes_)
-    output.append("\n" + tab + tab+ "entry in lost_nodes" + tab + "------" + tab + DebugId(entry));
-  output.append("\nMatrix of Node " + DebugId(node_id_) +
+    output.append("\n" + tab + tab + "entry in lost_nodes" + tab + "------" + tab + DebugId(entry));
+  output.append("\nClose nodes of Node " + DebugId(node_id_) +
                 " having following entries in new_nodes_ :");
   for (auto entry : new_nodes_)
-    output.append("\n" + tab + tab+ "entry in new_nodes" + tab + "------" + tab + DebugId(entry));
+    output.append("\n" + tab + tab + "entry in new_nodes" + tab + "------" + tab + DebugId(entry));
   LOG(kInfo) << output;
 }
 

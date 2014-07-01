@@ -16,8 +16,8 @@
     See the Licences for the specific language governing permissions and limitations relating to
     use of the MaidSafe Software.                                                                 */
 
-#ifndef MAIDSAFE_ROUTING_MATRIX_CHANGE_H_
-#define MAIDSAFE_ROUTING_MATRIX_CHANGE_H_
+#ifndef MAIDSAFE_ROUTING_CLOSE_NODES_CHANGE_H_
+#define MAIDSAFE_ROUTING_CLOSE_NODES_CHANGE_H_
 
 #include <set>
 #include <string>
@@ -32,11 +32,9 @@ namespace maidsafe {
 
 namespace routing {
 
-class RoutingTable;
-
 namespace test {
-class MatrixChangeTest_BEH_CheckHolders_Test;
-class SingleMatrixChangeTest_BEH_ChoosePmidNode_Test;
+class CloseNodesChangeTest_BEH_CheckHolders_Test;
+class SingleCloseNodesChangeTest_BEH_ChoosePmidNode_Test;
 }
 
 enum class GroupRangeStatus {
@@ -51,15 +49,12 @@ struct CheckHoldersResult {
   routing::GroupRangeStatus proximity_status;
 };
 
-class MatrixChange {
+class CloseNodesChange {
  public:
-  MatrixChange();
-  MatrixChange(const MatrixChange& other);
-  MatrixChange(MatrixChange&& other);
-  MatrixChange& operator=(MatrixChange other);
-  MatrixChange(NodeId this_node_id, const std::vector<NodeId>& old_matrix,
-               const std::vector<NodeId>& new_matrix);
-  bool OldEqualsToNew() const;
+  CloseNodesChange();
+  CloseNodesChange(const CloseNodesChange& other);
+  CloseNodesChange(CloseNodesChange&& other);
+  CloseNodesChange& operator=(CloseNodesChange other);
 
   CheckHoldersResult CheckHolders(const NodeId& target) const;
   NodeId ChoosePmidNode(const std::set<NodeId>& online_pmids, const NodeId& target) const;
@@ -67,15 +62,18 @@ class MatrixChange {
   std::vector<NodeId> new_nodes() const { return new_nodes_; }
   void Print();
 
-  friend void swap(MatrixChange& lhs, MatrixChange& rhs) MAIDSAFE_NOEXCEPT;
+  friend void swap(CloseNodesChange& lhs, CloseNodesChange& rhs) MAIDSAFE_NOEXCEPT;
   friend class RoutingTable;
-  friend class test::MatrixChangeTest_BEH_CheckHolders_Test;
-  friend class test::SingleMatrixChangeTest_BEH_ChoosePmidNode_Test;
+  friend class test::CloseNodesChangeTest_BEH_CheckHolders_Test;
+  friend class test::SingleCloseNodesChangeTest_BEH_ChoosePmidNode_Test;
 
  private:
+  CloseNodesChange(NodeId this_node_id, const std::vector<NodeId>& old_close_nodes,
+                   const std::vector<NodeId>& new_close_nodes);
+  bool OldEqualsToNew() const;
 
   NodeId node_id_;
-  std::vector<NodeId> old_matrix_, new_matrix_, lost_nodes_, new_nodes_;
+  std::vector<NodeId> old_close_nodes_, new_close_nodes_, lost_nodes_, new_nodes_;
   crypto::BigInt radius_;
 };
 
@@ -83,4 +81,4 @@ class MatrixChange {
 
 }  // namespace maidsafe
 
-#endif  // MAIDSAFE_ROUTING_MATRIX_CHANGE_H_
+#endif  // MAIDSAFE_ROUTING_CLOSE_NODES_CHANGE_H_

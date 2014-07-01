@@ -30,7 +30,7 @@
 #include "maidsafe/rudp/managed_connections.h"
 
 #include "maidsafe/routing/bootstrap_file_operations.h"
-#include "maidsafe/routing/matrix_change.h"
+#include "maidsafe/routing/close_nodes_change.h"
 #include "maidsafe/routing/message.h"
 
 namespace maidsafe {
@@ -71,13 +71,11 @@ typedef std::function<void(int /*network_health*/)> NetworkStatusFunctor;
 typedef std::function<void(const BootstrapContact& /*new_bootstrap_contact*/)>
     NewBootstrapContactFunctor;
 
-// This functor fires when a new close node is inserted in routing table. Upper layers responsible
-// for storing key/value pairs should send all key/values between itself and the new node's address
-// to the new node. Keys further than the furthest node can safely be deleted (if any).
-typedef std::function<void(const std::vector<NodeInfo>& /*new_close_nodes*/)>
-    CloseNodeReplacedFunctor;
-
-typedef std::function<void(std::shared_ptr<MatrixChange> /*matrix_change*/)> MatrixChangedFunctor;
+// This functor fires when a new close node is inserted or removed from routing table.
+// Upper layers are responsible for storing key/value pairs should send all key/values between
+// itself and the new node's address to the new node.
+typedef std::function<void(std::shared_ptr<CloseNodesChange> /*close_nodes_change*/)>
+    CloseNodesChangeFunctor;
 
 // This functor fires when routing table size is over greedy limit. The furthest unnecessary
 // node in routing table is dropped. Unnecessary is defined as a node who does not have us in
@@ -119,8 +117,7 @@ struct Functors {
       : message_and_caching(),
         typed_message_and_caching(),
         network_status(),
-        close_node_replaced(),
-        matrix_changed(),
+        close_nodes_change(),
         set_public_key(),
         request_public_key(),
         new_bootstrap_contact() {}
@@ -128,8 +125,7 @@ struct Functors {
   MessageAndCachingFunctors message_and_caching;
   TypedMessageAndCachingFunctor typed_message_and_caching;
   NetworkStatusFunctor network_status;
-  CloseNodeReplacedFunctor close_node_replaced;
-  MatrixChangedFunctor matrix_changed;
+  CloseNodesChangeFunctor close_nodes_change;
   GivePublicKeyFunctor set_public_key;
   RequestPublicKeyFunctor request_public_key;
   NewBootstrapContactFunctor new_bootstrap_contact;

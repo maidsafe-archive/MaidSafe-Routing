@@ -64,13 +64,11 @@ class RoutingTable {
   virtual ~RoutingTable();
   void InitialiseFunctors(NetworkStatusFunctor network_status_functor,
                           std::function<void(const NodeInfo&, bool)> remove_node_functor,
-                          MatrixChangedFunctor matrix_change_functor);
+                          CloseNodesChangeFunctor close_nodes_change_functor);
   bool AddNode(const NodeInfo& peer);
   bool CheckNode(const NodeInfo& peer);
   NodeInfo DropNode(const NodeId& node_to_drop, bool routing_only);
 
-  GroupRangeStatus IsNodeIdInGroupRange(const NodeId& group_id) const;
-  GroupRangeStatus IsNodeIdInGroupRange(const NodeId& group_id, const NodeId& node_id) const;
   bool IsThisNodeInRange(const NodeId& target_id, uint16_t range);
   bool IsThisNodeClosestTo(const NodeId& target_id, bool ignore_exact_match = false);
   bool Contains(const NodeId& node_id) const;
@@ -121,9 +119,7 @@ class RoutingTable {
 
   void UpdateNetworkStatus(uint16_t size) const;
 
-/* remove group matrix
-  void IpcSendGroupMatrix() const;
-*/
+  void IpcSendCloseNodes();
   std::string PrintRoutingTable();
 
   const bool kClientMode_;
@@ -135,7 +131,7 @@ class RoutingTable {
   mutable std::mutex mutex_;
   std::function<void(const NodeInfo&, bool)> remove_node_functor_;
   NetworkStatusFunctor network_status_functor_;
-  MatrixChangedFunctor matrix_change_functor_;
+  CloseNodesChangeFunctor close_nodes_change_functor_;
   std::vector<NodeInfo> nodes_;
   std::unique_ptr<boost::interprocess::message_queue> ipc_message_queue_;
   NetworkStatistics& network_statistics_;

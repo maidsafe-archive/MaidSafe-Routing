@@ -132,20 +132,20 @@ class Routing {
 
   // Evaluates whether the sender_id is a legitimate source to send a request for performing
   // an operation on info_id
-//?  bool EstimateInGroup(const NodeId& sender_id, const NodeId& info_id) const;
+  bool EstimateInGroup(const NodeId& sender_id, const NodeId& info_id) const;
 
   // Returns this node's id.
   NodeId kNodeId() const;
 
   // Returns a number between 0 to 100 representing % network health w.r.t. number of connections
-  //? int network_status();
+  int network_status();
 
 
-  // Checks if routing table or group matrix contains given node id
-  // bool IsConnectedVault(const NodeId& node_id);
+  // Checks if routing table contains given node id
+  bool IsConnectedVault(const NodeId& node_id);
 
   // Checks if client routing table contains given node id
-  // bool IsConnectedClient(const NodeId& node_id);
+  bool IsConnectedClient(const NodeId& node_id);
 
   friend class test::GenericNode;
 

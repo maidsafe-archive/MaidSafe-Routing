@@ -142,7 +142,7 @@ void Routing::Impl::ConnectFunctors(const Functors& functors) {
                                     },
                                     [this](const NodeInfo & node, bool internal_rudp_only) {
                                       RemoveNode(node, internal_rudp_only);
-                                    }, functors.matrix_changed);
+                                    }, functors.close_nodes_change);
   // only one of MessageAndCachingFunctors or TypedMessageAndCachingFunctor should be provided
   assert(!functors.message_and_caching.message_received !=
          !functors.typed_message_and_caching.single_to_single.message_received);
@@ -475,15 +475,6 @@ void Routing::Impl::CheckSendParameters(const NodeId& destination_id, const std:
 
 bool Routing::Impl::ClosestToId(const NodeId& target_id) {
   return routing_table_.IsThisNodeClosestTo(target_id, true);
-}
-
-GroupRangeStatus Routing::Impl::IsNodeIdInGroupRange(const NodeId& group_id) {
-  return routing_table_.IsNodeIdInGroupRange(group_id);
-}
-
-GroupRangeStatus Routing::Impl::IsNodeIdInGroupRange(const NodeId& group_id,
-                                                     const NodeId& node_id) {
-  return routing_table_.IsNodeIdInGroupRange(group_id, node_id);
 }
 
 NodeId Routing::Impl::RandomConnectedNode() { return routing_table_.RandomConnectedNode(); }

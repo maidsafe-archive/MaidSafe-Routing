@@ -118,10 +118,6 @@ class Routing::Impl {
 
   bool ClosestToId(const NodeId& node_id);
 
-  GroupRangeStatus IsNodeIdInGroupRange(const NodeId& group_id);
-
-  GroupRangeStatus IsNodeIdInGroupRange(const NodeId& group_id, const NodeId& node_id);
-
   NodeId RandomConnectedNode();
 
   bool EstimateInGroup(const NodeId& sender_id, const NodeId& info_id);

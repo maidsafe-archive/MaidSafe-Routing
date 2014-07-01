@@ -181,10 +181,6 @@ GenericNode::GenericNode(const passport::Maid& maid, bool has_symmetric_nat)
 GenericNode::~GenericNode() {}
 
 void GenericNode::InitialiseFunctors() {
-  functors_.close_node_replaced = [&](const std::vector<NodeInfo>&) {
-    std::cout << "Node " << HexSubstr(node_info_plus_->node_info.node_id.string())
-              << " got close node replaced " << std::endl;
-  };  // NOLINT (Fraser)
   functors_.message_and_caching.message_received = [this](
       const std::string & message, ReplyFunctor reply_functor) {
     LOG(kInfo) << id_ << " -- Received: message : " << message.substr(0, 10);
@@ -193,8 +189,8 @@ void GenericNode::InitialiseFunctors() {
     reply_functor(node_id().string() + ">::< response to >:<" + message);
   };
   functors_.network_status = [&](const int & health) { SetHealth(health); };  // NOLINT
-  functors_.matrix_changed = [&](std::shared_ptr<routing::MatrixChange> /*matrix_change*/) {
-//     matrix_change_functor(node_info_plus_->node_info.node_id, matrix_change);
+  functors_.close_nodes_change = [&](std::shared_ptr<routing::CloseNodesChange> /*matrix_change*/) {
+//     close_nodes_change_functor(node_info_plus_->node_info.node_id, matrix_change);
   };
 }
 
@@ -250,8 +246,8 @@ void GenericNode::RemoveNodeFromRandomNodeHelper(const NodeId& node_id) {
   routing_->pimpl_->random_node_helper_.Remove(node_id);
 }
 
-void GenericNode::SetMatrixChangeFunctor(MatrixChangedFunctor group_matrix_functor) {
-  functors_.matrix_changed = group_matrix_functor;
+void GenericNode::SetCloseNodesChangeFunctor(CloseNodesChangeFunctor close_nodes_change_functor) {
+  functors_.close_nodes_change = close_nodes_change_functor;
 }
 
 void GenericNode::SendDirect(const NodeId& destination_id, const std::string& data,
@@ -533,7 +529,7 @@ void GenericNetwork::SetUpNetwork(size_t total_number_vaults,
   //    EXPECT_TRUE(ValidateRoutingTables());
 }
 
-void GenericNetwork::AddNode(bool client_mode, MatrixChangedFunctor matrix_change_functor) {
+void GenericNetwork::AddNode(bool client_mode, CloseNodesChangeFunctor matrix_change_functor) {
   NodePtr node;
   if (client_mode) {
     auto maid(passport::CreateMaidAndSigner().first);
@@ -542,7 +538,7 @@ void GenericNetwork::AddNode(bool client_mode, MatrixChangedFunctor matrix_chang
     auto pmid(passport::CreatePmidAndSigner().first);
     node.reset(new GenericNode(pmid, false));
   }
-  node->SetMatrixChangeFunctor(matrix_change_functor);
+  node->SetCloseNodesChangeFunctor(matrix_change_functor);
   AddNodeDetails(node);
   LOG(kVerbose) << "Node # " << nodes_.size() << " added to network";
 }
@@ -576,19 +572,19 @@ void GenericNetwork::AddVault(bool has_symmetric_nat) {
 }
 
 void GenericNetwork::AddNode(const passport::Maid& maid,
-                             MatrixChangedFunctor matrix_change_functor) {
+                             CloseNodesChangeFunctor matrix_change_functor) {
   NodePtr node;
   node.reset(new GenericNode(maid));
-  node->SetMatrixChangeFunctor(matrix_change_functor);
+  node->SetCloseNodesChangeFunctor(matrix_change_functor);
   AddNodeDetails(node);
   LOG(kVerbose) << "Node # " << nodes_.size() << " added to network";
 }
 
 void GenericNetwork::AddNode(const passport::Pmid& pmid,
-                             MatrixChangedFunctor matrix_change_functor) {
+                             CloseNodesChangeFunctor matrix_change_functor) {
   NodePtr node;
   node.reset(new GenericNode(pmid, false));
-  node->SetMatrixChangeFunctor(matrix_change_functor);
+  node->SetCloseNodesChangeFunctor(matrix_change_functor);
   AddNodeDetails(node);
   LOG(kVerbose) << "Node # " << nodes_.size() << " added to network";
 }

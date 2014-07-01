@@ -260,15 +260,6 @@ void MessageHandler::HandleGroupMessageAsClosestNode(protobuf::Message& message)
            (message.route_history(0) != routing_table_.kNodeId().string()))
     route_history.push_back(message.route_history(0));
 
-  // Confirming from group matrix. If this node is closest to the target id or else passing on to
-  // the connected peer which has the closer node.
-/*  NodeInfo closest_to_group_leader_node;
-  if (!routing_table_.IsThisNodeGroupLeader(NodeId(message.destination_id()), route_history)) {
-    assert(NodeId(message.destination_id()) != closest_to_group_leader_node.node_id);
-    return network_.SendToDirectAdjustedRoute(message, closest_to_group_leader_node.node_id,
-                                              closest_to_group_leader_node.connection_id);
-  }*/
-
   // This node is closest so will send to all replicant nodes
   uint16_t replication(static_cast<uint16_t>(message.replication()));
   if ((replication < 1) || (replication > Parameters::group_size)) {
@@ -494,17 +485,6 @@ void MessageHandler::HandleGroupRelayRequestMessageAsClosestNode(protobuf::Messa
     return network_.SendToClosestNode(message);
   }
 
-  // Confirming from group matrix. If this node is closest to the target id or else passing on to
-  // the connected peer which has the closer node.
-/*  NodeInfo closest_to_group_leader_node;
-  if (!routing_table_.IsThisNodeGroupLeader(NodeId(message.destination_id()),
-                                            closest_to_group_leader_node)) {
-    assert(NodeId(message.destination_id()) != closest_to_group_leader_node.node_id);
-    message.set_source_id(routing_table_.kNodeId().string());
-    return network_.SendToDirect(message, closest_to_group_leader_node.node_id,
-                                 closest_to_group_leader_node.connection_id);
-  } */
-
   // This node is closest so will send to all replicant nodes
   uint16_t replication(static_cast<uint16_t>(message.replication()));
   if ((replication < 1) || (replication > Parameters::group_size)) {
@@ -521,12 +501,12 @@ void MessageHandler::HandleGroupRelayRequestMessageAsClosestNode(protobuf::Messa
 
   if (have_node_with_group_id)
     close.erase(close.begin());
-  std::string group_id(message.destination_id());
+  NodeId group_id(NodeId(message.destination_id()));
   std::string group_members("[" + DebugId(routing_table_.kNodeId()) + "]");
 
   for (const auto& i : close)
     group_members += std::string("[" + DebugId(i.node_id) + "]");
-  LOG(kInfo) << "Group members for group_id " << HexSubstr(group_id) << " are: " << group_members;
+  LOG(kInfo) << "Group members for group_id " << group_id << " are: " << group_members;
   // This node relays back the responses
   message.set_source_id(routing_table_.kNodeId().string());
   for (const auto& i : close) {

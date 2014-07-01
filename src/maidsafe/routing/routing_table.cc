@@ -31,7 +31,7 @@
 #include "maidsafe/routing/node_info.h"
 #include "maidsafe/routing/return_codes.h"
 #include "maidsafe/routing/routing.pb.h"
-#include "maidsafe/routing/matrix_change.h"
+#include "maidsafe/routing/close_nodes_change.h"
 
 namespace maidsafe {
 
@@ -79,12 +79,12 @@ RoutingTable::~RoutingTable() {
 void RoutingTable::InitialiseFunctors(
     NetworkStatusFunctor network_status_functor,
     std::function<void(const NodeInfo&, bool)> remove_node_functor,    
-    MatrixChangedFunctor matrix_change_functor) {
+    CloseNodesChangeFunctor matrix_change_functor) {
   assert(remove_node_functor);
   assert(network_status_functor);
   network_status_functor_ = network_status_functor;
   remove_node_functor_ = remove_node_functor;
-  matrix_change_functor_ = matrix_change_functor;
+  close_nodes_change_functor_ = matrix_change_functor;
 }
 
 bool RoutingTable::AddNode(const NodeInfo& peer) {
@@ -157,10 +157,12 @@ bool RoutingTable::AddOrCheckNode(NodeInfo peer, bool remove) {
 
     if (close_node_added) {
       network_statistics_.UpdateLocalAverageDistance(new_close_nodes);
-      if (matrix_change_functor_)
-        matrix_change_functor_(std::make_shared<MatrixChange>(kNodeId(), old_close_nodes,
-                                                              new_close_nodes));
-//      IpcSendGroupMatrix();
+      if (close_nodes_change_functor_) {
+        std::shared_ptr<CloseNodesChange> close_nodes_change(
+            new CloseNodesChange(kNodeId(), old_close_nodes, new_close_nodes));
+        close_nodes_change_functor_(close_nodes_change);
+      }
+      IpcSendCloseNodes();
     }
 
     if (peer.nat_type == rudp::NatType::kOther) {  // Usable as bootstrap endpoint
@@ -209,11 +211,12 @@ NodeInfo RoutingTable::DropNode(const NodeId& node_to_drop, bool routing_only) {
       new_close_nodes.push_back(potential_close_id);
     }
     network_statistics_.UpdateLocalAverageDistance(new_close_nodes);
-    if (matrix_change_functor_) {
-      matrix_change_functor_(std::make_shared<MatrixChange>(kNodeId(), old_close_nodes,
-                                                            new_close_nodes));
+    if (close_nodes_change_functor_) {
+        std::shared_ptr<CloseNodesChange> close_nodes_change(
+            new CloseNodesChange(kNodeId(), old_close_nodes, new_close_nodes));
+        close_nodes_change_functor_(close_nodes_change);
     }
-//    IpcSendGroupMatrix();
+    IpcSendCloseNodes();
   }
 
   if (!dropped_node.node_id.IsZero()) {
@@ -230,55 +233,6 @@ NodeInfo RoutingTable::DropNode(const NodeId& node_to_drop, bool routing_only) {
   }
   LOG(kInfo) << PrintRoutingTable();
   return dropped_node;
-}
-
-GroupRangeStatus RoutingTable::IsNodeIdInGroupRange(const NodeId& group_id) const {
-  return IsNodeIdInGroupRange(group_id, kNodeId_);
-}
-
-GroupRangeStatus RoutingTable::IsNodeIdInGroupRange(const NodeId& /*group_id*/,
-                                                    const NodeId& /*node_id*/) const {
-  return GroupRangeStatus::kInRange;
-//  if (group_id == node_id)
-//    return GroupRangeStatus::kInRange;
-
-
-//  if (nodes_.size() <= Parameters::group_size)
-//    return GroupRangeStatus::kInRange;
-
-//  std::lock_guard<std::mutex> lock(mutex_);
-//  PartialSortFromTarget(kNodeId(), Parameters::group_size + 1, lock);
-
-//  size_t holders_size = std::min(nodes_.size(), Parameters::group_size);
-//  std::vector<NodeInfo> holders_id;
-//  auto iter(std::begin(nodes_));
-//  for (; holders_id.size() < holders_size - 1; ++iter) {
-//    if (iter->node_id != group_id)
-//      holders_id.push_back(iter->node_id);
-//  }
-
-//  bool not_in_range(false);
-//  if (!NodeId::CloserToTarget(kNodeId(), iter->node_id, group_id)) {
-//    holders_id.push_back(iter->node_id);
-//    not_in_range = true;
-//  } else {
-//    holders_id.push_back(kNodeId());
-//  }
-
-//  assert(holders_id.size() <= Parameters::group_size);
-
-//  if (!client_mode_) {
-//    auto this_node_range(GetProximalRange(group_id, kNodeId_, kNodeId_, radius_, new_holders,
-//                                          not_in_range));
-//    if (node_id == kNodeId_)
-//      return this_node_range;
-//    else if (this_node_range != GroupRangeStatus::kInRange)
-//      BOOST_THROW_EXCEPTION(MakeError(RoutingErrors::not_in_range));  // not_in_group
-//  } else {
-//    if (node_id == kNodeId_)
-//      return GroupRangeStatus::kInProximalRange;
-//  }
-//  return GetProximalRange(group_id, node_id, kNodeId_, radius_, new_holders, not_in_range);
 }
 
 NodeId RoutingTable::RandomConnectedNode() {
@@ -511,14 +465,19 @@ std::vector<NodeInfo> RoutingTable::GetClosestNodes(const NodeId& target_id, uin
   }
 
   uint16_t index(ignore_exact_match && nodes_.begin()->node_id == target_id);
-  return std::vector<NodeInfo>(std::begin(nodes_) + index, std::begin(nodes_) + sorted_count);
+  return std::vector<NodeInfo>(std::begin(nodes_) + index,
+                               std::begin(nodes_) +
+                                   std::min(nodes_.size(),
+                                            static_cast<size_t>(number_to_get + index)));
 }
 
 NodeInfo RoutingTable::GetNthClosestNode(const NodeId& target_id, uint16_t index) {
   std::unique_lock<std::mutex> lock(mutex_);
-  if (nodes_.size() < index)
-    BOOST_THROW_EXCEPTION(MakeError(CommonErrors::invalid_parameter));
-
+  if (nodes_.size() < index) {
+    NodeInfo node_info;
+    node_info.node_id = (NodeId(NodeId::IdType::kMaxId) ^ kNodeId_);
+    return node_info;
+  }
   NthElementSortFromTarget(target_id, index, lock);
   return nodes_.at(index - 1);
 }
@@ -559,28 +518,18 @@ size_t RoutingTable::size() const {
   return nodes_.size();
 }
 
-/* remove group matrix
-void RoutingTable::IpcSendGroupMatrix() const {
+void RoutingTable::IpcSendCloseNodes() {
   if (ipc_message_queue_) {
     network_viewer::MatrixRecord matrix_record(kNodeId_);
-    std::vector<NodeInfo> matrix, close;
+    std::vector<NodeInfo> close;
     {
-      std::lock_guard<std::mutex> lock(mutex_);
-      matrix = group_matrix_.GetUniqueNodes();
-      close = group_matrix_.GetConnectedPeers();
+      std::unique_lock<std::mutex> lock(mutex_);
+      auto count(PartialSortFromTarget(kNodeId(), Parameters::closest_nodes_size, lock));
+      std::copy(std::begin(nodes_), std::begin(nodes_) + count, std::back_inserter(close));
     }
-    std::string printout("\tMatrix sent by: " + DebugId(kNodeId_) + "\n");
-    for (const auto& matrix_element : matrix) {
-      matrix_record.AddElement(matrix_element.node_id, network_viewer::ChildType::kMatrix);
-      printout += "\t\t" + DebugId(matrix_element.node_id) + " - kMatrix\n";
-    }
-
-    std::sort(std::begin(close), std::end(close),
-              [this](const NodeInfo & lhs, const NodeInfo & rhs) {
-      return NodeId::CloserToTarget(lhs.node_id, rhs.node_id, kNodeId_);
-    });
 
     size_t index(0);
+    std::string printout("\tClose nodes sent by: " + DebugId(kNodeId_) + "\n");
     size_t limit(std::min(static_cast<size_t>(Parameters::group_size), close.size()));
     for (; index < limit; ++index) {
       matrix_record.AddElement(close[index].node_id, network_viewer::ChildType::kGroup);
@@ -595,7 +544,6 @@ void RoutingTable::IpcSendGroupMatrix() const {
     ipc_message_queue_->try_send(serialised_matrix.c_str(), serialised_matrix.size(), 0);
   }
 }
-*/
 
 std::string RoutingTable::PrintRoutingTable() {
   std::vector<NodeInfo> rt;
