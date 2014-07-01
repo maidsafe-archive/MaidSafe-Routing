@@ -109,10 +109,6 @@ if(MaidsafeTesting)
   target_link_libraries(create_client_bootstrap maidsafe_routing_test_helper)
   target_link_libraries(routing_key_helper maidsafe_routing_test_helper)
   target_link_libraries(routing_node maidsafe_routing_test_helper)
-
-  foreach(Target maidsafe_routing TESTrouting_func TESTrouting_func_nat TESTrouting_big routing_node maidsafe_routing_test_helper)
-    target_compile_definitions(${Target} PRIVATE USE_GTEST)
-  endforeach()
 endif()
 
 ms_rename_outdated_built_exes()
