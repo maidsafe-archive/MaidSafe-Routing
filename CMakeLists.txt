@@ -49,11 +49,7 @@ set(RoutingTestsHelperFiles ${RoutingSourcesDir}/tests/routing_network.cc
                             ${RoutingSourcesDir}/tests/test_utils.h)
 set(RoutingApiTestFiles ${RoutingSourcesDir}/tests/routing_api_test.cc)
 set(RoutingFuncTestFiles ${RoutingSourcesDir}/tests/routing_functional_test.cc
-                         ${RoutingSourcesDir}/tests/routing_functional_non_nat_test.cc
                          ${RoutingSourcesDir}/tests/test_func_main.cc)
-set(RoutingFuncNatTestFiles ${RoutingSourcesDir}/tests/routing_functional_test.cc
-                            ${RoutingSourcesDir}/tests/routing_functional_nat_test.cc
-                            ${RoutingSourcesDir}/tests/test_func_nat_main.cc)
 set(RoutingBigTestFiles ${RoutingSourcesDir}/tests/cache_test.cc
                         ${RoutingSourcesDir}/tests/routing_churn_test.cc
                         ${RoutingSourcesDir}/tests/find_nodes_test.cc
@@ -62,7 +58,6 @@ set(RoutingBigTestFiles ${RoutingSourcesDir}/tests/cache_test.cc
 list(REMOVE_ITEM RoutingTestsAllFiles ${RoutingTestsHelperFiles}
                                       ${RoutingApiTestFiles}
                                       ${RoutingFuncTestFiles}
-                                      ${RoutingFuncNatTestFiles}
                                       ${RoutingBigTestFiles})
 
 
@@ -81,7 +76,6 @@ if(MaidsafeTesting)
   ms_add_executable(TESTrouting_api "Tests/Routing" ${RoutingApiTestFiles} ${RoutingSourcesDir}/tests/test_main.cc)
   # new executable TESTrouting_func is created to contain func tests excluded from TESTrouting, can be run seperately
   ms_add_executable(TESTrouting_func "Tests/Routing" ${RoutingFuncTestFiles})
-  ms_add_executable(TESTrouting_func_nat "Tests/Routing" ${RoutingFuncNatTestFiles})
   # new executable TESTrouting_big is created to contain tests that each need their own network
   ms_add_executable(TESTrouting_big "Tests/Routing" ${RoutingBigTestFiles} ${RoutingSourcesDir}/tests/test_main.cc)
   ms_add_executable(create_client_bootstrap "Tools/Routing" ${RoutingSourcesDir}/tools/create_bootstrap.cc)
@@ -96,7 +90,6 @@ if(MaidsafeTesting)
   target_include_directories(TESTrouting PRIVATE ${PROJECT_SOURCE_DIR}/src)
   target_include_directories(TESTrouting_api PRIVATE ${PROJECT_SOURCE_DIR}/src)
   target_include_directories(TESTrouting_func PRIVATE ${PROJECT_SOURCE_DIR}/src)
-  target_include_directories(TESTrouting_func_nat PRIVATE ${PROJECT_SOURCE_DIR}/src)
   target_include_directories(TESTrouting_big PRIVATE ${PROJECT_SOURCE_DIR}/src)
   target_include_directories(routing_key_helper PRIVATE ${PROJECT_SOURCE_DIR}/src)
   target_include_directories(routing_node PRIVATE ${PROJECT_SOURCE_DIR}/src)
@@ -104,13 +97,12 @@ if(MaidsafeTesting)
   target_link_libraries(TESTrouting maidsafe_routing_test_helper)
   target_link_libraries(TESTrouting_api maidsafe_routing_test_helper)
   target_link_libraries(TESTrouting_func maidsafe_routing_test_helper)
-  target_link_libraries(TESTrouting_func_nat maidsafe_routing_test_helper)
   target_link_libraries(TESTrouting_big maidsafe_routing_test_helper)
   target_link_libraries(create_client_bootstrap maidsafe_routing_test_helper)
   target_link_libraries(routing_key_helper maidsafe_routing_test_helper)
   target_link_libraries(routing_node maidsafe_routing_test_helper)
 
-  foreach(Target maidsafe_routing TESTrouting_func TESTrouting_func_nat TESTrouting_big routing_node maidsafe_routing_test_helper)
+  foreach(Target maidsafe_routing TESTrouting_func TESTrouting_big routing_node maidsafe_routing_test_helper)
     target_compile_definitions(${Target} PRIVATE USE_GTEST)
   endforeach()
 endif()
@@ -160,9 +152,9 @@ install(DIRECTORY ${PROJECT_SOURCE_DIR}/include/ COMPONENT Development DESTINATI
 
 if(MaidsafeTesting)
   install(TARGETS maidsafe_routing_test_helper TESTrouting TESTrouting_api TESTrouting_func
-                  TESTrouting_func_nat TESTrouting_big create_client_bootstrap routing_key_helper routing_node
+                  TESTrouting_big create_client_bootstrap routing_key_helper routing_node
                   COMPONENT Tests CONFIGURATIONS Debug RUNTIME DESTINATION bin/debug ARCHIVE DESTINATION lib)
   install(TARGETS maidsafe_routing_test_helper TESTrouting TESTrouting_api TESTrouting_func
-                  TESTrouting_func_nat TESTrouting_big create_client_bootstrap routing_key_helper routing_node
+                  TESTrouting_big create_client_bootstrap routing_key_helper routing_node
                   COMPONENT Tests CONFIGURATIONS Release RUNTIME DESTINATION bin ARCHIVE DESTINATION lib)
 endif()

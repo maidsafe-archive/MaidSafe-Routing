@@ -206,7 +206,7 @@ void GenericNode::SetGetFromCacheFunctor(HaveCacheDataFunctor get_from_functor) 
       functors_.message_and_caching);
 }
 
-// int GenericNode::GetStatus() const { return routing_->network_status(); }
+int GenericNode::GetStatus() const { return routing_->network_status(); }
 
 Endpoint GenericNode::endpoint() const { return endpoint_; }
 
@@ -220,22 +220,16 @@ bool GenericNode::IsClient() const { return client_mode_; }
 
 bool GenericNode::HasSymmetricNat() const { return has_symmetric_nat_; }
 
-/* void GenericNode::set_client_mode(bool client_mode) {
-  client_mode_ = client_mode;
-} */
-
 std::vector<NodeInfo> GenericNode::RoutingTable() const {
   return routing_->pimpl_->routing_table_.nodes_;
 }
 
-bool GenericNode::IsConnectedVault(const NodeId& /*node_id*/) {
-//  return routing_->IsConnectedVault(node_id);
-  return false;
+bool GenericNode::IsConnectedVault(const NodeId& node_id) {
+  return routing_->IsConnectedVault(node_id);
 }
 
-bool GenericNode::IsConnectedClient(const NodeId& /*node_id*/) {
-//  return routing_->IsConnectedClient(node_id);
- return false;
+bool GenericNode::IsConnectedClient(const NodeId& node_id) {
+  return routing_->IsConnectedClient(node_id);
 }
 
 void GenericNode::AddNodeToRandomNodeHelper(const NodeId& node_id) {

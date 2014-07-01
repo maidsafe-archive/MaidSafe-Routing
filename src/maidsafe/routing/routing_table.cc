@@ -78,13 +78,13 @@ RoutingTable::~RoutingTable() {
 
 void RoutingTable::InitialiseFunctors(
     NetworkStatusFunctor network_status_functor,
-    std::function<void(const NodeInfo&, bool)> remove_node_functor,    
-    CloseNodesChangeFunctor matrix_change_functor) {
+    std::function<void(const NodeInfo&, bool)> remove_node_functor,
+    CloseNodesChangeFunctor close_nodes_change_functor) {
   assert(remove_node_functor);
   assert(network_status_functor);
   network_status_functor_ = network_status_functor;
   remove_node_functor_ = remove_node_functor;
-  close_nodes_change_functor_ = matrix_change_functor;
+  close_nodes_change_functor_ = close_nodes_change_functor;
 }
 
 bool RoutingTable::AddNode(const NodeInfo& peer) {

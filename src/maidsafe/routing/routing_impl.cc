@@ -733,7 +733,7 @@ int Routing::Impl::network_status() {
 }
 
 std::vector<NodeInfo> Routing::Impl::ClosestNodes() {
- return routing_table_.GetClosestNodes(kNodeId(), Parameters::closest_nodes_size);
+  return routing_table_.GetClosestNodes(kNodeId(), Parameters::closest_nodes_size);
 }
 
 bool Routing::Impl::IsConnectedVault(const NodeId& node_id) {

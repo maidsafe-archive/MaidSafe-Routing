@@ -231,10 +231,8 @@ void MessageHandler::HandleDirectMessageAsClosestNode(protobuf::Message& message
 
 void MessageHandler::HandleGroupMessageAsClosestNode(protobuf::Message& message) {
   assert(!message.direct());
-//  bool have_node_with_group_id(routing_table_.Contains(NodeId(message.destination_id())));
   // This node is not closest to the destination node for non-direct message.
-  if (!routing_table_.IsThisNodeClosestTo(NodeId(message.destination_id()), !IsDirect(message))/* &&
-      !have_node_with_group_id*/) {
+  if (!routing_table_.IsThisNodeClosestTo(NodeId(message.destination_id()), !IsDirect(message))) {
     LOG(kInfo) << "This node is not closest, passing it on."
                << " id: " << message.id();
     // if (IsCacheableRequest(message))
