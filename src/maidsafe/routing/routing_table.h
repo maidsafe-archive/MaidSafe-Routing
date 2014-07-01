@@ -105,6 +105,19 @@ class RoutingTable {
   bool AddOrCheckNode(NodeInfo node, bool remove);
   void SetBucketIndex(NodeInfo& node_info) const;
   bool CheckPublicKeyIsUnique(const NodeInfo& node, std::unique_lock<std::mutex>& lock) const;
+
+  /** Attempts to find or allocate memory for an incomming connect request, returning true
+   * indicates approval
+   * returns true if routing table is not full, otherwise, performs the following process to
+   * evict an existing node:
+   * 1- sort the nodes according to their distance from self-node-id
+   * 2- a candidate for eviction must have an index > Parameters::unidirectional_interest_range
+   * 3- count the number of nodes in each bucket for nodes with
+   *    index > Parameters::unidirectional_interest_range
+   * 4- choose the furthest node among the nodes with maximum bucket index
+   * 5- in case more than one bucket have similar maximum bucket size, a node in higher bucket
+   *    will be evicted
+   * 6- remove the selected node and return true **/
   bool MakeSpaceForNodeToBeAdded(const NodeInfo& node, bool remove, NodeInfo& removed_node,
                                  std::unique_lock<std::mutex>& lock);
 

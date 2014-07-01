@@ -244,8 +244,7 @@ TEST(RoutingTableTest, FUNC_ClosestToId) {
       PartialSortFromTarget(target, known_nodes, 1);
       result = routing_table.IsThisNodeClosestTo(target, true);
       expectation = false;
-      if (NodeId::CloserToTarget(own_node_id, known_nodes.at(0).node_id, target) &&
-          !NodeId::CloserToTarget(furthest_group_node, target, own_node_id))
+      if (NodeId::CloserToTarget(own_node_id, known_nodes.at(0).node_id, target))
         expectation = true;
       EXPECT_EQ(expectation, result);
       if (expectation != result)

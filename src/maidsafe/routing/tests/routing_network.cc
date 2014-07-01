@@ -189,8 +189,8 @@ void GenericNode::InitialiseFunctors() {
     reply_functor(node_id().string() + ">::< response to >:<" + message);
   };
   functors_.network_status = [&](const int & health) { SetHealth(health); };  // NOLINT
-  functors_.close_nodes_change = [&](std::shared_ptr<routing::CloseNodesChange> /*matrix_change*/) {
-//     close_nodes_change_functor(node_info_plus_->node_info.node_id, matrix_change);
+  functors_.close_nodes_change = [&](std::shared_ptr<routing::CloseNodesChange> /*close_change*/) {
+//     close_nodes_change_functor(node_info_plus_->node_info.node_id, close_nodes_change);
   };
 }
 
@@ -523,7 +523,7 @@ void GenericNetwork::SetUpNetwork(size_t total_number_vaults,
   //    EXPECT_TRUE(ValidateRoutingTables());
 }
 
-void GenericNetwork::AddNode(bool client_mode, CloseNodesChangeFunctor matrix_change_functor) {
+void GenericNetwork::AddNode(bool client_mode, CloseNodesChangeFunctor close_nodes_change_functor) {
   NodePtr node;
   if (client_mode) {
     auto maid(passport::CreateMaidAndSigner().first);
@@ -532,7 +532,7 @@ void GenericNetwork::AddNode(bool client_mode, CloseNodesChangeFunctor matrix_ch
     auto pmid(passport::CreatePmidAndSigner().first);
     node.reset(new GenericNode(pmid, false));
   }
-  node->SetCloseNodesChangeFunctor(matrix_change_functor);
+  node->SetCloseNodesChangeFunctor(close_nodes_change_functor);
   AddNodeDetails(node);
   LOG(kVerbose) << "Node # " << nodes_.size() << " added to network";
 }
@@ -566,19 +566,19 @@ void GenericNetwork::AddVault(bool has_symmetric_nat) {
 }
 
 void GenericNetwork::AddNode(const passport::Maid& maid,
-                             CloseNodesChangeFunctor matrix_change_functor) {
+                             CloseNodesChangeFunctor close_nodes_change_functor) {
   NodePtr node;
   node.reset(new GenericNode(maid));
-  node->SetCloseNodesChangeFunctor(matrix_change_functor);
+  node->SetCloseNodesChangeFunctor(close_nodes_change_functor);
   AddNodeDetails(node);
   LOG(kVerbose) << "Node # " << nodes_.size() << " added to network";
 }
 
 void GenericNetwork::AddNode(const passport::Pmid& pmid,
-                             CloseNodesChangeFunctor matrix_change_functor) {
+                             CloseNodesChangeFunctor close_nodes_change_functor) {
   NodePtr node;
   node.reset(new GenericNode(pmid, false));
-  node->SetCloseNodesChangeFunctor(matrix_change_functor);
+  node->SetCloseNodesChangeFunctor(close_nodes_change_functor);
   AddNodeDetails(node);
   LOG(kVerbose) << "Node # " << nodes_.size() << " added to network";
 }
@@ -994,12 +994,12 @@ bool GenericNetwork::WaitForHealthToStabiliseInLargeNetwork() const {
   int server_size(static_cast<int>(client_index_));
   assert(server_size > Parameters::max_routing_table_size);
   int number_nonsymmetric_vaults(NonClientNonSymmetricNatNodesSize());
-  assert(number_nonsymmetric_vaults >= Parameters::greedy_fraction);
+  assert(number_nonsymmetric_vaults >= Parameters::routing_table_size_threshold);
 
   int i(0);
   bool healthy(false);
-  int vault_health(Parameters::greedy_fraction);
-  int vault_symmetric_health(Parameters::greedy_fraction);
+  int vault_health(Parameters::routing_table_size_threshold);
+  int vault_symmetric_health(Parameters::routing_table_size_threshold);
   int client_health(100);
   int client_symmetric_health(100);
   if (server_size <= Parameters::max_client_routing_table_size)

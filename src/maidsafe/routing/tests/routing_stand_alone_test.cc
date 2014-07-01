@@ -231,8 +231,7 @@ class ProportionedRoutingStandAloneTest : public GenericNetwork, public testing:
         old_max_routing_table_size_for_client_(Parameters::max_routing_table_size_for_client),
         old_closest_nodes_size_(Parameters::closest_nodes_size),
         old_max_client_routing_table_size_(Parameters::max_client_routing_table_size),
-        old_max_route_history_(Parameters::max_route_history),
-        old_greedy_fraction_(Parameters::greedy_fraction) {
+        old_max_route_history_(Parameters::max_route_history) {
     // NB. relative calculations should match those in parameters.cc
     Parameters::max_routing_table_size = 32;
     Parameters::routing_table_size_threshold = Parameters::max_routing_table_size / 2;
@@ -240,7 +239,6 @@ class ProportionedRoutingStandAloneTest : public GenericNetwork, public testing:
     Parameters::closest_nodes_size = 8;
     Parameters::max_client_routing_table_size = Parameters::max_routing_table_size;
     //    Parameters::max_route_history = 3;  // less than closest_nodes_size
-    Parameters::greedy_fraction = Parameters::max_routing_table_size * 3 / 4;
   }
 
   virtual ~ProportionedRoutingStandAloneTest() {
@@ -250,7 +248,6 @@ class ProportionedRoutingStandAloneTest : public GenericNetwork, public testing:
     Parameters::closest_nodes_size = old_closest_nodes_size_;
     Parameters::max_client_routing_table_size = old_max_client_routing_table_size_;
     Parameters::max_route_history = old_max_route_history_;
-    Parameters::greedy_fraction = old_greedy_fraction_;
   }
 
   virtual void SetUp() override { GenericNetwork::SetUp(); }

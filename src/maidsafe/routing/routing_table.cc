@@ -371,7 +371,7 @@ bool RoutingTable::MakeSpaceForNodeToBeAdded(const NodeInfo& node, bool remove,
   }
 
   int32_t max_bucket(0), max_bucket_count(1);
-  std::for_each(std::begin(nodes_) + Parameters::closest_nodes_size * 2, std::end(nodes_),
+  std::for_each(std::begin(nodes_) + Parameters::unidirectional_interest_range, std::end(nodes_),
                 [&bucket_rank_map, &max_bucket, &max_bucket_count](const NodeInfo& node_info) {
                   auto bucket_iter(bucket_rank_map.find(node_info.bucket));
                   if (bucket_iter != std::end(bucket_rank_map))

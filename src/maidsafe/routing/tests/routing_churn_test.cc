@@ -38,47 +38,48 @@ typename std::vector<T>::const_iterator Find(const T& t, const std::vector<T>& v
 
 class RoutingChurnTest : public GenericNetwork, public testing::Test {
  public:
-  RoutingChurnTest(void) : GenericNetwork(), old_matrix_(), new_matrix_(), expect_affected_(),
-      matrix_change_check_(false), dropping_node_(false), adding_node_(false),
+  RoutingChurnTest(void) : GenericNetwork(), old_close_nodes_(), new_close_nodes_(), expect_affected_(),
+      close_nodes_change_check_(false), dropping_node_(false), adding_node_(false),
       node_on_operation_(NodeId::IdType::kRandomId), affected_nodes_(), checking_mutex_() {}
 
   virtual void SetUp() override { GenericNetwork::SetUp(); }
 
   virtual void TearDown() override { Sleep(std::chrono::microseconds(100)); }
 
-  void CheckCloseNodesChange(std::shared_ptr<routing::CloseNodesChange> matrix_change,
+  void CheckCloseNodesChange(std::shared_ptr<routing::CloseNodesChange> close_nodes_change,
                          const NodeId affected_node) {
-    if (!matrix_change_check_)
+    if (!close_nodes_change_check_)
       return;
     LOG(kInfo) << "Node " << HexSubstr(affected_node.string())
-                << " having matrix change : ";
-    matrix_change->Print();
+                << " having close_nodes_change change : ";
+    close_nodes_change->Print();
     if (dropping_node_)
-      DoDroppingCheck(matrix_change, affected_node);
+      DoDroppingCheck(close_nodes_change, affected_node);
     else if (adding_node_)
-      DoAddingCheck(matrix_change, affected_node);
+      DoAddingCheck(close_nodes_change, affected_node);
   }
 
  protected:
   void PopulateGlobals(const std::vector<NodeId>& existing_vault_node_ids,
                        const std::vector<NodeId>& bootstrap_node_ids,
                        const NodeId& node_to_operate) {
-    old_matrix_.clear();
-    new_matrix_.clear();
+    old_close_nodes_.clear();
+    new_close_nodes_.clear();
     expect_affected_.clear();
     affected_nodes_.clear();
     std::copy(existing_vault_node_ids.begin(), existing_vault_node_ids.end(),
-              std::back_inserter(old_matrix_));
+              std::back_inserter(old_close_nodes_));
     std::copy(existing_vault_node_ids.begin(), existing_vault_node_ids.end(),
-              std::back_inserter(new_matrix_));
+              std::back_inserter(new_close_nodes_));
     if (dropping_node_) {
-      new_matrix_.erase(std::find(new_matrix_.begin(), new_matrix_.end(), node_to_operate));
+      new_close_nodes_.erase(std::find(new_close_nodes_.begin(), new_close_nodes_.end(),
+                             node_to_operate));
     }
 
-    SortIdsFromTarget(node_to_operate, new_matrix_);
+    SortIdsFromTarget(node_to_operate, new_close_nodes_);
     // Though reporting within Parameters::closest_nodes_size + Parameters::proximity_factor,
     // only radius of Parameters::closest_nodes_size is guaranteed
-    std::copy(new_matrix_.begin(), new_matrix_.begin() + Parameters::closest_nodes_size,
+    std::copy(new_close_nodes_.begin(), new_close_nodes_.begin() + Parameters::closest_nodes_size,
               std::back_inserter(expect_affected_));
     for (auto& node : bootstrap_node_ids) {
       auto find(std::find(expect_affected_.begin(), expect_affected_.end(), node));
@@ -87,7 +88,7 @@ class RoutingChurnTest : public GenericNetwork, public testing::Test {
     }
     LOG(kVerbose) << expect_affected_.size() << " nodes will be affected";
     if (adding_node_) {
-      new_matrix_.push_back(node_to_operate);
+      new_close_nodes_.push_back(node_to_operate);
     }
     node_on_operation_ = node_to_operate;
   }
@@ -115,19 +116,19 @@ class RoutingChurnTest : public GenericNetwork, public testing::Test {
     return true;
   }
 
-  std::vector<NodeId> old_matrix_, new_matrix_, expect_affected_;
-  std::atomic<bool> matrix_change_check_, dropping_node_, adding_node_;
+  std::vector<NodeId> old_close_nodes_, new_close_nodes_, expect_affected_;
+  std::atomic<bool> close_nodes_change_check_, dropping_node_, adding_node_;
   NodeId node_on_operation_;
   std::set<NodeId> affected_nodes_;
   std::mutex checking_mutex_;
 
  private:
-  void DoDroppingCheck(std::shared_ptr<routing::CloseNodesChange> matrix_change,
+  void DoDroppingCheck(std::shared_ptr<routing::CloseNodesChange> close_nodes_change,
                        const NodeId& affected_node) {
-    auto lost_nodes(matrix_change->lost_nodes());
+    auto lost_nodes(close_nodes_change->lost_nodes());
     if (lost_nodes.empty())
       return;
-    LOG(kVerbose) << "matrix_change of affected node " << HexSubstr(affected_node.string())
+    LOG(kVerbose) << "close_nodes_change of affected node " << HexSubstr(affected_node.string())
               << " containing following lost nodes :";
 //     bool not_found(true);
     for (auto& node_id : lost_nodes) {
@@ -139,7 +140,7 @@ class RoutingChurnTest : public GenericNetwork, public testing::Test {
     if (find == lost_nodes.end()) {
 //     if (not_found) {
       LOG(kVerbose) << "dropping node " << HexSubstr(node_on_operation_.string())
-                << " not find in the matrix_change of lost_node ";
+                << " not find in the close_nodes_change of lost_node ";
       return;
     }
     std::lock_guard<std::mutex> lock(checking_mutex_);
@@ -148,12 +149,12 @@ class RoutingChurnTest : public GenericNetwork, public testing::Test {
     affected_nodes_.insert(affected_node);
   }
 
-  void DoAddingCheck(std::shared_ptr<routing::CloseNodesChange> matrix_change,
+  void DoAddingCheck(std::shared_ptr<routing::CloseNodesChange> close_nodes_change,
                      const NodeId& affected_node) {
-    auto new_nodes(matrix_change->new_nodes());
+    auto new_nodes(close_nodes_change->new_nodes());
     if (new_nodes.empty())
       return;
-    LOG(kVerbose) << "matrix_change of affected node " << HexSubstr(affected_node.string())
+    LOG(kVerbose) << "close_nodes_change of affected node " << HexSubstr(affected_node.string())
               << " containing following new nodes :";
 //     bool not_found(true);
     for (auto& node_id : new_nodes) {
@@ -165,7 +166,7 @@ class RoutingChurnTest : public GenericNetwork, public testing::Test {
     if (find == new_nodes.end()) {
 //     if (not_found) {
       LOG(kVerbose) << "new node " << HexSubstr(node_on_operation_.string())
-                << " not find in the matrix_change of new_node ";
+                << " not find in the close_nodes_change of new_node ";
       return;
     }
     std::lock_guard<std::mutex> lock(checking_mutex_);
