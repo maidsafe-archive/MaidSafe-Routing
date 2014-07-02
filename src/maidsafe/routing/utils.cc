@@ -101,6 +101,13 @@ bool ValidateAndAddToRoutingTable(NetworkUtils& network, RoutingTable& routing_t
   return false;
 }
 
+void InformClientOfNewCloseNode(NetworkUtils& network, const NodeInfo& client,
+                                const NodeInfo& new_close_node, const NodeId& this_node_id) {
+  protobuf::Message inform_client_of_new_close_node(
+      rpcs::InformClientOfNewCloseNode(new_close_node.node_id, this_node_id, client.node_id));
+  network.SendToDirect(inform_client_of_new_close_node, client.node_id, client.connection_id);
+}
+
 // FIXME
 void HandleSymmetricNodeAdd(RoutingTable& /*routing_table*/, const NodeId& /*peer_id*/,
                             const asymm::PublicKey& /*public_key*/) {

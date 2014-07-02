@@ -46,11 +46,11 @@ class RoutingStandAloneTest : public GenericNetwork, public testing::Test {
     for (size_t index(0); index < ClientIndex(); ++index) {
       pmid_ids.push_back(nodes_[index]->node_id());
     }
-    std::partial_sort(std::begin(pmid_ids), std::begin(pmid_ids) + Parameters::closest_nodes_size,
-                      std::end(pmid_ids), [&](const NodeId& lhs, const NodeId& rhs) {
-                                            return NodeId::CloserToTarget(lhs, rhs, maid_id);
-                                          });
-    return !NodeId::CloserToTarget(pmid_ids.at(Parameters::closest_nodes_size - 1),
+    std::sort(std::begin(pmid_ids), std::end(pmid_ids),
+              [&](const NodeId& lhs, const NodeId& rhs) {
+                return NodeId::CloserToTarget(lhs, rhs, maid_id);
+              });
+    return !NodeId::CloserToTarget(pmid_ids.at(Parameters::max_routing_table_size_for_client - 1),
                                    pmid_id, maid_id);
   }
 };
@@ -264,7 +264,6 @@ class ProportionedRoutingStandAloneTest : public GenericNetwork, public testing:
   uint16_t old_closest_nodes_size_;
   uint16_t old_max_client_routing_table_size_;
   uint16_t old_max_route_history_;
-  uint16_t old_greedy_fraction_;
 };
 
 // TODO(Alison) - Add ProportionedRoutingStandAloneTest involving clients

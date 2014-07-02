@@ -198,6 +198,30 @@ protobuf::Message ConnectSuccessAcknowledgement(const NodeId& node_id, const Nod
   return message;
 }
 
+protobuf::Message InformClientOfNewCloseNode(const NodeId& node_id, const NodeId& this_node_id,
+                                             const NodeId& client_node_id) {
+  assert(!node_id.IsZero() && "Invalid node_id");
+  assert(!this_node_id.IsZero() && "Invalid my node_id");
+  protobuf::Message message;
+  protobuf::InformClientOfhNewCloseNode inform_client_of_new_close_node;
+  inform_client_of_new_close_node.set_node_id(node_id.string());
+  message.add_data(inform_client_of_new_close_node.SerializeAsString());
+  message.set_destination_id(client_node_id.string());
+  message.set_source_id(this_node_id.string());
+  message.set_routing_message(true);
+  message.set_direct(false);
+  message.set_replication(1);
+  message.set_type(static_cast<int32_t>(MessageType::kInformClientOfNewCloseNode));
+  message.set_request(true);
+  message.set_client_node(false);
+  message.set_hops_to_live(2);
+  message.set_visited(false);
+  message.set_id(RandomUint32() % 10000);
+  assert(message.IsInitialized() && "Unintialised message");
+  return message;
+}
+
+
 protobuf::Message GetGroup(const NodeId& node_id, const NodeId& my_node_id) {
   assert(!node_id.IsZero() && "Invalid node_id");
   assert(!my_node_id.IsZero() && "Invalid my node_id");

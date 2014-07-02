@@ -70,6 +70,7 @@ enum class MessageType : int32_t {
   kConnectSuccess = 4,
   kConnectSuccessAcknowledgement = 5,
   kGetGroup = 6,
+  kInformClientOfNewCloseNode = 7,
   kMaxRouting = 100,
   kNodeLevel = 101
 };

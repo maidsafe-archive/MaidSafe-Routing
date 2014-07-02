@@ -183,10 +183,8 @@ message ClosestNodesUpdate {
   repeated BasicNodeInfo nodes_info = 2;
 }
 
-message ClosestNodesUpdateSubscrirbe {
+message InformClientOfhNewCloseNode {
   required bytes node_id = 1;
-  required bytes connection_id = 2;
-  required bool subscribe = 3;
 }
 
 message GetGroup {

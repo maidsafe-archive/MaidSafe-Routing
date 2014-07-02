@@ -73,6 +73,10 @@ void MessageHandler::HandleRoutingMessage(protobuf::Message& message) {
       message.request() ? service_->GetGroup(message)
                         : response_handler_->GetGroup(timer_, message);
       break;
+    case MessageType::kInformClientOfNewCloseNode:
+      assert(message.request());
+      response_handler_->InformClientOfNewCloseNode(message);
+      break;
     default:  // unknown (silent drop)
       return;
   }

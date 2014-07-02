@@ -50,6 +50,8 @@ RoutingTable::RoutingTable(bool client_mode, const NodeId& node_id, const asymm:
       mutex_(),
       remove_node_functor_(),
       network_status_functor_(),
+      close_nodes_change_functor_(),
+      inform_clients_of_new_close_node_functor_(),
       nodes_(),
       ipc_message_queue_(),
       network_statistics_(network_statistics) {
@@ -79,12 +81,14 @@ RoutingTable::~RoutingTable() {
 void RoutingTable::InitialiseFunctors(
     NetworkStatusFunctor network_status_functor,
     std::function<void(const NodeInfo&, bool)> remove_node_functor,
-    CloseNodesChangeFunctor close_nodes_change_functor) {
+    CloseNodesChangeFunctor close_nodes_change_functor,
+    InformClientsOfNewCloseNodeFunctor inform_clients_of_new_close_node_functor) {
   assert(remove_node_functor);
   assert(network_status_functor);
   network_status_functor_ = network_status_functor;
   remove_node_functor_ = remove_node_functor;
   close_nodes_change_functor_ = close_nodes_change_functor;
+  inform_clients_of_new_close_node_functor_ = inform_clients_of_new_close_node_functor;
 }
 
 bool RoutingTable::AddNode(const NodeInfo& peer) {
@@ -162,6 +166,8 @@ bool RoutingTable::AddOrCheckNode(NodeInfo peer, bool remove) {
             new CloseNodesChange(kNodeId(), old_close_nodes, new_close_nodes));
         close_nodes_change_functor_(close_nodes_change);
       }
+      if (inform_clients_of_new_close_node_functor_)
+        inform_clients_of_new_close_node_functor_(peer);
       IpcSendCloseNodes();
     }
 

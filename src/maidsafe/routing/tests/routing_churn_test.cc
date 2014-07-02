@@ -33,14 +33,15 @@ namespace test {
 
 template <typename T>
 typename std::vector<T>::const_iterator Find(const T& t, const std::vector<T>& v) {
-  return std::find_if(v.begin(), v.end(), [&t](const T & element) { return element == t; });
+  return std::find_if(v.begin(), v.end(), [&t](const T& element) { return element == t; });
 }
 
 class RoutingChurnTest : public GenericNetwork, public testing::Test {
  public:
-  RoutingChurnTest(void) : GenericNetwork(), old_close_nodes_(), new_close_nodes_(), expect_affected_(),
-      close_nodes_change_check_(false), dropping_node_(false), adding_node_(false),
-      node_on_operation_(NodeId::IdType::kRandomId), affected_nodes_(), checking_mutex_() {}
+  RoutingChurnTest(void) : GenericNetwork(), old_close_nodes_(), new_close_nodes_(),
+      expect_affected_(), close_nodes_change_check_(false), dropping_node_(false),
+      adding_node_(false), node_on_operation_(NodeId::IdType::kRandomId), affected_nodes_(),
+      checking_mutex_() {}
 
   virtual void SetUp() override { GenericNetwork::SetUp(); }
 

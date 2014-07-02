@@ -140,9 +140,17 @@ void Routing::Impl::ConnectFunctors(const Functors& functors) {
                                       }
                                       NotifyNetworkStatus(network_status_in);
                                     },
-                                    [this](const NodeInfo & node, bool internal_rudp_only) {
+                                    [this](const NodeInfo& node, bool internal_rudp_only) {
                                       RemoveNode(node, internal_rudp_only);
-                                    }, functors.close_nodes_change);
+                                    },
+                                    functors.close_nodes_change,
+                                    [this](const NodeInfo& node_info) {
+                                      auto clients(client_routing_table_.GetNodesInfo());
+                                      for (auto client : clients) {
+                                        InformClientOfNewCloseNode(network_, client, node_info,
+                                                                   kNodeId());
+                                      }
+                                    });
   // only one of MessageAndCachingFunctors or TypedMessageAndCachingFunctor should be provided
   assert(!functors.message_and_caching.message_received !=
          !functors.typed_message_and_caching.single_to_single.message_received);

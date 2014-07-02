@@ -89,20 +89,22 @@ NodeInfo ClientRoutingTable::DropConnection(const NodeId& connection_to_drop) {
 }
 
 std::vector<NodeInfo> ClientRoutingTable::GetNodesInfo(const NodeId& node_id) const {
-  std::vector<NodeInfo> nodes_info;
   std::lock_guard<std::mutex> lock(mutex_);
-  for (const auto& elem : nodes_) {
-    if ((elem).node_id == node_id)
-      nodes_info.push_back(elem);
-  }
+  if (node_id == NodeId())
+    return nodes_;
+
+  std::vector<NodeInfo> nodes_info;
+  std::copy_if(std::begin(nodes_), std::end(nodes_), std::back_inserter(nodes_info),
+               [node_id](const NodeInfo& node) { return node.node_id == node_id; });
   return nodes_info;
 }
 
 bool ClientRoutingTable::Contains(const NodeId& node_id) const {
   std::lock_guard<std::mutex> lock(mutex_);
-  return std::find_if(nodes_.begin(), nodes_.end(), [node_id](const NodeInfo & node_info) {
-           return node_info.node_id == node_id;
-         }) != nodes_.end();
+  return std::find_if(std::begin(nodes_), std::end(nodes_),
+                      [node_id](const NodeInfo& node_info) {
+                        return node_info.node_id == node_id;
+                      }) != std::end(nodes_);
 }
 
 bool ClientRoutingTable::IsConnected(const NodeId& node_id) const { return Contains(node_id); }

@@ -77,11 +77,6 @@ typedef std::function<void(const BootstrapContact& /*new_bootstrap_contact*/)>
 typedef std::function<void(std::shared_ptr<CloseNodesChange> /*close_nodes_change*/)>
     CloseNodesChangeFunctor;
 
-// This functor fires when routing table size is over greedy limit. The furthest unnecessary
-// node in routing table is dropped. Unnecessary is defined as a node who does not have us in
-// it clsoest nodes.
-typedef std::function<void()> RemoveFurthestUnnecessaryNode;
-
 template <typename T>
 struct MessageAndCachingFunctorsType {
   std::function<void(const T& /*message*/)> message_received;

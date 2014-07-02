@@ -46,10 +46,6 @@ namespace {
 
 typedef boost::asio::ip::udp::endpoint Endpoint;
 
-#ifndef NDEBUG
-  const int kMaxUnvalidatedUpdates(64);
-#endif
-
 }  // unnamed namespace
 
 ResponseHandler::ResponseHandler(RoutingTable& routing_table,
@@ -384,6 +380,29 @@ void ResponseHandler::CloseNodeUpdateForClient(protobuf::Message& message) {
   }
   assert(!closest_nodes.empty());
   HandleSuccessAcknowledgementAsRequestor(closest_nodes);
+  message.Clear();
+}
+
+void ResponseHandler::InformClientOfNewCloseNode(protobuf::Message& message) {
+  assert(routing_table_.client_mode() && "Handler must be client");
+  if (message.destination_id() != routing_table_.kNodeId().string()) {
+    // Message not for this node and we should not pass it on.
+    LOG(kError) << "Message not for this node.";
+    message.Clear();
+    return;
+  }
+  protobuf::InformClientOfhNewCloseNode inform_client_of_new_close_node;
+  if (!inform_client_of_new_close_node.ParseFromString(message.data(0))) {
+    LOG(kError) << "Failure to parse";
+    return;
+  }
+
+  if (inform_client_of_new_close_node.node_id().empty() ||
+     !CheckId(inform_client_of_new_close_node.node_id())) {
+    LOG(kError) << "Invalid node id provided.";
+    return;
+  }
+  CheckAndSendConnectRequest(NodeId(inform_client_of_new_close_node.node_id()));
   message.Clear();
 }
 

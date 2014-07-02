@@ -53,6 +53,8 @@ class NetworkUtils;
 class ClientRoutingTable;
 class RoutingTable;
 
+typedef std::function<void(const NodeInfo& /*node_info*/)> InformClientsOfNewCloseNodeFunctor;
+
 int AddToRudp(NetworkUtils& network, const NodeId& this_node_id, const NodeId& this_connection_id,
               const NodeId& peer_id, const NodeId& peer_connection_id,
               rudp::EndpointPair peer_endpoint_pair, bool requestor, bool client);
@@ -60,6 +62,9 @@ int AddToRudp(NetworkUtils& network, const NodeId& this_node_id, const NodeId& t
 bool ValidateAndAddToRoutingTable(NetworkUtils& network, RoutingTable& routing_table,
     ClientRoutingTable& client_routing_table, const NodeId& peer_id, const NodeId& connection_id,
     const asymm::PublicKey& public_key, bool client);
+
+void InformClientOfNewCloseNode(NetworkUtils& network, const NodeInfo& client,
+                                const NodeInfo& new_close_node, const NodeId& this_node_id);
 
 void HandleSymmetricNodeAdd(RoutingTable& routing_table, const NodeId& peer_id,
                             const asymm::PublicKey& public_key);

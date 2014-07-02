@@ -38,6 +38,7 @@
 #include "maidsafe/routing/api_config.h"
 #include "maidsafe/routing/network_statistics.h"
 #include "maidsafe/routing/parameters.h"
+#include "maidsafe/routing/utils.h"
 
 namespace maidsafe {
 
@@ -64,7 +65,9 @@ class RoutingTable {
   virtual ~RoutingTable();
   void InitialiseFunctors(NetworkStatusFunctor network_status_functor,
                           std::function<void(const NodeInfo&, bool)> remove_node_functor,
-                          CloseNodesChangeFunctor close_nodes_change_functor);
+                          CloseNodesChangeFunctor close_nodes_change_functor,
+                          InformClientsOfNewCloseNodeFunctor
+                              inform_clients_of_new_close_node_functor);
   bool AddNode(const NodeInfo& peer);
   bool CheckNode(const NodeInfo& peer);
   NodeInfo DropNode(const NodeId& node_to_drop, bool routing_only);
@@ -109,15 +112,15 @@ class RoutingTable {
   /** Attempts to find or allocate memory for an incomming connect request, returning true
    * indicates approval
    * returns true if routing table is not full, otherwise, performs the following process to
-   * evict an existing node:
-   * 1- sort the nodes according to their distance from self-node-id
-   * 2- a candidate for eviction must have an index > Parameters::unidirectional_interest_range
-   * 3- count the number of nodes in each bucket for nodes with
+   * possibly evict an existing node:
+   * - sorts the nodes according to their distance from self-node-id
+   * - a candidate for eviction must have an index > Parameters::unidirectional_interest_range
+   * - count the number of nodes in each bucket for nodes with
    *    index > Parameters::unidirectional_interest_range
-   * 4- choose the furthest node among the nodes with maximum bucket index
-   * 5- in case more than one bucket have similar maximum bucket size, a node in higher bucket
-   *    will be evicted
-   * 6- remove the selected node and return true **/
+   * - choose the furthest node among the nodes with maximum bucket index
+   * - in case more than one bucket have similar maximum bucket size, the furthest node in higher
+   *    bucket will be evicted
+   * - remove the selected node and return true **/
   bool MakeSpaceForNodeToBeAdded(const NodeInfo& node, bool remove, NodeInfo& removed_node,
                                  std::unique_lock<std::mutex>& lock);
 
@@ -145,6 +148,7 @@ class RoutingTable {
   std::function<void(const NodeInfo&, bool)> remove_node_functor_;
   NetworkStatusFunctor network_status_functor_;
   CloseNodesChangeFunctor close_nodes_change_functor_;
+  InformClientsOfNewCloseNodeFunctor inform_clients_of_new_close_node_functor_;
   std::vector<NodeInfo> nodes_;
   std::unique_ptr<boost::interprocess::message_queue> ipc_message_queue_;
   NetworkStatistics& network_statistics_;
