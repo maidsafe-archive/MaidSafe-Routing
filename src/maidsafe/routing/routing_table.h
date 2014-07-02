@@ -66,8 +66,7 @@ class RoutingTable {
   void InitialiseFunctors(NetworkStatusFunctor network_status_functor,
                           std::function<void(const NodeInfo&, bool)> remove_node_functor,
                           CloseNodesChangeFunctor close_nodes_change_functor,
-                          InformClientsOfNewCloseNodeFunctor
-                              inform_clients_of_new_close_node_functor);
+                          RoutingTableChangeFunctor routing_table_change_functor);
   bool AddNode(const NodeInfo& peer);
   bool CheckNode(const NodeInfo& peer);
   NodeInfo DropNode(const NodeId& node_to_drop, bool routing_only);
@@ -148,7 +147,7 @@ class RoutingTable {
   std::function<void(const NodeInfo&, bool)> remove_node_functor_;
   NetworkStatusFunctor network_status_functor_;
   CloseNodesChangeFunctor close_nodes_change_functor_;
-  InformClientsOfNewCloseNodeFunctor inform_clients_of_new_close_node_functor_;
+  RoutingTableChangeFunctor routing_table_change_functor_;
   std::vector<NodeInfo> nodes_;
   std::unique_ptr<boost::interprocess::message_queue> ipc_message_queue_;
   NetworkStatistics& network_statistics_;

@@ -53,7 +53,8 @@ class NetworkUtils;
 class ClientRoutingTable;
 class RoutingTable;
 
-typedef std::function<void(const NodeInfo& /*node_info*/)> InformClientsOfNewCloseNodeFunctor;
+typedef std::function<void(const NodeInfo& /*node_info*/, bool /*close_node*/,
+                           bool /*node_added*/)> RoutingTableChangeFunctor;
 
 int AddToRudp(NetworkUtils& network, const NodeId& this_node_id, const NodeId& this_connection_id,
               const NodeId& peer_id, const NodeId& peer_connection_id,

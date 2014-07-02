@@ -144,12 +144,22 @@ void Routing::Impl::ConnectFunctors(const Functors& functors) {
                                       RemoveNode(node, internal_rudp_only);
                                     },
                                     functors.close_nodes_change,
-                                    [this](const NodeInfo& node_info) {
-                                      auto clients(client_routing_table_.GetNodesInfo());
-                                      for (auto client : clients) {
-                                        InformClientOfNewCloseNode(network_, client, node_info,
-                                                                   kNodeId());
+                                    [this](const NodeInfo& node_info, bool close_node,
+                                           bool node_added) {
+                                      if (routing_table_.client_mode())
+                                        return;
+
+                                      if (close_node && node_added) {
+                                        auto clients(client_routing_table_.GetNodesInfo());
+                                        for (auto client : clients)
+                                          InformClientOfNewCloseNode(network_, client, node_info,
+                                                                     kNodeId());
                                       }
+                                      if (routing_table_.size() >
+                                              Parameters::routing_table_size_threshold)
+                                        network_.SendToClosestNode(
+                                            rpcs::FindNodes(kNodeId_, kNodeId_,
+                                                            Parameters::closest_nodes_size));
                                     });
   // only one of MessageAndCachingFunctors or TypedMessageAndCachingFunctor should be provided
   assert(!functors.message_and_caching.message_received !=

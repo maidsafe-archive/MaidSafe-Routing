@@ -51,7 +51,7 @@ RoutingTable::RoutingTable(bool client_mode, const NodeId& node_id, const asymm:
       remove_node_functor_(),
       network_status_functor_(),
       close_nodes_change_functor_(),
-      inform_clients_of_new_close_node_functor_(),
+      routing_table_change_functor_(),
       nodes_(),
       ipc_message_queue_(),
       network_statistics_(network_statistics) {
@@ -78,17 +78,16 @@ RoutingTable::~RoutingTable() {
   }
 }
 
-void RoutingTable::InitialiseFunctors(
-    NetworkStatusFunctor network_status_functor,
+void RoutingTable::InitialiseFunctors(NetworkStatusFunctor network_status_functor,
     std::function<void(const NodeInfo&, bool)> remove_node_functor,
     CloseNodesChangeFunctor close_nodes_change_functor,
-    InformClientsOfNewCloseNodeFunctor inform_clients_of_new_close_node_functor) {
+    RoutingTableChangeFunctor routing_table_change_functor) {
   assert(remove_node_functor);
   assert(network_status_functor);
   network_status_functor_ = network_status_functor;
   remove_node_functor_ = remove_node_functor;
   close_nodes_change_functor_ = close_nodes_change_functor;
-  inform_clients_of_new_close_node_functor_ = inform_clients_of_new_close_node_functor;
+  routing_table_change_functor_ = routing_table_change_functor;
 }
 
 bool RoutingTable::AddNode(const NodeInfo& peer) {
@@ -166,10 +165,10 @@ bool RoutingTable::AddOrCheckNode(NodeInfo peer, bool remove) {
             new CloseNodesChange(kNodeId(), old_close_nodes, new_close_nodes));
         close_nodes_change_functor_(close_nodes_change);
       }
-      if (inform_clients_of_new_close_node_functor_)
-        inform_clients_of_new_close_node_functor_(peer);
       IpcSendCloseNodes();
     }
+    if (routing_table_change_functor_)
+      routing_table_change_functor_(peer, close_node_added, true);
 
     if (peer.nat_type == rudp::NatType::kOther) {  // Usable as bootstrap endpoint
                                                    // if (new_bootstrap_endpoint_)
@@ -228,14 +227,15 @@ NodeInfo RoutingTable::DropNode(const NodeId& node_to_drop, bool routing_only) {
   if (!dropped_node.node_id.IsZero()) {
     assert(nodes_.size() <= std::numeric_limits<uint16_t>::max());
     UpdateNetworkStatus(static_cast<uint16_t>(nodes_.size()));
-  }
 
-  if (!dropped_node.node_id.IsZero()) {
     LOG(kVerbose) << DebugId(kNodeId()) << "Routing table dropped node id : "
                   << DebugId(dropped_node.node_id) << ", connection id : "
                   << DebugId(dropped_node.connection_id);
     if (remove_node_functor_ && !routing_only)
       remove_node_functor_(dropped_node, false);
+
+    if (routing_table_change_functor_)
+      routing_table_change_functor_(dropped_node, close_node_removal, false);
   }
   LOG(kInfo) << PrintRoutingTable();
   return dropped_node;
