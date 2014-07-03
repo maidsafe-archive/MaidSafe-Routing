@@ -36,7 +36,6 @@
 #include "maidsafe/passport/types.h"
 
 #include "maidsafe/routing/api_config.h"
-#include "maidsafe/routing/network_statistics.h"
 #include "maidsafe/routing/parameters.h"
 #include "maidsafe/routing/utils.h"
 
@@ -58,15 +57,38 @@ class Contact;
 
 struct NodeInfo;
 
+struct RoutingTableChange {
+  struct Remove {
+    Remove() : node(), routing_only_removal(true) {}
+    Remove(NodeInfo& node_in, bool routing_only_removal_in)
+        : node(node_in), routing_only_removal(routing_only_removal_in) {}
+    NodeInfo node;
+    bool routing_only_removal;
+  };
+  RoutingTableChange() : added_node(), removed(), insertion(false),  close_node_affected(false),
+                         close_nodes_change(), health(0) {}
+  RoutingTableChange(const NodeInfo& added_node_in, const Remove& removed_in,
+                     bool insertion_in, bool close_node_affected_in,
+                     std::shared_ptr<CloseNodesChange> close_nodes_change_in, uint16_t health_in)
+      : added_node(added_node_in), removed(removed_in), insertion(insertion_in),
+        close_node_affected(close_node_affected_in), close_nodes_change(close_nodes_change_in),
+        health(health_in) {}
+  NodeInfo added_node;
+  Remove removed;
+  bool insertion;
+  bool close_node_affected;
+  std::shared_ptr<CloseNodesChange> close_nodes_change;
+  uint16_t health;
+};
+
+typedef std::function<void(const RoutingTableChange& /*routing_table_change*/)>
+    RoutingTableChangeFunctor;
+
 class RoutingTable {
  public:
-  RoutingTable(bool client_mode, const NodeId& node_id, const asymm::Keys& keys,
-               NetworkStatistics& network_statistics);
+  RoutingTable(bool client_mode, const NodeId& node_id, const asymm::Keys& keys);
   virtual ~RoutingTable();
-  void InitialiseFunctors(NetworkStatusFunctor network_status_functor,
-                          std::function<void(const NodeInfo&, bool)> remove_node_functor,
-                          CloseNodesChangeFunctor close_nodes_change_functor,
-                          RoutingTableChangeFunctor routing_table_change_functor);
+  void InitialiseFunctors(RoutingTableChangeFunctor routing_table_change_functor);
   bool AddNode(const NodeInfo& peer);
   bool CheckNode(const NodeInfo& peer);
   NodeInfo DropNode(const NodeId& node_to_drop, bool routing_only);
@@ -132,7 +154,7 @@ class RoutingTable {
   std::pair<bool, std::vector<NodeInfo>::const_iterator> Find(
       const NodeId& node_id, std::unique_lock<std::mutex>& lock) const;
 
-  void UpdateNetworkStatus(uint16_t size) const;
+  uint16_t NetworkStatus(uint16_t size) const;
 
   void IpcSendCloseNodes();
   std::string PrintRoutingTable();
@@ -144,13 +166,9 @@ class RoutingTable {
   const uint16_t kMaxSize_;
   const uint16_t kThresholdSize_;
   mutable std::mutex mutex_;
-  std::function<void(const NodeInfo&, bool)> remove_node_functor_;
-  NetworkStatusFunctor network_status_functor_;
-  CloseNodesChangeFunctor close_nodes_change_functor_;
   RoutingTableChangeFunctor routing_table_change_functor_;
   std::vector<NodeInfo> nodes_;
   std::unique_ptr<boost::interprocess::message_queue> ipc_message_queue_;
-  NetworkStatistics& network_statistics_;
 };
 
 }  // namespace routing

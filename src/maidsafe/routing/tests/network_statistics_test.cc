@@ -28,6 +28,7 @@
 #include "maidsafe/common/utils.h"
 #include "maidsafe/routing/parameters.h"
 #include "maidsafe/routing/tests/test_utils.h"
+#include "maidsafe/routing/network_statistics.h"
 
 namespace maidsafe {
 namespace routing {
@@ -86,7 +87,7 @@ TEST(NetworkStatisticsTest, BEH_AverageDistance) {
 TEST(NetworkStatisticsTest, BEH_IsIdInGroupRange) {
   NodeId node_id;
   NetworkStatistics network_statistics(node_id);
-  RoutingTable routing_table(false, node_id, asymm::GenerateKeyPair(), network_statistics);
+  RoutingTable routing_table(false, node_id, asymm::GenerateKeyPair());
   std::vector<NodeId> nodes_id;
   NodeInfo node_info;
   NodeId my_node(routing_table.kNodeId());

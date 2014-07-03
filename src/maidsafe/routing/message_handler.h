@@ -28,6 +28,7 @@
 #include "maidsafe/routing/response_handler.h"
 #include "maidsafe/routing/service.h"
 #include "maidsafe/routing/timer.h"
+#include "maidsafe/routing/network_statistics.h"
 
 namespace maidsafe {
 

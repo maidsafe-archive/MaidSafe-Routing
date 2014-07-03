@@ -68,8 +68,7 @@ TEST(NetworkUtilsTest, BEH_ProcessSendDirectInvalidEndpoint) {
   message.set_type(10);
   message.set_hops_to_live(Parameters::hops_to_live);
   NodeId node_id(NodeId::IdType::kRandomId);
-  NetworkStatistics network_statistics(node_id);
-  RoutingTable routing_table(false, node_id, asymm::GenerateKeyPair(), network_statistics);
+  RoutingTable routing_table(false, node_id, asymm::GenerateKeyPair());
   ClientRoutingTable client_routing_table(routing_table.kNodeId());
   NetworkUtils network(routing_table, client_routing_table);
   network.SendToClosestNode(message);
@@ -85,8 +84,7 @@ TEST(NetworkUtilsTest, BEH_ProcessSendUnavailableDirectEndpoint) {
   message.set_type(10);
   message.set_hops_to_live(Parameters::hops_to_live);
   NodeId node_id(NodeId::IdType::kRandomId);
-  NetworkStatistics network_statistics(node_id);
-  RoutingTable routing_table(false, node_id, asymm::GenerateKeyPair(), network_statistics);
+  RoutingTable routing_table(false, node_id, asymm::GenerateKeyPair());
   ClientRoutingTable client_routing_table(routing_table.kNodeId());
   Endpoint endpoint(GetLocalIp(), maidsafe::test::GetRandomPort());
   NetworkUtils network(routing_table, client_routing_table);
@@ -201,8 +199,7 @@ TEST(NetworkUtilsTest, FUNC_ProcessSendDirectEndpoint) {
   LOG(kVerbose) << " ------------------------   Zero state setup done  ----------------------- ";
 
   NodeId node_id(NodeId::IdType::kRandomId);
-  NetworkStatistics network_statistics(node_id);
-  RoutingTable routing_table(false, node_id, asymm::GenerateKeyPair(), network_statistics);
+  RoutingTable routing_table(false, node_id, asymm::GenerateKeyPair());
   NodeId node_id3(routing_table.kNodeId());
   ClientRoutingTable client_routing_table(routing_table.kNodeId());
   NetworkUtils network(routing_table, client_routing_table);
@@ -260,8 +257,7 @@ TEST(NetworkUtilsTest, FUNC_ProcessSendRecursiveSendOn) {
   sent_message.set_client_node(false);
   sent_message.set_hops_to_live(Parameters::hops_to_live);
   NodeId node_id(NodeId::IdType::kRandomId);
-  NetworkStatistics network_statistics(node_id);
-  RoutingTable routing_table(false, node_id, asymm::GenerateKeyPair(), network_statistics);
+  RoutingTable routing_table(false, node_id, asymm::GenerateKeyPair());
   NodeId node_id3(routing_table.kNodeId());
   ClientRoutingTable client_routing_table(routing_table.kNodeId());
   NetworkUtils network(routing_table, client_routing_table);

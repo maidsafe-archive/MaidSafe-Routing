@@ -42,8 +42,7 @@ namespace test {
 
 TEST(RoutingTableTest, BEH_AddCloseNodes) {
   NodeId node_id(NodeId::IdType::kRandomId);
-  NetworkStatistics network_statistics(node_id);
-  RoutingTable routing_table(false, node_id, asymm::GenerateKeyPair(), network_statistics);
+  RoutingTable routing_table(false, node_id, asymm::GenerateKeyPair());
   NodeInfo node;
   // check the node is useful when false is set
   for (unsigned int i = 0; i < Parameters::closest_nodes_size; ++i) {
@@ -69,8 +68,7 @@ TEST(RoutingTableTest, BEH_AddCloseNodes) {
 
 TEST(RoutingTableTest, FUNC_AddTooManyNodes) {
   NodeId node_id(NodeId::IdType::kRandomId);
-  NetworkStatistics network_statistics(node_id);
-  RoutingTable routing_table(false, node_id, asymm::GenerateKeyPair(), network_statistics);
+  RoutingTable routing_table(false, node_id, asymm::GenerateKeyPair());
 
   for (uint16_t i = 0; routing_table.size() < Parameters::max_routing_table_size; ++i) {
     NodeInfo node(MakeNode());
@@ -93,8 +91,7 @@ TEST(RoutingTableTest, FUNC_AddTooManyNodes) {
 TEST(RoutingTableTest, BEH_GetNthClosest) {
   std::vector<NodeId> nodes_id;
   NodeId node_id(NodeId::IdType::kRandomId);
-  NetworkStatistics network_statistics(node_id);
-  RoutingTable routing_table(false, node_id, asymm::GenerateKeyPair(), network_statistics);
+  RoutingTable routing_table(false, node_id, asymm::GenerateKeyPair());
   NodeId my_node(routing_table.kNodeId());
 
   for (uint16_t i(static_cast<uint16_t>(routing_table.size())); routing_table.size() < 10; ++i) {
@@ -114,8 +111,7 @@ TEST(RoutingTableTest, BEH_GetNthClosest) {
 
 TEST(RoutingTableTest, FUNC_GetClosestNodeWithExclusion) {
   NodeId node_id(NodeId::IdType::kRandomId);
-  NetworkStatistics network_statistics(node_id);
-  RoutingTable routing_table(false, node_id, asymm::GenerateKeyPair(), network_statistics);
+  RoutingTable routing_table(false, node_id, asymm::GenerateKeyPair());
   std::vector<NodeId> nodes_id;
   std::vector<std::string> exclude;
   NodeInfo node_info;
@@ -208,8 +204,7 @@ TEST(RoutingTableTest, FUNC_GetClosestNodeWithExclusion) {
 
 TEST(RoutingTableTest, FUNC_ClosestToId) {
   NodeId own_node_id(NodeId::IdType::kRandomId);
-  NetworkStatistics network_statistics(own_node_id);
-  RoutingTable routing_table(false, own_node_id, asymm::GenerateKeyPair(), network_statistics);
+  RoutingTable routing_table(false, own_node_id, asymm::GenerateKeyPair());
   std::vector<NodeInfo> known_nodes;
   std::vector<NodeInfo> known_targets;
   NodeId target;
@@ -297,8 +292,7 @@ TEST(RoutingTableTest, FUNC_ClosestToId) {
 
 TEST(RoutingTableTest, FUNC_GetRandomExistingNode) {
   NodeId own_node_id(NodeId::IdType::kRandomId);
-  NetworkStatistics network_statistics(own_node_id);
-  RoutingTable routing_table(false, own_node_id, asymm::GenerateKeyPair(), network_statistics);
+  RoutingTable routing_table(false, own_node_id, asymm::GenerateKeyPair());
   NodeInfo node_info;
   std::vector<NodeInfo> known_nodes;
 

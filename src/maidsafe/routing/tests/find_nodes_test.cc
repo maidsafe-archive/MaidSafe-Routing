@@ -48,7 +48,8 @@ class FindNodeNetwork : public GenericNetwork, public testing::Test {
 
  protected:
   testing::AssertionResult Find(std::shared_ptr<GenericNode> source, const NodeId& node_id) {
-    protobuf::Message find_node_rpc(rpcs::FindNodes(node_id, source->node_id(), 8));
+    protobuf::Message find_node_rpc(rpcs::FindNodes(node_id, source->node_id(),
+                                    Parameters::closest_nodes_size));
     source->SendToClosestNode(find_node_rpc);
     return testing::AssertionSuccess();
   }
@@ -102,7 +103,7 @@ TEST_F(FindNodeNetwork, FUNC_FindNodeAfterDrop) {
   this->AddNode(pmid);
   EXPECT_TRUE(this->nodes_[source]->RoutingTableHasNode(node_id));
   EXPECT_TRUE(this->nodes_[source]->DropNode(node_id));
-  Sleep(Parameters::recovery_time_lag + Parameters::find_node_interval + std::chrono::seconds(5));
+  Sleep(Parameters::recovery_time_lag);
   EXPECT_TRUE(this->nodes_[source]->RoutingTableHasNode(node_id));
 }
 
@@ -116,7 +117,8 @@ TEST_F(FindNodeNetwork, FUNC_VaultFindVaultNode) {
   EXPECT_FALSE(this->nodes_.at(dest)->IsClient());
   EXPECT_TRUE(this->nodes_[source]->RoutingTableHasNode(this->nodes_[dest]->node_id()));
   EXPECT_TRUE(this->nodes_[source]->DropNode(this->nodes_[dest]->node_id()));
-  Sleep(Parameters::recovery_time_lag + Parameters::find_node_interval + std::chrono::seconds(5));
+  LOG(kVerbose) << "before find " << HexSubstr(this->nodes_[dest]->node_id().string());
+  Sleep(Parameters::recovery_time_lag);
   LOG(kVerbose) << "after find " << HexSubstr(this->nodes_[dest]->node_id().string());
   EXPECT_TRUE(this->nodes_[source]->RoutingTableHasNode(this->nodes_[dest]->node_id()));
 }
@@ -135,7 +137,7 @@ TEST_F(FindNodeNetwork, FUNC_VaultFindClientNode) {
   EXPECT_TRUE(this->nodes_[source]->ClientRoutingTableHasNode(this->nodes_[dest]->node_id()));
   // clear up
   EXPECT_TRUE(this->nodes_[dest]->DropNode(this->nodes_[source]->node_id()));
-  Sleep(Parameters::recovery_time_lag + Parameters::find_node_interval + std::chrono::seconds(5));
+  Sleep(Parameters::recovery_time_lag);
   EXPECT_TRUE(this->nodes_[dest]->RoutingTableHasNode(this->nodes_[source]->node_id()));
   EXPECT_TRUE(this->nodes_[source]->ClientRoutingTableHasNode(this->nodes_[dest]->node_id()));
 }

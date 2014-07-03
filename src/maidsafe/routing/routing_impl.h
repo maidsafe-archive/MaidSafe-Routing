@@ -43,6 +43,7 @@
 #include "maidsafe/routing/routing_table.h"
 #include "maidsafe/routing/timer.h"
 
+
 namespace maidsafe {
 
 namespace routing {
@@ -152,6 +153,7 @@ class Routing::Impl {
   void DoOnMessageReceived(const std::string& message);
   void OnConnectionLost(const NodeId& lost_connection_id);
   void DoOnConnectionLost(const NodeId& lost_connection_id);
+  void OnRoutingTableChange(const RoutingTableChange& routing_table_change);
   void RemoveNode(const NodeInfo& node, bool internal_rudp_only);
   bool ConfirmGroupMembers(const NodeId& node1, const NodeId& node2);
   void NotifyNetworkStatus(int return_code) const;

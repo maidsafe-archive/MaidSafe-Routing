@@ -436,7 +436,6 @@ SingleToGroupRelayMessage CreateSingleToGroupRelayMessage(const protobuf::Messag
 //              static_cast<Cacheable>(proto_message.cacheable()));
 }
 
-
 }  // namespace routing
 
 }  // namespace maidsafe

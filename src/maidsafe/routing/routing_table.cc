@@ -37,8 +37,7 @@ namespace maidsafe {
 
 namespace routing {
 
-RoutingTable::RoutingTable(bool client_mode, const NodeId& node_id, const asymm::Keys& keys,
-                           NetworkStatistics& network_statistics)
+RoutingTable::RoutingTable(bool client_mode, const NodeId& node_id, const asymm::Keys& keys)
     : kClientMode_(client_mode),
       kNodeId_(node_id),
       kConnectionId_(kClientMode_ ? NodeId(NodeId::IdType::kRandomId) : kNodeId_),
@@ -48,13 +47,9 @@ RoutingTable::RoutingTable(bool client_mode, const NodeId& node_id, const asymm:
       kThresholdSize_(kClientMode_ ? Parameters::max_routing_table_size_for_client
                                    : Parameters::routing_table_size_threshold),
       mutex_(),
-      remove_node_functor_(),
-      network_status_functor_(),
-      close_nodes_change_functor_(),
       routing_table_change_functor_(),
       nodes_(),
-      ipc_message_queue_(),
-      network_statistics_(network_statistics) {
+      ipc_message_queue_() {
 #ifdef TESTING
   try {
     ipc_message_queue_.reset(new boost::interprocess::message_queue(
@@ -78,15 +73,8 @@ RoutingTable::~RoutingTable() {
   }
 }
 
-void RoutingTable::InitialiseFunctors(NetworkStatusFunctor network_status_functor,
-    std::function<void(const NodeInfo&, bool)> remove_node_functor,
-    CloseNodesChangeFunctor close_nodes_change_functor,
-    RoutingTableChangeFunctor routing_table_change_functor) {
-  assert(remove_node_functor);
-  assert(network_status_functor);
-  network_status_functor_ = network_status_functor;
-  remove_node_functor_ = remove_node_functor;
-  close_nodes_change_functor_ = close_nodes_change_functor;
+void RoutingTable::InitialiseFunctors(RoutingTableChangeFunctor routing_table_change_functor) {
+  assert(routing_table_change_functor);
   routing_table_change_functor_ = routing_table_change_functor;
 }
 
@@ -149,26 +137,14 @@ bool RoutingTable::AddOrCheckNode(NodeInfo peer, bool remove) {
   }
 
   if (return_value && remove) {  // Firing functors on Add only
-    UpdateNetworkStatus(routing_table_size);
-
-    if (!removed_node.node_id.IsZero()) {
-      LOG(kVerbose) << "Routing table removed node id : " << DebugId(removed_node.node_id)
-                    << ", connection id : " << DebugId(removed_node.connection_id);
-      if (remove_node_functor_)
-        remove_node_functor_(removed_node, false);
-    }
-
-    if (close_node_added) {
-      network_statistics_.UpdateLocalAverageDistance(new_close_nodes);
-      if (close_nodes_change_functor_) {
+    if (routing_table_change_functor_) {
         std::shared_ptr<CloseNodesChange> close_nodes_change(
             new CloseNodesChange(kNodeId(), old_close_nodes, new_close_nodes));
-        close_nodes_change_functor_(close_nodes_change);
-      }
-      IpcSendCloseNodes();
+      routing_table_change_functor_(
+          RoutingTableChange(peer, RoutingTableChange::Remove(removed_node, false), true,
+                             close_node_added, close_nodes_change,
+                             NetworkStatus(routing_table_size)));
     }
-    if (routing_table_change_functor_)
-      routing_table_change_functor_(peer, close_node_added, true);
 
     if (peer.nat_type == rudp::NatType::kOther) {  // Usable as bootstrap endpoint
                                                    // if (new_bootstrap_endpoint_)
@@ -182,6 +158,7 @@ bool RoutingTable::AddOrCheckNode(NodeInfo peer, bool remove) {
 NodeInfo RoutingTable::DropNode(const NodeId& node_to_drop, bool routing_only) {
   NodeInfo dropped_node;
   NodeId potential_close_id;
+  uint16_t routing_table_size(0);
   std::vector<NodeId> new_close_nodes, old_close_nodes;
   bool close_node_removal(false);
   {
@@ -200,13 +177,14 @@ NodeInfo RoutingTable::DropNode(const NodeId& node_to_drop, bool routing_only) {
     if (found.first) {
       dropped_node = *found.second;
       nodes_.erase(found.second);
-      }
+      routing_table_size = static_cast<uint16_t>(nodes_.size());
     }
+  }
 
-    close_node_removal = std::any_of(std::begin(old_close_nodes), std::end(old_close_nodes),
-                                     [dropped_node](const NodeId node_id) {
-                                       return node_id == dropped_node.node_id;
-                                     });
+  close_node_removal = std::any_of(std::begin(old_close_nodes), std::end(old_close_nodes),
+                                   [dropped_node](const NodeId& node_id) {
+                                     return node_id == dropped_node.node_id;
+                                   });
 
   if (close_node_removal) {
     if (nodes_.size() >= Parameters::closest_nodes_size) {
@@ -215,27 +193,17 @@ NodeInfo RoutingTable::DropNode(const NodeId& node_to_drop, bool routing_only) {
                             std::end(new_close_nodes));
       new_close_nodes.push_back(potential_close_id);
     }
-    network_statistics_.UpdateLocalAverageDistance(new_close_nodes);
-    if (close_nodes_change_functor_) {
-        std::shared_ptr<CloseNodesChange> close_nodes_change(
-            new CloseNodesChange(kNodeId(), old_close_nodes, new_close_nodes));
-        close_nodes_change_functor_(close_nodes_change);
-    }
-    IpcSendCloseNodes();
   }
 
   if (!dropped_node.node_id.IsZero()) {
-    assert(nodes_.size() <= std::numeric_limits<uint16_t>::max());
-    UpdateNetworkStatus(static_cast<uint16_t>(nodes_.size()));
-
-    LOG(kVerbose) << DebugId(kNodeId()) << "Routing table dropped node id : "
-                  << DebugId(dropped_node.node_id) << ", connection id : "
-                  << DebugId(dropped_node.connection_id);
-    if (remove_node_functor_ && !routing_only)
-      remove_node_functor_(dropped_node, false);
+    std::shared_ptr<CloseNodesChange> close_nodes_change(
+        new CloseNodesChange(kNodeId(), old_close_nodes, new_close_nodes));
 
     if (routing_table_change_functor_)
-      routing_table_change_functor_(dropped_node, close_node_removal, false);
+      routing_table_change_functor_(
+          RoutingTableChange(NodeInfo(), RoutingTableChange::Remove(dropped_node, routing_only),
+                             false, close_node_removal, close_nodes_change,
+                             NetworkStatus(routing_table_size)));
   }
   LOG(kInfo) << PrintRoutingTable();
   return dropped_node;
@@ -457,6 +425,9 @@ NodeInfo RoutingTable::GetClosestNode(const NodeId& target_id, bool ignore_exact
 std::vector<NodeInfo> RoutingTable::GetClosestNodes(const NodeId& target_id, uint16_t number_to_get,
                                                     bool ignore_exact_match) {
   std::unique_lock<std::mutex> lock(mutex_);
+  if (number_to_get == 0)
+    return std::vector<NodeInfo>();
+
   int sorted_count(PartialSortFromTarget(target_id, number_to_get + 1, lock));
   if (sorted_count == 0)
     return std::vector<NodeInfo>();
@@ -508,15 +479,8 @@ std::pair<bool, std::vector<NodeInfo>::const_iterator> RoutingTable::Find(
   return std::make_pair(itr != nodes_.end(), itr);
 }
 
-void RoutingTable::UpdateNetworkStatus(uint16_t size) const {
-#ifndef TESTING
-  assert(network_status_functor_);
-#else
-  if (!network_status_functor_)
-    return;
-#endif
-  network_status_functor_(static_cast<int>(size) * 100 / kMaxSize_);
-  LOG(kVerbose) << DebugId(kNodeId_) << " Updating network status !!! " << (size * 100) / kMaxSize_;
+uint16_t RoutingTable::NetworkStatus(uint16_t size) const {
+   return static_cast<uint16_t>((size) * 100 / kMaxSize_);
 }
 
 size_t RoutingTable::size() const {
@@ -524,32 +488,33 @@ size_t RoutingTable::size() const {
   return nodes_.size();
 }
 
-void RoutingTable::IpcSendCloseNodes() {
-  if (ipc_message_queue_) {
-    network_viewer::MatrixRecord matrix_record(kNodeId_);
-    std::vector<NodeInfo> close;
-    {
-      std::unique_lock<std::mutex> lock(mutex_);
-      auto count(PartialSortFromTarget(kNodeId(), Parameters::closest_nodes_size, lock));
-      std::copy(std::begin(nodes_), std::begin(nodes_) + count, std::back_inserter(close));
-    }
+// to be moved to utils
+//void RoutingTable::IpcSendCloseNodes() {
+//  if (ipc_message_queue_) {
+//    network_viewer::MatrixRecord matrix_record(kNodeId_);
+//    std::vector<NodeInfo> close;
+//    {
+//      std::unique_lock<std::mutex> lock(mutex_);
+//      auto count(PartialSortFromTarget(kNodeId(), Parameters::closest_nodes_size, lock));
+//      std::copy(std::begin(nodes_), std::begin(nodes_) + count, std::back_inserter(close));
+//    }
 
-    size_t index(0);
-    std::string printout("\tClose nodes sent by: " + DebugId(kNodeId_) + "\n");
-    size_t limit(std::min(static_cast<size_t>(Parameters::group_size), close.size()));
-    for (; index < limit; ++index) {
-      matrix_record.AddElement(close[index].node_id, network_viewer::ChildType::kGroup);
-      printout += "\t\t" + DebugId(close[index].node_id) + " - kGroup\n";
-    }
-    for (; index < close.size(); ++index) {
-      matrix_record.AddElement(close[index].node_id, network_viewer::ChildType::kClosest);
-      printout += "\t\t" + DebugId(close[index].node_id) + " - kClosest\n";
-    }
-    LOG(kInfo) << printout << '\n';
-    std::string serialised_matrix(matrix_record.Serialise());
-    ipc_message_queue_->try_send(serialised_matrix.c_str(), serialised_matrix.size(), 0);
-  }
-}
+//    size_t index(0);
+//    std::string printout("\tClose nodes sent by: " + DebugId(kNodeId_) + "\n");
+//    size_t limit(std::min(static_cast<size_t>(Parameters::group_size), close.size()));
+//    for (; index < limit; ++index) {
+//      matrix_record.AddElement(close[index].node_id, network_viewer::ChildType::kGroup);
+//      printout += "\t\t" + DebugId(close[index].node_id) + " - kGroup\n";
+//    }
+//    for (; index < close.size(); ++index) {
+//      matrix_record.AddElement(close[index].node_id, network_viewer::ChildType::kClosest);
+//      printout += "\t\t" + DebugId(close[index].node_id) + " - kClosest\n";
+//    }
+//    LOG(kInfo) << printout << '\n';
+//    std::string serialised_matrix(matrix_record.Serialise());
+//    ipc_message_queue_->try_send(serialised_matrix.c_str(), serialised_matrix.size(), 0);
+//  }
+//}
 
 std::string RoutingTable::PrintRoutingTable() {
   std::vector<NodeInfo> rt;

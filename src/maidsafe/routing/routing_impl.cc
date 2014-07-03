@@ -93,7 +93,7 @@ Routing::Impl::Impl(bool client_mode, const NodeId& node_id, const asymm::Keys& 
     : network_status_mutex_(),
       network_status_(kNotJoined),
       network_statistics_(node_id),
-      routing_table_(client_mode, node_id, keys, network_statistics_),
+      routing_table_(client_mode, node_id, keys),
       kNodeId_(node_id),
       running_(true),
       running_mutex_(),
@@ -133,34 +133,9 @@ void Routing::Impl::Join(const Functors& functors, const BootstrapContacts& boot
 
 void Routing::Impl::ConnectFunctors(const Functors& functors) {
   functors_ = functors;
-  routing_table_.InitialiseFunctors([this](int network_status_in) {
-                                      {
-                                        std::lock_guard<std::mutex> lock(network_status_mutex_);
-                                        network_status_ = network_status_in;
-                                      }
-                                      NotifyNetworkStatus(network_status_in);
-                                    },
-                                    [this](const NodeInfo& node, bool internal_rudp_only) {
-                                      RemoveNode(node, internal_rudp_only);
-                                    },
-                                    functors.close_nodes_change,
-                                    [this](const NodeInfo& node_info, bool close_node,
-                                           bool node_added) {
-                                      if (routing_table_.client_mode())
-                                        return;
-
-                                      if (close_node && node_added) {
-                                        auto clients(client_routing_table_.GetNodesInfo());
-                                        for (auto client : clients)
-                                          InformClientOfNewCloseNode(network_, client, node_info,
-                                                                     kNodeId());
-                                      }
-                                      if (routing_table_.size() >
-                                              Parameters::routing_table_size_threshold)
-                                        network_.SendToClosestNode(
-                                            rpcs::FindNodes(kNodeId_, kNodeId_,
-                                                            Parameters::closest_nodes_size));
-                                    });
+  routing_table_.InitialiseFunctors([this](const RoutingTableChange& routing_table_change) {
+                                             OnRoutingTableChange(routing_table_change);
+                                           });
   // only one of MessageAndCachingFunctors or TypedMessageAndCachingFunctor should be provided
   assert(!functors.message_and_caching.message_received !=
          !functors.typed_message_and_caching.single_to_single.message_received);
@@ -775,6 +750,43 @@ void Routing::Impl::AddDestinationTypeRelatedFields(protobuf::Message& proto_mes
                                                     std::false_type) {
   proto_message.set_direct(true);
   proto_message.set_replication(1);
+}
+
+void Routing::Impl::OnRoutingTableChange(const RoutingTableChange& routing_table_change) {
+  {
+    std::lock_guard<std::mutex> lock(network_status_mutex_);
+    network_status_ = routing_table_change.health;
+  }
+  NotifyNetworkStatus(routing_table_change.health);
+  LOG(kVerbose) << kNodeId_ << " Updating network status !!! " << routing_table_change.health;
+
+  if (routing_table_change.removed.node.node_id != NodeId()) {
+    RemoveNode(routing_table_change.removed.node,
+               routing_table_change.removed.routing_only_removal);
+    LOG(kVerbose) << "Routing table removed node id : " << routing_table_change.removed.node.node_id
+                  << ", connection id : " << routing_table_change.removed.node.connection_id;
+
+  }
+
+  if (routing_table_.client_mode())
+    return;
+
+  if (routing_table_change.close_node_affected) {
+    if (functors_.close_nodes_change)
+      functors_.close_nodes_change(routing_table_change.close_nodes_change);
+    network_statistics_.UpdateLocalAverageDistance(
+        routing_table_change.close_nodes_change->new_nodes());
+    // IpcSendCloseNodes(); TO BE MOVED FROM RT TO UTILS
+  }
+
+  if (routing_table_change.close_node_affected && routing_table_change.insertion) {
+    auto clients(client_routing_table_.GetNodesInfo());
+    for (auto client : clients)
+      InformClientOfNewCloseNode(network_, client, routing_table_change.added_node, kNodeId());
+  }
+
+  if (routing_table_.size() > Parameters::routing_table_size_threshold)
+    network_.SendToClosestNode(rpcs::FindNodes(kNodeId_, kNodeId_, Parameters::closest_nodes_size));
 }
 
 }  // namespace routing

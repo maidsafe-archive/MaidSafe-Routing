@@ -67,8 +67,7 @@ class MessageHandlerTest : public testing::Test {
     };
     NodeId node_id(NodeId::IdType::kRandomId);
     network_statistics_.reset(new NetworkStatistics(node_id));
-    table_.reset(
-        new MockRoutingTable(false, node_id, asymm::GenerateKeyPair(), *network_statistics_));
+    table_.reset(new MockRoutingTable(false, node_id, asymm::GenerateKeyPair()));
     ntable_.reset(new ClientRoutingTable(table_->kNodeId()));
     utils_.reset(new MockNetworkUtils(*table_, *ntable_));
     service_.reset(new MockService(*table_, *ntable_, *utils_));
@@ -628,8 +627,7 @@ TEST_F(MessageHandlerTest, BEH_ClientRoutingTable) {
   asymm::Keys keys;
   keys.private_key = maid.private_key();
   keys.public_key = maid.public_key();
-  table_.reset(
-      new MockRoutingTable(true, NodeId(maid.name()->string()), keys, *network_statistics_));
+  table_.reset(new MockRoutingTable(true, NodeId(maid.name()->string()), keys));
   table_->AddNode(close_info_);
   MessageHandler message_handler(*table_, *ntable_, *utils_, timer_, *network_statistics_);
   message_handler.service_ = service_;
