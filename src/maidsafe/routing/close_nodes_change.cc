@@ -74,26 +74,8 @@ CloseNodesChange::CloseNodesChange(NodeId this_node_id, const std::vector<NodeId
         });
         return new_close_nodes_in;
       }(new_close_nodes)),
-      lost_nodes_([this]()->std::vector<NodeId> {
-        std::vector<NodeId> lost_nodes;
-        std::set_difference(std::begin(old_close_nodes_), std::end(old_close_nodes_),
-                            std::begin(new_close_nodes_), std::end(new_close_nodes_),
-                            std::back_inserter(lost_nodes),
-                            [this](const NodeId& lhs, const NodeId& rhs) {
-                              return NodeId::CloserToTarget(lhs, rhs, node_id_);
-                            });
-        return lost_nodes;
-      }()),
-      new_nodes_([this]()->std::vector<NodeId> {
-        std::vector<NodeId> new_nodes;
-        std::set_difference(std::begin(new_close_nodes_), std::end(new_close_nodes_),
-                            std::begin(old_close_nodes_), std::end(old_close_nodes_),
-                            std::back_inserter(new_nodes),
-                            [this](const NodeId & lhs, const NodeId & rhs) {
-                              return NodeId::CloserToTarget(lhs, rhs, node_id_);
-                            });
-        return new_nodes;
-      }()),
+      lost_nodes_(),
+      new_nodes_(),
       radius_([this]()->crypto::BigInt {
         NodeId fcn_distance;
         if (new_close_nodes_.size() >= Parameters::closest_nodes_size)
@@ -220,6 +202,28 @@ void swap(CloseNodesChange& lhs, CloseNodesChange& rhs) MAIDSAFE_NOEXCEPT {
   swap(lhs.new_close_nodes_, rhs.new_close_nodes_);
   swap(lhs.lost_nodes_, rhs.lost_nodes_);
   swap(lhs.radius_, rhs.radius_);
+}
+
+std::vector<NodeId> CloseNodesChange::new_nodes() const {
+  std::vector<NodeId> new_nodes;
+  std::set_difference(std::begin(new_close_nodes_), std::end(new_close_nodes_),
+                      std::begin(old_close_nodes_), std::end(old_close_nodes_),
+                      std::back_inserter(new_nodes),
+                      [this](const NodeId & lhs, const NodeId & rhs) {
+                        return NodeId::CloserToTarget(lhs, rhs, node_id_);
+                      });
+  return new_nodes;
+}
+
+std::vector<NodeId> CloseNodesChange::lost_nodes() const {
+  std::vector<NodeId> lost_nodes;
+  std::set_difference(std::begin(old_close_nodes_), std::end(old_close_nodes_),
+                      std::begin(new_close_nodes_), std::end(new_close_nodes_),
+                      std::back_inserter(lost_nodes),
+                      [this](const NodeId& lhs, const NodeId& rhs) {
+                        return NodeId::CloserToTarget(lhs, rhs, node_id_);
+                      });
+  return lost_nodes;
 }
 
 void CloseNodesChange::Print() {

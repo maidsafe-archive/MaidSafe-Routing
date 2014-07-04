@@ -765,13 +765,12 @@ void Routing::Impl::OnRoutingTableChange(const RoutingTableChange& routing_table
                routing_table_change.removed.routing_only_removal);
     LOG(kVerbose) << "Routing table removed node id : " << routing_table_change.removed.node.node_id
                   << ", connection id : " << routing_table_change.removed.node.connection_id;
-
   }
 
   if (routing_table_.client_mode())
     return;
 
-  if (routing_table_change.close_node_affected) {
+  if (routing_table_change.close_nodes_change != nullptr) {
     if (functors_.close_nodes_change)
       functors_.close_nodes_change(routing_table_change.close_nodes_change);
     network_statistics_.UpdateLocalAverageDistance(
@@ -779,7 +778,7 @@ void Routing::Impl::OnRoutingTableChange(const RoutingTableChange& routing_table
     // IpcSendCloseNodes(); TO BE MOVED FROM RT TO UTILS
   }
 
-  if (routing_table_change.close_node_affected && routing_table_change.insertion) {
+  if (routing_table_change.close_nodes_change && routing_table_change.insertion) {
     auto clients(client_routing_table_.GetNodesInfo());
     for (auto client : clients)
       InformClientOfNewCloseNode(network_, client, routing_table_change.added_node, kNodeId());

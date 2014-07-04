@@ -76,7 +76,7 @@ TEST(RoutingTableTest, FUNC_AddTooManyNodes) {
   }
   EXPECT_EQ(routing_table.size(), Parameters::max_routing_table_size);
   size_t count(0);
-  for (uint16_t i = 0; i < 100; ++i) {
+  for (uint16_t i = 0; i < 1000; ++i) {
     NodeInfo node(MakeNode());
     if (routing_table.CheckNode(node)) {
       EXPECT_TRUE(routing_table.AddNode(node));

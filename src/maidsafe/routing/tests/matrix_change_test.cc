@@ -267,6 +267,89 @@ TEST(SingleCloseNodesChangeTest, BEH_ChoosePmidNode) {
   Choose(online_pmids, kTarget, owners, kGroupSize, kGroupSize + 2);
 }
 
+TEST_F(CloseNodesChangeTest, BEH_SmallSizeRoutingTable) {
+  NodeId node_id(NodeId::IdType::kRandomId);
+  RoutingTableChangeFunctor routing_table_change_functor(
+      [&](const RoutingTableChange& routing_table_change) {
+        EXPECT_TRUE(routing_table_change.close_nodes_change != nullptr);
+        EXPECT_EQ(routing_table_change.close_nodes_change->new_nodes().size(), 1);
+        EXPECT_TRUE(routing_table_change.close_nodes_change->lost_nodes().empty());
+      });
+  RoutingTable routing_table(false, node_id, asymm::GenerateKeyPair());
+  routing_table.InitialiseFunctors(routing_table_change_functor);
+  while (routing_table.size() < Parameters::closest_nodes_size) {
+    auto node(MakeNode());
+    EXPECT_TRUE(routing_table.AddNode(node));
+  }
+}
+
+TEST_F(CloseNodesChangeTest, BEH_FullSizeRoutingTable) {
+  NodeId node_id(NodeId::IdType::kRandomId);
+  std::set<NodeId, std::function<bool(const NodeId& lhs, const NodeId& rhs)>>
+      new_ids([node_id](const NodeId& lhs, const NodeId& rhs) {
+        return NodeId::CloserToTarget(lhs, rhs, node_id);
+      });
+  NodeInfo new_node;
+  NodeId removed;
+  RoutingTable routing_table(false, node_id, asymm::GenerateKeyPair());
+  RoutingTableChangeFunctor routing_table_change_functor(
+      [&](const RoutingTableChange& routing_table_change) {
+        if (routing_table.size() <= Parameters::closest_nodes_size) {
+          EXPECT_TRUE(routing_table_change.close_nodes_change != nullptr);
+          if (routing_table_change.insertion) {
+            EXPECT_EQ(routing_table_change.close_nodes_change->new_nodes().size(), 1);
+            EXPECT_TRUE(routing_table_change.close_nodes_change->lost_nodes().empty());
+          } else {
+            EXPECT_TRUE(routing_table_change.close_nodes_change->new_nodes().empty());
+            EXPECT_EQ(routing_table_change.close_nodes_change->lost_nodes().size(), 1);
+            EXPECT_EQ(routing_table_change.close_nodes_change->lost_nodes().at(0), removed);
+            new_ids.erase(removed);
+          }
+        } else {
+          auto iter(new_ids.begin());
+          std::advance(iter, Parameters::closest_nodes_size - 1);
+          if (routing_table_change.insertion) {
+            if (NodeId::CloserToTarget(new_node.node_id, *iter, node_id)) {
+              EXPECT_TRUE(routing_table_change.close_nodes_change != nullptr);
+              EXPECT_EQ(routing_table_change.close_nodes_change->new_nodes().size(), 1);
+              EXPECT_EQ(routing_table_change.close_nodes_change->lost_nodes().size(), 1);
+              std::advance(iter, 1);
+              EXPECT_EQ(routing_table_change.close_nodes_change->lost_nodes().at(0), *iter);
+            }
+          } else {
+            if (!NodeId::CloserToTarget(*iter, removed, node_id)) {
+              EXPECT_TRUE(routing_table_change.close_nodes_change != nullptr);
+              EXPECT_EQ(routing_table_change.close_nodes_change->new_nodes().size(), 1);
+              std::advance(iter, 1);
+              EXPECT_EQ(routing_table_change.close_nodes_change->new_nodes().at(0), *iter);
+              EXPECT_EQ(routing_table_change.close_nodes_change->lost_nodes().size(), 1);
+              EXPECT_EQ(routing_table_change.close_nodes_change->lost_nodes().at(0), removed);
+            }
+          }
+          if (!routing_table_change.removed.node.node_id.IsZero())
+            new_ids.erase(routing_table_change.removed.node.node_id);
+        }
+        EXPECT_LE(new_ids.size(), Parameters::max_routing_table_size);
+      });
+  routing_table.InitialiseFunctors(routing_table_change_functor);
+  auto iterations(200);
+  while (iterations-- != 0) {
+    new_node = MakeNode();
+    if (routing_table.CheckNode(new_node)) {
+      new_ids.insert(new_node.node_id);
+      EXPECT_TRUE(routing_table.AddNode(new_node));
+    }
+  }
+  while (!routing_table.size() > 0) {
+    auto random_index(RandomUint32() % new_ids.size());
+    auto iter(std::begin(new_ids));
+    std::advance(iter, random_index);
+    removed = *iter;
+    routing_table.DropNode(*iter, true);
+    new_ids.erase(iter);
+  }
+}
+
 }  // namespace test
 
 }  // namespace routing

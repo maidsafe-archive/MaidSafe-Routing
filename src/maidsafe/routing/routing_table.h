@@ -65,18 +65,16 @@ struct RoutingTableChange {
     NodeInfo node;
     bool routing_only_removal;
   };
-  RoutingTableChange() : added_node(), removed(), insertion(false),  close_node_affected(false),
-                         close_nodes_change(), health(0) {}
+  RoutingTableChange() : added_node(), removed(), insertion(false), close_nodes_change(),
+                         health(0) {}
   RoutingTableChange(const NodeInfo& added_node_in, const Remove& removed_in,
-                     bool insertion_in, bool close_node_affected_in,
-                     std::shared_ptr<CloseNodesChange> close_nodes_change_in, uint16_t health_in)
+                     bool insertion_in, std::shared_ptr<CloseNodesChange> close_nodes_change_in,
+                     uint16_t health_in)
       : added_node(added_node_in), removed(removed_in), insertion(insertion_in),
-        close_node_affected(close_node_affected_in), close_nodes_change(close_nodes_change_in),
-        health(health_in) {}
+        close_nodes_change(close_nodes_change_in), health(health_in) {}
   NodeInfo added_node;
   Remove removed;
   bool insertion;
-  bool close_node_affected;
   std::shared_ptr<CloseNodesChange> close_nodes_change;
   uint16_t health;
 };

@@ -58,8 +58,8 @@ class CloseNodesChange {
 
   CheckHoldersResult CheckHolders(const NodeId& target) const;
   NodeId ChoosePmidNode(const std::set<NodeId>& online_pmids, const NodeId& target) const;
-  std::vector<NodeId> lost_nodes() const { return lost_nodes_; }
-  std::vector<NodeId> new_nodes() const { return new_nodes_; }
+  std::vector<NodeId> lost_nodes() const;
+  std::vector<NodeId> new_nodes() const;
   void Print();
 
   friend void swap(CloseNodesChange& lhs, CloseNodesChange& rhs) MAIDSAFE_NOEXCEPT;
