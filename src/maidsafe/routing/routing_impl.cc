@@ -166,7 +166,7 @@ void Routing::Impl::BootstrapFromTheseEndpoints(const BootstrapContacts& bootstr
     for (uint16_t i = 0; i < routing_table_.size(); ++i) {
       NodeInfo remove_node = routing_table_.GetClosestNode(kNodeId_);
       network_.Remove(remove_node.connection_id);
-      routing_table_.DropNode(remove_node.node_id, true);
+      routing_table_.DropNode(remove_node.id, true);
     }
     NotifyNetworkStatus(static_cast<int>(routing_table_.size()));
   }
@@ -290,8 +290,8 @@ int Routing::Impl::ZeroStateJoin(const Functors& functors, const Endpoint& local
   LOG(kInfo) << "[" << DebugId(kNodeId_)
              << "]'s bootstrap connection id : " << DebugId(network_.bootstrap_connection_id());
 
-  assert(!peer_info.node_id.IsZero() && "Zero NodeId passed");
-  assert((network_.bootstrap_connection_id() == peer_info.node_id) &&
+  assert(!peer_info.id.IsZero() && "Zero NodeId passed");
+  assert((network_.bootstrap_connection_id() == peer_info.id) &&
          "Should bootstrap only with known peer for zero state network");
   LOG(kVerbose) << local_endpoint << " Bootstrapped with remote endpoint " << peer_endpoint;
   rudp::NatType nat_type(rudp::NatType::kUnknown);
@@ -300,21 +300,21 @@ int Routing::Impl::ZeroStateJoin(const Functors& functors, const Endpoint& local
   peer_endpoint_pair.external = peer_endpoint_pair.local = peer_endpoint;
   this_endpoint_pair.external = this_endpoint_pair.local = local_endpoint;
   Sleep(std::chrono::milliseconds(100));  // FIXME avoiding assert in rudp
-  result = network_.GetAvailableEndpoint(peer_info.node_id, peer_endpoint_pair, this_endpoint_pair,
+  result = network_.GetAvailableEndpoint(peer_info.id, peer_endpoint_pair, this_endpoint_pair,
                                          nat_type);
   if (result != rudp::kBootstrapConnectionAlreadyExists) {
     LOG(kError) << "Failed to get available endpoint to add zero state node : " << peer_endpoint;
     return result;
   }
 
-  result = network_.Add(peer_info.node_id, peer_endpoint_pair, "invalid");
+  result = network_.Add(peer_info.id, peer_endpoint_pair, "invalid");
   if (result != kSuccess) {
     LOG(kError) << "Failed to add zero state node : " << peer_endpoint;
     return result;
   }
 
-  ValidateAndAddToRoutingTable(network_, routing_table_, client_routing_table_, peer_info.node_id,
-                               peer_info.node_id, peer_info.public_key, false);
+  ValidateAndAddToRoutingTable(network_, routing_table_, client_routing_table_, peer_info.id,
+                               peer_info.id, peer_info.public_key, false);
   // Now poll for routing table size to have other zero state peer.
   uint8_t poll_count(0);
   do {
@@ -554,24 +554,24 @@ void Routing::Impl::DoOnConnectionLost(const NodeId& lost_connection_id) {
   NodeInfo dropped_node;
   bool resend(
       routing_table_.GetNodeInfo(lost_connection_id, dropped_node) &&
-      routing_table_.IsThisNodeInRange(dropped_node.node_id, Parameters::closest_nodes_size));
+      routing_table_.IsThisNodeInRange(dropped_node.id, Parameters::closest_nodes_size));
 
   // Checking routing table
   dropped_node = routing_table_.DropNode(lost_connection_id, true);
-  if (!dropped_node.node_id.IsZero()) {
+  if (!dropped_node.id.IsZero()) {
     LOG(kWarning) << "[" << DebugId(kNodeId_) << "]"
-                  << "Lost connection with routing node " << DebugId(dropped_node.node_id);
-    random_node_helper_.Remove(dropped_node.node_id);
+                  << "Lost connection with routing node " << DebugId(dropped_node.id);
+    random_node_helper_.Remove(dropped_node.id);
   }
 
   // Checking non-routing table
-  if (dropped_node.node_id.IsZero()) {
+  if (dropped_node.id.IsZero()) {
     resend = false;
     dropped_node = client_routing_table_.DropConnection(lost_connection_id);
-    if (!dropped_node.node_id.IsZero()) {
+    if (!dropped_node.id.IsZero()) {
       LOG(kWarning) << "[" << DebugId(kNodeId_) << "]"
                     << "Lost connection with non-routing node "
-                    << HexSubstr(dropped_node.node_id.string());
+                    << HexSubstr(dropped_node.id.string());
     } else if (!network_.bootstrap_connection_id().IsZero() &&
                lost_connection_id == network_.bootstrap_connection_id()) {
       LOG(kWarning) << "[" << DebugId(kNodeId_) << "]"
@@ -608,22 +608,22 @@ void Routing::Impl::DoOnConnectionLost(const NodeId& lost_connection_id) {
 }
 
 void Routing::Impl::RemoveNode(const NodeInfo& node, bool internal_rudp_only) {
-  if (node.connection_id.IsZero() || node.node_id.IsZero())
+  if (node.connection_id.IsZero() || node.id.IsZero())
     return;
 
   network_.Remove(node.connection_id);
   if (internal_rudp_only) {  // No recovery
-    LOG(kInfo) << "Routing: removed node : " << DebugId(node.node_id)
+    LOG(kInfo) << "Routing: removed node : " << DebugId(node.id)
                << ". Removed internal rudp connection id : " << DebugId(node.connection_id);
     return;
   }
 
-  LOG(kInfo) << "Routing: removed node : " << DebugId(node.node_id)
+  LOG(kInfo) << "Routing: removed node : " << DebugId(node.id)
              << ". Removed rudp connection id : " << DebugId(node.connection_id);
 
   // TODO(Prakash): Handle pseudo connection removal here and NRT node removal
 
-  bool resend(routing_table_.IsThisNodeInRange(node.node_id, Parameters::closest_nodes_size));
+  bool resend(routing_table_.IsThisNodeInRange(node.id, Parameters::closest_nodes_size));
   if (resend) {
     std::lock_guard<std::mutex> lock(running_mutex_);
     if (!running_)
@@ -760,10 +760,10 @@ void Routing::Impl::OnRoutingTableChange(const RoutingTableChange& routing_table
   NotifyNetworkStatus(routing_table_change.health);
   LOG(kVerbose) << kNodeId_ << " Updating network status !!! " << routing_table_change.health;
 
-  if (routing_table_change.removed.node.node_id != NodeId()) {
+  if (routing_table_change.removed.node.id != NodeId()) {
     RemoveNode(routing_table_change.removed.node,
                routing_table_change.removed.routing_only_removal);
-    LOG(kVerbose) << "Routing table removed node id : " << routing_table_change.removed.node.node_id
+    LOG(kVerbose) << "Routing table removed node id : " << routing_table_change.removed.node.id
                   << ", connection id : " << routing_table_change.removed.node.connection_id;
   }
 

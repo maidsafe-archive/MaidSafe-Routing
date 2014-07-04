@@ -93,7 +93,7 @@ TEST(NetworkStatisticsTest, BEH_IsIdInGroupRange) {
   NodeId my_node(routing_table.kNodeId());
   while (static_cast<uint16_t>(routing_table.size()) < Parameters::max_routing_table_size) {
     NodeInfo node(MakeNode());
-    nodes_id.push_back(node.node_id);
+    nodes_id.push_back(node.id);
     EXPECT_TRUE(routing_table.AddNode(node));
   }
 

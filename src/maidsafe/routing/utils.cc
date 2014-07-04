@@ -70,14 +70,14 @@ bool ValidateAndAddToRoutingTable(NetworkUtils& network, RoutingTable& routing_t
   }
 
   NodeInfo peer;
-  peer.node_id = peer_id;
+  peer.id = peer_id;
   peer.public_key = public_key;
   peer.connection_id = connection_id;
   bool routing_accepted_node(false);
   if (client) {
     NodeId furthest_close_node_id =
         routing_table.GetNthClosestNode(NodeId(routing_table.kNodeId()),
-                                        2 * Parameters::closest_nodes_size).node_id;
+                                        2 * Parameters::closest_nodes_size).id;
 
     if (client_routing_table.AddNode(peer, furthest_close_node_id))
       routing_accepted_node = true;
@@ -104,8 +104,8 @@ bool ValidateAndAddToRoutingTable(NetworkUtils& network, RoutingTable& routing_t
 void InformClientOfNewCloseNode(NetworkUtils& network, const NodeInfo& client,
                                 const NodeInfo& new_close_node, const NodeId& this_node_id) {
   protobuf::Message inform_client_of_new_close_node(
-      rpcs::InformClientOfNewCloseNode(new_close_node.node_id, this_node_id, client.node_id));
-  network.SendToDirect(inform_client_of_new_close_node, client.node_id, client.connection_id);
+      rpcs::InformClientOfNewCloseNode(new_close_node.id, this_node_id, client.id));
+  network.SendToDirect(inform_client_of_new_close_node, client.id, client.connection_id);
 }
 
 // FIXME
@@ -119,7 +119,7 @@ void HandleSymmetricNodeAdd(RoutingTable& /*routing_table*/, const NodeId& /*pee
   //    return;
   //  }
   //  NodeInfo peer;
-  //  peer.node_id = peer_id;
+  //  peer.id = peer_id;
   //  peer.public_key = public_key;
   ////  peer.endpoint = rudp::kNonRoutable;
   //  peer.nat_type = rudp::NatType::kSymmetric;

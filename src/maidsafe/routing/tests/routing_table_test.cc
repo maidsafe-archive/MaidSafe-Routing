@@ -46,7 +46,7 @@ TEST(RoutingTableTest, BEH_AddCloseNodes) {
   NodeInfo node;
   // check the node is useful when false is set
   for (unsigned int i = 0; i < Parameters::closest_nodes_size; ++i) {
-    node.node_id = NodeId(RandomString(64));
+    node.id = NodeId(RandomString(64));
     EXPECT_TRUE(routing_table.CheckNode(node));
   }
   EXPECT_EQ(routing_table.size(), 0);
@@ -96,16 +96,16 @@ TEST(RoutingTableTest, BEH_GetNthClosest) {
 
   for (uint16_t i(static_cast<uint16_t>(routing_table.size())); routing_table.size() < 10; ++i) {
     NodeInfo node(MakeNode());
-    nodes_id.push_back(node.node_id);
+    nodes_id.push_back(node.id);
     EXPECT_TRUE(routing_table.AddNode(node));
   }
   std::sort(nodes_id.begin(), nodes_id.end(), [&](const NodeId & lhs, const NodeId & rhs) {
     return NodeId::CloserToTarget(lhs, rhs, my_node);
   });
   for (uint16_t index = 0; index < 10; ++index) {
-    EXPECT_EQ(nodes_id[index], routing_table.GetNthClosestNode(my_node, index + 1).node_id)
+    EXPECT_EQ(nodes_id[index], routing_table.GetNthClosestNode(my_node, index + 1).id)
         << DebugId(nodes_id[index]) << " not eq to "
-        << DebugId(routing_table.GetNthClosestNode(my_node, index + 1).node_id);
+        << DebugId(routing_table.GetNthClosestNode(my_node, index + 1).id);
   }
 }
 
@@ -120,86 +120,86 @@ TEST(RoutingTableTest, FUNC_GetClosestNodeWithExclusion) {
   // Empty routing_table
   node_info = routing_table.GetClosestNode(my_node, false, exclude);
   NodeInfo node_info2(routing_table.GetClosestNode(my_node, true, exclude));
-  EXPECT_EQ(node_info.node_id, node_info2.node_id);
-  EXPECT_EQ(node_info.node_id, NodeInfo().node_id);
+  EXPECT_EQ(node_info.id, node_info2.id);
+  EXPECT_EQ(node_info.id, NodeInfo().id);
 
   // routing_table with one element
   NodeInfo node(MakeNode());
-  nodes_id.push_back(node.node_id);
+  nodes_id.push_back(node.id);
   EXPECT_TRUE(routing_table.AddNode(node));
 
   node_info = routing_table.GetClosestNode(my_node, false, exclude);
   node_info2 = routing_table.GetClosestNode(my_node, true, exclude);
-  EXPECT_EQ(node_info.node_id, node_info2.node_id);
+  EXPECT_EQ(node_info.id, node_info2.id);
   node_info = routing_table.GetClosestNode(nodes_id[0], false, exclude);
   node_info2 = routing_table.GetClosestNode(nodes_id[0], true, exclude);
-  EXPECT_NE(node_info.node_id, node_info2.node_id);
+  EXPECT_NE(node_info.id, node_info2.id);
 
   exclude.push_back(nodes_id[0].string());
   node_info = routing_table.GetClosestNode(nodes_id[0], false, exclude);
   node_info2 = routing_table.GetClosestNode(nodes_id[0], true, exclude);
-  EXPECT_EQ(node_info.node_id, node_info2.node_id);
-  EXPECT_EQ(node_info.node_id, NodeInfo().node_id);
+  EXPECT_EQ(node_info.id, node_info2.id);
+  EXPECT_EQ(node_info.id, NodeInfo().id);
 
   // routing_table with Parameters::group_size elements
   exclude.clear();
   for (uint16_t i(static_cast<uint16_t>(routing_table.size()));
        routing_table.size() < Parameters::group_size; ++i) {
     NodeInfo node(MakeNode());
-    nodes_id.push_back(node.node_id);
+    nodes_id.push_back(node.id);
     EXPECT_TRUE(routing_table.AddNode(node));
   }
 
   node_info = routing_table.GetClosestNode(my_node, false, exclude);
   node_info2 = routing_table.GetClosestNode(my_node, true, exclude);
-  EXPECT_EQ(node_info.node_id, node_info2.node_id);
+  EXPECT_EQ(node_info.id, node_info2.id);
 
   uint16_t random_index = RandomUint32() % Parameters::group_size;
   node_info = routing_table.GetClosestNode(nodes_id[random_index], false, exclude);
   node_info2 = routing_table.GetClosestNode(nodes_id[random_index], true, exclude);
-  EXPECT_NE(node_info.node_id, node_info2.node_id);
+  EXPECT_NE(node_info.id, node_info2.id);
 
   exclude.push_back(nodes_id[random_index].string());
   node_info = routing_table.GetClosestNode(nodes_id[random_index], false, exclude);
   node_info2 = routing_table.GetClosestNode(nodes_id[random_index], true, exclude);
-  EXPECT_EQ(node_info.node_id, node_info2.node_id);
+  EXPECT_EQ(node_info.id, node_info2.id);
 
   for (const auto& node_id : nodes_id)
     exclude.push_back(node_id.string());
   node_info = routing_table.GetClosestNode(nodes_id[random_index], false, exclude);
   node_info2 = routing_table.GetClosestNode(nodes_id[random_index], true, exclude);
-  EXPECT_EQ(node_info.node_id, node_info2.node_id);
-  EXPECT_EQ(node_info.node_id, NodeInfo().node_id);
+  EXPECT_EQ(node_info.id, node_info2.id);
+  EXPECT_EQ(node_info.id, NodeInfo().id);
 
   // routing_table with Parameters::Parameters::max_routing_table_size elements
   exclude.clear();
   for (uint16_t i = static_cast<uint16_t>(routing_table.size());
        routing_table.size() < Parameters::max_routing_table_size; ++i) {
     NodeInfo node(MakeNode());
-    nodes_id.push_back(node.node_id);
+    nodes_id.push_back(node.id);
     EXPECT_TRUE(routing_table.AddNode(node));
   }
 
   node_info = routing_table.GetClosestNode(my_node, false, exclude);
   node_info2 = routing_table.GetClosestNode(my_node, true, exclude);
-  EXPECT_EQ(node_info.node_id, node_info2.node_id);
+  EXPECT_EQ(node_info.id, node_info2.id);
 
   random_index = RandomUint32() % Parameters::max_routing_table_size;
   node_info = routing_table.GetClosestNode(nodes_id[random_index], false, exclude);
   node_info2 = routing_table.GetClosestNode(nodes_id[random_index], true, exclude);
-  EXPECT_NE(node_info.node_id, node_info2.node_id);
+  EXPECT_NE(node_info.id, node_info2.id);
 
   exclude.push_back(nodes_id[random_index].string());
   node_info = routing_table.GetClosestNode(nodes_id[random_index], false, exclude);
   node_info2 = routing_table.GetClosestNode(nodes_id[random_index], true, exclude);
-  EXPECT_EQ(node_info.node_id, node_info2.node_id);
+  EXPECT_EQ(node_info.id, node_info2.id);
 
   for (const auto& node_id : nodes_id)
     exclude.push_back(node_id.string());
   node_info = routing_table.GetClosestNode(nodes_id[random_index], false, exclude);
   node_info2 = routing_table.GetClosestNode(nodes_id[random_index], true, exclude);
-  EXPECT_EQ(node_info.node_id, node_info2.node_id);
-  EXPECT_EQ(node_info.node_id, NodeInfo().node_id);
+  EXPECT_EQ(node_info.id, node_info2.id);
+  EXPECT_EQ(node_info.id, NodeInfo().id);
 }
 
 TEST(RoutingTableTest, FUNC_ClosestToId) {
@@ -217,10 +217,10 @@ TEST(RoutingTableTest, FUNC_ClosestToId) {
     bool result(false);
     bool expectation(false);
     for (const auto& target : known_targets) {
-      PartialSortFromTarget(target.node_id, known_nodes, 2);
-      result = routing_table.IsThisNodeClosestTo(target.node_id, true);
+      PartialSortFromTarget(target.id, known_nodes, 2);
+      result = routing_table.IsThisNodeClosestTo(target.id, true);
       expectation = false;
-      if (NodeId::CloserToTarget(own_node_id, known_nodes.at(1).node_id, target.node_id))
+      if (NodeId::CloserToTarget(own_node_id, known_nodes.at(1).id, target.id))
         expectation = true;
       EXPECT_EQ(expectation, result);
       if (expectation != result)
@@ -239,7 +239,7 @@ TEST(RoutingTableTest, FUNC_ClosestToId) {
       PartialSortFromTarget(target, known_nodes, 1);
       result = routing_table.IsThisNodeClosestTo(target, true);
       expectation = false;
-      if (NodeId::CloserToTarget(own_node_id, known_nodes.at(0).node_id, target))
+      if (NodeId::CloserToTarget(own_node_id, known_nodes.at(0).id, target))
         expectation = true;
       EXPECT_EQ(expectation, result);
       if (expectation != result)
@@ -266,7 +266,7 @@ TEST(RoutingTableTest, FUNC_ClosestToId) {
     EXPECT_TRUE(routing_table.AddNode(node_info));
   }
   PartialSortFromTarget(own_node_id, known_nodes, Parameters::group_size);
-  furthest_group_node = known_nodes.at(Parameters::group_size - 2).node_id;
+  furthest_group_node = known_nodes.at(Parameters::group_size - 2).id;
 
   LOG(kInfo) << "Testing partially populated routing table...";
   EXPECT_FALSE(routing_table.IsThisNodeClosestTo(own_node_id, true));
@@ -282,7 +282,7 @@ TEST(RoutingTableTest, FUNC_ClosestToId) {
     EXPECT_TRUE(routing_table.AddNode(node_info));
   }
   PartialSortFromTarget(own_node_id, known_nodes, Parameters::group_size);
-  furthest_group_node = known_nodes.at(Parameters::group_size - 2).node_id;
+  furthest_group_node = known_nodes.at(Parameters::group_size - 2).id;
 
   LOG(kInfo) << "Testing fully populated routing table...";
   EXPECT_FALSE(routing_table.IsThisNodeClosestTo(own_node_id, true));
@@ -306,7 +306,7 @@ TEST(RoutingTableTest, FUNC_GetRandomExistingNode) {
     LOG(kVerbose) << "Got random connected node: " << DebugId(random_connected_node_id);
     auto found(std::find_if(std::begin(known_nodes), std::end(known_nodes),
                             [=] (const NodeInfo& node) {
-                              return (node.node_id ==  random_connected_node_id);
+                              return (node.id ==  random_connected_node_id);
                             }));
     ASSERT_FALSE(found == std::end(known_nodes));
   };

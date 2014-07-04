@@ -465,7 +465,7 @@ TEST_F(RoutingNetworkTest, FUNC_IsConnectedVault) {
     std::vector<NodeInfo> closest_nodes(
         env_->GetClosestVaults(client_id, Parameters::max_routing_table_size_for_client));
     for (const auto& vault : closest_nodes) {
-      EXPECT_TRUE(env_->nodes_.at(i)->IsConnectedVault(vault.node_id));
+      EXPECT_TRUE(env_->nodes_.at(i)->IsConnectedVault(vault.id));
     }
   }
 }
@@ -480,7 +480,7 @@ TEST_F(RoutingNetworkTest, FUNC_IsConnectedClient) {
     std::vector<NodeInfo> closest_nodes(
         env_->GetClosestVaults(client_id, Parameters::max_routing_table_size_for_client));
     for (const auto& node_info : closest_nodes) {
-      int node_index(env_->NodeIndex(node_info.node_id));
+      int node_index(env_->NodeIndex(node_info.id));
       ASSERT_GE(node_index, 0);
       EXPECT_TRUE(env_->nodes_.at(node_index)->IsConnectedClient(client_id));
     }
@@ -528,7 +528,7 @@ TEST_F(RoutingNetworkTest, FUNC_VaultJoinWhenClosestVaultAlsoBehindSymmetricNat)
   auto sym_node2(passport::CreatePmidAndSigner().first);
   NodeId sym_node_id_2(sym_node2.name());
 
-  while (NodeId::CloserToTarget(closest_vaults.at(1).node_id, sym_node_id_2, sym_node_id_1)) {
+  while (NodeId::CloserToTarget(closest_vaults.at(1).id, sym_node_id_2, sym_node_id_1)) {
     sym_node2 = passport::CreatePmidAndSigner().first;
     sym_node_id_2 = NodeId(sym_node2.name());
   }
@@ -549,7 +549,7 @@ TEST_F(RoutingNetworkTest, FUNC_ClientJoinWhenClosestVaultAlsoBehindSymmetricNat
   auto sym_node2(passport::CreatePmidAndSigner().first);
   NodeId sym_node_id_2(sym_node2.name());
 
-  while (NodeId::CloserToTarget(closest_vaults.at(1).node_id, sym_node_id_2, sym_node_id_1)) {
+  while (NodeId::CloserToTarget(closest_vaults.at(1).id, sym_node_id_2, sym_node_id_1)) {
     sym_node2 = passport::CreatePmidAndSigner().first;
     sym_node_id_2 = NodeId(sym_node2.name());
   }

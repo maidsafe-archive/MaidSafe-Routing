@@ -86,7 +86,7 @@ GenericNode::GenericNode(bool has_symmetric_nat)
       health_(0) {
   node_info_plus_.reset(new NodeInfoAndPrivateKey(MakeNodeInfoAndKeys()));
   routing_.reset(new Routing());
-  node_info_plus_->node_info.node_id = routing_->kNodeId();
+  node_info_plus_->node_info.id = routing_->kNodeId();
   endpoint_.address(GetLocalIp());
   endpoint_.port(maidsafe::test::GetRandomPort());
   InitialiseFunctors();
@@ -190,7 +190,7 @@ void GenericNode::InitialiseFunctors() {
   };
   functors_.network_status = [&](const int & health) { SetHealth(health); };  // NOLINT
   functors_.close_nodes_change = [&](std::shared_ptr<routing::CloseNodesChange> /*close_change*/) {
-//     close_nodes_change_functor(node_info_plus_->node_info.node_id, close_nodes_change);
+//     close_nodes_change_functor(node_info_plus_->node_info.id, close_nodes_change);
   };
 }
 
@@ -212,7 +212,7 @@ Endpoint GenericNode::endpoint() const { return endpoint_; }
 
 NodeId GenericNode::connection_id() const { return node_info_plus_->node_info.connection_id; }
 
-NodeId GenericNode::node_id() const { return node_info_plus_->node_info.node_id; }
+NodeId GenericNode::node_id() const { return node_info_plus_->node_info.id; }
 
 size_t GenericNode::id() const { return id_; }
 
@@ -275,11 +275,11 @@ void GenericNode::SendToClosestNode(const protobuf::Message& message) {
 
 bool GenericNode::RoutingTableHasNode(const NodeId& node_id) {
   for (auto info : routing_->pimpl_->routing_table_.nodes_)
-    LOG(kVerbose) << "RoutingTableHasNode " << DebugId(info.node_id);
+    LOG(kVerbose) << "RoutingTableHasNode " << DebugId(info.id);
   auto node(
       std::find_if(routing_->pimpl_->routing_table_.nodes_.begin(),
                    routing_->pimpl_->routing_table_.nodes_.end(),
-                   [node_id](const NodeInfo & node_info) { return node_id == node_info.node_id; }));
+                   [node_id](const NodeInfo & node_info) { return node_id == node_info.id; }));
   bool result(node != routing_->pimpl_->routing_table_.nodes_.end());
   LOG(kVerbose) << DebugId(node_id) << ", result: " << result;
   return result;
@@ -289,7 +289,7 @@ bool GenericNode::ClientRoutingTableHasNode(const NodeId& node_id) {
   return std::find_if(routing_->pimpl_->client_routing_table_.nodes_.begin(),
                       routing_->pimpl_->client_routing_table_.nodes_.end(),
                       [&node_id](const NodeInfo & node_info) {
-           return (node_id == node_info.node_id);
+           return (node_id == node_info.id);
          }) != routing_->pimpl_->client_routing_table_.nodes_.end();
 }
 
@@ -303,7 +303,7 @@ testing::AssertionResult GenericNode::DropNode(const NodeId& node_id) {
   auto iter = std::find_if(
       routing_->pimpl_->routing_table_.nodes_.begin(),
       routing_->pimpl_->routing_table_.nodes_.end(),
-      [&node_id](const NodeInfo & node_info) { return (node_id == node_info.node_id); });
+      [&node_id](const NodeInfo & node_info) { return (node_id == node_info.id); });
   if (iter != routing_->pimpl_->routing_table_.nodes_.end()) {
     LOG(kVerbose) << HexSubstr(routing_->pimpl_->routing_table_.kNodeId_.string()) << " Removes "
                   << HexSubstr(node_id.string());
@@ -335,20 +335,20 @@ int GenericNode::expected() { return expected_; }
 void GenericNode::set_expected(int expected) { expected_ = expected; }
 
 void GenericNode::PrintRoutingTable() {
-  LOG(kInfo) << "[" << HexSubstr(node_info_plus_->node_info.node_id.string()) << "]'s RoutingTable "
+  LOG(kInfo) << "[" << HexSubstr(node_info_plus_->node_info.id.string()) << "]'s RoutingTable "
              << (IsClient() ? " (Client)" : " (Vault) :")
              << "Routing table size: " << routing_->pimpl_->routing_table_.nodes_.size();
   {
     std::lock_guard<std::mutex> lock(routing_->pimpl_->routing_table_.mutex_);
     for (const auto& node_info : routing_->pimpl_->routing_table_.nodes_) {
-      LOG(kInfo) << "\tNodeId : " << HexSubstr(node_info.node_id.string());
+      LOG(kInfo) << "\tNodeId : " << HexSubstr(node_info.id.string());
     }
   }
-  LOG(kInfo) << "[" << HexSubstr(node_info_plus_->node_info.node_id.string())
+  LOG(kInfo) << "[" << HexSubstr(node_info_plus_->node_info.id.string())
              << "]'s Non-RoutingTable : ";
   std::lock_guard<std::mutex> lock(routing_->pimpl_->client_routing_table_.mutex_);
   for (const auto& node_info : routing_->pimpl_->client_routing_table_.nodes_) {
-    LOG(kInfo) << "\tNodeId : " << HexSubstr(node_info.node_id.string());
+    LOG(kInfo) << "\tNodeId : " << HexSubstr(node_info.id.string());
   }
 }
 
@@ -356,14 +356,14 @@ std::vector<NodeId> GenericNode::ReturnRoutingTable() {
   std::vector<NodeId> routing_nodes;
   std::lock_guard<std::mutex> lock(routing_->pimpl_->routing_table_.mutex_);
   for (const auto& node_info : routing_->pimpl_->routing_table_.nodes_)
-    routing_nodes.push_back(node_info.node_id);
+    routing_nodes.push_back(node_info.id);
   return routing_nodes;
 }
 
 std::string GenericNode::SerializeRoutingTable() {
   std::vector<NodeId> node_list;
   for (const auto& node_info : routing_->pimpl_->routing_table_.nodes_)
-    node_list.push_back(node_info.node_id);
+    node_list.push_back(node_info.id);
   return SerializeNodeIdList(node_list);
 }
 
@@ -742,17 +742,17 @@ bool GenericNetwork::ValidateRoutingTables() const {
     //      EXPECT_FALSE(routing_table.size() < Parameters::closest_nodes_size);
     std::sort(routing_table.begin(),
               routing_table.end(), [&, this](const NodeInfo & lhs, const NodeInfo & rhs)->bool {
-      return NodeId::CloserToTarget(lhs.node_id, rhs.node_id, node->node_id());
+      return NodeId::CloserToTarget(lhs.id, rhs.id, node->node_id());
     });
     LOG(kVerbose) << "Print ordered RT";
     uint16_t size(
         std::min(static_cast<uint16_t>(routing_table.size()), Parameters::closest_nodes_size));
     for (const auto& node_info : routing_table)
-      LOG(kVerbose) << HexSubstr(node_info.node_id.string());
+      LOG(kVerbose) << HexSubstr(node_info.id.string());
     for (auto iter(routing_table.begin()); iter < routing_table.begin() + size - 1; ++iter) {
       size_t distance(std::distance(node_ids.begin(),
-                                    std::find(node_ids.begin(), node_ids.end(), (*iter).node_id)));
-      LOG(kVerbose) << "distance: " << distance << " from " << HexSubstr((*iter).node_id.string());
+                                    std::find(node_ids.begin(), node_ids.end(), (*iter).id)));
+      LOG(kVerbose) << "distance: " << distance << " from " << HexSubstr((*iter).id.string());
       if (distance > size)
         return false;
     }
@@ -848,7 +848,7 @@ std::vector<NodeInfo> GenericNetwork::GetClosestNodes(const NodeId& target_id,
   std::lock_guard<std::mutex> lock(mutex_);
   std::partial_sort(closet_nodes.begin(), closet_nodes.begin() + size, closet_nodes.end(),
                     [&](const NodeInfo & lhs, const NodeInfo & rhs) {
-    return NodeId::CloserToTarget(lhs.node_id, rhs.node_id, target_id);
+    return NodeId::CloserToTarget(lhs.id, rhs.id, target_id);
   });
   return std::vector<NodeInfo>(closet_nodes.begin() + 1, closet_nodes.begin() + size);
 }
@@ -866,7 +866,7 @@ std::vector<NodeInfo> GenericNetwork::GetClosestVaults(const NodeId& target_id,
   std::lock_guard<std::mutex> lock(mutex_);
   std::partial_sort(closest_nodes.begin(), closest_nodes.begin() + sort_size, closest_nodes.end(),
                     [&](const NodeInfo & lhs, const NodeInfo & rhs) {
-    return NodeId::CloserToTarget(lhs.node_id, rhs.node_id, target_id);
+    return NodeId::CloserToTarget(lhs.id, rhs.id, target_id);
   });
 
   return std::vector<NodeInfo>(closest_nodes.begin(), closest_nodes.begin() + sort_size);

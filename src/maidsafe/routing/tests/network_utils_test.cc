@@ -52,7 +52,7 @@ typedef boost::asio::ip::udp::endpoint Endpoint;
 void SortFromThisNode(const NodeId& from, std::vector<NodeInfoAndPrivateKey> nodes) {
   std::sort(nodes.begin(), nodes.end(),
             [from](const NodeInfoAndPrivateKey & i, const NodeInfoAndPrivateKey & j) {
-    return (i.node_info.node_id ^ from) < (j.node_info.node_id ^ from);
+    return (i.node_info.id ^ from) < (j.node_info.id ^ from);
   });
 }
 
@@ -376,7 +376,7 @@ TEST(NetworkUtilsTest, FUNC_ProcessSendRecursiveSendOn) {
 
   // add the active node at the end of the RT
   nodes.at(7) = node2;  //  second node
-  sent_message.set_destination_id(NodeId(nodes.at(0).node_info.node_id).string());
+  sent_message.set_destination_id(NodeId(nodes.at(0).node_info.id).string());
 
   for (auto i(0); i != 8; ++i)
     ASSERT_TRUE(routing_table.AddNode(nodes.at(i).node_info));

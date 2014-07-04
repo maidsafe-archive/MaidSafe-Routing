@@ -141,13 +141,13 @@ void Commands::ZeroStateJoin() {
   }
   NodeInfo peer_node_info;
   if (identity_index_ == 0) {
-    peer_node_info.node_id = NodeId(all_keys_[1].pmid.name().value);
+    peer_node_info.id = NodeId(all_keys_[1].pmid.name().value);
     peer_node_info.public_key = all_keys_[1].pmid.public_key();
   } else {
-    peer_node_info.node_id = NodeId(all_keys_[0].pmid.name().value);
+    peer_node_info.id = NodeId(all_keys_[0].pmid.name().value);
     peer_node_info.public_key = all_keys_[0].pmid.public_key();
   }
-  peer_node_info.connection_id = peer_node_info.node_id;
+  peer_node_info.connection_id = peer_node_info.id;
 
   ReturnCode ret_code(
       static_cast<ReturnCode>(demo_node_->ZeroStateJoin(bootstrap_peer_ep_, peer_node_info)));

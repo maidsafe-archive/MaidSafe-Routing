@@ -309,7 +309,7 @@ TEST_F(CloseNodesChangeTest, BEH_FullSizeRoutingTable) {
           auto iter(new_ids.begin());
           std::advance(iter, Parameters::closest_nodes_size - 1);
           if (routing_table_change.insertion) {
-            if (NodeId::CloserToTarget(new_node.node_id, *iter, node_id)) {
+            if (NodeId::CloserToTarget(new_node.id, *iter, node_id)) {
               EXPECT_TRUE(routing_table_change.close_nodes_change != nullptr);
               EXPECT_EQ(routing_table_change.close_nodes_change->new_nodes().size(), 1);
               EXPECT_EQ(routing_table_change.close_nodes_change->lost_nodes().size(), 1);
@@ -326,8 +326,8 @@ TEST_F(CloseNodesChangeTest, BEH_FullSizeRoutingTable) {
               EXPECT_EQ(routing_table_change.close_nodes_change->lost_nodes().at(0), removed);
             }
           }
-          if (!routing_table_change.removed.node.node_id.IsZero())
-            new_ids.erase(routing_table_change.removed.node.node_id);
+          if (!routing_table_change.removed.node.id.IsZero())
+            new_ids.erase(routing_table_change.removed.node.id);
         }
         EXPECT_LE(new_ids.size(), Parameters::max_routing_table_size);
       });
@@ -336,7 +336,7 @@ TEST_F(CloseNodesChangeTest, BEH_FullSizeRoutingTable) {
   while (iterations-- != 0) {
     new_node = MakeNode();
     if (routing_table.CheckNode(new_node)) {
-      new_ids.insert(new_node.node_id);
+      new_ids.insert(new_node.id);
       EXPECT_TRUE(routing_table.AddNode(new_node));
     }
   }

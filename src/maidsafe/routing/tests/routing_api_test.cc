@@ -80,9 +80,9 @@ TEST(APITest, BEH_API_ZeroState) {
   NodeInfoAndPrivateKey node2(MakeNodeInfoAndKeysWithPmid(pmid2));
   NodeInfoAndPrivateKey node3(MakeNodeInfoAndKeysWithPmid(pmid3));
   std::map<NodeId, asymm::PublicKey> key_map;
-  key_map.insert(std::make_pair(node1.node_info.node_id, pmid1.public_key()));
-  key_map.insert(std::make_pair(node2.node_info.node_id, pmid2.public_key()));
-  key_map.insert(std::make_pair(node3.node_info.node_id, pmid3.public_key()));
+  key_map.insert(std::make_pair(node1.node_info.id, pmid1.public_key()));
+  key_map.insert(std::make_pair(node2.node_info.id, pmid2.public_key()));
+  key_map.insert(std::make_pair(node3.node_info.id, pmid3.public_key()));
 
   Functors functors1, functors2, functors3;
   Routing routing1(pmid1);
@@ -136,9 +136,9 @@ TEST(APITest, DISABLED_BEH_API_ZeroStateWithDuplicateNode) {
   NodeInfoAndPrivateKey node3(MakeNodeInfoAndKeysWithPmid(pmid3));
   NodeInfoAndPrivateKey node4(MakeNodeInfoAndKeysWithPmid(pmid3));
   std::map<NodeId, asymm::PublicKey> key_map;
-  key_map.insert(std::make_pair(node1.node_info.node_id, pmid1.public_key()));
-  key_map.insert(std::make_pair(node2.node_info.node_id, pmid2.public_key()));
-  key_map.insert(std::make_pair(node3.node_info.node_id, pmid3.public_key()));
+  key_map.insert(std::make_pair(node1.node_info.id, pmid1.public_key()));
+  key_map.insert(std::make_pair(node2.node_info.id, pmid2.public_key()));
+  key_map.insert(std::make_pair(node3.node_info.id, pmid3.public_key()));
 
   Functors functors1, functors2, functors3, functors4;
   Routing routing1(pmid1);
@@ -197,9 +197,9 @@ TEST(APITest, BEH_API_SendToSelf) {
   NodeInfoAndPrivateKey node2(MakeNodeInfoAndKeysWithPmid(pmid2));
   NodeInfoAndPrivateKey node3(MakeNodeInfoAndKeysWithPmid(pmid3));
   std::map<NodeId, asymm::PublicKey> key_map;
-  key_map.insert(std::make_pair(node1.node_info.node_id, pmid1.public_key()));
-  key_map.insert(std::make_pair(node2.node_info.node_id, pmid2.public_key()));
-  key_map.insert(std::make_pair(node3.node_info.node_id, pmid3.public_key()));
+  key_map.insert(std::make_pair(node1.node_info.id, pmid1.public_key()));
+  key_map.insert(std::make_pair(node2.node_info.id, pmid2.public_key()));
+  key_map.insert(std::make_pair(node3.node_info.id, pmid3.public_key()));
 
   Functors functors1, functors2, functors3;
   Routing routing1(pmid1);
@@ -263,7 +263,7 @@ TEST(APITest, BEH_API_SendToSelf) {
     std::call_once(flag, [&response_promise]() { response_promise.set_value(); });
     LOG(kVerbose) << "ResponseFunctor - end";
   };
-  routing3.SendDirect(node3.node_info.node_id, data, false, response_functor);
+  routing3.SendDirect(node3.node_info.id, data, false, response_functor);
   ASSERT_EQ(response_future.wait_for(boost::chrono::seconds(10)), boost::future_status::ready);
 }
 
@@ -274,8 +274,8 @@ TEST(APITest, BEH_API_ClientNode) {
   NodeInfoAndPrivateKey node2(MakeNodeInfoAndKeysWithPmid(pmid2));
   NodeInfoAndPrivateKey node3(MakeNodeInfoAndKeysWithMaid(maid));
   std::map<NodeId, asymm::PublicKey> key_map;
-  key_map.insert(std::make_pair(node1.node_info.node_id, pmid1.public_key()));
-  key_map.insert(std::make_pair(node2.node_info.node_id, pmid2.public_key()));
+  key_map.insert(std::make_pair(node1.node_info.id, pmid1.public_key()));
+  key_map.insert(std::make_pair(node2.node_info.id, pmid2.public_key()));
 
   Functors functors1, functors2, functors3;
   Routing routing1(pmid1);
@@ -336,7 +336,7 @@ TEST(APITest, BEH_API_ClientNode) {
     }
     cond_var.notify_one();
   };
-  routing3.SendDirect(node1.node_info.node_id, data, false, response_functor);
+  routing3.SendDirect(node1.node_info.id, data, false, response_functor);
   std::unique_lock<std::mutex> lock(mutex);
   EXPECT_EQ(std::cv_status::no_timeout, cond_var.wait_for(lock, std::chrono::seconds(10)));
 }
@@ -346,8 +346,8 @@ TEST(APITest, BEH_API_NonMutatingClientNode) {
   NodeInfoAndPrivateKey node1(MakeNodeInfoAndKeysWithPmid(pmid1));
   NodeInfoAndPrivateKey node2(MakeNodeInfoAndKeysWithPmid(pmid2));
   std::map<NodeId, asymm::PublicKey> key_map;
-  key_map.insert(std::make_pair(node1.node_info.node_id, pmid1.public_key()));
-  key_map.insert(std::make_pair(node2.node_info.node_id, pmid2.public_key()));
+  key_map.insert(std::make_pair(node1.node_info.id, pmid1.public_key()));
+  key_map.insert(std::make_pair(node2.node_info.id, pmid2.public_key()));
 
   Functors functors1, functors2, functors3;
   Routing routing1(pmid1);
@@ -409,7 +409,7 @@ TEST(APITest, BEH_API_NonMutatingClientNode) {
     }
     cond_var.notify_one();
   };
-  routing3.SendDirect(node1.node_info.node_id, data, false, response_functor);
+  routing3.SendDirect(node1.node_info.id, data, false, response_functor);
   std::unique_lock<std::mutex> lock(mutex);
   EXPECT_EQ(std::cv_status::no_timeout, cond_var.wait_for(lock, std::chrono::seconds(10)));
 }
@@ -421,8 +421,8 @@ TEST(APITest, BEH_API_ClientNodeSameId) {
   NodeInfoAndPrivateKey node2(MakeNodeInfoAndKeysWithPmid(pmid2));
   NodeInfoAndPrivateKey node3(MakeNodeInfoAndKeysWithMaid(maid));
   std::map<NodeId, asymm::PublicKey> key_map;
-  key_map.insert(std::make_pair(node1.node_info.node_id, pmid1.public_key()));
-  key_map.insert(std::make_pair(node2.node_info.node_id, pmid2.public_key()));
+  key_map.insert(std::make_pair(node1.node_info.id, pmid1.public_key()));
+  key_map.insert(std::make_pair(node2.node_info.id, pmid2.public_key()));
 
   Functors functors1, functors2, functors3, functors4;
   Routing routing1(pmid1);
@@ -500,7 +500,7 @@ TEST(APITest, BEH_API_ClientNodeSameId) {
     }
     cond_var_1.notify_one();
   };
-  routing3.SendDirect(node1.node_info.node_id, data_1, false, response_functor_1);
+  routing3.SendDirect(node1.node_info.id, data_1, false, response_functor_1);
   std::unique_lock<std::mutex> lock_1(mutex_1);
   EXPECT_EQ(std::cv_status::no_timeout, cond_var_1.wait_for(lock_1, std::chrono::seconds(10)));
 
@@ -515,7 +515,7 @@ TEST(APITest, BEH_API_ClientNodeSameId) {
     }
     cond_var_2.notify_one();
   };
-  routing4.SendDirect(node1.node_info.node_id, data_2, false, response_functor_2);
+  routing4.SendDirect(node1.node_info.id, data_2, false, response_functor_2);
   std::unique_lock<std::mutex> lock_2(mutex_2);
   EXPECT_EQ(std::cv_status::no_timeout, cond_var_2.wait_for(lock_2, std::chrono::seconds(10)));
 }
@@ -539,7 +539,7 @@ TEST(APITest, BEH_API_NodeNetwork) {
     auto pmid(passport::CreatePmidAndSigner().first);
     NodeInfoAndPrivateKey node(MakeNodeInfoAndKeysWithPmid(pmid));
     nodes.push_back(node);
-    key_map.insert(std::make_pair(node.node_info.node_id, pmid.public_key()));
+    key_map.insert(std::make_pair(node.node_info.id, pmid.public_key()));
     routing_node.push_back(std::make_shared<Routing>(pmid));
   }
 
@@ -600,7 +600,7 @@ TEST(APITest, BEH_API_NodeNetworkWithClient) {
     auto pmid(passport::CreatePmidAndSigner().first);
     NodeInfoAndPrivateKey node(MakeNodeInfoAndKeysWithPmid(pmid));
     nodes.push_back(node);
-    key_map.insert(std::make_pair(node.node_info.node_id, pmid.public_key()));
+    key_map.insert(std::make_pair(node.node_info.id, pmid.public_key()));
     routing_node.push_back(std::make_shared<Routing>(pmid));
   }
   for (; i != kNetworkSize; ++i) {
@@ -697,7 +697,7 @@ TEST(APITest, BEH_API_SendGroup) {
     auto pmid(passport::CreatePmidAndSigner().first);
     NodeInfoAndPrivateKey node(MakeNodeInfoAndKeysWithPmid(pmid));
     nodes.push_back(node);
-    key_map.insert(std::make_pair(node.node_info.node_id, pmid.public_key()));
+    key_map.insert(std::make_pair(node.node_info.id, pmid.public_key()));
     routing_node.push_back(std::make_shared<Routing>(pmid));
   }
 
@@ -820,9 +820,9 @@ TEST(APITest, BEH_API_PartiallyJoinedSend) {
   NodeInfoAndPrivateKey node2(MakeNodeInfoAndKeysWithPmid(pmid2));
   NodeInfoAndPrivateKey node3(MakeNodeInfoAndKeysWithPmid(pmid3));
   std::map<NodeId, asymm::PublicKey> key_map;
-  key_map.insert(std::make_pair(node1.node_info.node_id, pmid1.public_key()));
-  key_map.insert(std::make_pair(node2.node_info.node_id, pmid2.public_key()));
-  key_map.insert(std::make_pair(node3.node_info.node_id, pmid3.public_key()));
+  key_map.insert(std::make_pair(node1.node_info.id, pmid1.public_key()));
+  key_map.insert(std::make_pair(node2.node_info.id, pmid2.public_key()));
+  key_map.insert(std::make_pair(node3.node_info.id, pmid3.public_key()));
 
   Functors functors1, functors2, functors3;
   Routing routing1(pmid1);
@@ -889,8 +889,8 @@ TEST(APITest, BEH_API_PartiallyJoinedSend) {
       std::call_once(flag, [&response_promise]() { response_promise.set_value(); });
     LOG(kVerbose) << "ResponseFunctor - end";
   };
-  routing3.SendDirect(node1.node_info.node_id, data, false, response_functor);
-  routing3.SendDirect(node2.node_info.node_id, data, false, response_functor);
+  routing3.SendDirect(node1.node_info.id, data, false, response_functor);
+  routing3.SendDirect(node2.node_info.id, data, false, response_functor);
   EXPECT_EQ(response_future.wait_for(boost::chrono::seconds(10)), boost::future_status::ready);
 
   EXPECT_EQ(join_future.wait_for(boost::chrono::seconds(20)), boost::future_status::ready);
@@ -904,9 +904,9 @@ TEST(APITest, BEH_API_TypedMessageSend) {
   NodeInfoAndPrivateKey node2(MakeNodeInfoAndKeysWithPmid(pmid2));
   NodeInfoAndPrivateKey node3(MakeNodeInfoAndKeysWithPmid(pmid3));
   std::map<NodeId, asymm::PublicKey> key_map;
-  key_map.insert(std::make_pair(node1.node_info.node_id, pmid1.public_key()));
-  key_map.insert(std::make_pair(node2.node_info.node_id, pmid2.public_key()));
-  key_map.insert(std::make_pair(node3.node_info.node_id, pmid3.public_key()));
+  key_map.insert(std::make_pair(node1.node_info.id, pmid1.public_key()));
+  key_map.insert(std::make_pair(node2.node_info.id, pmid2.public_key()));
+  key_map.insert(std::make_pair(node3.node_info.id, pmid3.public_key()));
 
   Functors functors1, functors2, functors3;
   boost::promise<bool> single_to_single_promise, single_to_group_promise, group_to_single_promise,
@@ -1088,7 +1088,7 @@ TEST(APITest, BEH_API_TypedMessagePartiallyJoinedSendReceive) {
     auto pmid(passport::CreatePmidAndSigner().first);
     NodeInfoAndPrivateKey node(MakeNodeInfoAndKeysWithPmid(pmid));
     nodes.push_back(node);
-    key_map.insert(std::make_pair(node.node_info.node_id, pmid.public_key()));
+    key_map.insert(std::make_pair(node.node_info.id, pmid.public_key()));
     routing_nodes.push_back(std::make_shared<Routing>(pmid));
   }
   for (; i != kNetworkSize; ++i) {  // clients

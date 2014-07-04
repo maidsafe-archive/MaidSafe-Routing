@@ -209,7 +209,7 @@ std::vector<NodeId> CloseNodesChange::new_nodes() const {
   std::set_difference(std::begin(new_close_nodes_), std::end(new_close_nodes_),
                       std::begin(old_close_nodes_), std::end(old_close_nodes_),
                       std::back_inserter(new_nodes),
-                      [this](const NodeId & lhs, const NodeId & rhs) {
+                      [this](const NodeId& lhs, const NodeId& rhs) {
                         return NodeId::CloserToTarget(lhs, rhs, node_id_);
                       });
   return new_nodes;

@@ -253,7 +253,7 @@ TEST_F(ResponseHandlerTest, BEH_FindNodes) {
     NodeId node_id(RandomString(64));
     while (NodeId::CloserToTarget(
               routing_table_.GetNthClosestNode(routing_table_.kNodeId(),
-                                               Parameters::closest_nodes_size).node_id,
+                                               Parameters::closest_nodes_size).id,
               node_id, routing_table_.kNodeId()))
         node_id = NodeId(RandomString(64));
     nodes.push_back(node_id);
@@ -263,7 +263,7 @@ TEST_F(ResponseHandlerTest, BEH_FindNodes) {
     while (NodeId::CloserToTarget(
                node_id,
                routing_table_.GetNthClosestNode(routing_table_.kNodeId(),
-                                                Parameters::closest_nodes_size).node_id,
+                                                Parameters::closest_nodes_size).id,
                routing_table_.kNodeId()))
         node_id = NodeId(RandomString(64));
     nodes.push_back(node_id);

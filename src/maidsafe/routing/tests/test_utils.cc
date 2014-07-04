@@ -43,10 +43,10 @@ namespace test {
 
 NodeInfo MakeNode() {
   NodeInfo node;
-  node.node_id = NodeId(RandomString(64));
+  node.id = NodeId(RandomString(64));
   asymm::Keys keys(asymm::GenerateKeyPair());
   node.public_key = keys.public_key;
-  node.connection_id = node.node_id;
+  node.connection_id = node.id;
   return node;
 }
 
@@ -127,7 +127,7 @@ int NetworkStatus(bool client, int status) {
 
 void SortFromTarget(const NodeId& target, std::vector<NodeInfo>& nodes) {
   std::sort(nodes.begin(), nodes.end(), [target](const NodeInfo & lhs, const NodeInfo & rhs) {
-    return NodeId::CloserToTarget(lhs.node_id, rhs.node_id, target);
+    return NodeId::CloserToTarget(lhs.id, rhs.id, target);
   });
 }
 
@@ -135,7 +135,7 @@ void PartialSortFromTarget(const NodeId& target, std::vector<NodeInfo>& nodes, s
   assert(num_to_sort <= nodes.size());
   std::partial_sort(nodes.begin(), nodes.begin() + num_to_sort, nodes.end(),
                     [target](const NodeInfo & lhs, const NodeInfo & rhs) {
-    return NodeId::CloserToTarget(lhs.node_id, rhs.node_id, target);
+    return NodeId::CloserToTarget(lhs.id, rhs.id, target);
   });
 }
 
@@ -147,7 +147,7 @@ void SortIdsFromTarget(const NodeId& target, std::vector<NodeId>& nodes) {
 
 void SortNodeInfosFromTarget(const NodeId& target, std::vector<NodeInfo>& nodes) {
   std::sort(nodes.begin(), nodes.end(), [target](const NodeInfo & lhs, const NodeInfo & rhs) {
-    return NodeId::CloserToTarget(lhs.node_id, rhs.node_id, target);
+    return NodeId::CloserToTarget(lhs.id, rhs.id, target);
   });
 }
 
@@ -156,14 +156,14 @@ bool CompareListOfNodeInfos(const std::vector<NodeInfo>& lhs, const std::vector<
     return false;
   for (const auto& node_info : lhs) {
     if (std::find_if(rhs.begin(), rhs.end(), [&](const NodeInfo & node) {
-          return node.node_id == node_info.node_id;
+          return node.id == node_info.id;
         }) == rhs.end())
       return false;
   }
 
   for (const auto& node_info : rhs) {
     if (std::find_if(lhs.begin(), lhs.end(), [&](const NodeInfo & node) {
-          return node.node_id == node_info.node_id;
+          return node.id == node_info.id;
         }) == lhs.end())
       return false;
   }

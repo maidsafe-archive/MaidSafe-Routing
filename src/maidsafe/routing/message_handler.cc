@@ -277,11 +277,11 @@ void MessageHandler::HandleGroupMessageAsClosestNode(protobuf::Message& message)
   auto close_nodes(routing_table_.GetClosestNodes(destination_id, replication + 2));
   close_nodes.erase(std::remove_if(std::begin(close_nodes), std::end(close_nodes),
                                    [&destination_id](const NodeInfo& node_info) {
-                                     return node_info.node_id == destination_id;
+                                     return node_info.id == destination_id;
                                    }), std::end(close_nodes));
   close_nodes.erase(std::remove_if(std::begin(close_nodes), std::end(close_nodes),
                                    [this](const NodeInfo & node_info) {
-                                     return node_info.node_id == routing_table_.kNodeId();
+                                     return node_info.id == routing_table_.kNodeId();
                                    }), std::end(close_nodes));
   while (close_nodes.size() > replication)
     close_nodes.pop_back();
@@ -290,18 +290,18 @@ void MessageHandler::HandleGroupMessageAsClosestNode(protobuf::Message& message)
   std::string group_members("[" + DebugId(routing_table_.kNodeId()) + "]");
 
   for (const auto& i : close_nodes)
-    group_members += std::string("[" + DebugId(i.node_id) + "]");
+    group_members += std::string("[" + DebugId(i.id) + "]");
   LOG(kInfo) << "Group nodes for group_id " << HexSubstr(group_id) << " : " << group_members;
 
   for (const auto& i : close_nodes) {
     LOG(kInfo) << "[" << routing_table_.kNodeId() << "] - "
-               << "Replicating message to : " << HexSubstr(i.node_id.string())
+               << "Replicating message to : " << HexSubstr(i.id.string())
                << " [ group_id : " << HexSubstr(group_id) << "]"
                << " id: " << message.id();
-    message.set_destination_id(i.node_id.string());
+    message.set_destination_id(i.id.string());
     NodeInfo node;
-    if (routing_table_.GetNodeInfo(i.node_id, node)) {
-      network_.SendToDirect(message, node.node_id, node.connection_id);
+    if (routing_table_.GetNodeInfo(i.id, node)) {
+      network_.SendToDirect(message, node.id, node.connection_id);
     } else {
       network_.SendToClosestNode(message);
     }
@@ -507,18 +507,18 @@ void MessageHandler::HandleGroupRelayRequestMessageAsClosestNode(protobuf::Messa
   std::string group_members("[" + DebugId(routing_table_.kNodeId()) + "]");
 
   for (const auto& i : close)
-    group_members += std::string("[" + DebugId(i.node_id) + "]");
+    group_members += std::string("[" + DebugId(i.id) + "]");
   LOG(kInfo) << "Group members for group_id " << group_id << " are: " << group_members;
   // This node relays back the responses
   message.set_source_id(routing_table_.kNodeId().string());
   for (const auto& i : close) {
-    LOG(kInfo) << "Replicating message to : " << i.node_id
+    LOG(kInfo) << "Replicating message to : " << i.id
                << " [ group_id : " << group_id << "]"
                << " id: " << message.id();
-    message.set_destination_id(i.node_id.string());
+    message.set_destination_id(i.id.string());
     NodeInfo node;
-    if (routing_table_.GetNodeInfo(i.node_id, node)) {
-      network_.SendToDirect(message, node.node_id, node.connection_id);
+    if (routing_table_.GetNodeInfo(i.id, node)) {
+      network_.SendToDirect(message, node.id, node.connection_id);
     }
   }
 

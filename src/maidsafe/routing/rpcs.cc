@@ -181,7 +181,7 @@ protobuf::Message ConnectSuccessAcknowledgement(const NodeId& node_id, const Nod
   protobuf_connect_success_ack.set_connection_id(this_connection_id.string());
   protobuf_connect_success_ack.set_requestor(requestor);
   for (const auto& i : close_nodes) {
-    protobuf_connect_success_ack.add_close_ids(i.node_id.string());
+    protobuf_connect_success_ack.add_close_ids(i.id.string());
   }
   message.set_destination_id(node_id.string());
   message.set_routing_message(true);
