@@ -767,8 +767,12 @@ void Routing::Impl::OnRoutingTableChange(const RoutingTableChange& routing_table
                   << ", connection id : " << routing_table_change.removed.node.connection_id;
   }
 
-  if (routing_table_.client_mode())
+  if (routing_table_.client_mode()) {
+    if (routing_table_.size() < Parameters::max_routing_table_size_for_client)
+      network_.SendToClosestNode(rpcs::FindNodes(kNodeId_, kNodeId_,
+                                 Parameters::max_routing_table_size_for_client));
     return;
+  }
 
   if (routing_table_change.close_nodes_change != nullptr) {
     if (functors_.close_nodes_change)
