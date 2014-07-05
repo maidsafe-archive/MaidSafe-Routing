@@ -71,7 +71,7 @@ list(REMOVE_ITEM RoutingTestsAllFiles ${RoutingTestsHelperFiles}
 #==================================================================================================#
 ms_add_static_library(maidsafe_routing ${RoutingAllFiles})
 target_include_directories(maidsafe_routing PUBLIC ${PROJECT_SOURCE_DIR}/include PRIVATE ${PROJECT_SOURCE_DIR}/src)
-target_link_libraries(maidsafe_routing maidsafe_rudp maidsafe_passport maidsafe_network_viewer)
+target_link_libraries(maidsafe_routing maidsafe_rudp maidsafe_passport maidsafe_network_viewer sqlite)
 
 if(MaidsafeTesting)
   ms_add_static_library(maidsafe_routing_test_helper ${RoutingTestsHelperFiles})
