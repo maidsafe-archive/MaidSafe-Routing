@@ -33,20 +33,20 @@ namespace routing {
 namespace test {
 
 TEST(BootstrapFileOperationsTest, BEH_ReadWrite) {
-    maidsafe::test::TestPath test_path(maidsafe::test::CreateTestPath("MaidSafe_TestUtils"));
-    fs::path bootstrap_file_path(*test_path / "bootstrap");
-    ASSERT_FALSE(fs::exists(bootstrap_file_path));
-    EXPECT_THROW(ReadBootstrapContacts(bootstrap_file_path), std::exception);
-    EXPECT_FALSE(fs::exists(bootstrap_file_path));
-    BootstrapContacts bootstrap_contacts;
-    BootstrapContact bootstrap_contact(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort());
-    bootstrap_contacts.push_back(bootstrap_contact);
+  maidsafe::test::TestPath test_path(maidsafe::test::CreateTestPath("MaidSafe_TestUtils"));
+  fs::path bootstrap_file_path(*test_path / "bootstrap");
+  ASSERT_FALSE(fs::exists(bootstrap_file_path));
+  EXPECT_THROW(ReadBootstrapContacts(bootstrap_file_path), std::exception);
+  EXPECT_FALSE(fs::exists(bootstrap_file_path));
+  BootstrapContacts bootstrap_contacts;
+  for (int i(0); i < 50; ++i)
+    bootstrap_contacts.push_back(BootstrapContact(maidsafe::GetLocalIp(),
+                                                  maidsafe::test::GetRandomPort()));
 
-    EXPECT_NO_THROW(WriteBootstrapContacts(bootstrap_contacts, bootstrap_file_path));
-    EXPECT_NO_THROW(ReadBootstrapContacts(bootstrap_file_path));
-    auto bootstrap_contacts_result = ReadBootstrapContacts(bootstrap_file_path);
-    LOG(kVerbose) << "size  : " << bootstrap_contacts_result.size();
-    EXPECT_TRUE(bootstrap_contacts_result.at(0) == bootstrap_contact);
+  EXPECT_NO_THROW(WriteBootstrapContacts(bootstrap_contacts, bootstrap_file_path));
+  auto bootstrap_contacts_result = ReadBootstrapContacts(bootstrap_file_path);
+  EXPECT_EQ(bootstrap_contacts_result, bootstrap_contacts);
+  LOG(kVerbose) << bootstrap_contacts_result.size() << " vs " << bootstrap_contacts.size();
 }
 
 

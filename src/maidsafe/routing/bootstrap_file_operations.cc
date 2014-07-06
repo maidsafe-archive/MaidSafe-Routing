@@ -160,18 +160,14 @@ void WriteBootstrapContacts(const BootstrapContacts& bootstrap_contacts,
                             const fs::path& bootstrap_file_path) {
   sqlite3 *database = call_sqlite3_open_v2(bootstrap_file_path,
                                            SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE);
-  std::string query = "CREATE TABLE BOOTSTRAP_CONTACTS("  \
-                    "TIME_STAMP INT PRIMARY KEY     NOT NULL,"
-                    "BOOTSTRAP_CONTACT     TEXT     NOT NULL);";
+  std::string query = "CREATE TABLE BOOTSTRAP_CONTACTS("
+                      "BOOTSTRAP_CONTACT     BLOB     NOT NULL);";
   LOG(kInfo) << "query : " << query;
   call_sqlite3_exec(database, query, NULL);
-  int timestamp(0);
   query.clear();
   for (const auto& bootstrap_contact : bootstrap_contacts) {
-  query += "INSERT INTO BOOTSTRAP_CONTACTS (TIME_STAMP,BOOTSTRAP_CONTACT) "  \
-           "VALUES (" + std::to_string(timestamp) + ", '"
-                      + SerialiseBootstrapContact(bootstrap_contact) +"');";
-    ++timestamp;
+  query += "INSERT INTO BOOTSTRAP_CONTACTS (BOOTSTRAP_CONTACT) VALUES ('" +
+           SerialiseBootstrapContact(bootstrap_contact) + "');";
   }
   call_sqlite3_exec(database, query, NULL);
 }
@@ -191,12 +187,13 @@ BootstrapContacts ReadBootstrapContacts(const fs::path& bootstrap_file_path) {
   while(true) {
     result = sqlite3_step(statement);
     if(result == SQLITE_ROW) {
-      std::string serialised_bootstrap_contact((char*)sqlite3_column_text(statement, 1));
+      std::string serialised_bootstrap_contact((char*)sqlite3_column_text(statement, 0));
       bootstrap_contacts.push_back(ParseBootstrapContact(serialised_bootstrap_contact));
     } else {
       break;
     }
   }
+  sqlite3_finalize(statement);
   return bootstrap_contacts;
 }
 
