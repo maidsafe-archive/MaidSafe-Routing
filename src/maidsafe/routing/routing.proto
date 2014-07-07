@@ -16,6 +16,8 @@
     See the Licences for the specific language governing permissions and limitations relating to
     use of the MaidSafe Software.                                                                 */
 
+option optimize_for = LITE_RUNTIME;
+
 package maidsafe.routing.protobuf;
 
 message Layer {
