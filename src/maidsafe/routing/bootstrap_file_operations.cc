@@ -39,9 +39,20 @@ namespace routing {
 namespace {
   typedef boost::asio::ip::udp::endpoint Endpoint;
 
-void call_sqlite3_exec(sqlite3 *database, std::string& query, sqlite3_callback callback) {
+// Copied from Drive launcher
+// TODO Move to utils of routing
+boost::asio::ip::udp::endpoint GetEndpoint(const std::string& endpoint) {
+  size_t delim = endpoint.rfind(':');
+  boost::asio::ip::udp::endpoint ep;
+  ep.port(boost::lexical_cast<uint16_t>(endpoint.substr(delim + 1)));
+  ep.address(boost::asio::ip::address::from_string(endpoint.substr(0, delim)));
+  return ep;
+}
+
+
+void call_sqlite3_exec(sqlite3 *database, std::string& query) {
   char *error_message = 0;
-  if (sqlite3_exec(database, query.c_str(), callback, 0, &error_message) != SQLITE_OK) {
+  if (sqlite3_exec(database, query.c_str(), NULL, 0, &error_message) != SQLITE_OK) {
     LOG(kError) << "SQL error : " << error_message;
     sqlite3_free(error_message);
     BOOST_THROW_EXCEPTION(MakeError(CommonErrors::filesystem_io_error));  //FIXME Change to db error
@@ -56,6 +67,28 @@ sqlite3 * call_sqlite3_open_v2(const boost::filesystem::path& filename, int flag
     BOOST_THROW_EXCEPTION(MakeError(CommonErrors::filesystem_io_error));  //FIXME Change to db error
   }
   return database;
+}
+
+void InsertBootstrapContacts (sqlite3 *database, const BootstrapContacts& bootstrap_contacts) {
+  std::string query = "INSERT INTO BOOTSTRAP_CONTACTS (ENDPOINT) VALUES (?)";
+  sqlite3_stmt *statement = NULL;
+  if(sqlite3_prepare_v2(database, query.c_str(), query.size(), &statement, 0) != SQLITE_OK) {
+    BOOST_THROW_EXCEPTION(MakeError(CommonErrors::filesystem_io_error));  // FIXME
+  }
+  for (const auto& bootstrap_contact : bootstrap_contacts) {
+    std::string endpoint_string = boost::lexical_cast<std::string>(bootstrap_contact);
+    if (sqlite3_bind_text(statement, 1, endpoint_string.c_str(), endpoint_string.size(), 0)
+            != SQLITE_OK) {
+      BOOST_THROW_EXCEPTION(MakeError(CommonErrors::filesystem_io_error));  // FIXME
+    }
+    if (sqlite3_step(statement)!= SQLITE_DONE) {
+      BOOST_THROW_EXCEPTION(MakeError(CommonErrors::filesystem_io_error));  // FIXME
+    }
+    if (sqlite3_reset(statement) != SQLITE_OK) {
+      BOOST_THROW_EXCEPTION(MakeError(CommonErrors::filesystem_io_error));  // FIXME
+    }
+  }
+  sqlite3_finalize(statement);
 }
 
 }  // unnamed namespace
@@ -155,54 +188,99 @@ void UpdateBootstrapFile(const BootstrapContact& bootstrap_contact,
   }
 }
 
-// Throw if file exists
+// Throw if file exists ?
+// FIXME ensure strong guarantee
 void WriteBootstrapContacts(const BootstrapContacts& bootstrap_contacts,
                             const fs::path& bootstrap_file_path) {
   sqlite3 *database = call_sqlite3_open_v2(bootstrap_file_path,
                                            SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE);
-  std::string query = "CREATE TABLE BOOTSTRAP_CONTACTS("
-                      "BOOTSTRAP_CONTACT     BLOB     NOT NULL);";
-  LOG(kInfo) << "query : " << query;
-  call_sqlite3_exec(database, query, NULL);
-  query.clear();
-  for (const auto& bootstrap_contact : bootstrap_contacts) {
-  query += "INSERT INTO BOOTSTRAP_CONTACTS (BOOTSTRAP_CONTACT) VALUES ('" +
-           SerialiseBootstrapContact(bootstrap_contact) + "');";
-  }
-  call_sqlite3_exec(database, query, NULL);
+  sqlite3_busy_timeout(database, 1000);
+
+  std::string query = "BEGIN TRANSACTION";
+  call_sqlite3_exec(database, query);
+
+  query = "CREATE TABLE BOOTSTRAP_CONTACTS(""ENDPOINT TEXT  PRIMARY KEY  NOT NULL);";
+  call_sqlite3_exec(database, query);
+
+  InsertBootstrapContacts(database, bootstrap_contacts);
+
+  query = "COMMIT TRANSACTION";
+  call_sqlite3_exec(database, query);
+
+  sqlite3_close(database);
 }
 
 // Throw if file doesn't exist
 BootstrapContacts ReadBootstrapContacts(const fs::path& bootstrap_file_path) {
   sqlite3 *database = call_sqlite3_open_v2(bootstrap_file_path, SQLITE_OPEN_READONLY);
+  sqlite3_busy_timeout(database, 1000);
   std::string query = "SELECT * from BOOTSTRAP_CONTACTS";
   BootstrapContacts bootstrap_contacts;
-  sqlite3_stmt *statement;
+  sqlite3_stmt *statement = NULL;
   if(sqlite3_prepare_v2(database, query.c_str(), -1, &statement, 0) != SQLITE_OK) {
     BOOST_THROW_EXCEPTION(MakeError(CommonErrors::filesystem_io_error));  // FIXME
   }
-  int cols = sqlite3_column_count(statement);
-  std::cout << "cols" << cols << std::endl;
   int result = 0;
   while(true) {
     result = sqlite3_step(statement);
     if(result == SQLITE_ROW) {
-      std::string serialised_bootstrap_contact((char*)sqlite3_column_text(statement, 0));
-      bootstrap_contacts.push_back(ParseBootstrapContact(serialised_bootstrap_contact));
+      std::string endpoint_string((char*)sqlite3_column_text(statement, 0));
+      bootstrap_contacts.push_back(GetEndpoint(endpoint_string));
     } else {
       break;
     }
   }
   sqlite3_finalize(statement);
+  sqlite3_close(database);
   return bootstrap_contacts;
 }
 
-// Creates if file doesn't exist
-//void UpdateBootstrapFile(const BootstrapContact& /*bootstrap_contact*/,
-//                         const boost::filesystem::path& /*bootstrap_file_path*/,
-//                         bool /*remove*/) {
+void UpdateBootstrapContact(const BootstrapContact& bootstrap_contact,
+                            const boost::filesystem::path& bootstrap_file_path) {
+  sqlite3 *database = call_sqlite3_open_v2(bootstrap_file_path,
+                                           SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE);
+  sqlite3_busy_timeout(database, 1000);
 
-//}
+  std::string query = "BEGIN TRANSACTION";
+  call_sqlite3_exec(database, query);
+
+  query = "CREATE TABLE IF NOT EXISTS BOOTSTRAP_CONTACTS(""ENDPOINT TEXT  PRIMARY KEY NOT NULL);";
+  call_sqlite3_exec(database, query);
+
+  std::string endpoint_string = boost::lexical_cast<std::string>(bootstrap_contact);
+  query = "SELECT * from BOOTSTRAP_CONTACTS WHERE ENDPOINT = '" + endpoint_string + "';";
+  LOG(kVerbose) << " query " << query;
+  sqlite3_stmt *statement = NULL;
+  auto return_value = sqlite3_prepare_v2(database, query.c_str(), -1, &statement, 0);
+  if(return_value != SQLITE_OK) {
+    LOG(kVerbose) << " sqlite3_prepare_v2 return_value " << return_value;
+    BOOST_THROW_EXCEPTION(MakeError(CommonErrors::filesystem_io_error));  // FIXME
+  }
+  bool new_row_required(false);
+  int step_result = sqlite3_step(statement);
+  if (step_result == SQLITE_ROW) {
+    LOG(kVerbose) << "Need to update column !!";
+    // TODO extend this once public key is added to bootstrap list. Need to update column here
+  } else if (step_result == SQLITE_DONE) {
+    new_row_required = true;
+  } else {
+    BOOST_THROW_EXCEPTION(MakeError(CommonErrors::filesystem_io_error));  // FIXME
+  }
+  sqlite3_finalize(statement);
+
+  if (new_row_required) {
+    InsertBootstrapContacts(database, BootstrapContacts(1, bootstrap_contact));
+  }
+
+  query = "COMMIT TRANSACTION";
+  call_sqlite3_exec(database, query);
+
+  sqlite3_close(database);
+}
+
+
+void RemoveBootstrapContact(const Endpoint& /*endpoint*/,
+                            const boost::filesystem::path& /*bootstrap_file_path*/) {}
 
 
 }  // namespace routing

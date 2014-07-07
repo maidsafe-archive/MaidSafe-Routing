@@ -39,13 +39,35 @@ TEST(BootstrapFileOperationsTest, BEH_ReadWrite) {
   EXPECT_THROW(ReadBootstrapContacts(bootstrap_file_path), std::exception);
   EXPECT_FALSE(fs::exists(bootstrap_file_path));
   BootstrapContacts bootstrap_contacts;
-  for (int i(0); i < 50; ++i)
+  for (int i(0); i < 1000; ++i)
     bootstrap_contacts.push_back(BootstrapContact(maidsafe::GetLocalIp(),
                                                   maidsafe::test::GetRandomPort()));
 
   EXPECT_NO_THROW(WriteBootstrapContacts(bootstrap_contacts, bootstrap_file_path));
   auto bootstrap_contacts_result = ReadBootstrapContacts(bootstrap_file_path);
   EXPECT_EQ(bootstrap_contacts_result, bootstrap_contacts);
+  LOG(kVerbose) << bootstrap_contacts_result.size() << " vs " << bootstrap_contacts.size();
+}
+
+TEST(BootstrapFileOperationsTest, BEH_Update) {
+  maidsafe::test::TestPath test_path(maidsafe::test::CreateTestPath("MaidSafe_TestUtils"));
+  fs::path bootstrap_file_path(*test_path / "bootstrap");
+//  fs::path bootstrap_file_path("bootstrap");
+  ASSERT_FALSE(fs::exists(bootstrap_file_path));
+  EXPECT_THROW(ReadBootstrapContacts(bootstrap_file_path), std::exception);
+  EXPECT_FALSE(fs::exists(bootstrap_file_path));
+  BootstrapContacts bootstrap_contacts;
+  for (int i(0); i < 10; ++i) {
+    bootstrap_contacts.push_back(BootstrapContact(maidsafe::GetLocalIp(),
+                                                  maidsafe::test::GetRandomPort()));
+
+    EXPECT_NO_THROW(UpdateBootstrapContact(bootstrap_contacts.back(), bootstrap_file_path));
+  }
+  auto bootstrap_contacts_result = ReadBootstrapContacts(bootstrap_file_path);
+  EXPECT_EQ(bootstrap_contacts_result, bootstrap_contacts);
+  for (int i(0); i < 10; ++i) {
+    EXPECT_NO_THROW(UpdateBootstrapContact(bootstrap_contacts.at(i), bootstrap_file_path));
+  }
   LOG(kVerbose) << bootstrap_contacts_result.size() << " vs " << bootstrap_contacts.size();
 }
 

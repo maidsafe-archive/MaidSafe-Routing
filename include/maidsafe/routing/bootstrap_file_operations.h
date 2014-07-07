@@ -53,6 +53,8 @@ void WriteBootstrapContacts(const BootstrapContacts& bootstrap_contacts,
                             const boost::filesystem::path& bootstrap_file_path);
 BootstrapContacts ReadBootstrapContacts(const boost::filesystem::path& bootstrap_file_path);
 
+void UpdateBootstrapContact(const BootstrapContact& bootstrap_contact,
+                            const boost::filesystem::path& bootstrap_file_path);
 }  // namespace routing
 
 }  // namespace maidsafe
