@@ -947,41 +947,31 @@ TEST_P(GroupMatrixTest, BEH_CheckAssertions) {
   node_info.node_id = NodeId(NodeId::IdType::kRandomId);
 
 // Get row using zero ID
-#ifndef NDEBUG
-  EXPECT_DEATH(matrix_.GetRow(zero_id, row), "");
-#else
+#ifdef NDEBUG
   EXPECT_FALSE(matrix_.GetRow(zero_id, row));
 #endif
 
 // Call IsRowEmpty using unfound info
-#ifndef NDEBUG
-  EXPECT_DEATH(matrix_.IsRowEmpty(node_info), "");
-#else
+#ifdef NDEBUG
   EXPECT_NO_THROW(matrix_.IsRowEmpty(node_info));
 #endif
 
   // Client calls IsThisNodeGroupLeader
   if (client_mode_) {
-#ifndef NDEBUG
-    EXPECT_DEATH(matrix_.IsThisNodeGroupLeader(random_id_1, random_id_2), "");
-#else
+#ifdef NDEBUG
     EXPECT_FALSE(matrix_.IsThisNodeGroupLeader(random_id_1, random_id_2));
 #endif
   }
 
 // Update row using zero ID
-#ifndef NDEBUG
-  EXPECT_DEATH(matrix_.UpdateFromConnectedPeer(zero_id, row, std::vector<NodeId>()), "");
-#else
+#ifdef NDEBUG
   EXPECT_NO_THROW(matrix_.UpdateFromConnectedPeer(zero_id, row, std::vector<NodeId>()));
 #endif
 
   // Update row using too big row size
   while (row.size() < static_cast<size_t>(Parameters::max_routing_table_size + 1))
     row.push_back(NodeInfo());
-#ifndef NDEBUG
-  EXPECT_DEATH(matrix_.UpdateFromConnectedPeer(random_id_1, row, std::vector<NodeId>()), "");
-#else
+#ifdef NDEBUG
   EXPECT_NO_THROW(matrix_.UpdateFromConnectedPeer(random_id_1, row, std::vector<NodeId>()));
 #endif
 
@@ -992,9 +982,7 @@ TEST_P(GroupMatrixTest, BEH_CheckAssertions) {
     if (i != max_index) {
       matrix_.AddConnectedPeer(node_info);
     } else {
-#ifndef NDEBUG
-      EXPECT_DEATH(matrix_.AddConnectedPeer(node_info), "");
-#else
+#ifdef NDEBUG
       EXPECT_NO_THROW(matrix_.AddConnectedPeer(node_info));
 #endif
     }
