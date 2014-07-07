@@ -32,6 +32,7 @@ namespace maidsafe {
 namespace routing {
 namespace test {
 
+// SQLITE test
 TEST(BootstrapFileOperationsTest, BEH_ReadWrite) {
   maidsafe::test::TestPath test_path(maidsafe::test::CreateTestPath("MaidSafe_TestUtils"));
   fs::path bootstrap_file_path(*test_path / "bootstrap");
@@ -49,6 +50,7 @@ TEST(BootstrapFileOperationsTest, BEH_ReadWrite) {
   LOG(kVerbose) << bootstrap_contacts_result.size() << " vs " << bootstrap_contacts.size();
 }
 
+// SQLITE test
 TEST(BootstrapFileOperationsTest, BEH_Update) {
   maidsafe::test::TestPath test_path(maidsafe::test::CreateTestPath("MaidSafe_TestUtils"));
   fs::path bootstrap_file_path(*test_path / "bootstrap");
@@ -57,21 +59,23 @@ TEST(BootstrapFileOperationsTest, BEH_Update) {
   EXPECT_THROW(ReadBootstrapContacts(bootstrap_file_path), std::exception);
   EXPECT_FALSE(fs::exists(bootstrap_file_path));
   BootstrapContacts bootstrap_contacts;
-  for (int i(0); i < 10; ++i) {
+  for (int i(0); i < 1000; ++i) {
     bootstrap_contacts.push_back(BootstrapContact(maidsafe::GetLocalIp(),
                                                   maidsafe::test::GetRandomPort()));
 
-    EXPECT_NO_THROW(UpdateBootstrapContact(bootstrap_contacts.back(), bootstrap_file_path));
+    EXPECT_NO_THROW(InsertOrUpdateBootstrapContact(bootstrap_contacts.back(), bootstrap_file_path));
+//    std::this_thread::sleep_for(std::chrono::milliseconds(250)); // rand
   }
   auto bootstrap_contacts_result = ReadBootstrapContacts(bootstrap_file_path);
   EXPECT_EQ(bootstrap_contacts_result, bootstrap_contacts);
-  for (int i(0); i < 10; ++i) {
-    EXPECT_NO_THROW(UpdateBootstrapContact(bootstrap_contacts.at(i), bootstrap_file_path));
+
+  for (int i(0); i < 1000; ++i) {
+    EXPECT_NO_THROW(InsertOrUpdateBootstrapContact(bootstrap_contacts.at(i), bootstrap_file_path));
   }
-  LOG(kVerbose) << bootstrap_contacts_result.size() << " vs " << bootstrap_contacts.size();
 }
 
 
+// Old interface will be deleted
 TEST(BootstrapFileOperationsTest, BEH_ReadWriteUpdate) {
   maidsafe::test::TestPath test_path(maidsafe::test::CreateTestPath("MaidSafe_TestUtils"));
   fs::path bootstrap_file_path(*test_path / "bootstrap");

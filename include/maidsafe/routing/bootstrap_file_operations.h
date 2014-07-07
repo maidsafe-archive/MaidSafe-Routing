@@ -49,12 +49,18 @@ void WriteBootstrapFile(const BootstrapContacts& bootstrap_contacts,
 void UpdateBootstrapFile(const BootstrapContact& bootstrap_contact,
                          const boost::filesystem::path& bootstrap_file_path,
                          bool remove);
+
+// NOTE above methods will be deleted after SQLITE
+// ======================= SQLITE INTERFACE =================================================
+
+// FIXME over write table if it exists
 void WriteBootstrapContacts(const BootstrapContacts& bootstrap_contacts,
                             const boost::filesystem::path& bootstrap_file_path);
-BootstrapContacts ReadBootstrapContacts(const boost::filesystem::path& bootstrap_file_path);
+BootstrapContacts ReadBootstrapContacts(const boost::filesystem::path& bootstrap_file_path); // const FIXME
 
-void UpdateBootstrapContact(const BootstrapContact& bootstrap_contact,
-                            const boost::filesystem::path& bootstrap_file_path);
+
+void InsertOrUpdateBootstrapContact(const BootstrapContact& bootstrap_contact,
+                                    const boost::filesystem::path& bootstrap_file_path);
 }  // namespace routing
 
 }  // namespace maidsafe

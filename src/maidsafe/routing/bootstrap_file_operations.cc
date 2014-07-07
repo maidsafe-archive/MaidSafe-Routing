@@ -72,19 +72,26 @@ sqlite3 * call_sqlite3_open_v2(const boost::filesystem::path& filename, int flag
 void InsertBootstrapContacts (sqlite3 *database, const BootstrapContacts& bootstrap_contacts) {
   std::string query = "INSERT INTO BOOTSTRAP_CONTACTS (ENDPOINT) VALUES (?)";
   sqlite3_stmt *statement = NULL;
-  if(sqlite3_prepare_v2(database, query.c_str(), query.size(), &statement, 0) != SQLITE_OK) {
+  auto result = sqlite3_prepare_v2(database, query.c_str(), query.size(), &statement, 0);
+  if(result != SQLITE_OK) {
+    LOG(kError) << "SQL error : " << result;
     BOOST_THROW_EXCEPTION(MakeError(CommonErrors::filesystem_io_error));  // FIXME
   }
   for (const auto& bootstrap_contact : bootstrap_contacts) {
     std::string endpoint_string = boost::lexical_cast<std::string>(bootstrap_contact);
-    if (sqlite3_bind_text(statement, 1, endpoint_string.c_str(), endpoint_string.size(), 0)
-            != SQLITE_OK) {
+    result = sqlite3_bind_text(statement, 1, endpoint_string.c_str(), endpoint_string.size(), 0);
+    if (result != SQLITE_OK) {
+      LOG(kError) << "SQL error : " << result;
       BOOST_THROW_EXCEPTION(MakeError(CommonErrors::filesystem_io_error));  // FIXME
     }
-    if (sqlite3_step(statement)!= SQLITE_DONE) {
+    result = sqlite3_step(statement);
+    if (result!= SQLITE_DONE) {
+      LOG(kError) << "SQL error : " << result;
       BOOST_THROW_EXCEPTION(MakeError(CommonErrors::filesystem_io_error));  // FIXME
     }
-    if (sqlite3_reset(statement) != SQLITE_OK) {
+    result = sqlite3_reset(statement);
+    if (result != SQLITE_OK) {
+      LOG(kError) << "SQL error : " << result;
       BOOST_THROW_EXCEPTION(MakeError(CommonErrors::filesystem_io_error));  // FIXME
     }
   }
@@ -194,9 +201,9 @@ void WriteBootstrapContacts(const BootstrapContacts& bootstrap_contacts,
                             const fs::path& bootstrap_file_path) {
   sqlite3 *database = call_sqlite3_open_v2(bootstrap_file_path,
                                            SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE);
-  sqlite3_busy_timeout(database, 1000);
+  sqlite3_busy_timeout(database, 250);
 
-  std::string query = "BEGIN TRANSACTION";
+  std::string query = "BEGIN EXCLUSIVE TRANSACTION";
   call_sqlite3_exec(database, query);
 
   query = "CREATE TABLE BOOTSTRAP_CONTACTS(""ENDPOINT TEXT  PRIMARY KEY  NOT NULL);";
@@ -213,7 +220,7 @@ void WriteBootstrapContacts(const BootstrapContacts& bootstrap_contacts,
 // Throw if file doesn't exist
 BootstrapContacts ReadBootstrapContacts(const fs::path& bootstrap_file_path) {
   sqlite3 *database = call_sqlite3_open_v2(bootstrap_file_path, SQLITE_OPEN_READONLY);
-  sqlite3_busy_timeout(database, 1000);
+  sqlite3_busy_timeout(database, 250);
   std::string query = "SELECT * from BOOTSTRAP_CONTACTS";
   BootstrapContacts bootstrap_contacts;
   sqlite3_stmt *statement = NULL;
@@ -235,14 +242,14 @@ BootstrapContacts ReadBootstrapContacts(const fs::path& bootstrap_file_path) {
   return bootstrap_contacts;
 }
 
-void UpdateBootstrapContact(const BootstrapContact& bootstrap_contact,
-                            const boost::filesystem::path& bootstrap_file_path) {
+void InsertOrUpdateBootstrapContact(const BootstrapContact& bootstrap_contact,
+                                    const boost::filesystem::path& bootstrap_file_path) {
   sqlite3 *database = call_sqlite3_open_v2(bootstrap_file_path,
                                            SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE);
-  sqlite3_busy_timeout(database, 1000);
+  sqlite3_busy_timeout(database, 250);
 
-  std::string query = "BEGIN TRANSACTION";
-  call_sqlite3_exec(database, query);
+  std::string query = "BEGIN IMMEDIATE TRANSACTION";
+  call_sqlite3_exec(database, query);  // FIXME retry if busy
 
   query = "CREATE TABLE IF NOT EXISTS BOOTSTRAP_CONTACTS(""ENDPOINT TEXT  PRIMARY KEY NOT NULL);";
   call_sqlite3_exec(database, query);
@@ -264,6 +271,7 @@ void UpdateBootstrapContact(const BootstrapContact& bootstrap_contact,
   } else if (step_result == SQLITE_DONE) {
     new_row_required = true;
   } else {
+    LOG(kError) << "step_result!" << step_result;
     BOOST_THROW_EXCEPTION(MakeError(CommonErrors::filesystem_io_error));  // FIXME
   }
   sqlite3_finalize(statement);
