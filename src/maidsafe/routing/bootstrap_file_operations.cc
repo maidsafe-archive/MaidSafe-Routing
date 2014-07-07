@@ -228,7 +228,7 @@ BootstrapContacts ReadBootstrapContacts(const fs::path& bootstrap_file_path) {
     BOOST_THROW_EXCEPTION(MakeError(CommonErrors::filesystem_io_error));  // FIXME
   }
   int result = 0;
-  while(true) {
+  for (;;) {
     result = sqlite3_step(statement);
     if(result == SQLITE_ROW) {
       std::string endpoint_string((char*)sqlite3_column_text(statement, 0));
