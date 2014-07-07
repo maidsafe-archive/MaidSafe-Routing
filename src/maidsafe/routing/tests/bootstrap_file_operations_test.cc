@@ -32,7 +32,26 @@ namespace maidsafe {
 namespace routing {
 namespace test {
 
-// SQLITE test
+TEST(BootstrapFileOperationsTest, BEH_FileExists) {
+  maidsafe::test::TestPath test_path(maidsafe::test::CreateTestPath("MaidSafe_TestUtils"));
+  fs::path bootstrap_file_path(*test_path / "bootstrap");
+  std::string file_content(RandomString(3000 + RandomUint32() % 1000));
+  EXPECT_TRUE(WriteFile(bootstrap_file_path, file_content));
+  EXPECT_TRUE(fs::exists(bootstrap_file_path));
+  EXPECT_THROW(ReadBootstrapContacts(bootstrap_file_path), std::exception) 
+    << "read from bad file";
+  EXPECT_TRUE(fs::exists(bootstrap_file_path))
+    << bootstrap_file_path.string() << "should exist";
+  BootstrapContacts bootstrap_contacts;
+  for (int i(0); i < 100; ++i)
+    bootstrap_contacts.push_back(BootstrapContact(maidsafe::GetLocalIp(),
+                                                  maidsafe::test::GetRandomPort()));
+
+  EXPECT_THROW(WriteBootstrapContacts(bootstrap_contacts, bootstrap_file_path), std::exception) 
+    << "file exists, should throw";
+  EXPECT_THROW(ReadBootstrapContacts(bootstrap_file_path), std::exception) << "read bad file";
+}
+
 TEST(BootstrapFileOperationsTest, BEH_ReadWrite) {
   maidsafe::test::TestPath test_path(maidsafe::test::CreateTestPath("MaidSafe_TestUtils"));
   fs::path bootstrap_file_path(*test_path / "bootstrap");
@@ -46,8 +65,8 @@ TEST(BootstrapFileOperationsTest, BEH_ReadWrite) {
 
   EXPECT_NO_THROW(WriteBootstrapContacts(bootstrap_contacts, bootstrap_file_path));
   auto bootstrap_contacts_result = ReadBootstrapContacts(bootstrap_file_path);
-  EXPECT_EQ(bootstrap_contacts_result, bootstrap_contacts);
-  LOG(kVerbose) << bootstrap_contacts_result.size() << " vs " << bootstrap_contacts.size();
+  EXPECT_EQ(bootstrap_contacts_result, bootstrap_contacts)
+    << bootstrap_contacts_result.size() << " vs " << bootstrap_contacts.size();
 }
 
 // SQLITE test
@@ -58,23 +77,25 @@ TEST(BootstrapFileOperationsTest, BEH_Update) {
   ASSERT_FALSE(fs::exists(bootstrap_file_path));
   EXPECT_THROW(ReadBootstrapContacts(bootstrap_file_path), std::exception);
   EXPECT_FALSE(fs::exists(bootstrap_file_path));
+  ::maidsafe::test::RunInParallel(1000, [&] {
   BootstrapContacts bootstrap_contacts;
-  for (int i(0); i < 1000; ++i) {
+  for (int i(0); i < 100; ++i) {
     bootstrap_contacts.push_back(BootstrapContact(maidsafe::GetLocalIp(),
                                                   maidsafe::test::GetRandomPort()));
 
     EXPECT_NO_THROW(InsertOrUpdateBootstrapContact(bootstrap_contacts.back(), bootstrap_file_path));
-//    std::this_thread::sleep_for(std::chrono::milliseconds(250)); // rand
+    // std::this_thread::sleep_for(std::chrono::milliseconds((RandomUint32() % 100) + 10));
   }
   auto bootstrap_contacts_result = ReadBootstrapContacts(bootstrap_file_path);
   EXPECT_EQ(bootstrap_contacts_result, bootstrap_contacts);
 
-  for (int i(0); i < 1000; ++i) {
+  for (int i(0); i < 100; ++i) {
     EXPECT_NO_THROW(InsertOrUpdateBootstrapContact(bootstrap_contacts.at(i), bootstrap_file_path));
   }
+  });
 }
 
-
+// ############################################################################
 // Old interface will be deleted
 TEST(BootstrapFileOperationsTest, BEH_ReadWriteUpdate) {
   maidsafe::test::TestPath test_path(maidsafe::test::CreateTestPath("MaidSafe_TestUtils"));
