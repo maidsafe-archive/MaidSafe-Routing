@@ -25,6 +25,7 @@ extern "C" {
 #include <string>
 
 #include "maidsafe/common/log.h"
+#include "maidsafe/common/on_scope_exit.h"
 #include "maidsafe/common/utils.h"
 
 #include "maidsafe/routing/routing.pb.h"
@@ -96,6 +97,30 @@ void InsertBootstrapContacts (sqlite3 *database, const BootstrapContacts& bootst
     }
   }
   sqlite3_finalize(statement);
+}
+
+//BEGIN IMMEDIATE TRANSACTION
+void BeginImmediateTransaction(sqlite3 *database) {
+  const int kAttempts(100);
+  std::string query = "BEGIN IMMEDIATE TRANSACTION";
+  char *error_message = 0;
+  for (int i(0); i != kAttempts; ++i) {
+    int result = sqlite3_exec(database, query.c_str(), NULL, 0, &error_message);
+    if (result == SQLITE_OK) {
+      sqlite3_free(error_message);
+      return;
+    } else if (result == SQLITE_BUSY) {
+      LOG(kWarning) << "SQLITE_BUSY : " << error_message;
+      sqlite3_free(error_message);
+      std::this_thread::sleep_for(std::chrono::milliseconds(((RandomUint32() % 100) + 10) * i));
+      continue;
+    } else {
+      LOG(kError) << "SQL error : " << error_message;
+      sqlite3_free(error_message);
+      BOOST_THROW_EXCEPTION(MakeError(CommonErrors::filesystem_io_error));  //FIXME Change to db error
+    }
+
+  }
 }
 
 }  // unnamed namespace
@@ -196,11 +221,15 @@ void UpdateBootstrapFile(const BootstrapContact& bootstrap_contact,
 }
 
 // Throw if file exists ?
-// FIXME ensure strong guarantee
+// FIXME over write table if it exists ?
 void WriteBootstrapContacts(const BootstrapContacts& bootstrap_contacts,
                             const fs::path& bootstrap_file_path) {
   sqlite3 *database = call_sqlite3_open_v2(bootstrap_file_path,
                                            SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE);
+  on_scope_exit rollback_on_error([&] {
+      std::string rollback("ROLLBACK TRANSACTION");
+      call_sqlite3_exec(database, rollback); });
+
   sqlite3_busy_timeout(database, 250);
 
   std::string query = "BEGIN EXCLUSIVE TRANSACTION";
@@ -214,6 +243,7 @@ void WriteBootstrapContacts(const BootstrapContacts& bootstrap_contacts,
   query = "COMMIT TRANSACTION";
   call_sqlite3_exec(database, query);
 
+  rollback_on_error.Release();
   sqlite3_close(database);
 }
 
@@ -246,12 +276,15 @@ void InsertOrUpdateBootstrapContact(const BootstrapContact& bootstrap_contact,
                                     const boost::filesystem::path& bootstrap_file_path) {
   sqlite3 *database = call_sqlite3_open_v2(bootstrap_file_path,
                                            SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE);
+  on_scope_exit rollback_on_error([&] {
+      std::string rollback("ROLLBACK TRANSACTION");
+      call_sqlite3_exec(database, rollback); });
+
   sqlite3_busy_timeout(database, 250);
 
-  std::string query = "BEGIN IMMEDIATE TRANSACTION";
-  call_sqlite3_exec(database, query);  // FIXME retry if busy
+  BeginImmediateTransaction(database);
 
-  query = "CREATE TABLE IF NOT EXISTS BOOTSTRAP_CONTACTS(""ENDPOINT TEXT  PRIMARY KEY NOT NULL);";
+  std::string query = "CREATE TABLE IF NOT EXISTS BOOTSTRAP_CONTACTS(""ENDPOINT TEXT  PRIMARY KEY NOT NULL);";
   call_sqlite3_exec(database, query);
 
   std::string endpoint_string = boost::lexical_cast<std::string>(bootstrap_contact);
@@ -282,7 +315,7 @@ void InsertOrUpdateBootstrapContact(const BootstrapContact& bootstrap_contact,
 
   query = "COMMIT TRANSACTION";
   call_sqlite3_exec(database, query);
-
+  rollback_on_error.Release();
   sqlite3_close(database);
 }
 
