@@ -36,6 +36,7 @@ TEST(BootstrapFileOperationsTest, BEH_FileExists) {
   maidsafe::test::TestPath test_path(maidsafe::test::CreateTestPath("MaidSafe_TestUtils"));
   fs::path bootstrap_file_path(*test_path / "bootstrap");
   std::string file_content(RandomString(3000 + RandomUint32() % 1000));
+  ASSERT_FALSE(fs::exists(bootstrap_file_path));
   EXPECT_TRUE(WriteFile(bootstrap_file_path, file_content));
   EXPECT_TRUE(fs::exists(bootstrap_file_path));
   EXPECT_THROW(ReadBootstrapContacts(bootstrap_file_path), std::exception)
@@ -70,13 +71,13 @@ TEST(BootstrapFileOperationsTest, BEH_ReadWrite) {
 }
 
 // SQLITE test
-TEST(BootstrapFileOperationsTest, BEH_Update) {
+TEST(BootstrapFileOperationsTest, BEH_Parallel_Unique_Update) {
   maidsafe::test::TestPath test_path(maidsafe::test::CreateTestPath("MaidSafe_TestUtils"));
   fs::path bootstrap_file_path(*test_path / "bootstrap");
-//  fs::path bootstrap_file_path("bootstrap");
   ASSERT_FALSE(fs::exists(bootstrap_file_path));
   EXPECT_THROW(ReadBootstrapContacts(bootstrap_file_path), std::exception);
   EXPECT_FALSE(fs::exists(bootstrap_file_path));
+  
   ::maidsafe::test::RunInParallel(10, [&] {
   BootstrapContacts bootstrap_contacts;
   for (int i(0); i < 100; ++i) {
@@ -84,20 +85,37 @@ TEST(BootstrapFileOperationsTest, BEH_Update) {
                                                   maidsafe::test::GetRandomPort()));
 
     EXPECT_NO_THROW(InsertOrUpdateBootstrapContact(bootstrap_contacts.back(), bootstrap_file_path));
-    // std::this_thread::sleep_for(std::chrono::milliseconds((RandomUint32() % 100) + 10));
   }
   auto bootstrap_contacts_result = ReadBootstrapContacts(bootstrap_file_path);
   for (const auto& i : bootstrap_contacts) {
     EXPECT_NE(bootstrap_contacts_result.end(),
               std::find(bootstrap_contacts_result.begin(), bootstrap_contacts_result.end(), i));
   }
-
-//  for (int i(0); i < 100; ++i) {
-//    EXPECT_NO_THROW(InsertOrUpdateBootstrapContact(bootstrap_contacts.at(i), bootstrap_file_path));
-//  }
   });
 }
 
+TEST(BootstrapFileOperationsTest, BEH_Parallel_Duplicate_Update) {
+  maidsafe::test::TestPath test_path(maidsafe::test::CreateTestPath("MaidSafe_TestUtils"));
+  fs::path bootstrap_file_path(*test_path / "bootstrap");
+  ASSERT_FALSE(fs::exists(bootstrap_file_path));
+  EXPECT_THROW(ReadBootstrapContacts(bootstrap_file_path), std::exception);
+  EXPECT_FALSE(fs::exists(bootstrap_file_path));
+  // set up vector of all same contacts
+  BootstrapContacts bootstrap_contacts;
+  for (int i(0); i < 100; ++i) {
+    bootstrap_contacts.push_back(BootstrapContact(maidsafe::GetLocalIp(),
+                                                  maidsafe::test::GetRandomPort()));
+  }
+  
+  ::maidsafe::test::RunInParallel(10, [&] {
+    EXPECT_NO_THROW(InsertOrUpdateBootstrapContact(bootstrap_contacts.back(), bootstrap_file_path));
+  auto bootstrap_contacts_result = ReadBootstrapContacts(bootstrap_file_path);
+  for (const auto& i : bootstrap_contacts) {
+    EXPECT_NE(bootstrap_contacts_result.end(),
+              std::find(bootstrap_contacts_result.begin(), bootstrap_contacts_result.end(), i));
+  }
+  });
+}
 
 // ############################################################################
 // Old interface will be deleted
