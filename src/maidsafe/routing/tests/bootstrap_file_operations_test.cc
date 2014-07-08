@@ -71,14 +71,14 @@ TEST(BootstrapFileOperationsTest, BEH_ReadWrite) {
 }
 
 // SQLITE test
-TEST(BootstrapFileOperationsTest, BEH_Parallel_Unique_Update) {
+TEST(BootstrapFileOperationsTest, FUNC_Parallel_Unique_Update) {
   maidsafe::test::TestPath test_path(maidsafe::test::CreateTestPath("MaidSafe_TestUtils"));
   fs::path bootstrap_file_path(*test_path / "bootstrap");
   ASSERT_FALSE(fs::exists(bootstrap_file_path));
   EXPECT_THROW(ReadBootstrapContacts(bootstrap_file_path), std::exception);
   EXPECT_FALSE(fs::exists(bootstrap_file_path));
-  
-  ::maidsafe::test::RunInParallel(10, [&] {
+
+  ::maidsafe::test::RunInParallel(40, [&] {
   BootstrapContacts bootstrap_contacts;
   for (int i(0); i < 100; ++i) {
     bootstrap_contacts.push_back(BootstrapContact(maidsafe::GetLocalIp(),
@@ -106,9 +106,11 @@ TEST(BootstrapFileOperationsTest, BEH_Parallel_Duplicate_Update) {
     bootstrap_contacts.push_back(BootstrapContact(maidsafe::GetLocalIp(),
                                                   maidsafe::test::GetRandomPort()));
   }
-  
-  ::maidsafe::test::RunInParallel(10, [&] {
-    EXPECT_NO_THROW(InsertOrUpdateBootstrapContact(bootstrap_contacts.back(), bootstrap_file_path));
+
+  ::maidsafe::test::RunInParallel(40, [&] {
+  for (const auto& i : bootstrap_contacts) {
+    EXPECT_NO_THROW(InsertOrUpdateBootstrapContact(i, bootstrap_file_path));
+  }
   auto bootstrap_contacts_result = ReadBootstrapContacts(bootstrap_file_path);
   for (const auto& i : bootstrap_contacts) {
     EXPECT_NE(bootstrap_contacts_result.end(),
