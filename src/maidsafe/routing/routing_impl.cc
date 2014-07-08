@@ -778,7 +778,7 @@ void Routing::Impl::OnRoutingTableChange(const RoutingTableChange& routing_table
     if (functors_.close_nodes_change)
       functors_.close_nodes_change(routing_table_change.close_nodes_change);
     network_statistics_.UpdateLocalAverageDistance(
-        routing_table_change.close_nodes_change->new_nodes());
+        routing_table_change.close_nodes_change->new_close_nodes());
     // IpcSendCloseNodes(); TO BE MOVED FROM RT TO UTILS
   }
 

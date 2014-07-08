@@ -97,6 +97,7 @@ bool RoutingTable::AddOrCheckNode(NodeInfo peer, bool remove) {
   bool return_value(false);
   NodeInfo removed_node;
   uint16_t routing_table_size(0);
+  std::vector<NodeId> old_close_nodes, new_close_nodes;
   std::shared_ptr<CloseNodesChange> close_nodes_change;
 
   if (remove)
@@ -117,19 +118,18 @@ bool RoutingTable::AddOrCheckNode(NodeInfo peer, bool remove) {
         if ((nodes_.size() < Parameters::closest_nodes_size)  ||
             NodeId::CloserToTarget(
                 peer.id, nodes_.at(Parameters::closest_nodes_size - 1).id, kNodeId())) {
-          close_nodes_change.reset(new CloseNodesChange(kNodeId(), std::vector<NodeId>(),
-                                                        std::vector<NodeId>()));
           bool full_close_nodes(nodes_.size() >= Parameters::closest_nodes_size);
           close_nodes_size = (full_close_nodes) ? (close_nodes_size - 1) : close_nodes_size;
           std::for_each (std::begin(nodes_), std::begin(nodes_) + close_nodes_size,
-                         [close_nodes_change](const NodeInfo& node_info) {
-                            close_nodes_change->old_close_nodes_.push_back(node_info.id);
-                            close_nodes_change->new_close_nodes_.push_back(node_info.id);
+                         [&](const NodeInfo& node_info) {
+                           old_close_nodes.push_back(node_info.id);
+                           new_close_nodes.push_back(node_info.id);
                          });
-            close_nodes_change->new_close_nodes_.push_back(peer.id);
+            new_close_nodes.push_back(peer.id);
             if (full_close_nodes)
-              close_nodes_change->old_close_nodes_.push_back(
-                  nodes_.at(Parameters::closest_nodes_size - 1).id);
+              old_close_nodes.push_back(nodes_.at(Parameters::closest_nodes_size - 1).id);
+          close_nodes_change.reset(new CloseNodesChange(kNodeId(), old_close_nodes,
+                                                        new_close_nodes));
         }
         nodes_.push_back(peer);
       }
@@ -157,6 +157,7 @@ bool RoutingTable::AddOrCheckNode(NodeInfo peer, bool remove) {
 NodeInfo RoutingTable::DropNode(const NodeId& node_to_drop, bool routing_only) {
   NodeInfo dropped_node;
   uint16_t routing_table_size(0);
+  std::vector<NodeId> old_close_nodes, new_close_nodes;
   std::shared_ptr<CloseNodesChange> close_nodes_change;
   {
     std::unique_lock<std::mutex> lock(mutex_);
@@ -168,19 +169,17 @@ NodeInfo RoutingTable::DropNode(const NodeId& node_to_drop, bool routing_only) {
       if ((nodes_.size() < Parameters::closest_nodes_size) ||
            !NodeId::CloserToTarget(nodes_.at(Parameters::closest_nodes_size - 1).id,
                                    node_to_drop, kNodeId())) {
-        close_nodes_change.reset(new CloseNodesChange(kNodeId(), std::vector<NodeId>(),
-                                                      std::vector<NodeId>()));
         std::for_each (std::begin(nodes_),
                        std::begin(nodes_) + std::min(close_nodes_size,
                                                      Parameters::closest_nodes_size),
-                       [close_nodes_change, node_to_drop](const NodeInfo& node_info) {
-                         close_nodes_change->old_close_nodes_.push_back(node_info.id);
+                       [&](const NodeInfo& node_info) {
+                         old_close_nodes.push_back(node_info.id);
                          if (node_info.id != node_to_drop)
-                           close_nodes_change->new_close_nodes_.push_back(node_info.id);
+                           new_close_nodes.push_back(node_info.id);
                        });
         if (close_nodes_size == Parameters::closest_nodes_size + 1)
-          close_nodes_change->new_close_nodes_.push_back(
-              nodes_.at(Parameters::closest_nodes_size).id);
+          new_close_nodes.push_back(nodes_.at(Parameters::closest_nodes_size).id);
+        close_nodes_change.reset(new CloseNodesChange(kNodeId(), old_close_nodes, new_close_nodes));
       }
       dropped_node = *found.second;
       nodes_.erase(found.second);
@@ -480,7 +479,7 @@ size_t RoutingTable::size() const {
 // to be moved to utils
 //  void RoutingTable::IpcSendCloseNodes() {
 //  if (ipc_message_queue_) {
-//    network_viewer::MatrixRecord matrix_record(kNodeId_);
+//    network_viewer::MatrixRecord close_nodes_record(kNodeId_);
 //    std::vector<NodeInfo> close;
 //    {
 //      std::unique_lock<std::mutex> lock(mutex_);

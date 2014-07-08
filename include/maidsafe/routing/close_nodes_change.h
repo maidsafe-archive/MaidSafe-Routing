@@ -58,8 +58,9 @@ class CloseNodesChange {
 
   CheckHoldersResult CheckHolders(const NodeId& target) const;
   NodeId ChoosePmidNode(const std::set<NodeId>& online_pmids, const NodeId& target) const;
-  std::vector<NodeId> lost_nodes() const;
-  std::vector<NodeId> new_nodes() const;
+  NodeId lost_node() const { return lost_node_; }
+  NodeId new_node() const { return new_node_; }
+  std::vector<NodeId> new_close_nodes() const { return new_close_nodes_; }
   void Print();
 
   friend void swap(CloseNodesChange& lhs, CloseNodesChange& rhs) MAIDSAFE_NOEXCEPT;
@@ -69,11 +70,12 @@ class CloseNodesChange {
 
  private:
   CloseNodesChange(NodeId this_node_id, const std::vector<NodeId>& old_close_nodes,
-                   const std::vector<NodeId>& new_close_nodes);
+               const std::vector<NodeId>& new_close_nodes);
   bool OldEqualsToNew() const;
 
   NodeId node_id_;
-  std::vector<NodeId> old_close_nodes_, new_close_nodes_, lost_nodes_, new_nodes_;
+  std::vector<NodeId> old_close_nodes_, new_close_nodes_;
+  NodeId lost_node_, new_node_;
   crypto::BigInt radius_;
 };
 
