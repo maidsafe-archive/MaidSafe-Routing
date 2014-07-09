@@ -99,7 +99,7 @@ SqliteTranasction::SqliteTranasction(sqlite3* database_in)
       std::this_thread::sleep_for(std::chrono::milliseconds(((RandomUint32() % 250) + 10) * i));
       continue;
     } else {
-      LOG(kError) << "SQL error : " << error_message << " Attempts " << kAttempts;
+      LOG(kError) << "SQL error : " << error_message << ". Attempts " << i;
       sqlite3_free(error_message);
       BOOST_THROW_EXCEPTION(MakeError(CommonErrors::filesystem_io_error));  //FIXME Change to db error
     }
