@@ -221,21 +221,16 @@ void swap(CloseNodesChange& lhs, CloseNodesChange& rhs) MAIDSAFE_NOEXCEPT {
 }
 
 void CloseNodesChange::Print() {
-  std::string tab("\t"), output("\nclose_nodes of Node " + DebugId(node_id_) +
-                                " having following entries in old_close_nodes_ :");
+  std::stringstream stream;
   for (auto entry : old_close_nodes_)
-    output.append("\n" + tab + tab+ "entry in old_close_nodes" + tab + "------" + tab + DebugId(entry));
-  output.append("\nclose_nodes of Node " + DebugId(node_id_) +
-                " having following entries in new_close_nodes_ :");
+    stream << "\n\t\t" "entry in old_close_nodes" << "\t------\t" << DebugId(entry);
+
   for (auto entry : new_close_nodes_)
-    output.append("\n" + tab + tab+ "entry in new_close_nodes" + tab + "------" + tab + DebugId(entry));
-  output.append("\nclose_nodes of Node " + DebugId(node_id_) +
-                " having following entries in lost_node_ :");
-  output.append("\n" + tab + tab+ "entry in lost_nodes" + tab + "------" + tab + DebugId(lost_node_));
-  output.append("\nclose_nodes of Node " + DebugId(node_id_) +
-                " having following entries in new_nodes_ :");
-  output.append("\n" + tab + tab+ "entry in new_nodes" + tab + "------" + tab + DebugId(new_node_));
-  LOG(kInfo) << output;
+    stream << "\n\t\t entry in new_close_nodes\t------\t" << DebugId(entry);
+
+  stream << "\n\t\tentry in lost_node\t------\t" << DebugId(lost_node_);
+  stream << "\n\t\tentry in new_node\t------\t" << DebugId(new_node_);
+  LOG(kInfo) << stream.rdbuf();
 }
 
 }  // namespace routing

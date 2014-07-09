@@ -233,7 +233,7 @@ bool RoutingTable::IsThisNodeClosestTo(const NodeId& target_id, bool ignore_exac
     return false;
 
   if (nodes_.empty())
-    return true;
+    return false;
 
   if (target_id.IsZero()) {
     LOG(kError) << "Invalid target_id passed.";
