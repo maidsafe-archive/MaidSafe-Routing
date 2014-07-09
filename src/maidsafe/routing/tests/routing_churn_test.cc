@@ -126,20 +126,17 @@ class RoutingChurnTest : public GenericNetwork, public testing::Test {
  private:
   void DoDroppingCheck(std::shared_ptr<routing::CloseNodesChange> close_nodes_change,
                        const NodeId& affected_node) {
-    auto lost_nodes(close_nodes_change->lost_nodes());
-    if (lost_nodes.empty())
-      return;
+    auto lost_node(close_nodes_change->lost_node());
+
     LOG(kVerbose) << "close_nodes_change of affected node " << HexSubstr(affected_node.string())
               << " containing following lost nodes :";
 //     bool not_found(true);
-    for (auto& node_id : lost_nodes) {
-      LOG(kVerbose) << "    lost node : " << HexSubstr(node_id.string());
+    if  (!lost_node.IsZero()) {
+      LOG(kVerbose) << "    lost node : " << lost_node;
 //       if (node_id == node_on_operation_)
 //         not_found = false;
     }
-    auto find(std::find(lost_nodes.begin(), lost_nodes.end(), node_on_operation_));
-    if (find == lost_nodes.end()) {
-//     if (not_found) {
+    if (lost_node == node_on_operation_) {
       LOG(kVerbose) << "dropping node " << HexSubstr(node_on_operation_.string())
                 << " not find in the close_nodes_change of lost_node ";
       return;
@@ -152,19 +149,16 @@ class RoutingChurnTest : public GenericNetwork, public testing::Test {
 
   void DoAddingCheck(std::shared_ptr<routing::CloseNodesChange> close_nodes_change,
                      const NodeId& affected_node) {
-    auto new_nodes(close_nodes_change->new_nodes());
-    if (new_nodes.empty())
-      return;
+    auto new_node(close_nodes_change->new_node());
     LOG(kVerbose) << "close_nodes_change of affected node " << HexSubstr(affected_node.string())
               << " containing following new nodes :";
 //     bool not_found(true);
-    for (auto& node_id : new_nodes) {
-      LOG(kVerbose) << "    new node : " << HexSubstr(node_id.string());
+    if (!new_node.IsZero()) {
+      LOG(kVerbose) << "    new node : " << new_node;
 //       if (node_id == node_on_operation_)
 //         not_found = false;
     }
-    auto find(std::find(new_nodes.begin(), new_nodes.end(), node_on_operation_));
-    if (find == new_nodes.end()) {
+    if (new_node == node_on_operation_) {
 //     if (not_found) {
       LOG(kVerbose) << "new node " << HexSubstr(node_on_operation_.string())
                 << " not find in the close_nodes_change of new_node ";

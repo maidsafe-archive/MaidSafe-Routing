@@ -143,14 +143,19 @@ CheckHoldersResult CloseNodesChange::CheckHolders(const NodeId& target) const {
 
   CheckHoldersResult holders_result;
   holders_result.proximity_status = GroupRangeStatus::kOutwithRange;
-  if (NodeId::CloserToTarget(node_id_, new_holders.back(), target)) {
+  if (!new_holders.empty() &&
+      ((new_holders.size() < Parameters::group_size) ||
+        NodeId::CloserToTarget(node_id_, new_holders.back(), target))) {
     holders_result.proximity_status = GroupRangeStatus::kInRange;
-    new_holders.pop_back();
+    if (new_holders.size() == Parameters::group_size)
+      new_holders.pop_back();
     new_holders.push_back(node_id_);
   }
 
-  if (NodeId::CloserToTarget(node_id_, old_holders.back(), target)) {
+  if (!old_holders.empty() && NodeId::CloserToTarget(node_id_, old_holders.back(), target)) {
     old_holders.pop_back();
+    if (old_holders.size() == Parameters::group_size)
+      old_holders.pop_back();
     old_holders.push_back(node_id_);
   }
 
