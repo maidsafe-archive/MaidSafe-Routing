@@ -128,14 +128,16 @@ void SqliteTranasction::Commit() {
 void InsertBootstrapContacts (sqlite3 *database, const BootstrapContacts& bootstrap_contacts) {
   std::string query = "INSERT INTO BOOTSTRAP_CONTACTS (ENDPOINT) VALUES (?)";
   sqlite3_stmt *statement = NULL;
-  auto result = sqlite3_prepare_v2(database, query.c_str(), query.size(), &statement, 0);
+  auto result = sqlite3_prepare_v2(database, query.c_str(), static_cast<int>(query.size()),
+                                   &statement, 0);
   if(result != SQLITE_OK) {
     LOG(kError) << "SQL error : " << result;
     BOOST_THROW_EXCEPTION(MakeError(CommonErrors::filesystem_io_error));  // FIXME
   }
   for (const auto& bootstrap_contact : bootstrap_contacts) {
     std::string endpoint_string = boost::lexical_cast<std::string>(bootstrap_contact);
-    result = sqlite3_bind_text(statement, 1, endpoint_string.c_str(), endpoint_string.size(), 0);
+    result = sqlite3_bind_text(statement, 1, endpoint_string.c_str(),
+                               static_cast<int>(endpoint_string.size()), 0);
     if (result != SQLITE_OK) {
       LOG(kError) << "SQL error : " << result;
       BOOST_THROW_EXCEPTION(MakeError(CommonErrors::filesystem_io_error));  // FIXME
