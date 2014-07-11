@@ -98,10 +98,9 @@ TEST(NetworkStatisticsTest, BEH_IsIdInGroupRange) {
   }
 
   NodeId info_id(NodeId::IdType::kRandomId);
-  std::partial_sort(nodes_id.begin(), nodes_id.begin() + Parameters::group_size + 1,
-                    nodes_id.end(), [&](const NodeId & lhs, const NodeId & rhs) {
-    return NodeId::CloserToTarget(lhs, rhs, info_id);
-  });
+  std::partial_sort(nodes_id.begin(), nodes_id.begin() + Parameters::group_size + 1, nodes_id.end(),
+                    [&](const NodeId& lhs,
+                        const NodeId& rhs) { return NodeId::CloserToTarget(lhs, rhs, info_id); });
   uint16_t index(0);
   while (index < Parameters::max_routing_table_size) {
     if ((nodes_id.at(index) ^ info_id) <= (network_statistics.distance_))

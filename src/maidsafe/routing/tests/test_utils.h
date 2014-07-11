@@ -41,8 +41,8 @@ namespace test {
 
 struct NodeInfoAndPrivateKey {
   NodeInfoAndPrivateKey() : node_info(), private_key() {}
-  NodeInfoAndPrivateKey(const NodeInfoAndPrivateKey& info) : node_info(info.node_info),
-                                                             private_key(info.private_key) {}
+  NodeInfoAndPrivateKey(const NodeInfoAndPrivateKey& info)
+      : node_info(info.node_info), private_key(info.private_key) {}
   NodeInfo node_info;
   asymm::PrivateKey private_key;
 };

@@ -48,8 +48,7 @@ TEST(BootstrapFileOperationsTest, BEH_ReadWriteUpdate) {
     expected_bootstrap_contacts.insert(std::begin(expected_bootstrap_contacts), bootstrap_contact);
     EXPECT_NO_THROW(WriteBootstrapFile(bootstrap_contacts, bootstrap_file_path));
     auto actual_bootstrap_contacts = ReadBootstrapFile(bootstrap_file_path);
-    EXPECT_TRUE(std::equal(actual_bootstrap_contacts.begin(),
-                           actual_bootstrap_contacts.end(),
+    EXPECT_TRUE(std::equal(actual_bootstrap_contacts.begin(), actual_bootstrap_contacts.end(),
                            expected_bootstrap_contacts.begin()));
   }
 
@@ -60,8 +59,7 @@ TEST(BootstrapFileOperationsTest, BEH_ReadWriteUpdate) {
     expected_bootstrap_contacts.insert(std::begin(expected_bootstrap_contacts), bootstrap_contact);
     EXPECT_NO_THROW(UpdateBootstrapFile(bootstrap_contact, bootstrap_file_path, false));
     auto actual_bootstrap_contacts = ReadBootstrapFile(bootstrap_file_path);
-    EXPECT_TRUE(std::equal(actual_bootstrap_contacts.begin(),
-                           actual_bootstrap_contacts.end(),
+    EXPECT_TRUE(std::equal(actual_bootstrap_contacts.begin(), actual_bootstrap_contacts.end(),
                            expected_bootstrap_contacts.begin()));
   }
 

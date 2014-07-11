@@ -46,10 +46,9 @@ class RoutingStandAloneTest : public GenericNetwork, public testing::Test {
     for (size_t index(0); index < ClientIndex(); ++index) {
       pmid_ids.push_back(nodes_[index]->node_id());
     }
-    std::sort(std::begin(pmid_ids), std::end(pmid_ids),
-              [&](const NodeId& lhs, const NodeId& rhs) {
-                return NodeId::CloserToTarget(lhs, rhs, maid_id);
-              });
+    std::sort(std::begin(pmid_ids), std::end(pmid_ids), [&](const NodeId& lhs, const NodeId& rhs) {
+      return NodeId::CloserToTarget(lhs, rhs, maid_id);
+    });
     return !NodeId::CloserToTarget(pmid_ids.at(Parameters::max_routing_table_size_for_client - 1),
                                    pmid_id, maid_id);
   }
@@ -59,7 +58,8 @@ TEST_F(RoutingStandAloneTest, FUNC_VaultSendToClient) {
   this->SetUpNetwork(kServerSize, 1);
   for (size_t index(0); index < this->ClientIndex(); ++index) {
     EXPECT_TRUE(this->SendDirect(this->nodes_[index], this->nodes_[this->ClientIndex()]->node_id(),
-                ExpectedNodeType::kExpectClient)) << DebugId(this->nodes_[index]->node_id());
+                                 ExpectedNodeType::kExpectClient))
+        << DebugId(this->nodes_[index]->node_id());
   }
 }
 
@@ -173,8 +173,7 @@ TEST_F(RoutingStandAloneTest, FUNC_ExtendedSendToGroupRandomId) {
       }
     }
     EXPECT_EQ(message_count * (Parameters::group_size), receivers_message_count);
-    LOG(kVerbose) << "Total message received count : " << message_count *
-                                                              (Parameters::group_size);
+    LOG(kVerbose) << "Total message received count : " << message_count * (Parameters::group_size);
     receivers_message_count = 0;
     this->ClearMessages();
   }

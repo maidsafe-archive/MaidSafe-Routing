@@ -89,8 +89,7 @@ TEST(RpcsTest, BEH_ConnectMessageNode) {
   endpoint.external =
       Endpoint(boost::asio::ip::address_v4::loopback(), maidsafe::test::GetRandomPort());
   std::string destination = RandomString(64);
-  protobuf::Message message =
-      rpcs::Connect(NodeId(destination), endpoint, us.id, us.connection_id);
+  protobuf::Message message = rpcs::Connect(NodeId(destination), endpoint, us.id, us.connection_id);
   protobuf::ConnectRequest connect_request;
   EXPECT_TRUE(message.IsInitialized());
   EXPECT_TRUE(connect_request.ParseFromString(message.data(0)));  // us
@@ -149,8 +148,7 @@ TEST(RpcsTest, BEH_FindNodesMessageInitialised) {
 
 TEST(RpcsTest, BEH_FindNodesMessageNode) {
   NodeInfo us(MakeNode());
-  protobuf::Message message = rpcs::FindNodes(us.id, us.id,
-                                              Parameters::closest_nodes_size);
+  protobuf::Message message = rpcs::FindNodes(us.id, us.id, Parameters::closest_nodes_size);
   protobuf::FindNodesRequest find_nodes_request;
   EXPECT_TRUE(find_nodes_request.ParseFromString(message.data(0)));  // us
   EXPECT_TRUE(find_nodes_request.num_nodes_requested() == Parameters::closest_nodes_size);
@@ -171,9 +169,8 @@ TEST(RpcsTest, BEH_FindNodesMessageNode) {
 
 TEST(RpcsTest, BEH_FindNodesMessageNodeRelayMode) {
   NodeInfo us(MakeNode());
-  protobuf::Message message =
-      rpcs::FindNodes(us.id, us.id, Parameters::closest_nodes_size,
-                      true, NodeId(NodeId::IdType::kRandomId));
+  protobuf::Message message = rpcs::FindNodes(us.id, us.id, Parameters::closest_nodes_size, true,
+                                              NodeId(NodeId::IdType::kRandomId));
   protobuf::FindNodesRequest find_nodes_request;
   EXPECT_TRUE(find_nodes_request.ParseFromString(message.data(0)));  // us
   EXPECT_TRUE(find_nodes_request.num_nodes_requested() == Parameters::closest_nodes_size);

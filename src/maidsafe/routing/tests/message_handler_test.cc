@@ -60,8 +60,8 @@ class MessageHandlerTest : public testing::Test {
         response_handler_(),
         network_statistics_(),
         close_info_() {
-    message_and_caching_functor_.message_received = [this](
-        const std::string & message, ReplyFunctor reply_functor) {
+    message_and_caching_functor_.message_received = [this](const std::string& message,
+                                                           ReplyFunctor reply_functor) {
       MessageReceived(message);
       reply_functor("reply");
     };
@@ -188,11 +188,10 @@ TEST_F(MessageHandlerTest, BEH_HandleRelay) {
     message_handler.HandleMessage(message);
   }
   {  // Handle direct relay request to other in routing table
-    EXPECT_CALL(
-        *utils_,
-        SendToClosestNode(testing::AllOf(
-            testing::Property(&protobuf::Message::destination_id, close_info_.id.string()),
-            testing::Property(&protobuf::Message::source_id, table_->kNodeId().string()))))
+    EXPECT_CALL(*utils_,
+                SendToClosestNode(testing::AllOf(
+                    testing::Property(&protobuf::Message::destination_id, close_info_.id.string()),
+                    testing::Property(&protobuf::Message::source_id, table_->kNodeId().string()))))
         .Times(1)
         .RetiresOnSaturation();
     EXPECT_CALL(*utils_, SendToDirect(testing::_, testing::_, testing::_)).Times(0);
@@ -266,7 +265,7 @@ TEST_F(MessageHandlerTest, BEH_HandleGroupMessage) {
     auto closest_nodes(table_->GetClosestNodes(close_info_.id, 4));
     closest_nodes.erase(
         std::remove_if(closest_nodes.begin(), closest_nodes.end(),
-                       [&](const NodeInfo & info) { return info.id == close_info_.id; }),
+                       [&](const NodeInfo& info) { return info.id == close_info_.id; }),
         closest_nodes.end());
     EXPECT_CALL(*utils_, SendToClosestNode(testing::_)).Times(0);
     EXPECT_CALL(*utils_,
@@ -445,9 +444,8 @@ TEST_F(MessageHandlerTest, BEH_HandleGroupMessage) {
     message_handler.set_message_and_caching_functor(message_and_caching_functor_);
     message_handler.HandleMessage(message);
     std::unique_lock<std::mutex> lock(mutex_);
-    EXPECT_TRUE(cond_var_.wait_for(lock, std::chrono::seconds(1), [this]()->bool {
-      return messages_received_ != 0;
-    }));  // NOLINT
+    EXPECT_TRUE(cond_var_.wait_for(lock, std::chrono::seconds(1),
+                                   [this]()->bool { return messages_received_ != 0; }));  // NOLINT
     EXPECT_EQ(messages_received_, 1);
     messages_received_ = 0;
   }
@@ -563,9 +561,8 @@ TEST_F(MessageHandlerTest, BEH_HandleGroupMessage) {
     message_handler.set_message_and_caching_functor(message_and_caching_functor_);
     message_handler.HandleMessage(message);
     std::unique_lock<std::mutex> lock(mutex_);
-    EXPECT_TRUE(cond_var_.wait_for(lock, std::chrono::seconds(1), [this]()->bool {
-      return messages_received_ != 0;
-    }));  // NOLINT
+    EXPECT_TRUE(cond_var_.wait_for(lock, std::chrono::seconds(1),
+                                   [this]()->bool { return messages_received_ != 0; }));  // NOLINT
     EXPECT_EQ(messages_received_, 1);
     messages_received_ = 0;
   }
@@ -600,9 +597,8 @@ TEST_F(MessageHandlerTest, BEH_HandleNodeLevelMessage) {
     message_handler.set_message_and_caching_functor(message_and_caching_functor_);
     message_handler.HandleMessage(message);
     std::unique_lock<std::mutex> lock(mutex_);
-    EXPECT_TRUE(cond_var_.wait_for(lock, std::chrono::seconds(1), [this]()->bool {
-      return messages_received_ != 0;
-    }));  // NOLINT
+    EXPECT_TRUE(cond_var_.wait_for(lock, std::chrono::seconds(1),
+                                   [this]()->bool { return messages_received_ != 0; }));  // NOLINT
     EXPECT_EQ(messages_received_, 1);
     messages_received_ = 0;
   }
@@ -654,9 +650,8 @@ TEST_F(MessageHandlerTest, BEH_ClientRoutingTable) {
     message.set_request(true);
     message_handler.HandleMessage(message);
     std::unique_lock<std::mutex> lock(mutex_);
-    EXPECT_FALSE(cond_var_.wait_for(lock, std::chrono::seconds(1), [this]()->bool {
-      return messages_received_ != 0;
-    }));  // NOLINT
+    EXPECT_FALSE(cond_var_.wait_for(lock, std::chrono::seconds(1),
+                                    [this]()->bool { return messages_received_ != 0; }));  // NOLINT
     EXPECT_EQ(messages_received_, 0);
     messages_received_ = 0;
   }

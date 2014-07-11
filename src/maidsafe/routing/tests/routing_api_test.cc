@@ -75,7 +75,7 @@ MessageReceivedFunctor no_ops_message_received_functor = [](const std::string&,
 
 TEST(APITest, BEH_API_ZeroState) {
   auto pmid1(passport::CreatePmidAndSigner().first), pmid2(passport::CreatePmidAndSigner().first),
-       pmid3(passport::CreatePmidAndSigner().first);
+      pmid3(passport::CreatePmidAndSigner().first);
   NodeInfoAndPrivateKey node1(MakeNodeInfoAndKeysWithPmid(pmid1));
   NodeInfoAndPrivateKey node2(MakeNodeInfoAndKeysWithPmid(pmid2));
   NodeInfoAndPrivateKey node3(MakeNodeInfoAndKeysWithPmid(pmid3));
@@ -93,7 +93,7 @@ TEST(APITest, BEH_API_ZeroState) {
   functors1.message_and_caching.message_received = no_ops_message_received_functor;
   functors3 = functors2 = functors1;
 
-  functors1.request_public_key = [&](const NodeId & node_id, GivePublicKeyFunctor give_key) {
+  functors1.request_public_key = [&](const NodeId& node_id, GivePublicKeyFunctor give_key) {
     LOG(kWarning) << "node_validation called for " << DebugId(node_id);
     auto itr(key_map.find(node_id));
     if (key_map.end() != itr)
@@ -130,7 +130,7 @@ TEST(APITest, BEH_API_ZeroState) {
 TEST(APITest, DISABLED_BEH_API_ZeroStateWithDuplicateNode) {
   rudp::Parameters::bootstrap_connection_lifespan = boost::posix_time::seconds(5);
   auto pmid1(passport::CreatePmidAndSigner().first), pmid2(passport::CreatePmidAndSigner().first),
-       pmid3(passport::CreatePmidAndSigner().first);
+      pmid3(passport::CreatePmidAndSigner().first);
   NodeInfoAndPrivateKey node1(MakeNodeInfoAndKeysWithPmid(pmid1));
   NodeInfoAndPrivateKey node2(MakeNodeInfoAndKeysWithPmid(pmid2));
   NodeInfoAndPrivateKey node3(MakeNodeInfoAndKeysWithPmid(pmid3));
@@ -148,7 +148,7 @@ TEST(APITest, DISABLED_BEH_API_ZeroStateWithDuplicateNode) {
   functors1.message_and_caching.message_received = no_ops_message_received_functor;
   functors4 = functors3 = functors2 = functors1;
   functors1.network_status = [](int) {};  // NOLINT (Fraser)
-  functors1.request_public_key = [&](const NodeId & node_id, GivePublicKeyFunctor give_key) {
+  functors1.request_public_key = [&](const NodeId& node_id, GivePublicKeyFunctor give_key) {
     LOG(kWarning) << "node_validation called for " << DebugId(node_id);
     auto itr(key_map.find(node_id));
     if (key_map.end() != itr)
@@ -192,7 +192,7 @@ TEST(APITest, DISABLED_BEH_API_ZeroStateWithDuplicateNode) {
 
 TEST(APITest, BEH_API_SendToSelf) {
   auto pmid1(passport::CreatePmidAndSigner().first), pmid2(passport::CreatePmidAndSigner().first),
-       pmid3(passport::CreatePmidAndSigner().first);
+      pmid3(passport::CreatePmidAndSigner().first);
   NodeInfoAndPrivateKey node1(MakeNodeInfoAndKeysWithPmid(pmid1));
   NodeInfoAndPrivateKey node2(MakeNodeInfoAndKeysWithPmid(pmid2));
   NodeInfoAndPrivateKey node3(MakeNodeInfoAndKeysWithPmid(pmid3));
@@ -207,14 +207,14 @@ TEST(APITest, BEH_API_SendToSelf) {
   Routing routing3(pmid3);
 
   functors1.network_status = [](int) {};  // NOLINT (Fraser)
-  functors1.request_public_key = [&](const NodeId & node_id, GivePublicKeyFunctor give_key) {
+  functors1.request_public_key = [&](const NodeId& node_id, GivePublicKeyFunctor give_key) {
     LOG(kWarning) << "node_validation called for " << DebugId(node_id);
     auto itr(key_map.find(node_id));
     if (key_map.end() != itr)
       give_key((*itr).second);
   };
 
-  functors1.message_and_caching.message_received = [&](const std::string & message,
+  functors1.message_and_caching.message_received = [&](const std::string& message,
                                                        ReplyFunctor reply_functor) {
     reply_functor("response to " + message);
     LOG(kVerbose) << "Message received and replied to message !!";
@@ -284,14 +284,14 @@ TEST(APITest, BEH_API_ClientNode) {
   functors1.message_and_caching.message_received = no_ops_message_received_functor;
   functors3 = functors2 = functors1;
   functors1.network_status = [](int) {};  // NOLINT (Fraser)
-  functors1.request_public_key = [&](const NodeId & node_id, GivePublicKeyFunctor give_key) {
+  functors1.request_public_key = [&](const NodeId& node_id, GivePublicKeyFunctor give_key) {
     LOG(kWarning) << "node_validation called for " << DebugId(node_id);
     auto itr(key_map.find(node_id));
     if (key_map.end() != itr)
       give_key((*itr).second);
   };
 
-  functors1.message_and_caching.message_received = [&](const std::string & message,
+  functors1.message_and_caching.message_received = [&](const std::string& message,
                                                        ReplyFunctor reply_functor) {
     reply_functor("response to " + message);
     LOG(kVerbose) << "Message received and replied to message !!";
@@ -357,14 +357,14 @@ TEST(APITest, BEH_API_NonMutatingClientNode) {
   functors3 = functors2 = functors1;
 
   functors1.network_status = [](int) {};  // NOLINT (Fraser)
-  functors1.request_public_key = [&](const NodeId & node_id, GivePublicKeyFunctor give_key) {
+  functors1.request_public_key = [&](const NodeId& node_id, GivePublicKeyFunctor give_key) {
     LOG(kWarning) << "node_validation called for " << DebugId(node_id);
     auto itr(key_map.find(node_id));
     if (key_map.end() != itr)
       give_key((*itr).second);
   };
 
-  functors1.message_and_caching.message_received = [&](const std::string & message,
+  functors1.message_and_caching.message_received = [&](const std::string& message,
                                                        ReplyFunctor reply_functor) {
     reply_functor("response to " + message);
     LOG(kVerbose) << "Message received and replied to message !!";
@@ -432,14 +432,14 @@ TEST(APITest, BEH_API_ClientNodeSameId) {
   functors1.message_and_caching.message_received = no_ops_message_received_functor;
   functors4 = functors3 = functors2 = functors1;
   functors1.network_status = [](int) {};  // NOLINT (Fraser)
-  functors1.request_public_key = [&](const NodeId & node_id, GivePublicKeyFunctor give_key) {
+  functors1.request_public_key = [&](const NodeId& node_id, GivePublicKeyFunctor give_key) {
     LOG(kWarning) << "node_validation called for " << DebugId(node_id);
     auto itr(key_map.find(node_id));
     if (key_map.end() != itr)
       give_key((*itr).second);
   };
 
-  functors1.message_and_caching.message_received = [&](const std::string & message,
+  functors1.message_and_caching.message_received = [&](const std::string& message,
                                                        ReplyFunctor reply_functor) {
     reply_functor("response to " + message);
     LOG(kVerbose) << "Message received and replied to message !!";
@@ -526,7 +526,7 @@ TEST(APITest, BEH_API_NodeNetwork) {
   functors.message_and_caching.message_received = no_ops_message_received_functor;
   std::map<NodeId, asymm::PublicKey> key_map;
   functors.network_status = [](int) {};  // NOLINT (Fraser)
-  functors.request_public_key = [&](const NodeId & node_id, GivePublicKeyFunctor give_key) {
+  functors.request_public_key = [&](const NodeId& node_id, GivePublicKeyFunctor give_key) {
     LOG(kWarning) << "node_validation called for " << DebugId(node_id);
     auto itr(key_map.find(node_id));
     if (key_map.end() != itr)
@@ -557,7 +557,7 @@ TEST(APITest, BEH_API_NodeNetwork) {
 
   for (auto i(0); i != (kNetworkSize - 2); ++i) {
     std::shared_ptr<boost::promise<bool>> join_promise_ptr(
-                                              std::make_shared<boost::promise<bool>>());
+        std::make_shared<boost::promise<bool>>());
     std::shared_ptr<bool> promised(std::make_shared<bool>(false));
     boost::future<bool> join_future((*join_promise_ptr).get_future());
     functors.network_status = [i, min_join_status, join_promise_ptr, promised](int result) {
@@ -589,7 +589,7 @@ TEST(APITest, BEH_API_NodeNetworkWithClient) {
   std::map<NodeId, asymm::PublicKey> key_map;
   std::vector<std::shared_ptr<Routing>> routing_node;
   int i(0);
-  functors.request_public_key = [&](const NodeId & node_id, GivePublicKeyFunctor give_key) {
+  functors.request_public_key = [&](const NodeId& node_id, GivePublicKeyFunctor give_key) {
     LOG(kWarning) << "node_validation called for " << DebugId(node_id);
     auto itr(key_map.find(node_id));
     if (key_map.end() != itr)
@@ -790,17 +790,17 @@ TEST(APITest, BEH_API_SendGroup) {
   }
 
   while (!send_futures.empty()) {
-    send_futures.erase(
-        std::remove_if(send_futures.begin(), send_futures.end(),
-                                                 [&data](boost::future<bool>& future_bool)->bool {
-          if (future_bool.wait_for(boost::chrono::seconds::zero()) == boost::future_status::ready) {
-            EXPECT_TRUE(future_bool.get());
-            return true;
-          } else {
-            return false;
-          }
-        }),
-        send_futures.end());
+    send_futures.erase(std::remove_if(send_futures.begin(), send_futures.end(),
+                                      [&data](boost::future<bool> & future_bool)->bool {
+                         if (future_bool.wait_for(boost::chrono::seconds::zero()) ==
+                             boost::future_status::ready) {
+                           EXPECT_TRUE(future_bool.get());
+                           return true;
+                         } else {
+                           return false;
+                         }
+                       }),
+                       send_futures.end());
     std::this_thread::yield();
   }
   auto time_taken(t.elapsed());
@@ -815,7 +815,7 @@ TEST(APITest, BEH_API_PartiallyJoinedSend) {
   // N.B. 5sec sleep in functors3.request_public_key causes delay in joining, giving opportunity for
   // routing3's impl to use PartiallyJoinedSend when SendDirect is called
   auto pmid1(passport::CreatePmidAndSigner().first), pmid2(passport::CreatePmidAndSigner().first),
-       pmid3(passport::CreatePmidAndSigner().first);
+      pmid3(passport::CreatePmidAndSigner().first);
   NodeInfoAndPrivateKey node1(MakeNodeInfoAndKeysWithPmid(pmid1));
   NodeInfoAndPrivateKey node2(MakeNodeInfoAndKeysWithPmid(pmid2));
   NodeInfoAndPrivateKey node3(MakeNodeInfoAndKeysWithPmid(pmid3));
@@ -837,7 +837,7 @@ TEST(APITest, BEH_API_PartiallyJoinedSend) {
     reply_functor("response to " + message);
     LOG(kVerbose) << "Message received and replied to message !!";
   };
-  functors1.request_public_key = [&](const NodeId & node_id, GivePublicKeyFunctor give_key) {
+  functors1.request_public_key = [&](const NodeId& node_id, GivePublicKeyFunctor give_key) {
     LOG(kWarning) << "node_validation called for " << DebugId(node_id);
     auto itr(key_map.find(node_id));
     if (key_map.end() != itr)
@@ -847,7 +847,7 @@ TEST(APITest, BEH_API_PartiallyJoinedSend) {
   functors2.network_status = functors3.network_status = functors1.network_status;
   functors2.message_and_caching.message_received = functors1.message_and_caching.message_received;
   functors2.request_public_key = functors1.request_public_key;
-  functors3.request_public_key = [&](const NodeId & node_id, GivePublicKeyFunctor give_key) {
+  functors3.request_public_key = [&](const NodeId& node_id, GivePublicKeyFunctor give_key) {
     Sleep(std::chrono::seconds(5));
     LOG(kWarning) << "node_validation called for " << DebugId(node_id);
     auto itr(key_map.find(node_id));
@@ -899,7 +899,7 @@ TEST(APITest, BEH_API_PartiallyJoinedSend) {
 
 TEST(APITest, BEH_API_TypedMessageSend) {
   auto pmid1(passport::CreatePmidAndSigner().first), pmid2(passport::CreatePmidAndSigner().first),
-       pmid3(passport::CreatePmidAndSigner().first);
+      pmid3(passport::CreatePmidAndSigner().first);
   NodeInfoAndPrivateKey node1(MakeNodeInfoAndKeysWithPmid(pmid1));
   NodeInfoAndPrivateKey node2(MakeNodeInfoAndKeysWithPmid(pmid2));
   NodeInfoAndPrivateKey node3(MakeNodeInfoAndKeysWithPmid(pmid3));
@@ -918,7 +918,7 @@ TEST(APITest, BEH_API_TypedMessageSend) {
   Routing routing3(pmid3);
 
   functors1.network_status = [](int) {};  // NOLINT (Fraser)
-  functors1.request_public_key = [&](const NodeId & node_id, GivePublicKeyFunctor give_key) {
+  functors1.request_public_key = [&](const NodeId& node_id, GivePublicKeyFunctor give_key) {
     LOG(kWarning) << "node_validation called for " << DebugId(node_id);
     auto itr(key_map.find(node_id));
     if (key_map.end() != itr)
@@ -926,7 +926,7 @@ TEST(APITest, BEH_API_TypedMessageSend) {
   };
 
   functors1.typed_message_and_caching.group_to_group.message_received = [&](
-      const GroupToGroupMessage & /*g2g*/) {
+      const GroupToGroupMessage& /*g2g*/) {
     LOG(kVerbose) << "group to group message received!!";
     std::lock_guard<std::mutex> lock(mutex);
     if (++responses == 3)
@@ -934,13 +934,13 @@ TEST(APITest, BEH_API_TypedMessageSend) {
   };
 
   functors1.typed_message_and_caching.group_to_single.message_received = [&](
-      const GroupToSingleMessage & /*g2s*/) {
+      const GroupToSingleMessage& /*g2s*/) {
     LOG(kVerbose) << "group to single message received!!";
     group_to_single_promise.set_value(true);
   };
 
   functors1.typed_message_and_caching.single_to_group.message_received = [&](
-      const SingleToGroupMessage & /*s2g*/) {
+      const SingleToGroupMessage& /*s2g*/) {
     LOG(kVerbose) << "single to group message received!!";
     std::lock_guard<std::mutex> lock(mutex);
     if (++responses == 3)
@@ -948,13 +948,13 @@ TEST(APITest, BEH_API_TypedMessageSend) {
   };
 
   functors1.typed_message_and_caching.single_to_single.message_received = [&](
-      const SingleToSingleMessage & /*s2s*/) {
+      const SingleToSingleMessage& /*s2s*/) {
     LOG(kVerbose) << "single to single message received!!";
     single_to_single_promise.set_value(true);
   };
 
   functors1.typed_message_and_caching.single_to_group_relay.message_received = [&](
-      const SingleToGroupRelayMessage & /*s2g_relay*/) {
+      const SingleToGroupRelayMessage& /*s2g_relay*/) {
     LOG(kVerbose) << "single to group relay message received!!";
   };
 
@@ -1077,7 +1077,7 @@ TEST(APITest, BEH_API_TypedMessagePartiallyJoinedSendReceive) {
   std::condition_variable cv;
   std::vector<RelayMessageFunctorType<SingleToGroupRelayMessage>> single_to_group_relay_functors;
   int i(0);
-  functors.request_public_key = [&](const NodeId & node_id, GivePublicKeyFunctor give_key) {
+  functors.request_public_key = [&](const NodeId& node_id, GivePublicKeyFunctor give_key) {
     LOG(kWarning) << "node_validation called for " << DebugId(node_id);
     auto itr(key_map.find(node_id));
     if (key_map.end() != itr)
@@ -1101,22 +1101,20 @@ TEST(APITest, BEH_API_TypedMessagePartiallyJoinedSendReceive) {
   functors.network_status = [](int) {};  // NOLINT (Fraser)
 
   functors.typed_message_and_caching.group_to_group.message_received = [&](
-      const GroupToGroupMessage & /*g2g*/) {
-    LOG(kVerbose) << "group to group message received!!";
-  };
+      const GroupToGroupMessage& /*g2g*/) { LOG(kVerbose) << "group to group message received!!"; };
 
   functors.typed_message_and_caching.group_to_single.message_received = [&](
-      const GroupToSingleMessage & /*g2s*/) {
+      const GroupToSingleMessage& /*g2s*/) {
     LOG(kVerbose) << "group to single message received!!";
   };
 
   functors.typed_message_and_caching.single_to_group.message_received = [&](
-      const SingleToGroupMessage & /*s2g*/) {
+      const SingleToGroupMessage& /*s2g*/) {
     LOG(kVerbose) << "single to group message received!!";
   };
 
   functors.typed_message_and_caching.single_to_single.message_received = [&](
-      const SingleToSingleMessage & /*s2s*/) {
+      const SingleToSingleMessage& /*s2s*/) {
     LOG(kVerbose) << "single to single message received!!";
   };
 
@@ -1124,20 +1122,19 @@ TEST(APITest, BEH_API_TypedMessagePartiallyJoinedSendReceive) {
   // response to single to group relay messages
   for (int j = 0; j != kNetworkSize; ++j) {
     auto node_id = routing_nodes.at(j)->kNodeId();
-    LOG(kError) << "Preparing functor for node --" << j <<" , " << DebugId(node_id);
+    LOG(kError) << "Preparing functor for node --" << j << " , " << DebugId(node_id);
     RelayMessageFunctorType<SingleToGroupRelayMessage> relay_message_functor_struct;
     relay_message_functor_struct.message_received =
-        [node_id, j, &cv, &mutex, &received_relay_messages]
-            (const SingleToGroupRelayMessage& message) {
-          LOG(kVerbose) << "single to group relay message received at node index : " << j
-                           <<  " , node id : " << DebugId(node_id);
-          {
-            std::lock_guard<std::mutex> lock(mutex);
-            received_relay_messages.push_back(
-                std::pair<int, SingleToGroupRelayMessage>(j, message));
-          }
-          cv.notify_one();
-        };
+        [node_id, j, &cv, &mutex, &received_relay_messages](
+            const SingleToGroupRelayMessage& message) {
+      LOG(kVerbose) << "single to group relay message received at node index : " << j
+                    << " , node id : " << DebugId(node_id);
+      {
+        std::lock_guard<std::mutex> lock(mutex);
+        received_relay_messages.push_back(std::pair<int, SingleToGroupRelayMessage>(j, message));
+      }
+      cv.notify_one();
+    };
     single_to_group_relay_functors.push_back(relay_message_functor_struct);
   }
 
@@ -1168,7 +1165,7 @@ TEST(APITest, BEH_API_TypedMessagePartiallyJoinedSendReceive) {
   join_futures.emplace_back(promise1.get_future());
   join_futures.emplace_back(promise2.get_future());
 
-//  // Joining remaining server & client nodes
+  //  // Joining remaining server & client nodes
   for (auto i(2); i != (kNetworkSize); ++i) {
     join_futures.emplace_back(join_promises.at(i).get_future());
     promised.push_back(true);
@@ -1199,48 +1196,45 @@ TEST(APITest, BEH_API_TypedMessagePartiallyJoinedSendReceive) {
   Functors test_functors;
 
   test_functors.network_status = [min_join_status, &test_node_joined, &cv, &mutex](int result) {
-      ASSERT_GE(result, kSuccess);
-      {
-        std::lock_guard<std::mutex> lock(mutex);
-        test_node_joined = true;
-      }
-      cv.notify_one();
-      LOG(kVerbose) << "test node bootstrapped";
+    ASSERT_GE(result, kSuccess);
+    {
+      std::lock_guard<std::mutex> lock(mutex);
+      test_node_joined = true;
+    }
+    cv.notify_one();
+    LOG(kVerbose) << "test node bootstrapped";
   };
 
   test_functors.typed_message_and_caching.group_to_group.message_received = [](
-          const GroupToGroupMessage & /*g2g*/) {};  // NOLINT
+      const GroupToGroupMessage& /*g2g*/) {};  // NOLINT
   int response_count(0);
   test_functors.typed_message_and_caching.group_to_single.message_received =
-      [&mutex, &response_count, &cv](
-        const GroupToSingleMessage & /*g2s*/) {
-        LOG(kVerbose) << "group to single message received at test node";
-        {
-          std::lock_guard<std::mutex> lock(mutex);
-          ++response_count;
-        }
-        cv.notify_one();
-    };
+      [&mutex, &response_count, &cv](const GroupToSingleMessage& /*g2s*/) {
+    LOG(kVerbose) << "group to single message received at test node";
+    {
+      std::lock_guard<std::mutex> lock(mutex);
+      ++response_count;
+    }
+    cv.notify_one();
+  };
   test_functors.typed_message_and_caching.single_to_group.message_received = [](
-      const SingleToGroupMessage & /*s2g*/) {}; // NOLINT
+      const SingleToGroupMessage& /*s2g*/) {};  // NOLINT
   test_functors.typed_message_and_caching.single_to_single.message_received = [](
-      const SingleToSingleMessage & /*s2s*/) {}; // NOLINT
+      const SingleToSingleMessage& /*s2s*/) {};  // NOLINT
   test_functors.typed_message_and_caching.single_to_group_relay.message_received = [&](
-      const SingleToGroupRelayMessage & /*s2s*/) {}; // NOLINT
+      const SingleToGroupRelayMessage& /*s2s*/) {};  // NOLINT
 
   test_node.Join(test_functors, std::vector<Endpoint>(1, endpoint1));
   {
     std::unique_lock<std::mutex> lock(mutex);
-    cv.wait(lock, [&test_node_joined] {
-      return test_node_joined;
-    });
+    cv.wait(lock, [&test_node_joined] { return test_node_joined; });
   }
 
   auto send_message = [&test_node](const NodeId& target_id) {
-      SingleToGroupMessage single_to_group_message;
-      single_to_group_message.sender = SingleSource(SingleId(test_node.kNodeId()));
-      single_to_group_message.receiver = GroupId(target_id);
-      test_node.Send(single_to_group_message);
+    SingleToGroupMessage single_to_group_message;
+    single_to_group_message.sender = SingleSource(SingleId(test_node.kNodeId()));
+    single_to_group_message.receiver = GroupId(target_id);
+    test_node.Send(single_to_group_message);
   };
 
   //  Test Single To Group own id
@@ -1248,7 +1242,7 @@ TEST(APITest, BEH_API_TypedMessagePartiallyJoinedSendReceive) {
   {
     std::unique_lock<std::mutex> lock(mutex);
     cv.wait(lock, [&received_relay_messages] {
-        return received_relay_messages.size() == Parameters::group_size;
+      return received_relay_messages.size() == Parameters::group_size;
     });
     ASSERT_TRUE(received_relay_messages.size() == Parameters::group_size);
   };
@@ -1259,11 +1253,9 @@ TEST(APITest, BEH_API_TypedMessagePartiallyJoinedSendReceive) {
   {
     std::unique_lock<std::mutex> lock(mutex);
     cv.wait(lock, [kMessageCount, &received_relay_messages] {
-        return (received_relay_messages.size() ==
-                (Parameters::group_size * (kMessageCount + 1U)));
+      return (received_relay_messages.size() == (Parameters::group_size * (kMessageCount + 1U)));
     });
-    ASSERT_TRUE(received_relay_messages.size() ==
-                (Parameters::group_size * (kMessageCount + 1U)));
+    ASSERT_TRUE(received_relay_messages.size() == (Parameters::group_size * (kMessageCount + 1U)));
   };
 
   // Send response
@@ -1278,7 +1270,7 @@ TEST(APITest, BEH_API_TypedMessagePartiallyJoinedSendReceive) {
   {
     std::unique_lock<std::mutex> lock(mutex);
     cv.wait_for(lock, std::chrono::seconds(10), [&response_count, kMessageCount] {
-        return (response_count == Parameters::group_size * (kMessageCount + 1));
+      return (response_count == Parameters::group_size * (kMessageCount + 1));
     });
   }
   ASSERT_TRUE(response_count == Parameters::group_size * (kMessageCount + 1));

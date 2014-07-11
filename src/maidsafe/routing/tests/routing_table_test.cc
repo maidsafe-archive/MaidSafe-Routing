@@ -99,7 +99,7 @@ TEST(RoutingTableTest, BEH_GetNthClosest) {
     nodes_id.push_back(node.id);
     EXPECT_TRUE(routing_table.AddNode(node));
   }
-  std::sort(nodes_id.begin(), nodes_id.end(), [&](const NodeId & lhs, const NodeId & rhs) {
+  std::sort(nodes_id.begin(), nodes_id.end(), [&](const NodeId& lhs, const NodeId& rhs) {
     return NodeId::CloserToTarget(lhs, rhs, my_node);
   });
   for (uint16_t index = 0; index < 10; ++index) {
@@ -211,7 +211,7 @@ TEST(RoutingTableTest, FUNC_ClosestToId) {
   NodeInfo node_info;
   NodeId furthest_group_node;
 
-  auto test_known_ids = [&, this]()->bool {
+  auto test_known_ids = [&, this ]()->bool {
     LOG(kInfo) << "\tTesting known ids...";
     bool passed(true);
     bool result(false);
@@ -229,7 +229,7 @@ TEST(RoutingTableTest, FUNC_ClosestToId) {
     return passed;
   };  // NOLINT
 
-  auto test_unknown_ids = [&, this]()->bool {
+  auto test_unknown_ids = [&, this ]()->bool {
     LOG(kInfo) << "\tTesting unknown ids...";
     bool passed(true);
     bool result(false);
@@ -297,17 +297,16 @@ TEST(RoutingTableTest, FUNC_GetRandomExistingNode) {
   std::vector<NodeInfo> known_nodes;
 
 #ifndef NDEBUG
-    EXPECT_DEATH(routing_table.RandomConnectedNode(), "");
+  EXPECT_DEATH(routing_table.RandomConnectedNode(), "");
 #else
-    EXPECT_TRUE(routing_table.RandomConnectedNode().IsZero());
+  EXPECT_TRUE(routing_table.RandomConnectedNode().IsZero());
 #endif
-  auto run_random_connected_node_test = [&] () {
+  auto run_random_connected_node_test = [&]() {
     NodeId random_connected_node_id = routing_table.RandomConnectedNode();
     LOG(kVerbose) << "Got random connected node: " << DebugId(random_connected_node_id);
-    auto found(std::find_if(std::begin(known_nodes), std::end(known_nodes),
-                            [=] (const NodeInfo& node) {
-                              return (node.id ==  random_connected_node_id);
-                            }));
+    auto found(
+        std::find_if(std::begin(known_nodes), std::end(known_nodes),
+                     [=](const NodeInfo& node) { return (node.id == random_connected_node_id); }));
     ASSERT_FALSE(found == std::end(known_nodes));
   };
 

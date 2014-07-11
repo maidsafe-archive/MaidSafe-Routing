@@ -101,9 +101,9 @@ NodeId GenerateUniqueNonRandomId(const NodeId& holder, uint64_t id) {
 
 NodeId GenerateUniqueRandomNodeId(const std::vector<NodeId>& esisting_ids) {
   NodeId new_node(NodeId::IdType::kRandomId);
-  while (std::find_if(esisting_ids.begin(), esisting_ids.end(),
-                      [&new_node](const NodeId & element) { return element == new_node; }) !=
-                          esisting_ids.end()) {
+  while (std::find_if(esisting_ids.begin(), esisting_ids.end(), [&new_node](const NodeId& element) {
+           return element == new_node;
+         }) != esisting_ids.end()) {
     new_node = NodeId(NodeId::IdType::kRandomId);
   }
   return new_node;
@@ -126,7 +126,7 @@ int NetworkStatus(bool client, int status) {
 }
 
 void SortFromTarget(const NodeId& target, std::vector<NodeInfo>& nodes) {
-  std::sort(nodes.begin(), nodes.end(), [target](const NodeInfo & lhs, const NodeInfo & rhs) {
+  std::sort(nodes.begin(), nodes.end(), [target](const NodeInfo& lhs, const NodeInfo& rhs) {
     return NodeId::CloserToTarget(lhs.id, rhs.id, target);
   });
 }
@@ -134,19 +134,19 @@ void SortFromTarget(const NodeId& target, std::vector<NodeInfo>& nodes) {
 void PartialSortFromTarget(const NodeId& target, std::vector<NodeInfo>& nodes, size_t num_to_sort) {
   assert(num_to_sort <= nodes.size());
   std::partial_sort(nodes.begin(), nodes.begin() + num_to_sort, nodes.end(),
-                    [target](const NodeInfo & lhs, const NodeInfo & rhs) {
+                    [target](const NodeInfo& lhs, const NodeInfo& rhs) {
     return NodeId::CloserToTarget(lhs.id, rhs.id, target);
   });
 }
 
 void SortIdsFromTarget(const NodeId& target, std::vector<NodeId>& nodes) {
-  std::sort(nodes.begin(), nodes.end(), [target](const NodeId & lhs, const NodeId & rhs) {
+  std::sort(nodes.begin(), nodes.end(), [target](const NodeId& lhs, const NodeId& rhs) {
     return NodeId::CloserToTarget(lhs, rhs, target);
   });
 }
 
 void SortNodeInfosFromTarget(const NodeId& target, std::vector<NodeInfo>& nodes) {
-  std::sort(nodes.begin(), nodes.end(), [target](const NodeInfo & lhs, const NodeInfo & rhs) {
+  std::sort(nodes.begin(), nodes.end(), [target](const NodeInfo& lhs, const NodeInfo& rhs) {
     return NodeId::CloserToTarget(lhs.id, rhs.id, target);
   });
 }
@@ -155,16 +155,14 @@ bool CompareListOfNodeInfos(const std::vector<NodeInfo>& lhs, const std::vector<
   if (lhs.size() != rhs.size())
     return false;
   for (const auto& node_info : lhs) {
-    if (std::find_if(rhs.begin(), rhs.end(), [&](const NodeInfo & node) {
-          return node.id == node_info.id;
-        }) == rhs.end())
+    if (std::find_if(rhs.begin(), rhs.end(),
+                     [&](const NodeInfo& node) { return node.id == node_info.id; }) == rhs.end())
       return false;
   }
 
   for (const auto& node_info : rhs) {
-    if (std::find_if(lhs.begin(), lhs.end(), [&](const NodeInfo & node) {
-          return node.id == node_info.id;
-        }) == lhs.end())
+    if (std::find_if(lhs.begin(), lhs.end(),
+                     [&](const NodeInfo& node) { return node.id == node_info.id; }) == lhs.end())
       return false;
   }
   return true;

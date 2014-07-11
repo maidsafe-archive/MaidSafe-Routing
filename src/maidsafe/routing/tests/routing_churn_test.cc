@@ -38,21 +38,28 @@ typename std::vector<T>::const_iterator Find(const T& t, const std::vector<T>& v
 
 class RoutingChurnTest : public GenericNetwork, public testing::Test {
  public:
-  RoutingChurnTest(void) : GenericNetwork(), old_close_nodes_(), new_close_nodes_(),
-      expect_affected_(), close_nodes_change_check_(false), dropping_node_(false),
-      adding_node_(false), node_on_operation_(NodeId::IdType::kRandomId), affected_nodes_(),
-      checking_mutex_() {}
+  RoutingChurnTest(void)
+      : GenericNetwork(),
+        old_close_nodes_(),
+        new_close_nodes_(),
+        expect_affected_(),
+        close_nodes_change_check_(false),
+        dropping_node_(false),
+        adding_node_(false),
+        node_on_operation_(NodeId::IdType::kRandomId),
+        affected_nodes_(),
+        checking_mutex_() {}
 
   virtual void SetUp() override { GenericNetwork::SetUp(); }
 
   virtual void TearDown() override { Sleep(std::chrono::microseconds(100)); }
 
   void CheckCloseNodesChange(std::shared_ptr<routing::CloseNodesChange> close_nodes_change,
-                         const NodeId affected_node) {
+                             const NodeId affected_node) {
     if (!close_nodes_change_check_)
       return;
     LOG(kInfo) << "Node " << HexSubstr(affected_node.string())
-                << " having close_nodes_change change : ";
+               << " having close_nodes_change change : ";
     close_nodes_change->Print();
     if (dropping_node_)
       DoDroppingCheck(close_nodes_change, affected_node);
@@ -73,8 +80,8 @@ class RoutingChurnTest : public GenericNetwork, public testing::Test {
     std::copy(existing_vault_node_ids.begin(), existing_vault_node_ids.end(),
               std::back_inserter(new_close_nodes_));
     if (dropping_node_) {
-      new_close_nodes_.erase(std::find(new_close_nodes_.begin(), new_close_nodes_.end(),
-                             node_to_operate));
+      new_close_nodes_.erase(
+          std::find(new_close_nodes_.begin(), new_close_nodes_.end(), node_to_operate));
     }
 
     SortIdsFromTarget(node_to_operate, new_close_nodes_);
@@ -102,12 +109,13 @@ class RoutingChurnTest : public GenericNetwork, public testing::Test {
     LOG(kVerbose) << "Following nodes are affected : ";
     for (const auto& node : affected_nodes_)
       LOG(kVerbose) << "                  affected : " << HexSubstr(node.string());
-//     for(auto& node : affected_nodes_)
-//       if (std::find(expect_affected_.begin(), expect_affected_.end(), node) ==
-//           expect_affected_.end()) {
-//         EXPECT_TRUE(false) << "node " << HexSubstr(node.string()) << " shall not be affected";
-//         return;
-//       }
+    //     for(auto& node : affected_nodes_)
+    //       if (std::find(expect_affected_.begin(), expect_affected_.end(), node) ==
+    //           expect_affected_.end()) {
+    //         EXPECT_TRUE(false) << "node " << HexSubstr(node.string()) << " shall not be
+    // affected";
+    //         return;
+    //       }
     for (const auto& node : expect_affected_)
       if (std::find(affected_nodes_.begin(), affected_nodes_.end(), node) ==
           affected_nodes_.end()) {
@@ -129,21 +137,21 @@ class RoutingChurnTest : public GenericNetwork, public testing::Test {
     auto lost_node(close_nodes_change->lost_node());
 
     LOG(kVerbose) << "close_nodes_change of affected node " << HexSubstr(affected_node.string())
-              << " containing following lost nodes :";
-//     bool not_found(true);
-    if  (!lost_node.IsZero()) {
+                  << " containing following lost nodes :";
+    //     bool not_found(true);
+    if (!lost_node.IsZero()) {
       LOG(kVerbose) << "    lost node : " << lost_node;
-//       if (node_id == node_on_operation_)
-//         not_found = false;
+      //       if (node_id == node_on_operation_)
+      //         not_found = false;
     }
     if (lost_node == node_on_operation_) {
       LOG(kVerbose) << "dropping node " << HexSubstr(node_on_operation_.string())
-                << " not find in the close_nodes_change of lost_node ";
+                    << " not find in the close_nodes_change of lost_node ";
       return;
     }
     std::lock_guard<std::mutex> lock(checking_mutex_);
     LOG(kVerbose) << "Affected node " << HexSubstr(affected_node.string())
-              << " inserted into affected_nodes_";
+                  << " inserted into affected_nodes_";
     affected_nodes_.insert(affected_node);
   }
 
@@ -151,22 +159,22 @@ class RoutingChurnTest : public GenericNetwork, public testing::Test {
                      const NodeId& affected_node) {
     auto new_node(close_nodes_change->new_node());
     LOG(kVerbose) << "close_nodes_change of affected node " << HexSubstr(affected_node.string())
-              << " containing following new nodes :";
-//     bool not_found(true);
+                  << " containing following new nodes :";
+    //     bool not_found(true);
     if (!new_node.IsZero()) {
       LOG(kVerbose) << "    new node : " << new_node;
-//       if (node_id == node_on_operation_)
-//         not_found = false;
+      //       if (node_id == node_on_operation_)
+      //         not_found = false;
     }
     if (new_node == node_on_operation_) {
-//     if (not_found) {
+      //     if (not_found) {
       LOG(kVerbose) << "new node " << HexSubstr(node_on_operation_.string())
-                << " not find in the close_nodes_change of new_node ";
+                    << " not find in the close_nodes_change of new_node ";
       return;
     }
     std::lock_guard<std::mutex> lock(checking_mutex_);
     LOG(kVerbose) << "Affected node " << HexSubstr(affected_node.string())
-              << " inserted into affected_nodes_";
+                  << " inserted into affected_nodes_";
     affected_nodes_.insert(affected_node);
   }
 };
@@ -232,8 +240,7 @@ TEST_F(RoutingChurnTest, DISABLED_FUNC_MessagingNetworkChurn) {
       GenericNetwork::NodePtr vault_node(this->RandomVaultNode());
       // Choose random client nodes for direct message
       // TODO(Alison) - use result?
-      sender_client->SendDirect(receiver_client->node_id(), message, false,
-                                [](std::string) {});
+      sender_client->SendDirect(receiver_client->node_id(), message, false, [](std::string) {});
       // Choose random client for group message to random env
       // TODO(Alison) - use result?
       sender_client->SendGroup(NodeId(NodeId::IdType::kRandomId), message, false,

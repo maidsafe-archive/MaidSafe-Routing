@@ -789,7 +789,8 @@ void Routing::Impl::OnRoutingTableChange(const RoutingTableChange& routing_table
   }
 
   if (routing_table_.size() > Parameters::routing_table_size_threshold)
-    network_.SendToClosestNode(rpcs::FindNodes(kNodeId_, kNodeId_, Parameters::closest_nodes_size));
+    network_.SendToClosestNode(rpcs::FindNodes(kNodeId_, kNodeId_,
+                                               Parameters::max_routing_table_size));
 }
 
 }  // namespace routing

@@ -251,21 +251,20 @@ TEST_F(ResponseHandlerTest, BEH_FindNodes) {
   nodes.clear();
   for (size_t i(0); i < num_of_found_nodes; ++i) {
     NodeId node_id(RandomString(64));
-    while (NodeId::CloserToTarget(
-              routing_table_.GetNthClosestNode(routing_table_.kNodeId(),
-                                               Parameters::closest_nodes_size).id,
-              node_id, routing_table_.kNodeId()))
-        node_id = NodeId(RandomString(64));
+    while (
+        NodeId::CloserToTarget(routing_table_.GetNthClosestNode(routing_table_.kNodeId(),
+                                                                Parameters::closest_nodes_size).id,
+                               node_id, routing_table_.kNodeId()))
+      node_id = NodeId(RandomString(64));
     nodes.push_back(node_id);
   }
   for (size_t i(0); i < num_of_found_nodes; ++i) {
     NodeId node_id(RandomString(64));
     while (NodeId::CloserToTarget(
-               node_id,
-               routing_table_.GetNthClosestNode(routing_table_.kNodeId(),
-                                                Parameters::closest_nodes_size).id,
-               routing_table_.kNodeId()))
-        node_id = NodeId(RandomString(64));
+        node_id, routing_table_.GetNthClosestNode(routing_table_.kNodeId(),
+                                                  Parameters::closest_nodes_size).id,
+        routing_table_.kNodeId()))
+      node_id = NodeId(RandomString(64));
     nodes.push_back(node_id);
   }
   ASSERT_EQ(nodes.size(), num_of_found_nodes * 2);
@@ -351,8 +350,8 @@ TEST_F(ResponseHandlerTest, BEH_ConnectSuccessAcknowledgement) {
 
   // shared_from_this function inside requires the response_handler holder to be shared_ptr
   // if holding as a normal object, shared_from_this will throw an exception
-  std::shared_ptr<ResponseHandler> response_handler(std::make_shared<ResponseHandler>(
-      routing_table_, client_routing_table_, network_));
+  std::shared_ptr<ResponseHandler> response_handler(
+      std::make_shared<ResponseHandler>(routing_table_, client_routing_table_, network_));
 
   // request_public_key_functor_ doesn't setup
   message =

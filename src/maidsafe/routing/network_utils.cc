@@ -349,9 +349,9 @@ void NetworkUtils::RecursiveSendOn(protobuf::Message message, NodeInfo last_node
           return;
         rudp_.Remove(last_node_attempted.connection_id);
       }
-      LOG(kWarning) << " Routing-> removing connection " << DebugId(peer.connection_id);
-      routing_table_.DropNode(peer.id, false);
-      client_routing_table_.DropConnection(peer.connection_id);
+//      LOG(kWarning) << " Routing-> removing connection " << DebugId(peer.connection_id);
+//      routing_table_.DropNode(peer.id, false);
+//      client_routing_table_.DropConnection(peer.connection_id);
       RecursiveSendOn(message);
     }
   };
