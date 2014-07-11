@@ -98,11 +98,11 @@ class GenericNode;
 
 class Routing::Impl {
  public:
-  Impl(bool client_mode, const NodeId& node_id, const asymm::Keys& keys);
+  Impl(bool client_mode, const NodeId& node_id, const asymm::Keys& keys,
+      const boost::filesystem::path& bootstrap_file_path);
   ~Impl();
 
-  void Join(const Functors& functors,
-            const BootstrapContacts& bootstrap_contacts = BootstrapContacts());
+  void Join(const Functors& functors);
 
   int ZeroStateJoin(const Functors& functors, const boost::asio::ip::udp::endpoint& local_endpoint,
                     const boost::asio::ip::udp::endpoint& peer_endpoint, const NodeInfo& peer_info);
@@ -148,8 +148,8 @@ class Routing::Impl {
 
   void ConnectFunctors(const Functors& functors);
   void BootstrapFromTheseEndpoints(const BootstrapContacts& bootstrap_contacts);
-  void DoJoin(const BootstrapContacts& bootstrap_contacts);
-  int DoBootstrap(const BootstrapContacts& bootstrap_contacts);
+  void DoJoin();
+  int DoBootstrap();
   void ReBootstrap();
   void DoReBootstrap(const boost::system::error_code& error_code);
   void FindClosestNode(const boost::system::error_code& error_code, int attempts);

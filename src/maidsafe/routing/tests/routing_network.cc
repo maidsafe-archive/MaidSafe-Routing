@@ -364,8 +364,8 @@ int GenericNode::ZeroStateJoin(const Endpoint& peer_endpoint, const NodeInfo& pe
   return routing_->ZeroStateJoin(functors_, endpoint(), peer_endpoint, peer_node_info);
 }
 
-void GenericNode::Join(const std::vector<Endpoint>& peer_endpoints) {
-  routing_->Join(functors_, peer_endpoints);
+void GenericNode::Join(const std::vector<Endpoint>& /*peer_endpoints*/) {
+  routing_->Join(functors_/*, peer_endpoints*/);  // FIXME Prakash
 }
 
 void GenericNode::set_joined(const bool node_joined) { joined_ = node_joined; }

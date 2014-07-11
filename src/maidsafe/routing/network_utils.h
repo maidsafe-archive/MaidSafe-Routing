@@ -50,12 +50,13 @@ class MockNetworkUtils;
 
 class NetworkUtils {
  public:
-  NetworkUtils(RoutingTable& routing_table, ClientRoutingTable& client_routing_table);
+  NetworkUtils(const boost::filesystem::path& bootstrap_file_path, RoutingTable& routing_table,
+               ClientRoutingTable& client_routing_table);
   virtual ~NetworkUtils();
-  int Bootstrap(const BootstrapContacts& bootstrap_contacts,
-                const rudp::MessageReceivedFunctor& message_received_functor,
+  int Bootstrap(const rudp::MessageReceivedFunctor& message_received_functor,
                 const rudp::ConnectionLostFunctor& connection_lost_functor,
-                boost::asio::ip::udp::endpoint local_endpoint = boost::asio::ip::udp::endpoint());
+                boost::asio::ip::udp::endpoint local_endpoint = boost::asio::ip::udp::endpoint(),
+                boost::asio::ip::udp::endpoint peer_endpoint = boost::asio::ip::udp::endpoint());
   virtual int GetAvailableEndpoint(const NodeId& peer_id,
                                    const rudp::EndpointPair& peer_endpoint_pair,
                                    rudp::EndpointPair& this_endpoint_pair,
@@ -98,10 +99,10 @@ class NetworkUtils {
                        int attempt_count = 0);
   void AdjustRouteHistory(protobuf::Message& message);
 
+  boost::filesystem::path kBootstrapFilePath_;
   bool running_;
   std::mutex running_mutex_;
   uint16_t bootstrap_attempt_;
-  BootstrapContacts bootstrap_contacts_;
   NodeId bootstrap_connection_id_;
   NodeId this_node_relay_connection_id_;
   RoutingTable& routing_table_;

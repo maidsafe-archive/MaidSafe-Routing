@@ -27,17 +27,18 @@ namespace {
 typedef boost::asio::ip::udp::endpoint Endpoint;
 }
 
-Routing::Routing()
-    : pimpl_() {
-  InitialisePimpl(true, NodeId(NodeId::IdType::kRandomId), asymm::GenerateKeyPair());
+Routing::Routing(boost::filesystem::path bootstrap_file_path) : pimpl_() {
+  InitialisePimpl(true, NodeId(NodeId::IdType::kRandomId), asymm::GenerateKeyPair(),
+                  bootstrap_file_path);
 }
 
-void Routing::InitialisePimpl(bool client_mode, const NodeId& node_id, const asymm::Keys& keys) {
-  pimpl_.reset(new Impl(client_mode, node_id, keys));
+void Routing::InitialisePimpl(bool client_mode, const NodeId& node_id, const asymm::Keys& keys,
+                              const boost::filesystem::path& bootstrap_file_path) {
+  pimpl_.reset(new Impl(client_mode, node_id, keys, bootstrap_file_path));
 }
 
-void Routing::Join(Functors functors, BootstrapContacts bootstrap_contacts) {
-  pimpl_->Join(functors, bootstrap_contacts);
+void Routing::Join(Functors functors) {
+  pimpl_->Join(functors);
 }
 
 int Routing::ZeroStateJoin(Functors functors, const Endpoint& local_endpoint,
@@ -72,13 +73,13 @@ void Routing::Send(const GroupToSingleRelayMessage& message) {
 }
 
 
-void Routing::SendDirect(const NodeId& destination_id, const std::string& message,
-                         bool cacheable, ResponseFunctor response_functor) {
+void Routing::SendDirect(const NodeId& destination_id, const std::string& message, bool cacheable,
+                         ResponseFunctor response_functor) {
   return pimpl_->SendDirect(destination_id, message, cacheable, response_functor);
 }
 
-void Routing::SendGroup(const NodeId& destination_id, const std::string& message,
-                        bool cacheable, ResponseFunctor response_functor) {
+void Routing::SendGroup(const NodeId& destination_id, const std::string& message, bool cacheable,
+                        ResponseFunctor response_functor) {
   return pimpl_->SendGroup(destination_id, message, cacheable, response_functor);
 }
 
@@ -118,11 +119,12 @@ bool Routing::IsConnectedClient(const NodeId& node_id) {
 void UpdateNetworkHealth(int updated_health, int& current_health, std::mutex& mutex,
                          std::condition_variable& cond_var, const NodeId& this_node_id) {
   {
-    std::lock_guard<std::mutex> lock{ mutex };
+    std::lock_guard<std::mutex> lock{mutex};
 #if USE_LOGGING
     if (updated_health >= 0) {
-      std::string message{ DebugId(this_node_id) + " - Network health is " +
-          std::to_string(updated_health) + "% (was " + std::to_string(current_health) + "%)" };
+      std::string message{DebugId(this_node_id) + " - Network health is " +
+                          std::to_string(updated_health) + "% (was " +
+                          std::to_string(current_health) + "%)"};
       if (updated_health >= current_health)
         LOG(kVerbose) << message;
       else

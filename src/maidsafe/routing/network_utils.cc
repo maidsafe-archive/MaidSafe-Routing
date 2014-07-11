@@ -47,11 +47,12 @@ typedef boost::unique_lock<boost::shared_mutex> UniqueLock;
 
 namespace routing {
 
-NetworkUtils::NetworkUtils(RoutingTable& routing_table, ClientRoutingTable& client_routing_table)
-    : running_(true),
+NetworkUtils::NetworkUtils(const boost::filesystem::path& bootstrap_file_path,
+                           RoutingTable& routing_table, ClientRoutingTable& client_routing_table)
+    : kBootstrapFilePath_(bootstrap_file_path),
+      running_(true),
       running_mutex_(),
       bootstrap_attempt_(0),
-      bootstrap_contacts_(),
       bootstrap_connection_id_(),
       this_node_relay_connection_id_(),
       routing_table_(routing_table),
@@ -65,10 +66,9 @@ NetworkUtils::~NetworkUtils() {
   running_ = false;
 }
 
-int NetworkUtils::Bootstrap(const BootstrapContacts& bootstrap_contacts,
-                            const rudp::MessageReceivedFunctor& message_received_functor,
+int NetworkUtils::Bootstrap(const rudp::MessageReceivedFunctor& message_received_functor,
                             const rudp::ConnectionLostFunctor& connection_lost_functor,
-                            Endpoint local_endpoint) {
+                            Endpoint local_endpoint, Endpoint peer_endpoint) {
   {
     std::lock_guard<std::mutex> lock(running_mutex_);
     if (!running_)
@@ -80,33 +80,36 @@ int NetworkUtils::Bootstrap(const BootstrapContacts& bootstrap_contacts,
   auto private_key(std::make_shared<asymm::PrivateKey>(routing_table_.kPrivateKey()));
   auto public_key(std::make_shared<asymm::PublicKey>(routing_table_.kPublicKey()));
 
-  if (!bootstrap_contacts.empty())
-    bootstrap_contacts_ = bootstrap_contacts;
+  // ZERO STATE - populating bootstrap file
+  if (local_endpoint != Endpoint() && peer_endpoint != Endpoint()) {
+//    auto contacts = ReadBootstrapContacts(kBootstrapFilePath_);
+//    assert(contacts.empty() && "Must clear any outstanding bootstrap file for zero state");
+    WriteBootstrapContacts(std::vector<Endpoint>(1, peer_endpoint), kBootstrapFilePath_);
+    LOG(kInfo) << "Populated Zero State bootstrap file";
+  }
 
-  if (Parameters::append_maidsafe_endpoints && bootstrap_attempt_ == 0) {
+  BootstrapContacts bootstrap_contacts(ReadBootstrapContacts(kBootstrapFilePath_));
+  if (Parameters::append_maidsafe_endpoints) {
     LOG(kInfo) << "Appending Maidsafe Endpoints";
     auto maidsafe_bootstrap_contacts(MaidSafeBootstrapContacts());
-    bootstrap_contacts_.insert(bootstrap_contacts_.end(), maidsafe_bootstrap_contacts.begin(),
-                                maidsafe_bootstrap_contacts.end());
-  } else if (Parameters::append_maidsafe_local_endpoints && bootstrap_attempt_ == 0) {
+    bootstrap_contacts.insert(bootstrap_contacts.end(), maidsafe_bootstrap_contacts.begin(),
+                              maidsafe_bootstrap_contacts.end());
+  } else if (Parameters::append_maidsafe_local_endpoints) {
     auto maidsafe_local_bootstrap_contacts(MaidSafeLocalBootstrapContacts());
-    bootstrap_contacts_.insert(bootstrap_contacts_.end(),
-                                maidsafe_local_bootstrap_contacts.begin(),
-                                maidsafe_local_bootstrap_contacts.end());
+    bootstrap_contacts.insert(bootstrap_contacts.end(), maidsafe_local_bootstrap_contacts.begin(),
+                              maidsafe_local_bootstrap_contacts.end());
+  }
+  if (Parameters::append_local_live_port_endpoint) {
+    bootstrap_contacts.push_back(Endpoint(GetLocalIp(), kLivePort));
+    LOG(kInfo) << "Appending local live port endpoints: " << bootstrap_contacts.back();
   }
 
-  if (Parameters::append_local_live_port_endpoint && bootstrap_attempt_ == 0) {
-    bootstrap_contacts_.push_back(Endpoint(GetLocalIp(), kLivePort));
-    LOG(kInfo) << "Appending local live port endpoints: " << bootstrap_contacts_.back();
-  }
-
-  if (bootstrap_contacts_.empty())
+  if (bootstrap_contacts.empty())
     return kInvalidBootstrapContacts;
 
-  int result(rudp_.Bootstrap(/* sorted_ */ bootstrap_contacts_, message_received_functor,
+  int result(rudp_.Bootstrap(/* sorted_ */ bootstrap_contacts, message_received_functor,
                              connection_lost_functor, routing_table_.kConnectionId(), private_key,
                              public_key, bootstrap_connection_id_, nat_type_, local_endpoint));
-  ++bootstrap_attempt_;
   // RUDP will return a kZeroId for zero state !!
   if (result != kSuccess || bootstrap_connection_id_.IsZero()) {
     LOG(kError) << "No Online Bootstrap Node found.";
@@ -151,6 +154,7 @@ int NetworkUtils::MarkConnectionAsValid(const NodeId& peer_id) {
   int ret_val(rudp_.MarkConnectionAsValid(peer_id, new_bootstrap_endpoint));
   if ((ret_val == kSuccess) && !new_bootstrap_endpoint.address().is_unspecified()) {
     LOG(kVerbose) << "Found usable endpoint for bootstrapping : " << new_bootstrap_endpoint;
+    InsertOrUpdateBootstrapContact(new_bootstrap_endpoint, kBootstrapFilePath_);
     // TODO(Prakash): Is separate thread needed here ?
     if (new_bootstrap_contact_)
       new_bootstrap_contact_(new_bootstrap_endpoint);

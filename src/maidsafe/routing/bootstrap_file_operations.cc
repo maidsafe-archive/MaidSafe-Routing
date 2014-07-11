@@ -34,7 +34,7 @@ namespace maidsafe {
 namespace routing {
 
 namespace {
-  typedef boost::asio::ip::udp::endpoint Endpoint;
+typedef boost::asio::ip::udp::endpoint Endpoint;
 
 // Copied from Drive launcher
 // TODO Move to utils of routing
@@ -48,8 +48,8 @@ boost::asio::ip::udp::endpoint GetEndpoint(const std::string& endpoint) {
 
 void InsertBootstrapContacts(sqlite::Database& database,
                              const BootstrapContacts& bootstrap_contacts) {
-  std::string query ("INSERT OR REPLACE INTO BOOTSTRAP_CONTACTS (ENDPOINT) VALUES (?)");
-  sqlite::Statement statement{ database, query };
+  std::string query("INSERT OR REPLACE INTO BOOTSTRAP_CONTACTS (ENDPOINT) VALUES (?)");
+  sqlite::Statement statement{database, query};
   for (const auto& bootstrap_contact : bootstrap_contacts) {
     std::string endpoint_string = boost::lexical_cast<std::string>(bootstrap_contact);
     statement.BindText(1, endpoint_string);
@@ -103,7 +103,7 @@ BootstrapContacts ParseBootstrapContacts(const std::string& serialised_bootstrap
   BootstrapContacts bootstrap_contacts;
   bootstrap_contacts.reserve(protobuf_bootstrap_contacts.serialised_bootstrap_contacts().size());
   for (const auto& serialised_bootstrap_contact :
-           protobuf_bootstrap_contacts.serialised_bootstrap_contacts()) {
+       protobuf_bootstrap_contacts.serialised_bootstrap_contacts()) {
     bootstrap_contacts.push_back(ParseBootstrapContact(serialised_bootstrap_contact));
   }
   return bootstrap_contacts;
@@ -129,15 +129,14 @@ void WriteBootstrapFile(const BootstrapContacts& bootstrap_contacts,
 }
 
 void UpdateBootstrapFile(const BootstrapContact& bootstrap_contact,
-                         const boost::filesystem::path& bootstrap_file_path,
-                         bool remove) {
+                         const boost::filesystem::path& bootstrap_file_path, bool remove) {
   if (bootstrap_contact.address().is_unspecified()) {
     LOG(kWarning) << "Invalid Endpoint" << bootstrap_contact;
     BOOST_THROW_EXCEPTION(MakeError(CommonErrors::invalid_parameter));
   }
   auto bootstrap_contacts(ParseBootstrapContacts(ReadFile(bootstrap_file_path).string()));
-  auto itr(std::find(std::begin(bootstrap_contacts), std::end(bootstrap_contacts),
-                     bootstrap_contact));
+  auto itr(
+      std::find(std::begin(bootstrap_contacts), std::end(bootstrap_contacts), bootstrap_contact));
   if (remove) {
     if (itr != std::end(bootstrap_contacts)) {
       bootstrap_contacts.erase(itr);
@@ -149,7 +148,7 @@ void UpdateBootstrapFile(const BootstrapContact& bootstrap_contact,
     if (itr == std::end(bootstrap_contacts)) {
       bootstrap_contacts.push_back(bootstrap_contact);
       WriteBootstrapFile(bootstrap_contacts, bootstrap_file_path);
-    }  else {
+    } else {
       LOG(kVerbose) << "Endpoint already in the list : " << bootstrap_contact;
     }
   }
@@ -161,7 +160,9 @@ void WriteBootstrapContacts(const BootstrapContacts& bootstrap_contacts,
                             const fs::path& bootstrap_file_path) {
   sqlite::Database database(bootstrap_file_path, sqlite::Mode::kReadWriteCreate);
   sqlite::Tranasction transaction(database);
-  std::string query("CREATE TABLE BOOTSTRAP_CONTACTS(""ENDPOINT TEXT  PRIMARY KEY  NOT NULL);");
+  std::string query(
+      "CREATE TABLE BOOTSTRAP_CONTACTS("
+      "ENDPOINT TEXT  PRIMARY KEY  NOT NULL);");
   database.Execute(query);
   InsertBootstrapContacts(database, bootstrap_contacts);
   transaction.Commit();
@@ -172,9 +173,9 @@ BootstrapContacts ReadBootstrapContacts(const fs::path& bootstrap_file_path) {
   sqlite::Database database(bootstrap_file_path, sqlite::Mode::kReadOnly);
   std::string query("SELECT * from BOOTSTRAP_CONTACTS");
   BootstrapContacts bootstrap_contacts;
-  sqlite::Statement statement{ database, query };
+  sqlite::Statement statement{database, query};
   for (;;) {
-    if(statement.Step() == sqlite::StepResult::kSqliteRow) {
+    if (statement.Step() == sqlite::StepResult::kSqliteRow) {
       std::string endpoint_string = statement.ColumnText(0);
       bootstrap_contacts.push_back(GetEndpoint(endpoint_string));
     } else {
@@ -188,7 +189,9 @@ void InsertOrUpdateBootstrapContact(const BootstrapContact& bootstrap_contact,
                                     const boost::filesystem::path& bootstrap_file_path) {
   sqlite::Database database(bootstrap_file_path, sqlite::Mode::kReadWriteCreate);
   sqlite::Tranasction transaction(database);
-  std::string query("CREATE TABLE IF NOT EXISTS BOOTSTRAP_CONTACTS(""ENDPOINT TEXT  PRIMARY KEY NOT NULL);");
+  std::string query(
+      "CREATE TABLE IF NOT EXISTS BOOTSTRAP_CONTACTS("
+      "ENDPOINT TEXT  PRIMARY KEY NOT NULL);");
   database.Execute(query);
   InsertBootstrapContacts(database, BootstrapContacts(1, bootstrap_contact));
   transaction.Commit();
