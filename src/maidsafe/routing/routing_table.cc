@@ -353,12 +353,14 @@ bool RoutingTable::MakeSpaceForNodeToBeAdded(const NodeInfo& node, bool remove,
 
   for (auto it(nodes_.rbegin()); it != nodes_.rend(); ++it)
     if (it->bucket == max_bucket) {
-      if (remove) {
-        removed_node = *it;
-        nodes_.erase(--(it.base()));
-        LOG(kVerbose) << kNodeId_ << " Proposed removable " << removed_node.id;
+      if ((it->bucket != node.bucket) || NodeId::CloserToTarget(node.id, it->id, kNodeId())) {
+        if (remove) {
+          removed_node = *it;
+          nodes_.erase(--(it.base()));
+          LOG(kVerbose) << kNodeId_ << " Proposed removable " << removed_node.id;
+        }
+        return true;
       }
-      return true;
     }
   return false;
 }
