@@ -87,8 +87,12 @@ int NetworkUtils::Bootstrap(const rudp::MessageReceivedFunctor& message_received
     WriteBootstrapContacts(std::vector<Endpoint>(1, peer_endpoint), kBootstrapFilePath_);
     LOG(kInfo) << "Populated Zero State bootstrap file";
   }
-
-  BootstrapContacts bootstrap_contacts(ReadBootstrapContacts(kBootstrapFilePath_));
+  BootstrapContacts bootstrap_contacts;
+  try {
+    bootstrap_contacts = ReadBootstrapContacts(kBootstrapFilePath_);
+  } catch (const std::exception& error) {
+    LOG(kWarning) << "Failed to read bootstrap contacts file : " << error.what();
+  }
   if (Parameters::append_maidsafe_endpoints) {
     LOG(kInfo) << "Appending Maidsafe Endpoints";
     auto maidsafe_bootstrap_contacts(MaidSafeBootstrapContacts());

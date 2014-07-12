@@ -78,9 +78,9 @@ TEST(BootstrapFileOperationsTest, FUNC_Parallel_Unique_Update) {
   EXPECT_THROW(ReadBootstrapContacts(bootstrap_file_path), std::exception);
   EXPECT_FALSE(fs::exists(bootstrap_file_path));
 
-  ::maidsafe::test::RunInParallel(40, [&] {
+  ::maidsafe::test::RunInParallel(20, [&] {
   BootstrapContacts bootstrap_contacts;
-  for (int i(0); i < 100; ++i) {
+  for (int i(0); i < 20; ++i) {
     bootstrap_contacts.push_back(BootstrapContact(maidsafe::GetLocalIp(),
                                                   maidsafe::test::GetRandomPort()));
 
@@ -94,7 +94,7 @@ TEST(BootstrapFileOperationsTest, FUNC_Parallel_Unique_Update) {
   });
 }
 
-TEST(BootstrapFileOperationsTest, BEH_Parallel_Duplicate_Update) {
+TEST(BootstrapFileOperationsTest, FUNC_Parallel_Duplicate_Update) {
   maidsafe::test::TestPath test_path(maidsafe::test::CreateTestPath("MaidSafe_TestUtils"));
   fs::path bootstrap_file_path(*test_path / "bootstrap");
   ASSERT_FALSE(fs::exists(bootstrap_file_path));
@@ -102,12 +102,12 @@ TEST(BootstrapFileOperationsTest, BEH_Parallel_Duplicate_Update) {
   EXPECT_FALSE(fs::exists(bootstrap_file_path));
   // set up vector of all same contacts
   BootstrapContacts bootstrap_contacts;
-  for (int i(0); i < 100; ++i) {
+  for (int i(0); i < 20; ++i) {
     bootstrap_contacts.push_back(BootstrapContact(maidsafe::GetLocalIp(),
                                                   maidsafe::test::GetRandomPort()));
   }
 
-  ::maidsafe::test::RunInParallel(40, [&] {
+  ::maidsafe::test::RunInParallel(20, [&] {
   for (const auto& i : bootstrap_contacts) {
     EXPECT_NO_THROW(InsertOrUpdateBootstrapContact(i, bootstrap_file_path));
   }

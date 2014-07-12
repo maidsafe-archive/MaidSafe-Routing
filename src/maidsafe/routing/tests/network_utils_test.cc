@@ -71,7 +71,7 @@ TEST(NetworkUtilsTest, BEH_ProcessSendDirectInvalidEndpoint) {
   NetworkStatistics network_statistics(node_id);
   RoutingTable routing_table(false, node_id, asymm::GenerateKeyPair(), network_statistics);
   ClientRoutingTable client_routing_table(routing_table.kNodeId());
-  NetworkUtils network(routing_table, client_routing_table);
+  NetworkUtils network(boost::filesystem::path(), routing_table, client_routing_table);
   network.SendToClosestNode(message);
 }
 
@@ -89,7 +89,7 @@ TEST(NetworkUtilsTest, BEH_ProcessSendUnavailableDirectEndpoint) {
   RoutingTable routing_table(false, node_id, asymm::GenerateKeyPair(), network_statistics);
   ClientRoutingTable client_routing_table(routing_table.kNodeId());
   Endpoint endpoint(GetLocalIp(), maidsafe::test::GetRandomPort());
-  NetworkUtils network(routing_table, client_routing_table);
+  NetworkUtils network(boost::filesystem::path(), routing_table, client_routing_table);
   network.SendToDirect(message, NodeId(NodeId::IdType::kRandomId),
                        NodeId(NodeId::IdType::kRandomId));
 }
@@ -200,16 +200,20 @@ TEST(NetworkUtilsTest, FUNC_ProcessSendDirectEndpoint) {
   rudp2.MarkConnectionAsValid(node_id1, endpoint);
   LOG(kVerbose) << " ------------------------   Zero state setup done  ----------------------- ";
 
+
+  auto test_path = maidsafe::test::CreateTestPath("MaidSafe_Test_Routing");
+  boost::filesystem::path bootstrap_file_path(*test_path / "bootstrap");
+
   NodeId node_id(NodeId::IdType::kRandomId);
   NetworkStatistics network_statistics(node_id);
   RoutingTable routing_table(false, node_id, asymm::GenerateKeyPair(), network_statistics);
   NodeId node_id3(routing_table.kNodeId());
   ClientRoutingTable client_routing_table(routing_table.kNodeId());
-  NetworkUtils network(routing_table, client_routing_table);
+  NetworkUtils network(bootstrap_file_path, routing_table, client_routing_table);
 
   std::vector<Endpoint> bootstrap_endpoint(1, endpoint2);
-  EXPECT_EQ(kSuccess, network.Bootstrap(bootstrap_endpoint, message_received_functor3,
-                                        connection_lost_functor));
+  WriteBootstrapContacts(bootstrap_endpoint, bootstrap_file_path);
+  EXPECT_EQ(kSuccess, network.Bootstrap(message_received_functor3, connection_lost_functor));
   rudp::NatType this_nat_type;
   EXPECT_EQ(
       rudp::kBootstrapConnectionAlreadyExists,
@@ -264,7 +268,9 @@ TEST(NetworkUtilsTest, FUNC_ProcessSendRecursiveSendOn) {
   RoutingTable routing_table(false, node_id, asymm::GenerateKeyPair(), network_statistics);
   NodeId node_id3(routing_table.kNodeId());
   ClientRoutingTable client_routing_table(routing_table.kNodeId());
-  NetworkUtils network(routing_table, client_routing_table);
+  auto test_path = maidsafe::test::CreateTestPath("MaidSafe_Test_Routing");
+  boost::filesystem::path bootstrap_file_path(*test_path / "bootstrap");
+  NetworkUtils network(bootstrap_file_path, routing_table, client_routing_table);
 
   rudp::MessageReceivedFunctor message_received_functor1 = [](const std::string & message) {
     LOG(kInfo) << " -- Received: " << message;
@@ -354,8 +360,8 @@ TEST(NetworkUtilsTest, FUNC_ProcessSendRecursiveSendOn) {
   LOG(kVerbose) << " ------------------------   Zero state setup done  ----------------------- ";
 
   std::vector<Endpoint> bootstrap_endpoint(1, endpoint2);
-  EXPECT_EQ(kSuccess, network.Bootstrap(bootstrap_endpoint, message_received_functor3,
-                                        connection_lost_functor3));
+  WriteBootstrapContacts(bootstrap_endpoint, bootstrap_file_path);
+  EXPECT_EQ(kSuccess, network.Bootstrap(message_received_functor3, connection_lost_functor3));
   rudp::EndpointPair endpoint_pair2, endpoint_pair3;
   rudp::NatType this_nat_type;
   EXPECT_EQ(rudp::kBootstrapConnectionAlreadyExists,
