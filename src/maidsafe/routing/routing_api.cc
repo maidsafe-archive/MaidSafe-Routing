@@ -27,7 +27,7 @@ namespace {
 typedef boost::asio::ip::udp::endpoint Endpoint;
 }
 
-Routing::Routing(boost::filesystem::path bootstrap_file_path) : pimpl_() {
+Routing::Routing(const boost::filesystem::path& bootstrap_file_path) : pimpl_() {
   InitialisePimpl(true, NodeId(NodeId::IdType::kRandomId), asymm::GenerateKeyPair(),
                   bootstrap_file_path);
 }
