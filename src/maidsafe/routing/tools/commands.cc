@@ -178,6 +178,11 @@ void Commands::SendMessages(int id_index, const DestinationType& destination_typ
   std::condition_variable cond_var;
   int operation_count(0);
   //   Send messages
+  auto timeout(Parameters::default_response_timeout);
+  std::cout << "message_count " << messages_count << std::endl;
+  Parameters::default_response_timeout =
+      std::chrono::seconds(messages_count *
+                           ((destination_type != DestinationType::kGroup) ? 1 : 4));
   for (int index = 0; index < messages_count || infinite; ++index) {
     std::vector<NodeId> closest_nodes;
     NodeId dest_id;
@@ -201,6 +206,7 @@ void Commands::SendMessages(int id_index, const DestinationType& destination_typ
   std::cout << "Succcessfully received messages count::" << successful_count << std::endl;
   std::cout << "Unsucccessfully received messages count::" << (messages_count - successful_count)
             << std::endl;
+  Parameters::default_response_timeout = timeout;
 }
 
 uint16_t Commands::MakeMessage(int id_index, const DestinationType& destination_type,

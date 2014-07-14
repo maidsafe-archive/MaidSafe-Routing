@@ -110,7 +110,8 @@ bool RoutingTable::AddOrCheckNode(NodeInfo peer, bool remove) {
       return false;
     }
 
-    auto close_nodes_size(PartialSortFromTarget(kNodeId_, Parameters::closest_nodes_size, lock));
+    auto close_nodes_size(PartialSortFromTarget(kNodeId_, Parameters::max_routing_table_size,
+                                                lock));
 
     if (MakeSpaceForNodeToBeAdded(peer, remove, removed_node, lock)) {
       if (remove) {
@@ -161,10 +162,10 @@ NodeInfo RoutingTable::DropNode(const NodeId& node_to_drop, bool routing_only) {
   std::shared_ptr<CloseNodesChange> close_nodes_change;
   {
     std::unique_lock<std::mutex> lock(mutex_);
+    auto close_nodes_size(PartialSortFromTarget(kNodeId_, Parameters::closest_nodes_size + 1,
+                                                lock));
     auto found(Find(node_to_drop, lock));
     if (found.first) {
-      auto close_nodes_size(PartialSortFromTarget(kNodeId_, Parameters::closest_nodes_size + 1,
-                                                  lock));
 
       if ((nodes_.size() < Parameters::closest_nodes_size) ||
            !NodeId::CloserToTarget(nodes_.at(Parameters::closest_nodes_size - 1).id,
@@ -188,10 +189,11 @@ NodeInfo RoutingTable::DropNode(const NodeId& node_to_drop, bool routing_only) {
   }
 
   if (!dropped_node.id.IsZero()) {
-    if (routing_table_change_functor_)
+    if (routing_table_change_functor_) {
       routing_table_change_functor_(
           RoutingTableChange(NodeInfo(), RoutingTableChange::Remove(dropped_node, routing_only),
                              false, close_nodes_change, NetworkStatus(routing_table_size)));
+    }
   }
   LOG(kInfo) << PrintRoutingTable();
   return dropped_node;
@@ -349,6 +351,10 @@ bool RoutingTable::MakeSpaceForNodeToBeAdded(const NodeInfo& node, bool remove,
 
   // If no duplicate bucket exists, prioirity is given to closer nodes.
   if ((max_bucket_count == 1) && (nodes_.back().bucket < node.bucket))
+    return false;
+
+  // Parameters::closest_nodes_size * 2 to be a paramater by itself
+  if (NodeId::CloserToTarget(nodes_.at(Parameters::closest_nodes_size * 2).id, node.id, kNodeId()))
     return false;
 
   for (auto it(nodes_.rbegin()); it != nodes_.rend(); ++it)
