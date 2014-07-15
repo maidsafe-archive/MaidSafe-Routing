@@ -27,14 +27,12 @@ namespace {
 typedef boost::asio::ip::udp::endpoint Endpoint;
 }
 
-Routing::Routing(const boost::filesystem::path& bootstrap_file_path) : pimpl_() {
-  InitialisePimpl(true, NodeId(NodeId::IdType::kRandomId), asymm::GenerateKeyPair(),
-                  bootstrap_file_path);
+Routing::Routing() : pimpl_() {
+  InitialisePimpl(true, NodeId(NodeId::IdType::kRandomId), asymm::GenerateKeyPair());
 }
 
-void Routing::InitialisePimpl(bool client_mode, const NodeId& node_id, const asymm::Keys& keys,
-                              const boost::filesystem::path& bootstrap_file_path) {
-  pimpl_.reset(new Impl(client_mode, node_id, keys, bootstrap_file_path));
+void Routing::InitialisePimpl(bool client_mode, const NodeId& node_id, const asymm::Keys& keys) {
+  pimpl_.reset(new Impl(client_mode, node_id, keys));
 }
 
 void Routing::Join(Functors functors) {

@@ -98,8 +98,7 @@ class GenericNode;
 
 class Routing::Impl {
  public:
-  Impl(bool client_mode, const NodeId& node_id, const asymm::Keys& keys,
-      const boost::filesystem::path& bootstrap_file_path);
+  Impl(bool client_mode, const NodeId& node_id, const asymm::Keys& keys);
   ~Impl();
 
   void Join(const Functors& functors);

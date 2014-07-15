@@ -89,8 +89,7 @@ protobuf::Message Routing::Impl::CreateNodeLevelMessage(const GroupToSingleRelay
   return proto_message;
 }
 
-Routing::Impl::Impl(bool client_mode, const NodeId& node_id, const asymm::Keys& keys,
-                    const boost::filesystem::path& bootstrap_file_path)
+Routing::Impl::Impl(bool client_mode, const NodeId& node_id, const asymm::Keys& keys)
     : network_status_mutex_(),
       network_status_(kNotJoined),
       network_statistics_(node_id),
@@ -106,7 +105,7 @@ Routing::Impl::Impl(bool client_mode, const NodeId& node_id, const asymm::Keys& 
       group_change_handler_(routing_table_, client_routing_table_, network_),
       message_handler_(),
       asio_service_(2),
-      network_(bootstrap_file_path, routing_table_, client_routing_table_),
+      network_(routing_table_, client_routing_table_),
       timer_(asio_service_),
       re_bootstrap_timer_(asio_service_.service()),
       recovery_timer_(asio_service_.service()),
@@ -173,21 +172,6 @@ void Routing::Impl::ConnectFunctors(const Functors& functors) {
   message_handler_->set_request_public_key_functor(functors.request_public_key);
   network_.set_new_bootstrap_contact_functor(functors.new_bootstrap_contact);
 }
-
-//void Routing::Impl::BootstrapFromTheseEndpoints(const BootstrapContacts& bootstrap_contacts) {
-//  LOG(kInfo) << "Doing a BootstrapFromTheseEndpoints Join.  Entered first bootstrap contact: "
-//             << bootstrap_contacts[0] << ", this node's ID: " << DebugId(kNodeId_)
-//             << (routing_table_.client_mode() ? " Client" : "");
-//  if (routing_table_.size() > 0) {
-//    for (uint16_t i = 0; i < routing_table_.size(); ++i) {
-//      NodeInfo remove_node = routing_table_.GetClosestNode(kNodeId_);
-//      network_.Remove(remove_node.connection_id);
-//      routing_table_.DropNode(remove_node.node_id, true);
-//    }
-//    NotifyNetworkStatus(static_cast<int>(routing_table_.size()));
-//  }
-//  DoJoin(bootstrap_contacts);
-//}
 
 void Routing::Impl::DoJoin() {
   int return_value(DoBootstrap());

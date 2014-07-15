@@ -23,6 +23,8 @@
 #include <bitset>
 #include <string>
 
+#include "boost/filesystem/operations.hpp"
+
 #include "maidsafe/common/log.h"
 #include "maidsafe/common/node_id.h"
 #include "maidsafe/common/utils.h"
@@ -40,6 +42,21 @@ namespace maidsafe {
 namespace routing {
 
 namespace test {
+
+ScopedBootstrapFile::ScopedBootstrapFile(const BootstrapContacts& bootstrap_contacts)
+    : kFilePath(GetBootstrapFilePath(false)) {
+  boost::filesystem::remove(kFilePath);
+  if (boost::filesystem::remove(kFilePath)) {
+    LOG(kError) << "Failed to overwrite bootstrap file at : " << kFilePath;
+    BOOST_THROW_EXCEPTION(MakeError(CommonErrors::filesystem_io_error));
+  }
+  WriteBootstrapContacts(bootstrap_contacts, kFilePath);
+}
+
+ScopedBootstrapFile::~ScopedBootstrapFile() {
+  if (boost::filesystem::remove(kFilePath))
+    LOG(kError) << "Failed to remove bootstrap file at : " << kFilePath;
+}
 
 NodeInfo MakeNode() {
   NodeInfo node;

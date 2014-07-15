@@ -85,7 +85,7 @@ GenericNode::GenericNode(bool has_symmetric_nat)
       health_mutex_(),
       health_(0) {
   node_info_plus_.reset(new NodeInfoAndPrivateKey(MakeNodeInfoAndKeys()));
-  routing_.reset(new Routing(boost::filesystem::path()));                                // FIXME prakash
+  routing_.reset(new Routing());                                                       // FIXME prakash
   node_info_plus_->node_info.node_id = routing_->kNodeId();
   endpoint_.address(GetLocalIp());
   endpoint_.port(maidsafe::test::GetRandomPort());
@@ -113,11 +113,11 @@ GenericNode::GenericNode(bool client_mode, const rudp::NatType& nat_type)
   if (client_mode) {
     auto maid(passport::CreateMaidAndSigner().first);
     node_info_plus_.reset(new NodeInfoAndPrivateKey(MakeNodeInfoAndKeysWithMaid(maid)));
-    routing_.reset(new Routing(maid, boost::filesystem::path()));                         // FIXME prakash
+    routing_.reset(new Routing(maid));                                                   // FIXME prakash
   } else {
     auto pmid(passport::CreatePmidAndSigner().first);
     node_info_plus_.reset(new NodeInfoAndPrivateKey(MakeNodeInfoAndKeysWithPmid(pmid)));
-    routing_.reset(new Routing(pmid, boost::filesystem::path()));                         // FIXME prakash
+    routing_.reset(new Routing(pmid));                         // FIXME prakash
   }
   endpoint_.address(GetLocalIp());
   endpoint_.port(maidsafe::test::GetRandomPort());
@@ -147,7 +147,7 @@ GenericNode::GenericNode(const passport::Pmid& pmid, bool has_symmetric_nat)
   endpoint_.address(GetLocalIp());
   endpoint_.port(maidsafe::test::GetRandomPort());
   InitialiseFunctors();
-  routing_.reset(new Routing(pmid, boost::filesystem::path()));
+  routing_.reset(new Routing(pmid));
   LOG(kVerbose) << "Node constructor";
   std::lock_guard<std::mutex> lock(mutex_);
   id_ = next_node_id_++;
@@ -172,7 +172,7 @@ GenericNode::GenericNode(const passport::Maid& maid, bool has_symmetric_nat)
   endpoint_.address(GetLocalIp());
   endpoint_.port(maidsafe::test::GetRandomPort());
   InitialiseFunctors();
-  routing_.reset(new Routing(maid, boost::filesystem::path()));
+  routing_.reset(new Routing(maid));
   LOG(kVerbose) << "Node constructor";
   std::lock_guard<std::mutex> lock(mutex_);
   id_ = next_node_id_++;

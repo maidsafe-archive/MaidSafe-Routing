@@ -74,9 +74,9 @@ MessageReceivedFunctor no_ops_message_received_functor = [](const std::string&,
 }  // anonymous namespace
 
 TEST(APITest, BEH_API_ZeroState) {
-  auto test_path = maidsafe::test::CreateTestPath("MaidSafe_Test_Routing");
-  fs::path bootstrap_file_path1(*test_path / "bootstrap1");
-  fs::path bootstrap_file_path2(*test_path / "bootstrap2");
+  Endpoint endpoint1(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort()),
+      endpoint2(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort());
+  ScopedBootstrapFile bootstrap_file( {endpoint1, endpoint2} );
 
   auto pmid1(passport::CreatePmidAndSigner().first), pmid2(passport::CreatePmidAndSigner().first),
        pmid3(passport::CreatePmidAndSigner().first);
@@ -89,9 +89,9 @@ TEST(APITest, BEH_API_ZeroState) {
   key_map.insert(std::make_pair(node3.node_info.node_id, pmid3.public_key()));
 
   Functors functors1, functors2, functors3;
-  Routing routing1(pmid1, bootstrap_file_path1);
-  Routing routing2(pmid2, bootstrap_file_path2);
-  Routing routing3(pmid3, bootstrap_file_path1);
+  Routing routing1(pmid1);
+  Routing routing2(pmid2);
+  Routing routing3(pmid3);
 
   functors1.network_status = [](int) {};  // NOLINT (Fraser)
   functors1.message_and_caching.message_received = no_ops_message_received_functor;
@@ -106,8 +106,7 @@ TEST(APITest, BEH_API_ZeroState) {
 
   functors2.network_status = functors3.network_status = functors1.network_status;
   functors2.request_public_key = functors3.request_public_key = functors1.request_public_key;
-  Endpoint endpoint1(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort()),
-      endpoint2(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort());
+
   auto a1 = boost::async(boost::launch::async, [&] {
     return routing1.ZeroStateJoin(functors1, endpoint1, endpoint2, node2.node_info);
   });
@@ -133,9 +132,9 @@ TEST(APITest, BEH_API_ZeroState) {
 
  TEST(APITest, DISABLED_BEH_API_ZeroStateWithDuplicateNode) {
   rudp::Parameters::bootstrap_connection_lifespan = boost::posix_time::seconds(5);
-  auto test_path = maidsafe::test::CreateTestPath("MaidSafe_Test_Routing");
-  fs::path bootstrap_file_path1(*test_path / "bootstrap1");
-  fs::path bootstrap_file_path2(*test_path / "bootstrap2");
+  Endpoint endpoint1(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort()),
+      endpoint2(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort());
+  ScopedBootstrapFile bootstrap_file( {endpoint1, endpoint2} );
 
   auto pmid1(passport::CreatePmidAndSigner().first), pmid2(passport::CreatePmidAndSigner().first),
        pmid3(passport::CreatePmidAndSigner().first);
@@ -149,10 +148,10 @@ TEST(APITest, BEH_API_ZeroState) {
   key_map.insert(std::make_pair(node3.node_info.node_id, pmid3.public_key()));
 
   Functors functors1, functors2, functors3, functors4;
-  Routing routing1(pmid1, bootstrap_file_path1);
-  Routing routing2(pmid2, bootstrap_file_path2);
-  Routing routing3(pmid3, bootstrap_file_path1);
-  Routing routing4(pmid3, bootstrap_file_path1);
+  Routing routing1(pmid1);
+  Routing routing2(pmid2);
+  Routing routing3(pmid3);
+  Routing routing4(pmid3);
   functors1.message_and_caching.message_received = no_ops_message_received_functor;
   functors4 = functors3 = functors2 = functors1;
   functors1.network_status = [](int) {};  // NOLINT (Fraser)
@@ -166,8 +165,6 @@ TEST(APITest, BEH_API_ZeroState) {
   functors2.network_status = functors3.network_status = functors4.network_status =
       functors1.network_status;
   functors2.request_public_key = functors3.request_public_key = functors1.request_public_key;
-  Endpoint endpoint1(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort()),
-      endpoint2(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort());
   auto a1 = boost::async(boost::launch::async, [&] {
     return routing1.ZeroStateJoin(functors1, endpoint1, endpoint2, node2.node_info);
   });
@@ -199,9 +196,10 @@ TEST(APITest, BEH_API_ZeroState) {
 }
 
 TEST(APITest, BEH_API_SendToSelf) {
-  auto test_path = maidsafe::test::CreateTestPath("MaidSafe_Test_Routing");
-  fs::path bootstrap_file_path1(*test_path / "bootstrap1");
-  fs::path bootstrap_file_path2(*test_path / "bootstrap2");
+  Endpoint endpoint1(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort()),
+      endpoint2(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort());
+  ScopedBootstrapFile bootstrap_file( {endpoint1, endpoint2} );
+
 
   auto pmid1(passport::CreatePmidAndSigner().first), pmid2(passport::CreatePmidAndSigner().first),
        pmid3(passport::CreatePmidAndSigner().first);
@@ -214,9 +212,9 @@ TEST(APITest, BEH_API_SendToSelf) {
   key_map.insert(std::make_pair(node3.node_info.node_id, pmid3.public_key()));
 
   Functors functors1, functors2, functors3;
-  Routing routing1(pmid1, bootstrap_file_path1);
-  Routing routing2(pmid2, bootstrap_file_path2);
-  Routing routing3(pmid3, bootstrap_file_path1);
+  Routing routing1(pmid1);
+  Routing routing2(pmid2);
+  Routing routing3(pmid3);
 
   functors1.network_status = [](int) {};  // NOLINT (Fraser)
   functors1.request_public_key = [&](const NodeId & node_id, GivePublicKeyFunctor give_key) {
@@ -237,8 +235,6 @@ TEST(APITest, BEH_API_SendToSelf) {
   functors2.message_and_caching.message_received = functors3.message_and_caching.message_received =
       functors1.message_and_caching.message_received;
 
-  Endpoint endpoint1(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort()),
-      endpoint2(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort());
   auto a1 = boost::async(boost::launch::async, [&] {
     return routing1.ZeroStateJoin(functors1, endpoint1, endpoint2, node2.node_info);
   });
@@ -280,9 +276,9 @@ TEST(APITest, BEH_API_SendToSelf) {
 }
 
 TEST(APITest, BEH_API_ClientNode) {
-  auto test_path = maidsafe::test::CreateTestPath("MaidSafe_Test_Routing");
-  fs::path bootstrap_file_path1(*test_path / "bootstrap1");
-  fs::path bootstrap_file_path2(*test_path / "bootstrap2");
+  Endpoint endpoint1(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort()),
+      endpoint2(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort());
+  ScopedBootstrapFile bootstrap_file( {endpoint1, endpoint2} );
 
   auto pmid1(passport::CreatePmidAndSigner().first), pmid2(passport::CreatePmidAndSigner().first);
   auto maid(passport::CreateMaidAndSigner().first);
@@ -294,9 +290,9 @@ TEST(APITest, BEH_API_ClientNode) {
   key_map.insert(std::make_pair(node2.node_info.node_id, pmid2.public_key()));
 
   Functors functors1, functors2, functors3;
-  Routing routing1(pmid1, bootstrap_file_path1);
-  Routing routing2(pmid2, bootstrap_file_path2);
-  Routing routing3(maid, bootstrap_file_path1);
+  Routing routing1(pmid1);
+  Routing routing2(pmid2);
+  Routing routing3(maid);
   functors1.message_and_caching.message_received = no_ops_message_received_functor;
   functors3 = functors2 = functors1;
   functors1.network_status = [](int) {};  // NOLINT (Fraser)
@@ -315,8 +311,6 @@ TEST(APITest, BEH_API_ClientNode) {
 
   functors2.network_status = functors3.network_status = functors1.network_status;
   functors2.request_public_key = functors3.request_public_key = functors1.request_public_key;
-  Endpoint endpoint1(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort()),
-      endpoint2(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort());
   auto a1 = boost::async(boost::launch::async, [&] {
     return routing1.ZeroStateJoin(functors1, endpoint1, endpoint2, node2.node_info);
   });
@@ -358,9 +352,10 @@ TEST(APITest, BEH_API_ClientNode) {
 }
 
 TEST(APITest, BEH_API_NonMutatingClientNode) {
-  auto test_path = maidsafe::test::CreateTestPath("MaidSafe_Test_Routing");
-  fs::path bootstrap_file_path1(*test_path / "bootstrap1");
-  fs::path bootstrap_file_path2(*test_path / "bootstrap2");
+  Endpoint endpoint1(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort()),
+      endpoint2(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort());
+  ScopedBootstrapFile bootstrap_file( {endpoint1, endpoint2} );
+
   auto pmid1(passport::CreatePmidAndSigner().first), pmid2(passport::CreatePmidAndSigner().first);
   NodeInfoAndPrivateKey node1(MakeNodeInfoAndKeysWithPmid(pmid1));
   NodeInfoAndPrivateKey node2(MakeNodeInfoAndKeysWithPmid(pmid2));
@@ -369,9 +364,9 @@ TEST(APITest, BEH_API_NonMutatingClientNode) {
   key_map.insert(std::make_pair(node2.node_info.node_id, pmid2.public_key()));
 
   Functors functors1, functors2, functors3;
-  Routing routing1(pmid1, bootstrap_file_path1);
-  Routing routing2(pmid2, bootstrap_file_path2);
-  Routing routing3(bootstrap_file_path2);
+  Routing routing1(pmid1);
+  Routing routing2(pmid2);
+  Routing routing3{ };
   functors1.message_and_caching.message_received = no_ops_message_received_functor;
   functors3 = functors2 = functors1;
 
@@ -391,8 +386,6 @@ TEST(APITest, BEH_API_NonMutatingClientNode) {
 
   functors2.network_status = functors3.network_status = functors1.network_status;
   functors2.request_public_key = functors3.request_public_key = functors1.request_public_key;
-  Endpoint endpoint1(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort()),
-      endpoint2(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort());
   auto a1 = boost::async(boost::launch::async, [&] {
     return routing1.ZeroStateJoin(functors1, endpoint1, endpoint2, node2.node_info);
   });
@@ -434,9 +427,10 @@ TEST(APITest, BEH_API_NonMutatingClientNode) {
 }
 
 TEST(APITest, BEH_API_ClientNodeSameId) {
-  auto test_path = maidsafe::test::CreateTestPath("MaidSafe_Test_Routing");
-  fs::path bootstrap_file_path1(*test_path / "bootstrap1");
-  fs::path bootstrap_file_path2(*test_path / "bootstrap2");
+  Endpoint endpoint1(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort()),
+      endpoint2(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort());
+  ScopedBootstrapFile bootstrap_file( {endpoint1, endpoint2} );
+
 
   auto pmid1(passport::CreatePmidAndSigner().first), pmid2(passport::CreatePmidAndSigner().first);
   auto maid(passport::CreateMaidAndSigner().first);
@@ -448,10 +442,10 @@ TEST(APITest, BEH_API_ClientNodeSameId) {
   key_map.insert(std::make_pair(node2.node_info.node_id, pmid2.public_key()));
 
   Functors functors1, functors2, functors3, functors4;
-  Routing routing1(pmid1, bootstrap_file_path1);
-  Routing routing2(pmid2, bootstrap_file_path2);
-  Routing routing3(maid, bootstrap_file_path2);
-  Routing routing4(maid, bootstrap_file_path2);
+  Routing routing1(pmid1);
+  Routing routing2(pmid2);
+  Routing routing3(maid);
+  Routing routing4(maid);
   functors1.message_and_caching.message_received = no_ops_message_received_functor;
   functors4 = functors3 = functors2 = functors1;
   functors1.network_status = [](int) {};  // NOLINT (Fraser)
@@ -472,8 +466,6 @@ TEST(APITest, BEH_API_ClientNodeSameId) {
       functors1.network_status;
   functors4.request_public_key = functors2.request_public_key = functors3.request_public_key =
       functors1.request_public_key;
-  Endpoint endpoint1(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort()),
-      endpoint2(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort());
   auto a1 = boost::async(boost::launch::async, [&] {
     return routing1.ZeroStateJoin(functors1, endpoint1, endpoint2, node2.node_info);
   });
@@ -544,9 +536,10 @@ TEST(APITest, BEH_API_ClientNodeSameId) {
 }
 
 TEST(APITest, BEH_API_NodeNetwork) {
-  auto test_path = maidsafe::test::CreateTestPath("MaidSafe_Test_Routing");
-  fs::path bootstrap_file_path1(*test_path / "bootstrap1");
-  fs::path bootstrap_file_path2(*test_path / "bootstrap2");
+  Endpoint endpoint1(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort()),
+      endpoint2(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort());
+  ScopedBootstrapFile bootstrap_file( {endpoint1, endpoint2} );
+
   int min_join_status(8);  // TODO(Prakash): To decide
   Functors functors;
   functors.message_and_caching.message_received = no_ops_message_received_functor;
@@ -567,13 +560,11 @@ TEST(APITest, BEH_API_NodeNetwork) {
     nodes.push_back(node);
     key_map.insert(std::make_pair(node.node_info.node_id, pmid.public_key()));
     if (i != 0)
-      routing_node.push_back(std::make_shared<Routing>(pmid, bootstrap_file_path2));
+      routing_node.push_back(std::make_shared<Routing>(pmid));
     else
-      routing_node.push_back(std::make_shared<Routing>(pmid, bootstrap_file_path1));
+      routing_node.push_back(std::make_shared<Routing>(pmid));
   }
 
-  Endpoint endpoint1(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort()),
-      endpoint2(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort());
   auto a1 = boost::async(boost::launch::async, [&] {
     return routing_node[0]->ZeroStateJoin(functors, endpoint1, endpoint2, nodes[1].node_info);
   });
@@ -606,9 +597,10 @@ TEST(APITest, BEH_API_NodeNetwork) {
 }
 
 TEST(APITest, BEH_API_NodeNetworkWithClient) {
-  auto test_path = maidsafe::test::CreateTestPath("MaidSafe_Test_Routing");
-  fs::path bootstrap_file_path1(*test_path / "bootstrap1");
-  fs::path bootstrap_file_path2(*test_path / "bootstrap2");
+  Endpoint endpoint1(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort()),
+      endpoint2(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort());
+  ScopedBootstrapFile bootstrap_file( {endpoint1, endpoint2} );
+
 
   int min_join_status(std::min(kServerCount, 8));
   std::vector<boost::promise<bool>> join_promises(kNetworkSize);
@@ -635,15 +627,15 @@ TEST(APITest, BEH_API_NodeNetworkWithClient) {
     nodes.push_back(node);
     key_map.insert(std::make_pair(node.node_info.node_id, pmid.public_key()));
     if (i != 0)
-      routing_node.push_back(std::make_shared<Routing>(pmid, bootstrap_file_path1));
+      routing_node.push_back(std::make_shared<Routing>(pmid));
     else
-      routing_node.push_back(std::make_shared<Routing>(pmid, bootstrap_file_path2));
+      routing_node.push_back(std::make_shared<Routing>(pmid));
   }
   for (; i != kNetworkSize; ++i) {
     auto maid(passport::CreateMaidAndSigner().first);
     NodeInfoAndPrivateKey node(MakeNodeInfoAndKeysWithMaid(maid));
     nodes.push_back(node);
-    routing_node.push_back(std::make_shared<Routing>(maid, bootstrap_file_path2));
+    routing_node.push_back(std::make_shared<Routing>(maid));
   }
 
   functors.network_status = [](int) {};  // NOLINT (Fraser)
@@ -661,8 +653,6 @@ TEST(APITest, BEH_API_NodeNetworkWithClient) {
                                                              ReplyFunctor /*reply_functor*/) {
     ASSERT_TRUE(false);  //  Client should not receive incoming message
   };
-  Endpoint endpoint1(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort()),
-      endpoint2(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort());
   auto a1 = boost::async(boost::launch::async, [&] {
     return routing_node[0]->ZeroStateJoin(functors, endpoint1, endpoint2, nodes[1].node_info);
   });
@@ -707,9 +697,10 @@ TEST(APITest, BEH_API_NodeNetworkWithClient) {
 }
 
 TEST(APITest, BEH_API_SendGroup) {
-  auto test_path = maidsafe::test::CreateTestPath("MaidSafe_Test_Routing");
-  fs::path bootstrap_file_path1(*test_path / "bootstrap1");
-  fs::path bootstrap_file_path2(*test_path / "bootstrap2");
+  Endpoint endpoint1(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort()),
+      endpoint2(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort());
+  ScopedBootstrapFile bootstrap_file( {endpoint1, endpoint2} );
+
 
   Parameters::default_response_timeout = std::chrono::seconds(200);
   const uint16_t kMessageCount(10);  // each vault will send kMessageCount message to other vaults
@@ -739,9 +730,9 @@ TEST(APITest, BEH_API_SendGroup) {
     nodes.push_back(node);
     key_map.insert(std::make_pair(node.node_info.node_id, pmid.public_key()));
     if (i != 0)
-      routing_node.push_back(std::make_shared<Routing>(pmid, bootstrap_file_path1));
+      routing_node.push_back(std::make_shared<Routing>(pmid));
     else
-      routing_node.push_back(std::make_shared<Routing>(pmid, bootstrap_file_path2));
+      routing_node.push_back(std::make_shared<Routing>(pmid));
   }
 
   functors.network_status = [](int) {};  // NOLINT
@@ -752,8 +743,6 @@ TEST(APITest, BEH_API_SendGroup) {
     LOG(kVerbose) << "Message received and replied to message !!";
   };
 
-  Endpoint endpoint1(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort()),
-      endpoint2(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort());
   auto a1 = boost::async(boost::launch::async, [&] {
     return routing_node[0]->ZeroStateJoin(functors, endpoint1, endpoint2, nodes[1].node_info);
   });
@@ -858,9 +847,9 @@ TEST(APITest, BEH_API_PartiallyJoinedSend) {
   // N.B. 5sec sleep in functors3.request_public_key causes delay in joining, giving opportunity for
   // routing3's impl to use PartiallyJoinedSend when SendDirect is called
 
-  auto test_path = maidsafe::test::CreateTestPath("MaidSafe_Test_Routing");
-  fs::path bootstrap_file_path1(*test_path / "bootstrap1");
-  fs::path bootstrap_file_path2(*test_path / "bootstrap2");
+  Endpoint endpoint1(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort()),
+      endpoint2(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort());
+  ScopedBootstrapFile bootstrap_file( {endpoint1, endpoint2} );
 
   auto pmid1(passport::CreatePmidAndSigner().first), pmid2(passport::CreatePmidAndSigner().first),
        pmid3(passport::CreatePmidAndSigner().first);
@@ -873,9 +862,9 @@ TEST(APITest, BEH_API_PartiallyJoinedSend) {
   key_map.insert(std::make_pair(node3.node_info.node_id, pmid3.public_key()));
 
   Functors functors1, functors2, functors3;
-  Routing routing1(pmid1, bootstrap_file_path1);
-  Routing routing2(pmid2, bootstrap_file_path2);
-  Routing routing3(pmid3, bootstrap_file_path2);
+  Routing routing1(pmid1);
+  Routing routing2(pmid2);
+  Routing routing3(pmid3);
   functors1.message_and_caching.message_received = no_ops_message_received_functor;
   functors3 = functors2 = functors1;
 
@@ -902,8 +891,6 @@ TEST(APITest, BEH_API_PartiallyJoinedSend) {
     if (key_map.end() != itr)
       give_key((*itr).second);
   };
-  Endpoint endpoint1(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort()),
-      endpoint2(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort());
   auto a1 = boost::async(boost::launch::async, [&] {
     return routing1.ZeroStateJoin(functors1, endpoint1, endpoint2, node2.node_info);
   });
@@ -946,9 +933,9 @@ TEST(APITest, BEH_API_PartiallyJoinedSend) {
 }
 
 TEST(APITest, BEH_API_TypedMessageSend) {
-  auto test_path = maidsafe::test::CreateTestPath("MaidSafe_Test_Routing");
-  fs::path bootstrap_file_path1(*test_path / "bootstrap1");
-  fs::path bootstrap_file_path2(*test_path / "bootstrap2");
+  Endpoint endpoint1(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort()),
+      endpoint2(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort());
+  ScopedBootstrapFile bootstrap_file( {endpoint1, endpoint2} );
 
   auto pmid1(passport::CreatePmidAndSigner().first), pmid2(passport::CreatePmidAndSigner().first),
        pmid3(passport::CreatePmidAndSigner().first);
@@ -965,9 +952,9 @@ TEST(APITest, BEH_API_TypedMessageSend) {
       group_to_group_promise;
   size_t responses(0);
   std::mutex mutex;
-  Routing routing1(pmid1, bootstrap_file_path1);
-  Routing routing2(pmid2, bootstrap_file_path2);
-  Routing routing3(pmid3, bootstrap_file_path2);
+  Routing routing1(pmid1);
+  Routing routing2(pmid2);
+  Routing routing3(pmid3);
 
   functors1.network_status = [](int) {};  // NOLINT (Fraser)
   functors1.request_public_key = [&](const NodeId & node_id, GivePublicKeyFunctor give_key) {
@@ -1032,8 +1019,6 @@ TEST(APITest, BEH_API_TypedMessageSend) {
       functors3.typed_message_and_caching.single_to_group_relay.message_received =
           functors1.typed_message_and_caching.single_to_group_relay.message_received;
 
-  Endpoint endpoint1(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort()),
-      endpoint2(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort());
   auto a1 = boost::async(boost::launch::async, [&] {
     return routing1.ZeroStateJoin(functors1, endpoint1, endpoint2, node2.node_info);
   });
@@ -1113,9 +1098,9 @@ TEST(APITest, BEH_API_TypedMessageSend) {
 
 
 TEST(APITest, BEH_API_TypedMessagePartiallyJoinedSendReceive) {
-  auto test_path = maidsafe::test::CreateTestPath("MaidSafe_Test_Routing");
-  fs::path bootstrap_file_path1(*test_path / "bootstrap1");
-  fs::path bootstrap_file_path2(*test_path / "bootstrap2");
+  Endpoint endpoint1(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort()),
+      endpoint2(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort());
+  ScopedBootstrapFile bootstrap_file( {endpoint1, endpoint2} );
 
   const int kMessageCount = 100;
   int min_join_status(std::min(kServerCount, 8));
@@ -1146,15 +1131,15 @@ TEST(APITest, BEH_API_TypedMessagePartiallyJoinedSendReceive) {
     nodes.push_back(node);
     key_map.insert(std::make_pair(node.node_info.node_id, pmid.public_key()));
     if (i != 0)
-      routing_nodes.push_back(std::make_shared<Routing>(pmid, bootstrap_file_path1));
+      routing_nodes.push_back(std::make_shared<Routing>(pmid));
     else
-      routing_nodes.push_back(std::make_shared<Routing>(pmid, bootstrap_file_path2));
+      routing_nodes.push_back(std::make_shared<Routing>(pmid));
   }
   for (; i != kNetworkSize; ++i) {  // clients
     auto maid(passport::CreateMaidAndSigner().first);
     NodeInfoAndPrivateKey node(MakeNodeInfoAndKeysWithMaid(maid));
     nodes.push_back(node);
-    routing_nodes.push_back(std::make_shared<Routing>(maid, bootstrap_file_path2));
+    routing_nodes.push_back(std::make_shared<Routing>(maid));
   }
 
   functors.network_status = [](int) {};  // NOLINT (Fraser)
@@ -1201,8 +1186,6 @@ TEST(APITest, BEH_API_TypedMessagePartiallyJoinedSendReceive) {
   }
 
 
-  Endpoint endpoint1(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort()),
-      endpoint2(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort());
   Functors functors_1 = functors;
   functors_1.typed_message_and_caching.single_to_group_relay = single_to_group_relay_functors.at(0);
   auto a1 = boost::async(boost::launch::async, [&] {
@@ -1253,7 +1236,7 @@ TEST(APITest, BEH_API_TypedMessagePartiallyJoinedSendReceive) {
 
   //  -----  Join new vault and send messages ----------
   auto pmid(passport::CreatePmidAndSigner().first);
-  Routing test_node(pmid, bootstrap_file_path2);
+  Routing test_node(pmid);
   bool test_node_joined(false);
   Functors test_functors;
 

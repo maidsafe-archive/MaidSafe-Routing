@@ -50,8 +50,7 @@ class MockNetworkUtils;
 
 class NetworkUtils {
  public:
-  NetworkUtils(const boost::filesystem::path& bootstrap_file_path, RoutingTable& routing_table,
-               ClientRoutingTable& client_routing_table);
+  NetworkUtils(RoutingTable& routing_table, ClientRoutingTable& client_routing_table);
   virtual ~NetworkUtils();
   int Bootstrap(const rudp::MessageReceivedFunctor& message_received_functor,
                 const rudp::ConnectionLostFunctor& connection_lost_functor,

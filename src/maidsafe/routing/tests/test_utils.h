@@ -25,6 +25,7 @@
 
 #include "boost/asio/ip/address.hpp"
 #include "boost/asio/ip/udp.hpp"
+#include "boost/filesystem/path.hpp"
 
 #include "maidsafe/common/rsa.h"
 
@@ -32,12 +33,21 @@
 
 #include "maidsafe/routing/node_info.h"
 #include "maidsafe/routing/routing_table.h"
+#include "maidsafe/routing/utils.h"
+
 
 namespace maidsafe {
 
 namespace routing {
 
 namespace test {
+
+struct ScopedBootstrapFile {
+  ScopedBootstrapFile(const BootstrapContacts& bootstrap_contacts);
+  ~ScopedBootstrapFile();
+ private:
+   const boost::filesystem::path kFilePath;
+};
 
 struct NodeInfoAndPrivateKey {
   NodeInfoAndPrivateKey() : node_info(), private_key() {}

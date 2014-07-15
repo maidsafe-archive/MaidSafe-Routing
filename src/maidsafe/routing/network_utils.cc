@@ -19,6 +19,7 @@
 #include "maidsafe/routing/network_utils.h"
 
 #include "boost/date_time/posix_time/posix_time_config.hpp"
+#include "boost/filesystem/path.hpp"
 
 #include "maidsafe/common/log.h"
 #include "maidsafe/common/utils.h"
@@ -40,16 +41,14 @@ namespace maidsafe {
 namespace {
 
 typedef boost::asio::ip::udp::endpoint Endpoint;
-typedef boost::shared_lock<boost::shared_mutex> SharedLock;
-typedef boost::unique_lock<boost::shared_mutex> UniqueLock;
+
 
 }  // anonymous namespace
 
 namespace routing {
 
-NetworkUtils::NetworkUtils(const boost::filesystem::path& bootstrap_file_path,
-                           RoutingTable& routing_table, ClientRoutingTable& client_routing_table)
-    : kBootstrapFilePath_(bootstrap_file_path),
+NetworkUtils::NetworkUtils(RoutingTable& routing_table, ClientRoutingTable& client_routing_table)
+    : kBootstrapFilePath_(GetBootstrapFilePath(routing_table.client_mode())),
       running_(true),
       running_mutex_(),
       bootstrap_attempt_(0),
@@ -59,7 +58,9 @@ NetworkUtils::NetworkUtils(const boost::filesystem::path& bootstrap_file_path,
       client_routing_table_(client_routing_table),
       nat_type_(rudp::NatType::kUnknown),
       new_bootstrap_contact_(),
-      rudp_() {}
+      rudp_() {
+  LOG(kInfo) << "kBootstrapFilePath_ = " << kBootstrapFilePath_;
+}
 
 NetworkUtils::~NetworkUtils() {
   std::lock_guard<std::mutex> lock(running_mutex_);
@@ -68,7 +69,7 @@ NetworkUtils::~NetworkUtils() {
 
 int NetworkUtils::Bootstrap(const rudp::MessageReceivedFunctor& message_received_functor,
                             const rudp::ConnectionLostFunctor& connection_lost_functor,
-                            Endpoint local_endpoint, Endpoint peer_endpoint) {
+                            Endpoint local_endpoint, Endpoint /*peer_endpoint*/) {
   {
     std::lock_guard<std::mutex> lock(running_mutex_);
     if (!running_)
@@ -80,19 +81,13 @@ int NetworkUtils::Bootstrap(const rudp::MessageReceivedFunctor& message_received
   auto private_key(std::make_shared<asymm::PrivateKey>(routing_table_.kPrivateKey()));
   auto public_key(std::make_shared<asymm::PublicKey>(routing_table_.kPublicKey()));
 
-  // ZERO STATE - populating bootstrap file
-  if (local_endpoint != Endpoint() && peer_endpoint != Endpoint()) {
-//    auto contacts = ReadBootstrapContacts(kBootstrapFilePath_);
-//    assert(contacts.empty() && "Must clear any outstanding bootstrap file for zero state");
-    WriteBootstrapContacts(std::vector<Endpoint>(1, peer_endpoint), kBootstrapFilePath_);
-    LOG(kInfo) << "Populated Zero State bootstrap file";
-  }
   BootstrapContacts bootstrap_contacts;
   try {
     bootstrap_contacts = ReadBootstrapContacts(kBootstrapFilePath_);
   } catch (const std::exception& error) {
     LOG(kWarning) << "Failed to read bootstrap contacts file : " << error.what();
   }
+
   if (Parameters::append_maidsafe_endpoints) {
     LOG(kInfo) << "Appending Maidsafe Endpoints";
     auto maidsafe_bootstrap_contacts(MaidSafeBootstrapContacts());

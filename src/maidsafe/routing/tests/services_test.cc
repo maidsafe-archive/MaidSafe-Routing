@@ -53,7 +53,7 @@ TEST(ServicesTest, BEH_Ping) {
   RoutingTable routing_table(false, node_id, asymm::GenerateKeyPair(), network_statistics);
   ClientRoutingTable client_routing_table(routing_table.kNodeId());
   AsioService asio_service(1);
-  NetworkUtils network(boost::filesystem::path(), routing_table, client_routing_table);
+  NetworkUtils network(routing_table, client_routing_table);
   GroupChangeHandler group_change_handler(routing_table, client_routing_table, network);
   Service service(routing_table, client_routing_table, network);
   NodeInfo node;
@@ -85,7 +85,7 @@ TEST(ServicesTest, BEH_FindNodes) {
   NodeId this_node_id(routing_table.kNodeId());
   ClientRoutingTable client_routing_table(routing_table.kNodeId());
   AsioService asio_service(1);
-  NetworkUtils network(boost::filesystem::path(), routing_table, client_routing_table);
+  NetworkUtils network(routing_table, client_routing_table);
   GroupChangeHandler group_change_handler(routing_table, client_routing_table, network);
   Service service(routing_table, client_routing_table, network);
   protobuf::Message message = rpcs::FindNodes(this_node_id, this_node_id, 8);

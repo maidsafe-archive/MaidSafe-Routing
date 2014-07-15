@@ -71,7 +71,7 @@ TEST(NetworkUtilsTest, BEH_ProcessSendDirectInvalidEndpoint) {
   NetworkStatistics network_statistics(node_id);
   RoutingTable routing_table(false, node_id, asymm::GenerateKeyPair(), network_statistics);
   ClientRoutingTable client_routing_table(routing_table.kNodeId());
-  NetworkUtils network(boost::filesystem::path(), routing_table, client_routing_table);
+  NetworkUtils network(routing_table, client_routing_table);
   network.SendToClosestNode(message);
 }
 
@@ -89,7 +89,7 @@ TEST(NetworkUtilsTest, BEH_ProcessSendUnavailableDirectEndpoint) {
   RoutingTable routing_table(false, node_id, asymm::GenerateKeyPair(), network_statistics);
   ClientRoutingTable client_routing_table(routing_table.kNodeId());
   Endpoint endpoint(GetLocalIp(), maidsafe::test::GetRandomPort());
-  NetworkUtils network(boost::filesystem::path(), routing_table, client_routing_table);
+  NetworkUtils network(routing_table, client_routing_table);
   network.SendToDirect(message, NodeId(NodeId::IdType::kRandomId),
                        NodeId(NodeId::IdType::kRandomId));
 }
@@ -200,21 +200,21 @@ TEST(NetworkUtilsTest, FUNC_ProcessSendDirectEndpoint) {
   rudp2.MarkConnectionAsValid(node_id1, endpoint);
   LOG(kVerbose) << " ------------------------   Zero state setup done  ----------------------- ";
 
-
-  auto test_path = maidsafe::test::CreateTestPath("MaidSafe_Test_Routing");
-  boost::filesystem::path bootstrap_file_path(*test_path / "bootstrap");
-
   NodeId node_id(NodeId::IdType::kRandomId);
   NetworkStatistics network_statistics(node_id);
   RoutingTable routing_table(false, node_id, asymm::GenerateKeyPair(), network_statistics);
   NodeId node_id3(routing_table.kNodeId());
   ClientRoutingTable client_routing_table(routing_table.kNodeId());
-  NetworkUtils network(bootstrap_file_path, routing_table, client_routing_table);
+  NetworkUtils network(routing_table, client_routing_table);
 
-  std::vector<Endpoint> bootstrap_endpoint(1, endpoint2);
-  WriteBootstrapContacts(bootstrap_endpoint, bootstrap_file_path);
+  ScopedBootstrapFile bootstrap_file( {endpoint2} );
   EXPECT_EQ(kSuccess, network.Bootstrap(message_received_functor3, connection_lost_functor));
   rudp::NatType this_nat_type;
+  // RUDP NOTE: sleep here will let the test pass. Seems like rudp doesn't updates info about
+  // bootstrap node endpoints before returning from Bootstrap() and so some times this
+  // update happens after GetAvailableEndpoint called by test code and so it doesn't return
+  // kBootstrapConnectionAlreadyExists even though it has bootstrapped off the same node
+  // std::this_thread::sleep_for(std::chrono::milliseconds(100));
   EXPECT_EQ(
       rudp::kBootstrapConnectionAlreadyExists,
       network.GetAvailableEndpoint(node_id2, endpoint_pair_2, endpoint_pair_3, this_nat_type));
@@ -263,14 +263,13 @@ TEST(NetworkUtilsTest, FUNC_ProcessSendRecursiveSendOn) {
   sent_message.set_request(true);
   sent_message.set_client_node(false);
   sent_message.set_hops_to_live(Parameters::hops_to_live);
+  sent_message.set_source_id(NodeId(NodeId::IdType::kRandomId).string());
   NodeId node_id(NodeId::IdType::kRandomId);
   NetworkStatistics network_statistics(node_id);
   RoutingTable routing_table(false, node_id, asymm::GenerateKeyPair(), network_statistics);
   NodeId node_id3(routing_table.kNodeId());
   ClientRoutingTable client_routing_table(routing_table.kNodeId());
-  auto test_path = maidsafe::test::CreateTestPath("MaidSafe_Test_Routing");
-  boost::filesystem::path bootstrap_file_path(*test_path / "bootstrap");
-  NetworkUtils network(bootstrap_file_path, routing_table, client_routing_table);
+  NetworkUtils network(routing_table, client_routing_table);
 
   rudp::MessageReceivedFunctor message_received_functor1 = [](const std::string & message) {
     LOG(kInfo) << " -- Received: " << message;
@@ -359,11 +358,16 @@ TEST(NetworkUtilsTest, FUNC_ProcessSendRecursiveSendOn) {
   rudp2.MarkConnectionAsValid(node_id1, endpoint);
   LOG(kVerbose) << " ------------------------   Zero state setup done  ----------------------- ";
 
-  std::vector<Endpoint> bootstrap_endpoint(1, endpoint2);
-  WriteBootstrapContacts(bootstrap_endpoint, bootstrap_file_path);
+  ScopedBootstrapFile bootstrap_file( {endpoint2} );
+
   EXPECT_EQ(kSuccess, network.Bootstrap(message_received_functor3, connection_lost_functor3));
   rudp::EndpointPair endpoint_pair2, endpoint_pair3;
   rudp::NatType this_nat_type;
+  // RUDP NOTE: sleep here will let the test pass. Seems like rudp doesn't updates info about
+  // bootstrap node endpoints before returning from Bootstrap() and so some times this
+  // update happens after GetAvailableEndpoint called by test code and so it doesn't return
+  // kBootstrapConnectionAlreadyExists even though it has bootstrapped off the same node
+  // std::this_thread::sleep_for(std::chrono::milliseconds(100));
   EXPECT_EQ(rudp::kBootstrapConnectionAlreadyExists,
             network.GetAvailableEndpoint(node_id2, endpoint_pair_2, endpoint_pair3, this_nat_type));
   EXPECT_EQ(rudp::kBootstrapConnectionAlreadyExists,
