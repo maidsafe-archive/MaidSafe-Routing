@@ -51,8 +51,8 @@ struct ScopedBootstrapFile {
 
 struct NodeInfoAndPrivateKey {
   NodeInfoAndPrivateKey() : node_info(), private_key() {}
-  NodeInfoAndPrivateKey(const NodeInfoAndPrivateKey& info) : node_info(info.node_info),
-                                                             private_key(info.private_key) {}
+  NodeInfoAndPrivateKey(const NodeInfoAndPrivateKey& info)
+      : node_info(info.node_info), private_key(info.private_key) {}
   NodeInfo node_info;
   asymm::PrivateKey private_key;
 };
@@ -60,9 +60,9 @@ struct NodeInfoAndPrivateKey {
 template <typename FobType>
 NodeInfoAndPrivateKey MakeNodeInfoAndKeysWithFob(FobType fob) {
   NodeInfo node;
-  node.node_id = NodeId(fob.name()->string());
+  node.id = NodeId(fob.name()->string());
   node.public_key = fob.public_key();
-  node.connection_id = node.node_id;
+  node.connection_id = node.id;
   NodeInfoAndPrivateKey node_info_and_private_key;
   node_info_and_private_key.node_info = node;
   node_info_and_private_key.private_key = fob.private_key();

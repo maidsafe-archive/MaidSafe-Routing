@@ -125,7 +125,6 @@ void SendMessage(const NodeId& destination_id, protobuf::Message& proto_message)
                 rudp::MessageSentFunctor message_sent_functor);
   void PrintRoutingTable();
   std::vector<NodeId> ReturnRoutingTable();
-  void PrintGroupMatrix();
   bool RoutingTableHasNode(const NodeId& node_id);
   bool ClientRoutingTableHasNode(const NodeId& node_id);
   NodeInfo GetRemovableNode();
@@ -139,8 +138,7 @@ void SendMessage(const NodeId& destination_id, protobuf::Message& proto_message)
   void AddNodeToRandomNodeHelper(const NodeId& node_id);
   void RemoveNodeFromRandomNodeHelper(const NodeId& node_id);
   bool NodeSubscribedForGroupUpdate(const NodeId& node_id);
-  std::vector<NodeInfo> GetGroupMatrixConnectedPeers();
-  void SetMatrixChangeFunctor(MatrixChangedFunctor group_matrix_functor);
+  void SetCloseNodesChangeFunctor(CloseNodesChangeFunctor close_nodes_change_functor);
 
   void PostTaskToAsioService(std::function<void()> functor);
   rudp::NatType nat_type();
@@ -196,9 +194,9 @@ class GenericNetwork {
   void SetUpNetwork(size_t total_number_vaults, size_t total_number_clients,
                     size_t num_symmetric_nat_vaults,
                     size_t num_symmetric_nat_clients);
-  void AddNode(bool client_mode, MatrixChangedFunctor matrix_change_functor);
-  void AddNode(const passport::Maid& maid, MatrixChangedFunctor matrix_change_functor);
-  void AddNode(const passport::Pmid& pmid, MatrixChangedFunctor matrix_change_functor);
+  void AddNode(bool client_mode, CloseNodesChangeFunctor close_nodes_change_functor);
+  void AddNode(const passport::Maid& maid, CloseNodesChangeFunctor close_nodes_change_functor);
+  void AddNode(const passport::Pmid& pmid, CloseNodesChangeFunctor close_nodes_change_functor);
   void AddNode(bool has_symmetric_nat = false);
   void AddNode(bool client_mode, const rudp::NatType& nat_type);
   void AddNode(bool client_mode, bool has_symmetric_nat);
@@ -237,9 +235,6 @@ class GenericNetwork {
   // For num. vaults > max_routing_table_size
   bool WaitForHealthToStabiliseInLargeNetwork() const;
   bool NodeHasSymmetricNat(const NodeId& node_id) const;
-  // Verifies that nodes' group matrices contain the Parameters::closest_nodes_size closest nodes
-  testing::AssertionResult CheckGroupMatrixUniqueNodes(uint16_t check_length =
-                                                           Parameters::closest_nodes_size + 1);
   // Do SendDirect between each pair of nodes and monitor results (do this 'repeats' times)
   testing::AssertionResult SendDirect(size_t repeats, size_t message_size = (2 ^ 10) * 256);
   // Do SendGroup from source_index node to target ID and monitor results (do this 'repeats' times)

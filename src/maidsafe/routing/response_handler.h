@@ -54,7 +54,7 @@ class GroupChangeHandler;
 class ResponseHandler : public std::enable_shared_from_this<ResponseHandler> {
  public:
   ResponseHandler(RoutingTable& routing_table, ClientRoutingTable& client_routing_table,
-                  NetworkUtils& network, GroupChangeHandler& group_change_handler);
+                  NetworkUtils& network);
   virtual ~ResponseHandler();
   virtual void Ping(protobuf::Message& message);
   virtual void Connect(protobuf::Message& message);
@@ -64,8 +64,7 @@ class ResponseHandler : public std::enable_shared_from_this<ResponseHandler> {
   RequestPublicKeyFunctor request_public_key_functor() const;
   void GetGroup(Timer<std::string>& timer, protobuf::Message& message);
   void CloseNodeUpdateForClient(protobuf::Message& message);
-  void AddMatrixUpdateFromUnvalidatedPeer(const NodeId& node_id,
-                                          const std::vector<NodeInfo>& matrix_update);
+  void InformClientOfNewCloseNode(protobuf::Message& message);
 
   friend class test::ResponseHandlerTest_BEH_ConnectAttempts_Test;
 
@@ -83,9 +82,7 @@ class ResponseHandler : public std::enable_shared_from_this<ResponseHandler> {
   RoutingTable& routing_table_;
   ClientRoutingTable& client_routing_table_;
   NetworkUtils& network_;
-  GroupChangeHandler& group_change_handler_;
   RequestPublicKeyFunctor request_public_key_functor_;
-  std::deque<std::pair<NodeId, std::vector<NodeInfo>>> unvalidated_matrix_updates_;
 };
 
 }  // namespace routing

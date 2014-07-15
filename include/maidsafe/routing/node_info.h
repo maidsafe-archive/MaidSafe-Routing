@@ -44,7 +44,7 @@ struct NodeInfo {
 
   serialised_type Serialise() const;
 
-  NodeId node_id;
+  NodeId id;
   NodeId connection_id;  // Id of a node as far as rudp is concerned
   asymm::PublicKey public_key;
   int32_t rank;

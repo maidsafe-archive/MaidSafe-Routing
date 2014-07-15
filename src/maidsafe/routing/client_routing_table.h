@@ -56,7 +56,7 @@ class ClientRoutingTable {
   bool CheckNode(NodeInfo& node, const NodeId& furthest_close_node_id);
   std::vector<NodeInfo> DropNodes(const NodeId& node_to_drop);
   NodeInfo DropConnection(const NodeId& connection_to_drop);
-  std::vector<NodeInfo> GetNodesInfo(const NodeId& node_id) const;
+  std::vector<NodeInfo> GetNodesInfo(const NodeId& node_id = NodeId()) const;
   bool Contains(const NodeId& node_id) const;
   bool IsConnected(const NodeId& node_id) const;
   size_t size() const;

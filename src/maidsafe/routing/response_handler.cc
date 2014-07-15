@@ -29,7 +29,6 @@
 #include "maidsafe/rudp/return_codes.h"
 
 #include "maidsafe/routing/client_routing_table.h"
-#include "maidsafe/routing/group_change_handler.h"
 #include "maidsafe/routing/network_utils.h"
 #include "maidsafe/routing/return_codes.h"
 #include "maidsafe/routing/routing.pb.h"
@@ -47,18 +46,12 @@ namespace {
 
 typedef boost::asio::ip::udp::endpoint Endpoint;
 
-#ifndef NDEBUG
-  const int kMaxUnvalidatedUpdates(64);
-#endif
-
 }  // unnamed namespace
 
 ResponseHandler::ResponseHandler(RoutingTable& routing_table,
-                                 ClientRoutingTable& client_routing_table, NetworkUtils& network,
-                                 GroupChangeHandler& group_change_handler)
+                                 ClientRoutingTable& client_routing_table, NetworkUtils& network)
     : mutex_(), routing_table_(routing_table), client_routing_table_(client_routing_table),
-      network_(network), group_change_handler_(group_change_handler), request_public_key_functor_(),
-      unvalidated_matrix_updates_() {}
+      network_(network), request_public_key_functor_() {}
 
 ResponseHandler::~ResponseHandler() {}
 
@@ -104,9 +97,9 @@ void ResponseHandler::Connect(protobuf::Message& message) {
   }
 
   NodeInfo node_to_add;
-  node_to_add.node_id = NodeId(connect_response.contact().node_id());
+  node_to_add.id = NodeId(connect_response.contact().node_id());
   if (routing_table_.CheckNode(node_to_add) ||
-      (node_to_add.node_id == network_.bootstrap_connection_id())) {
+      (node_to_add.id == network_.bootstrap_connection_id())) {
     rudp::EndpointPair peer_endpoint_pair;
     peer_endpoint_pair.external =
         GetEndpointFromProtobuf(connect_response.contact().public_endpoint());
@@ -133,11 +126,11 @@ void ResponseHandler::Connect(protobuf::Message& message) {
       // Special case with bootstrapping peer in which kSuccess comes before connect response
       if (peer_node_id == network_.bootstrap_connection_id()) {
         LOG(kInfo) << "Special case with bootstrapping peer : " << DebugId(peer_node_id);
-        const std::vector<NodeId> close_ids;  // add closer ids if needed
+        const std::vector<NodeInfo> close_nodes;  // add closer ids if needed
         protobuf::Message connect_success_ack(rpcs::ConnectSuccessAcknowledgement(
             peer_node_id, routing_table_.kNodeId(), routing_table_.kConnectionId(),
             true,  // this node is requestor
-            close_ids, routing_table_.client_mode()));
+            close_nodes, routing_table_.client_mode()));
         network_.SendToDirect(connect_success_ack, peer_node_id, peer_connection_id);
       }
     }
@@ -197,30 +190,29 @@ void ResponseHandler::SendConnectRequest(const NodeId peer_node_id) {
   bool send_to_bootstrap_connection((routing_table_.size() < Parameters::closest_nodes_size) &&
                                     !network_.bootstrap_connection_id().IsZero());
   NodeInfo peer;
-  peer.node_id = peer_node_id;
+  peer.id = peer_node_id;
 
-  if (peer.node_id == NodeId(routing_table_.kNodeId())) {
+  if (peer.id == NodeId(routing_table_.kNodeId())) {
     //    LOG(kInfo) << "Can't send connect request to self !";
     return;
   }
 
   if (routing_table_.CheckNode(peer)) {
-    LOG(kVerbose) << "CheckNode succeeded for node " << DebugId(peer.node_id);
+    LOG(kVerbose) << "CheckNode succeeded for node " << peer.id;
     rudp::EndpointPair this_endpoint_pair, peer_endpoint_pair;
     rudp::NatType this_nat_type(rudp::NatType::kUnknown);
-    int ret_val = network_.GetAvailableEndpoint(peer.node_id, peer_endpoint_pair,
+    int ret_val = network_.GetAvailableEndpoint(peer.id, peer_endpoint_pair,
                                                 this_endpoint_pair, this_nat_type);
     if (rudp::kSuccess != ret_val && rudp::kBootstrapConnectionAlreadyExists != ret_val) {
       if (rudp::kUnvalidatedConnectionAlreadyExists != ret_val &&
           rudp::kConnectAttemptAlreadyRunning != ret_val) {
         LOG(kError) << "[" << DebugId(routing_table_.kNodeId()) << "] Response Handler"
-                    << "Failed to get available endpoint for new connection to : "
-                    << DebugId(peer.node_id)
+                    << "Failed to get available endpoint for new connection to : " << peer.id
                     << "peer_endpoint_pair.external = " << peer_endpoint_pair.external
                     << ", peer_endpoint_pair.local = " << peer_endpoint_pair.local
                     << ". Rudp returned :" << ret_val;
       } else {
-        LOG(kVerbose) << "Already ongoing attempt to : " << DebugId(peer.node_id);
+        LOG(kVerbose) << "Already ongoing attempt to : " << DebugId(peer.id);
       }
       return;
     }
@@ -235,9 +227,9 @@ void ResponseHandler::SendConnectRequest(const NodeId peer_node_id) {
       relay_message = true;
     }
     protobuf::Message connect_rpc(rpcs::Connect(
-        peer.node_id, this_endpoint_pair, routing_table_.kNodeId(), routing_table_.kConnectionId(),
+        peer.id, this_endpoint_pair, routing_table_.kNodeId(), routing_table_.kConnectionId(),
         routing_table_.client_mode(), this_nat_type, relay_message, relay_connection_id));
-    LOG(kVerbose) << "Sending Connect RPC to " << DebugId(peer.node_id)
+    LOG(kVerbose) << "Sending Connect RPC to " << DebugId(peer.id)
                   << " message id : " << connect_rpc.id();
     if (send_to_bootstrap_connection)
       network_.SendToDirect(connect_rpc, network_.bootstrap_connection_id(),
@@ -258,10 +250,10 @@ void ResponseHandler::ConnectSuccessAcknowledgement(protobuf::Message& message) 
 
   NodeInfo peer;
   if (!connect_success_ack.node_id().empty())
-    peer.node_id = NodeId(connect_success_ack.node_id());
+    peer.id = NodeId(connect_success_ack.node_id());
   if (!connect_success_ack.connection_id().empty())
     peer.connection_id = NodeId(connect_success_ack.connection_id());
-  if (peer.node_id.IsZero()) {
+  if (peer.id.IsZero()) {
     LOG(kWarning) << "Invalid node id provided";
     return;
   }
@@ -290,7 +282,7 @@ void ResponseHandler::ConnectSuccessAcknowledgement(protobuf::Message& message) 
 void ResponseHandler::ValidateAndCompleteConnectionToClient(const NodeInfo& peer,
                                                             bool from_requestor,
                                                             const std::vector<NodeId>& close_ids) {
-  if (ValidateAndAddToRoutingTable(network_, routing_table_, client_routing_table_, peer.node_id,
+  if (ValidateAndAddToRoutingTable(network_, routing_table_, client_routing_table_, peer.id,
                                    peer.connection_id, asymm::PublicKey(), true)) {
     if (from_requestor) {
       HandleSuccessAcknowledgementAsReponder(peer, true);
@@ -305,25 +297,12 @@ void ResponseHandler::ValidateAndCompleteConnectionToNonClient(
   std::weak_ptr<ResponseHandler> response_handler_weak_ptr = shared_from_this();
   if (request_public_key_functor_) {
     auto validate_node([=](const asymm::PublicKey& key) {
-      LOG(kInfo) << "Validation callback called with public key for " << DebugId(peer.node_id);
+      LOG(kInfo) << "Validation callback called with public key for " << peer.id;
       if (std::shared_ptr<ResponseHandler> response_handler = response_handler_weak_ptr.lock()) {
-        std::vector<NodeInfo> matrix_update;
-        {
-          std::lock_guard<std::mutex> lock(mutex_);
-          auto matrix_update_itr(std::find_if(
-              std::begin(unvalidated_matrix_updates_), std::end(unvalidated_matrix_updates_),
-              [&](const std::pair<NodeId, std::vector<NodeInfo>>& pair) {
-                return pair.first == peer.node_id;
-              }));
-          if (matrix_update_itr != std::end(unvalidated_matrix_updates_)) {
-            matrix_update = matrix_update_itr->second;
-            unvalidated_matrix_updates_.erase(matrix_update_itr);
-          }
-        }
         if (ValidateAndAddToRoutingTable(response_handler->network_,
                                          response_handler->routing_table_,
-                                         response_handler->client_routing_table_, peer.node_id,
-                                         peer.connection_id, key, false, matrix_update)) {
+                                         response_handler->client_routing_table_, peer.id,
+                                         peer.connection_id, key, false)) {
           if (from_requestor) {
             response_handler->HandleSuccessAcknowledgementAsReponder(peer, false);
           } else {
@@ -332,26 +311,26 @@ void ResponseHandler::ValidateAndCompleteConnectionToNonClient(
         }
       }
     });
-    request_public_key_functor_(peer.node_id, validate_node);
+    request_public_key_functor_(peer.id, validate_node);
   }
 }
 
 void ResponseHandler::HandleSuccessAcknowledgementAsReponder(NodeInfo peer, bool client) {
   auto count =
       (client ? Parameters::max_routing_table_size_for_client : Parameters::max_routing_table_size);
-  std::vector<NodeId> close_ids_for_peer(routing_table_.GetClosestNodes(peer.node_id, count));
-  auto itr(std::find_if(close_ids_for_peer.begin(), close_ids_for_peer.end(),
-                        [=](const NodeId & node_id)->bool {
-                          return (peer.node_id == node_id);
+  auto close_nodes_for_peer(routing_table_.GetClosestNodes(peer.id, count));
+  auto itr(std::find_if(std::begin(close_nodes_for_peer), std::end(close_nodes_for_peer),
+                        [=](const NodeInfo&  info)->bool {
+                          return (peer.id == info.id);
                         }));
-  if (itr != close_ids_for_peer.end())
-    close_ids_for_peer.erase(itr);
+  if (itr != std::end(close_nodes_for_peer))
+    close_nodes_for_peer.erase(itr);
 
   protobuf::Message connect_success_ack(rpcs::ConnectSuccessAcknowledgement(
-      peer.node_id, routing_table_.kNodeId(), routing_table_.kConnectionId(),
+      peer.id, routing_table_.kNodeId(), routing_table_.kConnectionId(),
       false,  // this node is responder
-      close_ids_for_peer, routing_table_.client_mode()));
-  network_.SendToDirect(connect_success_ack, peer.node_id, peer.connection_id);
+      close_nodes_for_peer, routing_table_.client_mode()));
+  network_.SendToDirect(connect_success_ack, peer.id, peer.connection_id);
 }
 
 void ResponseHandler::HandleSuccessAcknowledgementAsRequestor(
@@ -365,10 +344,10 @@ void ResponseHandler::HandleSuccessAcknowledgementAsRequestor(
 
 void ResponseHandler::CheckAndSendConnectRequest(const NodeId& node_id) {
   uint16_t limit(routing_table_.client_mode() ? Parameters::max_routing_table_size_for_client
-                                              : Parameters::greedy_fraction);
-  if ((routing_table_.size() < limit) ||
+                                              : Parameters::closest_nodes_size);
+  if ((routing_table_.size() < routing_table_.kMaxSize()) ||
       NodeId::CloserToTarget(
-          node_id, routing_table_.GetNthClosestNode(routing_table_.kNodeId(), limit).node_id,
+          node_id, routing_table_.GetNthClosestNode(routing_table_.kNodeId(), limit).id,
           routing_table_.kNodeId()))
     SendConnectRequest(node_id);
 }
@@ -403,22 +382,27 @@ void ResponseHandler::CloseNodeUpdateForClient(protobuf::Message& message) {
   message.Clear();
 }
 
-void ResponseHandler::AddMatrixUpdateFromUnvalidatedPeer(
-    const NodeId& node_id, const std::vector<NodeInfo>& matrix_update) {
-  std::lock_guard<std::mutex> lock(mutex_);
-  auto matrix_update_itr(std::find_if(
-      std::begin(unvalidated_matrix_updates_), std::end(unvalidated_matrix_updates_),
-      [&](const std::pair<NodeId, std::vector<NodeInfo>>& pair) {
-        return pair.first == node_id;
-      }));
-  if (matrix_update_itr == std::end(unvalidated_matrix_updates_))
-    unvalidated_matrix_updates_.push_back(std::pair<NodeId, std::vector<NodeInfo>>(node_id,
-                                                                                   matrix_update));
-  else
-    matrix_update_itr->second = matrix_update;
+void ResponseHandler::InformClientOfNewCloseNode(protobuf::Message& message) {
+  assert(routing_table_.client_mode() && "Handler must be client");
+  if (message.destination_id() != routing_table_.kNodeId().string()) {
+    // Message not for this node and we should not pass it on.
+    LOG(kError) << "Message not for this node.";
+    message.Clear();
+    return;
+  }
+  protobuf::InformClientOfhNewCloseNode inform_client_of_new_close_node;
+  if (!inform_client_of_new_close_node.ParseFromString(message.data(0))) {
+    LOG(kError) << "Failure to parse";
+    return;
+  }
 
-  LOG(kVerbose) << "unvalidated_matrix_updates.size() " << unvalidated_matrix_updates_.size();
-  assert(unvalidated_matrix_updates_.size() < kMaxUnvalidatedUpdates);
+  if (inform_client_of_new_close_node.node_id().empty() ||
+     !CheckId(inform_client_of_new_close_node.node_id())) {
+    LOG(kError) << "Invalid node id provided.";
+    return;
+  }
+  CheckAndSendConnectRequest(NodeId(inform_client_of_new_close_node.node_id()));
+  message.Clear();
 }
 
 void ResponseHandler::GetGroup(Timer<std::string>& timer, protobuf::Message& message) {

@@ -28,7 +28,6 @@
 #include "maidsafe/rudp/return_codes.h"
 
 #include "maidsafe/routing/client_routing_table.h"
-#include "maidsafe/routing/group_change_handler.h"
 #include "maidsafe/routing/message_handler.h"
 #include "maidsafe/routing/parameters.h"
 #include "maidsafe/routing/response_handler.h"
@@ -52,12 +51,10 @@ class ResponseHandlerTest : public testing::Test {
   ResponseHandlerTest()
       : node_id_(NodeId::IdType::kRandomId),
         network_statistics_(node_id_),
-        routing_table_(false, NodeId(NodeId::IdType::kRandomId), asymm::GenerateKeyPair(),
-                       network_statistics_),
+        routing_table_(false, NodeId(NodeId::IdType::kRandomId), asymm::GenerateKeyPair()),
         client_routing_table_(routing_table_.kNodeId()),
         network_(routing_table_, client_routing_table_),
-        group_change_handler_(routing_table_, client_routing_table_, network_),
-        response_handler_(routing_table_, client_routing_table_, network_, group_change_handler_) {}
+        response_handler_(routing_table_, client_routing_table_, network_) {}
 
   int GetAvailableEndpoint(rudp::EndpointPair& this_endpoint_pair, rudp::NatType& this_nat_type,
                            int return_val) {
@@ -201,7 +198,6 @@ class ResponseHandlerTest : public testing::Test {
   RoutingTable routing_table_;
   ClientRoutingTable client_routing_table_;
   MockNetworkUtils network_;
-  GroupChangeHandler group_change_handler_;
   ResponseHandler response_handler_;
 };
 
@@ -247,35 +243,37 @@ TEST_F(ResponseHandlerTest, BEH_FindNodes) {
   response_handler_.FindNodes(message);
 
   // In case routing_table_ is full
-  while (routing_table_.size() < Parameters::greedy_fraction) {
+  while (routing_table_.size() < size_t(Parameters::max_routing_table_size)) {
     NodeInfo node_info = MakeNodeInfoAndKeys().node_info;
     routing_table_.AddNode(node_info);
   }
-  size_t num_of_found_nodes(4), num_of_closer(0);
+  size_t num_of_found_nodes(2);
   nodes.clear();
   for (size_t i(0); i < num_of_found_nodes; ++i) {
     NodeId node_id(RandomString(64));
-    if (num_of_closer < 2) {
-      if (NodeId::CloserToTarget(
-              node_id, routing_table_.GetNthClosestNode(routing_table_.kNodeId(),
-                                                        Parameters::greedy_fraction).node_id,
-              routing_table_.kNodeId()))
-        ++num_of_closer;
-    } else {
-      while (NodeId::CloserToTarget(
-          node_id, routing_table_.GetNthClosestNode(routing_table_.kNodeId(),
-                                                    Parameters::greedy_fraction).node_id,
-          routing_table_.kNodeId()))
-        node_id = NodeId(RandomString(64));
-    }
+    while (
+        NodeId::CloserToTarget(routing_table_.GetNthClosestNode(routing_table_.kNodeId(),
+                                                                Parameters::closest_nodes_size).id,
+                               node_id, routing_table_.kNodeId()))
+      node_id = NodeId(RandomString(64));
     nodes.push_back(node_id);
   }
+  for (size_t i(0); i < num_of_found_nodes; ++i) {
+    NodeId node_id(RandomString(64));
+    while (NodeId::CloserToTarget(
+        node_id, routing_table_.GetNthClosestNode(routing_table_.kNodeId(),
+                                                  Parameters::closest_nodes_size).id,
+        routing_table_.kNodeId()))
+      node_id = NodeId(RandomString(64));
+    nodes.push_back(node_id);
+  }
+  ASSERT_EQ(nodes.size(), num_of_found_nodes * 2);
   message = ComposeFindNodesResponseMsg(num_of_found_nodes, nodes);
   EXPECT_CALL(network_, GetAvailableEndpoint(testing::_, testing::_, testing::_, testing::_))
-      .Times(static_cast<int>(num_of_closer))
+      .Times(static_cast<int>(num_of_found_nodes))
       .WillRepeatedly(testing::WithArgs<2, 3>(testing::Invoke(
            boost::bind(&ResponseHandlerTest::GetAvailableEndpoint, this, _1, _2, kSuccess))));
-  EXPECT_CALL(network_, SendToClosestNode(testing::_)).Times(static_cast<int>(num_of_closer));
+  EXPECT_CALL(network_, SendToClosestNode(testing::_)).Times(static_cast<int>(num_of_found_nodes));
   response_handler_.FindNodes(message);
 }
 
@@ -352,8 +350,8 @@ TEST_F(ResponseHandlerTest, BEH_ConnectSuccessAcknowledgement) {
 
   // shared_from_this function inside requires the response_handler holder to be shared_ptr
   // if holding as a normal object, shared_from_this will throw an exception
-  std::shared_ptr<ResponseHandler> response_handler(std::make_shared<ResponseHandler>(
-      routing_table_, client_routing_table_, network_, group_change_handler_));
+  std::shared_ptr<ResponseHandler> response_handler(
+      std::make_shared<ResponseHandler>(routing_table_, client_routing_table_, network_));
 
   // request_public_key_functor_ doesn't setup
   message =

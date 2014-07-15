@@ -28,6 +28,7 @@
 #include "maidsafe/routing/response_handler.h"
 #include "maidsafe/routing/service.h"
 #include "maidsafe/routing/timer.h"
+#include "maidsafe/routing/network_statistics.h"
 
 namespace maidsafe {
 
@@ -61,8 +62,6 @@ struct TypedMessageRecievedFunctors {
 class NetworkUtils;
 class ClientRoutingTable;
 class RoutingTable;
-class RemoveFurthestNode;
-class GroupChangeHandler;
 class NetworkStatistics;
 
 enum class MessageType : int32_t {
@@ -71,9 +70,8 @@ enum class MessageType : int32_t {
   kFindNodes = 3,
   kConnectSuccess = 4,
   kConnectSuccessAcknowledgement = 5,
-  kRemove = 6,
-  kClosestNodesUpdate = 7,
-  kGetGroup = 8,
+  kGetGroup = 6,
+  kInformClientOfNewCloseNode = 7,
   kMaxRouting = 100,
   kNodeLevel = 101
 };
@@ -81,8 +79,8 @@ enum class MessageType : int32_t {
 class MessageHandler {
  public:
   MessageHandler(RoutingTable& routing_table, ClientRoutingTable& client_routing_table,
-                 NetworkUtils& network, Timer<std::string>& timer, RemoveFurthestNode& remove_node,
-                 GroupChangeHandler& group_change_handler, NetworkStatistics& network_statistics);
+                 NetworkUtils& network, Timer<std::string>& timer,
+                 NetworkStatistics& network_statistics);
   void HandleMessage(protobuf::Message& message);
   void set_typed_message_and_caching_functor(TypedMessageAndCachingFunctor functors);
   void set_message_and_caching_functor(MessageAndCachingFunctors functors);
@@ -127,8 +125,6 @@ class MessageHandler {
   ClientRoutingTable& client_routing_table_;
   NetworkStatistics& network_statistics_;
   NetworkUtils& network_;
-  RemoveFurthestNode& remove_furthest_node_;
-  GroupChangeHandler& group_change_handler_;
   std::unique_ptr<CacheManager> cache_manager_;
   Timer<std::string>& timer_;
   std::shared_ptr<ResponseHandler> response_handler_;

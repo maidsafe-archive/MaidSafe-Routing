@@ -219,8 +219,8 @@ void NetworkUtils::SendToClosestNode(const protobuf::Message& message) {
 
       for (const auto& i : client_routing_nodes) {
         LOG(kVerbose) << "Sending message to NRT node with ID " << message.id() << " node_id "
-                      << DebugId(i.node_id) << " connection id " << DebugId(i.connection_id);
-        SendTo(message, i.node_id, i.connection_id);
+                      << DebugId(i.id) << " connection id " << DebugId(i.connection_id);
+        SendTo(message, i.id, i.connection_id);
       }
     } else if (routing_table_.size() > 0) {  // getting closer nodes from routing table
       RecursiveSendOn(message);
@@ -273,7 +273,7 @@ void NetworkUtils::RecursiveSendOn(protobuf::Message message, NodeInfo last_node
   }
   if (attempt_count >= 3) {
     LOG(kWarning) << " Retry attempts failed to send to ["
-                  << HexSubstr(last_node_attempted.node_id.string())
+                  << HexSubstr(last_node_attempted.id.string())
                   << "] will drop this node now and try with another node."
                   << " id: " << message.id();
     attempt_count = 0;
@@ -282,7 +282,7 @@ void NetworkUtils::RecursiveSendOn(protobuf::Message message, NodeInfo last_node
       if (!running_)
         return;
       rudp_.Remove(last_node_attempted.connection_id);
-      LOG(kWarning) << " Routing -> removing connection " << last_node_attempted.node_id.string();
+      LOG(kWarning) << " Routing -> removing connection " << last_node_attempted.id.string();
       // FIXME Should we remove this node or let rudp handle that?
       routing_table_.DropNode(last_node_attempted.connection_id, false);
       client_routing_table_.DropConnection(last_node_attempted.connection_id);
@@ -309,13 +309,12 @@ void NetworkUtils::RecursiveSendOn(protobuf::Message message, NodeInfo last_node
              (message.route_history(0) != routing_table_.kNodeId().string()))
       route_history.push_back(message.route_history(0));
 
-    peer = routing_table_.GetNodeForSendingMessage(NodeId(message.destination_id()), route_history,
-                                                   ignore_exact_match);
-    if (peer.node_id == NodeId() && routing_table_.size() != 0) {
-      peer = routing_table_.GetNodeForSendingMessage(
-          NodeId(message.destination_id()), std::vector<std::string>(), ignore_exact_match);
+    peer = routing_table_.GetClosestNode(NodeId(message.destination_id()), ignore_exact_match,
+                                         route_history);
+    if (peer.id == NodeId() && routing_table_.size() != 0) {
+      peer = routing_table_.GetClosestNode(NodeId(message.destination_id()), ignore_exact_match);
     }
-    if (peer.node_id == NodeId()) {
+    if (peer.id == NodeId()) {
       LOG(kError) << "This node's routing table is empty now.  Need to re-bootstrap.";
       return;
     }
@@ -330,20 +329,20 @@ void NetworkUtils::RecursiveSendOn(protobuf::Message message, NodeInfo last_node
     }
     if (rudp::kSuccess == message_sent) {
       LOG(kVerbose) << "  [" << HexSubstr(kThisId) << "] sent : " << MessageTypeString(message)
-                    << " to   " << HexSubstr(peer.node_id.string()) << "   (id: " << message.id()
+                    << " to   " << HexSubstr(peer.id.string()) << "   (id: " << message.id()
                     << ")"
                     << " dst : " << HexSubstr(message.destination_id());
     } else if (rudp::kSendFailure == message_sent) {
       LOG(kError) << "Sending type " << MessageTypeString(message) << " message from "
                   << HexSubstr(routing_table_.kNodeId().string()) << " to "
-                  << HexSubstr(peer.node_id.string()) << " with destination ID "
+                  << HexSubstr(peer.id.string()) << " with destination ID "
                   << HexSubstr(message.destination_id()) << " failed with code " << message_sent
                   << ".  Will retry to Send.  Attempt count = " << attempt_count + 1
                   << " id: " << message.id();
       RecursiveSendOn(message, peer, attempt_count + 1);
     } else {
       LOG(kError) << "Sending type " << MessageTypeString(message) << " message from "
-                  << HexSubstr(kThisId) << " to " << HexSubstr(peer.node_id.string())
+                  << HexSubstr(kThisId) << " to " << HexSubstr(peer.id.string())
                   << " with destination ID " << HexSubstr(message.destination_id())
                   << " failed with code " << message_sent << "  Will remove node."
                   << " message id: " << message.id();
@@ -354,7 +353,7 @@ void NetworkUtils::RecursiveSendOn(protobuf::Message message, NodeInfo last_node
         rudp_.Remove(last_node_attempted.connection_id);
       }
       LOG(kWarning) << " Routing-> removing connection " << DebugId(peer.connection_id);
-      routing_table_.DropNode(peer.node_id, false);
+      routing_table_.DropNode(peer.id, false);
       client_routing_table_.DropConnection(peer.connection_id);
       RecursiveSendOn(message);
     }

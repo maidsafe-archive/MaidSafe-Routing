@@ -122,8 +122,7 @@ int AddToRudp(NetworkUtils& network, const NodeId& this_node_id, const NodeId& t
 bool ValidateAndAddToRoutingTable(NetworkUtils& network, RoutingTable& routing_table,
                                   ClientRoutingTable& client_routing_table,
                                   const NodeId& peer_id, const NodeId& connection_id,
-                                  const asymm::PublicKey& public_key, bool client,
-                                  const std::vector<NodeInfo>& matrix_update) {
+                                  const asymm::PublicKey& public_key, bool client) {
   if (network.MarkConnectionAsValid(connection_id) != kSuccess) {
     LOG(kError) << "[" << DebugId(routing_table.kNodeId()) << "] "
                 << ". Rudp failed to validate connection with  Peer id : " << DebugId(peer_id)
@@ -132,19 +131,19 @@ bool ValidateAndAddToRoutingTable(NetworkUtils& network, RoutingTable& routing_t
   }
 
   NodeInfo peer;
-  peer.node_id = peer_id;
+  peer.id = peer_id;
   peer.public_key = public_key;
   peer.connection_id = connection_id;
   bool routing_accepted_node(false);
   if (client) {
     NodeId furthest_close_node_id =
         routing_table.GetNthClosestNode(NodeId(routing_table.kNodeId()),
-                                        2 * Parameters::closest_nodes_size).node_id;
+                                        2 * Parameters::closest_nodes_size).id;
 
     if (client_routing_table.AddNode(peer, furthest_close_node_id))
       routing_accepted_node = true;
   } else {  // Vaults
-    if (routing_table.AddNode(peer, matrix_update))
+    if (routing_table.AddNode(peer))
       routing_accepted_node = true;
   }
 
@@ -163,6 +162,13 @@ bool ValidateAndAddToRoutingTable(NetworkUtils& network, RoutingTable& routing_t
   return false;
 }
 
+void InformClientOfNewCloseNode(NetworkUtils& network, const NodeInfo& client,
+                                const NodeInfo& new_close_node, const NodeId& this_node_id) {
+  protobuf::Message inform_client_of_new_close_node(
+      rpcs::InformClientOfNewCloseNode(new_close_node.id, this_node_id, client.id));
+  network.SendToDirect(inform_client_of_new_close_node, client.id, client.connection_id);
+}
+
 // FIXME
 void HandleSymmetricNodeAdd(RoutingTable& /*routing_table*/, const NodeId& /*peer_id*/,
                             const asymm::PublicKey& /*public_key*/) {
@@ -174,7 +180,7 @@ void HandleSymmetricNodeAdd(RoutingTable& /*routing_table*/, const NodeId& /*pee
   //    return;
   //  }
   //  NodeInfo peer;
-  //  peer.node_id = peer_id;
+  //  peer.id = peer_id;
   //  peer.public_key = public_key;
   ////  peer.endpoint = rudp::kNonRoutable;
   //  peer.nat_type = rudp::NatType::kSymmetric;
@@ -339,12 +345,6 @@ std::string MessageTypeString(const protobuf::Message& message) {
     case MessageType::kConnectSuccessAcknowledgement:
       message_type = "kC-Suc-Ack";
       break;
-    case MessageType::kRemove:
-      message_type = "kRemove";
-      break;
-    case MessageType::kClosestNodesUpdate:
-      message_type = "kCloses_Nodes_Update";
-      break;
     case MessageType::kGetGroup:
       message_type = "kGetGroup";
       break;
@@ -496,7 +496,6 @@ SingleToGroupRelayMessage CreateSingleToGroupRelayMessage(const protobuf::Messag
 //          GroupId(NodeId(proto_message.group_destination())),
 //              static_cast<Cacheable>(proto_message.cacheable()));
 }
-
 
 }  // namespace routing
 

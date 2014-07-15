@@ -35,15 +35,14 @@
 
 #include "maidsafe/routing/api_config.h"
 #include "maidsafe/routing/client_routing_table.h"
-#include "maidsafe/routing/group_change_handler.h"
 #include "maidsafe/routing/message_handler.h"
 #include "maidsafe/routing/network_utils.h"
 #include "maidsafe/routing/random_node_helper.h"
-#include "maidsafe/routing/remove_furthest_node.h"
 #include "maidsafe/routing/routing_api.h"
 #include "maidsafe/routing/routing.pb.h"
 #include "maidsafe/routing/routing_table.h"
 #include "maidsafe/routing/timer.h"
+
 
 namespace maidsafe {
 
@@ -119,10 +118,6 @@ class Routing::Impl {
 
   bool ClosestToId(const NodeId& node_id);
 
-  GroupRangeStatus IsNodeIdInGroupRange(const NodeId& group_id);
-
-  GroupRangeStatus IsNodeIdInGroupRange(const NodeId& group_id, const NodeId& node_id);
-
   NodeId RandomConnectedNode();
 
   bool EstimateInGroup(const NodeId& sender_id, const NodeId& info_id);
@@ -157,6 +152,7 @@ class Routing::Impl {
   void DoOnMessageReceived(const std::string& message);
   void OnConnectionLost(const NodeId& lost_connection_id);
   void DoOnConnectionLost(const NodeId& lost_connection_id);
+  void OnRoutingTableChange(const RoutingTableChange& routing_table_change);
   void RemoveNode(const NodeInfo& node, bool internal_rudp_only);
   bool ConfirmGroupMembers(const NodeId& node1, const NodeId& node2);
   void NotifyNetworkStatus(int return_code) const;
@@ -192,8 +188,6 @@ class Routing::Impl {
   Functors functors_;
   RandomNodeHelper random_node_helper_;
   ClientRoutingTable client_routing_table_;
-  RemoveFurthestNode remove_furthest_node_;
-  GroupChangeHandler group_change_handler_;
   // The following variables' declarations should remain the last ones in this class and should stay
   // in the order: message_handler_, asio_service_, network_, all timers.  This is important for the
   // proper destruction of the routing library, i.e. to avoid segmentation faults.

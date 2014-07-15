@@ -30,7 +30,6 @@
 #include "maidsafe/rudp/return_codes.h"
 
 #include "maidsafe/routing/client_routing_table.h"
-#include "maidsafe/routing/group_change_handler.h"
 #include "maidsafe/routing/message_handler.h"
 #include "maidsafe/routing/network_utils.h"
 #include "maidsafe/routing/parameters.h"
@@ -110,10 +109,10 @@ void Service::Connect(protobuf::Message& message) {
   }
 
   NodeInfo peer_node;
-  peer_node.node_id = NodeId(connect_request.contact().node_id());
+  peer_node.id = NodeId(connect_request.contact().node_id());
   peer_node.connection_id = NodeId(connect_request.contact().connection_id());
-  LOG(kVerbose) << "[" << DebugId(routing_table_.kNodeId()) << "]"
-                << " received Connect request from " << DebugId(peer_node.node_id);
+  LOG(kVerbose) << "[" << routing_table_.kNodeId() << "]"
+                << " received Connect request from " << peer_node.id;
   rudp::EndpointPair this_endpoint_pair, peer_endpoint_pair;
   peer_endpoint_pair.external =
       GetEndpointFromProtobuf(connect_request.contact().public_endpoint());
@@ -153,7 +152,7 @@ void Service::Connect(protobuf::Message& message) {
     LOG(kVerbose) << "Client connect request - will check non-routing table.";
     NodeId furthest_close_node_id =
         routing_table_.GetNthClosestNode(routing_table_.kNodeId(),
-                                         2 * Parameters::closest_nodes_size).node_id;
+                                         2 * Parameters::closest_nodes_size).id;
     check_node_succeeded = client_routing_table_.CheckNode(peer_node, furthest_close_node_id);
   } else {
     LOG(kVerbose) << "Server connect request - will check routing table.";
@@ -171,7 +170,7 @@ void Service::Connect(protobuf::Message& message) {
           rudp::kConnectAttemptAlreadyRunning != ret_val) {
         LOG(kError) << "[" << DebugId(routing_table_.kNodeId()) << "] Service: "
                     << "Failed to get available endpoint for new connection to node id : "
-                    << DebugId(peer_node.node_id)
+                    << peer_node.id
                     << ", Connection id :" << DebugId(peer_node.connection_id)
                     << ". peer_endpoint_pair.external = " << peer_endpoint_pair.external
                     << ", peer_endpoint_pair.local = " << peer_endpoint_pair.local
@@ -179,7 +178,7 @@ void Service::Connect(protobuf::Message& message) {
         message.add_data(connect_response.SerializeAsString());
         return;
       } else {  // Resolving collision by giving priority to lesser node id.
-        if (!CheckPriority(peer_node.node_id, routing_table_.kNodeId())) {
+        if (!CheckPriority(peer_node.id, routing_table_.kNodeId())) {
           LOG(kInfo) << "Already ongoing attempt with : " << DebugId(peer_node.connection_id);
           connect_response.set_answer(protobuf::ConnectResponseType::kConnectAttemptAlreadyRunning);
           message.add_data(connect_response.SerializeAsString());
@@ -193,7 +192,7 @@ void Service::Connect(protobuf::Message& message) {
            "Unspecified endpoint after GetAvailableEndpoint success.");
 
     int add_result(AddToRudp(network_, routing_table_.kNodeId(), routing_table_.kConnectionId(),
-                             peer_node.node_id, peer_node.connection_id, peer_endpoint_pair, false,
+                             peer_node.id, peer_node.connection_id, peer_endpoint_pair, false,
                              routing_table_.client_mode()));
     if (rudp::kSuccess == add_result) {
       connect_response.set_answer(protobuf::ConnectResponseType::kAccepted);
@@ -239,13 +238,13 @@ void Service::FindNodes(protobuf::Message& message) {
                 << " parsed find node request for target id : "
                 << HexSubstr(find_nodes.target_node());
   protobuf::FindNodesResponse found_nodes;
-  std::vector<NodeId> nodes(
-      routing_table_.GetClosestNodes(NodeId(find_nodes.target_node()),
-                                     static_cast<uint16_t>(find_nodes.num_nodes_requested() - 1)));
+  auto nodes(routing_table_.GetClosestNodes(
+                 NodeId(find_nodes.target_node()),
+                 static_cast<uint16_t>(find_nodes.num_nodes_requested() - 1)));
   found_nodes.add_nodes(routing_table_.kNodeId().string());
 
   for (const auto& node : nodes)
-    found_nodes.add_nodes(node.string());
+    found_nodes.add_nodes(node.id.string());
 
   LOG(kVerbose) << "Responding Find node with " << found_nodes.nodes_size() << " contacts.";
 
@@ -283,10 +282,10 @@ void Service::ConnectSuccess(protobuf::Message& message) {
   }
 
   NodeInfo peer;
-  peer.node_id = NodeId(connect_success.node_id());
+  peer.id = NodeId(connect_success.node_id());
   peer.connection_id = NodeId(connect_success.connection_id());
 
-  if (peer.node_id.IsZero() || peer.connection_id.IsZero()) {
+  if (peer.id.IsZero() || peer.connection_id.IsZero()) {
     LOG(kWarning) << "Invalid node_id / connection_id provided";
     return;
   }
@@ -301,38 +300,39 @@ void Service::ConnectSuccessFromRequester(NodeInfo& /*peer*/) {}
 
 void Service::ConnectSuccessFromResponder(NodeInfo& peer, bool client) {
   // Reply with ConnectSuccessAcknowledgement immediately
-  LOG(kVerbose) << "ConnectSuccessFromResponder peer id : " << DebugId(peer.node_id);
+  LOG(kVerbose) << "ConnectSuccessFromResponder peer id : " << DebugId(peer.id);
   if (peer.connection_id == network_.bootstrap_connection_id()) {
     LOG(kVerbose) << "Special case : kConnectSuccess from bootstrapping node: "
-                  << DebugId(peer.node_id);
+                  << DebugId(peer.id);
     return;
   }
   auto count =
-      (client ? Parameters::max_routing_table_size_for_client : Parameters::greedy_fraction);
-  std::vector<NodeId> close_ids_for_peer(routing_table_.GetClosestNodes(peer.node_id, count));
+      (client ? Parameters::max_routing_table_size_for_client : Parameters::max_routing_table_size);
+  auto close_nodes_for_peer(routing_table_.GetClosestNodes(peer.id, count));
 
-  auto itr(std::find_if(close_ids_for_peer.begin(), close_ids_for_peer.end(),
-                                                        [=](const NodeId & node_id)->bool {
-    return (peer.node_id == node_id);
-  }));
-  if (itr != close_ids_for_peer.end())
-    close_ids_for_peer.erase(itr);
+  auto itr(std::find_if(std::begin(close_nodes_for_peer), std::end(close_nodes_for_peer),
+                        [=](const NodeInfo& info)->bool {
+                          return (peer.id == info.id);
+                        }));
+  if (itr != std::end(close_nodes_for_peer))
+    close_nodes_for_peer.erase(itr);
 
   protobuf::Message connect_success_ack(rpcs::ConnectSuccessAcknowledgement(
-      peer.node_id, routing_table_.kNodeId(), routing_table_.kConnectionId(),
+      peer.id, routing_table_.kNodeId(), routing_table_.kConnectionId(),
       true,  // this node is requestor
-      close_ids_for_peer, routing_table_.client_mode()));
-  network_.SendToDirect(connect_success_ack, peer.node_id, peer.connection_id);
+      close_nodes_for_peer, routing_table_.client_mode()));
+  network_.SendToDirect(connect_success_ack, peer.id, peer.connection_id);
 }
 
 void Service::GetGroup(protobuf::Message& message) {
   LOG(kVerbose) << "Service::GetGroup,  msg id:  " << message.id();
   protobuf::GetGroup get_group;
   assert(get_group.ParseFromString(message.data(0)));
-  auto close_nodes_id(routing_table_.GetGroup(NodeId(get_group.node_id())));
+  auto close_nodes(routing_table_.GetClosestNodes(NodeId(get_group.node_id()),
+                                                  Parameters::group_size, true));
   get_group.set_node_id(routing_table_.kNodeId().string());
-  for (const auto& node_id : close_nodes_id)
-    get_group.add_group_nodes_id(node_id.string());
+  for (const auto& node : close_nodes)
+    get_group.add_group_nodes_id(node.id.string());
   message.clear_route_history();
   message.set_destination_id(message.source_id());
   message.set_source_id(routing_table_.kNodeId().string());

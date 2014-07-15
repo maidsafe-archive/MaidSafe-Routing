@@ -27,7 +27,7 @@ namespace maidsafe {
 namespace routing {
 
 NodeInfo::NodeInfo()
-    : node_id(),
+    : id(),
       connection_id(),
       public_key(),
       rank(),
@@ -36,7 +36,7 @@ NodeInfo::NodeInfo()
       dimension_list() {}
 
 NodeInfo::NodeInfo(const NodeInfo& other)
-    : node_id(other.node_id),
+    : id(other.id),
       connection_id(other.connection_id),
       public_key(other.public_key),
       rank(other.rank),
@@ -45,7 +45,7 @@ NodeInfo::NodeInfo(const NodeInfo& other)
       dimension_list(other.dimension_list) {}
 
 NodeInfo::NodeInfo(NodeInfo&& other)
-    : node_id(std::move(other.node_id)),
+    : id(std::move(other.id)),
       connection_id(std::move(other.connection_id)),
       public_key(std::move(other.public_key)),
       rank(std::move(other.rank)),
@@ -64,7 +64,7 @@ NodeInfo::NodeInfo(const serialised_type& serialised_message)
   if (!proto_node_info.ParseFromString(serialised_message->string()))
     BOOST_THROW_EXCEPTION(MakeError(CommonErrors::parsing_error));
 
-  node_id = NodeId(proto_node_info.node_id());
+  id = NodeId(proto_node_info.node_id());
   rank = proto_node_info.rank();
   for (int i(0); i < proto_node_info.dimension_list_size(); ++i)
     dimension_list.push_back(proto_node_info.dimension_list(i));
@@ -74,7 +74,7 @@ NodeInfo::serialised_type NodeInfo::Serialise() const {
   serialised_type serialised_message;
   try {
     protobuf::NodeInfo proto_node_info;
-    proto_node_info.set_node_id(node_id.string());
+    proto_node_info.set_node_id(id.string());
     proto_node_info.set_rank(rank);
     for (const auto& dimension : dimension_list)
       proto_node_info.add_dimension_list(dimension);
@@ -92,7 +92,7 @@ const int32_t NodeInfo::kInvalidBucket(std::numeric_limits<int32_t>::max());
 
 void swap(NodeInfo& lhs, NodeInfo& rhs) MAIDSAFE_NOEXCEPT {
   using std::swap;
-  swap(lhs.node_id, rhs.node_id);
+  swap(lhs.id, rhs.id);
   swap(lhs.connection_id, rhs.connection_id);
   swap(lhs.public_key, rhs.public_key);
   swap(lhs.rank, rhs.rank);

@@ -24,13 +24,11 @@
 #include "maidsafe/common/node_id.h"
 
 #include "maidsafe/routing/client_routing_table.h"
-#include "maidsafe/routing/group_change_handler.h"
 #include "maidsafe/routing/message.h"
 #include "maidsafe/routing/network_utils.h"
 #include "maidsafe/routing/routing.pb.h"
 #include "maidsafe/routing/routing_table.h"
 #include "maidsafe/routing/service.h"
-#include "maidsafe/routing/remove_furthest_node.h"
 #include "maidsafe/routing/utils.h"
 
 namespace maidsafe {
@@ -39,21 +37,16 @@ namespace routing {
 
 MessageHandler::MessageHandler(RoutingTable& routing_table,
                                ClientRoutingTable& client_routing_table, NetworkUtils& network,
-                               Timer<std::string>& timer, RemoveFurthestNode& remove_furthest_node,
-                               GroupChangeHandler& group_change_handler,
-                               NetworkStatistics& network_statistics)
+                               Timer<std::string>& timer, NetworkStatistics& network_statistics)
     : routing_table_(routing_table),
       client_routing_table_(client_routing_table),
       network_statistics_(network_statistics),
       network_(network),
-      remove_furthest_node_(remove_furthest_node),
-      group_change_handler_(group_change_handler),
       cache_manager_(routing_table_.client_mode()
                          ? nullptr
                          : (new CacheManager(routing_table_.kNodeId(), network_))),
       timer_(timer),
-      response_handler_(new ResponseHandler(routing_table, client_routing_table, network_,
-                                            group_change_handler)),
+      response_handler_(new ResponseHandler(routing_table, client_routing_table, network_)),
       service_(new Service(routing_table, client_routing_table, network_)),
       message_received_functor_(),
       typed_message_received_functors_() {}
@@ -76,24 +69,13 @@ void MessageHandler::HandleRoutingMessage(protobuf::Message& message) {
     case MessageType::kConnectSuccessAcknowledgement:
       response_handler_->ConnectSuccessAcknowledgement(message);
       break;
-    case MessageType::kRemove:
-      message.request() ? remove_furthest_node_.RemoveRequest(message)
-                        : remove_furthest_node_.RemoveResponse(message);
-      break;
-    case MessageType::kClosestNodesUpdate:
-      {
-        assert(message.request());
-        auto matrix_update(group_change_handler_.ClosestNodesUpdate(message));
-        if (matrix_update.first != NodeId())
-          response_handler_->AddMatrixUpdateFromUnvalidatedPeer(matrix_update.first,
-                                                                matrix_update.second);
-      }
-      if (routing_table_.client_mode())
-        response_handler_->CloseNodeUpdateForClient(message);
-      break;
     case MessageType::kGetGroup:
       message.request() ? service_->GetGroup(message)
                         : response_handler_->GetGroup(timer_, message);
+      break;
+    case MessageType::kInformClientOfNewCloseNode:
+      assert(message.request());
+      response_handler_->InformClientOfNewCloseNode(message);
       break;
     default:  // unknown (silent drop)
       return;
@@ -225,7 +207,7 @@ void MessageHandler::HandleDirectMessageAsClosestNode(protobuf::Message& message
   // Dropping direct messages if this node is closest and destination node is not in routing_table_
   // or client_routing_table_.
   NodeId destination_node_id(message.destination_id());
-  if (routing_table_.IsThisNodeClosestToIncludingMatrix(destination_node_id)) {
+  if (routing_table_.IsThisNodeClosestTo(destination_node_id)) {
     if (routing_table_.Contains(destination_node_id) ||
         client_routing_table_.Contains(destination_node_id)) {
       return network_.SendToClosestNode(message);
@@ -253,10 +235,8 @@ void MessageHandler::HandleDirectMessageAsClosestNode(protobuf::Message& message
 
 void MessageHandler::HandleGroupMessageAsClosestNode(protobuf::Message& message) {
   assert(!message.direct());
-  bool have_node_with_group_id(routing_table_.Contains(NodeId(message.destination_id())));
   // This node is not closest to the destination node for non-direct message.
-  if (!routing_table_.IsThisNodeClosestTo(NodeId(message.destination_id()), !IsDirect(message)) &&
-      !have_node_with_group_id) {
+  if (!routing_table_.IsThisNodeClosestTo(NodeId(message.destination_id()), !IsDirect(message))) {
     LOG(kInfo) << "This node is not closest, passing it on."
                << " id: " << message.id();
     // if (IsCacheableRequest(message))
@@ -282,16 +262,6 @@ void MessageHandler::HandleGroupMessageAsClosestNode(protobuf::Message& message)
            (message.route_history(0) != routing_table_.kNodeId().string()))
     route_history.push_back(message.route_history(0));
 
-  // Confirming from group matrix. If this node is closest to the target id or else passing on to
-  // the connected peer which has the closer node.
-  NodeInfo closest_to_group_leader_node;
-  if (!routing_table_.IsThisNodeGroupLeader(NodeId(message.destination_id()),
-                                            closest_to_group_leader_node, route_history)) {
-    assert(NodeId(message.destination_id()) != closest_to_group_leader_node.node_id);
-    return network_.SendToDirectAdjustedRoute(message, closest_to_group_leader_node.node_id,
-                                              closest_to_group_leader_node.connection_id);
-  }
-
   // This node is closest so will send to all replicant nodes
   uint16_t replication(static_cast<uint16_t>(message.replication()));
   if ((replication < 1) || (replication > Parameters::group_size)) {
@@ -304,37 +274,34 @@ void MessageHandler::HandleGroupMessageAsClosestNode(protobuf::Message& message)
   message.set_direct(true);
   message.clear_route_history();
   NodeId destination_id(message.destination_id());
-  NodeId own_node_id(routing_table_.kNodeId());
-  auto close_from_matrix(routing_table_.GetClosestMatrixNodes(destination_id, replication + 2));
-  close_from_matrix.erase(std::remove_if(close_from_matrix.begin(), close_from_matrix.end(),
-                                         [&destination_id](const NodeInfo & node_info) {
-                            return node_info.node_id == destination_id;
-                          }),
-                          close_from_matrix.end());
-  close_from_matrix.erase(std::remove_if(close_from_matrix.begin(), close_from_matrix.end(),
-                                         [&own_node_id](const NodeInfo & node_info) {
-                            return node_info.node_id == own_node_id;
-                          }),
-                          close_from_matrix.end());
-  while (close_from_matrix.size() > replication)
-    close_from_matrix.pop_back();
+  auto close_nodes(routing_table_.GetClosestNodes(destination_id, replication + 2));
+  close_nodes.erase(std::remove_if(std::begin(close_nodes), std::end(close_nodes),
+                                   [&destination_id](const NodeInfo& node_info) {
+                                     return node_info.id == destination_id;
+                                   }), std::end(close_nodes));
+  close_nodes.erase(std::remove_if(std::begin(close_nodes), std::end(close_nodes),
+                                   [this](const NodeInfo & node_info) {
+                                     return node_info.id == routing_table_.kNodeId();
+                                   }), std::end(close_nodes));
+  while (close_nodes.size() > replication)
+    close_nodes.pop_back();
 
   std::string group_id(message.destination_id());
   std::string group_members("[" + DebugId(routing_table_.kNodeId()) + "]");
 
-  for (const auto& i : close_from_matrix)
-    group_members += std::string("[" + DebugId(i.node_id) + "]");
+  for (const auto& i : close_nodes)
+    group_members += std::string("[" + DebugId(i.id) + "]");
   LOG(kInfo) << "Group nodes for group_id " << HexSubstr(group_id) << " : " << group_members;
 
-  for (const auto& i : close_from_matrix) {
-    LOG(kInfo) << "[" << DebugId(own_node_id) << "] - "
-               << "Replicating message to : " << HexSubstr(i.node_id.string())
+  for (const auto& i : close_nodes) {
+    LOG(kInfo) << "[" << routing_table_.kNodeId() << "] - "
+               << "Replicating message to : " << HexSubstr(i.id.string())
                << " [ group_id : " << HexSubstr(group_id) << "]"
                << " id: " << message.id();
-    message.set_destination_id(i.node_id.string());
+    message.set_destination_id(i.id.string());
     NodeInfo node;
-    if (routing_table_.GetNodeInfo(i.node_id, node)) {
-      network_.SendToDirect(message, node.node_id, node.connection_id);
+    if (routing_table_.GetNodeInfo(i.id, node)) {
+      network_.SendToDirect(message, node.id, node.connection_id);
     } else {
       network_.SendToClosestNode(message);
     }
@@ -512,23 +479,11 @@ void MessageHandler::HandleGroupRelayRequestMessageAsClosestNode(protobuf::Messa
   assert(!message.direct());
   bool have_node_with_group_id(routing_table_.Contains(NodeId(message.destination_id())));
   // This node is not closest to the destination node for non-direct message.
-  if (!routing_table_.IsThisNodeClosestTo(NodeId(message.destination_id()), !IsDirect(message)) &&
-      !have_node_with_group_id) {
+  if (!routing_table_.IsThisNodeClosestTo(NodeId(message.destination_id()), !IsDirect(message))) {
     LOG(kInfo) << "This node is not closest, passing it on."
                << " id: " << message.id();
     message.set_source_id(routing_table_.kNodeId().string());
     return network_.SendToClosestNode(message);
-  }
-
-  // Confirming from group matrix. If this node is closest to the target id or else passing on to
-  // the connected peer which has the closer node.
-  NodeInfo closest_to_group_leader_node;
-  if (!routing_table_.IsThisNodeGroupLeader(NodeId(message.destination_id()),
-                                            closest_to_group_leader_node)) {
-    assert(NodeId(message.destination_id()) != closest_to_group_leader_node.node_id);
-    message.set_source_id(routing_table_.kNodeId().string());
-    return network_.SendToDirect(message, closest_to_group_leader_node.node_id,
-                                 closest_to_group_leader_node.connection_id);
   }
 
   // This node is closest so will send to all replicant nodes
@@ -547,22 +502,22 @@ void MessageHandler::HandleGroupRelayRequestMessageAsClosestNode(protobuf::Messa
 
   if (have_node_with_group_id)
     close.erase(close.begin());
-  std::string group_id(message.destination_id());
+  NodeId group_id(NodeId(message.destination_id()));
   std::string group_members("[" + DebugId(routing_table_.kNodeId()) + "]");
 
   for (const auto& i : close)
-    group_members += std::string("[" + DebugId(i) + "]");
-  LOG(kInfo) << "Group members for group_id " << HexSubstr(group_id) << " are: " << group_members;
+    group_members += std::string("[" + DebugId(i.id) + "]");
+  LOG(kInfo) << "Group members for group_id " << group_id << " are: " << group_members;
   // This node relays back the responses
   message.set_source_id(routing_table_.kNodeId().string());
   for (const auto& i : close) {
-    LOG(kInfo) << "Replicating message to : " << HexSubstr(i.string())
-               << " [ group_id : " << HexSubstr(group_id) << "]"
+    LOG(kInfo) << "Replicating message to : " << i.id
+               << " [ group_id : " << group_id << "]"
                << " id: " << message.id();
-    message.set_destination_id(i.string());
+    message.set_destination_id(i.id.string());
     NodeInfo node;
-    if (routing_table_.GetNodeInfo(i, node)) {
-      network_.SendToDirect(message, node.node_id, node.connection_id);
+    if (routing_table_.GetNodeInfo(i.id, node)) {
+      network_.SendToDirect(message, node.id, node.connection_id);
     }
   }
 

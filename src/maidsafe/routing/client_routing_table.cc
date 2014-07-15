@@ -46,13 +46,13 @@ bool ClientRoutingTable::CheckNode(NodeInfo& node, const NodeId& furthest_close_
 
 bool ClientRoutingTable::AddOrCheckNode(NodeInfo& node, const NodeId& furthest_close_node_id,
                                         bool add) {
-  if (node.node_id == kNodeId_)
+  if (node.id == kNodeId_)
     return false;
   std::lock_guard<std::mutex> lock(mutex_);
   if (CheckRangeForNodeToBeAdded(node, furthest_close_node_id, add)) {
     if (add) {
       nodes_.push_back(node);
-      LOG(kInfo) << "Added to ClientRoutingTable :" << DebugId(node.node_id);
+      LOG(kInfo) << "Added to ClientRoutingTable :" << node.id;
       LOG(kVerbose) << PrintClientRoutingTable();
     }
     return true;
@@ -65,7 +65,7 @@ std::vector<NodeInfo> ClientRoutingTable::DropNodes(const NodeId& node_to_drop) 
   std::lock_guard<std::mutex> lock(mutex_);
   uint16_t i(0);
   while (i < nodes_.size()) {
-    if (nodes_.at(i).node_id == node_to_drop) {
+    if (nodes_.at(i).id == node_to_drop) {
       nodes_info.push_back(nodes_.at(i));
       nodes_.erase(nodes_.begin() + i);
     } else {
@@ -89,20 +89,22 @@ NodeInfo ClientRoutingTable::DropConnection(const NodeId& connection_to_drop) {
 }
 
 std::vector<NodeInfo> ClientRoutingTable::GetNodesInfo(const NodeId& node_id) const {
-  std::vector<NodeInfo> nodes_info;
   std::lock_guard<std::mutex> lock(mutex_);
-  for (const auto& elem : nodes_) {
-    if ((elem).node_id == node_id)
-      nodes_info.push_back(elem);
-  }
+  if (node_id == NodeId())
+    return nodes_;
+
+  std::vector<NodeInfo> nodes_info;
+  std::copy_if(std::begin(nodes_), std::end(nodes_), std::back_inserter(nodes_info),
+               [node_id](const NodeInfo& node) { return node.id == node_id; });
   return nodes_info;
 }
 
 bool ClientRoutingTable::Contains(const NodeId& node_id) const {
   std::lock_guard<std::mutex> lock(mutex_);
-  return std::find_if(nodes_.begin(), nodes_.end(), [node_id](const NodeInfo & node_info) {
-           return node_info.node_id == node_id;
-         }) != nodes_.end();
+  return std::find_if(std::begin(nodes_), std::end(nodes_),
+                      [node_id](const NodeInfo& node_info) {
+                        return node_info.id == node_id;
+                      }) != std::end(nodes_);
 }
 
 bool ClientRoutingTable::IsConnected(const NodeId& node_id) const { return Contains(node_id); }
@@ -136,7 +138,7 @@ bool ClientRoutingTable::CheckParametersAreUnique(const NodeInfo& node) const {
   //                   nodes_.end(),
   //                   [node](const NodeInfo& node_info) {
   //                     return (asymm::MatchingKeys(node_info.public_key, node.public_key) &&
-  //                             (node_info.node_id != node.node_id));
+  //                             (node_info.id != node.id));
   //                   }) != nodes_.end()) {
   //    LOG(kInfo) << "Already have a different node ID with this public key.";
   //    return false;
@@ -157,7 +159,7 @@ bool ClientRoutingTable::CheckRangeForNodeToBeAdded(NodeInfo& node,
     return false;
   }
 
-  return IsThisNodeInRange(node.node_id, furthest_close_node_id);
+  return IsThisNodeInRange(node.id, furthest_close_node_id);
 }
 
 bool ClientRoutingTable::IsThisNodeInRange(const NodeId& node_id,
@@ -174,7 +176,7 @@ std::string ClientRoutingTable::PrintClientRoutingTable() {
   std::string s =
       "\n\n[" + DebugId(kNodeId_) + "] This node's own ClientRoutingTable and peer connections:\n";
   for (const auto& node : rt) {
-    s += std::string("\tPeer ") + "[" + DebugId(node.node_id) + "]" + "-->";
+    s += std::string("\tPeer ") + "[" + DebugId(node.id) + "]" + "-->";
     s += DebugId(node.connection_id) + "\n";
   }
   s += "\n\n";

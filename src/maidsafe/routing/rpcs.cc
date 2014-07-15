@@ -103,33 +103,6 @@ protobuf::Message Connect(const NodeId& node_id, const rudp::EndpointPair& our_e
   return message;
 }
 
-protobuf::Message Remove(const NodeId& node_id, const NodeId& this_node_id,
-                         const NodeId& this_connection_id,
-                         const std::vector<std::string>& attempted_nodes) {
-  assert(!node_id.IsZero() && "Invalid node_id");
-  assert(!this_node_id.IsZero() && "Invalid my node_id");
-  assert(!this_connection_id.IsZero() && "Invalid this_connection_id");
-  static_cast<void>(this_connection_id);
-  protobuf::RemoveRequest remove_request;
-  for (const auto& node : attempted_nodes)
-    remove_request.add_attempted_nodes(node);
-  remove_request.set_peer_id(this_node_id.string());
-  protobuf::Message message;
-  message.add_data(remove_request.SerializeAsString());
-  message.set_destination_id(node_id.string());
-  message.set_routing_message(true);
-  message.set_direct(true);
-  message.set_replication(1);
-  message.set_type(static_cast<int32_t>(MessageType::kRemove));
-  message.set_id(RandomUint32() % 10000);
-  message.set_client_node(false);
-  message.set_hops_to_live(Parameters::hops_to_live);
-  message.set_source_id(this_node_id.string());
-  message.set_request(true);
-  assert(message.IsInitialized() && "Unintialised message");
-  return message;
-}
-
 protobuf::Message FindNodes(const NodeId& node_id, const NodeId& this_node_id,
                             int num_nodes_requested, bool relay_message,
                             NodeId relay_connection_id) {
@@ -197,7 +170,7 @@ protobuf::Message ConnectSuccess(const NodeId& node_id, const NodeId& this_node_
 protobuf::Message ConnectSuccessAcknowledgement(const NodeId& node_id, const NodeId& this_node_id,
                                                 const NodeId& this_connection_id,
                                                 bool requestor,
-                                                const std::vector<NodeId>& close_ids,
+                                                const std::vector<NodeInfo>& close_nodes,
                                                 bool client_node) {
   assert(!node_id.IsZero() && "Invalid node_id");
   assert(!this_node_id.IsZero() && "Invalid my node_id");
@@ -207,8 +180,8 @@ protobuf::Message ConnectSuccessAcknowledgement(const NodeId& node_id, const Nod
   protobuf_connect_success_ack.set_node_id(this_node_id.string());
   protobuf_connect_success_ack.set_connection_id(this_connection_id.string());
   protobuf_connect_success_ack.set_requestor(requestor);
-  for (const auto& i : close_ids) {
-    protobuf_connect_success_ack.add_close_ids(i.string());
+  for (const auto& i : close_nodes) {
+    protobuf_connect_success_ack.add_close_ids(i.id.string());
   }
   message.set_destination_id(node_id.string());
   message.set_routing_message(true);
@@ -225,34 +198,29 @@ protobuf::Message ConnectSuccessAcknowledgement(const NodeId& node_id, const Nod
   return message;
 }
 
-protobuf::Message ClosestNodesUpdate(const NodeId& node_id, const NodeId& my_node_id,
-                                     const std::vector<NodeInfo>& closest_nodes) {
+protobuf::Message InformClientOfNewCloseNode(const NodeId& node_id, const NodeId& this_node_id,
+                                             const NodeId& client_node_id) {
   assert(!node_id.IsZero() && "Invalid node_id");
-  assert(!my_node_id.IsZero() && "Invalid my node_id");
-  // assert(!close_nodes.empty() && "Empty close nodes");
+  assert(!this_node_id.IsZero() && "Invalid my node_id");
   protobuf::Message message;
-  protobuf::ClosestNodesUpdate closest_nodes_update;
-  closest_nodes_update.set_node(my_node_id.string());
-  for (const auto& i : closest_nodes) {
-    protobuf::BasicNodeInfo* basic_node_info;
-    basic_node_info = closest_nodes_update.add_nodes_info();
-    basic_node_info->set_node_id(i.node_id.string());
-    basic_node_info->set_rank(i.rank);
-  }
-  message.set_destination_id(node_id.string());
-  message.set_source_id(my_node_id.string());
+  protobuf::InformClientOfhNewCloseNode inform_client_of_new_close_node;
+  inform_client_of_new_close_node.set_node_id(node_id.string());
+  message.add_data(inform_client_of_new_close_node.SerializeAsString());
+  message.set_destination_id(client_node_id.string());
+  message.set_source_id(this_node_id.string());
   message.set_routing_message(true);
-  message.add_data(closest_nodes_update.SerializeAsString());
-  message.set_direct(true);
+  message.set_direct(false);
   message.set_replication(1);
-  message.set_type(static_cast<int32_t>(MessageType::kClosestNodesUpdate));
+  message.set_type(static_cast<int32_t>(MessageType::kInformClientOfNewCloseNode));
   message.set_request(true);
   message.set_client_node(false);
-  message.set_hops_to_live(Parameters::hops_to_live);
+  message.set_hops_to_live(2);
+  message.set_visited(false);
   message.set_id(RandomUint32() % 10000);
   assert(message.IsInitialized() && "Unintialised message");
   return message;
 }
+
 
 protobuf::Message GetGroup(const NodeId& node_id, const NodeId& my_node_id) {
   assert(!node_id.IsZero() && "Invalid node_id");

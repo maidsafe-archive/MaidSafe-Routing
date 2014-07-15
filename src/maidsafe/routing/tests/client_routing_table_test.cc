@@ -61,12 +61,12 @@ class ClientRoutingTableTest : public BasicClientRoutingTableTest {
   }
 
   NodeId BiasNodeIds(std::vector<NodeInfo>& biased_nodes) {
-    NodeId sought_id(nodes_.at(RandomUint32() % Parameters::max_client_routing_table_size).node_id);
+    NodeId sought_id(nodes_.at(RandomUint32() % Parameters::max_client_routing_table_size).id);
     for (uint16_t i(0); i < Parameters::max_client_routing_table_size; ++i) {
-      if (nodes_.at(i).node_id == sought_id) {
+      if (nodes_.at(i).id == sought_id) {
         biased_nodes.push_back(nodes_.at(i));
       } else if ((RandomUint32() % 3) == 0) {
-        nodes_.at(i).node_id = sought_id;
+        nodes_.at(i).id = sought_id;
         biased_nodes.push_back(nodes_.at(i));
       }
     }
@@ -77,7 +77,7 @@ class ClientRoutingTableTest : public BasicClientRoutingTableTest {
 
   void PopulateClientRoutingTable(ClientRoutingTable& client_routing_table) {
     for (auto& node : nodes_)
-      EXPECT_TRUE(client_routing_table.AddNode(node, furthest_close_node_.node_id));
+      EXPECT_TRUE(client_routing_table.AddNode(node, furthest_close_node_.id));
   }
 
  protected:
@@ -89,7 +89,7 @@ TEST_F(BasicClientRoutingTableTest, BEH_CheckAddOwnNodeInfo) {
   ClientRoutingTable client_routing_table(node_id_);
 
   NodeInfo node(MakeNode());
-  node.node_id = client_routing_table.kNodeId();
+  node.id = client_routing_table.kNodeId();
 
   EXPECT_FALSE(client_routing_table.CheckNode(node, NodeId(NodeId::IdType::kRandomId)));
   EXPECT_FALSE(client_routing_table.AddNode(node, NodeId(NodeId::IdType::kRandomId)));
@@ -102,8 +102,8 @@ TEST_F(ClientRoutingTableTest, BEH_CheckAddFarAwayNode) {
 
   SortFromTarget(client_routing_table.kNodeId(), nodes_);
 
-  EXPECT_FALSE(client_routing_table.CheckNode(nodes_.at(1), nodes_.at(0).node_id));
-  EXPECT_FALSE(client_routing_table.AddNode(nodes_.at(1), nodes_.at(0).node_id));
+  EXPECT_FALSE(client_routing_table.CheckNode(nodes_.at(1), nodes_.at(0).id));
+  EXPECT_FALSE(client_routing_table.AddNode(nodes_.at(1), nodes_.at(0).id));
 }
 
 TEST_F(ClientRoutingTableTest, FUNC_CheckAddSurplusNodes) {
@@ -114,14 +114,14 @@ TEST_F(ClientRoutingTableTest, FUNC_CheckAddSurplusNodes) {
   ScrambleNodesOrder();
 
   for (int i(0); i < Parameters::max_client_routing_table_size; ++i) {
-    EXPECT_TRUE(client_routing_table.CheckNode(nodes_.at(i), furthest_close_node_.node_id));
-    EXPECT_TRUE(client_routing_table.AddNode(nodes_.at(i), furthest_close_node_.node_id));
+    EXPECT_TRUE(client_routing_table.CheckNode(nodes_.at(i), furthest_close_node_.id));
+    EXPECT_TRUE(client_routing_table.AddNode(nodes_.at(i), furthest_close_node_.id));
   }
 
   for (int i(Parameters::max_client_routing_table_size);
        i < 2 * Parameters::max_client_routing_table_size; ++i) {
-    EXPECT_FALSE(client_routing_table.CheckNode(nodes_.at(i), furthest_close_node_.node_id));
-    EXPECT_FALSE(client_routing_table.AddNode(nodes_.at(i), furthest_close_node_.node_id));
+    EXPECT_FALSE(client_routing_table.CheckNode(nodes_.at(i), furthest_close_node_.id));
+    EXPECT_FALSE(client_routing_table.AddNode(nodes_.at(i), furthest_close_node_.id));
   }
 
   EXPECT_EQ(Parameters::max_client_routing_table_size, client_routing_table.size());
@@ -133,15 +133,15 @@ TEST_F(ClientRoutingTableTest, BEH_CheckAddSameNodeIdTwice) {
   PopulateNodes(2);
   SortFromTarget(client_routing_table.kNodeId(), nodes_);
 
-  EXPECT_TRUE(client_routing_table.CheckNode(nodes_.at(0), nodes_.at(1).node_id));
-  EXPECT_TRUE(client_routing_table.AddNode(nodes_.at(0), nodes_.at(1).node_id));
+  EXPECT_TRUE(client_routing_table.CheckNode(nodes_.at(0), nodes_.at(1).id));
+  EXPECT_TRUE(client_routing_table.AddNode(nodes_.at(0), nodes_.at(1).id));
 
   NodeInfo node(MakeNode());
-  node.node_id = nodes_.at(0).node_id;
+  node.id = nodes_.at(0).id;
 
-  EXPECT_EQ(nodes_.at(0).node_id, node.node_id);
-  EXPECT_TRUE(client_routing_table.CheckNode(node, nodes_.at(1).node_id));
-  EXPECT_TRUE(client_routing_table.AddNode(node, nodes_.at(1).node_id));
+  EXPECT_EQ(nodes_.at(0).id, node.id);
+  EXPECT_TRUE(client_routing_table.CheckNode(node, nodes_.at(1).id));
+  EXPECT_TRUE(client_routing_table.AddNode(node, nodes_.at(1).id));
 }
 
 TEST_F(ClientRoutingTableTest, BEH_CheckAddSameConnectionIdTwice) {
@@ -150,14 +150,14 @@ TEST_F(ClientRoutingTableTest, BEH_CheckAddSameConnectionIdTwice) {
   PopulateNodes(3);
   SortFromTarget(client_routing_table.kNodeId(), nodes_);
 
-  EXPECT_TRUE(client_routing_table.CheckNode(nodes_.at(0), nodes_.at(2).node_id));
-  EXPECT_TRUE(client_routing_table.AddNode(nodes_.at(0), nodes_.at(2).node_id));
+  EXPECT_TRUE(client_routing_table.CheckNode(nodes_.at(0), nodes_.at(2).id));
+  EXPECT_TRUE(client_routing_table.AddNode(nodes_.at(0), nodes_.at(2).id));
 
   nodes_.at(1).connection_id = nodes_.at(0).connection_id;
 
   EXPECT_EQ(nodes_.at(0).connection_id, nodes_.at(1).connection_id);
-  EXPECT_TRUE(client_routing_table.CheckNode(nodes_.at(1), nodes_.at(2).node_id));
-  EXPECT_FALSE(client_routing_table.AddNode(nodes_.at(1), nodes_.at(2).node_id));
+  EXPECT_TRUE(client_routing_table.CheckNode(nodes_.at(1), nodes_.at(2).id));
+  EXPECT_FALSE(client_routing_table.AddNode(nodes_.at(1), nodes_.at(2).id));
 }
 
 // TODO(Alison) - uncomment this test if it becomes relevant again
@@ -167,14 +167,14 @@ TEST_F(ClientRoutingTableTest, BEH_CheckAddSameConnectionIdTwice) {
   PopulateNodes(3);
   SortFromTarget(client_routing_table.kNodeId(), nodes_);
 
-  EXPECT_TRUE(client_routing_table.CheckNode(nodes_.at(0), nodes_.at(2).node_id));
-  EXPECT_TRUE(client_routing_table.AddNode(nodes_.at(0), nodes_.at(2).node_id));
+  EXPECT_TRUE(client_routing_table.CheckNode(nodes_.at(0), nodes_.at(2).id));
+  EXPECT_TRUE(client_routing_table.AddNode(nodes_.at(0), nodes_.at(2).id));
 
   nodes_.at(1).public_key = nodes_.at(0).public_key;
 
   EXPECT_TRUE(asymm::MatchingKeys(nodes_.at(0).public_key, nodes_.at(1).public_key));
-  EXPECT_TRUE(client_routing_table.CheckNode(nodes_.at(1), nodes_.at(2).node_id));
-  EXPECT_FALSE(client_routing_table.AddNode(nodes_.at(1), nodes_.at(2).node_id));
+  EXPECT_TRUE(client_routing_table.CheckNode(nodes_.at(1), nodes_.at(2).id));
+  EXPECT_FALSE(client_routing_table.AddNode(nodes_.at(1), nodes_.at(2).id));
 }*/
 
 TEST_F(ClientRoutingTableTest, BEH_CheckAddSameConnectionAndKeysTwice) {
@@ -183,16 +183,16 @@ TEST_F(ClientRoutingTableTest, BEH_CheckAddSameConnectionAndKeysTwice) {
   PopulateNodes(3);
   SortFromTarget(client_routing_table.kNodeId(), nodes_);
 
-  EXPECT_TRUE(client_routing_table.CheckNode(nodes_.at(0), nodes_.at(2).node_id));
-  EXPECT_TRUE(client_routing_table.AddNode(nodes_.at(0), nodes_.at(2).node_id));
+  EXPECT_TRUE(client_routing_table.CheckNode(nodes_.at(0), nodes_.at(2).id));
+  EXPECT_TRUE(client_routing_table.AddNode(nodes_.at(0), nodes_.at(2).id));
 
   nodes_.at(1).connection_id = nodes_.at(0).connection_id;
   nodes_.at(1).public_key = nodes_.at(0).public_key;
 
   EXPECT_EQ(nodes_.at(0).connection_id, nodes_.at(1).connection_id);
   EXPECT_TRUE(asymm::MatchingKeys(nodes_.at(0).public_key, nodes_.at(1).public_key));
-  EXPECT_TRUE(client_routing_table.CheckNode(nodes_.at(1), nodes_.at(2).node_id));
-  EXPECT_FALSE(client_routing_table.AddNode(nodes_.at(1), nodes_.at(2).node_id));
+  EXPECT_TRUE(client_routing_table.CheckNode(nodes_.at(1), nodes_.at(2).id));
+  EXPECT_FALSE(client_routing_table.AddNode(nodes_.at(1), nodes_.at(2).id));
 }
 
 TEST_F(ClientRoutingTableTest, BEH_AddThenCheckNode) {
@@ -202,10 +202,10 @@ TEST_F(ClientRoutingTableTest, BEH_AddThenCheckNode) {
 
   SortFromTarget(client_routing_table.kNodeId(), nodes_);
 
-  EXPECT_TRUE(client_routing_table.CheckNode(nodes_.at(0), nodes_.at(1).node_id));
-  EXPECT_TRUE(client_routing_table.AddNode(nodes_.at(0), nodes_.at(1).node_id));
-  EXPECT_TRUE(client_routing_table.CheckNode(nodes_.at(0), nodes_.at(1).node_id));
-  EXPECT_FALSE(client_routing_table.AddNode(nodes_.at(0), nodes_.at(1).node_id));
+  EXPECT_TRUE(client_routing_table.CheckNode(nodes_.at(0), nodes_.at(1).id));
+  EXPECT_TRUE(client_routing_table.AddNode(nodes_.at(0), nodes_.at(1).id));
+  EXPECT_TRUE(client_routing_table.CheckNode(nodes_.at(0), nodes_.at(1).id));
+  EXPECT_FALSE(client_routing_table.AddNode(nodes_.at(0), nodes_.at(1).id));
 }
 
 TEST_F(ClientRoutingTableTest, FUNC_DropNodes) {
@@ -250,7 +250,7 @@ TEST_F(ClientRoutingTableTest, FUNC_DropConnection) {
   while (!nodes_.empty()) {
     NodeInfo dropped_node(
         client_routing_table.DropConnection(nodes_.at(nodes_.size() - 1).connection_id));
-    EXPECT_EQ(nodes_.at(nodes_.size() - 1).node_id, dropped_node.node_id);
+    EXPECT_EQ(nodes_.at(nodes_.size() - 1).id, dropped_node.id);
     EXPECT_EQ(nodes_.at(nodes_.size() - 1).connection_id, dropped_node.connection_id);
 
     nodes_.pop_back();
@@ -297,14 +297,14 @@ TEST_F(ClientRoutingTableTest, FUNC_IsConnected) {
   ScrambleNodesOrder();
 
   for (int i(0); i < Parameters::max_client_routing_table_size; ++i)
-    EXPECT_TRUE(client_routing_table.AddNode(nodes_.at(i), furthest_close_node_.node_id));
+    EXPECT_TRUE(client_routing_table.AddNode(nodes_.at(i), furthest_close_node_.id));
 
   for (int i(0); i < Parameters::max_client_routing_table_size; ++i)
-    EXPECT_TRUE(client_routing_table.Contains(nodes_.at(i).node_id));
+    EXPECT_TRUE(client_routing_table.Contains(nodes_.at(i).id));
 
   for (int i(Parameters::max_client_routing_table_size);
        i < 2 * Parameters::max_client_routing_table_size; ++i)
-    EXPECT_FALSE(client_routing_table.Contains(nodes_.at(i).node_id));
+    EXPECT_FALSE(client_routing_table.Contains(nodes_.at(i).id));
 }
 
 TEST_F(BasicClientRoutingTableTest, BEH_IsThisNodeInRange) {
@@ -313,17 +313,15 @@ TEST_F(BasicClientRoutingTableTest, BEH_IsThisNodeInRange) {
   std::vector<NodeInfo> nodes;
   NodeInfo node_info;
   for (int i(0); i < 101; ++i) {
-    node_info.node_id = NodeId(NodeId::IdType::kRandomId);
+    node_info.id = NodeId(NodeId::IdType::kRandomId);
     nodes.push_back(node_info);
   }
   SortNodeInfosFromTarget(client_routing_table.kNodeId(), nodes);
   NodeInfo furthest_close_node_id(nodes.at(50));
   for (int i(0); i < 50; ++i)
-    EXPECT_TRUE(client_routing_table.IsThisNodeInRange(nodes.at(i).node_id,
-                                                       furthest_close_node_id.node_id));
+    EXPECT_TRUE(client_routing_table.IsThisNodeInRange(nodes.at(i).id, furthest_close_node_id.id));
   for (int i(51); i < 101; ++i)
-    EXPECT_FALSE(client_routing_table.IsThisNodeInRange(nodes.at(i).node_id,
-                                                        furthest_close_node_id.node_id));
+    EXPECT_FALSE(client_routing_table.IsThisNodeInRange(nodes.at(i).id, furthest_close_node_id.id));
 }
 
 }  // namespace test

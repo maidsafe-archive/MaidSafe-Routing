@@ -70,7 +70,6 @@ void Routing::Send(const GroupToSingleRelayMessage& message) {
   pimpl_->Send(message);
 }
 
-
 void Routing::SendDirect(const NodeId& destination_id, const std::string& message, bool cacheable,
                          ResponseFunctor response_functor) {
   return pimpl_->SendDirect(destination_id, message, cacheable, response_functor);
@@ -83,30 +82,16 @@ void Routing::SendGroup(const NodeId& destination_id, const std::string& message
 
 bool Routing::ClosestToId(const NodeId& target_id) { return pimpl_->ClosestToId(target_id); }
 
-GroupRangeStatus Routing::IsNodeIdInGroupRange(const NodeId& group_id) const {
-  return pimpl_->IsNodeIdInGroupRange(group_id);
-}
-
-GroupRangeStatus Routing::IsNodeIdInGroupRange(const NodeId& group_id,
-                                               const NodeId& node_id) const {
-  return pimpl_->IsNodeIdInGroupRange(group_id, node_id);
-}
-
 NodeId Routing::RandomConnectedNode() { return pimpl_->RandomConnectedNode(); }
 
 bool Routing::EstimateInGroup(const NodeId& sender_id, const NodeId& info_id) const {
   return pimpl_->EstimateInGroup(sender_id, info_id);
 }
 
-std::future<std::vector<NodeId>> Routing::GetGroup(const NodeId& group_id) {
-  return pimpl_->GetGroup(group_id);
-}
-
 NodeId Routing::kNodeId() const { return pimpl_->kNodeId(); }
 
 int Routing::network_status() { return pimpl_->network_status(); }
 
-std::vector<NodeInfo> Routing::ClosestNodes() { return pimpl_->ClosestNodes(); }
 
 bool Routing::IsConnectedVault(const NodeId& node_id) { return pimpl_->IsConnectedVault(node_id); }
 

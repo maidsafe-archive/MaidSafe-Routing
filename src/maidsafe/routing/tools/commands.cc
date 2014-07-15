@@ -141,13 +141,13 @@ void Commands::ZeroStateJoin() {
   }
   NodeInfo peer_node_info;
   if (identity_index_ == 0) {
-    peer_node_info.node_id = NodeId(all_keys_[1].pmid.name().value);
+    peer_node_info.id = NodeId(all_keys_[1].pmid.name().value);
     peer_node_info.public_key = all_keys_[1].pmid.public_key();
   } else {
-    peer_node_info.node_id = NodeId(all_keys_[0].pmid.name().value);
+    peer_node_info.id = NodeId(all_keys_[0].pmid.name().value);
     peer_node_info.public_key = all_keys_[0].pmid.public_key();
   }
-  peer_node_info.connection_id = peer_node_info.node_id;
+  peer_node_info.connection_id = peer_node_info.id;
 
   ReturnCode ret_code(
       static_cast<ReturnCode>(demo_node_->ZeroStateJoin(bootstrap_peer_ep_, peer_node_info)));
@@ -178,6 +178,13 @@ void Commands::SendMessages(int id_index, const DestinationType& destination_typ
   std::condition_variable cond_var;
   int operation_count(0);
   //   Send messages
+  auto timeout(Parameters::default_response_timeout);
+  std::cout << "message_count " << messages_count << std::endl;
+  if (1000 * messages_count * ((destination_type != DestinationType::kGroup) ? 1 : 4) >
+          Parameters::default_response_timeout.count())
+    Parameters::default_response_timeout =
+      std::chrono::seconds(messages_count *
+                               ((destination_type != DestinationType::kGroup) ? 1 : 4));
   for (int index = 0; index < messages_count || infinite; ++index) {
     std::vector<NodeId> closest_nodes;
     NodeId dest_id;
@@ -201,6 +208,7 @@ void Commands::SendMessages(int id_index, const DestinationType& destination_typ
   std::cout << "Succcessfully received messages count::" << successful_count << std::endl;
   std::cout << "Unsucccessfully received messages count::" << (messages_count - successful_count)
             << std::endl;
+  Parameters::default_response_timeout = timeout;
 }
 
 uint16_t Commands::MakeMessage(int id_index, const DestinationType& destination_type,

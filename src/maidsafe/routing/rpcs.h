@@ -67,11 +67,11 @@ protobuf::Message ConnectSuccess(const NodeId& node_id, const NodeId& this_node_
 protobuf::Message ConnectSuccessAcknowledgement(const NodeId& node_id, const NodeId& this_node_id,
                                                 const NodeId& this_connection_id,
                                                 bool requestor,
-                                                const std::vector<NodeId>& close_ids,
+                                                const std::vector<NodeInfo>& close_ids,
                                                 bool client_node);
 
-protobuf::Message ClosestNodesUpdate(const NodeId& node_id, const NodeId& my_node_id,
-                                     const std::vector<NodeInfo>& closest_nodes);
+protobuf::Message InformClientOfNewCloseNode(const NodeId& node_id, const NodeId& this_node_id,
+                                             const NodeId& client_node_id);
 
 protobuf::Message GetGroup(const NodeId& node_id, const NodeId& my_node_id);
 
