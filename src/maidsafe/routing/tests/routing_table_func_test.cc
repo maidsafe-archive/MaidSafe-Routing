@@ -239,16 +239,16 @@ void RoutingTableNetwork::AddNewNode() {
 
   if (RoutingTableInfo::ready_nodes > size_t(0) &&
       RoutingTableInfo::ready_nodes <=
-          static_cast<size_t>(Parameters::max_routing_table_size + 20)) {
+          static_cast<size_t>(Parameters::max_routing_table_size * 2)) {
     for (uint16_t index(0);
          index < std::min(RoutingTableInfo::ready_nodes,
-                          static_cast<size_t>(Parameters::max_routing_table_size + 20));
+                          static_cast<size_t>(Parameters::max_routing_table_size * 2));
          ++index) {
       AddNode(*nodes_info_.rbegin(), nodes_info_.at(index));
     }
   } else if (RoutingTableInfo::ready_nodes != 0) {
     while ((*nodes_info_.rbegin())->routing_table->nodes_.size() <
-           static_cast<size_t>(Parameters::max_routing_table_size)) {
+           static_cast<size_t>(Parameters::unidirectional_interest_range)) {
       AddNode(*nodes_info_.rbegin(),
               nodes_info_.at(RandomUint32() % RoutingTableInfo::ready_nodes));
     }
@@ -410,9 +410,8 @@ void RoutingTableNetwork::RoutingTablesInfo() {
   }
 }
 
-TEST_F(RoutingTableNetwork, FUNC_CreateNetworkWithNoDiscovery) {
-  size_t kMaxNetworkSize(200), kReportInterval(10);
-  //  CreateNetworkWithNoDiscovery();
+TEST_F(RoutingTableNetwork, FUNC_AnalyseNetwork) {
+  size_t kMaxNetworkSize(100), kReportInterval(50);
   LOG(kVerbose) << "Add new nodes";
   for (size_t index(0); index < kMaxNetworkSize; ++index) {
     AddNewNode();

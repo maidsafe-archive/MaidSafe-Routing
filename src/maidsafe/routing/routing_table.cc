@@ -230,6 +230,9 @@ bool RoutingTable::IsThisNodeInRange(const NodeId& target_id, const uint16_t ran
 }
 
 bool RoutingTable::IsThisNodeClosestTo(const NodeId& target_id, bool ignore_exact_match) {
+  if (target_id == kNodeId())
+    return false;
+
   if (nodes_.empty())
     return false;
 

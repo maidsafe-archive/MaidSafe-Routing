@@ -206,10 +206,6 @@ NodeId CloseNodesChange::ChoosePmidNode(const std::set<NodeId>& online_pmids,
   return *pmids_itr;
 }
 
-bool CloseNodesChange::OldEqualsToNew() const {
-  return old_close_nodes_ == new_close_nodes_;
-}
-
 void swap(CloseNodesChange& lhs, CloseNodesChange& rhs) MAIDSAFE_NOEXCEPT {
   using std::swap;
   swap(lhs.node_id_, rhs.node_id_);
@@ -220,17 +216,17 @@ void swap(CloseNodesChange& lhs, CloseNodesChange& rhs) MAIDSAFE_NOEXCEPT {
   swap(lhs.radius_, rhs.radius_);
 }
 
-void CloseNodesChange::Print() {
+void CloseNodesChange::Print() const {
   std::stringstream stream;
   for (auto entry : old_close_nodes_)
-    stream << "\n\t\t" "entry in old_close_nodes" << "\t------\t" << DebugId(entry);
+    stream << "\n\t\tentry in old_close_nodes" << "\t------\t" << DebugId(entry);
 
   for (auto entry : new_close_nodes_)
-    stream << "\n\t\t entry in new_close_nodes\t------\t" << DebugId(entry);
+    stream << "\n\t\tentry in new_close_nodes\t------\t" << DebugId(entry);
 
   stream << "\n\t\tentry in lost_node\t------\t" << DebugId(lost_node_);
   stream << "\n\t\tentry in new_node\t------\t" << DebugId(new_node_);
-  LOG(kInfo) << stream.rdbuf();
+  LOG(kInfo) << stream.str();
 }
 
 }  // namespace routing
