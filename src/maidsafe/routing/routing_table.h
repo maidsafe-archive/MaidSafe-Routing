@@ -122,8 +122,8 @@ class RoutingTable {
   friend class test::RoutingTableTest_BEH_CheckMockSendGroupChangeRpcs_Test;
   friend class test::NetworkStatisticsTest_BEH_IsIdInGroupRange_Test;
   friend class test::RoutingTableTest_FUNC_IsNodeIdInGroupRange_Test;
- friend class test::RoutingTableInfo;
- friend class test::RoutingTableNetwork;
+  friend class test::RoutingTableInfo;
+  friend class test::RoutingTableNetwork;
 
  private:
   RoutingTable(const RoutingTable&);

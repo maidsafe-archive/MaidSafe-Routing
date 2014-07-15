@@ -47,7 +47,7 @@ uint16_t Parameters::maximum_find_close_node_failures(10);
 uint16_t Parameters::max_route_history(3);
 uint16_t Parameters::hops_to_live(50);
 uint16_t Parameters::accepted_distance_tolerance(1);
-uint16_t Parameters::unidirectional_interest_range(Parameters::closest_nodes_size * 3 / 2);
+uint16_t Parameters::unidirectional_interest_range(Parameters::closest_nodes_size * 2);
 std::chrono::steady_clock::duration Parameters::local_retreival_timeout(std::chrono::seconds(2));
 uint16_t Parameters::routing_table_ready_to_response(Parameters::max_routing_table_size / 2);
 bptime::time_duration Parameters::connect_rpc_prune_timeout(

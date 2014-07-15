@@ -166,7 +166,6 @@ NodeInfo RoutingTable::DropNode(const NodeId& node_to_drop, bool routing_only) {
                                                 lock));
     auto found(Find(node_to_drop, lock));
     if (found.first) {
-
       if ((nodes_.size() < Parameters::closest_nodes_size) ||
            !NodeId::CloserToTarget(nodes_.at(Parameters::closest_nodes_size - 1).id,
                                    node_to_drop, kNodeId())) {
@@ -354,7 +353,8 @@ bool RoutingTable::MakeSpaceForNodeToBeAdded(const NodeInfo& node, bool remove,
     return false;
 
   // Parameters::closest_nodes_size * 2 to be a paramater by itself
-  if (NodeId::CloserToTarget(nodes_.at(Parameters::closest_nodes_size * 2).id, node.id, kNodeId()))
+  if (NodeId::CloserToTarget(nodes_.at(Parameters::unidirectional_interest_range).id, node.id,
+                             kNodeId()))
     return false;
 
   for (auto it(nodes_.rbegin()); it != nodes_.rend(); ++it)
