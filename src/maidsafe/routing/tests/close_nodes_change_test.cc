@@ -334,7 +334,7 @@ TEST_F(CloseNodesChangeTest, BEH_FullSizeRoutingTable) {
       EXPECT_TRUE(routing_table.AddNode(new_node));
     }
   }
-  while (!routing_table.size() > 0) {
+  while (routing_table.size() > 0) {
     auto random_index(RandomUint32() % new_ids.size());
     auto iter(std::begin(new_ids));
     std::advance(iter, random_index);
