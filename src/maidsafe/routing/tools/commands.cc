@@ -180,9 +180,11 @@ void Commands::SendMessages(int id_index, const DestinationType& destination_typ
   //   Send messages
   auto timeout(Parameters::default_response_timeout);
   std::cout << "message_count " << messages_count << std::endl;
-  Parameters::default_response_timeout =
+  if (1000 * messages_count * ((destination_type != DestinationType::kGroup) ? 1 : 4) >
+          Parameters::default_response_timeout.count())
+    Parameters::default_response_timeout =
       std::chrono::seconds(messages_count *
-                           ((destination_type != DestinationType::kGroup) ? 1 : 4));
+                               ((destination_type != DestinationType::kGroup) ? 1 : 4));
   for (int index = 0; index < messages_count || infinite; ++index) {
     std::vector<NodeId> closest_nodes;
     NodeId dest_id;
