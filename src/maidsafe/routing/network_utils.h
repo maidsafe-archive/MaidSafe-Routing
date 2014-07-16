@@ -101,7 +101,7 @@ class NetworkUtils {
   boost::filesystem::path kBootstrapFilePath_;
   bool running_;
   std::mutex running_mutex_;
-  uint16_t bootstrap_attempt_;
+  unsigned int bootstrap_attempt_;
   NodeId bootstrap_connection_id_;
   NodeId this_node_relay_connection_id_;
   RoutingTable& routing_table_;

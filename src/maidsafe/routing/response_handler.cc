@@ -343,8 +343,8 @@ void ResponseHandler::HandleSuccessAcknowledgementAsRequestor(
 }
 
 void ResponseHandler::CheckAndSendConnectRequest(const NodeId& node_id) {
-  uint16_t limit(routing_table_.client_mode() ? Parameters::max_routing_table_size_for_client
-                                              : Parameters::closest_nodes_size);
+  unsigned int limit(routing_table_.client_mode() ? Parameters::max_routing_table_size_for_client
+                                                  : Parameters::closest_nodes_size);
   if ((routing_table_.size() < routing_table_.kMaxSize()) ||
       NodeId::CloserToTarget(
           node_id, routing_table_.GetNthClosestNode(routing_table_.kNodeId(), limit).id,

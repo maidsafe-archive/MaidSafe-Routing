@@ -204,7 +204,7 @@ TEST(NetworkUtilsTest, FUNC_ProcessSendDirectEndpoint) {
   ClientRoutingTable client_routing_table(routing_table.kNodeId());
   NetworkUtils network(routing_table, client_routing_table);
 
-  ScopedBootstrapFile bootstrap_file( {endpoint2} );
+  ScopedBootstrapFile bootstrap_file({endpoint2});
   EXPECT_EQ(kSuccess, network.Bootstrap(message_received_functor3, connection_lost_functor));
   rudp::NatType this_nat_type;
   // RUDP NOTE: sleep here will let the test pass. Seems like rudp doesn't updates info about
@@ -354,7 +354,7 @@ TEST(NetworkUtilsTest, FUNC_ProcessSendRecursiveSendOn) {
   rudp2.MarkConnectionAsValid(node_id1, endpoint);
   LOG(kVerbose) << " ------------------------   Zero state setup done  ----------------------- ";
 
-  ScopedBootstrapFile bootstrap_file( {endpoint2} );
+  ScopedBootstrapFile bootstrap_file({endpoint2});
 
   EXPECT_EQ(kSuccess, network.Bootstrap(message_received_functor3, connection_lost_functor3));
   rudp::EndpointPair endpoint_pair2, endpoint_pair3;

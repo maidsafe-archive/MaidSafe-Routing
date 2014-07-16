@@ -363,14 +363,15 @@ void NetworkUtils::RecursiveSendOn(protobuf::Message message, NodeInfo last_node
 }
 
 void NetworkUtils::AdjustRouteHistory(protobuf::Message& message) {
-  if (Parameters::hops_to_live == message.hops_to_live() &&
+  if (Parameters::hops_to_live == static_cast<unsigned int>(message.hops_to_live()) &&
       NodeId(message.source_id()) == routing_table_.kNodeId())
     return;
-  assert(message.route_history().size() <= Parameters::max_routing_table_size);
+  assert(static_cast<unsigned int>(message.route_history().size()) <=
+             Parameters::max_routing_table_size);
   if (std::find(message.route_history().begin(), message.route_history().end(),
                 routing_table_.kNodeId().string()) == message.route_history().end()) {
     message.add_route_history(routing_table_.kNodeId().string());
-    if (message.route_history().size() > Parameters::max_route_history) {
+    if (static_cast<unsigned int>(message.route_history().size()) > Parameters::max_route_history) {
       std::vector<std::string> route_history(message.route_history().begin() + 1,
                                              message.route_history().end());
       message.clear_route_history();
@@ -380,7 +381,8 @@ void NetworkUtils::AdjustRouteHistory(protobuf::Message& message) {
       }
     }
   }
-  assert(message.route_history().size() <= Parameters::max_routing_table_size);
+  assert(static_cast<unsigned int>(message.route_history().size()) <=
+             Parameters::max_routing_table_size);
 }
 
 void NetworkUtils::set_new_bootstrap_contact_functor(

@@ -58,7 +58,7 @@ TEST(ServicesTest, BEH_Ping) {
   protobuf::PingRequest ping_request;
   // somebody pings us
   protobuf::Message message = rpcs::Ping(routing_table.kNodeId(), "me");
-  EXPECT_TRUE(message.destination_id() == routing_table.kNodeId().string());
+  EXPECT_EQ(message.destination_id(), routing_table.kNodeId().string());
   EXPECT_TRUE(ping_request.ParseFromString(message.data(0)));  // us
   EXPECT_TRUE(ping_request.IsInitialized());
   // run message through Service
@@ -66,7 +66,7 @@ TEST(ServicesTest, BEH_Ping) {
   EXPECT_EQ(1, message.type());
   EXPECT_EQ(message.request(), false);
   EXPECT_NE(message.data_size(), 0);
-  EXPECT_TRUE(message.source_id() == routing_table.kNodeId().string());
+  EXPECT_EQ(message.source_id(), routing_table.kNodeId().string());
   EXPECT_EQ(message.replication(), 1);
   EXPECT_EQ(message.type(), 1);
   EXPECT_EQ(message.request(), false);

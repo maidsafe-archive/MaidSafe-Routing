@@ -43,10 +43,11 @@ namespace routing {
 namespace test {
 
 struct ScopedBootstrapFile {
-  ScopedBootstrapFile(const BootstrapContacts& bootstrap_contacts);
+  explicit ScopedBootstrapFile(const BootstrapContacts& bootstrap_contacts);
   ~ScopedBootstrapFile();
+
  private:
-   const boost::filesystem::path kFilePath;
+  const boost::filesystem::path kFilePath;
 };
 
 struct NodeInfoAndPrivateKey {
@@ -75,8 +76,8 @@ NodeInfoAndPrivateKey MakeNodeInfoAndKeysWithMaid(passport::Maid maid);
 
 NodeInfo MakeNode();
 
-NodeId GenerateUniqueRandomId(const NodeId& holder, uint16_t pos);
-NodeId GenerateUniqueRandomId(uint16_t pos);
+NodeId GenerateUniqueRandomId(const NodeId& holder, unsigned int pos);
+NodeId GenerateUniqueRandomId(unsigned int pos);
 NodeId GenerateUniqueRandomNodeId(const std::vector<NodeId>& esisting_ids);
 
 int NetworkStatus(bool client, int status);

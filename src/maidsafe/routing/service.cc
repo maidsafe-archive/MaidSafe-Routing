@@ -240,7 +240,7 @@ void Service::FindNodes(protobuf::Message& message) {
   protobuf::FindNodesResponse found_nodes;
   auto nodes(routing_table_.GetClosestNodes(
                  NodeId(find_nodes.target_node()),
-                 static_cast<uint16_t>(find_nodes.num_nodes_requested() - 1)));
+                 static_cast<unsigned int>(find_nodes.num_nodes_requested() - 1)));
   found_nodes.add_nodes(routing_table_.kNodeId().string());
 
   for (const auto& node : nodes)

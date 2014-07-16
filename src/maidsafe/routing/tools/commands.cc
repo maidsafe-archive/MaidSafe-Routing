@@ -121,7 +121,7 @@ void Commands::PrintRoutingTable() {
 void Commands::GetPeer(const std::string& peer) {
   size_t delim = peer.rfind(':');
   try {
-    bootstrap_peer_ep_.port(static_cast<uint16_t>(atoi(peer.substr(delim + 1).c_str())));
+    bootstrap_peer_ep_.port(static_cast<unsigned int>(atoi(peer.substr(delim + 1).c_str())));
     bootstrap_peer_ep_.address(boost::asio::ip::address::from_string(peer.substr(0, delim)));
     std::cout << "Going to bootstrap from endpoint " << bootstrap_peer_ep_ << std::endl;
   }
@@ -172,11 +172,11 @@ void Commands::SendMessages(int id_index, const DestinationType& destination_typ
     infinite = true;
 
   uint32_t message_id(0);
-  uint16_t expect_respondent(0);
+  unsigned int expect_respondent(0);
   std::atomic<int> successful_count(0);
   std::mutex mutex;
   std::condition_variable cond_var;
-  int operation_count(0);
+  unsigned int operation_count(0);
   //   Send messages
   auto timeout(Parameters::default_response_timeout);
   std::cout << "message_count " << messages_count << std::endl;
@@ -211,7 +211,7 @@ void Commands::SendMessages(int id_index, const DestinationType& destination_typ
   Parameters::default_response_timeout = timeout;
 }
 
-uint16_t Commands::MakeMessage(int id_index, const DestinationType& destination_type,
+unsigned int Commands::MakeMessage(int id_index, const DestinationType& destination_type,
                                std::vector<NodeId>& closest_nodes, NodeId& dest_id) {
   int identity_index;
   if (id_index >= 0)
@@ -229,7 +229,7 @@ uint16_t Commands::MakeMessage(int id_index, const DestinationType& destination_
             << " to " << (destination_type != DestinationType::kGroup ? ": " : "group : ")
             << maidsafe::HexSubstr(dest_id.string())
             << " , expect receive response from :" << std::endl;
-  uint16_t expected_respodents(destination_type != DestinationType::kGroup ? 1 : 4);
+  unsigned int expected_respodents(destination_type != DestinationType::kGroup ? 1 : 4);
   std::vector<NodeId> closests;
   if (destination_type == DestinationType::kGroup)
     NodeId farthest_closests(CalculateClosests(dest_id, closests, expected_respodents));
@@ -246,9 +246,9 @@ void Commands::CalculateTimeToSleep(std::chrono::milliseconds& msg_sent_time) {
   msg_sent_time = std::chrono::milliseconds(1000 / num_msgs_per_second);
 }
 
-void Commands::SendAMessage(std::atomic<int>& successful_count, int& operation_count,
+void Commands::SendAMessage(std::atomic<int>& successful_count, unsigned int& operation_count,
                             std::mutex& mutex, std::condition_variable& cond_var,
-                            int messages_count, uint16_t expect_respondent,
+                            int messages_count, unsigned int expect_respondent,
                             std::vector<NodeId> closest_nodes, NodeId dest_id, std::string data) {
   bool group_performance(false);
   if ((expect_respondent > 1) && (closest_nodes.empty()))
@@ -462,7 +462,7 @@ void Commands::MarkResultArrived() {
 }
 
 NodeId Commands::CalculateClosests(const NodeId& target_id, std::vector<NodeId>& closests,
-                                   uint16_t num_of_closests) {
+                                   unsigned int num_of_closests) {
   if (all_ids_.size() <= num_of_closests) {
     closests = all_ids_;
     return closests[closests.size() - 1];
@@ -487,7 +487,7 @@ void Commands::RunPerformanceTest(bool is_send_group) {
   data_size_ = 1;
   int iteration(1);
   uint32_t message_id(0);
-  uint16_t expect_respondent(is_send_group ? routing::Parameters::group_size : 1);
+  unsigned int expect_respondent(is_send_group ? routing::Parameters::group_size : 1);
   std::vector<NodeId> closest_nodes;
   while (data_size_ < ((1024 * 1024) + 1024)) {
     std::string data, data_to_send;
@@ -498,7 +498,7 @@ void Commands::RunPerformanceTest(bool is_send_group) {
       std::atomic<int> successful_count(0);
       std::mutex mutex;
       std::condition_variable cond_var;
-      int operation_count(0);
+      unsigned int operation_count(0);
       data = ">:<" + std::to_string(++message_id) + "<:>" + data;
       SendAMessage(successful_count, operation_count, mutex, cond_var, 1,
                    expect_respondent, closest_nodes, routing_node, data);

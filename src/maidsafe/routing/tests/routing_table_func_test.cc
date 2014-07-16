@@ -76,7 +76,7 @@ class RoutingTableNetwork : public testing::Test {
         max_close_index_(0),
         total_close_index_(0),
         close_index_count_(0) {
-    Parameters::closest_nodes_size = static_cast<uint16_t>(kNumberofClosestNode);
+    Parameters::closest_nodes_size = static_cast<unsigned int>(kNumberofClosestNode);
     //    CreateKeys();
   }
 
@@ -240,7 +240,7 @@ void RoutingTableNetwork::AddNewNode() {
   if (RoutingTableInfo::ready_nodes > size_t(0) &&
       RoutingTableInfo::ready_nodes <=
           static_cast<size_t>(Parameters::max_routing_table_size * 2)) {
-    for (uint16_t index(0);
+    for (unsigned int index(0);
          index < std::min(RoutingTableInfo::ready_nodes,
                           static_cast<size_t>(Parameters::max_routing_table_size * 2));
          ++index) {

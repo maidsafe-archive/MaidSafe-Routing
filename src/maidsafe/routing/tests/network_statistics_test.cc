@@ -91,7 +91,7 @@ TEST(NetworkStatisticsTest, BEH_IsIdInGroupRange) {
   std::vector<NodeId> nodes_id;
   NodeInfo node_info;
   NodeId my_node(routing_table.kNodeId());
-  while (static_cast<uint16_t>(routing_table.size()) < Parameters::max_routing_table_size) {
+  while (static_cast<unsigned int>(routing_table.size()) < Parameters::max_routing_table_size) {
     NodeInfo node(MakeNode());
     nodes_id.push_back(node.id);
     EXPECT_TRUE(routing_table.AddNode(node));
@@ -101,7 +101,7 @@ TEST(NetworkStatisticsTest, BEH_IsIdInGroupRange) {
   std::partial_sort(nodes_id.begin(), nodes_id.begin() + Parameters::group_size + 1, nodes_id.end(),
                     [&](const NodeId& lhs,
                         const NodeId& rhs) { return NodeId::CloserToTarget(lhs, rhs, info_id); });
-  uint16_t index(0);
+  unsigned int index(0);
   while (index < Parameters::max_routing_table_size) {
     if ((nodes_id.at(index) ^ info_id) <= (network_statistics.distance_))
       EXPECT_TRUE(network_statistics.EstimateInGroup(nodes_id.at(index++), info_id));

@@ -160,7 +160,7 @@ TEST_F(MessageHandlerTest, BEH_HandleRelay) {
     message_handler.HandleMessage(message);
   }
   {  // Handle direct relay request to other not in routing table
-    NodeId destination_id(GenerateUniqueRandomId(close_info_.id, 4));
+    NodeId destination_id(GenerateUniqueRandomId(close_info_.id, static_cast<unsigned int>(4)));
     EXPECT_CALL(*utils_,
                 SendToClosestNode(testing::AllOf(
                     testing::Property(&protobuf::Message::destination_id, destination_id.string()),

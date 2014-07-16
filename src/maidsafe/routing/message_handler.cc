@@ -263,7 +263,7 @@ void MessageHandler::HandleGroupMessageAsClosestNode(protobuf::Message& message)
     route_history.push_back(message.route_history(0));
 
   // This node is closest so will send to all replicant nodes
-  uint16_t replication(static_cast<uint16_t>(message.replication()));
+  unsigned int replication(static_cast<unsigned int>(message.replication()));
   if ((replication < 1) || (replication > Parameters::group_size)) {
     LOG(kError) << "Dropping invalid non-direct message."
                 << " id: " << message.id();
@@ -487,7 +487,7 @@ void MessageHandler::HandleGroupRelayRequestMessageAsClosestNode(protobuf::Messa
   }
 
   // This node is closest so will send to all replicant nodes
-  uint16_t replication(static_cast<uint16_t>(message.replication()));
+  unsigned int replication(static_cast<unsigned int>(message.replication()));
   if ((replication < 1) || (replication > Parameters::group_size)) {
     LOG(kError) << "Dropping invalid non-direct message."
                 << " id: " << message.id();

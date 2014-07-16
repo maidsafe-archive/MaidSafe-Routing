@@ -80,7 +80,7 @@ NodeInfoAndPrivateKey MakeNodeInfoAndKeysWithMaid(passport::Maid maid) {
   return MakeNodeInfoAndKeysWithFob(maid);
 }
 
-NodeId GenerateUniqueRandomId(const NodeId& holder, uint16_t pos) {
+NodeId GenerateUniqueRandomId(const NodeId& holder, unsigned int pos) {
   std::string holder_id = holder.ToStringEncoded(NodeId::EncodingType::kBinary);
   std::bitset<64 * 8> holder_id_binary_bitset(holder_id);
   NodeId new_node;
@@ -90,7 +90,7 @@ NodeId GenerateUniqueRandomId(const NodeId& holder, uint16_t pos) {
     new_node = NodeId(NodeId::IdType::kRandomId);
     std::string new_id = new_node.ToStringEncoded(NodeId::EncodingType::kBinary);
     std::bitset<64 * 8> binary_bitset(new_id);
-    for (uint16_t i(0); i < pos; ++i)
+    for (unsigned int i(0); i < pos; ++i)
       holder_id_binary_bitset[i] = binary_bitset[i];
     new_node_string = holder_id_binary_bitset.to_string();
     if (pos == 0)
@@ -109,7 +109,7 @@ NodeId GenerateUniqueNonRandomId(const NodeId& holder, uint64_t id) {
   new_node = NodeId(NodeId::IdType::kRandomId);
   std::string new_id = new_node.ToStringEncoded(NodeId::EncodingType::kBinary);
   std::bitset<64> binary_bitset(id);
-  for (uint16_t i(0); i < 64; ++i)
+  for (unsigned int i(0); i < 64; ++i)
     holder_id_binary_bitset[i] = binary_bitset[i];
   new_node_string = holder_id_binary_bitset.to_string();
   new_node = NodeId(new_node_string, NodeId::EncodingType::kBinary);
@@ -126,7 +126,7 @@ NodeId GenerateUniqueRandomNodeId(const std::vector<NodeId>& esisting_ids) {
   return new_node;
 }
 
-NodeId GenerateUniqueRandomId(uint16_t pos) {
+NodeId GenerateUniqueRandomId(unsigned int pos) {
   NodeId holder(NodeId(NodeId::IdType::kMaxId) ^ NodeId(NodeId::IdType::kMaxId));
   return GenerateUniqueRandomId(holder, pos);
 }
@@ -137,8 +137,8 @@ NodeId GenerateUniqueNonRandomId(uint64_t pos) {
 }
 
 int NetworkStatus(bool client, int status) {
-  uint16_t max_size(client ? Parameters::max_routing_table_size_for_client
-                           : Parameters::max_routing_table_size);
+  unsigned int max_size(client ? Parameters::max_routing_table_size_for_client
+                               : Parameters::max_routing_table_size);
   return (status > 0) ? (status * 100 / max_size) : status;
 }
 

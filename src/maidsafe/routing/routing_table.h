@@ -71,14 +71,14 @@ struct RoutingTableChange {
                          health(0) {}
   RoutingTableChange(const NodeInfo& added_node_in, const Remove& removed_in,
                      bool insertion_in, std::shared_ptr<CloseNodesChange> close_nodes_change_in,
-                     uint16_t health_in)
+                     unsigned int health_in)
       : added_node(added_node_in), removed(removed_in), insertion(insertion_in),
         close_nodes_change(close_nodes_change_in), health(health_in) {}
   NodeInfo added_node;
   Remove removed;
   bool insertion;
   std::shared_ptr<CloseNodesChange> close_nodes_change;
-  uint16_t health;
+  unsigned int health;
 };
 
 typedef std::function<void(const RoutingTableChange& /*routing_table_change*/)>
@@ -93,7 +93,7 @@ class RoutingTable {
   bool CheckNode(const NodeInfo& peer);
   NodeInfo DropNode(const NodeId& node_to_drop, bool routing_only);
 
-  bool IsThisNodeInRange(const NodeId& target_id, uint16_t range);
+  bool IsThisNodeInRange(const NodeId& target_id, unsigned int range);
   bool IsThisNodeClosestTo(const NodeId& target_id, bool ignore_exact_match = false);
   bool Contains(const NodeId& node_id) const;
   bool ConfirmGroupMembers(const NodeId& node1, const NodeId& node2);
@@ -103,14 +103,14 @@ class RoutingTable {
   NodeInfo GetClosestNode(const NodeId& target_id,
                           bool ignore_exact_match = false,
                           const std::vector<std::string>& exclude = std::vector<std::string>());
-  std::vector<NodeInfo> GetClosestNodes(const NodeId& target_id, uint16_t number_to_get,
+  std::vector<NodeInfo> GetClosestNodes(const NodeId& target_id, unsigned int number_to_get,
                                         bool ignore_exact_match = false);
-  NodeInfo GetNthClosestNode(const NodeId& target_id, uint16_t index);
+  NodeInfo GetNthClosestNode(const NodeId& target_id, unsigned int index);
   NodeId RandomConnectedNode();
 
   size_t size() const;
-  uint16_t kThresholdSize() const { return kThresholdSize_; }
-  uint16_t kMaxSize() const { return kMaxSize_; }
+  unsigned int kThresholdSize() const { return kThresholdSize_; }
+  unsigned int kMaxSize() const { return kMaxSize_; }
   NodeId kNodeId() const { return kNodeId_; }
   asymm::PrivateKey kPrivateKey() const { return kKeys_.private_key; }
   asymm::PublicKey kPublicKey() const { return kKeys_.public_key; }
@@ -147,16 +147,16 @@ class RoutingTable {
   bool MakeSpaceForNodeToBeAdded(const NodeInfo& node, bool remove, NodeInfo& removed_node,
                                  std::unique_lock<std::mutex>& lock);
 
-  uint16_t PartialSortFromTarget(const NodeId& target, uint16_t number,
-                                 std::unique_lock<std::mutex>& lock);
-  void NthElementSortFromTarget(const NodeId& target, uint16_t nth_element,
+  unsigned int PartialSortFromTarget(const NodeId& target, unsigned int number,
+                                     std::unique_lock<std::mutex>& lock);
+  void NthElementSortFromTarget(const NodeId& target, unsigned int nth_element,
                                 std::unique_lock<std::mutex>& lock);
   std::pair<bool, std::vector<NodeInfo>::iterator> Find(const NodeId& node_id,
                                                         std::unique_lock<std::mutex>& lock);
   std::pair<bool, std::vector<NodeInfo>::const_iterator> Find(
       const NodeId& node_id, std::unique_lock<std::mutex>& lock) const;
 
-  uint16_t NetworkStatus(uint16_t size) const;
+  unsigned int NetworkStatus(unsigned int size) const;
 
   void IpcSendCloseNodes();
   std::string PrintRoutingTable();
@@ -165,8 +165,8 @@ class RoutingTable {
   const NodeId kNodeId_;
   const NodeId kConnectionId_;
   const asymm::Keys kKeys_;
-  const uint16_t kMaxSize_;
-  const uint16_t kThresholdSize_;
+  const unsigned int kMaxSize_;
+  const unsigned int kThresholdSize_;
   mutable std::mutex mutex_;
   RoutingTableChangeFunctor routing_table_change_functor_;
   std::vector<NodeInfo> nodes_;

@@ -56,7 +56,8 @@ void UpdateBootstrapFile(const BootstrapContact& bootstrap_contact,
 // FIXME over write table if it exists
 void WriteBootstrapContacts(const BootstrapContacts& bootstrap_contacts,
                             const boost::filesystem::path& bootstrap_file_path);
-BootstrapContacts ReadBootstrapContacts(const boost::filesystem::path& bootstrap_file_path); // const FIXME
+// const FIXME
+BootstrapContacts ReadBootstrapContacts(const boost::filesystem::path& bootstrap_file_path);
 
 
 void InsertOrUpdateBootstrapContact(const BootstrapContact& bootstrap_contact,
