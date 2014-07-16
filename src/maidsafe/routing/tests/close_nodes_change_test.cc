@@ -281,7 +281,7 @@ TEST_F(CloseNodesChangeTest, BEH_SmallSizeRoutingTable) {
 
 TEST_F(CloseNodesChangeTest, BEH_FullSizeRoutingTable) {
   NodeId node_id(NodeId::IdType::kRandomId);
-  std::set<NodeId, std::function<bool(const NodeId & lhs, const NodeId & rhs)>> new_ids([node_id](
+  std::set<NodeId, std::function<bool(const NodeId& lhs, const NodeId& rhs)>> new_ids([node_id](
       const NodeId& lhs, const NodeId& rhs) { return NodeId::CloserToTarget(lhs, rhs, node_id); });
   NodeInfo new_node;
   NodeId removed;
@@ -289,12 +289,13 @@ TEST_F(CloseNodesChangeTest, BEH_FullSizeRoutingTable) {
   RoutingTableChangeFunctor routing_table_change_functor([&](
       const RoutingTableChange& routing_table_change) {
     if (routing_table.size() <= Parameters::closest_nodes_size) {
-      EXPECT_TRUE(routing_table_change.close_nodes_change != nullptr);
+      EXPECT_NE(routing_table_change.close_nodes_change, nullptr);
       if (routing_table_change.insertion) {
         EXPECT_FALSE(routing_table_change.close_nodes_change->new_node().IsZero());
         EXPECT_TRUE(routing_table_change.close_nodes_change->lost_node().IsZero());
       } else {
-        EXPECT_TRUE(routing_table_change.close_nodes_change->new_node().IsZero());
+        if (routing_table.size() != Parameters::closest_nodes_size)
+          EXPECT_TRUE(routing_table_change.close_nodes_change->new_node().IsZero());
         EXPECT_FALSE(routing_table_change.close_nodes_change->lost_node().IsZero());
         EXPECT_EQ(routing_table_change.close_nodes_change->lost_node(), removed);
         new_ids.erase(removed);
@@ -304,7 +305,7 @@ TEST_F(CloseNodesChangeTest, BEH_FullSizeRoutingTable) {
       std::advance(iter, Parameters::closest_nodes_size - 1);
       if (routing_table_change.insertion) {
         if (NodeId::CloserToTarget(new_node.id, *iter, node_id)) {
-          EXPECT_TRUE(routing_table_change.close_nodes_change != nullptr);
+          EXPECT_NE(routing_table_change.close_nodes_change, nullptr);
           EXPECT_FALSE(routing_table_change.close_nodes_change->new_node().IsZero());
           EXPECT_FALSE(routing_table_change.close_nodes_change->lost_node().IsZero());
           std::advance(iter, 1);
@@ -312,7 +313,7 @@ TEST_F(CloseNodesChangeTest, BEH_FullSizeRoutingTable) {
         }
       } else {
         if (!NodeId::CloserToTarget(*iter, removed, node_id)) {
-          EXPECT_TRUE(routing_table_change.close_nodes_change != nullptr);
+          EXPECT_NE(routing_table_change.close_nodes_change, nullptr);
           EXPECT_FALSE(routing_table_change.close_nodes_change->new_node().IsZero());
           std::advance(iter, 1);
           EXPECT_EQ(routing_table_change.close_nodes_change->new_node(), *iter);
@@ -340,7 +341,6 @@ TEST_F(CloseNodesChangeTest, BEH_FullSizeRoutingTable) {
     std::advance(iter, random_index);
     removed = *iter;
     routing_table.DropNode(*iter, true);
-    new_ids.erase(iter);
   }
 }
 
