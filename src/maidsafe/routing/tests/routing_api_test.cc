@@ -76,7 +76,7 @@ MessageReceivedFunctor no_ops_message_received_functor = [](const std::string&,
 TEST(APITest, BEH_API_ZeroState) {
   Endpoint endpoint1(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort()),
       endpoint2(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort());
-  ScopedBootstrapFile bootstrap_file( {endpoint1, endpoint2} );
+  ScopedBootstrapFile bootstrap_file({endpoint1, endpoint2});
 
   auto pmid1(passport::CreatePmidAndSigner().first), pmid2(passport::CreatePmidAndSigner().first),
       pmid3(passport::CreatePmidAndSigner().first);
@@ -130,11 +130,11 @@ TEST(APITest, BEH_API_ZeroState) {
   LOG(kInfo) << "done!!!";
 }
 
- TEST(APITest, DISABLED_BEH_API_ZeroStateWithDuplicateNode) {
+TEST(APITest, DISABLED_BEH_API_ZeroStateWithDuplicateNode) {
   rudp::Parameters::bootstrap_connection_lifespan = boost::posix_time::seconds(5);
   Endpoint endpoint1(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort()),
       endpoint2(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort());
-  ScopedBootstrapFile bootstrap_file( {endpoint1, endpoint2} );
+  ScopedBootstrapFile bootstrap_file({endpoint1, endpoint2});
 
   auto pmid1(passport::CreatePmidAndSigner().first), pmid2(passport::CreatePmidAndSigner().first),
       pmid3(passport::CreatePmidAndSigner().first);
@@ -198,7 +198,7 @@ TEST(APITest, BEH_API_ZeroState) {
 TEST(APITest, BEH_API_SendToSelf) {
   Endpoint endpoint1(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort()),
       endpoint2(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort());
-  ScopedBootstrapFile bootstrap_file( {endpoint1, endpoint2} );
+  ScopedBootstrapFile bootstrap_file({endpoint1, endpoint2});
 
 
   auto pmid1(passport::CreatePmidAndSigner().first), pmid2(passport::CreatePmidAndSigner().first),
@@ -278,7 +278,7 @@ TEST(APITest, BEH_API_SendToSelf) {
 TEST(APITest, BEH_API_ClientNode) {
   Endpoint endpoint1(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort()),
       endpoint2(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort());
-  ScopedBootstrapFile bootstrap_file( {endpoint1, endpoint2} );
+  ScopedBootstrapFile bootstrap_file({endpoint1, endpoint2});
 
   auto pmid1(passport::CreatePmidAndSigner().first), pmid2(passport::CreatePmidAndSigner().first);
   auto maid(passport::CreateMaidAndSigner().first);
@@ -354,7 +354,7 @@ TEST(APITest, BEH_API_ClientNode) {
 TEST(APITest, BEH_API_NonMutatingClientNode) {
   Endpoint endpoint1(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort()),
       endpoint2(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort());
-  ScopedBootstrapFile bootstrap_file( {endpoint1, endpoint2} );
+  ScopedBootstrapFile bootstrap_file({endpoint1, endpoint2});
 
   auto pmid1(passport::CreatePmidAndSigner().first), pmid2(passport::CreatePmidAndSigner().first);
   NodeInfoAndPrivateKey node1(MakeNodeInfoAndKeysWithPmid(pmid1));
@@ -366,7 +366,7 @@ TEST(APITest, BEH_API_NonMutatingClientNode) {
   Functors functors1, functors2, functors3;
   Routing routing1(pmid1);
   Routing routing2(pmid2);
-  Routing routing3{ };
+  Routing routing3{};
   functors1.message_and_caching.message_received = no_ops_message_received_functor;
   functors3 = functors2 = functors1;
 
@@ -429,7 +429,7 @@ TEST(APITest, BEH_API_NonMutatingClientNode) {
 TEST(APITest, BEH_API_ClientNodeSameId) {
   Endpoint endpoint1(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort()),
       endpoint2(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort());
-  ScopedBootstrapFile bootstrap_file( {endpoint1, endpoint2} );
+  ScopedBootstrapFile bootstrap_file({endpoint1, endpoint2});
 
 
   auto pmid1(passport::CreatePmidAndSigner().first), pmid2(passport::CreatePmidAndSigner().first);
@@ -538,7 +538,7 @@ TEST(APITest, BEH_API_ClientNodeSameId) {
 TEST(APITest, BEH_API_NodeNetwork) {
   Endpoint endpoint1(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort()),
       endpoint2(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort());
-  ScopedBootstrapFile bootstrap_file( {endpoint1, endpoint2} );
+  ScopedBootstrapFile bootstrap_file({endpoint1, endpoint2});
 
   int min_join_status(8);  // TODO(Prakash): To decide
   Functors functors;
@@ -596,7 +596,7 @@ TEST(APITest, BEH_API_NodeNetwork) {
 TEST(APITest, BEH_API_NodeNetworkWithClient) {
   Endpoint endpoint1(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort()),
       endpoint2(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort());
-  ScopedBootstrapFile bootstrap_file( {endpoint1, endpoint2} );
+  ScopedBootstrapFile bootstrap_file({endpoint1, endpoint2});
 
 
   int min_join_status(std::min(kServerCount, 8));
@@ -693,11 +693,12 @@ TEST(APITest, BEH_API_NodeNetworkWithClient) {
 TEST(APITest, BEH_API_SendGroup) {
   Endpoint endpoint1(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort()),
       endpoint2(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort());
-  ScopedBootstrapFile bootstrap_file( {endpoint1, endpoint2} );
+  ScopedBootstrapFile bootstrap_file({endpoint1, endpoint2});
 
 
   Parameters::default_response_timeout = std::chrono::seconds(200);
-  const uint16_t kMessageCount(10);  // each vault will send kMessageCount message to other vaults
+  const unsigned int kMessageCount(
+      10);  // each vault will send kMessageCount message to other vaults
   const size_t kDataSize(512 * 1024);
   int min_join_status(std::min(kServerCount, 8));
   std::vector<boost::promise<bool>> join_promises(kNetworkSize);
@@ -781,16 +782,16 @@ TEST(APITest, BEH_API_SendGroup) {
 
   std::mutex send_mutex;
   std::vector<boost::promise<bool>> send_promises(kServerCount * kMessageCount);
-  std::vector<uint16_t> send_counts(kServerCount * kMessageCount, 0);
+  std::vector<unsigned int> send_counts(kServerCount * kMessageCount, 0);
   std::vector<boost::future<bool>> send_futures;
   for (auto& send_promise : send_promises)
     send_futures.emplace_back(send_promise.get_future());
   bool result(false);
-  for (uint16_t i(0); i < kServerCount; ++i) {
+  for (unsigned int i(0); i < kServerCount; ++i) {
     NodeId dest_id(routing_node[i]->kNodeId());
-    uint16_t count(0);
+    unsigned int count(0);
     while (count < kMessageCount) {
-      uint16_t message_index(i * kServerCount + count);
+      unsigned int message_index(i * kServerCount + count);
       ResponseFunctor response_functor = [&send_mutex, &send_promises, &send_counts, &data,
                                           message_index, &result](std::string string) {
         std::unique_lock<std::mutex> lock(send_mutex);
@@ -840,7 +841,7 @@ TEST(APITest, BEH_API_PartiallyJoinedSend) {
 
   Endpoint endpoint1(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort()),
       endpoint2(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort());
-  ScopedBootstrapFile bootstrap_file( {endpoint1, endpoint2} );
+  ScopedBootstrapFile bootstrap_file({endpoint1, endpoint2});
 
   auto pmid1(passport::CreatePmidAndSigner().first), pmid2(passport::CreatePmidAndSigner().first),
       pmid3(passport::CreatePmidAndSigner().first);
@@ -926,7 +927,7 @@ TEST(APITest, BEH_API_PartiallyJoinedSend) {
 TEST(APITest, BEH_API_TypedMessageSend) {
   Endpoint endpoint1(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort()),
       endpoint2(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort());
-  ScopedBootstrapFile bootstrap_file( {endpoint1, endpoint2} );
+  ScopedBootstrapFile bootstrap_file({endpoint1, endpoint2});
 
   auto pmid1(passport::CreatePmidAndSigner().first), pmid2(passport::CreatePmidAndSigner().first),
       pmid3(passport::CreatePmidAndSigner().first);
@@ -1091,7 +1092,7 @@ TEST(APITest, BEH_API_TypedMessageSend) {
 TEST(APITest, BEH_API_TypedMessagePartiallyJoinedSendReceive) {
   Endpoint endpoint1(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort()),
       endpoint2(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort());
-  ScopedBootstrapFile bootstrap_file( {endpoint1, endpoint2} );
+  ScopedBootstrapFile bootstrap_file({endpoint1, endpoint2});
 
   const int kMessageCount = 100;
   int min_join_status(std::min(kServerCount, 8));
@@ -1237,7 +1238,7 @@ TEST(APITest, BEH_API_TypedMessagePartiallyJoinedSendReceive) {
 
   test_functors.typed_message_and_caching.group_to_group.message_received = [](
       const GroupToGroupMessage& /*g2g*/) {};  // NOLINT
-  int response_count(0);
+  unsigned int response_count(0);
   test_functors.typed_message_and_caching.group_to_single.message_received =
       [&mutex, &response_count, &cv](const GroupToSingleMessage& /*g2s*/) {
     LOG(kVerbose) << "group to single message received at test node";
@@ -1274,7 +1275,7 @@ TEST(APITest, BEH_API_TypedMessagePartiallyJoinedSendReceive) {
     cv.wait(lock, [&received_relay_messages] {
       return received_relay_messages.size() == Parameters::group_size;
     });
-    ASSERT_TRUE(received_relay_messages.size() == Parameters::group_size);
+    ASSERT_EQ(received_relay_messages.size(), Parameters::group_size);
   };
 
   //  Test Single To Group random id
@@ -1285,7 +1286,7 @@ TEST(APITest, BEH_API_TypedMessagePartiallyJoinedSendReceive) {
     cv.wait(lock, [kMessageCount, &received_relay_messages] {
       return (received_relay_messages.size() == (Parameters::group_size * (kMessageCount + 1U)));
     });
-    ASSERT_TRUE(received_relay_messages.size() == (Parameters::group_size * (kMessageCount + 1U)));
+    ASSERT_EQ(received_relay_messages.size(), (Parameters::group_size * (kMessageCount + 1U)));
   };
 
   // Send response
@@ -1303,7 +1304,7 @@ TEST(APITest, BEH_API_TypedMessagePartiallyJoinedSendReceive) {
       return (response_count == Parameters::group_size * (kMessageCount + 1));
     });
   }
-  ASSERT_TRUE(response_count == Parameters::group_size * (kMessageCount + 1));
+  ASSERT_EQ(response_count, Parameters::group_size * (kMessageCount + 1));
 }
 
 }  // namespace test

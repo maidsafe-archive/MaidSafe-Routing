@@ -27,29 +27,29 @@ namespace maidsafe {
 
 namespace routing {
 
-uint16_t Parameters::thread_count(8);
-uint16_t Parameters::num_chunks_to_cache(100);
-uint16_t Parameters::closest_nodes_size(16);
-uint16_t Parameters::group_size(4);
-uint16_t Parameters::proximity_factor(2);
-uint16_t Parameters::max_routing_table_size(64);
-uint16_t Parameters::routing_table_size_threshold(max_routing_table_size / 4);
-uint16_t Parameters::max_routing_table_size_for_client(8);
-uint16_t Parameters::max_client_routing_table_size(max_routing_table_size);
-uint16_t Parameters::bucket_target_size(1);
+unsigned int Parameters::thread_count(8);
+unsigned int Parameters::num_chunks_to_cache(100);
+unsigned int Parameters::closest_nodes_size(16);
+unsigned int Parameters::group_size(4);
+unsigned int Parameters::proximity_factor(2);
+unsigned int Parameters::max_routing_table_size(64);
+unsigned int Parameters::routing_table_size_threshold(max_routing_table_size / 4);
+unsigned int Parameters::max_routing_table_size_for_client(8);
+unsigned int Parameters::max_client_routing_table_size(max_routing_table_size);
+unsigned int Parameters::bucket_target_size(1);
 std::chrono::steady_clock::duration Parameters::default_response_timeout(std::chrono::seconds(10));
 std::chrono::seconds Parameters::find_node_interval(10);
 std::chrono::seconds Parameters::recovery_time_lag(5);
 std::chrono::seconds Parameters::re_bootstrap_time_lag(10);
 std::chrono::seconds Parameters::find_close_node_interval(3);
-uint16_t Parameters::find_node_repeats_per_num_requested(3);
-uint16_t Parameters::maximum_find_close_node_failures(10);
-uint16_t Parameters::max_route_history(3);
-uint16_t Parameters::hops_to_live(50);
-uint16_t Parameters::accepted_distance_tolerance(1);
-uint16_t Parameters::unidirectional_interest_range(Parameters::closest_nodes_size * 2);
+unsigned int Parameters::find_node_repeats_per_num_requested(3);
+unsigned int Parameters::maximum_find_close_node_failures(10);
+unsigned int Parameters::max_route_history(3);
+unsigned int Parameters::hops_to_live(50);
+unsigned int Parameters::accepted_distance_tolerance(1);
+unsigned int Parameters::unidirectional_interest_range(Parameters::closest_nodes_size * 2);
 std::chrono::steady_clock::duration Parameters::local_retreival_timeout(std::chrono::seconds(2));
-uint16_t Parameters::routing_table_ready_to_response(Parameters::max_routing_table_size / 2);
+unsigned int Parameters::routing_table_ready_to_response(Parameters::max_routing_table_size / 2);
 bptime::time_duration Parameters::connect_rpc_prune_timeout(
     rudp::Parameters::rendezvous_connect_timeout * 2);
 // 10 KB of book keeping data for Routing

@@ -37,11 +37,11 @@ namespace {
 typedef boost::asio::ip::udp::endpoint Endpoint;
 
 // Copied from Drive launcher
-// TODO Move to utils of routing
+// TODO(Prakash) Move to utils of routing
 boost::asio::ip::udp::endpoint GetEndpoint(const std::string& endpoint) {
   size_t delim = endpoint.rfind(':');
   boost::asio::ip::udp::endpoint ep;
-  ep.port(boost::lexical_cast<uint16_t>(endpoint.substr(delim + 1)));
+  ep.port(boost::lexical_cast<unsigned int>(endpoint.substr(delim + 1)));
   ep.address(boost::asio::ip::address::from_string(endpoint.substr(0, delim)));
   return ep;
 }

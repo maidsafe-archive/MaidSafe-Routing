@@ -232,7 +232,7 @@ void Choose(const std::set<NodeId>& online_pmids, const NodeId& kTarget,
 TEST(SingleCloseNodesChangeTest, BEH_ChoosePmidNode) {
   std::vector<NodeId> old_close_nodes, new_close_nodes;
   const auto kGroupSize(Parameters::group_size);
-  for (int i(0); i != kGroupSize * 5; ++i)
+  for (unsigned int i(0); i != kGroupSize * 5; ++i)
     new_close_nodes.emplace_back(NodeId::IdType::kRandomId);
   const NodeId kTarget(NodeId::IdType::kRandomId);
 
@@ -241,7 +241,7 @@ TEST(SingleCloseNodesChangeTest, BEH_ChoosePmidNode) {
             [&kTarget](const NodeId& lhs,
                        const NodeId& rhs) { return NodeId::CloserToTarget(lhs, rhs, kTarget); });
   std::vector<CloseNodesChange> owners;
-  for (int i(0); i != kGroupSize + 1; ++i)
+  for (unsigned int i(0); i != kGroupSize + 1; ++i)
     owners.push_back(CloseNodesChange(new_close_nodes[i], old_close_nodes, new_close_nodes));
 
   // Shuffle 'new_close_nodes'.
@@ -253,7 +253,7 @@ TEST(SingleCloseNodesChangeTest, BEH_ChoosePmidNode) {
   std::set<NodeId> online_pmids;
   EXPECT_THROW(owners[0].ChoosePmidNode(online_pmids, kTarget), maidsafe_error);
 
-  for (int i(0); i != kGroupSize + 2; ++i)
+  for (unsigned int i(0); i != kGroupSize + 2; ++i)
     online_pmids.insert(NodeId(NodeId::IdType::kRandomId));
 
   // Run tests.
@@ -287,7 +287,7 @@ TEST_F(CloseNodesChangeTest, BEH_SmallSizeRoutingTable) {
 
 TEST_F(CloseNodesChangeTest, BEH_FullSizeRoutingTable) {
   NodeId node_id(NodeId::IdType::kRandomId);
-  std::set<NodeId, std::function<bool(const NodeId& lhs, const NodeId& rhs)>> new_ids([node_id](
+  std::set<NodeId, std::function<bool(const NodeId & lhs, const NodeId & rhs)>> new_ids([node_id](
       const NodeId& lhs, const NodeId& rhs) { return NodeId::CloserToTarget(lhs, rhs, node_id); });
   NodeInfo new_node;
   NodeId removed;

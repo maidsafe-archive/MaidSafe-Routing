@@ -214,7 +214,7 @@ void Routing::Impl::FindClosestNode(const boost::system::error_code& error_code,
       return;
     }
 
-    if (attempts >= Parameters::maximum_find_close_node_failures) {
+    if (static_cast<unsigned int>(attempts) >= Parameters::maximum_find_close_node_failures) {
       LOG(kError) << "[" << DebugId(kNodeId_) << "] failed to get closest node. ReBootstrapping...";
       // TODO(Prakash) : Remove the bootstrap node from the list
       ReBootstrap();
@@ -343,7 +343,7 @@ void Routing::Impl::Send(const NodeId& destination_id, const std::string& data,
   CheckSendParameters(destination_id, data);
   protobuf::Message proto_message =
       CreateNodeLevelPartialMessage(destination_id, destination_type, data, cacheable);
-  uint16_t expected_response_count(1);
+  unsigned int expected_response_count(1);
   if (response_functor) {
     if (DestinationType::kGroup == destination_type)
       expected_response_count = 4;
@@ -423,7 +423,7 @@ protobuf::Message Routing::Impl::CreateNodeLevelPartialMessage(
   proto_message.set_client_node(routing_table_.client_mode());
   proto_message.set_request(true);
   proto_message.set_hops_to_live(Parameters::hops_to_live);
-  uint16_t replication(1);
+  unsigned int replication(1);
   if (DestinationType::kGroup == destination_type) {
     proto_message.set_visited(false);
     replication = Parameters::group_size;

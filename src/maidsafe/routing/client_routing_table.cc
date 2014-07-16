@@ -63,7 +63,7 @@ bool ClientRoutingTable::AddOrCheckNode(NodeInfo& node, const NodeId& furthest_c
 std::vector<NodeInfo> ClientRoutingTable::DropNodes(const NodeId& node_to_drop) {
   std::vector<NodeInfo> nodes_info;
   std::lock_guard<std::mutex> lock(mutex_);
-  uint16_t i(0);
+  unsigned int i(0);
   while (i < nodes_.size()) {
     if (nodes_.at(i).id == node_to_drop) {
       nodes_info.push_back(nodes_.at(i));

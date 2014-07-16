@@ -85,7 +85,7 @@ GenericNode::GenericNode(bool has_symmetric_nat)
       health_mutex_(),
       health_(0) {
   node_info_plus_.reset(new NodeInfoAndPrivateKey(MakeNodeInfoAndKeys()));
-  routing_.reset(new Routing());                                                                  // FIXME Prakash
+  routing_.reset(new Routing());  // FIXME Prakash
   node_info_plus_->node_info.id = routing_->kNodeId();
   endpoint_.address(GetLocalIp());
   endpoint_.port(maidsafe::test::GetRandomPort());
@@ -113,11 +113,11 @@ GenericNode::GenericNode(bool client_mode, const rudp::NatType& nat_type)
   if (client_mode) {
     auto maid(passport::CreateMaidAndSigner().first);
     node_info_plus_.reset(new NodeInfoAndPrivateKey(MakeNodeInfoAndKeysWithMaid(maid)));
-    routing_.reset(new Routing(maid));                                                   // FIXME prakash
+    routing_.reset(new Routing(maid));  // FIXME prakash
   } else {
     auto pmid(passport::CreatePmidAndSigner().first);
     node_info_plus_.reset(new NodeInfoAndPrivateKey(MakeNodeInfoAndKeysWithPmid(pmid)));
-    routing_.reset(new Routing(pmid));                         // FIXME prakash
+    routing_.reset(new Routing(pmid));  // FIXME prakash
   }
   endpoint_.address(GetLocalIp());
   endpoint_.port(maidsafe::test::GetRandomPort());
@@ -292,7 +292,7 @@ bool GenericNode::ClientRoutingTableHasNode(const NodeId& node_id) {
          }) != routing_->pimpl_->client_routing_table_.nodes_.end();
 }
 
-NodeInfo GenericNode::GetNthClosestNode(const NodeId& target_id, uint16_t node_number) {
+NodeInfo GenericNode::GetNthClosestNode(const NodeId& target_id, unsigned int node_number) {
   return routing_->pimpl_->routing_table_.GetNthClosestNode(target_id, node_number);
 }
 
@@ -322,7 +322,7 @@ int GenericNode::ZeroStateJoin(const Endpoint& peer_endpoint, const NodeInfo& pe
 }
 
 void GenericNode::Join(const std::vector<Endpoint>& /*peer_endpoints*/) {
-  routing_->Join(functors_/*, peer_endpoints*/);  // FIXME Prakash
+  routing_->Join(functors_ /*, peer_endpoints*/);  // FIXME Prakash
 }
 
 void GenericNode::set_joined(const bool node_joined) { joined_ = node_joined; }
@@ -409,16 +409,15 @@ GenericNetwork::GenericNetwork()
       public_keys_(),
       client_index_(0),
       nat_info_available_(true),
+      bootstrap_file_(),
       nodes_() {
   LOG(kVerbose) << "RoutingNetwork Constructor";
 }
 
 GenericNetwork::~GenericNetwork() {
   nat_info_available_ = false;
-  for (auto& node : nodes_) {
-    node->functors_.request_public_key = [](const NodeId&,
-                                            GivePublicKeyFunctor) {};  // NOLINT (Alison)
-  }
+  for (auto& node : nodes_)
+    node->functors_.request_public_key = [](const NodeId&, GivePublicKeyFunctor) {};
 
   while (!nodes_.empty())
     RemoveNode(nodes_.at(0)->node_id());
@@ -429,6 +428,8 @@ void GenericNetwork::SetUp() {
       node2(new GenericNode(passport::CreatePmidAndSigner().first));
   nodes_.push_back(node1);
   nodes_.push_back(node2);
+  bootstrap_file_.reset(new ScopedBootstrapFile({node1->endpoint(), node2->endpoint()}));
+
   client_index_ = 2;
   public_keys_.insert(std::make_pair(node1->node_id(), node1->public_key()));
   public_keys_.insert(std::make_pair(node2->node_id(), node2->public_key()));
@@ -445,9 +446,6 @@ void GenericNetwork::SetUp() {
   EXPECT_EQ(kSuccess, f2.get());
   EXPECT_EQ(kSuccess, f1.get());
   LOG(kVerbose) << "Setup succeeded";
-  bootstrap_endpoints_.clear();
-  bootstrap_endpoints_.push_back(node1->endpoint());
-  bootstrap_endpoints_.push_back(node2->endpoint());
 }
 
 void GenericNetwork::TearDown() {
@@ -622,11 +620,11 @@ bool GenericNetwork::RemoveNode(const NodeId& node_id) {
 bool GenericNetwork::WaitForNodesToJoin() {
   // TODO(Alison) - tailor max. duration to match number of nodes joining?
   bool all_joined = true;
-  uint16_t max(10);
-  uint16_t i(0);
+  unsigned int max(10);
+  unsigned int i(0);
   while (i < max) {
     all_joined = true;
-    for (uint16_t j(2); j < nodes_.size(); ++j) {
+    for (unsigned int j(2); j < nodes_.size(); ++j) {
       if (!nodes_.at(j)->joined()) {
         all_joined = false;
         break;
@@ -650,10 +648,10 @@ bool GenericNetwork::WaitForNodesToJoin(size_t num_total_nodes) {
                              ? (num_total_nodes * 100) /
                                    static_cast<size_t>(Parameters::max_client_routing_table_size)
                              : 100);
-  uint16_t max(10), i(0);
+  unsigned int max(10), i(0);
   while (i < max) {
     all_joined = true;
-    for (uint16_t j(2); j < nodes_.size(); ++j) {
+    for (unsigned int j(2); j < nodes_.size(); ++j) {
       if (!nodes_.at(j)->joined()) {
         all_joined = false;
         break;
@@ -710,9 +708,9 @@ std::vector<NodeId> GenericNetwork::GroupIds(const NodeId& node_id) const {
   std::partial_sort(all_ids.begin(), all_ids.begin() + Parameters::group_size + 1, all_ids.end(),
                     [&](const NodeId& lhs,
                         const NodeId& rhs) { return NodeId::CloserToTarget(lhs, rhs, node_id); });
-  return std::vector<NodeId>(all_ids.begin() + static_cast<uint16_t>(all_ids[0] == node_id),
+  return std::vector<NodeId>(all_ids.begin() + static_cast<unsigned int>(all_ids[0] == node_id),
                              all_ids.begin() + Parameters::group_size +
-                                 static_cast<uint16_t>(all_ids[0] == node_id));
+                                 static_cast<unsigned int>(all_ids[0] == node_id));
 }
 
 void GenericNetwork::PrintRoutingTables() const {
@@ -742,8 +740,8 @@ bool GenericNetwork::ValidateRoutingTables() const {
       return NodeId::CloserToTarget(lhs.id, rhs.id, node->node_id());
     });
     LOG(kVerbose) << "Print ordered RT";
-    uint16_t size(
-        std::min(static_cast<uint16_t>(routing_table.size()), Parameters::closest_nodes_size));
+    unsigned int size(
+        std::min(static_cast<unsigned int>(routing_table.size()), Parameters::closest_nodes_size));
     for (const auto& node_info : routing_table)
       LOG(kVerbose) << HexSubstr(node_info.id.string());
     for (auto iter(routing_table.begin()); iter < routing_table.begin() + size - 1; ++iter) {
@@ -757,21 +755,21 @@ bool GenericNetwork::ValidateRoutingTables() const {
   return true;
 }
 
-uint16_t GenericNetwork::RandomNodeIndex() const {
+unsigned int GenericNetwork::RandomNodeIndex() const {
   assert(!nodes_.empty());
-  return static_cast<uint16_t>(RandomUint32() % nodes_.size());
+  return static_cast<unsigned int>(RandomUint32() % nodes_.size());
 }
 
-uint16_t GenericNetwork::RandomClientIndex() const {
+unsigned int GenericNetwork::RandomClientIndex() const {
   assert(nodes_.size() > client_index_);
-  uint16_t client_count(static_cast<uint16_t>(nodes_.size()) - client_index_);
-  return static_cast<uint16_t>(RandomUint32() % client_count) + client_index_;
+  unsigned int client_count(static_cast<unsigned int>(nodes_.size()) - client_index_);
+  return static_cast<unsigned int>(RandomUint32() % client_count) + client_index_;
 }
 
-uint16_t GenericNetwork::RandomVaultIndex() const {
+unsigned int GenericNetwork::RandomVaultIndex() const {
   assert(nodes_.size() > 2);
   assert(client_index_ > 2);
-  return static_cast<uint16_t>(RandomUint32() % client_index_);
+  return static_cast<unsigned int>(RandomUint32() % client_index_);
 }
 
 GenericNetwork::NodePtr GenericNetwork::RandomClientNode() const {
@@ -931,12 +929,12 @@ bool GenericNetwork::WaitForHealthToStabilise() const {
   int client_health(100);
   int vault_symmetric_health(100);
   int client_symmetric_health(100);
-  int server_size(static_cast<int>(client_index_));
+  auto server_size(client_index_);
   if (server_size <= Parameters::max_routing_table_size)
     vault_health = (server_size - 1) * 100 / Parameters::max_routing_table_size;
   if (server_size <= Parameters::max_routing_table_size_for_client)
     client_health = (server_size - 1) * 100 / Parameters::max_routing_table_size_for_client;
-  int number_nonsymmetric_vaults(NonClientNonSymmetricNatNodesSize());
+  auto number_nonsymmetric_vaults(NonClientNonSymmetricNatNodesSize());
   if (number_nonsymmetric_vaults <= Parameters::max_routing_table_size)
     vault_symmetric_health = number_nonsymmetric_vaults * 100 / Parameters::max_routing_table_size;
   if (number_nonsymmetric_vaults <= Parameters::max_routing_table_size_for_client)
@@ -986,9 +984,9 @@ bool GenericNetwork::WaitForHealthToStabilise() const {
 
 bool GenericNetwork::WaitForHealthToStabiliseInLargeNetwork() const {
   // TODO(Alison) - check values for clients
-  int server_size(static_cast<int>(client_index_));
+  auto server_size(client_index_);
   assert(server_size > Parameters::max_routing_table_size);
-  int number_nonsymmetric_vaults(NonClientNonSymmetricNatNodesSize());
+  auto number_nonsymmetric_vaults(NonClientNonSymmetricNatNodesSize());
   assert(number_nonsymmetric_vaults >= Parameters::routing_table_size_threshold);
 
   int i(0);
@@ -1064,9 +1062,9 @@ testing::AssertionResult GenericNetwork::SendDirect(size_t repeats, size_t messa
 
   std::shared_ptr<std::mutex> response_mutex(std::make_shared<std::mutex>());
   std::shared_ptr<std::condition_variable> cond_var(std::make_shared<std::condition_variable>());
-  std::shared_ptr<uint16_t> reply_count(std::make_shared<uint16_t>(0)),
-      expected_count(std::make_shared<uint16_t>(
-          static_cast<uint16_t>(repeats * total_num_nodes * total_num_nodes)));
+  std::shared_ptr<unsigned int> reply_count(std::make_shared<unsigned int>(0)),
+      expected_count(std::make_shared<unsigned int>(
+          static_cast<unsigned int>(repeats * total_num_nodes * total_num_nodes)));
   std::shared_ptr<bool> failed(std::make_shared<bool>(false));
 
   for (size_t repeat = 0; repeat < repeats; ++repeat) {
@@ -1163,25 +1161,25 @@ struct SendGroupMonitor {
   explicit SendGroupMonitor(std::vector<NodeId> expected_ids)
       : response_count(0), expected_ids(std::move(expected_ids)) {}
 
-  uint16_t response_count;
+  unsigned int response_count;
   std::vector<NodeId> expected_ids;
 };
 
 testing::AssertionResult GenericNetwork::SendGroup(const NodeId& target_id, size_t repeats,
-                                                   uint16_t source_index, size_t message_size) {
+                                                   unsigned int source_index, size_t message_size) {
   LOG(kVerbose) << "Doing SendGroup from " << DebugId(nodes_.at(source_index)->node_id()) << " to "
                 << DebugId(target_id);
   assert(repeats > 0);
   std::shared_ptr<std::mutex> response_mutex(std::make_shared<std::mutex>());
   std::shared_ptr<std::condition_variable> cond_var(std::make_shared<std::condition_variable>());
   std::string data(RandomAlphaNumericString(message_size));
-  std::shared_ptr<uint16_t> reply_count(std::make_shared<uint16_t>(0)),
-      expected_count(
-          std::make_shared<uint16_t>(static_cast<uint16_t>(Parameters::group_size * repeats)));
+  std::shared_ptr<unsigned int> reply_count(std::make_shared<unsigned int>(0)),
+      expected_count(std::make_shared<unsigned int>(
+          static_cast<unsigned int>(Parameters::group_size * repeats)));
   std::shared_ptr<bool> failed(std::make_shared<bool>(false));
 
   std::vector<NodeId> target_group(this->GetGroupForId(target_id));
-  for (uint16_t repeat(0); repeat < repeats; ++repeat) {
+  for (unsigned int repeat(0); repeat < repeats; ++repeat) {
     std::shared_ptr<SendGroupMonitor> monitor(std::make_shared<SendGroupMonitor>(target_group));
     monitor->response_count = 0;
     ResponseFunctor response_functor =
@@ -1259,8 +1257,9 @@ testing::AssertionResult GenericNetwork::SendDirect(const NodeId& destination_no
 
   std::shared_ptr<std::mutex> response_mutex(std::make_shared<std::mutex>());
   std::shared_ptr<std::condition_variable> cond_var(std::make_shared<std::condition_variable>());
-  std::shared_ptr<uint16_t> reply_count(std::make_shared<uint16_t>(0)),
-      expected_count(std::make_shared<uint16_t>(static_cast<uint16_t>(this->nodes_.size())));
+  std::shared_ptr<unsigned int> reply_count(std::make_shared<unsigned int>(0)),
+      expected_count(
+          std::make_shared<unsigned int>(static_cast<unsigned int>(this->nodes_.size())));
   std::shared_ptr<bool> failed(std::make_shared<bool>(false));
 
   size_t message_index(0);
@@ -1417,8 +1416,8 @@ testing::AssertionResult GenericNetwork::SendDirect(std::shared_ptr<GenericNode>
   return testing::AssertionSuccess();
 }
 
-uint16_t GenericNetwork::NonClientNodesSize() const {
-  uint16_t non_client_size(0);
+unsigned int GenericNetwork::NonClientNodesSize() const {
+  unsigned int non_client_size(0);
   for (const auto& node : nodes_) {
     if (!node->IsClient())
       non_client_size++;
@@ -1426,8 +1425,8 @@ uint16_t GenericNetwork::NonClientNodesSize() const {
   return non_client_size;
 }
 
-uint16_t GenericNetwork::NonClientNonSymmetricNatNodesSize() const {
-  uint16_t non_client_non_sym_size(0);
+unsigned int GenericNetwork::NonClientNonSymmetricNatNodesSize() const {
+  unsigned int non_client_non_sym_size(0);
   for (const auto& node : nodes_) {
     if (!node->IsClient() && !node->HasSymmetricNat())
       non_client_non_sym_size++;
@@ -1494,7 +1493,7 @@ void GenericNetwork::AddNodeDetails(NodePtr node) {
   std::mutex mutex;
   if (!node->joined()) {
     std::unique_lock<std::mutex> lock(mutex);
-    uint16_t maximum_wait(20);
+    unsigned int maximum_wait(20);
     if (node->has_symmetric_nat_)
       maximum_wait = 30;
     auto result = cond_var->wait_for(lock, std::chrono::seconds(maximum_wait));

@@ -52,14 +52,14 @@ TEST(RoutingTableTest, BEH_AddCloseNodes) {
   EXPECT_EQ(routing_table.size(), 0);
   asymm::PublicKey dummy_key;
   // check we cannot input nodes with invalid public_keys
-  for (uint16_t i = 0; i < Parameters::closest_nodes_size; ++i) {
+  for (unsigned int i = 0; i < Parameters::closest_nodes_size; ++i) {
     NodeInfo node(MakeNode());
     node.public_key = dummy_key;
     EXPECT_FALSE(routing_table.AddNode(node));
   }
   EXPECT_EQ(0, routing_table.size());
   // everything should be set to go now
-  for (uint16_t i = 0; i < Parameters::closest_nodes_size; ++i) {
+  for (unsigned int i = 0; i < Parameters::closest_nodes_size; ++i) {
     node = MakeNode();
     EXPECT_TRUE(routing_table.AddNode(node));
   }
@@ -70,13 +70,13 @@ TEST(RoutingTableTest, FUNC_AddTooManyNodes) {
   NodeId node_id(NodeId::IdType::kRandomId);
   RoutingTable routing_table(false, node_id, asymm::GenerateKeyPair());
 
-  for (uint16_t i = 0; routing_table.size() < Parameters::max_routing_table_size; ++i) {
+  for (unsigned int i = 0; routing_table.size() < Parameters::max_routing_table_size; ++i) {
     NodeInfo node(MakeNode());
     EXPECT_TRUE(routing_table.AddNode(node));
   }
   EXPECT_EQ(routing_table.size(), Parameters::max_routing_table_size);
   size_t count(0);
-  for (uint16_t i = 0; i < 1000; ++i) {
+  for (unsigned int i = 0; i < 1000; ++i) {
     NodeInfo node(MakeNode());
     if (routing_table.CheckNode(node)) {
       EXPECT_TRUE(routing_table.AddNode(node));
@@ -94,7 +94,8 @@ TEST(RoutingTableTest, BEH_GetNthClosest) {
   RoutingTable routing_table(false, node_id, asymm::GenerateKeyPair());
   NodeId my_node(routing_table.kNodeId());
 
-  for (uint16_t i(static_cast<uint16_t>(routing_table.size())); routing_table.size() < 10; ++i) {
+  for (unsigned int i(static_cast<unsigned int>(routing_table.size())); routing_table.size() < 10;
+       ++i) {
     NodeInfo node(MakeNode());
     nodes_id.push_back(node.id);
     EXPECT_TRUE(routing_table.AddNode(node));
@@ -102,7 +103,7 @@ TEST(RoutingTableTest, BEH_GetNthClosest) {
   std::sort(nodes_id.begin(), nodes_id.end(), [&](const NodeId& lhs, const NodeId& rhs) {
     return NodeId::CloserToTarget(lhs, rhs, my_node);
   });
-  for (uint16_t index = 0; index < 10; ++index) {
+  for (unsigned int index = 0; index < 10; ++index) {
     EXPECT_EQ(nodes_id[index], routing_table.GetNthClosestNode(my_node, index + 1).id)
         << DebugId(nodes_id[index]) << " not eq to "
         << DebugId(routing_table.GetNthClosestNode(my_node, index + 1).id);
@@ -143,7 +144,7 @@ TEST(RoutingTableTest, FUNC_GetClosestNodeWithExclusion) {
 
   // routing_table with Parameters::group_size elements
   exclude.clear();
-  for (uint16_t i(static_cast<uint16_t>(routing_table.size()));
+  for (unsigned int i(static_cast<unsigned int>(routing_table.size()));
        routing_table.size() < Parameters::group_size; ++i) {
     NodeInfo node(MakeNode());
     nodes_id.push_back(node.id);
@@ -154,7 +155,7 @@ TEST(RoutingTableTest, FUNC_GetClosestNodeWithExclusion) {
   node_info2 = routing_table.GetClosestNode(my_node, true, exclude);
   EXPECT_EQ(node_info.id, node_info2.id);
 
-  uint16_t random_index = RandomUint32() % Parameters::group_size;
+  unsigned int random_index = RandomUint32() % Parameters::group_size;
   node_info = routing_table.GetClosestNode(nodes_id[random_index], false, exclude);
   node_info2 = routing_table.GetClosestNode(nodes_id[random_index], true, exclude);
   EXPECT_NE(node_info.id, node_info2.id);
@@ -173,7 +174,7 @@ TEST(RoutingTableTest, FUNC_GetClosestNodeWithExclusion) {
 
   // routing_table with Parameters::Parameters::max_routing_table_size elements
   exclude.clear();
-  for (uint16_t i = static_cast<uint16_t>(routing_table.size());
+  for (unsigned int i = static_cast<unsigned int>(routing_table.size());
        routing_table.size() < Parameters::max_routing_table_size; ++i) {
     NodeInfo node(MakeNode());
     nodes_id.push_back(node.id);
@@ -234,7 +235,7 @@ TEST(RoutingTableTest, FUNC_ClosestToId) {
     bool passed(true);
     bool result(false);
     bool expectation(false);
-    for (uint16_t i(0); i < 200; ++i) {
+    for (unsigned int i(0); i < 200; ++i) {
       target = NodeId(NodeId::IdType::kRandomId);
       PartialSortFromTarget(target, known_nodes, 1);
       result = routing_table.IsThisNodeClosestTo(target, true);
@@ -252,7 +253,7 @@ TEST(RoutingTableTest, FUNC_ClosestToId) {
   LOG(kInfo) << "Testing empty routing table...";
   EXPECT_FALSE(routing_table.IsThisNodeClosestTo(own_node_id, true));
 
-  for (uint16_t i(0); i < 200; ++i) {
+  for (unsigned int i(0); i < 200; ++i) {
     target = NodeId(NodeId::IdType::kRandomId);
     routing_table.IsThisNodeClosestTo(target, true);
   }

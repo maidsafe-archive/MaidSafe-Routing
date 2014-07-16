@@ -43,6 +43,7 @@
 #include "maidsafe/routing/routing_api.h"
 #include "maidsafe/routing/routing.pb.h"
 #include "maidsafe/routing/routing_impl.h"
+#include "maidsafe/routing/tests/test_utils.h"
 
 namespace args = std::placeholders;
 
@@ -128,7 +129,7 @@ void SendMessage(const NodeId& destination_id, protobuf::Message& proto_message)
   bool RoutingTableHasNode(const NodeId& node_id);
   bool ClientRoutingTableHasNode(const NodeId& node_id);
   NodeInfo GetRemovableNode();
-  NodeInfo GetNthClosestNode(const NodeId& target_id, uint16_t node_number);
+  NodeInfo GetNthClosestNode(const NodeId& target_id, unsigned int node_number);
   testing::AssertionResult DropNode(const NodeId& node_id);
   std::vector<NodeInfo> RoutingTable() const;
   NodeId GetRandomExistingNode() const;
@@ -212,9 +213,9 @@ class GenericNetwork {
   void SetNodeValidationFunctor(NodePtr node);
   std::vector<NodeId> GroupIds(const NodeId& node_id) const;
   void PrintRoutingTables() const;
-  uint16_t RandomNodeIndex() const;
-  uint16_t RandomClientIndex() const;
-  uint16_t RandomVaultIndex() const;
+  unsigned int RandomNodeIndex() const;
+  unsigned int RandomClientIndex() const;
+  unsigned int RandomVaultIndex() const;
   NodePtr RandomClientNode() const;
   NodePtr RandomVaultNode() const;
   void RemoveRandomClient();
@@ -239,7 +240,7 @@ class GenericNetwork {
   testing::AssertionResult SendDirect(size_t repeats, size_t message_size = (2 ^ 10) * 256);
   // Do SendGroup from source_index node to target ID and monitor results (do this 'repeats' times)
   testing::AssertionResult SendGroup(const NodeId& target_id, size_t repeats,
-                                     uint16_t source_index = 0,
+                                     unsigned int source_index = 0,
                                      size_t message_size = (2 ^ 10) * 256);
   // Do SendDirect from each node to destination_node_id and monitor results. The ExpectedNodeType
   // of destination_node_id should be correctly specified when calling this function.
@@ -254,16 +255,17 @@ class GenericNetwork {
   friend class NodesEnvironment;
 
  private:
-  uint16_t NonClientNodesSize() const;
-  uint16_t NonClientNonSymmetricNatNodesSize() const;
+  unsigned int NonClientNodesSize() const;
+  unsigned int NonClientNonSymmetricNatNodesSize() const;
   void AddNodeDetails(NodePtr node);
 
   mutable std::mutex mutex_, fobs_mutex_;
   std::vector<boost::asio::ip::udp::endpoint> bootstrap_endpoints_;
   boost::filesystem::path bootstrap_path_;
   std::map<NodeId, asymm::PublicKey> public_keys_;
-  uint16_t client_index_;
+  unsigned int client_index_;
   bool nat_info_available_;
+  std::unique_ptr<ScopedBootstrapFile> bootstrap_file_;
 
  public:
   std::vector<NodePtr> nodes_;

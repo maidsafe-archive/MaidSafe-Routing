@@ -48,7 +48,7 @@ void NetworkStatistics::UpdateLocalAverageDistance(const std::vector<NodeId>& cl
   });
 #endif
   NodeId furthest_group_node(unique_nodes.at(
-      std::min(Parameters::group_size - 1, static_cast<int>(unique_nodes.size()))));
+      std::min(Parameters::group_size - 1, static_cast<unsigned int>(unique_nodes.size()))));
   {
     std::lock_guard<std::mutex> lock(mutex_);
     distance_ = furthest_group_node ^ kNodeId_;

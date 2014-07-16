@@ -54,7 +54,7 @@ RoutingTable::RoutingTable(bool client_mode, const NodeId& node_id, const asymm:
   try {
     ipc_message_queue_.reset(new boost::interprocess::message_queue(
         boost::interprocess::open_only, network_viewer::kMessageQueueName.c_str()));
-    if (static_cast<uint16_t>(ipc_message_queue_->get_max_msg_size()) <
+    if (static_cast<unsigned int>(ipc_message_queue_->get_max_msg_size()) <
         (Parameters::closest_nodes_size + 1) * Parameters::closest_nodes_size * 2 * NodeId::kSize) {
       BOOST_THROW_EXCEPTION(MakeError(CommonErrors::invalid_parameter));
     }
@@ -96,7 +96,7 @@ bool RoutingTable::AddOrCheckNode(NodeInfo peer, bool remove) {
 
   bool return_value(false);
   NodeInfo removed_node;
-  uint16_t routing_table_size(0);
+  unsigned int routing_table_size(0);
   std::vector<NodeId> old_close_nodes, new_close_nodes;
   std::shared_ptr<CloseNodesChange> close_nodes_change;
 
@@ -136,7 +136,7 @@ bool RoutingTable::AddOrCheckNode(NodeInfo peer, bool remove) {
       }
       return_value = true;
     }
-    routing_table_size = static_cast<uint16_t>(nodes_.size());
+    routing_table_size = static_cast<unsigned int>(nodes_.size());
   }
 
   if (return_value && remove) {  // Firing functors on Add only
@@ -157,7 +157,7 @@ bool RoutingTable::AddOrCheckNode(NodeInfo peer, bool remove) {
 
 NodeInfo RoutingTable::DropNode(const NodeId& node_to_drop, bool routing_only) {
   NodeInfo dropped_node;
-  uint16_t routing_table_size(0);
+  unsigned int routing_table_size(0);
   std::vector<NodeId> old_close_nodes, new_close_nodes;
   std::shared_ptr<CloseNodesChange> close_nodes_change;
   {
@@ -183,7 +183,7 @@ NodeInfo RoutingTable::DropNode(const NodeId& node_to_drop, bool routing_only) {
       }
       dropped_node = *found.second;
       nodes_.erase(found.second);
-      routing_table_size = static_cast<uint16_t>(nodes_.size());
+      routing_table_size = static_cast<unsigned int>(nodes_.size());
     }
   }
 
@@ -208,7 +208,7 @@ NodeId RoutingTable::RandomConnectedNode() {
   if (nodes_.empty())
     return NodeId();
 
-  PartialSortFromTarget(kNodeId_, static_cast<uint16_t>(nodes_.size()), lock);
+  PartialSortFromTarget(kNodeId_, static_cast<unsigned int>(nodes_.size()), lock);
   size_t index(RandomUint32() % (nodes_.size()));
   return nodes_.at(index).id;
 }
@@ -221,7 +221,7 @@ bool RoutingTable::GetNodeInfo(const NodeId& node_id, NodeInfo& peer) const {
   return found.first;
 }
 
-bool RoutingTable::IsThisNodeInRange(const NodeId& target_id, const uint16_t range) {
+bool RoutingTable::IsThisNodeInRange(const NodeId& target_id, const unsigned int range) {
   std::unique_lock<std::mutex> lock(mutex_);
   if (nodes_.size() < range)
     return true;
@@ -253,8 +253,10 @@ bool RoutingTable::Contains(const NodeId& node_id) const {
 
 bool RoutingTable::ConfirmGroupMembers(const NodeId& node1, const NodeId& node2) {
   NodeId difference =
-      kNodeId_ ^ GetNthClosestNode(kNodeId(), std::min(static_cast<uint16_t>(nodes_.size()),
-                                                       Parameters::closest_nodes_size)).id;
+      kNodeId_ ^ GetNthClosestNode(
+                     kNodeId(),
+                     std::min(nodes_.size(),
+                              static_cast<size_t>(Parameters::closest_nodes_size))).id;
   return (node1 ^ node2) < difference;
 }
 
@@ -314,7 +316,7 @@ bool RoutingTable::MakeSpaceForNodeToBeAdded(const NodeInfo& node, bool remove,
                                              std::unique_lock<std::mutex>& lock) {
   assert(lock.owns_lock());
 
-  std::map<uint32_t, uint16_t> bucket_rank_map;
+  std::map<uint32_t, unsigned int> bucket_rank_map;
 
   if (remove && !CheckPublicKeyIsUnique(node, lock))
     return false;
@@ -333,7 +335,7 @@ bool RoutingTable::MakeSpaceForNodeToBeAdded(const NodeInfo& node, bool remove,
     }
   }
 
-  int32_t max_bucket(0), max_bucket_count(1);
+  unsigned int max_bucket(0), max_bucket_count(1);
   std::for_each(std::begin(nodes_) + Parameters::unidirectional_interest_range, std::end(nodes_),
                 [&bucket_rank_map, &max_bucket, &max_bucket_count](const NodeInfo& node_info) {
                   auto bucket_iter(bucket_rank_map.find(node_info.bucket));
@@ -355,13 +357,12 @@ bool RoutingTable::MakeSpaceForNodeToBeAdded(const NodeInfo& node, bool remove,
   if ((max_bucket_count == 1) && (nodes_.back().bucket < node.bucket))
     return false;
 
-  // Parameters::closest_nodes_size * 2 to be a paramater by itself
   if (NodeId::CloserToTarget(nodes_.at(Parameters::unidirectional_interest_range).id, node.id,
                              kNodeId()))
     return false;
 
   for (auto it(nodes_.rbegin()); it != nodes_.rend(); ++it)
-    if (it->bucket == max_bucket) {
+    if (static_cast<unsigned int>(it->bucket) == max_bucket) {
       if ((it->bucket != node.bucket) || NodeId::CloserToTarget(node.id, it->id, kNodeId())) {
         if (remove) {
           removed_node = *it;
@@ -374,11 +375,11 @@ bool RoutingTable::MakeSpaceForNodeToBeAdded(const NodeInfo& node, bool remove,
   return false;
 }
 
-uint16_t RoutingTable::PartialSortFromTarget(const NodeId& target, uint16_t number,
-                                             std::unique_lock<std::mutex>& lock) {
+unsigned int RoutingTable::PartialSortFromTarget(const NodeId& target, unsigned int number,
+                                                 std::unique_lock<std::mutex>& lock) {
   assert(lock.owns_lock());
   static_cast<void>(lock);
-  uint16_t count = std::min(number, static_cast<uint16_t>(nodes_.size()));
+  unsigned int count = std::min(number, static_cast<unsigned int>(nodes_.size()));
   std::partial_sort(nodes_.begin(), nodes_.begin() + count, nodes_.end(),
                     [target](const NodeInfo& lhs, const NodeInfo& rhs) {
     return NodeId::CloserToTarget(lhs.id, rhs.id, target);
@@ -386,7 +387,7 @@ uint16_t RoutingTable::PartialSortFromTarget(const NodeId& target, uint16_t numb
   return count;
 }
 
-void RoutingTable::NthElementSortFromTarget(const NodeId& target, uint16_t nth_element,
+void RoutingTable::NthElementSortFromTarget(const NodeId& target, unsigned int nth_element,
                                             std::unique_lock<std::mutex>& lock) {
   assert(lock.owns_lock());
   static_cast<void>(lock);
@@ -418,8 +419,8 @@ NodeInfo RoutingTable::GetClosestNode(const NodeId& target_id, bool ignore_exact
   return NodeInfo();
 }
 
-std::vector<NodeInfo> RoutingTable::GetClosestNodes(const NodeId& target_id, uint16_t number_to_get,
-                                                    bool ignore_exact_match) {
+std::vector<NodeInfo> RoutingTable::GetClosestNodes(
+    const NodeId& target_id, unsigned int number_to_get, bool ignore_exact_match) {
   std::unique_lock<std::mutex> lock(mutex_);
   if (number_to_get == 0)
     return std::vector<NodeInfo>();
@@ -437,14 +438,14 @@ std::vector<NodeInfo> RoutingTable::GetClosestNodes(const NodeId& target_id, uin
       return std::vector<NodeInfo>(std::begin(nodes_), std::end(nodes_));
   }
 
-  uint16_t index(ignore_exact_match && nodes_.begin()->id == target_id);
+  unsigned int index(ignore_exact_match && nodes_.begin()->id == target_id);
   return std::vector<NodeInfo>(std::begin(nodes_) + index,
                                std::begin(nodes_) +
                                    std::min(nodes_.size(),
                                             static_cast<size_t>(number_to_get + index)));
 }
 
-NodeInfo RoutingTable::GetNthClosestNode(const NodeId& target_id, uint16_t index) {
+NodeInfo RoutingTable::GetNthClosestNode(const NodeId& target_id, unsigned int index) {
   std::unique_lock<std::mutex> lock(mutex_);
   if (nodes_.size() < index) {
     NodeInfo node_info;
@@ -475,8 +476,8 @@ std::pair<bool, std::vector<NodeInfo>::const_iterator> RoutingTable::Find(
   return std::make_pair(itr != nodes_.end(), itr);
 }
 
-uint16_t RoutingTable::NetworkStatus(uint16_t size) const {
-  return static_cast<uint16_t>((size) * 100 / kMaxSize_);
+unsigned int RoutingTable::NetworkStatus(unsigned int size) const {
+  return static_cast<unsigned int>((size) * 100 / kMaxSize_);
 }
 
 size_t RoutingTable::size() const {
