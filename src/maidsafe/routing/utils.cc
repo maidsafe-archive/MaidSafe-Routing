@@ -46,60 +46,6 @@ namespace maidsafe {
 
 namespace routing {
 
-namespace {
-// FIXME Prakash Copied from common needs to formalise it
-// Retrieve homedir from environment
-boost::filesystem::path GetHomeDir() {
-#if defined(MAIDSAFE_WIN32)
-  std::string env_home2(std::getenv("HOMEPATH"));
-  std::string env_home_drive(std::getenv("HOMEDRIVE"));
-  if ((!env_home2.empty()) && (!env_home_drive.empty()))
-    return boost::filesystem::path(env_home_drive + env_home2);
-#elif defined(MAIDSAFE_APPLE) || defined(MAIDSAFE_LINUX)
-  struct passwd* p = getpwuid(getuid());  // NOLINT (dirvine)
-  std::string home(p->pw_dir);
-  if (!home.empty())
-    return boost::filesystem::path(home);
-  std::string env_home(std::getenv("HOME"));
-  if (!env_home.empty())
-    return boost::filesystem::path(env_home);
-#endif
-  LOG(kError) << "Cannot deduce home directory path";
-  return boost::filesystem::path();
-}
-
-// FIXME Prakash
-boost::filesystem::path GetUserRoutingAppDir() {
-  const boost::filesystem::path kHomeDir(GetHomeDir());
-  if (kHomeDir.empty()) {
-    LOG(kError) << "Cannot deduce user application directory path";
-  return boost::filesystem::path();
-  }
-#if defined(MAIDSAFE_WIN32)
-  return boost::filesystem::path(std::getenv("APPDATA")) / "MaidSafe" / "Routing";
-#elif defined(MAIDSAFE_APPLE)
-  return kHomeDir / "/Library/Application Support/" / "MaidSafe" / "Routing";
-#elif defined(MAIDSAFE_LINUX)
-  return kHomeDir / ".config" / "MaidSafe" / "Routing";
-#else
-  LOG(kError) << "Cannot deduce user application directory path";
-  return boost::filesystem::path();
-#endif
-}
-
-}  // anonymous namespace
-
-
-boost::filesystem::path GetBootstrapFilePath(bool is_client) {
-  const std::string kBootstrapFilename("bootstrap.dat");
-  const fs::path kLocalFilePath(ThisExecutableDir() / kBootstrapFilename);
-  if (is_client && !fs::exists(kLocalFilePath) &&
-      (fs::exists(GetUserRoutingAppDir() / kBootstrapFilename) )) {   // Clients only
-    return GetUserRoutingAppDir() / kBootstrapFilename;
-  }
-  return kLocalFilePath;
-}
-
 int AddToRudp(NetworkUtils& network, const NodeId& this_node_id, const NodeId& this_connection_id,
               const NodeId& peer_id, const NodeId& peer_connection_id,
               rudp::EndpointPair peer_endpoint_pair, bool requestor, bool client) {
