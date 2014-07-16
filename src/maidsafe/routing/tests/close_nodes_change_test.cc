@@ -1,14 +1,20 @@
-/*******************************************************************************
- *  Copyright 2012 maidsafe.net limited                                        *
- *                                                                             *
- *  The following source code is property of maidsafe.net limited and is not   *
- *  meant for external use.  The use of this code is governed by the licence   *
- *  file licence.txt found in the root of this directory and also on           *
- *  www.maidsafe.net.                                                          *
- *                                                                             *
- *  You are not free to copy, amend or otherwise use this source code without  *
- *  the explicit written permission of the board of directors of maidsafe.net. *
- ******************************************************************************/
+/*  Copyright 2012 MaidSafe.net limited
+
+    This MaidSafe Software is licensed to you under (1) the MaidSafe.net Commercial License,
+    version 1.0 or later, or (2) The General Public License (GPL), version 3, depending on which
+    licence you accepted on initial access to the Software (the "Licences").
+
+    By contributing code to the MaidSafe Software, or to this project generally, you agree to be
+    bound by the terms of the MaidSafe Contributor Agreement, version 1.0, found in the root
+    directory of this project at LICENSE, COPYING and CONTRIBUTOR respectively and also
+    available at: http://www.maidsafe.net/licenses
+
+    Unless required by applicable law or agreed to in writing, the MaidSafe Software distributed
+    under the GPL Licence is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS
+    OF ANY KIND, either express or implied.
+
+    See the Licences for the specific language governing permissions and limitations relating to
+    use of the MaidSafe Software.                                                                 */
 
 #include <bitset>
 #include <map>
@@ -281,7 +287,7 @@ TEST_F(CloseNodesChangeTest, BEH_SmallSizeRoutingTable) {
 
 TEST_F(CloseNodesChangeTest, BEH_FullSizeRoutingTable) {
   NodeId node_id(NodeId::IdType::kRandomId);
-  std::set<NodeId, std::function<bool(const NodeId & lhs, const NodeId & rhs)>> new_ids([node_id](
+  std::set<NodeId, std::function<bool(const NodeId& lhs, const NodeId& rhs)>> new_ids([node_id](
       const NodeId& lhs, const NodeId& rhs) { return NodeId::CloserToTarget(lhs, rhs, node_id); });
   NodeInfo new_node;
   NodeId removed;
@@ -289,12 +295,13 @@ TEST_F(CloseNodesChangeTest, BEH_FullSizeRoutingTable) {
   RoutingTableChangeFunctor routing_table_change_functor([&](
       const RoutingTableChange& routing_table_change) {
     if (routing_table.size() <= Parameters::closest_nodes_size) {
-      EXPECT_TRUE(routing_table_change.close_nodes_change != nullptr);
+      EXPECT_NE(routing_table_change.close_nodes_change, nullptr);
       if (routing_table_change.insertion) {
         EXPECT_FALSE(routing_table_change.close_nodes_change->new_node().IsZero());
         EXPECT_TRUE(routing_table_change.close_nodes_change->lost_node().IsZero());
       } else {
-        EXPECT_TRUE(routing_table_change.close_nodes_change->new_node().IsZero());
+        if (routing_table.size() != Parameters::closest_nodes_size)
+          EXPECT_TRUE(routing_table_change.close_nodes_change->new_node().IsZero());
         EXPECT_FALSE(routing_table_change.close_nodes_change->lost_node().IsZero());
         EXPECT_EQ(routing_table_change.close_nodes_change->lost_node(), removed);
         new_ids.erase(removed);
@@ -304,7 +311,7 @@ TEST_F(CloseNodesChangeTest, BEH_FullSizeRoutingTable) {
       std::advance(iter, Parameters::closest_nodes_size - 1);
       if (routing_table_change.insertion) {
         if (NodeId::CloserToTarget(new_node.id, *iter, node_id)) {
-          EXPECT_TRUE(routing_table_change.close_nodes_change != nullptr);
+          EXPECT_NE(routing_table_change.close_nodes_change, nullptr);
           EXPECT_FALSE(routing_table_change.close_nodes_change->new_node().IsZero());
           EXPECT_FALSE(routing_table_change.close_nodes_change->lost_node().IsZero());
           std::advance(iter, 1);
@@ -312,7 +319,7 @@ TEST_F(CloseNodesChangeTest, BEH_FullSizeRoutingTable) {
         }
       } else {
         if (!NodeId::CloserToTarget(*iter, removed, node_id)) {
-          EXPECT_TRUE(routing_table_change.close_nodes_change != nullptr);
+          EXPECT_NE(routing_table_change.close_nodes_change, nullptr);
           EXPECT_FALSE(routing_table_change.close_nodes_change->new_node().IsZero());
           std::advance(iter, 1);
           EXPECT_EQ(routing_table_change.close_nodes_change->new_node(), *iter);
@@ -340,7 +347,6 @@ TEST_F(CloseNodesChangeTest, BEH_FullSizeRoutingTable) {
     std::advance(iter, random_index);
     removed = *iter;
     routing_table.DropNode(*iter, true);
-    new_ids.erase(iter);
   }
 }
 

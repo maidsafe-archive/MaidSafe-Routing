@@ -76,7 +76,7 @@ class RoutingTableNetwork : public testing::Test {
         max_close_index_(0),
         total_close_index_(0),
         close_index_count_(0) {
-    Parameters::closest_nodes_size = kNumberofClosestNode;
+    Parameters::closest_nodes_size = static_cast<uint16_t>(kNumberofClosestNode);
     //    CreateKeys();
   }
 
