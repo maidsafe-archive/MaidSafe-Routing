@@ -99,14 +99,13 @@ class GenericNode {
   bool IsClient() const;
   bool HasSymmetricNat() const;
   // void set_client_mode(bool client_mode);
-  int expected();
+  unsigned int expected();
   void set_expected(int expected);
   void SetStoreInCacheFunctor(StoreCacheDataFunctor cache_store_functor);
   void SetGetFromCacheFunctor(HaveCacheDataFunctor get_from_functor);
   int ZeroStateJoin(const boost::asio::ip::udp::endpoint& peer_endpoint,
                     const NodeInfo& peer_node_info);
-  void Join(const std::vector<boost::asio::ip::udp::endpoint>& peer_endpoints =
-                std::vector<boost::asio::ip::udp::endpoint>());
+  void Join();
   void SendDirect(const NodeId& destination_id, const std::string& data, bool cacheable,
                   ResponseFunctor response_functor);
   void SendGroup(const NodeId& destination_id, const std::string& data, bool cacheable,
@@ -162,7 +161,7 @@ void SendMessage(const NodeId& destination_id, protobuf::Message& proto_message)
   std::mutex mutex_;
   bool client_mode_;
   bool joined_;
-  int expected_;
+  unsigned int expected_;
   rudp::NatType nat_type_;
   bool has_symmetric_nat_;
   boost::asio::ip::udp::endpoint endpoint_;
@@ -260,8 +259,6 @@ class GenericNetwork {
   void AddNodeDetails(NodePtr node);
 
   mutable std::mutex mutex_, fobs_mutex_;
-  std::vector<boost::asio::ip::udp::endpoint> bootstrap_endpoints_;
-  boost::filesystem::path bootstrap_path_;
   std::map<NodeId, asymm::PublicKey> public_keys_;
   unsigned int client_index_;
   bool nat_info_available_;

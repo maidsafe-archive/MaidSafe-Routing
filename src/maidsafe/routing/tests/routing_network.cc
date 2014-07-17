@@ -321,15 +321,13 @@ int GenericNode::ZeroStateJoin(const Endpoint& peer_endpoint, const NodeInfo& pe
   return routing_->ZeroStateJoin(functors_, endpoint(), peer_endpoint, peer_node_info);
 }
 
-void GenericNode::Join(const std::vector<Endpoint>& /*peer_endpoints*/) {
-  routing_->Join(functors_ /*, peer_endpoints*/);  // FIXME Prakash
-}
+void GenericNode::Join() { routing_->Join(functors_); }
 
 void GenericNode::set_joined(const bool node_joined) { joined_ = node_joined; }
 
 bool GenericNode::joined() const { return joined_; }
 
-int GenericNode::expected() { return expected_; }
+unsigned int GenericNode::expected() { return expected_; }
 
 void GenericNode::set_expected(int expected) { expected_ = expected; }
 
@@ -404,8 +402,6 @@ rudp::NatType GenericNode::nat_type() { return routing_->pimpl_->network_.nat_ty
 GenericNetwork::GenericNetwork()
     : mutex_(),
       fobs_mutex_(),
-      bootstrap_endpoints_(),
-      bootstrap_path_("bootstrap"),
       public_keys_(),
       client_index_(0),
       nat_info_available_(true),
@@ -1476,19 +1472,20 @@ void GenericNetwork::AddNodeDetails(NodePtr node) {
   node->functors_.network_status = [cond_var_weak, weak_node](const int& result) {
     std::shared_ptr<std::condition_variable> cond_var(cond_var_weak.lock());
     NodePtr node(weak_node.lock());
-    if (node) {
+    if (node)
       node->SetHealth(result);
-    }
+
     if (!cond_var || !node)
       return;
+
     ASSERT_GE(result, kSuccess);
     LOG(kVerbose) << node->node_id() << ", " << node->expected() << ", " << result;
-    if (result == node->expected() && !node->joined()) {
+    if (result == static_cast<int>(node->expected()) && !node->joined()) {
       node->set_joined(true);
       cond_var->notify_one();
     }
   };
-  node->Join(bootstrap_endpoints_);
+  node->Join();
 
   std::mutex mutex;
   if (!node->joined()) {
@@ -1504,8 +1501,7 @@ void GenericNetwork::AddNodeDetails(NodePtr node) {
   PrintRoutingTables();
 }
 
-std::shared_ptr<GenericNetwork> NodesEnvironment::g_env_ =
-    std::shared_ptr<GenericNetwork>(new GenericNetwork());
+std::shared_ptr<GenericNetwork> NodesEnvironment::g_env_ = std::make_shared<GenericNetwork>();
 
 }  // namespace test
 
