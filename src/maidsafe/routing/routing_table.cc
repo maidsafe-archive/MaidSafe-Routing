@@ -116,9 +116,10 @@ bool RoutingTable::AddOrCheckNode(NodeInfo peer, bool remove) {
     if (MakeSpaceForNodeToBeAdded(peer, remove, removed_node, lock)) {
       if (remove) {
         assert(peer.bucket != NodeInfo::kInvalidBucket);
-        if ((nodes_.size() < Parameters::closest_nodes_size)  ||
+        if (!client_mode() &&
+           ((nodes_.size() < Parameters::closest_nodes_size)  ||
             NodeId::CloserToTarget(
-                peer.id, nodes_.at(Parameters::closest_nodes_size - 1).id, kNodeId())) {
+                peer.id, nodes_.at(Parameters::closest_nodes_size - 1).id, kNodeId()))) {
           bool full_close_nodes(nodes_.size() >= Parameters::closest_nodes_size);
           close_nodes_size = (full_close_nodes) ? (close_nodes_size - 1) : close_nodes_size;
           std::for_each (std::begin(nodes_), std::begin(nodes_) + close_nodes_size,
@@ -166,9 +167,10 @@ NodeInfo RoutingTable::DropNode(const NodeId& node_to_drop, bool routing_only) {
                                                 lock));
     auto found(Find(node_to_drop, lock));
     if (found.first) {
-      if ((nodes_.size() < Parameters::closest_nodes_size) ||
+      if (!client_mode() &&
+          ((nodes_.size() < Parameters::closest_nodes_size) ||
            !NodeId::CloserToTarget(nodes_.at(Parameters::closest_nodes_size - 1).id,
-                                   node_to_drop, kNodeId())) {
+                                   node_to_drop, kNodeId()))) {
         std::for_each (std::begin(nodes_),
                        std::begin(nodes_) + std::min(close_nodes_size,
                                                      Parameters::closest_nodes_size),
