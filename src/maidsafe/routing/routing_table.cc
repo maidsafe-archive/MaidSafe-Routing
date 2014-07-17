@@ -22,6 +22,7 @@
 #include <bitset>
 #include <limits>
 #include <map>
+#include <sstream>
 
 #include "maidsafe/common/log.h"
 #include "maidsafe/common/utils.h"
@@ -523,17 +524,18 @@ std::string RoutingTable::PrintRoutingTable() {
     });
     rt = nodes_;
   }
-  std::string s = "\n\n[" + DebugId(kNodeId_) +
-                  "] This node's own routing table and peer connections:\n" +
-                  "Routing table size: " + std::to_string(nodes_.size()) + "\n";
+  std::stringstream stream;
+  stream << "\n\n[" << DebugId(kNodeId_)
+         << "] This node's own routing table and peer connections:\nRouting table size: "
+         << std::to_string(nodes_.size()) + "\n";
   for (const auto& node : rt) {
-    s += std::string("\tPeer ") + "[" + DebugId(node.id) + "]" + "-->";
-    s += DebugId(node.connection_id) + " && xored ";
-    s += DebugId(kNodeId_ ^ node.id) + " bucket ";
-    s += std::to_string(node.bucket) + "\n";
+    stream << std::string("\tPeer ") << "[" << DebugId(node.id) << "]-->";
+    stream << DebugId(node.connection_id) << " && xored ";
+    stream << DebugId(kNodeId_ ^ node.id) << " bucket ";
+    stream << std::to_string(node.bucket) << "\n";
   }
-  s += "\n\n";
-  return s;
+  stream << "\n\n";
+  return stream.str();
 }
 
 }  // namespace routing
