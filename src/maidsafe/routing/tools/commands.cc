@@ -80,15 +80,6 @@ void Commands::Validate(const NodeId& node_id, GivePublicKeyFunctor give_public_
     give_public_key((*iter).pmid.public_key());
 }
 
-void Commands::WriteBootStrapFile(const BootstrapContacts& bootstrap_contacts) {
-  auto file_path(GetBootstrapFilePath(false));
-  if (boost::filesystem::remove(file_path)) {
-    LOG(kError) << "Failed to overwrite bootstrap file at : " << file_path;
-    BOOST_THROW_EXCEPTION(MakeError(CommonErrors::filesystem_io_error));
-  }
-  WriteBootstrapContacts(bootstrap_contacts, file_path);
-}
-
 void Commands::Run() {
   PrintUsage();
 

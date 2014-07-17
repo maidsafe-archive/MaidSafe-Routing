@@ -58,7 +58,6 @@ class Commands {
   void ProcessCommand(const std::string& cmdline);
   void MarkResultArrived();
   bool ResultArrived() { return result_arrived_; }
-  void WriteBootStrapFile(const BootstrapContacts& bootstrap_contacts);
 
   void PrintRoutingTable();
   void ZeroStateJoin();
