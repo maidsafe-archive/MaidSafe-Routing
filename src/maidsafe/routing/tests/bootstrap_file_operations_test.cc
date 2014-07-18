@@ -68,7 +68,6 @@ TEST(BootstrapFileOperationsTest, BEH_ReadWrite) {
                                                            << " vs " << bootstrap_contacts.size();
 }
 
-// SQLITE test
 TEST(BootstrapFileOperationsTest, FUNC_Parallel_Unique_Update) {
   maidsafe::test::TestPath test_path(maidsafe::test::CreateTestPath("MaidSafe_TestUtils"));
   fs::path bootstrap_file_path(*test_path / "bootstrap");
@@ -116,43 +115,6 @@ TEST(BootstrapFileOperationsTest, FUNC_Parallel_Duplicate_Update) {
                 std::find(bootstrap_contacts_result.begin(), bootstrap_contacts_result.end(), i));
     }
   });
-}
-
-// ############################################################################
-// Old interface will be deleted
-TEST(BootstrapFileOperationsTest, BEH_ReadWriteUpdate) {
-  maidsafe::test::TestPath test_path(maidsafe::test::CreateTestPath("MaidSafe_TestUtils"));
-  fs::path bootstrap_file_path(*test_path / "bootstrap");
-  ASSERT_FALSE(fs::exists(bootstrap_file_path));
-  EXPECT_THROW(ReadBootstrapFile(bootstrap_file_path), std::exception);
-  EXPECT_FALSE(fs::exists(bootstrap_file_path));
-  BootstrapContacts bootstrap_contacts;
-  EXPECT_NO_THROW(WriteBootstrapFile(bootstrap_contacts, bootstrap_file_path));
-  // Write
-  BootstrapContacts expected_bootstrap_contacts;
-  for (int i(0); i < 100; ++i) {
-    BootstrapContact bootstrap_contact(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort());
-    bootstrap_contacts.push_back(bootstrap_contact);
-    expected_bootstrap_contacts.insert(std::begin(expected_bootstrap_contacts), bootstrap_contact);
-    EXPECT_NO_THROW(WriteBootstrapFile(bootstrap_contacts, bootstrap_file_path));
-    auto actual_bootstrap_contacts = ReadBootstrapFile(bootstrap_file_path);
-    EXPECT_TRUE(std::equal(actual_bootstrap_contacts.begin(), actual_bootstrap_contacts.end(),
-                           expected_bootstrap_contacts.begin()));
-  }
-
-  // Update add
-  for (int i(0); i < 100; ++i) {
-    BootstrapContact bootstrap_contact(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort());
-    bootstrap_contacts.push_back(bootstrap_contact);
-    expected_bootstrap_contacts.insert(std::begin(expected_bootstrap_contacts), bootstrap_contact);
-    EXPECT_NO_THROW(UpdateBootstrapFile(bootstrap_contact, bootstrap_file_path, false));
-    auto actual_bootstrap_contacts = ReadBootstrapFile(bootstrap_file_path);
-    EXPECT_TRUE(std::equal(actual_bootstrap_contacts.begin(), actual_bootstrap_contacts.end(),
-                           expected_bootstrap_contacts.begin()));
-  }
-
-  // Update remove
-  // TODO(Prakash)
 }
 
 }  // namespace test

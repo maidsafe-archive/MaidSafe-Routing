@@ -50,16 +50,6 @@ message ConfigFile {
   optional bytes private_key = 2;
 }
 
-message BootstrapContact {
-  required Endpoint endpoint = 1;
-}
-
-// bootstrap contacts file
-message BootstrapContacts {
-  repeated bytes serialised_bootstrap_contacts = 1;
-}
-
-
 // Message wrapper
 message Message {
   optional bytes source_id = 1;

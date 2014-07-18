@@ -101,7 +101,7 @@ void ReadFile() {
   std::string filename = Get<std::string>("please enter filename to load");
   fs::path file(filename);
   try {
-    bootstrap_contacts = maidsafe::routing::ReadBootstrapFile(file);
+    bootstrap_contacts = maidsafe::routing::ReadBootstrapContacts(file);
   }  catch (const std::exception& e) {
     std::cout << "Could not read bootstrap file. Error : " << e.what();;
     return;
@@ -113,7 +113,7 @@ void WriteFile() {
   fs::path file(filename);
 
   try {
-    maidsafe::routing::WriteBootstrapFile(bootstrap_contacts, file);
+    maidsafe::routing::WriteBootstrapContacts(bootstrap_contacts, file);
   }  catch (const std::exception& e) {
     std::cout << "Could not write bootstrap file. Error : " << e.what();;
     return;

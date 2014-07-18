@@ -37,7 +37,7 @@ namespace {
 typedef boost::asio::ip::udp::endpoint Endpoint;
 
 // Copied from Drive launcher
-// TODO(Prakash) Move to utils of routing
+// TODO(Prakash) Move to utils of routing                                                           // FIXME
 boost::asio::ip::udp::endpoint GetEndpoint(const std::string& endpoint) {
   size_t delim = endpoint.rfind(':');
   boost::asio::ip::udp::endpoint ep;
@@ -60,102 +60,6 @@ void InsertBootstrapContacts(sqlite::Database& database,
 
 }  // unnamed namespace
 
-std::string SerialiseBootstrapContact(const BootstrapContact& bootstrap_contact) {
-  protobuf::BootstrapContact protobuf_bootstrap_contact;
-  SetProtobufEndpoint(bootstrap_contact, protobuf_bootstrap_contact.mutable_endpoint());
-  std::string serialised_bootstrap_contact;
-  if (!protobuf_bootstrap_contact.SerializeToString(&serialised_bootstrap_contact)) {
-    LOG(kError) << "Failed to serialise bootstrap contact.";
-    BOOST_THROW_EXCEPTION(MakeError(CommonErrors::serialisation_error));
-  }
-  return serialised_bootstrap_contact;
-}
-
-std::string SerialiseBootstrapContacts(const BootstrapContacts& bootstrap_contacts) {
-  protobuf::BootstrapContacts protobuf_bootstrap_contacts;
-  for (const auto& bootstrap_contact : bootstrap_contacts) {
-    protobuf_bootstrap_contacts.add_serialised_bootstrap_contacts(
-        SerialiseBootstrapContact(bootstrap_contact));
-  }
-  std::string serialised_bootstrap_contacts;
-  if (!protobuf_bootstrap_contacts.SerializeToString(&serialised_bootstrap_contacts)) {
-    LOG(kError) << "Failed to serialise bootstrap contacts.";
-    BOOST_THROW_EXCEPTION(MakeError(CommonErrors::serialisation_error));
-  }
-  return serialised_bootstrap_contacts;
-}
-
-BootstrapContact ParseBootstrapContact(const std::string& serialised_bootstrap_contact) {
-  protobuf::BootstrapContact protobuf_bootstrap_contact;
-  if (!protobuf_bootstrap_contact.ParseFromString(serialised_bootstrap_contact)) {
-    LOG(kError) << "Could not parse bootstrap contact.";
-    BOOST_THROW_EXCEPTION(MakeError(CommonErrors::parsing_error));
-  }
-  return GetEndpointFromProtobuf(protobuf_bootstrap_contact.endpoint());
-}
-
-BootstrapContacts ParseBootstrapContacts(const std::string& serialised_bootstrap_contacts) {
-  protobuf::BootstrapContacts protobuf_bootstrap_contacts;
-  if (!protobuf_bootstrap_contacts.ParseFromString(serialised_bootstrap_contacts)) {
-    LOG(kError) << "Could not parse bootstrap file.";
-    BOOST_THROW_EXCEPTION(MakeError(CommonErrors::parsing_error));
-  }
-  BootstrapContacts bootstrap_contacts;
-  bootstrap_contacts.reserve(protobuf_bootstrap_contacts.serialised_bootstrap_contacts().size());
-  for (const auto& serialised_bootstrap_contact :
-       protobuf_bootstrap_contacts.serialised_bootstrap_contacts()) {
-    bootstrap_contacts.push_back(ParseBootstrapContact(serialised_bootstrap_contact));
-  }
-  return bootstrap_contacts;
-}
-
-
-// TODO(Team) : Consider timestamp in forming the list. If offline for more than a week, then
-// list new nodes first
-BootstrapContacts ReadBootstrapFile(const fs::path& bootstrap_file_path) {
-  auto bootstrap_contacts(ParseBootstrapContacts(ReadFile(bootstrap_file_path).string()));
-
-  std::reverse(std::begin(bootstrap_contacts), std::end(bootstrap_contacts));
-  return bootstrap_contacts;
-}
-
-void WriteBootstrapFile(const BootstrapContacts& bootstrap_contacts,
-                        const fs::path& bootstrap_file_path) {
-  // TODO(Prakash) consider overloading WriteFile() to take NonEmptyString as parameter
-  if (!WriteFile(bootstrap_file_path, SerialiseBootstrapContacts(bootstrap_contacts))) {
-    LOG(kError) << "Could not write bootstrap file at : " << bootstrap_file_path;
-    BOOST_THROW_EXCEPTION(MakeError(CommonErrors::filesystem_io_error));
-  }
-}
-
-void UpdateBootstrapFile(const BootstrapContact& bootstrap_contact,
-                         const boost::filesystem::path& bootstrap_file_path, bool remove) {
-  if (bootstrap_contact.address().is_unspecified()) {
-    LOG(kWarning) << "Invalid Endpoint" << bootstrap_contact;
-    BOOST_THROW_EXCEPTION(MakeError(CommonErrors::invalid_parameter));
-  }
-  auto bootstrap_contacts(ParseBootstrapContacts(ReadFile(bootstrap_file_path).string()));
-  auto itr(
-      std::find(std::begin(bootstrap_contacts), std::end(bootstrap_contacts), bootstrap_contact));
-  if (remove) {
-    if (itr != std::end(bootstrap_contacts)) {
-      bootstrap_contacts.erase(itr);
-      WriteBootstrapFile(bootstrap_contacts, bootstrap_file_path);
-    } else {
-      LOG(kVerbose) << "Can't find endpoint to remove : " << bootstrap_contact;
-    }
-  } else {
-    if (itr == std::end(bootstrap_contacts)) {
-      bootstrap_contacts.push_back(bootstrap_contact);
-      WriteBootstrapFile(bootstrap_contacts, bootstrap_file_path);
-    } else {
-      LOG(kVerbose) << "Endpoint already in the list : " << bootstrap_contact;
-    }
-  }
-}
-
-// Throw if file exists ?
-// FIXME over write table if it exists ?
 void WriteBootstrapContacts(const BootstrapContacts& bootstrap_contacts,
                             const fs::path& bootstrap_file_path) {
   sqlite::Database database(bootstrap_file_path, sqlite::Mode::kReadWriteCreate);
@@ -168,7 +72,8 @@ void WriteBootstrapContacts(const BootstrapContacts& bootstrap_contacts,
   transaction.Commit();
 }
 
-// Throw if file doesn't exist
+// TODO(Team) : Consider timestamp in forming the list. If offline for more than a week, then
+// list new nodes first
 BootstrapContacts ReadBootstrapContacts(const fs::path& bootstrap_file_path) {
   sqlite::Database database(bootstrap_file_path, sqlite::Mode::kReadOnly);
   std::string query("SELECT * from BOOTSTRAP_CONTACTS");
@@ -196,10 +101,6 @@ void InsertOrUpdateBootstrapContact(const BootstrapContact& bootstrap_contact,
   InsertBootstrapContacts(database, BootstrapContacts(1, bootstrap_contact));
   transaction.Commit();
 }
-
-void RemoveBootstrapContact(const Endpoint& /*endpoint*/,
-                            const boost::filesystem::path& /*bootstrap_file_path*/) {}
-
 
 }  // namespace routing
 
