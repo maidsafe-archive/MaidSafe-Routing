@@ -40,18 +40,10 @@ namespace test {
 Commands::Commands(DemoNodePtr demo_node,
                    std::vector<maidsafe::passport::detail::AnmaidToPmid> all_keys,
                    int identity_index)
-    : demo_node_(demo_node),
-      all_keys_(std::move(all_keys)),
-      all_ids_(),
-      identity_index_(identity_index),
-      bootstrap_peer_ep_(),
-      data_size_(1024 * 1024),
-      data_rate_(1024 * 1024),
-      result_arrived_(false),
-      finish_(false),
-      wait_mutex_(),
-      wait_cond_var_(),
-      mark_results_arrived_() {
+    : demo_node_(demo_node), all_keys_(std::move(all_keys)), all_ids_(),
+      identity_index_(identity_index), bootstrap_peer_ep_(), data_size_(1024 * 1024),
+      data_rate_(1024 * 1024), result_arrived_(false), finish_(false), wait_mutex_(),
+      wait_cond_var_(), mark_results_arrived_() {
   // CalculateClosests will only use all_ids_ to calculate expected respondents
   // here it is assumed that the first half of fobs will be used as vault
   // and the latter half part will be used as client, which shall not respond msg
@@ -128,6 +120,10 @@ void Commands::GetPeer(const std::string& peer) {
   catch (...) {
     std::cout << "Could not parse IPv4 peer endpoint from " << peer << std::endl;
   }
+  auto bootstrap_file_path(GetBootstrapFilePath(false));
+  if (!boost::filesystem::exists(bootstrap_file_path))
+    WriteBootstrapContacts(BootstrapContacts {demo_node_->endpoint(), bootstrap_peer_ep_},
+                           bootstrap_file_path);
 }
 
 void Commands::ZeroStateJoin() {
@@ -139,6 +135,7 @@ void Commands::ZeroStateJoin() {
     std::cout << "can't exec ZeroStateJoin as a non-bootstrap node" << std::endl;
     return;
   }
+
   NodeInfo peer_node_info;
   if (identity_index_ == 0) {
     peer_node_info.id = NodeId(all_keys_[1].pmid.name().value);
@@ -304,7 +301,7 @@ void Commands::Join() {
   demo_node_->functors_.network_status = [this, &cond_var, weak_node](const int& result) {
     if (std::shared_ptr<GenericNode> node = weak_node.lock()) {
       ASSERT_GE(result, kSuccess);
-      if (result == node->expected() && !node->joined()) {
+      if (result == static_cast<int>(node->expected()) && !node->joined()) {
         node->set_joined(true);
         cond_var.notify_one();
       } else {
@@ -313,10 +310,8 @@ void Commands::Join() {
       }
     }
   };
-  std::vector<boost::asio::ip::udp::endpoint> bootstrap_endpoints;
-  if (bootstrap_peer_ep_ != boost::asio::ip::udp::endpoint())
-    bootstrap_endpoints.push_back(bootstrap_peer_ep_);
-  demo_node_->Join(bootstrap_endpoints);
+
+  demo_node_->Join();
 
   if (!demo_node_->joined()) {
     std::unique_lock<std::mutex> lock(mutex);

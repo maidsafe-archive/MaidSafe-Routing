@@ -88,6 +88,10 @@ int NetworkUtils::Bootstrap(const rudp::MessageReceivedFunctor& message_received
     LOG(kWarning) << "Failed to read bootstrap contacts file : " << error.what();
   }
 
+  bootstrap_contacts.erase(std::remove(std::begin(bootstrap_contacts), std::end(bootstrap_contacts),
+                                       local_endpoint),
+                           std::end(bootstrap_contacts));
+
   if (Parameters::append_maidsafe_endpoints) {
     LOG(kInfo) << "Appending Maidsafe Endpoints";
     auto maidsafe_bootstrap_contacts(MaidSafeBootstrapContacts());

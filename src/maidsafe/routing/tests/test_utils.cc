@@ -45,8 +45,7 @@ namespace test {
 
 ScopedBootstrapFile::ScopedBootstrapFile(const BootstrapContacts& bootstrap_contacts)
     : kFilePath(GetBootstrapFilePath(false)) {
-  boost::filesystem::remove(kFilePath);
-  if (boost::filesystem::remove(kFilePath)) {
+  if (boost::filesystem::exists(kFilePath) && !boost::filesystem::remove(kFilePath)) {
     LOG(kError) << "Failed to overwrite bootstrap file at : " << kFilePath;
     BOOST_THROW_EXCEPTION(MakeError(CommonErrors::filesystem_io_error));
   }
