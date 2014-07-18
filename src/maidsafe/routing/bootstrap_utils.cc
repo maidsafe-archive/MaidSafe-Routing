@@ -33,22 +33,13 @@ namespace {
 
 BootstrapContacts MaidSafeBootstrapContacts() {
   std::vector<std::string> endpoint_string;
-  endpoint_string.reserve(15);
-  endpoint_string.push_back("176.58.120.133");
-  endpoint_string.push_back("178.79.163.139");
-  endpoint_string.push_back("176.58.102.53");
-  endpoint_string.push_back("176.58.113.214");
-  endpoint_string.push_back("106.187.49.208");
-  endpoint_string.push_back("198.74.60.81");
-  endpoint_string.push_back("198.74.60.83");
-  endpoint_string.push_back("198.74.60.84");
-  endpoint_string.push_back("198.74.60.85");
-  endpoint_string.push_back("198.74.60.86");
-  endpoint_string.push_back("176.58.103.83");
-  endpoint_string.push_back("106.187.102.233");
-  endpoint_string.push_back("106.187.47.248");
-  endpoint_string.push_back("106.187.93.100");
-  endpoint_string.push_back("106.186.16.51");
+  endpoint_string.reserve(6);
+  endpoint_string.push_back("104.131.253.66");
+  endpoint_string.push_back("95.85.32.100");
+  endpoint_string.push_back("128.199.159.50");
+  endpoint_string.push_back("178.79.156.73");
+  endpoint_string.push_back("106.185.24.221");
+  endpoint_string.push_back("23.239.27.245");
 
   BootstrapContacts maidsafe_endpoints;
   for (const auto& i : endpoint_string)
@@ -58,7 +49,7 @@ BootstrapContacts MaidSafeBootstrapContacts() {
 
 BootstrapContacts MaidSafeLocalBootstrapContacts() {
   std::vector<std::string> endpoint_string;
-  
+
 #if defined QA_BUILD
 //  LOG(kVerbose) << "Appending 192.168.0.130:5483 to bootstrap endpoints";
 //  endpoint_string.reserve(2);
