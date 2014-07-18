@@ -58,13 +58,28 @@ BootstrapContacts MaidSafeBootstrapContacts() {
 
 BootstrapContacts MaidSafeLocalBootstrapContacts() {
   std::vector<std::string> endpoint_string;
-  endpoint_string.reserve(2);
+  
 #if defined QA_BUILD
-  LOG(kVerbose) << "Appending 192.168.0.130:5483 to bootstrap endpoints";
-  endpoint_string.push_back("192.168.0.130");
+//  LOG(kVerbose) << "Appending 192.168.0.130:5483 to bootstrap endpoints";
+//  endpoint_string.reserve(2);
+//  endpoint_string.push_back("192.168.0.130");
 #elif defined TESTING
-  LOG(kVerbose) << "Appending 192.168.0.109:5483 to bootstrap endpoints";
+  LOG(kVerbose) << "Appending maidsafe local endpoints to bootstrap endpoints";
+  endpoint_string.reserve(14);
   endpoint_string.push_back("192.168.0.109");
+  endpoint_string.push_back("192.168.0.4");
+  endpoint_string.push_back("192.168.0.35");
+  endpoint_string.push_back("192.168.0.16");
+  endpoint_string.push_back("192.168.0.20");
+  endpoint_string.push_back("192.168.0.9");
+  endpoint_string.push_back("192.168.0.10");
+  endpoint_string.push_back("192.168.0.19");
+  endpoint_string.push_back("192.168.0.8");
+  endpoint_string.push_back("192.168.0.11");
+  endpoint_string.push_back("192.168.0.13");
+  endpoint_string.push_back("192.168.0.86");
+  endpoint_string.push_back("192.168.0.6");
+  endpoint_string.push_back("192.168.0.55");
 #endif
   assert(endpoint_string.size() &&
          "Either QA_BUILD or TESTING must be defined to use maidsafe local endpoint option");
