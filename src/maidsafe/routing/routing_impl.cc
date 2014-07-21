@@ -181,7 +181,8 @@ int Routing::Impl::DoBootstrap() {
 
   return network_.Bootstrap(
       [=](const std::string& message) { OnMessageReceived(message); },
-      [=](const NodeId& lost_connection_id) { OnConnectionLost(lost_connection_id); });  // NOLINT
+      [=](const NodeId& lost_connection_id) { OnConnectionLost(lost_connection_id); },
+      routing_table_.client_mode());
 }
 
 void Routing::Impl::FindClosestNode(const boost::system::error_code& error_code, int attempts) {
@@ -256,10 +257,10 @@ int Routing::Impl::ZeroStateJoin(const Functors& functors, const Endpoint& local
   assert((!routing_table_.client_mode()) && "no client nodes allowed in zero state network");
 
   ConnectFunctors(functors);
-  int result(network_.Bootstrap(
+  int result(network_.ZeroStateBootstrap(
       [=](const std::string& message) { OnMessageReceived(message); },
       [=](const NodeId& lost_connection_id) { OnConnectionLost(lost_connection_id); },
-      local_endpoint, peer_endpoint));
+      local_endpoint));
 
   if (result != kSuccess) {
     LOG(kError) << "Could not bootstrap zero state node from local endpoint : " << local_endpoint

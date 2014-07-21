@@ -20,65 +20,80 @@
 
 #include <string>
 
-#include "maidsafe/common/log.h"
 #include "maidsafe/common/utils.h"
 
 namespace maidsafe {
 
 namespace routing {
 
-namespace {
-  typedef boost::asio::ip::udp::endpoint Endpoint;
+using boost::asio::ip::udp;
+using boost::asio::ip::address;
+
+template <>
+BootstrapContacts GetBootstrapContacts<TargetNetwork::kSafe>(bool is_client) {
+  BootstrapContacts bootstrap_contacts{
+      is_client ? detail::GetFromLocalFile<true>() : detail::GetFromLocalFile<false>() };
+  // TODO(Fraser#5#): 2014-07-21 - BEFORE_RELEASE - Add hard-coded endpoints.
+  return bootstrap_contacts;
 }
 
-BootstrapContacts MaidSafeBootstrapContacts() {
-  std::vector<std::string> endpoint_string;
-  endpoint_string.reserve(6);
-  endpoint_string.push_back("104.131.253.66");
-  endpoint_string.push_back("95.85.32.100");
-  endpoint_string.push_back("128.199.159.50");
-  endpoint_string.push_back("178.79.156.73");
-  endpoint_string.push_back("106.185.24.221");
-  endpoint_string.push_back("23.239.27.245");
-
-  BootstrapContacts maidsafe_endpoints;
-  for (const auto& i : endpoint_string)
-    maidsafe_endpoints.push_back(Endpoint(boost::asio::ip::address::from_string(i), 5483));
-  return maidsafe_endpoints;
+template <>
+BootstrapContacts GetBootstrapContacts<TargetNetwork::kMachineLocalTestnet>(bool is_client) {
+  BootstrapContacts bootstrap_contacts{
+      is_client ? detail::GetFromLocalFile<true>() : detail::GetFromLocalFile<false>() };
+  if (bootstrap_contacts.empty())
+    bootstrap_contacts = BootstrapContacts{ udp::endpoint{ GetLocalIp(), kLivePort } };
+  return bootstrap_contacts;
 }
 
-BootstrapContacts MaidSafeLocalBootstrapContacts() {
-  std::vector<std::string> endpoint_string;
+template <>
+BootstrapContacts GetBootstrapContacts<TargetNetwork::kMaidSafeInternalTestnet>(bool is_client) {
+  BootstrapContacts bootstrap_contacts{
+      is_client ? detail::GetFromLocalFile<true>() : detail::GetFromLocalFile<false>() };
+  if (bootstrap_contacts.empty()) {
+    bootstrap_contacts = BootstrapContacts{
+        udp::endpoint{ address::from_string("192.168.0.109"), kLivePort },
+        udp::endpoint{ address::from_string("192.168.0.4"), kLivePort },
+        udp::endpoint{ address::from_string("192.168.0.35"), kLivePort },
+        udp::endpoint{ address::from_string("192.168.0.16"), kLivePort },
+        udp::endpoint{ address::from_string("192.168.0.20"), kLivePort },
+        udp::endpoint{ address::from_string("192.168.0.9"), kLivePort },
+        udp::endpoint{ address::from_string("192.168.0.10"), kLivePort },
+        udp::endpoint{ address::from_string("192.168.0.19"), kLivePort },
+        udp::endpoint{ address::from_string("192.168.0.8"), kLivePort },
+        udp::endpoint{ address::from_string("192.168.0.11"), kLivePort },
+        udp::endpoint{ address::from_string("192.168.0.13"), kLivePort },
+        udp::endpoint{ address::from_string("192.168.0.86"), kLivePort },
+        udp::endpoint{ address::from_string("192.168.0.6"), kLivePort },
+        udp::endpoint{ address::from_string("192.168.0.55"), kLivePort }
+    };
+  }
+  return bootstrap_contacts;
+}
 
-#if defined QA_BUILD
-//  LOG(kVerbose) << "Appending 192.168.0.130:5483 to bootstrap endpoints";
-//  endpoint_string.reserve(2);
-//  endpoint_string.push_back("192.168.0.130");
-#elif defined TESTING
-  LOG(kVerbose) << "Appending maidsafe local endpoints to bootstrap endpoints";
-  endpoint_string.reserve(14);
-  endpoint_string.push_back("192.168.0.109");
-  endpoint_string.push_back("192.168.0.4");
-  endpoint_string.push_back("192.168.0.35");
-  endpoint_string.push_back("192.168.0.16");
-  endpoint_string.push_back("192.168.0.20");
-  endpoint_string.push_back("192.168.0.9");
-  endpoint_string.push_back("192.168.0.10");
-  endpoint_string.push_back("192.168.0.19");
-  endpoint_string.push_back("192.168.0.8");
-  endpoint_string.push_back("192.168.0.11");
-  endpoint_string.push_back("192.168.0.13");
-  endpoint_string.push_back("192.168.0.86");
-  endpoint_string.push_back("192.168.0.6");
-  endpoint_string.push_back("192.168.0.55");
-#endif
-  assert(endpoint_string.size() &&
-         "Either QA_BUILD or TESTING must be defined to use maidsafe local endpoint option");
+template <>
+BootstrapContacts GetBootstrapContacts<TargetNetwork::kTestnet01v006>(bool is_client) {
+  BootstrapContacts bootstrap_contacts{
+      is_client ? detail::GetFromLocalFile<true>() : detail::GetFromLocalFile<false>() };
+  if (bootstrap_contacts.empty()) {
+    bootstrap_contacts = BootstrapContacts{
+        udp::endpoint{ address::from_string("104.131.253.66"), kLivePort },
+        udp::endpoint{ address::from_string("95.85.32.100"), kLivePort },
+        udp::endpoint{ address::from_string("128.199.159.50"), kLivePort },
+        udp::endpoint{ address::from_string("178.79.156.73"), kLivePort },
+        udp::endpoint{ address::from_string("106.185.24.221"), kLivePort },
+        udp::endpoint{ address::from_string("23.239.27.245"), kLivePort }
+    };
+  }
+  return bootstrap_contacts;
+}
 
-  BootstrapContacts maidsafe_endpoints;
-  for (const auto& i : endpoint_string)
-    maidsafe_endpoints.push_back(Endpoint(boost::asio::ip::address::from_string(i), 5483));
-  return maidsafe_endpoints;
+BootstrapContacts GetZeroStateBootstrapContacts(udp::endpoint local_endpoint) {
+  BootstrapContacts bootstrap_contacts{ detail::GetFromLocalFile<false>() };
+  bootstrap_contacts.erase(std::remove(std::begin(bootstrap_contacts), std::end(bootstrap_contacts),
+                                       local_endpoint),
+                           std::end(bootstrap_contacts));
+  return bootstrap_contacts;
 }
 
 }  // namespace routing

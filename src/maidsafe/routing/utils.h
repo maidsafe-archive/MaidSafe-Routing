@@ -31,41 +31,15 @@
 #include "maidsafe/passport/types.h"
 
 #include "maidsafe/routing/api_config.h"
-#include "maidsafe/routing/config.h"
 #include "maidsafe/routing/node_info.h"
 #include "maidsafe/routing/parameters.h"
 #include "maidsafe/routing/routing.pb.h"
 
-
-// NOTE: Temporarily defining COMPANY_NAME & APPLICATION_NAME if they are not defined.
-// This is to allow setting up of BootstrapFilePath for routing only.
-
-#ifndef COMPANY_NAME
-# define COMPANY_NAME MaidSafe
-# define COMPANY_NAME_DEFINED_TEMPORARILY
-#endif
-#ifndef APPLICATION_NAME
-# define APPLICATION_NAME Routing
-# define APPLICATION_NAME_DEFINED_TEMPORARILY
-#endif
-
-#include "maidsafe/common/application_support_directories.h"
-
-#ifdef COMPANY_NAME_DEFINED_TEMPORARILY
-# undef COMPANY_NAME
-# undef COMPANY_NAME_DEFINED_TEMPORARILY
-#endif
-#ifdef APPLICATION_NAME_DEFINED_TEMPORARILY
-# undef APPLICATION_NAME
-# undef APPLICATION_NAME_DEFINED_TEMPORARILY
-#endif
-
 namespace maidsafe {
 
 class NodeId;
-namespace routing {
 
-namespace fs = boost::filesystem;
+namespace routing {
 
 namespace protobuf {
 
@@ -77,15 +51,6 @@ class Endpoint;
 class NetworkUtils;
 class ClientRoutingTable;
 class RoutingTable;
-
-inline boost::filesystem::path GetBootstrapFilePath(bool is_client) {
-  const fs::path kLocalFilePath(ThisExecutableDir() / kBootstrapFilename);
-  if (is_client && !fs::exists(kLocalFilePath) &&
-      (fs::exists(GetUserAppDir() / kBootstrapFilename))) {   // Clients only
-    return GetUserAppDir() / kBootstrapFilename;
-  }
-  return kLocalFilePath;
-}
 
 int AddToRudp(NetworkUtils& network, const NodeId& this_node_id, const NodeId& this_connection_id,
               const NodeId& peer_id, const NodeId& peer_connection_id,

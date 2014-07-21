@@ -29,6 +29,7 @@
 #include "maidsafe/rudp/managed_connections.h"
 
 #include "maidsafe/routing/api_config.h"
+#include "maidsafe/routing/bootstrap_file_operations.h"
 #include "maidsafe/routing/node_info.h"
 #include "maidsafe/routing/timer.h"
 
@@ -54,8 +55,10 @@ class NetworkUtils {
   virtual ~NetworkUtils();
   int Bootstrap(const rudp::MessageReceivedFunctor& message_received_functor,
                 const rudp::ConnectionLostFunctor& connection_lost_functor,
-                boost::asio::ip::udp::endpoint local_endpoint = boost::asio::ip::udp::endpoint(),
-                boost::asio::ip::udp::endpoint peer_endpoint = boost::asio::ip::udp::endpoint());
+                bool is_client);
+  int ZeroStateBootstrap(const rudp::MessageReceivedFunctor& message_received_functor,
+                         const rudp::ConnectionLostFunctor& connection_lost_functor,
+                         boost::asio::ip::udp::endpoint local_endpoint);
   virtual int GetAvailableEndpoint(const NodeId& peer_id,
                                    const rudp::EndpointPair& peer_endpoint_pair,
                                    rudp::EndpointPair& this_endpoint_pair,
@@ -89,6 +92,11 @@ class NetworkUtils {
   NetworkUtils(const NetworkUtils&&);
   NetworkUtils& operator=(const NetworkUtils&);
 
+  // For zero-state, local_endpoint can be default-constructed.
+  int DoBootstrap(const rudp::MessageReceivedFunctor& message_received_functor,
+                  const rudp::ConnectionLostFunctor& connection_lost_functor,
+                  const BootstrapContacts& bootstrap_contacts,
+                  boost::asio::ip::udp::endpoint local_endpoint = boost::asio::ip::udp::endpoint());
   void RudpSend(const NodeId& peer_id, const protobuf::Message& message,
                 const rudp::MessageSentFunctor& message_sent_functor);
   void SendTo(const protobuf::Message& message, const NodeId& peer_node_id,

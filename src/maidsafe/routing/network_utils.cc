@@ -42,7 +42,6 @@ namespace {
 
 typedef boost::asio::ip::udp::endpoint Endpoint;
 
-
 }  // anonymous namespace
 
 namespace routing {
@@ -68,46 +67,52 @@ NetworkUtils::~NetworkUtils() {
 
 int NetworkUtils::Bootstrap(const rudp::MessageReceivedFunctor& message_received_functor,
                             const rudp::ConnectionLostFunctor& connection_lost_functor,
-                            Endpoint local_endpoint, Endpoint /*peer_endpoint*/) {
+                            bool is_client) {
+  BootstrapContacts bootstrap_contacts{ GetBootstrapContacts<Parameters::>(is_client) };
+
+                                                                                                          if (Parameters::append_maidsafe_endpoints) {
+                                                                                                            LOG(kInfo) << "Appending Maidsafe Endpoints";
+                                                                                                            auto maidsafe_bootstrap_contacts(MaidSafeBootstrapContacts());
+                                                                                                            bootstrap_contacts.insert(bootstrap_contacts.end(), maidsafe_bootstrap_contacts.begin(),
+                                                                                                                                      maidsafe_bootstrap_contacts.end());
+                                                                                                          } else if (Parameters::append_maidsafe_local_endpoints) {
+                                                                                                            auto maidsafe_local_bootstrap_contacts(MaidSafeLocalBootstrapContacts());
+                                                                                                            bootstrap_contacts.insert(bootstrap_contacts.end(), maidsafe_local_bootstrap_contacts.begin(),
+                                                                                                                                      maidsafe_local_bootstrap_contacts.end());
+                                                                                                          }
+                                                                                                          if (Parameters::append_local_live_port_endpoint) {
+                                                                                                            bootstrap_contacts.push_back(Endpoint(GetLocalIp(), kLivePort));
+                                                                                                            LOG(kInfo) << "Appending local live port endpoints: " << bootstrap_contacts.back();
+                                                                                                          }
+
+  return DoBootstrap(message_received_functor, connection_lost_functor, local_endpoint,
+                     bootstrap_contacts);
+}
+
+int NetworkUtils::ZeroStateBootstrap(const rudp::MessageReceivedFunctor& message_received_functor,
+                                     const rudp::ConnectionLostFunctor& connection_lost_functor,
+                                     boost::asio::ip::udp::endpoint local_endpoint) {
+  return DoBootstrap(message_received_functor, connection_lost_functor, bootstrap_contacts,
+                     local_endpoint);
+}
+
+int NetworkUtils::DoBootstrap(const rudp::MessageReceivedFunctor& message_received_functor,
+                              const rudp::ConnectionLostFunctor& connection_lost_functor,
+                              const BootstrapContacts& bootstrap_contacts,
+                              boost::asio::ip::udp::endpoint local_endpoint) {
   {
     std::lock_guard<std::mutex> lock(running_mutex_);
     if (!running_)
       return kNetworkShuttingDown;
   }
 
+  if (bootstrap_contacts.empty())
+    return kInvalidBootstrapContacts;
+
   assert(connection_lost_functor && "Must provide a valid functor");
   assert(bootstrap_connection_id_.IsZero() && "bootstrap_connection_id_ must be empty");
   auto private_key(std::make_shared<asymm::PrivateKey>(routing_table_.kPrivateKey()));
   auto public_key(std::make_shared<asymm::PublicKey>(routing_table_.kPublicKey()));
-
-  BootstrapContacts bootstrap_contacts;
-  try {
-    bootstrap_contacts = ReadBootstrapContacts(kBootstrapFilePath_);
-  } catch (const std::exception& error) {
-    LOG(kWarning) << "Failed to read bootstrap contacts file : " << error.what();
-  }
-
-  bootstrap_contacts.erase(std::remove(std::begin(bootstrap_contacts), std::end(bootstrap_contacts),
-                                       local_endpoint),
-                           std::end(bootstrap_contacts));
-
-  if (Parameters::append_maidsafe_endpoints) {
-    LOG(kInfo) << "Appending Maidsafe Endpoints";
-    auto maidsafe_bootstrap_contacts(MaidSafeBootstrapContacts());
-    bootstrap_contacts.insert(bootstrap_contacts.end(), maidsafe_bootstrap_contacts.begin(),
-                              maidsafe_bootstrap_contacts.end());
-  } else if (Parameters::append_maidsafe_local_endpoints) {
-    auto maidsafe_local_bootstrap_contacts(MaidSafeLocalBootstrapContacts());
-    bootstrap_contacts.insert(bootstrap_contacts.end(), maidsafe_local_bootstrap_contacts.begin(),
-                              maidsafe_local_bootstrap_contacts.end());
-  }
-  if (Parameters::append_local_live_port_endpoint) {
-    bootstrap_contacts.push_back(Endpoint(GetLocalIp(), kLivePort));
-    LOG(kInfo) << "Appending local live port endpoints: " << bootstrap_contacts.back();
-  }
-
-  if (bootstrap_contacts.empty())
-    return kInvalidBootstrapContacts;
 
   int result(rudp_.Bootstrap(/* sorted_ */ bootstrap_contacts, message_received_functor,
                              connection_lost_functor, routing_table_.kConnectionId(), private_key,

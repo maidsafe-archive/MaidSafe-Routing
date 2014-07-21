@@ -21,16 +21,56 @@
 
 #include <vector>
 
-#include "maidsafe/routing/api_config.h"
+#include "boost/asio/ip/udp.hpp"
+#include "boost/filesystem/path.hpp"
+
+#include "maidsafe/common/log.h"
+#include "maidsafe/routing/bootstrap_file_operations.h"
 
 namespace maidsafe {
 
 namespace routing {
 
-BootstrapContacts MaidSafeBootstrapContacts();
+enum class TargetNetwork {
+  kSafe,
+  kMachineLocalTestnet,
+  kMaidSafeInternalTestnet,
+  kTestnet01v006
+};
 
-// TODO(Prakash) : BEFORE_RELEASE remove using local endpoints
-BootstrapContacts MaidSafeLocalBootstrapContacts();
+template <TargetNetwork>
+BootstrapContacts GetBootstrapContacts(bool is_client = true);
+
+template <>
+BootstrapContacts GetBootstrapContacts<TargetNetwork::kSafe>(bool is_client);
+
+template <>
+BootstrapContacts GetBootstrapContacts<TargetNetwork::kMachineLocalTestnet>(bool is_client);
+
+template <>
+BootstrapContacts GetBootstrapContacts<TargetNetwork::kMaidSafeInternalTestnet>(bool is_client);
+
+template <>
+BootstrapContacts GetBootstrapContacts<TargetNetwork::kTestnet01v006>(bool is_client);
+
+BootstrapContacts GetZeroStateBootstrapContacts(boost::asio::ip::udp::endpoint local_endpoint);
+
+namespace detail {
+
+template <bool is_client>
+BootstrapContacts GetFromLocalFile() {
+  BootstrapContacts bootstrap_contacts;
+  try {
+    static const boost::filesystem::path kBootstrapFilePath{ GetBootstrapFilePath(is_client) };
+    bootstrap_contacts = ReadBootstrapContacts(kBootstrapFilePath);
+  }
+  catch (const std::exception& error) {
+    LOG(kWarning) << "Failed to read bootstrap contacts file: " << error.what();
+  }
+  return bootstrap_contacts;
+}
+
+}  // namespace detail
 
 }  // namespace routing
 

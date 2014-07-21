@@ -25,9 +25,42 @@
 #include "boost/asio/ip/udp.hpp"
 #include "boost/filesystem/path.hpp"
 
+// NOTE: Temporarily defining COMPANY_NAME & APPLICATION_NAME if they are not defined.
+// This is to allow setting up of BootstrapFilePath for routing only.
+
+#ifndef COMPANY_NAME
+# define COMPANY_NAME MaidSafe
+# define COMPANY_NAME_DEFINED_TEMPORARILY
+#endif
+#ifndef APPLICATION_NAME
+# define APPLICATION_NAME Routing
+# define APPLICATION_NAME_DEFINED_TEMPORARILY
+#endif
+
+#include "maidsafe/common/application_support_directories.h"
+
+#ifdef COMPANY_NAME_DEFINED_TEMPORARILY
+# undef COMPANY_NAME
+# undef COMPANY_NAME_DEFINED_TEMPORARILY
+#endif
+#ifdef APPLICATION_NAME_DEFINED_TEMPORARILY
+# undef APPLICATION_NAME
+# undef APPLICATION_NAME_DEFINED_TEMPORARILY
+#endif
+
 namespace maidsafe {
 
 namespace routing {
+
+inline boost::filesystem::path GetBootstrapFilePath(bool is_client) {
+  const std::string kBootstrapFilename("bootstrap.dat");
+  const boost::filesystem::path kLocalFilePath(ThisExecutableDir() / kBootstrapFilename);
+  if (is_client && !boost::filesystem::exists(kLocalFilePath) &&
+      (boost::filesystem::exists(GetUserAppDir() / kBootstrapFilename))) {  // Clients only
+    return GetUserAppDir() / kBootstrapFilename;
+  }
+  return kLocalFilePath;
+}
 
 // FIXME(Team) BEFORE_RELEASE add public key and timestamp to BootstrapContact
 // Note : asymm::PublicKey should be used here (not PublicPmid)
@@ -39,7 +72,6 @@ void WriteBootstrapContacts(const BootstrapContacts& bootstrap_contacts,
                             const boost::filesystem::path& bootstrap_file_path);
 
 BootstrapContacts ReadBootstrapContacts(const boost::filesystem::path& bootstrap_file_path);
-
 
 void InsertOrUpdateBootstrapContact(const BootstrapContact& bootstrap_contact,
                                     const boost::filesystem::path& bootstrap_file_path);
