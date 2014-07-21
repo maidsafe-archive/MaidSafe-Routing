@@ -78,7 +78,7 @@ void Echo(bool enable = true) {
 
 void AddEndPoint() {
   std::string ip_address = Get<std::string>("please enter IP addess");
-  unsigned int port = Get<unsigned int>("please enter port");
+  uint16_t port = Get<uint16_t>("please enter port");
   boost::asio::ip::udp::endpoint endpoint(boost::asio::ip::address::from_string(ip_address), port);
   bootstrap_contacts.push_back(endpoint);
 }

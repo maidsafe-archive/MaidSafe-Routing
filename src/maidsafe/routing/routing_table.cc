@@ -253,8 +253,8 @@ bool RoutingTable::ConfirmGroupMembers(const NodeId& node1, const NodeId& node2)
   NodeId difference =
       kNodeId_ ^ GetNthClosestNode(
                      kNodeId(),
-                     std::min(nodes_.size(),
-                              static_cast<size_t>(Parameters::closest_nodes_size))).id;
+                     std::min(static_cast<unsigned>(nodes_.size()),
+                              static_cast<unsigned>(Parameters::closest_nodes_size))).id;
   return (node1 ^ node2) < difference;
 }
 

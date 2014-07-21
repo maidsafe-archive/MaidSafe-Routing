@@ -192,7 +192,7 @@ TEST_F(CloseNodesChangeTest, BEH_CheckHolders) {
 void Choose(const std::set<NodeId>& online_pmids, const NodeId& kTarget,
             const std::vector<CloseNodesChange>& owners, int owner_count, int online_pmid_count) {
   // This test is only valid where 'owner_count' <= 'Parameters::group_size'.
-  ASSERT_LE(owner_count, Parameters::group_size);
+  ASSERT_LE(static_cast<unsigned>(owner_count), Parameters::group_size);
 
   // Create a map of chosen nodes with a count of how many times each was selected by the various
   // owning nodes.

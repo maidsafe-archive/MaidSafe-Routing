@@ -24,10 +24,12 @@
 #include <vector>
 
 #include "maidsafe/common/log.h"
+#include "maidsafe/common/make_unique.h"
 #include "maidsafe/common/node_id.h"
 #include "maidsafe/common/utils.h"
 #include "maidsafe/passport/passport.h"
 
+#include "maidsafe/routing/api_config.h"
 #include "maidsafe/routing/routing_impl.h"
 #include "maidsafe/routing/return_codes.h"
 #include "maidsafe/routing/routing_api.h"
@@ -412,8 +414,10 @@ GenericNetwork::GenericNetwork()
 
 GenericNetwork::~GenericNetwork() {
   nat_info_available_ = false;
-  for (auto& node : nodes_)
-    node->functors_.request_public_key = [](const NodeId&, GivePublicKeyFunctor) {};
+  for (auto& node : nodes_) {
+    node->functors_.request_public_key =
+        RequestPublicKeyFunctor([](NodeId, GivePublicKeyFunctor) {});
+  }
 
   while (!nodes_.empty())
     RemoveNode(nodes_.at(0)->node_id());
@@ -424,7 +428,9 @@ void GenericNetwork::SetUp() {
       node2(new GenericNode(passport::CreatePmidAndSigner().first));
   nodes_.push_back(node1);
   nodes_.push_back(node2);
-  bootstrap_file_.reset(new ScopedBootstrapFile({node1->endpoint(), node2->endpoint()}));
+  bootstrap_file_ =
+      maidsafe::make_unique<ScopedBootstrapFile>(BootstrapContacts{ node1->endpoint(),
+                                                                    node2->endpoint() });
 
   client_index_ = 2;
   public_keys_.insert(std::make_pair(node1->node_id(), node1->public_key()));

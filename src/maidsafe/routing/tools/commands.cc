@@ -113,7 +113,7 @@ void Commands::PrintRoutingTable() {
 void Commands::GetPeer(const std::string& peer) {
   size_t delim = peer.rfind(':');
   try {
-    bootstrap_peer_ep_.port(static_cast<unsigned int>(atoi(peer.substr(delim + 1).c_str())));
+    bootstrap_peer_ep_.port(static_cast<uint16_t>(atoi(peer.substr(delim + 1).c_str())));
     bootstrap_peer_ep_.address(boost::asio::ip::address::from_string(peer.substr(0, delim)));
     std::cout << "Going to bootstrap from endpoint " << bootstrap_peer_ep_ << std::endl;
   }

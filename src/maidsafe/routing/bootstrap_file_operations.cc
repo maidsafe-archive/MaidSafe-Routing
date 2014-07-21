@@ -18,6 +18,7 @@
 
 #include "maidsafe/routing/bootstrap_file_operations.h"
 
+#include <cstdint>
 #include <string>
 
 #include "maidsafe/common/log.h"
@@ -39,7 +40,7 @@ typedef boost::asio::ip::udp::endpoint Endpoint;
 boost::asio::ip::udp::endpoint GetEndpoint(const std::string& endpoint) {
   size_t delim = endpoint.rfind(':');
   boost::asio::ip::udp::endpoint ep;
-  ep.port(boost::lexical_cast<unsigned int>(endpoint.substr(delim + 1)));
+  ep.port(boost::lexical_cast<uint16_t>(endpoint.substr(delim + 1)));
   ep.address(boost::asio::ip::address::from_string(endpoint.substr(0, delim)));
   return ep;
 }
