@@ -31,6 +31,7 @@
 #include "maidsafe/passport/types.h"
 
 #include "maidsafe/routing/api_config.h"
+#include "maidsafe/routing/config.h"
 #include "maidsafe/routing/node_info.h"
 #include "maidsafe/routing/parameters.h"
 #include "maidsafe/routing/routing.pb.h"
@@ -78,7 +79,6 @@ class ClientRoutingTable;
 class RoutingTable;
 
 inline boost::filesystem::path GetBootstrapFilePath(bool is_client) {
-  const std::string kBootstrapFilename("bootstrap.dat");  // move to config file                    FIXME
   const fs::path kLocalFilePath(ThisExecutableDir() / kBootstrapFilename);
   if (is_client && !fs::exists(kLocalFilePath) &&
       (fs::exists(GetUserAppDir() / kBootstrapFilename))) {   // Clients only
@@ -98,8 +98,6 @@ bool ValidateAndAddToRoutingTable(NetworkUtils& network, RoutingTable& routing_t
 void InformClientOfNewCloseNode(NetworkUtils& network, const NodeInfo& client,
                                 const NodeInfo& new_close_node, const NodeId& this_node_id);
 
-void HandleSymmetricNodeAdd(RoutingTable& routing_table, const NodeId& peer_id,
-                            const asymm::PublicKey& public_key);
 GroupRangeStatus GetProximalRange(const NodeId& target_id, const NodeId& node_id,
                                   const NodeId& this_node_id,
                                   const crypto::BigInt& proximity_radius,

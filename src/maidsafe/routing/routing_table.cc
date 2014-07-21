@@ -147,11 +147,6 @@ bool RoutingTable::AddOrCheckNode(NodeInfo peer, bool remove) {
           RoutingTableChange(peer, RoutingTableChange::Remove(removed_node, false), true,
                              close_nodes_change, NetworkStatus(routing_table_size)));
     }
-
-    if (peer.nat_type == rudp::NatType::kOther) {  // Usable as bootstrap endpoint
-                                                   // if (new_bootstrap_endpoint_)
-                                                   // new_bootstrap_endpoint_(peer.endpoint);
-    }
     LOG(kInfo) << PrintRoutingTable();
   }
   return return_value;

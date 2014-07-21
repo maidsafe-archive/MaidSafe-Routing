@@ -36,8 +36,6 @@ namespace routing {
 namespace {
 typedef boost::asio::ip::udp::endpoint Endpoint;
 
-// Copied from Drive launcher
-// TODO(Prakash) Move to utils of routing                                                           // FIXME
 boost::asio::ip::udp::endpoint GetEndpoint(const std::string& endpoint) {
   size_t delim = endpoint.rfind(':');
   boost::asio::ip::udp::endpoint ep;

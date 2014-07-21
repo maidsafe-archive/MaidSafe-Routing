@@ -67,10 +67,6 @@ typedef std::function<void(const std::string& /*data*/)> StoreCacheDataFunctor;
 // This functor fires a number from 0 to 100 and represents % network health.
 typedef std::function<void(int /*network_health*/)> NetworkStatusFunctor;
 
-// This functor fires a validated contacts which is usable for bootstrapping
-typedef std::function<void(const BootstrapContact& /*new_bootstrap_contact*/)>
-    NewBootstrapContactFunctor;
-
 // This functor fires when a new close node is inserted or removed from routing table.
 // Upper layers are responsible for storing key/value pairs should send all key/values between
 // itself and the new node's address to the new node.
@@ -114,8 +110,7 @@ struct Functors {
         network_status(),
         close_nodes_change(),
         set_public_key(),
-        request_public_key(),
-        new_bootstrap_contact() {}
+        request_public_key() {}
 
   MessageAndCachingFunctors message_and_caching;
   TypedMessageAndCachingFunctor typed_message_and_caching;
@@ -123,7 +118,6 @@ struct Functors {
   CloseNodesChangeFunctor close_nodes_change;
   GivePublicKeyFunctor set_public_key;
   RequestPublicKeyFunctor request_public_key;
-  NewBootstrapContactFunctor new_bootstrap_contact;
 };
 
 }  // namespace routing

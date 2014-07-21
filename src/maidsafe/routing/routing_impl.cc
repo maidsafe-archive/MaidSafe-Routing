@@ -151,7 +151,6 @@ void Routing::Impl::ConnectFunctors(const Functors& functors) {
     message_handler_->set_typed_message_and_caching_functor(functors.typed_message_and_caching);
 
   message_handler_->set_request_public_key_functor(functors.request_public_key);
-  network_.set_new_bootstrap_contact_functor(functors.new_bootstrap_contact);
 }
 
 void Routing::Impl::DoJoin() {

@@ -115,32 +115,6 @@ void InformClientOfNewCloseNode(NetworkUtils& network, const NodeInfo& client,
   network.SendToDirect(inform_client_of_new_close_node, client.id, client.connection_id);
 }
 
-// FIXME
-void HandleSymmetricNodeAdd(RoutingTable& /*routing_table*/, const NodeId& /*peer_id*/,
-                            const asymm::PublicKey& /*public_key*/) {
-  //  if (routing_table.Contains(peer_id)) {
-  //    LOG(kVerbose) << "[" << HexSubstr(routing_table.kKeys().identity) << "] "
-  //                  << "already added node to routing table.  Node ID: "
-  //                  << HexSubstr(peer_id.string())
-  //                  << "Node is behind symmetric router but connected on local endpoint";
-  //    return;
-  //  }
-  //  NodeInfo peer;
-  //  peer.id = peer_id;
-  //  peer.public_key = public_key;
-  ////  peer.endpoint = rudp::kNonRoutable;
-  //  peer.nat_type = rudp::NatType::kSymmetric;
-
-  //  if (routing_table.AddNode(peer)) {
-  //    LOG(kVerbose) << "[" << HexSubstr(routing_table.kKeys().identity) << "] "
-  //                  << "added node to routing table.  Node ID: " << HexSubstr(peer_id.string())
-  //                  << "Node is behind symmetric router !";
-  //  } else {
-  //    LOG(kVerbose) << "Failed to add node to routing table.  Node id : "
-  //                  << HexSubstr(peer_id.string());
-  //  }
-}
-
 GroupRangeStatus GetProximalRange(const NodeId& target_id, const NodeId& node_id,
                                   const NodeId& this_node_id,
                                   const crypto::BigInt& proximity_radius,
