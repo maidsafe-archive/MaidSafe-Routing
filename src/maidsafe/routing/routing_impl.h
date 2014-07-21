@@ -100,7 +100,7 @@ class Routing::Impl {
   Impl(bool client_mode, const NodeId& node_id, const asymm::Keys& keys);
   ~Impl();
 
-  void Join(const Functors& functors);
+  void Join(const Functors& functors, TargetNetwork target_network);
 
   int ZeroStateJoin(const Functors& functors, const boost::asio::ip::udp::endpoint& local_endpoint,
                     const boost::asio::ip::udp::endpoint& peer_endpoint, const NodeInfo& peer_info);
@@ -188,6 +188,7 @@ class Routing::Impl {
   Functors functors_;
   RandomNodeHelper random_node_helper_;
   ClientRoutingTable client_routing_table_;
+  TargetNetwork target_network_;
   // The following variables' declarations should remain the last ones in this class and should stay
   // in the order: message_handler_, asio_service_, network_, all timers.  This is important for the
   // proper destruction of the routing library, i.e. to avoid segmentation faults.

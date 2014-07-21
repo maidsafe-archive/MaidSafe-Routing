@@ -35,8 +35,8 @@ void Routing::InitialisePimpl(bool client_mode, const NodeId& node_id, const asy
   pimpl_.reset(new Impl(client_mode, node_id, keys));
 }
 
-void Routing::Join(Functors functors) {
-  pimpl_->Join(functors);
+void Routing::Join(Functors functors, TargetNetwork target_network) {
+  pimpl_->Join(functors, target_network);
 }
 
 int Routing::ZeroStateJoin(Functors functors, const Endpoint& local_endpoint,

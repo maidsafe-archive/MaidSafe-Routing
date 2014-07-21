@@ -67,32 +67,15 @@ NetworkUtils::~NetworkUtils() {
 
 int NetworkUtils::Bootstrap(const rudp::MessageReceivedFunctor& message_received_functor,
                             const rudp::ConnectionLostFunctor& connection_lost_functor,
-                            bool is_client) {
-  BootstrapContacts bootstrap_contacts{ GetBootstrapContacts<Parameters::>(is_client) };
-
-                                                                                                          if (Parameters::append_maidsafe_endpoints) {
-                                                                                                            LOG(kInfo) << "Appending Maidsafe Endpoints";
-                                                                                                            auto maidsafe_bootstrap_contacts(MaidSafeBootstrapContacts());
-                                                                                                            bootstrap_contacts.insert(bootstrap_contacts.end(), maidsafe_bootstrap_contacts.begin(),
-                                                                                                                                      maidsafe_bootstrap_contacts.end());
-                                                                                                          } else if (Parameters::append_maidsafe_local_endpoints) {
-                                                                                                            auto maidsafe_local_bootstrap_contacts(MaidSafeLocalBootstrapContacts());
-                                                                                                            bootstrap_contacts.insert(bootstrap_contacts.end(), maidsafe_local_bootstrap_contacts.begin(),
-                                                                                                                                      maidsafe_local_bootstrap_contacts.end());
-                                                                                                          }
-                                                                                                          if (Parameters::append_local_live_port_endpoint) {
-                                                                                                            bootstrap_contacts.push_back(Endpoint(GetLocalIp(), kLivePort));
-                                                                                                            LOG(kInfo) << "Appending local live port endpoints: " << bootstrap_contacts.back();
-                                                                                                          }
-
-  return DoBootstrap(message_received_functor, connection_lost_functor, local_endpoint,
-                     bootstrap_contacts);
+                            TargetNetwork target_network, bool is_client) {
+  BootstrapContacts bootstrap_contacts{ GetBootstrapContacts(target_network, is_client) };
+  return DoBootstrap(message_received_functor, connection_lost_functor, bootstrap_contacts);
 }
 
 int NetworkUtils::ZeroStateBootstrap(const rudp::MessageReceivedFunctor& message_received_functor,
                                      const rudp::ConnectionLostFunctor& connection_lost_functor,
                                      boost::asio::ip::udp::endpoint local_endpoint) {
-  return DoBootstrap(message_received_functor, connection_lost_functor, bootstrap_contacts,
+  return DoBootstrap(message_received_functor, connection_lost_functor, BootstrapContacts{},
                      local_endpoint);
 }
 

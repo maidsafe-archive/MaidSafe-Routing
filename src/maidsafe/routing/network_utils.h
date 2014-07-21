@@ -55,7 +55,7 @@ class NetworkUtils {
   virtual ~NetworkUtils();
   int Bootstrap(const rudp::MessageReceivedFunctor& message_received_functor,
                 const rudp::ConnectionLostFunctor& connection_lost_functor,
-                bool is_client);
+                TargetNetwork target_network, bool is_client);
   int ZeroStateBootstrap(const rudp::MessageReceivedFunctor& message_received_functor,
                          const rudp::ConnectionLostFunctor& connection_lost_functor,
                          boost::asio::ip::udp::endpoint local_endpoint);

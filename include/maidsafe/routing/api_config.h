@@ -29,7 +29,6 @@
 #include "maidsafe/common/node_id.h"
 #include "maidsafe/rudp/managed_connections.h"
 
-#include "maidsafe/routing/bootstrap_file_operations.h"
 #include "maidsafe/routing/close_nodes_change.h"
 #include "maidsafe/routing/message.h"
 
@@ -38,6 +37,13 @@ namespace maidsafe {
 namespace routing {
 
 struct NodeInfo;
+
+enum class TargetNetwork {
+  kSafe,
+  kMachineLocalTestnet,
+  kMaidSafeInternalTestnet,
+  kTestnet01v006
+};
 
 enum class DestinationType : int {
   kDirect = 0,

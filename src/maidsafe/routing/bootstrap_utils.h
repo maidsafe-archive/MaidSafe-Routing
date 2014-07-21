@@ -25,33 +25,14 @@
 #include "boost/filesystem/path.hpp"
 
 #include "maidsafe/common/log.h"
+#include "maidsafe/routing/api_config.h"
 #include "maidsafe/routing/bootstrap_file_operations.h"
 
 namespace maidsafe {
 
 namespace routing {
 
-enum class TargetNetwork {
-  kSafe,
-  kMachineLocalTestnet,
-  kMaidSafeInternalTestnet,
-  kTestnet01v006
-};
-
-template <TargetNetwork>
-BootstrapContacts GetBootstrapContacts(bool is_client = true);
-
-template <>
-BootstrapContacts GetBootstrapContacts<TargetNetwork::kSafe>(bool is_client);
-
-template <>
-BootstrapContacts GetBootstrapContacts<TargetNetwork::kMachineLocalTestnet>(bool is_client);
-
-template <>
-BootstrapContacts GetBootstrapContacts<TargetNetwork::kMaidSafeInternalTestnet>(bool is_client);
-
-template <>
-BootstrapContacts GetBootstrapContacts<TargetNetwork::kTestnet01v006>(bool is_client);
+BootstrapContacts GetBootstrapContacts(TargetNetwork target_network, bool is_client = true);
 
 BootstrapContacts GetZeroStateBootstrapContacts(boost::asio::ip::udp::endpoint local_endpoint);
 
