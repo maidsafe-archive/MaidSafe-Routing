@@ -44,11 +44,8 @@ namespace routing {
 namespace test {
 
 ScopedBootstrapFile::ScopedBootstrapFile(const BootstrapContacts& bootstrap_contacts)
-    : kFilePath(GetBootstrapFilePath(false)) {
-  if (boost::filesystem::exists(kFilePath) && !boost::filesystem::remove(kFilePath)) {
-    LOG(kError) << "Failed to overwrite bootstrap file at : " << kFilePath;
-    BOOST_THROW_EXCEPTION(MakeError(CommonErrors::filesystem_io_error));
-  }
+    : kFilePath(detail::GetOverrideBootstrapFilePath<false>()) {
+  boost::filesystem::remove(kFilePath);
   WriteBootstrapContacts(bootstrap_contacts, kFilePath);
 }
 

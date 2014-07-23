@@ -23,6 +23,8 @@
 
 #include "boost/asio/ip/udp.hpp"
 #include "boost/filesystem/path.hpp"
+#include "boost/filesystem/operations.hpp"
+
 
 #include "maidsafe/common/log.h"
 #include "maidsafe/routing/api_config.h"
@@ -32,26 +34,24 @@ namespace maidsafe {
 
 namespace routing {
 
-BootstrapContacts GetBootstrapContacts(TargetNetwork target_network, bool is_client = true);
-
-BootstrapContacts GetZeroStateBootstrapContacts(boost::asio::ip::udp::endpoint local_endpoint);
-
 namespace detail {
 
 template <bool is_client>
-BootstrapContacts GetFromLocalFile() {
-  BootstrapContacts bootstrap_contacts;
-  try {
-    static const boost::filesystem::path kBootstrapFilePath{ GetBootstrapFilePath(is_client) };
-    bootstrap_contacts = ReadBootstrapContacts(kBootstrapFilePath);
-  }
-  catch (const std::exception& error) {
-    LOG(kWarning) << "Failed to read bootstrap contacts file: " << error.what();
-  }
-  return bootstrap_contacts;
+boost::filesystem::path GetCurrentBootstrapFilePath() {
+  static const boost::filesystem::path kCurrentBootstrapFilePath(
+      boost::filesystem::exists(GetOverrideBootstrapFilePath<is_client>())
+        ? GetOverrideBootstrapFilePath<is_client>() : GetDefaultBootstrapFilePath<is_client>());
+  return kCurrentBootstrapFilePath;
 }
 
 }  // namespace detail
+
+BootstrapContacts GetBootstrapContacts(bool is_client = true);
+
+BootstrapContacts GetZeroStateBootstrapContacts(boost::asio::ip::udp::endpoint local_endpoint);
+
+void InsertOrUpdateBootstrapContact(const BootstrapContact& bootstrap_contact, bool is_client);
+
 
 }  // namespace routing
 

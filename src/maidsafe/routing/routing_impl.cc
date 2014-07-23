@@ -101,7 +101,6 @@ Routing::Impl::Impl(bool client_mode, const NodeId& node_id, const asymm::Keys& 
       random_node_helper_(),
       // TODO(Prakash) : don't create client_routing_table for client nodes (wrap both)
       client_routing_table_(node_id),
-      target_network_(TargetNetwork::kSafe),
       message_handler_(),
       asio_service_(2),
       network_(routing_table_, client_routing_table_),
@@ -122,10 +121,9 @@ Routing::Impl::~Impl() {
   running_ = false;
 }
 
-void Routing::Impl::Join(const Functors& functors, TargetNetwork target_network) {
+void Routing::Impl::Join(const Functors& functors) {
   LOG(kInfo) << "Doing a default join";
   ConnectFunctors(functors);
-  target_network_ = target_network;
   DoJoin();
 }
 
@@ -183,8 +181,7 @@ int Routing::Impl::DoBootstrap() {
 
   return network_.Bootstrap(
       [=](const std::string& message) { OnMessageReceived(message); },
-      [=](const NodeId& lost_connection_id) { OnConnectionLost(lost_connection_id); },
-      target_network_, routing_table_.client_mode());
+      [=](const NodeId& lost_connection_id) { OnConnectionLost(lost_connection_id); });
 }
 
 void Routing::Impl::FindClosestNode(const boost::system::error_code& error_code, int attempts) {

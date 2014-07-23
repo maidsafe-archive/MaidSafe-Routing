@@ -54,8 +54,7 @@ class NetworkUtils {
   NetworkUtils(RoutingTable& routing_table, ClientRoutingTable& client_routing_table);
   virtual ~NetworkUtils();
   int Bootstrap(const rudp::MessageReceivedFunctor& message_received_functor,
-                const rudp::ConnectionLostFunctor& connection_lost_functor,
-                TargetNetwork target_network, bool is_client);
+                const rudp::ConnectionLostFunctor& connection_lost_functor);
   int ZeroStateBootstrap(const rudp::MessageReceivedFunctor& message_received_functor,
                          const rudp::ConnectionLostFunctor& connection_lost_functor,
                          boost::asio::ip::udp::endpoint local_endpoint);
@@ -105,7 +104,6 @@ class NetworkUtils {
                        int attempt_count = 0);
   void AdjustRouteHistory(protobuf::Message& message);
 
-  boost::filesystem::path kBootstrapFilePath_;
   bool running_;
   std::mutex running_mutex_;
   unsigned int bootstrap_attempt_;

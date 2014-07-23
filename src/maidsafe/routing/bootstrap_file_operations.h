@@ -25,42 +25,30 @@
 #include "boost/asio/ip/udp.hpp"
 #include "boost/filesystem/path.hpp"
 
-// NOTE: Temporarily defining COMPANY_NAME & APPLICATION_NAME if they are not defined.
-// This is to allow setting up of BootstrapFilePath for routing only.
-
-#ifndef COMPANY_NAME
-# define COMPANY_NAME MaidSafe
-# define COMPANY_NAME_DEFINED_TEMPORARILY
-#endif
-#ifndef APPLICATION_NAME
-# define APPLICATION_NAME Routing
-# define APPLICATION_NAME_DEFINED_TEMPORARILY
-#endif
-
-#include "maidsafe/common/application_support_directories.h"
-
-#ifdef COMPANY_NAME_DEFINED_TEMPORARILY
-# undef COMPANY_NAME
-# undef COMPANY_NAME_DEFINED_TEMPORARILY
-#endif
-#ifdef APPLICATION_NAME_DEFINED_TEMPORARILY
-# undef APPLICATION_NAME
-# undef APPLICATION_NAME_DEFINED_TEMPORARILY
-#endif
-
 namespace maidsafe {
 
 namespace routing {
 
-inline boost::filesystem::path GetBootstrapFilePath(bool is_client) {
-  const std::string kBootstrapFilename("bootstrap.dat");
-  const boost::filesystem::path kLocalFilePath(ThisExecutableDir() / kBootstrapFilename);
-  if (is_client && !boost::filesystem::exists(kLocalFilePath) &&
-      (boost::filesystem::exists(GetUserAppDir() / kBootstrapFilename))) {  // Clients only
-    return GetUserAppDir() / kBootstrapFilename;
-  }
-  return kLocalFilePath;
+namespace detail {
+
+boost::filesystem::path DoGetBootstrapFilePath(bool is_client,
+                                               const boost::filesystem::path& file_name);
+
+template <bool is_client>
+boost::filesystem::path GetOverrideBootstrapFilePath() {
+  static const boost::filesystem::path override_bootstrap_file_path
+      = DoGetBootstrapFilePath(is_client, "bootstrap_override.dat");
+  return override_bootstrap_file_path;
 }
+
+template <bool is_client>
+boost::filesystem::path GetDefaultBootstrapFilePath() {
+  static const boost::filesystem::path default_bootstrap_file_path
+      = DoGetBootstrapFilePath(is_client, "bootstrap.dat");
+  return default_bootstrap_file_path;
+}
+
+}  // namespace detail
 
 // FIXME(Team) BEFORE_RELEASE add public key and timestamp to BootstrapContact
 // Note : asymm::PublicKey should be used here (not PublicPmid)

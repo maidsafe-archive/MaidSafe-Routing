@@ -28,6 +28,30 @@
 #include "maidsafe/routing/routing.pb.h"
 #include "maidsafe/routing/utils.h"
 
+// NOTE: Temporarily defining COMPANY_NAME & APPLICATION_NAME if they are not defined.
+// This is to allow setting up of BootstrapFilePath for routing only.
+
+#ifndef COMPANY_NAME
+# define COMPANY_NAME MaidSafe
+# define COMPANY_NAME_DEFINED_TEMPORARILY
+#endif
+#ifndef APPLICATION_NAME
+# define APPLICATION_NAME Routing
+# define APPLICATION_NAME_DEFINED_TEMPORARILY
+#endif
+
+#include "maidsafe/common/application_support_directories.h"
+
+#ifdef COMPANY_NAME_DEFINED_TEMPORARILY
+# undef COMPANY_NAME
+# undef COMPANY_NAME_DEFINED_TEMPORARILY
+#endif
+#ifdef APPLICATION_NAME_DEFINED_TEMPORARILY
+# undef APPLICATION_NAME
+# undef APPLICATION_NAME_DEFINED_TEMPORARILY
+#endif
+
+
 namespace fs = boost::filesystem;
 
 namespace maidsafe {
@@ -58,6 +82,20 @@ void InsertBootstrapContacts(sqlite::Database& database,
 }
 
 }  // unnamed namespace
+
+namespace detail {
+
+boost::filesystem::path DoGetBootstrapFilePath(bool is_client,
+                                               const boost::filesystem::path& file_name) {
+  const boost::filesystem::path kLocalFilePath(ThisExecutableDir() / file_name);
+  if (is_client && !boost::filesystem::exists(kLocalFilePath) &&
+      (boost::filesystem::exists(GetUserAppDir() / file_name))) {  // Clients only
+    return GetUserAppDir() / file_name;
+  }
+  return kLocalFilePath;
+}
+
+}  // namespace detail
 
 void WriteBootstrapContacts(const BootstrapContacts& bootstrap_contacts,
                             const fs::path& bootstrap_file_path) {

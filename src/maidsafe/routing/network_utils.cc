@@ -47,8 +47,7 @@ typedef boost::asio::ip::udp::endpoint Endpoint;
 namespace routing {
 
 NetworkUtils::NetworkUtils(RoutingTable& routing_table, ClientRoutingTable& client_routing_table)
-    : kBootstrapFilePath_(GetBootstrapFilePath(routing_table.client_mode())),
-      running_(true),
+    : running_(true),
       running_mutex_(),
       bootstrap_attempt_(0),
       bootstrap_connection_id_(),
@@ -56,9 +55,7 @@ NetworkUtils::NetworkUtils(RoutingTable& routing_table, ClientRoutingTable& clie
       routing_table_(routing_table),
       client_routing_table_(client_routing_table),
       nat_type_(rudp::NatType::kUnknown),
-      rudp_() {
-  LOG(kInfo) << "kBootstrapFilePath_ = " << kBootstrapFilePath_;
-}
+      rudp_() {}
 
 NetworkUtils::~NetworkUtils() {
   std::lock_guard<std::mutex> lock(running_mutex_);
@@ -66,16 +63,16 @@ NetworkUtils::~NetworkUtils() {
 }
 
 int NetworkUtils::Bootstrap(const rudp::MessageReceivedFunctor& message_received_functor,
-                            const rudp::ConnectionLostFunctor& connection_lost_functor,
-                            TargetNetwork target_network, bool is_client) {
-  BootstrapContacts bootstrap_contacts{ GetBootstrapContacts(target_network, is_client) };
+                            const rudp::ConnectionLostFunctor& connection_lost_functor) {
+  BootstrapContacts bootstrap_contacts{ GetBootstrapContacts(routing_table_.client_mode()) };
   return DoBootstrap(message_received_functor, connection_lost_functor, bootstrap_contacts);
 }
 
 int NetworkUtils::ZeroStateBootstrap(const rudp::MessageReceivedFunctor& message_received_functor,
                                      const rudp::ConnectionLostFunctor& connection_lost_functor,
                                      boost::asio::ip::udp::endpoint local_endpoint) {
-  return DoBootstrap(message_received_functor, connection_lost_functor, BootstrapContacts{},
+  BootstrapContacts bootstrap_contacts{ GetZeroStateBootstrapContacts(local_endpoint) };
+  return DoBootstrap(message_received_functor, connection_lost_functor, bootstrap_contacts,
                      local_endpoint);
 }
 
@@ -144,7 +141,7 @@ int NetworkUtils::MarkConnectionAsValid(const NodeId& peer_id) {
   int ret_val(rudp_.MarkConnectionAsValid(peer_id, new_bootstrap_endpoint));
   if ((ret_val == kSuccess) && !new_bootstrap_endpoint.address().is_unspecified()) {
     LOG(kVerbose) << "Found usable endpoint for bootstrapping : " << new_bootstrap_endpoint;
-    InsertOrUpdateBootstrapContact(new_bootstrap_endpoint, kBootstrapFilePath_);
+    InsertOrUpdateBootstrapContact(new_bootstrap_endpoint, routing_table_.client_mode());
   }
   return ret_val;
 }

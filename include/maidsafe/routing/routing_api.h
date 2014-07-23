@@ -89,9 +89,7 @@ class Routing {
 
   // Joins the network. Valid method for requesting public key must be provided by the functor,
   // otherwise no node will be added to the routing table and node will fail to join the network.
-  // To force the node to use a specific endpoint for bootstrapping, provide peer_endpoint (i.e.
-  // private network).
-  void Join(Functors functors, TargetNetwork target_network);
+  void Join(Functors functors);
 
   // WARNING: THIS FUNCTION SHOULD BE ONLY USED TO JOIN FIRST TWO ZERO STATE NODES.
   int ZeroStateJoin(Functors functors, const boost::asio::ip::udp::endpoint& local_endpoint,

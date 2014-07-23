@@ -26,47 +26,14 @@ namespace maidsafe {
 
 namespace routing {
 
+namespace fs = boost::filesystem;
+
 namespace {
 
 using boost::asio::ip::udp;
 using boost::asio::ip::address;
 
-template <TargetNetwork target_network>
-BootstrapContacts GetHardCodedBootstrapContacts();
-
-template <>
-BootstrapContacts GetHardCodedBootstrapContacts<TargetNetwork::kSafe>() {
-  // TODO(Fraser#5#): 2014-07-21 - BEFORE_RELEASE - Add hard-coded endpoints.
-  return BootstrapContacts{};
-}
-
-template <>
-BootstrapContacts GetHardCodedBootstrapContacts<TargetNetwork::kMachineLocalTestnet>() {
-  return BootstrapContacts{ udp::endpoint{ GetLocalIp(), kLivePort } };
-}
-
-template <>
-BootstrapContacts GetHardCodedBootstrapContacts<TargetNetwork::kMaidSafeInternalTestnet>() {
-  return BootstrapContacts{
-      udp::endpoint{ address::from_string("192.168.0.109"), kLivePort },
-      udp::endpoint{ address::from_string("192.168.0.4"), kLivePort },
-      udp::endpoint{ address::from_string("192.168.0.35"), kLivePort },
-      udp::endpoint{ address::from_string("192.168.0.16"), kLivePort },
-      udp::endpoint{ address::from_string("192.168.0.20"), kLivePort },
-      udp::endpoint{ address::from_string("192.168.0.9"), kLivePort },
-      udp::endpoint{ address::from_string("192.168.0.10"), kLivePort },
-      udp::endpoint{ address::from_string("192.168.0.19"), kLivePort },
-      udp::endpoint{ address::from_string("192.168.0.8"), kLivePort },
-      udp::endpoint{ address::from_string("192.168.0.11"), kLivePort },
-      udp::endpoint{ address::from_string("192.168.0.13"), kLivePort },
-      udp::endpoint{ address::from_string("192.168.0.86"), kLivePort },
-      udp::endpoint{ address::from_string("192.168.0.6"), kLivePort },
-      udp::endpoint{ address::from_string("192.168.0.55"), kLivePort }
-  };
-}
-
-template <>
-BootstrapContacts GetHardCodedBootstrapContacts<TargetNetwork::kTestnet01v006>() {
+BootstrapContacts GetHardCodedBootstrapContacts() {
   return BootstrapContacts{
       udp::endpoint{ address::from_string("104.131.253.66"), kLivePort },
       udp::endpoint{ address::from_string("95.85.32.100"), kLivePort },
@@ -79,31 +46,29 @@ BootstrapContacts GetHardCodedBootstrapContacts<TargetNetwork::kTestnet01v006>()
 
 }  // unnamed namespace
 
-BootstrapContacts GetBootstrapContacts(TargetNetwork target_network, bool is_client) {
-  BootstrapContacts bootstrap_contacts{
-      is_client ? detail::GetFromLocalFile<true>() : detail::GetFromLocalFile<false>() };
+BootstrapContacts GetBootstrapContacts(bool is_client) {
+  const fs::path kCurrentBootstrapFilePath{
+    is_client ? detail::GetCurrentBootstrapFilePath<true>()
+              : detail::GetCurrentBootstrapFilePath<false>() };
+  auto bootstrap_contacts(ReadBootstrapContacts(kCurrentBootstrapFilePath));
 
-  if (!bootstrap_contacts.empty())
-    return bootstrap_contacts;
-
-  switch (target_network) {
-    case TargetNetwork::kSafe:
-      return GetHardCodedBootstrapContacts<TargetNetwork::kSafe>();
-    case TargetNetwork::kMachineLocalTestnet:
-      return GetHardCodedBootstrapContacts<TargetNetwork::kMachineLocalTestnet>();
-    case TargetNetwork::kMaidSafeInternalTestnet:
-      return GetHardCodedBootstrapContacts<TargetNetwork::kMaidSafeInternalTestnet>();
-    case TargetNetwork::kTestnet01v006:
-      return GetHardCodedBootstrapContacts<TargetNetwork::kTestnet01v006>();
-    default:
-      LOG(kError) << "Returning empty bootstrap list";
-      assert(!bootstrap_contacts.empty());
-      return bootstrap_contacts;
+  if (kCurrentBootstrapFilePath == (is_client ? detail::GetDefaultBootstrapFilePath<true>() :
+                                                detail::GetDefaultBootstrapFilePath<false>())) {
+    auto hard_coded_bootstrap_contacts = GetHardCodedBootstrapContacts();
+    bootstrap_contacts.insert(bootstrap_contacts.end(), hard_coded_bootstrap_contacts.begin(),
+                              hard_coded_bootstrap_contacts.end());
   }
+  return bootstrap_contacts;
+}
+
+void InsertOrUpdateBootstrapContact(const BootstrapContact& bootstrap_contact, bool is_client) {
+  InsertOrUpdateBootstrapContact(bootstrap_contact,
+                                 is_client ? detail::GetCurrentBootstrapFilePath<true>()
+                                           : detail::GetCurrentBootstrapFilePath<false>());
 }
 
 BootstrapContacts GetZeroStateBootstrapContacts(udp::endpoint local_endpoint) {
-  BootstrapContacts bootstrap_contacts{ detail::GetFromLocalFile<false>() };
+  BootstrapContacts bootstrap_contacts { GetBootstrapContacts(false) };
   bootstrap_contacts.erase(std::remove(std::begin(bootstrap_contacts), std::end(bootstrap_contacts),
                                        local_endpoint),
                            std::end(bootstrap_contacts));
