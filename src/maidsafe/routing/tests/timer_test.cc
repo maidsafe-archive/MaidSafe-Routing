@@ -204,7 +204,7 @@ TEST_F(TimerTest, BEH_MultipleGroupResponse) {
     TaskId task_id;
     for (int i(0); i != number; ++i) {
       task_id = timer_.NewTaskId();
-      timer_.AddTask(std::chrono::seconds(10), pass_response_functor_, kGroupSize_, task_id);
+      timer_.AddTask(std::chrono::seconds(40), pass_response_functor_, kGroupSize_, task_id);
       messages.insert(std::make_pair(task_id, RandomAlphaNumericString(30)));
     }
     return messages;

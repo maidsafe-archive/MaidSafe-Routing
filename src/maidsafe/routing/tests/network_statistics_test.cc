@@ -84,7 +84,7 @@ TEST(NetworkStatisticsTest, BEH_AverageDistance) {
   EXPECT_EQ(total / kCount, matrix_average_as_bigint);
 }
 
-TEST(NetworkStatisticsTest, BEH_IsIdInGroupRange) {
+TEST(NetworkStatisticsTest, FUNC_IsIdInGroupRange) {
   NodeId node_id;
   NetworkStatistics network_statistics(node_id);
   RoutingTable routing_table(false, node_id, asymm::GenerateKeyPair());
