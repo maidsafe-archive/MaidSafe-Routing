@@ -110,12 +110,12 @@ NodeId GenerateUniqueRandomNodeId(const std::vector<NodeId>& esisting_ids) {
 }
 
 NodeId GenerateUniqueRandomId(uint16_t pos) {
-  NodeId holder(NodeId(NodeId::IdType::kMaxId) ^ NodeId(NodeId::IdType::kMaxId));
+  NodeId holder;
   return GenerateUniqueRandomId(holder, pos);
 }
 
 NodeId GenerateUniqueNonRandomId(uint64_t pos) {
-  NodeId holder(NodeId(NodeId::IdType::kMaxId) ^ NodeId(NodeId::IdType::kMaxId));
+  NodeId holder;
   return GenerateUniqueNonRandomId(holder, pos);
 }
 

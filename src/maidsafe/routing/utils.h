@@ -82,6 +82,7 @@ bool IsClientToClientMessageWithDifferentNodeIds(const protobuf::Message& messag
                                                  const bool is_destination_client);
 bool CheckId(const std::string& id_to_test);
 bool ValidateMessage(const protobuf::Message& message);
+NodeId NodeInNthBucket(const NodeId& node_id, int bucket);
 void SetProtobufEndpoint(const boost::asio::ip::udp::endpoint& endpoint,
                          protobuf::Endpoint* pb_endpoint);
 boost::asio::ip::udp::endpoint GetEndpointFromProtobuf(const protobuf::Endpoint& pb_endpoint);
