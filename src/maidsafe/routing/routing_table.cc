@@ -529,7 +529,7 @@ std::string RoutingTable::PrintRoutingTable() {
          << "\nRouting table size: " << nodes_.size();
   for (const auto& node : rt) {
     stream << "\n\tPeer [" << node.id << "]--> " << node.connection_id << " && xored "
-           << kNodeId_ ^ node.id << " bucket " << node.bucket;
+           << NodeId(kNodeId_ ^ node.id) << " bucket " << node.bucket;
   }
   stream << "\n\n";
   return stream.str();
