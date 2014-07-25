@@ -28,12 +28,11 @@
 #include "maidsafe/common/utils.h"
 #include "maidsafe/passport/passport.h"
 
-#include "maidsafe/routing/routing_impl.h"
 #include "maidsafe/routing/return_codes.h"
-#include "maidsafe/routing/routing_api.h"
-#include "maidsafe/routing/tests/test_utils.h"
+#include "maidsafe/routing/routing_impl.h"
 #include "maidsafe/routing/routing.pb.h"
 #include "maidsafe/routing/utils.h"
+#include "maidsafe/routing/tests/test_utils.h"
 
 namespace asio = boost::asio;
 namespace ip = asio::ip;
@@ -262,6 +261,10 @@ void GenericNode::AddTask(const ResponseFunctor& response_functor, int expected_
                           TaskId task_id) {
   routing_->pimpl_->timer_.AddTask(Parameters::default_response_timeout, response_functor,
                                    expected_response_count, task_id);
+}
+
+protobuf::Message GenericNode::CreateNodeLevelMessage(const SingleToSingleMessage& message) {
+  return routing_->pimpl_->CreateNodeLevelMessage(message);
 }
 
 void GenericNode::RudpSend(const NodeId& peer_node_id, const protobuf::Message& message,
