@@ -101,7 +101,7 @@ CloseNodesChange::CloseNodesChange(NodeId this_node_id, const std::vector<NodeId
         if (new_close_nodes_.size() >= Parameters::closest_nodes_size)
           fcn_distance = node_id_ ^ new_close_nodes_[Parameters::closest_nodes_size - 1];
         else
-          fcn_distance = node_id_ ^ (NodeId(NodeId::IdType::kMaxId));  // FIXME
+          fcn_distance = NodeInNthBucket(node_id_, Parameters::closest_nodes_size);
         return (crypto::BigInt(
                     (fcn_distance.ToStringEncoded(NodeId::EncodingType::kHex) + 'h').c_str()) *
                 Parameters::proximity_factor);

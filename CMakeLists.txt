@@ -125,7 +125,7 @@ target_compile_definitions(maidsafe_routing PRIVATE $<$<BOOL:${QA_BUILD}>:QA_BUI
 # Tests                                                                                            #
 #==================================================================================================#
 if(MaidsafeTesting)
-  ms_add_style_test()
+  ms_add_default_tests()
   add_test(NAME Multiple_Functional_Tests COMMAND TESTrouting_func)
   set_property(TEST Multiple_Functional_Tests PROPERTY LABELS Routing Functional)
   ms_add_gtests(TESTrouting)
@@ -140,7 +140,6 @@ if(MaidsafeTesting)
   if(WEEKLY)
     ms_add_gtests(TESTrouting_big)
   endif()
-  ms_add_project_experimental()
   ms_test_summary_output()
 endif()
 

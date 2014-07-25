@@ -128,7 +128,7 @@ NodeId GenerateUniqueRandomId(unsigned int pos) {
 }
 
 NodeId GenerateUniqueNonRandomId(uint64_t pos) {
-  NodeId holder(NodeId(NodeId::IdType::kMaxId) ^ NodeId(NodeId::IdType::kMaxId));
+  NodeId holder;
   return GenerateUniqueNonRandomId(holder, pos);
 }
 

@@ -49,7 +49,7 @@ TEST(NetworkStatisticsTest, BEH_AverageDistance) {
   network_statistics.UpdateNetworkAverageDistance(node_id);
   EXPECT_EQ(network_statistics.network_distance_data_.average_distance, average);
 
-  node_id = NodeId(NodeId::IdType::kMaxId);
+  node_id = NodeInNthBucket(NodeId(), 511);
   network_statistics.network_distance_data_.total_distance =
       crypto::BigInt((node_id.ToStringEncoded(NodeId::EncodingType::kHex) + 'h').c_str()) *
       network_statistics.network_distance_data_.contributors_count;

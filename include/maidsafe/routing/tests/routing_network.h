@@ -41,8 +41,8 @@
 #include "maidsafe/routing/parameters.h"
 #include "maidsafe/routing/return_codes.h"
 #include "maidsafe/routing/routing_api.h"
-#include "maidsafe/routing/routing.pb.h"
 #include "maidsafe/routing/routing_impl.h"
+#include "maidsafe/routing/timer.h"
 #include "maidsafe/routing/tests/test_utils.h"
 
 namespace args = std::placeholders;
@@ -52,9 +52,7 @@ namespace maidsafe {
 namespace routing {
 
 class Routing;
-namespace protobuf {
-class Message;
-}
+namespace protobuf { class Message; }
 
 namespace test {
 
@@ -110,7 +108,7 @@ class GenericNode {
                   ResponseFunctor response_functor);
   void SendGroup(const NodeId& destination_id, const std::string& data, bool cacheable,
                  ResponseFunctor response_functor);
-void SendMessage(const NodeId& destination_id, protobuf::Message& proto_message);
+  void SendMessage(const NodeId& destination_id, protobuf::Message& proto_message);
 
   void AddTask(const ResponseFunctor& response_functor, int expected_response_count,
                TaskId task_id);

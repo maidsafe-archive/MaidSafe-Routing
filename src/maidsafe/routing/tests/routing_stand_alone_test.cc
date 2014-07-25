@@ -185,7 +185,8 @@ TEST_F(RoutingStandAloneTest, FUNC_JoinAfterBootstrapLeaves) {
   this->AddNode(passport::CreatePmidAndSigner().first);
 }
 
-TEST_F(RoutingStandAloneTest, FUNC_ReBootstrap) {
+// the logic is not right...
+TEST_F(RoutingStandAloneTest, DISABLED_FUNC_ReBootstrap) {
   // test currently fine for small network size (approx half max routing table size). Will need
   // updated to deal with larger network.
   int network_size(kServerSize);

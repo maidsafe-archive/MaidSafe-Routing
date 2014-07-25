@@ -29,13 +29,11 @@
 #include "maidsafe/common/utils.h"
 #include "maidsafe/passport/passport.h"
 
-#include "maidsafe/routing/api_config.h"
-#include "maidsafe/routing/routing_impl.h"
 #include "maidsafe/routing/return_codes.h"
-#include "maidsafe/routing/routing_api.h"
-#include "maidsafe/routing/tests/test_utils.h"
+#include "maidsafe/routing/routing_impl.h"
 #include "maidsafe/routing/routing.pb.h"
 #include "maidsafe/routing/utils.h"
+#include "maidsafe/routing/tests/test_utils.h"
 
 namespace asio = boost::asio;
 namespace ip = asio::ip;

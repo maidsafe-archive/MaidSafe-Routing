@@ -168,7 +168,7 @@ bool ClientRoutingTable::IsThisNodeInRange(const NodeId& node_id,
     assert(false && "node_id (client) and furthest_close_node_id (vault) should not be equal.");
     return false;
   }
-  return (furthest_close_node_id ^ kNodeId_) > (node_id ^ kNodeId_);
+  return NodeId::CloserToTarget(node_id, furthest_close_node_id, kNodeId_);
 }
 
 std::string ClientRoutingTable::PrintClientRoutingTable() {

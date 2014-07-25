@@ -447,7 +447,7 @@ NodeInfo RoutingTable::GetNthClosestNode(const NodeId& target_id, unsigned int i
   std::unique_lock<std::mutex> lock(mutex_);
   if (nodes_.size() < index) {
     NodeInfo node_info;
-    node_info.id = (NodeId(NodeId::IdType::kMaxId) ^ kNodeId_);
+    node_info.id = NodeInNthBucket(kNodeId(), static_cast<int>(index));
     return node_info;
   }
   NthElementSortFromTarget(target_id, index, lock);
@@ -515,20 +515,17 @@ std::string RoutingTable::PrintRoutingTable() {
   std::vector<NodeInfo> rt;
   {
     std::lock_guard<std::mutex> lock(mutex_);
-    std::sort(nodes_.begin(), nodes_.end(), [&](const NodeInfo & lhs, const NodeInfo & rhs) {
+    std::sort(nodes_.begin(), nodes_.end(), [&](const NodeInfo& lhs, const NodeInfo& rhs) {
       return NodeId::CloserToTarget(lhs.id, rhs.id, kNodeId_);
     });
     rt = nodes_;
   }
   std::stringstream stream;
-  stream << "\n\n[" << DebugId(kNodeId_)
-         << "] This node's own routing table and peer connections:\nRouting table size: "
-         << std::to_string(nodes_.size()) + "\n";
+  stream << "\n\n[" << kNodeId_ << "] This node's own routing table and peer connections:"
+         << "\nRouting table size: " << nodes_.size();
   for (const auto& node : rt) {
-    stream << std::string("\tPeer ") << "[" << DebugId(node.id) << "]-->";
-    stream << DebugId(node.connection_id) << " && xored ";
-    stream << DebugId(kNodeId_ ^ node.id) << " bucket ";
-    stream << std::to_string(node.bucket) << "\n";
+    stream << "\n\tPeer [" << node.id << "]--> " << node.connection_id << " && xored "
+           << NodeId(kNodeId_ ^ node.id) << " bucket " << node.bucket;
   }
   stream << "\n\n";
   return stream.str();

@@ -234,6 +234,16 @@ bool ValidateMessage(const protobuf::Message& message) {
   return true;
 }
 
+NodeId NodeInNthBucket(const NodeId& node_id, int bucket) {
+  assert(bucket < NodeId::kSize * 8);
+  auto binary_string(node_id.ToStringEncoded(NodeId::EncodingType::kBinary));
+  while (bucket >= 0) {
+    binary_string.at(bucket) = (binary_string.at(bucket) == '1') ? '0' : '1';
+    bucket--;
+  }
+  return NodeId(binary_string, NodeId::EncodingType::kBinary);
+}
+
 void SetProtobufEndpoint(const boost::asio::ip::udp::endpoint& endpoint,
                          protobuf::Endpoint* pb_endpoint) {
   if (pb_endpoint) {
