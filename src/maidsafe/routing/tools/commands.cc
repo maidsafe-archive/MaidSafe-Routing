@@ -120,10 +120,12 @@ void Commands::GetPeer(const std::string& peer) {
   catch (...) {
     std::cout << "Could not parse IPv4 peer endpoint from " << peer << std::endl;
   }
-  auto bootstrap_file_path(GetBootstrapFilePath(false));
-  if (!boost::filesystem::exists(bootstrap_file_path))
+  auto bootstrap_file_path(detail::GetOverrideBootstrapFilePath<false>());
+  boost::filesystem::remove(bootstrap_file_path);
+  try {
     WriteBootstrapContacts(BootstrapContacts {demo_node_->endpoint(), bootstrap_peer_ep_},
                            bootstrap_file_path);
+  } catch (const std::exception& /*error*/) {}  // File updated by peer zerostate node
 }
 
 void Commands::ZeroStateJoin() {

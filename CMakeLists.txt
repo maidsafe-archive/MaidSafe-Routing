@@ -95,6 +95,7 @@ if(MaidsafeTesting)
   target_include_directories(TESTrouting_big PRIVATE ${PROJECT_SOURCE_DIR}/src)
   target_include_directories(routing_key_helper PRIVATE ${PROJECT_SOURCE_DIR}/src)
   target_include_directories(routing_node PRIVATE ${PROJECT_SOURCE_DIR}/src)
+  target_include_directories(create_client_bootstrap PRIVATE ${PROJECT_SOURCE_DIR}/src)
 
   target_link_libraries(TESTrouting maidsafe_routing_test_helper)
   target_link_libraries(TESTrouting_api maidsafe_routing_test_helper)

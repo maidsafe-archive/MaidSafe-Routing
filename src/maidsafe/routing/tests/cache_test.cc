@@ -20,6 +20,7 @@
 
 #include "maidsafe/common/crypto.h"
 
+#include "maidsafe/routing/routing_impl.h"
 #include "maidsafe/routing/tests/routing_network.h"
 #include "maidsafe/routing/tests/test_utils.h"
 
@@ -29,6 +30,33 @@ namespace maidsafe {
 namespace routing {
 
 namespace test {
+
+namespace {
+
+// FIXME (Mahmoud) New API don't use response type message even for a node level response
+// from Vaults. This test need to be updated to use request only type of messages with
+// new API Send() with typed messages. Temporarily added a utility function.
+protobuf::Message CreateNodeLevelSingleToSingleResponseMessageProto(
+    const SingleToSingleMessage& message) {
+  protobuf::Message proto_message;
+  proto_message.set_destination_id(message.receiver->string());
+  proto_message.set_routing_message(false);
+  proto_message.add_data(message.contents);
+  proto_message.set_type(static_cast<int32_t>(MessageType::kNodeLevel));
+
+  proto_message.set_cacheable(static_cast<int32_t>(message.cacheable));
+  proto_message.set_client_node(false);
+
+  proto_message.set_hops_to_live(Parameters::hops_to_live);
+
+  proto_message.set_direct(true);
+  proto_message.set_replication(1);
+  proto_message.set_id(RandomUint32() % 10000);
+  proto_message.set_request(false);
+  return proto_message;
+}
+
+}  // anonymous namespace
 
 class NetworkCache : public GenericNetwork, public testing::Test {
  public:
@@ -89,9 +117,11 @@ TEST_F(NetworkCache, FUNC_StoreGet) {
   single_to_single_message.receiver = SingleId(NodeId(NodeId::IdType::kRandomId));
   single_to_single_message.sender = SingleSource(SingleId(nodes_[0]->node_id()));
   single_to_single_message.contents = content;
-  auto message(nodes_[0]->CreateNodeLevelMessage(single_to_single_message));
-  message.set_cacheable(static_cast<int32_t>(Cacheable::kPut));
-  message.set_request(false);
+  single_to_single_message.cacheable = Cacheable::kPut;
+
+  auto message(CreateNodeLevelSingleToSingleResponseMessageProto(single_to_single_message));
+//  message.set_cacheable(static_cast<int32_t>(Cacheable::kPut));
+//  message.set_request(false);
   LOG(kVerbose) << "Before sending " << message.id();
   nodes_[0]->SendMessage(single_to_single_message.receiver, message);
   Sleep(std::chrono::seconds(2));

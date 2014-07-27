@@ -41,9 +41,7 @@
 #include "maidsafe/routing/parameters.h"
 #include "maidsafe/routing/return_codes.h"
 #include "maidsafe/routing/routing_api.h"
-#include "maidsafe/routing/routing_impl.h"
 #include "maidsafe/routing/timer.h"
-#include "maidsafe/routing/tests/test_utils.h"
 
 namespace args = std::placeholders;
 
@@ -77,6 +75,7 @@ const uint32_t kNetworkSize = kClientSize + kServerSize;
 
 class GenericNetwork;
 class NodesEnvironment;
+struct ScopedBootstrapFile;
 
 class GenericNode {
  public:
@@ -110,11 +109,11 @@ class GenericNode {
                  ResponseFunctor response_functor);
   void SendMessage(const NodeId& destination_id, protobuf::Message& proto_message);
 
+  template <typename T>
+  void Send(const T& message);
+
   void AddTask(const ResponseFunctor& response_functor, int expected_response_count,
                TaskId task_id);
-
-  template <typename T>
-  protobuf::Message CreateNodeLevelMessage(const T& message);
 
   std::future<std::vector<NodeId>> GetGroup(const NodeId& info_id);
   GroupRangeStatus IsNodeIdInGroupRange(const NodeId& node_id);
@@ -172,10 +171,12 @@ class GenericNode {
   void InitialiseFunctors();
 };
 
+
 template <typename T>
-protobuf::Message GenericNode::CreateNodeLevelMessage(const T& message) {
-  return routing_->pimpl_->CreateNodeLevelMessage<T>(message);
+void GenericNode::Send(const T& message) {
+  routing_->Send(message);
 }
+
 
 class GenericNetwork {
  public:
