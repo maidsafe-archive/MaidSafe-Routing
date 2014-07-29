@@ -19,10 +19,12 @@
 #ifndef MAIDSAFE_ROUTING_BOOTSTRAP_UTILS_H_
 #define MAIDSAFE_ROUTING_BOOTSTRAP_UTILS_H_
 
+#ifdef _MSC_VER
 #include <atomic>
 #include <memory>
 #include <mutex>
 #include <thread>
+#endif
 #include <vector>
 
 #include "boost/asio/ip/udp.hpp"
@@ -42,6 +44,10 @@ namespace detail {
 
 template <bool is_client>
 boost::filesystem::path GetCurrentBootstrapFilePath() {
+  auto path_getter([] {
+    return boost::filesystem::exists(GetOverrideBootstrapFilePath<is_client>()) ?
+        GetOverrideBootstrapFilePath<is_client>() : GetDefaultBootstrapFilePath<is_client>(); });
+#ifdef _MSC_VER
   static std::once_flag initialised_flag;
   static std::atomic<bool> initialised{ false };
 
@@ -56,18 +62,16 @@ boost::filesystem::path GetCurrentBootstrapFilePath() {
       std::call_once(initialised_flag, [&] {
         // This unique_ptr guarantees that 'initialised == true' on exiting the call_once lambda.
         const std::unique_ptr<char, decltype(deleter)> scoped_setter(new char, deleter);
-        current_bootstrap_file_path =
-            boost::filesystem::exists(
-                GetOverrideBootstrapFilePath<is_client>()) ?
-                GetOverrideBootstrapFilePath<is_client>() :
-                GetDefaultBootstrapFilePath<is_client>();
+        current_bootstrap_file_path = path_getter();
       });
       return current_bootstrap_file_path;
     }() };
 
   while (!initialised)
     std::this_thread::yield();
-
+#else
+  static const boost::filesystem::path kCurrentBootstrapFilePath{ path_getter() };
+#endif
   return kCurrentBootstrapFilePath;
 }
 
