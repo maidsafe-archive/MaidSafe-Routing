@@ -40,6 +40,7 @@
 
 #include "boost/asio/ip/udp.hpp"
 #include "boost/date_time/posix_time/posix_time_config.hpp"
+#include "boost/variant.hpp"
 
 #include "maidsafe/common/node_id.h"
 #include "maidsafe/common/rsa.h"
@@ -47,27 +48,16 @@
 #include "maidsafe/passport/types.h"
 
 #include "maidsafe/routing/api_config.h"
+#include "maidsafe/routing/node_info.h"
+#include "maidsafe/routing/routing_impl.h"
 
 namespace maidsafe {
 
 namespace routing {
 
-struct NodeInfo;
-
-namespace test { class GenericNode; }
-
-namespace detail {
-
-template <typename FobType>
-struct is_client : public std::true_type {};
-
-template <>
-struct is_client<passport::Pmid> : public std::false_type {};
-
-template <>
-struct is_client<const passport::Pmid> : public std::false_type {};
-
-}  // namespace detail
+namespace test {
+class GenericNode;
+}
 
 class Routing {
  public:
@@ -84,12 +74,14 @@ class Routing {
     asymm::Keys keys;
     keys.private_key = fob.private_key();
     keys.public_key = fob.public_key();
-    InitialisePimpl(detail::is_client<FobType>::value, NodeId(fob.name()->string()), keys);
+    InitialisePimpl(NodeId(fob.name()->string()), keys, detail::is_client<FobType>());
   }
 
   // Joins the network. Valid method for requesting public key must be provided by the functor,
   // otherwise no node will be added to the routing table and node will fail to join the network.
-  void Join(Functors functors);
+  // To force the node to use a specific endpoint for bootstrapping, provide peer_endpoint (i.e.
+  // private network).
+  void Join(Functors functors, BootstrapContacts bootstrap_contacts = BootstrapContacts());
 
   // WARNING: THIS FUNCTION SHOULD BE ONLY USED TO JOIN FIRST TWO ZERO STATE NODES.
   int ZeroStateJoin(Functors functors, const boost::asio::ip::udp::endpoint& local_endpoint,
@@ -105,9 +97,9 @@ class Routing {
   // a) the response is receieved or,
   // b) waiting time (Parameters::default_response_timeout) for receiving the response expires
   // Throws on invalid paramaters
-  void SendDirect(const NodeId& destination_id,                       // ID of final destination
+  void SendDirect(const NodeId& destination_id,                // ID of final destination
                   const std::string& message, bool cacheable,  // to cache message content
-                  ResponseFunctor response_functor);                  // Called on response
+                  ResponseFunctor response_functor);           // Called on response
 
   // Sends message to Parameters::group_size most closest nodes to destination_id. The node
   // having id equal to destination id is not considered as part of group and will not receive
@@ -118,7 +110,7 @@ class Routing {
   // Throws on invalid paramaters
   void SendGroup(const NodeId& destination_id,  // ID of final destination or group centre
                  const std::string& message, bool cacheable,  // to cache message content
-                 ResponseFunctor response_functor);                  // Called on each response
+                 ResponseFunctor response_functor);           // Called on each response
 
   // Compares own closeness to target against other known nodes' closeness to the target
   bool ClosestToId(const NodeId& target_id);
@@ -147,14 +139,24 @@ class Routing {
 
   friend class test::GenericNode;
 
+  //  std::shared_ptr<RoutingImpl<VaultNode>> Pimpl() {
+  //   return boost::get<std::shared_ptr<RoutingImpl<VaultNode>>>(pimpl_);
+  //  }
+
  private:
   Routing(const Routing&);
   Routing(const Routing&&);
   Routing& operator=(const Routing&);
-  void InitialisePimpl(bool client_mode, const NodeId& node_id, const asymm::Keys& keys);
 
-  class Impl;
-  std::shared_ptr<Impl> pimpl_;
+  void InitialisePimpl(const NodeId& node_id, const asymm::Keys& keys, ClientNode);
+  void InitialisePimpl(const NodeId& node_id, const asymm::Keys& keys, VaultNode);
+
+  typedef boost::mpl::vector<std::shared_ptr<RoutingImpl<ClientNode>>,
+                             std::shared_ptr<RoutingImpl<VaultNode>>> RoutingImplTypes;
+
+ public:
+  typedef boost::make_variant_over<RoutingImplTypes>::type RoutingImpls;
+  RoutingImpls pimpl_;
 };
 
 // Locks 'mutex', sets 'current_health' to 'updated_health' then calls notify_one() on 'cond_var'.
@@ -178,6 +180,10 @@ void Routing::Send(const GroupToSingleRelayMessage& message);
 template <typename T>
 void Routing::Send(const T&) {
   T::message_type_must_be_one_of_the_specialisations_defined_as_typedefs_in_message_dot_h_file;
+}
+
+namespace {
+typedef boost::asio::ip::udp::endpoint Endpoint;
 }
 
 }  // namespace routing

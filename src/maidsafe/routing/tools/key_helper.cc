@@ -54,6 +54,10 @@ namespace po = boost::program_options;
 
 namespace {
 
+#ifndef TESTING
+#define TESTING
+#endif
+
 typedef std::vector<maidsafe::passport::detail::AnmaidToPmid> KeysVector;
 
 const std::string kHelperVersion = "MaidSafe Routing KeysHelper " + maidsafe::kApplicationVersion();

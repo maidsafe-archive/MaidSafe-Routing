@@ -23,6 +23,7 @@
 
 #include "maidsafe/routing/routing.pb.h"
 #include "maidsafe/routing/response_handler.h"
+#include "maidsafe/routing/routing_table.h"
 
 namespace maidsafe {
 
@@ -30,10 +31,11 @@ namespace routing {
 
 namespace test {
 
-class MockResponseHandler : public ResponseHandler {
+template <typename NodeType>
+class MockResponseHandler : public ResponseHandler<NodeType> {
  public:
-  MockResponseHandler(RoutingTable& routing_table, ClientRoutingTable& client_routing_table,
-                      NetworkUtils& network_utils);
+  MockResponseHandler(RoutingTable<NodeType>& routing_table, ClientRoutingTable& client_routing_table,
+                      NetworkUtils<NodeType>& network_utils);
   virtual ~MockResponseHandler();
 
   MOCK_METHOD1(Ping, void(protobuf::Message& message));

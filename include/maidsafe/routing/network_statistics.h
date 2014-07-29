@@ -32,7 +32,7 @@ namespace routing {
 
 namespace test {
 class NetworkStatisticsTest_BEH_AverageDistance_Test;
-class NetworkStatisticsTest_FUNC_IsIdInGroupRange_Test;
+class NetworkStatisticsTest_BEH_IsIdInGroupRange_Test;
 }
 
 class NetworkStatistics {
@@ -44,7 +44,7 @@ class NetworkStatistics {
   NodeId GetDistance();
 
   friend class test::NetworkStatisticsTest_BEH_AverageDistance_Test;
-  friend class test::NetworkStatisticsTest_FUNC_IsIdInGroupRange_Test;
+  friend class test::NetworkStatisticsTest_BEH_IsIdInGroupRange_Test;
 
  private:
   NetworkStatistics(const NetworkStatistics&);

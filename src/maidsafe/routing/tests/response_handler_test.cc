@@ -46,12 +46,13 @@ namespace routing {
 
 namespace test {
 
+template <typename NodeType>
 class ResponseHandlerTest : public testing::Test {
  public:
   ResponseHandlerTest()
       : node_id_(NodeId::IdType::kRandomId),
         network_statistics_(node_id_),
-        routing_table_(false, NodeId(NodeId::IdType::kRandomId), asymm::GenerateKeyPair()),
+        routing_table_(NodeId(NodeId::IdType::kRandomId), asymm::GenerateKeyPair()),
         client_routing_table_(routing_table_.kNodeId()),
         network_(routing_table_, client_routing_table_),
         response_handler_(routing_table_, client_routing_table_, network_) {}
@@ -149,7 +150,7 @@ class ResponseHandlerTest : public testing::Test {
   protobuf::Message ComposeMsg(const std::string& data) {
     protobuf::Message message;
     //     message.set_destination_id(message.source_id());
-    message.set_source_id(routing_table_.kNodeId().string());
+    message.set_source_id(this->routing_table_.kNodeId().string());
     message.clear_route_history();
     message.clear_data();
     message.add_data(data);
@@ -195,10 +196,10 @@ class ResponseHandlerTest : public testing::Test {
 
   NodeId node_id_;
   NetworkStatistics network_statistics_;
-  RoutingTable routing_table_;
+  RoutingTableTest<VaultNode> routing_table_;
   ClientRoutingTable client_routing_table_;
-  MockNetworkUtils network_;
-  ResponseHandler response_handler_;
+  MockNetworkUtils<VaultNode> network_;
+  ResponseHandler<VaultNode> response_handler_;
 };
 
 TEST_F(ResponseHandlerTest, BEH_FindNodes) {
@@ -251,20 +252,21 @@ TEST_F(ResponseHandlerTest, BEH_FindNodes) {
   nodes.clear();
   for (size_t i(0); i < num_of_found_nodes; ++i) {
     NodeId node_id(RandomString(64));
-    while (
-        NodeId::CloserToTarget(routing_table_.GetNthClosestNode(routing_table_.kNodeId(),
-                                                                Parameters::closest_nodes_size).id,
-                               node_id, routing_table_.kNodeId()))
-      node_id = NodeId(RandomString(64));
+    while (NodeId::CloserToTarget(
+              routing_table_.GetNthClosestNode(routing_table_.kNodeId(),
+                                               Parameters::closest_nodes_size).id,
+              node_id, routing_table_.kNodeId()))
+        node_id = NodeId(RandomString(64));
     nodes.push_back(node_id);
   }
   for (size_t i(0); i < num_of_found_nodes; ++i) {
     NodeId node_id(RandomString(64));
     while (NodeId::CloserToTarget(
-        node_id, routing_table_.GetNthClosestNode(routing_table_.kNodeId(),
-                                                  Parameters::closest_nodes_size).id,
-        routing_table_.kNodeId()))
-      node_id = NodeId(RandomString(64));
+               node_id,
+               routing_table_.GetNthClosestNode(routing_table_.kNodeId(),
+                                                Parameters::closest_nodes_size).id,
+               routing_table_.kNodeId()))
+        node_id = NodeId(RandomString(64));
     nodes.push_back(node_id);
   }
   ASSERT_EQ(nodes.size(), num_of_found_nodes * 2);
@@ -350,8 +352,8 @@ TEST_F(ResponseHandlerTest, BEH_ConnectSuccessAcknowledgement) {
 
   // shared_from_this function inside requires the response_handler holder to be shared_ptr
   // if holding as a normal object, shared_from_this will throw an exception
-  std::shared_ptr<ResponseHandler> response_handler(
-      std::make_shared<ResponseHandler>(routing_table_, client_routing_table_, network_));
+  std::shared_ptr<ResponseHandler> response_handler(std::make_shared<ResponseHandler>(
+      routing_table_, client_routing_table_, network_));
 
   // request_public_key_functor_ doesn't setup
   message =

@@ -93,12 +93,10 @@ class TimerTest : public testing::Test {
 TEST_F(TimerTest, BEH_InvalidParameters) {
   EXPECT_THROW(timer_.AddTask(std::chrono::seconds(1), nullptr, 1, timer_.NewTaskId()),
                maidsafe_error);
-  EXPECT_THROW(
-      timer_.AddTask(std::chrono::seconds(1), pass_response_functor_, 0, timer_.NewTaskId()),
-      maidsafe_error);
-  EXPECT_THROW(
-      timer_.AddTask(std::chrono::seconds(1), pass_response_functor_, -1, timer_.NewTaskId()),
-      maidsafe_error);
+  EXPECT_THROW(timer_.AddTask(std::chrono::seconds(1), pass_response_functor_, 0,
+               timer_.NewTaskId()), maidsafe_error);
+  EXPECT_THROW(timer_.AddTask(std::chrono::seconds(1), pass_response_functor_, -1,
+               timer_.NewTaskId()), maidsafe_error);
   auto task_id(timer_.NewTaskId());
   timer_.AddTask(std::chrono::milliseconds(100), failed_response_functor_, 1, task_id);
   EXPECT_THROW(timer_.CancelTask(task_id + 1), maidsafe_error);
@@ -204,7 +202,7 @@ TEST_F(TimerTest, BEH_MultipleGroupResponse) {
     TaskId task_id;
     for (int i(0); i != number; ++i) {
       task_id = timer_.NewTaskId();
-      timer_.AddTask(std::chrono::seconds(40), pass_response_functor_, kGroupSize_, task_id);
+      timer_.AddTask(std::chrono::seconds(10), pass_response_functor_, kGroupSize_, task_id);
       messages.insert(std::make_pair(task_id, RandomAlphaNumericString(30)));
     }
     return messages;

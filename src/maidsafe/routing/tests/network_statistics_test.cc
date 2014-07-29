@@ -49,7 +49,7 @@ TEST(NetworkStatisticsTest, BEH_AverageDistance) {
   network_statistics.UpdateNetworkAverageDistance(node_id);
   EXPECT_EQ(network_statistics.network_distance_data_.average_distance, average);
 
-  node_id = NodeInNthBucket(NodeId(), 511);
+  node_id = NodeId(NodeId::IdType::kMaxId);
   network_statistics.network_distance_data_.total_distance =
       crypto::BigInt((node_id.ToStringEncoded(NodeId::EncodingType::kHex) + 'h').c_str()) *
       network_statistics.network_distance_data_.contributors_count;
@@ -84,24 +84,25 @@ TEST(NetworkStatisticsTest, BEH_AverageDistance) {
   EXPECT_EQ(total / kCount, matrix_average_as_bigint);
 }
 
-TEST(NetworkStatisticsTest, FUNC_IsIdInGroupRange) {
+TEST(NetworkStatisticsTest, BEH_IsIdInGroupRange) {
   NodeId node_id;
   NetworkStatistics network_statistics(node_id);
-  RoutingTable routing_table(false, node_id, asymm::GenerateKeyPair());
+  RoutingTable<VaultNode> routing_table(node_id, asymm::GenerateKeyPair());
   std::vector<NodeId> nodes_id;
   NodeInfo node_info;
   NodeId my_node(routing_table.kNodeId());
-  while (static_cast<unsigned int>(routing_table.size()) < Parameters::max_routing_table_size) {
+  while (static_cast<uint16_t>(routing_table.size()) < Parameters::max_routing_table_size) {
     NodeInfo node(MakeNode());
     nodes_id.push_back(node.id);
     EXPECT_TRUE(routing_table.AddNode(node));
   }
 
   NodeId info_id(NodeId::IdType::kRandomId);
-  std::partial_sort(nodes_id.begin(), nodes_id.begin() + Parameters::group_size + 1, nodes_id.end(),
-                    [&](const NodeId& lhs,
-                        const NodeId& rhs) { return NodeId::CloserToTarget(lhs, rhs, info_id); });
-  unsigned int index(0);
+  std::partial_sort(nodes_id.begin(), nodes_id.begin() + Parameters::group_size + 1,
+                    nodes_id.end(), [&](const NodeId & lhs, const NodeId & rhs) {
+    return NodeId::CloserToTarget(lhs, rhs, info_id);
+  });
+  uint16_t index(0);
   while (index < Parameters::max_routing_table_size) {
     if ((nodes_id.at(index) ^ info_id) <= (network_statistics.distance_))
       EXPECT_TRUE(network_statistics.EstimateInGroup(nodes_id.at(index++), info_id));

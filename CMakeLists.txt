@@ -43,9 +43,7 @@ set(RoutingSourcesDir ${PROJECT_SOURCE_DIR}/src/maidsafe/routing)
 ms_glob_dir(Routing ${RoutingSourcesDir} Routing)
 ms_glob_dir(RoutingTests ${RoutingSourcesDir}/tests Tests)
 ms_glob_dir(RoutingTools ${RoutingSourcesDir}/tools Tools)
-set(RoutingTestsHelperFiles ${RoutingSourcesDir}/tests/routing_network.cc
-                            ${PROJECT_SOURCE_DIR}/include/maidsafe/routing/tests/routing_network.h
-                            ${RoutingSourcesDir}/tests/zero_state_helpers.cc
+set(RoutingTestsHelperFiles ${RoutingSourcesDir}/tests/zero_state_helpers.cc
                             ${PROJECT_SOURCE_DIR}/include/maidsafe/routing/tests/zero_state_helpers.h
                             ${RoutingSourcesDir}/tests/test_utils.cc
                             ${RoutingSourcesDir}/tests/test_utils.h)

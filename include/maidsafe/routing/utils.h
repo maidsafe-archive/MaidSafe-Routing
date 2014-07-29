@@ -38,30 +38,48 @@
 namespace maidsafe {
 
 class NodeId;
-
 namespace routing {
 
-namespace protobuf {
+namespace fs = boost::filesystem;
 
-class Message;
-class Endpoint;
-
-}  // namespace protobuf
-
-class NetworkUtils;
 class ClientRoutingTable;
-class RoutingTable;
 
-int AddToRudp(NetworkUtils& network, const NodeId& this_node_id, const NodeId& this_connection_id,
-              const NodeId& peer_id, const NodeId& peer_connection_id,
-              rudp::EndpointPair peer_endpoint_pair, bool requestor, bool client);
+enum class MessageType : int32_t {
+  kPing = 1,
+  kConnect = 2,
+  kFindNodes = 3,
+  kConnectSuccess = 4,
+  kConnectSuccessAcknowledgement = 5,
+  kGetGroup = 6,
+  kInformClientOfNewCloseNode = 7,
+  kMaxRouting = 100,
+  kNodeLevel = 101
+};
 
-bool ValidateAndAddToRoutingTable(NetworkUtils& network, RoutingTable& routing_table,
-    ClientRoutingTable& client_routing_table, const NodeId& peer_id, const NodeId& connection_id,
-    const asymm::PublicKey& public_key, bool client);
+template <MessageType action, bool type, typename Source>
+struct MessageWrapper {
+  typedef Source SourceType;
 
-void InformClientOfNewCloseNode(NetworkUtils& network, const NodeInfo& client,
-                                const NodeInfo& new_close_node, const NodeId& this_node_id);
+  explicit MessageWrapper(protobuf::Message message_in) : message(message_in) {}
+
+//  MessageWrapper(const MessageWrapper& other);
+//  MessageWrapper(MessageWrapper&& other);
+//  MessageWrapper& operator=(MessageWrapper other);
+
+  friend void swap(MessageWrapper& lhs, MessageWrapper& rhs) {
+    using std::swap;
+    swap(lhs.id, rhs.id);
+    swap(lhs.contents, rhs.contents);
+  }
+
+  protobuf::Message message;
+};
+
+typedef MessageWrapper<MessageType::kConnectSuccessAcknowledgement, true, VaultNode>
+            ConnectSuccessAcknowledgementRequestFromVault;
+
+typedef MessageWrapper<MessageType::kConnectSuccessAcknowledgement, true, ClientNode>
+            ConnectSuccessAcknowledgementRequestFromClient;
 
 GroupRangeStatus GetProximalRange(const NodeId& target_id, const NodeId& node_id,
                                   const NodeId& this_node_id,

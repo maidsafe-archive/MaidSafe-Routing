@@ -45,10 +45,6 @@ class BasicClientRoutingTableTest_BEH_IsThisNodeInRange_Test;
 
 class GroupChangeHandler;
 
-namespace protobuf {
-class Contact;
-}
-
 class ClientRoutingTable {
  public:
   explicit ClientRoutingTable(NodeId node_id);

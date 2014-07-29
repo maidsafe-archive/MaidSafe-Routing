@@ -16,18 +16,11 @@
     See the Licences for the specific language governing permissions and limitations relating to
     use of the MaidSafe Software.                                                                 */
 
-#include "maidsafe/routing/utils.h"
-
-#ifndef MAIDSAFE_WIN32
-#include <pwd.h>
-#endif
-
 #include <string>
 #include <algorithm>
 #include <vector>
 
-#include "boost/filesystem/operations.hpp"
-#include "boost/filesystem/path.hpp"
+#include "maidsafe/routing/utils.h"
 
 #include "maidsafe/common/log.h"
 #include "maidsafe/common/utils.h"
@@ -46,75 +39,6 @@ namespace maidsafe {
 
 namespace routing {
 
-int AddToRudp(NetworkUtils& network, const NodeId& this_node_id, const NodeId& this_connection_id,
-              const NodeId& peer_id, const NodeId& peer_connection_id,
-              rudp::EndpointPair peer_endpoint_pair, bool requestor, bool client) {
-  LOG(kVerbose) << "AddToRudp. peer_id : " << DebugId(peer_id)
-                << " , connection id : " << DebugId(peer_connection_id);
-  protobuf::Message connect_success(
-      rpcs::ConnectSuccess(peer_id, this_node_id, this_connection_id, requestor, client));
-  int result =
-      network.Add(peer_connection_id, peer_endpoint_pair, connect_success.SerializeAsString());
-  if (result != rudp::kSuccess) {
-    LOG(kError) << "rudp add failed for peer node [" << DebugId(peer_id)
-                << "]. Connection id : " << DebugId(peer_connection_id) << ". result : " << result;
-  } else {
-    LOG(kVerbose) << "rudp.Add succeeded for peer node [" << DebugId(peer_id)
-                  << "]. Connection id : " << DebugId(peer_connection_id);
-  }
-  return result;
-}
-
-bool ValidateAndAddToRoutingTable(NetworkUtils& network, RoutingTable& routing_table,
-                                  ClientRoutingTable& client_routing_table,
-                                  const NodeId& peer_id, const NodeId& connection_id,
-                                  const asymm::PublicKey& public_key, bool client) {
-  if (network.MarkConnectionAsValid(connection_id) != kSuccess) {
-    LOG(kError) << "[" << DebugId(routing_table.kNodeId()) << "] "
-                << ". Rudp failed to validate connection with  Peer id : " << DebugId(peer_id)
-                << " , Connection id : " << DebugId(connection_id);
-    return false;
-  }
-
-  NodeInfo peer;
-  peer.id = peer_id;
-  peer.public_key = public_key;
-  peer.connection_id = connection_id;
-  bool routing_accepted_node(false);
-  if (client) {
-    NodeId furthest_close_node_id =
-        routing_table.GetNthClosestNode(NodeId(routing_table.kNodeId()),
-                                        2 * Parameters::closest_nodes_size).id;
-
-    if (client_routing_table.AddNode(peer, furthest_close_node_id))
-      routing_accepted_node = true;
-  } else {  // Vaults
-    if (routing_table.AddNode(peer))
-      routing_accepted_node = true;
-  }
-
-  if (routing_accepted_node) {
-    LOG(kVerbose) << "[" << DebugId(routing_table.kNodeId()) << "] "
-                  << "added " << (client ? "client-" : "") << "node to " << (client ? "non-" : "")
-                  << "routing table.  Node ID: " << HexSubstr(peer_id.string());
-    return true;
-  }
-
-  LOG(kInfo) << "[" << DebugId(routing_table.kNodeId()) << "] "
-             << "failed to add " << (client ? "client-" : "") << "node to "
-             << (client ? "non-" : "") << "routing table.  Node ID: " << HexSubstr(peer_id.string())
-             << ". Added rudp connection will be removed.";
-  network.Remove(connection_id);
-  return false;
-}
-
-void InformClientOfNewCloseNode(NetworkUtils& network, const NodeInfo& client,
-                                const NodeInfo& new_close_node, const NodeId& this_node_id) {
-  protobuf::Message inform_client_of_new_close_node(
-      rpcs::InformClientOfNewCloseNode(new_close_node.id, this_node_id, client.id));
-  network.SendToDirect(inform_client_of_new_close_node, client.id, client.connection_id);
-}
-
 GroupRangeStatus GetProximalRange(const NodeId& target_id, const NodeId& node_id,
                                   const NodeId& this_node_id,
                                   const crypto::BigInt& proximity_radius,
@@ -122,7 +46,7 @@ GroupRangeStatus GetProximalRange(const NodeId& target_id, const NodeId& node_id
   assert((std::find(holders.begin(), holders.end(), target_id) == holders.end()) &&
          "Ensure to remove target id entry from holders, if present");
   assert(std::is_sorted(holders.begin(), holders.end(),
-                        [target_id](const NodeId & lhs, const NodeId & rhs) {
+                        [target_id](const NodeId& lhs, const NodeId& rhs) {
            return NodeId::CloserToTarget(lhs, rhs, target_id);
          }) &&
          "Ensure to sort holders in order of distance to targer_id");
@@ -166,7 +90,7 @@ bool IsCacheablePut(const protobuf::Message& message) {
 bool IsClientToClientMessageWithDifferentNodeIds(const protobuf::Message& message,
                                                  const bool is_destination_client) {
   return (is_destination_client && message.request() && message.client_node() &&
-            (message.destination_id() != message.source_id()));
+          (message.destination_id() != message.source_id()));
 }
 
 bool CheckId(const std::string& id_to_test) { return id_to_test.size() == NodeId::kSize; }
@@ -411,20 +335,18 @@ SingleToGroupRelayMessage CreateSingleToGroupRelayMessage(const protobuf::Messag
   NodeId connection_id(proto_message.relay_connection_id());
   SingleSource single_src_relay_node(NodeId(proto_message.source_id()));
   SingleRelaySource single_relay_src(single_src,  // original sender
-                                     connection_id,
-                                     single_src_relay_node);
+                                     connection_id, single_src_relay_node);
 
-  return SingleToGroupRelayMessage(proto_message.data(0),
-      single_relay_src,  // relay node
-          GroupId(NodeId(proto_message.group_destination())),
-              static_cast<Cacheable>(proto_message.cacheable()));
+  return SingleToGroupRelayMessage(proto_message.data(0), single_relay_src,  // relay node
+                                   GroupId(NodeId(proto_message.group_destination())),
+                                   static_cast<Cacheable>(proto_message.cacheable()));
 
-//  return SingleToGroupRelayMessage(proto_message.data(0),
-//      SingleSourceRelay(SingleSource(NodeId(proto_message.relay_id())), // original sender
-//                        NodeId(proto_message.relay_connection_id()),
-//                        SingleSource(NodeId(proto_message.source_id()))),  // relay node
-//          GroupId(NodeId(proto_message.group_destination())),
-//              static_cast<Cacheable>(proto_message.cacheable()));
+  //  return SingleToGroupRelayMessage(proto_message.data(0),
+  //      SingleSourceRelay(SingleSource(NodeId(proto_message.relay_id())), // original sender
+  //                        NodeId(proto_message.relay_connection_id()),
+  //                        SingleSource(NodeId(proto_message.source_id()))),  // relay node
+  //          GroupId(NodeId(proto_message.group_destination())),
+  //              static_cast<Cacheable>(proto_message.cacheable()));
 }
 
 }  // namespace routing

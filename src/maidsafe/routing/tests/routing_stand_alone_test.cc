@@ -46,9 +46,10 @@ class RoutingStandAloneTest : public GenericNetwork, public testing::Test {
     for (size_t index(0); index < ClientIndex(); ++index) {
       pmid_ids.push_back(nodes_[index]->node_id());
     }
-    std::sort(std::begin(pmid_ids), std::end(pmid_ids), [&](const NodeId& lhs, const NodeId& rhs) {
-      return NodeId::CloserToTarget(lhs, rhs, maid_id);
-    });
+    std::sort(std::begin(pmid_ids), std::end(pmid_ids),
+              [&](const NodeId& lhs, const NodeId& rhs) {
+                return NodeId::CloserToTarget(lhs, rhs, maid_id);
+              });
     return !NodeId::CloserToTarget(pmid_ids.at(Parameters::max_routing_table_size_for_client - 1),
                                    pmid_id, maid_id);
   }
@@ -58,8 +59,7 @@ TEST_F(RoutingStandAloneTest, FUNC_VaultSendToClient) {
   this->SetUpNetwork(kServerSize, 1);
   for (size_t index(0); index < this->ClientIndex(); ++index) {
     EXPECT_TRUE(this->SendDirect(this->nodes_[index], this->nodes_[this->ClientIndex()]->node_id(),
-                                 ExpectedNodeType::kExpectClient))
-        << DebugId(this->nodes_[index]->node_id());
+                ExpectedNodeType::kExpectClient)) << DebugId(this->nodes_[index]->node_id());
   }
 }
 
@@ -100,35 +100,35 @@ TEST_F(RoutingStandAloneTest, FUNC_SetupNetworkWithNodesBehindSymmetricNat) {
 
 TEST_F(RoutingStandAloneTest, FUNC_SetupNetworkAddVaultsBehindSymmetricNat) {
   this->SetUpNetwork(kServerSize);
-  unsigned int num_symmetric_vaults(kServerSize / 3);
-  for (unsigned int i(0); i < num_symmetric_vaults; ++i)
+  uint16_t num_symmetric_vaults(kServerSize / 3);
+  for (auto i(0); i < num_symmetric_vaults; ++i)
     this->AddNode(false, true);
 }
 
 TEST_F(RoutingStandAloneTest, FUNC_SetupNetworkAddVaultsBehindSymmetricNatAndClients) {
   this->SetUpNetwork(kServerSize, kClientSize);
-  unsigned int num_symmetric_vaults(kServerSize / 3);
-  for (unsigned int i(0); i < num_symmetric_vaults; ++i)
+  uint16_t num_symmetric_vaults(kServerSize / 3);
+  for (auto i(0); i < num_symmetric_vaults; ++i)
     this->AddNode(false, true);
-  unsigned int num_symmetric_clients(kClientSize);
-  for (unsigned int i(0); i < num_symmetric_clients; ++i)
+  uint16_t num_symmetric_clients(kClientSize);
+  for (auto i(0); i < num_symmetric_clients; ++i)
     this->AddNode(true, false);  // Add more normal clients
 }
 
 TEST_F(RoutingStandAloneTest, FUNC_SetupNetworkAddNodesBehindSymmetricNat) {
   this->SetUpNetwork(kServerSize, kClientSize);
-  unsigned int num_symmetric_vaults(kServerSize / 3);
-  for (unsigned int i(0); i < num_symmetric_vaults; ++i)
+  uint16_t num_symmetric_vaults(kServerSize / 3);
+  for (auto i(0); i < num_symmetric_vaults; ++i)
     this->AddNode(false, true);
-  unsigned int num_symmetric_clients(kClientSize);
-  for (unsigned int i(0); i < num_symmetric_clients; ++i)
+  uint16_t num_symmetric_clients(kClientSize);
+  for (auto i(0); i < num_symmetric_clients; ++i)
     this->AddNode(true, true);  // Add clients behind symmetric NAT
 }
 
 TEST_F(RoutingStandAloneTest, DISABLED_FUNC_ExtendedSendMulti) {
   // N.B. This test takes approx. 1hr to run, hence it is disabled.
   this->SetUpNetwork(kServerSize);
-  unsigned int loop(100);
+  uint16_t loop(100);
   while (loop-- > 0) {
     EXPECT_TRUE(SendDirect(40));
     this->ClearMessages();
@@ -136,16 +136,16 @@ TEST_F(RoutingStandAloneTest, DISABLED_FUNC_ExtendedSendMulti) {
 }
 
 TEST_F(RoutingStandAloneTest, FUNC_ExtendedSendToGroup) {
-  unsigned int message_count(10), receivers_message_count(0);
+  uint16_t message_count(10), receivers_message_count(0);
   this->SetUpNetwork(kServerSize);
   size_t last_index(this->nodes_.size() - 1);
   NodeId dest_id(this->nodes_[last_index]->node_id());
 
-  unsigned int loop(100);
+  uint16_t loop(100);
   while (loop-- > 0) {
     EXPECT_TRUE(SendGroup(dest_id, message_count));
     for (size_t index = 0; index != (last_index); ++index)
-      receivers_message_count += static_cast<unsigned int>(this->nodes_.at(index)->MessagesSize());
+      receivers_message_count += static_cast<uint16_t>(this->nodes_.at(index)->MessagesSize());
 
     EXPECT_EQ(0, this->nodes_[last_index]->MessagesSize())
         << "Not expected message at Node : "
@@ -157,23 +157,24 @@ TEST_F(RoutingStandAloneTest, FUNC_ExtendedSendToGroup) {
 }
 
 TEST_F(RoutingStandAloneTest, FUNC_ExtendedSendToGroupRandomId) {
-  unsigned int message_count(50), receivers_message_count(0);
+  uint16_t message_count(50), receivers_message_count(0);
   this->SetUpNetwork(kServerSize);
-  unsigned int loop(10);
+  uint16_t loop(10);
   while (loop-- > 0) {
-    for (unsigned int index(0); index < message_count; ++index) {
+    for (int index = 0; index < message_count; ++index) {
       NodeId random_id(NodeId::IdType::kRandomId);
       std::vector<NodeId> groupd_ids(this->GroupIds(random_id));
       EXPECT_TRUE(SendGroup(random_id, 1));
       for (const auto& node : this->nodes_) {
         if (std::find(groupd_ids.begin(), groupd_ids.end(), node->node_id()) != groupd_ids.end()) {
-          receivers_message_count += static_cast<unsigned int>(node->MessagesSize());
+          receivers_message_count += static_cast<uint16_t>(node->MessagesSize());
           node->ClearMessages();
         }
       }
     }
     EXPECT_EQ(message_count * (Parameters::group_size), receivers_message_count);
-    LOG(kVerbose) << "Total message received count : " << message_count * (Parameters::group_size);
+    LOG(kVerbose) << "Total message received count : " << message_count *
+                                                              (Parameters::group_size);
     receivers_message_count = 0;
     this->ClearMessages();
   }
@@ -185,8 +186,7 @@ TEST_F(RoutingStandAloneTest, FUNC_JoinAfterBootstrapLeaves) {
   this->AddNode(passport::CreatePmidAndSigner().first);
 }
 
-// the logic is not right...
-TEST_F(RoutingStandAloneTest, DISABLED_FUNC_ReBootstrap) {
+TEST_F(RoutingStandAloneTest, FUNC_ReBootstrap) {
   // test currently fine for small network size (approx half max routing table size). Will need
   // updated to deal with larger network.
   int network_size(kServerSize);
@@ -258,12 +258,12 @@ class ProportionedRoutingStandAloneTest : public GenericNetwork, public testing:
   }
 
  private:
-  unsigned int old_max_routing_table_size_;
-  unsigned int old_routing_table_size_threshold_;
-  unsigned int old_max_routing_table_size_for_client_;
-  unsigned int old_closest_nodes_size_;
-  unsigned int old_max_client_routing_table_size_;
-  unsigned int old_max_route_history_;
+  uint16_t old_max_routing_table_size_;
+  uint16_t old_routing_table_size_threshold_;
+  uint16_t old_max_routing_table_size_for_client_;
+  uint16_t old_closest_nodes_size_;
+  uint16_t old_max_client_routing_table_size_;
+  uint16_t old_max_route_history_;
 };
 
 // TODO(Alison) - Add ProportionedRoutingStandAloneTest involving clients
@@ -274,18 +274,18 @@ TEST_F(ProportionedRoutingStandAloneTest, DISABLED_FUNC_ExtendedMessagePassing) 
   ASSERT_TRUE(WaitForNodesToJoin());
   ASSERT_TRUE(WaitForHealthToStabiliseInLargeNetwork());
 
-  for (unsigned int repeat(0); repeat < 10; ++repeat) {
+  for (uint16_t repeat(0); repeat < 10; ++repeat) {
     std::cout << "Repeat: " << repeat << std::endl;
     std::cout << "SendDirect..." << std::endl;
     ASSERT_TRUE(this->SendDirect(2, 10));
     NodeId target;
     std::cout << "SendGroup (to random)..." << std::endl;
-    for (unsigned int i(0); i < nodes_.size(); ++i) {
+    for (uint16_t i(0); i < nodes_.size(); ++i) {
       target = NodeId(NodeId::IdType::kRandomId);
       ASSERT_TRUE(SendGroup(target, 1, i, 10));
     }
     std::cout << "SendGroup (to existing)..." << std::endl;
-    for (unsigned int i(0); i < nodes_.size(); ++i) {
+    for (uint16_t i(0); i < nodes_.size(); ++i) {
       for (const auto& node : nodes_) {
         ASSERT_TRUE(SendGroup(node->node_id(), 1, i, 10));
       }
@@ -300,18 +300,18 @@ TEST_F(ProportionedRoutingStandAloneTest, DISABLED_FUNC_ExtendedMessagePassingSy
   ASSERT_TRUE(WaitForNodesToJoin());
   ASSERT_TRUE(WaitForHealthToStabiliseInLargeNetwork());
 
-  for (unsigned int repeat(0); repeat < 10; ++repeat) {
+  for (uint16_t repeat(0); repeat < 10; ++repeat) {
     std::cout << "Repeat: " << repeat << std::endl;
     std::cout << "SendDirect..." << std::endl;
     ASSERT_TRUE(this->SendDirect(1, 10));
     NodeId target;
     std::cout << "SendGroup (to random)..." << std::endl;
-    for (unsigned int i(0); i < nodes_.size(); ++i) {
+    for (uint16_t i(0); i < nodes_.size(); ++i) {
       target = NodeId(NodeId::IdType::kRandomId);
       ASSERT_TRUE(SendGroup(target, 1, i, 10));
     }
     std::cout << "SendGroup (to existing)..." << std::endl;
-    for (unsigned int i(0); i < nodes_.size(); ++i) {
+    for (uint16_t i(0); i < nodes_.size(); ++i) {
       for (const auto& node : nodes_) {
         ASSERT_TRUE(SendGroup(node->node_id(), 1, i, 10));
       }

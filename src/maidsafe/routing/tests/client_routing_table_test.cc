@@ -47,13 +47,13 @@ class ClientRoutingTableTest : public BasicClientRoutingTableTest {
  public:
   ClientRoutingTableTest() : nodes_(), furthest_close_node_() {}
 
-  void PopulateNodes(unsigned int size) {
-    for (unsigned int i(0); i < size; ++i)
+  void PopulateNodes(uint16_t size) {
+    for (uint16_t i(0); i < size; ++i)
       nodes_.push_back(MakeNode());
   }
 
-  void PopulateNodesSetFurthestCloseNode(unsigned int size, const NodeId& target) {
-    for (unsigned int i(0); i <= size; ++i)
+  void PopulateNodesSetFurthestCloseNode(uint16_t size, const NodeId& target) {
+    for (uint16_t i(0); i <= size; ++i)
       nodes_.push_back(MakeNode());
     SortFromTarget(target, nodes_);
     furthest_close_node_ = nodes_.at(size);
@@ -62,7 +62,7 @@ class ClientRoutingTableTest : public BasicClientRoutingTableTest {
 
   NodeId BiasNodeIds(std::vector<NodeInfo>& biased_nodes) {
     NodeId sought_id(nodes_.at(RandomUint32() % Parameters::max_client_routing_table_size).id);
-    for (unsigned int i(0); i < Parameters::max_client_routing_table_size; ++i) {
+    for (uint16_t i(0); i < Parameters::max_client_routing_table_size; ++i) {
       if (nodes_.at(i).id == sought_id) {
         biased_nodes.push_back(nodes_.at(i));
       } else if ((RandomUint32() % 3) == 0) {
@@ -113,12 +113,12 @@ TEST_F(ClientRoutingTableTest, FUNC_CheckAddSurplusNodes) {
                                     client_routing_table.kNodeId());
   ScrambleNodesOrder();
 
-  for (unsigned int i(0); i < Parameters::max_client_routing_table_size; ++i) {
+  for (int i(0); i < Parameters::max_client_routing_table_size; ++i) {
     EXPECT_TRUE(client_routing_table.CheckNode(nodes_.at(i), furthest_close_node_.id));
     EXPECT_TRUE(client_routing_table.AddNode(nodes_.at(i), furthest_close_node_.id));
   }
 
-  for (unsigned int i(Parameters::max_client_routing_table_size);
+  for (int i(Parameters::max_client_routing_table_size);
        i < 2 * Parameters::max_client_routing_table_size; ++i) {
     EXPECT_FALSE(client_routing_table.CheckNode(nodes_.at(i), furthest_close_node_.id));
     EXPECT_FALSE(client_routing_table.AddNode(nodes_.at(i), furthest_close_node_.id));
@@ -296,13 +296,13 @@ TEST_F(ClientRoutingTableTest, FUNC_IsConnected) {
                                     client_routing_table.kNodeId());
   ScrambleNodesOrder();
 
-  for (unsigned int i(0); i < Parameters::max_client_routing_table_size; ++i)
+  for (int i(0); i < Parameters::max_client_routing_table_size; ++i)
     EXPECT_TRUE(client_routing_table.AddNode(nodes_.at(i), furthest_close_node_.id));
 
-  for (unsigned int i(0); i < Parameters::max_client_routing_table_size; ++i)
+  for (int i(0); i < Parameters::max_client_routing_table_size; ++i)
     EXPECT_TRUE(client_routing_table.Contains(nodes_.at(i).id));
 
-  for (unsigned int i(Parameters::max_client_routing_table_size);
+  for (int i(Parameters::max_client_routing_table_size);
        i < 2 * Parameters::max_client_routing_table_size; ++i)
     EXPECT_FALSE(client_routing_table.Contains(nodes_.at(i).id));
 }

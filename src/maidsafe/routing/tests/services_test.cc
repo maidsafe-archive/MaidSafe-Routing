@@ -48,17 +48,17 @@ typedef boost::asio::ip::udp::endpoint Endpoint;
 
 TEST(ServicesTest, BEH_Ping) {
   NodeId node_id(NodeId::IdType::kRandomId);
-  RoutingTable routing_table(false, node_id, asymm::GenerateKeyPair());
+  RoutingTable<VaultNode> routing_table(node_id, asymm::GenerateKeyPair());
   ClientRoutingTable client_routing_table(routing_table.kNodeId());
   AsioService asio_service(1);
-  NetworkUtils network(routing_table, client_routing_table);
-  Service service(routing_table, client_routing_table, network);
+  NetworkUtils<VaultNode> network(routing_table, client_routing_table);
+  Service<VaultNode> service(routing_table, client_routing_table, network);
   NodeInfo node;
   rudp::ManagedConnections rudp;
   protobuf::PingRequest ping_request;
   // somebody pings us
   protobuf::Message message = rpcs::Ping(routing_table.kNodeId(), "me");
-  EXPECT_EQ(message.destination_id(), routing_table.kNodeId().string());
+  EXPECT_TRUE(message.destination_id() == routing_table.kNodeId().string());
   EXPECT_TRUE(ping_request.ParseFromString(message.data(0)));  // us
   EXPECT_TRUE(ping_request.IsInitialized());
   // run message through Service
@@ -66,7 +66,7 @@ TEST(ServicesTest, BEH_Ping) {
   EXPECT_EQ(1, message.type());
   EXPECT_EQ(message.request(), false);
   EXPECT_NE(message.data_size(), 0);
-  EXPECT_EQ(message.source_id(), routing_table.kNodeId().string());
+  EXPECT_TRUE(message.source_id() == routing_table.kNodeId().string());
   EXPECT_EQ(message.replication(), 1);
   EXPECT_EQ(message.type(), 1);
   EXPECT_EQ(message.request(), false);
@@ -77,12 +77,12 @@ TEST(ServicesTest, BEH_Ping) {
 
 TEST(ServicesTest, BEH_FindNodes) {
   NodeId node_id(NodeId::IdType::kRandomId);
-  RoutingTable routing_table(false, node_id, asymm::GenerateKeyPair());
+  RoutingTable<VaultNode> routing_table(node_id, asymm::GenerateKeyPair());
   NodeId this_node_id(routing_table.kNodeId());
   ClientRoutingTable client_routing_table(routing_table.kNodeId());
   AsioService asio_service(1);
-  NetworkUtils network(routing_table, client_routing_table);
-  Service service(routing_table, client_routing_table, network);
+  NetworkUtils<VaultNode> network(routing_table, client_routing_table);
+  Service<VaultNode> service(routing_table, client_routing_table, network);
   protobuf::Message message = rpcs::FindNodes(this_node_id, this_node_id, 8);
   service.FindNodes(message);
   protobuf::FindNodesResponse find_nodes_respose;
@@ -114,7 +114,7 @@ TEST(ServicesTest, BEH_FindNodes) {
 //   AsioService asio_service(0);
 //   Timer timer(asio_service);
 //   NodeInfo node;
-//   NetworkUtils network(routing_table, client_routing_table, timer);
+//   NetworkUtils<VaultNode>(routing_table, client_routing_table, timer);
 //   protobuf::ProxyConnectRequest proxy_connect_request;
 //   // they send us an proxy connect rpc
 //   rudp::EndpointPair endpoint_pair;

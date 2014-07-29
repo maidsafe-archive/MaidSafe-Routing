@@ -20,59 +20,59 @@
 
 #include <string>
 
+#include "maidsafe/common/log.h"
 #include "maidsafe/common/utils.h"
 
 namespace maidsafe {
 
 namespace routing {
 
-namespace fs = boost::filesystem;
-
 namespace {
-
-using boost::asio::ip::udp;
-using boost::asio::ip::address;
-
-BootstrapContacts GetHardCodedBootstrapContacts() {
-  return BootstrapContacts{
-      udp::endpoint{ address::from_string("104.131.253.66"), kLivePort },
-      udp::endpoint{ address::from_string("95.85.32.100"), kLivePort },
-      udp::endpoint{ address::from_string("128.199.159.50"), kLivePort },
-      udp::endpoint{ address::from_string("178.79.156.73"), kLivePort },
-      udp::endpoint{ address::from_string("106.185.24.221"), kLivePort },
-      udp::endpoint{ address::from_string("23.239.27.245"), kLivePort }
-  };
+typedef boost::asio::ip::udp::endpoint Endpoint;
 }
 
-}  // unnamed namespace
+BootstrapContacts MaidSafeBootstrapContacts() {
+  std::vector<std::string> endpoint_string;
+  endpoint_string.reserve(15);
+  endpoint_string.push_back("176.58.120.133");
+  endpoint_string.push_back("178.79.163.139");
+  endpoint_string.push_back("176.58.102.53");
+  endpoint_string.push_back("176.58.113.214");
+  endpoint_string.push_back("106.187.49.208");
+  endpoint_string.push_back("198.74.60.81");
+  endpoint_string.push_back("198.74.60.83");
+  endpoint_string.push_back("198.74.60.84");
+  endpoint_string.push_back("198.74.60.85");
+  endpoint_string.push_back("198.74.60.86");
+  endpoint_string.push_back("176.58.103.83");
+  endpoint_string.push_back("106.187.102.233");
+  endpoint_string.push_back("106.187.47.248");
+  endpoint_string.push_back("106.187.93.100");
+  endpoint_string.push_back("106.186.16.51");
 
-BootstrapContacts GetBootstrapContacts(bool is_client) {
-  const fs::path kCurrentBootstrapFilePath{
-    is_client ? detail::GetCurrentBootstrapFilePath<true>()
-              : detail::GetCurrentBootstrapFilePath<false>() };
-  auto bootstrap_contacts(ReadBootstrapContacts(kCurrentBootstrapFilePath));
-
-  if (kCurrentBootstrapFilePath == (is_client ? detail::GetDefaultBootstrapFilePath<true>() :
-                                                detail::GetDefaultBootstrapFilePath<false>())) {
-    auto hard_coded_bootstrap_contacts = GetHardCodedBootstrapContacts();
-    bootstrap_contacts.insert(bootstrap_contacts.end(), hard_coded_bootstrap_contacts.begin(),
-                              hard_coded_bootstrap_contacts.end());
-  }
-  return bootstrap_contacts;
+  BootstrapContacts maidsafe_endpoints;
+  for (const auto& i : endpoint_string)
+    maidsafe_endpoints.push_back(Endpoint(boost::asio::ip::address::from_string(i), 5483));
+  return maidsafe_endpoints;
 }
 
-void InsertOrUpdateBootstrapContact(const BootstrapContact& bootstrap_contact, bool is_client) {
-  InsertOrUpdateBootstrapContact(bootstrap_contact,
-                                 is_client ? detail::GetCurrentBootstrapFilePath<true>()
-                                           : detail::GetCurrentBootstrapFilePath<false>());
-}
+BootstrapContacts MaidSafeLocalBootstrapContacts() {
+  std::vector<std::string> endpoint_string;
+  endpoint_string.reserve(2);
+#if defined QA_BUILD
+  LOG(kVerbose) << "Appending 192.168.0.130:5483 to bootstrap endpoints";
+  endpoint_string.push_back("192.168.0.130");
+#elif defined TESTING
+  LOG(kVerbose) << "Appending 192.168.0.109:5483 to bootstrap endpoints";
+  endpoint_string.push_back("192.168.0.109");
+#endif
+  assert(endpoint_string.size() &&
+         "Either QA_BUILD or TESTING must be defined to use maidsafe local endpoint option");
 
-BootstrapContacts GetZeroStateBootstrapContacts(udp::endpoint local_endpoint) {
-  BootstrapContacts bootstrap_contacts { GetBootstrapContacts(false) };
-  bootstrap_contacts.erase(std::remove(std::begin(bootstrap_contacts), std::end(bootstrap_contacts),
-                                       local_endpoint),
-                           std::end(bootstrap_contacts));
-  return bootstrap_contacts;
+  BootstrapContacts maidsafe_endpoints;
+  for (const auto& i : endpoint_string)
+    maidsafe_endpoints.push_back(Endpoint(boost::asio::ip::address::from_string(i), 5483));
+  return maidsafe_endpoints;
 }
 
 }  // namespace routing

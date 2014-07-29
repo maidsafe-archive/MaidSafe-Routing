@@ -50,6 +50,12 @@ message ConfigFile {
   optional bytes private_key = 2;
 }
 
+message BootstrapContact { required Endpoint endpoint = 1; }
+
+// bootstrap contacts file
+message BootstrapContacts { repeated bytes serialised_bootstrap_contacts = 1; }
+
+
 // Message wrapper
 message Message {
   optional bytes source_id = 1;
@@ -57,12 +63,12 @@ message Message {
   required bool routing_message = 3;
   optional bytes last_id = 4;
   optional bytes relay_id = 5;
-  repeated bytes data = 6; // serialised protobuf - possibly encrypted
+  repeated bytes data = 6;  // serialised protobuf - possibly encrypted
   optional bytes signature = 7;
   required bool direct = 8;
   optional int32 replication = 9;
-  optional sint32 type = 10; // type of data - used in signal to upper layers
-//  optional bool cacheable = 11;
+  optional sint32 type = 10;  // type of data - used in signal to upper layers
+                              //  optional bool cacheable = 11;
   optional int32 cacheable = 11;
   optional int32 id = 12;
   required bool client_node = 13;
@@ -81,7 +87,7 @@ message Message {
 }
 
 message SignedMessage {
-  required bytes message = 1; // serialised Message
+  required bytes message = 1;  // serialised Message
   required bytes signature = 2;
   required bytes id = 3;
 }
@@ -117,7 +123,7 @@ message ConnectSuccessAcknowledgement {
 }
 
 message FindNodesRequest {
-  required uint32 num_nodes_requested = 1;
+  required int32 num_nodes_requested = 1;
   required bytes target_node = 2;
   optional uint64 timestamp = 3;
 }
@@ -159,9 +165,7 @@ enum ConnectResponseType {
 }
 
 message NodeIdList {
-  message NodeId {
-    required bytes node_id = 1;
-  }
+  message NodeId { required bytes node_id = 1; }
   repeated NodeId node_id_list = 1;
 }
 
@@ -175,9 +179,7 @@ message ClosestNodesUpdate {
   repeated BasicNodeInfo nodes_info = 2;
 }
 
-message InformClientOfhNewCloseNode {
-  required bytes node_id = 1;
-}
+message InformClientOfhNewCloseNode { required bytes node_id = 1; }
 
 message GetGroup {
   required bytes node_id = 1;

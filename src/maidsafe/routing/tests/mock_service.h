@@ -30,10 +30,11 @@ namespace routing {
 
 namespace test {
 
-class MockService : public Service {
+template <typename NodeType>
+class MockService : public Service<NodeType> {
  public:
-  MockService(RoutingTable& routing_table, ClientRoutingTable& client_routing_table,
-              NetworkUtils& network_utils);
+  MockService(RoutingTable<NodeType>& routing_table, ClientRoutingTable& client_routing_table,
+              NetworkUtils<NodeType>& network_utils);
   virtual ~MockService();
 
   MOCK_METHOD1(Ping, void(protobuf::Message& message));

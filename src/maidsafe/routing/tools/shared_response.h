@@ -39,7 +39,7 @@ namespace routing {
 namespace test {
 class SharedResponse {
  public:
-  SharedResponse(std::vector<NodeId> closest_nodes, unsigned int expect_responses)
+  SharedResponse(std::vector<NodeId> closest_nodes, uint16_t expect_responses)
       : closest_nodes_(std::move(closest_nodes)),
         responded_nodes_(),
         expected_responses_(expect_responses),

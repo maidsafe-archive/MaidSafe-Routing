@@ -24,12 +24,14 @@ namespace routing {
 
 namespace test {
 
-MockResponseHandler::MockResponseHandler(RoutingTable& routing_table,
+template <typename NodeType>
+MockResponseHandler<NodeType>::MockResponseHandler(RoutingTable<NodeType>& routing_table,
                                          ClientRoutingTable& client_routing_table,
-                                         NetworkUtils& utils)
-    : ResponseHandler(routing_table, client_routing_table, utils) {}
+                                         NetworkUtils<NodeType>& utils)
+    : ResponseHandler<NodeType>(routing_table, client_routing_table, utils) {}
 
-MockResponseHandler::~MockResponseHandler() {}
+template <typename NodeType>
+MockResponseHandler<NodeType>::~MockResponseHandler() {}
 
 }  // namespace test
 

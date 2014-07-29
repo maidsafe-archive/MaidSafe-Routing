@@ -21,37 +21,16 @@
 
 #include <vector>
 
-#include "boost/asio/ip/udp.hpp"
-#include "boost/filesystem/path.hpp"
-#include "boost/filesystem/operations.hpp"
-
-
-#include "maidsafe/common/log.h"
 #include "maidsafe/routing/api_config.h"
-#include "maidsafe/routing/bootstrap_file_operations.h"
 
 namespace maidsafe {
 
 namespace routing {
 
-namespace detail {
+BootstrapContacts MaidSafeBootstrapContacts();
 
-template <bool is_client>
-boost::filesystem::path GetCurrentBootstrapFilePath() {
-  static const boost::filesystem::path kCurrentBootstrapFilePath(
-      boost::filesystem::exists(GetOverrideBootstrapFilePath<is_client>())
-        ? GetOverrideBootstrapFilePath<is_client>() : GetDefaultBootstrapFilePath<is_client>());
-  return kCurrentBootstrapFilePath;
-}
-
-}  // namespace detail
-
-BootstrapContacts GetBootstrapContacts(bool is_client = true);
-
-BootstrapContacts GetZeroStateBootstrapContacts(boost::asio::ip::udp::endpoint local_endpoint);
-
-void InsertOrUpdateBootstrapContact(const BootstrapContact& bootstrap_contact, bool is_client);
-
+// TODO(Prakash) : BEFORE_RELEASE remove using local endpoints
+BootstrapContacts MaidSafeLocalBootstrapContacts();
 
 }  // namespace routing
 

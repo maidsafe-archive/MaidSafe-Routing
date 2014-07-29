@@ -24,11 +24,13 @@ namespace routing {
 
 namespace test {
 
-MockNetworkUtils::MockNetworkUtils(RoutingTable& routing_table,
+template <typename NodeType>
+MockNetworkUtils<NodeType>::MockNetworkUtils(RoutingTable<NodeType>& routing_table,
                                    ClientRoutingTable& client_routing_table)
-    : NetworkUtils(routing_table, client_routing_table) {}
+    : NetworkUtils<NodeType>(routing_table, client_routing_table) {}
 
-MockNetworkUtils::~MockNetworkUtils() {}
+template <typename NodeType>
+MockNetworkUtils<NodeType>::~MockNetworkUtils() {}
 
 }  // namespace test
 

@@ -63,7 +63,7 @@ bool ClientRoutingTable::AddOrCheckNode(NodeInfo& node, const NodeId& furthest_c
 std::vector<NodeInfo> ClientRoutingTable::DropNodes(const NodeId& node_to_drop) {
   std::vector<NodeInfo> nodes_info;
   std::lock_guard<std::mutex> lock(mutex_);
-  unsigned int i(0);
+  uint16_t i(0);
   while (i < nodes_.size()) {
     if (nodes_.at(i).id == node_to_drop) {
       nodes_info.push_back(nodes_.at(i));
@@ -101,10 +101,9 @@ std::vector<NodeInfo> ClientRoutingTable::GetNodesInfo(const NodeId& node_id) co
 
 bool ClientRoutingTable::Contains(const NodeId& node_id) const {
   std::lock_guard<std::mutex> lock(mutex_);
-  return std::find_if(std::begin(nodes_), std::end(nodes_),
-                      [node_id](const NodeInfo& node_info) {
-                        return node_info.id == node_id;
-                      }) != std::end(nodes_);
+  return std::find_if(std::begin(nodes_), std::end(nodes_), [node_id](const NodeInfo& node_info) {
+           return node_info.id == node_id;
+         }) != std::end(nodes_);
 }
 
 bool ClientRoutingTable::IsConnected(const NodeId& node_id) const { return Contains(node_id); }
@@ -126,7 +125,7 @@ bool ClientRoutingTable::CheckValidParameters(const NodeInfo& node) const {
 
 bool ClientRoutingTable::CheckParametersAreUnique(const NodeInfo& node) const {
   // If we already have a duplicate endpoint return false
-  if (std::find_if(nodes_.begin(), nodes_.end(), [node](const NodeInfo & node_info) {
+  if (std::find_if(nodes_.begin(), nodes_.end(), [node](const NodeInfo& node_info) {
         return (node_info.connection_id == node.connection_id);
       }) != nodes_.end()) {
     LOG(kInfo) << "Already have node with this connection_id.";
@@ -168,7 +167,7 @@ bool ClientRoutingTable::IsThisNodeInRange(const NodeId& node_id,
     assert(false && "node_id (client) and furthest_close_node_id (vault) should not be equal.");
     return false;
   }
-  return NodeId::CloserToTarget(node_id, furthest_close_node_id, kNodeId_);
+  return (furthest_close_node_id ^ kNodeId_) > (node_id ^ kNodeId_);
 }
 
 std::string ClientRoutingTable::PrintClientRoutingTable() {

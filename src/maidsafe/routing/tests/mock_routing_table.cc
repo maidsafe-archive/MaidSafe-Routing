@@ -24,10 +24,12 @@ namespace routing {
 
 namespace test {
 
-MockRoutingTable::MockRoutingTable(bool client_mode, const NodeId& node_id, const asymm::Keys& keys)
-    : RoutingTable(client_mode, node_id, keys) {}
+template <typename NodeType>
+MockRoutingTable<NodeType>::MockRoutingTable(const NodeId& node_id, const asymm::Keys& keys)
+    : RoutingTable<NodeType>(node_id, keys) {}
 
-MockRoutingTable::~MockRoutingTable() {}
+template <typename NodeType>
+MockRoutingTable<NodeType>::~MockRoutingTable() {}
 
 }  // namespace test
 

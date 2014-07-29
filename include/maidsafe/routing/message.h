@@ -63,9 +63,9 @@ struct Relay {
   Relay(Relay&& other);
   Relay& operator=(Relay other);
 
-  T node_id;  // original source/receiver
+  T node_id;             // original source/receiver
   NodeId connection_id;  //  source/receiver's connection id
-  T relay_node;  // node relaying messages to/fro on behalf of original sender/receiver
+  T relay_node;          // node relaying messages to/fro on behalf of original sender/receiver
 };
 
 template <typename T>
@@ -96,7 +96,8 @@ void swap(Message<Sender, Receiver>& lhs, Message<Sender, Receiver>& rhs);
 
 // ==================== Implementation =============================================================
 template <typename T>
-Relay<T>::Relay() : relay_node(), node_id(), connection_id() {}
+Relay<T>::Relay()
+    : relay_node(), node_id(), connection_id() {}
 
 template <typename T>
 Relay<T>::Relay(T node_id_in, NodeId connection_id_in, T relay_node_in)
@@ -106,9 +107,7 @@ Relay<T>::Relay(T node_id_in, NodeId connection_id_in, T relay_node_in)
 
 template <typename T>
 Relay<T>::Relay(const Relay& other)
-    : node_id(other.node_id),
-      connection_id(other.connection_id),
-      relay_node(other.relay_node) {}
+    : node_id(other.node_id), connection_id(other.connection_id), relay_node(other.relay_node) {}
 
 template <typename T>
 Relay<T>::Relay(Relay&& other)
@@ -132,8 +131,7 @@ void swap(Relay<T>& lhs, Relay<T>& rhs) {
 
 template <typename T>
 bool operator==(const Relay<T>& lhs, const Relay<T>& rhs) {
-  return lhs.node_id == rhs.node_id &&
-         lhs.connection_id == rhs.connection_id &&
+  return lhs.node_id == rhs.node_id && lhs.connection_id == rhs.connection_id &&
          lhs.relay_node == rhs.relay_node;
 }
 
@@ -188,7 +186,7 @@ typedef Message<SingleRelaySource, GroupId> SingleToGroupRelayMessage;
 typedef Message<GroupSource, SingleIdRelay> GroupToSingleRelayMessage;
 
 namespace detail {
-SingleIdRelay GetRelayIdToReply(const SingleRelaySource &single_relay_src);
+SingleIdRelay GetRelayIdToReply(const SingleRelaySource& single_relay_src);
 }  // namespace detail
 
 }  // namespace routing

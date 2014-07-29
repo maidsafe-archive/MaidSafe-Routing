@@ -16,87 +16,295 @@
     See the Licences for the specific language governing permissions and limitations relating to
     use of the MaidSafe Software.                                                                 */
 
+#include <boost/variant.hpp>
 #include "maidsafe/routing/routing_api.h"
-#include "maidsafe/routing/routing_impl.h"
 
 namespace maidsafe {
 
 namespace routing {
 
-namespace {
-typedef boost::asio::ip::udp::endpoint Endpoint;
-}
+namespace detail {
+
+class JoinVisitor : public boost::static_visitor<> {
+ public:
+  JoinVisitor(Functors functors, BootstrapContacts bootstrap_contacts)
+      : functors_(functors), bootstrap_contacts_(bootstrap_contacts) {}
+
+  template <typename ImplType>
+  void operator()(std::shared_ptr<ImplType> impl) {
+    impl->Join(functors_, bootstrap_contacts_);
+  }
+
+ private:
+  Functors functors_;
+  const BootstrapContacts bootstrap_contacts_;
+};
+
+class ZeroStateJoinVisitor : public boost::static_visitor<int> {
+ public:
+  ZeroStateJoinVisitor(Functors functors, const Endpoint& local_endpoint,
+                       const Endpoint& peer_endpoint, const NodeInfo& peer_info)
+      : functors_(functors),
+        local_endpoint_(local_endpoint),
+        peer_endpoint_(peer_endpoint),
+        peer_info_(peer_info) {}
+
+  template <typename ImplType>
+  result_type operator()(ImplType& impl) {
+    return impl->ZeroStateJoin(functors_, local_endpoint_, peer_endpoint_, peer_info_);
+  }
+
+ private:
+  Functors functors_;
+  const Endpoint local_endpoint_;
+  const Endpoint peer_endpoint_;
+  const NodeInfo peer_info_;
+};
+
+template <typename MessageType>
+class SendVisitor : public boost::static_visitor<> {
+ public:
+  SendVisitor(const MessageType& message) : message_(message) {}
+
+  template <typename ImplType>
+  void operator()(ImplType& impl) {
+    impl->Send(message_);
+  }
+
+ private:
+  MessageType message_;
+};
+
+class SendDirectVisitor : public boost::static_visitor<> {
+ public:
+  SendDirectVisitor(const NodeId& destination_id, const std::string& message, bool cacheable,
+                    ResponseFunctor response_functor)
+      : destination_id_(destination_id),
+        message_(message),
+        cacheable_(cacheable),
+        response_functor_(response_functor) {}
+
+  template <typename ImplType>
+  void operator()(ImplType& impl) {
+    impl->SendDirect(destination_id_, message_, cacheable_, response_functor_);
+  }
+
+ private:
+  NodeId destination_id_;
+  std::string message_;
+  bool cacheable_;
+  ResponseFunctor response_functor_;
+};
+
+class SendGroupVisitor : public boost::static_visitor<> {
+ public:
+  SendGroupVisitor(const NodeId& destination_id, const std::string& message, bool cacheable,
+                   ResponseFunctor response_functor)
+      : destination_id_(destination_id),
+        message_(message),
+        cacheable_(cacheable),
+        response_functor_(response_functor) {}
+
+  template <typename ImplType>
+  void operator()(ImplType& impl) {
+    impl->SendGroup(destination_id_, message_, cacheable_, response_functor_);
+  }
+
+ private:
+  NodeId destination_id_;
+  std::string message_;
+  bool cacheable_;
+  ResponseFunctor response_functor_;
+};
+
+class ClosestToIdVisitor : public boost::static_visitor<bool> {
+ public:
+  ClosestToIdVisitor(const NodeId& target_id) : target_id_(target_id) {}
+
+  template <typename ImplType>
+  result_type operator()(ImplType& impl) {
+    return impl->ClosestToId(target_id_);
+  }
+
+ private:
+  NodeId target_id_;
+};
+
+class RandomConnectedNodeVisitor : public boost::static_visitor<NodeId> {
+ public:
+  RandomConnectedNodeVisitor() {}
+
+  template <typename ImplType>
+  result_type operator()(ImplType& impl) {
+    return impl->RandomConnectedNode();
+  }
+};
+
+class EstimateInGroupVisitor : public boost::static_visitor<bool> {
+ public:
+  EstimateInGroupVisitor(const NodeId& sender_id, const NodeId& info_id)
+      : sender_id_(sender_id), info_id_(info_id) {}
+
+  template <typename ImplType>
+  result_type operator()(ImplType& impl) {
+    return impl->EstimateInGroup(sender_id_, info_id_);
+  }
+
+ private:
+  NodeId sender_id_;
+  NodeId info_id_;
+};
+
+class NodeIdVisitor : public boost::static_visitor<NodeId> {
+ public:
+  NodeIdVisitor() {}
+
+  template <typename ImplType>
+  result_type operator()(ImplType& impl) {
+    return impl->kNodeId();
+  }
+};
+
+class NetworkStatusVisitor : public boost::static_visitor<int> {
+ public:
+  NetworkStatusVisitor() {}
+
+  template <typename ImplType>
+  result_type operator()(ImplType& impl) {
+    return impl->network_status();
+  }
+};
+
+class IsConnectedVaultVisitor : public boost::static_visitor<bool> {
+ public:
+  IsConnectedVaultVisitor(const NodeId& node_id) : node_id_(node_id) {}
+
+  template <typename ImplType>
+  result_type operator()(ImplType& impl) {
+    return impl->IsConnectedVault(node_id_);
+  }
+
+ private:
+  NodeId node_id_;
+};
+
+class IsConnectedClientVisitor : public boost::static_visitor<bool> {
+ public:
+  IsConnectedClientVisitor(const NodeId& node_id) : node_id_(node_id) {}
+
+  template <typename ImplType>
+  result_type operator()(ImplType& impl) {
+    return impl->IsConnectedClient(node_id_);
+  }
+
+ private:
+  NodeId node_id_;
+};
+
+}  // detail namespace
+
 
 Routing::Routing() : pimpl_() {
-  InitialisePimpl(true, NodeId(NodeId::IdType::kRandomId), asymm::GenerateKeyPair());
+  InitialisePimpl(NodeId(NodeId::IdType::kRandomId), asymm::GenerateKeyPair(), ClientNode());
 }
 
-void Routing::InitialisePimpl(bool client_mode, const NodeId& node_id, const asymm::Keys& keys) {
-  pimpl_.reset(new Impl(client_mode, node_id, keys));
+void Routing::InitialisePimpl(const NodeId& node_id, const asymm::Keys& keys, VaultNode) {
+  pimpl_ = std::make_shared<RoutingImpl<VaultNode>>(node_id, keys);
 }
 
-void Routing::Join(Functors functors) {
-  pimpl_->Join(functors);
+void Routing::InitialisePimpl(const NodeId& node_id, const asymm::Keys& keys, ClientNode) {
+  pimpl_ = std::make_shared<RoutingImpl<ClientNode>>(node_id, keys);
+}
+
+void Routing::Join(Functors functors, BootstrapContacts bootstrap_contacts) {
+  detail::JoinVisitor join_visitor(functors, bootstrap_contacts);
+  boost::apply_visitor(join_visitor, pimpl_);
 }
 
 int Routing::ZeroStateJoin(Functors functors, const Endpoint& local_endpoint,
                            const Endpoint& peer_endpoint, const NodeInfo& peer_info) {
-  return pimpl_->ZeroStateJoin(functors, local_endpoint, peer_endpoint, peer_info);
+  detail::ZeroStateJoinVisitor zero_state_join_visitor(functors, local_endpoint, peer_endpoint,
+                                                       peer_info);
+  return boost::apply_visitor(zero_state_join_visitor, pimpl_);
 }
 
 // Send methods
 template <>
 void Routing::Send(const SingleToSingleMessage& message) {
-  pimpl_->Send(message);
+  detail::SendVisitor<SingleToSingleMessage> send_visitor(message);
+  boost::apply_visitor(send_visitor, pimpl_);
 }
 
 template <>
 void Routing::Send(const SingleToGroupMessage& message) {
-  pimpl_->Send(message);
+  detail::SendVisitor<SingleToGroupMessage> send_visitor(message);
+  boost::apply_visitor(send_visitor, pimpl_);
 }
 
 template <>
 void Routing::Send(const GroupToSingleMessage& message) {
-  pimpl_->Send(message);
+  detail::SendVisitor<GroupToSingleMessage> send_visitor(message);
+  boost::apply_visitor(send_visitor, pimpl_);
 }
 
 template <>
 void Routing::Send(const GroupToGroupMessage& message) {
-  pimpl_->Send(message);
+  detail::SendVisitor<GroupToGroupMessage> send_visitor(message);
+  boost::apply_visitor(send_visitor, pimpl_);
 }
 
 template <>
 void Routing::Send(const GroupToSingleRelayMessage& message) {
-  pimpl_->Send(message);
+  detail::SendVisitor<GroupToSingleRelayMessage> send_visitor(message);
+  boost::apply_visitor(send_visitor, pimpl_);
 }
 
 void Routing::SendDirect(const NodeId& destination_id, const std::string& message, bool cacheable,
                          ResponseFunctor response_functor) {
-  return pimpl_->SendDirect(destination_id, message, cacheable, response_functor);
+  detail::SendDirectVisitor send_direct_visitor(destination_id, message, cacheable,
+                                                response_functor);
+  boost::apply_visitor(send_direct_visitor, pimpl_);
 }
 
 void Routing::SendGroup(const NodeId& destination_id, const std::string& message, bool cacheable,
                         ResponseFunctor response_functor) {
-  return pimpl_->SendGroup(destination_id, message, cacheable, response_functor);
+  detail::SendGroupVisitor send_group_visitor(destination_id, message, cacheable, response_functor);
+  boost::apply_visitor(send_group_visitor, pimpl_);
 }
 
-bool Routing::ClosestToId(const NodeId& target_id) { return pimpl_->ClosestToId(target_id); }
+bool Routing::ClosestToId(const NodeId& target_id) {
+  detail::ClosestToIdVisitor closest_to_id_visitor(target_id);
+  return boost::apply_visitor(closest_to_id_visitor, pimpl_);
+}
 
-NodeId Routing::RandomConnectedNode() { return pimpl_->RandomConnectedNode(); }
+NodeId Routing::RandomConnectedNode() {
+  detail::RandomConnectedNodeVisitor random_connected_node_visitor;
+  return boost::apply_visitor(random_connected_node_visitor, pimpl_);
+}
 
 bool Routing::EstimateInGroup(const NodeId& sender_id, const NodeId& info_id) const {
-  return pimpl_->EstimateInGroup(sender_id, info_id);
+  detail::EstimateInGroupVisitor estimate_in_group_visitor(sender_id, info_id);
+  return boost::apply_visitor(estimate_in_group_visitor, pimpl_);
 }
 
-NodeId Routing::kNodeId() const { return pimpl_->kNodeId(); }
+NodeId Routing::kNodeId() const {
+  detail::NodeIdVisitor node_id_visitor;
+  return boost::apply_visitor(node_id_visitor, pimpl_);
+}
 
-int Routing::network_status() { return pimpl_->network_status(); }
+int Routing::network_status() {
+  detail::NetworkStatusVisitor network_status_visitor;
+  return boost::apply_visitor(network_status_visitor, pimpl_);
+}
 
-
-bool Routing::IsConnectedVault(const NodeId& node_id) { return pimpl_->IsConnectedVault(node_id); }
+bool Routing::IsConnectedVault(const NodeId& node_id) {
+  detail::IsConnectedVaultVisitor is_connected_vault_visitor(node_id);
+  return boost::apply_visitor(is_connected_vault_visitor, pimpl_);
+}
 
 bool Routing::IsConnectedClient(const NodeId& node_id) {
-  return pimpl_->IsConnectedClient(node_id);
+  detail::IsConnectedClientVisitor is_connected_client_visitor(node_id);
+  return boost::apply_visitor(is_connected_client_visitor, pimpl_);
 }
 
 void UpdateNetworkHealth(int updated_health, int& current_health, std::mutex& mutex,

@@ -41,16 +41,14 @@
 #include "maidsafe/routing/parameters.h"
 #include "maidsafe/routing/return_codes.h"
 #include "maidsafe/routing/routing_api.h"
-#include "maidsafe/routing/timer.h"
+#include "maidsafe/routing/routing.pb.h"
+#include "maidsafe/routing/routing_impl.h"
 
 namespace args = std::placeholders;
 
 namespace maidsafe {
 
 namespace routing {
-
-class Routing;
-namespace protobuf { class Message; }
 
 namespace test {
 
@@ -75,7 +73,6 @@ const uint32_t kNetworkSize = kClientSize + kServerSize;
 
 class GenericNetwork;
 class NodesEnvironment;
-struct ScopedBootstrapFile;
 
 class GenericNode {
  public:
@@ -91,29 +88,31 @@ class GenericNode {
   boost::asio::ip::udp::endpoint endpoint() const;
   std::shared_ptr<Routing> routing() const;
   NodeInfo node_info() const;
+  std::shared_ptr<RoutingImpl<std::false_type>> Impl();
   void set_joined(const bool node_joined);
   bool joined() const;
   bool IsClient() const;
   bool HasSymmetricNat() const;
   // void set_client_mode(bool client_mode);
-  unsigned int expected();
+  int expected();
   void set_expected(int expected);
   void SetStoreInCacheFunctor(StoreCacheDataFunctor cache_store_functor);
   void SetGetFromCacheFunctor(HaveCacheDataFunctor get_from_functor);
   int ZeroStateJoin(const boost::asio::ip::udp::endpoint& peer_endpoint,
                     const NodeInfo& peer_node_info);
-  void Join();
+  void Join(const std::vector<boost::asio::ip::udp::endpoint>& peer_endpoints =
+                std::vector<boost::asio::ip::udp::endpoint>());
   void SendDirect(const NodeId& destination_id, const std::string& data, bool cacheable,
                   ResponseFunctor response_functor);
   void SendGroup(const NodeId& destination_id, const std::string& data, bool cacheable,
                  ResponseFunctor response_functor);
-  void SendMessage(const NodeId& destination_id, protobuf::Message& proto_message);
-
-  template <typename T>
-  void Send(const T& message);
+void SendMessage(const NodeId& destination_id, protobuf::Message& proto_message);
 
   void AddTask(const ResponseFunctor& response_functor, int expected_response_count,
                TaskId task_id);
+
+  template <typename T>
+  protobuf::Message CreateNodeLevelMessage(const T& message);
 
   std::future<std::vector<NodeId>> GetGroup(const NodeId& info_id);
   GroupRangeStatus IsNodeIdInGroupRange(const NodeId& node_id);
@@ -125,9 +124,9 @@ class GenericNode {
   bool RoutingTableHasNode(const NodeId& node_id);
   bool ClientRoutingTableHasNode(const NodeId& node_id);
   NodeInfo GetRemovableNode();
-  NodeInfo GetNthClosestNode(const NodeId& target_id, unsigned int node_number);
+  NodeInfo GetNthClosestNode(const NodeId& target_id, uint16_t node_number);
   testing::AssertionResult DropNode(const NodeId& node_id);
-  std::vector<NodeInfo> RoutingTable() const;
+  std::vector<NodeInfo> RoutingTable();
   NodeId GetRandomExistingNode() const;
   std::vector<NodeInfo> ClosestNodes();
   bool IsConnectedVault(const NodeId& node_id);
@@ -158,7 +157,7 @@ class GenericNode {
   std::mutex mutex_;
   bool client_mode_;
   bool joined_;
-  unsigned int expected_;
+  int expected_;
   rudp::NatType nat_type_;
   bool has_symmetric_nat_;
   boost::asio::ip::udp::endpoint endpoint_;
@@ -171,12 +170,10 @@ class GenericNode {
   void InitialiseFunctors();
 };
 
-
 template <typename T>
-void GenericNode::Send(const T& message) {
-  routing_->Send(message);
+protobuf::Message GenericNode::CreateNodeLevelMessage(const T& message) {
+  return Impl()->CreateNodeLevelMessage<T>(message);
 }
-
 
 class GenericNetwork {
  public:
@@ -211,9 +208,9 @@ class GenericNetwork {
   void SetNodeValidationFunctor(NodePtr node);
   std::vector<NodeId> GroupIds(const NodeId& node_id) const;
   void PrintRoutingTables() const;
-  unsigned int RandomNodeIndex() const;
-  unsigned int RandomClientIndex() const;
-  unsigned int RandomVaultIndex() const;
+  uint16_t RandomNodeIndex() const;
+  uint16_t RandomClientIndex() const;
+  uint16_t RandomVaultIndex() const;
   NodePtr RandomClientNode() const;
   NodePtr RandomVaultNode() const;
   void RemoveRandomClient();
@@ -238,7 +235,7 @@ class GenericNetwork {
   testing::AssertionResult SendDirect(size_t repeats, size_t message_size = (2 ^ 10) * 256);
   // Do SendGroup from source_index node to target ID and monitor results (do this 'repeats' times)
   testing::AssertionResult SendGroup(const NodeId& target_id, size_t repeats,
-                                     unsigned int source_index = 0,
+                                     uint16_t source_index = 0,
                                      size_t message_size = (2 ^ 10) * 256);
   // Do SendDirect from each node to destination_node_id and monitor results. The ExpectedNodeType
   // of destination_node_id should be correctly specified when calling this function.
@@ -253,15 +250,16 @@ class GenericNetwork {
   friend class NodesEnvironment;
 
  private:
-  unsigned int NonClientNodesSize() const;
-  unsigned int NonClientNonSymmetricNatNodesSize() const;
+  uint16_t NonClientNodesSize() const;
+  uint16_t NonClientNonSymmetricNatNodesSize() const;
   void AddNodeDetails(NodePtr node);
 
   mutable std::mutex mutex_, fobs_mutex_;
+  std::vector<boost::asio::ip::udp::endpoint> bootstrap_endpoints_;
+  boost::filesystem::path bootstrap_path_;
   std::map<NodeId, asymm::PublicKey> public_keys_;
-  unsigned int client_index_;
+  uint16_t client_index_;
   bool nat_info_available_;
-  std::unique_ptr<ScopedBootstrapFile> bootstrap_file_;
 
  public:
   std::vector<NodePtr> nodes_;

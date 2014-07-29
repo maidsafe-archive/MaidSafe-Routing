@@ -29,6 +29,7 @@
 #include "maidsafe/common/node_id.h"
 #include "maidsafe/rudp/managed_connections.h"
 
+#include "maidsafe/routing/bootstrap_file_operations.h"
 #include "maidsafe/routing/close_nodes_change.h"
 #include "maidsafe/routing/message.h"
 
@@ -36,14 +37,28 @@ namespace maidsafe {
 
 namespace routing {
 
-struct NodeInfo;
+namespace detail {
 
-enum class TargetNetwork {
-  kSafe,
-  kMachineLocalTestnet,
-  kMaidSafeInternalTestnet,
-  kTestnet01v006
-};
+template <typename FobType>
+struct is_client : public std::true_type {};
+
+template <>
+struct is_client<passport::Pmid> : public std::false_type {};
+
+template <>
+struct is_client<const passport::Pmid> : public std::false_type {};
+
+template <>
+struct is_client<std::false_type> : public std::false_type {};
+
+}  // namespace detail
+
+typedef std::true_type ClientNode;
+typedef std::false_type VaultNode;
+
+typedef boost::asio::ip::udp::endpoint Endpoint;
+
+struct NodeInfo;
 
 enum class DestinationType : int {
   kDirect = 0,
@@ -58,20 +73,24 @@ typedef std::function<void(std::string)> ResponseFunctor;
 typedef std::function<void(const std::string& /*message*/)> ReplyFunctor;
 
 // This is called on any message received that is NOT a reply to a request made by the Send method.
-typedef std::function<void(const std::string& /*message*/,
-                           ReplyFunctor /*reply functor*/)> MessageReceivedFunctor;
+typedef std::function<void(const std::string& /*message*/, ReplyFunctor /*reply functor*/)>
+    MessageReceivedFunctor;
 
 // This is fired to validate a new peer node. User is supposed to validate the node and call
 // ValidateThisNode() method with valid public key.
 typedef std::function<void(asymm::PublicKey /*public_key*/)> GivePublicKeyFunctor;
 typedef std::function<void(NodeId /*node Id*/, GivePublicKeyFunctor)> RequestPublicKeyFunctor;
 
-typedef std::function<void(const std::string& /*data*/,
-                           ReplyFunctor /*reply functor*/)> HaveCacheDataFunctor;
+typedef std::function<void(const std::string& /*data*/, ReplyFunctor /*reply functor*/)>
+    HaveCacheDataFunctor;
 typedef std::function<void(const std::string& /*data*/)> StoreCacheDataFunctor;
 
 // This functor fires a number from 0 to 100 and represents % network health.
 typedef std::function<void(int /*network_health*/)> NetworkStatusFunctor;
+
+// This functor fires a validated contacts which is usable for bootstrapping
+typedef std::function<void(const BootstrapContact& /*new_bootstrap_contact*/)>
+    NewBootstrapContactFunctor;
 
 // This functor fires when a new close node is inserted or removed from routing table.
 // Upper layers are responsible for storing key/value pairs should send all key/values between
@@ -116,7 +135,8 @@ struct Functors {
         network_status(),
         close_nodes_change(),
         set_public_key(),
-        request_public_key() {}
+        request_public_key(),
+        new_bootstrap_contact() {}
 
   MessageAndCachingFunctors message_and_caching;
   TypedMessageAndCachingFunctor typed_message_and_caching;
@@ -124,6 +144,7 @@ struct Functors {
   CloseNodesChangeFunctor close_nodes_change;
   GivePublicKeyFunctor set_public_key;
   RequestPublicKeyFunctor request_public_key;
+  NewBootstrapContactFunctor new_bootstrap_contact;
 };
 
 }  // namespace routing

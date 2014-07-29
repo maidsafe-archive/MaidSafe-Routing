@@ -16,48 +16,20 @@
     See the Licences for the specific language governing permissions and limitations relating to
     use of the MaidSafe Software.                                                                 */
 
-#ifndef MAIDSAFE_ROUTING_CACHE_MANAGER_H_
-#define MAIDSAFE_ROUTING_CACHE_MANAGER_H_
-
-#include <string>
-
-#include "maidsafe/routing/api_config.h"
+#include "maidsafe/routing/utils2.h"
 
 namespace maidsafe {
 
 namespace routing {
 
-namespace protobuf {
-class Message;
+template <>
+bool ValidateAndAddToRoutingTable(NetworkUtils<ClientNode>& /*network*/,
+                                   Connections<ClientNode> & /*connections*/,
+                                   const NodeId& /*peer_id*/, const NodeId& /*connection_id*/,
+                                   const asymm::PublicKey& /*public_key*/, ClientNode) {
+  return false;
 }
-
-class NetworkUtils;
-
-class CacheManager {
- public:
-  CacheManager(const NodeId& node_id, NetworkUtils& network);
-
-  void InitialiseFunctors(const MessageAndCachingFunctors& message_and_caching_functors);
-  void InitialiseFunctors(const TypedMessageAndCachingFunctor& typed_message_and_caching_functors);
-  void AddToCache(const protobuf::Message& message);
-  bool HandleGetFromCache(protobuf::Message& message);
-
- private:
-  CacheManager(const CacheManager&);
-  CacheManager(const CacheManager&&);
-  CacheManager& operator=(const CacheManager&);
-
-  void TypedMessageAddtoCache(const protobuf::Message& message);
-  bool TypedMessageHandleGetFromCache(protobuf::Message& message);
-
-  const NodeId kNodeId_;
-  NetworkUtils& network_;
-  MessageAndCachingFunctors message_and_caching_functors_;
-  TypedMessageAndCachingFunctor typed_message_and_caching_functors_;
-};
 
 }  // namespace routing
 
 }  // namespace maidsafe
-
-#endif  // MAIDSAFE_ROUTING_CACHE_MANAGER_H_

@@ -24,7 +24,6 @@
 #include "maidsafe/common/utils.h"
 
 #include "maidsafe/routing/message_handler.h"
-#include "maidsafe/routing/routing.pb.h"
 #include "maidsafe/routing/utils.h"
 
 namespace maidsafe {
@@ -168,8 +167,7 @@ protobuf::Message ConnectSuccess(const NodeId& node_id, const NodeId& this_node_
 }
 
 protobuf::Message ConnectSuccessAcknowledgement(const NodeId& node_id, const NodeId& this_node_id,
-                                                const NodeId& this_connection_id,
-                                                bool requestor,
+                                                const NodeId& this_connection_id, bool requestor,
                                                 const std::vector<NodeInfo>& close_nodes,
                                                 bool client_node) {
   assert(!node_id.IsZero() && "Invalid node_id");

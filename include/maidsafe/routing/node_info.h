@@ -27,6 +27,7 @@
 #include "maidsafe/common/tagged_value.h"
 
 #include "maidsafe/rudp/nat_type.h"
+#include "maidsafe/routing/routing.pb.h"
 
 namespace maidsafe {
 

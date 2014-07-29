@@ -67,16 +67,16 @@ class Commands {
                     bool is_routing_req, int messages_count);
 
   NodeId CalculateClosests(const NodeId& target_id, std::vector<NodeId>& closests,
-                           unsigned int num_of_closests);
-  unsigned int MakeMessage(int id_index, const DestinationType& destination_type,
+                           uint16_t num_of_closests);
+  uint16_t MakeMessage(int id_index, const DestinationType& destination_type,
                        std::vector<NodeId>& closest_nodes, NodeId& dest_id);
 
   void CalculateTimeToSleep(std::chrono::milliseconds& msg_sent_time);
 
-  void SendAMessage(std::atomic<int>& successful_count, unsigned int& operation_count,
-                    std::mutex& mutex, std::condition_variable& cond_var, int messages_count,
-                    unsigned int expect_respondent, std::vector<NodeId> closest_nodes,
-                    NodeId dest_id, std::string data);
+  void SendAMessage(std::atomic<int>& successful_count, int& operation_count, std::mutex& mutex,
+                    std::condition_variable& cond_var, int messages_count,
+                    uint16_t expect_respondent, std::vector<NodeId> closest_nodes, NodeId dest_id,
+                    std::string data);
   void PerformanceTest();
   void RunPerformanceTest(bool is_send_group);
 

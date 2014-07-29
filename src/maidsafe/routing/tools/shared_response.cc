@@ -65,7 +65,7 @@ void SharedResponse::CollectResponse(std::string response, bool print_performanc
 //   std::cout << "Response with size of " << response.size()
 //             << " bytes received in " << now - msg_send_time_ << " seconds" << std::endl;
   auto duration((now - msg_send_time_).total_milliseconds());
-  if (duration < Parameters::default_response_timeout.count()) {
+  if (duration < 10000) {
     responded_nodes_.insert(NodeId(response_id));
     average_response_time_ += (now - msg_send_time_);
     if (print_performance) {

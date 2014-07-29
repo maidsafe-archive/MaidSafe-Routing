@@ -25,17 +25,13 @@
 
 #include "boost/asio/ip/address.hpp"
 #include "boost/asio/ip/udp.hpp"
-#include "boost/filesystem/path.hpp"
 
 #include "maidsafe/common/rsa.h"
 
 #include "maidsafe/passport/types.h"
 
-#include "maidsafe/routing/bootstrap_file_operations.h"
 #include "maidsafe/routing/node_info.h"
 #include "maidsafe/routing/routing_table.h"
-#include "maidsafe/routing/utils.h"
-
 
 namespace maidsafe {
 
@@ -43,18 +39,10 @@ namespace routing {
 
 namespace test {
 
-struct ScopedBootstrapFile {
-  explicit ScopedBootstrapFile(const BootstrapContacts& bootstrap_contacts);
-  ~ScopedBootstrapFile();
-
- private:
-  const boost::filesystem::path kFilePath;
-};
-
 struct NodeInfoAndPrivateKey {
   NodeInfoAndPrivateKey() : node_info(), private_key() {}
-  NodeInfoAndPrivateKey(const NodeInfoAndPrivateKey& info)
-      : node_info(info.node_info), private_key(info.private_key) {}
+  NodeInfoAndPrivateKey(const NodeInfoAndPrivateKey& info) : node_info(info.node_info),
+                                                             private_key(info.private_key) {}
   NodeInfo node_info;
   asymm::PrivateKey private_key;
 };
@@ -77,8 +65,8 @@ NodeInfoAndPrivateKey MakeNodeInfoAndKeysWithMaid(passport::Maid maid);
 
 NodeInfo MakeNode();
 
-NodeId GenerateUniqueRandomId(const NodeId& holder, unsigned int pos);
-NodeId GenerateUniqueRandomId(unsigned int pos);
+NodeId GenerateUniqueRandomId(const NodeId& holder, uint16_t pos);
+NodeId GenerateUniqueRandomId(uint16_t pos);
 NodeId GenerateUniqueRandomNodeId(const std::vector<NodeId>& esisting_ids);
 
 int NetworkStatus(bool client, int status);

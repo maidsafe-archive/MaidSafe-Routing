@@ -45,15 +45,15 @@ void swap(GroupSource& lhs, GroupSource& rhs) {
 }
 
 bool operator==(const GroupSource& lhs, const GroupSource& rhs) {
-  return lhs.group_id == rhs.group_id &&
-         lhs.sender_id == rhs.sender_id;
+  return lhs.group_id == rhs.group_id && lhs.sender_id == rhs.sender_id;
 }
 
 namespace detail {
 
-SingleIdRelay GetRelayIdToReply(const SingleRelaySource &single_relay_src) {
+SingleIdRelay GetRelayIdToReply(const SingleRelaySource& single_relay_src) {
   return SingleIdRelay(SingleId(NodeId(single_relay_src.node_id->string())),
-      single_relay_src.connection_id, SingleId(NodeId(single_relay_src.relay_node->string())));
+                       single_relay_src.connection_id,
+                       SingleId(NodeId(single_relay_src.relay_node->string())));
 }
 
 }  // namespace detail

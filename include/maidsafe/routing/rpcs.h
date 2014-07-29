@@ -29,14 +29,11 @@
 #include "maidsafe/rudp/managed_connections.h"
 
 #include "maidsafe/routing/api_config.h"
+#include "maidsafe/routing/routing.pb.h"
 
 namespace maidsafe {
 
 namespace routing {
-
-namespace protobuf {
-class Message;
-}
 
 namespace rpcs {
 
@@ -65,8 +62,7 @@ protobuf::Message ConnectSuccess(const NodeId& node_id, const NodeId& this_node_
                                  bool client_node);
 
 protobuf::Message ConnectSuccessAcknowledgement(const NodeId& node_id, const NodeId& this_node_id,
-                                                const NodeId& this_connection_id,
-                                                bool requestor,
+                                                const NodeId& this_connection_id, bool requestor,
                                                 const std::vector<NodeInfo>& close_ids,
                                                 bool client_node);
 

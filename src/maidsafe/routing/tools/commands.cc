@@ -40,10 +40,18 @@ namespace test {
 Commands::Commands(DemoNodePtr demo_node,
                    std::vector<maidsafe::passport::detail::AnmaidToPmid> all_keys,
                    int identity_index)
-    : demo_node_(demo_node), all_keys_(std::move(all_keys)), all_ids_(),
-      identity_index_(identity_index), bootstrap_peer_ep_(), data_size_(1024 * 1024),
-      data_rate_(1024 * 1024), result_arrived_(false), finish_(false), wait_mutex_(),
-      wait_cond_var_(), mark_results_arrived_() {
+    : demo_node_(demo_node),
+      all_keys_(std::move(all_keys)),
+      all_ids_(),
+      identity_index_(identity_index),
+      bootstrap_peer_ep_(),
+      data_size_(1024 * 1024),
+      data_rate_(1024 * 1024),
+      result_arrived_(false),
+      finish_(false),
+      wait_mutex_(),
+      wait_cond_var_(),
+      mark_results_arrived_() {
   // CalculateClosests will only use all_ids_ to calculate expected respondents
   // here it is assumed that the first half of fobs will be used as vault
   // and the latter half part will be used as client, which shall not respond msg
@@ -120,12 +128,6 @@ void Commands::GetPeer(const std::string& peer) {
   catch (...) {
     std::cout << "Could not parse IPv4 peer endpoint from " << peer << std::endl;
   }
-  auto bootstrap_file_path(detail::GetOverrideBootstrapFilePath<false>());
-  boost::filesystem::remove(bootstrap_file_path);
-  try {
-    WriteBootstrapContacts(BootstrapContacts {demo_node_->endpoint(), bootstrap_peer_ep_},
-                           bootstrap_file_path);
-  } catch (const std::exception& /*error*/) {}  // File updated by peer zerostate node
 }
 
 void Commands::ZeroStateJoin() {
@@ -137,7 +139,6 @@ void Commands::ZeroStateJoin() {
     std::cout << "can't exec ZeroStateJoin as a non-bootstrap node" << std::endl;
     return;
   }
-
   NodeInfo peer_node_info;
   if (identity_index_ == 0) {
     peer_node_info.id = NodeId(all_keys_[1].pmid.name().value);
@@ -171,19 +172,12 @@ void Commands::SendMessages(int id_index, const DestinationType& destination_typ
     infinite = true;
 
   uint32_t message_id(0);
-  unsigned int expect_respondent(0);
+  uint16_t expect_respondent(0);
   std::atomic<int> successful_count(0);
   std::mutex mutex;
   std::condition_variable cond_var;
-  unsigned int operation_count(0);
+  int operation_count(0);
   //   Send messages
-  auto timeout(Parameters::default_response_timeout);
-  std::cout << "message_count " << messages_count << std::endl;
-  if (1000 * messages_count * ((destination_type != DestinationType::kGroup) ? 1 : 4) >
-          Parameters::default_response_timeout.count())
-    Parameters::default_response_timeout =
-      std::chrono::seconds(messages_count *
-                               ((destination_type != DestinationType::kGroup) ? 1 : 4));
   for (int index = 0; index < messages_count || infinite; ++index) {
     std::vector<NodeId> closest_nodes;
     NodeId dest_id;
@@ -207,10 +201,9 @@ void Commands::SendMessages(int id_index, const DestinationType& destination_typ
   std::cout << "Succcessfully received messages count::" << successful_count << std::endl;
   std::cout << "Unsucccessfully received messages count::" << (messages_count - successful_count)
             << std::endl;
-  Parameters::default_response_timeout = timeout;
 }
 
-unsigned int Commands::MakeMessage(int id_index, const DestinationType& destination_type,
+uint16_t Commands::MakeMessage(int id_index, const DestinationType& destination_type,
                                std::vector<NodeId>& closest_nodes, NodeId& dest_id) {
   int identity_index;
   if (id_index >= 0)
@@ -228,7 +221,7 @@ unsigned int Commands::MakeMessage(int id_index, const DestinationType& destinat
             << " to " << (destination_type != DestinationType::kGroup ? ": " : "group : ")
             << maidsafe::HexSubstr(dest_id.string())
             << " , expect receive response from :" << std::endl;
-  unsigned int expected_respodents(destination_type != DestinationType::kGroup ? 1 : 4);
+  uint16_t expected_respodents(destination_type != DestinationType::kGroup ? 1 : 4);
   std::vector<NodeId> closests;
   if (destination_type == DestinationType::kGroup)
     NodeId farthest_closests(CalculateClosests(dest_id, closests, expected_respodents));
@@ -245,9 +238,9 @@ void Commands::CalculateTimeToSleep(std::chrono::milliseconds& msg_sent_time) {
   msg_sent_time = std::chrono::milliseconds(1000 / num_msgs_per_second);
 }
 
-void Commands::SendAMessage(std::atomic<int>& successful_count, unsigned int& operation_count,
+void Commands::SendAMessage(std::atomic<int>& successful_count, int& operation_count,
                             std::mutex& mutex, std::condition_variable& cond_var,
-                            int messages_count, unsigned int expect_respondent,
+                            int messages_count, uint16_t expect_respondent,
                             std::vector<NodeId> closest_nodes, NodeId dest_id, std::string data) {
   bool group_performance(false);
   if ((expect_respondent > 1) && (closest_nodes.empty()))
@@ -303,7 +296,7 @@ void Commands::Join() {
   demo_node_->functors_.network_status = [this, &cond_var, weak_node](const int& result) {
     if (std::shared_ptr<GenericNode> node = weak_node.lock()) {
       ASSERT_GE(result, kSuccess);
-      if (result == static_cast<int>(node->expected()) && !node->joined()) {
+      if (result == node->expected() && !node->joined()) {
         node->set_joined(true);
         cond_var.notify_one();
       } else {
@@ -312,8 +305,10 @@ void Commands::Join() {
       }
     }
   };
-
-  demo_node_->Join();
+  std::vector<boost::asio::ip::udp::endpoint> bootstrap_endpoints;
+  if (bootstrap_peer_ep_ != boost::asio::ip::udp::endpoint())
+    bootstrap_endpoints.push_back(bootstrap_peer_ep_);
+  demo_node_->Join(bootstrap_endpoints);
 
   if (!demo_node_->joined()) {
     std::unique_lock<std::mutex> lock(mutex);
@@ -459,7 +454,7 @@ void Commands::MarkResultArrived() {
 }
 
 NodeId Commands::CalculateClosests(const NodeId& target_id, std::vector<NodeId>& closests,
-                                   unsigned int num_of_closests) {
+                                   uint16_t num_of_closests) {
   if (all_ids_.size() <= num_of_closests) {
     closests = all_ids_;
     return closests[closests.size() - 1];
@@ -484,7 +479,7 @@ void Commands::RunPerformanceTest(bool is_send_group) {
   data_size_ = 1;
   int iteration(1);
   uint32_t message_id(0);
-  unsigned int expect_respondent(is_send_group ? routing::Parameters::group_size : 1);
+  uint16_t expect_respondent(is_send_group ? routing::Parameters::group_size : 1);
   std::vector<NodeId> closest_nodes;
   while (data_size_ < ((1024 * 1024) + 1024)) {
     std::string data, data_to_send;
@@ -495,7 +490,7 @@ void Commands::RunPerformanceTest(bool is_send_group) {
       std::atomic<int> successful_count(0);
       std::mutex mutex;
       std::condition_variable cond_var;
-      unsigned int operation_count(0);
+      int operation_count(0);
       data = ">:<" + std::to_string(++message_id) + "<:>" + data;
       SendAMessage(successful_count, operation_count, mutex, cond_var, 1,
                    expect_respondent, closest_nodes, routing_node, data);

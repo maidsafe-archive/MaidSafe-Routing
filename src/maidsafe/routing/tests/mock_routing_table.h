@@ -31,9 +31,10 @@ namespace routing {
 
 namespace test {
 
-class MockRoutingTable : public RoutingTable {
+template <typename NodeType>
+class MockRoutingTable : public RoutingTable<NodeType> {
  public:
-  MockRoutingTable(bool client_mode, const NodeId& node_id, const asymm::Keys& keys);
+  MockRoutingTable(const NodeId& node_id, const asymm::Keys& keys);
   virtual ~MockRoutingTable();
 
   MOCK_METHOD2(IsNodeIdInGroupRange, bool(const NodeId& node_id, bool& is_group_leader));
