@@ -50,7 +50,13 @@ BootstrapContacts GetBootstrapContacts(bool is_client) {
   const fs::path kCurrentBootstrapFilePath{
     is_client ? detail::GetCurrentBootstrapFilePath<true>()
               : detail::GetCurrentBootstrapFilePath<false>() };
-  auto bootstrap_contacts(ReadBootstrapContacts(kCurrentBootstrapFilePath));
+  BootstrapContacts bootstrap_contacts;
+  try {
+    bootstrap_contacts = ReadBootstrapContacts(kCurrentBootstrapFilePath);
+  } catch (const std::exception& error) {
+    LOG(kWarning) << "Failed to read bootstrap file at : " << kCurrentBootstrapFilePath
+                  << " . Error : " << boost::diagnostic_information(error);
+  }
 
   if (kCurrentBootstrapFilePath == (is_client ? detail::GetDefaultBootstrapFilePath<true>() :
                                                 detail::GetDefaultBootstrapFilePath<false>())) {
