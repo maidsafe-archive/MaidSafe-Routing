@@ -36,14 +36,14 @@ boost::filesystem::path DoGetBootstrapFilePath(bool is_client,
 
 template <bool is_client>
 boost::filesystem::path GetOverrideBootstrapFilePath() {
-  static const boost::filesystem::path override_bootstrap_file_path
+  const boost::filesystem::path override_bootstrap_file_path
       = DoGetBootstrapFilePath(is_client, "bootstrap_override.dat");
   return override_bootstrap_file_path;
 }
 
 template <bool is_client>
 boost::filesystem::path GetDefaultBootstrapFilePath() {
-  static const boost::filesystem::path default_bootstrap_file_path
+  const boost::filesystem::path default_bootstrap_file_path
       = DoGetBootstrapFilePath(is_client, "bootstrap.dat");
   return default_bootstrap_file_path;
 }
