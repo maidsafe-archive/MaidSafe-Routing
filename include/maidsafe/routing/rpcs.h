@@ -30,12 +30,35 @@
 
 #include "maidsafe/routing/api_config.h"
 #include "maidsafe/routing/routing.pb.h"
+#include "maidsafe/routing/utils.h"
 
 namespace maidsafe {
 
 namespace routing {
 
+typedef TaggedValue<NodeId, struct NodeIdentifierType> SelfNodeId;
+typedef TaggedValue<NodeId, struct ConnectionIdType> SelfConnectionId;
+typedef TaggedValue<bool, struct NodeType> SelfNodeType;
+typedef TaggedValue<rudp::EndpointPair, struct EndpointPair> SelfEndpoint;
+typedef TaggedValue<rudp::NatType, struct NatType> SelfNatType;
+typedef TaggedValue<NodeId, struct DestinationIdType> PeerNodeId;
+typedef TaggedValue<std::string, struct IdentityType> Identity;
+typedef TaggedValue<bool, struct RelayMessageType> RelayMessage;
+typedef TaggedValue<NodeId, struct RelayConnectionIdType> RelayConnectionId;
+typedef TaggedValue<bool, struct RequestorType> Requestor;
+typedef TaggedValue<std::vector<NodeInfo>, struct CloseNodeIdsType> CloseNodeIds;
+typedef TaggedValue<MessageType, struct MessageRpcType> RpcType;
+
 namespace rpcs {
+
+template <typename PropertyType, typename... Args>
+void SetMessageProperties(protobuf::Message& message, const PropertyType& value, Args... args) {
+  SetMessageProperty(message, value);
+  SetMessageProperties(message, args...);
+}
+
+template <typename PropertyType>
+void SetMessageProperty(protobuf::Message& /*message*/, const PropertyType& /*value*/) {}
 
 protobuf::Message Ping(const NodeId& node_id, const std::string& identity);
 
@@ -44,10 +67,6 @@ protobuf::Message Connect(const NodeId& node_id, const rudp::EndpointPair& our_e
                           bool client_node = false,
                           rudp::NatType nat_type = rudp::NatType::kUnknown,
                           bool relay_message = false, NodeId relay_connection_id = NodeId());
-
-protobuf::Message Remove(const NodeId& node_id, const NodeId& this_node_id,
-                         const NodeId& this_connection_id,
-                         const std::vector<std::string>& attempted_nodes);
 
 protobuf::Message FindNodes(const NodeId& node_id, const NodeId& this_node_id,
                             int num_nodes_requested, bool relay_message = false,
