@@ -42,7 +42,8 @@ BootstrapContacts GetHardCodedBootstrapContacts() {
       udp::endpoint{ address::from_string("106.185.24.221"), kLivePort },
       udp::endpoint{ address::from_string("23.239.27.245"), kLivePort }
   };
-  std::random_shuffle(hard_coded_bootstrap_contacts.begin(), hard_coded_bootstrap_contacts.end());
+  std::mt19937 rng(RandomUint32());
+  std::shuffle(hard_coded_bootstrap_contacts.begin(), hard_coded_bootstrap_contacts.end(), rng);
   return hard_coded_bootstrap_contacts;
 }
 
