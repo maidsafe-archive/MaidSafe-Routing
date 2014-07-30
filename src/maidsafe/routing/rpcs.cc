@@ -110,7 +110,6 @@ protobuf::Message FindNodes(const NodeId& node_id, const NodeId& this_node_id,
   protobuf::Message message;
   protobuf::FindNodesRequest find_nodes;
   find_nodes.set_num_nodes_requested(num_nodes_requested);
-  find_nodes.set_target_node(node_id.string());
 #ifdef TESTING
   find_nodes.set_timestamp(GetTimeStamp());
 #endif
@@ -240,6 +239,11 @@ protobuf::Message GetGroup(const NodeId& node_id, const NodeId& my_node_id) {
   message.set_id(RandomUint32() % 10000);
   assert(message.IsInitialized() && "Unintialised message");
   return message;
+}
+
+template <>
+void SetMessageProperty(protobuf::Message& message, const SelfNodeId& value) {
+  message.set_source_id(value.data.string());
 }
 
 }  // namespace rpcs

@@ -242,17 +242,17 @@ void Service<NodeType>::FindNodes(protobuf::Message& message) {
     message.Clear();
     return;
   }
-  if (0 == find_nodes.num_nodes_requested() || NodeId(find_nodes.target_node()).IsZero()) {
+  if (0 == find_nodes.num_nodes_requested() || NodeId(message.destination_id()).IsZero()) {
     LOG(kWarning) << "Invalid find node request.";
     message.Clear();
     return;
   }
 
   LOG(kVerbose) << "[" << connections_.kNodeId() << "] parsed find node request for target id : "
-                << HexSubstr(find_nodes.target_node());
+                << HexSubstr(message.destination_id());
   protobuf::FindNodesResponse found_nodes;
   auto nodes(connections_.routing_table.GetClosestNodes(
-      NodeId(find_nodes.target_node()),
+      NodeId(message.destination_id()),
       static_cast<uint16_t>(find_nodes.num_nodes_requested() - 1)));
   found_nodes.add_nodes(connections_.kNodeId().string());
 
