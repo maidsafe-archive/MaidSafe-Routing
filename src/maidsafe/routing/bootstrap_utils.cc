@@ -34,7 +34,7 @@ using boost::asio::ip::udp;
 using boost::asio::ip::address;
 
 BootstrapContacts GetHardCodedBootstrapContacts() {
-  return BootstrapContacts{
+  BootstrapContacts hard_coded_bootstrap_contacts{
       udp::endpoint{ address::from_string("104.131.253.66"), kLivePort },
       udp::endpoint{ address::from_string("95.85.32.100"), kLivePort },
       udp::endpoint{ address::from_string("128.199.159.50"), kLivePort },
@@ -42,6 +42,8 @@ BootstrapContacts GetHardCodedBootstrapContacts() {
       udp::endpoint{ address::from_string("106.185.24.221"), kLivePort },
       udp::endpoint{ address::from_string("23.239.27.245"), kLivePort }
   };
+  std::random_shuffle(hard_coded_bootstrap_contacts.begin(), hard_coded_bootstrap_contacts.end());
+  return hard_coded_bootstrap_contacts;
 }
 
 }  // unnamed namespace
