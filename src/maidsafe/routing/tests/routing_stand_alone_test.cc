@@ -198,6 +198,25 @@ TEST_F(RoutingStandAloneTest, FUNC_ReBootstrap) {
   EXPECT_EQ(nodes_.front()->RoutingTable().size(), nodes_.size() - 1);
 }
 
+TEST_F(RoutingStandAloneTest, FUNC_RetryingJoin) {
+  nodes_.erase(std::begin(nodes_));
+  nodes_.erase(std::begin(nodes_));
+  Sleep(std::chrono::seconds(1));
+  auto node(std::make_shared<GenericNode>(passport::CreatePmidAndSigner().first));
+  nodes_.insert(std::begin(nodes_), node);
+  AddPublicKey(node->node_id(), node->public_key());
+  SetNodeValidationFunctor(node);
+  node->Join();
+  Sleep(Parameters::re_bootstrap_time_lag);
+  EXPECT_EQ(node->RoutingTable().size(), 0);
+  boost::filesystem::remove(detail::GetOverrideBootstrapFilePath<false>());
+  SetUp();
+  Sleep(Parameters::re_bootstrap_time_lag);
+  Sleep(Parameters::re_bootstrap_time_lag);
+  EXPECT_EQ(node->RoutingTable().size(), nodes_.size() - 1);
+}
+
+
 class ProportionedRoutingStandAloneTest : public GenericNetwork, public testing::Test {
  public:
   ProportionedRoutingStandAloneTest(void)

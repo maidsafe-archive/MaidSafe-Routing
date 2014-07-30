@@ -1426,6 +1426,10 @@ unsigned int GenericNetwork::NonClientNodesSize() const {
   return non_client_size;
 }
 
+void GenericNetwork::AddPublicKey(const NodeId& node_id, const asymm::PublicKey& public_key) {
+  public_keys_.insert(std::make_pair(node_id, public_key));
+}
+
 unsigned int GenericNetwork::NonClientNonSymmetricNatNodesSize() const {
   unsigned int non_client_non_sym_size(0);
   for (const auto& node : nodes_) {

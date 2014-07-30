@@ -143,9 +143,9 @@ class Routing::Impl {
   void ConnectFunctors(const Functors& functors);
   void BootstrapFromTheseEndpoints(const BootstrapContacts& bootstrap_contacts);
   void DoJoin();
+  void Bootstrap();
   int DoBootstrap();
   void ReBootstrap();
-  void DoReBootstrap(const boost::system::error_code& error_code);
   void FindClosestNode(const boost::system::error_code& error_code, int attempts);
   void ReSendFindNodeRequest(const boost::system::error_code& error_code, bool ignore_size);
   void OnMessageReceived(const std::string& message);
