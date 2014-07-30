@@ -18,6 +18,8 @@
 
 #include <vector>
 
+#include "boost/filesystem.hpp"
+
 #include "maidsafe/passport/passport.h"
 #include "maidsafe/rudp/nat_type.h"
 
@@ -185,41 +187,15 @@ TEST_F(RoutingStandAloneTest, FUNC_JoinAfterBootstrapLeaves) {
   this->AddNode(passport::CreatePmidAndSigner().first);
 }
 
-// the logic is not right...
-TEST_F(RoutingStandAloneTest, DISABLED_FUNC_ReBootstrap) {
-  // test currently fine for small network size (approx half max routing table size). Will need
-  // updated to deal with larger network.
-  int network_size(kServerSize);
-  this->SetUpNetwork(network_size);
-
-  NodeId removed_id(this->nodes_[network_size - 1]->node_id());
-
-  for (const auto& element : this->nodes_) {
-    if (element->node_id() != removed_id)
-      EXPECT_TRUE(element->RoutingTableHasNode(removed_id));
-  }
-
-  NodePtr removed_node(this->nodes_[network_size - 1]);
-  this->RemoveNode(this->nodes_[network_size - 1]->node_id());
-  EXPECT_EQ(network_size - 1, this->nodes_.size());
-
-  for (auto& node : this->nodes_) {
-    EXPECT_TRUE(node->DropNode(removed_id));
-    EXPECT_FALSE(node->RoutingTableHasNode(removed_id));
-  }
-
-  // wait for removed node's routing table to reach zero - re-bootstrap will be triggered
+TEST_F(RoutingStandAloneTest, FUNC_ReBootstrap) {
+  this->SetUpNetwork(3);
+  nodes_.erase(std::begin(nodes_));
+  nodes_.erase(std::begin(nodes_));
   Sleep(std::chrono::seconds(1));
-  std::vector<NodeInfo> routing_table(removed_node->RoutingTable());
-  EXPECT_EQ(0, routing_table.size());
-
-  // wait for re_bootstrap_time_lag to expire & bootstrap process to complete
-  Sleep(std::chrono::seconds(20));
-  for (const auto& node : this->nodes_)
-    EXPECT_TRUE(node->RoutingTableHasNode(removed_id));
-
-  routing_table = removed_node->RoutingTable();
-  EXPECT_EQ(network_size - 1, routing_table.size());
+  boost::filesystem::remove(detail::GetOverrideBootstrapFilePath<false>());
+  SetUp();
+  Sleep(std::chrono::seconds(Parameters::re_bootstrap_time_lag));
+  EXPECT_EQ(nodes_.front()->RoutingTable().size(), nodes_.size() - 1);
 }
 
 class ProportionedRoutingStandAloneTest : public GenericNetwork, public testing::Test {

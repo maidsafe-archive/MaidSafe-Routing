@@ -426,6 +426,7 @@ void GenericNetwork::SetUp() {
       node2(new GenericNode(passport::CreatePmidAndSigner().first));
   nodes_.push_back(node1);
   nodes_.push_back(node2);
+  bootstrap_file_.reset();
   bootstrap_file_ =
       maidsafe::make_unique<ScopedBootstrapFile>(BootstrapContacts{ node1->endpoint(),
                                                                     node2->endpoint() });
