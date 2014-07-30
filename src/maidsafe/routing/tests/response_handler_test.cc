@@ -165,7 +165,6 @@ class ResponseHandlerTest : public testing::Test {
                                                 std::vector<NodeId> nodes = std::vector<NodeId>()) {
     protobuf::FindNodesRequest find_nodes;
     find_nodes.set_num_nodes_requested(static_cast<int32_t>(num_of_requested));
-    find_nodes.set_target_node(routing_table_.kNodeId().string());
     find_nodes.set_timestamp(GetTimeStamp());
     return ComposeMsg(ComposeFindNodesResponse(find_nodes.SerializeAsString(), num_of_requested,
                                                nodes).SerializeAsString());

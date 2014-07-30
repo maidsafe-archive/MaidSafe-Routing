@@ -111,7 +111,6 @@ protobuf::Message FindNodes(const NodeId& node_id, const NodeId& this_node_id,
   protobuf::Message message;
   protobuf::FindNodesRequest find_nodes;
   find_nodes.set_num_nodes_requested(num_nodes_requested);
-  find_nodes.set_target_node(node_id.string());
 #ifdef TESTING
   find_nodes.set_timestamp(GetTimeStamp());
 #endif

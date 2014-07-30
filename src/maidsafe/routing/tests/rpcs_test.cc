@@ -153,7 +153,7 @@ TEST(RpcsTest, BEH_FindNodesMessageNode) {
   EXPECT_TRUE(find_nodes_request.ParseFromString(message.data(0)));  // us
   EXPECT_EQ(static_cast<unsigned int>(find_nodes_request.num_nodes_requested()),
             Parameters::closest_nodes_size);
-  EXPECT_EQ(us.id.string(), find_nodes_request.target_node());
+  EXPECT_EQ(us.id.string(), message.destination_id());
   EXPECT_TRUE(find_nodes_request.has_timestamp());
   EXPECT_TRUE(find_nodes_request.timestamp() > GetTimeStamp() - 2000);
   EXPECT_TRUE(find_nodes_request.timestamp() < GetTimeStamp() + 1000);
@@ -175,7 +175,7 @@ TEST(RpcsTest, BEH_FindNodesMessageNodeRelayMode) {
   protobuf::FindNodesRequest find_nodes_request;
   EXPECT_TRUE(find_nodes_request.ParseFromString(message.data(0)));  // us
   EXPECT_TRUE(find_nodes_request.num_nodes_requested() == Parameters::closest_nodes_size);
-  EXPECT_EQ(us.id.string(), find_nodes_request.target_node());
+  EXPECT_EQ(us.id.string(), message.destination_id());
   EXPECT_TRUE(find_nodes_request.has_timestamp());
   EXPECT_TRUE(find_nodes_request.timestamp() > GetTimeStamp() - 2000);
   EXPECT_TRUE(find_nodes_request.timestamp() < GetTimeStamp() + 1000);
