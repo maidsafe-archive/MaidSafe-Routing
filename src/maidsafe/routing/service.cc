@@ -26,7 +26,7 @@ namespace {
 
 template <>
 void Service<ClientNode>::Connect(protobuf::Message& message) {
-  if (message.destination_id() != connections_.kNodeId().string()) {
+  if (message.destination_id() != connections_.kNodeId().data.string()) {
     // Message not for this node and we should not pass it on.
     LOG(kError) << "Message not for this node.";
     message.Clear();
@@ -40,7 +40,7 @@ void Service<ClientNode>::Connect(protobuf::Message& message) {
    return;
   }
 
-  if (connect_request.peer_id() != connections_.kNodeId().string()) {
+  if (connect_request.peer_id() != connections_.kNodeId().data.string()) {
    LOG(kError) << "Message not for this node.";
    message.Clear();
    return;
@@ -82,7 +82,7 @@ void Service<ClientNode>::Connect(protobuf::Message& message) {
    message.set_destination_id(message.source_id());
   else
    message.clear_destination_id();
-  message.set_source_id(connections_.kNodeId().string());
+  message.set_source_id(connections_.kNodeId().data.string());
 
   // Check rudp & routing
   LOG(kVerbose) << "Server connect request - will check routing table.";
@@ -120,14 +120,15 @@ void Service<ClientNode>::Connect(protobuf::Message& message) {
           "Unspecified endpoint after GetAvailableEndpoint success.");
 
    int add_result(AddToRudp(network_, connections_.kNodeId(),
-                            connections_.kConnectionId(),
-                            peer_node.id, peer_node.connection_id, peer_endpoint_pair, false));
+                            connections_.kConnectionId(), PeerNodeId(peer_node.id),
+                            PeerConnectionId(peer_node.connection_id),
+                            PeerEndpoint(peer_endpoint_pair), IsRequestor(false)));
    if (rudp::kSuccess == add_result) {
     connect_response.set_answer(protobuf::ConnectResponseType::kAccepted);
 
-    connect_response.mutable_contact()->set_node_id(connections_.kNodeId().string());
+    connect_response.mutable_contact()->set_node_id(connections_.kNodeId().data.string());
     connect_response.mutable_contact()->set_connection_id(
-        connections_.kConnectionId().string());
+        connections_.kConnectionId().data.string());
     connect_response.mutable_contact()->set_nat_type(NatTypeProtobuf(this_nat_type));
 
     SetProtobufEndpoint(this_endpoint_pair.local,
@@ -137,7 +138,7 @@ void Service<ClientNode>::Connect(protobuf::Message& message) {
    }
   } else {
    LOG(kVerbose) << "CheckNode(node) for " << (message.client_node() ? "client" : "server")
-   << " node failed.";
+                 << " node failed.";
   }
 
   message.add_data(connect_response.SerializeAsString());

@@ -37,7 +37,8 @@
 
 #include "maidsafe/routing/api_config.h"
 #include "maidsafe/routing/parameters.h"
-#include "maidsafe/routing/utils.h"
+#include "maidsafe/routing/types.h"
+
 
 namespace maidsafe {
 
@@ -85,7 +86,7 @@ template <typename NodeType>
 class RoutingTable {
  public:
   typedef NodeType Type;
-  RoutingTable(const NodeId& node_id, const asymm::Keys& keys);
+  RoutingTable(const SelfNodeId& node_id, const asymm::Keys& keys);
   virtual ~RoutingTable();
   void InitialiseFunctors(RoutingTableChangeFunctor routing_table_change_functor);
   bool AddNode(const NodeInfo& peer);
@@ -107,10 +108,10 @@ class RoutingTable {
   NodeId RandomConnectedNode();
 
   size_t size() const;
-  NodeId kNodeId() const { return kNodeId_; }
+  SelfNodeId kNodeId() const { return kNodeId_; }
   asymm::PrivateKey kPrivateKey() const { return kKeys_.private_key; }
   asymm::PublicKey kPublicKey() const { return kKeys_.public_key; }
-  NodeId kConnectionId() const { return kConnectionId_; }
+  SelfConnectionId kConnectionId() const { return kConnectionId_; }
 
   friend class test::GenericNode;
   template <typename Type>
@@ -155,8 +156,8 @@ class RoutingTable {
   void IpcSendCloseNodes();
   std::string PrintRoutingTable();
 
-  const NodeId kNodeId_;
-  const NodeId kConnectionId_;
+  const SelfNodeId kNodeId_;
+  const SelfConnectionId kConnectionId_;
   const asymm::Keys kKeys_;
   mutable std::mutex mutex_;
   RoutingTableChangeFunctor routing_table_change_functor_;
@@ -164,7 +165,7 @@ class RoutingTable {
 };
 
 template <typename NodeType>
-RoutingTable<NodeType>::RoutingTable(const NodeId& node_id, const asymm::Keys& keys)
+RoutingTable<NodeType>::RoutingTable(const SelfNodeId& node_id, const asymm::Keys& keys)
     : kNodeId_(node_id),
       kConnectionId_(kNodeId_),
       kKeys_(keys),
@@ -173,7 +174,7 @@ RoutingTable<NodeType>::RoutingTable(const NodeId& node_id, const asymm::Keys& k
       nodes_() {}
 
 template <>
-RoutingTable<ClientNode>::RoutingTable(const NodeId& node_id, const asymm::Keys& keys);
+RoutingTable<ClientNode>::RoutingTable(const SelfNodeId& node_id, const asymm::Keys& keys);
 
 
 template <typename NodeType>
@@ -387,7 +388,7 @@ bool RoutingTable<NodeType>::ConfirmGroupMembers(const NodeId& node1, const Node
 // bucket 0 is us, 511 is furthest bucket (should fill first)
 template <typename NodeType>
 void RoutingTable<NodeType>::SetBucketIndex(NodeInfo& node_info) const {
-  std::string holder_raw_id(kNodeId_.string());
+  std::string holder_raw_id(kNodeId_.data.string());
   std::string node_raw_id(node_info.id.string());
   int16_t byte_index(0);
   while (byte_index != NodeId::kSize) {

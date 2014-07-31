@@ -37,8 +37,8 @@ namespace maidsafe {
 namespace routing {
 
 template <>
-RoutingTable<ClientNode>::RoutingTable(const NodeId& node_id, const asymm::Keys& keys)
-    : kNodeId_(node_id), kConnectionId_(NodeId::IdType::kRandomId), kKeys_(keys), mutex_(),
+RoutingTable<ClientNode>::RoutingTable(const SelfNodeId& node_id, const asymm::Keys& keys)
+    : kNodeId_(node_id), kConnectionId_(NodeId(NodeId::IdType::kRandomId)), kKeys_(keys), mutex_(),
       routing_table_change_functor_(), nodes_() {
 }
 

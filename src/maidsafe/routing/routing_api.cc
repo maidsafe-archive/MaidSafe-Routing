@@ -209,11 +209,11 @@ Routing::Routing() : pimpl_() {
 }
 
 void Routing::InitialisePimpl(const NodeId& node_id, const asymm::Keys& keys, VaultNode) {
-  pimpl_ = std::make_shared<RoutingImpl<VaultNode>>(node_id, keys);
+  pimpl_ = std::make_shared<RoutingImpl<VaultNode>>(SelfNodeId(node_id), keys);
 }
 
 void Routing::InitialisePimpl(const NodeId& node_id, const asymm::Keys& keys, ClientNode) {
-  pimpl_ = std::make_shared<RoutingImpl<ClientNode>>(node_id, keys);
+  pimpl_ = std::make_shared<RoutingImpl<ClientNode>>(SelfNodeId(node_id), keys);
 }
 
 void Routing::Join(Functors functors, BootstrapContacts bootstrap_contacts) {

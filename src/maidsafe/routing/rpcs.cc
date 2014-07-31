@@ -33,17 +33,16 @@ namespace routing {
 namespace rpcs {
 
 // This is maybe not required and might be removed
-protobuf::Message Ping(const NodeId& node_id, const std::string& identity) {
-  assert(!node_id.IsZero() && "Invalid node_id");
-  assert(!identity.empty() && "Invalid identity");
+protobuf::Message Ping(const PeerNodeId& peer_id, const SelfNodeId& self_id) {
+  assert(!peer_id.data.IsZero() && "Invalid node_id");
+  assert(self_id.data.IsZero() && "Invalid identity");
   protobuf::Message message;
   protobuf::PingRequest ping_request;
   ping_request.set_ping(true);
 #ifdef TESTING
   ping_request.set_timestamp(GetTimeStamp());
 #endif
-  message.set_destination_id(node_id.string());
-  message.set_source_id(identity);
+  SetMessageProperties(message, self_id, peer_id);
   message.set_routing_message(true);
   message.add_data(ping_request.SerializeAsString());
   message.set_direct(true);
@@ -56,82 +55,83 @@ protobuf::Message Ping(const NodeId& node_id, const std::string& identity) {
   return message;
 }
 
-protobuf::Message Connect(const NodeId& node_id, const rudp::EndpointPair& our_endpoint,
-                          const NodeId& this_node_id, const NodeId& this_connection_id,
-                          bool client_node, rudp::NatType nat_type, bool relay_message,
-                          NodeId relay_connection_id) {
-  assert(!node_id.IsZero() && "Invalid node_id");
-  assert(!this_node_id.IsZero() && "Invalid my node_id");
-  assert(!this_connection_id.IsZero() && "Invalid this_connection_id");
-  assert((!our_endpoint.external.address().is_unspecified() ||
-          !our_endpoint.local.address().is_unspecified()) &&
+protobuf::Message Connect(const PeerNodeId& peer_node_id, const SelfEndpoint& our_endpoint,
+                          const SelfNodeId& self_node_id,
+                          const SelfConnectionId& self_connection_id, IsClient is_client,
+                          NatType nat_type, IsRelayMessage is_relay_message,
+                          RelayConnectionId relay_connection_id) {
+  assert(!peer_node_id.data.IsZero() && "Invalid node_id");
+  assert(!self_node_id.data.IsZero() && "Invalid my node_id");
+  assert(!self_connection_id.data.IsZero() && "Invalid this_connection_id");
+  assert((!our_endpoint.data.external.address().is_unspecified() ||
+          !our_endpoint.data.local.address().is_unspecified()) &&
          "Unspecified endpoint");
   protobuf::Message message;
   protobuf::ConnectRequest protobuf_connect_request;
-  protobuf_connect_request.set_peer_id(node_id.string());
+  protobuf_connect_request.set_peer_id(peer_node_id.data.string());
   protobuf::Contact* contact = protobuf_connect_request.mutable_contact();
-  SetProtobufEndpoint(our_endpoint.external, contact->mutable_public_endpoint());
-  SetProtobufEndpoint(our_endpoint.local, contact->mutable_private_endpoint());
-  contact->set_node_id(this_node_id.string());
-  contact->set_connection_id(this_connection_id.string());
+  SetProtobufEndpoint(our_endpoint.data.external, contact->mutable_public_endpoint());
+  SetProtobufEndpoint(our_endpoint.data.local, contact->mutable_private_endpoint());
+  contact->set_connection_id(self_connection_id.data.string());
+  contact->set_node_id(self_node_id.data.string());
   contact->set_nat_type(NatTypeProtobuf(nat_type));
 #ifdef TESTING
   protobuf_connect_request.set_timestamp(GetTimeStamp());
 #endif
   message.set_id(RandomUint32() % 10000);
-  message.set_destination_id(node_id.string());
+  message.set_destination_id(peer_node_id.data.string());
   message.set_routing_message(true);
   message.add_data(protobuf_connect_request.SerializeAsString());
   message.set_direct(true);
   message.set_replication(1);
   message.set_type(static_cast<int32_t>(MessageType::kConnect));
   message.set_request(true);
-  message.set_client_node(client_node);
+  message.set_client_node(is_client);
   message.set_hops_to_live(Parameters::hops_to_live);
 
-  if (!relay_message) {
-    message.set_source_id(this_node_id.string());
+  if (!is_relay_message) {
+    message.set_source_id(self_node_id.data.string());
   } else {
-    message.set_relay_id(this_node_id.string());
+    message.set_relay_id(self_node_id.data.string());
     // This node is not in any peer's routing table yet
     LOG(kVerbose) << "Connect RPC has relay connection id " << DebugId(relay_connection_id);
-    message.set_relay_connection_id(relay_connection_id.string());
+    message.set_relay_connection_id(relay_connection_id.data.string());
   }
 
   assert(message.IsInitialized() && "Unintialised message");
   return message;
 }
 
-protobuf::Message FindNodes(const NodeId& node_id, const NodeId& this_node_id,
-                            int num_nodes_requested, bool relay_message,
-                            NodeId relay_connection_id) {
-  assert(!node_id.IsZero() && "Invalid node_id");
-  assert(!this_node_id.IsZero() && "Invalid my node_id");
+protobuf::Message FindNodes(unsigned int num_nodes_requested, const PeerNodeId& peer_id,
+                            const SelfNodeId& self_id, IsRelayMessage relay_message,
+                            RelayConnectionId relay_connection_id) {
+  assert(!peer_id.data.IsZero() && "Invalid node_id");
+  assert(!self_id.data.IsZero() && "Invalid my node_id");
   protobuf::Message message;
   protobuf::FindNodesRequest find_nodes;
   find_nodes.set_num_nodes_requested(num_nodes_requested);
 #ifdef TESTING
   find_nodes.set_timestamp(GetTimeStamp());
 #endif
-  message.set_last_id(this_node_id.string());
-  message.set_destination_id(node_id.string());
+  message.set_last_id(self_id.data.string());
+  SetMessageProperties(message, peer_id);
   message.set_routing_message(true);
   message.add_data(find_nodes.SerializeAsString());
   message.set_direct(false);
   message.set_replication(1);
   message.set_type(static_cast<int32_t>(MessageType::kFindNodes));
   message.set_request(true);
-  message.add_route_history(this_node_id.string());
+  message.add_route_history(self_id.data.string());
   message.set_client_node(false);
   message.set_visited(false);
   message.set_id(RandomUint32() % 10000);
   if (!relay_message) {
-    message.set_source_id(this_node_id.string());
+    message.set_source_id(self_id.data.string());
   } else {
-    message.set_relay_id(this_node_id.string());
+    message.set_relay_id(self_id.data.string());
     // This node is not in any peer's routing table yet
-    LOG(kVerbose) << "FindNodes RPC has relay connection id " << DebugId(relay_connection_id);
-    message.set_relay_connection_id(relay_connection_id.string());
+    LOG(kVerbose) << "FindNodes RPC has relay connection id " << relay_connection_id.data;
+    message.set_relay_connection_id(relay_connection_id.data.string());
   }
   message.set_hops_to_live(Parameters::hops_to_live);
   //  message.set_id(RandomUint32() % 10000);
@@ -139,18 +139,18 @@ protobuf::Message FindNodes(const NodeId& node_id, const NodeId& this_node_id,
   return message;
 }
 
-protobuf::Message ConnectSuccess(const NodeId& node_id, const NodeId& this_node_id,
-                                 const NodeId& this_connection_id, bool requestor,
-                                 bool client_node) {
-  assert(!node_id.IsZero() && "Invalid node_id");
-  assert(!this_node_id.IsZero() && "Invalid my node_id");
-  assert(!this_connection_id.IsZero() && "Invalid this_connection_id");
+protobuf::Message ConnectSuccess(const PeerNodeId& peer_node_id, const SelfNodeId& self_node_id,
+                                 const SelfConnectionId& self_connection_id, IsRequestor requestor,
+                                 IsClient client_node) {
+  assert(!peer_node_id.data.IsZero() && "Invalid node_id");
+  assert(!self_node_id.data.IsZero() && "Invalid my node_id");
+  assert(!self_connection_id.data.IsZero() && "Invalid this_connection_id");
   protobuf::Message message;
   protobuf::ConnectSuccess protobuf_connect_success;
-  protobuf_connect_success.set_node_id(this_node_id.string());
-  protobuf_connect_success.set_connection_id(this_connection_id.string());
+  protobuf_connect_success.set_node_id(self_node_id.data.string());
+  protobuf_connect_success.set_connection_id(self_connection_id.data.string());
   protobuf_connect_success.set_requestor(requestor);
-  message.set_destination_id(node_id.string());
+  message.set_destination_id(peer_node_id.data.string());
   message.set_routing_message(true);
   message.add_data(protobuf_connect_success.SerializeAsString());
   message.set_direct(true);
@@ -158,29 +158,28 @@ protobuf::Message ConnectSuccess(const NodeId& node_id, const NodeId& this_node_
   message.set_type(static_cast<int32_t>(MessageType::kConnectSuccess));
   message.set_client_node(client_node);
   message.set_hops_to_live(Parameters::hops_to_live);
-  message.set_source_id(this_node_id.string());
+  message.set_source_id(self_node_id.data.string());
   message.set_request(true);
   message.set_id(RandomUint32() % 10000);
   assert(message.IsInitialized() && "Unintialised message");
   return message;
 }
 
-protobuf::Message ConnectSuccessAcknowledgement(const NodeId& node_id, const NodeId& this_node_id,
-                                                const NodeId& this_connection_id, bool requestor,
-                                                const std::vector<NodeInfo>& close_nodes,
-                                                bool client_node) {
-  assert(!node_id.IsZero() && "Invalid node_id");
-  assert(!this_node_id.IsZero() && "Invalid my node_id");
-  assert(!this_connection_id.IsZero() && "Invalid this_connection_id");
+protobuf::Message ConnectSuccessAcknowledgement(
+    const PeerNodeId& peer_node_id, const SelfNodeId& self_node_id,
+    const SelfConnectionId& self_connection_id, IsRequestor requestor,
+    const std::vector<NodeInfo>& close_ids, IsClient client_node) {
+  assert(!peer_node_id.data.IsZero() && "Invalid node_id");
+  assert(!self_node_id.data.IsZero() && "Invalid my node_id");
+  assert(!self_connection_id.data.IsZero() && "Invalid this_connection_id");
   protobuf::Message message;
   protobuf::ConnectSuccessAcknowledgement protobuf_connect_success_ack;
-  protobuf_connect_success_ack.set_node_id(this_node_id.string());
-  protobuf_connect_success_ack.set_connection_id(this_connection_id.string());
+  protobuf_connect_success_ack.set_node_id(self_node_id.data.string());
+  protobuf_connect_success_ack.set_connection_id(self_connection_id.data.string());
   protobuf_connect_success_ack.set_requestor(requestor);
-  for (const auto& i : close_nodes) {
+  for (const auto& i : close_ids)
     protobuf_connect_success_ack.add_close_ids(i.id.string());
-  }
-  message.set_destination_id(node_id.string());
+  message.set_destination_id(peer_node_id.data.string());
   message.set_routing_message(true);
   message.add_data(protobuf_connect_success_ack.SerializeAsString());
   message.set_direct(true);
@@ -188,23 +187,24 @@ protobuf::Message ConnectSuccessAcknowledgement(const NodeId& node_id, const Nod
   message.set_type(static_cast<int32_t>(MessageType::kConnectSuccessAcknowledgement));
   message.set_client_node(client_node);
   message.set_hops_to_live(Parameters::hops_to_live);
-  message.set_source_id(this_node_id.string());
+  message.set_source_id(self_node_id.data.string());
   message.set_request(false);
   message.set_id(RandomUint32() % 10000);
   assert(message.IsInitialized() && "Unintialised message");
   return message;
 }
 
-protobuf::Message InformClientOfNewCloseNode(const NodeId& node_id, const NodeId& this_node_id,
+protobuf::Message InformClientOfNewCloseNode(const PeerNodeId& peer_node_id,
+                                             const SelfNodeId& self_node_id,
                                              const NodeId& client_node_id) {
-  assert(!node_id.IsZero() && "Invalid node_id");
-  assert(!this_node_id.IsZero() && "Invalid my node_id");
+  assert(!peer_node_id.data.IsZero() && "Invalid node_id");
+  assert(!self_node_id.data.IsZero() && "Invalid my node_id");
   protobuf::Message message;
   protobuf::InformClientOfhNewCloseNode inform_client_of_new_close_node;
-  inform_client_of_new_close_node.set_node_id(node_id.string());
+  inform_client_of_new_close_node.set_node_id(peer_node_id.data.string());
   message.add_data(inform_client_of_new_close_node.SerializeAsString());
   message.set_destination_id(client_node_id.string());
-  message.set_source_id(this_node_id.string());
+  message.set_source_id(self_node_id.data.string());
   message.set_routing_message(true);
   message.set_direct(false);
   message.set_replication(1);
@@ -217,7 +217,6 @@ protobuf::Message InformClientOfNewCloseNode(const NodeId& node_id, const NodeId
   assert(message.IsInitialized() && "Unintialised message");
   return message;
 }
-
 
 protobuf::Message GetGroup(const NodeId& node_id, const NodeId& my_node_id) {
   assert(!node_id.IsZero() && "Invalid node_id");
@@ -245,6 +244,13 @@ template <>
 void SetMessageProperty(protobuf::Message& message, const SelfNodeId& value) {
   message.set_source_id(value.data.string());
 }
+
+template <>
+void SetMessageProperty(protobuf::Message& message, const PeerNodeId& value) {
+  message.set_destination_id(value.data.string());
+}
+
+void SetMessageProperties(protobuf::Message& /*message*/) {}
 
 }  // namespace rpcs
 

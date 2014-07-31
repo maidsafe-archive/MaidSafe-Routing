@@ -40,13 +40,14 @@ class NetworkUtils;
 
 template <typename NodeType>
 struct ConnectionsInfo {
-  ConnectionsInfo(const NodeId& node_id, const asymm::Keys& keys) : routing_table(node_id, keys) {}
+  ConnectionsInfo(const SelfNodeId& node_id, const asymm::Keys& keys)
+      : routing_table(node_id, keys) {}
   RoutingTable<NodeType> routing_table;
 };
 
 template <>
 struct ConnectionsInfo<VaultNode> {
-  ConnectionsInfo(const NodeId& node_id, const asymm::Keys& keys)
+  ConnectionsInfo(const SelfNodeId& node_id, const asymm::Keys& keys)
       : routing_table(node_id, keys), client_routing_table(node_id) {}
   RoutingTable<VaultNode> routing_table;
   ClientRoutingTable client_routing_table;
@@ -54,29 +55,32 @@ struct ConnectionsInfo<VaultNode> {
 
 template <typename NodeType>
 struct Connections : ConnectionsInfo<NodeType> {
-  Connections(const NodeId& node_id, const asymm::Keys& keys)
+  Connections(const SelfNodeId& node_id, const asymm::Keys& keys)
       : ConnectionsInfo<NodeType>(node_id, keys) {}
-  NodeId kNodeId() { return ConnectionsInfo<NodeType>::routing_table.kNodeId(); }
-  NodeId kConnectionId() { return ConnectionsInfo<NodeType>::routing_table.kConnectionId(); }
+  SelfNodeId kNodeId() { return ConnectionsInfo<NodeType>::routing_table.kNodeId(); }
+  SelfConnectionId kConnectionId() {
+   return ConnectionsInfo<NodeType>::routing_table.kConnectionId();
+  }
 };
 
 template <typename NodeType>
-int AddToRudp(NetworkUtils<NodeType>& network, const NodeId& this_node_id,
-              const NodeId& this_connection_id, const NodeId& peer_id,
-              const NodeId& peer_connection_id, rudp::EndpointPair peer_endpoint_pair,
-              bool requestor) {
-  LOG(kVerbose) << "AddToRudp. peer_id : " << DebugId(peer_id)
-                << " , connection id : " << DebugId(peer_connection_id);
+int AddToRudp(NetworkUtils<NodeType>& network, const SelfNodeId& self_node_id,
+              const SelfConnectionId& self_connection_id, const PeerNodeId& peer_node_id,
+              const PeerConnectionId& peer_connection_id, PeerEndpoint peer_endpoint_pair,
+              IsRequestor is_requestor) {
+  LOG(kVerbose) << "AddToRudp. peer_id : " << peer_node_id.data
+                << " , connection id : " << peer_connection_id.data;
   protobuf::Message connect_success(
-      rpcs::ConnectSuccess(peer_id, this_node_id, this_connection_id, requestor, NodeType::value));
+      rpcs::ConnectSuccess(peer_node_id, self_node_id, self_connection_id, is_requestor,
+                           IsClient(NodeType::value)));
   int result(
       network.Add(peer_connection_id, peer_endpoint_pair, connect_success.SerializeAsString()));
   if (result != rudp::kSuccess) {
-    LOG(kError) << "rudp add failed for peer node [" << peer_id
-                << "]. Connection id : " << peer_connection_id << ". result : " << result;
+    LOG(kError) << "rudp add failed for peer node [" << peer_node_id.data
+                << "]. Connection id : " << peer_connection_id.data << ". result : " << result;
   } else {
-    LOG(kVerbose) << "rudp.Add succeeded for peer node [" << peer_id
-                  << "]. Connection id : " << peer_connection_id;
+    LOG(kVerbose) << "rudp.Add succeeded for peer node [" << peer_node_id.data
+                  << "]. Connection id : " << peer_connection_id.data;
   }
   return result;
 }
@@ -163,9 +167,9 @@ bool ValidateAndAddToRoutingTable(NetworkUtils<ClientNode>& network,
 
 template <typename NodeType>
 void InformClientOfNewCloseNode(NetworkUtils<NodeType>& network, const NodeInfo& client,
-                                const NodeInfo& new_close_node, const NodeId& this_node_id) {
+                                const NodeInfo& new_close_node, const SelfNodeId& self_node_id) {
   protobuf::Message inform_client_of_new_close_node(
-      rpcs::InformClientOfNewCloseNode(new_close_node.id, this_node_id, client.id));
+      rpcs::InformClientOfNewCloseNode(PeerNodeId(new_close_node.id), self_node_id, client.id));
   network.SendToDirect(inform_client_of_new_close_node, client.id, client.connection_id);
 }
 

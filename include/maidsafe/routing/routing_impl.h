@@ -99,7 +99,7 @@ class GenericNode;
 template <typename NodeType>
 class RoutingImpl : public std::enable_shared_from_this<RoutingImpl<NodeType>> {
  public:
-  RoutingImpl(const NodeId& node_id, const asymm::Keys& keys)
+  RoutingImpl(const SelfNodeId& node_id, const asymm::Keys& keys)
       : network_status_mutex_(),
         network_status_(kNotJoined),
         network_statistics_(node_id),
@@ -150,7 +150,7 @@ class RoutingImpl : public std::enable_shared_from_this<RoutingImpl<NodeType>> {
 
   std::future<std::vector<NodeId>> GetGroup(const NodeId& group_id);
 
-  NodeId kNodeId() const;
+  SelfNodeId kNodeId() const;
 
   int network_status();
 
@@ -208,7 +208,7 @@ class RoutingImpl : public std::enable_shared_from_this<RoutingImpl<NodeType>> {
   int network_status_;
   NetworkStatistics network_statistics_;
   Connections<NodeType> connections_;
-  const NodeId kNodeId_;
+  const SelfNodeId kNodeId_;
   bool running_;
   std::mutex running_mutex_;
   Functors functors_;
@@ -443,7 +443,7 @@ void RoutingImpl<NodeType>::NotifyNetworkStatus(int return_code) const {
 }
 
 template <typename NodeType>
-NodeId RoutingImpl<NodeType>::kNodeId() const {
+SelfNodeId RoutingImpl<NodeType>::kNodeId() const {
   return kNodeId_;
 }
 
@@ -597,7 +597,8 @@ void RoutingImpl<NodeType>::ReSendFindNodeRequest(const boost::system::error_cod
     else
       num_nodes_requested = static_cast<int>(Parameters::max_routing_table_size);
 
-    protobuf::Message find_node_rpc(rpcs::FindNodes(kNodeId_, kNodeId_, num_nodes_requested));
+    protobuf::Message find_node_rpc(rpcs::FindNodes(num_nodes_requested, PeerNodeId(kNodeId_.data),
+                                                    kNodeId_));
     network_.SendToClosestNode(find_node_rpc);
 
     std::lock_guard<std::mutex> lock(running_mutex_);
@@ -711,9 +712,10 @@ void RoutingImpl<NodeType>::FindClosestNode(const boost::system::error_code& err
   }
 
   int num_nodes_requested(1 + attempts / Parameters::find_node_repeats_per_num_requested);
-  protobuf::Message find_node_rpc(rpcs::FindNodes(kNodeId_, kNodeId_, num_nodes_requested, true,
-                                                  network_.this_node_relay_connection_id()));
-  LOG(kVerbose) << "   [" << DebugId(kNodeId_) << "] (attempt " << attempts << ")"
+  protobuf::Message find_node_rpc(rpcs::FindNodes(
+      num_nodes_requested, PeerNodeId(kNodeId_.data), kNodeId_, IsRelayMessage(true),
+      RelayConnectionId(network_.this_node_relay_connection_id())));
+  LOG(kVerbose) << "   [" << kNodeId_.data << "] (attempt " << attempts << ")"
                 << " requesting " << num_nodes_requested << " nodes"
                 << "   (id: " << find_node_rpc.id() << ")";
 
@@ -785,7 +787,7 @@ void RoutingImpl<NodeType>::SendMessage(const NodeId& destination_id,
   if (connections_.routing_table.size() == 0) {  // Partial join state
     PartiallyJoinedSend(proto_message);
   } else {  // Normal node
-    proto_message.set_source_id(kNodeId_.string());
+    proto_message.set_source_id(kNodeId_.data.string());
     if (kNodeId_ != destination_id) {
       network_.SendToClosestNode(proto_message);
     } else if (NodeType::value) {
@@ -801,7 +803,7 @@ void RoutingImpl<NodeType>::SendMessage(const NodeId& destination_id,
 // Partial join state
 template <typename NodeType>
 void RoutingImpl<NodeType>::PartiallyJoinedSend(protobuf::Message& proto_message) {
-  proto_message.set_relay_id(kNodeId_.string());
+  proto_message.set_relay_id(kNodeId_.data.string());
   proto_message.set_relay_connection_id(network_.this_node_relay_connection_id().string());
   NodeId bootstrap_connection_id(network_.bootstrap_connection_id());
   assert(proto_message.has_relay_connection_id() && "did not set this_node_relay_connection_id");

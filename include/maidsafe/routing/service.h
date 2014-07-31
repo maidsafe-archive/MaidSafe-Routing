@@ -66,7 +66,7 @@ Service<NodeType>::~Service() {}
 
 template <typename NodeType>
 void Service<NodeType>::Ping(protobuf::Message& message) {
-  if (message.destination_id() != connections_.kNodeId().string()) {
+  if (message.destination_id() != connections_.kNodeId().data.string()) {
     // Message not for this node and we should not pass it on.
     LOG(kError) << "Message not for this node.";
     message.Clear();
@@ -90,14 +90,14 @@ void Service<NodeType>::Ping(protobuf::Message& message) {
   message.clear_data();
   message.add_data(ping_response.SerializeAsString());
   message.set_destination_id(message.source_id());
-  message.set_source_id(connections_.kNodeId().string());
+  message.set_source_id(connections_.kNodeId().data.string());
   message.set_hops_to_live(Parameters::hops_to_live);
   assert(message.IsInitialized() && "unintialised message");
 }
 
 template <typename NodeType>
 void Service<NodeType>::Connect(protobuf::Message& message) {
-  if (message.destination_id() != connections_.kNodeId().string()) {
+  if (message.destination_id() != connections_.kNodeId().data.string()) {
     // Message not for this node and we should not pass it on.
     LOG(kError) << "Message not for this node.";
     message.Clear();
@@ -111,7 +111,7 @@ void Service<NodeType>::Connect(protobuf::Message& message) {
     return;
   }
 
-  if (connect_request.peer_id() != connections_.kNodeId().string()) {
+  if (connect_request.peer_id() != connections_.kNodeId().data.string()) {
     LOG(kError) << "Message not for this node.";
     message.Clear();
     return;
@@ -153,7 +153,7 @@ void Service<NodeType>::Connect(protobuf::Message& message) {
     message.set_destination_id(message.source_id());
   else
     message.clear_destination_id();
-  message.set_source_id(connections_.kNodeId().string());
+  message.set_source_id(connections_.kNodeId().data.string());
 
   // Check rudp & routing
   bool check_node_succeeded(false);
@@ -201,14 +201,15 @@ void Service<NodeType>::Connect(protobuf::Message& message) {
            "Unspecified endpoint after GetAvailableEndpoint success.");
 
     int add_result(AddToRudp(network_, connections_.kNodeId(),
-                             connections_.kConnectionId(), peer_node.id,
-                             peer_node.connection_id, peer_endpoint_pair, false));
+                             connections_.kConnectionId(), PeerNodeId(peer_node.id),
+                             PeerConnectionId(peer_node.connection_id),
+                             PeerEndpoint(peer_endpoint_pair), IsRequestor(false)));
     if (rudp::kSuccess == add_result) {
       connect_response.set_answer(protobuf::ConnectResponseType::kAccepted);
 
-      connect_response.mutable_contact()->set_node_id(connections_.kNodeId().string());
+      connect_response.mutable_contact()->set_node_id(connections_.kNodeId().data.string());
       connect_response.mutable_contact()->set_connection_id(
-          connections_.kConnectionId().string());
+          connections_.kConnectionId().data.string());
       connect_response.mutable_contact()->set_nat_type(NatTypeProtobuf(this_nat_type));
 
       SetProtobufEndpoint(this_endpoint_pair.local,
@@ -254,7 +255,7 @@ void Service<NodeType>::FindNodes(protobuf::Message& message) {
   auto nodes(connections_.routing_table.GetClosestNodes(
       NodeId(message.destination_id()),
       static_cast<uint16_t>(find_nodes.num_nodes_requested() - 1)));
-  found_nodes.add_nodes(connections_.kNodeId().string());
+  found_nodes.add_nodes(connections_.kNodeId().data.string());
 
   for (const auto& node : nodes)
     found_nodes.add_nodes(node.id.string());
@@ -273,7 +274,7 @@ void Service<NodeType>::FindNodes(protobuf::Message& message) {
     message.clear_destination_id();
     LOG(kVerbose) << "Relay message, so not setting destination ID.";
   }
-  message.set_source_id(connections_.kNodeId().string());
+  message.set_source_id(connections_.kNodeId().data.string());
   message.clear_route_history();
   message.clear_data();
   message.add_data(found_nodes.SerializeAsString());
@@ -331,9 +332,8 @@ void Service<NodeType>::ConnectSuccessFromResponder(NodeInfo& peer, bool client)
     close_nodes_for_peer.erase(itr);
 
   protobuf::Message connect_success_ack(rpcs::ConnectSuccessAcknowledgement(
-      peer.id, connections_.kNodeId(), connections_.kConnectionId(),
-      true,  // this node is requestor
-      close_nodes_for_peer, NodeType::value));
+      PeerNodeId(peer.id), connections_.kNodeId(), connections_.kConnectionId(), IsRequestor(true),
+      close_nodes_for_peer, IsClient(NodeType::value)));
   network_.SendToDirect(connect_success_ack, peer.id, peer.connection_id);
 }
 
@@ -344,12 +344,12 @@ void Service<NodeType>::GetGroup(protobuf::Message& message) {
   assert(get_group.ParseFromString(message.data(0)));
   auto close_nodes(connections_.routing_table.GetClosestNodes(NodeId(get_group.node_id()),
                                                               Parameters::group_size, true));
-  get_group.set_node_id(connections_.kNodeId().string());
+  get_group.set_node_id(connections_.kNodeId().data.string());
   for (const auto& node : close_nodes)
     get_group.add_group_nodes_id(node.id.string());
   message.clear_route_history();
   message.set_destination_id(message.source_id());
-  message.set_source_id(connections_.kNodeId().string());
+  message.set_source_id(connections_.kNodeId().data.string());
   message.clear_route_history();
   message.clear_data();
   message.add_data(get_group.SerializeAsString());

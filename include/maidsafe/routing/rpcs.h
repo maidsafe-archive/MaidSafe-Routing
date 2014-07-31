@@ -30,62 +30,67 @@
 
 #include "maidsafe/routing/api_config.h"
 #include "maidsafe/routing/routing.pb.h"
-#include "maidsafe/routing/utils.h"
+#include "maidsafe/routing/types.h"
 
 namespace maidsafe {
 
 namespace routing {
 
-typedef TaggedValue<NodeId, struct NodeIdentifierType> SelfNodeId;
-typedef TaggedValue<NodeId, struct ConnectionIdType> SelfConnectionId;
-typedef TaggedValue<bool, struct NodeType> SelfNodeType;
-typedef TaggedValue<rudp::EndpointPair, struct EndpointPair> SelfEndpoint;
-typedef TaggedValue<rudp::NatType, struct NatType> SelfNatType;
-typedef TaggedValue<NodeId, struct DestinationIdType> PeerNodeId;
-typedef TaggedValue<std::string, struct IdentityType> Identity;
-typedef TaggedValue<bool, struct RelayMessageType> RelayMessage;
-typedef TaggedValue<NodeId, struct RelayConnectionIdType> RelayConnectionId;
-typedef TaggedValue<bool, struct RequestorType> Requestor;
-typedef TaggedValue<std::vector<NodeInfo>, struct CloseNodeIdsType> CloseNodeIds;
-typedef TaggedValue<MessageType, struct MessageRpcType> RpcType;
-
 namespace rpcs {
 
+template <typename PropertyType>
+void SetMessageProperty(protobuf::Message& message, const PropertyType& value);
+
+void SetMessageProperties(protobuf::Message& message);
+
 template <typename PropertyType, typename... Args>
-void SetMessageProperties(protobuf::Message& message, const PropertyType& value, Args... args) {
+void SetMessageProperties(protobuf::Message& message, PropertyType value, Args... args) {
   SetMessageProperty(message, value);
   SetMessageProperties(message, args...);
 }
 
 template <typename PropertyType>
-void SetMessageProperty(protobuf::Message& /*message*/, const PropertyType& /*value*/) {}
+void SetMessageProperty(protobuf::Message& /*message*/, const PropertyType& /*value*/) {
+  PropertyType::No_generic_handler_is_available__Specialisation_is_required;
+}
 
-protobuf::Message Ping(const NodeId& node_id, const std::string& identity);
+template <>
+void SetMessageProperty(protobuf::Message& message, const SelfNodeId& value);
 
-protobuf::Message Connect(const NodeId& node_id, const rudp::EndpointPair& our_endpoint,
-                          const NodeId& this_node_id, const NodeId& this_connection_id,
-                          bool client_node = false,
-                          rudp::NatType nat_type = rudp::NatType::kUnknown,
-                          bool relay_message = false, NodeId relay_connection_id = NodeId());
+template <>
+void SetMessageProperty(protobuf::Message& message, const PeerNodeId& value);
 
-protobuf::Message FindNodes(const NodeId& node_id, const NodeId& this_node_id,
-                            int num_nodes_requested, bool relay_message = false,
-                            NodeId relay_connection_id = NodeId());
+
+protobuf::Message Ping(const PeerNodeId& peer_id, const SelfNodeId& self_id);
+
+protobuf::Message Connect(const PeerNodeId& node_id, const SelfEndpoint& our_endpoint,
+                          const SelfNodeId& self_node_id,
+                          const SelfConnectionId& self_connection_id,
+                          IsClient is_client = IsClient(false),
+                          NatType nat_type = NatType(rudp::NatType::kUnknown),
+                          IsRelayMessage = IsRelayMessage(false),
+                          RelayConnectionId relay_connection_id = RelayConnectionId(NodeId()));
+
+protobuf::Message FindNodes(unsigned int num_nodes_requested, const PeerNodeId& peer_id,
+                            const SelfNodeId& self_id,
+                            IsRelayMessage relay_message = IsRelayMessage(false),
+                            RelayConnectionId relay_connection_id = RelayConnectionId(NodeId()));
 
 protobuf::Message ProxyConnect(const NodeId& node_id, const NodeId& this_node_id,
                                const rudp::EndpointPair& endpoint_pair, bool relay_message = false,
                                NodeId relay_connection_id = NodeId());
 
-protobuf::Message ConnectSuccess(const NodeId& node_id, const NodeId& this_node_id,
-                                 const NodeId& this_connection_id, bool requestor,
-                                 bool client_node);
+protobuf::Message ConnectSuccess(const PeerNodeId& peer_node_id, const SelfNodeId& self_node_id,
+                                 const SelfConnectionId& self_connection_id, IsRequestor requestor,
+                                 IsClient client_node);
 
-protobuf::Message ConnectSuccessAcknowledgement(const NodeId& node_id, const NodeId& this_node_id,
-                                                const NodeId& this_connection_id, bool requestor,
-                                                const std::vector<NodeInfo>& close_ids,
-                                                bool client_node);
+protobuf::Message ConnectSuccessAcknowledgement(
+    const PeerNodeId& node_id, const SelfNodeId& self_node_id,
+    const SelfConnectionId& self_connection_id, IsRequestor requestor,
+    const std::vector<NodeInfo>& close_ids, IsClient client_node);
 
-protobuf::Message InformClientOfNewCloseNode(const NodeId& node_id, const NodeId& this_node_id,
+protobuf::Message InformClientOfNewCloseNode(const PeerNodeId& node_id,
+                                             const SelfNodeId& this_node_id,
                                              const NodeId& client_node_id);
 
 protobuf::Message GetGroup(const NodeId& node_id, const NodeId& my_node_id);

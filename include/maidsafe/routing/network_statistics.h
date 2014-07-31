@@ -25,6 +25,7 @@
 
 #include "maidsafe/common/node_id.h"
 #include "maidsafe/routing/node_info.h"
+#include "maidsafe/routing/types.h"
 
 namespace maidsafe {
 
@@ -37,7 +38,7 @@ class NetworkStatisticsTest_BEH_IsIdInGroupRange_Test;
 
 class NetworkStatistics {
  public:
-  explicit NetworkStatistics(NodeId node_id);
+  explicit NetworkStatistics(const SelfNodeId& node_id);
   void UpdateLocalAverageDistance(const std::vector<NodeId>& unique_nodes);
   void UpdateNetworkAverageDistance(const NodeId& distance);
   bool EstimateInGroup(const NodeId& sender_id, const NodeId& info_id);
@@ -55,7 +56,7 @@ class NetworkStatistics {
     NodeId average_distance;
   };
   std::mutex mutex_;
-  const NodeId kNodeId_;
+  const SelfNodeId kNodeId_;
   NodeId distance_;
   NetworkDistanceData network_distance_data_;
 };

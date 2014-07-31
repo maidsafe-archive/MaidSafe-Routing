@@ -168,7 +168,8 @@ void RoutingImpl<VaultNode>::OnRoutingTableChange(const RoutingTableChange& rout
   }
 
   if (connections_.routing_table.size() > Parameters::routing_table_size_threshold)
-    network_.SendToClosestNode(rpcs::FindNodes(kNodeId_, kNodeId_, Parameters::closest_nodes_size));
+    network_.SendToClosestNode(rpcs::FindNodes(Parameters::closest_nodes_size,
+                                               PeerNodeId(kNodeId_.data), kNodeId_));
 }
 
 template <>
@@ -188,8 +189,8 @@ void RoutingImpl<ClientNode>::OnRoutingTableChange(const RoutingTableChange& rou
   }
 
   if (connections_.routing_table.size() < Parameters::max_routing_table_size_for_client)
-    network_.SendToClosestNode(rpcs::FindNodes(kNodeId_, kNodeId_,
-                               Parameters::max_routing_table_size_for_client));
+    network_.SendToClosestNode(rpcs::FindNodes(Params<ClientNode>::max_routing_table_size,
+                                               PeerNodeId(kNodeId_.data), kNodeId_));
 }
 
 template <>

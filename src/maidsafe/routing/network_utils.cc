@@ -53,7 +53,7 @@ void NetworkUtils<ClientNode>::RecursiveSendOn(
   if (attempt_count > 0)
     Sleep(std::chrono::milliseconds(50));
 
-  const std::string kThisId(connections_.kNodeId().string());
+  const std::string kThisId(connections_.kNodeId().data.string());
   bool ignore_exact_match(!IsDirect(message));
   std::vector<std::string> route_history;
   NodeInfo peer;
@@ -67,7 +67,7 @@ void NetworkUtils<ClientNode>::RecursiveSendOn(
           message.route_history().end() -
               static_cast<size_t>(!(message.has_visited() && message.visited())));
     else if ((message.route_history().size() == 1) &&
-             (message.route_history(0) != connections_.kNodeId().string()))
+             (message.route_history(0) != connections_.kNodeId().data.string()))
       route_history.push_back(message.route_history(0));
 
     peer = connections_.routing_table.GetClosestNode(NodeId(message.destination_id()), ignore_exact_match,
@@ -95,7 +95,7 @@ void NetworkUtils<ClientNode>::RecursiveSendOn(
                     << " dst : " << HexSubstr(message.destination_id());
     } else if (rudp::kSendFailure == message_sent) {
       LOG(kError) << "Sending type " << MessageTypeString(message) << " message from "
-                  << HexSubstr(connections_.routing_table.kNodeId().string()) << " to "
+                  << HexSubstr(connections_.kNodeId().data.string()) << " to "
                   << HexSubstr(peer.id.string()) << " with destination ID "
                   << HexSubstr(message.destination_id()) << " failed with code " << message_sent
                   << ".  Will retry to Send.  Attempt count = " << attempt_count + 1
@@ -131,7 +131,7 @@ void NetworkUtils<ClientNode>::SendToClosestNode(const protobuf::Message& messag
     } else {
       LOG(kError) << " No endpoint to send to; aborting send.  Attempt to send a type "
                   << MessageTypeString(message) << " message to " << HexSubstr(message.source_id())
-                  << " from " << connections_.routing_table.kNodeId() << " id: " << message.id();
+                  << " from " << connections_.kNodeId().data << " id: " << message.id();
     }
     return;
  }

@@ -267,7 +267,7 @@ void NetworkUtils<NodeType>::RudpSend(const NodeId& peer_id, const protobuf::Mes
       return;
   }
   rudp_.Send(peer_id, message.SerializeAsString(), message_sent_functor);
-  LOG(kVerbose) << "  [" << connections_.routing_table.kNodeId()
+  LOG(kVerbose) << "  [" << connections_.kNodeId().data
                 << "] send : " << MessageTypeString(message) << " to   " << DebugId(peer_id)
                 << "   (id: " << message.id() << ")"
                 << " --To Rudp--";
@@ -304,12 +304,12 @@ void NetworkUtils<NodeType>::SendToClosestNode(const protobuf::Message& message)
     // have the destination ID in non-routing table
     if (!client_routing_nodes.empty() && message.direct()) {
       if (IsClientToClientMessageWithDifferentNodeIds(message, true)) {
-        LOG(kWarning) << "This node [" << connections_.routing_table.kNodeId()
+        LOG(kWarning) << "This node [" << connections_.kNodeId().data
                       << " Dropping message as client to client message not allowed."
                       << PrintMessage(message);
         return;
       }
-      LOG(kVerbose) << "This node [" << DebugId(connections_.routing_table.kNodeId()) << "] has "
+      LOG(kVerbose) << "This node [" << DebugId(connections_.kNodeId().data) << "] has "
                     << client_routing_nodes.size()
                     << " destination node(s) in its non-routing table."
                     << " id: " << message.id();
@@ -324,7 +324,7 @@ void NetworkUtils<NodeType>::SendToClosestNode(const protobuf::Message& message)
     } else {
       LOG(kError) << " No endpoint to send to; aborting send.  Attempt to send a type "
                   << MessageTypeString(message) << " message to " << HexSubstr(message.source_id())
-                  << " from " << connections_.routing_table.kNodeId() << " id: " << message.id();
+                  << " from " << connections_.kNodeId().data << " id: " << message.id();
     }
     return;
   }
@@ -350,7 +350,7 @@ void NetworkUtils<ClientNode>::SendToClosestNode(const protobuf::Message& messag
 template <typename NodeType>
 void NetworkUtils<NodeType>::SendTo(const protobuf::Message& message, const NodeId& peer_node_id,
                                     const NodeId& peer_connection_id) {
-  const std::string kThisId(connections_.routing_table.kNodeId().string());
+  const std::string kThisId(connections_.kNodeId().data.string());
   rudp::MessageSentFunctor message_sent_functor = [=](int message_sent) {
     if (rudp::kSuccess == message_sent) {
       LOG(kVerbose) << "  [" << HexSubstr(kThisId) << "] sent : " << MessageTypeString(message)
@@ -394,7 +394,7 @@ void NetworkUtils<NodeType>::RecursiveSendOn(protobuf::Message message,
   if (attempt_count > 0)
     Sleep(std::chrono::milliseconds(50));
 
-  const std::string kThisId(connections_.routing_table.kNodeId().string());
+  const std::string kThisId(connections_.kNodeId().data.string());
   bool ignore_exact_match(!IsDirect(message));
   std::vector<std::string> route_history;
   NodeInfo peer;
@@ -408,7 +408,7 @@ void NetworkUtils<NodeType>::RecursiveSendOn(protobuf::Message message,
           message.route_history().end() -
               static_cast<size_t>(!(message.has_visited() && message.visited())));
     else if ((message.route_history().size() == 1) &&
-             (message.route_history(0) != connections_.routing_table.kNodeId().string()))
+             (message.route_history(0) != connections_.kNodeId().data.string()))
       route_history.push_back(message.route_history(0));
 
     peer = connections_.routing_table.GetClosestNode(NodeId(message.destination_id()),
@@ -436,7 +436,7 @@ void NetworkUtils<NodeType>::RecursiveSendOn(protobuf::Message message,
                     << " dst : " << HexSubstr(message.destination_id());
     } else if (rudp::kSendFailure == message_sent) {
       LOG(kError) << "Sending type " << MessageTypeString(message) << " message from "
-                  << HexSubstr(connections_.routing_table.kNodeId().string()) << " to "
+                  << HexSubstr(connections_.kNodeId().data.string()) << " to "
                   << HexSubstr(peer.id.string()) << " with destination ID "
                   << HexSubstr(message.destination_id()) << " failed with code " << message_sent
                   << ".  Will retry to Send.  Attempt count = " << attempt_count + 1
@@ -505,8 +505,8 @@ void NetworkUtils<NodeType>::AdjustRouteHistory(protobuf::Message& message) {
     return;
   assert(message.route_history().size() <= Parameters::max_route_history);
   if (std::find(message.route_history().begin(), message.route_history().end(),
-                connections_.kNodeId().string()) == message.route_history().end()) {
-    message.add_route_history(connections_.kNodeId().string());
+                connections_.kNodeId().data.string()) == message.route_history().end()) {
+    message.add_route_history(connections_.kNodeId().data.string());
     if (message.route_history().size() > Parameters::max_route_history) {
       std::vector<std::string> route_history(message.route_history().begin() + 1,
                                              message.route_history().end());
