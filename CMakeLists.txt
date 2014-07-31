@@ -74,12 +74,12 @@ if(MaidsafeTesting)
   ms_add_static_library(maidsafe_routing_test_helper ${RoutingTestsHelperFiles})
   target_link_libraries(maidsafe_routing_test_helper maidsafe_routing maidsafe_test)
   target_link_libraries(maidsafe_routing maidsafe_network_viewer)
-  ms_add_executable(TESTrouting "Tests/Routing" ${RoutingTestsAllFiles})
-  ms_add_executable(TESTrouting_api "Tests/Routing" ${RoutingApiTestFiles} ${RoutingSourcesDir}/tests/test_main.cc)
-  # new executable TESTrouting_func is created to contain func tests excluded from TESTrouting, can be run seperately
-  ms_add_executable(TESTrouting_func "Tests/Routing" ${RoutingFuncTestFiles})
-  # new executable TESTrouting_big is created to contain tests that each need their own network
-  ms_add_executable(TESTrouting_big "Tests/Routing" ${RoutingBigTestFiles} ${RoutingSourcesDir}/tests/test_main.cc)
+  ms_add_executable(test_routing "Tests/Routing" ${RoutingTestsAllFiles})
+  ms_add_executable(test_routing_api "Tests/Routing" ${RoutingApiTestFiles} ${RoutingSourcesDir}/tests/test_main.cc)
+  # new executable test_routing_func is created to contain func tests excluded from test_routing, can be run seperately
+  ms_add_executable(test_routing_func "Tests/Routing" ${RoutingFuncTestFiles})
+  # new executable weekly_test_routing is created to contain tests that each need their own network
+  ms_add_executable(weekly_test_routing "Tests/Routing" ${RoutingBigTestFiles} ${RoutingSourcesDir}/tests/test_main.cc)
   ms_add_executable(create_client_bootstrap "Tools/Routing" ${RoutingSourcesDir}/tools/create_bootstrap.cc)
   ms_add_executable(routing_key_helper "Tools/Routing" ${RoutingSourcesDir}/tools/key_helper.cc)
   ms_add_executable(routing_node "Tools/Routing" ${RoutingSourcesDir}/tools/routing_node.cc
@@ -89,22 +89,22 @@ if(MaidsafeTesting)
                                                  ${RoutingSourcesDir}/tools/shared_response.cc)
 
   target_include_directories(maidsafe_routing_test_helper PRIVATE ${PROJECT_SOURCE_DIR}/src)
-  target_include_directories(TESTrouting PRIVATE ${PROJECT_SOURCE_DIR}/src)
-  target_include_directories(TESTrouting_api PRIVATE ${PROJECT_SOURCE_DIR}/src)
-  target_include_directories(TESTrouting_func PRIVATE ${PROJECT_SOURCE_DIR}/src)
-  target_include_directories(TESTrouting_big PRIVATE ${PROJECT_SOURCE_DIR}/src)
+  target_include_directories(test_routing PRIVATE ${PROJECT_SOURCE_DIR}/src)
+  target_include_directories(test_routing_api PRIVATE ${PROJECT_SOURCE_DIR}/src)
+  target_include_directories(test_routing_func PRIVATE ${PROJECT_SOURCE_DIR}/src)
+  target_include_directories(weekly_test_routing PRIVATE ${PROJECT_SOURCE_DIR}/src)
   target_include_directories(routing_key_helper PRIVATE ${PROJECT_SOURCE_DIR}/src)
   target_include_directories(routing_node PRIVATE ${PROJECT_SOURCE_DIR}/src)
   target_include_directories(create_client_bootstrap PRIVATE ${PROJECT_SOURCE_DIR}/src)
 
-  target_link_libraries(TESTrouting maidsafe_routing_test_helper)
-  target_link_libraries(TESTrouting_api maidsafe_routing_test_helper)
-  target_link_libraries(TESTrouting_func maidsafe_routing_test_helper)
-  target_link_libraries(TESTrouting_big maidsafe_routing_test_helper)
+  target_link_libraries(test_routing maidsafe_routing_test_helper)
+  target_link_libraries(test_routing_api maidsafe_routing_test_helper)
+  target_link_libraries(test_routing_func maidsafe_routing_test_helper)
+  target_link_libraries(weekly_test_routing maidsafe_routing_test_helper)
   target_link_libraries(create_client_bootstrap maidsafe_routing_test_helper)
   target_link_libraries(routing_key_helper maidsafe_routing_test_helper)
   target_link_libraries(routing_node maidsafe_routing_test_helper)
-  foreach(Target maidsafe_routing TESTrouting_func TESTrouting_big routing_node maidsafe_routing_test_helper)
+  foreach(Target maidsafe_routing test_routing_func weekly_test_routing routing_node maidsafe_routing_test_helper)
     target_compile_definitions(${Target} PRIVATE USE_GTEST)
   endforeach()
 endif()
@@ -127,10 +127,10 @@ target_compile_definitions(maidsafe_routing PRIVATE $<$<BOOL:${QA_BUILD}>:QA_BUI
 #==================================================================================================#
 if(MaidsafeTesting)
   ms_add_default_tests()
-  add_test(NAME Multiple_Functional_Tests COMMAND TESTrouting_func)
+  add_test(NAME Multiple_Functional_Tests COMMAND test_routing_func)
   set_property(TEST Multiple_Functional_Tests PROPERTY LABELS Routing Functional)
-  ms_add_gtests(TESTrouting)
-  ms_add_gtests(TESTrouting_api)
+  ms_add_gtests(test_routing)
+  ms_add_gtests(test_routing_api)
   set(Timeout 300)
   ms_update_test_timeout(Timeout)
   set_property(TEST ResponseHandlerTest.BEH_FindNodes PROPERTY TIMEOUT ${Timeout})
@@ -139,7 +139,7 @@ if(MaidsafeTesting)
   set_property(TEST APITest.BEH_API_NodeNetworkWithClient PROPERTY TIMEOUT ${Timeout})
 # This test target can be run separately. Removed from Experimental target to reduce the ctest time.
   if(WEEKLY)
-    ms_add_gtests(TESTrouting_big)
+    ms_add_gtests(weekly_test_routing)
   endif()
   ms_test_summary_output()
 endif()
@@ -152,10 +152,10 @@ install(TARGETS maidsafe_routing COMPONENT Development CONFIGURATIONS Debug Rele
 install(DIRECTORY ${PROJECT_SOURCE_DIR}/include/ COMPONENT Development DESTINATION include)
 
 if(MaidsafeTesting)
-  install(TARGETS maidsafe_routing_test_helper TESTrouting TESTrouting_api TESTrouting_func
-                  TESTrouting_big create_client_bootstrap routing_key_helper routing_node
+  install(TARGETS maidsafe_routing_test_helper test_routing test_routing_api test_routing_func
+                  weekly_test_routing create_client_bootstrap routing_key_helper routing_node
                   COMPONENT Tests CONFIGURATIONS Debug RUNTIME DESTINATION bin/debug ARCHIVE DESTINATION lib)
-  install(TARGETS maidsafe_routing_test_helper TESTrouting TESTrouting_api TESTrouting_func
-                  TESTrouting_big create_client_bootstrap routing_key_helper routing_node
+  install(TARGETS maidsafe_routing_test_helper test_routing test_routing_api test_routing_func
+                  weekly_test_routing create_client_bootstrap routing_key_helper routing_node
                   COMPONENT Tests CONFIGURATIONS Release RUNTIME DESTINATION bin ARCHIVE DESTINATION lib)
 endif()
