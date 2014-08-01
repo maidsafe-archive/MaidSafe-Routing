@@ -38,10 +38,6 @@ namespace routing {
 
 namespace rpcs {
 
-namespace detail {
-
-}
-
 
 protobuf::Message Ping(const PeerNodeId& peer_id, const SelfNodeId& self_id);
 
@@ -49,7 +45,7 @@ protobuf::Message Connect(const PeerNodeId& node_id, const SelfEndpoint& our_end
                           const SelfNodeId& self_node_id,
                           const SelfConnectionId& self_connection_id,
                           IsClient is_client = IsClient(false),
-                          NatType nat_type = NatType(rudp::NatType::kUnknown),
+                          rudp::NatType nat_type = rudp::NatType::kUnknown,
                           IsRelayMessage = IsRelayMessage(false),
                           RelayConnectionId relay_connection_id = RelayConnectionId(NodeId()));
 
@@ -57,10 +53,6 @@ protobuf::Message FindNodes(unsigned int num_nodes_requested, const PeerNodeId& 
                             const SelfNodeId& self_node_id,
                             IsRelayMessage relay_message = IsRelayMessage(false),
                             RelayConnectionId relay_connection_id = RelayConnectionId(NodeId()));
-
-protobuf::Message ProxyConnect(const NodeId& node_id, const NodeId& this_node_id,
-                               const rudp::EndpointPair& endpoint_pair, bool relay_message = false,
-                               NodeId relay_connection_id = NodeId());
 
 protobuf::Message ConnectSuccess(const PeerNodeId& peer_node_id, const SelfNodeId& self_node_id,
                                  const SelfConnectionId& self_connection_id, IsRequestor requestor,
@@ -73,7 +65,7 @@ protobuf::Message ConnectSuccessAcknowledgement(
 
 protobuf::Message InformClientOfNewCloseNode(const PeerNodeId& node_id,
                                              const SelfNodeId& this_node_id,
-                                             const NodeId& client_node_id);
+                                             const PeerNodeId& client_node_id);
 
 protobuf::Message GetGroup(const NodeId& node_id, const NodeId& my_node_id);
 

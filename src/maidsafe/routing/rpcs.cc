@@ -59,7 +59,7 @@ template <>
 void SetMessageProperty(protobuf::Message& message, const PeerNodeId& value);
 
 template <>
-void SetMessageProperty(protobuf::Message& message, const RpcType& value);
+void SetMessageProperty(protobuf::Message& message, const MessageType& value);
 
 template <>
 void SetMessageProperty(protobuf::Message& message, const IsDirectMessage& value);
@@ -110,8 +110,8 @@ void SetMessageProperty(protobuf::Message& message, const IsDirectMessage& value
 }
 
 template <>
-void SetMessageProperty(protobuf::Message& message, const RpcType& value) {
-  message.set_type(static_cast<uint32_t>(value.data));
+void SetMessageProperty(protobuf::Message& message, const MessageType &value) {
+  message.set_type(static_cast<uint32_t>(value));
 }
 
 template <>
@@ -161,7 +161,7 @@ protobuf::Message Ping(const PeerNodeId& peer_id, const SelfNodeId& self_id) {
 #ifdef TESTING
   ping_request.set_timestamp(GetTimeStamp());
 #endif
-  detail::SetMessageProperties(message, self_id, peer_id, RpcType(MessageType::kPing),
+  detail::SetMessageProperties(message, self_id, peer_id, MessageType::kPing,
                                MessageData(ping_request.SerializeAsString()));
   return message;
 }
@@ -169,7 +169,7 @@ protobuf::Message Ping(const PeerNodeId& peer_id, const SelfNodeId& self_id) {
 protobuf::Message Connect(const PeerNodeId& peer_node_id, const SelfEndpoint& our_endpoint,
                           const SelfNodeId& self_node_id,
                           const SelfConnectionId& self_connection_id, IsClient is_client,
-                          NatType nat_type, IsRelayMessage is_relay_message,
+                          rudp::NatType nat_type, IsRelayMessage is_relay_message,
                           RelayConnectionId relay_connection_id) {
   assert((!our_endpoint.data.external.address().is_unspecified() ||
           !our_endpoint.data.local.address().is_unspecified()) &&
@@ -189,7 +189,7 @@ protobuf::Message Connect(const PeerNodeId& peer_node_id, const SelfEndpoint& ou
     protobuf_connect_request.set_timestamp(GetTimeStamp());
 #endif
   }
-  detail::SetMessageProperties(message, peer_node_id, RpcType(MessageType::kConnect),
+  detail::SetMessageProperties(message, peer_node_id, MessageType::kConnect,
                                MessageData(protobuf_connect_request.SerializeAsString()),
                                is_client);
   if (!is_relay_message.data) {
@@ -215,7 +215,7 @@ protobuf::Message FindNodes(unsigned int num_nodes_requested, const PeerNodeId& 
 #endif
   }
   detail::SetMessageProperties(message, peer_id, MessageData(find_nodes.SerializeAsString()),
-                               IsDirectMessage(false), RpcType(MessageType::kFindNodes));
+                               IsDirectMessage(false), MessageType::kFindNodes);
   message.add_route_history(self_node_id.data.string());
   message.set_last_id(self_node_id.data.string());
   message.set_visited(false);
@@ -244,7 +244,7 @@ protobuf::Message ConnectSuccess(const PeerNodeId& peer_node_id, const SelfNodeI
   }
   detail::SetMessageProperties(message, peer_node_id,
                                MessageData(protobuf_connect_success.SerializeAsString()),
-                               RpcType(MessageType::kConnectSuccess), client_node, self_node_id);
+                               MessageType::kConnectSuccess, client_node, self_node_id);
   assert(message.IsInitialized() && "Uninitialised message");
   return message;
 }
@@ -265,24 +265,24 @@ protobuf::Message ConnectSuccessAcknowledgement(
   }
   detail::SetMessageProperties(message, peer_node_id,
                                MessageData(protobuf_connect_success_ack.SerializeAsString()),
-                               RpcType((MessageType::kConnectSuccessAcknowledgement)), client_node,
+                               MessageType::kConnectSuccessAcknowledgement, client_node,
                                self_node_id, IsRequestMessage(false));
   assert(message.IsInitialized() && "Uninitialised message");
   return message;
 }
 
-protobuf::Message InformClientOfNewCloseNode(const PeerNodeId& peer_node_id,
+protobuf::Message InformClientOfNewCloseNode(const PeerNodeId& added_peer_node_id,
                                              const SelfNodeId& self_node_id,
-                                             const NodeId& client_node_id) {
+                                             const PeerNodeId& client_node_id) {
   protobuf::Message message(detail::InitialisedMessage());
   message.set_hops_to_live(2);
   protobuf::InformClientOfhNewCloseNode inform_client_of_new_close_node;
   {
-    inform_client_of_new_close_node.set_node_id(peer_node_id.data.string());
+    inform_client_of_new_close_node.set_node_id(added_peer_node_id.data.string());
   }
-  detail::SetMessageProperties(message, PeerNodeId(client_node_id), self_node_id,
+  detail::SetMessageProperties(message, client_node_id, self_node_id,
                                MessageData(inform_client_of_new_close_node.SerializeAsString()),
-                               RpcType(MessageType::kInformClientOfNewCloseNode));
+                               MessageType::kInformClientOfNewCloseNode);
   assert(message.IsInitialized() && "Unintialised message");
   return message;
 }
@@ -295,8 +295,7 @@ protobuf::Message GetGroup(const PeerNodeId& peer_node_id, const SelfNodeId& sel
     get_group.set_node_id(peer_node_id.data.string());
   }
   detail::SetMessageProperties(message,  MessageData(get_group.SerializeAsString()), peer_node_id,
-                               self_node_id, IsDirectMessage(false),
-                               RpcType(MessageType::kGetGroup));
+                               self_node_id, IsDirectMessage(false), MessageType::kGetGroup);
   assert(message.IsInitialized() && "Unintialised message");
   return message;
 }

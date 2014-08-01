@@ -275,7 +275,7 @@ void ResponseHandler<NodeType>::SendConnectRequest(const NodeId peer_node_id) {
                                                 SelfNodeId(connections_.kNodeId()),
                                                 SelfConnectionId(connections_.kConnectionId()),
                                                 IsClient(NodeType::value),
-                                                NatType(this_nat_type),
+                                                rudp::NatType(this_nat_type),
                                                 IsRelayMessage(relay_message),
                                                 RelayConnectionId(relay_connection_id)));
     LOG(kVerbose) << "Sending Connect RPC to " << DebugId(peer.id)

@@ -169,7 +169,8 @@ template <typename NodeType>
 void InformClientOfNewCloseNode(NetworkUtils<NodeType>& network, const NodeInfo& client,
                                 const NodeInfo& new_close_node, const SelfNodeId& self_node_id) {
   protobuf::Message inform_client_of_new_close_node(
-      rpcs::InformClientOfNewCloseNode(PeerNodeId(new_close_node.id), self_node_id, client.id));
+      rpcs::InformClientOfNewCloseNode(PeerNodeId(new_close_node.id), self_node_id,
+                                       PeerNodeId(client.id)));
   network.SendToDirect(inform_client_of_new_close_node, client.id, client.connection_id);
 }
 
