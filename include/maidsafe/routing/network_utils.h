@@ -267,7 +267,7 @@ void NetworkUtils<NodeType>::RudpSend(const NodeId& peer_id, const protobuf::Mes
       return;
   }
   rudp_.Send(peer_id, message.SerializeAsString(), message_sent_functor);
-  LOG(kVerbose) << "  [" << connections_.kNodeId().data
+  LOG(kVerbose) << "  [" << connections_.kNodeId()
                 << "] send : " << MessageTypeString(message) << " to   " << DebugId(peer_id)
                 << "   (id: " << message.id() << ")"
                 << " --To Rudp--";
@@ -304,12 +304,12 @@ void NetworkUtils<NodeType>::SendToClosestNode(const protobuf::Message& message)
     // have the destination ID in non-routing table
     if (!client_routing_nodes.empty() && message.direct()) {
       if (IsClientToClientMessageWithDifferentNodeIds(message, true)) {
-        LOG(kWarning) << "This node [" << connections_.kNodeId().data
+        LOG(kWarning) << "This node [" << connections_.kNodeId()
                       << " Dropping message as client to client message not allowed."
                       << PrintMessage(message);
         return;
       }
-      LOG(kVerbose) << "This node [" << DebugId(connections_.kNodeId().data) << "] has "
+      LOG(kVerbose) << "This node [" << connections_.kNodeId() << "] has "
                     << client_routing_nodes.size()
                     << " destination node(s) in its non-routing table."
                     << " id: " << message.id();
@@ -324,7 +324,7 @@ void NetworkUtils<NodeType>::SendToClosestNode(const protobuf::Message& message)
     } else {
       LOG(kError) << " No endpoint to send to; aborting send.  Attempt to send a type "
                   << MessageTypeString(message) << " message to " << HexSubstr(message.source_id())
-                  << " from " << connections_.kNodeId().data << " id: " << message.id();
+                  << " from " << connections_.kNodeId() << " id: " << message.id();
     }
     return;
   }
@@ -436,7 +436,7 @@ void NetworkUtils<NodeType>::RecursiveSendOn(protobuf::Message message,
                     << " dst : " << HexSubstr(message.destination_id());
     } else if (rudp::kSendFailure == message_sent) {
       LOG(kError) << "Sending type " << MessageTypeString(message) << " message from "
-                  << HexSubstr(connections_.kNodeId().data.string()) << " to "
+                  << connections_.kNodeId() << " to "
                   << HexSubstr(peer.id.string()) << " with destination ID "
                   << HexSubstr(message.destination_id()) << " failed with code " << message_sent
                   << ".  Will retry to Send.  Attempt count = " << attempt_count + 1

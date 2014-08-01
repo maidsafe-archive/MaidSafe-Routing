@@ -37,9 +37,14 @@ typedef TaggedValue<bool, struct NodeType> IsClient;
 typedef TaggedValue<rudp::NatType, struct NodeNatType> NatType;
 typedef TaggedValue<std::string, struct IdentityType> Identity;
 typedef TaggedValue<bool, struct RelayMessageType> IsRelayMessage;
+typedef TaggedValue<NodeId, struct RelayIdType> RelayId;
 typedef TaggedValue<NodeId, struct RelayConnectionIdType> RelayConnectionId;
 typedef TaggedValue<bool, struct RequestorType> IsRequestor;
 typedef TaggedValue<MessageType, struct MessageRpcType> RpcType;
+typedef TaggedValue<bool, struct IsDirectType> IsDirectMessage;
+typedef TaggedValue<bool, struct IsRequestType> IsRequestMessage;
+typedef TaggedValue<std::string, struct MessageDataType> MessageData;
+typedef TaggedValue<bool, struct IsRoutingMessageType> IsRoutingRpCMessage;
 
 }  // namespace routing
 

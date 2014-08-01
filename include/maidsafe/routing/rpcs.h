@@ -38,27 +38,9 @@ namespace routing {
 
 namespace rpcs {
 
-template <typename PropertyType>
-void SetMessageProperty(protobuf::Message& message, const PropertyType& value);
+namespace detail {
 
-void SetMessageProperties(protobuf::Message& message);
-
-template <typename PropertyType, typename... Args>
-void SetMessageProperties(protobuf::Message& message, PropertyType value, Args... args) {
-  SetMessageProperty(message, value);
-  SetMessageProperties(message, args...);
 }
-
-template <typename PropertyType>
-void SetMessageProperty(protobuf::Message& /*message*/, const PropertyType& /*value*/) {
-  PropertyType::No_generic_handler_is_available__Specialisation_is_required;
-}
-
-template <>
-void SetMessageProperty(protobuf::Message& message, const SelfNodeId& value);
-
-template <>
-void SetMessageProperty(protobuf::Message& message, const PeerNodeId& value);
 
 
 protobuf::Message Ping(const PeerNodeId& peer_id, const SelfNodeId& self_id);
@@ -72,7 +54,7 @@ protobuf::Message Connect(const PeerNodeId& node_id, const SelfEndpoint& our_end
                           RelayConnectionId relay_connection_id = RelayConnectionId(NodeId()));
 
 protobuf::Message FindNodes(unsigned int num_nodes_requested, const PeerNodeId& peer_id,
-                            const SelfNodeId& self_id,
+                            const SelfNodeId& self_node_id,
                             IsRelayMessage relay_message = IsRelayMessage(false),
                             RelayConnectionId relay_connection_id = RelayConnectionId(NodeId()));
 
