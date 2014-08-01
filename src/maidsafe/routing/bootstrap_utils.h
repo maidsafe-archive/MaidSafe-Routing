@@ -20,10 +20,7 @@
 #define MAIDSAFE_ROUTING_BOOTSTRAP_UTILS_H_
 
 #ifdef _MSC_VER
-#include <atomic>
-#include <memory>
 #include <mutex>
-#include <thread>
 #endif
 #include <vector>
 
@@ -49,26 +46,8 @@ boost::filesystem::path GetCurrentBootstrapFilePath() {
         GetOverrideBootstrapFilePath<is_client>() : GetDefaultBootstrapFilePath<is_client>(); });
 #ifdef _MSC_VER
   static std::once_flag initialised_flag;
-  static std::atomic<bool> initialised{ false };
-
-  auto deleter([&](char* c) {
-    delete c;
-    initialised.store(true);
-  });
-
-  static const boost::filesystem::path kCurrentBootstrapFilePath{
-    [&]()->boost::filesystem::path {
-      boost::filesystem::path current_bootstrap_file_path;
-      std::call_once(initialised_flag, [&] {
-        // This unique_ptr guarantees that 'initialised == true' on exiting the call_once lambda.
-        const std::unique_ptr<char, decltype(deleter)> scoped_setter(new char, deleter);
-        current_bootstrap_file_path = path_getter();
-      });
-      return current_bootstrap_file_path;
-    }() };
-
-  while (!initialised)
-    std::this_thread::yield();
+  static boost::filesystem::path kCurrentBootstrapFilePath;
+  std::call_once(initialised_flag, [&] { kCurrentBootstrapFilePath = path_getter(); });
 #else
   static const boost::filesystem::path kCurrentBootstrapFilePath{ path_getter() };
 #endif
