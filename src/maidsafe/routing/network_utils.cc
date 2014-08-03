@@ -26,9 +26,9 @@ namespace maidsafe {
 namespace routing {
 
 template <>
-void NetworkUtils<ClientNode>::RecursiveSendOn(
-    protobuf::Message message, NodeInfo last_node_attempted,int attempt_count) {
- {
+void NetworkUtils<ClientNode>::RecursiveSendOn(protobuf::Message message,
+                                               NodeInfo last_node_attempted, int attempt_count) {
+  {
     std::lock_guard<std::mutex> lock(running_mutex_);
     if (!running_)
       return;
@@ -70,10 +70,11 @@ void NetworkUtils<ClientNode>::RecursiveSendOn(
              (message.route_history(0) != connections_.kNodeId().data.string()))
       route_history.push_back(message.route_history(0));
 
-    peer = connections_.routing_table.GetClosestNode(NodeId(message.destination_id()), ignore_exact_match,
-                                         route_history);
+    peer = connections_.routing_table.GetClosestNode(NodeId(message.destination_id()),
+                                                     ignore_exact_match, route_history);
     if (peer.id == NodeId() && connections_.routing_table.size() != 0) {
-      peer = connections_.routing_table.GetClosestNode(NodeId(message.destination_id()), ignore_exact_match);
+      peer = connections_.routing_table.GetClosestNode(NodeId(message.destination_id()),
+                                                       ignore_exact_match);
     }
     if (peer.id == NodeId()) {
       LOG(kError) << "This node's routing table is empty now.  Need to re-bootstrap.";
@@ -90,8 +91,7 @@ void NetworkUtils<ClientNode>::RecursiveSendOn(
     }
     if (rudp::kSuccess == message_sent) {
       LOG(kVerbose) << "  [" << HexSubstr(kThisId) << "] sent : " << MessageTypeString(message)
-                    << " to   " << HexSubstr(peer.id.string()) << "   (id: " << message.id()
-                    << ")"
+                    << " to   " << HexSubstr(peer.id.string()) << "   (id: " << message.id() << ")"
                     << " dst : " << HexSubstr(message.destination_id());
     } else if (rudp::kSendFailure == message_sent) {
       LOG(kError) << "Sending type " << MessageTypeString(message) << " message from "
@@ -124,7 +124,7 @@ void NetworkUtils<ClientNode>::RecursiveSendOn(
 
 template <>
 void NetworkUtils<ClientNode>::SendToClosestNode(const protobuf::Message& message) {
- // Normal messages
+  // Normal messages
   if (message.has_destination_id() && !message.destination_id().empty()) {
     if (connections_.routing_table.size() > 0) {  // getting closer nodes from routing table
       RecursiveSendOn(message);
@@ -134,20 +134,20 @@ void NetworkUtils<ClientNode>::SendToClosestNode(const protobuf::Message& messag
                   << " from " << connections_.kNodeId().data << " id: " << message.id();
     }
     return;
- }
+  }
 
   // Relay message responses only
   if (message.has_relay_id() /*&& (IsResponse(message))*/) {
-   protobuf::Message relay_message(message);
-   relay_message.set_destination_id(message.relay_id());  // so that peer identifies it as direct
-   SendTo(relay_message, NodeId(relay_message.relay_id()),
-          NodeId(relay_message.relay_connection_id()));
+    protobuf::Message relay_message(message);
+    relay_message.set_destination_id(message.relay_id());  // so that peer identifies it as direct
+    SendTo(relay_message, NodeId(relay_message.relay_id()),
+           NodeId(relay_message.relay_connection_id()));
   } else {
-   LOG(kError) << "Unable to work out destination; aborting send."
-               << " id: " << message.id() << " message.has_relay_id() ; " << std::boolalpha
-               << message.has_relay_id() << " Isresponse(message) : " << std::boolalpha
-               << IsResponse(message) << " message.has_relay_connection_id() : " << std::boolalpha
-               << message.has_relay_connection_id();
+    LOG(kError) << "Unable to work out destination; aborting send."
+                << " id: " << message.id() << " message.has_relay_id() ; " << std::boolalpha
+                << message.has_relay_id() << " Isresponse(message) : " << std::boolalpha
+                << IsResponse(message) << " message.has_relay_connection_id() : " << std::boolalpha
+                << message.has_relay_connection_id();
   }
 }
 

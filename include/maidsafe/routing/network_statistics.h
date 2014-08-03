@@ -38,7 +38,7 @@ class NetworkStatisticsTest_BEH_IsIdInGroupRange_Test;
 
 class NetworkStatistics {
  public:
-  explicit NetworkStatistics(const SelfNodeId& node_id);
+  explicit NetworkStatistics(const LocalNodeId& node_id);
   void UpdateLocalAverageDistance(const std::vector<NodeId>& unique_nodes);
   void UpdateNetworkAverageDistance(const NodeId& distance);
   bool EstimateInGroup(const NodeId& sender_id, const NodeId& info_id);
@@ -56,7 +56,7 @@ class NetworkStatistics {
     NodeId average_distance;
   };
   std::mutex mutex_;
-  const SelfNodeId kNodeId_;
+  const LocalNodeId kNodeId_;
   NodeId distance_;
   NetworkDistanceData network_distance_data_;
 };

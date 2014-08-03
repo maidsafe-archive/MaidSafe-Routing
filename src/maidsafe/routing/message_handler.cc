@@ -39,10 +39,10 @@ void MessageHandler<ClientNode>::HandleMessage(protobuf::Message& message) {
                 << " MessageHandler<NodeType>::HandleMessage handle message with id: "
                 << message.id();
   if (!ValidateMessage(message)) {
-   LOG(kWarning) << "Validate message failed， id: " << message.id();
-   BOOST_ASSERT_MSG((message.hops_to_live() > 0),
-                    "Message has traversed maximum number of hops allowed");
-   return;
+    LOG(kWarning) << "Validate message failed， id: " << message.id();
+    BOOST_ASSERT_MSG((message.hops_to_live() > 0),
+                     "Message has traversed maximum number of hops allowed");
+    return;
   }
 
   // Decrement hops_to_live
@@ -50,10 +50,12 @@ void MessageHandler<ClientNode>::HandleMessage(protobuf::Message& message) {
 
   // If group message request to self id
   if (IsGroupMessageRequestToSelfId(message)) {
-    LOG(kInfo) << "MessageHandler<NodeType>::HandleMessage " << message.id() << " HandleGroupMessageToSelfId";
+    LOG(kInfo) << "MessageHandler<NodeType>::HandleMessage " << message.id()
+               << " HandleGroupMessageToSelfId";
     return HandleGroupMessageToSelfId(message);
   }
-  LOG(kInfo) << "MessageHandler<NodeType>::HandleMessage " << message.id() << " HandleClientMessage";
+  LOG(kInfo) << "MessageHandler<NodeType>::HandleMessage " << message.id()
+             << " HandleClientMessage";
   return HandleClientMessage(message);
 }
 

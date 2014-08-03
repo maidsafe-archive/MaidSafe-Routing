@@ -37,10 +37,13 @@ namespace maidsafe {
 namespace routing {
 
 template <>
-RoutingTable<ClientNode>::RoutingTable(const SelfNodeId& node_id, const asymm::Keys& keys)
-    : kNodeId_(node_id), kConnectionId_(NodeId(NodeId::IdType::kRandomId)), kKeys_(keys), mutex_(),
-      routing_table_change_functor_(), nodes_() {
-}
+RoutingTable<ClientNode>::RoutingTable(const LocalNodeId& node_id, const asymm::Keys& keys)
+    : kNodeId_(node_id),
+      kConnectionId_(NodeId(NodeId::IdType::kRandomId)),
+      kKeys_(keys),
+      mutex_(),
+      routing_table_change_functor_(),
+      nodes_() {}
 
 template <>
 bool RoutingTable<ClientNode>::AddOrCheckNode(NodeInfo peer, bool remove) {
@@ -130,10 +133,10 @@ bool RoutingTable<ClientNode>::MakeSpaceForNodeToBeAdded(const NodeInfo& node, b
   assert(lock.owns_lock());
 
   if (remove && !CheckPublicKeyIsUnique(node, lock))
-   return false;
+    return false;
 
   if (nodes_.size() < Params<ClientNode>::max_routing_table_size)
-   return true;
+    return true;
 
   assert(nodes_.size() == Params<ClientNode>::max_routing_table_size);
   if (NodeId::CloserToTarget(node.id, nodes_.at(Params<ClientNode>::max_routing_table_size - 1).id,

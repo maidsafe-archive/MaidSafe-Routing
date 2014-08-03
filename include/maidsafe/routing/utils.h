@@ -62,9 +62,9 @@ struct MessageWrapper {
 
   explicit MessageWrapper(protobuf::Message message_in) : message(message_in) {}
 
-//  MessageWrapper(const MessageWrapper& other);
-//  MessageWrapper(MessageWrapper&& other);
-//  MessageWrapper& operator=(MessageWrapper other);
+  //  MessageWrapper(const MessageWrapper& other);
+  //  MessageWrapper(MessageWrapper&& other);
+  //  MessageWrapper& operator=(MessageWrapper other);
 
   friend void swap(MessageWrapper& lhs, MessageWrapper& rhs) {
     using std::swap;
@@ -76,10 +76,10 @@ struct MessageWrapper {
 };
 
 typedef MessageWrapper<MessageType::kConnectSuccessAcknowledgement, true, VaultNode>
-            ConnectSuccessAcknowledgementRequestFromVault;
+    ConnectSuccessAcknowledgementRequestFromVault;
 
 typedef MessageWrapper<MessageType::kConnectSuccessAcknowledgement, true, ClientNode>
-            ConnectSuccessAcknowledgementRequestFromClient;
+    ConnectSuccessAcknowledgementRequestFromClient;
 
 GroupRangeStatus GetProximalRange(const NodeId& target_id, const NodeId& node_id,
                                   const NodeId& this_node_id,

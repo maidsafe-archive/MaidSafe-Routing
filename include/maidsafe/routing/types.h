@@ -27,12 +27,15 @@ namespace maidsafe {
 
 namespace routing {
 
-typedef TaggedValue<NodeId, struct NodeIdentifierType> SelfNodeId;
-typedef TaggedValue<NodeId, struct ConnectionIdType> SelfConnectionId;
-typedef TaggedValue<rudp::EndpointPair, struct EndpointPair> SelfEndpoint;
+typedef TaggedValue<NodeId, struct NodeIdentifierType> LocalNodeId;
+typedef TaggedValue<NodeId, struct ConnectionIdType> LocalConnectionId;
+typedef TaggedValue<boost::asio::ip::udp::endpoint, struct LocalEndpointType> LocalEndpoint;
+typedef TaggedValue<rudp::EndpointPair, struct LocalEndpointPairType> LocalEndpointPair;
 typedef TaggedValue<NodeId, struct DestinationIdType> PeerNodeId;
 typedef TaggedValue<NodeId, struct ConnectionIdType> PeerConnectionId;
-typedef TaggedValue<rudp::EndpointPair, struct EndpointPair> PeerEndpoint;
+typedef TaggedValue<boost::asio::ip::udp::endpoint, struct PeerEndpointType> PeerEndpoint;
+typedef TaggedValue<rudp::EndpointPair, struct PeerEndpointPairType> PeerEndpointPair;
+typedef TaggedValue<NodeInfo, struct PeerNodeInfoType> PeerNodeInfo;
 typedef TaggedValue<bool, struct NodeType> IsClient;
 typedef TaggedValue<std::string, struct IdentityType> Identity;
 typedef TaggedValue<bool, struct RelayMessageType> IsRelayMessage;
@@ -43,10 +46,10 @@ typedef TaggedValue<bool, struct IsDirectType> IsDirectMessage;
 typedef TaggedValue<bool, struct IsRequestType> IsRequestMessage;
 typedef TaggedValue<std::string, struct MessageDataType> MessageData;
 typedef TaggedValue<bool, struct IsRoutingMessageType> IsRoutingRpCMessage;
+typedef TaggedValue<bool, struct IsCacheableType> IsCacheable;
 
 }  // namespace routing
 
 }  // namespace maidsafe
 
-#endif // MAIDSAFE_ROUTING_TYPES_H_
-
+#endif  // MAIDSAFE_ROUTING_TYPES_H_

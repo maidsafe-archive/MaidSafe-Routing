@@ -27,7 +27,7 @@ namespace maidsafe {
 
 namespace routing {
 
-NetworkStatistics::NetworkStatistics(const SelfNodeId& node_id)
+NetworkStatistics::NetworkStatistics(const LocalNodeId& node_id)
     : mutex_(), kNodeId_(node_id), distance_(), network_distance_data_() {}
 
 void NetworkStatistics::UpdateLocalAverageDistance(const std::vector<NodeId>& close_nodes) {

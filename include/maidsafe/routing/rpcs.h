@@ -38,33 +38,90 @@ namespace routing {
 
 namespace rpcs {
 
+namespace detail {
 
-protobuf::Message Ping(const PeerNodeId& peer_id, const SelfNodeId& self_id);
+protobuf::Message InitialisedMessage();
 
-protobuf::Message Connect(const PeerNodeId& node_id, const SelfEndpoint& our_endpoint,
-                          const SelfNodeId& self_node_id,
-                          const SelfConnectionId& self_connection_id,
+template <typename PropertyType>
+void SetMessageProperty(protobuf::Message& message, const PropertyType& value);
+
+void SetMessageProperties(protobuf::Message& message);
+
+template <typename PropertyType, typename... Args>
+void SetMessageProperties(protobuf::Message& message, PropertyType value, Args... args) {
+  SetMessageProperty(message, value);
+  SetMessageProperties(message, args...);
+}
+
+template <typename PropertyType>
+void SetMessageProperty(protobuf::Message& /*message*/, const PropertyType& /*value*/) {
+  PropertyType::No_generic_handler_is_available__Specialisation_is_required;
+}
+
+template <>
+void SetMessageProperty(protobuf::Message& message, const LocalNodeId& value);
+
+template <>
+void SetMessageProperty(protobuf::Message& message, const PeerNodeId& value);
+
+template <>
+void SetMessageProperty(protobuf::Message& message, const MessageType& value);
+
+template <>
+void SetMessageProperty(protobuf::Message& message, const IsDirectMessage& value);
+
+template <>
+void SetMessageProperty(protobuf::Message& message, const MessageData& value);
+
+template <>
+void SetMessageProperty(protobuf::Message& message, const IsRequestMessage& value);
+
+template <>
+void SetMessageProperty(protobuf::Message& message, const RelayId& value);
+
+template <>
+void SetMessageProperty(protobuf::Message& message, const RelayConnectionId& value);
+
+template <>
+void SetMessageProperty(protobuf::Message& message, const IsClient& value);
+
+template <>
+void SetMessageProperty(protobuf::Message& message, const IsRoutingRpCMessage& value);
+
+template <>
+void SetMessageProperty(protobuf::Message& message, const Cacheable& value);
+
+}  // namespace detail
+
+
+protobuf::Message Ping(const PeerNodeId& peer_id, const LocalNodeId& self_id);
+
+protobuf::Message Connect(const PeerNodeId& node_id, const LocalEndpointPair& our_endpoint,
+                          const LocalNodeId& self_node_id,
+                          const LocalConnectionId& self_connection_id,
                           IsClient is_client = IsClient(false),
                           rudp::NatType nat_type = rudp::NatType::kUnknown,
                           IsRelayMessage = IsRelayMessage(false),
                           RelayConnectionId relay_connection_id = RelayConnectionId(NodeId()));
 
 protobuf::Message FindNodes(unsigned int num_nodes_requested, const PeerNodeId& peer_id,
-                            const SelfNodeId& self_node_id,
+                            const LocalNodeId& self_node_id,
                             IsRelayMessage relay_message = IsRelayMessage(false),
                             RelayConnectionId relay_connection_id = RelayConnectionId(NodeId()));
 
-protobuf::Message ConnectSuccess(const PeerNodeId& peer_node_id, const SelfNodeId& self_node_id,
-                                 const SelfConnectionId& self_connection_id, IsRequestor requestor,
+protobuf::Message ConnectSuccess(const PeerNodeId& peer_node_id, const LocalNodeId& self_node_id,
+                                 const LocalConnectionId& self_connection_id, IsRequestor requestor,
                                  IsClient client_node);
 
-protobuf::Message ConnectSuccessAcknowledgement(
-    const PeerNodeId& node_id, const SelfNodeId& self_node_id,
-    const SelfConnectionId& self_connection_id, IsRequestor requestor,
-    const std::vector<NodeInfo>& close_ids, IsClient client_node);
+protobuf::Message ConnectSuccessAcknowledgement(const PeerNodeId& node_id,
+                                                const LocalNodeId& self_node_id,
+                                                const LocalConnectionId& self_connection_id,
+                                                IsRequestor requestor,
+                                                const std::vector<NodeInfo>& close_ids,
+                                                IsClient client_node);
 
 protobuf::Message InformClientOfNewCloseNode(const PeerNodeId& node_id,
-                                             const SelfNodeId& this_node_id,
+                                             const LocalNodeId& this_node_id,
                                              const PeerNodeId& client_node_id);
 
 protobuf::Message GetGroup(const NodeId& node_id, const NodeId& my_node_id);

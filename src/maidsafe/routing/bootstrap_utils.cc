@@ -1,78 +1,87 @@
 /*  Copyright 2012 MaidSafe.net limited
 
-    This MaidSafe Software is licensed to you under (1) the MaidSafe.net Commercial License,
-    version 1.0 or later, or (2) The General Public License (GPL), version 3, depending on which
-    licence you accepted on initial access to the Software (the "Licences").
+ This MaidSafe Software is licensed to you under (1) the MaidSafe.net Commercial License,
+ version 1.0 or later, or (2) The General Public License (GPL), version 3, depending on which
+ licence you accepted on initial access to the Software (the "Licences").
 
-    By contributing code to the MaidSafe Software, or to this project generally, you agree to be
-    bound by the terms of the MaidSafe Contributor Agreement, version 1.0, found in the root
-    directory of this project at LICENSE, COPYING and CONTRIBUTOR respectively and also
-    available at: http://www.maidsafe.net/licenses
+ By contributing code to the MaidSafe Software, or to this project generally, you agree to be
+ bound by the terms of the MaidSafe Contributor Agreement, version 1.0, found in the root
+ directory of this project at LICENSE, COPYING and CONTRIBUTOR respectively and also
+ available at: http://www.maidsafe.net/licenses
 
-    Unless required by applicable law or agreed to in writing, the MaidSafe Software distributed
-    under the GPL Licence is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS
-    OF ANY KIND, either express or implied.
+ Unless required by applicable law or agreed to in writing, the MaidSafe Software distributed
+ under the GPL Licence is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS
+ OF ANY KIND, either express or implied.
 
-    See the Licences for the specific language governing permissions and limitations relating to
-    use of the MaidSafe Software.                                                                 */
+ See the Licences for the specific language governing permissions and limitations relating to
+ use of the MaidSafe Software.                                                                 */
 
 #include "maidsafe/routing/bootstrap_utils.h"
 
 #include <string>
 
-#include "maidsafe/common/log.h"
 #include "maidsafe/common/utils.h"
 
 namespace maidsafe {
 
 namespace routing {
 
+namespace fs = boost::filesystem;
+
 namespace {
-typedef boost::asio::ip::udp::endpoint Endpoint;
+
+using boost::asio::ip::udp;
+using boost::asio::ip::address;
+
+BootstrapContacts GetHardCodedBootstrapContacts() {
+  BootstrapContacts hard_coded_bootstrap_contacts{
+      udp::endpoint{address::from_string("104.131.253.66"), kLivePort},
+      udp::endpoint{address::from_string("95.85.32.100"), kLivePort},
+      udp::endpoint{address::from_string("128.199.159.50"), kLivePort},
+      udp::endpoint{address::from_string("178.79.156.73"), kLivePort},
+      udp::endpoint{address::from_string("106.185.24.221"), kLivePort},
+      udp::endpoint{address::from_string("23.239.27.245"), kLivePort}};
+  std::mt19937 rng(RandomUint32());
+  std::shuffle(hard_coded_bootstrap_contacts.begin(), hard_coded_bootstrap_contacts.end(), rng);
+  return hard_coded_bootstrap_contacts;
 }
 
-BootstrapContacts MaidSafeBootstrapContacts() {
-  std::vector<std::string> endpoint_string;
-  endpoint_string.reserve(15);
-  endpoint_string.push_back("176.58.120.133");
-  endpoint_string.push_back("178.79.163.139");
-  endpoint_string.push_back("176.58.102.53");
-  endpoint_string.push_back("176.58.113.214");
-  endpoint_string.push_back("106.187.49.208");
-  endpoint_string.push_back("198.74.60.81");
-  endpoint_string.push_back("198.74.60.83");
-  endpoint_string.push_back("198.74.60.84");
-  endpoint_string.push_back("198.74.60.85");
-  endpoint_string.push_back("198.74.60.86");
-  endpoint_string.push_back("176.58.103.83");
-  endpoint_string.push_back("106.187.102.233");
-  endpoint_string.push_back("106.187.47.248");
-  endpoint_string.push_back("106.187.93.100");
-  endpoint_string.push_back("106.186.16.51");
+}  // unnamed namespace
 
-  BootstrapContacts maidsafe_endpoints;
-  for (const auto& i : endpoint_string)
-    maidsafe_endpoints.push_back(Endpoint(boost::asio::ip::address::from_string(i), 5483));
-  return maidsafe_endpoints;
+BootstrapContacts GetBootstrapContacts(bool is_client) {
+  const fs::path kCurrentBootstrapFilePath{is_client
+                                               ? detail::GetCurrentBootstrapFilePath<true>()
+                                               : detail::GetCurrentBootstrapFilePath<false>()};
+  BootstrapContacts bootstrap_contacts;
+  try {
+    bootstrap_contacts = ReadBootstrapContacts(kCurrentBootstrapFilePath);
+  }
+  catch (const std::exception& error) {
+    LOG(kWarning) << "Failed to read bootstrap file at : " << kCurrentBootstrapFilePath
+                  << " . Error : " << boost::diagnostic_information(error);
+  }
+
+  if (kCurrentBootstrapFilePath == (is_client ? detail::GetDefaultBootstrapFilePath<true>()
+                                              : detail::GetDefaultBootstrapFilePath<false>())) {
+    auto hard_coded_bootstrap_contacts = GetHardCodedBootstrapContacts();
+    bootstrap_contacts.insert(bootstrap_contacts.end(), hard_coded_bootstrap_contacts.begin(),
+                              hard_coded_bootstrap_contacts.end());
+  }
+  return bootstrap_contacts;
 }
 
-BootstrapContacts MaidSafeLocalBootstrapContacts() {
-  std::vector<std::string> endpoint_string;
-  endpoint_string.reserve(2);
-#if defined QA_BUILD
-  LOG(kVerbose) << "Appending 192.168.0.130:5483 to bootstrap endpoints";
-  endpoint_string.push_back("192.168.0.130");
-#elif defined TESTING
-  LOG(kVerbose) << "Appending 192.168.0.109:5483 to bootstrap endpoints";
-  endpoint_string.push_back("192.168.0.109");
-#endif
-  assert(endpoint_string.size() &&
-         "Either QA_BUILD or TESTING must be defined to use maidsafe local endpoint option");
+void InsertOrUpdateBootstrapContact(const BootstrapContact& bootstrap_contact, bool is_client) {
+  InsertOrUpdateBootstrapContact(bootstrap_contact,
+                                 is_client ? detail::GetCurrentBootstrapFilePath<true>()
+                                           : detail::GetCurrentBootstrapFilePath<false>());
+}
 
-  BootstrapContacts maidsafe_endpoints;
-  for (const auto& i : endpoint_string)
-    maidsafe_endpoints.push_back(Endpoint(boost::asio::ip::address::from_string(i), 5483));
-  return maidsafe_endpoints;
+BootstrapContacts GetZeroStateBootstrapContacts(udp::endpoint local_endpoint) {
+  BootstrapContacts bootstrap_contacts{GetBootstrapContacts(false)};
+  bootstrap_contacts.erase(
+      std::remove(std::begin(bootstrap_contacts), std::end(bootstrap_contacts), local_endpoint),
+      std::end(bootstrap_contacts));
+  return bootstrap_contacts;
 }
 
 }  // namespace routing

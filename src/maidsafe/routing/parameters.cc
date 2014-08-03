@@ -35,8 +35,7 @@ unsigned int Params<ClientNode>::routing_table_size_threshold =
     Params<ClientNode>::max_routing_table_size;
 
 template <>
-unsigned int Params<ClientNode>::closest_nodes_size =
-    Params<ClientNode>::max_routing_table_size;
+unsigned int Params<ClientNode>::closest_nodes_size = Params<ClientNode>::max_routing_table_size;
 
 
 uint16_t Parameters::thread_count(8);

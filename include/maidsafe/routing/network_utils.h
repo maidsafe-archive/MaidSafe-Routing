@@ -73,10 +73,11 @@ class NetworkUtils {
  public:
   NetworkUtils(Connections<NodeType>& connections);
   virtual ~NetworkUtils();
-  int Bootstrap(const BootstrapContacts& bootstrap_contacts,
-                const rudp::MessageReceivedFunctor& message_received_functor,
-                const rudp::ConnectionLostFunctor& connection_lost_functor,
-                boost::asio::ip::udp::endpoint local_endpoint = boost::asio::ip::udp::endpoint());
+  int Bootstrap(const rudp::MessageReceivedFunctor& message_received_functor,
+                const rudp::ConnectionLostFunctor& connection_lost_functor);
+  int ZeroStateBootstrap(const rudp::MessageReceivedFunctor& message_received_functor,
+                         const rudp::ConnectionLostFunctor& connection_lost_functor,
+                         LocalEndpoint local_endpoint);
   virtual int GetAvailableEndpoint(const NodeId& peer_id,
                                    const rudp::EndpointPair& peer_endpoint_pair,
                                    rudp::EndpointPair& this_endpoint_pair,
@@ -111,6 +112,12 @@ class NetworkUtils {
   NetworkUtils(const NetworkUtils&);
   NetworkUtils(const NetworkUtils&&);
   NetworkUtils& operator=(const NetworkUtils&);
+
+  // For zero-state, local_endpoint can be default-constructed.
+  int DoBootstrap(const rudp::MessageReceivedFunctor& message_received_functor,
+                  const rudp::ConnectionLostFunctor& connection_lost_functor,
+                  const BootstrapContacts& bootstrap_contacts,
+                  LocalEndpoint local_endpoint = LocalEndpoint(boost::asio::ip::udp::endpoint()));
 
   void RudpSend(const NodeId& peer_id, const protobuf::Message& message,
                 const rudp::MessageSentFunctor& message_sent_functor);
@@ -152,48 +159,43 @@ NetworkUtils<NodeType>::~NetworkUtils() {
 }
 
 template <typename NodeType>
-int NetworkUtils<NodeType>::Bootstrap(const BootstrapContacts& bootstrap_contacts,
-                                      const rudp::MessageReceivedFunctor& message_received_functor,
-                                      const rudp::ConnectionLostFunctor& connection_lost_functor,
-                                      Endpoint local_endpoint) {
+int NetworkUtils<NodeType>::Bootstrap(const rudp::MessageReceivedFunctor& message_received_functor,
+                                      const rudp::ConnectionLostFunctor& connection_lost_functor) {
+  BootstrapContacts bootstrap_contacts{GetBootstrapContacts(NodeType::value)};
+  return DoBootstrap(message_received_functor, connection_lost_functor, bootstrap_contacts);
+}
+
+template <typename NodeType>
+int NetworkUtils<NodeType>::ZeroStateBootstrap(
+    const rudp::MessageReceivedFunctor& message_received_functor,
+    const rudp::ConnectionLostFunctor& connection_lost_functor, LocalEndpoint local_endpoint) {
+  BootstrapContacts bootstrap_contacts{GetZeroStateBootstrapContacts(local_endpoint.data)};
+  return DoBootstrap(message_received_functor, connection_lost_functor, bootstrap_contacts,
+                     local_endpoint);
+}
+
+template <typename NodeType>
+int NetworkUtils<NodeType>::DoBootstrap(
+    const rudp::MessageReceivedFunctor& message_received_functor,
+    const rudp::ConnectionLostFunctor& connection_lost_functor,
+    const BootstrapContacts& bootstrap_contacts, LocalEndpoint local_endpoint) {
   {
     std::lock_guard<std::mutex> lock(running_mutex_);
     if (!running_)
       return kNetworkShuttingDown;
   }
 
+  if (bootstrap_contacts.empty())
+    return kInvalidBootstrapContacts;
+
   assert(connection_lost_functor && "Must provide a valid functor");
   assert(bootstrap_connection_id_.IsZero() && "bootstrap_connection_id_ must be empty");
   auto private_key(std::make_shared<asymm::PrivateKey>(connections_.routing_table.kPrivateKey()));
   auto public_key(std::make_shared<asymm::PublicKey>(connections_.routing_table.kPublicKey()));
 
-  if (!bootstrap_contacts.empty())
-    bootstrap_contacts_ = bootstrap_contacts;
-
-  if (Parameters::append_maidsafe_endpoints && bootstrap_attempt_ == 0) {
-    LOG(kInfo) << "Appending Maidsafe Endpoints";
-    auto maidsafe_bootstrap_contacts(MaidSafeBootstrapContacts());
-    bootstrap_contacts_.insert(bootstrap_contacts_.end(), maidsafe_bootstrap_contacts.begin(),
-                               maidsafe_bootstrap_contacts.end());
-  } else if (Parameters::append_maidsafe_local_endpoints && bootstrap_attempt_ == 0) {
-    auto maidsafe_local_bootstrap_contacts(MaidSafeLocalBootstrapContacts());
-    bootstrap_contacts_.insert(bootstrap_contacts_.end(), maidsafe_local_bootstrap_contacts.begin(),
-                               maidsafe_local_bootstrap_contacts.end());
-  }
-
-  if (Parameters::append_local_live_port_endpoint && bootstrap_attempt_ == 0) {
-    bootstrap_contacts_.push_back(Endpoint(GetLocalIp(), kLivePort));
-    LOG(kInfo) << "Appending local live port endpoints: " << bootstrap_contacts_.back();
-  }
-
-  if (bootstrap_contacts_.empty())
-    return kInvalidBootstrapContacts;
-
-  int result(rudp_.Bootstrap(/* sorted_ */ bootstrap_contacts_, message_received_functor,
-                             connection_lost_functor, connections_.kConnectionId(),
-                             private_key, public_key, bootstrap_connection_id_, nat_type_,
-                             local_endpoint));
-  ++bootstrap_attempt_;
+  int result(rudp_.Bootstrap(/* sorted_ */ bootstrap_contacts, message_received_functor,
+                             connection_lost_functor, connections_.kConnectionId(), private_key,
+                             public_key, bootstrap_connection_id_, nat_type_, local_endpoint.data));
   // RUDP will return a kZeroId for zero state !!
   if (result != kSuccess || bootstrap_connection_id_.IsZero()) {
     LOG(kError) << "No Online Bootstrap Node found.";
@@ -267,9 +269,8 @@ void NetworkUtils<NodeType>::RudpSend(const NodeId& peer_id, const protobuf::Mes
       return;
   }
   rudp_.Send(peer_id, message.SerializeAsString(), message_sent_functor);
-  LOG(kVerbose) << "  [" << connections_.kNodeId()
-                << "] send : " << MessageTypeString(message) << " to   " << DebugId(peer_id)
-                << "   (id: " << message.id() << ")"
+  LOG(kVerbose) << "  [" << connections_.kNodeId() << "] send : " << MessageTypeString(message)
+                << " to   " << DebugId(peer_id) << "   (id: " << message.id() << ")"
                 << " --To Rudp--";
 }
 
@@ -350,7 +351,7 @@ void NetworkUtils<ClientNode>::SendToClosestNode(const protobuf::Message& messag
 template <typename NodeType>
 void NetworkUtils<NodeType>::SendTo(const protobuf::Message& message, const NodeId& peer_node_id,
                                     const NodeId& peer_connection_id) {
-  const std::string kThisId(connections_.kNodeId().data.string());
+  const std::string kThisId(connections_.kNodeId()->string());
   rudp::MessageSentFunctor message_sent_functor = [=](int message_sent) {
     if (rudp::kSuccess == message_sent) {
       LOG(kVerbose) << "  [" << HexSubstr(kThisId) << "] sent : " << MessageTypeString(message)
@@ -394,7 +395,7 @@ void NetworkUtils<NodeType>::RecursiveSendOn(protobuf::Message message,
   if (attempt_count > 0)
     Sleep(std::chrono::milliseconds(50));
 
-  const std::string kThisId(connections_.kNodeId().data.string());
+  const std::string kThisId(connections_.kNodeId()->string());
   bool ignore_exact_match(!IsDirect(message));
   std::vector<std::string> route_history;
   NodeInfo peer;
@@ -408,7 +409,7 @@ void NetworkUtils<NodeType>::RecursiveSendOn(protobuf::Message message,
           message.route_history().end() -
               static_cast<size_t>(!(message.has_visited() && message.visited())));
     else if ((message.route_history().size() == 1) &&
-             (message.route_history(0) != connections_.kNodeId().data.string()))
+             (message.route_history(0) != connections_.kNodeId()->string()))
       route_history.push_back(message.route_history(0));
 
     peer = connections_.routing_table.GetClosestNode(NodeId(message.destination_id()),
@@ -436,9 +437,9 @@ void NetworkUtils<NodeType>::RecursiveSendOn(protobuf::Message message,
                     << " dst : " << HexSubstr(message.destination_id());
     } else if (rudp::kSendFailure == message_sent) {
       LOG(kError) << "Sending type " << MessageTypeString(message) << " message from "
-                  << connections_.kNodeId() << " to "
-                  << HexSubstr(peer.id.string()) << " with destination ID "
-                  << HexSubstr(message.destination_id()) << " failed with code " << message_sent
+                  << connections_.kNodeId() << " to " << HexSubstr(peer.id.string())
+                  << " with destination ID " << HexSubstr(message.destination_id())
+                  << " failed with code " << message_sent
                   << ".  Will retry to Send.  Attempt count = " << attempt_count + 1
                   << " id: " << message.id();
       RecursiveSendOn(message, peer, attempt_count + 1);
@@ -505,8 +506,8 @@ void NetworkUtils<NodeType>::AdjustRouteHistory(protobuf::Message& message) {
     return;
   assert(message.route_history().size() <= Parameters::max_route_history);
   if (std::find(message.route_history().begin(), message.route_history().end(),
-                connections_.kNodeId().data.string()) == message.route_history().end()) {
-    message.add_route_history(connections_.kNodeId().data.string());
+                connections_.kNodeId()->string()) == message.route_history().end()) {
+    message.add_route_history(connections_.kNodeId()->string());
     if (message.route_history().size() > Parameters::max_route_history) {
       std::vector<std::string> route_history(message.route_history().begin() + 1,
                                              message.route_history().end());

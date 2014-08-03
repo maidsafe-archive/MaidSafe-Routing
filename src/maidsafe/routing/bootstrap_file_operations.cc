@@ -1,20 +1,20 @@
 /*  Copyright 2012 MaidSafe.net limited
 
-    This MaidSafe Software is licensed to you under (1) the MaidSafe.net Commercial License,
-    version 1.0 or later, or (2) The General Public License (GPL), version 3, depending on which
-    licence you accepted on initial access to the Software (the "Licences").
+ This MaidSafe Software is licensed to you under (1) the MaidSafe.net Commercial License,
+ version 1.0 or later, or (2) The General Public License (GPL), version 3, depending on which
+ licence you accepted on initial access to the Software (the "Licences").
 
-    By contributing code to the MaidSafe Software, or to this project generally, you agree to be
-    bound by the terms of the MaidSafe Contributor Agreement, version 1.0, found in the root
-    directory of this project at LICENSE, COPYING and CONTRIBUTOR respectively and also
-    available at: http://www.maidsafe.net/licenses
+ By contributing code to the MaidSafe Software, or to this project generally, you agree to be
+ bound by the terms of the MaidSafe Contributor Agreement, version 1.0, found in the root
+ directory of this project at LICENSE, COPYING and CONTRIBUTOR respectively and also
+ available at: http://www.maidsafe.net/licenses
 
-    Unless required by applicable law or agreed to in writing, the MaidSafe Software distributed
-    under the GPL Licence is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS
-    OF ANY KIND, either express or implied.
+ Unless required by applicable law or agreed to in writing, the MaidSafe Software distributed
+ under the GPL Licence is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS
+ OF ANY KIND, either express or implied.
 
-    See the Licences for the specific language governing permissions and limitations relating to
-    use of the MaidSafe Software.                                                                 */
+ See the Licences for the specific language governing permissions and limitations relating to
+ use of the MaidSafe Software.                                                                 */
 
 #include "maidsafe/routing/bootstrap_file_operations.h"
 
@@ -32,23 +32,23 @@
 // This is to allow setting up of BootstrapFilePath for routing only.
 
 #ifndef COMPANY_NAME
-# define COMPANY_NAME MaidSafe
-# define COMPANY_NAME_DEFINED_TEMPORARILY
+#define COMPANY_NAME MaidSafe
+#define COMPANY_NAME_DEFINED_TEMPORARILY
 #endif
 #ifndef APPLICATION_NAME
-# define APPLICATION_NAME Routing
-# define APPLICATION_NAME_DEFINED_TEMPORARILY
+#define APPLICATION_NAME Routing
+#define APPLICATION_NAME_DEFINED_TEMPORARILY
 #endif
 
 #include "maidsafe/common/application_support_directories.h"
 
 #ifdef COMPANY_NAME_DEFINED_TEMPORARILY
-# undef COMPANY_NAME
-# undef COMPANY_NAME_DEFINED_TEMPORARILY
+#undef COMPANY_NAME
+#undef COMPANY_NAME_DEFINED_TEMPORARILY
 #endif
 #ifdef APPLICATION_NAME_DEFINED_TEMPORARILY
-# undef APPLICATION_NAME
-# undef APPLICATION_NAME_DEFINED_TEMPORARILY
+#undef APPLICATION_NAME
+#undef APPLICATION_NAME_DEFINED_TEMPORARILY
 #endif
 
 

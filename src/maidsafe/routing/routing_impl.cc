@@ -138,41 +138,6 @@ bool RoutingImpl<VaultNode>::IsConnectedClient(const NodeId& node_id) {
 }
 
 template <>
-void RoutingImpl<VaultNode>::OnRoutingTableChange(const RoutingTableChange& routing_table_change) {
-  {
-    std::lock_guard<std::mutex> lock(network_status_mutex_);
-    network_status_ = routing_table_change.health;
-  }
-  NotifyNetworkStatus(routing_table_change.health);
-  LOG(kVerbose) << kNodeId_ << " Updating network status !!! " << routing_table_change.health;
-
-  if (routing_table_change.removed.node.id != NodeId()) {
-    RemoveNode(routing_table_change.removed.node,
-               routing_table_change.removed.routing_only_removal);
-    LOG(kVerbose) << "Routing table removed node id : " << routing_table_change.removed.node.id
-                  << ", connection id : " << routing_table_change.removed.node.connection_id;
-  }
-
-  if (routing_table_change.close_nodes_change != nullptr) {
-    if (functors_.close_nodes_change)
-      functors_.close_nodes_change(routing_table_change.close_nodes_change);
-    network_statistics_.UpdateLocalAverageDistance(
-        routing_table_change.close_nodes_change->new_nodes());
-    // IpcSendCloseNodes(); TO BE MOVED FROM RT TO UTILS
-  }
-
-  if (routing_table_change.close_nodes_change && routing_table_change.insertion) {
-    auto clients(connections_.client_routing_table.GetNodesInfo());
-    for (auto client : clients)
-      InformClientOfNewCloseNode(network_, client, routing_table_change.added_node, kNodeId());
-  }
-
-  if (connections_.routing_table.size() > Parameters::routing_table_size_threshold)
-    network_.SendToClosestNode(rpcs::FindNodes(Parameters::closest_nodes_size,
-                                               PeerNodeId(kNodeId_.data), kNodeId_));
-}
-
-template <>
 void RoutingImpl<ClientNode>::OnRoutingTableChange(const RoutingTableChange& routing_table_change) {
   {
     std::lock_guard<std::mutex> lock(network_status_mutex_);
@@ -204,10 +169,9 @@ void RoutingImpl<ClientNode>::DoOnConnectionLost(const NodeId& lost_connection_i
   }
 
   NodeInfo dropped_node;
-  bool resend(
-      connections_.routing_table.GetNodeInfo(lost_connection_id, dropped_node) &&
-      connections_.routing_table.IsThisNodeInRange(dropped_node.id,
-                                                   Parameters::max_routing_table_size_for_client));
+  bool resend(connections_.routing_table.GetNodeInfo(lost_connection_id, dropped_node) &&
+              connections_.routing_table.IsThisNodeInRange(
+                  dropped_node.id, Parameters::max_routing_table_size_for_client));
 
   // Checking routing table
   dropped_node = connections_.routing_table.DropNode(lost_connection_id, true);
@@ -224,7 +188,7 @@ void RoutingImpl<ClientNode>::DoOnConnectionLost(const NodeId& lost_connection_i
     // Close node lost, get more nodes
     LOG(kWarning) << "Lost close node, getting more.";
     recovery_timer_.expires_from_now(Parameters::recovery_time_lag);
-    recovery_timer_.async_wait([=](const boost::system::error_code &error_code) {
+    recovery_timer_.async_wait([=](const boost::system::error_code& error_code) {
       if (error_code != boost::asio::error::operation_aborted)
         ReSendFindNodeRequest(error_code, true);
     });

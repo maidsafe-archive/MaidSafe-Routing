@@ -29,22 +29,22 @@ namespace maidsafe {
 namespace routing {
 
 CloseNodesChange::CloseNodesChange()
-    : node_id_(), old_close_nodes_(), new_close_nodes_(), lost_nodes_(), new_nodes_(), radius_() {}
+    : node_id_(), old_close_nodes_(), new_close_nodes_(), lost_node_(), new_node_(), radius_() {}
 
 CloseNodesChange::CloseNodesChange(const CloseNodesChange& other)
     : node_id_(other.node_id_),
       old_close_nodes_(other.old_close_nodes_),
       new_close_nodes_(other.new_close_nodes_),
-      lost_nodes_(other.lost_nodes_),
-      new_nodes_(other.new_nodes_),
+      lost_node_(other.lost_node_),
+      new_node_(other.new_node_),
       radius_(other.radius_) {}
 
 CloseNodesChange::CloseNodesChange(CloseNodesChange&& other)
     : node_id_(std::move(other.node_id_)),
       old_close_nodes_(std::move(other.old_close_nodes_)),
       new_close_nodes_(std::move(other.new_close_nodes_)),
-      lost_nodes_(std::move(other.lost_nodes_)),
-      new_nodes_(std::move(other.new_nodes_)),
+      lost_node_(std::move(other.lost_node_)),
+      new_node_(std::move(other.new_node_)),
       radius_(std::move(other.radius_)) {}
 
 CloseNodesChange& CloseNodesChange::operator=(CloseNodesChange other) {
@@ -67,8 +67,28 @@ CloseNodesChange::CloseNodesChange(NodeId this_node_id, const std::vector<NodeId
                          const NodeId& rhs) { return NodeId::CloserToTarget(lhs, rhs, node_id_); });
         return new_close_nodes_in;
       }(new_close_nodes)),
-      lost_nodes_(),
-      new_nodes_(),
+      lost_node_([this]()->NodeId {
+        std::vector<NodeId> lost_nodes;
+        std::set_difference(std::begin(old_close_nodes_), std::end(old_close_nodes_),
+                            std::begin(new_close_nodes_), std::end(new_close_nodes_),
+                            std::back_inserter(lost_nodes),
+                            [this](const NodeId& lhs, const NodeId& rhs) {
+          return NodeId::CloserToTarget(lhs, rhs, node_id_);
+        });
+        assert(lost_nodes.size() <= 1);
+        return (lost_nodes.empty()) ? NodeId() : lost_nodes.at(0);
+      }()),
+      new_node_([this]()->NodeId {
+        std::vector<NodeId> new_nodes;
+        std::set_difference(std::begin(new_close_nodes_), std::end(new_close_nodes_),
+                            std::begin(old_close_nodes_), std::end(old_close_nodes_),
+                            std::back_inserter(new_nodes),
+                            [this](const NodeId& lhs, const NodeId& rhs) {
+          return NodeId::CloserToTarget(lhs, rhs, node_id_);
+        });
+        assert(new_nodes.size() <= 1);
+        return (new_nodes.empty()) ? NodeId() : new_nodes.at(0);
+      }()),
       radius_([this]()->crypto::BigInt {
         NodeId fcn_distance;
         if (new_close_nodes_.size() >= Parameters::closest_nodes_size)
@@ -86,8 +106,8 @@ CheckHoldersResult CloseNodesChange::CheckHolders(const NodeId& target) const {
   size_t old_holders_size = std::min(old_close_nodes_.size(), group_size_adjust);
   size_t new_holders_size = std::min(new_close_nodes_.size(), group_size_adjust);
 
-  std::vector<NodeId> old_holders(old_holders_size), new_holders(new_holders_size),
-      lost_nodes(lost_nodes_);
+  std::vector<NodeId> old_holders(old_holders_size), new_holders(new_holders_size);
+
   std::partial_sort_copy(std::begin(old_close_nodes_), std::end(old_close_nodes_),
                          std::begin(old_holders), std::end(old_holders),
                          [target](const NodeId& lhs, const NodeId& rhs) {
@@ -98,9 +118,6 @@ CheckHoldersResult CloseNodesChange::CheckHolders(const NodeId& target) const {
                          [target](const NodeId& lhs, const NodeId& rhs) {
     return NodeId::CloserToTarget(lhs, rhs, target);
   });
-  std::sort(std::begin(lost_nodes), std::end(lost_nodes),
-            [target](const NodeId& lhs,
-                     const NodeId& rhs) { return NodeId::CloserToTarget(lhs, rhs, target); });
 
   // Remove target == node ids and adjust holder size
   old_holders.erase(std::remove(std::begin(old_holders), std::end(old_holders), target),
@@ -109,35 +126,33 @@ CheckHoldersResult CloseNodesChange::CheckHolders(const NodeId& target) const {
     old_holders.resize(Parameters::group_size);
     assert(old_holders.size() == Parameters::group_size);
   }
+
   new_holders.erase(std::remove(std::begin(new_holders), std::end(new_holders), target),
                     std::end(new_holders));
   if (new_holders.size() > Parameters::group_size) {
     new_holders.resize(Parameters::group_size);
     assert(new_holders.size() == Parameters::group_size);
   }
-  lost_nodes.erase(std::remove(std::begin(lost_nodes), std::end(lost_nodes), target),
-                   std::end(lost_nodes));
 
   CheckHoldersResult holders_result;
-  holders_result.proximity_status =
-      GetProximalRange(target, node_id_, node_id_, radius_, new_holders);
-  // Only return holders if this node is part of target group
-  if (GroupRangeStatus::kInRange != holders_result.proximity_status)
-    return holders_result;
+  holders_result.proximity_status = GroupRangeStatus::kOutwithRange;
+  if (!new_holders.empty() && ((new_holders.size() < Parameters::group_size) ||
+                               NodeId::CloserToTarget(node_id_, new_holders.back(), target))) {
+    holders_result.proximity_status = GroupRangeStatus::kInRange;
+    if (new_holders.size() == Parameters::group_size)
+      new_holders.pop_back();
+    new_holders.push_back(node_id_);
+  }
 
-  // Old holders = Old holder ∩ Lost nodes
-  std::set_intersection(std::begin(old_holders), std::end(old_holders), std::begin(lost_nodes),
-                        std::end(lost_nodes), std::back_inserter(holders_result.old_holders),
-                        [target](const NodeId& lhs, const NodeId& rhs) {
-    return NodeId::CloserToTarget(lhs, rhs, target);
-  });
+  if (!old_holders.empty() && NodeId::CloserToTarget(node_id_, old_holders.back(), target)) {
+    old_holders.pop_back();
+    if (old_holders.size() == Parameters::group_size)
+      old_holders.pop_back();
+    old_holders.push_back(node_id_);
+  }
 
-  // New holders = All new holders - Old holders
-  std::set_difference(std::begin(new_holders), std::end(new_holders), std::begin(old_holders),
-                      std::end(old_holders), std::back_inserter(holders_result.new_holders),
-                      [target](const NodeId& lhs, const NodeId& rhs) {
-    return NodeId::CloserToTarget(lhs, rhs, target);
-  });
+  holders_result.new_holders = new_holders;
+  holders_result.old_holders = old_holders;
   return holders_result;
 }
 
@@ -183,57 +198,28 @@ NodeId CloseNodesChange::ChoosePmidNode(const std::set<NodeId>& online_pmids,
   return *pmids_itr;
 }
 
-bool CloseNodesChange::OldEqualsToNew() const { return old_close_nodes_ == new_close_nodes_; }
-
 void swap(CloseNodesChange& lhs, CloseNodesChange& rhs) MAIDSAFE_NOEXCEPT {
   using std::swap;
   swap(lhs.node_id_, rhs.node_id_);
   swap(lhs.old_close_nodes_, rhs.old_close_nodes_);
   swap(lhs.new_close_nodes_, rhs.new_close_nodes_);
-  swap(lhs.lost_nodes_, rhs.lost_nodes_);
+  swap(lhs.lost_node_, rhs.lost_node_);
+  swap(lhs.new_node_, rhs.new_node_);
   swap(lhs.radius_, rhs.radius_);
 }
 
-std::vector<NodeId> CloseNodesChange::new_nodes() const {
-  std::vector<NodeId> new_nodes;
-  std::set_difference(std::begin(new_close_nodes_), std::end(new_close_nodes_),
-                      std::begin(old_close_nodes_), std::end(old_close_nodes_),
-                      std::back_inserter(new_nodes), [this](const NodeId& lhs, const NodeId& rhs) {
-    return NodeId::CloserToTarget(lhs, rhs, node_id_);
-  });
-  return new_nodes;
-}
-
-std::vector<NodeId> CloseNodesChange::lost_nodes() const {
-  std::vector<NodeId> lost_nodes;
-  std::set_difference(std::begin(old_close_nodes_), std::end(old_close_nodes_),
-                      std::begin(new_close_nodes_), std::end(new_close_nodes_),
-                      std::back_inserter(lost_nodes), [this](const NodeId& lhs, const NodeId& rhs) {
-    return NodeId::CloserToTarget(lhs, rhs, node_id_);
-  });
-  return lost_nodes;
-}
-
-void CloseNodesChange::Print() {
-  std::string tab("\t"), output("\nclose_nodes of Node " + DebugId(node_id_) +
-                                " having following entries in old_close_nodes_ :");
+void CloseNodesChange::Print() const {
+  std::stringstream stream;
   for (auto entry : old_close_nodes_)
-    output.append("\n" + tab + tab + "entry in old_close_nodes" + tab + "------" + tab +
-                  DebugId(entry));
-  output.append("\nClose nodes of Node " + DebugId(node_id_) +
-                " having following entries in new_close_nodes_ :");
+    stream << "\n\t\tentry in old_close_nodes"
+           << "\t------\t" << entry;
+
   for (auto entry : new_close_nodes_)
-    output.append("\n" + tab + tab + "entry in new_close_nodes" + tab + "------" + tab +
-                  DebugId(entry));
-  output.append("\nClose nodes of Node " + DebugId(node_id_) +
-                " having following entries in lost_nodes_ :");
-  for (auto entry : lost_nodes_)
-    output.append("\n" + tab + tab + "entry in lost_nodes" + tab + "------" + tab + DebugId(entry));
-  output.append("\nClose nodes of Node " + DebugId(node_id_) +
-                " having following entries in new_nodes_ :");
-  for (auto entry : new_nodes_)
-    output.append("\n" + tab + tab + "entry in new_nodes" + tab + "------" + tab + DebugId(entry));
-  LOG(kInfo) << output;
+    stream << "\n\t\tentry in new_close_nodes\t------\t" << entry;
+
+  stream << "\n\t\tentry in lost_node\t------\t" << lost_node_;
+  stream << "\n\t\tentry in new_node\t------\t" << new_node_;
+  LOG(kInfo) << stream.str();
 }
 
 }  // namespace routing

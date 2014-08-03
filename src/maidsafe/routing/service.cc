@@ -22,8 +22,6 @@ namespace maidsafe {
 
 namespace routing {
 
-namespace {
-
 template <>
 void Service<ClientNode>::Connect(protobuf::Message& message) {
   if (message.destination_id() != connections_.kNodeId().data.string()) {
@@ -35,15 +33,15 @@ void Service<ClientNode>::Connect(protobuf::Message& message) {
   protobuf::ConnectRequest connect_request;
   protobuf::ConnectResponse connect_response;
   if (!connect_request.ParseFromString(message.data(0))) {
-   LOG(kVerbose) << "Unable to parse connect request.";
-   message.Clear();
-   return;
+    LOG(kVerbose) << "Unable to parse connect request.";
+    message.Clear();
+    return;
   }
 
   if (connect_request.peer_id() != connections_.kNodeId().data.string()) {
-   LOG(kError) << "Message not for this node.";
-   message.Clear();
-   return;
+    LOG(kError) << "Message not for this node.";
+    message.Clear();
+    return;
   }
 
   NodeInfo peer_node;
@@ -53,14 +51,14 @@ void Service<ClientNode>::Connect(protobuf::Message& message) {
                 << " received Connect request from " << peer_node.id;
   rudp::EndpointPair this_endpoint_pair, peer_endpoint_pair;
   peer_endpoint_pair.external =
-  GetEndpointFromProtobuf(connect_request.contact().public_endpoint());
+      GetEndpointFromProtobuf(connect_request.contact().public_endpoint());
   peer_endpoint_pair.local = GetEndpointFromProtobuf(connect_request.contact().private_endpoint());
 
   if (peer_endpoint_pair.external.address().is_unspecified() &&
       peer_endpoint_pair.local.address().is_unspecified()) {
-   LOG(kWarning) << "Invalid endpoint pair provided in connect request.";
-   message.Clear();
-   return;
+    LOG(kWarning) << "Invalid endpoint pair provided in connect request.";
+    message.Clear();
+    return;
   }
 
   // Prepare response
@@ -79,9 +77,9 @@ void Service<ClientNode>::Connect(protobuf::Message& message) {
   message.set_request(false);
   message.set_hops_to_live(Parameters::hops_to_live);
   if (message.has_source_id())
-   message.set_destination_id(message.source_id());
+    message.set_destination_id(message.source_id());
   else
-   message.clear_destination_id();
+    message.clear_destination_id();
   message.set_source_id(connections_.kNodeId().data.string());
 
   // Check rudp & routing
@@ -89,64 +87,60 @@ void Service<ClientNode>::Connect(protobuf::Message& message) {
   bool check_node_succeeded(connections_.routing_table.CheckNode(peer_node));
 
   if (check_node_succeeded) {
-   LOG(kVerbose) << "CheckNode(node) for " << (message.client_node() ? "client" : "server")
-   << " node succeeded.";
-   rudp::NatType this_nat_type(rudp::NatType::kUnknown);
-   int ret_val = network_.GetAvailableEndpoint(peer_node.connection_id, peer_endpoint_pair,
-                                               this_endpoint_pair, this_nat_type);
-   if (ret_val != rudp::kSuccess && ret_val != rudp::kBootstrapConnectionAlreadyExists) {
-    if (rudp::kUnvalidatedConnectionAlreadyExists != ret_val &&
-        rudp::kConnectAttemptAlreadyRunning != ret_val) {
-     LOG(kError) << "[" << connections_.kNodeId() << "] Service: "
-                 << "Failed to get available endpoint for new connection to node id : "
-                 << peer_node.id << ", Connection id :" << DebugId(peer_node.connection_id)
-                 << ". peer_endpoint_pair.external = " << peer_endpoint_pair.external
-                 << ", peer_endpoint_pair.local = " << peer_endpoint_pair.local
-                 << ". Rudp returned :" << ret_val;
-     message.add_data(connect_response.SerializeAsString());
-     return;
-    } else {  // Resolving collision by giving priority to lesser node id.
-     if (!CheckPriority(peer_node.id, connections_.kNodeId())) {
-      LOG(kInfo) << "Already ongoing attempt with : " << DebugId(peer_node.connection_id);
-      connect_response.set_answer(protobuf::ConnectResponseType::kConnectAttemptAlreadyRunning);
-      message.add_data(connect_response.SerializeAsString());
-      return;
-     }
+    LOG(kVerbose) << "CheckNode(node) for " << (message.client_node() ? "client" : "server")
+                  << " node succeeded.";
+    rudp::NatType this_nat_type(rudp::NatType::kUnknown);
+    int ret_val = network_.GetAvailableEndpoint(peer_node.connection_id, peer_endpoint_pair,
+                                                this_endpoint_pair, this_nat_type);
+    if (ret_val != rudp::kSuccess && ret_val != rudp::kBootstrapConnectionAlreadyExists) {
+      if (rudp::kUnvalidatedConnectionAlreadyExists != ret_val &&
+          rudp::kConnectAttemptAlreadyRunning != ret_val) {
+        LOG(kError) << "[" << connections_.kNodeId() << "] Service: "
+                    << "Failed to get available endpoint for new connection to node id : "
+                    << peer_node.id << ", Connection id :" << DebugId(peer_node.connection_id)
+                    << ". peer_endpoint_pair.external = " << peer_endpoint_pair.external
+                    << ", peer_endpoint_pair.local = " << peer_endpoint_pair.local
+                    << ". Rudp returned :" << ret_val;
+        message.add_data(connect_response.SerializeAsString());
+        return;
+      } else {  // Resolving collision by giving priority to lesser node id.
+        if (!CheckPriority(peer_node.id, connections_.kNodeId())) {
+          LOG(kInfo) << "Already ongoing attempt with : " << DebugId(peer_node.connection_id);
+          connect_response.set_answer(protobuf::ConnectResponseType::kConnectAttemptAlreadyRunning);
+          message.add_data(connect_response.SerializeAsString());
+          return;
+        }
+      }
     }
-   }
 
-   assert((!this_endpoint_pair.external.address().is_unspecified() ||
-           !this_endpoint_pair.local.address().is_unspecified()) &&
-          "Unspecified endpoint after GetAvailableEndpoint success.");
+    assert((!this_endpoint_pair.external.address().is_unspecified() ||
+            !this_endpoint_pair.local.address().is_unspecified()) &&
+           "Unspecified endpoint after GetAvailableEndpoint success.");
 
-   int add_result(AddToRudp(network_, connections_.kNodeId(),
-                            connections_.kConnectionId(), PeerNodeId(peer_node.id),
-                            PeerConnectionId(peer_node.connection_id),
-                            PeerEndpoint(peer_endpoint_pair), IsRequestor(false)));
-   if (rudp::kSuccess == add_result) {
-    connect_response.set_answer(protobuf::ConnectResponseType::kAccepted);
+    int add_result(AddToRudp(network_, connections_.kNodeId(), connections_.kConnectionId(),
+                             PeerNodeId(peer_node.id), PeerConnectionId(peer_node.connection_id),
+                             PeerEndpointPair(peer_endpoint_pair), IsRequestor(false)));
+    if (rudp::kSuccess == add_result) {
+      connect_response.set_answer(protobuf::ConnectResponseType::kAccepted);
 
-    connect_response.mutable_contact()->set_node_id(connections_.kNodeId().data.string());
-    connect_response.mutable_contact()->set_connection_id(
-        connections_.kConnectionId().data.string());
-    connect_response.mutable_contact()->set_nat_type(NatTypeProtobuf(this_nat_type));
+      connect_response.mutable_contact()->set_node_id(connections_.kNodeId().data.string());
+      connect_response.mutable_contact()->set_connection_id(
+          connections_.kConnectionId().data.string());
+      connect_response.mutable_contact()->set_nat_type(NatTypeProtobuf(this_nat_type));
 
-    SetProtobufEndpoint(this_endpoint_pair.local,
-                        connect_response.mutable_contact()->mutable_private_endpoint());
-    SetProtobufEndpoint(this_endpoint_pair.external,
-                        connect_response.mutable_contact()->mutable_public_endpoint());
-   }
+      SetProtobufEndpoint(this_endpoint_pair.local,
+                          connect_response.mutable_contact()->mutable_private_endpoint());
+      SetProtobufEndpoint(this_endpoint_pair.external,
+                          connect_response.mutable_contact()->mutable_public_endpoint());
+    }
   } else {
-   LOG(kVerbose) << "CheckNode(node) for " << (message.client_node() ? "client" : "server")
-                 << " node failed.";
+    LOG(kVerbose) << "CheckNode(node) for " << (message.client_node() ? "client" : "server")
+                  << " node failed.";
   }
 
   message.add_data(connect_response.SerializeAsString());
   assert(message.IsInitialized() && "unintialised message");
 }
-
-}  // unnamed namespace
-
 
 }  // namespace routing
 

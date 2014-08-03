@@ -32,7 +32,7 @@ class JoinVisitor : public boost::static_visitor<> {
 
   template <typename ImplType>
   void operator()(std::shared_ptr<ImplType> impl) {
-    impl->Join(functors_, bootstrap_contacts_);
+    impl->Join(functors_);
   }
 
  private:
@@ -45,9 +45,9 @@ class ZeroStateJoinVisitor : public boost::static_visitor<int> {
   ZeroStateJoinVisitor(Functors functors, const Endpoint& local_endpoint,
                        const Endpoint& peer_endpoint, const NodeInfo& peer_info)
       : functors_(functors),
-        local_endpoint_(local_endpoint),
-        peer_endpoint_(peer_endpoint),
-        peer_info_(peer_info) {}
+        local_endpoint_(LocalEndpoint(local_endpoint)),
+        peer_endpoint_(PeerEndpoint(peer_endpoint)),
+        peer_info_(PeerNodeInfo(peer_info)) {}
 
   template <typename ImplType>
   result_type operator()(ImplType& impl) {
@@ -56,9 +56,9 @@ class ZeroStateJoinVisitor : public boost::static_visitor<int> {
 
  private:
   Functors functors_;
-  const Endpoint local_endpoint_;
-  const Endpoint peer_endpoint_;
-  const NodeInfo peer_info_;
+  const LocalEndpoint local_endpoint_;
+  const PeerEndpoint peer_endpoint_;
+  const PeerNodeInfo peer_info_;
 };
 
 template <typename MessageType>
@@ -77,8 +77,8 @@ class SendVisitor : public boost::static_visitor<> {
 
 class SendDirectVisitor : public boost::static_visitor<> {
  public:
-  SendDirectVisitor(const NodeId& destination_id, const std::string& message, bool cacheable,
-                    ResponseFunctor response_functor)
+  SendDirectVisitor(const PeerNodeId& destination_id, const std::string& message,
+                    IsCacheable cacheable, ResponseFunctor response_functor)
       : destination_id_(destination_id),
         message_(message),
         cacheable_(cacheable),
@@ -90,9 +90,9 @@ class SendDirectVisitor : public boost::static_visitor<> {
   }
 
  private:
-  NodeId destination_id_;
-  std::string message_;
-  bool cacheable_;
+  const PeerNodeId destination_id_;
+  const std::string message_;
+  const IsCacheable cacheable_;
   ResponseFunctor response_functor_;
 };
 
@@ -209,11 +209,11 @@ Routing::Routing() : pimpl_() {
 }
 
 void Routing::InitialisePimpl(const NodeId& node_id, const asymm::Keys& keys, VaultNode) {
-  pimpl_ = std::make_shared<RoutingImpl<VaultNode>>(SelfNodeId(node_id), keys);
+  pimpl_ = std::make_shared<RoutingImpl<VaultNode>>(LocalNodeId(node_id), keys);
 }
 
 void Routing::InitialisePimpl(const NodeId& node_id, const asymm::Keys& keys, ClientNode) {
-  pimpl_ = std::make_shared<RoutingImpl<ClientNode>>(SelfNodeId(node_id), keys);
+  pimpl_ = std::make_shared<RoutingImpl<ClientNode>>(LocalNodeId(node_id), keys);
 }
 
 void Routing::Join(Functors functors, BootstrapContacts bootstrap_contacts) {
@@ -261,8 +261,8 @@ void Routing::Send(const GroupToSingleRelayMessage& message) {
 
 void Routing::SendDirect(const NodeId& destination_id, const std::string& message, bool cacheable,
                          ResponseFunctor response_functor) {
-  detail::SendDirectVisitor send_direct_visitor(destination_id, message, cacheable,
-                                                response_functor);
+  detail::SendDirectVisitor send_direct_visitor(PeerNodeId(destination_id), message,
+                                                IsCacheable(cacheable), response_functor);
   boost::apply_visitor(send_direct_visitor, pimpl_);
 }
 

@@ -160,10 +160,9 @@ void ResponseHandler<NodeType>::Connect(protobuf::Message& message) {
     LOG(kVerbose) << "This node [" << connections_.kNodeId() << "] received connect response from "
                   << peer_node_id << " id: " << message.id();
 
-    int result =
-        AddToRudp(network_, connections_.kNodeId(), connections_.kConnectionId(),
-                  PeerNodeId(peer_node_id), PeerConnectionId(peer_connection_id),
-                  PeerEndpoint(peer_endpoint_pair), IsRequestor(true));
+    int result = AddToRudp(network_, connections_.kNodeId(), connections_.kConnectionId(),
+                           PeerNodeId(peer_node_id), PeerConnectionId(peer_connection_id),
+                           PeerEndpointPair(peer_endpoint_pair), IsRequestor(true));
     if (result == kSuccess) {
       // Special case with bootstrapping peer in which kSuccess comes before connect response
       if (peer_node_id == network_.bootstrap_connection_id()) {
@@ -195,7 +194,7 @@ void ResponseHandler<NodeType>::FindNodes(const protobuf::Message& message) {
 
   if (find_nodes_request.num_nodes_requested() == 1) {  // detect collision
     if ((find_nodes_response.nodes_size() == 1) &&
-        find_nodes_response.nodes(0) == connections_.kNodeId().data.string()) {
+        find_nodes_response.nodes(0) == connections_.kNodeId()->string()) {
       LOG(kWarning) << "Collision detected";
       // TODO(Prakash): FIXME handle collision and return kIdCollision on join()
       return;
@@ -270,14 +269,11 @@ void ResponseHandler<NodeType>::SendConnectRequest(const NodeId peer_node_id) {
       relay_connection_id = network_.this_node_relay_connection_id();
       relay_message = true;
     }
-    protobuf::Message connect_rpc(rpcs::Connect(PeerNodeId(peer.id),
-                                                SelfEndpoint(this_endpoint_pair),
-                                                SelfNodeId(connections_.kNodeId()),
-                                                SelfConnectionId(connections_.kConnectionId()),
-                                                IsClient(NodeType::value),
-                                                rudp::NatType(this_nat_type),
-                                                IsRelayMessage(relay_message),
-                                                RelayConnectionId(relay_connection_id)));
+    protobuf::Message connect_rpc(rpcs::Connect(
+        PeerNodeId(peer.id), LocalEndpointPair(this_endpoint_pair),
+        LocalNodeId(connections_.kNodeId()), LocalConnectionId(connections_.kConnectionId()),
+        IsClient(NodeType::value), rudp::NatType(this_nat_type), IsRelayMessage(relay_message),
+        RelayConnectionId(relay_connection_id)));
     LOG(kVerbose) << "Sending Connect RPC to " << DebugId(peer.id)
                   << " message id : " << connect_rpc.id();
     if (send_to_bootstrap_connection)
@@ -340,8 +336,10 @@ void ResponseHandler<NodeType>::ConnectSuccessAcknowledgement(protobuf::Message&
 }
 
 template <typename NodeType>
-void ResponseHandler<NodeType>::ValidateAndCompleteConnection(
-    const NodeInfo& peer, bool from_requestor, const std::vector<NodeId>& close_ids, ClientNode) {
+void ResponseHandler<NodeType>::ValidateAndCompleteConnection(const NodeInfo& peer,
+                                                              bool from_requestor,
+                                                              const std::vector<NodeId>& close_ids,
+                                                              ClientNode) {
   if (ValidateAndAddToRoutingTable(network_, connections_, peer.id, peer.connection_id,
                                    asymm::PublicKey(), ClientNode())) {
     if (from_requestor) {
@@ -353,8 +351,10 @@ void ResponseHandler<NodeType>::ValidateAndCompleteConnection(
 }
 
 template <typename NodeType>
-void ResponseHandler<NodeType>::ValidateAndCompleteConnection(
-    const NodeInfo& peer, bool from_requestor, const std::vector<NodeId>& close_ids, VaultNode) {
+void ResponseHandler<NodeType>::ValidateAndCompleteConnection(const NodeInfo& peer,
+                                                              bool from_requestor,
+                                                              const std::vector<NodeId>& close_ids,
+                                                              VaultNode) {
   std::weak_ptr<ResponseHandler<NodeType>> response_handler_weak_ptr = this->shared_from_this();
   if (request_public_key_functor_) {
     auto validate_node([=](const asymm::PublicKey& key) {
@@ -414,7 +414,7 @@ void ResponseHandler<NodeType>::CheckAndSendConnectRequest(const NodeId& node_id
 template <typename NodeType>
 void ResponseHandler<NodeType>::CloseNodeUpdateForClient(protobuf::Message& message) {
   assert(NodeType::value);
-  if (message.destination_id() != connections_.kNodeId().data.string()) {
+  if (message.destination_id() != connections_.kNodeId()->string()) {
     // Message not for this node and we should not pass it on.
     LOG(kError) << "Message not for this node.";
     message.Clear();
@@ -445,7 +445,7 @@ void ResponseHandler<NodeType>::CloseNodeUpdateForClient(protobuf::Message& mess
 template <typename NodeType>
 void ResponseHandler<NodeType>::InformClientOfNewCloseNode(protobuf::Message& message) {
   assert(NodeType::value && "Handler must be client");
-  if (message.destination_id() != connections_.kNodeId().data.string()) {
+  if (message.destination_id() != connections_.kNodeId()->string()) {
     // Message not for this node and we should not pass it on.
     LOG(kError) << "Message not for this node.";
     message.Clear();
