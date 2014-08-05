@@ -47,6 +47,7 @@ struct CheckHoldersResult {
   std::vector<NodeId> new_holders;  // New holders = All 4 New holders - All 4 Old holders
   std::vector<NodeId> old_holders;  // Old holders = All 4 Old holder ∩ All Lost nodes
   routing::GroupRangeStatus proximity_status;
+  NodeId new_holder;
 };
 
 class CloseNodesChange {
