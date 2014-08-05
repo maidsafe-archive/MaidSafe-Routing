@@ -54,17 +54,6 @@ bptime::time_duration Parameters::connect_rpc_prune_timeout(
     rudp::Parameters::rendezvous_connect_timeout * 2);
 // 10 KB of book keeping data for Routing
 uint32_t Parameters::max_data_size(rudp::ManagedConnections::kMaxMessageSize() - 10240);
-bool Parameters::append_maidsafe_endpoints(false);
-// TODO(Prakash): BEFORE_RELEASE revisit below preprocessor directives to remove internal endpoints
-#if defined QA_BUILD || defined TESTING
-// TODO(Prakash) : Revert append_maidsafe_local_endpoints to true once local network available.
-bool Parameters::append_maidsafe_local_endpoints(false);
-#else
-bool Parameters::append_maidsafe_local_endpoints(false);
-#endif
-// TODO(Prakash) : To allow bootstrapping off nodes on same machine, revert once local network
-// available
-bool Parameters::append_local_live_port_endpoint(false);
 // TODO(Prakash): BEFORE_RELEASE enable caching after persona tests are passing
 bool Parameters::caching(true);
 }  // namespace routing
