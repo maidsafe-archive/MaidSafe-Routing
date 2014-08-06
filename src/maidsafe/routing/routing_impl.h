@@ -95,7 +95,7 @@ namespace test {
 class GenericNode;
 }
 
-class Routing::Impl {
+class Routing::Impl : public std::enable_shared_from_this<Routing::Impl> {
  public:
   Impl(bool client_mode, const NodeId& node_id, const asymm::Keys& keys);
   ~Impl();
@@ -104,6 +104,7 @@ class Routing::Impl {
 
   int ZeroStateJoin(const Functors& functors, const boost::asio::ip::udp::endpoint& local_endpoint,
                     const boost::asio::ip::udp::endpoint& peer_endpoint, const NodeInfo& peer_info);
+  void Stop();
 
   template <typename T>
   void Send(const T& message);  // New API

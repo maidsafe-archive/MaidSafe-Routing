@@ -31,6 +31,10 @@ Routing::Routing() : pimpl_() {
   InitialisePimpl(true, NodeId(NodeId::IdType::kRandomId), asymm::GenerateKeyPair());
 }
 
+Routing::~Routing() {
+  pimpl_->Stop();
+}
+
 void Routing::InitialisePimpl(bool client_mode, const NodeId& node_id, const asymm::Keys& keys) {
   pimpl_.reset(new Impl(client_mode, node_id, keys));
 }

@@ -87,6 +87,7 @@ class Routing {
     InitialisePimpl(detail::is_client<FobType>::value, NodeId(fob.name()->string()), keys);
   }
 
+  ~Routing();
   // Joins the network. Valid method for requesting public key must be provided by the functor,
   // otherwise no node will be added to the routing table and node will fail to join the network.
   void Join(Functors functors);
