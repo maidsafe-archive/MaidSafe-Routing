@@ -118,8 +118,7 @@ message ConnectSuccessAcknowledgement {
 
 message FindNodesRequest {
   required uint32 num_nodes_requested = 1;
-  required bytes target_node = 2;
-  optional uint64 timestamp = 3;
+  optional uint64 timestamp = 2;
 }
 
 message FindNodesResponse {

@@ -123,13 +123,11 @@ NodeId GenerateUniqueRandomNodeId(const std::vector<NodeId>& esisting_ids) {
 }
 
 NodeId GenerateUniqueRandomId(unsigned int pos) {
-  NodeId holder(NodeId(NodeId::IdType::kMaxId) ^ NodeId(NodeId::IdType::kMaxId));
-  return GenerateUniqueRandomId(holder, pos);
+  return GenerateUniqueRandomId(NodeId(), pos);
 }
 
 NodeId GenerateUniqueNonRandomId(uint64_t pos) {
-  NodeId holder;
-  return GenerateUniqueNonRandomId(holder, pos);
+  return GenerateUniqueNonRandomId(NodeId(), pos);
 }
 
 int NetworkStatus(bool client, int status) {

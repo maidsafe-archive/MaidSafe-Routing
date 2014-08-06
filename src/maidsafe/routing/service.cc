@@ -228,7 +228,7 @@ void Service::FindNodes(protobuf::Message& message) {
     message.Clear();
     return;
   }
-  if (0 == find_nodes.num_nodes_requested() || NodeId(find_nodes.target_node()).IsZero()) {
+  if (0 == find_nodes.num_nodes_requested() || NodeId(message.destination_id()).IsZero()) {
     LOG(kWarning) << "Invalid find node request.";
     message.Clear();
     return;
@@ -236,10 +236,10 @@ void Service::FindNodes(protobuf::Message& message) {
 
   LOG(kVerbose) << "[" << DebugId(routing_table_.kNodeId()) << "]"
                 << " parsed find node request for target id : "
-                << HexSubstr(find_nodes.target_node());
+                << HexSubstr(message.destination_id());
   protobuf::FindNodesResponse found_nodes;
   auto nodes(routing_table_.GetClosestNodes(
-                 NodeId(find_nodes.target_node()),
+                 NodeId(message.destination_id()),
                  static_cast<unsigned int>(find_nodes.num_nodes_requested() - 1)));
   found_nodes.add_nodes(routing_table_.kNodeId().string());
 

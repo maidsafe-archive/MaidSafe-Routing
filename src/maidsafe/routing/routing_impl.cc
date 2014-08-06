@@ -123,7 +123,7 @@ Routing::Impl::~Impl() {
 void Routing::Impl::Join(const Functors& functors) {
   LOG(kInfo) << "Doing a default join";
   ConnectFunctors(functors);
-  DoJoin();
+  Bootstrap();
 }
 
 void Routing::Impl::ConnectFunctors(const Functors& functors) {
@@ -152,10 +152,22 @@ void Routing::Impl::ConnectFunctors(const Functors& functors) {
   message_handler_->set_request_public_key_functor(functors.request_public_key);
 }
 
-void Routing::Impl::DoJoin() {
+void Routing::Impl::Bootstrap() {
+  {
+    std::lock_guard<std::mutex>  lock(running_mutex_);
+    if (!running_)
+      return;
+  }
   int return_value(DoBootstrap());
-  if (kSuccess != return_value)
-    return NotifyNetworkStatus(return_value);
+  if (kSuccess != return_value) {
+    re_bootstrap_timer_.expires_from_now(Parameters::re_bootstrap_time_lag);
+    re_bootstrap_timer_.async_wait(
+        [=](boost::system::error_code error_code_local) {
+          if (error_code_local != boost::asio::error::operation_aborted)
+            Bootstrap();
+        });
+    return;
+  }
 
   assert(!network_.bootstrap_connection_id().IsZero() &&
          "Bootstrap connection id must be populated by now.");
@@ -247,6 +259,11 @@ void Routing::Impl::FindClosestNode(const boost::system::error_code& error_code,
     if (error_code_local != boost::asio::error::operation_aborted)
       FindClosestNode(error_code_local, attempts);
   });
+}
+
+void Routing::Impl::ReBootstrap() {
+  recovery_timer_.cancel();
+  Bootstrap();
 }
 
 int Routing::Impl::ZeroStateJoin(const Functors& functors, const Endpoint& local_endpoint,
@@ -653,35 +670,6 @@ void Routing::Impl::ReSendFindNodeRequest(const boost::system::error_code& error
         ReSendFindNodeRequest(error_code_local, false);
     });
   }
-}
-
-void Routing::Impl::ReBootstrap() {
-  {
-    std::lock_guard<std::mutex> lock(running_mutex_);
-    if (!running_)
-      return;
-  }
-  re_bootstrap_timer_.expires_from_now(Parameters::re_bootstrap_time_lag);
-  re_bootstrap_timer_.async_wait([=](boost::system::error_code error_code_local) {
-    if (error_code_local != boost::asio::error::operation_aborted) {
-      DoReBootstrap(error_code_local);
-    }
-  });
-  DoJoin();
-}
-
-void Routing::Impl::DoReBootstrap(const boost::system::error_code& error_code) {
-  if (error_code == boost::asio::error::operation_aborted)
-    return;
-  {
-    std::lock_guard<std::mutex> lock(running_mutex_);
-    if (!running_)
-      return;
-    if (routing_table_.size() != 0)
-      return;
-  }
-  LOG(kError) << "[" << kNodeId_ << "]'s' Routing table is empty. ReBootstrapping ....";
-  ReBootstrap();
 }
 
 void Routing::Impl::NotifyNetworkStatus(int return_code) const {

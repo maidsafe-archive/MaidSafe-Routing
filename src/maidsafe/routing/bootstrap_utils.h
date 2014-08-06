@@ -19,6 +19,9 @@
 #ifndef MAIDSAFE_ROUTING_BOOTSTRAP_UTILS_H_
 #define MAIDSAFE_ROUTING_BOOTSTRAP_UTILS_H_
 
+#ifdef _MSC_VER
+#include <mutex>
+#endif
 #include <vector>
 
 #include "boost/asio/ip/udp.hpp"
@@ -38,9 +41,16 @@ namespace detail {
 
 template <bool is_client>
 boost::filesystem::path GetCurrentBootstrapFilePath() {
-  const boost::filesystem::path kCurrentBootstrapFilePath(
-      boost::filesystem::exists(GetOverrideBootstrapFilePath<is_client>())
-        ? GetOverrideBootstrapFilePath<is_client>() : GetDefaultBootstrapFilePath<is_client>());
+  auto path_getter([] {
+    return boost::filesystem::exists(GetOverrideBootstrapFilePath<is_client>()) ?
+        GetOverrideBootstrapFilePath<is_client>() : GetDefaultBootstrapFilePath<is_client>(); });
+#ifdef _MSC_VER
+  static std::once_flag initialised_flag;
+  static boost::filesystem::path kCurrentBootstrapFilePath;
+  std::call_once(initialised_flag, [&] { kCurrentBootstrapFilePath = path_getter(); });
+#else
+  static const boost::filesystem::path kCurrentBootstrapFilePath{ path_getter() };
+#endif
   return kCurrentBootstrapFilePath;
 }
 

@@ -249,6 +249,7 @@ class GenericNetwork {
   testing::AssertionResult SendDirect(std::shared_ptr<GenericNode> source_node,
                                       const NodeId& destination_node_id,
                                       const ExpectedNodeType& destination_node_type = kExpectVault);
+  void AddPublicKey(const NodeId& node_id, const asymm::PublicKey& public_key);
 
   friend class NodesEnvironment;
 

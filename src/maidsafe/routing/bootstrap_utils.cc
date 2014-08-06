@@ -34,7 +34,7 @@ using boost::asio::ip::udp;
 using boost::asio::ip::address;
 
 BootstrapContacts GetHardCodedBootstrapContacts() {
-  return BootstrapContacts{
+  BootstrapContacts hard_coded_bootstrap_contacts{
       udp::endpoint{ address::from_string("104.131.253.66"), kLivePort },
       udp::endpoint{ address::from_string("95.85.32.100"), kLivePort },
       udp::endpoint{ address::from_string("128.199.159.50"), kLivePort },
@@ -42,6 +42,9 @@ BootstrapContacts GetHardCodedBootstrapContacts() {
       udp::endpoint{ address::from_string("106.185.24.221"), kLivePort },
       udp::endpoint{ address::from_string("23.239.27.245"), kLivePort }
   };
+  std::mt19937 rng(RandomUint32());
+  std::shuffle(hard_coded_bootstrap_contacts.begin(), hard_coded_bootstrap_contacts.end(), rng);
+  return hard_coded_bootstrap_contacts;
 }
 
 }  // unnamed namespace
@@ -50,7 +53,13 @@ BootstrapContacts GetBootstrapContacts(bool is_client) {
   const fs::path kCurrentBootstrapFilePath{
     is_client ? detail::GetCurrentBootstrapFilePath<true>()
               : detail::GetCurrentBootstrapFilePath<false>() };
-  auto bootstrap_contacts(ReadBootstrapContacts(kCurrentBootstrapFilePath));
+  BootstrapContacts bootstrap_contacts;
+  try {
+    bootstrap_contacts = ReadBootstrapContacts(kCurrentBootstrapFilePath);
+  } catch (const std::exception& error) {
+    LOG(kWarning) << "Failed to read bootstrap file at : " << kCurrentBootstrapFilePath
+                  << " . Error : " << boost::diagnostic_information(error);
+  }
 
   if (kCurrentBootstrapFilePath == (is_client ? detail::GetDefaultBootstrapFilePath<true>() :
                                                 detail::GetDefaultBootstrapFilePath<false>())) {
