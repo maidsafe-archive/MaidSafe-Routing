@@ -240,14 +240,16 @@ TEST_F(RoutingChurnTest, DISABLED_FUNC_MessagingNetworkChurn) {
       GenericNetwork::NodePtr vault_node(this->RandomVaultNode());
       // Choose random client nodes for direct message
       // TODO(Alison) - use result?
-      sender_client->SendDirect(receiver_client->node_id(), message, false, [](std::string) {});
+      sender_client->SendDirect(receiver_client->node_id(), message, false,
+                                [](std::string, maidsafe_error) {});
       // Choose random client for group message to random env
       // TODO(Alison) - use result?
       sender_client->SendGroup(NodeId(NodeId::IdType::kRandomId), message, false,
-                               [](std::string) {});
+                               [](std::string, maidsafe_error) {});
       // Choose random vault for group message to random env
       // TODO(Alison) - use result?
-      vault_node->SendGroup(NodeId(NodeId::IdType::kRandomId), message, false, [](std::string) {});
+      vault_node->SendGroup(NodeId(NodeId::IdType::kRandomId), message, false,
+                            [](std::string, maidsafe_error) {});
       // Wait before going again
       Sleep(std::chrono::milliseconds(900 + RandomUint32() % 200));
       LOG(kInfo) << "Ran messaging iteration";

@@ -1076,7 +1076,7 @@ testing::AssertionResult GenericNetwork::SendDirect(size_t repeats, size_t messa
         if (dest->IsClient() &&
             (!src->IsClient() || (src->IsClient() && (dest->node_id() == src->node_id())))) {
           response_functor = [response_mutex, cond_var, reply_count, expected_count, failed](
-              std::string reply) {
+              std::string reply, maidsafe_error) {
             std::lock_guard<std::mutex> lock(*response_mutex);
             ++(*reply_count);
             EXPECT_FALSE(reply.empty());
@@ -1091,7 +1091,7 @@ testing::AssertionResult GenericNetwork::SendDirect(size_t repeats, size_t messa
           };
         } else if (dest->IsClient() && src->IsClient() && (dest->node_id() != src->node_id())) {
           response_functor = [response_mutex, cond_var, reply_count, expected_count, failed](
-              std::string reply) {
+              std::string reply, maidsafe_error) {
             std::lock_guard<std::mutex> lock(*response_mutex);
             ++(*reply_count);
             EXPECT_TRUE(reply.empty());
@@ -1107,7 +1107,7 @@ testing::AssertionResult GenericNetwork::SendDirect(size_t repeats, size_t messa
         } else {
           std::shared_ptr<NodeId> expected_replier(std::make_shared<NodeId>(dest->node_id()));
           response_functor = [response_mutex, cond_var, reply_count, expected_count, failed,
-                              expected_replier](std::string reply) {
+                expected_replier](std::string reply, maidsafe_error) {
             std::lock_guard<std::mutex> lock(*response_mutex);
             ++(*reply_count);
             //            EXPECT_FALSE(reply.empty());
@@ -1184,7 +1184,7 @@ testing::AssertionResult GenericNetwork::SendGroup(const NodeId& target_id, size
     monitor->response_count = 0;
     ResponseFunctor response_functor =
         [response_mutex, cond_var, failed, reply_count, expected_count, target_id, monitor, repeat](
-            std::string reply) {
+          std::string reply, maidsafe_error) {
       std::lock_guard<std::mutex> lock(*response_mutex);
       ++(*reply_count);
       monitor->response_count += 1;
@@ -1269,7 +1269,7 @@ testing::AssertionResult GenericNetwork::SendDirect(const NodeId& destination_no
                      RandomAlphaNumericString((RandomUint32() % 255 + 1) * 2 ^ 10));
     if (destination_node_type == ExpectedNodeType::kExpectVault) {
       response_functor = [response_mutex, cond_var, reply_count, expected_count, failed,
-                          message_index, destination_node_id](std::string reply) {
+                          message_index, destination_node_id](std::string reply, maidsafe_error) {
         std::lock_guard<std::mutex> lock(*response_mutex);
         ++(*reply_count);
         EXPECT_FALSE(reply.empty());
@@ -1315,7 +1315,7 @@ testing::AssertionResult GenericNetwork::SendDirect(const NodeId& destination_no
           (dest->IsClient() &&
            (!src->IsClient() || (src->IsClient() && (dest->node_id() == src->node_id()))))) {
         response_functor = [response_mutex, cond_var, reply_count, expected_count, failed](
-            std::string reply) {
+            std::string reply, maidsafe_error) {
           std::lock_guard<std::mutex> lock(*response_mutex);
           ++(*reply_count);
           EXPECT_FALSE(reply.empty());
@@ -1330,7 +1330,7 @@ testing::AssertionResult GenericNetwork::SendDirect(const NodeId& destination_no
         };
       } else if (dest != nullptr) {
         response_functor = [response_mutex, cond_var, reply_count, expected_count, failed](
-            std::string reply) {
+            std::string reply, maidsafe_error) {
           std::lock_guard<std::mutex> lock(*response_mutex);
           ++(*reply_count);
           EXPECT_TRUE(reply.empty());
@@ -1375,7 +1375,7 @@ testing::AssertionResult GenericNetwork::SendDirect(std::shared_ptr<GenericNode>
   assert(!data.empty() && "Send Data Empty !");
   ResponseFunctor response_functor;
   if (destination_node_type == kExpectVault) {
-    response_functor = [response_mutex, cond_var, failed, destination_node_id](std::string reply) {
+    response_functor = [response_mutex, cond_var, failed, destination_node_id](std::string reply, maidsafe_error) {
       std::lock_guard<std::mutex> lock(*response_mutex);
       EXPECT_FALSE(reply.empty());
       // TODO(Alison) - compare reply to sent data
@@ -1394,7 +1394,7 @@ testing::AssertionResult GenericNetwork::SendDirect(std::shared_ptr<GenericNode>
       cond_var->notify_one();
     };
   } else {
-    response_functor = [response_mutex, cond_var, failed](std::string reply) {
+    response_functor = [response_mutex, cond_var, failed](std::string reply, maidsafe_error) {
       std::lock_guard<std::mutex> lock(*response_mutex);
       //      EXPECT_TRUE(reply.empty());
       if (reply.empty())

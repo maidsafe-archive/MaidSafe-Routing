@@ -51,7 +51,7 @@ enum class DestinationType : int {
   kGroup
 };
 
-typedef std::function<void(std::string)> ResponseFunctor;
+typedef std::function<void(std::string, maidsafe_error)> ResponseFunctor;
 
 // They are passed as a parameter by MessageReceivedFunctor and should be called for responding to
 // the received message. Passing an empty message will mean you don't want to reply.

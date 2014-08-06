@@ -38,7 +38,7 @@ namespace detail {
 
 template <bool is_client>
 boost::filesystem::path GetCurrentBootstrapFilePath() {
-  static const boost::filesystem::path kCurrentBootstrapFilePath(
+  const boost::filesystem::path kCurrentBootstrapFilePath(
       boost::filesystem::exists(GetOverrideBootstrapFilePath<is_client>())
         ? GetOverrideBootstrapFilePath<is_client>() : GetDefaultBootstrapFilePath<is_client>());
   return kCurrentBootstrapFilePath;

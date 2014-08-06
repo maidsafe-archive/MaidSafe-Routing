@@ -45,7 +45,8 @@ class TimerTest : public testing::Test {
         cond_var_(),
         mutex_(),
         kGroupSize_((RandomUint32() % 97) + 4),
-        pass_response_functor_([=](std::string response) {
+        pass_response_functor_([=](std::string response, maidsafe_error error) {
+          ASSERT_EQ(make_error_code(CommonErrors::success), error.code());
           {
             std::lock_guard<std::mutex> lock(mutex_);
             ++pass_response_count_;
@@ -53,7 +54,8 @@ class TimerTest : public testing::Test {
           ASSERT_FALSE(response.empty());
           cond_var_.notify_one();
         }),
-        failed_response_functor_([=](std::string response) {
+        failed_response_functor_([=](std::string response, maidsafe_error error) {
+          ASSERT_EQ(make_error_code(CommonErrors::success), error.code());
           {
             std::lock_guard<std::mutex> lock(mutex_);
             ++failed_response_count_;
@@ -61,7 +63,8 @@ class TimerTest : public testing::Test {
           ASSERT_TRUE(response.empty());
           cond_var_.notify_one();
         }),
-        variable_response_functor_([=](std::string response) {
+        variable_response_functor_([=](std::string response, maidsafe_error error) {
+          ASSERT_EQ(make_error_code(CommonErrors::success), error.code());
           {
             std::lock_guard<std::mutex> lock(mutex_);
             response.empty() ? ++failed_response_count_ : ++pass_response_count_;
@@ -125,7 +128,8 @@ TEST_F(TimerTest, BEH_SingleResponseTimedOut) {
 }
 
 TEST_F(TimerTest, BEH_SingleResponseWithMoreChecks) {
-  pass_response_functor_ = [=](std::string response) {
+  pass_response_functor_ = [=](std::string response, maidsafe_error error) {
+    ASSERT_EQ(make_error_code(CommonErrors::success), error.code());
     {
       std::lock_guard<std::mutex> lock(mutex_);
       ++pass_response_count_;
@@ -272,7 +276,9 @@ TEST_F(TimerTest, BEH_VariousResults) {
     MessageDetails details;
     uint32_t expected_count(details.expected_success_count + details.expected_failure_count);
     total_expected_functor_calls += expected_count;
-    TaskResponseFunctor functor([&messages_details, &functor_calls, i, this](std::string response) {
+    TaskResponseFunctor functor([&messages_details, &functor_calls, i, this](std::string response,
+                                                                             maidsafe_error error) {
+      ASSERT_EQ(make_error_code(CommonErrors::success), error.code());
       std::lock_guard<std::mutex> lock(mutex_);
       auto itr(messages_details.find(i));
       ASSERT_NE(itr, std::end(messages_details));

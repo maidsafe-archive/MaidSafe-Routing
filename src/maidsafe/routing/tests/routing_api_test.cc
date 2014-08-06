@@ -266,7 +266,8 @@ TEST(APITest, BEH_API_SendToSelf) {
   std::once_flag flag;
   boost::promise<void> response_promise;
   auto response_future = response_promise.get_future();
-  ResponseFunctor response_functor = [&data, &flag, &response_promise](std::string string) {
+  ResponseFunctor response_functor = [&data, &flag, &response_promise](std::string string,
+                                                                       maidsafe_error) {
     EXPECT_EQ("response to " + data, string);
     std::call_once(flag, [&response_promise]() { response_promise.set_value(); });
     LOG(kVerbose) << "ResponseFunctor - end";
@@ -339,7 +340,9 @@ TEST(APITest, BEH_API_ClientNode) {
   std::mutex mutex;
   std::condition_variable cond_var;
   std::string data(RandomAlphaNumericString(512 * 1024));
-  ResponseFunctor response_functor = [&cond_var, &mutex, &data](std::string string) {
+  ResponseFunctor response_functor = [&cond_var, &mutex, &data](std::string string,
+                                                                maidsafe_error error) {
+    ASSERT_EQ(make_error_code(CommonErrors::success), error.code());
     {
       std::lock_guard<std::mutex> lock(mutex);
       ASSERT_EQ(("response to " + data), string);
@@ -414,7 +417,9 @@ TEST(APITest, BEH_API_NonMutatingClientNode) {
   std::mutex mutex;
   std::condition_variable cond_var;
   std::string data(RandomAlphaNumericString(512 * 1024));
-  ResponseFunctor response_functor = [&cond_var, &mutex, &data](std::string string) {
+  ResponseFunctor response_functor = [&cond_var, &mutex, &data](std::string string,
+                                                                maidsafe_error error) {
+    ASSERT_EQ(make_error_code(CommonErrors::success), error.code());
     {
       std::lock_guard<std::mutex> lock(mutex);
       ASSERT_EQ(("response to " + data), string);
@@ -508,7 +513,9 @@ TEST(APITest, BEH_API_ClientNodeSameId) {
   std::string data_1("message 1 from client node");
   std::mutex mutex_1;
   std::condition_variable cond_var_1;
-  ResponseFunctor response_functor_1 = [&data_1, &mutex_1, &cond_var_1](std::string string) {
+  ResponseFunctor response_functor_1 = [&data_1, &mutex_1, &cond_var_1](std::string string,
+                                                                        maidsafe_error error) {
+    ASSERT_EQ(make_error_code(CommonErrors::success), error.code());
     {
       std::lock_guard<std::mutex> lock_1(mutex_1);
       ASSERT_EQ("response to " + data_1, string);
@@ -523,7 +530,9 @@ TEST(APITest, BEH_API_ClientNodeSameId) {
   std::string data_2("message 2 from client node");
   std::mutex mutex_2;
   std::condition_variable cond_var_2;
-  ResponseFunctor response_functor_2 = [&data_2, &mutex_2, &cond_var_2](std::string string) {
+  ResponseFunctor response_functor_2 = [&data_2, &mutex_2, &cond_var_2](std::string string,
+                                                                        maidsafe_error error) {
+    ASSERT_EQ(make_error_code(CommonErrors::success), error.code());
     {
       std::lock_guard<std::mutex> lock_2(mutex_2);
       ASSERT_EQ("response to " + data_2, string);
@@ -793,7 +802,9 @@ TEST(APITest, BEH_API_SendGroup) {
     while (count < kMessageCount) {
       unsigned int message_index(i * kServerCount + count);
       ResponseFunctor response_functor = [&send_mutex, &send_promises, &send_counts, &data,
-                                          message_index, &result](std::string string) {
+                                          message_index, &result](std::string string,
+                                                                  maidsafe_error error) {
+        ASSERT_EQ(make_error_code(CommonErrors::success), error.code());
         std::unique_lock<std::mutex> lock(send_mutex);
         EXPECT_EQ("response to " + data, string) << "for message_index " << message_index;
         if (send_counts.at(message_index) >= Parameters::group_size)
@@ -909,8 +920,10 @@ TEST(APITest, BEH_API_PartiallyJoinedSend) {
   boost::promise<void> response_promise;
   auto response_future = response_promise.get_future();
   std::atomic<int> count(0);
-  ResponseFunctor response_functor = [&data, &flag, &response_promise, &count](std::string str) {
-    EXPECT_EQ("response to " + data, str);
+  ResponseFunctor response_functor = [&data, &flag, &response_promise, &count](std::string string,
+                                                                               maidsafe_error error) {
+    ASSERT_EQ(make_error_code(CommonErrors::success), error.code());
+    EXPECT_EQ("response to " + data, string);
     ++count;
     if (count == 2)
       std::call_once(flag, [&response_promise]() { response_promise.set_value(); });

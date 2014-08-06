@@ -256,7 +256,7 @@ void Commands::SendAMessage(std::atomic<int>& successful_count, unsigned int& op
   auto shared_response_ptr = std::make_shared<SharedResponse>(closest_nodes, expect_respondent);
   auto callable = [shared_response_ptr, &successful_count, &operation_count, &mutex,
                    messages_count, expect_respondent, &cond_var, group_performance,
-                   data_size](std::string response) {
+                   data_size](std::string response, maidsafe_error) {
     if (!response.empty()) {
       shared_response_ptr->CollectResponse(response, !group_performance);
       if (shared_response_ptr->expected_responses_ == 1)

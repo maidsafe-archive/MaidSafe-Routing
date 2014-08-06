@@ -49,7 +49,7 @@ typedef int32_t TaskId;
 template <typename Response>
 class Timer {
  public:
-  typedef std::function<void(Response)> ResponseFunctor;
+  typedef std::function<void(Response, maidsafe_error)> ResponseFunctor;
   explicit Timer(AsioService& asio_service);
   // Cancels all tasks and blocks until all functors have been executed and all tasks removed.
   ~Timer();
@@ -183,6 +183,8 @@ template <typename Response>
 void Timer<Response>::FinishTask(TaskId task_id, const boost::system::error_code& error) {
   int outstanding_response_count(0);
   ResponseFunctor functor;
+  maidsafe_error timer_error(MakeError(CommonErrors::success));
+
   LOG(kVerbose) << "Timer<Response>::FinishTask finish task " << task_id;
   {
     std::lock_guard<std::mutex> lock(mutex_);
@@ -205,16 +207,20 @@ void Timer<Response>::FinishTask(TaskId task_id, const boost::system::error_code
     switch (error.value()) {
       case boost::system::errc::success:  // Task's timer has expired
         LOG(kWarning) << "Timed out waiting for task " << task_id;
+        timer_error = MakeError(RoutingErrors::timed_out);
         break;
       case boost::asio::error::operation_aborted:  // Cancelled via CancelTask
         LOG(kInfo) << "Cancelled task " << task_id;
+        timer_error = MakeError(RoutingErrors::timer_cancelled);
         break;
       default:
         LOG(kError) << "Error waiting for task " << task_id << " - " << error.message();
     }
   }
   for (int i(0); i != outstanding_response_count; ++i)
-    asio_service_.service().dispatch([=] { functor(Response()); });
+    asio_service_.service().dispatch([=] {
+      functor(Response(), timer_error);
+    });
   LOG(kVerbose) << "Timer<Response> notifying condition_variable";
   cond_var_.notify_one();
   LOG(kVerbose) << "Timer<Response>::FinishTask completed";
@@ -257,7 +263,7 @@ void Timer<Response>::AddResponse(TaskId task_id, const Response& response) {
     if (itr->second.outstanding_response_count == 0)
       itr->second.timer->cancel();  // Invokes 'FinishTask'
   }
-  asio_service_.service().dispatch([=] { functor(response); });
+  asio_service_.service().dispatch([=] { functor(response, MakeError(CommonErrors::success)); });
   LOG(kVerbose) << "Timer<Response>::AddResponse completed";
 }
 

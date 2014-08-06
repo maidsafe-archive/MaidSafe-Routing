@@ -148,7 +148,7 @@ TEST_F(NetworkCache, FUNC_StoreGet) {
 
   message.clear_data();
   message.set_id(RandomUint32());
-  auto response_functor([&](std::string string) { EXPECT_EQ(string, content); });
+  auto response_functor([&](std::string string, maidsafe_error) { EXPECT_EQ(string, content); });
   nodes_[no_cache_holder_index]->AddTask(response_functor, 1, message.id());
 
   message.add_data(crypto::Hash<crypto::SHA512>(single_to_single_message.contents).string());

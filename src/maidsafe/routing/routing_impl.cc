@@ -453,7 +453,7 @@ bool Routing::Impl::EstimateInGroup(const NodeId& sender_id, const NodeId& info_
 std::future<std::vector<NodeId>> Routing::Impl::GetGroup(const NodeId& group_id) {
   auto promise(std::make_shared<std::promise<std::vector<NodeId>>>());
   auto future(promise->get_future());
-  auto callback = [promise](const std::string& response) {
+  auto callback = [promise](const std::string& response, maidsafe_error error) {
     std::vector<NodeId> nodes_id;
     if (!response.empty()) {
       protobuf::GetGroup get_group;
