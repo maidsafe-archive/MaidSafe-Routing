@@ -193,10 +193,13 @@ CheckHoldersResult CloseNodesChange::CheckHolders(const NodeId& target) const {
     stream << "\t[ " << DebugId(itr) << " ]";
   LOG(kVerbose) << stream.str();
 #endif
-  holders_result.new_holders = new_holders;
-  holders_result.old_holders = old_holders;
+//   holders_result.new_holders = new_holders;
+//   holders_result.old_holders = old_holders;
   if (diff_new_holders.size() > 0)
     holders_result.new_holder = diff_new_holders.front();
+  // in case the new_holder is the node itself, it shall be ignored
+  if (holders_result.new_holder == node_id_)
+    holders_result.new_holder = NodeId();
   return holders_result;
 }
 
