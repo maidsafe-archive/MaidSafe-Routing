@@ -194,7 +194,7 @@ class Routing::Impl : public std::enable_shared_from_this<Routing::Impl> {
   // proper destruction of the routing library, i.e. to avoid segmentation faults.
   std::unique_ptr<MessageHandler> message_handler_;
   AsioService asio_service_;
-  NetworkUtils network_;
+  std::unique_ptr<NetworkUtils> network_;
   Timer<std::string> timer_;
   boost::asio::steady_timer re_bootstrap_timer_, recovery_timer_, setup_timer_;
 };

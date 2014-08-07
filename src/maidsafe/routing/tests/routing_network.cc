@@ -122,7 +122,7 @@ GenericNode::GenericNode(bool client_mode, const rudp::NatType& nat_type)
   endpoint_.address(GetLocalIp());
   endpoint_.port(maidsafe::test::GetRandomPort());
   InitialiseFunctors();
-  routing_->pimpl_->network_.nat_type_ = nat_type_;
+  routing_->pimpl_->network_->nat_type_ = nat_type_;
   LOG(kVerbose) << "Node constructor";
   std::lock_guard<std::mutex> lock(mutex_);
   id_ = next_node_id_++;
@@ -266,11 +266,11 @@ void GenericNode::AddTask(const ResponseFunctor& response_functor, int expected_
 
 void GenericNode::RudpSend(const NodeId& peer_node_id, const protobuf::Message& message,
                            rudp::MessageSentFunctor message_sent_functor) {
-  routing_->pimpl_->network_.RudpSend(peer_node_id, message, message_sent_functor);
+  routing_->pimpl_->network_->RudpSend(peer_node_id, message, message_sent_functor);
 }
 
 void GenericNode::SendToClosestNode(const protobuf::Message& message) {
-  routing_->pimpl_->network_.SendToClosestNode(message);
+  routing_->pimpl_->network_->SendToClosestNode(message);
 }
 
 bool GenericNode::RoutingTableHasNode(const NodeId& node_id) {
@@ -306,7 +306,7 @@ testing::AssertionResult GenericNode::DropNode(const NodeId& node_id) {
   if (iter != routing_->pimpl_->routing_table_.nodes_.end()) {
     LOG(kVerbose) << HexSubstr(routing_->pimpl_->routing_table_.kNodeId_.string()) << " Removes "
                   << HexSubstr(node_id.string());
-    //    routing_->pimpl_->network_.Remove(iter->connection_id);
+    //    routing_->pimpl_->network_->Remove(iter->connection_id);
     routing_->pimpl_->routing_table_.DropNode(iter->connection_id, false);
   } else {
     testing::AssertionFailure() << DebugId(routing_->pimpl_->routing_table_.kNodeId_)
@@ -397,7 +397,7 @@ void GenericNode::PostTaskToAsioService(std::function<void()> functor) {
     routing_->pimpl_->asio_service_.service().post(functor);
 }
 
-rudp::NatType GenericNode::nat_type() { return routing_->pimpl_->network_.nat_type(); }
+rudp::NatType GenericNode::nat_type() { return routing_->pimpl_->network_->nat_type(); }
 
 GenericNetwork::GenericNetwork()
     : mutex_(),
