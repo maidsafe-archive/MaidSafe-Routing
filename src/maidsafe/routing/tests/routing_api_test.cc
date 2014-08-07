@@ -501,6 +501,7 @@ TEST(APITest, BEH_API_ClientNodeSameId) {
     }
   };
 
+  Sleep(std::chrono::seconds(2));
   routing4.Join(functors4);
   EXPECT_EQ(join_future2.wait_for(boost::chrono::seconds(10)), boost::future_status::ready);
 
@@ -836,9 +837,6 @@ TEST(APITest, BEH_API_SendGroup) {
 }
 
 TEST(APITest, BEH_API_PartiallyJoinedSend) {
-  // N.B. 5sec sleep in functors3.request_public_key causes delay in joining, giving opportunity for
-  // routing3's impl to use PartiallyJoinedSend when SendDirect is called
-
   Endpoint endpoint1(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort()),
       endpoint2(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort());
   ScopedBootstrapFile bootstrap_file({endpoint1, endpoint2});
@@ -857,15 +855,16 @@ TEST(APITest, BEH_API_PartiallyJoinedSend) {
   Routing routing1(pmid1);
   Routing routing2(pmid2);
   Routing routing3(pmid3);
-  functors1.message_and_caching.message_received = no_ops_message_received_functor;
-  functors3 = functors2 = functors1;
 
   functors1.network_status = [](int) {};  // NOLINT (Fraser)
-  functors1.message_and_caching.message_received = [&](const std::string& message,
+  functors1.message_and_caching.message_received =  [&](const std::string& message,
                                                        ReplyFunctor reply_functor) {
     reply_functor("response to " + message);
     LOG(kVerbose) << "Message received and replied to message !!";
   };
+
+  functors3 = functors2 = functors1;
+
   functors1.request_public_key = [&](const NodeId& node_id, GivePublicKeyFunctor give_key) {
     LOG(kWarning) << "node_validation called for " << DebugId(node_id);
     auto itr(key_map.find(node_id));
@@ -874,15 +873,8 @@ TEST(APITest, BEH_API_PartiallyJoinedSend) {
   };
 
   functors2.network_status = functors3.network_status = functors1.network_status;
-  functors2.message_and_caching.message_received = functors1.message_and_caching.message_received;
-  functors2.request_public_key = functors1.request_public_key;
-  functors3.request_public_key = [&](const NodeId& node_id, GivePublicKeyFunctor give_key) {
-    Sleep(std::chrono::seconds(5));
-    LOG(kWarning) << "node_validation called for " << DebugId(node_id);
-    auto itr(key_map.find(node_id));
-    if (key_map.end() != itr)
-      give_key((*itr).second);
-  };
+  functors2.request_public_key = functors3.request_public_key = functors1.request_public_key;
+
   auto a1 = boost::async(boost::launch::async, [&] {
     return routing1.ZeroStateJoin(functors1, endpoint1, endpoint2, node2.node_info);
   });
@@ -891,36 +883,36 @@ TEST(APITest, BEH_API_PartiallyJoinedSend) {
   });
   EXPECT_EQ(kSuccess, a2.get());  // wait for promise !
   EXPECT_EQ(kSuccess, a1.get());  // wait for promise !
-  std::once_flag join_flag;
+  std::once_flag flag;
   boost::promise<void> join_promise;
   auto join_future = join_promise.get_future();
 
-  functors3.network_status = [&join_flag, &join_promise](int result) {
+  functors3.network_status = [&flag, &join_promise](int result) {
     if (result == NetworkStatus(false, 2)) {
-      std::call_once(join_flag, [&join_promise]() { join_promise.set_value(); });
+      std::call_once(flag, [&join_promise]() { join_promise.set_value(); });
     }
   };
-
   routing3.Join(functors3);
 
   // Test PartiallyJoinedSend
   std::string data("message from my node");
-  std::once_flag flag;
+  std::once_flag response_flag;
   boost::promise<void> response_promise;
   auto response_future = response_promise.get_future();
   std::atomic<int> count(0);
-  ResponseFunctor response_functor = [&data, &flag, &response_promise, &count](std::string str) {
+  ResponseFunctor response_functor = [&data, &response_flag, &response_promise, &count](
+                                         std::string str) {
     EXPECT_EQ("response to " + data, str);
     ++count;
     if (count == 2)
-      std::call_once(flag, [&response_promise]() { response_promise.set_value(); });
+      std::call_once(response_flag, [&response_promise]() { response_promise.set_value(); });
     LOG(kVerbose) << "ResponseFunctor - end";
   };
   routing3.SendDirect(node1.node_info.id, data, false, response_functor);
   routing3.SendDirect(node2.node_info.id, data, false, response_functor);
   EXPECT_EQ(response_future.wait_for(boost::chrono::seconds(10)), boost::future_status::ready);
-
   EXPECT_EQ(join_future.wait_for(boost::chrono::seconds(20)), boost::future_status::ready);
+
   EXPECT_EQ(count, 2);
 }
 

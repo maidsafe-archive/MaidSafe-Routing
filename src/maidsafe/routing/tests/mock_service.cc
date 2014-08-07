@@ -16,6 +16,8 @@
     See the Licences for the specific language governing permissions and limitations relating to
     use of the MaidSafe Software.                                                                 */
 
+#include <string>
+
 #include "maidsafe/routing/tests/mock_service.h"
 
 namespace maidsafe {
@@ -25,8 +27,8 @@ namespace routing {
 namespace test {
 
 MockService::MockService(RoutingTable& routing_table, ClientRoutingTable& client_routing_table,
-                         NetworkUtils& utils)
-    : Service(routing_table, client_routing_table, utils) {}
+                         NetworkUtils& utils, Timer<std::string>& timer)
+    : Service(routing_table, client_routing_table, utils, timer) {}
 
 MockService::~MockService() {}
 

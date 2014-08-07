@@ -22,6 +22,7 @@
 #include <set>
 #include <string>
 #include <vector>
+#include <memory>
 
 #include "maidsafe/common/log.h"
 #include "maidsafe/common/make_unique.h"
@@ -680,8 +681,9 @@ void GenericNetwork::Validate(const NodeId& node_id, GivePublicKeyFunctor give_p
   auto iter(public_keys_.find(node_id));
   if (!public_keys_.empty())
     EXPECT_NE(iter, public_keys_.end());
-  if (iter != public_keys_.end())
+  if (iter != public_keys_.end()) {
     give_public_key((*iter).second);
+  }
 }
 
 void GenericNetwork::SetNodeValidationFunctor(NodePtr node) {
@@ -1504,7 +1506,7 @@ void GenericNetwork::AddNodeDetails(NodePtr node) {
       maximum_wait = 30;
     auto result = cond_var->wait_for(lock, std::chrono::seconds(maximum_wait));
     EXPECT_EQ(result, std::cv_status::no_timeout) << descriptor << " node failed to join: "
-                                                  << DebugId(node->node_id());
+                                                  << node->node_id();
     Sleep(std::chrono::milliseconds(1000));
   }
   PrintRoutingTables();

@@ -70,8 +70,8 @@ class MessageHandlerTest : public testing::Test {
     table_.reset(new MockRoutingTable(false, node_id, asymm::GenerateKeyPair()));
     ntable_.reset(new ClientRoutingTable(table_->kNodeId()));
     utils_.reset(new MockNetworkUtils(*table_, *ntable_));
-    service_.reset(new MockService(*table_, *ntable_, *utils_));
-    response_handler_.reset(new MockResponseHandler(*table_, *ntable_, *utils_));
+    service_.reset(new MockService(*table_, *ntable_, *utils_, timer_));
+    response_handler_.reset(new MockResponseHandler(*table_, *ntable_, *utils_, timer_));
     close_info_ = MakeNodeInfoAndKeys().node_info;
     close_info_.id = GenerateUniqueRandomId(table_->kNodeId(), 20);
     table_->AddNode(close_info_);

@@ -19,6 +19,8 @@
 #ifndef MAIDSAFE_ROUTING_TESTS_MOCK_RESPONSE_HANDLER_H_
 #define MAIDSAFE_ROUTING_TESTS_MOCK_RESPONSE_HANDLER_H_
 
+#include <string>
+
 #include "gmock/gmock.h"
 
 #include "maidsafe/routing/routing.pb.h"
@@ -33,7 +35,7 @@ namespace test {
 class MockResponseHandler : public ResponseHandler {
  public:
   MockResponseHandler(RoutingTable& routing_table, ClientRoutingTable& client_routing_table,
-                      NetworkUtils& network_utils);
+                      NetworkUtils& network_utils, Timer<std::string>& timer);
   virtual ~MockResponseHandler();
 
   MOCK_METHOD1(Ping, void(protobuf::Message& message));

@@ -160,7 +160,7 @@ protobuf::Message ConnectSuccess(const NodeId& node_id, const NodeId& this_node_
   message.set_client_node(client_node);
   message.set_hops_to_live(Parameters::hops_to_live);
   message.set_source_id(this_node_id.string());
-  message.set_request(true);
+  message.set_request(requestor);
   message.set_id(RandomUint32() % 10000);
   assert(message.IsInitialized() && "Unintialised message");
   return message;

@@ -46,8 +46,8 @@ MessageHandler::MessageHandler(RoutingTable& routing_table,
                          ? nullptr
                          : (new CacheManager(routing_table_.kNodeId(), network_))),
       timer_(timer),
-      response_handler_(new ResponseHandler(routing_table, client_routing_table, network_)),
-      service_(new Service(routing_table, client_routing_table, network_)),
+      response_handler_(new ResponseHandler(routing_table, client_routing_table, network_, timer_)),
+      service_(new Service(routing_table, client_routing_table, network_, timer_)),
       message_received_functor_(),
       typed_message_received_functors_() {}
 
@@ -64,7 +64,8 @@ void MessageHandler::HandleRoutingMessage(protobuf::Message& message) {
       message.request() ? service_->FindNodes(message) : response_handler_->FindNodes(message);
       break;
     case MessageType::kConnectSuccess:
-      service_->ConnectSuccess(message);
+      message.request() ? service_->ConnectSuccess(message)
+                        : response_handler_->ConnectSuccess(message);
       break;
     case MessageType::kConnectSuccessAcknowledgement:
       response_handler_->ConnectSuccessAcknowledgement(message);

@@ -197,7 +197,7 @@ void NetworkUtils::SendToClosestNode(const protobuf::Message& message) {
                       << PrintMessage(message);
         return;
       }
-      LOG(kVerbose) << "This node [" << DebugId(routing_table_.kNodeId()) << "] has "
+      LOG(kVerbose) << "This node [" << routing_table_.kNodeId() << "] has "
                     << client_routing_nodes.size()
                     << " destination node(s) in its non-routing table."
                     << " id: " << message.id();

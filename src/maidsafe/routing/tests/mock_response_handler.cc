@@ -16,6 +16,8 @@
     See the Licences for the specific language governing permissions and limitations relating to
     use of the MaidSafe Software.                                                                 */
 
+#include <string>
+
 #include "maidsafe/routing/tests/mock_response_handler.h"
 
 namespace maidsafe {
@@ -26,8 +28,8 @@ namespace test {
 
 MockResponseHandler::MockResponseHandler(RoutingTable& routing_table,
                                          ClientRoutingTable& client_routing_table,
-                                         NetworkUtils& utils)
-    : ResponseHandler(routing_table, client_routing_table, utils) {}
+                                         NetworkUtils& utils, Timer<std::string>& timer)
+    : ResponseHandler(routing_table, client_routing_table, utils, timer) {}
 
 MockResponseHandler::~MockResponseHandler() {}
 

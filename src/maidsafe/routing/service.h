@@ -19,9 +19,12 @@
 #ifndef MAIDSAFE_ROUTING_SERVICE_H_
 #define MAIDSAFE_ROUTING_SERVICE_H_
 
+#include <map>
 #include <memory>
+#include <string>
 
 #include "maidsafe/routing/api_config.h"
+#include "maidsafe/routing/timer.h"
 
 namespace maidsafe {
 
@@ -35,10 +38,10 @@ class NetworkUtils;
 class ClientRoutingTable;
 class RoutingTable;
 
-class Service {
+class Service : public std::enable_shared_from_this<Service> {
  public:
   Service(RoutingTable& routing_table, ClientRoutingTable& client_routing_table,
-          NetworkUtils& network);
+          NetworkUtils& network, Timer<std::string>& timer);
   virtual ~Service();
   // Handle all incoming requests and send back reply
   virtual void Ping(protobuf::Message& message);
@@ -50,14 +53,22 @@ class Service {
   RequestPublicKeyFunctor request_public_key_functor() const;
 
  private:
-  void ConnectSuccessFromRequester(NodeInfo& peer);
+  void ConnectSuccessFromRequester(NodeInfo& peer, bool client);
   void ConnectSuccessFromResponder(NodeInfo& peer, bool client);
   bool CheckPriority(const NodeId& this_node, const NodeId& peer_node);
+  void ValidateAndSendConnectResponse(protobuf::Message message, const NodeInfo& peer_node,
+                                      const rudp::EndpointPair& peer_endpoint_pair);
+  void SendConnectResponse(protobuf::Message message, const NodeInfo& peer_node_in,
+                           const rudp::EndpointPair& peer_endpoint_pair);
+  void HandleConnectSuccess(NodeInfo& peer, bool client);
 
+  mutable std::mutex mutex_;
   RoutingTable& routing_table_;
   ClientRoutingTable& client_routing_table_;
   NetworkUtils& network_;
+  Timer<std::string>& timer_;
   RequestPublicKeyFunctor request_public_key_functor_;
+  std::map<NodeId, asymm::PublicKey> public_keys_;
 };
 
 }  // namespace routing
