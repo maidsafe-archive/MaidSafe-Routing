@@ -116,22 +116,25 @@ Routing::Impl::Impl(bool client_mode, const NodeId& node_id, const asymm::Keys& 
 }
 
 Routing::Impl::~Impl() {
+  assert(false);
   LOG(kError) << "~Impl " << kNodeId_ << ", connection id " << routing_table_.kConnectionId();
 }
 
 void Routing::Impl::Stop() {
   LOG(kVerbose) << "Routing::Impl::Stop() " << kNodeId_ << ", connection id "
-                << routing_table_.kConnectionId();
-  std::lock_guard<std::mutex> lock(running_mutex_);
-  LOG(kVerbose) << "Routing::Impl::Stop() Before ---------- " << shared_from_this().use_count();
-  running_ = false;
+    << routing_table_.kConnectionId();
+  {
+    std::lock_guard<std::mutex> lock(running_mutex_);
+    running_ = false;
+  }
+  LOG(kVerbose) << "Routing::Impl::Stop() Before ---------- ";// << shared_from_this().use_count();
   timer_.CancelAll();
   re_bootstrap_timer_.cancel();
   recovery_timer_.cancel();
   setup_timer_.cancel();
-  network_.reset();
   asio_service_.Stop();
-  LOG(kVerbose) << "Routing::Impl::Stop() After  ===========" << shared_from_this().use_count();
+  network_.reset();
+  LOG(kVerbose) << "Routing::Impl::Stop() After  ===========" ;// << shared_from_this().use_count();
   //assert(shared_from_this().use_count() == 1);
 }
 
@@ -207,11 +210,10 @@ int Routing::Impl::DoBootstrap() {
     network_->Remove(network_->bootstrap_connection_id());
     network_->clear_bootstrap_connection_info();
   }
-  std::shared_ptr<Routing::Impl> this_ptr(shared_from_this());
   return network_->Bootstrap(
-      [this_ptr](const std::string& message) { this_ptr->OnMessageReceived(message); },
-      [this_ptr](const NodeId& lost_connection_id) {
-        this_ptr->OnConnectionLost(lost_connection_id);
+      [=](const std::string& message) { OnMessageReceived(message); },
+      [=](const NodeId& lost_connection_id) {
+        OnConnectionLost(lost_connection_id);
       });
 }
 
@@ -258,16 +260,15 @@ void Routing::Impl::FindClosestNode(const boost::system::error_code& error_code,
                                                   network_->this_node_relay_connection_id()));
   LOG(kVerbose) << "   [" << kNodeId_ << "] (attempt " << attempts << ")  requesting "
                 << num_nodes_requested << " nodes (id: " << find_node_rpc.id() << ")";
-  std::shared_ptr<Routing::Impl> this_ptr(shared_from_this());
-  rudp::MessageSentFunctor message_sent_functor([this_ptr, find_node_rpc](int message_sent) {
+  rudp::MessageSentFunctor message_sent_functor([=](int message_sent) {
     if (message_sent == kSuccess)
-      LOG(kVerbose) << "   [" << this_ptr->kNodeId_ << "] sent : "
+      LOG(kVerbose) << "   [" << kNodeId_ << "] sent : "
                     << MessageTypeString(find_node_rpc)
-                    << " to   " << this_ptr->network_->bootstrap_connection_id() << "   (id: "
+                    << " to   " << network_->bootstrap_connection_id() << "   (id: "
                     << find_node_rpc.id() << ")";
     else
       LOG(kError) << "Failed to send FindNodes RPC to bootstrap connection id : "
-                  << this_ptr->network_->bootstrap_connection_id();
+                  << network_->bootstrap_connection_id();
   });
 
   ++attempts;
@@ -276,6 +277,7 @@ void Routing::Impl::FindClosestNode(const boost::system::error_code& error_code,
   std::lock_guard<std::mutex> lock(running_mutex_);
   if (!running_)
     return;
+  auto this_ptr(shared_from_this());
   setup_timer_.expires_from_now(Parameters::find_close_node_interval);
   setup_timer_.async_wait([this_ptr, attempts](boost::system::error_code error_code_local) {
     if (error_code_local != boost::asio::error::operation_aborted)
@@ -292,11 +294,10 @@ int Routing::Impl::ZeroStateJoin(const Functors& functors, const Endpoint& local
                                  const Endpoint& peer_endpoint, const NodeInfo& peer_info) {
   assert((!routing_table_.client_mode()) && "no client nodes allowed in zero state network");
   ConnectFunctors(functors);
-  std::shared_ptr<Routing::Impl> this_ptr(shared_from_this());
   int result(network_->ZeroStateBootstrap(
-      [this_ptr](const std::string& message) { this_ptr->OnMessageReceived(message); },
-      [this_ptr](const NodeId& lost_connection_id) {
-        this_ptr->OnConnectionLost(lost_connection_id);
+      [=](const std::string& message) { OnMessageReceived(message); },
+      [=](const NodeId& lost_connection_id) {
+        OnConnectionLost(lost_connection_id);
       },
       local_endpoint));
 
@@ -418,16 +419,15 @@ void Routing::Impl::PartiallyJoinedSend(protobuf::Message& proto_message) {
   NodeId bootstrap_connection_id(network_->bootstrap_connection_id());
   assert(proto_message.has_relay_connection_id() && "did not set this_node_relay_connection_id");
   std::shared_ptr<Routing::Impl> this_ptr(shared_from_this());
-  rudp::MessageSentFunctor message_sent([this_ptr, bootstrap_connection_id,
-                                        proto_message](int result) {
+  rudp::MessageSentFunctor message_sent([=](int result) {
     std::lock_guard<std::mutex> lock(this_ptr->running_mutex_);
-    if (!this_ptr->running_)
+    if (!running_)
       return;
-    this_ptr->asio_service_.service().post([this_ptr, result, proto_message, bootstrap_connection_id]() {
+    asio_service_.service().post([this, result, proto_message, bootstrap_connection_id]() {
       if (rudp::kSuccess != result) {
         if (proto_message.id() != 0) {
           try {
-            this_ptr->timer_.CancelTask(proto_message.id());
+            timer_.CancelTask(proto_message.id());
           }
           catch (const maidsafe_error& error) {
             if (error.code() != make_error_code(CommonErrors::invalid_parameter))
@@ -435,9 +435,9 @@ void Routing::Impl::PartiallyJoinedSend(protobuf::Message& proto_message) {
           }
         }
         LOG(kError) << "Partial join Session Ended, Send not allowed anymore";
-        this_ptr->NotifyNetworkStatus(kPartialJoinSessionEnded);
+        NotifyNetworkStatus(kPartialJoinSessionEnded);
       } else {
-        LOG(kVerbose) << "   [" << this_ptr->kNodeId_ << "] sent : " << MessageTypeString(proto_message)
+        LOG(kVerbose) << "   [" << kNodeId_ << "] sent : " << MessageTypeString(proto_message)
                       << " to   " << bootstrap_connection_id  << "   (id: " << proto_message.id()
                       << ") dst: " << NodeId(proto_message.destination_id()) << "--Partial-joined-";
       }
