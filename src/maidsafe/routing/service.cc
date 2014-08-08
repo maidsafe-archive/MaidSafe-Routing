@@ -334,15 +334,14 @@ void Service::HandleConnectSuccess(NodeInfo& peer, bool client) {
     LOG(kVerbose) << "Special case : kConnectSuccess from bootstrapping node: " << peer.id;
     return;
   }
-
-  auto peer_public_key(public_key_holder_.Find(peer.id));
   if (client) {
     if (!ValidateAndAddToRoutingTable(network_, routing_table_, client_routing_table_, peer.id,
-                                      peer.connection_id, *peer_public_key, true)) {
+                                      peer.connection_id, asymm::PublicKey(), true)) {
       LOG(kVerbose) << "Failed to add to routing table";
       return;
     }
   } else {
+    auto peer_public_key(public_key_holder_.Find(peer.id));
     if (!peer_public_key) {
       LOG(kVerbose) << "Missing peer public key for " << peer.id;
       return;

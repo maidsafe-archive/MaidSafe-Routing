@@ -283,14 +283,8 @@ void ResponseHandler::ConnectSuccessAcknowledgement(protobuf::Message& message) 
 void ResponseHandler::ValidateAndCompleteConnectionToClient(const NodeInfo& peer,
                                                             bool from_requestor,
                                                             const std::vector<NodeId>& close_ids) {
-  auto peer_public_key(public_key_holder_.Find(peer.id));
-  if (!peer_public_key) {
-    LOG(kVerbose) << "missing public key for " << peer.id;
-    return;
-  }
-
   if (ValidateAndAddToRoutingTable(network_, routing_table_, client_routing_table_, peer.id,
-                                   peer.connection_id, *peer_public_key, true)) {
+                                   peer.connection_id, asymm::PublicKey(), true)) {
     if (from_requestor) {
       HandleSuccessAcknowledgementAsReponder(peer, true);
     } else {
