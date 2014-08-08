@@ -98,7 +98,6 @@ class GenericNode;
 class Routing::Impl : public std::enable_shared_from_this<Routing::Impl> {
  public:
   Impl(bool client_mode, const NodeId& node_id, const asymm::Keys& keys);
-  ~Impl();
 
   void Join(const Functors& functors);
 
@@ -182,7 +181,7 @@ class Routing::Impl : public std::enable_shared_from_this<Routing::Impl> {
   std::mutex network_status_mutex_;
   int network_status_;
   NetworkStatistics network_statistics_;
-  RoutingTable routing_table_;
+  std::unique_ptr<RoutingTable> routing_table_;
   const NodeId kNodeId_;
   bool running_;
   std::mutex running_mutex_;
@@ -233,7 +232,7 @@ protobuf::Message Routing::Impl::CreateNodeLevelMessage(const T& message) {
   proto_message.set_type(static_cast<int32_t>(MessageType::kNodeLevel));
 
   proto_message.set_cacheable(static_cast<int32_t>(message.cacheable));
-  proto_message.set_client_node(routing_table_.client_mode());
+  proto_message.set_client_node(routing_table_->client_mode());
 
   proto_message.set_request(true);
   proto_message.set_hops_to_live(Parameters::hops_to_live);

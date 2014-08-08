@@ -74,7 +74,7 @@ MessageReceivedFunctor no_ops_message_received_functor = [](const std::string&,
 }  // anonymous namespace
 
 TEST(APITest, BEH_API_ZeroState) {
-  { Endpoint endpoint1(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort()),
+  Endpoint endpoint1(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort()),
     endpoint2(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort());
   ScopedBootstrapFile bootstrap_file({ endpoint1, endpoint2 });
 
@@ -91,7 +91,7 @@ TEST(APITest, BEH_API_ZeroState) {
   Functors functors1, functors2, functors3;
   Routing routing1(pmid1);
   Routing routing2(pmid2);
-//  Routing routing3(pmid3);
+  Routing routing3(pmid3);
 
   functors1.network_status = [](int) {};  // NOLINT (Fraser)
   functors1.message_and_caching.message_received = no_ops_message_received_functor;
@@ -115,20 +115,20 @@ TEST(APITest, BEH_API_ZeroState) {
   });
   EXPECT_EQ(kSuccess, a2.get());  // wait for promise !
   EXPECT_EQ(kSuccess, a1.get());  // wait for promise !
-  }
-  //std::once_flag flag;
-  //boost::promise<void> join_promise;
-  //auto join_future = join_promise.get_future();
 
-  //functors3.network_status = [&flag, &join_promise](int result) {
-  //  if (result == NetworkStatus(false, 2)) {
-  //    std::call_once(flag, [&join_promise]() { join_promise.set_value(); });
-  //  }
-  //};
+  std::once_flag flag;
+  boost::promise<void> join_promise;
+  auto join_future = join_promise.get_future();
 
-  //routing3.Join(functors3);
-  //ASSERT_EQ(join_future.wait_for(boost::chrono::seconds(5)), boost::future_status::ready);
-  //LOG(kInfo) << "done!!!";
+  functors3.network_status = [&flag, &join_promise](int result) {
+    if (result == NetworkStatus(false, 2)) {
+      std::call_once(flag, [&join_promise]() { join_promise.set_value(); });
+    }
+  };
+
+  routing3.Join(functors3);
+  ASSERT_EQ(join_future.wait_for(boost::chrono::seconds(5)), boost::future_status::ready);
+  LOG(kInfo) << "done!!!";
 }
 
 TEST(APITest, DISABLED_BEH_API_ZeroStateWithDuplicateNode) {
