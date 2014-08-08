@@ -202,7 +202,7 @@ NodeId RoutingTable::RandomConnectedNode() {
 // it into its routing table.
 //  assert(nodes_.size() > Parameters::closest_nodes_size &&
 //         "Shouldn't call RandomConnectedNode when routing table size is <= closest_nodes_size");
-  assert(!nodes_.empty());
+//   assert(nodes_.empty());
   if (nodes_.empty())
     return NodeId();
 

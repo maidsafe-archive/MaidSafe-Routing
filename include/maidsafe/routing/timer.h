@@ -159,8 +159,8 @@ void Timer<Response>::CancelAll() {
 
 template <typename Response>
 void Timer<Response>::AddTask(const std::chrono::steady_clock::duration& timeout,
-                                const ResponseFunctor& response_functor,
-                                int expected_response_count, TaskId task_id) {
+                              const ResponseFunctor& response_functor,
+                              int expected_response_count, TaskId task_id) {
   LOG(kVerbose) << "Timer<Response>::AddTask add task " << task_id
                 << " with expected_response_count as " << expected_response_count;
   if (!response_functor || expected_response_count < 1) {
