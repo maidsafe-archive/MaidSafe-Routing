@@ -109,7 +109,7 @@ Routing::Impl::Impl(bool client_mode, const NodeId& node_id, const asymm::Keys& 
       recovery_timer_(asio_service_.service()),
       setup_timer_(asio_service_.service()) {
   message_handler_.reset(new MessageHandler(routing_table_, client_routing_table_, network_, timer_,
-                                            network_statistics_));
+                                            network_statistics_, asio_service_));
   LOG(kInfo) << (client_mode ? "client " : "non-client ") << "node. Id : " << kNodeId_;
   assert((client_mode || !node_id.IsZero()) && "Server Nodes cannot be created without valid keys");
 }

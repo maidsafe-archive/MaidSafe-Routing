@@ -35,6 +35,7 @@
 #include "maidsafe/routing/routing_table.h"
 #include "maidsafe/routing/rpcs.h"
 #include "maidsafe/routing/utils.h"
+#include "maidsafe/routing/public_key_holder.h"
 
 namespace bptime = boost::posix_time;
 
@@ -50,9 +51,9 @@ typedef boost::asio::ip::udp::endpoint Endpoint;
 
 ResponseHandler::ResponseHandler(
     RoutingTable& routing_table, ClientRoutingTable& client_routing_table, NetworkUtils& network,
-    Timer<std::string>& timer)
+    PublicKeyHolder& public_key_holder)
     : mutex_(), routing_table_(routing_table), client_routing_table_(client_routing_table),
-      network_(network), timer_(timer), request_public_key_functor_(), public_keys_() {}
+      network_(network), request_public_key_functor_(), public_key_holder_(public_key_holder)  {}
 
 ResponseHandler::~ResponseHandler() {}
 
@@ -120,8 +121,7 @@ void ResponseHandler::Connect(protobuf::Message& message) {
                   << "] received connect response from " << peer_node_id
                   << " connection_id: " << peer_connection_id << " id: " << message.id();
 
-    auto public_key(public_keys_.find(peer_node_id));
-    if (public_key == std::end(public_keys_)) {
+    if (!public_key_holder_.Find(peer_node_id)) {
       LOG(kError)  << "missing public key ";
       message.Clear();
       return;
@@ -283,8 +283,14 @@ void ResponseHandler::ConnectSuccessAcknowledgement(protobuf::Message& message) 
 void ResponseHandler::ValidateAndCompleteConnectionToClient(const NodeInfo& peer,
                                                             bool from_requestor,
                                                             const std::vector<NodeId>& close_ids) {
+  auto peer_public_key(public_key_holder_.Find(peer.id));
+  if (!peer_public_key) {
+    LOG(kVerbose) << "missing public key for " << peer.id;
+    return;
+  }
+
   if (ValidateAndAddToRoutingTable(network_, routing_table_, client_routing_table_, peer.id,
-                                   peer.connection_id, public_keys_[peer.id], true)) {
+                                   peer.connection_id, *peer_public_key, true)) {
     if (from_requestor) {
       HandleSuccessAcknowledgementAsReponder(peer, true);
     } else {
@@ -295,8 +301,14 @@ void ResponseHandler::ValidateAndCompleteConnectionToClient(const NodeInfo& peer
 
 void ResponseHandler::ValidateAndCompleteConnectionToNonClient(
     const NodeInfo& peer, bool from_requestor, const std::vector<NodeId>& close_ids) {
+  auto peer_public_key(public_key_holder_.Find(peer.id));
+  if (!peer_public_key) {
+    LOG(kVerbose) << "missing public key for " << peer.id;
+    return;
+  }
+  public_key_holder_.Remove(peer.id);
   if (ValidateAndAddToRoutingTable(network_, routing_table_, client_routing_table_, peer.id,
-                                   peer.connection_id, public_keys_[peer.id], false)) {
+                                   peer.connection_id, *peer_public_key, false)) {
     if (from_requestor) {
       HandleSuccessAcknowledgementAsReponder(peer, false);
     } else {
@@ -333,10 +345,12 @@ void ResponseHandler::HandleSuccessAcknowledgementAsRequestor(
 }
 
 void ResponseHandler::CheckAndSendConnectRequest(const NodeId& node_id) {
+  if (node_id == routing_table_.kNodeId())
+    return;
+  if (routing_table_.Contains(node_id))
+    return;
   unsigned int limit(routing_table_.client_mode() ? Parameters::max_routing_table_size_for_client
                                                   : Parameters::closest_nodes_size);
-  if (public_keys_.find(node_id) != std::end(public_keys_))
-    return;
   if ((routing_table_.size() < routing_table_.kMaxSize()) ||
       NodeId::CloserToTarget(
           node_id, routing_table_.GetNthClosestNode(routing_table_.kNodeId(), limit).id,
@@ -353,14 +367,7 @@ void ResponseHandler::ValidateAndSendConnectRequest(const NodeId& peer_id) {
         return;
       }
       if (std::shared_ptr<ResponseHandler> response_handler = response_handler_weak_ptr.lock()) {
-        response_handler->timer_.AddTask(Parameters::default_response_timeout,
-                                         [peer_id, this](std::string /*string*/) {
-                                           public_keys_.erase(peer_id);
-                                         }, 1, response_handler->timer_.NewTaskId());
-        {
-          std::lock_guard<std::mutex> lock(response_handler->mutex_);
-          response_handler->public_keys_.insert(std::make_pair(peer_id, *public_key));
-        }
+        response_handler->public_key_holder_.Add(peer_id, *public_key);
         response_handler->SendConnectRequest(peer_id);
       }
     });

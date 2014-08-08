@@ -51,11 +51,12 @@ class NetworkUtils;
 class ClientRoutingTable;
 class RoutingTable;
 class GroupChangeHandler;
+class PublicKeyHolder;
 
 class ResponseHandler : public std::enable_shared_from_this<ResponseHandler> {
  public:
   ResponseHandler(RoutingTable& routing_table, ClientRoutingTable& client_routing_table,
-                  NetworkUtils& network, Timer<std::string>& timer);
+                  NetworkUtils& network, PublicKeyHolder& public_key_holder);
   virtual ~ResponseHandler();
   virtual void Ping(protobuf::Message& message);
   virtual void Connect(protobuf::Message& message);
@@ -85,9 +86,8 @@ class ResponseHandler : public std::enable_shared_from_this<ResponseHandler> {
   RoutingTable& routing_table_;
   ClientRoutingTable& client_routing_table_;
   NetworkUtils& network_;
-  Timer<std::string>& timer_;
   RequestPublicKeyFunctor request_public_key_functor_;
-  std::map<NodeId, asymm::PublicKey> public_keys_;
+  PublicKeyHolder& public_key_holder_;
 };
 
 }  // namespace routing

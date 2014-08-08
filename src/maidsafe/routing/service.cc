@@ -37,6 +37,7 @@
 #include "maidsafe/routing/routing_table.h"
 #include "maidsafe/routing/rpcs.h"
 #include "maidsafe/routing/utils.h"
+#include "maidsafe/routing/public_key_holder.h"
 
 namespace maidsafe {
 
@@ -49,9 +50,9 @@ typedef boost::asio::ip::udp::endpoint Endpoint;
 }  // unnamed namespace
 
 Service::Service(RoutingTable& routing_table, ClientRoutingTable& client_routing_table,
-                 NetworkUtils& network, Timer<std::string>& timer)
+                 NetworkUtils& network, PublicKeyHolder& public_key_holder)
     : mutex_(), routing_table_(routing_table), client_routing_table_(client_routing_table),
-      network_(network), timer_(timer), request_public_key_functor_(), public_keys_() {}
+      network_(network), request_public_key_functor_(), public_key_holder_(public_key_holder) {}
 
 Service::~Service() {}
 
@@ -139,15 +140,7 @@ void Service::ValidateAndSendConnectResponse(protobuf::Message message, const No
         return;
       }
       if (std::shared_ptr<Service> service = service_weak_ptr.lock()) {
-        service->timer_.AddTask(Parameters::default_response_timeout,
-                                [peer_node, this](std::string /*string*/) {
-                                  std::lock_guard<std::mutex> lock(this->mutex_);
-                                  this->public_keys_.erase(peer_node.id);
-                                }, 1, service->timer_.NewTaskId());
-        {
-          std::lock_guard<std::mutex> lock(service->mutex_);
-          service->public_keys_.insert(std::make_pair(peer_node.id, *public_key));
-        }
+        service->public_key_holder_.Add(peer_node.id, *public_key);
         service->SendConnectResponse(message, peer_node, peer_endpoint_pair);
       }
     });
@@ -342,24 +335,24 @@ void Service::HandleConnectSuccess(NodeInfo& peer, bool client) {
     return;
   }
 
+  auto peer_public_key(public_key_holder_.Find(peer.id));
   if (client) {
     if (!ValidateAndAddToRoutingTable(network_, routing_table_, client_routing_table_, peer.id,
-                                      peer.connection_id, public_keys_[peer.id], true)) {
+                                      peer.connection_id, *peer_public_key, true)) {
       LOG(kVerbose) << "Failed to add to routing table";
       return;
     }
   } else {
-    auto public_key(public_keys_.find(peer.id));
-    if (public_key == std::end(public_keys_)) {
-      LOG(kError)  << "missing public key ";
+    if (!peer_public_key) {
+      LOG(kVerbose) << "Missing peer public key for " << peer.id;
       return;
     }
     if (!ValidateAndAddToRoutingTable(network_, routing_table_, client_routing_table_, peer.id,
-                                      peer.connection_id, public_keys_[peer.id], false)) {
+                                      peer.connection_id, *peer_public_key, false)) {
       LOG(kVerbose) << "Failed to add to routing table";
       return;
     } else {
-      public_keys_.erase(peer.id);
+      public_key_holder_.Remove(peer.id);
     }
   }
 

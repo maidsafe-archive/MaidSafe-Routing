@@ -37,7 +37,8 @@ namespace routing {
 
 MessageHandler::MessageHandler(RoutingTable& routing_table,
                                ClientRoutingTable& client_routing_table, NetworkUtils& network,
-                               Timer<std::string>& timer, NetworkStatistics& network_statistics)
+                               Timer<std::string>& timer, NetworkStatistics& network_statistics,
+                               AsioService& asio_service)
     : routing_table_(routing_table),
       client_routing_table_(client_routing_table),
       network_statistics_(network_statistics),
@@ -46,8 +47,10 @@ MessageHandler::MessageHandler(RoutingTable& routing_table,
                          ? nullptr
                          : (new CacheManager(routing_table_.kNodeId(), network_))),
       timer_(timer),
-      response_handler_(new ResponseHandler(routing_table, client_routing_table, network_, timer_)),
-      service_(new Service(routing_table, client_routing_table, network_, timer_)),
+      public_key_holder_(asio_service),
+      response_handler_(new ResponseHandler(routing_table, client_routing_table, network_,
+                                            public_key_holder_)),
+      service_(new Service(routing_table, client_routing_table, network_, public_key_holder_)),
       message_received_functor_(),
       typed_message_received_functors_() {}
 

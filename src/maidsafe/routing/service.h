@@ -37,11 +37,12 @@ class Message;
 class NetworkUtils;
 class ClientRoutingTable;
 class RoutingTable;
+class PublicKeyHolder;
 
 class Service : public std::enable_shared_from_this<Service> {
  public:
   Service(RoutingTable& routing_table, ClientRoutingTable& client_routing_table,
-          NetworkUtils& network, Timer<std::string>& timer);
+          NetworkUtils& network, PublicKeyHolder& public_key_holder);
   virtual ~Service();
   // Handle all incoming requests and send back reply
   virtual void Ping(protobuf::Message& message);
@@ -66,9 +67,8 @@ class Service : public std::enable_shared_from_this<Service> {
   RoutingTable& routing_table_;
   ClientRoutingTable& client_routing_table_;
   NetworkUtils& network_;
-  Timer<std::string>& timer_;
   RequestPublicKeyFunctor request_public_key_functor_;
-  std::map<NodeId, asymm::PublicKey> public_keys_;
+  PublicKeyHolder& public_key_holder_;
 };
 
 }  // namespace routing

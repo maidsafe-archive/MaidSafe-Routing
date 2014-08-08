@@ -29,6 +29,7 @@
 #include "maidsafe/routing/service.h"
 #include "maidsafe/routing/timer.h"
 #include "maidsafe/routing/network_statistics.h"
+#include "maidsafe/routing/public_key_holder.h"
 
 namespace maidsafe {
 
@@ -80,7 +81,7 @@ class MessageHandler {
  public:
   MessageHandler(RoutingTable& routing_table, ClientRoutingTable& client_routing_table,
                  NetworkUtils& network, Timer<std::string>& timer,
-                 NetworkStatistics& network_statistics);
+                 NetworkStatistics& network_statistics, AsioService& asio_service);
   void HandleMessage(protobuf::Message& message);
   void set_typed_message_and_caching_functor(TypedMessageAndCachingFunctor functors);
   void set_message_and_caching_functor(MessageAndCachingFunctors functors);
@@ -127,6 +128,7 @@ class MessageHandler {
   NetworkUtils& network_;
   std::unique_ptr<CacheManager> cache_manager_;
   Timer<std::string>& timer_;
+  PublicKeyHolder public_key_holder_;
   std::shared_ptr<ResponseHandler> response_handler_;
   std::shared_ptr<Service> service_;
   MessageReceivedFunctor message_received_functor_;
