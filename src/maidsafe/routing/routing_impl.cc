@@ -131,7 +131,6 @@ void Routing::Impl::Stop() {
   // shared_from_this()
   network_.reset();
   routing_table_.reset();
-                                                                                                                assert(shared_from_this().use_count() == 2);
 }
 
 void Routing::Impl::Join(const Functors& functors) {
