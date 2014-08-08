@@ -109,8 +109,8 @@ Routing::Impl::Impl(bool client_mode, const NodeId& node_id, const asymm::Keys& 
       re_bootstrap_timer_(asio_service_.service()),
       recovery_timer_(asio_service_.service()),
       setup_timer_(asio_service_.service()) {
-  message_handler_.reset(new MessageHandler(*routing_table_, client_routing_table_, *network_, timer_,
-                                            network_statistics_));
+  message_handler_.reset(new MessageHandler(*routing_table_, client_routing_table_, *network_,
+                                            timer_, network_statistics_));
   LOG(kInfo) << (client_mode ? "client " : "non-client ") << "node. Id : " << kNodeId_;
   assert((client_mode || !node_id.IsZero()) && "Server Nodes cannot be created without valid keys");
 }
@@ -127,7 +127,8 @@ void Routing::Impl::Stop() {
   recovery_timer_.cancel();
   setup_timer_.cancel();
   asio_service_.Stop();
-  // Need to destroy network_ & routing_table_ as they hold a lambda capture (functor) of shared_from_this()
+  // Need to destroy network_ & routing_table_ as they hold a lambda capture (functor) of
+  // shared_from_this()
   network_.reset();
   routing_table_.reset();
                                                                                                                 assert(shared_from_this().use_count() == 2);
@@ -421,7 +422,8 @@ void Routing::Impl::PartiallyJoinedSend(protobuf::Message& proto_message) {
     std::lock_guard<std::mutex> lock(this_ptr->running_mutex_);
     if (!this_ptr->running_)
       return;
-    this_ptr->asio_service_.service().post([this_ptr, result, proto_message, bootstrap_connection_id]() {
+    this_ptr->asio_service_.service().post([this_ptr, result, proto_message,
+                                           bootstrap_connection_id]() {
       if (rudp::kSuccess != result) {
         if (proto_message.id() != 0) {
           try {
@@ -435,8 +437,9 @@ void Routing::Impl::PartiallyJoinedSend(protobuf::Message& proto_message) {
         LOG(kError) << "Partial join Session Ended, Send not allowed anymore";
         this_ptr->NotifyNetworkStatus(kPartialJoinSessionEnded);
       } else {
-        LOG(kVerbose) << "   [" << this_ptr->kNodeId_ << "] sent : " << MessageTypeString(proto_message)
-                      << " to   " << bootstrap_connection_id  << "   (id: " << proto_message.id()
+        LOG(kVerbose) << "   [" << this_ptr->kNodeId_ << "] sent : "
+                      << MessageTypeString(proto_message) << " to   " << bootstrap_connection_id
+                      << "   (id: " << proto_message.id()
                       << ") dst: " << NodeId(proto_message.destination_id()) << "--Partial-joined-";
       }
     });
