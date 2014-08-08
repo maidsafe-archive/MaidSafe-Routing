@@ -44,8 +44,8 @@ class CloseNodesChangeTest : public testing::Test {
       : old_close_nodes_(), new_close_nodes_(), kNodeId_(NodeId::IdType::kRandomId) {
     int old_close_nodes_size(20);
 
-    old_close_nodes_.push_back(kNodeId_);
-    new_close_nodes_.push_back(kNodeId_);
+//    old_close_nodes_.push_back(kNodeId_);
+//    new_close_nodes_.push_back(kNodeId_);
     for (auto i(0); i != old_close_nodes_size - 1; ++i) {
       old_close_nodes_.push_back(NodeId(NodeId::IdType::kRandomId));
       new_close_nodes_.push_back(old_close_nodes_.back());
@@ -55,7 +55,50 @@ class CloseNodesChangeTest : public testing::Test {
  public:
   CheckHoldersResult CheckHolders(const NodeId& target, std::vector<NodeId>& old_close_nodes,
                                   std::vector<NodeId>& new_close_nodes) {
+    std::sort(new_close_nodes.begin(), new_close_nodes.end(),
+              [&](const NodeId& lhs, const NodeId& rhs) {
+      return NodeId::CloserToTarget(lhs, rhs, target);
+    });
+    std::sort(old_close_nodes.begin(), old_close_nodes.end(),
+              [&](const NodeId& lhs, const NodeId& rhs) {
+      return NodeId::CloserToTarget(lhs, rhs, target);
+    });
+    unsigned int new_node_tail(Parameters::group_size), old_node_tail(Parameters::group_size);
+    if (new_close_nodes.front() != target)
+      --new_node_tail;
+    if (old_close_nodes.front() != target)
+      --old_node_tail;
+    bool now_in_range(NodeId::CloserToTarget(
+                        this->kNodeId_, new_close_nodes[new_node_tail], target));
+    bool was_in_range(NodeId::CloserToTarget(
+                        this->kNodeId_, old_close_nodes[old_node_tail], target));
+    LOG(kVerbose) << "now_in_range : " << std::boolalpha << now_in_range
+                  << " was_in_range : " << was_in_range;
+/*    // kNodeId_ is included in the new_close_nodes_
+    if (this->kNodeId_ == new_close_nodes[new_node_tail])
+      now_in_range = true;
+*/
     CheckHoldersResult holders_result;
+    holders_result.proximity_status = GroupRangeStatus::kOutwithRange;
+    if (now_in_range)
+      holders_result.proximity_status = GroupRangeStatus::kInRange;
+
+    if (now_in_range)
+      --new_node_tail;
+    if (was_in_range)
+      --old_node_tail;
+    std::vector<NodeId> diff_new_holders;
+    std::for_each(std::begin(new_close_nodes), new_close_nodes.begin() + new_node_tail + 1,
+                  [&](const NodeId& new_holder) {
+                    if (std::find(std::begin(old_close_nodes),
+                                  old_close_nodes.begin() + old_node_tail + 1,
+                                  new_holder) == (old_close_nodes.begin() + old_node_tail + 1))
+                      diff_new_holders.push_back(new_holder);
+                    });
+    if (diff_new_holders.size() > 0)
+      holders_result.new_holder = diff_new_holders.front();
+    return holders_result;
+/*
     // Radius
     std::sort(new_close_nodes.begin(), new_close_nodes.end(),
               [this](const NodeId& lhs, const NodeId& rhs) {
@@ -135,21 +178,39 @@ class CloseNodesChangeTest : public testing::Test {
     }
 
     holders_result.new_holders = all_new_holders;
-
+*/
+/*
     if (GroupRangeStatus::kInRange != holders_result.proximity_status) {
       holders_result.new_holders.clear();
       holders_result.old_holders.clear();
     }
-    return holders_result;
+*/
   }
 
   void DoCheckHoldersTest(const CloseNodesChange& close_nodes_change) {
     NodeId target_id(NodeId::IdType::kRandomId);
     auto result(close_nodes_change.CheckHolders(target_id));
     auto test_result(CheckHolders(target_id, old_close_nodes_, new_close_nodes_));
-//    ASSERT_EQ(result.proximity_status, test_result.proximity_status);
-    ASSERT_EQ(result.new_holders, test_result.new_holders);
-    ASSERT_EQ(result.old_holders, test_result.old_holders);
+    if ((result.new_holder != test_result.new_holder) ||
+        (result.proximity_status != test_result.proximity_status)) {
+      std::stringstream stream;
+      stream << "kNodeId_ is " << DebugId(kNodeId_) << " target is " << DebugId(target_id);
+      stream << "\nnew_close_nodes :";
+      std::for_each(std::begin(new_close_nodes_), std::end(new_close_nodes_),
+                    [&](const NodeId& new_holder) {
+                      stream << "\t" << DebugId(new_holder);
+                    });
+      stream << "\nold_close_nodes :";
+      std::for_each(std::begin(old_close_nodes_), std::end(old_close_nodes_),
+                    [&](const NodeId& old_holder) {
+                      stream << "\t" << DebugId(old_holder);
+                    });
+      LOG(kInfo) << stream.str();
+    }
+    ASSERT_EQ(result.new_holder, test_result.new_holder);
+    ASSERT_EQ(result.proximity_status, test_result.proximity_status);
+    // shall check whether reported as leaving range
+//    ASSERT_EQ(result.old_holders, test_result.old_holders);
     //     if ((result.proximity_status != test_result.proximity_status) ||
     //         (result.new_holders != test_result.new_holders) ||
     //         (result.old_holders != test_result.old_holders)) {
@@ -184,9 +245,33 @@ class CloseNodesChangeTest : public testing::Test {
 };
 
 TEST_F(CloseNodesChangeTest, BEH_CheckHolders) {
-  CloseNodesChange close_nodes_change(kNodeId_, old_close_nodes_, new_close_nodes_);
-  for (auto i(0); i != 1000; ++i)
-    DoCheckHoldersTest(close_nodes_change);
+  {
+    CloseNodesChange close_nodes_change(kNodeId_, old_close_nodes_, new_close_nodes_);
+    for (auto i(0); i != 1000; ++i) {
+      LOG(kVerbose) << "random target against same table, interation " << i;
+      DoCheckHoldersTest(close_nodes_change);
+    }
+  }
+  {
+    for (auto i(0); i != 1000; ++i) {
+      LOG(kVerbose) << "random target and node change, iteration " << i;
+      NodeId target_node(NodeId::IdType::kRandomId);
+      if (i % 2 == 0)
+          new_close_nodes_.push_back(target_node);
+      else
+          old_close_nodes_.push_back(target_node);
+      CloseNodesChange close_nodes_change(kNodeId_, old_close_nodes_, new_close_nodes_);
+      DoCheckHoldersTest(close_nodes_change);
+      if (i % 2 == 0)
+        new_close_nodes_.erase(std::find(new_close_nodes_.begin(),
+                                         new_close_nodes_.end(),
+                                         target_node));
+      else
+        old_close_nodes_.erase(std::find(old_close_nodes_.begin(),
+                                         old_close_nodes_.end(),
+                                         target_node));
+    }
+  }
 }
 
 void Choose(const std::set<NodeId>& online_pmids, const NodeId& kTarget,

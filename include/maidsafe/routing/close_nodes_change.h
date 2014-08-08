@@ -38,15 +38,16 @@ class SingleCloseNodesChangeTest_BEH_ChoosePmidNode_Test;
 }
 
 enum class GroupRangeStatus {
-  kInRange,
-  kInProximalRange,
-  kOutwithRange
+  kInRange,   // become in range (Parameter::group_size = 4)
+  kInProximalRange,   // factor of holders' range (Parameter::group_size = 4)
+  kOutwithRange   // become out of range (Parameter::group_size = 4)
 };
 
 struct CheckHoldersResult {
-  std::vector<NodeId> new_holders;  // New holders = All 4 New holders - All 4 Old holders
-  std::vector<NodeId> old_holders;  // Old holders = All 4 Old holder ∩ All Lost nodes
+//   std::vector<NodeId> new_holders;  // New holders = All 4 New holders - All 4 Old holders
+//   std::vector<NodeId> old_holders;  // Old holders = All 4 Old holder ∩ All Lost nodes
   routing::GroupRangeStatus proximity_status;
+  NodeId new_holder;
 };
 
 class CloseNodesChange {
