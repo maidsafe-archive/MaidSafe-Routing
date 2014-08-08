@@ -103,6 +103,7 @@ class Timer {
   Timer& operator=(Timer);
 
   void FinishTask(TaskId task_id, const boost::system::error_code& error);
+  void RespondWithError(ResponseFunctor functor, maidsafe_error error);
 
   AsioService& asio_service_;
   TaskId new_task_id_;
@@ -183,6 +184,8 @@ template <typename Response>
 void Timer<Response>::FinishTask(TaskId task_id, const boost::system::error_code& error) {
   int outstanding_response_count(0);
   ResponseFunctor functor;
+  maidsafe_error timer_error(MakeError(CommonErrors::success));
+
   LOG(kVerbose) << "Timer<Response>::FinishTask finish task " << task_id;
   {
     std::lock_guard<std::mutex> lock(mutex_);
@@ -194,7 +197,7 @@ void Timer<Response>::FinishTask(TaskId task_id, const boost::system::error_code
     }
     assert(itr->second.outstanding_response_count >= 0);
     LOG(kVerbose) << "Timer<Response>::FinishTask outstanding_response_count for Task "
-                  << task_id << " is " << itr->second.outstanding_response_count;
+      << task_id << " is " << itr->second.outstanding_response_count;
     if (itr->second.outstanding_response_count != 0) {
       outstanding_response_count = itr->second.outstanding_response_count;
       functor = itr->second.functor;
@@ -203,22 +206,35 @@ void Timer<Response>::FinishTask(TaskId task_id, const boost::system::error_code
     tasks_.erase(itr);
 
     switch (error.value()) {
-      case boost::system::errc::success:  // Task's timer has expired
-        LOG(kWarning) << "Timed out waiting for task " << task_id;
-        break;
-      case boost::asio::error::operation_aborted:  // Cancelled via CancelTask
-        LOG(kInfo) << "Cancelled task " << task_id;
-        break;
-      default:
-        LOG(kError) << "Error waiting for task " << task_id << " - " << error.message();
+    case boost::system::errc::success:  // Task's timer has expired
+      LOG(kWarning) << "Timed out waiting for task " << task_id;
+      timer_error = MakeError(RoutingErrors::timed_out);
+      break;
+    case boost::asio::error::operation_aborted:  // Cancelled via CancelTask
+      LOG(kInfo) << "Cancelled task " << task_id;
+      timer_error = MakeError(RoutingErrors::timer_cancelled);
+      break;
+    default:
+      LOG(kError) << "Error waiting for task " << task_id << " - " << error.message();
     }
   }
   for (int i(0); i != outstanding_response_count; ++i)
-    asio_service_.service().dispatch([=] { functor(Response()); });
+    asio_service_.service().dispatch([=] {
+      RespondWithError(functor, timer_error);
+  });
+
   LOG(kVerbose) << "Timer<Response> notifying condition_variable";
   cond_var_.notify_one();
   LOG(kVerbose) << "Timer<Response>::FinishTask completed";
 }
+
+template <typename Response>
+void Timer<Response>::RespondWithError(ResponseFunctor functor, maidsafe_error error) {
+  functor(Response(error));
+}
+
+template <>
+void Timer<std::string>::RespondWithError(ResponseFunctor functor, maidsafe_error error);
 
 template <typename Response>
 void Timer<Response>::CancelTask(TaskId task_id) {
