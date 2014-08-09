@@ -136,7 +136,8 @@ void InformClientOfNewCloseNode(NetworkUtils& network, const NodeInfo& client,
 //   }
 //
 //   NodeId distance_id(node_id ^ target_id);
-//   crypto::BigInt distance((distance_id.ToStringEncoded(NodeId::EncodingType::kHex) + 'h').c_str());
+//   crypto::BigInt distance((distance_id.ToStringEncoded(
+//       NodeId::EncodingType::kHex) + 'h').c_str());
 //   return (distance < proximity_radius) ? GroupRangeStatus::kInProximalRange
 //                                        : GroupRangeStatus::kOutwithRange;
 // }
