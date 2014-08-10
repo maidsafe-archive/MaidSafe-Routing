@@ -33,7 +33,7 @@
 #include "maidsafe/rudp/managed_connections.h"
 
 #include "maidsafe/routing/api_config.h"
-#include "maidsafe/routing/timer.h"
+#include "maidsafe/routing/utils.h"
 
 namespace maidsafe {
 
@@ -51,7 +51,6 @@ class NetworkUtils;
 class ClientRoutingTable;
 class RoutingTable;
 class GroupChangeHandler;
-class PublicKeyHolder;
 
 class ResponseHandler : public std::enable_shared_from_this<ResponseHandler> {
  public:

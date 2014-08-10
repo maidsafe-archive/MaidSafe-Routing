@@ -25,6 +25,7 @@
 
 #include "maidsafe/routing/routing.pb.h"
 #include "maidsafe/routing/service.h"
+#include "maidsafe/routing/utils.h"
 
 namespace maidsafe {
 
@@ -35,7 +36,7 @@ namespace test {
 class MockService : public Service {
  public:
   MockService(RoutingTable& routing_table, ClientRoutingTable& client_routing_table,
-              NetworkUtils& network_utils, Timer<std::string>& timer);
+              NetworkUtils& network_utils, PublicKeyHolder& public_key_holder);
   virtual ~MockService();
 
   MOCK_METHOD1(Ping, void(protobuf::Message& message));

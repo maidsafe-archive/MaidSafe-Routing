@@ -29,7 +29,7 @@
 #include "maidsafe/routing/service.h"
 #include "maidsafe/routing/timer.h"
 #include "maidsafe/routing/network_statistics.h"
-#include "maidsafe/routing/public_key_holder.h"
+#include "maidsafe/routing/utils.h"
 
 namespace maidsafe {
 

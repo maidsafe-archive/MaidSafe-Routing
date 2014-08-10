@@ -24,7 +24,7 @@
 #include <string>
 
 #include "maidsafe/routing/api_config.h"
-#include "maidsafe/routing/timer.h"
+#include "maidsafe/routing/utils.h"
 
 namespace maidsafe {
 
@@ -37,7 +37,6 @@ class Message;
 class NetworkUtils;
 class ClientRoutingTable;
 class RoutingTable;
-class PublicKeyHolder;
 
 class Service : public std::enable_shared_from_this<Service> {
  public:

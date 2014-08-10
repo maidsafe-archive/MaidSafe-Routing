@@ -59,6 +59,7 @@ class MessageHandlerTest : public testing::Test {
         service_(),
         response_handler_(),
         network_statistics_(),
+        public_key_holder_(asio_service_),
         close_info_() {
     message_and_caching_functor_.message_received = [this](const std::string& message,
                                                            ReplyFunctor reply_functor) {
@@ -70,8 +71,9 @@ class MessageHandlerTest : public testing::Test {
     table_.reset(new MockRoutingTable(false, node_id, asymm::GenerateKeyPair()));
     ntable_.reset(new ClientRoutingTable(table_->kNodeId()));
     utils_.reset(new MockNetworkUtils(*table_, *ntable_));
-    service_.reset(new MockService(*table_, *ntable_, *utils_, timer_));
-    response_handler_.reset(new MockResponseHandler(*table_, *ntable_, *utils_, timer_));
+    service_.reset(new MockService(*table_, *ntable_, *utils_, public_key_holder_));
+    response_handler_.reset(new MockResponseHandler(*table_, *ntable_, *utils_,
+                                                    public_key_holder_));
     close_info_ = MakeNodeInfoAndKeys().node_info;
     close_info_.id = GenerateUniqueRandomId(table_->kNodeId(), 20);
     table_->AddNode(close_info_);
@@ -101,11 +103,13 @@ class MessageHandlerTest : public testing::Test {
   std::shared_ptr<MockService> service_;
   std::shared_ptr<MockResponseHandler> response_handler_;
   std::shared_ptr<NetworkStatistics> network_statistics_;
+  PublicKeyHolder public_key_holder_;
   NodeInfo close_info_;
 };
 
 TEST_F(MessageHandlerTest, BEH_HandleInvalidMessage) {
-  MessageHandler message_handler(*table_, *ntable_, *utils_, timer_, *network_statistics_);
+  MessageHandler message_handler(*table_, *ntable_, *utils_, timer_, *network_statistics_,
+                                 asio_service_);
   // Reset the service and response handler inside the message handler to be mocks
   message_handler.service_ = service_;
   message_handler.response_handler_ = response_handler_;
@@ -133,7 +137,8 @@ TEST_F(MessageHandlerTest, BEH_HandleInvalidMessage) {
 }
 
 TEST_F(MessageHandlerTest, BEH_HandleRelay) {
-  MessageHandler message_handler(*table_, *ntable_, *utils_, timer_, *network_statistics_);
+  MessageHandler message_handler(*table_, *ntable_, *utils_, timer_, *network_statistics_,
+                                 asio_service_);
   message_handler.service_ = service_;
   message_handler.response_handler_ = response_handler_;
 
@@ -217,7 +222,8 @@ TEST_F(MessageHandlerTest, BEH_HandleRelay) {
 }
 
 TEST_F(MessageHandlerTest, BEH_HandleGroupMessage) {
-  MessageHandler message_handler(*table_, *ntable_, *utils_, timer_, *network_statistics_);
+  MessageHandler message_handler(*table_, *ntable_, *utils_, timer_, *network_statistics_,
+                                 asio_service_);
   bool result(true);
   message_handler.service_ = service_;
   message_handler.response_handler_ = response_handler_;
@@ -569,7 +575,8 @@ TEST_F(MessageHandlerTest, BEH_HandleGroupMessage) {
 }
 
 TEST_F(MessageHandlerTest, BEH_HandleNodeLevelMessage) {
-  MessageHandler message_handler(*table_, *ntable_, *utils_, timer_, *network_statistics_);
+  MessageHandler message_handler(*table_, *ntable_, *utils_, timer_, *network_statistics_,
+                                 asio_service_);
   message_handler.service_ = service_;
   message_handler.response_handler_ = response_handler_;
   protobuf::Message message;
@@ -625,7 +632,8 @@ TEST_F(MessageHandlerTest, BEH_ClientRoutingTable) {
   keys.public_key = maid.public_key();
   table_.reset(new MockRoutingTable(true, NodeId(maid.name()->string()), keys));
   table_->AddNode(close_info_);
-  MessageHandler message_handler(*table_, *ntable_, *utils_, timer_, *network_statistics_);
+  MessageHandler message_handler(*table_, *ntable_, *utils_, timer_, *network_statistics_,
+                                 asio_service_);
   message_handler.service_ = service_;
   message_handler.response_handler_ = response_handler_;
   protobuf::Message message;

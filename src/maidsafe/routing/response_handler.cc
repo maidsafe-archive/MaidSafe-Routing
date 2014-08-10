@@ -35,7 +35,6 @@
 #include "maidsafe/routing/routing_table.h"
 #include "maidsafe/routing/rpcs.h"
 #include "maidsafe/routing/utils.h"
-#include "maidsafe/routing/public_key_holder.h"
 
 namespace bptime = boost::posix_time;
 
@@ -121,7 +120,7 @@ void ResponseHandler::Connect(protobuf::Message& message) {
                   << "] received connect response from " << peer_node_id
                   << " connection_id: " << peer_connection_id << " id: " << message.id();
 
-    if (!public_key_holder_.Find(peer_node_id)) {
+    if (!public_key_holder_.Find(typename NodeIdPublicKeyPair::Key(peer_node_id))) {
       LOG(kError)  << "missing public key ";
       message.Clear();
       return;
@@ -300,9 +299,9 @@ void ResponseHandler::ValidateAndCompleteConnectionToNonClient(
     LOG(kVerbose) << "missing public key for " << peer.id;
     return;
   }
-  public_key_holder_.Remove(peer.id);
+  public_key_holder_.Remove(NodeIdPublicKeyPair::Key(peer.id));
   if (ValidateAndAddToRoutingTable(network_, routing_table_, client_routing_table_, peer.id,
-                                   peer.connection_id, *peer_public_key, false)) {
+                                   peer.connection_id, peer_public_key->GetValue(), false)) {
     if (from_requestor) {
       HandleSuccessAcknowledgementAsReponder(peer, false);
     } else {
@@ -361,7 +360,7 @@ void ResponseHandler::ValidateAndSendConnectRequest(const NodeId& peer_id) {
         return;
       }
       if (std::shared_ptr<ResponseHandler> response_handler = response_handler_weak_ptr.lock()) {
-        response_handler->public_key_holder_.Add(peer_id, *public_key);
+        response_handler->public_key_holder_.Add(NodeIdPublicKeyPair(peer_id, *public_key));
         response_handler->SendConnectRequest(peer_id);
       }
     });

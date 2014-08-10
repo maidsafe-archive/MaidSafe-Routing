@@ -28,8 +28,8 @@ namespace test {
 
 MockResponseHandler::MockResponseHandler(RoutingTable& routing_table,
                                          ClientRoutingTable& client_routing_table,
-                                         NetworkUtils& utils, Timer<std::string>& timer)
-    : ResponseHandler(routing_table, client_routing_table, utils, timer) {}
+                                         NetworkUtils& utils, PublicKeyHolder& public_key_holder)
+    : ResponseHandler(routing_table, client_routing_table, utils, public_key_holder) {}
 
 MockResponseHandler::~MockResponseHandler() {}
 

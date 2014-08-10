@@ -34,6 +34,7 @@
 #include "maidsafe/routing/service.h"
 #include "maidsafe/routing/tests/test_utils.h"
 
+
 namespace maidsafe {
 
 namespace routing {
@@ -51,9 +52,9 @@ TEST(ServicesTest, BEH_Ping) {
   RoutingTable routing_table(false, node_id, asymm::GenerateKeyPair());
   ClientRoutingTable client_routing_table(routing_table.kNodeId());
   AsioService asio_service(1);
-  Timer<std::string> timer(asio_service);
+  PublicKeyHolder public_key_holder(asio_service);
   NetworkUtils network(routing_table, client_routing_table);
-  Service service(routing_table, client_routing_table, network, timer);
+  Service service(routing_table, client_routing_table, network, public_key_holder);
   NodeInfo node;
   rudp::ManagedConnections rudp;
   protobuf::PingRequest ping_request;
@@ -82,9 +83,9 @@ TEST(ServicesTest, BEH_FindNodes) {
   NodeId this_node_id(routing_table.kNodeId());
   ClientRoutingTable client_routing_table(routing_table.kNodeId());
   AsioService asio_service(1);
-  Timer<std::string> timer(asio_service);
+  PublicKeyHolder public_key_holder(asio_service);
   NetworkUtils network(routing_table, client_routing_table);
-  Service service(routing_table, client_routing_table, network, timer);
+  Service service(routing_table, client_routing_table, network, public_key_holder);
   protobuf::Message message = rpcs::FindNodes(this_node_id, this_node_id, 8);
   service.FindNodes(message);
   protobuf::FindNodesResponse find_nodes_respose;

@@ -55,9 +55,9 @@ class ResponseHandlerTest : public testing::Test {
         routing_table_(false, NodeId(NodeId::IdType::kRandomId), asymm::GenerateKeyPair()),
         client_routing_table_(routing_table_.kNodeId()),
         network_(routing_table_, client_routing_table_),
-        timer_(asio_service_),
+        public_key_holder_(asio_service_),
         response_handler_(new ResponseHandler(routing_table_, client_routing_table_, network_,
-                                              timer_)) {}
+                                              public_key_holder_)) {}
 
   int GetAvailableEndpoint(rudp::EndpointPair& this_endpoint_pair, rudp::NatType& this_nat_type,
                            int return_val) {
@@ -201,7 +201,7 @@ class ResponseHandlerTest : public testing::Test {
   RoutingTable routing_table_;
   ClientRoutingTable client_routing_table_;
   MockNetworkUtils network_;
-  Timer<std::string> timer_;
+  PublicKeyHolder public_key_holder_;
   std::shared_ptr<ResponseHandler> response_handler_;
 };
 
@@ -355,7 +355,8 @@ TEST_F(ResponseHandlerTest, BEH_ConnectSuccessAcknowledgement) {
   // shared_from_this function inside requires the response_handler holder to be shared_ptr
   // if holding as a normal object, shared_from_this will throw an exception
   std::shared_ptr<ResponseHandler> response_handler(
-      std::make_shared<ResponseHandler>(routing_table_, client_routing_table_, network_, timer_));
+      std::make_shared<ResponseHandler>(routing_table_, client_routing_table_, network_,
+                                        public_key_holder_));
 
   // request_public_key_functor_ doesn't setup
   message =

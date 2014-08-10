@@ -92,22 +92,22 @@ TEST_F(RoutingStandAloneTest, FUNC_SetupHybridNetwork) {
   this->SetUpNetwork(kServerSize, kClientSize);
 }
 
-TEST_F(RoutingStandAloneTest, FUNC_SetupNetworkWithVaultsBehindSymmetricNat) {
+TEST_F(RoutingStandAloneTest, DISABLED_FUNC_SetupNetworkWithVaultsBehindSymmetricNat) {
   this->SetUpNetwork(kServerSize, kClientSize, kServerSize / 4, 0);
 }
 
-TEST_F(RoutingStandAloneTest, FUNC_SetupNetworkWithNodesBehindSymmetricNat) {
+TEST_F(RoutingStandAloneTest, DISABLED_FUNC_SetupNetworkWithNodesBehindSymmetricNat) {
   this->SetUpNetwork(kServerSize, kClientSize, kServerSize / 4, kClientSize);
 }
 
-TEST_F(RoutingStandAloneTest, FUNC_SetupNetworkAddVaultsBehindSymmetricNat) {
+TEST_F(RoutingStandAloneTest, DISABLED_FUNC_SetupNetworkAddVaultsBehindSymmetricNat) {
   this->SetUpNetwork(kServerSize);
   unsigned int num_symmetric_vaults(kServerSize / 3);
   for (unsigned int i(0); i < num_symmetric_vaults; ++i)
     this->AddNode(false, true);
 }
 
-TEST_F(RoutingStandAloneTest, FUNC_SetupNetworkAddVaultsBehindSymmetricNatAndClients) {
+TEST_F(RoutingStandAloneTest, DISABLED_FUNC_SetupNetworkAddVaultsBehindSymmetricNatAndClients) {
   this->SetUpNetwork(kServerSize, kClientSize);
   unsigned int num_symmetric_vaults(kServerSize / 3);
   for (unsigned int i(0); i < num_symmetric_vaults; ++i)
@@ -117,7 +117,7 @@ TEST_F(RoutingStandAloneTest, FUNC_SetupNetworkAddVaultsBehindSymmetricNatAndCli
     this->AddNode(true, false);  // Add more normal clients
 }
 
-TEST_F(RoutingStandAloneTest, FUNC_SetupNetworkAddNodesBehindSymmetricNat) {
+TEST_F(RoutingStandAloneTest, DISABLED_FUNC_SetupNetworkAddNodesBehindSymmetricNat) {
   this->SetUpNetwork(kServerSize, kClientSize);
   unsigned int num_symmetric_vaults(kServerSize / 3);
   for (unsigned int i(0); i < num_symmetric_vaults; ++i)
