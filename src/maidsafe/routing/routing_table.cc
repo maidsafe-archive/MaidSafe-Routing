@@ -202,7 +202,7 @@ NodeId RoutingTable::RandomConnectedNode() {
 // it into its routing table.
 //  assert(nodes_.size() > Parameters::closest_nodes_size &&
 //         "Shouldn't call RandomConnectedNode when routing table size is <= closest_nodes_size");
-  assert(!nodes_.empty());
+//   assert(nodes_.empty());
   if (nodes_.empty())
     return NodeId();
 
@@ -220,11 +220,21 @@ bool RoutingTable::GetNodeInfo(const NodeId& node_id, NodeInfo& peer) const {
 }
 
 bool RoutingTable::IsThisNodeInRange(const NodeId& target_id, const unsigned int range) {
+  // sort by target will always put the node bearing the same target_id (such as pmid_pub_key)
+  // as the closest if that node is in the routing table
   std::unique_lock<std::mutex> lock(mutex_);
   if (nodes_.size() < range)
     return true;
-  NthElementSortFromTarget(kNodeId_, range, lock);
-  return NodeId::CloserToTarget(target_id, nodes_[range - 1].id, kNodeId_);
+
+  auto count(PartialSortFromTarget(target_id, range + 1, lock));
+  LOG(kVerbose) << "[kNodeId_ , " << DebugId(kNodeId_) << "] [target_id , " << DebugId(target_id)
+                << "] [count , " << count << "] [tail , " << DebugId(nodes_[count - 1].id) << "]";
+  bool skip_front(target_id == nodes_[0].id);
+  if (skip_front && (count == range))
+    return true;
+  return NodeId::CloserToTarget(kNodeId_,
+                                nodes_[count - 1 - (skip_front ? 0 : 1)].id,
+                                target_id);
 }
 
 bool RoutingTable::IsThisNodeClosestTo(const NodeId& target_id, bool ignore_exact_match) {

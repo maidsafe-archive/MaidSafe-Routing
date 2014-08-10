@@ -95,15 +95,15 @@ namespace test {
 class GenericNode;
 }
 
-class Routing::Impl {
+class Routing::Impl : public std::enable_shared_from_this<Routing::Impl> {
  public:
   Impl(bool client_mode, const NodeId& node_id, const asymm::Keys& keys);
-  ~Impl();
 
   void Join(const Functors& functors);
 
   int ZeroStateJoin(const Functors& functors, const boost::asio::ip::udp::endpoint& local_endpoint,
                     const boost::asio::ip::udp::endpoint& peer_endpoint, const NodeInfo& peer_info);
+  void Stop();
 
   template <typename T>
   void Send(const T& message);  // New API
@@ -181,7 +181,7 @@ class Routing::Impl {
   std::mutex network_status_mutex_;
   int network_status_;
   NetworkStatistics network_statistics_;
-  RoutingTable routing_table_;
+  std::unique_ptr<RoutingTable> routing_table_;
   const NodeId kNodeId_;
   bool running_;
   std::mutex running_mutex_;
@@ -193,7 +193,7 @@ class Routing::Impl {
   // proper destruction of the routing library, i.e. to avoid segmentation faults.
   std::unique_ptr<MessageHandler> message_handler_;
   AsioService asio_service_;
-  NetworkUtils network_;
+  std::unique_ptr<NetworkUtils> network_;
   Timer<std::string> timer_;
   boost::asio::steady_timer re_bootstrap_timer_, recovery_timer_, setup_timer_;
 };
@@ -232,7 +232,7 @@ protobuf::Message Routing::Impl::CreateNodeLevelMessage(const T& message) {
   proto_message.set_type(static_cast<int32_t>(MessageType::kNodeLevel));
 
   proto_message.set_cacheable(static_cast<int32_t>(message.cacheable));
-  proto_message.set_client_node(routing_table_.client_mode());
+  proto_message.set_client_node(routing_table_->client_mode());
 
   proto_message.set_request(true);
   proto_message.set_hops_to_live(Parameters::hops_to_live);

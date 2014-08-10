@@ -84,10 +84,10 @@ bool ValidateAndAddToRoutingTable(NetworkUtils& network, RoutingTable& routing_t
 void InformClientOfNewCloseNode(NetworkUtils& network, const NodeInfo& client,
                                 const NodeInfo& new_close_node, const NodeId& this_node_id);
 
-GroupRangeStatus GetProximalRange(const NodeId& target_id, const NodeId& node_id,
-                                  const NodeId& this_node_id,
-                                  const crypto::BigInt& proximity_radius,
-                                  const std::vector<NodeId>& holders);
+// GroupRangeStatus GetProximalRange(const NodeId& target_id, const NodeId& node_id,
+//                                   const NodeId& this_node_id,
+//                                   const crypto::BigInt& proximity_radius,
+//                                   const std::vector<NodeId>& holders);
 
 bool IsRoutingMessage(const protobuf::Message& message);
 bool IsNodeLevelMessage(const protobuf::Message& message);

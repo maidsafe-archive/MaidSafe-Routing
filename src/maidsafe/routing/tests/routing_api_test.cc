@@ -75,11 +75,11 @@ MessageReceivedFunctor no_ops_message_received_functor = [](const std::string&,
 
 TEST(APITest, BEH_API_ZeroState) {
   Endpoint endpoint1(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort()),
-      endpoint2(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort());
-  ScopedBootstrapFile bootstrap_file({endpoint1, endpoint2});
+    endpoint2(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort());
+  ScopedBootstrapFile bootstrap_file({ endpoint1, endpoint2 });
 
   auto pmid1(passport::CreatePmidAndSigner().first), pmid2(passport::CreatePmidAndSigner().first),
-      pmid3(passport::CreatePmidAndSigner().first);
+    pmid3(passport::CreatePmidAndSigner().first);
   NodeInfoAndPrivateKey node1(MakeNodeInfoAndKeysWithPmid(pmid1));
   NodeInfoAndPrivateKey node2(MakeNodeInfoAndKeysWithPmid(pmid2));
   NodeInfoAndPrivateKey node3(MakeNodeInfoAndKeysWithPmid(pmid3));
@@ -115,6 +115,7 @@ TEST(APITest, BEH_API_ZeroState) {
   });
   EXPECT_EQ(kSuccess, a2.get());  // wait for promise !
   EXPECT_EQ(kSuccess, a1.get());  // wait for promise !
+
   std::once_flag flag;
   boost::promise<void> join_promise;
   auto join_future = join_promise.get_future();
