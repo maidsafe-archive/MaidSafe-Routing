@@ -35,6 +35,7 @@ struct Params {
   static unsigned int max_routing_table_size;
   static unsigned int routing_table_size_threshold;
   static unsigned int closest_nodes_size;
+  static unsigned int group_size;
 
  private:
   Params();
@@ -54,6 +55,8 @@ unsigned int Params<NodeType>::routing_table_size_threshold =
 template <typename NodeType>
 unsigned int Params<NodeType>::closest_nodes_size = 16;
 
+template <typename NodeType>
+unsigned int Params<NodeType>::group_size = 4;
 
 template <>
 unsigned int Params<ClientNode>::max_routing_table_size;

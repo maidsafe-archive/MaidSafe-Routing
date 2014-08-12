@@ -33,10 +33,10 @@ namespace routing {
 namespace test {
 
 template <typename NodeType>
-class MockNetworkUtils : public NetworkUtils<NodeType> {
+class MockNetwork : public Network<NodeType> {
  public:
-  MockNetworkUtils(RoutingTable<NodeType>& routing_table, ClientRoutingTable& client_routing_table);
-  virtual ~MockNetworkUtils();
+  MockNetwork(RoutingTable<NodeType>& routing_table, ClientRoutingTable& client_routing_table);
+  virtual ~MockNetwork();
 
   MOCK_METHOD1(SendToClosestNode, void(const protobuf::Message& message));
   MOCK_METHOD1(MarkConnectionAsValid, int(const NodeId& peer_id));
@@ -50,8 +50,8 @@ class MockNetworkUtils : public NetworkUtils<NodeType> {
   void SetBootstrapConnectionId(const NodeId& node_id) { this->bootstrap_connection_id_ = node_id; }
 
  private:
-  MockNetworkUtils& operator=(const MockNetworkUtils&);
-  MockNetworkUtils(const MockNetworkUtils&);
+  MockNetwork& operator=(const MockNetwork&);
+  MockNetwork(const MockNetwork&);
 };
 
 }  // namespace test

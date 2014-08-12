@@ -23,7 +23,7 @@ namespace maidsafe {
 namespace routing {
 
 template <>
-bool ValidateAndAddToRoutingTable(NetworkUtils<ClientNode>& /*network*/,
+bool ValidateAndAddToRoutingTable(Network<ClientNode>& /*network*/,
                                   Connections<ClientNode>& /*connections*/,
                                   const NodeId& /*peer_id*/, const NodeId& /*connection_id*/,
                                   const asymm::PublicKey& /*public_key*/, ClientNode) {

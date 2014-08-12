@@ -38,15 +38,16 @@ class SingleCloseNodesChangeTest_BEH_ChoosePmidNode_Test;
 }
 
 enum class GroupRangeStatus {
-  kInRange,
-  kInProximalRange,
-  kOutwithRange
+  kInRange,   // become in range (Parameter::group_size = 4)
+  kInProximalRange,   // factor of holders' range (Parameter::group_size = 4)
+  kOutwithRange   // become out of range (Parameter::group_size = 4)
 };
 
 struct CheckHoldersResult {
-  std::vector<NodeId> new_holders;  // New holders = All 4 New holders - All 4 Old holders
-  std::vector<NodeId> old_holders;  // Old holders = All 4 Old holder ∩ All Lost nodes
+//   std::vector<NodeId> new_holders;  // New holders = All 4 New holders - All 4 Old holders
+//   std::vector<NodeId> old_holders;  // Old holders = All 4 Old holder ∩ All Lost nodes
   routing::GroupRangeStatus proximity_status;
+  NodeId new_holder;
 };
 
 class CloseNodesChange {
@@ -64,14 +65,13 @@ class CloseNodesChange {
   void Print() const;
 
   friend void swap(CloseNodesChange& lhs, CloseNodesChange& rhs) MAIDSAFE_NOEXCEPT;
-  template <typename NodeType>
-  friend class RoutingTable;
+  template <typename NodeType> friend class RoutingTable;
   friend class test::CloseNodesChangeTest_BEH_CheckHolders_Test;
   friend class test::SingleCloseNodesChangeTest_BEH_ChoosePmidNode_Test;
 
  private:
   CloseNodesChange(NodeId this_node_id, const std::vector<NodeId>& old_close_nodes,
-                   const std::vector<NodeId>& new_close_nodes);
+               const std::vector<NodeId>& new_close_nodes);
 
   NodeId node_id_;
   std::vector<NodeId> old_close_nodes_, new_close_nodes_;

@@ -27,7 +27,7 @@ namespace test {
 template <typename NodeType>
 MockResponseHandler<NodeType>::MockResponseHandler(RoutingTable<NodeType>& routing_table,
                                          ClientRoutingTable& client_routing_table,
-                                         NetworkUtils<NodeType>& utils)
+                                         Network<NodeType>& utils)
     : ResponseHandler<NodeType>(routing_table, client_routing_table, utils) {}
 
 template <typename NodeType>

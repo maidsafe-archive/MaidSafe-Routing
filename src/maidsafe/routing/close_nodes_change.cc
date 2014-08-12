@@ -29,7 +29,12 @@ namespace maidsafe {
 namespace routing {
 
 CloseNodesChange::CloseNodesChange()
-    : node_id_(), old_close_nodes_(), new_close_nodes_(), lost_node_(), new_node_(), radius_() {}
+    : node_id_(),
+      old_close_nodes_(),
+      new_close_nodes_(),
+      lost_node_(),
+      new_node_(),
+      radius_() {}
 
 CloseNodesChange::CloseNodesChange(const CloseNodesChange& other)
     : node_id_(other.node_id_),
@@ -53,18 +58,20 @@ CloseNodesChange& CloseNodesChange::operator=(CloseNodesChange other) {
 }
 
 CloseNodesChange::CloseNodesChange(NodeId this_node_id, const std::vector<NodeId>& old_close_nodes,
-                                   const std::vector<NodeId>& new_close_nodes)
+                           const std::vector<NodeId>& new_close_nodes)
     : node_id_(std::move(this_node_id)),
       old_close_nodes_([this](std::vector<NodeId> old_close_nodes_in)->std::vector<NodeId> {
         std::sort(std::begin(old_close_nodes_in), std::end(old_close_nodes_in),
-                  [this](const NodeId& lhs,
-                         const NodeId& rhs) { return NodeId::CloserToTarget(lhs, rhs, node_id_); });
+                  [this](const NodeId & lhs, const NodeId & rhs) {
+          return NodeId::CloserToTarget(lhs, rhs, node_id_);
+        });
         return old_close_nodes_in;
       }(old_close_nodes)),
       new_close_nodes_([this](std::vector<NodeId> new_close_nodes_in)->std::vector<NodeId> {
         std::sort(std::begin(new_close_nodes_in), std::end(new_close_nodes_in),
-                  [this](const NodeId& lhs,
-                         const NodeId& rhs) { return NodeId::CloserToTarget(lhs, rhs, node_id_); });
+                  [this](const NodeId & lhs, const NodeId & rhs) {
+          return NodeId::CloserToTarget(lhs, rhs, node_id_);
+        });
         return new_close_nodes_in;
       }(new_close_nodes)),
       lost_node_([this]()->NodeId {
@@ -72,9 +79,9 @@ CloseNodesChange::CloseNodesChange(NodeId this_node_id, const std::vector<NodeId
         std::set_difference(std::begin(old_close_nodes_), std::end(old_close_nodes_),
                             std::begin(new_close_nodes_), std::end(new_close_nodes_),
                             std::back_inserter(lost_nodes),
-                            [this](const NodeId& lhs, const NodeId& rhs) {
-          return NodeId::CloserToTarget(lhs, rhs, node_id_);
-        });
+                            [this](const NodeId & lhs, const NodeId & rhs) {
+                              return NodeId::CloserToTarget(lhs, rhs, node_id_);
+                            });
         assert(lost_nodes.size() <= 1);
         return (lost_nodes.empty()) ? NodeId() : lost_nodes.at(0);
       }()),
@@ -84,10 +91,10 @@ CloseNodesChange::CloseNodesChange(NodeId this_node_id, const std::vector<NodeId
                             std::begin(old_close_nodes_), std::end(old_close_nodes_),
                             std::back_inserter(new_nodes),
                             [this](const NodeId& lhs, const NodeId& rhs) {
-          return NodeId::CloserToTarget(lhs, rhs, node_id_);
-        });
+                              return NodeId::CloserToTarget(lhs, rhs, node_id_);
+                            });
         assert(new_nodes.size() <= 1);
-        return (new_nodes.empty()) ? NodeId() : new_nodes.at(0);
+        return (new_nodes.empty())? NodeId() : new_nodes.at(0);
       }()),
       radius_([this]()->crypto::BigInt {
         NodeId fcn_distance;
@@ -98,7 +105,21 @@ CloseNodesChange::CloseNodesChange(NodeId this_node_id, const std::vector<NodeId
         return (crypto::BigInt(
                     (fcn_distance.ToStringEncoded(NodeId::EncodingType::kHex) + 'h').c_str()) *
                 Parameters::proximity_factor);
-      }()) {}
+      }()) {
+#ifdef TESTING
+  std::stringstream stream;
+  stream << " CloseNodesChange constructed having : ";
+  if (new_node_ != NodeId())
+    stream << " new node : " << DebugId(new_node_);
+  stream << "\n new_nodes : ";
+  for (auto& itr : new_close_nodes_)
+    stream << "\t[ " << DebugId(itr) << " ]";
+  stream << "\n old_nodes : ";
+  for (auto& itr : old_close_nodes_)
+    stream << "\t[ " << DebugId(itr) << " ]";
+  LOG(kVerbose) << stream.str();
+#endif
+}
 
 CheckHoldersResult CloseNodesChange::CheckHolders(const NodeId& target) const {
   // Handle cases of lower number of group close_nodes nodes
@@ -111,13 +132,13 @@ CheckHoldersResult CloseNodesChange::CheckHolders(const NodeId& target) const {
   std::partial_sort_copy(std::begin(old_close_nodes_), std::end(old_close_nodes_),
                          std::begin(old_holders), std::end(old_holders),
                          [target](const NodeId& lhs, const NodeId& rhs) {
-    return NodeId::CloserToTarget(lhs, rhs, target);
-  });
+                           return NodeId::CloserToTarget(lhs, rhs, target);
+                         });
   std::partial_sort_copy(std::begin(new_close_nodes_), std::end(new_close_nodes_),
                          std::begin(new_holders), std::end(new_holders),
                          [target](const NodeId& lhs, const NodeId& rhs) {
-    return NodeId::CloserToTarget(lhs, rhs, target);
-  });
+                           return NodeId::CloserToTarget(lhs, rhs, target);
+                         });
 
   // Remove target == node ids and adjust holder size
   old_holders.erase(std::remove(std::begin(old_holders), std::end(old_holders), target),
@@ -136,8 +157,9 @@ CheckHoldersResult CloseNodesChange::CheckHolders(const NodeId& target) const {
 
   CheckHoldersResult holders_result;
   holders_result.proximity_status = GroupRangeStatus::kOutwithRange;
-  if (!new_holders.empty() && ((new_holders.size() < Parameters::group_size) ||
-                               NodeId::CloserToTarget(node_id_, new_holders.back(), target))) {
+  if (!new_holders.empty() &&
+      ((new_holders.size() < Parameters::group_size) ||
+        NodeId::CloserToTarget(node_id_, new_holders.back(), target))) {
     holders_result.proximity_status = GroupRangeStatus::kInRange;
     if (new_holders.size() == Parameters::group_size)
       new_holders.pop_back();
@@ -151,21 +173,46 @@ CheckHoldersResult CloseNodesChange::CheckHolders(const NodeId& target) const {
     old_holders.push_back(node_id_);
   }
 
-  holders_result.new_holders = new_holders;
-  holders_result.old_holders = old_holders;
+  std::vector<NodeId> diff_new_holders;
+  std::for_each(std::begin(new_holders), std::end(new_holders),
+                [&](const NodeId& new_holder) {
+                  if (std::find(std::begin(old_holders), std::end(old_holders),
+                                new_holder) == std::end(old_holders))
+                    diff_new_holders.push_back(new_holder);
+                  });
+#ifdef TESTING
+  std::stringstream stream;
+  stream << "checking against : " << DebugId(target) << "\n new_holders : ";
+  for (auto& itr : new_holders)
+    stream << "\t[ " << DebugId(itr) << " ]";
+  stream << "\n old_holders : ";
+  for (auto& itr : old_holders)
+    stream << "\t[ " << DebugId(itr) << " ]";
+  stream << "\n diff_new_holders : ";
+  for (auto& itr : diff_new_holders)
+    stream << "\t[ " << DebugId(itr) << " ]";
+  LOG(kVerbose) << stream.str();
+#endif
+//   holders_result.new_holders = new_holders;
+//   holders_result.old_holders = old_holders;
+  if (diff_new_holders.size() > 0)
+    holders_result.new_holder = diff_new_holders.front();
+  // in case the new_holder is the node itself, it shall be ignored
+  if (holders_result.new_holder == node_id_)
+    holders_result.new_holder = NodeId();
   return holders_result;
 }
 
 NodeId CloseNodesChange::ChoosePmidNode(const std::set<NodeId>& online_pmids,
-                                        const NodeId& target) const {
+                                    const NodeId& target) const {
   if (online_pmids.empty())
     BOOST_THROW_EXCEPTION(MakeError(CommonErrors::invalid_parameter));
 
   LOG(kInfo) << "CloseNodesChange::ChoosePmidNode having following new_close_nodes_ : ";
   for (auto id : new_close_nodes_)
     LOG(kInfo) << "       new_close_nodes_ ids     ---  " << HexSubstr(id.string());
-  LOG(kInfo) << "CloseNodesChange::ChoosePmidNode having target : " << HexSubstr(target.string())
-             << " and following online_pmids : ";
+  LOG(kInfo) << "CloseNodesChange::ChoosePmidNode having target : "
+                << HexSubstr(target.string()) << " and following online_pmids : ";
   for (auto pmid : online_pmids)
     LOG(kInfo) << "       online_pmids        ---  " << HexSubstr(pmid.string());
 
@@ -177,8 +224,8 @@ NodeId CloseNodesChange::ChoosePmidNode(const std::set<NodeId>& online_pmids,
     return NodeId::CloserToTarget(lhs, rhs, target);
   });
 
-  LOG(kInfo) << "CloseNodesChange::ChoosePmidNode own id : " << HexSubstr(node_id_.string())
-             << " and closest+1 to the target are : ";
+  LOG(kInfo) << "CloseNodesChange::ChoosePmidNode own id : "
+                << HexSubstr(node_id_.string()) << " and closest+1 to the target are : ";
   for (auto node : temp)
     LOG(kInfo) << "       sorted_neighbours   ---  " << HexSubstr(node.string());
 
@@ -186,7 +233,7 @@ NodeId CloseNodesChange::ChoosePmidNode(const std::set<NodeId>& online_pmids,
   auto pmids_itr(std::begin(online_pmids));
   while (*temp_itr != node_id_) {
     ++temp_itr;
-    //     assert(temp_itr != std::end(temp));
+//     assert(temp_itr != std::end(temp));
     if (temp_itr == std::end(temp)) {
       LOG(kError) << "node_id_ not listed in group range having " << temp.size() << " nodes";
       break;
@@ -211,14 +258,13 @@ void swap(CloseNodesChange& lhs, CloseNodesChange& rhs) MAIDSAFE_NOEXCEPT {
 void CloseNodesChange::Print() const {
   std::stringstream stream;
   for (auto entry : old_close_nodes_)
-    stream << "\n\t\tentry in old_close_nodes"
-           << "\t------\t" << entry;
+    stream << "\n\t\tentry in old_close_nodes" << "\t------\t" << DebugId(entry);
 
   for (auto entry : new_close_nodes_)
-    stream << "\n\t\tentry in new_close_nodes\t------\t" << entry;
+    stream << "\n\t\tentry in new_close_nodes\t------\t" << DebugId(entry);
 
-  stream << "\n\t\tentry in lost_node\t------\t" << lost_node_;
-  stream << "\n\t\tentry in new_node\t------\t" << new_node_;
+  stream << "\n\t\tentry in lost_node\t------\t" << DebugId(lost_node_);
+  stream << "\n\t\tentry in new_node\t------\t" << DebugId(new_node_);
   LOG(kInfo) << stream.str();
 }
 

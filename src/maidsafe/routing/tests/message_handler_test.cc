@@ -69,7 +69,7 @@ class MessageHandlerTest : public testing::Test {
     network_statistics_.reset(new NetworkStatistics(node_id));
     table_.reset(new MockRoutingTable<NodeType>(node_id, asymm::GenerateKeyPair()));
     ntable_.reset(new ClientRoutingTable(table_->kNodeId()));
-    utils_.reset(new MockNetworkUtils<NodeType>(*table_, *ntable_));
+    utils_.reset(new MockNetwork<NodeType>(*table_, *ntable_));
     service_.reset(new MockService<NodeType>(*table_, *ntable_, *utils_));
     response_handler_.reset(new MockResponseHandler<NodeType>(*table_, *ntable_, *utils_));
     close_info_ = MakeNodeInfoAndKeys().node_info;
@@ -97,7 +97,7 @@ class MessageHandlerTest : public testing::Test {
   int messages_received_;
   std::shared_ptr<ClientRoutingTable> ntable_;
   std::shared_ptr<MockRoutingTable<NodeType>> table_;
-  std::shared_ptr<MockNetworkUtils<NodeType>> utils_;
+  std::shared_ptr<MockNetwork<NodeType>> utils_;
   std::shared_ptr<MockService<NodeType>> service_;
   std::shared_ptr<MockResponseHandler<NodeType>> response_handler_;
   std::shared_ptr<NetworkStatistics> network_statistics_;

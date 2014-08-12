@@ -23,6 +23,8 @@
 #include <bitset>
 #include <string>
 
+#include "boost/filesystem/operations.hpp"
+
 #include "maidsafe/common/log.h"
 #include "maidsafe/common/node_id.h"
 #include "maidsafe/common/utils.h"
@@ -40,6 +42,17 @@ namespace maidsafe {
 namespace routing {
 
 namespace test {
+
+ScopedBootstrapFile::ScopedBootstrapFile(const BootstrapContacts& bootstrap_contacts)
+    : kFilePath(detail::GetOverrideBootstrapFilePath<false>()) {
+  boost::filesystem::remove(kFilePath);
+  WriteBootstrapContacts(bootstrap_contacts, kFilePath);
+}
+
+ScopedBootstrapFile::~ScopedBootstrapFile() {
+  if (boost::filesystem::remove(kFilePath))
+    LOG(kError) << "Failed to remove bootstrap file at : " << kFilePath;
+}
 
 NodeInfo MakeNode() {
   NodeInfo node;
@@ -63,7 +76,7 @@ NodeInfoAndPrivateKey MakeNodeInfoAndKeysWithMaid(passport::Maid maid) {
   return MakeNodeInfoAndKeysWithFob(maid);
 }
 
-NodeId GenerateUniqueRandomId(const NodeId& holder, uint16_t pos) {
+NodeId GenerateUniqueRandomId(const NodeId& holder, unsigned int pos) {
   std::string holder_id = holder.ToStringEncoded(NodeId::EncodingType::kBinary);
   std::bitset<64 * 8> holder_id_binary_bitset(holder_id);
   NodeId new_node;
@@ -73,7 +86,7 @@ NodeId GenerateUniqueRandomId(const NodeId& holder, uint16_t pos) {
     new_node = NodeId(NodeId::IdType::kRandomId);
     std::string new_id = new_node.ToStringEncoded(NodeId::EncodingType::kBinary);
     std::bitset<64 * 8> binary_bitset(new_id);
-    for (uint16_t i(0); i < pos; ++i)
+    for (unsigned int i(0); i < pos; ++i)
       holder_id_binary_bitset[i] = binary_bitset[i];
     new_node_string = holder_id_binary_bitset.to_string();
     if (pos == 0)
@@ -92,7 +105,7 @@ NodeId GenerateUniqueNonRandomId(const NodeId& holder, uint64_t id) {
   new_node = NodeId(NodeId::IdType::kRandomId);
   std::string new_id = new_node.ToStringEncoded(NodeId::EncodingType::kBinary);
   std::bitset<64> binary_bitset(id);
-  for (uint16_t i(0); i < 64; ++i)
+  for (unsigned int i(0); i < 64; ++i)
     holder_id_binary_bitset[i] = binary_bitset[i];
   new_node_string = holder_id_binary_bitset.to_string();
   new_node = NodeId(new_node_string, NodeId::EncodingType::kBinary);
@@ -101,15 +114,15 @@ NodeId GenerateUniqueNonRandomId(const NodeId& holder, uint64_t id) {
 
 NodeId GenerateUniqueRandomNodeId(const std::vector<NodeId>& esisting_ids) {
   NodeId new_node(NodeId::IdType::kRandomId);
-  while (std::find_if(esisting_ids.begin(), esisting_ids.end(),
-                      [&new_node](const NodeId & element) { return element == new_node; }) !=
-                          esisting_ids.end()) {
+  while (std::find_if(esisting_ids.begin(), esisting_ids.end(), [&new_node](const NodeId& element) {
+           return element == new_node;
+         }) != esisting_ids.end()) {
     new_node = NodeId(NodeId::IdType::kRandomId);
   }
   return new_node;
 }
 
-NodeId GenerateUniqueRandomId(uint16_t pos) {
+NodeId GenerateUniqueRandomId(unsigned int pos) {
   return GenerateUniqueRandomId(NodeId(), pos);
 }
 
@@ -118,13 +131,13 @@ NodeId GenerateUniqueNonRandomId(uint64_t pos) {
 }
 
 int NetworkStatus(bool client, int status) {
-  uint16_t max_size(client ? Parameters::max_routing_table_size_for_client
-                           : Parameters::max_routing_table_size);
+  unsigned int max_size(client ? Parameters::max_routing_table_size_for_client
+                               : Parameters::max_routing_table_size);
   return (status > 0) ? (status * 100 / max_size) : status;
 }
 
 void SortFromTarget(const NodeId& target, std::vector<NodeInfo>& nodes) {
-  std::sort(nodes.begin(), nodes.end(), [target](const NodeInfo & lhs, const NodeInfo & rhs) {
+  std::sort(nodes.begin(), nodes.end(), [target](const NodeInfo& lhs, const NodeInfo& rhs) {
     return NodeId::CloserToTarget(lhs.id, rhs.id, target);
   });
 }
@@ -132,19 +145,19 @@ void SortFromTarget(const NodeId& target, std::vector<NodeInfo>& nodes) {
 void PartialSortFromTarget(const NodeId& target, std::vector<NodeInfo>& nodes, size_t num_to_sort) {
   assert(num_to_sort <= nodes.size());
   std::partial_sort(nodes.begin(), nodes.begin() + num_to_sort, nodes.end(),
-                    [target](const NodeInfo & lhs, const NodeInfo & rhs) {
+                    [target](const NodeInfo& lhs, const NodeInfo& rhs) {
     return NodeId::CloserToTarget(lhs.id, rhs.id, target);
   });
 }
 
 void SortIdsFromTarget(const NodeId& target, std::vector<NodeId>& nodes) {
-  std::sort(nodes.begin(), nodes.end(), [target](const NodeId & lhs, const NodeId & rhs) {
+  std::sort(nodes.begin(), nodes.end(), [target](const NodeId& lhs, const NodeId& rhs) {
     return NodeId::CloserToTarget(lhs, rhs, target);
   });
 }
 
 void SortNodeInfosFromTarget(const NodeId& target, std::vector<NodeInfo>& nodes) {
-  std::sort(nodes.begin(), nodes.end(), [target](const NodeInfo & lhs, const NodeInfo & rhs) {
+  std::sort(nodes.begin(), nodes.end(), [target](const NodeInfo& lhs, const NodeInfo& rhs) {
     return NodeId::CloserToTarget(lhs.id, rhs.id, target);
   });
 }
@@ -153,16 +166,14 @@ bool CompareListOfNodeInfos(const std::vector<NodeInfo>& lhs, const std::vector<
   if (lhs.size() != rhs.size())
     return false;
   for (const auto& node_info : lhs) {
-    if (std::find_if(rhs.begin(), rhs.end(), [&](const NodeInfo & node) {
-          return node.id == node_info.id;
-        }) == rhs.end())
+    if (std::find_if(rhs.begin(), rhs.end(),
+                     [&](const NodeInfo& node) { return node.id == node_info.id; }) == rhs.end())
       return false;
   }
 
   for (const auto& node_info : rhs) {
-    if (std::find_if(lhs.begin(), lhs.end(), [&](const NodeInfo & node) {
-          return node.id == node_info.id;
-        }) == lhs.end())
+    if (std::find_if(lhs.begin(), lhs.end(),
+                     [&](const NodeInfo& node) { return node.id == node_info.id; }) == lhs.end())
       return false;
   }
   return true;

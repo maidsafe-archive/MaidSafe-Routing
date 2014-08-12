@@ -78,7 +78,7 @@ typedef std::function<void(const std::string& /*message*/, ReplyFunctor /*reply 
 
 // This is fired to validate a new peer node. User is supposed to validate the node and call
 // ValidateThisNode() method with valid public key.
-typedef std::function<void(asymm::PublicKey /*public_key*/)> GivePublicKeyFunctor;
+typedef std::function<void(boost::optional<asymm::PublicKey> /*public_key*/)> GivePublicKeyFunctor;
 typedef std::function<void(NodeId /*node Id*/, GivePublicKeyFunctor)> RequestPublicKeyFunctor;
 
 typedef std::function<void(const std::string& /*data*/, ReplyFunctor /*reply functor*/)>

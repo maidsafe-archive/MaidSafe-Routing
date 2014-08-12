@@ -78,15 +78,15 @@ void SetMessageProperty(protobuf::Message& message, const IsRequestMessage& valu
 }
 
 template <>
-void SetMessageProperty(protobuf::Message& message, const RelayId& value) {
+void SetMessageProperty(protobuf::Message& message, const RelayNodeId &value) {
   assert(!value.data.IsZero() && "invalid data value");
   message.set_relay_id(value.data.string());
 }
 
 template <>
-void SetMessageProperty(protobuf::Message& message, const RelayConnectionId& value) {
-  assert(!value.data.IsZero() && "invalid data value");
-  message.set_relay_connection_id(value.data.string());
+void SetMessageProperty(protobuf::Message& /*message*/, const RelayConnectionId& /*value*/) {
+//  assert(!value.data.IsZero() && "invalid data value");
+//  message.set_relay_connection_id(value.data.string());
 }
 
 template <>
@@ -100,8 +100,23 @@ void SetMessageProperty(protobuf::Message& message, const IsRoutingRpCMessage& v
 }
 
 template <>
+void SetMessageProperty(protobuf::Message& message, const LastNodeId& value) {
+  message.set_last_id(value.data.string());
+}
+
+template <>
+void SetMessageProperty(protobuf::Message& message, const MessageId& value) {
+  message.set_id(value.data);
+}
+
+template <>
 void SetMessageProperty(protobuf::Message& message, const Cacheable& value) {
   message.set_cacheable(static_cast<uint32_t>(value));
+}
+
+template <>
+void SetMessageProperty(protobuf::Message& message, const IsRequestor& value) {
+  message.set_request(value.data);
 }
 
 void SetMessageProperties(protobuf::Message& /*message*/) {
@@ -154,7 +169,7 @@ protobuf::Message Connect(const PeerNodeId& peer_node_id, const LocalEndpointPai
   } else {
     // This node is not in any peer's routing table yet
     LOG(kVerbose) << "Connect RPC has relay connection id " << relay_connection_id;
-    detail::SetMessageProperties(message, RelayId(self_node_id.data), relay_connection_id);
+    detail::SetMessageProperties(message, RelayNodeId(self_node_id.data), relay_connection_id);
   }
   return message;
 }
@@ -180,7 +195,7 @@ protobuf::Message FindNodes(unsigned int num_nodes_requested, const PeerNodeId& 
   } else {
     // This node is not in any peer's routing table yet
     LOG(kVerbose) << "Connect RPC has relay connection id " << DebugId(relay_connection_id);
-    detail::SetMessageProperties(message, RelayId(self_node_id.data), relay_connection_id);
+    detail::SetMessageProperties(message, RelayNodeId(self_node_id.data), relay_connection_id);
   }
   assert(message.IsInitialized() && "Uninitialised message");
   return message;
@@ -197,7 +212,7 @@ protobuf::Message ConnectSuccess(const PeerNodeId& peer_node_id, const LocalNode
     protobuf_connect_success.set_connection_id(self_connection_id.data.string());
     protobuf_connect_success.set_requestor(requestor);
   }
-  detail::SetMessageProperties(message, peer_node_id,
+  detail::SetMessageProperties(message, peer_node_id, requestor,
                                MessageData(protobuf_connect_success.SerializeAsString()),
                                MessageType::kConnectSuccess, client_node, self_node_id);
   assert(message.IsInitialized() && "Uninitialised message");

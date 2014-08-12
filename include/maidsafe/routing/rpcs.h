@@ -77,7 +77,7 @@ template <>
 void SetMessageProperty(protobuf::Message& message, const IsRequestMessage& value);
 
 template <>
-void SetMessageProperty(protobuf::Message& message, const RelayId& value);
+void SetMessageProperty(protobuf::Message& message, const RelayNodeId& value);
 
 template <>
 void SetMessageProperty(protobuf::Message& message, const RelayConnectionId& value);
@@ -89,7 +89,16 @@ template <>
 void SetMessageProperty(protobuf::Message& message, const IsRoutingRpCMessage& value);
 
 template <>
+void SetMessageProperty(protobuf::Message& message, const LastNodeId& value);
+
+template <>
+void SetMessageProperty(protobuf::Message& message, const MessageId& value);
+
+template <>
 void SetMessageProperty(protobuf::Message& message, const Cacheable& value);
+
+template <>
+void SetMessageProperty(protobuf::Message& message, const IsRequestor& value);
 
 }  // namespace detail
 

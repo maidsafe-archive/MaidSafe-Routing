@@ -51,7 +51,7 @@ TEST(ServicesTest, BEH_Ping) {
   RoutingTable<VaultNode> routing_table(node_id, asymm::GenerateKeyPair());
   ClientRoutingTable client_routing_table(routing_table.kNodeId());
   AsioService asio_service(1);
-  NetworkUtils<VaultNode> network(routing_table, client_routing_table);
+  Network<VaultNode> network(routing_table, client_routing_table);
   Service<VaultNode> service(routing_table, client_routing_table, network);
   NodeInfo node;
   rudp::ManagedConnections rudp;
@@ -81,7 +81,7 @@ TEST(ServicesTest, BEH_FindNodes) {
   NodeId this_node_id(routing_table.kNodeId());
   ClientRoutingTable client_routing_table(routing_table.kNodeId());
   AsioService asio_service(1);
-  NetworkUtils<VaultNode> network(routing_table, client_routing_table);
+  Network<VaultNode> network(routing_table, client_routing_table);
   Service<VaultNode> service(routing_table, client_routing_table, network);
   protobuf::Message message = rpcs::FindNodes(this_node_id, this_node_id, 8);
   service.FindNodes(message);
@@ -114,7 +114,7 @@ TEST(ServicesTest, BEH_FindNodes) {
 //   AsioService asio_service(0);
 //   Timer timer(asio_service);
 //   NodeInfo node;
-//   NetworkUtils<VaultNode>(routing_table, client_routing_table, timer);
+//   Network<VaultNode>(routing_table, client_routing_table, timer);
 //   protobuf::ProxyConnectRequest proxy_connect_request;
 //   // they send us an proxy connect rpc
 //   rudp::EndpointPair endpoint_pair;

@@ -25,8 +25,9 @@ namespace routing {
 namespace test {
 
 template <typename NodeType>
-MockService<NodeType>::MockService(RoutingTable<NodeType>& routing_table, ClientRoutingTable& client_routing_table,
-                         NetworkUtils<NodeType>& utils)
+MockService<NodeType>::MockService(RoutingTable<NodeType>& routing_table,
+                                   ClientRoutingTable& client_routing_table,
+                                   Network<NodeType>& utils)
     : Service<NodeType>(routing_table, client_routing_table, utils) {}
 
 template <typename NodeType>

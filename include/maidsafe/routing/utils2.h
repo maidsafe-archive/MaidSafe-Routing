@@ -16,8 +16,8 @@
     See the Licences for the specific language governing permissions and limitations relating to
     use of the MaidSafe Software.                                                                 */
 
-#ifndef MAIDSAFE_ROUTING_UTILS2_H_
-#define MAIDSAFE_ROUTING_UTILS2_H_
+#ifndef MAIDSAFE_ROUTING_NETWORK_UTILS_H_
+#define MAIDSAFE_ROUTING_NETWORK_UTILS_H_
 
 #include <string>
 #include <vector>
@@ -36,7 +36,7 @@ namespace routing {
 namespace fs = boost::filesystem;
 
 template <typename NodeType>
-class NetworkUtils;
+class Network;
 
 template <typename NodeType>
 struct ConnectionsInfo {
@@ -64,7 +64,7 @@ struct Connections : ConnectionsInfo<NodeType> {
 };
 
 template <typename NodeType>
-int AddToRudp(NetworkUtils<NodeType>& network, const LocalNodeId& self_node_id,
+int AddToRudp(Network<NodeType>& network, const LocalNodeId& self_node_id,
               const LocalConnectionId& self_connection_id, const PeerNodeId& peer_node_id,
               const PeerConnectionId& peer_connection_id, PeerEndpointPair peer_endpoint_pair,
               IsRequestor is_requestor) {
@@ -85,7 +85,7 @@ int AddToRudp(NetworkUtils<NodeType>& network, const LocalNodeId& self_node_id,
 }
 
 template <typename NodeType>
-bool ValidateAndAddToRoutingTable(NetworkUtils<NodeType>& network,
+bool ValidateAndAddToRoutingTable(Network<NodeType>& network,
                                   Connections<NodeType>& connections, const NodeId& peer_id,
                                   const NodeId& connection_id, const asymm::PublicKey& public_key,
                                   VaultNode) {
@@ -105,10 +105,8 @@ bool ValidateAndAddToRoutingTable(NetworkUtils<NodeType>& network,
     routing_accepted_node = true;
 
   if (routing_accepted_node) {
-    LOG(kVerbose) << "[" << connections.kNodeId() << "] "
-                  << "added "
-                  << "node to "
-                  << "routing table.  Node ID: " << HexSubstr(peer_id.string());
+    LOG(kVerbose) << "[" << connections.kNodeId() << "] added node to routing table.  Node ID: "
+                  << HexSubstr(peer_id.string());
     return true;
   }
 
@@ -122,7 +120,7 @@ bool ValidateAndAddToRoutingTable(NetworkUtils<NodeType>& network,
 }
 
 template <typename NodeType>
-bool ValidateAndAddToRoutingTable(NetworkUtils<NodeType>& network,
+bool ValidateAndAddToRoutingTable(Network<NodeType>& network,
                                   Connections<NodeType>& connections, const NodeId& peer_id,
                                   const NodeId& connection_id, const asymm::PublicKey& public_key,
                                   ClientNode) {
@@ -159,13 +157,13 @@ bool ValidateAndAddToRoutingTable(NetworkUtils<NodeType>& network,
 }
 
 template <>
-bool ValidateAndAddToRoutingTable(NetworkUtils<ClientNode>& network,
+bool ValidateAndAddToRoutingTable(Network<ClientNode>& network,
                                   Connections<ClientNode>& connections, const NodeId& peer_id,
                                   const NodeId& connection_id, const asymm::PublicKey& public_key,
                                   ClientNode);
 
 template <typename NodeType>
-void InformClientOfNewCloseNode(NetworkUtils<NodeType>& network, const NodeInfo& client,
+void InformClientOfNewCloseNode(Network<NodeType>& network, const NodeInfo& client,
                                 const NodeInfo& new_close_node, const LocalNodeId& self_node_id) {
   protobuf::Message inform_client_of_new_close_node(rpcs::InformClientOfNewCloseNode(
       PeerNodeId(new_close_node.id), self_node_id, PeerNodeId(client.id)));
@@ -203,4 +201,4 @@ void HandleSymmetricNodeAdd(RoutingTable<NodeType>& /*routing_table*/, const Nod
 
 }  // namespace maidsafe
 
-#endif  // MAIDSAFE_ROUTING_UTILS2_H_
+#endif  // MAIDSAFE_ROUTING_NETWORK_UTILS_H_

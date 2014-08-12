@@ -16,8 +16,8 @@
     See the Licences for the specific language governing permissions and limitations relating to
     use of the MaidSafe Software.                                                                 */
 
-#ifndef MAIDSAFE_ROUTING_NETWORK_UTILS_H_
-#define MAIDSAFE_ROUTING_NETWORK_UTILS_H_
+#ifndef MAIDSAFE_ROUTING_NETWORK_H_
+#define MAIDSAFE_ROUTING_NETWORK_H_
 
 #include <mutex>
 #include <string>
@@ -65,14 +65,14 @@ class ClientRoutingTable;
 namespace test {
 class GenericNode;
 template <typename NodeType>
-class MockNetworkUtils;
+class MockNetwork;
 }
 
 template <typename NodeType>
-class NetworkUtils {
+class Network {
  public:
-  NetworkUtils(Connections<NodeType>& connections);
-  virtual ~NetworkUtils();
+  Network(Connections<NodeType>& connections);
+  virtual ~Network();
   int Bootstrap(const rudp::MessageReceivedFunctor& message_received_functor,
                 const rudp::ConnectionLostFunctor& connection_lost_functor);
   int ZeroStateBootstrap(const rudp::MessageReceivedFunctor& message_received_functor,
@@ -106,12 +106,12 @@ class NetworkUtils {
 
   friend class test::GenericNode;
   template <typename Type>
-  friend class test::MockNetworkUtils;
+  friend class test::MockNetwork;
 
  private:
-  NetworkUtils(const NetworkUtils&);
-  NetworkUtils(const NetworkUtils&&);
-  NetworkUtils& operator=(const NetworkUtils&);
+  Network(const Network&);
+  Network(const Network&&);
+  Network& operator=(const Network&);
 
   // For zero-state, local_endpoint can be default-constructed.
   int DoBootstrap(const rudp::MessageReceivedFunctor& message_received_functor,
@@ -140,7 +140,7 @@ class NetworkUtils {
 };
 
 template <typename NodeType>
-NetworkUtils<NodeType>::NetworkUtils(Connections<NodeType>& connections)
+Network<NodeType>::Network(Connections<NodeType>& connections)
     : running_(true),
       running_mutex_(),
       bootstrap_attempt_(0),
@@ -153,29 +153,31 @@ NetworkUtils<NodeType>::NetworkUtils(Connections<NodeType>& connections)
       rudp_() {}
 
 template <typename NodeType>
-NetworkUtils<NodeType>::~NetworkUtils() {
+Network<NodeType>::~Network() {
   std::lock_guard<std::mutex> lock(running_mutex_);
   running_ = false;
 }
 
 template <typename NodeType>
-int NetworkUtils<NodeType>::Bootstrap(const rudp::MessageReceivedFunctor& message_received_functor,
+int Network<NodeType>::Bootstrap(const rudp::MessageReceivedFunctor& message_received_functor,
                                       const rudp::ConnectionLostFunctor& connection_lost_functor) {
   BootstrapContacts bootstrap_contacts{GetBootstrapContacts(NodeType::value)};
   return DoBootstrap(message_received_functor, connection_lost_functor, bootstrap_contacts);
 }
 
 template <typename NodeType>
-int NetworkUtils<NodeType>::ZeroStateBootstrap(
+int Network<NodeType>::ZeroStateBootstrap(
     const rudp::MessageReceivedFunctor& message_received_functor,
     const rudp::ConnectionLostFunctor& connection_lost_functor, LocalEndpoint local_endpoint) {
   BootstrapContacts bootstrap_contacts{GetZeroStateBootstrapContacts(local_endpoint.data)};
+  for (const auto& bootstrap : bootstrap_contacts)
+    LOG(kVerbose) << bootstrap.port();
   return DoBootstrap(message_received_functor, connection_lost_functor, bootstrap_contacts,
                      local_endpoint);
 }
 
 template <typename NodeType>
-int NetworkUtils<NodeType>::DoBootstrap(
+int Network<NodeType>::DoBootstrap(
     const rudp::MessageReceivedFunctor& message_received_functor,
     const rudp::ConnectionLostFunctor& connection_lost_functor,
     const BootstrapContacts& bootstrap_contacts, LocalEndpoint local_endpoint) {
@@ -209,7 +211,7 @@ int NetworkUtils<NodeType>::DoBootstrap(
 }
 
 template <typename NodeType>
-int NetworkUtils<NodeType>::GetAvailableEndpoint(const NodeId& peer_id,
+int Network<NodeType>::GetAvailableEndpoint(const NodeId& peer_id,
                                                  const rudp::EndpointPair& peer_endpoint_pair,
                                                  rudp::EndpointPair& this_endpoint_pair,
                                                  rudp::NatType& this_nat_type) {
@@ -222,7 +224,7 @@ int NetworkUtils<NodeType>::GetAvailableEndpoint(const NodeId& peer_id,
 }
 
 template <typename NodeType>
-int NetworkUtils<NodeType>::Add(const NodeId& peer_id, const rudp::EndpointPair& peer_endpoint_pair,
+int Network<NodeType>::Add(const NodeId& peer_id, const rudp::EndpointPair& peer_endpoint_pair,
                                 const std::string& validation_data) {
   {
     std::lock_guard<std::mutex> lock(running_mutex_);
@@ -233,7 +235,7 @@ int NetworkUtils<NodeType>::Add(const NodeId& peer_id, const rudp::EndpointPair&
 }
 
 template <typename NodeType>
-int NetworkUtils<NodeType>::MarkConnectionAsValid(const NodeId& peer_id) {
+int Network<NodeType>::MarkConnectionAsValid(const NodeId& peer_id) {
   {
     std::lock_guard<std::mutex> lock(running_mutex_);
     if (!running_)
@@ -251,7 +253,7 @@ int NetworkUtils<NodeType>::MarkConnectionAsValid(const NodeId& peer_id) {
 }
 
 template <typename NodeType>
-void NetworkUtils<NodeType>::Remove(const NodeId& peer_id) {
+void Network<NodeType>::Remove(const NodeId& peer_id) {
   {
     std::lock_guard<std::mutex> lock(running_mutex_);
     if (!running_)
@@ -261,7 +263,7 @@ void NetworkUtils<NodeType>::Remove(const NodeId& peer_id) {
 }
 
 template <typename NodeType>
-void NetworkUtils<NodeType>::RudpSend(const NodeId& peer_id, const protobuf::Message& message,
+void Network<NodeType>::RudpSend(const NodeId& peer_id, const protobuf::Message& message,
                                       const rudp::MessageSentFunctor& message_sent_functor) {
   {
     std::lock_guard<std::mutex> lock(running_mutex_);
@@ -275,21 +277,21 @@ void NetworkUtils<NodeType>::RudpSend(const NodeId& peer_id, const protobuf::Mes
 }
 
 template <typename NodeType>
-void NetworkUtils<NodeType>::SendToDirect(const protobuf::Message& message,
+void Network<NodeType>::SendToDirect(const protobuf::Message& message,
                                           const NodeId& peer_connection_id,
                                           const rudp::MessageSentFunctor& message_sent_functor) {
   RudpSend(peer_connection_id, message, message_sent_functor ? message_sent_functor : nullptr);
 }
 
 template <typename NodeType>
-void NetworkUtils<NodeType>::SendToDirect(const protobuf::Message& message,
+void Network<NodeType>::SendToDirect(const protobuf::Message& message,
                                           const NodeId& peer_node_id,
                                           const NodeId& peer_connection_id) {
   SendTo(message, peer_node_id, peer_connection_id);
 }
 
 template <typename NodeType>
-void NetworkUtils<NodeType>::SendToDirectAdjustedRoute(protobuf::Message& message,
+void Network<NodeType>::SendToDirectAdjustedRoute(protobuf::Message& message,
                                                        const NodeId& peer_node_id,
                                                        const NodeId& peer_connection_id) {
   AdjustRouteHistory(message);
@@ -297,7 +299,7 @@ void NetworkUtils<NodeType>::SendToDirectAdjustedRoute(protobuf::Message& messag
 }
 
 template <typename NodeType>
-void NetworkUtils<NodeType>::SendToClosestNode(const protobuf::Message& message) {
+void Network<NodeType>::SendToClosestNode(const protobuf::Message& message) {
   // Normal messages
   if (message.has_destination_id() && !message.destination_id().empty()) {
     auto client_routing_nodes(
@@ -346,10 +348,10 @@ void NetworkUtils<NodeType>::SendToClosestNode(const protobuf::Message& message)
 }
 
 template <>
-void NetworkUtils<ClientNode>::SendToClosestNode(const protobuf::Message& message);
+void Network<ClientNode>::SendToClosestNode(const protobuf::Message& message);
 
 template <typename NodeType>
-void NetworkUtils<NodeType>::SendTo(const protobuf::Message& message, const NodeId& peer_node_id,
+void Network<NodeType>::SendTo(const protobuf::Message& message, const NodeId& peer_node_id,
                                     const NodeId& peer_connection_id) {
   const std::string kThisId(connections_.kNodeId()->string());
   rudp::MessageSentFunctor message_sent_functor = [=](int message_sent) {
@@ -367,7 +369,7 @@ void NetworkUtils<NodeType>::SendTo(const protobuf::Message& message, const Node
 }
 
 template <typename NodeType>
-void NetworkUtils<NodeType>::RecursiveSendOn(protobuf::Message message,
+void Network<NodeType>::RecursiveSendOn(protobuf::Message message,
                                              NodeInfo last_node_attempted, int attempt_count) {
   {
     std::lock_guard<std::mutex> lock(running_mutex_);
@@ -466,41 +468,41 @@ void NetworkUtils<NodeType>::RecursiveSendOn(protobuf::Message message,
 }
 
 template <>
-void NetworkUtils<ClientNode>::RecursiveSendOn(protobuf::Message message,
+void Network<ClientNode>::RecursiveSendOn(protobuf::Message message,
                                                NodeInfo last_node_attempted, int attempt_count);
 
 
 template <typename NodeType>
-void NetworkUtils<NodeType>::set_new_bootstrap_contact_functor(
+void Network<NodeType>::set_new_bootstrap_contact_functor(
     NewBootstrapContactFunctor new_bootstrap_contact) {
   new_bootstrap_contact_ = new_bootstrap_contact;
 }
 
 template <typename NodeType>
-void NetworkUtils<NodeType>::clear_bootstrap_connection_info() {
+void Network<NodeType>::clear_bootstrap_connection_info() {
   bootstrap_connection_id_ = NodeId();
   this_node_relay_connection_id_ = NodeId();
 }
 
 template <typename NodeType>
-maidsafe::NodeId NetworkUtils<NodeType>::bootstrap_connection_id() const {
+maidsafe::NodeId Network<NodeType>::bootstrap_connection_id() const {
   if (running_)
     return bootstrap_connection_id_;
   return NodeId();
 }
 
 template <typename NodeType>
-maidsafe::NodeId NetworkUtils<NodeType>::this_node_relay_connection_id() const {
+maidsafe::NodeId Network<NodeType>::this_node_relay_connection_id() const {
   return this_node_relay_connection_id_;
 }
 
 template <typename NodeType>
-rudp::NatType NetworkUtils<NodeType>::nat_type() const {
+rudp::NatType Network<NodeType>::nat_type() const {
   return nat_type_;
 }
 
 template <typename NodeType>
-void NetworkUtils<NodeType>::AdjustRouteHistory(protobuf::Message& message) {
+void Network<NodeType>::AdjustRouteHistory(protobuf::Message& message) {
   if (Parameters::hops_to_live == message.hops_to_live() &&
       NodeId(message.source_id()) == connections_.kNodeId())
     return;
@@ -526,4 +528,4 @@ void NetworkUtils<NodeType>::AdjustRouteHistory(protobuf::Message& message) {
 
 }  // namespace maidsafe
 
-#endif  // MAIDSAFE_ROUTING_NETWORK_UTILS_H_
+#endif  // MAIDSAFE_ROUTING_NETWORK_H_

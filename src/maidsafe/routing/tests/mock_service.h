@@ -34,7 +34,7 @@ template <typename NodeType>
 class MockService : public Service<NodeType> {
  public:
   MockService(RoutingTable<NodeType>& routing_table, ClientRoutingTable& client_routing_table,
-              NetworkUtils<NodeType>& network_utils);
+              Network<NodeType>& network_utils);
   virtual ~MockService();
 
   MOCK_METHOD1(Ping, void(protobuf::Message& message));

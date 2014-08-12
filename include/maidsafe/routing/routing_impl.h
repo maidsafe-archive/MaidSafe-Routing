@@ -36,7 +36,7 @@
 #include "maidsafe/routing/api_config.h"
 #include "maidsafe/routing/client_routing_table.h"
 #include "maidsafe/routing/message_handler.h"
-#include "maidsafe/routing/network_utils.h"
+#include "maidsafe/routing/network.h"
 #include "maidsafe/routing/random_node_helper.h"
 #include "maidsafe/routing/routing.pb.h"
 #include "maidsafe/routing/routing_table.h"
@@ -118,7 +118,8 @@ class RoutingImpl : public std::enable_shared_from_this<RoutingImpl<NodeType>> {
         recovery_timer_(asio_service_.service()),
         setup_timer_(asio_service_.service()) {
     message_handler_.reset(
-        new MessageHandler<NodeType>(connections_, network_, timer_, network_statistics_));
+        new MessageHandler<NodeType>(connections_, network_, timer_, network_statistics_,
+                                     asio_service_));
     LOG(kVerbose) << NodeType::value << ", " << connections_.kNodeId()
                   << ", routing_table_.kConnectionId()" << connections_.kConnectionId();
   }
@@ -214,7 +215,7 @@ class RoutingImpl : public std::enable_shared_from_this<RoutingImpl<NodeType>> {
   // proper destruction of the routing library, i.e. to avoid segmentation faults.
   std::unique_ptr<MessageHandler<NodeType>> message_handler_;
   AsioService asio_service_;
-  NetworkUtils<NodeType> network_;
+  Network<NodeType> network_;
   Timer<std::string> timer_;
   boost::asio::steady_timer re_bootstrap_timer_, recovery_timer_, setup_timer_;
 };

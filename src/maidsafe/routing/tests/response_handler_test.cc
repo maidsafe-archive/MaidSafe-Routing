@@ -197,7 +197,7 @@ class ResponseHandlerTest : public testing::Test {
   NetworkStatistics network_statistics_;
   RoutingTableTest<VaultNode> routing_table_;
   ClientRoutingTable client_routing_table_;
-  MockNetworkUtils<VaultNode> network_;
+  MockNetwork<VaultNode> network_;
   ResponseHandler<VaultNode> response_handler_;
 };
 

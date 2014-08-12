@@ -39,7 +39,7 @@ typedef TaggedValue<NodeInfo, struct PeerNodeInfoType> PeerNodeInfo;
 typedef TaggedValue<bool, struct NodeType> IsClient;
 typedef TaggedValue<std::string, struct IdentityType> Identity;
 typedef TaggedValue<bool, struct RelayMessageType> IsRelayMessage;
-typedef TaggedValue<NodeId, struct RelayIdType> RelayId;
+typedef TaggedValue<NodeId, struct RelayIdType> RelayNodeId;
 typedef TaggedValue<NodeId, struct RelayConnectionIdType> RelayConnectionId;
 typedef TaggedValue<bool, struct RequestorType> IsRequestor;
 typedef TaggedValue<bool, struct IsDirectType> IsDirectMessage;
@@ -47,6 +47,8 @@ typedef TaggedValue<bool, struct IsRequestType> IsRequestMessage;
 typedef TaggedValue<std::string, struct MessageDataType> MessageData;
 typedef TaggedValue<bool, struct IsRoutingMessageType> IsRoutingRpCMessage;
 typedef TaggedValue<bool, struct IsCacheableType> IsCacheable;
+typedef TaggedValue<NodeId, struct LastIdType> LastNodeId;
+typedef TaggedValue<int, struct MessageIdType> MessageId;
 
 }  // namespace routing
 

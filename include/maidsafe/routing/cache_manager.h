@@ -22,7 +22,7 @@
 #include <string>
 
 #include "maidsafe/routing/api_config.h"
-#include "maidsafe/routing/network_utils.h"
+#include "maidsafe/routing/network.h"
 #include "maidsafe/routing/routing.pb.h"
 #include "maidsafe/routing/utils.h"
 
@@ -33,7 +33,7 @@ namespace routing {
 template <typename NodeType>
 class CacheManager {
  public:
-  CacheManager(const NodeId& node_id, NetworkUtils<NodeType>& network);
+  CacheManager(const NodeId& node_id, Network<NodeType>& network);
 
   void InitialiseFunctors(const MessageAndCachingFunctors& message_and_caching_functors);
   void InitialiseFunctors(const TypedMessageAndCachingFunctor& typed_message_and_caching_functors);
@@ -49,13 +49,13 @@ class CacheManager {
   bool TypedMessageHandleGetFromCache(protobuf::Message& message);
 
   const NodeId kNodeId_;
-  NetworkUtils<NodeType>& network_;
+  Network<NodeType>& network_;
   MessageAndCachingFunctors message_and_caching_functors_;
   TypedMessageAndCachingFunctor typed_message_and_caching_functors_;
 };
 
 template <typename NodeType>
-CacheManager<NodeType>::CacheManager(const NodeId& node_id, NetworkUtils<NodeType>& network)
+CacheManager<NodeType>::CacheManager(const NodeId& node_id, Network<NodeType>& network)
     : kNodeId_(node_id),
       network_(network),
       message_and_caching_functors_(),
@@ -144,31 +144,25 @@ bool CacheManager<NodeType>::HandleGetFromCache(protobuf::Message& message) {
         LOG(kVerbose) << "Cache contents: " << reply_message;
 
         //  Responding with cached response
-        protobuf::Message message_out;
-        message_out.set_request(false);
-        message_out.set_hops_to_live(Parameters::hops_to_live);
-        message_out.set_destination_id(message.source_id());
-        message_out.set_type(message.type());
-        message_out.set_direct(true);
-        message_out.clear_data();
-        message_out.set_client_node(message.client_node());
-        message_out.set_routing_message(message.routing_message());
-        message_out.add_data(reply_message);
-        message_out.set_last_id(kNodeId_.string());
-        message_out.set_source_id(kNodeId_.string());
+        auto message_out(rpcs::detail::InitialisedMessage());
+        rpcs::detail::SetMessageProperties(
+            message_out, IsRequestMessage(false), PeerNodeId(NodeId(message.source_id())),
+            IsClient(message.client_node()), IsRoutingRpCMessage(message.routing_message()),
+            MessageData(reply_message), LocalNodeId(NodeId(kNodeId_.string())),
+            MessageType(message.type()), LastNodeId(NodeId(kNodeId_.string())));
         if (message.has_cacheable())
-          message_out.set_cacheable(static_cast<int32_t>(Cacheable::kPut));
+          rpcs::detail::SetMessageProperty(message_out, Cacheable::kPut);
         if (message.has_id())
-          message_out.set_id(message.id());
+          rpcs::detail::SetMessageProperty(message_out, MessageId(message.id()));
         else
           LOG(kInfo) << "Message to be sent back had no ID.";
 
         if (message.has_relay_id())
-          message_out.set_relay_id(message.relay_id());
+          rpcs::detail::SetMessageProperty(message_out, RelayNodeId(NodeId(message.relay_id())));
 
-        if (message.has_relay_connection_id()) {
-          message_out.set_relay_connection_id(message.relay_connection_id());
-        }
+        if (message.has_relay_connection_id())
+          rpcs::detail::SetMessageProperty(
+              message_out, RelayConnectionId(NodeId(message.relay_connection_id())));
         network_.SendToClosestNode(message_out);
         cache_hit->set_value(true);
       };

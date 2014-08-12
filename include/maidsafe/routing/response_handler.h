@@ -35,7 +35,7 @@
 #include "maidsafe/routing/api_config.h"
 #include "maidsafe/routing/timer.h"
 #include "maidsafe/routing/routing_table.h"
-#include "maidsafe/routing/network_utils.h"
+#include "maidsafe/routing/network.h"
 #include "maidsafe/routing/rpcs.h"
 #include "maidsafe/routing/utils.h"
 #include "maidsafe/routing/utils2.h"
@@ -54,13 +54,15 @@ class GroupChangeHandler;
 template <typename NodeType>
 class ResponseHandler : public std::enable_shared_from_this<ResponseHandler<NodeType>> {
  public:
-  ResponseHandler(Connections<NodeType>& connections, NetworkUtils<NodeType>& network);
+  ResponseHandler(Connections<NodeType>& connections, Network<NodeType>& network,
+                  PublicKeyHolder& public_key_holder);
   virtual ~ResponseHandler();
   virtual void Ping(protobuf::Message& message);
   virtual void Connect(protobuf::Message& message);
   virtual void FindNodes(const protobuf::Message& message);
   template <typename PeerNodeType>
   void ConnectSuccessAcknowledgement(protobuf::Message& message);
+  void ConnectSuccess(protobuf::Message& message);
   protobuf::Message HandleMessage(ConnectSuccessAcknowledgementRequestFromVault message_wrapper);
   protobuf::Message HandleMessage(ConnectSuccessAcknowledgementRequestFromClient message_wrapper);
   void set_request_public_key_functor(RequestPublicKeyFunctor request_public_key);
@@ -74,6 +76,7 @@ class ResponseHandler : public std::enable_shared_from_this<ResponseHandler<Node
  private:
   void SendConnectRequest(const NodeId peer_node_id);
   void CheckAndSendConnectRequest(const NodeId& node_id);
+  void ValidateAndSendConnectRequest(const NodeId& peer_id);
   void HandleSuccessAcknowledgementAsRequestor(const std::vector<NodeId>& close_ids);
   void HandleSuccessAcknowledgementAsReponder(NodeInfo peer, bool client);
   void ValidateAndCompleteConnection(const NodeInfo& peer, bool from_requestor,
@@ -83,14 +86,17 @@ class ResponseHandler : public std::enable_shared_from_this<ResponseHandler<Node
 
   mutable std::mutex mutex_;
   Connections<NodeType>& connections_;
-  NetworkUtils<NodeType>& network_;
+  Network<NodeType>& network_;
+  PublicKeyHolder& public_key_holder_;
   RequestPublicKeyFunctor request_public_key_functor_;
 };
 
 template <typename NodeType>
 ResponseHandler<NodeType>::ResponseHandler(Connections<NodeType>& connections,
-                                           NetworkUtils<NodeType>& network)
-    : mutex_(), connections_(connections), network_(network), request_public_key_functor_() {}
+                                           Network<NodeType>& network,
+                                           PublicKeyHolder& public_key_holder)
+    : mutex_(), connections_(connections), network_(network),
+      public_key_holder_(public_key_holder), request_public_key_functor_() {}
 
 template <typename NodeType>
 ResponseHandler<NodeType>::~ResponseHandler() {}
@@ -157,26 +163,27 @@ void ResponseHandler<NodeType>::Connect(protobuf::Message& message) {
     NodeId peer_node_id(connect_response.contact().node_id());
     NodeId peer_connection_id(connect_response.contact().connection_id());
 
-    LOG(kVerbose) << "This node [" << connections_.kNodeId() << "] received connect response from "
-                  << peer_node_id << " id: " << message.id();
+    LOG(kVerbose) << "This node [" << connections_.kNodeId()
+                  << "] received connect response from " << peer_node_id
+                  << " connection_id: " << peer_connection_id << " id: " << message.id();
 
-    int result = AddToRudp(network_, connections_.kNodeId(), connections_.kConnectionId(),
-                           PeerNodeId(peer_node_id), PeerConnectionId(peer_connection_id),
-                           PeerEndpointPair(peer_endpoint_pair), IsRequestor(true));
-    if (result == kSuccess) {
-      // Special case with bootstrapping peer in which kSuccess comes before connect response
-      if (peer_node_id == network_.bootstrap_connection_id()) {
-        LOG(kInfo) << "Special case with bootstrapping peer : " << DebugId(peer_node_id);
-        const std::vector<NodeInfo> close_nodes;  // add closer ids if needed
-        protobuf::Message connect_success_ack(rpcs::ConnectSuccessAcknowledgement(
-            PeerNodeId(peer_node_id), connections_.kNodeId(), connections_.kConnectionId(),
-            IsRequestor(true), close_nodes, IsClient(NodeType::value)));
-        network_.SendToDirect(connect_success_ack, peer_node_id, peer_connection_id);
-      }
+    if (!public_key_holder_.Find(typename NodeIdPublicKeyPair::Key(peer_node_id))) {
+      LOG(kError)  << "missing public key ";
+      message.Clear();
+      return;
     }
-  } else {
-    LOG(kVerbose) << "Already added node";
+
+    auto result(AddToRudp(network_, connections_.kNodeId(), connections_.kConnectionId(),
+                          PeerNodeId(peer_node_id), PeerConnectionId(peer_connection_id),
+                          PeerEndpointPair(peer_endpoint_pair), IsRequestor(true)));
+    if (result != kSuccess)
+      LOG(kVerbose) << "Already added node";
   }
+}
+
+template <typename NodeType>
+void ResponseHandler<NodeType>::ConnectSuccess(protobuf::Message& message) {
+  message.Clear();  // message is sent directly to the peer
 }
 
 template <typename NodeType>
@@ -340,8 +347,8 @@ void ResponseHandler<NodeType>::ValidateAndCompleteConnection(const NodeInfo& pe
                                                               bool from_requestor,
                                                               const std::vector<NodeId>& close_ids,
                                                               ClientNode) {
-  if (ValidateAndAddToRoutingTable(network_, connections_, peer.id, peer.connection_id,
-                                   asymm::PublicKey(), ClientNode())) {
+ if (ValidateAndAddToRoutingTable(network_, connections_, peer.id,
+                                   peer.connection_id, asymm::PublicKey(), ClientNode())) {
     if (from_requestor) {
       HandleSuccessAcknowledgementAsReponder(peer, true);
     } else {
@@ -355,22 +362,19 @@ void ResponseHandler<NodeType>::ValidateAndCompleteConnection(const NodeInfo& pe
                                                               bool from_requestor,
                                                               const std::vector<NodeId>& close_ids,
                                                               VaultNode) {
-  std::weak_ptr<ResponseHandler<NodeType>> response_handler_weak_ptr = this->shared_from_this();
-  if (request_public_key_functor_) {
-    auto validate_node([=](const asymm::PublicKey& key) {
-      LOG(kInfo) << "Validation callback called with public key for " << peer.id;
-      if (std::shared_ptr<ResponseHandler> response_handler = response_handler_weak_ptr.lock()) {
-        if (ValidateAndAddToRoutingTable(response_handler->network_, response_handler->connections_,
-                                         peer.id, peer.connection_id, key, VaultNode())) {
-          if (from_requestor) {
-            response_handler->HandleSuccessAcknowledgementAsReponder(peer, false);
-          } else {
-            response_handler->HandleSuccessAcknowledgementAsRequestor(close_ids);
-          }
-        }
-      }
-    });
-    request_public_key_functor_(peer.id, validate_node);
+  auto peer_public_key(public_key_holder_.Find(peer.id));
+  if (!peer_public_key) {
+    LOG(kVerbose) << "missing public key for " << peer.id;
+    return;
+  }
+  public_key_holder_.Remove(NodeIdPublicKeyPair::Key(peer.id));
+  if (ValidateAndAddToRoutingTable(network_, connections_, peer.id,
+                                   peer.connection_id, peer_public_key->GetValue(), VaultNode())) {
+    if (from_requestor) {
+      HandleSuccessAcknowledgementAsReponder(peer, false);
+    } else {
+      HandleSuccessAcknowledgementAsRequestor(close_ids);
+    }
   }
 }
 
@@ -395,6 +399,7 @@ void ResponseHandler<NodeType>::HandleSuccessAcknowledgementAsRequestor(
     const std::vector<NodeId>& close_ids) {
   for (const auto& i : close_ids) {
     if (!i.IsZero()) {
+      LOG(kVerbose) << "HandleSuccessAcknowledgementAsRequestor " << i;
       CheckAndSendConnectRequest(i);
     }
   }
@@ -402,13 +407,36 @@ void ResponseHandler<NodeType>::HandleSuccessAcknowledgementAsRequestor(
 
 template <typename NodeType>
 void ResponseHandler<NodeType>::CheckAndSendConnectRequest(const NodeId& node_id) {
+  if (node_id == connections_.kNodeId())
+    return;
+  if (connections_.routing_table.Contains(node_id))
+    return;
+
   if ((connections_.routing_table.size() < Params<NodeType>::max_routing_table_size) ||
       NodeId::CloserToTarget(
           node_id,
           connections_.routing_table.GetNthClosestNode(connections_.kNodeId(),
                                                        Params<NodeType>::closest_nodes_size).id,
           connections_.kNodeId()))
-    SendConnectRequest(node_id);
+    ValidateAndSendConnectRequest(node_id);
+}
+
+template <typename NodeType>
+void ResponseHandler<NodeType>::ValidateAndSendConnectRequest(const NodeId& peer_id) {
+  std::weak_ptr<ResponseHandler> response_handler_weak_ptr(this->shared_from_this());
+  if (request_public_key_functor_) {
+    auto validate_node([=](boost::optional<asymm::PublicKey> public_key) {
+      if (!public_key) {
+        LOG(kError) << "Failed to retrieve public key for: " << peer_id;
+        return;
+      }
+      if (std::shared_ptr<ResponseHandler> response_handler = response_handler_weak_ptr.lock()) {
+        response_handler->public_key_holder_.Add(NodeIdPublicKeyPair(peer_id, *public_key));
+        response_handler->SendConnectRequest(peer_id);
+      }
+    });
+    request_public_key_functor_(peer_id, validate_node);
+  }
 }
 
 template <typename NodeType>

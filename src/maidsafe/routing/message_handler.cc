@@ -25,7 +25,7 @@
 
 #include "maidsafe/routing/client_routing_table.h"
 #include "maidsafe/routing/message.h"
-#include "maidsafe/routing/network_utils.h"
+#include "maidsafe/routing/network.h"
 #include "maidsafe/routing/routing_table.h"
 #include "maidsafe/routing/service.h"
 #include "maidsafe/routing/utils.h"

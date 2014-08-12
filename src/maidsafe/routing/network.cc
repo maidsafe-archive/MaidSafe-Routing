@@ -16,7 +16,7 @@
     See the Licences for the specific language governing permissions and limitations relating to
     use of the MaidSafe Software.                                                                 */
 
-#include "maidsafe/routing/network_utils.h"
+#include "maidsafe/routing/network.h"
 
 
 namespace bptime = boost::posix_time;
@@ -26,7 +26,7 @@ namespace maidsafe {
 namespace routing {
 
 template <>
-void NetworkUtils<ClientNode>::RecursiveSendOn(protobuf::Message message,
+void Network<ClientNode>::RecursiveSendOn(protobuf::Message message,
                                                NodeInfo last_node_attempted, int attempt_count) {
   {
     std::lock_guard<std::mutex> lock(running_mutex_);
@@ -123,7 +123,7 @@ void NetworkUtils<ClientNode>::RecursiveSendOn(protobuf::Message message,
 }
 
 template <>
-void NetworkUtils<ClientNode>::SendToClosestNode(const protobuf::Message& message) {
+void Network<ClientNode>::SendToClosestNode(const protobuf::Message& message) {
   // Normal messages
   if (message.has_destination_id() && !message.destination_id().empty()) {
     if (connections_.routing_table.size() > 0) {  // getting closer nodes from routing table

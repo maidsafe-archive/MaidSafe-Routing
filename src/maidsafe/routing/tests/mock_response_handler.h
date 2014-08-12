@@ -35,7 +35,7 @@ template <typename NodeType>
 class MockResponseHandler : public ResponseHandler<NodeType> {
  public:
   MockResponseHandler(RoutingTable<NodeType>& routing_table, ClientRoutingTable& client_routing_table,
-                      NetworkUtils<NodeType>& network_utils);
+                      Network<NodeType>& network_utils);
   virtual ~MockResponseHandler();
 
   MOCK_METHOD1(Ping, void(protobuf::Message& message));

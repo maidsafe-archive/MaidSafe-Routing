@@ -29,7 +29,7 @@
 #include "maidsafe/routing/service.h"
 #include "maidsafe/routing/timer.h"
 #include "maidsafe/routing/network_statistics.h"
-#include "maidsafe/routing/network_utils.h"
+#include "maidsafe/routing/network.h"
 #include "maidsafe/routing/utils2.h"
 
 
@@ -65,8 +65,9 @@ class NetworkStatistics;
 template <typename NodeType>
 class MessageHandler {
  public:
-  MessageHandler(Connections<NodeType>& connections, NetworkUtils<NodeType>& network,
-                 Timer<std::string>& timer, NetworkStatistics& network_statistics);
+  MessageHandler(Connections<NodeType>& connections, Network<NodeType>& network,
+                 Timer<std::string>& timer, NetworkStatistics& network_statistics,
+                 AsioService& asio_service);
   void HandleMessage(protobuf::Message& message);
   void set_typed_message_and_caching_functor(TypedMessageAndCachingFunctor functors);
   void set_message_and_caching_functor(MessageAndCachingFunctors functors);
@@ -110,9 +111,10 @@ class MessageHandler {
 
   Connections<NodeType>& connections_;
   NetworkStatistics& network_statistics_;
-  NetworkUtils<NodeType>& network_;
+  Network<NodeType>& network_;
   std::unique_ptr<CacheManager<NodeType>> cache_manager_;
   Timer<std::string>& timer_;
+  PublicKeyHolder public_key_holder_;
   std::shared_ptr<ResponseHandler<NodeType>> response_handler_;
   std::shared_ptr<Service<NodeType>> service_;
   MessageReceivedFunctor message_received_functor_;
@@ -121,16 +123,18 @@ class MessageHandler {
 
 template <typename NodeType>
 MessageHandler<NodeType>::MessageHandler(Connections<NodeType>& connections,
-                                         NetworkUtils<NodeType>& network, Timer<std::string>& timer,
-                                         NetworkStatistics& network_statistics)
+                                         Network<NodeType>& network, Timer<std::string>& timer,
+                                         NetworkStatistics& network_statistics,
+                                         AsioService& asio_service)
     : connections_(connections),
       network_statistics_(network_statistics),
       network_(network),
       cache_manager_(NodeType::value ? nullptr : (new CacheManager<NodeType>(connections_.kNodeId(),
                                                                              network_))),
       timer_(timer),
-      response_handler_(new ResponseHandler<NodeType>(connections, network_)),
-      service_(new Service<NodeType>(connections, network_)),
+      public_key_holder_(asio_service),
+      response_handler_(new ResponseHandler<NodeType>(connections, network_, public_key_holder_)),
+      service_(new Service<NodeType>(connections, network_, public_key_holder_)),
       message_received_functor_(),
       typed_message_received_functors_() {}
 
@@ -148,7 +152,8 @@ void MessageHandler<NodeType>::HandleRoutingMessage(protobuf::Message& message) 
       message.request() ? service_->FindNodes(message) : response_handler_->FindNodes(message);
       break;
     case MessageType::kConnectSuccess:
-      service_->ConnectSuccess(message);
+       message.request() ? service_->ConnectSuccess(message)
+                         : response_handler_->ConnectSuccess(message);
       break;
     case MessageType::kConnectSuccessAcknowledgement:
       if (!message.client_node())

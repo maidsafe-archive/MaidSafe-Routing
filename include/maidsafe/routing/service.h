@@ -23,7 +23,7 @@
 
 #include "maidsafe/routing/api_config.h"
 #include "maidsafe/routing/routing_table.h"
-#include "maidsafe/routing/network_utils.h"
+#include "maidsafe/routing/network.h"
 #include "maidsafe/routing/rpcs.h"
 #include "maidsafe/routing/utils2.h"
 
@@ -34,9 +34,10 @@ namespace routing {
 class ClientRoutingTable;
 
 template <typename NodeType>
-class Service {
+class Service : public std::enable_shared_from_this<Service<NodeType>> {
  public:
-  Service(Connections<NodeType>& connections, NetworkUtils<NodeType>& network);
+  Service(Connections<NodeType>& connections, Network<NodeType>& network,
+          PublicKeyHolder& public_key_holder);
   virtual ~Service();
   // Handle all incoming requests and send back reply
   virtual void Ping(protobuf::Message& message);
@@ -48,18 +49,23 @@ class Service {
   RequestPublicKeyFunctor request_public_key_functor() const;
 
  private:
-  void ConnectSuccessFromRequester(NodeInfo& peer);
-  void ConnectSuccessFromResponder(NodeInfo& peer, bool client);
   bool CheckPriority(const NodeId& this_node, const NodeId& peer_node);
-
+  void ValidateAndSendConnectResponse(protobuf::Message message, const NodeInfo& peer_node,
+                                      const rudp::EndpointPair& peer_endpoint_pair);
+  void SendConnectResponse(protobuf::Message message, const NodeInfo& peer_node_in,
+                           const rudp::EndpointPair& peer_endpoint_pair);
+  void HandleConnectSuccess(NodeInfo& peer, bool client);
   Connections<NodeType>& connections_;
-  NetworkUtils<NodeType>& network_;
+  Network<NodeType>& network_;
+  PublicKeyHolder& public_key_holder_;
   RequestPublicKeyFunctor request_public_key_functor_;
 };
 
 template <typename NodeType>
-Service<NodeType>::Service(Connections<NodeType>& connections, NetworkUtils<NodeType>& network)
-    : connections_(connections), network_(network), request_public_key_functor_() {}
+Service<NodeType>::Service(Connections<NodeType>& connections, Network<NodeType>& network,
+                           PublicKeyHolder& public_key_holder)
+    : connections_(connections), network_(network), public_key_holder_(public_key_holder),
+      request_public_key_functor_() {}
 
 template <typename NodeType>
 Service<NodeType>::~Service() {}
@@ -85,26 +91,24 @@ void Service<NodeType>::Ping(protobuf::Message& message) {
 #ifdef TESTING
   ping_response.set_timestamp(GetTimeStamp());
 #endif
-  message.set_request(false);
   message.clear_route_history();
   message.clear_data();
-  message.add_data(ping_response.SerializeAsString());
-  message.set_destination_id(message.source_id());
-  message.set_source_id(connections_.kNodeId()->string());
   message.set_hops_to_live(Parameters::hops_to_live);
+  rpcs::detail::SetMessageProperties(
+      message, IsRequestMessage(false), MessageData(ping_response.SerializeAsString()),
+      PeerNodeId(NodeId(message.source_id())), LocalNodeId(connections_.kNodeId()));
   assert(message.IsInitialized() && "unintialised message");
 }
 
 template <typename NodeType>
 void Service<NodeType>::Connect(protobuf::Message& message) {
-  if (message.destination_id() != connections_.kNodeId()->string()) {
+  if (NodeId(message.destination_id()) != connections_.kNodeId()) {
     // Message not for this node and we should not pass it on.
     LOG(kError) << "Message not for this node.";
     message.Clear();
     return;
   }
   protobuf::ConnectRequest connect_request;
-  protobuf::ConnectResponse connect_response;
   if (!connect_request.ParseFromString(message.data(0))) {
     LOG(kVerbose) << "Unable to parse connect request.";
     message.Clear();
@@ -120,9 +124,9 @@ void Service<NodeType>::Connect(protobuf::Message& message) {
   NodeInfo peer_node;
   peer_node.id = NodeId(connect_request.contact().node_id());
   peer_node.connection_id = NodeId(connect_request.contact().connection_id());
-  LOG(kVerbose) << "[" << connections_.kNodeId() << "]"
-                << " received Connect request from " << peer_node.id;
-  rudp::EndpointPair this_endpoint_pair, peer_endpoint_pair;
+  LOG(kVerbose) << "[" << connections_.kNodeId() << "] received Connect request from "
+                << peer_node.id;
+  rudp::EndpointPair peer_endpoint_pair;
   peer_endpoint_pair.external =
       GetEndpointFromProtobuf(connect_request.contact().public_endpoint());
   peer_endpoint_pair.local = GetEndpointFromProtobuf(connect_request.contact().private_endpoint());
@@ -133,7 +137,43 @@ void Service<NodeType>::Connect(protobuf::Message& message) {
     message.Clear();
     return;
   }
+  if (!message.client_node()) {
+    ValidateAndSendConnectResponse(message, peer_node, peer_endpoint_pair);
+  } else {
+    SendConnectResponse(message, peer_node, peer_endpoint_pair);
+  }
+  message.Clear();
+}
 
+template <>
+void Service<ClientNode>::Connect(protobuf::Message& message);
+
+template <typename NodeType>
+void Service<NodeType>::ValidateAndSendConnectResponse(
+    protobuf::Message message, const NodeInfo& peer_node,
+    const rudp::EndpointPair& peer_endpoint_pair) {
+  std::weak_ptr<Service<NodeType>> service_weak_ptr(this->shared_from_this());
+  if (request_public_key_functor_) {
+    auto validate_node([=](boost::optional<asymm::PublicKey> public_key) {
+      if (!public_key) {
+        LOG(kError) << "Failed to retrieve public key for: " << peer_node.id;
+        return;
+      }
+      if (std::shared_ptr<Service> service = service_weak_ptr.lock()) {
+        service->public_key_holder_.Add(NodeIdPublicKeyPair(peer_node.id, *public_key));
+        service->SendConnectResponse(message, peer_node, peer_endpoint_pair);
+      }
+    });
+    request_public_key_functor_(peer_node.id, validate_node);
+  }
+}
+
+template <typename NodeType>
+void Service<NodeType>::SendConnectResponse(protobuf::Message message, const NodeInfo& peer_node_in,
+    const rudp::EndpointPair& peer_endpoint_pair) {
+  protobuf::ConnectResponse connect_response;
+  rudp::EndpointPair this_endpoint_pair;
+  NodeInfo peer_node(peer_node_in);
   // Prepare response
   connect_response.set_answer(protobuf::ConnectResponseType::kRejected);
 #ifdef TESTING
@@ -146,7 +186,6 @@ void Service<NodeType>::Connect(protobuf::Message& message) {
   message.clear_data();
   message.set_direct(true);
   message.set_replication(1);
-  message.set_client_node(NodeType::value);
   message.set_request(false);
   message.set_hops_to_live(Parameters::hops_to_live);
   if (message.has_source_id())
@@ -162,8 +201,8 @@ void Service<NodeType>::Connect(protobuf::Message& message) {
     NodeId furthest_close_node_id =
         connections_.routing_table.GetNthClosestNode(connections_.kNodeId(),
                                                      2 * Parameters::closest_nodes_size).id;
-    check_node_succeeded =
-        connections_.client_routing_table.CheckNode(peer_node, furthest_close_node_id);
+    check_node_succeeded = connections_.client_routing_table.CheckNode(peer_node,
+                                                                       furthest_close_node_id);
   } else {
     LOG(kVerbose) << "Server connect request - will check routing table.";
     check_node_succeeded = connections_.routing_table.CheckNode(peer_node);
@@ -180,7 +219,7 @@ void Service<NodeType>::Connect(protobuf::Message& message) {
           rudp::kConnectAttemptAlreadyRunning != ret_val) {
         LOG(kError) << "[" << connections_.kNodeId() << "] Service: "
                     << "Failed to get available endpoint for new connection to node id : "
-                    << peer_node.id << ", Connection id :" << DebugId(peer_node.connection_id)
+                    << peer_node.id << ", Connection id :" << peer_node.connection_id
                     << ". peer_endpoint_pair.external = " << peer_endpoint_pair.external
                     << ", peer_endpoint_pair.local = " << peer_endpoint_pair.local
                     << ". Rudp returned :" << ret_val;
@@ -188,7 +227,7 @@ void Service<NodeType>::Connect(protobuf::Message& message) {
         return;
       } else {  // Resolving collision by giving priority to lesser node id.
         if (!CheckPriority(peer_node.id, connections_.kNodeId())) {
-          LOG(kInfo) << "Already ongoing attempt with : " << DebugId(peer_node.connection_id);
+          LOG(kInfo) << "Already ongoing attempt with : " << peer_node.connection_id;
           connect_response.set_answer(protobuf::ConnectResponseType::kConnectAttemptAlreadyRunning);
           message.add_data(connect_response.SerializeAsString());
           return;
@@ -207,7 +246,8 @@ void Service<NodeType>::Connect(protobuf::Message& message) {
       connect_response.set_answer(protobuf::ConnectResponseType::kAccepted);
 
       connect_response.mutable_contact()->set_node_id(connections_.kNodeId()->string());
-      connect_response.mutable_contact()->set_connection_id(connections_.kConnectionId()->string());
+      connect_response.mutable_contact()->set_connection_id(
+          connections_.kConnectionId()->string());
       connect_response.mutable_contact()->set_nat_type(NatTypeProtobuf(this_nat_type));
 
       SetProtobufEndpoint(this_endpoint_pair.local,
@@ -222,10 +262,12 @@ void Service<NodeType>::Connect(protobuf::Message& message) {
 
   message.add_data(connect_response.SerializeAsString());
   assert(message.IsInitialized() && "unintialised message");
+  if (connections_.routing_table.size() == 0)  // This node can only send to bootstrap_endpoint
+    network_.SendToDirect(message, network_.bootstrap_connection_id(),
+                          network_.bootstrap_connection_id());
+  else
+    network_.SendToClosestNode(message);
 }
-
-template <>
-void Service<ClientNode>::Connect(protobuf::Message& message);
 
 template <typename NodeType>
 bool Service<NodeType>::CheckPriority(const NodeId& this_node, const NodeId& peer_node) {
@@ -303,35 +345,58 @@ void Service<NodeType>::ConnectSuccess(protobuf::Message& message) {
     return;
   }
 
-  if (!connect_success.requestor()) {
-    ConnectSuccessFromResponder(peer, message.client_node());
-  }
+  HandleConnectSuccess(peer, message.client_node());
   message.Clear();  // message is sent directly to the peer
 }
 
 template <typename NodeType>
-void Service<NodeType>::ConnectSuccessFromRequester(NodeInfo& /*peer*/) {}
-
-template <typename NodeType>
-void Service<NodeType>::ConnectSuccessFromResponder(NodeInfo& peer, bool client) {
+void Service<NodeType>::HandleConnectSuccess(NodeInfo& peer, bool client) {
   // Reply with ConnectSuccessAcknowledgement immediately
-  LOG(kVerbose) << "ConnectSuccessFromResponder peer id : " << DebugId(peer.id);
+  LOG(kVerbose) << "ConnectSuccessFromResponder peer id : " << peer.id;
   if (peer.connection_id == network_.bootstrap_connection_id()) {
-    LOG(kVerbose) << "Special case : kConnectSuccess from bootstrapping node: " << DebugId(peer.id);
+    LOG(kVerbose) << "Special case : kConnectSuccess from bootstrapping node: " << peer.id;
     return;
   }
-  auto count =
-      (client ? Parameters::max_routing_table_size_for_client : Parameters::max_routing_table_size);
+  if (client) {
+    if (!ValidateAndAddToRoutingTable(network_, connections_, PeerNodeId(peer.id),
+                                      PeerConnectionId(peer.connection_id), asymm::PublicKey(),
+                                      ClientNode())) {
+      LOG(kVerbose) << "Failed to add to routing table";
+      return;
+    }
+  } else {
+    auto peer_public_key(public_key_holder_.Find(peer.id));
+    if (!peer_public_key) {
+      LOG(kVerbose) << "Missing peer public key for " << peer.id;
+      return;
+    }
+    if (!ValidateAndAddToRoutingTable(network_, connections_, PeerNodeId(peer.id),
+                                      PeerConnectionId(peer.connection_id),
+                                      peer_public_key->GetValue(), VaultNode())) {
+      LOG(kVerbose) << "Failed to add to routing table";
+      return;
+    } else {
+      public_key_holder_.Remove(peer.id);
+    }
+  }
+
+  auto count = (client ? Params<ClientNode>::max_routing_table_size
+                       : Params<VaultNode>::max_routing_table_size);
   auto close_nodes_for_peer(connections_.routing_table.GetClosestNodes(peer.id, count));
 
-  auto itr(std::find_if(std::begin(close_nodes_for_peer), std::end(close_nodes_for_peer),
-                        [=](const NodeInfo & info)->bool { return (peer.id == info.id); }));
-  if (itr != std::end(close_nodes_for_peer))
-    close_nodes_for_peer.erase(itr);
+  close_nodes_for_peer.erase(
+      std::remove_if(std::begin(close_nodes_for_peer), std::end(close_nodes_for_peer),
+                     [this, peer](const NodeInfo& info) {
+                       return (info.id == peer.id) || (info.id == connections_.kNodeId());
+                     }), std::end(close_nodes_for_peer));
+
+  LOG(kVerbose) << "Service<NodeType>::HandleConnectSuccess " << close_nodes_for_peer.size();
+  for (const auto& close_node_for_peer : close_nodes_for_peer)
+    LOG(kVerbose) << close_node_for_peer.id;
 
   protobuf::Message connect_success_ack(rpcs::ConnectSuccessAcknowledgement(
-      PeerNodeId(peer.id), connections_.kNodeId(), connections_.kConnectionId(), IsRequestor(true),
-      close_nodes_for_peer, IsClient(NodeType::value)));
+      PeerNodeId(peer.id), connections_.kNodeId(), connections_.kConnectionId(),
+      IsRequestor(false), close_nodes_for_peer, IsClient(NodeType::value)));
   network_.SendToDirect(connect_success_ack, peer.id, peer.connection_id);
 }
 
