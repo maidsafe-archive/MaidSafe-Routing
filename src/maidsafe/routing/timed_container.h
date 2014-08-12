@@ -32,11 +32,11 @@ namespace maidsafe {
 namespace routing {
 
 template <typename T>
-class TimedHolder {
+class TimedContainer {
  public:
-  explicit TimedHolder(AsioService& asio_service);
-  ~TimedHolder();
-  void Add(const T& value);
+  explicit TimedContainer(AsioService& asio_service);
+  ~TimedContainer();
+  bool Add(const T& value);
   boost::optional<T> Find(const typename T::Key& key) const;
   void Remove(const typename T::Key& key);
 
@@ -47,32 +47,33 @@ class TimedHolder {
 };
 
 template <typename T>
-TimedHolder<T>::TimedHolder(AsioService& asio_service)
+TimedContainer<T>::TimedContainer(AsioService& asio_service)
     : mutex_(), timer_(asio_service), elements_() {}
 
 template <typename T>
-TimedHolder<T>::~TimedHolder() {
-  std::lock_guard<std::mutex> lock(mutex_);
-  while (!elements_.empty())
-    timer_.CancelTask(std::begin(elements_)->first);
+TimedContainer<T>::~TimedContainer() {
+  timer_.CancelAll();
 }
 
 template <typename T>
-void TimedHolder<T>::Add(const T& value) {
+bool TimedContainer<T>::Add(const T& value) {
   TaskId task_id(timer_.NewTaskId());
   {
     std::lock_guard<std::mutex> lock(mutex_);
-    elements_.insert(std::make_pair(task_id, value));
+    auto result(elements_.insert(std::make_pair(task_id, value)));
+    if (!result.second)
+      return false;
   }
   timer_.AddTask(Parameters::default_response_timeout,
                  [this, task_id](std::string /*dummy_string*/) {
                    std::lock_guard<std::mutex> lock(this->mutex_);
                    this->elements_.erase(task_id);
                  }, 1, task_id);
+  return true;
 }
 
 template <typename T>
-boost::optional<T> TimedHolder<T>::Find(const typename T::Key& key) const {
+boost::optional<T> TimedContainer<T>::Find(const typename T::Key& key) const {
   boost::optional<T> element;
 
   std::lock_guard<std::mutex> lock(mutex_);
@@ -85,7 +86,7 @@ boost::optional<T> TimedHolder<T>::Find(const typename T::Key& key) const {
 }
 
 template <typename T>
-void TimedHolder<T>::Remove(const typename T::Key& key) {
+void TimedContainer<T>::Remove(const typename T::Key& key) {
   std::vector<TaskId> task_ids;
   {
     std::lock_guard<std::mutex> lock(mutex_);

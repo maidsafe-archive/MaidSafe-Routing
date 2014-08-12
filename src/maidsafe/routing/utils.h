@@ -35,7 +35,7 @@
 #include "maidsafe/routing/node_info.h"
 #include "maidsafe/routing/parameters.h"
 #include "maidsafe/routing/routing.pb.h"
-#include "maidsafe/routing/timed_holder.h"
+#include "maidsafe/routing/timed_container.h"
 
 namespace maidsafe {
 
@@ -60,7 +60,7 @@ struct NodeIdPublicKeyPair {
   asymm::PublicKey public_key;
 };
 
-typedef TimedHolder<NodeIdPublicKeyPair> PublicKeyHolder;
+typedef TimedContainer<NodeIdPublicKeyPair> PublicKeyHolder;
 
 namespace protobuf {
 
