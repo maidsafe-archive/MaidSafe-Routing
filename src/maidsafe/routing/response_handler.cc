@@ -344,6 +344,8 @@ void ResponseHandler::CheckAndSendConnectRequest(const NodeId& node_id) {
     return;
   unsigned int limit(routing_table_.client_mode() ? Parameters::max_routing_table_size_for_client
                                                   : Parameters::closest_nodes_size);
+  if (public_key_holder_.Find(node_id))
+    return;
   if ((routing_table_.size() < routing_table_.kMaxSize()) ||
       NodeId::CloserToTarget(
           node_id, routing_table_.GetNthClosestNode(routing_table_.kNodeId(), limit).id,
