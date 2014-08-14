@@ -45,13 +45,6 @@ struct NodeIdPublicKeyPair {
   typedef NodeId Key;
   NodeIdPublicKeyPair(const NodeId& node_id_in, const asymm::PublicKey& public_key_in)
       : node_id(node_id_in), public_key(public_key_in) {}
-  NodeIdPublicKeyPair(const NodeIdPublicKeyPair& other)
-      : node_id(other.node_id), public_key(other.public_key) {}
-  NodeIdPublicKeyPair& operator=(const NodeIdPublicKeyPair& other) {
-    node_id = other.node_id;
-    public_key = other.public_key;
-    return *this;
-  }
   NodeId GetKey() const { return node_id; }
   asymm::PublicKey GetValue() const { return public_key; }
 

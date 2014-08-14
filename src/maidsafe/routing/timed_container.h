@@ -41,6 +41,9 @@ class TimedContainer {
   void Remove(const typename T::Key& key);
 
  private:
+  TimedContainer(const TimedContainer&);
+  TimedContainer& operator=(const TimedContainer&);
+
   mutable std::mutex mutex_;
   Timer<std::string> timer_;
   std::map<TaskId, T> elements_;
