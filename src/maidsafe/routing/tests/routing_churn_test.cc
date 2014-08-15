@@ -112,14 +112,13 @@ class RoutingChurnTest : public GenericNetwork, public testing::Test {
     //     for(auto& node : affected_nodes_)
     //       if (std::find(expect_affected_.begin(), expect_affected_.end(), node) ==
     //           expect_affected_.end()) {
-    //         EXPECT_TRUE(false) << "node " << HexSubstr(node.string()) << " shall not be
-    // affected";
+    //         ADD_FAILURE() << "node " << HexSubstr(node.string()) << " shall not be affected";
     //         return;
     //       }
     for (const auto& node : expect_affected_)
       if (std::find(affected_nodes_.begin(), affected_nodes_.end(), node) ==
           affected_nodes_.end()) {
-        EXPECT_TRUE(false) << "node " << HexSubstr(node.string()) << " shall be affected but not";
+        ADD_FAILURE() << "node " << HexSubstr(node.string()) << " shall be affected but not";
         return false;
       }
     return true;
