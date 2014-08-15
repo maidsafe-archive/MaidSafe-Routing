@@ -53,7 +53,7 @@ struct NodeIdPublicKeyPair {
   asymm::PublicKey public_key;
 };
 
-typedef TimedContainer<NodeIdPublicKeyPair> PublicKeyHolder;
+typedef TimedContainer<NodeIdPublicKeyPair, 10> PublicKeyHolder;
 
 namespace protobuf {
 

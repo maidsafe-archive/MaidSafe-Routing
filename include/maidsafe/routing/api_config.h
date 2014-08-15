@@ -24,6 +24,7 @@
 #include <vector>
 
 #include "boost/asio/ip/udp.hpp"
+#include "boost/optional.hpp"
 
 #include "maidsafe/common/rsa.h"
 #include "maidsafe/common/node_id.h"
