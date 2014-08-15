@@ -35,15 +35,16 @@ template <typename T>
 class TimedContainer {
  public:
   explicit TimedContainer(AsioService& asio_service);
+  TimedContainer(const TimedContainer&) = delete;
+  TimedContainer& operator=(const TimedContainer&) = delete;
   ~TimedContainer();
-  bool Add(const T& value);
+  bool Add(const T& value,
+           const std::chrono::steady_clock::duration& timeout =
+               Parameters::default_response_timeout);
   boost::optional<T> Find(const typename T::Key& key) const;
   void Remove(const typename T::Key& key);
 
  private:
-  TimedContainer(const TimedContainer&);
-  TimedContainer& operator=(const TimedContainer&);
-
   mutable std::mutex mutex_;
   Timer<std::string> timer_;
   std::map<TaskId, T> elements_;
@@ -59,7 +60,7 @@ TimedContainer<T>::~TimedContainer() {
 }
 
 template <typename T>
-bool TimedContainer<T>::Add(const T& value) {
+bool TimedContainer<T>::Add(const T& value, const std::chrono::steady_clock::duration& timeout) {
   TaskId task_id(timer_.NewTaskId());
   {
     std::lock_guard<std::mutex> lock(mutex_);
@@ -67,7 +68,7 @@ bool TimedContainer<T>::Add(const T& value) {
     if (!result.second)
       return false;
   }
-  timer_.AddTask(Parameters::default_response_timeout,
+  timer_.AddTask(timeout,
                  [this, task_id](std::string /*dummy_string*/) {
                    std::lock_guard<std::mutex> lock(this->mutex_);
                    this->elements_.erase(task_id);
