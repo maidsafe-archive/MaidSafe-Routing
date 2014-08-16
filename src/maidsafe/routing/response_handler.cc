@@ -120,7 +120,7 @@ void ResponseHandler::Connect(protobuf::Message& message) {
                   << "] received connect response from " << peer_node_id
                   << " connection_id: " << peer_connection_id << " id: " << message.id();
 
-    if (!public_key_holder_.Find(typename NodeIdPublicKeyPair::Key(peer_node_id))) {
+    if (!public_key_holder_.Find(peer_node_id)) {
       LOG(kError)  << "missing public key ";
       message.Clear();
       return;
@@ -299,7 +299,7 @@ void ResponseHandler::ValidateAndCompleteConnectionToNonClient(
     LOG(kVerbose) << "missing public key for " << peer.id;
     return;
   }
-  public_key_holder_.Remove(NodeIdPublicKeyPair::Key(peer.id));
+  public_key_holder_.Remove(peer.id);
   if (ValidateAndAddToRoutingTable(network_, routing_table_, client_routing_table_, peer.id,
                                    peer.connection_id, peer_public_key->GetValue(), false)) {
     if (from_requestor) {

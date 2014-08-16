@@ -16,8 +16,8 @@
     See the Licences for the specific language governing permissions and limitations relating to
     use of the MaidSafe Software.                                                                 */
 
-#ifndef MAIDSAFE_ROUTING_TIMED_HOLDER_H_
-#define MAIDSAFE_ROUTING_TIMED_HOLDER_H_
+#ifndef MAIDSAFE_ROUTING_TIMED_CONTAINER_H_
+#define MAIDSAFE_ROUTING_TIMED_CONTAINER_H_
 
 #include <utility>
 #include <map>
@@ -31,7 +31,7 @@ namespace maidsafe {
 
 namespace routing {
 
-template <typename T, unsigned int Timeout= 10>
+template <typename T, unsigned int DefaultTimeout = 10>
 class TimedContainer {
  public:
   explicit TimedContainer(AsioService& asio_service);
@@ -40,7 +40,7 @@ class TimedContainer {
   ~TimedContainer();
   bool Add(const T& value,
            const std::chrono::steady_clock::duration& timeout =
-               std::chrono::seconds(Timeout));
+               std::chrono::seconds(DefaultTimeout));
   boost::optional<T> Find(const typename T::Key& key) const;
   void Remove(const typename T::Key& key);
 
@@ -50,17 +50,17 @@ class TimedContainer {
   std::map<TaskId, T> elements_;
 };
 
-template <typename T, unsigned int Timeout>
-TimedContainer<T, Timeout>::TimedContainer(AsioService& asio_service)
+template <typename T, unsigned int DefaultTimeout>
+TimedContainer<T, DefaultTimeout>::TimedContainer(AsioService& asio_service)
     : mutex_(), timer_(asio_service), elements_() {}
 
-template <typename T, unsigned int Timeout>
-TimedContainer<T, Timeout>::~TimedContainer() {
+template <typename T, unsigned int DefaultTimeout>
+TimedContainer<T, DefaultTimeout>::~TimedContainer() {
   timer_.CancelAll();
 }
 
-template <typename T, unsigned int Timeout>
-bool TimedContainer<T, Timeout>::Add(
+template <typename T, unsigned int DefaultTimeout>
+bool TimedContainer<T, DefaultTimeout>::Add(
     const T& value, const std::chrono::steady_clock::duration& timeout) {
   TaskId task_id(timer_.NewTaskId());
   {
@@ -77,8 +77,8 @@ bool TimedContainer<T, Timeout>::Add(
   return true;
 }
 
-template <typename T, unsigned int Timeout>
-boost::optional<T> TimedContainer<T, Timeout>::Find(
+template <typename T, unsigned int DefaultTimeout>
+boost::optional<T> TimedContainer<T, DefaultTimeout>::Find(
     const typename T::Key& key) const {
   boost::optional<T> element;
 
@@ -91,8 +91,8 @@ boost::optional<T> TimedContainer<T, Timeout>::Find(
   return element;
 }
 
-template <typename T, unsigned int Timeout>
-void TimedContainer<T, Timeout>::Remove(const typename T::Key& key) {
+template <typename T, unsigned int DefaultTimeout>
+void TimedContainer<T, DefaultTimeout>::Remove(const typename T::Key& key) {
   std::vector<TaskId> task_ids;
   {
     std::lock_guard<std::mutex> lock(mutex_);
@@ -112,5 +112,5 @@ void TimedContainer<T, Timeout>::Remove(const typename T::Key& key) {
 
 }  // namespace maidsafe
 
-#endif  // MAIDSAFE_ROUTING_TIMED_HOLDER_H_
+#endif  // MAIDSAFE_ROUTING_TIMED_CONTAINER_H_
 

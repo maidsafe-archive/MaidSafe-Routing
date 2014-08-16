@@ -42,8 +42,7 @@ TEST(TimedContainerTest, BEH_AddFindRemoveTimeout) {
   EXPECT_TRUE(public_key_holder.Find(node_details.node_info.id));
   EXPECT_FALSE(public_key_holder.Find(NodeId(NodeId::IdType::kRandomId)));
 
-  Sleep(Parameters::default_response_timeout);
-  Sleep(std::chrono::seconds(1));
+  Sleep(std::chrono::seconds(Parameters::public_key_holding_time + 1));
   EXPECT_FALSE(public_key_holder.Find(node_details.node_info.id));
 
   public_key_holder.Add(NodeIdPublicKeyPair(node_details.node_info.id,
@@ -166,8 +165,7 @@ TEST(TimedContainerTest, BEH_MultipleAddFindTimeout) {
   futures.clear();
 
   // wait for timeout
-  Sleep(Parameters::default_response_timeout);
-  Sleep(std::chrono::seconds(2));
+  Sleep(std::chrono::seconds(Parameters::public_key_holding_time + 2));
 
   futures.clear();
 

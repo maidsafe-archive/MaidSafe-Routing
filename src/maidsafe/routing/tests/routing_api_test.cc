@@ -745,7 +745,8 @@ TEST(APITest, BEH_API_NodeNetworkWithClient) {
     join_futures.emplace_back(join_promises.at(i).get_future());
     promised.push_back(true);
     status_vector.emplace_back([=, &join_promises, &mutex, &promised](int result) {
-      ASSERT_GE(result, kSuccess);
+      if (result < kSuccess)
+        return;
       if (result == NetworkStatus((i >= kServerCount), std::min(i, min_join_status))) {
         std::lock_guard<std::mutex> lock(mutex);
         if (promised.at(i)) {
@@ -1266,7 +1267,8 @@ TEST(APITest, BEH_API_TypedMessagePartiallyJoinedSendReceive) {
     join_futures.emplace_back(join_promises.at(i).get_future());
     promised.push_back(true);
     status_vector.emplace_back([=, &join_promises, &mutex, &promised](int result) {
-      ASSERT_GE(result, kSuccess);
+      if (result < kSuccess)
+        return;
       if (result == NetworkStatus((i >= kServerCount), std::min(i, min_join_status))) {
         std::lock_guard<std::mutex> lock(mutex);
         if (promised.at(i)) {
