@@ -122,7 +122,7 @@ GenericNode::GenericNode(bool client_mode, const rudp::NatType& nat_type)
   endpoint_.address(GetLocalIp());
   endpoint_.port(maidsafe::test::GetRandomPort());
   InitialiseFunctors();
-  routing_->pimpl_->network_.nat_type_ = nat_type_;
+  routing_->pimpl_->network_->nat_type_ = nat_type_;
   LOG(kVerbose) << "Node constructor";
   std::lock_guard<std::mutex> lock(mutex_);
   id_ = next_node_id_++;
@@ -221,7 +221,7 @@ bool GenericNode::IsClient() const { return client_mode_; }
 bool GenericNode::HasSymmetricNat() const { return has_symmetric_nat_; }
 
 std::vector<NodeInfo> GenericNode::RoutingTable() const {
-  return routing_->pimpl_->routing_table_.nodes_;
+  return routing_->pimpl_->routing_table_->nodes_;
 }
 
 bool GenericNode::IsConnectedVault(const NodeId& node_id) {
@@ -266,20 +266,20 @@ void GenericNode::AddTask(const ResponseFunctor& response_functor, int expected_
 
 void GenericNode::RudpSend(const NodeId& peer_node_id, const protobuf::Message& message,
                            rudp::MessageSentFunctor message_sent_functor) {
-  routing_->pimpl_->network_.RudpSend(peer_node_id, message, message_sent_functor);
+  routing_->pimpl_->network_->RudpSend(peer_node_id, message, message_sent_functor);
 }
 
 void GenericNode::SendToClosestNode(const protobuf::Message& message) {
-  routing_->pimpl_->network_.SendToClosestNode(message);
+  routing_->pimpl_->network_->SendToClosestNode(message);
 }
 
 bool GenericNode::RoutingTableHasNode(const NodeId& node_id) {
-  for (auto info : routing_->pimpl_->routing_table_.nodes_)
+  for (auto info : routing_->pimpl_->routing_table_->nodes_)
     LOG(kVerbose) << "RoutingTableHasNode " << DebugId(info.id);
-  auto node(std::find_if(routing_->pimpl_->routing_table_.nodes_.begin(),
-                         routing_->pimpl_->routing_table_.nodes_.end(),
+  auto node(std::find_if(routing_->pimpl_->routing_table_->nodes_.begin(),
+                         routing_->pimpl_->routing_table_->nodes_.end(),
                          [node_id](const NodeInfo& node_info) { return node_id == node_info.id; }));
-  bool result(node != routing_->pimpl_->routing_table_.nodes_.end());
+  bool result(node != routing_->pimpl_->routing_table_->nodes_.end());
   LOG(kVerbose) << DebugId(node_id) << ", result: " << result;
   return result;
 }
@@ -293,23 +293,23 @@ bool GenericNode::ClientRoutingTableHasNode(const NodeId& node_id) {
 }
 
 NodeInfo GenericNode::GetNthClosestNode(const NodeId& target_id, unsigned int node_number) {
-  return routing_->pimpl_->routing_table_.GetNthClosestNode(target_id, node_number);
+  return routing_->pimpl_->routing_table_->GetNthClosestNode(target_id, node_number);
 }
 
 testing::AssertionResult GenericNode::DropNode(const NodeId& node_id) {
-  LOG(kInfo) << " DropNode " << HexSubstr(routing_->pimpl_->routing_table_.kNodeId_.string())
+  LOG(kInfo) << " DropNode " << HexSubstr(routing_->pimpl_->routing_table_->kNodeId_.string())
              << " Removes " << HexSubstr(node_id.string());
   auto iter =
-      std::find_if(routing_->pimpl_->routing_table_.nodes_.begin(),
-                   routing_->pimpl_->routing_table_.nodes_.end(),
+      std::find_if(routing_->pimpl_->routing_table_->nodes_.begin(),
+                   routing_->pimpl_->routing_table_->nodes_.end(),
                    [&node_id](const NodeInfo& node_info) { return (node_id == node_info.id); });
-  if (iter != routing_->pimpl_->routing_table_.nodes_.end()) {
-    LOG(kVerbose) << HexSubstr(routing_->pimpl_->routing_table_.kNodeId_.string()) << " Removes "
+  if (iter != routing_->pimpl_->routing_table_->nodes_.end()) {
+    LOG(kVerbose) << HexSubstr(routing_->pimpl_->routing_table_->kNodeId_.string()) << " Removes "
                   << HexSubstr(node_id.string());
-    //    routing_->pimpl_->network_.Remove(iter->connection_id);
-    routing_->pimpl_->routing_table_.DropNode(iter->connection_id, false);
+    //    routing_->pimpl_->network_->Remove(iter->connection_id);
+    routing_->pimpl_->routing_table_->DropNode(iter->connection_id, false);
   } else {
-    testing::AssertionFailure() << DebugId(routing_->pimpl_->routing_table_.kNodeId_)
+    testing::AssertionFailure() << DebugId(routing_->pimpl_->routing_table_->kNodeId_)
                                 << " does not have " << DebugId(node_id) << " in routing table of ";
   }
   return testing::AssertionSuccess();
@@ -334,10 +334,10 @@ void GenericNode::set_expected(int expected) { expected_ = expected; }
 void GenericNode::PrintRoutingTable() {
   LOG(kInfo) << "[" << HexSubstr(node_info_plus_->node_info.id.string()) << "]'s RoutingTable "
              << (IsClient() ? " (Client)" : " (Vault) :")
-             << "Routing table size: " << routing_->pimpl_->routing_table_.nodes_.size();
+             << "Routing table size: " << routing_->pimpl_->routing_table_->nodes_.size();
   {
-    std::lock_guard<std::mutex> lock(routing_->pimpl_->routing_table_.mutex_);
-    for (const auto& node_info : routing_->pimpl_->routing_table_.nodes_) {
+    std::lock_guard<std::mutex> lock(routing_->pimpl_->routing_table_->mutex_);
+    for (const auto& node_info : routing_->pimpl_->routing_table_->nodes_) {
       LOG(kInfo) << "\tNodeId : " << HexSubstr(node_info.id.string());
     }
   }
@@ -351,15 +351,15 @@ void GenericNode::PrintRoutingTable() {
 
 std::vector<NodeId> GenericNode::ReturnRoutingTable() {
   std::vector<NodeId> routing_nodes;
-  std::lock_guard<std::mutex> lock(routing_->pimpl_->routing_table_.mutex_);
-  for (const auto& node_info : routing_->pimpl_->routing_table_.nodes_)
+  std::lock_guard<std::mutex> lock(routing_->pimpl_->routing_table_->mutex_);
+  for (const auto& node_info : routing_->pimpl_->routing_table_->nodes_)
     routing_nodes.push_back(node_info.id);
   return routing_nodes;
 }
 
 std::string GenericNode::SerializeRoutingTable() {
   std::vector<NodeId> node_list;
-  for (const auto& node_info : routing_->pimpl_->routing_table_.nodes_)
+  for (const auto& node_info : routing_->pimpl_->routing_table_->nodes_)
     node_list.push_back(node_info.id);
   return SerializeNodeIdList(node_list);
 }
@@ -397,7 +397,7 @@ void GenericNode::PostTaskToAsioService(std::function<void()> functor) {
     routing_->pimpl_->asio_service_.service().post(functor);
 }
 
-rudp::NatType GenericNode::nat_type() { return routing_->pimpl_->network_.nat_type(); }
+rudp::NatType GenericNode::nat_type() { return routing_->pimpl_->network_->nat_type(); }
 
 GenericNetwork::GenericNetwork()
     : mutex_(),
@@ -1130,7 +1130,7 @@ testing::AssertionResult GenericNetwork::SendDirect(size_t repeats, size_t messa
               // TODO(Alison) - check data
             }
             catch (const std::exception& ex) {
-              EXPECT_TRUE(false) << "Got message with invalid replier ID. Exception: " << ex.what();
+              ADD_FAILURE() << "Got message with invalid replier ID. Exception: " << ex.what();
               *failed = true;
               if (*reply_count == *expected_count)
                 cond_var->notify_one();
@@ -1149,7 +1149,7 @@ testing::AssertionResult GenericNetwork::SendDirect(size_t repeats, size_t messa
   if (!cond_var->wait_for(
            lock, std::chrono::seconds(15 * (nodes_.size()) * (nodes_.size() - 1)),
            [reply_count, expected_count]() { return *reply_count == *expected_count; })) {
-    EXPECT_TRUE(false) << "Didn't get reply within allowed time!";
+    ADD_FAILURE() << "Didn't get reply within allowed time!";
     return testing::AssertionFailure();
   }
 
@@ -1190,7 +1190,7 @@ testing::AssertionResult GenericNetwork::SendGroup(const NodeId& target_id, size
       ++(*reply_count);
       monitor->response_count += 1;
       if (monitor->response_count > Parameters::group_size) {
-        EXPECT_TRUE(false) << "Received too many replies: " << monitor->response_count;
+        ADD_FAILURE() << "Received too many replies: " << monitor->response_count;
         *failed = true;
         if (*reply_count == *expected_count)
           cond_var->notify_one();
@@ -1223,13 +1223,12 @@ testing::AssertionResult GenericNetwork::SendGroup(const NodeId& target_id, size
         }
         LOG(kVerbose) << output;
         if (!valid_replier) {
-          EXPECT_TRUE(false) << "Got unexpected reply from " << DebugId(replier)
-                             << "\t (for target: " << DebugId(target_id) << ")";
+          ADD_FAILURE() << "Got unexpected reply from " << replier << "\tfor target: " << target_id;
           *failed = true;
         }
       }
       catch (const std::exception& /*ex*/) {
-        EXPECT_TRUE(false) << "Reply contained invalid node ID.";
+        ADD_FAILURE() << "Reply contained invalid node ID.";
         *failed = true;
       }
       if (*reply_count == *expected_count)
@@ -1243,7 +1242,7 @@ testing::AssertionResult GenericNetwork::SendGroup(const NodeId& target_id, size
   if (!cond_var->wait_for(
            lock, std::chrono::seconds(15 * repeats),
            [reply_count, expected_count]() { return *reply_count == *expected_count; })) {
-    EXPECT_TRUE(false) << "Didn't get replies within allowed time!";
+    ADD_FAILURE() << "Didn't get replies within allowed time!";
     return testing::AssertionFailure();
   }
 
@@ -1295,7 +1294,7 @@ testing::AssertionResult GenericNetwork::SendDirect(const NodeId& destination_no
           // TODO(Alison) - check data
         }
         catch (const std::exception& ex) {
-          EXPECT_TRUE(false) << "Got message with invalid replier ID. Exception: " << ex.what();
+          ADD_FAILURE() << "Got message with invalid replier ID. Exception: " << ex.what();
           *failed = true;
           if (*reply_count == *expected_count)
             cond_var->notify_one();
@@ -1354,7 +1353,7 @@ testing::AssertionResult GenericNetwork::SendDirect(const NodeId& destination_no
   if (!cond_var->wait_for(lock, std::chrono::seconds(15), [reply_count, expected_count]() {
          return *reply_count == *expected_count;
        })) {
-    //    EXPECT_TRUE(false) << "Didn't get reply within allowed time!";
+    //    ADD_FAILURE() << "Didn't get reply within allowed time!";
     return testing::AssertionFailure();
   }
 
@@ -1389,7 +1388,7 @@ testing::AssertionResult GenericNetwork::SendDirect(std::shared_ptr<GenericNode>
           *failed = true;
       }
       catch (const std::exception* /*ex*/) {
-        EXPECT_TRUE(false) << "Reply contained invalid node ID!";
+        ADD_FAILURE() << "Reply contained invalid node ID!";
         *failed = true;
       }
       cond_var->notify_one();
@@ -1408,7 +1407,7 @@ testing::AssertionResult GenericNetwork::SendDirect(std::shared_ptr<GenericNode>
 
   std::unique_lock<std::mutex> lock(*response_mutex);
   if (cond_var->wait_for(lock, std::chrono::seconds(15)) != std::cv_status::no_timeout) {
-    EXPECT_TRUE(false) << "Didn't get reply within allowed time!";
+    ADD_FAILURE() << "Didn't get reply within allowed time!";
     return testing::AssertionFailure();
   }
 

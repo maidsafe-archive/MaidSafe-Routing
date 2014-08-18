@@ -22,6 +22,7 @@
 #include <type_traits>
 
 #include "maidsafe/common/log.h"
+#include "maidsafe/common/make_unique.h"
 
 #include "maidsafe/rudp/managed_connections.h"
 #include "maidsafe/rudp/return_codes.h"
@@ -70,7 +71,7 @@ protobuf::Message Routing::Impl::CreateNodeLevelMessage(const GroupToSingleRelay
   proto_message.set_type(static_cast<int32_t>(MessageType::kNodeLevel));
 
   proto_message.set_cacheable(static_cast<int32_t>(message.cacheable));
-  proto_message.set_client_node(routing_table_.client_mode());
+  proto_message.set_client_node(routing_table_->client_mode());
 
   proto_message.set_request(true);
   proto_message.set_hops_to_live(Parameters::hops_to_live);
@@ -93,7 +94,7 @@ Routing::Impl::Impl(bool client_mode, const NodeId& node_id, const asymm::Keys& 
     : network_status_mutex_(),
       network_status_(kNotJoined),
       network_statistics_(node_id),
-      routing_table_(client_mode, node_id, keys),
+      routing_table_(maidsafe::make_unique<RoutingTable>(client_mode, node_id, keys)),
       kNodeId_(node_id),
       running_(true),
       running_mutex_(),
@@ -103,21 +104,33 @@ Routing::Impl::Impl(bool client_mode, const NodeId& node_id, const asymm::Keys& 
       client_routing_table_(node_id),
       message_handler_(),
       asio_service_(2),
-      network_(routing_table_, client_routing_table_),
+      network_(maidsafe::make_unique<NetworkUtils>(*routing_table_, client_routing_table_)),
       timer_(asio_service_),
       re_bootstrap_timer_(asio_service_.service()),
       recovery_timer_(asio_service_.service()),
       setup_timer_(asio_service_.service()) {
-  message_handler_.reset(new MessageHandler(routing_table_, client_routing_table_, network_, timer_,
-                                            network_statistics_));
+  message_handler_.reset(new MessageHandler(*routing_table_, client_routing_table_, *network_,
+                                            timer_, network_statistics_));
   LOG(kInfo) << (client_mode ? "client " : "non-client ") << "node. Id : " << kNodeId_;
   assert((client_mode || !node_id.IsZero()) && "Server Nodes cannot be created without valid keys");
 }
 
-Routing::Impl::~Impl() {
-  LOG(kVerbose) << "~Impl " << kNodeId_ << ", connection id " << routing_table_.kConnectionId();
-  std::lock_guard<std::mutex> lock(running_mutex_);
-  running_ = false;
+void Routing::Impl::Stop() {
+  LOG(kVerbose) << "Routing::Impl::Stop() " << kNodeId_ << ", connection id "
+    << routing_table_->kConnectionId();
+  {
+    std::lock_guard<std::mutex> lock(running_mutex_);
+    running_ = false;
+  }
+  timer_.CancelAll();
+  re_bootstrap_timer_.cancel();
+  recovery_timer_.cancel();
+  setup_timer_.cancel();
+  asio_service_.Stop();
+  // Need to destroy network_ & routing_table_ as they hold a lambda capture (functor) of
+  // shared_from_this()
+  network_.reset();
+  routing_table_.reset();
 }
 
 void Routing::Impl::Join(const Functors& functors) {
@@ -128,9 +141,10 @@ void Routing::Impl::Join(const Functors& functors) {
 
 void Routing::Impl::ConnectFunctors(const Functors& functors) {
   functors_ = functors;
-  routing_table_.InitialiseFunctors([this](const RoutingTableChange& routing_table_change) {
-                                             OnRoutingTableChange(routing_table_change);
-                                           });
+  std::shared_ptr<Routing::Impl> this_ptr(shared_from_this());
+  routing_table_->InitialiseFunctors([this_ptr](const RoutingTableChange& routing_table_change) {
+                                      this_ptr->OnRoutingTableChange(routing_table_change);
+                                    });
   // only one of MessageAndCachingFunctors or TypedMessageAndCachingFunctor should be provided
   assert(!functors.message_and_caching.message_received !=
          !functors.typed_message_and_caching.single_to_single.message_received);
@@ -140,7 +154,7 @@ void Routing::Impl::ConnectFunctors(const Functors& functors) {
          !functors.typed_message_and_caching.group_to_single.message_received);
   assert(!functors.message_and_caching.message_received !=
          !functors.typed_message_and_caching.group_to_group.message_received);
-  if (!routing_table_.client_mode()) {
+  if (!routing_table_->client_mode()) {
     assert(!functors.message_and_caching.message_received !=
            !functors.typed_message_and_caching.single_to_group_relay.message_received);
   }
@@ -161,15 +175,17 @@ void Routing::Impl::Bootstrap() {
   int return_value(DoBootstrap());
   if (kSuccess != return_value) {
     re_bootstrap_timer_.expires_from_now(Parameters::re_bootstrap_time_lag);
+    std::shared_ptr<Routing::Impl> this_ptr(shared_from_this());
     re_bootstrap_timer_.async_wait(
-        [=](boost::system::error_code error_code_local) {
-          if (error_code_local != boost::asio::error::operation_aborted)
-            Bootstrap();
+        [this_ptr](boost::system::error_code error_code) {
+          if (error_code != boost::asio::error::operation_aborted)
+            this_ptr->Bootstrap();
         });
+    NotifyNetworkStatus(return_value);
     return;
   }
 
-  assert(!network_.bootstrap_connection_id().IsZero() &&
+  assert(!network_->bootstrap_connection_id().IsZero() &&
          "Bootstrap connection id must be populated by now.");
   FindClosestNode(boost::system::error_code(), 0);
   NotifyNetworkStatus(return_value);
@@ -177,22 +193,24 @@ void Routing::Impl::Bootstrap() {
 
 int Routing::Impl::DoBootstrap() {
   // FIXME race condition if a new connection appears at rudp -- rudp should handle this
-  assert(routing_table_.size() == 0);
+  assert(routing_table_->size() == 0);
   recovery_timer_.cancel();
   setup_timer_.cancel();
   std::lock_guard<std::mutex> lock(running_mutex_);
   if (!running_)
     return kNetworkShuttingDown;
-  if (!network_.bootstrap_connection_id().IsZero()) {
+  if (!network_->bootstrap_connection_id().IsZero()) {
     LOG(kInfo) << "Removing bootstrap connection to rebootstrap. Connection id : "
-               << network_.bootstrap_connection_id();
-    network_.Remove(network_.bootstrap_connection_id());
-    network_.clear_bootstrap_connection_info();
+               << network_->bootstrap_connection_id();
+    network_->Remove(network_->bootstrap_connection_id());
+    network_->clear_bootstrap_connection_info();
   }
-
-  return network_.Bootstrap(
-      [=](const std::string& message) { OnMessageReceived(message); },
-      [=](const NodeId& lost_connection_id) { OnConnectionLost(lost_connection_id); });
+  std::shared_ptr<Routing::Impl> this_ptr(shared_from_this());
+  return network_->Bootstrap(
+      [this_ptr](const std::string& message) { this_ptr->OnMessageReceived(message); },
+      [this_ptr](const NodeId& lost_connection_id) {
+        this_ptr->OnConnectionLost(lost_connection_id);
+      });
 }
 
 void Routing::Impl::FindClosestNode(const boost::system::error_code& error_code, int attempts) {
@@ -205,11 +223,11 @@ void Routing::Impl::FindClosestNode(const boost::system::error_code& error_code,
     return;
 
   if (attempts == 0) {
-    assert(!network_.bootstrap_connection_id().IsZero() && "Only after bootstrapping succeeds");
-    assert(!network_.this_node_relay_connection_id().IsZero() &&
+    assert(!network_->bootstrap_connection_id().IsZero() && "Only after bootstrapping succeeds");
+    assert(!network_->this_node_relay_connection_id().IsZero() &&
            "Relay connection id should be set after bootstrapping succeeds");
   } else {
-    if (routing_table_.size() > 0) {
+    if (routing_table_->size() > 0) {
       std::lock_guard<std::mutex> lock(running_mutex_);
       if (!running_)
         return;
@@ -217,9 +235,10 @@ void Routing::Impl::FindClosestNode(const boost::system::error_code& error_code,
       LOG(kVerbose) << "[" << kNodeId_ << "] Added a node in routing table."
                     << " Terminating setup loop & Scheduling recovery loop.";
       recovery_timer_.expires_from_now(Parameters::find_node_interval);
-      recovery_timer_.async_wait([=](const boost::system::error_code& error_code) {
+      std::shared_ptr<Routing::Impl> this_ptr(shared_from_this());
+      recovery_timer_.async_wait([this_ptr](const boost::system::error_code& error_code) {
         if (error_code != boost::asio::error::operation_aborted)
-          ReSendFindNodeRequest(error_code, false);
+          this_ptr->ReSendFindNodeRequest(error_code, false);
       });
       return;
     }
@@ -234,30 +253,31 @@ void Routing::Impl::FindClosestNode(const boost::system::error_code& error_code,
 
   int num_nodes_requested(1 + attempts / Parameters::find_node_repeats_per_num_requested);
   protobuf::Message find_node_rpc(rpcs::FindNodes(kNodeId_, kNodeId_, num_nodes_requested, true,
-                                                  network_.this_node_relay_connection_id()));
+                                                  network_->this_node_relay_connection_id()));
   LOG(kVerbose) << "   [" << kNodeId_ << "] (attempt " << attempts << ")  requesting "
                 << num_nodes_requested << " nodes (id: " << find_node_rpc.id() << ")";
-
-  rudp::MessageSentFunctor message_sent_functor([=](int message_sent) {
+  std::shared_ptr<Routing::Impl> this_ptr(shared_from_this());
+  rudp::MessageSentFunctor message_sent_functor([this_ptr, find_node_rpc](int message_sent) {
     if (message_sent == kSuccess)
-      LOG(kVerbose) << "   [" << kNodeId_ << "] sent : " << MessageTypeString(find_node_rpc)
-                    << " to   " << network_.bootstrap_connection_id() << "   (id: "
+      LOG(kVerbose) << "   [" << this_ptr->kNodeId_ << "] sent : "
+                    << MessageTypeString(find_node_rpc)
+                    << " to   " << this_ptr->network_->bootstrap_connection_id() << "   (id: "
                     << find_node_rpc.id() << ")";
     else
       LOG(kError) << "Failed to send FindNodes RPC to bootstrap connection id : "
-                  << network_.bootstrap_connection_id();
+                  << this_ptr->network_->bootstrap_connection_id();
   });
 
   ++attempts;
-  network_.SendToDirect(find_node_rpc, network_.bootstrap_connection_id(), message_sent_functor);
+  network_->SendToDirect(find_node_rpc, network_->bootstrap_connection_id(), message_sent_functor);
 
   std::lock_guard<std::mutex> lock(running_mutex_);
   if (!running_)
     return;
   setup_timer_.expires_from_now(Parameters::find_close_node_interval);
-  setup_timer_.async_wait([=](boost::system::error_code error_code_local) {
+  setup_timer_.async_wait([this_ptr, attempts](boost::system::error_code error_code_local) {
     if (error_code_local != boost::asio::error::operation_aborted)
-      FindClosestNode(error_code_local, attempts);
+      this_ptr->FindClosestNode(error_code_local, attempts);
   });
 }
 
@@ -268,11 +288,14 @@ void Routing::Impl::ReBootstrap() {
 
 int Routing::Impl::ZeroStateJoin(const Functors& functors, const Endpoint& local_endpoint,
                                  const Endpoint& peer_endpoint, const NodeInfo& peer_info) {
-  assert((!routing_table_.client_mode()) && "no client nodes allowed in zero state network");
+  assert((!routing_table_->client_mode()) && "no client nodes allowed in zero state network");
   ConnectFunctors(functors);
-  int result(network_.ZeroStateBootstrap(
-      [=](const std::string& message) { OnMessageReceived(message); },
-      [=](const NodeId& lost_connection_id) { OnConnectionLost(lost_connection_id); },
+  std::shared_ptr<Routing::Impl> this_ptr(shared_from_this());
+  int result(network_->ZeroStateBootstrap(
+      [this_ptr](const std::string& message) { this_ptr->OnMessageReceived(message); },
+      [this_ptr](const NodeId& lost_connection_id) {
+        this_ptr->OnConnectionLost(lost_connection_id);
+      },
       local_endpoint));
 
   if (result != kSuccess) {
@@ -282,10 +305,10 @@ int Routing::Impl::ZeroStateJoin(const Functors& functors, const Endpoint& local
   }
 
   LOG(kInfo) << "[" << kNodeId_ << "]'s bootstrap connection id : "
-             << network_.bootstrap_connection_id();
+             << network_->bootstrap_connection_id();
 
   assert(!peer_info.id.IsZero() && "Zero NodeId passed");
-  assert((network_.bootstrap_connection_id() == peer_info.id) &&
+  assert((network_->bootstrap_connection_id() == peer_info.id) &&
          "Should bootstrap only with known peer for zero state network");
   LOG(kVerbose) << local_endpoint << " Bootstrapped with remote endpoint " << peer_endpoint;
   rudp::NatType nat_type(rudp::NatType::kUnknown);
@@ -294,38 +317,39 @@ int Routing::Impl::ZeroStateJoin(const Functors& functors, const Endpoint& local
   peer_endpoint_pair.external = peer_endpoint_pair.local = peer_endpoint;
   this_endpoint_pair.external = this_endpoint_pair.local = local_endpoint;
   Sleep(std::chrono::milliseconds(100));  // FIXME avoiding assert in rudp
-  result = network_.GetAvailableEndpoint(peer_info.id, peer_endpoint_pair, this_endpoint_pair,
+  result = network_->GetAvailableEndpoint(peer_info.id, peer_endpoint_pair, this_endpoint_pair,
                                          nat_type);
   if (result != rudp::kBootstrapConnectionAlreadyExists) {
     LOG(kError) << "Failed to get available endpoint to add zero state node : " << peer_endpoint;
     return result;
   }
 
-  result = network_.Add(peer_info.id, peer_endpoint_pair, "invalid");
+  result = network_->Add(peer_info.id, peer_endpoint_pair, "invalid");
   if (result != kSuccess) {
     LOG(kError) << "Failed to add zero state node : " << peer_endpoint;
     return result;
   }
 
-  ValidateAndAddToRoutingTable(network_, routing_table_, client_routing_table_, peer_info.id,
+  ValidateAndAddToRoutingTable(*network_, *routing_table_, client_routing_table_, peer_info.id,
                                peer_info.id, peer_info.public_key, false);
   // Now poll for routing table size to have other zero state peer.
   uint8_t poll_count(0);
   do {
     Sleep(std::chrono::milliseconds(100));
-  } while ((routing_table_.size() == 0) && (++poll_count < 50));
-  if (routing_table_.size() != 0) {
+  } while ((routing_table_->size() == 0) && (++poll_count < 50));
+  if (routing_table_->size() != 0) {
     LOG(kInfo) << "Node Successfully joined zero state network, with "
-               << network_.bootstrap_connection_id() << ", Routing table size - "
-               << routing_table_.size() << ", Node id : " << kNodeId_;
+               << network_->bootstrap_connection_id() << ", Routing table size - "
+               << routing_table_->size() << ", Node id : " << kNodeId_;
 
     std::lock_guard<std::mutex> lock(running_mutex_);
     if (!running_)
       return kNetworkShuttingDown;
     recovery_timer_.expires_from_now(Parameters::find_node_interval);
-    recovery_timer_.async_wait([=](const boost::system::error_code& error_code) {
+    std::shared_ptr<Routing::Impl> this_ptr(shared_from_this());
+    recovery_timer_.async_wait([this_ptr](const boost::system::error_code& error_code) {
       if (error_code != boost::asio::error::operation_aborted)
-        ReSendFindNodeRequest(error_code, false);
+        this_ptr->ReSendFindNodeRequest(error_code, false);
     });
     return kSuccess;
   } else {
@@ -369,15 +393,15 @@ void Routing::Impl::Send(const NodeId& destination_id, const std::string& data,
 }
 
 void Routing::Impl::SendMessage(const NodeId& destination_id, protobuf::Message& proto_message) {
-  if (routing_table_.size() == 0) {  // Partial join state
+  if (routing_table_->size() == 0) {  // Partial join state
     PartiallyJoinedSend(proto_message);
   } else {  // Normal node
     proto_message.set_source_id(kNodeId_.string());
     if (kNodeId_ != destination_id) {
-      network_.SendToClosestNode(proto_message);
-    } else if (routing_table_.client_mode()) {
+      network_->SendToClosestNode(proto_message);
+    } else if (routing_table_->client_mode()) {
       LOG(kVerbose) << "Client sending request to self id";
-      network_.SendToClosestNode(proto_message);
+      network_->SendToClosestNode(proto_message);
     } else {
       LOG(kInfo) << "Sending request to self";
       OnMessageReceived(proto_message.SerializeAsString());
@@ -388,18 +412,21 @@ void Routing::Impl::SendMessage(const NodeId& destination_id, protobuf::Message&
 // Partial join state
 void Routing::Impl::PartiallyJoinedSend(protobuf::Message& proto_message) {
   proto_message.set_relay_id(kNodeId_.string());
-  proto_message.set_relay_connection_id(network_.this_node_relay_connection_id().string());
-  NodeId bootstrap_connection_id(network_.bootstrap_connection_id());
+  proto_message.set_relay_connection_id(network_->this_node_relay_connection_id().string());
+  NodeId bootstrap_connection_id(network_->bootstrap_connection_id());
   assert(proto_message.has_relay_connection_id() && "did not set this_node_relay_connection_id");
-  rudp::MessageSentFunctor message_sent([=](int result) {
-    std::lock_guard<std::mutex> lock(running_mutex_);
-    if (!running_)
+  std::shared_ptr<Routing::Impl> this_ptr(shared_from_this());
+  rudp::MessageSentFunctor message_sent([this_ptr, bootstrap_connection_id,
+                                        proto_message](int result) {
+    std::lock_guard<std::mutex> lock(this_ptr->running_mutex_);
+    if (!this_ptr->running_)
       return;
-    asio_service_.service().post([=]() {
+    this_ptr->asio_service_.service().post([this_ptr, result, proto_message,
+                                           bootstrap_connection_id]() {
       if (rudp::kSuccess != result) {
         if (proto_message.id() != 0) {
           try {
-            timer_.CancelTask(proto_message.id());
+            this_ptr->timer_.CancelTask(proto_message.id());
           }
           catch (const maidsafe_error& error) {
             if (error.code() != make_error_code(CommonErrors::invalid_parameter))
@@ -407,15 +434,16 @@ void Routing::Impl::PartiallyJoinedSend(protobuf::Message& proto_message) {
           }
         }
         LOG(kError) << "Partial join Session Ended, Send not allowed anymore";
-        NotifyNetworkStatus(kPartialJoinSessionEnded);
+        this_ptr->NotifyNetworkStatus(kPartialJoinSessionEnded);
       } else {
-        LOG(kVerbose) << "   [" << kNodeId_ << "] sent : " << MessageTypeString(proto_message)
-                      << " to   " << bootstrap_connection_id  << "   (id: " << proto_message.id()
+        LOG(kVerbose) << "   [" << this_ptr->kNodeId_ << "] sent : "
+                      << MessageTypeString(proto_message) << " to   " << bootstrap_connection_id
+                      << "   (id: " << proto_message.id()
                       << ") dst: " << NodeId(proto_message.destination_id()) << "--Partial-joined-";
       }
     });
   });
-  network_.SendToDirect(proto_message, bootstrap_connection_id, message_sent);
+  network_->SendToDirect(proto_message, bootstrap_connection_id, message_sent);
 }
 
 protobuf::Message Routing::Impl::CreateNodeLevelPartialMessage(
@@ -429,7 +457,7 @@ protobuf::Message Routing::Impl::CreateNodeLevelPartialMessage(
   if (cacheable)
     proto_message.set_cacheable(static_cast<int32_t>(Cacheable::kGet));
   proto_message.set_direct((DestinationType::kDirect == destination_type));
-  proto_message.set_client_node(routing_table_.client_mode());
+  proto_message.set_client_node(routing_table_->client_mode());
   proto_message.set_request(true);
   proto_message.set_hops_to_live(Parameters::hops_to_live);
   unsigned int replication(1);
@@ -457,13 +485,13 @@ void Routing::Impl::CheckSendParameters(const NodeId& destination_id, const std:
 }
 
 bool Routing::Impl::ClosestToId(const NodeId& target_id) {
-  return routing_table_.IsThisNodeClosestTo(target_id, true);
+  return routing_table_->IsThisNodeClosestTo(target_id, true);
 }
 
-NodeId Routing::Impl::RandomConnectedNode() { return routing_table_.RandomConnectedNode(); }
+NodeId Routing::Impl::RandomConnectedNode() { return routing_table_->RandomConnectedNode(); }
 
 bool Routing::Impl::EstimateInGroup(const NodeId& sender_id, const NodeId& info_id) {
-  return ((routing_table_.size() > Parameters::routing_table_ready_to_response) &&
+  return ((routing_table_->size() > Parameters::routing_table_ready_to_response) &&
           network_statistics_.EstimateInGroup(sender_id, info_id));
 }
 
@@ -489,14 +517,16 @@ std::future<std::vector<NodeId>> Routing::Impl::GetGroup(const NodeId& group_id)
   protobuf::Message get_group_message(rpcs::GetGroup(group_id, kNodeId_));
   get_group_message.set_id(timer_.NewTaskId());
   timer_.AddTask(Parameters::default_response_timeout, callback, 1, get_group_message.id());
-  network_.SendToClosestNode(get_group_message);
-  return std::move(future);
+  network_->SendToClosestNode(get_group_message);
+  return future;
 }
 
 void Routing::Impl::OnMessageReceived(const std::string& message) {
   std::lock_guard<std::mutex> lock(running_mutex_);
-  if (running_)
-    asio_service_.service().post([=]() { DoOnMessageReceived(message); });  // NOLINT (Fraser)
+  if (running_) {
+    std::shared_ptr<Routing::Impl> this_ptr(shared_from_this());
+    asio_service_.service().post([this_ptr, message]() { this_ptr->DoOnMessageReceived(message); });  // NOLINT (Fraser)
+  }
 }
 
 void Routing::Impl::DoOnMessageReceived(const std::string& message) {
@@ -527,9 +557,12 @@ void Routing::Impl::DoOnMessageReceived(const std::string& message) {
 
 void Routing::Impl::OnConnectionLost(const NodeId& lost_connection_id) {
   std::lock_guard<std::mutex> lock(running_mutex_);
-  if (running_)
-    asio_service_.service().post([=]() { DoOnConnectionLost(lost_connection_id); });  // NOLINT
-                                                                                      // (Fraser)
+  if (running_) {
+    std::shared_ptr<Routing::Impl> this_ptr(shared_from_this());
+    asio_service_.service().post([this_ptr, lost_connection_id]() {
+      this_ptr->DoOnConnectionLost(lost_connection_id);
+    });
+  }
 }
 
 void Routing::Impl::DoOnConnectionLost(const NodeId& lost_connection_id) {
@@ -543,11 +576,11 @@ void Routing::Impl::DoOnConnectionLost(const NodeId& lost_connection_id) {
 
   NodeInfo dropped_node;
   bool resend(
-      routing_table_.GetNodeInfo(lost_connection_id, dropped_node) &&
-      routing_table_.IsThisNodeInRange(dropped_node.id, Parameters::closest_nodes_size));
+      routing_table_->GetNodeInfo(lost_connection_id, dropped_node) &&
+      routing_table_->IsThisNodeInRange(dropped_node.id, Parameters::closest_nodes_size));
 
   // Checking routing table
-  dropped_node = routing_table_.DropNode(lost_connection_id, true);
+  dropped_node = routing_table_->DropNode(lost_connection_id, true);
   if (!dropped_node.id.IsZero()) {
     LOG(kWarning) << "[" << DebugId(kNodeId_) << "]"
                   << "Lost connection with routing node " << DebugId(dropped_node.id);
@@ -562,8 +595,8 @@ void Routing::Impl::DoOnConnectionLost(const NodeId& lost_connection_id) {
       LOG(kWarning) << "[" << DebugId(kNodeId_) << "]"
                     << "Lost connection with non-routing node "
                     << HexSubstr(dropped_node.id.string());
-    } else if (!network_.bootstrap_connection_id().IsZero() &&
-               lost_connection_id == network_.bootstrap_connection_id()) {
+    } else if (!network_->bootstrap_connection_id().IsZero() &&
+               lost_connection_id == network_->bootstrap_connection_id()) {
       LOG(kWarning) << "[" << DebugId(kNodeId_) << "]"
                     << "Lost temporary connection with bootstrap node. connection id :"
                     << DebugId(lost_connection_id);
@@ -572,9 +605,9 @@ void Routing::Impl::DoOnConnectionLost(const NodeId& lost_connection_id) {
         if (!running_)
           return;
       }
-      network_.clear_bootstrap_connection_info();
+      network_->clear_bootstrap_connection_info();
 
-      if (routing_table_.size() == 0)
+      if (routing_table_->size() == 0)
         resend = true;  // This will trigger rebootstrap
     } else {
       LOG(kWarning) << "[" << DebugId(kNodeId_) << "]"
@@ -590,9 +623,10 @@ void Routing::Impl::DoOnConnectionLost(const NodeId& lost_connection_id) {
     // Close node lost, get more nodes
     LOG(kWarning) << "Lost close node, getting more.";
     recovery_timer_.expires_from_now(Parameters::recovery_time_lag);
-    recovery_timer_.async_wait([=](const boost::system::error_code& error_code) {
+    std::shared_ptr<Routing::Impl> this_ptr(shared_from_this());
+    recovery_timer_.async_wait([this_ptr](const boost::system::error_code& error_code) {
       if (error_code != boost::asio::error::operation_aborted)
-        ReSendFindNodeRequest(error_code, true);
+        this_ptr->ReSendFindNodeRequest(error_code, true);
     });
   }
 }
@@ -601,7 +635,7 @@ void Routing::Impl::RemoveNode(const NodeInfo& node, bool internal_rudp_only) {
   if (node.connection_id.IsZero() || node.id.IsZero())
     return;
 
-  network_.Remove(node.connection_id);
+  network_->Remove(node.connection_id);
   if (internal_rudp_only) {  // No recovery
     LOG(kInfo) << "Routing: removed node : " << DebugId(node.id)
                << ". Removed internal rudp connection id : " << DebugId(node.connection_id);
@@ -613,7 +647,7 @@ void Routing::Impl::RemoveNode(const NodeInfo& node, bool internal_rudp_only) {
 
   // TODO(Prakash): Handle pseudo connection removal here and NRT node removal
 
-  bool resend(routing_table_.IsThisNodeInRange(node.id, Parameters::closest_nodes_size));
+  bool resend(routing_table_->IsThisNodeInRange(node.id, Parameters::closest_nodes_size));
   if (resend) {
     std::lock_guard<std::mutex> lock(running_mutex_);
     if (!running_)
@@ -622,15 +656,16 @@ void Routing::Impl::RemoveNode(const NodeInfo& node, bool internal_rudp_only) {
     LOG(kWarning) << "[" << DebugId(kNodeId_)
                   << "] Removed close node, sending find node to get more nodes.";
     recovery_timer_.expires_from_now(Parameters::recovery_time_lag);
-    recovery_timer_.async_wait([=](const boost::system::error_code& error_code) {
+    std::shared_ptr<Routing::Impl> this_ptr(shared_from_this());
+    recovery_timer_.async_wait([this_ptr](const boost::system::error_code& error_code) {
       if (error_code != boost::asio::error::operation_aborted)
-        ReSendFindNodeRequest(error_code, true);
+        this_ptr->ReSendFindNodeRequest(error_code, true);
     });
   }
 }
 
 bool Routing::Impl::ConfirmGroupMembers(const NodeId& node1, const NodeId& node2) {
-  return routing_table_.ConfirmGroupMembers(node1, node2);
+  return routing_table_->ConfirmGroupMembers(node1, node2);
 }
 
 void Routing::Impl::ReSendFindNodeRequest(const boost::system::error_code& error_code,
@@ -641,33 +676,34 @@ void Routing::Impl::ReSendFindNodeRequest(const boost::system::error_code& error
       return;
   }
 
-  if (routing_table_.size() == 0) {
+  if (routing_table_->size() == 0) {
     LOG(kError) << "[" << kNodeId_ << "]'s' Routing table is empty. Scheduling Re-Bootstrap.. !!!";
     ReBootstrap();
     return;
-  } else if (ignore_size || (routing_table_.size() < routing_table_.kThresholdSize())) {
+  } else if (ignore_size || (routing_table_->size() < routing_table_->kThresholdSize())) {
     if (!ignore_size)
       LOG(kInfo) << "[" << kNodeId_ << "] Routing table smaller than "
-                 << routing_table_.kThresholdSize() << " nodes.  Sending another FindNodes. "
-                 << " Routing table size " << routing_table_.size() << " >";
+                 << routing_table_->kThresholdSize() << " nodes.  Sending another FindNodes. "
+                 << " Routing table size " << routing_table_->size() << " >";
     else
       LOG(kInfo) << "[" << kNodeId_ << "] lost close node."
                  << "Sending another FindNodes. Current routing table size : "
-                 << routing_table_.size();
+                 << routing_table_->size();
 
     int num_nodes_requested(0);
-    if (ignore_size && (routing_table_.size() > routing_table_.kThresholdSize()))
+    if (ignore_size && (routing_table_->size() > routing_table_->kThresholdSize()))
       num_nodes_requested = static_cast<int>(Parameters::closest_nodes_size);
     else
       num_nodes_requested = static_cast<int>(Parameters::max_routing_table_size);
 
     protobuf::Message find_node_rpc(rpcs::FindNodes(kNodeId_, kNodeId_, num_nodes_requested));
-    network_.SendToClosestNode(find_node_rpc);
+    network_->SendToClosestNode(find_node_rpc);
 
     recovery_timer_.expires_from_now(Parameters::find_node_interval);
-    recovery_timer_.async_wait([=](boost::system::error_code error_code_local) {
+    std::shared_ptr<Routing::Impl> this_ptr(shared_from_this());
+    recovery_timer_.async_wait([this_ptr, error_code](boost::system::error_code error_code_local) {
       if (error_code != boost::asio::error::operation_aborted)
-        ReSendFindNodeRequest(error_code_local, false);
+        this_ptr->ReSendFindNodeRequest(error_code_local, false);
     });
   }
 }
@@ -685,11 +721,11 @@ int Routing::Impl::network_status() {
 }
 
 std::vector<NodeInfo> Routing::Impl::ClosestNodes() {
-  return routing_table_.GetClosestNodes(kNodeId(), Parameters::closest_nodes_size);
+  return routing_table_->GetClosestNodes(kNodeId(), Parameters::closest_nodes_size);
 }
 
 bool Routing::Impl::IsConnectedVault(const NodeId& node_id) {
-  return routing_table_.Contains(node_id);
+  return routing_table_->Contains(node_id);
 }
 
 bool Routing::Impl::IsConnectedClient(const NodeId& node_id) {
@@ -726,9 +762,9 @@ void Routing::Impl::OnRoutingTableChange(const RoutingTableChange& routing_table
                   << ", connection id : " << routing_table_change.removed.node.connection_id;
   }
 
-  if (routing_table_.client_mode()) {
-    if (routing_table_.size() < Parameters::max_routing_table_size_for_client)
-      network_.SendToClosestNode(rpcs::FindNodes(kNodeId_, kNodeId_,
+  if (routing_table_->client_mode()) {
+    if (routing_table_->size() < Parameters::max_routing_table_size_for_client)
+      network_->SendToClosestNode(rpcs::FindNodes(kNodeId_, kNodeId_,
                                  Parameters::max_routing_table_size_for_client));
     return;
   }
@@ -744,11 +780,11 @@ void Routing::Impl::OnRoutingTableChange(const RoutingTableChange& routing_table
   if (routing_table_change.close_nodes_change && routing_table_change.insertion) {
     auto clients(client_routing_table_.GetNodesInfo());
     for (auto client : clients)
-      InformClientOfNewCloseNode(network_, client, routing_table_change.added_node, kNodeId());
+      InformClientOfNewCloseNode(*network_, client, routing_table_change.added_node, kNodeId());
   }
 
-  if (routing_table_.size() > Parameters::routing_table_size_threshold)
-    network_.SendToClosestNode(rpcs::FindNodes(kNodeId_, kNodeId_,
+  if (routing_table_->size() > Parameters::routing_table_size_threshold)
+    network_->SendToClosestNode(rpcs::FindNodes(kNodeId_, kNodeId_,
                                                Parameters::max_routing_table_size));
 }
 

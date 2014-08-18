@@ -105,7 +105,21 @@ CloseNodesChange::CloseNodesChange(NodeId this_node_id, const std::vector<NodeId
         return (crypto::BigInt(
                     (fcn_distance.ToStringEncoded(NodeId::EncodingType::kHex) + 'h').c_str()) *
                 Parameters::proximity_factor);
-      }()) {}
+      }()) {
+#ifdef TESTING
+  std::stringstream stream;
+  stream << " CloseNodesChange constructed having : ";
+  if (new_node_ != NodeId())
+    stream << " new node : " << DebugId(new_node_);
+  stream << "\n new_nodes : ";
+  for (auto& itr : new_close_nodes_)
+    stream << "\t[ " << DebugId(itr) << " ]";
+  stream << "\n old_nodes : ";
+  for (auto& itr : old_close_nodes_)
+    stream << "\t[ " << DebugId(itr) << " ]";
+  LOG(kVerbose) << stream.str();
+#endif
+}
 
 CheckHoldersResult CloseNodesChange::CheckHolders(const NodeId& target) const {
   // Handle cases of lower number of group close_nodes nodes
@@ -159,8 +173,33 @@ CheckHoldersResult CloseNodesChange::CheckHolders(const NodeId& target) const {
     old_holders.push_back(node_id_);
   }
 
-  holders_result.new_holders = new_holders;
-  holders_result.old_holders = old_holders;
+  std::vector<NodeId> diff_new_holders;
+  std::for_each(std::begin(new_holders), std::end(new_holders),
+                [&](const NodeId& new_holder) {
+                  if (std::find(std::begin(old_holders), std::end(old_holders),
+                                new_holder) == std::end(old_holders))
+                    diff_new_holders.push_back(new_holder);
+                  });
+#ifdef TESTING
+  std::stringstream stream;
+  stream << "checking against : " << DebugId(target) << "\n new_holders : ";
+  for (auto& itr : new_holders)
+    stream << "\t[ " << DebugId(itr) << " ]";
+  stream << "\n old_holders : ";
+  for (auto& itr : old_holders)
+    stream << "\t[ " << DebugId(itr) << " ]";
+  stream << "\n diff_new_holders : ";
+  for (auto& itr : diff_new_holders)
+    stream << "\t[ " << DebugId(itr) << " ]";
+  LOG(kVerbose) << stream.str();
+#endif
+//   holders_result.new_holders = new_holders;
+//   holders_result.old_holders = old_holders;
+  if (diff_new_holders.size() > 0)
+    holders_result.new_holder = diff_new_holders.front();
+  // in case the new_holder is the node itself, it shall be ignored
+  if (holders_result.new_holder == node_id_)
+    holders_result.new_holder = NodeId();
   return holders_result;
 }
 

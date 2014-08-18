@@ -55,9 +55,6 @@ struct Parameters {
   static unsigned int routing_table_ready_to_response;
   static unsigned int accepted_distance_tolerance;
   static boost::posix_time::time_duration connect_rpc_prune_timeout;
-  static bool append_maidsafe_endpoints;
-  static bool append_maidsafe_local_endpoints;
-  static bool append_local_live_port_endpoint;
   static bool caching;
 
  private:
