@@ -26,6 +26,7 @@
 #include "maidsafe/routing/client_routing_table.h"
 #include "maidsafe/routing/message.h"
 #include "maidsafe/routing/network.h"
+#include "maidsafe/routing/network_utils.h"
 #include "maidsafe/routing/routing.pb.h"
 #include "maidsafe/routing/routing_table.h"
 #include "maidsafe/routing/service.h"
@@ -37,12 +38,11 @@ namespace routing {
 
 MessageHandler::MessageHandler(RoutingTable& routing_table,
                                ClientRoutingTable& client_routing_table, Network& network,
-                               Timer<std::string>& timer, NetworkStatistics& network_statistics,
-                               Acknowledgement& acknowledgement, AsioService& asio_service)
+                               Timer<std::string>& timer, NetworkUtils& network_utils,
+                               AsioService& asio_service)
     : routing_table_(routing_table),
       client_routing_table_(client_routing_table),
-      network_statistics_(network_statistics),
-      acknowledgement_(acknowledgement),
+      network_utils_(network_utils),
       network_(network),
       cache_manager_(routing_table_.client_mode()
                          ? nullptr
@@ -175,7 +175,7 @@ void MessageHandler::HandleNodeLevelMessageForThisNode(protobuf::Message& messag
       return;
     }
     if (message.has_average_distace())
-      network_statistics_.UpdateNetworkAverageDistance(NodeId(message.average_distace()));
+      network_utils_.statistics_.UpdateNetworkAverageDistance(NodeId(message.average_distace()));
   } else {
     LOG(kWarning) << "This node [" << DebugId(routing_table_.kNodeId())
                   << " Dropping message as client to client message not allowed."

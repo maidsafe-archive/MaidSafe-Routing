@@ -28,10 +28,8 @@
 #include "maidsafe/routing/response_handler.h"
 #include "maidsafe/routing/service.h"
 #include "maidsafe/routing/timer.h"
-#include "maidsafe/routing/network_statistics.h"
 #include "maidsafe/routing/utils.h"
-#include "maidsafe/routing/acknowledgement.h"
-#include "maidsafe/routing/firewall.h"
+#include "maidsafe/routing/network_utils.h"
 
 namespace maidsafe {
 
@@ -63,6 +61,7 @@ struct TypedMessageRecievedFunctors {
 }  // unnamed detail
 
 class Network;
+class NetworkUtils;
 class ClientRoutingTable;
 class RoutingTable;
 class NetworkStatistics;
@@ -84,8 +83,7 @@ class MessageHandler {
  public:
   MessageHandler(RoutingTable& routing_table, ClientRoutingTable& client_routing_table,
                  Network& network, Timer<std::string>& timer,
-                 NetworkStatistics& network_statistics, Acknowledgement& acknowledgement,
-                 AsioService& asio_service);
+                 NetworkUtils& network_utils, AsioService& asio_service);
   void HandleMessage(protobuf::Message& message);
   void set_typed_message_and_caching_functor(TypedMessageAndCachingFunctor functors);
   void set_message_and_caching_functor(MessageAndCachingFunctors functors);
@@ -128,8 +126,7 @@ class MessageHandler {
 
   RoutingTable& routing_table_;
   ClientRoutingTable& client_routing_table_;
-  NetworkStatistics& network_statistics_;
-  Acknowledgement& acknowledgement_;
+  NetworkUtils& network_utils_;
   Network& network_;
   std::unique_ptr<CacheManager> cache_manager_;
   Timer<std::string>& timer_;

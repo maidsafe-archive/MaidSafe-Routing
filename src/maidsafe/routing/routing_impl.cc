@@ -37,7 +37,6 @@
 #include "maidsafe/routing/routing.pb.h"
 #include "maidsafe/routing/rpcs.h"
 #include "maidsafe/routing/utils.h"
-#include "maidsafe/routing/network_statistics.h"
 
 namespace fs = boost::filesystem;
 
@@ -93,7 +92,6 @@ protobuf::Message Routing::Impl::CreateNodeLevelMessage(const GroupToSingleRelay
 Routing::Impl::Impl(bool client_mode, const NodeId& node_id, const asymm::Keys& keys)
     : network_status_mutex_(),
       network_status_(kNotJoined),
-      network_statistics_(node_id),
       routing_table_(maidsafe::make_unique<RoutingTable>(client_mode, node_id, keys)),
       kNodeId_(node_id),
       running_(true),
@@ -104,15 +102,14 @@ Routing::Impl::Impl(bool client_mode, const NodeId& node_id, const asymm::Keys& 
       client_routing_table_(node_id),
       message_handler_(),
       asio_service_(2),
+      network_utils_(node_id, asio_service_),
       network_(maidsafe::make_unique<Network>(*routing_table_, client_routing_table_)),
       timer_(asio_service_),
-      acknowledgement_(asio_service_),
       re_bootstrap_timer_(asio_service_.service()),
       recovery_timer_(asio_service_.service()),
       setup_timer_(asio_service_.service()) {
   message_handler_.reset(new MessageHandler(*routing_table_, client_routing_table_, *network_,
-                                            timer_, network_statistics_, acknowledgement_,
-                                            asio_service_));
+                                            timer_, network_utils_, asio_service_));
   LOG(kInfo) << (client_mode ? "client " : "non-client ") << "node. Id : " << kNodeId_;
   assert((client_mode || !node_id.IsZero()) && "Server Nodes cannot be created without valid keys");
 }
@@ -494,7 +491,7 @@ NodeId Routing::Impl::RandomConnectedNode() { return routing_table_->RandomConne
 
 bool Routing::Impl::EstimateInGroup(const NodeId& sender_id, const NodeId& info_id) {
   return ((routing_table_->size() > Parameters::routing_table_ready_to_response) &&
-          network_statistics_.EstimateInGroup(sender_id, info_id));
+          network_utils_.statistics_.EstimateInGroup(sender_id, info_id));
 }
 
 std::future<std::vector<NodeId>> Routing::Impl::GetGroup(const NodeId& group_id) {
@@ -774,7 +771,7 @@ void Routing::Impl::OnRoutingTableChange(const RoutingTableChange& routing_table
   if (routing_table_change.close_nodes_change != nullptr) {
     if (functors_.close_nodes_change)
       functors_.close_nodes_change(routing_table_change.close_nodes_change);
-    network_statistics_.UpdateLocalAverageDistance(
+    network_utils_.statistics_.UpdateLocalAverageDistance(
         routing_table_change.close_nodes_change->new_close_nodes());
     // IpcSendCloseNodes(); TO BE MOVED FROM RT TO UTILS
   }
