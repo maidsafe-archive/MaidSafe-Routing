@@ -1132,7 +1132,7 @@ testing::AssertionResult GenericNetwork::SendDirect(size_t repeats, size_t messa
               // TODO(Alison) - check data
             }
             catch (const std::exception& ex) {
-              EXPECT_TRUE(false) << "Got message with invalid replier ID. Exception: " << ex.what();
+              ADD_FAILURE() << "Got message with invalid replier ID. Exception: " << ex.what();
               *failed = true;
               if (*reply_count == *expected_count)
                 cond_var->notify_one();
@@ -1151,7 +1151,7 @@ testing::AssertionResult GenericNetwork::SendDirect(size_t repeats, size_t messa
   if (!cond_var->wait_for(
            lock, std::chrono::seconds(15 * (nodes_.size()) * (nodes_.size() - 1)),
            [reply_count, expected_count]() { return *reply_count == *expected_count; })) {
-    EXPECT_TRUE(false) << "Didn't get reply within allowed time!";
+    ADD_FAILURE() << "Didn't get reply within allowed time!";
     return testing::AssertionFailure();
   }
 
@@ -1192,7 +1192,7 @@ testing::AssertionResult GenericNetwork::SendGroup(const NodeId& target_id, size
       ++(*reply_count);
       monitor->response_count += 1;
       if (monitor->response_count > Parameters::group_size) {
-        EXPECT_TRUE(false) << "Received too many replies: " << monitor->response_count;
+        ADD_FAILURE() << "Received too many replies: " << monitor->response_count;
         *failed = true;
         if (*reply_count == *expected_count)
           cond_var->notify_one();
@@ -1225,13 +1225,12 @@ testing::AssertionResult GenericNetwork::SendGroup(const NodeId& target_id, size
         }
         LOG(kVerbose) << output;
         if (!valid_replier) {
-          EXPECT_TRUE(false) << "Got unexpected reply from " << DebugId(replier)
-                             << "\t (for target: " << DebugId(target_id) << ")";
+          ADD_FAILURE() << "Got unexpected reply from " << replier << "\tfor target: " << target_id;
           *failed = true;
         }
       }
       catch (const std::exception& /*ex*/) {
-        EXPECT_TRUE(false) << "Reply contained invalid node ID.";
+        ADD_FAILURE() << "Reply contained invalid node ID.";
         *failed = true;
       }
       if (*reply_count == *expected_count)
@@ -1245,7 +1244,7 @@ testing::AssertionResult GenericNetwork::SendGroup(const NodeId& target_id, size
   if (!cond_var->wait_for(
            lock, std::chrono::seconds(15 * repeats),
            [reply_count, expected_count]() { return *reply_count == *expected_count; })) {
-    EXPECT_TRUE(false) << "Didn't get replies within allowed time!";
+    ADD_FAILURE() << "Didn't get replies within allowed time!";
     return testing::AssertionFailure();
   }
 
@@ -1297,7 +1296,7 @@ testing::AssertionResult GenericNetwork::SendDirect(const NodeId& destination_no
           // TODO(Alison) - check data
         }
         catch (const std::exception& ex) {
-          EXPECT_TRUE(false) << "Got message with invalid replier ID. Exception: " << ex.what();
+          ADD_FAILURE() << "Got message with invalid replier ID. Exception: " << ex.what();
           *failed = true;
           if (*reply_count == *expected_count)
             cond_var->notify_one();
@@ -1356,7 +1355,7 @@ testing::AssertionResult GenericNetwork::SendDirect(const NodeId& destination_no
   if (!cond_var->wait_for(lock, std::chrono::seconds(15), [reply_count, expected_count]() {
          return *reply_count == *expected_count;
        })) {
-    //    EXPECT_TRUE(false) << "Didn't get reply within allowed time!";
+    //    ADD_FAILURE() << "Didn't get reply within allowed time!";
     return testing::AssertionFailure();
   }
 
@@ -1391,7 +1390,7 @@ testing::AssertionResult GenericNetwork::SendDirect(std::shared_ptr<GenericNode>
           *failed = true;
       }
       catch (const std::exception* /*ex*/) {
-        EXPECT_TRUE(false) << "Reply contained invalid node ID!";
+        ADD_FAILURE() << "Reply contained invalid node ID!";
         *failed = true;
       }
       cond_var->notify_one();
@@ -1410,7 +1409,7 @@ testing::AssertionResult GenericNetwork::SendDirect(std::shared_ptr<GenericNode>
 
   std::unique_lock<std::mutex> lock(*response_mutex);
   if (cond_var->wait_for(lock, std::chrono::seconds(15)) != std::cv_status::no_timeout) {
-    EXPECT_TRUE(false) << "Didn't get reply within allowed time!";
+    ADD_FAILURE() << "Didn't get reply within allowed time!";
     return testing::AssertionFailure();
   }
 
