@@ -23,7 +23,7 @@ namespace maidsafe {
 namespace routing {
 
 NetworkUtils::NetworkUtils(const NodeId& local_node_id, AsioService& asio_service)
-    : acknowledgement_(asio_service), firewall_(), statistics_(local_node_id) {}
+    : acknowledgement_(local_node_id, asio_service), firewall_(), statistics_(local_node_id) {}
 
 }  // namespace routing
 

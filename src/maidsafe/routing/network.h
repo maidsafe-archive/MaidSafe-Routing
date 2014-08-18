@@ -43,6 +43,7 @@ class Message;
 
 class ClientRoutingTable;
 class RoutingTable;
+class Acknowledgement;
 
 namespace test {
 class GenericNode;
@@ -51,7 +52,8 @@ class MockNetwork;
 
 class Network {
  public:
-  Network(RoutingTable& routing_table, ClientRoutingTable& client_routing_table);
+  Network(RoutingTable& routing_table, ClientRoutingTable& client_routing_table,
+          Acknowledgement& acknowledgement);
   virtual ~Network();
   int Bootstrap(const rudp::MessageReceivedFunctor& message_received_functor,
                 const rudp::ConnectionLostFunctor& connection_lost_functor);
@@ -70,13 +72,16 @@ class Network {
   // direct endpoint.
   void SendToDirect(const protobuf::Message& message, const NodeId& peer_connection_id,
                     const rudp::MessageSentFunctor& message_sent_functor);
-  virtual void SendToDirect(const protobuf::Message& message, const NodeId& peer_node_id,
+  void SendAck(const protobuf::Message& message);
+  void AdjustAckHistory(protobuf::Message& message);
+  virtual void SendToDirect(protobuf::Message& message, const NodeId& peer_node_id,
                             const NodeId& peer_connection_id);
   void SendToDirectAdjustedRoute(protobuf::Message& message, const NodeId& peer_node_id,
                                  const NodeId& peer_connection_id);
   // Handles relay response messages.  Also leave destination ID empty if needs to send as a relay
   // response message
   virtual void SendToClosestNode(const protobuf::Message& message);
+  void SendToClosestNode(protobuf::Message& message, const std::vector<NodeId>& exclude);
   void AddToBootstrapFile(const boost::asio::ip::udp::endpoint& endpoint);
   void clear_bootstrap_connection_info();
   NodeId bootstrap_connection_id() const;
@@ -99,7 +104,7 @@ class Network {
   void RudpSend(const NodeId& peer_id, const protobuf::Message& message,
                 const rudp::MessageSentFunctor& message_sent_functor);
   void SendTo(const protobuf::Message& message, const NodeId& peer_node_id,
-              const NodeId& peer_connection_id);
+              const NodeId& peer_connection_id, bool no_ack_timer = false);
   void RecursiveSendOn(protobuf::Message message, NodeInfo last_node_attempted = NodeInfo(),
                        int attempt_count = 0);
   void AdjustRouteHistory(protobuf::Message& message);
@@ -109,8 +114,9 @@ class Network {
   unsigned int bootstrap_attempt_;
   NodeId bootstrap_connection_id_;
   NodeId this_node_relay_connection_id_;
-  RoutingTable& routing_table_;
+  RoutingTable& routing_table_;  
   ClientRoutingTable& client_routing_table_;
+  Acknowledgement& acknowledgement_;
   rudp::NatType nat_type_;
   rudp::ManagedConnections rudp_;
 };

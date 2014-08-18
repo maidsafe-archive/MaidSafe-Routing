@@ -52,8 +52,9 @@ TEST(ServicesTest, BEH_Ping) {
   RoutingTable routing_table(false, node_id, asymm::GenerateKeyPair());
   ClientRoutingTable client_routing_table(routing_table.kNodeId());
   AsioService asio_service(1);
+  Acknowledgement acknowledgement(node_id, asio_service);
   PublicKeyHolder public_key_holder(asio_service);
-  Network network(routing_table, client_routing_table);
+  Network network(routing_table, client_routing_table, acknowledgement);
   Service service(routing_table, client_routing_table, network, public_key_holder);
   NodeInfo node;
   rudp::ManagedConnections rudp;

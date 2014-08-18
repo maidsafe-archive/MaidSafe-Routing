@@ -79,6 +79,7 @@ message Message {
   optional bool actual_destination_is_relay_id = 24;  // to support new API's request message to
                                                       // be sent to relaying node and passed on
   optional int32 ack_id = 25;
+  repeated bytes ack_node_ids = 26;
 }
 
 message SignedMessage {

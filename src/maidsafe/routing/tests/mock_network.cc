@@ -24,9 +24,9 @@ namespace routing {
 
 namespace test {
 
-MockNetwork::MockNetwork(RoutingTable& routing_table,
-                                   ClientRoutingTable& client_routing_table)
-    : Network(routing_table, client_routing_table) {}
+MockNetwork::MockNetwork(RoutingTable& routing_table, ClientRoutingTable& client_routing_table,
+                         Acknowledgement& acknowledgement)
+    : Network(routing_table, client_routing_table, acknowledgement) {}
 
 MockNetwork::~MockNetwork() {}
 

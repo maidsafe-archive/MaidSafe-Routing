@@ -83,7 +83,7 @@ struct GroupAckTimer {
 
 class Acknowledgement {
  public:
-  explicit Acknowledgement(AsioService& io_service);
+  explicit Acknowledgement(const NodeId& local_node_id, AsioService& io_service);
   ~Acknowledgement();
   AckId GetId();
   void Add(const protobuf::Message& message, Handler handler, int timeout);
@@ -96,6 +96,7 @@ class Acknowledgement {
   bool IsSendingAckRequired(const protobuf::Message& message, const NodeId& local_node_id);
   NodeId AppendGroup(AckId ack_id, std::vector<std::string>& exclusion);
   void SetAsFailedPeer(AckId ack_id, const NodeId& node_id);
+  void AdjustAckHistory(protobuf::Message& message);
 
   friend class test::GenericNode;
 
@@ -106,6 +107,7 @@ class Acknowledgement {
   void RemoveAll();
 
   bool running_;
+  const NodeId kNodeId_;
   AckId ack_id_;
   std::mutex mutex_;
   AsioService& io_service_;

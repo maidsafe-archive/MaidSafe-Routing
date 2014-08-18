@@ -75,6 +75,8 @@ protobuf::Message InformClientOfNewCloseNode(const NodeId& node_id, const NodeId
 
 protobuf::Message GetGroup(const NodeId& node_id, const NodeId& my_node_id);
 
+protobuf::Message Ack(const NodeId& node_id, const NodeId& my_node_id, int32_t ack_id);
+
 }  // namespace rpcs
 
 }  // namespace routing

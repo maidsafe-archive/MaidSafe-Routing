@@ -78,6 +78,10 @@ void MessageHandler::HandleRoutingMessage(protobuf::Message& message) {
       message.request() ? service_->GetGroup(message)
                         : response_handler_->GetGroup(timer_, message);
       break;
+    case MessageType::kAcknowledgement:
+      network_utils_.acknowledgement_.HandleMessage(message.ack_id());
+      message.Clear();
+      break;
     case MessageType::kInformClientOfNewCloseNode:
       assert(message.request());
       response_handler_->InformClientOfNewCloseNode(message);
@@ -88,6 +92,8 @@ void MessageHandler::HandleRoutingMessage(protobuf::Message& message) {
 
   if (!request || !message.IsInitialized())
     return;
+
+  message.set_ack_id(network_utils_.acknowledgement_.GetId());
 
   if (routing_table_.size() == 0)  // This node can only send to bootstrap_endpoint
     network_.SendToDirect(message, network_.bootstrap_connection_id(),
@@ -126,6 +132,7 @@ void MessageHandler::HandleNodeLevelMessageForThisNode(protobuf::Message& messag
         message_out.set_cacheable(static_cast<int32_t>(Cacheable::kPut));
       message_out.set_last_id(routing_table_.kNodeId().string());
       message_out.set_source_id(routing_table_.kNodeId().string());
+      message_out.set_ack_id(network_utils_.acknowledgement_.GetId());
       if (message.has_id())
         message_out.set_id(message.id());
       else
@@ -220,6 +227,7 @@ void MessageHandler::HandleDirectMessageAsClosestNode(protobuf::Message& message
       message.set_visited(true);
       return network_.SendToClosestNode(message);
     } else {
+      network_.SendAck(message);
       LOG(kWarning) << "Dropping message. This node [" << DebugId(routing_table_.kNodeId())
                     << "] is the closest but is not connected to destination node ["
                     << HexSubstr(message.destination_id())
@@ -255,8 +263,27 @@ void MessageHandler::HandleGroupMessageAsClosestNode(protobuf::Message& message)
       (routing_table_.size() > Parameters::closest_nodes_size) &&
       (!routing_table_.IsThisNodeInRange(NodeId(message.destination_id()),
                                          Parameters::closest_nodes_size))) {
+    if (message.source_id() != routing_table_.kNodeId().string())
+      network_.SendAck(message);
     message.set_visited(true);
+    LOG(kVerbose) << "message visited id: " << message.id();
     return network_.SendToClosestNode(message);
+  }
+
+  auto replication(static_cast<unsigned int>(message.replication()));
+
+  if (replication > 1) {
+    network_utils_.acknowledgement_.AddGroup(
+        message,
+        [message, this](const boost::system::error_code& error) {
+          LOG(kVerbose) << "Ack AddGroup Handler Fires";
+          if (error &&  (NodeId(message.source_id()) != routing_table_.kNodeId()))
+            network_.SendAck(message);
+          else
+            network_utils_.acknowledgement_.GroupQueueRemove(message.ack_id());
+        }, Parameters::ack_timeout * Parameters::max_send_retry);
+  } else if (message.source_id() != routing_table_.kNodeId().string()) {
+    network_.SendAck(message);
   }
 
   std::vector<std::string> route_history;
@@ -268,7 +295,6 @@ void MessageHandler::HandleGroupMessageAsClosestNode(protobuf::Message& message)
     route_history.push_back(message.route_history(0));
 
   // This node is closest so will send to all replicant nodes
-  unsigned int replication(static_cast<unsigned int>(message.replication()));
   if ((replication < 1) || (replication > Parameters::group_size)) {
     LOG(kError) << "Dropping invalid non-direct message."
                 << " id: " << message.id();
@@ -303,6 +329,7 @@ void MessageHandler::HandleGroupMessageAsClosestNode(protobuf::Message& message)
                << "Replicating message to : " << HexSubstr(i.id.string())
                << " [ group_id : " << HexSubstr(group_id) << "]"
                << " id: " << message.id();
+    message.clear_ack_node_ids();
     message.set_destination_id(i.id.string());
     NodeInfo node;
     if (routing_table_.GetNodeInfo(i.id, node)) {
@@ -336,8 +363,17 @@ void MessageHandler::HandleMessageAsFarNode(protobuf::Message& message) {
 }
 
 void MessageHandler::HandleMessage(protobuf::Message& message) {
-  LOG(kVerbose) << "[" << DebugId(routing_table_.kNodeId()) << "]"
+  LOG(kVerbose) << "[" << routing_table_.kNodeId() << "]"
                 << " MessageHandler::HandleMessage handle message with id: " << message.id();
+  if (!message.source_id().empty() && !IsAck(message) &&
+      (message.destination_id() != message.source_id()) &&
+      (message.destination_id() == routing_table_.kNodeId().string()) &&
+      !network_utils_.firewall_.Add(NodeId(message.source_id()), message.id()))
+    return;
+
+ if (IsAck(message))
+   return;
+
   if (!ValidateMessage(message)) {
     LOG(kWarning) << "Validate message failed， id: " << message.id();
     BOOST_ASSERT_MSG((message.hops_to_live() > 0),
@@ -420,6 +456,8 @@ void MessageHandler::HandleMessageForNonRoutingNodes(protobuf::Message& message)
     LOG(kWarning) << "This node [" << DebugId(routing_table_.kNodeId())
                   << " Dropping message as client to client message not allowed."
                   << PrintMessage(message);
+    network_utils_.acknowledgement_.AdjustAckHistory(message);
+    network_.SendAck(message);
     return;
   }
   LOG(kInfo) << "This node has message destination in its ClientRoutingTable. Dest id : "

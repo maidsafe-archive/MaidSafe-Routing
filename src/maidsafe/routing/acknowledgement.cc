@@ -31,9 +31,9 @@ namespace maidsafe {
 
 namespace routing {
 
-Acknowledgement::Acknowledgement(AsioService& io_service)
-    : running_(true), ack_id_(RandomUint32()), mutex_(), io_service_(io_service),
-      queue_(), group_queue_() {}
+Acknowledgement::Acknowledgement(const NodeId& local_node_id, AsioService& io_service)
+    : running_(true), kNodeId_(local_node_id), ack_id_(RandomUint32()), mutex_(),
+      io_service_(io_service), queue_(), group_queue_() {}
 
 Acknowledgement::~Acknowledgement() {
   running_ = false;
@@ -157,7 +157,7 @@ void Acknowledgement::GroupQueueRemove(AckId ack_id) {
 void Acknowledgement::HandleMessage(AckId ack_id) {
   assert((ack_id != 0) && "Invalid acknowledgement id");
   LOG(kVerbose) << "MessageHandler::HandleAckMessage " << ack_id;
-  Remove(ack_id);
+  Remove(ack_id);  
 }
 
 bool Acknowledgement::HandleGroupMessage(const protobuf::Message& message) {
@@ -265,6 +265,23 @@ bool Acknowledgement::NeedsAck(const protobuf::Message& message, const NodeId& n
 
   LOG(kVerbose) << PrintMessage(message);
   return true;
+}
+
+void Acknowledgement::AdjustAckHistory(protobuf::Message& message) {
+  LOG(kVerbose) << "size of acks "  << message.ack_node_ids_size();
+  if (NodeId(message.relay_id()) == kNodeId_)
+    return;
+  assert((message.ack_node_ids_size() <= 2) && "size of ack list must be smaller than 3");
+  if ((message.ack_node_ids_size() == 0) ||
+      ((message.ack_node_ids_size() == 1) &&
+       (NodeId(message.ack_node_ids(0)) != kNodeId_)))  {
+    message.add_ack_node_ids(kNodeId_.string());
+  } else if (message.ack_node_ids_size() == 2) {
+    std::string last_node(message.ack_node_ids(1));
+    message.clear_ack_node_ids();
+    message.add_ack_node_ids(last_node);
+    message.add_ack_node_ids(kNodeId_.string());
+  }
 }
 
 }  // namespace routing
