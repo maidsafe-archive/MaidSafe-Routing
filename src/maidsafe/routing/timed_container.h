@@ -25,7 +25,6 @@
 #include <vector>
 
 #include "maidsafe/routing/timer.h"
-#include "maidsafe/routing/parameters.h"
 
 namespace maidsafe {
 
