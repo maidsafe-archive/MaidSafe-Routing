@@ -47,6 +47,7 @@ unsigned int Parameters::maximum_find_close_node_failures(10);
 unsigned int Parameters::max_route_history(3);
 unsigned int Parameters::hops_to_live(50);
 unsigned int Parameters::accepted_distance_tolerance(1);
+unsigned int Parameters::max_send_retry(3);
 unsigned int Parameters::unidirectional_interest_range(Parameters::closest_nodes_size * 2);
 std::chrono::steady_clock::duration Parameters::local_retreival_timeout(std::chrono::seconds(2));
 unsigned int Parameters::routing_table_ready_to_response(Parameters::max_routing_table_size / 2);

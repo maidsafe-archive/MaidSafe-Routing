@@ -37,7 +37,7 @@
 #include "maidsafe/routing/rpcs.h"
 #include "maidsafe/routing/service.h"
 #include "maidsafe/routing/utils.h"
-#include "maidsafe/routing/tests/mock_network_utils.h"
+#include "maidsafe/routing/tests/mock_network.h"
 #include "maidsafe/routing/tests/test_utils.h"
 
 namespace maidsafe {
@@ -200,7 +200,7 @@ class ResponseHandlerTest : public testing::Test {
   NetworkStatistics network_statistics_;
   RoutingTable routing_table_;
   ClientRoutingTable client_routing_table_;
-  MockNetworkUtils network_;
+  MockNetwork network_;
   PublicKeyHolder public_key_holder_;
   std::shared_ptr<ResponseHandler> response_handler_;
 };

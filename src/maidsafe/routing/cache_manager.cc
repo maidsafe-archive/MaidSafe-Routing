@@ -20,7 +20,7 @@
 
 #include "maidsafe/routing/cache_manager.h"
 
-#include "maidsafe/routing/network_utils.h"
+#include "maidsafe/routing/network.h"
 #include "maidsafe/routing/parameters.h"
 #include "maidsafe/routing/routing.pb.h"
 #include "maidsafe/routing/utils.h"
@@ -30,7 +30,7 @@ namespace maidsafe {
 
 namespace routing {
 
-CacheManager::CacheManager(const NodeId& node_id, NetworkUtils &network)
+CacheManager::CacheManager(const NodeId& node_id, Network& network)
     : kNodeId_(node_id),
       network_(network),
       message_and_caching_functors_(),

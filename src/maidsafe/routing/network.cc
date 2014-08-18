@@ -16,7 +16,7 @@
     See the Licences for the specific language governing permissions and limitations relating to
     use of the MaidSafe Software.                                                                 */
 
-#include "maidsafe/routing/network_utils.h"
+#include "maidsafe/routing/network.h"
 
 #include "boost/date_time/posix_time/posix_time_config.hpp"
 #include "boost/filesystem/path.hpp"
@@ -46,7 +46,7 @@ typedef boost::asio::ip::udp::endpoint Endpoint;
 
 namespace routing {
 
-NetworkUtils::NetworkUtils(RoutingTable& routing_table, ClientRoutingTable& client_routing_table)
+Network::Network(RoutingTable& routing_table, ClientRoutingTable& client_routing_table)
     : running_(true),
       running_mutex_(),
       bootstrap_attempt_(0),
@@ -57,18 +57,18 @@ NetworkUtils::NetworkUtils(RoutingTable& routing_table, ClientRoutingTable& clie
       nat_type_(rudp::NatType::kUnknown),
       rudp_() {}
 
-NetworkUtils::~NetworkUtils() {
+Network::~Network() {
   std::lock_guard<std::mutex> lock(running_mutex_);
   running_ = false;
 }
 
-int NetworkUtils::Bootstrap(const rudp::MessageReceivedFunctor& message_received_functor,
+int Network::Bootstrap(const rudp::MessageReceivedFunctor& message_received_functor,
                             const rudp::ConnectionLostFunctor& connection_lost_functor) {
   BootstrapContacts bootstrap_contacts{ GetBootstrapContacts(routing_table_.client_mode()) };
   return DoBootstrap(message_received_functor, connection_lost_functor, bootstrap_contacts);
 }
 
-int NetworkUtils::ZeroStateBootstrap(const rudp::MessageReceivedFunctor& message_received_functor,
+int Network::ZeroStateBootstrap(const rudp::MessageReceivedFunctor& message_received_functor,
                                      const rudp::ConnectionLostFunctor& connection_lost_functor,
                                      boost::asio::ip::udp::endpoint local_endpoint) {
   BootstrapContacts bootstrap_contacts{ GetZeroStateBootstrapContacts(local_endpoint) };
@@ -76,7 +76,7 @@ int NetworkUtils::ZeroStateBootstrap(const rudp::MessageReceivedFunctor& message
                      local_endpoint);
 }
 
-int NetworkUtils::DoBootstrap(const rudp::MessageReceivedFunctor& message_received_functor,
+int Network::DoBootstrap(const rudp::MessageReceivedFunctor& message_received_functor,
                               const rudp::ConnectionLostFunctor& connection_lost_functor,
                               const BootstrapContacts& bootstrap_contacts,
                               boost::asio::ip::udp::endpoint local_endpoint) {
@@ -109,7 +109,7 @@ int NetworkUtils::DoBootstrap(const rudp::MessageReceivedFunctor& message_receiv
   return kSuccess;
 }
 
-int NetworkUtils::GetAvailableEndpoint(const NodeId& peer_id,
+int Network::GetAvailableEndpoint(const NodeId& peer_id,
                                        const rudp::EndpointPair& peer_endpoint_pair,
                                        rudp::EndpointPair& this_endpoint_pair,
                                        rudp::NatType& this_nat_type) {
@@ -121,7 +121,7 @@ int NetworkUtils::GetAvailableEndpoint(const NodeId& peer_id,
   return rudp_.GetAvailableEndpoint(peer_id, peer_endpoint_pair, this_endpoint_pair, this_nat_type);
 }
 
-int NetworkUtils::Add(const NodeId& peer_id, const rudp::EndpointPair& peer_endpoint_pair,
+int Network::Add(const NodeId& peer_id, const rudp::EndpointPair& peer_endpoint_pair,
                       const std::string& validation_data) {
   {
     std::lock_guard<std::mutex> lock(running_mutex_);
@@ -131,7 +131,7 @@ int NetworkUtils::Add(const NodeId& peer_id, const rudp::EndpointPair& peer_endp
   return rudp_.Add(peer_id, peer_endpoint_pair, validation_data);
 }
 
-int NetworkUtils::MarkConnectionAsValid(const NodeId& peer_id) {
+int Network::MarkConnectionAsValid(const NodeId& peer_id) {
   {
     std::lock_guard<std::mutex> lock(running_mutex_);
     if (!running_)
@@ -146,7 +146,7 @@ int NetworkUtils::MarkConnectionAsValid(const NodeId& peer_id) {
   return ret_val;
 }
 
-void NetworkUtils::Remove(const NodeId& peer_id) {
+void Network::Remove(const NodeId& peer_id) {
   {
     std::lock_guard<std::mutex> lock(running_mutex_);
     if (!running_)
@@ -155,7 +155,7 @@ void NetworkUtils::Remove(const NodeId& peer_id) {
   rudp_.Remove(peer_id);
 }
 
-void NetworkUtils::RudpSend(const NodeId& peer_id, const protobuf::Message& message,
+void Network::RudpSend(const NodeId& peer_id, const protobuf::Message& message,
                             const rudp::MessageSentFunctor& message_sent_functor) {
   {
     std::lock_guard<std::mutex> lock(running_mutex_);
@@ -169,23 +169,23 @@ void NetworkUtils::RudpSend(const NodeId& peer_id, const protobuf::Message& mess
                 << " --To Rudp--";
 }
 
-void NetworkUtils::SendToDirect(const protobuf::Message& message, const NodeId& peer_connection_id,
+void Network::SendToDirect(const protobuf::Message& message, const NodeId& peer_connection_id,
                                 const rudp::MessageSentFunctor& message_sent_functor) {
   RudpSend(peer_connection_id, message, message_sent_functor ? message_sent_functor : nullptr);
 }
 
-void NetworkUtils::SendToDirect(const protobuf::Message& message, const NodeId& peer_node_id,
+void Network::SendToDirect(const protobuf::Message& message, const NodeId& peer_node_id,
                                 const NodeId& peer_connection_id) {
   SendTo(message, peer_node_id, peer_connection_id);
 }
 
-void NetworkUtils::SendToDirectAdjustedRoute(protobuf::Message& message, const NodeId& peer_node_id,
+void Network::SendToDirectAdjustedRoute(protobuf::Message& message, const NodeId& peer_node_id,
                                              const NodeId& peer_connection_id) {
   AdjustRouteHistory(message);
   SendTo(message, peer_node_id, peer_connection_id);
 }
 
-void NetworkUtils::SendToClosestNode(const protobuf::Message& message) {
+void Network::SendToClosestNode(const protobuf::Message& message) {
   // Normal messages
   if (message.has_destination_id() && !message.destination_id().empty()) {
     auto client_routing_nodes(client_routing_table_.GetNodesInfo(NodeId(message.destination_id())));
@@ -232,7 +232,7 @@ void NetworkUtils::SendToClosestNode(const protobuf::Message& message) {
   }
 }
 
-void NetworkUtils::SendTo(const protobuf::Message& message, const NodeId& peer_node_id,
+void Network::SendTo(const protobuf::Message& message, const NodeId& peer_node_id,
                           const NodeId& peer_connection_id) {
   const std::string kThisId(routing_table_.kNodeId().string());
   rudp::MessageSentFunctor message_sent_functor = [=](int message_sent) {
@@ -249,7 +249,7 @@ void NetworkUtils::SendTo(const protobuf::Message& message, const NodeId& peer_n
   RudpSend(peer_connection_id, message, message_sent_functor);
 }
 
-void NetworkUtils::RecursiveSendOn(protobuf::Message message, NodeInfo last_node_attempted,
+void Network::RecursiveSendOn(protobuf::Message message, NodeInfo last_node_attempted,
                                    int attempt_count) {
   {
     std::lock_guard<std::mutex> lock(running_mutex_);
@@ -347,7 +347,7 @@ void NetworkUtils::RecursiveSendOn(protobuf::Message message, NodeInfo last_node
   RudpSend(peer.connection_id, message, message_sent_functor);
 }
 
-void NetworkUtils::AdjustRouteHistory(protobuf::Message& message) {
+void Network::AdjustRouteHistory(protobuf::Message& message) {
   if (Parameters::hops_to_live == static_cast<unsigned int>(message.hops_to_live()) &&
       NodeId(message.source_id()) == routing_table_.kNodeId())
     return;
@@ -371,22 +371,22 @@ void NetworkUtils::AdjustRouteHistory(protobuf::Message& message) {
 }
 
 
-void NetworkUtils::clear_bootstrap_connection_info() {
+void Network::clear_bootstrap_connection_info() {
   bootstrap_connection_id_ = NodeId();
   this_node_relay_connection_id_ = NodeId();
 }
 
-maidsafe::NodeId NetworkUtils::bootstrap_connection_id() const {
+maidsafe::NodeId Network::bootstrap_connection_id() const {
   if (running_)
     return bootstrap_connection_id_;
   return NodeId();
 }
 
-maidsafe::NodeId NetworkUtils::this_node_relay_connection_id() const {
+maidsafe::NodeId Network::this_node_relay_connection_id() const {
   return this_node_relay_connection_id_;
 }
 
-rudp::NatType NetworkUtils::nat_type() const { return nat_type_; }
+rudp::NatType Network::nat_type() const { return nat_type_; }
 
 }  // namespace routing
 

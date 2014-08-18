@@ -25,7 +25,7 @@
 
 #include "maidsafe/routing/client_routing_table.h"
 #include "maidsafe/routing/message.h"
-#include "maidsafe/routing/network_utils.h"
+#include "maidsafe/routing/network.h"
 #include "maidsafe/routing/routing.pb.h"
 #include "maidsafe/routing/routing_table.h"
 #include "maidsafe/routing/service.h"
@@ -36,12 +36,13 @@ namespace maidsafe {
 namespace routing {
 
 MessageHandler::MessageHandler(RoutingTable& routing_table,
-                               ClientRoutingTable& client_routing_table, NetworkUtils& network,
+                               ClientRoutingTable& client_routing_table, Network& network,
                                Timer<std::string>& timer, NetworkStatistics& network_statistics,
-                               AsioService& asio_service)
+                               Acknowledgement& acknowledgement, AsioService& asio_service)
     : routing_table_(routing_table),
       client_routing_table_(client_routing_table),
       network_statistics_(network_statistics),
+      acknowledgement_(acknowledgement),
       network_(network),
       cache_manager_(routing_table_.client_mode()
                          ? nullptr

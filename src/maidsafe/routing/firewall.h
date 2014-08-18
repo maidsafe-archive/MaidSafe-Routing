@@ -16,22 +16,48 @@
     See the Licences for the specific language governing permissions and limitations relating to
     use of the MaidSafe Software.                                                                 */
 
-#include "maidsafe/routing/tests/mock_network.h"
+#ifndef MAIDSAFE_ROUTING_FIREWALL_H_
+#define MAIDSAFE_ROUTING_FIREWALL_H_
+
+#include <time.h>
+#include <tuple>
+#include <deque>
+
+#include "maidsafe/routing/api_config.h"
 
 namespace maidsafe {
 
 namespace routing {
 
+
 namespace test {
+  class FirewallTest_BEH_AddRemove_Test;
+}
 
-MockNetwork::MockNetwork(RoutingTable& routing_table,
-                                   ClientRoutingTable& client_routing_table)
-    : Network(routing_table, client_routing_table) {}
+typedef std::tuple<NodeId, uint32_t, std::time_t> ProcessedMessage;
 
-MockNetwork::~MockNetwork() {}
+class Firewall {
+ public:
+  Firewall();
+  Firewall& operator=(const Firewall&) = delete;
+  Firewall(const Firewall&) = delete;
+  Firewall(const Firewall&&) = delete;
 
-}  // namespace test
+  bool Add(const NodeId& source_id, const uint32_t& message_id);
+
+ private:
+  friend class test::FirewallTest_BEH_AddRemove_Test;
+
+  void Remove(std::unique_lock<std::mutex>& lock);
+
+  std::mutex mutex_;
+  std::deque<ProcessedMessage> history_;
+  static const int kQueueSize_;
+};
 
 }  // namespace routing
 
 }  // namespace maidsafe
+
+#endif  // MAIDSAFE_ROUTING_FIREWALL_H_
+

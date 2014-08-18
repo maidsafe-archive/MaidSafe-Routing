@@ -36,13 +36,13 @@
 #include "maidsafe/routing/api_config.h"
 #include "maidsafe/routing/client_routing_table.h"
 #include "maidsafe/routing/message_handler.h"
-#include "maidsafe/routing/network_utils.h"
+#include "maidsafe/routing/network.h"
 #include "maidsafe/routing/random_node_helper.h"
 #include "maidsafe/routing/routing_api.h"
 #include "maidsafe/routing/routing.pb.h"
 #include "maidsafe/routing/routing_table.h"
 #include "maidsafe/routing/timer.h"
-
+#include "maidsafe/routing/acknowledgement.h"
 
 namespace maidsafe {
 
@@ -193,8 +193,9 @@ class Routing::Impl : public std::enable_shared_from_this<Routing::Impl> {
   // proper destruction of the routing library, i.e. to avoid segmentation faults.
   std::unique_ptr<MessageHandler> message_handler_;
   AsioService asio_service_;
-  std::unique_ptr<NetworkUtils> network_;
+  std::unique_ptr<Network> network_;
   Timer<std::string> timer_;
+  Acknowledgement acknowledgement_;
   boost::asio::steady_timer re_bootstrap_timer_, recovery_timer_, setup_timer_;
 };
 

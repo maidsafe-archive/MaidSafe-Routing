@@ -36,7 +36,7 @@
 
 #include "maidsafe/routing/client_routing_table.h"
 #include "maidsafe/routing/message_handler.h"
-#include "maidsafe/routing/network_utils.h"
+#include "maidsafe/routing/network.h"
 #include "maidsafe/routing/return_codes.h"
 #include "maidsafe/routing/routing.pb.h"
 #include "maidsafe/routing/routing_table.h"
@@ -46,7 +46,7 @@ namespace maidsafe {
 
 namespace routing {
 
-int AddToRudp(NetworkUtils& network, const NodeId& this_node_id, const NodeId& this_connection_id,
+int AddToRudp(Network& network, const NodeId& this_node_id, const NodeId& this_connection_id,
               const NodeId& peer_id, const NodeId& peer_connection_id,
               rudp::EndpointPair peer_endpoint_pair, bool requestor, bool client) {
   LOG(kVerbose) << "AddToRudp. peer_id: " << peer_id << " ,connection id: " << peer_connection_id;
@@ -66,7 +66,7 @@ int AddToRudp(NetworkUtils& network, const NodeId& this_node_id, const NodeId& t
   return result;
 }
 
-bool ValidateAndAddToRoutingTable(NetworkUtils& network, RoutingTable& routing_table,
+bool ValidateAndAddToRoutingTable(Network& network, RoutingTable& routing_table,
                                   ClientRoutingTable& client_routing_table,
                                   const NodeId& peer_id, const NodeId& connection_id,
                                   const asymm::PublicKey& public_key, bool client) {
@@ -109,7 +109,7 @@ bool ValidateAndAddToRoutingTable(NetworkUtils& network, RoutingTable& routing_t
   return false;
 }
 
-void InformClientOfNewCloseNode(NetworkUtils& network, const NodeInfo& client,
+void InformClientOfNewCloseNode(Network& network, const NodeInfo& client,
                                 const NodeInfo& new_close_node, const NodeId& this_node_id) {
   protobuf::Message inform_client_of_new_close_node(
       rpcs::InformClientOfNewCloseNode(new_close_node.id, this_node_id, client.id));
@@ -163,6 +163,10 @@ bool IsCacheablePut(const protobuf::Message& message) {
   return (!(message.has_relay_id() || message.has_relay_connection_id()) &&
           message.has_cacheable() &&
           (static_cast<Cacheable>(message.cacheable()) == Cacheable::kPut));
+}
+
+bool IsAck(const protobuf::Message& message) {
+  return message.type() == static_cast<int>(MessageType::kAcknowledgement);
 }
 
 bool IsClientToClientMessageWithDifferentNodeIds(const protobuf::Message& message,

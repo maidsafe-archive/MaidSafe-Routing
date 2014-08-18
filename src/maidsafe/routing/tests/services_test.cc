@@ -27,7 +27,7 @@
 
 #include "maidsafe/routing/client_routing_table.h"
 #include "maidsafe/routing/network_statistics.h"
-#include "maidsafe/routing/network_utils.h"
+#include "maidsafe/routing/network.h"
 #include "maidsafe/routing/parameters.h"
 #include "maidsafe/routing/routing.pb.h"
 #include "maidsafe/routing/rpcs.h"
@@ -53,7 +53,7 @@ TEST(ServicesTest, BEH_Ping) {
   ClientRoutingTable client_routing_table(routing_table.kNodeId());
   AsioService asio_service(1);
   PublicKeyHolder public_key_holder(asio_service);
-  NetworkUtils network(routing_table, client_routing_table);
+  Network network(routing_table, client_routing_table);
   Service service(routing_table, client_routing_table, network, public_key_holder);
   NodeInfo node;
   rudp::ManagedConnections rudp;
@@ -84,7 +84,7 @@ TEST(ServicesTest, BEH_FindNodes) {
   ClientRoutingTable client_routing_table(routing_table.kNodeId());
   AsioService asio_service(1);
   PublicKeyHolder public_key_holder(asio_service);
-  NetworkUtils network(routing_table, client_routing_table);
+  Network network(routing_table, client_routing_table);
   Service service(routing_table, client_routing_table, network, public_key_holder);
   protobuf::Message message = rpcs::FindNodes(this_node_id, this_node_id, 8);
   service.FindNodes(message);
@@ -117,7 +117,7 @@ TEST(ServicesTest, BEH_FindNodes) {
 //   AsioService asio_service(0);
 //   Timer timer(asio_service);
 //   NodeInfo node;
-//   NetworkUtils network(routing_table, client_routing_table, timer);
+//   Network network(routing_table, client_routing_table, timer);
 //   protobuf::ProxyConnectRequest proxy_connect_request;
 //   // they send us an proxy connect rpc
 //   rudp::EndpointPair endpoint_pair;

@@ -55,6 +55,7 @@ struct Parameters {
   static unsigned int routing_table_ready_to_response;
   static unsigned int accepted_distance_tolerance;
   static boost::posix_time::time_duration connect_rpc_prune_timeout;
+  static unsigned int max_send_retry;
   static const unsigned int public_key_holding_time = 30;
   static bool caching;
 

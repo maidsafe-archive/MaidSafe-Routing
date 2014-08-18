@@ -23,7 +23,7 @@
 
 #include "gmock/gmock.h"
 
-#include "maidsafe/routing/network_utils.h"
+#include "maidsafe/routing/network.h"
 #include "maidsafe/routing/routing.pb.h"
 
 namespace maidsafe {
@@ -32,10 +32,10 @@ namespace routing {
 
 namespace test {
 
-class MockNetworkUtils : public NetworkUtils {
+class MockNetwork : public Network {
  public:
-  MockNetworkUtils(RoutingTable& routing_table, ClientRoutingTable& client_routing_table);
-  virtual ~MockNetworkUtils();
+  MockNetwork(RoutingTable& routing_table, ClientRoutingTable& client_routing_table);
+  virtual ~MockNetwork();
 
   MOCK_METHOD1(SendToClosestNode, void(const protobuf::Message& message));
   MOCK_METHOD1(MarkConnectionAsValid, int(const NodeId& peer_id));
@@ -49,8 +49,8 @@ class MockNetworkUtils : public NetworkUtils {
   void SetBootstrapConnectionId(const NodeId& node_id) { this->bootstrap_connection_id_ = node_id; }
 
  private:
-  MockNetworkUtils& operator=(const MockNetworkUtils&);
-  MockNetworkUtils(const MockNetworkUtils&);
+  MockNetwork& operator=(const MockNetwork&);
+  MockNetwork(const MockNetwork&);
 };
 
 }  // namespace test

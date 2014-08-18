@@ -28,7 +28,7 @@
 #include "maidsafe/routing/message_handler.h"
 #include "maidsafe/routing/tests/mock_service.h"
 #include "maidsafe/routing/tests/mock_response_handler.h"
-#include "maidsafe/routing/tests/mock_network_utils.h"
+#include "maidsafe/routing/tests/mock_network.h"
 #include "maidsafe/routing/tests/mock_routing_table.h"
 #include "maidsafe/routing/tests/test_utils.h"
 #include "maidsafe/routing/client_routing_table.h"
@@ -70,7 +70,7 @@ class MessageHandlerTest : public testing::Test {
     network_statistics_.reset(new NetworkStatistics(node_id));
     table_.reset(new MockRoutingTable(false, node_id, asymm::GenerateKeyPair()));
     ntable_.reset(new ClientRoutingTable(table_->kNodeId()));
-    utils_.reset(new MockNetworkUtils(*table_, *ntable_));
+    utils_.reset(new MockNetwork(*table_, *ntable_));
     service_.reset(new MockService(*table_, *ntable_, *utils_, public_key_holder_));
     response_handler_.reset(new MockResponseHandler(*table_, *ntable_, *utils_,
                                                     public_key_holder_));
@@ -99,7 +99,7 @@ class MessageHandlerTest : public testing::Test {
   int messages_received_;
   std::shared_ptr<ClientRoutingTable> ntable_;
   std::shared_ptr<MockRoutingTable> table_;
-  std::shared_ptr<MockNetworkUtils> utils_;
+  std::shared_ptr<MockNetwork> utils_;
   std::shared_ptr<MockService> service_;
   std::shared_ptr<MockResponseHandler> response_handler_;
   std::shared_ptr<NetworkStatistics> network_statistics_;

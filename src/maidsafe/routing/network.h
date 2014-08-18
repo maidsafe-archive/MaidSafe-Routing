@@ -16,8 +16,8 @@
     See the Licences for the specific language governing permissions and limitations relating to
     use of the MaidSafe Software.                                                                 */
 
-#ifndef MAIDSAFE_ROUTING_NETWORK_UTILS_H_
-#define MAIDSAFE_ROUTING_NETWORK_UTILS_H_
+#ifndef MAIDSAFE_ROUTING_NETWORK_H_
+#define MAIDSAFE_ROUTING_NETWORK_H_
 
 #include <mutex>
 #include <string>
@@ -46,13 +46,13 @@ class RoutingTable;
 
 namespace test {
 class GenericNode;
-class MockNetworkUtils;
+class MockNetwork;
 }
 
-class NetworkUtils {
+class Network {
  public:
-  NetworkUtils(RoutingTable& routing_table, ClientRoutingTable& client_routing_table);
-  virtual ~NetworkUtils();
+  Network(RoutingTable& routing_table, ClientRoutingTable& client_routing_table);
+  virtual ~Network();
   int Bootstrap(const rudp::MessageReceivedFunctor& message_received_functor,
                 const rudp::ConnectionLostFunctor& connection_lost_functor);
   int ZeroStateBootstrap(const rudp::MessageReceivedFunctor& message_received_functor,
@@ -84,12 +84,12 @@ class NetworkUtils {
   rudp::NatType nat_type() const;
 
   friend class test::GenericNode;
-  friend class test::MockNetworkUtils;
+  friend class test::MockNetwork;
 
  private:
-  NetworkUtils(const NetworkUtils&);
-  NetworkUtils(const NetworkUtils&&);
-  NetworkUtils& operator=(const NetworkUtils&);
+  Network(const Network&);
+  Network(const Network&&);
+  Network& operator=(const Network&);
 
   // For zero-state, local_endpoint can be default-constructed.
   int DoBootstrap(const rudp::MessageReceivedFunctor& message_received_functor,
@@ -119,4 +119,4 @@ class NetworkUtils {
 
 }  // namespace maidsafe
 
-#endif  // MAIDSAFE_ROUTING_NETWORK_UTILS_H_
+#endif  // MAIDSAFE_ROUTING_NETWORK_H_

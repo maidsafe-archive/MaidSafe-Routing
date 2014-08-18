@@ -34,14 +34,14 @@ namespace protobuf {
 class Message;
 }
 
-class NetworkUtils;
+class Network;
 class ClientRoutingTable;
 class RoutingTable;
 
 class Service : public std::enable_shared_from_this<Service> {
  public:
   Service(RoutingTable& routing_table, ClientRoutingTable& client_routing_table,
-          NetworkUtils& network, PublicKeyHolder& public_key_holder);
+          Network& network, PublicKeyHolder& public_key_holder);
   virtual ~Service();
   // Handle all incoming requests and send back reply
   virtual void Ping(protobuf::Message& message);
@@ -65,7 +65,7 @@ class Service : public std::enable_shared_from_this<Service> {
   mutable std::mutex mutex_;
   RoutingTable& routing_table_;
   ClientRoutingTable& client_routing_table_;
-  NetworkUtils& network_;
+  Network& network_;
   RequestPublicKeyFunctor request_public_key_functor_;
   PublicKeyHolder& public_key_holder_;
 };

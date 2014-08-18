@@ -29,7 +29,7 @@
 #include "maidsafe/rudp/return_codes.h"
 
 #include "maidsafe/routing/client_routing_table.h"
-#include "maidsafe/routing/network_utils.h"
+#include "maidsafe/routing/network.h"
 #include "maidsafe/routing/return_codes.h"
 #include "maidsafe/routing/routing.pb.h"
 #include "maidsafe/routing/routing_table.h"
@@ -49,7 +49,7 @@ typedef boost::asio::ip::udp::endpoint Endpoint;
 }  // unnamed namespace
 
 ResponseHandler::ResponseHandler(
-    RoutingTable& routing_table, ClientRoutingTable& client_routing_table, NetworkUtils& network,
+    RoutingTable& routing_table, ClientRoutingTable& client_routing_table, Network& network,
     PublicKeyHolder& public_key_holder)
     : mutex_(), routing_table_(routing_table), client_routing_table_(client_routing_table),
       network_(network), request_public_key_functor_(), public_key_holder_(public_key_holder)  {}

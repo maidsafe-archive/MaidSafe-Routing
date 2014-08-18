@@ -36,7 +36,7 @@ namespace test {
 class MockResponseHandler : public ResponseHandler {
  public:
   MockResponseHandler(RoutingTable& routing_table, ClientRoutingTable& client_routing_table,
-                      NetworkUtils& network_utils, PublicKeyHolder& public_key_holder);
+                      Network& network_utils, PublicKeyHolder& public_key_holder);
   virtual ~MockResponseHandler();
 
   MOCK_METHOD1(Ping, void(protobuf::Message& message));

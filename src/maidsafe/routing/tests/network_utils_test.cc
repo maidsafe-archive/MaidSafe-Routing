@@ -30,7 +30,7 @@
 #include "maidsafe/rudp/return_codes.h"
 #include "maidsafe/rudp/managed_connections.h"
 
-#include "maidsafe/routing/network_utils.h"
+#include "maidsafe/routing/network.h"
 #include "maidsafe/routing/client_routing_table.h"
 #include "maidsafe/routing/return_codes.h"
 #include "maidsafe/routing/routing_table.h"
@@ -58,7 +58,7 @@ void SortFromThisNode(const NodeId& from, std::vector<NodeInfoAndPrivateKey> nod
 
 }  // anonymous namespace
 
-TEST(NetworkUtilsTest, BEH_ProcessSendDirectInvalidEndpoint) {
+TEST(NetworkTest, BEH_ProcessSendDirectInvalidEndpoint) {
   protobuf::Message message;
   message.set_routing_message(true);
   message.set_client_node(false);
@@ -70,11 +70,11 @@ TEST(NetworkUtilsTest, BEH_ProcessSendDirectInvalidEndpoint) {
   NodeId node_id(NodeId::IdType::kRandomId);
   RoutingTable routing_table(false, node_id, asymm::GenerateKeyPair());
   ClientRoutingTable client_routing_table(routing_table.kNodeId());
-  NetworkUtils network(routing_table, client_routing_table);
+  Network network(routing_table, client_routing_table);
   network.SendToClosestNode(message);
 }
 
-TEST(NetworkUtilsTest, BEH_ProcessSendUnavailableDirectEndpoint) {
+TEST(NetworkTest, BEH_ProcessSendUnavailableDirectEndpoint) {
   protobuf::Message message;
   message.set_routing_message(true);
   message.set_client_node(false);
@@ -87,12 +87,12 @@ TEST(NetworkUtilsTest, BEH_ProcessSendUnavailableDirectEndpoint) {
   RoutingTable routing_table(false, node_id, asymm::GenerateKeyPair());
   ClientRoutingTable client_routing_table(routing_table.kNodeId());
   Endpoint endpoint(GetLocalIp(), maidsafe::test::GetRandomPort());
-  NetworkUtils network(routing_table, client_routing_table);
+  Network network(routing_table, client_routing_table);
   network.SendToDirect(message, NodeId(NodeId::IdType::kRandomId),
                        NodeId(NodeId::IdType::kRandomId));
 }
 
-TEST(NetworkUtilsTest, FUNC_ProcessSendDirectEndpoint) {
+TEST(NetworkTest, FUNC_ProcessSendDirectEndpoint) {
   const int kMessageCount(10);
   rudp::ManagedConnections rudp1, rudp2;
   Endpoint endpoint1(GetLocalIp(), maidsafe::test::GetRandomPort());
@@ -202,7 +202,7 @@ TEST(NetworkUtilsTest, FUNC_ProcessSendDirectEndpoint) {
   RoutingTable routing_table(false, node_id, asymm::GenerateKeyPair());
   NodeId node_id3(routing_table.kNodeId());
   ClientRoutingTable client_routing_table(routing_table.kNodeId());
-  NetworkUtils network(routing_table, client_routing_table);
+  Network network(routing_table, client_routing_table);
 
   ScopedBootstrapFile bootstrap_file({endpoint2});
   EXPECT_EQ(kSuccess, network.Bootstrap(message_received_functor3, connection_lost_functor));
@@ -236,7 +236,7 @@ TEST(NetworkUtilsTest, FUNC_ProcessSendDirectEndpoint) {
 }
 
 // RT with only 1 active node and 7 inactive node
-TEST(NetworkUtilsTest, FUNC_ProcessSendRecursiveSendOn) {
+TEST(NetworkTest, FUNC_ProcessSendRecursiveSendOn) {
   const int kMessageCount(1);
   rudp::ManagedConnections rudp1, rudp2;
   Endpoint endpoint1(GetLocalIp(), maidsafe::test::GetRandomPort());
@@ -265,7 +265,7 @@ TEST(NetworkUtilsTest, FUNC_ProcessSendRecursiveSendOn) {
   RoutingTable routing_table(false, node_id, asymm::GenerateKeyPair());
   NodeId node_id3(routing_table.kNodeId());
   ClientRoutingTable client_routing_table(routing_table.kNodeId());
-  NetworkUtils network(routing_table, client_routing_table);
+  Network network(routing_table, client_routing_table);
 
   rudp::MessageReceivedFunctor message_received_functor1 = [](const std::string& message) {
     LOG(kInfo) << " -- Received: " << message;
