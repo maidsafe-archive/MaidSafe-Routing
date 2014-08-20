@@ -268,6 +268,15 @@ void CloseNodesChange::Print() const {
   LOG(kInfo) << stream.str();
 }
 
+std::string CloseNodesChange::ReportConnection() const {
+  std::stringstream stream;
+  stream << DebugId(lost_node_);
+  stream << "," << DebugId(new_node_);
+  for (auto entry : new_close_nodes_)
+    stream << "," << DebugId(entry);
+  return stream.str();
+}
+
 }  // namespace routing
 
 }  // namespace maidsafe
